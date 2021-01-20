@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C5}</ProjectGuid>
+    <RootNamespace>CopyData</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>15.0.28127.55</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\HLSDK\cl_dll;..\..\HLSDK\common;..\..\HLSDK\engine;..\..\HLSDK\pm_shared;..\..\HLSDK\public;..\..\Interface;.\SourceSDK;.\VGUI;.\vgui_controls;.\SourceSDK\tier0;.\SourceSDK\tier1;.\SourceSDK\vstdlib;.\Steam\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;STEAM_API_NODLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader />
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <DisableSpecificWarnings>4311;4312;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>.\SourceSDK\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+    <PostBuildEvent>
+      <Command>copy $(OutDir)$(ProjectName).dll I:\SteamLibrary\steamapps\common\Half-Life\valve\metahook\plugins\</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\HLSDK\cl_dll;..\..\HLSDK\common;..\..\HLSDK\engine;..\..\HLSDK\pm_shared;..\..\HLSDK\public;..\..\Interface;.\SourceSDK;.\VGUI;.\vgui_controls;.\SourceSDK\tier0;.\SourceSDK\tier1;.\SourceSDK\vstdlib;.\Steam\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;STEAM_API_NODLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4311;4312;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>.\SourceSDK\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\HLSDK\common\interface.cpp" />
+    <ClCompile Include="BaseUI.cpp" />
+    <ClCompile Include="Bitmap.cpp" />
+    <ClCompile Include="Border.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <XMLDocumentationFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename)1.xdc</XMLDocumentationFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <XMLDocumentationFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.xdc</XMLDocumentationFileName>
+    </ClCompile>
+    <ClCompile Include="ClientVGUI.cpp" />
+    <ClCompile Include="engfuncs.cpp" />
+    <ClCompile Include="exportfuncs.cpp" />
+    <ClCompile Include="FontAmalgam.cpp" />
+    <ClCompile Include="FontManager.cpp" />
+    <ClCompile Include="FontTextureCache.cpp" />
+    <ClCompile Include="GameUI.cpp" />
+    <ClCompile Include="KeyValuesSystemHook.cpp" />
+    <ClCompile Include="libcsv\csv_document.cpp" />
+    <ClCompile Include="message.cpp" />
+    <ClCompile Include="msghook.cpp" />
+    <ClCompile Include="parsemsg.cpp" />
+    <ClCompile Include="plugins.cpp" />
+    <ClCompile Include="Scheme.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <XMLDocumentationFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename)1.xdc</XMLDocumentationFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <XMLDocumentationFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.xdc</XMLDocumentationFileName>
+    </ClCompile>
+    <ClCompile Include="SourceSDK\filesystem.cpp" />
+    <ClCompile Include="SourceSDK\filesystem_helpers.cpp" />
+    <ClCompile Include="SourceSDK\InputWin32.cpp" />
+    <ClCompile Include="SourceSDK\mathlib\3dnow.cpp" />
+    <ClCompile Include="SourceSDK\mathlib\mathlib_base.cpp" />
+    <ClCompile Include="SourceSDK\mathlib\sse.cpp" />
+    <ClCompile Include="SourceSDK\SchemeHook.cpp" />
+    <ClCompile Include="SourceSDK\Surface.cpp" />
+    <ClCompile Include="SourceSDK\tier0\assert_dialog.cpp" />
+    <ClCompile Include="SourceSDK\tier0\cpu.cpp" />
+    <ClCompile Include="SourceSDK\tier0\dbg.cpp" />
+    <ClCompile Include="SourceSDK\tier0\fasttimer.cpp" />
+    <ClCompile Include="SourceSDK\tier0\mem.cpp" />
+    <ClCompile Include="SourceSDK\tier0\memdbg.cpp" />
+    <ClCompile Include="SourceSDK\tier0\memstd.cpp" />
+    <ClCompile Include="SourceSDK\tier0\mem_helpers.cpp" />
+    <ClCompile Include="SourceSDK\tier0\minidump.cpp" />
+    <ClCompile Include="SourceSDK\tier0\platform.cpp" />
+    <ClCompile Include="SourceSDK\tier0\threadtools.cpp" />
+    <ClCompile Include="SourceSDK\tier0\vcrmode.cpp" />
+    <ClCompile Include="SourceSDK\tier1\characterset.cpp" />
+    <ClCompile Include="SourceSDK\tier1\generichash.cpp" />
+    <ClCompile Include="SourceSDK\tier1\KeyValues.cpp" />
+    <ClCompile Include="SourceSDK\tier1\mempool.cpp" />
+    <ClCompile Include="SourceSDK\tier1\memstack.cpp" />
+    <ClCompile Include="SourceSDK\tier1\stringpool.cpp" />
+    <ClCompile Include="SourceSDK\tier1\strtools.cpp" />
+    <ClCompile Include="SourceSDK\tier1\utlbuffer.cpp" />
+    <ClCompile Include="SourceSDK\tier1\utlstring.cpp" />
+    <ClCompile Include="SourceSDK\tier1\utlsymbol.cpp" />
+    <ClCompile Include="SourceSDK\VPanelWrapper.cpp" />
+    <ClCompile Include="SourceSDK\vstdlib\KeyValuesSystem.cpp" />
+    <ClCompile Include="SourceSDK\vstdlib\random.cpp" />
+    <ClCompile Include="steam_api.cpp" />
+    <ClCompile Include="SubtitlePanel.cpp" />
+    <ClCompile Include="SurfaceHook.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <XMLDocumentationFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename)1.xdc</XMLDocumentationFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <XMLDocumentationFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.xdc</XMLDocumentationFileName>
+    </ClCompile>
+    <ClCompile Include="sys_dll.cpp" />
+    <ClCompile Include="vgui_controls\AnalogBar.cpp" />
+    <ClCompile Include="vgui_controls\AnimatingImagePanel.cpp" />
+    <ClCompile Include="vgui_controls\AnimationController.cpp" />
+    <ClCompile Include="vgui_controls\BitmapImagePanel.cpp" />
+    <ClCompile Include="vgui_controls\BuildFactoryHelper.cpp" />
+    <ClCompile Include="vgui_controls\BuildGroup.cpp" />
+    <ClCompile Include="vgui_controls\BuildModeDialog.cpp" />
+    <ClCompile Include="vgui_controls\Button.cpp" />
+    <ClCompile Include="vgui_controls\CheckButton.cpp" />
+    <ClCompile Include="vgui_controls\CheckButtonList.cpp" />
+    <ClCompile Include="vgui_controls\CircularProgressBar.cpp" />
+    <ClCompile Include="vgui_controls\ComboBox.cpp" />
+    <ClCompile Include="vgui_controls\consoledialog.cpp" />
+    <ClCompile Include="vgui_controls\ControllerMap.cpp" />
+    <ClCompile Include="vgui_controls\Controls.cpp" />
+    <ClCompile Include="vgui_controls\DirectorySelectDialog.cpp" />
+    <ClCompile Include="vgui_controls\Divider.cpp" />
+    <ClCompile Include="vgui_controls\EditablePanel.cpp" />
+    <ClCompile Include="vgui_controls\ExpandButton.cpp" />
+    <ClCompile Include="vgui_controls\FileOpenDialog.cpp" />
+    <ClCompile Include="vgui_controls\FocusNavGroup.cpp" />
+    <ClCompile Include="vgui_controls\Frame.cpp" />
+    <ClCompile Include="vgui_controls\GraphPanel.cpp" />
+    <ClCompile Include="vgui_controls\HTML.cpp" />
+    <ClCompile Include="vgui_controls\Image.cpp" />
+    <ClCompile Include="vgui_controls\ImageList.cpp" />
+    <ClCompile Include="vgui_controls\ImagePanel.cpp" />
+    <ClCompile Include="vgui_controls\InputDialog.cpp" />
+    <ClCompile Include="vgui_controls\KeyBindingHelpDialog.cpp" />
+    <ClCompile Include="vgui_controls\KeyBoardEditorDialog.cpp" />
+    <ClCompile Include="vgui_controls\KeyRepeat.cpp" />
+    <ClCompile Include="vgui_controls\Label.cpp" />
+    <ClCompile Include="vgui_controls\ListPanel.cpp" />
+    <ClCompile Include="vgui_controls\ListViewPanel.cpp" />
+    <ClCompile Include="vgui_controls\Menu.cpp" />
+    <ClCompile Include="vgui_controls\MenuBar.cpp" />
+    <ClCompile Include="vgui_controls\MenuButton.cpp" />
+    <ClCompile Include="vgui_controls\MenuItem.cpp" />
+    <ClCompile Include="vgui_controls\MessageBox.cpp" />
+    <ClCompile Include="vgui_controls\MessageDialog.cpp" />
+    <ClCompile Include="vgui_controls\Panel.cpp" />
+    <ClCompile Include="vgui_controls\PanelListPanel.cpp" />
+    <ClCompile Include="vgui_controls\ProgressBar.cpp" />
+    <ClCompile Include="vgui_controls\ProgressBox.cpp" />
+    <ClCompile Include="vgui_controls\PropertyDialog.cpp" />
+    <ClCompile Include="vgui_controls\PropertyPage.cpp" />
+    <ClCompile Include="vgui_controls\PropertySheet.cpp" />
+    <ClCompile Include="vgui_controls\QueryBox.cpp" />
+    <ClCompile Include="vgui_controls\RadioButton.cpp" />
+    <ClCompile Include="vgui_controls\RichText.cpp" />
+    <ClCompile Include="vgui_controls\RotatingProgressBar.cpp" />
+    <ClCompile Include="vgui_controls\savedocumentquery.cpp" />
+    <ClCompile Include="vgui_controls\ScrollableEditablePanel.cpp" />
+    <ClCompile Include="vgui_controls\ScrollBar.cpp" />
+    <ClCompile Include="vgui_controls\ScrollBarSlider.cpp" />
+    <ClCompile Include="vgui_controls\SectionedListPanel.cpp" />
+    <ClCompile Include="vgui_controls\Slider.cpp" />
+    <ClCompile Include="vgui_controls\Splitter.cpp" />
+    <ClCompile Include="vgui_controls\subrectimage.cpp" />
+    <ClCompile Include="vgui_controls\TextEntry.cpp" />
+    <ClCompile Include="vgui_controls\TextImage.cpp" />
+    <ClCompile Include="vgui_controls\ToggleButton.cpp" />
+    <ClCompile Include="vgui_controls\Tooltip.cpp" />
+    <ClCompile Include="vgui_controls\ToolWindow.cpp" />
+    <ClCompile Include="vgui_controls\TreeView.cpp" />
+    <ClCompile Include="vgui_controls\TreeViewListControl.cpp" />
+    <ClCompile Include="vgui_controls\URLLabel.cpp" />
+    <ClCompile Include="vgui_controls\vgui_controls.cpp" />
+    <ClCompile Include="vgui_controls\WizardPanel.cpp" />
+    <ClCompile Include="vgui_controls\WizardSubPanel.cpp" />
+    <ClCompile Include="Viewport.cpp" />
+    <ClCompile Include="VPanel.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <XMLDocumentationFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)%(Filename)1.xdc</XMLDocumentationFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
+      <XMLDocumentationFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.xdc</XMLDocumentationFileName>
+    </ClCompile>
+    <ClCompile Include="Win32Font.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\HLSDK\common\interface.h" />
+    <ClInclude Include="..\..\metahook.h" />
+    <ClInclude Include="BaseUI.h" />
+    <ClInclude Include="Bitmap.h" />
+    <ClInclude Include="Border.h" />
+    <ClInclude Include="engfuncs.h" />
+    <ClInclude Include="enginedef.h" />
+    <ClInclude Include="exportfuncs.h" />
+    <ClInclude Include="FontAmalgam.h" />
+    <ClInclude Include="FontManager.h" />
+    <ClInclude Include="FontTextureCache.h" />
+    <ClInclude Include="libcsv\csv_document.h" />
+    <ClInclude Include="message.h" />
+    <ClInclude Include="msghook.h" />
+    <ClInclude Include="parsemsg.h" />
+    <ClInclude Include="plugins.h" />
+    <ClInclude Include="SourceSDK\appframework\IAppSystem.h" />
+    <ClInclude Include="SourceSDK\Color.h" />
+    <ClInclude Include="SourceSDK\common\xbox\xbox_console.h" />
+    <ClInclude Include="SourceSDK\datamap.h" />
+    <ClInclude Include="SourceSDK\filesystem.h" />
+    <ClInclude Include="SourceSDK\filesystem_helpers.h" />
+    <ClInclude Include="SourceSDK\inputsystem\ButtonCode.h" />
+    <ClInclude Include="SourceSDK\inputsystem\InputEnums.h" />
+    <ClInclude Include="SourceSDK\mathlib\3dnow.h" />
+    <ClInclude Include="SourceSDK\mathlib\amd3dx.h" />
+    <ClInclude Include="SourceSDK\mathlib\mathlib.h" />
+    <ClInclude Include="SourceSDK\mathlib\math_pfns.h" />
+    <ClInclude Include="SourceSDK\mathlib\sse.h" />
+    <ClInclude Include="SourceSDK\mathlib\ssemath.h" />
+    <ClInclude Include="SourceSDK\mathlib\ssequaternion.h" />
+    <ClInclude Include="SourceSDK\mathlib\vector.h" />
+    <ClInclude Include="SourceSDK\mathlib\vector2d.h" />
+    <ClInclude Include="SourceSDK\OfflineMode.h" />
+    <ClInclude Include="SourceSDK\tier0\basetypes.h" />
+    <ClInclude Include="SourceSDK\tier0\commonmacros.h" />
+    <ClInclude Include="SourceSDK\tier0\dbg.h" />
+    <ClInclude Include="SourceSDK\tier0\dbgflag.h" />
+    <ClInclude Include="SourceSDK\tier0\fasttimer.h" />
+    <ClInclude Include="SourceSDK\tier0\l2cache.h" />
+    <ClInclude Include="SourceSDK\tier0\mem.h" />
+    <ClInclude Include="SourceSDK\tier0\memalloc.h" />
+    <ClInclude Include="SourceSDK\tier0\memdbgoff.h" />
+    <ClInclude Include="SourceSDK\tier0\memdbgon.h" />
+    <ClInclude Include="SourceSDK\tier0\mem_helpers.h" />
+    <ClInclude Include="SourceSDK\tier0\minidump.h" />
+    <ClInclude Include="SourceSDK\tier0\pch_tier0.h" />
+    <ClInclude Include="SourceSDK\tier0\platform.h" />
+    <ClInclude Include="SourceSDK\tier0\protected_things.h" />
+    <ClInclude Include="SourceSDK\tier0\resource.h" />
+    <ClInclude Include="SourceSDK\tier0\threadtools.h" />
+    <ClInclude Include="SourceSDK\tier0\tslist.h" />
+    <ClInclude Include="SourceSDK\tier0\validator.h" />
+    <ClInclude Include="SourceSDK\tier0\valobject.h" />
+    <ClInclude Include="SourceSDK\tier0\valve_off.h" />
+    <ClInclude Include="SourceSDK\tier0\valve_on.h" />
+    <ClInclude Include="SourceSDK\tier0\vcrmode.h" />
+    <ClInclude Include="SourceSDK\tier0\vcr_shared.h" />
+    <ClInclude Include="SourceSDK\tier0\vprof.h" />
+    <ClInclude Include="SourceSDK\tier0\wchartypes.h" />
+    <ClInclude Include="SourceSDK\tier0\xbox_codeline_defines.h" />
+    <ClInclude Include="SourceSDK\tier1\byteswap.h" />
+    <ClInclude Include="SourceSDK\tier1\characterset.h" />
+    <ClInclude Include="SourceSDK\tier1\generichash.h" />
+    <ClInclude Include="SourceSDK\tier1\KeyValues.h" />
+    <ClInclude Include="SourceSDK\tier1\mempool.h" />
+    <ClInclude Include="SourceSDK\tier1\memstack.h" />
+    <ClInclude Include="SourceSDK\tier1\stringpool.h" />
+    <ClInclude Include="SourceSDK\tier1\strtools.h" />
+    <ClInclude Include="SourceSDK\tier1\utlblockmemory.h" />
+    <ClInclude Include="SourceSDK\tier1\utlbuffer.h" />
+    <ClInclude Include="SourceSDK\tier1\utldict.h" />
+    <ClInclude Include="SourceSDK\tier1\utlfixedmemory.h" />
+    <ClInclude Include="SourceSDK\tier1\utlflags.h" />
+    <ClInclude Include="SourceSDK\tier1\utlhandletable.h" />
+    <ClInclude Include="SourceSDK\tier1\utllinkedlist.h" />
+    <ClInclude Include="SourceSDK\tier1\utlmap.h" />
+    <ClInclude Include="SourceSDK\tier1\utlmemory.h" />
+    <ClInclude Include="SourceSDK\tier1\utlqueue.h" />
+    <ClInclude Include="SourceSDK\tier1\utlrbtree.h" />
+    <ClInclude Include="SourceSDK\tier1\utlstring.h" />
+    <ClInclude Include="SourceSDK\tier1\UtlStringMap.h" />
+    <ClInclude Include="SourceSDK\tier1\utlsymbol.h" />
+    <ClInclude Include="SourceSDK\tier1\utlvector.h" />
+    <ClInclude Include="SourceSDK\vstdlib\IKeyValuesSystem.h" />
+    <ClInclude Include="SourceSDK\vstdlib\random.h" />
+    <ClInclude Include="SourceSDK\vstdlib\vstdlib.h" />
+    <ClInclude Include="SourceSDK\winlite.h" />
+    <ClInclude Include="SubtitlePanel.h" />
+    <ClInclude Include="VGUI\Cursor.h" />
+    <ClInclude Include="VGUI\Dar.h" />
+    <ClInclude Include="VGUI\IBorder.h" />
+    <ClInclude Include="VGUI\IClientPanel.h" />
+    <ClInclude Include="VGUI\IEngineVGui.h" />
+    <ClInclude Include="VGUI\IHTML.h" />
+    <ClInclude Include="VGUI\IImage.h" />
+    <ClInclude Include="VGUI\IInput.h" />
+    <ClInclude Include="VGUI\IInputInternal.h" />
+    <ClInclude Include="VGUI\ILocalize.h" />
+    <ClInclude Include="VGUI\IPanel.h" />
+    <ClInclude Include="VGUI\IScheme.h" />
+    <ClInclude Include="VGUI\ISurface.h" />
+    <ClInclude Include="VGUI\ISurface2.h" />
+    <ClInclude Include="VGUI\ISystem.h" />
+    <ClInclude Include="VGUI\IVGUI.h" />
+    <ClInclude Include="VGUI\KeyCode.h" />
+    <ClInclude Include="VGUI\MouseCode.h" />
+    <ClInclude Include="VGUI\VGUI.h" />
+    <ClInclude Include="vgui_controls\AnalogBar.h" />
+    <ClInclude Include="vgui_controls\AnimatingImagePanel.h" />
+    <ClInclude Include="vgui_controls\AnimationController.h" />
+    <ClInclude Include="vgui_controls\BitmapImagePanel.h" />
+    <ClInclude Include="vgui_controls\BuildGroup.h" />
+    <ClInclude Include="vgui_controls\BuildModeDialog.h" />
+    <ClInclude Include="vgui_controls\Button.h" />
+    <ClInclude Include="vgui_controls\CheckButton.h" />
+    <ClInclude Include="vgui_controls\CheckButtonList.h" />
+    <ClInclude Include="vgui_controls\CircularProgressBar.h" />
+    <ClInclude Include="vgui_controls\ComboBox.h" />
+    <ClInclude Include="vgui_controls\consoledialog.h" />
+    <ClInclude Include="vgui_controls\ControllerMap.h" />
+    <ClInclude Include="vgui_controls\Controls.h" />
+    <ClInclude Include="vgui_controls\DialogManager.h" />
+    <ClInclude Include="vgui_controls\DirectorySelectDialog.h" />
+    <ClInclude Include="vgui_controls\Divider.h" />
+    <ClInclude Include="vgui_controls\EditablePanel.h" />
+    <ClInclude Include="vgui_controls\ExpandButton.h" />
+    <ClInclude Include="vgui_controls\FileOpenDialog.h" />
+    <ClInclude Include="vgui_controls\FocusNavGroup.h" />
+    <ClInclude Include="vgui_controls\Frame.h" />
+    <ClInclude Include="vgui_controls\GraphPanel.h" />
+    <ClInclude Include="vgui_controls\HTML.h" />
+    <ClInclude Include="vgui_controls\Image.h" />
+    <ClInclude Include="vgui_controls\ImageList.h" />
+    <ClInclude Include="vgui_controls\ImagePanel.h" />
+    <ClInclude Include="vgui_controls\InputDialog.h" />
+    <ClInclude Include="vgui_controls\KeyBindingHelpDialog.h" />
+    <ClInclude Include="vgui_controls\KeyBindingMap.h" />
+    <ClInclude Include="vgui_controls\KeyBoardEditorDialog.h" />
+    <ClInclude Include="vgui_controls\KeyRepeat.h" />
+    <ClInclude Include="vgui_controls\Label.h" />
+    <ClInclude Include="vgui_controls\ListPanel.h" />
+    <ClInclude Include="vgui_controls\ListViewPanel.h" />
+    <ClInclude Include="vgui_controls\Menu.h" />
+    <ClInclude Include="vgui_controls\MenuBar.h" />
+    <ClInclude Include="vgui_controls\MenuButton.h" />
+    <ClInclude Include="vgui_controls\MenuItem.h" />
+    <ClInclude Include="vgui_controls\MessageBox.h" />
+    <ClInclude Include="vgui_controls\MessageDialog.h" />
+    <ClInclude Include="vgui_controls\MessageMap.h" />
+    <ClInclude Include="vgui_controls\Panel.h" />
+    <ClInclude Include="vgui_controls\PanelAnimationVar.h" />
+    <ClInclude Include="vgui_controls\PanelListPanel.h" />
+    <ClInclude Include="vgui_controls\pch_vgui_controls.h" />
+    <ClInclude Include="vgui_controls\PHandle.h" />
+    <ClInclude Include="vgui_controls\ProgressBar.h" />
+    <ClInclude Include="vgui_controls\ProgressBox.h" />
+    <ClInclude Include="vgui_controls\PropertyDialog.h" />
+    <ClInclude Include="vgui_controls\PropertyPage.h" />
+    <ClInclude Include="vgui_controls\PropertySheet.h" />
+    <ClInclude Include="vgui_controls\QueryBox.h" />
+    <ClInclude Include="vgui_controls\RadioButton.h" />
+    <ClInclude Include="vgui_controls\RichText.h" />
+    <ClInclude Include="vgui_controls\RotatingProgressBar.h" />
+    <ClInclude Include="vgui_controls\savedocumentquery.h" />
+    <ClInclude Include="vgui_controls\ScrollableEditablePanel.h" />
+    <ClInclude Include="vgui_controls\ScrollBar.h" />
+    <ClInclude Include="vgui_controls\ScrollBarSlider.h" />
+    <ClInclude Include="vgui_controls\SectionedListPanel.h" />
+    <ClInclude Include="vgui_controls\Slider.h" />
+    <ClInclude Include="vgui_controls\Splitter.h" />
+    <ClInclude Include="vgui_controls\subrectimage.h" />
+    <ClInclude Include="vgui_controls\TextEntry.h" />
+    <ClInclude Include="vgui_controls\TextImage.h" />
+    <ClInclude Include="vgui_controls\ToggleButton.h" />
+    <ClInclude Include="vgui_controls\Tooltip.h" />
+    <ClInclude Include="vgui_controls\ToolWindow.h" />
+    <ClInclude Include="vgui_controls\TreeView.h" />
+    <ClInclude Include="vgui_controls\TreeViewListControl.h" />
+    <ClInclude Include="vgui_controls\URLLabel.h" />
+    <ClInclude Include="vgui_controls\WizardPanel.h" />
+    <ClInclude Include="vgui_controls\WizardSubPanel.h" />
+    <ClInclude Include="vgui_internal.h" />
+    <ClInclude Include="Viewport.h" />
+    <ClInclude Include="Win32Font.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
