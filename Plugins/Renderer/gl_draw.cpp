@@ -127,11 +127,9 @@ void Draw_TextureMode_f(void)
 
 void Draw_UpdateAnsios(void)
 {
-	int i;
-
 	if (gl_ansio->value != current_ansio)
 	{
-		for (i = 0; i < 6; i++)
+		for (int i = 0; i < 6; i++)
 		{
 			if (gl_filter_min == modes[i].minimize)
 			{

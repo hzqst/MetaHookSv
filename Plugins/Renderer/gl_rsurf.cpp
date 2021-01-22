@@ -33,6 +33,11 @@ void R_RecursiveWorldNode(mnode_t *node)
 
 void R_DrawWorld(void)
 {
+	if (r_3dsky_parm.enable && r_3dsky->value)
+	{
+		R_Render3DSky();
+	}
+
 	if(r_water->value && !R_GetDrawPass() && *cl_waterlevel > 2)
 	{
 		R_RenderWaterFog();

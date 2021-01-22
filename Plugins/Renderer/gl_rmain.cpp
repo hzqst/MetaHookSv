@@ -505,7 +505,7 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 			{
 				case mod_brush:
 				{
-					if (*g_bUserFogOn)
+					if (g_bUserFogOn && *g_bUserFogOn)
 					{
 						if ((*currententity)->curstate.rendermode != kRenderGlow && (*currententity)->curstate.rendermode != kRenderTransAdd)
 							qglEnable(GL_FOG);
@@ -591,12 +591,12 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
     qglEnable(GL_ALPHA_TEST);
     qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-	if (*g_bUserFogOn)
+	if (g_bUserFogOn && *g_bUserFogOn)
 		qglDisable(GL_FOG);
 
 	HUD_DrawTransparentTriangles();
 
-	if (*g_bUserFogOn)
+	if (g_bUserFogOn && *g_bUserFogOn)
 		qglEnable(GL_FOG);
 
 	(*numTransObjs) = 0;
@@ -728,7 +728,7 @@ void R_CalcRefdef(struct ref_params_s *pparams)
 	screenaspect = (float)r_refdef->vrect.width / r_refdef->vrect.height;
 }
 
-void R_RenderScene(void)
+/*void R_RenderScene(void)
 {
 	R_UploadLightmaps();
 	Draw_UpdateAnsios();
@@ -741,7 +741,7 @@ void R_RenderScene(void)
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, screenframebuffer);
 
 	gRefFuncs.R_RenderScene();
-}
+}*/
 
 void CheckMultiTextureExtensions(void)
 {
@@ -1304,6 +1304,9 @@ void R_RenderView(void)
 
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, screenframebuffer);
 	}
+
+	R_UploadLightmaps();
+	Draw_UpdateAnsios();
 
 	if(r_3dsky_parm.enable && r_3dsky->value)
 	{

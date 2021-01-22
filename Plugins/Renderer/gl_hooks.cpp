@@ -6,9 +6,11 @@
 
 #define R_RENDERSCENE_SIG "\x51\xDB\x05\x2A\x2A\x2A\x2A\xD9\x5C\x24\x00\xD9\x05\x2A\x2A\x2A\x2A\xD8\x5C\x24\x00\xDF\xE0\xF6\xC4\x2A\x2A\x2A\xA1"
 #define R_RENDERSCENE_SIG_NEW "\xE8\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\xE8\x2A\x2A\x2A\x2A\xE8"
+#define R_RENDERSCENE_SIG_SVENGINE "\x83\xEC\x1C\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x18\xE8\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8"
 
 #define R_NEWMAP_SIG "\x55\x8B\xEC\x83\xEC\x0C\xC7\x45\xFC\x00\x00\x00\x00\x2A\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC"
 #define R_NEWMAP_SIG_NEW "\x55\x8B\xEC\x83\xEC\x08\xC7\x45\xFC\x00\x00\x00\x00\x2A\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC\x81\x7D\xFC\x00\x01\x00\x00\x2A\x2A\x8B\x4D\xFC"
+#define R_NEWMAP_SIG_SVENGINE "\x55\x8B\xEC\x51\xC7\x45\xFC\x00\x00\x00\x00\xEB\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC\x81\x7D\xFC\x00\x01\x00\x00"
 
 #define R_DRAWWORLD_SIG "\x81\xEC\xB8\x0B\x00\x00\x68\xB8\x0B\x00\x00\x8D\x44\x24\x04\x6A\x00\x50\xE8"
 #define R_DRAWWORLD_SIG_NEW "\x55\x8B\xEC\x81\xEC\xB8\x0B\x00\x00\x68\xB8\x0B\x00\x00\x8D\x85\x48\xF4\xFF\xFF\x6A\x00\x50\xE8\x2A\x2A\x2A\x2A\x8B\x0D"
@@ -101,6 +103,7 @@
 
 #define R_BUILDLIGHTMAP_SIG "\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\x83\xEC\x18\xDF\xE0\xF6\xC4"
 #define R_BUILDLIGHTMAP_SIG_NEW "\x55\x8B\xEC\x83\xEC\x1C\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0"
+#define R_BUILDLIGHTMAP_SIG_SVENGINE "\xD9\x05\x2A\x2A\x2A\x2A\x83\xEC\x1C\xD9\xEE\xDD\xE1\xDF\xE0\x53\x55\x56\x57\xDD\xD9"
 
 #define R_DECALMPOLY_SIG "\xA1\x2A\x2A\x2A\x2A\x57\x50\xE8\x2A\x2A\x2A\x2A\x8B\x4C\x24\x10\x8B\x51\x18"
 #define R_DECALMPOLY_SIG_NEW "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x57\x50\xE8\x2A\x2A\x2A\x2A\x8B\x4D\x0C\x8B\x51\x18\x52\xE8"
@@ -121,6 +124,7 @@
 
 #define R_RENDERVIEW_SIG "\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\x83\xEC\x14\xDF\xE0\xF6\xC4"
 #define R_RENDERVIEW_SIG_NEW "\x55\x8B\xEC\x83\xEC\x14\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x44"
+#define R_RENDERVIEW_SIG_SVENGINE "\x55\x8B\xEC\x83\xE4\xC0\x83\xEC\x34\x53\x56\x57\x8B\x7D\x08\x85\xFF"
 
 #define DRAW_MIPTEXTEXTURE_SIG "\x83\xEC\x28\x53\x55\x56\x8B\x74\x24\x38\x57\x83\x7E\x18\x20"
 #define DRAW_MIPTEXTEXTURE_SIG2 "\x83\xEC\x28\x53\x8B\x5C\x24\x30\x55\x56\x8B\x43\x18"
@@ -229,7 +233,7 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(R_CullBox);
 
 		gRefFuncs.R_SetupFrame = (void (*)(void))
-			Search_Pattern_From(R_CullBox, R_SETUPFRAME_SIG_NEW);
+			Search_Pattern(R_SETUPFRAME_SIG_NEW);
 		if (!gRefFuncs.R_SetupFrame)
 		{
 			gRefFuncs.R_SetupFrame = (void(*)(void))
@@ -237,24 +241,45 @@ void R_FillAddress(void)
 		}
 		Sig_FuncNotFound(R_SetupFrame);
 
-		gRefFuncs.R_Clear = (void (*)(void))
+		/*gRefFuncs.R_Clear = (void (*)(void))
 			Search_Pattern_From(R_SetupFrame, R_CLEAR_SIG_NEW);
-		Sig_FuncNotFound(R_Clear);
+		if (!gRefFuncs.R_Clear)
+			gRefFuncs.R_Clear = R_Clear;*/
 
 		gRefFuncs.R_RenderScene = (void (*)(void))
-			Search_Pattern_From(R_Clear, R_RENDERSCENE_SIG_NEW);
+			Search_Pattern( R_RENDERSCENE_SIG_NEW);
+		if (!gRefFuncs.R_RenderScene)
+		{
+			gRefFuncs.R_RenderScene = (void(*)(void))
+				Search_Pattern(R_RENDERSCENE_SIG_SVENGINE);
+		}
 		Sig_FuncNotFound(R_RenderScene);
 
 		gRefFuncs.R_RenderView = (void (*)(void))
-			Search_Pattern_From(R_RenderScene, R_RENDERVIEW_SIG_NEW);
+			Search_Pattern(R_RENDERVIEW_SIG_NEW);
+		if (!gRefFuncs.R_RenderView)
+		{
+			gRefFuncs.R_RenderView = (void(*)(void))
+				Search_Pattern(R_RENDERVIEW_SIG_SVENGINE);
+		}
 		Sig_FuncNotFound(R_RenderView);
 
 		gRefFuncs.R_NewMap = (void (*)(void))
-			Search_Pattern_From(R_RenderView, R_NEWMAP_SIG_NEW);
+			Search_Pattern(R_NEWMAP_SIG_NEW);
+		if (!gRefFuncs.R_NewMap)
+		{
+			gRefFuncs.R_NewMap = (void(*)(void))
+				Search_Pattern(R_NEWMAP_SIG_SVENGINE);
+		}
 		Sig_FuncNotFound(R_NewMap);
 
 		gRefFuncs.R_BuildLightMap = (void (*)(msurface_t *, byte *, int ))
-			Search_Pattern_From(R_NewMap, R_BUILDLIGHTMAP_SIG_NEW);
+			Search_Pattern(R_BUILDLIGHTMAP_SIG_NEW);
+		if (!gRefFuncs.R_BuildLightMap)
+		{
+			gRefFuncs.R_BuildLightMap = (void(*)(msurface_t *, byte *, int))
+				Search_Pattern(R_BUILDLIGHTMAP_SIG_SVENGINE);
+		}
 		Sig_FuncNotFound(R_BuildLightMap);
 
 		gRefFuncs.GL_DisableMultitexture = (void (*)(void))
@@ -461,7 +486,6 @@ void R_FillAddress(void)
 		gRefFuncs.R_Clear = (void (*)(void))Search_Pattern_From(R_SetupFrame, R_CLEAR_SIG);
 		if (!gRefFuncs.R_Clear)
 			gRefFuncs.R_Clear = (void (*)(void))Search_Pattern_From(R_SetupFrame, R_CLEAR_SIG2);
-		Sig_FuncNotFound(R_Clear);
 
 		gRefFuncs.R_RenderScene = (void (*)(void))
 			Search_Pattern_From(R_Clear, R_RENDERSCENE_SIG);
@@ -701,7 +725,9 @@ void R_FillAddress(void)
 	//R_RenderScene
 #define GBUSERFOG_SIG "\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x85\xC0\x74\x2A\xE8"
 	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x200, GBUSERFOG_SIG, sizeof(GBUSERFOG_SIG) - 1);
-	Sig_AddrNotFound(g_bUserFogOn);
+	
+	//Sig_AddrNotFound(g_bUserFogOn);
+
 	g_bUserFogOn = *(int **)(addr+6);
 
 	//R_RecursiveWorldNode
@@ -933,7 +959,7 @@ void R_InstallHook(void)
 	g_pMetaHookAPI->InlineHook(gRefFuncs.GL_BeginRendering, GL_BeginRendering, (void *&)gRefFuncs.GL_BeginRendering);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.GL_EndRendering, GL_EndRendering, (void *&)gRefFuncs.GL_EndRendering);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderView, R_RenderView, (void *&)gRefFuncs.R_RenderView);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderScene, R_RenderScene, (void *&)gRefFuncs.R_RenderScene);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderScene, R_RenderScene, (void *&)gRefFuncs.R_RenderScene);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_NewMap, R_NewMap, (void *&)gRefFuncs.R_NewMap);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawWorld, R_DrawWorld, (void *&)gRefFuncs.R_DrawWorld);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_SetupFrame, R_SetupFrame, (void *&)gRefFuncs.R_SetupFrame);

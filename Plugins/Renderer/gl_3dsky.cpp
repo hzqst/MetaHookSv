@@ -241,7 +241,7 @@ void R_Draw3DSkyEntities(void)
 		{
 			case mod_brush:
 			{
-				if (*g_bUserFogOn)
+				if (g_bUserFogOn && *g_bUserFogOn)
 				{
 					if ((*currententity)->curstate.rendermode != kRenderGlow && (*currententity)->curstate.rendermode != kRenderTransAdd)
 						qglEnable(GL_FOG);
