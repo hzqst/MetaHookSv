@@ -13,15 +13,10 @@ IFileSystem *g_pFileSystem;
 HINSTANCE g_hInstance, g_hThisModule, g_hEngineModule;
 DWORD g_dwEngineBase, g_dwEngineSize;
 DWORD g_dwEngineBuildnum;
-DWORD g_iVideoMode;
 int g_iVideoWidth, g_iVideoHeight, g_iBPP;
 
-#pragma pack(1)
-bool g_bWindowed;
-bool g_bIsNewEngine;
-bool g_bIsUseSteam;
-bool g_bIsDebuggerPresent;
-#pragma pack()
+int g_iEngineType = ENGINE_GOLDSRC;
+bool g_bWindowed = false;
 
 void IPlugins::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
@@ -31,7 +26,6 @@ void IPlugins::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_engines
 	g_pMetaHookAPI = pAPI;
 	g_pMetaSave = pSave;
 	g_hInstance = GetModuleHandle(NULL);
-	g_bIsDebuggerPresent = IsDebuggerPresent() != FALSE;
 
 	//TODO: D3D Support
 	//g_pInterface->CommandLine->RemoveParm("-d3d");
@@ -46,7 +40,20 @@ void IPlugins::Shutdown(void)
 void IPlugins::LoadEngine(void)
 {
 	g_pFileSystem = g_pInterface->FileSystem;
-	g_iVideoMode = g_pMetaHookAPI->GetVideoMode(&g_iVideoWidth, &g_iVideoHeight, &g_iBPP, &g_bWindowed);
+	
+	int iVideoMode = g_pMetaHookAPI->GetVideoMode(&g_iVideoWidth, &g_iVideoHeight, &g_iBPP, &g_bWindowed);
+
+	if (iVideoMode == 2)
+	{
+		Sys_ErrorEx("D3D mode is not supported.");
+	}
+	if (iVideoMode == 0)
+	{
+		Sys_ErrorEx("Software mode is not supported.");
+	}
+
+	g_iEngineType = g_pMetaHookAPI->GetEngineType();
+
 	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
 
 	g_hEngineModule = g_pMetaHookAPI->GetEngineModule();

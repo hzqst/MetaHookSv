@@ -1,4 +1,5 @@
 #include "gl_local.h"
+#include <metahook.h>
 
 #define R_CLEAR_SIG "\xD9\x05\x2A\x2A\x2A\x2A\xDC\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0"
 #define R_CLEAR_SIG2 "\x8B\x15\x2A\x2A\x2A\x2A\x33\xC0\x83\xFA\x01\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xDC\x1D\x2A\x2A\x2A\x2A\x83\xC4\x04\xDF\xE0"
@@ -14,6 +15,7 @@
 
 #define R_DRAWWORLD_SIG "\x81\xEC\xB8\x0B\x00\x00\x68\xB8\x0B\x00\x00\x8D\x44\x24\x04\x6A\x00\x50\xE8"
 #define R_DRAWWORLD_SIG_NEW "\x55\x8B\xEC\x81\xEC\xB8\x0B\x00\x00\x68\xB8\x0B\x00\x00\x8D\x85\x48\xF4\xFF\xFF\x6A\x00\x50\xE8\x2A\x2A\x2A\x2A\x8B\x0D"
+#define R_DRAWWORLD_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\xB8\x0B\x00\x00\xD9\x05"
 
 #define R_MARKLEAVES_SIG "\xB8\x00\x10\x00\x00\xE8\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A"
 #define R_MARKLEAVES_SIG_NEW "\x55\x8B\xEC\xB8\x04\x10\x00\x00\xE8\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A"
@@ -82,24 +84,29 @@
 
 #define GL_DISABLEMULTITEXTURE_SIG "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x50\xE8"
 #define GL_DISABLEMULTITEXTURE_SIG_NEW "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x50\xE8"
+#define GL_DISABLEMULTITEXTURE_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xC0\x84\x00\x00\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x00\x00\xC3"
 
 #define GL_ENABLEMULTITEXTURE_SIG "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x68\xE1\x0D\x00\x00\xFF\x15"
 #define GL_ENABLEMULTITEXTURE_SIG_NEW "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x68\xE1\x0D\x00\x00\xFF\x15"
+#define GL_ENABLEMULTITEXTURE_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\xC1\x84\x00\x00\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00\xC3"
 
 #define R_DRAWSEQUENTIALPOLY_SIG "\xA1\x2A\x2A\x2A\x2A\x53\x55\x56\x8B\x88\xF8\x02\x00\x00\xBE\x01\x00\x00\x00"
 #define R_DRAWSEQUENTIALPOLY_SIG_NEW "\x55\x8B\xEC\x51\xA1\x2A\x2A\x2A\x2A\x53\x56\x57\x83\xB8\xF8\x02\x00\x00\x01\x75\x2A\xE8"
 
 #define R_DRAWBRUSHMODEL_SIG "\x83\xEC\x4C\xC7\x05\x2A\x2A\x2A\x2A\xFF\xFF\xFF\xFF\x53\x55\x56\x57"
 #define R_DRAWBRUSHMODEL_SIG_NEW "\x55\x8B\xEC\x83\xEC\x50\x53\x56\x57\x8B\x7D\x08\x89\x3D\x2A\x2A\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\xFF\xFF\xFF\xFF"
+#define R_DRAWBRUSHMODEL_SIG_SVENGINE "\x83\xEC\x54\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x50\x53\x8B\x5C\x24\x5C\x55\x56\x57\x89\x1D\x2A\x2A\x2A\x2A\x8D\xBB"
 
 #define R_RECURSIVEWORLDNODE_SIG "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x0C\x53\x56\x57\x8B\x7D\x08\x83\x3F\xFE"
 #define R_RECURSIVEWORLDNODE_SIG_NEW "\x55\x8B\xEC\x83\xEC\x08\x53\x56\x57\x8B\x7D\x08\x83\x3F\xFE\x0F\x2A\x2A\x2A\x2A\x2A\x8B\x47\x04"
+#define R_RECURSIVEWORLDNODE_SIG_SVENGINE "\x83\xEC\x08\x53\x8B\x5C\x24\x10\x83\x3B\xFE"
 
 #define R_TEXTUREANIMATION_SIG "\x53\x55\x8B\x6C\x24\x0C\x56\x57\x8B\x45\x2C\x8B\x78\x24\xA1"
 #define R_TEXTUREANIMATION_SIG_NEW "\x55\x8B\xEC\x8B\x45\x08\x53\x56\x57\x8B\x48\x2C\xA1\x2A\x2A\x2A\x2A\x85\xC0\x8B\x79\x24\x75\x2A\xBE"
 
 #define R_RENDERDYNAMICLIGHTMAPS_SIG "\x8B\x0D\x2A\x2A\x2A\x2A\x53\x41\x55\x89\x0D\x2A\x2A\x2A\x2A\x8B\x4C\x24\x0C\x56\x57"
 #define R_RENDERDYNAMICLIGHTMAPS_SIG_NEW "\x55\x8B\xEC\x8B\x0D\x2A\x2A\x2A\x2A\x53\x41\x56\x89\x0D\x2A\x2A\x2A\x2A\x8B\x4D\x08\x57"
+#define R_RENDERDYNAMICLIGHTMAPS_SIG_SVENGINE "\x51\x8B\x54\x24\x08\xFF\x05\x2A\x2A\x2A\x2A\x57\x33\xFF\xF6\x42\x08\x14"
 
 #define R_BUILDLIGHTMAP_SIG "\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\x83\xEC\x18\xDF\xE0\xF6\xC4"
 #define R_BUILDLIGHTMAP_SIG_NEW "\x55\x8B\xEC\x83\xEC\x1C\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0"
@@ -187,127 +194,106 @@ void Sys_ErrorEx(const char *fmt, ...);
 void R_FillAddress(void)
 {
 	DWORD addr;
-	if(g_iVideoMode == 2)
-	{
-		Sys_ErrorEx("D3D mode is not supported.");
-	}
-	if(g_iVideoMode == 0)
-	{
-		Sys_ErrorEx("Software mode is not supported.");
-	}
 
-	if (g_dwEngineBuildnum >= 5953)
+	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.GL_Bind = (void (*)(int))Search_Pattern(GL_BIND_SIG_NEW);
-		if (!gRefFuncs.GL_Bind)
-		{
-			gRefFuncs.GL_Bind = (void(*)(int))Search_Pattern(GL_BIND_SIG_SVENGINE);
-		}
+		gRefFuncs.GL_Bind = (void(*)(int))Search_Pattern(GL_BIND_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_Bind);
 
-		gRefFuncs.GL_SelectTexture = (void (*)(GLenum))
-			Search_Pattern_From(GL_Bind, GL_SELECTTEXTURE_SIG_NEW);
-		if (!gRefFuncs.GL_SelectTexture)
-		{
-			gRefFuncs.GL_SelectTexture = (void(*)(GLenum))Search_Pattern_From(GL_Bind, GL_SELECTTEXTURE_SIG_SVENGINE);
-		}
+		gRefFuncs.GL_SelectTexture = (void(*)(GLenum))Search_Pattern_From(GL_Bind, GL_SELECTTEXTURE_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_SelectTexture);
 
-		gRefFuncs.GL_LoadTexture2 = (int (*)(char *, int, int, int, byte *, qboolean, int, byte *, int))
-			Search_Pattern_From(GL_SelectTexture, GL_LOADTEXTURE2_SIG_NEW);
-		if (!gRefFuncs.GL_LoadTexture2)
-		{
-			gRefFuncs.GL_LoadTexture2 = (int(*)(char *, int, int, int, byte *, qboolean, int, byte *, int))
-				Search_Pattern(GL_LOADTEXTURE2_SIG_SVENGINE);
-		}
+		gRefFuncs.GL_LoadTexture2 = (int(*)(char *, int, int, int, byte *, qboolean, int, byte *, int))Search_Pattern(GL_LOADTEXTURE2_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_LoadTexture2);
 
-		gRefFuncs.R_CullBox = (qboolean (*)(vec3_t, vec3_t))
-			Search_Pattern_From(GL_LoadTexture2, R_CULLBOX_SIG_NEW);
-		if (!gRefFuncs.R_CullBox)
-		{
-			gRefFuncs.R_CullBox = (qboolean(*)(vec3_t, vec3_t))
-				Search_Pattern_From(GL_LoadTexture2, R_CULLBOX_SIG_SVENGINE);
-		}
-		
+		gRefFuncs.R_CullBox = (qboolean(*)(vec3_t, vec3_t))Search_Pattern_From(GL_LoadTexture2, R_CULLBOX_SIG_SVENGINE);
 		Sig_FuncNotFound(R_CullBox);
 
-		gRefFuncs.R_SetupFrame = (void (*)(void))
-			Search_Pattern(R_SETUPFRAME_SIG_NEW);
-		if (!gRefFuncs.R_SetupFrame)
-		{
-			gRefFuncs.R_SetupFrame = (void(*)(void))
-				Search_Pattern_From(R_CullBox, R_SETUPFRAME_SIG_SVENGINE);
-		}
+		gRefFuncs.R_SetupFrame = (void(*)(void))Search_Pattern_From(R_CullBox, R_SETUPFRAME_SIG_SVENGINE);
 		Sig_FuncNotFound(R_SetupFrame);
 
-		/*gRefFuncs.R_Clear = (void (*)(void))
-			Search_Pattern_From(R_SetupFrame, R_CLEAR_SIG_NEW);
-		if (!gRefFuncs.R_Clear)
-			gRefFuncs.R_Clear = R_Clear;*/
+		gRefFuncs.R_Clear = NULL;
 
-		gRefFuncs.R_RenderScene = (void (*)(void))
-			Search_Pattern( R_RENDERSCENE_SIG_NEW);
-		if (!gRefFuncs.R_RenderScene)
-		{
-			gRefFuncs.R_RenderScene = (void(*)(void))
-				Search_Pattern(R_RENDERSCENE_SIG_SVENGINE);
-		}
+		gRefFuncs.R_RenderScene = (void(*)(void))Search_Pattern(R_RENDERSCENE_SIG_SVENGINE);
 		Sig_FuncNotFound(R_RenderScene);
 
-		gRefFuncs.R_RenderView = (void (*)(void))
-			Search_Pattern(R_RENDERVIEW_SIG_NEW);
-		if (!gRefFuncs.R_RenderView)
-		{
-			gRefFuncs.R_RenderView = (void(*)(void))
-				Search_Pattern(R_RENDERVIEW_SIG_SVENGINE);
-		}
+		gRefFuncs.R_RenderView = (void(*)(void))Search_Pattern(R_RENDERVIEW_SIG_SVENGINE);
 		Sig_FuncNotFound(R_RenderView);
 
-		gRefFuncs.R_NewMap = (void (*)(void))
-			Search_Pattern(R_NEWMAP_SIG_NEW);
-		if (!gRefFuncs.R_NewMap)
-		{
-			gRefFuncs.R_NewMap = (void(*)(void))
-				Search_Pattern(R_NEWMAP_SIG_SVENGINE);
-		}
+		gRefFuncs.R_NewMap = (void(*)(void))Search_Pattern(R_NEWMAP_SIG_SVENGINE);
 		Sig_FuncNotFound(R_NewMap);
 
-		gRefFuncs.R_BuildLightMap = (void (*)(msurface_t *, byte *, int ))
-			Search_Pattern(R_BUILDLIGHTMAP_SIG_NEW);
-		if (!gRefFuncs.R_BuildLightMap)
-		{
-			gRefFuncs.R_BuildLightMap = (void(*)(msurface_t *, byte *, int))
-				Search_Pattern(R_BUILDLIGHTMAP_SIG_SVENGINE);
-		}
+		gRefFuncs.R_BuildLightMap = (void(*)(msurface_t *, byte *, int))Search_Pattern(R_BUILDLIGHTMAP_SIG_SVENGINE);
 		Sig_FuncNotFound(R_BuildLightMap);
 
-		gRefFuncs.GL_DisableMultitexture = (void (*)(void))
-			Search_Pattern_From(R_NewMap, GL_DISABLEMULTITEXTURE_SIG_NEW);
+		gRefFuncs.GL_DisableMultitexture = (void(*)(void))Search_Pattern(GL_DISABLEMULTITEXTURE_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_DisableMultitexture);
 
-		gRefFuncs.GL_EnableMultitexture = (void (*)(void))
-			Search_Pattern_From(GL_DisableMultitexture, GL_ENABLEMULTITEXTURE_SIG_NEW);
+		gRefFuncs.GL_EnableMultitexture = (void(*)(void))Search_Pattern(GL_ENABLEMULTITEXTURE_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_EnableMultitexture);
 
-		gRefFuncs.R_RenderDynamicLightmaps = (void (*)(msurface_t *))
-			Search_Pattern_From(GL_EnableMultitexture, R_RENDERDYNAMICLIGHTMAPS_SIG_NEW);
+		gRefFuncs.R_RenderDynamicLightmaps = (void(*)(msurface_t *))Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_SVENGINE);
 		Sig_FuncNotFound(R_RenderDynamicLightmaps);
 
-		gRefFuncs.R_DrawBrushModel = (void (*)(cl_entity_t *))
-			Search_Pattern_From(R_RenderDynamicLightmaps, R_DRAWBRUSHMODEL_SIG_NEW);
+		gRefFuncs.R_DrawBrushModel = (void(*)(cl_entity_t *))Search_Pattern(R_DRAWBRUSHMODEL_SIG_SVENGINE);
 		Sig_FuncNotFound(R_DrawBrushModel);
 
-		gRefFuncs.R_RecursiveWorldNode = (void (*)(mnode_t *))
-			Search_Pattern_From(R_DrawBrushModel, R_RECURSIVEWORLDNODE_SIG_NEW);
+		gRefFuncs.R_RecursiveWorldNode = (void(*)(mnode_t *))Search_Pattern(R_RECURSIVEWORLDNODE_SIG_SVENGINE);
 		Sig_FuncNotFound(R_RecursiveWorldNode);
 
-		gRefFuncs.R_DrawWorld = (void (*)(void))
-			Search_Pattern_From(R_RecursiveWorldNode, R_DRAWWORLD_SIG_NEW);
+		gRefFuncs.R_DrawWorld = (void(*)(void))Search_Pattern(R_DRAWWORLD_SIG_SVENGINE);
+		Sig_FuncNotFound(R_DrawWorld);
+	}
+	else if (g_dwEngineBuildnum >= 5953)
+	{
+		gRefFuncs.GL_Bind = (void (*)(int))Search_Pattern(GL_BIND_SIG_NEW);
+		Sig_FuncNotFound(GL_Bind);
+		
+		gRefFuncs.GL_SelectTexture = (void (*)(GLenum))Search_Pattern(GL_SELECTTEXTURE_SIG_NEW);
+		Sig_FuncNotFound(GL_SelectTexture);
+
+		gRefFuncs.GL_LoadTexture2 = (int (*)(char *, int, int, int, byte *, qboolean, int, byte *, int))Search_Pattern(GL_LOADTEXTURE2_SIG_NEW);
+		Sig_FuncNotFound(GL_LoadTexture2);
+
+		gRefFuncs.R_CullBox = (qboolean (*)(vec3_t, vec3_t))Search_Pattern_From(GL_LoadTexture2, R_CULLBOX_SIG_NEW);
+		Sig_FuncNotFound(R_CullBox);
+
+		gRefFuncs.R_SetupFrame = (void (*)(void))Search_Pattern(R_SETUPFRAME_SIG_NEW);
+		Sig_FuncNotFound(R_SetupFrame);
+
+		gRefFuncs.R_Clear = (void (*)(void))Search_Pattern_From(R_SetupFrame, R_CLEAR_SIG_NEW);
+
+		gRefFuncs.R_RenderScene = (void (*)(void))Search_Pattern( R_RENDERSCENE_SIG_NEW);
+		Sig_FuncNotFound(R_RenderScene);
+
+		gRefFuncs.R_RenderView = (void (*)(void))Search_Pattern(R_RENDERVIEW_SIG_NEW);
+		Sig_FuncNotFound(R_RenderView);
+
+		gRefFuncs.R_NewMap = (void (*)(void))Search_Pattern(R_NEWMAP_SIG_NEW);
+		Sig_FuncNotFound(R_NewMap);
+
+		gRefFuncs.R_BuildLightMap = (void (*)(msurface_t *, byte *, int ))Search_Pattern(R_BUILDLIGHTMAP_SIG_NEW);
+		Sig_FuncNotFound(R_BuildLightMap);
+
+		gRefFuncs.GL_DisableMultitexture = (void (*)(void))Search_Pattern_From(R_NewMap, GL_DISABLEMULTITEXTURE_SIG_NEW);
+		Sig_FuncNotFound(GL_DisableMultitexture);
+
+		gRefFuncs.GL_EnableMultitexture = (void (*)(void))Search_Pattern_From(GL_DisableMultitexture, GL_ENABLEMULTITEXTURE_SIG_NEW);
+		Sig_FuncNotFound(GL_EnableMultitexture);
+
+		gRefFuncs.R_RenderDynamicLightmaps = (void (*)(msurface_t *))Search_Pattern_From(GL_EnableMultitexture, R_RENDERDYNAMICLIGHTMAPS_SIG_NEW);
+		Sig_FuncNotFound(R_RenderDynamicLightmaps);
+
+		gRefFuncs.R_DrawBrushModel = (void (*)(cl_entity_t *))Search_Pattern_From(R_RenderDynamicLightmaps, R_DRAWBRUSHMODEL_SIG_NEW);
+		Sig_FuncNotFound(R_DrawBrushModel);
+
+		gRefFuncs.R_RecursiveWorldNode = (void (*)(mnode_t *))Search_Pattern_From(R_DrawBrushModel, R_RECURSIVEWORLDNODE_SIG_NEW);
+		Sig_FuncNotFound(R_RecursiveWorldNode);
+
+		gRefFuncs.R_DrawWorld = (void (*)(void))Search_Pattern_From(R_RecursiveWorldNode, R_DRAWWORLD_SIG_NEW);
 		Sig_FuncNotFound(R_DrawWorld);
 
-		gRefFuncs.R_MarkLeaves = (void (*)(void))
-			Search_Pattern_From(R_DrawWorld, R_MARKLEAVES_SIG_NEW);
+		gRefFuncs.R_MarkLeaves = (void (*)(void))Search_Pattern_From(R_DrawWorld, R_MARKLEAVES_SIG_NEW);
 		Sig_FuncNotFound(R_MarkLeaves);
 
 		gRefFuncs.BuildSurfaceDisplayList = (void (*)(msurface_t *))

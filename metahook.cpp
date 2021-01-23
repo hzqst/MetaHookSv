@@ -844,6 +844,20 @@ DWORD MH_GetEngineVersion(void)
 	return g_pfnbuild_number();
 }
 
+int MH_GetEngineType(void)
+{
+	if (g_bIsSvEngine)
+		return ENGINE_SVENGINE;
+
+	if (g_bIsNewEngine)
+		return ENGINE_GOLDSRC_NEW;
+
+	if (g_bEngineIsBlob)
+		return ENGINE_GOLDSRC_BLOB;
+
+	return ENGINE_GOLDSRC;
+}
+
 metahook_api_t gMetaHookAPI =
 {
 	MH_UnHook,
@@ -868,4 +882,5 @@ metahook_api_t gMetaHookAPI =
 	MH_WriteBYTE,
 	MH_ReadBYTE,
 	MH_WriteNOP,
+	MH_GetEngineType,
 };

@@ -24,6 +24,11 @@ typedef struct hook_s hook_t;
 #define VIDEOMODE_OPENGL 1
 #define VIDEOMODE_D3D 2
 
+#define ENGINE_GOLDSRC 0
+#define ENGINE_GOLDSRC_BLOB 1
+#define ENGINE_GOLDSRC_NEW 2
+#define ENGINE_SVENGINE 3
+
 typedef struct metahook_api_s
 {
 	BOOL (*UnHook)(hook_t *pHook);
@@ -48,6 +53,7 @@ typedef struct metahook_api_s
 	void (*WriteBYTE)(void *pAddress, BYTE ucValue);
 	BYTE (*ReadBYTE)(void *pAddress);
 	void (*WriteNOP)(void *pAddress, DWORD dwCount);
+	int (*GetEngineType)(void);
 }
 metahook_api_t;
 
