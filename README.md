@@ -9,7 +9,7 @@ Plugin porting is in progress as most signatures/patterns for GoldSrc engine are
 
 A simple demo plugin that pops MessageBox when load.
 
-Current state : Ready to use
+Current state : Ready to use.
 
 ### CaptionMod
 
@@ -17,7 +17,9 @@ A subtitle plugin designed for displaying subtitles in VGUI2 based games.
 
 check https://github.com/hzqst/CaptionMod for detail.
 
-Current state : preparing for port.
+![](/hzqst/MetaHookSv/raw/master/img/1.png)
+
+Current state : Ready to use.
 
 ### Renderer
 
