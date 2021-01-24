@@ -19,7 +19,7 @@ check https://github.com/hzqst/CaptionMod for detail.
 
 Current state : Ready to use.
 
-![](/hzqst/MetaHookSv/raw/main/img/1.png)
+![](https://github.com/hzqst/MetaHookSv/raw/main/img/1.png)
 
 ### Renderer
 
