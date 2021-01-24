@@ -1,0 +1,7 @@
+Macro Type,Macro Name,Source RegEx,Destination Text
+regex,holo,(\w+),holo/tr_holo_$1.wav
+regex,Holo,(\w+),#HalfLife_Holo_$1
+regex,tr,(\w+),tride/c0a0_tr_$1.wav
+fill,HL_Anno,,#HalfLife_Announcer
+fill,HL_Holo,,#HalfLife_Hologram
+fill,skyb,,SkyBlue

@@ -1,0 +1,174 @@
+Audio Script For Hazard Course
+
+Transcribed by: Dusan
+
+Location: Hazard Course, Beginning
+
+Scene: A holographic woman invites you on the beginning of the course.
+
+Hologram: Hello and welcome to the Black Mesa hazard course, where you will be trained in the use of the Hazardous Environment Suit. I¡¯m your holographic assistant. Let¡¯s begin by stepping into your suit. You can see it suspended up ahead of you.
+
+When you step into the HEV suit.
+
+HEV: Welcome to the HEV mark 4 protective system. For use in hazardous environment conditions.
+
+Hologram: If you see one of these buttons, press it and I will appear to demonstrate certain moves.
+
+Moving around in your HEV suit can be slightly disorienting at first. Take a moment to familiarize yourself with basic movement and soon it will fit you like a second skin. I will see you just around the corner.
+
+Scene: The holographic assistant explains basic movements, jumping and ducking.
+
+Hologram: The first move we will practice in the hazard course, is basic jumping. You will attempt to get over this set of pipes, using only your run and jump commands. It helps to get a running start. Watch me and than try it yourself.
+
+When you get over all obstacles, scientist compliments you over the intercom.
+
+Scientist: Good work! Those new suits can be tricky. Please proceed to the next area.
+
+Hologram: You will now duck under the next set of obstacles. Please note that crouching will automatically shift your suit into stealth mode, minimizing movement noise.
+
+Scientist: Very good! I hardly noticed you. Move on to the next area.
+
+Hologram: Now we will combine skills. You will need to jump, duck and than jump again. This will prepare you for the next room, where you will have to do both moves at the same time.
+
+Scientist: Good work! You look prepared for the next station.
+
+Hologram: To get into these pipes, you¡¯ll have to signal your suit to make a duck jump. You¡¯ve to stand right at the mouth of the pipe and continue to press forward. Than jump up and while are you in mid air, go into a crouch. It¡¯s tricky, but you¡¯ll find it comes in handy.
+
+When you can¡¯t get through the pipe.
+
+Hologram: Give it another try. Remember to move forward, jump and while in mid air, crouch.
+
+When you get through all three pipes.
+
+Hologram: Nice job!
+
+Scene: Hologram tells you, how to climb up and down the ladder.
+
+Hologram: Walk directly into the ladder, look up and continue moving forward. If you want to come back down, just move backward.
+
+Scene: Hologram shows you, how to manage three tricky jumps.
+
+Hologram: The next tree jumps get harder each time, but they are quite possible. Don¡¯t be surprised, if you miss the last one a time or two. If you can make all three in a continuous run, you are doing well.
+
+When you fall down during first or second jump.
+
+Hologram: Keep trying! You¡¯ll get it.
+
+When you fall down during the third jump.
+
+Hologram: If you keep falling short, you might be jumping too soon.
+
+When you managed all three jumps.
+
+Hologram: Great work! Now there is one more style of jumping you need to learn.
+
+Long jumping requires its own charging module, seen in here. To activate your long jump, you will have to duck and move forward and than launch into a jump. Once you are up on the platform press the button and I will demonstrate the move.
+
+Scene: Hologram tells you, how to use lifts.
+
+Hologram: Please start the lift by moving up to the button, looking at it and pressing the use key.
+
+Now that you¡¯re up here, there is only one way down. Find the target on the floor below and do your best to hit it. If you take any damage from the fall, we will administer medical care at the next station.
+
+Scene: Hologram tells you, how to use medical equipment and control devises.
+
+Hologram: You¡¯ll find med-kits like this one through out the Black Mesa compound. To restore your health, walk up to med-kit and press your use key. Your health will recover gradually, until you¡¯re at full health or the kit is depleted. Once the light goes out, a med-kit can not be reused.
+
+To spin that bridge, walk up to the control wheel and press the use key.
+
+When you jump over from the spinning bridge, hologram compliments you again.
+
+Hologram: Fantastic!
+
+Scene: Hologram tells you, how to pull and push boxes and also how to break your way through barriers.
+
+Hologram: Sometimes you¡¯ll need to rely on more than just your suit to get through a tight place. Try jumping this gap on your own.
+
+What you really need to do, is push that box down into the pit. Pushing is easy. Just move forward against the box and you can push it into position.
+
+If you can¡¯t push the obstacle out of your way, you might try pulling it. To pull a box, move up to it and press your use key. While holding in a use key to keep a grip on a box, move slowly backward. The box will come along with you.
+
+Finally, if nothing else works you can try breaking the objects in your path. Make sure you picked up the crowbar, than simply smash your way through the debris.
+
+Scene: Hologram advises you, to switch on the flashlight.
+
+Hologram: Activate your suit flashlight for the next area.
+
+When you fall down while going through the maze.
+
+Barney: Let me get the lights on, so you can that again.
+
+When you are through.
+
+Hologram: Great! Remember your flashlight drains power. So switch it off, when you don¡¯t need it.
+
+Location: Hazard Course, Target Range
+
+Scene: Hologram tells you, how to use weapons and grenade launcher.
+
+Hologram: Welcome to the Black Mesa target range, where you will receive training in firing a weapon, reloading and firing the attached grenade launcher. Please pick up your weapon and advance to the firing station.
+
+You¡¯ll have to hit every target in order to complete the course. But if you miss the first time, don¡¯t worry, it will come around again. Try to reload during pauses, rather than waiting to run out of a munition at a critical time.
+
+To fire your grenade launcher, use your alternate fire button. Certain targets will break only, when hit by grenades.
+
+Commencing sequence in five, four, tree, two, one.
+
+When you hit all the targets.
+
+Hologram: Congratulation! You have completed the Black Mesa target range. Please advance to the next area.
+
+Location: Hazard Course, Swimming Lesson
+
+Scene: Hologram gives you instruction regarding swimming.
+
+Hologram: Your HEV suit monitors blood oxygen levels, warning you, when you need to find an air supply. As you swim through this course, your oxygen levels will begin to drop. At the mid point, you will be given an opportunity to surface for air.
+
+Come up and catch your breath. You will see the blood oxygen indicator on your suit heads-up display returning to its previous level. You are free to swim on to the end of the course.
+
+Scene: Hologram tells you, how to use charging units and how to cope with environmental hazards.
+
+Hologram: This is the charging unit for your hazardous environment suit. When you are running low on power, step up to any charger and press your use key. Your suit will recharge gradually, until the charge unit is depleted. Individual batteries may also be used to charge your suit.
+
+If you pass to fire or steam, you will see a heat damage icon lighting up. Directional indicators at the center of your display show you, where damage is coming from.
+
+Proximity to radiation activates a Geiger counter and radiation display. Biohazards are also indicated with the luminous icon.
+
+After you pass the hazardous environment rooms, hologram asks you to proceed.
+
+Hologram: Please advance to the next area.
+
+Location: Hazard Course, Utilization Of Human Assets
+
+Scene: Hologram tells you, how to ask security guards and scientists for help or to stay unused.
+
+Hologram: Lead the security guard into the next room. He will let you back into the transit system. You must approach a guard and press your use key. He will follow you until you face him and press the use key again.
+
+When you ask the scientist to follow you.
+
+Scientist: Yes! I will follow you, if you wish.
+
+When you tell the scientist to stay.
+
+Scientist: OK. I will wait here.
+
+When you ask the security guard to follow you.
+
+Barney: Sure! I¡¯ll follow you.
+
+When you tell the security guard to stay.
+
+Barney: OK. I¡¯ll wait here.
+
+Location: Hazard Course, Railway Station
+
+Scene: Hologram tells you over the intercom, how to use the inbound train.
+
+Hologram: Press your use key to engage the train. Press your forward and backward keys to increase or decrease the speed of the train. Press your use key again to disengage from the train.
+
+Scene: Player is moving forward on the train into the end of the Hazard course.
+
+Hologram: Congratulation on completing the Black Mesa hazard course. You are now fully certified for use of the HEV mark 4 protective system.
+
+.. The End ..
+

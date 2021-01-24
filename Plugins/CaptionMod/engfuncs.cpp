@@ -3,6 +3,13 @@
 #include "exportfuncs.h"
 #include "engfuncs.h"
 
+#define S_FINDNAME_SIG_SVENGINE "\x53\x55\x8B\x6C\x24\x0C\x56\x33\xF6\x57\x85\xED\x75\x2A\x68"
+#define S_STARTDYNAMICSOUND_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x54\x8B\x44\x24\x5C\x55"
+#define S_STARTSTATICSOUND_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x48\x57\x8B\x7C\x24\x5C"
+#define S_LOADSOUND_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\x8B\x8C\x24\x2A\x2A\x00\x00\x56\x8B\xB4\x24\x2A\x2A\x00\x00\x8A\x06\x3C\x2A"
+#define SV_FINDSOUND_SIG_SVENGINE "\x51\x55\x8B\x6C\x24\x0C\x89\x4C\x24\x04\x85\xED\x0F\x84\x2A\x2A\x2A\x2A\x80\x7D\x00\x00"
+
+
 #define S_INIT_SIG_NEW "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x85\xC0"
 #define S_FINDNAME_SIG_NEW "\x55\x8B\xEC\x53\x56\x8B\x75\x08\x33\xDB\x85\xF6"
 #define S_STARTDYNAMICSOUND_SIG_NEW "\x55\x8B\xEC\x83\xEC\x48\xA1\x2A\x2A\x2A\x2A\x53\x56\x57\x85\xC0\xC7\x45\xFC\x00\x00\x00\x00"
@@ -39,7 +46,26 @@ void Engine_FillAddress(void)
 {
 	memset(&gCapFuncs, 0, sizeof(gCapFuncs));
 
-	if(g_dwEngineBuildnum >= 5953)
+	if (g_EngineType == ENGINE_SVENGINE)
+	{
+		gCapFuncs.S_Init = (void(*)(void))Search_Pattern(S_INIT_SIG_NEW);
+		Sig_FuncNotFound(S_Init); 
+		
+		gCapFuncs.S_FindName = (sfx_t *(*)(char *, int *))Search_Pattern(S_FINDNAME_SIG_SVENGINE);
+		Sig_FuncNotFound(S_FindName);
+
+		gCapFuncs.S_StartDynamicSound = (void(*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern(S_STARTDYNAMICSOUND_SIG_SVENGINE);
+		Sig_FuncNotFound(S_StartDynamicSound);
+
+		gCapFuncs.S_StartStaticSound = (void(*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern(S_STARTSTATICSOUND_SIG_SVENGINE);
+		Sig_FuncNotFound(S_StartStaticSound);
+
+		gCapFuncs.S_LoadSound = (sfxcache_t *(*)(sfx_t *, channel_t *))Search_Pattern(S_LOADSOUND_SIG_SVENGINE);
+		Sig_FuncNotFound(S_LoadSound);
+
+	}
+
+	else if(g_dwEngineBuildnum >= 5953)
 	{
 		gCapFuncs.S_Init = (void (*)(void))Search_Pattern(S_INIT_SIG_NEW);
 		Sig_FuncNotFound(S_Init);
@@ -88,4 +114,14 @@ void Engine_InstallHook(void)
 	InstallHook(S_FindName);
 	InstallHook(S_StartDynamicSound);
 	InstallHook(S_StartStaticSound);
+
+	if (g_EngineType == ENGINE_SVENGINE)
+	{
+		gCapFuncs.SvClient_FindSoundEx = (decltype(gCapFuncs.SvClient_FindSoundEx))
+			g_pMetaHookAPI->SearchPattern((void *)g_hClientDll, g_dwClientSize, SV_FINDSOUND_SIG_SVENGINE, Sig_Length(SV_FINDSOUND_SIG_SVENGINE));
+		Sig_FuncNotFound(SvClient_FindSoundEx);
+
+		InstallHook(SvClient_FindSoundEx);
+
+	}
 }

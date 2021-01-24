@@ -119,7 +119,7 @@ void BaseUI_InstallHook(void)
 	DWORD *pVFTable = *(DWORD **)&BaseUI;
 
 	g_pMetaHookAPI->VFTHook(g_pBaseUI, 0, 1, (void *)pVFTable[1], (void *&)g_pfnCBaseUI_Initialize);
-	g_pMetaHookAPI->VFTHook(g_pBaseUI, 0, 2, (void *)pVFTable[2], (void *&)g_pfnCBaseUI_Start);
+	/*g_pMetaHookAPI->VFTHook(g_pBaseUI, 0, 2, (void *)pVFTable[2], (void *&)g_pfnCBaseUI_Start);
 	g_pMetaHookAPI->VFTHook(g_pBaseUI, 0, 3, (void *)pVFTable[3], (void *&)g_pfnCBaseUI_Shutdown);
 	g_pMetaHookAPI->VFTHook(g_pBaseUI, 0, 4, (void *)pVFTable[4], (void *&)g_pfnCBaseUI_Key_Event);
 	g_pMetaHookAPI->VFTHook(g_pBaseUI, 0, 5, (void *)pVFTable[5], (void *&)g_pfnCBaseUI_CallEngineSurfaceProc);
@@ -128,5 +128,5 @@ void BaseUI_InstallHook(void)
 	g_pMetaHookAPI->VFTHook(g_pBaseUI, 0, 8, (void *)pVFTable[8], (void *&)g_pfnCBaseUI_ActivateGameUI);
 	g_pMetaHookAPI->VFTHook(g_pBaseUI, 0, 9, (void *)pVFTable[9], (void *&)g_pfnCBaseUI_IsGameUIVisible);
 	g_pMetaHookAPI->VFTHook(g_pBaseUI, 0, 10, (void *)pVFTable[10], (void *&)g_pfnCBaseUI_HideConsole);
-	g_pMetaHookAPI->VFTHook(g_pBaseUI, 0, 11, (void *)pVFTable[11], (void *&)g_pfnCBaseUI_ShowConsole);
+	g_pMetaHookAPI->VFTHook(g_pBaseUI, 0, 11, (void *)pVFTable[11], (void *&)g_pfnCBaseUI_ShowConsole);*/
 }

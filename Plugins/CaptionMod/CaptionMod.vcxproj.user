@@ -7,9 +7,9 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommand>I:\SteamLibrary\steamapps\common\Half-Life\Metahook.exe</LocalDebuggerCommand>
-    <LocalDebuggerCommandArguments>-game valve -lang english</LocalDebuggerCommandArguments>
-    <LocalDebuggerWorkingDirectory>I:\SteamLibrary\steamapps\common\Half-Life\</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerCommand>I:\SteamLibrary\steamapps\common\Sven Co-op\Metahook.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>-game svencoop</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>I:\SteamLibrary\steamapps\common\Sven Co-op\</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

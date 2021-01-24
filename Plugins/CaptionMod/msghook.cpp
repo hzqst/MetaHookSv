@@ -1,6 +1,7 @@
 #include <metahook.h>
 #include "parsemsg.h"
 #include "msghook.h"
+#include "plugins.h"
 
 typedef struct usermsg_s
 {
@@ -17,10 +18,18 @@ void MSG_Init(void)
 {
 	DWORD address = (DWORD)g_pMetaSave->pEngineFuncs->pfnHookUserMsg;
 
-	if (*(BYTE *)(address + 0x1A) != 0xE8)
-		address += 0x19;
+	if (g_EngineType == ENGINE_SVENGINE)
+	{
+		if (*(BYTE *)(address + 8) == 0xE8)
+			address += 8;
+	}
 	else
-		address += 0x1A;
+	{
+		if (*(BYTE *)(address + 0x1A) != 0xE8)
+			address += 0x19;
+		else
+			address += 0x1A;
+	}
 
 	address += 0x1;
 	address += *(DWORD *)address + 0x4;

@@ -2,11 +2,16 @@
 #include <keydefs.h>
 #include <net_api.h>
 #include <cvardef.h>
+#include <imm.h>
 #include "IMEInput.h"
 #include "Encode.h"
 #include "cmd.h"
 #include "plugins.h"
+#include "Input.h"
 
+#pragma comment(lib, "imm32.lib")
+
+HWND g_MainHwnd;
 WNDPROC g_MainWndProc;
 char g_szInputBuffer[4096];
 char *g_pszInputCommand;
@@ -58,50 +63,17 @@ int IMEIN_DrawConsoleString(int x, int y, char *string)
 	return result;
 }
 
+static bool s_bIMEComposing = false;
+
 LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
-		case WM_CHAR:
+		case WM_COPYDATA:
 		{
-			if (!g_pfnVGuiWrap2_IsConsoleVisible() && *g_piEngineKeyDest == 1)
-			{
-				int len = strlen(g_szInputBuffer);
-
-				if (wParam == VK_BACK)
-				{
-					if (g_szInputBuffer[len - 1] < 0)
-						g_szInputBuffer[len - 3] = '\0';
-					else
-						g_szInputBuffer[len - 1] = '\0';
-				}
-				else
-				{
-					g_szInputBuffer[len] = wParam;
-					g_szInputBuffer[len + 1] = '\0';
-				}
-
-				return 1;
-			}
-
-			break;
-		}
-
-		case WM_IME_CHAR:
-		{
-			int len = strlen(g_szInputBuffer);
-
-			if (!g_pfnVGuiWrap2_IsConsoleVisible() && *g_piEngineKeyDest == 1)
-			{
-				char buf[3];
-				buf[0] = wParam >> 8;
-				buf[1] = (byte)wParam;
-				buf[2] = '\0';
-				strcat(g_szInputBuffer, UnicodeToUTF8(ANSIToUnicode(buf)));
-				return 1;
-			}
-
-			break;
+			gEngfuncs.pfnClientCmd((char *)(((COPYDATASTRUCT *)lParam)->lpData));
+			gEngfuncs.pfnClientCmd("\n");
+			return 1;
 		}
 	}
 
@@ -127,8 +99,30 @@ void IMEIN_PatchNonASCIICheck(void)
 
 void INEIN_InstallHook(void)
 {
-	if (g_dwEngineBuildnum >= 5953)
+	EnumWindows([](HWND hwnd,LPARAM lParam
+	)
+	{
+		DWORD pid = 0;
+		if (GetWindowThreadProcessId(hwnd, &pid) && pid == GetCurrentProcessId())
+		{
+			char windowClass[256] = { 0 };
+			RealGetWindowClassA(hwnd, windowClass, sizeof(windowClass));
+			if (!strcmp(windowClass, "Valve001") || !strcmp(windowClass, "SDL_app"))
+			{
+				g_MainHwnd = hwnd;
+				return FALSE;
+			}
+		}
+		return TRUE;
+	}, NULL);
+
+	if (!g_MainHwnd)
 		return;
+
+	g_MainWndProc = (WNDPROC)GetWindowLong(g_MainHwnd, GWL_WNDPROC);
+	SetWindowLong(g_MainHwnd, GWL_WNDPROC, (LONG)MainWndProc);
+
+	return;
 
 	for (cmd_function_t *cmd = (cmd_function_t *)gEngfuncs.GetFirstCmdFunctionHandle(); cmd; cmd = cmd->next)
 	{
@@ -139,7 +133,7 @@ void INEIN_InstallHook(void)
 			continue;
 		}
 
-		if (!strcmp(cmd->name, "escape"))
+		/*if (!strcmp(cmd->name, "escape"))
 		{
 			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)((DWORD)cmd->function + 0x40), 0x20, "\x6A\x1B\xE8", 3) + 0x3;
 			g_pfnKey_Message = (void (*)(int))(addr + *(DWORD *)addr + 0x4);
@@ -151,12 +145,8 @@ void INEIN_InstallHook(void)
 			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)((DWORD)cmd->function + 0x10), 0x50, "\x83\xC4\x04\x50\x68", 5) + 0x5;
 			g_pszInputCommand = *(char **)addr;
 			continue;
-		}
+		}*/
 	}
-
-	HWND hWnd = FindWindow("Valve001", NULL);
-	g_MainWndProc = (WNDPROC)GetWindowLong(hWnd, GWL_WNDPROC);
-	SetWindowLong(hWnd, GWL_WNDPROC, (LONG)MainWndProc);
 
 	IMEIN_PatchNonASCIICheck();
 

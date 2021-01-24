@@ -143,14 +143,30 @@ void BaseUI_InstallHook(void)
 	gameuifuncs = (IGameUIFuncs *)fnCreateInterface(VENGINE_GAMEUIFUNCS_VERSION, NULL);
 
 	//Search CBaseUI::Initialize for ClientFactory
+	if (g_EngineType == ENGINE_SVENGINE)
+	{
+#define CLIENTFACTORY_SIG_SVENGINE "\x83\xC4\x0C\x83\x3D"
+		DWORD *vft = *(DWORD **)baseuifuncs;
+		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)vft[1], 0x200, CLIENTFACTORY_SIG_SVENGINE, Sig_Length(CLIENTFACTORY_SIG_SVENGINE));
+		if (!addr)
+			Sig_NotFound(ClientFactory);
+		gCapFuncs.pfnClientFactory = (void *(**)(void))*(DWORD *)(addr + 5);
+
+		DWORD *pVFTable = *(DWORD **)&s_BaseUI;
+
+		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, (void *)pVFTable[1], (void *&)m_pfnCBaseUI_Initialize);
+	}
+	else
+	{
 #define CLIENTFACTORY_SIG "\xCC\xA1\x2A\x2A\x2A\x2A\x85\xC0\x74"
-	DWORD *vft = *(DWORD **)baseuifuncs;
-	DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)vft[1], 0x200, CLIENTFACTORY_SIG, Sig_Length(CLIENTFACTORY_SIG));
-	if(!addr)
-		Sig_NotFound(ClientFactory);
-	gCapFuncs.pfnClientFactory = (void *(**)(void))*(DWORD *)(addr + 2);
+		DWORD *vft = *(DWORD **)baseuifuncs;
+		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)vft[1], 0x200, CLIENTFACTORY_SIG, Sig_Length(CLIENTFACTORY_SIG));
+		if (!addr)
+			Sig_NotFound(ClientFactory);
+		gCapFuncs.pfnClientFactory = (void *(**)(void))*(DWORD *)(addr + 2);
 
-	DWORD *pVFTable = *(DWORD **)&s_BaseUI;
+		DWORD *pVFTable = *(DWORD **)&s_BaseUI;
 
-	g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, (void *)pVFTable[1], (void *&)m_pfnCBaseUI_Initialize);
+		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, (void *)pVFTable[1], (void *&)m_pfnCBaseUI_Initialize);
+	}
 }

@@ -1,0 +1,25 @@
+2015-12-17
+新增VGUI2风格的配置界面
+新增宏系统，详见readme.txt和macro.csv
+增加XLS/XLSX支持，所有CSV格式均可用XLS/XLSX格式代替
+
+2015-12-12
+SubtitlePanel.res中新增参数"fadetype" 支持值"alphafade"和"leftscan"，leftscan对应的动画效果是从左往右扫描出现，alphafade就是原来的alpha淡入
+顺便每条字幕可以单独指定fade方式了，在原来style的位置
+字符串全部换成std::string/wstring，引用boost库，主要改了替换算法和hashmap，实际功能没什么改变
+加了个控制台指令cap_reload，还有加载速度的统计
+
+2015-11-28
+修复了高分辨率下字幕面板不会缩放的bug
+
+2015-11-27
+把vgui2里的Scheme系统换成了起源的那套，使得字体支持outline和outline2两种描边属性。
+现在非默认字体必须添加"custom"属性才能生效。
+移除CaptionScheme.res中的Border项目，因为Border没卵用。
+自动替换翻译文本中的换行符"\r" "\n"为'\r' '\n'（前者是两个字符组成的字符串，后者是一个字符，只有单个字符的换行符才能被正确识别）
+增加对CS的HudTextPro消息的支持。
+
+2015-11-26
+SubtitlePanel.res增加"htimescale"属性，用于控制字幕总时长的缩放。
+SENTENCE同时支持!和#开头和不带符号开头的了。（都会扫描一遍）
+SENTENCE支持以声音总长度作为字幕时间了。

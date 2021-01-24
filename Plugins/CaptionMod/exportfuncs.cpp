@@ -9,10 +9,16 @@
 #include <VGUI/VGUI.h>
 #include "Viewport.h"
 
+#include <intrin.h>
+
 cl_enginefunc_t gEngfuncs;
 
 cvar_t *al_enable = NULL;
 cvar_t *cap_show = NULL;
+
+static CDictionary *m_SentenceDictionary = NULL;
+static qboolean m_bSentenceSound = false;
+static float m_flSentenceDuration = 0;
 
 void *NewClientFactory(void)
 {
@@ -42,6 +48,62 @@ void Cap_Version_f(void)
 	gEngfuncs.Con_Printf("%s\n", CAPTION_MOD_VERSION);
 }
 
+void SvClient_StartWave(const char *name, float duration)
+{
+	if (m_bSentenceSound && m_SentenceDictionary)
+	{
+		if (m_SentenceDictionary->m_flDuration <= 0)
+		{
+			float flDuration = duration;
+			if (flDuration > 0)
+			{
+				m_flSentenceDuration += flDuration;
+			}
+		}
+	}
+
+	CDictionary *Dict = g_pViewPort->FindDictionary(name, DICT_SOUND);
+
+	if (cap_show && cap_show->value)
+	{
+		gEngfuncs.Con_Printf((Dict) ? "CaptionMod: Sound [%s] found.\n" : "CaptionMod: Sound [%s] not found.\n", name);
+	}
+
+	if (!Dict)
+		return;
+
+	//Get duration for zero-duration
+	if (Dict->m_flDuration <= 0)
+	{
+		float flDuration = duration;
+		if (flDuration > 0)
+		{
+			Dict->m_flDuration = flDuration;
+		}
+	}
+
+	if (Dict->m_flDuration > 0)
+	{
+		m_flSentenceDuration += Dict->m_flDuration;
+	}
+
+	g_pViewPort->StartSubtitle(Dict);
+}
+
+int __fastcall SvClient_FindSoundEx(int pthis, int, const char *sound)
+{
+	auto result = gCapFuncs.SvClient_FindSoundEx(pthis, 0, sound);
+
+	if (result)
+	{
+		int duration = 0;
+		gCapFuncs.FMOD_Sound_getLength(result, &duration, 1);
+		SvClient_StartWave(sound, (float)duration / 1000.0f);
+	}
+
+	return result;
+}
+
 void HUD_Init(void)
 {
 	gExportfuncs.HUD_Init();
@@ -51,11 +113,16 @@ void HUD_Init(void)
 	al_enable = gEngfuncs.pfnGetCvarPointer("al_enable");
 	cap_show = gEngfuncs.pfnRegisterVariable("cap_show", "0", FCVAR_CLIENTDLL);
 	gEngfuncs.pfnAddCommand("cap_version", Cap_Version_f);
-}
 
-static CDictionary *m_SentenceDictionary = NULL;
-static qboolean m_bSentenceSound = false;
-static float m_flSentenceDuration = 0;
+	if (g_EngineType == ENGINE_SVENGINE)
+	{
+		gCapFuncs.fmodex = GetModuleHandleA("fmodex.dll");
+		Sig_FuncNotFound(fmodex);
+
+		gCapFuncs.FMOD_Sound_getLength = (decltype(gCapFuncs.FMOD_Sound_getLength))GetProcAddress(gCapFuncs.fmodex, "?getLength@Sound@FMOD@@QAG?AW4FMOD_RESULT@@PAII@Z");
+		Sig_FuncNotFound(FMOD_Sound_getLength);
+	}
+}
 
 float S_GetDuration(sfx_t *sfx)
 {

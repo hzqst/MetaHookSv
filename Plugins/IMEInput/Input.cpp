@@ -213,7 +213,7 @@ void CInput::InternalKeyCodeTyped(KeyCode code)
 
 void CInput::InternalKeyTyped(wchar_t unichar)
 {
-	char cChar = (char)unichar;
+	/*char cChar = (char)unichar;
 	static bool bDoubleChar = false;
 	static char sInpub[3] = { 0 };
 	wchar_t *pComplete;
@@ -254,7 +254,7 @@ void CInput::InternalKeyTyped(wchar_t unichar)
 		sInpub[0] = cChar;
 		return;
 	}
-
+	*/
 	g_pfnInternalKeyTyped(this, 0, unichar);
 }
 
@@ -304,8 +304,8 @@ void Input_InstallHook(vgui::IInputInternal *pInput)
 
 	g_pInput = pInput;
 
-	if (g_dwEngineBuildnum < 5953)
-	{
-		g_pMetaHookAPI->VFTHook(pInput, 0, 32, (void *)pVFTable[32], (void *&)g_pfnInternalKeyTyped);
-	}
+	//if (g_dwEngineBuildnum < 5953)
+	//{
+	//	g_pMetaHookAPI->VFTHook(pInput, 0, 32, (void *)pVFTable[32], (void *&)g_pfnInternalKeyTyped);
+	//}
 }

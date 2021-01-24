@@ -73,7 +73,7 @@
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(OutDir)$(ProjectName).dll I:\SteamLibrary\steamapps\common\Half-Life\valve\metahook\plugins\</Command>
+      <Command>copy $(OutDir)$(ProjectName).dll "I:\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\plugins\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -96,8 +96,7 @@
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>
-      </Command>
+      <Command>copy $(OutDir)$(ProjectName).dll "$(OutDir)..\..\..\Build\svencoop\metahook\plugins\$(ProjectName).dll"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

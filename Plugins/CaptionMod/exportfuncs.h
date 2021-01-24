@@ -41,6 +41,7 @@ void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, 
 void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);
 sfxcache_t *S_LoadSound(sfx_t *s, channel_t *ch);
 sfx_t *S_FindName(char *name, int *pfInCache);
+int __fastcall SvClient_FindSoundEx(int pthis, int, const char *sound);
 void Sys_ErrorEx(const char *fmt, ...);
 
 extern cvar_t *cap_show;

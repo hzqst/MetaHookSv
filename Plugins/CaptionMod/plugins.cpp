@@ -9,10 +9,12 @@ mh_enginesave_t *g_pMetaSave;
 IFileSystem *g_pFileSystem;
 BOOL g_IsClientVGUI2 = false;
 HMODULE g_hClientDll = NULL;
+DWORD g_dwClientSize = 0;
 
 DWORD g_dwEngineBase, g_dwEngineSize;
 DWORD g_dwEngineBuildnum;
 DWORD g_iVideoMode;
+int g_EngineType;
 int g_iVideoWidth, g_iVideoHeight, g_iBPP;
 bool g_bWindowed;
 bool g_bIsUseSteam;
@@ -44,6 +46,7 @@ void IPlugins::LoadEngine(void)
 	g_pFileSystem = g_pInterface->FileSystem;
 	g_iVideoMode = g_pMetaHookAPI->GetVideoMode(&g_iVideoWidth, &g_iVideoHeight, &g_iBPP, &g_bWindowed);
 	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
+	g_EngineType = g_pMetaHookAPI->GetEngineType();
 
 	g_dwEngineBase = g_pMetaHookAPI->GetEngineBase();
 	g_dwEngineSize = g_pMetaHookAPI->GetEngineSize();
@@ -64,16 +67,17 @@ void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_VidInit = HUD_VidInit;
 
 	g_hClientDll = GetModuleHandle("client.dll");
+	g_dwClientSize = g_pMetaHookAPI->GetModuleSize(g_hClientDll);
 
 	gCapFuncs.GetProcAddress = GetProcAddress;
 
 	//Try installing hook to interface VClientVGUI001
 	ClientVGUI_InstallHook();
 
-	//For TextMessage hook
+	//hook textmsg
 	MSG_Init();
 
-	//For Meta Audio
+	//hook engine audio
 	Engine_InstallHook();
 }
 
