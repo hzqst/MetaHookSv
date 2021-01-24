@@ -17,9 +17,9 @@ A subtitle plugin designed for displaying subtitles in VGUI2 based games.
 
 check https://github.com/hzqst/CaptionMod for detail.
 
-![](/hzqst/MetaHookSv/raw/master/img/1.png)
-
 Current state : Ready to use.
+
+![](/hzqst/MetaHookSv/raw/master/img/1.png)
 
 ### Renderer
 
