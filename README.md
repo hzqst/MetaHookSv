@@ -9,6 +9,8 @@ All pre-compiled binary and required files are in "Build" folder, copy them to "
 
 and launch game from "\SteamLibrary\steamapps\common\Sven Co-op\" with commandline "metahook.exe -game svencoop"
 
+the SDL2.dll fixes a bug that the original SDL's IME input handler was causing buffer overflow and game crash.
+
 ## Plugins
 
 ### FuckWorld
