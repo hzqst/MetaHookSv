@@ -10,7 +10,7 @@ int Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 
 	pEnginefuncs->pfnGetPlayerInfo = GetPlayerInfo;
 
-	INEIN_InstallHook();
+	//INEIN_InstallHook();
 
 	return gExportfuncs.Initialize(pEnginefuncs, iVersion);
 }

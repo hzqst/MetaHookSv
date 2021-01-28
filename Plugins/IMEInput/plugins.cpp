@@ -26,7 +26,7 @@ void IPlugins::LoadEngine(void)
 {
 	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
 
-	BaseUI_InstallHook();
+	//BaseUI_InstallHook();
 }
 
 void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)

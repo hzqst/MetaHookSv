@@ -15,8 +15,7 @@ void GetPlayerInfo(int ent_num, hud_player_info_t *pinfo)
 {
 	gEngfuncs.pfnGetPlayerInfo(ent_num, pinfo);
 
-	if (!g_bUpdateVoiceState)
-		return;
-
-	pinfo->name = UnicodeToANSI(UTF8ToUnicode(pinfo->name));
+	pinfo->name = "asdasdasdasd123";
+	//if (!g_bUpdateVoiceState)
+	//	return;
 }

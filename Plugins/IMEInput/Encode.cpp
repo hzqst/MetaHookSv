@@ -1,37 +1,30 @@
 #include <windows.h>
+#include <string>
 
-wchar_t *UTF8ToUnicode(const char *str)
+void ANSIToUnicode(const std::string &str, std::wstring &out)
 {
-	static wchar_t result[1024];
-	int len = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
-	MultiByteToWideChar(CP_UTF8, 0, str, -1, result, len);
-	result[len] = L'\0';
-	return result;
+	int len = MultiByteToWideChar(CP_ACP, 0, str.c_str(), str.length(), NULL, 0);
+	out.resize(len);
+	MultiByteToWideChar(CP_ACP, 0, str.c_str(), str.length(), (LPWSTR)out.data(), len);
 }
 
-wchar_t *ANSIToUnicode(const char *str)
+void UnicodeToANSI(const std::wstring &str, std::string &out)
 {
-	static wchar_t result[1024];
-	int len = MultiByteToWideChar(CP_ACP, 0, str, -1, NULL, 0);
-	MultiByteToWideChar(CP_ACP, 0, str, -1, result, len);
-	result[len] = '\0';
-	return result;
+	int len = WideCharToMultiByte(CP_ACP, 0, str.c_str(), str.length(), NULL, 0, NULL, NULL);
+	out.resize(len);
+	WideCharToMultiByte(CP_ACP, 0, str.c_str(), str.length(), (LPSTR)out.data(), len, NULL, NULL);
 }
 
-char *UnicodeToUTF8(const wchar_t *str)
+void UnicodeToUTF8(const std::wstring &str, std::string &out)
 {
-	static char result[1024];
-	int len = WideCharToMultiByte(CP_UTF8, 0, str, -1, NULL, 0, NULL, NULL);
-	WideCharToMultiByte(CP_UTF8, 0, str, -1, result, len, NULL, NULL);
-	result[len] = '\0';
-	return result;
+	int len = WideCharToMultiByte(CP_UTF8, 0, str.c_str(), str.length(), NULL, 0, NULL, NULL);
+	out.resize(len);
+	WideCharToMultiByte(CP_UTF8, 0, str.c_str(), str.length(), (LPSTR)out.data(), len, NULL, NULL);
 }
 
-char *UnicodeToANSI(const wchar_t *str)
+void UTF8ToUnicode(const std::string &str, std::wstring &out)
 {
-	static char result[1024];
-	int len = WideCharToMultiByte(CP_ACP, 0, str, -1, NULL, 0, NULL, NULL);
-	WideCharToMultiByte(CP_ACP, 0, str, -1, result, len, NULL, NULL);
-	result[len] = '\0';
-	return result;
+	int len = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), str.length(), NULL, 0);
+	out.resize(len);
+	MultiByteToWideChar(CP_UTF8, 0, str.c_str(), str.length(), (LPWSTR)out.data(), len);
 }

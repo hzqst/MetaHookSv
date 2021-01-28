@@ -1,4 +1,6 @@
-wchar_t *UTF8ToUnicode(const char *str);
-wchar_t *ANSIToUnicode(const char *str);
-char *UnicodeToUTF8(const wchar_t *str);
-char *UnicodeToANSI(const wchar_t *str);
+#include <string>
+
+void ANSIToUnicode(const std::string &str, std::wstring &out);
+void UnicodeToANSI(const std::wstring &str, std::string &out);
+void UnicodeToUTF8(const std::wstring &str, std::string &out);
+void UTF8ToUnicode(const std::string &str, std::wstring &out);
