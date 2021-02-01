@@ -88,8 +88,8 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	if (drawreflect || drawrefract)
 		return;
 
-	if (0 == !strncmp(fa->texinfo->texture->name, "!toxi", sizeof("!toxi") - 1))
-		return;
+	if (fa->texinfo->texture && 0 == strncmp(fa->texinfo->texture->name, "!toxi", sizeof("!toxi") - 1))
+		return gRefFuncs.EmitWaterPolys(fa, direction);
 
 	float clientTime = (*cl_time);
 
@@ -119,7 +119,11 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 
 			float alpha = 1;
 			if((*currententity)->curstate.rendermode == kRenderTransTexture)
-				alpha = (*r_blend);
+				alpha = (*r_blend) + 0.25f;
+
+			if (alpha > 1)
+				alpha = 1;
+
 			qglUniform4fARB(water.waterfogcolor, curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, alpha);
 			qglUniform3fARB(water.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
 			qglUniform3fARB(water.eyedir, vpn[0], vpn[1], vpn[2]);
