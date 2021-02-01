@@ -33,4 +33,20 @@ Current state : Ready to use.
 
 A graphic enhancement plugin that modifiy the original render system.
 
-Current state : 15 / 50 signatures are updated.
+Current state : Ready to use, more feature are coming soon.
+
+#### Features
+
+1. HDR (high-dynamic-range) post-processor.
+
+2. Water reflection and refraction.
+
+#### Console Vars
+
+r_hdr 1 / 0 : to enable / disable HDR(high-dynamic-range) post-processor.
+
+r_water 1 / 0 : to enable / disable water reflection and refraction.
+
+r_water_fresnel (0.0 ~ 2.0) : to determine how to lerp and mix the refraction color and reflection color.
+
+r_water_depthfactor (0.0 ~ 100.0) : to determine if we can see through water in a close distance.
