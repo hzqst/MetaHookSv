@@ -64,7 +64,7 @@ extern GLuint drawframebuffer;
 extern GLuint readframebuffer;
 
 extern float scr_fov_value;
-
+extern mplane_t *frustum;
 extern mleaf_t **r_viewleaf, **r_oldviewleaf;
 extern texture_t *r_notexture_mip;
 
@@ -136,6 +136,8 @@ extern msurface_t *skychain;
 extern msurface_t *waterchain;
 
 extern int *gSkyTexNumber;
+extern skybox_t *skymins;
+extern skybox_t *skymaxs;
 
 extern cvar_t *r_bmodelinterp;
 extern cvar_t *r_bmodelhighfrac;
@@ -199,6 +201,7 @@ void R_FillAddress(void);
 void R_InstallHook(void);
 void R_RenderView(void);
 void R_RenderScene(void);
+void R_RenderView_SvEngine(int a1);
 qboolean R_CullBox(vec3_t mins, vec3_t maxs);
 void R_RotateForEntity(vec_t *origin, cl_entity_t *e);
 void R_Clear(void);
@@ -288,8 +291,6 @@ void R_PushRefDef(void);
 void R_UpdateRefDef(void);
 void R_PopRefDef(void);
 float *R_GetSavedViewOrg(void);
-void R_RenderWaterFog(void) ;
-void R_FinalWaterFog(void);
 void R_EndProgram(void);
 int R_GetDrawPass(void);
 int R_GetSupportExtension(void);

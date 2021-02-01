@@ -147,7 +147,7 @@ void Draw_UpdateAnsios(void)
 void Draw_Init(void)
 {
 	gl_texturemode_function = Cmd_HookCmd("gl_texturemode", Draw_TextureMode_f);
-	Cmd_HookCmd("screenshot", CL_ScreenShot_f);
+	//Cmd_HookCmd("screenshot", CL_ScreenShot_f);
 }
 
 byte *R_GetTexLoaderBuffer(int *bufsize)

@@ -33,6 +33,7 @@ GLuint readframebuffer;
 
 float scr_fov_value;
 
+mplane_t *frustum;
 mleaf_t **r_viewleaf, **r_oldviewleaf;
 texture_t *r_notexture_mip;
 
@@ -215,15 +216,15 @@ qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 	if(draw3dsky)
 		return false;
 
-	if(drawreflect || drawrefract)
+	/*if(drawreflect || drawrefract)
 	{
 		for (i = 0; i < 4; i++)
 		{
-			if (BoxOnPlaneSide(mins, maxs, &custom_frustum[i]) == 2)
+			if (BoxOnPlaneSide(mins, maxs, &frustum[i]) == 2)
 				return true;
 		}
 		return false;
-	}
+	}*/
 
 	return gRefFuncs.R_CullBox(mins, maxs);
 }
@@ -263,7 +264,7 @@ int CL_FxBlend(cl_entity_t *entity)
 
 void R_Clear(void)
 {
-	if (r_mirroralpha->value != 1.0)
+	if (r_mirroralpha && r_mirroralpha->value != 1.0)
 	{
 		if (gl_clear->value)
 			qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -274,7 +275,7 @@ void R_Clear(void)
 		gldepthmax = 0.5;
 		qglDepthFunc(GL_LEQUAL);
 	}
-	else if (gl_ztrick->value)
+	else if (gl_ztrick && gl_ztrick->value)
 	{
 		static int trickframe;
 
@@ -626,10 +627,34 @@ void R_PolyBlend(void)
 
 void R_SetFrustum(void)
 {
-	gRefFuncs.R_SetFrustum();
+	if(gRefFuncs.R_SetFrustum)
+		return gRefFuncs.R_SetFrustum();
+
+	if (scr_fov_value == 90)
+	{
+		VectorAdd(vpn, vright, frustum[0].normal);
+		VectorSubtract(vpn, vright, frustum[1].normal);
+
+		VectorAdd(vpn, vup, frustum[2].normal);
+		VectorSubtract(vpn, vup, frustum[3].normal);
+	}
+	else
+	{
+		RotatePointAroundVector(frustum[0].normal, vup, vpn, -(90 - scr_fov_value / 2));
+		RotatePointAroundVector(frustum[1].normal, vup, vpn, 90 - scr_fov_value / 2);
+		RotatePointAroundVector(frustum[2].normal, vright, vpn, 90 - yfov / 2);
+		RotatePointAroundVector(frustum[3].normal, vright, vpn, -(90 - yfov / 2));
+	}
+
+	for (int i = 0; i < 4; i++)
+	{
+		frustum[i].type = PLANE_ANYZ;
+		frustum[i].dist = DotProduct(r_origin, frustum[i].normal);
+		frustum[i].signbits = SignbitsForPlane(&frustum[i]);
+	}
 }
 
-void R_ForceCVars(qboolean mp)
+/*void R_ForceCVars(qboolean mp)
 {
 	if (gRefFuncs.R_ForceCVars)
 	{
@@ -649,7 +674,7 @@ void R_ForceCVars(qboolean mp)
 		Cvar_DirectSet(v_lightgamma, "1.8");
 		GL_BuildLightmaps();
 	}
-}
+}*/
 
 int SignbitsForPlane(mplane_t *out)
 {
@@ -666,7 +691,7 @@ int SignbitsForPlane(mplane_t *out)
 	return bits;
 }
 
-void R_SetupFrame(void)
+/*void R_SetupFrame(void)
 {
 	float gl_wireframe_value = gl_wireframe->value;
 	float r_dynamic_value = r_dynamic->value;
@@ -684,7 +709,7 @@ void R_SetupFrame(void)
 	{
 		r_dynamic->value = r_dynamic_value;
 	}
-}
+}*/
 
 void MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar)
 {
@@ -718,6 +743,13 @@ float CalcFov(float fov_x, float width, float height)
 void R_SetupGL(void)
 {
 	gRefFuncs.R_SetupGL();
+
+	if (drawreflect || drawrefract)
+	{
+		qglViewport(0, 0, water_texture_size, water_texture_size);
+
+		R_EnableClip(true);
+	}
 }
 
 void R_CalcRefdef(struct ref_params_s *pparams)
@@ -727,21 +759,6 @@ void R_CalcRefdef(struct ref_params_s *pparams)
 	yfov = CalcFov(scr_fov_value, r_refdef->vrect.width, r_refdef->vrect.height);
 	screenaspect = (float)r_refdef->vrect.width / r_refdef->vrect.height;
 }
-
-/*void R_RenderScene(void)
-{
-	R_UploadLightmaps();
-	Draw_UpdateAnsios();
-
-	if(r_3dsky_parm.enable && r_3dsky->value)
-	{
-		R_Render3DSky();
-	}
-
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, screenframebuffer);
-
-	gRefFuncs.R_RenderScene();
-}*/
 
 void CheckMultiTextureExtensions(void)
 {
@@ -1264,7 +1281,7 @@ void GL_Shutdown(void)
 
 void GL_BeginRendering(int *x, int *y, int *width, int *height)
 {
-	static int vsync = -1;
+	/*static int vsync = -1;
 	if (gl_vsync->value != vsync)
 	{
 		if (qwglSwapIntervalEXT)
@@ -1276,7 +1293,7 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 		}
 
 		vsync = gl_vsync->value;
-	}
+	}*/
 
 	gRefFuncs.GL_BeginRendering(x, y, width, height);
 
@@ -1293,6 +1310,104 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
+void R_RenderView_SvEngine(int a1)
+{
+	if (a1 == 0)
+	{
+		if (s_BackBufferFBO.s_hBackBufferFBO)
+		{
+			if (s_MSAAFBO.s_hBackBufferFBO)
+				screenframebuffer = s_MSAAFBO.s_hBackBufferFBO;
+			else
+				screenframebuffer = s_BackBufferFBO.s_hBackBufferFBO;
+
+			qglBindFramebufferEXT(GL_FRAMEBUFFER, screenframebuffer);
+		}
+
+		//R_UploadLightmaps();
+		Draw_UpdateAnsios();
+
+		/*if (r_3dsky_parm.enable && r_3dsky->value)
+		{
+			R_ViewOriginFor3DSky(_3dsky_view);
+		}*/
+
+		if (!r_refdef->onlyClientDraws)
+		{
+			/*if (shadow.program && r_shadow->value)
+			{
+				R_UpdateShadow();
+			}*/
+			if (water.program && r_water->value)
+			{
+				R_RenderWaterView();
+			}
+			R_Clear();
+		}
+	}
+
+	gRefFuncs.R_RenderView_SvEngine(a1);
+
+	if (a1 == 0)
+	{
+		if (s_BackBufferFBO.s_hBackBufferFBO)
+		{
+			//Do MSAA here so HUD won't be AA
+			if (s_MSAAFBO.s_hBackBufferFBO)
+			{
+				qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+				qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
+				qglBlitFramebufferEXT(0, 0, s_MSAAFBO.iWidth, s_MSAAFBO.iHeight, 0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+			}
+
+			R_BeginHUDQuad();
+			if (bDoHDR && r_hdr->value > 0)
+			{
+				//normal downsample
+				R_DownSample(&s_BackBufferFBO, &s_DownSampleFBO[0], false);//(1->1/4)
+				R_DownSample(&s_DownSampleFBO[0], &s_DownSampleFBO[1], false);//(1/4)->(1/16)
+
+				//Log Luminance DownSample from .. (HDRColor to 32RF)
+				R_LuminPass(&s_DownSampleFBO[1], &s_LuminFBO[0], 1);//(1/16)->64x64
+				//Luminance DownSample from..
+				R_LuminPass(&s_LuminFBO[0], &s_LuminFBO[1], 0);//64x64->16x16
+				R_LuminPass(&s_LuminFBO[1], &s_LuminFBO[2], 0);//16x16->4x4
+				//exp Luminance DownSample from..
+				R_LuminPass(&s_LuminFBO[2], &s_Lumin1x1FBO[2], 2);//4x4->1x1
+
+				//Luminance Adaptation
+				R_LuminAdaptation(&s_Lumin1x1FBO[2], &s_Lumin1x1FBO[!last_luminance], &s_Lumin1x1FBO[last_luminance], *cl_time - *cl_oldtime);
+				last_luminance = !last_luminance;
+				//Bright Pass (with 1/16)
+				R_BrightPass(&s_DownSampleFBO[1], &s_BrightPassFBO, &s_Lumin1x1FBO[last_luminance]);
+
+				//Gaussian Blur Pass (with bright pass)
+				R_BlurPass(&s_BrightPassFBO, &s_BlurPassFBO[0][0], false);
+				R_BlurPass(&s_BlurPassFBO[0][0], &s_BlurPassFBO[0][1], true);
+				//Blur again and downsample from 1/16 to 1/32
+				R_BlurPass(&s_BlurPassFBO[0][1], &s_BlurPassFBO[1][0], false);
+				R_BlurPass(&s_BlurPassFBO[1][0], &s_BlurPassFBO[1][1], true);
+				//Blur again and downsample from 1/32 to 1/64
+				R_BlurPass(&s_BlurPassFBO[1][1], &s_BlurPassFBO[2][0], false);
+				R_BlurPass(&s_BlurPassFBO[2][0], &s_BlurPassFBO[2][1], true);
+
+				//Accumulate all blurred textures
+				R_BrightAccum(&s_BlurPassFBO[0][1], &s_BlurPassFBO[1][1], &s_BlurPassFBO[2][1], &s_BrightAccumFBO);
+
+				//Tone mapping
+				R_ToneMapping(&s_BackBufferFBO, &s_ToneMapFBO, &s_BrightAccumFBO, &s_Lumin1x1FBO[last_luminance]);
+
+				R_BlitToFBO(&s_ToneMapFBO, &s_BackBufferFBO);
+
+			}
+		}
+
+		screenframebuffer = s_BackBufferFBO.s_hBackBufferFBO;
+		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, screenframebuffer);
+		qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, screenframebuffer);
+	}
+}
+
 void R_RenderView(void)
 {
 	if (s_BackBufferFBO.s_hBackBufferFBO)
@@ -1305,8 +1420,8 @@ void R_RenderView(void)
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, screenframebuffer);
 	}
 
-	R_UploadLightmaps();
-	Draw_UpdateAnsios();
+	//R_UploadLightmaps();
+	//Draw_UpdateAnsios();
 
 	if(r_3dsky_parm.enable && r_3dsky->value)
 	{
@@ -1317,19 +1432,11 @@ void R_RenderView(void)
 	{
 		if(shadow.program && r_shadow->value)
 		{
-			//if (!(shadow_update_counter % 2))
-			//{
-				R_UpdateShadow();
-			//}
-			//shadow_update_counter ++;
+			R_UpdateShadow();
 		}
 		if(water.program && r_water->value)
 		{
-			//if (!(water_update_counter % 2))
-			//{
-				R_UpdateWater();			
-			//}
-			//water_update_counter ++;
+			R_RenderWaterView();
 		}
 		R_Clear();
 	}
@@ -1402,7 +1509,7 @@ void GL_EndRendering(void)
 
 		windowW = window_rect->right - window_rect->left;
 		windowH = window_rect->bottom - window_rect->top;
-
+		
 		int dstX = 0;
 		int dstY = 0;
 		int dstX2 = windowW;
@@ -1581,11 +1688,11 @@ void R_InitScreen(void)
 
 void R_Init(void)
 {
-	if(g_dwEngineBuildnum >= 5953)
+	if(gRefFuncs.FreeFBObjects)
 		gRefFuncs.FreeFBObjects();
 
 	R_InitCvars();
-	R_InitScreen();
+	//R_InitScreen();
 	R_InitTextures();
 	R_InitShaders();
 	R_InitWater();
@@ -1596,8 +1703,8 @@ void R_Init(void)
 	R_Init3DSky();
 	R_InitCloak();
 
-	CL_VisEdicts_Patch();
-	Lightmaps_Patch();
+	//CL_VisEdicts_Patch();
+	//Lightmaps_Patch();
 
 	Draw_Init();
 }

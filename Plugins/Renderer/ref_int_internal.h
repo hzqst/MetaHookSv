@@ -43,6 +43,11 @@ typedef struct refdef_s
 	qboolean onlyClientDraws;
 }refdef_t;
 
+typedef struct skybox_s
+{
+	float v[2][6];
+}skybox_t;
+
 typedef struct msurface_s msurface_t;
 
 typedef struct
@@ -50,6 +55,7 @@ typedef struct
 	void (*R_Clear)(void);
 	void (*R_ForceCVars)(qboolean mp);
 	void (*R_RenderView)(void);
+	void(*R_RenderView_SvEngine)(int a1);
 	void (*R_RenderScene)(void);
 	void (*R_NewMap)(void);
 	void (*R_DrawEntitiesOnList)(void);
@@ -93,6 +99,7 @@ typedef struct
 	void (*R_GetSpriteAxes)(cl_entity_t *entity, int type, float *vforwrad, float *vright, float *vup);
 	void (*R_SpriteColor)(mcolor24_t *col, cl_entity_t *entity, int renderamt);
 	void (*VID_UpdateWindowVars)(RECT *prc, int x, int y);
+	mleaf_t *(*Mod_PointInLeaf)(vec3_t p, model_t *model);
 
 	//Engine Studio
 	void (*R_GLStudioDrawPoints)(void);

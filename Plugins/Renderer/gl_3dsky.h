@@ -13,7 +13,6 @@ typedef struct
 extern qboolean draw3dsky;
 extern vec3_t _3dsky_view;
 extern float _3dsky_mvmatrix[16];
-extern mplane_t _3dsky_frustum[4];
 extern r_3dsky_parm_t r_3dsky_parm;
 
 extern cvar_t *r_3dsky;

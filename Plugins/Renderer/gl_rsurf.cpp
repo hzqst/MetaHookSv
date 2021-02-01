@@ -33,26 +33,29 @@ void R_RecursiveWorldNode(mnode_t *node)
 
 void R_DrawWorld(void)
 {
-	if (r_3dsky_parm.enable && r_3dsky->value)
+	/*if (r_3dsky_parm.enable && r_3dsky->value)
 	{
 		R_Render3DSky();
-	}
-
-	if(r_water->value && !R_GetDrawPass() && *cl_waterlevel > 2)
-	{
-		R_RenderWaterFog();
-	}
+	}*/
 
 	gRefFuncs.R_DrawWorld();
 
-	R_FinalWaterFog();
-
-	R_RenderAllShadowScenes();
+	//R_RenderAllShadowScenes();
 }
 
 void R_MarkLeaves(void)
 {
+	if (drawreflect || drawrefract)
+	{
+		if (curwater && curwater->color.a == 255)
+		{
+			r_novis->value = 1;
+		}
+	}
+
 	gRefFuncs.R_MarkLeaves();
+
+	r_novis->value = 0;
 }
 
 void R_UploadLightmaps(void)

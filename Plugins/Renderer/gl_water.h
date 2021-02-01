@@ -11,6 +11,7 @@ typedef struct
 	int zmax;
 	int time;
 	int fresnel;
+	int depthfactor;
 	int abovewater;
 	int normalmap;
 	int refractmap;
@@ -33,14 +34,14 @@ typedef struct r_water_s
 	float distances;
 	cl_entity_t *ent;
 	vec3_t org;
-	struct r_water_s *next;
+	colorVec color;
 	int is3dsky;
+	struct r_water_s *next;
 }r_water_t;
 
 //renderer
 extern qboolean drawreflect;
 extern qboolean drawrefract;
-extern mplane_t custom_frustum[4];
 extern int water_update_counter;
 extern int water_texture_size;
 //water
@@ -58,7 +59,6 @@ extern SHADER_DEFINE(drawdepth);
 //water fog
 extern int *g_bUserFogOn;
 extern int save_userfogon;
-extern int waterfog_on;
 
 typedef struct
 {
@@ -77,15 +77,12 @@ extern water_parm_t water_parm;
 extern cvar_t *r_water;
 extern cvar_t *r_water_debug;
 extern cvar_t *r_water_fresnel;
+extern cvar_t *r_water_depthfactor;
 
-void R_AddWater(cl_entity_t *ent, vec3_t p);
+void R_AddWater(cl_entity_t *ent, vec3_t p, colorVec *color);
 void R_InitWater(void);
 void R_ClearWater(void);
-void R_SetupReflect(void);
-void R_FinishReflect(void);
-void R_SetupRefract(void);
-void R_FinishRefract(void);
-void R_UpdateWater(void);
-void R_SetupClip(qboolean isdrawworld);
+void R_RenderWaterView(void);
+void R_EnableClip(qboolean isdrawworld);
 void R_SetWaterParm(water_parm_t *parm);
-void R_SetCustomFrustum(void);
+void R_SetFrustum(void);

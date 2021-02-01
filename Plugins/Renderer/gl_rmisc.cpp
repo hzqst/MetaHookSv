@@ -33,7 +33,7 @@ void R_GLBindFrameBuffer(GLenum target, GLuint framebuffer)
 GLuint R_GLGenTexture(int w, int h)
 {
 	GLuint texid = GL_GenTexture();
-	GL_Bind(texid);
+	qglBindTexture(GL_TEXTURE_2D, texid);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -45,7 +45,7 @@ GLuint R_GLGenTexture(int w, int h)
 GLuint R_GLGenDepthTexture(int w, int h)
 {
 	GLuint texid = GL_GenTexture();
-	GL_Bind(texid);
+	qglBindTexture(GL_TEXTURE_2D, texid);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -110,17 +110,15 @@ void R_FreeTextures(void)
 
 void R_NewMap(void)
 {
-	int i;
-
 	r_worldentity = gEngfuncs.GetEntityByIndex(0);
 	r_worldmodel = r_worldentity->model;
 
-	GL_BuildLightmaps();
+	/*GL_BuildLightmaps();
 
 	skytexturenum = -1;
 	mirrortexturenum = -1;
 	
-	for (i = 0; i < r_worldmodel->numtextures; i++)
+	for (int i = 0; i < r_worldmodel->numtextures; i++)
 	{
 		if (!r_worldmodel->textures[i])
 			continue;
@@ -132,7 +130,7 @@ void R_NewMap(void)
 			mirrortexturenum = i;
 
  		r_worldmodel->textures[i]->texturechain = NULL;
-	}
+	}*/
 
 	gRefFuncs.R_NewMap();
 
@@ -149,6 +147,15 @@ mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
 		Sys_ErrorEx("Mod_PointInLeaf: bad model");
 
 	node = model->nodes;
+
+	if (drawreflect || drawrefract)
+	{
+		if (curwater && curwater->color.a == 255)
+		{
+			if (node->contents < 0)
+				return (mleaf_t *)node;
+		}
+	}
 
 	while (1)
 	{

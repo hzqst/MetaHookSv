@@ -550,12 +550,12 @@ void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *l
 
 	GL_SelectTexture(TEXTURE1_SGIS);
 	qglEnable(GL_TEXTURE_2D);
-	GL_Bind(lum->s_hBackBufferTex);
+	qglBindTexture(GL_TEXTURE_2D, lum->s_hBackBufferTex);
 
 	R_DrawHUDQuad(dst->iWidth, dst->iHeight);
 
 	GL_SelectTexture(TEXTURE1_SGIS);
-	GL_Bind(0);
+	qglBindTexture(GL_TEXTURE_2D, 0);
 	qglDisable(GL_TEXTURE_2D);
 
 	GL_SelectTexture(TEXTURE0_SGIS);
@@ -602,7 +602,6 @@ void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container
 	GL_Bind(blur1->s_hBackBufferTex);
 	R_DrawHUDQuad(dst->iWidth, dst->iHeight);
 
-	GL_Bind(blur1->s_hBackBufferTex);
 	GL_Bind(blur2->s_hBackBufferTex);
 	R_DrawHUDQuad(dst->iWidth, dst->iHeight);
 
@@ -627,26 +626,31 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 	qglUniform1fARB(pp_tonemap.exposure, clamp(r_hdr_exposure->value, 0.001, 10));
 	qglUniform1fARB(pp_tonemap.darkness, clamp(r_hdr_darkness->value, 0.001, 10));
 	qglUniform1fARB(pp_tonemap.gamma, 1.0 / v_gamma->value);
-
+	
 	GL_SelectTexture(TEXTURE0_SGIS);
-	GL_Bind(src->s_hBackBufferTex);
+	qglEnable(GL_TEXTURE_2D);
+	qglBindTexture(GL_TEXTURE_2D, src->s_hBackBufferTex);
+
 	GL_SelectTexture(TEXTURE1_SGIS);
 	qglEnable(GL_TEXTURE_2D);
-	GL_Bind(blur->s_hBackBufferTex);
+	qglBindTexture(GL_TEXTURE_2D, blur->s_hBackBufferTex);
+
 	GL_SelectTexture(TEXTURE2_SGIS);
 	qglEnable(GL_TEXTURE_2D);
-	GL_Bind(lum->s_hBackBufferTex);
+	qglBindTexture(GL_TEXTURE_2D, lum->s_hBackBufferTex);
 
 	R_DrawHUDQuad(dst->iWidth, dst->iHeight);
 
 	GL_SelectTexture(TEXTURE2_SGIS);
-	GL_Bind(0);
+	qglBindTexture(GL_TEXTURE_2D, 0);
 	qglDisable(GL_TEXTURE_2D);
+	
 	GL_SelectTexture(TEXTURE1_SGIS);
-	GL_Bind(0);
+	qglBindTexture(GL_TEXTURE_2D, 0);
 	qglDisable(GL_TEXTURE_2D);
+	
 	GL_SelectTexture(TEXTURE0_SGIS);
-
+	
 	qglUseProgramObjectARB(0);
 }
 

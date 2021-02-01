@@ -3,7 +3,6 @@
 qboolean draw3dsky;
 vec3_t _3dsky_view;
 float _3dsky_mvmatrix[16];
-mplane_t _3dsky_frustum[4];
 
 r_3dsky_parm_t r_3dsky_parm;
 

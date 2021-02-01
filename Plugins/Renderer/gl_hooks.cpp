@@ -28,7 +28,6 @@
 #define R_SETUPFRAME_SIG "\xA1\x2A\x2A\x2A\x2A\x83\xEC\x18\x83\xF8\x01\x0F\x8E\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x2A\x2A\x2A\x68"
 #define R_SETUPFRAME_SIG2 "\x8B\x0D\x2A\x2A\x2A\x2A\x83\xEC\x18\x33\xC0\x83\xF9\x01\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1"
 #define R_SETUPFRAME_SIG_NEW "\x55\x8B\xEC\x83\xEC\x18\x8B\x0D\x2A\x2A\x2A\x2A\x33\xC0\x83\xF9\x01\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1"
-#define R_SETUPFRAME_SIG_SVENGINE "\x83\xEC\x1C\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x18\xE8\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04"
 
 #define GL_BUILDLIGHTMAPS_SIG "\x53\x56\x57\x68\x00\x80\x00\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x0C\xBB\x01\x00\x00\x00\x85\xC0\x89\x1D"
 #define GL_BUILDLIGHTMAPS_SIG2 "\x51\x68\x00\x80\x00\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x0C\xB9\x01\x00\x00\x00\x85\xC0\x89\x0D"
@@ -60,9 +59,11 @@
 
 #define EMITWATERPOLYS_SIG "\x83\xEC\x1C\x33\xD2\x55\x56\x8B\x74\x24\x28\x57\x8B\x46\x2C\x8B\x48\x24\x8B\x41\x44\x33\xC9\x8A\x50\x0C\x8A\x48\x0B\x52"
 #define EMITWATERPOLYS_SIG_NEW "\x55\x8B\xEC\x83\xEC\x20\x56\x8B\x75\x08\x33\xD2\x57\x8B\x46\x2C\x8B\x48\x24\x8B\x41\x44\x33\xC9\x8A\x50\x0C\x8A\x48\x0B\x52\x51"
+#define EMITWATERPOLYS_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x20\x53\x55\xD9\x05\x2A\x2A\x2A\x2A\x56\x57"
 
 #define R_DRAWSKYCHAIN_SIG "\x81\xEC\x00\x03\x00\x00\xE8\x2A\x2A\x2A\x2A\x85\xC0\x0F\x85\x2A\x2A\x2A\x2A\xA3\x2A\x2A\x2A\x2A\x8B\x84\x24\x04\x03\x00\x00\x57\x8B\xF8\x85\xC0"
 #define R_DRAWSKYCHAIN_SIG_NEW "\x55\x8B\xEC\x81\xEC\x00\x03\x00\x00\xE8\x2A\x2A\x2A\x2A\x85\xC0\x0F\x85\x2A\x2A\x2A\x2A\xA3\x2A\x2A\x2A\x2A\x8B\x45\x08\x57\x8B\xF8\x85\xC0"
+#define R_DRAWSKYCHAIN_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\x53\x8B\x9C\x24\x2A\x2A\x00\x00\xE8"
 
 #define R_DRAWSKYBOX_SIG "\x83\xEC\x1C\xA1\x2A\x2A\x2A\x2A\x53\x55\x56\x57\xBF\x00\x00\x80\x3F\x85\xC0"
 #define R_DRAWSKYBOX_SIG2 "\x83\xEC\x1C\xA1\x2A\x2A\x2A\x2A\x53\x55\x56\x57\x33\xF6\xBF\x00\x00\x80\x3F"
@@ -85,6 +86,7 @@
 
 #define R_SETUPGL_SIG "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x10\x53\x55\x56\x57\x68\x01\x17\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x15"
 #define R_SETUPGL_SIG_NEW "\x55\x8B\xEC\x83\xEC\x10\x53\x56\x57\x68\x01\x17\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x15\x2A\x2A\x2A\x2A\x8B\x1D"
+#define R_SETUPGL_SIG_SVENGINE "\x55\x8B\xEC\x83\xE4\xC0\x83\xEC\x2A\x53\x56\x57\x68\x01\x17\x00\x00"
 
 #define GL_DISABLEMULTITEXTURE_SIG "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x50\xE8"
 #define GL_DISABLEMULTITEXTURE_SIG_NEW "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x50\xE8"
@@ -146,6 +148,9 @@
 
 #define VID_UPDATEWINDOWVARS_SIG "\x56\x8B\x74\x24\x08\x8B\xC6\x8B\x08\x89\x0D\x2A\x2A\x2A\x2A\x8B\x50\x04\x89\x15"
 #define VID_UPDATEWINDOWVARS_SIG_NEW "\x55\x8B\xEC\x51\x56\x8B\x75\x08\x8B\xC6\x8B\x08\x89\x0D\x2A\x2A\x2A\x2A\x8B\x50\x04\x89\x15"
+#define VID_UPDATEWINDOWVARS_SIG_SVENGINE "\x8b\xc7\x99\x2B\xC2\xD1\xF8\x03\x2A\x50"
+
+#define MOD_POINTINLEAF_SIG_SVENGINE "\x56\x8B\x74\x24\x0C\x85\xF6\x2A\x2A\x8B\x8E\xA4\x00\x00\x00"
 
 //Studio Funcs
 #define R_GLSTUDIODRAWPOINTS_SIG "\x83\xEC\x44\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x53\x55\x56\x8B\x70\x54\x8B\x40\x60\x57"
@@ -214,16 +219,18 @@ void R_FillAddress(void)
 		gRefFuncs.R_CullBox = (qboolean(*)(vec3_t, vec3_t))Search_Pattern_From(GL_LoadTexture2, R_CULLBOX_SIG_SVENGINE);
 		Sig_FuncNotFound(R_CullBox);
 
-		gRefFuncs.R_SetupFrame = (void(*)(void))Search_Pattern_From(R_CullBox, R_SETUPFRAME_SIG_SVENGINE);
-		Sig_FuncNotFound(R_SetupFrame);
+		gRefFuncs.R_SetupFrame = NULL;//inlined
 
-		gRefFuncs.R_Clear = NULL;
+		gRefFuncs.R_SetupGL = (void(*)(void))Search_Pattern(R_SETUPGL_SIG_SVENGINE);
+		Sig_FuncNotFound(R_SetupGL);
+
+		gRefFuncs.R_Clear = NULL;//inlined
 
 		gRefFuncs.R_RenderScene = (void(*)(void))Search_Pattern(R_RENDERSCENE_SIG_SVENGINE);
 		Sig_FuncNotFound(R_RenderScene);
 
-		gRefFuncs.R_RenderView = (void(*)(void))Search_Pattern(R_RENDERVIEW_SIG_SVENGINE);
-		Sig_FuncNotFound(R_RenderView);
+		gRefFuncs.R_RenderView_SvEngine = (void(*)(int))Search_Pattern(R_RENDERVIEW_SIG_SVENGINE);
+		Sig_FuncNotFound(R_RenderView_SvEngine);
 
 		gRefFuncs.R_NewMap = (void(*)(void))Search_Pattern(R_NEWMAP_SIG_SVENGINE);
 		Sig_FuncNotFound(R_NewMap);
@@ -266,6 +273,24 @@ void R_FillAddress(void)
 
 		gRefFuncs.GL_EndRendering = (void(*)(void))Search_Pattern( GL_ENDRENDERING_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_EndRendering);
+
+		gRefFuncs.EmitWaterPolys = (void(*)(msurface_t *, int))Search_Pattern(EMITWATERPOLYS_SIG_SVENGINE);
+		Sig_FuncNotFound(EmitWaterPolys);
+
+		gRefFuncs.R_DrawSkyChain = (void(*)(msurface_t *))Search_Pattern(R_DRAWSKYCHAIN_SIG_SVENGINE);
+		Sig_FuncNotFound(R_DrawSkyChain);
+
+		DWORD addr = (DWORD)Search_Pattern(VID_UPDATEWINDOWVARS_SIG_SVENGINE);
+		Sig_AddrNotFound(VID_UpdateWindowVars);
+
+		DWORD addr2 = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x50, "\x50\xE8", 2);
+		Sig_AddrNotFound(VID_UpdateWindowVars);
+
+		gRefFuncs.VID_UpdateWindowVars = (void(*)(RECT *prc, int x, int y))(addr2 + 2 + 4 + *(int *)(addr2 + 2));
+		Sig_FuncNotFound(VID_UpdateWindowVars);
+
+		gRefFuncs.Mod_PointInLeaf = (mleaf_t *(*)(vec3_t, model_t *))Search_Pattern(MOD_POINTINLEAF_SIG_SVENGINE);
+		Sig_FuncNotFound(Mod_PointInLeaf);
 	}
 	else if (g_dwEngineBuildnum >= 5953)
 	{
@@ -695,266 +720,355 @@ void R_FillAddress(void)
 
 	//Common Vars
 
-	//R_DrawSkyBox
-	//mov     eax, skytexorder[esi*4]
-	//mov     ecx, gSkyTexNumber[eax*4]
-	//push    ecx
-	//call    GL_Bind
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+#define GSKYTEXNUMBER_SIG_SVENGINE "\xFF\x34\xB5\x2A\x2A\x2A\x2A\xE8"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawSkyChain, 0x300, GSKYTEXNUMBER_SIG_SVENGINE, sizeof(GSKYTEXNUMBER_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(gSkyTexNumber);
+		gSkyTexNumber = *(int **)(addr + 3);
+
+#define SKYMINSMAXS_SIG_SVENGINE "\xD9\x04\xB5\x2A\x2A\x2A\x2A\xD8\x1C\xB5"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawSkyChain, 0x300, SKYMINSMAXS_SIG_SVENGINE, sizeof(SKYMINSMAXS_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(skymaxs);
+		skymaxs = *(skybox_t **)(addr + 3);
+		skymins = *(skybox_t **)(addr + 10);
+
+#define CURRENTTEXTURE_SIG_SVENGINE "\x39\x05\x2A\x2A\x2A\x2A\x74"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_Bind, 0x50, CURRENTTEXTURE_SIG_SVENGINE, sizeof(CURRENTTEXTURE_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(currenttexture);
+		currenttexture = *(int **)(addr + 2);
+
+#define R_ORIGIN_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xD9\x1D\x2A\x2A\x2A\x2A\xE8"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x300, R_ORIGIN_SIG_SVENGINE, sizeof(R_ORIGIN_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(r_origin);
+		vright = (vec_t *)(*(DWORD *)(addr + 1));
+		vpn = (vec_t *)(*(DWORD *)(addr + 6));
+		vup = (vec_t *)((char *)vpn - sizeof(float[3]));
+		r_refdef = (refdef_t *)(*(DWORD *)(addr + 11) - offsetof(refdef_t, viewangles));
+		r_origin = (vec_t *)(*(DWORD *)(addr + 17) - 8);
+
+#define GLTEXTURES_SIG_SVENGINE "\x8B\x15\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x1D"
+		//Search in GL_LoadTexture2
+		//.text : 01D4EBF4 8B 15 F0 C5 0F 03                                   mov     edx, numgltextures
+		//.text : 01D4EBFA 3B F2                                               cmp     esi, edx
+		//.text : 01D4EBFC 7D 4D                                               jge     short loc_1D4EC4B
+		//.text : 01D4EBFE 8B 1D E4 C5 0F 03                                   mov     ebx, gltextures
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x300, GLTEXTURES_SIG_SVENGINE, sizeof(GLTEXTURES_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(gltextures);
+		numgltextures = *(int **)(addr + 2);
+		gltextures = *(gltexture_t **)(addr + 12);
+
+#define GHOSTSPAWNCOUNT_SIG_SVENGINE "\x66\x8B\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x04"
+		//66 8B 0D E0 72 40 08                                mov     cx, word ptr gHostSpawnCount
+		//66 89 4B 04                                         mov     [ebx+4], cx
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x200, GHOSTSPAWNCOUNT_SIG_SVENGINE, sizeof(GHOSTSPAWNCOUNT_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(gHostSpawnCount);
+		gHostSpawnCount = *(int **)(addr + 3);
+
+#define WINDOW_RECT_SIG_SVENGINE "\xA3\x2A\x2A\x2A\x2A\x8B\x41"
+		//A3 B4 65 00 08                                      mov     dword_80065B4, eax
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.VID_UpdateWindowVars, 0x50, WINDOW_RECT_SIG_SVENGINE, sizeof(WINDOW_RECT_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(window_rect);
+		window_rect = *(RECT **)(addr + 1);
+
+#define WINDOW_VIDEO_ASPECT_SIG_SVENGINE "\xD9\x15\x2A\x2A\x2A\x2A\xD9\x1D\x2A\x2A\x2A\x2A\x39"
+		//.text:01D5D9DD D9 15 E0 85 ED 01                                   fst     videowindowaspect
+		//.text : 01D5D9E3 D9 1D DC 85 ED 01                                   fstp    windowvideoaspect
+		//.text : 01D5D9E9 39 1D D8 85 ED 01                                   cmp     dword_1ED85D8, ebx
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_EndRendering, 0x200, WINDOW_VIDEO_ASPECT_SIG_SVENGINE, sizeof(WINDOW_VIDEO_ASPECT_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(windowvideoaspect);
+		videowindowaspect = *(float **)(addr + 2);
+		windowvideoaspect = *(float **)(addr + 8);
+
+		//R_DrawEntitiesOnList
+//mov     eax, CL_UPDATE_MASK
+#define CL_PARSECOUNT_SIG_SVENGINE "\xA1\x2A\x2A\x2A\x2A\x23\x05\x2A\x2A\x2A\x2A\x69\xC8\xD8\x84\x00\x00"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x500, CL_PARSECOUNT_SIG_SVENGINE, sizeof(CL_PARSECOUNT_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(cl_parsecount);
+		cl_parsecount = *(int **)(addr + 7);
+
+		//mov     edx, r_framecount
+#define R_FRAMECOUNT_SIG_SVENGINE "\x8B\x0A\x8D\x52\x04\xA1\x2A\x2A\x2A\x2A\x89\x01"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RecursiveWorldNode, 0x200, R_FRAMECOUNT_SIG_SVENGINE, sizeof(R_FRAMECOUNT_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(r_framecount);
+		r_framecount = *(int **)(addr + 6);
+
+		//mov     ecx, r_viewleaf
+		//mov     eax, r_oldviewleaf
+#define R_VIEWLEAF_SIG "\x8B\x0D\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD9\xEE\x39\x0D"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_MarkLeaves, 0x50, R_VIEWLEAF_SIG, sizeof(R_VIEWLEAF_SIG) - 1);
+		Sig_AddrNotFound(r_viewleaf);
+		r_viewleaf = *(mleaf_t ***)(addr + 2);
+		r_oldviewleaf = *(mleaf_t ***)(addr + 16);
+
+		//.text:01D52C37 8B 7C 24 14                                         mov     edi, [esp+14h]
+		//.text:01D52C3B BE 80 3E F5 03                                      mov     esi, offset frustum
+#define R_FRUSTUM_SIG_SVENGINE "\x8B\x7C\x24\x2A\xBE"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_CullBox, 0x100, R_FRUSTUM_SIG_SVENGINE, sizeof(R_FRUSTUM_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(frustum);
+		frustum = *(mplane_t **)(addr + 5);
+	}
+	else
+	{
+		//R_DrawSkyBox
+		//mov     eax, skytexorder[esi*4]
+		//mov     ecx, gSkyTexNumber[eax*4]
+		//push    ecx
+		//call    GL_Bind
 #define GSKYTEXNUMBER_SIG "\x8B\x04\xB5\x2A\x2A\x2A\x2A\x8B\x0C\x85\x2A\x2A\x2A\x2A\x51\xE8"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawSkyBox, 0x300, GSKYTEXNUMBER_SIG, sizeof(GSKYTEXNUMBER_SIG)-1 );
-	Sig_AddrNotFound(gSkyTexNumber);
-	gSkyTexNumber = *(int **)(addr + 10);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawSkyBox, 0x300, GSKYTEXNUMBER_SIG, sizeof(GSKYTEXNUMBER_SIG) - 1);
+		Sig_AddrNotFound(gSkyTexNumber);
+		gSkyTexNumber = *(int **)(addr + 10);
 
-	//GL_Bind
-	//mov     ecx, currenttexture
-	//push    esi
+		//GL_Bind
+		//mov     ecx, currenttexture
+		//push    esi
 #define CURRENTTEXTURE_SIG "\x8B\x0D\x2A\x2A\x2A\x2A\x56"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_Bind, 0x50, CURRENTTEXTURE_SIG, sizeof(CURRENTTEXTURE_SIG)-1);
-	Sig_AddrNotFound(currenttexture);
-	currenttexture = *(int **)(addr + 2);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_Bind, 0x50, CURRENTTEXTURE_SIG, sizeof(CURRENTTEXTURE_SIG) - 1);
+		Sig_AddrNotFound(currenttexture);
+		currenttexture = *(int **)(addr + 2);
 
-	//R_SetupFrame
+		//R_SetupFrame
 #define R_ORIGIN_SIG "\x40\x68\x2A\x2A\x2A\x2A\xA3\x2A\x2A\x2A\x2A\xA1"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupFrame, 0x300, R_ORIGIN_SIG, sizeof(R_ORIGIN_SIG)-1);
-	Sig_AddrNotFound(r_origin);
-	addr += 2;
-	vup = (vec_t *)(*(DWORD *)addr);
-	addr += 10;
-	addr += 5;
-	vright = (vec_t *)(*(DWORD *)addr);
-	addr += 5;
-	vpn = (vec_t *)(*(DWORD *)addr);
-	addr += 5;
-	r_refdef = (refdef_t *)(*(DWORD *)addr - offsetof(refdef_t, viewangles));
-	addr += 5;
-	if (*(BYTE *)addr == 0x0D)//5953
-		addr += 1;
-	r_origin = (vec_t *)(*(DWORD *)addr);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupFrame, 0x300, R_ORIGIN_SIG, sizeof(R_ORIGIN_SIG) - 1);
+		Sig_AddrNotFound(r_origin);
+		addr += 2;
+		vup = (vec_t *)(*(DWORD *)addr);
+		addr += 10;
+		addr += 5;
+		vright = (vec_t *)(*(DWORD *)addr);
+		addr += 5;
+		vpn = (vec_t *)(*(DWORD *)addr);
+		addr += 5;
+		r_refdef = (refdef_t *)(*(DWORD *)addr - offsetof(refdef_t, viewangles));
+		addr += 5;
+		if (*(BYTE *)addr == 0x0D)//5953
+			addr += 1;
+		r_origin = (vec_t *)(*(DWORD *)addr);
 
-	//R_RenderScene
+		//R_RenderScene
 #define GBUSERFOG_SIG "\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x85\xC0\x74\x2A\xE8"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x200, GBUSERFOG_SIG, sizeof(GBUSERFOG_SIG) - 1);
-	
-	//Sig_AddrNotFound(g_bUserFogOn);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x200, GBUSERFOG_SIG, sizeof(GBUSERFOG_SIG) - 1);
 
-	g_bUserFogOn = *(int **)(addr+6);
+		Sig_AddrNotFound(g_bUserFogOn);
 
-	//R_RecursiveWorldNode
+		g_bUserFogOn = *(int **)(addr + 6);
+
+		//R_RecursiveWorldNode
 #define MODELORG_SIG "\xD9\x05\x2A\x2A\x2A\x2A\x49\x74\x2A\xD8\x48\x08"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RecursiveWorldNode, 0x200, MODELORG_SIG, sizeof(MODELORG_SIG)-1);
-	Sig_AddrNotFound(modelorg);
-	modelorg = *(float **)(addr+2);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RecursiveWorldNode, 0x200, MODELORG_SIG, sizeof(MODELORG_SIG) - 1);
+		Sig_AddrNotFound(modelorg);
+		modelorg = *(float **)(addr + 2);
 
-	//mov     eax, [edi+4]
-	//mov     ecx, r_visframecount
+		//mov     eax, [edi+4]
+		//mov     ecx, r_visframecount
 #define R_VISFRAMECOUNT_SIG "\x8B\x47\x04\x8B\x0D\x2A\x2A\x2A\x2A\x3B\xC1"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RecursiveWorldNode, 0x50, R_VISFRAMECOUNT_SIG, sizeof(R_VISFRAMECOUNT_SIG)-1);
-	Sig_AddrNotFound(r_visframecount);
-	r_visframecount = *(int **)(addr + 5);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RecursiveWorldNode, 0x50, R_VISFRAMECOUNT_SIG, sizeof(R_VISFRAMECOUNT_SIG) - 1);
+		Sig_AddrNotFound(r_visframecount);
+		r_visframecount = *(int **)(addr + 5);
 
-	//mov     edx, r_framecount
+		//mov     edx, r_framecount
 #define R_FRAMECOUNT_SIG "\x8B\x15\x2A\x2A\x2A\x2A\x8B\x30\x83\xC0\x04\x49\x89\x16"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x200, R_FRAMECOUNT_SIG, sizeof(R_FRAMECOUNT_SIG)-1);
-	Sig_AddrNotFound(r_framecount);
-	r_framecount = *(int **)(addr + 2);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x200, R_FRAMECOUNT_SIG, sizeof(R_FRAMECOUNT_SIG) - 1);
+		Sig_AddrNotFound(r_framecount);
+		r_framecount = *(int **)(addr + 2);
 
-	//mov     ecx, r_viewleaf
-	//mov     eax, r_oldviewleaf
+		//mov     ecx, r_viewleaf
+		//mov     eax, r_oldviewleaf
 #define R_VIEWLEAF_SIG "\x8B\x0D\x2A\x2A\x2A\x2A\xA1"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_MarkLeaves, 0x50, R_VIEWLEAF_SIG, sizeof(R_VIEWLEAF_SIG)-1);
-	Sig_AddrNotFound(r_viewleaf);
-	r_viewleaf = *(mleaf_t ***)(addr + 2);
-	r_oldviewleaf = *(mleaf_t ***)(addr + 7);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_MarkLeaves, 0x50, R_VIEWLEAF_SIG, sizeof(R_VIEWLEAF_SIG) - 1);
+		Sig_AddrNotFound(r_viewleaf);
+		r_viewleaf = *(mleaf_t ***)(addr + 2);
+		r_oldviewleaf = *(mleaf_t ***)(addr + 7);
 
-	//mov     eax, gDecalSurfCount
+		//mov     eax, gDecalSurfCount
 #define GDECALSURFS_SIG "\xA1\x2A\x2A\x2A\x2A\x89\x1C\x85\x2A\x2A\x2A\x2A\x40\x3D\xF4\x01\x00\x00"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawSequentialPoly, 0x500, GDECALSURFS_SIG, sizeof(GDECALSURFS_SIG)-1);
-	Sig_AddrNotFound(gDecalSurfs);
-	gDecalSurfCount = *(int **)(addr + 1);
-	gDecalSurfs = *(msurface_t ***)(addr + 8);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawSequentialPoly, 0x500, GDECALSURFS_SIG, sizeof(GDECALSURFS_SIG) - 1);
+		Sig_AddrNotFound(gDecalSurfs);
+		gDecalSurfCount = *(int **)(addr + 1);
+		gDecalSurfs = *(msurface_t ***)(addr + 8);
 
-	//R_DrawEntitiesOnList
-	//mov     eax, CL_UPDATE_MASK
+		//R_DrawEntitiesOnList
+		//mov     eax, CL_UPDATE_MASK
 #define CL_PARSECOUNT_SIG "\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x23\xC1\x8B\x12"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawEntitiesOnList, 0x200, CL_PARSECOUNT_SIG, sizeof(CL_PARSECOUNT_SIG)-1);
-	Sig_AddrNotFound(cl_parsecount);
-	cl_parsecount = *(int **)(addr + 7);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawEntitiesOnList, 0x200, CL_PARSECOUNT_SIG, sizeof(CL_PARSECOUNT_SIG) - 1);
+		Sig_AddrNotFound(cl_parsecount);
+		cl_parsecount = *(int **)(addr + 7);
 
 #define CL_FRAMES_SIG "\x8D\x84\xCA"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x50, CL_FRAMES_SIG, sizeof(CL_FRAMES_SIG)-1);
-	Sig_AddrNotFound(cl.frames);
-	cl_frames = *(frame_t **)(addr + 3);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x50, CL_FRAMES_SIG, sizeof(CL_FRAMES_SIG) - 1);
+		Sig_AddrNotFound(cl.frames);
+		cl_frames = *(frame_t **)(addr + 3);
 
-	//R_StudioLighting
-	//call    __ftol
-	//shl     eax, 2
-	//mov     ecx, offset lightgammatable
+		//R_StudioLighting
+		//call    __ftol
+		//shl     eax, 2
+		//mov     ecx, offset lightgammatable
 #define LIGHTGAMMATABLE_SIG "\xE8\x2A\x2A\x2A\x2A\xC1\xE0\x02\xB9\x2A\x2A\x2A\x2A\x8B"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_StudioLighting, 0x300, LIGHTGAMMATABLE_SIG, sizeof(LIGHTGAMMATABLE_SIG)-1);
-	Sig_AddrNotFound(lightgammatable);
-	lightgammatable = *(int (**)[1024])(addr+9);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_StudioLighting, 0x300, LIGHTGAMMATABLE_SIG, sizeof(LIGHTGAMMATABLE_SIG) - 1);
+		Sig_AddrNotFound(lightgammatable);
+		lightgammatable = *(int(**)[1024])(addr + 9);
 
-	//R_StudioChrome
-	//mov     eax, chromeage[esi*4]
-	//cmp     eax, ecx
+		//R_StudioChrome
+		//mov     eax, chromeage[esi*4]
+		//cmp     eax, ecx
 #define CHROMEAGE_SIG "\x8B\x04\xB5\x2A\x2A\x2A\x2A\x3B\xC1"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_StudioChrome, 0x50, CHROMEAGE_SIG, sizeof(CHROMEAGE_SIG)-1);
-	Sig_AddrNotFound(chromeage);
-	chromeage = *(int (**)[MAXSTUDIOBONES])((DWORD)addr + 3);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_StudioChrome, 0x50, CHROMEAGE_SIG, sizeof(CHROMEAGE_SIG) - 1);
+		Sig_AddrNotFound(chromeage);
+		chromeage = *(int(**)[MAXSTUDIOBONES])((DWORD)addr + 3);
 
-	//R_AllocObjects
-	//3266
-	//add     esp, 10h
-	//mov     maxTransObjs, edi
-	//6153
-	//push    ebp
-	//mov     ebp, esp
-	//mov     eax, transObjects
+		//R_AllocObjects
+		//3266
+		//add     esp, 10h
+		//mov     maxTransObjs, edi
+		//6153
+		//push    ebp
+		//mov     ebp, esp
+		//mov     eax, transObjects
 #define MAXTRANSOBJS_SIG "\x83\xC4\x10\x89\x3D"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_AllocObjects, 0x80, MAXTRANSOBJS_SIG, sizeof(MAXTRANSOBJS_SIG)-1);
-	Sig_AddrNotFound(maxTransObjs);
-	maxTransObjs = *(int **)(addr + 5);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_AllocObjects, 0x80, MAXTRANSOBJS_SIG, sizeof(MAXTRANSOBJS_SIG) - 1);
+		Sig_AddrNotFound(maxTransObjs);
+		maxTransObjs = *(int **)(addr + 5);
 
-	numTransObjs = maxTransObjs - 1;
+		numTransObjs = maxTransObjs - 1;
 
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_AllocObjects, 0x20, "\xA1", 1);
-	Sig_AddrNotFound(transObjects);
-	transObjects = *(transObjRef ***)(addr + 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_AllocObjects, 0x20, "\xA1", 1);
+		Sig_AddrNotFound(transObjects);
+		transObjects = *(transObjRef ***)(addr + 1);
 
 #define MEM_MALLOC_SIG "\x56\xE8\x2A\x2A\x2A\x2A\x56\x6A\x00"
-	//push    esi
-	//call Mem_Malloc
-	//push    esi
-	//push    0
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_AllocObjects, 0x80, MEM_MALLOC_SIG, sizeof(MEM_MALLOC_SIG)-1);
-	Sig_AddrNotFound(Mem_Malloc);
-	gRefFuncs.Mem_Malloc = (void *(*)(size_t))GetCallAddress(addr+1);
+		//push    esi
+		//call Mem_Malloc
+		//push    esi
+		//push    0
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_AllocObjects, 0x80, MEM_MALLOC_SIG, sizeof(MEM_MALLOC_SIG) - 1);
+		Sig_AddrNotFound(Mem_Malloc);
+		gRefFuncs.Mem_Malloc = (void *(*)(size_t))GetCallAddress(addr + 1);
 
 #define R_ENTORIGIN_SIG "\xD9\x05"
-	//fld     r_entorigin
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GlowBlend, 0x50, R_ENTORIGIN_SIG, sizeof(R_ENTORIGIN_SIG)-1);
-	Sig_AddrNotFound(Mem_Malloc);
-	r_entorigin = *(float **)(addr + 2);
+		//fld     r_entorigin
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GlowBlend, 0x50, R_ENTORIGIN_SIG, sizeof(R_ENTORIGIN_SIG) - 1);
+		Sig_AddrNotFound(Mem_Malloc);
+		r_entorigin = *(float **)(addr + 2);
 
-	//BuildNormalIndexTable
-	//mov     edx, psubmodel
-	//push    edi
+		//BuildNormalIndexTable
+		//mov     edx, psubmodel
+		//push    edi
 #define PSUBMODEL_SIG "\x8B\x15\x2A\x2A\x2A\x2A\x57"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.BuildNormalIndexTable, 0x50, PSUBMODEL_SIG, sizeof(PSUBMODEL_SIG)-1);
-	Sig_AddrNotFound(psubmodel);
-	psubmodel = *(mstudiomodel_t ***)((DWORD)addr + 2);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.BuildNormalIndexTable, 0x50, PSUBMODEL_SIG, sizeof(PSUBMODEL_SIG) - 1);
+		Sig_AddrNotFound(psubmodel);
+		psubmodel = *(mstudiomodel_t ***)((DWORD)addr + 2);
 
-	//mov     edi, offset g_NormalIndex
-	//rep stosd
+		//mov     edi, offset g_NormalIndex
+		//rep stosd
 #define G_NORMALINDEX_SIG "\xBF\x2A\x2A\x2A\x2A\xF3\xAB"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.BuildNormalIndexTable, 0x50, G_NORMALINDEX_SIG, sizeof(G_NORMALINDEX_SIG)-1);
-	Sig_AddrNotFound(g_NormalIndex);
-	g_NormalIndex = *(int (**)[MAXSTUDIOVERTS])(addr + 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.BuildNormalIndexTable, 0x50, G_NORMALINDEX_SIG, sizeof(G_NORMALINDEX_SIG) - 1);
+		Sig_AddrNotFound(g_NormalIndex);
+		g_NormalIndex = *(int(**)[MAXSTUDIOVERTS])(addr + 1);
 
-	//R_RenderDynamicLightmaps
-	//mov     ecx, c_brush_polys
-	//push    ebx
+		//R_RenderDynamicLightmaps
+		//mov     ecx, c_brush_polys
+		//push    ebx
 #define C_BRUSH_POLYS_SIG "\x8B\x0D\x2A\x2A\x2A\x2A\x53"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderDynamicLightmaps, 0x30, C_BRUSH_POLYS_SIG, sizeof(C_BRUSH_POLYS_SIG)-1);
-	Sig_AddrNotFound(c_brush_polys);
-	c_brush_polys = *(int **)(addr + 2);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderDynamicLightmaps, 0x30, C_BRUSH_POLYS_SIG, sizeof(C_BRUSH_POLYS_SIG) - 1);
+		Sig_AddrNotFound(c_brush_polys);
+		c_brush_polys = *(int **)(addr + 2);
 
-	//and     eax, 0FFh
-	//mov     eax, d_lightstylevalue[eax*4]
+		//and     eax, 0FFh
+		//mov     eax, d_lightstylevalue[eax*4]
 #define D_LIGHTSTYLEVALUE_SIG "\x25\xFF\x00\x00\x00\x8B\x04\x85"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderDynamicLightmaps, 0x200, D_LIGHTSTYLEVALUE_SIG, sizeof(D_LIGHTSTYLEVALUE_SIG)-1);
-	Sig_AddrNotFound(d_lightstylevalue);
-	d_lightstylevalue = *(int **)(addr + 8);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderDynamicLightmaps, 0x200, D_LIGHTSTYLEVALUE_SIG, sizeof(D_LIGHTSTYLEVALUE_SIG) - 1);
+		Sig_AddrNotFound(d_lightstylevalue);
+		d_lightstylevalue = *(int **)(addr + 8);
 
 #define WINDOW_RECT_SIG "\x89\x0D"
 		//89 0D 20 42 7B 02		mov     window_rect.left, ecx
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.VID_UpdateWindowVars, 0x50, WINDOW_RECT_SIG, sizeof(WINDOW_RECT_SIG)-1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.VID_UpdateWindowVars, 0x50, WINDOW_RECT_SIG, sizeof(WINDOW_RECT_SIG) - 1);
 		Sig_AddrNotFound(window_rect);
-		window_rect = *(RECT **)(addr+2);
+		window_rect = *(RECT **)(addr + 2);
 
-	//Engine special
-
-	if(g_dwEngineBuildnum >= 5953)
-	{
+		if (g_dwEngineBuildnum >= 5953)
+		{
 #define GLTEXTURES_SIG_NEW "\x33\xF6\xBF\x2A\x2A\x2A\x2A\x3B\x35\x2A\x2A\x2A\x2A\x7D"
-		//Search in GL_LoadTexture2
-		//xor     esi, esi
-		//mov     edi, offset gltextures
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x100, GLTEXTURES_SIG_NEW, sizeof(GLTEXTURES_SIG_NEW)-1);
-		Sig_AddrNotFound(gltextures);
-		gltextures = *(gltexture_t **)(addr+3);
-		numgltextures = *(int **)(addr+9);
+			//Search in GL_LoadTexture2
+			//xor     esi, esi
+			//mov     edi, offset gltextures
+			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x100, GLTEXTURES_SIG_NEW, sizeof(GLTEXTURES_SIG_NEW) - 1);
+			Sig_AddrNotFound(gltextures);
+			gltextures = *(gltexture_t **)(addr + 3);
+			numgltextures = *(int **)(addr + 9);
 
 #define GHOSTSPAWNCOUNT_SIG_NEW "\x66\x8B\x15\x2A\x2A\x2A\x2A\x66\x89\x57\x04"
-		//mov     dx, word ptr gHostSpawnCount
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x200, GHOSTSPAWNCOUNT_SIG_NEW, sizeof(GHOSTSPAWNCOUNT_SIG_NEW)-1);
-		Sig_AddrNotFound(gHostSpawnCount);
-		gHostSpawnCount = *(int **)(addr+3);
+			//mov     dx, word ptr gHostSpawnCount
+			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x200, GHOSTSPAWNCOUNT_SIG_NEW, sizeof(GHOSTSPAWNCOUNT_SIG_NEW) - 1);
+			Sig_AddrNotFound(gHostSpawnCount);
+			gHostSpawnCount = *(int **)(addr + 3);
 
-		//5953 use qglGenTexture instead of currenttexid
+			//5953 use qglGenTexture instead of currenttexid
 
-		//6153 have to use windowvideoaspect
+			//6153 have to use windowvideoaspect
 #define WINDOW_VIDEO_ASPECT_SIG_NEW "\xA3\x2A\x2A\x2A\x2A\xA3\x2A\x2A\x2A\x2A\xA1"
 		//A3 F8 4D E4 01		mov     videowindowaspect, eax
 		//A3 F4 4D E4 01		mov     windowvideoaspect, eax
 		//A1 F0 4D E4 01		mov     eax, bNoStretchAspect
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_EndRendering, 0x200, WINDOW_VIDEO_ASPECT_SIG_NEW, sizeof(WINDOW_VIDEO_ASPECT_SIG_NEW)-1);
-		Sig_AddrNotFound(windowvideoaspect);
-		videowindowaspect = *(float **)(addr+1);
-		windowvideoaspect = *(float **)(addr+6);
-	}
-	else
-	{
-		//Search in GL_LoadTexture2
-		//3266
-		//BF 2A 2A 2A 2A    mov edi, offset gltextures
-		//3B 2D 2A 2A 2A 2A cmp     ebp, numgltextures
+			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_EndRendering, 0x200, WINDOW_VIDEO_ASPECT_SIG_NEW, sizeof(WINDOW_VIDEO_ASPECT_SIG_NEW) - 1);
+			Sig_AddrNotFound(windowvideoaspect);
+			videowindowaspect = *(float **)(addr + 1);
+			windowvideoaspect = *(float **)(addr + 6);
+		}
+		else
+		{
+			//Search in GL_LoadTexture2
+			//3266
+			//BF 2A 2A 2A 2A    mov edi, offset gltextures
+			//3B 2D 2A 2A 2A 2A cmp     ebp, numgltextures
 #define GLTEXTURES_SIG "\xBF\x2A\x2A\x2A\x2A\x3B\x2D"
 #define GLTEXTURES_SIG2 "\xBF\x2A\x2A\x2A\x2A\xBD\x2A\x2A\x2A\x2A\x3B\x35"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x100, GLTEXTURES_SIG, sizeof(GLTEXTURES_SIG)-1);
-		if(addr)
-		{
-			gltextures = *(gltexture_t **)(addr+1);
-			numgltextures = *(int **)(addr+7);
-		}
-		else
-		{
-			//4554
-			//BF 2A 2A 2A 2A    mov edi, offset gltextures
-			//BD 2A 2A 2A 2A    mov ebp, offset gltextures.identifier
-			//3B 35 2A 2A 2A 2A cmp esi, numgltextures
-			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x100, GLTEXTURES_SIG2, sizeof(GLTEXTURES_SIG2)-1);
-			Sig_AddrNotFound(gltextures);
-			gltextures = *(gltexture_t **)(addr+1);
-			numgltextures = *(int **)(addr+12);
-		}
+			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x100, GLTEXTURES_SIG, sizeof(GLTEXTURES_SIG) - 1);
+			if (addr)
+			{
+				gltextures = *(gltexture_t **)(addr + 1);
+				numgltextures = *(int **)(addr + 7);
+			}
+			else
+			{
+				//4554
+				//BF 2A 2A 2A 2A    mov edi, offset gltextures
+				//BD 2A 2A 2A 2A    mov ebp, offset gltextures.identifier
+				//3B 35 2A 2A 2A 2A cmp esi, numgltextures
+				addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x100, GLTEXTURES_SIG2, sizeof(GLTEXTURES_SIG2) - 1);
+				Sig_AddrNotFound(gltextures);
+				gltextures = *(gltexture_t **)(addr + 1);
+				numgltextures = *(int **)(addr + 12);
+			}
 #define GHOSTSPAWNCOUNT_SIG "\x66\xA1\x2A\x2A\x2A\x2A\x66\x89\x47\x04"
 #define GHOSTSPAWNCOUNT_SIG2 "\x66\x8B\x0D\x2A\x2A\x2A\x2A\x66\x89\x4F\x04"
-		//3266 1D3F8C7 mov ax, word ptr gHostSpawnCount
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x200, GHOSTSPAWNCOUNT_SIG, sizeof(GHOSTSPAWNCOUNT_SIG)-1);
-		if(addr)
-		{
-			gHostSpawnCount = *(int **)(addr+2);
-		}
-		else
-		{
-			//4554 1D4A75A mov cx, word ptr gHostSpawnCount
-			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x200, GHOSTSPAWNCOUNT_SIG2, sizeof(GHOSTSPAWNCOUNT_SIG2)-1);
-			Sig_AddrNotFound(gHostSpawnCount);
-			gHostSpawnCount = *(int **)(addr+3);
-		}
-		//Below 5953 only
+			//3266 1D3F8C7 mov ax, word ptr gHostSpawnCount
+			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x200, GHOSTSPAWNCOUNT_SIG, sizeof(GHOSTSPAWNCOUNT_SIG) - 1);
+			if (addr)
+			{
+				gHostSpawnCount = *(int **)(addr + 2);
+			}
+			else
+			{
+				//4554 1D4A75A mov cx, word ptr gHostSpawnCount
+				addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x200, GHOSTSPAWNCOUNT_SIG2, sizeof(GHOSTSPAWNCOUNT_SIG2) - 1);
+				Sig_AddrNotFound(gHostSpawnCount);
+				gHostSpawnCount = *(int **)(addr + 3);
+			}
+			//Below 5953 only
 #define CURRENTTEXID_SIG "\x83\xC4\x04\xA1\x2A\x2A\x2A\x2A\x89\x06\x40\xA3"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x300, CURRENTTEXID_SIG, sizeof(CURRENTTEXID_SIG)-1);
-		//add esp, 4
-		//mov eax, currenttexid
-		Sig_AddrNotFound(currenttexid);
-		currenttexid = *(int **)(addr+4);
+			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x300, CURRENTTEXID_SIG, sizeof(CURRENTTEXID_SIG) - 1);
+			//add esp, 4
+			//mov eax, currenttexid
+			Sig_AddrNotFound(currenttexid);
+			currenttexid = *(int **)(addr + 4);
 
-		//< 5953 don't have videowindowaspect & windowvideoaspect so we create one;
-		
-		videowindowaspect = &videowindowaspect_old;
-		windowvideoaspect = &windowvideoaspect_old;
+			//< 5953 don't have videowindowaspect & windowvideoaspect so we create one;
+
+			videowindowaspect = &videowindowaspect_old;
+			windowvideoaspect = &windowvideoaspect_old;
+		}
 	}
 
 	//get cl. vars by offsets
@@ -967,25 +1081,34 @@ void R_InstallHook(void)
 {
 	g_pMetaHookAPI->InlineHook(gRefFuncs.GL_BeginRendering, GL_BeginRendering, (void *&)gRefFuncs.GL_BeginRendering);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.GL_EndRendering, GL_EndRendering, (void *&)gRefFuncs.GL_EndRendering);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderView, R_RenderView, (void *&)gRefFuncs.R_RenderView);
-	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderScene, R_RenderScene, (void *&)gRefFuncs.R_RenderScene);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_NewMap, R_NewMap, (void *&)gRefFuncs.R_NewMap);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawWorld, R_DrawWorld, (void *&)gRefFuncs.R_DrawWorld);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_SetupFrame, R_SetupFrame, (void *&)gRefFuncs.R_SetupFrame);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSkyChain, R_DrawSkyChain, (void *&)gRefFuncs.R_DrawSkyChain);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_CullBox, R_CullBox, (void *&)gRefFuncs.R_CullBox);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.GL_Bind, GL_Bind, (void *&)gRefFuncs.GL_Bind);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.GL_BuildLightmaps, GL_BuildLightmaps, (void *&)gRefFuncs.GL_BuildLightmaps);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.GL_LoadTexture2, GL_LoadTexture2, (void *&)gRefFuncs.GL_LoadTexture2);
+	if(gRefFuncs.R_RenderView_SvEngine)
+		g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderView_SvEngine, R_RenderView_SvEngine, (void *&)gRefFuncs.R_RenderView_SvEngine);
+	else
+		g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderView, R_RenderView, (void *&)gRefFuncs.R_RenderView);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.EmitWaterPolys, EmitWaterPolys, (void *&)gRefFuncs.EmitWaterPolys);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSequentialPoly, R_DrawSequentialPoly, (void *&)gRefFuncs.R_DrawSequentialPoly);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_AllocObjects, R_AllocObjects, (void *&)gRefFuncs.R_AllocObjects);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_StudioRenderFinal, R_StudioRenderFinal, (void *&)gRefFuncs.R_StudioRenderFinal);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.Draw_DecalTexture, Draw_DecalTexture, (void *&)gRefFuncs.Draw_DecalTexture);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.Draw_MiptexTexture, Draw_MiptexTexture, (void *&)gRefFuncs.Draw_MiptexTexture);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DecalMPoly, R_DecalMPoly,  (void *&)gRefFuncs.R_DecalMPoly);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawEntitiesOnList, R_DrawEntitiesOnList, (void *&)gRefFuncs.R_DrawEntitiesOnList);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawTEntitiesOnList, R_DrawTEntitiesOnList, (void *&)gRefFuncs.R_DrawTEntitiesOnList);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_NewMap, R_NewMap, (void *&)gRefFuncs.R_NewMap);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_SetupGL, R_SetupGL, (void *&)gRefFuncs.R_SetupGL);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_MarkLeaves, R_MarkLeaves, (void *&)gRefFuncs.R_MarkLeaves);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.Mod_PointInLeaf, Mod_PointInLeaf, (void *&)gRefFuncs.Mod_PointInLeaf);
+
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_CullBox, R_CullBox, (void *&)gRefFuncs.R_CullBox);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderScene, R_RenderScene, (void *&)gRefFuncs.R_RenderScene);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawWorld, R_DrawWorld, (void *&)gRefFuncs.R_DrawWorld);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_SetupFrame, R_SetupFrame, (void *&)gRefFuncs.R_SetupFrame);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSkyChain, R_DrawSkyChain, (void *&)gRefFuncs.R_DrawSkyChain);
+	
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.GL_Bind, GL_Bind, (void *&)gRefFuncs.GL_Bind);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.GL_BuildLightmaps, GL_BuildLightmaps, (void *&)gRefFuncs.GL_BuildLightmaps);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.GL_LoadTexture2, GL_LoadTexture2, (void *&)gRefFuncs.GL_LoadTexture2);
+	
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSequentialPoly, R_DrawSequentialPoly, (void *&)gRefFuncs.R_DrawSequentialPoly);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_AllocObjects, R_AllocObjects, (void *&)gRefFuncs.R_AllocObjects);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_StudioRenderFinal, R_StudioRenderFinal, (void *&)gRefFuncs.R_StudioRenderFinal);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.Draw_DecalTexture, Draw_DecalTexture, (void *&)gRefFuncs.Draw_DecalTexture);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.Draw_MiptexTexture, Draw_MiptexTexture, (void *&)gRefFuncs.Draw_MiptexTexture);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DecalMPoly, R_DecalMPoly,  (void *&)gRefFuncs.R_DecalMPoly);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawEntitiesOnList, R_DrawEntitiesOnList, (void *&)gRefFuncs.R_DrawEntitiesOnList);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawTEntitiesOnList, R_DrawTEntitiesOnList, (void *&)gRefFuncs.R_DrawTEntitiesOnList);
 }
 
 void Lightmaps_Patch(void)

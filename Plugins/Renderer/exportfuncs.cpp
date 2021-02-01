@@ -312,11 +312,11 @@ int HUD_Redraw(float time, int intermission)
 			qglTexCoord2f(0,1);
 			qglVertex3f(0,0,0);
 			qglTexCoord2f(1,1);
-			qglVertex3f(glwidth/2,0,0);
+			qglVertex3f(glwidth,0,0);
 			qglTexCoord2f(1,0);
-			qglVertex3f(glwidth/2,glheight/2,0);
+			qglVertex3f(glwidth,glheight,0);
 			qglTexCoord2f(0,0);
-			qglVertex3f(0,glheight/2,0);
+			qglVertex3f(0,glheight,0);
 			qglEnd();
 
 			if(debugTextureID = waters_active->depthrefrmap)
@@ -487,10 +487,10 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	gpStudioInterface = ppinterface;
 
 	//InlineHook StudioAPI
-	InstallHook(studioapi_StudioDrawPoints);
-	InstallHook(studioapi_StudioSetupLighting);
-	InstallHook(studioapi_SetupRenderer);
-	InstallHook(studioapi_RestoreRenderer);
+	//InstallHook(studioapi_StudioDrawPoints);
+	//InstallHook(studioapi_StudioSetupLighting);
+	//InstallHook(studioapi_SetupRenderer);
+	//InstallHook(studioapi_RestoreRenderer);
 
 	R_InitDetailTextures();
 	//Load global extra textures into array
