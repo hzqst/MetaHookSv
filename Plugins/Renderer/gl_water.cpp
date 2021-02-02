@@ -268,7 +268,7 @@ void R_RenderReflectView(void)
 
 	if (!s_WaterFBO.s_hBackBufferFBO)
 	{
-		GL_Bind(curwater->reflectmap);
+		qglBindTexture(GL_TEXTURE_2D, curwater->reflectmap);
 		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, water_texture_size, water_texture_size, 0);
 	}
 
@@ -311,10 +311,10 @@ void R_RenderRefractView(void)
 
 	if (!s_WaterFBO.s_hBackBufferFBO)
 	{
-		GL_Bind(curwater->refractmap);
+		qglBindTexture(GL_TEXTURE_2D, curwater->refractmap);
 		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, water_texture_size, water_texture_size, 0);
 
-		GL_Bind(curwater->depthrefrmap);
+		qglBindTexture(GL_TEXTURE_2D, curwater->depthrefrmap);
 		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 0, 0, water_texture_size, water_texture_size, 0);
 	}
 

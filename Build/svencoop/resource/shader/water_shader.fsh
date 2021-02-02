@@ -72,10 +72,11 @@ void main()
 		
 		float flWaterColorAlpha = clamp(waterfogcolor.a, 0.01, 0.85);
 
-		waterfogcolor.a = 1.0;
+		vec4 vWaterColor = waterfogcolor;
+		vWaterColor.a = 1.0;
 
 		//lerp waterfog color
-		vec4 vFinalColor2 = vFinalColor * (1.0-flWaterColorAlpha) + waterfogcolor * flWaterColorAlpha;
+		vec4 vFinalColor2 = vFinalColor * (1.0-flWaterColorAlpha) + vWaterColor * flWaterColorAlpha;
 		
 		vFinalColor2.a = flDepth;
 

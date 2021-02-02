@@ -93,7 +93,7 @@ void R_InitShadow(void)
 
 void R_GLUploadShadowTexture(int texid, int w, int h)
 {
-	GL_Bind(texid);
+	qglBindTexture(GL_TEXTURE_2D, texid);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -341,7 +341,7 @@ void R_RenderShadowMap(void)
 
 	if(!s_ShadowFBO.s_hBackBufferFBO)
 	{
-		GL_Bind(cursdlight->depthmap);
+		qglBindTexture(GL_TEXTURE_2D, cursdlight->depthmap);
 		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, 0, 0, cursdlight->texsize, cursdlight->texsize, 0);
 	}
 }
@@ -657,8 +657,8 @@ void R_RenderAllShadowScenes(void)
 		qglUniform1fARB(shadow.fard, cursdlight->fard);
 		qglUniform3fvARB(shadow.entorigin, 1, cursdlight->origin);
 
-		GL_SelectTexture(GL_TEXTURE0_ARB);
-		GL_Bind(cursdlight->depthmap);
+		GL_SelectTexture(TEXTURE0_SGIS);
+		qglBindTexture(GL_TEXTURE_2D, cursdlight->depthmap);
 
 		qglMatrixMode(GL_TEXTURE);
 		qglLoadIdentity();
@@ -696,8 +696,8 @@ void R_RenderAllShadowScenes(void)
 	}
 
 	//Restore texture0
-	GL_SelectTexture(GL_TEXTURE0_ARB);
-	GL_Bind(0);
+	GL_SelectTexture(TEXTURE0_SGIS);
+	qglBindTexture(GL_TEXTURE_2D, 0);
 
 	qglMatrixMode(GL_TEXTURE);
 	qglLoadIdentity();

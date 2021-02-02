@@ -442,7 +442,7 @@ void R_DrawHUDQuad_Texture(int tex, int w, int h)
 
 	qglViewport(0, 0, w, h);
 
-	qglBindTexture(GL_TEXTURE_2D, tex);
+	GL_Bind(tex);
 	qglBegin(GL_QUADS);
 	qglTexCoord2f(0, 0);
 	qglVertex3f(0, h, -1);
@@ -583,6 +583,7 @@ void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container
 
 	GL_SelectTexture(TEXTURE0_SGIS);
 	GL_Bind(src->s_hBackBufferTex);
+
 	GL_EnableMultitexture();
 	GL_Bind(ada->s_hBackBufferTex);
 
@@ -607,17 +608,12 @@ void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *l
 	GL_SelectTexture(TEXTURE0_SGIS);
 	GL_Bind(src->s_hBackBufferTex);
 
-	GL_SelectTexture(TEXTURE1_SGIS);
-	qglEnable(GL_TEXTURE_2D);
-	qglBindTexture(GL_TEXTURE_2D, lum->s_hBackBufferTex);
+	GL_EnableMultitexture();
+	GL_Bind(lum->s_hBackBufferTex);
 
 	R_DrawHUDQuad(dst->iWidth, dst->iHeight);
 
-	GL_SelectTexture(TEXTURE1_SGIS);
-	qglBindTexture(GL_TEXTURE_2D, 0);
-	qglDisable(GL_TEXTURE_2D);
-
-	GL_SelectTexture(TEXTURE0_SGIS);
+	GL_DisableMultitexture();
 
 	qglUseProgramObjectARB(0);
 }
@@ -687,29 +683,23 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 	qglUniform1fARB(pp_tonemap.gamma, 1.0 / v_gamma->value);
 	
 	GL_SelectTexture(TEXTURE0_SGIS);
-	qglEnable(GL_TEXTURE_2D);
-	qglBindTexture(GL_TEXTURE_2D, src->s_hBackBufferTex);
+	GL_Bind(src->s_hBackBufferTex);
 
-	GL_SelectTexture(TEXTURE1_SGIS);
-	qglEnable(GL_TEXTURE_2D);
-	qglBindTexture(GL_TEXTURE_2D, blur->s_hBackBufferTex);
+	GL_EnableMultitexture();
+	GL_Bind(blur->s_hBackBufferTex);
 
-	GL_SelectTexture(TEXTURE2_SGIS);
+	qglActiveTextureARB(TEXTURE2_SGIS);
 	qglEnable(GL_TEXTURE_2D);
 	qglBindTexture(GL_TEXTURE_2D, lum->s_hBackBufferTex);
 
 	R_DrawHUDQuad(dst->iWidth, dst->iHeight);
 
-	GL_SelectTexture(TEXTURE2_SGIS);
-	qglBindTexture(GL_TEXTURE_2D, 0);
+	qglActiveTextureARB(TEXTURE2_SGIS);
 	qglDisable(GL_TEXTURE_2D);
+	qglActiveTextureARB(TEXTURE1_SGIS);
 	
-	GL_SelectTexture(TEXTURE1_SGIS);
-	qglBindTexture(GL_TEXTURE_2D, 0);
-	qglDisable(GL_TEXTURE_2D);
-	
-	GL_SelectTexture(TEXTURE0_SGIS);
-	
+	GL_DisableMultitexture();
+
 	qglUseProgramObjectARB(0);
 }
 

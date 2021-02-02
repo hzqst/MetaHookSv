@@ -832,7 +832,7 @@ void R_GLRenderBufferStorage(FBO_Container_t *s, qboolean depth, GLuint iInterna
 void R_GLFrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat)
 {
 	s->s_hBackBufferTex = GL_GenTexture();
-	GL_Bind(s->s_hBackBufferTex);
+	qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferTex);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -845,7 +845,7 @@ void R_GLFrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat)
 void R_GLFrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 {
 	s->s_hBackBufferTex = GL_GenTexture();
-	GL_Bind(s->s_hBackBufferTex);
+	qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferTex);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -865,8 +865,8 @@ void GL_GenerateFBO(void)
 	if (gEngfuncs.CheckParm("-nomsaa", NULL))
 		bDoMSAAFBO = false;
 
-	//if (!gl_msaa_blit_support)
-	//	bDoMSAAFBO = false;
+	if (!gl_msaa_blit_support)
+		bDoMSAAFBO = false;
 
 	if (gEngfuncs.CheckParm("-nofbo", NULL))
 		bDoScaledFBO = false;
@@ -876,9 +876,6 @@ void GL_GenerateFBO(void)
 
 	if (gEngfuncs.CheckParm("-nodirectblit", NULL))
 		bDoDirectBlit = false;
-
-	if (gEngfuncs.CheckParm("-nohdr", NULL))
-		bDoHDR = false;
 
 	if(!gl_float_buffer_support)
 		bDoHDR = false;
@@ -914,6 +911,19 @@ void GL_GenerateFBO(void)
 	{
 		gEngfuncs.Con_Printf("FBO backbuffer rendering disabled.\n");
 		bDoHDR = false;
+	}
+	else
+	{
+		gEngfuncs.Con_Printf("FBO backbuffer rendering enabled.\n");
+	}
+
+	if (!bDoMSAAFBO)
+	{
+		gEngfuncs.Con_Printf("MSAA disabled.\n");
+	}
+	else
+	{
+		gEngfuncs.Con_Printf("MSAA enabled.\n");
 	}
 
 	qglEnable(GL_TEXTURE_2D);
@@ -1334,7 +1344,6 @@ void R_RenderView_SvEngine(int a1)
 			{
 				R_RenderWaterView();
 			}
-			R_Clear();
 		}
 	}
 
@@ -1352,9 +1361,9 @@ void R_RenderView_SvEngine(int a1)
 				qglBlitFramebufferEXT(0, 0, s_MSAAFBO.iWidth, s_MSAAFBO.iHeight, 0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 			}
 
-			R_BeginHUDQuad();
 			if (bDoHDR && r_hdr->value > 0)
 			{
+				R_BeginHUDQuad();
 				//normal downsample
 				R_DownSample(&s_BackBufferFBO, &s_DownSampleFBO[0], false);//(1->1/4)
 				R_DownSample(&s_DownSampleFBO[0], &s_DownSampleFBO[1], false);//(1/4)->(1/16)
@@ -1390,7 +1399,6 @@ void R_RenderView_SvEngine(int a1)
 				R_ToneMapping(&s_BackBufferFBO, &s_ToneMapFBO, &s_BrightAccumFBO, &s_Lumin1x1FBO[last_luminance]);
 
 				R_BlitToFBO(&s_ToneMapFBO, &s_BackBufferFBO);
-
 			}
 		}
 
@@ -1413,12 +1421,12 @@ void R_RenderView(void)
 	}
 
 	//R_UploadLightmaps();
-	//Draw_UpdateAnsios();
+	Draw_UpdateAnsios();
 
-	if(r_3dsky_parm.enable && r_3dsky->value)
+	/*if(r_3dsky_parm.enable && r_3dsky->value)
 	{
 		R_ViewOriginFor3DSky(_3dsky_view);
-	}
+	}*/
 
 	if(!r_refdef->onlyClientDraws)
 	{
@@ -1430,7 +1438,6 @@ void R_RenderView(void)
 		{
 			R_RenderWaterView();
 		}
-		R_Clear();
 	}
 
 	gRefFuncs.R_RenderView();

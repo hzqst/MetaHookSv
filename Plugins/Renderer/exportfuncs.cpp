@@ -247,11 +247,13 @@ void HUD_Init(void)
 
 	R_Init();
 
-	gEngfuncs.pfnHookUserMsg("MetaRender", MsgFunc_MetaRender);
+	//gEngfuncs.pfnHookUserMsg("MetaRender", MsgFunc_MetaRender);
 
 	cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
 
 	gEngfuncs.pfnAddCommand("r_version", R_Version_f);
+
+	gEngfuncs.pfnConsolePrint("HUD_Init");
 }
 
 int HUD_VidInit(void)

@@ -35,11 +35,11 @@ qboolean GL_IsShaderError(GLuint shader, const char *filename)
 
 	if(!iStatus)
 	{
-		gEngfuncs.Con_Printf("Shader %s compiled with error: %s\n", filename, szCompilerLog);
+		Sys_ErrorEx("Shader %s compiled with error: %s\n", filename, szCompilerLog);
 		return true;
 	}
 
-	gEngfuncs.Con_Printf("Shader %s compiled result: %s\n", filename, szCompilerLog);
+	//gEngfuncs.Con_Printf("Shader %s compiled result: %s\n", filename, szCompilerLog);
 	return false;
 }
 
