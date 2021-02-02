@@ -275,6 +275,11 @@ void HUD_DrawNormalTriangles(void)
 
 void HUD_DrawTransparentTriangles(void)
 {
+	if (!drawreflect && !drawrefract && !drawshadow)
+	{
+		R_FreeDeadWaters();
+	}
+
 	gExportfuncs.HUD_DrawTransparentTriangles();
 
 	if (!drawreflect && !drawrefract && !drawshadow)
@@ -285,6 +290,11 @@ void HUD_DrawTransparentTriangles(void)
 		{
 			sl->free = true;
 		}
+
+		for (r_water_t *water = waters_active; water; water = water->next)
+		{
+			water->free = true;
+		}
 	}
 }
 
@@ -294,11 +304,11 @@ int HUD_Redraw(float time, int intermission)
 	{
 		qglDisable(GL_BLEND);
 		qglDisable(GL_ALPHA_TEST);
-		qglColor4f(1,1,1,1);
+		qglColor4f(1, 1, 1, 1);
 
 		qglEnable(GL_TEXTURE_2D);
 		int debugTextureID = 0;
-		switch((int)r_water_debug->value)
+		switch ((int)r_water_debug->value)
 		{
 		case 1:
 			debugTextureID = waters_active->reflectmap;
@@ -313,21 +323,21 @@ int HUD_Redraw(float time, int intermission)
 		default:
 			break;
 		}
-		if(debugTextureID)
+		if (debugTextureID)
 		{
 			qglBindTexture(GL_TEXTURE_2D, debugTextureID);
 			qglBegin(GL_QUADS);
-			qglTexCoord2f(0,1);
-			qglVertex3f(0,0,0);
-			qglTexCoord2f(1,1);
-			qglVertex3f(glwidth / 2,0,0);
-			qglTexCoord2f(1,0);
-			qglVertex3f(glwidth/2,glheight / 2,0);
-			qglTexCoord2f(0,0);
-			qglVertex3f(0,glheight / 2,0);
+			qglTexCoord2f(0, 1);
+			qglVertex3f(0, 0, 0);
+			qglTexCoord2f(1, 1);
+			qglVertex3f(glwidth / 2, 0, 0);
+			qglTexCoord2f(1, 0);
+			qglVertex3f(glwidth / 2, glheight / 2, 0);
+			qglTexCoord2f(0, 0);
+			qglVertex3f(0, glheight / 2, 0);
 			qglEnd();
 
-			if(debugTextureID = waters_active->depthrefrmap)
+			if (debugTextureID = waters_active->depthrefrmap)
 				qglUseProgramObjectARB(0);
 		}
 	}

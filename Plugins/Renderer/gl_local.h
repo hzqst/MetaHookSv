@@ -217,6 +217,7 @@ void R_FreeTextures(void);
 void R_InitShaders(void);
 void R_FreeShaders(void);
 void R_SetupFrame(void);
+void R_SetFrustum(void);
 void R_SetupGL(void);
 void R_MarkLeaves(void);
 void R_SetFrustum(void);

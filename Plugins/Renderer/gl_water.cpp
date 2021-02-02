@@ -147,6 +147,7 @@ void R_AddWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 		{
 			//found one
 			curwater = w;
+			curwater->free = false;
 			return;
 		}
 	}
@@ -178,6 +179,7 @@ void R_AddWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 	curwater->org[2] = (ent->curstate.mins[2] + ent->curstate.maxs[2]) / 2;
 	memcpy(&curwater->color, color, sizeof(*color));
 	curwater->is3dsky = (draw3dsky) ? true : false;
+	curwater->free = false;
 	curwater = NULL;
 }
 
@@ -247,6 +249,8 @@ void R_RenderReflectView(void)
 	r_refdef->viewangles[0] = -r_refdef->viewangles[0];
 	r_refdef->viewangles[2] = -r_refdef->viewangles[2];
 
+	R_UpdateRefDef();
+
 	drawreflect = true;
 
 	gRefFuncs.R_RenderScene();
@@ -288,6 +292,8 @@ void R_RenderRefractView(void)
 
 	VectorCopy(water_view, r_refdef->vieworg);
 
+	R_UpdateRefDef();
+
 	drawrefract = true;
 
 	gRefFuncs.R_RenderScene();
@@ -306,6 +312,43 @@ void R_RenderRefractView(void)
 	R_PopRefDef();
 
 	drawrefract = false;
+}
+
+void R_FreeDeadWaters(void)
+{
+	r_water_t *kill;
+	r_water_t *p;
+
+	for (;; )
+	{
+		kill = waters_active;
+
+		if (kill && kill->free)
+		{
+			waters_active = kill->next;
+			kill->next = waters_free;
+			waters_free = kill;
+			continue;
+		}
+
+		break;
+	}
+
+	for (p = waters_active; p; p = p->next)
+	{
+		for (;; )
+		{
+			kill = p->next;
+			if (kill && kill->free)
+			{
+				p->next = kill->next;
+				kill->next = waters_free;
+				waters_free = kill;
+				continue;
+			}
+			break;
+		}
+	}
 }
 
 void R_RenderWaterView(void)

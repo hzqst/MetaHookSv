@@ -130,13 +130,18 @@ mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
 	node = model->nodes;
 
 	//Don't clip bsp nodes when rendering refract or reflect view for non-transparent water.
-	if (drawreflect || drawrefract)
+	if (drawrefract)
 	{
 		if (curwater && curwater->color.a == 255)
 		{
 			if (node->contents < 0)
 				return (mleaf_t *)node;
 		}
+	}
+	else if (drawreflect)
+	{
+		if (node->contents < 0)
+			return (mleaf_t *)node;
 	}
 
 	while (1)

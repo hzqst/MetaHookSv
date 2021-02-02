@@ -254,7 +254,7 @@ void R_CreateShadowLight(cl_entity_t *entity, vec3_t angles, float radius, float
 
 void R_RenderCurrentEntity(void)
 {
-	int parsecount = (*cl_parsecount) % 63;
+	int parsecount = ((*cl_parsecount) % 63);
 	switch ((*currententity)->model->type)
 	{
 		case mod_brush:

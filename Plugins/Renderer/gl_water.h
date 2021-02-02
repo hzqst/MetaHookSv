@@ -37,6 +37,7 @@ typedef struct r_water_s
 	vec3_t org;
 	colorVec color;
 	int is3dsky;
+	int free;
 	struct r_water_s *next;
 }r_water_t;
 
@@ -86,4 +87,4 @@ void R_InitWater(void);
 void R_ClearWater(void);
 void R_RenderWaterView(void);
 void R_EnableClip(qboolean isdrawworld);
-void R_SetFrustum(void);
+void R_FreeDeadWaters(void);
