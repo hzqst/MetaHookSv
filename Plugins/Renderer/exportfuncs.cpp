@@ -115,8 +115,6 @@ ref_export_t gRefExports =
 	//common
 	R_GetDrawPass,
 	R_GetSupportExtension,
-	//water
-	R_SetWaterParm,
 	//studio
 	R_GLStudioDrawPointsEx,
 	R_GetPlayerState,
@@ -277,7 +275,20 @@ void HUD_DrawNormalTriangles(void)
 
 void HUD_DrawTransparentTriangles(void)
 {
-	gExportfuncs.HUD_DrawTransparentTriangles();	
+	gExportfuncs.HUD_DrawTransparentTriangles();
+
+	if (!drawreflect && !drawrefract && !drawshadow)
+	{
+		R_RenderAllShadowScenes();
+
+		for (shadowlight_t *sl = sdlights_active; sl; sl = sl->next)
+		{
+			if (!sl->followent->player)
+			{
+				sl->free = true;
+			}
+		}
+	}
 }
 
 int HUD_Redraw(float time, int intermission)
@@ -312,11 +323,11 @@ int HUD_Redraw(float time, int intermission)
 			qglTexCoord2f(0,1);
 			qglVertex3f(0,0,0);
 			qglTexCoord2f(1,1);
-			qglVertex3f(glwidth,0,0);
+			qglVertex3f(glwidth / 2,0,0);
 			qglTexCoord2f(1,0);
-			qglVertex3f(glwidth,glheight,0);
+			qglVertex3f(glwidth/2,glheight / 2,0);
 			qglTexCoord2f(0,0);
-			qglVertex3f(0,glheight,0);
+			qglVertex3f(0,glheight / 2,0);
 			qglEnd();
 
 			if(debugTextureID = waters_active->depthrefrmap)
@@ -508,7 +519,7 @@ int HUD_UpdateClientData(client_data_t *pcldata, float flTime)
 
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 {
-	if(r_shadow->value && shadow.program && (ent->curstate.effects & EF_SHADOW))
+	if(r_shadow->value && shadow.program)
 	{
 		R_AddEntityShadow(ent, model);
 	}

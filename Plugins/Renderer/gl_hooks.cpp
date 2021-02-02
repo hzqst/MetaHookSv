@@ -98,6 +98,7 @@
 
 #define R_DRAWSEQUENTIALPOLY_SIG "\xA1\x2A\x2A\x2A\x2A\x53\x55\x56\x8B\x88\xF8\x02\x00\x00\xBE\x01\x00\x00\x00"
 #define R_DRAWSEQUENTIALPOLY_SIG_NEW "\x55\x8B\xEC\x51\xA1\x2A\x2A\x2A\x2A\x53\x56\x57\x83\xB8\xF8\x02\x00\x00\x01\x75\x2A\xE8"
+#define R_DRAWSEQUENTIALPOLY_SIG_SVENGINE "\xA1\x2A\x2A\x2A\x2A\x83\xEC\x08\x83\xB8\x2A\x2A\x00\x00\x01"
 
 #define R_DRAWBRUSHMODEL_SIG "\x83\xEC\x4C\xC7\x05\x2A\x2A\x2A\x2A\xFF\xFF\xFF\xFF\x53\x55\x56\x57"
 #define R_DRAWBRUSHMODEL_SIG_NEW "\x55\x8B\xEC\x83\xEC\x50\x53\x56\x57\x8B\x7D\x08\x89\x3D\x2A\x2A\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\xFF\xFF\xFF\xFF"
@@ -223,6 +224,9 @@ void R_FillAddress(void)
 
 		gRefFuncs.R_SetupGL = (void(*)(void))Search_Pattern(R_SETUPGL_SIG_SVENGINE);
 		Sig_FuncNotFound(R_SetupGL);
+
+		gRefFuncs.R_DrawSequentialPoly = (void(*)(msurface_t *, int))Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_SVENGINE);
+		Sig_FuncNotFound(R_DrawSequentialPoly);
 
 		gRefFuncs.R_Clear = NULL;//inlined
 
@@ -787,6 +791,23 @@ void R_FillAddress(void)
 		Sig_AddrNotFound(cl_parsecount);
 		cl_parsecount = *(int **)(addr + 7);
 
+#define CL_FRAMES_SIG_SVENGINE "\x8D\x80\x2A\x2A\x2A\x2A\x03\xC1\x50"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x500, CL_FRAMES_SIG_SVENGINE, sizeof(CL_FRAMES_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(cl.frames);
+		cl_frames = *(frame_t **)(addr + 2);
+
+#define SIZE_OF_FRAME_SIG_SVENGINE "\x69\xC8\x2A\x2A\x2A\x2A\x69\x02\x54\x01\x00\x00"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x500, SIZE_OF_FRAME_SIG_SVENGINE, sizeof(SIZE_OF_FRAME_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(size_of_frame);
+		size_of_frame = *(int *)(addr + 2);
+
+		//mov     eax, [edi+4]
+		//mov     ecx, r_visframecount
+#define R_VISFRAMECOUNT_SIG_SVENGINE "\x8B\x43\x04\x3B\x05"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RecursiveWorldNode, 0x100, R_VISFRAMECOUNT_SIG_SVENGINE, sizeof(R_VISFRAMECOUNT_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(r_visframecount);
+		r_visframecount = *(int **)(addr + 5);
+
 		//mov     edx, r_framecount
 #define R_FRAMECOUNT_SIG_SVENGINE "\x8B\x0A\x8D\x52\x04\xA1\x2A\x2A\x2A\x2A\x89\x01"
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RecursiveWorldNode, 0x200, R_FRAMECOUNT_SIG_SVENGINE, sizeof(R_FRAMECOUNT_SIG_SVENGINE) - 1);
@@ -795,8 +816,8 @@ void R_FillAddress(void)
 
 		//mov     ecx, r_viewleaf
 		//mov     eax, r_oldviewleaf
-#define R_VIEWLEAF_SIG "\x8B\x0D\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD9\xEE\x39\x0D"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_MarkLeaves, 0x50, R_VIEWLEAF_SIG, sizeof(R_VIEWLEAF_SIG) - 1);
+#define R_VIEWLEAF_SIG_SVENGINE "\x8B\x0D\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD9\xEE\x39\x0D"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_MarkLeaves, 0x50, R_VIEWLEAF_SIG_SVENGINE, sizeof(R_VIEWLEAF_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(r_viewleaf);
 		r_viewleaf = *(mleaf_t ***)(addr + 2);
 		r_oldviewleaf = *(mleaf_t ***)(addr + 16);
@@ -1090,6 +1111,7 @@ void R_InstallHook(void)
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_SetupGL, R_SetupGL, (void *&)gRefFuncs.R_SetupGL);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_MarkLeaves, R_MarkLeaves, (void *&)gRefFuncs.R_MarkLeaves);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.Mod_PointInLeaf, Mod_PointInLeaf, (void *&)gRefFuncs.Mod_PointInLeaf);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSequentialPoly, R_DrawSequentialPoly, (void *&)gRefFuncs.R_DrawSequentialPoly);
 
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_CullBox, R_CullBox, (void *&)gRefFuncs.R_CullBox);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderScene, R_RenderScene, (void *&)gRefFuncs.R_RenderScene);
@@ -1101,7 +1123,7 @@ void R_InstallHook(void)
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.GL_BuildLightmaps, GL_BuildLightmaps, (void *&)gRefFuncs.GL_BuildLightmaps);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.GL_LoadTexture2, GL_LoadTexture2, (void *&)gRefFuncs.GL_LoadTexture2);
 	
-	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSequentialPoly, R_DrawSequentialPoly, (void *&)gRefFuncs.R_DrawSequentialPoly);
+	//
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_AllocObjects, R_AllocObjects, (void *&)gRefFuncs.R_AllocObjects);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_StudioRenderFinal, R_StudioRenderFinal, (void *&)gRefFuncs.R_StudioRenderFinal);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.Draw_DecalTexture, Draw_DecalTexture, (void *&)gRefFuncs.Draw_DecalTexture);

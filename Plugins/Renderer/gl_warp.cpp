@@ -88,8 +88,12 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	if (drawreflect || drawrefract)
 		return;
 
-	if (fa->texinfo->texture && 0 == strncmp(fa->texinfo->texture->name, "!toxi", sizeof("!toxi") - 1))
+	if (fa->texinfo->texture)
+	{
+		if(0 == strncmp(fa->texinfo->texture->name, "!toxi", sizeof("!toxi") - 1) || 
+			0 == strcmp(fa->texinfo->texture->name, "!radio"))
 		return gRefFuncs.EmitWaterPolys(fa, direction);
+	}
 
 	float clientTime = (*cl_time);
 
@@ -119,18 +123,15 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 
 			float alpha = 1;
 			if((*currententity)->curstate.rendermode == kRenderTransTexture)
-				alpha = (*r_blend) + 0.25f;
-
-			if (alpha > 1)
-				alpha = 1;
+				alpha = (*r_blend);
 
 			qglUniform4fARB(water.waterfogcolor, curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, alpha);
 			qglUniform3fARB(water.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
 			qglUniform3fARB(water.eyedir, vpn[0], vpn[1], vpn[2]);
-			qglUniform1fARB(water.zmax, (r_params.movevars) ? r_params.movevars->zmax : 4096);
 			qglUniform1fARB(water.time, (*cl_time));
 			qglUniform1fARB(water.fresnel, clamp(r_water_fresnel->value, 0.0, 10.0));
-			qglUniform1fARB(water.depthfactor, clamp(r_water_depthfactor->value, 0.0, 100.0));
+			qglUniform1fARB(water.depthfactor, clamp(r_water_depthfactor->value, 0.0, 1000.0));
+			qglUniform1fARB(water.normfactor, clamp(r_water_normfactor->value, 0.0, 1000.0));
 			qglUniform1fARB(water.abovewater, (r_refdef->vieworg[2] > curwater->vecs[2]) ? 1.0f : 0.0f);
 
 			qglUniform1iARB(water.normalmap, 0);

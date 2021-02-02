@@ -23,30 +23,14 @@ SHADER_DEFINE(drawdepth);
 int save_userfogon;
 int *g_bUserFogOn;
 
-water_parm_t water_parm;
-water_parm_t default_water_parm = { true, {64.0f/255, 80.0f/255, 90.0f/255, 51.0f/255}, 100, 3000, 1, 1, false };
-
 //cvar
 cvar_t *r_water = NULL;
 cvar_t *r_water_debug = NULL;
 cvar_t *r_water_fresnel = NULL;
 cvar_t *r_water_depthfactor = NULL;
+cvar_t *r_water_normfactor = NULL;
 
 void RotatePointAroundVector(vec3_t dst, const vec3_t dir, const vec3_t point, float degrees);
-
-void R_SetWaterParm(water_parm_t *parm)
-{
-	water_parm.fog = parm->fog ? 1 : 0;
-	water_parm.start = max(parm->start, 0);
-	water_parm.end = max(parm->end, 0);
-	water_parm.density = clamp(parm->density, 0, 1);
-	water_parm.fresnel = clamp(parm->fresnel, 0, 1);
-	water_parm.color[0] = clamp(parm->color[0], 0, 1);
-	water_parm.color[1] = clamp(parm->color[1], 0, 1);
-	water_parm.color[2] = clamp(parm->color[2], 0, 1);
-	water_parm.color[3] = clamp(parm->color[3], 0, 1);
-	water_parm.active = parm->active;
-}
 
 void R_ClearWater(void)
 {
@@ -55,8 +39,6 @@ void R_ClearWater(void)
 	waters[MAX_WATERS-1].next = NULL;
 	waters_free = &waters[0];
 	waters_active = NULL;
-
-	memcpy(&water_parm, &default_water_parm, sizeof(water_parm));
 }
 
 const char *drawdepth_vscode = 
@@ -91,10 +73,10 @@ void R_InitWater(void)
 				SHADER_UNIFORM(water, waterfogcolor, "waterfogcolor");
 				SHADER_UNIFORM(water, eyepos, "eyepos");
 				SHADER_UNIFORM(water, eyedir, "eyedir");
-				SHADER_UNIFORM(water, zmax, "zmax");
 				SHADER_UNIFORM(water, time, "time");
 				SHADER_UNIFORM(water, fresnel, "fresnel");
 				SHADER_UNIFORM(water, depthfactor, "depthfactor");
+				SHADER_UNIFORM(water, normfactor, "normfactor");
 				SHADER_UNIFORM(water, abovewater, "abovewater");
 				
 				SHADER_UNIFORM(water, normalmap, "normalmap");
@@ -125,7 +107,8 @@ void R_InitWater(void)
 	r_water = gEngfuncs.pfnRegisterVariable("r_water", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_debug = gEngfuncs.pfnRegisterVariable("r_water_debug", "0", FCVAR_CLIENTDLL);
 	r_water_fresnel = gEngfuncs.pfnRegisterVariable("r_water_fresnel", "2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_water_depthfactor = gEngfuncs.pfnRegisterVariable("r_water_depthfactor", "75", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_water_depthfactor = gEngfuncs.pfnRegisterVariable("r_water_depthfactor", "50", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_water_normfactor = gEngfuncs.pfnRegisterVariable("r_water_normfactor", "1.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	curwater = NULL;
 	drawreflect = false;
@@ -244,7 +227,6 @@ void R_RenderReflectView(void)
 		qglFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, s_WaterFBO.s_hBackBufferDB);
 	}
 
-	//qglClearColor(water_parm.color[0], water_parm.color[1], water_parm.color[2], 1);
 	qglClearColor(curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, 1);
 	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -290,7 +272,6 @@ void R_RenderRefractView(void)
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, curwater->depthrefrmap, 0);
 	}
 
-	//qglClearColor(water_parm.color[0], water_parm.color[1], water_parm.color[2], 1);
 	qglClearColor(curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, 1);
 	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -346,6 +327,7 @@ void R_RenderWaterView(void)
 		}
 
 		R_RenderRefractView();
+
 		curwater = NULL;
 	}
 

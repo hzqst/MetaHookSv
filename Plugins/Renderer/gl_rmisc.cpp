@@ -113,25 +113,6 @@ void R_NewMap(void)
 	r_worldentity = gEngfuncs.GetEntityByIndex(0);
 	r_worldmodel = r_worldentity->model;
 
-	/*GL_BuildLightmaps();
-
-	skytexturenum = -1;
-	mirrortexturenum = -1;
-	
-	for (int i = 0; i < r_worldmodel->numtextures; i++)
-	{
-		if (!r_worldmodel->textures[i])
-			continue;
-
-		if (!strncmp(r_worldmodel->textures[i]->name, "sky", 3))
-			skytexturenum = i;
-
-		if (!strncmp(r_worldmodel->textures[i]->name, "window02_1", 10))
-			mirrortexturenum = i;
-
- 		r_worldmodel->textures[i]->texturechain = NULL;
-	}*/
-
 	gRefFuncs.R_NewMap();
 
 	R_VidInitWSurf();
@@ -148,6 +129,7 @@ mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
 
 	node = model->nodes;
 
+	//Don't clip bsp nodes when rendering refract or reflect view for non-transparent water.
 	if (drawreflect || drawrefract)
 	{
 		if (curwater && curwater->color.a == 255)

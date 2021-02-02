@@ -33,6 +33,10 @@ cmd_function_t *Cmd_FindCmdPrev(char *cmd_name)
 xcommand_t Cmd_HookCmd(char *cmd_name, xcommand_t newfuncs)
 {
 	cmd_function_t *cmd = Cmd_FindCmd(cmd_name);
+
+	if (!cmd)
+		return NULL;
+
 	xcommand_t result = cmd->function;
 	cmd->function = newfuncs;
 	return result;

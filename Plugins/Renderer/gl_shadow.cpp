@@ -153,6 +153,10 @@ void R_AddEntityShadow(cl_entity_t *ent, const char *model)
 {
 	if (!model)
 		return;
+
+	if (!R_ShouldCastShadow(ent))
+		return;
+
 	if(ent->player)
 	{
 		shadowlight_t *sl = R_FindShadowLight(ent);
@@ -181,7 +185,7 @@ void R_AddEntityShadow(cl_entity_t *ent, const char *model)
 			}
 			else
 			{
-				vec3_t ang = {90, 0, 0};
+				vec3_t ang = {100, 0, 0};
 				R_CreateShadowLight(ent, ang, 256, 64, 8, 512);
 			}
 		}
@@ -246,7 +250,7 @@ void R_CreateShadowLight(cl_entity_t *entity, vec3_t angles, float radius, float
 	cursdlight = NULL;
 }
 
-#define CURRENT_DRAW_PLAYER_STATE ((entity_state_t *)( (char *)cl_frames + sizeof(frame_t) * parsecount + sizeof(entity_state_t) * (*currententity)->index) )
+#define CURRENT_DRAW_PLAYER_STATE ((entity_state_t *)( (char *)cl_frames + size_of_frame * parsecount + sizeof(entity_state_t) * (*currententity)->index) )
 
 void R_RenderCurrentEntity(void)
 {
@@ -290,8 +294,9 @@ void R_RenderShadowMap(void)
 
 	qglMatrixMode(GL_PROJECTION);
 	qglLoadIdentity();
-	int tsize = cursdlight->texsize / cursdlight->scale;
-	qglOrtho(-tsize, tsize, -tsize, tsize, -cursdlight->radius, cursdlight->radius);
+	
+	int scaled_texsize = cursdlight->texsize / cursdlight->scale;
+	qglOrtho(-scaled_texsize, scaled_texsize, -scaled_texsize, scaled_texsize, -cursdlight->radius, cursdlight->radius);
 
 	qglMatrixMode(GL_MODELVIEW);
 	qglLoadIdentity();
@@ -312,19 +317,19 @@ void R_RenderShadowMap(void)
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, cursdlight->depthmap, 0);
 
 	qglClear(GL_DEPTH_BUFFER_BIT);
+	
 	//render start
 
 	cl_entity_t *curentity = (*currententity);
 	(*currententity) = cursdlight->followent;
-	int iSaveRenderFx = (*currententity)->curstate.renderfx;
-	(*currententity)->curstate.renderfx = kRenderFxShadow;
+	//int iSaveRenderFx = (*currententity)->curstate.renderfx;
+	//(*currententity)->curstate.renderfx = kRenderFxShadow;
 
 	R_RenderCurrentEntity();
 
-	(*currententity)->curstate.renderfx = iSaveRenderFx;
+	//(*currententity)->curstate.renderfx = iSaveRenderFx;
 	(*currententity) = curentity;
 
-	//render end
 	if(!s_ShadowFBO.s_hBackBufferFBO)
 	{
 		GL_Bind(cursdlight->depthmap);
@@ -332,21 +337,43 @@ void R_RenderShadowMap(void)
 	}
 }
 
-qboolean R_ShouldCastShadow(shadowlight_t *sl)
+qboolean R_ShouldCastShadow(cl_entity_t *ent)
 {
-	if(!sl->followent)
+	if(!ent)
 		return false;
-	if(!sl->followent->model)
+
+	if(!ent->model)
 		return false;
-	if(!(sl->followent->curstate.effects & EF_SHADOW))
+
+	if (ent->curstate.effects & EF_NODRAW)
 		return false;
-	if(sl->followent->curstate.rendermode != kRenderNormal)
+
+	if (ent->curstate.rendermode != kRenderNormal)
 		return false;
-	return true;
+
+	if (ent->model->type == mod_studio)
+	{
+		return true;
+	}
+	else if (ent->model->type == mod_brush)
+	{
+		if (ent->curstate.movetype == MOVETYPE_NONE)
+			return false;
+
+		return true;
+	}
+
+	return false;
 }
 
-void R_RenderAllShadowMaps(void)
+void R_RenderShadowMaps(void)
 {
+	if(s_ShadowFBO.s_hBackBufferFBO)
+	{
+		R_PushFrameBuffer();
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_ShadowFBO.s_hBackBufferFBO);
+	}
+
 	qglColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 	qglPolygonOffset(1.0f, 4096.0f);
 	qglEnable(GL_POLYGON_OFFSET_FILL);
@@ -356,9 +383,9 @@ void R_RenderAllShadowMaps(void)
 	r_refdef->onlyClientDraws = true;
 	drawshadow = true;
 
-	for(shadowlight_t *sl = sdlights_active; sl; sl = sl->next)
+	for (shadowlight_t *sl = sdlights_active; sl; sl = sl->next)
 	{
-		if(!R_ShouldCastShadow(sl))
+		if (!R_ShouldCastShadow(sl->followent))
 		{
 			sl->free = true;
 			continue;
@@ -377,17 +404,6 @@ void R_RenderAllShadowMaps(void)
 	qglEnable(GL_CULL_FACE);
 	qglDisable(GL_POLYGON_OFFSET_FILL);
 	qglColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-}
-
-void R_UpdateShadow(void)
-{
-	if(s_ShadowFBO.s_hBackBufferFBO)
-	{
-		R_PushFrameBuffer();
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_ShadowFBO.s_hBackBufferFBO);
-	}
-
-	R_RenderAllShadowMaps();
 
 	if(s_ShadowFBO.s_hBackBufferFBO)
 	{
@@ -533,12 +549,16 @@ void R_RecursiveWorldNodeShadow(mnode_t *node)
 				if (!(surf->flags & SURF_UNDERWATER) && ((dot < 0) ^ !!(surf->flags & SURF_PLANEBACK)))
 					continue;
 
-				if(dot2 > cursdlight->radius)
+				if (dot2 > cursdlight->radius)
+					continue;
+
+				if (dot2 < 0)
 					continue;
 
 				if (!(surf->flags & SURF_DRAWTURB) && !(surf->flags & SURF_DRAWSKY))
 				{
-					R_DrawSequentialPolyShadow(surf);
+					if((*currententity)->curstate.rendermode == kRenderNormal)
+						R_DrawSequentialPolyShadow(surf);
 				}
 			}
 		}
@@ -551,6 +571,7 @@ void R_RenderAllShadowScenes(void)
 {
 	if(!r_shadow->value || !shadow.program)
 		return;
+
 	if(!sdlights_active)
 		return;
 
@@ -590,11 +611,11 @@ void R_RenderAllShadowScenes(void)
 	qglTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR); 
 	qglTexGenfv(GL_Q, GL_EYE_PLANE, planeQ);
 
-	if (gl_polyoffset->value)
+	if (gl_polyoffset && gl_polyoffset->value)
 	{
 		qglEnable(GL_POLYGON_OFFSET_FILL);
 
-		if (gl_ztrick->value)
+		if (gl_ztrick && gl_ztrick->value)
 			qglPolygonOffset(1, gl_polyoffset->value);
 		else
 			qglPolygonOffset(-1, -gl_polyoffset->value);
@@ -602,21 +623,24 @@ void R_RenderAllShadowScenes(void)
 
 	qglDepthMask(GL_FALSE);
 	qglEnable(GL_BLEND);
-	qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);	
+	qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	qglColor4f(0.1, 0.1, 0.1, 0.5);
 
 	qglUseProgramObjectARB(shadow.program);
 	qglUniform1iARB(shadow.depthmap, 0);
 
-	cl_entity_t *curentity = (*currententity);
-	drawshadowscene = true;
-
 	GL_DisableMultitexture();
+
+	cl_entity_t *curentity = (*currententity);
+	(*currententity) = r_worldentity;
+
+	drawshadowscene = true;
 
 	for(shadowlight_t *slight = sdlights_active; slight; slight = slight->next)
 	{
 		if(slight->free)
 			continue;
+
 		cursdlight = slight;
 
 		qglUniform1fARB(shadow.texoffset, 1 / cursdlight->texsize);
@@ -624,6 +648,7 @@ void R_RenderAllShadowScenes(void)
 		qglUniform1fARB(shadow.fard, cursdlight->fard);
 		qglUniform3fvARB(shadow.entorigin, 1, cursdlight->origin);
 
+		GL_SelectTexture(GL_TEXTURE0_ARB);
 		GL_Bind(cursdlight->depthmap);
 
 		qglMatrixMode(GL_TEXTURE);
@@ -642,17 +667,20 @@ void R_RenderAllShadowScenes(void)
 		shadow_light_maxs[1] = cursdlight->origin[1] + cursdlight->radius;
 		shadow_light_maxs[2] = cursdlight->origin[2] + cursdlight->radius;
 
-		(*currententity) = r_worldentity;
 		R_RecursiveWorldNodeShadow(r_worldmodel->nodes);
+
+		cursdlight = NULL;
 	}
+
 	drawshadowscene = false;
+
 	(*currententity) = curentity;
-	cursdlight = NULL;
 
 	qglUseProgramObjectARB(0);
 
 	qglDepthMask(GL_TRUE);
-	qglDisable(GL_BLEND);
+	//qglDisable(GL_BLEND);
+
 	if (gl_polyoffset->value)
 	{
 		qglDisable(GL_POLYGON_OFFSET_FILL);

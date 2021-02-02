@@ -89,6 +89,7 @@ extern int *r_visframecount;
 //extern float r_projection_matrix[16];
 
 extern frame_t *cl_frames;
+extern int size_of_frame;
 extern int *cl_parsecount;
 extern int *cl_waterlevel;
 extern double *cl_time;

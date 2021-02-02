@@ -99,14 +99,14 @@ void R_Render3DSky(void)
 	qglViewport(0, 0, glwidth, glheight);
 
 	R_ClearSkyBox();
-	R_DrawWorld();
+	//R_DrawWorld();
 
 	R_PopRefDef();
 
 	draw3dsky = false;
 }
 
-#define CURRENT_DRAW_PLAYER_STATE ((entity_state_t *)( (char *)cl_frames + sizeof(frame_t) * (parsecount + sizeof(entity_state_t) * (*currententity)->index) ))
+#define CURRENT_DRAW_PLAYER_STATE ((entity_state_t *)( (char *)cl_frames + size_of_frame * (parsecount + sizeof(entity_state_t) * (*currententity)->index) ))
 
 void R_Draw3DSkyEntities(void)
 {

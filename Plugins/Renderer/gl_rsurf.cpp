@@ -31,20 +31,9 @@ void R_RecursiveWorldNode(mnode_t *node)
 	gRefFuncs.R_RecursiveWorldNode(node);
 }
 
-void R_DrawWorld(void)
-{
-	/*if (r_3dsky_parm.enable && r_3dsky->value)
-	{
-		R_Render3DSky();
-	}*/
-
-	gRefFuncs.R_DrawWorld();
-
-	//R_RenderAllShadowScenes();
-}
-
 void R_MarkLeaves(void)
 {
+	//Don't clip bsp nodes when rendering refract or reflect view for non-transparent water.
 	if (drawreflect || drawrefract)
 	{
 		if (curwater && curwater->color.a == 255)

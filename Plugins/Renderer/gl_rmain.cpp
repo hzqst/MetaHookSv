@@ -55,6 +55,7 @@ int *r_framecount;
 int *r_visframecount;
 
 frame_t *cl_frames;
+int size_of_frame = sizeof(frame_t);
 int *cl_parsecount;
 int *cl_waterlevel;
 double *cl_time;
@@ -349,11 +350,11 @@ void R_AddTEntity(cl_entity_t *pEnt)
 	(*numTransObjs)++;
 }
 
-#define CURRENT_DRAW_PLAYER_STATE ((entity_state_t *)( (char *)cl_frames + sizeof(frame_t) * parsecount + sizeof(entity_state_t) * (*currententity)->index) )
+#define CURRENT_DRAW_PLAYER_STATE ((entity_state_t *)( (char *)cl_frames + size_of_frame * parsecount + sizeof(entity_state_t) * (*currententity)->index) )
 
 entity_state_t *R_GetPlayerState(int index)
 {
-	return (entity_state_t *)( (char *)cl_frames + sizeof(frame_t) * ((*cl_parsecount) % 63) + sizeof(entity_state_t) * index );
+	return (entity_state_t *)( (char *)cl_frames + size_of_frame * ((*cl_parsecount) % 63) + sizeof(entity_state_t) * index );
 }
 
 void R_DrawEntitiesOnList(void)
@@ -630,6 +631,7 @@ void R_SetFrustum(void)
 	if(gRefFuncs.R_SetFrustum)
 		return gRefFuncs.R_SetFrustum();
 
+	//Seems does't work well with SvEngine
 	if (scr_fov_value == 90)
 	{
 		VectorAdd(vpn, vright, frustum[0].normal);
@@ -1334,10 +1336,10 @@ void R_RenderView_SvEngine(int a1)
 
 		if (!r_refdef->onlyClientDraws)
 		{
-			/*if (shadow.program && r_shadow->value)
+			if (shadow.program && r_shadow->value)
 			{
-				R_UpdateShadow();
-			}*/
+				R_RenderShadowMaps();
+			}
 			if (water.program && r_water->value)
 			{
 				R_RenderWaterView();
@@ -1432,7 +1434,7 @@ void R_RenderView(void)
 	{
 		if(shadow.program && r_shadow->value)
 		{
-			R_UpdateShadow();
+			R_RenderShadowMaps();
 		}
 		if(water.program && r_water->value)
 		{

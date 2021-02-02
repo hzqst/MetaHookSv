@@ -161,8 +161,6 @@ typedef struct
 	//common
 	int (*R_GetDrawPass)(void);
 	int (*R_GetSupportExtension)(void);
-	//water
-	void (*R_SetWaterParm)(water_parm_t *parm);
 	//studio
 	void (*R_GLStudioDrawPointsEx)(void);
 	entity_state_t *(*R_GetPlayerState)(int index);

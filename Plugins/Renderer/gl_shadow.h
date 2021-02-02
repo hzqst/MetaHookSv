@@ -71,13 +71,13 @@ extern vec3_t shadow_light_maxs;
 extern cvar_t *r_shadow;
 extern cvar_t *r_shadow_debug;
 
-void R_UpdateShadow(void);
+void R_RenderShadowMaps(void);
 void R_InitShadow(void);
 void R_ClearShadow(void);
 void R_RecursiveWorldNodeShadow(mnode_t *node);
 void R_RenderAllShadowScenes(void);
-
 void R_AddEntityShadow(cl_entity_t *ent, const char *model);
+qboolean R_ShouldCastShadow(cl_entity_t *ent);
 
 //Shadow Light
 shadowlight_t *R_FindShadowLight(cl_entity_t *entity);

@@ -12,6 +12,7 @@ typedef struct
 	int time;
 	int fresnel;
 	int depthfactor;
+	int normfactor;
 	int abovewater;
 	int normalmap;
 	int refractmap;
@@ -78,11 +79,11 @@ extern cvar_t *r_water;
 extern cvar_t *r_water_debug;
 extern cvar_t *r_water_fresnel;
 extern cvar_t *r_water_depthfactor;
+extern cvar_t *r_water_normfactor;
 
 void R_AddWater(cl_entity_t *ent, vec3_t p, colorVec *color);
 void R_InitWater(void);
 void R_ClearWater(void);
 void R_RenderWaterView(void);
 void R_EnableClip(qboolean isdrawworld);
-void R_SetWaterParm(water_parm_t *parm);
 void R_SetFrustum(void);

@@ -247,57 +247,6 @@ void R_LoadSkyTextures(cJSON *tex)
 	}
 }
 
-void R_LoadWaterTextures(cJSON *tex)
-{
-	cJSON *normal = cJSON_GetObjectItem(tex, "normal");
-	if(normal && normal->valuestring)
-	{
-		//Load Water Textures
-		int texid = R_LoadTextureEx(normal->valuestring, normal->valuestring, NULL, NULL, GLT_WORLD, false, true);
-		if(texid)
-		{
-			water_normalmap = texid;
-		}
-	}
-	cJSON *fog = cJSON_GetObjectItem(tex, "fog");
-	if(fog && fog->valuestring)
-	{
-		water_parm.fog = atoi(fog->valuestring) ? 1 : 0;
-	}
-	cJSON *fogstart = cJSON_GetObjectItem(tex, "fogstart");
-	if(fogstart && fogstart->valuestring)
-	{
-		water_parm.start = max(atof(fogstart->valuestring), 0);
-	}
-	cJSON *fogend = cJSON_GetObjectItem(tex, "fogend");
-	if(fogend && fogend->valuestring)
-	{
-		water_parm.end = max(atof(fogend->valuestring), 0);
-	}
-	cJSON *fogdensity = cJSON_GetObjectItem(tex, "fogdensity");
-	if(fogdensity && fogdensity->valuestring)
-	{
-		water_parm.density = clamp(atof(fogdensity->valuestring), 0, 1);
-	}
-	cJSON *fresnel = cJSON_GetObjectItem(tex, "fresnel");
-	if(fresnel && fresnel->valuestring)
-	{
-		water_parm.fresnel = clamp(atof(fresnel->valuestring), 0, 10000);
-	}
-	cJSON *color = cJSON_GetObjectItem(tex, "color");
-	if(color && color->valuestring)
-	{
-		if(4 == sscanf(color->valuestring, "%f %f %f %f", &water_parm.color[0], &water_parm.color[1], &water_parm.color[2], &water_parm.color[3]))
-		{
-			water_parm.color[0] = clamp(water_parm.color[0], 0, 255) / 255.0;
-			water_parm.color[1] = clamp(water_parm.color[1], 0, 255) / 255.0;
-			water_parm.color[2] = clamp(water_parm.color[2], 0, 255) / 255.0;
-			water_parm.color[3] = clamp(water_parm.color[3], 0, 255) / 255.0;
-		}
-	}
-	water_parm.active = true;
-}
-
 void R_LoadExtraTextureFile(qboolean loadmap)
 {
 	int i;
@@ -318,9 +267,6 @@ void R_LoadExtraTextureFile(qboolean loadmap)
 		}
 		szFileName[strlen(szFileName)-4] = 0;
 		strcat(szFileName, "_extra.txt");
-
-		//deactivate the water param
-		water_parm.active = false;
 	}
 
 	pFile = (char *)gEngfuncs.COM_LoadFile(szFileName, 5, NULL);
@@ -372,11 +318,6 @@ void R_LoadExtraTextureFile(qboolean loadmap)
 				if(loadmap && !strcmp(base->valuestring, "sky"))
 				{
 					R_LoadSkyTextures(tex);
-					continue;
-				}
-				if(loadmap && !strcmp(base->valuestring, "water"))
-				{
-					R_LoadWaterTextures(tex);
 					continue;
 				}
 				int num = pExtraMgr->iNumTextures;
@@ -723,6 +664,20 @@ void R_DrawGLPoly(brushface_t *pFace)
 
 void R_DrawSequentialPoly(msurface_t *s, int face)
 {
+	if ((*currententity)->curstate.rendermode == kRenderNormal)
+	{
+		if (!(s->flags & (SURF_DRAWSKY | SURF_DRAWTURB | SURF_UNDERWATER)) && gl_mtexable)
+		{
+			if (!drawreflect && !drawrefract && !drawshadow)
+			{
+			}
+
+			return;
+		}
+	}
+
+	return gRefFuncs.R_DrawSequentialPoly(s, face);
+
 	glpoly_t *p;
 	int lightmapnum;
 	texture_t *t;
