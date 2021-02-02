@@ -50,6 +50,14 @@ void R_InitRefHUD(void)
 			gEngfuncs.COM_FreeFile(pp_fxaa_vscode);
 			gEngfuncs.COM_FreeFile(pp_fxaa_fscode);
 		}
+		if (!pp_fxaa_vscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\pp_fxaa.vsh\" not found!");
+		}
+		if (!pp_fxaa_fscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\pp_fxaa.fsh\" not found!");
+		}
 
 		//DownSample Pass
 		char *pp_common_vscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_common.vsh", 5, 0);
@@ -63,6 +71,15 @@ void R_InitRefHUD(void)
 			}
 			gEngfuncs.COM_FreeFile(pp_downsample_fscode);
 		}
+		if (!pp_common_vscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\pp_common.vsh\" not found!");
+		}
+		if (!pp_downsample_fscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\pp_downsample.fsh\" not found!");
+		}
+
 		//2x2 Downsample Pass
 		char *pp_common2x2_vscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_common2x2.vsh", 5, 0);
 		char *pp_downsample2x2_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_downsample2x2.fsh", 5, 0);
@@ -75,7 +92,16 @@ void R_InitRefHUD(void)
 				SHADER_UNIFORM(pp_downsample2x2, texelsize, "texelsize");
 			}
 			gEngfuncs.COM_FreeFile(pp_downsample2x2_fscode);
+		}	
+		if (!pp_common2x2_vscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\pp_common2x2.vsh\" not found!");
 		}
+		if (!pp_downsample2x2_fscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\pp_downsample2x2.fsh\" not found!");
+		}
+
 		//Luminance Downsample Pass
 		char *pp_lumin_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_lumin.fsh", 5, 0);
 		if(pp_common2x2_vscode && pp_lumin_fscode)
@@ -87,6 +113,10 @@ void R_InitRefHUD(void)
 				SHADER_UNIFORM(pp_lumin, texelsize, "texelsize");
 			}
 			gEngfuncs.COM_FreeFile(pp_lumin_fscode);
+		}
+		if (!pp_lumin_fscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\pp_lumin.fsh\" not found!");
 		}
 
 		//Log Luminance Downsample Pass
@@ -101,7 +131,11 @@ void R_InitRefHUD(void)
 			}
 			gEngfuncs.COM_FreeFile(pp_luminlog_fscode);
 		}
-		
+		if (!pp_luminlog_fscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\pp_luminlog.fsh\" not found!");
+		}
+
 		//Exp Luminance Downsample Pass
 		char *pp_luminexp_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_luminexp.fsh", 5, 0);
 		if(pp_common2x2_vscode && pp_luminexp_fscode)
@@ -113,6 +147,10 @@ void R_InitRefHUD(void)
 				SHADER_UNIFORM(pp_luminexp, texelsize, "texelsize");
 			}
 			gEngfuncs.COM_FreeFile(pp_luminexp_fscode);
+		}
+		if (!pp_luminexp_fscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\pp_luminexp.fsh\" not found!");
 		}
 
 		//Luminance Adaptation Downsample Pass
@@ -128,6 +166,10 @@ void R_InitRefHUD(void)
 			}
 			gEngfuncs.COM_FreeFile(pp_luminadapt_fscode);
 		}
+		if (!pp_luminadapt_fscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\pp_luminadapt.fsh\" not found!");
+		}
 
 		//Bright Pass
 		char *pp_brightpass_vscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_brightpass.vsh", 5, 0);
@@ -142,6 +184,14 @@ void R_InitRefHUD(void)
 			}
 			gEngfuncs.COM_FreeFile(pp_brightpass_vscode);
 			gEngfuncs.COM_FreeFile(pp_brightpass_fscode);
+		}
+		if (!pp_brightpass_vscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\pp_brightpass.vsh\" not found!");
+		}
+		if (!pp_brightpass_fscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\pp_brightpass.fsh\" not found!");
 		}
 
 		//Tone mapping
@@ -162,6 +212,14 @@ void R_InitRefHUD(void)
 			}
 			gEngfuncs.COM_FreeFile(pp_tonemap_vscode);
 			gEngfuncs.COM_FreeFile(pp_tonemap_fscode);
+		}
+		if (!pp_tonemap_vscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\pp_tonemap.vsh\" not found!");
+		}
+		if (!pp_tonemap_fscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\pp_tonemap.fsh\" not found!");
 		}
 
 		char *hud_drawroundrect_vscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\hud_drawroundrect.vsh", 5, 0);

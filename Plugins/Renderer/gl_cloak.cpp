@@ -40,6 +40,15 @@ void R_InitCloak(void)
 				SHADER_UNIFORM(conc, packedfactor, "packedfactor");
 			}
 		}
+
+		if(!conc_vscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\conc_shader.vsh\" not found!");
+		}
+		if (!conc_fscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\conc_shader.fsh\" not found!");
+		}
 		gEngfuncs.COM_FreeFile((void *)conc_vscode);
 		gEngfuncs.COM_FreeFile((void *)conc_fscode);
 	}
