@@ -45,6 +45,8 @@ Current state : Ready to use, more feature are coming soon.
 
 2. Water reflection and refraction.
 
+3. Per-Object Shadow. (each object render it's own shadow mapping just like how source engine does this.)
+
 #### Console Vars
 
 r_hdr 1 / 0 : to enable / disable HDR(high-dynamic-range) post-processor.
@@ -53,4 +55,8 @@ r_water 1 / 0 : to enable / disable water reflection and refraction.
 
 r_water_fresnel (0.0 ~ 2.0) : to determine how to lerp and mix the refraction color and reflection color.
 
-r_water_depthfactor (0.0 ~ 100.0) : to determine if we can see through water in a close distance.
+r_water_depthfactor (0.0 ~ 1000.0) : to determine if we can see through water in a close distance.
+
+r_water_normfactor (0.0 ~ 1000.0) : to determine the size of water wave (offset to the normalmap).
+
+r_shadow 1 / 0 : to enable / disable per-object shadow rendering.
