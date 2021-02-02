@@ -283,10 +283,7 @@ void HUD_DrawTransparentTriangles(void)
 
 		for (shadowlight_t *sl = sdlights_active; sl; sl = sl->next)
 		{
-			if (!sl->followent->player)
-			{
-				sl->free = true;
-			}
+			sl->free = true;
 		}
 	}
 }
@@ -519,7 +516,7 @@ int HUD_UpdateClientData(client_data_t *pcldata, float flTime)
 
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 {
-	if(r_shadow->value && shadow.program)
+	if(r_shadow->value && shadow.program && (type == 0 || type == 1))//NORMAL OR PLAYER
 	{
 		R_AddEntityShadow(ent, model);
 	}
