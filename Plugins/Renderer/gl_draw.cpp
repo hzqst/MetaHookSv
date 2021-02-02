@@ -295,8 +295,11 @@ void GL_Upload32(unsigned int *data, int width, int height, qboolean mipmap, qbo
 	//if(gl_loadtexture_format != GL_RGBA)
 	//	Sys_ErrorEx("GL_Upload32: Only RGBA is supported!");
 
+	int bbp = 0;
+	g_pMetaHookAPI->GetVideoMode(NULL, NULL, &bbp, NULL);
+
 	iFormat = GL_RGBA;
-	iComponent = (g_iBPP == 16) ? GL_RGB5_A1 : GL_RGBA8;
+	iComponent = (bbp == 16) ? GL_RGB5_A1 : GL_RGBA8;
 
 	qglTexParameterf(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, (mipmap) ? GL_TRUE : GL_FALSE);
 

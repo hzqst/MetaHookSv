@@ -488,11 +488,11 @@ void R_BlitToScreen(FBO_Container_t *src)
 
 	if (bDoDirectBlit)
 	{
-		qglBlitFramebufferEXT(0, 0, src->iWidth, src->iHeight, 0, 0, g_iVideoWidth, g_iVideoHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+		qglBlitFramebufferEXT(0, 0, src->iWidth, src->iHeight, 0, 0, glwidth, glheight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 	}
 	else
 	{
-		R_DrawHUDQuad_Texture(src->s_hBackBufferTex, g_iVideoWidth, g_iVideoHeight);
+		R_DrawHUDQuad_Texture(src->s_hBackBufferTex, glwidth, glheight);
 	}
 }
 

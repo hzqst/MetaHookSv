@@ -177,12 +177,17 @@ void hudGetMousePos(struct tagPOINT *ppt)
 {
 	gEngfuncs.pfnGetMousePos(ppt);
 
-	if ( !g_bWindowed )
+	int iVideoWidth, iVideoHeight, iBPP;
+	bool bWindowed = false;
+
+	g_pMetaHookAPI->GetVideoMode(&iVideoWidth, &iVideoHeight, &iBPP, &bWindowed);
+
+	if ( !bWindowed )
 	{
 		RECT rectWin;
 		GetWindowRect(GetMainHWND(), &rectWin);
-		int videoW = g_iVideoWidth;
-		int videoH = g_iVideoHeight;
+		int videoW = iVideoWidth;
+		int videoH = iVideoHeight;
 		int winW = rectWin.right - rectWin.left;
 		int winH = rectWin.bottom - rectWin.top;
 		ppt->x *= (float)videoW / winW;
@@ -196,12 +201,17 @@ void hudGetMousePosition(int *x, int *y)
 {
 	gEngfuncs.GetMousePosition(x, y);
 
-	if ( !g_bWindowed )
+	int iVideoWidth, iVideoHeight, iBPP;
+	bool bWindowed = false;
+
+	g_pMetaHookAPI->GetVideoMode(&iVideoWidth, &iVideoHeight, &iBPP, &bWindowed);
+
+	if ( !bWindowed )
 	{
 		RECT rectWin;
 		GetWindowRect(GetMainHWND(), &rectWin);
-		int videoW = g_iVideoWidth;
-		int videoH = g_iVideoHeight;
+		int videoW = iVideoWidth;
+		int videoH = iVideoHeight;
 		int winW = rectWin.right - rectWin.left;
 		int winH = rectWin.bottom - rectWin.top;
 		*x *= (float)videoW / winW;

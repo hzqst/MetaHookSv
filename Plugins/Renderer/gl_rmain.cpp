@@ -80,6 +80,12 @@ float gl_force_ansio = 0;
 int gl_msaa_samples = 0;
 int gl_csaa_samples = 0;
 
+int *gl_msaa_fbo = 0;
+int *gl_backbuffer_fbo = 0;
+
+int glwidth = 0;
+int glheight = 0;
+
 FBO_Container_t s_MSAAFBO;
 FBO_Container_t s_BackBufferFBO;
 FBO_Container_t s_3DHUDFBO;
@@ -917,15 +923,6 @@ void GL_GenerateFBO(void)
 		gEngfuncs.Con_Printf("FBO backbuffer rendering enabled.\n");
 	}
 
-	if (!bDoMSAAFBO)
-	{
-		gEngfuncs.Con_Printf("MSAA disabled.\n");
-	}
-	else
-	{
-		gEngfuncs.Con_Printf("MSAA enabled.\n");
-	}
-
 	qglEnable(GL_TEXTURE_2D);
 
 	GLuint iColorInternalFormat = GL_RGBA8;
@@ -984,8 +981,8 @@ void GL_GenerateFBO(void)
 			}
 		}
 
-		s_MSAAFBO.iWidth = g_iVideoWidth;
-		s_MSAAFBO.iHeight = g_iVideoHeight;
+		s_MSAAFBO.iWidth = glwidth;
+		s_MSAAFBO.iHeight = glheight;
 
 		//fbo
 		R_GLGenFrameBuffer(&s_MSAAFBO);
@@ -1010,11 +1007,11 @@ void GL_GenerateFBO(void)
 
 	if (bDoScaledFBO)
 	{
-		if (s_MSAAFBO.s_hBackBufferFBO)
+		if (bDoMSAAFBO && s_MSAAFBO.s_hBackBufferFBO)
 			qglEnable(GL_MULTISAMPLE);
 
-		s_BackBufferFBO.iWidth = g_iVideoWidth;
-		s_BackBufferFBO.iHeight = g_iVideoHeight;
+		s_BackBufferFBO.iWidth = glwidth;
+		s_BackBufferFBO.iHeight = glheight;
 
 		//fbo
 		R_GLGenFrameBuffer(&s_BackBufferFBO);
@@ -1027,14 +1024,14 @@ void GL_GenerateFBO(void)
 		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			GL_FreeFBO(&s_MSAAFBO);
-			GL_FreeFBO(&s_BackBufferFBO);		
+			GL_FreeFBO(&s_BackBufferFBO);
 			gEngfuncs.Con_Printf("FBO backbuffer rendering disabled due to create error.\n");
 		}
 	}
 
 	//3D HUD FBO
-	s_3DHUDFBO.iWidth = g_iVideoWidth;
-	s_3DHUDFBO.iHeight = g_iVideoHeight;
+	s_3DHUDFBO.iWidth = glwidth;
+	s_3DHUDFBO.iHeight = glheight;
 
 	//fbo
 	R_GLGenFrameBuffer(&s_3DHUDFBO);
@@ -1080,8 +1077,8 @@ void GL_GenerateFBO(void)
 	//DownSample FBO 1->1/4->1/16
 	if(bDoHDR)
 	{
-		downW = g_iVideoWidth;
-		downH = g_iVideoHeight;
+		downW = glwidth;
+		downH = glheight;
 		for(int i = 0; i < DOWNSAMPLE_BUFFERS && bDoHDR; ++i)
 		{
 			downW >>= 1;
@@ -1152,8 +1149,8 @@ void GL_GenerateFBO(void)
 	//Bright Pass FBO
 	if(bDoHDR)
 	{
-		s_BrightPassFBO.iWidth = (g_iVideoWidth >> DOWNSAMPLE_BUFFERS);
-		s_BrightPassFBO.iHeight = (g_iVideoHeight >> DOWNSAMPLE_BUFFERS);
+		s_BrightPassFBO.iWidth = (glwidth >> DOWNSAMPLE_BUFFERS);
+		s_BrightPassFBO.iHeight = (glheight >> DOWNSAMPLE_BUFFERS);
 
 		//fbo
 		R_GLGenFrameBuffer(&s_BrightPassFBO);
@@ -1171,8 +1168,8 @@ void GL_GenerateFBO(void)
 	//Blur FBO
 	if(bDoHDR)
 	{
-		downW = g_iVideoWidth >> DOWNSAMPLE_BUFFERS;
-		downH = g_iVideoHeight >> DOWNSAMPLE_BUFFERS;
+		downW = glwidth >> DOWNSAMPLE_BUFFERS;
+		downH = glheight >> DOWNSAMPLE_BUFFERS;
 		for(int i = 0; i < BLUR_BUFFERS; ++i)
 		{
 			for(int j = 0; j < 2; ++j)
@@ -1199,8 +1196,8 @@ void GL_GenerateFBO(void)
 
 	if(bDoHDR)
 	{
-		s_BrightAccumFBO.iWidth = g_iVideoWidth >> DOWNSAMPLE_BUFFERS;
-		s_BrightAccumFBO.iHeight = g_iVideoHeight >> DOWNSAMPLE_BUFFERS;
+		s_BrightAccumFBO.iWidth = glwidth >> DOWNSAMPLE_BUFFERS;
+		s_BrightAccumFBO.iHeight = glheight >> DOWNSAMPLE_BUFFERS;
 
 		//fbo
 		R_GLGenFrameBuffer(&s_BrightAccumFBO);
@@ -1217,8 +1214,8 @@ void GL_GenerateFBO(void)
 
 	if(bDoHDR)
 	{
-		s_ToneMapFBO.iWidth = g_iVideoWidth;
-		s_ToneMapFBO.iHeight = g_iVideoHeight;
+		s_ToneMapFBO.iWidth = glwidth;
+		s_ToneMapFBO.iHeight = glheight;
 
 		//fbo
 		R_GLGenFrameBuffer(&s_ToneMapFBO);
@@ -1233,8 +1230,8 @@ void GL_GenerateFBO(void)
 		}
 	}
 
-	s_CloakFBO.iWidth = g_iVideoWidth;
-	s_CloakFBO.iHeight = g_iVideoHeight;
+	s_CloakFBO.iWidth = glwidth;
+	s_CloakFBO.iHeight = glheight;
 
 	//fbo
 	R_GLGenFrameBuffer(&s_CloakFBO);
@@ -1283,25 +1280,13 @@ void GL_Shutdown(void)
 
 void GL_BeginRendering(int *x, int *y, int *width, int *height)
 {
-	/*static int vsync = -1;
-	if (gl_vsync->value != vsync)
-	{
-		if (qwglSwapIntervalEXT)
-		{
-			if (gl_vsync->value > 0)
-				qwglSwapIntervalEXT(1);
-			else
-				qwglSwapIntervalEXT(0);
-		}
-
-		vsync = gl_vsync->value;
-	}*/
-
 	gRefFuncs.GL_BeginRendering(x, y, width, height);
+
+	glwidth = *width; 
+	glheight = *height;
 
 	screenframebuffer = 0;
 
-	//no MSAA here
 	if (s_BackBufferFBO.s_hBackBufferFBO)
 	{
 		screenframebuffer = s_BackBufferFBO.s_hBackBufferFBO;
@@ -1351,10 +1336,10 @@ void R_RenderView_SvEngine(int a1)
 
 	if (a1 == 0)
 	{
-		if (s_BackBufferFBO.s_hBackBufferFBO)
+		if (bDoScaledFBO)
 		{
 			//Do MSAA here so HUD won't be AA
-			if (s_MSAAFBO.s_hBackBufferFBO)
+			if (bDoMSAAFBO && s_MSAAFBO.s_hBackBufferFBO)
 			{
 				qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 				qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
@@ -1442,19 +1427,19 @@ void R_RenderView(void)
 
 	gRefFuncs.R_RenderView();
 
-	if (s_BackBufferFBO.s_hBackBufferFBO)
+	if (bDoScaledFBO)
 	{
 		//Do MSAA here so HUD won't be AA
-		if (s_MSAAFBO.s_hBackBufferFBO)
+		if (bDoMSAAFBO && s_MSAAFBO.s_hBackBufferFBO)
 		{
 			qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 			qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
 			qglBlitFramebufferEXT(0, 0, s_MSAAFBO.iWidth, s_MSAAFBO.iHeight, 0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 		}
 
-		R_BeginHUDQuad();
 		if(bDoHDR && r_hdr->value > 0)
 		{
+			R_BeginHUDQuad();
 			//normal downsample
 			R_DownSample(&s_BackBufferFBO, &s_DownSampleFBO[0], false);//(1->1/4)
 			R_DownSample(&s_DownSampleFBO[0], &s_DownSampleFBO[1], false);//(1/4)->(1/16)
@@ -1496,6 +1481,13 @@ void R_RenderView(void)
 
 void GL_EndRendering(void)
 {
+	GLuint save_backbuffer_fbo = 0;
+	if (gl_backbuffer_fbo)
+	{
+		save_backbuffer_fbo = *gl_backbuffer_fbo;
+		*gl_backbuffer_fbo = 0;
+	}
+
 	if(s_BackBufferFBO.s_hBackBufferFBO)
 	{
 		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0);
@@ -1503,8 +1495,8 @@ void GL_EndRendering(void)
 		qglClearColor(0, 0, 0, 0);
 		qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		int windowW = g_iVideoWidth;
-		int windowH = g_iVideoHeight;
+		int windowW = glwidth;
+		int windowH = glheight;
 
 		windowW = window_rect->right - window_rect->left;
 		windowH = window_rect->bottom - window_rect->top;
@@ -1516,7 +1508,7 @@ void GL_EndRendering(void)
 
 		*videowindowaspect = *windowvideoaspect = 1;
 
-		float videoAspect = (float)g_iVideoWidth / g_iVideoHeight;
+		float videoAspect = (float)glwidth / glheight;
 		float windowAspect = (float)windowW / windowH;
 		if ( bNoStretchAspect )
 		{
@@ -1536,7 +1528,7 @@ void GL_EndRendering(void)
 
 		if ( bDoDirectBlit )
 		{
-			qglBlitFramebufferEXT(0, 0, g_iVideoWidth, g_iVideoHeight, dstX, dstY, dstX2, dstY2, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+			qglBlitFramebufferEXT(0, 0, glwidth, glheight, dstX, dstY, dstX2, dstY2, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 		}
 		else
 		{
@@ -1578,6 +1570,11 @@ void GL_EndRendering(void)
 
 	//this will call VID_FlipScreen for us.
 	gRefFuncs.GL_EndRendering();
+
+	if (gl_backbuffer_fbo)
+	{
+		*gl_backbuffer_fbo = save_backbuffer_fbo;
+	}
 }
 
 void R_InitCvars(void)
@@ -1681,8 +1678,8 @@ void R_InitCvars(void)
 
 void R_InitScreen(void)
 {
-	r_refdef->vrect.width = g_iVideoWidth;
-	r_refdef->vrect.height = g_iVideoHeight;
+	r_refdef->vrect.width = glwidth;
+	r_refdef->vrect.height = glheight;
 }
 
 void R_Init(void)

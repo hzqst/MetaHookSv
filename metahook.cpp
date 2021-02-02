@@ -19,6 +19,8 @@ struct hook_s
 	void *pInfo;
 };
 
+DWORD *g_pVideoMode = NULL;
+void (*g_pfnGetVideoMode)(int *videomode, int *width, int *height);
 int (*g_pfnbuild_number)(void);
 void *g_pClientDLL_Init;
 int (*g_pfnClientDLL_Init)(void);
@@ -62,6 +64,7 @@ DWORD MH_GetEngineVersion(void);
 #define CLIENTDLL_INIT_SIG "\x81\xEC\x00\x04\x00\x00\x8D\x44\x24\x00\x68\x2A\x2A\x2A\x2A\x68\x00\x02\x00\x00\x50\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x0C\x85\xC0"
 #define CLIENTDLL_INIT_SIG_NEW "\x55\x8B\xEC\x81\xEC\x00\x02\x00\x00\x68\x2A\x2A\x2A\x2A\x8D\x85\x00\xFE\xFF\xFF\x68\x00\x02\x00\x00\x50\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x0C\x85\xC0\x74\x2A\xE8"
 #define CLIENTDLL_INIT_SIG_SVENGINE "\x81\xEC\x2A\x02\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\x68\x2A\x2A\x2A\x2A\x8D\x44\x24\x2A\x68\x00\x02\x00\x00\x50\xE8"
+#define GETVIDEOMODE_SIG_SVENGINE "\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x01\xFF\x50\x10\x8B\xD0"
 
 typedef struct plugin_s
 {
@@ -259,6 +262,13 @@ void MH_LoadEngine(HMODULE hModule)
 	{
 		MessageBox(NULL, "Failed to locate ClientDLL_Init.", "Fatal Error", MB_ICONERROR);
 		ExitProcess(0);
+	}
+
+	if (g_bIsSvEngine)
+	{
+		g_pfnGetVideoMode = (decltype(g_pfnGetVideoMode))MH_SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, GETVIDEOMODE_SIG_SVENGINE, sizeof(GETVIDEOMODE_SIG_SVENGINE) - 1);
+		if (g_pfnGetVideoMode)
+			g_pVideoMode = *(decltype(g_pVideoMode)*)((char *)g_pfnGetVideoMode + 0x2);
 	}
 
 	g_phClientDLL_Init = MH_InlineHook(g_pClientDLL_Init, MH_ClientDLL_Init, (void *&)g_pfnClientDLL_Init);
@@ -708,6 +718,16 @@ DWORD MH_GetVideoMode(int *width, int *height, int *bpp, bool *windowed)
 	static int iSaveMode;
 	static int iSaveWidth, iSaveHeight, iSaveBPP;
 	static bool bSaveWindowed;
+
+	if (g_pfnGetVideoMode && g_pVideoMode && *g_pVideoMode)
+	{
+		g_pfnGetVideoMode(width, height, bpp);
+
+		if (windowed)
+			*windowed = bSaveWindowed;
+
+		return iSaveMode;
+	}
 
 	if (g_bSaveVideo)
 	{

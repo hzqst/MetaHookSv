@@ -726,6 +726,12 @@ void R_FillAddress(void)
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
+#define FBO_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\x68\xA9\x8C\x00\x00"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_EndRendering, 0x500, FBO_SIG_SVENGINE, sizeof(FBO_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(backbuffer_fbo);
+		gl_msaa_fbo = *(int **)(addr + 2);
+		gl_backbuffer_fbo = *(int **)(addr + 11);
+
 #define GSKYTEXNUMBER_SIG_SVENGINE "\xFF\x34\xB5\x2A\x2A\x2A\x2A\xE8"
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawSkyChain, 0x300, GSKYTEXNUMBER_SIG_SVENGINE, sizeof(GSKYTEXNUMBER_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(gSkyTexNumber);
@@ -1106,8 +1112,8 @@ void R_InstallHook(void)
 		g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderView_SvEngine, R_RenderView_SvEngine, (void *&)gRefFuncs.R_RenderView_SvEngine);
 	else
 		g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderView, R_RenderView, (void *&)gRefFuncs.R_RenderView);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.EmitWaterPolys, EmitWaterPolys, (void *&)gRefFuncs.EmitWaterPolys);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_NewMap, R_NewMap, (void *&)gRefFuncs.R_NewMap);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.EmitWaterPolys, EmitWaterPolys, (void *&)gRefFuncs.EmitWaterPolys);	
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_SetupGL, R_SetupGL, (void *&)gRefFuncs.R_SetupGL);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_MarkLeaves, R_MarkLeaves, (void *&)gRefFuncs.R_MarkLeaves);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.Mod_PointInLeaf, Mod_PointInLeaf, (void *&)gRefFuncs.Mod_PointInLeaf);
@@ -1131,142 +1137,4 @@ void R_InstallHook(void)
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DecalMPoly, R_DecalMPoly,  (void *&)gRefFuncs.R_DecalMPoly);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawEntitiesOnList, R_DrawEntitiesOnList, (void *&)gRefFuncs.R_DrawEntitiesOnList);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawTEntitiesOnList, R_DrawTEntitiesOnList, (void *&)gRefFuncs.R_DrawTEntitiesOnList);
-}
-
-void Lightmaps_Patch(void)
-{
-	max_lightmaps = 128;
-	const char *s_num;
-	if(g_pInterface->CommandLine->CheckParm("-lightmaps", &s_num))
-	{
-		if(s_num && s_num[0] && s_num[0] >= '0' && s_num[0] <= '9')
-		{
-			int i_num = atoi(s_num);
-			max_lightmaps = min(max(i_num, 64), 512);
-		}
-	}
-
-	lightmap_textures = new int[max_lightmaps];
-	memset(lightmap_textures, 0, sizeof(int) * max_lightmaps);
-
-	lightmap_rectchange = new glRect_t[max_lightmaps];
-	memset(lightmap_rectchange, 0, sizeof(glRect_t) * max_lightmaps);
-
-	lightmap_modified = new int[max_lightmaps];
-	memset(lightmap_modified, 0, sizeof(int) * max_lightmaps);
-
-	lightmap_alloc = new int[max_lightmaps * BLOCK_WIDTH];
-	memset(lightmap_alloc, 0, sizeof(int) * max_lightmaps * BLOCK_WIDTH);
-
-	lightmaps_new = new byte[max_lightmaps * BLOCK_WIDTH * BLOCK_HEIGHT * LIGHTMAP_BYTES];
-	memset(lightmaps_new, 0, sizeof(byte) * max_lightmaps * BLOCK_WIDTH * BLOCK_HEIGHT * LIGHTMAP_BYTES);
-}
-
-void CL_VisEdicts_Patch(void)
-{
-	cl_maxvisedicts = 512;
-	const char *s_num;
-	if(g_pInterface->CommandLine->CheckParm("-visedicts", &s_num))
-	{
-		if(s_num && s_num[0] && s_num[0] >= '0' && s_num[0] <= '9')
-		{
-			int i_num = atoi(s_num);
-			cl_maxvisedicts = min(max(i_num, 512), 4096);
-		}
-	}
-
-	//search in CL_CreateVisibleEntity
-	DWORD addr_cl_numvisedicts = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gEngfuncs.CL_CreateVisibleEntity, 0x50, "\x8B\x0D\x2A\x2A\x2A\x2A\x81\xF9\x00\x02\x00\x00", sizeof("\x8B\x0D\x2A\x2A\x2A\x2A\x81\xF9\x00\x02\x00\x00")-1);
-	if(!addr_cl_numvisedicts)
-		Sig_NotFound(cl_numvisedicts);
-	cl_numvisedicts = *(int **)(addr_cl_numvisedicts+2);
-
-	//search cl_visedicts
-	DWORD addr_cl_visedicts = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gEngfuncs.CL_CreateVisibleEntity, 0x100, "\xB8\x01\x00\x00\x00\x89\x14\x8D\x2A\x2A\x2A\x2A\x41", sizeof("\xB8\x01\x00\x00\x00\x89\x14\x8D\x2A\x2A\x2A\x2A\x41")-1);
-	if(!addr_cl_visedicts)
-		Sig_NotFound(cl_visedicts);
-	cl_visedicts_old = *(cl_entity_t ***)(addr_cl_visedicts + 8);
-
-	//no need to patch
-	if(cl_maxvisedicts <= 512)
-	{
-		cl_visedicts_new = cl_visedicts_old;
-		return;
-	}
-
-	//alloc here
-	cl_visedicts_new = (cl_entity_t **)malloc(cl_maxvisedicts*sizeof(cl_entity_t *));
-	if(!cl_visedicts_new)
-	{
-		Sys_ErrorEx("CL_VisEdicts_Patch: out of memory");
-		return;
-	}
-
-	//replace this first
-	g_pMetaHookAPI->WriteDWORD((void *)(cl_visedicts_old+8), (DWORD)cl_visedicts_new);
-	gEngfuncs.Con_Printf("CL_VisEdicts_Patch: CL_CreateVisibleEntity patched.\n");
-
-	//replace all "cmp cl_numvisedicts, 200h"
-	char sig[32];
-	int count;
-	DWORD addr, size, end;
-
-	end = g_dwEngineBase+g_dwEngineSize;
-
-	count = 0;
-	memcpy(sig, "\x81\x3D\x2A\x2A\x2A\x2A\x00\x02\x00\x00", 10);
-	*(DWORD *)(&sig[2]) = (DWORD)cl_numvisedicts;
-	addr = g_dwEngineBase;
-	while(1)
-	{
-		size = end-addr;
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, size, sig, 10);
-		if(addr == 0)
-			break;
-		g_pMetaHookAPI->WriteDWORD((void *)(addr+6), (DWORD)cl_maxvisedicts);
-		count ++;
-		addr += 10;
-	}
-	gEngfuncs.Con_DPrintf("CL_VisEdicts_Patch: %d of \"cmp cl_numvisedicts, 200h\" patched.\n", count);
-
-	//patch ClientDLL_AddEntity
-	memcpy(sig, "\x89\x34\x85\x2A\x2A\x2A\x2A\x40\xA3\x2A\x2A\x2A\x2A", 13);
-	*(DWORD *)(&sig[3]) = (DWORD)cl_visedicts_old;
-	*(DWORD *)(&sig[9]) = (DWORD)cl_numvisedicts;
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, sig, 13);
-	if(!addr)
-		SIG_NOT_FOUND("ClientDLL_AddEntity->cl_visedicts");
-	g_pMetaHookAPI->WriteDWORD((void *)(addr+3), (DWORD)cl_visedicts_new);
-	gEngfuncs.Con_DPrintf("CL_VisEdicts_Patch: ClientDLL_AddEntity patched.\n");
-
-	//patch CL_MoveAiments
-	memcpy(sig, "\x8B\x04\x95\x2A\x2A\x2A\x2A\x8B\x88\x44\x03\x00\x00", 13);
-	*(DWORD *)(&sig[3]) = (DWORD)cl_visedicts_old;
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, sig, 13);
-	if(!addr)
-		SIG_NOT_FOUND("CL_MoveAiments->cl_visedicts");
-	g_pMetaHookAPI->WriteDWORD((void *)(addr+3), (DWORD)cl_visedicts_new);
-	gEngfuncs.Con_DPrintf("CL_VisEdicts_Patch: CL_MoveAiments patched.\n");
-
-	//we have already rewrite the R_DrawEntitiesOnList code
-	//no need to patch R_DrawEntitiesOnList
-
-	/*count = 0;
-	memcpy(sig, "\x8B\x2A\x2A\x2A\x2A\x2A\x2A", 7);
-	*(DWORD *)(&sig[3]) = (DWORD)cl_visedicts_old;
-	addr = (DWORD)gRefFuncs.R_DrawEntitiesOnList;
-	size = 0x350;
-	end = size + addr;
-	do
-	{
-		size = end - addr;
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, size, sig, 7);
-		if(!addr)
-			break;
-		g_pMetaHookAPI->WriteDWORD((void *)(addr+3), (DWORD)cl_visedicts_new);
-		count ++;
-		addr += 7;
-	}while(1);*/
-	
-	//gEngfuncs.Con_DPrintf("CL_VisEdicts_Patch: %d replaced in R_DrawEntitiesOnList\n", count);
 }

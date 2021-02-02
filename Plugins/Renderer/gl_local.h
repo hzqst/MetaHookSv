@@ -110,6 +110,12 @@ extern int gl_max_texture_size;
 extern float gl_max_ansio;
 extern float gl_force_ansio;
 
+extern int *gl_msaa_fbo;
+extern int *gl_backbuffer_fbo;
+
+extern int glwidth;
+extern int glheight;
+
 extern qboolean bDoMSAAFBO;
 extern qboolean bDoScaledFBO;
 extern qboolean bDoDirectBlit;
@@ -316,6 +322,3 @@ extern int save_refdefstack;
 
 extern double g_flFrameTime;
 extern int last_luminance;
-
-#define glwidth g_iVideoWidth
-#define glheight g_iVideoHeight

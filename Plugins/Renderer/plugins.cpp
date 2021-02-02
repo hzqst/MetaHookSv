@@ -13,10 +13,8 @@ IFileSystem *g_pFileSystem;
 HINSTANCE g_hInstance, g_hThisModule, g_hEngineModule;
 DWORD g_dwEngineBase, g_dwEngineSize;
 DWORD g_dwEngineBuildnum;
-int g_iVideoWidth, g_iVideoHeight, g_iBPP;
 
 int g_iEngineType = ENGINE_GOLDSRC;
-bool g_bWindowed = false;
 
 void IPlugins::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
@@ -39,9 +37,7 @@ void IPlugins::Shutdown(void)
 
 void IPlugins::LoadEngine(void)
 {
-	g_pFileSystem = g_pInterface->FileSystem;
-	
-	int iVideoMode = g_pMetaHookAPI->GetVideoMode(&g_iVideoWidth, &g_iVideoHeight, &g_iBPP, &g_bWindowed);
+	int iVideoMode = g_pMetaHookAPI->GetVideoMode(NULL, NULL, NULL, NULL);
 
 	if (iVideoMode == 2)
 	{
@@ -52,6 +48,8 @@ void IPlugins::LoadEngine(void)
 		Sys_ErrorEx("Software mode is not supported.");
 	}
 
+	g_pFileSystem = g_pInterface->FileSystem;
+	
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();
 
 	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
@@ -67,6 +65,17 @@ void IPlugins::LoadEngine(void)
 
 void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 {
+	int iVideoMode = g_pMetaHookAPI->GetVideoMode(&glwidth, &glheight, NULL, NULL);
+
+	if (iVideoMode == 2)
+	{
+		Sys_ErrorEx("D3D mode is not supported.");
+	}
+	if (iVideoMode == 0)
+	{
+		Sys_ErrorEx("Software mode is not supported.");
+	}
+
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
 	memcpy(&gEngfuncs, g_pMetaSave->pEngineFuncs, sizeof(gEngfuncs));
 
