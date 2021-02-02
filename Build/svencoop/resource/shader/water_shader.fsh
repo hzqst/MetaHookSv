@@ -5,6 +5,7 @@ uniform vec3 eyepos;
 uniform float time;
 uniform float fresnel;
 uniform float depthfactor;
+uniform float normfactor;
 uniform float abovewater;
 uniform sampler2D normalmap;
 uniform sampler2D refractmap;
@@ -29,7 +30,15 @@ void main()
 
 	//calculate texcoord
 	vec2 vBaseTexCoord = projpos.xy / projpos.w * 0.5 + 0.5;
-	vec2 vOffsetTexCoord = normalize(vNormal.xyz).xy * 0.3;
+
+	//fresnel factor
+	vec3 vEyeVect = eyepos - worldpos;
+	float sinX = abs(vEyeVect.z) / (length(vEyeVect) + 0.001);
+	float fresnelX = asin(sinX) / (0.5 * 3.14159);
+
+	float flOffsetFactor = clamp(fresnelX * normfactor, 0.0, 0.3);
+
+	vec2 vOffsetTexCoord = normalize(vNormal.xyz).xy * flOffsetFactor;
 
 	//sample the refract color
 
@@ -53,11 +62,6 @@ void main()
 		
 		float flDepth = pow(vDepthColor.z, depthfactor);
 
-		//fresnel factor, eyepos'z must be larger than worldpos's
-		vec3 vEyeVect = eyepos - worldpos;
-		float sinX = vEyeVect.z / length(vEyeVect);
-		float fresnelX = asin(sinX);
-
 		float flRefractFactor = clamp(fresnelX * fresnel, 0.05, 0.999);
 
 		if(vReflectColor.x == waterfogcolor.x && vReflectColor.y == waterfogcolor.y && vReflectColor.z == waterfogcolor.z )
@@ -65,12 +69,17 @@ void main()
 
 		//lerp the reflection and refraction color by fresnel
 		vec4 vFinalColor = vReflectColor * (1.0-flRefractFactor) + vRefractColor * flRefractFactor;
-		//waterfog color
-		//vec4 vFinalColor2 = vec4(waterfogcolor.xyz * (vFinalColor.r + vFinalColor.g + vFinalColor.b) / 3.0, 1.0);
-		//lerp the final color
-		gl_FragColor = vFinalColor;
+		
+		float flWaterColorAlpha = clamp(waterfogcolor.a, 0.01, 0.85);
 
-		gl_FragColor.a = flDepth * waterfogcolor.a;
+		waterfogcolor.a = 1.0;
+
+		//lerp waterfog color
+		vec4 vFinalColor2 = vFinalColor * (1.0-flWaterColorAlpha) + waterfogcolor * flWaterColorAlpha;
+		
+		vFinalColor2.a = flDepth;
+
+		gl_FragColor = vFinalColor2;		
 	}
 	else
 	{
