@@ -66,6 +66,15 @@ void R_InitShadow(void)
 				SHADER_UNIFORM(shadow, fard, "fard");
 			}
 		}
+
+		if (!shadow_vscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\shadow_shader.vsh\" not found!");
+		}
+		if (!shadow_fscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\shadow_shader.fsh\" not found!");
+		}
 		gEngfuncs.COM_FreeFile((void *)shadow_vscode);
 		gEngfuncs.COM_FreeFile((void *)shadow_fscode);
 	}

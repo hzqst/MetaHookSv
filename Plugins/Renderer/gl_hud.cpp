@@ -238,6 +238,7 @@ void R_InitRefHUD(void)
 			gEngfuncs.COM_FreeFile(hud_drawroundrect_fscode);
 		}
 
+
 		char *hud_drawhudmask_vscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\hud_drawhudmask.vsh", 5, 0);
 		char *hud_drawhudmask_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\hud_drawhudmask.fsh", 5, 0);
 		if(hud_drawhudmask_vscode && hud_drawhudmask_fscode)

@@ -84,7 +84,16 @@ void R_InitWater(void)
 				SHADER_UNIFORM(water, reflectmap, "reflectmap");
 				SHADER_UNIFORM(water, depthrefrmap, "depthrefrmap");
 			}
+		}	
+		if (!water_vscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\water_shader.vsh\" not found!");
 		}
+		if (!water_fscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\water_shader.fsh\" not found!");
+		}
+
 		gEngfuncs.COM_FreeFile((void *)water_vscode);
 		gEngfuncs.COM_FreeFile((void *)water_fscode);
 
