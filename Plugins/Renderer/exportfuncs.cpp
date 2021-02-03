@@ -331,6 +331,8 @@ int HUD_Redraw(float time, int intermission)
 		qglEnable(GL_TEXTURE_2D);
 		qglBindTexture(GL_TEXTURE_2D, sdlights_active->depthmap);
 
+		qglUseProgramObjectARB(drawdepth.program);
+
 		qglBegin(GL_QUADS);
 		qglTexCoord2f(0,1);
 		qglVertex3f(0,0,0);
@@ -342,6 +344,8 @@ int HUD_Redraw(float time, int intermission)
 		qglVertex3f(0,glheight/2,0);
 		qglEnd();
 		qglEnable(GL_ALPHA_TEST);
+
+		qglUseProgramObjectARB(0);
 	}
 	else if(r_cloak_debug->value)
 	{

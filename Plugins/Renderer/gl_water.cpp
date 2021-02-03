@@ -144,7 +144,7 @@ int R_ShouldReflect(void)
 	return 1;
 }
 
-void R_AddWater(cl_entity_t *ent, vec3_t p, colorVec *color)
+void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 {
 	r_water_t *w;
 
@@ -155,6 +155,7 @@ void R_AddWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 		if ((ent != r_worldentity && w->ent == ent) || (ent == r_worldentity && fabs(w->vecs[2] - p[2]) < 1.0f) )
 		{
 			//found one
+			VectorCopy(p, w->vecs);
 			curwater = w;
 			curwater->free = false;
 			return;

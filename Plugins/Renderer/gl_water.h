@@ -83,7 +83,7 @@ extern cvar_t *r_water_fresnel;
 extern cvar_t *r_water_depthfactor;
 extern cvar_t *r_water_normfactor;
 
-void R_AddWater(cl_entity_t *ent, vec3_t p, colorVec *color);
+void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color);
 void R_InitWater(void);
 void R_ClearWater(void);
 void R_RenderWaterView(void);

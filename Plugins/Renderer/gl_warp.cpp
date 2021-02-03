@@ -176,7 +176,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 
 	if(r_water && r_water->value && water.program)
 	{
-		R_AddWater((*currententity), tempVert, &gWaterColor);
+		R_AddEntityWater((*currententity), tempVert, &gWaterColor);
 		if(curwater)
 		{
 			qglUseProgramObjectARB(water.program);

@@ -19,6 +19,13 @@ SHADER_DEFINE(shadow);
 //cvar
 cvar_t *r_shadow = NULL;
 cvar_t *r_shadow_debug = NULL;
+cvar_t *r_shadow_angle_p = NULL;
+cvar_t *r_shadow_angle_y = NULL;
+cvar_t *r_shadow_angle_r = NULL;
+cvar_t *r_shadow_radius = NULL;
+cvar_t *r_shadow_fardist = NULL;
+cvar_t *r_shadow_scale = NULL;
+cvar_t *r_shadow_texsize = NULL;
 
 void R_ClearShadow(void)
 {
@@ -61,9 +68,15 @@ void R_InitShadow(void)
 	}
 
 	r_shadow = gEngfuncs.pfnRegisterVariable("r_shadow", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_debug = gEngfuncs.pfnRegisterVariable("r_shadow_debug", "0", FCVAR_CLIENTDLL);
+	r_shadow_debug = gEngfuncs.pfnRegisterVariable("r_shadow_debug", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_angle_p = gEngfuncs.pfnRegisterVariable("r_shadow_angle_pitch", "100", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_angle_y = gEngfuncs.pfnRegisterVariable("r_shadow_angle_yaw", "30", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_angle_r = gEngfuncs.pfnRegisterVariable("r_shadow_angle_roll", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_radius = gEngfuncs.pfnRegisterVariable("r_shadow_radius", "256", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_fardist = gEngfuncs.pfnRegisterVariable("r_shadow_fardist", "64", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_scale = gEngfuncs.pfnRegisterVariable("r_shadow_scale", "8", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_texsize", "512", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
-	shadow_update_counter = 0;
 	drawshadow = false;
 	drawshadowscene = false;
 	cursdlight = NULL;
@@ -152,8 +165,8 @@ void R_AddEntityShadow(cl_entity_t *ent, const char *model)
 		shadowlight_t *sl = R_FindShadowLight(ent);
 		if(!sl)
 		{
-			vec3_t ang = { 100, 0, 0 };
-			R_CreateShadowLight(ent, ang, 256, 64, 8, 512);
+			vec3_t ang = { r_shadow_angle_p->value, r_shadow_angle_y->value, r_shadow_angle_r->value };
+			R_CreateShadowLight(ent, ang, r_shadow_radius->value, r_shadow_fardist->value, (int)r_shadow_scale->value, (int)r_shadow_texsize->value);
 		}
 		else
 		{
@@ -165,8 +178,8 @@ void R_AddEntityShadow(cl_entity_t *ent, const char *model)
 		shadowlight_t *sl = R_FindShadowLight(ent);
 		if(!sl)
 		{
-			vec3_t ang = { 100, 0, 0 };
-			R_CreateShadowLight(ent, ang, 256, 64, 8, 512);
+			vec3_t ang = { r_shadow_angle_p->value, r_shadow_angle_y->value, r_shadow_angle_r->value };
+			R_CreateShadowLight(ent, ang, r_shadow_radius->value, r_shadow_fardist->value, (int)r_shadow_scale->value, (int)r_shadow_texsize->value);
 		}
 		else
 		{
@@ -336,10 +349,10 @@ qboolean R_ShouldCastShadow(cl_entity_t *ent)
 	}
 	else if (ent->model->type == mod_brush)
 	{
-		if (ent->curstate.movetype == MOVETYPE_NONE)
-			return false;
+		if (ent->curstate.movetype == MOVETYPE_BOUNCE || ent->curstate.movetype == MOVETYPE_TOSS)
+			return true;
 
-		return true;
+		return false;
 	}
 
 	return false;
@@ -600,7 +613,7 @@ void R_RenderAllShadowScenes(void)
 			qglPolygonOffset(-1, -gl_polyoffset->value);
 	}
 
-	qglDepthMask(GL_FALSE);
+	qglDepthMask(GL_TRUE);
 	qglEnable(GL_BLEND);
 	qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	qglColor4f(0.1, 0.1, 0.1, 0.5);

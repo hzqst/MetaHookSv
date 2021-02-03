@@ -47,7 +47,6 @@ typedef struct
 //renderer 
 extern qboolean drawshadow;
 extern qboolean drawshadowscene;
-extern int shadow_update_counter;
 extern vec3_t shadow_light_mins;
 extern vec3_t shadow_light_maxs;
 
@@ -70,7 +69,14 @@ extern vec3_t shadow_light_maxs;
 //cvar
 extern cvar_t *r_shadow;
 extern cvar_t *r_shadow_debug;
-
+extern cvar_t *r_shadow_angle_p;
+extern cvar_t *r_shadow_angle_y;
+extern cvar_t *r_shadow_angle_r;
+extern cvar_t *r_shadow_radius;
+extern cvar_t *r_shadow_fardist;
+extern cvar_t *r_shadow_scale;
+extern cvar_t *r_shadow_texsize;
+	   
 void R_RenderShadowMaps(void);
 void R_InitShadow(void);
 void R_ClearShadow(void);

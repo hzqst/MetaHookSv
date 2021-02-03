@@ -30,28 +30,18 @@ void main()
 	shadow += lookup(ShadowCoord, vec2( 1.0, 1.0)) * 0.0625;*/
 	
 	if(shadow > 0.9)
-	{
 		discard;
-		//gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
-	}
-	else
+
+	float dist = length(worldpos - entorigin);
+	if(dist > radius)
+		discard;
+
+	shadow = 1.0-shadow;
+
+	if(dist > fard)
 	{
-		float dist = length(worldpos - entorigin);
-		if(dist > radius)
-		{
-			discard;
-			//gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
-		}
-		else
-		{
-			shadow = 1.0-shadow;
-
-			if(dist > fard)
-			{
-				shadow = clamp(shadow * (1.0 - (dist - fard) / (radius - fard)), 0.1, 1.0);
-			}
-
-			gl_FragColor = vec4(0.0, 0.0, 0.0, shadow * 0.5);
-		}
+		shadow = clamp(shadow * (1.0 - (dist - fard) / (radius - fard)), 0.1, 1.0);
 	}
+
+	gl_FragColor = vec4(0.0, 0.0, 0.0, shadow * 0.5);
 }
