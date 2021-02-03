@@ -63,16 +63,16 @@ r_water_normfactor (0.0 ~ 1000.0) : to determine the size of water wave (offset 
 
 r_shadow 1 / 0 : to enable / disable per-object shadow rendering.
 
-r_shadow_angle_pitch (0.0 ~ 360.0) : to control the angle(pitch) of shadow caster light.
+r_shadow_angle_pitch (0.0 ~ 360.0) : to control the angle(pitch) of shadow caster (light source).
 
-r_shadow_angle_yaw (0.0 ~ 360.0) : to control the angle(yaw) of shadow caster light.
+r_shadow_angle_yaw (0.0 ~ 360.0) : to control the angle(yaw) of shadow caster (light source).
 
-r_shadow_angle_roll (0.0 ~ 360.0) : to control the angle(roll) of shadow caster light.
+r_shadow_angle_roll (0.0 ~ 360.0) : to control the angle(roll) of shadow caster (light source).
 
-r_shadow_texsize (must be power of 2) : the texture size of shadow map.
+r_shadow_texsize (must be power of 2) : the texture size of shadow map. larger texture supports bigger shadow-caster entity but uses more graphic RAM.
 
-r_shadow_scale (must be power of 2) : to determine the quality of shadow map.
+r_shadow_scale (must be power of 2) : scale factor when render shadow-caster entity in shadow map. larger scale factor gets better quality shadow but uses more GPU resource.
 
 r_shadow_fardist (0.0 ~ 1000.0) : to determine how far the shadow is going to fade out.
 
-r_shadow_radius (0.0 ~ 1000.0) : if shadow pixiel don't render when it gets this distance away from entity.
+r_shadow_radius (0.0 ~ 1000.0) : entity don't cast shadow at this distance away from surface.
