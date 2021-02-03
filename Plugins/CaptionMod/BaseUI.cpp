@@ -147,6 +147,12 @@ void BaseUI_InstallHook(void)
 	{
 #define CLIENTFACTORY_SIG_SVENGINE "\x83\xC4\x0C\x83\x3D"
 		DWORD *vft = *(DWORD **)baseuifuncs;
+
+		char test[256];
+		sprintf(test, "vft %p\n", vft);
+		OutputDebugStringA(test);
+		MessageBoxA(NULL, "", "", MB_OK);
+
 		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)vft[1], 0x200, CLIENTFACTORY_SIG_SVENGINE, Sig_Length(CLIENTFACTORY_SIG_SVENGINE));
 		if (!addr)
 			Sig_NotFound(ClientFactory);

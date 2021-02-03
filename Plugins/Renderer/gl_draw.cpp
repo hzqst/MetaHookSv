@@ -697,20 +697,7 @@ int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int wid
 		return texnum;
 	}
 
-	//ComputeScaledSize(&scaled_width, &scaled_height, width, height);
-	//rescale = (scaled_width == width && scaled_height == height) ? false : true;
-
-	//pTexture = data;
-	//if (!mipmap && rescale && scaled_width <= 128 && scaled_height <= 128)
-	//{
-	//	GL_ResampleTexturePoint(data, width, height, scaled_buffer, scaled_width, scaled_height);
-	//	pTexture = scaled_buffer;
-	//}
-
-	//if (pTexture)
-	//{
-		GL_Upload32((unsigned *)data, width, height, mipmap, ansio);
-	//}
+	GL_Upload32((unsigned *)data, width, height, mipmap, ansio);
 
 	return texnum;
 }

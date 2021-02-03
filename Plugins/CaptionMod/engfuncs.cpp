@@ -62,9 +62,7 @@ void Engine_FillAddress(void)
 
 		gCapFuncs.S_LoadSound = (sfxcache_t *(*)(sfx_t *, channel_t *))Search_Pattern(S_LOADSOUND_SIG_SVENGINE);
 		Sig_FuncNotFound(S_LoadSound);
-
 	}
-
 	else if(g_dwEngineBuildnum >= 5953)
 	{
 		gCapFuncs.S_Init = (void (*)(void))Search_Pattern(S_INIT_SIG_NEW);
@@ -122,6 +120,5 @@ void Engine_InstallHook(void)
 		Sig_FuncNotFound(SvClient_FindSoundEx);
 
 		InstallHook(SvClient_FindSoundEx);
-
 	}
 }

@@ -1011,6 +1011,25 @@ void GL_GenerateFBO(void)
 		water_texture_height = glheight;
 	}
 
+	const char *water_texture_size = NULL;
+	if (g_pInterface->CommandLine->CheckParm("-water_texture_size", &water_texture_size))
+	{
+		if (water_texture_size && water_texture_size[0] >= '0' && water_texture_size[0] <= '9')
+		{
+			int iWaterTextureSize = atoi(water_texture_size);
+			if (iWaterTextureSize >= 256)
+			{
+				water_texture_width = glwidth;
+				water_texture_height = glheight;
+				while ((water_texture_height >> 1) > iWaterTextureSize)
+				{
+					water_texture_width >>= 1;
+					water_texture_height >>= 1;
+				}
+			}
+		}
+	}
+
 	//Water FBO
 	s_WaterFBO.iWidth = water_texture_width;
 	s_WaterFBO.iHeight = water_texture_height;
@@ -1068,7 +1087,7 @@ void GL_GenerateFBO(void)
 	{
 		downW = glwidth;
 		downH = glheight;
-		while (downW > 128)
+		while ((downH >> 1) > 128)
 		{
 			downW >>= 1;
 			downH >>= 1;
