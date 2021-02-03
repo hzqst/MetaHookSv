@@ -74,6 +74,61 @@ void EmitWaterPolysWireFrame(msurface_t *fa, int direction, qboolean useProgram)
 	}
 }
 
+void Matrix4x4_CreateTranslate(vec4_t *out, float x, float y, float z)
+{
+	out[0][0] = 1.0f;
+	out[0][1] = 0.0f;
+	out[0][2] = 0.0f;
+	out[0][3] = x;
+	out[1][0] = 0.0f;
+	out[1][1] = 1.0f;
+	out[1][2] = 0.0f;
+	out[1][3] = y;
+	out[2][0] = 0.0f;
+	out[2][1] = 0.0f;
+	out[2][2] = 1.0f;
+	out[2][3] = z;
+	out[3][0] = 0.0f;
+	out[3][1] = 0.0f;
+	out[3][2] = 0.0f;
+	out[3][3] = 1.0f;
+}
+
+void Matrix4x4_CreateRotate(vec4_t *out, float angle, float x, float y, float z)
+{
+	float	len, c, s;
+
+	len = x * x + y * y + z * z;
+	if (len != 0.0f) len = 1.0f / sqrt(len);
+	x *= len;
+	y *= len;
+	z *= len;
+
+	angle *= (-M_PI / 180.0f);
+	s = sin(angle);
+	c = cos(angle);
+
+	out[0][0] = x * x + c * (1 - x * x);
+	out[0][1] = x * y * (1 - c) + z * s;
+	out[0][2] = z * x * (1 - c) - y * s;
+	out[0][3] = 0.0f;
+
+	out[1][0] = x * y * (1 - c) - z * s;
+	out[1][1] = y * y + c * (1 - y * y);
+	out[1][2] = y * z * (1 - c) + x * s;
+	out[1][3] = 0.0f;
+
+	out[2][0] = z * x * (1 - c) + y * s;
+	out[2][1] = y * z * (1 - c) - x * s;
+	out[2][2] = z * z + c * (1 - z * z);
+	out[2][3] = 0.0f;
+
+	out[3][0] = 0.0f;
+	out[3][1] = 0.0f;
+	out[3][2] = 0.0f;
+	out[3][3] = 1.0f;
+}
+
 void EmitWaterPolys(msurface_t *fa, int direction)
 {
 	glpoly_t *p;
@@ -114,7 +169,12 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	if ((*currententity)->curstate.rendermode == kRenderTransTexture)
 		gWaterColor.a = (*r_blend) * 255;
 
-	if(r_water->value && water.program)
+	if ((*currententity) != r_worldentity)
+	{
+		VectorAdd(tempVert, (*currententity)->curstate.origin, tempVert);
+	}
+
+	if(r_water && r_water->value && water.program)
 	{
 		R_AddWater((*currententity), tempVert, &gWaterColor);
 		if(curwater)
@@ -128,7 +188,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 			qglUniform4fARB(water.waterfogcolor, curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, alpha);
 			qglUniform3fARB(water.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
 			qglUniform3fARB(water.eyedir, vpn[0], vpn[1], vpn[2]);
-			qglUniform1fARB(water.time, (*cl_time));
+			qglUniform1fARB(water.time, clientTime);
 			qglUniform1fARB(water.fresnel, clamp(r_water_fresnel->value, 0.0, 10.0));
 			qglUniform1fARB(water.depthfactor, clamp(r_water_depthfactor->value, 0.0, 1000.0));
 			qglUniform1fARB(water.normfactor, clamp(r_water_normfactor->value, 0.0, 1000.0));

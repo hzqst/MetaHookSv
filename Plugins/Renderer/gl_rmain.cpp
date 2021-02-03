@@ -215,8 +215,6 @@ int R_GetSupportExtension(void)
 
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
-	int i;
-
 	if(draw3dhud || drawshadow)
 		return false;
 
@@ -1322,7 +1320,7 @@ void R_PreRenderView()
 			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	}
 
-	Draw_UpdateAnsios();
+	//Draw_UpdateAnsios();
 
 	/*if (r_3dsky_parm.enable && r_3dsky->value)
 	{
@@ -1331,11 +1329,11 @@ void R_PreRenderView()
 
 	if (!r_refdef->onlyClientDraws)
 	{
-		if (shadow.program && r_shadow->value)
+		if (shadow.program && r_shadow && r_shadow->value)
 		{
 			R_RenderShadowMaps();
 		}
-		if (water.program && r_water->value)
+		if (water.program && r_water && r_water->value)
 		{
 			R_RenderWaterView();
 		}

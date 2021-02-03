@@ -548,7 +548,7 @@ void R_RecursiveWorldNodeShadow(mnode_t *node)
 
 void R_RenderAllShadowScenes(void)
 {
-	if(!r_shadow->value || !shadow.program)
+	if(!r_shadow || !r_shadow->value || !shadow.program)
 		return;
 
 	if(!sdlights_active)

@@ -152,7 +152,7 @@ void R_AddWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 
 	for (w = waters_active; w; w = w->next)
 	{
-		if (w->ent == ent || fabs(w->vecs[2] - p[2]) < 1.0f)
+		if ((ent != r_worldentity && w->ent == ent) || (ent == r_worldentity && fabs(w->vecs[2] - p[2]) < 1.0f) )
 		{
 			//found one
 			curwater = w;
