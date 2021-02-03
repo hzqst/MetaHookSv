@@ -13,22 +13,14 @@ IFileSystem *g_pFileSystem;
 HINSTANCE g_hInstance, g_hThisModule, g_hEngineModule;
 DWORD g_dwEngineBase, g_dwEngineSize;
 DWORD g_dwEngineBuildnum;
-
-int g_iEngineType = ENGINE_GOLDSRC;
+int g_iEngineType;
 
 void IPlugins::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
-	BOOL (*IsDebuggerPresent)(void) = (BOOL (*)(void))GetProcAddress(GetModuleHandle("kernel32.dll"), "IsDebuggerPresent");
-
 	g_pInterface = pInterface;
 	g_pMetaHookAPI = pAPI;
 	g_pMetaSave = pSave;
 	g_hInstance = GetModuleHandle(NULL);
-
-	//TODO: D3D Support
-	//g_pInterface->CommandLine->RemoveParm("-d3d");
-	//g_pInterface->CommandLine->AppendParm("-gl", NULL);
-	//g_pInterface->CommandLine->AppendParm("-32bpp", NULL);
 }
 
 void IPlugins::Shutdown(void)
@@ -48,12 +40,9 @@ void IPlugins::LoadEngine(void)
 		Sys_ErrorEx("Software mode is not supported.");
 	}
 
-	g_pFileSystem = g_pInterface->FileSystem;
-	
+	g_pFileSystem = g_pInterface->FileSystem;	
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();
-
 	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
-
 	g_hEngineModule = g_pMetaHookAPI->GetEngineModule();
 	g_dwEngineBase = g_pMetaHookAPI->GetEngineBase();
 	g_dwEngineSize = g_pMetaHookAPI->GetEngineSize();
@@ -81,7 +70,7 @@ void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	Cmd_GetCmdBase = *(cmd_function_t *(**)(void))((DWORD)g_pMetaSave->pEngineFuncs + 0x198);
 
-	if(g_dwEngineBuildnum < 5953)
+	if(g_iEngineType != ENGINE_SVENGINE && g_dwEngineBuildnum < 5953)
 	{
 		g_pMetaHookAPI->InlineHook(gEngfuncs.pfnGetMousePos, hudGetMousePos, (void *&)gEngfuncs.pfnGetMousePos);
 		g_pMetaHookAPI->InlineHook(gEngfuncs.GetMousePosition, hudGetMousePosition, (void *&)gEngfuncs.GetMousePosition);

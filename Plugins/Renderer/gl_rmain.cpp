@@ -27,7 +27,6 @@ cl_entity_t **currententity;
 int *numTransObjs;
 int *maxTransObjs;
 transObjRef **transObjects;
-GLuint screenframebuffer;
 GLuint drawframebuffer;
 GLuint readframebuffer;
 
@@ -83,6 +82,8 @@ int gl_csaa_samples = 0;
 int *gl_msaa_fbo = 0;
 int *gl_backbuffer_fbo = 0;
 
+int glx = 0;
+int gly = 0;
 int glwidth = 0;
 int glheight = 0;
 
@@ -652,28 +653,6 @@ void R_SetFrustum(void)
 	}
 }
 
-/*void R_ForceCVars(qboolean mp)
-{
-	if (gRefFuncs.R_ForceCVars)
-	{
-		gRefFuncs.R_ForceCVars(mp);
-		return;
-	}
-
-	if (gl_polyoffset->value < 0 && gl_polyoffset->value < -0.001)
-		Cvar_DirectSet(gl_polyoffset, "-0.001");
-	if (gl_polyoffset->value > 0 && gl_polyoffset->value < 0.001)
-		Cvar_DirectSet(gl_polyoffset, "0.001");
-	else if (gl_polyoffset->value > 0 && gl_polyoffset->value > 25)
-		Cvar_DirectSet(gl_polyoffset, "25");
-
-	if (v_lightgamma->value < 1.8)
-	{
-		Cvar_DirectSet(v_lightgamma, "1.8");
-		GL_BuildLightmaps();
-	}
-}*/
-
 int SignbitsForPlane(mplane_t *out)
 {
 	int bits, j;
@@ -688,26 +667,6 @@ int SignbitsForPlane(mplane_t *out)
 
 	return bits;
 }
-
-/*void R_SetupFrame(void)
-{
-	float gl_wireframe_value = gl_wireframe->value;
-	float r_dynamic_value = r_dynamic->value;
-
-	if (R_GetDrawPass() == r_draw_normal)
-		R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
-
-	gRefFuncs.R_SetupFrame();
-
-	if(developer->value != 0)
-	{
-		gl_wireframe->value = gl_wireframe_value;
-	}
-	if(developer->value != 0)
-	{
-		r_dynamic->value = r_dynamic_value;
-	}
-}*/
 
 void MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar)
 {
@@ -744,7 +703,7 @@ void R_SetupGL(void)
 
 	if (drawreflect || drawrefract)
 	{
-		qglViewport(0, 0, water_texture_size, water_texture_size);
+		qglViewport(0, 0, water_texture_width, water_texture_height);
 
 		R_EnableClip(true);
 	}
@@ -754,8 +713,8 @@ void R_CalcRefdef(struct ref_params_s *pparams)
 {
 	memcpy(&r_params, pparams, sizeof(struct ref_params_s));
 
-	yfov = CalcFov(scr_fov_value, r_refdef->vrect.width, r_refdef->vrect.height);
-	screenaspect = (float)r_refdef->vrect.width / r_refdef->vrect.height;
+	//yfov = CalcFov(scr_fov_value, r_refdef->vrect.width, r_refdef->vrect.height);
+	//screenaspect = (float)r_refdef->vrect.width / r_refdef->vrect.height;
 }
 
 void CheckMultiTextureExtensions(void)
@@ -871,6 +830,9 @@ void GL_GenerateFBO(void)
 	if (gEngfuncs.CheckParm("-nomsaa", NULL))
 		bDoMSAAFBO = false;
 
+	if (!gl_msaa_support)
+		bDoMSAAFBO = false;
+
 	if (!gl_msaa_blit_support)
 		bDoMSAAFBO = false;
 
@@ -914,14 +876,7 @@ void GL_GenerateFBO(void)
 	GL_ClearFBO(&s_CloakFBO);
 
 	if(!bDoScaledFBO)
-	{
-		gEngfuncs.Con_Printf("FBO backbuffer rendering disabled.\n");
-		bDoHDR = false;
-	}
-	else
-	{
-		gEngfuncs.Con_Printf("FBO backbuffer rendering enabled.\n");
-	}
+		bDoMSAAFBO = false;
 
 	qglEnable(GL_TEXTURE_2D);
 
@@ -947,7 +902,7 @@ void GL_GenerateFBO(void)
 		}
 	}
 
-	if (bDoScaledFBO && gl_msaa_support && bDoMSAAFBO)
+	if (bDoMSAAFBO)
 	{
 		const char *s_Samples;
 		gl_msaa_samples = 4;
@@ -996,7 +951,7 @@ void GL_GenerateFBO(void)
 		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			GL_FreeFBO(&s_MSAAFBO);
-			gl_msaa_support = false;
+			bDoMSAAFBO = false;
 			gEngfuncs.Con_Printf("Error initializing MSAA frame buffer\n");
 		}
 	}
@@ -1028,49 +983,70 @@ void GL_GenerateFBO(void)
 			gEngfuncs.Con_Printf("FBO backbuffer rendering disabled due to create error.\n");
 		}
 	}
-
-	//3D HUD FBO
-	s_3DHUDFBO.iWidth = glwidth;
-	s_3DHUDFBO.iHeight = glheight;
-
-	//fbo
-	R_GLGenFrameBuffer(&s_3DHUDFBO);
-	//color
-	R_GLFrameBufferColorTexture(&s_3DHUDFBO, GL_RGBA8);
-	//depth
-	R_GLGenRenderBuffer(&s_3DHUDFBO, true);
-	R_GLRenderBufferStorage(&s_3DHUDFBO, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, false);
-
-	if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	else
 	{
-		GL_FreeFBO(&s_3DHUDFBO);
-		gEngfuncs.Con_Printf("3DHUD FBO rendering disabled due to create error.\n");
+		gEngfuncs.Con_Printf("FBO backbuffer rendering enabled.\n");
 	}
 
-	//HUDInWorld FBO
-	R_GLGenFrameBuffer(&s_HUDInWorldFBO);
-
-	//Shadow FBO
-	R_GLGenFrameBuffer(&s_ShadowFBO);
-	qglDrawBuffer(GL_NONE);
-	qglReadBuffer(GL_NONE);
-
-	//Water FBO
-	water_texture_size = gl_max_texture_size / 4;
-	s_WaterFBO.iWidth = water_texture_size;
-	s_WaterFBO.iHeight = water_texture_size;
-	//fbo
-	R_GLGenFrameBuffer(&s_WaterFBO);
-	//depth we need depth texture
-	//R_GLFrameBufferDepthTexture(&s_WaterFBO, GL_DEPTH_COMPONENT24);
-	R_GLGenRenderBuffer(&s_WaterFBO, true);
-	R_GLRenderBufferStorage(&s_WaterFBO, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, false);
-
-	/*if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	//3D HUD FBO
+	if (bDoScaledFBO)
 	{
-		GL_FreeFBO(&s_WaterFBO);
-		gEngfuncs.Con_Printf("Water FBO rendering disabled due to create error.\n");
-	}*/
+		s_3DHUDFBO.iWidth = glwidth;
+		s_3DHUDFBO.iHeight = glheight;
+
+		//fbo
+		R_GLGenFrameBuffer(&s_3DHUDFBO);
+		//color
+		R_GLFrameBufferColorTexture(&s_3DHUDFBO, GL_RGBA8);
+		//depth
+		R_GLGenRenderBuffer(&s_3DHUDFBO, true);
+		R_GLRenderBufferStorage(&s_3DHUDFBO, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, false);
+
+		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			GL_FreeFBO(&s_3DHUDFBO);
+			gEngfuncs.Con_Printf("3DHUD FBO rendering disabled due to create error.\n");
+		}
+
+		//HUDInWorld FBO
+		R_GLGenFrameBuffer(&s_HUDInWorldFBO);
+
+		//Shadow FBO
+		R_GLGenFrameBuffer(&s_ShadowFBO);
+	}
+
+	if (glwidth >= 2560)
+	{
+		water_texture_width = 1920;
+		water_texture_height = 1080;
+	}
+	else if (glwidth >= 1600)
+	{
+		water_texture_width = glwidth / 2;
+		water_texture_height = glheight / 2;
+	}
+	else
+	{
+		water_texture_width = glwidth;
+		water_texture_height = glheight;
+	}
+
+	if (bDoScaledFBO)
+	{
+		//Water FBO
+		s_WaterFBO.iWidth = water_texture_width;
+		s_WaterFBO.iHeight = water_texture_height;
+		//fbo
+		R_GLGenFrameBuffer(&s_WaterFBO);
+		R_GLGenRenderBuffer(&s_WaterFBO, true);
+		R_GLRenderBufferStorage(&s_WaterFBO, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, false);
+
+		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			GL_FreeFBO(&s_WaterFBO);
+			gEngfuncs.Con_Printf("Water FBO rendering disabled due to create error.\n");
+		}
+	}
 
 	int downW, downH;
 
@@ -1230,19 +1206,25 @@ void GL_GenerateFBO(void)
 		}
 	}
 
-	s_CloakFBO.iWidth = glwidth;
-	s_CloakFBO.iHeight = glheight;
-
-	//fbo
-	R_GLGenFrameBuffer(&s_CloakFBO);
-	//color
-	R_GLFrameBufferColorTexture(&s_CloakFBO, GL_RGBA8);
-
-	if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	if (bDoScaledFBO)
 	{
-		GL_FreeFBO(&s_CloakFBO);
-		gEngfuncs.Con_Printf("Cloak FBO rendering disabled due to create error.\n");
+		s_CloakFBO.iWidth = glwidth;
+		s_CloakFBO.iHeight = glheight;
+
+		//fbo
+		R_GLGenFrameBuffer(&s_CloakFBO);
+		//color
+		R_GLFrameBufferColorTexture(&s_CloakFBO, GL_RGBA8);
+
+		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			GL_FreeFBO(&s_CloakFBO);
+			gEngfuncs.Con_Printf("Cloak FBO rendering disabled due to create error.\n");
+		}
 	}
+
+	//qglDrawBuffer(GL_NONE);
+	//qglReadBuffer(GL_NONE);
 
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 	readframebuffer = drawframebuffer = 0;
@@ -1282,168 +1264,69 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 {
 	gRefFuncs.GL_BeginRendering(x, y, width, height);
 
+	glx = *x;
+	gly = *y;
 	glwidth = *width; 
 	glheight = *height;
 
-	screenframebuffer = 0;
-
 	if (s_BackBufferFBO.s_hBackBufferFBO)
 	{
-		screenframebuffer = s_BackBufferFBO.s_hBackBufferFBO;
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, screenframebuffer);
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	}
 	
 	qglClearColor(0.0, 0.0, 0.0, 1.0);
 	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void R_RenderView_SvEngine(int a1)
-{
-	if (a1 == 0)
-	{
-		if (s_BackBufferFBO.s_hBackBufferFBO)
-		{
-			if (s_MSAAFBO.s_hBackBufferFBO)
-				screenframebuffer = s_MSAAFBO.s_hBackBufferFBO;
-			else
-				screenframebuffer = s_BackBufferFBO.s_hBackBufferFBO;
-
-			qglBindFramebufferEXT(GL_FRAMEBUFFER, screenframebuffer);
-		}
-
-		//R_UploadLightmaps();
-		Draw_UpdateAnsios();
-
-		/*if (r_3dsky_parm.enable && r_3dsky->value)
-		{
-			R_ViewOriginFor3DSky(_3dsky_view);
-		}*/
-
-		if (!r_refdef->onlyClientDraws)
-		{
-			if (shadow.program && r_shadow->value)
-			{
-				R_RenderShadowMaps();
-			}
-			if (water.program && r_water->value)
-			{
-				R_RenderWaterView();
-			}
-		}
-	}
-
-	gRefFuncs.R_RenderView_SvEngine(a1);
-
-	if (a1 == 0)
-	{
-		if (bDoScaledFBO)
-		{
-			//Do MSAA here so HUD won't be AA
-			if (bDoMSAAFBO && s_MSAAFBO.s_hBackBufferFBO)
-			{
-				qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-				qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
-				qglBlitFramebufferEXT(0, 0, s_MSAAFBO.iWidth, s_MSAAFBO.iHeight, 0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-			}
-
-			if (bDoHDR && r_hdr->value > 0)
-			{
-				R_BeginHUDQuad();
-				//normal downsample
-				R_DownSample(&s_BackBufferFBO, &s_DownSampleFBO[0], false);//(1->1/4)
-				R_DownSample(&s_DownSampleFBO[0], &s_DownSampleFBO[1], false);//(1/4)->(1/16)
-
-				//Log Luminance DownSample from .. (HDRColor to 32RF)
-				R_LuminPass(&s_DownSampleFBO[1], &s_LuminFBO[0], 1);//(1/16)->64x64
-				//Luminance DownSample from..
-				R_LuminPass(&s_LuminFBO[0], &s_LuminFBO[1], 0);//64x64->16x16
-				R_LuminPass(&s_LuminFBO[1], &s_LuminFBO[2], 0);//16x16->4x4
-				//exp Luminance DownSample from..
-				R_LuminPass(&s_LuminFBO[2], &s_Lumin1x1FBO[2], 2);//4x4->1x1
-
-				//Luminance Adaptation
-				R_LuminAdaptation(&s_Lumin1x1FBO[2], &s_Lumin1x1FBO[!last_luminance], &s_Lumin1x1FBO[last_luminance], *cl_time - *cl_oldtime);
-				last_luminance = !last_luminance;
-				//Bright Pass (with 1/16)
-				R_BrightPass(&s_DownSampleFBO[1], &s_BrightPassFBO, &s_Lumin1x1FBO[last_luminance]);
-
-				//Gaussian Blur Pass (with bright pass)
-				R_BlurPass(&s_BrightPassFBO, &s_BlurPassFBO[0][0], false);
-				R_BlurPass(&s_BlurPassFBO[0][0], &s_BlurPassFBO[0][1], true);
-				//Blur again and downsample from 1/16 to 1/32
-				R_BlurPass(&s_BlurPassFBO[0][1], &s_BlurPassFBO[1][0], false);
-				R_BlurPass(&s_BlurPassFBO[1][0], &s_BlurPassFBO[1][1], true);
-				//Blur again and downsample from 1/32 to 1/64
-				R_BlurPass(&s_BlurPassFBO[1][1], &s_BlurPassFBO[2][0], false);
-				R_BlurPass(&s_BlurPassFBO[2][0], &s_BlurPassFBO[2][1], true);
-
-				//Accumulate all blurred textures
-				R_BrightAccum(&s_BlurPassFBO[0][1], &s_BlurPassFBO[1][1], &s_BlurPassFBO[2][1], &s_BrightAccumFBO);
-
-				//Tone mapping
-				R_ToneMapping(&s_BackBufferFBO, &s_ToneMapFBO, &s_BrightAccumFBO, &s_Lumin1x1FBO[last_luminance]);
-
-				R_BlitToFBO(&s_ToneMapFBO, &s_BackBufferFBO);
-			}
-		}
-
-		screenframebuffer = s_BackBufferFBO.s_hBackBufferFBO;
-		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, screenframebuffer);
-		qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, screenframebuffer);
-	}
-}
-
-void R_RenderView(void)
+void R_PreRenderView()
 {
 	if (s_BackBufferFBO.s_hBackBufferFBO)
 	{
 		if (s_MSAAFBO.s_hBackBufferFBO)
-			screenframebuffer = s_MSAAFBO.s_hBackBufferFBO;
+			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
 		else
-			screenframebuffer = s_BackBufferFBO.s_hBackBufferFBO;
-
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, screenframebuffer);
+			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	}
 
-	//R_UploadLightmaps();
 	Draw_UpdateAnsios();
 
-	/*if(r_3dsky_parm.enable && r_3dsky->value)
+	/*if (r_3dsky_parm.enable && r_3dsky->value)
 	{
 		R_ViewOriginFor3DSky(_3dsky_view);
 	}*/
 
-	if(!r_refdef->onlyClientDraws)
+	if (!r_refdef->onlyClientDraws)
 	{
-		if(shadow.program && r_shadow->value)
+		if (shadow.program && r_shadow->value)
 		{
 			R_RenderShadowMaps();
 		}
-		if(water.program && r_water->value)
+		if (water.program && r_water->value)
 		{
 			R_RenderWaterView();
 		}
 	}
+}
 
-	gRefFuncs.R_RenderView();
-
-	if (bDoScaledFBO)
+void R_PostRenderView()
+{
+	if (s_BackBufferFBO.s_hBackBufferFBO)
 	{
 		//Do MSAA here so HUD won't be AA
-		if (bDoMSAAFBO && s_MSAAFBO.s_hBackBufferFBO)
+		if (s_MSAAFBO.s_hBackBufferFBO)
 		{
 			qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 			qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
 			qglBlitFramebufferEXT(0, 0, s_MSAAFBO.iWidth, s_MSAAFBO.iHeight, 0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 		}
 
-		if(bDoHDR && r_hdr->value > 0)
+		if (bDoHDR && r_hdr->value > 0)
 		{
 			R_BeginHUDQuad();
 			//normal downsample
 			R_DownSample(&s_BackBufferFBO, &s_DownSampleFBO[0], false);//(1->1/4)
 			R_DownSample(&s_DownSampleFBO[0], &s_DownSampleFBO[1], false);//(1/4)->(1/16)
-			
+
 			//Log Luminance DownSample from .. (HDRColor to 32RF)
 			R_LuminPass(&s_DownSampleFBO[1], &s_LuminFBO[0], 1);//(1/16)->64x64
 			//Luminance DownSample from..
@@ -1451,11 +1334,13 @@ void R_RenderView(void)
 			R_LuminPass(&s_LuminFBO[1], &s_LuminFBO[2], 0);//16x16->4x4
 			//exp Luminance DownSample from..
 			R_LuminPass(&s_LuminFBO[2], &s_Lumin1x1FBO[2], 2);//4x4->1x1
+
 			//Luminance Adaptation
 			R_LuminAdaptation(&s_Lumin1x1FBO[2], &s_Lumin1x1FBO[!last_luminance], &s_Lumin1x1FBO[last_luminance], *cl_time - *cl_oldtime);
 			last_luminance = !last_luminance;
 			//Bright Pass (with 1/16)
 			R_BrightPass(&s_DownSampleFBO[1], &s_BrightPassFBO, &s_Lumin1x1FBO[last_luminance]);
+
 			//Gaussian Blur Pass (with bright pass)
 			R_BlurPass(&s_BrightPassFBO, &s_BlurPassFBO[0][0], false);
 			R_BlurPass(&s_BlurPassFBO[0][0], &s_BlurPassFBO[0][1], true);
@@ -1465,18 +1350,44 @@ void R_RenderView(void)
 			//Blur again and downsample from 1/32 to 1/64
 			R_BlurPass(&s_BlurPassFBO[1][1], &s_BlurPassFBO[2][0], false);
 			R_BlurPass(&s_BlurPassFBO[2][0], &s_BlurPassFBO[2][1], true);
+
 			//Accumulate all blurred textures
 			R_BrightAccum(&s_BlurPassFBO[0][1], &s_BlurPassFBO[1][1], &s_BlurPassFBO[2][1], &s_BrightAccumFBO);
+
 			//Tone mapping
 			R_ToneMapping(&s_BackBufferFBO, &s_ToneMapFBO, &s_BrightAccumFBO, &s_Lumin1x1FBO[last_luminance]);
 
 			R_BlitToFBO(&s_ToneMapFBO, &s_BackBufferFBO);
 		}
-	}
 
-	screenframebuffer = s_BackBufferFBO.s_hBackBufferFBO;
-	qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, screenframebuffer);
-	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, screenframebuffer);
+		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+		qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	}
+}
+
+void R_RenderView_SvEngine(int a1)
+{
+	if (a1 == 0)
+	{
+		R_PreRenderView();
+
+		gRefFuncs.R_RenderView_SvEngine(a1);
+
+		R_PostRenderView();
+	}
+	else
+	{
+		gRefFuncs.R_RenderView_SvEngine(a1);
+	}
+}
+
+void R_RenderView(void)
+{
+	R_PreRenderView();
+
+	gRefFuncs.R_RenderView();
+
+	R_PostRenderView();
 }
 
 void GL_EndRendering(void)
@@ -1674,12 +1585,8 @@ void R_InitCvars(void)
 	v_lightgamma = gEngfuncs.pfnGetCvarPointer("lightgamma");
 	v_brightness = gEngfuncs.pfnGetCvarPointer("brightness");
 	v_gamma = gEngfuncs.pfnGetCvarPointer("gamma");
-}
 
-void R_InitScreen(void)
-{
-	r_refdef->vrect.width = glwidth;
-	r_refdef->vrect.height = glheight;
+	cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
 }
 
 void R_Init(void)
@@ -1688,7 +1595,6 @@ void R_Init(void)
 		gRefFuncs.FreeFBObjects();
 
 	R_InitCvars();
-	//R_InitScreen();
 	R_InitTextures();
 	R_InitShaders();
 	R_InitWater();
@@ -1698,9 +1604,6 @@ void R_Init(void)
 	R_InitRefHUD();
 	R_Init3DSky();
 	R_InitCloak();
-
-	//CL_VisEdicts_Patch();
-	//Lightmaps_Patch();
 
 	Draw_Init();
 }

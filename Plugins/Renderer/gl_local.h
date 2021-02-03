@@ -59,7 +59,6 @@ extern float *windowvideoaspect;
 extern float videowindowaspect_old;
 extern float windowvideoaspect_old;
 
-extern GLuint screenframebuffer;
 extern GLuint drawframebuffer;
 extern GLuint readframebuffer;
 

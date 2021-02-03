@@ -41,6 +41,8 @@ typedef struct refdef_s
 	vec3_t viewangles;
 	color24 ambientlight;
 	qboolean onlyClientDraws;
+	qboolean useCamera;
+	vec3_t r_camera_origin;
 }refdef_t;
 
 typedef struct skybox_s
@@ -239,4 +241,4 @@ enum
 	kRenderFxInvulnLayer
 };
 
-#define META_RENDERER_VERSION "Meta Renderer 1.5"
+#define META_RENDERER_VERSION "Meta Renderer 3.0"

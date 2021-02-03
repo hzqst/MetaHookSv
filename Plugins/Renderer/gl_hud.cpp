@@ -807,7 +807,7 @@ void R_BeginDrawTrianglesInHUD_FBO(int x, int y, int left, int top)
 {
 	qglEnable(GL_DEPTH_TEST);
 
-	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, screenframebuffer);
+	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_3DHUDFBO.s_hBackBufferFBO);
 
 	qglClearColor(0.0, 0.0, 0.0, 0.0);

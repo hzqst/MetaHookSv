@@ -58,7 +58,7 @@ void R_PushRefDef(void)
 {
 	if(save_refdefstack == MAX_SAVEREFDEF_STACK)
 	{
-		gEngfuncs.Con_Printf("R_PushRefDef: MAX_SAVEREFDEF_STACK exceed\n");
+		Sys_ErrorEx("R_PushRefDef: MAX_SAVEREFDEF_STACK exceed\n");
 		return;
 	}
 	VectorCopy(r_refdef->vieworg, save_vieworg[save_refdefstack]);
@@ -81,7 +81,7 @@ void R_PopRefDef(void)
 {
 	if(save_refdefstack == 0)
 	{
-		gEngfuncs.Con_Printf("R_PushRefDef: no refdef is pushed\n");
+		Sys_ErrorEx("R_PushRefDef: no refdef is pushed\n");
 		return;
 	}
 	-- save_refdefstack;
@@ -130,7 +130,7 @@ mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
 	node = model->nodes;
 
 	//Don't clip bsp nodes when rendering refract or reflect view for non-transparent water.
-	if (drawrefract)
+	/*if (drawrefract)
 	{
 		if (curwater && curwater->color.a == 255)
 		{
@@ -142,7 +142,7 @@ mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
 	{
 		if (node->contents < 0)
 			return (mleaf_t *)node;
-	}
+	}*/
 
 	while (1)
 	{

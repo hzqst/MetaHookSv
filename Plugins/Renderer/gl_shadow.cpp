@@ -13,19 +13,12 @@ shadowlight_t sdlights[MAX_SHADOW_LIGHTS];
 shadowlight_t *sdlights_active = NULL;
 shadowlight_t *sdlights_free = NULL;
 
-shadow_manager_t sdmanagers[MAX_SHADOW_MANAGERS];
-shadow_manager_t sdmanager_player;
-int numsdmanagers;
-
 //shader
 SHADER_DEFINE(shadow);
 
 //cvar
 cvar_t *r_shadow = NULL;
 cvar_t *r_shadow_debug = NULL;
-
-//bug fix
-int g_flPlayerParseCount;
 
 void R_ClearShadow(void)
 {
@@ -34,18 +27,6 @@ void R_ClearShadow(void)
 	sdlights[MAX_SHADOW_LIGHTS-1].next = NULL;
 	sdlights_free = &sdlights[0];
 	sdlights_active = NULL;
-
-	memset(sdmanagers, 0, sizeof(sdmanagers));
-	memset(&sdmanager_player, 0, sizeof(sdmanager_player));
-	numsdmanagers = 0;
-
-	sdmanager_player.radius = 256;
-	sdmanager_player.fard = 64;
-	sdmanager_player.scale = 8;
-	sdmanager_player.texsize = 512;
-	sdmanager_player.angles[0] = 90;
-	sdmanager_player.angles[1] = 0;
-	sdmanager_player.angles[2] = 0;
 }
 
 void R_InitShadow(void)
@@ -171,11 +152,8 @@ void R_AddEntityShadow(cl_entity_t *ent, const char *model)
 		shadowlight_t *sl = R_FindShadowLight(ent);
 		if(!sl)
 		{
-			shadow_manager_t *sm = R_FindPlayerShadowManager();
-			if(sm)
-			{
-				R_CreateShadowLight(ent, sm->angles, sm->radius, sm->fard, sm->scale, sm->texsize);
-			}
+			vec3_t ang = { 100, 0, 0 };
+			R_CreateShadowLight(ent, ang, 256, 64, 8, 512);
 		}
 		else
 		{
@@ -187,16 +165,8 @@ void R_AddEntityShadow(cl_entity_t *ent, const char *model)
 		shadowlight_t *sl = R_FindShadowLight(ent);
 		if(!sl)
 		{
-			shadow_manager_t *sm = R_FindShadowManager(model);
-			if(sm)
-			{
-				R_CreateShadowLight(ent, sm->angles, sm->radius, sm->fard, sm->scale, sm->texsize);
-			}
-			else
-			{
-				vec3_t ang = {100, 0, 0};
-				R_CreateShadowLight(ent, ang, 256, 64, 8, 512);
-			}
+			vec3_t ang = { 100, 0, 0 };
+			R_CreateShadowLight(ent, ang, 256, 64, 8, 512);
 		}
 		else
 		{
@@ -710,46 +680,4 @@ void R_RenderAllShadowScenes(void)
 	qglMatrixMode(GL_MODELVIEW);
 
 	GL_EnableMultitexture();
-}
-
-shadow_manager_t *R_FindShadowManager(const char *affectmodel)
-{
-	for(int i = 0; i < numsdmanagers; ++i)
-	{
-		if(!stricmp(affectmodel, sdmanagers[i].affectmodel))
-		{
-			return &sdmanagers[i];
-		}
-	}
-	return NULL;
-}
-
-shadow_manager_t *R_FindPlayerShadowManager(void)
-{
-	return &sdmanager_player;
-}
-
-void R_CreateShadowManager(char *affectmodel, vec3_t angles, float radius, float fard, float scale, int texsize)
-{
-	shadow_manager_t *sm;
-	if(!stricmp(affectmodel, "player"))
-	{
-		sm = &sdmanager_player;
-	}
-	else
-	{
-		if(numsdmanagers >= MAX_SHADOW_MANAGERS)
-		{
-			gEngfuncs.Con_DPrintf("R_CreateShadowManager: Overflow %d shadow managers!\n", MAX_SHADOW_MANAGERS);
-			return;
-		}
-		sm = &sdmanagers[numsdmanagers];
-	}
-	strcpy(sm->affectmodel, affectmodel);
-	VectorCopy(angles, sm->angles);
-	sm->radius = radius;
-	sm->fard = fard;
-	sm->scale = scale;
-	sm->texsize = texsize;
-	numsdmanagers ++;
 }

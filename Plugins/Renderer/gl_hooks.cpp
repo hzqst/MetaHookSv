@@ -146,6 +146,7 @@
 #define DRAW_MIPTEXTEXTURE_SIG_NEW "\x55\x8B\xEC\x83\xEC\x28\x53\x56\x8B\x75\x08\x57\x83\x7E\x18\x20\x74\x2A\x8B\x06\x50"
 
 #define FREEFBOBJECTS_SIG_NEW "\xA1\x2A\x2A\x2A\x2A\x56\x33\xF6\x3B\xC6\x74\x0D\x68\x2A\x2A\x2A\x2A\x6A\x01\xFF\x15"
+#define FREEFBOBJECTS_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\x2A\x2A\x2A\x2A\x6A\x01"
 
 #define VID_UPDATEWINDOWVARS_SIG "\x56\x8B\x74\x24\x08\x8B\xC6\x8B\x08\x89\x0D\x2A\x2A\x2A\x2A\x8B\x50\x04\x89\x15"
 #define VID_UPDATEWINDOWVARS_SIG_NEW "\x55\x8B\xEC\x51\x56\x8B\x75\x08\x8B\xC6\x8B\x08\x89\x0D\x2A\x2A\x2A\x2A\x8B\x50\x04\x89\x15"
@@ -295,6 +296,10 @@ void R_FillAddress(void)
 
 		gRefFuncs.Mod_PointInLeaf = (mleaf_t *(*)(vec3_t, model_t *))Search_Pattern(MOD_POINTINLEAF_SIG_SVENGINE);
 		Sig_FuncNotFound(Mod_PointInLeaf);
+
+		//5953 above only
+		gRefFuncs.FreeFBObjects = (void(*)(void))Search_Pattern_From(GL_EndRendering, FREEFBOBJECTS_SIG_SVENGINE);
+		Sig_FuncNotFound(FreeFBObjects);
 	}
 	else if (g_dwEngineBuildnum >= 5953)
 	{
@@ -1116,7 +1121,7 @@ void R_InstallHook(void)
 	g_pMetaHookAPI->InlineHook(gRefFuncs.EmitWaterPolys, EmitWaterPolys, (void *&)gRefFuncs.EmitWaterPolys);	
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_SetupGL, R_SetupGL, (void *&)gRefFuncs.R_SetupGL);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_MarkLeaves, R_MarkLeaves, (void *&)gRefFuncs.R_MarkLeaves);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.Mod_PointInLeaf, Mod_PointInLeaf, (void *&)gRefFuncs.Mod_PointInLeaf);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.Mod_PointInLeaf, Mod_PointInLeaf, (void *&)gRefFuncs.Mod_PointInLeaf);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSequentialPoly, R_DrawSequentialPoly, (void *&)gRefFuncs.R_DrawSequentialPoly);
 
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_CullBox, R_CullBox, (void *&)gRefFuncs.R_CullBox);

@@ -39,7 +39,6 @@ qboolean GL_IsShaderError(GLuint shader, const char *filename)
 		return true;
 	}
 
-	//gEngfuncs.Con_Printf("Shader %s compiled result: %s\n", filename, szCompilerLog);
 	return false;
 }
 

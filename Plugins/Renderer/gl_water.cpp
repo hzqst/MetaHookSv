@@ -4,7 +4,8 @@
 qboolean drawreflect;
 qboolean drawrefract;
 vec3_t water_view;
-int water_texture_size = 0;
+int water_texture_width;
+int water_texture_height;
 
 //water
 r_water_t waters[MAX_WATERS];
@@ -55,8 +56,8 @@ const char *drawdepth_fscode =
 "void main(void)"
 "{"
 "	vec2 vBaseTexCoord = projpos.xy / projpos.w * 0.5 + 0.5;"
-"	float flDepth = texture2D(depthmap, vBaseTexCoord);"//vBaseTexCoord
-"	gl_FragColor = vec4(vec3(pow(flDepth, 50.0)), 1.0);"
+"	vec4 vDepthColor = texture2D(depthmap, vBaseTexCoord);"
+"	gl_FragColor = vec4(vec3(pow(vDepthColor.z, 50.0)), 1.0);"
 "}";
 
 void R_InitWater(void)
@@ -109,9 +110,6 @@ void R_InitWater(void)
 
 	water_normalmap_default = R_LoadTextureEx("resource\\tga\\water_normalmap.tga", "resource\\tga\\water_normalmap.tga", NULL, NULL, GLT_SYSTEM, false, false);
 	water_normalmap = water_normalmap_default;
-
-	if(!water_texture_size)//don't support FBO?
-		water_texture_size = 512;
 
 	r_water = gEngfuncs.pfnRegisterVariable("r_water", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_debug = gEngfuncs.pfnRegisterVariable("r_water_debug", "0", FCVAR_CLIENTDLL);
@@ -173,13 +171,13 @@ void R_AddWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 	waters_active = curwater;
 
 	if (!curwater->reflectmap)
-		curwater->reflectmap = R_GLGenTexture(water_texture_size, water_texture_size);
+		curwater->reflectmap = R_GLGenTexture(glwidth, glheight);
 
 	if (!curwater->refractmap)
-		curwater->refractmap = R_GLGenTexture(water_texture_size, water_texture_size);
+		curwater->refractmap = R_GLGenTexture(glwidth, glheight);
 
 	if (!curwater->depthrefrmap)
-		curwater->depthrefrmap = R_GLGenDepthTexture(water_texture_size, water_texture_size);
+		curwater->depthrefrmap = R_GLGenDepthTexture(glwidth, glheight);
 
 	VectorCopy(p, curwater->vecs);
 	curwater->ent = ent;
@@ -222,9 +220,9 @@ void R_EnableClip(qboolean isdrawworld)
 			clipPlane[3] = curwater->vecs[2];
 		}
 	}
-	if(isdrawworld)
+	if(isdrawworld && drawrefract)
 	{
-		clipPlane[3] += 23.5f;
+		clipPlane[3] += 16.05f;
 	}
 	qglEnable(GL_CLIP_PLANE0);
 	qglClipPlane(GL_CLIP_PLANE0, clipPlane);
@@ -269,7 +267,7 @@ void R_RenderReflectView(void)
 	if (!s_WaterFBO.s_hBackBufferFBO)
 	{
 		qglBindTexture(GL_TEXTURE_2D, curwater->reflectmap);
-		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, water_texture_size, water_texture_size, 0);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, water_texture_width, water_texture_height, 0);
 	}
 
 	R_PopRefDef();
@@ -312,10 +310,10 @@ void R_RenderRefractView(void)
 	if (!s_WaterFBO.s_hBackBufferFBO)
 	{
 		qglBindTexture(GL_TEXTURE_2D, curwater->refractmap);
-		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, water_texture_size, water_texture_size, 0);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, water_texture_width, water_texture_height, 0);
 
 		qglBindTexture(GL_TEXTURE_2D, curwater->depthrefrmap);
-		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 0, 0, water_texture_size, water_texture_size, 0);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 0, 0, water_texture_width, water_texture_height, 0);
 	}
 
 	R_PopRefDef();

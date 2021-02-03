@@ -143,18 +143,16 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 			qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 			GL_SelectTexture(TEXTURE0_SGIS);
-			qglEnable(GL_TEXTURE_2D);
-			qglBindTexture(GL_TEXTURE_2D, water_normalmap);
+			GL_Bind(water_normalmap);
 
-			GL_SelectTexture(TEXTURE1_SGIS);
-			qglEnable(GL_TEXTURE_2D);
-			qglBindTexture(GL_TEXTURE_2D, curwater->refractmap);
+			GL_EnableMultitexture();
+			GL_Bind(curwater->refractmap);
 
-			GL_SelectTexture(TEXTURE2_SGIS);
+			qglActiveTextureARB(TEXTURE2_SGIS);
 			qglEnable(GL_TEXTURE_2D);
 			qglBindTexture(GL_TEXTURE_2D, curwater->reflectmap);
 
-			GL_SelectTexture(TEXTURE3_SGIS);
+			qglActiveTextureARB(TEXTURE3_SGIS);
 			qglEnable(GL_TEXTURE_2D);
 			qglBindTexture(GL_TEXTURE_2D, curwater->depthrefrmap);
 
@@ -227,19 +225,15 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 
 	if(useProgram)
 	{
-		GL_SelectTexture(TEXTURE3_SGIS);
-		qglBindTexture(GL_TEXTURE_2D, 0);
+		qglActiveTextureARB(TEXTURE3_SGIS);
 		qglDisable(GL_TEXTURE_2D);
 
-		GL_SelectTexture(TEXTURE2_SGIS);
-		qglBindTexture(GL_TEXTURE_2D, 0);
+		qglActiveTextureARB(TEXTURE2_SGIS);
 		qglDisable(GL_TEXTURE_2D);
 
-		GL_SelectTexture(TEXTURE1_SGIS);
-		qglBindTexture(GL_TEXTURE_2D, 0);
-		qglDisable(GL_TEXTURE_2D);
-		
-		GL_SelectTexture(TEXTURE0_SGIS);
+		qglActiveTextureARB(TEXTURE1_SGIS);
+
+		GL_DisableMultitexture();
 
 		qglUseProgramObjectARB(0);
 	}

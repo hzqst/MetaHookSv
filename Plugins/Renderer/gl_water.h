@@ -44,8 +44,9 @@ typedef struct r_water_s
 //renderer
 extern qboolean drawreflect;
 extern qboolean drawrefract;
-extern int water_update_counter;
-extern int water_texture_size;
+extern int water_texture_width;
+extern int water_texture_height;
+
 //water
 extern r_water_t *curwater;
 extern r_water_t *waters_free;

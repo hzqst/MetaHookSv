@@ -221,31 +221,6 @@ void hudGetMousePosition(int *x, int *y)
 	}
 }
 
-#define METARENDER_SKYCAMERA 1
-#define METARENDER_SHADOWMGR 2
-
-int MsgFunc_MetaRender(const char *pszName, int iSize, void *pbuf)
-{
-	BEGIN_READ(pbuf, iSize);
-
-	int type = READ_BYTE();
-	if(type == METARENDER_SHADOWMGR)
-	{
-		vec3_t angles;
-		angles[0] = READ_COORD();
-		angles[1] = READ_COORD();
-		angles[2] = READ_COORD();
-		float radius = READ_COORD();
-		float fard = READ_COORD();
-		float scale = READ_COORD();
-		int texsize = READ_SHORT();
-		char *affectmodel = READ_STRING();
-		R_CreateShadowManager(affectmodel, angles, radius, fard, scale, texsize);
-	}
-	
-	return 1;
-}
-
 void R_Version_f(void)
 {
 	gEngfuncs.Con_Printf("Renderer Version:\n%s\n", META_RENDERER_VERSION);
@@ -257,13 +232,7 @@ void HUD_Init(void)
 
 	R_Init();
 
-	//gEngfuncs.pfnHookUserMsg("MetaRender", MsgFunc_MetaRender);
-
-	cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
-
 	gEngfuncs.pfnAddCommand("r_version", R_Version_f);
-
-	gEngfuncs.pfnConsolePrint("HUD_Init");
 }
 
 int HUD_VidInit(void)
@@ -349,7 +318,7 @@ int HUD_Redraw(float time, int intermission)
 			qglVertex3f(0, glheight / 2, 0);
 			qglEnd();
 
-			if (debugTextureID = waters_active->depthrefrmap)
+			if (debugTextureID == waters_active->depthrefrmap)
 				qglUseProgramObjectARB(0);
 		}
 	}

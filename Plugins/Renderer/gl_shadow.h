@@ -82,8 +82,3 @@ qboolean R_ShouldCastShadow(cl_entity_t *ent);
 //Shadow Light
 shadowlight_t *R_FindShadowLight(cl_entity_t *entity);
 void R_CreateShadowLight(cl_entity_t *entity, vec3_t ang, float radius, float fard, float scale, int texscale);
-
-//Shadow Manager
-shadow_manager_t *R_FindShadowManager(const char *affectmodel);
-shadow_manager_t *R_FindPlayerShadowManager(void);
-void R_CreateShadowManager(char *affectmodel, vec3_t angles, float radius, float fard, float scale, int texsize);
