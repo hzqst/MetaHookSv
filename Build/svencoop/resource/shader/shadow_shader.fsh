@@ -31,16 +31,16 @@ void main()
 	
 	if(shadow > 0.9)
 	{
-		//discard
-		gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+		discard;
+		//gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
 	}
 	else
 	{
 		float dist = length(worldpos - entorigin);
 		if(dist > radius)
 		{
-			//discard;
-			gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+			discard;
+			//gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
 		}
 		else
 		{

@@ -42,6 +42,18 @@ GLuint R_GLGenTexture(int w, int h)
 	return texid;
 }
 
+GLuint R_GLGenTextureColorFormat(int w, int h, int iInternalFormat)
+{
+	GLuint texid = GL_GenTexture();
+	qglBindTexture(GL_TEXTURE_2D, texid);
+	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	qglTexImage2D(GL_TEXTURE_2D, 0, iInternalFormat, w, h, 0, GL_RGBA, (iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, 0);
+	return texid;
+}
+
 GLuint R_GLGenDepthTexture(int w, int h)
 {
 	GLuint texid = GL_GenTexture();

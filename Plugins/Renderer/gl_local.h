@@ -278,6 +278,7 @@ refdef_t *R_GetRefDef(void);
 int R_GetDrawPass(void);
 GLuint R_GLGenTexture(int w, int h);
 GLuint R_GLGenDepthTexture(int w, int h);
+GLuint R_GLGenTextureColorFormat(int w, int h, int iInternalFormat);
 byte *R_GetTexLoaderBuffer(int *bufsize);
 gltexture_t *R_GetCurrentGLTexture(void);
 int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, qboolean ansio);

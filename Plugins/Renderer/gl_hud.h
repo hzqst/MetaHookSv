@@ -141,5 +141,5 @@ void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container
 void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *blur, FBO_Container_t *lum);
 void R_BlitToScreen(FBO_Container_t *src);
 void R_BlitToFBO(FBO_Container_t *src, FBO_Container_t *dst);
-
+void R_DrawHUDQuad_Texture(int tex, int w, int h);
 void GLBeginHud(void);

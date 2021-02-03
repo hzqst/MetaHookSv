@@ -24,6 +24,8 @@ SHADER_DEFINE(drawdepth);
 int save_userfogon;
 int *g_bUserFogOn;
 
+int saved_cl_waterlevel;
+
 //cvar
 cvar_t *r_water = NULL;
 cvar_t *r_water_debug = NULL;
@@ -171,13 +173,13 @@ void R_AddWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 	waters_active = curwater;
 
 	if (!curwater->reflectmap)
-		curwater->reflectmap = R_GLGenTexture(glwidth, glheight);
+		curwater->reflectmap = R_GLGenTexture(water_texture_width, water_texture_height);
 
 	if (!curwater->refractmap)
-		curwater->refractmap = R_GLGenTexture(glwidth, glheight);
+		curwater->refractmap = R_GLGenTexture(water_texture_width, water_texture_height);
 
 	if (!curwater->depthrefrmap)
-		curwater->depthrefrmap = R_GLGenDepthTexture(glwidth, glheight);
+		curwater->depthrefrmap = R_GLGenDepthTexture(water_texture_width, water_texture_height);
 
 	VectorCopy(p, curwater->vecs);
 	curwater->ent = ent;
@@ -196,7 +198,7 @@ void R_EnableClip(qboolean isdrawworld)
 
 	if(drawreflect)
 	{
-		if(water_view[2] < curwater->vecs[2])
+		if(saved_cl_waterlevel > 2)
 		{
 			clipPlane[2] = -1.0;
 			clipPlane[3] = curwater->vecs[2];
@@ -209,10 +211,11 @@ void R_EnableClip(qboolean isdrawworld)
 	}
 	if(drawrefract)
 	{
-		if (water_view[2] < curwater->vecs[2])
+		if (saved_cl_waterlevel > 2)
 		{
-			clipPlane[2] = 1.0;
-			clipPlane[3] = -curwater->vecs[2];
+			return;
+			//clipPlane[2] = 1.0;
+			//clipPlane[3] = curwater->vecs[2]; 
 		}
 		else
 		{
@@ -220,10 +223,12 @@ void R_EnableClip(qboolean isdrawworld)
 			clipPlane[3] = curwater->vecs[2];
 		}
 	}
-	if(isdrawworld && drawrefract)
+
+	if(isdrawworld && drawrefract && saved_cl_waterlevel <= 2)
 	{
 		clipPlane[3] += 16.05f;
 	}
+
 	qglEnable(GL_CLIP_PLANE0);
 	qglClipPlane(GL_CLIP_PLANE0, clipPlane);
 }
@@ -256,11 +261,19 @@ void R_RenderReflectView(void)
 	r_refdef->viewangles[0] = -r_refdef->viewangles[0];
 	r_refdef->viewangles[2] = -r_refdef->viewangles[2];
 
-	R_UpdateRefDef();
-
 	drawreflect = true;
 
+	int saved_framecount = *r_framecount;
+	mleaf_t *saved_oldviewleaf = *r_oldviewleaf;
+	*r_oldviewleaf = NULL;
+	saved_cl_waterlevel = *cl_waterlevel;
+	*cl_waterlevel = 0;
+
 	gRefFuncs.R_RenderScene();
+
+	*cl_waterlevel = saved_cl_waterlevel;
+	*r_oldviewleaf = saved_oldviewleaf;
+	*r_framecount = saved_framecount;
 
 	qglDisable(GL_CLIP_PLANE0);
 
@@ -299,11 +312,19 @@ void R_RenderRefractView(void)
 
 	VectorCopy(water_view, r_refdef->vieworg);
 
-	R_UpdateRefDef();
-
 	drawrefract = true;
 
+	int saved_framecount = *r_framecount;
+	mleaf_t *saved_oldviewleaf = *r_oldviewleaf;
+	*r_oldviewleaf = NULL;
+	saved_cl_waterlevel = *cl_waterlevel;
+	//*cl_waterlevel = 0;
+
 	gRefFuncs.R_RenderScene();
+
+	*cl_waterlevel = saved_cl_waterlevel;
+	*r_oldviewleaf = saved_oldviewleaf;
+	*r_framecount = saved_framecount;
 
 	qglDisable(GL_CLIP_PLANE0);
 

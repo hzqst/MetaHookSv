@@ -17,26 +17,6 @@ typedef struct
 
 typedef struct refdef_s
 {
-	vrect_t vrect;
-	vrect_t aliasvrect;
-	int vrectright;
-	int vrectbottom;
-	int aliasvrectright;
-	int aliasvrectbottom;
-	float vrectrightedge;
-	float fvrectx;
-	float fvrecty;
-	float fvrectx_adj;
-	float fvrecty_adj;
-	int vrect_x_adj_shift20;
-	int vrectright_adj_shift20;
-	float fvrectright_adj;
-	float fvrectbottom_adj;
-	float fvrectright;
-	float fvrectbottom;
-	float horizontalFieldOfView;
-	float xOrigin;
-	float yOrigin;
 	vec3_t vieworg;
 	vec3_t viewangles;
 	color24 ambientlight;

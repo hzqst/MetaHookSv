@@ -516,7 +516,10 @@ void R_BlitToFBO(FBO_Container_t *src, FBO_Container_t *dst)
 
 void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2)
 {
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	if (dst->s_hBackBufferFBO)
+	{
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	}
 
 	qglClearColor(0.0, 1.0, 0.0, 0.25);
 	qglClear(GL_COLOR_BUFFER_BIT);
@@ -536,11 +539,20 @@ void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2
 	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, dst->iWidth, dst->iHeight);
 
 	qglUseProgramObjectARB(0);
+
+	if (!dst->s_hBackBufferFBO)
+	{
+		qglBindTexture(GL_TEXTURE_2D, dst->s_hBackBufferTex);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, dst->iTextureColorFormat, 0, 0, dst->iWidth, dst->iHeight, 0);
+	}
 }
 
 void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int logexp)
 {
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	if (dst->s_hBackBufferFBO)
+	{
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	}
 
 	qglClearColor(0.0, 1.0, 0.0, 0.25);
 	qglClear(GL_COLOR_BUFFER_BIT);
@@ -567,11 +579,20 @@ void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int logexp)
 	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, dst->iWidth, dst->iHeight);
 
 	qglUseProgramObjectARB(0);
+
+	if (!dst->s_hBackBufferFBO)
+	{
+		qglBindTexture(GL_TEXTURE_2D, dst->s_hBackBufferTex);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, dst->iTextureColorFormat, 0, 0, dst->iWidth, dst->iHeight, 0);
+	}
 }
 
 void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *ada, double frametime)
 {
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	if (dst->s_hBackBufferFBO)
+	{
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	}
 
 	qglClearColor(0.0, 1.0, 0.0, 0.25);
 	qglClear(GL_COLOR_BUFFER_BIT);
@@ -592,11 +613,20 @@ void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container
 	GL_DisableMultitexture();
 
 	qglUseProgramObjectARB(0);
+
+	if (!dst->s_hBackBufferFBO)
+	{
+		qglBindTexture(GL_TEXTURE_2D, dst->s_hBackBufferTex);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, dst->iTextureColorFormat, 0, 0, dst->iWidth, dst->iHeight, 0);
+	}
 }
 
 void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *lum)
 {
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	if (dst->s_hBackBufferFBO)
+	{
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	}
 
 	qglClearColor(0.0, 1.0, 0.0, 0.25);
 	qglClear(GL_COLOR_BUFFER_BIT);
@@ -616,11 +646,20 @@ void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *l
 	GL_DisableMultitexture();
 
 	qglUseProgramObjectARB(0);
+
+	if (!dst->s_hBackBufferFBO)
+	{
+		qglBindTexture(GL_TEXTURE_2D, dst->s_hBackBufferTex);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, dst->iTextureColorFormat, 0, 0, dst->iWidth, dst->iHeight, 0);
+	}
 }
 
 void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
 {
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	if (dst->s_hBackBufferFBO)
+	{
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	}
 
 	qglClearColor(0.0, 1.0, 0.0, 0.25);
 	qglClear(GL_COLOR_BUFFER_BIT);
@@ -641,11 +680,20 @@ void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
 	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, dst->iWidth, dst->iHeight);
 
 	qglUseProgramObjectARB(0);
+
+	if (!dst->s_hBackBufferFBO)
+	{
+		qglBindTexture(GL_TEXTURE_2D, dst->s_hBackBufferTex);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, dst->iTextureColorFormat, 0, 0, dst->iWidth, dst->iHeight, 0);
+	}
 }
 
 void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container_t *blur3, FBO_Container_t *dst)
 {
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	if (dst->s_hBackBufferFBO)
+	{
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	}
 
 	qglClearColor(0.0, 0.0, 0.0, 0.25);
 	qglClear(GL_COLOR_BUFFER_BIT);
@@ -664,11 +712,20 @@ void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container
 	R_DrawHUDQuad(dst->iWidth, dst->iHeight);
 
 	qglDisable(GL_BLEND);
+
+	if (!dst->s_hBackBufferFBO)
+	{
+		qglBindTexture(GL_TEXTURE_2D, dst->s_hBackBufferTex);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, dst->iTextureColorFormat, 0, 0, dst->iWidth, dst->iHeight, 0);
+	}
 }
 
 void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *blur, FBO_Container_t *lum)
 {
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	if (dst->s_hBackBufferFBO)
+	{
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	}
 
 	qglClearColor(0.0, 1.0, 0.0, 0.25);
 	qglClear(GL_COLOR_BUFFER_BIT);
@@ -701,11 +758,17 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 	GL_DisableMultitexture();
 
 	qglUseProgramObjectARB(0);
+
+	if (!dst->s_hBackBufferFBO)
+	{
+		qglBindTexture(GL_TEXTURE_2D, dst->s_hBackBufferTex);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, dst->iTextureColorFormat, 0, 0, dst->iWidth, dst->iHeight, 0);
+	}
 }
 
 void R_SetupGL_3DHUD(void)
 {
-	qglMatrixMode(GL_PROJECTION);
+	/*qglMatrixMode(GL_PROJECTION);
 	qglLoadIdentity();
 
 	float fov_x = 90;
@@ -721,7 +784,7 @@ void R_SetupGL_3DHUD(void)
 	qglRotatef(-r_refdef->viewangles[2], 1, 0, 0);
 	qglRotatef(-r_refdef->viewangles[0], 0, 1, 0);
 	qglRotatef(-r_refdef->viewangles[1], 0, 0, 1);
-	qglTranslatef(-r_refdef->vieworg[0], -r_refdef->vieworg[1], -r_refdef->vieworg[2]);
+	qglTranslatef(-r_refdef->vieworg[0], -r_refdef->vieworg[1], -r_refdef->vieworg[2]);*/
 }
 
 void GLSetupHud(int w, int h)

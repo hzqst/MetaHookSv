@@ -132,7 +132,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 			qglUniform1fARB(water.fresnel, clamp(r_water_fresnel->value, 0.0, 10.0));
 			qglUniform1fARB(water.depthfactor, clamp(r_water_depthfactor->value, 0.0, 1000.0));
 			qglUniform1fARB(water.normfactor, clamp(r_water_normfactor->value, 0.0, 1000.0));
-			qglUniform1fARB(water.abovewater, (r_refdef->vieworg[2] > curwater->vecs[2]) ? 1.0f : 0.0f);
+			qglUniform1fARB(water.abovewater, (*cl_waterlevel <= 2 /*r_refdef->vieworg[2] > curwater->vecs[2]*/) ? 1.0f : 0.0f);
 
 			qglUniform1iARB(water.normalmap, 0);
 			qglUniform1iARB(water.refractmap, 1);
