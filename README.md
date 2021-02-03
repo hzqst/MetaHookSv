@@ -31,7 +31,7 @@ Current state : Ready to use.
 
 ### Renderer
 
-A graphic enhancement plugin that modifiy the original render system.
+A graphic enhancement plugin that modifiy the original render engine.
 
 Current state : Ready to use, more feature are coming soon.
 
