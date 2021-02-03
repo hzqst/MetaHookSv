@@ -1,8 +1,8 @@
 #include "gl_local.h"
 #include "gl_shader.h"
 
-glshader_t shaders[MAX_SHADERS];
-int numshaders;
+glshader_t shaders[MAX_SHADERS] = {0};
+int numshaders = 0;
 
 void R_InitShaders(void)
 {
@@ -44,6 +44,12 @@ qboolean GL_IsShaderError(GLuint shader, const char *filename)
 
 GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfile, const char *fsfile)
 {
+	if (numshaders + 1 == MAX_SHADERS)
+	{
+		Sys_ErrorEx("R_CompileShader: max shaders exceeded");
+		return 0;
+	}
+
 	GLuint vs = qglCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
 	qglShaderSourceARB(vs, 1, &vscode, NULL);
 	qglCompileShaderARB(vs);

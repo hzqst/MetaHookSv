@@ -7,7 +7,7 @@ typedef struct
 	int program;
 }glshader_t;
 
-#define MAX_SHADERS 16
+#define MAX_SHADERS 256
 
 extern glshader_t shaders[MAX_SHADERS];
 extern int numshaders;

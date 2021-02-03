@@ -281,7 +281,7 @@ void HUD_DrawTransparentTriangles(void)
 
 int HUD_Redraw(float time, int intermission)
 {
-	if(waters_active && r_water_debug->value > 0 && r_water_debug->value <= 3)
+	if(waters_active && r_water_debug && r_water_debug->value > 0 && r_water_debug->value <= 3)
 	{
 		qglDisable(GL_BLEND);
 		qglDisable(GL_ALPHA_TEST);
@@ -347,7 +347,7 @@ int HUD_Redraw(float time, int intermission)
 
 		qglUseProgramObjectARB(0);
 	}
-	else if(r_cloak_debug->value)
+	else if(r_cloak_debug && r_cloak_debug->value)
 	{
 		qglDisable(GL_BLEND);
 		qglDisable(GL_ALPHA_TEST);
@@ -368,7 +368,7 @@ int HUD_Redraw(float time, int intermission)
 		qglEnd();
 		qglEnable(GL_ALPHA_TEST);
 	}
-	else if(r_hudinworld_debug->value && r_hudinworld_texture)
+	else if(r_hudinworld_debug && r_hudinworld_debug->value && r_hudinworld_texture)
 	{
 		qglDisable(GL_BLEND);
 		qglDisable(GL_ALPHA_TEST);
@@ -389,7 +389,7 @@ int HUD_Redraw(float time, int intermission)
 		qglEnd();
 		qglEnable(GL_ALPHA_TEST);
 	}
-	else if(r_hdr_debug->value)
+	else if(r_hdr_debug && r_hdr_debug->value)
 	{
 		qglDisable(GL_BLEND);
 		qglDisable(GL_ALPHA_TEST);
