@@ -771,7 +771,20 @@ void R_FillAddress(void)
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x300, GLTEXTURES_SIG_SVENGINE, sizeof(GLTEXTURES_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(gltextures);
 		numgltextures = *(int **)(addr + 2);
-		gltextures = *(gltexture_t **)(addr + 12);
+		gltextures_SvEngine = *(gltexture_t ***)(addr + 12);
+
+#define MAXGLTEXTURES_SIG_SVENGINE "\x6B\xC1\x54\x89\x0D"
+		//Search in GL_LoadTexture2
+		//.text:01D4ED66 6B C1 54                                            imul    eax, ecx, 54h; 'T'
+		//.text:01D4ED69 89 0D F0 C6 0F 03                                   mov     maxgltextures, ecx
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x300, MAXGLTEXTURES_SIG_SVENGINE, sizeof(MAXGLTEXTURES_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(maxgltextures);
+		maxgltextures_SvEngine = *(int **)(addr + 5);
+
+#define REALLOC_SIG_SVENGINE "\x51\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x50, REALLOC_SIG_SVENGINE, sizeof(REALLOC_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(realloc);
+		gRefFuncs.realloc_SvEngine = (decltype(gRefFuncs.realloc_SvEngine))(addr + 2 + 4 + *(int *)(addr + 2));
 
 #define GHOSTSPAWNCOUNT_SIG_SVENGINE "\x66\x8B\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x04"
 		//66 8B 0D E0 72 40 08                                mov     cx, word ptr gHostSpawnCount

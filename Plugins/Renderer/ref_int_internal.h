@@ -82,6 +82,7 @@ typedef struct
 	void (*R_SpriteColor)(mcolor24_t *col, cl_entity_t *entity, int renderamt);
 	void (*VID_UpdateWindowVars)(RECT *prc, int x, int y);
 	mleaf_t *(*Mod_PointInLeaf)(vec3_t p, model_t *model);
+	void *(*realloc_SvEngine)(void *, size_t);
 
 	//Engine Studio
 	void (*R_GLStudioDrawPoints)(void);

@@ -31,6 +31,8 @@ extern GLenum TEXTURE2_SGIS;
 extern GLenum TEXTURE3_SGIS;
 
 extern gltexture_t *gltextures;
+extern gltexture_t **gltextures_SvEngine;
+extern int *maxgltextures_SvEngine;
 extern int *numgltextures;
 extern int *gHostSpawnCount;
 extern int *currenttexid;;

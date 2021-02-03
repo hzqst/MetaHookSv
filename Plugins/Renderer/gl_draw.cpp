@@ -17,15 +17,18 @@ xcommand_t gl_texturemode_function;
 
 float current_ansio = -1.0;
 
-static byte texloader_buffer[2048*2048*4];
-gltexture_t *gltextures;
-int *numgltextures;
-int *gHostSpawnCount;
-int *currenttexid;//for 3xxx~4xxx
-int *currenttexture;
-//for renderer
-gltexture_t *currentglt;
-static byte scaled_buffer[1024*1024*4];
+static byte texloader_buffer[4096 * 4096 * 4];
+static byte scaled_buffer[1024 * 1024 * 4];
+
+gltexture_t *gltextures = NULL;
+gltexture_t **gltextures_SvEngine = NULL;//for SvEngine
+int *maxgltextures_SvEngine = NULL;//for SvEngine
+int *numgltextures = NULL;
+int *gHostSpawnCount = NULL;
+int *currenttexid = NULL;//for 3xxx~4xxx
+int *currenttexture = NULL;
+gltexture_t *currentglt = NULL;
+
 int gl_filter_min = GL_LINEAR_MIPMAP_LINEAR;
 int gl_filter_max = GL_LINEAR;
 
@@ -521,6 +524,9 @@ int GL_AllocTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int
 
 	glt = NULL;
 
+	if (!gltextures && gltextures_SvEngine)
+		gltextures = *gltextures_SvEngine;
+
 tryagain:
 	if (identifier[0])
 	{
@@ -557,14 +563,28 @@ tryagain:
 
 	if (!glt)
 	{
+		if (maxgltextures_SvEngine)
+		{
+			if ((*numgltextures) + 1 >= (*maxgltextures_SvEngine))
+			{
+				//realloc just like SvEngine does.
+
+				*maxgltextures_SvEngine += 100;
+				*gltextures_SvEngine = (gltexture_t *)gRefFuncs.realloc_SvEngine((void *)(*gltextures_SvEngine), (*maxgltextures_SvEngine) * sizeof(gltexture_t));
+				gltextures = *gltextures_SvEngine;
+			}
+		}
+		else
+		{
+			if ((*numgltextures) + 1 >= MAX_GLTEXTURES)
+			{
+				gEngfuncs.Con_Printf("Texture Overflow: MAX_GLTEXTURES\n");
+				return 0;
+			}
+		}
+
 		glt = &gltextures[(*numgltextures)];
 		(*numgltextures)++;
-
-		if (*numgltextures >= MAX_GLTEXTURES)
-		{
-			gEngfuncs.Con_Printf("Texture Overflow: MAX_GLTEXTURES\n");
-			return 0;
-		}
 	}
 
 	if (!glt->texnum)
