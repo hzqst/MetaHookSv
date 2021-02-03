@@ -29,7 +29,7 @@ cvar_t *r_shadow_texsize = NULL;
 
 void R_ClearShadow(void)
 {
-	for(int i = 0; i < MAX_SHADOW_LIGHTS; ++i)
+	for(int i = 0; i < MAX_SHADOW_LIGHTS - 1; ++i)
 		sdlights[i].next = &sdlights[i+1];
 	sdlights[MAX_SHADOW_LIGHTS-1].next = NULL;
 	sdlights_free = &sdlights[0];

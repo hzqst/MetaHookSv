@@ -37,7 +37,7 @@ void RotatePointAroundVector(vec3_t dst, const vec3_t dir, const vec3_t point, f
 
 void R_ClearWater(void)
 {
-	for(int i = 0; i < MAX_WATERS; ++i)
+	for(int i = 0; i < MAX_WATERS - 1; ++i)
 		waters[i].next = &waters[i+1];
 	waters[MAX_WATERS-1].next = NULL;
 	waters_free = &waters[0];
