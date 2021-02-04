@@ -49,6 +49,8 @@ Current state : Ready to use, more feature are coming soon.
 
 3. Per-Object Shadow. (each object render it's own shadow mapping just like how source engine does this.)
 
+4. Screen Space Ambient Occlusion (SSAO) using horizon-based ambient occlusion (HBAO). the implementation is taken from nvidia.
+
 #### Console Vars
 
 r_hdr 1 / 0 : to enable / disable HDR(high-dynamic-range) post-processor.
@@ -61,7 +63,9 @@ r_water_depthfactor (0.0 ~ 1000.0) : to determine if we can see through water in
 
 r_water_normfactor (0.0 ~ 1000.0) : to determine the size of water wave (offset to the normalmap).
 
-r_shadow 1 / 0 : to enable / disable per-object shadow rendering.
+r_water_novis 1 / 0 : force engine to render the scene which should have been removed by visleaf when rendering refract or reflect view.
+
+r_shadow 1 / 0 : to enable / disable Per-Object Shadow.
 
 r_shadow_angle_pitch (0.0 ~ 360.0) : to control the angle(pitch) of shadow caster (light source).
 
@@ -76,3 +80,13 @@ r_shadow_scale (must be power of 2) : scale factor when render shadow-caster ent
 r_shadow_fardist (0.0 ~ 1000.0) : to determine how far the shadow is going to fade out.
 
 r_shadow_radius (0.0 ~ 1000.0) : entity don't cast shadow at this distance away from surface.
+
+r_ssao 1 / 0 : to enable / disable Screen Space Ambient Occlusion.
+
+r_ssao_intensity : to control the intensity of SSAO shadow.
+
+r_ssao_radius : to control the size of SSAO shadow.
+
+r_ssao_blur_sharpness : to control the sharpness of SSAO shadow.
+
+r_ssao_bias : 
