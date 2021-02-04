@@ -84,9 +84,6 @@ extern vec_t *r_entorigin;
 extern int *r_framecount;
 extern int *r_visframecount;
 
-//extern float r_world_matrix[16];
-//extern float r_projection_matrix[16];
-
 extern frame_t *cl_frames;
 extern int size_of_frame;
 extern int *cl_parsecount;
@@ -133,6 +130,8 @@ extern FBO_Container_t s_BrightPassFBO;
 extern FBO_Container_t s_BlurPassFBO[BLUR_BUFFERS][2];
 extern FBO_Container_t s_BrightAccumFBO;
 extern FBO_Container_t s_ToneMapFBO;
+extern FBO_Container_t s_DepthLinearFBO;
+extern FBO_Container_t s_HBAOCalcFBO;
 extern FBO_Container_t s_HUDInWorldFBO;
 extern FBO_Container_t s_CloakFBO;
 

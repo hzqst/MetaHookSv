@@ -613,7 +613,7 @@ void R_RenderAllShadowScenes(void)
 			qglPolygonOffset(-1, -gl_polyoffset->value);
 	}
 
-	qglDepthMask(GL_TRUE);
+	qglDepthMask(GL_FALSE);
 	qglEnable(GL_BLEND);
 	qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	qglColor4f(0.1, 0.1, 0.1, 0.5);

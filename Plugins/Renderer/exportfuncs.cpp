@@ -440,6 +440,48 @@ int HUD_Redraw(float time, int intermission)
 			qglEnd();
 		}
 	}
+	else if (r_ssao_debug && r_ssao_debug->value)
+	{
+		qglDisable(GL_BLEND);
+		qglDisable(GL_ALPHA_TEST);
+		qglColor4f(1, 1, 1, 1);
+
+		qglEnable(GL_TEXTURE_2D);
+		int texId = 0;
+		switch ((int)r_ssao_debug->value)
+		{	
+		case 1:
+			qglUseProgramObjectARB(drawdepth.program);
+			texId = s_BackBufferFBO.s_hBackBufferDepthTex; break;
+		case 2:
+			texId = s_DepthLinearFBO.s_hBackBufferTex; break;
+		case 3:
+			texId = s_HBAOCalcFBO.s_hBackBufferTex; break;
+		case 4:
+			texId = s_HBAOCalcFBO.s_hBackBufferTex2; break;
+		case 5:
+			texId = s_BackBufferFBO.s_hBackBufferTex; break;
+		default:
+			break;
+		}
+
+		if (texId)
+		{
+			qglBindTexture(GL_TEXTURE_2D, texId);
+			qglBegin(GL_QUADS);
+			qglTexCoord2f(0, 1);
+			qglVertex3f(0, 0, 0);
+			qglTexCoord2f(1, 1);
+			qglVertex3f(glwidth / 2, 0, 0);
+			qglTexCoord2f(1, 0);
+			qglVertex3f(glwidth / 2, glheight / 2, 0);
+			qglTexCoord2f(0, 0);
+			qglVertex3f(0, glheight / 2, 0);
+			qglEnd();
+
+			qglUseProgramObjectARB(0);
+		}
+	}
 	return gExportfuncs.HUD_Redraw(time, intermission);
 }
 

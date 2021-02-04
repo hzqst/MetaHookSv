@@ -83,6 +83,8 @@ void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 void IPlugins::ExitGame(int iResult)
 {
+	if (gCapFuncs.hk_GetProcAddress)
+		g_pMetaHookAPI->UnHook(gCapFuncs.hk_GetProcAddress);
 }
 
 EXPOSE_SINGLE_INTERFACE(IPlugins, IPlugins, METAHOOK_PLUGIN_API_VERSION);

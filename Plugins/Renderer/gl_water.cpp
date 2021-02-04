@@ -32,6 +32,7 @@ cvar_t *r_water_debug = NULL;
 cvar_t *r_water_fresnel = NULL;
 cvar_t *r_water_depthfactor = NULL;
 cvar_t *r_water_normfactor = NULL;
+cvar_t *r_water_novis = NULL;
 
 void RotatePointAroundVector(vec3_t dst, const vec3_t dir, const vec3_t point, float degrees);
 
@@ -118,6 +119,7 @@ void R_InitWater(void)
 	r_water_fresnel = gEngfuncs.pfnRegisterVariable("r_water_fresnel", "2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_depthfactor = gEngfuncs.pfnRegisterVariable("r_water_depthfactor", "50", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_normfactor = gEngfuncs.pfnRegisterVariable("r_water_normfactor", "1.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_water_novis = gEngfuncs.pfnRegisterVariable("r_water_novis", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	curwater = NULL;
 	drawreflect = false;

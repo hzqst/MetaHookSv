@@ -311,6 +311,11 @@ extern "C"
 	void (APIENTRY *qglTexGeniv)(GLenum coord, GLenum pname, const GLint *params) = NULL;
 	void (APIENTRY *qglTexImage1D)(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid *pixels) = NULL;
 	void (APIENTRY *qglTexImage2D)(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels) = NULL;
+	void (APIENTRY *qglTexStorage2D)(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height) = NULL;
+	void (APIENTRY *qglTexStorage3D)(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth) = NULL;
+	void (APIENTRY *qglTexSubImage3D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void* pixels) = NULL;
+	void (APIENTRY *qglTextureView) (GLuint texture, GLenum target, GLuint origtexture, GLenum internalformat, GLuint minlevel, GLuint numlevels, GLuint minlayer, GLuint numlayers) = NULL;
+	void (APIENTRY *qglCreateTextures) (GLenum target, GLsizei n, GLuint *textures) = NULL;
 	void (APIENTRY *qglTexParameterf)(GLenum target, GLenum pname, GLfloat param) = NULL;
 	void (APIENTRY *qglTexParameterfv)(GLenum target, GLenum pname, const GLfloat *params) = NULL;
 	void (APIENTRY *qglTexParameteri)(GLenum target, GLenum pname, GLint param) = NULL;
@@ -420,6 +425,7 @@ PFNGLCOMPILESHADERARBPROC qglCompileShaderARB = NULL;
 PFNGLCREATEPROGRAMOBJECTARBPROC qglCreateProgramObjectARB = NULL;
 PFNGLATTACHOBJECTARBPROC qglAttachObjectARB = NULL;
 PFNGLLINKPROGRAMARBPROC qglLinkProgramARB = NULL;
+PFNGLUSEPROGRAMPROC qglUseProgram = NULL;
 PFNGLUSEPROGRAMOBJECTARBPROC qglUseProgramObjectARB = NULL;
 PFNGLGETUNIFORMLOCATIONARBPROC qglGetUniformLocationARB = NULL;
 PFNGLGETATTRIBLOCATIONARBPROC qglGetAttribLocationARB = NULL;
@@ -431,6 +437,7 @@ PFNGLUNIFORM1FARBPROC qglUniform1fARB = NULL;
 PFNGLUNIFORM2FARBPROC qglUniform2fARB = NULL;
 PFNGLUNIFORM3FARBPROC qglUniform3fARB = NULL;
 PFNGLUNIFORM4FARBPROC qglUniform4fARB = NULL;
+PFNGLUNIFORM2FVARBPROC qglUniform2fvARB = NULL;
 PFNGLUNIFORM3FVARBPROC qglUniform3fvARB = NULL;
 PFNGLUNIFORM4FVARBPROC qglUniform4fvARB = NULL;
 PFNGLVERTEXATTRIB3FPROC qglVertexAttrib3f = NULL;
@@ -806,6 +813,12 @@ void QGL_Init(void)
 		*(FARPROC *)&qwglSwapBuffers = GetProcAddress(hOpenGL, "wglSwapBuffers");
 
 		*(FARPROC *)&qwglSwapIntervalEXT = qwglGetProcAddress("wglSwapIntervalEXT");
+
+		*(FARPROC *)&qglTexStorage2D = qwglGetProcAddress("glTexStorage2D");
+		*(FARPROC *)&qglTexStorage3D = qwglGetProcAddress("glTexStorage3D");
+		*(FARPROC *)&qglTexSubImage3D = qwglGetProcAddress("glTexSubImage3D");
+		*(FARPROC *)&qglTextureView = qwglGetProcAddress("glTextureView");
+		*(FARPROC *)&qglCreateTextures = qwglGetProcAddress("glCreateTextures");
 	}
 
 	QGL_InitExtension();
@@ -877,6 +890,7 @@ void QGL_InitExtension(void)
 		qglCreateProgramObjectARB = (PFNGLCREATEPROGRAMOBJECTARBPROC)qwglGetProcAddress("glCreateProgramObjectARB");
 		qglAttachObjectARB = (PFNGLATTACHOBJECTARBPROC)qwglGetProcAddress("glAttachObjectARB");
 		qglLinkProgramARB = (PFNGLLINKPROGRAMARBPROC)qwglGetProcAddress("glLinkProgramARB");
+		qglUseProgram = (PFNGLUSEPROGRAMOBJECTARBPROC)qwglGetProcAddress("glUseProgram");
 		qglUseProgramObjectARB = (PFNGLUSEPROGRAMOBJECTARBPROC)qwglGetProcAddress("glUseProgramObjectARB");
 		qglGetUniformLocationARB = (PFNGLGETUNIFORMLOCATIONARBPROC)qwglGetProcAddress("glGetUniformLocationARB");
 
@@ -888,6 +902,7 @@ void QGL_InitExtension(void)
 		qglUniform2fARB = (PFNGLUNIFORM2FARBPROC)qwglGetProcAddress("glUniform2fARB");
 		qglUniform3fARB = (PFNGLUNIFORM3FARBPROC)qwglGetProcAddress("glUniform3fARB");
 		qglUniform4fARB = (PFNGLUNIFORM4FARBPROC)qwglGetProcAddress("glUniform4fARB");
+		qglUniform2fvARB = (PFNGLUNIFORM2FVARBPROC)qwglGetProcAddress("glUniform2fvARB");
 		qglUniform3fvARB = (PFNGLUNIFORM3FVARBPROC)qwglGetProcAddress("glUniform3fvARB");
 		qglUniform4fvARB = (PFNGLUNIFORM4FVARBPROC)qwglGetProcAddress("glUniform4fvARB");
 

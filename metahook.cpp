@@ -207,8 +207,12 @@ void MH_ClientDLL_Init(void)
 
 	static DWORD dwClientDLL_Initialize[1];
 	dwClientDLL_Initialize[0] = (DWORD)&ClientDLL_Initialize;
+
 	MH_WriteDWORD((void *)(dwResult + 0x9), (DWORD)dwClientDLL_Initialize);
+
 	g_pfnClientDLL_Init();
+
+	MH_WriteDWORD((void *)(dwResult + 0x9), (DWORD)g_pExportFuncs);
 }
 
 void MH_LoadEngine(HMODULE hModule)
@@ -423,12 +427,12 @@ void MH_FreeHook(hook_t *pHook)
 	if (pHook->pClass)
 	{
 		tagVTABLEDATA *info = (tagVTABLEDATA *)pHook->pInfo;
-		MH_WriteMemory(info->pVFTInfoAddr, (BYTE *)pHook->pOldFuncAddr, sizeof(DWORD));
+		MH_WriteMemory(info->pVFTInfoAddr, (BYTE *)&pHook->pOldFuncAddr, sizeof(DWORD));
 	}
 	else if (pHook->hModule)
 	{
 		tagIATDATA *info = (tagIATDATA *)pHook->pInfo;
-		MH_WriteMemory(info->pAPIInfoAddr, (BYTE *)pHook->pOldFuncAddr, sizeof(DWORD));
+		MH_WriteMemory(info->pAPIInfoAddr, (BYTE *)&pHook->pOldFuncAddr, sizeof(DWORD));
 	}
 	else
 	{

@@ -103,7 +103,7 @@ void ClientVGUI_InstallHook(void)
 	CreateInterfaceFn ClientVGUICreateInterface = NULL;
 	if(g_hClientDll)
 		ClientVGUICreateInterface = (CreateInterfaceFn)gCapFuncs.GetProcAddress(g_hClientDll, CREATEINTERFACE_PROCNAME);
-	if(!ClientVGUICreateInterface)
+	if(!ClientVGUICreateInterface && gExportfuncs.ClientFactory)
 		ClientVGUICreateInterface = (CreateInterfaceFn)gExportfuncs.ClientFactory();
 
 	g_pClientVGUI = (IClientVGUI *)ClientVGUICreateInterface(CLIENTVGUI_INTERFACE_VERSION, NULL);
@@ -122,7 +122,8 @@ void ClientVGUI_InstallHook(void)
 	}
 	else
 	{
-		g_pMetaHookAPI->InlineHook(gCapFuncs.GetProcAddress, NewGetProcAddress, (void *&)gCapFuncs.GetProcAddress);
+		auto pfnGetProcAddress = GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetProcAddress");
+		gCapFuncs.hk_GetProcAddress = g_pMetaHookAPI->InlineHook(pfnGetProcAddress, NewGetProcAddress, (void *&)gCapFuncs.GetProcAddress);
 	}
 }
 

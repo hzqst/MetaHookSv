@@ -34,16 +34,19 @@ void R_RecursiveWorldNode(mnode_t *node)
 void R_MarkLeaves(void)
 {
 	//Don't clip bsp nodes when rendering refract or reflect view for non-transparent water.
-	if (drawrefract)
+	if (r_water_novis && r_water_novis->value > 0)
 	{
-		if (curwater && curwater->color.a == 255)
+		if (drawrefract)
+		{
+			if (curwater && curwater->color.a == 255)
+			{
+				r_novis->value = 1;
+			}
+		}
+		else if (drawreflect)
 		{
 			r_novis->value = 1;
 		}
-	}
-	else if (drawreflect)
-	{
-		r_novis->value = 1;
 	}
 
 	gRefFuncs.R_MarkLeaves();
