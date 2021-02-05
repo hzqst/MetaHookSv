@@ -71,8 +71,6 @@ Current state : Ready to use, more feature are coming soon.
 
 -msaa 4/8/16 : set the sample count of MSAA.
 
--water_texture_size : set the maximum texture size for water reflect/refract view rendering.
-
 #### Console Vars
 
 r_hdr 1 / 0 : to enable / disable HDR(high-dynamic-range) post-processor.
@@ -85,7 +83,7 @@ r_hdr_darkness : to control the darkness for HDR.
 
 r_hdr_adaptation : to control the dark / bright adaptation speed for HDR.
 
-r_water 1 / 0 : to enable / disable water reflection and refraction.
+r_water 2 / 1 / 0 : to enable / disable water reflection and refraction. 2 = all entities and terrains in reflection view, 1 = only terrains in reflection view.
 
 r_water_fresnel (0.0 ~ 2.0) : to determine how to lerp and mix the refraction color and reflection color.
 
@@ -93,7 +91,9 @@ r_water_depthfactor (0.0 ~ 1000.0) : to determine if we can see through water in
 
 r_water_normfactor (0.0 ~ 1000.0) : to determine the size of water wave (offset to the normalmap).
 
-r_water_novis 1 / 0 : force engine to render the scene which should have been removed by visleaf when rendering refract or reflect view.
+r_water_novis 1 / 0 : force engine to render the scene which should have been removed by visleaf when rendering refraction or reflection view.
+
+r_water_texscale (0.1 ~ 1.0) : to control the size of refract or reflect view texture.
 
 r_shadow 1 / 0 : to enable / disable Per-Object Shadow.
 
@@ -103,7 +103,7 @@ r_shadow_angle_yaw (0.0 ~ 360.0) : to control the angle(yaw) of shadow caster (l
 
 r_shadow_angle_roll (0.0 ~ 360.0) : to control the angle(roll) of shadow caster (light source).
 
-r_shadow_texsize (must be power of 2) : the texture size of shadow map. larger texture supports bigger shadow-caster entity but uses more graphic RAM.
+r_shadow_texsize (must be power of 4) : the texture size of shadow map. larger texture supports bigger shadow-caster entity but uses more graphic RAM.
 
 r_shadow_scale (must be power of 2) : scale factor when render shadow-caster entity in shadow map. larger scale factor gets better quality shadow but will cause incorrect render result when the entity is scaled too much.
 
