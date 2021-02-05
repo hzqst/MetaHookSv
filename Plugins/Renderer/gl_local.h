@@ -122,7 +122,6 @@ extern qboolean bNoStretchAspect;
 
 extern FBO_Container_t s_MSAAFBO;
 extern FBO_Container_t s_BackBufferFBO;
-extern FBO_Container_t s_3DHUDFBO;
 extern FBO_Container_t s_WaterFBO;
 extern FBO_Container_t s_ShadowFBO;
 extern FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];

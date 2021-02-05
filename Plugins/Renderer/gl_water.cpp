@@ -271,9 +271,20 @@ void R_RenderReflectView(void)
 	*r_oldviewleaf = NULL;
 	saved_cl_waterlevel = *cl_waterlevel;
 	*cl_waterlevel = 0;
+	auto saved_r_drawentities = r_drawentities->value;
+
+	if (r_water->value >= 2)
+	{
+		r_drawentities->value = 1;
+	}
+	else
+	{
+		r_drawentities->value = 0;
+	}
 
 	gRefFuncs.R_RenderScene();
 
+	r_drawentities->value = saved_r_drawentities;
 	*cl_waterlevel = saved_cl_waterlevel;
 	*r_oldviewleaf = saved_oldviewleaf;
 	*r_framecount = saved_framecount;
@@ -322,9 +333,20 @@ void R_RenderRefractView(void)
 	*r_oldviewleaf = NULL;
 	saved_cl_waterlevel = *cl_waterlevel;
 	//*cl_waterlevel = 0;
+	auto saved_r_drawentities = r_drawentities->value;
+
+	if (r_water->value >= 2)
+	{
+		r_drawentities->value = 1;
+	}
+	else
+	{
+		r_drawentities->value = 0;
+	}
 
 	gRefFuncs.R_RenderScene();
 
+	r_drawentities->value = saved_r_drawentities;
 	*cl_waterlevel = saved_cl_waterlevel;
 	*r_oldviewleaf = saved_oldviewleaf;
 	*r_framecount = saved_framecount;

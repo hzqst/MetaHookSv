@@ -157,8 +157,6 @@ typedef struct
 	void (*R_PushFrameBuffer)(void);
 	void (*R_PopFrameBuffer)(void);
 	void (*R_GLBindFrameBuffer)(GLenum target, GLuint framebuffer);
-	//shadow
-	void (*R_CreateShadowLight)(cl_entity_t *entity, vec3_t angles, float radius, float fard, float scale, int texscale);
 	//texture
 	GLuint (*R_GLGenTexture)(int w, int h);
 	byte *(*R_GetTexLoaderBuffer)(int *bufsize);
@@ -177,20 +175,10 @@ typedef struct
 	void (*R_Finish3DSkyModel)(void);
 	//2d postprocess
 	void (*R_BeginFXAA)(int w, int h);
-	void (*R_BeginDrawRoundRect)(int centerX, int centerY, float radius, float blurdist);
-	void (*R_BeginDrawHudMask)(int r, int g, int b);
 	//cloak
 	void (*R_RenderCloakTexture)(void);
 	int (*R_GetCloakTexture)(void);
 	void (*R_BeginRenderConc)(float flBlurFactor, float flRefractFactor);
-	//3dhud
-	int (*R_Get3DHUDTexture)(void);
-	void (*R_Draw3DHUDQuad)(int x, int y, int left, int top);
-	void (*R_BeginDrawTrianglesInHUD_Direct)(int x, int y);
-	void (*R_BeginDrawTrianglesInHUD_FBO)(int x, int y, int left, int top);
-	void (*R_FinishDrawTrianglesInHUD)(void);
-	void (*R_BeginDrawHUDInWorld)(int texid, int w, int h);
-	void (*R_FinishDrawHUDInWorld)(void);
 	//shader
 	shaderapi_t ShaderAPI;
 	engrefapi_t RefAPI;

@@ -154,6 +154,8 @@
 
 #define MOD_POINTINLEAF_SIG_SVENGINE "\x56\x8B\x74\x24\x0C\x85\xF6\x2A\x2A\x8B\x8E\xA4\x00\x00\x00"
 
+#define R_FORCECVAR_SIG_SVENGINE "\x83\x7C\x24\x2A\x00\x2A\x2A\x2A\x2A\x00\x00\x81\x3D\x2A\x2A\x2A\x2A\xFF\x00\x00\x00"
+
 //Studio Funcs
 #define R_GLSTUDIODRAWPOINTS_SIG "\x83\xEC\x44\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x53\x55\x56\x8B\x70\x54\x8B\x40\x60\x57"
 #define R_GLSTUDIODRAWPOINTS_SIG2 "\x83\xEC\x48\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\x53\x55\x8B\x41\x54\x8B\x59\x60"
@@ -300,6 +302,9 @@ void R_FillAddress(void)
 		//5953 above only
 		gRefFuncs.FreeFBObjects = (void(*)(void))Search_Pattern_From(GL_EndRendering, FREEFBOBJECTS_SIG_SVENGINE);
 		Sig_FuncNotFound(FreeFBObjects);
+
+		gRefFuncs.R_ForceCVars = (void(*)(qboolean))Search_Pattern(R_FORCECVAR_SIG_SVENGINE);
+		Sig_FuncNotFound(R_ForceCVars);
 	}
 	else if (g_dwEngineBuildnum >= 5953)
 	{
@@ -1136,10 +1141,11 @@ void R_InstallHook(void)
 	g_pMetaHookAPI->InlineHook(gRefFuncs.EmitWaterPolys, EmitWaterPolys, (void *&)gRefFuncs.EmitWaterPolys);	
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_SetupGL, R_SetupGL, (void *&)gRefFuncs.R_SetupGL);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_MarkLeaves, R_MarkLeaves, (void *&)gRefFuncs.R_MarkLeaves);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_CullBox, R_CullBox, (void *&)gRefFuncs.R_CullBox);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_ForceCVars, R_ForceCVars, (void *&)gRefFuncs.R_ForceCVars);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.Mod_PointInLeaf, Mod_PointInLeaf, (void *&)gRefFuncs.Mod_PointInLeaf);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSequentialPoly, R_DrawSequentialPoly, (void *&)gRefFuncs.R_DrawSequentialPoly);
 
-	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_CullBox, R_CullBox, (void *&)gRefFuncs.R_CullBox);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderScene, R_RenderScene, (void *&)gRefFuncs.R_RenderScene);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawWorld, R_DrawWorld, (void *&)gRefFuncs.R_DrawWorld);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_SetupFrame, R_SetupFrame, (void *&)gRefFuncs.R_SetupFrame);
