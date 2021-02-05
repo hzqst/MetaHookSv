@@ -289,6 +289,10 @@ int HUD_Redraw(float time, int intermission)
 			debugTextureID = waters_active->depthrefrmap;
 			qglUseProgramObjectARB(drawdepth.program);
 			break;
+		case 4:
+			debugTextureID = waters_active->depthreflmap;
+			qglUseProgramObjectARB(drawdepth.program);
+			break;
 		default:
 			break;
 		}
@@ -306,8 +310,7 @@ int HUD_Redraw(float time, int intermission)
 			qglVertex3f(0, glheight / 2, 0);
 			qglEnd();
 
-			if (debugTextureID == waters_active->depthrefrmap)
-				qglUseProgramObjectARB(0);
+			qglUseProgramObjectARB(0);
 		}
 	}
 	else if(sdlights_active && r_shadow_debug && r_shadow_debug->value)
@@ -426,8 +429,6 @@ int HUD_Redraw(float time, int intermission)
 			texId = s_HBAOCalcFBO.s_hBackBufferTex; break;
 		case 4:
 			texId = s_HBAOCalcFBO.s_hBackBufferTex2; break;
-		case 5:
-			texId = s_BackBufferFBO.s_hBackBufferTex; break;
 		default:
 			break;
 		}

@@ -4,8 +4,6 @@
 qboolean drawreflect;
 qboolean drawrefract;
 vec3_t water_view;
-int water_texture_width;
-int water_texture_height;
 
 //water
 r_water_t waters[MAX_WATERS];
@@ -33,6 +31,7 @@ cvar_t *r_water_fresnel = NULL;
 cvar_t *r_water_depthfactor = NULL;
 cvar_t *r_water_normfactor = NULL;
 cvar_t *r_water_novis = NULL;
+cvar_t *r_water_texscale = NULL;
 
 void RotatePointAroundVector(vec3_t dst, const vec3_t dir, const vec3_t point, float degrees);
 
@@ -120,6 +119,7 @@ void R_InitWater(void)
 	r_water_depthfactor = gEngfuncs.pfnRegisterVariable("r_water_depthfactor", "50", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_normfactor = gEngfuncs.pfnRegisterVariable("r_water_normfactor", "1.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_novis = gEngfuncs.pfnRegisterVariable("r_water_novis", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_water_texscale = gEngfuncs.pfnRegisterVariable("r_water_texscale", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	curwater = NULL;
 	drawreflect = false;
@@ -131,18 +131,18 @@ void R_InitWater(void)
 int R_ShouldReflect(void) 
 {
 	//The camera is above water?
-	if(curwater->vecs[2] > r_refdef->vieworg[2])
+	if(curwater->vecs[2] > r_refdef->vieworg[2] || *cl_waterlevel >= 3)
 		return 0;
 
 	//Getting too close to another water?
-	for(r_water_t *w = waters_active; w; w = w->next)
+	/*for(r_water_t *w = waters_active; w; w = w->next)
 	{
 		if(w->ent && curwater->ent != w->ent)
 		{
 			if(fabs(w->vecs[2] - curwater->vecs[2]) < 1.0f)
 				return 0;
 		}
-	}
+	}*/
 	return 1;
 }
 
@@ -175,6 +175,19 @@ void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 	curwater->next = waters_active;
 	waters_active = curwater;
 
+	int water_texture_width = glwidth;
+	int water_texture_height = glheight;
+
+	int desired_height = glheight * clamp(r_water_texscale->value, 0.1, 2.0);
+	while ((water_texture_height >> 1) >= desired_height)
+	{
+		water_texture_width >>= 1;
+		water_texture_height >>= 1;
+	}
+
+	curwater->texwidth = water_texture_width;
+	curwater->texheight = water_texture_height;
+
 	if (!curwater->reflectmap)
 		curwater->reflectmap = R_GLGenTexture(water_texture_width, water_texture_height);
 
@@ -183,6 +196,9 @@ void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 
 	if (!curwater->depthrefrmap)
 		curwater->depthrefrmap = R_GLGenDepthTexture(water_texture_width, water_texture_height);
+
+	if (!curwater->depthreflmap)
+		curwater->depthreflmap = R_GLGenDepthTexture(water_texture_width, water_texture_height);
 
 	VectorCopy(p, curwater->vecs);
 	curwater->ent = ent;
@@ -238,11 +254,14 @@ void R_EnableClip(qboolean isdrawworld)
 
 void R_RenderReflectView(void)
 {
-	if (s_WaterFBO.s_hBackBufferFBO)
+	if (s_BackBufferFBO.s_hBackBufferFBO)
 	{
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, curwater->reflectmap, 0);
-		qglFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, s_WaterFBO.s_hBackBufferDB);
+		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, curwater->depthreflmap, 0);
 	}
+
+	int err = qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER);
 
 	qglClearColor(curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, 1);
 	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -272,7 +291,6 @@ void R_RenderReflectView(void)
 	saved_cl_waterlevel = *cl_waterlevel;
 	*cl_waterlevel = 0;
 	auto saved_r_drawentities = r_drawentities->value;
-
 	if (r_water->value >= 2)
 	{
 		r_drawentities->value = 1;
@@ -291,10 +309,15 @@ void R_RenderReflectView(void)
 
 	qglDisable(GL_CLIP_PLANE0);
 
-	if (!s_WaterFBO.s_hBackBufferFBO)
+	if (!s_BackBufferFBO.s_hBackBufferFBO)
 	{
 		qglBindTexture(GL_TEXTURE_2D, curwater->reflectmap);
-		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, water_texture_width, water_texture_height, 0);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, curwater->texwidth, curwater->texheight, 0);
+	}
+	else
+	{
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s_BackBufferFBO.s_hBackBufferTex, 0);
 	}
 
 	R_PopRefDef();
@@ -304,8 +327,9 @@ void R_RenderReflectView(void)
 
 void R_RenderRefractView(void)
 {
-	if (s_WaterFBO.s_hBackBufferFBO)
+	if (s_BackBufferFBO.s_hBackBufferFBO)
 	{
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, curwater->refractmap, 0);
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, curwater->depthrefrmap, 0);
 	}
@@ -334,7 +358,6 @@ void R_RenderRefractView(void)
 	saved_cl_waterlevel = *cl_waterlevel;
 	//*cl_waterlevel = 0;
 	auto saved_r_drawentities = r_drawentities->value;
-
 	if (r_water->value >= 2)
 	{
 		r_drawentities->value = 1;
@@ -353,13 +376,19 @@ void R_RenderRefractView(void)
 
 	qglDisable(GL_CLIP_PLANE0);
 
-	if (!s_WaterFBO.s_hBackBufferFBO)
+	if (!s_BackBufferFBO.s_hBackBufferFBO)
 	{
 		qglBindTexture(GL_TEXTURE_2D, curwater->refractmap);
-		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, water_texture_width, water_texture_height, 0);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, curwater->texwidth, curwater->texheight, 0);
 
 		qglBindTexture(GL_TEXTURE_2D, curwater->depthrefrmap);
-		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 0, 0, water_texture_width, water_texture_height, 0);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 0, 0, curwater->texwidth, curwater->texheight, 0);
+	}
+	else
+	{
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s_BackBufferFBO.s_hBackBufferTex, 0);
+		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, s_BackBufferFBO.s_hBackBufferDepthTex, 0);
 	}
 
 	R_PopRefDef();
@@ -406,12 +435,7 @@ void R_FreeDeadWaters(void)
 
 void R_RenderWaterView(void)
 {
-	int savedframebuffer = 0;
-	if(s_WaterFBO.s_hBackBufferFBO)
-	{
-		qglGetIntegerv(GL_FRAMEBUFFER_BINDING, &savedframebuffer);
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
-	}
+	R_PushFrameBuffer();
 
 	for(r_water_t *w = waters_active; w; w = w->next)
 	{
@@ -427,8 +451,5 @@ void R_RenderWaterView(void)
 		curwater = NULL;
 	}
 
-	if(s_WaterFBO.s_hBackBufferFBO)
-	{
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, savedframebuffer);
-	}
+	R_PopFrameBuffer();
 }

@@ -70,10 +70,24 @@ GLuint R_GLGenTextureColorFormat(int w, int h, int iInternalFormat)
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-	if (iInternalFormat == GL_R32F)
-		qglTexStorage2D(GL_TEXTURE_2D, 1, iInternalFormat, w, h);
-	else
-		qglTexImage2D(GL_TEXTURE_2D, 0, iInternalFormat, w, h, 0, GL_RGBA,
+	//glTexStorage2D doesnt work with qglCopyTexImage2D so we use glTexImage2D here
+	qglTexImage2D(GL_TEXTURE_2D, 0, iInternalFormat, w, h, 0, GL_RGBA,
+		(iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, 0);
+
+	qglBindTexture(GL_TEXTURE_2D, 0);
+	return texid;
+}
+
+GLuint R_GLUploadTextureColorFormat(int texid, int w, int h, int iInternalFormat)
+{
+	qglBindTexture(GL_TEXTURE_2D, texid);
+	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	//glTexStorage2D doesnt work with qglCopyTexImage2D so we use glTexImage2D here
+	qglTexImage2D(GL_TEXTURE_2D, 0, iInternalFormat, w, h, 0, GL_RGBA,
 		(iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, 0);
 
 	qglBindTexture(GL_TEXTURE_2D, 0);
@@ -88,6 +102,7 @@ GLuint R_GLGenDepthTexture(int w, int h)
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	//glTexStorage2D doesnt work with qglCopyTexImage2D so we use glTexImage2D here
 	qglTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 	qglBindTexture(GL_TEXTURE_2D, 0);
 	return texid;

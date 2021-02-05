@@ -70,7 +70,7 @@ void main()
 		//lerp the reflection and refraction color by fresnel
 		vec4 vFinalColor = vReflectColor * (1.0-flRefractFactor) + vRefractColor * flRefractFactor;
 		
-		float flWaterColorAlpha = clamp(waterfogcolor.a, 0.01, 0.85);
+		float flWaterColorAlpha = clamp(waterfogcolor.a, 0.01, 0.9);
 
 		vec4 vWaterColor = waterfogcolor;
 		vWaterColor.a = 1.0;

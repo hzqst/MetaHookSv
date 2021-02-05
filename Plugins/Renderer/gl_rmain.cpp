@@ -85,8 +85,6 @@ int glheight = 0;
 
 FBO_Container_t s_MSAAFBO;
 FBO_Container_t s_BackBufferFBO;
-FBO_Container_t s_WaterFBO;
-FBO_Container_t s_ShadowFBO;
 FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];
 FBO_Container_t s_LuminFBO[LUMIN_BUFFERS];
 FBO_Container_t s_Lumin1x1FBO[LUMIN1x1_BUFFERS];
@@ -678,9 +676,9 @@ void R_SetupGL(void)
 {
 	gRefFuncs.R_SetupGL();
 
-	if (drawreflect || drawrefract)
+	if ((drawreflect || drawrefract) && curwater)
 	{
-		qglViewport(0, 0, water_texture_width, water_texture_height);
+		qglViewport(0, 0, curwater->texwidth, curwater->texheight);
 
 		R_EnableClip(true);
 	}
@@ -730,6 +728,12 @@ void GL_FreeFBO(FBO_Container_t *s)
 
 	if (s->s_hBackBufferTex)
 		qglDeleteTextures(1, &s->s_hBackBufferTex);
+
+	if (s->s_hBackBufferTex2)
+		qglDeleteTextures(1, &s->s_hBackBufferTex2);
+
+	if (s->s_hBackBufferDepthTex)
+		qglDeleteTextures(1, &s->s_hBackBufferDepthTex);
 
 	GL_ClearFBO(s);
 }
@@ -839,7 +843,22 @@ void R_GLFrameBufferDepthStencilTexture(FBO_Container_t *s, GLuint iInternalForm
 	qglFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, s->s_hBackBufferDepthTex, 0);
 }
 
-void R_GLFrameBufferColorTextureHBAO(FBO_Container_t *s, int iInternalFormat)
+int R_GLGenColorTextureHBAO(int w, int h)
+{
+	GLint swizzle[4] = { GL_RED,GL_GREEN,GL_ZERO,GL_ZERO };
+
+	int texId = GL_GenTexture();
+	qglBindTexture(GL_TEXTURE_2D, texId);
+	qglTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	qglTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, w, h, 0, GL_RG, GL_FLOAT, 0);
+	qglBindTexture(GL_TEXTURE_2D, 0);
+
+	return texId;
+}
+
+void R_GLFrameBufferColorTextureHBAO(FBO_Container_t *s)
 {
 	GLint swizzle[4] = { GL_RED,GL_GREEN,GL_ZERO,GL_ZERO };
 
@@ -848,22 +867,19 @@ void R_GLFrameBufferColorTextureHBAO(FBO_Container_t *s, int iInternalFormat)
 	qglTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	qglTexStorage2D(GL_TEXTURE_2D, 1, iInternalFormat, s->iWidth, s->iHeight);
+	qglTexStorage2D(GL_TEXTURE_2D, 1, GL_RG16F, s->iWidth, s->iHeight);
 
 	s->s_hBackBufferTex2 = GL_GenTexture();
 	qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferTex2);
 	qglTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	qglTexStorage2D(GL_TEXTURE_2D, 1, iInternalFormat, s->iWidth, s->iHeight);
+	qglTexStorage2D(GL_TEXTURE_2D, 1, GL_RG16F, s->iWidth, s->iHeight);
 	
-	s->iTextureColorFormat = iInternalFormat;
+	s->iTextureColorFormat = GL_RG16F;
 
-	if (s->s_hBackBufferFBO)
-	{
-		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s->s_hBackBufferTex, 0);
-		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, s->s_hBackBufferTex2, 0);
-	}
+	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s->s_hBackBufferTex, 0);
+	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, s->s_hBackBufferTex2, 0);
 }
 
 void GL_GenerateFBO(void)
@@ -899,8 +915,6 @@ void GL_GenerateFBO(void)
 
 	GL_ClearFBO(&s_MSAAFBO);
 	GL_ClearFBO(&s_BackBufferFBO);
-	GL_ClearFBO(&s_ShadowFBO);
-	GL_ClearFBO(&s_WaterFBO);
 
 	for(int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
 		GL_ClearFBO(&s_DownSampleFBO[i]);
@@ -999,7 +1013,6 @@ void GL_GenerateFBO(void)
 
 		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
-			GL_FreeFBO(&s_MSAAFBO);
 			GL_FreeFBO(&s_BackBufferFBO);
 			gEngfuncs.Con_Printf("FBO backbuffer rendering disabled due to create error.\n");
 		}
@@ -1012,24 +1025,13 @@ void GL_GenerateFBO(void)
 	if (!s_BackBufferFBO.s_hBackBufferTex)
 	{
 		s_BackBufferFBO.s_hBackBufferTex = R_GLGenTextureColorFormat(s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight, iColorInternalFormat);
+		s_BackBufferFBO.s_hBackBufferDepthTex = R_GLGenDepthTexture(s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight);
 		s_BackBufferFBO.iTextureColorFormat = iColorInternalFormat;
-	}
-
-	s_ShadowFBO.iWidth = 0;
-	s_ShadowFBO.iHeight = 0;
-	if (bDoScaledFBO)
-	{
-		R_GLGenFrameBuffer(&s_ShadowFBO);
-		int err = qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER);
-		if (err != GL_FRAMEBUFFER_COMPLETE && err != GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT)
-		{
-			GL_FreeFBO(&s_ShadowFBO);
-			gEngfuncs.Con_Printf("Shadow FBO rendering disabled due to create error.\n");
-		}
 	}
 
 	s_DepthLinearFBO.iWidth = glwidth;
 	s_DepthLinearFBO.iHeight = glheight;
+	
 	if (bDoScaledFBO)
 	{
 		R_GLGenFrameBuffer(&s_DepthLinearFBO);
@@ -1049,10 +1051,11 @@ void GL_GenerateFBO(void)
 
 	s_HBAOCalcFBO.iWidth = glwidth;
 	s_HBAOCalcFBO.iHeight = glheight;
+
 	if (bDoScaledFBO)
 	{
 		R_GLGenFrameBuffer(&s_HBAOCalcFBO);
-		R_GLFrameBufferColorTextureHBAO(&s_HBAOCalcFBO, GL_RG16F);
+		R_GLFrameBufferColorTextureHBAO(&s_HBAOCalcFBO);
 
 		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
@@ -1060,60 +1063,13 @@ void GL_GenerateFBO(void)
 			gEngfuncs.Con_Printf("HBAOCalc FBO rendering disabled due to create error.\n");
 		}
 	}
+
 	if (!s_HBAOCalcFBO.s_hBackBufferTex)
 	{
-		R_GLFrameBufferColorTextureHBAO(&s_HBAOCalcFBO, GL_RG16F);
-	}
+		s_HBAOCalcFBO.s_hBackBufferTex = R_GLGenColorTextureHBAO(glwidth, glheight);
+		s_HBAOCalcFBO.s_hBackBufferTex2 = R_GLGenColorTextureHBAO(glwidth, glheight);	
+		s_HBAOCalcFBO.iTextureColorFormat = GL_RG16F;
 
-	if (glwidth >= 2560)
-	{
-		water_texture_width = 1920;
-		water_texture_height = 1080;
-	}
-	else if (glwidth >= 1600)
-	{
-		water_texture_width = glwidth / 2;
-		water_texture_height = glheight / 2;
-	}
-	else
-	{
-		water_texture_width = glwidth;
-		water_texture_height = glheight;
-	}
-
-	const char *water_texture_size = NULL;
-	if (g_pInterface->CommandLine->CheckParm("-water_texture_size", &water_texture_size))
-	{
-		if (water_texture_size && water_texture_size[0] >= '0' && water_texture_size[0] <= '9')
-		{
-			int iWaterTextureSize = atoi(water_texture_size);
-			if (iWaterTextureSize >= 256)
-			{
-				water_texture_width = glwidth;
-				water_texture_height = glheight;
-				while ((water_texture_height >> 1) > iWaterTextureSize)
-				{
-					water_texture_width >>= 1;
-					water_texture_height >>= 1;
-				}
-			}
-		}
-	}
-
-	//Water FBO
-	s_WaterFBO.iWidth = water_texture_width;
-	s_WaterFBO.iHeight = water_texture_height;
-
-	if (bDoScaledFBO)
-	{
-		R_GLGenFrameBuffer(&s_WaterFBO);
-		R_GLGenRenderBuffer(&s_WaterFBO, true);
-		R_GLRenderBufferStorage(&s_WaterFBO, true, GL_DEPTH_COMPONENT24, false);
-		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		{
-			GL_FreeFBO(&s_WaterFBO);
-			gEngfuncs.Con_Printf("Water FBO rendering disabled due to create error.\n");
-		}
 	}
 
 	int downW, downH;
@@ -1156,7 +1112,7 @@ void GL_GenerateFBO(void)
 	{
 		downW = glwidth;
 		downH = glheight;
-		while ((downH >> 1) > 128)
+		while ((downH >> 1) >= 256)
 		{
 			downW >>= 1;
 			downH >>= 1;
@@ -1178,7 +1134,6 @@ void GL_GenerateFBO(void)
 					gEngfuncs.Con_Printf("Luminance FBO #%d rendering disabled due to create error.\n", i);
 				}
 			}
-
 
 			if(!s_LuminFBO[i].s_hBackBufferTex)
 			{
@@ -1363,8 +1318,6 @@ void GL_Shutdown(void)
 {
 	GL_FreeFBO(&s_MSAAFBO);
 	GL_FreeFBO(&s_BackBufferFBO);
-	GL_FreeFBO(&s_ShadowFBO);
-	GL_FreeFBO(&s_WaterFBO);
 	for(int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
 		GL_FreeFBO(&s_DownSampleFBO[i]);
 	for(int i = 0; i < LUMIN_BUFFERS; ++i)
@@ -1401,14 +1354,6 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 
 void R_PreRenderView()
 {
-	if (s_BackBufferFBO.s_hBackBufferFBO)
-	{
-		if (s_MSAAFBO.s_hBackBufferFBO)
-			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
-		else
-			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-	}
-
 	//Draw_UpdateAnsios();
 
 	/*if (r_3dsky_parm.enable && r_3dsky->value)
@@ -1426,6 +1371,14 @@ void R_PreRenderView()
 		{
 			R_RenderWaterView();
 		}
+	}
+
+	if (s_BackBufferFBO.s_hBackBufferFBO)
+	{
+		if (s_MSAAFBO.s_hBackBufferFBO)
+			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
+		else
+			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	}
 }
 

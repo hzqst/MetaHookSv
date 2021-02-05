@@ -29,14 +29,19 @@ typedef struct
 typedef struct r_water_s
 {
 	GLuint refractmap;
-	GLuint reflectmap;
 	GLuint depthrefrmap;
+
+	GLuint reflectmap;
+	GLuint depthreflmap;
+
 	vec3_t vecs;
 	float distances;
 	cl_entity_t *ent;
 	vec3_t org;
 	colorVec color;
 	int is3dsky;
+	int texwidth;
+	int texheight;
 	int free;
 	struct r_water_s *next;
 }r_water_t;
@@ -44,8 +49,6 @@ typedef struct r_water_s
 //renderer
 extern qboolean drawreflect;
 extern qboolean drawrefract;
-extern int water_texture_width;
-extern int water_texture_height;
 
 //water
 extern r_water_t *curwater;
@@ -63,19 +66,6 @@ extern SHADER_DEFINE(drawdepth);
 extern int *g_bUserFogOn;
 extern int save_userfogon;
 
-typedef struct
-{
-	qboolean fog;
-	vec4_t color;
-	float start;
-	float end;
-	float density;
-	float fresnel;
-	qboolean active;
-}water_parm_t;
-
-extern water_parm_t water_parm;
-
 //cvar
 extern cvar_t *r_water;
 extern cvar_t *r_water_debug;
@@ -83,6 +73,7 @@ extern cvar_t *r_water_fresnel;
 extern cvar_t *r_water_depthfactor;
 extern cvar_t *r_water_normfactor;
 extern cvar_t *r_water_novis;
+extern cvar_t *r_water_texscale;
 
 void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color);
 void R_InitWater(void);

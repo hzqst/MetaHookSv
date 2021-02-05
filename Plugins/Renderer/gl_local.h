@@ -122,8 +122,6 @@ extern qboolean bNoStretchAspect;
 
 extern FBO_Container_t s_MSAAFBO;
 extern FBO_Container_t s_BackBufferFBO;
-extern FBO_Container_t s_WaterFBO;
-extern FBO_Container_t s_ShadowFBO;
 extern FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];
 extern FBO_Container_t s_LuminFBO[LUMIN_BUFFERS];
 extern FBO_Container_t s_Lumin1x1FBO[LUMIN1x1_BUFFERS];
@@ -279,6 +277,7 @@ int R_GetDrawPass(void);
 GLuint R_GLGenTexture(int w, int h);
 GLuint R_GLGenDepthTexture(int w, int h);
 GLuint R_GLGenTextureColorFormat(int w, int h, int iInternalFormat);
+GLuint R_GLUploadTextureColorFormat(int texid, int w, int h, int iInternalFormat);
 byte *R_GetTexLoaderBuffer(int *bufsize);
 gltexture_t *R_GetCurrentGLTexture(void);
 int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, qboolean ansio);

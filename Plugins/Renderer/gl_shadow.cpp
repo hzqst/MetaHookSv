@@ -165,7 +165,7 @@ void R_AddEntityShadow(cl_entity_t *ent, const char *model)
 		if(!sl)
 		{
 			vec3_t ang = { r_shadow_angle_p->value, r_shadow_angle_y->value, r_shadow_angle_r->value };
-			R_CreateShadowLight(ent, ang, r_shadow_radius->value, r_shadow_fardist->value, (int)r_shadow_scale->value, (int)r_shadow_texsize->value);
+			R_CreateShadowLight(ent, ang, r_shadow_radius->value, r_shadow_fardist->value, (int)r_shadow_scale->value, r_shadow_texsize->value);
 		}
 		else
 		{
@@ -178,7 +178,7 @@ void R_AddEntityShadow(cl_entity_t *ent, const char *model)
 		if(!sl)
 		{
 			vec3_t ang = { r_shadow_angle_p->value, r_shadow_angle_y->value, r_shadow_angle_r->value };
-			R_CreateShadowLight(ent, ang, r_shadow_radius->value, r_shadow_fardist->value, (int)r_shadow_scale->value, (int)r_shadow_texsize->value);
+			R_CreateShadowLight(ent, ang, r_shadow_radius->value, r_shadow_fardist->value, (int)r_shadow_scale->value, r_shadow_texsize->value);
 		}
 		else
 		{
@@ -211,30 +211,35 @@ void R_CreateShadowLight(cl_entity_t *entity, vec3_t angles, float radius, float
 	VectorCopy(angles, cursdlight->angles);
 	AngleVectors(angles, cursdlight->vforward, cursdlight->vright, cursdlight->vup);
 
+	int shadow_texture_size = r_shadow_texsize->value;
+
 	int scaled_texsize;
 	for (scaled_texsize = 1; scaled_texsize < texsize; scaled_texsize <<= 1) {}
 	if (gl_round_down->value > 0 && texsize < scaled_texsize && (gl_round_down->value == 1 || (scaled_texsize - texsize) > (scaled_texsize >> (int)gl_round_down->value)))
 		scaled_texsize >>= 1;
 	int max_size = max(128, gl_max_texture_size);
-	if(!s_ShadowFBO.s_hBackBufferFBO && max_size > 512)//glCopyTexImage2D fix
+	if (!s_BackBufferFBO.s_hBackBufferFBO && max_size > 512)//glCopyTexImage2D fix
 		max_size = 512;
-	scaled_texsize = max(min(scaled_texsize >> (int)gl_picmip->value, max_size), 64);
+
+	if (scaled_texsize > max_size)
+		scaled_texsize = max_size;
 
 	cursdlight->radius = min(max(radius, 0), 1000);
 	cursdlight->fard = min(max(fard, 0), cursdlight->radius);
 	cursdlight->scale = min(max(scale, 1), 64);
 	cursdlight->free = false;
+
 	if(!cursdlight->depthmap)
 	{
 		cursdlight->texsize = scaled_texsize;
-		cursdlight->depthmap = R_GLGenShadowTexture(cursdlight->texsize, cursdlight->texsize);
+		cursdlight->depthmap = R_GLGenShadowTexture(scaled_texsize, scaled_texsize);
 	}
 	else
 	{
 		if(scaled_texsize != cursdlight->texsize)
 		{
 			cursdlight->texsize = scaled_texsize;
-			R_GLUploadShadowTexture(cursdlight->depthmap, cursdlight->texsize, cursdlight->texsize);
+			R_GLUploadShadowTexture(cursdlight->depthmap, scaled_texsize, scaled_texsize);
 		}
 	}
 
@@ -283,8 +288,21 @@ void R_RenderShadowMap(void)
 
 	qglMatrixMode(GL_PROJECTION);
 	qglLoadIdentity();
-	
+
 	int scaled_texsize = cursdlight->texsize / cursdlight->scale;
+
+	if (cursdlight->followent->model->type == mod_studio)
+	{
+		if (cursdlight->followent->model->maxs[2] > cursdlight->followent->model->mins[2] + 256.0f
+			||
+			cursdlight->followent->model->maxs[1] > cursdlight->followent->model->mins[1] + 256.0f
+			||
+			cursdlight->followent->model->maxs[0] > cursdlight->followent->model->mins[0] + 256.0f)
+		{
+			scaled_texsize *= 2;;
+		}
+	}
+
 	qglOrtho(-scaled_texsize, scaled_texsize, -scaled_texsize, scaled_texsize, -cursdlight->radius, cursdlight->radius);
 
 	qglMatrixMode(GL_MODELVIEW);
@@ -302,14 +320,14 @@ void R_RenderShadowMap(void)
 
 	qglViewport(0, 0, cursdlight->texsize, cursdlight->texsize);
 
-	if(s_ShadowFBO.s_hBackBufferFBO)
+	if(s_BackBufferFBO.s_hBackBufferFBO)
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, cursdlight->depthmap, 0);
 
 	qglDrawBuffer(GL_DEPTH_ATTACHMENT);
 
 	qglClear(GL_DEPTH_BUFFER_BIT);
 
-	qglDepthRange(0, 1);
+	//qglDepthRange(0, 1);
 
 	qglColorMask(0, 0, 0, 0);
 	
@@ -327,7 +345,7 @@ void R_RenderShadowMap(void)
 
 	qglColorMask(1, 1, 1, 1);
 
-	if(!s_ShadowFBO.s_hBackBufferFBO)
+	if(!s_BackBufferFBO.s_hBackBufferFBO)
 	{
 		qglBindTexture(GL_TEXTURE_2D, cursdlight->depthmap);
 		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, 0, 0, cursdlight->texsize, cursdlight->texsize, 0);
@@ -365,10 +383,11 @@ qboolean R_ShouldCastShadow(cl_entity_t *ent)
 
 void R_RenderShadowMaps(void)
 {
-	if(s_ShadowFBO.s_hBackBufferFBO)
+	if(s_BackBufferFBO.s_hBackBufferFBO)
 	{
 		R_PushFrameBuffer();
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_ShadowFBO.s_hBackBufferFBO);
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
 	}
 
 	qglColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -402,8 +421,11 @@ void R_RenderShadowMaps(void)
 	qglDisable(GL_POLYGON_OFFSET_FILL);
 	qglColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
-	if(s_ShadowFBO.s_hBackBufferFBO)
+	if(s_BackBufferFBO.s_hBackBufferFBO)
 	{
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s_BackBufferFBO.s_hBackBufferTex, 0);
+		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, s_BackBufferFBO.s_hBackBufferDepthTex, 0);
 		R_PopFrameBuffer();
 	}
 
@@ -633,6 +655,8 @@ void R_RenderAllShadowScenes(void)
 
 	drawshadowscene = true;
 
+	r_refdef->onlyClientDraws = true;
+
 	for(shadowlight_t *slight = sdlights_active; slight; slight = slight->next)
 	{
 		if(slight->free)
@@ -668,6 +692,8 @@ void R_RenderAllShadowScenes(void)
 
 		cursdlight = NULL;
 	}
+
+	r_refdef->onlyClientDraws = false;
 
 	drawshadowscene = false;
 

@@ -689,7 +689,7 @@ void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int logexp)
 	if (!dst->s_hBackBufferFBO)
 	{
 		qglBindTexture(GL_TEXTURE_2D, dst->s_hBackBufferTex);
-		qglCopyTexImage2D(GL_TEXTURE_2D, 0, dst->iTextureColorFormat, 0, 0, dst->iWidth, dst->iHeight, 0);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, dst->iWidth, dst->iHeight, 0);
 	}
 }
 
@@ -933,6 +933,7 @@ void R_DoHDR(void)
 
 	//Log Luminance DownSample from .. (HDRColor to 32RF)
 	R_LuminPass(&s_DownSampleFBO[1], &s_LuminFBO[0], 1);//(1/16)->64x64
+
 	//Luminance DownSample from..
 	R_LuminPass(&s_LuminFBO[0], &s_LuminFBO[1], 0);//64x64->16x16
 	R_LuminPass(&s_LuminFBO[1], &s_LuminFBO[2], 0);//16x16->4x4
@@ -981,6 +982,9 @@ int R_DoSSAO(int sampleIndex)
 
 	qboolean bUseFBO = s_DepthLinearFBO.s_hBackBufferFBO && s_HBAOCalcFBO.s_hBackBufferFBO ? true : false;
 
+	if (!bUseFBO)
+		return 0;
+
 	GLfloat P[16];
 	qglGetFloatv(GL_PROJECTION_MATRIX, P);
 
@@ -993,10 +997,20 @@ int R_DoSSAO(int sampleIndex)
 
 	R_BeginHUDQuad();
 
-	//write to depthlinear
 	if (bUseFBO)
 	{
+		//write to depthlinear
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_DepthLinearFBO.s_hBackBufferFBO);
+	}
+	else
+	{
+		//backup current color image into texture
+		qglBindTexture(GL_TEXTURE_2D, s_BackBufferFBO.s_hBackBufferTex);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, s_BackBufferFBO.iTextureColorFormat, 0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight, 0);
+
+		//write depth data into depthtexture
+		qglBindTexture(GL_TEXTURE_2D, s_BackBufferFBO.s_hBackBufferDepthTex);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, 0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight, 0);
 	}
 
 	//MSAA?
@@ -1022,9 +1036,21 @@ int R_DoSSAO(int sampleIndex)
 		R_DrawHUDQuad_Texture(s_BackBufferFBO.s_hBackBufferDepthTex, glwidth, glheight);
 	}
 
-	//HBAL Calc
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_HBAOCalcFBO.s_hBackBufferFBO);
-	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
+	qglUseProgramObjectARB(0);
+
+	//copy to depthlinear texture
+	if (!bUseFBO)
+	{
+		qglBindTexture(GL_TEXTURE_2D, s_DepthLinearFBO.s_hBackBufferTex);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, s_DepthLinearFBO.iTextureColorFormat, 0, 0, glwidth, glheight, 0);
+	}
+
+	//write result to hbao texture1
+	if (bUseFBO)
+	{
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_HBAOCalcFBO.s_hBackBufferFBO);
+		qglDrawBuffer(GL_COLOR_ATTACHMENT0);
+	}
 
 	float projInfoPerspective[] = {
 		2.0f / (P[4 * 0 + 0]),       // (x) * (R - L)/N
@@ -1045,10 +1071,12 @@ int R_DoSSAO(int sampleIndex)
 	auto projInfo = useOrtho ? projInfoOrtho : projInfoPerspective;
 
 	float projScale;
-	if (useOrtho) {
+	if (useOrtho) 
+	{
 		projScale = float(glheight) / (projInfoOrtho[1]);
 	}
-	else {
+	else
+	{
 		projScale = float(glheight) / (tanf(scr_fov_value * 0.5f) * 2.0f);
 	}
 
@@ -1093,11 +1121,20 @@ int R_DoSSAO(int sampleIndex)
 	GL_Bind(s_DepthLinearFBO.s_hBackBufferTex);
 
 	GL_EnableMultitexture();
-	GL_Bind(hbao_randomview[sampleIndex]);
+	GL_Bind(hbao_randomview[sampleIndex >= 0 ? sampleIndex : 0]);
 
 	R_DrawHUDQuad(glwidth, glheight);
 
+	qglUseProgramObjectARB(0);
+
 	GL_DisableMultitexture();
+
+	//copy result to hbao texture1
+	if (!bUseFBO)
+	{
+		qglBindTexture(GL_TEXTURE_2D, s_HBAOCalcFBO.s_hBackBufferTex);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, s_HBAOCalcFBO.iTextureColorFormat, 0, 0, glwidth, glheight, 0);
+	}
 
 	//ssao blur
 
@@ -1113,17 +1150,46 @@ int R_DoSSAO(int sampleIndex)
 
 	qglUniform1fARB(0, r_ssao_blur_sharpness->value / meters2viewspace);
 	qglUniform2fARB(1, 1.0f / float(glwidth), 0);
-
-	qglDrawBuffer(GL_COLOR_ATTACHMENT1);
+	
+	//write to hbao texture2
+	if (bUseFBO)
+	{
+		qglDrawBuffer(GL_COLOR_ATTACHMENT1);
+	}
 
 	R_DrawHUDQuad(glwidth, glheight);
 
-	//final output to main fbo
-	if(s_MSAAFBO.s_hBackBufferDepthTex)
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
-	else
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	qglUseProgramObjectARB(0);
 
+	GL_DisableMultitexture();
+
+	//copy result to hbao texture2
+	if (!bUseFBO)
+	{
+		qglBindTexture(GL_TEXTURE_2D, s_HBAOCalcFBO.s_hBackBufferTex2);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, s_HBAOCalcFBO.iTextureColorFormat, 0, 0, glwidth, glheight, 0);
+	}
+
+	if (bUseFBO)
+	{
+		//final output to main fbo or MSAA fbo
+		if (s_MSAAFBO.s_hBackBufferDepthTex)
+			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
+		else
+			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	}
+
+	if (!bUseFBO)
+	{	
+		//draw main scene image back from texture
+
+		qglDisable(GL_DEPTH_TEST);
+		qglDisable(GL_BLEND);
+
+		R_DrawHUDQuad_Texture(s_BackBufferFBO.s_hBackBufferTex, glwidth, glheight);
+	}
+
+	//merge SSAO result into main scene
 	qglDisable(GL_DEPTH_TEST);
 	qglEnable(GL_BLEND);
 	qglBlendFunc(GL_ZERO, GL_SRC_COLOR);
@@ -1136,26 +1202,28 @@ int R_DoSSAO(int sampleIndex)
 	qglUseProgramObjectARB(hbao_blur2.program);
 	qglUniform1fARB(0, r_ssao_blur_sharpness->value / meters2viewspace);
 
-	GL_SelectTexture(TEXTURE0_SGIS);
 	GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex2);
 	qglUniform2fARB(1, 0, 1.0f / float(glheight));
 
 	R_DrawHUDQuad(glwidth, glheight);
 
-	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
+	qglUseProgramObjectARB(0);
 
-	GL_SelectTexture(TEXTURE1_SGIS);
-	GL_DisableMultitexture();
+	//restore context
+	if (bUseFBO)
+	{
+		qglDrawBuffer(GL_COLOR_ATTACHMENT0);
+	}
 
 	qglEnable(GL_DEPTH_TEST);
 	qglDisable(GL_BLEND);
 	qglDisable(GL_SAMPLE_MASK);
 	qglSampleMaski(0, ~0);
 
-	qglUseProgramObjectARB(0);
-
 	R_PopMatrix();
 
 	if(bUseFBO)
 		R_PopFrameBuffer();
+
+	return 1;
 }
