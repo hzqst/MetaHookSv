@@ -9,9 +9,9 @@ Plugin porting is in progress as most signatures/patterns for GoldSrc engine are
 
 All pre-compiled binary and required files are in "Build" folder, copy them to "\SteamLibrary\steamapps\common\Sven Co-op\".
 
-and launch game from "\SteamLibrary\steamapps\common\Sven Co-op\" with commandline "metahook.exe -game svencoop"
+and launch game from "\SteamLibrary\steamapps\common\Sven Co-op\metahook.exe"
 
-the SDL2.dll fixes a bug that the original SDL's IME input handler was causing buffer overflow and game crash.
+the SDL2.dll fixes a bug that the original SDL's IME input handler was causing buffer overflow and game crash. you don't need to copy it if you don't have a non-english IME.
 
 ## Plugins
 
@@ -45,7 +45,7 @@ Current state : Ready to use, more feature are coming soon.
 
 #### Features
 
-1. HDR (high-dynamic-range) post-processor.
+1. High-Dynamic-Range (HDR) post-processor.
 
 2. Water reflection and refraction.
 
@@ -53,9 +53,37 @@ Current state : Ready to use, more feature are coming soon.
 
 4. Screen Space Ambient Occlusion (SSAO) using horizon-based ambient occlusion (HBAO). the implementation is taken from nvidia.
 
+5. MultiSampling Anti-Aliasing (MSAA)
+
+#### Launch Parameters / Commmandline Parameters
+
+-nofbo : disable FrameBufferObject rendering. add it if you caught some rendering error.
+
+-nomsaa : disable MultiSampling Anti-Aliasing (MSAA).
+
+-nohdr : disable High-Dynamic-Range (HDR).
+
+-directblit : force to blit the FrameBufferObject to screen.
+
+-nodirectblit : force to render backbuffer as a textured quad to screen.
+
+-hdrcolor 8/16/32 : set the HDR internal framebufferobject/texture color.
+
+-msaa 4/8/16 : set the sample count of MSAA.
+
+-water_texture_size : set the maximum texture size for water reflect/refract view rendering.
+
 #### Console Vars
 
 r_hdr 1 / 0 : to enable / disable HDR(high-dynamic-range) post-processor.
+
+r_hdr_blurwidth : to control the intensity of blur for HDR.
+
+r_hdr_exposure : to control the intensity of exposure for HDR.
+
+r_hdr_darkness : to control the darkness for HDR.
+
+r_hdr_adaptation : to control the dark / bright adaptation speed for HDR.
 
 r_water 1 / 0 : to enable / disable water reflection and refraction.
 
@@ -91,4 +119,4 @@ r_ssao_radius : to control the size of SSAO shadow.
 
 r_ssao_blur_sharpness : to control the sharpness of SSAO shadow.
 
-r_ssao_bias : 
+r_ssao_bias : test it yourself.
