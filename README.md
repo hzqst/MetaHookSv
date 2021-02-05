@@ -105,7 +105,7 @@ r_shadow_angle_roll (0.0 ~ 360.0) : to control the angle(roll) of shadow caster 
 
 r_shadow_texsize (must be power of 2) : the texture size of shadow map. larger texture supports bigger shadow-caster entity but uses more graphic RAM.
 
-r_shadow_scale (must be power of 2) : scale factor when render shadow-caster entity in shadow map. larger scale factor gets better quality shadow but uses more GPU resource.
+r_shadow_scale (must be power of 2) : scale factor when render shadow-caster entity in shadow map. larger scale factor gets better quality shadow but will cause incorrect render result when the entity is scaled too much.
 
 r_shadow_fardist (0.0 ~ 1000.0) : to determine how far the shadow is going to fade out.
 
