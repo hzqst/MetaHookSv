@@ -312,6 +312,7 @@ extern void (APIENTRY *qglTexImage1D)(GLenum target, GLint level, GLint internal
 extern void (APIENTRY *qglTexImage2D)(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
 extern void (APIENTRY *qglTexStorage2D)(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
 extern void (APIENTRY *qglTexStorage3D)(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth);
+extern void (APIENTRY *qglTexStorage2DMultisample)(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations);
 extern void (APIENTRY *qglTexSubImage3D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void* pixels);
 extern void (APIENTRY *qglTextureView) (GLuint texture, GLenum target, GLuint origtexture, GLenum internalformat, GLuint minlevel, GLuint numlevels, GLuint minlayer, GLuint numlayers);
 extern void (APIENTRY *qglCreateTextures) (GLenum target, GLsizei n, GLuint *textures);
@@ -349,6 +350,7 @@ extern void (APIENTRY *qglVertex4s)(GLshort x, GLshort y, GLshort z, GLshort w);
 extern void (APIENTRY *qglVertex4sv)(const GLshort *v);
 extern void (APIENTRY *qglVertexPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 extern void (APIENTRY *qglViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
+extern void (APIENTRY *qglSampleMaski)(GLuint maskNumber, GLbitfield mask);
 #ifdef __cplusplus
 }
 #endif
@@ -417,6 +419,7 @@ extern PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC qglFramebufferRenderbufferEXT;
 extern PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC qglCheckFramebufferStatusEXT;
 extern PFNGLRENDERBUFFERSTORAGEEXTPROC qglRenderbufferStorageEXT;
 extern PFNGLFRAMEBUFFERTEXTURE2DEXTPROC qglFramebufferTexture2DEXT;
+extern PFNGLFRAMEBUFFERTEXTUREPROC qglFramebufferTexture;
 extern PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC qglRenderbufferStorageMultisampleEXT;
 extern PFNGLBLITFRAMEBUFFEREXTPROC qglBlitFramebufferEXT;
 extern PFNGLRENDERBUFFERSTORAGEMULTISAMPLECOVERAGENVPROC qglRenderbufferStorageMultisampleCoverageNV;

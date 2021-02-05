@@ -3,7 +3,6 @@
 //renderer
 qboolean drawshadow;
 qboolean drawshadowscene;
-int shadow_update_counter;
 vec3_t shadow_light_mins;
 vec3_t shadow_light_maxs;
 
@@ -242,8 +241,6 @@ void R_CreateShadowLight(cl_entity_t *entity, vec3_t angles, float radius, float
 	cursdlight = NULL;
 }
 
-#define CURRENT_DRAW_PLAYER_STATE ((entity_state_t *)( (char *)cl_frames + size_of_frame * parsecount + sizeof(entity_state_t) * (*currententity)->index) )
-
 void R_RenderCurrentEntity(void)
 {
 	int parsecount = ((*cl_parsecount) % 63);
@@ -258,7 +255,7 @@ void R_RenderCurrentEntity(void)
 		{
 			if ((*currententity)->player)
 			{
-				(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER, CURRENT_DRAW_PLAYER_STATE );
+				(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER, R_GetCurrentDrawPlayerState(parsecount));
 			}
 			else
 			{
@@ -308,7 +305,13 @@ void R_RenderShadowMap(void)
 	if(s_ShadowFBO.s_hBackBufferFBO)
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, cursdlight->depthmap, 0);
 
+	qglDrawBuffer(GL_DEPTH_ATTACHMENT);
+
 	qglClear(GL_DEPTH_BUFFER_BIT);
+
+	qglDepthRange(0, 1);
+
+	qglColorMask(0, 0, 0, 0);
 	
 	//render start
 
@@ -321,6 +324,8 @@ void R_RenderShadowMap(void)
 
 	//(*currententity)->curstate.renderfx = iSaveRenderFx;
 	(*currententity) = curentity;
+
+	qglColorMask(1, 1, 1, 1);
 
 	if(!s_ShadowFBO.s_hBackBufferFBO)
 	{

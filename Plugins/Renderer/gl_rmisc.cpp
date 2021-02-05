@@ -22,6 +22,24 @@ void R_PopFrameBuffer(void)
 	}
 }
 
+void R_PushMatrix(void)
+{
+	qglMatrixMode(GL_PROJECTION);
+	qglPushMatrix();
+
+	qglMatrixMode(GL_MODELVIEW);
+	qglPushMatrix();
+}
+
+void R_PopMatrix(void)
+{
+	qglMatrixMode(GL_PROJECTION);
+	qglPopMatrix();
+
+	qglMatrixMode(GL_MODELVIEW);
+	qglPopMatrix();
+}
+
 void R_GLBindFrameBuffer(GLenum target, GLuint framebuffer)
 {
 	if(gl_framebuffer_object)

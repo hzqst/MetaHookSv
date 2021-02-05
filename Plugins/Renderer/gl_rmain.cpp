@@ -344,11 +344,14 @@ void R_AddTEntity(cl_entity_t *pEnt)
 	(*numTransObjs)++;
 }
 
-#define CURRENT_DRAW_PLAYER_STATE ((entity_state_t *)( (char *)cl_frames + size_of_frame * parsecount + sizeof(entity_state_t) * (*currententity)->index) )
-
 entity_state_t *R_GetPlayerState(int index)
 {
 	return (entity_state_t *)( (char *)cl_frames + size_of_frame * ((*cl_parsecount) % 63) + sizeof(entity_state_t) * index );
+}
+
+entity_state_t *R_GetCurrentDrawPlayerState(int parsecount)
+{
+	return ((entity_state_t *)((char *)cl_frames + size_of_frame * parsecount + sizeof(entity_state_t) * (*currententity)->index));
 }
 
 void R_DrawEntitiesOnList(void)
@@ -391,7 +394,7 @@ void R_DrawEntitiesOnList(void)
 				R_Setup3DSkyModel();
 				if ((*currententity)->player)
 				{
-					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, CURRENT_DRAW_PLAYER_STATE );
+					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetCurrentDrawPlayerState(parsecount) );
 				}
 				else
 				{
@@ -405,7 +408,7 @@ void R_DrawEntitiesOnList(void)
 
 								if ((*currententity)->player)
 								{
-									(*gpStudioInterface)->StudioDrawPlayer(0, CURRENT_DRAW_PLAYER_STATE );
+									(*gpStudioInterface)->StudioDrawPlayer(0, R_GetCurrentDrawPlayerState(parsecount));
 								}
 								else
 								{
@@ -540,7 +543,7 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 					R_Setup3DSkyModel();
 					if ((*currententity)->player)
 					{
-						(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, CURRENT_DRAW_PLAYER_STATE );
+						(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetCurrentDrawPlayerState(parsecount));
 					}
 					else
 					{
@@ -554,7 +557,7 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 									if ((*currententity)->player)
 									{
-										(*gpStudioInterface)->StudioDrawPlayer(0, CURRENT_DRAW_PLAYER_STATE );
+										(*gpStudioInterface)->StudioDrawPlayer(0, R_GetCurrentDrawPlayerState(parsecount));
 									}
 									else
 									{
@@ -601,11 +604,11 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 void R_DrawBrushModel(cl_entity_t *entity)
 {
-	R_Setup3DSkyModel();
+	//R_Setup3DSkyModel();
 
 	gRefFuncs.R_DrawBrushModel(entity);
 
-	R_Finish3DSkyModel();
+	//R_Finish3DSkyModel();
 }
 
 void R_DrawViewModel(void)
@@ -774,51 +777,73 @@ void R_GLRenderBufferStorage(FBO_Container_t *s, qboolean depth, GLuint iInterna
 	qglFramebufferRenderbufferEXT(GL_FRAMEBUFFER, (depth) ? GL_DEPTH_ATTACHMENT : GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, (depth) ? s->s_hBackBufferDB : s->s_hBackBufferCB);
 }
 
-void R_GLFrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat)
+void R_GLFrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat, qboolean multisample)
 {
-	s->s_hBackBufferTex = GL_GenTexture();
-	qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferTex);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	if(iInternalFormat == GL_R32F)
-		qglTexStorage2D(GL_TEXTURE_2D, 1, iInternalFormat, s->iWidth, s->iHeight);
-	else
-		qglTexImage2D(GL_TEXTURE_2D, 0, iInternalFormat, s->iWidth, s->iHeight, 0, GL_RGBA, 
-		(iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, 0);
+	int tex2D = multisample ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
 
+	s->s_hBackBufferTex = GL_GenTexture();
+	qglBindTexture(tex2D, s->s_hBackBufferTex);
+	qglTexParameteri(tex2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	qglTexParameteri(tex2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	qglTexParameteri(tex2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	qglTexParameteri(tex2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	if (multisample)
+	{
+		qglTexStorage2DMultisample(tex2D, gl_msaa_samples, iInternalFormat, s->iWidth, s->iHeight, GL_FALSE);
+	}
+	else
+	{
+		if (iInternalFormat == GL_R32F)
+			qglTexStorage2D(tex2D, 1, iInternalFormat, s->iWidth, s->iHeight);
+		else
+			qglTexImage2D(tex2D, 0, iInternalFormat, s->iWidth, s->iHeight, 0, GL_RGBA,
+			(iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, 0);
+	}
 	s->iTextureColorFormat = iInternalFormat;
 
-	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s->s_hBackBufferTex, 0);
+	qglFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, s->s_hBackBufferTex, 0);
+	qglBindTexture(tex2D, 0);
 }
 
-void R_GLFrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
+void R_GLFrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat, qboolean multisample)
 {
-	s->s_hBackBufferDepthTex = GL_GenTexture();
-	qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferDepthTex);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	qglTexImage2D(GL_TEXTURE_2D, 0, iInternalFormat, s->iWidth, s->iHeight, 0, GL_DEPTH_COMPONENT, 
-		(iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, 0);
+	int tex2D = multisample ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
 
-	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, s->s_hBackBufferDepthTex, 0);
+	s->s_hBackBufferDepthTex = GL_GenTexture();
+	qglBindTexture(tex2D, s->s_hBackBufferDepthTex);
+	qglTexParameteri(tex2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	qglTexParameteri(tex2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	qglTexParameteri(tex2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	qglTexParameteri(tex2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	if (multisample)
+	{
+		qglTexStorage2DMultisample(tex2D, gl_msaa_samples, iInternalFormat, s->iWidth, s->iHeight, GL_FALSE);
+	}
+	else
+	{
+		qglTexImage2D(tex2D, 0, iInternalFormat, s->iWidth, s->iHeight, 0, GL_DEPTH_COMPONENT,
+			(iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, 0);
+	}
+
+	qglFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, s->s_hBackBufferDepthTex, 0);
+	qglBindTexture(tex2D, 0);
 }
 
-void R_GLFrameBufferDepthStencilTexture(FBO_Container_t *s, GLuint iInternalFormat)
+void R_GLFrameBufferDepthStencilTexture(FBO_Container_t *s, GLuint iInternalFormat, qboolean multisample)
 {
+	int tex2D = multisample ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
+
 	s->s_hBackBufferDepthTex = GL_GenTexture();
-	qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferDepthTex);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	qglTexImage2D(GL_TEXTURE_2D, 0, iInternalFormat, s->iWidth, s->iHeight, 0, GL_DEPTH_COMPONENT,
+	qglBindTexture(tex2D, s->s_hBackBufferDepthTex);
+	qglTexParameteri(tex2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	qglTexParameteri(tex2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	qglTexParameteri(tex2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	qglTexParameteri(tex2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	qglTexImage2D(tex2D, 0, iInternalFormat, s->iWidth, s->iHeight, 0, GL_DEPTH_COMPONENT,
 		(iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, 0);
 
-	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, s->s_hBackBufferDepthTex, 0);
+	qglFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, s->s_hBackBufferDepthTex, 0);
 }
 
 void R_GLFrameBufferColorTextureHBAO(FBO_Container_t *s, int iInternalFormat)
@@ -900,7 +925,8 @@ void GL_GenerateFBO(void)
 	}
 	GL_ClearFBO(&s_BrightAccumFBO);
 	GL_ClearFBO(&s_ToneMapFBO);
-
+	GL_ClearFBO(&s_DepthLinearFBO);
+	GL_ClearFBO(&s_HBAOCalcFBO);
 	GL_ClearFBO(&s_HUDInWorldFBO);
 	GL_ClearFBO(&s_CloakFBO);
 
@@ -968,14 +994,12 @@ void GL_GenerateFBO(void)
 			}
 		}
 
-		//fbo
 		R_GLGenFrameBuffer(&s_MSAAFBO);
-		//color
-		R_GLGenRenderBuffer(&s_MSAAFBO, false);
-		R_GLRenderBufferStorage(&s_MSAAFBO, false, iColorInternalFormat, true);
-		//depth
-		R_GLGenRenderBuffer(&s_MSAAFBO, true);
-		R_GLRenderBufferStorage(&s_MSAAFBO, true, GL_DEPTH_COMPONENT24, true);
+		R_GLFrameBufferColorTexture(&s_MSAAFBO, iColorInternalFormat, true);
+		R_GLFrameBufferDepthTexture(&s_MSAAFBO, GL_DEPTH_COMPONENT24, true);
+
+		if (s_MSAAFBO.s_hBackBufferFBO)
+			qglEnable(GL_MULTISAMPLE);
 
 		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
@@ -994,15 +1018,9 @@ void GL_GenerateFBO(void)
 
 	if (bDoScaledFBO)
 	{
-		if (bDoMSAAFBO && s_MSAAFBO.s_hBackBufferFBO)
-			qglEnable(GL_MULTISAMPLE);
-
 		R_GLGenFrameBuffer(&s_BackBufferFBO);
-		R_GLFrameBufferColorTexture(&s_BackBufferFBO, iColorInternalFormat);
-		R_GLFrameBufferDepthTexture(&s_BackBufferFBO, GL_DEPTH_COMPONENT24);
-
-		//R_GLGenRenderBuffer(&s_BackBufferFBO, true);
-		//R_GLRenderBufferStorage(&s_BackBufferFBO, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, false);
+		R_GLFrameBufferColorTexture(&s_BackBufferFBO, iColorInternalFormat, false);
+		R_GLFrameBufferDepthTexture(&s_BackBufferFBO, GL_DEPTH_COMPONENT24, false);
 
 		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
@@ -1027,7 +1045,7 @@ void GL_GenerateFBO(void)
 	if (bDoScaledFBO)
 	{
 		R_GLGenFrameBuffer(&s_3DHUDFBO);
-		R_GLFrameBufferColorTexture(&s_3DHUDFBO, GL_RGBA8);
+		R_GLFrameBufferColorTexture(&s_3DHUDFBO, GL_RGBA8, false);
 		R_GLGenRenderBuffer(&s_3DHUDFBO, true);
 		R_GLRenderBufferStorage(&s_3DHUDFBO, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, false);
 
@@ -1049,7 +1067,7 @@ void GL_GenerateFBO(void)
 	if (bDoScaledFBO)
 	{
 		R_GLGenFrameBuffer(&s_DepthLinearFBO);
-		R_GLFrameBufferColorTexture(&s_DepthLinearFBO, GL_R32F);
+		R_GLFrameBufferColorTexture(&s_DepthLinearFBO, GL_R32F, false);
 
 		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
@@ -1116,7 +1134,7 @@ void GL_GenerateFBO(void)
 	{
 		R_GLGenFrameBuffer(&s_WaterFBO);
 		R_GLGenRenderBuffer(&s_WaterFBO, true);
-		R_GLRenderBufferStorage(&s_WaterFBO, GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24, false);
+		R_GLRenderBufferStorage(&s_WaterFBO, true, GL_DEPTH_COMPONENT24, false);
 
 		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
@@ -1143,7 +1161,7 @@ void GL_GenerateFBO(void)
 				//fbo
 				R_GLGenFrameBuffer(&s_DownSampleFBO[i]);
 				//color
-				R_GLFrameBufferColorTexture(&s_DownSampleFBO[i], iColorInternalFormat);
+				R_GLFrameBufferColorTexture(&s_DownSampleFBO[i], iColorInternalFormat, false);
 
 				if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 				{
@@ -1179,7 +1197,7 @@ void GL_GenerateFBO(void)
 			if (bDoScaledFBO)
 			{
 				R_GLGenFrameBuffer(&s_LuminFBO[i]);
-				R_GLFrameBufferColorTexture(&s_LuminFBO[i], GL_R32F);
+				R_GLFrameBufferColorTexture(&s_LuminFBO[i], GL_R32F, false);
 
 				if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 				{
@@ -1210,7 +1228,7 @@ void GL_GenerateFBO(void)
 			if (bDoScaledFBO)
 			{
 				R_GLGenFrameBuffer(&s_Lumin1x1FBO[i]);
-				R_GLFrameBufferColorTexture(&s_Lumin1x1FBO[i], GL_R32F);
+				R_GLFrameBufferColorTexture(&s_Lumin1x1FBO[i], GL_R32F, false);
 
 				if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 				{
@@ -1235,7 +1253,7 @@ void GL_GenerateFBO(void)
 		if (bDoScaledFBO)
 		{
 			R_GLGenFrameBuffer(&s_BrightPassFBO);
-			R_GLFrameBufferColorTexture(&s_BrightPassFBO, iColorInternalFormat);
+			R_GLFrameBufferColorTexture(&s_BrightPassFBO, iColorInternalFormat, false);
 
 			if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 			{
@@ -1267,7 +1285,7 @@ void GL_GenerateFBO(void)
 				if (bDoScaledFBO)
 				{
 					R_GLGenFrameBuffer(&s_BlurPassFBO[i][j]);
-					R_GLFrameBufferColorTexture(&s_BlurPassFBO[i][j], iColorInternalFormat);
+					R_GLFrameBufferColorTexture(&s_BlurPassFBO[i][j], iColorInternalFormat, false);
 
 					if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 					{
@@ -1295,7 +1313,7 @@ void GL_GenerateFBO(void)
 		if (bDoScaledFBO)
 		{
 			R_GLGenFrameBuffer(&s_BrightAccumFBO);
-			R_GLFrameBufferColorTexture(&s_BrightAccumFBO, iColorInternalFormat);
+			R_GLFrameBufferColorTexture(&s_BrightAccumFBO, iColorInternalFormat, false);
 
 			if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 			{
@@ -1319,7 +1337,7 @@ void GL_GenerateFBO(void)
 		if (bDoScaledFBO)
 		{
 			R_GLGenFrameBuffer(&s_ToneMapFBO);
-			R_GLFrameBufferColorTexture(&s_ToneMapFBO, GL_RGBA8);
+			R_GLFrameBufferColorTexture(&s_ToneMapFBO, GL_RGBA8, false);
 
 			if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 			{
@@ -1343,7 +1361,7 @@ void GL_GenerateFBO(void)
 		//fbo
 		R_GLGenFrameBuffer(&s_CloakFBO);
 		//color
-		R_GLFrameBufferColorTexture(&s_CloakFBO, GL_RGBA8);
+		R_GLFrameBufferColorTexture(&s_CloakFBO, GL_RGBA8, false);
 
 		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
@@ -1441,20 +1459,31 @@ void R_PostRenderView()
 {
 	if (s_BackBufferFBO.s_hBackBufferFBO)
 	{
-		//Do MSAA here so HUD won't be AA
 		if (s_MSAAFBO.s_hBackBufferFBO)
 		{
+			for (int sampleIndex = 0; sampleIndex < max(1, sampleIndex); sampleIndex++)
+			{
+				if (!R_DoSSAO(sampleIndex))
+				{
+					break;
+				}
+			}
+
 			qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 			qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
 			qglBlitFramebufferEXT(0, 0, s_MSAAFBO.iWidth, s_MSAAFBO.iHeight, 0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+			R_DoHDR();
 		}
+		else
+		{
+			//NoMSAA
 
-		R_DoSSAO();
+			R_DoSSAO(-1);
 
-		R_DoHDR();
-
-		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-		qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+			R_DoHDR();
+		}
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	}
 	else
 	{
@@ -1490,8 +1519,6 @@ void R_RenderView(void)
 void R_RenderScene(void)
 {
 	gRefFuncs.R_RenderScene();
-
-	//R_DoSSAO();
 }
 
 void GL_EndRendering(void)
@@ -1724,127 +1751,4 @@ void R_Shutdown(void)
 {
 	R_FreeTextures();
 	R_FreeShaders();
-}
-
-/*void R_LoadRendererEntities(void)
-{
-	int i, j;
-	char szFileName[256];
-	char *pFile;
-
-	numsdmanagers = 0;
-
-	for(i = 0; i < 2; ++i)
-	{
-		if(i == 0)
-		{
-			sprintf(szFileName, "resource/renderer_entities.txt");
-		}
-		else
-		{
-			strcpy( szFileName, gEngfuncs.pfnGetLevelName() );
-			if ( !strlen(szFileName) )
-			{
-				gEngfuncs.Con_Printf("R_LoadRendererEntities failed to GetLevelName.\n");
-				continue;
-			}
-			szFileName[strlen(szFileName)-4] = 0;
-			strcat(szFileName, "_rent.txt");
-		}
-
-		pFile = (char *)gEngfuncs.COM_LoadFile(szFileName, 5, NULL);
-		if (!pFile)
-		{
-			gEngfuncs.Con_Printf("R_LoadRendererEntities failed to load %s.\n", szFileName);
-			continue;
-		}
-
-		cJSON *root = cJSON_Parse(pFile);
-		if (!root)
-		{
-			gEngfuncs.Con_Printf("R_LoadRendererEntities failed to parse %s.\n", szFileName);
-			continue;
-		}
-		//ent load
-		int numentities = cJSON_GetArraySize(root);
-		for(j = 0; j < numentities; ++j)
-		{
-			cJSON *ent = cJSON_GetArrayItem(root, j);
-			if(!ent) continue;
-
-			cJSON *type = cJSON_GetObjectItem(ent, "type");
-			if(!type || !type->valuestring)
-			{
-				gEngfuncs.Con_Printf("R_LoadRendererEntities parse %s with error, entity #%d has no \"type\" component.\n", szFileName, j);
-				continue;
-			}
-
-			if(!strcmp(type->valuestring, "shadowmanager"))
-			{
-				cJSON *affectmodel = cJSON_GetObjectItem(ent, "affectmodel");
-				cJSON *radius = cJSON_GetObjectItem(ent, "radius");
-				cJSON *fard = cJSON_GetObjectItem(ent, "fard");
-				cJSON *scale = cJSON_GetObjectItem(ent, "scale");
-				cJSON *texsize = cJSON_GetObjectItem(ent, "texsize");
-				cJSON *angles = cJSON_GetObjectItem(ent, "angles");
-				if(!affectmodel || !affectmodel->valuestring)
-				{
-					gEngfuncs.Con_Printf("R_LoadRendererEntities parse %s with error, entity with type \"shadowmanager\" #%d has no \"affectmodel\" component.\n", szFileName, j);
-					continue;
-				}
-				vec3_t angles2;
-				float radius2;
-				float fard2;
-				float scale2;
-				int texsize2;
-				if(!angles || !angles->valuestring)
-				{
-					angles2[0] = 90;
-					angles2[1] = 0;
-					angles2[2] = 0;
-				}
-				else
-					sscanf(angles->valuestring, "%f %f %f", &angles2[0], &angles2[1], &angles2[2]);
-
-				if(!radius || !radius->valuestring)
-					radius2 = 256;
-				else
-					radius2 = (float)atof(radius->valuestring);
-
-				if(!fard || !fard->valuestring)
-					fard2 = 64;
-				else
-					fard2 = (float)atof(fard->valuestring);
-				if(!scale || !scale->valuestring)
-					scale2 = 8;
-				else
-					scale2 = (float)atof(scale->valuestring);
-				if(!texsize || !texsize->valuestring)
-					texsize2 = 512;
-				else
-					texsize2 = atoi(texsize->valuestring);
-				
-				R_CreateShadowManager(affectmodel->valuestring, angles2, radius2, fard2, scale2, texsize2);
-			}
-		}
-		//load end
-		cJSON_Delete(root);
-		gEngfuncs.COM_FreeFile((void *) pFile );
-	}
-}*/
-
-void R_AllocObjects(int nMax)
-{
-	if(cl_maxvisedicts == 512)
-	{
-		gRefFuncs.R_AllocObjects(nMax);
-		return;
-	}
-	if (*transObjects)
-		gEngfuncs.Con_Printf("Transparent objects reallocate\n");
-
-	*transObjects = (transObjRef *)gRefFuncs.Mem_Malloc(cl_maxvisedicts * sizeof(transObjRef));
-	memset(*transObjects, 0, cl_maxvisedicts * sizeof(transObjRef));
-	*maxTransObjs = cl_maxvisedicts;
-	*numTransObjs = 0;
 }

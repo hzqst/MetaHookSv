@@ -313,6 +313,7 @@ extern "C"
 	void (APIENTRY *qglTexImage2D)(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels) = NULL;
 	void (APIENTRY *qglTexStorage2D)(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height) = NULL;
 	void (APIENTRY *qglTexStorage3D)(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth) = NULL;
+	void (APIENTRY *qglTexStorage2DMultisample)(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations) = NULL;
 	void (APIENTRY *qglTexSubImage3D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void* pixels) = NULL;
 	void (APIENTRY *qglTextureView) (GLuint texture, GLenum target, GLuint origtexture, GLenum internalformat, GLuint minlevel, GLuint numlevels, GLuint minlayer, GLuint numlayers) = NULL;
 	void (APIENTRY *qglCreateTextures) (GLenum target, GLsizei n, GLuint *textures) = NULL;
@@ -350,6 +351,7 @@ extern "C"
 	void (APIENTRY *qglVertex4sv)(const GLshort *v) = NULL;
 	void (APIENTRY *qglVertexPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) = NULL;
 	void (APIENTRY *qglViewport)(GLint x, GLint y, GLsizei width, GLsizei height) = NULL;
+	void (APIENTRY *qglSampleMaski)(GLuint maskNumber, GLbitfield mask) = NULL;
 }
 
 extern "C"
@@ -412,6 +414,7 @@ PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC qglFramebufferRenderbufferEXT = NULL;
 PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC qglCheckFramebufferStatusEXT = NULL;
 PFNGLRENDERBUFFERSTORAGEEXTPROC qglRenderbufferStorageEXT = NULL;
 PFNGLFRAMEBUFFERTEXTURE2DEXTPROC qglFramebufferTexture2DEXT = NULL;
+PFNGLFRAMEBUFFERTEXTUREPROC qglFramebufferTexture = NULL;
 PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC qglRenderbufferStorageMultisampleEXT = NULL;
 PFNGLBLITFRAMEBUFFEREXTPROC qglBlitFramebufferEXT = NULL;
 PFNGLRENDERBUFFERSTORAGEMULTISAMPLECOVERAGENVPROC qglRenderbufferStorageMultisampleCoverageNV = NULL;
@@ -816,9 +819,11 @@ void QGL_Init(void)
 
 		*(FARPROC *)&qglTexStorage2D = qwglGetProcAddress("glTexStorage2D");
 		*(FARPROC *)&qglTexStorage3D = qwglGetProcAddress("glTexStorage3D");
+		*(FARPROC *)&qglTexStorage2DMultisample = qwglGetProcAddress("glTexStorage2DMultisample");
 		*(FARPROC *)&qglTexSubImage3D = qwglGetProcAddress("glTexSubImage3D");
 		*(FARPROC *)&qglTextureView = qwglGetProcAddress("glTextureView");
 		*(FARPROC *)&qglCreateTextures = qwglGetProcAddress("glCreateTextures");
+		*(FARPROC *)&qglSampleMaski = qwglGetProcAddress("glSampleMaski");
 	}
 
 	QGL_InitExtension();
@@ -933,6 +938,7 @@ void QGL_InitExtension(void)
 		qglCheckFramebufferStatusEXT = (PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC)qwglGetProcAddress("glCheckFramebufferStatusEXT");
 		qglRenderbufferStorageEXT = (PFNGLRENDERBUFFERSTORAGEEXTPROC)qwglGetProcAddress("glRenderbufferStorageEXT");
 		qglFramebufferTexture2DEXT = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC)qwglGetProcAddress("glFramebufferTexture2DEXT");
+		qglFramebufferTexture = (PFNGLFRAMEBUFFERTEXTUREPROC)qwglGetProcAddress("glFramebufferTexture");
 
 		gl_framebuffer_object = true;
 	}

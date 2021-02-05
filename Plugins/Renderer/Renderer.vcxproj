@@ -89,7 +89,8 @@
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(ProjectName).dll" "I:\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\plugins\renderer.dll"</Command>
+      <Command>copy "$(OutDir)$(ProjectName).dll" "I:\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\plugins\"
+xcopy "$(OutDir)\..\..\..\Build\svencoop\resource\shader\*.*" "I:\SteamLibrary\steamapps\common\Sven Co-op\svencoop\resource\shader\" /y</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

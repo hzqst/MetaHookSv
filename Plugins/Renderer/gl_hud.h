@@ -116,6 +116,11 @@ typedef struct
 typedef struct
 {
 	int program;
+}depth_linearize_msaa_program_t;
+
+typedef struct
+{
+	int program;
 	int texLinearDepth;
 	int texRandom;
 	int control_RadiusToScreen;
@@ -162,7 +167,6 @@ void R_BeginHUDQuad(void);
 void R_BeginFXAA(int w, int h);
 void R_BeginDrawRoundRect(int centerX, int centerY, float radius, float blurdist);
 void R_BeginDrawHudMask(int r, int g, int b);
-void R_EndProgram(void);
 
 int R_Get3DHUDTexture(void);
 void R_Draw3DHUDQuad(int x, int y, int left, int top);
@@ -171,7 +175,7 @@ void R_BeginDrawTrianglesInHUD_FBO(int x, int y, int left, int top);
 void R_FinishDrawTrianglesInHUD(void);
 void R_BeginDrawHUDInWorld(int texid, int w, int h);
 void R_FinishDrawHUDInWorld(void);
-void R_DoSSAO(void);
+int R_DoSSAO(int sampleIndex);
 void R_DoHDR(void);
 void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2);
 void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int logexp);

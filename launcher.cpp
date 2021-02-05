@@ -122,14 +122,18 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	Sys_GetExecutableName(szFileName, sizeof(szFileName));
 	char *szExeName = strrchr(szFileName, '\\') + 1;
 
+	if(INVALID_FILE_ATTRIBUTES != GetFileAttributesA("svends.exe") &&
+		INVALID_FILE_ATTRIBUTES != GetFileAttributesA("svencoop.exe"))
+		CommandLine()->AppendParm("-game", "svencoop");
+
 	if (stricmp(szExeName, "hl.exe") && CommandLine()->CheckParm("-game") == NULL)
 	{
 		szExeName[strlen(szExeName) - 4] = '\0';
 		CommandLine()->AppendParm("-game", szExeName);
 	}
 
-	const char *_szGameName;
 	static char szGameName[32];
+	const char *_szGameName;
 	const char *szGameStr = CommandLine()->CheckParm("-game", &_szGameName);
 
 	if (szGameStr)
@@ -174,12 +178,12 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		if (!hFileSystem)
 			break;
 
-		MH_Init(szGameName);
-
 		CreateInterfaceFn fsCreateInterface = (CreateInterfaceFn)Sys_GetFactory(hFileSystem);
 		g_pFileSystem = (IFileSystem *)fsCreateInterface(FILESYSTEM_INTERFACE_VERSION, NULL);
 		g_pFileSystem->Mount();
 		g_pFileSystem->AddSearchPath(Sys_GetLongPathName(), "ROOT");
+
+		MH_Init(szGameName);
 
 		static char szNewCommandParams[2048];
 		const char *pszEngineDLL;

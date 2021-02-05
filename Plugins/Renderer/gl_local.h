@@ -105,6 +105,8 @@ extern int gl_mtexable;
 extern int gl_max_texture_size;
 extern float gl_max_ansio;
 extern float gl_force_ansio;
+extern int gl_msaa_samples;
+extern int gl_csaa_samples;
 
 extern int *gl_msaa_fbo;
 extern int *gl_backbuffer_fbo;
@@ -298,22 +300,21 @@ void R_PushRefDef(void);
 void R_UpdateRefDef(void);
 void R_PopRefDef(void);
 float *R_GetSavedViewOrg(void);
-void R_EndProgram(void);
 int R_GetDrawPass(void);
 int R_GetSupportExtension(void);
 //void R_LoadRendererEntities(void);
 void GL_FreeTexture(gltexture_t *glt);
 void R_InitRefHUD(void);
+void R_PushMatrix(void);
+void R_PopMatrix(void);
 
-//patch engine limitation
-void CL_VisEdicts_Patch(void);
-void Lightmaps_Patch(void);
 //for screenshot
 byte *R_GetSCRCaptureBuffer(int *bufsize);
 void CL_ScreenShot_f(void);
 
 //player state for StudioDrawPlayer
 entity_state_t *R_GetPlayerState(int index);
+entity_state_t *R_GetCurrentDrawPlayerState(int parsecount);
 
 extern vec3_t save_vieworg[MAX_SAVEREFDEF_STACK];
 extern vec3_t save_viewang[MAX_SAVEREFDEF_STACK];

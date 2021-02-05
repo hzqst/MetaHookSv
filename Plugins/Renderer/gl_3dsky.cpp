@@ -106,8 +106,6 @@ void R_Render3DSky(void)
 	draw3dsky = false;
 }
 
-#define CURRENT_DRAW_PLAYER_STATE ((entity_state_t *)( (char *)cl_frames + size_of_frame * (parsecount + sizeof(entity_state_t) * (*currententity)->index) ))
-
 void R_Draw3DSkyEntities(void)
 {
 	int i, j, numvisedicts, parsecount;
@@ -143,7 +141,7 @@ void R_Draw3DSkyEntities(void)
 				R_Setup3DSkyModel();
 				if ((*currententity)->player)
 				{
-					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, CURRENT_DRAW_PLAYER_STATE );
+					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetCurrentDrawPlayerState(parsecount) );
 				}
 				else
 				{
@@ -157,7 +155,7 @@ void R_Draw3DSkyEntities(void)
 
 								if ((*currententity)->player)
 								{
-									(*gpStudioInterface)->StudioDrawPlayer(0, CURRENT_DRAW_PLAYER_STATE );
+									(*gpStudioInterface)->StudioDrawPlayer(0, R_GetCurrentDrawPlayerState(parsecount));
 								}
 								else
 								{
@@ -276,7 +274,7 @@ void R_Draw3DSkyEntities(void)
 				R_Setup3DSkyModel();
 				if ((*currententity)->player)
 				{
-					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, CURRENT_DRAW_PLAYER_STATE );
+					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetCurrentDrawPlayerState(parsecount));
 				}
 				else
 				{
@@ -290,7 +288,7 @@ void R_Draw3DSkyEntities(void)
 
 								if ((*currententity)->player)
 								{
-									(*gpStudioInterface)->StudioDrawPlayer(0, CURRENT_DRAW_PLAYER_STATE );
+									(*gpStudioInterface)->StudioDrawPlayer(0, R_GetCurrentDrawPlayerState(parsecount));
 								}
 								else
 								{

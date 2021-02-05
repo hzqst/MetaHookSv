@@ -32,6 +32,7 @@ SHADER_DEFINE(pp_gaussianblurv);
 SHADER_DEFINE(pp_gaussianblurh);
 SHADER_DEFINE(pp_tonemap);
 SHADER_DEFINE(depth_linearize);
+SHADER_DEFINE(depth_linearize_msaa);
 SHADER_DEFINE(hbao_calc_blur);
 SHADER_DEFINE(hbao_blur);
 SHADER_DEFINE(hbao_blur2);
@@ -330,6 +331,7 @@ void R_InitRefHUD(void)
 
 		//SSAO
 		char *fullscreenquad_vscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\fullscreenquad.vert.glsl", 5, 0);
+
 		char *depthlinearize_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\depthlinearize.frag.glsl", 5, 0);
 		if (fullscreenquad_vscode && depthlinearize_fscode)
 		{
@@ -343,6 +345,21 @@ void R_InitRefHUD(void)
 		if (!depthlinearize_fscode)
 		{
 			Sys_ErrorEx("shader file \"resource\\shader\\depthlinearize.frag.glsl\" not found!");
+		}
+
+		char *depthlinearize_msaa_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\depthlinearize.msaa.frag.glsl", 5, 0);
+		if (fullscreenquad_vscode && depthlinearize_msaa_fscode)
+		{
+			depth_linearize_msaa.program = R_CompileShader(fullscreenquad_vscode, depthlinearize_msaa_fscode, "fullscreenquad.vert.glsl", "depthlinearize.msaa.frag.glsl");
+			if (depth_linearize_msaa.program)
+			{
+			}
+			gEngfuncs.COM_FreeFile(depthlinearize_msaa_fscode);
+		}
+
+		if (!depthlinearize_msaa_fscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\depthlinearize.msaa.frag.glsl\" not found!");
 		}
 
 		char *hbao_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\hbao.frag.glsl", 5, 0);
@@ -583,30 +600,6 @@ void R_BeginHUDQuad(void)
 	qglColor4f(1, 1, 1, 1);
 }
 
-void R_DrawHUDQuad_Texture(int tex, int w, int h)
-{
-	qglMatrixMode(GL_PROJECTION);
-	qglLoadIdentity();
-	qglOrtho(0, w, h, 0, -1.875, 1.875);
-
-	qglMatrixMode(GL_MODELVIEW);
-	qglLoadIdentity();
-
-	qglViewport(0, 0, w, h);
-
-	GL_Bind(tex);
-	qglBegin(GL_QUADS);
-	qglTexCoord2f(0, 0);
-	qglVertex3f(0, h, -1);
-	qglTexCoord2f(0, 1);
-	qglVertex3f(0, 0, -1);
-	qglTexCoord2f(1, 1);
-	qglVertex3f(w, 0, -1);
-	qglTexCoord2f(1, 0);
-	qglVertex3f(w, h, -1);
-	qglEnd();
-}
-
 void R_DrawHUDQuad(int w, int h)
 {
 	qglMatrixMode(GL_PROJECTION);
@@ -628,6 +621,13 @@ void R_DrawHUDQuad(int w, int h)
 	qglTexCoord2f(1, 0);
 	qglVertex3f(w, h, -1);
 	qglEnd();
+}
+
+void R_DrawHUDQuad_Texture(int tex, int w, int h)
+{
+	GL_Bind(tex);
+
+	R_DrawHUDQuad(w, h);
 }
 
 void R_BlitToScreen(FBO_Container_t *src)
@@ -1201,10 +1201,10 @@ void R_DoHDR(void)
 	}
 }
 
-void R_DoSSAO(void)
+int R_DoSSAO(int sampleIndex)
 {
 	if (!r_ssao || !r_ssao->value)
-		return;
+		return 0;
 
 	GLfloat P[16];
 	qglGetFloatv(GL_PROJECTION_MATRIX, P);
@@ -1213,16 +1213,35 @@ void R_DoSSAO(void)
 	{
 		R_PushFrameBuffer();
 
-		//depthlinear
+		R_PushMatrix();
+
+		//Depth Linear Stage
 
 		R_BeginHUDQuad();
 
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_DepthLinearFBO.s_hBackBufferFBO);
 
-		qglUseProgramObjectARB(depth_linearize.program);
-		qglUniform4fARB(0, 4 * r_params.movevars->zmax, 4 - r_params.movevars->zmax, r_params.movevars->zmax, 1.0f);
-		
-		R_DrawHUDQuad_Texture(s_BackBufferFBO.s_hBackBufferDepthTex, glwidth, glheight);
+		if (sampleIndex >= 0)
+		{
+			qglUseProgramObjectARB(depth_linearize_msaa.program);
+			qglUniform4fARB(0, 4 * r_params.movevars->zmax, 4 - r_params.movevars->zmax, r_params.movevars->zmax, 1.0f);
+			qglUniform1iARB(1, sampleIndex);
+
+			qglActiveTextureARB(GL_TEXTURE_2D_MULTISAMPLE);
+			qglBindTexture(GL_TEXTURE_2D_MULTISAMPLE, s_MSAAFBO.s_hBackBufferDepthTex);
+
+			R_DrawHUDQuad(glwidth, glheight);
+
+			qglActiveTextureARB(GL_TEXTURE_2D_MULTISAMPLE);
+			qglBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+		}
+		else
+		{
+			qglUseProgramObjectARB(depth_linearize.program);
+			qglUniform4fARB(0, 4 * r_params.movevars->zmax, 4 - r_params.movevars->zmax, r_params.movevars->zmax, 1.0f);
+
+			R_DrawHUDQuad_Texture(s_BackBufferFBO.s_hBackBufferDepthTex, glwidth, glheight);
+		}
 
 		//ssao
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_HBAOCalcFBO.s_hBackBufferFBO);
@@ -1295,7 +1314,7 @@ void R_DoSSAO(void)
 		GL_Bind(s_DepthLinearFBO.s_hBackBufferTex);
 
 		GL_EnableMultitexture();
-		GL_Bind(hbao_randomview[0]);
+		GL_Bind(hbao_randomview[sampleIndex]);
 
 		R_DrawHUDQuad(glwidth, glheight);
 
@@ -1321,8 +1340,19 @@ void R_DoSSAO(void)
 		R_DrawHUDQuad(glwidth, glheight);
 
 		//final output to main fbo
+		if(s_MSAAFBO.s_hBackBufferDepthTex)
+			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
+		else
+			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+		qglDisable(GL_DEPTH_TEST);
+		qglEnable(GL_BLEND);
+		qglBlendFunc(GL_ZERO, GL_SRC_COLOR);
+
+		if (sampleIndex >= 0) {
+			qglEnable(GL_SAMPLE_MASK);
+			qglSampleMaski(0, 1 << sampleIndex);
+		}
 
 		qglUseProgramObjectARB(hbao_blur2.program);
 		qglUniform1fARB(0, r_ssao_blur_sharpness->value / meters2viewspace);
@@ -1331,9 +1361,6 @@ void R_DoSSAO(void)
 		GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex2);
 		qglUniform2fARB(1, 0, 1.0f / float(glheight));
 
-		qglEnable(GL_BLEND);
-		qglBlendFunc(GL_ZERO, GL_SRC_COLOR);
-
 		R_DrawHUDQuad(glwidth, glheight);
 
 		qglDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -1341,9 +1368,14 @@ void R_DoSSAO(void)
 		GL_SelectTexture(TEXTURE1_SGIS);
 		GL_DisableMultitexture();
 
+		qglEnable(GL_DEPTH_TEST);
+		qglDisable(GL_BLEND);
+		qglDisable(GL_SAMPLE_MASK);
+		qglSampleMaski(0, ~0);
+
 		qglUseProgramObjectARB(0);
 
-		//R_FinishDrawHUDInWorld();
+		R_PopMatrix();
 
 		R_PopFrameBuffer();
 	}

@@ -1,10 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommand>I:\SteamLibrary\steamapps\common\Half-Life\Metahook.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommand>metahook.exe</LocalDebuggerCommand>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>-game valve</LocalDebuggerCommandArguments>
-    <LocalDebuggerWorkingDirectory>I:\SteamLibrary\steamapps\common\Half-Life\</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerCommandArguments>
+    </LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>I:\SteamLibrary\steamapps\common\Sven Co-op\</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LocalDebuggerWorkingDirectory>I:\SteamLibrary\steamapps\common\Sven Co-op\</LocalDebuggerWorkingDirectory>
