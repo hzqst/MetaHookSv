@@ -71,10 +71,10 @@ void R_InitShadow(void)
 	r_shadow_angle_p = gEngfuncs.pfnRegisterVariable("r_shadow_angle_pitch", "100", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_angle_y = gEngfuncs.pfnRegisterVariable("r_shadow_angle_yaw", "30", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_angle_r = gEngfuncs.pfnRegisterVariable("r_shadow_angle_roll", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_radius = gEngfuncs.pfnRegisterVariable("r_shadow_radius", "256", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_radius = gEngfuncs.pfnRegisterVariable("r_shadow_radius", "512", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_fardist = gEngfuncs.pfnRegisterVariable("r_shadow_fardist", "64", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_scale = gEngfuncs.pfnRegisterVariable("r_shadow_scale", "8", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_texsize", "512", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_texsize", "1024", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	drawshadow = false;
 	drawshadowscene = false;

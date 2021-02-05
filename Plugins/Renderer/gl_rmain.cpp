@@ -74,7 +74,6 @@ int gl_max_texture_size = 0;
 float gl_max_ansio = 0;
 float gl_force_ansio = 0;
 int gl_msaa_samples = 0;
-int gl_csaa_samples = 0;
 
 int *gl_msaa_fbo = 0;
 int *gl_backbuffer_fbo = 0;
@@ -765,10 +764,10 @@ void R_GLRenderBufferStorage(FBO_Container_t *s, qboolean depth, GLuint iInterna
 {
 	if(multisample)
 	{
-		if(gl_csaa_support)
+		/*if(gl_csaa_support)
 			qglRenderbufferStorageMultisampleCoverageNV(GL_RENDERBUFFER, gl_csaa_samples, gl_msaa_samples, iInternalFormat, s->iWidth, s->iHeight);
 		else
-			qglRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER, gl_msaa_samples, iInternalFormat, s->iWidth, s->iHeight);
+			*/qglRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER, gl_msaa_samples, iInternalFormat, s->iWidth, s->iHeight);
 	}
 	else
 	{
@@ -964,8 +963,6 @@ void GL_GenerateFBO(void)
 	{
 		const char *s_Samples;
 		gl_msaa_samples = 4;
-		if(gl_csaa_support)
-			gl_csaa_samples = 8;
 		if(g_pInterface->CommandLine->CheckParm("-msaa", &s_Samples))
 		{
 			if(s_Samples && s_Samples[0] >= '0' && s_Samples[0] <= '9')
@@ -977,20 +974,6 @@ void GL_GenerateFBO(void)
 					gl_msaa_samples = 8;
 				else if(i_Samples == 16)
 					gl_msaa_samples = 16;
-			}
-		}
-
-		if(g_pInterface->CommandLine->CheckParm("-csaa", &s_Samples))
-		{
-			if(s_Samples && s_Samples[0] >= '0' && s_Samples[0] <= '9')
-			{
-				int i_Samples = atoi(s_Samples);
-				if(i_Samples == 4)
-					gl_csaa_samples = 4;
-				else if(i_Samples == 8)
-					gl_csaa_samples = 8;
-				else if(i_Samples == 16)
-					gl_csaa_samples = 16;
 			}
 		}
 
