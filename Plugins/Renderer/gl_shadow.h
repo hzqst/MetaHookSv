@@ -75,7 +75,8 @@ extern cvar_t *r_shadow_radius;
 extern cvar_t *r_shadow_fardist;
 extern cvar_t *r_shadow_scale;
 extern cvar_t *r_shadow_texsize;
-	   
+extern cvar_t *r_shadow_maxdist;
+
 void R_RenderShadowMaps(void);
 void R_InitShadow(void);
 void R_ClearShadow(void);

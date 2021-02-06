@@ -129,7 +129,7 @@ ref_export_t gRefExports =
 	R_PopFrameBuffer,
 	R_GLBindFrameBuffer,
 	//texture
-	R_GLGenTexture,
+	R_GLGenTextureRGBA8,
 	R_GetTexLoaderBuffer,
 	R_LoadTextureEx,
 	GL_LoadTextureEx,

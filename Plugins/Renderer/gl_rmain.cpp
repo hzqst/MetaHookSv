@@ -85,6 +85,7 @@ int glheight = 0;
 
 FBO_Container_t s_MSAAFBO;
 FBO_Container_t s_BackBufferFBO;
+FBO_Container_t s_BackBufferFBO2;
 FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];
 FBO_Container_t s_LuminFBO[LUMIN_BUFFERS];
 FBO_Container_t s_Lumin1x1FBO[LUMIN1x1_BUFFERS];
@@ -94,7 +95,6 @@ FBO_Container_t s_BrightAccumFBO;
 FBO_Container_t s_ToneMapFBO;
 FBO_Container_t s_DepthLinearFBO;
 FBO_Container_t s_HBAOCalcFBO;
-FBO_Container_t s_HUDInWorldFBO;
 FBO_Container_t s_CloakFBO;
 
 qboolean bDoMSAAFBO = true;
@@ -915,7 +915,7 @@ void GL_GenerateFBO(void)
 
 	GL_ClearFBO(&s_MSAAFBO);
 	GL_ClearFBO(&s_BackBufferFBO);
-
+	GL_ClearFBO(&s_BackBufferFBO2);
 	for(int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
 		GL_ClearFBO(&s_DownSampleFBO[i]);
 	for(int i = 0; i < LUMIN_BUFFERS; ++i)
@@ -932,7 +932,6 @@ void GL_GenerateFBO(void)
 	GL_ClearFBO(&s_ToneMapFBO);
 	GL_ClearFBO(&s_DepthLinearFBO);
 	GL_ClearFBO(&s_HBAOCalcFBO);
-	GL_ClearFBO(&s_HUDInWorldFBO);
 	GL_ClearFBO(&s_CloakFBO);
 
 	if(!bDoScaledFBO)
@@ -1005,6 +1004,8 @@ void GL_GenerateFBO(void)
 	s_BackBufferFBO.iWidth = glwidth;
 	s_BackBufferFBO.iHeight = glheight;
 
+	s_BackBufferFBO2.iWidth = 0;
+	s_BackBufferFBO2.iHeight = 0;
 	if (bDoScaledFBO)
 	{
 		R_GLGenFrameBuffer(&s_BackBufferFBO);
@@ -1016,6 +1017,8 @@ void GL_GenerateFBO(void)
 			GL_FreeFBO(&s_BackBufferFBO);
 			gEngfuncs.Con_Printf("FBO backbuffer rendering disabled due to create error.\n");
 		}
+
+		R_GLGenFrameBuffer(&s_BackBufferFBO2);
 	}
 	else
 	{
@@ -1354,8 +1357,6 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 
 void R_PreRenderView()
 {
-	//Draw_UpdateAnsios();
-
 	/*if (r_3dsky_parm.enable && r_3dsky->value)
 	{
 		R_ViewOriginFor3DSky(_3dsky_view);
@@ -1372,6 +1373,8 @@ void R_PreRenderView()
 			R_RenderWaterView();
 		}
 	}
+
+	Draw_UpdateAnsios();
 
 	if (s_BackBufferFBO.s_hBackBufferFBO)
 	{

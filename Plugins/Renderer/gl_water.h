@@ -43,6 +43,9 @@ typedef struct r_water_s
 	int texwidth;
 	int texheight;
 	int free;
+	int framecount;
+	qboolean refractmap_ready;
+	qboolean reflectmap_ready;
 	struct r_water_s *next;
 }r_water_t;
 

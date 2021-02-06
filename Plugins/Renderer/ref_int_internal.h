@@ -158,7 +158,7 @@ typedef struct
 	void (*R_PopFrameBuffer)(void);
 	void (*R_GLBindFrameBuffer)(GLenum target, GLuint framebuffer);
 	//texture
-	GLuint (*R_GLGenTexture)(int w, int h);
+	GLuint (*R_GLGenTextureRGBA8)(int w, int h);
 	byte *(*R_GetTexLoaderBuffer)(int *bufsize);
 	int (*R_LoadTextureEx)(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio);
 	int (*GL_LoadTextureEx)(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, qboolean ansio);

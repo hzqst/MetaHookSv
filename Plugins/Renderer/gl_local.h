@@ -122,6 +122,7 @@ extern qboolean bNoStretchAspect;
 
 extern FBO_Container_t s_MSAAFBO;
 extern FBO_Container_t s_BackBufferFBO;
+extern FBO_Container_t s_BackBufferFBO2;
 extern FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];
 extern FBO_Container_t s_LuminFBO[LUMIN_BUFFERS];
 extern FBO_Container_t s_Lumin1x1FBO[LUMIN1x1_BUFFERS];
@@ -131,7 +132,6 @@ extern FBO_Container_t s_BrightAccumFBO;
 extern FBO_Container_t s_ToneMapFBO;
 extern FBO_Container_t s_DepthLinearFBO;
 extern FBO_Container_t s_HBAOCalcFBO;
-extern FBO_Container_t s_HUDInWorldFBO;
 extern FBO_Container_t s_CloakFBO;
 
 extern int skytexturenum;
@@ -274,10 +274,17 @@ void BuildSurfaceDisplayList(msurface_t *fa);
 
 refdef_t *R_GetRefDef(void);
 int R_GetDrawPass(void);
-GLuint R_GLGenTexture(int w, int h);
+GLuint R_GLGenTextureRGBA8(int w, int h);
+
+void R_GLUploadDepthTexture(int texid, int w, int h);
 GLuint R_GLGenDepthTexture(int w, int h);
+
 GLuint R_GLGenTextureColorFormat(int w, int h, int iInternalFormat);
-GLuint R_GLUploadTextureColorFormat(int texid, int w, int h, int iInternalFormat);
+void R_GLUploadTextureColorFormat(int texid, int w, int h, int iInternalFormat);
+
+GLuint R_GLGenShadowTexture(int w, int h);
+void R_GLUploadShadowTexture(int texid, int w, int h);
+
 byte *R_GetTexLoaderBuffer(int *bufsize);
 gltexture_t *R_GetCurrentGLTexture(void);
 int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, qboolean ansio);

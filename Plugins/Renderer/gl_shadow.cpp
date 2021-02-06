@@ -25,6 +25,7 @@ cvar_t *r_shadow_radius = NULL;
 cvar_t *r_shadow_fardist = NULL;
 cvar_t *r_shadow_scale = NULL;
 cvar_t *r_shadow_texsize = NULL;
+cvar_t *r_shadow_maxdist = NULL;
 
 void R_ClearShadow(void)
 {
@@ -75,6 +76,7 @@ void R_InitShadow(void)
 	r_shadow_fardist = gEngfuncs.pfnRegisterVariable("r_shadow_fardist", "64", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_scale = gEngfuncs.pfnRegisterVariable("r_shadow_scale", "8", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_texsize", "1024", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_maxdist = gEngfuncs.pfnRegisterVariable("r_shadow_maxdist", "512", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	drawshadow = false;
 	drawshadowscene = false;
@@ -82,26 +84,6 @@ void R_InitShadow(void)
 
 	memset(sdlights, 0, sizeof(sdlights));
 	R_ClearShadow();
-}
-
-void R_GLUploadShadowTexture(int texid, int w, int h)
-{
-	qglBindTexture(GL_TEXTURE_2D, texid);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
-	qglTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE_ARB, GL_INTENSITY);
-	qglTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-}
-
-GLuint R_GLGenShadowTexture(int w, int h)
-{
-	GLuint texid = GL_GenTexture();
-	R_GLUploadShadowTexture(texid, w, h);
-	return texid;
 }
 
 void R_FreeDeadShadowLights(void)
@@ -368,6 +350,13 @@ qboolean R_ShouldCastShadow(cl_entity_t *ent)
 
 	if (ent->model->type == mod_studio)
 	{
+		vec3_t dir;
+		VectorSubtract(ent->origin, r_refdef->vieworg, dir);
+		float dist = VectorLength(dir);
+
+		if (dist > r_shadow_maxdist->value)
+			return false;
+
 		return true;
 	}
 	else if (ent->model->type == mod_brush)
@@ -569,6 +558,9 @@ void R_RecursiveWorldNodeShadow(mnode_t *node)
 					continue;
 
 				if (dot2 > cursdlight->radius)
+					continue;
+
+				if (dot < 0)
 					continue;
 
 				if (dot2 < 0)

@@ -115,7 +115,7 @@ void R_InitWater(void)
 
 	r_water = gEngfuncs.pfnRegisterVariable("r_water", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_debug = gEngfuncs.pfnRegisterVariable("r_water_debug", "0", FCVAR_CLIENTDLL);
-	r_water_fresnel = gEngfuncs.pfnRegisterVariable("r_water_fresnel", "2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_water_fresnel = gEngfuncs.pfnRegisterVariable("r_water_fresnel", "1.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_depthfactor = gEngfuncs.pfnRegisterVariable("r_water_depthfactor", "50", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_normfactor = gEngfuncs.pfnRegisterVariable("r_water_normfactor", "1.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_novis = gEngfuncs.pfnRegisterVariable("r_water_novis", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -160,6 +160,7 @@ void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 			VectorCopy(p, w->vecs);
 			curwater = w;
 			curwater->free = false;
+			curwater->framecount = (*r_framecount);
 			return;
 		}
 	}
@@ -185,20 +186,47 @@ void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 		water_texture_height >>= 1;
 	}
 
+	if (!curwater->reflectmap)
+	{
+		curwater->reflectmap = R_GLGenTextureRGBA8(water_texture_width, water_texture_height);
+	}
+	else if (curwater->texwidth != water_texture_width)
+	{
+		R_GLUploadTextureColorFormat(curwater->reflectmap, water_texture_width, water_texture_height, GL_RGBA8);
+	}
+
+	if (!curwater->refractmap)
+	{
+		curwater->refractmap = R_GLGenTextureRGBA8(water_texture_width, water_texture_height);
+	}
+	else if (curwater->texwidth != water_texture_width)
+	{
+		R_GLUploadTextureColorFormat(curwater->refractmap, water_texture_width, water_texture_height, GL_RGBA8);
+	}
+
+	if (!curwater->depthrefrmap)
+	{
+		curwater->depthrefrmap = R_GLGenDepthTexture(water_texture_width, water_texture_height);
+	}
+	else if (curwater->texwidth != water_texture_width)
+	{
+		R_GLUploadDepthTexture(curwater->depthrefrmap, water_texture_width, water_texture_height);
+	}
+
+	if (!curwater->depthreflmap)
+	{
+		curwater->depthreflmap = R_GLGenDepthTexture(water_texture_width, water_texture_height);
+	}
+	else if (curwater->texwidth != water_texture_width)
+	{
+		R_GLUploadDepthTexture(curwater->depthreflmap, water_texture_width, water_texture_height);
+	}
+
 	curwater->texwidth = water_texture_width;
 	curwater->texheight = water_texture_height;
 
-	if (!curwater->reflectmap)
-		curwater->reflectmap = R_GLGenTexture(water_texture_width, water_texture_height);
-
-	if (!curwater->refractmap)
-		curwater->refractmap = R_GLGenTexture(water_texture_width, water_texture_height);
-
-	if (!curwater->depthrefrmap)
-		curwater->depthrefrmap = R_GLGenDepthTexture(water_texture_width, water_texture_height);
-
-	if (!curwater->depthreflmap)
-		curwater->depthreflmap = R_GLGenDepthTexture(water_texture_width, water_texture_height);
+	curwater->reflectmap_ready = false;
+	curwater->refractmap_ready = false;
 
 	VectorCopy(p, curwater->vecs);
 	curwater->ent = ent;
@@ -208,6 +236,7 @@ void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 	memcpy(&curwater->color, color, sizeof(*color));
 	curwater->is3dsky = (draw3dsky) ? true : false;
 	curwater->free = false;
+	curwater->framecount = (*r_framecount);
 	curwater = NULL;
 }
 
@@ -230,6 +259,8 @@ void R_EnableClip(qboolean isdrawworld)
 	}
 	if(drawrefract)
 	{
+		return;
+
 		if (saved_cl_waterlevel > 2)
 		{
 			return;
@@ -243,10 +274,11 @@ void R_EnableClip(qboolean isdrawworld)
 		}
 	}
 
-	if(isdrawworld && drawrefract && saved_cl_waterlevel <= 2)
+	//bugfix
+	/*if(isdrawworld && drawrefract && saved_cl_waterlevel <= 2)
 	{
-		clipPlane[3] += 16.05f;
-	}
+		clipPlane[3] -= 16.05f;
+	}*/
 
 	qglEnable(GL_CLIP_PLANE0);
 	qglClipPlane(GL_CLIP_PLANE0, clipPlane);
@@ -260,8 +292,6 @@ void R_RenderReflectView(void)
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, curwater->reflectmap, 0);
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, curwater->depthreflmap, 0);
 	}
-
-	int err = qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER);
 
 	qglClearColor(curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, 1);
 	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -285,9 +315,9 @@ void R_RenderReflectView(void)
 
 	drawreflect = true;
 
-	int saved_framecount = *r_framecount;
-	mleaf_t *saved_oldviewleaf = *r_oldviewleaf;
-	*r_oldviewleaf = NULL;
+	//int saved_framecount = *r_framecount;
+	//mleaf_t *saved_oldviewleaf = *r_oldviewleaf;
+	//*r_oldviewleaf = NULL;
 	saved_cl_waterlevel = *cl_waterlevel;
 	*cl_waterlevel = 0;
 	auto saved_r_drawentities = r_drawentities->value;
@@ -304,8 +334,8 @@ void R_RenderReflectView(void)
 
 	r_drawentities->value = saved_r_drawentities;
 	*cl_waterlevel = saved_cl_waterlevel;
-	*r_oldviewleaf = saved_oldviewleaf;
-	*r_framecount = saved_framecount;
+	//*r_oldviewleaf = saved_oldviewleaf;
+	//*r_framecount = saved_framecount;
 
 	qglDisable(GL_CLIP_PLANE0);
 
@@ -318,11 +348,14 @@ void R_RenderReflectView(void)
 	{
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s_BackBufferFBO.s_hBackBufferTex, 0);
+		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, s_BackBufferFBO.s_hBackBufferDepthTex, 0);
 	}
 
 	R_PopRefDef();
 
 	drawreflect = false;
+
+	curwater->reflectmap_ready = true;
 }
 
 void R_RenderRefractView(void)
@@ -352,9 +385,9 @@ void R_RenderRefractView(void)
 
 	drawrefract = true;
 
-	int saved_framecount = *r_framecount;
-	mleaf_t *saved_oldviewleaf = *r_oldviewleaf;
-	*r_oldviewleaf = NULL;
+	//int saved_framecount = *r_framecount;
+	//mleaf_t *saved_oldviewleaf = *r_oldviewleaf;
+	//*r_oldviewleaf = NULL;
 	saved_cl_waterlevel = *cl_waterlevel;
 	//*cl_waterlevel = 0;
 	auto saved_r_drawentities = r_drawentities->value;
@@ -371,8 +404,8 @@ void R_RenderRefractView(void)
 
 	r_drawentities->value = saved_r_drawentities;
 	*cl_waterlevel = saved_cl_waterlevel;
-	*r_oldviewleaf = saved_oldviewleaf;
-	*r_framecount = saved_framecount;
+	//*r_oldviewleaf = saved_oldviewleaf;
+	//*r_framecount = saved_framecount;
 
 	qglDisable(GL_CLIP_PLANE0);
 
@@ -394,6 +427,8 @@ void R_RenderRefractView(void)
 	R_PopRefDef();
 
 	drawrefract = false;
+
+	curwater->refractmap_ready = true;
 }
 
 void R_FreeDeadWaters(void)

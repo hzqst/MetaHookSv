@@ -177,7 +177,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	if(r_water && r_water->value && water.program)
 	{
 		R_AddEntityWater((*currententity), tempVert, &gWaterColor);
-		if(curwater)
+		if(curwater && curwater->reflectmap_ready && curwater->refractmap_ready)
 		{
 			qglUseProgramObjectARB(water.program);
 
