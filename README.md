@@ -51,7 +51,7 @@ Current state : Ready to use, more feature are coming soon.
 
 3. Per-Object Shadow. (each object render it's own shadow mapping just like how source engine does this.)
 
-4. Screen Space Ambient Occlusion (SSAO) using horizon-based ambient occlusion (HBAO). the implementation is taken from nvidia.
+4. Screen Space Ambient Occlusion (SSAO) using horizon-based ambient occlusion (HBAO). the implementation is taken from nvidia. (not support with -nofbo)
 
 5. MultiSampling Anti-Aliasing (MSAA)
 
@@ -109,7 +109,9 @@ r_shadow_scale (must be power of 2) : scale factor when render shadow-caster ent
 
 r_shadow_fardist (0.0 ~ 1000.0) : to determine how far the shadow is going to fade out.
 
-r_shadow_radius (0.0 ~ 1000.0) : entity don't cast shadow at this distance away from surface.
+r_shadow_radius : entity don't cast shadow at this distance away from surface.
+
+r_shadow_masdist : entity don't cast shadow at this distance away from camera.
 
 r_ssao 1 / 0 : to enable / disable Screen Space Ambient Occlusion.
 
