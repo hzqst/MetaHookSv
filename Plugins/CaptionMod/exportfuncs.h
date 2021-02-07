@@ -31,6 +31,7 @@ void Engine_InstallHook(void);
 void BaseUI_InstallHook(void);
 void GameUI_InstallHook(void);
 void ClientVGUI_InstallHook(void);
+void VGUI1_InstallHook(void);
 void Surface_InstallHook(void);
 void Scheme_InstallHook(void);
 void KeyValuesSystem_InstallHook(void);

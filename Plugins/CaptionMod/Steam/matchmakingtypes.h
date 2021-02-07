@@ -1,4 +1,4 @@
-//========= Copyright ï¿?1996-2008, Valve LLC, All rights reserved. ============
+//========= Copyright ï¿½ 1996-2008, Valve LLC, All rights reserved. ============
 //
 // Purpose: 
 //
@@ -59,23 +59,13 @@ enum EMatchMakingServerResponse
 	eNoServersListedOnMasterServer // for the Internet query type, returned in response callback if no servers of this type match
 };
 
-enum EMatchMakingType
-{
-	eInternetServer = 0,
-	eLANServer,
-	eFriendsServer,
-	eFavoritesServer,
-	eHistoryServer,
-	eSpectatorServer,
-	eInvalidServer 
-};
-
-
 // servernetadr_t is all the addressing info the serverbrowser needs to know about a game server,
 // namely: its IP, its connection port, and its query port.
 class servernetadr_t 
 {
 public:
+
+	servernetadr_t() : m_usConnectionPort( 0 ), m_usQueryPort( 0 ), m_unIP( 0 ) {}
 	
 	void	Init( unsigned int ip, uint16 usQueryPort, uint16 usConnectionPort );
 #ifdef NETADR_H
@@ -92,7 +82,7 @@ public:
 
 	// Access the IP
 	uint32 GetIP() const;
-	void SetIP( uint32 );
+	void SetIP( uint32 unIP );
 
 	// This gets the 'a.b.c.d:port' string with the connection port (instead of the query port).
 	const char *GetConnectionAddressString() const;
@@ -126,17 +116,7 @@ inline void	servernetadr_t::Init( unsigned int ip, uint16 usQueryPort, uint16 us
 #ifdef NETADR_H
 inline netadr_t servernetadr_t::GetIPAndQueryPort()
 {
-	unsigned char *ipByte = (unsigned char *)&m_unIP;
-
-	netadr_t netadr;
-	netadr.ip[0] = ipByte[3];
-	netadr.ip[1] = ipByte[2];
-	netadr.ip[2] = ipByte[1];
-	netadr.ip[3] = ipByte[0];
-	netadr.port = m_usQueryPort;
-	netadr.type = NA_IP;
-
-	return netadr;
+	return netadr_t( );
 }
 #endif
 
@@ -229,7 +209,7 @@ public:
 	uint32 m_ulTimeLastPlayed;									///< time (in unix time) when this server was last played on (for favorite/history servers)
 	int	m_nServerVersion;										///< server version as reported to Steam
 
-public:
+private:
 
 	/// Game server name
 	char m_szServerName[k_cbMaxGameServerName];

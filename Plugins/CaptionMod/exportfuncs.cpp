@@ -333,26 +333,18 @@ FARPROC WINAPI NewGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 
 void Steam_Init(void)
 {
-	g_bIsUseSteam = CommandLine()->CheckParm("-steam") != NULL;
-
-	SteamAPI_Load();
-
 	gCapFuncs.szLanguage[0] = '\0';
 
-	if(g_bIsUseSteam && SteamAPI_Init())
+	if(SteamAPI_Init())
 	{
 		g_bIsRunningSteam = SteamAPI_IsSteamRunning();
 		
 		if (g_bIsRunningSteam)
 		{
-			ISteamApps *Apps = SteamApps();
-			if(Apps)
-			{
-				const char *pszLanguage = SteamApps()->GetCurrentGameLanguage();
+			const char *pszLanguage = SteamApps()->GetCurrentGameLanguage();
 
-				if (pszLanguage)
-					Q_strncpy(gCapFuncs.szLanguage, pszLanguage, sizeof(gCapFuncs.szLanguage));
-			}
+			if (pszLanguage)
+				Q_strncpy(gCapFuncs.szLanguage, pszLanguage, sizeof(gCapFuncs.szLanguage));
 		}
 	}
 

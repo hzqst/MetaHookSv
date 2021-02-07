@@ -87,9 +87,6 @@
     <ClCompile Include="plugins.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="steam_api.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="SubtitlePanel.cpp">
       <Filter>Source</Filter>
     </ClCompile>

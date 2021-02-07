@@ -25,6 +25,7 @@
 // General result codes
 enum EResult
 {
+	k_EResultNone = 0,							// no result
 	k_EResultOK	= 1,							// success
 	k_EResultFail = 2,							// generic failure 
 	k_EResultNoConnection = 3,					// no/failed network connection
@@ -102,7 +103,48 @@ enum EResult
 	k_EResultNoMatchingURL = 75,
 	k_EResultBadResponse = 76,					// parse failure, missing field, etc.
 	k_EResultRequirePasswordReEntry = 77,		// The user cannot complete the action until they re-enter their password
-	k_EResultValueOutOfRange = 78				// the value entered is outside the acceptable range
+	k_EResultValueOutOfRange = 78,				// the value entered is outside the acceptable range
+	k_EResultUnexpectedError = 79,				// something happened that we didn't expect to ever happen
+	k_EResultDisabled = 80,						// The requested service has been configured to be unavailable
+	k_EResultInvalidCEGSubmission = 81,			// The set of files submitted to the CEG server are not valid !
+	k_EResultRestrictedDevice = 82,				// The device being used is not allowed to perform this action
+	k_EResultRegionLocked = 83,					// The action could not be complete because it is region restricted
+	k_EResultRateLimitExceeded = 84,			// Temporary rate limit exceeded, try again later, different from k_EResultLimitExceeded which may be permanent
+	k_EResultAccountLoginDeniedNeedTwoFactor = 85,	// Need two-factor code to login
+	k_EResultItemDeleted = 86,					// The thing we're trying to access has been deleted
+	k_EResultAccountLoginDeniedThrottle = 87,	// login attempt failed, try to throttle response to possible attacker
+	k_EResultTwoFactorCodeMismatch = 88,		// two factor code mismatch
+	k_EResultTwoFactorActivationCodeMismatch = 89,	// activation code for two-factor didn't match
+	k_EResultAccountAssociatedToMultiplePartners = 90,	// account has been associated with multiple partners
+	k_EResultNotModified = 91,					// data not modified
+	k_EResultNoMobileDevice = 92,				// the account does not have a mobile device associated with it
+	k_EResultTimeNotSynced = 93,				// the time presented is out of range or tolerance
+	k_EResultSmsCodeFailed = 94,				// SMS code failure (no match, none pending, etc.)
+	k_EResultAccountLimitExceeded = 95,			// Too many accounts access this resource
+	k_EResultAccountActivityLimitExceeded = 96,	// Too many changes to this account
+	k_EResultPhoneActivityLimitExceeded = 97,	// Too many changes to this phone
+	k_EResultRefundToWallet = 98,				// Cannot refund to payment method, must use wallet
+	k_EResultEmailSendFailure = 99,				// Cannot send an email
+	k_EResultNotSettled = 100,					// Can't perform operation till payment has settled
+	k_EResultNeedCaptcha = 101,					// Needs to provide a valid captcha
+	k_EResultGSLTDenied = 102,					// a game server login token owned by this token's owner has been banned
+	k_EResultGSOwnerDenied = 103,				// game server owner is denied for other reason (account lock, community ban, vac ban, missing phone)
+	k_EResultInvalidItemType = 104,				// the type of thing we were requested to act on is invalid
+	k_EResultIPBanned = 105,					// the ip address has been banned from taking this action
+	k_EResultGSLTExpired = 106,					// this token has expired from disuse; can be reset for use
+	k_EResultInsufficientFunds = 107,			// user doesn't have enough wallet funds to complete the action
+	k_EResultTooManyPending = 108,				// There are too many of this thing pending already
+	k_EResultNoSiteLicensesFound = 109,			// No site licenses found
+	k_EResultWGNetworkSendExceeded = 110,		// the WG couldn't send a response because we exceeded max network send size
+	k_EResultAccountNotFriends = 111,			// the user is not mutually friends
+	k_EResultLimitedUserAccount = 112,			// the user is limited
+	k_EResultCantRemoveItem = 113,				// item can't be removed
+	k_EResultAccountDeleted = 114,				// account has been deleted
+	k_EResultExistingUserCancelledLicense = 115,	// A license for this already exists, but cancelled
+	k_EResultCommunityCooldown = 116,			// access is denied because of a community cooldown (probably from support profile data resets)
+	k_EResultNoLauncherSpecified = 117,			// No launcher was specified, but a launcher was needed to choose correct realm for operation.
+	k_EResultMustAgreeToSSA = 118,				// User must agree to china SSA or global SSA before login
+	k_EResultLauncherMigrated = 119,			// The specified launcher type is no longer supported; the user should be directed elsewhere
 };
 
 // Error codes for use with the voice functions
@@ -116,11 +158,13 @@ enum EVoiceResult
 	k_EVoiceResultDataCorrupted = 5,
 	k_EVoiceResultRestricted = 6,
 	k_EVoiceResultUnsupportedCodec = 7,
+	k_EVoiceResultReceiverOutOfDate = 8,
+	k_EVoiceResultReceiverDidNotAnswer = 9,
 
 };
 
 // Result codes to GSHandleClientDeny/Kick
-typedef enum
+enum EDenyReason
 {
 	k_EDenyInvalid = 0,
 	k_EDenyInvalidVersion = 1,
@@ -138,14 +182,14 @@ typedef enum
 	k_EDenySteamResponseTimedOut = 13,
 	k_EDenySteamValidationStalled = 14,
 	k_EDenySteamOwnerLeftGuestUser = 15,
-} EDenyReason;
+};
 
 // return type of GetAuthSessionTicket
 typedef uint32 HAuthTicket;
 const HAuthTicket k_HAuthTicketInvalid = 0;
 
 // results from BeginAuthSession
-typedef enum
+enum EBeginAuthSessionResult
 {
 	k_EBeginAuthSessionResultOK = 0,						// Ticket is valid for this game and this steamID.
 	k_EBeginAuthSessionResultInvalidTicket = 1,				// Ticket is not valid.
@@ -153,10 +197,10 @@ typedef enum
 	k_EBeginAuthSessionResultInvalidVersion = 3,			// Ticket is from an incompatible interface version
 	k_EBeginAuthSessionResultGameMismatch = 4,				// Ticket is not for this game
 	k_EBeginAuthSessionResultExpiredTicket = 5,				// Ticket has expired
-} EBeginAuthSessionResult;
+};
 
 // Callback values for callback ValidateAuthTicketResponse_t which is a response to BeginAuthSession
-typedef enum
+enum EAuthSessionResponse
 {
 	k_EAuthSessionResponseOK = 0,							// Steam has verified the user is online, the ticket is valid and ticket has not been reused.
 	k_EAuthSessionResponseUserNotConnectedToSteam = 1,		// The user in question is not connected to steam
@@ -167,15 +211,16 @@ typedef enum
 	k_EAuthSessionResponseAuthTicketCanceled = 6,			// The ticket has been canceled by the issuer
 	k_EAuthSessionResponseAuthTicketInvalidAlreadyUsed = 7,	// This ticket has already been used, it is not valid.
 	k_EAuthSessionResponseAuthTicketInvalid = 8,			// This ticket is not from a user instance currently connected to steam.
-} EAuthSessionResponse;
+	k_EAuthSessionResponsePublisherIssuedBan = 9,			// The user is banned for this game. The ban came via the web api and not VAC
+};
 
 // results from UserHasLicenseForApp
-typedef enum
+enum EUserHasLicenseForAppResult
 {
 	k_EUserHasLicenseResultHasLicense = 0,					// User has a license for specified app
 	k_EUserHasLicenseResultDoesNotHaveLicense = 1,			// User does not have a license for the specified app
 	k_EUserHasLicenseResultNoAuth = 2,						// User has not been authenticated
-} EUserHasLicenseForAppResult;
+};
 
 
 // Steam account types
@@ -205,9 +250,9 @@ enum EAccountType
 enum EAppReleaseState
 {
 	k_EAppReleaseState_Unknown			= 0,	// unknown, required appinfo or license info is missing
-	k_EAppReleaseState_Unavailable		= 1,	// even if user 'just' owns it, can see game at all
-	k_EAppReleaseState_Prerelease		= 2,	// can be purchased and is visible in games list, nothing else. Common appInfo section released
-	k_EAppReleaseState_PreloadOnly		= 3,	// owners can preload app, not play it. AppInfo fully released.
+	k_EAppReleaseState_Unavailable		= 1,	// even owners can't see game in library yet, no AppInfo released
+	k_EAppReleaseState_Prerelease		= 2,	// app can be purchased and is visible in library, nothing else. Only Common AppInfo section released
+	k_EAppReleaseState_PreloadOnly		= 3,	// owners can preload app, but not play it. All AppInfo sections fully released
 	k_EAppReleaseState_Released			= 4,	// owners can download and play app.
 };
 
@@ -215,22 +260,37 @@ enum EAppReleaseState
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-enum EAppOwernshipFlags
+enum EAppOwnershipFlags
 {
-	k_EAppOwernshipFlags_None				= 0,	// unknown
-	k_EAppOwernshipFlags_OwnsLicense		= 1,	// owns license for this game
-	k_EAppOwernshipFlags_FreeLicense		= 2,	// not paid for game
-	k_EAppOwernshipFlags_RegionRestricted	= 4,	// owns app, but not allowed to play in current region
-	k_EAppOwernshipFlags_LowViolence		= 8,	// only low violence version
-	k_EAppOwernshipFlags_InvalidPlatform	= 16,	// app not supported on current platform
-	k_EAppOwernshipFlags_SharedLicense		= 32,	// license was granted by authorized local device
-	k_EAppOwernshipFlags_FreeWeekend		= 64,	// owned by a free weekend licenses
-	k_EAppOwernshipFlags_LicenseLocked		= 128,	// shared license is locked (in use) by other user
+	k_EAppOwnershipFlags_None				= 0x0000,	// unknown
+	k_EAppOwnershipFlags_OwnsLicense		= 0x0001,	// owns license for this game
+	k_EAppOwnershipFlags_FreeLicense		= 0x0002,	// not paid for game
+	k_EAppOwnershipFlags_RegionRestricted	= 0x0004,	// owns app, but not allowed to play in current region
+	k_EAppOwnershipFlags_LowViolence		= 0x0008,	// only low violence version
+	k_EAppOwnershipFlags_InvalidPlatform	= 0x0010,	// app not supported on current platform
+	k_EAppOwnershipFlags_SharedLicense		= 0x0020,	// license was granted by authorized local device
+	k_EAppOwnershipFlags_FreeWeekend		= 0x0040,	// owned by a free weekend licenses
+	k_EAppOwnershipFlags_RetailLicense		= 0x0080,	// has a retail license for game, (CD-Key etc)
+	k_EAppOwnershipFlags_LicenseLocked		= 0x0100,	// shared license is locked (in use) by other user
+	k_EAppOwnershipFlags_LicensePending		= 0x0200,	// owns app, but transaction is still pending. Can't install or play
+	k_EAppOwnershipFlags_LicenseExpired		= 0x0400,	// doesn't own app anymore since license expired
+	k_EAppOwnershipFlags_LicensePermanent	= 0x0800,	// permanent license, not borrowed, or guest or freeweekend etc
+	k_EAppOwnershipFlags_LicenseRecurring	= 0x1000,	// Recurring license, user is charged periodically
+	k_EAppOwnershipFlags_LicenseCanceled	= 0x2000,	// Mark as canceled, but might be still active if recurring
+	k_EAppOwnershipFlags_AutoGrant			= 0x4000,	// Ownership is based on any kind of autogrant license
+	k_EAppOwnershipFlags_PendingGift		= 0x8000,	// user has pending gift to redeem
+	k_EAppOwnershipFlags_RentalNotActivated	= 0x10000,	// Rental hasn't been activated yet
+	k_EAppOwnershipFlags_Rental				= 0x20000,	// Is a rental
+	k_EAppOwnershipFlags_SiteLicense		= 0x40000,	// Is from a site license
+	k_EAppOwnershipFlags_LegacyFreeSub		= 0x80000,	// App only owned through Steam's legacy free sub
+	k_EAppOwnershipFlags_InvalidOSType		= 0x100000,	// app not supported on current OS version, used to indicate a game is 32-bit on post-catalina. Currently it's own flag so the library will display a notice.
+	k_EAppOwnershipFlags_TimedTrial			= 0x200000,	// App is playable only for limited time
 };
 
 
 //-----------------------------------------------------------------------------
 // Purpose: designed as flags to allow filters masks
+// NOTE: If you add to this, please update PackageAppType (SteamConfig) as well as populatePackageAppType 
 //-----------------------------------------------------------------------------
 enum EAppType
 {
@@ -239,15 +299,24 @@ enum EAppType
 	k_EAppType_Application			= 0x002,	// software application
 	k_EAppType_Tool					= 0x004,	// SDKs, editors & dedicated servers
 	k_EAppType_Demo					= 0x008,	// game demo
-	k_EAppType_Media				= 0x010,	// media trailer
+	k_EAppType_Media_DEPRECATED		= 0x010,	// legacy - was used for game trailers, which are now just videos on the web
 	k_EAppType_DLC					= 0x020,	// down loadable content
 	k_EAppType_Guide				= 0x040,	// game guide, PDF etc
 	k_EAppType_Driver				= 0x080,	// hardware driver updater (ATI, Razor etc)
 	k_EAppType_Config				= 0x100,	// hidden app used to config Steam features (backpack, sales, etc)
+	k_EAppType_Hardware				= 0x200,	// a hardware device (Steam Machine, Steam Controller, Steam Link, etc.)
+	k_EAppType_Franchise			= 0x400,	// A hub for collections of multiple apps, eg films, series, games
+	k_EAppType_Video				= 0x800,	// A video component of either a Film or TVSeries (may be the feature, an episode, preview, making-of, etc)
+	k_EAppType_Plugin				= 0x1000,	// Plug-in types for other Apps
+	k_EAppType_MusicAlbum			= 0x2000,	// "Video game soundtrack album"
+	k_EAppType_Series				= 0x4000,	// Container app for video series
+	k_EAppType_Comic_UNUSED			= 0x8000,	// Comic Book
+	k_EAppType_Beta					= 0x10000,	// this is a beta version of a game
 		
 	k_EAppType_Shortcut				= 0x40000000,	// just a shortcut, client side only
-	k_EAppType_DepotOnly			= 0x80000000,	// placeholder since depots and apps share the same namespace
+	k_EAppType_DepotOnly_DEPRECATED = 0x80000000,	// there shouldn't be any appinfo for depots
 };
+
 
 
 //-----------------------------------------------------------------------------
@@ -287,7 +356,9 @@ enum EChatEntryType
 	k_EChatEntryTypeWasBanned = 9,		// user was banned (data: 64-bit steamid of actor performing the ban)
 	k_EChatEntryTypeDisconnected = 10,	// user disconnected
 	k_EChatEntryTypeHistoricalChat = 11,	// a chat message from user's chat history or offilne message
-
+	//k_EChatEntryTypeReserved1 = 12, // No longer used
+	//k_EChatEntryTypeReserved2 = 13, // No longer used
+	k_EChatEntryTypeLinkBlocked = 14, // a link was removed by the chat filter.
 };
 
 
@@ -310,18 +381,7 @@ enum EChatRoomEnterResponse
 	// k_EChatRoomEnterResponseNoRankingDataLobby = 12,  // No longer used
 	// k_EChatRoomEnterResponseNoRankingDataUser = 13,  //  No longer used
 	// k_EChatRoomEnterResponseRankOutOfRange = 14, //  No longer used
-};
-
-
-//-----------------------------------------------------------------------------
-// Purpose: Status of a given depot version, these are stored in the DB, don't renumber
-//-----------------------------------------------------------------------------
-enum EStatusDepotVersion
-{
-	k_EStatusDepotVersionInvalid = 0,			
-	k_EStatusDepotVersionDisabled = 1,			// version was disabled, no manifest & content available
-	k_EStatusDepotVersionAvailable = 2,			// manifest & content is available, but not current
-	k_EStatusDepotVersionCurrent = 3,			// current depot version. The can be multiple, one for public and one for each beta key
+	k_EChatRoomEnterResponseRatelimitExceeded = 15, // Join failed - to many join attempts in a very short period of time
 };
 
 
@@ -330,10 +390,7 @@ typedef bool (*PFNLegacyKeyInstalled)();
 
 const unsigned int k_unSteamAccountIDMask = 0xFFFFFFFF;
 const unsigned int k_unSteamAccountInstanceMask = 0x000FFFFF;
-// we allow 3 simultaneous user account instances right now, 1= desktop, 2 = console, 4 = web, 0 = all
-const unsigned int k_unSteamUserDesktopInstance	= 1;	 
-const unsigned int k_unSteamUserConsoleInstance	= 2;
-const unsigned int k_unSteamUserWebInstance		= 4;
+const unsigned int k_unSteamUserDefaultInstance	= 1; // fixed instance for all individual users
 
 // Special flags for Chat accounts - they go in the top 8 bits
 // of the steam ID's "instance", leaving 12 for the actual instances
@@ -363,8 +420,8 @@ enum EMarketingMessageFlags
 	//aggregate flags
 	k_EMarketingMessageFlagsPlatformRestrictions = 
 		k_EMarketingMessageFlagsPlatformWindows |
-        k_EMarketingMessageFlagsPlatformMac |
-        k_EMarketingMessageFlagsPlatformLinux,
+		k_EMarketingMessageFlagsPlatformMac |
+		k_EMarketingMessageFlagsPlatformLinux,
 };
 
 
@@ -381,7 +438,292 @@ enum ENotificationPosition
 };
 
 
-#pragma pack( push, 1 )		
+//-----------------------------------------------------------------------------
+// Purpose: Broadcast upload result details
+//-----------------------------------------------------------------------------
+enum EBroadcastUploadResult
+{
+	k_EBroadcastUploadResultNone = 0,	// broadcast state unknown
+	k_EBroadcastUploadResultOK = 1,		// broadcast was good, no problems
+	k_EBroadcastUploadResultInitFailed = 2,	// broadcast init failed
+	k_EBroadcastUploadResultFrameFailed = 3,	// broadcast frame upload failed
+	k_EBroadcastUploadResultTimeout = 4,	// broadcast upload timed out
+	k_EBroadcastUploadResultBandwidthExceeded = 5,	// broadcast send too much data
+	k_EBroadcastUploadResultLowFPS = 6,	// broadcast FPS too low
+	k_EBroadcastUploadResultMissingKeyFrames = 7,	// broadcast sending not enough key frames
+	k_EBroadcastUploadResultNoConnection = 8,	// broadcast client failed to connect to relay
+	k_EBroadcastUploadResultRelayFailed = 9,	// relay dropped the upload
+	k_EBroadcastUploadResultSettingsChanged = 10,	// the client changed broadcast settings 
+	k_EBroadcastUploadResultMissingAudio = 11,	// client failed to send audio data
+	k_EBroadcastUploadResultTooFarBehind = 12,	// clients was too slow uploading
+	k_EBroadcastUploadResultTranscodeBehind = 13,	// server failed to keep up with transcode
+	k_EBroadcastUploadResultNotAllowedToPlay = 14, // Broadcast does not have permissions to play game
+	k_EBroadcastUploadResultBusy = 15, // RTMP host to busy to take new broadcast stream, choose another
+	k_EBroadcastUploadResultBanned = 16, // Account banned from community broadcast
+	k_EBroadcastUploadResultAlreadyActive = 17, // We already already have an stream running.
+	k_EBroadcastUploadResultForcedOff = 18, // We explicitly shutting down a broadcast
+	k_EBroadcastUploadResultAudioBehind = 19, // Audio stream was too far behind video 
+	k_EBroadcastUploadResultShutdown = 20,	// Broadcast Server was shut down
+	k_EBroadcastUploadResultDisconnect = 21,	// broadcast uploader TCP disconnected 
+	k_EBroadcastUploadResultVideoInitFailed = 22,	// invalid video settings 
+	k_EBroadcastUploadResultAudioInitFailed = 23,	// invalid audio settings 
+};
+
+
+//-----------------------------------------------------------------------------
+// Purpose: codes for well defined launch options
+//-----------------------------------------------------------------------------
+enum ELaunchOptionType
+{
+	k_ELaunchOptionType_None		= 0,	// unknown what launch option does
+	k_ELaunchOptionType_Default		= 1,	// runs the game, app, whatever in default mode
+	k_ELaunchOptionType_SafeMode	= 2,	// runs the game in safe mode
+	k_ELaunchOptionType_Multiplayer = 3,	// runs the game in multiplayer mode
+	k_ELaunchOptionType_Config		= 4,	// runs config tool for this game
+	k_ELaunchOptionType_OpenVR		= 5,	// runs game in VR mode using OpenVR
+	k_ELaunchOptionType_Server		= 6,	// runs dedicated server for this game
+	k_ELaunchOptionType_Editor		= 7,	// runs game editor
+	k_ELaunchOptionType_Manual		= 8,	// shows game manual
+	k_ELaunchOptionType_Benchmark	= 9,	// runs game benchmark
+	k_ELaunchOptionType_Option1		= 10,	// generic run option, uses description field for game name
+	k_ELaunchOptionType_Option2		= 11,	// generic run option, uses description field for game name
+	k_ELaunchOptionType_Option3     = 12,	// generic run option, uses description field for game name
+	k_ELaunchOptionType_OculusVR	= 13,	// runs game in VR mode using the Oculus SDK 
+	k_ELaunchOptionType_OpenVROverlay = 14,	// runs an OpenVR dashboard overlay
+	k_ELaunchOptionType_OSVR		= 15,	// runs game in VR mode using the OSVR SDK
+
+	
+	k_ELaunchOptionType_Dialog 		= 1000, // show launch options dialog
+};
+
+
+//-----------------------------------------------------------------------------
+// Purpose: true if this launch option is any of the vr launching types
+//-----------------------------------------------------------------------------
+static inline bool BIsVRLaunchOptionType( const ELaunchOptionType  eType )
+{
+	return eType == k_ELaunchOptionType_OpenVR 
+		|| eType == k_ELaunchOptionType_OpenVROverlay 
+		|| eType == k_ELaunchOptionType_OculusVR
+		|| eType == k_ELaunchOptionType_OSVR;
+}
+
+
+//-----------------------------------------------------------------------------
+// Purpose: true if this launch option is any of the vr launching types
+//-----------------------------------------------------------------------------
+static inline bool BIsLaunchOptionTypeExemptFromGameTheater( const ELaunchOptionType  eType )
+{
+	return eType == k_ELaunchOptionType_Config
+		|| eType == k_ELaunchOptionType_Server
+		|| eType == k_ELaunchOptionType_Editor
+		|| eType == k_ELaunchOptionType_Manual;
+}
+
+
+//-----------------------------------------------------------------------------
+// Purpose: code points for VR HMD vendors and models 
+// WARNING: DO NOT RENUMBER EXISTING VALUES - STORED IN A DATABASE
+//-----------------------------------------------------------------------------
+enum EVRHMDType
+{
+	k_eEVRHMDType_None = -1, // unknown vendor and model
+
+	k_eEVRHMDType_Unknown = 0, // unknown vendor and model
+
+	k_eEVRHMDType_HTC_Dev = 1,	// original HTC dev kits
+	k_eEVRHMDType_HTC_VivePre = 2,	// htc vive pre
+	k_eEVRHMDType_HTC_Vive = 3,	// htc vive consumer release
+	k_eEVRHMDType_HTC_VivePro = 4,	// htc vive pro release
+	k_eEVRHMDType_HTC_ViveCosmos = 5,	// HTC Vive Cosmos
+
+	k_eEVRHMDType_HTC_Unknown = 20, // unknown htc hmd
+
+	k_eEVRHMDType_Oculus_DK1 = 21, // Oculus DK1 
+	k_eEVRHMDType_Oculus_DK2 = 22, // Oculus DK2
+	k_eEVRHMDType_Oculus_Rift = 23, // Oculus Rift
+	k_eEVRHMDType_Oculus_RiftS = 24, // Oculus Rift S
+	k_eEVRHMDType_Oculus_Quest = 25, // Oculus Quest
+
+	k_eEVRHMDType_Oculus_Unknown = 40, // // Oculus unknown HMD
+
+	k_eEVRHMDType_Acer_Unknown = 50, // Acer unknown HMD
+	k_eEVRHMDType_Acer_WindowsMR = 51, // Acer QHMD Windows MR headset
+
+	k_eEVRHMDType_Dell_Unknown = 60, // Dell unknown HMD
+	k_eEVRHMDType_Dell_Visor = 61, // Dell Visor Windows MR headset
+
+	k_eEVRHMDType_Lenovo_Unknown = 70, // Lenovo unknown HMD
+	k_eEVRHMDType_Lenovo_Explorer = 71, // Lenovo Explorer Windows MR headset
+
+	k_eEVRHMDType_HP_Unknown = 80, // HP unknown HMD
+	k_eEVRHMDType_HP_WindowsMR = 81, // HP Windows MR headset
+	k_eEVRHMDType_HP_Reverb = 82, // HP Reverb Windows MR headset
+	k_eEVRHMDType_HP_ReverbG2 = 1463, // HP Reverb G2 Windows MR headset
+
+	k_eEVRHMDType_Samsung_Unknown = 90, // Samsung unknown HMD
+	k_eEVRHMDType_Samsung_Odyssey = 91, // Samsung Odyssey Windows MR headset
+
+	k_eEVRHMDType_Unannounced_Unknown = 100, // Unannounced unknown HMD
+	k_eEVRHMDType_Unannounced_WindowsMR = 101, // Unannounced Windows MR headset
+
+	k_eEVRHMDType_vridge = 110, // VRIDGE tool
+	
+	k_eEVRHMDType_Huawei_Unknown = 120, // Huawei unknown HMD
+	k_eEVRHMDType_Huawei_VR2 = 121, // Huawei VR2 3DOF headset
+	k_eEVRHMDType_Huawei_EndOfRange = 129, // end of Huawei HMD range
+
+	k_eEVRHmdType_Valve_Unknown = 130, // Valve Unknown HMD
+	k_eEVRHmdType_Valve_Index = 131, // Valve Index HMD
+
+};
+
+
+//-----------------------------------------------------------------------------
+// Purpose: true if this is from an Oculus HMD
+//-----------------------------------------------------------------------------
+static inline bool BIsOculusHMD( EVRHMDType eType )
+{
+	return eType == k_eEVRHMDType_Oculus_DK1 || eType == k_eEVRHMDType_Oculus_DK2 || eType == k_eEVRHMDType_Oculus_Rift || eType == k_eEVRHMDType_Oculus_RiftS || eType == k_eEVRHMDType_Oculus_Quest || eType == k_eEVRHMDType_Oculus_Unknown;
+}
+
+
+//-----------------------------------------------------------------------------
+// Purpose: true if this is from a Windows MR HMD
+//-----------------------------------------------------------------------------
+static inline bool BIsWindowsMRHeadset( EVRHMDType eType )
+{
+	return eType >= k_eEVRHMDType_Acer_WindowsMR && eType <= k_eEVRHMDType_Unannounced_WindowsMR;
+}
+
+
+//-----------------------------------------------------------------------------
+// Purpose: true if this is from a Hauwei HMD
+//-----------------------------------------------------------------------------
+static inline bool BIsHuaweiHeadset( EVRHMDType eType )
+{
+	return eType >= k_eEVRHMDType_Huawei_Unknown && eType <= k_eEVRHMDType_Huawei_EndOfRange;
+}
+
+
+//-----------------------------------------------------------------------------
+// Purpose: true if this is from an Vive HMD
+//-----------------------------------------------------------------------------
+static inline bool BIsViveHMD( EVRHMDType eType )
+{
+	return eType == k_eEVRHMDType_HTC_Dev || eType == k_eEVRHMDType_HTC_VivePre || eType == k_eEVRHMDType_HTC_Vive || eType == k_eEVRHMDType_HTC_Unknown || eType == k_eEVRHMDType_HTC_VivePro;
+}
+
+
+//-----------------------------------------------------------------------------
+// Purpose: Reasons a user may not use the Community Market.
+//          Used in MarketEligibilityResponse_t.
+//-----------------------------------------------------------------------------
+enum EMarketNotAllowedReasonFlags
+{
+	k_EMarketNotAllowedReason_None = 0,
+
+	// A back-end call failed or something that might work again on retry
+	k_EMarketNotAllowedReason_TemporaryFailure = (1 << 0),
+
+	// Disabled account
+	k_EMarketNotAllowedReason_AccountDisabled = (1 << 1),
+
+	// Locked account
+	k_EMarketNotAllowedReason_AccountLockedDown = (1 << 2),
+
+	// Limited account (no purchases)
+	k_EMarketNotAllowedReason_AccountLimited = (1 << 3),
+
+	// The account is banned from trading items
+	k_EMarketNotAllowedReason_TradeBanned = (1 << 4),
+
+	// Wallet funds aren't tradable because the user has had no purchase
+	// activity in the last year or has had no purchases prior to last month
+	k_EMarketNotAllowedReason_AccountNotTrusted = (1 << 5),
+
+	// The user doesn't have Steam Guard enabled
+	k_EMarketNotAllowedReason_SteamGuardNotEnabled = (1 << 6),
+
+	// The user has Steam Guard, but it hasn't been enabled for the required
+	// number of days
+	k_EMarketNotAllowedReason_SteamGuardOnlyRecentlyEnabled = (1 << 7),
+
+	// The user has recently forgotten their password and reset it
+	k_EMarketNotAllowedReason_RecentPasswordReset = (1 << 8),
+
+	// The user has recently funded his or her wallet with a new payment method
+	k_EMarketNotAllowedReason_NewPaymentMethod = (1 << 9),
+
+	// An invalid cookie was sent by the user
+	k_EMarketNotAllowedReason_InvalidCookie = (1 << 10),
+
+	// The user has Steam Guard, but is using a new computer or web browser
+	k_EMarketNotAllowedReason_UsingNewDevice = (1 << 11),
+
+	// The user has recently refunded a store purchase by his or herself
+	k_EMarketNotAllowedReason_RecentSelfRefund = (1 << 12),
+
+	// The user has recently funded his or her wallet with a new payment method that cannot be verified
+	k_EMarketNotAllowedReason_NewPaymentMethodCannotBeVerified = (1 << 13),
+
+	// Not only is the account not trusted, but they have no recent purchases at all
+	k_EMarketNotAllowedReason_NoRecentPurchases = (1 << 14),
+
+	// User accepted a wallet gift that was recently purchased
+	k_EMarketNotAllowedReason_AcceptedWalletGift = (1 << 15),
+};
+
+
+//
+// describes XP / progress restrictions to apply for games with duration control /
+// anti-indulgence enabled for minor Steam China users.
+//
+// WARNING: DO NOT RENUMBER
+enum EDurationControlProgress
+{
+	k_EDurationControlProgress_Full = 0,	// Full progress
+	k_EDurationControlProgress_Half = 1,	// deprecated - XP or persistent rewards should be halved
+	k_EDurationControlProgress_None = 2,	// deprecated - XP or persistent rewards should be stopped
+
+	k_EDurationControl_ExitSoon_3h = 3,		// allowed 3h time since 5h gap/break has elapsed, game should exit - steam will terminate the game soon
+	k_EDurationControl_ExitSoon_5h = 4,		// allowed 5h time in calendar day has elapsed, game should exit - steam will terminate the game soon
+	k_EDurationControl_ExitSoon_Night = 5,	// game running after day period, game should exit - steam will terminate the game soon
+};
+
+
+//
+// describes which notification timer has expired, for steam china duration control feature
+//
+// WARNING: DO NOT RENUMBER
+enum EDurationControlNotification
+{
+	k_EDurationControlNotification_None = 0,		// just informing you about progress, no notification to show
+	k_EDurationControlNotification_1Hour = 1,		// "you've been playing for N hours"
+	
+	k_EDurationControlNotification_3Hours = 2,		// deprecated - "you've been playing for 3 hours; take a break"
+	k_EDurationControlNotification_HalfProgress = 3,// deprecated - "your XP / progress is half normal"
+	k_EDurationControlNotification_NoProgress = 4,	// deprecated - "your XP / progress is zero"
+	
+	k_EDurationControlNotification_ExitSoon_3h = 5,	// allowed 3h time since 5h gap/break has elapsed, game should exit - steam will terminate the game soon
+	k_EDurationControlNotification_ExitSoon_5h = 6,	// allowed 5h time in calendar day has elapsed, game should exit - steam will terminate the game soon
+	k_EDurationControlNotification_ExitSoon_Night = 7,// game running after day period, game should exit - steam will terminate the game soon
+};
+
+
+//
+// Specifies a game's online state in relation to duration control
+//
+enum EDurationControlOnlineState
+{
+	k_EDurationControlOnlineState_Invalid = 0,				// nil value
+	k_EDurationControlOnlineState_Offline = 1,				// currently in offline play - single-player, offline co-op, etc.
+	k_EDurationControlOnlineState_Online = 2,				// currently in online play
+	k_EDurationControlOnlineState_OnlineHighPri = 3,		// currently in online play and requests not to be interrupted
+};
+
+
+#pragma pack( push, 1 )
 
 #define CSTEAMID_DEFINED
 
@@ -424,7 +766,7 @@ public:
 	CSteamID( uint32 unAccountID, unsigned int unAccountInstance, EUniverse eUniverse, EAccountType eAccountType )
 	{
 #if defined(_SERVER) && defined(Assert)
-		Assert( ! ( ( k_EAccountTypeIndividual == eAccountType ) && ( unAccountInstance > k_unSteamUserWebInstance ) ) );	// enforce that for individual accounts, instance is always 1
+		Assert( ( k_EAccountTypeIndividual != eAccountType ) || ( unAccountInstance == k_unSteamUserDefaultInstance ) );	// enforce that for individual accounts, instance is always 1
 #endif // _SERVER
 		InstancedSet( unAccountID, unAccountInstance, eUniverse, eAccountType );
 	}
@@ -460,14 +802,13 @@ public:
 		m_steamid.m_comp.m_EUniverse = eUniverse;
 		m_steamid.m_comp.m_EAccountType = eAccountType;
 
-		if ( eAccountType == k_EAccountTypeClan )
+		if ( eAccountType == k_EAccountTypeClan || eAccountType == k_EAccountTypeGameServer )
 		{
 			m_steamid.m_comp.m_unAccountInstance = 0;
 		}
 		else
 		{
-			// by default we pick the desktop instance
-			m_steamid.m_comp.m_unAccountInstance = k_unSteamUserDesktopInstance;
+			m_steamid.m_comp.m_unAccountInstance = k_unSteamUserDefaultInstance;
 		}
 	}
 
@@ -522,7 +863,7 @@ public:
 	}
 
 
-#if defined( INCLUDED_STEAM_COMMON_STEAMCOMMON_H ) 
+#if defined( INCLUDED_STEAM2_USERID_STRUCTS ) 
 	//-----------------------------------------------------------------------------
 	// Purpose: Initializes a steam ID from a Steam2 ID structure
 	// Input:	pTSteamGlobalUserID -	Steam2 ID to convert
@@ -534,7 +875,7 @@ public:
 			pTSteamGlobalUserID->m_SteamLocalUserID.Split.High32bits;
 		m_steamid.m_comp.m_EUniverse = eUniverse;		// set the universe
 		m_steamid.m_comp.m_EAccountType = k_EAccountTypeIndividual; // Steam 2 accounts always map to account type of individual
-		m_steamid.m_comp.m_unAccountInstance = k_unSteamUserDesktopInstance; // Steam2 only knew desktop instances
+		m_steamid.m_comp.m_unAccountInstance = k_unSteamUserDefaultInstance; // Steam2 only knew one instance
 	}
 
 	//-----------------------------------------------------------------------------
@@ -703,8 +1044,7 @@ public:
 	// simple accessors
 	void SetAccountID( uint32 unAccountID )		{ m_steamid.m_comp.m_unAccountID = unAccountID; }
 	void SetAccountInstance( uint32 unInstance ){ m_steamid.m_comp.m_unAccountInstance = unInstance; }
-	void ClearIndividualInstance()				{ if ( BIndividualAccount() ) m_steamid.m_comp.m_unAccountInstance = 0; }
-	bool HasNoIndividualInstance() const		{ return BIndividualAccount() && (m_steamid.m_comp.m_unAccountInstance==0); }
+		
 	AccountID_t GetAccountID() const			{ return m_steamid.m_comp.m_unAccountID; }
 	uint32 GetUnAccountInstance() const			{ return m_steamid.m_comp.m_unAccountInstance; }
 	EAccountType GetEAccountType() const		{ return ( EAccountType ) m_steamid.m_comp.m_EAccountType; }
@@ -774,7 +1114,7 @@ inline bool CSteamID::IsValid() const
 
 	if ( m_steamid.m_comp.m_EAccountType == k_EAccountTypeIndividual )
 	{
-		if ( m_steamid.m_comp.m_unAccountID == 0 || m_steamid.m_comp.m_unAccountInstance > k_unSteamUserWebInstance )
+		if ( m_steamid.m_comp.m_unAccountID == 0 || m_steamid.m_comp.m_unAccountInstance != k_unSteamUserDefaultInstance )
 			return false;
 	}
 
@@ -869,6 +1209,17 @@ public:
 		m_gameID.m_nType = k_EGameIDTypeGameMod;
 	}
 
+	CGameID( const CGameID &that )
+	{
+		m_ulGameID = that.m_ulGameID;
+	}
+
+	CGameID& operator=( const CGameID & that )
+	{
+		m_ulGameID = that.m_ulGameID;
+		return *this;
+	}
+
 	// Hidden functions used only by Steam
 	explicit CGameID( const char *pchGameID );
 	const char *Render() const;					// render this Game ID to string
@@ -883,10 +1234,10 @@ public:
 		m_gameID.m_nType = k_EGameIDTypeGameMod;
 
 		char rgchModDir[MAX_PATH];
-		Q_FileBase( pchModPath, rgchModDir, sizeof( rgchModDir ) );
+		V_FileBase( pchModPath, rgchModDir, sizeof( rgchModDir ) );
 		CRC32_t crc32;
 		CRC32_Init( &crc32 );
-		CRC32_ProcessBuffer( &crc32, rgchModDir, Q_strlen( rgchModDir ) );
+		CRC32_ProcessBuffer( &crc32, rgchModDir, V_strlen( rgchModDir ) );
 		CRC32_Final( &crc32 );
 
 		// set the high-bit on the mod-id 
@@ -903,8 +1254,10 @@ public:
 
 		CRC32_t crc32;
 		CRC32_Init( &crc32 );
-		CRC32_ProcessBuffer( &crc32, pchExePath, Q_strlen( pchExePath ) );
-		CRC32_ProcessBuffer( &crc32, pchAppName, Q_strlen( pchAppName ) );
+		if ( pchExePath )
+			CRC32_ProcessBuffer( &crc32, pchExePath, V_strlen( pchExePath ) );
+		if ( pchAppName )
+			CRC32_ProcessBuffer( &crc32, pchAppName, V_strlen( pchAppName ) );
 		CRC32_Final( &crc32 );
 
 		// set the high-bit on the mod-id 
@@ -924,7 +1277,7 @@ public:
 		CRC32_t crc32;
 		CRC32_Init( &crc32 );
 		const char *pchFileId = vstFileID.Render();
-		CRC32_ProcessBuffer( &crc32, pchFileId, Q_strlen( pchFileId ) );
+		CRC32_ProcessBuffer( &crc32, pchFileId, V_strlen( pchFileId ) );
 		CRC32_Final( &crc32 );
 
 		// set the high-bit on the mod-id 
@@ -1016,9 +1369,6 @@ public:
 			return m_gameID.m_nAppID == k_uAppIdInvalid && m_gameID.m_nModID & 0x80000000;
 
 		default:
-#if defined(Assert)
-			Assert(false);
-#endif
 			return false;
 		}
 
@@ -1085,5 +1435,85 @@ typedef void (*PFNPreMinidumpCallback)(void *context);
 //-----------------------------------------------------------------------------
 typedef void *BREAKPAD_HANDLE;
 #define BREAKPAD_INVALID_HANDLE (BREAKPAD_HANDLE)0 
+
+enum EGameSearchErrorCode_t
+{
+	k_EGameSearchErrorCode_OK = 1,
+	k_EGameSearchErrorCode_Failed_Search_Already_In_Progress = 2,
+	k_EGameSearchErrorCode_Failed_No_Search_In_Progress = 3,
+	k_EGameSearchErrorCode_Failed_Not_Lobby_Leader = 4, // if not the lobby leader can not call SearchForGameWithLobby
+	k_EGameSearchErrorCode_Failed_No_Host_Available = 5, // no host is available that matches those search params
+	k_EGameSearchErrorCode_Failed_Search_Params_Invalid = 6, // search params are invalid
+	k_EGameSearchErrorCode_Failed_Offline = 7, // offline, could not communicate with server
+	k_EGameSearchErrorCode_Failed_NotAuthorized = 8, // either the user or the application does not have priveledges to do this
+	k_EGameSearchErrorCode_Failed_Unknown_Error = 9, // unknown error
+};
+
+enum EPlayerResult_t
+{
+	k_EPlayerResultFailedToConnect = 1, // failed to connect after confirming
+	k_EPlayerResultAbandoned = 2,		// quit game without completing it
+	k_EPlayerResultKicked = 3,			// kicked by other players/moderator/server rules
+	k_EPlayerResultIncomplete = 4,		// player stayed to end but game did not conclude successfully ( nofault to player )
+	k_EPlayerResultCompleted = 5,		// player completed game
+};
+
+
+enum ESteamIPv6ConnectivityProtocol
+{
+	k_ESteamIPv6ConnectivityProtocol_Invalid = 0,
+	k_ESteamIPv6ConnectivityProtocol_HTTP = 1,		// because a proxy may make this different than other protocols
+	k_ESteamIPv6ConnectivityProtocol_UDP = 2,		// test UDP connectivity. Uses a port that is commonly needed for other Steam stuff. If UDP works, TCP probably works. 
+};
+
+// For the above transport protocol, what do we think the local machine's connectivity to the internet over ipv6 is like
+enum ESteamIPv6ConnectivityState
+{
+	k_ESteamIPv6ConnectivityState_Unknown = 0,	// We haven't run a test yet
+	k_ESteamIPv6ConnectivityState_Good = 1,		// We have recently been able to make a request on ipv6 for the given protocol
+	k_ESteamIPv6ConnectivityState_Bad = 2,		// We failed to make a request, either because this machine has no ipv6 address assigned, or it has no upstream connectivity
+};
+
+
+// Define compile time assert macros to let us validate the structure sizes.
+#define VALVE_COMPILE_TIME_ASSERT( pred ) typedef char compile_time_assert_type[(pred) ? 1 : -1];
+
+#if defined(__linux__) || defined(__APPLE__) 
+// The 32-bit version of gcc has the alignment requirement for uint64 and double set to
+// 4 meaning that even with #pragma pack(8) these types will only be four-byte aligned.
+// The 64-bit version of gcc has the alignment requirement for these types set to
+// 8 meaning that unless we use #pragma pack(4) our structures will get bigger.
+// The 64-bit structure packing has to match the 32-bit structure packing for each platform.
+#define VALVE_CALLBACK_PACK_SMALL
+#else
+#define VALVE_CALLBACK_PACK_LARGE
+#endif
+
+#if defined( VALVE_CALLBACK_PACK_SMALL )
+#pragma pack( push, 4 )
+#elif defined( VALVE_CALLBACK_PACK_LARGE )
+#pragma pack( push, 8 )
+#else
+#error ???
+#endif 
+
+typedef struct ValvePackingSentinel_t
+{
+    uint32 m_u32;
+    uint64 m_u64;
+    uint16 m_u16;
+    double m_d;
+} ValvePackingSentinel_t;
+
+#pragma pack( pop )
+
+
+#if defined(VALVE_CALLBACK_PACK_SMALL)
+VALVE_COMPILE_TIME_ASSERT( sizeof(ValvePackingSentinel_t) == 24 )
+#elif defined(VALVE_CALLBACK_PACK_LARGE)
+VALVE_COMPILE_TIME_ASSERT( sizeof(ValvePackingSentinel_t) == 32 )
+#else
+#error ???
+#endif
 
 #endif // STEAMCLIENTPUBLIC_H

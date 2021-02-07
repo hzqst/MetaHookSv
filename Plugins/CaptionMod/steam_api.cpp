@@ -179,9 +179,6 @@ ISteamUnifiedMessages *SteamUnifiedMessages(void)
 
 bool SteamAPI_Init(void)
 {
-	if (!g_bIsUseSteam)
-		return false;
-
 	if (!g_hSteamAPI)
 		return false;
 
@@ -193,9 +190,6 @@ bool SteamAPI_Init(void)
 
 void SteamAPI_Shutdown(void)
 {
-	if (!g_bIsUseSteam)
-		return;
-
 	if (!g_hSteamAPI)
 		return;
 
@@ -207,9 +201,6 @@ void SteamAPI_Shutdown(void)
 
 bool SteamAPI_IsSteamRunning(void)
 {
-	if (!g_bIsUseSteam)
-		return false;
-
 	if (!g_hSteamAPI)
 		return false;
 
@@ -221,9 +212,6 @@ bool SteamAPI_IsSteamRunning(void)
 
 void SteamAPI_RegisterCallback(class CCallbackBase *pCallback, int iCallback)
 {
-	if (!g_bIsUseSteam)
-		return;
-
 	if (!g_hSteamAPI)
 		return;
 
@@ -235,9 +223,6 @@ void SteamAPI_RegisterCallback(class CCallbackBase *pCallback, int iCallback)
 
 void SteamAPI_UnregisterCallback(class CCallbackBase *pCallback)
 {
-	if (!g_bIsUseSteam)
-		return;
-
 	if (!g_hSteamAPI)
 		return;
 

@@ -47,6 +47,39 @@ Scheme
 				"custom"	"1"
 			}
 		}
+		"SmallScoreboardFont" // for Scoreboard
+		{
+			"1"
+			{
+				"name"		"Trebuchet MS"
+				"tall"		"12"
+				"weight"	"600"
+				"antialias"	"1"
+				"custom"	"1"
+			}
+		}
+		"MediumScoreboardFont" // for Scoreboard
+		{
+			"1"
+			{
+				"name"		"Trebuchet MS"
+				"tall"		"16"
+				"weight"	"600"
+				"antialias"	"1"
+				"custom"	"1"
+			}
+		}
+		"LargeScoreboardFont" // for Scoreboard
+		{
+			"1"
+			{
+				"name"		"Trebuchet MS"
+				"tall"		"24"
+				"weight"	"600"
+				"antialias"	"1"
+				"custom"	"1"
+			}
+		}
 		"SubtitleFont" //for Subtitles
 		{
 			"1"

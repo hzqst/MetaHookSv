@@ -74,6 +74,8 @@ void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 	//Try installing hook to interface VClientVGUI001
 	ClientVGUI_InstallHook();
 
+	VGUI1_InstallHook();
+
 	//hook textmsg
 	MSG_Init();
 
