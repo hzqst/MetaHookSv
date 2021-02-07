@@ -29,7 +29,7 @@ Scheme
 			"1"
 			{
 				"name"		"Trebuchet MS"
-				"tall"		"18"
+				"tall"		"24"
 				"weight"	"600"
 				"antialias"	"1"
 				"custom"	"1"
@@ -40,7 +40,7 @@ Scheme
 			"1"
 			{
 				"name"		"Trebuchet MS"
-				"tall"		"20"
+				"tall"		"24"
 				"weight"	"700"
 				"antialias"	"1"
 				"yres"	"1 10000"
