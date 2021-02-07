@@ -27,6 +27,16 @@ A subtitle plugin designed for displaying subtitles in VGUI2 based games.
 
 check https://github.com/hzqst/CaptionMod for detail.
 
+#### Features
+
+1. display subtitles when sound is played.
+
+2. display subtitles when sentence is played.
+
+3. display subtitles when there is a HUD TextMessage.
+
+4. hook original client's HUD TextMessage and draw it with multi-byte character support.
+
 Current state : Ready to use.
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/1.png)
