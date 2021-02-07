@@ -37,6 +37,8 @@ check https://github.com/hzqst/CaptionMod for detail.
 
 4. hook original client's HUD TextMessage and draw it with multi-byte character support.
 
+4. hook VGUI1 TextImage control paint procedure and draw it with multi-byte character support.
+
 Current state : Ready to use.
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/1.png)
