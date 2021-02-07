@@ -17,6 +17,8 @@
 #include <sequence.h>
 #include <regex>
 
+#define HUDMESSAGE_MAXLENGTH 2048
+
 class SubtitlePanel;
 class CHudMessage;
 class ISchemel;

@@ -11,8 +11,6 @@
 #include "msghook.h"
 #include <algorithm>
 
-#define HUDMESSAGE_MAXLENGTH 2048
-
 using namespace vgui;
 
 CHudMessage m_HudMessage;
@@ -485,14 +483,15 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 
 	if (!strncmp(pString, "__NETMESSAGE__", sizeof("__NETMESSAGE__") - 1))
 	{
-		int useSlot = -1;
-		if (isdigit(pString[sizeof("__NETMESSAGE__") - 1]))
-		{
-			useSlot = atoi(&pString[sizeof("__NETMESSAGE__") - 1]);
-		}
-
 		if (cap_netmessage && cap_netmessage->value)
 		{
+			int useSlot = -1;
+			char *slotString = &pString[sizeof("__NETMESSAGE__") - 1];
+			if (isdigit(*slotString))
+			{
+				useSlot = atoi(slotString);
+			}
+
 			client_textmessage_t *pTextMessage = NULL;
 
 			if (pString[0] == '#')
@@ -515,9 +514,8 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 				if (!dict->m_pTextMessage)
 				{
 					dict->m_pTextMessage = new client_textmessage_t;
+					memcpy(dict->m_pTextMessage, pTextMessage, sizeof(*pTextMessage));
 					dict->m_pTextMessage->pMessage = (const char *)new char[HUDMESSAGE_MAXLENGTH];
-
-					memcpy(dict->m_pTextMessage, pTextMessage, sizeof(*pTextMessage) - sizeof(const char *));
 				}
 
 				std::string sentence;
@@ -557,9 +555,8 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 				if (!dict->m_pTextMessage)
 				{
 					dict->m_pTextMessage = new client_textmessage_t;
+					memcpy(dict->m_pTextMessage, pTextMessage, sizeof(*pTextMessage));
 					dict->m_pTextMessage->pMessage = (const char *)new char[HUDMESSAGE_MAXLENGTH];
-
-					memcpy(dict->m_pTextMessage, pTextMessage, sizeof(*pTextMessage) - sizeof(const char *));
 				}
 
 				std::string sentence;
@@ -594,6 +591,13 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 		if (cap_show && cap_show->value)
 		{
 			gEngfuncs.Con_Printf((dict) ? "CaptionMod: TextMessage [%s] found.\n" : "CaptionMod: TextMessage [%s] not found.\n", pString);
+		}
+
+		if (dict)
+		{
+			MessageAdd(dict->m_pTextMessage, cl_time, hintMessage, -1, m_hFont);
+			m_parms.time = cl_time;
+			return 1;
 		}
 	}
 	

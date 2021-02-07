@@ -140,7 +140,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	unsigned char *pSourcePalette;
 	qboolean useProgram = 0;
 
-	if (drawreflect || drawrefract)
+	if (drawreflect || drawrefract || drawshadowscene)
 		return;
 
 	if (fa->texinfo->texture)
@@ -176,7 +176,15 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 
 	if(r_water && r_water->value && water.program)
 	{
-		R_AddEntityWater((*currententity), tempVert, &gWaterColor);
+		if ((*currententity) != r_worldentity && (*currententity)->model->maxs[2] - (*currententity)->model->mins[2] < r_water_minheight->value)
+		{
+
+		}
+		else
+		{
+			R_AddEntityWater((*currententity), tempVert, &gWaterColor);
+		}
+
 		if(curwater && curwater->reflectmap_ready && curwater->refractmap_ready)
 		{
 			qglUseProgramObjectARB(water.program);

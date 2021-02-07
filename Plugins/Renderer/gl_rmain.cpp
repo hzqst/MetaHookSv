@@ -1364,13 +1364,13 @@ void R_PreRenderView()
 
 	if (!r_refdef->onlyClientDraws)
 	{
-		if (shadow.program && r_shadow && r_shadow->value)
-		{
-			R_RenderShadowMaps();
-		}
 		if (water.program && r_water && r_water->value)
 		{
 			R_RenderWaterView();
+		}
+		if (shadow.program && r_shadow && r_shadow->value)
+		{
+			R_RenderShadowMaps();
 		}
 	}
 

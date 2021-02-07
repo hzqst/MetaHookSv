@@ -940,7 +940,7 @@ void R_ParseBSPEntities(void)
 				
 				if(pCurText[0] == '}')
 				{
-					Sys_ErrorEx("R_ParseBSPEntities: failed to parse entity data\n");
+					Sys_ErrorEx("R_ParseBSPEntities: failed to parse entity data, bad \"}\" excceeded.\n");
 					return;
 				}
 
@@ -959,7 +959,7 @@ void R_ParseBSPEntities(void)
 			{
 				if(pCurText[0] == '}')
 				{
-					Sys_ErrorEx("R_ParseBSPEntities: failed to parse entity data\n");
+					Sys_ErrorEx("R_ParseBSPEntities: failed to parse entity data, bad \"}\" excceeded.\n");
 					return;
 				}
 
@@ -978,7 +978,7 @@ void R_ParseBSPEntities(void)
 			{
 				if(pCurText[0] == '}')
 				{
-					Sys_ErrorEx("R_ParseBSPEntities: failed to parse entity data\n");
+					Sys_ErrorEx("R_ParseBSPEntities: failed to parse entity data, bad \"}\" excceeded.\n");
 					return;
 				}
 

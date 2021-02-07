@@ -32,6 +32,7 @@ cvar_t *r_water_depthfactor = NULL;
 cvar_t *r_water_normfactor = NULL;
 cvar_t *r_water_novis = NULL;
 cvar_t *r_water_texscale = NULL;
+cvar_t *r_water_minheight = NULL;
 
 void RotatePointAroundVector(vec3_t dst, const vec3_t dir, const vec3_t point, float degrees);
 
@@ -120,6 +121,7 @@ void R_InitWater(void)
 	r_water_normfactor = gEngfuncs.pfnRegisterVariable("r_water_normfactor", "1.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_novis = gEngfuncs.pfnRegisterVariable("r_water_novis", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_texscale = gEngfuncs.pfnRegisterVariable("r_water_texscale", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_water_minheight = gEngfuncs.pfnRegisterVariable("r_water_minheight", "7.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	curwater = NULL;
 	drawreflect = false;
@@ -134,15 +136,6 @@ int R_ShouldReflect(void)
 	if(curwater->vecs[2] > r_refdef->vieworg[2] || *cl_waterlevel >= 3)
 		return 0;
 
-	//Getting too close to another water?
-	/*for(r_water_t *w = waters_active; w; w = w->next)
-	{
-		if(w->ent && curwater->ent != w->ent)
-		{
-			if(fabs(w->vecs[2] - curwater->vecs[2]) < 1.0f)
-				return 0;
-		}
-	}*/
 	return 1;
 }
 
@@ -154,7 +147,7 @@ void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 
 	for (w = waters_active; w; w = w->next)
 	{
-		if ((ent != r_worldentity && w->ent == ent) || (ent == r_worldentity && fabs(w->vecs[2] - p[2]) < 1.0f) )
+		if ((ent != r_worldentity && w->ent == ent) || (fabs(w->vecs[2] - p[2]) < 1.0f) )
 		{
 			//found one
 			VectorCopy(p, w->vecs);
@@ -167,7 +160,10 @@ void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 
 	//no free water slot
 	if (!waters_free)
+	{
+		gEngfuncs.Con_Printf("R_AddEntityWater: MAX_WATER exceeded!");
 		return;
+	}
 
 	//not found, try to create
 	curwater = waters_free;

@@ -371,6 +371,7 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 		m_Type = DICT_MESSAGE;
 		m_pTextMessage = new client_textmessage_t;
 		memcpy(m_pTextMessage, textmsg, sizeof(client_textmessage_t));
+		m_pTextMessage->pMessage = (const char *)new char[HUDMESSAGE_MAXLENGTH];
 	}
 
 	//2015-11-26 added to support NETMESSAGE:
@@ -486,11 +487,15 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 	if(m_pTextMessage)
 	{
 		//Covert the sentence text to UTF8
-		int utf8Length = WideCharToMultiByte(CP_UTF8, 0, &m_szSentence[0], -1, NULL, 0, NULL, NULL);
-		char *utf8Text = new char[utf8Length + 1];
-		WideCharToMultiByte(CP_UTF8, 0, &m_szSentence[0], -1, utf8Text, utf8Length, NULL, NULL);
-		utf8Text[utf8Length] = '\0';
-		m_pTextMessage->pMessage = utf8Text; 
+		std::string sentence;
+		sentence.resize(HUDMESSAGE_MAXLENGTH);
+
+		int finalLength = localize()->ConvertUnicodeToANSI(m_szSentence.Base(), (char *)sentence.data(), sentence.length());
+
+		sentence.resize(finalLength);
+
+		V_strncpy((char *)m_pTextMessage->pMessage, sentence.data(), HUDMESSAGE_MAXLENGTH - 1);
+		((char *)m_pTextMessage->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
 	}
 
 	//Next dictionary

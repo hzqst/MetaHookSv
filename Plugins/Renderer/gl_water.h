@@ -77,6 +77,7 @@ extern cvar_t *r_water_depthfactor;
 extern cvar_t *r_water_normfactor;
 extern cvar_t *r_water_novis;
 extern cvar_t *r_water_texscale;
+extern cvar_t *r_water_minheight;
 
 void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color);
 void R_InitWater(void);
