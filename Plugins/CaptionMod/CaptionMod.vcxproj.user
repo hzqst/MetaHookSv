@@ -8,7 +8,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LocalDebuggerCommand>I:\SteamLibrary\steamapps\common\Sven Co-op\Metahook.exe</LocalDebuggerCommand>
-    <LocalDebuggerCommandArguments>-game svencoop</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-game svencoop -language schinese</LocalDebuggerCommandArguments>
     <LocalDebuggerWorkingDirectory>I:\SteamLibrary\steamapps\common\Sven Co-op\</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>

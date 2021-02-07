@@ -548,6 +548,12 @@ void R_RecursiveWorldNodeShadow(mnode_t *node)
 			side = SURF_PLANEBACK;
 		else if (dot > BACKFACE_EPSILON)
 			side = 0;
+
+		if (plane->type == PLANE_Z && side == SURF_PLANEBACK)
+		{
+			
+		}
+		else
 		{
 			for ( ; c; c--, surf++)
 			{
@@ -558,12 +564,6 @@ void R_RecursiveWorldNodeShadow(mnode_t *node)
 					continue;
 
 				if (dot2 > cursdlight->radius)
-					continue;
-
-				if (dot < 0)
-					continue;
-
-				if (dot2 < 0)
 					continue;
 
 				if (!(surf->flags & SURF_DRAWTURB) && !(surf->flags & SURF_DRAWSKY))

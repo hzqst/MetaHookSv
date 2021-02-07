@@ -33,10 +33,11 @@ void main()
 
 	//fresnel factor
 	vec3 vEyeVect = eyepos - worldpos;
-	float sinX = abs(vEyeVect.z) / (length(vEyeVect) + 0.001);
+	float dist = length(vEyeVect);
+	float sinX = abs(vEyeVect.z) / (dist + 0.001);
 	float fresnelX = asin(sinX) / (0.5 * 3.14159);
 
-	float flOffsetFactor = clamp(fresnelX * normfactor, 0.0, 0.3);
+	float flOffsetFactor = clamp(fresnelX, 0.001, 1.0) * normfactor;
 
 	vec2 vOffsetTexCoord = normalize(vNormal.xyz).xy * flOffsetFactor;
 

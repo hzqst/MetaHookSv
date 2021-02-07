@@ -53,7 +53,7 @@ public:
 
 public:
 	void MessageAdd(client_textmessage_t *newMessage);
-	int MessageAdd(client_textmessage_t *newMessage, float time, int hintMessage, unsigned int font);
+	int MessageAdd(client_textmessage_t *newMessage, float time, int hintMessage, int useSlot, unsigned int font);
 	void MessageScanNextChar(unsigned int font);
 	void MessageScanStart(void);
 	void MessageDrawScan(client_message_t *pClientMessage, float time, unsigned int font);
@@ -65,4 +65,33 @@ private:
 	float m_gameTitleTime;
 	client_textmessage_t *m_pGameTitle;
 	vgui::HFont	m_hFont;
+};
+
+struct message_parms_svclient_t
+{
+	client_textmessage_t *pMessage;
+	float time;
+	int x;
+	int y;
+	int totalWidth;
+	int totalHeight;
+	int width;
+	int lines;
+	int lineLength;
+	int length;
+	int r;
+	int g;
+	int b;
+	int a;
+	int svtext;
+	int fadeBlend;
+	float charTime;
+	float fadeTime;
+};
+
+class CHudMessage_SvClient
+{
+	DWORD *vftable;
+	char padding[144];
+	message_parms_svclient_t m_parms;
 };

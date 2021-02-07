@@ -15,6 +15,7 @@ cl_enginefunc_t gEngfuncs;
 
 cvar_t *al_enable = NULL;
 cvar_t *cap_show = NULL;
+cvar_t *cap_netmessage = NULL;
 
 static CDictionary *m_SentenceDictionary = NULL;
 static qboolean m_bSentenceSound = false;
@@ -112,6 +113,7 @@ void HUD_Init(void)
 
 	al_enable = gEngfuncs.pfnGetCvarPointer("al_enable");
 	cap_show = gEngfuncs.pfnRegisterVariable("cap_show", "0", FCVAR_CLIENTDLL);
+	cap_netmessage = gEngfuncs.pfnRegisterVariable("cap_netmessage", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	gEngfuncs.pfnAddCommand("cap_version", Cap_Version_f);
 
 	if (g_EngineType == ENGINE_SVENGINE)

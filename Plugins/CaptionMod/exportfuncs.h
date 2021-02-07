@@ -45,3 +45,4 @@ int __fastcall SvClient_FindSoundEx(int pthis, int, const char *sound);
 void Sys_ErrorEx(const char *fmt, ...);
 
 extern cvar_t *cap_show;
+extern cvar_t *cap_netmessage;

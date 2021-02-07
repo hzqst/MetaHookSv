@@ -102,6 +102,24 @@ CDictionary *CViewport::FindDictionary(const char *szValue, dict_t Type)
 	return item->dict;
 }
 
+CDictionary *CViewport::FindDictionaryRegex(const std::string &str, dict_t Type, std::smatch &result)
+{
+	for(int i = 0; i < m_Dictionary.Count(); ++i)
+	{
+		if (m_Dictionary[i]->m_Type == Type)
+		{
+			std::regex pattern(m_Dictionary[i]->m_szTitle);
+
+			if (std::regex_search(str, result, pattern)) 
+			{
+				return m_Dictionary[i];
+			}
+		}
+	}
+
+	return NULL;
+}
+
 int CViewport::CaseInsensitiveHash(const char *string, int iBounds)
 {
 	unsigned int hash = 0;
@@ -307,6 +325,7 @@ CDictionary::CDictionary()
 	m_iTextAlign = ALIGN_DEFAULT;
 	m_bKeyReplaced = false;
 	m_bPrefixAdded = false;
+	m_bRegex = false;
 	m_szSentence.RemoveAll();
 	m_szSentence.AddToTail(L'\0');
 	m_szSpeaker.RemoveAll();
@@ -329,45 +348,54 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 
 	const char *title = row[0].c_str();
 
-	Q_strncpy(m_szTitle, title, sizeof(m_szTitle));
+	Q_memset(m_szTitle, 0, sizeof(m_szTitle));
+	Q_strncpy(m_szTitle, title, sizeof(m_szTitle) - 1);
 
 	//If title ended with .wav
 	int titlelen = strlen(title);
-	if(!Q_stricmp(&title[titlelen-4], ".wav"))
+	if (!Q_stricmp(&title[titlelen - 4], ".wav"))
 	{
 		m_Type = DICT_SOUND;
 	}
 
 	//2015-11-26 added to support !SENTENCE and #SENTENCE
-	if(title[0] == '!' || title[0] == '#')
+	if (title[0] == '!' || title[0] == '#')
 	{
 		m_Type = DICT_SENTENCE;
 	}
 
 	//If it's a textmessage found in engine (gamedir/titles.txt)
 	client_textmessage_t *textmsg = gEngfuncs.pfnTextMessageGet(title);
-	if(textmsg)
+	if (textmsg)
 	{
 		m_Type = DICT_MESSAGE;
 		m_pTextMessage = new client_textmessage_t;
 		memcpy(m_pTextMessage, textmsg, sizeof(client_textmessage_t));
 	}
 
+	//2015-11-26 added to support NETMESSAGE:
+	if (!Q_strncmp(title, "NETMESSAGE:", sizeof("NETMESSAGE:") - 1))
+	{
+		m_Type = DICT_NETMESSAGE;
+		memcpy(m_szTitle, title + sizeof("NETMESSAGE:") - 1, titlelen - (sizeof("NETMESSAGE:") - 1));
+		m_szTitle[titlelen - (sizeof("NETMESSAGE:") - 1)] = 0;
+	}
+
 	//Translated text
 	const char *sentence = row[1].c_str();
 	wchar_t *pLocalized = NULL;
 	int localizedLength;
-	if(sentence[0] == '#')
+	if (sentence[0] == '#')
 	{
 		pLocalized = localize()->Find(sentence);
-		if(pLocalized)
+		if (pLocalized)
 		{
 			localizedLength = Q_wcslen(pLocalized);
 			m_szSentence.SetSize(localizedLength + 1);
 			Q_wcsncpy(&m_szSentence[0], pLocalized, (localizedLength + 1) * sizeof(wchar_t));
 		}
 	}
-	if(!pLocalized)
+	if (!pLocalized)
 	{
 		localizedLength = MultiByteToWideChar(CP_ACP, 0, sentence, -1, NULL, 0);
 		m_szSentence.SetSize(localizedLength + 1);
@@ -376,9 +404,21 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 	}
 
 	//There is no <pattern> in text, marked as replaced
-	if(!wcschr(&m_szSentence[0], L'<'))
+
+	if (!wcschr(&m_szSentence[0], L'<'))
 	{
 		m_bKeyReplaced = true;
+	}
+
+	if (m_Type == DICT_NETMESSAGE)
+	{
+		if (strstr(m_szTitle, "(") && strstr(m_szTitle, ")"))
+		{
+			if (wcschr(&m_szSentence[0], L'{') && wcschr(&m_szSentence[0], L'}'))
+			{
+				m_bRegex = true;
+			}
+		}
 	}
 
 	ReplaceReturn();
@@ -601,6 +641,11 @@ void CDictionary::AddPrefix(void)
 	memcpy(&m_szSentence[0] + nSpeakerLength, &m_szSentence[0], sizeof(wchar_t) * nSentenceLength);
 	memcpy(&m_szSentence[0], &m_szSpeaker[0], sizeof(wchar_t) * nSpeakerLength);
 	m_szSentence[nSentenceLength + nSpeakerLength] = L'\0';
+}
+
+void CDictionary::ReplaceRegex(void)
+{
+
 }
 
 void CDictionary::ReplaceKey(void)

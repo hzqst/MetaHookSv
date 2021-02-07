@@ -15,6 +15,7 @@
 #include <VGUI_controls/Frame.h>
 #include "libcsv/csv_document.h"
 #include <sequence.h>
+#include <regex>
 
 class SubtitlePanel;
 class CHudMessage;
@@ -26,6 +27,7 @@ enum dict_t
 	DICT_SOUND,
 	DICT_MESSAGE,
 	DICT_SENTENCE,
+	DICT_NETMESSAGE,
 };
 
 enum textalign_t
@@ -45,9 +47,10 @@ public:
 	void ReplaceKey(void);
 	void ReplaceReturn(void);
 	void AddPrefix(void);
+	void ReplaceRegex(void);
 
 	dict_t					m_Type;
-	char					m_szTitle[64];
+	char					m_szTitle[256];
 	CUtlVector<wchar_t>		m_szSentence;
 	Color					m_Color;
 	float					m_flDuration;
@@ -59,6 +62,7 @@ public:
 	textalign_t				m_iTextAlign;
 	bool					m_bKeyReplaced;
 	bool					m_bPrefixAdded;
+	bool					m_bRegex;
 };
 
 typedef struct hash_item_s
@@ -96,6 +100,7 @@ public:
 	//Dictionary Hashtable
 	CDictionary *FindDictionary(const char *szValue);
 	CDictionary *FindDictionary(const char *szValue, dict_t Type);
+	CDictionary *FindDictionaryRegex(const std::string &str, dict_t Type, std::smatch &result);
 	int CaseInsensitiveHash(const char *string, int iBounds);
 	void EmptyDictionaryHash(void);
 	void AddDictionaryHash(CDictionary *dict, const char *value);
