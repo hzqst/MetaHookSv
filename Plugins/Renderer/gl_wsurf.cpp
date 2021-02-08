@@ -529,8 +529,8 @@ void R_VidInitWSurf(void)
 	R_GenerateVertexBuffer();
 
 	//parse entities data from bsp's entity lump
-	R_ParseBSPEntities();
-	R_LoadBSPEntities();
+	//R_ParseBSPEntities();
+	//R_LoadBSPEntities();
 }
 
 void R_DrawPolyFromArray(glpoly_t *p)
@@ -872,6 +872,8 @@ void R_ClearBSPEntities(void)
 //From trinity renderer
 void R_ParseBSPEntities(void)
 {
+	return;
+
 	char *pEntData = r_worldmodel->entities;
 
 	if(!pEntData)
