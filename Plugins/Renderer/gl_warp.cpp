@@ -304,9 +304,12 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		GL_DisableMultitexture();
 
 		qglUseProgramObjectARB(0);
+
 	}
 
 	EmitWaterPolysWireFrame(fa, direction, useProgram);
+
+	curwater = NULL;
 }
 
 #define SKY_TEX 5800

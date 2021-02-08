@@ -564,7 +564,6 @@ void R_RenderShadowScenes(void)
 	 
 	//setup texture 0
 	GL_SelectTexture(TEXTURE0_SGIS);
-	qglEnable(GL_TEXTURE_2D);	
 	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	qglEnable(GL_TEXTURE_GEN_S);
 	qglEnable(GL_TEXTURE_GEN_T);
@@ -578,7 +577,7 @@ void R_RenderShadowScenes(void)
 	qglTexGenfv(GL_R, GL_EYE_PLANE, planeR);
 	qglTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR); 
 	qglTexGenfv(GL_Q, GL_EYE_PLANE, planeQ);
-	qglBindTexture(GL_TEXTURE_2D, shadow_depthmap_high);
+	GL_Bind(shadow_depthmap_high);
 
 	qglMatrixMode(GL_TEXTURE);
 	qglLoadIdentity();
@@ -589,7 +588,6 @@ void R_RenderShadowScenes(void)
 	
 	//setup texture1
 	GL_EnableMultitexture();
-	qglEnable(GL_TEXTURE_2D);
 	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	qglEnable(GL_TEXTURE_GEN_S);
 	qglEnable(GL_TEXTURE_GEN_T);
@@ -603,7 +601,7 @@ void R_RenderShadowScenes(void)
 	qglTexGenfv(GL_R, GL_EYE_PLANE, planeR);
 	qglTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
 	qglTexGenfv(GL_Q, GL_EYE_PLANE, planeQ);
-	qglBindTexture(GL_TEXTURE_2D, shadow_depthmap_medium);
+	GL_Bind(shadow_depthmap_medium);
 
 	qglMatrixMode(GL_TEXTURE);
 	qglLoadIdentity();
