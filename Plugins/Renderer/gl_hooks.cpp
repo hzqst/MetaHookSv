@@ -830,6 +830,12 @@ void R_FillAddress(void)
 		Sig_AddrNotFound(size_of_frame);
 		size_of_frame = *(int *)(addr + 2);
 
+#define CL_VISEDICTS_SIG_SVENGINE "\x39\x35\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x00\x00\x8B\x14\xB5"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x500, CL_VISEDICTS_SIG_SVENGINE, sizeof(CL_VISEDICTS_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(cl_visedicts);
+		cl_visedicts = *(cl_entity_t ***)(addr + 15);
+		cl_numvisedicts = *(int **)(addr + 2);
+
 		//mov     eax, [edi+4]
 		//mov     ecx, r_visframecount
 #define R_VISFRAMECOUNT_SIG_SVENGINE "\x8B\x43\x04\x3B\x05"

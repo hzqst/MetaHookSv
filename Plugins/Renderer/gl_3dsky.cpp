@@ -117,7 +117,7 @@ void R_Draw3DSkyEntities(void)
 
 	for (i = 0; i < numvisedicts; i++)
 	{
-		(*currententity) = cl_visedicts_new[i];
+		(*currententity) = cl_visedicts[i];
 
 		if( (*currententity)->curstate.entityType != ET_3DSKYENTITY )//if( !((*currententity)->curstate.effects & EF_3DSKY) )
 			continue;
@@ -149,9 +149,9 @@ void R_Draw3DSkyEntities(void)
 					{
 						for (j = 0; j < numvisedicts; j++)
 						{
-							if (cl_visedicts_new[j]->index == (*currententity)->curstate.aiment)
+							if (cl_visedicts[j]->index == (*currententity)->curstate.aiment)
 							{
-								*currententity = cl_visedicts_new[j];
+								*currententity = cl_visedicts[j];
 
 								if ((*currententity)->player)
 								{
@@ -162,7 +162,7 @@ void R_Draw3DSkyEntities(void)
 									(*gpStudioInterface)->StudioDrawModel(0);
 								}
 
-								*currententity = cl_visedicts_new[i];
+								*currententity = cl_visedicts[i];
 								break;
 							}
 						}
@@ -185,7 +185,7 @@ void R_Draw3DSkyEntities(void)
 
 	for (i = 0; i < numvisedicts; i++)
 	{
-		*currententity = cl_visedicts_new[i];
+		*currententity = cl_visedicts[i];
 
 		if ((*currententity)->curstate.rendermode != kRenderNormal)
 		{

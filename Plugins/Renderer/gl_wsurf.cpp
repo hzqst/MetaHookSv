@@ -668,7 +668,7 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 	{
 		if (!(s->flags & (SURF_DRAWSKY | SURF_DRAWTURB | SURF_UNDERWATER)) && gl_mtexable)
 		{
-			if (!drawreflect && !drawrefract && !drawshadow)
+			if (!drawreflect && !drawrefract && !drawshadowmap)
 			{
 			}
 

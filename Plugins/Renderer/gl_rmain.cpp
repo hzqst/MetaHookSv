@@ -21,8 +21,7 @@ float *windowvideoaspect;
 float videowindowaspect_old;
 float windowvideoaspect_old;
 
-cl_entity_t **cl_visedicts_old;
-cl_entity_t **cl_visedicts_new;
+cl_entity_t **cl_visedicts;
 cl_entity_t **currententity;
 int *numTransObjs;
 int *maxTransObjs;
@@ -177,7 +176,7 @@ int R_GetDrawPass(void)
 		return r_draw_reflect;
 	if(drawrefract)
 		return r_draw_refract;
-	if(drawshadow)
+	if(drawshadowmap)
 		return r_draw_shadow;
 	if(drawshadowscene)
 		return r_draw_shadowscene;
@@ -206,7 +205,7 @@ int R_GetSupportExtension(void)
 
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
-	if(drawshadow)
+	if(drawshadowmap)
 		return false;
 
 	if(draw3dsky)
@@ -361,7 +360,7 @@ void R_DrawEntitiesOnList(void)
 
 	for (i = 0; i < numvisedicts; i++)
 	{
-		(*currententity) = cl_visedicts_new[i];
+		(*currententity) = cl_visedicts[i];
 
 		if ((*currententity)->curstate.rendermode != kRenderNormal || (*currententity)->curstate.renderfx == kRenderFxCloak)
 		{
@@ -393,9 +392,9 @@ void R_DrawEntitiesOnList(void)
 					{
 						for (j = 0; j < numvisedicts; j++)
 						{
-							if (cl_visedicts_new[j]->index == (*currententity)->curstate.aiment)
+							if (cl_visedicts[j]->index == (*currententity)->curstate.aiment)
 							{
-								*currententity = cl_visedicts_new[j];
+								*currententity = cl_visedicts[j];
 
 								if ((*currententity)->player)
 								{
@@ -406,7 +405,7 @@ void R_DrawEntitiesOnList(void)
 									(*gpStudioInterface)->StudioDrawModel(0);
 								}
 
-								*currententity = cl_visedicts_new[i];
+								*currententity = cl_visedicts[i];
 								break;
 							}
 						}
@@ -430,7 +429,7 @@ void R_DrawEntitiesOnList(void)
 
 	for (i = 0; i < numvisedicts; i++)
 	{
-		*currententity = cl_visedicts_new[i];
+		*currententity = cl_visedicts[i];
 
 		if ((*currententity)->curstate.rendermode != kRenderNormal)
 		{
@@ -1370,7 +1369,7 @@ void R_PreRenderView()
 		}
 		if (shadow.program && r_shadow && r_shadow->value)
 		{
-			R_RenderShadowMaps();
+			R_RenderShadowMap();
 		}
 	}
 
@@ -1683,7 +1682,7 @@ void R_Shutdown(void)
 
 void R_ForceCVars(qboolean mp)
 {
-	if (drawreflect || drawrefract || drawshadow || drawshadowscene)
+	if (drawreflect || drawrefract || drawshadowmap || drawshadowscene)
 		return;
 
 	gRefFuncs.R_ForceCVars(mp);

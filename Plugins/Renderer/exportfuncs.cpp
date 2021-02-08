@@ -244,21 +244,16 @@ void HUD_DrawNormalTriangles(void)
 
 void HUD_DrawTransparentTriangles(void)
 {
-	if (!drawreflect && !drawrefract && !drawshadow)
+	if (!drawreflect && !drawrefract && !drawshadowmap)
 	{
 		R_FreeDeadWaters();
 	}
 
 	gExportfuncs.HUD_DrawTransparentTriangles();
 
-	if (!drawreflect && !drawrefract && !drawshadow)
+	if (!drawreflect && !drawrefract && !drawshadowmap)
 	{
-		R_RenderAllShadowScenes();
-
-		for (shadowlight_t *sl = sdlights_active; sl; sl = sl->next)
-		{
-			sl->free = true;
-		}
+		R_RenderShadowScenes();
 
 		for (r_water_t *water = waters_active; water; water = water->next)
 		{
@@ -313,14 +308,14 @@ int HUD_Redraw(float time, int intermission)
 			qglUseProgramObjectARB(0);
 		}
 	}
-	else if(sdlights_active && r_shadow_debug && r_shadow_debug->value)
+	else if(r_shadow_debug && r_shadow_debug->value)
 	{
 		qglDisable(GL_BLEND);
 		qglDisable(GL_ALPHA_TEST);
 		qglColor4f(1,1,1,1);
 
 		qglEnable(GL_TEXTURE_2D);
-		qglBindTexture(GL_TEXTURE_2D, sdlights_active->depthmap);
+		qglBindTexture(GL_TEXTURE_2D, shadow_depthmap_high);
 
 		qglUseProgramObjectARB(drawdepth.program);
 
@@ -521,11 +516,12 @@ int HUD_UpdateClientData(client_data_t *pcldata, float flTime)
 
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 {
+#if 0
 	if(r_shadow && r_shadow->value && shadow.program && (type == 0 || type == 1))//NORMAL OR PLAYER
 	{
 		R_AddEntityShadow(ent, model);
 	}
-#if 0
+
 	if(r_3dsky_parm.enable)
 	{
 		if(ent->curstate.origin[0] + ent->curstate.maxs[0] > r_3dsky_parm.mins[0] && 
@@ -547,9 +543,5 @@ int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 
 void HUD_Frame(double time)
 {
-	for(shadowlight_t *sl = sdlights_active; sl; sl = sl->next)
-	{
-		sl->free = true;
-	}
 	return gExportfuncs.HUD_Frame(time);
 }
