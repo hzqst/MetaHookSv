@@ -59,9 +59,9 @@ Current state : Ready to use, more feature are coming soon.
 
 1. High-Dynamic-Range (HDR) post-processor.
 
-2. Water reflection and refraction.
+2. Water reflection and refraction. (Warning: this may cause a significant performance hit.)
 
-3. Per-Object Shadow. (each object render it's own shadow mapping just like how source engine does this.)
+3. Per-Object Shadow. (Warning: this may cause a significant performance hit.)
 
 4. Screen Space Ambient Occlusion (SSAO) using horizon-based ambient occlusion (HBAO). the implementation is taken from nvidia. (not support with -nofbo)
 
@@ -117,15 +117,23 @@ r_shadow_angle_yaw (0.0 ~ 360.0) : to control the angle(yaw) of shadow caster (l
 
 r_shadow_angle_roll (0.0 ~ 360.0) : to control the angle(roll) of shadow caster (light source).
 
-r_shadow_texsize (must be power of 4) : the texture size of shadow map. larger texture supports bigger shadow-caster entity but uses more graphic RAM.
+r_shadow_high_texsize (must be power of 4) : the texture size of high-quality shadow map. larger texture with bigger scale factor has better quality but uses more graphic RAM.
 
-r_shadow_scale (must be power of 2) : scale factor when render shadow-caster entity in shadow map. larger scale factor gets better quality shadow but will cause incorrect render result when the entity is scaled too much.
+r_shadow_high_distance : entities within this distance are rendered into high-quality shadow map.
 
-r_shadow_fardist (0.0 ~ 1000.0) : to determine how far the shadow is going to fade out.
+r_shadow_high_scale : scale factor when render shadow-caster entity in high-quality shadow map. larger scale factor gets better quality shadow but will cause incorrect render result when the entity is scaled too much.
 
-r_shadow_radius : entity don't cast shadow at this distance away from surface.
+r_shadow_medium_texsize (must be power of 4) : the texture size of medium-quality shadow map.
 
-r_shadow_masdist : entity don't cast shadow at this distance away from camera.
+r_shadow_medium_distance : entities within this distance are rendered into medium-quality shadow map.
+
+r_shadow_medium_scale : scale factor when render shadow-caster entity in low-quality shadow map.
+
+r_shadow_low_texsize (must be power of 4) : the texture size of low-quality shadow map.
+
+r_shadow_low_distance : entities within this distance are rendered into low-quality shadow map.
+
+r_shadow_low_scale : scale factor when render shadow-caster entity in medium quality shadow map.
 
 r_ssao 1 / 0 : to enable / disable Screen Space Ambient Occlusion.
 
