@@ -593,7 +593,7 @@ void R_RenderAllShadowScenes(void)
 		0.5f, 0.5f, 0.5f, 1.0f	};
 
 	float mvmatrix[16];
-	float invmvmatrix[16];	
+	float invmvmatrix[16];
 
 	qglGetFloatv(GL_MODELVIEW_MATRIX, mvmatrix);
 	InvertMatrix(mvmatrix, invmvmatrix);
@@ -647,8 +647,6 @@ void R_RenderAllShadowScenes(void)
 
 	drawshadowscene = true;
 
-	r_refdef->onlyClientDraws = true;
-
 	for(shadowlight_t *slight = sdlights_active; slight; slight = slight->next)
 	{
 		if(slight->free)
@@ -684,8 +682,6 @@ void R_RenderAllShadowScenes(void)
 
 		cursdlight = NULL;
 	}
-
-	r_refdef->onlyClientDraws = false;
 
 	drawshadowscene = false;
 

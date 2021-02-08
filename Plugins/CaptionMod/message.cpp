@@ -574,7 +574,7 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 				m_parms.time = cl_time;
 				return 1;
 			}
-			else
+			else if(pTextMessage)
 			{
 				MessageAdd(pTextMessage, cl_time, hintMessage, useSlot, m_hFont);
 				m_parms.time = cl_time;
