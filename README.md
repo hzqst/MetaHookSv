@@ -107,6 +107,8 @@ r_water_novis 1 / 0 : force engine to render the scene which should have been re
 
 r_water_texscale (0.1 ~ 1.0) : to control the size of refract or reflect view texture.
 
+r_water_minheight : water entity which has height < this value will not be handled.
+
 r_shadow 1 / 0 : to enable / disable Per-Object Shadow.
 
 r_shadow_angle_pitch (0.0 ~ 360.0) : to control the angle(pitch) of shadow caster (light source).
