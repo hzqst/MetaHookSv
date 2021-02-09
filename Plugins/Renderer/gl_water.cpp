@@ -15,7 +15,6 @@ r_water_t *waters_active;
 SHADER_DEFINE(water);
 
 int water_normalmap;
-int water_normalmap_default;
 
 SHADER_DEFINE(drawdepth);
 
@@ -111,9 +110,6 @@ void R_InitWater(void)
 		}
 	}
 
-	water_normalmap_default = R_LoadTextureEx("resource\\tga\\water_normalmap.tga", "resource\\tga\\water_normalmap.tga", NULL, NULL, GLT_SYSTEM, false, false);
-	water_normalmap = water_normalmap_default;
-
 	r_water = gEngfuncs.pfnRegisterVariable("r_water", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_debug = gEngfuncs.pfnRegisterVariable("r_water_debug", "0", FCVAR_CLIENTDLL);
 	r_water_fresnel = gEngfuncs.pfnRegisterVariable("r_water_fresnel", "1.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -181,6 +177,9 @@ void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 		water_texture_width >>= 1;
 		water_texture_height >>= 1;
 	}
+
+	if (!water_normalmap)
+		water_normalmap = R_LoadTextureEx("resource\\tga\\water_normalmap.tga", "resource\\tga\\water_normalmap.tga", NULL, NULL, GLT_SYSTEM, false, false);
 
 	if (!curwater->reflectmap)
 	{

@@ -424,7 +424,7 @@ tryagain:
 	glt->width = width;
 	glt->height = height;
 	glt->mipmap = mipmap;
-	glt->servercount = (textureType == GLT_WORLD) ? *gHostSpawnCount : 0;
+	glt->servercount = (textureType != GLT_SYSTEM && textureType != GLT_DECAL && textureType != GLT_HUDSPRITE) ? *gHostSpawnCount : 0;
 	glt->paletteIndex = -1;
 
 	currentglt = glt;

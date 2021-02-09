@@ -62,7 +62,6 @@ extern r_water_t *waters_active;
 //shader
 extern SHADER_DEFINE(water);
 extern int water_normalmap;
-extern int water_normalmap_default;
 
 extern SHADER_DEFINE(drawdepth);
 

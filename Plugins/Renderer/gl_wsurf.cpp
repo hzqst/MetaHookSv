@@ -509,8 +509,6 @@ void R_InitWSurf(void)
 
 void R_VidInitWSurf(void)
 {
-	water_normalmap = water_normalmap_default;
-
 	//we don't need to free extra or decal textures cuz they are freed by engine when level changes.
 
 	R_ClearMapTextures();

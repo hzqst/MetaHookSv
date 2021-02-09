@@ -47,8 +47,6 @@ void VectorRotate(const vec3_t in1, const float in2[3][4], vec3_t out);
 
 SHADER_DEFINE(invuln);
 
-extern int water_normalmap;
-
 void R_UnloadTextureArray(studio_texarray_t *texarray)
 {
 	int i;
@@ -706,7 +704,7 @@ void R_GLStudioDrawPointsEx(void)
 			{
 				if( (*currententity)->curstate.renderfx == kRenderFxInvulnLayer )
 				{
-					normal_texture = water_normalmap;
+					//normal_texture = water_normalmap;
 
 					GL_EnableMultitexture();
 					qglEnable(GL_TEXTURE_2D);

@@ -105,7 +105,7 @@ void R_InitShadow(void)
 	r_shadow_high_scale = gEngfuncs.pfnRegisterVariable("r_shadow_high_scale", "5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_medium_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_medium_texsize", "2048", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_medium_distance = gEngfuncs.pfnRegisterVariable("r_shadow_medium_distance", "1024", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_medium_scale = gEngfuncs.pfnRegisterVariable("r_shadow_medium_scale", "1.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_medium_scale = gEngfuncs.pfnRegisterVariable("r_shadow_medium_scale", "2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_low_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_low_texsize", "2048", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_low_distance = gEngfuncs.pfnRegisterVariable("r_shadow_low_distance", "4096", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_low_scale = gEngfuncs.pfnRegisterVariable("r_shadow_low_scale", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -535,7 +535,7 @@ void R_DrawBrushModelShadow(cl_entity_t *e)
 
 		if (psurf->flags & SURF_DRAWTURB)
 		{
-			if (pplane->type != PLANE_Z && !gl_watersides->value)
+			if (pplane->type != PLANE_Z && gl_watersides && !gl_watersides->value)
 				continue;
 
 			if (mins[2] + 1.0 >= pplane->dist)
