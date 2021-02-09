@@ -25,6 +25,14 @@ float shadow_mvmatrix_medium[16];
 float shadow_projmatrix_low[16];
 float shadow_mvmatrix_low[16];
 
+cl_entity_t *shadow_visedicts_high[512];
+cl_entity_t *shadow_visedicts_medium[512];
+cl_entity_t *shadow_visedicts_low[512];
+
+int shadow_numvisedicts_high = 0;
+int shadow_numvisedicts_medium = 0;
+int shadow_numvisedicts_low = 0;
+
 //shader
 SHADER_DEFINE(shadow);
 
@@ -67,6 +75,9 @@ void R_InitShadow(void)
 				SHADER_UNIFORM(shadow, depthmap_high, "depthmap_high");
 				SHADER_UNIFORM(shadow, depthmap_medium, "depthmap_medium");
 				SHADER_UNIFORM(shadow, depthmap_low, "depthmap_low");
+				SHADER_UNIFORM(shadow, numedicts_high, "numedicts_high");
+				SHADER_UNIFORM(shadow, numedicts_medium, "numedicts_medium");
+				SHADER_UNIFORM(shadow, numedicts_low, "numedicts_low");
 				SHADER_UNIFORM(shadow, alpha, "alpha");
 			}
 		}
@@ -89,12 +100,12 @@ void R_InitShadow(void)
 	r_shadow_angle_p = gEngfuncs.pfnRegisterVariable("r_shadow_angle_pitch", "100", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_angle_y = gEngfuncs.pfnRegisterVariable("r_shadow_angle_yaw", "30", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_angle_r = gEngfuncs.pfnRegisterVariable("r_shadow_angle_roll", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_high_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_high_texsize", "4096", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_high_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_high_texsize", "2048", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_high_distance = gEngfuncs.pfnRegisterVariable("r_shadow_high_distance", "512", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_high_scale = gEngfuncs.pfnRegisterVariable("r_shadow_high_scale", "6", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_medium_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_medium_texsize", "4096", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_high_scale = gEngfuncs.pfnRegisterVariable("r_shadow_high_scale", "5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_medium_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_medium_texsize", "2048", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_medium_distance = gEngfuncs.pfnRegisterVariable("r_shadow_medium_distance", "1024", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_medium_scale = gEngfuncs.pfnRegisterVariable("r_shadow_medium_scale", "3", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_medium_scale = gEngfuncs.pfnRegisterVariable("r_shadow_medium_scale", "1.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_low_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_low_texsize", "2048", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_low_distance = gEngfuncs.pfnRegisterVariable("r_shadow_low_distance", "4096", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_low_scale = gEngfuncs.pfnRegisterVariable("r_shadow_low_scale", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -118,6 +129,9 @@ qboolean R_ShouldCastShadow(cl_entity_t *ent)
 
 	if (ent->model->type == mod_studio)
 	{
+		if (ent->index == 0)
+			return false;
+
 		return true;
 	}
 
@@ -191,12 +205,9 @@ void R_RenderShadowMap(void)
 	int texsizeArray[3] = { shadow_depthmap_high_texsize, shadow_depthmap_medium_texsize, shadow_depthmap_low_texsize };
 	float scaleArray[3] = { r_shadow_high_scale->value, r_shadow_medium_scale->value, r_shadow_low_scale->value };
 
-	cl_entity_t *visedicts_high[512];
-	cl_entity_t *visedicts_medium[512];
-	cl_entity_t *visedicts_low[512];
-	int numvisedicts_high = 0;
-	int numvisedicts_medium = 0; 
-	int numvisedicts_low = 0;
+	shadow_numvisedicts_high = 0;
+	shadow_numvisedicts_medium = 0;
+	shadow_numvisedicts_low = 0;
 
 	for (int j = 0; j < *cl_numvisedicts; ++j)
 	{
@@ -211,33 +222,33 @@ void R_RenderShadowMap(void)
 
 			if (distance > r_shadow_medium_distance->value)
 			{
-				if (numvisedicts_low < 512)
+				if (shadow_numvisedicts_low < 512)
 				{
-					visedicts_low[numvisedicts_low] = cl_visedicts[j];
-					numvisedicts_low++;
+					shadow_visedicts_low[shadow_numvisedicts_low] = cl_visedicts[j];
+					shadow_numvisedicts_low++;
 				}
 			}
 			else if (distance > r_shadow_high_distance->value)
 			{
-				if (numvisedicts_medium < 512)
+				if (shadow_numvisedicts_medium < 512)
 				{
-					visedicts_medium[numvisedicts_medium] = cl_visedicts[j];
-					numvisedicts_medium++;
+					shadow_visedicts_medium[shadow_numvisedicts_medium] = cl_visedicts[j];
+					shadow_numvisedicts_medium++;
 				}
 			}
 			else
 			{
-				if (numvisedicts_high < 512)
+				if (shadow_numvisedicts_high < 512)
 				{
-					visedicts_high[numvisedicts_high] = cl_visedicts[j];
-					numvisedicts_high++;
+					shadow_visedicts_high[shadow_numvisedicts_high] = cl_visedicts[j];
+					shadow_numvisedicts_high++;
 				}
 			}
 		}
 	}
 
-	int numvisedictsArray[3] = { numvisedicts_high , numvisedicts_medium, numvisedicts_low };
-	cl_entity_t **visedictsArray[3] = { visedicts_high , visedicts_medium, visedicts_low };
+	int numvisedictsArray[3] = { shadow_numvisedicts_high , shadow_numvisedicts_medium, shadow_numvisedicts_low };
+	cl_entity_t **visedictsArray[3] = { shadow_visedicts_high , shadow_visedicts_medium, shadow_visedicts_low };
 
 	float *projmatrixArray[3] = { shadow_projmatrix_high , shadow_projmatrix_medium, shadow_projmatrix_low };
 	float *mvmatrixArray[3] = { shadow_mvmatrix_high , shadow_mvmatrix_medium, shadow_mvmatrix_low };
@@ -358,7 +369,7 @@ void R_RecursiveWorldNodeShadow(mnode_t *node)
 	mplane_t *plane;
 	msurface_t *surf, **mark;
 	mleaf_t *pleaf;
-	double dot, dot2;
+	double dot;
 
 	if (node->contents == CONTENTS_SOLID)
 		return;
@@ -464,7 +475,6 @@ void R_RecursiveWorldNodeShadow(mnode_t *node)
 void R_DrawBrushModelShadow(cl_entity_t *e)
 {
 	int i;
-	int k;
 	vec3_t mins, maxs;
 	msurface_t *psurf;
 	float dot;
@@ -559,7 +569,7 @@ void R_DrawBrushModelShadow(cl_entity_t *e)
 
 void R_DrawEntitiesOnListShadow(void)
 {
-	int i, j, numvisedicts, parsecount, candraw3dsky;
+	int i, numvisedicts, parsecount;
 
 	if (!r_drawentities->value)
 		return;
@@ -627,6 +637,10 @@ void R_RenderShadowScenes(void)
 	qglUniform1iARB(shadow.depthmap_high, 0);
 	qglUniform1iARB(shadow.depthmap_medium, 1);
 	qglUniform1iARB(shadow.depthmap_low, 2);
+
+	qglUniform1iARB(shadow.numedicts_high, shadow_numvisedicts_high);
+	qglUniform1iARB(shadow.numedicts_medium, shadow_numvisedicts_medium);
+	qglUniform1iARB(shadow.numedicts_low, shadow_numvisedicts_low);
 
 	qglUniform1fARB(shadow.texoffset_high, 1 / shadow_depthmap_high_texsize);
 	qglUniform1fARB(shadow.texoffset_medium, 1 / shadow_depthmap_medium_texsize);

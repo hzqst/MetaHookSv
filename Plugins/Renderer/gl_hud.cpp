@@ -403,7 +403,7 @@ void R_InitRefHUD(void)
 	r_ssao = gEngfuncs.pfnRegisterVariable("r_ssao", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssao_debug = gEngfuncs.pfnRegisterVariable("r_ssao_debug", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssao_radius = gEngfuncs.pfnRegisterVariable("r_ssao_radius", "2.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_ssao_intensity = gEngfuncs.pfnRegisterVariable("r_ssao_intensity", "1.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssao_intensity = gEngfuncs.pfnRegisterVariable("r_ssao_intensity", "2.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssao_bias = gEngfuncs.pfnRegisterVariable("r_ssao_bias", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssao_blur_sharpness = gEngfuncs.pfnRegisterVariable("r_ssao_blur_sharpness", "40.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
@@ -1193,6 +1193,7 @@ int R_DoSSAO(int sampleIndex)
 	qglDisable(GL_DEPTH_TEST);
 	qglEnable(GL_BLEND);
 	qglBlendFunc(GL_ZERO, GL_SRC_COLOR);
+	qglColor4f(1, 1, 1, 1);
 
 	if (sampleIndex >= 0) {
 		qglEnable(GL_SAMPLE_MASK);

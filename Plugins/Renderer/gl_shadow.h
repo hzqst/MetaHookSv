@@ -37,6 +37,9 @@ typedef struct
 	int depthmap_high;
 	int depthmap_medium;
 	int depthmap_low;
+	int numedicts_high;
+	int numedicts_medium;
+	int numedicts_low;
 	int alpha;
 }shadow_program_t;
 
@@ -54,6 +57,10 @@ extern int shadow_depthmap_medium_texsize;
 
 extern int shadow_depthmap_low;
 extern int shadow_depthmap_low_texsize;
+
+extern int shadow_numvisedicts_high;
+extern int shadow_numvisedicts_medium;
+extern int shadow_numvisedicts_low;
 
 //shader
 extern SHADER_DEFINE(shadow);

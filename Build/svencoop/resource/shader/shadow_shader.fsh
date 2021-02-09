@@ -6,7 +6,9 @@ uniform float texoffset_high = 1.0 / 1024.0;
 uniform float texoffset_medium = 1.0 / 1024.0;
 uniform float texoffset_low = 1.0 / 1024.0;
 uniform float alpha = 1.0;
-
+uniform int numedicts_high = 0;
+uniform int numedicts_medium = 0;
+uniform int numedicts_low = 0;
 varying vec4 shadowcoord_high;
 varying vec4 shadowcoord_medium;
 varying vec4 shadowcoord_low;
@@ -30,33 +32,41 @@ float lookup_low(vec4 coord, vec2 off)
 void main()
 {
 	// Gaussian 3x3 filter
-	float shadow_high = lookup_high(shadowcoord_high, vec2(0.0,0.0)) * 0.25;
-	shadow_high += lookup_high(shadowcoord_high, vec2( -1.0, -1.0)) * 0.0625;
-	shadow_high += lookup_high(shadowcoord_high, vec2( -1.0, 0.0)) * 0.125;
-	shadow_high += lookup_high(shadowcoord_high, vec2( -1.0, 1.0)) * 0.0625;
-	shadow_high += lookup_high(shadowcoord_high, vec2( 0.0, -1.0)) * 0.125;
-	shadow_high += lookup_high(shadowcoord_high, vec2( 0.0, 1.0)) * 0.125;
-	shadow_high += lookup_high(shadowcoord_high, vec2( 1.0, -1.0)) * 0.0625;
-	shadow_high += lookup_high(shadowcoord_high, vec2( 1.0, 0.0)) * 0.125;
-	shadow_high += lookup_high(shadowcoord_high, vec2( 1.0, 1.0)) * 0.0625;
+	float shadow_high = 1;
+	if(numedicts_high > 0){
+		shadow_high = 0;
+		shadow_high += lookup_high(shadowcoord_high, vec2(0.0,0.0)) * 0.25;
+		shadow_high += lookup_high(shadowcoord_high, vec2( -1.0, -1.0)) * 0.0625;
+		shadow_high += lookup_high(shadowcoord_high, vec2( -1.0, 0.0)) * 0.125;
+		shadow_high += lookup_high(shadowcoord_high, vec2( -1.0, 1.0)) * 0.0625;
+		shadow_high += lookup_high(shadowcoord_high, vec2( 0.0, -1.0)) * 0.125;
+		shadow_high += lookup_high(shadowcoord_high, vec2( 0.0, 1.0)) * 0.125;
+		shadow_high += lookup_high(shadowcoord_high, vec2( 1.0, -1.0)) * 0.0625;
+		shadow_high += lookup_high(shadowcoord_high, vec2( 1.0, 0.0)) * 0.125;
+		shadow_high += lookup_high(shadowcoord_high, vec2( 1.0, 1.0)) * 0.0625;
+	}
 
-	float shadow_medium = 
-	lookup_medium(shadowcoord_medium, vec2(0.0,0.0)) + 
-	lookup_medium(shadowcoord_medium, vec2(0.035,0.0)) + 
-	lookup_medium(shadowcoord_medium, vec2(-0.035,0.0)) + 
-	lookup_medium(shadowcoord_medium, vec2(0.0,0.035)) + 
-	lookup_medium(shadowcoord_medium, vec2(0.0,-0.035));
+	float shadow_medium = 1;
+	if(numedicts_medium > 0){
+		shadow_medium = 0;
+		shadow_medium += lookup_medium(shadowcoord_medium, vec2(0.0,0.0));
+		shadow_medium += lookup_medium(shadowcoord_medium, vec2(0.035,0.0));
+		shadow_medium += lookup_medium(shadowcoord_medium, vec2(-0.035,0.0));
+		shadow_medium += lookup_medium(shadowcoord_medium, vec2(0.0,0.035));
+		shadow_medium += lookup_medium(shadowcoord_medium, vec2(0.0,-0.035));
+		shadow_medium *= 0.2;
+	}
 
-	shadow_medium *= 0.2;
 
-	float shadow_low = 
-	lookup_low(shadowcoord_low, vec2(0.0,0.0)) + 
-	lookup_low(shadowcoord_low, vec2(0.035,0.0)) + 
-	lookup_low(shadowcoord_low, vec2(-0.035,0.0)) + 
-	lookup_low(shadowcoord_low, vec2(0.0,0.035)) + 
-	lookup_low(shadowcoord_low, vec2(0.0,-0.035));
-
-	shadow_low *= 0.2;
+	float shadow_low = 1;
+	if(numedicts_low > 0){
+		shadow_low += lookup_low(shadowcoord_low, vec2(0.0,0.0));
+		shadow_low += lookup_low(shadowcoord_low, vec2(0.035,0.0));
+		shadow_low += lookup_low(shadowcoord_low, vec2(-0.035,0.0));
+		shadow_low += lookup_low(shadowcoord_low, vec2(0.0,0.035));
+		shadow_low += lookup_low(shadowcoord_low, vec2(0.0,-0.035));
+		shadow_low *= 0.2;
+	}
 	
 	if(shadow_high > 0.95 && shadow_medium > 0.95 && shadow_low > 0.95)
 		discard;
