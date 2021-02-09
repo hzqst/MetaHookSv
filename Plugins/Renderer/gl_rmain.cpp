@@ -1,5 +1,6 @@
 #include "gl_local.h"
 #include "cJSON.h"
+#include "pm_defs.h"
 
 ref_funcs_t gRefFuncs;
 
@@ -216,15 +217,60 @@ qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 
 void R_RotateForEntity(vec_t *origin, cl_entity_t *e)
 {
+	int i;
+	vec3_t angles;
+	vec3_t modelpos;
+
+	VectorCopy(origin, modelpos);
+	VectorCopy(e->angles, angles);
+
+	if (e->curstate.movetype != MOVETYPE_NONE)
+	{
+		float f;
+		float d;
+
+		if (e->curstate.animtime + 0.2f > (*cl_time) && e->curstate.animtime != e->latched.prevanimtime)
+		{
+			f = ((*cl_time) - e->curstate.animtime) / (e->curstate.animtime - e->latched.prevanimtime);
+		}
+		else
+		{
+			f = 0;
+		}
+
+		for (i = 0; i < 3; i++)
+		{
+			modelpos[i] -= (e->latched.prevorigin[i] - e->origin[i]) * f;
+		}
+
+		if (f != 0.0f && f < 1.5f)
+		{
+			f = 1.0f - f;
+
+			for (i = 0; i < 3; i++)
+			{
+				d = e->latched.prevangles[i] - e->angles[i];
+
+				if (d > 180.0)
+					d -= 360.0;
+				else if (d < -180.0)
+					d += 360.0;
+
+				angles[i] += d * f;
+			}
+		}
+	}
+
+	qglTranslatef(modelpos[0], modelpos[1], modelpos[2]);
+
+	qglRotatef(angles[1], 0, 0, 1);
+	qglRotatef(angles[0], 0, 1, 0);
+	qglRotatef(angles[2], 1, 0, 0);
 }
 
 void R_DrawSpriteModel(cl_entity_t *entity)
 {
-	R_Setup3DSkyModel();
-
 	gRefFuncs.R_DrawSpriteModel(entity);
-
-	R_Finish3DSkyModel();
 }
 
 void R_GetSpriteAxes(cl_entity_t *entity, int type, float *vforwrad, float *vright, float *vup)
@@ -239,7 +285,38 @@ void R_SpriteColor(mcolor24_t *col, cl_entity_t *entity, int renderamt)
 
 float GlowBlend(cl_entity_t *entity)
 {
-	return gRefFuncs.GlowBlend(entity);
+	if(gRefFuncs.GlowBlend)
+		return gRefFuncs.GlowBlend(entity);
+
+	vec3_t tmp;
+	float dist, brightness;
+
+	VectorSubtract(r_entorigin, r_origin, tmp);
+	dist = VectorLength(tmp);
+
+	auto trace = gEngfuncs.PM_TraceLine(r_origin, r_entorigin, r_traceglow->value ? PM_GLASS_IGNORE : (PM_GLASS_IGNORE | PM_STUDIO_IGNORE), 2, -1);
+
+	if ((1.0 - trace->fraction) * dist > 8)
+		return 0;
+
+	if (entity->curstate.renderfx == kRenderFxNoDissipation)
+	{
+		return (float)entity->curstate.renderamt * (1.0f / 255.0f);
+	}
+
+	brightness = 19000 / (dist * dist);
+
+	if (brightness < 0.05)
+	{
+		brightness = 0.05;
+	}
+	else if (brightness > 1.0)
+	{
+		brightness = 1.0;
+	}
+
+	entity->curstate.scale = dist * (1.0 / 200.0);
+	return brightness;
 }
 
 int CL_FxBlend(cl_entity_t *entity)
@@ -344,6 +421,42 @@ entity_state_t *R_GetCurrentDrawPlayerState(int parsecount)
 	return ((entity_state_t *)((char *)cl_frames + size_of_frame * parsecount + sizeof(entity_state_t) * (*currententity)->index));
 }
 
+void R_RenderCurrentEntity(void)
+{
+	int parsecount = ((*cl_parsecount) % 63);
+	switch ((*currententity)->model->type)
+	{
+	case mod_brush:
+	{
+		R_DrawBrushModel(*currententity);
+		break;
+	}
+	case mod_studio:
+	{
+		if ((*currententity)->player)
+		{
+			(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER, R_GetCurrentDrawPlayerState(parsecount));
+		}
+		else
+		{
+			if ((*currententity)->curstate.movetype == MOVETYPE_FOLLOW)
+			{
+				break;
+			}
+
+			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER);
+		}
+
+		break;
+	}
+
+	default:
+	{
+		break;
+	}
+	}
+}
+
 void R_DrawEntitiesOnList(void)
 {
 	int i, j, numvisedicts, parsecount, candraw3dsky;
@@ -356,20 +469,15 @@ void R_DrawEntitiesOnList(void)
 
 	(*numTransObjs) = 0;
 
-	candraw3dsky = (r_3dsky_parm.enable && r_3dsky->value > 0) ? true : false;
-
 	for (i = 0; i < numvisedicts; i++)
 	{
 		(*currententity) = cl_visedicts[i];
 
-		if ((*currententity)->curstate.rendermode != kRenderNormal || (*currententity)->curstate.renderfx == kRenderFxCloak)
+		if ((*currententity)->curstate.rendermode != kRenderNormal)
 		{
 			R_AddTEntity(*currententity);
 			continue;
 		}
-
-		if( !candraw3dsky && (*currententity)->curstate.entityType == ET_3DSKYENTITY )//if( !candraw3dsky && ((*currententity)->curstate.effects & EF_3DSKY) )
-			continue;
 
 		switch ((*currententity)->model->type)
 		{
@@ -381,7 +489,6 @@ void R_DrawEntitiesOnList(void)
 
 			case mod_studio:
 			{
-				R_Setup3DSkyModel();
 				if ((*currententity)->player)
 				{
 					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetCurrentDrawPlayerState(parsecount) );
@@ -414,7 +521,6 @@ void R_DrawEntitiesOnList(void)
 					(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
 					
 				}
-				R_Finish3DSkyModel();
 				break;
 			}
 
@@ -459,6 +565,9 @@ void R_DrawEntitiesOnList(void)
 
 void R_DrawTEntitiesOnList(int onlyClientDraw)
 {
+	if (gRefFuncs.R_DrawTEntitiesOnList)
+		return gRefFuncs.R_DrawTEntitiesOnList(onlyClientDraw);
+
 	int i, j, numvisedicts, parsecount, candraw3dsky;
 
 	if (!r_drawentities->value)
@@ -467,20 +576,15 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 	numvisedicts = *cl_numvisedicts;
 	parsecount = (*cl_parsecount) & 63;
 
-	candraw3dsky = (r_3dsky_parm.enable && r_3dsky->value > 0) ? true : false;
-
 	if (!onlyClientDraw)
 	{
 		for (i = 0; i < (*numTransObjs); i++)
 		{
 			(*currententity) = (*transObjects)[i].pEnt;
 
-			if( !candraw3dsky && (*currententity)->curstate.entityType == ET_3DSKYENTITY )
-				continue;
-
 			qglDisable(GL_FOG);
 
-			*r_blend = gRefFuncs.CL_FxBlend(*currententity);
+			*r_blend = CL_FxBlend(*currententity);
 
 			if (*r_blend <= 0)
 				continue;
@@ -517,7 +621,7 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 					}
 
 					if ((*currententity)->curstate.rendermode == kRenderGlow)
-						(*r_blend) *= gRefFuncs.GlowBlend(*currententity);
+						(*r_blend) *= GlowBlend(*currententity);
 
 					if ((*r_blend) != 0)
 						R_DrawSpriteModel(*currententity);
@@ -530,7 +634,6 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 					if ( (*currententity)->curstate.renderamt == kRenderNormal )
 						continue;
 
-					R_Setup3DSkyModel();
 					if ((*currententity)->player)
 					{
 						(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetCurrentDrawPlayerState(parsecount));
@@ -562,7 +665,6 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 						(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
 					}
-					R_Finish3DSkyModel();
 
 					break;
 				}
@@ -594,11 +696,7 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 void R_DrawBrushModel(cl_entity_t *entity)
 {
-	//R_Setup3DSkyModel();
-
 	gRefFuncs.R_DrawBrushModel(entity);
-
-	//R_Finish3DSkyModel();
 }
 
 void R_DrawViewModel(void)

@@ -180,45 +180,12 @@ void R_NewMap(void)
 
 mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
 {
-	mnode_t *node;
-	float d;
-	mplane_t *plane;
-
-	if (!model || !model->nodes)
-		Sys_ErrorEx("Mod_PointInLeaf: bad model");
-
-	node = model->nodes;
-
-	//Don't clip bsp nodes when rendering refract or reflect view for non-transparent water.
-	/*if (drawrefract)
+	if (drawreflect && model == r_worldmodel && 0  == VectorCompare(p, r_refdef->vieworg))
 	{
-		if (curwater && curwater->color.a == 255)
-		{
-			if (node->contents < 0)
-				return (mleaf_t *)node;
-		}
-	}
-	else if (drawreflect)
-	{
-		if (node->contents < 0)
-			return (mleaf_t *)node;
-	}*/
-
-	while (1)
-	{
-		if (node->contents < 0)
-			return (mleaf_t *)node;
-
-		plane = node->plane;
-		d = DotProduct(p,plane->normal) - plane->dist;
-
-		if (d > 0)
-			node = node->children[0];
-		else
-			node = node->children[1];
+		return gRefFuncs.Mod_PointInLeaf(water_view, model);
 	}
 
-	return NULL;
+	return gRefFuncs.Mod_PointInLeaf(p, model);
 }
 
 float *R_GetAttachmentPoint(int entity, int attachment)

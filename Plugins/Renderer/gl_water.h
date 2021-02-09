@@ -50,6 +50,7 @@ typedef struct r_water_s
 }r_water_t;
 
 //renderer
+extern vec3_t water_view;
 extern qboolean drawreflect;
 extern qboolean drawrefract;
 

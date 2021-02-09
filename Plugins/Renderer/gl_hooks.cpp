@@ -80,6 +80,7 @@
 
 #define R_DRAWTENTITIESONLIST_SIG "\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x2A\x0F\x2A\x2A\x2A\x00\x00\x8B\x44\x24\x04"
 #define R_DRAWTENTITIESONLIST_SIG_NEW "\x55\x8B\xEC\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x44\x0F\x8B\x2A\x2A\x2A\x2A\x8B\x45\x08"
+#define R_DRAWTENTITIESONLIST_SIG_SVENGINE "\x55\x8B\xEC\x83\xE4\x2A\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x00\x00\x00\xD9\x05\x2A\x2A\x2A\x2A\xD9\xEE"
 
 #define R_SETFRUSTUM_SIG "\x83\xEC\x08\xDB\x05\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x56\x89\x44\x24\x04\xD9\x5C\x24\x08\xDB\x05"
 #define R_SETFRUSTUM_SIG_NEW "\x55\x8B\xEC\x83\xEC\x08\xDB\x05\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x56\x89\x45\xFC\xD9\x5D\xF8\xDB\x05"
@@ -305,6 +306,9 @@ void R_FillAddress(void)
 
 		gRefFuncs.R_ForceCVars = (void(*)(qboolean))Search_Pattern(R_FORCECVAR_SIG_SVENGINE);
 		Sig_FuncNotFound(R_ForceCVars);
+
+		gRefFuncs.R_DrawTEntitiesOnList = (void(*)(int))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_SVENGINE);
+		Sig_FuncNotFound(R_DrawTEntitiesOnList);
 	}
 	else if (g_dwEngineBuildnum >= 5953)
 	{
@@ -863,6 +867,16 @@ void R_FillAddress(void)
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_CullBox, 0x100, R_FRUSTUM_SIG_SVENGINE, sizeof(R_FRUSTUM_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(frustum);
 		frustum = *(mplane_t **)(addr + 5);
+
+#define R_ENTORIGIN_SIG_SVENGINE "\x6A\x05\x8D\x84\x24\x2A\x00\x00\x00\x68"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawTEntitiesOnList, 0x500, R_ENTORIGIN_SIG_SVENGINE, sizeof(R_ENTORIGIN_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(r_entorigin);
+		r_entorigin = *(float **)(addr + 10);
+
+#define MODELORG_SIG_SVENGINE "\x50\xE8\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\xD9\x1D"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawWorld, 0x200, MODELORG_SIG_SVENGINE, sizeof(MODELORG_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(modelorg);
+		modelorg = *(float **)(addr + sizeof(MODELORG_SIG_SVENGINE) - 1);
 	}
 	else
 	{
@@ -1149,7 +1163,7 @@ void R_InstallHook(void)
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_MarkLeaves, R_MarkLeaves, (void *&)gRefFuncs.R_MarkLeaves);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_CullBox, R_CullBox, (void *&)gRefFuncs.R_CullBox);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_ForceCVars, R_ForceCVars, (void *&)gRefFuncs.R_ForceCVars);
-	//g_pMetaHookAPI->InlineHook(gRefFuncs.Mod_PointInLeaf, Mod_PointInLeaf, (void *&)gRefFuncs.Mod_PointInLeaf);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.Mod_PointInLeaf, Mod_PointInLeaf, (void *&)gRefFuncs.Mod_PointInLeaf);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSequentialPoly, R_DrawSequentialPoly, (void *&)gRefFuncs.R_DrawSequentialPoly);
 
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawWorld, R_DrawWorld, (void *&)gRefFuncs.R_DrawWorld);

@@ -238,7 +238,7 @@ void R_GetSpriteAxes(cl_entity_t *entity, int type, float *vforwrad, float *vrig
 void R_SpriteColor(mcolor24_t *col, cl_entity_t *entity, int renderamt);
 float GlowBlend(cl_entity_t *entity);
 int CL_FxBlend(cl_entity_t *entity);
-
+void R_RenderCurrentEntity(void);
 void R_DrawTEntitiesOnList(int onlyClientDraw);
 void R_AllocObjects(int nMax);
 void R_AddTEntity(cl_entity_t *pEnt);

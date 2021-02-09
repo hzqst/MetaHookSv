@@ -89,56 +89,20 @@ void R_InitShadow(void)
 	r_shadow_angle_p = gEngfuncs.pfnRegisterVariable("r_shadow_angle_pitch", "100", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_angle_y = gEngfuncs.pfnRegisterVariable("r_shadow_angle_yaw", "30", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_angle_r = gEngfuncs.pfnRegisterVariable("r_shadow_angle_roll", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_high_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_high_texsize", "2048", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_high_distance = gEngfuncs.pfnRegisterVariable("r_shadow_high_distance", "256", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_high_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_high_texsize", "4096", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_high_distance = gEngfuncs.pfnRegisterVariable("r_shadow_high_distance", "512", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_high_scale = gEngfuncs.pfnRegisterVariable("r_shadow_high_scale", "6", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_medium_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_medium_texsize", "2048", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_medium_distance = gEngfuncs.pfnRegisterVariable("r_shadow_medium_distance", "512", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_medium_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_medium_texsize", "4096", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_medium_distance = gEngfuncs.pfnRegisterVariable("r_shadow_medium_distance", "1024", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_medium_scale = gEngfuncs.pfnRegisterVariable("r_shadow_medium_scale", "3", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_low_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_low_texsize", "1024", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_low_distance = gEngfuncs.pfnRegisterVariable("r_shadow_low_distance", "1024", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_low_scale = gEngfuncs.pfnRegisterVariable("r_shadow_low_scale", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_low_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_low_texsize", "2048", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_low_distance = gEngfuncs.pfnRegisterVariable("r_shadow_low_distance", "4096", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_low_scale = gEngfuncs.pfnRegisterVariable("r_shadow_low_scale", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	drawshadowmap = false;
 	drawshadowscene = false;
 
 	R_ClearShadow();
-}
-
-void R_RenderCurrentEntity(void)
-{
-	int parsecount = ((*cl_parsecount) % 63);
-	switch ((*currententity)->model->type)
-	{
-		case mod_brush:
-		{
-			R_DrawBrushModel(*currententity);
-			break;
-		}
-		case mod_studio:
-		{
-			if ((*currententity)->player)
-			{
-				(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER, R_GetCurrentDrawPlayerState(parsecount));
-			}
-			else
-			{
-				if ((*currententity)->curstate.movetype == MOVETYPE_FOLLOW)
-				{
-					break;
-				}
-
-				(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER);
-			}
-
-			break;
-		}
-
-		default:
-		{
-			break;
-		}
-	}
 }
 
 qboolean R_ShouldCastShadow(cl_entity_t *ent)
@@ -155,13 +119,6 @@ qboolean R_ShouldCastShadow(cl_entity_t *ent)
 	if (ent->model->type == mod_studio)
 	{
 		return true;
-	}
-	else if (ent->model->type == mod_brush)
-	{
-		//if (ent->curstate.movetype == MOVETYPE_PUSH)
-		//	return true;
-
-		return false;
 	}
 
 	return false;
@@ -504,9 +461,140 @@ void R_RecursiveWorldNodeShadow(mnode_t *node)
 	R_RecursiveWorldNodeShadow(node->children[!side]);
 }
 
+void R_DrawBrushModelShadow(cl_entity_t *e)
+{
+	int i;
+	int k;
+	vec3_t mins, maxs;
+	msurface_t *psurf;
+	float dot;
+	mplane_t *pplane;
+	model_t *clmodel;
+	qboolean rotated;
+
+	if (e->curstate.rendermode != kRenderNormal)
+		return;
+
+	clmodel = e->model;
+
+	if (e->angles[0] || e->angles[1] || e->angles[2])
+	{
+		rotated = true;
+
+		for (i = 0; i < 3; i++)
+		{
+			mins[i] = e->origin[i] - clmodel->radius;
+			maxs[i] = e->origin[i] + clmodel->radius;
+		}
+	}
+	else
+	{
+		rotated = false;
+		VectorAdd(e->origin, clmodel->mins, mins);
+		VectorAdd(e->origin, clmodel->maxs, maxs);
+	}
+
+	if (R_CullBox(mins, maxs))
+		return;
+
+	(*currententity) = e;
+
+	VectorSubtract(r_refdef->vieworg, e->origin, modelorg);
+
+	if (rotated)
+	{
+		vec3_t temp;
+		vec3_t forward, right, up;
+
+		VectorCopy(modelorg, temp);
+		AngleVectors(e->angles, forward, right, up);
+		modelorg[0] = DotProduct(temp, forward);
+		modelorg[1] = -DotProduct(temp, right);
+		modelorg[2] = DotProduct(temp, up);
+	}
+
+	psurf = &clmodel->surfaces[clmodel->firstmodelsurface];
+
+	qglPushMatrix();
+
+	R_RotateForEntity(e->origin, e);
+
+	for (i = 0; i < clmodel->nummodelsurfaces; i++, psurf++)
+	{
+		pplane = psurf->plane;
+
+		if (psurf->flags & SURF_DRAWTURB)
+		{
+			if (pplane->type != PLANE_Z && !gl_watersides->value)
+				continue;
+
+			if (mins[2] + 1.0 >= pplane->dist)
+				continue;
+		}
+
+		dot = DotProduct(modelorg, pplane->normal) - pplane->dist;
+
+		if (((psurf->flags & SURF_PLANEBACK) && (dot < -BACKFACE_EPSILON)) || (!(psurf->flags & SURF_PLANEBACK) && (dot > BACKFACE_EPSILON)))
+		{
+			if (gl_texsort->value)
+			{
+				//R_RenderBrushPoly(psurf);
+			}
+			else
+			{
+				R_DrawSequentialPolyShadow(psurf);
+			}
+		}
+		else
+		{
+			if (psurf->flags & SURF_DRAWTURB)
+			{
+				R_DrawSequentialPolyShadow(psurf);
+			}
+		}
+	}
+
+	qglPopMatrix();
+}
+
+void R_DrawEntitiesOnListShadow(void)
+{
+	int i, j, numvisedicts, parsecount, candraw3dsky;
+
+	if (!r_drawentities->value)
+		return;
+
+	numvisedicts = *cl_numvisedicts;
+	parsecount = (*cl_parsecount) & 63;
+
+	for (i = 0; i < numvisedicts; i++)
+	{
+		(*currententity) = cl_visedicts[i];
+
+		if ((*currententity)->curstate.rendermode != kRenderNormal)
+		{
+			continue;
+		}
+
+		switch ((*currententity)->model->type)
+		{
+		case mod_brush:
+		{
+			R_DrawBrushModelShadow(*currententity);
+			break;
+		}
+
+		default:
+		{
+			break;
+		}
+		}
+	}
+}
+
 void R_RenderShadowScenes(void)
 {
-	if(!r_shadow || !r_shadow->value || !shadow.program)
+	if(!shadow.program || !r_shadow || !r_shadow->value)
 		return;
 
 	if (!shadow_depthmap_high)
@@ -558,6 +646,7 @@ void R_RenderShadowScenes(void)
 
 	qglDepthMask(GL_FALSE);
 	qglEnable(GL_DEPTH_TEST);
+
 	qglEnable(GL_BLEND);
 	qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	qglColor4f(0.1, 0.1, 0.1, 0.5);
@@ -650,6 +739,9 @@ void R_RenderShadowScenes(void)
 
 	R_RecursiveWorldNodeShadow(r_worldmodel->nodes);
 
+	if (r_shadow->value >= 2)
+		R_DrawEntitiesOnListShadow();
+
 	drawshadowscene = false;
 
 	(*currententity) = backup_curentity;
@@ -694,7 +786,7 @@ void R_RenderShadowScenes(void)
 	qglDisable(GL_TEXTURE_GEN_Q);
 
 	qglDepthMask(GL_TRUE);
-	qglDisable(GL_DEPTH_TEST);
+	qglEnable(GL_DEPTH_TEST);
 
 	if (gl_polyoffset->value)
 	{
