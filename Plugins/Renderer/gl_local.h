@@ -202,6 +202,8 @@ extern cvar_t *cl_righthand;
 
 void R_FillAddress(void);
 void R_InstallHook(void);
+
+int GL_SetMode(int a1, int a2, int a3);
 void R_RenderView(void);
 void R_RenderScene(void);
 void R_RenderView_SvEngine(int a1);
@@ -288,6 +290,7 @@ byte *R_GetTexLoaderBuffer(int *bufsize);
 gltexture_t *R_GetCurrentGLTexture(void);
 int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, qboolean ansio);
 int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio);
+int R_LoadTexture(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type);
 
 void GL_UploadDXT(byte *data, int width, int height, qboolean mipmap, qboolean ansio);
 int LoadDDS(const char *filename, byte *buf, int bufSize, int *width, int *height);

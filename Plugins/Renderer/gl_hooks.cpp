@@ -149,6 +149,8 @@
 #define FREEFBOBJECTS_SIG_NEW "\xA1\x2A\x2A\x2A\x2A\x56\x33\xF6\x3B\xC6\x74\x0D\x68\x2A\x2A\x2A\x2A\x6A\x01\xFF\x15"
 #define FREEFBOBJECTS_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\x2A\x2A\x2A\x2A\x6A\x01"
 
+#define GL_SETMODE_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1"
+
 #define VID_UPDATEWINDOWVARS_SIG "\x56\x8B\x74\x24\x08\x8B\xC6\x8B\x08\x89\x0D\x2A\x2A\x2A\x2A\x8B\x50\x04\x89\x15"
 #define VID_UPDATEWINDOWVARS_SIG_NEW "\x55\x8B\xEC\x51\x56\x8B\x75\x08\x8B\xC6\x8B\x08\x89\x0D\x2A\x2A\x2A\x2A\x8B\x50\x04\x89\x15"
 #define VID_UPDATEWINDOWVARS_SIG_SVENGINE "\x8b\xc7\x99\x2B\xC2\xD1\xF8\x03\x2A\x50"
@@ -303,6 +305,9 @@ void R_FillAddress(void)
 		//5953 above only
 		gRefFuncs.FreeFBObjects = (void(*)(void))Search_Pattern_From(GL_EndRendering, FREEFBOBJECTS_SIG_SVENGINE);
 		Sig_FuncNotFound(FreeFBObjects);
+
+		gRefFuncs.GL_SetMode = (int(*)(int,int,int))Search_Pattern_From(FreeFBObjects, GL_SETMODE_SIG_SVENGINE);
+		Sig_FuncNotFound(GL_SetMode);
 
 		gRefFuncs.R_ForceCVars = (void(*)(qboolean))Search_Pattern(R_FORCECVAR_SIG_SVENGINE);
 		Sig_FuncNotFound(R_ForceCVars);
@@ -1165,6 +1170,7 @@ void R_InstallHook(void)
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_CullBox, R_CullBox, (void *&)gRefFuncs.R_CullBox);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_ForceCVars, R_ForceCVars, (void *&)gRefFuncs.R_ForceCVars);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.Mod_PointInLeaf, Mod_PointInLeaf, (void *&)gRefFuncs.Mod_PointInLeaf);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.GL_SetMode, GL_SetMode, (void *&)gRefFuncs.GL_SetMode);
 
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSequentialPoly, R_DrawSequentialPoly, (void *&)gRefFuncs.R_DrawSequentialPoly);
 

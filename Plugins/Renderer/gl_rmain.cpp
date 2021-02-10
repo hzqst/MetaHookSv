@@ -1408,6 +1408,18 @@ void GL_GenerateFBO(void)
 	readframebuffer = drawframebuffer = 0;
 }
 
+int GL_SetMode(int a1, int a2, int a3)
+{
+	int result = gRefFuncs.GL_SetMode(a1, a2, a3);
+
+	if (result == 1)
+	{
+
+	}
+
+	return result;
+}
+
 void GL_Init(void)
 {
 	QGL_Init();
@@ -1474,7 +1486,7 @@ void R_PreRenderView()
 		}
 	}
 
-	Draw_UpdateAnsios();
+	//Draw_UpdateAnsios();
 
 	if (s_BackBufferFBO.s_hBackBufferFBO)
 	{
@@ -1750,8 +1762,8 @@ void R_InitCvars(void)
 
 void R_Init(void)
 {
-	if(gRefFuncs.FreeFBObjects)
-		gRefFuncs.FreeFBObjects();
+	//if(gRefFuncs.FreeFBObjects)
+	//	gRefFuncs.FreeFBObjects();
 
 	R_InitCvars();
 	R_InitTextures();

@@ -179,7 +179,7 @@ void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 	}
 
 	if (!water_normalmap)
-		water_normalmap = R_LoadTextureEx("resource\\tga\\water_normalmap.tga", "resource\\tga\\water_normalmap.tga", NULL, NULL, GLT_SYSTEM, false, false);
+		water_normalmap = R_LoadTexture("resource\\tga\\water_normalmap.tga", "resource\\tga\\water_normalmap.tga", NULL, NULL, GLT_SYSTEM);
 
 	if (!curwater->reflectmap)
 	{

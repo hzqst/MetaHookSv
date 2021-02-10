@@ -83,6 +83,7 @@ typedef struct
 	void (*VID_UpdateWindowVars)(RECT *prc, int x, int y);
 	mleaf_t *(*Mod_PointInLeaf)(vec3_t p, model_t *model);
 	void *(*realloc_SvEngine)(void *, size_t);
+	int (*GL_SetMode)(int a1, int a2, int a3);
 
 	//Engine Studio
 	void (*R_GLStudioDrawPoints)(void);

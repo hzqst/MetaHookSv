@@ -881,6 +881,42 @@ int SaveImageGeneric(const char *filename, int width, int height, byte *data)
 	return TRUE;
 }
 
+int R_LoadTexture(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type)
+{
+	int w, h;
+
+	const char *extension = V_GetFileExtension(filepath);
+
+	if (!extension)
+	{
+		gEngfuncs.Con_Printf("R_LoadTexture: File %s has no extension.\n", filepath);
+		return 0;
+	}
+
+	if (!stricmp(extension, "dds") && gl_s3tc_compression_support)
+	{
+		if (LoadDDS(filepath, texloader_buffer, sizeof(texloader_buffer), &w, &h))
+		{
+			if (width)
+				*width = w;
+			if (height)
+				*height = h;
+			return gRefFuncs.GL_LoadTexture2((char *)name, type, w, h, texloader_buffer, 1, 3, NULL, 0x2703);
+		}
+	}
+	else if (LoadImageGeneric(filepath, texloader_buffer, sizeof(texloader_buffer), &w, &h))
+	{
+		if (width)
+			*width = w;
+		if (height)
+			*height = h;
+		return gRefFuncs.GL_LoadTexture2((char *)name, type, w, h, texloader_buffer, 1, 3, NULL, 0x2703);
+	}
+
+	gEngfuncs.Con_Printf("R_LoadTexture: Cannot load texture %s.\n", filepath);
+	return 0;
+}
+
 int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio)
 {
 	int w, h;

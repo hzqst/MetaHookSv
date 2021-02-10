@@ -148,7 +148,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	{
 		registry->WriteInt("CrashInitializingVideoMode", FALSE);
 
-		if (strcmp(registry->ReadString("EngineDLL", "hw.dll"), "hw.dll"))
+		auto hw = registry->ReadString("EngineDLL", "hw.dll");
+		if (hw[0] && 0 != strcmp(hw, "hw.dll"))
 		{
 			if (registry->ReadInt("EngineD3D", FALSE))
 			{
