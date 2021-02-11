@@ -114,7 +114,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 #endif
 
 	WSAData WSAData;
-	WSAStartup(2, &WSAData);
+	WSAStartup(0x202, &WSAData);
 
 	registry->Init();
 
@@ -122,8 +122,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	Sys_GetExecutableName(szFileName, sizeof(szFileName));
 	char *szExeName = strrchr(szFileName, '\\') + 1;
 
-	if(INVALID_FILE_ATTRIBUTES != GetFileAttributesA("svends.exe") &&
-		INVALID_FILE_ATTRIBUTES != GetFileAttributesA("svencoop.exe"))
+	if(INVALID_FILE_ATTRIBUTES != GetFileAttributesA("svends.exe"))
 		CommandLine()->AppendParm("-game", "svencoop");
 
 	if (stricmp(szExeName, "hl.exe") && CommandLine()->CheckParm("-game") == NULL)
@@ -233,11 +232,16 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			MH_LoadEngine(bUseBlobDLL ? NULL : (HMODULE)hEngine);
 			iResult = engineAPI->Run(hInstance, Sys_GetLongPathName(), CommandLine()->GetCmdLine(), szNewCommandParams, Sys_GetFactoryThis(), Sys_GetFactory(hFileSystem));
 			MH_ExitGame(iResult);
+			MH_Shutdown();
 
 			if (bUseBlobDLL)
+			{
 				FreeBlob(&g_blobfootprintClient);
+			}
 			else
+			{
 				Sys_FreeModule(hEngine);
+			}
 		}
 
 		if (iResult == ENGINE_RESULT_NONE || iResult > ENGINE_RESULT_UNSUPPORTEDVIDEO)
@@ -291,7 +295,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 		g_pFileSystem->Unmount();
 		Sys_FreeModule(hFileSystem);
-		MH_Shutdown();
 
 		if (!bContinue)
 			break;

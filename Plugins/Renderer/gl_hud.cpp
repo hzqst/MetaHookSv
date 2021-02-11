@@ -392,7 +392,7 @@ void R_InitRefHUD(void)
 			gEngfuncs.COM_FreeFile(pp_common2x2_vscode);
 		}
 	}
-	r_hdr = gEngfuncs.pfnRegisterVariable("r_hdr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL | FCVAR_CLIENTDLL);
+	r_hdr = gEngfuncs.pfnRegisterVariable("r_hdr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_blurwidth = gEngfuncs.pfnRegisterVariable("r_hdr_blurwidth", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_exposure = gEngfuncs.pfnRegisterVariable("r_hdr_exposure", "5.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_darkness = gEngfuncs.pfnRegisterVariable("r_hdr_darkness", "3.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);

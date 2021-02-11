@@ -325,7 +325,7 @@ void R_RenderReflectView(void)
 		r_drawentities->value = 0;
 	}
 
-	gRefFuncs.R_RenderScene();
+	R_RenderScene();
 
 	r_drawentities->value = saved_r_drawentities;
 	*cl_waterlevel = saved_cl_waterlevel;
@@ -395,7 +395,7 @@ void R_RenderRefractView(void)
 		r_drawentities->value = 0;
 	}
 
-	gRefFuncs.R_RenderScene();
+	R_RenderScene();
 
 	r_drawentities->value = saved_r_drawentities;
 	*cl_waterlevel = saved_cl_waterlevel;

@@ -255,6 +255,11 @@ namespace CSV
 			}
 		}
 
+		if (csv_file)
+		{
+			g_pFullFileSystem->Close(csv_file);
+			csv_file = NULL;
+		}
 		return row_count;
 	}
 

@@ -245,7 +245,7 @@ void R_DrawTEntitiesOnList(int onlyClientDraw);
 void R_AllocObjects(int nMax);
 void R_AddTEntity(cl_entity_t *pEnt);
 void R_SortTEntities(void);
-
+void GL_FreeFBObjects(void);
 void GL_Init(void);
 void GL_BeginRendering(int *x, int *y, int *width, int *height);
 void GL_EndRendering(void);

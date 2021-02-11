@@ -595,6 +595,7 @@ void CViewport::LoadDictionary(void)
 			Dict->m_pNext = FindDictionary(Dict->m_szNext);
 		}
 	}
+
 }
 
 //KeyBinding Name(jump) -> Key Name(SPACE)

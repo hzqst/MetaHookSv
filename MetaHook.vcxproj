@@ -98,7 +98,7 @@
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(ProjectName).exe" "$(OutDir)..\Build\metahook.exe"</Command>
+      <Command>copy "$(OutDir)$(ProjectName).exe" "$(OutDir)..\Build\svencoop.exe"</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableDpiAwareness>true</EnableDpiAwareness>

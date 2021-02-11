@@ -353,7 +353,7 @@ int GL_AllocTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int
 
 	glt = NULL;
 
-	if (!gltextures && gltextures_SvEngine)
+	if (gltextures_SvEngine)
 		gltextures = *gltextures_SvEngine;
 
 tryagain:
@@ -394,11 +394,21 @@ tryagain:
 	{
 		if (maxgltextures_SvEngine)
 		{
-			if ((*numgltextures) + 1 >= (*maxgltextures_SvEngine))
+			if ((*numgltextures) + 1 > (*maxgltextures_SvEngine))
 			{
 				//realloc just like SvEngine does.
+				int v16 = (*numgltextures) - (*maxgltextures_SvEngine) + 1;
+				if (/*dword_30FC6F4 >= 0 || */(*numgltextures) - (*maxgltextures_SvEngine) < 0)
+				{
+					if (v16 <= 0)
+					{
+						v16 = (*maxgltextures_SvEngine);
+						if (!(*maxgltextures_SvEngine))
+							v16 = 1;
+					}
+				}
 
-				*maxgltextures_SvEngine += 100;
+				*maxgltextures_SvEngine += v16;
 				*gltextures_SvEngine = (gltexture_t *)gRefFuncs.realloc_SvEngine((void *)(*gltextures_SvEngine), (*maxgltextures_SvEngine) * sizeof(gltexture_t));
 				gltextures = *gltextures_SvEngine;
 			}
@@ -434,10 +444,6 @@ tryagain:
 
 int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal, int filter)
 {
-	if(!qglTexParameterf) 
-	{
-		return gRefFuncs.GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iType, pPal, filter);
-	}
 	/*if (!mipmap || textureType != GLT_WORLD)
 	{
 		if(qglTexParameterf)//just in case of crashing when called before initalize QGL

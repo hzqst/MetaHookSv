@@ -114,7 +114,7 @@ void HUD_Init(void)
 	al_enable = gEngfuncs.pfnGetCvarPointer("al_enable");
 	cap_show = gEngfuncs.pfnRegisterVariable("cap_show", "0", FCVAR_CLIENTDLL);
 	cap_netmessage = gEngfuncs.pfnRegisterVariable("cap_netmessage", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	gEngfuncs.pfnAddCommand("cap_version", Cap_Version_f);
+	//gEngfuncs.pfnAddCommand("cap_version", Cap_Version_f);
 
 	if (g_EngineType == ENGINE_SVENGINE)
 	{

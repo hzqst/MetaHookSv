@@ -1433,13 +1433,13 @@ void GL_Shutdown(void)
 {
 	GL_FreeFBO(&s_MSAAFBO);
 	GL_FreeFBO(&s_BackBufferFBO);
-	for(int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
+	for (int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
 		GL_FreeFBO(&s_DownSampleFBO[i]);
-	for(int i = 0; i < LUMIN_BUFFERS; ++i)
+	for (int i = 0; i < LUMIN_BUFFERS; ++i)
 		GL_FreeFBO(&s_LuminFBO[i]);
-	for(int i = 0; i < LUMIN1x1_BUFFERS; ++i)
+	for (int i = 0; i < LUMIN1x1_BUFFERS; ++i)
 		GL_FreeFBO(&s_Lumin1x1FBO[i]);
-	for(int i = 0; i < BLUR_BUFFERS; ++i)
+	for (int i = 0; i < BLUR_BUFFERS; ++i)
 	{
 		GL_FreeFBO(&s_BlurPassFBO[i][0]);
 		GL_FreeFBO(&s_BlurPassFBO[i][1]);
@@ -1485,8 +1485,6 @@ void R_PreRenderView()
 			R_RenderShadowMap();
 		}
 	}
-
-	//Draw_UpdateAnsios();
 
 	if (s_BackBufferFBO.s_hBackBufferFBO)
 	{
@@ -1688,7 +1686,7 @@ void R_InitCvars(void)
 	gl_vsync = gEngfuncs.pfnGetCvarPointer("gl_vsync");
 
 	if (!gl_vsync)
-		gl_vsync = gEngfuncs.pfnRegisterVariable("gl_vsync", "1", FCVAR_ARCHIVE);
+		gl_vsync = gEngfuncs.pfnRegisterVariable("gl_vsync", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	gl_ztrick = gEngfuncs.pfnGetCvarPointer("gl_ztrick");
 
@@ -1739,7 +1737,7 @@ void R_InitCvars(void)
 
 	gl_ansio = gEngfuncs.pfnGetCvarPointer("gl_ansio");
 	if (!gl_ansio)
-		gl_ansio = gEngfuncs.pfnRegisterVariable("gl_ansio", "1", FCVAR_ARCHIVE);
+		gl_ansio = gEngfuncs.pfnRegisterVariable("gl_ansio", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	const char *s_ansio;
 	gl_force_ansio = 0;
@@ -1760,11 +1758,13 @@ void R_InitCvars(void)
 	cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
 }
 
+void GL_FreeFBObjects(void)
+{
+	GL_Shutdown();
+}
+
 void R_Init(void)
 {
-	//if(gRefFuncs.FreeFBObjects)
-	//	gRefFuncs.FreeFBObjects();
-
 	R_InitCvars();
 	R_InitTextures();
 	R_InitShaders();

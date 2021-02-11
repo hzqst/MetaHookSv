@@ -303,10 +303,10 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(Mod_PointInLeaf);
 
 		//5953 above only
-		gRefFuncs.FreeFBObjects = (void(*)(void))Search_Pattern_From(GL_EndRendering, FREEFBOBJECTS_SIG_SVENGINE);
-		Sig_FuncNotFound(FreeFBObjects);
+		gRefFuncs.GL_FreeFBObjects = (void(*)(void))Search_Pattern_From(GL_EndRendering, FREEFBOBJECTS_SIG_SVENGINE);
+		Sig_FuncNotFound(GL_FreeFBObjects);
 
-		gRefFuncs.GL_SetMode = (int(*)(int,int,int))Search_Pattern_From(FreeFBObjects, GL_SETMODE_SIG_SVENGINE);
+		gRefFuncs.GL_SetMode = (int(*)(int,int,int))Search_Pattern_From(GL_FreeFBObjects, GL_SETMODE_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_SetMode);
 
 		gRefFuncs.R_ForceCVars = (void(*)(qboolean))Search_Pattern(R_FORCECVAR_SIG_SVENGINE);
@@ -448,9 +448,8 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(VID_UpdateWindowVars);
 
 		//5953 above only
-		gRefFuncs.FreeFBObjects = (void (*)(void))
-			Search_Pattern_From(GL_EndRendering, FREEFBOBJECTS_SIG_NEW);
-		Sig_FuncNotFound(FreeFBObjects);
+		gRefFuncs.GL_FreeFBObjects = (void (*)(void))Search_Pattern_From(GL_EndRendering, FREEFBOBJECTS_SIG_NEW);
+		Sig_FuncNotFound(GL_FreeFBObjects);
 
 		//Studio Funcs
 
@@ -1170,6 +1169,9 @@ void R_InstallHook(void)
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_CullBox, R_CullBox, (void *&)gRefFuncs.R_CullBox);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_ForceCVars, R_ForceCVars, (void *&)gRefFuncs.R_ForceCVars);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.Mod_PointInLeaf, Mod_PointInLeaf, (void *&)gRefFuncs.Mod_PointInLeaf);
+
+	if(gRefFuncs.GL_FreeFBObjects)
+		g_pMetaHookAPI->InlineHook(gRefFuncs.GL_FreeFBObjects, GL_FreeFBObjects, (void *&)gRefFuncs.GL_FreeFBObjects);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.GL_SetMode, GL_SetMode, (void *&)gRefFuncs.GL_SetMode);
 
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSequentialPoly, R_DrawSequentialPoly, (void *&)gRefFuncs.R_DrawSequentialPoly);

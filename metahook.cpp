@@ -119,6 +119,8 @@ void MH_Init(const char *pszGameName)
 	g_pfnbuild_number = NULL;
 	g_pfnClientDLL_Init = NULL;
 	g_phClientDLL_Init = NULL;
+	g_pfnGetVideoMode = NULL;
+	g_pVideoMode = NULL;
 
 	g_dwEngineBase = 0;
 	g_dwEngineSize = 0;
@@ -717,6 +719,26 @@ DWORD MH_ReadMemory(void *pAddress, BYTE *pData, DWORD dwDataSize)
 	return dwDataSize;
 }
 
+typedef struct
+{
+	int width;
+	int height;
+	int bpp;
+}VideoMode_WindowSize;
+
+class IVideoMode
+{
+public:
+	virtual const char *GetVideoMode();
+	virtual void unk1();
+	virtual void unk2();
+	virtual void unk3();
+	virtual VideoMode_WindowSize *GetWindowSize();
+	virtual void unk5();
+	virtual void unk6();
+	virtual BOOL IsWindowedMode();
+};
+
 DWORD MH_GetVideoMode(int *width, int *height, int *bpp, bool *windowed)
 {
 	static int iSaveMode;
@@ -725,12 +747,29 @@ DWORD MH_GetVideoMode(int *width, int *height, int *bpp, bool *windowed)
 
 	if (g_pfnGetVideoMode && g_pVideoMode && *g_pVideoMode)
 	{
-		g_pfnGetVideoMode(width, height, bpp);
+		IVideoMode *pVideoMode = (IVideoMode *)(*g_pVideoMode);
+
+		auto windowSize = pVideoMode->GetWindowSize();
+
+		if (width)
+			*width = windowSize->width;
+
+		if (height)
+			*height = windowSize->height;
+
+		if (bpp)
+			*bpp = windowSize->bpp;
 
 		if (windowed)
-			*windowed = bSaveWindowed;
+			*windowed = pVideoMode->IsWindowedMode();
 
-		return iSaveMode;
+		if(!strcmp(pVideoMode->GetVideoMode(), "gl"))
+			return VIDEOMODE_OPENGL;
+
+		if (!strcmp(pVideoMode->GetVideoMode(), "d3d"))
+			return VIDEOMODE_D3D;
+
+		return VIDEOMODE_SOFTWARE;
 	}
 
 	if (g_bSaveVideo)

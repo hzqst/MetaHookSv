@@ -220,7 +220,7 @@ void HUD_Init(void)
 
 	R_Init();
 
-	gEngfuncs.pfnAddCommand("r_version", R_Version_f);
+	//gEngfuncs.pfnAddCommand("r_version", R_Version_f);
 }
 
 int HUD_VidInit(void)

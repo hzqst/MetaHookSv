@@ -71,7 +71,7 @@ typedef struct
 	void (*R_BuildLightMap)(msurface_t *psurf, byte *dest, int stride);
 	void *(*Mem_Malloc)(size_t);
 	void (*R_DecalMPoly)(float *v, texture_t *ptexture, msurface_t *psurf, int vertCount);
-	void (*FreeFBObjects)(void);//only above 5953
+	void (*GL_FreeFBObjects)(void);//only above 5953
 	void (*R_MarkLeaves)(void);
 	void (*R_DrawBrushModel)(cl_entity_t *e);
 	float (*GlowBlend)(cl_entity_t *e);
