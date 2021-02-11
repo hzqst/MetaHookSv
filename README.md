@@ -3,15 +3,15 @@ This is a porting of MetaHook (https://github.com/nagist/metahook) for SvEngine 
 
 Plugin porting is in progress as most signatures/patterns for GoldSrc engine are failed for SvEngine.
 
-* You must shutdown and restart the game manually after changing the video setting, or the game may crash.
-
 ## Installation
 
-All pre-compiled binary and required files are in "Build" folder, copy them to "\SteamLibrary\steamapps\common\Sven Co-op\".
+1. All pre-compiled binary and required files are in "Build" folder, copy them to "\SteamLibrary\steamapps\common\Sven Co-op\".
 
-and launch game from "\SteamLibrary\steamapps\common\Sven Co-op\metahook.exe"
+2. Launch game from "\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe"
 
-the SDL2.dll fixes a bug that the original SDL's IME input handler was causing buffer overflow and game crash. you don't need to copy it if you don't have a non-english IME.
+* The new "svencoop.exe" is original called "metahook.exe", you can also run game from "metahook.exe -game svencoop" however it will cause game crash when changing video settings.
+
+* The SDL2.dll fixes a bug that the original SDL's IME input handler was causing buffer overflow and game crash. you don't need to copy it if you don't have a non-english IME.
 
 ## Plugins
 
