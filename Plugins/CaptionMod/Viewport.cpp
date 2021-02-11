@@ -828,12 +828,14 @@ void CViewport::Init(void)
 
 void CViewport::StartSubtitle(CDictionary *dict)
 {
-	m_pSubtitle->StartSubtitle(dict, cl_time);
+	if(cap_enabled->value)
+		m_pSubtitle->StartSubtitle(dict, cl_time);
 }
 
 void CViewport::StartNextSubtitle(CDictionary *dict)
 {
-	m_pSubtitle->StartNextSubtitle(dict);
+	if (cap_enabled->value)
+		m_pSubtitle->StartNextSubtitle(dict);
 }
 
 void CViewport::ActivateClientUI(void)

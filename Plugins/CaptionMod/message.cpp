@@ -504,7 +504,7 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 
 			dict = g_pViewPort->FindDictionaryRegex(str, DICT_NETMESSAGE, result);
 
-			if (cap_show && cap_show->value)
+			if (cap_debug && cap_debug->value)
 			{
 				gEngfuncs.Con_Printf((dict) ? "CaptionMod: NetMessage [%s] found.\n" : "CaptionMod: NetMessage [%s] not found.\n", pTextMessage->pMessage);
 			}
@@ -588,7 +588,7 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 	{
 		dict = g_pViewPort->FindDictionary(pString, DICT_MESSAGE);
 
-		if (cap_show && cap_show->value)
+		if (cap_debug && cap_debug->value)
 		{
 			gEngfuncs.Con_Printf((dict) ? "CaptionMod: TextMessage [%s] found.\n" : "CaptionMod: TextMessage [%s] not found.\n", pString);
 		}
@@ -613,7 +613,7 @@ int CHudMessage::MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
 
 	CDictionary *dict = g_pViewPort->FindDictionary(pString, DICT_MESSAGE);
 
-	if(cap_show && cap_show->value)
+	if(cap_debug && cap_debug->value)
 	{
 		gEngfuncs.Con_Printf((dict) ? "CaptionMod: TextMessage [%s] found.\n" : "CaptionMod: TextMessage [%s] not found.\n", pString);
 	}

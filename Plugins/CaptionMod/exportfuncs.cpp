@@ -14,7 +14,8 @@
 cl_enginefunc_t gEngfuncs;
 
 cvar_t *al_enable = NULL;
-cvar_t *cap_show = NULL;
+cvar_t *cap_debug = NULL;
+cvar_t *cap_enabled = NULL;
 cvar_t *cap_netmessage = NULL;
 
 static CDictionary *m_SentenceDictionary = NULL;
@@ -65,7 +66,7 @@ void SvClient_StartWave(const char *name, float duration)
 
 	CDictionary *Dict = g_pViewPort->FindDictionary(name, DICT_SOUND);
 
-	if (cap_show && cap_show->value)
+	if (cap_debug && cap_debug->value)
 	{
 		gEngfuncs.Con_Printf((Dict) ? "CaptionMod: Sound [%s] found.\n" : "CaptionMod: Sound [%s] not found.\n", name);
 	}
@@ -112,9 +113,10 @@ void HUD_Init(void)
 	g_pViewPort->Init();
 
 	al_enable = gEngfuncs.pfnGetCvarPointer("al_enable");
-	cap_show = gEngfuncs.pfnRegisterVariable("cap_show", "0", FCVAR_CLIENTDLL);
+	cap_debug = gEngfuncs.pfnRegisterVariable("cap_debug", "0", FCVAR_CLIENTDLL);
+	cap_enabled = gEngfuncs.pfnRegisterVariable("cap_enabled", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cap_netmessage = gEngfuncs.pfnRegisterVariable("cap_netmessage", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	//gEngfuncs.pfnAddCommand("cap_version", Cap_Version_f);
+	gEngfuncs.pfnAddCommand("cap_version", Cap_Version_f);
 
 	if (g_EngineType == ENGINE_SVENGINE)
 	{
@@ -179,7 +181,7 @@ void S_StartWave(sfx_t *sfx)
 
 	CDictionary *Dict = g_pViewPort->FindDictionary(name, DICT_SOUND);
 
-	if(cap_show && cap_show->value)
+	if(cap_debug && cap_debug->value)
 	{
 		gEngfuncs.Con_Printf((Dict) ? "CaptionMod: Sound [%s] found.\n" : "CaptionMod: Sound [%s] not found.\n", name);
 	}
@@ -215,7 +217,7 @@ void S_StartSentence(const char *name)
 		Dict = g_pViewPort->FindDictionary(name + 1);
 	}
 
-	if(cap_show && cap_show->value)
+	if(cap_debug && cap_debug->value)
 	{
 		gEngfuncs.Con_Printf((Dict) ? "CaptionMod: SENTENCE [%s] found.\n" : "CaptionMod: SENTENCE [%s] not found.\n", name);
 	}

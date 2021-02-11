@@ -60,6 +60,9 @@ void IPlugins::LoadEngine(void)
 
 void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 {
+	//Get video settings again since W&H might change during initialization.
+	g_iVideoMode = g_pMetaHookAPI->GetVideoMode(&g_iVideoWidth, &g_iVideoHeight, &g_iBPP, &g_bWindowed);
+
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
 
 	pExportFunc->Initialize = Initialize;
@@ -67,6 +70,12 @@ void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_VidInit = HUD_VidInit;
 
 	g_hClientDll = GetModuleHandle("client.dll");
+
+	if (!g_hClientDll)
+	{
+		Sys_ErrorEx("CaptionMod: client.dll not found.");
+	}
+
 	g_dwClientSize = g_pMetaHookAPI->GetModuleSize(g_hClientDll);
 
 	gCapFuncs.GetProcAddress = GetProcAddress;
