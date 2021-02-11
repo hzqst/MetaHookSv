@@ -1431,6 +1431,9 @@ void GL_Init(void)
 
 void GL_Shutdown(void)
 {
+	R_FreeShadow();
+	R_FreeWater();
+
 	GL_FreeFBO(&s_MSAAFBO);
 	GL_FreeFBO(&s_BackBufferFBO);
 	for (int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
@@ -1469,11 +1472,6 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 
 void R_PreRenderView()
 {
-	/*if (r_3dsky_parm.enable && r_3dsky->value)
-	{
-		R_ViewOriginFor3DSky(_3dsky_view);
-	}*/
-
 	if (!r_refdef->onlyClientDraws)
 	{
 		if (water.program && r_water && r_water->value)
@@ -1756,11 +1754,6 @@ void R_InitCvars(void)
 	v_gamma = gEngfuncs.pfnGetCvarPointer("gamma");
 
 	cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
-}
-
-void GL_FreeFBObjects(void)
-{
-	GL_Shutdown();
 }
 
 void R_Init(void)

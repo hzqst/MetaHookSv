@@ -53,6 +53,25 @@ cvar_t *r_shadow_low_texsize = NULL;
 cvar_t *r_shadow_low_distance = NULL;
 cvar_t *r_shadow_low_scale = NULL;
 
+void R_FreeShadow(void)
+{
+	if (shadow_depthmap_high)
+	{
+		GL_DeleteTexture(shadow_depthmap_high);
+		shadow_depthmap_high = NULL;
+	}
+	if (shadow_depthmap_medium)
+	{
+		GL_DeleteTexture(shadow_depthmap_medium);
+		shadow_depthmap_medium = NULL;
+	}
+	if (shadow_depthmap_low)
+	{
+		GL_DeleteTexture(shadow_depthmap_low);
+		shadow_depthmap_low = NULL;
+	}
+}
+
 void R_ClearShadow(void)
 {
 

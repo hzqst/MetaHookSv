@@ -1170,8 +1170,6 @@ void R_InstallHook(void)
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_ForceCVars, R_ForceCVars, (void *&)gRefFuncs.R_ForceCVars);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.Mod_PointInLeaf, Mod_PointInLeaf, (void *&)gRefFuncs.Mod_PointInLeaf);
 
-	if(gRefFuncs.GL_FreeFBObjects)
-		g_pMetaHookAPI->InlineHook(gRefFuncs.GL_FreeFBObjects, GL_FreeFBObjects, (void *&)gRefFuncs.GL_FreeFBObjects);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.GL_SetMode, GL_SetMode, (void *&)gRefFuncs.GL_SetMode);
 
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSequentialPoly, R_DrawSequentialPoly, (void *&)gRefFuncs.R_DrawSequentialPoly);

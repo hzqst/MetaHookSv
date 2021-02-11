@@ -25,6 +25,21 @@ SubtitlePanel::SubtitlePanel(Panel *parent)  : EditablePanel(parent, "Subtitle")
 	vgui::ivgui()->AddTickSignal( GetVPanel() );
 };
 
+SubtitlePanel::~SubtitlePanel()
+{
+	for (int i = 0; i < m_Lines.Count(); ++i)
+	{
+		delete m_Lines[i];
+	}
+	m_Lines.RemoveAll();
+
+	for (int i = 0; i < m_BackLines.Count(); ++i)
+	{
+		delete m_BackLines[i];
+	}
+	m_BackLines.RemoveAll();
+}
+
 void SubtitlePanel::ApplySettings( KeyValues *inResourceData )
 {
 	BaseClass::ApplySettings( inResourceData );

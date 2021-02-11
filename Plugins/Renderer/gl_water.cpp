@@ -35,6 +35,35 @@ cvar_t *r_water_minheight = NULL;
 
 void RotatePointAroundVector(vec3_t dst, const vec3_t dir, const vec3_t point, float degrees);
 
+void R_FreeWater(void)
+{
+	for (int i = 0; i < MAX_WATERS; ++i)
+	{
+		if (waters[i].depthreflmap)
+		{
+			GL_DeleteTexture(waters[i].depthreflmap);
+			waters[i].depthreflmap = 0;
+		}
+		if (waters[i].depthrefrmap)
+		{
+			GL_DeleteTexture(waters[i].depthrefrmap);
+			waters[i].depthrefrmap = 0;
+		}
+		if (waters[i].reflectmap)
+		{
+			GL_DeleteTexture(waters[i].reflectmap);
+			waters[i].reflectmap = 0;
+		}
+		if (waters[i].refractmap)
+		{
+			GL_DeleteTexture(waters[i].refractmap);
+			waters[i].refractmap = 0;
+		}
+		waters[i].reflectmap_ready = false;
+		waters[i].refractmap_ready = false;
+	}
+}
+
 void R_ClearWater(void)
 {
 	for(int i = 0; i < MAX_WATERS - 1; ++i)

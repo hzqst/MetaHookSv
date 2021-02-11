@@ -81,6 +81,7 @@ extern cvar_t *r_water_minheight;
 
 void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color);
 void R_InitWater(void);
+void R_FreeWater(void);
 void R_ClearWater(void);
 void R_RenderWaterView(void);
 void R_EnableClip(qboolean isdrawworld);

@@ -481,7 +481,7 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 
 	// Trim off a leading # if it's there
 
-	if (!strncmp(pString, "__NETMESSAGE__", sizeof("__NETMESSAGE__") - 1))
+	if (!V_strncmp(pString, "__NETMESSAGE__", sizeof("__NETMESSAGE__") - 1))
 	{
 		if (cap_netmessage && cap_netmessage->value)
 		{
@@ -559,14 +559,13 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 					dict->m_pTextMessage->pMessage = (const char *)new char[HUDMESSAGE_MAXLENGTH];
 				}
 
-				std::string sentence;
-				sentence.resize(HUDMESSAGE_MAXLENGTH);
+				char sentence[HUDMESSAGE_MAXLENGTH];
 
-				int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.Base(), (char *)sentence.data(), sentence.length());
+				int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.Base(), (char *)sentence, HUDMESSAGE_MAXLENGTH);
 
-				sentence.resize(finalLength);
+				sentence[finalLength] = 0;
 
-				V_strncpy((char *)dict->m_pTextMessage->pMessage, sentence.data(), HUDMESSAGE_MAXLENGTH - 1);
+				V_strncpy((char *)dict->m_pTextMessage->pMessage, sentence, HUDMESSAGE_MAXLENGTH - 1);
 				((char *)dict->m_pTextMessage->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
 
 				MessageAdd(dict->m_pTextMessage, cl_time, hintMessage, useSlot, m_hFont);

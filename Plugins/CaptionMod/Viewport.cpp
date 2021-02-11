@@ -41,7 +41,14 @@ CViewport::CViewport(void) : Panel(NULL, "CaptionViewport")
 
 CViewport::~CViewport(void)
 {
+	for (int i = 0; i < m_Dictionary.Count(); ++i)
+	{
+		delete m_Dictionary[i];
+	}
 
+	m_Dictionary.RemoveAll();
+
+	delete m_pSubtitle;
 }
 
 CDictionary *CViewport::FindDictionary(const char *szValue)

@@ -372,8 +372,20 @@ void VGUI1_InstallHook(void)
 {
 	g_hVGui1 = GetModuleHandleA("vgui.dll");
 
+	if (!g_hVGui1)
+	{
+		Sys_ErrorEx("vgui.dll not found");
+		return;
+	}
+
 	vftable_TextImage = (void **)GetProcAddress(g_hVGui1, "??_7TextImage@vgui@@6B@");
 	vftable_Color = (void **)GetProcAddress(g_hVGui1, "??_7Color@vgui@@6B@");
 
 	g_pMetaHookAPI->InlineHook(vftable_TextImage[22], vgui_TextImage_paint, (void *&)vgui_TextImage_paint_orig);
+}
+
+void ClientVGUI_Shutdown(void)
+{
+	//if(g_pViewPort)
+	//	delete g_pViewPort;
 }

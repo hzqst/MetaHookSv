@@ -131,6 +131,7 @@ private:
 
 public:
 	SubtitlePanel(Panel *parent);
+	virtual ~SubtitlePanel();
 	void VidInit(void);
 
 public://Subtitle interface

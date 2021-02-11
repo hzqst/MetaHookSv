@@ -1,33 +1,5 @@
 #pragma once
 
-#define MAX_SHADOW_MANAGERS 32
-#define MAX_SHADOW_LIGHTS 256
-#define MAX_SHADOW_TEXSIZE gl_max_texture_size
-
-typedef struct sdlight_s
-{
-	cl_entity_t *followent;
-	vec3_t origin;
-	vec3_t angles;
-	float radius;
-	float fard;
-	vec3_t vforward;
-	vec3_t vright;
-	vec3_t vup;
-	int free;
-	struct sdlight_s *next;
-}shadowlight_t;
-
-typedef struct
-{
-	char affectmodel[64];
-	vec3_t angles;
-	float radius;
-	float fard;
-	float scale;
-	int texsize;
-}shadow_manager_t;
-
 typedef struct
 {
 	int program;
@@ -80,6 +52,7 @@ extern cvar_t *r_shadow_low_distance;
 
 void R_RenderShadowMap(void);
 void R_InitShadow(void);
+void R_FreeShadow(void);
 void R_ClearShadow(void);
 void R_RecursiveWorldNodeShadow(mnode_t *node);
 void R_RenderShadowScenes(void);

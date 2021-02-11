@@ -25,6 +25,7 @@ void IPlugins::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_engines
 
 void IPlugins::Shutdown(void)
 {
+	GL_Shutdown();
 }
 
 void IPlugins::LoadEngine(void)
