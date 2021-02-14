@@ -16,8 +16,6 @@ typedef struct
 }shadow_program_t;
 
 //renderer 
-extern qboolean drawshadowmap;
-extern qboolean drawshadowscene;
 extern vec3_t shadow_light_mins;
 extern vec3_t shadow_light_maxs;
 

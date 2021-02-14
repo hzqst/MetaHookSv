@@ -140,7 +140,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	unsigned char *pSourcePalette;
 	qboolean useProgram = 0;
 
-	if (drawreflect || drawrefract || drawshadowscene)
+	if (drawreflect || drawrefract)
 		return;
 
 	if (fa->texinfo->texture)
@@ -294,9 +294,11 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	if(useProgram)
 	{
 		qglActiveTextureARB(TEXTURE3_SGIS);
+		qglBindTexture(GL_TEXTURE_2D, 0);
 		qglDisable(GL_TEXTURE_2D);
 
 		qglActiveTextureARB(TEXTURE2_SGIS);
+		qglBindTexture(GL_TEXTURE_2D, 0);
 		qglDisable(GL_TEXTURE_2D);
 
 		qglActiveTextureARB(TEXTURE1_SGIS);

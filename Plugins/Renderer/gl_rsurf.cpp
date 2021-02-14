@@ -15,15 +15,13 @@ byte *lightmaps;
 int *gDecalSurfCount;
 msurface_t **gDecalSurfs;
 int *lightmap_textures;
-glRect_t *lightmap_rectchange;
+void *lightmap_rectchange;
 int *lightmap_modified;
 int *c_brush_polys;
 int *d_lightstylevalue;
+dlight_t *cl_dlights;
 
 //renderer
-byte *lightmaps_new;
-int *lightmap_alloc;
-int max_lightmaps;
 qboolean lightmap_updateing;
 
 void R_RecursiveWorldNode(mnode_t *node)
@@ -68,11 +66,17 @@ void R_UploadLightmaps(void)
 	}
 }
 
+void R_AddDynamicLights(msurface_t *surf)
+{
+
+}
+
 void R_RenderDynamicLightmaps(msurface_t *fa)
 {
+	return gRefFuncs.R_RenderDynamicLightmaps(fa);
+
 	byte *base;
 	int maps;
-	glRect_t *theRect;
 	int smax, tmax;
 
 	(*c_brush_polys)++;
@@ -86,40 +90,73 @@ void R_RenderDynamicLightmaps(msurface_t *fa)
 			goto dynamic;
 	}
 
-	if (fa->dlightframe == (*r_framecount) || fa->cached_dlight)
+	//Disable original dlight
+	if (0/*fa->dlightframe == (*r_framecount) || fa->cached_dlight*/)
 	{
 dynamic:
 		if (r_dynamic->value)
 		{
 			lightmap_modified[fa->lightmaptexturenum] = true;
-			theRect = &lightmap_rectchange[fa->lightmaptexturenum];
-
-			if (fa->light_t < theRect->t)
+			if (g_iEngineType == ENGINE_SVENGINE)
 			{
-				if (theRect->h)
-					theRect->h += theRect->t - fa->light_t;
+				glRect_SvEngine_t *theRect = (glRect_SvEngine_t *)((char *)lightmap_rectchange + sizeof(glRect_SvEngine_t) * fa->lightmaptexturenum);
 
-				theRect->t = fa->light_t;
+				if (fa->light_t < theRect->t)
+				{
+					if (theRect->h)
+						theRect->h += theRect->t - fa->light_t;
+
+					theRect->t = fa->light_t;
+				}
+
+				if (fa->light_s < theRect->l)
+				{
+					if (theRect->w)
+						theRect->w += theRect->l - fa->light_s;
+
+					theRect->l = fa->light_s;
+				}
+
+				smax = (fa->extents[0] >> 4) + 1;
+				tmax = (fa->extents[1] >> 4) + 1;
+
+				if ((theRect->w + theRect->l) < (fa->light_s + smax))
+					theRect->w = (fa->light_s - theRect->l) + smax;
+
+				if ((theRect->h + theRect->t) < (fa->light_t + tmax))
+					theRect->h = (fa->light_t - theRect->t) + tmax;
+			}
+			else
+			{
+				glRect_t *theRect = (glRect_t *)((char *)lightmap_rectchange + sizeof(glRect_t) * fa->lightmaptexturenum);
+
+				if (fa->light_t < theRect->t)
+				{
+					if (theRect->h)
+						theRect->h += theRect->t - fa->light_t;
+
+					theRect->t = fa->light_t;
+				}
+
+				if (fa->light_s < theRect->l)
+				{
+					if (theRect->w)
+						theRect->w += theRect->l - fa->light_s;
+
+					theRect->l = fa->light_s;
+				}
+
+				smax = (fa->extents[0] >> 4) + 1;
+				tmax = (fa->extents[1] >> 4) + 1;
+
+				if ((theRect->w + theRect->l) < (fa->light_s + smax))
+					theRect->w = (fa->light_s - theRect->l) + smax;
+
+				if ((theRect->h + theRect->t) < (fa->light_t + tmax))
+					theRect->h = (fa->light_t - theRect->t) + tmax;
 			}
 
-			if (fa->light_s < theRect->l)
-			{
-				if (theRect->w)
-					theRect->w += theRect->l - fa->light_s;
-
-				theRect->l = fa->light_s;
-			}
-
-			smax = (fa->extents[0] >> 4) + 1;
-			tmax = (fa->extents[1] >> 4) + 1;
-
-			if ((theRect->w + theRect->l) < (fa->light_s + smax))
-				theRect->w = (fa->light_s - theRect->l) + smax;
-
-			if ((theRect->h + theRect->t) < (fa->light_t + tmax))
-				theRect->h = (fa->light_t - theRect->t) + tmax;
-
-			base = lightmaps_new + fa->lightmaptexturenum * LIGHTMAP_BYTES * BLOCK_WIDTH * BLOCK_HEIGHT;
+			base = lightmaps + fa->lightmaptexturenum * LIGHTMAP_BYTES * BLOCK_WIDTH * BLOCK_HEIGHT;
 			base += fa->light_t * BLOCK_WIDTH * LIGHTMAP_BYTES + fa->light_s * LIGHTMAP_BYTES;
 			gRefFuncs.R_BuildLightMap(fa, base, BLOCK_WIDTH * LIGHTMAP_BYTES);
 		}
@@ -234,7 +271,7 @@ int R_LightmapAllocBlock(int w, int h, int *x, int *y)
 	int best, best2;
 	int texnum;
 
-	for (texnum = 0; texnum < max_lightmaps; texnum++)
+	for (texnum = 0; texnum < MAX_LIGHTMAPS; texnum++)
 	{
 		best = BLOCK_HEIGHT;
 
@@ -244,11 +281,11 @@ int R_LightmapAllocBlock(int w, int h, int *x, int *y)
 
 			for (j = 0; j < w; j++)
 			{
-				if (lightmap_alloc[texnum * BLOCK_WIDTH + i + j] >= best)
+				if (lightmaps[texnum * BLOCK_WIDTH + i + j] >= best)
 					break;
 
-				if (lightmap_alloc[texnum * BLOCK_WIDTH + i + j] > best2)
-					best2 = lightmap_alloc[texnum * BLOCK_WIDTH + i + j];
+				if (lightmaps[texnum * BLOCK_WIDTH + i + j] > best2)
+					best2 = lightmaps[texnum * BLOCK_WIDTH + i + j];
 			}
 
 			if (j == w)
@@ -262,7 +299,7 @@ int R_LightmapAllocBlock(int w, int h, int *x, int *y)
 			continue;
 
 		for (i = 0; i < w; i++)
-			lightmap_alloc[texnum * BLOCK_WIDTH + (*x) + i] = best + h;
+			lightmaps[texnum * BLOCK_WIDTH + (*x) + i] = best + h;
 
 		return texnum;
 	}
@@ -286,7 +323,7 @@ void GL_CreateSurfaceLightmap(msurface_t *surf)
 	tmax = (surf->extents[1] >> 4) + 1;
 
 	surf->lightmaptexturenum = R_LightmapAllocBlock(smax, tmax, &surf->light_s, &surf->light_t);
-	base = lightmaps_new + surf->lightmaptexturenum * LIGHTMAP_BYTES * BLOCK_WIDTH * BLOCK_HEIGHT;
+	base = lightmaps + surf->lightmaptexturenum * LIGHTMAP_BYTES * BLOCK_WIDTH * BLOCK_HEIGHT;
 	base += (surf->light_t * BLOCK_WIDTH + surf->light_s) * LIGHTMAP_BYTES;
 	gRefFuncs.R_BuildLightMap(surf, base, BLOCK_WIDTH * LIGHTMAP_BYTES);
 }
@@ -300,11 +337,11 @@ void GL_BuildLightmaps(void)
 	int i, j;
 	model_t *m;
 
-	memset(lightmap_alloc, 0, sizeof(int)*BLOCK_WIDTH*max_lightmaps);
+	memset(lightmaps, 0, sizeof(int)*BLOCK_WIDTH*MAX_LIGHTMAPS);
 
 	*r_framecount = 1;
 
-	for (i = 0; i < max_lightmaps; i++)
+	for (i = 0; i < MAX_LIGHTMAPS; i++)
 	{
 		if (!lightmap_textures[i])
 			lightmap_textures[i] = GL_GenTexture();
@@ -333,16 +370,16 @@ void GL_BuildLightmaps(void)
 
 	GL_SelectTexture(TEXTURE1_SGIS);
 
-	for (i = 0; i < max_lightmaps; i++)
+	for (i = 0; i < MAX_LIGHTMAPS; i++)
 	{
-		if (!lightmap_alloc[i * BLOCK_WIDTH + 0])
+		if (!lightmaps[i * BLOCK_WIDTH + 0])
 			break;
 
 		GL_Bind(lightmap_textures[i]);
 		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		qglPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-		qglTexImage2D(GL_TEXTURE_2D, 0, 4, BLOCK_WIDTH, BLOCK_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps_new + i * BLOCK_WIDTH * BLOCK_HEIGHT * LIGHTMAP_BYTES);
+		qglTexImage2D(GL_TEXTURE_2D, 0, 4, BLOCK_WIDTH, BLOCK_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + i * BLOCK_WIDTH * BLOCK_HEIGHT * LIGHTMAP_BYTES);
 	}
 
  	GL_SelectTexture(TEXTURE0_SGIS);

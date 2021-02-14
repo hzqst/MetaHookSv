@@ -132,9 +132,8 @@ extern cvar_t *r_ssao_blur_sharpness;
 
 void R_InitBlur(const char *vs_code, int samples);
 void R_BeginHUDQuad(void);
-
+void R_EndHUDQuad(void);
 void R_BeginFXAA(int w, int h);
-
 int R_DoSSAO(int sampleIndex);
 void R_DoHDR(void);
 void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2);

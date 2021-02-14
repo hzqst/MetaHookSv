@@ -84,6 +84,7 @@ typedef struct
 {
    vec3_t      origin;
    epair_t     *epairs;
+   char		*classname;
 }bspentity_t;
 
 typedef struct
@@ -108,7 +109,7 @@ typedef struct
 	int					iNumDecalTextures;
 
 	int					iNumBSPEntities;
-	bspentity_t			pBSPEntities[4096];
+	bspentity_t			pBSPEntities[MAX_MAP_BSPENTITY];
 }r_worldsurf_t;
 
 #define OFFSET(type, variable) ((const void*)&(((type*)NULL)->variable))
@@ -123,15 +124,13 @@ extern byte *lightmaps;
 extern int *gDecalSurfCount;
 extern msurface_t **gDecalSurfs;
 extern int *lightmap_textures;
-extern glRect_t *lightmap_rectchange;
+extern void *lightmap_rectchange;
 extern int *lightmap_modified;
 extern int *c_brush_polys;
 extern int *d_lightstylevalue;
+extern dlight_t *cl_dlights;
 
 //renderer
-extern byte *lightmaps_new;
-extern int *lightmap_alloc;
-extern int max_lightmaps;
 extern qboolean lightmap_updateing;
 extern model_t *currentmodel;
 extern mvertex_t *currentvertbase;
@@ -141,7 +140,7 @@ extern cvar_t *r_wsurf_replace;
 extern cvar_t *r_wsurf_sky;
 
 void R_ClearBSPEntities(void);
-void R_ParseBSPEntities(void);
+void R_ParseBSPEntities(char *data);
 char *ValueForKey(bspentity_t *ent, char *key);
 void R_LoadBSPEntities(void);
 
@@ -149,5 +148,6 @@ void R_LinkDecalTexture(texture_t *t);
 void R_LoadExtraTextureFile(qboolean loadmap);
 void R_InitDetailTextures(void);
 void R_RenderDynamicLightmaps(msurface_t *fa);
+void R_AddDynamicLights(msurface_t *surf);
 void GL_BuildLightmaps(void);
 void R_DecalMPoly(float *v, texture_t *ptexture, msurface_t *psurf, int vertCount);

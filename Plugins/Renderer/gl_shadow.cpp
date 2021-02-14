@@ -1,8 +1,6 @@
 #include "gl_local.h"
 
 //renderer
-qboolean drawshadowmap;
-qboolean drawshadowscene;
 
 vec3_t shadow_light_mins;
 vec3_t shadow_light_maxs;
@@ -120,17 +118,14 @@ void R_InitShadow(void)
 	r_shadow_angle_y = gEngfuncs.pfnRegisterVariable("r_shadow_angle_yaw", "30", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_angle_r = gEngfuncs.pfnRegisterVariable("r_shadow_angle_roll", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_high_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_high_texsize", "2048", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_high_distance = gEngfuncs.pfnRegisterVariable("r_shadow_high_distance", "512", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_high_scale = gEngfuncs.pfnRegisterVariable("r_shadow_high_scale", "5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_high_distance = gEngfuncs.pfnRegisterVariable("r_shadow_high_distance", "400", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_high_scale = gEngfuncs.pfnRegisterVariable("r_shadow_high_scale", "4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_medium_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_medium_texsize", "2048", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_medium_distance = gEngfuncs.pfnRegisterVariable("r_shadow_medium_distance", "1024", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_medium_scale = gEngfuncs.pfnRegisterVariable("r_shadow_medium_scale", "2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_low_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_low_texsize", "2048", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_low_distance = gEngfuncs.pfnRegisterVariable("r_shadow_low_distance", "4096", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_low_scale = gEngfuncs.pfnRegisterVariable("r_shadow_low_scale", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-
-	drawshadowmap = false;
-	drawshadowscene = false;
 
 	R_ClearShadow();
 }
@@ -208,9 +203,19 @@ void R_RenderShadowMap(void)
 	}
 
 	vec3_t sangles;
-	sangles[0] = r_shadow_angle_p->value;
-	sangles[1] = r_shadow_angle_y->value;
-	sangles[2] = r_shadow_angle_r->value;
+
+	if (r_light_env_enabled && r_light_env_shadow && r_light_env_shadow->value)
+	{
+		sangles[0] = r_light_env_angles[0];
+		sangles[1] = r_light_env_angles[1];
+		sangles[2] = r_light_env_angles[2];
+	}
+	else
+	{
+		sangles[0] = r_shadow_angle_p->value;
+		sangles[1] = r_shadow_angle_y->value;
+		sangles[2] = r_shadow_angle_r->value;
+	}
 
 	if(s_BackBufferFBO.s_hBackBufferFBO)
 	{
@@ -304,8 +309,6 @@ void R_RenderShadowMap(void)
 
 		qglColorMask(0, 0, 0, 0);
 
-		drawshadowmap = true;
-
 		//render start
 
 		cl_entity_t *backup_curentity = (*currententity);
@@ -324,8 +327,6 @@ void R_RenderShadowMap(void)
 			qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, 0, 0, texsizeArray[i], texsizeArray[i], 0);
 		}
 
-		drawshadowmap = false;
-
 		qglColorMask(1, 1, 1, 1);
 	}
 
@@ -339,24 +340,6 @@ void R_RenderShadowMap(void)
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, s_BackBufferFBO.s_hBackBufferDepthTex, 0);
 		R_PopFrameBuffer();
 	}
-}
-
-void R_DrawVertexArray(brushface_t *face);
-
-void R_DrawSequentialPolyShadow(msurface_t *s)
-{
-	glpoly_t *p;
-
-	qglBindBufferARB( GL_ARRAY_BUFFER_ARB, r_wsurf.hVBO );
-	qglEnableClientState(GL_VERTEX_ARRAY);
-	qglVertexPointer(3, GL_FLOAT, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
-
-	p = s->polys;
-	brushface_t *face = &r_wsurf.pFaceBuffer[p->flags];
-	R_DrawVertexArray(face);
-
-	qglDisableClientState(GL_VERTEX_ARRAY);
-	qglBindBufferARB( GL_ARRAY_BUFFER_ARB, 0 );
 }
 
 int R_ShadowLightCullBox(vec3_t mins, vec3_t maxs)
@@ -388,7 +371,7 @@ void R_RecursiveWorldNodeShadow(mnode_t *node)
 	mplane_t *plane;
 	msurface_t *surf, **mark;
 	mleaf_t *pleaf;
-	double dot;
+	float dot;
 
 	if (node->contents == CONTENTS_SOLID)
 		return;
@@ -400,6 +383,10 @@ void R_RecursiveWorldNodeShadow(mnode_t *node)
 		return;
 
 	if (node->contents < 0)
+	{
+		return;
+	}
+	/*if (node->contents < 0)
 	{
 		pleaf = (mleaf_t *)node;
 
@@ -416,7 +403,7 @@ void R_RecursiveWorldNodeShadow(mnode_t *node)
 			while (--c);
 		}
 		return;
-	}
+	}*/
 
 	plane = node->plane;
 
@@ -482,7 +469,7 @@ void R_RecursiveWorldNodeShadow(mnode_t *node)
 				if (!(surf->flags & SURF_DRAWTURB) && !(surf->flags & SURF_DRAWSKY))
 				{
 					if((*currententity)->curstate.rendermode == kRenderNormal)
-						R_DrawSequentialPolyShadow(surf);
+						R_DrawSequentialPoly(surf, 0);
 				}
 			}
 		}
@@ -571,14 +558,14 @@ void R_DrawBrushModelShadow(cl_entity_t *e)
 			}
 			else
 			{
-				R_DrawSequentialPolyShadow(psurf);
+				R_DrawSequentialPoly(psurf, 0);
 			}
 		}
 		else
 		{
 			if (psurf->flags & SURF_DRAWTURB)
 			{
-				R_DrawSequentialPolyShadow(psurf);
+				R_DrawSequentialPoly(psurf, 1);
 			}
 		}
 	}
@@ -648,6 +635,8 @@ void R_RenderShadowScenes(void)
 
 	float mvmatrix[16];
 	float invmvmatrix[16];
+	GLfloat texture1_env;
+	GLfloat texture2_env;
 
 	qglGetFloatv(GL_MODELVIEW_MATRIX, mvmatrix);
 	InvertMatrix(mvmatrix, invmvmatrix);
@@ -710,6 +699,7 @@ void R_RenderShadowScenes(void)
 	
 	//setup texture1
 	GL_EnableMultitexture();
+	qglGetTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, &texture1_env);
 	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	qglEnable(GL_TEXTURE_GEN_S);
 	qglEnable(GL_TEXTURE_GEN_T);
@@ -734,6 +724,7 @@ void R_RenderShadowScenes(void)
 
 	qglActiveTextureARB(TEXTURE2_SGIS);
 	qglEnable(GL_TEXTURE_2D);
+	qglGetTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, &texture2_env);
 	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	qglEnable(GL_TEXTURE_GEN_S);
 	qglEnable(GL_TEXTURE_GEN_T);
@@ -768,14 +759,14 @@ void R_RenderShadowScenes(void)
 	cl_entity_t *backup_curentity = (*currententity);
 	(*currententity) = r_worldentity;
 
-	drawshadowscene = true;
+	drawpolynocolor = true;
 
 	R_RecursiveWorldNodeShadow(r_worldmodel->nodes);
 
 	if (r_shadow->value >= 2)
 		R_DrawEntitiesOnListShadow();
 
-	drawshadowscene = false;
+	drawpolynocolor = false;
 
 	(*currententity) = backup_curentity;
 
@@ -789,6 +780,8 @@ void R_RenderShadowScenes(void)
 	qglMatrixMode(GL_TEXTURE);
 	qglLoadIdentity();
 
+	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texture2_env);
+
 	qglBindTexture(GL_TEXTURE_2D, 0);
 	qglDisable(GL_TEXTURE_GEN_S);
 	qglDisable(GL_TEXTURE_GEN_T);
@@ -801,6 +794,8 @@ void R_RenderShadowScenes(void)
 
 	qglMatrixMode(GL_TEXTURE);
 	qglLoadIdentity();
+
+	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texture1_env);
 
 	qglBindTexture(GL_TEXTURE_2D, 0);
 	qglDisable(GL_TEXTURE_GEN_S);

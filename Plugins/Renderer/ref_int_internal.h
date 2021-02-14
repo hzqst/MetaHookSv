@@ -69,6 +69,7 @@ typedef struct
 	void (*R_AllocObjects)(int nMax);
 	void (*Draw_MiptexTexture)(cachewad_t *wad, byte *data);
 	void (*R_BuildLightMap)(msurface_t *psurf, byte *dest, int stride);
+	void(*R_AddDynamicLights)(msurface_t *psurf);
 	void *(*Mem_Malloc)(size_t);
 	void (*R_DecalMPoly)(float *v, texture_t *ptexture, msurface_t *psurf, int vertCount);
 	void (*GL_FreeFBObjects)(void);//only above 5953
@@ -84,6 +85,7 @@ typedef struct
 	mleaf_t *(*Mod_PointInLeaf)(vec3_t p, model_t *model);
 	void *(*realloc_SvEngine)(void *, size_t);
 	int (*GL_SetMode)(int a1, int a2, int a3);
+	dlight_t *(*CL_AllocDlight)(int key);
 
 	//Engine Studio
 	void (*R_GLStudioDrawPoints)(void);

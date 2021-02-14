@@ -25,6 +25,7 @@ void IPlugins::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_engines
 
 void IPlugins::Shutdown(void)
 {
+	R_Shutdown();
 	GL_Shutdown();
 }
 
@@ -92,7 +93,7 @@ void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 void IPlugins::ExitGame(int iResult)
 {
-	R_Shutdown();
+	
 }
 
 EXPOSE_SINGLE_INTERFACE(IPlugins, IPlugins, METAHOOK_PLUGIN_API_VERSION);

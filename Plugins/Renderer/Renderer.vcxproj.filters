@@ -89,6 +89,9 @@
     <ClCompile Include="..\..\HLSDK\common\interface.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="gl_light.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bspfile.h">
@@ -177,6 +180,9 @@
     </ClInclude>
     <ClInclude Include="ref_int_internal.h">
       <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="gl_light.h">
+      <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

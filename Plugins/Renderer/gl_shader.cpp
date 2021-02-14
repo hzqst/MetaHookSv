@@ -1,17 +1,18 @@
 #include "gl_local.h"
 #include "gl_shader.h"
 
-glshader_t shaders[MAX_SHADERS] = {0};
-int numshaders = 0;
+glshader_t shaders[MAX_SHADERS];
+int numshaders;
 
-void R_InitShaders(void)
+void GL_InitShaders(void)
 {
 	numshaders = 0;
+	memset(shaders, 0, sizeof(shaders));
 }
 
-void R_FreeShaders(void)
+void GL_FreeShaders(void)
 {
-	/*for (int i = 0; i < numshaders; i++)
+	for (int i = 0; i < numshaders; i++)
 	{
 		if(shaders[i].program)
 		{
@@ -21,7 +22,7 @@ void R_FreeShaders(void)
 			qglDeleteObjectARB(shaders[i].fs);
 			qglDeleteProgramsARB(1, (GLuint *)&shaders[i].program);
 		}
-	}*/
+	}
 	numshaders = 0;
 }
 
@@ -46,7 +47,7 @@ GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfil
 {
 	if (numshaders + 1 == MAX_SHADERS)
 	{
-		Sys_ErrorEx("R_CompileShader: max shaders exceeded");
+		Sys_ErrorEx("R_CompileShader: MAX_SHADERS exceeded");
 		return 0;
 	}
 

@@ -138,7 +138,6 @@ void R_Draw3DSkyEntities(void)
 
 			case mod_studio:
 			{
-				R_Setup3DSkyModel();
 				if ((*currententity)->player)
 				{
 					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetCurrentDrawPlayerState(parsecount) );
@@ -170,7 +169,6 @@ void R_Draw3DSkyEntities(void)
 
 					(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
 				}
-				R_Finish3DSkyModel();
 				break;
 			}
 

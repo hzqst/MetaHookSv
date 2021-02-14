@@ -19,7 +19,7 @@ void Sys_ErrorEx(const char *fmt, ...)
 		gEngfuncs.pfnClientCmd("escape\n");
 
 	MessageBox(NULL, msg, "Error", MB_ICONERROR);
-	exit(0);
+	TerminateProcess((HANDLE)(-1), 0);
 }
 
 int Q_stricmp_slash(const char *s1, const char *s2)
@@ -240,26 +240,26 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 void HUD_DrawNormalTriangles(void)
 {
 	gExportfuncs.HUD_DrawNormalTriangles();
+
+	if (!drawreflect && !drawrefract)
+	{
+		R_RenderShadowScenes();
+		R_RenderDLightForEntity(r_worldentity);
+	}
 }
 
 void HUD_DrawTransparentTriangles(void)
 {
-	if (!drawreflect && !drawrefract && !drawshadowmap)
+	if (!drawreflect && !drawrefract)
 	{
 		R_FreeDeadWaters();
-	}
-
-	gExportfuncs.HUD_DrawTransparentTriangles();
-
-	if (!drawreflect && !drawrefract && !drawshadowmap)
-	{
-		R_RenderShadowScenes();
-
 		for (r_water_t *water = waters_active; water; water = water->next)
 		{
 			water->free = true;
 		}
 	}
+
+	gExportfuncs.HUD_DrawTransparentTriangles();
 }
 
 int HUD_Redraw(float time, int intermission)
@@ -341,6 +341,27 @@ int HUD_Redraw(float time, int intermission)
 
 		qglEnable(GL_TEXTURE_2D);
 		qglBindTexture(GL_TEXTURE_2D, cloak_texture);
+
+		qglBegin(GL_QUADS);
+		qglTexCoord2f(0,1);
+		qglVertex3f(0,0,0);
+		qglTexCoord2f(1,1);
+		qglVertex3f(glwidth/2,0,0);
+		qglTexCoord2f(1,0);
+		qglVertex3f(glwidth/2,glheight/2,0);
+		qglTexCoord2f(0,0);
+		qglVertex3f(0,glheight/2,0);
+		qglEnd();
+		qglEnable(GL_ALPHA_TEST);
+	}
+	else if(r_light_debug && r_light_debug->value)
+	{
+		qglDisable(GL_BLEND);
+		qglDisable(GL_ALPHA_TEST);
+		qglColor4f(1,1,1,1);
+
+		qglEnable(GL_TEXTURE_2D);
+		qglBindTexture(GL_TEXTURE_2D, s_DLightFBO.s_hBackBufferTex);
 
 		qglBegin(GL_QUADS);
 		qglTexCoord2f(0,1);
@@ -500,7 +521,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	//InstallHook(studioapi_SetupRenderer);
 	//InstallHook(studioapi_RestoreRenderer);
 
-	R_InitDetailTextures();
+	//R_InitDetailTextures();
 	//Load global extra textures into array
 	R_LoadExtraTextureFile(false);
 	R_LoadStudioTextures(false);

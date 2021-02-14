@@ -394,8 +394,8 @@ void R_InitRefHUD(void)
 	}
 	r_hdr = gEngfuncs.pfnRegisterVariable("r_hdr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_blurwidth = gEngfuncs.pfnRegisterVariable("r_hdr_blurwidth", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_hdr_exposure = gEngfuncs.pfnRegisterVariable("r_hdr_exposure", "5.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_hdr_darkness = gEngfuncs.pfnRegisterVariable("r_hdr_darkness", "3.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_hdr_exposure = gEngfuncs.pfnRegisterVariable("r_hdr_exposure", "5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_hdr_darkness = gEngfuncs.pfnRegisterVariable("r_hdr_darkness", "4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_adaptation = gEngfuncs.pfnRegisterVariable("r_hdr_adaptation", "50.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hudinworld_debug = gEngfuncs.pfnRegisterVariable("r_hudinworld_debug", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_debug = gEngfuncs.pfnRegisterVariable("r_hdr_debug", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -547,11 +547,18 @@ void R_BeginHUDQuad(void)
 	qglDisable(GL_BLEND);
 	qglDisable(GL_DEPTH_TEST);
 	qglDisable(GL_ALPHA_TEST);
-	qglDisable(GL_CULL_FACE);
+	//qglDisable(GL_CULL_FACE);
 	
 	GL_SelectTexture(TEXTURE0_SGIS);
 	qglEnable(GL_TEXTURE_2D);
 	qglColor4f(1, 1, 1, 1);
+}
+
+void R_EndHUDQuad(void)
+{
+	qglEnable(GL_BLEND);
+	qglEnable(GL_DEPTH_TEST);
+	qglEnable(GL_CULL_FACE);
 }
 
 void R_DrawHUDQuad(int w, int h)
@@ -858,6 +865,7 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 	R_DrawHUDQuad(dst->iWidth, dst->iHeight);
 
 	qglActiveTextureARB(TEXTURE2_SGIS);
+	qglBindTexture(GL_TEXTURE_2D, 0);
 	qglDisable(GL_TEXTURE_2D);
 	qglActiveTextureARB(TEXTURE1_SGIS);
 	

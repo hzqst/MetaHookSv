@@ -32,6 +32,7 @@ GLuint readframebuffer;
 
 float scr_fov_value;
 
+mplane_t custom_frustum[4];
 mplane_t *frustum;
 mleaf_t **r_viewleaf, **r_oldviewleaf;
 texture_t *r_notexture_mip;
@@ -96,6 +97,7 @@ FBO_Container_t s_ToneMapFBO;
 FBO_Container_t s_DepthLinearFBO;
 FBO_Container_t s_HBAOCalcFBO;
 FBO_Container_t s_CloakFBO;
+FBO_Container_t s_DLightFBO;
 
 qboolean bDoMSAAFBO = true;
 qboolean bDoScaledFBO = true;
@@ -177,10 +179,6 @@ int R_GetDrawPass(void)
 		return r_draw_reflect;
 	if(drawrefract)
 		return r_draw_refract;
-	if(drawshadowmap)
-		return r_draw_shadow;
-	if(drawshadowscene)
-		return r_draw_shadowscene;
 	if(draw3dsky)
 		return r_draw_3dsky;
 	return r_draw_normal;
@@ -206,9 +204,6 @@ int R_GetSupportExtension(void)
 
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
-	if(drawshadowmap)
-		return false;
-
 	if(draw3dsky)
 		return false;
 
@@ -428,7 +423,7 @@ void R_RenderCurrentEntity(void)
 	{
 	case mod_brush:
 	{
-		R_DrawBrushModel(*currententity);
+		gRefFuncs.R_DrawBrushModel(*currententity);
 		break;
 	}
 	case mod_studio:
@@ -697,6 +692,12 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 void R_DrawBrushModel(cl_entity_t *entity)
 {
 	gRefFuncs.R_DrawBrushModel(entity);
+
+	if (!drawreflect && !drawrefract && !drawdlightsecond)
+	{
+		if(entity->curstate.rendermode == kRenderNormal || entity->curstate.rendermode == kRenderTransAlpha)
+			R_RenderDLightForEntity(entity);
+	}
 }
 
 void R_DrawViewModel(void)
@@ -709,6 +710,52 @@ void R_PreDrawViewModel(void)
 
 void R_PolyBlend(void)
 {
+}
+
+float CalcFov(float fov_x, float width, float height)
+{
+	float a;
+	float x;
+
+	if (fov_x < 1 || fov_x > 179)
+		fov_x = 90;
+
+	x = width / tan(fov_x / 360 * M_PI);
+
+	a = atan(height / x);
+
+	a = a * 360 / M_PI;
+
+	return a;
+}
+
+void R_SetCustomFrustum(float *org, float *vpn2, float *vright2, float *vup2, float fov)
+{
+	//Seems does't work well with SvEngine
+	if (fov == 90)
+	{
+		VectorAdd(vpn2, vright2, custom_frustum[0].normal);
+		VectorSubtract(vpn2, vright2, custom_frustum[1].normal);
+
+		VectorAdd(vpn2, vup2, custom_frustum[2].normal);
+		VectorSubtract(vpn2, vup2, custom_frustum[3].normal);
+	}
+	else
+	{
+		float yfov = CalcFov(fov, glwidth, glheight);
+
+		RotatePointAroundVector(custom_frustum[0].normal, vup2, vpn2, -(90 - fov / 2));
+		RotatePointAroundVector(custom_frustum[1].normal, vup2, vpn2, 90 - fov / 2);
+		RotatePointAroundVector(custom_frustum[2].normal, vright2, vpn2, 90 - yfov / 2);
+		RotatePointAroundVector(custom_frustum[3].normal, vright2, vpn2, -(90 - yfov / 2));
+	}
+
+	for (int i = 0; i < 4; i++)
+	{
+		custom_frustum[i].type = PLANE_ANYZ;
+		custom_frustum[i].dist = DotProduct(org, custom_frustum[i].normal);
+		custom_frustum[i].signbits = SignbitsForPlane(&custom_frustum[i]);
+	}
 }
 
 void R_SetFrustum(void)
@@ -1033,6 +1080,7 @@ void GL_GenerateFBO(void)
 	GL_ClearFBO(&s_DepthLinearFBO);
 	GL_ClearFBO(&s_HBAOCalcFBO);
 	GL_ClearFBO(&s_CloakFBO);
+	GL_ClearFBO(&s_DLightFBO);
 
 	if(!bDoScaledFBO)
 		bDoMSAAFBO = false;
@@ -1172,7 +1220,26 @@ void GL_GenerateFBO(void)
 		s_HBAOCalcFBO.s_hBackBufferTex = R_GLGenColorTextureHBAO(glwidth, glheight);
 		s_HBAOCalcFBO.s_hBackBufferTex2 = R_GLGenColorTextureHBAO(glwidth, glheight);	
 		s_HBAOCalcFBO.iTextureColorFormat = GL_RG16F;
+	}
 
+	s_DLightFBO.iWidth = glwidth;
+	s_DLightFBO.iHeight = glheight;
+
+	if (bDoScaledFBO)
+	{
+		R_GLGenFrameBuffer(&s_DLightFBO);
+		R_GLFrameBufferColorTexture(&s_DLightFBO, iColorInternalFormat, false);
+
+		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			GL_FreeFBO(&s_DLightFBO);
+			gEngfuncs.Con_Printf("DynamicLight FBO rendering disabled due to create error.\n");
+		}
+	}
+	if (!s_DLightFBO.s_hBackBufferTex)
+	{
+		s_DLightFBO.s_hBackBufferTex = R_GLGenTextureColorFormat(glwidth, glheight, iColorInternalFormat);
+		s_DLightFBO.iTextureColorFormat = iColorInternalFormat;
 	}
 
 	int downW, downH;
@@ -1427,12 +1494,12 @@ void GL_Init(void)
 	CheckMultiTextureExtensions();
 
 	GL_GenerateFBO();
+	GL_InitShaders();
 }
 
 void GL_Shutdown(void)
 {
-	R_FreeShadow();
-	R_FreeWater();
+	GL_FreeShaders();
 
 	GL_FreeFBO(&s_MSAAFBO);
 	GL_FreeFBO(&s_BackBufferFBO);
@@ -1482,6 +1549,7 @@ void R_PreRenderView()
 		{
 			R_RenderShadowMap();
 		}
+		r_dlight_present = R_IsDynamicLightPresent();
 	}
 
 	if (s_BackBufferFBO.s_hBackBufferFBO)
@@ -1552,8 +1620,18 @@ void R_RenderView(void)
 	R_PostRenderView();
 }
 
+void R_PreRenderScene(void)
+{
+	if (r_light_dynamic->value)
+	{
+
+	}
+}
+
 void R_RenderScene(void)
 {
+	R_PreRenderScene();
+
 	gRefFuncs.R_RenderScene();
 }
 
@@ -1759,8 +1837,6 @@ void R_InitCvars(void)
 void R_Init(void)
 {
 	R_InitCvars();
-	R_InitTextures();
-	R_InitShaders();
 	R_InitWater();
 	R_InitStudio();
 	R_InitShadow();
@@ -1768,6 +1844,7 @@ void R_Init(void)
 	R_InitRefHUD();
 	R_Init3DSky();
 	R_InitCloak();
+	R_InitLight();
 
 	Draw_Init();
 }
@@ -1782,13 +1859,13 @@ void R_VidInit(void)
 
 void R_Shutdown(void)
 {
-	R_FreeTextures();
-	R_FreeShaders();
+	R_FreeShadow();
+	R_FreeWater();
 }
 
 void R_ForceCVars(qboolean mp)
 {
-	if (drawreflect || drawrefract || drawshadowmap || drawshadowscene)
+	if (drawreflect || drawrefract)
 		return;
 
 	gRefFuncs.R_ForceCVars(mp);

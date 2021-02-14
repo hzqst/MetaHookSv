@@ -31,6 +31,7 @@
 #include "gl_studio.h"
 #include "gl_hud.h"
 #include "gl_shadow.h"
+#include "gl_light.h"
 #include "gl_wsurf.h"
 #include "gl_draw.h"
 #include "gl_3dsky.h"
@@ -132,6 +133,7 @@ extern FBO_Container_t s_ToneMapFBO;
 extern FBO_Container_t s_DepthLinearFBO;
 extern FBO_Container_t s_HBAOCalcFBO;
 extern FBO_Container_t s_CloakFBO;
+extern FBO_Container_t s_DLightFBO;
 
 extern int skytexturenum;
 
@@ -203,7 +205,6 @@ extern cvar_t *cl_righthand;
 void R_FillAddress(void);
 void R_InstallHook(void);
 
-int GL_SetMode(int a1, int a2, int a3);
 void R_RenderView(void);
 void R_RenderScene(void);
 void R_RenderView_SvEngine(int a1);
@@ -218,8 +219,6 @@ void R_VidInit(void);
 void R_Shutdown(void);
 void R_InitTextures(void);
 void R_FreeTextures(void);
-void R_InitShaders(void);
-void R_FreeShaders(void);
 void R_SetupFrame(void);
 void R_SetFrustum(void);
 void R_SetupGL(void);
@@ -232,6 +231,7 @@ void R_DrawSkyChain(msurface_t *s);
 void R_ClearSkyBox(void);
 void R_DrawSkyBox(void);
 void R_DrawEntitiesOnList(void);
+void R_RecursiveWorldNode(mnode_t *node);
 void R_DrawSequentialPoly(msurface_t *s, int face);
 float *R_GetAttachmentPoint(int entity, int attachment);
 void R_DrawBrushModel(cl_entity_t *entity);
@@ -262,14 +262,17 @@ void GL_DisableMultitexture(void);
 void GL_EnableMultitexture(void);
 int GL_LoadTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal);
 int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal, int filter);
+void GL_InitShaders(void);
+void GL_FreeShaders(void);
+int GL_SetMode(int a1, int a2, int a3);
 texture_t *Draw_DecalTexture(int index);
 void Draw_MiptexTexture(cachewad_t *wad, byte *data);
-
 void Draw_UpdateAnsios(void);
 void Draw_Init(void);
 
 void EmitWaterPolys(msurface_t *fa, int direction);
 void MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar);
+void R_SetCustomFrustum(float *org, float *vpn2, float *vright2, float *vup2, float fov);
 float CalcFov(float fov_x, float width, float height);
 int SignbitsForPlane(mplane_t *out);
 void BuildSurfaceDisplayList(msurface_t *fa);
@@ -310,6 +313,7 @@ void R_PopRefDef(void);
 float *R_GetSavedViewOrg(void);
 int R_GetDrawPass(void);
 int R_GetSupportExtension(void);
+
 //void R_LoadRendererEntities(void);
 void GL_FreeTexture(gltexture_t *glt);
 void R_InitRefHUD(void);
@@ -330,3 +334,5 @@ extern int save_refdefstack;
 
 extern double g_flFrameTime;
 extern int last_luminance;
+
+extern mplane_t custom_frustum[4];

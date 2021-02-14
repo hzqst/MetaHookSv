@@ -52,6 +52,11 @@ typedef struct glRect_s
 	unsigned char l, t, w, h;
 }glRect_t;
 
+typedef struct glRect_SvEngine_s
+{
+	unsigned int l, t, w, h;
+}glRect_SvEngine_t;
+
 typedef struct FBO_Container_s
 {
 	GLuint s_hBackBufferFBO;

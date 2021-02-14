@@ -32,39 +32,6 @@ void R_ClearSkyTextures(void)
 		r_wsurf.iSkyTextures[i] = 0;
 }
 
-/*void R_FreeDecalTextures(void)
-{
-	for(int i = 0; i < r_wsurf.iNumDecalTextures; ++i)
-	{
-		texture_t *t = &r_wsurf.DecalTextures[i];
-		if(t->gl_texturenum && t->alternate_anims)
-		{
-			texture_t *link_decal = t->anim_next;
-			if(link_decal)
-			{
-				link_decal->anim_next = NULL;
-			}
-			gltexture_t *glt = (gltexture_t *)t->alternate_anims;
-			GL_FreeTexture(glt);
-		}
-	}
-	R_ClearDecalTextures();
-}*/
-
-void R_InitDetailTextures(void)
-{
-	if(gl_mtexable > 2)
-	{
-		qglActiveTextureARB(TEXTURE2_SGIS);
-		qglEnable(GL_TEXTURE_2D);
-		qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB);
-		qglTexEnvf(GL_TEXTURE_ENV, GL_COMBINE_RGB_ARB, GL_MODULATE);
-		qglTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 2.0);
-		qglDisable(GL_TEXTURE_2D);
-		qglActiveTextureARB(TEXTURE0_SGIS);
-	}
-}
-
 void R_FreeVertexBuffer(void)
 {
 	if (r_wsurf.hVBO)
@@ -516,19 +483,19 @@ void R_VidInitWSurf(void)
 	R_ClearBSPEntities();
 
 	//Load local extra textures into array
-	R_LoadStudioTextures(true);
-	R_LoadExtraTextureFile(true);
+	//R_LoadStudioTextures(true);
+	//R_LoadExtraTextureFile(true);
 
 	//Rebuild MapTextures from both local and global array
-	R_LoadExtraTextures(true);
-	R_LoadExtraTextures(false);
+	//R_LoadExtraTextures(true);
+	//R_LoadExtraTextures(false);
 
 	R_FreeVertexBuffer();
 	R_GenerateVertexBuffer();
 
 	//parse entities data from bsp's entity lump
-	//R_ParseBSPEntities();
-	//R_LoadBSPEntities();
+	R_ParseBSPEntities(r_worldmodel->entities);
+	R_LoadBSPEntities();
 }
 
 void R_DrawPolyFromArray(glpoly_t *p)
@@ -560,7 +527,7 @@ inline void R_BeginVertexArrayNoTexture(void)
 	qglVertexPointer(3, GL_FLOAT, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
 }
 
-void R_BeginVertexArrayTexture(qboolean detail)
+inline void R_BeginVertexArrayTexture(qboolean detail)
 {
 	qglVertexPointer(3, GL_FLOAT, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
 
@@ -620,24 +587,37 @@ inline void R_EndVertexArrayTexture(qboolean detail)
 	qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
+inline bool R_BeginDetailTexture(brushface_t *pFace)
+{
+	if (pFace->maptex && pFace->maptex->detailtex && r_detailtextures->value > 0)
+	{
+		qglActiveTextureARB(TEXTURE2_SGIS);
+		qglEnable(GL_TEXTURE_2D);
+		qglBindTexture(GL_TEXTURE_2D, pFace->maptex->detailtex);
+		qglMatrixMode(GL_TEXTURE);
+		qglLoadIdentity();
+		qglScalef(pFace->maptex->detailscale[0], pFace->maptex->detailscale[1], 1.0f);
+		qglMatrixMode(GL_MODELVIEW);
+
+		return true;
+	}
+
+	return false;
+}
+
 inline void R_EndDetailTexture(void)
 {
-	GL_SelectTexture(TEXTURE2_SGIS);
-	qglMatrixMode(GL_TEXTURE);
-	qglLoadIdentity();
-	qglMatrixMode(GL_MODELVIEW);
+	qglActiveTextureARB(TEXTURE2_SGIS);
 	qglDisable(GL_TEXTURE_2D);
-	GL_SelectTexture(TEXTURE1_SGIS);
+	qglActiveTextureARB(TEXTURE1_SGIS);
 }
 
 void R_DrawScrollingPoly(brushface_t *pFace, float sOffset, qboolean detail)
 {
-	int i;
-
 	brushvertex_t *pVert = &r_wsurf.pVertexBuffer[pFace->start_vertex];
 
 	qglBegin( GL_POLYGON );
-	for(i = 0; i < pFace->num_vertexes; i++, pVert++)
+	for(int i = 0; i < pFace->num_vertexes; i++, pVert++)
 	{
 		qglMultiTexCoord2fARB(TEXTURE0_SGIS, pVert->texcoord[0] + sOffset, pVert->texcoord[1]);
 		qglMultiTexCoord2fARB(TEXTURE1_SGIS, pVert->lightmaptexcoord[0], pVert->lightmaptexcoord[1]);
@@ -650,146 +630,177 @@ void R_DrawScrollingPoly(brushface_t *pFace, float sOffset, qboolean detail)
 
 void R_DrawGLPoly(brushface_t *pFace)
 {
-	int i;
 	brushvertex_t *pVert = &r_wsurf.pVertexBuffer[pFace->start_vertex];
 	qglBegin( GL_POLYGON );
-	for(i = 0; i < pFace->num_vertexes; i++, pVert++)
+	for(int i = 0; i < pFace->num_vertexes; i++, pVert++)
 	{
 		qglVertex3fv(pVert->pos);			
 	}
 	qglEnd();
 }
 
+void DrawGLPoly(msurface_t *psurface)
+{
+	int i;
+	float *v;
+	glpoly_t *p;
+
+	p = psurface->polys;
+
+	qglBegin(GL_POLYGON);
+
+	v = p->verts[0];
+
+	for (i = 0; i < p->numverts; i++, v += VERTEXSIZE)
+	{
+		qglTexCoord2f(v[3], v[4]);
+		qglVertex3fv(v);
+	}
+
+	qglEnd();
+}
+
+void DrawGLPolyScroll(msurface_t *psurface, cl_entity_t *pEntity)
+{
+	int i;
+	float *v, sOffset;
+	glpoly_t *p;
+
+	sOffset = ScrollOffset(psurface, pEntity);
+	p = psurface->polys;
+
+	qglBegin(GL_POLYGON);
+
+	v = p->verts[0];
+
+	for (i = 0; i < p->numverts; i++, v += VERTEXSIZE)
+	{
+		qglTexCoord2f(v[3] + sOffset, v[4]);
+		qglVertex3fv(v);
+	}
+
+	qglEnd();
+}
+
 void R_DrawSequentialPoly(msurface_t *s, int face)
 {
-	if ((*currententity)->curstate.rendermode == kRenderNormal)
+	if (drawdlightsecond)
 	{
-		if (!(s->flags & (SURF_DRAWSKY | SURF_DRAWTURB | SURF_UNDERWATER)) && gl_mtexable)
+		if ((*currententity)->curstate.rendermode == kRenderTransAlpha)
 		{
-			if (!drawreflect && !drawrefract && !drawshadowmap)
-			{
-			}
-
-			return;
+			qglEnable(GL_BLEND);
+			qglBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
 		}
 	}
 
-	return gRefFuncs.R_DrawSequentialPoly(s, face);
-
-	glpoly_t *p;
-	int lightmapnum;
-	texture_t *t;
-	glRect_t *theRect;
-	qboolean detail;
-	qboolean replace;
-	qboolean replacescaled;
-	brushface_t *bface;
-
 	if ((*currententity)->curstate.rendermode == kRenderTransColor)
 	{
-		p = s->polys;
-		bface = &r_wsurf.pFaceBuffer[p->flags];
+		if (!drawpolynocolor && !drawdlightsecond)
+		{
+			auto p = s->polys;
+			auto bface = &r_wsurf.pFaceBuffer[p->flags];
 
-		GL_DisableMultitexture();
-		qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		qglEnable(GL_BLEND);
-		qglDisable(GL_TEXTURE_2D);
+			GL_DisableMultitexture();
+			qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			qglEnable(GL_BLEND);
+			qglDisable(GL_TEXTURE_2D);
 
-		qglEnableClientState(GL_VERTEX_ARRAY);
-		qglBindBufferARB( GL_ARRAY_BUFFER_ARB, r_wsurf.hVBO );
-		R_BeginVertexArrayNoTexture();
+			qglEnableClientState(GL_VERTEX_ARRAY);
+			qglBindBufferARB(GL_ARRAY_BUFFER_ARB, r_wsurf.hVBO);
+			R_BeginVertexArrayNoTexture();
+			R_DrawVertexArray(bface);
+			R_DrawPolyWireFrame(bface, R_DrawVertexArray);
+			qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+			qglDisableClientState(GL_VERTEX_ARRAY);
 
-		R_DrawVertexArray(bface);
-
-		R_DrawPolyWireFrame(bface, R_DrawVertexArray);
-
-		qglBindBufferARB( GL_ARRAY_BUFFER_ARB, 0 );
-		qglDisableClientState(GL_VERTEX_ARRAY);
-
-		qglEnable(GL_TEXTURE_2D);
-		GL_EnableMultitexture();
+			qglEnable(GL_TEXTURE_2D);
+			GL_EnableMultitexture();
+		}
 		return;
 	}
 
 	if (s->flags & SURF_DRAWTURB)
 	{
-		GL_DisableMultitexture();
-		GL_Bind(s->texinfo->texture->gl_texturenum);
-		EmitWaterPolys(s, face);
+		if (!drawdlightsecond && !drawpolynocolor)
+		{
+			GL_DisableMultitexture();
+			GL_Bind(s->texinfo->texture->gl_texturenum);
+			EmitWaterPolys(s, face);
+		}
 		return;
 	}
 
 	if (!(s->flags & (SURF_DRAWSKY | SURF_DRAWTURB | SURF_UNDERWATER)))
 	{
-		R_RenderDynamicLightmaps(s);
-
-		if (gl_mtexable)
+		if (!drawdlightsecond && !drawpolynocolor)
 		{
-			p = s->polys;
-			bface = &r_wsurf.pFaceBuffer[p->flags];
-			t = gRefFuncs.R_TextureAnimation(s);
+			R_RenderDynamicLightmaps(s);
+		}
 
-			detail = false;
-			replace = false;
-			replacescaled = false;
+		if (gl_mtexable && ((*currententity)->curstate.rendermode == kRenderTransAlpha || (*currententity)->curstate.rendermode == kRenderNormal))
+		{
+			auto p = s->polys;
+			auto bface = &r_wsurf.pFaceBuffer[p->flags];
+			auto t = gRefFuncs.R_TextureAnimation(s);
 
-			GL_SelectTexture(TEXTURE0_SGIS);
-			if(bface->maptex && bface->maptex->replacetex && r_wsurf_replace->value > 0)
+			if (!drawpolynocolor)
 			{
-				GL_Bind(bface->maptex->replacetex);
-
-				if(bface->maptex->replacescale[0] != 1 || bface->maptex->replacescale[1] != 1)
-				{
-					replacescaled = true;
-					qglMatrixMode(GL_TEXTURE);
-					qglLoadIdentity();
-					qglScalef(bface->maptex->replacescale[0], bface->maptex->replacescale[1], 1.0f);
-					qglMatrixMode(GL_MODELVIEW);
-				}
-				replace = true;
-			}
-			else
-			{
+				GL_SelectTexture(TEXTURE0_SGIS);
 				GL_Bind(t->gl_texturenum);
+				if (!drawdlightsecond)
+				{
+					qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+				}
+				else
+				{
+					qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+				}
+
+				if ((*currententity)->curstate.rendermode == kRenderTransColor)
+					qglDisable(GL_TEXTURE_2D);
 			}
-			qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-			GL_EnableMultitexture();
-			lightmapnum = s->lightmaptexturenum;
-			GL_Bind( lightmap_textures[lightmapnum] );
-			qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+			auto lightmapnum = s->lightmaptexturenum;
 
-			if(!replace && bface->maptex && bface->maptex->detailtex && r_detailtextures->value > 0)
+			if (!drawdlightsecond && !drawpolynocolor)
 			{
-				GL_SelectTexture(TEXTURE2_SGIS);
-				qglEnable(GL_TEXTURE_2D);
-				GL_Bind(bface->maptex->detailtex);
-				qglMatrixMode(GL_TEXTURE);
-				qglLoadIdentity();
-				qglScalef(bface->maptex->detailscale[0], bface->maptex->detailscale[1], 1.0f);
-				qglMatrixMode(GL_MODELVIEW);
-				detail = true;
+				GL_EnableMultitexture();
+				GL_Bind(lightmap_textures[lightmapnum]);
+				qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 			}
 
 			if (lightmap_modified[lightmapnum])
 			{
 				lightmap_modified[lightmapnum] = 0;
-				theRect = &lightmap_rectchange[lightmapnum];
-				qglTexSubImage2D(GL_TEXTURE_2D, 0, 0, theRect->t, BLOCK_WIDTH, theRect->h, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps_new + (lightmapnum * BLOCK_HEIGHT + theRect->t) * BLOCK_WIDTH * LIGHTMAP_BYTES);
-				theRect->l = BLOCK_WIDTH;
-				theRect->t = BLOCK_HEIGHT;
-				theRect->h = 0;
-				theRect->w = 0;
+				if (g_iEngineType == ENGINE_SVENGINE)
+				{
+					glRect_SvEngine_t *theRect = (glRect_SvEngine_t *)((char *)lightmap_rectchange + sizeof(glRect_SvEngine_t) * lightmapnum);
+					qglTexSubImage2D(GL_TEXTURE_2D, 0, 0, theRect->t, BLOCK_WIDTH, theRect->h, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + (lightmapnum * BLOCK_HEIGHT + theRect->t) * BLOCK_WIDTH * LIGHTMAP_BYTES);
+					theRect->l = BLOCK_WIDTH;
+					theRect->t = BLOCK_HEIGHT;
+					theRect->h = 0;
+					theRect->w = 0;
+				}
+				else
+				{
+					glRect_t *theRect = (glRect_t *)((char *)lightmap_rectchange + sizeof(glRect_t) * lightmapnum);
+					qglTexSubImage2D(GL_TEXTURE_2D, 0, 0, theRect->t, BLOCK_WIDTH, theRect->h, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + (lightmapnum * BLOCK_HEIGHT + theRect->t) * BLOCK_WIDTH * LIGHTMAP_BYTES);
+					theRect->l = BLOCK_WIDTH;
+					theRect->t = BLOCK_HEIGHT;
+					theRect->h = 0;
+					theRect->w = 0;
+				}
 			}
+
+			bool detail = drawpolynocolor ? false : R_BeginDetailTexture(bface);
 
 			if (s->flags & SURF_DRAWTILED)
 			{
-				float sOffset = ScrollOffset(s, *currententity);
+				auto sOffset = ScrollOffset(s, *currententity);
 
 				R_DrawScrollingPoly(bface, sOffset, detail);
 
-				if(detail)
-					R_EndDetailTexture();
+				if(detail) R_EndDetailTexture();
 
 				R_DrawPolyWireFrame(bface, R_DrawGLPoly);
 			}
@@ -797,21 +808,30 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 			{
 				qglEnableClientState(GL_VERTEX_ARRAY);
 				qglBindBufferARB( GL_ARRAY_BUFFER_ARB, r_wsurf.hVBO );
-				R_BeginVertexArrayTexture(detail);
 
-				R_DrawVertexArray(bface);
-
-				if(detail)
-					R_EndDetailTexture();
-				R_EndVertexArrayTexture(detail);
-
-				R_DrawPolyWireFrame(bface, R_DrawVertexArray);
+				if (drawpolynocolor)
+				{
+					R_BeginVertexArrayNoTexture();
+					R_DrawVertexArray(bface);
+				}
+				else
+				{
+					R_BeginVertexArrayTexture(detail);
+					R_DrawVertexArray(bface);
+					if (detail) R_EndDetailTexture();
+					R_EndVertexArrayTexture(detail);
+				}
+				
+				if (!drawpolynocolor && !drawdlightsecond)
+				{
+					R_DrawPolyWireFrame(bface, R_DrawVertexArray);
+				}
 
 				qglBindBufferARB( GL_ARRAY_BUFFER_ARB, 0 );
 				qglDisableClientState(GL_VERTEX_ARRAY);
 			}
 
-			if (!gl_texsort->value && s->pdecals)
+			if (!gl_texsort->value && s->pdecals && !drawpolynocolor)
 			{
 				gDecalSurfs[(*gDecalSurfCount)] = s;
 				(*gDecalSurfCount)++;
@@ -823,15 +843,77 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 					gRefFuncs.R_DrawDecals(true);
 			}
 
-			if(replacescaled)
-			{
-				GL_SelectTexture(TEXTURE0_SGIS);
-				qglMatrixMode(GL_TEXTURE);
-				qglLoadIdentity();
-				qglMatrixMode(GL_MODELVIEW);
-				GL_SelectTexture(TEXTURE1_SGIS);
-			}
 			return;
+		}
+		else
+		{
+			auto p = s->polys;
+			auto t = gRefFuncs.R_TextureAnimation(s);
+
+			if (!drawpolynocolor)
+			{
+				GL_DisableMultitexture();
+				GL_Bind(t->gl_texturenum);
+			}
+
+			if (s->flags & SURF_DRAWTILED)
+			{
+				DrawGLPolyScroll(s, (*currententity));
+			}
+			else
+			{
+				DrawGLPoly(s);
+			}
+
+			if (!gl_texsort->value && s->pdecals && !drawpolynocolor)
+			{
+				gDecalSurfs[(*gDecalSurfCount)] = s;
+				(*gDecalSurfCount)++;
+
+				if ((*gDecalSurfCount) > MAX_DECALSURFS)
+					Sys_ErrorEx("Too many decal surfaces!\n");
+
+				gRefFuncs.R_DrawDecals(false);
+			}
+
+			if (gl_wireframe->value && !drawpolynocolor && !drawdlightsecond)
+			{
+				qglDisable(GL_TEXTURE_2D);
+				qglColor3f(1, 1, 1);
+
+				if (gl_wireframe->value == 2)
+					qglDisable(GL_DEPTH_TEST);
+
+				qglBegin(GL_LINE_LOOP);
+				auto v = p->verts[0];
+				for (int i = 0; i < p->numverts; i++, v += VERTEXSIZE)
+				{
+					qglVertex3fv(v);
+				}
+				qglEnd();
+				qglEnable(GL_TEXTURE_2D);
+
+				if (gl_wireframe->value == 2)
+					qglEnable(GL_DEPTH_TEST);
+			}
+
+			if ((*currententity)->curstate.rendermode == kRenderNormal)
+			{
+				if (!drawpolynocolor && !drawdlightsecond)
+				{
+					GL_Bind(lightmap_textures[s->lightmaptexturenum]);
+					qglEnable(GL_BLEND);
+					qglBegin(GL_POLYGON);
+					auto v = p->verts[0];
+					for (int i = 0; i < p->numverts; i++, v += VERTEXSIZE)
+					{
+						qglTexCoord2f(v[5], v[6]);
+						qglVertex3fv(v);
+					}
+					qglEnd();
+					qglDisable(GL_BLEND);
+				}
+			}
 		}
 		return;
 	}
@@ -862,138 +944,163 @@ void R_ClearBSPEntities(void)
 			delete pFree;
 		}
 		r_wsurf.pBSPEntities[i].epairs = NULL;
+		r_wsurf.pBSPEntities[i].classname = NULL;
+		VectorClear(r_wsurf.pBSPEntities[i].origin);
 	}
 	
 	r_wsurf.iNumBSPEntities = 0;
 }
 
-//From trinity renderer
-void R_ParseBSPEntities(void)
+bspentity_t *current_parse_entity = NULL;
+char com_token[4096];
+
+bool R_ParseBSPEntityKeyValue(const char *classname, const char *keyname, const char *value)
 {
-	return;
-
-	char *pEntData = r_worldmodel->entities;
-
-	if(!pEntData)
-		return;
-
-	int iEntDataSize = strlen(pEntData);
-
-	char *pCurText = pEntData;
-	while(pCurText && pCurText - pEntData < iEntDataSize)
+	if (classname == NULL)
 	{
-		if(r_wsurf.iNumBSPEntities == 4096)
-			break;
+		if (r_wsurf.iNumBSPEntities >= MAX_MAP_BSPENTITY)
+			return false;
 
-		while(1)
-		{
-			if(pCurText[0] == '{')
-				break;
-			
-			if(pCurText - pEntData >= iEntDataSize)
-				break;
-
-			pCurText++;
-		}
-
-		if(pCurText - pEntData >= iEntDataSize)
-			break;
-
-		bspentity_t *pEntity = &r_wsurf.pBSPEntities[r_wsurf.iNumBSPEntities];
+		current_parse_entity = &r_wsurf.pBSPEntities[r_wsurf.iNumBSPEntities];
 		r_wsurf.iNumBSPEntities++;
 
-		while(1)
+		current_parse_entity->classname = NULL;
+		current_parse_entity->epairs = NULL;
+		VectorClear(current_parse_entity->origin);
+	}
+
+	if (current_parse_entity)
+	{
+		auto epairs = new epair_t;
+		auto keynamelen = strlen(keyname);
+		epairs->key = new char[keynamelen + 1];
+		strncpy(epairs->key, keyname, keynamelen);
+		epairs->key[keynamelen] = 0;
+
+		auto valuelen = strlen(value);
+		epairs->value = new char[valuelen + 1];
+		strncpy(epairs->value, value, valuelen);
+		epairs->value[valuelen] = 0;
+
+		if (!strcmp(keyname, "origin"))
 		{
-			// skip to next token
-			while(1)
-			{
-				if(pCurText[0] == '}')
-					break;
-
-				if(pCurText[0] == '"')
-				{
-					pCurText++;
-					break;
-				}
-
-				pCurText++;
-			}
-
-			// end of ent
-			if(pCurText[0] == '}')
-				break;
-
-			epair_t *pEPair = new epair_t;
-			memset(pEPair, 0, sizeof(epair_t));
-
-			if(pEntity->epairs)
-				pEPair->next = pEntity->epairs;
-				
-			pEntity->epairs = pEPair;
-
-			int iLength = 0;
-			char *pTemp = pCurText;
-			while(1)
-			{
-				if(pTemp[0] == '"')
-					break;
-				
-				if(pCurText[0] == '}')
-				{
-					Sys_ErrorEx("R_ParseBSPEntities: failed to parse entity data, bad \"}\" excceeded.\n");
-					return;
-				}
-
-				iLength++;
-				pTemp++;
-			}
-
-			pEPair->key = new char[iLength+1];
-			pEPair->key[iLength] = NULL; // terminator
-
-			memcpy(pEPair->key, pCurText, sizeof(char)*iLength);
-			pCurText += iLength+1;
-
-			// skip to next token
-			while(1)
-			{
-				if(pCurText[0] == '}')
-				{
-					Sys_ErrorEx("R_ParseBSPEntities: failed to parse entity data, bad \"}\" excceeded.\n");
-					return;
-				}
-
-				if(pCurText[0] == '"')
-				{
-					pCurText++;
-					break;
-				}
-
-				pCurText++;
-			}
-
-			iLength = 0;
-			pTemp = pCurText;
-			while(1)
-			{
-				if(pCurText[0] == '}')
-				{
-					Sys_ErrorEx("R_ParseBSPEntities: failed to parse entity data, bad \"}\" excceeded.\n");
-					return;
-				}
-
-				if(pTemp[0] == '"')
-					break;
-				
-				iLength++;
-				pTemp++;
-			}
-
-			pEPair->value = new char[iLength+1];
-			strncpy(pEPair->value, pCurText, sizeof(char)*iLength);
-			pEPair->value[iLength] = NULL;
-			pCurText += iLength+1;
+			sscanf(value, "%f %f %f", &current_parse_entity->origin[0], &current_parse_entity->origin[1], &current_parse_entity->origin[2]);
 		}
+
+		if (!strcmp(keyname, "classname"))
+		{
+			current_parse_entity->classname = epairs->value;
+		}
+
+		epairs->next = current_parse_entity->epairs;
+		current_parse_entity->epairs = epairs;
+
+		return true;
+	}
+
+	return false;
+}
+
+bool R_ParseBSPEntityClassname(char *szInputStream, char *classname)
+{
+	char szKeyName[256];
+
+	// key
+	szInputStream = gEngfuncs.COM_ParseFile(szInputStream, com_token);
+	while (szInputStream && com_token[0] != '}')
+	{
+		strncpy(szKeyName, com_token, sizeof(szKeyName) - 1);
+		szKeyName[sizeof(szKeyName) - 1] = 0;
+
+		szInputStream = gEngfuncs.COM_ParseFile(szInputStream, com_token);
+
+		if (!strcmp(szKeyName, "classname"))
+		{
+			R_ParseBSPEntityKeyValue(NULL, szKeyName, com_token);
+
+			strcpy(classname, com_token);
+
+			return true;
+		}
+
+		if (!szInputStream)
+		{
+			break;
+		}
+
+		szInputStream = gEngfuncs.COM_ParseFile(szInputStream, com_token);
+	}
+
+	return false;
+}
+
+char *R_ParseBSPEntity(char *data)
+{
+	char keyname[256] = { 0 };
+	char classname[256] = { 0 };
+
+	if (R_ParseBSPEntityClassname(data, classname))
+	{
+		while (1)
+		{
+			data = gEngfuncs.COM_ParseFile(data, com_token);
+			if (com_token[0] == '}')
+			{
+				break;
+			}
+			if (!data)
+			{
+				Sys_ErrorEx("R_ParseBSPEntity: EOF without closing brace");
+			}
+
+			strncpy(keyname, com_token, sizeof(keyname) - 1);
+			keyname[sizeof(keyname) - 1] = 0;
+			// Remove tail spaces
+			for (int n = strlen(keyname) - 1; n >= 0 && keyname[n] == ' '; n--)
+			{
+				keyname[n] = 0;
+			}
+
+			data = gEngfuncs.COM_ParseFile(data, com_token);
+			if (!data)
+			{
+				Sys_ErrorEx("R_ParseBSPEntity: EOF without closing brace");
+
+			}
+			if (com_token[0] == '}')
+			{
+				Sys_ErrorEx("R_ParseBSPEntity: closing brace without data");
+			}
+
+			if (!strcmp(classname, com_token))
+			{
+				continue;
+			}
+
+			R_ParseBSPEntityKeyValue(classname, keyname, com_token);
+		}
+	}
+
+	current_parse_entity = NULL;
+
+	return data;
+}
+
+void R_ParseBSPEntities(char *data)
+{
+	while (1)
+	{
+		data = gEngfuncs.COM_ParseFile(data, com_token);
+		if (!data)
+		{
+			break;
+		}
+		if (com_token[0] != '{')
+		{
+			Sys_ErrorEx("R_ParseBSPEntities: found %s when expecting {", com_token);
+			return;
+		}
+		data = R_ParseBSPEntity(data);
 	}
 }
 
@@ -1002,10 +1109,30 @@ void R_LoadBSPEntities(void)
 	for(int i = 0; i < r_wsurf.iNumBSPEntities; i++)
 	{
 		bspentity_t *ent = &r_wsurf.pBSPEntities[i];
-		char *classname = ValueForKey(ent, "classname");
+
+		char *classname = ent->classname;
 
 		if(!classname)
 			continue;
+
+		if (!strcmp(classname, "light_environment"))
+		{
+			char *light = ValueForKey(ent, "_light");
+			if (light)
+			{
+				sscanf(light, "%d %d %d %d", &r_light_env_color[0], &r_light_env_color[1], &r_light_env_color[2], &r_light_env_color[3]);
+
+				r_light_env_enabled = true;
+			}
+			
+			char *angle = ValueForKey(ent, "angles");
+			if (angle)
+			{
+				sscanf(angle, "%f %f %f", &r_light_env_angles[0], &r_light_env_angles[1], &r_light_env_angles[2]);
+				r_light_env_angles[0] += 180;
+				r_light_env_angles[1] += 180;
+			}
+		}
 
 		if(!strcmp(classname, "sky_box"))
 		{
@@ -1022,19 +1149,11 @@ void R_LoadBSPEntities(void)
 		}
 		if(!strcmp(classname, "sky_center"))
 		{
-			char *origin = ValueForKey(ent, "origin");
-			if (origin)
-			{
-				sscanf(origin, "%f %f %f", &r_3dsky_parm.center[0], &r_3dsky_parm.center[1], &r_3dsky_parm.center[2]);
-			}			
+			VectorCopy(ent->origin, r_3dsky_parm.center);
 		}
 		if(!strcmp(classname, "sky_camera"))
 		{
-			char *origin = ValueForKey(ent, "origin");
-			if (origin)
-			{
-				sscanf(origin, "%f %f %f", &r_3dsky_parm.camera[0], &r_3dsky_parm.camera[1], &r_3dsky_parm.camera[2]);
-			}
+			VectorCopy(ent->origin, r_3dsky_parm.camera);
 			r_3dsky_parm.enable = true;
 		}
 	}//end for
