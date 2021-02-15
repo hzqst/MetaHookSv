@@ -451,6 +451,7 @@ void R_DrawCurrentEntity(void)
 						break;
 					}
 				}
+				break;
 			}
 
 			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER);
