@@ -346,6 +346,8 @@ CDictionary::~CDictionary()
 		if(m_pTextMessage->pMessage)
 			delete m_pTextMessage->pMessage;
 		delete m_pTextMessage;
+
+		m_pTextMessage = NULL;
 	}
 }
 

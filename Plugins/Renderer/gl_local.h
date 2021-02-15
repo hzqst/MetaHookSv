@@ -121,8 +121,8 @@ extern qboolean bDoHDR;
 extern qboolean bNoStretchAspect;
 
 extern FBO_Container_t s_MSAAFBO;
+extern FBO_Container_t s_GBufferFBO;
 extern FBO_Container_t s_BackBufferFBO;
-extern FBO_Container_t s_BackBufferFBO2;
 extern FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];
 extern FBO_Container_t s_LuminFBO[LUMIN_BUFFERS];
 extern FBO_Container_t s_Lumin1x1FBO[LUMIN1x1_BUFFERS];
@@ -134,15 +134,20 @@ extern FBO_Container_t s_DepthLinearFBO;
 extern FBO_Container_t s_HBAOCalcFBO;
 extern FBO_Container_t s_CloakFBO;
 extern FBO_Container_t s_DLightFBO;
+extern FBO_Container_t s_ShadowFBO;
+extern FBO_Container_t s_WaterFBO;
 
 extern int skytexturenum;
 
-extern msurface_t *skychain;
-extern msurface_t *waterchain;
+extern msurface_t **skychain;
+extern msurface_t **waterchain;
 
 extern int *gSkyTexNumber;
 extern skybox_t *skymins;
 extern skybox_t *skymaxs;
+
+extern float gldepthmin;
+extern float gldepthmax;
 
 extern cvar_t *r_bmodelinterp;
 extern cvar_t *r_bmodelhighfrac;
@@ -240,7 +245,7 @@ void R_GetSpriteAxes(cl_entity_t *entity, int type, float *vforwrad, float *vrig
 void R_SpriteColor(mcolor24_t *col, cl_entity_t *entity, int renderamt);
 float GlowBlend(cl_entity_t *entity);
 int CL_FxBlend(cl_entity_t *entity);
-void R_RenderCurrentEntity(void);
+void R_DrawCurrentEntity(void);
 void R_DrawTEntitiesOnList(int onlyClientDraw);
 void R_AllocObjects(int nMax);
 void R_AddTEntity(cl_entity_t *pEnt);
@@ -264,7 +269,6 @@ int GL_LoadTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int 
 int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal, int filter);
 void GL_InitShaders(void);
 void GL_FreeShaders(void);
-int GL_SetMode(int a1, int a2, int a3);
 texture_t *Draw_DecalTexture(int index);
 void Draw_MiptexTexture(cachewad_t *wad, byte *data);
 void Draw_UpdateAnsios(void);
@@ -305,6 +309,7 @@ int SaveImageGeneric(const char *filename, int width, int height, byte *data);
 void R_PushFrameBuffer(void);
 void R_PopFrameBuffer(void);
 void R_GLBindFrameBuffer(GLenum target, GLuint framebuffer);
+bool R_CanUseMSAAFrameBuffer(void);
 
 //refdef
 void R_PushRefDef(void);
@@ -314,7 +319,6 @@ float *R_GetSavedViewOrg(void);
 int R_GetDrawPass(void);
 int R_GetSupportExtension(void);
 
-//void R_LoadRendererEntities(void);
 void GL_FreeTexture(gltexture_t *glt);
 void R_InitRefHUD(void);
 void R_PushMatrix(void);
@@ -323,10 +327,6 @@ void R_PopMatrix(void);
 //for screenshot
 byte *R_GetSCRCaptureBuffer(int *bufsize);
 void CL_ScreenShot_f(void);
-
-//player state for StudioDrawPlayer
-entity_state_t *R_GetPlayerState(int index);
-entity_state_t *R_GetCurrentDrawPlayerState(int parsecount);
 
 extern vec3_t save_vieworg[MAX_SAVEREFDEF_STACK];
 extern vec3_t save_viewang[MAX_SAVEREFDEF_STACK];

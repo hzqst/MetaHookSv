@@ -513,12 +513,7 @@ void GL_UploadDXT(byte *data, int width, int height, qboolean mipmap, qboolean a
 
 int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, qboolean ansio)
 {
-	int scaled_width, scaled_height;
-	qboolean rescale;
-	byte *pTexture;
-	int texnum;
-
-	texnum = GL_AllocTexture((char *)identifier, textureType, width, height, mipmap);
+	int texnum = GL_AllocTexture((char *)identifier, textureType, width, height, mipmap);
 
 	if(!texnum)
 		return 0;
@@ -547,8 +542,10 @@ extern cvar_t *r_wsurf_decal;
 texture_t *Draw_DecalTexture(int index)
 {
 	texture_t *t = gRefFuncs.Draw_DecalTexture(index);
+
 	if(index < 0)
 		return t;
+
 	if(t->anim_next && r_wsurf_decal->value)
 		return t->anim_next;
 

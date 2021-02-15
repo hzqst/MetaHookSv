@@ -13,7 +13,7 @@ r_water_t *waters_active;
 
 //shader
 SHADER_DEFINE(water);
-
+SHADER_DEFINE(watergbuffer);
 int water_normalmap;
 
 SHADER_DEFINE(drawdepth);
@@ -97,6 +97,16 @@ void R_InitWater(void)
 	{
 		const char *water_vscode = (const char *)gEngfuncs.COM_LoadFile("resource\\shader\\water_shader.vsh", 5, 0);
 		const char *water_fscode = (const char *)gEngfuncs.COM_LoadFile("resource\\shader\\water_shader.fsh", 5, 0);
+		
+		if (!water_vscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\water_shader.vsh\" not found!");
+		}
+		if (!water_fscode)
+		{
+			Sys_ErrorEx("shader file \"resource\\shader\\water_shader.fsh\" not found!");
+		}
+		
 		if(water_vscode && water_fscode)
 		{
 			water.program = R_CompileShader(water_vscode, water_fscode, "water_shader.vsh", "water_shader.fsh");
@@ -104,7 +114,6 @@ void R_InitWater(void)
 			{
 				SHADER_UNIFORM(water, waterfogcolor, "waterfogcolor");
 				SHADER_UNIFORM(water, eyepos, "eyepos");
-				SHADER_UNIFORM(water, eyedir, "eyedir");
 				SHADER_UNIFORM(water, time, "time");
 				SHADER_UNIFORM(water, fresnel, "fresnel");
 				SHADER_UNIFORM(water, depthfactor, "depthfactor");
@@ -116,14 +125,25 @@ void R_InitWater(void)
 				SHADER_UNIFORM(water, reflectmap, "reflectmap");
 				SHADER_UNIFORM(water, depthrefrmap, "depthrefrmap");
 			}
-		}	
-		if (!water_vscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\water_shader.vsh\" not found!");
-		}
-		if (!water_fscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\water_shader.fsh\" not found!");
+
+			watergbuffer.program = R_CompileShaderEx(water_vscode, water_fscode, 
+				"water_shader.vsh", "water_shader.fsh",
+				"#define GBUFFER_ENABLED", "#define GBUFFER_ENABLED");
+			if (watergbuffer.program)
+			{
+				SHADER_UNIFORM(watergbuffer, waterfogcolor, "waterfogcolor");
+				SHADER_UNIFORM(watergbuffer, eyepos, "eyepos");
+				SHADER_UNIFORM(watergbuffer, time, "time");
+				SHADER_UNIFORM(watergbuffer, fresnel, "fresnel");
+				SHADER_UNIFORM(watergbuffer, depthfactor, "depthfactor");
+				SHADER_UNIFORM(watergbuffer, normfactor, "normfactor");
+				SHADER_UNIFORM(watergbuffer, abovewater, "abovewater");
+
+				SHADER_UNIFORM(watergbuffer, normalmap, "normalmap");
+				SHADER_UNIFORM(watergbuffer, refractmap, "refractmap");
+				SHADER_UNIFORM(watergbuffer, reflectmap, "reflectmap");
+				SHADER_UNIFORM(watergbuffer, depthrefrmap, "depthrefrmap");
+			}
 		}
 
 		gEngfuncs.COM_FreeFile((void *)water_vscode);
@@ -310,11 +330,12 @@ void R_EnableClip(qboolean isdrawworld)
 
 void R_RenderReflectView(void)
 {
-	if (s_BackBufferFBO.s_hBackBufferFBO)
+	if (s_WaterFBO.s_hBackBufferFBO)
 	{
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, curwater->reflectmap, 0);
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, curwater->depthreflmap, 0);
+		qglDrawBuffer(GL_COLOR_ATTACHMENT0);
 	}
 
 	qglClearColor(curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, 1);
@@ -354,7 +375,7 @@ void R_RenderReflectView(void)
 		r_drawentities->value = 0;
 	}
 
-	R_RenderScene();
+	gRefFuncs.R_RenderScene();
 
 	r_drawentities->value = saved_r_drawentities;
 	*cl_waterlevel = saved_cl_waterlevel;
@@ -363,16 +384,10 @@ void R_RenderReflectView(void)
 
 	qglDisable(GL_CLIP_PLANE0);
 
-	if (!s_BackBufferFBO.s_hBackBufferFBO)
+	if (!s_WaterFBO.s_hBackBufferFBO)
 	{
 		qglBindTexture(GL_TEXTURE_2D, curwater->reflectmap);
 		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, curwater->texwidth, curwater->texheight, 0);
-	}
-	else
-	{
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s_BackBufferFBO.s_hBackBufferTex, 0);
-		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, s_BackBufferFBO.s_hBackBufferDepthTex, 0);
 	}
 
 	R_PopRefDef();
@@ -384,11 +399,12 @@ void R_RenderReflectView(void)
 
 void R_RenderRefractView(void)
 {
-	if (s_BackBufferFBO.s_hBackBufferFBO)
+	if (s_WaterFBO.s_hBackBufferFBO)
 	{
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, curwater->refractmap, 0);
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, curwater->depthrefrmap, 0);
+		qglDrawBuffer(GL_COLOR_ATTACHMENT0);
 	}
 
 	qglClearColor(curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, 1);
@@ -413,7 +429,7 @@ void R_RenderRefractView(void)
 	//mleaf_t *saved_oldviewleaf = *r_oldviewleaf;
 	//*r_oldviewleaf = NULL;
 	saved_cl_waterlevel = *cl_waterlevel;
-	//*cl_waterlevel = 0;
+	*cl_waterlevel = 0;
 	auto saved_r_drawentities = r_drawentities->value;
 	if (r_water->value >= 2)
 	{
@@ -424,7 +440,7 @@ void R_RenderRefractView(void)
 		r_drawentities->value = 0;
 	}
 
-	R_RenderScene();
+	gRefFuncs.R_RenderScene();
 
 	r_drawentities->value = saved_r_drawentities;
 	*cl_waterlevel = saved_cl_waterlevel;
@@ -433,19 +449,13 @@ void R_RenderRefractView(void)
 
 	qglDisable(GL_CLIP_PLANE0);
 
-	if (!s_BackBufferFBO.s_hBackBufferFBO)
+	if (!s_WaterFBO.s_hBackBufferFBO)
 	{
 		qglBindTexture(GL_TEXTURE_2D, curwater->refractmap);
 		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, curwater->texwidth, curwater->texheight, 0);
 
 		qglBindTexture(GL_TEXTURE_2D, curwater->depthrefrmap);
 		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 0, 0, curwater->texwidth, curwater->texheight, 0);
-	}
-	else
-	{
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s_BackBufferFBO.s_hBackBufferTex, 0);
-		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, s_BackBufferFBO.s_hBackBufferDepthTex, 0);
 	}
 
 	R_PopRefDef();

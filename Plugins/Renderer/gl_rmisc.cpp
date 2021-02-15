@@ -180,7 +180,7 @@ void R_NewMap(void)
 
 mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
 {
-	if (drawreflect && model == r_worldmodel && 0  == VectorCompare(p, r_refdef->vieworg))
+	if (drawreflect && model == r_worldmodel && 0 == VectorCompare(p, r_refdef->vieworg))
 	{
 		return gRefFuncs.Mod_PointInLeaf(water_view, model);
 	}

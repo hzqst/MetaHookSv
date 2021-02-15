@@ -19,6 +19,15 @@
 #define MAX_MODELS 512
 #define COLINEAR_EPSILON 0.001
 
+#define FDECAL_PERMANENT			0x01		// This decal should not be removed in favor of any new decals
+#define FDECAL_REFERENCE			0x02		// This is a decal that's been moved from another level
+#define FDECAL_CUSTOM               0x04        // This is a custom clan logo and should not be saved/restored
+#define FDECAL_HFLIP				0x08		// Flip horizontal (U/S) axis
+#define FDECAL_VFLIP				0x10		// Flip vertical (V/T) axis
+#define FDECAL_CLIPTEST				0x20		// Decal needs to be clip-tested
+#define FDECAL_NOCLIP				0x40		// Decal is not clipped by containing polygon
+
+
 typedef struct brushvertex_s
 {
 	vec3_t	pos;
@@ -121,19 +130,17 @@ void R_VidInitWSurf(void);
 
 //engine
 extern byte *lightmaps;
-extern int *gDecalSurfCount;
-extern msurface_t **gDecalSurfs;
 extern int *lightmap_textures;
 extern void *lightmap_rectchange;
 extern int *lightmap_modified;
 extern int *c_brush_polys;
 extern int *d_lightstylevalue;
 extern dlight_t *cl_dlights;
-
-//renderer
-extern qboolean lightmap_updateing;
-extern model_t *currentmodel;
-extern mvertex_t *currentvertbase;
+extern int *r_dlightactive;
+extern int *gDecalSurfCount;
+extern msurface_t **gDecalSurfs;
+extern decal_t *gDecalPool;
+extern decalcache_t *gDecalCache;
 
 //cvar
 extern cvar_t *r_wsurf_replace;
@@ -149,5 +156,6 @@ void R_LoadExtraTextureFile(qboolean loadmap);
 void R_InitDetailTextures(void);
 void R_RenderDynamicLightmaps(msurface_t *fa);
 void R_AddDynamicLights(msurface_t *surf);
-void GL_BuildLightmaps(void);
+void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride);
 void R_DecalMPoly(float *v, texture_t *ptexture, msurface_t *psurf, int vertCount);
+void R_DrawDecals(qboolean bMultitexture);

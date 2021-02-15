@@ -498,11 +498,6 @@ void R_VidInitWSurf(void)
 	R_LoadBSPEntities();
 }
 
-void R_DrawPolyFromArray(glpoly_t *p)
-{
-	qglDrawArrays(GL_TRIANGLES, r_wsurf.pFaceBuffer[p->flags].start_vertex, r_wsurf.pFaceBuffer[p->flags].num_vertexes );
-}
-
 float ScrollOffset(msurface_t *psurface, cl_entity_t *pEntity)
 {
 	float speed, sOffset;
@@ -524,11 +519,13 @@ float ScrollOffset(msurface_t *psurface, cl_entity_t *pEntity)
 
 inline void R_BeginVertexArrayNoTexture(void)
 {
+	qglNormalPointer(GL_FLOAT, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
 	qglVertexPointer(3, GL_FLOAT, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
 }
 
 inline void R_BeginVertexArrayTexture(qboolean detail)
 {
+	qglNormalPointer(GL_FLOAT, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
 	qglVertexPointer(3, GL_FLOAT, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
 
 	qglClientActiveTextureARB(GL_TEXTURE0_ARB);
@@ -623,7 +620,8 @@ void R_DrawScrollingPoly(brushface_t *pFace, float sOffset, qboolean detail)
 		qglMultiTexCoord2fARB(TEXTURE1_SGIS, pVert->lightmaptexcoord[0], pVert->lightmaptexcoord[1]);
 		if(detail)
 			qglMultiTexCoord2fARB(TEXTURE2_SGIS, pVert->detailtexcoord[0] + sOffset, pVert->detailtexcoord[1]);
-		qglVertex3fv(pVert->pos);			
+		qglNormal3fv(pVert->normal);
+		qglVertex3fv(pVert->pos);
 	}
 	qglEnd();
 }
@@ -634,7 +632,8 @@ void R_DrawGLPoly(brushface_t *pFace)
 	qglBegin( GL_POLYGON );
 	for(int i = 0; i < pFace->num_vertexes; i++, pVert++)
 	{
-		qglVertex3fv(pVert->pos);			
+		qglNormal3fv(pVert->normal);
+		qglVertex3fv(pVert->pos);
 	}
 	qglEnd();
 }
@@ -682,59 +681,438 @@ void DrawGLPolyScroll(msurface_t *psurface, cl_entity_t *pEntity)
 	qglEnd();
 }
 
-void R_DrawSequentialPoly(msurface_t *s, int face)
+// Generate lighting coordinates at each vertex for decal vertices v[] on surface psurf
+void R_DecalVertsLight(float *v, msurface_t *psurf, int vertCount)
 {
-	if (drawdlightsecond)
+	int j;
+	float s, t;
+
+	for (j = 0; j < vertCount; j++, v += VERTEXSIZE)
 	{
-		if ((*currententity)->curstate.rendermode == kRenderTransAlpha)
+		s = DotProduct(v, psurf->texinfo->vecs[0]) + psurf->texinfo->vecs[0][3];
+		s -= psurf->texturemins[0];
+		s += psurf->light_s * 16;
+		s += 8;
+		s /= BLOCK_WIDTH * 16;
+
+		t = DotProduct(v, psurf->texinfo->vecs[1]) + psurf->texinfo->vecs[1][3];
+		t -= psurf->texturemins[1];
+		t += psurf->light_t * 16;
+		t += 8;
+		t /= BLOCK_HEIGHT * 16;
+
+		v[5] = s;
+		v[6] = t;
+	}
+}
+
+// Quick and dirty sutherland Hodgman clipper
+// Clip polygon to decal in texture space
+// JAY: This code is lame, change it later.  It does way too much work per frame
+// It can be made to recursively call the clipping code and only copy the vertex list once
+int Inside(float *vert, int edge)
+{
+	switch (edge) {
+	case 0:		// left
+		if (vert[3] > 0.0)
+			return 1;
+		return 0;
+	case 1:		// right
+		if (vert[3] < 1.0)
+			return 1;
+		return 0;
+
+	case 2:		// top
+		if (vert[4] > 0.0)
+			return 1;
+		return 0;
+
+	case 3:
+		if (vert[4] < 1.0)
+			return 1;
+		return 0;
+	}
+	return 0;
+}
+
+
+void Intersect(float *one, float *two, int edge, float *out)
+{
+	float t;
+
+	// t is the parameter of the line between one and two clipped to the edge
+	// or the fraction of the clipped point between one & two
+	// vert[3] is u
+	// vert[4] is v
+	// vert[0], vert[1], vert[2] is X, Y, Z
+	if (edge < 2) {
+		if (edge == 0) {	// left
+			t = ((one[3] - 0) / (one[3] - two[3]));
+			out[3] = 0;
+		}
+		else {				// right
+			t = ((one[3] - 1) / (one[3] - two[3]));
+			out[3] = 1;
+		}
+		out[4] = one[4] + (two[4] - one[4]) * t;
+	}
+	else {
+		if (edge == 2) {	// top
+			t = ((one[4] - 0) / (one[4] - two[4]));
+			out[4] = 0;
+		}
+		else {				// bottom
+			t = ((one[4] - 1) / (one[4] - two[4]));
+			out[4] = 1;
+		}
+		out[3] = one[3] + (two[3] - one[3]) * t;
+	}
+	out[0] = one[0] + (two[0] - one[0]) * t;
+	out[1] = one[1] + (two[1] - one[1]) * t;
+	out[2] = one[2] + (two[2] - one[2]) * t;
+}
+
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+// Input  : *vert - 
+//			vertCount - 
+//			*out - 
+//			outSize - 
+//			edge - 
+// Output : int
+//-----------------------------------------------------------------------------
+int SHClip(float *vert, int vertCount, float *out, int edge)
+{
+	int		j, outCount;
+	float	*s, *p;
+
+	outCount = 0;
+
+	s = &vert[(vertCount - 1) * VERTEXSIZE];
+	for (j = 0; j < vertCount; j++) {
+		p = &vert[j * VERTEXSIZE];
+		if (Inside(p, edge)) {
+			if (Inside(s, edge)) {
+				// Add a vertex and advance out to next vertex
+				memcpy(out, p, sizeof(float)*VERTEXSIZE);
+				outCount++;
+				out += VERTEXSIZE;
+			}
+			else {
+				Intersect(s, p, edge, out);
+				out += VERTEXSIZE;
+				outCount++;
+				memcpy(out, p, sizeof(float)*VERTEXSIZE);
+				outCount++;
+				out += VERTEXSIZE;
+			}
+		}
+		else {
+			if (Inside(s, edge)) {
+				Intersect(p, s, edge, out);
+				out += VERTEXSIZE;
+				outCount++;
+			}
+		}
+
+		s = p;
+	}
+
+	return outCount;
+}
+
+#define MAX_DECALCLIPVERT		32
+static float vert[MAX_DECALCLIPVERT][VERTEXSIZE];
+static float outvert[MAX_DECALCLIPVERT][VERTEXSIZE];
+//-----------------------------------------------------------------------------
+// Generate clipped vertex list for decal pdecal projected onto polygon psurf
+//-----------------------------------------------------------------------------
+float *R_DecalVertsClip(
+	float *poutVerts,
+	decal_t *pdecal,
+	msurface_t *psurf,
+	texture_t *ptexture,
+	int *pvertCount)
+{
+	float *v;
+	float scalex, scaley;
+	int j, outCount;
+
+	scalex = (psurf->texinfo->texture->width * pdecal->scale) / (float)ptexture->width;
+	scaley = (psurf->texinfo->texture->height * pdecal->scale) / (float)ptexture->width;
+
+	if (poutVerts == NULL)
+		poutVerts = (float *)&vert[0];
+
+	v = psurf->polys->verts[0];
+
+	for (j = 0; j < psurf->polys->numverts; j++, v += VERTEXSIZE)
+	{
+		VectorCopy(v, vert[j]);
+		vert[j][3] = (v[3] - pdecal->dx) * scalex;
+		vert[j][4] = (v[4] - pdecal->dy) * scaley;
+
+		if (pdecal->flags & FDECAL_HFLIP)
+			vert[j][3] = 1 - vert[j][3];
+
+		if (pdecal->flags & FDECAL_VFLIP)
+			vert[j][4] = 1 - vert[j][4];
+	}
+
+	// Clip the polygon to the decal texture space
+	outCount = SHClip((float *)&vert[0], psurf->polys->numverts, (float *)&outvert[0], 0);
+	outCount = SHClip((float *)&outvert[0], outCount, (float *)&vert[0], 1);
+	outCount = SHClip((float *)&vert[0], outCount, (float *)&outvert[0], 2);
+	outCount = SHClip((float *)&outvert[0], outCount, poutVerts, 3);
+
+	if (outCount)
+	{
+		if (pdecal->flags & FDECAL_CLIPTEST)
 		{
-			qglEnable(GL_BLEND);
-			qglBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
+			pdecal->flags &= ~FDECAL_CLIPTEST;	// We're doing the test
+
+			// If there are exactly 4 verts and they are all 0,1 tex coords, then we've got an unclipped decal
+			// A more precise test would be to calculate the texture area and make sure it's one, but this
+			// should work as well.
+			if (outCount == 4)
+			{
+				int clipped = 0;
+				float s, t;
+
+				v = poutVerts;
+				for (j = 0; j < outCount && !clipped; j++, v += VERTEXSIZE)
+				{
+					s = v[3];
+					t = v[4];
+
+					if ((s != 0.0 && s != 1.0) || (t != 0.0 && t != 1.0))
+						clipped = 1;
+				}
+
+				// We didn't need to clip this decal, it's a quad covering the full texture space, optimize
+				// subsequent frames.
+				if (!clipped)
+					pdecal->flags |= FDECAL_NOCLIP;
+			}
 		}
 	}
 
+	*pvertCount = outCount;
+	return poutVerts;
+}
+
+static int R_DecalIndex(decal_t *pdecal)
+{
+	return (pdecal - gDecalPool);
+}
+
+static int R_DecalCacheIndex(int index)
+{
+	return index & (256 - 1);
+}
+
+
+static decalcache_t *R_DecalCacheSlot(int decalIndex)
+{
+	int				cacheIndex;
+
+	cacheIndex = R_DecalCacheIndex(decalIndex);	// Find the cache slot
+
+	return gDecalCache + cacheIndex;
+}
+
+static float *R_DecalVertsNoclip(decal_t *pdecal, msurface_t *psurf, texture_t *ptexture, qboolean bMultitexture)
+{
+	float			*vlist;
+	decalcache_t	*pCache;
+	int				decalIndex;
+	int				outCount;
+
+	decalIndex = R_DecalIndex(pdecal);
+	pCache = R_DecalCacheSlot(decalIndex);
+
+	// Is the decal cached?
+	if (pCache->decalIndex == decalIndex)
+	{
+		return (float *)&pCache->decalVert[0];
+	}
+
+	pCache->decalIndex = decalIndex;
+
+	vlist = pCache->decalVert[0];
+
+	// Use the old code for now, and just cache them
+	vlist = R_DecalVertsClip(vlist, pdecal, psurf, ptexture, &outCount);
+
+	R_DecalVertsLight(vlist, psurf, 4);
+
+	return vlist;
+}
+
+static void R_DecalPoly(float *v, texture_t *ptexture, msurface_t *psurf, int vertCount)
+{
+	auto p = psurf->polys;
+	auto bface = &r_wsurf.pFaceBuffer[p->flags];
+
+	R_SetRenderGBufferDecal();
+	R_SetGBufferRenderState(1);
+
+	GL_Bind(ptexture->gl_texturenum);
+	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	qglBegin(GL_POLYGON);
+	for (int j = 0; j < vertCount; j++, v += VERTEXSIZE)
+	{
+		qglTexCoord2f(v[3], v[4]);
+		qglVertex3fv(v);
+	}
+	qglEnd();
+
+	R_SetRenderGBufferAll();
+}
+
+static void R_DecalMPoly(float *v, texture_t *ptexture, msurface_t *psurf, int vertCount)
+{
+	auto p = psurf->polys;
+	auto bface = &r_wsurf.pFaceBuffer[p->flags];
+	auto pVert = &r_wsurf.pVertexBuffer[bface->start_vertex];
+
+	R_SetRenderGBufferDecal();
+	R_SetGBufferRenderState(2);
+
+	GL_SelectTexture(TEXTURE0_SGIS);
+	GL_Bind(ptexture->gl_texturenum);
+	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	GL_EnableMultitexture();
+	GL_Bind(lightmap_textures[psurf->lightmaptexturenum]);
+	qglBegin(GL_POLYGON);
+	for (int j = 0; j < vertCount; j++, v += VERTEXSIZE)
+	{
+		qglMultiTexCoord2fARB(TEXTURE0_SGIS, v[3], v[4]);
+		qglMultiTexCoord2fARB(TEXTURE1_SGIS, v[5], v[6]);
+		qglNormal3fv(pVert->normal);
+		qglVertex3fv(v);
+	}
+	qglEnd();
+
+	R_SetRenderGBufferAll();
+}
+
+void R_DrawDecals(qboolean bMultitexture)
+{
+	decal_t *plist;
+	int i, outCount;
+	texture_t *ptexture;
+	msurface_t *psurf;
+	float *v;
+
+	if (!(*gDecalSurfCount))
+		return;
+
+	qglEnable(GL_BLEND);
+	qglEnable(GL_ALPHA_TEST);
+	qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	qglDepthMask(0);
+
+	if (gl_polyoffset->value)
+	{
+		qglEnable(GL_POLYGON_OFFSET_FILL);
+
+		if (gl_ztrick && gl_ztrick->value)
+			qglPolygonOffset(1, gl_polyoffset->value);
+		else
+			qglPolygonOffset(-1, -gl_polyoffset->value);
+	}
+
+	for (i = 0; i < (*gDecalSurfCount); i++)
+	{
+		psurf = gDecalSurfs[i];
+		plist = psurf->pdecals;
+
+		while (plist)
+		{
+			ptexture = Draw_DecalTexture(plist->texture);
+			if (plist->flags & FDECAL_NOCLIP)
+			{
+				v = R_DecalVertsNoclip(plist, psurf, ptexture, bMultitexture);
+				outCount = 4;
+			}
+			else
+			{
+				v = R_DecalVertsClip(NULL, plist, psurf, ptexture, &outCount);
+				if (outCount && bMultitexture)
+				{
+					R_DecalVertsLight(v, psurf, outCount);
+				}
+			}
+
+			if (outCount)
+			{
+				if (bMultitexture)
+					R_DecalMPoly(v, ptexture, psurf, outCount);
+				else
+					R_DecalPoly(v, ptexture, psurf, outCount);
+			}
+			plist = plist->pnext;
+		}
+	}
+
+	if (gl_polyoffset->value)
+	{
+		qglDisable(GL_POLYGON_OFFSET_FILL);
+	}
+
+	qglDisable(GL_ALPHA_TEST);
+	qglDisable(GL_BLEND);
+	qglDepthMask(1);
+
+	(*gDecalSurfCount) = 0;
+}
+
+void R_DrawSequentialPoly(msurface_t *s, int face)
+{
 	if ((*currententity)->curstate.rendermode == kRenderTransColor)
 	{
-		if (!drawpolynocolor && !drawdlightsecond)
-		{
-			auto p = s->polys;
-			auto bface = &r_wsurf.pFaceBuffer[p->flags];
+		//todo
+		auto p = s->polys;
+		auto bface = &r_wsurf.pFaceBuffer[p->flags];
 
-			GL_DisableMultitexture();
-			qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			qglEnable(GL_BLEND);
-			qglDisable(GL_TEXTURE_2D);
+		R_SetGBufferRenderState(1);
+		GL_DisableMultitexture();
 
-			qglEnableClientState(GL_VERTEX_ARRAY);
-			qglBindBufferARB(GL_ARRAY_BUFFER_ARB, r_wsurf.hVBO);
-			R_BeginVertexArrayNoTexture();
-			R_DrawVertexArray(bface);
-			R_DrawPolyWireFrame(bface, R_DrawVertexArray);
-			qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-			qglDisableClientState(GL_VERTEX_ARRAY);
+		qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		qglEnable(GL_BLEND);
 
-			qglEnable(GL_TEXTURE_2D);
-			GL_EnableMultitexture();
-		}
+		qglDisable(GL_TEXTURE_2D);
+
+		qglEnableClientState(GL_VERTEX_ARRAY);
+		qglEnableClientState(GL_NORMAL_ARRAY);
+		qglBindBufferARB(GL_ARRAY_BUFFER_ARB, r_wsurf.hVBO);
+		R_BeginVertexArrayNoTexture();
+		R_DrawVertexArray(bface);
+		R_DrawPolyWireFrame(bface, R_DrawVertexArray);
+		qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+		qglDisableClientState(GL_NORMAL_ARRAY);
+		qglDisableClientState(GL_VERTEX_ARRAY);
+
+		qglEnable(GL_TEXTURE_2D);
+		GL_EnableMultitexture();
 		return;
 	}
 
 	if (s->flags & SURF_DRAWTURB)
 	{
-		if (!drawdlightsecond && !drawpolynocolor)
-		{
-			GL_DisableMultitexture();
-			GL_Bind(s->texinfo->texture->gl_texturenum);
-			EmitWaterPolys(s, face);
-		}
+		GL_DisableMultitexture();
+		GL_Bind(s->texinfo->texture->gl_texturenum);
+		EmitWaterPolys(s, face);
 		return;
 	}
 
 	if (!(s->flags & (SURF_DRAWSKY | SURF_DRAWTURB | SURF_UNDERWATER)))
 	{
-		if (!drawdlightsecond && !drawpolynocolor)
+		if (!drawpolynocolor)
 		{
-			R_RenderDynamicLightmaps(s);
+			gRefFuncs.R_RenderDynamicLightmaps(s);
 		}
 
 		if (gl_mtexable && ((*currententity)->curstate.rendermode == kRenderTransAlpha || (*currententity)->curstate.rendermode == kRenderNormal))
@@ -747,14 +1125,7 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 			{
 				GL_SelectTexture(TEXTURE0_SGIS);
 				GL_Bind(t->gl_texturenum);
-				if (!drawdlightsecond)
-				{
-					qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-				}
-				else
-				{
-					qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-				}
+				qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 				if ((*currententity)->curstate.rendermode == kRenderTransColor)
 					qglDisable(GL_TEXTURE_2D);
@@ -762,9 +1133,10 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 
 			auto lightmapnum = s->lightmaptexturenum;
 
-			if (!drawdlightsecond && !drawpolynocolor)
+			if (!drawpolynocolor)
 			{
-				GL_EnableMultitexture();
+				R_SetGBufferRenderState(2);
+				GL_EnableMultitexture();				
 				GL_Bind(lightmap_textures[lightmapnum]);
 				qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 			}
@@ -794,6 +1166,9 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 
 			bool detail = drawpolynocolor ? false : R_BeginDetailTexture(bface);
 
+			if (detail)
+				R_SetGBufferRenderState(3);
+
 			if (s->flags & SURF_DRAWTILED)
 			{
 				auto sOffset = ScrollOffset(s, *currententity);
@@ -807,6 +1182,7 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 			else
 			{
 				qglEnableClientState(GL_VERTEX_ARRAY);
+				qglEnableClientState(GL_NORMAL_ARRAY);
 				qglBindBufferARB( GL_ARRAY_BUFFER_ARB, r_wsurf.hVBO );
 
 				if (drawpolynocolor)
@@ -819,15 +1195,17 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 					R_BeginVertexArrayTexture(detail);
 					R_DrawVertexArray(bface);
 					if (detail) R_EndDetailTexture();
-					R_EndVertexArrayTexture(detail);
+					R_EndVertexArrayTexture(detail);					
 				}
 				
-				if (!drawpolynocolor && !drawdlightsecond)
+				if (!drawpolynocolor)
 				{
+					R_SetGBufferRenderState(1);
 					R_DrawPolyWireFrame(bface, R_DrawVertexArray);
 				}
 
 				qglBindBufferARB( GL_ARRAY_BUFFER_ARB, 0 );
+				qglDisableClientState(GL_NORMAL_ARRAY);
 				qglDisableClientState(GL_VERTEX_ARRAY);
 			}
 
@@ -840,7 +1218,9 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 					Sys_ErrorEx("Too many decal surfaces!\n");
 
 				if ((*currententity)->curstate.rendermode != kRenderTransColor)
-					gRefFuncs.R_DrawDecals(true);
+				{
+					R_DrawDecals(true);
+				}
 			}
 
 			return;
@@ -852,6 +1232,7 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 
 			if (!drawpolynocolor)
 			{
+				R_SetGBufferRenderState(1);
 				GL_DisableMultitexture();
 				GL_Bind(t->gl_texturenum);
 			}
@@ -873,10 +1254,10 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 				if ((*gDecalSurfCount) > MAX_DECALSURFS)
 					Sys_ErrorEx("Too many decal surfaces!\n");
 
-				gRefFuncs.R_DrawDecals(false);
+				R_DrawDecals(false);
 			}
 
-			if (gl_wireframe->value && !drawpolynocolor && !drawdlightsecond)
+			if (gl_wireframe->value && !drawpolynocolor)
 			{
 				qglDisable(GL_TEXTURE_2D);
 				qglColor3f(1, 1, 1);
@@ -899,19 +1280,26 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 
 			if ((*currententity)->curstate.rendermode == kRenderNormal)
 			{
-				if (!drawpolynocolor && !drawdlightsecond)
+				if (!drawpolynocolor)
 				{
-					GL_Bind(lightmap_textures[s->lightmaptexturenum]);
-					qglEnable(GL_BLEND);
-					qglBegin(GL_POLYGON);
-					auto v = p->verts[0];
-					for (int i = 0; i < p->numverts; i++, v += VERTEXSIZE)
+					if (drawgbuffer)
 					{
-						qglTexCoord2f(v[5], v[6]);
-						qglVertex3fv(v);
+						//todo
 					}
-					qglEnd();
-					qglDisable(GL_BLEND);
+					else
+					{
+						GL_Bind(lightmap_textures[s->lightmaptexturenum]);
+						qglEnable(GL_BLEND);
+						qglBegin(GL_POLYGON);
+						auto v = p->verts[0];
+						for (int i = 0; i < p->numverts; i++, v += VERTEXSIZE)
+						{
+							qglTexCoord2f(v[5], v[6]);
+							qglVertex3fv(v);
+						}
+						qglEnd();
+						qglDisable(GL_BLEND);
+					}
 				}
 			}
 		}

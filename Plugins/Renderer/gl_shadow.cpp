@@ -204,7 +204,7 @@ void R_RenderShadowMap(void)
 
 	vec3_t sangles;
 
-	if (r_light_env_enabled && r_light_env_shadow && r_light_env_shadow->value)
+	if (r_light_env_enabled && r_light_env_shadow->value)
 	{
 		sangles[0] = r_light_env_angles[0];
 		sangles[1] = r_light_env_angles[1];
@@ -217,12 +217,12 @@ void R_RenderShadowMap(void)
 		sangles[2] = r_shadow_angle_r->value;
 	}
 
-	if(s_BackBufferFBO.s_hBackBufferFBO)
+	if(s_ShadowFBO.s_hBackBufferFBO)
 	{
 		R_PushFrameBuffer();
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_ShadowFBO.s_hBackBufferFBO);
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
-		qglDrawBuffer(GL_DEPTH_ATTACHMENT);
+		qglDrawBuffer(GL_NONE);
 	}
 
 	int shadowmapArray[3] = { shadow_depthmap_high, shadow_depthmap_medium, shadow_depthmap_low };
@@ -316,7 +316,7 @@ void R_RenderShadowMap(void)
 		for (int j = 0; j < numvisedictsArray[i]; ++j)
 		{
 			(*currententity) = visedictsArray[i][j];
-			R_RenderCurrentEntity();
+			R_DrawCurrentEntity();
 		}
 
 		(*currententity) = backup_curentity;
@@ -333,11 +333,9 @@ void R_RenderShadowMap(void)
 	qglEnable(GL_CULL_FACE);
 	qglDisable(GL_POLYGON_OFFSET_FILL);
 
-	if(s_BackBufferFBO.s_hBackBufferFBO)
+	if(s_ShadowFBO.s_hBackBufferFBO)
 	{
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s_BackBufferFBO.s_hBackBufferTex, 0);
-		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, s_BackBufferFBO.s_hBackBufferDepthTex, 0);
+		qglDrawBuffer(GL_COLOR_ATTACHMENT0);
 		R_PopFrameBuffer();
 	}
 }
@@ -468,7 +466,7 @@ void R_RecursiveWorldNodeShadow(mnode_t *node)
 
 				if (!(surf->flags & SURF_DRAWTURB) && !(surf->flags & SURF_DRAWSKY))
 				{
-					if((*currententity)->curstate.rendermode == kRenderNormal)
+					if((*currententity)->curstate.rendermode == kRenderNormal || (*currententity)->curstate.rendermode == kRenderTransAlpha)
 						R_DrawSequentialPoly(surf, 0);
 				}
 			}
@@ -575,13 +573,12 @@ void R_DrawBrushModelShadow(cl_entity_t *e)
 
 void R_DrawEntitiesOnListShadow(void)
 {
-	int i, numvisedicts, parsecount;
+	int i, numvisedicts;
 
 	if (!r_drawentities->value)
 		return;
 
 	numvisedicts = *cl_numvisedicts;
-	parsecount = (*cl_parsecount) & 63;
 
 	for (i = 0; i < numvisedicts; i++)
 	{

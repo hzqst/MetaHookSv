@@ -98,6 +98,25 @@ typedef struct msurface_s
 }
 msurface_t;
 
+typedef struct decal_s
+{
+	struct decal_s *pnext;
+	struct msurface_s *psurface;
+	float dx;
+	float dy;
+	float scale;
+	short texture;
+	short flags;
+	short entityIndex;
+}
+decal_t;
+
+typedef struct decalcache_s
+{
+	int		decalIndex;
+	float	decalVert[4][VERTEXSIZE];
+} decalcache_t;
+
 typedef struct mnode_s
 {
 	int contents;

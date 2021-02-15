@@ -78,27 +78,28 @@ extern float (*pbonetransform)[MAXSTUDIOBONES][3][4];
 extern float (*plighttransform)[MAXSTUDIOBONES][3][4];
 extern int (*g_NormalIndex)[MAXSTUDIOVERTS];
 extern int (*chromeage)[MAXSTUDIOBONES];
+extern int(*chrome)[MAXSTUDIOVERTS][2];
 extern cl_entity_t *cl_viewent;
 extern int *g_ForcedFaceFlags;
 extern int (*lightgammatable)[1024];
-
+extern float *g_ChromeOrigin;
+extern int *r_smodels_total;
+extern int *r_ambientlight;
+extern float *r_shadelight;
+extern vec3_t (*r_blightvec)[MAXSTUDIOBONES];
+extern vec3_t *r_plightvec;
+extern vec3_t *r_colormix;
 //renderer
 
 void R_LoadStudioTextures(qboolean loadmap);
 void R_InitStudio(void);
 
-void R_GLStudioDrawPointsEx(void);
+void R_GLStudioDrawPoints(void);
 void R_StudioRenderFinal(void);
-void R_GLStudioDrawPointsShadow(void);
-void R_StudioDrawPoints(void);
 
-void studioapi_StudioDrawPoints(void);
-void studioapi_StudioSetupLighting(alight_t *plighting);
 void studioapi_SetupRenderer(int rendermode);
 void studioapi_RestoreRenderer(void);
-
-int studiointerface_StudioDrawModel(int flags);
-int studiointerface_StudioDrawPlayer(int flags, entity_state_t *pplayer);
+void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
 
 extern engine_studio_api_t IEngineStudio;
 extern r_studio_interface_t **gpStudioInterface;

@@ -129,13 +129,14 @@ extern cvar_t *r_ssao_radius;
 extern cvar_t *r_ssao_intensity;
 extern cvar_t *r_ssao_bias;
 extern cvar_t *r_ssao_blur_sharpness;
-
+extern cvar_t *r_fxaa;
 void R_InitBlur(const char *vs_code, int samples);
 void R_BeginHUDQuad(void);
 void R_EndHUDQuad(void);
 void R_BeginFXAA(int w, int h);
 int R_DoSSAO(int sampleIndex);
 void R_DoHDR(void);
+void R_DoFXAA(void);
 void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2);
 void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int logexp);
 void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *ada, double frametime);
@@ -145,5 +146,5 @@ void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container
 void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *blur, FBO_Container_t *lum);
 void R_BlitToScreen(FBO_Container_t *src);
 void R_BlitToFBO(FBO_Container_t *src, FBO_Container_t *dst);
+void R_DrawHUDQuad(int w, int h);
 void R_DrawHUDQuad_Texture(int tex, int w, int h);
-void GLBeginHud(void);

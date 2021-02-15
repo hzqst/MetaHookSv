@@ -115,9 +115,6 @@ ref_export_t gRefExports =
 	//common
 	R_GetDrawPass,
 	R_GetSupportExtension,
-	//studio
-	R_GLStudioDrawPointsEx,
-	R_GetPlayerState,
 	//refdef
 	R_PushRefDef,
 	R_UpdateRefDef,
@@ -241,10 +238,14 @@ void HUD_DrawNormalTriangles(void)
 {
 	gExportfuncs.HUD_DrawNormalTriangles();
 
+	if (drawgbuffer)
+	{
+		R_EndRenderGBuffer();
+	}
+
 	if (!drawreflect && !drawrefract)
 	{
 		R_RenderShadowScenes();
-		R_RenderDLightForEntity(r_worldentity);
 	}
 }
 
@@ -361,7 +362,19 @@ int HUD_Redraw(float time, int intermission)
 		qglColor4f(1,1,1,1);
 
 		qglEnable(GL_TEXTURE_2D);
-		qglBindTexture(GL_TEXTURE_2D, s_DLightFBO.s_hBackBufferTex);
+		if(r_light_debug->value == 1)
+			qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex);
+		else if (r_light_debug->value == 2)
+			qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex2);
+		else if (r_light_debug->value == 3)
+			qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex3);
+		else if (r_light_debug->value == 4)
+			qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
+		else
+		{
+			qglUseProgramObjectARB(drawdepth.program);
+			qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
+		}
 
 		qglBegin(GL_QUADS);
 		qglTexCoord2f(0,1);
@@ -374,6 +387,8 @@ int HUD_Redraw(float time, int intermission)
 		qglVertex3f(0,glheight/2,0);
 		qglEnd();
 		qglEnable(GL_ALPHA_TEST);
+
+		qglUseProgramObjectARB(0);
 	}
 	else if(r_hdr_debug && r_hdr_debug->value)
 	{
@@ -474,15 +489,24 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	DWORD addr;
 
 	//Save StudioAPI Funcs
-	gRefFuncs.studioapi_StudioDrawPoints = pstudio->StudioDrawPoints;
-	gRefFuncs.studioapi_StudioSetupLighting = pstudio->StudioSetupLighting;
 	gRefFuncs.studioapi_SetupRenderer = pstudio->SetupRenderer;
 	gRefFuncs.studioapi_RestoreRenderer = pstudio->RestoreRenderer;
+	gRefFuncs.studioapi_StudioDynamicLight = pstudio->StudioDynamicLight;
 
 	//Vars in Engine Studio API
 	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->GetCurrentEntity, 0x10, "\xA1", 1);
 	Sig_AddrNotFound("currententity");
 	currententity = *(cl_entity_t ***)(addr + 0x1);
+
+	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->GetTimes, 0x10, "\xA1\x2A\x2A\x2A\x2A\x89", 6);
+	Sig_AddrNotFound("r_framecount");
+	r_framecount = *(int **)(addr + 1);
+
+	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x20, "\xDD\x05\x2A\x2A\x2A\x2A\xDD\x18", 8);
+	cl_time = *(double **)(addr + 2);
+
+	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)(addr + 8) , 0x20, "\xDD\x05\x2A\x2A\x2A\x2A\xDD\x18", 8);
+	cl_oldtime = *(double **)(addr + 2);
 
 	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->SetRenderModel, 0x10, "\xA3", 1);
 	Sig_AddrNotFound("r_model");
@@ -506,8 +530,27 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	Sig_AddrNotFound("r_blend");
 	r_blend = *(float **)(addr + 2);
 
+#define G_CHROMEORIGIN_SIG_SVENGINE "\xD9\x05\x2A\x2A\x2A\x2A\xD9\x1D"
+	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->SetChromeOrigin, 0x150, G_CHROMEORIGIN_SIG_SVENGINE, sizeof(G_CHROMEORIGIN_SIG_SVENGINE) - 1);
+	Sig_AddrNotFound("g_ChromeOrigin");
+	g_ChromeOrigin = *(decltype(g_ChromeOrigin) *)(addr + 8);
+
 	pbonetransform = (float (*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetBoneTransform();
 	plighttransform = (float (*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetLightTransform();
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+#define PSUBMODEL_SIG_SVENGINE "\xC7\x00\x2A\x2A\x2A\x2A\xC3"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->StudioSetupModel, 0x50, PSUBMODEL_SIG_SVENGINE, sizeof(PSUBMODEL_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound("psubmodel");
+		psubmodel = *(decltype(psubmodel)*)(addr + 2);
+
+#define R_COLORMIX_SIG_SVENGINE "\xD9\x46\x08\xD9\x1D\x2A\x2A\x2A\x2A\xD9\x46\x0C"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->StudioSetupLighting, 0x150, R_COLORMIX_SIG_SVENGINE, sizeof(R_COLORMIX_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound("psubmodel");
+		r_colormix = *(decltype(r_colormix)*)(addr + 5);
+
+	}
 
 	cl_viewent = gEngfuncs.GetViewModel();
 
@@ -516,10 +559,9 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	gpStudioInterface = ppinterface;
 
 	//InlineHook StudioAPI
-	//InstallHook(studioapi_StudioDrawPoints);
-	//InstallHook(studioapi_StudioSetupLighting);
-	//InstallHook(studioapi_SetupRenderer);
-	//InstallHook(studioapi_RestoreRenderer);
+	InstallHook(studioapi_SetupRenderer);
+	InstallHook(studioapi_RestoreRenderer);
+	InstallHook(studioapi_StudioDynamicLight);
 
 	//R_InitDetailTextures();
 	//Load global extra textures into array

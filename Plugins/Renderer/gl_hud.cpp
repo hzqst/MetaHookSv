@@ -42,8 +42,9 @@ cvar_t *r_hdr_blurwidth = NULL;
 cvar_t *r_hdr_exposure = NULL;
 cvar_t *r_hdr_darkness = NULL;
 cvar_t *r_hdr_adaptation = NULL;
-cvar_t *r_hudinworld_debug = NULL;
 cvar_t *r_hdr_debug = NULL;
+
+cvar_t *r_fxaa = NULL;
 
 cvar_t *r_ssao = NULL;
 cvar_t *r_ssao_debug = NULL;
@@ -397,11 +398,12 @@ void R_InitRefHUD(void)
 	r_hdr_exposure = gEngfuncs.pfnRegisterVariable("r_hdr_exposure", "5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_darkness = gEngfuncs.pfnRegisterVariable("r_hdr_darkness", "4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_adaptation = gEngfuncs.pfnRegisterVariable("r_hdr_adaptation", "50.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_hudinworld_debug = gEngfuncs.pfnRegisterVariable("r_hudinworld_debug", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_hdr_debug = gEngfuncs.pfnRegisterVariable("r_hdr_debug", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_hdr_debug = gEngfuncs.pfnRegisterVariable("r_hdr_debug", "0",  FCVAR_CLIENTDLL);
+
+	r_fxaa = gEngfuncs.pfnRegisterVariable("r_fxaa", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_ssao = gEngfuncs.pfnRegisterVariable("r_ssao", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_ssao_debug = gEngfuncs.pfnRegisterVariable("r_ssao_debug", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssao_debug = gEngfuncs.pfnRegisterVariable("r_ssao_debug", "0",  FCVAR_CLIENTDLL);
 	r_ssao_radius = gEngfuncs.pfnRegisterVariable("r_ssao_radius", "2.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssao_intensity = gEngfuncs.pfnRegisterVariable("r_ssao_intensity", "2.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssao_bias = gEngfuncs.pfnRegisterVariable("r_ssao_bias", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -547,8 +549,9 @@ void R_BeginHUDQuad(void)
 	qglDisable(GL_BLEND);
 	qglDisable(GL_DEPTH_TEST);
 	qglDisable(GL_ALPHA_TEST);
-	//qglDisable(GL_CULL_FACE);
+	qglDisable(GL_CULL_FACE);
 	
+	GL_DisableMultitexture();
 	GL_SelectTexture(TEXTURE0_SGIS);
 	qglEnable(GL_TEXTURE_2D);
 	qglColor4f(1, 1, 1, 1);
@@ -880,40 +883,6 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 	}
 }
 
-void GLSetupHud(int w, int h)
-{
-	qglMatrixMode(GL_PROJECTION);
-	qglLoadIdentity();
-	qglOrtho(0, w, h, 0, -99999, 99999);
-
-	qglMatrixMode(GL_MODELVIEW);
-	qglLoadIdentity();
-}
-
-void GLBeginHud(void)
-{
-	qglDisable(GL_DEPTH_TEST);
-	qglDisable(GL_CULL_FACE);
-
-	qglEnable(GL_ALPHA_TEST);
-	qglAlphaFunc(GL_NOTEQUAL, 0);
-
-	qglColor4f(1, 1, 1, 1);
-	qglEnable(GL_BLEND);
-	qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	qglEnable(GL_TEXTURE_2D);
-}
-
-void GLEndHud(void)
-{
-	qglEnable(GL_CULL_FACE);
-	qglDisable(GL_BLEND);
-	qglDisable(GL_ALPHA_TEST);
-	qglEnable(GL_DEPTH_TEST);
-	qglDepthMask(1);
-}
-
 void R_BeginFXAA(int w, int h)
 {
 	qglUseProgramObjectARB(pp_fxaa.program);
@@ -1181,10 +1150,12 @@ int R_DoSSAO(int sampleIndex)
 	if (bUseFBO)
 	{
 		//final output to main fbo or MSAA fbo
-		if (s_MSAAFBO.s_hBackBufferDepthTex)
+		if (s_MSAAFBO.s_hBackBufferFBO)
 			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
 		else
 			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+
+		qglDrawBuffer(GL_COLOR_ATTACHMENT0);
 	}
 
 	if (!bUseFBO)
@@ -1235,4 +1206,24 @@ int R_DoSSAO(int sampleIndex)
 		R_PopFrameBuffer();
 
 	return 1;
+}
+
+void R_DoFXAA(void)
+{
+	if (!r_fxaa->value)
+		return;
+
+	if (!pp_fxaa.program)
+		return;
+
+	if (!s_BackBufferFBO.s_hBackBufferFBO)
+	{
+		qglBindTexture(GL_TEXTURE_2D, s_BackBufferFBO.s_hBackBufferTex);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, s_BackBufferFBO.iTextureColorFormat, 0, 0, glwidth, glheight, 0);
+	}
+
+	R_BeginHUDQuad();
+	R_BeginFXAA(glwidth, glheight);
+	R_DrawHUDQuad_Texture(s_BackBufferFBO.s_hBackBufferTex, glwidth, glheight);
+	qglUseProgramObjectARB(0);
 }

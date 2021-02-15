@@ -1,4 +1,5 @@
 #include "gl_local.h"
+#include "triangleapi.h"
 #include "cJSON.h"
 //#include <sselib.h>
 
@@ -10,29 +11,33 @@ float *r_blend;
 float (*pbonetransform)[MAXSTUDIOBONES][3][4];
 float (*plighttransform)[MAXSTUDIOBONES][3][4];
 int (*g_NormalIndex)[MAXSTUDIOVERTS];
+int(*chrome)[MAXSTUDIOVERTS][2];
 int (*chromeage)[MAXSTUDIOBONES];
 cl_entity_t *cl_viewent;
 int *g_ForcedFaceFlags;
 int (*lightgammatable)[1024];
+float *g_ChromeOrigin;
+int *r_smodels_total;
+int *r_ambientlight;
+float *r_shadelight;
+vec3_t(*r_blightvec)[MAXSTUDIOBONES];
+vec3_t *r_plightvec;
+vec3_t *r_colormix;
 
 //renderer
 vec3_t r_studionormal[MAXSTUDIOVERTS];
 vec3_t r_studiotangent[MAXSTUDIOVERTS];
-int chrome[MAXSTUDIOVERTS][2];
 float lightpos[MAXSTUDIOVERTS][3][4];
 auxvert_t auxverts[MAXSTUDIOVERTS];
 vec3_t lightvalues[MAXSTUDIOVERTS];
 auxvert_t *pauxverts;
 float *pvlightvalues;
-vec3_t r_colormix;
-vec3_t r_blightvec[MAXSTUDIOBONES];
-vec3_t r_plightvec;
-int r_ambientlight;
-float r_shadelight;
+
+vec3_t				lightbonepos[MAXSTUDIOBONES][3];
+int					lightage[MAXSTUDIOBONES];
 
 SHADER_DEFINE(studio);
 
-cvar_t *gl_studionormal;
 cvar_t *r_pplightambient;
 cvar_t *r_pplightdiffuse;
 cvar_t *r_pplightspecular;
@@ -215,7 +220,6 @@ void R_LoadStudioTextures(qboolean loadmap)
 			pTex->base.name[63] = 0;
 			pTex->base.index = 0;
 			R_LoadStudioTextures_Normal(tex, "replace", &pTex->replace);
-			R_LoadStudioTextures_Normal(tex, "normal", &pTex->normal);
 		}//texture load end			
 	}//model load end		
 	cJSON_Delete(root);
@@ -224,109 +228,10 @@ void R_LoadStudioTextures(qboolean loadmap)
 
 void R_InitStudio(void)
 {
-	if(gl_shader_support)
-	{
-		char *studio_vscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\studio_shader.vsh", 5, 0);
-		char *studio_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\studio_shader.fsh", 5, 0);
 
-		if(studio_vscode && studio_fscode)
-		{
-			studio.program = R_CompileShader(studio_vscode, studio_fscode, "studio_shader.vsh", "studio_shader.fsh");
-			if(studio.program)
-			{
-				SHADER_UNIFORM(studio, lightpos, "lightpos");
-				SHADER_UNIFORM(studio, eyepos, "eyepos");
-				SHADER_UNIFORM(studio, basemap, "basemap");
-				SHADER_UNIFORM(studio, normalmap, "normalmap");
-				SHADER_UNIFORM(studio, ambient, "ambient");
-				SHADER_UNIFORM(studio, diffuse, "diffuse");
-				SHADER_UNIFORM(studio, specular, "specular");
-				SHADER_UNIFORM(studio, shiness, "shiness");
-				SHADER_ATTRIB(studio, tangent, "tangent");
-				SHADER_ATTRIB(studio, binormal, "binormal");
-			}
-		}
-		gEngfuncs.COM_FreeFile((void *) studio_vscode);
-		gEngfuncs.COM_FreeFile((void *) studio_fscode);
-
-		char *invuln_vscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\invuln_shader.vsh", 5, 0);
-		char *invuln_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\invuln_shader.fsh", 5, 0);
-		if(invuln_vscode && invuln_fscode)
-		{
-			invuln.program = R_CompileShader(invuln_vscode, invuln_fscode, "invuln_shader.vsh", "invuln_shader.fsh");
-			if(invuln.program)
-			{
-				SHADER_UNIFORM(invuln, basemap, "basemap");
-				SHADER_UNIFORM(invuln, normalmap, "normalmap");
-				SHADER_UNIFORM(invuln, time, "time");
-			}
-		}
-		gEngfuncs.COM_FreeFile((void *) invuln_vscode);
-		gEngfuncs.COM_FreeFile((void *) invuln_fscode);
-	}
-
-	gl_studionormal = gEngfuncs.pfnRegisterVariable("gl_studionormal", "0", FCVAR_CLIENTDLL);
-	r_pplightambient = gEngfuncs.pfnRegisterVariable("r_pplightambient", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_pplightdiffuse = gEngfuncs.pfnRegisterVariable("r_pplightdiffuse", "0.3", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_pplightspecular = gEngfuncs.pfnRegisterVariable("r_pplightspecular", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_pplightshiness = gEngfuncs.pfnRegisterVariable("r_pplightshiness", "2.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
 //Engine Studio
-
-void R_StudioLighting(float *lv, int bone, int flags, vec3_t normal)
-{
-	static float v_lambert1 = 1.4953241;
-
-	float illum;
-	float lightcos;
-
-	illum = r_ambientlight;
-
-	if (flags & STUDIO_NF_FULLBRIGHT)
-	{
-		illum = 255;
-	}
-	else if (flags & STUDIO_NF_FLATSHADE)
-	{
-		illum += r_shadelight * 0.8;
-	}
-	else
-	{
-		float r;
-#ifndef SSE
-		if (bone != -1)
-			lightcos = DotProduct(normal, r_blightvec[bone]);
-		else
-			lightcos = DotProduct(normal, r_plightvec);
-#else
-		if (bone != -1)
-			DotProductSSE(&lightcos, normal, r_blightvec[bone]);
-		else
-			DotProductSSE(&lightcos, normal, r_plightvec);
-#endif
-		if (lightcos > 1.0)
-			lightcos = 1;
-
-		illum += r_shadelight;
-
-		r = v_lambert1;
-		lightcos = (lightcos + (r - 1.0)) / r;
-
-		if (lightcos > 0)
-		{
-			illum -= r_shadelight * lightcos;
-		}
-
-		if (illum <= 0)
-			illum = 0;
-	}
-
-	if (illum > 255)
-		illum = 255;
-
-	*lv = (*lightgammatable)[(int)(illum * 4)] / 1023.0;
-}
 
 inline void R_StudioTransformAuxVert(auxvert_t *av, int bone, vec3_t vert)
 {
@@ -348,7 +253,116 @@ inline qboolean R_IsFlippedViewModel(void)
 	return false;
 }
 
-void R_GLStudioDrawPointsEx(void)
+void BuildNormalIndexTable(void)
+{
+	if (gRefFuncs.BuildNormalIndexTable)
+		return gRefFuncs.BuildNormalIndexTable();
+
+	int					j;
+	int					i;
+	mstudiomesh_t		*pmesh;
+
+	for (i = 0; i < (*psubmodel)->numverts; i++)
+	{
+		(*g_NormalIndex)[i] = -1;
+	}
+
+	for (j = 0; j < (*psubmodel)->nummesh; j++)
+	{
+		short		*ptricmds;
+
+		pmesh = (mstudiomesh_t *)((byte *)(*pstudiohdr) + (*psubmodel)->meshindex) + j;
+		ptricmds = (short *)((byte *)(*pstudiohdr) + pmesh->triindex);
+
+		while (i = *(ptricmds++))
+		{
+			if (i < 0)
+			{
+				i = -i;
+			}
+
+			for (; i > 0; i--, ptricmds += 4)
+			{
+				if ((*g_NormalIndex)[ptricmds[0]] < 0)
+					(*g_NormalIndex)[ptricmds[0]] = ptricmds[1];
+			}
+		}
+	}
+}
+
+studiohdr_t *R_LoadTextures(model_t *psubm)
+{
+	if (gRefFuncs.R_LoadTextures)
+		return gRefFuncs.R_LoadTextures(psubm);
+
+	model_t *texmodel;
+
+	if ((*pstudiohdr)->textureindex == 0)
+	{
+		studiohdr_t *ptexturehdr;
+		char modelname[256];
+
+		strncpy(modelname, psubm->name, sizeof(modelname) - 2);
+		modelname[sizeof(modelname) - 2] = 0;
+
+		strcpy(&modelname[strlen(modelname) - 4], "T.mdl");
+		texmodel = IEngineStudio.Mod_ForName(modelname, true);
+		psubm->texinfo = (mtexinfo_t *)texmodel;
+
+		ptexturehdr = (studiohdr_t *)texmodel->cache.data;
+		strncpy(ptexturehdr->name, modelname, sizeof(ptexturehdr->name) - 1);
+		ptexturehdr->name[sizeof(ptexturehdr->name) - 1] = 0;
+
+		return ptexturehdr;
+	}
+
+	return (*pstudiohdr);
+}
+
+void BuildGlowShellVerts(vec3_t *pstudioverts, auxvert_t *paux)
+{
+	if (gRefFuncs.BuildGlowShellVerts)
+		return gRefFuncs.BuildGlowShellVerts(pstudioverts, paux);
+
+	int					i;
+	byte				*pvertbone;
+	vec3_t				*pstudionorms;
+	auxvert_t			*av;
+	float				vscale;
+
+	pvertbone = ((byte *)(*pstudiohdr) + (*psubmodel)->vertinfoindex);
+	pstudionorms = (vec3_t *)((byte *)(*pstudiohdr) + (*psubmodel)->normindex);
+
+	vscale = (*currententity)->curstate.renderamt * 0.05;
+
+	for (i = 0; i < (*pstudiohdr)->numbones; i++)
+	{
+		(*chromeage)[i] = 0;
+	}
+
+	for (i = 0; i < (*psubmodel)->numverts; i++)
+	{
+		vec3_t vert;
+		VectorMA(pstudioverts[i], vscale, pstudionorms[(*g_NormalIndex)[i]], vert);
+
+		av = &paux[i];
+		R_StudioTransformAuxVert(av, pvertbone[i], vert);
+	}
+
+	g_ChromeOrigin[0] = cos(r_glowshellfreq->value * (*cl_time)) * 4000.0;
+	g_ChromeOrigin[1] = sin(r_glowshellfreq->value * (*cl_time)) * 4000.0;
+	g_ChromeOrigin[2] = cos(r_glowshellfreq->value * (*cl_time) * 0.33) * 4000.0;
+
+	qglColor4ub((*currententity)->curstate.rendercolor.r, (*currententity)->curstate.rendercolor.g, (*currententity)->curstate.rendercolor.b, 255);
+}
+
+void R_LightStrength(int bone, float *vert, float light[3][4])
+{
+	if (gRefFuncs.R_LightStrength)
+		return gRefFuncs.R_LightStrength(bone, vert, light);
+}
+
+void R_GLStudioDrawPoints(void)
 {
 	int i, j, k;
 	byte *pvertbone;
@@ -368,13 +382,12 @@ void R_GLStudioDrawPointsEx(void)
 	qboolean has_extra_texture;
 	qboolean use_extra_texture;
 	int replace_texture;
-	int normal_texture;
 	qboolean iNoBaseTexture;
 	studio_texarray_t *pTexArray;
 
 	pvertbone = ((byte *)(*pstudiohdr) + (*psubmodel)->vertinfoindex);
 	pnormbone = ((byte *)(*pstudiohdr) + (*psubmodel)->norminfoindex);
-	ptexturehdr = gRefFuncs.R_LoadTextures(*r_model);
+	ptexturehdr = R_LoadTextures(*r_model);
 	ptexture = (mstudiotexture_t *)((byte *)ptexturehdr + ptexturehdr->textureindex);
 
 	pmesh = (mstudiomesh_t *)((byte *)(*pstudiohdr) + (*psubmodel)->meshindex);
@@ -392,8 +405,8 @@ void R_GLStudioDrawPointsEx(void)
 
 	if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
 	{
-		gRefFuncs.BuildNormalIndexTable();
-		gRefFuncs.BuildGlowShellVerts(pstudioverts, pauxverts);
+		BuildNormalIndexTable();
+		BuildGlowShellVerts(pstudioverts, pauxverts);
 	}
 	else
 	{
@@ -408,7 +421,7 @@ void R_GLStudioDrawPointsEx(void)
 	{
 		for (i = 0; i < (*psubmodel)->numverts; i++)
 		{
-			gRefFuncs.R_LightStrength(pvertbone[i], pstudioverts[i], lightpos[i]);
+			R_LightStrength(pvertbone[i], pstudioverts[i], lightpos[i]);
 		}
 		lv = pvlightvalues;
 	}
@@ -420,52 +433,36 @@ void R_GLStudioDrawPointsEx(void)
 		if (r_fullbright->value >= 2)
 			flags |= STUDIO_NF_FULLBRIGHT;
 
-		if((*currententity)->curstate.renderfx == kRenderFxFireLayer)
+		if ((*currententity)->curstate.rendermode == kRenderTransAdd)
 		{
-			flags &= ~STUDIO_NF_CHROME;
-		}
-		else if((*currententity)->curstate.renderfx == kRenderFxInvulnLayer)
-		{
-			flags |= STUDIO_NF_CHROME;
-		}
-		else if((*currententity)->curstate.renderfx == kRenderFxCloak)
-		{
-			flags &= ~STUDIO_NF_CHROME;
-		}
-
-		if((*currententity)->curstate.renderfx != kRenderFxShadow)
-		{
-			if ((*currententity)->curstate.rendermode == kRenderTransAdd)
+			for (k = 0; k < pmesh[j].numnorms; k++, lv += 3, pstudionorms++, pnormbone++)
 			{
-				for (k = 0; k < pmesh[j].numnorms; k++, lv += 3, pstudionorms++, pnormbone++)
-				{
-					lv[0] = *r_blend;
-					lv[1] = *r_blend;
-					lv[2] = *r_blend;
+				lv[0] = *r_blend;
+				lv[1] = *r_blend;
+				lv[2] = *r_blend;
 
-					if (flags & STUDIO_NF_CHROME)
-					{
-						int m = (int)((char *)lv - (char *)pvlightvalues) / 12;
-						gRefFuncs.R_StudioChrome(chrome[m], *pnormbone, *pstudionorms);
-					}
+				if (flags & STUDIO_NF_CHROME)
+				{
+					int m = (int)((char *)lv - (char *)pvlightvalues) / 12;
+					gRefFuncs.R_StudioChrome((*chrome)[m], *pnormbone, *pstudionorms);
 				}
 			}
-			else
+		}
+		else
+		{
+			for (k = 0; k < pmesh[j].numnorms; k++, lv += 3, pstudionorms++, pnormbone++)
 			{
-				for (k = 0; k < pmesh[j].numnorms; k++, lv += 3, pstudionorms++, pnormbone++)
+				gRefFuncs.R_StudioLighting(&lv_tmp, *pnormbone, flags, *pstudionorms);
+
+				if (flags & STUDIO_NF_CHROME)
 				{
-					R_StudioLighting(&lv_tmp, *pnormbone, flags, *pstudionorms);
-
-					if (flags & STUDIO_NF_CHROME)
-					{
-						int m = (int)((char *)lv - (char *)pvlightvalues) / 12;
-						gRefFuncs.R_StudioChrome(chrome[m], *pnormbone, *pstudionorms);
-					}
-
-					lv[0] = lv_tmp * r_colormix[0];
-					lv[1] = lv_tmp * r_colormix[1];
-					lv[2] = lv_tmp * r_colormix[2];
+					int m = (int)((char *)lv - (char *)pvlightvalues) / 12;
+					gRefFuncs.R_StudioChrome((*chrome)[m], *pnormbone, *pstudionorms);
 				}
+
+				lv[0] = lv_tmp * (*r_colormix)[0];
+				lv[1] = lv_tmp * (*r_colormix)[1];
+				lv[2] = lv_tmp * (*r_colormix)[2];
 			}
 		}
 	}
@@ -527,199 +524,39 @@ void R_GLStudioDrawPointsEx(void)
 		if (r_fullbright->value >= 2)
 			flags |= STUDIO_NF_FULLBRIGHT;
 
-		if((*currententity)->curstate.renderfx == kRenderFxCloak)
+		if (flags & STUDIO_NF_MASKED)
 		{
-			if ((flags & STUDIO_NF_MASKED) || (flags & STUDIO_NF_ADDITIVE))
-			{
-				continue;
-			}
-			qglDepthMask(0);
+			qglEnable(GL_ALPHA_TEST);
+			qglAlphaFunc(GL_GREATER, 0.5);
+			qglDepthMask(1);
+		}
+
+		if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
+		{
+			qglBlendFunc(GL_ONE, GL_ONE);
 			qglEnable(GL_BLEND);
-			qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			qglEnable(GL_POLYGON_OFFSET_FILL);
-			qglPolygonOffset(-1, -gl_polyoffset->value);
-			flags &= ~STUDIO_NF_CHROME;
-		}
-		else if((*currententity)->curstate.renderfx == kRenderFxFireLayer)
-		{
-			if ((flags & STUDIO_NF_MASKED) || (flags & STUDIO_NF_ADDITIVE))
-			{
-				continue;
-			}
 			qglDepthMask(0);
-			qglEnable(GL_BLEND);
-			qglBlendFunc(GL_SRC_COLOR, GL_ONE);
-			qglEnable(GL_POLYGON_OFFSET_FILL);
-			qglPolygonOffset(-1, -gl_polyoffset->value);
-			flags &= ~STUDIO_NF_CHROME;
-		}
-		else if((*currententity)->curstate.renderfx == kRenderFxInvulnLayer)
-		{
-			if ((flags & STUDIO_NF_MASKED) || (flags & STUDIO_NF_ADDITIVE))
-			{
-				continue;
-			}
-			qglDepthMask(0);
-			qglEnable(GL_BLEND);
-			qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			qglEnable(GL_POLYGON_OFFSET_FILL);
-			qglPolygonOffset(-1, -gl_polyoffset->value);
-			flags |= STUDIO_NF_CHROME;
-		}
-		else if((*currententity)->curstate.renderfx != kRenderFxShadow)
-		{
-			if (flags & STUDIO_NF_MASKED)
-			{
-				qglEnable(GL_ALPHA_TEST);
-				qglAlphaFunc(GL_GREATER, 0.5);
-				qglDepthMask(1);
-			}
-
-			if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
-			{
-				qglBlendFunc(GL_ONE, GL_ONE);
-				qglEnable(GL_BLEND);
-				qglDepthMask(0);
-				qglShadeModel(GL_SMOOTH);
-			}
+			qglShadeModel(GL_SMOOTH);
 		}
 
-		if((*currententity)->curstate.renderfx == kRenderFxShadow)
+		if (flags & STUDIO_NF_CHROME)//chrome start
 		{
-			while (i = *(ptricmds++))
-			{
-				if (i < 0)
-				{
-					qglBegin(GL_TRIANGLE_FAN);
-					i = -i;
-				}
-				else
-				{
-					qglBegin(GL_TRIANGLE_STRIP);
-				}
 
-				for ( ; i > 0; i--, ptricmds += 4)
-				{
-					av = &(pauxverts[ptricmds[0]]);
-					qglVertex3fv(av->fv);
-				}
+			GL_SelectTexture(GL_TEXTURE0_ARB);
+			qglEnable(GL_TEXTURE_2D);
 
-				qglEnd();
-			}
-		}
-		else if((*currententity)->curstate.renderfx == kRenderFxCloak)
-		{
-			GL_DisableMultitexture();
-			GL_Bind(cloak_texture);
-			qglUseProgramObjectARB(cloak.program);
-			qglUniform1iARB(cloak.refract, 0);
-			qglUniform3fARB(cloak.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);			
-			qglUniform1fARB(cloak.cloakfactor, clamp((255 - (*currententity)->curstate.renderamt) / 255.0, 0, 1));
-			qglUniform1fARB(cloak.refractamount, 2.0f);
+			R_SetGBufferRenderState(1);
 
-			while (i = *(ptricmds++))
-			{
-				if (i < 0)
-				{
-					qglBegin(GL_TRIANGLE_FAN);
-					i = -i;
-				}
-				else
-				{
-					qglBegin(GL_TRIANGLE_STRIP);
-				}
-
-				for ( ; i > 0; i--, ptricmds += 4)
-				{
-					short *ptricmds2;
-					if(i <= 1)
-						ptricmds2 = ptricmds-4;
-					else
-						ptricmds2 = ptricmds+4;
-
-					//VectorSubtract((pauxverts[ptricmds2[0]]).fv, (pauxverts[ptricmds[0]]).fv, r_studiotangent[ptricmds[0]]);
-#ifndef SSE
-					//VectorNormalize(r_studiotangent[ptricmds[0]]);
-					VectorRotate(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
-#else
-					//VectorNormalizeSSE(r_studiotangent[ptricmds[0]]);
-					VectorRotateSSE(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
-#endif
-					//if (iFlippedVModel)
-					//	VectorInverse(r_studionormal[ptricmds[0]]);
-
-					//qglVertexAttrib3fv(studio_attrib.tangent, r_studiotangent[ptricmds[0]]);
-					qglNormal3fv(r_studionormal[ptricmds[0]]);
-
-					av = &(pauxverts[ptricmds[0]]);
-					qglVertex3fv(av->fv);
-				}
-
-				qglEnd();
-			}
-
-			qglUseProgramObjectARB(0);
-
-			if(gl_studionormal->value == 1)
-			{
-				qglDisable(GL_TEXTURE_2D);		
-				ptricmds = (short *)((byte *)(*pstudiohdr) + pmesh->triindex);
-				while (i = *(ptricmds++))
-				{
-					if (i < 0)
-					{
-						i = -i;
-					}
-
-					for ( ; i > 0; i--, ptricmds += 4)
-					{
-						av = &(pauxverts[ptricmds[0]]);
-						qglColor4f(0,1,0,1);
-						qglBegin(GL_LINES);
-						qglVertex3f(av->fv[0], av->fv[1], av->fv[2]);
-						qglVertex3f(av->fv[0]+r_studionormal[ptricmds[0]][0], av->fv[1]+r_studionormal[ptricmds[0]][1], av->fv[2]+r_studionormal[ptricmds[0]][2]);
-						qglEnd();
-						qglColor4f(0,0,1,1);
-						qglBegin(GL_LINES);
-						qglVertex3f(av->fv[0], av->fv[1], av->fv[2]);
-						qglVertex3f(av->fv[0]+r_studiotangent[ptricmds[0]][0], av->fv[1]+r_studiotangent[ptricmds[0]][1], av->fv[2]+r_studiotangent[ptricmds[0]][2]);
-						qglEnd();
-					}
-				}
-				qglEnable(GL_TEXTURE_2D);
-			}
-		}
-		else if (flags & STUDIO_NF_CHROME)//chrome start
-		{
-			s = (1 / (float)ptexture[pskinref[pmesh->skinref]].width) / 1024;
-			t = (1 / (float)ptexture[pskinref[pmesh->skinref]].height) / 1024;
-
-			normal_texture = 0;
-
-			if(!iNoBaseTexture)
-			{
-				gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
-			}
-			else
-			{
-				if( (*currententity)->curstate.renderfx == kRenderFxInvulnLayer )
-				{
-					//normal_texture = water_normalmap;
-
-					GL_EnableMultitexture();
-					qglEnable(GL_TEXTURE_2D);
-					GL_Bind(normal_texture);
-
-					qglUseProgramObjectARB(invuln.program);
-
-					qglUniform1iARB(invuln.basemap, 0);
-					qglUniform1iARB(invuln.normalmap, 1);
-					qglUniform1fARB(invuln.time, (*cl_time) * 0.3f);
-				}
-			}
+			gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
 
 			if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
 			{//force chrome
+				s = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].width;
+				t = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].height;
+
+				s /= 256.0f;
+				t /= 256.0f;
+
 				while (i = *(ptricmds++))
 				{
 					if (i < 0)
@@ -737,7 +574,27 @@ void R_GLStudioDrawPointsEx(void)
 						int normalIndex;
 
 						normalIndex = (*g_NormalIndex)[ptricmds[0]];
-						qglTexCoord2f(chrome[normalIndex][0] * s, chrome[normalIndex][1] * t);
+						qglTexCoord2f((*chrome)[normalIndex][0] * s, (*chrome)[normalIndex][1] * t);
+
+						if (1)
+						{
+							short *ptricmds2;
+							if (i <= 1)
+								ptricmds2 = ptricmds - 4;
+							else
+								ptricmds2 = ptricmds + 4;
+
+							VectorSubtract((pauxverts[ptricmds2[0]]).fv, (pauxverts[ptricmds[0]]).fv, r_studiotangent[ptricmds[0]]);
+#ifndef SSE
+							VectorNormalize(r_studiotangent[ptricmds[0]]);
+							VectorRotate(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
+#else
+							VectorNormalizeSSE(r_studiotangent[ptricmds[0]]);
+							VectorRotateSSE(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
+#endif
+
+							qglNormal3fv(r_studionormal[ptricmds[0]]);
+						}
 
 						av = &pauxverts[ptricmds[0]];
 						qglVertex3f(av->fv[0], av->fv[1], av->fv[2]);
@@ -748,6 +605,9 @@ void R_GLStudioDrawPointsEx(void)
 			}
 			else
 			{//no force chrome
+				s = 1.0f / 2048.0f;
+				t = 1.0f / 2048.0f;
+
 				while (i = *(ptricmds++))
 				{
 					if (i < 0)
@@ -762,13 +622,40 @@ void R_GLStudioDrawPointsEx(void)
 
 					for ( ; i > 0; i--, ptricmds += 4)
 					{
-						if(normal_texture)
-							qglMultiTexCoord2fARB(GL_TEXTURE0_ARB, chrome[ptricmds[1]][0] * s, chrome[ptricmds[1]][1] * t);
-						else
-							qglTexCoord2f(chrome[ptricmds[1]][0] * s, chrome[ptricmds[1]][1] * t);
+						qglTexCoord2f((*chrome)[ptricmds[1]][0] * s, (*chrome)[ptricmds[1]][1] * t);
 
 						lv = &pvlightvalues[ptricmds[1] * 3];
-						gRefFuncs.R_LightLambert(lightpos[ptricmds[0]], pstudionorms[ptricmds[1]], lv, fl);
+
+						vec3_t vNormal;
+						VectorCopy(pstudionorms[ptricmds[1]], vNormal);
+
+						if (iFlippedVModel == 1)
+						{
+							VectorScale(vNormal, -1, vNormal);
+						}
+
+						gRefFuncs.R_LightLambert(lightpos[ptricmds[0]], vNormal, lv, fl);
+
+						if (1)
+						{
+							short *ptricmds2;
+							if (i <= 1)
+								ptricmds2 = ptricmds - 4;
+							else
+								ptricmds2 = ptricmds + 4;
+
+							VectorSubtract((pauxverts[ptricmds2[0]]).fv, (pauxverts[ptricmds[0]]).fv, r_studiotangent[ptricmds[0]]);
+#ifndef SSE
+							VectorNormalize(r_studiotangent[ptricmds[0]]);
+							VectorRotate(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
+#else
+							VectorNormalizeSSE(r_studiotangent[ptricmds[0]]);
+							VectorRotateSSE(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
+#endif
+
+							qglNormal3fv(r_studionormal[ptricmds[0]]);
+						}
+
 						qglColor4f(fl[0], fl[1], fl[2], *r_blend);
 
 						av = &pauxverts[ptricmds[0]];
@@ -779,12 +666,8 @@ void R_GLStudioDrawPointsEx(void)
 				}
 			}//no force chrome end
 
-			if(normal_texture)
-			{
-				qglEnable(GL_BLEND);
-				qglUseProgramObjectARB(0);
-				GL_DisableMultitexture();
-			}
+			//restore gbuffer state
+			R_SetGBufferRenderState(2);
 
 		}//chrome end
 		else
@@ -798,7 +681,8 @@ void R_GLStudioDrawPointsEx(void)
 
 			use_extra_texture = false;
 			replace_texture = 0;
-			normal_texture = 0;
+
+			R_SetGBufferRenderState(1);
 
 			if(!iNoBaseTexture)
 			{
@@ -811,8 +695,6 @@ void R_GLStudioDrawPointsEx(void)
 							use_extra_texture = true;
 							if(pTexArray->textures[k].replace.index)
 								replace_texture = pTexArray->textures[k].replace.index;
-							if(pTexArray->textures[k].normal.index)
-								normal_texture = pTexArray->textures[k].normal.index;
 							break;
 						}
 					}
@@ -823,30 +705,6 @@ void R_GLStudioDrawPointsEx(void)
 						GL_Bind(replace_texture);
 					else
 						gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
-					if(normal_texture)
-					{
-						GL_EnableMultitexture();
-						qglEnable(GL_TEXTURE_2D);
-						GL_Bind(normal_texture);
-
-						qglUseProgramObjectARB(studio.program);
-
-						vec3_t vlightpos;
-						VectorMA((*currententity)->origin, -10000, r_plightvec, vlightpos);
-						qglUniform3fARB(studio.lightpos, vlightpos[0], vlightpos[1], vlightpos[2]);
-						qglUniform3fARB(studio.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
-						qglUniform1iARB(studio.basemap, 0);
-						qglUniform1iARB(studio.normalmap, 1);
-						float ambient, diffuse, specular;
-						ambient = max(r_pplightambient->value, 0.0);
-						diffuse = max(r_pplightdiffuse->value, 0.0);
-						specular = max(r_pplightspecular->value, 0.0);
-						qglUniform4fARB(studio.ambient, r_colormix[0]*ambient, r_colormix[1]*ambient, r_colormix[2]*ambient, 1);
-						qglUniform4fARB(studio.diffuse, r_colormix[0]*diffuse, r_colormix[1]*diffuse, r_colormix[2]*diffuse, 1);
-						qglUniform4fARB(studio.specular, specular, specular, specular, 1);
-						qglUniform1fARB(studio.shiness, max(r_pplightshiness->value, 0.0));
-						qglDisable(GL_BLEND);
-					}
 				}
 				else
 				{
@@ -868,10 +726,7 @@ void R_GLStudioDrawPointsEx(void)
 
 				for ( ; i > 0; i--, ptricmds += 4)
 				{
-					if(normal_texture)
-						qglMultiTexCoord2fARB(GL_TEXTURE0_ARB, ptricmds[2] * s, ptricmds[3] * t);
-					else
-						qglTexCoord2f(ptricmds[2] * s, ptricmds[3] * t);
+					qglTexCoord2f(ptricmds[2] * s, ptricmds[3] * t);
 
 					lv = &(pvlightvalues[ptricmds[1] * 3]);
 
@@ -883,7 +738,7 @@ void R_GLStudioDrawPointsEx(void)
 
 					gRefFuncs.R_LightLambert(lightpos[ptricmds[0]], vNormal, lv, fl);
 
-					if(normal_texture)
+					if(1)
 					{
 						short *ptricmds2;
 						if(i <= 1)
@@ -899,11 +754,9 @@ void R_GLStudioDrawPointsEx(void)
 						VectorNormalizeSSE(r_studiotangent[ptricmds[0]]);
 						VectorRotateSSE(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
 #endif
-						//if (iFlippedVModel)
-						//	VectorInverse(r_studionormal[ptricmds[0]]);
 
-						qglVertexAttrib3fv(studio.tangent, r_studiotangent[ptricmds[0]]);
 						qglNormal3fv(r_studionormal[ptricmds[0]]);
+						//qglVertexAttrib3fv(studio.tangent, r_studiotangent[ptricmds[0]]);
 					}
 
 					qglColor4f(fl[0], fl[1], fl[2], *r_blend);
@@ -914,43 +767,9 @@ void R_GLStudioDrawPointsEx(void)
 
 				qglEnd();
 			}
-			if(normal_texture)
-			{
-				qglEnable(GL_BLEND);
-				qglUseProgramObjectARB(0);
-				GL_DisableMultitexture();
 
-				if(gl_studionormal->value == 1)
-				{
-					qglDepthMask(0);
-					qglDisable(GL_TEXTURE_2D);		
-					ptricmds = (short *)((byte *)(*pstudiohdr) + pmesh->triindex);
-					while (i = *(ptricmds++))
-					{
-						if (i < 0)
-						{
-							i = -i;
-						}
-				
-						for ( ; i > 0; i--, ptricmds += 4)
-						{
-							av = &(pauxverts[ptricmds[0]]);
-							qglColor4f(0,1,0,1);
-							qglBegin(GL_LINES);
-							qglVertex3f(av->fv[0], av->fv[1], av->fv[2]);
-							qglVertex3f(av->fv[0]+r_studionormal[ptricmds[0]][0], av->fv[1]+r_studionormal[ptricmds[0]][1], av->fv[2]+r_studionormal[ptricmds[0]][2]);
-							qglEnd();
-							qglColor4f(0,0,1,1);
-							qglBegin(GL_LINES);
-							qglVertex3f(av->fv[0], av->fv[1], av->fv[2]);
-							qglVertex3f(av->fv[0]+r_studiotangent[ptricmds[0]][0], av->fv[1]+r_studiotangent[ptricmds[0]][1], av->fv[2]+r_studiotangent[ptricmds[0]][2]);
-							qglEnd();
-						}
-					}
-					qglDepthMask(1);
-					qglEnable(GL_TEXTURE_2D);
-				}//gl_studionormal draw end
-			}//finish normalmap
+			R_SetGBufferRenderState(2);
+
 		}//normal draw end
 
 		//restore render state
@@ -1003,21 +822,48 @@ void R_StudioRenderFinal(void)
 
 //StudioAPI
 
-void studioapi_StudioDrawPoints(void)
+void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight)
 {
-	R_GLStudioDrawPointsEx();
-}
+	if (!r_light_dynamic->value)
+		return gRefFuncs.studioapi_StudioDynamicLight(ent, plight);
 
-void studioapi_StudioSetupLighting(alight_t *plighting)
-{
-	r_ambientlight = plighting->ambientlight;
-	r_shadelight = plighting->shadelight;
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		float dies[256];
 
-	VectorCopy(plighting->plightvec, r_plightvec);
-	for (int i = 0; i < (*pstudiohdr)->numbones; i++)
-		VectorIRotate(plighting->plightvec, (*plighttransform)[i], r_blightvec[i]);
+		dlight_t *dl = cl_dlights;
+		for (int i = 0; i < 256; i++, dl++)
+		{
+			dies[i] = dl->die;
+			dl->die = 0;
+		}
 
-	VectorCopy(plighting->color, r_colormix);
+		gRefFuncs.studioapi_StudioDynamicLight(ent, plight);
+
+		dl = cl_dlights;
+		for (int i = 0; i < 256; i++, dl++)
+		{
+			dl->die = dies[i];
+		}
+	}
+	else
+	{
+		float dies[32];
+		dlight_t *dl = cl_dlights;
+		for (int i = 0; i < 32; i++, dl++)
+		{
+			dies[i] = dl->die;
+			dl->die = 0;
+		}
+
+		gRefFuncs.studioapi_StudioDynamicLight(ent, plight);
+
+		dl = cl_dlights;
+		for (int i = 0; i < 32; i++, dl++)
+		{
+			dl->die = dies[i];
+		}
+	}
 }
 
 void studioapi_SetupRenderer(int rendermode)

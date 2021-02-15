@@ -13,6 +13,7 @@ extern glshader_t shaders[MAX_SHADERS];
 extern int numshaders;
 
 GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfile, const char *fsfile);
+GLuint R_CompileShaderEx(const char *vscode, const char *fscode, const char *vsfile, const char *fsfile, const char *vsdefine, const char *fsdefine);
 void GL_UseProgram(GLuint program);
 void GL_EndProgram(void);
 GLuint GL_GetUniformLoc(GLuint program, const char *name);

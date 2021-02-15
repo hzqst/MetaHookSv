@@ -172,9 +172,6 @@
     <ClInclude Include="zone.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\Interface\IBTEClient.h">
-      <Filter>Interface</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\src\Interface\IRenderer.h">
       <Filter>Interface</Filter>
     </ClInclude>

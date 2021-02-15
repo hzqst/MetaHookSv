@@ -82,6 +82,30 @@ GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfil
 	return program;
 }
 
+GLuint R_CompileShaderEx(const char *vscode, const char *fscode, const char *vsfile, const char *fsfile, const char *vsdefine, const char *fsdefine)
+{
+	auto vslen = strlen(vscode);
+	auto vsdeflen = strlen(vsdefine);
+	char *vs = new char[vslen + 1 + vsdeflen + 1];
+	strcpy(vs, vsdefine);
+	strcat(vs, "\n");
+	strcat(vs, vscode);
+
+	auto fslen = strlen(fscode);
+	auto fsdeflen = strlen(fsdefine);
+	char *fs = new char[fslen + 1 + fsdeflen + 1];
+	strcpy(fs, fsdefine);
+	strcat(fs, "\n");
+	strcat(fs, fscode);
+
+	auto r = R_CompileShader(vs, fs, vsfile, fsfile);
+
+	delete[]vs;
+	delete[]fs;
+
+	return r;
+}
+
 void GL_UseProgram(GLuint program)
 {
 	qglUseProgramObjectARB(program);

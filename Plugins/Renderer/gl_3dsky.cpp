@@ -99,7 +99,6 @@ void R_Render3DSky(void)
 	qglViewport(0, 0, glwidth, glheight);
 
 	R_ClearSkyBox();
-	//R_DrawWorld();
 
 	R_PopRefDef();
 
@@ -108,10 +107,9 @@ void R_Render3DSky(void)
 
 void R_Draw3DSkyEntities(void)
 {
-	int i, j, numvisedicts, parsecount;
+	int i, j, numvisedicts;
 
 	numvisedicts = *cl_numvisedicts;
-	parsecount = (*cl_parsecount) & 63;
 
 	(*numTransObjs) = 0;
 
@@ -140,7 +138,7 @@ void R_Draw3DSkyEntities(void)
 			{
 				if ((*currententity)->player)
 				{
-					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetCurrentDrawPlayerState(parsecount) );
+					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, IEngineStudio.GetPlayerState((*currententity)->index) );
 				}
 				else
 				{
@@ -154,7 +152,7 @@ void R_Draw3DSkyEntities(void)
 
 								if ((*currententity)->player)
 								{
-									(*gpStudioInterface)->StudioDrawPlayer(0, R_GetCurrentDrawPlayerState(parsecount));
+									(*gpStudioInterface)->StudioDrawPlayer(0, IEngineStudio.GetPlayerState((*currententity)->index));
 								}
 								else
 								{
@@ -272,7 +270,7 @@ void R_Draw3DSkyEntities(void)
 				R_Setup3DSkyModel();
 				if ((*currententity)->player)
 				{
-					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetCurrentDrawPlayerState(parsecount));
+					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, IEngineStudio.GetPlayerState((*currententity)->index));
 				}
 				else
 				{
@@ -286,7 +284,7 @@ void R_Draw3DSkyEntities(void)
 
 								if ((*currententity)->player)
 								{
-									(*gpStudioInterface)->StudioDrawPlayer(0, R_GetCurrentDrawPlayerState(parsecount));
+									(*gpStudioInterface)->StudioDrawPlayer(0, IEngineStudio.GetPlayerState((*currententity)->index));
 								}
 								else
 								{

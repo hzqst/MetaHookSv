@@ -174,7 +174,6 @@ xcopy "$(OutDir)\..\..\..\Build\svencoop\resource\shader\*.*" "I:\SteamLibrary\s
     <ClCompile Include="zone.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\Interface\IBTEClient.h" />
     <ClInclude Include="..\..\src\Interface\IRenderer.h" />
     <ClInclude Include="bspfile.h" />
     <ClInclude Include="cJSON.h" />

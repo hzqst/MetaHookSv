@@ -7,7 +7,6 @@ typedef struct
 	int program;
 	int waterfogcolor;
 	int eyepos;
-	int eyedir;
 	int zmax;
 	int time;
 	int fresnel;
@@ -19,6 +18,23 @@ typedef struct
 	int reflectmap;	
 	int depthrefrmap;
 }water_program_t;
+
+typedef struct
+{
+	int program;
+	int waterfogcolor;
+	int eyepos;
+	int zmax;
+	int time;
+	int fresnel;
+	int depthfactor;
+	int normfactor;
+	int abovewater;
+	int normalmap;
+	int refractmap;
+	int reflectmap;
+	int depthrefrmap;
+}watergbuffer_program_t;
 
 typedef struct
 {
@@ -61,10 +77,10 @@ extern r_water_t *waters_active;
 
 //shader
 extern SHADER_DEFINE(water);
+extern SHADER_DEFINE(watergbuffer);
 extern int water_normalmap;
 
 extern SHADER_DEFINE(drawdepth);
-
 //water fog
 extern int *g_bUserFogOn;
 extern int save_userfogon;
@@ -78,6 +94,15 @@ extern cvar_t *r_water_normfactor;
 extern cvar_t *r_water_novis;
 extern cvar_t *r_water_texscale;
 extern cvar_t *r_water_minheight;
+
+typedef struct
+{
+	int percent;
+	int destcolor[3];
+}cshift_t;
+
+extern colorVec *gWaterColor;
+extern cshift_t *cshift_water;
 
 void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color);
 void R_InitWater(void);

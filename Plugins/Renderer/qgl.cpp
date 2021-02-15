@@ -76,6 +76,7 @@ extern "C"
 	void (APIENTRY *qglDisableClientState)(GLenum array) = NULL;
 	void (APIENTRY *qglDrawArrays)(GLenum mode, GLint first, GLsizei count) = NULL;
 	void (APIENTRY *qglDrawBuffer)(GLenum mode) = NULL;
+	void (APIENTRY *qglDrawBuffers)(GLsizei n, const GLenum *bufs) = NULL;
 	void (APIENTRY *qglDrawElements)(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices) = NULL;
 	void (APIENTRY *qglDrawPixels)(GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) = NULL;
 	void (APIENTRY *qglEdgeFlag)(GLboolean flag) = NULL;
@@ -939,6 +940,7 @@ void QGL_InitExtension(void)
 		qglRenderbufferStorageEXT = (PFNGLRENDERBUFFERSTORAGEEXTPROC)qwglGetProcAddress("glRenderbufferStorageEXT");
 		qglFramebufferTexture2DEXT = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC)qwglGetProcAddress("glFramebufferTexture2DEXT");
 		qglFramebufferTexture = (PFNGLFRAMEBUFFERTEXTUREPROC)qwglGetProcAddress("glFramebufferTexture");
+		*(FARPROC *)&qglDrawBuffers = qwglGetProcAddress("glDrawBuffers");
 
 		gl_framebuffer_object = true;
 	}

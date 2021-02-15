@@ -42,6 +42,7 @@ typedef struct
 	void (*R_NewMap)(void);
 	void (*R_DrawEntitiesOnList)(void);
 	void (*R_DrawTEntitiesOnList)(int onlyClientDraw);
+	void(*R_AddTEntity)(cl_entity_t *pEnt);
 	void (*R_DrawWorld)(void);
 	void (*R_SetupFrame)(void);
 	void (*R_SetFrustum)(void);
@@ -56,8 +57,6 @@ typedef struct
 	void (*GL_EnableMultitexture)(void);
 	void (*GL_BeginRendering)(int *x, int *y, int *width, int *height);
 	void (*GL_EndRendering)(void);
-	int (*GL_LoadTexture)(char *identifier, int textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal);
-	int (*GL_LoadTexture2)(char *identifier, int textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal, int filter);
 	void (*EmitWaterPolys)(msurface_t *fa, int direction);
 	void (*BuildSurfaceDisplayList)(msurface_t *fa);
 	void (*R_DrawSequentialPoly)(msurface_t *s, int face);
@@ -70,9 +69,9 @@ typedef struct
 	void (*Draw_MiptexTexture)(cachewad_t *wad, byte *data);
 	void (*R_BuildLightMap)(msurface_t *psurf, byte *dest, int stride);
 	void(*R_AddDynamicLights)(msurface_t *psurf);
-	void *(*Mem_Malloc)(size_t);
+	int(*GL_LoadTexture)(char *identifier, int textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal);
+	int(*GL_LoadTexture2)(char *identifier, int textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal, int filter);
 	void (*R_DecalMPoly)(float *v, texture_t *ptexture, msurface_t *psurf, int vertCount);
-	void (*GL_FreeFBObjects)(void);//only above 5953
 	void (*R_MarkLeaves)(void);
 	void (*R_DrawBrushModel)(cl_entity_t *e);
 	float (*GlowBlend)(cl_entity_t *e);
@@ -84,7 +83,6 @@ typedef struct
 	void (*VID_UpdateWindowVars)(RECT *prc, int x, int y);
 	mleaf_t *(*Mod_PointInLeaf)(vec3_t p, model_t *model);
 	void *(*realloc_SvEngine)(void *, size_t);
-	int (*GL_SetMode)(int a1, int a2, int a3);
 	dlight_t *(*CL_AllocDlight)(int key);
 
 	//Engine Studio
@@ -100,8 +98,7 @@ typedef struct
 	void (*R_StudioRenderFinal)(void);
 
 	//Studio API
-	void (*studioapi_StudioDrawPoints)(void);
-	void (*studioapi_StudioSetupLighting)(alight_t *plighting);
+	void (*studioapi_StudioDynamicLight)(struct cl_entity_s *ent, struct alight_s *plight);
 	void (*studioapi_SetupRenderer)(int rendermode);
 	void (*studioapi_RestoreRenderer)(void);
 }ref_funcs_t;
@@ -147,9 +144,6 @@ typedef struct
 	//common
 	int (*R_GetDrawPass)(void);
 	int (*R_GetSupportExtension)(void);
-	//studio
-	void (*R_GLStudioDrawPointsEx)(void);
-	entity_state_t *(*R_GetPlayerState)(int index);
 	//refdef
 	void (*R_PushRefDef)(void);
 	void (*R_UpdateRefDef)(void);

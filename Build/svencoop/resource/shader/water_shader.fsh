@@ -81,12 +81,28 @@ void main()
 		
 		vFinalColor2.a = flDepth;
 
-		gl_FragColor = vFinalColor2;		
+#ifdef GBUFFER_ENABLED
+		vFinalColor2.a = 1.0f;
+	    gl_FragData[0] = vFinalColor2;
+		gl_FragData[1] = vec4(1.0, 1.0, 1.0, 1.0);
+		gl_FragData[2] = vec4(worldpos, 1.0);
+		gl_FragData[3] = vNormal;
+#else
+		gl_FragColor = vFinalColor2;
+#endif
 	}
 	else
 	{
 		//lerp waterfog color and refraction color
 		float fLerp = (vRefractColor.x + vRefractColor.y + vRefractColor.z) / 15.0;
+
+#ifdef GBUFFER_ENABLED
+	    gl_FragData[0] = vRefractColor * (1.0 - fLerp) + waterfogcolor * fLerp;
+		gl_FragData[1] = vec4(1.0, 1.0, 1.0, 1.0);
+		gl_FragData[2] = vec4(worldpos, 1.0);
+		gl_FragData[3] = -vNormal;
+#else
 		gl_FragColor = vRefractColor * (1.0 - fLerp) + waterfogcolor * fLerp;
+#endif
 	}
 }
