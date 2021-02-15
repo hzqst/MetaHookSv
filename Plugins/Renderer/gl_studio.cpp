@@ -522,21 +522,39 @@ void R_GLStudioDrawPoints(void)
 		flags = ptexture[pskinref[pmesh->skinref]].flags | (*g_ForcedFaceFlags);
 
 		if (r_fullbright->value >= 2)
-			flags |= STUDIO_NF_FULLBRIGHT;
+		{
+			flags = flags & 0xFC;
+		}
+
+		if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
+		{
+			qglBlendFunc(GL_ONE, GL_ONE);
+			qglEnable(GL_BLEND);
+			qglDepthMask(GL_FALSE);
+			qglShadeModel(GL_SMOOTH);
+		}
 
 		if (flags & STUDIO_NF_MASKED)
 		{
 			qglEnable(GL_ALPHA_TEST);
 			qglAlphaFunc(GL_GREATER, 0.5);
-			qglDepthMask(1);
+			qglDepthMask(GL_TRUE);
 		}
 
 		if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
 		{
 			qglBlendFunc(GL_ONE, GL_ONE);
 			qglEnable(GL_BLEND);
-			qglDepthMask(0);
+			qglDepthMask(GL_FALSE);
 			qglShadeModel(GL_SMOOTH);
+		}
+
+		if (r_fullbright->value >= 2)
+		{
+			//todo
+			//gEngfuncs.pTriAPI->SpriteTexture()
+			s = 1.0f / 256.0f;
+			t = 1.0f / 256.0f;
 		}
 
 		if (flags & STUDIO_NF_CHROME)//chrome start
