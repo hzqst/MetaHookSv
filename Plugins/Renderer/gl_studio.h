@@ -89,6 +89,8 @@ extern float *r_shadelight;
 extern vec3_t (*r_blightvec)[MAXSTUDIOBONES];
 extern vec3_t *r_plightvec;
 extern vec3_t *r_colormix;
+extern model_t *cl_sprite_white;
+extern model_t *cl_shellchrome;
 //renderer
 
 void R_LoadStudioTextures(qboolean loadmap);

@@ -4,6 +4,8 @@
 //#include <sselib.h>
 
 //engine
+model_t *cl_sprite_white;
+model_t *cl_shellchrome;
 mstudiomodel_t **psubmodel;
 studiohdr_t **pstudiohdr;
 model_t **r_model;
@@ -228,7 +230,7 @@ void R_LoadStudioTextures(qboolean loadmap)
 
 void R_InitStudio(void)
 {
-
+	
 }
 
 //Engine Studio
@@ -549,29 +551,29 @@ void R_GLStudioDrawPoints(void)
 			qglShadeModel(GL_SMOOTH);
 		}
 
+		R_SetGBufferRenderState(1);
+
 		if (r_fullbright->value >= 2)
 		{
-			//todo
-			//gEngfuncs.pTriAPI->SpriteTexture()
+			gEngfuncs.pTriAPI->SpriteTexture(cl_sprite_white, 0);
 			s = 1.0f / 256.0f;
 			t = 1.0f / 256.0f;
+		}
+		else
+		{
+			s = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].width;
+			t = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].height;
+
+			gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
 		}
 
 		if (flags & STUDIO_NF_CHROME)//chrome start
 		{
+			//GL_SelectTexture(GL_TEXTURE0_ARB);
+			//qglEnable(GL_TEXTURE_2D);
 
-			GL_SelectTexture(GL_TEXTURE0_ARB);
-			qglEnable(GL_TEXTURE_2D);
-
-			R_SetGBufferRenderState(1);
-
-			gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
-
-			if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
-			{//force chrome
-				s = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].width;
-				t = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].height;
-
+			if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)//force chrome
+			{
 				s /= 256.0f;
 				t /= 256.0f;
 
@@ -694,9 +696,6 @@ void R_GLStudioDrawPoints(void)
 			s = 1.0 / (float)ptexture[pskinref[pmesh->skinref]].width;
 			t = 1.0 / (float)ptexture[pskinref[pmesh->skinref]].height;
 
-			GL_SelectTexture(GL_TEXTURE0_ARB);
-			qglEnable(GL_TEXTURE_2D);
-
 			use_extra_texture = false;
 			replace_texture = 0;
 
@@ -719,10 +718,16 @@ void R_GLStudioDrawPoints(void)
 				}
 				if(use_extra_texture)
 				{
-					if(replace_texture)
+					if (replace_texture)
+					{
+						GL_SelectTexture(GL_TEXTURE0_ARB);
+						qglEnable(GL_TEXTURE_2D);
 						GL_Bind(replace_texture);
+					}
 					else
+					{
 						gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
+					}
 				}
 				else
 				{
@@ -774,10 +779,16 @@ void R_GLStudioDrawPoints(void)
 #endif
 
 						qglNormal3fv(r_studionormal[ptricmds[0]]);
-						//qglVertexAttrib3fv(studio.tangent, r_studiotangent[ptricmds[0]]);
 					}
 
-					qglColor4f(fl[0], fl[1], fl[2], *r_blend);
+					if (flags & STUDIO_NF_FULLBRIGHT)
+					{
+						qglColor4f(1, 1, 1, *r_blend);
+					}
+					else
+					{
+						qglColor4f(fl[0], fl[1], fl[2], *r_blend);
+					}
 
 					av = &(pauxverts[ptricmds[0]]);
 					qglVertex3fv(av->fv);
