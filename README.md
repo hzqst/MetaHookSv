@@ -161,4 +161,4 @@ r_light_diffuse : diffuse intensity of dynamic light.
 
 r_light_specular : specular intensity of dynamic light.
 
-r_light_specular : specular power of dynamic light.
+r_light_specularpow : specular power of dynamic light.
