@@ -67,9 +67,13 @@ Current state : Ready to use, more feature are coming soon.
 
 5. MultiSampling Anti-Aliasing (MSAA)
 
+6. Fast Approximate Anti-Aliasing (FXAA) when MSAA is not available.
+
+7. Rendering using Deferred-Shading and Per-Pixel-Lighting technique for all non-transparent objects. "unlimited" dynamic lightsource supported. (maximum at 256 for SvEngine)
+
 #### Launch Parameters / Commmandline Parameters
 
--nofbo : disable FrameBufferObject rendering. add it if you caught some rendering error.
+-nofbo : disable FrameBufferObject rendering. add it if you caught some rendering error. SSAO and Deferred-Shading will not be available when FBO disabled.
 
 -nomsaa : disable MultiSampling Anti-Aliasing (MSAA).
 
@@ -107,7 +111,7 @@ r_water_novis 1 / 0 : force engine to render the scene which should have been re
 
 r_water_texscale (0.1 ~ 1.0) : to control the size of refract or reflect view texture.
 
-r_water_minheight : water entity which has height < this value will not be handled.
+r_water_minheight : water entity which has height < this value will not be rendered with shader program.
 
 r_shadow 1 / 0 : to enable / disable Per-Object Shadow.
 
@@ -144,3 +148,17 @@ r_ssao_radius : to control the size of SSAO shadow.
 r_ssao_blur_sharpness : to control the sharpness of SSAO shadow.
 
 r_ssao_bias : test it yourself.
+
+r_light_dynamic : to enable / disable Deferred-Shading (Dynamic-LightSource support).
+
+r_flashlight_cone : cosine of angle of flashlight cone.
+
+r_flashlight_distance : flashlight's illumination distance.
+
+r_light_ambient : ambient intensity of dynamic light.
+
+r_light_diffuse : diffuse intensity of dynamic light.
+
+r_light_specular : specular intensity of dynamic light.
+
+r_light_specular : specular power of dynamic light.
