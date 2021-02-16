@@ -136,43 +136,67 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 			R_AddEntityWater((*currententity), tempVert, gWaterColor);
 		}
 
-		if(curwater && curwater->reflectmap_ready && curwater->refractmap_ready)
+		bool bAboveWater = *cl_waterlevel <= 2 ? true : false;
+
+		if(curwater && curwater->refractmap_ready && ((curwater->reflectmap_ready && bAboveWater) || !bAboveWater))
 		{
 			float alpha = 1;
 			if ((*currententity)->curstate.rendermode == kRenderTransTexture)
 				alpha = (*r_blend);
 
-			if (drawgbuffer)
+			if (bAboveWater)
 			{
-				qglUseProgramObjectARB(watergbuffer.program);
-				qglUniform4fARB(watergbuffer.waterfogcolor, curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, alpha);
-				qglUniform3fARB(watergbuffer.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
-				qglUniform1fARB(watergbuffer.time, clientTime);
-				qglUniform1fARB(watergbuffer.fresnel, clamp(r_water_fresnel->value, 0.0, 10.0));
-				qglUniform1fARB(watergbuffer.depthfactor, clamp(r_water_depthfactor->value, 0.0, 1000.0));
-				qglUniform1fARB(watergbuffer.normfactor, clamp(r_water_normfactor->value, 0.0, 1000.0));
-				qglUniform1fARB(watergbuffer.abovewater, (*cl_waterlevel <= 2 /*r_refdef->vieworg[2] > curwater->vecs[2]*/) ? 1.0f : 0.0f);
-
-				qglUniform1iARB(watergbuffer.normalmap, 0);
-				qglUniform1iARB(watergbuffer.refractmap, 1);
-				qglUniform1iARB(watergbuffer.reflectmap, 2);
-				qglUniform1iARB(watergbuffer.depthrefrmap, 3);
+				if (drawgbuffer)
+				{
+					qglUseProgramObjectARB(watergbuffer.program);
+					qglUniform4fARB(watergbuffer.waterfogcolor, curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, alpha);
+					qglUniform3fARB(watergbuffer.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
+					qglUniform1fARB(watergbuffer.time, clientTime);
+					qglUniform1fARB(watergbuffer.fresnel, clamp(r_water_fresnel->value, 0.0, 10.0));
+					qglUniform1fARB(watergbuffer.depthfactor, clamp(r_water_depthfactor->value, 0.0, 1000.0));
+					qglUniform1fARB(watergbuffer.normfactor, clamp(r_water_normfactor->value, 0.0, 1000.0));
+					qglUniform1iARB(watergbuffer.normalmap, 0);
+					qglUniform1iARB(watergbuffer.refractmap, 1);
+					qglUniform1iARB(watergbuffer.reflectmap, 2);
+					qglUniform1iARB(watergbuffer.depthrefrmap, 3);
+				}
+				else
+				{
+					qglUseProgramObjectARB(water.program);
+					qglUniform4fARB(water.waterfogcolor, curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, alpha);
+					qglUniform3fARB(water.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
+					qglUniform1fARB(water.time, clientTime);
+					qglUniform1fARB(water.fresnel, clamp(r_water_fresnel->value, 0.0, 10.0));
+					qglUniform1fARB(water.depthfactor, clamp(r_water_depthfactor->value, 0.0, 1000.0));
+					qglUniform1fARB(water.normfactor, clamp(r_water_normfactor->value, 0.0, 1000.0));
+					qglUniform1iARB(water.normalmap, 0);
+					qglUniform1iARB(water.refractmap, 1);
+					qglUniform1iARB(water.reflectmap, 2);
+					qglUniform1iARB(water.depthrefrmap, 3);
+				}
 			}
 			else
 			{
-				qglUseProgramObjectARB(water.program);
-				qglUniform4fARB(water.waterfogcolor, curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, alpha);
-				qglUniform3fARB(water.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
-				qglUniform1fARB(water.time, clientTime);
-				qglUniform1fARB(water.fresnel, clamp(r_water_fresnel->value, 0.0, 10.0));
-				qglUniform1fARB(water.depthfactor, clamp(r_water_depthfactor->value, 0.0, 1000.0));
-				qglUniform1fARB(water.normfactor, clamp(r_water_normfactor->value, 0.0, 1000.0));
-				qglUniform1fARB(water.abovewater, (*cl_waterlevel <= 2 /*r_refdef->vieworg[2] > curwater->vecs[2]*/) ? 1.0f : 0.0f);
-
-				qglUniform1iARB(water.normalmap, 0);
-				qglUniform1iARB(water.refractmap, 1);
-				qglUniform1iARB(water.reflectmap, 2);
-				qglUniform1iARB(water.depthrefrmap, 3);
+				if (drawgbuffer)
+				{
+					qglUseProgramObjectARB(underwatergbuffer.program);
+					qglUniform4fARB(underwatergbuffer.waterfogcolor, curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, alpha);
+					qglUniform3fARB(underwatergbuffer.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
+					qglUniform1fARB(underwatergbuffer.time, clientTime);
+					qglUniform1fARB(underwatergbuffer.normfactor, clamp(r_water_normfactor->value, 0.0, 1000.0));
+					qglUniform1iARB(underwatergbuffer.normalmap, 0);
+					qglUniform1iARB(underwatergbuffer.refractmap, 1);
+				}
+				else
+				{
+					qglUseProgramObjectARB(underwater.program);
+					qglUniform4fARB(underwater.waterfogcolor, curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, alpha);
+					qglUniform3fARB(underwater.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
+					qglUniform1fARB(underwater.time, clientTime);
+					qglUniform1fARB(underwater.normfactor, clamp(r_water_normfactor->value, 0.0, 1000.0));
+					qglUniform1iARB(underwater.normalmap, 0);
+					qglUniform1iARB(underwater.refractmap, 1);
+				}
 			}
 
 			qglEnable(GL_BLEND);

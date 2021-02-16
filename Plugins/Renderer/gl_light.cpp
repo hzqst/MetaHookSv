@@ -212,7 +212,7 @@ void R_SetGBufferRenderState(int state)
 		return;
 	}
 
-	//color
+	//diffuse only, use glColor as lightmapColor
 	if (state == 1)
 	{
 		qglUseProgramObjectARB(gbuffer1.program);
@@ -225,8 +225,9 @@ void R_SetGBufferRenderState(int state)
 		qglUniform1iARB(gbuffer2.diffuseTex, 0);
 		qglUniform1iARB(gbuffer2.lightmapTex, 1);
 	}
+	//lightmap + detailtexture
 	else if (state == 3)
-	{
+	{		
 		qglUseProgramObjectARB(gbuffer3.program);
 		qglUniform1iARB(gbuffer3.diffuseTex, 0);
 		qglUniform1iARB(gbuffer3.lightmapTex, 1);

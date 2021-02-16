@@ -138,7 +138,7 @@ void R_Draw3DSkyEntities(void)
 			{
 				if ((*currententity)->player)
 				{
-					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, IEngineStudio.GetPlayerState((*currententity)->index) );
+					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index) );
 				}
 				else
 				{
@@ -152,7 +152,7 @@ void R_Draw3DSkyEntities(void)
 
 								if ((*currententity)->player)
 								{
-									(*gpStudioInterface)->StudioDrawPlayer(0, IEngineStudio.GetPlayerState((*currententity)->index));
+									(*gpStudioInterface)->StudioDrawPlayer(0, R_GetPlayerState((*currententity)->index));
 								}
 								else
 								{
@@ -270,7 +270,7 @@ void R_Draw3DSkyEntities(void)
 				R_Setup3DSkyModel();
 				if ((*currententity)->player)
 				{
-					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, IEngineStudio.GetPlayerState((*currententity)->index));
+					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
 				}
 				else
 				{
@@ -284,7 +284,7 @@ void R_Draw3DSkyEntities(void)
 
 								if ((*currententity)->player)
 								{
-									(*gpStudioInterface)->StudioDrawPlayer(0, IEngineStudio.GetPlayerState((*currententity)->index));
+									(*gpStudioInterface)->StudioDrawPlayer(0, R_GetPlayerState((*currententity)->index));
 								}
 								else
 								{

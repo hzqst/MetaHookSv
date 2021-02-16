@@ -12,8 +12,8 @@ typedef struct
 	int fresnel;
 	int depthfactor;
 	int normfactor;
-	int abovewater;
 	int normalmap;
+	int dudvmap;
 	int refractmap;
 	int reflectmap;	
 	int depthrefrmap;
@@ -29,12 +29,38 @@ typedef struct
 	int fresnel;
 	int depthfactor;
 	int normfactor;
-	int abovewater;
 	int normalmap;
+	int dudvmap;
 	int refractmap;
 	int reflectmap;
 	int depthrefrmap;
 }watergbuffer_program_t;
+
+typedef struct
+{
+	int program;
+	int waterfogcolor;
+	int eyepos;
+	int zmax;
+	int time;
+	int normfactor;
+	int normalmap;
+	int dudvmap;
+	int refractmap;
+}underwater_program_t;
+
+typedef struct
+{
+	int program;
+	int waterfogcolor;
+	int eyepos;
+	int zmax;
+	int time;
+	int normfactor;
+	int normalmap;
+	int dudvmap;
+	int refractmap;
+}underwatergbuffer_program_t;
 
 typedef struct
 {
@@ -78,9 +104,13 @@ extern r_water_t *waters_active;
 //shader
 extern SHADER_DEFINE(water);
 extern SHADER_DEFINE(watergbuffer);
+extern SHADER_DEFINE(underwater);
+extern SHADER_DEFINE(underwatergbuffer);
+
 extern int water_normalmap;
 
 extern SHADER_DEFINE(drawdepth);
+
 //water fog
 extern int *g_bUserFogOn;
 extern int save_userfogon;

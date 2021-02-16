@@ -6,8 +6,8 @@ uniform float time;
 uniform float fresnel;
 uniform float depthfactor;
 uniform float normfactor;
-uniform float abovewater;
 uniform sampler2D normalmap;
+uniform sampler2D dudvmap;
 uniform sampler2D refractmap;
 uniform sampler2D reflectmap;
 uniform sampler2D depthrefrmap;
@@ -51,8 +51,25 @@ void main()
 
 	vec4 vDepthColor = texture2D(depthrefrmap, vBaseTexCoord);
 
-	if(abovewater > 0.0)
-	{
+#ifdef UNDER_WATER
+
+		//lerp waterfog color and refraction color
+		float flWaterColorAlpha = clamp(waterfogcolor.a, 0.01, 0.99);
+
+		vec4 vFinalColor2 = vRefractColor * (1.0 - flWaterColorAlpha) + waterfogcolor * flWaterColorAlpha;
+
+	#ifdef GBUFFER_ENABLED
+		vFinalColor2.a = 1.0;
+	    gl_FragData[0] = vFinalColor2;
+		gl_FragData[1] = vec4(1.0, 1.0, 1.0, 1.0);
+		gl_FragData[2] = vec4(worldpos, 1.0);
+		gl_FragData[3] = -vNormal;
+	#else
+		gl_FragColor = vFinalColor2;
+	#endif
+
+#else
+
 		//sample the reflect color(texcoord inverted)
 		vBaseTexCoord = vec2(projpos.x, -projpos.y) / projpos.w * 0.5 + 0.5;
 
@@ -81,28 +98,15 @@ void main()
 		
 		vFinalColor2.a = flDepth;
 
-#ifdef GBUFFER_ENABLED
+	#ifdef GBUFFER_ENABLED
 		vFinalColor2.a = 1.0f;
 	    gl_FragData[0] = vFinalColor2;
 		gl_FragData[1] = vec4(1.0, 1.0, 1.0, 1.0);
 		gl_FragData[2] = vec4(worldpos, 1.0);
 		gl_FragData[3] = vNormal;
-#else
+	#else
 		gl_FragColor = vFinalColor2;
-#endif
-	}
-	else
-	{
-		//lerp waterfog color and refraction color
-		float fLerp = (vRefractColor.x + vRefractColor.y + vRefractColor.z) / 15.0;
+	#endif
 
-#ifdef GBUFFER_ENABLED
-	    gl_FragData[0] = vRefractColor * (1.0 - fLerp) + waterfogcolor * fLerp;
-		gl_FragData[1] = vec4(1.0, 1.0, 1.0, 1.0);
-		gl_FragData[2] = vec4(worldpos, 1.0);
-		gl_FragData[3] = -vNormal;
-#else
-		gl_FragColor = vRefractColor * (1.0 - fLerp) + waterfogcolor * fLerp;
 #endif
-	}
 }

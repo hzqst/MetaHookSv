@@ -28,22 +28,13 @@ vec3_t *r_colormix;
 
 //renderer
 vec3_t r_studionormal[MAXSTUDIOVERTS];
-vec3_t r_studiotangent[MAXSTUDIOVERTS];
 float lightpos[MAXSTUDIOVERTS][3][4];
 auxvert_t auxverts[MAXSTUDIOVERTS];
 vec3_t lightvalues[MAXSTUDIOVERTS];
 auxvert_t *pauxverts;
 float *pvlightvalues;
 
-vec3_t				lightbonepos[MAXSTUDIOBONES][3];
-int					lightage[MAXSTUDIOBONES];
-
 SHADER_DEFINE(studio);
-
-cvar_t *r_pplightambient;
-cvar_t *r_pplightdiffuse;
-cvar_t *r_pplightspecular;
-cvar_t *r_pplightshiness;
 
 studio_texarray_mgr_t g_TexArray;
 studio_texarray_mgr_t g_LocalTexArray;
@@ -591,30 +582,16 @@ void R_GLStudioDrawPoints(void)
 
 					for ( ; i > 0; i--, ptricmds += 4)
 					{
-						int normalIndex;
-
-						normalIndex = (*g_NormalIndex)[ptricmds[0]];
+						int normalIndex = (*g_NormalIndex)[ptricmds[0]];
 						qglTexCoord2f((*chrome)[normalIndex][0] * s, (*chrome)[normalIndex][1] * t);
 
-						if (1)
-						{
-							short *ptricmds2;
-							if (i <= 1)
-								ptricmds2 = ptricmds - 4;
-							else
-								ptricmds2 = ptricmds + 4;
-
-							VectorSubtract((pauxverts[ptricmds2[0]]).fv, (pauxverts[ptricmds[0]]).fv, r_studiotangent[ptricmds[0]]);
 #ifndef SSE
-							VectorNormalize(r_studiotangent[ptricmds[0]]);
-							VectorRotate(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
+						VectorRotate(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
 #else
-							VectorNormalizeSSE(r_studiotangent[ptricmds[0]]);
-							VectorRotateSSE(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
+						VectorRotateSSE(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
 #endif
 
-							qglNormal3fv(r_studionormal[ptricmds[0]]);
-						}
+						qglNormal3fv(r_studionormal[ptricmds[0]]);
 
 						av = &pauxverts[ptricmds[0]];
 						qglVertex3f(av->fv[0], av->fv[1], av->fv[2]);
@@ -656,25 +633,13 @@ void R_GLStudioDrawPoints(void)
 
 						gRefFuncs.R_LightLambert(lightpos[ptricmds[0]], vNormal, lv, fl);
 
-						if (1)
-						{
-							short *ptricmds2;
-							if (i <= 1)
-								ptricmds2 = ptricmds - 4;
-							else
-								ptricmds2 = ptricmds + 4;
-
-							VectorSubtract((pauxverts[ptricmds2[0]]).fv, (pauxverts[ptricmds[0]]).fv, r_studiotangent[ptricmds[0]]);
 #ifndef SSE
-							VectorNormalize(r_studiotangent[ptricmds[0]]);
-							VectorRotate(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
+						VectorRotate(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
 #else
-							VectorNormalizeSSE(r_studiotangent[ptricmds[0]]);
-							VectorRotateSSE(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
+						VectorRotateSSE(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
 #endif
 
-							qglNormal3fv(r_studionormal[ptricmds[0]]);
-						}
+						qglNormal3fv(r_studionormal[ptricmds[0]]);
 
 						qglColor4f(fl[0], fl[1], fl[2], *r_blend);
 
@@ -761,25 +726,13 @@ void R_GLStudioDrawPoints(void)
 
 					gRefFuncs.R_LightLambert(lightpos[ptricmds[0]], vNormal, lv, fl);
 
-					if(1)
-					{
-						short *ptricmds2;
-						if(i <= 1)
-							ptricmds2 = ptricmds-4;
-						else
-							ptricmds2 = ptricmds+4;
-
-						VectorSubtract((pauxverts[ptricmds2[0]]).fv, (pauxverts[ptricmds[0]]).fv, r_studiotangent[ptricmds[0]]);
 #ifndef SSE
-						VectorNormalize(r_studiotangent[ptricmds[0]]);
-						VectorRotate(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
+					VectorRotate(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
 #else
-						VectorNormalizeSSE(r_studiotangent[ptricmds[0]]);
-						VectorRotateSSE(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
+					VectorRotateSSE(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
 #endif
 
-						qglNormal3fv(r_studionormal[ptricmds[0]]);
-					}
+					qglNormal3fv(r_studionormal[ptricmds[0]]);
 
 					if (flags & STUDIO_NF_FULLBRIGHT)
 					{

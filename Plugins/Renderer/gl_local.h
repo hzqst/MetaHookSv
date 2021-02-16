@@ -243,6 +243,7 @@ void R_DrawBrushModel(cl_entity_t *entity);
 void R_DrawSpriteModel(cl_entity_t *entity);
 void R_GetSpriteAxes(cl_entity_t *entity, int type, float *vforwrad, float *vright, float *vup);
 void R_SpriteColor(mcolor24_t *col, cl_entity_t *entity, int renderamt);
+entity_state_t *R_GetPlayerState(int index);
 float GlowBlend(cl_entity_t *entity);
 int CL_FxBlend(cl_entity_t *entity);
 void R_DrawCurrentEntity(void);
@@ -273,7 +274,6 @@ texture_t *Draw_DecalTexture(int index);
 void Draw_MiptexTexture(cachewad_t *wad, byte *data);
 void Draw_UpdateAnsios(void);
 void Draw_Init(void);
-
 void EmitWaterPolys(msurface_t *fa, int direction);
 void MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar);
 void R_SetCustomFrustum(float *org, float *vpn2, float *vright2, float *vup2, float fov);

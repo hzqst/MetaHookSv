@@ -1082,8 +1082,16 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 
 		qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		qglEnable(GL_BLEND);
-
+		auto t = gRefFuncs.R_TextureAnimation(s);
+		GL_Bind(t->gl_texturenum);
 		qglDisable(GL_TEXTURE_2D);
+
+		//DrawGLSolidPoly
+		qglColor4f(
+			(float)(*currententity)->curstate.rendercolor.r / 255.0f,
+			(float)(*currententity)->curstate.rendercolor.g / 255.0f, 
+			(float)(*currententity)->curstate.rendercolor.b / 255.0f,
+			(*r_blend));
 
 		qglEnableClientState(GL_VERTEX_ARRAY);
 		qglEnableClientState(GL_NORMAL_ARRAY);

@@ -14,6 +14,8 @@ r_water_t *waters_active;
 //shader
 SHADER_DEFINE(water);
 SHADER_DEFINE(watergbuffer);
+SHADER_DEFINE(underwater);
+SHADER_DEFINE(underwatergbuffer);
 int water_normalmap;
 
 SHADER_DEFINE(drawdepth);
@@ -118,8 +120,6 @@ void R_InitWater(void)
 				SHADER_UNIFORM(water, fresnel, "fresnel");
 				SHADER_UNIFORM(water, depthfactor, "depthfactor");
 				SHADER_UNIFORM(water, normfactor, "normfactor");
-				SHADER_UNIFORM(water, abovewater, "abovewater");
-				
 				SHADER_UNIFORM(water, normalmap, "normalmap");
 				SHADER_UNIFORM(water, refractmap, "refractmap");
 				SHADER_UNIFORM(water, reflectmap, "reflectmap");
@@ -137,12 +137,36 @@ void R_InitWater(void)
 				SHADER_UNIFORM(watergbuffer, fresnel, "fresnel");
 				SHADER_UNIFORM(watergbuffer, depthfactor, "depthfactor");
 				SHADER_UNIFORM(watergbuffer, normfactor, "normfactor");
-				SHADER_UNIFORM(watergbuffer, abovewater, "abovewater");
-
 				SHADER_UNIFORM(watergbuffer, normalmap, "normalmap");
 				SHADER_UNIFORM(watergbuffer, refractmap, "refractmap");
 				SHADER_UNIFORM(watergbuffer, reflectmap, "reflectmap");
 				SHADER_UNIFORM(watergbuffer, depthrefrmap, "depthrefrmap");
+			}
+
+			underwater.program = R_CompileShaderEx(water_vscode, water_fscode,
+				"water_shader.vsh", "water_shader.fsh",
+				"#define UNDER_WATER", "#define UNDER_WATER");
+			if (underwater.program)
+			{
+				SHADER_UNIFORM(underwater, waterfogcolor, "waterfogcolor");
+				SHADER_UNIFORM(underwater, eyepos, "eyepos");
+				SHADER_UNIFORM(underwater, time, "time");
+				SHADER_UNIFORM(underwater, normfactor, "normfactor");
+				SHADER_UNIFORM(underwater, normalmap, "normalmap");
+				SHADER_UNIFORM(underwater, refractmap, "refractmap");
+			}
+
+			underwatergbuffer.program = R_CompileShaderEx(water_vscode, water_fscode,
+				"water_shader.vsh", "water_shader.fsh",
+				"#define UNDER_WATER\n#define GBUFFER_ENABLED", "#define UNDER_WATER\n#define GBUFFER_ENABLED");
+			if (underwatergbuffer.program)
+			{
+				SHADER_UNIFORM(underwatergbuffer, waterfogcolor, "waterfogcolor");
+				SHADER_UNIFORM(underwatergbuffer, eyepos, "eyepos");
+				SHADER_UNIFORM(underwatergbuffer, time, "time");
+				SHADER_UNIFORM(underwatergbuffer, normfactor, "normfactor");
+				SHADER_UNIFORM(underwatergbuffer, normalmap, "normalmap");
+				SHADER_UNIFORM(underwatergbuffer, refractmap, "refractmap");
 			}
 		}
 
@@ -317,12 +341,6 @@ void R_EnableClip(qboolean isdrawworld)
 			clipPlane[3] = curwater->vecs[2];
 		}
 	}
-
-	//bugfix
-	/*if(isdrawworld && drawrefract && saved_cl_waterlevel <= 2)
-	{
-		clipPlane[3] -= 16.05f;
-	}*/
 
 	qglEnable(GL_CLIP_PLANE0);
 	qglClipPlane(GL_CLIP_PLANE0, clipPlane);

@@ -412,6 +412,11 @@ void R_AddTEntity(cl_entity_t *pEnt)
 	(*numTransObjs)++;
 }
 
+entity_state_t *R_GetPlayerState(int index)
+{
+	return ((entity_state_t *)((char *)cl_frames + size_of_frame * ((*cl_parsecount) & 63) + sizeof(entity_state_t) * index));
+}
+
 void R_DrawCurrentEntity(void)
 {
 	switch ((*currententity)->model->type)
@@ -425,7 +430,7 @@ void R_DrawCurrentEntity(void)
 	{
 		if ((*currententity)->player)
 		{
-			(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER, IEngineStudio.GetPlayerState((*currententity)->index));
+			(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER, R_GetPlayerState((*currententity)->index));
 		}
 		else
 		{
@@ -440,7 +445,7 @@ void R_DrawCurrentEntity(void)
 
 						if ((*currententity)->player)
 						{
-							(*gpStudioInterface)->StudioDrawPlayer(0, IEngineStudio.GetPlayerState((*currententity)->index));
+							(*gpStudioInterface)->StudioDrawPlayer(0, R_GetPlayerState(save_currententity->index));
 						}
 						else
 						{
@@ -500,7 +505,7 @@ void R_DrawEntitiesOnList(void)
 			{
 				if ((*currententity)->player)
 				{
-					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, IEngineStudio.GetPlayerState((*currententity)->index));
+					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
 				}
 				else
 				{
@@ -514,7 +519,7 @@ void R_DrawEntitiesOnList(void)
 
 								if ((*currententity)->player)
 								{
-									(*gpStudioInterface)->StudioDrawPlayer(0, IEngineStudio.GetPlayerState((*currententity)->index));
+									(*gpStudioInterface)->StudioDrawPlayer(0, R_GetPlayerState((*currententity)->index));
 								}
 								else
 								{
@@ -643,7 +648,7 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 					if ((*currententity)->player)
 					{
-						(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, IEngineStudio.GetPlayerState((*currententity)->index));
+						(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
 					}
 					else
 					{
@@ -657,7 +662,7 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 									if ((*currententity)->player)
 									{
-										(*gpStudioInterface)->StudioDrawPlayer(0, IEngineStudio.GetPlayerState((*currententity)->index));
+										(*gpStudioInterface)->StudioDrawPlayer(0, R_GetPlayerState((*currententity)->index));
 									}
 									else
 									{
