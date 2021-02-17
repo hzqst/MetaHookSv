@@ -1518,6 +1518,10 @@ void R_ParseBSPEntities(char *data)
 
 void R_LoadBSPEntities(void)
 {
+	r_light_env_angles_exists = false;
+	r_light_env_color_exists = false;
+	VectorClear(r_light_env_angles);
+
 	for(int i = 0; i < r_wsurf.iNumBSPEntities; i++)
 	{
 		bspentity_t *ent = &r_wsurf.pBSPEntities[i];
@@ -1533,21 +1537,42 @@ void R_LoadBSPEntities(void)
 			if (light)
 			{
 				sscanf(light, "%d %d %d %d", &r_light_env_color[0], &r_light_env_color[1], &r_light_env_color[2], &r_light_env_color[3]);
-
-				r_light_env_enabled = true;
+				r_light_env_color_exists = true;
 			}
 			
-			char *angle = ValueForKey(ent, "angles");
-			if (angle)
+			char *pitch = ValueForKey(ent, "pitch");
+			if (pitch)
 			{
-				sscanf(angle, "%f %f %f", &r_light_env_angles[0], &r_light_env_angles[1], &r_light_env_angles[2]);
+				sscanf(pitch, "%f", &r_light_env_angles[0]);
 				r_light_env_angles[0] += 180;
 				r_light_env_angles[1] += 180;
-
 				if (r_light_env_angles[0] > 360)
 					r_light_env_angles[0] -= 360;
 				if (r_light_env_angles[1] > 360)
 					r_light_env_angles[1] -= 360;
+				r_light_env_angles_exists = true;
+			}
+
+			char *angle = ValueForKey(ent, "angles");
+			if (angle)
+			{
+				vec3_t ang;
+				sscanf(angle, "%f %f %f", &ang[0], &ang[1], &ang[2]);
+				if (ang[0] == 0 && ang[1] == 0 && ang[2] == 0)
+				{
+
+				}
+				else
+				{
+					VectorCopy(ang, r_light_env_angles);
+					r_light_env_angles[0] += 180;
+					r_light_env_angles[1] += 180;
+					if (r_light_env_angles[0] > 360)
+						r_light_env_angles[0] -= 360;
+					if (r_light_env_angles[1] > 360)
+						r_light_env_angles[1] -= 360;
+					r_light_env_angles_exists = true;
+				}
 			}
 		}
 

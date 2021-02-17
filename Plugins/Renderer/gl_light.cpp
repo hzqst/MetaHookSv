@@ -1,8 +1,9 @@
 #include "gl_local.h"
 
 int r_light_env_color[4] = { 0 };
+qboolean r_light_env_color_exists = false;
 vec3_t r_light_env_angles = {0};
-qboolean r_light_env_enabled = false;
+qboolean r_light_env_angles_exists = false;
 
 cvar_t *r_light_dynamic = NULL;
 cvar_t *r_light_debug = NULL;
@@ -140,7 +141,8 @@ void R_InitLight(void)
 	r_light_env_angles[1] = 0;
 	r_light_env_angles[2] = 0;
 
-	r_light_env_enabled = false;
+	r_light_env_color_exists = false;
+	r_light_env_angles_exists = false;
 
 	r_light_dynamic = gEngfuncs.pfnRegisterVariable("r_light_dynamic", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_light_debug = gEngfuncs.pfnRegisterVariable("r_light_debug", "0", FCVAR_CLIENTDLL);

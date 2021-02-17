@@ -206,7 +206,7 @@ void R_RenderShadowMap(void)
 
 	vec3_t sangles;
 
-	if (r_light_env_enabled && r_shadow_map_override->value)
+	if (r_light_env_angles_exists && r_shadow_map_override->value)
 	{
 		sangles[0] = r_light_env_angles[0];
 		sangles[1] = r_light_env_angles[1];
