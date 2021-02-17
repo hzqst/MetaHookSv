@@ -69,13 +69,13 @@ Current state : Ready to use, more feature are coming soon.
 
 6. Fast Approximate Anti-Aliasing (FXAA) when MSAA is not available.
 
-7. Rendering using Deferred-Shading and Per-Pixel-Lighting technique for all non-transparent objects. "unlimited" dynamic lightsource supported. (maximum at 256 for SvEngine)
+7. Rendering using Deferred-Shading and Per-Pixel-Lighting technique for all non-transparent objects. "unlimited" (maximum at 256 for SvEngine) dynamic lightsource supported. (not support with -nofbo)
 
 #### Launch Parameters / Commmandline Parameters
 
 -nofbo : disable FrameBufferObject rendering. add it if you caught some rendering error. SSAO and Deferred-Shading will not be available when FBO disabled.
 
--nomsaa : disable MultiSampling Anti-Aliasing (MSAA).
+-nomsaa : disable MultiSampling Anti-Aliasing (MSAA). add it if you caught some performance hit.
 
 -nohdr : disable High-Dynamic-Range (HDR).
 
@@ -143,7 +143,7 @@ r_ssao 1 / 0 : to enable / disable Screen Space Ambient Occlusion.
 
 r_ssao_intensity : to control the intensity of SSAO shadow.
 
-r_ssao_radius : to control the size of SSAO shadow.
+r_ssao_radius : to control the sample size of SSAO shadow.
 
 r_ssao_blur_sharpness : to control the sharpness of SSAO shadow.
 
