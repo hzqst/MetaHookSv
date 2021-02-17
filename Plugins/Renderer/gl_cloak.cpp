@@ -75,7 +75,7 @@ void R_RenderCloakTexture(void)
 {
 	if(s_CloakFBO.s_hBackBufferFBO && s_BackBufferFBO.s_hBackBufferFBO)
 	{
-		R_PushFrameBuffer();
+		GL_PushFrameBuffer();
 
 		if(s_MSAAFBO.s_hBackBufferFBO)
 			qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
@@ -86,7 +86,7 @@ void R_RenderCloakTexture(void)
 
 		qglBlitFramebufferEXT(0, 0, glwidth, glheight, 0, 0, s_CloakFBO.iWidth, s_CloakFBO.iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
-		R_PopFrameBuffer();
+		GL_PopFrameBuffer();
 	}
 	else
 	{

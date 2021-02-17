@@ -6,12 +6,12 @@ uniform vec3 viewpos;
 uniform vec3 lightdir;
 uniform vec3 lightpos;
 uniform vec3 lightcolor;
-uniform float lightcone = 0.92;
-uniform float lightradius = 1000.0;
-uniform float lightambient = 1.0;
-uniform float lightdiffuse = 0.0;
-uniform float lightspecular = 0.0;
-uniform float lightspecularpow = 0.0;
+uniform float lightcone;
+uniform float lightradius;
+uniform float lightambient
+uniform float lightdiffuse;
+uniform float lightspecular;
+uniform float lightspecularpow;
 #endif
 
 #ifdef FINAL_PASS

@@ -146,17 +146,13 @@ typedef struct
 	int (*R_GetSupportExtension)(void);
 	//refdef
 	void (*R_PushRefDef)(void);
-	void (*R_UpdateRefDef)(void);
 	void (*R_PopRefDef)(void);
-	float *(*R_GetSavedViewOrg)(void);
 	refdef_t *(*R_GetRefDef)(void);
 	//framebuffer
-	void (*R_PushFrameBuffer)(void);
-	void (*R_PopFrameBuffer)(void);
-	void (*R_GLBindFrameBuffer)(GLenum target, GLuint framebuffer);
+	void (*GL_PushFrameBuffer)(void);
+	void (*GL_PopFrameBuffer)(void);
 	//texture
-	GLuint (*R_GLGenTextureRGBA8)(int w, int h);
-	byte *(*R_GetTexLoaderBuffer)(int *bufsize);
+	GLuint (*GL_GenTextureRGBA8)(int w, int h);
 	int (*R_LoadTextureEx)(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio);
 	int (*GL_LoadTextureEx)(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, qboolean ansio);
 	gltexture_t *(*R_GetCurrentGLTexture)(void);

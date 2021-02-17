@@ -170,36 +170,36 @@ void R_RenderShadowMap(void)
 	if (!shadow_depthmap_high)
 	{
 		shadow_depthmap_high_texsize = highSize;
-		shadow_depthmap_high = R_GLGenShadowTexture(highSize, highSize);
+		shadow_depthmap_high = GL_GenShadowTexture(highSize, highSize);
 	}
 	else if (shadow_depthmap_high_texsize != highSize)
 	{
 		shadow_depthmap_high_texsize = highSize;
-		R_GLUploadShadowTexture(shadow_depthmap_high, highSize, highSize);
+		GL_UploadShadowTexture(shadow_depthmap_high, highSize, highSize);
 	}
 
 	int mediumSize = R_GetTextureSizePowerOfTwo(r_shadow_medium_texsize->value);
 	if (!shadow_depthmap_medium)
 	{
 		shadow_depthmap_medium_texsize = mediumSize;
-		shadow_depthmap_medium = R_GLGenShadowTexture(mediumSize, mediumSize);
+		shadow_depthmap_medium = GL_GenShadowTexture(mediumSize, mediumSize);
 	}
 	else if (shadow_depthmap_medium_texsize != mediumSize)
 	{
 		shadow_depthmap_medium_texsize = mediumSize;
-		R_GLUploadShadowTexture(shadow_depthmap_medium, mediumSize, mediumSize);
+		GL_UploadShadowTexture(shadow_depthmap_medium, mediumSize, mediumSize);
 	}
 
 	int lowSize = R_GetTextureSizePowerOfTwo(r_shadow_low_texsize->value);
 	if (!shadow_depthmap_low)
 	{
 		shadow_depthmap_low_texsize = lowSize;
-		shadow_depthmap_low = R_GLGenShadowTexture(lowSize, lowSize);
+		shadow_depthmap_low = GL_GenShadowTexture(lowSize, lowSize);
 	}
 	else if (shadow_depthmap_low_texsize != lowSize)
 	{
 		shadow_depthmap_low_texsize = lowSize;
-		R_GLUploadShadowTexture(shadow_depthmap_low, lowSize, lowSize);
+		GL_UploadShadowTexture(shadow_depthmap_low, lowSize, lowSize);
 	}
 
 	vec3_t sangles;
@@ -219,7 +219,7 @@ void R_RenderShadowMap(void)
 
 	if(s_ShadowFBO.s_hBackBufferFBO)
 	{
-		R_PushFrameBuffer();
+		GL_PushFrameBuffer();
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_ShadowFBO.s_hBackBufferFBO);
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
 		qglDrawBuffer(GL_NONE);
@@ -336,7 +336,7 @@ void R_RenderShadowMap(void)
 	if(s_ShadowFBO.s_hBackBufferFBO)
 	{
 		qglDrawBuffer(GL_COLOR_ATTACHMENT0);
-		R_PopFrameBuffer();
+		GL_PopFrameBuffer();
 	}
 }
 
@@ -607,7 +607,7 @@ void R_DrawEntitiesOnListShadow(void)
 
 void R_RenderShadowScenes(void)
 {
-	if(!shadow.program || !r_shadow || !r_shadow->value)
+	if(!shadow.program || !r_shadow->value)
 		return;
 
 	if (!shadow_depthmap_high)
@@ -618,6 +618,8 @@ void R_RenderShadowScenes(void)
 
 	if (!shadow_depthmap_low)
 		return;
+
+	GL_PushDrawState();
 
 	const float bias[16] = {
 		0.5f, 0.0f, 0.0f, 0.0f, 
@@ -810,13 +812,7 @@ void R_RenderShadowScenes(void)
 	qglDisable(GL_TEXTURE_GEN_R);
 	qglDisable(GL_TEXTURE_GEN_Q);
 
-	qglDepthMask(GL_TRUE);
-	qglEnable(GL_DEPTH_TEST);
-
-	if (gl_polyoffset->value)
-	{
-		qglDisable(GL_POLYGON_OFFSET_FILL);
-	}
-
 	qglMatrixMode(GL_MODELVIEW);
+
+	GL_PopDrawState();
 }

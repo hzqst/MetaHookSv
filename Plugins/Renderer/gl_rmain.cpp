@@ -13,7 +13,6 @@ float gldepthmin, gldepthmax;
 cl_entity_t *r_worldentity;
 model_t *r_worldmodel;
 int *cl_numvisedicts;
-int cl_maxvisedicts;
 
 RECT *window_rect;
 
@@ -27,8 +26,6 @@ cl_entity_t **currententity;
 int *numTransObjs;
 int *maxTransObjs;
 transObjRef **transObjects;
-GLuint drawframebuffer;
-GLuint readframebuffer;
 
 float scr_fov_value;
 
@@ -78,6 +75,7 @@ int gl_msaa_samples = 0;
 
 int *gl_msaa_fbo = 0;
 int *gl_backbuffer_fbo = 0;
+qboolean *mtexenabled = 0;
 
 int glx = 0;
 int gly = 0;
@@ -97,7 +95,6 @@ FBO_Container_t s_ToneMapFBO;
 FBO_Container_t s_DepthLinearFBO;
 FBO_Container_t s_HBAOCalcFBO;
 FBO_Container_t s_CloakFBO;
-FBO_Container_t s_DLightFBO;
 FBO_Container_t s_ShadowFBO;
 FBO_Container_t s_WaterFBO;
 
@@ -169,11 +166,6 @@ cvar_t *v_brightness = NULL;
 cvar_t *v_gamma = NULL;
 
 cvar_t *cl_righthand = NULL;
-
-refdef_t *R_GetRefDef(void)
-{
-	return r_refdef;
-}
 
 int R_GetDrawPass(void)
 {
@@ -1137,7 +1129,6 @@ void GL_GenerateFBO(void)
 	GL_ClearFBO(&s_DepthLinearFBO);
 	GL_ClearFBO(&s_HBAOCalcFBO);
 	GL_ClearFBO(&s_CloakFBO);
-	GL_ClearFBO(&s_DLightFBO);
 
 	if(!bDoScaledFBO)
 		bDoMSAAFBO = false;
@@ -1225,8 +1216,8 @@ void GL_GenerateFBO(void)
 
 	if (!s_BackBufferFBO.s_hBackBufferTex)
 	{
-		s_BackBufferFBO.s_hBackBufferTex = R_GLGenTextureColorFormat(s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight, iColorInternalFormat);
-		s_BackBufferFBO.s_hBackBufferDepthTex = R_GLGenDepthTexture(s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight);
+		s_BackBufferFBO.s_hBackBufferTex = GL_GenTextureColorFormat(s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight, iColorInternalFormat);
+		s_BackBufferFBO.s_hBackBufferDepthTex = GL_GenDepthTexture(s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight);
 		s_BackBufferFBO.iWidth = glwidth;
 		s_BackBufferFBO.iHeight = glheight;
 		s_BackBufferFBO.iTextureColorFormat = iColorInternalFormat;
@@ -1247,7 +1238,7 @@ void GL_GenerateFBO(void)
 	}
 	if (!s_DepthLinearFBO.s_hBackBufferTex)
 	{
-		s_DepthLinearFBO.s_hBackBufferTex = R_GLGenTextureColorFormat(glwidth, glheight, GL_R32F);	
+		s_DepthLinearFBO.s_hBackBufferTex = GL_GenTextureColorFormat(glwidth, glheight, GL_R32F);	
 		s_DepthLinearFBO.iWidth = glwidth;
 		s_DepthLinearFBO.iHeight = glheight;
 		s_DepthLinearFBO.iTextureColorFormat = GL_R32F;
@@ -1274,25 +1265,6 @@ void GL_GenerateFBO(void)
 		s_HBAOCalcFBO.iWidth = glwidth;
 		s_HBAOCalcFBO.iHeight = glheight;
 		s_HBAOCalcFBO.iTextureColorFormat = GL_RG16F;
-	}
-
-	if (bDoScaledFBO)
-	{
-		R_GLGenFrameBuffer(&s_DLightFBO);
-		R_GLFrameBufferColorTexture(&s_DLightFBO, iColorInternalFormat, false);
-
-		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		{
-			GL_FreeFBO(&s_DLightFBO);
-			gEngfuncs.Con_Printf("DynamicLight FBO rendering disabled due to create error.\n");
-		}
-	}
-	if (!s_DLightFBO.s_hBackBufferTex)
-	{
-		s_DLightFBO.s_hBackBufferTex = R_GLGenTextureColorFormat(glwidth, glheight, iColorInternalFormat);
-		s_DLightFBO.iWidth = glwidth;
-		s_DLightFBO.iHeight = glheight;
-		s_DLightFBO.iTextureColorFormat = iColorInternalFormat;
 	}
 
 	s_ShadowFBO.iWidth = glwidth;
@@ -1337,7 +1309,7 @@ void GL_GenerateFBO(void)
 			
 			if (!s_DownSampleFBO[i].s_hBackBufferTex)
 			{
-				s_DownSampleFBO[i].s_hBackBufferTex = R_GLGenTextureColorFormat(downW, downH, iColorInternalFormat);
+				s_DownSampleFBO[i].s_hBackBufferTex = GL_GenTextureColorFormat(downW, downH, iColorInternalFormat);
 				s_DownSampleFBO[i].iTextureColorFormat = iColorInternalFormat;
 			}
 		}
@@ -1388,7 +1360,7 @@ void GL_GenerateFBO(void)
 
 			if(!s_LuminFBO[i].s_hBackBufferTex)
 			{
-				s_LuminFBO[i].s_hBackBufferTex = R_GLGenTextureColorFormat(downW, downH, GL_R32F);
+				s_LuminFBO[i].s_hBackBufferTex = GL_GenTextureColorFormat(downW, downH, GL_R32F);
 				s_LuminFBO[i].iTextureColorFormat = GL_R32F;
 			}
 
@@ -1418,7 +1390,7 @@ void GL_GenerateFBO(void)
 
 			if (!s_Lumin1x1FBO[i].s_hBackBufferTex)
 			{
-				s_Lumin1x1FBO[i].s_hBackBufferTex = R_GLGenTextureColorFormat(1, 1, GL_R32F);
+				s_Lumin1x1FBO[i].s_hBackBufferTex = GL_GenTextureColorFormat(1, 1, GL_R32F);
 				s_Lumin1x1FBO[i].iTextureColorFormat = GL_R32F;
 			}
 		}
@@ -1443,7 +1415,7 @@ void GL_GenerateFBO(void)
 
 		if (!s_BrightPassFBO.s_hBackBufferTex)
 		{
-			s_BrightPassFBO.s_hBackBufferTex = R_GLGenTextureColorFormat(glwidth >> DOWNSAMPLE_BUFFERS, glheight >> DOWNSAMPLE_BUFFERS, iColorInternalFormat);
+			s_BrightPassFBO.s_hBackBufferTex = GL_GenTextureColorFormat(glwidth >> DOWNSAMPLE_BUFFERS, glheight >> DOWNSAMPLE_BUFFERS, iColorInternalFormat);
 			s_BrightPassFBO.iTextureColorFormat = iColorInternalFormat;
 		}
 	}
@@ -1475,7 +1447,7 @@ void GL_GenerateFBO(void)
 
 				if (!s_BlurPassFBO[i][j].s_hBackBufferTex)
 				{
-					s_BlurPassFBO[i][j].s_hBackBufferTex = R_GLGenTextureColorFormat(downW, downH, iColorInternalFormat);
+					s_BlurPassFBO[i][j].s_hBackBufferTex = GL_GenTextureColorFormat(downW, downH, iColorInternalFormat);
 					s_BlurPassFBO[i][j].iTextureColorFormat = iColorInternalFormat;
 				}
 			}
@@ -1503,7 +1475,7 @@ void GL_GenerateFBO(void)
 
 		if (!s_BrightAccumFBO.s_hBackBufferTex)
 		{
-			s_BrightAccumFBO.s_hBackBufferTex = R_GLGenTextureColorFormat(glwidth >> DOWNSAMPLE_BUFFERS, glheight >> DOWNSAMPLE_BUFFERS, iColorInternalFormat);
+			s_BrightAccumFBO.s_hBackBufferTex = GL_GenTextureColorFormat(glwidth >> DOWNSAMPLE_BUFFERS, glheight >> DOWNSAMPLE_BUFFERS, iColorInternalFormat);
 			s_BrightAccumFBO.iTextureColorFormat = iColorInternalFormat;
 		}
 	}
@@ -1527,7 +1499,7 @@ void GL_GenerateFBO(void)
 
 		if (!s_ToneMapFBO.s_hBackBufferTex)
 		{
-			s_ToneMapFBO.s_hBackBufferTex = R_GLGenTextureColorFormat(s_ToneMapFBO.iWidth, s_ToneMapFBO.iHeight, GL_RGBA8);
+			s_ToneMapFBO.s_hBackBufferTex = GL_GenTextureColorFormat(s_ToneMapFBO.iWidth, s_ToneMapFBO.iHeight, GL_RGBA8);
 			s_ToneMapFBO.iTextureColorFormat = GL_RGBA8;
 		}
 	}
@@ -1550,7 +1522,6 @@ void GL_GenerateFBO(void)
 	}
 
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, 0);
-	readframebuffer = drawframebuffer = 0;
 }
 
 void GL_Init(void)
@@ -1583,7 +1554,6 @@ void GL_Shutdown(void)
 	GL_FreeFBO(&s_ToneMapFBO);
 	GL_FreeFBO(&s_DepthLinearFBO);
 	GL_FreeFBO(&s_HBAOCalcFBO);
-	GL_FreeFBO(&s_DLightFBO);
 	GL_FreeFBO(&s_ShadowFBO);
 	GL_FreeFBO(&s_WaterFBO);
 }
@@ -1606,11 +1576,6 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-bool R_CanUseMSAAFrameBuffer(void)
-{
-	return s_MSAAFBO.s_hBackBufferFBO;// && !r_light_dynamic->value;
-}
-
 void R_PreRenderView()
 {
 	if (!r_refdef->onlyClientDraws)
@@ -1627,7 +1592,7 @@ void R_PreRenderView()
 
 	if (s_BackBufferFBO.s_hBackBufferFBO)
 	{
-		if (R_CanUseMSAAFrameBuffer())
+		if (s_MSAAFBO.s_hBackBufferFBO)
 			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
 		else
 			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
@@ -1638,16 +1603,8 @@ void R_PostRenderView()
 {
 	if (s_BackBufferFBO.s_hBackBufferFBO)
 	{
-		if (R_CanUseMSAAFrameBuffer())
+		if (s_MSAAFBO.s_hBackBufferFBO)
 		{
-			for (int sampleIndex = 0; sampleIndex < max(1, sampleIndex); sampleIndex++)
-			{
-				if (!R_DoSSAO(sampleIndex))
-				{
-					break;
-				}
-			}
-
 			qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 			qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
 			qglBlitFramebufferEXT(0, 0, s_MSAAFBO.iWidth, s_MSAAFBO.iHeight, 0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
@@ -1656,7 +1613,6 @@ void R_PostRenderView()
 		}
 		else
 		{
-			R_DoSSAO(-1);
 			R_DoFXAA();
 			R_DoHDR();
 		}
@@ -1664,7 +1620,6 @@ void R_PostRenderView()
 	}
 	else
 	{
-		R_DoSSAO(-1);
 		R_DoFXAA();
 		R_DoHDR();
 	}
@@ -1698,6 +1653,24 @@ void R_RenderView(void)
 void R_RenderScene(void)
 {
 	gRefFuncs.R_RenderScene();
+
+	if (!drawreflect && !drawrefract)
+	{
+		if (s_MSAAFBO.s_hBackBufferFBO)
+		{
+			for (int sampleIndex = 0; sampleIndex < max(1, gl_msaa_samples); sampleIndex++)
+			{
+				if (!R_DoSSAO(sampleIndex))
+				{
+					break;
+				}
+			}
+		}
+		else
+		{
+			R_DoSSAO(-1);
+		}
+	}
 }
 
 void R_DrawWorld(void)
@@ -1913,7 +1886,7 @@ void R_Init(void)
 	R_InitStudio();
 	R_InitShadow();
 	R_InitWSurf();
-	R_InitRefHUD();
+	R_InitGLHUD();
 	R_Init3DSky();
 	R_InitCloak();
 	R_InitLight();
@@ -1941,4 +1914,34 @@ void R_ForceCVars(qboolean mp)
 		return;
 
 	gRefFuncs.R_ForceCVars(mp);
+}
+
+void R_NewMap(void)
+{
+	r_worldentity = gEngfuncs.GetEntityByIndex(0);
+	r_worldmodel = r_worldentity->model;
+
+	gRefFuncs.R_NewMap();
+
+	R_VidInitWSurf();
+}
+
+mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
+{
+	if (drawreflect && model == r_worldmodel && 0 == VectorCompare(p, r_refdef->vieworg))
+	{
+		return gRefFuncs.Mod_PointInLeaf(water_view, model);
+	}
+
+	return gRefFuncs.Mod_PointInLeaf(p, model);
+}
+
+float *R_GetAttachmentPoint(int entity, int attachment)
+{
+	auto pEntity = gEngfuncs.GetEntityByIndex(entity);
+
+	if (attachment)
+		return pEntity->attachment[attachment - 1];
+
+	return pEntity->origin;
 }

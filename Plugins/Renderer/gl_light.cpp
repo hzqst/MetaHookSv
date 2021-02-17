@@ -146,8 +146,8 @@ void R_InitLight(void)
 	r_light_dynamic = gEngfuncs.pfnRegisterVariable("r_light_dynamic", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_light_debug = gEngfuncs.pfnRegisterVariable("r_light_debug", "0", FCVAR_CLIENTDLL);
 
-	r_light_ambient = gEngfuncs.pfnRegisterVariable("r_light_ambient", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_light_diffuse = gEngfuncs.pfnRegisterVariable("r_light_diffuse", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_light_ambient = gEngfuncs.pfnRegisterVariable("r_light_ambient", "0.35", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_light_diffuse = gEngfuncs.pfnRegisterVariable("r_light_diffuse", "0.35", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_light_specular = gEngfuncs.pfnRegisterVariable("r_light_specular", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_light_specularpow = gEngfuncs.pfnRegisterVariable("r_light_specularpow", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
@@ -245,7 +245,7 @@ void R_BeginRenderGBuffer(void)
 
 	drawgbuffer = true;
 
-	R_PushFrameBuffer();
+	GL_PushFrameBuffer();
 
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
 
@@ -263,10 +263,11 @@ void R_EndRenderGBuffer(void)
 
 	drawgbuffer = false;
 
-	//Write to lightmap texture only
-	qglDrawBuffer(GL_COLOR_ATTACHMENT1);
+	GL_PushDrawState();
+	GL_PushMatrix();
 
-	R_PushMatrix();
+	//Write to GBuffer->lightmap only
+	qglDrawBuffer(GL_COLOR_ATTACHMENT1);
 
 	R_BeginHUDQuad();
 
@@ -377,8 +378,8 @@ void R_EndRenderGBuffer(void)
 	//End light pass
 	qglUseProgramObjectARB(0);
 
-	//Begin shading pass
-	R_PopFrameBuffer();
+	//Begin shading pass, write to main FBO?
+	GL_PopFrameBuffer();
 	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	//Bind new lightmap at texture1
@@ -387,18 +388,20 @@ void R_EndRenderGBuffer(void)
 	qglUniform1iARB(dlight_final.lightmapTex, 1);
 	qglUniform1iARB(dlight_final.depthTex, 2);
 
+	//Allow depth data to be transfered to main FBO
 	qglDisable(GL_BLEND);
 	qglEnable(GL_DEPTH_TEST);
 	qglDepthMask(GL_TRUE);
 
-	//Diffuse texture
+	//Diffuse texture (for merging)
 	GL_SelectTexture(TEXTURE0_SGIS);
 	GL_Bind(s_GBufferFBO.s_hBackBufferTex);
 
-	//Lightmap texture
+	//Lightmap texture (for merging)
 	GL_EnableMultitexture();
 	GL_Bind(s_GBufferFBO.s_hBackBufferTex2);
 
+	//Depth texture (for direct-writing)
 	qglActiveTextureARB(TEXTURE2_SGIS);
 	qglEnable(GL_TEXTURE_2D);
 	qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
@@ -409,8 +412,8 @@ void R_EndRenderGBuffer(void)
 	qglDisable(GL_TEXTURE_2D);
 	qglActiveTextureARB(TEXTURE1_SGIS);
 
-	//FXAA when MSAA available for all render stage
-	if (r_fxaa->value && R_CanUseMSAAFrameBuffer() && (!drawreflect && !drawrefract))
+	//FXAA for shading stage when MSAA available for all other render stage
+	if (r_fxaa->value && s_MSAAFBO.s_hBackBufferFBO && (!drawreflect && !drawrefract))
 	{
 		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 		qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
@@ -428,12 +431,6 @@ void R_EndRenderGBuffer(void)
 
 	qglUseProgramObjectARB(0);
 
-	GL_EnableMultitexture();
-
-	R_EndHUDQuad();
-
-	//qglDisable(GL_BLEND);
-	qglDepthMask(GL_TRUE);
-
-	R_PopMatrix();
+	GL_PopMatrix();
+	GL_PopDrawState();
 }

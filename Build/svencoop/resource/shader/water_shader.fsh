@@ -7,7 +7,6 @@ uniform float fresnel;
 uniform float depthfactor;
 uniform float normfactor;
 uniform sampler2D normalmap;
-uniform sampler2D dudvmap;
 uniform sampler2D refractmap;
 uniform sampler2D reflectmap;
 uniform sampler2D depthrefrmap;
@@ -54,7 +53,7 @@ void main()
 #ifdef UNDER_WATER
 
 		//lerp waterfog color and refraction color
-		float flWaterColorAlpha = clamp(waterfogcolor.a, 0.01, 0.99);
+		float flWaterColorAlpha = clamp(waterfogcolor.a, 0.01, 0.9);
 
 		vec4 vFinalColor2 = vRefractColor * (1.0 - flWaterColorAlpha) + waterfogcolor * flWaterColorAlpha;
 

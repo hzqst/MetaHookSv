@@ -171,7 +171,6 @@ xcopy "$(OutDir)\..\..\..\Build\svencoop\resource\shader\*.*" "I:\SteamLibrary\s
     <ClCompile Include="parsemsg.cpp" />
     <ClCompile Include="plugins.cpp" />
     <ClCompile Include="qgl.cpp" />
-    <ClCompile Include="zone.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\Interface\IRenderer.h" />

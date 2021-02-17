@@ -84,7 +84,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	unsigned char *pSourcePalette;
 	qboolean useProgram = false, dontShader = false;
 
-	if (drawreflect || drawrefract)
+	if (drawreflect)
 		return;
 
 	if (fa->texinfo->texture)
@@ -94,6 +94,14 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		{
 			dontShader = true;
 		}
+	}
+
+	if (drawrefract)
+	{
+		if ((*currententity) == r_worldentity)
+			dontShader = true;
+		else
+			return;
 	}
 
 	float clientTime = (*cl_time);
@@ -127,19 +135,22 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 
 	if(r_water && r_water->value && water.program && !dontShader)
 	{
-		if ((*currententity) != r_worldentity && (*currententity)->model->maxs[2] - (*currententity)->model->mins[2] < r_water_minheight->value)
+		r_water_t *waterObject = NULL;
+
+		bool bAboveWater = *cl_waterlevel <= 2 ? true : false;
+
+		if ((*currententity) != r_worldentity && bAboveWater && (*currententity)->model->maxs[2] - (*currententity)->model->mins[2] < r_water_minheight->value)
 		{
 
 		}
 		else
 		{
-			R_AddEntityWater((*currententity), tempVert, gWaterColor);
+			waterObject = R_GetActiveWater((*currententity), tempVert, gWaterColor);
 		}
 
-		bool bAboveWater = *cl_waterlevel <= 2 ? true : false;
-
-		if(curwater && curwater->refractmap_ready && ((curwater->reflectmap_ready && bAboveWater) || !bAboveWater))
+		if(waterObject && waterObject->refractmap_ready && ((waterObject->reflectmap_ready && bAboveWater) || !bAboveWater))
 		{
+
 			float alpha = 1;
 			if ((*currententity)->curstate.rendermode == kRenderTransTexture)
 				alpha = (*r_blend);
@@ -149,7 +160,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 				if (drawgbuffer)
 				{
 					qglUseProgramObjectARB(watergbuffer.program);
-					qglUniform4fARB(watergbuffer.waterfogcolor, curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, alpha);
+					qglUniform4fARB(watergbuffer.waterfogcolor, waterObject->color.r / 255.0f, waterObject->color.g / 255.0f, waterObject->color.b / 255.0f, alpha);
 					qglUniform3fARB(watergbuffer.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
 					qglUniform1fARB(watergbuffer.time, clientTime);
 					qglUniform1fARB(watergbuffer.fresnel, clamp(r_water_fresnel->value, 0.0, 10.0));
@@ -163,7 +174,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 				else
 				{
 					qglUseProgramObjectARB(water.program);
-					qglUniform4fARB(water.waterfogcolor, curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, alpha);
+					qglUniform4fARB(water.waterfogcolor, waterObject->color.r / 255.0f, waterObject->color.g / 255.0f, waterObject->color.b / 255.0f, alpha);
 					qglUniform3fARB(water.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
 					qglUniform1fARB(water.time, clientTime);
 					qglUniform1fARB(water.fresnel, clamp(r_water_fresnel->value, 0.0, 10.0));
@@ -180,7 +191,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 				if (drawgbuffer)
 				{
 					qglUseProgramObjectARB(underwatergbuffer.program);
-					qglUniform4fARB(underwatergbuffer.waterfogcolor, curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, alpha);
+					qglUniform4fARB(underwatergbuffer.waterfogcolor, waterObject->color.r / 255.0f, waterObject->color.g / 255.0f, waterObject->color.b / 255.0f, alpha);
 					qglUniform3fARB(underwatergbuffer.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
 					qglUniform1fARB(underwatergbuffer.time, clientTime);
 					qglUniform1fARB(underwatergbuffer.normfactor, clamp(r_water_normfactor->value, 0.0, 1000.0));
@@ -190,7 +201,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 				else
 				{
 					qglUseProgramObjectARB(underwater.program);
-					qglUniform4fARB(underwater.waterfogcolor, curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, alpha);
+					qglUniform4fARB(underwater.waterfogcolor, waterObject->color.r / 255.0f, waterObject->color.g / 255.0f, waterObject->color.b / 255.0f, alpha);
 					qglUniform3fARB(underwater.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
 					qglUniform1fARB(underwater.time, clientTime);
 					qglUniform1fARB(underwater.normfactor, clamp(r_water_normfactor->value, 0.0, 1000.0));
@@ -206,15 +217,15 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 			GL_Bind(water_normalmap);
 
 			GL_EnableMultitexture();
-			GL_Bind(curwater->refractmap);
+			GL_Bind(waterObject->refractmap);
 
 			qglActiveTextureARB(TEXTURE2_SGIS);
 			qglEnable(GL_TEXTURE_2D);
-			qglBindTexture(GL_TEXTURE_2D, curwater->reflectmap);
+			qglBindTexture(GL_TEXTURE_2D, waterObject->reflectmap);
 
 			qglActiveTextureARB(TEXTURE3_SGIS);
 			qglEnable(GL_TEXTURE_2D);
-			qglBindTexture(GL_TEXTURE_2D, curwater->depthrefrmap);
+			qglBindTexture(GL_TEXTURE_2D, waterObject->depthrefrmap);
 
 			useProgram = true;
 		}
@@ -224,6 +235,12 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		scale = (*currententity)->curstate.scale;
 	else
 		scale = -(*currententity)->curstate.scale;
+
+	if (drawrefract)
+		scale = 0;
+
+	if (useProgram)
+		scale = 0;
 
 	for (p = fa->polys; p; p = p->next)
 	{
@@ -242,7 +259,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 
 				tempVert[0] = v[0];
 				tempVert[1] = v[1];
-				tempVert[2] = v[2];
+				tempVert[2] = v[2] + (s * scale);
 
 				os = v[3];
 				ot = v[4];
@@ -306,8 +323,6 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	EmitWaterPolysWireFrame(fa, direction, useProgram);
 
 	R_SetGBufferRenderState(2);
-
-	curwater = NULL;
 }
 
 #define SKY_TEX 5800
@@ -616,6 +631,7 @@ void MakeSkyVec(float s, float t, int axis)
 	t = 1.0f - t;
 
 	qglTexCoord2f(s, t);
+	//qglNormal3fv();
 	qglVertex3fv(v);
 }
 
@@ -624,6 +640,15 @@ int skytexorder[6] = { 0, 2, 1, 3, 4, 5 };
 void R_DrawSkyBox(void)
 {
 	int i, order;
+
+	float vNormalTable[6][3] = { 
+		{-1, 0, 0},
+		{1, 0, 0},
+		{0, -1, 0},
+		{0, 1, 0},
+		{0, 0, -1},
+		{0, 0, 1}
+	};
 
 	for (i = 0; i < 6; i++)
 	{
@@ -649,6 +674,7 @@ void R_DrawSkyBox(void)
 		}
 
 		qglBegin(GL_QUADS);
+		qglNormal3fv(vNormalTable[i]);
 		MakeSkyVec(skymins->v[0][i], skymins->v[1][i], i);
 		MakeSkyVec(skymins->v[0][i], skymaxs->v[1][i], i);
 		MakeSkyVec(skymaxs->v[0][i], skymaxs->v[1][i], i);

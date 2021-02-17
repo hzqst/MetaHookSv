@@ -1000,6 +1000,22 @@ static void R_DecalMPoly(float *v, texture_t *ptexture, msurface_t *psurf, int v
 
 void R_DrawDecals(qboolean bMultitexture)
 {
+	if (bMultitexture)
+	{
+		R_SetRenderGBufferDecal();
+		R_SetGBufferRenderState(2);
+		gRefFuncs.R_DrawDecals(bMultitexture);
+		R_SetRenderGBufferAll();
+	}
+	else
+	{
+		R_SetRenderGBufferDecal();
+		R_SetGBufferRenderState(1);
+		gRefFuncs.R_DrawDecals(bMultitexture);
+		R_SetRenderGBufferAll();
+	}
+	return;
+
 	decal_t *plist;
 	int i, outCount;
 	texture_t *ptexture;

@@ -7,4 +7,4 @@
 
 #define ET_3DSKYENTITY				5
 
-#define MAX_SAVEREFDEF_STACK 16
+#define MAX_SAVESTACK 16

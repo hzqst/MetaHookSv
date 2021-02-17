@@ -1,28 +1,61 @@
 #include "gl_local.h"
 
-vec3_t save_vieworg[MAX_SAVEREFDEF_STACK];
-vec3_t save_viewang[MAX_SAVEREFDEF_STACK];
-int save_refdefstack = 0;
-
-void R_PushFrameBuffer(void)
+typedef struct
 {
-	if(gl_framebuffer_object)
+	GLboolean polygon_offset_fill;
+	GLboolean cullface;
+	GLboolean alphatest;
+	GLboolean depthtest;
+	GLboolean depthmask;
+	GLboolean blend;
+	int blendsrc;
+	int blenddst;
+	qboolean mtex;
+}gl_draw_context;
+
+vec3_t save_vieworg[MAX_SAVESTACK];
+
+vec3_t save_viewang[MAX_SAVESTACK];
+
+int save_refdef_stack = 0;
+
+gl_draw_context save_drawcontext[MAX_SAVESTACK];
+
+int save_drawcontext_stack = 0;
+
+GLint save_readframebuffer = 0;
+
+GLint save_drawframebuffer = 0;
+
+bool GL_CanUseMSAAFrameBuffer(void)
+{
+	return s_MSAAFBO.s_hBackBufferFBO;
+}
+
+bool GL_CanUseBackFrameBuffer(void)
+{
+	return s_BackBufferFBO.s_hBackBufferFBO;
+}
+
+void GL_PushFrameBuffer(void)
+{
+	if(gl_framebuffer_object && GL_CanUseBackFrameBuffer())
 	{
-		qglGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, (GLint *)&readframebuffer);
-		qglGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, (GLint *)&drawframebuffer);
+		qglGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &save_readframebuffer);
+		qglGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &save_drawframebuffer);
 	}
 }
 
-void R_PopFrameBuffer(void)
+void GL_PopFrameBuffer(void)
 {
-	if(gl_framebuffer_object)
+	if(gl_framebuffer_object && GL_CanUseBackFrameBuffer())
 	{
-		qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, readframebuffer);
-		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, drawframebuffer);
+		qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, save_readframebuffer);
+		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, save_drawframebuffer);
 	}
 }
 
-void R_PushMatrix(void)
+void GL_PushMatrix(void)
 {
 	qglMatrixMode(GL_PROJECTION);
 	qglPushMatrix();
@@ -31,7 +64,7 @@ void R_PushMatrix(void)
 	qglPushMatrix();
 }
 
-void R_PopMatrix(void)
+void GL_PopMatrix(void)
 {
 	qglMatrixMode(GL_PROJECTION);
 	qglPopMatrix();
@@ -40,15 +73,115 @@ void R_PopMatrix(void)
 	qglPopMatrix();
 }
 
-void R_GLBindFrameBuffer(GLenum target, GLuint framebuffer)
+void GL_PushDrawState(void)
 {
-	if(gl_framebuffer_object)
+	if (save_drawcontext_stack == MAX_SAVESTACK)
 	{
-		qglBindFramebufferEXT(target, framebuffer);
+		Sys_ErrorEx("GL_PushDrawState: MAX_SAVESTACK exceed");
+		return;
 	}
+	qglGetBooleanv(GL_POLYGON_OFFSET_FILL, &save_drawcontext[save_drawcontext_stack].polygon_offset_fill);
+	qglGetBooleanv(GL_CULL_FACE, &save_drawcontext[save_drawcontext_stack].cullface);
+	qglGetBooleanv(GL_ALPHA_TEST, &save_drawcontext[save_drawcontext_stack].alphatest);
+	qglGetBooleanv(GL_DEPTH_TEST, &save_drawcontext[save_drawcontext_stack].depthtest);
+	qglGetBooleanv(GL_DEPTH_WRITEMASK, &save_drawcontext[save_drawcontext_stack].depthmask);
+	qglGetBooleanv(GL_BLEND, &save_drawcontext[save_drawcontext_stack].blend);
+	if (save_drawcontext[save_drawcontext_stack].blend)
+	{
+		qglGetIntegerv(GL_BLEND_SRC, &save_drawcontext[save_drawcontext_stack].blendsrc);
+		qglGetIntegerv(GL_BLEND_DST, &save_drawcontext[save_drawcontext_stack].blenddst);
+	}
+	save_drawcontext[save_drawcontext_stack].mtex = *mtexenabled;
+
+	++save_drawcontext_stack;
 }
 
-void R_GLUploadTextureColorFormat(int texid, int w, int h, int iInternalFormat)
+void GL_PopDrawState(void)
+{
+	if (save_drawcontext_stack == 0)
+	{
+		Sys_ErrorEx("GL_PopDrawState: no drawcontext saved");
+		return;
+	}
+	--save_drawcontext_stack;
+
+	if(save_drawcontext[save_drawcontext_stack].polygon_offset_fill)
+		qglEnable(GL_POLYGON_OFFSET_FILL);
+	else
+		qglDisable(GL_POLYGON_OFFSET_FILL);
+
+	if (save_drawcontext[save_drawcontext_stack].cullface)
+		qglEnable(GL_CULL_FACE);
+	else
+		qglDisable(GL_CULL_FACE);
+
+	if(save_drawcontext[save_drawcontext_stack].alphatest)
+		qglEnable(GL_ALPHA_TEST);
+	else
+		qglDisable(GL_ALPHA_TEST);
+
+	if (save_drawcontext[save_drawcontext_stack].depthtest)
+		qglEnable(GL_DEPTH_TEST);
+	else
+		qglDisable(GL_DEPTH_TEST);
+
+	if (save_drawcontext[save_drawcontext_stack].depthmask)
+		qglDepthMask(GL_TRUE);
+	else
+		qglDepthMask(GL_FALSE);
+
+	if (save_drawcontext[save_drawcontext_stack].blend)
+		qglEnable(GL_BLEND);
+	else
+		qglDisable(GL_BLEND);
+
+	if (save_drawcontext[save_drawcontext_stack].blend)
+	{
+		qglBlendFunc(save_drawcontext[save_drawcontext_stack].blendsrc, save_drawcontext[save_drawcontext_stack].blenddst);
+	}
+
+	if (save_drawcontext[save_drawcontext_stack].mtex && !(*mtexenabled))
+		GL_EnableMultitexture();
+	else if (!save_drawcontext[save_drawcontext_stack].mtex && (*mtexenabled))
+		GL_DisableMultitexture();
+}
+
+refdef_t *R_GetRefDef(void)
+{
+	return r_refdef;
+}
+
+void R_PushRefDef(void)
+{
+	if (save_refdef_stack == MAX_SAVESTACK)
+	{
+		Sys_ErrorEx("R_PushRefDef: MAX_SAVESTACK exceed");
+		return;
+	}
+	VectorCopy(r_refdef->vieworg, save_vieworg[save_refdef_stack]);
+	VectorCopy(r_refdef->viewangles, save_viewang[save_refdef_stack]);
+	++save_refdef_stack;
+}
+
+void R_UpdateRefDef(void)
+{
+	VectorCopy(r_refdef->vieworg, r_origin);
+	AngleVectors(r_refdef->viewangles, vpn, vright, vup);
+}
+
+void R_PopRefDef(void)
+{
+	if (save_refdef_stack == 0)
+	{
+		Sys_ErrorEx("R_PopRefDef: no refdef saved");
+		return;
+	}
+	--save_refdef_stack;
+	VectorCopy(save_vieworg[save_refdef_stack], r_refdef->vieworg);
+	VectorCopy(save_viewang[save_refdef_stack], r_refdef->viewangles);
+}
+
+void GL_UploadTextureColorFormat(int texid, int w, int h, int iInternalFormat)
 {
 	qglBindTexture(GL_TEXTURE_2D, texid);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -63,19 +196,19 @@ void R_GLUploadTextureColorFormat(int texid, int w, int h, int iInternalFormat)
 	qglBindTexture(GL_TEXTURE_2D, 0);
 }
 
-GLuint R_GLGenTextureColorFormat(int w, int h, int iInternalFormat)
+GLuint GL_GenTextureColorFormat(int w, int h, int iInternalFormat)
 {
 	GLuint texid = GL_GenTexture();
-	R_GLUploadTextureColorFormat(texid, w, h, iInternalFormat);
+	GL_UploadTextureColorFormat(texid, w, h, iInternalFormat);
 	return texid;
 }
 
-GLuint R_GLGenTextureRGBA8(int w, int h)
+GLuint GL_GenTextureRGBA8(int w, int h)
 {
-	return R_GLGenTextureColorFormat(w, h, GL_RGBA8);
+	return GL_GenTextureColorFormat(w, h, GL_RGBA8);
 }
 
-void R_GLUploadDepthTexture(int texId, int w, int h)
+void GL_UploadDepthTexture(int texId, int w, int h)
 {
 	qglBindTexture(GL_TEXTURE_2D, texId);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -87,14 +220,14 @@ void R_GLUploadDepthTexture(int texId, int w, int h)
 	qglBindTexture(GL_TEXTURE_2D, 0);
 }
 
-GLuint R_GLGenDepthTexture(int w, int h)
+GLuint GL_GenDepthTexture(int w, int h)
 {
 	GLuint texid = GL_GenTexture();
-	R_GLUploadDepthTexture(texid, w, h);
+	GL_UploadDepthTexture(texid, w, h);
 	return texid;
 }
 
-void R_GLUploadShadowTexture(int texid, int w, int h)
+void GL_UploadShadowTexture(int texid, int w, int h)
 {
 	qglBindTexture(GL_TEXTURE_2D, texid);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -107,46 +240,11 @@ void R_GLUploadShadowTexture(int texid, int w, int h)
 	qglTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 }
 
-GLuint R_GLGenShadowTexture(int w, int h)
+GLuint GL_GenShadowTexture(int w, int h)
 {
 	GLuint texid = GL_GenTexture();
-	R_GLUploadShadowTexture(texid, w, h);
+	GL_UploadShadowTexture(texid, w, h);
 	return texid;
-}
-
-void R_PushRefDef(void)
-{
-	if(save_refdefstack == MAX_SAVEREFDEF_STACK)
-	{
-		Sys_ErrorEx("R_PushRefDef: MAX_SAVEREFDEF_STACK exceed\n");
-		return;
-	}
-	VectorCopy(r_refdef->vieworg, save_vieworg[save_refdefstack]);
-	VectorCopy(r_refdef->viewangles, save_viewang[save_refdefstack]);
-	++ save_refdefstack;
-}
-
-void R_UpdateRefDef(void)
-{
-	VectorCopy(r_refdef->vieworg, r_origin);
-	AngleVectors(r_refdef->viewangles, vpn, vright, vup);
-}
-
-float *R_GetSavedViewOrg(void)
-{
-	return save_vieworg[save_refdefstack-1];
-}
-
-void R_PopRefDef(void)
-{
-	if(save_refdefstack == 0)
-	{
-		Sys_ErrorEx("R_PushRefDef: no refdef is pushed\n");
-		return;
-	}
-	-- save_refdefstack;
-	VectorCopy(save_vieworg[save_refdefstack], r_refdef->vieworg);
-	VectorCopy(save_viewang[save_refdefstack], r_refdef->viewangles);
 }
 
 void GL_FreeTexture(gltexture_t *glt)
@@ -166,36 +264,4 @@ void R_InitTextures(void)
 
 void R_FreeTextures(void)
 {
-}
-
-void R_NewMap(void)
-{
-	r_worldentity = gEngfuncs.GetEntityByIndex(0);
-	r_worldmodel = r_worldentity->model;
-
-	gRefFuncs.R_NewMap();
-
-	R_VidInitWSurf();
-}
-
-mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
-{
-	if (drawreflect && model == r_worldmodel && 0 == VectorCompare(p, r_refdef->vieworg))
-	{
-		return gRefFuncs.Mod_PointInLeaf(water_view, model);
-	}
-
-	return gRefFuncs.Mod_PointInLeaf(p, model);
-}
-
-float *R_GetAttachmentPoint(int entity, int attachment)
-{
-	cl_entity_t *pEntity;
-
-	pEntity = gEngfuncs.GetEntityByIndex(entity);
-
-	if (attachment)
-		return pEntity->attachment[attachment - 1];
-
-	return pEntity->origin;
 }

@@ -117,17 +117,13 @@ ref_export_t gRefExports =
 	R_GetSupportExtension,
 	//refdef
 	R_PushRefDef,
-	R_UpdateRefDef,
 	R_PopRefDef,
-	R_GetSavedViewOrg,
 	R_GetRefDef,
 	//framebuffer
-	R_PushFrameBuffer,
-	R_PopFrameBuffer,
-	R_GLBindFrameBuffer,
+	GL_PushFrameBuffer,
+	GL_PopFrameBuffer,
 	//texture
-	R_GLGenTextureRGBA8,
-	R_GetTexLoaderBuffer,
+	GL_GenTextureRGBA8,
 	R_LoadTextureEx,
 	GL_LoadTextureEx,
 	R_GetCurrentGLTexture,
@@ -583,28 +579,6 @@ int HUD_UpdateClientData(client_data_t *pcldata, float flTime)
 
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 {
-#if 0
-	if(r_shadow && r_shadow->value && shadow.program && (type == 0 || type == 1))//NORMAL OR PLAYER
-	{
-		R_AddEntityShadow(ent, model);
-	}
-
-	if(r_3dsky_parm.enable)
-	{
-		if(ent->curstate.origin[0] + ent->curstate.maxs[0] > r_3dsky_parm.mins[0] && 
-			ent->curstate.origin[1] + ent->curstate.maxs[1] > r_3dsky_parm.mins[1] &&
-			ent->curstate.origin[2] + ent->curstate.maxs[2] > r_3dsky_parm.mins[2] && 
-			ent->curstate.origin[0] + ent->curstate.mins[0] < r_3dsky_parm.maxs[0] && 
-			ent->curstate.origin[1] + ent->curstate.mins[1] < r_3dsky_parm.maxs[1] && 
-			ent->curstate.origin[2] + ent->curstate.mins[2] < r_3dsky_parm.maxs[2])
-		{
-			if(!r_3dsky || !r_3dsky->value)
-				return 0;
-
-			R_Add3DSkyEntity(ent);
-		}
-	}
-#endif
 	return gExportfuncs.HUD_AddEntity(type, ent, model);
 }
 

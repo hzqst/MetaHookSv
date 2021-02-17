@@ -85,8 +85,6 @@ void R_Render3DSky(void)
 
 	VectorCopy(_3dsky_view, r_refdef->vieworg);
 
-	R_UpdateRefDef();
-
 	++(*r_framecount);
 	*r_oldviewleaf = *r_viewleaf;
 	*r_viewleaf = Mod_PointInLeaf(r_origin, r_worldmodel);

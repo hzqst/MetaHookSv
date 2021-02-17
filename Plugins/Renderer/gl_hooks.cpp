@@ -1041,6 +1041,11 @@ void R_FillAddress(void)
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x150, CSHIFTWATER_SIG_SVENGINE, sizeof(CSHIFTWATER_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(cshift_water);
 		cshift_water = *(decltype(cshift_water) *)(addr + 3);
+
+#define MTEXENABLED_SIG_SVENGINE "\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00\xC3"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_EnableMultitexture, 0x50, MTEXENABLED_SIG_SVENGINE, sizeof(MTEXENABLED_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(mtexenabled);
+		mtexenabled = *(decltype(mtexenabled) *)(addr + 2);
 	}
 	else
 	{
@@ -1310,23 +1315,21 @@ void R_InstallHook(void)
 		g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderView_SvEngine, R_RenderView_SvEngine, (void *&)gRefFuncs.R_RenderView_SvEngine);
 	else
 		g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderView, R_RenderView, (void *&)gRefFuncs.R_RenderView);
-
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSpriteModel, R_DrawSpriteModel, (void *&)gRefFuncs.R_DrawSpriteModel);
-	
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_NewMap, R_NewMap, (void *&)gRefFuncs.R_NewMap);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.EmitWaterPolys, EmitWaterPolys, (void *&)gRefFuncs.EmitWaterPolys);	
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_SetupGL, R_SetupGL, (void *&)gRefFuncs.R_SetupGL);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_MarkLeaves, R_MarkLeaves, (void *&)gRefFuncs.R_MarkLeaves);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_CullBox, R_CullBox, (void *&)gRefFuncs.R_CullBox);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_ForceCVars, R_ForceCVars, (void *&)gRefFuncs.R_ForceCVars);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.Mod_PointInLeaf, Mod_PointInLeaf, (void *&)gRefFuncs.Mod_PointInLeaf);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderScene, R_RenderScene, (void *&)gRefFuncs.R_RenderScene);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawWorld, R_DrawWorld, (void *&)gRefFuncs.R_DrawWorld);
-
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_AddDynamicLights, R_AddDynamicLights, (void *&)gRefFuncs.R_AddDynamicLights);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSpriteModel, R_DrawSpriteModel, (void *&)gRefFuncs.R_DrawSpriteModel);	
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_NewMap, R_NewMap, (void *&)gRefFuncs.R_NewMap);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_SetupGL, R_SetupGL, (void *&)gRefFuncs.R_SetupGL);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_ForceCVars, R_ForceCVars, (void *&)gRefFuncs.R_ForceCVars);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_CullBox, R_CullBox, (void *&)gRefFuncs.R_CullBox);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_MarkLeaves, R_MarkLeaves, (void *&)gRefFuncs.R_MarkLeaves);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.Mod_PointInLeaf, Mod_PointInLeaf, (void *&)gRefFuncs.Mod_PointInLeaf);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSequentialPoly, R_DrawSequentialPoly, (void *&)gRefFuncs.R_DrawSequentialPoly);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_StudioRenderFinal, R_StudioRenderFinal, (void *&)gRefFuncs.R_StudioRenderFinal);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_GLStudioDrawPoints, R_GLStudioDrawPoints, (void *&)gRefFuncs.R_GLStudioDrawPoints);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.EmitWaterPolys, EmitWaterPolys, (void *&)gRefFuncs.EmitWaterPolys);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawDecals, R_DrawDecals, (void *&)gRefFuncs.R_DrawDecals);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSkyChain, R_DrawSkyChain, (void *&)gRefFuncs.R_DrawSkyChain);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_BuildLightMap, R_BuildLightMap, (void *&)gRefFuncs.R_BuildLightMap);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_AddDynamicLights, R_AddDynamicLights, (void *&)gRefFuncs.R_AddDynamicLights);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_StudioRenderFinal, R_StudioRenderFinal, (void *&)gRefFuncs.R_StudioRenderFinal);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_GLStudioDrawPoints, R_GLStudioDrawPoints, (void *&)gRefFuncs.R_GLStudioDrawPoints);
 }

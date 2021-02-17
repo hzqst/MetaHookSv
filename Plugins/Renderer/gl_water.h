@@ -134,7 +134,7 @@ typedef struct
 extern colorVec *gWaterColor;
 extern cshift_t *cshift_water;
 
-void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color);
+r_water_t *R_GetActiveWater(cl_entity_t *ent, vec3_t p, colorVec *color);
 void R_InitWater(void);
 void R_FreeWater(void);
 void R_ClearWater(void);

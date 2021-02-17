@@ -208,11 +208,9 @@ int R_ShouldReflect(void)
 	return 1;
 }
 
-void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color)
+r_water_t *R_GetActiveWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 {
 	r_water_t *w;
-
-	curwater = NULL;
 
 	for (w = waters_active; w; w = w->next)
 	{
@@ -220,26 +218,26 @@ void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 		{
 			//found one
 			VectorCopy(p, w->vecs);
-			curwater = w;
-			curwater->free = false;
-			curwater->framecount = (*r_framecount);
-			return;
+			w->free = false;
+			w->framecount = (*r_framecount);
+			return w;
 		}
 	}
 
-	//no free water slot
+	//No free water slot
 	if (!waters_free)
 	{
-		gEngfuncs.Con_Printf("R_AddEntityWater: MAX_WATER exceeded!");
-		return;
+		gEngfuncs.Con_Printf("R_ActivateWater: MAX_WATER exceeded!");
+		return NULL;
 	}
 
-	//not found, try to create
-	curwater = waters_free;
-	waters_free = curwater->next;
+	//Get one from free list
+	w = waters_free;
+	waters_free = w->next;
 
-	curwater->next = waters_active;
-	waters_active = curwater;
+	//Link to active list
+	w->next = waters_active;
+	waters_active = w;
 
 	int water_texture_width = glwidth;
 	int water_texture_height = glheight;
@@ -251,61 +249,63 @@ void R_AddEntityWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 		water_texture_height >>= 1;
 	}
 
+	//Load if normalmap not exists.
 	if (!water_normalmap)
 		water_normalmap = R_LoadTexture("resource\\tga\\water_normalmap.tga", "resource\\tga\\water_normalmap.tga", NULL, NULL, GLT_SYSTEM);
 
-	if (!curwater->reflectmap)
+	//Upload color textures and depth textures.
+	if (!w->reflectmap)
 	{
-		curwater->reflectmap = R_GLGenTextureRGBA8(water_texture_width, water_texture_height);
+		w->reflectmap = GL_GenTextureRGBA8(water_texture_width, water_texture_height);
 	}
-	else if (curwater->texwidth != water_texture_width)
+	else if (w->texwidth != water_texture_width)
 	{
-		R_GLUploadTextureColorFormat(curwater->reflectmap, water_texture_width, water_texture_height, GL_RGBA8);
-	}
-
-	if (!curwater->refractmap)
-	{
-		curwater->refractmap = R_GLGenTextureRGBA8(water_texture_width, water_texture_height);
-	}
-	else if (curwater->texwidth != water_texture_width)
-	{
-		R_GLUploadTextureColorFormat(curwater->refractmap, water_texture_width, water_texture_height, GL_RGBA8);
+		GL_UploadTextureColorFormat(w->reflectmap, water_texture_width, water_texture_height, GL_RGBA8);
 	}
 
-	if (!curwater->depthrefrmap)
+	if (!w->refractmap)
 	{
-		curwater->depthrefrmap = R_GLGenDepthTexture(water_texture_width, water_texture_height);
+		w->refractmap = GL_GenTextureRGBA8(water_texture_width, water_texture_height);
 	}
-	else if (curwater->texwidth != water_texture_width)
+	else if (w->texwidth != water_texture_width)
 	{
-		R_GLUploadDepthTexture(curwater->depthrefrmap, water_texture_width, water_texture_height);
-	}
-
-	if (!curwater->depthreflmap)
-	{
-		curwater->depthreflmap = R_GLGenDepthTexture(water_texture_width, water_texture_height);
-	}
-	else if (curwater->texwidth != water_texture_width)
-	{
-		R_GLUploadDepthTexture(curwater->depthreflmap, water_texture_width, water_texture_height);
+		GL_UploadTextureColorFormat(w->refractmap, water_texture_width, water_texture_height, GL_RGBA8);
 	}
 
-	curwater->texwidth = water_texture_width;
-	curwater->texheight = water_texture_height;
+	if (!w->depthrefrmap)
+	{
+		w->depthrefrmap = GL_GenDepthTexture(water_texture_width, water_texture_height);
+	}
+	else if (w->texwidth != water_texture_width)
+	{
+		GL_UploadDepthTexture(w->depthrefrmap, water_texture_width, water_texture_height);
+	}
 
-	curwater->reflectmap_ready = false;
-	curwater->refractmap_ready = false;
+	if (!w->depthreflmap)
+	{
+		w->depthreflmap = GL_GenDepthTexture(water_texture_width, water_texture_height);
+	}
+	else if (w->texwidth != water_texture_width)
+	{
+		GL_UploadDepthTexture(w->depthreflmap, water_texture_width, water_texture_height);
+	}
 
-	VectorCopy(p, curwater->vecs);
-	curwater->ent = ent;
-	curwater->org[0] = (ent->curstate.mins[0] + ent->curstate.maxs[0]) / 2;
-	curwater->org[1] = (ent->curstate.mins[1] + ent->curstate.maxs[1]) / 2;
-	curwater->org[2] = (ent->curstate.mins[2] + ent->curstate.maxs[2]) / 2;
-	memcpy(&curwater->color, color, sizeof(*color));
-	curwater->is3dsky = (draw3dsky) ? true : false;
-	curwater->free = false;
-	curwater->framecount = (*r_framecount);
-	curwater = NULL;
+	w->texwidth = water_texture_width;
+	w->texheight = water_texture_height;
+
+	w->reflectmap_ready = false;
+	w->refractmap_ready = false;
+
+	VectorCopy(p, w->vecs);
+	w->ent = ent;
+	w->org[0] = (ent->curstate.mins[0] + ent->curstate.maxs[0]) / 2;
+	w->org[1] = (ent->curstate.mins[1] + ent->curstate.maxs[1]) / 2;
+	w->org[2] = (ent->curstate.mins[2] + ent->curstate.maxs[2]) / 2;
+	memcpy(&w->color, color, sizeof(*color));
+	w->is3dsky = (draw3dsky) ? true : false;
+	w->free = false;
+	w->framecount = (*r_framecount);
+	return w;
 }
 
 void R_EnableClip(qboolean isdrawworld)
@@ -331,9 +331,8 @@ void R_EnableClip(qboolean isdrawworld)
 
 		if (saved_cl_waterlevel > 2)
 		{
-			return;
-			//clipPlane[2] = 1.0;
-			//clipPlane[3] = curwater->vecs[2]; 
+			clipPlane[2] = 1.0;
+			clipPlane[3] = curwater->vecs[2]; 
 		}
 		else
 		{
@@ -522,7 +521,7 @@ void R_FreeDeadWaters(void)
 
 void R_RenderWaterView(void)
 {
-	R_PushFrameBuffer();
+	GL_PushFrameBuffer();
 
 	for(r_water_t *w = waters_active; w; w = w->next)
 	{
@@ -538,5 +537,5 @@ void R_RenderWaterView(void)
 		curwater = NULL;
 	}
 
-	R_PopFrameBuffer();
+	GL_PopFrameBuffer();
 }

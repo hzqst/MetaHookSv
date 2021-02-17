@@ -35,7 +35,7 @@ void R_RecursiveWorldNode(mnode_t *node)
 void R_MarkLeaves(void)
 {
 	//Don't clip bsp nodes when rendering refract or reflect view for non-transparent water.
-	if (r_water_novis && r_water_novis->value > 0)
+	if (r_water_novis->value > 0)
 	{
 		if (drawrefract)
 		{
@@ -79,97 +79,3 @@ void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride)
 		gRefFuncs.R_BuildLightMap(psurf, dest, stride);
 	}
 }
-
-#if 0
-void R_RenderDynamicLightmaps(msurface_t *fa)
-{
-	return gRefFuncs.R_RenderDynamicLightmaps(fa);
-
-	byte *base;
-	int maps;
-	int smax, tmax;
-
-	(*c_brush_polys)++;
-
-	if (fa->flags & (SURF_DRAWSKY | SURF_DRAWTURB))
-		return;
-
-	for (maps = 0; maps < MAXLIGHTMAPS && fa->styles[maps] != 255; maps++)
-	{
-		if (d_lightstylevalue[fa->styles[maps]] != fa->cached_light[maps])
-			goto dynamic;
-	}
-
-	//Disable original dlight
-	if (0/*fa->dlightframe == (*r_framecount) || fa->cached_dlight*/)
-	{
-dynamic:
-		if (r_dynamic->value)
-		{
-			lightmap_modified[fa->lightmaptexturenum] = true;
-			if (g_iEngineType == ENGINE_SVENGINE)
-			{
-				glRect_SvEngine_t *theRect = (glRect_SvEngine_t *)((char *)lightmap_rectchange + sizeof(glRect_SvEngine_t) * fa->lightmaptexturenum);
-
-				if (fa->light_t < theRect->t)
-				{
-					if (theRect->h)
-						theRect->h += theRect->t - fa->light_t;
-
-					theRect->t = fa->light_t;
-				}
-
-				if (fa->light_s < theRect->l)
-				{
-					if (theRect->w)
-						theRect->w += theRect->l - fa->light_s;
-
-					theRect->l = fa->light_s;
-				}
-
-				smax = (fa->extents[0] >> 4) + 1;
-				tmax = (fa->extents[1] >> 4) + 1;
-
-				if ((theRect->w + theRect->l) < (fa->light_s + smax))
-					theRect->w = (fa->light_s - theRect->l) + smax;
-
-				if ((theRect->h + theRect->t) < (fa->light_t + tmax))
-					theRect->h = (fa->light_t - theRect->t) + tmax;
-			}
-			else
-			{
-				glRect_t *theRect = (glRect_t *)((char *)lightmap_rectchange + sizeof(glRect_t) * fa->lightmaptexturenum);
-
-				if (fa->light_t < theRect->t)
-				{
-					if (theRect->h)
-						theRect->h += theRect->t - fa->light_t;
-
-					theRect->t = fa->light_t;
-				}
-
-				if (fa->light_s < theRect->l)
-				{
-					if (theRect->w)
-						theRect->w += theRect->l - fa->light_s;
-
-					theRect->l = fa->light_s;
-				}
-
-				smax = (fa->extents[0] >> 4) + 1;
-				tmax = (fa->extents[1] >> 4) + 1;
-
-				if ((theRect->w + theRect->l) < (fa->light_s + smax))
-					theRect->w = (fa->light_s - theRect->l) + smax;
-
-				if ((theRect->h + theRect->t) < (fa->light_t + tmax))
-					theRect->h = (fa->light_t - theRect->t) + tmax;
-			}
-
-			base = lightmaps + fa->lightmaptexturenum * LIGHTMAP_BYTES * BLOCK_WIDTH * BLOCK_HEIGHT;
-			base += fa->light_t * BLOCK_WIDTH * LIGHTMAP_BYTES + fa->light_s * LIGHTMAP_BYTES;
-			gRefFuncs.R_BuildLightMap(fa, base, BLOCK_WIDTH * LIGHTMAP_BYTES);
-		}
-	}
-}
-#endif

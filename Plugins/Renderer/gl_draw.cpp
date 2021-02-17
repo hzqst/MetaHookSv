@@ -154,12 +154,6 @@ void Draw_Init(void)
 		Cmd_HookCmd("snapshot", CL_ScreenShot_f);
 }
 
-byte *R_GetTexLoaderBuffer(int *bufsize)
-{
-	if(bufsize)
-		*bufsize = sizeof(texloader_buffer);
-	return texloader_buffer;
-}
 
 //Texture resampler
 
