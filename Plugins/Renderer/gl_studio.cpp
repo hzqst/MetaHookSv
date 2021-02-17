@@ -594,7 +594,7 @@ void R_GLStudioDrawPoints(void)
 						qglNormal3fv(r_studionormal[ptricmds[0]]);
 
 						av = &pauxverts[ptricmds[0]];
-						qglVertex3f(av->fv[0], av->fv[1], av->fv[2]);
+						qglVertex3fv(av->fv);
 					}
 
 					qglEnd();
@@ -644,7 +644,7 @@ void R_GLStudioDrawPoints(void)
 						qglColor4f(fl[0], fl[1], fl[2], *r_blend);
 
 						av = &pauxverts[ptricmds[0]];
-						qglVertex3f(av->fv[0], av->fv[1], av->fv[2]);
+						qglVertex3fv(av->fv);
 					}
 
 					qglEnd();
@@ -658,8 +658,8 @@ void R_GLStudioDrawPoints(void)
 		else
 		{//normal render
 
-			s = 1.0 / (float)ptexture[pskinref[pmesh->skinref]].width;
-			t = 1.0 / (float)ptexture[pskinref[pmesh->skinref]].height;
+			s = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].width;
+			t = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].height;
 
 			use_extra_texture = false;
 			replace_texture = 0;

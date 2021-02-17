@@ -47,6 +47,7 @@ extern cvar_t *r_shadow_medium_texsize;
 extern cvar_t *r_shadow_medium_distance;
 extern cvar_t *r_shadow_low_texsize;
 extern cvar_t *r_shadow_low_distance;
+extern cvar_t *r_shadow_mapoverride;
 
 void R_RenderShadowMap(void);
 void R_InitShadow(void);

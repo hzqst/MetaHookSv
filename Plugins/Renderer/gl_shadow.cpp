@@ -50,6 +50,7 @@ cvar_t *r_shadow_medium_scale = NULL;
 cvar_t *r_shadow_low_texsize = NULL;
 cvar_t *r_shadow_low_distance = NULL;
 cvar_t *r_shadow_low_scale = NULL;
+cvar_t *r_shadow_mapoverride = NULL;
 
 void R_FreeShadow(void)
 {
@@ -112,10 +113,11 @@ void R_InitShadow(void)
 	}
 
 	r_shadow = gEngfuncs.pfnRegisterVariable("r_shadow", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_mapoverride = gEngfuncs.pfnRegisterVariable("r_shadow_mapoverride", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_debug = gEngfuncs.pfnRegisterVariable("r_shadow_debug", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_alpha = gEngfuncs.pfnRegisterVariable("r_shadow_alpha", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_angle_p = gEngfuncs.pfnRegisterVariable("r_shadow_angle_pitch", "100", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_angle_y = gEngfuncs.pfnRegisterVariable("r_shadow_angle_yaw", "30", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_angle_p = gEngfuncs.pfnRegisterVariable("r_shadow_angle_pitch", "90", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_angle_y = gEngfuncs.pfnRegisterVariable("r_shadow_angle_yaw", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_angle_r = gEngfuncs.pfnRegisterVariable("r_shadow_angle_roll", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_high_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_high_texsize", "2048", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_high_distance = gEngfuncs.pfnRegisterVariable("r_shadow_high_distance", "400", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -204,7 +206,7 @@ void R_RenderShadowMap(void)
 
 	vec3_t sangles;
 
-	if (r_light_env_enabled && r_light_env_shadow->value)
+	if (r_light_env_enabled && r_shadow_mapoverride->value)
 	{
 		sangles[0] = r_light_env_angles[0];
 		sangles[1] = r_light_env_angles[1];
@@ -306,7 +308,6 @@ void R_RenderShadowMap(void)
 		qglViewport(0, 0, texsizeArray[i], texsizeArray[i]);
 
 		qglClear(GL_DEPTH_BUFFER_BIT);
-
 		qglColorMask(0, 0, 0, 0);
 
 		//render start
@@ -367,8 +368,7 @@ void R_RecursiveWorldNodeShadow(mnode_t *node)
 {
 	int c, side;
 	mplane_t *plane;
-	msurface_t *surf, **mark;
-	mleaf_t *pleaf;
+	msurface_t *surf;
 	float dot;
 
 	if (node->contents == CONTENTS_SOLID)

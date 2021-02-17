@@ -1,9 +1,8 @@
 #pragma once
 
-extern UCHAR r_light_env_color[4];
+extern int r_light_env_color[4];
 extern vec3_t r_light_env_angles;
 extern qboolean r_light_env_enabled;
-extern cvar_t *r_light_env_shadow;
 extern cvar_t *r_light_dynamic;
 extern cvar_t *r_light_debug;
 extern bool drawpolynocolor;
