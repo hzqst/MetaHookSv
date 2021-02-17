@@ -8,7 +8,7 @@ uniform vec3 lightpos;
 uniform vec3 lightcolor;
 uniform float lightcone;
 uniform float lightradius;
-uniform float lightambient
+uniform float lightambient;
 uniform float lightdiffuse;
 uniform float lightspecular;
 uniform float lightspecularpow;

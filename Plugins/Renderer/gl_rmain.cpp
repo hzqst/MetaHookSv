@@ -12,7 +12,6 @@ float gldepthmin, gldepthmax;
 
 cl_entity_t *r_worldentity;
 model_t *r_worldmodel;
-int *cl_numvisedicts;
 
 RECT *window_rect;
 
@@ -21,6 +20,7 @@ float *windowvideoaspect;
 float videowindowaspect_old;
 float windowvideoaspect_old;
 
+int *cl_numvisedicts;
 cl_entity_t **cl_visedicts;
 cl_entity_t **currententity;
 int *numTransObjs;
