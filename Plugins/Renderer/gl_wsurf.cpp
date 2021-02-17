@@ -1543,6 +1543,11 @@ void R_LoadBSPEntities(void)
 				sscanf(angle, "%f %f %f", &r_light_env_angles[0], &r_light_env_angles[1], &r_light_env_angles[2]);
 				r_light_env_angles[0] += 180;
 				r_light_env_angles[1] += 180;
+
+				if (r_light_env_angles[0] > 360)
+					r_light_env_angles[0] -= 360;
+				if (r_light_env_angles[1] > 360)
+					r_light_env_angles[1] -= 360;
 			}
 		}
 

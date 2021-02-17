@@ -50,7 +50,7 @@ cvar_t *r_shadow_medium_scale = NULL;
 cvar_t *r_shadow_low_texsize = NULL;
 cvar_t *r_shadow_low_distance = NULL;
 cvar_t *r_shadow_low_scale = NULL;
-cvar_t *r_shadow_mapoverride = NULL;
+cvar_t *r_shadow_map_override = NULL;
 
 void R_FreeShadow(void)
 {
@@ -113,7 +113,7 @@ void R_InitShadow(void)
 	}
 
 	r_shadow = gEngfuncs.pfnRegisterVariable("r_shadow", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_mapoverride = gEngfuncs.pfnRegisterVariable("r_shadow_mapoverride", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_map_override = gEngfuncs.pfnRegisterVariable("r_shadow_map_override", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_debug = gEngfuncs.pfnRegisterVariable("r_shadow_debug", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_alpha = gEngfuncs.pfnRegisterVariable("r_shadow_alpha", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_angle_p = gEngfuncs.pfnRegisterVariable("r_shadow_angle_pitch", "90", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -206,7 +206,7 @@ void R_RenderShadowMap(void)
 
 	vec3_t sangles;
 
-	if (r_light_env_enabled && r_shadow_mapoverride->value)
+	if (r_light_env_enabled && r_shadow_map_override->value)
 	{
 		sangles[0] = r_light_env_angles[0];
 		sangles[1] = r_light_env_angles[1];
