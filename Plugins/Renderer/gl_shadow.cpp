@@ -282,6 +282,8 @@ void R_RenderShadowMap(void)
 	qglEnable(GL_POLYGON_OFFSET_FILL);
 	qglDisable(GL_CULL_FACE);
 
+	drawpolynocolor = true;
+
 	for (int i = 0; i < 3; ++i)
 	{
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowmapArray[i], 0);
@@ -330,6 +332,8 @@ void R_RenderShadowMap(void)
 
 		qglColorMask(1, 1, 1, 1);
 	}
+
+	drawpolynocolor = false;
 
 	qglEnable(GL_CULL_FACE);
 	qglDisable(GL_POLYGON_OFFSET_FILL);
@@ -775,12 +779,10 @@ void R_RenderShadowScenes(void)
 
 	//restore texture 2
 	qglActiveTextureARB(TEXTURE2_SGIS);
-
 	qglMatrixMode(GL_TEXTURE);
 	qglLoadIdentity();
-
+	qglMatrixMode(GL_MODELVIEW);
 	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texture2_env);
-
 	qglBindTexture(GL_TEXTURE_2D, 0);
 	qglDisable(GL_TEXTURE_GEN_S);
 	qglDisable(GL_TEXTURE_GEN_T);
@@ -790,29 +792,25 @@ void R_RenderShadowScenes(void)
 
 	//restore texture 1
 	qglActiveTextureARB(TEXTURE1_SGIS);
-
 	qglMatrixMode(GL_TEXTURE);
 	qglLoadIdentity();
-
+	qglMatrixMode(GL_MODELVIEW);
 	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texture1_env);
-
 	qglBindTexture(GL_TEXTURE_2D, 0);
 	qglDisable(GL_TEXTURE_GEN_S);
 	qglDisable(GL_TEXTURE_GEN_T);
 	qglDisable(GL_TEXTURE_GEN_R);
 	qglDisable(GL_TEXTURE_GEN_Q);
-	GL_DisableMultitexture();
-
-	qglMatrixMode(GL_TEXTURE);
-	qglLoadIdentity();
 
 	//restore texture 0
+	GL_DisableMultitexture();
+	qglMatrixMode(GL_TEXTURE);
+	qglLoadIdentity();
+	qglMatrixMode(GL_MODELVIEW);
 	qglDisable(GL_TEXTURE_GEN_S);
 	qglDisable(GL_TEXTURE_GEN_T);
 	qglDisable(GL_TEXTURE_GEN_R);
 	qglDisable(GL_TEXTURE_GEN_Q);
-
-	qglMatrixMode(GL_MODELVIEW);
 
 	GL_PopDrawState();
 }

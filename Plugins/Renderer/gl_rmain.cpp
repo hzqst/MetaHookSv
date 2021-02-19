@@ -8,6 +8,9 @@ refdef_t *r_refdef;
 
 ref_params_t r_params;
 
+int saved_c_alias_polys;
+int saved_c_brush_polys;
+
 float gldepthmin, gldepthmax;
 
 cl_entity_t *r_worldentity;
@@ -1580,6 +1583,8 @@ void R_PreRenderView()
 {
 	if (!r_refdef->onlyClientDraws)
 	{
+		(*c_alias_polys) = 0;
+		(*c_brush_polys) = 0;
 		if (water.program && r_water && r_water->value)
 		{
 			R_RenderWaterView();
@@ -1588,6 +1593,8 @@ void R_PreRenderView()
 		{
 			R_RenderShadowMap();
 		}
+		saved_c_alias_polys = (*c_alias_polys);
+		saved_c_brush_polys = (*c_brush_polys);
 	}
 
 	if (s_BackBufferFBO.s_hBackBufferFBO)
@@ -1601,6 +1608,12 @@ void R_PreRenderView()
 
 void R_PostRenderView()
 {
+	if (!r_refdef->onlyClientDraws)
+	{
+		(*c_alias_polys) += saved_c_alias_polys;
+		(*c_brush_polys) += saved_c_brush_polys;
+	}
+
 	if (s_BackBufferFBO.s_hBackBufferFBO)
 	{
 		if (s_MSAAFBO.s_hBackBufferFBO)

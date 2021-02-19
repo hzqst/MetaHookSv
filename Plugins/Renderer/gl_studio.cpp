@@ -1,7 +1,8 @@
 #include "gl_local.h"
 #include "triangleapi.h"
 #include "cJSON.h"
-//#include <sselib.h>
+#define SSE
+#include <sselib.h>
 
 //engine
 model_t *cl_sprite_white;
@@ -375,7 +376,7 @@ void R_GLStudioDrawPoints(void)
 	qboolean has_extra_texture;
 	qboolean use_extra_texture;
 	int replace_texture;
-	qboolean iNoBaseTexture;
+	qboolean no_base_texture;
 	studio_texarray_t *pTexArray;
 
 	pvertbone = ((byte *)(*pstudiohdr) + (*psubmodel)->vertinfoindex);
@@ -391,7 +392,7 @@ void R_GLStudioDrawPoints(void)
 	pskinref = (short *)((byte *)ptexturehdr + ptexturehdr->skinindex);
 
 	iFlippedVModel = false;
-	iNoBaseTexture = false;
+	no_base_texture = false;
 
 	if ((*currententity)->curstate.skin != 0 && (*currententity)->curstate.skin < ptexturehdr->numskinfamilies)
 		pskinref += ((*currententity)->curstate.skin * ptexturehdr->numskinref);
@@ -407,6 +408,7 @@ void R_GLStudioDrawPoints(void)
 		{
 			av = &(pauxverts[i]);
 			R_StudioTransformAuxVert(av, pvertbone[i], pstudioverts[i]);
+			//VectorRotate(pstudionorms[i], (*pbonetransform)[pnormbone[i]], r_studionormal[i]);
 		}
 	}
 
@@ -473,10 +475,10 @@ void R_GLStudioDrawPoints(void)
 
 	if((*currententity)->curstate.renderfx == kRenderFxShadow || (*currententity)->curstate.renderfx == kRenderFxCloak || (*currententity)->curstate.renderfx == kRenderFxGlowShell || (*currententity)->curstate.renderfx == kRenderFxFireLayer || (*currententity)->curstate.renderfx == kRenderFxInvulnLayer )
 	{
-		iNoBaseTexture = true;
+		no_base_texture = true;
 	}
 
-	if(!iNoBaseTexture)
+	if(!no_base_texture)
 	{
 		has_extra_texture = false;
 		for(i = 0; i < g_LocalTexArray.iNumTexArray; ++i)
@@ -508,9 +510,10 @@ void R_GLStudioDrawPoints(void)
 		short *ptricmds;
 
 		pmesh = (mstudiomesh_t *)((byte *)(*pstudiohdr) + (*psubmodel)->meshindex) + j;
+
 		ptricmds = (short *)((byte *)(*pstudiohdr) + pmesh->triindex);
 
-		//c_alias_polys += pmesh->numtris;
+		(*c_alias_polys) += pmesh->numtris;
 
 		flags = ptexture[pskinref[pmesh->skinref]].flags | (*g_ForcedFaceFlags);
 
@@ -555,7 +558,40 @@ void R_GLStudioDrawPoints(void)
 			s = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].width;
 			t = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].height;
 
-			gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
+			use_extra_texture = false;
+			replace_texture = 0;
+
+			if (!no_base_texture)
+			{
+				if (has_extra_texture)
+				{
+					for (k = 0; k < pTexArray->numtextures; ++k)
+					{
+						if (!stricmp(pTexArray->textures[k].base.name, ptexture[pskinref[pmesh->skinref]].name))
+						{
+							use_extra_texture = true;
+							if (pTexArray->textures[k].replace.index)
+								replace_texture = pTexArray->textures[k].replace.index;
+							break;
+						}
+					}
+				}
+				if (use_extra_texture)
+				{
+					if (replace_texture)
+					{
+						GL_Bind(replace_texture);
+					}
+					else
+					{
+						gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
+					}
+				}
+				else
+				{
+					gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
+				}
+			}
 		}
 
 		if (flags & STUDIO_NF_CHROME)//chrome start
@@ -586,9 +622,9 @@ void R_GLStudioDrawPoints(void)
 						qglTexCoord2f((*chrome)[normalIndex][0] * s, (*chrome)[normalIndex][1] * t);
 
 #ifndef SSE
-						VectorRotate(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
+						VectorRotate(pstudionorms[ptricmds[1]], (*pbonetransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
 #else
-						VectorRotateSSE(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
+						VectorRotateSSE(pstudionorms[ptricmds[1]], (*pbonetransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
 #endif
 
 						qglNormal3fv(r_studionormal[ptricmds[0]]);
@@ -634,9 +670,9 @@ void R_GLStudioDrawPoints(void)
 						gRefFuncs.R_LightLambert(lightpos[ptricmds[0]], vNormal, lv, fl);
 
 #ifndef SSE
-						VectorRotate(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
+						VectorRotate(pstudionorms[ptricmds[1]], (*pbonetransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
 #else
-						VectorRotateSSE(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
+						VectorRotateSSE(pstudionorms[ptricmds[1]], (*pbonetransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
 #endif
 
 						qglNormal3fv(r_studionormal[ptricmds[0]]);
@@ -657,48 +693,6 @@ void R_GLStudioDrawPoints(void)
 		}//chrome end
 		else
 		{//normal render
-
-			s = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].width;
-			t = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].height;
-
-			use_extra_texture = false;
-			replace_texture = 0;
-
-			R_SetGBufferRenderState(1);
-
-			if(!iNoBaseTexture)
-			{
-				if(has_extra_texture)
-				{
-					for(k = 0; k < pTexArray->numtextures; ++k)
-					{
-						if(!stricmp(pTexArray->textures[k].base.name, ptexture[pskinref[pmesh->skinref]].name))
-						{
-							use_extra_texture = true;
-							if(pTexArray->textures[k].replace.index)
-								replace_texture = pTexArray->textures[k].replace.index;
-							break;
-						}
-					}
-				}
-				if(use_extra_texture)
-				{
-					if (replace_texture)
-					{
-						GL_SelectTexture(GL_TEXTURE0_ARB);
-						qglEnable(GL_TEXTURE_2D);
-						GL_Bind(replace_texture);
-					}
-					else
-					{
-						gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
-					}
-				}
-				else
-				{
-					gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
-				}
-			}
 
 			while (i = *(ptricmds++))
 			{
@@ -725,11 +719,11 @@ void R_GLStudioDrawPoints(void)
 						VectorInverse(vNormal);
 
 					gRefFuncs.R_LightLambert(lightpos[ptricmds[0]], vNormal, lv, fl);
-
+					
 #ifndef SSE
-					VectorRotate(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
+					VectorRotate(pstudionorms[ptricmds[1]], (*pbonetransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
 #else
-					VectorRotateSSE(pstudionorms[ptricmds[1]], (*plighttransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
+					VectorRotateSSE(pstudionorms[ptricmds[1]], (*pbonetransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[0]]);
 #endif
 
 					qglNormal3fv(r_studionormal[ptricmds[0]]);

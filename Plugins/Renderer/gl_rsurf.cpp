@@ -16,6 +16,7 @@ int *lightmap_textures;
 void *lightmap_rectchange;
 int *lightmap_modified;
 int *c_brush_polys;
+int *c_alias_polys;
 int *d_lightstylevalue;
 dlight_t *cl_dlights;
 int *r_dlightactive;
