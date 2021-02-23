@@ -1,41 +1,103 @@
-uniform vec3 lightpos;
-uniform vec3 eyepos;
-varying vec3 lightvec;
-varying vec3 halfvec;
-attribute vec3 tangent;
-attribute vec3 binormal;
+
+uniform mat3x4 bonematrix[128];
+uniform float v_lambert;
+uniform float v_brightness;
+uniform float v_lightgamma;
+uniform float r_ambientlight;
+uniform float r_shadelight;
+uniform float r_blend;
+uniform float r_g1;
+uniform float r_g3;
+uniform vec3 r_plightvec;
+uniform vec3 r_colormix;
+
+attribute ivec2 attrbone;
+
+varying vec4 worldpos;
+varying vec4 normal;
+varying vec4 color;
 
 void main(void)
 {
-	vec4 pos = vec4(gl_Vertex.xyz / gl_Vertex.w, 1.0);
-	pos = gl_ModelViewMatrix * pos;
+	vec3 vert = gl_Vertex.xyz;
+	vec3 norm = gl_Normal;
 
-	vec4 vlightpos = (gl_ModelViewMatrix * vec4(lightpos, 1.0));
-	vec4 veyepos = (gl_ModelViewMatrix * vec4(eyepos, 1.0));
+	int vertbone = attrbone.x;
+	int normbone = attrbone.y;
 
-	vec3 lightdir = normalize(vlightpos.xyz - pos.xyz);
-	vec3 eyedir = normalize(veyepos.xyz - pos.xyz);
+	mat3x4 vertbone_matrix = bonematrix[vertbone];
+	vec3 outvert = vec3(
+		dot(vert, vertbone_matrix[0]) + vertbone_matrix[0][3],
+		dot(vert, vertbone_matrix[1]) + vertbone_matrix[1][3],
+		dot(vert, vertbone_matrix[2]) + vertbone_matrix[2][3]
+	);
 
-	vec3 n = normalize(gl_NormalMatrix * gl_Normal);
-	vec3 t = normalize(gl_NormalMatrix * tangent);
-	vec3 b = normalize(gl_NormalMatrix * binormal);
+	mat3x4 normbone_matrix = bonematrix[normbone];
+	vec3 outnorm = vec3(
+		dot(norm, normbone_matrix[0]),
+		dot(norm, normbone_matrix[1]),
+		dot(norm, normbone_matrix[2])
+	);
 
-	vec3 halfdir = normalize(lightdir + eyedir);
+	worldpos = vec4(outvert, 1.0);
+	normal = vec4(normalize(outnorm), 1.0);
 
-	lightvec.x = dot(t, lightdir);
-	lightvec.y = dot(b, lightdir);
-	lightvec.z = dot(n, lightdir);
-	lightvec = normalize(lightvec);
+	float lv = 1.0;
 
-	vec3 eyevec;
-	eyevec.x = dot(t, eyedir);
-	eyevec.y = dot(b, eyedir);
-	eyevec.z = dot(n, eyedir);
-	eyevec = normalize(eyevec);
+#ifdef STUDIO_FULLBRIGHT
 
-	halfvec = normalize(lightvec + eyevec);
+	color = vec4(1.0, 1.0, 1.0, r_blend);
 
-	gl_FrontColor = gl_Color;
+#else
+
+	float illum = r_ambientlight;
+
+	#ifdef STUDIO_FLATSHADE
+
+		illum += r_shadelight * 0.8;
+
+	#else
+
+		float lightcos = max(dot(normal.xyz, r_plightvec), 1.0);
+
+		illum += r_shadelight;
+
+		float r = v_lambert;
+		if(r > 1.0)
+		{
+			lightcos = (lightcos + r - 1.0) / r;
+		}
+		else
+		{
+			r += 1.0;
+			lightcos = ((r - 1.0) - lightcos) / r; 
+		}
+		
+		illum -= r_shadelight * max(lightcos, 0.0); 
+
+		illum = clamp(illum, 0.0, 255.0);
+
+	#endif
+
+	float fv = (illum * 4.0) / 1023.0;
+	fv = pow(fv, v_lightgamma);
+
+	fv = fv * max(v_brightness, 1.0);
+
+	if (fv < r_g3)
+		fv = (fv / r_g3) * 0.125;
+	else 
+		fv = 0.125 + ((fv - r_g3) / (1.0 - r_g3)) * 0.875;
+
+	float inf = 1023.0 * pow( fv, r_g1 );
+
+	inf = clamp(inf, 0.0, 1023.0);
+
+	lv = inf / 1023.0;
+
+	color = vec4(lv * r_colormix.x, lv * r_colormix.y, lv * r_colormix.z, r_blend);
+#endif
+
 	gl_TexCoord[0] = gl_MultiTexCoord0;
-	gl_Position = ftransform();
+	gl_Position = gl_ModelViewProjectionMatrix * vec4(outvert, 1.0);
 }
