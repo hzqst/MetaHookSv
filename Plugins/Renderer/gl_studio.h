@@ -204,6 +204,7 @@ extern model_t *cl_sprite_white;
 extern model_t *cl_shellchrome;
 //renderer
 
+void R_StudioClearVBOCache(void);
 void R_LoadStudioTextures(qboolean loadmap);
 void R_InitStudio(void);
 

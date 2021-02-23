@@ -4,7 +4,7 @@
 #define SSE
 #include <sselib.h>
 
-std::unordered_map<DWORD, studio_vbo_t *> g_StudioVBOTable;
+std::unordered_map<studiohdr_t *, studio_vbo_t *> g_StudioVBOTable;
 
 //engine
 model_t *cl_sprite_white;
@@ -54,6 +54,42 @@ cvar_t *r_studio_vbo = NULL;
 int Q_stricmp_slash(const char *s1, const char *s2);
 void VectorIRotate(const vec3_t in1, const float in2[3][4], vec3_t out);
 void VectorRotate(const vec3_t in1, const float in2[3][4], vec3_t out);
+
+void R_StudioClearVBOCache(void)
+{
+	/*auto itor = g_StudioVBOTable.find((studiohdr_t *)cache_data);
+	if (itor != g_StudioVBOTable.end())
+	{
+		if (itor->second->hVBO)
+		{
+			qglDeleteBuffersARB(1, &itor->second->hVBO);
+		}
+
+		for (auto &submodel : itor->second->vSubmodel)
+		{
+			delete []submodel.second->vMesh;
+		}
+
+		delete itor->second;
+		g_StudioVBOTable.erase(itor);
+	}*/
+
+	for (auto &itor = g_StudioVBOTable.begin(); itor != g_StudioVBOTable.end();++itor)
+	{
+		if (itor->second->hVBO)
+		{
+			qglDeleteBuffersARB(1, &itor->second->hVBO);
+		}
+
+		for (auto &submodel : itor->second->vSubmodel)
+		{
+			delete[]submodel.second->vMesh;
+		}
+
+		delete itor->second;
+	}
+	g_StudioVBOTable.clear();
+}
 
 void R_UnloadTextureArray(studio_texarray_t *texarray)
 {
@@ -536,7 +572,7 @@ void R_GLStudioDrawPoints(void)
 
 	if (r_studio_vbo->value)
 	{
-		auto itor = g_StudioVBOTable.find((DWORD)(*pstudiohdr));
+		auto itor = g_StudioVBOTable.find((*pstudiohdr));
 		if (itor != g_StudioVBOTable.end())
 		{
 			VBOData = itor->second;
@@ -556,11 +592,10 @@ void R_GLStudioDrawPoints(void)
 		else
 		{
 			VBOData = new studio_vbo_t;
-
 			VBOSubmodel = new studio_vbo_submodel_t;
 			VBOData->vSubmodel[(*psubmodel)] = VBOSubmodel;
 
-			g_StudioVBOTable[(DWORD)(*pstudiohdr)] = VBOData;
+			g_StudioVBOTable[(*pstudiohdr)] = VBOData;
 			iInitVBO = 3;
 		}
 	}

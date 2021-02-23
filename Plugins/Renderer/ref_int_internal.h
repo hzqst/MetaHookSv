@@ -34,6 +34,7 @@ typedef struct msurface_s msurface_t;
 
 typedef struct
 {
+	void(*Cache_Free)(cache_user_t *c);
 	void (*R_Clear)(void);
 	void (*R_ForceCVars)(qboolean mp);
 	void (*R_RenderView)(void);

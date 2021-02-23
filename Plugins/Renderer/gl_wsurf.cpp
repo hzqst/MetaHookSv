@@ -496,6 +496,8 @@ void R_VidInitWSurf(void)
 	//parse entities data from bsp's entity lump
 	R_ParseBSPEntities(r_worldmodel->entities);
 	R_LoadBSPEntities();
+
+	R_StudioClearVBOCache();
 }
 
 float ScrollOffset(msurface_t *psurface, cl_entity_t *pEntity)
