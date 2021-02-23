@@ -26,7 +26,7 @@ void GL_FreeShaders(void)
 	numshaders = 0;
 }
 
-qboolean GL_IsShaderError(GLuint shader, const char *filename)
+void GL_CheckShaderError(GLuint shader, const char *filename)
 {
 	char szCompilerLog[1024];
 	int iStatus, nInfoLength;
@@ -36,14 +36,12 @@ qboolean GL_IsShaderError(GLuint shader, const char *filename)
 
 	if(!iStatus)
 	{
-		Sys_ErrorEx("Shader %s compiled with error: %s\n", filename, szCompilerLog);
-		return true;
+		Sys_ErrorEx("Shader %s compiled with error:\n%s", filename, szCompilerLog);
+		return;
 	}
-
-	return false;
 }
 
-GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfile, const char *fsfile)
+GLuint R_CompileShader(const char *vscode, const char *gscode, const char *fscode, const char *vsfile, const char *gsfile, const char *fsfile)
 {
 	if (numshaders + 1 == MAX_SHADERS)
 	{
@@ -51,57 +49,153 @@ GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfil
 		return 0;
 	}
 
-	GLuint vs = qglCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
+	GLuint vs = 0, gs = 0, fs = 0;
+
+	vs = qglCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
 	qglShaderSourceARB(vs, 1, &vscode, NULL);
 	qglCompileShaderARB(vs);
-	if(GL_IsShaderError(vs, vsfile))
+	GL_CheckShaderError(vs, vsfile);
+
+	if (gscode != NULL)
 	{
-		qglDeleteObjectARB(vs);
-		return 0;
+		gs = qglCreateShaderObjectARB(GL_GEOMETRY_SHADER_ARB);
+		qglShaderSourceARB(gs, 1, &gscode, NULL);
+		qglCompileShaderARB(gs);
+		GL_CheckShaderError(vs, gsfile);
 	}
 
-	GLuint fs = qglCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
+	fs = qglCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
 	qglShaderSourceARB(fs, 1, &fscode, NULL);
 	qglCompileShaderARB(fs);
-	if(GL_IsShaderError(fs, fsfile))
-	{
-		qglDeleteObjectARB(fs);
-		return 0;
-	}	
+	GL_CheckShaderError(vs, fsfile);
 
 	GLuint program = qglCreateProgramObjectARB();
 	qglAttachObjectARB(program, vs);
+	if (gs)
+	{
+		qglAttachObjectARB(program, gs);
+	}
 	qglAttachObjectARB(program, fs);
 	qglLinkProgramARB(program);
 
 	shaders[numshaders].program = program;
 	shaders[numshaders].vs = vs;
+	shaders[numshaders].gs = gs;
 	shaders[numshaders].fs = fs;
 	numshaders ++;
 
 	return program;
 }
 
-GLuint R_CompileShaderEx(const char *vscode, const char *fscode, const char *vsfile, const char *fsfile, const char *vsdefine, const char *fsdefine)
+GLuint R_CompileShaderFile(const char *vsfile, const char *gsfile, const char *fsfile)
 {
-	auto vslen = strlen(vscode);
-	auto vsdeflen = strlen(vsdefine);
-	char *vs = new char[vslen + 1 + vsdeflen + 1];
-	strcpy(vs, vsdefine);
-	strcat(vs, "\n");
-	strcat(vs, vscode);
+	char *vscode = NULL;
+	char *gscode = NULL;
+	char *fscode = NULL;
 
-	auto fslen = strlen(fscode);
-	auto fsdeflen = strlen(fsdefine);
-	char *fs = new char[fslen + 1 + fsdeflen + 1];
-	strcpy(fs, fsdefine);
-	strcat(fs, "\n");
-	strcat(fs, fscode);
+	vscode = (char *)gEngfuncs.COM_LoadFile((char *)vsfile, 5, 0);
+	if (!vscode)
+	{
+		Sys_ErrorEx("R_CompileShaderFile: %s not found!", vsfile);
+	}
 
-	auto r = R_CompileShader(vs, fs, vsfile, fsfile);
+	if (gsfile)
+	{
+		gscode = (char *)gEngfuncs.COM_LoadFile((char *)gsfile, 5, 0);
+		if (!fscode)
+		{
+			Sys_ErrorEx("R_CompileShaderFile: %s not found!", vsfile);
+		}
+	}
 
-	delete[]vs;
-	delete[]fs;
+	fscode = (char *)gEngfuncs.COM_LoadFile((char *)fsfile, 5, 0);
+	if (!fscode)
+	{
+		Sys_ErrorEx("R_CompileShaderFile: %s not found!", vsfile);
+	}
+
+	auto program = R_CompileShader(vscode, gscode, fscode, vsfile, gsfile, fsfile);
+	
+	if (vscode)
+		gEngfuncs.COM_FreeFile(vscode);
+	if (gscode)
+		gEngfuncs.COM_FreeFile(gscode);
+	if (fscode)
+		gEngfuncs.COM_FreeFile(fscode);
+
+	return program;
+}
+
+GLuint R_CompileShaderFileEx(
+	const char *vsfile, const char *gsfile, const char *fsfile, 
+	const char *vsdefine, const char *gsdefine, const char *fsdefine)
+{
+	char *vscode = NULL;
+	char *gscode = NULL;
+	char *fscode = NULL;
+	char *vs = NULL;
+	char *gs = NULL;
+	char *fs = NULL;
+
+	vscode = (char *)gEngfuncs.COM_LoadFile((char *)vsfile, 5, 0);
+	if (!vscode)
+	{
+		Sys_ErrorEx("R_CompileShaderFile: %s not found!", vsfile);
+	}
+
+	if (gsfile)
+	{
+		gscode = (char *)gEngfuncs.COM_LoadFile((char *)gsfile, 5, 0);
+		if (!fscode)
+		{
+			Sys_ErrorEx("R_CompileShaderFile: %s not found!", vsfile);
+		}
+	}
+
+	fscode = (char *)gEngfuncs.COM_LoadFile((char *)fsfile, 5, 0);
+	if (!fscode)
+	{
+		Sys_ErrorEx("R_CompileShaderFile: %s not found!", vsfile);
+	}
+
+	if (vscode && vsdefine)
+	{
+		auto vslen = strlen(vscode);
+		auto vsdeflen = strlen(vsdefine);
+		vs = new char[vslen + 1 + vsdeflen + 1];
+		strcpy(vs, vsdefine);
+		strcat(vs, "\n");
+		strcat(vs, vscode);
+	}
+
+	if (gscode && gsdefine)
+	{
+		auto gslen = strlen(gscode);
+		auto gsdeflen = strlen(gsdefine);
+		gs = new char[gslen + 1 + gsdeflen + 1];
+		strcpy(gs, gsdefine);
+		strcat(gs, "\n");
+		strcat(gs, gscode);
+	}
+
+	if (fscode && fsdefine)
+	{
+		auto fslen = strlen(fscode);
+		auto fsdeflen = strlen(fsdefine);
+		fs = new char[fslen + 1 + fsdeflen + 1];
+		strcpy(fs, fsdefine);
+		strcat(fs, "\n");
+		strcat(fs, fscode);
+	}
+
+	auto r = R_CompileShader(vs, gs, fs, vsfile, gsfile, fsfile);
+
+	if (vs)
+		delete[]vs;
+	if (fs)
+		delete[]fs;
+	if (gs)
+		delete[]gs;
 
 	return r;
 }

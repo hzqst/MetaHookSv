@@ -154,8 +154,6 @@ void R_LoadBSPEntities(void);
 
 void R_LinkDecalTexture(texture_t *t);
 void R_LoadExtraTextureFile(qboolean loadmap);
-void R_InitDetailTextures(void);
-void R_RenderDynamicLightmaps(msurface_t *fa);
 void R_AddDynamicLights(msurface_t *surf);
 void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride);
 void R_DecalMPoly(float *v, texture_t *ptexture, msurface_t *psurf, int vertCount);

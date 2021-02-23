@@ -3,6 +3,7 @@
 typedef struct
 {
 	int vs;
+	int gs;
 	int fs;
 	int program;
 }glshader_t;
@@ -12,8 +13,9 @@ typedef struct
 extern glshader_t shaders[MAX_SHADERS];
 extern int numshaders;
 
-GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfile, const char *fsfile);
-GLuint R_CompileShaderEx(const char *vscode, const char *fscode, const char *vsfile, const char *fsfile, const char *vsdefine, const char *fsdefine);
+GLuint R_CompileShader(const char *vscode, const char *gscode, const char *fscode, const char *vsfile, const char *gsfile, const char *fsfile);
+GLuint R_CompileShaderFile(const char *vsfile, const char *gsfile, const char *fsfile);
+GLuint R_CompileShaderFileEx(const char *vsfile, const char *gsfile, const char *fsfile, const char *vsdefine, const char *gsdefine, const char *fsdefine);
 void GL_UseProgram(GLuint program);
 void GL_EndProgram(void);
 GLuint GL_GetUniformLoc(GLuint program, const char *name);

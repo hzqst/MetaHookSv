@@ -10,7 +10,7 @@ cvar_t *r_cloak_debug;
 
 void R_InitCloak(void)
 {
-	if(gl_shader_support)
+	/*if(gl_shader_support)
 	{
 		const char *cloak_vscode = (const char *)gEngfuncs.COM_LoadFile("resource\\shader\\cloak_shader.vsh", 5, 0);
 		const char *cloak_fscode = (const char *)gEngfuncs.COM_LoadFile("resource\\shader\\cloak_shader.fsh", 5, 0);
@@ -51,7 +51,7 @@ void R_InitCloak(void)
 		}
 		gEngfuncs.COM_FreeFile((void *)conc_vscode);
 		gEngfuncs.COM_FreeFile((void *)conc_fscode);
-	}
+	}*/
 
 	if(!s_CloakFBO.s_hBackBufferFBO)
 	{

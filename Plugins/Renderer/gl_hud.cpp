@@ -53,6 +53,121 @@ cvar_t *r_ssao_intensity = NULL;
 cvar_t *r_ssao_bias = NULL;
 cvar_t *r_ssao_blur_sharpness = NULL;
 
+float *R_GenerateGaussianWeights(int kernelRadius)
+{
+	int size = kernelRadius * 2 + 1;
+
+	float x;
+	float s = floor(kernelRadius / 4.0f);
+	float *weights = new float[size];
+
+	float sum = 0.0f;
+	for (int i = 0; i < size; i++)
+	{
+		x = (float)(i - kernelRadius);
+
+		// True Gaussian
+		weights[i] = expf(-x * x / (2.0f*s*s)) / (s*sqrtf(2.0f*M_PI));
+
+		// This sum of exps is not really a separable kernel but produces a very interesting star-shaped effect
+		//weights[i] = expf( -0.0625f * x * x ) + 2 * expf( -0.25f * x * x ) + 4 * expf( - x * x ) + 8 * expf( - 4.0f * x * x ) + 16 * expf( - 16.0f * x * x ) ;
+		sum += weights[i];
+	}
+
+	for (int i = 0; i < size; i++)
+		weights[i] /= sum;
+
+	return weights;
+}
+
+void R_CaculateGaussianBilinear(float *coordOffset, float *gaussWeight, int maxSamples)
+{
+	int i = 0;
+
+	//  store all the intermediate offsets & weights, then compute the bilinear
+	//  taps in a second pass
+	float *tmpWeightArray = R_GenerateGaussianWeights(maxSamples);
+
+	// Bilinear filtering taps 
+	// Ordering is left to right.
+	float sScale;
+	float sFrac;
+
+	for (i = 0; i < maxSamples; i++)
+	{
+		sScale = tmpWeightArray[i * 2 + 0] + tmpWeightArray[i * 2 + 1];
+		sFrac = tmpWeightArray[i * 2 + 1] / sScale;
+
+		coordOffset[i] = ((2.0f*i - maxSamples) + sFrac);
+		gaussWeight[i] = sScale;
+	}
+
+	delete[]tmpWeightArray;
+}
+
+char *UTIL_VarArgs(char *format, ...);
+
+void R_InitBlur(int samples)
+{
+	if (!bDoHDR)
+		return;
+
+	auto pp_common_vscode = (char *)gEngfuncs.COM_LoadFile((char *)"resource\\shader\\pp_common.vsh", 5, 0);
+
+	if (!pp_common_vscode)
+		return;
+
+	float coord_offsets[MAX_GAUSSIAN_SAMPLES];
+	float gauss_weights[MAX_GAUSSIAN_SAMPLES];
+	char code[4096];
+
+	R_CaculateGaussianBilinear(coord_offsets, gauss_weights, min(samples, MAX_GAUSSIAN_SAMPLES));
+
+	//Generate horizonal blur code
+	if (pp_gaussianblurh.program)
+	{
+		qglDeleteObjectARB(pp_gaussianblurh.program);
+		pp_gaussianblurh.program = 0;
+	}
+
+	sprintf(code, "#version 120\nuniform float du;\nuniform sampler2D tex;\nvoid main()\n{\n vec4 sample = vec4(0.0, 0.0, 0.0, 0.0);\n");
+	for (int i = 0; i < samples; ++i)
+	{
+		strcat(code, UTIL_VarArgs(" sample += %f * texture2D( tex, gl_TexCoord[0].xy + vec2(%f * du, 0.0) );\n", gauss_weights[i], coord_offsets[i]));
+	}
+	strcat(code, " gl_FragColor = sample;\n}");
+
+	pp_gaussianblurh.program = R_CompileShader(pp_common_vscode, NULL, code, "pp_common.vsh", NULL, "pp_gaussianblur_h.fsh");
+	if (pp_gaussianblurh.program)
+	{
+		SHADER_UNIFORM(pp_gaussianblurh, tex, "tex");
+		SHADER_UNIFORM(pp_gaussianblurh, du, "du");
+	}
+
+	//Generate vertical blur code
+	if (pp_gaussianblurv.program)
+	{
+		qglDeleteObjectARB(pp_gaussianblurv.program);
+		pp_gaussianblurv.program = 0;
+	}
+
+	sprintf(code, "#version 120\nuniform float du;\nuniform sampler2D tex;\nvoid main()\n{\n vec4 sample = vec4(0.0, 0.0, 0.0, 0.0);\n");
+	for (int i = 0; i < samples; ++i)
+	{
+		strcat(code, UTIL_VarArgs(" sample += %f * texture2D( tex, gl_TexCoord[0].xy + vec2(0.0, %f * du) );\n", gauss_weights[i], coord_offsets[i]));
+	}
+	strcat(code, " gl_FragColor = sample;\n}");
+
+	pp_gaussianblurv.program = R_CompileShader(pp_common_vscode, NULL, code, "pp_common.vsh", NULL, "pp_gaussianblur_v.fsh");
+	if (pp_gaussianblurv.program)
+	{
+		SHADER_UNIFORM(pp_gaussianblurv, tex, "tex");
+		SHADER_UNIFORM(pp_gaussianblurv, du, "du");
+	}
+
+	gEngfuncs.COM_FreeFile(pp_common_vscode);
+}
+
 void R_InitGLHUD(void)
 {
 	if(gl_shader_support)
@@ -99,299 +214,123 @@ void R_InitGLHUD(void)
 		}
 
 		//FXAA Pass
-		char *pp_fxaa_vscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_fxaa.vsh", 5, 0);
-		char *pp_fxaa_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_fxaa.fsh", 5, 0);
-		if(pp_fxaa_vscode && pp_fxaa_fscode)
+		pp_fxaa.program = R_CompileShaderFile("resource\\shader\\pp_fxaa.vsh", NULL, "resource\\shader\\pp_fxaa.fsh");
+		if (pp_fxaa.program)
 		{
-			pp_fxaa.program = R_CompileShader(pp_fxaa_vscode, pp_fxaa_fscode, "pp_fxaa.vsh", "pp_fxaa.fsh");
-			if(pp_fxaa.program)
-			{
-				SHADER_UNIFORM(pp_fxaa, tex0, "tex0");
-				SHADER_UNIFORM(pp_fxaa, rt_w, "rt_w");
-				SHADER_UNIFORM(pp_fxaa, rt_h, "rt_h");
-			}
-			gEngfuncs.COM_FreeFile(pp_fxaa_vscode);
-			gEngfuncs.COM_FreeFile(pp_fxaa_fscode);
-		}
-		if (!pp_fxaa_vscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\pp_fxaa.vsh\" not found!");
-		}
-		if (!pp_fxaa_fscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\pp_fxaa.fsh\" not found!");
+			SHADER_UNIFORM(pp_fxaa, tex0, "tex0");
+			SHADER_UNIFORM(pp_fxaa, rt_w, "rt_w");
+			SHADER_UNIFORM(pp_fxaa, rt_h, "rt_h");
 		}
 
 		//DownSample Pass
-		char *pp_common_vscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_common.vsh", 5, 0);
-		char *pp_downsample_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_downsample.fsh", 5, 0);
-		if(pp_common_vscode && pp_downsample_fscode)
+		pp_downsample.program = R_CompileShaderFile("resource\\shader\\pp_common.vsh", NULL, "resource\\shader\\pp_downsample.fsh");
+		if (pp_downsample.program)
 		{
-			pp_downsample.program = R_CompileShader(pp_common_vscode, pp_downsample_fscode, "pp_common.vsh", "pp_downsample.fsh");
-			if(pp_downsample.program)
-			{
-				SHADER_UNIFORM(pp_downsample, tex, "tex");
-			}
-			gEngfuncs.COM_FreeFile(pp_downsample_fscode);
-		}
-		if (!pp_common_vscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\pp_common.vsh\" not found!");
-		}
-		if (!pp_downsample_fscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\pp_downsample.fsh\" not found!");
+			SHADER_UNIFORM(pp_downsample, tex, "tex");
 		}
 
 		//2x2 Downsample Pass
-		char *pp_common2x2_vscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_common2x2.vsh", 5, 0);
-		char *pp_downsample2x2_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_downsample2x2.fsh", 5, 0);
-		if(pp_common2x2_vscode && pp_downsample2x2_fscode)
+		pp_downsample2x2.program = R_CompileShaderFile("resource\\shader\\pp_common2x2.vsh", NULL, "resource\\shader\\pp_downsample2x2.fsh");
+		if (pp_downsample2x2.program)
 		{
-			pp_downsample2x2.program = R_CompileShader(pp_common2x2_vscode, pp_downsample2x2_fscode, "pp_common2x2.vsh", "pp_downsample2x2.fsh");
-			if(pp_downsample2x2.program)
-			{
-				SHADER_UNIFORM(pp_downsample2x2, tex, "tex");
-				SHADER_UNIFORM(pp_downsample2x2, texelsize, "texelsize");
-			}
-			gEngfuncs.COM_FreeFile(pp_downsample2x2_fscode);
-		}	
-		if (!pp_common2x2_vscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\pp_common2x2.vsh\" not found!");
-		}
-		if (!pp_downsample2x2_fscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\pp_downsample2x2.fsh\" not found!");
+			SHADER_UNIFORM(pp_downsample2x2, tex, "tex");
+			SHADER_UNIFORM(pp_downsample2x2, texelsize, "texelsize");
 		}
 
 		//Luminance Downsample Pass
-		char *pp_lumin_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_lumin.fsh", 5, 0);
-		if(pp_common2x2_vscode && pp_lumin_fscode)
+		pp_lumin.program = R_CompileShaderFile("resource\\shader\\pp_common2x2.vsh", NULL, "resource\\shader\\pp_lumin.fsh");
+		if (pp_lumin.program)
 		{
-			pp_lumin.program = R_CompileShader(pp_common2x2_vscode, pp_lumin_fscode, "pp_common2x2.vsh", "pp_lumin.fsh");
-			if(pp_lumin.program)
-			{
-				SHADER_UNIFORM(pp_lumin, tex, "tex");
-				SHADER_UNIFORM(pp_lumin, texelsize, "texelsize");
-			}
-			gEngfuncs.COM_FreeFile(pp_lumin_fscode);
-		}
-		if (!pp_lumin_fscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\pp_lumin.fsh\" not found!");
+			SHADER_UNIFORM(pp_lumin, tex, "tex");
+			SHADER_UNIFORM(pp_lumin, texelsize, "texelsize");
 		}
 
 		//Log Luminance Downsample Pass
-		char *pp_luminlog_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_luminlog.fsh", 5, 0);
-		if(pp_common2x2_vscode && pp_luminlog_fscode)
+		pp_luminlog.program = R_CompileShaderFile("resource\\shader\\pp_common2x2.vsh", NULL, "resource\\shader\\pp_luminlog.fsh");
+		if (pp_luminlog.program)
 		{
-			pp_luminlog.program = R_CompileShader(pp_common2x2_vscode, pp_luminlog_fscode, "pp_common2x2.vsh", "pp_luminlog.fsh");
-			if(pp_luminlog.program)
-			{
-				SHADER_UNIFORM(pp_luminlog, tex, "tex");
-				SHADER_UNIFORM(pp_luminlog, texelsize, "texelsize");
-			}
-			gEngfuncs.COM_FreeFile(pp_luminlog_fscode);
-		}
-		if (!pp_luminlog_fscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\pp_luminlog.fsh\" not found!");
+			SHADER_UNIFORM(pp_luminlog, tex, "tex");
+			SHADER_UNIFORM(pp_luminlog, texelsize, "texelsize");
 		}
 
 		//Exp Luminance Downsample Pass
-		char *pp_luminexp_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_luminexp.fsh", 5, 0);
-		if(pp_common2x2_vscode && pp_luminexp_fscode)
+		pp_luminexp.program = R_CompileShaderFile("resource\\shader\\pp_common2x2.vsh", NULL, "resource\\shader\\pp_luminexp.fsh");
+		if (pp_luminexp.program)
 		{
-			pp_luminexp.program = R_CompileShader(pp_common2x2_vscode, pp_luminexp_fscode, "pp_common2x2.vsh", "pp_luminexp.fsh");
-			if(pp_luminexp.program)
-			{
-				SHADER_UNIFORM(pp_luminexp, tex, "tex");
-				SHADER_UNIFORM(pp_luminexp, texelsize, "texelsize");
-			}
-			gEngfuncs.COM_FreeFile(pp_luminexp_fscode);
-		}
-		if (!pp_luminexp_fscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\pp_luminexp.fsh\" not found!");
+			SHADER_UNIFORM(pp_luminexp, tex, "tex");
+			SHADER_UNIFORM(pp_luminexp, texelsize, "texelsize");
 		}
 
 		//Luminance Adaptation Downsample Pass
-		char *pp_luminadapt_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_luminadapt.fsh", 5, 0);
-		if(pp_common_vscode && pp_luminadapt_fscode)
+		pp_luminadapt.program = R_CompileShaderFile("resource\\shader\\pp_common.vsh", NULL, "resource\\shader\\pp_luminadapt.fsh");
+		if (pp_luminadapt.program)
 		{
-			pp_luminadapt.program = R_CompileShader(pp_common_vscode, pp_luminadapt_fscode, "pp_common.vsh", "pp_luminadapt.fsh");
-			if(pp_luminadapt.program)
-			{
-				SHADER_UNIFORM(pp_luminadapt, curtex, "curtex");
-				SHADER_UNIFORM(pp_luminadapt, adatex, "adatex");
-				SHADER_UNIFORM(pp_luminadapt, frametime, "frametime");
-			}
-			gEngfuncs.COM_FreeFile(pp_luminadapt_fscode);
-		}
-		if (!pp_luminadapt_fscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\pp_luminadapt.fsh\" not found!");
+			SHADER_UNIFORM(pp_luminadapt, curtex, "curtex");
+			SHADER_UNIFORM(pp_luminadapt, adatex, "adatex");
+			SHADER_UNIFORM(pp_luminadapt, frametime, "frametime");
 		}
 
 		//Bright Pass
-		char *pp_brightpass_vscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_brightpass.vsh", 5, 0);
-		char *pp_brightpass_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_brightpass.fsh", 5, 0);
-		if(pp_brightpass_vscode && pp_brightpass_fscode)
+		pp_brightpass.program = R_CompileShaderFile("resource\\shader\\pp_brightpass.vsh", NULL, "resource\\shader\\pp_brightpass.fsh");
+		if (pp_brightpass.program)
 		{
-			pp_brightpass.program = R_CompileShader(pp_brightpass_vscode, pp_brightpass_fscode, "pp_brightpass.vsh", "pp_brightpass.fsh");
-			if(pp_brightpass.program)
-			{
-				SHADER_UNIFORM(pp_brightpass, tex, "tex");
-				SHADER_UNIFORM(pp_brightpass, lumtex, "lumtex");
-			}
-			gEngfuncs.COM_FreeFile(pp_brightpass_vscode);
-			gEngfuncs.COM_FreeFile(pp_brightpass_fscode);
-		}
-		if (!pp_brightpass_vscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\pp_brightpass.vsh\" not found!");
-		}
-		if (!pp_brightpass_fscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\pp_brightpass.fsh\" not found!");
+			SHADER_UNIFORM(pp_brightpass, tex, "tex");
+			SHADER_UNIFORM(pp_brightpass, lumtex, "lumtex");
 		}
 
 		//Tone mapping
-		char *pp_tonemap_vscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_tonemap.vsh", 5, 0);
-		char *pp_tonemap_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\pp_tonemap.fsh", 5, 0);
-		if(pp_tonemap_vscode && pp_tonemap_fscode)
+		pp_tonemap.program = R_CompileShaderFile("resource\\shader\\pp_tonemap.vsh", NULL, "resource\\shader\\pp_tonemap.fsh");
+		if (pp_tonemap.program)
 		{
-			pp_tonemap.program = R_CompileShader(pp_tonemap_vscode, pp_tonemap_fscode, "pp_tonemap.vsh", "pp_tonemap.fsh");
-			if(pp_tonemap.program)
-			{
-				SHADER_UNIFORM(pp_tonemap, basetex, "basetex");
-				SHADER_UNIFORM(pp_tonemap, blurtex, "blurtex");
-				SHADER_UNIFORM(pp_tonemap, lumtex, "lumtex");
-				SHADER_UNIFORM(pp_tonemap, blurfactor, "blurfactor");
-				SHADER_UNIFORM(pp_tonemap, exposure, "exposure");
-				SHADER_UNIFORM(pp_tonemap, darkness, "darkness");
-				SHADER_UNIFORM(pp_tonemap, gamma, "gamma");
-			}
-			gEngfuncs.COM_FreeFile(pp_tonemap_vscode);
-			gEngfuncs.COM_FreeFile(pp_tonemap_fscode);
-		}
-		if (!pp_tonemap_vscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\pp_tonemap.vsh\" not found!");
-		}
-		if (!pp_tonemap_fscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\pp_tonemap.fsh\" not found!");
+			SHADER_UNIFORM(pp_tonemap, basetex, "basetex");
+			SHADER_UNIFORM(pp_tonemap, blurtex, "blurtex");
+			SHADER_UNIFORM(pp_tonemap, lumtex, "lumtex");
+			SHADER_UNIFORM(pp_tonemap, blurfactor, "blurfactor");
+			SHADER_UNIFORM(pp_tonemap, exposure, "exposure");
+			SHADER_UNIFORM(pp_tonemap, darkness, "darkness");
+			SHADER_UNIFORM(pp_tonemap, gamma, "gamma");
 		}
 
 		//SSAO
-		char *fullscreenquad_vscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\fullscreenquad.vert.glsl", 5, 0);
-		char *depthlinearize_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\depthlinearize.frag.glsl", 5, 0);
-		if (fullscreenquad_vscode && depthlinearize_fscode)
+		depth_linearize.program = R_CompileShaderFile("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\depthlinearize.frag.glsl");
+		if (depth_linearize.program)
 		{
-			depth_linearize.program = R_CompileShader(fullscreenquad_vscode, depthlinearize_fscode, "fullscreenquad.vert.glsl", "depthlinearize.frag.glsl");
-			if (depth_linearize.program)
-			{
-			}
-			gEngfuncs.COM_FreeFile(depthlinearize_fscode);
 		}
 
-		if (!depthlinearize_fscode)
+		depth_linearize_msaa.program = R_CompileShaderFile("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\depthlinearize.msaa.frag.glsl");
+		if (depth_linearize_msaa.program)
 		{
-			Sys_ErrorEx("shader file \"resource\\shader\\depthlinearize.frag.glsl\" not found!");
 		}
 
-		char *depthlinearize_msaa_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\depthlinearize.msaa.frag.glsl", 5, 0);
-		if (fullscreenquad_vscode && depthlinearize_msaa_fscode)
+		hbao_calc_blur.program = R_CompileShaderFile("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\hbao.frag.glsl");
+		if (hbao_calc_blur.program)
 		{
-			depth_linearize_msaa.program = R_CompileShader(fullscreenquad_vscode, depthlinearize_msaa_fscode, "fullscreenquad.vert.glsl", "depthlinearize.msaa.frag.glsl");
-			if (depth_linearize_msaa.program)
-			{
-			}
-			gEngfuncs.COM_FreeFile(depthlinearize_msaa_fscode);
+			SHADER_UNIFORM(hbao_calc_blur, texLinearDepth, "texLinearDepth");
+			SHADER_UNIFORM(hbao_calc_blur, texRandom, "texRandom");
+			SHADER_UNIFORM(hbao_calc_blur, control_RadiusToScreen, "control_RadiusToScreen");
+			SHADER_UNIFORM(hbao_calc_blur, control_projOrtho, "control_projOrtho");
+			SHADER_UNIFORM(hbao_calc_blur, control_projInfo, "control_projInfo");
+			SHADER_UNIFORM(hbao_calc_blur, control_PowExponent, "control_PowExponent");
+			SHADER_UNIFORM(hbao_calc_blur, control_InvQuarterResolution, "control_InvQuarterResolution");
+			SHADER_UNIFORM(hbao_calc_blur, control_AOMultiplier, "control_AOMultiplier");
+			SHADER_UNIFORM(hbao_calc_blur, control_InvFullResolution, "control_InvFullResolution");
+			SHADER_UNIFORM(hbao_calc_blur, control_NDotVBias, "control_NDotVBias");
+			SHADER_UNIFORM(hbao_calc_blur, control_NegInvR2, "control_NegInvR2");
 		}
 
-		if (!depthlinearize_msaa_fscode)
+		hbao_blur.program = R_CompileShaderFile("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\hbao_blur.frag.glsl");
+		if (hbao_blur.program)
 		{
-			Sys_ErrorEx("shader file \"resource\\shader\\depthlinearize.msaa.frag.glsl\" not found!");
 		}
 
-		char *hbao_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\hbao.frag.glsl", 5, 0);
-		if (fullscreenquad_vscode && hbao_fscode)
+		hbao_blur2.program = R_CompileShaderFile("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\hbao_blur2.frag.glsl");
+		if (hbao_blur2.program)
 		{
-			hbao_calc_blur.program = R_CompileShader(fullscreenquad_vscode, hbao_fscode, "fullscreenquad.vert.glsl", "hbao.frag.glsl");
-			if (hbao_calc_blur.program)
-			{
-				SHADER_UNIFORM(hbao_calc_blur, texLinearDepth, "texLinearDepth");
-				SHADER_UNIFORM(hbao_calc_blur, texRandom, "texRandom");
-				SHADER_UNIFORM(hbao_calc_blur, control_RadiusToScreen, "control_RadiusToScreen");
-				SHADER_UNIFORM(hbao_calc_blur, control_projOrtho, "control_projOrtho");
-				SHADER_UNIFORM(hbao_calc_blur, control_projInfo, "control_projInfo");
-				SHADER_UNIFORM(hbao_calc_blur, control_PowExponent, "control_PowExponent");
-				SHADER_UNIFORM(hbao_calc_blur, control_InvQuarterResolution, "control_InvQuarterResolution");
-				SHADER_UNIFORM(hbao_calc_blur, control_AOMultiplier, "control_AOMultiplier");
-				SHADER_UNIFORM(hbao_calc_blur, control_InvFullResolution, "control_InvFullResolution");
-				SHADER_UNIFORM(hbao_calc_blur, control_NDotVBias, "control_NDotVBias");
-				SHADER_UNIFORM(hbao_calc_blur, control_NegInvR2, "control_NegInvR2");
-			}
-			gEngfuncs.COM_FreeFile(hbao_fscode);
-		}
-		if (!hbao_fscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\hbao.frag.glsl\" not found!");
-		}
 
-		char *hbao_blur_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\hbao_blur.frag.glsl", 5, 0);
-		if (fullscreenquad_vscode && hbao_blur_fscode)
-		{
-			hbao_blur.program = R_CompileShader(fullscreenquad_vscode, hbao_blur_fscode, "fullscreenquad.vert.glsl", "hbao_blur.frag.glsl");
-			if (hbao_blur.program)
-			{
-			}
-
-			gEngfuncs.COM_FreeFile(hbao_blur_fscode);
-		}
-		if (!hbao_blur_fscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\hbao_blur.frag.glsl\" not found!");
-		}
-
-		char *hbao_blur2_fscode = (char *)gEngfuncs.COM_LoadFile("resource\\shader\\hbao_blur2.frag.glsl", 5, 0);
-		if (fullscreenquad_vscode && hbao_blur2_fscode)
-		{
-			hbao_blur2.program = R_CompileShader(fullscreenquad_vscode, hbao_blur2_fscode, "fullscreenquad.vert.glsl", "hbao_blur2.frag.glsl");
-			if (hbao_blur2.program)
-			{
-
-			}
-
-			gEngfuncs.COM_FreeFile(hbao_blur2_fscode);
-		}
-		if (!hbao_blur2_fscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\hbao_blur2.frag.glsl\" not found!");
-		}
-
-		if (!fullscreenquad_vscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\fullscreenquad.vert.glsl\" not found!");
-		}
-		if (fullscreenquad_vscode)
-		{
-			gEngfuncs.COM_FreeFile(fullscreenquad_vscode);
 		}
 
 		//gaussian blur code
-		if(pp_common_vscode)
-		{
-			R_InitBlur(pp_common_vscode, 16);
-			gEngfuncs.COM_FreeFile(pp_common_vscode);
-		}
-		if(pp_common2x2_vscode)
-		{
-			gEngfuncs.COM_FreeFile(pp_common2x2_vscode);
-		}
+		R_InitBlur(16);
 	}
 	r_hdr = gEngfuncs.pfnRegisterVariable("r_hdr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_blurwidth = gEngfuncs.pfnRegisterVariable("r_hdr_blurwidth", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -433,114 +372,6 @@ void R_InitGLHUD(void)
 			bDoHDR = false;
 		else if(!pp_tonemap.program)
 			bDoHDR = false;
-	}
-}
-
-float *R_GenerateGaussianWeights(int kernelRadius)
-{
-	int size = kernelRadius * 2 + 1;
-
-	float x;
-	float s        = floor(kernelRadius / 4.0f);  
-	float *weights = new float [size];
-
-	float sum = 0.0f;
-	for(int i = 0; i < size; i++)
-	{
-		x          = (float)(i - kernelRadius);
-
-		// True Gaussian
-		weights[i] = expf(-x*x/(2.0f*s*s)) / (s*sqrtf(2.0f*M_PI));
-
-		// This sum of exps is not really a separable kernel but produces a very interesting star-shaped effect
-		//weights[i] = expf( -0.0625f * x * x ) + 2 * expf( -0.25f * x * x ) + 4 * expf( - x * x ) + 8 * expf( - 4.0f * x * x ) + 16 * expf( - 16.0f * x * x ) ;
-		sum += weights[i];
-	}
-
-	for(int i = 0; i < size; i++)
-		weights[i] /= sum;
-
-	return weights;
-}
-
-void R_CaculateGaussianBilinear(float *coordOffset, float *gaussWeight, int maxSamples )
-{
-    int i=0;
-
-	//  store all the intermediate offsets & weights, then compute the bilinear
-    //  taps in a second pass
-    float *tmpWeightArray = R_GenerateGaussianWeights( maxSamples );
-
-    // Bilinear filtering taps 
-    // Ordering is left to right.
-    float sScale;
-    float sFrac;
-
-    for( i = 0; i < maxSamples; i++ )
-    {
-        sScale = tmpWeightArray[i*2 + 0] + tmpWeightArray[i*2 + 1];
-        sFrac  = tmpWeightArray[i*2 + 1] / sScale;
-
-        coordOffset[i] = ( (2.0f*i - maxSamples) + sFrac );
-        gaussWeight[i] = sScale;
-    }
-
-    delete []tmpWeightArray;
-}
-
-char *UTIL_VarArgs(char *format, ...);
-
-void R_InitBlur(const char *vs_code, int samples)
-{
-	if(!bDoHDR)
-		return;
-
-	float coord_offsets[MAX_GAUSSIAN_SAMPLES];
-	float gauss_weights[MAX_GAUSSIAN_SAMPLES];
-	char code[4096];
-
-	R_CaculateGaussianBilinear(coord_offsets, gauss_weights, min(samples, MAX_GAUSSIAN_SAMPLES));
-
-	//Generate horizonal blur code
-	if(pp_gaussianblurh.program)
-	{
-		qglDeleteObjectARB(pp_gaussianblurh.program);
-		pp_gaussianblurh.program = 0;
-	}
-
-	sprintf(code, "#version 120\nuniform float du;\nuniform sampler2D tex;\nvoid main()\n{\n vec4 sample = vec4(0.0, 0.0, 0.0, 0.0);\n");
-	for(int i = 0; i < samples; ++i)
-	{
-		strcat(code, UTIL_VarArgs(" sample += %f * texture2D( tex, gl_TexCoord[0].xy + vec2(%f * du, 0.0) );\n", gauss_weights[i], coord_offsets[i]));
-	}
-	strcat(code, " gl_FragColor = sample;\n}");
-
-	pp_gaussianblurh.program = R_CompileShader(vs_code, code, "pp_common.vsh", "pp_gaussianblur_h.fsh");
-	if(pp_gaussianblurh.program)
-	{
-		SHADER_UNIFORM(pp_gaussianblurh, tex, "tex");
-		SHADER_UNIFORM(pp_gaussianblurh, du, "du");
-	}
-
-	//Generate vertical blur code
-	if(pp_gaussianblurv.program)
-	{
-		qglDeleteObjectARB(pp_gaussianblurv.program);
-		pp_gaussianblurv.program = 0;
-	}
-	
-	sprintf(code, "#version 120\nuniform float du;\nuniform sampler2D tex;\nvoid main()\n{\n vec4 sample = vec4(0.0, 0.0, 0.0, 0.0);\n");
-	for(int i = 0; i < samples; ++i)
-	{
-		strcat(code, UTIL_VarArgs(" sample += %f * texture2D( tex, gl_TexCoord[0].xy + vec2(0.0, %f * du) );\n", gauss_weights[i], coord_offsets[i]));
-	}
-	strcat(code, " gl_FragColor = sample;\n}");
-
-	pp_gaussianblurv.program = R_CompileShader(vs_code, code, "pp_common.vsh", "pp_gaussianblur_v.fsh");
-	if(pp_gaussianblurv.program)
-	{
-		SHADER_UNIFORM(pp_gaussianblurv, tex, "tex");
-		SHADER_UNIFORM(pp_gaussianblurv, du, "du");
 	}
 }
 

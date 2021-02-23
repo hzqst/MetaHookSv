@@ -641,13 +641,22 @@ void R_DrawSkyBox(void)
 {
 	int i, order;
 
-	float vNormalTable[6][3] = { 
+	/*float vNormalTable[6][3] = { 
 		{-1, 0, 0},
 		{1, 0, 0},
 		{0, -1, 0},
 		{0, 1, 0},
 		{0, 0, -1},
 		{0, 0, 1}
+	};*/
+
+	float vNormalTable[6][3] = {
+		{0, 0, 0},
+		{0, 0, 0},
+		{0, 0, 0},
+		{0, 0, 0},
+		{0, 0, 0},
+		{0, 0, 0}
 	};
 
 	for (i = 0; i < 6; i++)

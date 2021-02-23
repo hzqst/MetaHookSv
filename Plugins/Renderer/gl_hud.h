@@ -130,7 +130,6 @@ extern cvar_t *r_ssao_intensity;
 extern cvar_t *r_ssao_bias;
 extern cvar_t *r_ssao_blur_sharpness;
 extern cvar_t *r_fxaa;
-void R_InitBlur(const char *vs_code, int samples);
 void R_BeginHUDQuad(void);
 void R_BeginFXAA(int w, int h);
 int R_DoSSAO(int sampleIndex);

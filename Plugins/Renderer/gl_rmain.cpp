@@ -164,9 +164,11 @@ cvar_t *gl_round_down = NULL;
 cvar_t *gl_picmip = NULL;
 cvar_t *gl_max_size = NULL;
 
+cvar_t *v_texgamma = NULL;
 cvar_t *v_lightgamma = NULL;
 cvar_t *v_brightness = NULL;
 cvar_t *v_gamma = NULL;
+cvar_t *v_lambert = NULL;
 
 cvar_t *cl_righthand = NULL;
 
@@ -1885,9 +1887,11 @@ void R_InitCvars(void)
 		}
 	}
 
+	v_texgamma = gEngfuncs.pfnGetCvarPointer("texgamma");
 	v_lightgamma = gEngfuncs.pfnGetCvarPointer("lightgamma");
 	v_brightness = gEngfuncs.pfnGetCvarPointer("brightness");
 	v_gamma = gEngfuncs.pfnGetCvarPointer("gamma");
+	v_lambert = gEngfuncs.pfnGetCvarPointer("lambert");
 
 	cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
 }

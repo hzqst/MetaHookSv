@@ -351,6 +351,8 @@ extern "C"
 	void (APIENTRY *qglVertex4s)(GLshort x, GLshort y, GLshort z, GLshort w) = NULL;
 	void (APIENTRY *qglVertex4sv)(const GLshort *v) = NULL;
 	void (APIENTRY *qglVertexPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer) = NULL;
+	void (APIENTRY *qglVertexAttribPointer)(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid * pointer) = NULL;
+	void (APIENTRY *qglVertexAttribIPointer)(GLuint index, GLint size, GLenum type, GLsizei stride, const GLvoid * pointer) = NULL;
 	void (APIENTRY *qglViewport)(GLint x, GLint y, GLsizei width, GLsizei height) = NULL;
 	void (APIENTRY *qglSampleMaski)(GLuint maskNumber, GLbitfield mask) = NULL;
 }
@@ -419,6 +421,10 @@ PFNGLFRAMEBUFFERTEXTUREPROC qglFramebufferTexture = NULL;
 PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC qglRenderbufferStorageMultisampleEXT = NULL;
 PFNGLBLITFRAMEBUFFEREXTPROC qglBlitFramebufferEXT = NULL;
 PFNGLRENDERBUFFERSTORAGEMULTISAMPLECOVERAGENVPROC qglRenderbufferStorageMultisampleCoverageNV = NULL;
+PFNGLGENVERTEXARRAYSPROC qglGenVertexArrays = NULL;
+PFNGLBINDVERTEXARRAYPROC qglBindVertexArray = NULL;
+PFNGLENABLEVERTEXATTRIBARRAYPROC qglEnableVertexAttribArray = NULL;
+PFNGLDISABLEVERTEXATTRIBARRAYPROC qglDisableVertexAttribArray = NULL;
 
 //Shader ARB funcs
 PFNGLCREATESHADEROBJECTARBPROC qglCreateShaderObjectARB = NULL;
@@ -431,6 +437,7 @@ PFNGLATTACHOBJECTARBPROC qglAttachObjectARB = NULL;
 PFNGLLINKPROGRAMARBPROC qglLinkProgramARB = NULL;
 PFNGLUSEPROGRAMPROC qglUseProgram = NULL;
 PFNGLUSEPROGRAMOBJECTARBPROC qglUseProgramObjectARB = NULL;
+PFNGLGETUNIFORMLOCATIONPROC qglGetUniformLocation = NULL;
 PFNGLGETUNIFORMLOCATIONARBPROC qglGetUniformLocationARB = NULL;
 PFNGLGETATTRIBLOCATIONARBPROC qglGetAttribLocationARB = NULL;
 PFNGLUNIFORM1IARBPROC qglUniform1iARB = NULL;
@@ -444,6 +451,10 @@ PFNGLUNIFORM4FARBPROC qglUniform4fARB = NULL;
 PFNGLUNIFORM2FVARBPROC qglUniform2fvARB = NULL;
 PFNGLUNIFORM3FVARBPROC qglUniform3fvARB = NULL;
 PFNGLUNIFORM4FVARBPROC qglUniform4fvARB = NULL;
+PFNGLUNIFORMMATRIX3FVARBPROC qglUniformMatrix3fvARB = NULL;
+PFNGLUNIFORMMATRIX4FVARBPROC qglUniformMatrix4fvARB = NULL;
+PFNGLUNIFORMMATRIX4FVARBPROC qglUniformMatrix3x4fvARB = NULL;
+PFNGLUNIFORMMATRIX4FVARBPROC qglUniformMatrix4x3fvARB = NULL;
 PFNGLVERTEXATTRIB3FPROC qglVertexAttrib3f = NULL;
 PFNGLVERTEXATTRIB3FVPROC qglVertexAttrib3fv = NULL;
 PFNGLGETSHADERIVPROC qglGetShaderiv = NULL;
@@ -817,13 +828,7 @@ void QGL_Init(void)
 		*(FARPROC *)&qwglSwapBuffers = GetProcAddress(hOpenGL, "wglSwapBuffers");
 
 		*(FARPROC *)&qwglSwapIntervalEXT = qwglGetProcAddress("wglSwapIntervalEXT");
-
-		*(FARPROC *)&qglTexStorage2D = qwglGetProcAddress("glTexStorage2D");
-		*(FARPROC *)&qglTexStorage3D = qwglGetProcAddress("glTexStorage3D");
-		*(FARPROC *)&qglTexStorage2DMultisample = qwglGetProcAddress("glTexStorage2DMultisample");
 		*(FARPROC *)&qglTexSubImage3D = qwglGetProcAddress("glTexSubImage3D");
-		*(FARPROC *)&qglTextureView = qwglGetProcAddress("glTextureView");
-		*(FARPROC *)&qglCreateTextures = qwglGetProcAddress("glCreateTextures");
 		*(FARPROC *)&qglSampleMaski = qwglGetProcAddress("glSampleMaski");
 	}
 
@@ -844,6 +849,19 @@ void QGL_InitExtension(void)
 		qglGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &gl_max_ansio);
 	}
 
+	if (strstr(extension, "GL_ARB_texture_view"))
+	{
+		*(FARPROC *)&qglCreateTextures = qwglGetProcAddress("glCreateTextures");
+		*(FARPROC *)&qglTextureView = qwglGetProcAddress("glTextureView");
+	}
+
+	if (strstr(extension, "GL_EXT_texture_storage"))
+	{
+		*(FARPROC *)&qglTexStorage2D = qwglGetProcAddress("glTexStorage2D");
+		*(FARPROC *)&qglTexStorage3D = qwglGetProcAddress("glTexStorage3D");
+		*(FARPROC *)&qglTexStorage2DMultisample = qwglGetProcAddress("glTexStorage2DMultisample");
+	}
+
 	if (strstr(extension, "GL_ARB_multitexture"))
 	{
 		qglActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC)qwglGetProcAddress("glActiveTextureARB");
@@ -860,6 +878,16 @@ void QGL_InitExtension(void)
 		qglGenBuffersARB = (PFNGLGENBUFFERSARBPROC)qwglGetProcAddress("glGenBuffersARB");
 		qglBufferDataARB = (PFNGLBUFFERDATAARBPROC)qwglGetProcAddress("glBufferDataARB");
 		qglDeleteBuffersARB = (PFNGLDELETEBUFFERSARBPROC)qwglGetProcAddress("glDeleteBuffersARB");
+	}
+
+	if (strstr(extension, "GL_ARB_vertex_array_object"))
+	{
+		*(FARPROC *)&qglGenVertexArrays = qwglGetProcAddress("glGenVertexArrays");
+		*(FARPROC *)&qglBindVertexArray = qwglGetProcAddress("glBindVertexArray");
+		*(FARPROC *)&qglEnableVertexAttribArray = qwglGetProcAddress("glEnableVertexAttribArray");
+		*(FARPROC *)&qglDisableVertexAttribArray = qwglGetProcAddress("glDisableVertexAttribArray");
+		*(FARPROC *)&qglVertexAttribPointer = qwglGetProcAddress("glVertexAttribPointer");
+		*(FARPROC *)&qglVertexAttribIPointer = qwglGetProcAddress("glVertexAttribIPointer");
 	}
 
 	if (strstr(extension, "GL_EXT_compiled_vertex_array"))
@@ -899,6 +927,7 @@ void QGL_InitExtension(void)
 		qglUseProgram = (PFNGLUSEPROGRAMOBJECTARBPROC)qwglGetProcAddress("glUseProgram");
 		qglUseProgramObjectARB = (PFNGLUSEPROGRAMOBJECTARBPROC)qwglGetProcAddress("glUseProgramObjectARB");
 		qglGetUniformLocationARB = (PFNGLGETUNIFORMLOCATIONARBPROC)qwglGetProcAddress("glGetUniformLocationARB");
+		qglGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC)qwglGetProcAddress("glGetUniformLocation");
 
 		qglUniform1iARB = (PFNGLUNIFORM1IARBPROC)qwglGetProcAddress("glUniform1iARB");
 		qglUniform2iARB = (PFNGLUNIFORM2IARBPROC)qwglGetProcAddress("glUniform2iARB");
@@ -911,6 +940,10 @@ void QGL_InitExtension(void)
 		qglUniform2fvARB = (PFNGLUNIFORM2FVARBPROC)qwglGetProcAddress("glUniform2fvARB");
 		qglUniform3fvARB = (PFNGLUNIFORM3FVARBPROC)qwglGetProcAddress("glUniform3fvARB");
 		qglUniform4fvARB = (PFNGLUNIFORM4FVARBPROC)qwglGetProcAddress("glUniform4fvARB");
+		qglUniformMatrix3fvARB = (PFNGLUNIFORMMATRIX3FVARBPROC)qwglGetProcAddress("glUniformMatrix3fvARB");
+		qglUniformMatrix4fvARB = (PFNGLUNIFORMMATRIX4FVARBPROC)qwglGetProcAddress("glUniformMatrix4fvARB");
+		qglUniformMatrix4x3fvARB = (PFNGLUNIFORMMATRIX4FVARBPROC)qwglGetProcAddress("glUniformMatrix4x3fv");
+		qglUniformMatrix3x4fvARB = (PFNGLUNIFORMMATRIX4FVARBPROC)qwglGetProcAddress("glUniformMatrix3x4fv");
 
 		qglGetShaderiv = (PFNGLGETSHADERIVPROC)qwglGetProcAddress("glGetShaderiv");
 		qglGetShaderInfoLog = (PFNGLGETSHADERINFOLOGPROC)qwglGetProcAddress("glGetShaderInfoLog");

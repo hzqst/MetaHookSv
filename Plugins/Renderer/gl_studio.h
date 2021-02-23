@@ -1,6 +1,8 @@
 #pragma once
 
 #include "gl_draw.h"
+#include <vector>
+#include <unordered_map>
 
 #define STUDIO_RENDER 1
 #define STUDIO_EVENTS 2
@@ -17,25 +19,64 @@
 typedef struct
 {
 	int program;
-	int lightpos;
-	int eyepos;
-	int ambient;
-	int diffuse;
-	int specular;
-	int shiness;
-	int basemap;
-	int normalmap;
-	int tangent;
-	int binormal;
-}studio_program_t;
+	int bonematrix;
+
+	int diffuseTex;
+	int v_lambert;
+	int v_brightness;
+	int v_lightgamma;
+	int r_ambientlight;
+	int r_shadelight;
+	int r_blend;
+	int r_g1;
+	int r_g3;
+	int r_plightvec;
+	int r_colormix;
+	int r_flags;
+
+	int attrbone;
+}studio_fullbright_program_t, studiogbuffer_fullbright_program_t;
 
 typedef struct
 {
 	int program;
-	int basemap;
-	int normalmap;
-	int time;
-}invuln_program_t;
+	int bonematrix;
+
+	int diffuseTex;
+	int v_lambert;
+	int v_brightness;
+	int v_lightgamma;
+	int r_ambientlight;
+	int r_shadelight;
+	int r_blend;
+	int r_g1;
+	int r_g3;
+	int r_plightvec;
+	int r_colormix;
+	int r_flags;
+
+	int attrbone;
+}studio_flatshade_program_t, studiogbuffer_flatshade_program_t;
+
+typedef struct
+{
+	int program;
+	int bonematrix;
+
+	int diffuseTex;
+	int v_lambert;
+	int v_brightness;
+	int v_lightgamma;
+	int r_ambientlight;
+	int r_shadelight;
+	int r_blend;
+	int r_g1;
+	int r_g3;
+	int r_plightvec;
+	int r_colormix;
+
+	int attrbone;
+}studio_program_t, studiogbuffer_program_t;
 
 typedef struct
 {
@@ -68,6 +109,76 @@ typedef struct
 	studio_texarray_t *pTexArray;
 	int iNumTexArray;
 }studio_texarray_mgr_t;
+
+typedef struct studio_vbo_vertex_s
+{
+	studio_vbo_vertex_s(float *a, float *b, float *c, int d, int e)
+	{
+		memcpy(pos, a, sizeof(vec3_t));
+		memcpy(normal, b, sizeof(vec3_t));
+		memcpy(texcoord, c, sizeof(vec2_t));
+		vertbone = d;
+		normbone = e;
+	}
+	studio_vbo_vertex_s()
+	{
+
+	}
+	vec3_t	pos;
+	vec3_t	normal;
+	vec2_t	texcoord;
+	int		vertbone;
+	int		normbone;
+}studio_vbo_vertex_t;
+
+typedef struct studio_vbo_trilist_s
+{
+	studio_vbo_trilist_s()
+	{
+		start_vertex = 0;
+		num_vertex = 0;
+		draw_type = 0;
+	}
+	studio_vbo_trilist_s(int a, int b, int c) : start_vertex(a), num_vertex(b), draw_type(c)
+	{
+
+	}
+	int start_vertex;
+	int num_vertex;
+	int draw_type;
+}studio_vbo_trilist_t;
+
+typedef struct studio_vbo_mesh_s
+{
+	studio_vbo_mesh_s()
+	{
+	}
+
+	std::vector<studio_vbo_trilist_t> vTri;
+}studio_vbo_mesh_t;
+
+typedef struct studio_vbo_submodel_s
+{
+	studio_vbo_submodel_s()
+	{
+		vMesh = NULL;
+		iNumMesh = 0;
+	}
+	studio_vbo_mesh_t *vMesh;
+	int iNumMesh;
+}studio_vbo_submodel_t;
+
+typedef struct studio_vbo_s
+{
+	studio_vbo_s()
+	{
+		hVBO = 0;
+	}
+
+	GLuint				hVBO;
+	std::unordered_map<mstudiomodel_t *, studio_vbo_submodel_t *> vSubmodel;
+	std::vector<studio_vbo_vertex_t> vVertex;
+}studio_vbo_t;
 
 //engine
 extern mstudiomodel_t **psubmodel;
@@ -102,6 +213,9 @@ void R_StudioRenderFinal(void);
 void studioapi_SetupRenderer(int rendermode);
 void studioapi_RestoreRenderer(void);
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
+void studioapi_SetupModel(int bodypart, void **ppbodypart, void **ppsubmodel);
 
 extern engine_studio_api_t IEngineStudio;
 extern r_studio_interface_t **gpStudioInterface;
+
+extern cvar_t *r_studio_vbo;

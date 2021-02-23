@@ -97,89 +97,65 @@ void R_InitWater(void)
 {
 	if(gl_shader_support)
 	{
-		const char *water_vscode = (const char *)gEngfuncs.COM_LoadFile("resource\\shader\\water_shader.vsh", 5, 0);
-		const char *water_fscode = (const char *)gEngfuncs.COM_LoadFile("resource\\shader\\water_shader.fsh", 5, 0);
-		
-		if (!water_vscode)
+		water.program = R_CompileShaderFile("resource\\shader\\water_shader.vsh", NULL, "resource\\shader\\water_shader.fsh");
+		if (water.program)
 		{
-			Sys_ErrorEx("shader file \"resource\\shader\\water_shader.vsh\" not found!");
-		}
-		if (!water_fscode)
-		{
-			Sys_ErrorEx("shader file \"resource\\shader\\water_shader.fsh\" not found!");
-		}
-		
-		if(water_vscode && water_fscode)
-		{
-			water.program = R_CompileShader(water_vscode, water_fscode, "water_shader.vsh", "water_shader.fsh");
-			if(water.program)
-			{
-				SHADER_UNIFORM(water, waterfogcolor, "waterfogcolor");
-				SHADER_UNIFORM(water, eyepos, "eyepos");
-				SHADER_UNIFORM(water, time, "time");
-				SHADER_UNIFORM(water, fresnel, "fresnel");
-				SHADER_UNIFORM(water, depthfactor, "depthfactor");
-				SHADER_UNIFORM(water, normfactor, "normfactor");
-				SHADER_UNIFORM(water, normalmap, "normalmap");
-				SHADER_UNIFORM(water, refractmap, "refractmap");
-				SHADER_UNIFORM(water, reflectmap, "reflectmap");
-				SHADER_UNIFORM(water, depthrefrmap, "depthrefrmap");
-			}
-
-			watergbuffer.program = R_CompileShaderEx(water_vscode, water_fscode, 
-				"water_shader.vsh", "water_shader.fsh",
-				"#define GBUFFER_ENABLED", "#define GBUFFER_ENABLED");
-			if (watergbuffer.program)
-			{
-				SHADER_UNIFORM(watergbuffer, waterfogcolor, "waterfogcolor");
-				SHADER_UNIFORM(watergbuffer, eyepos, "eyepos");
-				SHADER_UNIFORM(watergbuffer, time, "time");
-				SHADER_UNIFORM(watergbuffer, fresnel, "fresnel");
-				SHADER_UNIFORM(watergbuffer, depthfactor, "depthfactor");
-				SHADER_UNIFORM(watergbuffer, normfactor, "normfactor");
-				SHADER_UNIFORM(watergbuffer, normalmap, "normalmap");
-				SHADER_UNIFORM(watergbuffer, refractmap, "refractmap");
-				SHADER_UNIFORM(watergbuffer, reflectmap, "reflectmap");
-				SHADER_UNIFORM(watergbuffer, depthrefrmap, "depthrefrmap");
-			}
-
-			underwater.program = R_CompileShaderEx(water_vscode, water_fscode,
-				"water_shader.vsh", "water_shader.fsh",
-				"#define UNDER_WATER", "#define UNDER_WATER");
-			if (underwater.program)
-			{
-				SHADER_UNIFORM(underwater, waterfogcolor, "waterfogcolor");
-				SHADER_UNIFORM(underwater, eyepos, "eyepos");
-				SHADER_UNIFORM(underwater, time, "time");
-				SHADER_UNIFORM(underwater, normfactor, "normfactor");
-				SHADER_UNIFORM(underwater, normalmap, "normalmap");
-				SHADER_UNIFORM(underwater, refractmap, "refractmap");
-			}
-
-			underwatergbuffer.program = R_CompileShaderEx(water_vscode, water_fscode,
-				"water_shader.vsh", "water_shader.fsh",
-				"#define UNDER_WATER\n#define GBUFFER_ENABLED", "#define UNDER_WATER\n#define GBUFFER_ENABLED");
-			if (underwatergbuffer.program)
-			{
-				SHADER_UNIFORM(underwatergbuffer, waterfogcolor, "waterfogcolor");
-				SHADER_UNIFORM(underwatergbuffer, eyepos, "eyepos");
-				SHADER_UNIFORM(underwatergbuffer, time, "time");
-				SHADER_UNIFORM(underwatergbuffer, normfactor, "normfactor");
-				SHADER_UNIFORM(underwatergbuffer, normalmap, "normalmap");
-				SHADER_UNIFORM(underwatergbuffer, refractmap, "refractmap");
-			}
+			SHADER_UNIFORM(water, waterfogcolor, "waterfogcolor");
+			SHADER_UNIFORM(water, eyepos, "eyepos");
+			SHADER_UNIFORM(water, time, "time");
+			SHADER_UNIFORM(water, fresnel, "fresnel");
+			SHADER_UNIFORM(water, depthfactor, "depthfactor");
+			SHADER_UNIFORM(water, normfactor, "normfactor");
+			SHADER_UNIFORM(water, normalmap, "normalmap");
+			SHADER_UNIFORM(water, refractmap, "refractmap");
+			SHADER_UNIFORM(water, reflectmap, "reflectmap");
+			SHADER_UNIFORM(water, depthrefrmap, "depthrefrmap");
 		}
 
-		gEngfuncs.COM_FreeFile((void *)water_vscode);
-		gEngfuncs.COM_FreeFile((void *)water_fscode);
-
-		if(drawdepth_vscode && drawdepth_fscode)
+		watergbuffer.program = R_CompileShaderFileEx("resource\\shader\\water_shader.vsh", NULL, "resource\\shader\\water_shader.fsh",
+			"#define GBUFFER_ENABLED", NULL, "#define GBUFFER_ENABLED");
+		if (watergbuffer.program)
 		{
-			drawdepth.program = R_CompileShader(drawdepth_vscode, drawdepth_fscode, "drawdepth_shader.vsh", "drawdepth_shader.fsh");
-			if(drawdepth.program)
-			{
-				SHADER_UNIFORM(drawdepth, depthmap, "depthmap");
-			}
+			SHADER_UNIFORM(watergbuffer, waterfogcolor, "waterfogcolor");
+			SHADER_UNIFORM(watergbuffer, eyepos, "eyepos");
+			SHADER_UNIFORM(watergbuffer, time, "time");
+			SHADER_UNIFORM(watergbuffer, fresnel, "fresnel");
+			SHADER_UNIFORM(watergbuffer, depthfactor, "depthfactor");
+			SHADER_UNIFORM(watergbuffer, normfactor, "normfactor");
+			SHADER_UNIFORM(watergbuffer, normalmap, "normalmap");
+			SHADER_UNIFORM(watergbuffer, refractmap, "refractmap");
+			SHADER_UNIFORM(watergbuffer, reflectmap, "reflectmap");
+			SHADER_UNIFORM(watergbuffer, depthrefrmap, "depthrefrmap");
+		}
+
+		underwater.program = R_CompileShaderFileEx("resource\\shader\\water_shader.vsh", NULL, "resource\\shader\\water_shader.fsh",
+			"#define UNDER_WATER", NULL, "#define UNDER_WATER");
+		if (underwater.program)
+		{
+			SHADER_UNIFORM(underwater, waterfogcolor, "waterfogcolor");
+			SHADER_UNIFORM(underwater, eyepos, "eyepos");
+			SHADER_UNIFORM(underwater, time, "time");
+			SHADER_UNIFORM(underwater, normfactor, "normfactor");
+			SHADER_UNIFORM(underwater, normalmap, "normalmap");
+			SHADER_UNIFORM(underwater, refractmap, "refractmap");
+		}
+
+		underwatergbuffer.program = R_CompileShaderFileEx("resource\\shader\\water_shader.vsh", NULL, "resource\\shader\\water_shader.fsh",
+			"#define UNDER_WATER\n#define GBUFFER_ENABLED", NULL, "#define UNDER_WATER\n#define GBUFFER_ENABLED");
+		if (underwatergbuffer.program)
+		{
+			SHADER_UNIFORM(underwatergbuffer, waterfogcolor, "waterfogcolor");
+			SHADER_UNIFORM(underwatergbuffer, eyepos, "eyepos");
+			SHADER_UNIFORM(underwatergbuffer, time, "time");
+			SHADER_UNIFORM(underwatergbuffer, normfactor, "normfactor");
+			SHADER_UNIFORM(underwatergbuffer, normalmap, "normalmap");
+			SHADER_UNIFORM(underwatergbuffer, refractmap, "refractmap");
+		}
+
+		drawdepth.program = R_CompileShader(drawdepth_vscode, NULL, drawdepth_fscode, "drawdepth_shader.vsh", NULL, "drawdepth_shader.fsh");
+		if (drawdepth.program)
+		{
+			SHADER_UNIFORM(drawdepth, depthmap, "depthmap");
 		}
 	}
 

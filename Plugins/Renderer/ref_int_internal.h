@@ -101,11 +101,14 @@ typedef struct
 	void (*studioapi_StudioDynamicLight)(struct cl_entity_s *ent, struct alight_s *plight);
 	void (*studioapi_SetupRenderer)(int rendermode);
 	void (*studioapi_RestoreRenderer)(void);
+	void (*studioapi_SetupModel)(int bodypart, void **ppbodypart, void **ppsubmodel);
 }ref_funcs_t;
 
 typedef struct
 {
-	GLuint (*R_CompileShader)(const char *vscode, const char *fscode, const char *vsfile, const char *fsfile);
+	GLuint (*R_CompileShader)(const char *vscode, const char *gscode, const char *fscode, const char *vsfile, const char *gsfile, const char *fsfile);
+	GLuint (*R_CompileShaderFile)(const char *vsfile, const char *gsfile, const char *fsfile);
+	GLuint (*R_CompileShaderFileEx)(const char *vsfile, const char *gsfile, const char *fsfile, const char *vsdefine, const char *gsdefine, const char *fsdefine);
 	void (*GL_UseProgram)(GLuint program);
 	void (*GL_EndProgram)(void);
 	GLuint (*GL_GetUniformLoc)(GLuint program, const char *name);

@@ -77,6 +77,8 @@ r_studio_interface_t **gpStudioInterface;
 shaderapi_t ShaderAPI = 
 {
 	R_CompileShader,
+	R_CompileShaderFile,
+	R_CompileShaderFileEx,
 	GL_UseProgram,
 	GL_EndProgram,
 	GL_GetUniformLoc,
@@ -488,6 +490,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	gRefFuncs.studioapi_SetupRenderer = pstudio->SetupRenderer;
 	gRefFuncs.studioapi_RestoreRenderer = pstudio->RestoreRenderer;
 	gRefFuncs.studioapi_StudioDynamicLight = pstudio->StudioDynamicLight;
+	gRefFuncs.studioapi_SetupModel = pstudio->StudioSetupModel;
 
 	//Vars in Engine Studio API
 	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->GetCurrentEntity, 0x10, "\xA1", 1);
@@ -545,7 +548,6 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->StudioSetupLighting, 0x150, R_COLORMIX_SIG_SVENGINE, sizeof(R_COLORMIX_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound("psubmodel");
 		r_colormix = *(decltype(r_colormix)*)(addr + 5);
-
 	}
 
 	cl_viewent = gEngfuncs.GetViewModel();
@@ -558,6 +560,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	InstallHook(studioapi_SetupRenderer);
 	InstallHook(studioapi_RestoreRenderer);
 	InstallHook(studioapi_StudioDynamicLight);
+	//InstallHook(studioapi_SetupModel);
 
 	//R_InitDetailTextures();
 	//Load global extra textures into array

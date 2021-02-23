@@ -318,7 +318,9 @@ double VectorLength(vec3_t v)
 	return length;
 }
 
+#ifndef FLT_EPSILON
 #define FLT_EPSILON (1.192093e-007)
+#endif
 
 int VectorCompare(const vec3_t v1, const vec3_t v2)
 {

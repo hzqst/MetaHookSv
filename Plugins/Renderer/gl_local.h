@@ -199,9 +199,11 @@ extern cvar_t *gl_round_down;
 extern cvar_t *gl_picmip;
 extern cvar_t *gl_max_size;
 
+extern cvar_t *v_texgamma;
 extern cvar_t *v_lightgamma;
 extern cvar_t *v_brightness;
 extern cvar_t *v_gamma;
+extern cvar_t *v_lambert;
 extern cvar_t *cl_righthand;
 
 void R_FillAddress(void);
