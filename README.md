@@ -71,6 +71,8 @@ Current state : Ready to use, more feature are coming soon.
 
 7. Rendering using Deferred-Shading and Per-Pixel-Lighting technique for all non-transparent objects. "unlimited" (maximum at 256 for SvEngine) dynamic lightsource supported. (not support with -nofbo)
 
+8. Vertex-Buffer-Object (VBO) rendering for terrain and studio model. with VBO you will get higher framerate and lower CPU usage. (tested with 200k epolys and get about 1.5x FPS than no-VBO mode)
+
 #### Launch Parameters / Commmandline Parameters
 
 -nofbo : disable FrameBufferObject rendering. add it if you caught some rendering error. SSAO and Deferred-Shading will not be available when FBO disabled.
@@ -162,3 +164,5 @@ r_light_diffuse : diffuse intensity of dynamic light.
 r_light_specular : specular intensity of dynamic light.
 
 r_light_specularpow : specular power of dynamic light.
+
+r_studio_vbo 1 / 0 : enable / disable VBO rendering for studio model.
