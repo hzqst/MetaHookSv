@@ -73,13 +73,13 @@ Current state : Ready to use, more feature are coming soon.
 
 7. Deferred-Shading and Per-Pixel-Lighting technique for all non-transparent objects. "unlimited" (maximum at 256 for SvEngine) dynamic lightsources are supported now. (not support with -nofbo)
 
-9. Vertex-Buffer-Object (VBO) rendering technique for terrain and studio model. with VBO you will get higher framerate and lower CPU usage. tested with 200k epolys in GeForce GTX 970 + Ryzen 1800X and get about 2x FPS than non-VBO mode.
+9. Vertex-Buffer-Object (VBO) and GPU-Light-Shading technique for studio model. With VBO enabled you will get higher framerate and lower CPU usage. You can get maximum at 6x FramePerSeconds than non-VBO mode in extreme case (200k epolys, 6 wpolys).
 
-#### Todo
+#### Todo List
 
-1. Texture Replacer
+1. BSP terrain rendering optmization
 
-2. Normal Texture
+2. Normal Texture? Texture Replacer?
 
 3. StudioModel Decal
 
