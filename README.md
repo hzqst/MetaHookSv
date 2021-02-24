@@ -1,7 +1,7 @@
 # MetaHookSv
-This is a porting of MetaHook (https://github.com/nagist/metahook) for SvEngine (GoldSrc engine modified by Sven-Coop), and it is still compatible with original GoldSrc engine.
+This is a porting of MetaHook (https://github.com/nagist/metahook) for SvEngine (GoldSrc engine modified by Sven-Coop).
 
-Plugin porting is in progress as most signatures/patterns for GoldSrc engine are failed for SvEngine.
+It is currently not compatible with original GoldSrc engine, but it can be if you fix the broken signatures.
 
 ## Installation
 
@@ -35,9 +35,9 @@ check https://github.com/hzqst/CaptionMod for detail.
 
 3. display subtitles when there is a HUD TextMessage.
 
-4. hook original client's HUD TextMessage and draw it with multi-byte character support.
+4. hook original client's HUD TextMessage and draw it with multi-byte character support. (new and only for SvEngine)
 
-4. hook VGUI1 TextImage control paint procedure and draw it with multi-byte character support.
+4. hook VGUI1 TextImage control paint procedure and draw it with multi-byte character support. (new and only for SvEngine)
 
 Current state : Ready to use.
 
