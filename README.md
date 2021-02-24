@@ -1,7 +1,8 @@
 # MetaHookSv
+
 This is a porting of MetaHook (https://github.com/nagist/metahook) for SvEngine (GoldSrc engine modified by Sven-Coop Team).
 
-It is currently not compatible with original GoldSrc engine, but it can be if you fix the broken signatures.
+It is currently not compatible with original GoldSrc engine, but it can be if broken signatures are fixed at future.
 
 ## Installation
 
