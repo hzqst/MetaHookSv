@@ -255,7 +255,8 @@ void R_InitStudio(void)
 {
 	if (gl_shader_support)
 	{
-		studio.program = R_CompileShaderFile("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh");
+		studio.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
+			"#version 130", NULL, "#version 130");
 		if (studio.program)
 		{
 			SHADER_UNIFORM(studio, bonematrix, "bonematrix");
@@ -276,7 +277,7 @@ void R_InitStudio(void)
 		}
 
 		studiogbuffer.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#define GBUFFER_ENABLED", NULL, "#define GBUFFER_ENABLED");
+			"#version 130\n#define GBUFFER_ENABLED", NULL, "#version 130\n#define GBUFFER_ENABLED");
 		if (studiogbuffer.program)
 		{
 			SHADER_UNIFORM(studiogbuffer, bonematrix, "bonematrix");
@@ -298,7 +299,7 @@ void R_InitStudio(void)
 
 		//FlatShade
 		studio_flatshade.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#define STUDIO_FLATSHADE", NULL, "#define STUDIO_FLATSHADE");
+			"#version 130\n#define STUDIO_FLATSHADE", NULL, "#version 130\n#define STUDIO_FLATSHADE");
 		if (studio_flatshade.program)
 		{
 			SHADER_UNIFORM(studio_flatshade, bonematrix, "bonematrix");
@@ -319,7 +320,7 @@ void R_InitStudio(void)
 		}
 
 		studiogbuffer_flatshade.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#define GBUFFER_ENABLED\n#define STUDIO_FLATSHADE", NULL, "#define GBUFFER_ENABLED\n#define STUDIO_FLATSHADE");
+			"#version 130\n#define GBUFFER_ENABLED\n#define STUDIO_FLATSHADE", NULL, "#version 130\n#define GBUFFER_ENABLED\n#define STUDIO_FLATSHADE");
 		if (studiogbuffer_flatshade.program)
 		{
 			SHADER_UNIFORM(studiogbuffer_flatshade, bonematrix, "bonematrix");
@@ -341,7 +342,7 @@ void R_InitStudio(void)
 
 		//FullBright
 		studio_fullbright.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#define STUDIO_FULLBRIGHT", NULL, "#define STUDIO_FULLBRIGHT");
+			"#version 130\n#define STUDIO_FULLBRIGHT", NULL, "#version 130\n#define STUDIO_FULLBRIGHT");
 		if (studio_fullbright.program)
 		{
 			SHADER_UNIFORM(studio_fullbright, bonematrix, "bonematrix");
@@ -362,7 +363,7 @@ void R_InitStudio(void)
 		}
 
 		studiogbuffer_fullbright.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#define GBUFFER_ENABLED\n#define STUDIO_FULLBRIGHT", NULL, "#define GBUFFER_ENABLED\n#define STUDIO_FULLBRIGHT");
+			"#version 130\n#define GBUFFER_ENABLED\n#define STUDIO_FULLBRIGHT", NULL, "#version 130\n#define GBUFFER_ENABLED\n#define STUDIO_FULLBRIGHT");
 		if (studiogbuffer_fullbright.program)
 		{
 			SHADER_UNIFORM(studiogbuffer_fullbright, bonematrix, "bonematrix");
@@ -383,7 +384,7 @@ void R_InitStudio(void)
 		}
 
 		studio_chrome.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#define STUDIO_CHROME", NULL, "#define STUDIO_CHROME");
+			"#version 130\n#define STUDIO_CHROME", NULL, "#version 130\n#define STUDIO_CHROME");
 		if (studio_chrome.program)
 		{
 			SHADER_UNIFORM(studio_chrome, bonematrix, "bonematrix");
@@ -407,7 +408,7 @@ void R_InitStudio(void)
 		}
 
 		studiogbuffer_chrome.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#define GBUFFER_ENABLED\n#define STUDIO_CHROME", NULL, "#define GBUFFER_ENABLED\n#define STUDIO_CHROME");
+			"#version 130\n#define GBUFFER_ENABLED\n#define STUDIO_CHROME", NULL, "#version 130\n#define GBUFFER_ENABLED\n#define STUDIO_CHROME");
 		if (studiogbuffer_chrome.program)
 		{
 			SHADER_UNIFORM(studiogbuffer_chrome, bonematrix, "bonematrix");
@@ -661,7 +662,9 @@ void R_GLStudioDrawPoints(void)
 	int iFlippedVModel = 0;
 
 	int iInitVBO = 0;
+
 	studio_vbo_t *VBOData = NULL;
+
 	studio_vbo_submodel_t *VBOSubmodel = NULL;
 
 	if (r_studio_vbo->value)
