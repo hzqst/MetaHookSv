@@ -1,7 +1,7 @@
 # MetaHookSv
-This is a porting of MetaHook (https://github.com/nagist/metahook) for SvEngine (GoldSrc engine modified by Sven-Coop), and it is still compatible with original GoldSrc engine.
+This is a porting of MetaHook (https://github.com/nagist/metahook) for SvEngine (GoldSrc engine modified by Sven-Coop Team).
 
-Plugin porting is in progress as most signatures/patterns for GoldSrc engine are failed for SvEngine.
+It is currently not compatible with original GoldSrc engine, but it can be if you fix the broken signatures.
 
 ## Installation
 
@@ -35,9 +35,9 @@ check https://github.com/hzqst/CaptionMod for detail.
 
 3. display subtitles when there is a HUD TextMessage.
 
-4. hook original client's HUD TextMessage and draw it with multi-byte character support.
+4. hook original client's HUD TextMessage and draw it with multi-byte character support. (new and only for SvEngine)
 
-4. hook VGUI1 TextImage control paint procedure and draw it with multi-byte character support.
+4. hook VGUI1 TextImage control paint procedure and draw it with multi-byte character support. (new and only for SvEngine)
 
 Current state : Ready to use.
 
@@ -55,23 +55,37 @@ Current state : Ready to use, more feature are coming soon.
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/4.png)
 
+![](https://github.com/hzqst/MetaHookSv/raw/main/img/5.png)
+
 #### Features
 
 1. High-Dynamic-Range (HDR) post-processor.
 
 2. Water reflection and refraction. (Warning: this may cause a significant performance hit.)
 
-3. Per-Object Shadow. (Warning: this may cause a significant performance hit.)
+3. Per-Object Shadow. (Warning: this may cause a significant performance hit when there are too many epolys in the view.)
 
-4. Screen Space Ambient Occlusion (SSAO) using horizon-based ambient occlusion (HBAO). the implementation is taken from nvidia. (not support with -nofbo)
+4. Screen Space Ambient Occlusion (SSAO) using horizon-based ambient occlusion (HBAO). the implementation is taken from nvidia. (not support with -nofbo) (Warning: this may cause a significant performance hit when sampling radius is too large.)
 
 5. MultiSampling Anti-Aliasing (MSAA)
 
 6. Fast Approximate Anti-Aliasing (FXAA) when MSAA is not available.
 
-7. Rendering using Deferred-Shading and Per-Pixel-Lighting technique for all non-transparent objects. "unlimited" (maximum at 256 for SvEngine) dynamic lightsource supported. (not support with -nofbo)
+7. Deferred-Shading and Per-Pixel-Lighting technique for all non-transparent objects. "unlimited" (maximum at 256 for SvEngine) dynamic lightsources are supported now. (not support with -nofbo)
 
-8. Vertex-Buffer-Object (VBO) rendering for terrain and studio model. with VBO you will get higher framerate and lower CPU usage. (tested with 200k epolys and get about 1.5x FPS than no-VBO mode)
+9. Vertex-Buffer-Object (VBO) rendering technique for terrain and studio model. with VBO you will get higher framerate and lower CPU usage. tested with 200k epolys in GeForce GTX 970 + Ryzen 1800X and get about 2x FPS than non-VBO mode.
+
+#### Todo
+
+1. Texture Replacer
+
+2. Normal Texture
+
+3. StudioModel Decal
+
+4. Ragdoll Engine
+
+5. Particle System
 
 #### Launch Parameters / Commmandline Parameters
 
@@ -166,3 +180,5 @@ r_light_specular : specular intensity of dynamic light.
 r_light_specularpow : specular power of dynamic light.
 
 r_studio_vbo 1 / 0 : enable / disable VBO rendering for studio model.
+
+r_fxaa 1 / 0  : enable / disable Fast Approximate Anti-Aliasing (FXAA) when MSAA is not available.
