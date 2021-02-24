@@ -96,6 +96,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <BaseAddress>0x1400000</BaseAddress>
       <TargetMachine>MachineX86</TargetMachine>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(OutDir)$(ProjectName).exe" "$(OutDir)..\Build\svencoop.exe"</Command>

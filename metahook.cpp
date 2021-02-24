@@ -215,6 +215,8 @@ void MH_ClientDLL_Init(void)
 	g_pfnClientDLL_Init();
 
 	MH_WriteDWORD((void *)(dwResult + 0x9), (DWORD)g_pExportFuncs);
+
+	//SetUnhandledExceptionFilter(MinidumpCallback);
 }
 
 void MH_LoadEngine(HMODULE hModule)

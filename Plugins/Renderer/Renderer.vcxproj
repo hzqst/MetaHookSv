@@ -115,6 +115,7 @@ xcopy "$(OutDir)\..\..\..\Build\svencoop\resource\shader\*.*" "I:\SteamLibrary\s
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
       <Profile>true</Profile>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(OutDir)$(ProjectName).dll" "$(OutDir)\..\..\..\Build\svencoop\metahook\plugins"</Command>

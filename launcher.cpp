@@ -10,6 +10,30 @@
 
 IFileSystem *g_pFileSystem;
 
+#include <dbghelp.h>
+#include <shlobj.h>
+#pragma comment(lib,"dbghelp.lib")
+
+LONG WINAPI MinidumpCallback(EXCEPTION_POINTERS* pException)
+{
+	HANDLE hDumpFile = CreateFile("minidump.dmp", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (hDumpFile != INVALID_HANDLE_VALUE) {
+
+		MINIDUMP_EXCEPTION_INFORMATION dumpInfo;
+		dumpInfo.ExceptionPointers = pException;
+		dumpInfo.ThreadId = GetCurrentThreadId();
+		dumpInfo.ClientPointers = TRUE;
+
+		MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hDumpFile, (MINIDUMP_TYPE)(MiniDumpNormal | MiniDumpWithFullMemory | MiniDumpWithProcessThreadData | MiniDumpWithThreadInfo), &dumpInfo, NULL, NULL);
+		CloseHandle(hDumpFile);
+	}
+
+	MessageBoxW(NULL, L"A fatal error occured, sorry but we have to terminate this program.", L"MetaHook Fatal Error", MB_ICONWARNING);
+	TerminateProcess((HANDLE)(-1), 0);
+
+	return EXCEPTION_EXECUTE_HANDLER;
+}
+
 HINTERFACEMODULE LoadFilesystemModule(void)
 {
 	HINTERFACEMODULE hModule = Sys_LoadModule("filesystem_stdio.dll");
@@ -117,6 +141,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	WSAStartup(0x202, &WSAData);
 
 	registry->Init();
+
+	//SetUnhandledExceptionFilter(MinidumpCallback);
 
 	char szFileName[256];
 	Sys_GetExecutableName(szFileName, sizeof(szFileName));

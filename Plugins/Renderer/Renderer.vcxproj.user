@@ -10,7 +10,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LocalDebuggerWorkingDirectory>I:\SteamLibrary\steamapps\common\Sven Co-op\</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommand>metahook.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommand>svencoop.exe</LocalDebuggerCommand>
     <LocalDebuggerCommandArguments>
     </LocalDebuggerCommandArguments>
   </PropertyGroup>
