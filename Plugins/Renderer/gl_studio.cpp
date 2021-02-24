@@ -62,9 +62,13 @@ void R_StudioClearVBOCache(void)
 {
 	for (auto &itor = g_StudioVBOTable.begin(); itor != g_StudioVBOTable.end();++itor)
 	{
-		if (itor->second->hVBO)
+		if (itor->second->hDataBuffer)
 		{
-			qglDeleteBuffersARB(1, &itor->second->hVBO);
+			qglDeleteBuffersARB(1, &itor->second->hDataBuffer);
+		}
+		if (itor->second->hIndexBuffer)
+		{
+			qglDeleteBuffersARB(1, &itor->second->hIndexBuffer);
 		}
 
 		for (auto &submodel : itor->second->vSubmodel)
@@ -798,9 +802,11 @@ void R_GLStudioDrawPoints(void)
 
 	if (!iInitVBO && VBOSubmodel && r_studio_vbo->value && studio.program)
 	{
+		qglEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 		qglEnableClientState(GL_VERTEX_ARRAY);
 		qglEnableClientState(GL_NORMAL_ARRAY);
-		qglBindBufferARB(GL_ARRAY_BUFFER_ARB, VBOData->hVBO);
+		qglBindBufferARB(GL_ARRAY_BUFFER_ARB, VBOData->hDataBuffer);
+		qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->hIndexBuffer);
 		qglVertexPointer(3, GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, pos));
 		qglNormalPointer(GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, normal));
 
@@ -1067,9 +1073,16 @@ void R_GLStudioDrawPoints(void)
 				}
 			}
 
-			auto &tri = VBOMesh.vTri;
+			/*auto &tri = VBOMesh.vTri;
 			for (size_t k = 0; k < tri.size(); ++k)
-				qglDrawArrays(tri[k].draw_type, tri[k].start_vertex, tri[k].num_vertex);
+				qglDrawArrays(tri[k].draw_type, tri[k].start_vertex, tri[k].num_vertex);*/
+#define BUFFER_OFFSET(i) ((unsigned int *)NULL + (i))
+
+			if (VBOMesh.iTriStripVertexCount)
+				qglDrawElements(GL_TRIANGLE_STRIP, VBOMesh.iTriStripVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(VBOMesh.iTriStripStartIndex));
+
+			if (VBOMesh.iTriFanVertexCount)
+				qglDrawElements(GL_TRIANGLE_FAN, VBOMesh.iTriFanVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(VBOMesh.iTriFanStartIndex));
 
 			if (flags & STUDIO_NF_MASKED)
 			{
@@ -1088,11 +1101,12 @@ void R_GLStudioDrawPoints(void)
 		}
 
 		qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 		qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 		qglDisableClientState(GL_VERTEX_ARRAY);
 		qglDisableClientState(GL_NORMAL_ARRAY);
-
 		qglUseProgramObjectARB(0);
+		qglDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 	}
 	else
 	{
@@ -1401,6 +1415,59 @@ void R_GLStudioDrawPoints(void)
 				qglShadeModel(GL_FLAT);
 			}
 
+			if (iInitVBO & 2)
+			{
+				//Convert vTri into indices
+				for (int t = 0; t < VBOMesh->vTri.size(); ++t)
+				{
+					auto &tri = VBOMesh->vTri[t];
+					if (tri.draw_type == GL_TRIANGLE_STRIP)
+					{
+						for (int k = 0; k < tri.num_vertex; ++k)
+						{
+							VBOMesh->vTriStrip.emplace_back((unsigned int)(tri.start_vertex + k));
+						}
+						//Restart Primitives
+						VBOMesh->vTriStrip.emplace_back((unsigned int)0xFFFFFFFF);
+					}
+					else if (tri.draw_type == GL_TRIANGLE_FAN)
+					{
+						for (int k = 0; k < tri.num_vertex; ++k)
+						{
+							VBOMesh->vTriFan.emplace_back((unsigned int)(tri.start_vertex + k));
+						}
+						//Restart Primitives
+						VBOMesh->vTriFan.emplace_back((unsigned int)0xFFFFFFFF);
+					}
+					
+				}
+
+				//Push indices into indices buffer
+				if (VBOMesh->vTriStrip.size() > 0)
+				{
+					VBOMesh->iTriStripStartIndex = VBOData->vIndices.size();
+					for (size_t k = 0; k < VBOMesh->vTriStrip.size(); ++k)
+					{
+						VBOData->vIndices.emplace_back(VBOMesh->vTriStrip[k]);
+						VBOMesh->iTriStripVertexCount++;
+					}
+
+					VBOMesh->vTriStrip.shrink_to_fit();
+				}
+
+				if (VBOMesh->vTriFan.size() > 0)
+				{
+					VBOMesh->iTriFanStartIndex = VBOData->vIndices.size();
+					for (size_t k = 0; k < VBOMesh->vTriFan.size(); ++k)
+					{
+						VBOData->vIndices.emplace_back(VBOMesh->vTriFan[k]);
+						VBOMesh->iTriFanVertexCount++;
+					}
+
+					VBOMesh->vTriFan.shrink_to_fit();
+				}
+			}
+
 		}//mesh draw end
 
 	}//non-VBO way
@@ -1410,17 +1477,28 @@ void R_GLStudioDrawPoints(void)
 
 	qglEnable(GL_CULL_FACE);
 
-	//upload index buffer if necessary
+	//upload all data and indices to GPU
 	if (iInitVBO & 2)
 	{
-		if (!VBOData->hVBO)
+		if (!VBOData->hDataBuffer)
 		{
-			qglGenBuffersARB(1, &VBOData->hVBO);
+			qglGenBuffersARB(1, &VBOData->hDataBuffer);
+		}
+		if (!VBOData->hIndexBuffer)
+		{
+			qglGenBuffersARB(1, &VBOData->hIndexBuffer);
 		}
 
-		qglBindBufferARB(GL_ARRAY_BUFFER_ARB, VBOData->hVBO);
+		qglBindBufferARB(GL_ARRAY_BUFFER_ARB, VBOData->hDataBuffer);
 		qglBufferDataARB(GL_ARRAY_BUFFER_ARB, VBOData->vVertex.size() * sizeof(studio_vbo_vertex_t), VBOData->vVertex.data(), GL_STATIC_DRAW_ARB);
 		qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+
+		qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->hIndexBuffer);
+		qglBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->vIndices.size() * sizeof(unsigned int), VBOData->vIndices.data(), GL_STATIC_DRAW_ARB);
+		qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+
+		VBOData->vVertex.shrink_to_fit();
+		VBOData->vIndices.shrink_to_fit();
 	}
 }
 

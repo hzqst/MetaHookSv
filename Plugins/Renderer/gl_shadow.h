@@ -38,6 +38,7 @@ extern SHADER_DEFINE(shadow);
 //cvar
 extern cvar_t *r_shadow;
 extern cvar_t *r_shadow_debug;
+extern cvar_t *r_shadow_alpha;
 extern cvar_t *r_shadow_angle_p;
 extern cvar_t *r_shadow_angle_y;
 extern cvar_t *r_shadow_angle_r;

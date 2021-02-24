@@ -177,9 +177,19 @@ typedef struct studio_vbo_mesh_s
 {
 	studio_vbo_mesh_s()
 	{
+		iTriStripStartIndex = -1;
+		iTriStripVertexCount = 0;
+		iTriFanStartIndex = -1;
+		iTriFanVertexCount = 0;
 	}
 
 	std::vector<studio_vbo_trilist_t> vTri;
+	std::vector<unsigned int> vTriStrip;
+	std::vector<unsigned int> vTriFan;
+	int iTriStripStartIndex;
+	int iTriStripVertexCount;
+	int iTriFanStartIndex;
+	int iTriFanVertexCount;
 }studio_vbo_mesh_t;
 
 typedef struct studio_vbo_submodel_s
@@ -197,12 +207,17 @@ typedef struct studio_vbo_s
 {
 	studio_vbo_s()
 	{
-		hVBO = 0;
+		hDataBuffer = 0;
+		hIndexBuffer = 0;
+		iStartIndices = 0;
 	}
 
-	GLuint				hVBO;
+	GLuint				hDataBuffer;
+	GLuint				hIndexBuffer;
 	std::unordered_map<mstudiomodel_t *, studio_vbo_submodel_t *> vSubmodel;
 	std::vector<studio_vbo_vertex_t> vVertex;
+	std::vector<unsigned int> vIndices;
+	int					iStartIndices;
 }studio_vbo_t;
 
 //engine
