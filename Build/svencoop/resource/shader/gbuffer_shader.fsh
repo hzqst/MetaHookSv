@@ -8,6 +8,7 @@ uniform sampler2D detailTex;
 
 varying vec4 worldpos;
 varying vec4 normal;
+varying vec4 color;
 
 void main()
 {
@@ -15,7 +16,7 @@ void main()
 #ifdef LIGHTMAP_ENABLED
     vec4 lightmapColor = texture2D(lightmapTex, gl_TexCoord[1].xy);
 #else
-    vec4 lightmapColor = gl_Color;
+    vec4 lightmapColor = color;
 #endif
 
 #ifdef DETAILTEXTURE_ENABLED
@@ -26,8 +27,12 @@ void main()
 
     vec4 mixedColor = diffuseColor * detailColor;
 
+#ifdef TRANSPARENT_ENABLED
+    gl_FragData[0] = diffuseColor * color;
+#else
     gl_FragData[0] = mixedColor;
     gl_FragData[1] = lightmapColor;
     gl_FragData[2] = worldpos;
     gl_FragData[3] = normal;
+#endif
 }

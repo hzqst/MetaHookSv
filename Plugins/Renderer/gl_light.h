@@ -33,6 +33,12 @@ typedef struct
 typedef struct
 {
 	int program;
+	int diffuseTex;
+}gbuffer4_program_t;
+
+typedef struct
+{
+	int program;
 	int positionTex;
 	int normalTex;
 	int viewpos;

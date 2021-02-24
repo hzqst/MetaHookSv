@@ -10,6 +10,9 @@ uniform float r_g1;
 uniform float r_g3;
 uniform vec3 r_plightvec;
 uniform vec3 r_colormix;
+uniform vec3 r_origin;
+uniform vec3 r_vright;
+uniform float r_scale;
 
 attribute ivec2 attrbone;
 
@@ -39,10 +42,10 @@ void main(void)
 		dot(norm, normbone_matrix[2])
 	);
 
-	worldpos = vec4(outvert, 1.0);
-	normal = vec4(normalize(outnorm), 1.0);
+	outnorm = normalize(outnorm);
 
-	float lv = 1.0;
+	worldpos = vec4(outvert, 1.0);
+	normal = vec4(outnorm, 1.0);
 
 #ifdef STUDIO_FULLBRIGHT
 
@@ -58,46 +61,89 @@ void main(void)
 
 	#else
 
-		float lightcos = max(dot(normal.xyz, r_plightvec), 1.0);
-
-		illum += r_shadelight;
+		float lightcos = dot(outnorm, r_plightvec);
 
 		float r = v_lambert;
-		if(r > 1.0)
+		if(r < 1.0)
 		{
-			lightcos = (lightcos + r - 1.0) / r;
+			lightcos = (r - lightcos) / (r + 1.0); 
+			illum += r_shadelight * max(lightcos, 0.0); 			
 		}
 		else
 		{
-			r += 1.0;
-			lightcos = ((r - 1.0) - lightcos) / r; 
+			illum += r_shadelight;
+			lightcos = (lightcos + r - 1.0) / r;
+			illum -= r_shadelight * max(lightcos, 0.0);
 		}
-		
-		illum -= r_shadelight * max(lightcos, 0.0); 
-
-		illum = clamp(illum, 0.0, 255.0);
 
 	#endif
 
-	float fv = (illum * 4.0) / 1023.0;
+	illum = clamp(illum, 0.0, 255.0);
+
+	float fv = illum / 255.0;
 	fv = pow(fv, v_lightgamma);
 
 	fv = fv * max(v_brightness, 1.0);
 
-	if (fv < r_g3)
-		fv = (fv / r_g3) * 0.125;
-	else 
+	if (fv > r_g3)
 		fv = 0.125 + ((fv - r_g3) / (1.0 - r_g3)) * 0.875;
+	else 
+		fv = (fv / r_g3) * 0.125;
 
-	float inf = 1023.0 * pow( fv, r_g1 );
-
-	inf = clamp(inf, 0.0, 1023.0);
-
-	lv = inf / 1023.0;
+	float lv = clamp(pow( fv, r_g1 ), 0.0, 1.0);
 
 	color = vec4(lv * r_colormix.x, lv * r_colormix.y, lv * r_colormix.z, r_blend);
 #endif
 
+#ifdef STUDIO_CHROME
+
+	outvert = outvert + outnorm * r_scale;
+	worldpos = vec4(outvert, 1.0);
+
+	vec3 tmp = vec3(
+		normbone_matrix[0][3] - r_origin.x,
+		normbone_matrix[1][3] - r_origin.y,
+		normbone_matrix[2][3] - r_origin.z
+	);
+	tmp = normalize(tmp);
+
+	vec3 chromeupvec = cross(tmp, r_vright);
+	chromeupvec = normalize(chromeupvec);
+
+	vec3 chromerightvec = cross(tmp, chromeupvec);
+	chromerightvec = normalize(chromerightvec);
+
+	vec3 chromeup = vec3(
+		chromeupvec.x * normbone_matrix[0][0] + chromeupvec.y * normbone_matrix[1][0] + chromeupvec.z * normbone_matrix[2][0],
+		chromeupvec.x * normbone_matrix[0][1] + chromeupvec.y * normbone_matrix[1][1] + chromeupvec.z * normbone_matrix[2][1],
+		chromeupvec.x * normbone_matrix[0][2] + chromeupvec.y * normbone_matrix[1][2] + chromeupvec.z * normbone_matrix[2][2]
+	);
+
+	vec3 chromeright = vec3(
+		chromerightvec.x * normbone_matrix[0][0] + chromerightvec.y * normbone_matrix[1][0] + chromerightvec.z * normbone_matrix[2][0],
+		chromerightvec.x * normbone_matrix[0][1] + chromerightvec.y * normbone_matrix[1][1] + chromerightvec.z * normbone_matrix[2][1],
+		chromerightvec.x * normbone_matrix[0][2] + chromerightvec.y * normbone_matrix[1][2] + chromerightvec.z * normbone_matrix[2][2]
+	);
+	
+	vec2 texcoord = vec2(
+		(dot(norm, chromeright) + 1.0),
+		(dot(norm, chromeup) + 1.0)
+	);
+
+	if(r_scale > 0.0)
+	{
+		texcoord.x *= gl_MultiTexCoord0.x;
+		texcoord.y *= gl_MultiTexCoord0.y;
+	}
+	else
+	{
+		texcoord.x *= 1024.0 / 2048.0;
+		texcoord.y *= 1024.0 / 2048.0;
+	}
+
+	gl_TexCoord[0] = vec4(texcoord.x, texcoord.y, 0.0, 0.0);
+#else
 	gl_TexCoord[0] = gl_MultiTexCoord0;
+#endif
 	gl_Position = gl_ModelViewProjectionMatrix * vec4(outvert, 1.0);
 }

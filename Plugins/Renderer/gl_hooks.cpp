@@ -1008,10 +1008,10 @@ void R_FillAddress(void)
 //	text:01D8BF98 E8 53 B9 09 00                                      call    sub_1E278F0
 	//	.text:01D8BF9D BF B0 07 68 09                                      mov     edi, offset lineargammatable
 	//	.text:01D8BFA2 C1 E0 02                                            shl     eax, 2
-#define LIGHTGAMMATABLE_SIG_SVENGINE "\xE8\x2A\x2A\x2A\x2A\xBF\x2A\x2A\x2A\x2A\xC1"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_LightLambert, 0x500, LIGHTGAMMATABLE_SIG_SVENGINE, sizeof(LIGHTGAMMATABLE_SIG_SVENGINE) - 1);
+#define LIGHTGAMMATABLE_SIG_SVENGINE "\xC1\xE0\x02\xB9\x2A\x2A\x2A\x2A\x2B\xC8"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_StudioLighting, 0x500, LIGHTGAMMATABLE_SIG_SVENGINE, sizeof(LIGHTGAMMATABLE_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(lightgammatable);
-		lightgammatable = *(decltype(lightgammatable) *)(addr + 6);
+		lightgammatable = *(decltype(lightgammatable) *)(addr + 4);
 
 #define R_AMBIENTLIGHT_SIG_SVENGINE "\xF6\x44\x24\x2A\x01\xDB\x05"
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_StudioLighting, 0x50, R_AMBIENTLIGHT_SIG_SVENGINE, sizeof(R_AMBIENTLIGHT_SIG_SVENGINE) - 1);
@@ -1150,7 +1150,7 @@ void R_FillAddress(void)
 #define LIGHTGAMMATABLE_SIG "\xE8\x2A\x2A\x2A\x2A\xC1\xE0\x02\xB9\x2A\x2A\x2A\x2A\x8B"
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_StudioLighting, 0x300, LIGHTGAMMATABLE_SIG, sizeof(LIGHTGAMMATABLE_SIG) - 1);
 		Sig_AddrNotFound(lightgammatable);
-		lightgammatable = *(int(**)[1024])(addr + 9);
+		lightgammatable = *(decltype(lightgammatable) *)(addr + 9);
 
 		//R_StudioChrome
 		//mov     eax, chromeage[esi*4]

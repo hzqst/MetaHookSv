@@ -1,1 +1,0 @@
-extern DWORD g_dwEngineBuildnum;

@@ -22,6 +22,7 @@ bool drawgbuffer = false;
 SHADER_DEFINE(gbuffer1);
 SHADER_DEFINE(gbuffer2);
 SHADER_DEFINE(gbuffer3);
+SHADER_DEFINE(gbuffer4);
 SHADER_DEFINE(dlight_spot);
 SHADER_DEFINE(dlight_point);
 SHADER_DEFINE(dlight_final);
@@ -49,6 +50,12 @@ void R_InitLight(void)
 			SHADER_UNIFORM(gbuffer3, diffuseTex, "diffuseTex");
 			SHADER_UNIFORM(gbuffer3, lightmapTex, "lightmapTex");
 			SHADER_UNIFORM(gbuffer3, detailTex, "detailTex");
+		}
+		gbuffer4.program = R_CompileShaderFileEx("resource\\shader\\gbuffer_shader.vsh", NULL, "resource\\shader\\gbuffer_shader.fsh",
+			"#define TRANSPARENT_ENABLED", NULL, "#define TRANSPARENT_ENABLED");
+		if (gbuffer4.program)
+		{
+			SHADER_UNIFORM(gbuffer4, diffuseTex, "diffuseTex");
 		}
 	}
 
@@ -199,6 +206,11 @@ void R_SetGBufferRenderState(int state)
 		qglUniform1iARB(gbuffer3.diffuseTex, 0);
 		qglUniform1iARB(gbuffer3.lightmapTex, 1);
 		qglUniform1iARB(gbuffer3.detailTex, 2);
+	}
+	else if (state == 4)
+	{
+		qglUseProgramObjectARB(gbuffer4.program);
+		qglUniform1iARB(gbuffer4.diffuseTex, 0);
 	}
 }
 

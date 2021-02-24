@@ -20,6 +20,7 @@ typedef struct
 {
 	int program;
 	int bonematrix;
+	int lightmatrix;
 
 	int diffuseTex;
 	int v_lambert;
@@ -32,7 +33,30 @@ typedef struct
 	int r_g3;
 	int r_plightvec;
 	int r_colormix;
-	int r_flags;
+	int r_origin;
+	int r_vright;
+	int r_scale;
+
+	int attrbone;
+}studio_chrome_program_t, studiogbuffer_chrome_program_t;
+
+typedef struct
+{
+	int program;
+	int bonematrix;
+	int lightmatrix;
+
+	int diffuseTex;
+	int v_lambert;
+	int v_brightness;
+	int v_lightgamma;
+	int r_ambientlight;
+	int r_shadelight;
+	int r_blend;
+	int r_g1;
+	int r_g3;
+	int r_plightvec;
+	int r_colormix;
 
 	int attrbone;
 }studio_fullbright_program_t, studiogbuffer_fullbright_program_t;
@@ -41,6 +65,7 @@ typedef struct
 {
 	int program;
 	int bonematrix;
+	int lightmatrix;
 
 	int diffuseTex;
 	int v_lambert;
@@ -53,7 +78,6 @@ typedef struct
 	int r_g3;
 	int r_plightvec;
 	int r_colormix;
-	int r_flags;
 
 	int attrbone;
 }studio_flatshade_program_t, studiogbuffer_flatshade_program_t;
@@ -62,6 +86,7 @@ typedef struct
 {
 	int program;
 	int bonematrix;
+	int lightmatrix;
 
 	int diffuseTex;
 	int v_lambert;
@@ -192,14 +217,14 @@ extern int (*chromeage)[MAXSTUDIOBONES];
 extern int(*chrome)[MAXSTUDIOVERTS][2];
 extern cl_entity_t *cl_viewent;
 extern int *g_ForcedFaceFlags;
-extern int (*lightgammatable)[1024];
+extern int *lightgammatable;
 extern float *g_ChromeOrigin;
 extern int *r_smodels_total;
 extern int *r_ambientlight;
 extern float *r_shadelight;
-extern vec3_t (*r_blightvec)[MAXSTUDIOBONES];
-extern vec3_t *r_plightvec;
-extern vec3_t *r_colormix;
+extern vec3_t *r_blightvec;
+extern float *r_plightvec;
+extern float *r_colormix;
 extern model_t *cl_sprite_white;
 extern model_t *cl_shellchrome;
 //renderer
