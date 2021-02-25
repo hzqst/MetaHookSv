@@ -1,3 +1,4 @@
+#version 130
 uniform mat3x4 bonematrix[128];
 uniform float v_lambert;
 uniform float v_brightness;
@@ -68,16 +69,15 @@ void main(void)
 
 		float lightcos = dot(outnorm, r_plightvec);
 
-		float r = v_lambert;
-		if(r < 1.0)
+		if(v_lambert < 1.0)
 		{
-			lightcos = (r - lightcos) / (r + 1.0); 
+			lightcos = (v_lambert - lightcos) / (v_lambert + 1.0); 
 			illum += r_shadelight * max(lightcos, 0.0); 			
 		}
 		else
 		{
 			illum += r_shadelight;
-			lightcos = (lightcos + r - 1.0) / r;
+			lightcos = (lightcos + v_lambert - 1.0) / v_lambert;
 			illum -= r_shadelight * max(lightcos, 0.0);
 		}
 

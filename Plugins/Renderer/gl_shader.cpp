@@ -1,41 +1,52 @@
 #include "gl_local.h"
 #include "gl_shader.h"
+#include <string>
+#include <sstream>
 
-glshader_t shaders[MAX_SHADERS];
-int numshaders;
+std::vector<glshader_t> g_ShaderTable;
 
 void GL_InitShaders(void)
 {
-	numshaders = 0;
-	memset(shaders, 0, sizeof(shaders));
+	
 }
 
 void GL_FreeShaders(void)
 {
-	for (int i = 0; i < numshaders; i++)
+	for(size_t i = 0;i < g_ShaderTable.size(); ++i)
 	{
-		if(shaders[i].program)
+		if (g_ShaderTable[i].vs)
 		{
-			qglDetachObjectARB(shaders[i].program, shaders[i].vs);
-			qglDetachObjectARB(shaders[i].program, shaders[i].fs);
-			qglDeleteObjectARB(shaders[i].vs);
-			qglDeleteObjectARB(shaders[i].fs);
-			qglDeleteProgramsARB(1, (GLuint *)&shaders[i].program);
+			qglDetachObjectARB(g_ShaderTable[i].program, g_ShaderTable[i].vs);
+			qglDeleteObjectARB(g_ShaderTable[i].vs);
 		}
+		if (g_ShaderTable[i].gs)
+		{
+			qglDetachObjectARB(g_ShaderTable[i].program, g_ShaderTable[i].gs);
+			qglDeleteObjectARB(g_ShaderTable[i].gs);
+		}
+		if (g_ShaderTable[i].fs)
+		{
+			qglDetachObjectARB(g_ShaderTable[i].program, g_ShaderTable[i].fs);
+			qglDeleteObjectARB(g_ShaderTable[i].fs);
+		}
+		qglDeleteProgramsARB(1, &g_ShaderTable[i].program);
 	}
-	numshaders = 0;
+
+	g_ShaderTable.clear();
 }
 
 void GL_CheckShaderError(GLuint shader, const char *filename)
 {
-	char szCompilerLog[1024];
-	int iStatus, nInfoLength;
+	int iStatus;
 
 	qglGetShaderiv(shader, GL_COMPILE_STATUS, &iStatus); 
-	qglGetInfoLogARB(shader, sizeof(szCompilerLog), &nInfoLength, szCompilerLog);
 
 	if(!iStatus)
 	{
+		int nInfoLength;
+		char szCompilerLog[1024] = { 0 };
+		qglGetInfoLogARB(shader, sizeof(szCompilerLog), &nInfoLength, szCompilerLog);
+
 		Sys_ErrorEx("Shader %s compiled with error:\n%s", filename, szCompilerLog);
 		return;
 	}
@@ -43,34 +54,34 @@ void GL_CheckShaderError(GLuint shader, const char *filename)
 
 GLuint R_CompileShader(const char *vscode, const char *gscode, const char *fscode, const char *vsfile, const char *gsfile, const char *fsfile)
 {
-	if (numshaders + 1 == MAX_SHADERS)
-	{
-		Sys_ErrorEx("R_CompileShader: MAX_SHADERS exceeded");
-		return 0;
-	}
-
 	GLuint vs = 0, gs = 0, fs = 0;
 
-	vs = qglCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
-	qglShaderSourceARB(vs, 1, &vscode, NULL);
-	qglCompileShaderARB(vs);
-	GL_CheckShaderError(vs, vsfile);
+	if (vscode && vscode[0])
+	{
+		vs = qglCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
+		qglShaderSourceARB(vs, 1, &vscode, NULL);
+		qglCompileShaderARB(vs);
+		GL_CheckShaderError(vs, vsfile);
+	}
 
-	if (gscode != NULL)
+	if (gscode && gscode[0])
 	{
 		gs = qglCreateShaderObjectARB(GL_GEOMETRY_SHADER_ARB);
 		qglShaderSourceARB(gs, 1, &gscode, NULL);
 		qglCompileShaderARB(gs);
-		GL_CheckShaderError(vs, gsfile);
+		GL_CheckShaderError(gs, gsfile);
 	}
 
 	fs = qglCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
 	qglShaderSourceARB(fs, 1, &fscode, NULL);
 	qglCompileShaderARB(fs);
-	GL_CheckShaderError(vs, fsfile);
+	GL_CheckShaderError(fs, fsfile);
 
 	GLuint program = qglCreateProgramObjectARB();
-	qglAttachObjectARB(program, vs);
+	if (vs)
+	{
+		qglAttachObjectARB(program, vs);
+	}
 	if (gs)
 	{
 		qglAttachObjectARB(program, gs);
@@ -78,50 +89,19 @@ GLuint R_CompileShader(const char *vscode, const char *gscode, const char *fscod
 	qglAttachObjectARB(program, fs);
 	qglLinkProgramARB(program);
 
-	shaders[numshaders].program = program;
-	shaders[numshaders].vs = vs;
-	shaders[numshaders].gs = gs;
-	shaders[numshaders].fs = fs;
-	numshaders ++;
-
-	return program;
-}
-
-GLuint R_CompileShaderFile(const char *vsfile, const char *gsfile, const char *fsfile)
-{
-	char *vscode = NULL;
-	char *gscode = NULL;
-	char *fscode = NULL;
-
-	vscode = (char *)gEngfuncs.COM_LoadFile((char *)vsfile, 5, 0);
-	if (!vscode)
+	/*int iStatus;
+	qglGetProgramiv(program, GL_LINK_STATUS, &iStatus);
+	if (!iStatus)
 	{
-		Sys_ErrorEx("R_CompileShaderFile: %s not found!", vsfile);
-	}
+		int nInfoLength;
+		char szCompilerLog[1024] = { 0 };
+		qglGetProgramInfoLog(program, sizeof(szCompilerLog), &nInfoLength, szCompilerLog);
 
-	if (gsfile)
-	{
-		gscode = (char *)gEngfuncs.COM_LoadFile((char *)gsfile, 5, 0);
-		if (!fscode)
-		{
-			Sys_ErrorEx("R_CompileShaderFile: %s not found!", vsfile);
-		}
-	}
+		Sys_ErrorEx("Shader linked with error:\n%s", szCompilerLog);
+		return 0;
+	}*/
 
-	fscode = (char *)gEngfuncs.COM_LoadFile((char *)fsfile, 5, 0);
-	if (!fscode)
-	{
-		Sys_ErrorEx("R_CompileShaderFile: %s not found!", vsfile);
-	}
-
-	auto program = R_CompileShader(vscode, gscode, fscode, vsfile, gsfile, fsfile);
-	
-	if (vscode)
-		gEngfuncs.COM_FreeFile(vscode);
-	if (gscode)
-		gEngfuncs.COM_FreeFile(gscode);
-	if (fscode)
-		gEngfuncs.COM_FreeFile(fscode);
+	g_ShaderTable.emplace_back(vs, gs, fs, program);
 
 	return program;
 }
@@ -133,14 +113,13 @@ GLuint R_CompileShaderFileEx(
 	char *vscode = NULL;
 	char *gscode = NULL;
 	char *fscode = NULL;
-	char *vs = NULL;
-	char *gs = NULL;
-	char *fs = NULL;
+	
+	std::stringstream vss, gss, fss;
 
 	vscode = (char *)gEngfuncs.COM_LoadFile((char *)vsfile, 5, 0);
 	if (!vscode)
 	{
-		Sys_ErrorEx("R_CompileShaderFile: %s not found!", vsfile);
+		Sys_ErrorEx("R_CompileShaderFileEx: %s not found!", vsfile);
 	}
 
 	if (gsfile)
@@ -148,56 +127,97 @@ GLuint R_CompileShaderFileEx(
 		gscode = (char *)gEngfuncs.COM_LoadFile((char *)gsfile, 5, 0);
 		if (!fscode)
 		{
-			Sys_ErrorEx("R_CompileShaderFile: %s not found!", vsfile);
+			Sys_ErrorEx("R_CompileShaderFileEx: %s not found!", vsfile);
 		}
 	}
 
 	fscode = (char *)gEngfuncs.COM_LoadFile((char *)fsfile, 5, 0);
 	if (!fscode)
 	{
-		Sys_ErrorEx("R_CompileShaderFile: %s not found!", vsfile);
+		Sys_ErrorEx("R_CompileShaderFileEx: %s not found!", vsfile);
 	}
 
 	if (vscode && vsdefine)
 	{
-		auto vslen = strlen(vscode);
-		auto vsdeflen = strlen(vsdefine);
-		vs = new char[vslen + 1 + vsdeflen + 1];
-		strcpy(vs, vsdefine);
-		strcat(vs, "\n");
-		strcat(vs, vscode);
+		if (!strncmp(vscode, "#version ", sizeof("#version ") - 1))
+		{
+			char *pcode = vscode + sizeof("#version ") - 1;
+			while (*pcode && (isdigit(*pcode) ||  *pcode == ' ' || *pcode == '\r' || *pcode == '\n'))
+			{
+				pcode++;
+			}
+			vss << std::string(vscode, pcode - vscode);
+			vss << vsdefine << "\n";
+			vss << pcode;
+		}
+		else
+		{
+			vss << vsdefine << "\n";
+			vss << vscode;
+		}
+	}
+	else if (vscode)
+	{
+		vss << vscode;
 	}
 
 	if (gscode && gsdefine)
 	{
-		auto gslen = strlen(gscode);
-		auto gsdeflen = strlen(gsdefine);
-		gs = new char[gslen + 1 + gsdeflen + 1];
-		strcpy(gs, gsdefine);
-		strcat(gs, "\n");
-		strcat(gs, gscode);
+		if (!strncmp(gscode, "#version ", sizeof("#version ") - 1))
+		{
+			char *pcode = gscode + sizeof("#version ") - 1;
+			while (*pcode && (isdigit(*pcode) || *pcode == ' ' || *pcode == '\r' || *pcode == '\n'))
+			{
+				pcode++;
+			}
+			gss << std::string(gscode, pcode - gscode);
+			gss << gsdefine << "\n";
+			gss << pcode;
+		}
+		else
+		{
+			gss << gsdefine << "\n";
+			gss << gscode;
+		}
+	}
+	else if (gscode)
+	{
+		gss << gscode;
 	}
 
 	if (fscode && fsdefine)
 	{
-		auto fslen = strlen(fscode);
-		auto fsdeflen = strlen(fsdefine);
-		fs = new char[fslen + 1 + fsdeflen + 1];
-		strcpy(fs, fsdefine);
-		strcat(fs, "\n");
-		strcat(fs, fscode);
+		if (!strncmp(fscode, "#version ", sizeof("#version ") - 1))
+		{
+			char *pcode = fscode + sizeof("#version ") - 1;
+			while (*pcode && (isdigit(*pcode) || *pcode == ' ' || *pcode == '\r' || *pcode == '\n'))
+			{
+				pcode++;
+			}
+			fss << std::string(fscode, pcode - fscode);
+			fss << fsdefine << "\n";
+			fss << pcode;
+		}
+		else
+		{
+			fss << fsdefine << "\n";
+			fss << fscode;
+		}
+	}
+	else if (fscode)
+	{
+		fss << fscode;
 	}
 
-	auto r = R_CompileShader(vs, gs, fs, vsfile, gsfile, fsfile);
-
-	if (vs)
-		delete[]vs;
-	if (fs)
-		delete[]fs;
-	if (gs)
-		delete[]gs;
+	auto r = R_CompileShader(vss.str().c_str(), gss.str().c_str(), fss.str().c_str(), vsfile, gsfile, fsfile);
 
 	return r;
+}
+
+
+GLuint R_CompileShaderFile(const char *vsfile, const char *gsfile, const char *fsfile)
+{
+	return R_CompileShaderFileEx(vsfile, gsfile, fsfile, NULL, NULL, NULL);
 }
 
 void GL_UseProgram(GLuint program)

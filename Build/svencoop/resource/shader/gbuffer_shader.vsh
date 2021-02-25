@@ -6,9 +6,11 @@ void main()
 {
   worldpos = vec4(gl_Vertex.xyz / gl_Vertex.w, 1.0);
   normal = vec4(normalize(gl_Normal), 1.0);
-
-  gl_TexCoord[0] = gl_MultiTexCoord0;
   
+#ifdef DIFFUSE_ENABLED
+  gl_TexCoord[0] = gl_MultiTexCoord0;
+#endif
+
 #ifdef LIGHTMAP_ENABLED
   gl_TexCoord[1] = gl_MultiTexCoord1;
 #endif

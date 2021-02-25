@@ -1,3 +1,4 @@
+#version 130
 uniform sampler2D diffuseTex;
 uniform float r_scale;
 

@@ -188,7 +188,6 @@ xcopy "$(OutDir)\..\..\..\Build\svencoop\resource\shader\*.*" "I:\SteamLibrary\s
     <ClInclude Include="gl_light.h" />
     <ClInclude Include="gl_local.h" />
     <ClInclude Include="gl_model.h" />
-    <ClInclude Include="gl_model2.h" />
     <ClInclude Include="gl_shader.h" />
     <ClInclude Include="gl_shadow.h" />
     <ClInclude Include="gl_studio.h" />

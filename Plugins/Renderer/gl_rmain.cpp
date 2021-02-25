@@ -70,7 +70,6 @@ qboolean gl_csaa_support = false;
 qboolean gl_float_buffer_support = false;
 qboolean gl_s3tc_compression_support = false;
 
-int gl_mtexable = 0;
 int gl_max_texture_size = 0;
 float gl_max_ansio = 0;
 float gl_force_ansio = 0;
@@ -78,6 +77,7 @@ int gl_msaa_samples = 0;
 
 int *gl_msaa_fbo = 0;
 int *gl_backbuffer_fbo = 0;
+int *gl_mtexable = 0;
 qboolean *mtexenabled = 0;
 
 int glx = 0;
@@ -264,11 +264,10 @@ void R_RotateForEntity(vec_t *origin, cl_entity_t *e)
 
 void R_DrawSpriteModel(cl_entity_t *entity)
 {
-	R_SetGBufferRenderState(1);
+	R_SetGBufferRenderState(GBUFFER_STATE_TRANSPARENT_DIFFUSE);
+	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
 
 	gRefFuncs.R_DrawSpriteModel(entity);
-
-	R_SetGBufferRenderState(2);
 }
 
 void R_GetSpriteAxes(cl_entity_t *entity, int type, float *vforwrad, float *vright, float *vup)
@@ -841,21 +840,6 @@ void R_CalcRefdef(struct ref_params_s *pparams)
 	memcpy(&r_params, pparams, sizeof(struct ref_params_s));
 }
 
-void CheckMultiTextureExtensions(void)
-{
-	if (gl_mtexable)
-	{
-		TEXTURE0_SGIS = GL_TEXTURE0;
-		TEXTURE1_SGIS = GL_TEXTURE1;
-		TEXTURE2_SGIS = GL_TEXTURE2;
-		TEXTURE3_SGIS = GL_TEXTURE3;
-	}
-	else
-	{
-		Sys_ErrorEx("don't support multitexture extension!");
-	}
-}
-
 void GL_ClearFBO(FBO_Container_t *s)
 {
 	s->s_hBackBufferFBO = 0;
@@ -987,7 +971,7 @@ void R_GLFrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat, qbo
 	qglBindTexture(tex2D, 0);
 }
 
-void R_GLFrameBufferDepthStencilTexture(FBO_Container_t *s, GLuint iInternalFormat, qboolean multisample)
+void R_GLFrameBufferDepthStencilTexture(FBO_Container_t *s, qboolean multisample)
 {
 	int tex2D = multisample ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
 
@@ -997,8 +981,7 @@ void R_GLFrameBufferDepthStencilTexture(FBO_Container_t *s, GLuint iInternalForm
 	qglTexParameteri(tex2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	qglTexParameteri(tex2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	qglTexParameteri(tex2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	qglTexImage2D(tex2D, 0, iInternalFormat, s->iWidth, s->iHeight, 0, GL_DEPTH_COMPONENT,
-		(iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, 0);
+	qglTexImage2D(tex2D, 0, GL_DEPTH24_STENCIL8, s->iWidth, s->iHeight, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, 0);
 
 	qglFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, s->s_hBackBufferDepthTex, 0);
 	qglBindTexture(tex2D, 0);
@@ -1532,11 +1515,13 @@ void GL_GenerateFBO(void)
 void GL_Init(void)
 {
 	QGL_Init();
-
-	CheckMultiTextureExtensions();
-
 	GL_GenerateFBO();
 	GL_InitShaders();
+
+	if (gl_mtexable && !(*gl_mtexable))
+	{
+		Sys_ErrorEx("Multitexture extension must be enabled! please remove -nomtex from launch parameters and try again.");
+	}
 }
 
 void GL_Shutdown(void)
@@ -1610,12 +1595,6 @@ void R_PreRenderView()
 
 void R_PostRenderView()
 {
-	if (!r_refdef->onlyClientDraws)
-	{
-		(*c_alias_polys) += saved_c_alias_polys;
-		(*c_brush_polys) += saved_c_brush_polys;
-	}
-
 	if (s_BackBufferFBO.s_hBackBufferFBO)
 	{
 		if (s_MSAAFBO.s_hBackBufferFBO)
@@ -1685,6 +1664,12 @@ void R_RenderScene(void)
 		{
 			R_DoSSAO(-1);
 		}
+	}
+
+	if (!r_refdef->onlyClientDraws)
+	{
+		(*c_alias_polys) += saved_c_alias_polys;
+		(*c_brush_polys) += saved_c_brush_polys;
 	}
 }
 
@@ -1835,7 +1820,9 @@ void R_InitCvars(void)
 	gl_texsort = gEngfuncs.pfnGetCvarPointer("gl_texsort");
 
 	if (!gl_texsort)
-		gl_texsort = &s_gl_texsort;
+	{
+		gl_texsort = gEngfuncs.pfnRegisterVariable("r_texsort", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	}
 
 	gl_smoothmodels = gEngfuncs.pfnGetCvarPointer("gl_smoothmodels");
 	gl_affinemodels = gEngfuncs.pfnGetCvarPointer("gl_affinemodels");
@@ -1911,14 +1898,6 @@ void R_Init(void)
 	Draw_Init();
 }
 
-void R_VidInit(void)
-{
-	memset(&r_params, 0, sizeof(r_params));
-	R_ClearWater();
-	R_ClearShadow();
-	R_Clear3DSky();
-}
-
 void R_Shutdown(void)
 {
 	R_FreeShadow();
@@ -1931,6 +1910,11 @@ void R_ForceCVars(qboolean mp)
 		return;
 
 	gRefFuncs.R_ForceCVars(mp);
+
+	if (gl_texsort_value)
+	{
+		*gl_texsort_value = (int)gl_texsort->value;
+	}
 }
 
 void R_NewMap(void)
@@ -1940,6 +1924,9 @@ void R_NewMap(void)
 
 	gRefFuncs.R_NewMap();
 
+	memset(&r_params, 0, sizeof(r_params));
+	R_ClearWater();
+	R_Clear3DSky();
 	R_VidInitWSurf();
 }
 

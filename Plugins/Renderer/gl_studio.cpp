@@ -259,8 +259,7 @@ void R_InitStudio(void)
 {
 	if (gl_shader_support)
 	{
-		studio.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#version 130", NULL, "#version 130");
+		studio.program = R_CompileShaderFile("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh");
 		if (studio.program)
 		{
 			SHADER_UNIFORM(studio, bonematrix, "bonematrix");
@@ -281,7 +280,7 @@ void R_InitStudio(void)
 		}
 
 		studiogbuffer.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#version 130\n#define GBUFFER_ENABLED", NULL, "#version 130\n#define GBUFFER_ENABLED");
+			"#define GBUFFER_ENABLED", NULL, "#define GBUFFER_ENABLED");
 		if (studiogbuffer.program)
 		{
 			SHADER_UNIFORM(studiogbuffer, bonematrix, "bonematrix");
@@ -303,7 +302,7 @@ void R_InitStudio(void)
 
 		//FlatShade
 		studio_flatshade.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#version 130\n#define STUDIO_FLATSHADE", NULL, "#version 130\n#define STUDIO_FLATSHADE");
+			"#define STUDIO_FLATSHADE", NULL, "#define STUDIO_FLATSHADE");
 		if (studio_flatshade.program)
 		{
 			SHADER_UNIFORM(studio_flatshade, bonematrix, "bonematrix");
@@ -324,7 +323,7 @@ void R_InitStudio(void)
 		}
 
 		studiogbuffer_flatshade.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#version 130\n#define GBUFFER_ENABLED\n#define STUDIO_FLATSHADE", NULL, "#version 130\n#define GBUFFER_ENABLED\n#define STUDIO_FLATSHADE");
+			"#define GBUFFER_ENABLED\n#define STUDIO_FLATSHADE", NULL, "#define GBUFFER_ENABLED\n#define STUDIO_FLATSHADE");
 		if (studiogbuffer_flatshade.program)
 		{
 			SHADER_UNIFORM(studiogbuffer_flatshade, bonematrix, "bonematrix");
@@ -346,7 +345,7 @@ void R_InitStudio(void)
 
 		//FullBright
 		studio_fullbright.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#version 130\n#define STUDIO_FULLBRIGHT", NULL, "#version 130\n#define STUDIO_FULLBRIGHT");
+			"#define STUDIO_FULLBRIGHT", NULL, "#define STUDIO_FULLBRIGHT");
 		if (studio_fullbright.program)
 		{
 			SHADER_UNIFORM(studio_fullbright, bonematrix, "bonematrix");
@@ -367,7 +366,7 @@ void R_InitStudio(void)
 		}
 
 		studiogbuffer_fullbright.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#version 130\n#define GBUFFER_ENABLED\n#define STUDIO_FULLBRIGHT", NULL, "#version 130\n#define GBUFFER_ENABLED\n#define STUDIO_FULLBRIGHT");
+			"#define GBUFFER_ENABLED\n#define STUDIO_FULLBRIGHT", NULL, "#define GBUFFER_ENABLED\n#define STUDIO_FULLBRIGHT");
 		if (studiogbuffer_fullbright.program)
 		{
 			SHADER_UNIFORM(studiogbuffer_fullbright, bonematrix, "bonematrix");
@@ -388,7 +387,7 @@ void R_InitStudio(void)
 		}
 
 		studio_chrome.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#version 130\n#define STUDIO_CHROME", NULL, "#version 130\n#define STUDIO_CHROME");
+			"#define STUDIO_CHROME", NULL, "#define STUDIO_CHROME");
 		if (studio_chrome.program)
 		{
 			SHADER_UNIFORM(studio_chrome, bonematrix, "bonematrix");
@@ -412,7 +411,7 @@ void R_InitStudio(void)
 		}
 
 		studiogbuffer_chrome.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#version 130\n#define GBUFFER_ENABLED\n#define STUDIO_CHROME", NULL, "#version 130\n#define GBUFFER_ENABLED\n#define STUDIO_CHROME");
+			"#define GBUFFER_ENABLED\n#define STUDIO_CHROME", NULL, "#define GBUFFER_ENABLED\n#define STUDIO_CHROME");
 		if (studiogbuffer_chrome.program)
 		{
 			SHADER_UNIFORM(studiogbuffer_chrome, bonematrix, "bonematrix");
@@ -839,12 +838,15 @@ void R_GLStudioDrawPoints(void)
 				flags = flags & 0xFC;
 			}
 
+			bool bTransparent = false;
 			if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
 			{
 				qglBlendFunc(GL_ONE, GL_ONE);
 				qglEnable(GL_BLEND);
 				qglDepthMask(GL_FALSE);
 				qglShadeModel(GL_SMOOTH);
+
+				bTransparent = true;
 			}
 			else if (flags & STUDIO_NF_MASKED)
 			{
@@ -862,16 +864,18 @@ void R_GLStudioDrawPoints(void)
 
 			//Transparent object?
 
-			GLboolean writemask;
-			qglGetBooleanv(GL_DEPTH_WRITEMASK, &writemask);
+			//GLboolean writemask;
+			//qglGetBooleanv(GL_DEPTH_WRITEMASK, &writemask);
 
-			if (!writemask)
+			if (bTransparent)
 			{
-				R_SetRenderGBufferDecal();
+				R_SetGBufferRenderState(GBUFFER_STATE_TRANSPARENT_DIFFUSE);
+				R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
 			}
 			else
 			{
-				R_SetRenderGBufferAll();
+				R_SetGBufferRenderState(GBUFFER_STATE_DIFFUSE);
+				R_SetGBufferMask(GBUFFER_MASK_ALL);
 			}
 
 			if (r_fullbright->value >= 2)
@@ -1073,9 +1077,6 @@ void R_GLStudioDrawPoints(void)
 				}
 			}
 
-			/*auto &tri = VBOMesh.vTri;
-			for (size_t k = 0; k < tri.size(); ++k)
-				qglDrawArrays(tri[k].draw_type, tri[k].start_vertex, tri[k].num_vertex);*/
 #define BUFFER_OFFSET(i) ((unsigned int *)NULL + (i))
 
 			if (VBOMesh.iTriStripVertexCount)
@@ -1125,12 +1126,16 @@ void R_GLStudioDrawPoints(void)
 				flags = flags & 0xFC;
 			}
 
+			bool bTransparent = false;
+
 			if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
 			{
 				qglBlendFunc(GL_ONE, GL_ONE);
 				qglEnable(GL_BLEND);
 				qglDepthMask(GL_FALSE);
 				qglShadeModel(GL_SMOOTH);
+
+				bTransparent = true;
 			}
 			else if (flags & STUDIO_NF_MASKED)
 			{
@@ -1148,18 +1153,18 @@ void R_GLStudioDrawPoints(void)
 
 			//Transparent object?
 
-			GLboolean writemask;
-			qglGetBooleanv(GL_DEPTH_WRITEMASK, &writemask);
+			//GLboolean writemask;
+			//qglGetBooleanv(GL_DEPTH_WRITEMASK, &writemask);
 
-			if (!writemask)
+			if (bTransparent)
 			{
-				R_SetGBufferRenderState(4);
-				R_SetRenderGBufferDecal();
+				R_SetGBufferRenderState(GBUFFER_STATE_TRANSPARENT_DIFFUSE);
+				R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
 			}
 			else
 			{
-				R_SetGBufferRenderState(1);
-				R_SetRenderGBufferAll();
+				R_SetGBufferRenderState(GBUFFER_STATE_DIFFUSE);
+				R_SetGBufferMask(GBUFFER_MASK_ALL);
 			}
 
 			float s, t;
@@ -1471,9 +1476,6 @@ void R_GLStudioDrawPoints(void)
 		}//mesh draw end
 
 	}//non-VBO way
-
-	R_SetGBufferRenderState(2);
-	R_SetRenderGBufferAll();
 
 	qglEnable(GL_CULL_FACE);
 

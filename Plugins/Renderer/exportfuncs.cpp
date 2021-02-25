@@ -220,8 +220,6 @@ void HUD_Init(void)
 
 int HUD_VidInit(void)
 {
-	R_VidInit();
-
 	return gExportfuncs.HUD_VidInit();
 }
 

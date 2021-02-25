@@ -71,11 +71,6 @@ void R_FreeShadow(void)
 	}
 }
 
-void R_ClearShadow(void)
-{
-
-}
-
 void R_InitShadow(void)
 {
 	if(gl_shader_support)
@@ -112,8 +107,6 @@ void R_InitShadow(void)
 	r_shadow_low_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_low_texsize", "2048", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_low_distance = gEngfuncs.pfnRegisterVariable("r_shadow_low_distance", "4096", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_low_scale = gEngfuncs.pfnRegisterVariable("r_shadow_low_scale", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-
-	R_ClearShadow();
 }
 
 qboolean R_ShouldCastShadow(cl_entity_t *ent)
@@ -658,8 +651,8 @@ void R_RenderShadowScenes(void)
 
 	qglEnable(GL_BLEND);
 	qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	qglColor4f(0.1, 0.1, 0.1, 0.5);
-	 
+	//qglColor4f(0.1, 0.1, 0.1, 0.5);
+
 	//setup texture 0
 	GL_SelectTexture(TEXTURE0_SGIS);
 	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);

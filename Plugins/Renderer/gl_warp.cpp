@@ -131,7 +131,8 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		VectorAdd(tempVert, (*currententity)->curstate.origin, tempVert);
 	}
 	
-	R_SetGBufferRenderState(1);
+	R_SetGBufferRenderState(GBUFFER_STATE_DIFFUSE);
+	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
 	if(r_water && r_water->value && water.program && !dontShader)
 	{
@@ -318,14 +319,11 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		qglUseProgramObjectARB(0);
 	}
 
-	R_SetGBufferRenderState(1);
+	R_SetGBufferRenderState(GBUFFER_STATE_TRANSPARENT_COLOR);
+	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
 
 	EmitWaterPolysWireFrame(fa, direction, useProgram);
-
-	R_SetGBufferRenderState(2);
 }
-
-#define SKY_TEX 5800
 
 int *gSkyTexNumber;
 
@@ -573,9 +571,10 @@ void R_DrawSkyChain(msurface_t *s)
 		}
 	}
 
-	R_SetGBufferRenderState(1);
+	R_SetGBufferRenderState(GBUFFER_STATE_DIFFUSE);
+	R_SetGBufferMask(GBUFFER_MASK_ALL);
+
 	R_DrawSkyBox();
-	R_SetGBufferRenderState(2);
 }
 
 void R_ClearSkyBox(void)

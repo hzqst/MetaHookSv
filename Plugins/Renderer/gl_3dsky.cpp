@@ -115,8 +115,8 @@ void R_Draw3DSkyEntities(void)
 	{
 		(*currententity) = cl_visedicts[i];
 
-		if( (*currententity)->curstate.entityType != ET_3DSKYENTITY )//if( !((*currententity)->curstate.effects & EF_3DSKY) )
-			continue;
+		//if( (*currententity)->curstate.entityType != ET_3DSKYENTITY )//if( !((*currententity)->curstate.effects & EF_3DSKY) )
+		//	continue;
 
 		if ((*currententity)->curstate.rendermode != kRenderNormal)
 		{
@@ -213,8 +213,8 @@ void R_Draw3DSkyEntities(void)
 	{
 		(*currententity) = (*transObjects)[i].pEnt;
 
-		if( (*currententity)->curstate.entityType != ET_3DSKYENTITY )//if( !((*currententity)->curstate.effects & EF_3DSKY) )
-			continue;
+		//if( (*currententity)->curstate.entityType != ET_3DSKYENTITY )//if( !((*currententity)->curstate.effects & EF_3DSKY) )
+		//	continue;
 
 		qglDisable(GL_FOG);
 		
@@ -313,13 +313,13 @@ void R_Draw3DSkyEntities(void)
 void R_Add3DSkyEntity(cl_entity_t *ent)
 {
 	//ent->curstate.effects |= EF_3DSKY;
-	ent->curstate.entityType = ET_3DSKYENTITY;
+	//ent->curstate.entityType = ET_3DSKYENTITY;
 }
 
 void R_Setup3DSkyModel(void)
 {
 	//if((*currententity)->curstate.effects & EF_3DSKY)
-	if((*currententity)->curstate.entityType == ET_3DSKYENTITY)
+	//if((*currententity)->curstate.entityType == ET_3DSKYENTITY)
 	{
 		if(!drawreflect && !drawrefract)
 		{
@@ -338,7 +338,7 @@ void R_Setup3DSkyModel(void)
 
 void R_Finish3DSkyModel(void)
 {
-	if((*currententity)->curstate.entityType == ET_3DSKYENTITY)//if((*currententity)->curstate.effects & EF_3DSKY)
+	//if((*currententity)->curstate.entityType == ET_3DSKYENTITY)//if((*currententity)->curstate.effects & EF_3DSKY)
 	{
 		if(!drawreflect && !drawrefract)
 		{

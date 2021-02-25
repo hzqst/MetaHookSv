@@ -100,6 +100,10 @@ typedef struct
 {
 	GLuint				hVBO;
 
+	int					iVBOState;
+	bool				bLightmapTexture;
+	bool				bDetailTexture;
+
 	brushvertex_t		*pVertexBuffer;
 	int					iNumVerts;
 	int					iNumTris;
@@ -133,6 +137,7 @@ extern byte *lightmaps;
 extern int *lightmap_textures;
 extern void *lightmap_rectchange;
 extern int *lightmap_modified;
+extern glpoly_t **lightmap_polys;
 extern int *c_brush_polys;
 extern int *c_alias_polys;
 extern int *d_lightstylevalue;
@@ -155,6 +160,14 @@ void R_LoadBSPEntities(void);
 void R_LinkDecalTexture(texture_t *t);
 void R_LoadExtraTextureFile(qboolean loadmap);
 void R_AddDynamicLights(msurface_t *surf);
+void R_RenderDynamicLightmaps(msurface_t *fa);
 void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride);
 void R_DecalMPoly(float *v, texture_t *ptexture, msurface_t *psurf, int vertCount);
 void R_DrawDecals(qboolean bMultitexture);
+void DrawGLPoly(glpoly_t *p);
+
+#define VBOSTATE_OFF 0
+#define VBOSTATE_NO_TEXTURE 1
+#define VBOSTATE_DIFFUSE_TEXTURE 2
+#define VBOSTATE_LIGHTMAP_TEXTURE 3
+#define VBOSTATE_DETAIL_TEXTURE 4

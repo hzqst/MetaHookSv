@@ -458,7 +458,9 @@ PFNGLUNIFORMMATRIX4FVARBPROC qglUniformMatrix4x3fvARB = NULL;
 PFNGLVERTEXATTRIB3FPROC qglVertexAttrib3f = NULL;
 PFNGLVERTEXATTRIB3FVPROC qglVertexAttrib3fv = NULL;
 PFNGLGETSHADERIVPROC qglGetShaderiv = NULL;
+PFNGLGETPROGRAMIVPROC qglGetProgramiv = NULL;
 PFNGLGETSHADERINFOLOGPROC qglGetShaderInfoLog = NULL;
+PFNGLGETPROGRAMINFOLOGPROC qglGetProgramInfoLog = NULL;
 PFNGLGETINFOLOGARBPROC qglGetInfoLogARB = NULL;
 
 void QGL_Init(void)
@@ -869,7 +871,10 @@ void QGL_InitExtension(void)
 		qglMultiTexCoord2fARB = (PFNGLMULTITEXCOORD2FARBPROC)qwglGetProcAddress("glMultiTexCoord2fARB");
 		qglMultiTexCoord3fARB = (PFNGLMULTITEXCOORD3FARBPROC)qwglGetProcAddress("glMultiTexCoord3fARB");
 
-		qglGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &gl_mtexable);
+		TEXTURE0_SGIS = GL_TEXTURE0;
+		TEXTURE1_SGIS = GL_TEXTURE1;
+		TEXTURE2_SGIS = GL_TEXTURE2;
+		TEXTURE3_SGIS = GL_TEXTURE3;
 	}
 
 	if (strstr(extension, "GL_ARB_vertex_buffer_object"))
@@ -947,6 +952,8 @@ void QGL_InitExtension(void)
 
 		qglGetShaderiv = (PFNGLGETSHADERIVPROC)qwglGetProcAddress("glGetShaderiv");
 		qglGetShaderInfoLog = (PFNGLGETSHADERINFOLOGPROC)qwglGetProcAddress("glGetShaderInfoLog");
+		qglGetProgramiv = (PFNGLGETPROGRAMIVPROC)qwglGetProcAddress("glGetProgramiv");
+		qglGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOGPROC)qwglGetProcAddress("glGetProgramInfoLog");
 		qglGetInfoLogARB = (PFNGLGETINFOLOGARBPROC)qwglGetProcAddress("glGetInfoLogARB");
 		qglGetAttribLocationARB = (PFNGLGETATTRIBLOCATIONARBPROC)qwglGetProcAddress("glGetAttribLocationARB");
 		qglVertexAttrib3f = (PFNGLVERTEXATTRIB3FPROC)qwglGetProcAddress("glVertexAttrib3f");

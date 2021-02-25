@@ -22,7 +22,6 @@
 
 #include "gl_const.h"
 #include "gl_shader.h"
-#include "gl_model2.h"
 #include "gl_model.h"
 #include "enginedef.h"
 
@@ -97,7 +96,6 @@ extern qboolean gl_csaa_support;
 extern qboolean gl_float_buffer_support;
 extern qboolean gl_s3tc_compression_support;
 
-extern int gl_mtexable;
 extern int gl_max_texture_size;
 extern float gl_max_ansio;
 extern float gl_force_ansio;
@@ -106,6 +104,7 @@ extern int gl_csaa_samples;
 
 extern int *gl_msaa_fbo;
 extern int *gl_backbuffer_fbo;
+extern int *gl_mtexable;
 
 extern qboolean *mtexenabled;
 
@@ -138,6 +137,7 @@ extern int skytexturenum;
 
 extern msurface_t **skychain;
 extern msurface_t **waterchain;
+extern int *gl_texsort_value;
 
 extern int *gSkyTexNumber;
 extern skybox_t *skymins;
@@ -234,6 +234,8 @@ void R_DrawSkyBox(void);
 void R_DrawEntitiesOnList(void);
 void R_RecursiveWorldNode(mnode_t *node);
 void R_DrawSequentialPoly(msurface_t *s, int face);
+void R_BlendLightmaps(void);
+void R_RenderBrushPoly(msurface_t *fa);
 float *R_GetAttachmentPoint(int entity, int attachment);
 void R_DrawBrushModel(cl_entity_t *entity);
 void R_DrawSpriteModel(cl_entity_t *entity);

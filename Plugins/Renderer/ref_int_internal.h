@@ -60,10 +60,12 @@ typedef struct
 	void (*GL_EndRendering)(void);
 	void (*EmitWaterPolys)(msurface_t *fa, int direction);
 	void (*BuildSurfaceDisplayList)(msurface_t *fa);
+	void (*R_RenderBrushPoly)(msurface_t *s);
 	void (*R_DrawSequentialPoly)(msurface_t *s, int face);
 	void (*R_RecursiveWorldNode)(mnode_t *node);
 	texture_t *(*R_TextureAnimation)(msurface_t *fa);
 	void (*R_RenderDynamicLightmaps)(msurface_t *fa);
+	void (*R_BlendLightmaps)(void);
 	void (*R_DrawDecals)(qboolean bMultitexture);
 	texture_t *(*Draw_DecalTexture)(int index);
 	void (*R_AllocObjects)(int nMax);

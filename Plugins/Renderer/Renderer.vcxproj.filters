@@ -127,9 +127,6 @@
     <ClInclude Include="gl_model.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="gl_model2.h">
-      <Filter>Header</Filter>
-    </ClInclude>
     <ClInclude Include="gl_shader.h">
       <Filter>Header</Filter>
     </ClInclude>

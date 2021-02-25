@@ -16,6 +16,19 @@
 #define STUDIO_NF_ADDITIVE      0x0020
 #define STUDIO_NF_MASKED        0x0040
 
+typedef struct auxvert_s
+{
+	float	fv[3];
+}auxvert_t;
+
+typedef struct alight_s
+{
+	int ambientlight;
+	int shadelight;
+	vec3_t color;
+	float *plightvec;
+}alight_t;
+
 typedef struct
 {
 	int program;
@@ -260,3 +273,10 @@ extern engine_studio_api_t IEngineStudio;
 extern r_studio_interface_t **gpStudioInterface;
 
 extern cvar_t *r_studio_vbo;
+
+#define SPRITE_VERSION 2
+
+#define NL_PRESENT 0
+#define NL_NEEDS_LOADED 1
+#define NL_UNREFERENCED 2
+#define NL_CLIENT 3

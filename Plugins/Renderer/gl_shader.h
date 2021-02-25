@@ -1,17 +1,19 @@
 #pragma once
 
-typedef struct
+typedef struct glshader_s
 {
-	int vs;
-	int gs;
-	int fs;
-	int program;
+	struct glshader_s(GLuint a, GLuint b, GLuint c, GLuint d)
+	{
+		vs = a;
+		gs = b;
+		fs = c;
+		program = d;
+	}
+	GLuint vs;
+	GLuint gs;
+	GLuint fs;
+	GLuint program;
 }glshader_t;
-
-#define MAX_SHADERS 256
-
-extern glshader_t shaders[MAX_SHADERS];
-extern int numshaders;
 
 GLuint R_CompileShader(const char *vscode, const char *gscode, const char *fscode, const char *vsfile, const char *gsfile, const char *fsfile);
 GLuint R_CompileShaderFile(const char *vsfile, const char *gsfile, const char *fsfile);

@@ -13,28 +13,15 @@ typedef struct
 {
 	int program;
 	int diffuseTex;
-}gbuffer1_program_t;
-
-typedef struct
-{
-	int program;
-	int diffuseTex;
-	int lightmapTex;
-}gbuffer2_program_t;
-
-typedef struct
-{
-	int program;
-	int diffuseTex;
 	int lightmapTex;
 	int detailTex;
-}gbuffer3_program_t;
-
-typedef struct
-{
-	int program;
-	int diffuseTex;
-}gbuffer4_program_t;
+}gbuffer_color_program_t, 
+gbuffer_diffuse_program_t, 
+gbuffer_lightmap_program_t, 
+gbuffer_detail_program_t, 
+gbuffer_transparent_diffuse_program_t,
+gbuffer_transparent_color_program_t,
+gbuffer_lightmap_only_program_t;
 
 typedef struct
 {
@@ -80,6 +67,19 @@ void R_InitLight(void);
 void R_BeginRenderGBuffer(void);
 void R_EndRenderGBuffer(void);
 void R_SetGBufferRenderState(int state);
-void R_SetRenderGBufferDecal(void);
-void R_SetRenderGBufferWater(void);
-void R_SetRenderGBufferAll(void);
+void R_SetGBufferMask(int mask);
+
+#define GBUFFER_MASK_DIFFUSE		1
+#define GBUFFER_MASK_LIGHTMAP		2
+#define GBUFFER_MASK_WORLD			4
+#define GBUFFER_MASK_NORMAL			8
+
+#define GBUFFER_MASK_ALL (GBUFFER_MASK_DIFFUSE | GBUFFER_MASK_LIGHTMAP | GBUFFER_MASK_WORLD | GBUFFER_MASK_NORMAL )
+
+#define GBUFFER_STATE_COLOR			1
+#define GBUFFER_STATE_DIFFUSE			2
+#define GBUFFER_STATE_LIGHTMAP			3
+#define GBUFFER_STATE_DETAIL			4
+#define GBUFFER_STATE_TRANSPARENT_COLOR		5
+#define GBUFFER_STATE_TRANSPARENT_DIFFUSE		6
+#define GBUFFER_STATE_LIGHTMAP_ONLY		7

@@ -5,16 +5,14 @@ int skytexturenum;
 
 msurface_t **skychain = NULL;
 msurface_t **waterchain = NULL;
-
-float current_lightgamma = -1.0;
-float current_brightness = -1.0;
-float current_gamma = -1.0;
+int *gl_texsort_value = NULL;
 
 //engine
 byte *lightmaps;
 int *lightmap_textures;
 void *lightmap_rectchange;
 int *lightmap_modified;
+glpoly_t **lightmap_polys;
 int *c_brush_polys;
 int *c_alias_polys;
 int *d_lightstylevalue;
@@ -64,19 +62,119 @@ void R_AddDynamicLights(msurface_t *surf)
 	return gRefFuncs.R_AddDynamicLights(surf);
 }
 
+void R_RenderDynamicLightmaps(msurface_t *fa)
+{
+	if(!r_light_dynamic->value)
+		return gRefFuncs.R_RenderDynamicLightmaps(fa);
+
+	byte *base;
+	int maps;
+	int smax, tmax;
+
+	(*c_brush_polys)++;
+
+	if (fa->flags & (SURF_DRAWSKY | SURF_DRAWTURB))
+		return;
+
+	fa->polys->chain = lightmap_polys[fa->lightmaptexturenum];
+	lightmap_polys[fa->lightmaptexturenum] = fa->polys;
+
+	bool dynamic = false;
+
+	for (maps = 0; maps < MAXLIGHTMAPS && fa->styles[maps] != 255; maps++)
+	{
+		if (d_lightstylevalue[fa->styles[maps]] != fa->cached_light[maps])
+		{
+			dynamic = true;
+			break;
+		}
+	}
+
+	if (dynamic)
+	{
+		if (r_dynamic->value)
+		{
+			lightmap_modified[fa->lightmaptexturenum] = true;
+			if (g_iEngineType == ENGINE_SVENGINE)
+			{
+				glRect_SvEngine_t *theRect = (glRect_SvEngine_t *)((char *)lightmap_rectchange + sizeof(glRect_SvEngine_t) * fa->lightmaptexturenum);
+
+				if (fa->light_t < theRect->t)
+				{
+					if (theRect->h)
+						theRect->h += theRect->t - fa->light_t;
+
+					theRect->t = fa->light_t;
+				}
+
+				if (fa->light_s < theRect->l)
+				{
+					if (theRect->w)
+						theRect->w += theRect->l - fa->light_s;
+
+					theRect->l = fa->light_s;
+				}
+
+				smax = (fa->extents[0] >> 4) + 1;
+				tmax = (fa->extents[1] >> 4) + 1;
+
+				if ((theRect->w + theRect->l) < (fa->light_s + smax))
+					theRect->w = (fa->light_s - theRect->l) + smax;
+
+				if ((theRect->h + theRect->t) < (fa->light_t + tmax))
+					theRect->h = (fa->light_t - theRect->t) + tmax;
+			}
+			else
+			{
+				glRect_t *theRect = (glRect_t *)((char *)lightmap_rectchange + sizeof(glRect_t) * fa->lightmaptexturenum);
+
+				if (fa->light_t < theRect->t)
+				{
+					if (theRect->h)
+						theRect->h += theRect->t - fa->light_t;
+
+					theRect->t = fa->light_t;
+				}
+
+				if (fa->light_s < theRect->l)
+				{
+					if (theRect->w)
+						theRect->w += theRect->l - fa->light_s;
+
+					theRect->l = fa->light_s;
+				}
+
+				smax = (fa->extents[0] >> 4) + 1;
+				tmax = (fa->extents[1] >> 4) + 1;
+
+				if ((theRect->w + theRect->l) < (fa->light_s + smax))
+					theRect->w = (fa->light_s - theRect->l) + smax;
+
+				if ((theRect->h + theRect->t) < (fa->light_t + tmax))
+					theRect->h = (fa->light_t - theRect->t) + tmax;
+			}
+
+			base = lightmaps + fa->lightmaptexturenum * LIGHTMAP_BYTES * BLOCK_WIDTH * BLOCK_HEIGHT;
+			base += fa->light_t * BLOCK_WIDTH * LIGHTMAP_BYTES + fa->light_s * LIGHTMAP_BYTES;
+			R_BuildLightMap(fa, base, BLOCK_WIDTH * LIGHTMAP_BYTES);
+		}
+	}
+}
+
 void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride)
 {
-	if (r_light_dynamic->value)
-	{
-		auto save_dlightactive = (*r_dlightactive);
-		(*r_dlightactive) = 0;
+	if (!r_light_dynamic->value)
+		return gRefFuncs.R_BuildLightMap(psurf, dest, stride);
 
-		gRefFuncs.R_BuildLightMap(psurf, dest, stride);
+	auto save_dlightactive = (*r_dlightactive);
+	(*r_dlightactive) = 0;
 
-		(*r_dlightactive) = save_dlightactive;
-	}
-	else
-	{
-		gRefFuncs.R_BuildLightMap(psurf, dest, stride);
-	}
+	gRefFuncs.R_BuildLightMap(psurf, dest, stride);
+
+	(*r_dlightactive) = save_dlightactive;
+}
+
+void R_BlendLightmaps(void)
+{
+	return;
 }

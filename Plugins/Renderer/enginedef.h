@@ -19,8 +19,7 @@ typedef struct
 {
 	char name[MAX_QPATH];
 	cache_user_t cache;
-}
-cacheentry_t;
+}cacheentry_t;
 
 typedef void (*PFNCACHE)(struct cachewad_s *wad, byte *data);
 
@@ -38,8 +37,7 @@ typedef struct cachewad_s
 	char **basedirs;
 	int *lumppathindices;
 	qboolean tempWad;
-}
-cachewad_t;
+}cachewad_t;
 
 typedef struct
 {
