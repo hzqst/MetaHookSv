@@ -1648,6 +1648,8 @@ void R_RenderScene(void)
 {
 	gRefFuncs.R_RenderScene();
 
+	R_SetVBOState(VBOSTATE_OFF);
+
 	if (!drawreflect && !drawrefract)
 	{
 		if (s_MSAAFBO.s_hBackBufferFBO)
@@ -1780,8 +1782,6 @@ void GL_EndRendering(void)
 
 void R_InitCvars(void)
 {
-	static cvar_t s_gl_texsort = { "gl_texsort", "0", 0, 0, 0 };
-
 	r_bmodelinterp = gEngfuncs.pfnGetCvarPointer("r_bmodelinterp");
 	r_bmodelhighfrac = gEngfuncs.pfnGetCvarPointer("r_bmodelhighfrac");
 	r_norefresh = gEngfuncs.pfnGetCvarPointer("r_norefresh");
@@ -1821,7 +1821,7 @@ void R_InitCvars(void)
 
 	if (!gl_texsort)
 	{
-		gl_texsort = gEngfuncs.pfnRegisterVariable("r_texsort", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+		gl_texsort = gEngfuncs.pfnRegisterVariable("r_texsort", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	}
 
 	gl_smoothmodels = gEngfuncs.pfnGetCvarPointer("gl_smoothmodels");

@@ -19,6 +19,9 @@ cvar_t *r_flashlight_cone = NULL;
 bool drawpolynocolor = false;
 bool drawgbuffer = false;
 
+int gbuffer_render_state = -1;
+int gbuffer_mask = -1;
+
 SHADER_DEFINE(gbuffer_color);
 SHADER_DEFINE(gbuffer_diffuse);
 SHADER_DEFINE(gbuffer_lightmap);
@@ -180,6 +183,11 @@ void R_SetGBufferMask(int mask)
 	if (!drawgbuffer)
 		return;
 
+	if (gbuffer_mask == mask)
+		return;
+
+	gbuffer_mask = mask;
+
 	GLuint attachments[4] = {0};
 	int attachCount = 0;
 
@@ -211,6 +219,12 @@ void R_SetGBufferRenderState(int state)
 {
 	if (!drawgbuffer)
 		return;
+
+	if (gbuffer_render_state == state)
+		return;
+
+	gbuffer_render_state = state;
+
 	switch (state)
 	{
 	case  GBUFFER_STATE_COLOR:
@@ -272,11 +286,14 @@ void R_BeginRenderGBuffer(void)
 		return;
 
 	drawgbuffer = true;
+	gbuffer_render_state = -1;
+	gbuffer_mask = -1;
 
 	GL_PushFrameBuffer();
 
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
 
+	R_SetGBufferRenderState(GBUFFER_STATE_LIGHTMAP);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
 	qglClearColor(0, 0, 0, 1);
@@ -289,6 +306,8 @@ void R_EndRenderGBuffer(void)
 		return;
 
 	drawgbuffer = false;
+	gbuffer_render_state = -1;
+	gbuffer_mask = -1;
 
 	GL_PushDrawState();
 	GL_PushMatrix();

@@ -131,6 +131,8 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		VectorAdd(tempVert, (*currententity)->curstate.origin, tempVert);
 	}
 	
+	R_SetVBOState(VBOSTATE_OFF);
+
 	R_SetGBufferRenderState(GBUFFER_STATE_DIFFUSE);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
@@ -672,14 +674,14 @@ void R_DrawSkyBox(void)
 			order = skytexorder[i];
 		}
 
-		if(r_wsurf_sky->value > 0 && r_wsurf.iSkyTextures[order])
+		/*if(r_wsurf_sky->value > 0 && r_wsurf.iSkyTextures[order])
 		{
 			GL_Bind(r_wsurf.iSkyTextures[order]);
 		}
 		else
-		{
+		{*/
 			GL_Bind(gSkyTexNumber[order]);
-		}
+		//}
 
 		qglBegin(GL_QUADS);
 		qglNormal3fv(vNormalTable[i]);

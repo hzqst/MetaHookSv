@@ -185,6 +185,9 @@ void R_GenerateVertexBuffer(void)
 
 void R_SetVBOState(int state)
 {
+	if(!r_wsurf_vbo->value)
+		return;
+
 	if (r_wsurf.iVBOState == state)
 		return;
 
@@ -724,9 +727,9 @@ void R_InitWSurf(void)
 	R_ClearDecalTextures();
 	R_ClearBSPEntities();
 
-	r_wsurf_replace = gEngfuncs.pfnRegisterVariable("r_wsurf_replace", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	r_wsurf_sky = gEngfuncs.pfnRegisterVariable("r_wsurf_sky", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	r_wsurf_decal = gEngfuncs.pfnRegisterVariable("r_wsurf_decal", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	//r_wsurf_replace = gEngfuncs.pfnRegisterVariable("r_wsurf_replace", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	//r_wsurf_sky = gEngfuncs.pfnRegisterVariable("r_wsurf_sky", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	//r_wsurf_decal = gEngfuncs.pfnRegisterVariable("r_wsurf_decal", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_vbo = gEngfuncs.pfnRegisterVariable("r_wsurf_vbo", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 }
 
@@ -779,24 +782,42 @@ void R_DrawWireFrame(brushface_t *brushface, void(*draw)(brushface_t *face))
 {
 	if (gl_wireframe->value)
 	{
+		R_SetVBOState(VBOSTATE_NO_TEXTURE);
+
 		R_SetGBufferRenderState(GBUFFER_STATE_TRANSPARENT_COLOR);
 		R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
 
-		GL_DisableMultitexture();
-		qglDisable(GL_TEXTURE_2D);
 		qglColor3f(1, 1, 1);
 		qglPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		qglLineWidth(1);
 		if (gl_wireframe->value == 2)
 			qglDisable(GL_DEPTH_TEST);
 
-		draw(brushface);
+		if ((*mtexenabled))
+		{
+			GL_DisableMultitexture();
+			qglDisable(GL_TEXTURE_2D);
+
+			draw(brushface);
+
+			qglEnable(GL_TEXTURE_2D);
+			GL_EnableMultitexture();
+		}
+		else
+		{
+			qglDisable(GL_TEXTURE_2D);
+
+			draw(brushface);
+
+			qglEnable(GL_TEXTURE_2D);
+		}
 
 		qglPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-		qglEnable(GL_TEXTURE_2D);
 		if (gl_wireframe->value == 2)
 			qglEnable(GL_DEPTH_TEST);
+
+		R_SetVBOState(VBOSTATE_OFF);
 	}
 }
 
@@ -881,8 +902,6 @@ void DrawGLPoly(glpoly_t *p)
 
 		DrawGLVertexBufferObject(brushface);
 
-		R_SetVBOState(VBOSTATE_NO_TEXTURE);
-
 		R_DrawWireFrame(brushface, DrawGLVertexBufferObject);
 
 		R_SetVBOState(VBOSTATE_OFF);
@@ -890,6 +909,7 @@ void DrawGLPoly(glpoly_t *p)
 	else
 	{
 		DrawGLVertex(brushface);
+
 		R_DrawWireFrame(brushface, DrawGLVertex);
 	}
 }
@@ -907,88 +927,9 @@ void DrawGLPolyScroll(msurface_t *fa, cl_entity_t *pEntity)
 
 	auto sOffset = ScrollOffset(fa, pEntity);
 
-	//Texture matrix doesnt work with VBO
-	if (0/*r_wsurf_vbo->value*/)
-	{
-		if (r_wsurf.bDetailTexture)
-		{
-			R_SetVBOState(VBOSTATE_DETAIL_TEXTURE);
+	DrawGLScrollingVertex(brushface, sOffset);
 
-			qglActiveTextureARB(TEXTURE2_SGIS);
-			qglMatrixMode(GL_TEXTURE);
-			qglLoadIdentity();
-			qglTranslatef(sOffset, 0, 0);
-
-			qglActiveTextureARB(TEXTURE0_SGIS);
-			qglMatrixMode(GL_TEXTURE);
-			qglLoadIdentity();
-			qglTranslatef(sOffset, 0, 0);
-
-			qglMatrixMode(GL_MODELVIEW);
-
-			DrawGLVertexBufferObject(brushface);
-
-			qglActiveTextureARB(TEXTURE0_SGIS);
-			qglMatrixMode(GL_TEXTURE);
-			qglLoadIdentity();
-
-			qglActiveTextureARB(TEXTURE2_SGIS);
-			qglMatrixMode(GL_TEXTURE);
-			qglLoadIdentity();
-
-			qglMatrixMode(GL_MODELVIEW);
-		}
-		else if (r_wsurf.bLightmapTexture)
-		{
-			R_SetVBOState(VBOSTATE_LIGHTMAP_TEXTURE);
-
-			qglActiveTextureARB(TEXTURE0_SGIS);
-			qglMatrixMode(GL_TEXTURE);
-			qglLoadIdentity();
-			qglTranslatef(sOffset, 0, 0);
-
-			qglMatrixMode(GL_MODELVIEW);
-
-			DrawGLVertexBufferObject(brushface);
-
-			qglActiveTextureARB(TEXTURE0_SGIS);
-			qglMatrixMode(GL_TEXTURE);
-			qglLoadIdentity();
-			qglActiveTextureARB(TEXTURE1_SGIS);
-
-			qglMatrixMode(GL_MODELVIEW);
-		}
-		else
-		{
-			R_SetVBOState(VBOSTATE_DIFFUSE_TEXTURE);
-
-			qglActiveTextureARB(TEXTURE0_SGIS);
-			qglMatrixMode(GL_TEXTURE);
-			qglLoadIdentity();
-			qglTranslatef(sOffset, 0, 0);
-
-			qglMatrixMode(GL_MODELVIEW);
-
-			DrawGLVertexBufferObject(brushface);
-
-			qglMatrixMode(GL_TEXTURE);
-			qglLoadIdentity();
-
-			qglMatrixMode(GL_MODELVIEW);
-		}
-
-		R_SetVBOState(VBOSTATE_NO_TEXTURE);
-
-		R_DrawWireFrame(brushface, DrawGLVertexBufferObject);
-
-		R_SetVBOState(VBOSTATE_OFF);
-	}
-	else
-	{
-		DrawGLScrollingVertex(brushface, sOffset);
-
-		R_DrawWireFrame(brushface, DrawGLVertex);
-	}
+	R_DrawWireFrame(brushface, DrawGLVertex);
 }
 
 void DrawGLPolySolid(msurface_t *fa)
@@ -1341,77 +1282,9 @@ void R_DrawDecals(qboolean bMultitexture)
 	R_SetGBufferRenderState(GBUFFER_STATE_LIGHTMAP);
 	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
 	gRefFuncs.R_DrawDecals(1);
+
 	if (!bMultitexture)
 		GL_DisableMultitexture();
-	return;
-
-	decal_t *plist;
-	int i, outCount;
-	texture_t *ptexture;
-	msurface_t *psurf;
-	float *v;
-
-	if (!(*gDecalSurfCount))
-		return;
-
-	qglEnable(GL_BLEND);
-	qglEnable(GL_ALPHA_TEST);
-	qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	qglDepthMask(0);
-
-	if (gl_polyoffset->value)
-	{
-		qglEnable(GL_POLYGON_OFFSET_FILL);
-
-		if (gl_ztrick && gl_ztrick->value)
-			qglPolygonOffset(1, gl_polyoffset->value);
-		else
-			qglPolygonOffset(-1, -gl_polyoffset->value);
-	}
-
-	for (i = 0; i < (*gDecalSurfCount); i++)
-	{
-		psurf = gDecalSurfs[i];
-		plist = psurf->pdecals;
-
-		while (plist)
-		{
-			ptexture = Draw_DecalTexture(plist->texture);
-			if (plist->flags & FDECAL_NOCLIP)
-			{
-				v = R_DecalVertsNoclip(plist, psurf, ptexture, bMultitexture);
-				outCount = 4;
-			}
-			else
-			{
-				v = R_DecalVertsClip(NULL, plist, psurf, ptexture, &outCount);
-				if (outCount && bMultitexture)
-				{
-					R_DecalVertsLight(v, psurf, outCount);
-				}
-			}
-
-			if (outCount)
-			{
-				if (bMultitexture)
-					R_DecalMPoly(v, ptexture, psurf, outCount);
-				else
-					R_DecalPoly(v, ptexture, psurf, outCount);
-			}
-			plist = plist->pnext;
-		}
-	}
-
-	if (gl_polyoffset->value)
-	{
-		qglDisable(GL_POLYGON_OFFSET_FILL);
-	}
-
-	qglDisable(GL_ALPHA_TEST);
-	qglDisable(GL_BLEND);
-	qglDepthMask(1);
-
-	(*gDecalSurfCount) = 0;
 }
 
 void R_RenderBrushPoly(msurface_t *s)

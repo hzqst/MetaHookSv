@@ -165,7 +165,7 @@ void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride);
 void R_DecalMPoly(float *v, texture_t *ptexture, msurface_t *psurf, int vertCount);
 void R_DrawDecals(qboolean bMultitexture);
 void DrawGLPoly(glpoly_t *p);
-
+void R_SetVBOState(int state);
 #define VBOSTATE_OFF 0
 #define VBOSTATE_NO_TEXTURE 1
 #define VBOSTATE_DIFFUSE_TEXTURE 2
