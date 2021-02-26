@@ -36,6 +36,7 @@ auxvert_t auxverts[MAXSTUDIOVERTS];
 vec3_t lightvalues[MAXSTUDIOVERTS];
 auxvert_t *pauxverts;
 float *pvlightvalues;
+int r_studio_drawcall = 0;
 
 SHADER_DEFINE(studio);
 SHADER_DEFINE(studiogbuffer);
@@ -869,12 +870,12 @@ void R_GLStudioDrawPoints(void)
 
 			if (bTransparent)
 			{
-				R_SetGBufferRenderState(GBUFFER_STATE_TRANSPARENT_DIFFUSE);
+				R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED | GBUFFER_LIGHTMAP_ENABLED);
 				R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
 			}
 			else
 			{
-				R_SetGBufferRenderState(GBUFFER_STATE_DIFFUSE);
+				R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED);
 				R_SetGBufferMask(GBUFFER_MASK_ALL);
 			}
 
@@ -1077,13 +1078,17 @@ void R_GLStudioDrawPoints(void)
 				}
 			}
 
-#define BUFFER_OFFSET(i) ((unsigned int *)NULL + (i))
-
 			if (VBOMesh.iTriStripVertexCount)
+			{
 				qglDrawElements(GL_TRIANGLE_STRIP, VBOMesh.iTriStripVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(VBOMesh.iTriStripStartIndex));
+				++r_studio_drawcall;
+			}
 
 			if (VBOMesh.iTriFanVertexCount)
+			{
 				qglDrawElements(GL_TRIANGLE_FAN, VBOMesh.iTriFanVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(VBOMesh.iTriFanStartIndex));
+				++r_studio_drawcall;
+			}
 
 			if (flags & STUDIO_NF_MASKED)
 			{
@@ -1158,12 +1163,12 @@ void R_GLStudioDrawPoints(void)
 
 			if (bTransparent)
 			{
-				R_SetGBufferRenderState(GBUFFER_STATE_TRANSPARENT_DIFFUSE);
+				R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED | GBUFFER_TRANSPARENT_ENABLED);
 				R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
 			}
 			else
 			{
-				R_SetGBufferRenderState(GBUFFER_STATE_DIFFUSE);
+				R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED);
 				R_SetGBufferMask(GBUFFER_MASK_ALL);
 			}
 
@@ -1254,6 +1259,7 @@ void R_GLStudioDrawPoints(void)
 
 						qglEnd();
 
+						r_studio_drawcall++;
 						if (iInitVBO & 2)
 						{
 							VBOMesh->vTri.emplace_back(iStartDrawVertex, iNumDrawVertex, iCurrentDrawType);
@@ -1322,6 +1328,7 @@ void R_GLStudioDrawPoints(void)
 						}
 
 						qglEnd();
+						r_studio_drawcall++;
 
 						if (iInitVBO & 2)
 						{
@@ -1399,6 +1406,7 @@ void R_GLStudioDrawPoints(void)
 					}
 
 					qglEnd();
+					r_studio_drawcall++;
 
 					if (iInitVBO & 2)
 					{

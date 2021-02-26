@@ -3,7 +3,13 @@ uniform sampler2D diffuseTex;
 #endif
 
 #ifdef LIGHTMAP_ENABLED
+
+#ifdef LIGHTMAP_ARRAY_ENABLED
+uniform sampler2DArray lightmapTexArray;
+#else
 uniform sampler2D lightmapTex;
+#endif
+
 #endif
 
 #ifdef DETAIL_ENABLED
@@ -23,7 +29,13 @@ void main()
 #endif
 
 #ifdef LIGHTMAP_ENABLED
-    vec4 lightmapColor = texture2D(lightmapTex, gl_TexCoord[1].xy);
+
+    #ifdef LIGHTMAP_ARRAY_ENABLED
+        vec4 lightmapColor = texture2DArray(lightmapTexArray, gl_TexCoord[1].xyz);
+    #else
+        vec4 lightmapColor = texture2D(lightmapTex, gl_TexCoord[1].xy);
+    #endif
+
 #else
     vec4 lightmapColor = color;
 #endif

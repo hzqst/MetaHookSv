@@ -255,7 +255,9 @@ extern float *r_plightvec;
 extern float *r_colormix;
 extern model_t *cl_sprite_white;
 extern model_t *cl_shellchrome;
+
 //renderer
+extern int r_studio_drawcall;
 
 void R_StudioClearVBOCache(void);
 void R_LoadStudioTextures(qboolean loadmap);

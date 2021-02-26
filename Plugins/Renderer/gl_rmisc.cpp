@@ -1,5 +1,7 @@
 #include "gl_local.h"
 
+#define MAX_SAVESTACK 16
+
 typedef struct
 {
 	GLboolean polygon_offset_fill;

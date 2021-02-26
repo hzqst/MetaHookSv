@@ -970,6 +970,7 @@ void R_FillAddress(void)
 		Sig_AddrNotFound(gDecalSurfs);
 		gDecalSurfs = *(msurface_t ***)(addr + 3);
 		gDecalSurfCount = *(int **)(addr + 9);
+		skytexturenum = gDecalSurfCount - 1;
 
 #define GDECALPOOL_SIG_SVENGINE "\x81\xE9\x2A\x2A\x2A\x2A\xF7\xE9"
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawDecals, 0x500, GDECALPOOL_SIG_SVENGINE, sizeof(GDECALPOOL_SIG_SVENGINE) - 1);
@@ -1352,12 +1353,10 @@ void R_InstallHook(void)
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_CullBox, R_CullBox, (void *&)gRefFuncs.R_CullBox);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_MarkLeaves, R_MarkLeaves, (void *&)gRefFuncs.R_MarkLeaves);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.Mod_PointInLeaf, Mod_PointInLeaf, (void *&)gRefFuncs.Mod_PointInLeaf);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderBrushPoly, R_RenderBrushPoly, (void *&)gRefFuncs.R_RenderBrushPoly);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSequentialPoly, R_DrawSequentialPoly, (void *&)gRefFuncs.R_DrawSequentialPoly);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.EmitWaterPolys, EmitWaterPolys, (void *&)gRefFuncs.EmitWaterPolys);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawDecals, R_DrawDecals, (void *&)gRefFuncs.R_DrawDecals);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSkyChain, R_DrawSkyChain, (void *&)gRefFuncs.R_DrawSkyChain);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_BlendLightmaps, R_BlendLightmaps, (void *&)gRefFuncs.R_BlendLightmaps);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_BuildLightMap, R_BuildLightMap, (void *&)gRefFuncs.R_BuildLightMap);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_AddDynamicLights, R_AddDynamicLights, (void *&)gRefFuncs.R_AddDynamicLights);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_StudioRenderFinal, R_StudioRenderFinal, (void *&)gRefFuncs.R_StudioRenderFinal);

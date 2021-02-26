@@ -1,8 +1,6 @@
 #include "gl_local.h"
 #include "zone.h"
 
-int skytexturenum;
-
 msurface_t **skychain = NULL;
 msurface_t **waterchain = NULL;
 int *gl_texsort_value = NULL;
@@ -22,6 +20,7 @@ int *gDecalSurfCount;
 msurface_t **gDecalSurfs;
 decal_t *gDecalPool;
 decalcache_t *gDecalCache;
+int *skytexturenum;
 
 //renderer
 qboolean lightmap_updateing;
@@ -70,8 +69,6 @@ void R_RenderDynamicLightmaps(msurface_t *fa)
 	byte *base;
 	int maps;
 	int smax, tmax;
-
-	(*c_brush_polys)++;
 
 	if (fa->flags & (SURF_DRAWSKY | SURF_DRAWTURB))
 		return;
@@ -172,9 +169,4 @@ void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride)
 	gRefFuncs.R_BuildLightMap(psurf, dest, stride);
 
 	(*r_dlightactive) = save_dlightactive;
-}
-
-void R_BlendLightmaps(void)
-{
-	return;
 }

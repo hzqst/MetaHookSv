@@ -1,7 +1,9 @@
 #pragma once
 
-#define LIGHTMAP_NUMCOLUMNS		8
-#define LIGHTMAP_NUMROWS		8
+#include <vector>
+
+#define LIGHTMAP_NUMCOLUMNS		32
+#define LIGHTMAP_NUMROWS		32
 
 #define LIGHTMAP_BYTES		4
 #define	BLOCK_WIDTH			128
@@ -27,60 +29,35 @@
 #define FDECAL_CLIPTEST				0x20		// Decal needs to be clip-tested
 #define FDECAL_NOCLIP				0x40		// Decal is not clipped by containing polygon
 
-
 typedef struct brushvertex_s
 {
 	vec3_t	pos;
 	vec3_t	normal;
 
-	float	fogcoord;
-	float	texcoord[2];
+	float	texcoord[3];
+	float	lightmaptexcoord[3];
 	float	detailtexcoord[2];
-	float	lightmaptexcoord[2];
-
-	byte	pad[12];
 }brushvertex_t;
-
-typedef struct
-{
-	texture_t *basetex;
-	int detailtex;
-	int replacetex;
-	int normaltex;
-	float detailscale[2];
-	float replacescale[2];
-	float replacealpha;
-	qboolean loaded;
-}maptexture_t;
 
 typedef struct brushface_s
 {
 	int index;
 	int start_vertex;
 	int num_vertexes;
-	maptexture_t *maptex;
 
 	vec3_t	normal;
 	vec3_t	s_tangent;
 	vec3_t	t_tangent;
 }brushface_t;
 
-typedef struct
+typedef struct brushtexchain_s
 {
-	char basetex[32];
-	char detailtex[64];
-	char replacetex[64];
-	char normaltex[64];
-	float detailscale[2];
-	float replacescale[2];
-	qboolean loaded;
-}extratexture_t;
-
-typedef struct
-{
-	extratexture_t		*pTextures;
-	int					iNumTextures;
-}extratexture_mgr_t;
+	int iStartIndex;
+	int iVertexCount;
+	int iFaceCount;
+	texture_t *pTexture;
+	int iScroll;
+}brushtexchain_t;
 
 typedef struct epair_s
 {
@@ -99,35 +76,41 @@ typedef struct
 typedef struct
 {
 	GLuint				hVBO;
+	GLuint				hEBO;
 
 	int					iVBOState;
 	bool				bLightmapTexture;
 	bool				bDetailTexture;
 
-	brushvertex_t		*pVertexBuffer;
+	brushvertex_t		*vVertexBuffer;
 	int					iNumVerts;
-	int					iNumTris;
 
-	brushface_t			*pFaceBuffer;
+	brushface_t			*vFaceBuffer;
 	int					iNumFaces;
+	int					iNumLightmapTextures;
+	int					iLightmapTextureArray;
 
-	extratexture_mgr_t	ExtraTextures;
-	extratexture_mgr_t	LocalExtraTextures;
-
-	maptexture_t		MapTextures[MAX_MAP_TEXTURES];
-
-	int					iSkyTextures[6];
-
-	texture_t			DecalTextures[MAX_MAP_TEXTURES];
-	int					iNumDecalTextures;
+	std::vector<brushtexchain_t> vTextureChainStatic;
+	std::vector<brushtexchain_t> vTextureChainScroll;
+	std::vector<unsigned int> vIndicesBuffer;
 
 	int					iNumBSPEntities;
 	bspentity_t			pBSPEntities[MAX_MAP_BSPENTITY];
 }r_worldsurf_t;
 
+typedef struct
+{
+	int program;
+	int diffuseTex;
+	int lightmapTexArray;
+	int detailTex;
+	int speed;
+}wsurf_program_t;
+
 #define OFFSET(type, variable) ((const void*)&(((type*)NULL)->variable))
 
 extern r_worldsurf_t	r_wsurf;
+extern int r_wsurf_drawcall;
 
 void R_InitWSurf(void);
 void R_VidInitWSurf(void);
@@ -151,23 +134,28 @@ extern decalcache_t *gDecalCache;
 //cvar
 extern cvar_t *r_wsurf_replace;
 extern cvar_t *r_wsurf_sky;
+extern cvar_t *r_wsurf_vbo;
 
 void R_ClearBSPEntities(void);
 void R_ParseBSPEntities(char *data);
 char *ValueForKey(bspentity_t *ent, char *key);
 void R_LoadBSPEntities(void);
 
-void R_LinkDecalTexture(texture_t *t);
-void R_LoadExtraTextureFile(qboolean loadmap);
 void R_AddDynamicLights(msurface_t *surf);
 void R_RenderDynamicLightmaps(msurface_t *fa);
 void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride);
-void R_DecalMPoly(float *v, texture_t *ptexture, msurface_t *psurf, int vertCount);
-void R_DrawDecals(qboolean bMultitexture);
 void DrawGLPoly(glpoly_t *p);
+void DrawGLPoly(msurface_t *fa);
 void R_SetVBOState(int state);
+void R_ShutdownWSurf(void);
+void R_DrawDecals(qboolean bMultitexture);
+
 #define VBOSTATE_OFF 0
 #define VBOSTATE_NO_TEXTURE 1
 #define VBOSTATE_DIFFUSE_TEXTURE 2
 #define VBOSTATE_LIGHTMAP_TEXTURE 3
 #define VBOSTATE_DETAIL_TEXTURE 4
+
+#define WSURF_DIFFUSE_ENABLED		1
+#define WSURF_LIGHTMAP_ENABLED		2
+#define WSURF_DETAILTEXTURE_ENABLED	4

@@ -1,3 +1,0 @@
-#define MAX_LIGHTMAPS 64
-
-#define MAX_SAVESTACK 16

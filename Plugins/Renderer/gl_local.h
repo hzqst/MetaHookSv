@@ -20,7 +20,6 @@
 #include "bspfile.h"
 #include "qgl.h"
 
-#include "gl_const.h"
 #include "gl_shader.h"
 #include "gl_model.h"
 #include "enginedef.h"
@@ -133,7 +132,7 @@ extern FBO_Container_t s_CloakFBO;
 extern FBO_Container_t s_ShadowFBO;
 extern FBO_Container_t s_WaterFBO;
 
-extern int skytexturenum;
+extern int *skytexturenum;
 
 extern msurface_t **skychain;
 extern msurface_t **waterchain;
@@ -320,7 +319,6 @@ void CL_ScreenShot_f(void);
 //for hud or post-processing
 void R_InitGLHUD(void);
 
-extern double g_flFrameTime;
-extern int last_luminance;
-
 extern mplane_t custom_frustum[4];
+
+#define BUFFER_OFFSET(i) ((unsigned int *)NULL + (i))

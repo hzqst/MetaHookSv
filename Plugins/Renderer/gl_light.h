@@ -6,7 +6,7 @@ extern vec3_t r_light_env_angles;
 extern qboolean r_light_env_angles_exists;
 extern cvar_t *r_light_dynamic;
 extern cvar_t *r_light_debug;
-extern bool drawpolynocolor;
+
 extern bool drawgbuffer;
 
 typedef struct
@@ -14,14 +14,11 @@ typedef struct
 	int program;
 	int diffuseTex;
 	int lightmapTex;
+	int lightmapTexArray;
 	int detailTex;
-}gbuffer_color_program_t, 
-gbuffer_diffuse_program_t, 
-gbuffer_lightmap_program_t, 
-gbuffer_detail_program_t, 
-gbuffer_transparent_diffuse_program_t,
-gbuffer_transparent_color_program_t,
-gbuffer_lightmap_only_program_t;
+	int speed;
+	int attrvert;
+}gbuffer_program_t;
 
 typedef struct
 {
@@ -64,10 +61,12 @@ typedef struct
 }dlight_final_program_t;
 
 void R_InitLight(void);
+void R_ShutdownLight(void);
 void R_BeginRenderGBuffer(void);
 void R_EndRenderGBuffer(void);
-void R_SetGBufferRenderState(int state);
 void R_SetGBufferMask(int mask);
+void R_UseGBufferProgram(int state);
+void R_UseGBufferProgram(int state, gbuffer_program_t *progOutput);
 
 #define GBUFFER_MASK_DIFFUSE		1
 #define GBUFFER_MASK_LIGHTMAP		2
@@ -76,10 +75,9 @@ void R_SetGBufferMask(int mask);
 
 #define GBUFFER_MASK_ALL (GBUFFER_MASK_DIFFUSE | GBUFFER_MASK_LIGHTMAP | GBUFFER_MASK_WORLD | GBUFFER_MASK_NORMAL )
 
-#define GBUFFER_STATE_COLOR			1
-#define GBUFFER_STATE_DIFFUSE			2
-#define GBUFFER_STATE_LIGHTMAP			3
-#define GBUFFER_STATE_DETAIL			4
-#define GBUFFER_STATE_TRANSPARENT_COLOR		5
-#define GBUFFER_STATE_TRANSPARENT_DIFFUSE		6
-#define GBUFFER_STATE_LIGHTMAP_ONLY		7
+#define GBUFFER_DIFFUSE_ENABLED			1
+#define GBUFFER_LIGHTMAP_ENABLED		2
+#define GBUFFER_DETAILTEXTURE_ENABLED	4
+#define GBUFFER_LIGHTMAP_ARRAY_ENABLED	8
+#define GBUFFER_TRANSPARENT_ENABLED		16
+#define GBUFFER_SCROLL_ENABLED			32

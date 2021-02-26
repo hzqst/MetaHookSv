@@ -312,6 +312,7 @@ extern "C"
 	void (APIENTRY *qglTexGeniv)(GLenum coord, GLenum pname, const GLint *params) = NULL;
 	void (APIENTRY *qglTexImage1D)(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid *pixels) = NULL;
 	void (APIENTRY *qglTexImage2D)(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels) = NULL;
+	void (APIENTRY *qglTexImage3D)(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid * data) = NULL;
 	void (APIENTRY *qglTexStorage2D)(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height) = NULL;
 	void (APIENTRY *qglTexStorage3D)(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth) = NULL;
 	void (APIENTRY *qglTexStorage2DMultisample)(GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height, GLboolean fixedsamplelocations) = NULL;
@@ -862,6 +863,7 @@ void QGL_InitExtension(void)
 		*(FARPROC *)&qglTexStorage2D = qwglGetProcAddress("glTexStorage2D");
 		*(FARPROC *)&qglTexStorage3D = qwglGetProcAddress("glTexStorage3D");
 		*(FARPROC *)&qglTexStorage2DMultisample = qwglGetProcAddress("glTexStorage2DMultisample");
+		*(FARPROC *)&qglTexImage3D = qwglGetProcAddress("glTexImage3D");
 	}
 
 	if (strstr(extension, "GL_ARB_multitexture"))

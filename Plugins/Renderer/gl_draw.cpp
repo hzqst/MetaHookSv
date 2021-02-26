@@ -550,8 +550,8 @@ void Draw_MiptexTexture(cachewad_t *wad, byte *data)
 {
 	gRefFuncs.Draw_MiptexTexture(wad, data);
 
-	texture_t *t = (texture_t *)data;
-	R_LinkDecalTexture(t);
+	//texture_t *t = (texture_t *)data;
+	//R_LinkDecalTexture(t);
 }
 
 DWORD ByteToUInt( byte *byte )

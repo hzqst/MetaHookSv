@@ -264,7 +264,7 @@ void R_RotateForEntity(vec_t *origin, cl_entity_t *e)
 
 void R_DrawSpriteModel(cl_entity_t *entity)
 {
-	R_SetGBufferRenderState(GBUFFER_STATE_TRANSPARENT_DIFFUSE);
+	R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED | GBUFFER_TRANSPARENT_ENABLED);
 	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
 
 	gRefFuncs.R_DrawSpriteModel(entity);
@@ -1561,6 +1561,9 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 	{
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	}
+
+	r_wsurf_drawcall = 0;
+	r_studio_drawcall = 0;
 	
 	qglClearColor(0.0, 0.0, 0.0, 1.0);
 	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1617,6 +1620,11 @@ void R_PostRenderView()
 		R_DoFXAA();
 		R_DoHDR();
 	}
+
+	if (r_speeds->value)
+	{
+		gEngfuncs.Con_Printf("%d wsurf drawcall, %d studio drawcall\n", r_wsurf_drawcall, r_studio_drawcall);
+	}
 }
 
 void R_RenderView_SvEngine(int a1)
@@ -1648,8 +1656,6 @@ void R_RenderScene(void)
 {
 	gRefFuncs.R_RenderScene();
 
-	R_SetVBOState(VBOSTATE_OFF);
-
 	if (!drawreflect && !drawrefract)
 	{
 		if (s_MSAAFBO.s_hBackBufferFBO)
@@ -1673,13 +1679,6 @@ void R_RenderScene(void)
 		(*c_alias_polys) += saved_c_alias_polys;
 		(*c_brush_polys) += saved_c_brush_polys;
 	}
-}
-
-void R_DrawWorld(void)
-{
-	R_BeginRenderGBuffer();
-
-	gRefFuncs.R_DrawWorld();
 }
 
 void GL_EndRendering(void)
@@ -1819,11 +1818,6 @@ void R_InitCvars(void)
 	gl_cull = gEngfuncs.pfnGetCvarPointer("gl_cull");
 	gl_texsort = gEngfuncs.pfnGetCvarPointer("gl_texsort");
 
-	if (!gl_texsort)
-	{
-		gl_texsort = gEngfuncs.pfnRegisterVariable("r_texsort", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	}
-
 	gl_smoothmodels = gEngfuncs.pfnGetCvarPointer("gl_smoothmodels");
 	gl_affinemodels = gEngfuncs.pfnGetCvarPointer("gl_affinemodels");
 	gl_flashblend = gEngfuncs.pfnGetCvarPointer("gl_flashblend");
@@ -1902,6 +1896,8 @@ void R_Shutdown(void)
 {
 	R_FreeShadow();
 	R_FreeWater();
+	R_ShutdownLight();
+	R_ShutdownWSurf();
 }
 
 void R_ForceCVars(qboolean mp)
@@ -1910,21 +1906,17 @@ void R_ForceCVars(qboolean mp)
 		return;
 
 	gRefFuncs.R_ForceCVars(mp);
-
-	if (gl_texsort_value)
-	{
-		*gl_texsort_value = (int)gl_texsort->value;
-	}
 }
 
 void R_NewMap(void)
 {
+	gRefFuncs.R_NewMap();
+
 	r_worldentity = gEngfuncs.GetEntityByIndex(0);
 	r_worldmodel = r_worldentity->model;
 
-	gRefFuncs.R_NewMap();
-
 	memset(&r_params, 0, sizeof(r_params));
+
 	R_ClearWater();
 	R_Clear3DSky();
 	R_VidInitWSurf();

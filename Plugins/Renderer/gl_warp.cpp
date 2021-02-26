@@ -111,7 +111,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	tempVert[1] = p->verts[0][1];
 	tempVert[2] = p->verts[0][2];
 
-	auto bface = &r_wsurf.pFaceBuffer[p->flags];
+	auto brushface = &r_wsurf.vFaceBuffer[p->flags];
 
 	pSourcePalette = fa->texinfo->texture->pPal;
 	gWaterColor->r = pSourcePalette[9];
@@ -133,7 +133,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	
 	R_SetVBOState(VBOSTATE_OFF);
 
-	R_SetGBufferRenderState(GBUFFER_STATE_DIFFUSE);
+	R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
 	if(r_water && r_water->value && water.program && !dontShader)
@@ -292,7 +292,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 				qglMultiTexCoord2fARB(TEXTURE0_SGIS, os, ot);
 			}
 
-			qglNormal3fv(bface->normal);
+			qglNormal3fv(brushface->normal);
 			qglVertex3fv(tempVert);
 
 			if (direction)
@@ -321,7 +321,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		qglUseProgramObjectARB(0);
 	}
 
-	R_SetGBufferRenderState(GBUFFER_STATE_TRANSPARENT_COLOR);
+	R_UseGBufferProgram(GBUFFER_TRANSPARENT_ENABLED);
 	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
 
 	EmitWaterPolysWireFrame(fa, direction, useProgram);
@@ -573,7 +573,7 @@ void R_DrawSkyChain(msurface_t *s)
 		}
 	}
 
-	R_SetGBufferRenderState(GBUFFER_STATE_DIFFUSE);
+	R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
 	R_DrawSkyBox();

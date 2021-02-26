@@ -112,9 +112,6 @@
     <ClInclude Include="gl_cloak.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="gl_const.h">
-      <Filter>Header</Filter>
-    </ClInclude>
     <ClInclude Include="gl_draw.h">
       <Filter>Header</Filter>
     </ClInclude>

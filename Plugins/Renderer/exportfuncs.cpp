@@ -562,8 +562,8 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 	//R_InitDetailTextures();
 	//Load global extra textures into array
-	R_LoadExtraTextureFile(false);
-	R_LoadStudioTextures(false);
+	//R_LoadExtraTextureFile(false);
+	//R_LoadStudioTextures(false);
 
 	cl_sprite_white = IEngineStudio.Mod_ForName("sprites/white.spr", 1);
 
