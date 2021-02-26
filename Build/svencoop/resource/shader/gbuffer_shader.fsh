@@ -1,18 +1,21 @@
+#extension GL_EXT_texture_array : enable
+
 #ifdef DIFFUSE_ENABLED
 uniform sampler2D diffuseTex;
 #endif
 
 #ifdef LIGHTMAP_ENABLED
 
-#ifdef LIGHTMAP_ARRAY_ENABLED
-uniform sampler2DArray lightmapTexArray;
-#else
-uniform sampler2D lightmapTex;
-#endif
+    #ifdef LIGHTMAP_ARRAY_ENABLED
+
+    uniform sampler2DArray lightmapTexArray;
+    #else
+    uniform sampler2D lightmapTex;
+    #endif
 
 #endif
 
-#ifdef DETAIL_ENABLED
+#ifdef DETAILTEXTURE_ENABLED
 uniform sampler2D detailTex;
 #endif
 
@@ -40,14 +43,16 @@ void main()
     vec4 lightmapColor = color;
 #endif
 
-#ifdef DETAIL_ENABLED
+#ifdef DETAILTEXTURE_ENABLED
     vec4 detailColor = texture2D(detailTex, gl_TexCoord[2].xy);
+    detailColor.xyz *= 2.0;
+    detailColor.a = 1.0;
 #else
     vec4 detailColor = vec4(1.0, 1.0, 1.0, 1.0);
 #endif
 
 #ifdef TRANSPARENT_ENABLED
-    vec4 mixedColor = diffuseColor * color;
+    vec4 mixedColor = diffuseColor * detailColor * color;
     gl_FragData[0] = mixedColor;
 #else
     vec4 mixedColor = diffuseColor * detailColor;

@@ -21,6 +21,8 @@ msurface_t **gDecalSurfs;
 decal_t *gDecalPool;
 decalcache_t *gDecalCache;
 int *skytexturenum;
+int *r_detail_texid;
+float *r_detail_texcoord;
 
 //renderer
 qboolean lightmap_updateing;

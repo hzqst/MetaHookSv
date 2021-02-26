@@ -1,5 +1,7 @@
 #version 130
 
+#extension GL_EXT_texture_array : enable
+
 #ifdef DIFFUSE_ENABLED
 uniform sampler2D diffuseTex;
 #endif
@@ -27,9 +29,15 @@ void main()
 	#endif
 
 	#ifdef DETAILTEXTURE_ENABLED
+
 	vec4 detailColor = texture2D(detailTex, gl_TexCoord[2].xy);
+    detailColor.xyz *= 2.0;
+    detailColor.a = 1.0;
+
 	#else
+
 	vec4 detailColor = vec4(1.0, 1.0, 1.0, 1.0);
+
 	#endif
 
 	gl_FragColor = diffuseColor * lightmapColor * detailColor;

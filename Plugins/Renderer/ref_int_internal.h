@@ -65,6 +65,7 @@ typedef struct
 	void (*R_RecursiveWorldNode)(mnode_t *node);
 	texture_t *(*R_TextureAnimation)(msurface_t *fa);
 	void (*R_RenderDynamicLightmaps)(msurface_t *fa);
+	int (*R_BeginDetailTexture)(int textureId);
 	void (*R_BlendLightmaps)(void);
 	void (*R_DrawDecals)(qboolean bMultitexture);
 	texture_t *(*Draw_DecalTexture)(int index);

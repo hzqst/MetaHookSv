@@ -3,6 +3,8 @@
 
 #define CACHE_FREE_SVENGINE "\x56\x57\x8B\x7C\x24\x0C\x8B\x37\x85\xF6\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8"
 
+#define R_BEGINDETAILTEXTURE_SVENGINE "\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x73\x18\xE8"
+
 #define R_CLEAR_SIG "\xD9\x05\x2A\x2A\x2A\x2A\xDC\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0"
 #define R_CLEAR_SIG2 "\x8B\x15\x2A\x2A\x2A\x2A\x33\xC0\x83\xFA\x01\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xDC\x1D\x2A\x2A\x2A\x2A\x83\xC4\x04\xDF\xE0"
 #define R_CLEAR_SIG_NEW "\x8B\x15\x2A\x2A\x2A\x2A\x33\xC0\x83\xFA\x01\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xDC\x1D\x2A\x2A\x2A\x2A\x83\xC4\x04"
@@ -365,6 +367,12 @@ void R_FillAddress(void)
 
 		gRefFuncs.R_DrawSpriteModel = (void(*)(cl_entity_t *))Search_Pattern(R_DRAWSRPITEMODEL_SIG_SVENGINE);
 		Sig_FuncNotFound(R_DrawSpriteModel);
+
+		addr = (DWORD)Search_Pattern_From(R_DrawSequentialPoly, R_BEGINDETAILTEXTURE_SVENGINE);
+		Sig_AddrNotFound(R_BeginDetailTexture);
+		addr += sizeof(R_BEGINDETAILTEXTURE_SVENGINE) - 1;
+		addr --;
+		gRefFuncs.R_BeginDetailTexture = (int(*)(int))GetCallAddress(addr);
 	}
 	else if (g_dwEngineBuildnum >= 5953)
 	{
@@ -1075,6 +1083,12 @@ void R_FillAddress(void)
 		Sig_AddrNotFound(c_brush_polys);
 		c_alias_polys = *(int **)(addr + 2);
 		c_brush_polys = *(int **)(addr + 14);
+
+#define R_DETAIL_TEXID_SIG_SVENGINE "\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\xB2\x01"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_BeginDetailTexture, 0x250, R_DETAIL_TEXID_SIG_SVENGINE, sizeof(R_DETAIL_TEXID_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(r_detail_texid);
+		r_detail_texid = *(int **)(addr + 7);
+		r_detail_texcoord = (float *)(r_detail_texid + 1);
 	}
 	else
 	{

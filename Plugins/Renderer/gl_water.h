@@ -30,7 +30,6 @@ typedef struct
 	int depthfactor;
 	int normfactor;
 	int normalmap;
-	int dudvmap;
 	int refractmap;
 	int reflectmap;
 	int depthrefrmap;
@@ -45,7 +44,6 @@ typedef struct
 	int time;
 	int normfactor;
 	int normalmap;
-	int dudvmap;
 	int refractmap;
 }underwater_program_t;
 
@@ -58,7 +56,6 @@ typedef struct
 	int time;
 	int normfactor;
 	int normalmap;
-	int dudvmap;
 	int refractmap;
 }underwatergbuffer_program_t;
 

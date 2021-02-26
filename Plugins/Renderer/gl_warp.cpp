@@ -24,6 +24,10 @@ void EmitWaterPolysWireFrame(msurface_t *fa, int direction, qboolean useProgram)
 
 	if (gl_wireframe->value)
 	{
+		R_UseGBufferProgram(GBUFFER_TRANSPARENT_ENABLED);
+		R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
+
+
 		if (fa->polys->verts[0][2] >= r_refdef->vieworg[2])
 			scale = (*currententity)->curstate.scale;
 		else
@@ -320,9 +324,6 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 
 		qglUseProgramObjectARB(0);
 	}
-
-	R_UseGBufferProgram(GBUFFER_TRANSPARENT_ENABLED);
-	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
 
 	EmitWaterPolysWireFrame(fa, direction, useProgram);
 }

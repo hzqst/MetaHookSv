@@ -34,8 +34,8 @@ typedef struct brushvertex_s
 	vec3_t	pos;
 	vec3_t	normal;
 
-	float	texcoord[3];
-	float	lightmaptexcoord[3];
+	float	texcoord[3];//texcoord[2]=1/texwidth
+	float	lightmaptexcoord[3];//lightmaptexcoord[2]=lightmaptexturenum
 	float	detailtexcoord[2];
 }brushvertex_t;
 
@@ -130,7 +130,8 @@ extern int *gDecalSurfCount;
 extern msurface_t **gDecalSurfs;
 extern decal_t *gDecalPool;
 extern decalcache_t *gDecalCache;
-
+extern int *r_detail_texid;
+extern float *r_detail_texcoord;
 //cvar
 extern cvar_t *r_wsurf_replace;
 extern cvar_t *r_wsurf_sky;
@@ -149,7 +150,8 @@ void DrawGLPoly(msurface_t *fa);
 void R_SetVBOState(int state);
 void R_ShutdownWSurf(void);
 void R_DrawDecals(qboolean bMultitexture);
-
+qboolean R_BeginDetailTexture(int texId);
+void R_EndDetailTexture(void);
 #define VBOSTATE_OFF 0
 #define VBOSTATE_NO_TEXTURE 1
 #define VBOSTATE_DIFFUSE_TEXTURE 2

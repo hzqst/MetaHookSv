@@ -4,6 +4,8 @@
 #define SSE
 #include <sselib.h>
 
+//TODO: shader table
+
 std::unordered_map<studiohdr_t *, studio_vbo_t *> g_StudioVBOTable;
 
 //engine

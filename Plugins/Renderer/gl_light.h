@@ -17,7 +17,6 @@ typedef struct
 	int lightmapTexArray;
 	int detailTex;
 	int speed;
-	int attrvert;
 }gbuffer_program_t;
 
 typedef struct

@@ -22,6 +22,7 @@ void main()
     gl_TexCoord[0] = gl_MultiTexCoord0;
 
   #endif
+
 #endif
 
 #ifdef LIGHTMAP_ENABLED
