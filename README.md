@@ -74,7 +74,9 @@ Current state : Ready to use, more feature are coming soon.
 
 7. Deferred-Shading and Per-Pixel-Lighting technique for all non-transparent objects. "unlimited" (maximum at 256 for SvEngine) dynamic lightsources are supported now. (not support with -nofbo)
 
-9. Vertex-Buffer-Object (VBO) and GPU-Light-Shading technique for studio model. With VBO enabled you will get higher framerate and lower CPU usage. You can get maximum at 6x FramePerSeconds than non-VBO mode in extreme case (200k epolys, 6 wpolys).
+9. Vertex-Buffer-Object (VBO) "Batch-Draw" optimization and GPU-PerVertex-Light-Shading technique for studio model. With VBO enabled you will get higher framerate and lower CPU usage. You can get maximum at 8x FramePerSeconds than non-VBO mode in extreme case (200k+ epolys with no FPS drop).
+
+10. Vertex-Buffer-Object (VBO) "Batch-Draw" optimization for terrain. With VBO enabled you will get higher framerate and lower CPU usage. You can get maximum at 8x FramePerSeconds than non-VBO mode in extreme case (100k+ wpolys with no FPS drop).
 
 #### Todo List
 
