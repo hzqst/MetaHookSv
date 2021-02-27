@@ -60,7 +60,7 @@ void main()
 		vFinalColor2.a = 1.0;
 	    gl_FragData[0] = vFinalColor2;
 		gl_FragData[1] = vec4(1.0, 1.0, 1.0, 1.0);
-		gl_FragData[2] = vec4(worldpos, 1.0);
+		gl_FragData[2] = worldpos;
 		gl_FragData[3] = -vNormal;
 	#else
 		gl_FragColor = vFinalColor2;
@@ -97,10 +97,10 @@ void main()
 		vFinalColor2.a = flDepth;
 
 	#ifdef GBUFFER_ENABLED
-		vFinalColor2.a = 1.0f;
+		vFinalColor2.a = 1.0;
 	    gl_FragData[0] = vFinalColor2;
 		gl_FragData[1] = vec4(1.0, 1.0, 1.0, 1.0);
-		gl_FragData[2] = vec4(worldpos, 1.0);
+		gl_FragData[2] = worldpos;
 		gl_FragData[3] = vNormal;
 	#else
 		gl_FragColor = vFinalColor2;
