@@ -64,7 +64,7 @@ Current state : Ready to use, more feature are coming soon.
 
 2. Water reflection and refraction. (Warning: this may cause a significant performance hit.)
 
-3. Per-Object Shadow. (Warning: this may cause a significant performance hit when there are too many epolys in the view.)
+3. Per-Object Shadow. (Warning: this may cause a significant performance hit when there are too many epolys in view.)
 
 4. Screen Space Ambient Occlusion (SSAO) using horizon-based ambient occlusion (HBAO). the implementation is taken from nvidia. (not support with -nofbo) (Warning: this may cause a significant performance hit when sampling radius is too large.)
 
@@ -72,23 +72,19 @@ Current state : Ready to use, more feature are coming soon.
 
 6. Fast Approximate Anti-Aliasing (FXAA) when MSAA is not available.
 
-7. Deferred-Shading and Per-Pixel-Lighting technique for all non-transparent objects. "unlimited" (maximum at 256 for SvEngine) dynamic lightsources are supported now. (not support with -nofbo)
+7. Deferred-Shading and Per-Pixel-Dynamic-Lighting for all non-transparent objects. "unlimited" (maximum at 256 for SvEngine) dynamic lightsources are supported now  with almost no cost. (not support with -nofbo)
 
-9. Vertex-Buffer-Object (VBO) "Batch-Draw" optimization and GPU-PerVertex-Light-Shading technique for studio model. With VBO enabled you will get higher framerate and lower CPU usage. You can get maximum at 8x FramePerSeconds than non-VBO mode in extreme case (200k+ epolys with no FPS drop).
+9. Vertex-Buffer-Object (VBO) "Batch-Draw" optimization and GPU-Lighting for studio model. With VBO enabled you will get higher framerate and lower CPU usage. You can get maximum at 8x FramePerSeconds than non-VBO mode in extreme case (200k+ epolys with no FPS drop).
 
-10. Vertex-Buffer-Object (VBO) "Batch-Draw" optimization for terrain. With VBO enabled you will get higher framerate and lower CPU usage. You can get maximum at 8x FramePerSeconds than non-VBO mode in extreme case (100k+ wpolys with no FPS drop).
+10. Vertex-Buffer-Object (VBO) "Batch-Draw" optimization for BSP terrain. With VBO enabled you will get higher framerate and lower CPU usage.
 
 #### Todo List
 
-1. BSP terrain rendering optmization
+1. StudioModel Decal
 
-2. Normal Texture? Texture Replacer?
+2. Ragdoll Engine
 
-3. StudioModel Decal
-
-4. Ragdoll Engine
-
-5. Particle System
+3. Particle System
 
 #### Launch Parameters / Commmandline Parameters
 
@@ -182,6 +178,8 @@ r_light_specular : specular intensity of dynamic light.
 
 r_light_specularpow : specular power of dynamic light.
 
-r_studio_vbo 1 / 0 : enable / disable VBO rendering for studio model.
+r_studio_vbo 1 / 0 : enable / disable VBO batch-optmization draw for studio model.
+
+r_wsurf_vbo 1 / 0 : enable / disable VBO batch-optmization draw for BSP terrain.
 
 r_fxaa 1 / 0  : enable / disable Fast Approximate Anti-Aliasing (FXAA) when MSAA is not available.
