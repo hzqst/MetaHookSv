@@ -266,8 +266,17 @@ void R_RotateForEntity(vec_t *origin, cl_entity_t *e)
 
 void R_DrawSpriteModel(cl_entity_t *entity)
 {
-	R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED | GBUFFER_TRANSPARENT_ENABLED);
-	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
+	//only non-transparent sprite goes handled by gbuffer
+	if ((*r_blend) < 1.0f)
+	{
+		R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED | GBUFFER_TRANSPARENT_ENABLED);
+		R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
+	}
+	else
+	{
+		R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED);
+		R_SetGBufferMask(GBUFFER_MASK_ALL);
+	}
 
 	gRefFuncs.R_DrawSpriteModel(entity);
 }
