@@ -1,4 +1,5 @@
 #include "gl_local.h"
+#include <sstream>
 
 //renderer
 qboolean drawreflect;
@@ -12,11 +13,8 @@ r_water_t *waters_free;
 r_water_t *waters_active;
 
 //shader
-SHADER_DEFINE(water);
-SHADER_DEFINE(watergbuffer);
-SHADER_DEFINE(underwater);
-SHADER_DEFINE(underwatergbuffer);
-int water_normalmap;
+
+int water_normalmap = 0;
 
 SHADER_DEFINE(drawdepth);
 
@@ -35,7 +33,69 @@ cvar_t *r_water_novis = NULL;
 cvar_t *r_water_texscale = NULL;
 cvar_t *r_water_minheight = NULL;
 
-void RotatePointAroundVector(vec3_t dst, const vec3_t dir, const vec3_t point, float degrees);
+std::unordered_map<int, water_program_t> g_WaterProgramTable;
+
+void R_UseWaterProgram(int state, water_program_t *progOutput)
+{
+	water_program_t prog = { 0 };
+
+	auto itor = g_WaterProgramTable.find(state);
+	if (itor == g_WaterProgramTable.end())
+	{
+		std::stringstream defs;
+
+		if (state & WATER_UNDERWATER_ENABLED)
+			defs << "#define UNDERWATER_ENABLED\n";
+
+		if (state & WATER_GBUFFER_ENABLED)
+			defs << "#define GBUFFER_ENABLED\n";
+
+		auto def = defs.str();
+
+		prog.program = R_CompileShaderFileEx("resource\\shader\\water_shader.vsh", NULL, "resource\\shader\\water_shader.fsh", def.c_str(), NULL, def.c_str());
+		if (prog.program)
+		{
+			SHADER_UNIFORM(prog, waterfogcolor, "waterfogcolor");
+			SHADER_UNIFORM(prog, eyepos, "eyepos");
+			SHADER_UNIFORM(prog, zmax, "zmax");
+			SHADER_UNIFORM(prog, time, "time");
+			SHADER_UNIFORM(prog, fresnel, "fresnel");
+			SHADER_UNIFORM(prog, depthfactor, "depthfactor");
+			SHADER_UNIFORM(prog, normfactor, "normfactor");
+			SHADER_UNIFORM(prog, normalmap, "normalmap");
+			SHADER_UNIFORM(prog, refractmap, "refractmap");
+			SHADER_UNIFORM(prog, reflectmap, "reflectmap");
+			SHADER_UNIFORM(prog, depthrefrmap, "depthrefrmap");
+		}
+
+		g_WaterProgramTable[state] = prog;
+	}
+	else
+	{
+		prog = itor->second;
+	}
+
+	if (prog.program)
+	{
+		qglUseProgramObjectARB(prog.program);
+
+		if (prog.normalmap != -1)
+			qglUniform1iARB(prog.normalmap, 0);
+		if (prog.refractmap != -1)
+			qglUniform1iARB(prog.refractmap, 1);
+		if (prog.reflectmap != -1)
+			qglUniform1iARB(prog.reflectmap, 2);
+		if (prog.depthrefrmap != -1)
+			qglUniform1iARB(prog.depthrefrmap, 3);
+
+		if (progOutput)
+			*progOutput = prog;
+	}
+	else
+	{
+		Sys_ErrorEx("R_UseWaterProgram: Failed to load program!");
+	}
+}
 
 void R_FreeWater(void)
 {
@@ -64,6 +124,8 @@ void R_FreeWater(void)
 		waters[i].reflectmap_ready = false;
 		waters[i].refractmap_ready = false;
 	}
+
+	g_WaterProgramTable.clear();
 }
 
 void R_ClearWater(void)
@@ -97,61 +159,6 @@ void R_InitWater(void)
 {
 	if(gl_shader_support)
 	{
-		water.program = R_CompileShaderFile("resource\\shader\\water_shader.vsh", NULL, "resource\\shader\\water_shader.fsh");
-		if (water.program)
-		{
-			SHADER_UNIFORM(water, waterfogcolor, "waterfogcolor");
-			SHADER_UNIFORM(water, eyepos, "eyepos");
-			SHADER_UNIFORM(water, time, "time");
-			SHADER_UNIFORM(water, fresnel, "fresnel");
-			SHADER_UNIFORM(water, depthfactor, "depthfactor");
-			SHADER_UNIFORM(water, normfactor, "normfactor");
-			SHADER_UNIFORM(water, normalmap, "normalmap");
-			SHADER_UNIFORM(water, refractmap, "refractmap");
-			SHADER_UNIFORM(water, reflectmap, "reflectmap");
-			SHADER_UNIFORM(water, depthrefrmap, "depthrefrmap");
-		}
-
-		watergbuffer.program = R_CompileShaderFileEx("resource\\shader\\water_shader.vsh", NULL, "resource\\shader\\water_shader.fsh",
-			"#define GBUFFER_ENABLED", NULL, "#define GBUFFER_ENABLED");
-		if (watergbuffer.program)
-		{
-			SHADER_UNIFORM(watergbuffer, waterfogcolor, "waterfogcolor");
-			SHADER_UNIFORM(watergbuffer, eyepos, "eyepos");
-			SHADER_UNIFORM(watergbuffer, time, "time");
-			SHADER_UNIFORM(watergbuffer, fresnel, "fresnel");
-			SHADER_UNIFORM(watergbuffer, depthfactor, "depthfactor");
-			SHADER_UNIFORM(watergbuffer, normfactor, "normfactor");
-			SHADER_UNIFORM(watergbuffer, normalmap, "normalmap");
-			SHADER_UNIFORM(watergbuffer, refractmap, "refractmap");
-			SHADER_UNIFORM(watergbuffer, reflectmap, "reflectmap");
-			SHADER_UNIFORM(watergbuffer, depthrefrmap, "depthrefrmap");
-		}
-
-		underwater.program = R_CompileShaderFileEx("resource\\shader\\water_shader.vsh", NULL, "resource\\shader\\water_shader.fsh",
-			"#define UNDER_WATER", NULL, "#define UNDER_WATER");
-		if (underwater.program)
-		{
-			SHADER_UNIFORM(underwater, waterfogcolor, "waterfogcolor");
-			SHADER_UNIFORM(underwater, eyepos, "eyepos");
-			SHADER_UNIFORM(underwater, time, "time");
-			SHADER_UNIFORM(underwater, normfactor, "normfactor");
-			SHADER_UNIFORM(underwater, normalmap, "normalmap");
-			SHADER_UNIFORM(underwater, refractmap, "refractmap");
-		}
-
-		underwatergbuffer.program = R_CompileShaderFileEx("resource\\shader\\water_shader.vsh", NULL, "resource\\shader\\water_shader.fsh",
-			"#define UNDER_WATER\n#define GBUFFER_ENABLED", NULL, "#define UNDER_WATER\n#define GBUFFER_ENABLED");
-		if (underwatergbuffer.program)
-		{
-			SHADER_UNIFORM(underwatergbuffer, waterfogcolor, "waterfogcolor");
-			SHADER_UNIFORM(underwatergbuffer, eyepos, "eyepos");
-			SHADER_UNIFORM(underwatergbuffer, time, "time");
-			SHADER_UNIFORM(underwatergbuffer, normfactor, "normfactor");
-			SHADER_UNIFORM(underwatergbuffer, normalmap, "normalmap");
-			SHADER_UNIFORM(underwatergbuffer, refractmap, "refractmap");
-		}
-
 		drawdepth.program = R_CompileShader(drawdepth_vscode, NULL, drawdepth_fscode, "drawdepth_shader.vsh", NULL, "drawdepth_shader.fsh");
 		if (drawdepth.program)
 		{
@@ -353,9 +360,6 @@ void R_RenderReflectView(void)
 
 	drawreflect = true;
 
-	//int saved_framecount = *r_framecount;
-	//mleaf_t *saved_oldviewleaf = *r_oldviewleaf;
-	//*r_oldviewleaf = NULL;
 	saved_cl_waterlevel = *cl_waterlevel;
 	*cl_waterlevel = 0;
 	auto saved_r_drawentities = r_drawentities->value;
@@ -372,8 +376,6 @@ void R_RenderReflectView(void)
 
 	r_drawentities->value = saved_r_drawentities;
 	*cl_waterlevel = saved_cl_waterlevel;
-	//*r_oldviewleaf = saved_oldviewleaf;
-	//*r_framecount = saved_framecount;
 
 	qglDisable(GL_CLIP_PLANE0);
 
@@ -418,9 +420,6 @@ void R_RenderRefractView(void)
 
 	drawrefract = true;
 
-	//int saved_framecount = *r_framecount;
-	//mleaf_t *saved_oldviewleaf = *r_oldviewleaf;
-	//*r_oldviewleaf = NULL;
 	saved_cl_waterlevel = *cl_waterlevel;
 	*cl_waterlevel = 0;
 	auto saved_r_drawentities = r_drawentities->value;
@@ -434,11 +433,9 @@ void R_RenderRefractView(void)
 	}
 
 	gRefFuncs.R_RenderScene();
-
+	
 	r_drawentities->value = saved_r_drawentities;
 	*cl_waterlevel = saved_cl_waterlevel;
-	//*r_oldviewleaf = saved_oldviewleaf;
-	//*r_framecount = saved_framecount;
 
 	qglDisable(GL_CLIP_PLANE0);
 

@@ -1,5 +1,3 @@
-//Water Fragment Shader by hzqst
-
 uniform vec4 waterfogcolor;
 uniform vec3 eyepos;
 uniform float time;
@@ -50,7 +48,7 @@ void main()
 
 	vec4 vDepthColor = texture2D(depthrefrmap, vBaseTexCoord);
 
-#ifdef UNDER_WATER
+#ifdef UNDERWATER_ENABLED
 
 		//lerp waterfog color and refraction color
 		float flWaterColorAlpha = clamp(waterfogcolor.a, 0.01, 0.9);

@@ -150,7 +150,6 @@ typedef struct
 {
 	//common
 	int (*R_GetDrawPass)(void);
-	int (*R_GetSupportExtension)(void);
 	//refdef
 	void (*R_PushRefDef)(void);
 	void (*R_PopRefDef)(void);

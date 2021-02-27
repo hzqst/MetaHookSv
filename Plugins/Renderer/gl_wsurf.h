@@ -132,6 +132,8 @@ extern decal_t *gDecalPool;
 extern decalcache_t *gDecalCache;
 extern int *r_detail_texid;
 extern float *r_detail_texcoord;
+extern float *r_polygon_offset;;
+
 //cvar
 extern cvar_t *r_wsurf_replace;
 extern cvar_t *r_wsurf_sky;

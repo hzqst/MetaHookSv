@@ -1,4 +1,3 @@
-//Water Vertex Shader by hzqst
 varying vec3 worldpos;
 varying vec4 projpos;
 

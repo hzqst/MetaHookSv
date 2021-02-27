@@ -183,24 +183,6 @@ int R_GetDrawPass(void)
 	return r_draw_normal;
 }
 
-int R_GetSupportExtension(void)
-{
-	int ext = 0;
-
-	if(s_BackBufferFBO.s_hBackBufferFBO)
-		ext |= r_ext_fbo;
-	if(s_MSAAFBO.s_hBackBufferFBO)
-		ext |= r_ext_msaa;
-	if(water.program)
-		ext |= r_ext_water;
-	if(gl_shader_support)
-		ext |= r_ext_shader;
-	if(shadow.program)
-		ext |= r_ext_shadow;
-
-	return ext;
-}
-
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
 	if(draw3dsky)
@@ -1575,11 +1557,11 @@ void R_PreRenderView()
 	{
 		(*c_alias_polys) = 0;
 		(*c_brush_polys) = 0;
-		if (water.program && r_water && r_water->value)
+		if (r_water && r_water->value && waters_active)
 		{
 			R_RenderWaterView();
 		}
-		if (shadow.program && r_shadow && r_shadow->value)
+		if (r_shadow && r_shadow->value)
 		{
 			R_RenderShadowMap();
 		}

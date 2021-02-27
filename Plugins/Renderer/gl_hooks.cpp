@@ -1089,6 +1089,11 @@ void R_FillAddress(void)
 		Sig_AddrNotFound(r_detail_texid);
 		r_detail_texid = *(int **)(addr + 7);
 		r_detail_texcoord = (float *)(r_detail_texid + 1);
+
+#define R_POLYGON_OFFSET_SIG_SVENGINE "\x83\xEC\x08\xD9\x15\x2A\x2A\x2A\x2A\xD9"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawWorld, 0x100, R_POLYGON_OFFSET_SIG_SVENGINE, sizeof(R_POLYGON_OFFSET_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(r_polygon_offset);
+		r_polygon_offset = *(float **)(addr + 5);
 	}
 	else
 	{

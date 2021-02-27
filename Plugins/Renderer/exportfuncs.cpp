@@ -116,7 +116,6 @@ ref_export_t gRefExports =
 {
 	//common
 	R_GetDrawPass,
-	R_GetSupportExtension,
 	//refdef
 	R_PushRefDef,
 	R_PopRefDef,

@@ -303,7 +303,6 @@ void R_PushRefDef(void);
 void R_UpdateRefDef(void);
 void R_PopRefDef(void);
 int R_GetDrawPass(void);
-int R_GetSupportExtension(void);
 
 void GL_FreeTexture(gltexture_t *glt);
 void GL_PushMatrix(void);

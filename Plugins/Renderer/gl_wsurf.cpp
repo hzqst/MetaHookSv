@@ -9,6 +9,8 @@ r_worldsurf_t r_wsurf;
 cvar_t *r_wsurf_replace;
 cvar_t *r_wsurf_vbo;
 
+int r_wsurf_drawcall = 0;
+
 std::unordered_map<int, wsurf_program_t> g_WSurfProgramTable;
 
 void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
@@ -66,11 +68,9 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 	}
 	else
 	{
-		Sys_ErrorEx("R_UseGBufferProgram: Failed to load program!");
+		Sys_ErrorEx("R_UseWSurfProgram: Failed to load program!");
 	}
 }
-
-int r_wsurf_drawcall = 0;
 
 void R_FreeVertexBuffer(void)
 {
@@ -1510,34 +1510,27 @@ void R_RecursiveWorldNodeVBO(mnode_t *node)
 		else if (dot > BACKFACE_EPSILON)
 			side = 0;
 
-		if (plane->type == PLANE_Z && side == SURF_PLANEBACK)
+		for (; c; c--, surf++)
 		{
+			if (surf->visframe != (*r_framecount))
+				continue;
 
-		}
-		else
-		{
-			for (; c; c--, surf++)
+			if (!(surf->flags & SURF_UNDERWATER) && ((dot < 0) ^ !!(surf->flags & SURF_PLANEBACK)))
+				continue;
+
+			if (surf->flags & SURF_DRAWSKY)
 			{
-				if (surf->visframe != (*r_framecount))
-					continue;
-
-				if (!(surf->flags & SURF_UNDERWATER) && ((dot < 0) ^ !!(surf->flags & SURF_PLANEBACK)))
-					continue;
-
-				if (surf->flags & SURF_DRAWSKY)
-				{
-					surf->texturechain = (*skychain);
-					(*skychain) = surf;
-				}
-				else if (surf->flags & SURF_DRAWTURB)
-				{
-					surf->texturechain = (*waterchain);
-					(*waterchain) = surf;
-				}
-				else
-				{
-					R_DrawSequentialPolyVBO(surf);
-				}
+				surf->texturechain = (*skychain);
+				(*skychain) = surf;
+			}
+			else if (surf->flags & SURF_DRAWTURB)
+			{
+				surf->texturechain = (*waterchain);
+				(*waterchain) = surf;
+			}
+			else
+			{
+				R_DrawSequentialPolyVBO(surf);
 			}
 		}
 	}
@@ -1553,7 +1546,7 @@ void R_DrawWorld(void)
 	{
 		qglEnable(GL_POLYGON_OFFSET_FILL);
 		qglPolygonOffset(1.0f, 1.0f);
-		//r_polygon_offset = 1.0;
+		(*r_polygon_offset) = 1.0;
 	}
 
 	cl_entity_t tempent = { 0 };
@@ -1684,6 +1677,8 @@ void R_DrawWorld(void)
 			(*c_brush_polys) += texchain.iFaceCount;
 		}
 
+		qglUseProgramObjectARB(0);
+
 		R_SetVBOState(VBOSTATE_OFF);
 
 		qglDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
@@ -1727,6 +1722,6 @@ void R_DrawWorld(void)
 	if (gl_wireframe->value)
 	{
 		qglDisable(GL_POLYGON_OFFSET_FILL);
-		//r_polygon_offset = 0.0;
+		(*r_polygon_offset) = 0.0;
 	}
 }

@@ -12,52 +12,11 @@ typedef struct
 	int fresnel;
 	int depthfactor;
 	int normfactor;
-	int normalmap;
-	int dudvmap;
-	int refractmap;
-	int reflectmap;	
-	int depthrefrmap;
+	int normalmap;//0
+	int refractmap;//1
+	int reflectmap;//2
+	int depthrefrmap;//3
 }water_program_t;
-
-typedef struct
-{
-	int program;
-	int waterfogcolor;
-	int eyepos;
-	int zmax;
-	int time;
-	int fresnel;
-	int depthfactor;
-	int normfactor;
-	int normalmap;
-	int refractmap;
-	int reflectmap;
-	int depthrefrmap;
-}watergbuffer_program_t;
-
-typedef struct
-{
-	int program;
-	int waterfogcolor;
-	int eyepos;
-	int zmax;
-	int time;
-	int normfactor;
-	int normalmap;
-	int refractmap;
-}underwater_program_t;
-
-typedef struct
-{
-	int program;
-	int waterfogcolor;
-	int eyepos;
-	int zmax;
-	int time;
-	int normfactor;
-	int normalmap;
-	int refractmap;
-}underwatergbuffer_program_t;
 
 typedef struct
 {
@@ -99,11 +58,6 @@ extern r_water_t *waters_free;
 extern r_water_t *waters_active;
 
 //shader
-extern SHADER_DEFINE(water);
-extern SHADER_DEFINE(watergbuffer);
-extern SHADER_DEFINE(underwater);
-extern SHADER_DEFINE(underwatergbuffer);
-
 extern int water_normalmap;
 
 extern SHADER_DEFINE(drawdepth);
@@ -138,3 +92,7 @@ void R_ClearWater(void);
 void R_RenderWaterView(void);
 void R_EnableClip(qboolean isdrawworld);
 void R_FreeDeadWaters(void);
+void R_UseWaterProgram(int state, water_program_t *progOutput);
+
+#define WATER_UNDERWATER_ENABLED		1
+#define WATER_GBUFFER_ENABLED			2
