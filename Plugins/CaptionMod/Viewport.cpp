@@ -37,6 +37,8 @@ CViewport::CViewport(void) : Panel(NULL, "CaptionViewport")
 	SetMouseInputEnabled(false);
 	SetKeyBoardInputEnabled(false);
 	SetProportional(true);
+	m_pSubtitle = NULL;
+	m_szLevelName[0] = 0;
 }
 
 CViewport::~CViewport(void)
@@ -53,6 +55,9 @@ CViewport::~CViewport(void)
 
 CDictionary *CViewport::FindDictionary(const char *szValue)
 {
+	if (!m_Dictionary.Count())
+		return NULL;
+
 	int hash = 0;
 	hash_item_t *item;
 	int count;
@@ -82,6 +87,9 @@ CDictionary *CViewport::FindDictionary(const char *szValue)
 
 CDictionary *CViewport::FindDictionary(const char *szValue, dict_t Type)
 {
+	if (!m_Dictionary.Count())
+		return NULL;
+
 	int hash = 0;
 	hash_item_t *item;
 	int count;
@@ -111,6 +119,9 @@ CDictionary *CViewport::FindDictionary(const char *szValue, dict_t Type)
 
 CDictionary *CViewport::FindDictionaryRegex(const std::string &str, dict_t Type, std::smatch &result)
 {
+	if (!m_Dictionary.Count())
+		return NULL;
+
 	for(int i = 0; i < m_Dictionary.Count(); ++i)
 	{
 		if (m_Dictionary[i]->m_Type == Type)
@@ -536,10 +547,73 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 	}
 }
 
-void CViewport::LoadDictionary(void)
+void CViewport::LoadCustomDictionary(const char *dict_name)
 {
 	CSV::CSVDocument doc;
-	CSV::CSVDocument::row_index_type row_count;
+	CSV::CSVDocument::row_index_type row_count = 0;
+
+	//Parse from the document
+
+	try
+	{
+		row_count = doc.load_file(dict_name);
+	}
+	catch (std::exception &err)
+	{
+		gEngfuncs.Con_Printf("LoadCustomDictionary: %s", err.what());
+	}
+
+	if (row_count < 2)
+		return;
+
+	IScheme *ischeme = scheme()->GetIScheme(GetScheme());
+
+	if (!ischeme)
+		return;
+
+	Color defaultColor = ischeme->GetColor("BaseText", Color(255, 255, 255, 200));
+
+	int nRowCount = row_count;
+
+	//parse the dictionary line by line...
+	for (int i = 1; i < nRowCount; ++i)
+	{
+		CSV::CSVDocument::row_type row = doc.get_row(i);
+
+		if (row.size() < 1)
+			continue;
+
+		const char *title = row[0].c_str();
+
+		if (!title || !title[0])
+			continue;
+
+		CDictionary *Dict = new CDictionary;
+
+		Dict->Load(row, defaultColor, ischeme);
+
+		m_Dictionary.AddToTail(Dict);
+
+		AddDictionaryHash(Dict, Dict->m_szTitle);
+	}
+}
+
+void CViewport::LinkDictionary(void)
+{
+	for (int i = 0; i < m_Dictionary.Count(); ++i)
+	{
+		CDictionary *Dict = m_Dictionary[i];
+		if (Dict->m_szNext[0])
+		{
+			Dict->m_pNext = FindDictionary(Dict->m_szNext);
+		}
+	}
+}
+
+void CViewport::LoadBaseDictionary(void)
+{
+	CSV::CSVDocument doc;
+	CSV::CSVDocument::row_index_type row_count = 0;
 
 	//Parse from the document
 
@@ -549,7 +623,7 @@ void CViewport::LoadDictionary(void)
 	}
 	catch(std::exception &err)
 	{
-		Sys_ErrorEx("%s\n%s", "LoadDictionary: ", err.what());
+		Sys_ErrorEx("LoadBaseDictionary: %s", err.what());
 	}
 
 	if(row_count < 2)
@@ -593,18 +667,7 @@ void CViewport::LoadDictionary(void)
 
 		AddDictionaryHash(Dict, Dict->m_szTitle);
 	}
-
-	//Link the dictionaries
-
-	for(int i = 0; i < m_Dictionary.Count(); ++i)
-	{
-		CDictionary *Dict = m_Dictionary[i];
-		if(Dict->m_szNext[0])
-		{
-			Dict->m_pNext = FindDictionary(Dict->m_szNext);
-		}
-	}
-
+	
 }
 
 //KeyBinding Name(jump) -> Key Name(SPACE)
@@ -822,16 +885,33 @@ void CViewport::SetParent(VPANEL vPanel)
 
 void CViewport::Think(void)
 {
+	if (!gEngfuncs.pfnGetLevelName() || !gEngfuncs.pfnGetLevelName()[0])
+		return;
+
+	if (0 != strcmp(gEngfuncs.pfnGetLevelName(), m_szLevelName))
+	{
+		std::string name = gEngfuncs.pfnGetLevelName();
+		name = name.substr(0, name.length() - 4);
+		name += "_dictionary.csv";
+
+		LoadCustomDictionary(name.c_str());
+		LinkDictionary();
+
+		strcpy(m_szLevelName, gEngfuncs.pfnGetLevelName());
+	}
 }
 
 void CViewport::VidInit(void)
 {
+	m_szLevelName[0] = 0;
+	LoadBaseDictionary();
+	LinkDictionary();
+
 	m_HudMessage.VidInit();
 }
 
 void CViewport::Init(void)
 {
-	LoadDictionary();
 	m_HudMessage.Init();
 }
 

@@ -68,6 +68,7 @@ void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->Initialize = Initialize;
 	pExportFunc->HUD_Init = HUD_Init;
 	pExportFunc->HUD_VidInit = HUD_VidInit;
+	pExportFunc->HUD_Frame = HUD_Frame;
 
 	g_hClientDll = GetModuleHandle("client.dll");
 

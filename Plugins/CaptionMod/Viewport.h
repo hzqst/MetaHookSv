@@ -93,7 +93,9 @@ public:
 	void SetParent(vgui::VPANEL vPanel);
 	void ActivateClientUI(void);
 	void HideClientUI(void);
-	void LoadDictionary(void);
+	void LoadBaseDictionary(void);
+	void LoadCustomDictionary(const char *dict_name);
+	void LinkDictionary(void);
 
 	//Subtitle Interface
 	void StartSubtitle(CDictionary *dict);
@@ -112,6 +114,7 @@ private:
 	SubtitlePanel *m_pSubtitle;
 	CUtlVector<CDictionary *> m_Dictionary;	
 	CUtlVector<hash_item_t> m_StringsHashTable;
+	char m_szLevelName[256];
 };
 
 extern CViewport *g_pViewPort;

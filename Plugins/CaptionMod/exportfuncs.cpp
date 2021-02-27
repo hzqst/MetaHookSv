@@ -45,6 +45,13 @@ int HUD_VidInit(void)
 	return result;
 }
 
+void HUD_Frame(double time)
+{
+	g_pViewPort->Think();
+
+	gExportfuncs.HUD_Frame(time);
+}
+
 void Cap_Version_f(void)
 {
 	gEngfuncs.Con_Printf("%s\n", CAPTION_MOD_VERSION);

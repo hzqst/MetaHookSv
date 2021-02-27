@@ -24,6 +24,7 @@ void MSG_Init(void);
 int Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion);
 void HUD_Init(void);
 int HUD_VidInit(void);
+void HUD_Frame(double time);
 client_textmessage_t *pfnTextMessageGet(const char *pName);
 void Engine_FillAddress(void);
 void Engine_InstallHook(void);
