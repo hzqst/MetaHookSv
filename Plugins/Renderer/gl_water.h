@@ -6,6 +6,7 @@ typedef struct
 {
 	int program;
 	int waterfogcolor;
+	int entitymatrix;
 	int eyepos;
 	int zmax;
 	int time;

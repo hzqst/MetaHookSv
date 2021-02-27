@@ -1,3 +1,7 @@
+#ifdef ROTATE_ENABLED
+uniform mat4 entitymatrix;
+#endif
+
 varying vec4 worldpos;
 varying vec4 normal;
 varying vec4 color;
@@ -8,9 +12,19 @@ uniform float speed;
 
 void main()
 {
-  worldpos = vec4(gl_Vertex.xyz / gl_Vertex.w, 1.0);
-  normal = vec4(normalize(gl_Normal), 1.0);
-  
+  #ifdef ROTATE_ENABLED
+
+  worldpos = entitymatrix * gl_Vertex;
+  normal = vec4(gl_Normal, 0.0);
+  normal = normalize(entitymatrix * normal);
+
+  #else
+
+  worldpos = gl_Vertex;
+  normal = vec4(gl_Normal, 0.0);
+
+  #endif
+
 #ifdef DIFFUSE_ENABLED
   
   #ifdef SCROLL_ENABLED

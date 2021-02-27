@@ -57,6 +57,9 @@ void R_UseGBufferProgram(int state, gbuffer_program_t *progOutput)
 		if (state & GBUFFER_SCROLL_ENABLED)
 			defs << "#define SCROLL_ENABLED\n";
 
+		if (state & GBUFFER_ROTATE_ENABLED)
+			defs << "#define ROTATE_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("resource\\shader\\gbuffer_shader.vsh", NULL, "resource\\shader\\gbuffer_shader.fsh", def.c_str(), NULL, def.c_str());
@@ -67,6 +70,7 @@ void R_UseGBufferProgram(int state, gbuffer_program_t *progOutput)
 			SHADER_UNIFORM(prog, lightmapTexArray, "lightmapTexArray");
 			SHADER_UNIFORM(prog, detailTex, "detailTex");
 			SHADER_UNIFORM(prog, speed, "speed");
+			SHADER_UNIFORM(prog, entitymatrix, "entitymatrix");
 		}
 
 		g_GBufferProgramTable[state] = prog;
@@ -88,6 +92,13 @@ void R_UseGBufferProgram(int state, gbuffer_program_t *progOutput)
 			qglUniform1iARB(prog.lightmapTex, 1);
 		if (prog.detailTex != -1)
 			qglUniform1iARB(prog.detailTex, 2);
+		if (prog.entitymatrix != -1)
+		{
+			if(r_rotate_entity)
+				qglUniformMatrix4fvARB(prog.entitymatrix, 1, false, r_rotate_entity_matrix);
+			else
+				qglUniformMatrix4fvARB(prog.entitymatrix, 1, false, r_identity_matrix);
+		}
 
 		if (progOutput)
 			*progOutput = prog;
@@ -118,6 +129,7 @@ void R_InitLight(void)
 		{
 			SHADER_UNIFORM(dlight_spot, positionTex, "positionTex");
 			SHADER_UNIFORM(dlight_spot, normalTex, "normalTex");
+			SHADER_UNIFORM(dlight_spot, worldmatrix, "worldmatrix");
 			SHADER_UNIFORM(dlight_spot, viewpos, "viewpos");
 			SHADER_UNIFORM(dlight_spot, lightdir, "lightdir");
 			SHADER_UNIFORM(dlight_spot, lightpos, "lightpos");
@@ -136,6 +148,7 @@ void R_InitLight(void)
 		{
 			SHADER_UNIFORM(dlight_point, positionTex, "positionTex");
 			SHADER_UNIFORM(dlight_point, normalTex, "normalTex");
+			SHADER_UNIFORM(dlight_point, worldmatrix, "worldmatrix");
 			SHADER_UNIFORM(dlight_point, viewpos, "viewpos");
 			SHADER_UNIFORM(dlight_point, lightpos, "lightpos");
 			SHADER_UNIFORM(dlight_point, lightcolor, "lightcolor");
@@ -339,9 +352,9 @@ void R_EndRenderGBuffer(void)
 			qglUseProgramObjectARB(dlight_spot.program);
 			qglUniform1iARB(dlight_spot.positionTex, 0);
 			qglUniform1iARB(dlight_spot.normalTex, 1);
-			qglUniform3fARB(dlight_spot.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
-			qglUniform3fARB(dlight_spot.lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2]);
-			qglUniform3fARB(dlight_spot.lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2]);
+			qglUniform4fARB(dlight_spot.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0f);
+			qglUniform4fARB(dlight_spot.lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2], 0.0f);
+			qglUniform4fARB(dlight_spot.lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2], 1.0f);
 			qglUniform3fARB(dlight_spot.lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
 			qglUniform1fARB(dlight_spot.lightcone, r_flashlight_cone->value);
 			qglUniform1fARB(dlight_spot.lightradius, r_flashlight_distance->value);
@@ -349,6 +362,7 @@ void R_EndRenderGBuffer(void)
 			qglUniform1fARB(dlight_spot.lightdiffuse, r_light_diffuse->value);
 			qglUniform1fARB(dlight_spot.lightspecular, r_light_specular->value);
 			qglUniform1fARB(dlight_spot.lightspecularpow, r_light_specularpow->value);
+			qglUniformMatrix4fvARB(dlight_spot.worldmatrix, 1, false, r_world_matrix);
 
 			R_DrawHUDQuad(glwidth, glheight);
 		}
@@ -362,14 +376,15 @@ void R_EndRenderGBuffer(void)
 			qglUseProgramObjectARB(dlight_point.program);
 			qglUniform1iARB(dlight_point.positionTex, 0);
 			qglUniform1iARB(dlight_point.normalTex, 1);
-			qglUniform3fARB(dlight_point.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
-			qglUniform3fARB(dlight_point.lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2]);
+			qglUniform4fARB(dlight_point.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0f);
+			qglUniform4fARB(dlight_point.lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2], 1.0f);
 			qglUniform3fARB(dlight_point.lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
 			qglUniform1fARB(dlight_point.lightradius, dl->radius);
 			qglUniform1fARB(dlight_point.lightambient, r_light_ambient->value);
 			qglUniform1fARB(dlight_point.lightdiffuse, r_light_diffuse->value);
 			qglUniform1fARB(dlight_point.lightspecular, r_light_specular->value);
 			qglUniform1fARB(dlight_point.lightspecularpow, r_light_specularpow->value);
+			qglUniformMatrix4fvARB(dlight_point.worldmatrix, 1, false, r_world_matrix);
 
 			R_DrawHUDQuad(glwidth, glheight);
 		}

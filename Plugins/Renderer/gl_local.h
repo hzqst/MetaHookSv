@@ -74,6 +74,7 @@ extern vec_t *vright;
 extern vec_t *r_origin;
 extern vec_t *modelorg;
 extern vec_t *r_entorigin;
+extern float *r_world_matrix;
 
 extern int *r_framecount;
 extern int *r_visframecount;
@@ -235,6 +236,7 @@ void R_RecursiveWorldNode(mnode_t *node);
 void R_DrawSequentialPoly(msurface_t *s, int face);
 void R_BlendLightmaps(void);
 void R_RenderBrushPoly(msurface_t *fa);
+void R_RotateForEntity(float *origin, cl_entity_t *ent);
 float *R_GetAttachmentPoint(int entity, int attachment);
 void R_DrawBrushModel(cl_entity_t *entity);
 void R_DrawSpriteModel(cl_entity_t *entity);
@@ -319,5 +321,9 @@ void CL_ScreenShot_f(void);
 void R_InitGLHUD(void);
 
 extern mplane_t custom_frustum[4];
+extern float r_identity_matrix[16];
+
+extern float r_rotate_entity_matrix[16];
+extern bool r_rotate_entity;
 
 #define BUFFER_OFFSET(i) ((unsigned int *)NULL + (i))

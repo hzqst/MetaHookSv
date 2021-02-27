@@ -1,5 +1,5 @@
 uniform vec4 waterfogcolor;
-uniform vec3 eyepos;
+uniform vec4 eyepos;
 uniform float time;
 uniform float fresnel;
 uniform float depthfactor;
@@ -8,8 +8,9 @@ uniform sampler2D normalmap;
 uniform sampler2D refractmap;
 uniform sampler2D reflectmap;
 uniform sampler2D depthrefrmap;
-varying vec3 worldpos;
+
 varying vec4 projpos;
+varying vec4 worldpos;
 
 void main()
 {
@@ -29,7 +30,7 @@ void main()
 	vec2 vBaseTexCoord = projpos.xy / projpos.w * 0.5 + 0.5;
 
 	//fresnel factor
-	vec3 vEyeVect = eyepos - worldpos;
+	vec3 vEyeVect = eyepos.xyz - worldpos.xyz;
 	float dist = length(vEyeVect);
 	float sinX = abs(vEyeVect.z) / (dist + 0.001);
 	float fresnelX = asin(sinX) / (0.5 * 3.14159);

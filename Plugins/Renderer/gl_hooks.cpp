@@ -5,6 +5,8 @@
 
 #define R_BEGINDETAILTEXTURE_SVENGINE "\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x73\x18\xE8"
 
+#define R_ROTATEFORENTITY_SVENGINE "\x83\xEC\x2A\x8B\x2A\x24\x2A\x8B\x2A\x24\x2A\xD9\x00"
+
 #define R_CLEAR_SIG "\xD9\x05\x2A\x2A\x2A\x2A\xDC\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0"
 #define R_CLEAR_SIG2 "\x8B\x15\x2A\x2A\x2A\x2A\x33\xC0\x83\xFA\x01\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xDC\x1D\x2A\x2A\x2A\x2A\x83\xC4\x04\xDF\xE0"
 #define R_CLEAR_SIG_NEW "\x8B\x15\x2A\x2A\x2A\x2A\x33\xC0\x83\xFA\x01\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xDC\x1D\x2A\x2A\x2A\x2A\x83\xC4\x04"
@@ -373,6 +375,10 @@ void R_FillAddress(void)
 		addr += sizeof(R_BEGINDETAILTEXTURE_SVENGINE) - 1;
 		addr --;
 		gRefFuncs.R_BeginDetailTexture = (int(*)(int))GetCallAddress(addr);
+
+		gRefFuncs.R_RotateForEntity = (void(*)(float *,cl_entity_t *))Search_Pattern(R_ROTATEFORENTITY_SVENGINE);
+		Sig_FuncNotFound(R_RotateForEntity);
+
 	}
 	else if (g_dwEngineBuildnum >= 5953)
 	{
@@ -1094,6 +1100,11 @@ void R_FillAddress(void)
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawWorld, 0x100, R_POLYGON_OFFSET_SIG_SVENGINE, sizeof(R_POLYGON_OFFSET_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(r_polygon_offset);
 		r_polygon_offset = *(float **)(addr + 5);
+
+#define R_WORLD_MATRIX_SIG_SVENGINE "\xFF\x15\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x68\xA6\x0B\x00\x00"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x600, R_WORLD_MATRIX_SIG_SVENGINE, sizeof(R_WORLD_MATRIX_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(r_world_matrix);
+		r_world_matrix = *(float **)(addr + 7);
 	}
 	else
 	{
@@ -1380,4 +1391,6 @@ void R_InstallHook(void)
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_AddDynamicLights, R_AddDynamicLights, (void *&)gRefFuncs.R_AddDynamicLights);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_StudioRenderFinal, R_StudioRenderFinal, (void *&)gRefFuncs.R_StudioRenderFinal);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_GLStudioDrawPoints, R_GLStudioDrawPoints, (void *&)gRefFuncs.R_GLStudioDrawPoints);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_RotateForEntity, R_RotateForEntity, (void *&)gRefFuncs.R_RotateForEntity);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawBrushModel, R_DrawBrushModel, (void *&)gRefFuncs.R_DrawBrushModel);
 }

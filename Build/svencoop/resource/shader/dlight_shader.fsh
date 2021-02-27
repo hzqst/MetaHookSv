@@ -1,10 +1,8 @@
 #ifdef LIGHT_PASS
+
 uniform sampler2D positionTex;
 uniform sampler2D normalTex;
 
-uniform vec3 viewpos;
-uniform vec3 lightdir;
-uniform vec3 lightpos;
 uniform vec3 lightcolor;
 uniform float lightcone;
 uniform float lightradius;
@@ -12,6 +10,11 @@ uniform float lightambient;
 uniform float lightdiffuse;
 uniform float lightspecular;
 uniform float lightspecularpow;
+
+uniform vec4 viewpos;
+uniform vec4 lightdir;
+uniform vec4 lightpos;
+
 #endif
 
 #ifdef FINAL_PASS
@@ -31,7 +34,7 @@ vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal)
  
     if (DiffuseFactor > 0.0) {
         DiffuseColor = vec4(lightcolor * lightdiffuse * DiffuseFactor, 1.0);
-        vec3 VertexToEye = normalize(viewpos - World);
+        vec3 VertexToEye = normalize(viewpos.xyz - World);
         vec3 LightReflect = normalize(reflect(LightDirection, Normal));
         float SpecularFactor = dot(VertexToEye, LightReflect);
         if (SpecularFactor > 0.0) {
@@ -45,7 +48,7 @@ vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal)
 
 vec4 CalcPointLight(vec3 World, vec3 Normal)
 {
-    vec3 LightDirection = World - lightpos;
+    vec3 LightDirection = World - lightpos.xyz;
     float Distance = length(LightDirection);
     LightDirection = normalize(LightDirection);
  
@@ -59,8 +62,8 @@ vec4 CalcPointLight(vec3 World, vec3 Normal)
 
 vec4 CalcSpotLight(vec3 World, vec3 Normal)
 {
-    vec3 LightToPixel = normalize(World - lightpos);
-    float SpotFactor = dot(LightToPixel, lightdir);
+    vec3 LightToPixel = normalize(World - lightpos.xyz);
+    float SpotFactor = dot(LightToPixel, lightdir.xyz);
     if (SpotFactor > lightcone) {
         vec4 Color = CalcPointLight(World, Normal);
         return Color * (1.0 - (1.0 - SpotFactor) * 1.0/(1.0 - lightcone));
@@ -76,10 +79,6 @@ void main()
     vec4 normalColor = texture2D(normalTex, gl_TexCoord[0].xy);
 
     vec3 worldpos = positionColor.xyz;
-    //worldpos.x *= 1024.0;
-    //worldpos.y *= 1024.0;
-   // worldpos.z *= 1024.0;
-
     vec3 normal = normalColor.xyz;
     
 #ifdef LIGHT_PASS_SPOT

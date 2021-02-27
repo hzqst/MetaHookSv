@@ -17,6 +17,7 @@ typedef struct
 	int lightmapTexArray;
 	int detailTex;
 	int speed;
+	int entitymatrix;
 }gbuffer_program_t;
 
 typedef struct
@@ -24,6 +25,7 @@ typedef struct
 	int program;
 	int positionTex;
 	int normalTex;
+	int worldmatrix;
 	int viewpos;
 	int lightdir;
 	int lightpos;
@@ -41,6 +43,7 @@ typedef struct
 	int program;
 	int positionTex;
 	int normalTex;
+	int worldmatrix;
 	int viewpos;
 	int lightpos;
 	int lightcolor;
@@ -80,3 +83,4 @@ void R_UseGBufferProgram(int state, gbuffer_program_t *progOutput);
 #define GBUFFER_LIGHTMAP_ARRAY_ENABLED	8
 #define GBUFFER_TRANSPARENT_ENABLED		16
 #define GBUFFER_SCROLL_ENABLED			32
+#define GBUFFER_ROTATE_ENABLED			64

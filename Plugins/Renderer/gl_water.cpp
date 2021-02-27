@@ -57,6 +57,7 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 		{
 			SHADER_UNIFORM(prog, waterfogcolor, "waterfogcolor");
 			SHADER_UNIFORM(prog, eyepos, "eyepos");
+			SHADER_UNIFORM(prog, entitymatrix, "entitymatrix");
 			SHADER_UNIFORM(prog, zmax, "zmax");
 			SHADER_UNIFORM(prog, time, "time");
 			SHADER_UNIFORM(prog, fresnel, "fresnel");
@@ -87,6 +88,13 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 			qglUniform1iARB(prog.reflectmap, 2);
 		if (prog.depthrefrmap != -1)
 			qglUniform1iARB(prog.depthrefrmap, 3);
+		if (prog.entitymatrix != -1)
+		{
+			if (r_rotate_entity)
+				qglUniformMatrix4fvARB(prog.entitymatrix, 1, false, r_rotate_entity_matrix);
+			else
+				qglUniformMatrix4fvARB(prog.entitymatrix, 1, false, r_identity_matrix);
+		}
 
 		if (progOutput)
 			*progOutput = prog;

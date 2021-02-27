@@ -50,6 +50,7 @@ vec_t *vright;
 vec_t *r_origin;
 vec_t *modelorg;
 vec_t *r_entorigin;
+float *r_world_matrix;
 
 int *r_framecount;
 int *r_visframecount;
@@ -79,6 +80,15 @@ int *gl_msaa_fbo = 0;
 int *gl_backbuffer_fbo = 0;
 int *gl_mtexable = 0;
 qboolean *mtexenabled = 0;
+
+float r_identity_matrix[16] = {
+	1.0f, 0.0f, 0.0f, 0.0f,
+	0.0f, 1.0f, 0.0f, 0.0f,
+	0.0f, 0.0f, 1.0f, 0.0f,
+	0.0f, 0.0f, 0.0f, 1.0f };
+
+float r_rotate_entity_matrix[16];
+bool r_rotate_entity = false;
 
 int glx = 0;
 int gly = 0;
@@ -237,11 +247,21 @@ void R_RotateForEntity(vec_t *origin, cl_entity_t *e)
 		}
 	}
 
+	qglPushMatrix();
+	qglLoadIdentity();
 	qglTranslatef(modelpos[0], modelpos[1], modelpos[2]);
-
 	qglRotatef(angles[1], 0, 0, 1);
 	qglRotatef(angles[0], 0, 1, 0);
 	qglRotatef(angles[2], 1, 0, 0);
+	qglGetFloatv(GL_MODELVIEW_MATRIX, r_rotate_entity_matrix);
+	qglPopMatrix();
+
+	qglTranslatef(modelpos[0], modelpos[1], modelpos[2]);
+	qglRotatef(angles[1], 0, 0, 1);
+	qglRotatef(angles[0], 0, 1, 0);
+	qglRotatef(angles[2], 1, 0, 0);
+
+	r_rotate_entity = true;
 }
 
 void R_DrawSpriteModel(cl_entity_t *entity)
@@ -687,6 +707,8 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 void R_DrawBrushModel(cl_entity_t *entity)
 {
 	gRefFuncs.R_DrawBrushModel(entity);
+
+	r_rotate_entity = false;
 }
 
 void R_DrawViewModel(void)

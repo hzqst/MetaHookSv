@@ -9,8 +9,11 @@ uniform sampler2D diffuseTex;
     #ifdef LIGHTMAP_ARRAY_ENABLED
 
     uniform sampler2DArray lightmapTexArray;
+
     #else
+
     uniform sampler2D lightmapTex;
+    
     #endif
 
 #endif

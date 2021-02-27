@@ -1019,16 +1019,21 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 
 		r_wsurf.bDetailTexture = R_BeginDetailTexture(t->gl_texturenum);
 
+		int GBufferProgramState = GBUFFER_DIFFUSE_ENABLED | GBUFFER_LIGHTMAP_ENABLED;
+
 		if (r_wsurf.bDetailTexture)
 		{
-			R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED | GBUFFER_LIGHTMAP_ENABLED | GBUFFER_DETAILTEXTURE_ENABLED);
-			R_SetGBufferMask(GBUFFER_MASK_ALL);
+			GBufferProgramState |= GBUFFER_DETAILTEXTURE_ENABLED;
 		}
-		else
+
+		if (r_rotate_entity)
 		{
-			R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED | GBUFFER_LIGHTMAP_ENABLED);
-			R_SetGBufferMask(GBUFFER_MASK_ALL);
+			GBufferProgramState |= GBUFFER_ROTATE_ENABLED;
 		}
+
+		R_UseGBufferProgram(GBufferProgramState);
+
+		R_SetGBufferMask(GBUFFER_MASK_ALL);
 
 		if (s->flags & SURF_DRAWTILED)
 		{
@@ -1072,16 +1077,21 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 
 		r_wsurf.bDetailTexture = R_BeginDetailTexture(t->gl_texturenum);
 
+		int GBufferProgramState = GBUFFER_DIFFUSE_ENABLED;
+
 		if (r_wsurf.bDetailTexture)
 		{
-			R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED | GBUFFER_DETAILTEXTURE_ENABLED);
-			R_SetGBufferMask(GBUFFER_MASK_ALL);
+			GBufferProgramState |= GBUFFER_DETAILTEXTURE_ENABLED;
 		}
-		else
+
+		if (r_rotate_entity)
 		{
-			R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED);
-			R_SetGBufferMask(GBUFFER_MASK_ALL);
+			GBufferProgramState |= GBUFFER_ROTATE_ENABLED;
 		}
+
+		R_UseGBufferProgram(GBufferProgramState);
+
+		R_SetGBufferMask(GBUFFER_MASK_ALL);
 
 		if (s->flags & SURF_DRAWTILED)
 		{

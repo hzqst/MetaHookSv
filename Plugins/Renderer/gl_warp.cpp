@@ -174,10 +174,10 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 
 			if (prog.program)
 			{
-				if(prog.waterfogcolor != -1)
+				if (prog.waterfogcolor != -1)
 					qglUniform4fARB(prog.waterfogcolor, waterObject->color.r / 255.0f, waterObject->color.g / 255.0f, waterObject->color.b / 255.0f, alpha);
 				if (prog.eyepos != -1)
-					qglUniform3fARB(prog.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
+					qglUniform4fARB(prog.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0);
 				if (prog.time != -1)
 					qglUniform1fARB(prog.time, clientTime);
 				if (prog.fresnel != -1)

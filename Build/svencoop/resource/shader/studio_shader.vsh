@@ -150,5 +150,6 @@ void main(void)
 #else
 	gl_TexCoord[0] = gl_MultiTexCoord0;
 #endif
+
 	gl_Position = gl_ModelViewProjectionMatrix * vec4(outvert, 1.0);
 }

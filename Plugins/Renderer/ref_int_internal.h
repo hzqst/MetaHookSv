@@ -66,6 +66,7 @@ typedef struct
 	texture_t *(*R_TextureAnimation)(msurface_t *fa);
 	void (*R_RenderDynamicLightmaps)(msurface_t *fa);
 	int (*R_BeginDetailTexture)(int textureId);
+	void(*R_RotateForEntity)(float *origin, cl_entity_t *ent);
 	void (*R_BlendLightmaps)(void);
 	void (*R_DrawDecals)(qboolean bMultitexture);
 	texture_t *(*Draw_DecalTexture)(int index);
