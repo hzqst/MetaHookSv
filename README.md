@@ -40,6 +40,8 @@ check https://github.com/hzqst/CaptionMod for detail.
 
 4. hook VGUI1 TextImage control paint procedure and draw it with multi-byte character support. (new and only for SvEngine)
 
+5. Custom dictionary for each map, put dictionary file at "/maps/[mapname]_dictionary.csv"
+
 Current state : Ready to use.
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/1.png)
