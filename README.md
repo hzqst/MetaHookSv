@@ -64,9 +64,9 @@ Current state : Ready to use, more feature are coming soon.
 
 1. High-Dynamic-Range (HDR) post-processor.
 
-2. Water reflection and refraction. (Warning: this may cause a significant performance hit.)
+2. Simple water reflection and refraction. (Warning: this may cause a significant performance hit.)
 
-3. Per-Object Shadow. (Warning: this may cause a significant performance hit when there are too many epolys in view.)
+3. Simple Per-Object Shadow. (Warning: this may cause a significant performance hit.)
 
 4. Screen Space Ambient Occlusion (SSAO) using horizon-based ambient occlusion (HBAO). the implementation is taken from nvidia. (not support with -nofbo) (Warning: this may cause a significant performance hit when sampling radius is too large.)
 
@@ -78,7 +78,7 @@ Current state : Ready to use, more feature are coming soon.
 
 9. Vertex-Buffer-Object (VBO) "Batch-Draw" optimization and GPU-Lighting for studio model. With VBO enabled you will get higher framerate and lower CPU usage. You can get maximum at 8x FramePerSeconds than non-VBO mode in extreme case (200k+ epolys with no FPS drop).
 
-10. Vertex-Buffer-Object (VBO) "Batch-Draw" optimization for BSP terrain. With VBO enabled you will get higher framerate and lower CPU usage.
+10. Vertex-Buffer-Object (VBO) "Batch-Draw" optimization for BSP terrain. With VBO enabled you will get higher framerate and lower CPU usage. Warning: this feature may cause the render result differs from the one in original game that: random textures are gone, non-visible terrain in current BSP-node are always visible...
 
 #### Todo List
 
