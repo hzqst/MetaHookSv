@@ -502,7 +502,10 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 			std::smatch result;
 			std::string str = pTextMessage->pMessage;
 
-			dict = g_pViewPort->FindDictionaryRegex(str, DICT_NETMESSAGE, result);
+			dict = g_pViewPort->FindDictionary(str.c_str(), DICT_NETMESSAGE);
+			
+			if(!dict)
+				dict = g_pViewPort->FindDictionaryRegex(str, DICT_NETMESSAGE, result);
 
 			if (cap_debug && cap_debug->value)
 			{

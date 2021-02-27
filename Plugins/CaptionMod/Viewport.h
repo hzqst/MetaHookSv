@@ -47,9 +47,7 @@ public:
 	~CDictionary();
 	void Load(CSV::CSVDocument::row_type &row, Color &defaultColor, vgui::IScheme *ischeme);
 	void ReplaceKey(void);
-	void ReplaceReturn(void);
 	void AddPrefix(void);
-	void ReplaceRegex(void);
 
 	dict_t					m_Type;
 	char					m_szTitle[256];

@@ -124,11 +124,12 @@ CDictionary *CViewport::FindDictionaryRegex(const std::string &str, dict_t Type,
 
 	for(int i = 0; i < m_Dictionary.Count(); ++i)
 	{
-		if (m_Dictionary[i]->m_Type == Type)
+		if (m_Dictionary[i]->m_Type == Type && m_Dictionary[i]->m_bRegex)
 		{
-			std::regex pattern(m_Dictionary[i]->m_szTitle);
+			auto &title = m_Dictionary[i]->m_szTitle;
+			std::regex pattern(title);
 
-			if (std::regex_search(str, result, pattern)) 
+			if (std::regex_search(str, result, pattern))
 			{
 				return m_Dictionary[i];
 			}
@@ -362,6 +363,82 @@ CDictionary::~CDictionary()
 	}
 }
 
+//2015-11-27 added
+//Purpose: replace all "\r" "\n" to '\r' '\n'
+void ReplaceReturnW(wchar_t *str)
+{
+	wchar_t *p = str;
+
+	wchar_t *pBackSlash = NULL;
+
+	//empty sentence?
+	if (!p[0])
+		return;
+
+	//make sure we have at least two characters
+	while (*p && *(p + 1))
+	{
+		if (*p == L'\\')
+		{
+			int bMove = false;
+			if (*(p + 1) == L'r')
+			{
+				*p = L'\r';
+				bMove = true;
+			}
+			else if (*(p + 1) == L'n')
+			{
+				*p = L'\n';
+				bMove = true;
+			}
+			if (bMove)
+			{
+				int nCharsToMove = Q_wcslen(p + 2);
+				memcpy(p + 1, p + 2, (nCharsToMove + 1) * sizeof(wchar_t));
+			}
+		}
+
+		p++;
+	}
+}
+
+void ReplaceReturnA(char *str)
+{
+	char *p = str;
+
+	char *pBackSlash = NULL;
+
+	//empty sentence?
+	if (!p[0])
+		return;
+
+	//make sure we have at least two characters
+	while (*p && *(p + 1))
+	{
+		if (*p == '\\')
+		{
+			int bMove = false;
+			if (*(p + 1) == 'r')
+			{
+				*p = '\r';
+				bMove = true;
+			}
+			else if (*(p + 1) == 'n')
+			{
+				*p = '\n';
+				bMove = true;
+			}
+			if (bMove)
+			{
+				int nCharsToMove = Q_strlen(p + 2);
+				memcpy(p + 1, p + 2, (nCharsToMove + 1) * sizeof(char));
+			}
+		}
+
+		p++;
+	}
+}
+
 void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, IScheme *ischeme)
 {
 	m_Color = defaultColor;
@@ -395,11 +472,19 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 	}
 
 	//2015-11-26 added to support NETMESSAGE:
-	if (!Q_strncmp(title, "NETMESSAGE:", sizeof("NETMESSAGE:") - 1))
+	if (!Q_strncmp(title, "NETMESSAGE_REGEX:", sizeof("NETMESSAGE_REGEX:") - 1))
+	{
+		m_Type = DICT_NETMESSAGE;
+		memcpy(m_szTitle, title + sizeof("NETMESSAGE_REGEX:") - 1, titlelen - (sizeof("NETMESSAGE_REGEX:") - 1));
+		m_szTitle[titlelen - (sizeof("NETMESSAGE_REGEX:") - 1)] = 0;
+		m_bRegex = true;
+	}
+	else if (!Q_strncmp(title, "NETMESSAGE:", sizeof("NETMESSAGE:") - 1))
 	{
 		m_Type = DICT_NETMESSAGE;
 		memcpy(m_szTitle, title + sizeof("NETMESSAGE:") - 1, titlelen - (sizeof("NETMESSAGE:") - 1));
 		m_szTitle[titlelen - (sizeof("NETMESSAGE:") - 1)] = 0;
+		m_bRegex = false;
 	}
 
 	//Translated text
@@ -431,18 +516,9 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 		m_bKeyReplaced = true;
 	}
 
-	if (m_Type == DICT_NETMESSAGE)
-	{
-		if (strstr(m_szTitle, "(") && strstr(m_szTitle, ")"))
-		{
-			if (wcschr(&m_szSentence[0], L'{') && wcschr(&m_szSentence[0], L'}'))
-			{
-				m_bRegex = true;
-			}
-		}
-	}
-
-	ReplaceReturn();
+	if(m_Type == DICT_NETMESSAGE && !m_bRegex)
+		ReplaceReturnA(m_szTitle);
+	ReplaceReturnW(m_szSentence.Base());
 
 	const char *color = row[2].c_str();
 	if(color[0])
@@ -721,11 +797,6 @@ void CDictionary::AddPrefix(void)
 	m_szSentence[nSentenceLength + nSpeakerLength] = L'\0';
 }
 
-void CDictionary::ReplaceRegex(void)
-{
-
-}
-
 void CDictionary::ReplaceKey(void)
 {
 	wchar_t *p = &m_szSentence[0];
@@ -827,45 +898,6 @@ void CDictionary::ReplaceKey(void)
 		WideCharToMultiByte(CP_UTF8, 0, &m_szSentence[0], -1, utf8Text, utf8Length, NULL, NULL);
 		utf8Text[utf8Length] = '\0';
 		m_pTextMessage->pMessage = utf8Text;
-	}
-}
-
-//2015-11-27 added
-//Purpose: replace all "\r" "\n" to '\r' '\n'
-void CDictionary::ReplaceReturn(void)
-{
-	wchar_t *p = &m_szSentence[0];
-
-	wchar_t *pBackSlash = NULL;
-
-	//empty sentence?
-	if(!p[0])
-		return;
-
-	//make sure we have at least two characters
-	while(*p && *(p + 1))
-	{
-		if(*p == L'\\')
-		{
-			int bMove = false;
-			if(*(p + 1) == L'r')
-			{
-				*p = L'\r';
-				bMove = true;
-			}
-			else if(*(p + 1) == L'n')
-			{
-				*p = L'\n';
-				bMove = true;
-			}
-			if(bMove)
-			{
-				int nCharsToMove = Q_wcslen(p + 2);
-				memcpy(p + 1, p + 2, (nCharsToMove + 1) * sizeof(wchar_t));
-			}
-		}
-
-		p ++;
 	}
 }
 
