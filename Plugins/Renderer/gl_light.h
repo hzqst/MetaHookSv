@@ -25,7 +25,6 @@ typedef struct
 	int program;
 	int positionTex;
 	int normalTex;
-	int worldmatrix;
 	int viewpos;
 	int lightdir;
 	int lightpos;
@@ -43,7 +42,6 @@ typedef struct
 	int program;
 	int positionTex;
 	int normalTex;
-	int worldmatrix;
 	int viewpos;
 	int lightpos;
 	int lightcolor;
