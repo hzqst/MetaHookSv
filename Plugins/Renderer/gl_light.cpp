@@ -253,6 +253,9 @@ void R_BeginRenderGBuffer(void)
 	if (!r_light_dynamic->value)
 		return;
 
+	if (!s_GBufferFBO.s_hBackBufferFBO)
+		return;
+
 	drawgbuffer = true;
 	gbuffer_mask = -1;
 
@@ -434,6 +437,7 @@ void R_EndRenderGBuffer(void)
 		GL_DisableMultitexture();
 		qglDisable(GL_BLEND);
 		qglDisable(GL_DEPTH_TEST);
+		qglDisable(GL_ALPHA_TEST);
 		qglDepthMask(GL_FALSE);
 
 		R_BeginFXAA(glwidth, glheight);		

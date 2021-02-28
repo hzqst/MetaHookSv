@@ -973,15 +973,26 @@ void R_DoFXAA(void)
 	GL_PushDrawState();
 	GL_PushMatrix();
 
-	R_BeginHUDQuad();
-	R_BeginFXAA(glwidth, glheight);
-	R_DrawHUDQuad_Texture(s_BackBufferFBO.s_hBackBufferTex, glwidth, glheight);
-	qglUseProgramObjectARB(0);
-
-	if (!s_BackBufferFBO.s_hBackBufferFBO)
+	if (s_BackBufferFBO.s_hBackBufferFBO && s_BackBufferFBO2.s_hBackBufferFBO)
 	{
-		qglBindTexture(GL_TEXTURE_2D, s_BackBufferFBO.s_hBackBufferTex);
-		qglCopyTexImage2D(GL_TEXTURE_2D, 0, s_BackBufferFBO.iTextureColorFormat, 0, 0, glwidth, glheight, 0);
+		R_BlitToFBO(&s_BackBufferFBO, &s_BackBufferFBO2);
+
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+
+		R_BeginHUDQuad();
+		R_BeginFXAA(glwidth, glheight);
+		R_DrawHUDQuad_Texture(s_BackBufferFBO2.s_hBackBufferTex, glwidth, glheight);
+		qglUseProgramObjectARB(0);
+	}
+	else
+	{
+		qglBindTexture(GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferTex);
+		qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, s_BackBufferFBO2.iWidth, s_BackBufferFBO2.iHeight, 0);
+
+		R_BeginHUDQuad();
+		R_BeginFXAA(glwidth, glheight);
+		R_DrawHUDQuad_Texture(s_BackBufferFBO2.s_hBackBufferTex, glwidth, glheight);
+		qglUseProgramObjectARB(0);
 	}
 
 	GL_PopMatrix();

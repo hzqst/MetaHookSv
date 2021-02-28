@@ -91,7 +91,7 @@ extern qboolean gl_framebuffer_object;
 extern qboolean gl_shader_support;
 extern qboolean gl_program_support;
 extern qboolean gl_msaa_support;
-extern qboolean gl_msaa_blit_support;
+extern qboolean gl_blit_support;
 extern qboolean gl_csaa_support;
 extern qboolean gl_float_buffer_support;
 extern qboolean gl_s3tc_compression_support;
@@ -119,7 +119,7 @@ extern qboolean bNoStretchAspect;
 
 extern FBO_Container_t s_MSAAFBO;
 extern FBO_Container_t s_GBufferFBO;
-extern FBO_Container_t s_BackBufferFBO;
+extern FBO_Container_t s_BackBufferFBO, s_BackBufferFBO2;
 extern FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];
 extern FBO_Container_t s_LuminFBO[LUMIN_BUFFERS];
 extern FBO_Container_t s_Lumin1x1FBO[LUMIN1x1_BUFFERS];

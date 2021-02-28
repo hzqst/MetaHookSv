@@ -996,12 +996,14 @@ void QGL_InitExtension(void)
 	if (strstr(extension, "GL_EXT_framebuffer_blit"))
 	{
 		qglBlitFramebufferEXT = (PFNGLBLITFRAMEBUFFEREXTPROC)qwglGetProcAddress("glBlitFramebufferEXT");
+
+		gl_blit_support = true;
 	}
 
-	if (strstr(extension, "GL_EXT_framebuffer_multisample_blit_scaled"))
+	/*if (strstr(extension, "GL_EXT_framebuffer_multisample_blit_scaled"))
 	{
-		gl_msaa_blit_support = true;
-	}
+		
+	}*/
 
 	if(strstr(extension, "GL_NV_framebuffer_multisample_coverage"))
 	{

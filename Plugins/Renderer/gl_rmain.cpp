@@ -66,7 +66,7 @@ qboolean gl_framebuffer_object = false;
 qboolean gl_shader_support = false;
 qboolean gl_program_support = false;
 qboolean gl_msaa_support = false;
-qboolean gl_msaa_blit_support = false;
+qboolean gl_blit_support = false;
 qboolean gl_csaa_support = false;
 qboolean gl_float_buffer_support = false;
 qboolean gl_s3tc_compression_support = false;
@@ -97,7 +97,7 @@ int glheight = 0;
 
 FBO_Container_t s_MSAAFBO;
 FBO_Container_t s_GBufferFBO;
-FBO_Container_t s_BackBufferFBO;
+FBO_Container_t s_BackBufferFBO, s_BackBufferFBO2;
 FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];
 FBO_Container_t s_LuminFBO[LUMIN_BUFFERS];
 FBO_Container_t s_Lumin1x1FBO[LUMIN1x1_BUFFERS];
@@ -1087,32 +1087,54 @@ void GL_GenerateFBO(void)
 	bNoStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
 
 	if (gEngfuncs.CheckParm("-nomsaa", NULL))
+	{
 		bDoMSAAFBO = false;
+		gEngfuncs.Con_Printf("MSAA disabled by user");
+	}
 
 	if (!gl_msaa_support)
+	{
 		bDoMSAAFBO = false;
+		gEngfuncs.Con_Printf("MSAA disabled due to lack of GL_EXT_framebuffer_multisample.\n");
+	}
 
-	if (!gl_msaa_blit_support)
+	if (!gl_blit_support)
+	{
 		bDoMSAAFBO = false;
+		gEngfuncs.Con_Printf("MSAA disabled due to lack of  GL_EXT_framebuffer_blit.\n");
+	}
 
 	if (gEngfuncs.CheckParm("-nofbo", NULL))
+	{
 		bDoScaledFBO = false;
+		gEngfuncs.Con_Printf("FBO rendering disabled by user.\n");
+	}
 
 	if (gEngfuncs.CheckParm("-directblit", NULL))
 		bDoDirectBlit = true;
 
 	if (gEngfuncs.CheckParm("-nodirectblit", NULL))
+	{
 		bDoDirectBlit = false;
+		gEngfuncs.Con_Printf("DirectBlit disabled by user.\n");
+	}
 
-	if(!gl_float_buffer_support)
+	if (!gl_float_buffer_support)
+	{
 		bDoHDR = false;
+		gEngfuncs.Con_Printf("HDR rendering disabled by user.\n");
+	}
 
-	if (!qglGenFramebuffersEXT || !qglBindFramebufferEXT || !qglBlitFramebufferEXT)
+	if (!gl_framebuffer_object)
+	{
 		bDoScaledFBO = false;
+		gEngfuncs.Con_Printf("FBO rendering disabled due to lack of GL_EXT_framebuffer_object.\n");
+	}
 
 	GL_ClearFBO(&s_MSAAFBO);
 	GL_ClearFBO(&s_GBufferFBO);
 	GL_ClearFBO(&s_BackBufferFBO);
+	GL_ClearFBO(&s_BackBufferFBO2);
 	for(int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
 		GL_ClearFBO(&s_DownSampleFBO[i]);
 	for(int i = 0; i < LUMIN_BUFFERS; ++i)
@@ -1188,12 +1210,9 @@ void GL_GenerateFBO(void)
 		{
 			GL_FreeFBO(&s_MSAAFBO);
 			bDoMSAAFBO = false;
-			gEngfuncs.Con_Printf("Error initializing MSAA frame buffer\n");
+
+			Sys_ErrorEx("Failed to initialize MSAA framebuffer!\n");
 		}
-	}
-	else
-	{
-		gEngfuncs.Con_Printf("MSAA backbuffer rendering disabled.\n");
 	}
 
 	if (bDoScaledFBO)
@@ -1207,21 +1226,40 @@ void GL_GenerateFBO(void)
 		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			GL_FreeFBO(&s_BackBufferFBO);
-			gEngfuncs.Con_Printf("FBO backbuffer rendering disabled due to create error.\n");
+			bDoScaledFBO = false;
+			Sys_ErrorEx("Failed to initialize backbuffer framebuffer!\n");
 		}
-	}
-	else
-	{
-		gEngfuncs.Con_Printf("FBO backbuffer rendering enabled.\n");
+
+		s_BackBufferFBO2.iWidth = glwidth;
+		s_BackBufferFBO2.iHeight = glheight;
+		R_GLGenFrameBuffer(&s_BackBufferFBO2);
+		R_GLFrameBufferColorTexture(&s_BackBufferFBO2, iColorInternalFormat, false);
+		R_GLFrameBufferDepthTexture(&s_BackBufferFBO2, GL_DEPTH_COMPONENT24, false);
+
+		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			GL_FreeFBO(&s_BackBufferFBO2);
+			bDoScaledFBO = false;
+			Sys_ErrorEx("Failed to initialize backbuffer2 framebuffer!\n");
+		}
 	}
 
 	if (!s_BackBufferFBO.s_hBackBufferTex)
 	{
-		s_BackBufferFBO.s_hBackBufferTex = GL_GenTextureColorFormat(s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight, iColorInternalFormat);
-		s_BackBufferFBO.s_hBackBufferDepthTex = GL_GenDepthTexture(s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight);
+		s_BackBufferFBO.s_hBackBufferTex = GL_GenTextureColorFormat(glwidth, glheight, iColorInternalFormat);
+		s_BackBufferFBO.s_hBackBufferDepthTex = GL_GenDepthTexture(glwidth, glheight);
 		s_BackBufferFBO.iWidth = glwidth;
 		s_BackBufferFBO.iHeight = glheight;
 		s_BackBufferFBO.iTextureColorFormat = iColorInternalFormat;
+	}
+
+	if (!s_BackBufferFBO2.s_hBackBufferTex)
+	{
+		s_BackBufferFBO2.s_hBackBufferTex = GL_GenTextureColorFormat(glwidth, glheight, iColorInternalFormat);
+		s_BackBufferFBO2.s_hBackBufferDepthTex = GL_GenDepthTexture(glwidth, glheight);
+		s_BackBufferFBO2.iWidth = glwidth;
+		s_BackBufferFBO2.iHeight = glheight;
+		s_BackBufferFBO2.iTextureColorFormat = iColorInternalFormat;
 	}
 
 	if (bDoScaledFBO)
@@ -1543,6 +1581,7 @@ void GL_Shutdown(void)
 
 	GL_FreeFBO(&s_MSAAFBO);
 	GL_FreeFBO(&s_BackBufferFBO);
+	GL_FreeFBO(&s_BackBufferFBO2);
 	for (int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
 		GL_FreeFBO(&s_DownSampleFBO[i]);
 	for (int i = 0; i < LUMIN_BUFFERS; ++i)

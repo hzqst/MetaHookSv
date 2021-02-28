@@ -146,6 +146,10 @@ int R_GetTextureSizePowerOfTwo(int texSize)
 void R_RenderShadowMap(void)
 {
 	int highSize = R_GetTextureSizePowerOfTwo(r_shadow_high_texsize->value);
+
+	if (!s_ShadowFBO.s_hBackBufferFBO)
+		highSize = 512;//the fucking glCopyTexImage2D limit up to 512x512
+
 	if (!shadow_depthmap_high)
 	{
 		shadow_depthmap_high_texsize = highSize;
@@ -158,6 +162,10 @@ void R_RenderShadowMap(void)
 	}
 
 	int mediumSize = R_GetTextureSizePowerOfTwo(r_shadow_medium_texsize->value);
+
+	if (!s_ShadowFBO.s_hBackBufferFBO)
+		mediumSize = 512;//the fucking glCopyTexImage2D limit up to 512x512
+
 	if (!shadow_depthmap_medium)
 	{
 		shadow_depthmap_medium_texsize = mediumSize;
@@ -170,6 +178,10 @@ void R_RenderShadowMap(void)
 	}
 
 	int lowSize = R_GetTextureSizePowerOfTwo(r_shadow_low_texsize->value);
+
+	if (!s_ShadowFBO.s_hBackBufferFBO)
+		lowSize = 512;//the fucking glCopyTexImage2D limit up to 512x512
+
 	if (!shadow_depthmap_low)
 	{
 		shadow_depthmap_low_texsize = lowSize;

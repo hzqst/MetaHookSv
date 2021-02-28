@@ -233,10 +233,7 @@ void HUD_DrawNormalTriangles(void)
 {
 	gExportfuncs.HUD_DrawNormalTriangles();
 
-	if (drawgbuffer)
-	{
-		R_EndRenderGBuffer();
-	}
+	R_EndRenderGBuffer();
 
 	if (!drawreflect && !drawrefract)
 	{
