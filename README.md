@@ -108,27 +108,27 @@ Current state : Ready to use, more feature are coming soon.
 
 r_hdr 1 / 0 : to enable / disable HDR(high-dynamic-range) post-processor.
 
-r_hdr_blurwidth : to control the intensity of blur for HDR.
+r_hdr_blurwidth : to control the intensity of blur for HDR. recommended value : 0.1
 
-r_hdr_exposure : to control the intensity of exposure for HDR.
+r_hdr_exposure : to control the intensity of exposure for HDR. recommended value : 5
 
-r_hdr_darkness : to control the darkness for HDR.
+r_hdr_darkness : to control the darkness for HDR. recommended value : 4
 
-r_hdr_adaptation : to control the dark / bright adaptation speed for HDR.
+r_hdr_adaptation : to control the dark / bright adaptation speed for HDR. recommended value : 50
 
-r_water 2 / 1 / 0 : to enable / disable water reflection and refraction. 2 = all entities and terrains in reflection view, 1 = only terrains in reflection view.
+r_water 2 / 1 / 0 : to enable / disable water reflection and refraction. 2 = draw all entities and terrains in reflection view, 1 = draw only terrains in reflection view.
 
-r_water_fresnel (0.0 ~ 2.0) : to determine how to lerp and mix the refraction color and reflection color.
+r_water_fresnel (0.0 ~ 2.0) : to determine how to lerp and mix the refraction color and reflection color. recommended value : 1.5
 
-r_water_depthfactor (0.0 ~ 1000.0) : to determine if we can see through water in a close distance.
+r_water_depthfactor (0.0 ~ 1000.0) : to determine if we can see through water in a close distance. recommended value : 50
 
-r_water_normfactor (0.0 ~ 1000.0) : to determine the size of water wave (offset to the normalmap).
+r_water_normfactor (0.0 ~ 1000.0) : to determine the size of water wave (offset to the normalmap). recommended value : 1.5
 
 r_water_novis 1 / 0 : force engine to render the scene which should have been removed by visleaf when rendering refraction or reflection view.
 
-r_water_texscale (0.1 ~ 1.0) : to control the size of refract or reflect view texture.
+r_water_texscale (0.1 ~ 1.0) : to control the size of refract or reflect view texture. recommended value : 0.5
 
-r_water_minheight : water entity which has height < this value will not be rendered with shader program.
+r_water_minheight : water entity which has height < this value will not be rendered with shader program. recommended value : 7.5
 
 r_shadow 1 / 0 : to enable / disable Per-Object Shadow.
 
@@ -138,47 +138,47 @@ r_shadow_angle_yaw (0.0 ~ 360.0) : to control the angle(yaw) of shadow caster (l
 
 r_shadow_angle_roll (0.0 ~ 360.0) : to control the angle(roll) of shadow caster (light source).
 
-r_shadow_high_texsize (must be power of 4) : the texture size of high-quality shadow map. larger texture with bigger scale factor has better quality but uses more graphic RAM.
+r_shadow_high_texsize (must be power of 4) : the texture size of high-quality shadow map. larger texture with bigger scale factor has better quality but uses more graphic RAM. recommended value : 2048
 
-r_shadow_high_distance : entities within this distance are rendered into high-quality shadow map.
+r_shadow_high_distance : entities within this distance are rendered into high-quality shadow map. recommended value : 400
 
-r_shadow_high_scale : scale factor when render shadow-caster entity in high-quality shadow map. larger scale factor gets better quality shadow but will cause incorrect render result when the entity is scaled too much.
+r_shadow_high_scale : scale factor when render shadow-caster entity in high-quality shadow map. larger scale factor gets better quality shadow but will cause incorrect render result when the entity is scaled too much. recommended value : 4.0
 
-r_shadow_medium_texsize (must be power of 4) : the texture size of medium-quality shadow map.
+r_shadow_medium_texsize (must be power of 4) : the texture size of medium-quality shadow map. recommended value : 2048
 
-r_shadow_medium_distance : entities within this distance are rendered into medium-quality shadow map.
+r_shadow_medium_distance : entities within this distance are rendered into medium-quality shadow map. recommended value : 1024
 
-r_shadow_medium_scale : scale factor when render shadow-caster entity in low-quality shadow map.
+r_shadow_medium_scale : scale factor when render shadow-caster entity in low-quality shadow map. recommended value : 2.0
 
-r_shadow_low_texsize (must be power of 4) : the texture size of low-quality shadow map.
+r_shadow_low_texsize (must be power of 4) : the texture size of low-quality shadow map. recommended value : 2048
 
-r_shadow_low_distance : entities within this distance are rendered into low-quality shadow map.
+r_shadow_low_distance : entities within this distance are rendered into low-quality shadow map. recommended value : 4096
 
-r_shadow_low_scale : scale factor when render shadow-caster entity in medium quality shadow map.
+r_shadow_low_scale : scale factor when render shadow-caster entity in medium quality shadow map. recommended value : 0.5
 
 r_ssao 1 / 0 : to enable / disable Screen Space Ambient Occlusion.
 
-r_ssao_intensity : to control the intensity of SSAO shadow.
+r_ssao_intensity : to control the intensity of SSAO shadow. recommended value : 0.6
 
-r_ssao_radius : to control the sample size of SSAO shadow.
+r_ssao_radius : to control the sample size of SSAO shadow. recommended value : 100.0
 
-r_ssao_blur_sharpness : to control the sharpness of SSAO shadow.
+r_ssao_blur_sharpness : to control the sharpness of SSAO shadow. recommended value : 1.0
 
-r_ssao_bias : test it yourself.
+r_ssao_bias : test it yourself. recommended value : 0.2
 
 r_light_dynamic : to enable / disable Deferred-Shading (Dynamic-LightSource support).
 
-r_flashlight_cone : cosine of angle of flashlight cone.
+r_flashlight_cone : cosine of angle of flashlight cone. recommended value : 0.9
 
-r_flashlight_distance : flashlight's illumination distance.
+r_flashlight_distance : flashlight's illumination distance. recommended value : 2000.0
 
-r_light_ambient : ambient intensity of dynamic light.
+r_light_ambient : ambient intensity of dynamic light. recommended value : 0.35
 
-r_light_diffuse : diffuse intensity of dynamic light.
+r_light_diffuse : diffuse intensity of dynamic light. recommended value : 0.35
 
-r_light_specular : specular intensity of dynamic light.
+r_light_specular : specular intensity of dynamic light. recommended value : 0.1
 
-r_light_specularpow : specular power of dynamic light.
+r_light_specularpow : specular power of dynamic light. recommended value : 10.0
 
 r_studio_vbo 1 / 0 : enable / disable VBO batch-optmization draw for studio model.
 
