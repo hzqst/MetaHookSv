@@ -90,9 +90,9 @@ Current state : Ready to use, more feature are coming soon.
 
 #### Launch Parameters / Commmandline Parameters
 
--nofbo : disable FrameBufferObject rendering. add it if you caught some rendering error. SSAO and Deferred-Shading will not be available when FBO disabled.
+-nofbo : disable FrameBufferObject rendering. SSAO and Deferred-Shading will not be available when FBO is disabled.
 
--nomsaa : disable MultiSampling Anti-Aliasing (MSAA). add it if you caught some performance hit.
+-nomsaa : disable MultiSampling Anti-Aliasing (MSAA). It is strongly recommended to disable MSAA if you are using SSAO.
 
 -nohdr : disable High-Dynamic-Range (HDR).
 
