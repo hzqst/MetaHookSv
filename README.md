@@ -106,7 +106,7 @@ Current state : Ready to use, more feature are coming soon.
 
 #### Console Vars
 
-r_hdr 1 / 0 : to enable / disable HDR(high-dynamic-range) post-processor.
+r_hdr 1 / 0 : to enable / disable HDR(high-dynamic-range) post-processor. recommended value : 1
 
 r_hdr_blurwidth : to control the intensity of blur for HDR. recommended value : 0.1
 
@@ -116,7 +116,7 @@ r_hdr_darkness : to control the darkness for HDR. recommended value : 4
 
 r_hdr_adaptation : to control the dark / bright adaptation speed for HDR. recommended value : 50
 
-r_water 2 / 1 / 0 : to enable / disable water reflection and refraction. 2 = draw all entities and terrains in reflection view, 1 = draw only terrains in reflection view.
+r_water 2 / 1 / 0 : to enable / disable water reflection and refraction. 2 = draw all entities and terrains in reflection view, 1 = draw only terrains in reflection view. recommended value : 1
 
 r_water_fresnel (0.0 ~ 2.0) : to determine how to lerp and mix the refraction color and reflection color. recommended value : 1.5
 
@@ -124,13 +124,13 @@ r_water_depthfactor (0.0 ~ 1000.0) : to determine if we can see through water in
 
 r_water_normfactor (0.0 ~ 1000.0) : to determine the size of water wave (offset to the normalmap). recommended value : 1.5
 
-r_water_novis 1 / 0 : force engine to render the scene which should have been removed by visleaf when rendering refraction or reflection view.
+r_water_novis 1 / 0 : force engine to render the scene which should have been removed by visleaf when rendering refraction or reflection view. recommended value : 1
 
 r_water_texscale (0.1 ~ 1.0) : to control the size of refract or reflect view texture. recommended value : 0.5
 
 r_water_minheight : water entity which has height < this value will not be rendered with shader program. recommended value : 7.5
 
-r_shadow 1 / 0 : to enable / disable Per-Object Shadow.
+r_shadow 1 / 0 : to enable / disable Per-Object Shadow. recommended value : 1
 
 r_shadow_angle_pitch (0.0 ~ 360.0) : to control the angle(pitch) of shadow caster (light source).
 
@@ -156,7 +156,7 @@ r_shadow_low_distance : entities within this distance are rendered into low-qual
 
 r_shadow_low_scale : scale factor when render shadow-caster entity in medium quality shadow map. recommended value : 0.5
 
-r_ssao 1 / 0 : to enable / disable Screen Space Ambient Occlusion.
+r_ssao 1 / 0 : to enable / disable Screen Space Ambient Occlusion. recommended value : 1
 
 r_ssao_intensity : to control the intensity of SSAO shadow. recommended value : 0.6
 
@@ -166,7 +166,9 @@ r_ssao_blur_sharpness : to control the sharpness of SSAO shadow. recommended val
 
 r_ssao_bias : test it yourself. recommended value : 0.2
 
-r_light_dynamic : to enable / disable Deferred-Shading (Dynamic-LightSource support).
+r_ssao_studio_model : 0 / 1 to enable / disable drawing SSAO shadow on studio model. recommended value : 0
+
+r_light_dynamic : to enable / disable Deferred-Shading (Dynamic-LightSource support). recommended value : 1
 
 r_flashlight_cone : cosine of angle of flashlight cone. recommended value : 0.9
 
@@ -180,8 +182,8 @@ r_light_specular : specular intensity of dynamic light. recommended value : 0.1
 
 r_light_specularpow : specular power of dynamic light. recommended value : 10.0
 
-r_studio_vbo 1 / 0 : enable / disable VBO batch-optmization draw for studio model.
+r_studio_vbo 1 / 0 : enable / disable VBO batch-optmization draw for studio model. recommended value : 1
 
-r_wsurf_vbo 1 / 0 : enable / disable VBO batch-optmization draw for BSP terrain.
+r_wsurf_vbo 1 / 0 : enable / disable VBO batch-optmization draw for BSP terrain. recommended value : 1
 
-r_fxaa 1 / 0  : enable / disable Fast Approximate Anti-Aliasing (FXAA) when MSAA is not available.
+r_fxaa 1 / 0  : enable / disable Fast Approximate Anti-Aliasing (FXAA) when MSAA is not available. recommended value : 1
