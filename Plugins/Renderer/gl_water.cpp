@@ -347,7 +347,10 @@ void R_RenderReflectView(void)
 	}
 
 	qglClearColor(curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, 1);
-	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	qglStencilMask(0xFF);
+	qglClearStencil(0);
+	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	qglStencilMask(0);
 
 	R_PushRefDef();
 
@@ -411,7 +414,10 @@ void R_RenderRefractView(void)
 	}
 
 	qglClearColor(curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, 1);
-	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	qglStencilMask(0xFF);
+	qglClearStencil(0);
+	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	qglStencilMask(0);
 
 	R_PushRefDef();
 

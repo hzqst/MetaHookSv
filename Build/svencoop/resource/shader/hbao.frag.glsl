@@ -25,10 +25,6 @@ uniform  float   control_PowExponent;
 uniform  vec4    control_projInfo;
 uniform  vec2    control_projScale;
 uniform  int     control_projOrtho;
-  
-uniform  vec4    control_float2Offsets[AO_RANDOMTEX_SIZE*AO_RANDOMTEX_SIZE];
-uniform  vec4    control_jitters[AO_RANDOMTEX_SIZE*AO_RANDOMTEX_SIZE];
-
 
 // The pragma below is critical for optimal performance
 // in this fragment shader to let the shader compiler

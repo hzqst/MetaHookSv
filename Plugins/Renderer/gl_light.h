@@ -58,7 +58,7 @@ typedef struct
 	int diffuseTex;
 	int lightmapTex;
 	int depthTex;
-}dlight_final_program_t;
+}dlight_final_program_t, dlight_final2_program_t;
 
 void R_InitLight(void);
 void R_ShutdownLight(void);

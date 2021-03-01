@@ -654,6 +654,11 @@ void R_GLStudioDrawPoints(void)
 	short *pskinref;
 	int flags;
 
+	qglEnable(GL_STENCIL_TEST);
+	qglStencilMask(0xFF);
+	qglStencilFunc(GL_ALWAYS, 1, 0xFF);
+	qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
 	pvertbone = ((byte *)(*pstudiohdr) + (*psubmodel)->vertinfoindex);
 	pnormbone = ((byte *)(*pstudiohdr) + (*psubmodel)->norminfoindex);
 	ptexturehdr = R_LoadTextures(*r_model);
@@ -1492,6 +1497,8 @@ void R_GLStudioDrawPoints(void)
 	}//non-VBO way
 
 	qglEnable(GL_CULL_FACE);
+	qglStencilMask(0);
+	qglDisable(GL_STENCIL_TEST);
 
 	//upload all data and indices to GPU
 	if (iInitVBO & 2)

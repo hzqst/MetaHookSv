@@ -341,7 +341,7 @@ void R_Clear(void)
 	if (r_mirroralpha && r_mirroralpha->value != 1.0)
 	{
 		if (gl_clear->value)
-			qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		else
 			qglClear(GL_DEPTH_BUFFER_BIT);
 
@@ -354,7 +354,7 @@ void R_Clear(void)
 		static int trickframe;
 
 		if (gl_clear->value)
-			qglClear(GL_COLOR_BUFFER_BIT);
+			qglClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 		trickframe++;
 
@@ -374,7 +374,7 @@ void R_Clear(void)
 	else
 	{
 		if (gl_clear->value)
-			qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		else
 			qglClear(GL_DEPTH_BUFFER_BIT);
 
@@ -980,6 +980,7 @@ void GL_ClearFBO(FBO_Container_t *s)
 	s->s_hBackBufferTex3 = 0;
 	s->s_hBackBufferTex4 = 0;
 	s->s_hBackBufferDepthTex = 0;
+	s->s_hBackBufferStencilTexView = 0;
 	s->iWidth = s->iHeight = s->iTextureColorFormat = 0;
 }
 
@@ -1008,6 +1009,9 @@ void GL_FreeFBO(FBO_Container_t *s)
 
 	if (s->s_hBackBufferDepthTex)
 		qglDeleteTextures(1, &s->s_hBackBufferDepthTex);
+
+	if (s->s_hBackBufferStencilTexView)
+		qglDeleteTextures(1, &s->s_hBackBufferStencilTexView);
 
 	GL_ClearFBO(s);
 }
@@ -1043,7 +1047,9 @@ void R_GLRenderBufferStorage(FBO_Container_t *s, int type, GLuint iInternalForma
 		qglRenderbufferStorageEXT(GL_RENDERBUFFER, iInternalFormat, s->iWidth, s->iHeight);
 	}
 
-	if(type == 1)
+	if (type == 2)
+		qglFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, s->s_hBackBufferDB);
+	else if(type == 1)
 		qglFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, s->s_hBackBufferDB);
 	else if	(type == 0)
 		qglFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, s->s_hBackBufferCB);
@@ -1119,7 +1125,14 @@ void R_GLFrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat, qbo
 	{
 		qglFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, s->s_hBackBufferDepthTex, 0);
 	}
+
 	qglBindTexture(tex2D, 0);
+
+	if (iInternalFormat == GL_DEPTH24_STENCIL8 || iInternalFormat == GL_DEPTH24_STENCIL8_EXT)
+	{
+		s->s_hBackBufferStencilTexView = GL_GenTexture();
+		qglTextureView(s->s_hBackBufferStencilTexView, tex2D, s->s_hBackBufferDepthTex, GL_DEPTH24_STENCIL8, 0, 1, 0, 1);
+	}
 }
 
 int R_GLGenColorTextureHBAO(int w, int h)
@@ -1323,7 +1336,7 @@ void GL_GenerateFBO(void)
 		s_MSAAFBO.iHeight = glheight;
 		R_GLGenFrameBuffer(&s_MSAAFBO);
 		R_GLFrameBufferColorTexture(&s_MSAAFBO, iColorInternalFormat, true);
-		R_GLFrameBufferDepthTexture(&s_MSAAFBO, GL_DEPTH_COMPONENT24, true);
+		R_GLFrameBufferDepthTexture(&s_MSAAFBO, GL_DEPTH24_STENCIL8, true);
 		R_GLGenRenderBuffer(&s_MSAAFBO, 2);
 		if (s_MSAAFBO.s_hBackBufferFBO)
 			qglEnable(GL_MULTISAMPLE);
@@ -1343,7 +1356,7 @@ void GL_GenerateFBO(void)
 		s_BackBufferFBO.iHeight = glheight;
 		R_GLGenFrameBuffer(&s_BackBufferFBO);
 		R_GLFrameBufferColorTexture(&s_BackBufferFBO, iColorInternalFormat, false);
-		R_GLFrameBufferDepthTexture(&s_BackBufferFBO, GL_DEPTH_COMPONENT24, false);
+		R_GLFrameBufferDepthTexture(&s_BackBufferFBO, GL_DEPTH24_STENCIL8, false);
 
 		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
@@ -1356,7 +1369,7 @@ void GL_GenerateFBO(void)
 		s_BackBufferFBO2.iHeight = glheight;
 		R_GLGenFrameBuffer(&s_BackBufferFBO2);
 		R_GLFrameBufferColorTexture(&s_BackBufferFBO2, iColorInternalFormat, false);
-		R_GLFrameBufferDepthTexture(&s_BackBufferFBO2, GL_DEPTH_COMPONENT24, false);
+		R_GLFrameBufferDepthTexture(&s_BackBufferFBO2, GL_DEPTH24_STENCIL8, false);
 
 		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
@@ -1482,7 +1495,7 @@ void GL_GenerateFBO(void)
 		s_GBufferFBO.iHeight = glheight;
 		R_GLGenFrameBuffer(&s_GBufferFBO);
 		R_GLFrameBufferColorTextureDeferred(&s_GBufferFBO);
-		R_GLFrameBufferDepthTexture(&s_GBufferFBO, GL_DEPTH_COMPONENT24, false);
+		R_GLFrameBufferDepthTexture(&s_GBufferFBO, GL_DEPTH24_STENCIL8, false);
 
 		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
@@ -1796,8 +1809,6 @@ void R_PostRenderView()
 
 void R_PreDrawViewModel(void)
 {
-	int i;
-
 	(*currententity) = cl_viewent;
 
 	if (!r_drawviewmodel->value)
@@ -1837,7 +1848,7 @@ void R_PreDrawViewModel(void)
 		(*currententity)->curstate.animtime = (*cl_weaponstarttime);
 
 		auto ent = gEngfuncs.GetEntityByIndex((*currententity)->index);
-		for (i = 0; i < 4; i++)
+		for (int i = 0; i < 4; i++)
 		{
 			VectorCopy(ent->origin, (*currententity)->attachment[i]);
 		}
@@ -1882,10 +1893,15 @@ void R_RenderView_SvEngine(int a1)
 
 	qglClearColor(clearColor[0], clearColor[1], clearColor[2], 0);
 
+	qglStencilMask(0xFF);
+	qglClearStencil(0);
+
 	if (!gl_clear->value || a1)
-		qglClear(GL_DEPTH_BUFFER_BIT);
+		qglClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	else
-		qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	qglStencilMask(0);
 
 	qglDepthFunc(GL_LEQUAL);
 	qglDepthRange(0, 1);
@@ -1967,7 +1983,10 @@ void GL_EndRendering(void)
 		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0);
 		qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 		qglClearColor(0, 0, 0, 0);
-		qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		qglStencilMask(0xFF);
+		qglClearStencil(0);
+		qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		qglStencilMask(0);
 
 		int windowW = glwidth;
 		int windowH = glheight;

@@ -319,12 +319,14 @@ void R_InitGLHUD(void)
 			SHADER_UNIFORM(hbao_calc_blur, control_NegInvR2, "control_NegInvR2");
 		}
 
-		hbao_blur.program = R_CompileShaderFile("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\hbao_blur.frag.glsl");
+		hbao_blur.program = R_CompileShaderFileEx("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\hbao_blur.frag.glsl",
+			"", NULL, "");
 		if (hbao_blur.program)
 		{
 		}
 
-		hbao_blur2.program = R_CompileShaderFile("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\hbao_blur2.frag.glsl");
+		hbao_blur2.program = R_CompileShaderFileEx("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\hbao_blur.frag.glsl",
+			"#define AO_BLUR_PRESENT\n", NULL, "#define AO_BLUR_PRESENT\n");
 		if (hbao_blur2.program)
 		{
 
@@ -344,11 +346,11 @@ void R_InitGLHUD(void)
 
 	r_ssao = gEngfuncs.pfnRegisterVariable("r_ssao", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssao_debug = gEngfuncs.pfnRegisterVariable("r_ssao_debug", "0",  FCVAR_CLIENTDLL);
-	r_ssao_radius = gEngfuncs.pfnRegisterVariable("r_ssao_radius", "15.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_ssao_intensity = gEngfuncs.pfnRegisterVariable("r_ssao_intensity", "1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_ssao_bias = gEngfuncs.pfnRegisterVariable("r_ssao_bias", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_ssao_blur_sharpness = gEngfuncs.pfnRegisterVariable("r_ssao_blur_sharpness", "40.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_ssao_studio_model = gEngfuncs.pfnRegisterVariable("r_ssao_studio_model", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssao_radius = gEngfuncs.pfnRegisterVariable("r_ssao_radius", "100.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssao_intensity = gEngfuncs.pfnRegisterVariable("r_ssao_intensity", "0.6", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssao_bias = gEngfuncs.pfnRegisterVariable("r_ssao_bias", "0.2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssao_blur_sharpness = gEngfuncs.pfnRegisterVariable("r_ssao_blur_sharpness", "1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssao_studio_model = gEngfuncs.pfnRegisterVariable("r_ssao_studio_model", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	last_luminance = 0;
 
@@ -918,14 +920,14 @@ int R_DoSSAO(int sampleIndex)
 
 	GL_DisableMultitexture();
 	GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex);
-	GL_EnableMultitexture();
-	GL_Bind(s_DepthLinearFBO.s_hBackBufferTex);
+	//GL_EnableMultitexture();
+	//GL_Bind(s_DepthLinearFBO.s_hBackBufferTex);
 
 	R_DrawHUDQuad(glwidth, glheight);
 
 	qglUseProgramObjectARB(0);
 
-	GL_DisableMultitexture();
+	//GL_DisableMultitexture();
 
 	//Final output stage, write to main FBO or MSAA FBO.
 	if (s_MSAAFBO.s_hBackBufferFBO)
@@ -947,6 +949,14 @@ int R_DoSSAO(int sampleIndex)
 	}
 
 	//Stencil for studio model?
+	qglEnable(GL_STENCIL_TEST);
+	qglStencilMask(0xFF);
+	if(r_ssao_studio_model->value)
+		qglStencilFunc(GL_ALWAYS, 0, 0xFF);
+	else
+		qglStencilFunc(GL_EQUAL, 0, 0xFF);
+	qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
 	qglUseProgramObjectARB(hbao_blur2.program);
 	qglUniform1fARB(0, r_ssao_blur_sharpness->value / meters2viewspace);
 	qglUniform2fARB(1, 0, 1.0f / float(glheight));
@@ -955,6 +965,9 @@ int R_DoSSAO(int sampleIndex)
 	R_DrawHUDQuad(glwidth, glheight);
 
 	qglUseProgramObjectARB(0);
+
+	qglStencilMask(0);
+	qglDisable(GL_STENCIL_TEST);
 
 	qglDisable(GL_SAMPLE_MASK);
 	qglSampleMaski(0, ~0);

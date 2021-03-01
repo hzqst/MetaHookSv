@@ -1,24 +1,15 @@
 #version 430
 
-#define AO_BLUR_PRESENT 0
-
 const float KERNEL_RADIUS = 3;
   
 layout(location=0) uniform float g_Sharpness;
-layout(location=1) uniform vec2  g_InvResolutionDirection; // either set x to 1/width or y to 1/height
+layout(location=1) uniform vec2 g_InvResolutionDirection; // either set x to 1/width or y to 1/height
 
 layout(binding=0) uniform sampler2D texSource;
 
 in vec2 texCoord;
 
 layout(location=0,index=0) out vec4 out_Color;
-
-#ifndef AO_BLUR_PRESENT
-#define AO_BLUR_PRESENT 1
-#endif
-
-
-//-------------------------------------------------------------------------
 
 float BlurFunction(vec2 uv, float r, float center_c, float center_d, inout float w_total)
 {
@@ -57,7 +48,7 @@ void main()
     c_total += BlurFunction(uv, r, center_c, center_d, w_total);  
   }
   
-#if AO_BLUR_PRESENT
+#ifdef AO_BLUR_PRESENT
   out_Color = vec4(c_total/w_total);
 #else
   out_Color = vec4(c_total/w_total, center_d, 0, 0);

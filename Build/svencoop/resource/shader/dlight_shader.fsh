@@ -20,7 +20,11 @@ uniform vec4 lightpos;
 #ifdef FINAL_PASS
 uniform sampler2D diffuseTex;
 uniform sampler2D lightmapTex;
+
+#ifndef DIRECT_BLIT
 uniform sampler2D depthTex;
+#endif
+
 #endif
 
 #ifdef LIGHT_PASS
@@ -96,11 +100,15 @@ void main()
 {
     vec4 diffuseColor = texture2D(diffuseTex, gl_TexCoord[0].xy);
     vec4 lightmapColor = texture2D(lightmapTex, gl_TexCoord[0].xy);
-    vec4 depthColor = texture2D(depthTex, gl_TexCoord[0].xy);
     
     vec4 finalColor = diffuseColor * lightmapColor;
 
     gl_FragColor = finalColor;
+
+#ifndef DIRECT_BLIT
+    vec4 depthColor = texture2D(depthTex, gl_TexCoord[0].xy);
+
     gl_FragDepth = depthColor.x;
+#endif
 }
 #endif
