@@ -1263,7 +1263,6 @@ char *R_ParseBSPEntity(char *data)
 			if (!data)
 			{
 				Sys_ErrorEx("R_ParseBSPEntity: EOF without closing brace");
-
 			}
 			if (com_token[0] == '}')
 			{
@@ -1276,6 +1275,22 @@ char *R_ParseBSPEntity(char *data)
 			}
 
 			R_ParseBSPEntityKeyValue(classname, keyname, com_token);
+		}
+	}
+	else
+	{
+		gEngfuncs.Con_Printf("R_ParseBSPEntity: missing classname, try next section.");
+		while (1)
+		{
+			data = gEngfuncs.COM_ParseFile(data, com_token);
+			if (!data)
+			{
+				break;
+			}
+			if (com_token[0] == '}')
+			{
+				break;
+			}
 		}
 	}
 
