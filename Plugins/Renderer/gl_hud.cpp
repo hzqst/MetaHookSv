@@ -52,6 +52,7 @@ cvar_t *r_ssao_radius = NULL;
 cvar_t *r_ssao_intensity = NULL;
 cvar_t *r_ssao_bias = NULL;
 cvar_t *r_ssao_blur_sharpness = NULL;
+cvar_t *r_ssao_studio_model = NULL;
 
 float *R_GenerateGaussianWeights(int kernelRadius)
 {
@@ -347,6 +348,7 @@ void R_InitGLHUD(void)
 	r_ssao_intensity = gEngfuncs.pfnRegisterVariable("r_ssao_intensity", "1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssao_bias = gEngfuncs.pfnRegisterVariable("r_ssao_bias", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssao_blur_sharpness = gEngfuncs.pfnRegisterVariable("r_ssao_blur_sharpness", "40.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssao_studio_model = gEngfuncs.pfnRegisterVariable("r_ssao_studio_model", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	last_luminance = 0;
 
@@ -422,7 +424,7 @@ void R_BlitToScreen(FBO_Container_t *src)
 	qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0);
 	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
 
-	qglClearColor(0.0, 1.0, 0.0, 0.25);
+	qglClearColor(0, 0, 0, 0);
 	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	if (bDoDirectBlit)
@@ -440,7 +442,7 @@ void R_BlitToFBO(FBO_Container_t *src, FBO_Container_t *dst)
 	qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
 
-	qglClearColor(0.0, 1.0, 0.0, 0.25);
+	qglClearColor(0, 0, 0, 0);
 	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	if (bDoDirectBlit)
@@ -460,7 +462,7 @@ void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	}
 
-	qglClearColor(0.0, 1.0, 0.0, 0.25);
+	qglClearColor(0, 0, 0, 0);
 	qglClear(GL_COLOR_BUFFER_BIT);
 
 	if(!filter2x2)
@@ -493,7 +495,7 @@ void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int logexp)
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	}
 
-	qglClearColor(0.0, 1.0, 0.0, 0.25);
+	qglClearColor(0, 0, 0, 0);
 	qglClear(GL_COLOR_BUFFER_BIT);
 
 	if(!logexp)
@@ -533,7 +535,7 @@ void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	}
 
-	qglClearColor(0.0, 1.0, 0.0, 0.25);
+	qglClearColor(0, 0, 0, 0);
 	qglClear(GL_COLOR_BUFFER_BIT);
 
 	qglUseProgramObjectARB(pp_luminadapt.program);
@@ -567,7 +569,7 @@ void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *l
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	}
 
-	qglClearColor(0.0, 1.0, 0.0, 0.25);
+	qglClearColor(0, 0, 0, 0);
 	qglClear(GL_COLOR_BUFFER_BIT);
 
 	qglUseProgramObjectARB(pp_brightpass.program);
@@ -600,7 +602,7 @@ void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	}
 
-	qglClearColor(0.0, 1.0, 0.0, 0.25);
+	qglClearColor(0, 0, 0, 0);
 	qglClear(GL_COLOR_BUFFER_BIT);
 
 	if(!vertical)
@@ -634,7 +636,7 @@ void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	}
 
-	qglClearColor(0.0, 0.0, 0.0, 0.25);
+	qglClearColor(0, 0, 0, 0);
 	qglClear(GL_COLOR_BUFFER_BIT);
 
 	qglEnable(GL_BLEND);
@@ -666,7 +668,7 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	}
 
-	qglClearColor(0.0, 1.0, 0.0, 0.25);
+	qglClearColor(0, 0, 0, 0);
 	qglClear(GL_COLOR_BUFFER_BIT);
 
 	qglUseProgramObjectARB(pp_tonemap.program);
@@ -770,7 +772,7 @@ void R_DoHDR(void)
 	}
 	else
 	{
-		qglClearColor(0.0, 1.0, 0.0, 0.25);
+		qglClearColor(0.0, 0, 0.0, 0);
 		qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		R_DrawHUDQuad_Texture(s_ToneMapFBO.s_hBackBufferTex, s_ToneMapFBO.iWidth, s_ToneMapFBO.iHeight);
@@ -821,7 +823,8 @@ int R_DoSSAO(int sampleIndex)
 		qglUseProgramObjectARB(depth_linearize.program);
 		qglUniform4fARB(0, 4 * r_params.movevars->zmax, 4 - r_params.movevars->zmax, r_params.movevars->zmax, 1.0f);
 
-		R_DrawHUDQuad_Texture(s_BackBufferFBO.s_hBackBufferDepthTex, glwidth, glheight);
+		GL_Bind(s_BackBufferFBO.s_hBackBufferDepthTex);
+		R_DrawHUDQuad(glwidth, glheight);
 	}
 
 	qglUseProgramObjectARB(0);
@@ -943,6 +946,7 @@ int R_DoSSAO(int sampleIndex)
 		qglSampleMaski(0, 1 << sampleIndex);
 	}
 
+	//Stencil for studio model?
 	qglUseProgramObjectARB(hbao_blur2.program);
 	qglUniform1fARB(0, r_ssao_blur_sharpness->value / meters2viewspace);
 	qglUniform2fARB(1, 0, 1.0f / float(glheight));

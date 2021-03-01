@@ -258,6 +258,7 @@ extern model_t *cl_shellchrome;
 
 //renderer
 extern int r_studio_drawcall;
+extern int r_studio_polys;
 
 void R_StudioClearVBOCache(void);
 void R_LoadStudioTextures(qboolean loadmap);

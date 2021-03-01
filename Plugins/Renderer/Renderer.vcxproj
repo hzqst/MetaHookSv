@@ -155,7 +155,6 @@ xcopy "$(OutDir)\..\..\..\Build\svencoop\resource\shader\*.*" "I:\SteamLibrary\s
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="gl_3dsky.cpp" />
     <ClCompile Include="gl_backend.cpp" />
-    <ClCompile Include="gl_cloak.cpp" />
     <ClCompile Include="gl_draw.cpp" />
     <ClCompile Include="gl_hooks.cpp" />
     <ClCompile Include="gl_hud.cpp" />
@@ -182,7 +181,6 @@ xcopy "$(OutDir)\..\..\..\Build\svencoop\resource\shader\*.*" "I:\SteamLibrary\s
     <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />
     <ClInclude Include="gl_3dsky.h" />
-    <ClInclude Include="gl_cloak.h" />
     <ClInclude Include="gl_draw.h" />
     <ClInclude Include="gl_hud.h" />
     <ClInclude Include="gl_light.h" />

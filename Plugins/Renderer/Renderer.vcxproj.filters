@@ -32,9 +32,6 @@
     <ClCompile Include="gl_backend.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="gl_cloak.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="gl_draw.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -107,9 +104,6 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="gl_3dsky.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="gl_cloak.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="gl_draw.h">

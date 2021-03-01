@@ -265,7 +265,7 @@ void R_BeginRenderGBuffer(void)
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
-	qglClearColor(0, 0, 0, 1);
+	qglClearColor(0, 0, 0, 0);
 	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
@@ -396,16 +396,16 @@ void R_EndRenderGBuffer(void)
 	GL_PopFrameBuffer();
 	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
 
+	//Allow depth data to be transfered to main FBO
+	qglDisable(GL_BLEND);
+	qglEnable(GL_DEPTH_TEST);
+	qglDepthMask(GL_TRUE);
+
 	//Bind new lightmap at texture1
 	qglUseProgramObjectARB(dlight_final.program);
 	qglUniform1iARB(dlight_final.diffuseTex, 0);
 	qglUniform1iARB(dlight_final.lightmapTex, 1);
 	qglUniform1iARB(dlight_final.depthTex, 2);
-
-	//Allow depth data to be transfered to main FBO
-	qglDisable(GL_BLEND);
-	qglEnable(GL_DEPTH_TEST);
-	qglDepthMask(GL_TRUE);
 
 	//Diffuse texture (for merging)
 	GL_SelectTexture(TEXTURE0_SGIS);

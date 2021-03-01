@@ -38,7 +38,8 @@ auxvert_t auxverts[MAXSTUDIOVERTS];
 vec3_t lightvalues[MAXSTUDIOVERTS];
 auxvert_t *pauxverts;
 float *pvlightvalues;
-int r_studio_drawcall = 0;
+int r_studio_drawcall;
+int r_studio_polys;
 
 SHADER_DEFINE(studio);
 SHADER_DEFINE(studiogbuffer);
@@ -832,7 +833,7 @@ void R_GLStudioDrawPoints(void)
 
 			pmesh = (mstudiomesh_t *)((byte *)(*pstudiohdr) + (*psubmodel)->meshindex) + j;
 
-			(*c_alias_polys) += pmesh->numtris;
+			r_studio_polys += pmesh->numtris;
 
 			flags = ptexture[pskinref[pmesh->skinref]].flags | (*g_ForcedFaceFlags);
 
@@ -1124,7 +1125,7 @@ void R_GLStudioDrawPoints(void)
 
 			auto ptricmds = (short *)((byte *)(*pstudiohdr) + pmesh->triindex);
 
-			(*c_alias_polys) += pmesh->numtris;
+			r_studio_polys += pmesh->numtris;
 
 			flags = ptexture[pskinref[pmesh->skinref]].flags | (*g_ForcedFaceFlags);
 
@@ -1262,6 +1263,7 @@ void R_GLStudioDrawPoints(void)
 						qglEnd();
 
 						r_studio_drawcall++;
+
 						if (iInitVBO & 2)
 						{
 							VBOMesh->vTri.emplace_back(iStartDrawVertex, iNumDrawVertex, iCurrentDrawType);
@@ -1330,6 +1332,7 @@ void R_GLStudioDrawPoints(void)
 						}
 
 						qglEnd();
+
 						r_studio_drawcall++;
 
 						if (iInitVBO & 2)
@@ -1408,6 +1411,7 @@ void R_GLStudioDrawPoints(void)
 					}
 
 					qglEnd();
+
 					r_studio_drawcall++;
 
 					if (iInitVBO & 2)

@@ -735,8 +735,7 @@ void R_RenderShadowScenes(void)
 			qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
 
 			r_wsurf_drawcall++;
-
-			(*c_brush_polys) += texchain.iFaceCount;
+			r_wsurf_polys += texchain.iFaceCount;
 		}
 
 		for (size_t i = 0; i < r_wsurf.vTextureChainScroll.size(); ++i)
@@ -746,8 +745,7 @@ void R_RenderShadowScenes(void)
 			qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
 
 			r_wsurf_drawcall++;
-
-			(*c_brush_polys) += texchain.iFaceCount;
+			r_wsurf_polys += texchain.iFaceCount;
 		}
 
 		R_SetVBOState(VBOSTATE_OFF);

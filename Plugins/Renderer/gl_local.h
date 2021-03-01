@@ -33,7 +33,6 @@
 #include "gl_wsurf.h"
 #include "gl_draw.h"
 #include "gl_3dsky.h"
-#include "gl_cloak.h"
 
 #include "ref_int_internal.h"
 
@@ -83,8 +82,13 @@ extern frame_t *cl_frames;
 extern int size_of_frame;
 extern int *cl_parsecount;
 extern int *cl_waterlevel;
+extern int *envmap;
+extern int *cl_stats;
 extern double *cl_time;
 extern double *cl_oldtime;
+extern float *cl_weaponstarttime;
+extern int *cl_weaponsequence;
+extern int *cl_light_level;
 
 //gl extension
 extern qboolean gl_framebuffer_object;
@@ -129,7 +133,7 @@ extern FBO_Container_t s_BrightAccumFBO;
 extern FBO_Container_t s_ToneMapFBO;
 extern FBO_Container_t s_DepthLinearFBO;
 extern FBO_Container_t s_HBAOCalcFBO;
-extern FBO_Container_t s_CloakFBO;
+//extern FBO_Container_t s_CloakFBO;
 extern FBO_Container_t s_ShadowFBO;
 extern FBO_Container_t s_WaterFBO;
 
@@ -170,6 +174,7 @@ extern cvar_t *gl_vsync;
 extern cvar_t *gl_ztrick;
 extern cvar_t *gl_finish;
 extern cvar_t *gl_clear;
+extern cvar_t *gl_clearcolor;
 extern cvar_t *gl_cull;
 extern cvar_t *gl_texsort;
 extern cvar_t *gl_smoothmodels;
@@ -204,7 +209,9 @@ extern cvar_t *v_lightgamma;
 extern cvar_t *v_brightness;
 extern cvar_t *v_gamma;
 extern cvar_t *v_lambert;
+
 extern cvar_t *cl_righthand;
+extern cvar_t *chase_active;
 
 void R_FillAddress(void);
 void R_InstallHook(void);
@@ -272,6 +279,9 @@ void MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble z
 void R_SetCustomFrustum(float *org, float *vpn2, float *vright2, float *vup2, float fov);
 float CalcFov(float fov_x, float width, float height);
 int SignbitsForPlane(mplane_t *out);
+qboolean R_ParseVectorCvar(cvar_t *a1, float *vec);
+void R_ForceCVars(qboolean mp);
+colorVec R_LightPoint(vec3_t p);
 
 refdef_t *R_GetRefDef(void);
 int R_GetDrawPass(void);

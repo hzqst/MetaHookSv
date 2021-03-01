@@ -129,6 +129,7 @@ extern cvar_t *r_ssao_radius;
 extern cvar_t *r_ssao_intensity;
 extern cvar_t *r_ssao_bias;
 extern cvar_t *r_ssao_blur_sharpness;
+extern cvar_t *r_ssao_studio_model;
 extern cvar_t *r_fxaa;
 extern int last_luminance;
 

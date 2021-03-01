@@ -10,6 +10,7 @@ cvar_t *r_wsurf_replace;
 cvar_t *r_wsurf_vbo;
 
 int r_wsurf_drawcall = 0;
+int r_wsurf_polys = 0;
 
 std::unordered_map<int, wsurf_program_t> g_WSurfProgramTable;
 
@@ -862,7 +863,7 @@ void DrawGLScrollingVertex(brushface_t *brushface, float sOffset)
 	}
 	qglEnd();
 
-	(*c_brush_polys)++;
+	r_wsurf_polys ++;
 	r_wsurf_drawcall ++;
 }
 
@@ -921,9 +922,8 @@ void R_DrawDecals(qboolean bMultitexture)
 	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
 	gRefFuncs.R_DrawDecals(1);
 
-	(*c_brush_polys)++;
-
-	r_wsurf_drawcall++;
+	r_wsurf_polys ++;
+	r_wsurf_drawcall ++;
 
 	//Restore if not enabled
 	if (!bMultitexture)
@@ -1631,8 +1631,7 @@ void R_DrawWorld(void)
 			R_EndDetailTexture();
 
 			r_wsurf_drawcall++;
-
-			(*c_brush_polys) += texchain.iFaceCount;
+			r_wsurf_polys += texchain.iFaceCount;
 		}
 
 		//Use scrolling shader
@@ -1684,7 +1683,7 @@ void R_DrawWorld(void)
 			R_EndDetailTexture();
 
 			r_wsurf_drawcall++;
-			(*c_brush_polys) += texchain.iFaceCount;
+			r_wsurf_polys += texchain.iFaceCount;
 		}
 
 		qglUseProgramObjectARB(0);

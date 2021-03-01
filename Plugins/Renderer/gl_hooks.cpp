@@ -378,7 +378,6 @@ void R_FillAddress(void)
 
 		gRefFuncs.R_RotateForEntity = (void(*)(float *,cl_entity_t *))Search_Pattern(R_ROTATEFORENTITY_SVENGINE);
 		Sig_FuncNotFound(R_RotateForEntity);
-
 	}
 	else if (g_dwEngineBuildnum >= 5953)
 	{
@@ -1084,11 +1083,24 @@ void R_FillAddress(void)
 		Sig_AddrNotFound(gl_mtexable);
 		gl_mtexable = *(decltype(gl_mtexable) *)(addr + 2);
 
-#define C_BRUSH_POLYS_SIG_SVENGINE "\xFF\x35\x2A\x2A\x2A\x2A\xDC\x0D\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xE8"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView_SvEngine, 0x800, C_BRUSH_POLYS_SIG_SVENGINE, sizeof(C_BRUSH_POLYS_SIG_SVENGINE) - 1);
-		Sig_AddrNotFound(c_brush_polys);
-		c_alias_polys = *(int **)(addr + 2);
-		c_brush_polys = *(int **)(addr + 14);
+#define ENVMAP_SIG_SVENGINE "\xF6\xC4\x44\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView_SvEngine, 0x400, ENVMAP_SIG_SVENGINE, sizeof(ENVMAP_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(envmap);
+		envmap = *(int **)(addr + 11);
+		cl_stats = *(int **)(addr + 24);
+
+#define CL_WEAPONSTARTTIME_SIG_SVENGINE "\xD9\x1D\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x89\x81\xDC\x02\x00\x00"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView_SvEngine, 0x600, CL_WEAPONSTARTTIME_SIG_SVENGINE, sizeof(CL_WEAPONSTARTTIME_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(cl_weaponstarttime);
+		cl_weaponstarttime = *(float **)(addr + 2);
+		cl_weaponsequence = *(int **)(addr + 7);
+
+#define CL_LIGHTLEVEL_SIG_SVENGINE "\xD1\xEA\x89\x15\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView_SvEngine, 0x600, CL_LIGHTLEVEL_SIG_SVENGINE, sizeof(CL_LIGHTLEVEL_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(cl_light_level);
+		cl_light_level = *(int **)(addr + 4);
+		gRefFuncs.R_PolyBlend = (decltype(gRefFuncs.R_PolyBlend))GetCallAddress(addr + 8);
+		gRefFuncs.S_ExtraUpdate = (decltype(gRefFuncs.S_ExtraUpdate))GetCallAddress(addr + 13);
 
 #define R_DETAIL_TEXID_SIG_SVENGINE "\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\xB2\x01"
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_BeginDetailTexture, 0x250, R_DETAIL_TEXID_SIG_SVENGINE, sizeof(R_DETAIL_TEXID_SIG_SVENGINE) - 1);
@@ -1255,14 +1267,6 @@ void R_FillAddress(void)
 		Sig_AddrNotFound(g_NormalIndex);
 		g_NormalIndex = *(int(**)[MAXSTUDIOVERTS])(addr + 1);
 
-		//R_RenderDynamicLightmaps
-		//mov     ecx, c_brush_polys
-		//push    ebx
-#define C_BRUSH_POLYS_SIG "\x8B\x0D\x2A\x2A\x2A\x2A\x53"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderDynamicLightmaps, 0x30, C_BRUSH_POLYS_SIG, sizeof(C_BRUSH_POLYS_SIG) - 1);
-		Sig_AddrNotFound(c_brush_polys);
-		c_brush_polys = *(int **)(addr + 2);
-
 		//and     eax, 0FFh
 		//mov     eax, d_lightstylevalue[eax*4]
 #define D_LIGHTSTYLEVALUE_SIG "\x25\xFF\x00\x00\x00\x8B\x04\x85"
@@ -1374,7 +1378,7 @@ void R_InstallHook(void)
 		g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderView_SvEngine, R_RenderView_SvEngine, (void *&)gRefFuncs.R_RenderView_SvEngine);
 	else
 		g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderView, R_RenderView, (void *&)gRefFuncs.R_RenderView);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderScene, R_RenderScene, (void *&)gRefFuncs.R_RenderScene);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderScene, R_RenderScene, (void *&)gRefFuncs.R_RenderScene);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawWorld, R_DrawWorld, (void *&)gRefFuncs.R_DrawWorld);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSpriteModel, R_DrawSpriteModel, (void *&)gRefFuncs.R_DrawSpriteModel);	
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_NewMap, R_NewMap, (void *&)gRefFuncs.R_NewMap);

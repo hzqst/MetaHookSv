@@ -141,9 +141,6 @@ ref_export_t gRefExports =
 	//2d postprocess
 	R_BeginFXAA,
 	//cloak
-	R_RenderCloakTexture,
-	R_GetCloakTexture,
-	R_BeginRenderConc,
 	//shader
 	ShaderAPI,
 	RefAPI
@@ -326,27 +323,7 @@ int HUD_Redraw(float time, int intermission)
 
 		qglUseProgramObjectARB(0);
 	}
-	else if(r_cloak_debug && r_cloak_debug->value)
-	{
-		qglDisable(GL_BLEND);
-		qglDisable(GL_ALPHA_TEST);
-		qglColor4f(1,1,1,1);
-
-		qglEnable(GL_TEXTURE_2D);
-		qglBindTexture(GL_TEXTURE_2D, cloak_texture);
-
-		qglBegin(GL_QUADS);
-		qglTexCoord2f(0,1);
-		qglVertex3f(0,0,0);
-		qglTexCoord2f(1,1);
-		qglVertex3f(glwidth/2,0,0);
-		qglTexCoord2f(1,0);
-		qglVertex3f(glwidth/2,glheight/2,0);
-		qglTexCoord2f(0,0);
-		qglVertex3f(0,glheight/2,0);
-		qglEnd();
-		qglEnable(GL_ALPHA_TEST);
-	}
+	
 	else if(r_light_debug && r_light_debug->value)
 	{
 		qglDisable(GL_BLEND);

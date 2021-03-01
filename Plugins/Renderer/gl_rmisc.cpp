@@ -270,6 +270,5 @@ void R_FreeTextures(void)
 
 void Cache_Free(cache_user_t *c)
 {
-
 	return gRefFuncs.Cache_Free(c);
 }

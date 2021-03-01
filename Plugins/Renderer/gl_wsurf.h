@@ -111,6 +111,7 @@ typedef struct
 
 extern r_worldsurf_t	r_wsurf;
 extern int r_wsurf_drawcall;
+extern int r_wsurf_polys;
 
 void R_InitWSurf(void);
 void R_VidInitWSurf(void);
@@ -121,8 +122,6 @@ extern int *lightmap_textures;
 extern void *lightmap_rectchange;
 extern int *lightmap_modified;
 extern glpoly_t **lightmap_polys;
-extern int *c_brush_polys;
-extern int *c_alias_polys;
 extern int *d_lightstylevalue;
 extern dlight_t *cl_dlights;
 extern int *r_dlightactive;

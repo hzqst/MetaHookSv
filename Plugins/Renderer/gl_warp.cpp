@@ -279,7 +279,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		qglEnd();
 
 		r_wsurf_drawcall++;
-		(*c_brush_polys) ++;
+		r_wsurf_polys++;
 	}
 
 	if(useProgram)
