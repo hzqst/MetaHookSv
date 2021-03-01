@@ -160,7 +160,7 @@ r_ssao 1 / 0 : to enable / disable Screen Space Ambient Occlusion. recommended v
 
 r_ssao_intensity : to control the intensity of SSAO shadow. recommended value : 0.6
 
-r_ssao_radius : to control the sample size of SSAO shadow. recommended value : 100.0
+r_ssao_radius : to control the sample size of SSAO shadow. recommended value : 30.0
 
 r_ssao_blur_sharpness : to control the sharpness of SSAO shadow. recommended value : 1.0
 
