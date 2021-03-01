@@ -298,7 +298,8 @@ void R_InitGLHUD(void)
 		{
 		}
 
-		depth_linearize_msaa.program = R_CompileShaderFile("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\depthlinearize.msaa.frag.glsl");
+		depth_linearize_msaa.program = R_CompileShaderFileEx("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\depthlinearize.frag.glsl",
+			"#define DEPTHLINEARIZE_MSAA 1\n", NULL, "#define DEPTHLINEARIZE_MSAA 1\n");
 		if (depth_linearize_msaa.program)
 		{
 		}

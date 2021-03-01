@@ -2,15 +2,32 @@ uniform vec4 waterfogcolor;
 uniform vec4 eyepos;
 uniform float time;
 uniform float fresnel;
-uniform float depthfactor;
 uniform float normfactor;
+
+#ifdef DEPTH_ENABLED
+uniform vec2 clipinfo;
+uniform float depthfactor;
+#endif
+
 uniform sampler2D normalmap;
 uniform sampler2D refractmap;
+
+#ifndef UNDERWATER_ENABLED
 uniform sampler2D reflectmap;
+#endif
+
+#ifdef DEPTH_ENABLED
 uniform sampler2D depthrefrmap;
+#endif
 
 varying vec4 projpos;
 varying vec4 worldpos;
+
+float linearizeDepth(float nearz, float farz, float depth)
+{
+	depth = 2.0 * depth - 1.0;
+	return (2.0 * nearz) / (farz + nearz - depth * (farz - nearz));
+}
 
 void main()
 {
@@ -43,18 +60,20 @@ void main()
 
 	vec2 vRefractTexCoord = vBaseTexCoord + vOffsetTexCoord;
 	vec4 vRefractColor = texture2D(refractmap, vRefractTexCoord);
+	vRefractColor.a = 1.0;
 
 	if(vRefractColor.x == waterfogcolor.x && vRefractColor.y == waterfogcolor.y && vRefractColor.z == waterfogcolor.z )
 		discard;
 
-	vec4 vDepthColor = texture2D(depthrefrmap, vBaseTexCoord);
+	
 
 #ifdef UNDERWATER_ENABLED
 
 		//lerp waterfog color and refraction color
 		float flWaterColorAlpha = clamp(waterfogcolor.a, 0.01, 0.9);
+		vec4 vWaterColor = vec4(waterfogcolor.x, waterfogcolor.y, waterfogcolor.z, 1.0);
 
-		vec4 vFinalColor2 = vRefractColor * (1.0 - flWaterColorAlpha) + waterfogcolor * flWaterColorAlpha;
+		vec4 vFinalColor2 = vRefractColor * (1.0 - flWaterColorAlpha) + vWaterColor * flWaterColorAlpha;
 
 	#ifdef GBUFFER_ENABLED
 		vFinalColor2.a = 1.0;
@@ -68,15 +87,17 @@ void main()
 
 #else
 
+	#ifdef DEPTH_ENABLED
+		vec4 vDepthColor = texture2D(depthrefrmap, vBaseTexCoord);
+		float flDepthFactor = pow(vDepthColor.x, depthfactor);
+	#endif
+
 		//sample the reflect color(texcoord inverted)
-		vBaseTexCoord = vec2(projpos.x, -projpos.y) / projpos.w * 0.5 + 0.5;
+		vec2 vBaseTexCoord2 = vec2(projpos.x, -projpos.y) / projpos.w * 0.5 + 0.5;
 
-		vec2 vReflectTexCoord = vBaseTexCoord + vOffsetTexCoord;
+		vec2 vReflectTexCoord = vBaseTexCoord2 + vOffsetTexCoord;
 		vec4 vReflectColor = texture2D(reflectmap, vReflectTexCoord);
-
-		//depth of water
-		
-		float flDepth = pow(vDepthColor.z, depthfactor);
+		vReflectColor.a = 1.0;
 
 		float flRefractFactor = clamp(fresnelX * fresnel, 0.05, 0.999);
 
@@ -85,16 +106,19 @@ void main()
 
 		//lerp the reflection and refraction color by fresnel
 		vec4 vFinalColor = vReflectColor * (1.0-flRefractFactor) + vRefractColor * flRefractFactor;
-		
+
 		float flWaterColorAlpha = clamp(waterfogcolor.a, 0.01, 0.9);
 
-		vec4 vWaterColor = waterfogcolor;
-		vWaterColor.a = 1.0;
+		vec4 vWaterColor = vec4(waterfogcolor.x, waterfogcolor.y, waterfogcolor.z, 1.0);
 
 		//lerp waterfog color
 		vec4 vFinalColor2 = vFinalColor * (1.0-flWaterColorAlpha) + vWaterColor * flWaterColorAlpha;
-		
-		vFinalColor2.a = flDepth;
+
+	#ifdef DEPTH_ENABLED
+		vFinalColor2.a = flDepthFactor;
+	#else
+		vFinalColor2.a = 1.0;
+	#endif
 
 	#ifdef GBUFFER_ENABLED
 		vFinalColor2.a = 1.0;

@@ -86,7 +86,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	float scale;
 	float tempVert[3];
 	unsigned char *pSourcePalette;
-	qboolean useProgram = false, dontShader = false;
+	int useProgram = 0, dontShader = false;
 
 	if (drawreflect)
 		return;
@@ -166,8 +166,11 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 			if (!bAboveWater)
 				programState |= WATER_UNDERWATER_ENABLED;
 
-			if(drawgbuffer)
+			if (drawgbuffer)
 				programState |= WATER_GBUFFER_ENABLED;
+
+			if (bAboveWater && alpha < 1)
+				programState |= WATER_DEPTH_ENABLED;
 
 			water_program_t prog = { 0 };
 			R_UseWaterProgram(programState, &prog);
@@ -178,6 +181,8 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 					qglUniform4fARB(prog.waterfogcolor, waterObject->color.r / 255.0f, waterObject->color.g / 255.0f, waterObject->color.b / 255.0f, alpha);
 				if (prog.eyepos != -1)
 					qglUniform4fARB(prog.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0);
+				if (prog.clipinfo != -1)
+					qglUniform2fARB(prog.clipinfo, 4.0, r_params.movevars->zmax);
 				if (prog.time != -1)
 					qglUniform1fARB(prog.time, clientTime);
 				if (prog.fresnel != -1)
@@ -186,26 +191,32 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 					qglUniform1fARB(prog.depthfactor, clamp(r_water_depthfactor->value, 0.0, 1000.0));
 				if (prog.normfactor != -1)
 					qglUniform1fARB(prog.normfactor, clamp(r_water_normfactor->value, 0.0, 1000.0));
+
+				qglEnable(GL_BLEND);
+				qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+				GL_SelectTexture(TEXTURE0_SGIS);
+				GL_Bind(water_normalmap);
+
+				GL_EnableMultitexture();
+				GL_Bind(waterObject->refractmap);
+
+				if (prog.reflectmap != -1)
+				{
+					qglActiveTextureARB(TEXTURE2_SGIS);
+					qglEnable(GL_TEXTURE_2D);
+					qglBindTexture(GL_TEXTURE_2D, waterObject->reflectmap);
+				}
+
+				if (prog.depthrefrmap != -1)
+				{
+					qglActiveTextureARB(TEXTURE3_SGIS);
+					qglEnable(GL_TEXTURE_2D);
+					qglBindTexture(GL_TEXTURE_2D, waterObject->depthrefrmap);
+				}
+
+				useProgram = 1;
 			}
-
-			qglEnable(GL_BLEND);
-			qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-			GL_SelectTexture(TEXTURE0_SGIS);
-			GL_Bind(water_normalmap);
-
-			GL_EnableMultitexture();
-			GL_Bind(waterObject->refractmap);
-
-			qglActiveTextureARB(TEXTURE2_SGIS);
-			qglEnable(GL_TEXTURE_2D);
-			qglBindTexture(GL_TEXTURE_2D, waterObject->reflectmap);
-
-			qglActiveTextureARB(TEXTURE3_SGIS);
-			qglEnable(GL_TEXTURE_2D);
-			qglBindTexture(GL_TEXTURE_2D, waterObject->depthrefrmap);
-
-			useProgram = true;
 		}
 	}
 

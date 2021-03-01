@@ -50,6 +50,9 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 		if (state & WATER_GBUFFER_ENABLED)
 			defs << "#define GBUFFER_ENABLED\n";
 
+		if (state & WATER_DEPTH_ENABLED)
+			defs << "#define DEPTH_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("resource\\shader\\water_shader.vsh", NULL, "resource\\shader\\water_shader.fsh", def.c_str(), NULL, def.c_str());
@@ -58,7 +61,7 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 			SHADER_UNIFORM(prog, waterfogcolor, "waterfogcolor");
 			SHADER_UNIFORM(prog, eyepos, "eyepos");
 			SHADER_UNIFORM(prog, entitymatrix, "entitymatrix");
-			SHADER_UNIFORM(prog, zmax, "zmax");
+			SHADER_UNIFORM(prog, clipinfo, "clipinfo");
 			SHADER_UNIFORM(prog, time, "time");
 			SHADER_UNIFORM(prog, fresnel, "fresnel");
 			SHADER_UNIFORM(prog, depthfactor, "depthfactor");
