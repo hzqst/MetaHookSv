@@ -38,14 +38,14 @@ void R_MarkLeaves(void)
 	//Don't clip bsp nodes when rendering refract or reflect view for non-transparent water.
 	if (r_water_novis->value > 0)
 	{
-		if (drawrefract)
+		/*if (drawrefract)
 		{
 			if (curwater && curwater->color.a == 255)
 			{
 				r_novis->value = 1;
 			}
 		}
-		else if (drawreflect)
+		else */if (drawreflect)
 		{
 			r_novis->value = 1;
 		}
