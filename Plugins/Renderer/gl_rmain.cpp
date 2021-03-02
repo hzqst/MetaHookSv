@@ -82,6 +82,7 @@ int *gl_msaa_fbo = 0;
 int *gl_backbuffer_fbo = 0;
 int *gl_mtexable = 0;
 qboolean *mtexenabled = 0;
+qboolean g_SvEngine_DrawPortalView = 0;
 
 float r_identity_matrix[16] = {
 	1.0f, 0.0f, 0.0f, 0.0f,
@@ -192,15 +193,11 @@ int R_GetDrawPass(void)
 		return r_draw_reflect;
 	if(drawrefract)
 		return r_draw_refract;
-	if(draw3dsky)
-		return r_draw_3dsky;
 	return r_draw_normal;
 }
 
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
-	if(draw3dsky)
-		return false;
 
 	return gRefFuncs.R_CullBox(mins, maxs);
 }
@@ -982,7 +979,6 @@ void GL_ClearFBO(FBO_Container_t *s)
 	s->s_hBackBufferTex3 = 0;
 	s->s_hBackBufferTex4 = 0;
 	s->s_hBackBufferDepthTex = 0;
-	s->s_hBackBufferStencilTexView = 0;
 	s->iWidth = s->iHeight = s->iTextureColorFormat = 0;
 }
 
@@ -1011,9 +1007,6 @@ void GL_FreeFBO(FBO_Container_t *s)
 
 	if (s->s_hBackBufferDepthTex)
 		qglDeleteTextures(1, &s->s_hBackBufferDepthTex);
-
-	if (s->s_hBackBufferStencilTexView)
-		qglDeleteTextures(1, &s->s_hBackBufferStencilTexView);
 
 	GL_ClearFBO(s);
 }
@@ -1129,12 +1122,6 @@ void R_GLFrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat, qbo
 	}
 
 	qglBindTexture(tex2D, 0);
-
-	if (iInternalFormat == GL_DEPTH24_STENCIL8 || iInternalFormat == GL_DEPTH24_STENCIL8_EXT)
-	{
-		s->s_hBackBufferStencilTexView = GL_GenTexture();
-		qglTextureView(s->s_hBackBufferStencilTexView, tex2D, s->s_hBackBufferDepthTex, GL_DEPTH24_STENCIL8, 0, 1, 0, 1);
-	}
 }
 
 int R_GLGenColorTextureHBAO(int w, int h)
@@ -1761,13 +1748,15 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 
 void R_PreRenderView(int a1)
 {
-	if (!a1 && !r_refdef->onlyClientDraws)
+	g_SvEngine_DrawPortalView = a1;
+
+	if (!r_refdef->onlyClientDraws)
 	{
 		if (r_water && r_water->value && waters_active)
 		{
 			R_RenderWaterView();
 		}
-		if (r_shadow && r_shadow->value)
+		if (r_shadow && r_shadow->value && !g_SvEngine_DrawPortalView)
 		{
 			R_RenderShadowMap();
 		}
@@ -1807,10 +1796,7 @@ void R_PostRenderView()
 		R_DoHDR();
 	}
 
-	if (r_speeds->value)
-	{
-		gEngfuncs.Con_Printf("%d wsurf drawcall, %d studio drawcall\n", r_wsurf_drawcall, r_studio_drawcall);
-	}
+	g_SvEngine_DrawPortalView = 0;	
 }
 
 void R_PreDrawViewModel(void)
@@ -1917,24 +1903,6 @@ void R_RenderView_SvEngine(int a1)
 		R_PreDrawViewModel();
 
 	R_RenderScene();
-
-	if (!a1 && !r_refdef->onlyClientDraws)
-	{
-		if (s_MSAAFBO.s_hBackBufferFBO)
-		{
-			for (int sampleIndex = 0; sampleIndex < max(1, gl_msaa_samples); sampleIndex++)
-			{
-				if (!R_DoSSAO(sampleIndex))
-				{
-					break;
-				}
-			}
-		}
-		else
-		{
-			R_DoSSAO(-1);
-		}
-	}
 
 	if (!r_refdef->onlyClientDraws)
 		R_DrawViewModel();
@@ -2187,7 +2155,6 @@ void R_Init(void)
 	R_InitShadow();
 	R_InitWSurf();
 	R_InitGLHUD();
-	R_Init3DSky();
 	R_InitLight();
 
 	Draw_Init();
@@ -2219,7 +2186,6 @@ void R_NewMap(void)
 	memset(&r_params, 0, sizeof(r_params));
 
 	R_ClearWater();
-	R_Clear3DSky();
 	R_VidInitWSurf();
 }
 

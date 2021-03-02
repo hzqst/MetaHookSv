@@ -274,7 +274,7 @@ void R_BeginRenderGBuffer(void)
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
-	qglClearColor(0.0, 0.0, 0.0, 1);
+	qglClearColor(0, 0, 0, 1);
 	qglStencilMask(0xFF);
 	qglClearStencil(0);
 	qglDepthMask(GL_TRUE);
@@ -414,7 +414,9 @@ void R_EndRenderGBuffer(void)
 	qglEnable(GL_DEPTH_TEST);
 	qglDepthMask(GL_TRUE);
 
-	//Allow stencil to be transfered to main FBO
+	//Allow stencil to be transfered to main FBO ?
+	//I donthink there is a mask check in qglBlitFramebufferEXT
+
 	qglEnable(GL_STENCIL_TEST);
 	qglStencilMask(0xFF);
 	qglStencilFunc(GL_ALWAYS, 0, 0xFF);
@@ -500,7 +502,7 @@ void R_EndRenderGBuffer(void)
 	qglDisable(GL_STENCIL_TEST);
 
 	//FXAA for shading stage when MSAA available for all other render stage
-	if (r_fxaa->value && s_MSAAFBO.s_hBackBufferFBO && (!drawreflect && !drawrefract))
+	if (r_fxaa->value && s_MSAAFBO.s_hBackBufferFBO && (!drawreflect && !drawrefract && !g_SvEngine_DrawPortalView))
 	{
 		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 		qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);

@@ -26,9 +26,6 @@
     <ClCompile Include="exportfuncs.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="gl_3dsky.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="gl_backend.cpp">
       <Filter>Source</Filter>
     </ClCompile>

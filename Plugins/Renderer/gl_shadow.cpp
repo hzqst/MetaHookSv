@@ -224,6 +224,16 @@ void R_RenderShadowMap(void)
 	shadow_numvisedicts_medium = 0;
 	shadow_numvisedicts_low = 0;
 
+	float vieworg[3];
+	if (r_refdef->useCamera) 
+	{
+		VectorCopy(r_refdef->r_camera_origin, vieworg);
+	}
+	else
+	{
+		VectorCopy(r_refdef->vieworg, vieworg);
+	}
+
 	for (int j = 0; j < *cl_numvisedicts; ++j)
 	{
 		if (R_ShouldCastShadow(cl_visedicts[j]))
@@ -268,7 +278,6 @@ void R_RenderShadowMap(void)
 	float *projmatrixArray[3] = { shadow_projmatrix_high , shadow_projmatrix_medium, shadow_projmatrix_low };
 	float *mvmatrixArray[3] = { shadow_mvmatrix_high , shadow_mvmatrix_medium, shadow_mvmatrix_low };
 
-	qglEnable(GL_POLYGON_OFFSET_FILL);
 	qglDisable(GL_CULL_FACE);
 
 	for (int i = 0; i < 3; ++i)
@@ -322,7 +331,6 @@ void R_RenderShadowMap(void)
 	}
 
 	qglEnable(GL_CULL_FACE);
-	qglDisable(GL_POLYGON_OFFSET_FILL);
 
 	if(s_ShadowFBO.s_hBackBufferFBO)
 	{
@@ -727,7 +735,7 @@ void R_RenderShadowScenes(void)
 	{
 		qglEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
-		R_SetVBOState(VBOSTATE_LIGHTMAP_TEXTURE);
+		R_SetVBOState(VBOSTATE_NO_TEXTURE);
 
 		for (size_t i = 0; i < r_wsurf.vTextureChainStatic.size(); ++i)
 		{

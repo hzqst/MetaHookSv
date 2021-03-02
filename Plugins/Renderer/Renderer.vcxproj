@@ -153,7 +153,6 @@ xcopy "$(OutDir)\..\..\..\Build\svencoop\resource\shader\*.*" "I:\SteamLibrary\s
     <ClCompile Include="cJSON.c" />
     <ClCompile Include="command.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
-    <ClCompile Include="gl_3dsky.cpp" />
     <ClCompile Include="gl_backend.cpp" />
     <ClCompile Include="gl_draw.cpp" />
     <ClCompile Include="gl_hooks.cpp" />

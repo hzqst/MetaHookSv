@@ -32,7 +32,6 @@
 #include "gl_light.h"
 #include "gl_wsurf.h"
 #include "gl_draw.h"
-#include "gl_3dsky.h"
 
 #include "ref_int_internal.h"
 
@@ -335,5 +334,7 @@ extern float r_identity_matrix[16];
 
 extern float r_rotate_entity_matrix[16];
 extern bool r_rotate_entity;
+
+extern qboolean g_SvEngine_DrawPortalView;
 
 #define BUFFER_OFFSET(i) ((unsigned int *)NULL + (i))

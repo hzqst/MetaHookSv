@@ -18,7 +18,6 @@ extern r_3dsky_parm_t r_3dsky_parm;
 extern cvar_t *r_3dsky;
 extern cvar_t *r_3dsky_debug;
 
-void R_Init3DSky(void);
 void R_Clear3DSky(void);
 void R_Render3DSky(void);
 void R_ViewOriginFor3DSky(float *org);

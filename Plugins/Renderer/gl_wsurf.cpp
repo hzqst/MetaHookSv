@@ -1376,29 +1376,6 @@ void R_LoadBSPEntities(void)
 				}
 			}
 		}
-
-		if(!strcmp(classname, "sky_box"))
-		{
-			char *model = ValueForKey(ent, "model");
-			if (model && model[0] == '*')
-			{
-				model_t *mod = IEngineStudio.Mod_ForName(model, false);
-				if(mod)
-				{
-					VectorCopy(mod->mins, r_3dsky_parm.mins);
-					VectorCopy(mod->maxs, r_3dsky_parm.maxs);
-				}
-			}
-		}
-		if(!strcmp(classname, "sky_center"))
-		{
-			VectorCopy(ent->origin, r_3dsky_parm.center);
-		}
-		if(!strcmp(classname, "sky_camera"))
-		{
-			VectorCopy(ent->origin, r_3dsky_parm.camera);
-			r_3dsky_parm.enable = true;
-		}
 	}//end for
 }
 

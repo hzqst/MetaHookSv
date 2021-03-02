@@ -134,10 +134,6 @@ ref_export_t gRefExports =
 	SaveImageGeneric,
 	//capture screen
 	R_GetSCRCaptureBuffer,
-	//3dsky
-	R_Add3DSkyEntity,
-	R_Setup3DSkyModel,
-	R_Finish3DSkyModel,
 	//2d postprocess
 	R_BeginFXAA,
 	//cloak
@@ -221,20 +217,53 @@ int HUD_VidInit(void)
 
 void V_CalcRefdef(struct ref_params_s *pparams)
 {
-	R_CalcRefdef(pparams);
-
 	gExportfuncs.V_CalcRefdef(pparams);
+
+	R_CalcRefdef(pparams);
 }
 
 void HUD_DrawNormalTriangles(void)
 {
-	gExportfuncs.HUD_DrawNormalTriangles();
-
 	R_EndRenderGBuffer();
+
+	GL_DisableMultitexture();
 
 	if (!drawreflect && !drawrefract)
 	{
 		R_RenderShadowScenes();
+	}
+
+	if (!r_refdef->onlyClientDraws)
+	{
+		if (s_MSAAFBO.s_hBackBufferFBO)
+		{
+			for (int sampleIndex = 0; sampleIndex < max(1, gl_msaa_samples); sampleIndex++)
+			{
+				if (!R_DoSSAO(sampleIndex))
+				{
+					break;
+				}
+			}
+		}
+		else
+		{
+			R_DoSSAO(-1);
+		}
+	}
+
+	//Allow SCClient to write stencil buffer (but not bit 1)?
+	qglStencilMask(0xFF);
+	qglClear(GL_STENCIL_BUFFER_BIT);
+	gExportfuncs.HUD_DrawNormalTriangles();
+	qglStencilMask(0);
+
+	//Restore current framebuffer just in case that SCClient change it
+	if (s_BackBufferFBO.s_hBackBufferFBO)
+	{
+		if (s_MSAAFBO.s_hBackBufferFBO)
+			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
+		else
+			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	}
 }
 
@@ -391,6 +420,8 @@ int HUD_Redraw(float time, int intermission)
 			pFBO = &s_BrightAccumFBO;break;
 		case 11:
 			pFBO = &s_ToneMapFBO;break;
+		case 12:
+			pFBO = &s_BackBufferFBO; break;
 		default:
 			break;
 		}
@@ -533,14 +564,40 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	InstallHook(studioapi_StudioDynamicLight);
 	//InstallHook(studioapi_SetupModel);
 
-	//R_InitDetailTextures();
-	//Load global extra textures into array
-	//R_LoadExtraTextureFile(false);
-	//R_LoadStudioTextures(false);
-
 	cl_sprite_white = IEngineStudio.Mod_ForName("sprites/white.spr", 1);
 
 	cl_shellchrome = IEngineStudio.Mod_ForName("sprites/shellchrome.spr", 1);
+
+	//Fix SvClient Portal Rendering Confliction
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		PUCHAR ClientBase = (PUCHAR)GetModuleHandleA("client.dll");
+		if (ClientBase)
+		{
+			auto ClientSize = g_pMetaHookAPI->GetModuleSize((HMODULE)ClientBase);
+
+#define SVCLIENT_HUD_VIDINIT_SIG "\x6A\x01\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C\xE8\x2A\x2A\x2A\x2A\xB8\x01\x00\x00\x00\xC3"
+			{
+				DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)ClientBase, ClientSize, SVCLIENT_HUD_VIDINIT_SIG, sizeof(SVCLIENT_HUD_VIDINIT_SIG) - 1);
+				Sig_AddrNotFound("SvClient_PortalManager_VIDInit");
+				g_pMetaHookAPI->WriteNOP((PUCHAR)addr + 10, 5);
+			}
+/*
+#define SVCLIENT_STENCILFUNC_SIG "\x68\xFF\x00\x00\x00\x6A\x01\x68\x03\x02\x00\x00\xFF\x15"
+			{
+				auto addr = g_pMetaHookAPI->SearchPattern((void *)ClientBase, ClientSize, SVCLIENT_STENCILFUNC_SIG, sizeof(SVCLIENT_STENCILFUNC_SIG) - 1);
+				Sig_AddrNotFound("SvClient_CPortalManager_DrawQuad");
+				g_pMetaHookAPI->WriteBYTE((PUCHAR)addr + 6, 0x02);
+			}
+
+#define SVCLIENT_STENCILFUNC_SIG2 "\x68\xFF\x00\x00\x00\x6A\x01\x68\x02\x02\x00\x00\xFF\x15"
+			{
+				auto addr = g_pMetaHookAPI->SearchPattern((void *)ClientBase, ClientSize, SVCLIENT_STENCILFUNC_SIG2, sizeof(SVCLIENT_STENCILFUNC_SIG2) - 1);
+				Sig_AddrNotFound("SvClient_CPortalManager_DrawTexturedPortal");
+				g_pMetaHookAPI->WriteBYTE((PUCHAR)addr + 6, 0x02);
+			}*/
+		}
+	}
 
 	return gExportfuncs.HUD_GetStudioModelInterface(version, ppinterface, pstudio);
 }

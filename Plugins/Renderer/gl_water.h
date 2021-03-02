@@ -38,7 +38,6 @@ typedef struct r_water_s
 	cl_entity_t *ent;
 	vec3_t org;
 	colorVec color;
-	int is3dsky;
 	int texwidth;
 	int texheight;
 	int free;

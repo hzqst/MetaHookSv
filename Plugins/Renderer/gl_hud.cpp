@@ -445,15 +445,15 @@ void R_BlitToFBO(FBO_Container_t *src, FBO_Container_t *dst)
 	qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
 
-	qglClearColor(0, 0, 0, 1);
-	qglClear(GL_COLOR_BUFFER_BIT);
-
 	if (bDoDirectBlit)
 	{
 		qglBlitFramebufferEXT(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 	}
 	else
 	{
+		qglClearColor(0, 0, 0, 1);
+		qglClear(GL_COLOR_BUFFER_BIT);
+
 		R_DrawHUDQuad_Texture(src->s_hBackBufferTex, dst->iWidth, dst->iHeight);
 	}
 }
@@ -465,7 +465,7 @@ void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	}
 
-	qglClearColor(0, 0, 0, 0);
+	qglClearColor(0, 0, 0, 1);
 	qglClear(GL_COLOR_BUFFER_BIT);
 
 	if(!filter2x2)
@@ -721,11 +721,21 @@ void R_BeginFXAA(int w, int h)
 
 void R_DoHDR(void)
 {
-	if (!bDoHDR || !(r_hdr->value > 0))
+	if (!bDoHDR || !r_hdr->value)
+		return;
+
+	if (drawreflect)
+		return;
+
+	if (drawrefract)
+		return;
+
+	if (g_SvEngine_DrawPortalView)
 		return;
 
 	GL_PushDrawState();
 	GL_PushMatrix();
+
 	R_BeginHUDQuad();
 
 	if (!s_BackBufferFBO.s_hBackBufferFBO)
@@ -983,6 +993,15 @@ void R_DoFXAA(void)
 		return;
 
 	if (!pp_fxaa.program)
+		return;
+
+	if (drawreflect)
+		return;
+
+	if (drawrefract)
+		return;
+
+	if (g_SvEngine_DrawPortalView)
 		return;
 
 	GL_PushDrawState();

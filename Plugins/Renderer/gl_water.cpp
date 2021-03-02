@@ -296,7 +296,6 @@ r_water_t *R_GetActiveWater(cl_entity_t *ent, vec3_t p, colorVec *color)
 	w->org[1] = (ent->curstate.mins[1] + ent->curstate.maxs[1]) / 2;
 	w->org[2] = (ent->curstate.mins[2] + ent->curstate.maxs[2]) / 2;
 	memcpy(&w->color, color, sizeof(*color));
-	w->is3dsky = (draw3dsky) ? true : false;
 	w->free = false;
 	w->framecount = (*r_framecount);
 	return w;
@@ -358,9 +357,9 @@ void R_RenderReflectView(void)
 
 	R_PushRefDef();
 
-	if(curwater->is3dsky)
+	if (r_refdef->useCamera)
 	{
-		VectorCopy(_3dsky_view, water_view);
+		VectorCopy(r_refdef->r_camera_origin, water_view);
 	}
 	else
 	{
@@ -426,9 +425,9 @@ void R_RenderRefractView(void)
 
 	R_PushRefDef();
 
-	if(curwater->is3dsky)
+	if (r_refdef->useCamera)
 	{
-		VectorCopy(_3dsky_view, water_view);
+		VectorCopy(r_refdef->r_camera_origin, water_view);
 	}
 	else
 	{

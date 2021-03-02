@@ -171,10 +171,6 @@ typedef struct
 	int (*SaveImageGeneric)(const char *filename, int width, int height, byte *data);
 	//capture screen
 	byte *(*R_GetSCRCaptureBuffer)(int *bufsize);
-	//3dsky
-	void (*R_Add3DSkyEntity)(cl_entity_t *ent);
-	void (*R_Setup3DSkyModel)(void);
-	void (*R_Finish3DSkyModel)(void);
 	//2d postprocess
 	void (*R_BeginFXAA)(int w, int h);
 	//shader
