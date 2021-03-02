@@ -445,8 +445,8 @@ void R_BlitToFBO(FBO_Container_t *src, FBO_Container_t *dst)
 	qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
 
-	qglClearColor(0, 0, 0, 0);
-	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	qglClearColor(0, 0, 0, 1);
+	qglClear(GL_COLOR_BUFFER_BIT);
 
 	if (bDoDirectBlit)
 	{
@@ -775,8 +775,8 @@ void R_DoHDR(void)
 	}
 	else
 	{
-		qglClearColor(0.0, 0, 0.0, 0);
-		qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		qglClearColor(0, 0, 0, 1);
+		qglClear(GL_COLOR_BUFFER_BIT);
 
 		R_DrawHUDQuad_Texture(s_ToneMapFBO.s_hBackBufferTex, s_ToneMapFBO.iWidth, s_ToneMapFBO.iHeight);
 	}
@@ -952,10 +952,7 @@ int R_DoSSAO(int sampleIndex)
 	//Stencil for studio model?
 	qglEnable(GL_STENCIL_TEST);
 	qglStencilMask(0xFF);
-	if(r_ssao_studio_model->value)
-		qglStencilFunc(GL_ALWAYS, 0, 0xFF);
-	else
-		qglStencilFunc(GL_EQUAL, 0, 0xFF);
+	qglStencilFunc(GL_EQUAL, 0, 0xFF);
 	qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 	qglUseProgramObjectARB(hbao_blur2.program);

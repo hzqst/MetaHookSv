@@ -135,6 +135,11 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		VectorAdd(tempVert, (*currententity)->curstate.origin, tempVert);
 	}
 	
+	qglEnable(GL_STENCIL_TEST);
+	qglStencilMask(0xFF);
+	qglStencilFunc(GL_ALWAYS, 1, 0xFF);
+	qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
 	R_SetVBOState(VBOSTATE_OFF);
 
 	R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED);
@@ -221,9 +226,9 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	}
 
 	if (fa->polys->verts[0][2] >= r_refdef->vieworg[2])
-		scale = (*currententity)->curstate.scale;
-	else
 		scale = -(*currententity)->curstate.scale;
+	else
+		scale = (*currententity)->curstate.scale;
 
 	if (drawrefract)
 		scale = 0;
@@ -311,6 +316,9 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	}
 
 	EmitWaterPolysWireFrame(fa, direction, useProgram);
+
+	qglStencilMask(0);
+	qglDisable(GL_STENCIL_TEST);
 }
 
 int *gSkyTexNumber;

@@ -83,6 +83,7 @@ void main()
     vec4 normalColor = texture2D(normalTex, gl_TexCoord[0].xy);
 
     vec3 worldpos = positionColor.xyz;
+    //worldpos *= 1024.0;
     vec3 normal = normalColor.xyz;
     
 #ifdef LIGHT_PASS_SPOT

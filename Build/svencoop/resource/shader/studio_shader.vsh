@@ -151,5 +151,7 @@ void main(void)
 	gl_TexCoord[0] = gl_MultiTexCoord0;
 #endif
 
+	//worldpos.xyz *= 1.0 / 1024.0;
+
 	gl_Position = gl_ModelViewProjectionMatrix * vec4(outvert, 1.0);
 }

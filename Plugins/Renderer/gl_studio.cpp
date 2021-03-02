@@ -654,10 +654,13 @@ void R_GLStudioDrawPoints(void)
 	short *pskinref;
 	int flags;
 
-	qglEnable(GL_STENCIL_TEST);
-	qglStencilMask(0xFF);
-	qglStencilFunc(GL_ALWAYS, 1, 0xFF);
-	qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	if (!r_ssao_studio_model->value)
+	{
+		qglEnable(GL_STENCIL_TEST);
+		qglStencilMask(0xFF);
+		qglStencilFunc(GL_ALWAYS, 1, 0xFF);
+		qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	}
 
 	pvertbone = ((byte *)(*pstudiohdr) + (*psubmodel)->vertinfoindex);
 	pnormbone = ((byte *)(*pstudiohdr) + (*psubmodel)->norminfoindex);

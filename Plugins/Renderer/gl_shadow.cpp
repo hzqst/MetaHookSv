@@ -296,6 +296,7 @@ void R_RenderShadowMap(void)
 
 		qglViewport(0, 0, texsizeArray[i], texsizeArray[i]);
 
+		qglDepthMask(GL_TRUE);
 		qglClear(GL_DEPTH_BUFFER_BIT);
 		qglColorMask(0, 0, 0, 0);
 

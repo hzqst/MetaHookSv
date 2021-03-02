@@ -274,9 +274,10 @@ void R_BeginRenderGBuffer(void)
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
-	qglClearColor(0, 0, 0, 0);
+	qglClearColor(0.0, 0.0, 0.0, 1);
 	qglStencilMask(0xFF);
 	qglClearStencil(0);
+	qglDepthMask(GL_TRUE);
 	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	qglStencilMask(0);
 }

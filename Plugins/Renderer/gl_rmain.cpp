@@ -340,6 +340,7 @@ void R_Clear(void)
 {
 	if (r_mirroralpha && r_mirroralpha->value != 1.0)
 	{
+		qglDepthMask(GL_TRUE);
 		if (gl_clear->value)
 			qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		else
@@ -373,6 +374,7 @@ void R_Clear(void)
 	}
 	else
 	{
+		qglDepthMask(GL_TRUE);
 		if (gl_clear->value)
 			qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		else
@@ -1748,9 +1750,13 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 	{
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	}
-	
-	qglClearColor(0.0, 0.0, 0.0, 1.0);
-	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	qglClearColor(0.0, 0.0, 0.0, 1);
+	qglStencilMask(0xFF);
+	qglClearStencil(0);
+	qglDepthMask(GL_TRUE);
+	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	qglStencilMask(0);
 }
 
 void R_PreRenderView(int a1)
@@ -1891,10 +1897,11 @@ void R_RenderView_SvEngine(int a1)
 	float clearColor[3];
 	R_ParseVectorCvar(gl_clearcolor, clearColor);
 
-	qglClearColor(clearColor[0], clearColor[1], clearColor[2], 0);
+	qglClearColor(clearColor[0], clearColor[1], clearColor[2], 1);
 
 	qglStencilMask(0xFF);
 	qglClearStencil(0);
+	qglDepthMask(GL_TRUE);
 
 	if (!gl_clear->value || a1)
 		qglClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -1982,11 +1989,10 @@ void GL_EndRendering(void)
 	{
 		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0);
 		qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-		qglClearColor(0, 0, 0, 0);
-		qglStencilMask(0xFF);
-		qglClearStencil(0);
-		qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		qglStencilMask(0);
+		
+		qglClearColor(0, 0, 0, 1);
+		qglDepthMask(GL_TRUE);
+		qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		int windowW = glwidth;
 		int windowH = glheight;
