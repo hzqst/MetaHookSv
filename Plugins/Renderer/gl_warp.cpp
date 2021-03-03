@@ -570,7 +570,15 @@ void R_DrawSkyChain(msurface_t *s)
 	R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
+	qglEnable(GL_STENCIL_TEST);
+	qglStencilMask(0xFF);
+	qglStencilFunc(GL_ALWAYS, 1, 0xFF);
+	qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
 	R_DrawSkyBox();
+
+	qglStencilMask(0);
+	qglDisable(GL_STENCIL_TEST);
 }
 
 void R_ClearSkyBox(void)
@@ -636,22 +644,13 @@ void R_DrawSkyBox(void)
 {
 	int i, order;
 
-	/*float vNormalTable[6][3] = { 
+	float vNormalTable[6][3] = { 
 		{-1, 0, 0},
 		{1, 0, 0},
 		{0, -1, 0},
 		{0, 1, 0},
 		{0, 0, -1},
 		{0, 0, 1}
-	};*/
-
-	float vNormalTable[6][3] = {
-		{0, 0, 0},
-		{0, 0, 0},
-		{0, 0, 0},
-		{0, 0, 0},
-		{0, 0, 0},
-		{0, 0, 0}
 	};
 
 	for (i = 0; i < 6; i++)
@@ -668,14 +667,7 @@ void R_DrawSkyBox(void)
 			order = skytexorder[i];
 		}
 
-		/*if(r_wsurf_sky->value > 0 && r_wsurf.iSkyTextures[order])
-		{
-			GL_Bind(r_wsurf.iSkyTextures[order]);
-		}
-		else
-		{*/
-			GL_Bind(gSkyTexNumber[order]);
-		//}
+		GL_Bind(gSkyTexNumber[order]);
 
 		qglBegin(GL_QUADS);
 		qglNormal3fv(vNormalTable[i]);

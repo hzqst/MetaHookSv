@@ -345,7 +345,6 @@ void R_GenerateVertexBuffer(void)
 
 			if (i == *skytexturenum)
 			{
-				//R_DrawSkyChain(s);
 				continue;
 			}
 			else
