@@ -1,6 +1,8 @@
 # MetaHookSv
 
-This is a porting of MetaHook (https://github.com/nagist/metahook) for SvEngine (GoldSrc engine modified by Sven-Coop Team).
+This is a porting of MetaHook (https://github.com/nagist/metahook) for SvEngine (GoldSrc engine modified by Sven-Coop Team), 
+
+mainly to keep you a good game experience in Sven-Coop.
 
 It is currently not compatible with original GoldSrc engine, but it can be if broken signatures are fixed at future.
 
@@ -16,41 +18,37 @@ It is currently not compatible with original GoldSrc engine, but it can be if br
 
 ## Plugins
 
-### FuckWorld
-
-A simple demo plugin that pops MessageBox when load.
-
-Current state : Ready to use.
-
 ### CaptionMod
 
-A subtitle plugin designed for displaying subtitles in VGUI2 based games.
-
-check https://github.com/hzqst/CaptionMod for detail.
+A subtitle plugin designed for displaying subtitles and translate in-game text in VGUI1 or VGUI2 based games.
 
 #### Features
 
-1. display subtitles when sound is played.
+1. Display subtitles when sound is played.
 
-2. display subtitles when sentence is played.
+2. Display subtitles when sentence is played.
 
-3. display subtitles when there is a HUD TextMessage.
+3. Display subtitles when there is a HUD TextMessage.
 
-4. hook original client's HUD TextMessage and draw it with multi-byte character support. (new and only for SvEngine)
+4. Translate HUD TextMessage dynamically (regex supported).
 
-4. hook VGUI1 TextImage control paint procedure and draw it with multi-byte character support. (new and only for SvEngine)
+5. Hook original client's old-style HUD TextMessage and draw it with multi-byte character support.
 
-5. Custom dictionary for each map, put dictionary file at "/maps/[mapname]_dictionary.csv"
+6. Hook VGUI1's TextImage control paint procedure and draw it with multi-byte character support.
 
-Current state : Ready to use.
+7. Custom dictionary for each map, put dictionary file at "/maps/[mapname]_dictionary.csv"
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/1.png)
+
+There is a example demo shows you how to translate dynamic HUD TextMessage into other language with regex in "svencoop\captionmod\dictionary_english.txt" called "#SVENCOOP_PLAYERINFO"
+
+There is a example demo shows you how to translate constant HUD TextMessage into other language in "svencoop\maps\restrictionXX_dictionary.csv"
 
 ### Renderer
 
 A graphic enhancement plugin that modifiy the original render engine.
 
-Current state : Ready to use, more feature are coming soon.
+You can even play with 200k epolys models and still keep a high framerate.
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/2.png)
 
