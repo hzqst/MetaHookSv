@@ -40,6 +40,8 @@ public:
 	virtual void HideAllVGUIMenu(void);
 	virtual void ActivateClientUI(void);
 	virtual void HideClientUI(void);
+	virtual void unknown(void);
+	virtual void Shutdown(void);
 };
 
 static CClientVGUI s_ClientVGUI;
@@ -106,6 +108,17 @@ void CClientVGUI::HideClientUI(void)
 	g_pViewPort->HideClientUI();
 }
 
+void CClientVGUI::unknown(void)
+{
+
+}
+
+void CClientVGUI::Shutdown(void)
+{
+
+}
+
+
 FARPROC WINAPI NewGetProcAddress(HMODULE hModule, LPCSTR lpProcName);
 
 void ClientVGUI_InstallHook(void)
@@ -150,6 +163,8 @@ public:
 	virtual void HideAllVGUIMenu(void);
 	virtual void ActivateClientUI(void);
 	virtual void HideClientUI(void);
+	virtual void unknown(void);
+	virtual void Shutdown(void);
 };
 
 void NewClientVGUI::Initialize(CreateInterfaceFn *factories, int count)
@@ -164,10 +179,16 @@ void NewClientVGUI::Initialize(CreateInterfaceFn *factories, int count)
 		Sys_ErrorEx("Failed to load captionmod/dictionary_%%language%%.txt");
 }
 
+extern vgui::ISurface *g_pSurface;
+
 void NewClientVGUI::Start(void)
 {
 	g_pViewPort = new CViewport();
 	g_pViewPort->Start();
+
+	//Fix a bug that VGUI1 mouse disappear
+	auto pSurface4 = (DWORD)g_pSurface + 4;
+	*(PUCHAR)(pSurface4 + 0x4B) = 0;
 }
 
 void NewClientVGUI::SetParent(vgui::VPANEL parent)
@@ -196,6 +217,16 @@ void NewClientVGUI::ActivateClientUI(void)
 void NewClientVGUI::HideClientUI(void)
 {
 	g_pViewPort->HideClientUI();
+}
+
+void NewClientVGUI::unknown(void)
+{
+
+}
+
+void NewClientVGUI::Shutdown(void)
+{
+	
 }
 
 EXPOSE_SINGLE_INTERFACE(NewClientVGUI, IClientVGUI, CLIENTVGUI_INTERFACE_VERSION);

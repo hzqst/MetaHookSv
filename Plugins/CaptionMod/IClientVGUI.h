@@ -18,6 +18,8 @@ public:
 	virtual void HideAllVGUIMenu(void) = 0;
 	virtual void ActivateClientUI(void) = 0;
 	virtual void HideClientUI(void) = 0;
+	virtual void unknown(void) = 0;
+	virtual void Shutdown(void) = 0;
 };
 
 #define CLIENTVGUI_INTERFACE_VERSION "VClientVGUI001"

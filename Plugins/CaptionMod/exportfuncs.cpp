@@ -40,14 +40,16 @@ int HUD_VidInit(void)
 {
 	int result = gExportfuncs.HUD_VidInit();
 
-	g_pViewPort->VidInit();
+	if(g_pViewPort)
+		g_pViewPort->VidInit();
 
 	return result;
 }
 
 void HUD_Frame(double time)
 {
-	g_pViewPort->Think();
+	if(g_pViewPort)
+		g_pViewPort->Think();
 
 	gExportfuncs.HUD_Frame(time);
 }
@@ -59,6 +61,9 @@ void Cap_Version_f(void)
 
 void SvClient_StartWave(const char *name, float duration)
 {
+	if (!g_pViewPort)
+		return;
+
 	if (m_bSentenceSound && m_SentenceDictionary)
 	{
 		if (m_SentenceDictionary->m_flDuration <= 0)
@@ -117,7 +122,8 @@ void HUD_Init(void)
 {
 	gExportfuncs.HUD_Init();
 
-	g_pViewPort->Init();
+	if(g_pViewPort)
+		g_pViewPort->Init();
 
 	al_enable = gEngfuncs.pfnGetCvarPointer("al_enable");
 	cap_debug = gEngfuncs.pfnRegisterVariable("cap_debug", "0", FCVAR_CLIENTDLL);
@@ -167,6 +173,9 @@ float S_GetDuration(sfx_t *sfx)
 //2015-11-26 added, support added up the duration of sound for zero-duration sentences
 void S_StartWave(sfx_t *sfx)
 {
+	if (!g_pViewPort)
+		return;
+
 	const char *name = sfx->name;
 
 	if(!Q_strnicmp(name, "sound/", 6))
@@ -216,6 +225,9 @@ void S_StartWave(sfx_t *sfx)
 
 void S_StartSentence(const char *name)
 {
+	if (!g_pViewPort)
+		return;
+
 	CDictionary *Dict = g_pViewPort->FindDictionary(name, DICT_SENTENCE);	
 
 	if(!Dict && (name[0] == '!' || name[0] == '#'))
@@ -235,6 +247,9 @@ void S_StartSentence(const char *name)
 //2015-11-26 fixed, to support !SENTENCE and #SENTENCE
 void S_EndSentence(void)
 {
+	if (!g_pViewPort)
+		return;
+
 	if(!m_SentenceDictionary)
 		return;
 

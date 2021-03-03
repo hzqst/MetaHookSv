@@ -730,11 +730,14 @@ void CHudMessage::MessageAdd(client_textmessage_t *newMessage)
 
 client_textmessage_t *pfnTextMessageGet(const char *pName)
 {
-	CDictionary *dict = g_pViewPort->FindDictionary(pName);
-
-	if(dict && dict->m_pTextMessage)
+	if (g_pViewPort)
 	{
-		return NULL;
+		CDictionary *dict = g_pViewPort->FindDictionary(pName);
+
+		if (dict && dict->m_pTextMessage)
+		{
+			return NULL;
+		}
 	}
 
 	return gEngfuncs.pfnTextMessageGet(pName);
