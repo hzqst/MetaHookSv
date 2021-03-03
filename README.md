@@ -6,7 +6,7 @@ mainly to keep you a good game experience in Sven-Coop.
 
 It is currently not compatible with original GoldSrc engine, but it can be if broken signatures are fixed at future.
 
-[中文README](/hzqst/MetaHookSv/blob/main/READMECN.md)  
+[中文README](READMECN.md)  
 
 ## Installation
 
