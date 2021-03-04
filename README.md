@@ -18,11 +18,29 @@ It is currently not compatible with original GoldSrc engine, but it can be if br
 
 * The SDL2.dll fixes a bug that the original SDL's IME input handler was causing buffer overflow and game crash. you don't need to copy it if you don't have a non-english IME.
 
+## Build Instruction
+
+1. git clone https://github.com/hzqst/MetaHookSv
+
+2. Open "MetaHook.sln" with MSVC 2015 or MSVC 2017 (not tested yet with MSVC2019)
+
+3. Build with Release configuration
+
+4. Open "Plugins\CaptionMod\CaptionMod.sln" with MSVC 2015 or MSVC 2017 (not tested yet with MSVC2019)
+
+5. Build with Release configuration
+
+6. Open "Plugins\Renderer\Renderer.sln" with MSVC 2015 or MSVC 2017 (not tested yet with MSVC2019)
+
+7. Build with Release configuration
+
+9. If there is no compile error(s), all binaries should be generated under "Build" directory.
+
 ## Plugins
 
 ### CaptionMod
 
-A subtitle plugin designed for displaying subtitles and translate in-game text in VGUI1 or VGUI2 based games.
+A subtitle plugin designed for displaying subtitles and translate in-game HUD text.
 
 #### Features
 
@@ -45,6 +63,14 @@ A subtitle plugin designed for displaying subtitles and translate in-game text i
 There is a example demo shows you how to translate dynamic HUD TextMessage into other language with regex in "svencoop\captionmod\dictionary_english.txt" called "#SVENCOOP_PLAYERINFO"
 
 There is a example demo shows you how to translate constant HUD TextMessage into other language in "svencoop\maps\restrictionXX_dictionary.csv"
+
+#### Console Vars
+
+cap_enabled 0 / 1 : to enable or disable CaptionMod's subtitle display.
+
+cap_netmessage 0 / 1 : to enable or disable CaptionMod's HUD TextMessage translation.
+
+cap_debug 0 / 1 : to output debug message when there is a HUD TextMessage or sound playing.
 
 ### Renderer
 
@@ -79,14 +105,6 @@ You can even play with 200k epolys models and still keep a high framerate.
 9. Vertex-Buffer-Object (VBO) "Batch-Draw" optimization and GPU-Lighting for studio model. With VBO enabled you will get higher framerate and lower CPU usage. You can get maximum at 8x FramePerSeconds than non-VBO mode in extreme case (200k+ epolys with no FPS drop).
 
 10. Vertex-Buffer-Object (VBO) "Batch-Draw" optimization for BSP terrain. With VBO enabled you will get higher framerate and lower CPU usage. Warning: this feature may cause the render result differs from the one in original game that: random textures are gone, non-visible terrain in current BSP-node are always visible...
-
-#### Todo List
-
-1. StudioModel Decal
-
-2. Ragdoll Engine
-
-3. Particle System
 
 #### Launch Parameters / Commmandline Parameters
 
