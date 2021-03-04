@@ -885,6 +885,8 @@ void QGL_InitExtension(void)
 		qglGenBuffersARB = (PFNGLGENBUFFERSARBPROC)qwglGetProcAddress("glGenBuffersARB");
 		qglBufferDataARB = (PFNGLBUFFERDATAARBPROC)qwglGetProcAddress("glBufferDataARB");
 		qglDeleteBuffersARB = (PFNGLDELETEBUFFERSARBPROC)qwglGetProcAddress("glDeleteBuffersARB");
+		*(FARPROC *)&qglVertexAttribPointer = qwglGetProcAddress("glVertexAttribPointer");
+		*(FARPROC *)&qglVertexAttribIPointer = qwglGetProcAddress("glVertexAttribIPointer");
 	}
 
 	if (strstr(extension, "GL_ARB_vertex_array_object"))
@@ -893,8 +895,6 @@ void QGL_InitExtension(void)
 		*(FARPROC *)&qglBindVertexArray = qwglGetProcAddress("glBindVertexArray");
 		*(FARPROC *)&qglEnableVertexAttribArray = qwglGetProcAddress("glEnableVertexAttribArray");
 		*(FARPROC *)&qglDisableVertexAttribArray = qwglGetProcAddress("glDisableVertexAttribArray");
-		*(FARPROC *)&qglVertexAttribPointer = qwglGetProcAddress("glVertexAttribPointer");
-		*(FARPROC *)&qglVertexAttribIPointer = qwglGetProcAddress("glVertexAttribIPointer");
 	}
 
 	if (strstr(extension, "GL_EXT_compiled_vertex_array"))

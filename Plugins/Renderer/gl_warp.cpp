@@ -27,7 +27,6 @@ void EmitWaterPolysWireFrame(msurface_t *fa, int direction, qboolean useProgram)
 		R_UseGBufferProgram(GBUFFER_TRANSPARENT_ENABLED);
 		R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
 
-
 		if (fa->polys->verts[0][2] >= r_refdef->vieworg[2])
 			scale = (*currententity)->curstate.scale;
 		else

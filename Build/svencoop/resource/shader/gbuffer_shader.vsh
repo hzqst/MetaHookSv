@@ -48,6 +48,6 @@ void main()
 #endif
 
   color = gl_Color;
-  //worldpos.xyz *= 1.0 / 1024.0;
+
   gl_Position = ftransform();
 }

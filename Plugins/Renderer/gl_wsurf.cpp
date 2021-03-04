@@ -940,16 +940,8 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 
 		qglDisable(GL_TEXTURE_2D);
 
-		if ((*r_blend) < 1)
-		{
-			R_UseGBufferProgram(GBUFFER_TRANSPARENT_ENABLED);
-			R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
-		}
-		else
-		{
-			R_UseGBufferProgram(0);
-			R_SetGBufferMask(GBUFFER_MASK_ALL);
-		}
+		R_UseGBufferProgram(0);
+		R_SetGBufferMask(GBUFFER_MASK_ALL);
 
 		DrawGLPolySolid(s);
 

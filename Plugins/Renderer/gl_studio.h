@@ -37,7 +37,6 @@ typedef struct
 	int diffuseTex;
 
 	int bonematrix;
-	int lightmatrix;
 
 	int v_lambert;
 	int v_brightness;

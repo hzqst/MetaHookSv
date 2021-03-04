@@ -565,7 +565,12 @@ void R_GLStudioDrawPoints(void)
 				flags = flags & 0xFC;
 			}
 
-			bool bTransparent = false;
+			int GBufferProgramState = GBUFFER_DIFFUSE_ENABLED;
+			int GBufferMask = GBUFFER_MASK_ALL;
+			int StudioProgramState = flags;
+
+			if (drawgbuffer)
+				StudioProgramState |= STUDIO_GBUFFER_ENABLED;
 
 			if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
 			{
@@ -574,7 +579,9 @@ void R_GLStudioDrawPoints(void)
 				qglDepthMask(GL_FALSE);
 				qglShadeModel(GL_SMOOTH);
 
-				bTransparent = true;
+				GBufferMask = GBUFFER_MASK_ADDITIVE;
+				GBufferProgramState |= GBUFFER_TRANSPARENT_ENABLED | GBUFFER_ADDITIVE_ENABLED;
+				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
 			}
 			else if (flags & STUDIO_NF_MASKED)
 			{
@@ -585,13 +592,17 @@ void R_GLStudioDrawPoints(void)
 			else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
 			{
 				qglBlendFunc(GL_ONE, GL_ONE);
-
 				qglEnable(GL_BLEND);
 				qglDepthMask(GL_FALSE);
 				qglShadeModel(GL_SMOOTH);
 
-				bTransparent = true;
+				GBufferMask = GBUFFER_MASK_ADDITIVE;
+				GBufferProgramState |= GBUFFER_TRANSPARENT_ENABLED | GBUFFER_ADDITIVE_ENABLED;
+				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
 			}
+
+			R_UseGBufferProgram(GBufferProgramState);
+			R_SetGBufferMask(GBufferMask);
 
 			if (r_fullbright->value >= 2)
 			{
@@ -602,23 +613,7 @@ void R_GLStudioDrawPoints(void)
 				gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
 			}
 
-			if (bTransparent)
-			{
-				R_SetGBufferMask(GBUFFER_MASK_DIFFUSE | GBUFFER_LIGHTMAP_ENABLED);
-			}
-			else
-			{
-				R_SetGBufferMask(GBUFFER_MASK_ALL);
-			}
-
 			int attr_bone = -1;
-			int StudioProgramState = flags;
-
-			if (drawgbuffer)
-				StudioProgramState |= STUDIO_GBUFFER_ENABLED;
-
-			if (bTransparent)
-				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED;
 
 			studio_program_t prog = { 0 };
 			R_UseStudioProgram(StudioProgramState, &prog);
@@ -725,7 +720,8 @@ void R_GLStudioDrawPoints(void)
 				flags = flags & 0xFC;
 			}
 
-			bool bTransparent = false;
+			int GBufferProgramState = GBUFFER_DIFFUSE_ENABLED;
+			int GBufferMask = GBUFFER_MASK_ALL;
 
 			if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
 			{
@@ -734,7 +730,8 @@ void R_GLStudioDrawPoints(void)
 				qglDepthMask(GL_FALSE);
 				qglShadeModel(GL_SMOOTH);
 
-				bTransparent = true;
+				GBufferMask = GBUFFER_MASK_ADDITIVE;
+				GBufferProgramState |= GBUFFER_TRANSPARENT_ENABLED | GBUFFER_ADDITIVE_ENABLED;
 			}
 			else if (flags & STUDIO_NF_MASKED)
 			{
@@ -749,19 +746,12 @@ void R_GLStudioDrawPoints(void)
 				qglDepthMask(GL_FALSE);
 				qglShadeModel(GL_SMOOTH);
 
-				bTransparent = true;
+				GBufferMask = GBUFFER_MASK_ADDITIVE;
+				GBufferProgramState |= GBUFFER_TRANSPARENT_ENABLED | GBUFFER_ADDITIVE_ENABLED;
 			}
 
-			if (bTransparent)
-			{
-				R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED | GBUFFER_TRANSPARENT_ENABLED);
-				R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
-			}
-			else
-			{
-				R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED);
-				R_SetGBufferMask(GBUFFER_MASK_ALL);
-			}
+			R_UseGBufferProgram(GBufferProgramState);
+			R_SetGBufferMask(GBufferMask);
 
 			float s, t;
 			//setup texture and texcoord

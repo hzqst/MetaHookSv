@@ -368,6 +368,8 @@ int HUD_Redraw(float time, int intermission)
 			qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex3);
 		else if (r_light_debug->value == 4)
 			qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
+		else if (r_light_debug->value == 5)
+			qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex5);
 		else
 		{
 			qglUseProgramObjectARB(drawdepth.program);

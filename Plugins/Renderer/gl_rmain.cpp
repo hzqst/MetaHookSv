@@ -269,17 +269,8 @@ void R_RotateForEntity(vec_t *origin, cl_entity_t *e)
 
 void R_DrawSpriteModel(cl_entity_t *entity)
 {
-	//only non-transparent sprite goes handled by gbuffer
-	if ((*r_blend) < 1.0f)
-	{
-		R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED | GBUFFER_TRANSPARENT_ENABLED);
-		R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
-	}
-	else
-	{
-		R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED);
-		R_SetGBufferMask(GBUFFER_MASK_ALL);
-	}
+	R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED | GBUFFER_TRANSPARENT_ENABLED);
+	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
 
 	gRefFuncs.R_DrawSpriteModel(entity);
 }
@@ -980,6 +971,7 @@ void GL_ClearFBO(FBO_Container_t *s)
 	s->s_hBackBufferTex2 = 0;
 	s->s_hBackBufferTex3 = 0;
 	s->s_hBackBufferTex4 = 0;
+	s->s_hBackBufferTex5 = 0;
 	s->s_hBackBufferDepthTex = 0;
 	s->iWidth = s->iHeight = s->iTextureColorFormat = 0;
 }
@@ -1006,6 +998,9 @@ void GL_FreeFBO(FBO_Container_t *s)
 
 	if (s->s_hBackBufferTex4)
 		qglDeleteTextures(1, &s->s_hBackBufferTex4);
+
+	if (s->s_hBackBufferTex5)
+		qglDeleteTextures(1, &s->s_hBackBufferTex5);
 
 	if (s->s_hBackBufferDepthTex)
 		qglDeleteTextures(1, &s->s_hBackBufferDepthTex);
@@ -1167,42 +1162,50 @@ void R_GLFrameBufferColorTextureHBAO(FBO_Container_t *s)
 	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, s->s_hBackBufferTex2, 0);
 }
 
-void R_GLFrameBufferColorTextureDeferred(FBO_Container_t *s)
+void R_GLFrameBufferColorTextureDeferred(FBO_Container_t *s, int iInternalColorFormat)
 {
 	s->s_hBackBufferTex = GL_GenTexture();
 	qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferTex);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	qglTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, s->iWidth, s->iHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	qglTexImage2D(GL_TEXTURE_2D, 0, iInternalColorFormat, s->iWidth, s->iHeight, 0, GL_RGB, GL_FLOAT, NULL);
 	qglBindTexture(GL_TEXTURE_2D, 0);
 
 	s->s_hBackBufferTex2 = GL_GenTexture();
 	qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferTex2);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	qglTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, s->iWidth, s->iHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	qglTexImage2D(GL_TEXTURE_2D, 0, iInternalColorFormat, s->iWidth, s->iHeight, 0, GL_RGB, GL_FLOAT, NULL);
 	qglBindTexture(GL_TEXTURE_2D, 0);
 
 	s->s_hBackBufferTex3 = GL_GenTexture();
 	qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferTex3);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	qglTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, s->iWidth, s->iHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	qglTexImage2D(GL_TEXTURE_2D, 0, iInternalColorFormat, s->iWidth, s->iHeight, 0, GL_RGB, GL_FLOAT, NULL);
 	qglBindTexture(GL_TEXTURE_2D, 0);
 
 	s->s_hBackBufferTex4 = GL_GenTexture();
 	qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferTex4);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	qglTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, s->iWidth, s->iHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	qglTexImage2D(GL_TEXTURE_2D, 0, iInternalColorFormat, s->iWidth, s->iHeight, 0, GL_RGB, GL_FLOAT, NULL);
 	qglBindTexture(GL_TEXTURE_2D, 0);
 
-	s->iTextureColorFormat = GL_RGB32F;
+	s->s_hBackBufferTex5 = GL_GenTexture();
+	qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferTex5);
+	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	qglTexImage2D(GL_TEXTURE_2D, 0, iInternalColorFormat, s->iWidth, s->iHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	qglBindTexture(GL_TEXTURE_2D, 0);
+
+	s->iTextureColorFormat = iInternalColorFormat;
 
 	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s->s_hBackBufferTex, 0);
 	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, s->s_hBackBufferTex2, 0);
 	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, s->s_hBackBufferTex3, 0);
 	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, s->s_hBackBufferTex4, 0);
+	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, s->s_hBackBufferTex5, 0);
 }
 
 void GL_GenerateFBO(void)
@@ -1288,7 +1291,7 @@ void GL_GenerateFBO(void)
 
 	if(bDoHDR)
 	{
-		iColorInternalFormat = GL_RGBA16F;
+		iColorInternalFormat = GL_RGBA32F;
 
 		const char *s_HDRColor;
 		if(g_pInterface->CommandLine->CheckParm("-hdrcolor", &s_HDRColor))
@@ -1485,7 +1488,7 @@ void GL_GenerateFBO(void)
 		s_GBufferFBO.iWidth = glwidth;
 		s_GBufferFBO.iHeight = glheight;
 		R_GLGenFrameBuffer(&s_GBufferFBO);
-		R_GLFrameBufferColorTextureDeferred(&s_GBufferFBO);
+		R_GLFrameBufferColorTextureDeferred(&s_GBufferFBO, iColorInternalFormat);
 		R_GLFrameBufferDepthTexture(&s_GBufferFBO, GL_DEPTH24_STENCIL8, false);
 
 		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)

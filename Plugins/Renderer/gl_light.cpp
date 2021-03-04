@@ -164,6 +164,7 @@ void R_InitLight(void)
 		{
 			SHADER_UNIFORM(dlight_final, diffuseTex, "diffuseTex");
 			SHADER_UNIFORM(dlight_final, lightmapTex, "lightmapTex");
+			SHADER_UNIFORM(dlight_final, additiveTex, "additiveTex");
 			SHADER_UNIFORM(dlight_final, depthTex, "depthTex");
 		}
 
@@ -173,6 +174,7 @@ void R_InitLight(void)
 		{
 			SHADER_UNIFORM(dlight_final2, diffuseTex, "diffuseTex");
 			SHADER_UNIFORM(dlight_final2, lightmapTex, "lightmapTex");
+			SHADER_UNIFORM(dlight_final2, additiveTex, "additiveTex");
 		}
 	}
 
@@ -227,7 +229,7 @@ void R_SetGBufferMask(int mask)
 
 	gbuffer_mask = mask;
 
-	GLuint attachments[4] = {0};
+	GLuint attachments[6] = {0};
 	int attachCount = 0;
 
 	if (mask & GBUFFER_MASK_DIFFUSE)
@@ -248,6 +250,11 @@ void R_SetGBufferMask(int mask)
 	if (mask & GBUFFER_MASK_NORMAL)
 	{
 		attachments[attachCount] = GL_COLOR_ATTACHMENT3;
+		attachCount++;
+	}
+	if (mask & GBUFFER_MASK_ADDITIVE)
+	{
+		attachments[attachCount] = GL_COLOR_ATTACHMENT4;
 		attachCount++;
 	}
 
@@ -272,7 +279,7 @@ void R_BeginRenderGBuffer(void)
 
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
 
-	R_SetGBufferMask(GBUFFER_MASK_ALL);
+	R_SetGBufferMask(GBUFFER_MASK_ALL | GBUFFER_MASK_ADDITIVE);
 
 	qglClearColor(0, 0, 0, 1);
 	qglStencilMask(0xFF);
@@ -427,6 +434,7 @@ void R_EndRenderGBuffer(void)
 		qglUseProgramObjectARB(dlight_final2.program);
 		qglUniform1iARB(dlight_final2.diffuseTex, 0);
 		qglUniform1iARB(dlight_final2.lightmapTex, 1);
+		qglUniform1iARB(dlight_final2.additiveTex, 2);
 
 		//Diffuse texture (for merging)
 		GL_SelectTexture(TEXTURE0_SGIS);
@@ -435,6 +443,11 @@ void R_EndRenderGBuffer(void)
 		//Lightmap texture (for merging)
 		GL_EnableMultitexture();
 		GL_Bind(s_GBufferFBO.s_hBackBufferTex2);
+
+		//Additive texture
+		qglActiveTextureARB(TEXTURE2_SGIS);
+		qglEnable(GL_TEXTURE_2D);
+		qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex5);
 
 		R_DrawHUDQuad(glwidth, glheight);
 	}
@@ -443,7 +456,8 @@ void R_EndRenderGBuffer(void)
 		qglUseProgramObjectARB(dlight_final.program);
 		qglUniform1iARB(dlight_final.diffuseTex, 0);
 		qglUniform1iARB(dlight_final.lightmapTex, 1);
-		qglUniform1iARB(dlight_final.depthTex, 2);
+		qglUniform1iARB(dlight_final.additiveTex, 2);
+		qglUniform1iARB(dlight_final.depthTex, 3);
 
 		//Diffuse texture (for merging)
 		GL_SelectTexture(TEXTURE0_SGIS);
@@ -453,8 +467,13 @@ void R_EndRenderGBuffer(void)
 		GL_EnableMultitexture();
 		GL_Bind(s_GBufferFBO.s_hBackBufferTex2);
 
-		//Depth texture (for direct-writing)
+		//Additive texture
 		qglActiveTextureARB(TEXTURE2_SGIS);
+		qglEnable(GL_TEXTURE_2D);
+		qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex5);
+
+		//Depth texture (for direct-writing)
+		qglActiveTextureARB(TEXTURE3_SGIS);
 		qglEnable(GL_TEXTURE_2D);
 		qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
 
@@ -462,7 +481,11 @@ void R_EndRenderGBuffer(void)
 
 		qglBindTexture(GL_TEXTURE_2D, 0);
 		qglDisable(GL_TEXTURE_2D);
-		qglActiveTextureARB(TEXTURE1_SGIS); 
+		qglActiveTextureARB(TEXTURE2_SGIS);
+
+		qglBindTexture(GL_TEXTURE_2D, 0);
+		qglDisable(GL_TEXTURE_2D);
+		qglActiveTextureARB(TEXTURE1_SGIS);
 	}
 
 	if (bDoDirectBlit)

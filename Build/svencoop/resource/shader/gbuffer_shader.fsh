@@ -43,7 +43,9 @@ void main()
     #endif
 
 #else
+
     vec4 lightmapColor = color;
+
 #endif
 
 #ifdef DETAILTEXTURE_ENABLED
@@ -55,13 +57,24 @@ void main()
 #endif
 
 #ifdef TRANSPARENT_ENABLED
-    vec4 mixedColor = diffuseColor * detailColor * color;
-    gl_FragData[0] = mixedColor;
+
+    #ifdef ADDITIVE_ENABLED
+
+        gl_FragColor = diffuseColor * lightmapColor;
+
+    #else
+
+        gl_FragColor = diffuseColor * lightmapColor;
+
+    #endif
+
 #else
+
     vec4 mixedColor = diffuseColor * detailColor;
     gl_FragData[0] = mixedColor;
     gl_FragData[1] = lightmapColor;
     gl_FragData[2] = worldpos;
     gl_FragData[3] = normal;
+
 #endif
 }

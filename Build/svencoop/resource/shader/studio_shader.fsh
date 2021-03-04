@@ -14,10 +14,8 @@ void main(void)
 	#ifdef TRANSPARENT_ENABLED
 
 		#ifdef STUDIO_NF_ADDITIVE
-			float brightness = (diffuseColor.x + diffuseColor.y + diffuseColor.z) / 1.5;
-		
-			gl_FragData[0] = vec4(brightness, brightness, brightness, brightness);
-			gl_FragData[1] = color * diffuseColor;
+
+			gl_FragColor = diffuseColor * color;
 
 		#else
 
