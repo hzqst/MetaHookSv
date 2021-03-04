@@ -351,7 +351,6 @@ void R_InitGLHUD(void)
 	r_ssao_intensity = gEngfuncs.pfnRegisterVariable("r_ssao_intensity", "0.6", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssao_bias = gEngfuncs.pfnRegisterVariable("r_ssao_bias", "0.2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssao_blur_sharpness = gEngfuncs.pfnRegisterVariable("r_ssao_blur_sharpness", "1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_ssao_studio_model = gEngfuncs.pfnRegisterVariable("r_ssao_studio_model", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	last_luminance = 0;
 

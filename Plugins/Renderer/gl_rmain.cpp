@@ -270,7 +270,7 @@ void R_RotateForEntity(vec_t *origin, cl_entity_t *e)
 void R_DrawSpriteModel(cl_entity_t *entity)
 {
 	R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED | GBUFFER_TRANSPARENT_ENABLED);
-	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
+	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
 	gRefFuncs.R_DrawSpriteModel(entity);
 }
@@ -711,7 +711,15 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 void R_DrawBrushModel(cl_entity_t *entity)
 {
+	qglEnable(GL_STENCIL_TEST);
+	qglStencilMask(0xFF);
+	qglStencilFunc(GL_ALWAYS, 0, 0xFF);
+	qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
 	gRefFuncs.R_DrawBrushModel(entity);
+
+	qglStencilMask(0);
+	qglEnable(GL_STENCIL_TEST);
 
 	r_rotate_entity = false;
 }

@@ -92,6 +92,9 @@ typedef struct
 	void (*S_ExtraUpdate)(void);
 	void(*R_PolyBlend)(void);
 
+	//SvClient
+	void(__fastcall *PortalManager_ResetAll)(int pthis, int);
+
 	//Engine Studio
 	void (*R_GLStudioDrawPoints)(void);
 	studiohdr_t *(*R_LoadTextures)(struct model_s *psubmodel);

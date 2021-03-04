@@ -314,10 +314,10 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		qglUseProgramObjectARB(0);
 	}
 
-	EmitWaterPolysWireFrame(fa, direction, useProgram);
-
 	qglStencilMask(0);
 	qglDisable(GL_STENCIL_TEST);
+
+	EmitWaterPolysWireFrame(fa, direction, useProgram);
 }
 
 int *gSkyTexNumber;

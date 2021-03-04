@@ -64,7 +64,10 @@ void main()
 
     #else
 
-        gl_FragColor = diffuseColor * lightmapColor;
+        gl_FragData[0] = diffuseColor;
+        gl_FragData[1] = lightmapColor;
+        gl_FragData[2] = worldpos;
+        gl_FragData[3] = normal;
 
     #endif
 

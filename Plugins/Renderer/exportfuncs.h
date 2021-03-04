@@ -22,7 +22,7 @@ void hudGetMousePos(struct tagPOINT *ppt);
 
 void hudGetMousePosition(int *x, int *y);
 
-#define GetCallAddress(addr) (addr + (*(DWORD *)((addr)+1)) + 5)
+#define GetCallAddress(addr) (addr + (*(int *)((addr)+1)) + 5)
 #define Sig_NotFound(name) Sys_ErrorEx("Could not found: %s\nEngine buildnum£º%d", #name, g_dwEngineBuildnum);
 #define Sig_FuncNotFound(name) if(!gRefFuncs.name) Sig_NotFound(name)
 #define Sig_AddrNotFound(name) if(!addr) Sig_NotFound(name)

@@ -405,6 +405,7 @@ void R_GenerateVertexBuffer(void)
 	qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 
 	r_wsurf.iLightmapTextureArray = GL_GenTexture();
+	qglEnable(GL_TEXTURE_2D_ARRAY);
 	qglBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
 	qglTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	qglTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -414,8 +415,7 @@ void R_GenerateVertexBuffer(void)
 		qglTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, BLOCK_WIDTH, BLOCK_HEIGHT, 1, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + 0x10000 * i);
 	}
 	qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-
-	auto err = qglGetError();
+	qglDisable(GL_TEXTURE_2D_ARRAY);
 }
 
 void R_SetVBOState(int state)
@@ -1558,6 +1558,11 @@ void R_DrawWorld(void)
 
 	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
+	qglEnable(GL_STENCIL_TEST);
+	qglStencilMask(0xFF);
+	qglStencilFunc(GL_ALWAYS, 0, 0xFF);
+	qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
 	if (r_wsurf_vbo->value)
 	{
 		GL_DisableMultitexture();
@@ -1716,4 +1721,7 @@ void R_DrawWorld(void)
 		qglDisable(GL_POLYGON_OFFSET_FILL);
 		(*r_polygon_offset) = 0.0;
 	}
+
+	qglStencilMask(0);
+	qglDisable(GL_STENCIL_TEST);
 }

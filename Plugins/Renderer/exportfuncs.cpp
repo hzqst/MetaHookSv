@@ -486,6 +486,31 @@ int HUD_Redraw(float time, int intermission)
 	return gExportfuncs.HUD_Redraw(time, intermission);
 }
 
+typedef struct portal_texture_s
+{
+	struct portal_texture_s *next;
+	struct portal_texture_s *prev;
+	GLuint gl_texturenum1;
+	GLuint gl_texturenum2;
+}portal_texture_t;
+
+void __fastcall PortalManager_ResetAll(int pthis, int)
+{
+	portal_texture_t *ptextures = *(portal_texture_t **)(pthis + 0x9C);
+
+	if (ptextures->next != ptextures)
+	{
+		do
+		{
+			//qglDeleteTextures(1, &ptextures->gl_texturenum2);
+			ptextures->gl_texturenum2 = 0;
+			ptextures = ptextures->next;
+		} while (ptextures != *(portal_texture_t **)(pthis + 0x9C) );
+	}
+
+	gRefFuncs.PortalManager_ResetAll(pthis, 0);
+}
+
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
 {
 	DWORD addr;
@@ -577,27 +602,14 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		if (ClientBase)
 		{
 			auto ClientSize = g_pMetaHookAPI->GetModuleSize((HMODULE)ClientBase);
+#define SVCLIENT_PORTALMANAGER_RESETALL_SIG "\xC7\x45\x2A\xFF\xFF\xFF\xFF\xA3\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x0D"
+		 DWORD addr = (DWORD)
+				g_pMetaHookAPI->SearchPattern((void *)ClientBase, ClientSize, SVCLIENT_PORTALMANAGER_RESETALL_SIG, sizeof(SVCLIENT_PORTALMANAGER_RESETALL_SIG) - 1);
+			Sig_AddrNotFound("PortalManager_ResetAll");
 
-#define SVCLIENT_HUD_VIDINIT_SIG "\x6A\x01\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C\xE8\x2A\x2A\x2A\x2A\xB8\x01\x00\x00\x00\xC3"
-			{
-				DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)ClientBase, ClientSize, SVCLIENT_HUD_VIDINIT_SIG, sizeof(SVCLIENT_HUD_VIDINIT_SIG) - 1);
-				Sig_AddrNotFound("SvClient_PortalManager_VIDInit");
-				g_pMetaHookAPI->WriteNOP((PUCHAR)addr + 10, 5);
-			}
-/*
-#define SVCLIENT_STENCILFUNC_SIG "\x68\xFF\x00\x00\x00\x6A\x01\x68\x03\x02\x00\x00\xFF\x15"
-			{
-				auto addr = g_pMetaHookAPI->SearchPattern((void *)ClientBase, ClientSize, SVCLIENT_STENCILFUNC_SIG, sizeof(SVCLIENT_STENCILFUNC_SIG) - 1);
-				Sig_AddrNotFound("SvClient_CPortalManager_DrawQuad");
-				g_pMetaHookAPI->WriteBYTE((PUCHAR)addr + 6, 0x02);
-			}
+			gRefFuncs.PortalManager_ResetAll = (decltype(gRefFuncs.PortalManager_ResetAll))GetCallAddress(addr + 12);
 
-#define SVCLIENT_STENCILFUNC_SIG2 "\x68\xFF\x00\x00\x00\x6A\x01\x68\x02\x02\x00\x00\xFF\x15"
-			{
-				auto addr = g_pMetaHookAPI->SearchPattern((void *)ClientBase, ClientSize, SVCLIENT_STENCILFUNC_SIG2, sizeof(SVCLIENT_STENCILFUNC_SIG2) - 1);
-				Sig_AddrNotFound("SvClient_CPortalManager_DrawTexturedPortal");
-				g_pMetaHookAPI->WriteBYTE((PUCHAR)addr + 6, 0x02);
-			}*/
+			g_pMetaHookAPI->InlineHook(gRefFuncs.PortalManager_ResetAll, PortalManager_ResetAll, (void *&)gRefFuncs.PortalManager_ResetAll);
 		}
 	}
 
