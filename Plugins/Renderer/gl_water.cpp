@@ -357,14 +357,7 @@ void R_RenderReflectView(void)
 
 	R_PushRefDef();
 
-	if (r_refdef->useCamera)
-	{
-		VectorCopy(r_refdef->r_camera_origin, water_view);
-	}
-	else
-	{
-		VectorCopy(r_refdef->vieworg, water_view);
-	}
+	VectorCopy(r_refdef->vieworg, water_view);
 
 	VectorCopy(water_view, r_refdef->vieworg);
 
@@ -425,14 +418,7 @@ void R_RenderRefractView(void)
 
 	R_PushRefDef();
 
-	if (r_refdef->useCamera)
-	{
-		VectorCopy(r_refdef->r_camera_origin, water_view);
-	}
-	else
-	{
-		VectorCopy(r_refdef->vieworg, water_view);
-	}
+	VectorCopy(r_refdef->vieworg, water_view);
 
 	VectorCopy(water_view, r_refdef->vieworg);
 

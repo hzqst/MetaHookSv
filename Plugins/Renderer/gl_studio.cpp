@@ -1,6 +1,6 @@
 #include "gl_local.h"
 #include "triangleapi.h"
-#include "cJSON.h"
+#include <sstream>
 #define SSE
 #include <sselib.h>
 
@@ -41,21 +41,6 @@ float *pvlightvalues;
 int r_studio_drawcall;
 int r_studio_polys;
 
-SHADER_DEFINE(studio);
-SHADER_DEFINE(studiogbuffer);
-
-SHADER_DEFINE(studio_flatshade);
-SHADER_DEFINE(studiogbuffer_flatshade);
-
-SHADER_DEFINE(studio_fullbright);
-SHADER_DEFINE(studiogbuffer_fullbright);
-
-SHADER_DEFINE(studio_chrome);
-SHADER_DEFINE(studiogbuffer_chrome);
-
-studio_texarray_mgr_t g_TexArray;
-studio_texarray_mgr_t g_LocalTexArray;
-
 cvar_t *r_studio_vbo = NULL;
 
 int Q_stricmp_slash(const char *s1, const char *s2);
@@ -85,360 +70,90 @@ void R_StudioClearVBOCache(void)
 	g_StudioVBOTable.clear();
 }
 
-void R_UnloadTextureArray(studio_texarray_t *texarray)
+std::unordered_map<int, studio_program_t> g_StudioProgramTable;
+
+void R_UseStudioProgram(int state, studio_program_t *progOutput)
 {
-	int i;
-	if(!texarray->numtextures)
-		return;
-	for(i = 0; i < texarray->numtextures; ++i)
+	studio_program_t prog = { 0 };
+
+	auto itor = g_StudioProgramTable.find(state);
+	if (itor == g_StudioProgramTable.end())
 	{
-		studio_texture_t *st = &texarray->textures[i];
-		if(st->replace.glt)
-			GL_FreeTexture(st->replace.glt);
-		if(st->normal.glt)
-			GL_FreeTexture(st->normal.glt);
-	}
-	delete [] texarray->textures;
-	texarray->textures = NULL;
-	texarray->numtextures = 0;
-	texarray->modelname[0] = 0;
-}
+		std::stringstream defs;
 
-void R_UnloadTextureArrayMgr(studio_texarray_mgr_t *pTexArrayMgr)
-{
-	int i;
-	for(i = 0;i < pTexArrayMgr->iNumTexArray; ++i)
-	{
-		R_UnloadTextureArray(&pTexArrayMgr->pTexArray[i]);
-	}
-	delete [] pTexArrayMgr->pTexArray;
-	pTexArrayMgr->pTexArray = NULL;
-	pTexArrayMgr->iNumTexArray = 0;
-}
+		if (state & STUDIO_NF_FLATSHADE)
+			defs << "#define STUDIO_NF_FLATSHADE\n";
 
-void R_LoadStudioTextures_Normal(cJSON *tex, const char *objname, studio_texentry_t *pTexEntry)
-{
-	int texid;
+		if (state & STUDIO_NF_CHROME)
+			defs << "#define STUDIO_NF_CHROME\n";
 
-	cJSON *obj = cJSON_GetObjectItem(tex, objname);
-	if(!obj || !obj->valuestring)
-		return;
+		if (state & STUDIO_NF_FULLBRIGHT)
+			defs << "#define STUDIO_NF_FULLBRIGHT\n";
 
-	texid = R_LoadTextureEx(obj->valuestring, obj->valuestring, NULL, NULL, GLT_SYSTEM, false, false);
-	if (!texid)
-		return;
-	strncpy(pTexEntry->name, obj->valuestring, 63);
-	pTexEntry->name[63] = 0;
-	pTexEntry->glt = R_GetCurrentGLTexture();
-	pTexEntry->w = pTexEntry->glt->width;
-	pTexEntry->h = pTexEntry->glt->height;
-	pTexEntry->index = texid;
-}
+		if (state & STUDIO_NF_ADDITIVE)
+			defs << "#define STUDIO_NF_ADDITIVE\n";
 
-void R_LoadStudioTextures(qboolean loadmap)
-{
-	int i, j;
-	char szFileName[256];
-	char *pFile;
-	studio_texarray_mgr_t *pTexArrayMgr;
-	studio_texarray_t *pTexArray;
-	studio_texture_t *pTex;
+		if (state & STUDIO_GBUFFER_ENABLED)
+			defs << "#define GBUFFER_ENABLED\n";
 
-	if(!loadmap)
-	{
-		memset(&g_TexArray, 0, sizeof(g_TexArray));
-		memset(&g_LocalTexArray, 0, sizeof(g_LocalTexArray));
+		if (state & STUDIO_TRANSPARENT_ENABLED)
+			defs << "#define TRANSPARENT_ENABLED\n";
+
+		auto def = defs.str();
+
+		prog.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh", def.c_str(), NULL, def.c_str());
+		if (prog.program)
+		{
+			SHADER_UNIFORM(prog, bonematrix, "bonematrix");
+
+			SHADER_UNIFORM(prog, diffuseTex, "diffuseTex");
+			SHADER_UNIFORM(prog, v_lambert, "v_lambert");
+			SHADER_UNIFORM(prog, v_brightness, "v_brightness");
+			SHADER_UNIFORM(prog, v_lightgamma, "v_lightgamma");
+			SHADER_UNIFORM(prog, r_ambientlight, "r_ambientlight");
+			SHADER_UNIFORM(prog, r_shadelight, "r_shadelight");
+			SHADER_UNIFORM(prog, r_blend, "r_blend");
+			SHADER_UNIFORM(prog, r_g1, "r_g1");
+			SHADER_UNIFORM(prog, r_g3, "r_g3");
+			SHADER_UNIFORM(prog, r_plightvec, "r_plightvec");
+			SHADER_UNIFORM(prog, r_colormix, "r_colormix");
+			SHADER_UNIFORM(prog, r_origin, "r_origin");
+			SHADER_UNIFORM(prog, r_vright, "r_vright");
+			SHADER_UNIFORM(prog, r_scale, "r_scale");
+
+			SHADER_ATTRIB(prog, attr_bone, "attr_bone");
+		}
+
+		g_StudioProgramTable[state] = prog;
 	}
 	else
 	{
-		R_UnloadTextureArrayMgr(&g_LocalTexArray);
+		prog = itor->second;
 	}
 
-	if(!loadmap)
+	if (prog.program)
 	{
-		sprintf(szFileName, "resource/studio_textures.txt");
+		qglUseProgramObjectARB(prog.program);
+
+		if (prog.diffuseTex != -1)
+			qglUniform1iARB(prog.diffuseTex, 0);
+
+		if (progOutput)
+			*progOutput = prog;
 	}
 	else
 	{
-		strcpy( szFileName, gEngfuncs.pfnGetLevelName() );
-		if ( !strlen(szFileName) )
-		{
-			gEngfuncs.Con_Printf("R_LoadStudioTextures failed to GetLevelName.\n");
-			return;
-		}
-		szFileName[strlen(szFileName)-4] = 0;
-		strcat(szFileName, "_studio.txt");
+		Sys_ErrorEx("R_UseStudioProgram: Failed to load program!");
 	}
+}
 
-	pFile = (char *)gEngfuncs.COM_LoadFile(szFileName, 5, NULL);
-	if (!pFile)
-	{
-		gEngfuncs.Con_Printf("R_LoadStudioTextures failed to load %s.\n", szFileName);
-		return;
-	}
-
-	cJSON *root = cJSON_Parse(pFile);
-	if (!root)
-	{
-		gEngfuncs.Con_Printf("R_LoadStudioTextures failed to parse %s.\n", szFileName);
-		return;
-	}
-	//texture array load
-	int nummodels = cJSON_GetArraySize(root);
-	if(nummodels < 1)
-		return;
-
-	if(!loadmap)
-		pTexArrayMgr = &g_TexArray;
-	else
-		pTexArrayMgr = &g_LocalTexArray;
-
-	//alloc new texarrays
-	pTexArrayMgr->iNumTexArray = 0;
-	pTexArrayMgr->pTexArray = new studio_texarray_t[nummodels];
-	memset(pTexArrayMgr->pTexArray, 0, sizeof(studio_texarray_t)*nummodels);
-
-	for(i = 0; i < nummodels; ++i)
-	{
-		cJSON *mod = cJSON_GetArrayItem(root, i);
-		if(!mod)
-			continue;
-		//parse modelname
-		cJSON *modelname = cJSON_GetObjectItem(mod, "modelname");
-		if(!modelname || !modelname->valuestring)
-		{
-			gEngfuncs.Con_Printf("R_LoadStudioTextures parse %s with error, model #%d has no \"model\" component.\n", szFileName, i);
-			continue;
-		}
-
-		//parse textures
-		cJSON *textures = cJSON_GetObjectItem(mod, "textures");
-		if(!textures)
-		{
-			gEngfuncs.Con_Printf("R_LoadStudioTextures parse %s with error, model #%d has no \"textures\" component.\n", szFileName, i);
-			continue;
-		}
-
-		//create texture array
-		int numtextures = cJSON_GetArraySize(textures);
-		if(numtextures < 1)
-			continue;
-
-		pTexArray = &pTexArrayMgr->pTexArray[pTexArrayMgr->iNumTexArray];
-		pTexArrayMgr->iNumTexArray ++;
-
-		//init texarray
-		pTexArray->textures = new studio_texture_t[numtextures];
-		memset(pTexArray->textures, 0, sizeof(studio_texture_t)*numtextures);
-		pTexArray->numtextures = 0;
-		strncpy(pTexArray->modelname, modelname->valuestring, 63);
-		pTexArray->modelname[63] = 0;
-
-		for(j = 0; j < numtextures; ++j)
-		{
-			pTex = &pTexArray->textures[pTexArray->numtextures];
-			cJSON *tex = cJSON_GetArrayItem(textures, j);
-			if(!tex)
-				continue;
-			cJSON *base = cJSON_GetObjectItem(tex, "base");
-			if(!base || !base->valuestring)
-			{
-				gEngfuncs.Con_Printf("R_LoadStudioTextures parse %s with error, model #%d's texture #%d has no \"base\" component.\n", szFileName, i, j);
-				continue;
-			}
-			//increment
-			pTexArray->numtextures ++;
-			//load base texture
-			strncpy(pTex->base.name, base->valuestring, 63);
-			pTex->base.name[63] = 0;
-			pTex->base.index = 0;
-			R_LoadStudioTextures_Normal(tex, "replace", &pTex->replace);
-		}//texture load end			
-	}//model load end		
-	cJSON_Delete(root);
-	gEngfuncs.COM_FreeFile((void *) pFile );
+void R_ShutdownStudio(void)
+{
+	g_StudioProgramTable.clear();
 }
 
 void R_InitStudio(void)
 {
-	if (gl_shader_support)
-	{
-		studio.program = R_CompileShaderFile("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh");
-		if (studio.program)
-		{
-			SHADER_UNIFORM(studio, bonematrix, "bonematrix");
-
-			SHADER_UNIFORM(studio, diffuseTex, "diffuseTex");
-			SHADER_UNIFORM(studio, v_lambert, "v_lambert");
-			SHADER_UNIFORM(studio, v_brightness, "v_brightness");
-			SHADER_UNIFORM(studio, v_lightgamma, "v_lightgamma");
-			SHADER_UNIFORM(studio, r_ambientlight, "r_ambientlight");
-			SHADER_UNIFORM(studio, r_shadelight, "r_shadelight");
-			SHADER_UNIFORM(studio, r_blend, "r_blend");
-			SHADER_UNIFORM(studio, r_g1, "r_g1");
-			SHADER_UNIFORM(studio, r_g3, "r_g3");
-			SHADER_UNIFORM(studio, r_plightvec, "r_plightvec");
-			SHADER_UNIFORM(studio, r_colormix, "r_colormix");
-
-			SHADER_ATTRIB(studio, attrbone, "attrbone");
-		}
-
-		studiogbuffer.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#define GBUFFER_ENABLED", NULL, "#define GBUFFER_ENABLED");
-		if (studiogbuffer.program)
-		{
-			SHADER_UNIFORM(studiogbuffer, bonematrix, "bonematrix");
-
-			SHADER_UNIFORM(studiogbuffer, diffuseTex, "diffuseTex");
-			SHADER_UNIFORM(studiogbuffer, v_lambert, "v_lambert");
-			SHADER_UNIFORM(studiogbuffer, v_brightness, "v_brightness");
-			SHADER_UNIFORM(studiogbuffer, v_lightgamma, "v_lightgamma");
-			SHADER_UNIFORM(studiogbuffer, r_ambientlight, "r_ambientlight");
-			SHADER_UNIFORM(studiogbuffer, r_shadelight, "r_shadelight");
-			SHADER_UNIFORM(studiogbuffer, r_blend, "r_blend");
-			SHADER_UNIFORM(studiogbuffer, r_g1, "r_g1");
-			SHADER_UNIFORM(studiogbuffer, r_g3, "r_g3");
-			SHADER_UNIFORM(studiogbuffer, r_plightvec, "r_plightvec");
-			SHADER_UNIFORM(studiogbuffer, r_colormix, "r_colormix");
-
-			SHADER_ATTRIB(studiogbuffer, attrbone, "attrbone");
-		}
-
-		//FlatShade
-		studio_flatshade.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#define STUDIO_FLATSHADE", NULL, "#define STUDIO_FLATSHADE");
-		if (studio_flatshade.program)
-		{
-			SHADER_UNIFORM(studio_flatshade, bonematrix, "bonematrix");
-
-			SHADER_UNIFORM(studio_flatshade, diffuseTex, "diffuseTex");
-			SHADER_UNIFORM(studio_flatshade, v_lambert, "v_lambert");
-			SHADER_UNIFORM(studio_flatshade, v_brightness, "v_brightness");
-			SHADER_UNIFORM(studio_flatshade, v_lightgamma, "v_lightgamma");
-			SHADER_UNIFORM(studio_flatshade, r_ambientlight, "r_ambientlight");
-			SHADER_UNIFORM(studio_flatshade, r_shadelight, "r_shadelight");
-			SHADER_UNIFORM(studio_flatshade, r_blend, "r_blend");
-			SHADER_UNIFORM(studio_flatshade, r_g1, "r_g1");
-			SHADER_UNIFORM(studio_flatshade, r_g3, "r_g3");
-			SHADER_UNIFORM(studio_flatshade, r_plightvec, "r_plightvec");
-			SHADER_UNIFORM(studio_flatshade, r_colormix, "r_colormix");
-
-			SHADER_ATTRIB(studio_flatshade, attrbone, "attrbone");
-		}
-
-		studiogbuffer_flatshade.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#define GBUFFER_ENABLED\n#define STUDIO_FLATSHADE", NULL, "#define GBUFFER_ENABLED\n#define STUDIO_FLATSHADE");
-		if (studiogbuffer_flatshade.program)
-		{
-			SHADER_UNIFORM(studiogbuffer_flatshade, bonematrix, "bonematrix");
-
-			SHADER_UNIFORM(studiogbuffer_flatshade, diffuseTex, "diffuseTex");
-			SHADER_UNIFORM(studiogbuffer_flatshade, v_lambert, "v_lambert");
-			SHADER_UNIFORM(studiogbuffer_flatshade, v_brightness, "v_brightness");
-			SHADER_UNIFORM(studiogbuffer_flatshade, v_lightgamma, "v_lightgamma");
-			SHADER_UNIFORM(studiogbuffer_flatshade, r_ambientlight, "r_ambientlight");
-			SHADER_UNIFORM(studiogbuffer_flatshade, r_shadelight, "r_shadelight");
-			SHADER_UNIFORM(studiogbuffer_flatshade, r_blend, "r_blend");
-			SHADER_UNIFORM(studiogbuffer_flatshade, r_g1, "r_g1");
-			SHADER_UNIFORM(studiogbuffer_flatshade, r_g3, "r_g3");
-			SHADER_UNIFORM(studiogbuffer_flatshade, r_plightvec, "r_plightvec");
-			SHADER_UNIFORM(studiogbuffer_flatshade, r_colormix, "r_colormix");
-
-			SHADER_ATTRIB(studiogbuffer_flatshade, attrbone, "attrbone");
-		}
-
-		//FullBright
-		studio_fullbright.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#define STUDIO_FULLBRIGHT", NULL, "#define STUDIO_FULLBRIGHT");
-		if (studio_fullbright.program)
-		{
-			SHADER_UNIFORM(studio_fullbright, bonematrix, "bonematrix");
-
-			SHADER_UNIFORM(studio_fullbright, diffuseTex, "diffuseTex");
-			SHADER_UNIFORM(studio_fullbright, v_lambert, "v_lambert");
-			SHADER_UNIFORM(studio_fullbright, v_brightness, "v_brightness");
-			SHADER_UNIFORM(studio_fullbright, v_lightgamma, "v_lightgamma");
-			SHADER_UNIFORM(studio_fullbright, r_ambientlight, "r_ambientlight");
-			SHADER_UNIFORM(studio_fullbright, r_shadelight, "r_shadelight");
-			SHADER_UNIFORM(studio_fullbright, r_blend, "r_blend");
-			SHADER_UNIFORM(studio_fullbright, r_g1, "r_g1");
-			SHADER_UNIFORM(studio_fullbright, r_g3, "r_g3");
-			SHADER_UNIFORM(studio_fullbright, r_plightvec, "r_plightvec");
-			SHADER_UNIFORM(studio_fullbright, r_colormix, "r_colormix");
-
-			SHADER_ATTRIB(studio_fullbright, attrbone, "attrbone");
-		}
-
-		studiogbuffer_fullbright.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#define GBUFFER_ENABLED\n#define STUDIO_FULLBRIGHT", NULL, "#define GBUFFER_ENABLED\n#define STUDIO_FULLBRIGHT");
-		if (studiogbuffer_fullbright.program)
-		{
-			SHADER_UNIFORM(studiogbuffer_fullbright, bonematrix, "bonematrix");
-
-			SHADER_UNIFORM(studiogbuffer_fullbright, diffuseTex, "diffuseTex");
-			SHADER_UNIFORM(studiogbuffer_fullbright, v_lambert, "v_lambert");
-			SHADER_UNIFORM(studiogbuffer_fullbright, v_brightness, "v_brightness");
-			SHADER_UNIFORM(studiogbuffer_fullbright, v_lightgamma, "v_lightgamma");
-			SHADER_UNIFORM(studiogbuffer_fullbright, r_ambientlight, "r_ambientlight");
-			SHADER_UNIFORM(studiogbuffer_fullbright, r_shadelight, "r_shadelight");
-			SHADER_UNIFORM(studiogbuffer_fullbright, r_blend, "r_blend");
-			SHADER_UNIFORM(studiogbuffer_fullbright, r_g1, "r_g1");
-			SHADER_UNIFORM(studiogbuffer_fullbright, r_g3, "r_g3");
-			SHADER_UNIFORM(studiogbuffer_fullbright, r_plightvec, "r_plightvec");
-			SHADER_UNIFORM(studiogbuffer_fullbright, r_colormix, "r_colormix");
-
-			SHADER_ATTRIB(studiogbuffer_fullbright, attrbone, "attrbone");
-		}
-
-		studio_chrome.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#define STUDIO_CHROME", NULL, "#define STUDIO_CHROME");
-		if (studio_chrome.program)
-		{
-			SHADER_UNIFORM(studio_chrome, bonematrix, "bonematrix");
-
-			SHADER_UNIFORM(studio_chrome, diffuseTex, "diffuseTex");
-			SHADER_UNIFORM(studio_chrome, v_lambert, "v_lambert");
-			SHADER_UNIFORM(studio_chrome, v_brightness, "v_brightness");
-			SHADER_UNIFORM(studio_chrome, v_lightgamma, "v_lightgamma");
-			SHADER_UNIFORM(studio_chrome, r_ambientlight, "r_ambientlight");
-			SHADER_UNIFORM(studio_chrome, r_shadelight, "r_shadelight");
-			SHADER_UNIFORM(studio_chrome, r_blend, "r_blend");
-			SHADER_UNIFORM(studio_chrome, r_g1, "r_g1");
-			SHADER_UNIFORM(studio_chrome, r_g3, "r_g3");
-			SHADER_UNIFORM(studio_chrome, r_plightvec, "r_plightvec");
-			SHADER_UNIFORM(studio_chrome, r_colormix, "r_colormix");
-			SHADER_UNIFORM(studio_chrome, r_origin, "r_origin");
-			SHADER_UNIFORM(studio_chrome, r_vright, "r_vright");
-			SHADER_UNIFORM(studio_chrome, r_scale, "r_scale");
-
-			SHADER_ATTRIB(studio_chrome, attrbone, "attrbone");
-		}
-
-		studiogbuffer_chrome.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh",
-			"#define GBUFFER_ENABLED\n#define STUDIO_CHROME", NULL, "#define GBUFFER_ENABLED\n#define STUDIO_CHROME");
-		if (studiogbuffer_chrome.program)
-		{
-			SHADER_UNIFORM(studiogbuffer_chrome, bonematrix, "bonematrix");
-
-			SHADER_UNIFORM(studiogbuffer_chrome, diffuseTex, "diffuseTex");
-			SHADER_UNIFORM(studiogbuffer_chrome, v_lambert, "v_lambert");
-			SHADER_UNIFORM(studiogbuffer_chrome, v_brightness, "v_brightness");
-			SHADER_UNIFORM(studiogbuffer_chrome, v_lightgamma, "v_lightgamma");
-			SHADER_UNIFORM(studiogbuffer_chrome, r_ambientlight, "r_ambientlight");
-			SHADER_UNIFORM(studiogbuffer_chrome, r_shadelight, "r_shadelight");
-			SHADER_UNIFORM(studiogbuffer_chrome, r_blend, "r_blend");
-			SHADER_UNIFORM(studiogbuffer_chrome, r_g1, "r_g1");
-			SHADER_UNIFORM(studiogbuffer_chrome, r_g3, "r_g3");
-			SHADER_UNIFORM(studiogbuffer_chrome, r_plightvec, "r_plightvec");
-			SHADER_UNIFORM(studiogbuffer_chrome, r_colormix, "r_colormix");
-			SHADER_UNIFORM(studiogbuffer_chrome, r_origin, "r_origin");
-			SHADER_UNIFORM(studiogbuffer_chrome, r_vright, "r_vright");
-			SHADER_UNIFORM(studiogbuffer_chrome, r_scale, "r_scale");
-
-			SHADER_ATTRIB(studiogbuffer_chrome, attrbone, "attrbone");
-		}
-	}
-
 	r_studio_vbo = gEngfuncs.pfnRegisterVariable("r_studio_vbo", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
@@ -811,7 +526,7 @@ void R_GLStudioDrawPoints(void)
 	pstudionorms = (vec3_t *)((byte *)(*pstudiohdr) + (*psubmodel)->normindex);
 	pnormbone = ((byte *)(*pstudiohdr) + (*psubmodel)->norminfoindex);
 
-	if (!iInitVBO && VBOSubmodel && r_studio_vbo->value && studio.program)
+	if (!iInitVBO && VBOSubmodel && r_studio_vbo->value)
 	{
 		qglEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 		qglEnableClientState(GL_VERTEX_ARRAY);
@@ -851,6 +566,7 @@ void R_GLStudioDrawPoints(void)
 			}
 
 			bool bTransparent = false;
+
 			if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
 			{
 				qglBlendFunc(GL_ONE, GL_ONE);
@@ -869,25 +585,12 @@ void R_GLStudioDrawPoints(void)
 			else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
 			{
 				qglBlendFunc(GL_ONE, GL_ONE);
+
 				qglEnable(GL_BLEND);
 				qglDepthMask(GL_FALSE);
 				qglShadeModel(GL_SMOOTH);
-			}
 
-			//Transparent object?
-
-			//GLboolean writemask;
-			//qglGetBooleanv(GL_DEPTH_WRITEMASK, &writemask);
-
-			if (bTransparent)
-			{
-				R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED | GBUFFER_LIGHTMAP_ENABLED);
-				R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
-			}
-			else
-			{
-				R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED);
-				R_SetGBufferMask(GBUFFER_MASK_ALL);
+				bTransparent = true;
 			}
 
 			if (r_fullbright->value >= 2)
@@ -899,194 +602,74 @@ void R_GLStudioDrawPoints(void)
 				gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
 			}
 
-			int attrbone = -1;
-
-			if (drawgbuffer)
+			if (bTransparent)
 			{
-				if (flags & STUDIO_NF_CHROME)
-				{
-					qglUseProgramObjectARB(studiogbuffer_chrome.program);
-					qglUniformMatrix3x4fvARB(studiogbuffer_chrome.bonematrix, 128, 0, (float *)(*pbonetransform));
-					qglUniform1iARB(studiogbuffer_chrome.diffuseTex, 0);
-					qglUniform1fARB(studiogbuffer_chrome.r_blend, (*r_blend));
-					qglUniform1fARB(studiogbuffer_chrome.r_g1, r_g);
-					qglUniform1fARB(studiogbuffer_chrome.r_g3, r_g3);
-					qglUniform1fARB(studiogbuffer_chrome.r_ambientlight, (float)(*r_ambientlight));
-					qglUniform1fARB(studiogbuffer_chrome.r_shadelight, (*r_shadelight));
-					qglUniform1fARB(studiogbuffer_chrome.v_brightness, v_brightness->value);
-					qglUniform1fARB(studiogbuffer_chrome.v_lightgamma, v_lightgamma->value);
-					qglUniform1fARB(studiogbuffer_chrome.v_lambert, v_lambert->value);
-					qglUniform3fARB(studiogbuffer_chrome.r_plightvec, r_plightvec[0], r_plightvec[1], r_plightvec[2]);
-					qglUniform3fARB(studiogbuffer_chrome.r_colormix, r_colormix[0], r_colormix[1], r_colormix[2]);
-					qglUniform3fARB(studiogbuffer_chrome.r_origin, g_ChromeOrigin[0], g_ChromeOrigin[1], g_ChromeOrigin[2]);
-					qglUniform3fARB(studiogbuffer_chrome.r_vright, vright[0], vright[1], vright[2]);
-					if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
-					{
-						qglUniform1fARB(studiogbuffer_chrome.r_scale, (*currententity)->curstate.renderamt * 0.05f);
-					}
-					else
-					{
-						qglUniform1fARB(studiogbuffer_chrome.r_scale, 0);
-					}
-					qglVertexAttribIPointer(studiogbuffer_chrome.attrbone, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
-					qglEnableVertexAttribArray(studiogbuffer_chrome.attrbone);
-					attrbone = studiogbuffer_chrome.attrbone;
-				}
-				else if (flags & STUDIO_NF_FULLBRIGHT)
-				{
-					qglUseProgramObjectARB(studiogbuffer_fullbright.program);
-					qglUniformMatrix3x4fvARB(studiogbuffer_fullbright.bonematrix, 128, 0, (float *)(*pbonetransform));
-					qglUniform1iARB(studiogbuffer_fullbright.diffuseTex, 0);
-					qglUniform1fARB(studiogbuffer_fullbright.r_blend, (*r_blend));
-					qglUniform1fARB(studiogbuffer_fullbright.r_g1, r_g);
-					qglUniform1fARB(studiogbuffer_fullbright.r_g3, r_g3);
-					qglUniform1fARB(studiogbuffer_fullbright.r_ambientlight, (float)(*r_ambientlight));
-					qglUniform1fARB(studiogbuffer_fullbright.r_shadelight, (*r_shadelight));
-					qglUniform1fARB(studiogbuffer_fullbright.v_brightness, v_brightness->value);
-					qglUniform1fARB(studiogbuffer_fullbright.v_lightgamma, v_lightgamma->value);
-					qglUniform1fARB(studiogbuffer_fullbright.v_lambert, v_lambert->value);
-					qglUniform3fARB(studiogbuffer_fullbright.r_plightvec, r_plightvec[0], r_plightvec[1], r_plightvec[2]);
-					qglUniform3fARB(studiogbuffer_fullbright.r_colormix, 1, 1, 1);
-					qglVertexAttribIPointer(studiogbuffer_fullbright.attrbone, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
-					qglEnableVertexAttribArray(studiogbuffer_fullbright.attrbone);
-					attrbone = studiogbuffer_fullbright.attrbone;
-				}
-				else if (flags & STUDIO_NF_FLATSHADE)
-				{
-					qglUseProgramObjectARB(studiogbuffer_flatshade.program);
-					qglUniformMatrix3x4fvARB(studiogbuffer_flatshade.bonematrix, 128, 0, (float *)(*pbonetransform));
-					qglUniform1iARB(studiogbuffer_flatshade.diffuseTex, 0);
-					qglUniform1fARB(studiogbuffer_flatshade.r_blend, (*r_blend));
-					qglUniform1fARB(studiogbuffer_flatshade.r_g1, r_g);
-					qglUniform1fARB(studiogbuffer_flatshade.r_g3, r_g3);
-					qglUniform1fARB(studiogbuffer_flatshade.r_ambientlight, (float)(*r_ambientlight));
-					qglUniform1fARB(studiogbuffer_flatshade.r_shadelight, (*r_shadelight));
-					qglUniform1fARB(studiogbuffer_flatshade.v_brightness, v_brightness->value);
-					qglUniform1fARB(studiogbuffer_flatshade.v_lightgamma, v_lightgamma->value);
-					qglUniform1fARB(studiogbuffer_flatshade.v_lambert, v_lambert->value);
-					qglUniform3fARB(studiogbuffer_flatshade.r_plightvec, r_plightvec[0], r_plightvec[1], r_plightvec[2]);
-					qglUniform3fARB(studiogbuffer_flatshade.r_colormix, r_colormix[0], r_colormix[1], r_colormix[2]);
-					qglVertexAttribIPointer(studiogbuffer_flatshade.attrbone, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
-					qglEnableVertexAttribArray(studiogbuffer_flatshade.attrbone);
-					attrbone = studiogbuffer_flatshade.attrbone;
-				}
-				else
-				{
-					qglUseProgramObjectARB(studiogbuffer.program);
-					qglUniformMatrix3x4fvARB(studiogbuffer.bonematrix, 128, 0, (float *)(*pbonetransform));
-					qglUniformMatrix3x4fvARB(studiogbuffer.lightmatrix, 128, 0, (float *)(*plighttransform));
-					qglUniform1iARB(studiogbuffer.diffuseTex, 0);
-					qglUniform1fARB(studiogbuffer.r_blend, (*r_blend));
-					qglUniform1fARB(studiogbuffer.r_g1, r_g);
-					qglUniform1fARB(studiogbuffer.r_g3, r_g3);
-					qglUniform1fARB(studiogbuffer.r_ambientlight, (float)(*r_ambientlight));
-					qglUniform1fARB(studiogbuffer.r_shadelight, (*r_shadelight));
-					qglUniform1fARB(studiogbuffer.v_brightness, v_brightness->value);
-					qglUniform1fARB(studiogbuffer.v_lightgamma, v_lightgamma->value);
-					qglUniform1fARB(studiogbuffer.v_lambert, v_lambert->value);
-					qglUniform3fARB(studiogbuffer.r_plightvec, r_plightvec[0], r_plightvec[1], r_plightvec[2]);
-					qglUniform3fARB(studiogbuffer.r_colormix, r_colormix[0], r_colormix[1], r_colormix[2]);
-					qglVertexAttribIPointer(studiogbuffer.attrbone, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
-					qglEnableVertexAttribArray(studiogbuffer.attrbone);
-					attrbone = studiogbuffer.attrbone;
-				}
+				R_SetGBufferMask(GBUFFER_MASK_DIFFUSE | GBUFFER_LIGHTMAP_ENABLED);
 			}
 			else
 			{
-				if (flags & STUDIO_NF_CHROME)
-				{
-					qglUseProgramObjectARB(studio_chrome.program);
-					qglUniformMatrix3x4fvARB(studio_chrome.bonematrix, 128, 0, (float *)(*pbonetransform));
-					qglUniform1iARB(studio_chrome.diffuseTex, 0);
-					qglUniform1fARB(studio_chrome.r_blend, (*r_blend));
-					qglUniform1fARB(studio_chrome.r_g1, r_g);
-					qglUniform1fARB(studio_chrome.r_g3, r_g3);
-					qglUniform1fARB(studio_chrome.r_ambientlight, (float)(*r_ambientlight));
-					qglUniform1fARB(studio_chrome.r_shadelight, (*r_shadelight));
-					qglUniform1fARB(studio_chrome.v_brightness, v_brightness->value);
-					qglUniform1fARB(studio_chrome.v_lightgamma, v_lightgamma->value);
-					qglUniform1fARB(studio_chrome.v_lambert, v_lambert->value);
-					qglUniform3fARB(studio_chrome.r_plightvec, r_plightvec[0], r_plightvec[1], r_plightvec[2]);
-					qglUniform3fARB(studio_chrome.r_colormix, r_colormix[0], r_colormix[1], r_colormix[2]);
-					qglUniform3fARB(studio_chrome.r_origin, g_ChromeOrigin[0], g_ChromeOrigin[1], g_ChromeOrigin[2]);
-					qglUniform3fARB(studio_chrome.r_vright, vright[0], vright[1], vright[2]);
-					if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
-					{
-						qglUniform1fARB(studio_chrome.r_scale, (*currententity)->curstate.renderamt * 0.05f);
-					}
-					else
-					{
-						qglUniform1fARB(studio_chrome.r_scale, 0);
-					}
-					qglVertexAttribIPointer(studio_chrome.attrbone, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
-					qglEnableVertexAttribArray(studio_chrome.attrbone);
-					attrbone = studio_chrome.attrbone;
-				}
-				else if (flags & STUDIO_NF_FULLBRIGHT)
-				{
-					qglUseProgramObjectARB(studio_fullbright.program);
-					qglUniformMatrix3x4fvARB(studio_fullbright.bonematrix, 128, 0, (float *)(*pbonetransform));
-					qglUniform1iARB(studio_fullbright.diffuseTex, 0);
-					qglUniform1fARB(studio_fullbright.r_blend, (*r_blend));
-					qglUniform1fARB(studio_fullbright.r_g1, r_g);
-					qglUniform1fARB(studio_fullbright.r_g3, r_g3);
-					qglUniform1fARB(studio_fullbright.r_ambientlight, (float)(*r_ambientlight));
-					qglUniform1fARB(studio_fullbright.r_shadelight, (*r_shadelight));
-					qglUniform1fARB(studio_fullbright.v_brightness, v_brightness->value);
-					qglUniform1fARB(studio_fullbright.v_lightgamma, v_lightgamma->value);
-					qglUniform1fARB(studio_fullbright.v_lambert, v_lambert->value);
-					qglUniform3fARB(studio_fullbright.r_plightvec, r_plightvec[0], r_plightvec[1], r_plightvec[2]);
-					qglUniform3fARB(studio_fullbright.r_colormix, 1, 1, 1);
-					qglVertexAttribIPointer(studio_fullbright.attrbone, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
-					qglEnableVertexAttribArray(studio_fullbright.attrbone);
-					attrbone = studio_fullbright.attrbone;
-				}
-				else if (flags & STUDIO_NF_FLATSHADE)
-				{
-					qglUseProgramObjectARB(studio_flatshade.program);
-					qglUniformMatrix3x4fvARB(studio_flatshade.bonematrix, 128, 0, (float *)(*pbonetransform));
-					qglUniform1iARB(studio_flatshade.diffuseTex, 0);
-					qglUniform1fARB(studio_flatshade.r_blend, (*r_blend));
-					qglUniform1fARB(studio_flatshade.r_g1, r_g);
-					qglUniform1fARB(studio_flatshade.r_g3, r_g3);
-					qglUniform1fARB(studio_flatshade.r_ambientlight, (float)(*r_ambientlight));
-					qglUniform1fARB(studio_flatshade.r_shadelight, (*r_shadelight));
-					qglUniform1fARB(studio_flatshade.v_brightness, v_brightness->value);
-					qglUniform1fARB(studio_flatshade.v_lightgamma, v_lightgamma->value);
-					qglUniform1fARB(studio_flatshade.v_lambert, v_lambert->value);
-					qglUniform3fARB(studio_flatshade.r_plightvec, r_plightvec[0], r_plightvec[1], r_plightvec[2]);
-					qglUniform3fARB(studio_flatshade.r_colormix, r_colormix[0], r_colormix[1], r_colormix[2]);
-					qglVertexAttribIPointer(studio_flatshade.attrbone, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
-					qglEnableVertexAttribArray(studio_flatshade.attrbone);
-					attrbone = studio_flatshade.attrbone;
-				}
-				else
-				{
-					qglUseProgramObjectARB(studio.program);
-					qglUniformMatrix3x4fvARB(studio.bonematrix, 128, 0, (float *)(*pbonetransform));
-					qglUniform1iARB(studio.diffuseTex, 0);
-					qglUniform1fARB(studio.r_blend, (*r_blend));
-					qglUniform1fARB(studio.r_g1, r_g);
-					qglUniform1fARB(studio.r_g3, r_g3);
-					qglUniform1fARB(studio.r_ambientlight, (float)(*r_ambientlight));
-					qglUniform1fARB(studio.r_shadelight, (*r_shadelight));
-					qglUniform1fARB(studio.v_brightness, v_brightness->value);
-					qglUniform1fARB(studio.v_lightgamma, v_lightgamma->value);
-					qglUniform1fARB(studio.v_lambert, v_lambert->value);
-					qglUniform3fARB(studio.r_plightvec, r_plightvec[0], r_plightvec[1], r_plightvec[2]);
-					qglUniform3fARB(studio.r_colormix, r_colormix[0], r_colormix[1], r_colormix[2]);
-					if (flags & STUDIO_NF_FULLBRIGHT)
-					{
-						qglUniform3fARB(studio.r_colormix, 1, 1, 1);
-					}
-					else
-					{
-						qglUniform3fARB(studio.r_colormix, r_colormix[0], r_colormix[1], r_colormix[2]);
-					}
-					qglVertexAttribIPointer(studio.attrbone, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
-					qglEnableVertexAttribArray(studio.attrbone);
-					attrbone = studio.attrbone;
-				}
+				R_SetGBufferMask(GBUFFER_MASK_ALL);
+			}
+
+			int attr_bone = -1;
+			int StudioProgramState = flags;
+
+			if (drawgbuffer)
+				StudioProgramState |= STUDIO_GBUFFER_ENABLED;
+
+			if (bTransparent)
+				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED;
+
+			studio_program_t prog = { 0 };
+			R_UseStudioProgram(StudioProgramState, &prog);
+			
+			if(prog.bonematrix != -1)
+				qglUniformMatrix3x4fvARB(prog.bonematrix, 128, 0, (float *)(*pbonetransform));
+
+			if (prog.r_blend != -1)
+				qglUniform1fARB(prog.r_blend, (*r_blend));
+
+			if (prog.r_g1 != -1)
+				qglUniform1fARB(prog.r_g1, r_g);
+
+			if (prog.r_g3 != -1)
+				qglUniform1fARB(prog.r_g3, r_g3);
+
+			if (prog.r_ambientlight != -1)
+				qglUniform1fARB(prog.r_ambientlight, (float)(*r_ambientlight));
+
+			if (prog.r_shadelight != -1)
+				qglUniform1fARB(prog.r_shadelight, (*r_shadelight));
+
+			if (prog.v_brightness != -1)
+				qglUniform1fARB(prog.v_brightness, v_brightness->value);
+			
+			if (prog.v_lightgamma != -1)
+				qglUniform1fARB(prog.v_lightgamma, v_lightgamma->value);
+
+			if (prog.v_lambert != -1)
+				qglUniform1fARB(prog.v_lambert, v_lambert->value);
+
+			if (prog.r_plightvec != -1)
+				qglUniform3fARB(prog.r_plightvec, r_plightvec[0], r_plightvec[1], r_plightvec[2]);
+
+			if (prog.r_colormix != -1)
+				qglUniform3fARB(prog.r_colormix, r_colormix[0], r_colormix[1], r_colormix[2]);
+
+			if (prog.r_origin != -1)
+				qglUniform3fARB(prog.r_origin, g_ChromeOrigin[0], g_ChromeOrigin[1], g_ChromeOrigin[2]);
+
+			if (prog.r_vright != -1)
+				qglUniform3fARB(prog.r_vright, vright[0], vright[1], vright[2]);
+
+			if (prog.r_scale != -1)
+				qglUniform1fARB(prog.r_scale, ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME) ? (*currententity)->curstate.renderamt * 0.05f : 0);
+
+			if (prog.attr_bone != -1)
+			{
+				qglVertexAttribIPointer(prog.attr_bone, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
+				qglEnableVertexAttribArray(prog.attr_bone);
+				attr_bone = prog.attr_bone;
 			}
 
 			if (VBOMesh.iTriStripVertexCount)
@@ -1113,8 +696,8 @@ void R_GLStudioDrawPoints(void)
 				qglShadeModel(GL_FLAT);
 			}
 
-			if(attrbone != -1)
-				qglDisableVertexAttribArray(attrbone);
+			if(attr_bone != -1)
+				qglDisableVertexAttribArray(attr_bone);
 		}
 
 		qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -1165,12 +748,9 @@ void R_GLStudioDrawPoints(void)
 				qglEnable(GL_BLEND);
 				qglDepthMask(GL_FALSE);
 				qglShadeModel(GL_SMOOTH);
+
+				bTransparent = true;
 			}
-
-			//Transparent object?
-
-			//GLboolean writemask;
-			//qglGetBooleanv(GL_DEPTH_WRITEMASK, &writemask);
 
 			if (bTransparent)
 			{

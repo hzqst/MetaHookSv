@@ -281,7 +281,7 @@ int SignbitsForPlane(mplane_t *out);
 qboolean R_ParseVectorCvar(cvar_t *a1, float *vec);
 void R_ForceCVars(qboolean mp);
 colorVec R_LightPoint(vec3_t p);
-
+void R_GetViewOrigin(float *vieworg);
 refdef_t *R_GetRefDef(void);
 int R_GetDrawPass(void);
 GLuint GL_GenTextureRGBA8(int w, int h);

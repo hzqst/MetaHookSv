@@ -2166,6 +2166,7 @@ void R_Shutdown(void)
 	R_FreeWater();
 	R_ShutdownLight();
 	R_ShutdownWSurf();
+	R_ShutdownStudio();
 }
 
 void R_ForceCVars(qboolean mp)

@@ -14,7 +14,7 @@ uniform vec3 r_origin;
 uniform vec3 r_vright;
 uniform float r_scale;
 
-attribute ivec2 attrbone;
+attribute ivec2 attr_bone;
 
 varying vec4 worldpos;
 varying vec4 normal;
@@ -25,8 +25,8 @@ void main(void)
 	vec3 vert = gl_Vertex.xyz;
 	vec3 norm = gl_Normal;
 
-	int vertbone = attrbone.x;
-	int normbone = attrbone.y;
+	int vertbone = attr_bone.x;
+	int normbone = attr_bone.y;
 
 	mat3x4 vertbone_matrix = bonematrix[vertbone];
     vec3 vertbone_matrix_0 = vec3(vertbone_matrix[0][0], vertbone_matrix[0][1], vertbone_matrix[0][2]);
@@ -53,7 +53,7 @@ void main(void)
 	worldpos = vec4(outvert, 1.0);
 	normal = vec4(outnorm, 1.0);
 
-#ifdef STUDIO_FULLBRIGHT
+#ifdef STUDIO_NF_FULLBRIGHT
 
 	color = vec4(1.0, 1.0, 1.0, r_blend);
 
@@ -61,7 +61,7 @@ void main(void)
 
 	float illum = r_ambientlight;
 
-	#ifdef STUDIO_FLATSHADE
+	#ifdef STUDIO_NF_FLATSHADE
 
 		illum += r_shadelight * 0.8;
 
@@ -98,9 +98,10 @@ void main(void)
 	float lv = clamp(pow( fv, r_g1 ), 0.0, 1.0);
 
 	color = vec4(lv * r_colormix.x, lv * r_colormix.y, lv * r_colormix.z, r_blend);
+
 #endif
 
-#ifdef STUDIO_CHROME
+#ifdef STUDIO_NF_CHROME
 
 	outvert = outvert + outnorm * r_scale;
 	worldpos = vec4(outvert, 1.0);
@@ -147,11 +148,12 @@ void main(void)
 	}
 
 	gl_TexCoord[0] = vec4(texcoord.x, texcoord.y, 0.0, 0.0);
-#else
-	gl_TexCoord[0] = gl_MultiTexCoord0;
-#endif
 
-	//worldpos.xyz *= 1.0 / 1024.0;
+#else
+
+	gl_TexCoord[0] = gl_MultiTexCoord0;
+
+#endif
 
 	gl_Position = gl_ModelViewProjectionMatrix * vec4(outvert, 1.0);
 }

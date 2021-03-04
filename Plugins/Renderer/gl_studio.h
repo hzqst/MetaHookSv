@@ -15,6 +15,8 @@
 #define STUDIO_NF_ALPHA         0x0010
 #define STUDIO_NF_ADDITIVE      0x0020
 #define STUDIO_NF_MASKED        0x0040
+#define STUDIO_GBUFFER_ENABLED  0x1000
+#define STUDIO_TRANSPARENT_ENABLED  0x2000
 
 typedef struct auxvert_s
 {
@@ -32,10 +34,11 @@ typedef struct alight_s
 typedef struct
 {
 	int program;
+	int diffuseTex;
+
 	int bonematrix;
 	int lightmatrix;
 
-	int diffuseTex;
 	int v_lambert;
 	int v_brightness;
 	int v_lightgamma;
@@ -46,107 +49,13 @@ typedef struct
 	int r_g3;
 	int r_plightvec;
 	int r_colormix;
+	//chrome only
 	int r_origin;
 	int r_vright;
 	int r_scale;
-
-	int attrbone;
-}studio_chrome_program_t, studiogbuffer_chrome_program_t;
-
-typedef struct
-{
-	int program;
-	int bonematrix;
-	int lightmatrix;
-
-	int diffuseTex;
-	int v_lambert;
-	int v_brightness;
-	int v_lightgamma;
-	int r_ambientlight;
-	int r_shadelight;
-	int r_blend;
-	int r_g1;
-	int r_g3;
-	int r_plightvec;
-	int r_colormix;
-
-	int attrbone;
-}studio_fullbright_program_t, studiogbuffer_fullbright_program_t;
-
-typedef struct
-{
-	int program;
-	int bonematrix;
-	int lightmatrix;
-
-	int diffuseTex;
-	int v_lambert;
-	int v_brightness;
-	int v_lightgamma;
-	int r_ambientlight;
-	int r_shadelight;
-	int r_blend;
-	int r_g1;
-	int r_g3;
-	int r_plightvec;
-	int r_colormix;
-
-	int attrbone;
-}studio_flatshade_program_t, studiogbuffer_flatshade_program_t;
-
-typedef struct
-{
-	int program;
-	int bonematrix;
-	int lightmatrix;
-
-	int diffuseTex;
-	int v_lambert;
-	int v_brightness;
-	int v_lightgamma;
-	int r_ambientlight;
-	int r_shadelight;
-	int r_blend;
-	int r_g1;
-	int r_g3;
-	int r_plightvec;
-	int r_colormix;
-
-	int attrbone;
-}studio_program_t, studiogbuffer_program_t;
-
-typedef struct
-{
-	char name[64];
-	int index;
-	int w, h;
-	gltexture_t *glt;
-}studio_texentry_t;
-
-typedef struct
-{
-	studio_texentry_t base;
-	studio_texentry_t replace;
-	studio_texentry_t normal;
-	float ambient;
-	float diffuse;
-	float specular;
-	float shiness;
-}studio_texture_t;
-
-typedef struct
-{
-	char modelname[64];
-	int numtextures;
-	studio_texture_t *textures;
-}studio_texarray_t;
-
-typedef struct
-{
-	studio_texarray_t *pTexArray;
-	int iNumTexArray;
-}studio_texarray_mgr_t;
+	//attribute
+	int attr_bone;
+}studio_program_t;
 
 typedef struct studio_vbo_vertex_s
 {
@@ -261,7 +170,7 @@ extern int r_studio_drawcall;
 extern int r_studio_polys;
 
 void R_StudioClearVBOCache(void);
-void R_LoadStudioTextures(qboolean loadmap);
+void R_ShutdownStudio(void);
 void R_InitStudio(void);
 
 void R_GLStudioDrawPoints(void);
@@ -276,10 +185,3 @@ extern engine_studio_api_t IEngineStudio;
 extern r_studio_interface_t **gpStudioInterface;
 
 extern cvar_t *r_studio_vbo;
-
-#define SPRITE_VERSION 2
-
-#define NL_PRESENT 0
-#define NL_NEEDS_LOADED 1
-#define NL_UNREFERENCED 2
-#define NL_CLIENT 3

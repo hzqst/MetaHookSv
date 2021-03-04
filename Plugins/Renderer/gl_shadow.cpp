@@ -224,16 +224,6 @@ void R_RenderShadowMap(void)
 	shadow_numvisedicts_medium = 0;
 	shadow_numvisedicts_low = 0;
 
-	float vieworg[3];
-	if (r_refdef->useCamera) 
-	{
-		VectorCopy(r_refdef->r_camera_origin, vieworg);
-	}
-	else
-	{
-		VectorCopy(r_refdef->vieworg, vieworg);
-	}
-
 	for (int j = 0; j < *cl_numvisedicts; ++j)
 	{
 		if (R_ShouldCastShadow(cl_visedicts[j]))
