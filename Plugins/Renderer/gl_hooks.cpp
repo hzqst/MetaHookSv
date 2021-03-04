@@ -1083,6 +1083,12 @@ void R_FillAddress(void)
 		Sig_AddrNotFound(gl_mtexable);
 		gl_mtexable = *(decltype(gl_mtexable) *)(addr + 2);
 
+#define C_BRUSH_POLYS_SIG_SVENGINE "\xFF\x35\x2A\x2A\x2A\x2A\xDC\x0D\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xE8"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView_SvEngine, 0x800, C_BRUSH_POLYS_SIG_SVENGINE, sizeof(C_BRUSH_POLYS_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(c_brush_polys);
+		c_alias_polys = *(int **)(addr + 2);
+		c_brush_polys = *(int **)(addr + 14);
+
 #define ENVMAP_SIG_SVENGINE "\xF6\xC4\x44\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F"
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView_SvEngine, 0x400, ENVMAP_SIG_SVENGINE, sizeof(ENVMAP_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(envmap);

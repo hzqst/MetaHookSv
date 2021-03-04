@@ -63,6 +63,8 @@ int *cl_stats;
 float *cl_weaponstarttime;
 int *cl_weaponsequence;
 int *cl_light_level;
+int *c_alias_polys;
+int *c_brush_polys;
 
 qboolean gl_framebuffer_object = false;
 qboolean gl_shader_support = false;
@@ -1927,6 +1929,9 @@ void R_RenderView_SvEngine(int a1)
 			r_wsurf_polys, r_wsurf_drawcall,
 			r_studio_polys, r_studio_drawcall
 		);
+
+		*c_alias_polys = r_studio_polys;
+		*c_brush_polys = r_wsurf_polys;
 	}
 }
 

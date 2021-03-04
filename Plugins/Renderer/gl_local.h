@@ -88,6 +88,8 @@ extern double *cl_oldtime;
 extern float *cl_weaponstarttime;
 extern int *cl_weaponsequence;
 extern int *cl_light_level;
+extern int *c_alias_polys;
+extern int *c_brush_polys;
 
 //gl extension
 extern qboolean gl_framebuffer_object;
