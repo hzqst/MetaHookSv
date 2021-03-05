@@ -6,11 +6,13 @@ mainly to keep you a good game experience in Sven-Coop.
 
 It is currently not compatible with original GoldSrc engine, but it can be if broken signatures are fixed at future.
 
-[中文README](READMECN.md)  
+[中文README](READMECN.md)
 
 ## Installation
 
-1. All pre-compiled binary and required files are in "Build" folder, copy them to "\SteamLibrary\steamapps\common\Sven Co-op\".
+0. git pull https://github.com/hzqst/MetaHookSv or download from https://github.com/hzqst/MetaHookSv/archive/main.zip
+
+1. All required binaries and files are in "Build" folder, copy them to "\SteamLibrary\steamapps\common\Sven Co-op\".
 
 2. Launch game from "\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe"
 
@@ -60,9 +62,11 @@ A subtitle plugin designed for displaying subtitles and translate in-game HUD te
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/1.png)
 
-There is a example demo shows you how to translate dynamic HUD TextMessage into other language with regex in "svencoop\captionmod\dictionary_english.txt" called "#SVENCOOP_PLAYERINFO"
+There is a example demo shows you how to translate constant HUD TextMessage into other language in "svencoop\maps\restrictionXX_dictionary.csv", delete if you don't need them.
 
-There is a example demo shows you how to translate constant HUD TextMessage into other language in "svencoop\maps\restrictionXX_dictionary.csv"
+There is a example demo shows you how to translate dynamic HUD TextMessage into other language with regex in "svencoop\captionmod\dictionary_schinese.txt" called "#SVENCOOP_PLAYERINFO", however it won't take effect in game since Sven-Coop only uses "dictionary_english.txt" as localization file.
+
+Modify and overwrite "dictionary_english.txt" is the best option if you are expected to use non-English language in game.
 
 #### Console Vars
 
