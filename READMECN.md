@@ -10,7 +10,7 @@ MetaHook的SvenCoop移植版本 (https://github.com/nagist/metahook)
 
 ## 安装方式
 
-0. git pull https://github.com/hzqst/MetaHookSv （如果你有安装git的话） 或者 直接从 https://github.com/hzqst/MetaHookSv/archive/main.zip 下载压缩包。如果因为国内网络问题导致速度太慢或无法访问，也可以直接从国内镜像 https://gitee.com/hzqst/MetaHookSv 和 https://gitee.com/hzqst/MetaHookSv/repository/archive/main.zip 下载（gitee上可能不是最新版本，且从gitee下载压缩包可能需要注册账号）
+0. git pull https://github.com/hzqst/MetaHookSv （如果你有安装git的话） 或者 直接从 https://github.com/hzqst/MetaHookSv/archive/main.zip 下载压缩包。如果因为国内网络问题导致速度太慢或无法访问，也可以直接从国内镜像 https://gitee.com/hzqst/MetaHookSv 和 https://gitee.com/hzqst/MetaHookSv/repository/archive/main.zip 下载（gitee上可能不是最新版本，且从gitee下载压缩包可能需要注册账号，不过也可以使用QQ直接登录）
 
 1. 复制Build目录下的所有文件到 "你的Steam游戏库目录\steamapps\common\Sven Co-op\".
 
@@ -44,11 +44,11 @@ MetaHook的SvenCoop移植版本 (https://github.com/nagist/metahook)
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/1.png)
 
-字典文件"svencoop\maps\restrictionXX_dictionary.csv"用于翻译潜行者系列地图中的文本，其他地图的文本也可以参照这个格式进行汉化
+字典文件"svencoop\maps\restrictionXX_dictionary.csv"用于翻译潜行者系列地图中的文本，其他地图的文本也可以参照这个格式进行翻译
 
-"svencoop\captionmod\dictionary_schinese.txt" 里有一段翻译文本叫 "#SVENCOOP_PLAYERINFO" 用于展示如何以正则表达式翻译HUD消息，不过该汉化文本并不会在游戏中生效，因为 Sven-Coop 不支持其他语言的本地化语言文件，它只会读取 "dictionary_english.txt"。
+"svencoop\captionmod\dictionary_schinese.txt" 里有一段翻译文本叫 "#SVENCOOP_PLAYERINFO" 用于展示如何以正则表达式翻译HUD消息，不过该翻译文本并不会在游戏中生效，因为 Sven-Coop 不支持其他语言的本地化语言文件，它只会读取 "dictionary_english.txt"。
 
-所以如果你需要汉化游戏文本请直接用 "dictionary_[你的语言].txt" 替换 "dictionary_english.txt"。
+所以如果你需要翻译游戏文本请直接用 "dictionary_[你的语言].txt" 替换 "dictionary_english.txt"。
 
 ### MetaRenderer
 
