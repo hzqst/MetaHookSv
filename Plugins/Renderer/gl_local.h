@@ -332,9 +332,8 @@ void CL_ScreenShot_f(void);
 void R_InitGLHUD(void);
 
 extern mplane_t custom_frustum[4];
-extern float r_identity_matrix[16];
-
-extern float r_rotate_entity_matrix[16];
+extern float r_identity_matrix[4][4];
+extern float r_rotate_entity_matrix[4][4];
 extern bool r_rotate_entity;
 
 extern qboolean g_SvEngine_DrawPortalView;

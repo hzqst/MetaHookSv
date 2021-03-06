@@ -94,9 +94,9 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 		if (prog.entitymatrix != -1)
 		{
 			if (r_rotate_entity)
-				qglUniformMatrix4fvARB(prog.entitymatrix, 1, false, r_rotate_entity_matrix);
+				qglUniformMatrix4fvARB(prog.entitymatrix, 1, true, (float *)r_rotate_entity_matrix);
 			else
-				qglUniformMatrix4fvARB(prog.entitymatrix, 1, false, r_identity_matrix);
+				qglUniformMatrix4fvARB(prog.entitymatrix, 1, false, (float *)r_identity_matrix);
 		}
 
 		if (progOutput)

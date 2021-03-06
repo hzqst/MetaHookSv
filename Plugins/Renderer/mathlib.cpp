@@ -838,3 +838,94 @@ int InvertMatrix(const float *m, float *out)
 #undef MAT
 #undef SWAP_ROWS
 }
+
+void SinCos(float radians, float *sine, float *cosine)
+{
+	*sine = sinf(radians);
+	*cosine = cosf(radians);
+}
+
+void Matrix4x4_CreateFromEntity(float out[4][4], const vec3_t angles, const vec3_t origin, float scale)
+{
+	float	angle, sr, sp, sy, cr, cp, cy;
+
+#define PITCH 0
+#define YAW 1
+#define ROLL 2
+
+	if (angles[ROLL])
+	{
+		angle = angles[YAW] * (M_PI * 2 / 360.0f);
+		SinCos(angle, &sy, &cy);
+		angle = angles[PITCH] * (M_PI * 2 / 360.0f);
+		SinCos(angle, &sp, &cp);
+		angle = angles[ROLL] * (M_PI * 2 / 360.0f);
+		SinCos(angle, &sr, &cr);
+
+		out[0][0] = (cp*cy) * scale;
+		out[0][1] = (sr*sp*cy + cr * -sy) * scale;
+		out[0][2] = (cr*sp*cy + -sr * -sy) * scale;
+		out[0][3] = origin[0];
+		out[1][0] = (cp*sy) * scale;
+		out[1][1] = (sr*sp*sy + cr * cy) * scale;
+		out[1][2] = (cr*sp*sy + -sr * cy) * scale;
+		out[1][3] = origin[1];
+		out[2][0] = (-sp) * scale;
+		out[2][1] = (sr*cp) * scale;
+		out[2][2] = (cr*cp) * scale;
+		out[2][3] = origin[2];
+	}
+	else if (angles[PITCH])
+	{
+		angle = angles[YAW] * (M_PI * 2 / 360.0f);
+		SinCos(angle, &sy, &cy);
+		angle = angles[PITCH] * (M_PI * 2 / 360.0f);
+		SinCos(angle, &sp, &cp);
+
+		out[0][0] = (cp*cy) * scale;
+		out[0][1] = (-sy) * scale;
+		out[0][2] = (sp*cy) * scale;
+		out[0][3] = origin[0];
+		out[1][0] = (cp*sy) * scale;
+		out[1][1] = (cy)* scale;
+		out[1][2] = (sp*sy) * scale;
+		out[1][3] = origin[1];
+		out[2][0] = (-sp) * scale;
+		out[2][1] = 0.0f;
+		out[2][2] = (cp)* scale;
+		out[2][3] = origin[2];
+	}
+	else if (angles[YAW])
+	{
+		angle = angles[YAW] * (M_PI * 2 / 360.0f);
+		SinCos(angle, &sy, &cy);
+
+		out[0][0] = (cy)* scale;
+		out[0][1] = (-sy) * scale;
+		out[0][2] = 0.0f;
+		out[0][3] = origin[0];
+		out[1][0] = (sy)* scale;
+		out[1][1] = (cy)* scale;
+		out[1][2] = 0.0f;
+		out[1][3] = origin[1];
+		out[2][0] = 0.0f;
+		out[2][1] = 0.0f;
+		out[2][2] = scale;
+		out[2][3] = origin[2];
+	}
+	else
+	{
+		out[0][0] = scale;
+		out[0][1] = 0.0f;
+		out[0][2] = 0.0f;
+		out[0][3] = origin[0];
+		out[1][0] = 0.0f;
+		out[1][1] = scale;
+		out[1][2] = 0.0f;
+		out[1][3] = origin[1];
+		out[2][0] = 0.0f;
+		out[2][1] = 0.0f;
+		out[2][2] = scale;
+		out[2][3] = origin[2];
+	}
+}

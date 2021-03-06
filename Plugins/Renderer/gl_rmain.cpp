@@ -86,13 +86,15 @@ int *gl_mtexable = 0;
 qboolean *mtexenabled = 0;
 qboolean g_SvEngine_DrawPortalView = 0;
 
-float r_identity_matrix[16] = {
-	1.0f, 0.0f, 0.0f, 0.0f,
-	0.0f, 1.0f, 0.0f, 0.0f,
-	0.0f, 0.0f, 1.0f, 0.0f,
-	0.0f, 0.0f, 0.0f, 1.0f };
+float r_identity_matrix[4][4] = {
+	{1.0f, 0.0f, 0.0f, 0.0f},
+	{0.0f, 1.0f, 0.0f, 0.0f},
+	{0.0f, 0.0f, 1.0f, 0.0f},
+	{0.0f, 0.0f, 0.0f, 1.0f}
+};
 
-float r_rotate_entity_matrix[16];
+float r_rotate_entity_matrix[4][4];
+
 bool r_rotate_entity = false;
 
 int glx = 0;
@@ -200,7 +202,6 @@ int R_GetDrawPass(void)
 
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
-
 	return gRefFuncs.R_CullBox(mins, maxs);
 }
 
@@ -250,14 +251,8 @@ void R_RotateForEntity(vec_t *origin, cl_entity_t *e)
 		}
 	}
 
-	qglPushMatrix();
-	qglLoadIdentity();
-	qglTranslatef(modelpos[0], modelpos[1], modelpos[2]);
-	qglRotatef(angles[1], 0, 0, 1);
-	qglRotatef(angles[0], 0, 1, 0);
-	qglRotatef(angles[2], 1, 0, 0);
-	qglGetFloatv(GL_MODELVIEW_MATRIX, r_rotate_entity_matrix);
-	qglPopMatrix();
+	memcpy(r_rotate_entity_matrix, r_identity_matrix, sizeof(r_identity_matrix));
+	Matrix4x4_CreateFromEntity(r_rotate_entity_matrix, angles, modelpos, 1);
 
 	qglTranslatef(modelpos[0], modelpos[1], modelpos[2]);
 	qglRotatef(angles[1], 0, 0, 1);
