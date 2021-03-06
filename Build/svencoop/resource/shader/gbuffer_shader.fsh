@@ -68,6 +68,7 @@ void main()
         gl_FragData[1] = lightmapColor;
         gl_FragData[2] = worldpos;
         gl_FragData[3] = normal;
+        gl_FragData[4] = vec4(0.0, 0.0, 0.0, 1.0);
 
     #endif
 
@@ -78,6 +79,7 @@ void main()
     gl_FragData[1] = lightmapColor;
     gl_FragData[2] = worldpos;
     gl_FragData[3] = normal;
+    gl_FragData[4] = vec4(0.0, 0.0, 0.0, 1.0);
 
 #endif
 }
