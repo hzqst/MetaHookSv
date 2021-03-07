@@ -8,7 +8,7 @@ MetaHook的SvenCoop移植版本 (https://github.com/nagist/metahook)
 
 [英文README](README.md)
 
-## VAC风险
+## VAC风险?
 
 虽然在受VAC保护的游戏上使用hook之类的行为可能看上去很危险，但是目前为止还没有人反馈因为使用此插件导致VAC封禁。
 
