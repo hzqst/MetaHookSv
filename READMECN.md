@@ -8,6 +8,12 @@ MetaHook的SvenCoop移植版本 (https://github.com/nagist/metahook)
 
 [英文README](README.md)
 
+## VAC风险
+
+虽然在受VAC保护的游戏上使用hook之类的行为可能看上去很危险，但是目前为止还没有人反馈因为使用此插件导致VAC封禁。
+
+如果你实在不放心，那么请使用小号进行游戏，毕竟Sven-Coop是免费游戏。
+
 ## 安装方式
 
 0. git pull https://github.com/hzqst/MetaHookSv （如果你有安装git的话） 或者 直接从 https://github.com/hzqst/MetaHookSv/archive/main.zip 下载压缩包。如果因为国内网络问题导致速度太慢或无法访问，也可以直接从国内镜像 https://gitee.com/hzqst/MetaHookSv 和 https://gitee.com/hzqst/MetaHookSv/repository/archive/main.zip 下载（gitee上可能不是最新版本，且从gitee下载压缩包可能需要注册账号，不过也可以使用QQ直接登录）
