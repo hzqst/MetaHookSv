@@ -22,7 +22,7 @@ Use a separate account to play Sven-Coop if you worry about getting banned, sinc
 
 2. Launch game from "\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe"
 
-* The new "svencoop.exe" is original called "metahook.exe", you can also run game from "metahook.exe -game svencoop" however it will cause game crash when changing video settings.
+* The new "svencoop.exe" is renamed from "metahook.exe", you could run game from "metahook.exe -game svencoop" however it will cause game crash when changing video settings.
 
 * The SDL2.dll fixes a bug that the original SDL's IME input handler was causing buffer overflow and game crash. you don't need to copy it if you don't have a non-english IME.
 
