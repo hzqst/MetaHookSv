@@ -99,6 +99,9 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		if (state & STUDIO_TRANSPARENT_ENABLED)
 			defs << "#define TRANSPARENT_ENABLED\n";
 
+		if (state & STUDIO_TRANSADDITIVE_ENABLED)
+			defs << "#define TRANSADDITIVE_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh", def.c_str(), NULL, def.c_str());
@@ -597,6 +600,16 @@ void R_GLStudioDrawPoints(void)
 				GBufferProgramState |= GBUFFER_TRANSPARENT_ENABLED | GBUFFER_ADDITIVE_ENABLED;
 				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
 			}
+			else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
+			{
+				qglBlendFunc(GL_ONE, GL_ONE);
+				qglEnable(GL_BLEND);
+				qglShadeModel(GL_SMOOTH);
+
+				GBufferMask = GBUFFER_MASK_ADDITIVE;
+				GBufferProgramState |= GBUFFER_TRANSPARENT_ENABLED | GBUFFER_ADDITIVE_ENABLED;
+				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE | STUDIO_TRANSADDITIVE_ENABLED;
+			}
 
 			R_UseGBufferProgram(GBufferProgramState);
 			R_SetGBufferMask(GBufferMask);
@@ -685,6 +698,11 @@ void R_GLStudioDrawPoints(void)
 			{
 				qglDisable(GL_BLEND);
 				qglDepthMask(1);
+				qglShadeModel(GL_FLAT);
+			}
+			else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
+			{
+				qglDisable(GL_BLEND);
 				qglShadeModel(GL_FLAT);
 			}
 

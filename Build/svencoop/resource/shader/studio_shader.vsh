@@ -53,51 +53,59 @@ void main(void)
 	worldpos = vec4(outvert, 1.0);
 	normal = vec4(outnorm, 1.0);
 
-#ifdef STUDIO_NF_FULLBRIGHT
+#ifdef TRANSADDITIVE_ENABLED
 
-	color = vec4(1.0, 1.0, 1.0, r_blend);
+	color = vec4(r_blend, r_blend, r_blend, r_blend);
 
 #else
 
-	float illum = r_ambientlight;
+	#ifdef STUDIO_NF_FULLBRIGHT
 
-	#ifdef STUDIO_NF_FLATSHADE
-
-		illum += r_shadelight * 0.8;
+		color = vec4(1.0, 1.0, 1.0, r_blend);
 
 	#else
 
-		float lightcos = dot(outnorm, r_plightvec);
+		float illum = r_ambientlight;
 
-		if(v_lambert < 1.0)
-		{
-			lightcos = (v_lambert - lightcos) / (v_lambert + 1.0); 
-			illum += r_shadelight * max(lightcos, 0.0); 			
-		}
-		else
-		{
-			illum += r_shadelight;
-			lightcos = (lightcos + v_lambert - 1.0) / v_lambert;
-			illum -= r_shadelight * max(lightcos, 0.0);
-		}
+		#ifdef STUDIO_NF_FLATSHADE
+
+			illum += r_shadelight * 0.8;
+
+		#else
+
+			float lightcos = dot(outnorm, r_plightvec);
+
+			if(v_lambert < 1.0)
+			{
+				lightcos = (v_lambert - lightcos) / (v_lambert + 1.0); 
+				illum += r_shadelight * max(lightcos, 0.0); 			
+			}
+			else
+			{
+				illum += r_shadelight;
+				lightcos = (lightcos + v_lambert - 1.0) / v_lambert;
+				illum -= r_shadelight * max(lightcos, 0.0);
+			}
+
+		#endif
+
+		illum = clamp(illum, 0.0, 255.0);
+
+		float fv = illum / 255.0;
+		fv = pow(fv, v_lightgamma);
+
+		fv = fv * max(v_brightness, 1.0);
+
+		if (fv > r_g3)
+			fv = 0.125 + ((fv - r_g3) / (1.0 - r_g3)) * 0.875;
+		else 
+			fv = (fv / r_g3) * 0.125;
+
+		float lv = clamp(pow( fv, r_g1 ), 0.0, 1.0);
+
+		color = vec4(lv * r_colormix.x, lv * r_colormix.y, lv * r_colormix.z, r_blend);
 
 	#endif
-
-	illum = clamp(illum, 0.0, 255.0);
-
-	float fv = illum / 255.0;
-	fv = pow(fv, v_lightgamma);
-
-	fv = fv * max(v_brightness, 1.0);
-
-	if (fv > r_g3)
-		fv = 0.125 + ((fv - r_g3) / (1.0 - r_g3)) * 0.875;
-	else 
-		fv = (fv / r_g3) * 0.125;
-
-	float lv = clamp(pow( fv, r_g1 ), 0.0, 1.0);
-
-	color = vec4(lv * r_colormix.x, lv * r_colormix.y, lv * r_colormix.z, r_blend);
 
 #endif
 
