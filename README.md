@@ -8,6 +8,12 @@ It is currently not compatible with original GoldSrc engine, but it can be if br
 
 [中文README](READMECN.md)
 
+## Risk of VAC ?
+
+Although using hook is likely to be dangerous in VAC protected games, there is no VAC ban reported yet.
+
+Use a separate account to play Sven-Coop if you worry about getting banned, since Sven-Coop is a free game.
+
 ## Installation
 
 0. git pull https://github.com/hzqst/MetaHookSv or download from https://github.com/hzqst/MetaHookSv/archive/main.zip
