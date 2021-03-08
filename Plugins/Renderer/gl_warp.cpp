@@ -162,7 +162,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		if(waterObject && waterObject->refractmap_ready && ((waterObject->reflectmap_ready && bAboveWater) || !bAboveWater))
 		{
 			float alpha = 1;
-			if ((*currententity)->curstate.rendermode == kRenderTransTexture)
+			if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
 				alpha = (*r_blend);
 
 			int programState = 0;

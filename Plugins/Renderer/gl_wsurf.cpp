@@ -1595,9 +1595,12 @@ void R_DrawWorld(void)
 			if (!drawgbuffer)
 			{
 				wsurf_program_t wprog = { 0 };
-				R_UseWSurfProgram(r_wsurf.bDetailTexture ? 
-					WSURF_DIFFUSE_ENABLED | WSURF_LIGHTMAP_ENABLED | WSURF_DETAILTEXTURE_ENABLED : 
-					WSURF_DIFFUSE_ENABLED | WSURF_LIGHTMAP_ENABLED, &wprog);
+
+				int WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_LIGHTMAP_ENABLED;
+				if (r_wsurf.bDetailTexture)
+					WSurfProgramState |= WSURF_DETAILTEXTURE_ENABLED;
+
+				R_UseWSurfProgram(WSurfProgramState, &wprog);
 				if (wprog.program)
 				{
 					qglUniform1fARB(wprog.speed, 0);
@@ -1607,11 +1610,12 @@ void R_DrawWorld(void)
 			{
 				R_SetGBufferMask(GBUFFER_MASK_ALL);
 
+				int GSurfProgramState = GBUFFER_DIFFUSE_ENABLED | GBUFFER_LIGHTMAP_ENABLED | GBUFFER_LIGHTMAP_ARRAY_ENABLED;
+				if (r_wsurf.bDetailTexture)
+					GSurfProgramState |= GBUFFER_DETAILTEXTURE_ENABLED;
+
 				gbuffer_program_t gprog = { 0 };
-				R_UseGBufferProgram(r_wsurf.bDetailTexture ? 
-					GBUFFER_DIFFUSE_ENABLED | GBUFFER_LIGHTMAP_ENABLED | GBUFFER_LIGHTMAP_ARRAY_ENABLED | GBUFFER_DETAILTEXTURE_ENABLED :
-					GBUFFER_DIFFUSE_ENABLED | GBUFFER_LIGHTMAP_ENABLED | GBUFFER_LIGHTMAP_ARRAY_ENABLED,
-					&gprog);
+				R_UseGBufferProgram(GSurfProgramState, &gprog);
 			}
 
 			qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
@@ -1623,10 +1627,14 @@ void R_DrawWorld(void)
 		}
 
 		//Use scrolling shader
-		float speed = ((*currententity)->curstate.rendercolor.b + ((*currententity)->curstate.rendercolor.g << 8)) / 16.0;
-		if ((*currententity)->curstate.rendercolor.r == 0)
-			speed = -speed;
-		speed *= (*cl_time);
+		float speed = 0;
+		if (r_wsurf.vTextureChainScroll.size())
+		{
+			speed = ((*currententity)->curstate.rendercolor.b + ((*currententity)->curstate.rendercolor.g << 8)) / 16.0;
+			if ((*currententity)->curstate.rendercolor.r == 0)
+				speed = -speed;
+			speed *= (*cl_time);
+		}
 
 		for (size_t i = 0; i < r_wsurf.vTextureChainScroll.size(); ++i)
 		{
@@ -1644,10 +1652,12 @@ void R_DrawWorld(void)
 			if (!drawgbuffer)
 			{
 				wsurf_program_t wprog2 = { 0 };
-				R_UseWSurfProgram(r_wsurf.bDetailTexture ? 
-					WSURF_DIFFUSE_ENABLED | WSURF_LIGHTMAP_ENABLED | WSURF_DETAILTEXTURE_ENABLED :
-					WSURF_DIFFUSE_ENABLED | WSURF_LIGHTMAP_ENABLED, 
-						&wprog2);
+
+				int WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_LIGHTMAP_ENABLED;
+				if (r_wsurf.bDetailTexture)
+					WSurfProgramState |= WSURF_DETAILTEXTURE_ENABLED;
+
+				R_UseWSurfProgram(WSurfProgramState, &wprog2);
 				if (wprog2.program)
 				{
 					qglUniform1fARB(wprog2.speed, speed);
@@ -1656,10 +1666,12 @@ void R_DrawWorld(void)
 			else
 			{
 				gbuffer_program_t gprog2 = { 0 };
-				R_UseGBufferProgram(r_wsurf.bDetailTexture ?
-					GBUFFER_DIFFUSE_ENABLED | GBUFFER_LIGHTMAP_ENABLED | GBUFFER_LIGHTMAP_ARRAY_ENABLED | GBUFFER_SCROLL_ENABLED | GBUFFER_DETAILTEXTURE_ENABLED :
-					GBUFFER_DIFFUSE_ENABLED | GBUFFER_LIGHTMAP_ENABLED | GBUFFER_LIGHTMAP_ARRAY_ENABLED | GBUFFER_SCROLL_ENABLED,
-					&gprog2);
+
+				int GSurfProgramState = GBUFFER_DIFFUSE_ENABLED | GBUFFER_LIGHTMAP_ENABLED | GBUFFER_LIGHTMAP_ARRAY_ENABLED | GBUFFER_SCROLL_ENABLED;
+				if (r_wsurf.bDetailTexture)
+					GSurfProgramState |= GBUFFER_DETAILTEXTURE_ENABLED;
+
+				R_UseGBufferProgram(GSurfProgramState, &gprog2);
 				if (gprog2.program)
 				{
 					qglUniform1fARB(gprog2.speed, speed);

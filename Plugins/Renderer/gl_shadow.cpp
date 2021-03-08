@@ -124,6 +124,8 @@ qboolean R_ShouldCastShadow(cl_entity_t *ent)
 	{
 		if (ent->index == 0)
 			return false;
+		if (ent->curstate.movetype == MOVETYPE_NONE)
+			return false;
 
 		return true;
 	}

@@ -150,7 +150,6 @@ xcopy "$(OutDir)\..\..\..\Build\svencoop\resource\shader\*.*" "I:\SteamLibrary\s
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\HLSDK\common\interface.cpp" />
-    <ClCompile Include="cJSON.c" />
     <ClCompile Include="command.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="gl_backend.cpp" />

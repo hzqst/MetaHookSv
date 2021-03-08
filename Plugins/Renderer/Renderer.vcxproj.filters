@@ -17,9 +17,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cJSON.c">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="command.cpp">
       <Filter>Source</Filter>
     </ClCompile>
