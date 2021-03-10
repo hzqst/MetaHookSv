@@ -130,6 +130,8 @@ qboolean R_ShouldCastShadow(cl_entity_t *ent)
 void R_RenderShadowMap(void)
 {
 	int highSize = gl_max_texture_size / 4;
+	if (highSize > 4096)
+		highSize = 4096;
 
 	if (!shadow_depthmap_high)
 	{
@@ -143,7 +145,9 @@ void R_RenderShadowMap(void)
 	}
 
 	int mediumSize = gl_max_texture_size / 4;
-	
+	if (mediumSize > 4096)
+		mediumSize = 4096;
+
 	if (!shadow_depthmap_medium)
 	{
 		shadow_depthmap_medium_texsize = mediumSize;
@@ -156,6 +160,8 @@ void R_RenderShadowMap(void)
 	}
 
 	int lowSize = gl_max_texture_size / 4;
+	if (lowSize > 4096)
+		lowSize = 4096;
 
 	if (!shadow_depthmap_low)
 	{
