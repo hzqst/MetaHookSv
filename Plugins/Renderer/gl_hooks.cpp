@@ -378,6 +378,19 @@ void R_FillAddress(void)
 
 		gRefFuncs.R_RotateForEntity = (void(*)(float *,cl_entity_t *))Search_Pattern(R_ROTATEFORENTITY_SVENGINE);
 		Sig_FuncNotFound(R_RotateForEntity);
+
+#define R_ADDTENTITY_STRING_SIG "Can't add transparent entity. Too many"
+		addr = (DWORD)Search_Pattern(R_ADDTENTITY_STRING_SIG);
+		Sig_AddrNotFound(R_AddTEntity_String);
+		char pattern[] = "\x50\x68\x2A\x2A\x2A\x2A\xE8";
+		*(DWORD *)(pattern + 2) = addr;
+		addr = (DWORD)Search_Pattern(pattern);
+		Sig_AddrNotFound(R_AddTEntity_Call);
+
+		char pattern2[] = "\xCC\xCC\xCC\x83\xEC";
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((PUCHAR)addr - 0x50, 0x50, pattern2, sizeof(pattern2) - 1);
+		Sig_AddrNotFound(R_AddTEntity_Call);
+		gRefFuncs.R_AddTEntity = (decltype(gRefFuncs.R_AddTEntity))(addr + 3);
 	}
 	else if (g_dwEngineBuildnum >= 5953)
 	{
@@ -1016,6 +1029,7 @@ void R_FillAddress(void)
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawTEntitiesOnList, 0x500, TRANSOBJECTS_SIG_SVENGINE, sizeof(TRANSOBJECTS_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(transObjects);
 		transObjects = *(transObjRef ***)(addr + 1);
+		maxTransObjs = (int *)((char *)transObjects - 4);
 		numTransObjs = (int *)((char *)transObjects - 8);
 
 #define NORMALINDEX_SIG_SVENGINE "\x83\x3C\xB5\x2A\x2A\x2A\x2A\x00"
@@ -1380,17 +1394,19 @@ void R_InstallHook(void)
 {
 	g_pMetaHookAPI->InlineHook(gRefFuncs.GL_BeginRendering, GL_BeginRendering, (void *&)gRefFuncs.GL_BeginRendering);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.GL_EndRendering, GL_EndRendering, (void *&)gRefFuncs.GL_EndRendering);
+
 	if(gRefFuncs.R_RenderView_SvEngine)
 		g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderView_SvEngine, R_RenderView_SvEngine, (void *&)gRefFuncs.R_RenderView_SvEngine);
 	else
 		g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderView, R_RenderView, (void *&)gRefFuncs.R_RenderView);
+
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderScene, R_RenderScene, (void *&)gRefFuncs.R_RenderScene);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawWorld, R_DrawWorld, (void *&)gRefFuncs.R_DrawWorld);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSpriteModel, R_DrawSpriteModel, (void *&)gRefFuncs.R_DrawSpriteModel);	
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_NewMap, R_NewMap, (void *&)gRefFuncs.R_NewMap);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_SetupGL, R_SetupGL, (void *&)gRefFuncs.R_SetupGL);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_ForceCVars, R_ForceCVars, (void *&)gRefFuncs.R_ForceCVars);
-//	g_pMetaHookAPI->InlineHook(gRefFuncs.R_CullBox, R_CullBox, (void *&)gRefFuncs.R_CullBox);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_CullBox, R_CullBox, (void *&)gRefFuncs.R_CullBox);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_MarkLeaves, R_MarkLeaves, (void *&)gRefFuncs.R_MarkLeaves);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.Mod_PointInLeaf, Mod_PointInLeaf, (void *&)gRefFuncs.Mod_PointInLeaf);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSequentialPoly, R_DrawSequentialPoly, (void *&)gRefFuncs.R_DrawSequentialPoly);
@@ -1403,5 +1419,6 @@ void R_InstallHook(void)
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_GLStudioDrawPoints, R_GLStudioDrawPoints, (void *&)gRefFuncs.R_GLStudioDrawPoints);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_RotateForEntity, R_RotateForEntity, (void *&)gRefFuncs.R_RotateForEntity);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawBrushModel, R_DrawBrushModel, (void *&)gRefFuncs.R_DrawBrushModel);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.R_AddTEntity, R_AddTEntity, (void *&)gRefFuncs.R_AddTEntity);
 
 }

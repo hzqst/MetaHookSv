@@ -737,8 +737,6 @@ void R_VidInitWSurf(void)
 	//parse entities data from bsp's entity lump
 	R_ParseBSPEntities(r_worldmodel->entities);
 	R_LoadBSPEntities();
-
-	R_StudioClearVBOCache();
 }
 
 float ScrollOffset(msurface_t *psurface, cl_entity_t *pEntity)
@@ -999,7 +997,7 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 			}
 			else
 			{
-				glRect_t *theRect = (glRect_t *)((char *)lightmap_rectchange + sizeof(glRect_t) * lightmapnum);
+				glRect_GoldSrc_t *theRect = (glRect_GoldSrc_t *)((char *)lightmap_rectchange + sizeof(glRect_GoldSrc_t) * lightmapnum);
 				qglTexSubImage2D(GL_TEXTURE_2D, 0, 0, theRect->t, BLOCK_WIDTH, theRect->h, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + (lightmapnum * BLOCK_HEIGHT + theRect->t) * BLOCK_WIDTH * LIGHTMAP_BYTES);
 				theRect->l = BLOCK_WIDTH;
 				theRect->t = BLOCK_HEIGHT;
@@ -1336,19 +1334,16 @@ void R_LoadBSPEntities(void)
 			if (pitch)
 			{
 				sscanf(pitch, "%f", &r_light_env_angles[0]);
+
 				r_light_env_angles[0] += 180;
-				r_light_env_angles[1] += 180;
 				if (r_light_env_angles[0] > 360)
 					r_light_env_angles[0] -= 360;
-				if (r_light_env_angles[1] > 360)
-					r_light_env_angles[1] -= 360;
-				r_light_env_angles_exists = true;
 			}
 
 			char *angle = ValueForKey(ent, "angles");
 			if (angle)
 			{
-				vec3_t ang;
+				vec3_t ang = { 0 };
 				sscanf(angle, "%f %f %f", &ang[0], &ang[1], &ang[2]);
 				if (ang[0] == 0 && ang[1] == 0 && ang[2] == 0)
 				{
@@ -1356,11 +1351,13 @@ void R_LoadBSPEntities(void)
 				}
 				else
 				{
+					if (pitch)
+					{
+						ang[0] = r_light_env_angles[0];
+					}
+
 					VectorCopy(ang, r_light_env_angles);
-					r_light_env_angles[0] += 180;
 					r_light_env_angles[1] += 180;
-					if (r_light_env_angles[0] > 360)
-						r_light_env_angles[0] -= 360;
 					if (r_light_env_angles[1] > 360)
 						r_light_env_angles[1] -= 360;
 					r_light_env_angles_exists = true;
@@ -1392,7 +1389,7 @@ void R_DrawSequentialPolyVBO(msurface_t *s)
 		}
 		else
 		{
-			glRect_t *theRect = (glRect_t *)((char *)lightmap_rectchange + sizeof(glRect_t) * lightmapnum);
+			glRect_GoldSrc_t *theRect = (glRect_GoldSrc_t *)((char *)lightmap_rectchange + sizeof(glRect_GoldSrc_t) * lightmapnum);
 			qglBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
 			qglTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, theRect->t, lightmapnum, BLOCK_WIDTH, theRect->h, 1, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + (lightmapnum * BLOCK_HEIGHT + theRect->t) * BLOCK_WIDTH * LIGHTMAP_BYTES);
 			qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);

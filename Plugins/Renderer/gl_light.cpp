@@ -193,8 +193,8 @@ void R_InitLight(void)
 	r_light_dynamic = gEngfuncs.pfnRegisterVariable("r_light_dynamic", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_light_debug = gEngfuncs.pfnRegisterVariable("r_light_debug", "0", FCVAR_CLIENTDLL);
 
-	r_light_ambient = gEngfuncs.pfnRegisterVariable("r_light_ambient", "0.35", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_light_diffuse = gEngfuncs.pfnRegisterVariable("r_light_diffuse", "0.35", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_light_ambient = gEngfuncs.pfnRegisterVariable("r_light_ambient", "0.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_light_diffuse = gEngfuncs.pfnRegisterVariable("r_light_diffuse", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_light_specular = gEngfuncs.pfnRegisterVariable("r_light_specular", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_light_specularpow = gEngfuncs.pfnRegisterVariable("r_light_specularpow", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
@@ -263,7 +263,7 @@ void R_SetGBufferMask(int mask)
 
 void R_BeginRenderGBuffer(void)
 {
-	if (drawrefract || drawreflect)
+	if (r_draw_pass)
 		return;
 
 	if (!r_light_dynamic->value)
@@ -424,79 +424,38 @@ void R_EndRenderGBuffer(void)
 	//Allow stencil to be transfered to main FBO ?
 	//I donthink there is a mask check in qglBlitFramebufferEXT
 
-	qglEnable(GL_STENCIL_TEST);
+	qglDisable(GL_STENCIL_TEST);
 	qglStencilMask(0xFF);
-	qglStencilFunc(GL_ALWAYS, 0, 0xFF);
-	qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	//qglStencilFunc(GL_ALWAYS, 0, 0xFF);
+	//qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-	if (bDoDirectBlit)
+	qglUseProgramObjectARB(dlight_final2.program);
+	qglUniform1iARB(dlight_final2.diffuseTex, 0);
+	qglUniform1iARB(dlight_final2.lightmapTex, 1);
+	qglUniform1iARB(dlight_final2.additiveTex, 2);
+
+	//Diffuse texture (for merging)
+	GL_SelectTexture(TEXTURE0_SGIS);
+	GL_Bind(s_GBufferFBO.s_hBackBufferTex);
+
+	//Lightmap texture (for merging)
+	GL_EnableMultitexture();
+	GL_Bind(s_GBufferFBO.s_hBackBufferTex2);
+
+	//Additive texture
+	qglActiveTextureARB(TEXTURE2_SGIS);
+	qglEnable(GL_TEXTURE_2D);
+	qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex5);
+
+	R_DrawHUDQuad(glwidth, glheight);
+
+	if (R_UseMSAA())
 	{
-		qglUseProgramObjectARB(dlight_final2.program);
-		qglUniform1iARB(dlight_final2.diffuseTex, 0);
-		qglUniform1iARB(dlight_final2.lightmapTex, 1);
-		qglUniform1iARB(dlight_final2.additiveTex, 2);
-
-		//Diffuse texture (for merging)
-		GL_SelectTexture(TEXTURE0_SGIS);
-		GL_Bind(s_GBufferFBO.s_hBackBufferTex);
-
-		//Lightmap texture (for merging)
-		GL_EnableMultitexture();
-		GL_Bind(s_GBufferFBO.s_hBackBufferTex2);
-
-		//Additive texture
-		qglActiveTextureARB(TEXTURE2_SGIS);
-		qglEnable(GL_TEXTURE_2D);
-		qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex5);
-
-		R_DrawHUDQuad(glwidth, glheight);
-	}
-	else
-	{
-		qglUseProgramObjectARB(dlight_final.program);
-		qglUniform1iARB(dlight_final.diffuseTex, 0);
-		qglUniform1iARB(dlight_final.lightmapTex, 1);
-		qglUniform1iARB(dlight_final.additiveTex, 2);
-		qglUniform1iARB(dlight_final.depthTex, 3);
-
-		//Diffuse texture (for merging)
-		GL_SelectTexture(TEXTURE0_SGIS);
-		GL_Bind(s_GBufferFBO.s_hBackBufferTex);
-
-		//Lightmap texture (for merging)
-		GL_EnableMultitexture();
-		GL_Bind(s_GBufferFBO.s_hBackBufferTex2);
-
-		//Additive texture
-		qglActiveTextureARB(TEXTURE2_SGIS);
-		qglEnable(GL_TEXTURE_2D);
-		qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex5);
-
-		//Depth texture (for direct-writing)
-		qglActiveTextureARB(TEXTURE3_SGIS);
-		qglEnable(GL_TEXTURE_2D);
-		qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
-
-		R_DrawHUDQuad(glwidth, glheight);
-
-		qglBindTexture(GL_TEXTURE_2D, 0);
-		qglDisable(GL_TEXTURE_2D);
-		qglActiveTextureARB(TEXTURE2_SGIS);
-
-		qglBindTexture(GL_TEXTURE_2D, 0);
-		qglDisable(GL_TEXTURE_2D);
-		qglActiveTextureARB(TEXTURE1_SGIS);
-	}
-
-	if (bDoDirectBlit)
-	{
-		if (s_MSAAFBO.s_hBackBufferFBO)
-		{
-			qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
-			qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
-			qglBlitFramebufferEXT(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight, 
-				0, 0, s_MSAAFBO.iWidth, s_MSAAFBO.iHeight,
-				GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, 
+		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
+		qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
+		qglBlitFramebufferEXT(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight,
+			0, 0, s_MSAAFBO.iWidth, s_MSAAFBO.iHeight,
+			GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
 			/*
 			According to OpenGL API document
 			https://www.khronos.org/opengl/wiki_opengl/index.php?title=GLAPI/glBlitFramebuffer&printable=yes
@@ -505,27 +464,26 @@ void R_EndRenderGBuffer(void)
 			 If filter is not GL_NEAREST and mask includes GL_DEPTH_BUFFER_BIT or GL_STENCIL_BUFFER_BIT,
 			 no data is transferred and a GL_INVALID_OPERATION error is generated.
 			*/
-				GL_NEAREST);
+			GL_NEAREST);
 
-			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
-		}
-		else
-		{
-			qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-			qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
-			qglBlitFramebufferEXT(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight, 
-				0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight,
-				GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
-				GL_NEAREST);
-			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-		}
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
+	}
+	else
+	{
+		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+		qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
+		qglBlitFramebufferEXT(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight,
+			0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight,
+			GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
+			GL_NEAREST);
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	}
 
 	qglStencilMask(0);
 	qglDisable(GL_STENCIL_TEST);
 
 	//FXAA for shading stage when MSAA available for all other render stage
-	if (r_fxaa->value && s_MSAAFBO.s_hBackBufferFBO && (!drawreflect && !drawrefract && !g_SvEngine_DrawPortalView))
+	if (r_fxaa->value && R_UseMSAA() && (!r_draw_pass && !g_SvEngine_DrawPortalView))
 	{
 		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 		qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);

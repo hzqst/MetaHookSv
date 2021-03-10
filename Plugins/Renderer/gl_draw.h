@@ -1,30 +1,5 @@
 #pragma once
 
-#define MAX_GLTEXTURES 4800
-
-#pragma pack(1)
-typedef struct gltexture_s
-{
-	int texnum;
-	short servercount;
-	short paletteIndex;
-	int width;
-	int height;
-	qboolean mipmap;
-	char identifier[64];
-}gltexture_t;
-#pragma pack()
-
-typedef enum
-{
-	GLT_SYSTEM,
-	GLT_DECAL,
-	GLT_HUDSPRITE,
-	GLT_STUDIO,
-	GLT_WORLD,
-	GLT_SPRITE
-}GL_TEXTURETYPE;
-
 extern GLenum TEXTURE0_SGIS;
 extern GLenum TEXTURE1_SGIS;
 extern GLenum TEXTURE2_SGIS;

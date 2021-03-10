@@ -1,5 +1,5 @@
 #include "gl_local.h"
-#include <string>
+#include <sstream>
 
 //HDR
 int last_luminance = 0;
@@ -11,9 +11,9 @@ static const int  HBAO_RANDOM_SIZE = AO_RANDOMTEX_SIZE;
 static const int  HBAO_RANDOM_ELEMENTS = HBAO_RANDOM_SIZE * HBAO_RANDOM_SIZE;
 static const int  MAX_SAMPLES = 16;
 
-GLuint  hbao_random = 0;
-GLuint  hbao_randomview[MAX_SAMPLES] = { 0 };
-vec4_t m_hbaoRandom[HBAO_RANDOM_ELEMENTS * MAX_SAMPLES];
+GLuint hbao_random = 0;
+GLuint hbao_randomview[MAX_SAMPLES] = { 0 };
+vec4_t m_hbaoRandom[HBAO_RANDOM_ELEMENTS * MAX_SAMPLES] = { 0 };
 
 //FXAA
 SHADER_DEFINE(pp_fxaa);
@@ -110,9 +110,6 @@ char *UTIL_VarArgs(char *format, ...);
 
 void R_InitBlur(int samples)
 {
-	if (!bDoHDR)
-		return;
-
 	auto pp_common_vscode = (char *)gEngfuncs.COM_LoadFile((char *)"resource\\shader\\pp_common.vsh", 5, 0);
 
 	if (!pp_common_vscode)
@@ -120,25 +117,20 @@ void R_InitBlur(int samples)
 
 	float coord_offsets[MAX_GAUSSIAN_SAMPLES];
 	float gauss_weights[MAX_GAUSSIAN_SAMPLES];
-	char code[4096];
-
+	
 	R_CaculateGaussianBilinear(coord_offsets, gauss_weights, min(samples, MAX_GAUSSIAN_SAMPLES));
 
-	//Generate horizonal blur code
-	if (pp_gaussianblurh.program)
-	{
-		qglDeleteObjectARB(pp_gaussianblurh.program);
-		pp_gaussianblurh.program = 0;
-	}
+	std::stringstream ss;
 
-	sprintf(code, "#version 120\nuniform float du;\nuniform sampler2D tex;\nvoid main()\n{\n vec4 sample = vec4(0.0, 0.0, 0.0, 0.0);\n");
+	//Generate horizonal blur code
+	ss << "#version 120\nuniform float du;\nuniform sampler2D tex;\nvoid main()\n{\n vec4 sample = vec4(0.0, 0.0, 0.0, 0.0);\n";
 	for (int i = 0; i < samples; ++i)
 	{
-		strcat(code, UTIL_VarArgs(" sample += %f * texture2D( tex, gl_TexCoord[0].xy + vec2(%f * du, 0.0) );\n", gauss_weights[i], coord_offsets[i]));
+		ss << UTIL_VarArgs(" sample += %f * texture2D( tex, gl_TexCoord[0].xy + vec2(%f * du, 0.0) );\n", gauss_weights[i], coord_offsets[i]);
 	}
-	strcat(code, " gl_FragColor = sample;\n}");
+	ss << " gl_FragColor = sample;\n}";
 
-	pp_gaussianblurh.program = R_CompileShader(pp_common_vscode, NULL, code, "pp_common.vsh", NULL, "pp_gaussianblur_h.fsh");
+	pp_gaussianblurh.program = R_CompileShader(pp_common_vscode, NULL, ss.str().c_str(), "pp_common.vsh", NULL, "pp_gaussianblur_h.fsh");
 	if (pp_gaussianblurh.program)
 	{
 		SHADER_UNIFORM(pp_gaussianblurh, tex, "tex");
@@ -152,14 +144,16 @@ void R_InitBlur(int samples)
 		pp_gaussianblurv.program = 0;
 	}
 
-	sprintf(code, "#version 120\nuniform float du;\nuniform sampler2D tex;\nvoid main()\n{\n vec4 sample = vec4(0.0, 0.0, 0.0, 0.0);\n");
+	std::stringstream ss2;
+
+	ss2 << "#version 120\nuniform float du;\nuniform sampler2D tex;\nvoid main()\n{\n vec4 sample = vec4(0.0, 0.0, 0.0, 0.0);\n";
 	for (int i = 0; i < samples; ++i)
 	{
-		strcat(code, UTIL_VarArgs(" sample += %f * texture2D( tex, gl_TexCoord[0].xy + vec2(0.0, %f * du) );\n", gauss_weights[i], coord_offsets[i]));
+		ss2 << UTIL_VarArgs(" sample += %f * texture2D( tex, gl_TexCoord[0].xy + vec2(0.0, %f * du) );\n", gauss_weights[i], coord_offsets[i]);
 	}
-	strcat(code, " gl_FragColor = sample;\n}");
+	ss2 << " gl_FragColor = sample;\n}";
 
-	pp_gaussianblurv.program = R_CompileShader(pp_common_vscode, NULL, code, "pp_common.vsh", NULL, "pp_gaussianblur_v.fsh");
+	pp_gaussianblurv.program = R_CompileShader(pp_common_vscode, NULL, ss2.str().c_str(), "pp_common.vsh", NULL, "pp_gaussianblur_v.fsh");
 	if (pp_gaussianblurv.program)
 	{
 		SHADER_UNIFORM(pp_gaussianblurv, tex, "tex");
@@ -171,171 +165,169 @@ void R_InitBlur(int samples)
 
 void R_InitGLHUD(void)
 {
-	if(gl_shader_support)
+	float numDir = 8; // keep in sync to glsl
+
+	signed short hbaoRandomShort[HBAO_RANDOM_ELEMENTS * MAX_SAMPLES * 4];
+
+	for (int i = 0; i < HBAO_RANDOM_ELEMENTS * MAX_SAMPLES; i++)
 	{
-		float numDir = 8; // keep in sync to glsl
+		float Rand1 = gEngfuncs.pfnRandomFloat(0, 1);
+		float Rand2 = gEngfuncs.pfnRandomFloat(0, 1);
 
-		signed short hbaoRandomShort[HBAO_RANDOM_ELEMENTS*MAX_SAMPLES * 4];
-
-		for (int i = 0; i < HBAO_RANDOM_ELEMENTS*MAX_SAMPLES; i++)
-		{
-			float Rand1 = gEngfuncs.pfnRandomFloat(0, 1);
-			float Rand2 = gEngfuncs.pfnRandomFloat(0, 1);
-
-			// Use random rotation angles in [0,2PI/NUM_DIRECTIONS)
-			float Angle = 2.f * M_PI * Rand1 / numDir;
-			m_hbaoRandom[i][0] = cosf(Angle);
-			m_hbaoRandom[i][1] = sinf(Angle);
-			m_hbaoRandom[i][2] = Rand2;
-			m_hbaoRandom[i][3] = 0;
+		// Use random rotation angles in [0,2PI/NUM_DIRECTIONS)
+		float Angle = 2.f * M_PI * Rand1 / numDir;
+		m_hbaoRandom[i][0] = cosf(Angle);
+		m_hbaoRandom[i][1] = sinf(Angle);
+		m_hbaoRandom[i][2] = Rand2;
+		m_hbaoRandom[i][3] = 0;
 #define SCALE ((1<<15))
-			hbaoRandomShort[i * 4 + 0] = (signed short)(SCALE*m_hbaoRandom[i][0]);
-			hbaoRandomShort[i * 4 + 1] = (signed short)(SCALE*m_hbaoRandom[i][1]);
-			hbaoRandomShort[i * 4 + 2] = (signed short)(SCALE*m_hbaoRandom[i][2]);
-			hbaoRandomShort[i * 4 + 3] = (signed short)(SCALE*m_hbaoRandom[i][3]);
+		hbaoRandomShort[i * 4 + 0] = (signed short)(SCALE*m_hbaoRandom[i][0]);
+		hbaoRandomShort[i * 4 + 1] = (signed short)(SCALE*m_hbaoRandom[i][1]);
+		hbaoRandomShort[i * 4 + 2] = (signed short)(SCALE*m_hbaoRandom[i][2]);
+		hbaoRandomShort[i * 4 + 3] = (signed short)(SCALE*m_hbaoRandom[i][3]);
 #undef SCALE
-		}
-
-		hbao_random = GL_GenTexture();
-		qglBindTexture(GL_TEXTURE_2D_ARRAY, hbao_random);
-		qglTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA16_SNORM, HBAO_RANDOM_SIZE, HBAO_RANDOM_SIZE, MAX_SAMPLES);
-		qglTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, HBAO_RANDOM_SIZE, HBAO_RANDOM_SIZE, MAX_SAMPLES, GL_RGBA, GL_SHORT, hbaoRandomShort);
-		qglTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		qglTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-
-		for (int i = 0; i < MAX_SAMPLES; i++)
-		{
-			hbao_randomview[i] = GL_GenTexture();
-			qglTextureView(hbao_randomview[i], GL_TEXTURE_2D, hbao_random, GL_RGBA16_SNORM, 0, 1, i, 1);
-			qglBindTexture(GL_TEXTURE_2D, hbao_randomview[i]);
-			qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			qglBindTexture(GL_TEXTURE_2D, 0);
-		}
-
-		//FXAA Pass
-		pp_fxaa.program = R_CompileShaderFile("resource\\shader\\pp_fxaa.vsh", NULL, "resource\\shader\\pp_fxaa.fsh");
-		if (pp_fxaa.program)
-		{
-			SHADER_UNIFORM(pp_fxaa, tex0, "tex0");
-			SHADER_UNIFORM(pp_fxaa, rt_w, "rt_w");
-			SHADER_UNIFORM(pp_fxaa, rt_h, "rt_h");
-		}
-
-		//DownSample Pass
-		pp_downsample.program = R_CompileShaderFile("resource\\shader\\pp_common.vsh", NULL, "resource\\shader\\pp_downsample.fsh");
-		if (pp_downsample.program)
-		{
-			SHADER_UNIFORM(pp_downsample, tex, "tex");
-		}
-
-		//2x2 Downsample Pass
-		pp_downsample2x2.program = R_CompileShaderFile("resource\\shader\\pp_common2x2.vsh", NULL, "resource\\shader\\pp_downsample2x2.fsh");
-		if (pp_downsample2x2.program)
-		{
-			SHADER_UNIFORM(pp_downsample2x2, tex, "tex");
-			SHADER_UNIFORM(pp_downsample2x2, texelsize, "texelsize");
-		}
-
-		//Luminance Downsample Pass
-		pp_lumin.program = R_CompileShaderFile("resource\\shader\\pp_common2x2.vsh", NULL, "resource\\shader\\pp_lumin.fsh");
-		if (pp_lumin.program)
-		{
-			SHADER_UNIFORM(pp_lumin, tex, "tex");
-			SHADER_UNIFORM(pp_lumin, texelsize, "texelsize");
-		}
-
-		//Log Luminance Downsample Pass
-		pp_luminlog.program = R_CompileShaderFile("resource\\shader\\pp_common2x2.vsh", NULL, "resource\\shader\\pp_luminlog.fsh");
-		if (pp_luminlog.program)
-		{
-			SHADER_UNIFORM(pp_luminlog, tex, "tex");
-			SHADER_UNIFORM(pp_luminlog, texelsize, "texelsize");
-		}
-
-		//Exp Luminance Downsample Pass
-		pp_luminexp.program = R_CompileShaderFile("resource\\shader\\pp_common2x2.vsh", NULL, "resource\\shader\\pp_luminexp.fsh");
-		if (pp_luminexp.program)
-		{
-			SHADER_UNIFORM(pp_luminexp, tex, "tex");
-			SHADER_UNIFORM(pp_luminexp, texelsize, "texelsize");
-		}
-
-		//Luminance Adaptation Downsample Pass
-		pp_luminadapt.program = R_CompileShaderFile("resource\\shader\\pp_common.vsh", NULL, "resource\\shader\\pp_luminadapt.fsh");
-		if (pp_luminadapt.program)
-		{
-			SHADER_UNIFORM(pp_luminadapt, curtex, "curtex");
-			SHADER_UNIFORM(pp_luminadapt, adatex, "adatex");
-			SHADER_UNIFORM(pp_luminadapt, frametime, "frametime");
-		}
-
-		//Bright Pass
-		pp_brightpass.program = R_CompileShaderFile("resource\\shader\\pp_brightpass.vsh", NULL, "resource\\shader\\pp_brightpass.fsh");
-		if (pp_brightpass.program)
-		{
-			SHADER_UNIFORM(pp_brightpass, tex, "tex");
-			SHADER_UNIFORM(pp_brightpass, lumtex, "lumtex");
-		}
-
-		//Tone mapping
-		pp_tonemap.program = R_CompileShaderFile("resource\\shader\\pp_tonemap.vsh", NULL, "resource\\shader\\pp_tonemap.fsh");
-		if (pp_tonemap.program)
-		{
-			SHADER_UNIFORM(pp_tonemap, basetex, "basetex");
-			SHADER_UNIFORM(pp_tonemap, blurtex, "blurtex");
-			SHADER_UNIFORM(pp_tonemap, lumtex, "lumtex");
-			SHADER_UNIFORM(pp_tonemap, blurfactor, "blurfactor");
-			SHADER_UNIFORM(pp_tonemap, exposure, "exposure");
-			SHADER_UNIFORM(pp_tonemap, darkness, "darkness");
-			SHADER_UNIFORM(pp_tonemap, gamma, "gamma");
-		}
-
-		//SSAO
-		depth_linearize.program = R_CompileShaderFile("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\depthlinearize.frag.glsl");
-		if (depth_linearize.program)
-		{
-		}
-
-		depth_linearize_msaa.program = R_CompileShaderFileEx("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\depthlinearize.frag.glsl",
-			"#define DEPTHLINEARIZE_MSAA 1\n", NULL, "#define DEPTHLINEARIZE_MSAA 1\n");
-		if (depth_linearize_msaa.program)
-		{
-		}
-
-		hbao_calc_blur.program = R_CompileShaderFile("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\hbao.frag.glsl");
-		if (hbao_calc_blur.program)
-		{
-			SHADER_UNIFORM(hbao_calc_blur, texLinearDepth, "texLinearDepth");
-			SHADER_UNIFORM(hbao_calc_blur, texRandom, "texRandom");
-			SHADER_UNIFORM(hbao_calc_blur, control_RadiusToScreen, "control_RadiusToScreen");
-			SHADER_UNIFORM(hbao_calc_blur, control_projOrtho, "control_projOrtho");
-			SHADER_UNIFORM(hbao_calc_blur, control_projInfo, "control_projInfo");
-			SHADER_UNIFORM(hbao_calc_blur, control_PowExponent, "control_PowExponent");
-			SHADER_UNIFORM(hbao_calc_blur, control_InvQuarterResolution, "control_InvQuarterResolution");
-			SHADER_UNIFORM(hbao_calc_blur, control_AOMultiplier, "control_AOMultiplier");
-			SHADER_UNIFORM(hbao_calc_blur, control_InvFullResolution, "control_InvFullResolution");
-			SHADER_UNIFORM(hbao_calc_blur, control_NDotVBias, "control_NDotVBias");
-			SHADER_UNIFORM(hbao_calc_blur, control_NegInvR2, "control_NegInvR2");
-		}
-
-		hbao_blur.program = R_CompileShaderFileEx("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\hbao_blur.frag.glsl",
-			"", NULL, "");
-		if (hbao_blur.program)
-		{
-		}
-
-		hbao_blur2.program = R_CompileShaderFileEx("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\hbao_blur.frag.glsl",
-			"#define AO_BLUR_PRESENT\n", NULL, "#define AO_BLUR_PRESENT\n");
-		if (hbao_blur2.program)
-		{
-
-		}
-
-		//gaussian blur code
-		R_InitBlur(16);
 	}
+
+	hbao_random = GL_GenTexture();
+	qglBindTexture(GL_TEXTURE_2D_ARRAY, hbao_random);
+	qglTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA16_SNORM, HBAO_RANDOM_SIZE, HBAO_RANDOM_SIZE, MAX_SAMPLES);
+	qglTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, HBAO_RANDOM_SIZE, HBAO_RANDOM_SIZE, MAX_SAMPLES, GL_RGBA, GL_SHORT, hbaoRandomShort);
+	qglTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	qglTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+
+	for (int i = 0; i < MAX_SAMPLES; i++)
+	{
+		hbao_randomview[i] = GL_GenTexture();
+		qglTextureView(hbao_randomview[i], GL_TEXTURE_2D, hbao_random, GL_RGBA16_SNORM, 0, 1, i, 1);
+		qglBindTexture(GL_TEXTURE_2D, hbao_randomview[i]);
+		qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		qglBindTexture(GL_TEXTURE_2D, 0);
+	}
+
+	//FXAA Pass
+	pp_fxaa.program = R_CompileShaderFile("resource\\shader\\pp_fxaa.vsh", NULL, "resource\\shader\\pp_fxaa.fsh");
+	if (pp_fxaa.program)
+	{
+		SHADER_UNIFORM(pp_fxaa, tex0, "tex0");
+		SHADER_UNIFORM(pp_fxaa, rt_w, "rt_w");
+		SHADER_UNIFORM(pp_fxaa, rt_h, "rt_h");
+	}
+
+	//DownSample Pass
+	pp_downsample.program = R_CompileShaderFile("resource\\shader\\pp_common.vsh", NULL, "resource\\shader\\pp_downsample.fsh");
+	if (pp_downsample.program)
+	{
+		SHADER_UNIFORM(pp_downsample, tex, "tex");
+	}
+
+	//2x2 Downsample Pass
+	pp_downsample2x2.program = R_CompileShaderFile("resource\\shader\\pp_common2x2.vsh", NULL, "resource\\shader\\pp_downsample2x2.fsh");
+	if (pp_downsample2x2.program)
+	{
+		SHADER_UNIFORM(pp_downsample2x2, tex, "tex");
+		SHADER_UNIFORM(pp_downsample2x2, texelsize, "texelsize");
+	}
+
+	//Luminance Downsample Pass
+	pp_lumin.program = R_CompileShaderFile("resource\\shader\\pp_common2x2.vsh", NULL, "resource\\shader\\pp_lumin.fsh");
+	if (pp_lumin.program)
+	{
+		SHADER_UNIFORM(pp_lumin, tex, "tex");
+		SHADER_UNIFORM(pp_lumin, texelsize, "texelsize");
+	}
+
+	//Log Luminance Downsample Pass
+	pp_luminlog.program = R_CompileShaderFile("resource\\shader\\pp_common2x2.vsh", NULL, "resource\\shader\\pp_luminlog.fsh");
+	if (pp_luminlog.program)
+	{
+		SHADER_UNIFORM(pp_luminlog, tex, "tex");
+		SHADER_UNIFORM(pp_luminlog, texelsize, "texelsize");
+	}
+
+	//Exp Luminance Downsample Pass
+	pp_luminexp.program = R_CompileShaderFile("resource\\shader\\pp_common2x2.vsh", NULL, "resource\\shader\\pp_luminexp.fsh");
+	if (pp_luminexp.program)
+	{
+		SHADER_UNIFORM(pp_luminexp, tex, "tex");
+		SHADER_UNIFORM(pp_luminexp, texelsize, "texelsize");
+	}
+
+	//Luminance Adaptation Downsample Pass
+	pp_luminadapt.program = R_CompileShaderFile("resource\\shader\\pp_common.vsh", NULL, "resource\\shader\\pp_luminadapt.fsh");
+	if (pp_luminadapt.program)
+	{
+		SHADER_UNIFORM(pp_luminadapt, curtex, "curtex");
+		SHADER_UNIFORM(pp_luminadapt, adatex, "adatex");
+		SHADER_UNIFORM(pp_luminadapt, frametime, "frametime");
+	}
+
+	//Bright Pass
+	pp_brightpass.program = R_CompileShaderFile("resource\\shader\\pp_brightpass.vsh", NULL, "resource\\shader\\pp_brightpass.fsh");
+	if (pp_brightpass.program)
+	{
+		SHADER_UNIFORM(pp_brightpass, tex, "tex");
+		SHADER_UNIFORM(pp_brightpass, lumtex, "lumtex");
+	}
+
+	//Tone mapping
+	pp_tonemap.program = R_CompileShaderFile("resource\\shader\\pp_tonemap.vsh", NULL, "resource\\shader\\pp_tonemap.fsh");
+	if (pp_tonemap.program)
+	{
+		SHADER_UNIFORM(pp_tonemap, basetex, "basetex");
+		SHADER_UNIFORM(pp_tonemap, blurtex, "blurtex");
+		SHADER_UNIFORM(pp_tonemap, lumtex, "lumtex");
+		SHADER_UNIFORM(pp_tonemap, blurfactor, "blurfactor");
+		SHADER_UNIFORM(pp_tonemap, exposure, "exposure");
+		SHADER_UNIFORM(pp_tonemap, darkness, "darkness");
+		SHADER_UNIFORM(pp_tonemap, gamma, "gamma");
+	}
+
+	//SSAO
+	depth_linearize.program = R_CompileShaderFile("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\depthlinearize.frag.glsl");
+	if (depth_linearize.program)
+	{
+	}
+
+	depth_linearize_msaa.program = R_CompileShaderFileEx("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\depthlinearize.frag.glsl",
+		"#define DEPTHLINEARIZE_MSAA 1\n", NULL, "#define DEPTHLINEARIZE_MSAA 1\n");
+	if (depth_linearize_msaa.program)
+	{
+	}
+
+	hbao_calc_blur.program = R_CompileShaderFile("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\hbao.frag.glsl");
+	if (hbao_calc_blur.program)
+	{
+		SHADER_UNIFORM(hbao_calc_blur, texLinearDepth, "texLinearDepth");
+		SHADER_UNIFORM(hbao_calc_blur, texRandom, "texRandom");
+		SHADER_UNIFORM(hbao_calc_blur, control_RadiusToScreen, "control_RadiusToScreen");
+		SHADER_UNIFORM(hbao_calc_blur, control_projOrtho, "control_projOrtho");
+		SHADER_UNIFORM(hbao_calc_blur, control_projInfo, "control_projInfo");
+		SHADER_UNIFORM(hbao_calc_blur, control_PowExponent, "control_PowExponent");
+		SHADER_UNIFORM(hbao_calc_blur, control_InvQuarterResolution, "control_InvQuarterResolution");
+		SHADER_UNIFORM(hbao_calc_blur, control_AOMultiplier, "control_AOMultiplier");
+		SHADER_UNIFORM(hbao_calc_blur, control_InvFullResolution, "control_InvFullResolution");
+		SHADER_UNIFORM(hbao_calc_blur, control_NDotVBias, "control_NDotVBias");
+		SHADER_UNIFORM(hbao_calc_blur, control_NegInvR2, "control_NegInvR2");
+	}
+
+	hbao_blur.program = R_CompileShaderFileEx("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\hbao_blur.frag.glsl",
+		"", NULL, "");
+	if (hbao_blur.program)
+	{
+	}
+
+	hbao_blur2.program = R_CompileShaderFileEx("resource\\shader\\fullscreenquad.vert.glsl", NULL, "resource\\shader\\hbao_blur.frag.glsl",
+		"#define AO_BLUR_PRESENT\n", NULL, "#define AO_BLUR_PRESENT\n");
+	if (hbao_blur2.program)
+	{
+
+	}
+
+	//gaussian blur code
+	R_InitBlur(16);
+
 	r_hdr = gEngfuncs.pfnRegisterVariable("r_hdr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_blurwidth = gEngfuncs.pfnRegisterVariable("r_hdr_blurwidth", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_exposure = gEngfuncs.pfnRegisterVariable("r_hdr_exposure", "5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -353,30 +345,6 @@ void R_InitGLHUD(void)
 	r_ssao_blur_sharpness = gEngfuncs.pfnRegisterVariable("r_ssao_blur_sharpness", "1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	last_luminance = 0;
-
-	if(bDoHDR)
-	{
-		if(!pp_downsample.program)
-			bDoHDR = false;
-		else if(!pp_downsample2x2.program)
-			bDoHDR = false;
-		else if(!pp_luminlog.program)
-			bDoHDR = false;
-		else if(!pp_lumin.program)
-			bDoHDR = false;
-		else if(!pp_luminexp.program)
-			bDoHDR = false;
-		else if(!pp_luminadapt.program)
-			bDoHDR = false;
-		else if(!pp_brightpass.program)
-			bDoHDR = false;
-		else if(!pp_gaussianblurv.program)
-			bDoHDR = false;
-		else if(!pp_gaussianblurh.program)
-			bDoHDR = false;
-		else if(!pp_tonemap.program)
-			bDoHDR = false;
-	}
 }
 
 void R_BeginHUDQuad(void)
@@ -427,16 +395,9 @@ void R_BlitToScreen(FBO_Container_t *src)
 	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
 
 	qglClearColor(0, 0, 0, 0);
-	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	qglClear(GL_COLOR_BUFFER_BIT);
 
-	if (bDoDirectBlit)
-	{
-		qglBlitFramebufferEXT(0, 0, src->iWidth, src->iHeight, 0, 0, glwidth, glheight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-	}
-	else
-	{
-		R_DrawHUDQuad_Texture(src->s_hBackBufferTex, glwidth, glheight);
-	}
+	qglBlitFramebufferEXT(0, 0, src->iWidth, src->iHeight, 0, 0, glwidth, glheight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
 
 void R_BlitToFBO(FBO_Container_t *src, FBO_Container_t *dst)
@@ -444,17 +405,7 @@ void R_BlitToFBO(FBO_Container_t *src, FBO_Container_t *dst)
 	qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
 
-	if (bDoDirectBlit)
-	{
-		qglBlitFramebufferEXT(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-	}
-	else
-	{
-		qglClearColor(0, 0, 0, 1);
-		qglClear(GL_COLOR_BUFFER_BIT);
-
-		R_DrawHUDQuad_Texture(src->s_hBackBufferTex, dst->iWidth, dst->iHeight);
-	}
+	qglBlitFramebufferEXT(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
 
 void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2)
@@ -720,13 +671,10 @@ void R_BeginFXAA(int w, int h)
 
 void R_DoHDR(void)
 {
-	if (!bDoHDR || !r_hdr->value)
+	if (!r_hdr->value)
 		return;
 
-	if (drawreflect)
-		return;
-
-	if (drawrefract)
+	if (r_draw_pass)
 		return;
 
 	if (g_SvEngine_DrawPortalView)
@@ -940,7 +888,7 @@ int R_DoSSAO(int sampleIndex)
 	//GL_DisableMultitexture();
 
 	//Final output stage, write to main FBO or MSAA FBO.
-	if (s_MSAAFBO.s_hBackBufferFBO)
+	if (R_UseMSAA())
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
 	else
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
@@ -994,10 +942,7 @@ void R_DoFXAA(void)
 	if (!pp_fxaa.program)
 		return;
 
-	if (drawreflect)
-		return;
-
-	if (drawrefract)
+	if (r_draw_pass)
 		return;
 
 	if (g_SvEngine_DrawPortalView)

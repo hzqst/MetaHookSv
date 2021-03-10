@@ -844,7 +844,6 @@ void QGL_InitExtension(void)
 
 	gl_max_texture_size = 128;
 	qglGetIntegerv(GL_MAX_TEXTURE_SIZE, &gl_max_texture_size);
-	gl_max_texture_size /= 4;//4096 x RGBA
 
 	gl_max_ansio = 1;
 	if (strstr(extension, "GL_EXT_texture_filter_anisotropic"))
@@ -982,7 +981,7 @@ void QGL_InitExtension(void)
 		qglRenderbufferStorageEXT = (PFNGLRENDERBUFFERSTORAGEEXTPROC)qwglGetProcAddress("glRenderbufferStorageEXT");
 		qglFramebufferTexture2DEXT = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC)qwglGetProcAddress("glFramebufferTexture2DEXT");
 		qglFramebufferTexture = (PFNGLFRAMEBUFFERTEXTUREPROC)qwglGetProcAddress("glFramebufferTexture");
-		*(FARPROC *)&qglDrawBuffers = qwglGetProcAddress("glDrawBuffers");
+		qglDrawBuffers = (PFNGLDRAWBUFFERSPROC)qwglGetProcAddress("glDrawBuffers");
 
 		gl_framebuffer_object = true;
 	}
@@ -990,6 +989,7 @@ void QGL_InitExtension(void)
 	if (strstr(extension, "GL_EXT_framebuffer_multisample"))
 	{
 		qglRenderbufferStorageMultisampleEXT = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC)qwglGetProcAddress("glRenderbufferStorageMultisampleEXT");
+	
 		gl_msaa_support = true;
 	}
 
@@ -998,17 +998,6 @@ void QGL_InitExtension(void)
 		qglBlitFramebufferEXT = (PFNGLBLITFRAMEBUFFEREXTPROC)qwglGetProcAddress("glBlitFramebufferEXT");
 
 		gl_blit_support = true;
-	}
-
-	/*if (strstr(extension, "GL_EXT_framebuffer_multisample_blit_scaled"))
-	{
-		
-	}*/
-
-	if(strstr(extension, "GL_NV_framebuffer_multisample_coverage"))
-	{
-		gl_csaa_support = true;
-		qglRenderbufferStorageMultisampleCoverageNV = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLECOVERAGENVPROC)qwglGetProcAddress("glRenderbufferStorageMultisampleCoverageNV");
 	}
 
 	if(strstr(extension, "GL_NV_float_buffer"))

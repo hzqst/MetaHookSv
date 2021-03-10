@@ -87,7 +87,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	unsigned char *pSourcePalette;
 	int useProgram = 0, dontShader = false;
 
-	if (drawreflect)
+	if (r_draw_pass == r_draw_reflect)
 		return;
 
 	if (fa->texinfo->texture)
@@ -99,7 +99,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		}
 	}
 
-	if (drawrefract)
+	if (r_draw_pass == r_draw_refract)
 	{
 		if ((*currententity) == r_worldentity)
 			dontShader = true;
@@ -229,7 +229,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	else
 		scale = (*currententity)->curstate.scale;
 
-	if (drawrefract)
+	if (r_draw_pass == r_draw_refract)
 		scale = 0;
 
 	if (useProgram)

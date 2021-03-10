@@ -36,14 +36,7 @@ void R_MarkLeaves(void)
 	//Don't clip bsp nodes when rendering refract or reflect view for non-transparent water.
 	if (r_water_novis->value > 0)
 	{
-		/*if (drawrefract)
-		{
-			if (curwater && curwater->color.a == 255)
-			{
-				r_novis->value = 1;
-			}
-		}
-		else */if (drawreflect)
+		if (r_draw_pass == r_draw_reflect)
 		{
 			r_novis->value = 1;
 		}
@@ -124,7 +117,7 @@ void R_RenderDynamicLightmaps(msurface_t *fa)
 			}
 			else
 			{
-				glRect_t *theRect = (glRect_t *)((char *)lightmap_rectchange + sizeof(glRect_t) * fa->lightmaptexturenum);
+				glRect_GoldSrc_t *theRect = (glRect_GoldSrc_t *)((char *)lightmap_rectchange + sizeof(glRect_GoldSrc_t) * fa->lightmaptexturenum);
 
 				if (fa->light_t < theRect->t)
 				{

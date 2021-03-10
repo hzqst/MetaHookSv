@@ -4,34 +4,6 @@
 #include <vector>
 #include <unordered_map>
 
-#define STUDIO_RENDER 1
-#define STUDIO_EVENTS 2
-
-// lighting options
-#define STUDIO_NF_FLATSHADE		0x0001
-#define STUDIO_NF_CHROME		0x0002
-#define STUDIO_NF_FULLBRIGHT	0x0004
-#define STUDIO_NF_NOMIPS        0x0008
-#define STUDIO_NF_ALPHA         0x0010
-#define STUDIO_NF_ADDITIVE      0x0020
-#define STUDIO_NF_MASKED        0x0040
-#define STUDIO_GBUFFER_ENABLED  0x1000
-#define STUDIO_TRANSPARENT_ENABLED  0x2000
-#define STUDIO_TRANSADDITIVE_ENABLED  0x4000
-
-typedef struct auxvert_s
-{
-	float	fv[3];
-}auxvert_t;
-
-typedef struct alight_s
-{
-	int ambientlight;
-	int shadelight;
-	vec3_t color;
-	float *plightvec;
-}alight_t;
-
 typedef struct
 {
 	int program;
@@ -142,6 +114,19 @@ typedef struct studio_vbo_s
 	int					iStartIndices;
 }studio_vbo_t;
 
+typedef struct studio_bone_s
+{
+	studio_bone_s()
+	{
+		
+	}
+
+	int framecount;
+	int numbones;
+	float cached_bonetransform[MAXSTUDIOBONES][3][4];
+	float cached_lighttransform[MAXSTUDIOBONES][3][4];
+}studio_bone_t;
+
 //engine
 extern mstudiomodel_t **psubmodel;
 extern studiohdr_t **pstudiohdr;
@@ -168,11 +153,14 @@ extern model_t *cl_shellchrome;
 //renderer
 extern int r_studio_drawcall;
 extern int r_studio_polys;
+extern int r_studio_framecount;
 
+void R_StudioClearBoneCache(void);
 void R_StudioClearVBOCache(void);
 void R_ShutdownStudio(void);
 void R_InitStudio(void);
-
+bool R_StudioRestoreBones(void);
+void R_StudioSaveBones(void);
 void R_GLStudioDrawPoints(void);
 void R_StudioRenderFinal(void);
 

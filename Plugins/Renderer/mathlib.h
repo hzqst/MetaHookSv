@@ -60,58 +60,6 @@ void R_ConcatRotations(float in1[3][3], float in2[3][3], float out[3][3]);
 void R_ConcatTransforms(float in1[3][4], float in2[3][4], float out[3][4]);
 void Matrix4x4_CreateFromEntity(float out[4][4], const vec3_t angles, const vec3_t origin, float scale);
 
-extern short new_cw, old_cw;
-
-typedef union DLONG
-{
-	int i[2];
-	double d;
-	float f;
-}
-DLONG;
-
-extern DLONG dlong;
-
-#ifdef _WIN32
-
-void __inline set_fpu_cw(void)
-{
-	_asm
-	{
-		wait
-		fnstcw old_cw
-		wait
-		mov ax, word ptr old_cw
-		or ah, 0xc
-		mov word ptr new_cw,ax
-		fldcw new_cw
-	}
-}
-
-int __inline quick_ftol(float f)
-{
-	_asm
-	{
-		fld DWORD PTR f
-		fistp DWORD PTR dlong
-	}
-
-	return dlong.i[0];
-}
-
-void __inline restore_fpu_cw(void)
-{
-	_asm fldcw old_cw
-}
-
-#else
-
-#define set_fpu_cw()
-#define quick_ftol(f) ftol(f)
-#define restore_fpu_cw()
-
-#endif
-
 void FloorDivMod(double numer, double denom, int *quotient, int *rem);
 int GreatestCommonDivisor(int i1, int i2);
 void RotatePointAroundVector(vec3_t dst, const vec3_t dir, const vec3_t point, float degrees);
@@ -136,6 +84,8 @@ int InvertMatrix(const float * m, float *out);
 
 int BoxOnPlaneSide(vec3_t emins, vec3_t emaxs, struct mplane_s *plane);
 
+void VectorRotate(const vec3_t in1, const float in2[3][4], vec3_t out);
+void VectorIRotate(const vec3_t in1, const float in2[3][4], vec3_t out);
 float anglemod(float a);
 
 #define BOX_ON_PLANE_SIDE(emins, emaxs, p) \

@@ -97,9 +97,6 @@
     <ClInclude Include="exportfuncs.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="gl_3dsky.h">
-      <Filter>Header</Filter>
-    </ClInclude>
     <ClInclude Include="gl_draw.h">
       <Filter>Header</Filter>
     </ClInclude>
@@ -109,9 +106,6 @@
     <ClInclude Include="gl_local.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="gl_model.h">
-      <Filter>Header</Filter>
-    </ClInclude>
     <ClInclude Include="gl_shader.h">
       <Filter>Header</Filter>
     </ClInclude>
@@ -119,9 +113,6 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="gl_studio.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="gl_util.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="gl_warp_sin.h">
@@ -150,9 +141,6 @@
     </ClInclude>
     <ClInclude Include="zone.h">
       <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\Interface\IRenderer.h">
-      <Filter>Interface</Filter>
     </ClInclude>
     <ClInclude Include="ref_int_internal.h">
       <Filter>Interface</Filter>

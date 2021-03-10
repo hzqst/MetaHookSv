@@ -1,12 +1,14 @@
 #include "gl_local.h"
 #include "triangleapi.h"
 #include <sstream>
-#define SSE
-#include <sselib.h>
 
-//TODO: shader table
+#include "mathlib.h"
+
+std::unordered_map<cl_entity_t *, studio_bone_t *> g_StudioBoneTable;
 
 std::unordered_map<studiohdr_t *, studio_vbo_t *> g_StudioVBOTable;
+
+std::unordered_map<int, studio_program_t> g_StudioProgramTable;
 
 //engine
 model_t *cl_sprite_white;
@@ -40,12 +42,19 @@ auxvert_t *pauxverts;
 float *pvlightvalues;
 int r_studio_drawcall;
 int r_studio_polys;
+int r_studio_framecount;
 
 cvar_t *r_studio_vbo = NULL;
+cvar_t *r_studio_cache_bone = NULL;
 
-int Q_stricmp_slash(const char *s1, const char *s2);
-void VectorIRotate(const vec3_t in1, const float in2[3][4], vec3_t out);
-void VectorRotate(const vec3_t in1, const float in2[3][4], vec3_t out);
+void R_StudioClearBoneCache(void)
+{
+	for (auto &itor = g_StudioBoneTable.begin(); itor != g_StudioBoneTable.end(); ++itor)
+	{
+		delete itor->second;
+	}
+	g_StudioBoneTable.clear();
+}
 
 void R_StudioClearVBOCache(void)
 {
@@ -69,8 +78,6 @@ void R_StudioClearVBOCache(void)
 	}
 	g_StudioVBOTable.clear();
 }
-
-std::unordered_map<int, studio_program_t> g_StudioProgramTable;
 
 void R_UseStudioProgram(int state, studio_program_t *progOutput)
 {
@@ -158,9 +165,64 @@ void R_ShutdownStudio(void)
 void R_InitStudio(void)
 {
 	r_studio_vbo = gEngfuncs.pfnRegisterVariable("r_studio_vbo", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_cache_bone = gEngfuncs.pfnRegisterVariable("r_studio_cache_bone", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
-//Engine Studio
+bool R_StudioRestoreBones(void)
+{
+	if (!r_studio_cache_bone->value)
+		return false;
+
+	auto ent = (*currententity);
+
+	studio_bone_t *b = NULL;
+
+	auto itor = g_StudioBoneTable.find(ent);
+	if (itor != g_StudioBoneTable.end())
+	{
+		b = itor->second;
+	}
+
+	if (b && r_studio_framecount == b->framecount)
+	{
+		b->numbones = (*pstudiohdr)->numbones;
+		memcpy((*pbonetransform), b->cached_bonetransform, sizeof(float[3][4]) * b->numbones);
+		memcpy((*plighttransform), b->cached_lighttransform, sizeof(float[3][4]) * b->numbones);
+
+		return true;
+	}
+
+	return false;
+}
+
+void R_StudioSaveBones(void)
+{
+	if (!r_studio_cache_bone->value)
+		return;
+
+	auto ent = (*currententity);
+
+	studio_bone_t *b = NULL;
+
+	auto itor = g_StudioBoneTable.find(ent);
+	if (itor == g_StudioBoneTable.end())
+	{
+		b = new studio_bone_t;
+		g_StudioBoneTable[ent] = b;
+	}
+	else
+	{
+		b = itor->second;
+	}
+
+	if (b)
+	{
+		b->framecount = r_studio_framecount;
+		b->numbones = (*pstudiohdr)->numbones;
+		memcpy(b->cached_bonetransform, (*pbonetransform), sizeof(float[3][4]) * b->numbones);
+		memcpy(b->cached_lighttransform, (*plighttransform), sizeof(float[3][4]) * b->numbones);
+	}
+}
 
 inline void R_StudioTransformAuxVert(auxvert_t *av, int bone, vec3_t vert)
 {
@@ -833,6 +895,7 @@ void R_GLStudioDrawPoints(void)
 							qglTexCoord2f((*chrome)[normalIndex][0] * s, (*chrome)[normalIndex][1] * t);
 
 							VectorRotate(pstudionorms[ptricmds[1]], (*pbonetransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[1]]);
+
 							qglNormal3fv(r_studionormal[ptricmds[1]]);
 
 							vec4_t col;

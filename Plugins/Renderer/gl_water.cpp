@@ -2,8 +2,6 @@
 #include <sstream>
 
 //renderer
-qboolean drawreflect;
-qboolean drawrefract;
 vec3_t water_view;
 
 //water
@@ -187,8 +185,6 @@ void R_InitWater(void)
 	r_water_minheight = gEngfuncs.pfnRegisterVariable("r_water_minheight", "7.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	curwater = NULL;
-	drawreflect = false;
-	drawrefract = false;
 
 	R_ClearWater();
 }
@@ -305,7 +301,7 @@ void R_EnableClip(qboolean isdrawworld)
 {
 	double clipPlane[] = {0, 0, 0, 0};
 
-	if(drawreflect)
+	if(r_draw_pass == r_draw_reflect)
 	{
 		if(saved_cl_waterlevel > 2)
 		{
@@ -318,7 +314,7 @@ void R_EnableClip(qboolean isdrawworld)
 			clipPlane[3] = -curwater->vecs[2];
 		}
 	}
-	if(drawrefract)
+	else if(r_draw_pass == r_draw_refract)
 	{
 		return;
 
@@ -365,7 +361,7 @@ void R_RenderReflectView(void)
 	r_refdef->viewangles[0] = -r_refdef->viewangles[0];
 	r_refdef->viewangles[2] = -r_refdef->viewangles[2];
 
-	drawreflect = true;
+	r_draw_pass = r_draw_reflect;
 
 	saved_cl_waterlevel = *cl_waterlevel;
 	*cl_waterlevel = 0;
@@ -394,7 +390,7 @@ void R_RenderReflectView(void)
 
 	R_PopRefDef();
 
-	drawreflect = false;
+	r_draw_pass = r_draw_normal;
 
 	curwater->reflectmap_ready = true;
 }
@@ -422,7 +418,7 @@ void R_RenderRefractView(void)
 
 	VectorCopy(water_view, r_refdef->vieworg);
 
-	drawrefract = true;
+	r_draw_pass = r_draw_refract;
 
 	saved_cl_waterlevel = *cl_waterlevel;
 	*cl_waterlevel = 0;
@@ -454,7 +450,7 @@ void R_RenderRefractView(void)
 
 	R_PopRefDef();
 
-	drawrefract = false;
+	r_draw_pass = r_draw_normal;
 
 	curwater->refractmap_ready = true;
 }

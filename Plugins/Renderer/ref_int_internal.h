@@ -1,36 +1,24 @@
 #pragma once
 
 #include <gl/gl.h>
-#include "gl_model.h"
 
-typedef struct vrect_s
+#include "enginedef.h"
+
+typedef struct FBO_Container_s
 {
-	int x, y, width, height;
-	struct vrect_s *pnext;
-}
-vrect_t;
-
-typedef struct
-{
-	int r, g, b;
-}mcolor24_t;
-
-typedef struct refdef_s
-{
-	vec3_t vieworg;
-	vec3_t viewangles;
-	color24 ambientlight;
-	qboolean onlyClientDraws;
-	qboolean useCamera;
-	vec3_t r_camera_origin;
-}refdef_t;
-
-typedef struct skybox_s
-{
-	float v[2][6];
-}skybox_t;
-
-typedef struct msurface_s msurface_t;
+	GLuint s_hBackBufferFBO;
+	GLuint s_hBackBufferCB;
+	GLuint s_hBackBufferDB;
+	GLuint s_hBackBufferTex;
+	GLuint s_hBackBufferTex2;
+	GLuint s_hBackBufferTex3;
+	GLuint s_hBackBufferTex4;
+	GLuint s_hBackBufferTex5;
+	GLuint s_hBackBufferDepthTex;
+	int iWidth;
+	int iHeight;
+	int iTextureColorFormat;
+}FBO_Container_t;
 
 typedef struct
 {
@@ -107,11 +95,14 @@ typedef struct
 	void (*R_StudioChrome)(int *pchrome, int bone, vec3_t normal);
 	void (*R_StudioRenderFinal)(void);
 
-	//Studio API
+	//Engine Studio Exported API
 	void (*studioapi_StudioDynamicLight)(struct cl_entity_s *ent, struct alight_s *plight);
 	void (*studioapi_SetupRenderer)(int rendermode);
 	void (*studioapi_RestoreRenderer)(void);
 	void (*studioapi_SetupModel)(int bodypart, void **ppbodypart, void **ppsubmodel);
+
+	//Client Studio
+	void (__fastcall *StudioSetupBones)(void *pthis, int);
 }ref_funcs_t;
 
 typedef struct
@@ -188,10 +179,6 @@ extern ref_export_t gRefExports;
 #define r_draw_reflect 1
 #define r_draw_refract 2
 #define r_draw_shadow 3
-#define r_draw_3dhud 4
-#define r_draw_shadowscene 5
-#define r_draw_3dsky 6
-#define r_draw_hudinworld 7
 
 #define r_ext_fbo (1<<0)
 #define r_ext_msaa (1<<1)

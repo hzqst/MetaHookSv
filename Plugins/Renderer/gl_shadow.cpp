@@ -41,13 +41,10 @@ cvar_t *r_shadow_alpha = NULL;
 cvar_t *r_shadow_angle_p = NULL;
 cvar_t *r_shadow_angle_y = NULL;
 cvar_t *r_shadow_angle_r = NULL;
-cvar_t *r_shadow_high_texsize = NULL;
 cvar_t *r_shadow_high_distance = NULL;
 cvar_t *r_shadow_high_scale = NULL;
-cvar_t *r_shadow_medium_texsize = NULL;
 cvar_t *r_shadow_medium_distance = NULL;
 cvar_t *r_shadow_medium_scale = NULL;
-cvar_t *r_shadow_low_texsize = NULL;
 cvar_t *r_shadow_low_distance = NULL;
 cvar_t *r_shadow_low_scale = NULL;
 cvar_t *r_shadow_map_override = NULL;
@@ -98,13 +95,10 @@ void R_InitShadow(void)
 	r_shadow_angle_p = gEngfuncs.pfnRegisterVariable("r_shadow_angle_pitch", "90", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_angle_y = gEngfuncs.pfnRegisterVariable("r_shadow_angle_yaw", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_angle_r = gEngfuncs.pfnRegisterVariable("r_shadow_angle_roll", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_high_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_high_texsize", "2048", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_high_distance = gEngfuncs.pfnRegisterVariable("r_shadow_high_distance", "400", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_high_scale = gEngfuncs.pfnRegisterVariable("r_shadow_high_scale", "4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_medium_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_medium_texsize", "2048", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_medium_distance = gEngfuncs.pfnRegisterVariable("r_shadow_medium_distance", "1024", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_medium_scale = gEngfuncs.pfnRegisterVariable("r_shadow_medium_scale", "2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_low_texsize = gEngfuncs.pfnRegisterVariable("r_shadow_low_texsize", "2048", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_low_distance = gEngfuncs.pfnRegisterVariable("r_shadow_low_distance", "4096", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_low_scale = gEngfuncs.pfnRegisterVariable("r_shadow_low_scale", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
@@ -133,24 +127,9 @@ qboolean R_ShouldCastShadow(cl_entity_t *ent)
 	return false;
 }
 
-int R_GetTextureSizePowerOfTwo(int texSize)
-{
-	int scaled_texsize;
-	for (scaled_texsize = 1; scaled_texsize < texSize; scaled_texsize <<= 1) {}
-
-	int max_size = max(128, gl_max_texture_size);
-	if (!s_BackBufferFBO.s_hBackBufferFBO && max_size > 512)//glCopyTexImage2D fix
-		max_size = 512;
-
-	return scaled_texsize;
-}
-
 void R_RenderShadowMap(void)
 {
-	int highSize = R_GetTextureSizePowerOfTwo(r_shadow_high_texsize->value);
-
-	if (!s_ShadowFBO.s_hBackBufferFBO)
-		highSize = 512;//the fucking glCopyTexImage2D limit up to 512x512
+	int highSize = gl_max_texture_size / 4;
 
 	if (!shadow_depthmap_high)
 	{
@@ -163,11 +142,8 @@ void R_RenderShadowMap(void)
 		GL_UploadShadowTexture(shadow_depthmap_high, highSize, highSize);
 	}
 
-	int mediumSize = R_GetTextureSizePowerOfTwo(r_shadow_medium_texsize->value);
-
-	if (!s_ShadowFBO.s_hBackBufferFBO)
-		mediumSize = 512;//the fucking glCopyTexImage2D limit up to 512x512
-
+	int mediumSize = gl_max_texture_size / 4;
+	
 	if (!shadow_depthmap_medium)
 	{
 		shadow_depthmap_medium_texsize = mediumSize;
@@ -179,10 +155,7 @@ void R_RenderShadowMap(void)
 		GL_UploadShadowTexture(shadow_depthmap_medium, mediumSize, mediumSize);
 	}
 
-	int lowSize = R_GetTextureSizePowerOfTwo(r_shadow_low_texsize->value);
-
-	if (!s_ShadowFBO.s_hBackBufferFBO)
-		lowSize = 512;//the fucking glCopyTexImage2D limit up to 512x512
+	int lowSize = gl_max_texture_size / 4;
 
 	if (!shadow_depthmap_low)
 	{
@@ -237,15 +210,15 @@ void R_RenderShadowMap(void)
 			if (distance > r_shadow_low_distance->value)
 				continue;
 
-			if (distance > r_shadow_medium_distance->value)
+			if (distance < r_shadow_high_distance->value)
 			{
-				if (shadow_numvisedicts_low < 512)
+				if (shadow_numvisedicts_high < 512)
 				{
-					shadow_visedicts_low[shadow_numvisedicts_low] = cl_visedicts[j];
-					shadow_numvisedicts_low++;
+					shadow_visedicts_high[shadow_numvisedicts_high] = cl_visedicts[j];
+					shadow_numvisedicts_high++;
 				}
 			}
-			else if (distance > r_shadow_high_distance->value)
+			else if (distance < r_shadow_medium_distance->value)
 			{
 				if (shadow_numvisedicts_medium < 512)
 				{
@@ -255,10 +228,10 @@ void R_RenderShadowMap(void)
 			}
 			else
 			{
-				if (shadow_numvisedicts_high < 512)
+				if (shadow_numvisedicts_low < 512)
 				{
-					shadow_visedicts_high[shadow_numvisedicts_high] = cl_visedicts[j];
-					shadow_numvisedicts_high++;
+					shadow_visedicts_low[shadow_numvisedicts_low] = cl_visedicts[j];
+					shadow_numvisedicts_low++;
 				}
 			}
 		}
@@ -272,6 +245,8 @@ void R_RenderShadowMap(void)
 
 	qglDisable(GL_CULL_FACE);
 
+	r_draw_pass = r_draw_shadow;
+
 	for (int i = 0; i < 3; ++i)
 	{
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowmapArray[i], 0);
@@ -280,7 +255,7 @@ void R_RenderShadowMap(void)
 		qglLoadIdentity();
 
 		float texsize = (float)texsizeArray[i] / scaleArray[i];
-		qglOrtho(-texsize, texsize, -texsize, texsize, -4096, 4096);
+		qglOrtho(-texsize / 2, texsize / 2, -texsize / 2,  texsize / 2, -4096, 4096);
 
 		qglMatrixMode(GL_MODELVIEW);
 		qglLoadIdentity();
@@ -321,6 +296,8 @@ void R_RenderShadowMap(void)
 
 		qglColorMask(1, 1, 1, 1);
 	}
+
+	r_draw_pass = r_draw_normal;
 
 	qglEnable(GL_CULL_FACE);
 

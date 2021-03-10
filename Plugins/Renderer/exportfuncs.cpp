@@ -8,8 +8,9 @@
 //Error when can't find sig
 void Sys_ErrorEx(const char *fmt, ...)
 {
+	char msg[4096] = { 0 };
+
 	va_list argptr;
-	char msg[1024];
 
 	va_start(argptr, fmt);
 	_vsnprintf(msg, sizeof(msg), fmt, argptr);
@@ -18,41 +19,8 @@ void Sys_ErrorEx(const char *fmt, ...)
 	if(gEngfuncs.pfnClientCmd)
 		gEngfuncs.pfnClientCmd("escape\n");
 
-	MessageBox(NULL, msg, "Error", MB_ICONERROR);
+	MessageBox(NULL, msg, "Fatal Error", MB_ICONERROR);
 	TerminateProcess((HANDLE)(-1), 0);
-}
-
-int Q_stricmp_slash(const char *s1, const char *s2)
-{
-	int c1, c2;
-
-	while (1)
-	{
-		c1 = *s1++;
-		c2 = *s2++;
-
-		if (c1 != c2)
-		{
-			if (c1 >= 'a' && c1 <= 'z')
-				c1 -= ('a' - 'A');
-
-			if (c2 >= 'a' && c2 <= 'z')
-				c2 -= ('a' - 'A');
-
-			if (c1 == '\\')
-				c1 = '/';
-
-			if (c2 == '\\')
-				c2 = '/';
-
-			if (c1 != c2)
-				return -1;
-		}
-
-		if (!c1)
-			return 0;
-	}
-	return -1;
 }
 
 char *UTIL_VarArgs(char *format, ...)
@@ -228,14 +196,14 @@ void HUD_DrawNormalTriangles(void)
 
 	GL_DisableMultitexture();
 
-	if (!drawreflect && !drawrefract)
+	if (!r_draw_pass)
 	{
 		R_RenderShadowScenes();
 	}
 
 	if (!r_refdef->onlyClientDraws)
 	{
-		if (s_MSAAFBO.s_hBackBufferFBO)
+		if (R_UseMSAA())
 		{
 			for (int sampleIndex = 0; sampleIndex < max(1, gl_msaa_samples); sampleIndex++)
 			{
@@ -257,19 +225,16 @@ void HUD_DrawNormalTriangles(void)
 	gExportfuncs.HUD_DrawNormalTriangles();
 	qglStencilMask(0);
 
-	//Restore current framebuffer just in case that SCClient change it
-	if (s_BackBufferFBO.s_hBackBufferFBO)
-	{
-		if (s_MSAAFBO.s_hBackBufferFBO)
-			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
-		else
-			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-	}
+	//Restore current framebuffer just in case that Sven-Coop client changes it
+	if (R_UseMSAA())
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
+	else
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 }
 
 void HUD_DrawTransparentTriangles(void)
 {
-	if (!drawreflect && !drawrefract)
+	if (!r_draw_pass)
 	{
 		R_FreeDeadWaters();
 		for (r_water_t *water = waters_active; water; water = water->next)
@@ -511,6 +476,16 @@ void __fastcall PortalManager_ResetAll(int pthis, int)
 	gRefFuncs.PortalManager_ResetAll(pthis, 0);
 }
 
+void __fastcall StudioSetupBones(void *pthis, int)
+{
+	if (R_StudioRestoreBones())
+		return;
+
+	gRefFuncs.StudioSetupBones(pthis, 0);
+
+	R_StudioSaveBones();
+}
+
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
 {
 	DWORD addr;
@@ -602,6 +577,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		if (ClientBase)
 		{
 			auto ClientSize = g_pMetaHookAPI->GetModuleSize((HMODULE)ClientBase);
+
 #define SVCLIENT_PORTALMANAGER_RESETALL_SIG "\xC7\x45\x2A\xFF\xFF\xFF\xFF\xA3\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x0D"
 		 DWORD addr = (DWORD)
 				g_pMetaHookAPI->SearchPattern((void *)ClientBase, ClientSize, SVCLIENT_PORTALMANAGER_RESETALL_SIG, sizeof(SVCLIENT_PORTALMANAGER_RESETALL_SIG) - 1);
@@ -610,6 +586,12 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			gRefFuncs.PortalManager_ResetAll = (decltype(gRefFuncs.PortalManager_ResetAll))GetCallAddress(addr + 12);
 
 			g_pMetaHookAPI->InlineHook(gRefFuncs.PortalManager_ResetAll, PortalManager_ResetAll, (void *&)gRefFuncs.PortalManager_ResetAll);
+
+#define SVCLIENT_STUDIO_SETUP_BONES_SIG "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x4F\x40"
+			gRefFuncs.StudioSetupBones = (decltype(gRefFuncs.StudioSetupBones))g_pMetaHookAPI->SearchPattern((void *)ClientBase, ClientSize, SVCLIENT_STUDIO_SETUP_BONES_SIG, sizeof(SVCLIENT_STUDIO_SETUP_BONES_SIG) - 1);
+			Sig_FuncNotFound(StudioSetupBones);
+
+			g_pMetaHookAPI->InlineHook(gRefFuncs.StudioSetupBones, StudioSetupBones, (void *&)gRefFuncs.StudioSetupBones);
 		}
 	}
 
