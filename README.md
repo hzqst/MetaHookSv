@@ -82,7 +82,7 @@ cap_netmessage 0 / 1 : to enable or disable CaptionMod's HUD TextMessage transla
 
 cap_debug 0 / 1 : to output debug message when there is a HUD TextMessage or sound playing.
 
-### Renderer
+### MetaRenderer
 
 A graphic enhancement plugin that modifiy the original render engine.
 
@@ -116,25 +116,9 @@ You can even play with 200k epolys models and still keep a high framerate.
 
 10. Vertex-Buffer-Object (VBO) "Batch-Draw" optimization for BSP terrain. With VBO enabled you will get higher framerate and lower CPU usage. Warning: this feature may cause the render result differs from the one in original game that: random textures are gone, non-visible terrain in current BSP-node are always visible...
 
-#### Launch Parameters / Commmandline Parameters
-
--nofbo : disable FrameBufferObject rendering. SSAO and Deferred-Shading will not be available when FBO is disabled.
-
--nomsaa : disable MultiSampling Anti-Aliasing (MSAA). It is strongly recommended to disable MSAA if you are using SSAO.
-
--nohdr : disable High-Dynamic-Range (HDR).
-
--directblit : force to blit the FrameBufferObject to screen.
-
--nodirectblit : force to render backbuffer as a textured quad to screen.
-
--hdrcolor 8/16/32 : set the HDR internal framebufferobject/texture color.
-
--msaa 4/8/16 : set the sample count of MSAA.
-
 #### Console Vars
 
-r_hdr 1 / 0 : to enable / disable HDR(high-dynamic-range) post-processor. recommended value : 1
+r_hdr 1 / 0 : to enable or disable HDR(high-dynamic-range) post-processor. recommended value : 1
 
 r_hdr_blurwidth : to control the intensity of blur for HDR. recommended value : 0.1
 
@@ -144,7 +128,7 @@ r_hdr_darkness : to control the darkness for HDR. recommended value : 4
 
 r_hdr_adaptation : to control the dark / bright adaptation speed for HDR. recommended value : 50
 
-r_water 2 / 1 / 0 : to enable / disable water reflection and refraction. 2 = draw all entities and terrains in reflection view, 1 = draw only terrains in reflection view. recommended value : 1
+r_water 2 / 1 / 0 : enable or disable water reflection and refraction. 2 = draw all entities and terrains in reflection view, 1 = draw only terrains in reflection view. recommended value : 1
 
 r_water_fresnel (0.0 ~ 2.0) : to determine how to lerp and mix the refraction color and reflection color. recommended value : 1.5
 
@@ -158,7 +142,7 @@ r_water_texscale (0.1 ~ 1.0) : to control the size of refract or reflect view te
 
 r_water_minheight : water entity which has height < this value will not be rendered with shader program. recommended value : 7.5
 
-r_shadow 1 / 0 : to enable / disable Per-Object Shadow. recommended value : 1
+r_shadow 1 / 0 : enable or disable Per-Object Shadow. recommended value : 1
 
 r_shadow_angle_pitch (0.0 ~ 360.0) : to control the angle(pitch) of shadow caster (light source).
 
@@ -166,52 +150,48 @@ r_shadow_angle_yaw (0.0 ~ 360.0) : to control the angle(yaw) of shadow caster (l
 
 r_shadow_angle_roll (0.0 ~ 360.0) : to control the angle(roll) of shadow caster (light source).
 
-r_shadow_high_texsize (must be power of 4) : the texture size of high-quality shadow map. larger texture with bigger scale factor has better quality but uses more graphic RAM. recommended value : 2048
-
 r_shadow_high_distance : entities within this distance are rendered into high-quality shadow map. recommended value : 400
 
 r_shadow_high_scale : scale factor when render shadow-caster entity in high-quality shadow map. larger scale factor gets better quality shadow but will cause incorrect render result when the entity is scaled too much. recommended value : 4.0
-
-r_shadow_medium_texsize (must be power of 4) : the texture size of medium-quality shadow map. recommended value : 2048
 
 r_shadow_medium_distance : entities within this distance are rendered into medium-quality shadow map. recommended value : 1024
 
 r_shadow_medium_scale : scale factor when render shadow-caster entity in low-quality shadow map. recommended value : 2.0
 
-r_shadow_low_texsize (must be power of 4) : the texture size of low-quality shadow map. recommended value : 2048
-
 r_shadow_low_distance : entities within this distance are rendered into low-quality shadow map. recommended value : 4096
 
 r_shadow_low_scale : scale factor when render shadow-caster entity in medium quality shadow map. recommended value : 0.5
 
-r_ssao 1 / 0 : to enable / disable Screen Space Ambient Occlusion. recommended value : 1
+r_ssao 1 / 0 : enable or disable Screen Space Ambient Occlusion. recommended value : 1
 
-r_ssao_intensity : to control the intensity of SSAO shadow. recommended value : 0.6
+r_ssao_intensity : control the intensity of SSAO shadow. recommended value : 0.6
 
-r_ssao_radius : to control the sample size of SSAO shadow. recommended value : 30.0
+r_ssao_radius : control the sample size of SSAO shadow. recommended value : 30.0
 
-r_ssao_blur_sharpness : to control the sharpness of SSAO shadow. recommended value : 1.0
+r_ssao_blur_sharpness : control the sharpness of SSAO shadow. recommended value : 1.0
 
 r_ssao_bias : test it yourself. recommended value : 0.2
 
-r_ssao_studio_model : 0 / 1 to enable / disable drawing SSAO shadow on studio model. recommended value : 0
+r_ssao_studio_model 1 / 0 : enable or disable drawing SSAO shadow on studio model. recommended value : 0
 
-r_light_dynamic : to enable / disable Deferred-Shading (Dynamic-LightSource support). recommended value : 1
+r_light_dynamic 1 / 0 : enable or disable Deferred-Shading (Dynamic-LightSource support). recommended value : 1
 
 r_flashlight_cone : cosine of angle of flashlight cone. recommended value : 0.9
 
 r_flashlight_distance : flashlight's illumination distance. recommended value : 2000.0
 
-r_light_ambient : ambient intensity of dynamic light. recommended value : 0.35
+r_light_ambient : ambient intensity of dynamic light. recommended value : 0
 
-r_light_diffuse : diffuse intensity of dynamic light. recommended value : 0.35
+r_light_diffuse : diffuse intensity of dynamic light. recommended value : 0.5
 
 r_light_specular : specular intensity of dynamic light. recommended value : 0.1
 
 r_light_specularpow : specular power of dynamic light. recommended value : 10.0
 
-r_studio_vbo 1 / 0 : enable / disable VBO batch-optmization draw for studio model. recommended value : 1
+r_studio_vbo 1 / 0 : enable or disable VBO batch-optmization draw for studio model. recommended value : 1
 
-r_wsurf_vbo 1 / 0 : enable / disable VBO batch-optmization draw for BSP terrain. recommended value : 1
+r_wsurf_vbo 1 / 0 : enable or disable VBO batch-optmization draw for BSP terrain. recommended value : 1
 
-r_fxaa 1 / 0  : enable / disable Fast Approximate Anti-Aliasing (FXAA) when MSAA is not available. recommended value : 1
+r_fxaa 1 / 0  : enable or disable Fast Approximate Anti-Aliasing (FXAA) when MSAA is not available. recommended value : 1
+
+r_msaa 0 / 2 / 4 / 8 / 16 : enable or disable MultiSampling Anti-Aliasing (MSAA), number >= 2 for MSAA sample count. recommended value : 0 or 4

@@ -68,7 +68,7 @@ MetaHook的SvenCoop移植版本 (https://github.com/nagist/metahook)
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/5.png)
 
-#### Features
+#### 功能
 
 1. HDR后处理
 
@@ -88,23 +88,7 @@ MetaHook的SvenCoop移植版本 (https://github.com/nagist/metahook)
 
 10. bsp地形渲染可使用顶点缓冲对象、合并DrawCall来进行优化，使用这些技术可以解放CPU算力，做到同屏渲染10万多边形的bsp地形仍能维持在可接受的帧数
 
-#### 启动项参数
-
--nofbo : 禁用帧缓冲对象. SSAO和延迟光照将不可用.
-
--nomsaa : 禁用多重采样抗锯齿 (MSAA)。 强烈建议你在开启SSAO时禁用MSAA，这样可以大幅度提高帧数。
-
--nohdr : 禁用HDR（不推荐）。
-
--directblit : force to blit the FrameBufferObject to screen.
-
--nodirectblit : force to render backbuffer as a textured quad to screen.
-
--hdrcolor 8/16/32 : set the HDR internal framebufferobject/texture color.
-
--msaa 4/8/16 : 多重采样抗锯齿的采样倍数.
-
-#### Console Vars
+#### 控制台参数
 
 r_hdr 1 / 0 : 开启/关闭 HDR后处理. 推荐值 : 1
 
@@ -138,29 +122,23 @@ r_shadow_angle_yaw (0.0 ~ 360.0) : 控制阴影投射源的左右偏转角(yaw).
 
 r_shadow_angle_roll (0.0 ~ 360.0) : 控制阴影投射源的滚动旋转角（roll）.
 
-r_shadow_high_texsize (必须是4的平方) : 高质量阴影贴图的贴图大小. 推荐值 : 2048
-
 r_shadow_high_distance : 这个距离内的实体使用高质量阴影贴图. 推荐值 : 400
 
 r_shadow_high_scale : 使用高质量阴影贴图的实体的缩放大小，缩放过大可能导致一些体型较大的实体阴影出现渲染错误，缩放过小会严重影响阴影质量。 推荐值 : 4.0
-
-r_shadow_medium_texsize : 中等质量阴影贴图的贴图大小. 推荐值 : 2048
 
 r_shadow_medium_distance : 这个距离内的实体使用中等质量阴影贴图. 推荐值 : 1024
 
 r_shadow_medium_scale : 使用中等质量阴影贴图的实体的缩放大小 推荐值 : 2.0
 
-r_shadow_low_texsize : 低等质量阴影贴图的贴图大小. 推荐值 : 2048
-
 r_shadow_low_distance : 这个距离内的实体使用中等质量阴影贴图. 推荐值 : 4096
 
 r_shadow_low_scale : 使用低质量阴影贴图的实体的缩放大小 推荐值 : 0.5
 
-r_ssao 1 / 0 : 开启关闭屏幕空间遮蔽（SSAO）. 推荐值 : 1
+r_ssao 1 / 0 : 开启关闭屏幕空间遮蔽（SSAO）. 推荐值 : 1  （和MSAA一起使用可能导致严重的性能下降！）
 
-r_ssao_intensity : SSAO阴影的强度. recommended value : 0.6
+r_ssao_intensity : SSAO阴影的强度. 推荐值 : 0.6
 
-r_ssao_radius : SSAO阴影的采样半径. recommended value : 30.0
+r_ssao_radius : SSAO阴影的采样半径. 推荐值 : 30.0
 
 r_ssao_blur_sharpness : SSAO阴影的锐化程度， 推荐值 : 1.0
 
@@ -187,3 +165,5 @@ r_studio_vbo 1 / 0 : 开启/关闭mdl模型的VBO优化和DrawCall合批优化. 
 r_wsurf_vbo 1 / 0 : 开启/关闭bsp地形的VBO优化和DrawCall合批优化. 推荐值 : 1
 
 r_fxaa 1 / 0  : 开启快速近似抗锯齿 (FXAA) ，仅当 MSAA 不可用时有效. 推荐值 : 1
+
+r_msaa 0 / 2 / 4 / 8 / 16 : 开启或关闭多重采样抗锯齿 (MSAA) . 推荐值 : 0 或 4 （和SSAO一起使用可能导致严重的性能下降！）
