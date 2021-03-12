@@ -65,15 +65,13 @@ void main()
 	if(vRefractColor.x == waterfogcolor.x && vRefractColor.y == waterfogcolor.y && vRefractColor.z == waterfogcolor.z )
 		discard;
 
-	
-
 #ifdef UNDERWATER_ENABLED
 
 		//lerp waterfog color and refraction color
 		float flWaterColorAlpha = clamp(waterfogcolor.a, 0.01, 0.9);
 		vec4 vWaterColor = vec4(waterfogcolor.x, waterfogcolor.y, waterfogcolor.z, 1.0);
 
-		vec4 vFinalColor2 = vRefractColor * (1.0 - flWaterColorAlpha) + vWaterColor * flWaterColorAlpha;
+		vec4 vFinalColor2 = mix(vRefractColor, vWaterColor, flWaterColorAlpha);
 
 	#ifdef GBUFFER_ENABLED
 		vFinalColor2.a = 1.0;
@@ -105,14 +103,14 @@ void main()
 			flRefractFactor = 1.0;
 
 		//lerp the reflection and refraction color by fresnel
-		vec4 vFinalColor = vReflectColor * (1.0-flRefractFactor) + vRefractColor * flRefractFactor;
+		vec4 vFinalColor = mix(vReflectColor, vRefractColor, flRefractFactor);
 
 		float flWaterColorAlpha = clamp(waterfogcolor.a, 0.01, 0.9);
 
 		vec4 vWaterColor = vec4(waterfogcolor.x, waterfogcolor.y, waterfogcolor.z, 1.0);
 
 		//lerp waterfog color
-		vec4 vFinalColor2 = vFinalColor * (1.0-flWaterColorAlpha) + vWaterColor * flWaterColorAlpha;
+		vec4 vFinalColor2 = mix(vFinalColor, vWaterColor, flWaterColorAlpha);
 
 	#ifdef DEPTH_ENABLED
 		vFinalColor2.a = flDepthFactor;

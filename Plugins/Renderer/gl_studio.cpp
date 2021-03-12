@@ -109,6 +109,9 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		if (state & STUDIO_TRANSADDITIVE_ENABLED)
 			defs << "#define TRANSADDITIVE_ENABLED\n";
 
+		if (state & STUDIO_LINEAR_FOG_ENABLED)
+			defs << "#define LINEAR_FOG_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("resource\\shader\\studio_shader.vsh", NULL, "resource\\shader\\studio_shader.fsh", def.c_str(), NULL, def.c_str());
@@ -673,6 +676,9 @@ void R_GLStudioDrawPoints(void)
 				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE | STUDIO_TRANSADDITIVE_ENABLED;
 			}
 
+			if (r_wsurf_fogmode == GL_LINEAR)
+				StudioProgramState |= STUDIO_LINEAR_FOG_ENABLED;
+
 			R_UseGBufferProgram(GBufferProgramState);
 			R_SetGBufferMask(GBufferMask);
 
@@ -688,6 +694,7 @@ void R_GLStudioDrawPoints(void)
 			int attr_bone = -1;
 
 			studio_program_t prog = { 0 };
+
 			R_UseStudioProgram(StudioProgramState, &prog);
 			
 			if(prog.bonematrix != -1)

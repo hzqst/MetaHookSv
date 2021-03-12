@@ -85,9 +85,6 @@
     <ClInclude Include="bspfile.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="cJSON.h">
-      <Filter>Header</Filter>
-    </ClInclude>
     <ClInclude Include="command.h">
       <Filter>Header</Filter>
     </ClInclude>

@@ -1,5 +1,4 @@
 #include "gl_local.h"
-#include "cJSON.h"
 #include "pm_defs.h"
 
 ref_funcs_t gRefFuncs;
@@ -32,10 +31,8 @@ float scr_fov_value;
 mplane_t custom_frustum[4];
 mplane_t *frustum;
 mleaf_t **r_viewleaf, **r_oldviewleaf;
-texture_t *r_notexture_mip;
 
 float yfov;
-float screenaspect;
 
 vec_t *vup;
 vec_t *vpn;
@@ -44,6 +41,12 @@ vec_t *r_origin;
 vec_t *modelorg;
 vec_t *r_entorigin;
 float *r_world_matrix;
+
+int *g_bUserFogOn;
+float *g_UserFogColor;
+float *g_UserFogDensity;
+float *g_UserFogStart;
+float *g_UserFogEnd;
 
 int *r_framecount;
 int *r_visframecount;
@@ -62,14 +65,6 @@ int *cl_light_level;
 int *c_alias_polys;
 int *c_brush_polys;
 
-qboolean gl_framebuffer_object = false;
-qboolean gl_shader_support = false;
-qboolean gl_program_support = false;
-qboolean gl_msaa_support = false;
-qboolean gl_blit_support = false;
-qboolean gl_float_buffer_support = false;
-qboolean gl_s3tc_compression_support = false;
-
 int gl_max_texture_size = 0;
 float gl_max_ansio = 0;
 float gl_force_ansio = 0;
@@ -82,6 +77,14 @@ int *gl_backbuffer_fbo = 0;
 int *gl_mtexable = 0;
 qboolean *mtexenabled = 0;
 qboolean g_SvEngine_DrawPortalView = 0;
+
+qboolean gl_framebuffer_object = false;
+qboolean gl_shader_support = false;
+qboolean gl_program_support = false;
+qboolean gl_msaa_support = false;
+qboolean gl_blit_support = false;
+qboolean gl_float_buffer_support = false;
+qboolean gl_s3tc_compression_support = false;
 
 float r_identity_matrix[4][4] = {
 	{1.0f, 0.0f, 0.0f, 0.0f},
@@ -731,13 +734,7 @@ void R_DrawViewModel(void)
 {
 	float lightvec[3];
 	colorVec c;
-	float ambient[4], diffuse[4];
-	int j;
-	int lnum;
-	vec3_t dist;
-	float add, oldShadows;
-	dlight_t *dl;
-	int ambientlight, shadelight;
+	float oldShadows;
 
 	lightvec[0] = -1;
 	lightvec[1] = 0;
@@ -963,8 +960,6 @@ void R_SetupGL(void)
 	if ((r_draw_pass == r_draw_reflect || r_draw_pass == r_draw_refract) && curwater)
 	{
 		qglViewport(0, 0, curwater->texwidth, curwater->texheight);
-
-		R_EnableClip(true);
 	}
 }
 

@@ -156,7 +156,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		}
 		else
 		{
-			waterObject = R_GetActiveWater((*currententity), tempVert, gWaterColor);
+			waterObject = R_GetActiveWater((*currententity), tempVert, brushface->normal, gWaterColor);
 		}
 
 		if(waterObject && waterObject->refractmap_ready && ((waterObject->reflectmap_ready && bAboveWater) || !bAboveWater))
@@ -633,7 +633,6 @@ void MakeSkyVec(float s, float t, int axis)
 	t = 1.0f - t;
 
 	qglTexCoord2f(s, t);
-	//qglNormal3fv();
 	qglVertex3fv(v);
 }
 

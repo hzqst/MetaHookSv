@@ -275,6 +275,7 @@ int HUD_Redraw(float time, int intermission)
 		default:
 			break;
 		}
+
 		if (debugTextureID)
 		{
 			qglBindTexture(GL_TEXTURE_2D, debugTextureID);

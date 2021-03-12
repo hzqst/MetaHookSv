@@ -21,11 +21,6 @@ bool drawgbuffer = false;
 
 int gbuffer_mask = -1;
 
-SHADER_DEFINE(dlight_spot);
-SHADER_DEFINE(dlight_point);
-SHADER_DEFINE(dlight_final);
-SHADER_DEFINE(dlight_final2);
-
 std::unordered_map<int, gbuffer_program_t> g_GBufferProgramTable;
 
 void R_UseGBufferProgram(int state, gbuffer_program_t *progOutput)
@@ -115,69 +110,104 @@ void R_UseGBufferProgram(int state)
 	return R_UseGBufferProgram(state, NULL);
 }
 
+std::unordered_map<int, dlight_program_t> g_DLightProgramTable;
+
+void R_UseDLightProgram(int state, dlight_program_t *progOutput)
+{
+	dlight_program_t prog = { 0 };
+
+	auto itor = g_DLightProgramTable.find(state);
+	if (itor == g_DLightProgramTable.end())
+	{
+		std::stringstream defs;
+
+		if (state & DLIGHT_LIGHT_PASS)
+			defs << "#define LIGHT_PASS\n";
+
+		if (state & DLIGHT_LIGHT_PASS_SPOT)
+			defs << "#define LIGHT_PASS_SPOT\n";
+
+		if (state & DLIGHT_LIGHT_PASS_POINT)
+			defs << "#define LIGHT_PASS_POINT\n";
+
+		if (state & DLIGHT_FINAL_PASS)
+			defs << "#define FINAL_PASS\n";
+
+		if (state & DLIGHT_LINEAR_FOG_ENABLED)
+			defs << "#define LINEAR_FOG_ENABLED\n";
+
+		auto def = defs.str();
+
+		prog.program = R_CompileShaderFileEx("resource\\shader\\dlight_shader.vsh", NULL, "resource\\shader\\dlight_shader.fsh", def.c_str(), NULL, def.c_str());
+		if (prog.program)
+		{
+			SHADER_UNIFORM(prog, positionTex, "positionTex");
+			SHADER_UNIFORM(prog, normalTex, "normalTex");
+			SHADER_UNIFORM(prog, viewpos, "viewpos");
+			SHADER_UNIFORM(prog, lightdir, "lightdir");
+			SHADER_UNIFORM(prog, lightpos, "lightpos");
+			SHADER_UNIFORM(prog, lightcolor, "lightcolor");
+			SHADER_UNIFORM(prog, lightcone, "lightcone");
+			SHADER_UNIFORM(prog, lightradius, "lightradius");
+			SHADER_UNIFORM(prog, lightambient, "lightambient");
+			SHADER_UNIFORM(prog, lightdiffuse, "lightdiffuse");
+			SHADER_UNIFORM(prog, lightspecular, "lightspecular");
+			SHADER_UNIFORM(prog, lightspecularpow, "lightspecularpow");
+
+			SHADER_UNIFORM(prog, diffuseTex, "diffuseTex");
+			SHADER_UNIFORM(prog, lightmapTex, "lightmapTex");
+			SHADER_UNIFORM(prog, additiveTex, "additiveTex");
+			SHADER_UNIFORM(prog, depthTex, "depthTex");
+			SHADER_UNIFORM(prog, clipInfo, "clipInfo");
+		}
+
+		g_DLightProgramTable[state] = prog;
+	}
+	else
+	{
+		prog = itor->second;
+	}
+
+	if (prog.program)
+	{
+		qglUseProgramObjectARB(prog.program);
+
+		if (prog.positionTex != -1)
+			qglUniform1iARB(prog.positionTex, 0);
+		if (prog.normalTex != -1)
+			qglUniform1iARB(prog.normalTex, 1);
+
+		if (prog.diffuseTex != -1)
+			qglUniform1iARB(prog.diffuseTex, 0);
+		if (prog.lightmapTex != -1)
+			qglUniform1iARB(prog.lightmapTex, 1);
+		if (prog.additiveTex != -1)
+			qglUniform1iARB(prog.additiveTex, 2);
+		if (prog.depthTex != -1)
+			qglUniform1iARB(prog.depthTex, 3);
+
+		if (progOutput)
+			*progOutput = prog;
+	}
+	else
+	{
+		Sys_ErrorEx("R_UseDLightProgram: Failed to load program!");
+	}
+}
+
+void R_UseDLightProgram(int state)
+{
+	return R_UseDLightProgram(state, NULL);
+}
+
 void R_ShutdownLight(void)
 {
 	g_GBufferProgramTable.clear();
+	g_DLightProgramTable.clear();
 }
 
 void R_InitLight(void)
 {
-	if (gl_shader_support)
-	{
-		dlight_spot.program = R_CompileShaderFileEx("resource\\shader\\dlight_shader.vsh", NULL, "resource\\shader\\dlight_shader.fsh",
-			"#define LIGHT_PASS", NULL, "#define LIGHT_PASS\n#define LIGHT_PASS_SPOT");
-		if (dlight_spot.program)
-		{
-			SHADER_UNIFORM(dlight_spot, positionTex, "positionTex");
-			SHADER_UNIFORM(dlight_spot, normalTex, "normalTex");
-			SHADER_UNIFORM(dlight_spot, viewpos, "viewpos");
-			SHADER_UNIFORM(dlight_spot, lightdir, "lightdir");
-			SHADER_UNIFORM(dlight_spot, lightpos, "lightpos");
-			SHADER_UNIFORM(dlight_spot, lightcolor, "lightcolor");
-			SHADER_UNIFORM(dlight_spot, lightcone, "lightcone");
-			SHADER_UNIFORM(dlight_spot, lightradius, "lightradius");
-			SHADER_UNIFORM(dlight_spot, lightambient, "lightambient");
-			SHADER_UNIFORM(dlight_spot, lightdiffuse, "lightdiffuse");
-			SHADER_UNIFORM(dlight_spot, lightspecular, "lightspecular");
-			SHADER_UNIFORM(dlight_spot, lightspecularpow, "lightspecularpow");
-		}
-
-		dlight_point.program = R_CompileShaderFileEx("resource\\shader\\dlight_shader.vsh", NULL, "resource\\shader\\dlight_shader.fsh",
-			"#define LIGHT_PASS", NULL, "#define LIGHT_PASS\n#define LIGHT_PASS_POINT");
-		if (dlight_point.program)
-		{
-			SHADER_UNIFORM(dlight_point, positionTex, "positionTex");
-			SHADER_UNIFORM(dlight_point, normalTex, "normalTex");
-			SHADER_UNIFORM(dlight_point, viewpos, "viewpos");
-			SHADER_UNIFORM(dlight_point, lightpos, "lightpos");
-			SHADER_UNIFORM(dlight_point, lightcolor, "lightcolor");
-			SHADER_UNIFORM(dlight_point, lightradius, "lightradius");
-			SHADER_UNIFORM(dlight_point, lightambient, "lightambient");
-			SHADER_UNIFORM(dlight_point, lightdiffuse, "lightdiffuse");
-			SHADER_UNIFORM(dlight_point, lightspecular, "lightspecular");
-			SHADER_UNIFORM(dlight_point, lightspecularpow, "lightspecularpow");
-		}
-
-		dlight_final.program = R_CompileShaderFileEx("resource\\shader\\dlight_shader.vsh", NULL, "resource\\shader\\dlight_shader.fsh",
-			"#define FINAL_PASS", NULL, "#define FINAL_PASS");
-		if (dlight_final.program)
-		{
-			SHADER_UNIFORM(dlight_final, diffuseTex, "diffuseTex");
-			SHADER_UNIFORM(dlight_final, lightmapTex, "lightmapTex");
-			SHADER_UNIFORM(dlight_final, additiveTex, "additiveTex");
-			SHADER_UNIFORM(dlight_final, depthTex, "depthTex");
-		}
-
-		dlight_final2.program = R_CompileShaderFileEx("resource\\shader\\dlight_shader.vsh", NULL, "resource\\shader\\dlight_shader.fsh",
-			"#define FINAL_PASS\n#define DIRECT_BLIT\n", NULL, "#define FINAL_PASS\n#define DIRECT_BLIT\n");
-		if (dlight_final2.program)
-		{
-			SHADER_UNIFORM(dlight_final2, diffuseTex, "diffuseTex");
-			SHADER_UNIFORM(dlight_final2, lightmapTex, "lightmapTex");
-			SHADER_UNIFORM(dlight_final2, additiveTex, "additiveTex");
-		}
-	}
-
 	r_light_env_color[0] = 0;
 	r_light_env_color[1] = 0;
 	r_light_env_color[2] = 0;
@@ -303,6 +333,9 @@ void R_EndRenderGBuffer(void)
 	//Write to GBuffer->lightmap only
 	qglDrawBuffer(GL_COLOR_ATTACHMENT1);
 
+	qglDisable(GL_STENCIL_TEST);
+	qglStencilMask(0xFF);
+
 	R_BeginHUDQuad();
 
 	//Begin light pass
@@ -370,19 +403,19 @@ void R_EndRenderGBuffer(void)
 				VectorCopy(org, dlight_origin);
 			}
 
-			qglUseProgramObjectARB(dlight_spot.program);
-			qglUniform1iARB(dlight_spot.positionTex, 0);
-			qglUniform1iARB(dlight_spot.normalTex, 1);
-			qglUniform4fARB(dlight_spot.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0f);
-			qglUniform4fARB(dlight_spot.lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2], 0.0f);
-			qglUniform4fARB(dlight_spot.lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2], 1.0f);
-			qglUniform3fARB(dlight_spot.lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
-			qglUniform1fARB(dlight_spot.lightcone, r_flashlight_cone->value);
-			qglUniform1fARB(dlight_spot.lightradius, r_flashlight_distance->value);
-			qglUniform1fARB(dlight_spot.lightambient, r_light_ambient->value);
-			qglUniform1fARB(dlight_spot.lightdiffuse, r_light_diffuse->value);
-			qglUniform1fARB(dlight_spot.lightspecular, r_light_specular->value);
-			qglUniform1fARB(dlight_spot.lightspecularpow, r_light_specularpow->value);
+
+			dlight_program_t prog = { 0 };
+			R_UseDLightProgram(DLIGHT_LIGHT_PASS | DLIGHT_LIGHT_PASS_SPOT, &prog);
+			qglUniform4fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0f);
+			qglUniform4fARB(prog.lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2], 0.0f);
+			qglUniform4fARB(prog.lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2], 1.0f);
+			qglUniform3fARB(prog.lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
+			qglUniform1fARB(prog.lightcone, r_flashlight_cone->value);
+			qglUniform1fARB(prog.lightradius, r_flashlight_distance->value);
+			qglUniform1fARB(prog.lightambient, r_light_ambient->value);
+			qglUniform1fARB(prog.lightdiffuse, r_light_diffuse->value);
+			qglUniform1fARB(prog.lightspecular, r_light_specular->value);
+			qglUniform1fARB(prog.lightspecularpow, r_light_specularpow->value);
 
 			R_DrawHUDQuad(glwidth, glheight);
 		}
@@ -393,17 +426,16 @@ void R_EndRenderGBuffer(void)
 			//Point Light
 			VectorCopy(dl->origin, dlight_origin);
 
-			qglUseProgramObjectARB(dlight_point.program);
-			qglUniform1iARB(dlight_point.positionTex, 0);
-			qglUniform1iARB(dlight_point.normalTex, 1);
-			qglUniform4fARB(dlight_point.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0f);
-			qglUniform4fARB(dlight_point.lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2], 1.0f);
-			qglUniform3fARB(dlight_point.lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
-			qglUniform1fARB(dlight_point.lightradius, dl->radius);
-			qglUniform1fARB(dlight_point.lightambient, r_light_ambient->value);
-			qglUniform1fARB(dlight_point.lightdiffuse, r_light_diffuse->value);
-			qglUniform1fARB(dlight_point.lightspecular, r_light_specular->value);
-			qglUniform1fARB(dlight_point.lightspecularpow, r_light_specularpow->value);
+			dlight_program_t prog = { 0 };
+			R_UseDLightProgram(DLIGHT_LIGHT_PASS | DLIGHT_LIGHT_PASS_POINT, &prog);
+			qglUniform4fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0f);
+			qglUniform4fARB(prog.lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2], 1.0f);
+			qglUniform3fARB(prog.lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
+			qglUniform1fARB(prog.lightradius, dl->radius);
+			qglUniform1fARB(prog.lightambient, r_light_ambient->value);
+			qglUniform1fARB(prog.lightdiffuse, r_light_diffuse->value);
+			qglUniform1fARB(prog.lightspecular, r_light_specular->value);
+			qglUniform1fARB(prog.lightspecularpow, r_light_specularpow->value);
 
 			R_DrawHUDQuad(glwidth, glheight);
 		}
@@ -416,23 +448,19 @@ void R_EndRenderGBuffer(void)
 	GL_PopFrameBuffer();
 	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-	//Allow depth data to be transfered to main FBO
-	qglDisable(GL_BLEND);
-	qglEnable(GL_DEPTH_TEST);
-	qglDepthMask(GL_TRUE);
+	//Allow depth data to be transfered to main FBO?
+	
+	int FinalProgramState = DLIGHT_FINAL_PASS;
 
-	//Allow stencil to be transfered to main FBO ?
-	//I donthink there is a mask check in qglBlitFramebufferEXT
+	if (r_wsurf_fogmode == GL_LINEAR)
+		FinalProgramState |= DLIGHT_LINEAR_FOG_ENABLED;
 
-	qglDisable(GL_STENCIL_TEST);
-	qglStencilMask(0xFF);
-	//qglStencilFunc(GL_ALWAYS, 0, 0xFF);
-	//qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	dlight_program_t finalProg = { 0 };
 
-	qglUseProgramObjectARB(dlight_final2.program);
-	qglUniform1iARB(dlight_final2.diffuseTex, 0);
-	qglUniform1iARB(dlight_final2.lightmapTex, 1);
-	qglUniform1iARB(dlight_final2.additiveTex, 2);
+	R_UseDLightProgram(FinalProgramState, &finalProg);
+
+	if(finalProg.clipInfo != -1)
+		qglUniform4fARB(finalProg.clipInfo, 4 * r_params.movevars->zmax, 4 - r_params.movevars->zmax, r_params.movevars->zmax, 1.0f);
 
 	//Diffuse texture (for merging)
 	GL_SelectTexture(TEXTURE0_SGIS);
@@ -446,8 +474,23 @@ void R_EndRenderGBuffer(void)
 	qglActiveTextureARB(TEXTURE2_SGIS);
 	qglEnable(GL_TEXTURE_2D);
 	qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex5);
+	
+	//Depth texture
+	qglActiveTextureARB(TEXTURE3_SGIS);
+	qglEnable(GL_TEXTURE_2D);
+	qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
 
 	R_DrawHUDQuad(glwidth, glheight);
+
+	qglBindTexture(GL_TEXTURE_2D, 0);
+	qglDisable(GL_TEXTURE_2D);
+
+	qglActiveTextureARB(TEXTURE2_SGIS);
+	qglBindTexture(GL_TEXTURE_2D, 0);
+	qglDisable(GL_TEXTURE_2D);
+
+	qglStencilMask(0);
+	qglDisable(GL_STENCIL_TEST);
 
 	if (R_UseMSAA())
 	{
@@ -478,9 +521,6 @@ void R_EndRenderGBuffer(void)
 			GL_NEAREST);
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	}
-
-	qglStencilMask(0);
-	qglDisable(GL_STENCIL_TEST);
 
 	//FXAA for shading stage when MSAA available for all other render stage
 	if (r_fxaa->value && R_UseMSAA() && (!r_draw_pass && !g_SvEngine_DrawPortalView))

@@ -194,9 +194,6 @@ typedef struct alight_s
 #define STUDIO_NF_ALPHA         0x0010
 #define STUDIO_NF_ADDITIVE      0x0020
 #define STUDIO_NF_MASKED        0x0040
-#define STUDIO_GBUFFER_ENABLED  0x1000
-#define STUDIO_TRANSPARENT_ENABLED  0x2000
-#define STUDIO_TRANSADDITIVE_ENABLED  0x4000
 
 //gl_model
 

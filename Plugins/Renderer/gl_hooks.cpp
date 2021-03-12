@@ -848,6 +848,15 @@ void R_FillAddress(void)
 		r_refdef = (refdef_t *)(*(DWORD *)(addr + 11) - offsetof(refdef_t, viewangles));
 		r_origin = (vec_t *)(*(DWORD *)(addr + 17) - 8);
 
+#define G_USERFOGON_SIG "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\x60\x0B\x00\x00"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x600, G_USERFOGON_SIG, sizeof(G_USERFOGON_SIG) - 1);
+		Sig_AddrNotFound(g_bUserFogOn);
+		g_bUserFogOn = *(int **)(addr + 2);
+		g_UserFogColor = (float *)(g_bUserFogOn + 1);
+		g_UserFogDensity = (float *)(g_UserFogDensity + 4);
+		g_UserFogStart = (float *)(g_UserFogDensity + 1);
+		g_UserFogEnd = (float *)(g_UserFogStart + 1);
+
 #define GLTEXTURES_SIG_SVENGINE "\x8B\x15\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x1D"
 		//Search in GL_LoadTexture2
 		//.text : 01D4EBF4 8B 15 F0 C5 0F 03                                   mov     edx, numgltextures

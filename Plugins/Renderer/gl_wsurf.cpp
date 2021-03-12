@@ -1,5 +1,4 @@
 #include "gl_local.h"
-#include "cJSON.h"
 #include <sstream>
 
 //TODO: detail texture
@@ -9,6 +8,7 @@ r_worldsurf_t r_wsurf;
 cvar_t *r_wsurf_replace;
 cvar_t *r_wsurf_vbo;
 
+int r_wsurf_fogmode = 0;
 int r_wsurf_drawcall = 0;
 int r_wsurf_polys = 0;
 
@@ -35,6 +35,15 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		if (state & WSURF_DETAILTEXTURE_ENABLED)
 			defs << "#define DETAILTEXTURE_ENABLED\n";
 
+		if (state & WSURF_CLIP_ABOVE_ENABLED)
+			defs << "#define CLIP_ABOVE_ENABLED\n";
+
+		if (state & WSURF_CLIP_UNDER_ENABLED)
+			defs << "#define CLIP_UNDER_ENABLED\n";
+
+		if (state & WSURF_LINEAR_FOG_ENABLED)
+			defs << "#define LINEAR_FOG_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("resource\\shader\\wsurf_shader.vsh", NULL, "resource\\shader\\wsurf_shader.fsh", def.c_str(), NULL, def.c_str());
@@ -44,6 +53,8 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 			SHADER_UNIFORM(prog, lightmapTexArray, "lightmapTexArray");
 			SHADER_UNIFORM(prog, detailTex, "detailTex");
 			SHADER_UNIFORM(prog, speed, "speed");
+			SHADER_UNIFORM(prog, entitymatrix, "entitymatrix");
+			SHADER_UNIFORM(prog, clipPlane, "clipPlane");
 		}
 
 		g_WSurfProgramTable[state] = prog;
@@ -59,10 +70,20 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 
 		if (prog.diffuseTex != -1)
 			qglUniform1iARB(prog.diffuseTex, 0);
+
 		if (prog.lightmapTexArray != -1)
 			qglUniform1iARB(prog.lightmapTexArray, 1);
+
 		if (prog.detailTex != -1)
 			qglUniform1iARB(prog.detailTex, 2);
+
+		if (prog.entitymatrix != -1)
+		{
+			if (r_rotate_entity)
+				qglUniformMatrix4fvARB(prog.entitymatrix, 1, true, (float *)r_rotate_entity_matrix);
+			else
+				qglUniformMatrix4fvARB(prog.entitymatrix, 1, false, (float *)r_identity_matrix);
+		}
 
 		if (progOutput)
 			*progOutput = prog;
@@ -1560,6 +1581,12 @@ void R_DrawWorld(void)
 	qglStencilFunc(GL_ALWAYS, 0, 0xFF);
 	qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
+	r_wsurf_fogmode = 0;
+	if (qglIsEnabled(GL_FOG))
+	{
+		qglGetIntegerv(GL_FOG_MODE, &r_wsurf_fogmode);
+	}
+
 	if (r_wsurf_vbo->value)
 	{
 		GL_DisableMultitexture();
@@ -1575,7 +1602,6 @@ void R_DrawWorld(void)
 
 		R_SetVBOState(VBOSTATE_LIGHTMAP_TEXTURE);
 
-		//prepare shader for non-GBuffer mode?
 		for (size_t i = 0; i < r_wsurf.vTextureChainStatic.size(); ++i)
 		{
 			auto &texchain = r_wsurf.vTextureChainStatic[i];
@@ -1594,13 +1620,29 @@ void R_DrawWorld(void)
 				wsurf_program_t wprog = { 0 };
 
 				int WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_LIGHTMAP_ENABLED;
+
 				if (r_wsurf.bDetailTexture)
 					WSurfProgramState |= WSURF_DETAILTEXTURE_ENABLED;
 
+				if (r_draw_pass == r_draw_reflect)
+				{
+					WSurfProgramState |= WSURF_CLIP_UNDER_ENABLED;
+				}
+
+				if (r_wsurf_fogmode == GL_LINEAR)
+				{
+					WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+				}
+
 				R_UseWSurfProgram(WSurfProgramState, &wprog);
+
 				if (wprog.program)
 				{
-					qglUniform1fARB(wprog.speed, 0);
+					if (wprog.speed != -1)
+						qglUniform1fARB(wprog.speed, 0);
+
+					if (wprog.clipPlane != -1)
+						qglUniform1fARB(wprog.clipPlane, curwater->vecs[2]);
 				}
 			}
 			else
@@ -1651,13 +1693,29 @@ void R_DrawWorld(void)
 				wsurf_program_t wprog2 = { 0 };
 
 				int WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_LIGHTMAP_ENABLED;
+
 				if (r_wsurf.bDetailTexture)
 					WSurfProgramState |= WSURF_DETAILTEXTURE_ENABLED;
 
+				if (r_draw_pass == r_draw_reflect)
+				{
+					WSurfProgramState |= WSURF_CLIP_ABOVE_ENABLED;
+				}
+
+				if (r_wsurf_fogmode == GL_LINEAR)
+				{
+					WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+				}
+
 				R_UseWSurfProgram(WSurfProgramState, &wprog2);
+
 				if (wprog2.program)
 				{
-					qglUniform1fARB(wprog2.speed, speed);
+					if(wprog2.speed != -1)
+						qglUniform1fARB(wprog2.speed, speed);
+
+					if (wprog2.clipPlane != -1)
+						qglUniform1fARB(wprog2.clipPlane, curwater->vecs[2]);
 				}
 			}
 			else

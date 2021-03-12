@@ -38,5 +38,15 @@ void main(void)
 
 	gl_FragColor = diffuseColor * color;
 
+#ifdef LINEAR_FOG_ENABLED
+	float z = gl_FragCoord.z / gl_FragCoord.w;
+	float fogFactor = ( gl_Fog.end - z ) / ( gl_Fog.end - gl_Fog.start );
+	fogFactor = clamp(fogFactor, 0.0, 1.0);
+
+	vec3 finalColor = gl_FragColor.xyz;
+
+	gl_FragColor.xyz = mix(gl_Fog.color.xyz, finalColor, fogFactor );
+#endif
+
 #endif
 }

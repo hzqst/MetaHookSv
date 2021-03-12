@@ -1,9 +1,14 @@
 #version 130
 
+uniform mat4 entitymatrix;
+
 uniform float speed;
+varying vec4 worldpos;
 
 void main(void)
 {
+	worldpos = entitymatrix * gl_Vertex;
+
 #ifdef DIFFUSE_ENABLED
 	gl_TexCoord[0] = vec4(gl_MultiTexCoord0.x + gl_MultiTexCoord0.z * speed, gl_MultiTexCoord0.y, 0.0, 0.0);
 #endif

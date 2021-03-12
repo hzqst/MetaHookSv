@@ -173,3 +173,8 @@ extern engine_studio_api_t IEngineStudio;
 extern r_studio_interface_t **gpStudioInterface;
 
 extern cvar_t *r_studio_vbo;
+
+#define STUDIO_GBUFFER_ENABLED			0x1000
+#define STUDIO_TRANSPARENT_ENABLED		0x2000
+#define STUDIO_TRANSADDITIVE_ENABLED	0x4000
+#define STUDIO_LINEAR_FOG_ENABLED		0x8000

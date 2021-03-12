@@ -21,11 +21,8 @@ uniform vec4 lightpos;
 uniform sampler2D diffuseTex;
 uniform sampler2D lightmapTex;
 uniform sampler2D additiveTex;
-
-#ifndef DIRECT_BLIT
 uniform sampler2D depthTex;
-#endif
-
+uniform vec4 clipInfo;
 #endif
 
 #ifdef LIGHT_PASS
@@ -98,6 +95,20 @@ void main()
 #endif
 
 #ifdef FINAL_PASS
+
+#ifdef LINEAR_FOG_ENABLED
+
+    float reconstructCSZ(float d) {
+        if (clipInfo[3] > 0.0) {
+            return (clipInfo[0] / (clipInfo[1] * d + clipInfo[2]));
+        }
+        else {
+            return (clipInfo[1]+clipInfo[2] - d * clipInfo[1]);
+        }
+    }
+
+#endif
+
 void main()
 {
     vec4 diffuseColor = texture2D(diffuseTex, gl_TexCoord[0].xy);
@@ -108,10 +119,15 @@ void main()
 
     gl_FragColor = finalColor;
 
-#ifndef DIRECT_BLIT
+#ifdef LINEAR_FOG_ENABLED
     vec4 depthColor = texture2D(depthTex, gl_TexCoord[0].xy);
 
-    gl_FragDepth = depthColor.x;
+	float z = reconstructCSZ(depthColor.x);
+	float fogFactor = ( gl_Fog.end - z ) / ( gl_Fog.end - gl_Fog.start );
+	fogFactor = clamp(fogFactor, 0.0, 1.0);
+
+	gl_FragColor.xyz = mix(gl_Fog.color.xyz, finalColor.xyz, fogFactor );
 #endif
+
 }
 #endif

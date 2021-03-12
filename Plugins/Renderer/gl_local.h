@@ -51,10 +51,8 @@ extern float windowvideoaspect_old;
 extern float scr_fov_value;
 extern mplane_t *frustum;
 extern mleaf_t **r_viewleaf, **r_oldviewleaf;
-extern texture_t *r_notexture_mip;
 
 extern float yfov;
-extern float screenaspect;
 
 extern vec_t *vup;
 extern vec_t *vpn;
@@ -80,6 +78,13 @@ extern int *cl_weaponsequence;
 extern int *cl_light_level;
 extern int *c_alias_polys;
 extern int *c_brush_polys;
+
+//fog
+extern int *g_bUserFogOn;
+extern float *g_UserFogColor;
+extern float *g_UserFogDensity;
+extern float *g_UserFogStart;
+extern float *g_UserFogEnd;
 
 //gl extension
 extern qboolean gl_framebuffer_object;

@@ -173,7 +173,6 @@ xcopy "$(OutDir)\..\..\..\Build\svencoop\resource\shader\*.*" "I:\SteamLibrary\s
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bspfile.h" />
-    <ClInclude Include="cJSON.h" />
     <ClInclude Include="command.h" />
     <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />

@@ -249,7 +249,7 @@ void R_RenderShadowMap(void)
 	float *projmatrixArray[3] = { shadow_projmatrix_high , shadow_projmatrix_medium, shadow_projmatrix_low };
 	float *mvmatrixArray[3] = { shadow_mvmatrix_high , shadow_mvmatrix_medium, shadow_mvmatrix_low };
 
-	qglDisable(GL_CULL_FACE);
+	//qglDisable(GL_CULL_FACE);
 
 	r_draw_pass = r_draw_shadow;
 
@@ -305,7 +305,7 @@ void R_RenderShadowMap(void)
 
 	r_draw_pass = r_draw_normal;
 
-	qglEnable(GL_CULL_FACE);
+	//qglEnable(GL_CULL_FACE);
 
 	if(s_ShadowFBO.s_hBackBufferFBO)
 	{

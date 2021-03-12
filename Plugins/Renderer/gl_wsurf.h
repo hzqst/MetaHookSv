@@ -105,6 +105,8 @@ typedef struct
 	int lightmapTexArray;
 	int detailTex;
 	int speed;
+	int entitymatrix;
+	int clipPlane;
 }wsurf_program_t;
 
 #define OFFSET(type, variable) ((const void*)&(((type*)NULL)->variable))
@@ -112,6 +114,7 @@ typedef struct
 extern r_worldsurf_t	r_wsurf;
 extern int r_wsurf_drawcall;
 extern int r_wsurf_polys;
+extern int r_wsurf_fogmode;
 
 void R_InitWSurf(void);
 void R_VidInitWSurf(void);
@@ -153,6 +156,7 @@ void R_ShutdownWSurf(void);
 void R_DrawDecals(qboolean bMultitexture);
 qboolean R_BeginDetailTexture(int texId);
 void R_EndDetailTexture(void);
+
 #define VBOSTATE_OFF 0
 #define VBOSTATE_NO_TEXTURE 1
 #define VBOSTATE_DIFFUSE_TEXTURE 2
@@ -162,3 +166,6 @@ void R_EndDetailTexture(void);
 #define WSURF_DIFFUSE_ENABLED		1
 #define WSURF_LIGHTMAP_ENABLED		2
 #define WSURF_DETAILTEXTURE_ENABLED	4
+#define WSURF_CLIP_ABOVE_ENABLED	8
+#define WSURF_CLIP_UNDER_ENABLED	16
+#define WSURF_LINEAR_FOG_ENABLED	32
