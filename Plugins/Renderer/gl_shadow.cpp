@@ -72,7 +72,7 @@ void R_InitShadow(void)
 {
 	if(gl_shader_support)
 	{
-		shadow.program = R_CompileShaderFile("resource\\shader\\shadow_shader.vsh", NULL, "resource\\shader\\shadow_shader.fsh");
+		shadow.program = R_CompileShaderFile("renderer\\shader\\shadow_shader.vsh", NULL, "renderer\\shader\\shadow_shader.fsh");
 		if (shadow.program)
 		{
 			SHADER_UNIFORM(shadow, texoffset_high, "texoffset_high");

@@ -1000,13 +1000,13 @@ void QGL_InitExtension(void)
 		gl_blit_support = true;
 	}
 
-	if(strstr(extension, "GL_NV_float_buffer"))
+	if( strstr(extension, "GL_ARB_texture_float") || strstr(extension, "GL_NV_float_buffer") || strstr(extension, "GL_ATI_texture_float"))
 	{
 		gl_float_buffer_support = true;;
 	}
 
-	if(strstr(extension, "GL_EXT_texture_compression_s3tc"))
+	if (strstr(extension, "GL_EXT_texture_compression_s3tc"))
 	{
-		gl_s3tc_compression_support = true;;
+		gl_s3tc_compression_support = true;
 	}
 }

@@ -154,9 +154,6 @@ void Draw_Init(void)
 		Cmd_HookCmd("snapshot", CL_ScreenShot_f);
 }
 
-
-//Texture resampler
-
 void GL_Upload32(unsigned int *data, int width, int height, qboolean mipmap, qboolean ansio)
 {
 	int iComponent, iFormat;
@@ -438,23 +435,6 @@ tryagain:
 
 int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal, int filter)
 {
-	/*if (!mipmap || textureType != GLT_WORLD)
-	{
-		if(qglTexParameterf)//just in case of crashing when called before initalize QGL
-			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
-		return gRefFuncs.GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iType, pPal, filter);
-	}
-
-	Draw_UpdateAnsios();
-
-	if(qglTexParameterf)
-	{
-		if(gl_force_ansio)
-			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, gl_force_ansio);
-		else
-			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
-	}*/
-
 	int texnum = GL_AllocTexture((char *)identifier, textureType, width, height, mipmap);
 
 	if(!texnum)
@@ -515,14 +495,19 @@ int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int wid
 	GL_Bind(texnum);
 	(*currenttexture) = -1;
 
-	if(gl_s3tc_compression_support && (gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT || gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT || gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT))
+	if (gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT || gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT || gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT)
 	{
+		if (!gl_s3tc_compression_support)
+		{
+			Sys_ErrorEx("Failed to load DXT texture, missing extension GL_EXT_texture_compression_s3tc!");
+			return 0;
+		}
+
 		GL_UploadDXT(data, width, height, mipmap, ansio);
 		return texnum;
 	}
 
 	GL_Upload32((unsigned *)data, width, height, mipmap, ansio);
-
 	return texnum;
 }
 
@@ -934,6 +919,7 @@ int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *hei
 				*width = w;
 			if(height)
 				*height = h;
+
 			return GL_LoadTextureEx(name, type, w, h, texloader_buffer, mipmap, ansio);
 		}
 	}
@@ -943,6 +929,7 @@ int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *hei
 			*width = w;
 		if(height)
 			*height = h;
+
 		return GL_LoadTextureEx(name, type, w, h, texloader_buffer, mipmap, ansio);
 	}
 

@@ -46,7 +46,7 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("resource\\shader\\wsurf_shader.vsh", NULL, "resource\\shader\\wsurf_shader.fsh", def.c_str(), NULL, def.c_str());
+		prog.program = R_CompileShaderFileEx("renderer\\shader\\wsurf_shader.vsh", NULL, "renderer\\shader\\wsurf_shader.fsh", def.c_str(), NULL, def.c_str());
 		if (prog.program)
 		{
 			SHADER_UNIFORM(prog, diffuseTex, "diffuseTex");

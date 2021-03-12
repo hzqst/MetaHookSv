@@ -50,7 +50,7 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("resource\\shader\\water_shader.vsh", NULL, "resource\\shader\\water_shader.fsh", def.c_str(), NULL, def.c_str());
+		prog.program = R_CompileShaderFileEx("renderer\\shader\\water_shader.vsh", NULL, "renderer\\shader\\water_shader.fsh", def.c_str(), NULL, def.c_str());
 		if (prog.program)
 		{
 			SHADER_UNIFORM(prog, waterfogcolor, "waterfogcolor");
@@ -238,7 +238,7 @@ r_water_t *R_GetActiveWater(cl_entity_t *ent, vec3_t p, vec3_t n, colorVec *colo
 
 	//Load if normalmap not exists.
 	if (!water_normalmap)
-		water_normalmap = R_LoadTexture("resource\\tga\\water_normalmap.tga", "resource\\tga\\water_normalmap.tga", NULL, NULL, GLT_SYSTEM);
+		water_normalmap = R_LoadTexture("renderer\\texture\\water_normalmap.tga", "renderer\\texture\\water_normalmap.tga", NULL, NULL, GLT_SYSTEM);
 
 	//Upload color textures and depth textures.
 	if (!w->reflectmap)
