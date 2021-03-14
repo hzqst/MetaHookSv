@@ -832,16 +832,8 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 	if (r_wsurf.bLightmapTexture)
 	{
 		qglActiveTextureARB(TEXTURE1_SGIS);
+		qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 		qglDisable(GL_TEXTURE_2D_ARRAY);
-		if ((*mtexenabled))
-		{
-			qglEnable(GL_TEXTURE_2D);
-		}
-		else
-		{
-			qglDisable(GL_TEXTURE_2D);
-			qglActiveTextureARB(TEXTURE0_SGIS);
-		}
 	}
 
 	qglActiveTextureARB(TEXTURE0_SGIS);
