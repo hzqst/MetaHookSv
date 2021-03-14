@@ -488,30 +488,43 @@ void R_DrawBrushModelShadow(cl_entity_t *e)
 
 	R_RotateForEntity(e->origin, e);
 
-	for (i = 0; i < clmodel->nummodelsurfaces; i++, psurf++)
+	if (r_wsurf_vbo->value)
 	{
-		pplane = psurf->plane;
+		auto modcache = R_PrepareWSurfVBO(clmodel);
 
-		if (psurf->flags & SURF_DRAWTURB)
+		R_EnableWSurfVBO(modcache);
+
+		R_DrawWSurfVBO(modcache);
+
+		R_EnableWSurfVBO(NULL);
+	}
+	else
+	{
+		for (i = 0; i < clmodel->nummodelsurfaces; i++, psurf++)
 		{
-			if (pplane->type != PLANE_Z && gl_watersides && !gl_watersides->value)
-				continue;
+			pplane = psurf->plane;
 
-			if (mins[2] + 1.0 >= pplane->dist)
-				continue;
-		}
-
-		dot = DotProduct(modelorg, pplane->normal) - pplane->dist;
-
-		if (((psurf->flags & SURF_PLANEBACK) && (dot < -BACKFACE_EPSILON)) || (!(psurf->flags & SURF_PLANEBACK) && (dot > BACKFACE_EPSILON)))
-		{
-			DrawGLPoly(psurf);
-		}
-		else
-		{
 			if (psurf->flags & SURF_DRAWTURB)
 			{
+				if (pplane->type != PLANE_Z && gl_watersides && !gl_watersides->value)
+					continue;
+
+				if (mins[2] + 1.0 >= pplane->dist)
+					continue;
+			}
+
+			dot = DotProduct(modelorg, pplane->normal) - pplane->dist;
+
+			if (((psurf->flags & SURF_PLANEBACK) && (dot < -BACKFACE_EPSILON)) || (!(psurf->flags & SURF_PLANEBACK) && (dot > BACKFACE_EPSILON)))
+			{
 				DrawGLPoly(psurf);
+			}
+			else
+			{
+				if (psurf->flags & SURF_DRAWTURB)
+				{
+					DrawGLPoly(psurf);
+				}
 			}
 		}
 	}
@@ -582,10 +595,13 @@ void R_RenderShadowScenes(void)
 
 	float mvmatrix[16];
 	float invmvmatrix[16];
+	GLfloat texture0_env;
 	GLfloat texture1_env;
 	GLfloat texture2_env;
 
-	qglGetFloatv(GL_MODELVIEW_MATRIX, mvmatrix);
+	//test
+	//qglGetFloatv(GL_MODELVIEW_MATRIX, mvmatrix);
+	memcpy(mvmatrix, r_world_matrix, sizeof(mvmatrix));
 	InvertMatrix(mvmatrix, invmvmatrix);
 
 	qglUseProgramObjectARB(shadow.program);
@@ -618,10 +634,10 @@ void R_RenderShadowScenes(void)
 
 	qglEnable(GL_BLEND);
 	qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	//qglColor4f(0.1, 0.1, 0.1, 0.5);
 
 	//setup texture 0
 	GL_SelectTexture(TEXTURE0_SGIS);
+	qglGetTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, &texture0_env);
 	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	qglEnable(GL_TEXTURE_GEN_S);
 	qglEnable(GL_TEXTURE_GEN_T);
@@ -708,33 +724,13 @@ void R_RenderShadowScenes(void)
 
 	if (r_wsurf_vbo->value)
 	{
-		qglEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+		auto modcache = R_PrepareWSurfVBO(r_worldmodel);
 
-		R_SetVBOState(VBOSTATE_NO_TEXTURE);
+		R_EnableWSurfVBOSolid(modcache);
 
-		for (size_t i = 0; i < r_wsurf.vTextureChainStatic.size(); ++i)
-		{
-			auto &texchain = r_wsurf.vTextureChainStatic[i];
+		R_DrawWSurfVBOSolid(modcache);
 
-			qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
-
-			r_wsurf_drawcall++;
-			r_wsurf_polys += texchain.iFaceCount;
-		}
-
-		for (size_t i = 0; i < r_wsurf.vTextureChainScroll.size(); ++i)
-		{
-			auto &texchain = r_wsurf.vTextureChainScroll[i];
-
-			qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
-
-			r_wsurf_drawcall++;
-			r_wsurf_polys += texchain.iFaceCount;
-		}
-
-		R_SetVBOState(VBOSTATE_OFF);
-
-		qglDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+		R_EnableWSurfVBOSolid(NULL);
 	}
 	else
 	{
@@ -780,6 +776,7 @@ void R_RenderShadowScenes(void)
 	qglMatrixMode(GL_TEXTURE);
 	qglLoadIdentity();
 	qglMatrixMode(GL_MODELVIEW);
+	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, texture0_env);
 	qglDisable(GL_TEXTURE_GEN_S);
 	qglDisable(GL_TEXTURE_GEN_T);
 	qglDisable(GL_TEXTURE_GEN_R);

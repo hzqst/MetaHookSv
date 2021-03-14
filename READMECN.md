@@ -152,9 +152,9 @@ r_flashlight_cone : 手电筒光锥的锥体夹角cosine值. 推荐值 : 0.9
 
 r_flashlight_distance : 手电筒照明距离. 推荐值 : 2000.0
 
-r_light_ambient : 动态光照的环境光强度. 推荐值 : 0
+r_light_ambient : 动态光照的环境光强度. 推荐值 : 0.2
 
-r_light_diffuse : 动态光照的漫反射光强度. 推荐值 : 0.5
+r_light_diffuse : 动态光照的漫反射光强度. 推荐值 : 0.3
 
 r_light_specular : 动态光照的高光反光强度. 推荐值 : 0.1
 

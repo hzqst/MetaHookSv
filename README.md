@@ -180,9 +180,9 @@ r_flashlight_cone : cosine of angle of flashlight cone. recommended value : 0.9
 
 r_flashlight_distance : flashlight's illumination distance. recommended value : 2000.0
 
-r_light_ambient : ambient intensity of dynamic light. recommended value : 0
+r_light_ambient : ambient intensity of dynamic light. recommended value : 0.1
 
-r_light_diffuse : diffuse intensity of dynamic light. recommended value : 0.5
+r_light_diffuse : diffuse intensity of dynamic light. recommended value : 0.3
 
 r_light_specular : specular intensity of dynamic light. recommended value : 0.1
 

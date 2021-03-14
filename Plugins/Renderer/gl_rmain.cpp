@@ -715,19 +715,59 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 	*r_blend = 1.0;
 }
 
-void R_DrawBrushModel(cl_entity_t *entity)
+void R_SetRenderMode(cl_entity_t *pEntity)
 {
-	qglEnable(GL_STENCIL_TEST);
-	qglStencilMask(0xFF);
-	qglStencilFunc(GL_ALWAYS, 0, 0xFF);
-	qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	switch (pEntity->curstate.rendermode)
+	{
+	case kRenderNormal:
+	{
+		qglColor4f(1, 1, 1, 1);
+		break;
+	}
 
-	gRefFuncs.R_DrawBrushModel(entity);
+	case kRenderTransColor:
+	{
+		qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ALPHA);
+		qglEnable(GL_BLEND);
+		qglColor4f(
+			(*currententity)->curstate.rendercolor.r / 255.0,
+			(*currententity)->curstate.rendercolor.g / 255.0,
+			(*currententity)->curstate.rendercolor.b / 255.0,
+			(*r_blend));
+		break;
+	}
 
-	qglStencilMask(0);
-	qglEnable(GL_STENCIL_TEST);
+	case kRenderTransAdd:
+	{
+		qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		qglBlendFunc(GL_ONE, GL_ONE);
+		qglColor4f(*r_blend, *r_blend, *r_blend, 1);
+		qglDepthMask(0);
+		qglEnable(GL_BLEND);
+		break;
+	}
 
-	r_rotate_entity = false;
+	case kRenderTransAlpha:
+	{
+		qglEnable(GL_ALPHA_TEST);
+		qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		qglColor4f(1, 1, 1, 1);
+		qglDisable(GL_BLEND);
+		qglAlphaFunc(GL_GREATER, gl_alphamin->value);
+		break;
+	}
+
+	default:
+	{
+		qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		qglColor4f(1, 1, 1, *r_blend);
+		qglDepthMask(0);
+		qglEnable(GL_BLEND);
+		break;
+	}
+	}
 }
 
 void R_DrawViewModel(void)

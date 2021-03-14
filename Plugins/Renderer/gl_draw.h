@@ -46,3 +46,6 @@ typedef struct
 	byte bPFFlags[4];
 	byte bPFFourCC[4];
 }dds_header_t;
+
+int GL_FindTexture(const char *identifier, GL_TEXTURETYPE textureType, int *width, int *height);
+const char * V_GetFileExtension(const char * path);

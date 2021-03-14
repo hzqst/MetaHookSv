@@ -25,6 +25,51 @@ uniform sampler2D depthTex;
 uniform vec4 clipInfo;
 #endif
 
+#ifdef DECAL_PASS
+
+varying vec4 projpos;
+uniform mat4 decalToWorldMatrix;
+uniform mat4 worldToDecalMatrix;
+uniform float decalScale;
+uniform vec4 decalCenter;
+uniform sampler2D decalTex;
+uniform sampler2D positionTex;
+uniform sampler2D normalTex;
+
+void main()
+{
+    vec2 vBaseTexCoord = projpos.xy / projpos.w * 0.5 + 0.5;
+
+    vec4 world = vec4(texture2D(positionTex, vBaseTexCoord).xyz, 1.0);
+
+    if(  length(world.xyz - decalCenter.xyz) > decalScale)
+        discard;
+
+    vec3 worldNormal = texture2D(normalTex, vBaseTexCoord).xyz;
+
+    vec3 decalNormal = mat3(worldToDecalMatrix) * worldNormal;
+
+    vec4 decalPos = worldToDecalMatrix * world;
+    decalPos.xyz /= decalPos.w;
+
+    vec2 decal_texcoord = decalPos.xy / decalScale + 0.5;
+
+    float threshold = 0.1f;
+    if(abs(dot(vec3(worldToDecalMatrix[2]), worldNormal)) < threshold)
+    {
+        decal_texcoord = (decalPos.xy + decalPos.z * decalNormal.xy) / decalScale + 0.5;
+    }
+
+    if (decal_texcoord.x < 0.0 || decal_texcoord.x > 1.0 || decal_texcoord.y < 0.0 || decal_texcoord.y > 1.0)
+       discard;
+
+    vec4 albedo = texture2D(decalTex, decal_texcoord);
+
+    gl_FragColor = albedo;
+}
+
+#endif
+
 #ifdef LIGHT_PASS
 vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal)
 {

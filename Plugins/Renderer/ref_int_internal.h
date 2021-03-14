@@ -79,6 +79,7 @@ typedef struct
 	dlight_t *(*CL_AllocDlight)(int key);
 	void (*S_ExtraUpdate)(void);
 	void(*R_PolyBlend)(void);
+	void(*R_DecalShootInternal)(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
 
 	//SvClient
 	void(__fastcall *PortalManager_ResetAll)(int pthis, int);

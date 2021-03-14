@@ -139,8 +139,6 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	qglStencilFunc(GL_ALWAYS, 1, 0xFF);
 	qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
-	R_SetVBOState(VBOSTATE_OFF);
-
 	R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 

@@ -336,6 +336,43 @@ void GL_Upload16(byte *data, int width, int height, qboolean mipmap, int iType, 
 	GL_Upload32(trans, width, height, mipmap, ansio);
 }
 
+int GL_FindTexture(const char *identifier, GL_TEXTURETYPE textureType, int *width, int *height)
+{
+	int i;
+	gltexture_t *slot;
+
+	if (gltextures_SvEngine)
+		gltextures = *gltextures_SvEngine;
+
+	if (identifier[0])
+	{
+		for (i = 0, slot = gltextures; i < *numgltextures; i++, slot++)
+		{
+			if (!strcmp(identifier, slot->identifier))
+			{
+				if (textureType != GLT_SYSTEM && textureType != GLT_DECAL && textureType != GLT_HUDSPRITE)
+				{
+					if (slot->servercount != *gHostSpawnCount)
+						continue;
+				}
+
+				if (width)
+					*width = slot->width;
+				if (height)
+					*height = slot->height;
+
+				return slot->texnum;
+			}
+		}
+	}
+	else
+	{
+		gEngfuncs.Con_DPrintf("NULL Texture\n");
+	}
+
+	return 0;
+}
+
 int GL_AllocTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int height, qboolean mipmap)
 {
 	int i;
