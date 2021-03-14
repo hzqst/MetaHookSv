@@ -88,6 +88,8 @@ MetaHook的SvenCoop移植版本 (https://github.com/nagist/metahook)
 
 10. bsp地形渲染可使用顶点缓冲对象、合并DrawCall来进行优化，使用这些技术可以解放CPU算力，做到同屏渲染10万多边形的bsp地形仍能维持在可接受的帧数
 
+11. bsp地形渲染支持法线贴图、视差贴图，具体见svencoop/maps/restriction02_detail.txt里自带的例子
+
 #### 控制台参数
 
 r_hdr 1 / 0 : 开启/关闭 HDR后处理. 推荐值 : 1
@@ -109,8 +111,6 @@ r_water_depthfactor (0.0 ~ 1000.0) : 控制距离水底的深度对水体透明�
 r_water_normfactor (0.0 ~ 1000.0) : 控制水面波纹大小. 推荐值 : 1.5
 
 r_water_novis 1 / 0 : 强制让绘制折射反射贴图时关闭VIS可视区域裁剪，可能会导致性能严重下降。 推荐值 : 0
-
-r_water_texscale (0.1 ~ 1.0) : 控制反射和折射贴图相对于原始游戏分辨率的缩放大小。推荐值 : 0.5
 
 r_water_minheight : 小于这个高度的水体不会被应用折射和反射。 推荐值 : 7.5
 
@@ -136,9 +136,9 @@ r_shadow_low_scale : 使用低质量阴影贴图的实体的缩放大小 推荐�
 
 r_ssao 1 / 0 : 开启关闭屏幕空间遮蔽（SSAO）. 推荐值 : 1  （和MSAA一起使用可能导致严重的性能下降！）
 
-r_ssao_intensity : SSAO阴影的强度. 推荐值 : 0.6
+r_ssao_intensity : SSAO阴影的强度. 推荐值 : 0.6 ~ 1.0
 
-r_ssao_radius : SSAO阴影的采样半径. 推荐值 : 30.0
+r_ssao_radius : SSAO阴影的采样半径. 推荐值 : 30.0 ~ 100.0
 
 r_ssao_blur_sharpness : SSAO阴影的锐化程度， 推荐值 : 1.0
 
@@ -164,6 +164,9 @@ r_studio_vbo 1 / 0 : 开启/关闭mdl模型的VBO优化和DrawCall合批优化. 
 
 r_wsurf_vbo 1 / 0 : 开启/关闭bsp地形的VBO优化和DrawCall合批优化. 推荐值 : 1
 
+r_wsurf_parallax_scale : 控制视差贴图的作用强度. 推荐值 : 0.01 ~ 0.04
+
 r_fxaa 1 / 0  : 开启快速近似抗锯齿 (FXAA) ，仅当 MSAA 不可用时有效. 推荐值 : 1
 
 r_msaa 0 / 2 / 4 / 8 / 16 : 开启或关闭多重采样抗锯齿 (MSAA) . 推荐值 : 0 或 4 （和SSAO一起使用可能导致严重的性能下降！）
+

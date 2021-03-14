@@ -104,17 +104,19 @@ You can even play with 200k epolys models and still keep a high framerate.
 
 3. Simple Per-Object Shadow. (Warning: this may cause a significant performance hit.)
 
-4. Screen Space Ambient Occlusion (SSAO) using horizon-based ambient occlusion (HBAO). the implementation is taken from nvidia. (not support with -nofbo) (Warning: this may cause a significant performance hit when sampling radius is too large.)
+4. Screen Space Ambient Occlusion (SSAO) using horizon-based ambient occlusion (HBAO). the implementation is taken from nvidia. (Warning: this may cause a significant performance hit when sampling radius is too large.)
 
-5. MultiSampling Anti-Aliasing (MSAA)
+5. MultiSampling Anti-Aliasing (MSAA) (High quality, low performance)
 
-6. Fast Approximate Anti-Aliasing (FXAA) when MSAA is not available.
+6. Fast Approximate Anti-Aliasing (FXAA) when MSAA is not available. (Low quality, high performance)
 
-7. Deferred-Shading and Per-Pixel-Dynamic-Lighting for all non-transparent objects. "unlimited" (maximum at 256 for SvEngine) dynamic lightsources are supported now  with almost no cost. (not support with -nofbo)
+7. Deferred-Shading and Per-Pixel-Dynamic-Lighting for all non-transparent objects. "unlimited" (maximum at 256 for SvEngine) dynamic lightsources are supported with almost no cost.
 
-9. Vertex-Buffer-Object (VBO) "Batch-Draw" optimization and GPU-Lighting for studio model. With VBO enabled you will get higher framerate and lower CPU usage. You can get maximum at 8x FramePerSeconds than non-VBO mode in extreme case (200k+ epolys with no FPS drop).
+9. Vertex-Buffer-Object (VBO) "Batch-Draw" optimization and GPU-Lighting for studio model. With VBO enabled you will get higher framerate and lower CPU usage. You can get maximum at 8x FramePerSeconds than non-VBO mode in extreme case. (200k+ epolys with no FPS drop).
 
-10. Vertex-Buffer-Object (VBO) "Batch-Draw" optimization for BSP terrain. With VBO enabled you will get higher framerate and lower CPU usage. Warning: this feature may cause the render result differs from the one in original game that: random textures are gone, non-visible terrain in current BSP-node are always visible...
+10. Vertex-Buffer-Object (VBO) "Batch-Draw" optimization for BSP terrain and brush model. With VBO enabled you will get higher framerate and lower CPU usage. Warning: this feature may cause the render result differs from the one in original game (e.g. random textures are disabled, non-visible terrain in current BSP-node are always visible.)
+
+11. Normal texture and Parallax texture support for BSP terrain and brush model. Check svencoop/maps/restriction02_detail.txt for usage sample.
 
 #### Console Vars
 
@@ -138,8 +140,6 @@ r_water_normfactor (0.0 ~ 1000.0) : to determine the size of water wave (offset 
 
 r_water_novis 1 / 0 : force engine to render the scene which should have been removed by visleaf when rendering refraction or reflection view. recommended value : 1
 
-r_water_texscale (0.1 ~ 1.0) : to control the size of refract or reflect view texture. recommended value : 0.5
-
 r_water_minheight : water entity which has height < this value will not be rendered with shader program. recommended value : 7.5
 
 r_shadow 1 / 0 : enable or disable Per-Object Shadow. recommended value : 1
@@ -162,25 +162,23 @@ r_shadow_low_distance : entities within this distance are rendered into low-qual
 
 r_shadow_low_scale : scale factor when render shadow-caster entity in medium quality shadow map. recommended value : 0.5
 
-r_ssao 1 / 0 : enable or disable Screen Space Ambient Occlusion. recommended value : 1
+r_ssao 1 / 0 : enable or disable Screen Space Ambient Occlusion (SSAO). recommended value : 1
 
-r_ssao_intensity : control the intensity of SSAO shadow. recommended value : 0.6
+r_ssao_intensity : control the intensity of SSAO shadow. recommended value : 0.6 ~ 1.0
 
-r_ssao_radius : control the sample size of SSAO shadow. recommended value : 30.0
+r_ssao_radius : control the sample size of SSAO shadow. recommended value : 30.0 ~ 100.0
 
 r_ssao_blur_sharpness : control the sharpness of SSAO shadow. recommended value : 1.0
 
-r_ssao_bias : test it yourself. recommended value : 0.2
+r_ssao_bias : test it yourself. recommended value : 0.1 ~ 0.2
 
-r_ssao_studio_model 1 / 0 : enable or disable drawing SSAO shadow on studio model. recommended value : 0
-
-r_light_dynamic 1 / 0 : enable or disable Deferred-Shading (Dynamic-LightSource support). recommended value : 1
+r_light_dynamic 1 / 0 : enable or disable Deferred-Shading. recommended value : 1
 
 r_flashlight_cone : cosine of angle of flashlight cone. recommended value : 0.9
 
 r_flashlight_distance : flashlight's illumination distance. recommended value : 2000.0
 
-r_light_ambient : ambient intensity of dynamic light. recommended value : 0.1
+r_light_ambient : ambient intensity of dynamic light. recommended value : 0.2
 
 r_light_diffuse : diffuse intensity of dynamic light. recommended value : 0.3
 
@@ -192,6 +190,8 @@ r_studio_vbo 1 / 0 : enable or disable VBO batch-optmization draw for studio mod
 
 r_wsurf_vbo 1 / 0 : enable or disable VBO batch-optmization draw for BSP terrain. recommended value : 1
 
-r_fxaa 1 / 0  : enable or disable Fast Approximate Anti-Aliasing (FXAA) when MSAA is not available. recommended value : 1
+r_wsurf_parallax_scale : control parallax textures' intensity factor. recommended value : 0.01 ~ 0.04
 
-r_msaa 0 / 2 / 4 / 8 / 16 : enable or disable MultiSampling Anti-Aliasing (MSAA), number >= 2 for MSAA sample count. recommended value : 0 or 4
+r_fxaa 1 / 0 : enable or disable Fast Approximate Anti-Aliasing (FXAA). recommended value : 1
+
+r_msaa 0 / 2 / 4 / 8 / 16 : enable or disable MultiSampling Anti-Aliasing (MSAA), number >= 2 for MSAA sample count. recommended value : 0 if SSAO enabled or 4 if SSAO disabled.
