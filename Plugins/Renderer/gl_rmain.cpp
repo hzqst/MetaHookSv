@@ -270,7 +270,7 @@ void R_DrawSpriteModel(cl_entity_t *entity)
 	R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED | GBUFFER_TRANSPARENT_ENABLED);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
-	GL_DisableMultitexture();
+//	GL_DisableMultitexture();
 
 	gRefFuncs.R_DrawSpriteModel(entity);
 }
