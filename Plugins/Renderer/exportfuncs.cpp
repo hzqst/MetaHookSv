@@ -219,9 +219,8 @@ void HUD_DrawNormalTriangles(void)
 		}
 	}
 
-	//GL_PushFrameBuffer();
-
 	//Allow SCClient to write stencil buffer (but not bit 1)?
+
 	qglStencilMask(0xFF);
 	qglClear(GL_STENCIL_BUFFER_BIT);
 	gExportfuncs.HUD_DrawNormalTriangles();

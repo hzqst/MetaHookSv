@@ -5,14 +5,16 @@ uniform mat4 entitymatrix;
 uniform float speed;
 varying vec4 worldpos;
 varying vec4 normal;
+varying vec4 tangent;
+varying vec4 bitangent;
 varying vec4 color;
+
+attribute vec3 s_tangent;
+attribute vec3 t_tangent;
 
 #ifdef PARALLAXTEXTURE_ENABLED
 
 uniform vec4 viewpos;
-
-attribute vec3 s_tangent;
-attribute vec3 t_tangent;
 
 varying vec3 tangentViewPos;
 varying vec3 tangentFragPos;
@@ -47,6 +49,13 @@ void main(void)
 	normal = vec4(gl_Normal, 0.0);
 	normal = normalize(entitymatrix * normal);
 
+#ifdef NORMALTEXTURE_ENABLED
+    tangent = vec4(s_tangent, 0.0);
+    tangent = normalize(entitymatrix * tangent);
+    bitangent = vec4(t_tangent, 0.0);
+    bitangent = normalize(entitymatrix * bitangent);
+#endif
+
 #ifdef DIFFUSE_ENABLED
 	gl_TexCoord[0] = vec4(gl_MultiTexCoord0.x + gl_MultiTexCoord0.z * speed, gl_MultiTexCoord0.y, 0.0, 0.0);
 #endif
@@ -66,6 +75,7 @@ void main(void)
 #ifdef PARALLAXTEXTURE_ENABLED
 	gl_TexCoord[4] = gl_MultiTexCoord4;
 
+    //world to tangent
 	mat3 normalMatrix = transpose(inverse_mat3(mat3(entitymatrix)));
     vec3 T = normalize(normalMatrix * s_tangent);
     vec3 N = normalize(normalMatrix * gl_Normal);

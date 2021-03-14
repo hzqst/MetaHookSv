@@ -38,11 +38,32 @@ uniform float clipPlane;
 
 varying vec4 worldpos;
 varying vec4 normal;
+varying vec4 tangent;
+varying vec4 bitangent;
 varying vec4 color;
+
+#ifdef NORMALTEXTURE_ENABLED
+
+vec3 NormalMapping()
+{
+    // Create TBN matrix. tangent to world?
+    mat3 TBN = mat3(normalize(tangent), normalize(bitangent), normalize(normal));
+
+    // Sample tangent space normal vector from normal map and remap it from [0, 1] to [-1, 1] range.
+    vec3 n = texture2D(normalTex, vec2(gl_TexCoord[0].x / gl_TexCoord[3].x, gl_TexCoord[0].y / gl_TexCoord[3].y)).xyz;
+    n = normalize(n * 2.0 - 1.0);
+
+    // Multiple vector by the TBN matrix to transform the normal from tangent space to world space.
+    n = normalize(TBN * n);
+
+    return n;
+}
+
+#endif
 
 #ifdef PARALLAXTEXTURE_ENABLED
 
-vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir)
+vec2 ParallaxMapping(vec3 viewDir)
 { 
     const float numLayers = 100;
 
@@ -54,7 +75,7 @@ vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir)
 
     vec2 deltaTexCoords = p / numLayers;
 
-    vec2 currentTexCoords = texCoords;
+    vec2 currentTexCoords = gl_TexCoord[0].xy;
     float currentDepthMapValue = texture2D(parallaxTex, vec2(currentTexCoords.x / gl_TexCoord[4].x, currentTexCoords.y / gl_TexCoord[4].y) ).r;
 
     while(currentLayerDepth < currentDepthMapValue)
@@ -77,7 +98,7 @@ void main()
 		
 		vec3 viewDir = normalize(tangentViewPos - tangentFragPos);
 
-		vec4 diffuseColor = texture2D(diffuseTex, ParallaxMapping(gl_TexCoord[0].xy, viewDir));
+		vec4 diffuseColor = texture2D(diffuseTex, ParallaxMapping(viewDir));
 
 	#else
 
@@ -131,6 +152,12 @@ void main()
 	gl_FragData[2] = worldpos;
 	gl_FragData[3] = normal;
 	gl_FragData[4] = vec4(0.0, 0.0, 0.0, 1.0);
+
+	#ifdef NORMALTEXTURE_ENABLED
+
+		gl_FragData[3] = vec4(NormalMapping(), 0.0);
+
+	#endif
 
 #else
 
