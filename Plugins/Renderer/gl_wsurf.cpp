@@ -272,8 +272,7 @@ void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
 
 			if (psurf->flags & SURF_DRAWTURB)
 			{
-				if (pplane->type != PLANE_Z && !gl_watersides->value)
-					continue;
+				continue;
 			}
 
 			psurf->texturechain = psurf->texinfo->texture->texturechain;
