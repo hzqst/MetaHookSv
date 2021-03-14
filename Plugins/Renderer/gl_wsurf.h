@@ -154,9 +154,6 @@ typedef struct r_worldsurf_s
 	brushface_t			*vFaceBuffer;
 	int					iNumFaces;
 
-	GLuint				hVBOCube;
-	GLuint				hEBOCube;
-
 	bool				bDiffuseTexture;
 	bool				bLightmapTexture;
 	bool				bDetailTexture;
@@ -198,6 +195,8 @@ extern r_worldsurf_t	r_wsurf;
 extern int r_wsurf_drawcall;
 extern int r_wsurf_polys;
 extern int r_wsurf_fogmode;
+extern float r_wsurf_fogcontrol[2];
+extern float r_wsurf_fogcolor[4];
 
 void R_InitWSurf(void);
 void R_VidInitWSurf(void);

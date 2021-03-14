@@ -144,12 +144,7 @@ void main()
 #ifdef LINEAR_FOG_ENABLED
 
     float reconstructCSZ(float d) {
-        if (clipInfo[3] > 0.0) {
-            return (clipInfo[0] / (clipInfo[1] * d + clipInfo[2]));
-        }
-        else {
-            return (clipInfo[1]+clipInfo[2] - d * clipInfo[1]);
-        }
+        return (clipInfo[0] / (clipInfo[1] * d + clipInfo[2]));
     }
 
 #endif

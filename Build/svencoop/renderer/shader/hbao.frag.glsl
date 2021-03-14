@@ -25,6 +25,7 @@ uniform  float   control_PowExponent;
 uniform  vec4    control_projInfo;
 uniform  vec2    control_projScale;
 uniform  int     control_projOrtho;
+uniform  vec2    control_Fog;
 
 // The pragma below is critical for optimal performance
 // in this fragment shader to let the shader compiler
@@ -270,4 +271,12 @@ void main()
   outputColor(vec4(pow(AO, control_PowExponent)));
 #endif
   
+#ifdef LINEAR_FOG_ENABLED
+	float z = length(ViewPosition);
+	float fogFactor = ( control_Fog.y - z ) / ( control_Fog.y - control_Fog.x );
+	fogFactor = clamp(fogFactor, 0.0, 1.0);
+  vec3 FogColor = vec3(1.0, 1.0, 1.0);
+
+	out_Color.xyz = mix(FogColor, out_Color.xyz, fogFactor );
+#endif
 }

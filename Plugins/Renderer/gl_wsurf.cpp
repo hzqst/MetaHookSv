@@ -8,6 +8,8 @@ cvar_t *r_wsurf_vbo;
 cvar_t *r_wsurf_parallax_scale;
 
 int r_wsurf_fogmode = 0;
+float r_wsurf_fogcontrol[2];
+float r_wsurf_fogcolor[4];
 int r_wsurf_drawcall = 0;
 int r_wsurf_polys = 0;
 
@@ -166,18 +168,6 @@ void R_FreeVertexBuffer(void)
 	{
 		qglDeleteBuffersARB(1, &r_wsurf.hVBO);
 		r_wsurf.hVBO = 0;
-	}
-
-	if (r_wsurf.hVBOCube)
-	{
-		qglDeleteBuffersARB(1, &r_wsurf.hVBOCube);
-		r_wsurf.hVBOCube = 0;
-	}
-
-	if (r_wsurf.hEBOCube)
-	{
-		qglDeleteBuffersARB(1, &r_wsurf.hEBOCube);
-		r_wsurf.hEBOCube = 0;
 	}
 
 	if (r_wsurf.vVertexBuffer)
@@ -542,78 +532,6 @@ void R_GenerateVertexBuffer(void)
 	qglBindBufferARB( GL_ARRAY_BUFFER_ARB, r_wsurf.hVBO );
 	qglBufferDataARB( GL_ARRAY_BUFFER_ARB, sizeof(brushvertex_t) * r_wsurf.iNumVerts, r_wsurf.vVertexBuffer, GL_STATIC_DRAW_ARB );
 	qglBindBufferARB( GL_ARRAY_BUFFER_ARB, 0 );
-
-	if (!r_wsurf.hVBOCube)
-	{
-		const float cube_vertices[][4] = {
-				{-0.5f, -0.5f, 0.5f, 0.5f},  // Far-Bottom-Left
-				{-0.5f, 0.5f, 0.5f, 0.5f},   // Far-Top-Left
-				{0.5f, 0.5f, 0.5f, 0.5f},    // Far-Top-Right
-				{0.5f, -0.5f, 0.5f, 0.5f},   // Far-Bottom-Right
-				{-0.5f, -0.5f, -0.5f, 0.5f}, // Near-Bottom-Left
-				{-0.5f, 0.5f, -0.5f, 0.5f},  // Near-Top-Left
-				{0.5f, 0.5f, -0.5f, 0.5f},   // Near-Top-Right
-				{0.5f, -0.5f, -0.5f, 0.5f}   // Near-Bottom-Right
-		};
-		qglGenBuffersARB(1, &r_wsurf.hVBOCube);
-		qglBindBufferARB(GL_ARRAY_BUFFER_ARB, r_wsurf.hVBOCube);
-		qglBufferDataARB(GL_ARRAY_BUFFER_ARB, sizeof(cube_vertices), cube_vertices, GL_STATIC_DRAW_ARB);
-		qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-	}
-
-	if (!r_wsurf.hEBOCube)
-	{
-		GLushort cube_elements[] = {
-			// front
-			0,
-			1,
-			2,
-			2,
-			3,
-			0,
-			// right
-			1,
-			5,
-			6,
-			6,
-			2,
-			1,
-			// back
-			7,
-			6,
-			5,
-			5,
-			4,
-			7,
-			// left
-			4,
-			0,
-			3,
-			3,
-			7,
-			4,
-			// bottom
-			4,
-			5,
-			1,
-			1,
-			0,
-			4,
-			// top
-			3,
-			2,
-			6,
-			6,
-			7,
-			3
-		};
-
-
-		qglGenBuffersARB(1, &r_wsurf.hEBOCube);
-		qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, r_wsurf.hEBOCube);
-		qglBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(cube_elements), cube_elements, GL_STATIC_DRAW_ARB);
-		qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-	}
 }
 
 void R_GenerateLightmapArray(void)
@@ -972,8 +890,6 @@ char *strtolower(char *str)
 void R_InitWSurf(void)
 {
 	r_wsurf.hVBO = 0;
-	r_wsurf.hVBOCube = 0;
-	r_wsurf.hEBOCube = 0;
 	r_wsurf.bLightmapTexture = false;
 	r_wsurf.bDetailTexture = false;
 	r_wsurf.bNormalTexture = false;
@@ -1356,6 +1272,8 @@ void DrawGLPolySolid(msurface_t *fa)
 
 void R_DrawDecals(qboolean bMultitexture)
 {
+	auto multitex = (*mtexenabled);
+
 	//Force using multitexture
 	if (drawgbuffer)
 	{
@@ -1370,8 +1288,18 @@ void R_DrawDecals(qboolean bMultitexture)
 		R_UseGBufferProgram(bMultitexture ? GBUFFER_DIFFUSE_ENABLED | GBUFFER_LIGHTMAP_ENABLED : GBUFFER_DIFFUSE_ENABLED);
 		R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
 
+		if (bMultitexture)
+			GL_EnableMultitexture();
+		else
+			GL_DisableMultitexture();
+
 		gRefFuncs.R_DrawDecals(bMultitexture);
 	}
+
+	if (multitex)
+		GL_EnableMultitexture();
+	else
+		GL_DisableMultitexture();
 
 	r_wsurf_polys ++;
 	r_wsurf_drawcall ++;
@@ -2211,6 +2139,13 @@ void R_DrawWorld(void)
 	if (qglIsEnabled(GL_FOG))
 	{
 		qglGetIntegerv(GL_FOG_MODE, &r_wsurf_fogmode);
+
+		if (r_wsurf_fogmode == GL_LINEAR)
+		{
+			qglGetFloatv(GL_FOG_START, &r_wsurf_fogcontrol[0]);
+			qglGetFloatv(GL_FOG_END, &r_wsurf_fogcontrol[1]);
+			qglGetFloatv(GL_FOG_COLOR, r_wsurf_fogcolor);
+		}
 	}
 
 	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);

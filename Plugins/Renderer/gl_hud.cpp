@@ -34,6 +34,7 @@ SHADER_DEFINE(pp_tonemap);
 SHADER_DEFINE(depth_linearize);
 SHADER_DEFINE(depth_linearize_msaa);
 SHADER_DEFINE(hbao_calc_blur);
+SHADER_DEFINE(hbao_calc_blur_fog);
 SHADER_DEFINE(hbao_blur);
 SHADER_DEFINE(hbao_blur2);
 
@@ -286,46 +287,44 @@ void R_InitGLHUD(void)
 
 	//SSAO
 	depth_linearize.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", NULL, "renderer\\shader\\depthlinearize.frag.glsl");
-	if (depth_linearize.program)
-	{
-	}
 
 	depth_linearize_msaa.program = R_CompileShaderFileEx("renderer\\shader\\fullscreenquad.vert.glsl", NULL, "renderer\\shader\\depthlinearize.frag.glsl",
 		"#define DEPTHLINEARIZE_MSAA 1\n", NULL, "#define DEPTHLINEARIZE_MSAA 1\n");
-	if (depth_linearize_msaa.program)
-	{
-	}
 
 	hbao_calc_blur.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", NULL, "renderer\\shader\\hbao.frag.glsl");
-	if (hbao_calc_blur.program)
-	{
-		SHADER_UNIFORM(hbao_calc_blur, texLinearDepth, "texLinearDepth");
-		SHADER_UNIFORM(hbao_calc_blur, texRandom, "texRandom");
-		SHADER_UNIFORM(hbao_calc_blur, control_RadiusToScreen, "control_RadiusToScreen");
-		SHADER_UNIFORM(hbao_calc_blur, control_projOrtho, "control_projOrtho");
-		SHADER_UNIFORM(hbao_calc_blur, control_projInfo, "control_projInfo");
-		SHADER_UNIFORM(hbao_calc_blur, control_PowExponent, "control_PowExponent");
-		SHADER_UNIFORM(hbao_calc_blur, control_InvQuarterResolution, "control_InvQuarterResolution");
-		SHADER_UNIFORM(hbao_calc_blur, control_AOMultiplier, "control_AOMultiplier");
-		SHADER_UNIFORM(hbao_calc_blur, control_InvFullResolution, "control_InvFullResolution");
-		SHADER_UNIFORM(hbao_calc_blur, control_NDotVBias, "control_NDotVBias");
-		SHADER_UNIFORM(hbao_calc_blur, control_NegInvR2, "control_NegInvR2");
-	}
+	SHADER_UNIFORM(hbao_calc_blur, texLinearDepth, "texLinearDepth");
+	SHADER_UNIFORM(hbao_calc_blur, texRandom, "texRandom");
+	SHADER_UNIFORM(hbao_calc_blur, control_RadiusToScreen, "control_RadiusToScreen");
+	SHADER_UNIFORM(hbao_calc_blur, control_projOrtho, "control_projOrtho");
+	SHADER_UNIFORM(hbao_calc_blur, control_projInfo, "control_projInfo");
+	SHADER_UNIFORM(hbao_calc_blur, control_PowExponent, "control_PowExponent");
+	SHADER_UNIFORM(hbao_calc_blur, control_InvQuarterResolution, "control_InvQuarterResolution");
+	SHADER_UNIFORM(hbao_calc_blur, control_AOMultiplier, "control_AOMultiplier");
+	SHADER_UNIFORM(hbao_calc_blur, control_InvFullResolution, "control_InvFullResolution");
+	SHADER_UNIFORM(hbao_calc_blur, control_NDotVBias, "control_NDotVBias");
+	SHADER_UNIFORM(hbao_calc_blur, control_NegInvR2, "control_NegInvR2");
+
+	hbao_calc_blur_fog.program = R_CompileShaderFileEx("renderer\\shader\\fullscreenquad.vert.glsl", NULL, "renderer\\shader\\hbao.frag.glsl", 
+		"#define LINEAR_FOG_ENABLED\n", NULL, "#define LINEAR_FOG_ENABLED\n");
+	SHADER_UNIFORM(hbao_calc_blur_fog, texLinearDepth, "texLinearDepth");
+	SHADER_UNIFORM(hbao_calc_blur_fog, texRandom, "texRandom");
+	SHADER_UNIFORM(hbao_calc_blur_fog, control_RadiusToScreen, "control_RadiusToScreen");
+	SHADER_UNIFORM(hbao_calc_blur_fog, control_projOrtho, "control_projOrtho");
+	SHADER_UNIFORM(hbao_calc_blur_fog, control_projInfo, "control_projInfo");
+	SHADER_UNIFORM(hbao_calc_blur_fog, control_PowExponent, "control_PowExponent");
+	SHADER_UNIFORM(hbao_calc_blur_fog, control_InvQuarterResolution, "control_InvQuarterResolution");
+	SHADER_UNIFORM(hbao_calc_blur_fog, control_AOMultiplier, "control_AOMultiplier");
+	SHADER_UNIFORM(hbao_calc_blur_fog, control_InvFullResolution, "control_InvFullResolution");
+	SHADER_UNIFORM(hbao_calc_blur_fog, control_NDotVBias, "control_NDotVBias");
+	SHADER_UNIFORM(hbao_calc_blur_fog, control_NegInvR2, "control_NegInvR2");
+	SHADER_UNIFORM(hbao_calc_blur_fog, control_Fog, "control_Fog");
 
 	hbao_blur.program = R_CompileShaderFileEx("renderer\\shader\\fullscreenquad.vert.glsl", NULL, "renderer\\shader\\hbao_blur.frag.glsl",
 		"", NULL, "");
-	if (hbao_blur.program)
-	{
-	}
 
 	hbao_blur2.program = R_CompileShaderFileEx("renderer\\shader\\fullscreenquad.vert.glsl", NULL, "renderer\\shader\\hbao_blur.frag.glsl",
 		"#define AO_BLUR_PRESENT\n", NULL, "#define AO_BLUR_PRESENT\n");
-	if (hbao_blur2.program)
-	{
 
-	}
-
-	//gaussian blur code
 	R_InitBlur(16);
 
 	r_hdr = gEngfuncs.pfnRegisterVariable("r_hdr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -845,17 +844,33 @@ int R_DoSSAO(int sampleIndex)
 	InvFullResolution[1] = 1.0f / float(glheight);
 
 	//setup args for hbao_calc
-
-	qglUseProgramObjectARB(hbao_calc_blur.program);
-	qglUniform1iARB(hbao_calc_blur.control_projOrtho, projOrtho);
-	qglUniform4fvARB(hbao_calc_blur.control_projInfo, 1, projInfo);
-	qglUniform2fvARB(hbao_calc_blur.control_InvFullResolution, 1, InvFullResolution);
-	qglUniform2fvARB(hbao_calc_blur.control_InvQuarterResolution, 1, InvQuarterResolution);
-	qglUniform1fARB(hbao_calc_blur.control_RadiusToScreen, RadiusToScreen);
-	qglUniform1fARB(hbao_calc_blur.control_AOMultiplier, AOMultiplier);
-	qglUniform1fARB(hbao_calc_blur.control_NDotVBias, NDotVBias);
-	qglUniform1fARB(hbao_calc_blur.control_NegInvR2, NegInvR2);
-	qglUniform1fARB(hbao_calc_blur.control_PowExponent, PowExponent);
+	if (r_wsurf_fogmode == GL_LINEAR)
+	{
+		qglUseProgramObjectARB(hbao_calc_blur_fog.program);
+		qglUniform4fvARB(hbao_calc_blur_fog.control_projInfo, 1, projInfo);
+		qglUniform2fvARB(hbao_calc_blur_fog.control_InvFullResolution, 1, InvFullResolution);
+		qglUniform2fvARB(hbao_calc_blur_fog.control_InvQuarterResolution, 1, InvQuarterResolution);
+		qglUniform1iARB(hbao_calc_blur_fog.control_projOrtho, projOrtho);
+		qglUniform1fARB(hbao_calc_blur_fog.control_RadiusToScreen, RadiusToScreen);
+		qglUniform1fARB(hbao_calc_blur_fog.control_AOMultiplier, AOMultiplier);
+		qglUniform1fARB(hbao_calc_blur_fog.control_NDotVBias, NDotVBias);
+		qglUniform1fARB(hbao_calc_blur_fog.control_NegInvR2, NegInvR2);
+		qglUniform1fARB(hbao_calc_blur_fog.control_PowExponent, PowExponent);
+		qglUniform2fARB(hbao_calc_blur_fog.control_Fog, r_wsurf_fogcontrol[0], r_wsurf_fogcontrol[1]);
+	}
+	else
+	{
+		qglUseProgramObjectARB(hbao_calc_blur.program);
+		qglUniform4fvARB(hbao_calc_blur.control_projInfo, 1, projInfo);
+		qglUniform2fvARB(hbao_calc_blur.control_InvFullResolution, 1, InvFullResolution);
+		qglUniform2fvARB(hbao_calc_blur.control_InvQuarterResolution, 1, InvQuarterResolution);
+		qglUniform1iARB(hbao_calc_blur.control_projOrtho, projOrtho);
+		qglUniform1fARB(hbao_calc_blur.control_RadiusToScreen, RadiusToScreen);
+		qglUniform1fARB(hbao_calc_blur.control_AOMultiplier, AOMultiplier);
+		qglUniform1fARB(hbao_calc_blur.control_NDotVBias, NDotVBias);
+		qglUniform1fARB(hbao_calc_blur.control_NegInvR2, NegInvR2);
+		qglUniform1fARB(hbao_calc_blur.control_PowExponent, PowExponent);
+	}
 
 	GL_SelectTexture(TEXTURE0_SGIS);
 	GL_Bind(s_DepthLinearFBO.s_hBackBufferTex);
@@ -878,14 +893,10 @@ int R_DoSSAO(int sampleIndex)
 
 	GL_DisableMultitexture();
 	GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex);
-	//GL_EnableMultitexture();
-	//GL_Bind(s_DepthLinearFBO.s_hBackBufferTex);
 
 	R_DrawHUDQuad(glwidth, glheight);
 
 	qglUseProgramObjectARB(0);
-
-	//GL_DisableMultitexture();
 
 	//Final output stage, write to main FBO or MSAA FBO.
 	if (R_UseMSAA())
@@ -917,6 +928,7 @@ int R_DoSSAO(int sampleIndex)
 	qglUniform2fARB(1, 0, 1.0f / float(glheight));
 
 	GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex2);
+
 	R_DrawHUDQuad(glwidth, glheight);
 
 	qglUseProgramObjectARB(0);

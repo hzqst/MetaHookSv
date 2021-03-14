@@ -270,8 +270,6 @@ void R_DrawSpriteModel(cl_entity_t *entity)
 	R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED | GBUFFER_TRANSPARENT_ENABLED);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
-//	GL_DisableMultitexture();
-
 	gRefFuncs.R_DrawSpriteModel(entity);
 }
 
@@ -1772,7 +1770,7 @@ void R_InitCvars(void)
 	cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
 	chase_active = gEngfuncs.pfnGetCvarPointer("chase_active");
 
-	r_msaa = gEngfuncs.pfnRegisterVariable("r_msaa", "4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_msaa = gEngfuncs.pfnRegisterVariable("r_msaa", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 }
 
 void R_Init(void)

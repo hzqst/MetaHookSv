@@ -108,18 +108,14 @@ typedef struct
 	int control_InvFullResolution;
 	int control_NDotVBias;
 	int control_NegInvR2;
-}hbao_calc_blur_program_t;
+
+	int control_Fog;
+}hbao_calc_blur_program_t, hbao_calc_blur_fog_program_t;
 
 typedef struct
 {
-	int program;
-	
-}hbao_blur_program_t;
-
-typedef struct
-{
-	int program;
-}hbao_blur2_program_t;
+	int program;	
+}hbao_blur_program_t, hbao_blur2_program_t;
 
 extern cvar_t *r_hdr;
 extern cvar_t *r_hdr_debug;
