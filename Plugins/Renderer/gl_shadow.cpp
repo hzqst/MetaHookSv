@@ -506,11 +506,7 @@ void R_DrawBrushModelShadow(cl_entity_t *e)
 
 			if (psurf->flags & SURF_DRAWTURB)
 			{
-				if (pplane->type != PLANE_Z && gl_watersides && !gl_watersides->value)
-					continue;
-
-				if (mins[2] + 1.0 >= pplane->dist)
-					continue;
+				continue;
 			}
 
 			dot = DotProduct(modelorg, pplane->normal) - pplane->dist;

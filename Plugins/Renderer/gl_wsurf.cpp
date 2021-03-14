@@ -753,13 +753,26 @@ void R_EnableWSurfVBO(wsurf_model_t *modcache)
 
 void R_DrawWSurfVBO(wsurf_model_t *modcache)
 {
-	qglActiveTextureARB(TEXTURE1_SGIS);
-	qglDisable(GL_TEXTURE_2D);
-	qglEnable(GL_TEXTURE_2D_ARRAY);
-	qglBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
+	GL_DisableMultitexture();
+
+	if (r_wsurf.bDiffuseTexture)
+	{
+		qglEnable(GL_TEXTURE_2D);
+	}
+	else
+	{
+		qglDisable(GL_TEXTURE_2D);
+	}
+
+	if (r_wsurf.bLightmapTexture)
+	{
+		qglActiveTextureARB(TEXTURE1_SGIS);
+		qglDisable(GL_TEXTURE_2D);
+		qglEnable(GL_TEXTURE_2D_ARRAY);
+		qglBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
+	}
 
 	qglActiveTextureARB(TEXTURE0_SGIS);
-	qglEnable(GL_TEXTURE_2D);
 
 	for (size_t i = 0; i < modcache->vTextureChainStatic.size(); ++i)
 	{
@@ -818,8 +831,8 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 
 		auto prog = R_UseWSurfProgram(WSurfProgramState);
 
-		if (prog->program != -1)
-			qglUniform1fARB(prog->program, 0);
+		if (prog->speed != -1)
+			qglUniform1fARB(prog->speed, 0);
 
 		qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
 
@@ -898,17 +911,23 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		}
 	}
 
-	qglActiveTextureARB(TEXTURE1_SGIS);
-	qglDisable(GL_TEXTURE_2D_ARRAY);
-	if ((*mtexenabled))
+	if (r_wsurf.bLightmapTexture)
 	{
-		qglEnable(GL_TEXTURE_2D);
+		qglActiveTextureARB(TEXTURE1_SGIS);
+		qglDisable(GL_TEXTURE_2D_ARRAY);
+		if ((*mtexenabled))
+		{
+			qglEnable(GL_TEXTURE_2D);
+		}
+		else
+		{
+			qglDisable(GL_TEXTURE_2D);
+			qglActiveTextureARB(TEXTURE0_SGIS);
+		}
 	}
-	else
-	{
-		qglDisable(GL_TEXTURE_2D);
-		qglActiveTextureARB(TEXTURE0_SGIS);
-	}
+
+	qglActiveTextureARB(TEXTURE0_SGIS);
+	qglEnable(GL_TEXTURE_2D);
 
 	qglUseProgramObjectARB(0);
 }
@@ -938,8 +957,6 @@ void R_DrawWSurfVBOSolid(wsurf_model_t *modcache)
 			r_wsurf_polys += texchain.iFaceCount;
 		}
 	}
-
-	qglUseProgramObjectARB(0);
 }
 
 char *strtolower(char *str)
@@ -1279,22 +1296,22 @@ void DrawGLVertex(brushface_t *brushface)
 		if (r_wsurf.bDiffuseTexture)
 			qglMultiTexCoord3fARB(TEXTURE0_SGIS, vert->texcoord[0], vert->texcoord[1], vert->texcoord[2]);
 
-		if(r_wsurf.bLightmapTexture)
+		if (r_wsurf.bLightmapTexture)
 			qglMultiTexCoord3fARB(TEXTURE1_SGIS, vert->lightmaptexcoord[0], vert->lightmaptexcoord[1], vert->lightmaptexcoord[2]);
 
-		if(r_wsurf.bDetailTexture)
-			qglMultiTexCoord2fARB(TEXTURE2_SGIS, vert->texcoord[0] * vert->detailtexcoord[0], vert->texcoord[1] * vert->detailtexcoord[1]);
+		if (r_wsurf.bDetailTexture)
+			qglMultiTexCoord2fARB(TEXTURE2_SGIS, vert->detailtexcoord[0], vert->detailtexcoord[1]);
 
 		if (r_wsurf.bNormalTexture)
-			qglMultiTexCoord2fARB(TEXTURE3_SGIS, vert->texcoord[0] * vert->normaltexcoord[0], vert->texcoord[1] * vert->normaltexcoord[1]);
+			qglMultiTexCoord2fARB(TEXTURE3_SGIS, vert->normaltexcoord[0], vert->normaltexcoord[1]);
 
 		if (r_wsurf.bParallaxTexture)
-			qglMultiTexCoord2fARB(GL_TEXTURE3_ARB, vert->texcoord[0] * vert->parallaxtexcoord[0], vert->texcoord[1] * vert->parallaxtexcoord[1]);
+			qglMultiTexCoord2fARB(GL_TEXTURE4_ARB, vert->parallaxtexcoord[0], vert->parallaxtexcoord[1]);
 
-		if(r_wsurf.iS_Tangent != -1)
+		if (r_wsurf.iS_Tangent != -1)
 			qglVertexAttrib3fv(r_wsurf.iS_Tangent, vert->s_tangent);
 
-		if(r_wsurf.iT_Tangent != -1)
+		if (r_wsurf.iT_Tangent != -1)
 			qglVertexAttrib3fv(r_wsurf.iT_Tangent, vert->t_tangent);
 
 		qglNormal3fv(vert->normal);
@@ -1345,11 +1362,11 @@ void R_DrawDecals(qboolean bMultitexture)
 		R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED);
 		R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
 
+		GL_DisableMultitexture();
 		gRefFuncs.R_DrawDecals(false);
 	}
 	else
 	{
-
 		R_UseGBufferProgram(bMultitexture ? GBUFFER_DIFFUSE_ENABLED | GBUFFER_LIGHTMAP_ENABLED : GBUFFER_DIFFUSE_ENABLED);
 		R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
 
@@ -1358,10 +1375,6 @@ void R_DrawDecals(qboolean bMultitexture)
 
 	r_wsurf_polys ++;
 	r_wsurf_drawcall ++;
-
-	//Restore if not enabled
-	if (!bMultitexture)
-		GL_DisableMultitexture();
 }
 
 void R_DrawSequentialPoly(msurface_t *s, int face)
@@ -2101,11 +2114,20 @@ void R_DrawBrushModel(cl_entity_t *e)
 
 			if (((psurf->flags & SURF_PLANEBACK) && (dot < -BACKFACE_EPSILON)) || (!(psurf->flags & SURF_PLANEBACK) && (dot > BACKFACE_EPSILON)))
 			{
-				R_DrawSequentialPolyVBO(psurf);
+				//fuck water
+				if (psurf->flags & SURF_DRAWTURB)
+				{
+					R_SetRenderMode(e);
+					R_DrawSequentialPoly(psurf, 0);
+				}
+				else
+				{
+					R_DrawSequentialPolyVBO(psurf);
+				}
 			}
 			else
 			{
-				if (psurf->flags & SURF_DRAWTURB)//wtf water?
+				if (psurf->flags & SURF_DRAWTURB)
 				{
 					R_SetRenderMode(e);
 					R_DrawSequentialPoly(psurf, 1);
@@ -2224,6 +2246,7 @@ void R_DrawWorld(void)
 		(*gDecalSurfCount) = 0;
 	}
 
+	GL_DisableMultitexture();
 	r_wsurf.bLightmapTexture = false;
 
 	(*currententity) = gEngfuncs.GetEntityByIndex(0);

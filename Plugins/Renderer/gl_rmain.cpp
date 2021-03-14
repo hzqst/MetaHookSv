@@ -199,6 +199,12 @@ qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 	if (r_draw_pass == r_draw_shadow)
 		return false;
 
+	if ((*currententity)->model && (*currententity)->model->type == mod_studio)
+	{
+		if ((*currententity)->curstate.scale > 8.0f)
+			return false;
+	}
+
 	return gRefFuncs.R_CullBox(mins, maxs);
 }
 
