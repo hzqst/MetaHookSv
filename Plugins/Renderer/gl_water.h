@@ -68,7 +68,6 @@ extern cvar_t *r_water_fresnel;
 extern cvar_t *r_water_depthfactor;
 extern cvar_t *r_water_normfactor;
 extern cvar_t *r_water_novis;
-extern cvar_t *r_water_texscale;
 extern cvar_t *r_water_minheight;
 
 typedef struct

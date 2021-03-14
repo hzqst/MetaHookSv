@@ -219,6 +219,8 @@ void HUD_DrawNormalTriangles(void)
 		}
 	}
 
+	//GL_PushFrameBuffer();
+
 	//Allow SCClient to write stencil buffer (but not bit 1)?
 	qglStencilMask(0xFF);
 	qglClear(GL_STENCIL_BUFFER_BIT);
@@ -226,10 +228,18 @@ void HUD_DrawNormalTriangles(void)
 	qglStencilMask(0);
 
 	//Restore current framebuffer just in case that Sven-Coop client changes it
-	if (R_UseMSAA())
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
+	
+	if (r_draw_pass == r_draw_reflect || r_draw_pass == r_draw_refract)
+	{
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
+	}
 	else
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	{
+		if (R_UseMSAA())
+			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
+		else
+			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	}
 }
 
 void HUD_DrawTransparentTriangles(void)

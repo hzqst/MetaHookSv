@@ -125,7 +125,15 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	cshift_water->destcolor[2] = pSourcePalette[11];
 	cshift_water->percent = pSourcePalette[12];
 
+	if (gWaterColor->r == 0 && gWaterColor->g == 0 && gWaterColor->b == 0)
+	{
+		gWaterColor->r = pSourcePalette[0];
+		gWaterColor->g = pSourcePalette[1];
+		gWaterColor->b = pSourcePalette[2];
+	}
+
 	gWaterColor->a = 255;
+
 	if ((*currententity)->curstate.rendermode == kRenderTransTexture)
 		gWaterColor->a = (*r_blend) * 255;
 

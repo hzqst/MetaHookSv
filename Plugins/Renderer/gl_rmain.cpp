@@ -1003,10 +1003,10 @@ void R_SetupGL(void)
 {
 	gRefFuncs.R_SetupGL();
 
-	if ((r_draw_pass == r_draw_reflect || r_draw_pass == r_draw_refract) && curwater)
+	/*if ((r_draw_pass == r_draw_reflect || r_draw_pass == r_draw_refract) && curwater)
 	{
 		qglViewport(0, 0, curwater->texwidth, curwater->texheight);
-	}
+	}*/
 }
 
 void R_CalcRefdef(struct ref_params_s *pparams)

@@ -25,7 +25,6 @@ cvar_t *r_water_fresnel = NULL;
 cvar_t *r_water_depthfactor = NULL;
 cvar_t *r_water_normfactor = NULL;
 cvar_t *r_water_novis = NULL;
-cvar_t *r_water_texscale = NULL;
 cvar_t *r_water_minheight = NULL;
 
 std::unordered_map<int, water_program_t> g_WaterProgramTable;
@@ -178,7 +177,6 @@ void R_InitWater(void)
 	r_water_depthfactor = gEngfuncs.pfnRegisterVariable("r_water_depthfactor", "50", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_normfactor = gEngfuncs.pfnRegisterVariable("r_water_normfactor", "1.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_novis = gEngfuncs.pfnRegisterVariable("r_water_novis", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_water_texscale = gEngfuncs.pfnRegisterVariable("r_water_texscale", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_minheight = gEngfuncs.pfnRegisterVariable("r_water_minheight", "7.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	curwater = NULL;
@@ -228,13 +226,6 @@ r_water_t *R_GetActiveWater(cl_entity_t *ent, vec3_t p, vec3_t n, colorVec *colo
 
 	int water_texture_width = glwidth;
 	int water_texture_height = glheight;
-
-	int desired_height = glheight * clamp(r_water_texscale->value, 0.1, 2.0);
-	while ((water_texture_height >> 1) >= desired_height)
-	{
-		water_texture_width >>= 1;
-		water_texture_height >>= 1;
-	}
 
 	//Load if normalmap not exists.
 	if (!water_normalmap)
@@ -302,6 +293,9 @@ void R_RenderReflectView(void)
 	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, curwater->depthreflmap, 0);
 	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
 
+	s_WaterFBO.s_hBackBufferTex = curwater->reflectmap;
+	s_WaterFBO.s_hBackBufferDepthTex = curwater->depthreflmap;
+
 	qglClearColor(curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, 1);
 	qglStencilMask(0xFF);
 	qglClearStencil(0);
@@ -362,6 +356,9 @@ void R_RenderRefractView(void)
 	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, curwater->refractmap, 0);
 	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, curwater->depthrefrmap, 0);
 	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+	s_WaterFBO.s_hBackBufferTex = curwater->refractmap;
+	s_WaterFBO.s_hBackBufferDepthTex = curwater->depthrefrmap;
 
 	qglClearColor(curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, 1);
 	qglStencilMask(0xFF);
