@@ -150,6 +150,11 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
+	vec3_t normal;
+	VectorCopy(brushface->normal, normal);
+	if (direction == 1)
+		VectorInverse(normal);
+
 	if(r_water && r_water->value && !dontShader)
 	{
 		r_water_t *waterObject = NULL;
@@ -162,10 +167,10 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		}
 		else
 		{
-			waterObject = R_GetActiveWater((*currententity), tempVert, brushface->normal, gWaterColor);
+			waterObject = R_GetActiveWater((*currententity), tempVert, normal, gWaterColor);
 		}
 
-		if(waterObject && waterObject->refractmap_ready && ((waterObject->reflectmap_ready && bAboveWater) || !bAboveWater))
+		if(waterObject && waterObject->ready)
 		{
 			float alpha = 1;
 			if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
@@ -209,7 +214,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 				GL_Bind(water_normalmap);
 
 				GL_EnableMultitexture();
-				GL_Bind(waterObject->refractmap);
+				GL_Bind(refractmap);
 
 				if (prog.reflectmap != -1)
 				{
@@ -222,7 +227,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 				{
 					qglActiveTextureARB(TEXTURE3_SGIS);
 					qglEnable(GL_TEXTURE_2D);
-					qglBindTexture(GL_TEXTURE_2D, waterObject->depthrefrmap);
+					qglBindTexture(GL_TEXTURE_2D, depthrefrmap);
 				}
 
 				useProgram = 1;
@@ -288,7 +293,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 				qglMultiTexCoord2fARB(TEXTURE0_SGIS, os, ot);
 			}
 
-			qglNormal3fv(brushface->normal);
+			qglNormal3fv(normal);
 			qglVertex3fv(tempVert);
 
 			if (direction)

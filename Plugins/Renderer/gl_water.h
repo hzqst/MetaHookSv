@@ -25,11 +25,12 @@ typedef struct
 	int depthmap;
 }drawdepth_program_t;
 
+extern GLuint refractmap;
+extern GLuint depthrefrmap;
+extern qboolean refractmap_ready;
+
 typedef struct r_water_s
 {
-	GLuint refractmap;
-	GLuint depthrefrmap;
-
 	GLuint reflectmap;
 	GLuint depthreflmap;
 
@@ -39,12 +40,9 @@ typedef struct r_water_s
 	cl_entity_t *ent;
 	vec3_t org;
 	colorVec color;
-	int texwidth;
-	int texheight;
 	int free;
 	int framecount;
-	qboolean refractmap_ready;
-	qboolean reflectmap_ready;
+	qboolean ready;
 	struct r_water_s *next;
 }r_water_t;
 

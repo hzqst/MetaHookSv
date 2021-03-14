@@ -13,6 +13,9 @@ r_water_t *waters_active;
 //shader
 
 int water_normalmap = 0;
+GLuint refractmap = 0;
+GLuint depthrefrmap = 0;
+qboolean refractmap_ready = 0;
 
 SHADER_DEFINE(drawdepth);
 
@@ -104,6 +107,17 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 
 void R_FreeWater(void)
 {
+	if (refractmap)
+	{
+		GL_DeleteTexture(refractmap);
+		refractmap = 0;
+	}
+	if (depthrefrmap)
+	{
+		GL_DeleteTexture(depthrefrmap);
+		depthrefrmap = 0;
+	}
+
 	for (int i = 0; i < MAX_WATERS; ++i)
 	{
 		if (waters[i].depthreflmap)
@@ -111,23 +125,12 @@ void R_FreeWater(void)
 			GL_DeleteTexture(waters[i].depthreflmap);
 			waters[i].depthreflmap = 0;
 		}
-		if (waters[i].depthrefrmap)
-		{
-			GL_DeleteTexture(waters[i].depthrefrmap);
-			waters[i].depthrefrmap = 0;
-		}
 		if (waters[i].reflectmap)
 		{
 			GL_DeleteTexture(waters[i].reflectmap);
 			waters[i].reflectmap = 0;
 		}
-		if (waters[i].refractmap)
-		{
-			GL_DeleteTexture(waters[i].refractmap);
-			waters[i].refractmap = 0;
-		}
-		waters[i].reflectmap_ready = false;
-		waters[i].refractmap_ready = false;
+		waters[i].ready = false;
 	}
 
 	g_WaterProgramTable.clear();
@@ -184,13 +187,13 @@ void R_InitWater(void)
 	R_ClearWater();
 }
 
-int R_ShouldReflect(void) 
+bool R_ShouldReflect(r_water_t *w) 
 {
 	//The camera is above water?
-	if(curwater->vecs[2] > r_refdef->vieworg[2] || *cl_waterlevel >= 3)
-		return 0;
+	if(w->vecs[2] > r_refdef->vieworg[2] || *cl_waterlevel >= 3)
+		return false;
 
-	return 1;
+	return true;
 }
 
 r_water_t *R_GetActiveWater(cl_entity_t *ent, vec3_t p, vec3_t n, colorVec *color)
@@ -224,55 +227,34 @@ r_water_t *R_GetActiveWater(cl_entity_t *ent, vec3_t p, vec3_t n, colorVec *colo
 	w->next = waters_active;
 	waters_active = w;
 
-	int water_texture_width = glwidth;
-	int water_texture_height = glheight;
-
 	//Load if normalmap not exists.
 	if (!water_normalmap)
+	{
 		water_normalmap = R_LoadTexture("renderer\\texture\\water_normalmap.tga", "renderer\\texture\\water_normalmap.tga", NULL, NULL, GLT_SYSTEM);
+	}
 
 	//Upload color textures and depth textures.
+	if (!refractmap)
+	{
+		refractmap = GL_GenTextureRGBA8(glwidth, glheight);
+	}
+
+	if (!depthrefrmap)
+	{
+		depthrefrmap = GL_GenDepthTexture(glwidth, glheight);
+	}
+
 	if (!w->reflectmap)
 	{
-		w->reflectmap = GL_GenTextureRGBA8(water_texture_width, water_texture_height);
-	}
-	else if (w->texwidth != water_texture_width)
-	{
-		GL_UploadTextureColorFormat(w->reflectmap, water_texture_width, water_texture_height, GL_RGBA8);
-	}
-
-	if (!w->refractmap)
-	{
-		w->refractmap = GL_GenTextureRGBA8(water_texture_width, water_texture_height);
-	}
-	else if (w->texwidth != water_texture_width)
-	{
-		GL_UploadTextureColorFormat(w->refractmap, water_texture_width, water_texture_height, GL_RGBA8);
-	}
-
-	if (!w->depthrefrmap)
-	{
-		w->depthrefrmap = GL_GenDepthTexture(water_texture_width, water_texture_height);
-	}
-	else if (w->texwidth != water_texture_width)
-	{
-		GL_UploadDepthTexture(w->depthrefrmap, water_texture_width, water_texture_height);
+		w->reflectmap = GL_GenTextureRGBA8(glwidth, glheight);
 	}
 
 	if (!w->depthreflmap)
 	{
-		w->depthreflmap = GL_GenDepthTexture(water_texture_width, water_texture_height);
-	}
-	else if (w->texwidth != water_texture_width)
-	{
-		GL_UploadDepthTexture(w->depthreflmap, water_texture_width, water_texture_height);
+		w->depthreflmap = GL_GenDepthTexture(glwidth, glheight);
 	}
 
-	w->texwidth = water_texture_width;
-	w->texheight = water_texture_height;
-
-	w->reflectmap_ready = false;
-	w->refractmap_ready = false;
+	w->ready = false;
 
 	VectorCopy(p, w->vecs);
 	VectorCopy(n, w->norm);
@@ -283,20 +265,21 @@ r_water_t *R_GetActiveWater(cl_entity_t *ent, vec3_t p, vec3_t n, colorVec *colo
 	memcpy(&w->color, color, sizeof(*color));
 	w->free = false;
 	w->framecount = (*r_framecount);
+
 	return w;
 }
 
-void R_RenderReflectView(void)
+void R_RenderReflectView(r_water_t *w)
 {
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
-	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, curwater->reflectmap, 0);
-	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, curwater->depthreflmap, 0);
+	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, w->reflectmap, 0);
+	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, w->depthreflmap, 0);
 	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-	s_WaterFBO.s_hBackBufferTex = curwater->reflectmap;
-	s_WaterFBO.s_hBackBufferDepthTex = curwater->depthreflmap;
+	s_WaterFBO.s_hBackBufferTex = w->reflectmap;
+	s_WaterFBO.s_hBackBufferDepthTex = w->depthreflmap;
 
-	qglClearColor(curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, 1);
+	qglClearColor(w->color.r / 255.0f, w->color.g / 255.0f, w->color.b / 255.0f, 1);
 	qglStencilMask(0xFF);
 	qglClearStencil(0);
 	qglDepthMask(GL_TRUE);
@@ -310,11 +293,11 @@ void R_RenderReflectView(void)
 	float vForward[3], vRight[3], vUp[3];
 	gEngfuncs.pfnAngleVectors(r_refdef->viewangles, vForward, vRight, vUp);
 
-	float flDist = fabs(curwater->vecs[2] - r_refdef->vieworg[2]);
-	VectorMA(r_refdef->vieworg, -2 * flDist, curwater->norm, r_refdef->vieworg);
+	float flDist = fabs(w->vecs[2] - r_refdef->vieworg[2]);
+	VectorMA(r_refdef->vieworg, -2 * flDist, w->norm, r_refdef->vieworg);
 
 	float neg_norm[3];
-	VectorCopy(curwater->norm, neg_norm);
+	VectorCopy(w->norm, neg_norm);
 	VectorInverse(neg_norm);
 
 	float flDist2 = DotProduct(vForward, neg_norm);
@@ -347,20 +330,23 @@ void R_RenderReflectView(void)
 
 	r_draw_pass = r_draw_normal;
 
-	curwater->reflectmap_ready = true;
+	w->ready = true;
 }
 
-void R_RenderRefractView(void)
+void R_RenderRefractView(r_water_t *w)
 {
+	if (refractmap_ready)
+		goto end;
+
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
-	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, curwater->refractmap, 0);
-	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, curwater->depthrefrmap, 0);
+	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, refractmap, 0);
+	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthrefrmap, 0);
 	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-	s_WaterFBO.s_hBackBufferTex = curwater->refractmap;
-	s_WaterFBO.s_hBackBufferDepthTex = curwater->depthrefrmap;
+	s_WaterFBO.s_hBackBufferTex = refractmap;
+	s_WaterFBO.s_hBackBufferDepthTex = depthrefrmap;
 
-	qglClearColor(curwater->color.r / 255.0f, curwater->color.g / 255.0f, curwater->color.b / 255.0f, 1);
+	qglClearColor(w->color.r / 255.0f, w->color.g / 255.0f, w->color.b / 255.0f, 1);
 	qglStencilMask(0xFF);
 	qglClearStencil(0);
 	qglDepthMask(GL_TRUE);
@@ -370,8 +356,6 @@ void R_RenderRefractView(void)
 	R_PushRefDef();
 
 	VectorCopy(r_refdef->vieworg, water_view);
-
-	VectorCopy(water_view, r_refdef->vieworg);
 
 	r_draw_pass = r_draw_refract;
 
@@ -396,7 +380,9 @@ void R_RenderRefractView(void)
 
 	r_draw_pass = r_draw_normal;
 
-	curwater->refractmap_ready = true;
+end:
+	w->ready = true;
+	refractmap_ready = true;
 }
 
 void R_FreeDeadWaters(void)
@@ -438,18 +424,20 @@ void R_FreeDeadWaters(void)
 
 void R_RenderWaterView(void)
 {
+	refractmap_ready = false;
+
 	GL_PushFrameBuffer();
 
 	for(r_water_t *w = waters_active; w; w = w->next)
 	{
 		curwater = w;
 
-		if(R_ShouldReflect())
+		if(R_ShouldReflect(w))
 		{
-			R_RenderReflectView();
+			R_RenderReflectView(w);
 		}
 
-		R_RenderRefractView();
+		R_RenderRefractView(w);
 
 		curwater = NULL;
 	}

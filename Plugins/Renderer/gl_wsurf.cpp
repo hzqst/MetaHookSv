@@ -1117,6 +1117,9 @@ void R_DrawWireFrame(brushface_t *brushface, void(*draw)(brushface_t *face))
 
 void R_BeginDetailTexture(int texId)
 {
+	if (r_detailtextures && !r_detailtextures->value)
+		return;
+
 	auto itor = g_DetailTextureTable.find(texId);
 
 	if (itor != g_DetailTextureTable.end())
@@ -2030,7 +2033,7 @@ void R_DrawBrushModel(cl_entity_t *e)
 
 			if (psurf->flags & SURF_DRAWTURB)
 			{
-				if (pplane->type != PLANE_Z && !gl_watersides->value)
+				if (pplane->type != PLANE_Z)
 					continue;
 
 				if (mins[2] + 1.0 >= pplane->dist)
@@ -2072,7 +2075,7 @@ void R_DrawBrushModel(cl_entity_t *e)
 
 			if (psurf->flags & SURF_DRAWTURB)
 			{
-				if (pplane->type != PLANE_Z && !gl_watersides->value)
+				if (pplane->type != PLANE_Z)
 					continue;
 
 				if (mins[2] + 1.0 >= pplane->dist)
@@ -2135,6 +2138,7 @@ void R_DrawWorld(void)
 	R_ClearSkyBox();
 
 	r_wsurf_fogmode = 0;
+
 	if (qglIsEnabled(GL_FOG))
 	{
 		qglGetIntegerv(GL_FOG_MODE, &r_wsurf_fogmode);
@@ -2181,6 +2185,8 @@ void R_DrawWorld(void)
 	}
 
 	GL_DisableMultitexture();
+
+	r_wsurf.bDiffuseTexture = true;
 	r_wsurf.bLightmapTexture = false;
 
 	(*currententity) = gEngfuncs.GetEntityByIndex(0);

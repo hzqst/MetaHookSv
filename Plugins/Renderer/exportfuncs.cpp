@@ -271,10 +271,10 @@ int HUD_Redraw(float time, int intermission)
 			debugTextureID = waters_active->reflectmap;
 			break;
 		case 2:
-			debugTextureID = waters_active->refractmap;
+			debugTextureID = refractmap;
 			break;
 		case 3:
-			debugTextureID = waters_active->depthrefrmap;
+			debugTextureID = depthrefrmap;
 			qglUseProgramObjectARB(drawdepth.program);
 			break;
 		case 4:

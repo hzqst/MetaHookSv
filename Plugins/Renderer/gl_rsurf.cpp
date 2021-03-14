@@ -23,9 +23,6 @@ int *r_detail_texid;
 float *r_detail_texcoord;
 float *r_polygon_offset;
 
-//renderer
-qboolean lightmap_updateing;
-
 void R_RecursiveWorldNode(mnode_t *node)
 {
 	gRefFuncs.R_RecursiveWorldNode(node);

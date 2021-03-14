@@ -1100,7 +1100,7 @@ void R_GLStudioDrawPoints(void)
 			if (iInitVBO & 2)
 			{
 				//Convert vTri into indices
-				for (int t = 0; t < VBOMesh->vTri.size(); ++t)
+				for (size_t t = 0; t < VBOMesh->vTri.size(); ++t)
 				{
 					auto &tri = VBOMesh->vTri[t];
 					if (tri.draw_type == GL_TRIANGLE_STRIP)
