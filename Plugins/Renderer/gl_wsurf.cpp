@@ -6,6 +6,7 @@ r_worldsurf_t r_wsurf;
 
 cvar_t *r_wsurf_vbo;
 cvar_t *r_wsurf_parallax_scale;
+cvar_t *r_wsurf_detail;
 
 int r_wsurf_fogmode = 0;
 float r_wsurf_fogcontrol[2];
@@ -909,6 +910,7 @@ void R_InitWSurf(void)
 
 	r_wsurf_vbo = gEngfuncs.pfnRegisterVariable("r_wsurf_vbo", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_parallax_scale = gEngfuncs.pfnRegisterVariable("r_wsurf_parallax_scale", "0.03", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_wsurf_detail = gEngfuncs.pfnRegisterVariable("r_wsurf_detail", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 }
 
 void R_ShutdownWSurf(void)
@@ -957,18 +959,34 @@ void R_LoadDetailTextures(void)
 		{
 			ptext = gEngfuncs.COM_ParseFile(ptext, temp);
 			strcat(basetexture, temp);
-		}
 
-		if (!ptext)
-			break;
+			if (!ptext)
+				break;
+		}
 
 		ptext = gEngfuncs.COM_ParseFile(ptext, detailtexture);
 		if (!ptext)
 			break;
 
 		ptext = gEngfuncs.COM_ParseFile(ptext, sz_xscale);
+
 		if (!ptext)
 			break;
+
+		if (sz_xscale[0] == '{')
+		{
+			strcat(detailtexture, sz_xscale);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, temp);
+			if (!ptext)
+				break;
+
+			strcat(detailtexture, temp);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, sz_xscale);
+			if (!ptext)
+				break;
+		}
 
 		ptext = gEngfuncs.COM_ParseFile(ptext, sz_yscale);
 		if (!ptext)
@@ -1117,7 +1135,7 @@ void R_DrawWireFrame(brushface_t *brushface, void(*draw)(brushface_t *face))
 
 void R_BeginDetailTexture(int texId)
 {
-	if (r_detailtextures && !r_detailtextures->value)
+	if (!r_wsurf_detail->value)
 		return;
 
 	auto itor = g_DetailTextureTable.find(texId);

@@ -348,7 +348,7 @@ int GL_FindTexture(const char *identifier, GL_TEXTURETYPE textureType, int *widt
 	{
 		for (i = 0, slot = gltextures; i < *numgltextures; i++, slot++)
 		{
-			if (!strcmp(identifier, slot->identifier))
+			if (!stricmp(identifier, slot->identifier))
 			{
 				if (textureType != GLT_SYSTEM && textureType != GLT_DECAL && textureType != GLT_HUDSPRITE)
 				{
