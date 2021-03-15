@@ -6,7 +6,6 @@ uniform float speed;
 varying vec4 worldpos;
 varying vec4 normal;
 varying vec4 tangent;
-varying vec4 bitangent;
 varying vec4 color;
 
 attribute vec3 s_tangent;
@@ -52,8 +51,6 @@ void main(void)
 #ifdef NORMALTEXTURE_ENABLED
     tangent = vec4(s_tangent, 0.0);
     tangent = normalize(entitymatrix * tangent);
-    bitangent = vec4(t_tangent, 0.0);
-    bitangent = normalize(entitymatrix * bitangent);
 #endif
 
 #ifdef DIFFUSE_ENABLED

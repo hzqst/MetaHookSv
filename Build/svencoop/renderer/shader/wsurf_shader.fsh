@@ -39,7 +39,7 @@ uniform float clipPlane;
 varying vec4 worldpos;
 varying vec4 normal;
 varying vec4 tangent;
-varying vec4 bitangent;
+//varying vec4 bitangent;
 varying vec4 color;
 
 #ifdef NORMALTEXTURE_ENABLED
@@ -47,7 +47,8 @@ varying vec4 color;
 vec3 NormalMapping()
 {
     // Create TBN matrix. tangent to world?
-    mat3 TBN = mat3(normalize(tangent), normalize(bitangent), normalize(normal));
+	vec3 bitangent = cross(normalize(normal.xyz), normalize(tangent.xyz));
+    mat3 TBN = mat3(normalize(tangent.xyz), normalize(bitangent.xyz), normalize(normal.xyz));
 
     // Sample tangent space normal vector from normal map and remap it from [0, 1] to [-1, 1] range.
     vec3 n = texture2D(normalTex, vec2(gl_TexCoord[0].x / gl_TexCoord[3].x, gl_TexCoord[0].y / gl_TexCoord[3].y)).xyz;
@@ -75,7 +76,9 @@ vec2 ParallaxMapping(vec3 viewDir)
 
     vec2 deltaTexCoords = p / numLayers;
 
-    vec2 currentTexCoords = gl_TexCoord[0].xy;
+	vec2 mainTexCoods = gl_TexCoord[0].xy;
+
+    vec2 currentTexCoords = mainTexCoods;
     float currentDepthMapValue = texture2D(parallaxTex, vec2(currentTexCoords.x / gl_TexCoord[4].x, currentTexCoords.y / gl_TexCoord[4].y) ).r;
 
     while(currentLayerDepth < currentDepthMapValue)
@@ -84,6 +87,13 @@ vec2 ParallaxMapping(vec3 viewDir)
         currentDepthMapValue = texture2D(parallaxTex, vec2(currentTexCoords.x / gl_TexCoord[4].x, currentTexCoords.y / gl_TexCoord[4].y) ).r;
         currentLayerDepth += layerDepth;  
     }
+
+	/*vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
+	float afterHeight  = currentDepthMapValue - currentLayerDepth;
+	float beforeHeight = currentLayerDepth + layerDepth - texture2D(parallaxTex, vec2(prevTexCoords.x / gl_TexCoord[4].x, prevTexCoords.y / gl_TexCoord[4].y) ).r;
+
+	float weight = afterHeight / (afterHeight + beforeHeight);
+	vec2 finalTexCoords = mix(currentTexCoords, prevTexCoords, weight);*/
 
     return currentTexCoords;   
 }

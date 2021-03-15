@@ -190,7 +190,7 @@ r_studio_vbo 1 / 0 : enable or disable VBO batch-optmization draw for studio mod
 
 r_wsurf_vbo 1 / 0 : enable or disable VBO batch-optmization draw for BSP terrain. recommended value : 1
 
-r_wsurf_parallax_scale : control parallax textures' intensity factor. recommended value : 0.01 ~ 0.04
+r_wsurf_parallax_scale : control parallax textures' intensity factor. recommended value : 0.01 ~ 0.03
 
 r_fxaa 1 / 0 : enable or disable Fast Approximate Anti-Aliasing (FXAA). recommended value : 1
 
