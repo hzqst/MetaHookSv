@@ -1151,6 +1151,11 @@ void R_FillAddress(void)
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x600, R_WORLD_MATRIX_SIG_SVENGINE, sizeof(R_WORLD_MATRIX_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(r_world_matrix);
 		r_world_matrix = *(float **)(addr + 7);
+
+#define R_PROJ_MATRIX_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x68\xA7\x0B\x00\x00\xFF\xD7"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x500, R_PROJ_MATRIX_SIG_SVENGINE, sizeof(R_PROJ_MATRIX_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(r_projection_matrix);
+		r_projection_matrix = *(float **)(addr + 1);
 	}
 	else
 	{

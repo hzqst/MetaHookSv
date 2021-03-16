@@ -6,27 +6,33 @@ extern vec3_t r_light_env_angles;
 extern qboolean r_light_env_angles_exists;
 extern cvar_t *r_light_dynamic;
 extern cvar_t *r_light_debug;
+extern cvar_t *r_light_darkness;
 
 extern bool drawgbuffer;
 
-/*typedef struct deferred_decal_s
+typedef struct deferred_light_s
 {
-	deferred_decal_s()
+	deferred_light_s()
 	{
-		texture = NULL;
+		type = 0;
+		memset(org, 0, sizeof(org));
+		memset(col, 0, sizeof(col));
 		VectorClear(org);
-		width = 0;
-		height = 0;
+		fade = 0;
+	}
+	deferred_light_s(int t, float *o, float *c, float f)
+	{
+		type = t;
+		memcpy(org, o, sizeof(org));
+		memcpy(col, c, sizeof(col));
+		fade = f;
 	}
 
-	texture_t *texture;
+	int type;
 	vec3_t org;
-	vec3_t normal;
-	vec3_t s_tangent;
-	vec3_t t_tangent;
-	int width;
-	int height;
-}deferred_decal_t;*/
+	float col[4];
+	float fade;
+}deferred_light_t;
 
 typedef struct
 {
@@ -59,12 +65,6 @@ typedef struct
 	int additiveTex;
 	int depthTex;
 	int clipInfo;
-
-	int decalTex;
-	int decalToWorldMatrix;
-	int worldToDecalMatrix;
-	int decalScale;
-	int decalCenter;
 }dlight_program_t;
 
 void R_InitLight(void);
@@ -92,9 +92,12 @@ void R_UseGBufferProgram(int state, gbuffer_program_t *progOutput);
 #define GBUFFER_SCROLL_ENABLED			64
 #define GBUFFER_ROTATE_ENABLED			128
 
-#define DLIGHT_DECAL_PASS				1
 #define DLIGHT_LIGHT_PASS				2
 #define DLIGHT_LIGHT_PASS_SPOT			4
 #define DLIGHT_LIGHT_PASS_POINT			8
-#define DLIGHT_FINAL_PASS				0x10
-#define DLIGHT_LINEAR_FOG_ENABLED		0x20
+#define DLIGHT_LIGHT_PASS_VOLUME		0x10
+#define DLIGHT_FINAL_PASS				0x20
+#define DLIGHT_LINEAR_FOG_ENABLED		0x40
+
+#define DLIGHT_POINT					0
+#define DLIGHT_SPOT						1

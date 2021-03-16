@@ -466,6 +466,10 @@ extern PFNGLGENVERTEXARRAYSPROC qglGenVertexArrays;
 extern PFNGLBINDVERTEXARRAYPROC qglBindVertexArray;
 extern PFNGLENABLEVERTEXATTRIBARRAYPROC qglEnableVertexAttribArray;
 extern PFNGLDISABLEVERTEXATTRIBARRAYPROC qglDisableVertexAttribArray;
-
+extern PFNGLGENQUERIESPROC qglGenQueries ;
+extern PFNGLBEGINQUERYPROC qglBeginQuery ;
+extern PFNGLENDQUERYPROC qglEndQuery ;
+extern PFNGLBEGINCONDITIONALRENDERPROC qglBeginConditionalRender ;
+extern PFNGLENDCONDITIONALRENDERPROC qglEndConditionalRender ;
 void QGL_Init(void);
 void QGL_InitExtension(void);

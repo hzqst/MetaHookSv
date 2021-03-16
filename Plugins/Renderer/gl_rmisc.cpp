@@ -453,3 +453,45 @@ void GL_FrameBufferColorTextureDeferred(FBO_Container_t *s, int iInternalColorFo
 	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, s->s_hBackBufferTex4, 0);
 	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, s->s_hBackBufferTex5, 0);
 }
+
+void GL_Begin2D(void)
+{
+	qglViewport(glx, gly, glwidth, glheight);
+
+	qglMatrixMode(GL_PROJECTION);
+	qglLoadIdentity();
+	qglOrtho(0, glwidth, glheight, 0, -99999, 99999);
+
+	qglMatrixMode(GL_MODELVIEW);
+	qglLoadIdentity();
+
+	qglDisable(GL_DEPTH_TEST);
+	qglDisable(GL_ALPHA_TEST);
+	qglDisable(GL_CULL_FACE);
+}
+
+void GL_Begin2DEx(int width, int height)
+{
+	qglViewport(glx, gly, width, height);
+
+	qglMatrixMode(GL_PROJECTION);
+	qglLoadIdentity();
+	qglOrtho(0, width, height, 0, -99999, 99999);
+
+	qglMatrixMode(GL_MODELVIEW);
+	qglLoadIdentity();
+}
+
+void GL_End2D(void)
+{
+	qglViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
+
+	qglMatrixMode(GL_PROJECTION);
+	qglLoadMatrixf(r_projection_matrix);
+
+	qglMatrixMode(GL_MODELVIEW);
+	qglLoadMatrixf(r_world_matrix);
+
+	qglEnable(GL_DEPTH_TEST);
+	qglEnable(GL_CULL_FACE);
+}

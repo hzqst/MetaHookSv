@@ -20,6 +20,8 @@ std::unordered_map<int, detail_texture_cache_t *> g_DetailTextureTable;
 
 std::unordered_map<model_t *, wsurf_model_t *> g_WSurfModelCache;
 
+extern std::vector<deferred_light_t> g_DeferredLights;
+
 void R_ClearWSurfModelCache(void)
 {
 	for (auto &itor = g_WSurfModelCache.begin(); itor != g_WSurfModelCache.end(); ++itor)
@@ -1524,6 +1526,11 @@ void R_ClearBSPEntities(void)
 	}
 	
 	r_wsurf.iNumBSPEntities = 0;
+
+	r_light_env_angles_exists = false;
+	r_light_env_color_exists = false;
+	VectorClear(r_light_env_angles);
+	g_DeferredLights.clear();
 }
 
 bspentity_t *current_parse_entity = NULL;
@@ -1696,10 +1703,6 @@ void R_ParseBSPEntities(char *data)
 
 void R_LoadBSPEntities(void)
 {
-	r_light_env_angles_exists = false;
-	r_light_env_color_exists = false;
-	VectorClear(r_light_env_angles);
-
 	for(int i = 0; i < r_wsurf.iNumBSPEntities; i++)
 	{
 		bspentity_t *ent = &r_wsurf.pBSPEntities[i];
@@ -1709,7 +1712,35 @@ void R_LoadBSPEntities(void)
 		if(!classname)
 			continue;
 
-		if (!strcmp(classname, "light_environment"))
+		if (!strcmp(classname, "light"))
+		{
+			int color[4] = {255, 255, 255, 255};
+			char *s_light = ValueForKey(ent, "_light");
+			if (s_light)
+			{
+				sscanf(s_light, "%d %d %d %d", &color[0], &color[1], &color[2], &color[3]);
+			}
+
+			float org[3] = { 0 };
+			char *s_origin = ValueForKey(ent, "origin");
+			if (s_origin)
+			{
+				sscanf(s_origin, "%f %f %f", &org[0], &org[1], &org[2]);
+			}
+
+			float fade = 1;
+			char *s_fade = ValueForKey(ent, "_fade");
+			if (s_fade)
+			{
+				sscanf(s_fade, "%f", &fade);
+			}
+
+			float col[4] = { color[0] / 255.0f, color[1] / 255.0f, color[2] / 255.0f, color[3] / 255.0f };
+
+			g_DeferredLights.emplace_back(0, org, col, fade);
+		}
+
+		else if (!strcmp(classname, "light_environment"))
 		{
 			char *light = ValueForKey(ent, "_light");
 			if (light)

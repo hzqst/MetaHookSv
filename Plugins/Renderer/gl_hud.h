@@ -130,7 +130,6 @@ extern cvar_t *r_fxaa;
 
 extern int last_luminance;
 
-void R_BeginHUDQuad(void);
 void R_BeginFXAA(int w, int h);
 int R_DoSSAO(int sampleIndex);
 void R_DoHDR(void);

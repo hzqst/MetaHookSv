@@ -29,6 +29,7 @@ cvar_t *r_water_depthfactor = NULL;
 cvar_t *r_water_normfactor = NULL;
 cvar_t *r_water_novis = NULL;
 cvar_t *r_water_minheight = NULL;
+cvar_t *r_water_maxalpha = NULL;
 
 std::unordered_map<int, water_program_t> g_WaterProgramTable;
 
@@ -181,6 +182,7 @@ void R_InitWater(void)
 	r_water_normfactor = gEngfuncs.pfnRegisterVariable("r_water_normfactor", "1.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_novis = gEngfuncs.pfnRegisterVariable("r_water_novis", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_minheight = gEngfuncs.pfnRegisterVariable("r_water_minheight", "7.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_water_maxalpha = gEngfuncs.pfnRegisterVariable("r_water_maxalpha", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	curwater = NULL;
 

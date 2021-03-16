@@ -27,6 +27,7 @@ int *maxTransObjs;
 transObjRef **transObjects;
 
 float scr_fov_value;
+GLint r_viewport[4];
 
 mplane_t custom_frustum[4];
 mplane_t *frustum;
@@ -41,6 +42,7 @@ vec_t *r_origin;
 vec_t *modelorg;
 vec_t *r_entorigin;
 float *r_world_matrix;
+float *r_projection_matrix;
 
 int *g_bUserFogOn;
 float *g_UserFogColor;
@@ -267,8 +269,14 @@ void R_RotateForEntity(vec_t *origin, cl_entity_t *e)
 
 void R_DrawSpriteModel(cl_entity_t *entity)
 {
-	R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED | GBUFFER_TRANSPARENT_ENABLED);
-	R_SetGBufferMask(GBUFFER_MASK_ALL);
+	if (drawgbuffer)
+	{
+		R_AddTEntity(entity);
+		return;
+	}
+
+	//R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED | GBUFFER_TRANSPARENT_ENABLED);
+	//R_SetGBufferMask(GBUFFER_MASK_ALL);
 
 	gRefFuncs.R_DrawSpriteModel(entity);
 }
@@ -1003,10 +1011,7 @@ void R_SetupGL(void)
 {
 	gRefFuncs.R_SetupGL();
 
-	/*if ((r_draw_pass == r_draw_reflect || r_draw_pass == r_draw_refract) && curwater)
-	{
-		qglViewport(0, 0, curwater->texwidth, curwater->texheight);
-	}*/
+	qglGetIntegerv(GL_VIEWPORT, r_viewport);
 }
 
 void R_CalcRefdef(struct ref_params_s *pparams)
@@ -1452,6 +1457,7 @@ void R_PostRenderView()
 	else
 	{
 		R_DoFXAA();
+
 		R_DoHDR();
 	}
 

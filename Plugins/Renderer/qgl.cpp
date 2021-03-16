@@ -426,6 +426,11 @@ PFNGLGENVERTEXARRAYSPROC qglGenVertexArrays = NULL;
 PFNGLBINDVERTEXARRAYPROC qglBindVertexArray = NULL;
 PFNGLENABLEVERTEXATTRIBARRAYPROC qglEnableVertexAttribArray = NULL;
 PFNGLDISABLEVERTEXATTRIBARRAYPROC qglDisableVertexAttribArray = NULL;
+PFNGLGENQUERIESPROC qglGenQueries = NULL;
+PFNGLBEGINQUERYPROC qglBeginQuery = NULL;
+PFNGLENDQUERYPROC qglEndQuery = NULL;
+PFNGLBEGINCONDITIONALRENDERPROC qglBeginConditionalRender = NULL;
+PFNGLENDCONDITIONALRENDERPROC qglEndConditionalRender = NULL;
 
 //Shader ARB funcs
 PFNGLCREATESHADEROBJECTARBPROC qglCreateShaderObjectARB = NULL;
@@ -985,6 +990,12 @@ void QGL_InitExtension(void)
 
 		gl_framebuffer_object = true;
 	}
+
+	qglGenQueries = (PFNGLGENQUERIESPROC)qwglGetProcAddress("glGenQueries");
+	qglBeginQuery = (PFNGLBEGINQUERYPROC)qwglGetProcAddress("glBeginQuery");
+	qglEndQuery = (PFNGLENDQUERYPROC)qwglGetProcAddress("glEndQuery");
+	qglBeginConditionalRender = (PFNGLBEGINCONDITIONALRENDERPROC)qwglGetProcAddress("glBeginConditionalRender");
+	qglEndConditionalRender = (PFNGLENDCONDITIONALRENDERPROC)qwglGetProcAddress("glEndConditionalRender");
 
 	if (strstr(extension, "GL_EXT_framebuffer_multisample"))
 	{
