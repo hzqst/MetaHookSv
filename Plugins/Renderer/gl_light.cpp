@@ -30,6 +30,8 @@ std::vector<deferred_light_t> g_DeferredLights;
 GLuint r_sphere_vbo = 0;
 GLuint r_sphere_ebo = 0;
 
+GLuint r_cone_vbo = 0;
+
 void R_UseGBufferProgram(int state, gbuffer_program_t *progOutput)
 {
 	if (!drawgbuffer)
@@ -214,6 +216,15 @@ void R_ShutdownLight(void)
 {
 	g_GBufferProgramTable.clear();
 	g_DLightProgramTable.clear();
+
+	if(r_sphere_vbo)
+		qglDeleteBuffersARB(1, &r_sphere_vbo);
+
+	if (r_sphere_ebo)
+		qglDeleteBuffersARB(1, &r_sphere_ebo);
+
+	if (r_cone_vbo)
+		qglDeleteBuffersARB(1, &r_cone_vbo);
 }
 
 void R_InitLight(void)
@@ -279,13 +290,44 @@ void R_InitLight(void)
 
 	qglGenBuffersARB(1, &r_sphere_vbo);
 	qglBindBufferARB(GL_ARRAY_BUFFER_ARB, r_sphere_vbo);
-	qglBufferDataARB(GL_ARRAY_BUFFER_ARB, sphereVertices.size() * sizeof(float), &sphereVertices[0], GL_STATIC_DRAW_ARB);
+	qglBufferDataARB(GL_ARRAY_BUFFER_ARB, sphereVertices.size() * sizeof(float), sphereVertices.data(), GL_STATIC_DRAW_ARB);
 	qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 
 	qglGenBuffersARB(1, &r_sphere_ebo);
 	qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, r_sphere_ebo);
-	qglBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sphereIndices.size() * sizeof(int), &sphereIndices[0], GL_STATIC_DRAW_ARB);
+	qglBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sphereIndices.size() * sizeof(int), sphereIndices.data(), GL_STATIC_DRAW_ARB);
 	qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+
+	std::vector<float> coneVertices;
+
+	for (int x = 0; x < X_SEGMENTS; x++)
+	{
+		float xSegment = (float)x / (float)X_SEGMENTS;
+		float xSegment2 = (float)(x + 1) / (float)X_SEGMENTS;
+
+		coneVertices.push_back(0);
+		coneVertices.push_back(0);
+		coneVertices.push_back(0);
+
+		float xPos2 = 1.0;
+		float yPos2 = std::sin(xSegment2 * 2.0f * M_PI);
+		float zPos2 = std::cos(xSegment2 * 2.0f * M_PI);
+		coneVertices.push_back(xPos2);
+		coneVertices.push_back(yPos2);
+		coneVertices.push_back(zPos2);
+
+		float xPos = 1.0;
+		float yPos = std::sin(xSegment * 2.0f * M_PI);
+		float zPos = std::cos(xSegment * 2.0f * M_PI);
+		coneVertices.push_back(xPos);
+		coneVertices.push_back(yPos);
+		coneVertices.push_back(zPos);
+	}
+
+	qglGenBuffersARB(1, &r_cone_vbo);
+	qglBindBufferARB(GL_ARRAY_BUFFER_ARB, r_cone_vbo);
+	qglBufferDataARB(GL_ARRAY_BUFFER_ARB, coneVertices.size() * sizeof(float), coneVertices.data(), GL_STATIC_DRAW_ARB);
+	qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 
 	drawgbuffer = false;
 }
@@ -375,6 +417,23 @@ void R_BeginRenderGBuffer(void)
 	qglStencilMask(0);
 }
 
+bool Util_IsOriginInCone(float *org, float *cone_origin, float *cone_forward, float cone_cosine, float cone_distance)
+{
+	float dir[3];
+	VectorSubtract(org, cone_origin, dir);
+
+	float dist = VectorLength(dir);
+
+	if (dist > cone_distance)
+		return false;
+
+	VectorNormalize(dir);
+
+	auto dot = DotProduct(cone_forward, dir);
+
+	return dot > cone_cosine;
+}
+
 void R_EndRenderGBuffer(void)
 {
 	if (!drawgbuffer)
@@ -432,11 +491,6 @@ void R_EndRenderGBuffer(void)
 	GL_EnableMultitexture();
 	GL_Bind(s_GBufferFBO.s_hBackBufferTex4);
 	
-	qglEnableClientState(GL_VERTEX_ARRAY);
-	qglBindBufferARB(GL_ARRAY_BUFFER_ARB, r_sphere_vbo);
-	qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, r_sphere_ebo);
-	qglVertexPointer(3, GL_FLOAT, sizeof(float[3]), 0);
-
 	if (r_light_dynamic->value >= 2.0f && g_DeferredLights.size())
 	{
 		for (size_t i = 0; i < g_DeferredLights.size(); i++)
@@ -465,6 +519,11 @@ void R_EndRenderGBuffer(void)
 					qglUniform1fARB(prog.lightspecular, r_light_specular->value * sl.col[3]);
 					qglUniform1fARB(prog.lightspecularpow, r_light_specularpow->value);
 
+					qglEnableClientState(GL_VERTEX_ARRAY);
+					qglBindBufferARB(GL_ARRAY_BUFFER_ARB, r_sphere_vbo);
+					qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, r_sphere_ebo);
+					qglVertexPointer(3, GL_FLOAT, sizeof(float[3]), 0);
+
 					qglPushMatrix();
 
 					qglTranslatef(sl.org[0], sl.org[1], sl.org[2]);
@@ -473,6 +532,10 @@ void R_EndRenderGBuffer(void)
 					qglDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
 
 					qglPopMatrix();
+
+					qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+					qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+					qglDisableClientState(GL_VERTEX_ARRAY);
 				}
 				else
 				{
@@ -527,7 +590,7 @@ void R_EndRenderGBuffer(void)
 			auto ent = gEngfuncs.GetEntityByIndex(dl->key);
 
 			vec3_t org;
-			if (ent == gEngfuncs.GetLocalPlayer())
+			if (ent == gEngfuncs.GetLocalPlayer() && !gExportfuncs.CL_IsThirdPerson())
 			{
 				VectorCopy(r_refdef->viewangles, dlight_angle);
 				gEngfuncs.pfnAngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
@@ -550,24 +613,76 @@ void R_EndRenderGBuffer(void)
 				VectorCopy(org, dlight_origin);
 			}
 
-			dlight_program_t prog = { 0 };
-			R_UseDLightProgram(DLIGHT_LIGHT_PASS | DLIGHT_LIGHT_PASS_SPOT, &prog);
-			qglUniform4fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0f);
-			qglUniform4fARB(prog.lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2], 0.0f);
-			qglUniform4fARB(prog.lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2], 1.0f);
-			qglUniform3fARB(prog.lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
-			qglUniform1fARB(prog.lightcone, r_flashlight_cone->value);
-			qglUniform1fARB(prog.lightradius, r_flashlight_distance->value);
-			qglUniform1fARB(prog.lightambient, r_light_ambient->value);
-			qglUniform1fARB(prog.lightdiffuse, r_light_diffuse->value);
-			qglUniform1fARB(prog.lightspecular, r_light_specular->value);
-			qglUniform1fARB(prog.lightspecularpow, r_light_specularpow->value);
+			if (Util_IsOriginInCone(r_refdef->vieworg, dlight_origin, dlight_vforward, r_flashlight_cone->value, r_flashlight_distance->value))
+			{
+				dlight_program_t prog = { 0 };
+				R_UseDLightProgram(DLIGHT_LIGHT_PASS | DLIGHT_LIGHT_PASS_SPOT, &prog);
+				qglUniform4fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0f);
+				qglUniform4fARB(prog.lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2], 0.0f);
+				qglUniform4fARB(prog.lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2], 1.0f);
+				qglUniform3fARB(prog.lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
+				qglUniform1fARB(prog.lightcone, r_flashlight_cone->value);
+				qglUniform1fARB(prog.lightradius, r_flashlight_distance->value);
+				qglUniform1fARB(prog.lightambient, r_light_ambient->value);
+				qglUniform1fARB(prog.lightdiffuse, r_light_diffuse->value);
+				qglUniform1fARB(prog.lightspecular, r_light_specular->value);
+				qglUniform1fARB(prog.lightspecularpow, r_light_specularpow->value);
 
-			GL_Begin2D();
+				GL_Begin2D();
 
-			R_DrawHUDQuad(glwidth, glheight);
+				R_DrawHUDQuad(glwidth, glheight);
 
-			GL_End2D();
+				GL_End2D();
+			}
+			else
+			{
+				dlight_program_t prog = { 0 };
+				R_UseDLightProgram(DLIGHT_LIGHT_PASS | DLIGHT_LIGHT_PASS_SPOT | DLIGHT_LIGHT_PASS_VOLUME, &prog);
+				qglUniform4fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0f);
+				qglUniform4fARB(prog.lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2], 0.0f);
+				qglUniform4fARB(prog.lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2], 1.0f);
+				qglUniform3fARB(prog.lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
+				qglUniform1fARB(prog.lightcone, r_flashlight_cone->value);
+				qglUniform1fARB(prog.lightradius, r_flashlight_distance->value);
+				qglUniform1fARB(prog.lightambient, r_light_ambient->value);
+				qglUniform1fARB(prog.lightdiffuse, r_light_diffuse->value);
+				qglUniform1fARB(prog.lightspecular, r_light_specular->value);
+				qglUniform1fARB(prog.lightspecularpow, r_light_specularpow->value);
+
+				qglEnableClientState(GL_VERTEX_ARRAY);
+				qglBindBufferARB(GL_ARRAY_BUFFER_ARB, r_cone_vbo);
+				qglVertexPointer(3, GL_FLOAT, sizeof(float[3]), 0);
+
+				float ang = acosf(r_flashlight_cone->value);
+				float tan = tanf(ang);
+				float radius = r_flashlight_distance->value * tan;
+
+				qglPushMatrix();
+
+				qglTranslatef(dlight_origin[0], dlight_origin[1], dlight_origin[2]);
+
+				if (ent == gEngfuncs.GetLocalPlayer() && !gExportfuncs.CL_IsThirdPerson())
+				{
+					qglRotatef(dlight_angle[1], 0, 0, 1);
+					qglRotatef(dlight_angle[0], 0, 1, 0);
+					qglRotatef(dlight_angle[2], 1, 0, 0);
+				}
+				else
+				{
+					qglRotatef(dlight_angle[1], 0, 0, 1);
+					qglRotatef(-dlight_angle[0], 0, 1, 0);
+					qglRotatef(dlight_angle[2], 1, 0, 0);
+				}
+
+				qglScalef(r_flashlight_distance->value, radius, radius);
+
+				qglDrawArrays(GL_TRIANGLES, 0, X_SEGMENTS * 3);
+
+				qglPopMatrix();
+
+				qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+				qglDisableClientState(GL_VERTEX_ARRAY);
+			}
 		}
 		else
 		{
@@ -587,6 +702,11 @@ void R_EndRenderGBuffer(void)
 				qglUniform1fARB(prog.lightspecular, r_light_specular->value);
 				qglUniform1fARB(prog.lightspecularpow, r_light_specularpow->value);
 
+				qglEnableClientState(GL_VERTEX_ARRAY);
+				qglBindBufferARB(GL_ARRAY_BUFFER_ARB, r_sphere_vbo);
+				qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, r_sphere_ebo);
+				qglVertexPointer(3, GL_FLOAT, sizeof(float[3]), 0);
+
 				qglPushMatrix();
 
 				qglTranslatef(dl->origin[0], dl->origin[1], dl->origin[2]);
@@ -595,6 +715,10 @@ void R_EndRenderGBuffer(void)
 				qglDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
 
 				qglPopMatrix();
+
+				qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+				qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+				qglDisableClientState(GL_VERTEX_ARRAY);
 			}
 			else
 			{
@@ -617,10 +741,6 @@ void R_EndRenderGBuffer(void)
 			}
 		}
 	}
-
-	qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-	qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-	qglDisableClientState(GL_VERTEX_ARRAY);
 
 	GL_Begin2D();
 	qglDisable(GL_BLEND);
