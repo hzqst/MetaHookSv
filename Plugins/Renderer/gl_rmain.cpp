@@ -275,9 +275,6 @@ void R_DrawSpriteModel(cl_entity_t *entity)
 		return;
 	}
 
-	//R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED | GBUFFER_TRANSPARENT_ENABLED);
-	//R_SetGBufferMask(GBUFFER_MASK_ALL);
-
 	gRefFuncs.R_DrawSpriteModel(entity);
 }
 
@@ -1418,13 +1415,13 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 			GL_FrameBufferDepthTexture(&s_MSAAFBO, GL_DEPTH24_STENCIL8, true);
 		}
 	}
-
-	r_studio_framecount ++;
 }
 
 void R_PreRenderView(int a1)
 {
 	g_SvEngine_DrawPortalView = a1;
+
+	r_studio_framecount++;
 
 	if (!r_refdef->onlyClientDraws)
 	{
@@ -1446,6 +1443,15 @@ void R_PreRenderView(int a1)
 
 void R_PostRenderView()
 {
+	if (!r_draw_pass && !g_SvEngine_DrawPortalView)
+	{
+		R_FreeDeadWaters();
+		for (r_water_t *water = waters_active; water; water = water->next)
+		{
+			water->free = true;
+		}
+	}
+
 	if (R_UseMSAA())
 	{
 		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);

@@ -201,7 +201,7 @@ void HUD_DrawNormalTriangles(void)
 		R_RenderShadowScenes();
 	}
 
-	if (!r_refdef->onlyClientDraws)
+	if (!r_refdef->onlyClientDraws && !g_SvEngine_DrawPortalView)
 	{
 		if (R_UseMSAA())
 		{
@@ -243,15 +243,6 @@ void HUD_DrawNormalTriangles(void)
 
 void HUD_DrawTransparentTriangles(void)
 {
-	if (!r_draw_pass)
-	{
-		R_FreeDeadWaters();
-		for (r_water_t *water = waters_active; water; water = water->next)
-		{
-			water->free = true;
-		}
-	}
-
 	gExportfuncs.HUD_DrawTransparentTriangles();
 }
 
@@ -574,7 +565,6 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	InstallHook(studioapi_SetupRenderer);
 	InstallHook(studioapi_RestoreRenderer);
 	InstallHook(studioapi_StudioDynamicLight);
-	//InstallHook(studioapi_SetupModel);
 
 	cl_sprite_white = IEngineStudio.Mod_ForName("sprites/white.spr", 1);
 

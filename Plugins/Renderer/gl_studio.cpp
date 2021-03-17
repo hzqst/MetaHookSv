@@ -176,6 +176,9 @@ bool R_StudioRestoreBones(void)
 	if (!r_studio_cache_bone->value)
 		return false;
 
+	if (g_SvEngine_DrawPortalView)
+		return false;
+
 	auto ent = (*currententity);
 
 	studio_bone_t *b = NULL;
@@ -201,6 +204,9 @@ bool R_StudioRestoreBones(void)
 void R_StudioSaveBones(void)
 {
 	if (!r_studio_cache_bone->value)
+		return;
+
+	if (g_SvEngine_DrawPortalView)
 		return;
 
 	auto ent = (*currententity);

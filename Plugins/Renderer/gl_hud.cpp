@@ -603,7 +603,6 @@ void R_DoHDR(void)
 		return;
 
 	GL_PushDrawState();
-	GL_PushMatrix();
 
 	GL_Begin2D();
 	qglDisable(GL_BLEND);
@@ -648,7 +647,6 @@ void R_DoHDR(void)
 
 	R_BlitToFBO(&s_ToneMapFBO, &s_BackBufferFBO);
 
-	GL_PopMatrix();
 	GL_PopDrawState();
 }
 

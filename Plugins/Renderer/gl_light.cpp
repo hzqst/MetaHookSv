@@ -29,7 +29,6 @@ std::vector<deferred_light_t> g_DeferredLights;
 
 GLuint r_sphere_vbo = 0;
 GLuint r_sphere_ebo = 0;
-
 GLuint r_cone_vbo = 0;
 
 void R_UseGBufferProgram(int state, gbuffer_program_t *progOutput)
@@ -305,23 +304,47 @@ void R_InitLight(void)
 		float xSegment = (float)x / (float)X_SEGMENTS;
 		float xSegment2 = (float)(x + 1) / (float)X_SEGMENTS;
 
-		coneVertices.push_back(0);
-		coneVertices.push_back(0);
-		coneVertices.push_back(0);
+		//cone tri
+		{
+			coneVertices.push_back(0);
+			coneVertices.push_back(0);
+			coneVertices.push_back(0);
 
-		float xPos2 = 1.0;
-		float yPos2 = std::sin(xSegment2 * 2.0f * M_PI);
-		float zPos2 = std::cos(xSegment2 * 2.0f * M_PI);
-		coneVertices.push_back(xPos2);
-		coneVertices.push_back(yPos2);
-		coneVertices.push_back(zPos2);
+			float xPos2 = 1.0;
+			float yPos2 = std::sin(xSegment2 * 2.0f * M_PI);
+			float zPos2 = std::cos(xSegment2 * 2.0f * M_PI);
+			coneVertices.push_back(xPos2);
+			coneVertices.push_back(yPos2);
+			coneVertices.push_back(zPos2);
 
-		float xPos = 1.0;
-		float yPos = std::sin(xSegment * 2.0f * M_PI);
-		float zPos = std::cos(xSegment * 2.0f * M_PI);
-		coneVertices.push_back(xPos);
-		coneVertices.push_back(yPos);
-		coneVertices.push_back(zPos);
+			float xPos = 1.0;
+			float yPos = std::sin(xSegment * 2.0f * M_PI);
+			float zPos = std::cos(xSegment * 2.0f * M_PI);
+			coneVertices.push_back(xPos);
+			coneVertices.push_back(yPos);
+			coneVertices.push_back(zPos);
+		}
+
+		//circle tri
+		/*{
+			coneVertices.push_back(1.0);
+			coneVertices.push_back(0);
+			coneVertices.push_back(0);
+
+			float xPos = 1.0;
+			float yPos = std::sin(xSegment * 2.0f * M_PI);
+			float zPos = std::cos(xSegment * 2.0f * M_PI);
+			coneVertices.push_back(xPos);
+			coneVertices.push_back(yPos);
+			coneVertices.push_back(zPos);
+
+			float xPos2 = 1.0;
+			float yPos2 = std::sin(xSegment2 * 2.0f * M_PI);
+			float zPos2 = std::cos(xSegment2 * 2.0f * M_PI);
+			coneVertices.push_back(xPos2);
+			coneVertices.push_back(yPos2);
+			coneVertices.push_back(zPos2);
+		}*/
 	}
 
 	qglGenBuffersARB(1, &r_cone_vbo);

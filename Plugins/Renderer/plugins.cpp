@@ -83,10 +83,10 @@ void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_UpdateClientData = HUD_UpdateClientData;
 	pExportFunc->HUD_Redraw = HUD_Redraw;
 	pExportFunc->HUD_Init = HUD_Init;
-	pExportFunc->HUD_VidInit = HUD_VidInit;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 	pExportFunc->HUD_DrawNormalTriangles = HUD_DrawNormalTriangles;
-	pExportFunc->HUD_DrawTransparentTriangles = HUD_DrawTransparentTriangles;
+	//pExportFunc->HUD_VidInit = HUD_VidInit;
+	//pExportFunc->HUD_DrawTransparentTriangles = HUD_DrawTransparentTriangles;
 }
 
 void IPlugins::ExitGame(int iResult)

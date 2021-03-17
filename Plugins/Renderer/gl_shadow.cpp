@@ -189,13 +189,9 @@ void R_RenderShadowMap(void)
 		sangles[2] = r_shadow_angle_r->value;
 	}
 
-	if(s_ShadowFBO.s_hBackBufferFBO)
-	{
-		GL_PushFrameBuffer();
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_ShadowFBO.s_hBackBufferFBO);
-		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
-		qglDrawBuffer(GL_NONE);
-	}
+	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_ShadowFBO.s_hBackBufferFBO);
+	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
+	qglDrawBuffer(GL_NONE);
 
 	int shadowmapArray[3] = { shadow_depthmap_high, shadow_depthmap_medium, shadow_depthmap_low };
 	int texsizeArray[3] = { shadow_depthmap_high_texsize, shadow_depthmap_medium_texsize, shadow_depthmap_low_texsize };
@@ -307,11 +303,7 @@ void R_RenderShadowMap(void)
 
 	//qglEnable(GL_CULL_FACE);
 
-	if(s_ShadowFBO.s_hBackBufferFBO)
-	{
-		qglDrawBuffer(GL_COLOR_ATTACHMENT0);
-		GL_PopFrameBuffer();
-	}
+	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
 }
 
 int R_ShadowLightCullBox(vec3_t mins, vec3_t maxs)
