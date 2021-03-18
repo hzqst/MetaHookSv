@@ -60,7 +60,7 @@ typedef struct glRect_GoldSrc_s
 
 typedef struct glRect_SvEngine_s
 {
-	unsigned int l, t, w, h;
+	int l, t, w, h;
 }glRect_SvEngine_t;
 
 typedef struct vrect_s

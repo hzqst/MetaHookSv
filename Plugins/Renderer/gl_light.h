@@ -40,8 +40,6 @@ typedef struct
 	int lightmapTex;
 	int lightmapTexArray;
 	int detailTex;
-	int speed;
-	int entitymatrix;
 }gbuffer_program_t;
 
 typedef struct
@@ -88,8 +86,6 @@ void R_UseGBufferProgram(int state, gbuffer_program_t *progOutput);
 #define GBUFFER_LIGHTMAP_ARRAY_ENABLED	8
 #define GBUFFER_TRANSPARENT_ENABLED		16
 #define GBUFFER_ADDITIVE_ENABLED		32
-#define GBUFFER_SCROLL_ENABLED			64
-#define GBUFFER_ROTATE_ENABLED			128
 
 #define DLIGHT_LIGHT_PASS				2
 #define DLIGHT_LIGHT_PASS_SPOT			4

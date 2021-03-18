@@ -58,11 +58,8 @@ void R_UseGBufferProgram(int state, gbuffer_program_t *progOutput)
 		if (state & GBUFFER_TRANSPARENT_ENABLED)
 			defs << "#define TRANSPARENT_ENABLED\n";
 
-		if (state & GBUFFER_SCROLL_ENABLED)
-			defs << "#define SCROLL_ENABLED\n";
-
-		if (state & GBUFFER_ROTATE_ENABLED)
-			defs << "#define ROTATE_ENABLED\n";
+		if (state & GBUFFER_ADDITIVE_ENABLED)
+			defs << "#define ADDITIVE_ENABLED\n";
 
 		auto def = defs.str();
 
@@ -73,8 +70,6 @@ void R_UseGBufferProgram(int state, gbuffer_program_t *progOutput)
 			SHADER_UNIFORM(prog, lightmapTex, "lightmapTex");
 			SHADER_UNIFORM(prog, lightmapTexArray, "lightmapTexArray");
 			SHADER_UNIFORM(prog, detailTex, "detailTex");
-			SHADER_UNIFORM(prog, speed, "speed");
-			SHADER_UNIFORM(prog, entitymatrix, "entitymatrix");
 		}
 
 		g_GBufferProgramTable[state] = prog;
@@ -96,13 +91,6 @@ void R_UseGBufferProgram(int state, gbuffer_program_t *progOutput)
 			qglUniform1iARB(prog.lightmapTex, 1);
 		if (prog.detailTex != -1)
 			qglUniform1iARB(prog.detailTex, 2);
-		if (prog.entitymatrix != -1)
-		{
-			if(r_rotate_entity)
-				qglUniformMatrix4fvARB(prog.entitymatrix, 1, true, (float *)r_rotate_entity_matrix);
-			else
-				qglUniformMatrix4fvARB(prog.entitymatrix, 1, false, (float *)r_identity_matrix);
-		}
 
 		if (progOutput)
 			*progOutput = prog;

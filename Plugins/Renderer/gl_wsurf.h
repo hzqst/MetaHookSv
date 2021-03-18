@@ -77,9 +77,11 @@ typedef struct
    char		*classname;
 }bspentity_t;
 
-#define WSURF_DETAIL_TEXTURE 0
-#define WSURF_NORMAL_TEXTURE 1
-#define WSURF_PARALLAX_TEXTURE 2
+#define WSURF_REPLACE_TEXTURE		0
+#define WSURF_DETAIL_TEXTURE		1
+#define WSURF_NORMAL_TEXTURE		2
+#define WSURF_PARALLAX_TEXTURE		3
+#define WSURF_MAX_TEXTURE			4
 
 typedef struct detail_texture_s
 {
@@ -99,7 +101,7 @@ typedef struct detail_texture_s
 typedef struct detail_texture_cache_s
 {
 	std::string basetexture;
-	detail_texture_t tex[3];
+	detail_texture_t tex[WSURF_MAX_TEXTURE];
 }detail_texture_cache_t;
 
 typedef struct wsurf_model_s

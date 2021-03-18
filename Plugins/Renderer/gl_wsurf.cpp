@@ -679,6 +679,10 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		qglEnable(GL_TEXTURE_2D_ARRAY);
 		qglBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
 	}
+	else
+	{
+		GL_DisableMultitexture();
+	}
 
 	if (r_wsurf.bDiffuseTexture)
 	{
@@ -1137,6 +1141,11 @@ void R_BeginDetailTexture(int texId)
 	{
 		auto cache = itor->second;
 
+		if (r_wsurf.bDiffuseTexture && cache->tex[WSURF_REPLACE_TEXTURE].gltexturenum)
+		{
+			GL_Bind(cache->tex[WSURF_REPLACE_TEXTURE].gltexturenum);
+		}
+
 		if (cache->tex[WSURF_DETAIL_TEXTURE].gltexturenum)
 		{
 			qglActiveTextureARB(TEXTURE2_SGIS);
@@ -1286,17 +1295,6 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 	auto p = s->polys;
 	auto t = gRefFuncs.R_TextureAnimation(s);
 
-	if (r_wsurf.bDiffuseTexture)
-	{
-		GL_SelectTexture(TEXTURE0_SGIS);
-		GL_Bind(t->gl_texturenum);
-	}
-	else
-	{
-		GL_SelectTexture(TEXTURE0_SGIS);
-		qglDisable(GL_TEXTURE_2D);
-	}
-
 	if (r_wsurf.bLightmapTexture)
 	{
 		GL_EnableMultitexture();
@@ -1328,6 +1326,21 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 				theRect->w = 0;
 			}
 		}
+	}
+	else
+	{
+		GL_DisableMultitexture();
+	}
+
+	if (r_wsurf.bDiffuseTexture)
+	{
+		GL_SelectTexture(TEXTURE0_SGIS);
+		GL_Bind(t->gl_texturenum);
+	}
+	else
+	{
+		GL_SelectTexture(TEXTURE0_SGIS);
+		qglDisable(GL_TEXTURE_2D);
 	}
 
 	if (r_wsurf.bDiffuseTexture)
