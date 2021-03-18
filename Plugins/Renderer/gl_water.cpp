@@ -428,8 +428,6 @@ void R_RenderWaterView(void)
 {
 	refractmap_ready = false;
 
-	GL_PushFrameBuffer();
-
 	for(r_water_t *w = waters_active; w; w = w->next)
 	{
 		curwater = w;
@@ -443,6 +441,4 @@ void R_RenderWaterView(void)
 
 		curwater = NULL;
 	}
-
-	GL_PopFrameBuffer();
 }

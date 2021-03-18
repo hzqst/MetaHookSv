@@ -1069,7 +1069,7 @@ bool GL_IsValidSampleCount(int msaa_samples)
 
 bool R_UseMSAA(void)
 {
-	return s_MSAAFBO.s_hBackBufferFBO && GL_IsValidSampleCount((int)r_msaa->value);
+	return s_MSAAFBO.s_hBackBufferFBO && GL_IsValidSampleCount((int)r_msaa->value) && !g_SvEngine_DrawPortalView;
 }
 
 void GL_GenerateFBO(void)

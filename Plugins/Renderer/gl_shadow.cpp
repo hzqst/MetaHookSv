@@ -588,8 +588,11 @@ void R_RenderShadowScenes(void)
 	GLfloat texture2_env;
 
 	//test
-	//qglGetFloatv(GL_MODELVIEW_MATRIX, mvmatrix);
-	memcpy(mvmatrix, r_world_matrix, sizeof(mvmatrix));
+	if(g_SvEngine_DrawPortalView)
+		qglGetFloatv(GL_MODELVIEW_MATRIX, mvmatrix);
+	else
+		memcpy(mvmatrix, r_world_matrix, sizeof(mvmatrix));
+
 	InvertMatrix(mvmatrix, invmvmatrix);
 
 	qglUseProgramObjectARB(shadow.program);

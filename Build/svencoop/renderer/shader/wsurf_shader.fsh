@@ -180,6 +180,7 @@ void main()
 		gl_FragColor = diffuseColor * lightmapColor * detailColor;
 
 	#endif
+
 #endif
 
 #ifdef LINEAR_FOG_ENABLED

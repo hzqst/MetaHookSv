@@ -221,10 +221,25 @@ void HUD_DrawNormalTriangles(void)
 
 	//Allow SCClient to write stencil buffer (but not bit 1)?
 
+	if (gl_polyoffset && gl_polyoffset->value)
+	{
+		qglEnable(GL_POLYGON_OFFSET_FILL);
+
+		if (gl_ztrick && gl_ztrick->value)
+			qglPolygonOffset(1, gl_polyoffset->value);
+		else
+			qglPolygonOffset(-1, -gl_polyoffset->value);
+	}
+
 	qglStencilMask(0xFF);
 	qglClear(GL_STENCIL_BUFFER_BIT);
 	gExportfuncs.HUD_DrawNormalTriangles();
 	qglStencilMask(0);
+
+	if (gl_polyoffset && gl_polyoffset->value)
+	{
+		qglDisable(GL_POLYGON_OFFSET_FILL);
+	}
 
 	//Restore current framebuffer just in case that Sven-Coop client changes it
 	

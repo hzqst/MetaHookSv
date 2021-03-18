@@ -242,6 +242,8 @@ void R_EnableWSurfVBOSolid(wsurf_model_t *modcache);
 void R_DrawWSurfVBOSolid(wsurf_model_t *modcache);
 void R_ShutdownWSurf(void);
 
+wsurf_program_t *R_UseWSurfProgram(int state);
+
 #define WSURF_DIFFUSE_ENABLED			1
 #define WSURF_LIGHTMAP_ENABLED			2
 #define WSURF_DETAILTEXTURE_ENABLED		4
