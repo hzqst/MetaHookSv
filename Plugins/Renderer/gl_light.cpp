@@ -326,7 +326,7 @@ void R_InitLight(void)
 		}
 
 		//circle tri
-		/*{
+		{
 			coneVertices.push_back(1.0);
 			coneVertices.push_back(0);
 			coneVertices.push_back(0);
@@ -344,7 +344,7 @@ void R_InitLight(void)
 			coneVertices.push_back(xPos2);
 			coneVertices.push_back(yPos2);
 			coneVertices.push_back(zPos2);
-		}*/
+		}
 	}
 
 	qglGenBuffersARB(1, &r_cone_vbo);
@@ -524,22 +524,32 @@ void R_EndRenderGBuffer(void)
 			{
 				//Point Light
 
-				float radius = r_light_radius->value / sl.fade;
+				float sl_radius = r_light_radius->value / sl.fade;
 
 				vec3_t dist;
-				VectorSubtract(r_refdef->vieworg, sl.org, dist);
+				VectorSubtract(r_refdef->vieworg, sl.origin, dist);
 
-				if (VectorLength(dist) > radius + 32)
+				if (VectorLength(dist) > sl_radius + 32)
 				{
+					vec3_t mins, maxs;
+					for (int j = 0; j < 3; j++)
+					{
+						mins[j] = sl.origin[j] - sl_radius;
+						maxs[j] = sl.origin[j] + sl_radius;
+					}
+
+					if (R_CullBox(mins, maxs))
+						continue;
+
 					dlight_program_t prog = { 0 };
 					R_UseDLightProgram(DLIGHT_LIGHT_PASS | DLIGHT_LIGHT_PASS_POINT | DLIGHT_LIGHT_PASS_VOLUME, &prog);
 					qglUniform4fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0f);
-					qglUniform4fARB(prog.lightpos, sl.org[0], sl.org[1], sl.org[2], 1.0f);
-					qglUniform3fARB(prog.lightcolor, sl.col[0], sl.col[1], sl.col[2]);
-					qglUniform1fARB(prog.lightradius, radius);
-					qglUniform1fARB(prog.lightambient, r_light_ambient->value * sl.col[3]);
-					qglUniform1fARB(prog.lightdiffuse, r_light_diffuse->value * sl.col[3]);
-					qglUniform1fARB(prog.lightspecular, r_light_specular->value * sl.col[3]);
+					qglUniform4fARB(prog.lightpos, sl.origin[0], sl.origin[1], sl.origin[2], 1.0f);
+					qglUniform3fARB(prog.lightcolor, sl.color[0], sl.color[1], sl.color[2]);
+					qglUniform1fARB(prog.lightradius, sl_radius);
+					qglUniform1fARB(prog.lightambient, r_light_ambient->value * sl.color[3]);
+					qglUniform1fARB(prog.lightdiffuse, r_light_diffuse->value * sl.color[3]);
+					qglUniform1fARB(prog.lightspecular, r_light_specular->value * sl.color[3]);
 					qglUniform1fARB(prog.lightspecularpow, r_light_specularpow->value);
 
 					qglEnableClientState(GL_VERTEX_ARRAY);
@@ -549,8 +559,8 @@ void R_EndRenderGBuffer(void)
 
 					qglPushMatrix();
 
-					qglTranslatef(sl.org[0], sl.org[1], sl.org[2]);
-					qglScalef(radius, radius, radius);
+					qglTranslatef(sl.origin[0], sl.origin[1], sl.origin[2]);
+					qglScalef(sl_radius, sl_radius, sl_radius);
 
 					qglDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
 
@@ -565,12 +575,12 @@ void R_EndRenderGBuffer(void)
 					dlight_program_t prog = { 0 };
 					R_UseDLightProgram(DLIGHT_LIGHT_PASS | DLIGHT_LIGHT_PASS_POINT, &prog);
 					qglUniform4fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0f);
-					qglUniform4fARB(prog.lightpos, sl.org[0], sl.org[1], sl.org[2], 1.0f);
-					qglUniform3fARB(prog.lightcolor, sl.col[0], sl.col[1], sl.col[2]);
-					qglUniform1fARB(prog.lightradius, radius);
-					qglUniform1fARB(prog.lightambient, r_light_ambient->value * sl.col[3]);
-					qglUniform1fARB(prog.lightdiffuse, r_light_diffuse->value * sl.col[3]);
-					qglUniform1fARB(prog.lightspecular, r_light_specular->value * sl.col[3]);
+					qglUniform4fARB(prog.lightpos, sl.origin[0], sl.origin[1], sl.origin[2], 1.0f);
+					qglUniform3fARB(prog.lightcolor, sl.color[0], sl.color[1], sl.color[2]);
+					qglUniform1fARB(prog.lightradius, sl_radius);
+					qglUniform1fARB(prog.lightambient, r_light_ambient->value * sl.color[3]);
+					qglUniform1fARB(prog.lightdiffuse, r_light_diffuse->value * sl.color[3]);
+					qglUniform1fARB(prog.lightspecular, r_light_specular->value * sl.color[3]);
 					qglUniform1fARB(prog.lightspecularpow, r_light_specularpow->value);
 
 					GL_Begin2D();
@@ -627,6 +637,7 @@ void R_EndRenderGBuffer(void)
 			else
 			{
 				VectorCopy(ent->angles, dlight_angle);
+				dlight_angle[0] = -dlight_angle[0];
 				gEngfuncs.pfnAngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
 
 				VectorCopy(ent->origin, org);
@@ -684,22 +695,13 @@ void R_EndRenderGBuffer(void)
 
 				qglTranslatef(dlight_origin[0], dlight_origin[1], dlight_origin[2]);
 
-				if (ent == gEngfuncs.GetLocalPlayer() && !gExportfuncs.CL_IsThirdPerson())
-				{
-					qglRotatef(dlight_angle[1], 0, 0, 1);
-					qglRotatef(dlight_angle[0], 0, 1, 0);
-					qglRotatef(dlight_angle[2], 1, 0, 0);
-				}
-				else
-				{
-					qglRotatef(dlight_angle[1], 0, 0, 1);
-					qglRotatef(-dlight_angle[0], 0, 1, 0);
-					qglRotatef(dlight_angle[2], 1, 0, 0);
-				}
+				qglRotatef(dlight_angle[1], 0, 0, 1);
+				qglRotatef(dlight_angle[0], 0, 1, 0);
+				qglRotatef(dlight_angle[2], 1, 0, 0);
 
 				qglScalef(r_flashlight_distance->value, radius, radius);
 
-				qglDrawArrays(GL_TRIANGLES, 0, X_SEGMENTS * 3);
+				qglDrawArrays(GL_TRIANGLES, 0, X_SEGMENTS * 6);
 
 				qglPopMatrix();
 
@@ -714,6 +716,16 @@ void R_EndRenderGBuffer(void)
 
 			if (VectorLength(dist) > dl->radius + 32)
 			{
+				vec3_t mins, maxs;
+				for (int j = 0; j < 3; j++)
+				{
+					mins[j] = dl->origin[j] - dl->radius;
+					maxs[j] = dl->origin[j] + dl->radius;
+				}
+
+				if (R_CullBox(mins, maxs))
+					continue;
+
 				dlight_program_t prog = { 0 };
 				R_UseDLightProgram(DLIGHT_LIGHT_PASS | DLIGHT_LIGHT_PASS_POINT | DLIGHT_LIGHT_PASS_VOLUME, &prog);
 				qglUniform4fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0f);

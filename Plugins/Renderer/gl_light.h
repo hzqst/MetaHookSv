@@ -15,22 +15,21 @@ typedef struct deferred_light_s
 	deferred_light_s()
 	{
 		type = 0;
-		memset(org, 0, sizeof(org));
-		memset(col, 0, sizeof(col));
-		VectorClear(org);
+		memset(origin, 0, sizeof(origin));
+		memset(color, 0, sizeof(color));
 		fade = 0;
 	}
 	deferred_light_s(int t, float *o, float *c, float f)
 	{
 		type = t;
-		memcpy(org, o, sizeof(org));
-		memcpy(col, c, sizeof(col));
+		memcpy(origin, o, sizeof(origin));
+		memcpy(color, c, sizeof(color));
 		fade = f;
 	}
 
 	int type;
-	vec3_t org;
-	float col[4];
+	vec3_t origin;
+	float color[4];
 	float fade;
 }deferred_light_t;
 
