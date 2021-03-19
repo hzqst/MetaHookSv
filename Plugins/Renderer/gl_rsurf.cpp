@@ -31,12 +31,9 @@ void R_RecursiveWorldNode(mnode_t *node)
 void R_MarkLeaves(void)
 {
 	//Don't clip bsp nodes when rendering refract or reflect view for non-transparent water.
-	if (r_water_novis->value > 0)
+	if (r_draw_pass == r_draw_reflect)
 	{
-		if (r_draw_pass == r_draw_reflect)
-		{
-			r_novis->value = 1;
-		}
+		r_novis->value = 1;
 	}
 
 	gRefFuncs.R_MarkLeaves();
@@ -667,10 +664,10 @@ void R_DrawDecals(qboolean bMultitexture)
 
 	if (r_draw_pass == r_draw_reflect && curwater)
 	{
-		WSurfProgramState |= WSURF_CLIP_ABOVE_ENABLED;
+		WSurfProgramState |= WSURF_CLIP_UNDER_ENABLED;
 	}
 
-	if (!drawgbuffer && r_wsurf_fogmode == GL_LINEAR)
+	if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 	{
 		WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
 	}

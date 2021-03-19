@@ -682,7 +682,7 @@ void R_GLStudioDrawPoints(void)
 				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE | STUDIO_TRANSADDITIVE_ENABLED;
 			}
 
-			if (r_wsurf_fogmode == GL_LINEAR)
+			if (r_fog_mode == GL_LINEAR)
 				StudioProgramState |= STUDIO_LINEAR_FOG_ENABLED;
 
 			R_UseGBufferProgram(GBufferProgramState);

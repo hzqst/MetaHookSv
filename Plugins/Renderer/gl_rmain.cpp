@@ -120,6 +120,7 @@ FBO_Container_t s_DepthLinearFBO;
 FBO_Container_t s_HBAOCalcFBO;
 FBO_Container_t s_ShadowFBO;
 FBO_Container_t s_WaterFBO;
+FBO_Container_t s_SkyFBO;
 
 qboolean bNoStretchAspect = false;
 qboolean bDoMSAA = true;
@@ -1096,6 +1097,9 @@ void GL_GenerateFBO(void)
 	GL_ClearFBO(&s_ToneMapFBO);
 	GL_ClearFBO(&s_DepthLinearFBO);
 	GL_ClearFBO(&s_HBAOCalcFBO);
+	GL_ClearFBO(&s_SkyFBO);
+	GL_ClearFBO(&s_WaterFBO);
+	GL_ClearFBO(&s_ShadowFBO);
 
 	if (!gl_msaa_support)
 	{
@@ -1151,6 +1155,18 @@ void GL_GenerateFBO(void)
 	{
 		GL_FreeFBO(&s_BackBufferFBO2);
 		Sys_ErrorEx("Failed to initialize backbuffer2 framebuffer!\n");
+	}
+
+	s_SkyFBO.iWidth = glwidth;
+	s_SkyFBO.iHeight = glheight;
+	GL_GenFrameBuffer(&s_SkyFBO);
+	GL_FrameBufferColorTexture(&s_SkyFBO, gl_color_format, false);
+	GL_FrameBufferDepthTexture(&s_SkyFBO, GL_DEPTH24_STENCIL8, false);
+
+	if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		GL_FreeFBO(&s_SkyFBO);
+		Sys_ErrorEx("Failed to initialize sky framebuffer!\n");
 	}
 
 	s_GBufferFBO.iWidth = glwidth;
@@ -1379,6 +1395,7 @@ void GL_Shutdown(void)
 	GL_FreeFBO(&s_HBAOCalcFBO);
 	GL_FreeFBO(&s_ShadowFBO);
 	GL_FreeFBO(&s_WaterFBO);
+	GL_FreeFBO(&s_SkyFBO);
 }
 
 void GL_BeginRendering(int *x, int *y, int *width, int *height)
@@ -1422,9 +1439,22 @@ void R_PreRenderView(int a1)
 	g_SvEngine_DrawPortalView = a1;
 
 	r_studio_framecount++;
+	r_fog_mode = 0;
 
 	if (!r_refdef->onlyClientDraws)
 	{
+		if (qglIsEnabled(GL_FOG))
+		{
+			qglGetIntegerv(GL_FOG_MODE, &r_fog_mode);
+
+			if (r_fog_mode == GL_LINEAR)
+			{
+				qglGetFloatv(GL_FOG_START, &r_fog_control[0]);
+				qglGetFloatv(GL_FOG_END, &r_fog_control[1]);
+				qglGetFloatv(GL_FOG_COLOR, r_fog_color);
+			}
+		}
+
 		if (r_water && r_water->value && waters_active)
 		{
 			R_RenderWaterView();
@@ -1834,7 +1864,7 @@ void R_NewMap(void)
 
 mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
 {
-	if ((r_draw_pass == r_draw_reflect || r_draw_pass == r_draw_refract) && model == r_worldmodel && 0 == VectorCompare(p, r_refdef->vieworg))
+	if (r_draw_pass == r_draw_reflect && model == r_worldmodel && VectorCompare(p, r_refdef->vieworg))
 	{
 		return gRefFuncs.Mod_PointInLeaf(water_view, model);
 	}

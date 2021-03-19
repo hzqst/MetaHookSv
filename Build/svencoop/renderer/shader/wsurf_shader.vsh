@@ -20,6 +20,10 @@ varying vec3 tangentFragPos;
 
 #endif
 
+#ifdef PROJECTION_ENABLED
+varying vec4 projpos;
+#endif
+
 mat3 inverse_mat3(mat3 m)
 {
     float Determinant = 
@@ -87,4 +91,8 @@ void main(void)
 	color = gl_Color;
 
 	gl_Position = ftransform();
+
+#ifdef PROJECTION_ENABLED
+	projpos = gl_Position;
+#endif
 }

@@ -400,16 +400,16 @@ void R_SetGBufferMask(int mask)
 	qglDrawBuffers(attachCount, attachments);
 }
 
-void R_BeginRenderGBuffer(void)
+bool R_BeginRenderGBuffer(void)
 {
 	if (r_draw_pass)
-		return;
+		return false;
 
 	if (!r_light_dynamic->value)
-		return;
+		return false;
 
 	if (!s_GBufferFBO.s_hBackBufferFBO)
-		return;
+		return false;
 
 	drawgbuffer = true;
 	gbuffer_mask = -1;
@@ -426,6 +426,8 @@ void R_BeginRenderGBuffer(void)
 	qglDepthMask(GL_TRUE);
 	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	qglStencilMask(0);
+
+	return true;
 }
 
 bool Util_IsOriginInCone(float *org, float *cone_origin, float *cone_forward, float cone_cosine, float cone_distance)
@@ -774,7 +776,7 @@ void R_EndRenderGBuffer(void)
 
 	int FinalProgramState = DLIGHT_FINAL_PASS;
 
-	if (r_wsurf_fogmode == GL_LINEAR)
+	if (r_fog_mode == GL_LINEAR)
 		FinalProgramState |= DLIGHT_LINEAR_FOG_ENABLED;
 
 	dlight_program_t finalProg = { 0 };

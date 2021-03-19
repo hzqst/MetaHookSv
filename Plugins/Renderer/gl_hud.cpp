@@ -800,7 +800,7 @@ int R_DoSSAO(int sampleIndex)
 	InvFullResolution[1] = 1.0f / float(glheight);
 
 	//setup args for hbao_calc
-	if (r_wsurf_fogmode == GL_LINEAR)
+	if (r_fog_mode == GL_LINEAR)
 	{
 		qglUseProgramObjectARB(hbao_calc_blur_fog.program);
 		qglUniform4fvARB(hbao_calc_blur_fog.control_projInfo, 1, projInfo);
@@ -812,7 +812,7 @@ int R_DoSSAO(int sampleIndex)
 		qglUniform1fARB(hbao_calc_blur_fog.control_NDotVBias, NDotVBias);
 		qglUniform1fARB(hbao_calc_blur_fog.control_NegInvR2, NegInvR2);
 		qglUniform1fARB(hbao_calc_blur_fog.control_PowExponent, PowExponent);
-		qglUniform2fARB(hbao_calc_blur_fog.control_Fog, r_wsurf_fogcontrol[0], r_wsurf_fogcontrol[1]);
+		qglUniform2fARB(hbao_calc_blur_fog.control_Fog, r_fog_control[0], r_fog_control[1]);
 	}
 	else
 	{

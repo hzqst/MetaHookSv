@@ -833,12 +833,6 @@ void R_FillAddress(void)
 		Sig_AddrNotFound(gSkyTexNumber);
 		gSkyTexNumber = *(int **)(addr + 3);
 
-#define SKYMINSMAXS_SIG_SVENGINE "\xD9\x04\xB5\x2A\x2A\x2A\x2A\xD8\x1C\xB5"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawSkyChain, 0x300, SKYMINSMAXS_SIG_SVENGINE, sizeof(SKYMINSMAXS_SIG_SVENGINE) - 1);
-		Sig_AddrNotFound(skymaxs);
-		skymaxs = *(skybox_t **)(addr + 3);
-		skymins = *(skybox_t **)(addr + 10);
-
 #define CURRENTTEXTURE_SIG_SVENGINE "\x39\x05\x2A\x2A\x2A\x2A\x74"
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_Bind, 0x50, CURRENTTEXTURE_SIG_SVENGINE, sizeof(CURRENTTEXTURE_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(currenttexture);
@@ -1431,7 +1425,7 @@ void R_InstallHook(void)
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSequentialPoly, R_DrawSequentialPoly, (void *&)gRefFuncs.R_DrawSequentialPoly);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.EmitWaterPolys, EmitWaterPolys, (void *&)gRefFuncs.EmitWaterPolys);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawDecals, R_DrawDecals, (void *&)gRefFuncs.R_DrawDecals);
-	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSkyChain, R_DrawSkyChain, (void *&)gRefFuncs.R_DrawSkyChain);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSkyChain, R_DrawSkyChain, (void *&)gRefFuncs.R_DrawSkyChain);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_BuildLightMap, R_BuildLightMap, (void *&)gRefFuncs.R_BuildLightMap);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_AddDynamicLights, R_AddDynamicLights, (void *&)gRefFuncs.R_AddDynamicLights);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_StudioRenderFinal, R_StudioRenderFinal, (void *&)gRefFuncs.R_StudioRenderFinal);

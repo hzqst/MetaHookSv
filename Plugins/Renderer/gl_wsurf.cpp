@@ -8,9 +8,9 @@ cvar_t *r_wsurf_vbo;
 cvar_t *r_wsurf_parallax_scale;
 cvar_t *r_wsurf_detail;
 
-int r_wsurf_fogmode = 0;
-float r_wsurf_fogcontrol[2];
-float r_wsurf_fogcolor[4];
+int r_fog_mode = 0;
+float r_fog_control[2];
+float r_fog_color[4];
 int r_wsurf_drawcall = 0;
 int r_wsurf_polys = 0;
 
@@ -73,6 +73,9 @@ wsurf_program_t *R_UseWSurfProgram(int state)
 
 		if (state & WSURF_TRANSPARENT_ENABLED)
 			defs << "#define TRANSPARENT_ENABLED\n";
+
+		if (state & WSURF_PROJECTION_ENABLED)
+			defs << "#define PROJECTION_ENABLED\n";
 
 		auto def = defs.str();
 
@@ -215,9 +218,6 @@ void R_RecursiveWorldNodeGenerateTextureChain(mnode_t *node)
 
 void R_GenerateElementBufferIndices(msurface_t *s, brushtexchain_t *texchain, wsurf_model_t *modcache)
 {
-	if (s->flags & SURF_DRAWSKY)
-		return;
-
 	auto p = s->polys;
 	auto brushface = &r_wsurf.vFaceBuffer[p->flags];
 
@@ -229,9 +229,23 @@ void R_GenerateElementBufferIndices(msurface_t *s, brushtexchain_t *texchain, ws
 	{
 
 	}
+	else if (s->flags & SURF_DRAWSKY)
+	{
+		if (texchain->iType == TEXCHAIN_SKY)
+		{
+			for (int i = 0; i < brushface->num_vertexes; ++i)
+			{
+				modcache->vIndicesBuffer.emplace_back(brushface->start_vertex + i);
+				texchain->iVertexCount++;
+			}
+			modcache->vIndicesBuffer.emplace_back((unsigned int)0xFFFFFFFF);
+			texchain->iVertexCount++;
+			texchain->iFaceCount++;
+		}
+	}
 	else if (s->flags & SURF_DRAWTILED)
 	{
-		if (texchain->iScroll)
+		if (texchain->iType == TEXCHAIN_SCROLL)
 		{
 			for (int i = 0; i < brushface->num_vertexes; ++i)
 			{
@@ -245,7 +259,7 @@ void R_GenerateElementBufferIndices(msurface_t *s, brushtexchain_t *texchain, ws
 	}
 	else
 	{
-		if (!texchain->iScroll)
+		if (texchain->iType == TEXCHAIN_STATIC)
 		{
 			for (int i = 0; i < brushface->num_vertexes; ++i)
 			{
@@ -293,57 +307,74 @@ void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
 
 		if (s)
 		{
-			brushtexchain_t texchain;
-
-			texchain.pTexture = t;
-			texchain.iVertexCount = 0;
-			texchain.iFaceCount = 0;
-			texchain.iStartIndex = modcache->vIndicesBuffer.size();
-			texchain.iScroll = 0;
-
-			if (i == *skytexturenum)
+			if (s->flags & SURF_DRAWSKY)
 			{
-				continue;
-			}
-			else
-			{
-				if ((s->flags & SURF_DRAWTURB) && r_wateralpha->value != 1.0)
-					continue;
+				brushtexchain_t texchain;
+
+				texchain.pTexture = t;
+				texchain.iVertexCount = 0;
+				texchain.iFaceCount = 0;
+				texchain.iStartIndex = modcache->vIndicesBuffer.size();
+				texchain.iType = TEXCHAIN_SKY;
 
 				for (; s; s = s->texturechain)
 				{
 					R_GenerateElementBufferIndices(s, &texchain, modcache);
 				}
-			}
 
-			if (texchain.iVertexCount > 0)
-				modcache->vTextureChainStatic.emplace_back(texchain);
+				if (texchain.iVertexCount > 0)
+					modcache->vTextureChainSky = texchain;
+
+				t->texturechain = NULL;
+
+				continue;
+			}
+			else
+			{
+				if ((s->flags & SURF_DRAWTURB) && r_wateralpha->value != 1.0)
+				{
+					t->texturechain = NULL;
+					continue;
+				}
+
+				brushtexchain_t texchain;
+
+				texchain.pTexture = t;
+				texchain.iVertexCount = 0;
+				texchain.iFaceCount = 0;
+				texchain.iStartIndex = modcache->vIndicesBuffer.size();
+				texchain.iType = TEXCHAIN_STATIC;
+
+				for (; s; s = s->texturechain)
+				{
+					R_GenerateElementBufferIndices(s, &texchain, modcache);
+				}
+
+				if (texchain.iVertexCount > 0)
+					modcache->vTextureChainStatic.emplace_back(texchain);
+			}
 		}
 
 		s = t->texturechain;
 		if (s)
 		{
+			if ((s->flags & SURF_DRAWTURB) && r_wateralpha->value != 1.0)
+			{
+				t->texturechain = NULL;
+				continue;
+			}
+
 			brushtexchain_t texchain;
 
 			texchain.pTexture = t;
 			texchain.iVertexCount = 0;
 			texchain.iFaceCount = 0;
 			texchain.iStartIndex = modcache->vIndicesBuffer.size();
-			texchain.iScroll = 1;
+			texchain.iType = TEXCHAIN_SCROLL;
 
-			if (i == *skytexturenum)
+			for (; s; s = s->texturechain)
 			{
-				continue;
-			}
-			else
-			{
-				if ((s->flags & SURF_DRAWTURB) && r_wateralpha->value != 1.0)
-					continue;
-
-				for (; s; s = s->texturechain)
-				{
-					R_GenerateElementBufferIndices(s, &texchain, modcache);
-				}
+				R_GenerateElementBufferIndices(s, &texchain, modcache);
 			}
 
 			if (texchain.iVertexCount > 0)
@@ -380,7 +411,7 @@ void R_GenerateVertexBuffer(void)
 
 	for(i = 0; i < r_worldmodel->numsurfaces; i++)
 	{
-		if ((surf[i].flags & (SURF_DRAWSKY | SURF_UNDERWATER)))
+		if ((surf[i].flags & (SURF_UNDERWATER)))
 			continue;
 
 		for (poly = surf[i].polys; poly; poly = poly->next)
@@ -397,7 +428,7 @@ void R_GenerateVertexBuffer(void)
 
 	for(i = 0; i < r_worldmodel->numsurfaces; i++)
 	{
-		if ((surf[i].flags & (SURF_DRAWSKY | SURF_UNDERWATER)))
+		if ((surf[i].flags & (SURF_UNDERWATER)))
 			continue;
 
 		poly = surf[i].polys;
@@ -735,7 +766,7 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 			WSurfProgramState |= WSURF_CLIP_UNDER_ENABLED;
 		}
 
-		if (!drawgbuffer && r_wsurf_fogmode == GL_LINEAR)
+		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 		{
 			WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
 		}
@@ -800,10 +831,10 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 
 			if (r_draw_pass == r_draw_reflect && curwater)
 			{
-				WSurfProgramState |= WSURF_CLIP_ABOVE_ENABLED;
+				WSurfProgramState |= WSURF_CLIP_UNDER_ENABLED;
 			}
 
-			if (!drawgbuffer && r_wsurf_fogmode == GL_LINEAR)
+			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 			{
 				WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
 			}
@@ -844,6 +875,45 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		qglEnable(GL_TEXTURE_2D);
 	}
 
+	if (r_draw_pass != r_draw_reflect)
+	{
+		auto &texchain = modcache->vTextureChainSky;
+
+		if (texchain.iVertexCount)
+		{
+			qglEnable(GL_STENCIL_TEST);
+			qglStencilMask(0xFF);
+			qglStencilFunc(GL_ALWAYS, 1, 0xFF);
+			qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+			GL_DisableMultitexture();
+			GL_Bind(s_SkyFBO.s_hBackBufferTex);
+
+			int WSurfProgramState = WSURF_PROJECTION_ENABLED;
+
+			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			{
+				WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+			}
+
+			if (drawgbuffer)
+			{
+				WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+			}
+
+			auto prog = R_UseWSurfProgram(WSurfProgramState);
+
+			qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
+
+			r_wsurf_drawcall++;
+			r_wsurf_polys += texchain.iFaceCount;
+
+			qglStencilMask(0);
+			qglDisable(GL_STENCIL_TEST);
+		}
+
+	}
+
 	qglUseProgramObjectARB(0);
 }
 
@@ -872,16 +942,6 @@ void R_DrawWSurfVBOSolid(wsurf_model_t *modcache)
 			r_wsurf_polys += texchain.iFaceCount;
 		}
 	}
-}
-
-char *strtolower(char *str)
-{
-	char *temp;
-
-	for ( temp = str; *temp; temp++ ) 
-		*temp = tolower( *temp );
-
-	return str;
 }
 
 void R_InitWSurf(void)
@@ -1377,10 +1437,10 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 
 	if (r_draw_pass == r_draw_reflect && curwater)
 	{
-		WSurfProgramState |= WSURF_CLIP_ABOVE_ENABLED;
+		WSurfProgramState |= WSURF_CLIP_UNDER_ENABLED;
 	}
 
-	if (!drawgbuffer && r_wsurf_fogmode == GL_LINEAR)
+	if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 	{
 		WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
 	}
@@ -1888,8 +1948,8 @@ void R_RecursiveWorldNodeVBO(mnode_t *node)
 
 			if (surf->flags & SURF_DRAWSKY)
 			{
-				surf->texturechain = (*skychain);
-				(*skychain) = surf;
+				//surf->texturechain = (*skychain);
+				//(*skychain) = surf;
 			}
 			else if (surf->flags & SURF_DRAWTURB)
 			{
@@ -2121,10 +2181,23 @@ void R_DrawBrushModel(cl_entity_t *e)
 
 void R_DrawWorld(void)
 {
+	GL_PushFrameBuffer();
+
+	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_SkyFBO.s_hBackBufferFBO);
+
+	qglClearColor(0, 0, 0, 1);
+	qglDepthMask(GL_TRUE);
+	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	R_DrawSkyBox();
+
+	GL_PopFrameBuffer();
+
 	R_BeginRenderGBuffer();
 
-	cl_entity_t tempent = { 0 };
 	VectorCopy(r_refdef->vieworg, modelorg);
+
+	cl_entity_t tempent = { 0 };
 	tempent.model = r_worldmodel;
 	tempent.curstate.rendercolor.r = cshift_water->destcolor[0];
 	tempent.curstate.rendercolor.g = cshift_water->destcolor[1];
@@ -2135,21 +2208,6 @@ void R_DrawWorld(void)
 
 	qglColor3f(1.0f, 1.0f, 1.0f);
 	memset(lightmap_polys, 0, sizeof(glpoly_t *) * 1024);
-	R_ClearSkyBox();
-
-	r_wsurf_fogmode = 0;
-
-	if (qglIsEnabled(GL_FOG))
-	{
-		qglGetIntegerv(GL_FOG_MODE, &r_wsurf_fogmode);
-
-		if (r_wsurf_fogmode == GL_LINEAR)
-		{
-			qglGetFloatv(GL_FOG_START, &r_wsurf_fogcontrol[0]);
-			qglGetFloatv(GL_FOG_END, &r_wsurf_fogcontrol[1]);
-			qglGetFloatv(GL_FOG_COLOR, r_wsurf_fogcolor);
-		}
-	}
 
 	qglEnable(GL_STENCIL_TEST);
 	qglStencilMask(0xFF);
@@ -2183,18 +2241,39 @@ void R_DrawWorld(void)
 		(*gDecalSurfCount) = 0;
 	}
 
+	(*currententity) = gEngfuncs.GetEntityByIndex(0);
+
 	GL_DisableMultitexture();
+
+	if (!r_wsurf_vbo->value)
+	{
+		r_wsurf.bDiffuseTexture = false;
+		r_wsurf.bLightmapTexture = false;
+
+		if (r_draw_pass == r_draw_reflect)
+		{
+			R_DrawSkyBox();
+		}
+		else
+		{
+			if ((*skychain))
+			{
+				R_DrawSkyChain((*skychain));
+			}
+		}
+	}
+	else
+	{
+		if (r_draw_pass == r_draw_reflect)
+		{
+			R_DrawSkyBox();
+		}
+	}
+
+	(*skychain) = 0;
 
 	r_wsurf.bDiffuseTexture = true;
 	r_wsurf.bLightmapTexture = false;
-
-	(*currententity) = gEngfuncs.GetEntityByIndex(0);
-
-	if ((*skychain))
-	{
-		R_DrawSkyChain((*skychain));
-		(*skychain) = 0;
-	}
 
 	if ((*waterchain))
 	{

@@ -15,9 +15,9 @@ uniform vec4 viewpos;
 uniform vec4 lightdir;
 uniform vec4 lightpos;
 
-    #ifdef LIGHT_PASS_VOLUME
-        varying vec4 projpos;
-    #endif
+#ifdef LIGHT_PASS_VOLUME
+    varying vec4 projpos;
+#endif
 
 #endif
 

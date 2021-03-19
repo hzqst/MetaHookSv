@@ -130,6 +130,7 @@ extern FBO_Container_t s_DepthLinearFBO;
 extern FBO_Container_t s_HBAOCalcFBO;
 extern FBO_Container_t s_ShadowFBO;
 extern FBO_Container_t s_WaterFBO;
+extern FBO_Container_t s_SkyFBO;
 
 extern int *skytexturenum;
 
@@ -138,8 +139,6 @@ extern msurface_t **waterchain;
 extern int *gl_texsort_value;
 
 extern int *gSkyTexNumber;
-extern skybox_t *skymins;
-extern skybox_t *skymaxs;
 
 extern float gldepthmin;
 extern float gldepthmax;
@@ -228,9 +227,9 @@ void R_MarkLeaves(void);
 void R_SetFrustum(void);
 void R_CalcRefdef(struct ref_params_s *pparams);
 void R_DrawWorld(void);
-void R_DrawSkyChain(msurface_t *s);
-void R_ClearSkyBox(void);
 void R_DrawSkyBox(void);
+void R_ClearSkyBox(void);
+void R_DrawSkyChain(msurface_t *s);
 void R_DrawEntitiesOnList(void);
 void R_RecursiveWorldNode(mnode_t *node);
 void R_DrawSequentialPoly(msurface_t *s, int face);

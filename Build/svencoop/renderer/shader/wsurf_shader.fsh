@@ -39,8 +39,14 @@ uniform float clipPlane;
 varying vec4 worldpos;
 varying vec4 normal;
 varying vec4 tangent;
-//varying vec4 bitangent;
 varying vec4 color;
+
+#ifdef PROJECTION_ENABLED
+varying vec4 projpos;
+uniform sampler2D diffuseTex;
+uniform sampler2D depthTex;
+uniform mat4 projectionMatrixInverse;
+#endif
 
 #ifdef NORMALTEXTURE_ENABLED
 
@@ -100,6 +106,19 @@ vec2 ParallaxMapping(vec3 viewDir)
 
 #endif
 
+#ifdef PROJECTION_ENABLED
+
+vec3 decodeCameraSpacePositionFromDepthBuffer(in vec2 texCoord){ 
+	vec4 clipSpaceLocation;
+	clipSpaceLocation.xy = texCoord*2.0-1.0; 
+	clipSpaceLocation.z  = texture(depthTex, texCoord).r * 2.0-1.0; 
+	clipSpaceLocation.w  = 1.0; 
+	vec4 homogenousLocation = projectionMatrixInverse * clipSpaceLocation; 
+	return homogenousLocation.xyz/homogenousLocation.w; 
+}
+
+#endif
+
 void main()
 {
 #ifdef DIFFUSE_ENABLED
@@ -118,7 +137,16 @@ void main()
 
 #else
 
-	vec4 diffuseColor = color;
+	#ifdef PROJECTION_ENABLED
+
+		vec2 vBaseTexCoord = projpos.xy / projpos.w * 0.5 + 0.5;
+		vec4 diffuseColor = texture2D(diffuseTex, vBaseTexCoord);
+
+	#else
+	
+		vec4 diffuseColor = color;
+
+	#endif
 
 #endif
 
@@ -184,22 +212,22 @@ void main()
 #endif
 
 #ifdef LINEAR_FOG_ENABLED
-	float z = gl_FragCoord.z / gl_FragCoord.w;
+
+	#ifdef PROJECTION_ENABLED
+	
+		float z = length(decodeCameraSpacePositionFromDepthBuffer(vBaseTexCoord));
+
+	#else
+
+		float z = gl_FragCoord.z / gl_FragCoord.w;
+
+	#endif
+
 	float fogFactor = ( gl_Fog.end - z ) / ( gl_Fog.end - gl_Fog.start );
 	fogFactor = clamp(fogFactor, 0.0, 1.0);
 
 	vec3 finalColor = gl_FragColor.xyz;
 
 	gl_FragColor.xyz = mix(gl_Fog.color.xyz, finalColor, fogFactor );
-#endif
-
-#ifdef EXP2_FOG_ENABLED
-	float z = gl_FragCoord.z / gl_FragCoord.w;
-	float fogFactor = exp( (-1.0) * (gl_Fog.density * z) * (gl_Fog.density * z) );
-	fogFactor = clamp(fogFactor, 0.0, 1.0);
-
-	vec3 finalColor = gl_FragColor.xyz;
-
-	gl_FragColor.xyz = mix(finalColor, gl_Fog.color.xyz, fogFactor );
 #endif
 }

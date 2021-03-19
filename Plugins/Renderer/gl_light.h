@@ -66,7 +66,7 @@ typedef struct
 
 void R_InitLight(void);
 void R_ShutdownLight(void);
-void R_BeginRenderGBuffer(void);
+bool R_BeginRenderGBuffer(void);
 void R_EndRenderGBuffer(void);
 void R_SetGBufferMask(int mask);
 void R_UseGBufferProgram(int state);
