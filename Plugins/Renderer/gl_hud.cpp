@@ -608,6 +608,7 @@ void R_DoHDR(void)
 	qglDisable(GL_BLEND);
 	GL_DisableMultitexture();
 	qglEnable(GL_TEXTURE_2D);
+	qglColor4f(1, 1, 1, 1);
 
 	//Downsample backbuffer
 	R_DownSample(&s_BackBufferFBO, &s_DownSampleFBO[0], false);//(1->1/4)

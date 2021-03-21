@@ -475,7 +475,7 @@ void R_DrawSkyBox(void)
 	qglDisable(GL_STENCIL_TEST);
 }
 
-void R_DrawSkyChain(msurface_t *s)
+void R_DrawSkyChain(void)
 {
 	qglEnable(GL_STENCIL_TEST);
 	qglStencilMask(0xFF);
@@ -498,7 +498,7 @@ void R_DrawSkyChain(msurface_t *s)
 
 	GL_Bind(s_SkyFBO.s_hBackBufferTex);
 
-	for (auto fa = s; fa; fa = fa->texturechain)
+	for (auto fa = (*skychain); fa; fa = fa->texturechain)
 	{
 		DrawGLPoly(fa);
 	}

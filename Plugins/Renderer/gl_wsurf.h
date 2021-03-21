@@ -54,7 +54,7 @@ typedef struct brushface_s
 	vec3_t	t_tangent;
 }brushface_t;
 
-#define TEXCHAIN_SKY 0
+//#define TEXCHAIN_SKY 0
 #define TEXCHAIN_STATIC 1
 #define TEXCHAIN_SCROLL 2
 
@@ -117,7 +117,7 @@ typedef struct wsurf_model_s
 
 	GLuint				hEBO;
 
-	brushtexchain_t vTextureChainSky;
+	//brushtexchain_t vTextureChainSky;
 	std::vector<brushtexchain_t> vTextureChainStatic;
 	std::vector<brushtexchain_t> vTextureChainScroll;
 	std::vector<unsigned int> vIndicesBuffer;

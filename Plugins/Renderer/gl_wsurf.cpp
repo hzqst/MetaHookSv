@@ -229,7 +229,7 @@ void R_GenerateElementBufferIndices(msurface_t *s, brushtexchain_t *texchain, ws
 	{
 
 	}
-	else if (s->flags & SURF_DRAWSKY)
+	/*else if (s->flags & SURF_DRAWSKY)
 	{
 		if (texchain->iType == TEXCHAIN_SKY)
 		{
@@ -242,7 +242,7 @@ void R_GenerateElementBufferIndices(msurface_t *s, brushtexchain_t *texchain, ws
 			texchain->iVertexCount++;
 			texchain->iFaceCount++;
 		}
-	}
+	}*/
 	else if (s->flags & SURF_DRAWTILED)
 	{
 		if (texchain->iType == TEXCHAIN_SCROLL)
@@ -309,7 +309,7 @@ void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
 		{
 			if (s->flags & SURF_DRAWSKY)
 			{
-				brushtexchain_t texchain;
+				/*brushtexchain_t texchain;
 
 				texchain.pTexture = t;
 				texchain.iVertexCount = 0;
@@ -323,7 +323,7 @@ void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
 				}
 
 				if (texchain.iVertexCount > 0)
-					modcache->vTextureChainSky = texchain;
+					modcache->vTextureChainSky = texchain;*/
 
 				t->texturechain = NULL;
 
@@ -358,6 +358,13 @@ void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
 		s = t->texturechain;
 		if (s)
 		{
+			if (s->flags & SURF_DRAWSKY)
+			{
+				t->texturechain = NULL;
+
+				continue;
+			}
+
 			if ((s->flags & SURF_DRAWTURB) && r_wateralpha->value != 1.0)
 			{
 				t->texturechain = NULL;
@@ -640,7 +647,7 @@ void R_EnableWSurfVBOSolid(wsurf_model_t *modcache)
 
 void R_EnableWSurfVBO(wsurf_model_t *modcache)
 {
-	if(!r_wsurf_vbo->value)
+	if (!r_wsurf_vbo->value)
 		return;
 
 	if (r_wsurf.pCurrentModel == modcache)
@@ -875,7 +882,7 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		qglEnable(GL_TEXTURE_2D);
 	}
 
-	if (r_draw_pass != r_draw_reflect)
+	/*if (r_draw_pass != r_draw_reflect)
 	{
 		auto &texchain = modcache->vTextureChainSky;
 
@@ -911,8 +918,7 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 			qglStencilMask(0);
 			qglDisable(GL_STENCIL_TEST);
 		}
-
-	}
+	}*/
 
 	qglUseProgramObjectARB(0);
 }
@@ -1948,8 +1954,8 @@ void R_RecursiveWorldNodeVBO(mnode_t *node)
 
 			if (surf->flags & SURF_DRAWSKY)
 			{
-				//surf->texturechain = (*skychain);
-				//(*skychain) = surf;
+				surf->texturechain = (*skychain);
+				(*skychain) = surf;
 			}
 			else if (surf->flags & SURF_DRAWTURB)
 			{
@@ -2245,28 +2251,22 @@ void R_DrawWorld(void)
 
 	GL_DisableMultitexture();
 
-	if (!r_wsurf_vbo->value)
-	{
-		r_wsurf.bDiffuseTexture = false;
-		r_wsurf.bLightmapTexture = false;
+	r_wsurf.bDiffuseTexture = true;
+	r_wsurf.bLightmapTexture = false;
 
-		if (r_draw_pass == r_draw_reflect)
-		{
-			R_DrawSkyBox();
-		}
-		else
-		{
-			if ((*skychain))
-			{
-				R_DrawSkyChain((*skychain));
-			}
-		}
-	}
-	else
+	if (r_draw_pass == r_draw_reflect)
 	{
-		if (r_draw_pass == r_draw_reflect)
+		R_DrawSkyBox();
+	}
+
+	r_wsurf.bDiffuseTexture = false;
+	r_wsurf.bLightmapTexture = false;
+
+	if (r_draw_pass != r_draw_reflect)
+	{
+		if ((*skychain))
 		{
-			R_DrawSkyBox();
+			R_DrawSkyChain();
 		}
 	}
 

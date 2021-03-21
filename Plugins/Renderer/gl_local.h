@@ -229,7 +229,7 @@ void R_CalcRefdef(struct ref_params_s *pparams);
 void R_DrawWorld(void);
 void R_DrawSkyBox(void);
 void R_ClearSkyBox(void);
-void R_DrawSkyChain(msurface_t *s);
+void R_DrawSkyChain(void);
 void R_DrawEntitiesOnList(void);
 void R_RecursiveWorldNode(mnode_t *node);
 void R_DrawSequentialPoly(msurface_t *s, int face);
