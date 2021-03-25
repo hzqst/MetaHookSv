@@ -2187,18 +2187,6 @@ void R_DrawBrushModel(cl_entity_t *e)
 
 void R_DrawWorld(void)
 {
-	GL_PushFrameBuffer();
-
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_SkyFBO.s_hBackBufferFBO);
-
-	qglClearColor(0, 0, 0, 1);
-	qglDepthMask(GL_TRUE);
-	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	R_DrawSkyBox();
-
-	GL_PopFrameBuffer();
-
 	R_BeginRenderGBuffer();
 
 	VectorCopy(r_refdef->vieworg, modelorg);
@@ -2254,26 +2242,9 @@ void R_DrawWorld(void)
 	r_wsurf.bDiffuseTexture = true;
 	r_wsurf.bLightmapTexture = false;
 
-	if (r_draw_pass == r_draw_reflect)
-	{
-		R_DrawSkyBox();
-	}
-
-	r_wsurf.bDiffuseTexture = false;
-	r_wsurf.bLightmapTexture = false;
-
-	if (r_draw_pass != r_draw_reflect)
-	{
-		if ((*skychain))
-		{
-			R_DrawSkyChain();
-		}
-	}
+	R_DrawSkyBox();
 
 	(*skychain) = 0;
-
-	r_wsurf.bDiffuseTexture = true;
-	r_wsurf.bLightmapTexture = false;
 
 	if ((*waterchain))
 	{

@@ -430,6 +430,16 @@ void R_DrawSkyBox(void)
 
 	int WSurfProgramState = WSURF_DIFFUSE_ENABLED;
 
+	if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+	{
+		WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+	}
+
+	if (drawgbuffer)
+	{
+		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+	}
+
 	auto prog = R_UseWSurfProgram(WSurfProgramState);
 
 	if (prog->speed != -1)
