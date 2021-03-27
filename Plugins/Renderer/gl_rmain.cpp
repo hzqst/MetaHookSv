@@ -1482,6 +1482,10 @@ void R_PostRenderView()
 		R_DoHDR();
 	}
 
+	GL_DisableMultitexture();
+	qglEnable(GL_TEXTURE_2D);
+	qglColor4f(1, 1, 1, 1);
+
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 
 	g_SvEngine_DrawPortalView = 0;	
