@@ -74,9 +74,6 @@ wsurf_program_t *R_UseWSurfProgram(int state)
 		if (state & WSURF_TRANSPARENT_ENABLED)
 			defs << "#define TRANSPARENT_ENABLED\n";
 
-		if (state & WSURF_PROJECTION_ENABLED)
-			defs << "#define PROJECTION_ENABLED\n";
-
 		auto def = defs.str();
 
 		prog = new wsurf_program_t;
@@ -221,7 +218,11 @@ void R_GenerateElementBufferIndices(msurface_t *s, brushtexchain_t *texchain, ws
 	auto p = s->polys;
 	auto brushface = &r_wsurf.vFaceBuffer[p->flags];
 
-	if (s->flags & SURF_DRAWTURB)
+	if (s->flags & SURF_DRAWSKY)
+	{
+
+	}
+	else if (s->flags & SURF_DRAWTURB)
 	{
 
 	}
@@ -229,20 +230,6 @@ void R_GenerateElementBufferIndices(msurface_t *s, brushtexchain_t *texchain, ws
 	{
 
 	}
-	/*else if (s->flags & SURF_DRAWSKY)
-	{
-		if (texchain->iType == TEXCHAIN_SKY)
-		{
-			for (int i = 0; i < brushface->num_vertexes; ++i)
-			{
-				modcache->vIndicesBuffer.emplace_back(brushface->start_vertex + i);
-				texchain->iVertexCount++;
-			}
-			modcache->vIndicesBuffer.emplace_back((unsigned int)0xFFFFFFFF);
-			texchain->iVertexCount++;
-			texchain->iFaceCount++;
-		}
-	}*/
 	else if (s->flags & SURF_DRAWTILED)
 	{
 		if (texchain->iType == TEXCHAIN_SCROLL)
@@ -290,6 +277,10 @@ void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
 			{
 				continue;
 			}
+			else if (psurf->flags & SURF_DRAWSKY)
+			{
+				continue;
+			}
 
 			psurf->texturechain = psurf->texinfo->texture->texturechain;
 			psurf->texinfo->texture->texturechain = psurf;
@@ -309,29 +300,12 @@ void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
 		{
 			if (s->flags & SURF_DRAWSKY)
 			{
-				/*brushtexchain_t texchain;
-
-				texchain.pTexture = t;
-				texchain.iVertexCount = 0;
-				texchain.iFaceCount = 0;
-				texchain.iStartIndex = modcache->vIndicesBuffer.size();
-				texchain.iType = TEXCHAIN_SKY;
-
-				for (; s; s = s->texturechain)
-				{
-					R_GenerateElementBufferIndices(s, &texchain, modcache);
-				}
-
-				if (texchain.iVertexCount > 0)
-					modcache->vTextureChainSky = texchain;*/
-
 				t->texturechain = NULL;
-
 				continue;
 			}
 			else
 			{
-				if ((s->flags & SURF_DRAWTURB) && r_wateralpha->value != 1.0)
+				if (s->flags & SURF_DRAWTURB)
 				{
 					t->texturechain = NULL;
 					continue;
@@ -361,11 +335,10 @@ void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
 			if (s->flags & SURF_DRAWSKY)
 			{
 				t->texturechain = NULL;
-
 				continue;
 			}
 
-			if ((s->flags & SURF_DRAWTURB) && r_wateralpha->value != 1.0)
+			if (s->flags & SURF_DRAWTURB)
 			{
 				t->texturechain = NULL;
 				continue;
@@ -418,7 +391,7 @@ void R_GenerateVertexBuffer(void)
 
 	for(i = 0; i < r_worldmodel->numsurfaces; i++)
 	{
-		if ((surf[i].flags & (SURF_UNDERWATER)))
+		if ((surf[i].flags & (SURF_DRAWSKY | SURF_UNDERWATER)))
 			continue;
 
 		for (poly = surf[i].polys; poly; poly = poly->next)
@@ -435,7 +408,7 @@ void R_GenerateVertexBuffer(void)
 
 	for(i = 0; i < r_worldmodel->numsurfaces; i++)
 	{
-		if ((surf[i].flags & (SURF_UNDERWATER)))
+		if ((surf[i].flags & (SURF_DRAWSKY | SURF_UNDERWATER)))
 			continue;
 
 		poly = surf[i].polys;
@@ -881,44 +854,6 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		qglDisable(GL_TEXTURE_2D_ARRAY);
 		qglEnable(GL_TEXTURE_2D);
 	}
-
-	/*if (r_draw_pass != r_draw_reflect)
-	{
-		auto &texchain = modcache->vTextureChainSky;
-
-		if (texchain.iVertexCount)
-		{
-			qglEnable(GL_STENCIL_TEST);
-			qglStencilMask(0xFF);
-			qglStencilFunc(GL_ALWAYS, 1, 0xFF);
-			qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
-			GL_DisableMultitexture();
-			GL_Bind(s_SkyFBO.s_hBackBufferTex);
-
-			int WSurfProgramState = WSURF_PROJECTION_ENABLED;
-
-			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
-			{
-				WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
-			}
-
-			if (drawgbuffer)
-			{
-				WSurfProgramState |= WSURF_GBUFFER_ENABLED;
-			}
-
-			auto prog = R_UseWSurfProgram(WSurfProgramState);
-
-			qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
-
-			r_wsurf_drawcall++;
-			r_wsurf_polys += texchain.iFaceCount;
-
-			qglStencilMask(0);
-			qglDisable(GL_STENCIL_TEST);
-		}
-	}*/
 
 	qglUseProgramObjectARB(0);
 }
@@ -2164,7 +2099,6 @@ void R_DrawBrushModel(cl_entity_t *e)
 				}
 			}
 		}
-
 	}
 
 	if ((*currententity)->curstate.rendermode != kRenderNormal)
@@ -2238,9 +2172,6 @@ void R_DrawWorld(void)
 	(*currententity) = gEngfuncs.GetEntityByIndex(0);
 
 	GL_DisableMultitexture();
-
-	r_wsurf.bDiffuseTexture = true;
-	r_wsurf.bLightmapTexture = false;
 
 	R_DrawSkyBox();
 

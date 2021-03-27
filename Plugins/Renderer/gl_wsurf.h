@@ -117,7 +117,6 @@ typedef struct wsurf_model_s
 
 	GLuint				hEBO;
 
-	//brushtexchain_t vTextureChainSky;
 	std::vector<brushtexchain_t> vTextureChainStatic;
 	std::vector<brushtexchain_t> vTextureChainScroll;
 	std::vector<unsigned int> vIndicesBuffer;
@@ -261,5 +260,4 @@ wsurf_program_t *R_UseWSurfProgram(int state);
 #define WSURF_LINEAR_FOG_ENABLED		0x80
 #define WSURF_GBUFFER_ENABLED			0x100
 #define WSURF_TRANSPARENT_ENABLED		0x200
-#define WSURF_PROJECTION_ENABLED		0x400
-#define WSURF_MAX_STATE					0x800
+#define WSURF_MAX_STATE					0x400

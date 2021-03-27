@@ -484,37 +484,3 @@ void R_DrawSkyBox(void)
 	qglStencilMask(0);
 	qglDisable(GL_STENCIL_TEST);
 }
-
-void R_DrawSkyChain(void)
-{
-	qglEnable(GL_STENCIL_TEST);
-	qglStencilMask(0xFF);
-	qglStencilFunc(GL_ALWAYS, 1, 0xFF);
-	qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
-	int WSurfProgramState = WSURF_PROJECTION_ENABLED;
-
-	if (!drawgbuffer && r_fog_mode == GL_LINEAR)
-	{
-		WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
-	}
-
-	if (drawgbuffer)
-	{
-		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
-	}
-
-	auto prog = R_UseWSurfProgram(WSurfProgramState);
-
-	GL_Bind(s_SkyFBO.s_hBackBufferTex);
-
-	for (auto fa = (*skychain); fa; fa = fa->texturechain)
-	{
-		DrawGLPoly(fa);
-	}
-
-	qglUseProgramObjectARB(0);
-
-	qglStencilMask(0);
-	qglDisable(GL_STENCIL_TEST);
-}

@@ -636,7 +636,7 @@ void CViewport::LoadCustomDictionary(const char *dict_name)
 	}
 	catch (std::exception &err)
 	{
-		gEngfuncs.Con_Printf("LoadCustomDictionary: %s", err.what());
+		gEngfuncs.Con_Printf("LoadCustomDictionary: %s\n", err.what());
 	}
 
 	if (row_count < 2)
@@ -699,7 +699,7 @@ void CViewport::LoadBaseDictionary(void)
 	}
 	catch(std::exception &err)
 	{
-		Sys_ErrorEx("LoadBaseDictionary: %s", err.what());
+		Sys_ErrorEx("LoadBaseDictionary: %s\n", err.what());
 	}
 
 	if(row_count < 2)

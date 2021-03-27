@@ -405,8 +405,6 @@ int HUD_Redraw(float time, int intermission)
 			pFBO = &s_ToneMapFBO;break;
 		case 12:
 			pFBO = &s_BackBufferFBO; break;
-		case 13:
-			pFBO = &s_SkyFBO; break;
 		default:
 			break;
 		}

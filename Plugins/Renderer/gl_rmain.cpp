@@ -120,7 +120,6 @@ FBO_Container_t s_DepthLinearFBO;
 FBO_Container_t s_HBAOCalcFBO;
 FBO_Container_t s_ShadowFBO;
 FBO_Container_t s_WaterFBO;
-FBO_Container_t s_SkyFBO;
 
 qboolean bNoStretchAspect = false;
 qboolean bDoMSAA = true;
@@ -1097,7 +1096,6 @@ void GL_GenerateFBO(void)
 	GL_ClearFBO(&s_ToneMapFBO);
 	GL_ClearFBO(&s_DepthLinearFBO);
 	GL_ClearFBO(&s_HBAOCalcFBO);
-	GL_ClearFBO(&s_SkyFBO);
 	GL_ClearFBO(&s_WaterFBO);
 	GL_ClearFBO(&s_ShadowFBO);
 
@@ -1155,18 +1153,6 @@ void GL_GenerateFBO(void)
 	{
 		GL_FreeFBO(&s_BackBufferFBO2);
 		Sys_ErrorEx("Failed to initialize backbuffer2 framebuffer!\n");
-	}
-
-	s_SkyFBO.iWidth = glwidth;
-	s_SkyFBO.iHeight = glheight;
-	GL_GenFrameBuffer(&s_SkyFBO);
-	GL_FrameBufferColorTexture(&s_SkyFBO, gl_color_format, false);
-	GL_FrameBufferDepthTexture(&s_SkyFBO, GL_DEPTH24_STENCIL8, false);
-
-	if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	{
-		GL_FreeFBO(&s_SkyFBO);
-		Sys_ErrorEx("Failed to initialize sky framebuffer!\n");
 	}
 
 	s_GBufferFBO.iWidth = glwidth;
@@ -1395,7 +1381,6 @@ void GL_Shutdown(void)
 	GL_FreeFBO(&s_HBAOCalcFBO);
 	GL_FreeFBO(&s_ShadowFBO);
 	GL_FreeFBO(&s_WaterFBO);
-	GL_FreeFBO(&s_SkyFBO);
 }
 
 void GL_BeginRendering(int *x, int *y, int *width, int *height)
