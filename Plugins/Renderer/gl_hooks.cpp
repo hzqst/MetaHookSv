@@ -844,6 +844,11 @@ void R_FillAddress(void)
 		gl_filter_min = *(int **)(addr + 2);
 		gl_filter_max = *(int **)(addr + sizeof(GL_FILTER_MINMAX_SIG_SVENGINE) - 1);
 
+#define RTABLE_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_TextureAnimation, 0x50, RTABLE_SIG_SVENGINE, sizeof(RTABLE_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(rtable);
+		rtable = (decltype(rtable))(*(DWORD *)(addr + 2));
+
 #define R_ORIGIN_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xD9\x1D\x2A\x2A\x2A\x2A\xE8"
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x300, R_ORIGIN_SIG_SVENGINE, sizeof(R_ORIGIN_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(r_origin);

@@ -57,6 +57,8 @@ typedef struct brushface_s
 //#define TEXCHAIN_SKY 0
 #define TEXCHAIN_STATIC 1
 #define TEXCHAIN_SCROLL 2
+#define TEXCHAIN_RANDOM 3
+#define TEXCHAIN_ANIMATION 4
 
 typedef struct brushtexchain_s
 {
@@ -119,6 +121,7 @@ typedef struct wsurf_model_s
 
 	std::vector<brushtexchain_t> vTextureChainStatic;
 	std::vector<brushtexchain_t> vTextureChainScroll;
+	std::vector<brushtexchain_t> vTextureChainAnim;
 	std::vector<unsigned int> vIndicesBuffer;
 
 }wsurf_model_t;

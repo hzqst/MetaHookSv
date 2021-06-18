@@ -66,6 +66,7 @@ int *cl_weaponsequence;
 int *cl_light_level;
 int *c_alias_polys;
 int *c_brush_polys;
+int(*rtable)[20][20];
 
 int gl_max_texture_size = 0;
 float gl_max_ansio = 0;

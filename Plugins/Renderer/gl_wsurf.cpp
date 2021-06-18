@@ -246,6 +246,7 @@ void R_GenerateElementBufferIndices(msurface_t *s, brushtexchain_t *texchain, ws
 	}
 	else
 	{
+
 		if (texchain->iType == TEXCHAIN_STATIC)
 		{
 			for (int i = 0; i < brushface->num_vertexes; ++i)
@@ -294,17 +295,179 @@ void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
 		if (!t)
 			continue;
 
-		auto s = t->texturechain;
-
-		if (s)
+		if (t->anim_total)
 		{
-			if (s->flags & SURF_DRAWSKY)
+			if (t->name[0] == '-')
 			{
-				t->texturechain = NULL;
-				continue;
+				//Construct texchain for random textures
+
+				auto s = t->texturechain;
+
+				if (s)
+				{
+					if (s->flags & SURF_DRAWSKY)
+					{
+						t->texturechain = NULL;
+						continue;
+					}
+					else
+					{
+						if (s->flags & SURF_DRAWTURB)
+						{
+							t->texturechain = NULL;
+							continue;
+						}
+
+						brushtexchain_t *texchainArray = new brushtexchain_t[t->anim_total];
+
+						int numtexturechain = 0;
+						for (msurface_t *s2 = s; s2; s2 = s2->texturechain)
+						{
+							numtexturechain++;
+						}
+
+						//rtable not initialized?
+						if ((*rtable)[0][0] == 0)
+						{
+							gRefFuncs.R_TextureAnimation(s);
+						}
+
+						int *texchainMapper = new int[numtexturechain];
+						msurface_t **texchainSurface = new msurface_t*[numtexturechain];
+
+						{
+							msurface_t *s2 = s;
+							int k = 0;
+
+							for (; s2; s2 = s2->texturechain, ++k)
+							{
+								texchainSurface[k] = s2;
+
+								int mappingIndex = (*rtable)[(int)((s2->texturemins[0] + (t->width << 16)) / t->width) % 20][(int)((s2->texturemins[1] + (t->height << 16)) / t->height) % 20] % t->anim_total;
+
+								texchainMapper[k] = mappingIndex;
+							}
+						}
+
+						{
+							texture_t *t2 = t;
+							int k = 0;
+							for (; k < t->anim_total && t2; t2 = t2->anim_next, ++k)
+							{
+								brushtexchain_t texchain;
+								texchain.pTexture = t2;
+								texchain.iVertexCount = 0;
+								texchain.iFaceCount = 0;
+								texchain.iStartIndex = modcache->vIndicesBuffer.size();
+								texchain.iType = TEXCHAIN_STATIC;
+
+								for (int n = 0; n < numtexturechain; ++n)
+								{
+									if (texchainMapper[n] == k)
+										R_GenerateElementBufferIndices(texchainSurface[n], &texchain, modcache);
+								}
+
+								if (texchain.iVertexCount > 0)
+									modcache->vTextureChainStatic.emplace_back(texchain);
+							}
+						}
+
+						delete []texchainSurface;
+						delete []texchainMapper;
+						delete []texchainArray;
+					}
+				}
 			}
-			else
+			else if (t->name[0] == '+')
 			{
+				//Construct texchain for anim textures
+
+				auto s = t->texturechain;
+
+				if (s)
+				{
+					if (s->flags & SURF_DRAWSKY)
+					{
+						t->texturechain = NULL;
+						continue;
+					}
+					else
+					{
+						if (s->flags & SURF_DRAWTURB)
+						{
+							t->texturechain = NULL;
+							continue;
+						}
+
+						brushtexchain_t texchain;
+
+						texchain.pTexture = t;
+						texchain.iVertexCount = 0;
+						texchain.iFaceCount = 0;
+						texchain.iStartIndex = modcache->vIndicesBuffer.size();
+						texchain.iType = TEXCHAIN_STATIC;
+
+						for (; s; s = s->texturechain)
+						{
+							R_GenerateElementBufferIndices(s, &texchain, modcache);
+						}
+
+						if (texchain.iVertexCount > 0)
+							modcache->vTextureChainAnim.emplace_back(texchain);
+					}
+				}
+			}
+		}
+		else
+		{
+			//Construct texchain for static textures
+
+			auto s = t->texturechain;
+
+			if (s)
+			{
+				if (s->flags & SURF_DRAWSKY)
+				{
+					t->texturechain = NULL;
+					continue;
+				}
+				else
+				{
+					if (s->flags & SURF_DRAWTURB)
+					{
+						t->texturechain = NULL;
+						continue;
+					}
+
+					brushtexchain_t texchain;
+
+					texchain.pTexture = t;
+					texchain.iVertexCount = 0;
+					texchain.iFaceCount = 0;
+					texchain.iStartIndex = modcache->vIndicesBuffer.size();
+					texchain.iType = TEXCHAIN_STATIC;
+
+					for (; s; s = s->texturechain)
+					{
+						R_GenerateElementBufferIndices(s, &texchain, modcache);
+					}
+
+					if (texchain.iVertexCount > 0)
+						modcache->vTextureChainStatic.emplace_back(texchain);
+				}
+			}
+
+			//Construct texchain for scroll textures
+
+			s = t->texturechain;
+			if (s)
+			{
+				if (s->flags & SURF_DRAWSKY)
+				{
+					t->texturechain = NULL;
+					continue;
+				}
+
 				if (s->flags & SURF_DRAWTURB)
 				{
 					t->texturechain = NULL;
@@ -317,7 +480,7 @@ void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
 				texchain.iVertexCount = 0;
 				texchain.iFaceCount = 0;
 				texchain.iStartIndex = modcache->vIndicesBuffer.size();
-				texchain.iType = TEXCHAIN_STATIC;
+				texchain.iType = TEXCHAIN_SCROLL;
 
 				for (; s; s = s->texturechain)
 				{
@@ -325,47 +488,18 @@ void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
 				}
 
 				if (texchain.iVertexCount > 0)
-					modcache->vTextureChainStatic.emplace_back(texchain);
+					modcache->vTextureChainScroll.emplace_back(texchain);
 			}
 		}
 
-		s = t->texturechain;
-		if (s)
-		{
-			if (s->flags & SURF_DRAWSKY)
-			{
-				t->texturechain = NULL;
-				continue;
-			}
-
-			if (s->flags & SURF_DRAWTURB)
-			{
-				t->texturechain = NULL;
-				continue;
-			}
-
-			brushtexchain_t texchain;
-
-			texchain.pTexture = t;
-			texchain.iVertexCount = 0;
-			texchain.iFaceCount = 0;
-			texchain.iStartIndex = modcache->vIndicesBuffer.size();
-			texchain.iType = TEXCHAIN_SCROLL;
-
-			for (; s; s = s->texturechain)
-			{
-				R_GenerateElementBufferIndices(s, &texchain, modcache);
-			}
-
-			if (texchain.iVertexCount > 0)
-				modcache->vTextureChainScroll.emplace_back(texchain);
-		}
+		//End construction
 
 		t->texturechain = NULL;
 	}
 
 	modcache->vTextureChainStatic.shrink_to_fit();
 	modcache->vTextureChainScroll.shrink_to_fit();
+	modcache->vTextureChainAnim.shrink_to_fit();
 	modcache->vIndicesBuffer.shrink_to_fit();
 
 	qglGenBuffersARB(1, &modcache->hEBO);
@@ -706,6 +840,8 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		qglDisable(GL_TEXTURE_2D);
 	}
 
+	//Static texchain
+
 	for (size_t i = 0; i < modcache->vTextureChainStatic.size(); ++i)
 	{
 		auto &texchain = modcache->vTextureChainStatic[i];
@@ -713,6 +849,99 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		GL_Bind(texchain.pTexture->gl_texturenum);
 
 		R_BeginDetailTexture(texchain.pTexture->gl_texturenum);
+
+		int WSurfProgramState = 0;
+
+		if (r_wsurf.bDiffuseTexture)
+		{
+			WSurfProgramState |= WSURF_DIFFUSE_ENABLED;
+		}
+
+		if (r_wsurf.bLightmapTexture)
+		{
+			WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
+		}
+
+		if (r_wsurf.bDetailTexture)
+		{
+			WSurfProgramState |= WSURF_DETAILTEXTURE_ENABLED;
+		}
+
+		if (r_wsurf.bNormalTexture)
+		{
+			WSurfProgramState |= WSURF_NORMALTEXTURE_ENABLED;
+		}
+
+		if (r_wsurf.bParallaxTexture)
+		{
+			WSurfProgramState |= WSURF_PARALLAXTEXTURE_ENABLED;
+		}
+
+		if (r_draw_pass == r_draw_reflect && curwater)
+		{
+			WSurfProgramState |= WSURF_CLIP_UNDER_ENABLED;
+		}
+
+		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+		{
+			WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+		}
+
+		if (drawgbuffer)
+		{
+			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+		}
+
+		if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
+		{
+			WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
+		}
+
+		auto prog = R_UseWSurfProgram(WSurfProgramState);
+
+		if (prog->speed != -1)
+			qglUniform1fARB(prog->speed, 0);
+
+		qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
+
+		R_EndDetailTexture();
+
+		r_wsurf_drawcall++;
+		r_wsurf_polys += texchain.iFaceCount;
+	}
+
+	//Animated texchain
+
+	for (size_t i = 0; i < modcache->vTextureChainAnim.size(); ++i)
+	{
+		auto &texchain = modcache->vTextureChainAnim[i];
+
+		auto base = texchain.pTexture;
+
+		if ((*currententity)->curstate.frame)
+		{
+			if (base->alternate_anims)
+				base = base->alternate_anims;
+		}
+
+		int reletive = (int)((*cl_time) * 10.0f) % base->anim_total;
+
+		int count = 0;
+
+		while (base->anim_min > reletive || base->anim_max <= reletive)
+		{
+			base = base->anim_next;
+
+			if (!base)
+				Sys_ErrorEx("R_TextureAnimation: broken cycle");
+
+			if (++count > 100)
+				Sys_ErrorEx("R_TextureAnimation: infinite cycle");
+		}
+
+		GL_Bind(base->gl_texturenum);
+
+		R_BeginDetailTexture(base->gl_texturenum);
 
 		int WSurfProgramState = 0;
 
