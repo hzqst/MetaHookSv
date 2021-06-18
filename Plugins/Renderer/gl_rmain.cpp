@@ -69,7 +69,6 @@ int *c_brush_polys;
 
 int gl_max_texture_size = 0;
 float gl_max_ansio = 0;
-float gl_force_ansio = 0;
 GLuint gl_color_format = 0;
 int gl_msaa_samples = 0;
 cvar_t *r_msaa = NULL;
@@ -1779,18 +1778,6 @@ void R_InitCvars(void)
 	gl_ansio = gEngfuncs.pfnGetCvarPointer("gl_ansio");
 	if (!gl_ansio)
 		gl_ansio = gEngfuncs.pfnRegisterVariable("gl_ansio", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-
-	const char *s_ansio;
-	gl_force_ansio = 0;
-	if(g_pInterface->CommandLine->CheckParm("-ansio", &s_ansio))
-	{
-		gl_force_ansio = gl_max_ansio;
-		if(s_ansio && s_ansio[0] && s_ansio[0] >= '0' && s_ansio[0] <= '9')
-		{
-			float f_ansio = atof(s_ansio);
-			gl_force_ansio = max(min(f_ansio, gl_max_ansio), 1);
-		}
-	}
 
 	v_texgamma = gEngfuncs.pfnGetCvarPointer("texgamma");
 	v_lightgamma = gEngfuncs.pfnGetCvarPointer("lightgamma");

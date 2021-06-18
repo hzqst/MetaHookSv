@@ -97,7 +97,6 @@ extern qboolean gl_s3tc_compression_support;
 
 extern int gl_max_texture_size;
 extern float gl_max_ansio;
-extern float gl_force_ansio; 
 extern GLuint gl_color_format;
 extern int gl_msaa_samples;
 extern cvar_t *r_msaa;

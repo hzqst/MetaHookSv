@@ -108,10 +108,7 @@ void GL_Upload32(unsigned int *data, int width, int height, qboolean mipmap, qbo
 
 	if(ansio && gl_ansio)
 	{
-		if(gl_force_ansio)
-			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, gl_force_ansio);
-		else
-			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
 	}
 	else
 	{
@@ -436,10 +433,7 @@ void GL_UploadDXT(byte *data, int width, int height, qboolean mipmap, qboolean a
 
 	if(ansio)
 	{
-		if(gl_force_ansio)
-			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, gl_force_ansio);
-		else
-			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
 	}
 	else
 	{
