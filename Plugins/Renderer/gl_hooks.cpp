@@ -838,6 +838,12 @@ void R_FillAddress(void)
 		Sig_AddrNotFound(currenttexture);
 		currenttexture = *(int **)(addr + 2);
 
+#define GL_FILTER_MINMAX_SIG_SVENGINE "\xDB\x05\x2A\x2A\x2A\x2A\x2A\xD9\x1C\x2A\x68\x01\x28\x00\x00\x68\xE1\x0D\x00\x00\xFF\x2A\xDB\x05"
+		addr = (DWORD)Search_Pattern(GL_FILTER_MINMAX_SIG_SVENGINE);
+		Sig_AddrNotFound(gl_filter_min);
+		gl_filter_min = *(int **)(addr + 2);
+		gl_filter_max = *(int **)(addr + sizeof(GL_FILTER_MINMAX_SIG_SVENGINE) - 1);
+
 #define R_ORIGIN_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xD9\x1D\x2A\x2A\x2A\x2A\xE8"
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x300, R_ORIGIN_SIG_SVENGINE, sizeof(R_ORIGIN_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(r_origin);

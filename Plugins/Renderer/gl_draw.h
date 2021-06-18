@@ -13,6 +13,8 @@ extern int *gHostSpawnCount;
 extern int *currenttexid;;
 extern int *currenttexture;
 extern gltexture_t *currentglt;
+extern int *gl_filter_min;
+extern int *gl_filter_max;
 
 extern float gl_max_ansio;
 extern float gl_force_ansio;

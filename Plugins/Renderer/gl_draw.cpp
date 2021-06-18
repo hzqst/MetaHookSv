@@ -13,8 +13,6 @@ GLenum TEXTURE1_SGIS;
 GLenum TEXTURE2_SGIS;
 GLenum TEXTURE3_SGIS;
 
-xcommand_t gl_texturemode_function;
-
 float current_ansio = -1.0;
 
 static byte texloader_buffer[4096 * 4096 * 4];
@@ -29,8 +27,8 @@ int *currenttexid = NULL;//for 3xxx~4xxx
 int *currenttexture = NULL;
 gltexture_t *currentglt = NULL;
 
-int gl_filter_min = GL_LINEAR_MIPMAP_LINEAR;
-int gl_filter_max = GL_LINEAR;
+int *gl_filter_min = NULL;
+int *gl_filter_max = NULL;
 
 int gl_loadtexture_format = GL_RGBA;
 int gl_loadtexture_size;
@@ -77,79 +75,8 @@ void GL_EnableMultitexture(void)
 	gRefFuncs.GL_EnableMultitexture();
 }
 
-typedef struct
-{
-	char *name;
-	int minimize, maximize;
-}glmode_t;
-
-glmode_t modes[] =
-{
-	{ "GL_NEAREST", GL_NEAREST, GL_NEAREST },
-	{ "GL_LINEAR", GL_LINEAR, GL_LINEAR },
-	{ "GL_NEAREST_MIPMAP_NEAREST", GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST },
-	{ "GL_LINEAR_MIPMAP_NEAREST", GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR },
-	{ "GL_NEAREST_MIPMAP_LINEAR", GL_NEAREST_MIPMAP_LINEAR, GL_NEAREST },
-	{ "GL_LINEAR_MIPMAP_LINEAR", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR }
-};
-
-void Draw_TextureMode_f(void)
-{
-	int i;
-
-	if (gEngfuncs.Cmd_Argc() == 1)
-	{
-		for (i = 0; i < 6; i++)
-		{
-			if (gl_filter_min == modes[i].minimize)
-			{
-				gEngfuncs.Con_Printf("%s\n", modes[i].name);
-				return;
-			}
-		}
-
-		gEngfuncs.Con_Printf("current filter is unknown???\n");
-		return;
-	}
-
-	for (i = 0; i < 6; i++)
-	{
-		if (!stricmp(modes[i].name, gEngfuncs.Cmd_Argv(1)))
-			break;
-	}
-
-	if (i == 6)
-	{
-		gEngfuncs.Con_Printf("bad filter name\n");
-		return;
-	}
-
-	gl_filter_min = modes[i].minimize;
-	gl_filter_max = modes[i].maximize;
-}
-
-void Draw_UpdateAnsios(void)
-{
-	if (gl_ansio->value != current_ansio)
-	{
-		for (int i = 0; i < 6; i++)
-		{
-			if (gl_filter_min == modes[i].minimize)
-			{
-				char cmd[64];
-				sprintf(cmd, "gl_texturemode %s\n", modes[i].name);
-				gEngfuncs.pfnClientCmd(cmd);
-				break;
-			}
-		}
-
-		current_ansio = gl_ansio->value;
-	}
-}
-
 void Draw_Init(void)
 {
-	gl_texturemode_function = Cmd_HookCmd("gl_texturemode", Draw_TextureMode_f);
 	if (!Cmd_HookCmd("screenshot", CL_ScreenShot_f))
 		Cmd_HookCmd("snapshot", CL_ScreenShot_f);
 }
@@ -168,14 +95,14 @@ void GL_Upload32(unsigned int *data, int width, int height, qboolean mipmap, qbo
 
 	if (mipmap)
 	{
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
+		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
 		qglTexParameterf(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 	}
 	else
 	{
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_max);
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
+		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
 		qglTexParameterf(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
 	}
 
@@ -496,14 +423,14 @@ void GL_UploadDXT(byte *data, int width, int height, qboolean mipmap, qboolean a
 {
 	if (mipmap)
 	{
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
+		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
 		qglTexParameterf(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
 	}
 	else
 	{
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_max);
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
+		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
 		qglTexParameterf(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
 	}
 
