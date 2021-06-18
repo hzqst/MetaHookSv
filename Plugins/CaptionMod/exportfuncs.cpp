@@ -271,7 +271,7 @@ void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, 
 	if(sfx)
 	{
 		bool bIgnore = false;
-		if (cap_max_distance->value)
+		if (cap_max_distance && cap_max_distance->value && origin && gEngfuncs.GetLocalPlayer())
 		{
 			float dir[3];
 			VectorSubtract(origin, gEngfuncs.GetLocalPlayer()->origin, dir);
@@ -312,7 +312,7 @@ void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, f
 	if(sfx)
 	{
 		bool bIgnore = false;
-		if (cap_max_distance->value)
+		if (cap_max_distance && cap_max_distance->value && origin && gEngfuncs.GetLocalPlayer())
 		{
 			float dir[3];
 			VectorSubtract(origin, gEngfuncs.GetLocalPlayer()->origin, dir);
