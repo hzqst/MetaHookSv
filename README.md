@@ -104,7 +104,7 @@ You can even play with 200k epolys models and still keep a high framerate.
 
 3. Simple Per-Object Shadow. (Warning: this may cause a significant performance hit.)
 
-4. Screen Space Ambient Occlusion (SSAO) using horizon-based ambient occlusion (HBAO). the implementation is taken from nvidia. (Warning: this may cause a significant performance hit when sampling radius is too large.)
+4. Screen Space Ambient Occlusion (SSAO) using horizon-based ambient occlusion (HBAO). the implementation is taken from nvidia. (Warning: this may cause a significant performance hit when sampling radius is too large.) (Warning: you might see SSAO's black pixel fighting on wall or terrain if your defalt_fov is not 90)
 
 5. MultiSampling Anti-Aliasing (MSAA) (High quality, low performance)
 
@@ -163,6 +163,8 @@ r_shadow_low_distance : entities within this distance are rendered into low-qual
 r_shadow_low_scale : scale factor when render shadow-caster entity in medium quality shadow map. recommended value : 0.5
 
 r_ssao 1 / 0 : enable or disable Screen Space Ambient Occlusion (SSAO). recommended value : 1
+
+(Warning: you might see SSAO's black pixel fighting on wall or terrain if your defalt_fov is not 90. you have to either turn SSAO off or change default_fov back to 90)
 
 r_ssao_intensity : control the intensity of SSAO shadow. recommended value : 0.6 ~ 1.0
 
