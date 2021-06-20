@@ -364,6 +364,16 @@ void SubtitlePanel::StartSubtitle(CDictionary *Dict, float flStartTime)
 			return;
 	}
 
+	if (m_iAntiSpam)
+	{
+		for (int i = 0; i < m_Lines.Count(); ++i)
+		{
+			//Already in display, ignore
+			if (m_Lines[i]->m_Dict == Dict)
+				return;
+		}
+	}
+
 	Dict->ReplaceKey();
 
 	if(m_iPrefix)

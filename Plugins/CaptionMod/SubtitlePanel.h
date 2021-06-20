@@ -21,7 +21,6 @@ enum LineAnim_t
 
 class CSubLine;
 
-//animation for subtitle lines
 class CSubLineAnim
 {
 public:
@@ -77,7 +76,6 @@ private:
 	int m_EndValue;
 };
 
-//one subtitle line
 class CSubLine
 {
 public:
@@ -111,13 +109,13 @@ public:
 	float			m_EndTime;
 	float			m_StartTime;
 	float			m_Duration;
-	Color			m_Color;//实际渲染颜色 //actual render color
-	int				m_Alpha;//实际渲染alpha（0~255，叠加在原颜色alpha上）//actual alpha multiplier
-	int				m_YPos;//实际渲染位置Y坐标 //actual Y position
-	int				m_LineIndex;//行号，0为最下面 //line number, 0 means the bottom
-	bool			m_Retired;//是否应该消失 //should retire
-	float			m_FadeOut;//淡出时间
-	CUtlVector<CSubLineAnim *>	m_AnimList;//list of animation
+	Color			m_Color; //Render color
+	int				m_Alpha;//Alpha multiplier
+	int				m_YPos;//Y position
+	int				m_LineIndex;//Line number, 0 means the bottom
+	bool			m_Retired;//Should this line be retired?
+	float			m_FadeOut;//Fadeout duration
+	CUtlVector<CSubLineAnim *>	m_AnimList;//Animation list
 	SubtitlePanel	*m_Panel;//Subtitle panel
 	CDictionary		*m_Dict;//Linked dictionary
 	int				m_TextWide;
@@ -159,11 +157,11 @@ protected:
 	CPanelAnimationVar( float, m_flHoldTime, "holdtime", "4.0" );
 	CPanelAnimationVar( int, m_iPrefix, "prefix", "1" );
 	CPanelAnimationVar( int, m_iWaitPlay, "waitplay", "1" );
+	CPanelAnimationVar(int, m_iAntiSpam, "antispam", "1");
 	CPanelAnimationVar( float, m_flStartTimeScale, "stimescale", "1" );
 	CPanelAnimationVar( float, m_flHoldTimeScale, "htimescale", "1" );
 
 public:
-	//一些属性
 	//Some attributes
 	textalign_t					m_iTextAlign;
 	vgui::HFont					m_hTextFont;
