@@ -271,11 +271,17 @@ void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, 
 	if(sfx)
 	{
 		bool bIgnore = false;
-		if (cap_max_distance && cap_max_distance->value && origin && gEngfuncs.GetLocalPlayer())
+
+		auto level = gEngfuncs.pfnGetLevelName();
+		if (cap_max_distance && cap_max_distance->value && origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && level[0])
 		{
+			auto local = gEngfuncs.GetLocalPlayer();
+
 			float dir[3];
-			VectorSubtract(origin, gEngfuncs.GetLocalPlayer()->origin, dir);
+			VectorSubtract(origin, local->origin, dir);
+
 			auto distance = VectorLength(dir);
+
 			if (distance > cap_max_distance->value)
 				bIgnore = true;
 		}
@@ -312,11 +318,17 @@ void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, f
 	if(sfx)
 	{
 		bool bIgnore = false;
-		if (cap_max_distance && cap_max_distance->value && origin && gEngfuncs.GetLocalPlayer())
+
+		auto level = gEngfuncs.pfnGetLevelName();
+		if (cap_max_distance && cap_max_distance->value && origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && level[0])
 		{
+			auto local = gEngfuncs.GetLocalPlayer();
+
 			float dir[3];
-			VectorSubtract(origin, gEngfuncs.GetLocalPlayer()->origin, dir);
+			VectorSubtract(origin, local->origin, dir);
+
 			auto distance = VectorLength(dir);
+
 			if (distance > cap_max_distance->value)
 				bIgnore = true;
 		}
