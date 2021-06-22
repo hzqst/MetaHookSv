@@ -440,10 +440,11 @@ void R_DrawSkyBox(void)
 		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 	}
 
-	auto prog = R_UseWSurfProgram(WSurfProgramState);
+	wsurf_program_t prog = { 0 };
+	R_UseWSurfProgram(WSurfProgramState, &prog);
 
-	if (prog->speed != -1)
-		qglUniform1fARB(prog->speed, 0);
+	if (prog.speed != -1)
+		qglUniform1fARB(prog.speed, 0);
 
 	float zFar = (r_params.movevars) ? r_params.movevars->zmax : 4096;
 

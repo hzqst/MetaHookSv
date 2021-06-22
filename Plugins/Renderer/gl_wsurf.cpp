@@ -7,14 +7,15 @@ r_worldsurf_t r_wsurf;
 cvar_t *r_wsurf_vbo;
 cvar_t *r_wsurf_parallax_scale;
 cvar_t *r_wsurf_detail;
+cvar_t *r_wsurf_sky_occlusion;
 
 int r_fog_mode = 0;
-float r_fog_control[2];
-float r_fog_color[4];
+float r_fog_control[2] = { 0 };
+float r_fog_color[4] = {0};
 int r_wsurf_drawcall = 0;
 int r_wsurf_polys = 0;
 
-wsurf_program_t *g_WSurfProgramTable[WSURF_MAX_STATE];
+std::unordered_map <int, wsurf_program_t> g_WSurfProgramTable;
 
 std::unordered_map<int, detail_texture_cache_t *> g_DetailTextureTable;
 
@@ -36,11 +37,12 @@ void R_ClearWSurfModelCache(void)
 	g_WSurfModelCache.clear();
 }
 
-wsurf_program_t *R_UseWSurfProgram(int state)
+void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 {
-	wsurf_program_t *prog = NULL;
+	wsurf_program_t prog = { 0 };
 
-	if(!g_WSurfProgramTable[state])
+	auto itor = g_WSurfProgramTable.find(state);
+	if (itor == g_WSurfProgramTable.end())
 	{
 		std::stringstream defs;
 
@@ -76,82 +78,82 @@ wsurf_program_t *R_UseWSurfProgram(int state)
 
 		auto def = defs.str();
 
-		prog = new wsurf_program_t;
-
-		prog->program = R_CompileShaderFileEx("renderer\\shader\\wsurf_shader.vsh", NULL, "renderer\\shader\\wsurf_shader.fsh", def.c_str(), NULL, def.c_str());
-		SHADER_UNIFORM((*prog), diffuseTex, "diffuseTex");
-		SHADER_UNIFORM((*prog), lightmapTexArray, "lightmapTexArray");
-		SHADER_UNIFORM((*prog), detailTex, "detailTex");
-		SHADER_UNIFORM((*prog), normalTex, "normalTex");
-		SHADER_UNIFORM((*prog), parallaxTex, "parallaxTex");
-		SHADER_UNIFORM((*prog), speed, "speed");
-		SHADER_UNIFORM((*prog), entitymatrix, "entitymatrix");
-		SHADER_UNIFORM((*prog), clipPlane, "clipPlane");
-		SHADER_UNIFORM((*prog), viewpos, "viewpos");
-		SHADER_UNIFORM((*prog), parallaxScale, "parallaxScale");
-		SHADER_ATTRIB((*prog), s_tangent, "s_tangent");
-		SHADER_ATTRIB((*prog), t_tangent, "t_tangent");
+		prog.program = R_CompileShaderFileEx("renderer\\shader\\wsurf_shader.vsh", NULL, "renderer\\shader\\wsurf_shader.fsh", def.c_str(), NULL, def.c_str());
+		SHADER_UNIFORM(prog, diffuseTex, "diffuseTex");
+		SHADER_UNIFORM(prog, lightmapTexArray, "lightmapTexArray");
+		SHADER_UNIFORM(prog, detailTex, "detailTex");
+		SHADER_UNIFORM(prog, normalTex, "normalTex");
+		SHADER_UNIFORM(prog, parallaxTex, "parallaxTex");
+		SHADER_UNIFORM(prog, speed, "speed");
+		SHADER_UNIFORM(prog, entitymatrix, "entitymatrix");
+		SHADER_UNIFORM(prog, clipPlane, "clipPlane");
+		SHADER_UNIFORM(prog, viewpos, "viewpos");
+		SHADER_UNIFORM(prog, parallaxScale, "parallaxScale");
+		SHADER_ATTRIB(prog, s_tangent, "s_tangent");
+		SHADER_ATTRIB(prog, t_tangent, "t_tangent");
 
 		g_WSurfProgramTable[state] = prog;
 	}
 	else
 	{
-		prog = g_WSurfProgramTable[state];
+		prog = itor->second;
 	}
 
-	if (!prog->program)
+	if (prog.program)
+	{
+		qglUseProgramObjectARB(prog.program);
+
+		if (prog.diffuseTex != -1)
+			qglUniform1iARB(prog.diffuseTex, 0);
+
+		if (prog.lightmapTexArray != -1)
+			qglUniform1iARB(prog.lightmapTexArray, 1);
+
+		if (prog.detailTex != -1)
+			qglUniform1iARB(prog.detailTex, 2);
+
+		if (prog.normalTex != -1)
+			qglUniform1iARB(prog.normalTex, 3);
+
+		if (prog.parallaxTex != -1)
+			qglUniform1iARB(prog.parallaxTex, 4);
+
+		if (prog.entitymatrix != -1)
+		{
+			if (r_rotate_entity)
+				qglUniformMatrix4fvARB(prog.entitymatrix, 1, true, (float *)r_rotate_entity_matrix);
+			else
+				qglUniformMatrix4fvARB(prog.entitymatrix, 1, false, (float *)r_identity_matrix);
+		}
+
+		if (prog.clipPlane != -1)
+			qglUniform1fARB(prog.clipPlane, curwater->vecs[2]);
+
+		if (prog.viewpos != -1)
+			qglUniform4fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 0);
+
+		if (prog.parallaxScale != -1)
+			qglUniform1fARB(prog.parallaxScale, r_wsurf_parallax_scale->value);
+
+		if (prog.s_tangent != -1 && r_wsurf.pCurrentModel)
+		{
+			qglVertexAttribPointer(prog.s_tangent, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, s_tangent));
+			qglEnableVertexAttribArray(prog.s_tangent);
+		}
+
+		if (prog.t_tangent != -1 && r_wsurf.pCurrentModel)
+		{
+			qglVertexAttribPointer(prog.t_tangent, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, t_tangent));
+			qglEnableVertexAttribArray(prog.t_tangent);
+		}
+
+		if (progOutput)
+			*progOutput = prog;
+	}
+	else
 	{
 		Sys_ErrorEx("R_UseWSurfProgram: Failed to load program!");
-		return NULL;
 	}
-
-	qglUseProgramObjectARB(prog->program);
-
-	if (prog->diffuseTex != -1)
-		qglUniform1iARB(prog->diffuseTex, 0);
-
-	if (prog->lightmapTexArray != -1)
-		qglUniform1iARB(prog->lightmapTexArray, 1);
-
-	if (prog->detailTex != -1)
-		qglUniform1iARB(prog->detailTex, 2);
-
-	if (prog->normalTex != -1)
-		qglUniform1iARB(prog->normalTex, 3);
-
-	if (prog->parallaxTex != -1)
-		qglUniform1iARB(prog->parallaxTex, 4);
-
-	if (prog->entitymatrix != -1)
-	{
-		if (r_rotate_entity)
-			qglUniformMatrix4fvARB(prog->entitymatrix, 1, true, (float *)r_rotate_entity_matrix);
-		else
-			qglUniformMatrix4fvARB(prog->entitymatrix, 1, false, (float *)r_identity_matrix);
-	}
-
-	if (prog->clipPlane != -1)
-		qglUniform1fARB(prog->clipPlane, curwater->vecs[2]);
-
-	if (prog->viewpos != -1)
-		qglUniform4fARB(prog->viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 0);
-
-	if (prog->parallaxScale != -1)
-		qglUniform1fARB(prog->parallaxScale, r_wsurf_parallax_scale->value);
-
-	if (prog->s_tangent != -1 && r_wsurf.pCurrentModel)
-	{
-		qglVertexAttribPointer(prog->s_tangent, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, s_tangent));
-		qglEnableVertexAttribArray(prog->s_tangent);
-	}
-
-	if (prog->t_tangent != -1 && r_wsurf.pCurrentModel)
-	{
-		qglVertexAttribPointer(prog->t_tangent, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, t_tangent));
-		qglEnableVertexAttribArray(prog->t_tangent);
-	}
-
-	return prog;
 }
 
 void R_FreeLightmapArray(void)
@@ -220,7 +222,17 @@ void R_GenerateElementBufferIndices(msurface_t *s, brushtexchain_t *texchain, ws
 
 	if (s->flags & SURF_DRAWSKY)
 	{
-
+		if (texchain->iType == TEXCHAIN_SKY)
+		{
+			for (int i = 0; i < brushface->num_vertexes; ++i)
+			{
+				modcache->vIndicesBuffer.emplace_back(brushface->start_vertex + i);
+				texchain->iVertexCount++;
+			}
+			modcache->vIndicesBuffer.emplace_back((unsigned int)0xFFFFFFFF);
+			texchain->iVertexCount++;
+			texchain->iFaceCount++;
+		}
 	}
 	else if (s->flags & SURF_DRAWTURB)
 	{
@@ -295,7 +307,30 @@ void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
 		if (!t)
 			continue;
 
-		if (t->anim_total)
+		if (!strcmp(t->name, "sky"))
+		{
+			auto s = t->texturechain;
+
+			if (s)
+			{
+				brushtexchain_t texchain;
+
+				texchain.pTexture = t;
+				texchain.iVertexCount = 0;
+				texchain.iFaceCount = 0;
+				texchain.iStartIndex = modcache->vIndicesBuffer.size();
+				texchain.iType = TEXCHAIN_SKY;
+
+				for (; s; s = s->texturechain)
+				{
+					R_GenerateElementBufferIndices(s, &texchain, modcache);
+				}
+
+				if (texchain.iVertexCount > 0)
+					modcache->TextureChainSky = texchain;
+			}
+		}
+		else if (t->anim_total)
 		{
 			if (t->name[0] == '-')
 			{
@@ -525,7 +560,7 @@ void R_GenerateVertexBuffer(void)
 
 	for(i = 0; i < r_worldmodel->numsurfaces; i++)
 	{
-		if ((surf[i].flags & (SURF_DRAWSKY | SURF_UNDERWATER)))
+		if ((surf[i].flags & (/*SURF_DRAWSKY |*/ SURF_UNDERWATER)))
 			continue;
 
 		for (poly = surf[i].polys; poly; poly = poly->next)
@@ -542,7 +577,7 @@ void R_GenerateVertexBuffer(void)
 
 	for(i = 0; i < r_worldmodel->numsurfaces; i++)
 	{
-		if ((surf[i].flags & (SURF_DRAWSKY | SURF_UNDERWATER)))
+		if ((surf[i].flags & (/*SURF_DRAWSKY | */SURF_UNDERWATER)))
 			continue;
 
 		poly = surf[i].polys;
@@ -706,6 +741,8 @@ wsurf_model_t *R_PrepareWSurfVBO(model_t *mod)
 
 		R_GenerateElementBuffer(mod, modcache);
 
+		modcache->pModel = mod;
+
 		g_WSurfModelCache[mod] = modcache;
 	}
 	else
@@ -817,6 +854,48 @@ void R_EnableWSurfVBO(wsurf_model_t *modcache)
 
 void R_DrawWSurfVBO(wsurf_model_t *modcache)
 {
+	//This only applies to world rendering
+	if(modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value)
+	{
+		qglColorMask(0, 0, 0, 0);
+
+		auto &texchain = modcache->TextureChainSky;
+
+		GL_DisableMultitexture();
+
+		GL_Bind(0);
+
+		int WSurfProgramState = 0;
+
+		if (r_draw_pass == r_draw_reflect && curwater)
+		{
+			WSurfProgramState |= WSURF_CLIP_UNDER_ENABLED;
+		}
+
+		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+		{
+			WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+		}
+
+		if (drawgbuffer)
+		{
+			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+		}
+
+		wsurf_program_t prog = { 0 };
+		R_UseWSurfProgram(WSurfProgramState, &prog);
+
+		if (prog.speed != -1)
+			qglUniform1fARB(prog.speed, 0);
+
+		qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
+
+		r_wsurf_drawcall++;
+		r_wsurf_polys += texchain.iFaceCount;
+
+		qglColorMask(1, 1, 1, 1);
+	}
+
 	if (r_wsurf.bLightmapTexture)
 	{
 		GL_EnableMultitexture();
@@ -897,10 +976,11 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 			WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
 		}
 
-		auto prog = R_UseWSurfProgram(WSurfProgramState);
+		wsurf_program_t prog = { 0 };
+		R_UseWSurfProgram(WSurfProgramState, &prog);
 
-		if (prog->speed != -1)
-			qglUniform1fARB(prog->speed, 0);
+		if (prog.speed != -1)
+			qglUniform1fARB(prog.speed, 0);
 
 		qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
 
@@ -1004,10 +1084,11 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 			WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
 		}
 
-		auto prog = R_UseWSurfProgram(WSurfProgramState);
+		wsurf_program_t prog = { 0 };
+		R_UseWSurfProgram(WSurfProgramState, &prog);
 
-		if (prog->speed != -1)
-			qglUniform1fARB(prog->speed, 0);
+		if (prog.speed != -1)
+			qglUniform1fARB(prog.speed, 0);
 
 		qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
 
@@ -1072,10 +1153,11 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 				WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
 			}
 
-			auto prog = R_UseWSurfProgram(WSurfProgramState);
+			wsurf_program_t prog = { 0 };
+			R_UseWSurfProgram(WSurfProgramState, &prog);
 
-			if (prog->speed != -1)
-				qglUniform1fARB(prog->speed, scrollSpeed);
+			if (prog.speed != -1)
+				qglUniform1fARB(prog.speed, scrollSpeed);
 
 			qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
 
@@ -1098,6 +1180,46 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		qglEnable(GL_TEXTURE_2D);
 	}
 
+	//This only applies to world rendering, draw world again for correct depth
+	if (modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value)
+	{
+		qglDepthMask(GL_TRUE);
+		qglClear(GL_DEPTH_BUFFER_BIT);
+
+		qglColorMask(0, 0, 0, 0);
+
+		GL_DisableMultitexture();
+
+		GL_Bind(0);
+
+		int WSurfProgramState = 0;
+
+		if (r_draw_pass == r_draw_reflect && curwater)
+		{
+			WSurfProgramState |= WSURF_CLIP_UNDER_ENABLED;
+		}
+
+		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+		{
+			WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+		}
+
+		if (drawgbuffer)
+		{
+			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+		}
+
+		wsurf_program_t prog = { 0 };
+		R_UseWSurfProgram(WSurfProgramState, &prog);
+
+		if (prog.speed != -1)
+			qglUniform1fARB(prog.speed, 0);
+
+		R_DrawWSurfVBOSolid(modcache);
+
+		qglColorMask(1, 1, 1, 1);
+	}
+
 	qglUseProgramObjectARB(0);
 }
 
@@ -1113,18 +1235,24 @@ void R_DrawWSurfVBOSolid(wsurf_model_t *modcache)
 		r_wsurf_polys += texchain.iFaceCount;
 	}
 
-	//Use scrolling shader
-	if (modcache->vTextureChainScroll.size())
+	for (size_t i = 0; i < modcache->vTextureChainAnim.size(); ++i)
 	{
-		for (size_t i = 0; i < modcache->vTextureChainScroll.size(); ++i)
-		{
-			auto &texchain = modcache->vTextureChainScroll[i];
+		auto &texchain = modcache->vTextureChainAnim[i];
 
-			qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
+		qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
 
-			r_wsurf_drawcall++;
-			r_wsurf_polys += texchain.iFaceCount;
-		}
+		r_wsurf_drawcall++;
+		r_wsurf_polys += texchain.iFaceCount;
+	}
+
+	for (size_t i = 0; i < modcache->vTextureChainScroll.size(); ++i)
+	{
+		auto &texchain = modcache->vTextureChainScroll[i];
+
+		qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
+
+		r_wsurf_drawcall++;
+		r_wsurf_polys += texchain.iFaceCount;
 	}
 }
 
@@ -1145,23 +1273,17 @@ void R_InitWSurf(void)
 	r_wsurf.vFaceBuffer = 0;
 	r_wsurf.iNumFaces = 0;
 
-	memset(g_WSurfProgramTable, 0, sizeof(g_WSurfProgramTable));
-
 	R_ClearBSPEntities();
 
 	r_wsurf_vbo = gEngfuncs.pfnRegisterVariable("r_wsurf_vbo", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_parallax_scale = gEngfuncs.pfnRegisterVariable("r_wsurf_parallax_scale", "0.03", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_detail = gEngfuncs.pfnRegisterVariable("r_wsurf_detail", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_wsurf_sky_occlusion = gEngfuncs.pfnRegisterVariable("r_wsurf_sky_occlusion", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 }
 
 void R_ShutdownWSurf(void)
 {
-	for (int i = 0; i < _ARRAYSIZE(g_WSurfProgramTable); ++i)
-	{
-		if (g_WSurfProgramTable[i])
-			delete g_WSurfProgramTable[i];
-		g_WSurfProgramTable[i] = NULL;
-	}
+	g_WSurfProgramTable.clear();
 
 	R_FreeLightmapArray();
 	R_FreeVertexBuffer();
@@ -1639,7 +1761,8 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 		WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
 	}
 
-	auto prog = R_UseWSurfProgram(WSurfProgramState);
+	wsurf_program_t prog = { 0 };
+	R_UseWSurfProgram(WSurfProgramState, &prog);
 
 	float speed = 0;
 
@@ -1651,13 +1774,13 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 			speed = -speed;
 	}
 
-	if (prog->speed != -1)
+	if (prog.speed != -1)
 	{
-		qglUniform1fARB(prog->speed, speed);
+		qglUniform1fARB(prog.speed, speed);
 	}
 
-	r_wsurf.iS_Tangent = prog->s_tangent;
-	r_wsurf.iT_Tangent = prog->t_tangent;
+	r_wsurf.iS_Tangent = prog.s_tangent;
+	r_wsurf.iT_Tangent = prog.t_tangent;
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
@@ -2389,6 +2512,11 @@ void R_DrawWorld(void)
 	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 	r_wsurf.bDiffuseTexture = true;
+	r_wsurf.bLightmapTexture = false;
+
+	R_DrawSkyBox();
+
+	r_wsurf.bDiffuseTexture = true;
 	r_wsurf.bLightmapTexture = true;
 
 	if (r_wsurf_vbo->value)
@@ -2415,8 +2543,6 @@ void R_DrawWorld(void)
 	(*currententity) = gEngfuncs.GetEntityByIndex(0);
 
 	GL_DisableMultitexture();
-
-	R_DrawSkyBox();
 
 	(*skychain) = 0;
 

@@ -54,11 +54,11 @@ typedef struct brushface_s
 	vec3_t	t_tangent;
 }brushface_t;
 
-//#define TEXCHAIN_SKY 0
 #define TEXCHAIN_STATIC 1
 #define TEXCHAIN_SCROLL 2
 #define TEXCHAIN_RANDOM 3
 #define TEXCHAIN_ANIMATION 4
+#define TEXCHAIN_SKY 5
 
 typedef struct brushtexchain_s
 {
@@ -115,15 +115,17 @@ typedef struct wsurf_model_s
 	wsurf_model_s()
 	{
 		hEBO = 0;
+		pModel = NULL;
 	}
 
-	GLuint				hEBO;
+	GLuint	hEBO;
+	model_t	*pModel;
 
 	std::vector<brushtexchain_t> vTextureChainStatic;
 	std::vector<brushtexchain_t> vTextureChainScroll;
 	std::vector<brushtexchain_t> vTextureChainAnim;
+	brushtexchain_t TextureChainSky;
 	std::vector<unsigned int> vIndicesBuffer;
-
 }wsurf_model_t;
 
 typedef struct r_worldsurf_s
@@ -251,7 +253,7 @@ void R_EnableWSurfVBOSolid(wsurf_model_t *modcache);
 void R_DrawWSurfVBOSolid(wsurf_model_t *modcache);
 void R_ShutdownWSurf(void);
 
-wsurf_program_t *R_UseWSurfProgram(int state);
+void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
 
 #define WSURF_DIFFUSE_ENABLED			1
 #define WSURF_LIGHTMAP_ENABLED			2
@@ -263,4 +265,3 @@ wsurf_program_t *R_UseWSurfProgram(int state);
 #define WSURF_LINEAR_FOG_ENABLED		0x80
 #define WSURF_GBUFFER_ENABLED			0x100
 #define WSURF_TRANSPARENT_ENABLED		0x200
-#define WSURF_MAX_STATE					0x400
