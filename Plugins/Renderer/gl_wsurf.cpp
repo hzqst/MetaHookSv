@@ -1186,11 +1186,20 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		qglEnable(GL_TEXTURE_2D);
 	}
 
+	if (modcache->pModel == r_worldmodel)
+	{
+		(*gDecalSurfCount) = 0;
+		R_RecursiveWorldNodeVBO(r_worldmodel->nodes);
+		(*gDecalSurfCount) = 0;
+	}
+
 	//This only applies to world rendering, draw world again for correct depth
 	if (modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value)
 	{
 		qglDepthMask(GL_TRUE);
 		qglClear(GL_DEPTH_BUFFER_BIT);
+
+		qglStencilMask(0);
 
 		qglColorMask(0, 0, 0, 0);
 
@@ -1222,6 +1231,8 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 			qglUniform1fARB(prog.speed, 0);
 
 		R_DrawWSurfVBOSolid(modcache);
+
+		qglStencilMask(0xFF);
 
 		qglColorMask(1, 1, 1, 1);
 	}
@@ -2542,10 +2553,6 @@ void R_DrawWorld(void)
 		R_DrawWSurfVBO(modcache);
 
 		R_EnableWSurfVBO(NULL);
-		
-		(*gDecalSurfCount) = 0;
-		R_RecursiveWorldNodeVBO(r_worldmodel->nodes);
-		(*gDecalSurfCount) = 0;
 	}
 	else
 	{

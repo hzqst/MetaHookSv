@@ -229,6 +229,7 @@ void R_ClearSkyBox(void);
 void R_DrawSkyChain(void);
 void R_DrawEntitiesOnList(void);
 void R_RecursiveWorldNode(mnode_t *node);
+void R_RecursiveWorldNodeVBO(mnode_t *node);
 void R_DrawSequentialPoly(msurface_t *s, int face);
 void R_BlendLightmaps(void);
 void R_RenderBrushPoly(msurface_t *fa);
