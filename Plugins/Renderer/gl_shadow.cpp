@@ -290,12 +290,6 @@ void R_RenderShadowMap(void)
 
 		(*currententity) = backup_curentity;
 
-		if (!s_BackBufferFBO.s_hBackBufferFBO)
-		{
-			qglBindTexture(GL_TEXTURE_2D, shadowmapArray[i]);
-			qglCopyTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, 0, 0, texsizeArray[i], texsizeArray[i], 0);
-		}
-
 		qglColorMask(1, 1, 1, 1);
 	}
 

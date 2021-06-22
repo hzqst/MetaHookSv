@@ -344,7 +344,9 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat, qboo
 	{
 		if (iInternalFormat == GL_DEPTH24_STENCIL8 || iInternalFormat == GL_DEPTH24_STENCIL8_EXT)
 		{
-			qglTexImage2D(tex2D, 0, iInternalFormat, s->iWidth, s->iHeight, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, 0);
+			qglTexStorage2D(tex2D, 1, iInternalFormat, s->iWidth, s->iHeight);
+
+			//qglTexImage2D(tex2D, 0, iInternalFormat, s->iWidth, s->iHeight, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, 0);
 		}
 		else
 		{
@@ -365,6 +367,18 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat, qboo
 	}
 
 	qglBindTexture(tex2D, 0);
+
+	if (iInternalFormat == GL_DEPTH24_STENCIL8 || iInternalFormat == GL_DEPTH24_STENCIL8_EXT)
+	{
+		s->s_hBackBufferStencilView = GL_GenTexture();
+		qglTextureView(s->s_hBackBufferStencilView, tex2D, s->s_hBackBufferDepthTex, GL_DEPTH24_STENCIL8, 0, 1, 0, 1);
+		
+		/*qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferStencilView);
+		qglTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
+		qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		qglBindTexture(GL_TEXTURE_2D, 0);*/
+	}
 }
 
 int GL_GenColorTextureHBAO(int w, int h)

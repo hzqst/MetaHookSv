@@ -15,6 +15,7 @@ typedef struct FBO_Container_s
 	GLuint s_hBackBufferTex4;
 	GLuint s_hBackBufferTex5;
 	GLuint s_hBackBufferDepthTex;
+	GLuint s_hBackBufferStencilView;
 	int iWidth;
 	int iHeight;
 	int iTextureColorFormat;
@@ -22,7 +23,6 @@ typedef struct FBO_Container_s
 
 typedef struct
 {
-	void(*Cache_Free)(cache_user_t *c);
 	void (*R_Clear)(void);
 	void (*R_ForceCVars)(qboolean mp);
 	void (*R_RenderView)(void);

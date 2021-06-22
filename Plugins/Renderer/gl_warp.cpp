@@ -107,6 +107,11 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 			return;
 	}
 
+	qglEnable(GL_STENCIL_TEST);
+	qglStencilMask(0xFF);
+	qglStencilFunc(GL_ALWAYS, 1, 0xFF);
+	qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
 	float clientTime = (*cl_time);
 
 	auto p = fa->polys;
@@ -142,11 +147,6 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		VectorAdd(tempVert, (*currententity)->curstate.origin, tempVert);
 	}
 	
-	qglEnable(GL_STENCIL_TEST);
-	qglStencilMask(0xFF);
-	qglStencilFunc(GL_ALWAYS, 1, 0xFF);
-	qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
 	R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
@@ -419,12 +419,6 @@ int skytexorder[6] = { 0, 2, 1, 3, 4, 5 };
 
 void R_DrawSkyBox(void)
 {
-	qglEnable(GL_STENCIL_TEST);
-	qglStencilMask(0xFF);
-	qglStencilFunc(GL_ALWAYS, 1, 0xFF);
-	qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
-	GL_DisableMultitexture();
 	qglDisable(GL_BLEND);
 	qglColor4f(1, 1, 1, 1);
 
@@ -481,7 +475,4 @@ void R_DrawSkyBox(void)
 	}
 
 	qglUseProgramObjectARB(0);
-
-	qglStencilMask(0);
-	qglDisable(GL_STENCIL_TEST);
 }

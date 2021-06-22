@@ -192,6 +192,9 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 
 void HUD_DrawNormalTriangles(void)
 {
+	r_draw_nontransparent = false;
+
+	//Transfer everything from gbuffer into backbuffer
 	R_EndRenderGBuffer();
 
 	GL_DisableMultitexture();
@@ -201,7 +204,7 @@ void HUD_DrawNormalTriangles(void)
 		R_RenderShadowScenes();
 	}
 
-	if (!r_refdef->onlyClientDraws && !g_SvEngine_DrawPortalView && !r_draw_pass)
+	if (!r_refdef->onlyClientDraws && !r_draw_pass && !g_SvEngine_DrawPortalView)
 	{
 		if (R_UseMSAA())
 		{

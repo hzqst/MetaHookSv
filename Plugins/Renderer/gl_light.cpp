@@ -142,6 +142,7 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 		{
 			SHADER_UNIFORM(prog, positionTex, "positionTex");
 			SHADER_UNIFORM(prog, normalTex, "normalTex");
+			SHADER_UNIFORM(prog, stencilTex, "stencilTex");
 			SHADER_UNIFORM(prog, viewpos, "viewpos");
 			SHADER_UNIFORM(prog, lightdir, "lightdir");
 			SHADER_UNIFORM(prog, lightpos, "lightpos");
@@ -175,6 +176,8 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 			qglUniform1iARB(prog.positionTex, 0);
 		if (prog.normalTex != -1)
 			qglUniform1iARB(prog.normalTex, 1);
+		if (prog.stencilTex != -1)
+			qglUniform1iARB(prog.stencilTex, 2);
 
 		if (prog.diffuseTex != -1)
 			qglUniform1iARB(prog.diffuseTex, 0);
@@ -408,9 +411,6 @@ bool R_BeginRenderGBuffer(void)
 	if (!r_light_dynamic->value)
 		return false;
 
-	if (!s_GBufferFBO.s_hBackBufferFBO)
-		return false;
-
 	drawgbuffer = true;
 	gbuffer_mask = -1;
 
@@ -458,8 +458,8 @@ void R_EndRenderGBuffer(void)
 	GL_PushDrawState();
 	GL_PushMatrix();
 
+	qglStencilMask(0);
 	qglDisable(GL_STENCIL_TEST);
-	qglStencilMask(0xFF);
 	
 	//Light Pass
 
@@ -496,14 +496,23 @@ void R_EndRenderGBuffer(void)
 	qglEnable(GL_BLEND);
 	qglBlendFunc(GL_ONE, GL_ONE);
 
-	//Position texture
+	//Position texture for unit0
 	GL_SelectTexture(TEXTURE0_SGIS);
 	GL_Bind(s_GBufferFBO.s_hBackBufferTex3);
 
-	//Normal texture
+	//Normal texture for unit1
 	GL_EnableMultitexture();
 	GL_Bind(s_GBufferFBO.s_hBackBufferTex4);
+
+	//Stencil texture for unit2
+	qglActiveTextureARB(TEXTURE2_SGIS);
+	qglEnable(GL_TEXTURE_2D);
+	qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferStencilView);
 	
+	qglTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
+	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
 	if (r_light_dynamic->value >= 2.0f && g_DeferredLights.size())
 	{
 		for (size_t i = 0; i < g_DeferredLights.size(); i++)
@@ -766,6 +775,10 @@ void R_EndRenderGBuffer(void)
 			}
 		}
 	}
+
+	qglActiveTextureARB(TEXTURE2_SGIS);
+	qglDisable(GL_TEXTURE_2D);
+	qglBindTexture(GL_TEXTURE_2D, 0);
 
 	GL_Begin2D();
 	qglDisable(GL_BLEND);

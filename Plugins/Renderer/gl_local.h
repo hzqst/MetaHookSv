@@ -207,12 +207,10 @@ extern cvar_t *chase_active;
 
 void R_FillAddress(void);
 void R_InstallHook(void);
-void Cache_Free(cache_user_t *c);
 void R_RenderView(void);
 void R_RenderScene(void);
 void R_RenderView_SvEngine(int a1);
 qboolean R_CullBox(vec3_t mins, vec3_t maxs);
-void R_Clear(void);
 void R_ForceCVars(qboolean mp);
 void R_NewMap(void);
 void R_Init(void);
@@ -337,8 +335,9 @@ extern mplane_t custom_frustum[4];
 extern float r_identity_matrix[4][4];
 extern float r_rotate_entity_matrix[4][4];
 extern bool r_rotate_entity;
+extern bool r_draw_nontransparent;
 
-extern qboolean g_SvEngine_DrawPortalView;
+extern bool g_SvEngine_DrawPortalView;
 extern int r_draw_pass;
 
 #define BUFFER_OFFSET(i) ((unsigned int *)NULL + (i))

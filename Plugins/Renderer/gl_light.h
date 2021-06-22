@@ -47,6 +47,7 @@ typedef struct
 	int program;
 	int positionTex;
 	int normalTex;
+	int stencilTex;
 	int viewpos;
 	int lightdir;
 	int lightpos;

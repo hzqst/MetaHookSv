@@ -78,7 +78,8 @@ int *gl_msaa_fbo = 0;
 int *gl_backbuffer_fbo = 0;
 int *gl_mtexable = 0;
 qboolean *mtexenabled = 0;
-qboolean g_SvEngine_DrawPortalView = 0;
+
+bool g_SvEngine_DrawPortalView = 0;
 
 qboolean gl_framebuffer_object = false;
 qboolean gl_shader_support = false;
@@ -98,6 +99,8 @@ float r_identity_matrix[4][4] = {
 float r_rotate_entity_matrix[4][4];
 
 bool r_rotate_entity = false;
+
+bool r_draw_nontransparent = false;
 
 int r_draw_pass = 0;
 
@@ -201,7 +204,7 @@ qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 	if (r_draw_pass == r_draw_shadow)
 		return false;
 
-	if ((*currententity)->model && (*currententity)->model->type == mod_studio)
+	if ((*currententity)->model && (*currententity)->model->type == mod_studio && (*currententity)->curstate.scale != 1.0f)
 	{
 		if ((*currententity)->curstate.scale > 8.0f)
 			return false;
@@ -267,6 +270,7 @@ void R_RotateForEntity(vec_t *origin, cl_entity_t *e)
 	r_rotate_entity = true;
 }
 
+//All sprite models goes transentities
 void R_DrawSpriteModel(cl_entity_t *entity)
 {
 	if (drawgbuffer)
@@ -327,58 +331,6 @@ float GlowBlend(cl_entity_t *entity)
 int CL_FxBlend(cl_entity_t *entity)
 {
 	return gRefFuncs.CL_FxBlend(entity);
-}
-
-void R_Clear(void)
-{
-	if (r_mirroralpha && r_mirroralpha->value != 1.0)
-	{
-		qglDepthMask(GL_TRUE);
-		if (gl_clear->value)
-			qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		else
-			qglClear(GL_DEPTH_BUFFER_BIT);
-
-		gldepthmin = 0;
-		gldepthmax = 0.5;
-		qglDepthFunc(GL_LEQUAL);
-	}
-	else if (gl_ztrick && gl_ztrick->value)
-	{
-		static int trickframe;
-
-		if (gl_clear->value)
-			qglClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-		trickframe++;
-
-		if (trickframe & 1)
-		{
-			gldepthmin = 0;
-			gldepthmax = 0.49999;
-			qglDepthFunc(GL_LEQUAL);
-		}
-		else
-		{
-			gldepthmin = 1;
-			gldepthmax = 0.5;
-			qglDepthFunc(GL_GEQUAL);
-		}
-	}
-	else
-	{
-		qglDepthMask(GL_TRUE);
-		if (gl_clear->value)
-			qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		else
-			qglClear(GL_DEPTH_BUFFER_BIT);
-
-		gldepthmin = 0;
-		gldepthmax = 1;
-		qglDepthFunc(GL_LEQUAL);
-	}
-
-	qglDepthRange(gldepthmin, gldepthmax);
 }
 
 void R_AddTEntity(cl_entity_t *pEnt)
@@ -1059,6 +1011,9 @@ void GL_FreeFBO(FBO_Container_t *s)
 	if (s->s_hBackBufferDepthTex)
 		qglDeleteTextures(1, &s->s_hBackBufferDepthTex);
 
+	if (s->s_hBackBufferStencilView)
+		qglDeleteTextures(1, &s->s_hBackBufferStencilView);
+
 	GL_ClearFBO(s);
 }
 
@@ -1069,7 +1024,7 @@ bool GL_IsValidSampleCount(int msaa_samples)
 
 bool R_UseMSAA(void)
 {
-	return s_MSAAFBO.s_hBackBufferFBO && GL_IsValidSampleCount((int)r_msaa->value) && !g_SvEngine_DrawPortalView;
+	return s_MSAAFBO.s_hBackBufferFBO && GL_IsValidSampleCount((int)r_msaa->value) && !r_draw_pass && !g_SvEngine_DrawPortalView;
 }
 
 void GL_GenerateFBO(void)
@@ -1421,7 +1376,7 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 
 void R_PreRenderView(int a1)
 {
-	g_SvEngine_DrawPortalView = a1;
+	g_SvEngine_DrawPortalView = a1 ? true : false;
 
 	r_studio_framecount++;
 	r_fog_mode = 0;
@@ -1488,7 +1443,7 @@ void R_PostRenderView()
 
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 
-	g_SvEngine_DrawPortalView = 0;	
+	g_SvEngine_DrawPortalView = false;	
 }
 
 void R_PreDrawViewModel(void)

@@ -874,7 +874,7 @@ int R_DoSSAO(int sampleIndex)
 		qglSampleMaski(0, 1 << sampleIndex);
 	}
 
-	//Stencil for studio model?
+	//Don't draw SSAO shadow on studio models, water, etc...
 	qglEnable(GL_STENCIL_TEST);
 	qglStencilMask(0xFF);
 	qglStencilFunc(GL_EQUAL, 0, 0xFF);

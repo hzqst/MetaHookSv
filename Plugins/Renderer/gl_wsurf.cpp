@@ -857,6 +857,9 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 	//This only applies to world rendering
 	if(modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value)
 	{
+		//Sky surface uses stencil = 1
+		qglStencilFunc(GL_ALWAYS, 1, 0xFF);
+
 		qglColorMask(0, 0, 0, 0);
 
 		auto &texchain = modcache->TextureChainSky;
@@ -895,6 +898,9 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 
 		qglColorMask(1, 1, 1, 1);
 	}
+
+	//World uses stencil = 0
+	qglStencilFunc(GL_ALWAYS, 0, 0xFF);
 
 	if (r_wsurf.bLightmapTexture)
 	{
@@ -2487,6 +2493,8 @@ void R_DrawBrushModel(cl_entity_t *e)
 
 void R_DrawWorld(void)
 {
+	r_draw_nontransparent = true;
+
 	R_BeginRenderGBuffer();
 
 	VectorCopy(r_refdef->vieworg, modelorg);
@@ -2503,18 +2511,24 @@ void R_DrawWorld(void)
 	qglColor3f(1.0f, 1.0f, 1.0f);
 	memset(lightmap_polys, 0, sizeof(glpoly_t *) * 1024);
 
-	qglEnable(GL_STENCIL_TEST);
-	qglStencilMask(0xFF);
-	qglStencilFunc(GL_ALWAYS, 0, 0xFF);
-	qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
 	GL_DisableMultitexture();
 	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+	//Skybox uses stencil = 1
+
+	qglEnable(GL_STENCIL_TEST);
+	qglStencilMask(0xFF);
+	qglStencilFunc(GL_ALWAYS, 1, 0xFF);
+	qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	r_wsurf.bDiffuseTexture = true;
 	r_wsurf.bLightmapTexture = false;
 
 	R_DrawSkyBox();
+
+	//World uses stencil = 0
+
+	qglStencilFunc(GL_ALWAYS, 0, 0xFF);
 
 	r_wsurf.bDiffuseTexture = true;
 	r_wsurf.bLightmapTexture = true;
@@ -2552,11 +2566,14 @@ void R_DrawWorld(void)
 		{
 			qglColor4ub(255, 255, 255, 255);
 			GL_Bind(s->texinfo->texture->gl_texturenum);
+
+			//Water uses stencil = 1
 			EmitWaterPolys(s, 0);
 		}
 		(*waterchain) = 0;
 	}
 
+	//No stencil write later
 	qglStencilMask(0);
 	qglDisable(GL_STENCIL_TEST);
 }

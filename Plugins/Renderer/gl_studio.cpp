@@ -443,10 +443,15 @@ void R_GLStudioDrawPoints(void)
 	short *pskinref;
 	int flags;
 
-	qglEnable(GL_STENCIL_TEST);
-	qglStencilMask(0xFF);
-	qglStencilFunc(GL_ALWAYS, 1, 0xFF);
-	qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	int stencilState = 1;
+
+	if (r_draw_nontransparent)
+	{
+		qglEnable(GL_STENCIL_TEST);
+		qglStencilMask(0xFF);
+		qglStencilFunc(GL_ALWAYS, stencilState, 0xFF);
+		qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	}
 
 	pvertbone = ((byte *)(*pstudiohdr) + (*psubmodel)->vertinfoindex);
 	pnormbone = ((byte *)(*pstudiohdr) + (*psubmodel)->norminfoindex);
@@ -636,6 +641,26 @@ void R_GLStudioDrawPoints(void)
 				flags = flags & 0xFC;
 			}
 
+			if (r_draw_nontransparent)
+			{
+				if (flags & STUDIO_NF_FLATSHADE)
+				{
+					if (stencilState != 2)
+					{
+						stencilState = 2;
+						qglStencilFunc(GL_ALWAYS, stencilState, 0xFF);
+					}
+				}
+				else
+				{
+					if (stencilState != 1)
+					{
+						stencilState = 1;
+						qglStencilFunc(GL_ALWAYS, stencilState, 0xFF);
+					}
+				}
+			}
+
 			int GBufferProgramState = GBUFFER_DIFFUSE_ENABLED;
 			int GBufferMask = GBUFFER_MASK_ALL;
 			int StudioProgramState = flags;
@@ -808,6 +833,26 @@ void R_GLStudioDrawPoints(void)
 			if (r_fullbright->value >= 2)
 			{
 				flags = flags & 0xFC;
+			}
+
+			if (r_draw_nontransparent)
+			{
+				if (flags & STUDIO_NF_FLATSHADE)
+				{
+					if (stencilState != 2)
+					{
+						stencilState = 2;
+						qglStencilFunc(GL_ALWAYS, stencilState, 0xFF);
+					}
+				}
+				else
+				{
+					if (stencilState != 1)
+					{
+						stencilState = 1;
+						qglStencilFunc(GL_ALWAYS, stencilState, 0xFF);
+					}
+				}
 			}
 
 			int GBufferProgramState = GBUFFER_DIFFUSE_ENABLED;
@@ -1161,8 +1206,12 @@ void R_GLStudioDrawPoints(void)
 	}//non-VBO way
 
 	qglEnable(GL_CULL_FACE);
-	qglStencilMask(0);
-	qglDisable(GL_STENCIL_TEST);
+
+	if (r_draw_nontransparent)
+	{
+		qglStencilMask(0);
+		qglDisable(GL_STENCIL_TEST);
+	}
 
 	//upload all data and indices to GPU
 	if (iInitVBO & 2)

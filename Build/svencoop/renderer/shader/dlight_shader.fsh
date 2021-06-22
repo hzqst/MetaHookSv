@@ -2,6 +2,7 @@
 
 uniform sampler2D positionTex;
 uniform sampler2D normalTex;
+uniform usampler2D stencilTex;
 
 uniform vec3 lightcolor;
 uniform float lightcone;
@@ -32,35 +33,42 @@ uniform vec4 clipInfo;
 #endif
 
 #ifdef LIGHT_PASS
-vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal)
+vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, uint stencil)
 {
     vec4 AmbientColor = vec4(lightcolor, 1.0) * lightambient;
-    float DiffuseFactor = dot(Normal, -LightDirection);
- 
     vec4 DiffuseColor = vec4(0.0, 0.0, 0.0, 0.0);
     vec4 SpecularColor = vec4(0.0, 0.0, 0.0, 0.0);
- 
-    if (DiffuseFactor > 0.0) {
-        DiffuseColor = vec4(lightcolor * lightdiffuse * DiffuseFactor, 1.0);
-        vec3 VertexToEye = normalize(viewpos.xyz - World);
-        vec3 LightReflect = normalize(reflect(LightDirection, Normal));
-        float SpecularFactor = dot(VertexToEye, LightReflect);
-        if (SpecularFactor > 0.0) {
-            SpecularFactor = pow(SpecularFactor, lightspecularpow);
-            SpecularColor = vec4(lightcolor * lightspecular * SpecularFactor, 1.0);
+
+    if(stencil < 2)
+    {
+        float DiffuseFactor = dot(Normal, -LightDirection);
+    
+        if (DiffuseFactor > 0.0) {
+            DiffuseColor = vec4(lightcolor * lightdiffuse * DiffuseFactor, 1.0);
+            vec3 VertexToEye = normalize(viewpos.xyz - World);
+            vec3 LightReflect = normalize(reflect(LightDirection, Normal));
+            float SpecularFactor = dot(VertexToEye, LightReflect);
+            if (SpecularFactor > 0.0) {
+                SpecularFactor = pow(SpecularFactor, lightspecularpow);
+                SpecularColor = vec4(lightcolor * lightspecular * SpecularFactor, 1.0);
+            }
         }
+    }
+    else
+    {
+        DiffuseColor = vec4(lightcolor * lightdiffuse * 0.8, 1.0);
     }
  
     return (AmbientColor + DiffuseColor + SpecularColor);
 }
 
-vec4 CalcPointLight(vec3 World, vec3 Normal)
+vec4 CalcPointLight(vec3 World, vec3 Normal, uint stencil)
 {
     vec3 LightDirection = World - lightpos.xyz;
     float Distance = length(LightDirection);
     LightDirection = normalize(LightDirection);
  
-    vec4 Color = CalcLightInternal(World, LightDirection, Normal);
+    vec4 Color = CalcLightInternal(World, LightDirection, Normal, stencil);
 
     float r2 = lightradius * lightradius;
     float Attenuation = clamp(( r2 - (Distance * Distance)) / r2, 0.0, 1.0);
@@ -68,12 +76,12 @@ vec4 CalcPointLight(vec3 World, vec3 Normal)
     return Color * Attenuation;
 }
 
-vec4 CalcSpotLight(vec3 World, vec3 Normal)
+vec4 CalcSpotLight(vec3 World, vec3 Normal, uint stencil)
 {
     vec3 LightToPixel = normalize(World - lightpos.xyz);
     float SpotFactor = dot(LightToPixel, lightdir.xyz);
     if (SpotFactor > lightcone) {
-        vec4 Color = CalcPointLight(World, Normal);
+        vec4 Color = CalcPointLight(World, Normal, stencil);
         return Color * (1.0 - (1.0 - SpotFactor) * 1.0/(1.0 - lightcone));
     }
     else {
@@ -87,19 +95,21 @@ void main()
     vec2 vBaseTexCoord = projpos.xy / projpos.w * 0.5 + 0.5;
     vec4 positionColor = texture2D(positionTex, vBaseTexCoord);
     vec4 normalColor = texture2D(normalTex, vBaseTexCoord);
+    uint stencilColor = texture(stencilTex, vBaseTexCoord).r;
 #else
     vec4 positionColor = texture2D(positionTex, gl_TexCoord[0].xy);
     vec4 normalColor = texture2D(normalTex, gl_TexCoord[0].xy);
+    uint stencilColor = texture(stencilTex, gl_TexCoord[0].xy).r;
 #endif
     vec3 worldpos = positionColor.xyz;
     vec3 normal = normalColor.xyz;
-    
+
 #ifdef LIGHT_PASS_SPOT
-    gl_FragColor = CalcSpotLight(worldpos, normal);
+    gl_FragColor = CalcSpotLight(worldpos, normal, stencilColor);
 #endif
 
 #ifdef LIGHT_PASS_POINT
-    gl_FragColor = CalcPointLight(worldpos, normal);
+    gl_FragColor = CalcPointLight(worldpos, normal, stencilColor);
 #endif
 }
 #endif

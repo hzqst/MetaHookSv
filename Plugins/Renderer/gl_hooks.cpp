@@ -1,8 +1,6 @@
 #include "gl_local.h"
 #include <metahook.h>
 
-#define CACHE_FREE_SVENGINE "\x56\x57\x8B\x7C\x24\x0C\x8B\x37\x85\xF6\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8"
-
 #define R_BEGINDETAILTEXTURE_SVENGINE "\x68\x00\x22\x00\x00\x68\x00\x23\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x73\x18\xE8"
 
 #define R_ROTATEFORENTITY_SVENGINE "\x83\xEC\x2A\x8B\x2A\x24\x2A\x8B\x2A\x24\x2A\xD9\x00"
@@ -235,9 +233,6 @@ void R_FillAddress(void)
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.Cache_Free = (void(*)(cache_user_t *))Search_Pattern(CACHE_FREE_SVENGINE);
-		Sig_FuncNotFound(Cache_Free);
-
 		gRefFuncs.GL_Bind = (void(*)(int))Search_Pattern(GL_BIND_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_Bind);
 
