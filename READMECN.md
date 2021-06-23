@@ -168,7 +168,7 @@ r_wsurf_vbo 1 / 0 : 开启/关闭bsp地形的VBO优化和DrawCall合批优化. �
 
 r_wsurf_parallax_scale : 控制视差贴图的作用强度. 推荐值 : 0.01 ~ 0.04
 
-r_wsurf_sky_occlusion 1 / 0 : when set to 1, scenes occluded by "sky" surfaces (surfaces with sky texture) will be invisible. this only takes effect when r_wsurf_vbo set to 1. recommended value : 1
+r_wsurf_sky_occlusion 1 / 0 : 设为1时被天空贴图遮挡的场景将不可见. 该选项仅在r_wsurf_vbo为1时有效. 推荐值 : 1
 
 r_fxaa 1 / 0  : 开启快速近似抗锯齿 (FXAA) ，仅当 MSAA 不可用时有效. 推荐值 : 1
 
