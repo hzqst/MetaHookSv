@@ -10,7 +10,9 @@ MetaHook的SvenCoop移植版本 (https://github.com/nagist/metahook)
 
 ## VAC风险?
 
-虽然在受VAC保护的游戏上使用hook之类的行为可能看上去很危险，但是目前为止还没有人反馈因为使用此插件导致VAC封禁。
+虽然在游戏中使用hook之类的行为可能看上去很危险，但是目前为止还没有人反馈因为使用此插件导致VAC封禁。
+
+并且SvenCoop并不属于受VAC保护的游戏：https://store.steampowered.com/search/?term=coop&category2=8
 
 如果你实在不放心，那么请使用小号进行游戏，毕竟Sven-Coop是免费游戏。
 
@@ -165,6 +167,8 @@ r_studio_vbo 1 / 0 : 开启/关闭mdl模型的VBO优化和DrawCall合批优化. 
 r_wsurf_vbo 1 / 0 : 开启/关闭bsp地形的VBO优化和DrawCall合批优化. 推荐值 : 1
 
 r_wsurf_parallax_scale : 控制视差贴图的作用强度. 推荐值 : 0.01 ~ 0.04
+
+r_wsurf_sky_occlusion 1 / 0 : when set to 1, scenes occluded by "sky" surfaces (surfaces with sky texture) will be invisible. this only takes effect when r_wsurf_vbo set to 1. recommended value : 1
 
 r_fxaa 1 / 0  : 开启快速近似抗锯齿 (FXAA) ，仅当 MSAA 不可用时有效. 推荐值 : 1
 
