@@ -196,6 +196,8 @@ r_wsurf_parallax_scale : control parallax textures' intensity factor. recommende
 
 r_wsurf_detail 1 / 0 : enable or disable detail textures, normal textures, parallax textures. recommended value : 1
 
+r_wsurf_sky_occlusion 1 / 0 : when set to 1, scenes occluded by "sky" surfaces (surfaces with sky texture) will be invisible. this only takes effect when r_wsurf_vbo set to 1. recommended value : 1
+
 r_fxaa 1 / 0 : enable or disable Fast Approximate Anti-Aliasing (FXAA). recommended value : 1
 
 r_msaa 0 / 2 / 4 / 8 / 16 : enable or disable MultiSampling Anti-Aliasing (MSAA), number >= 2 for MSAA sample count. recommended value : 0 if SSAO enabled or 4 if SSAO disabled.
