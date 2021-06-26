@@ -62,6 +62,14 @@ typedef struct brushface_s
 
 typedef struct brushtexchain_s
 {
+	struct brushtexchain_s()
+	{
+		iStartIndex = 0;
+		iVertexCount = 0;
+		iFaceCount = 0;
+		pTexture = 0;
+		iType = 0;
+	}
 	int iStartIndex;
 	int iVertexCount;
 	int iFaceCount;

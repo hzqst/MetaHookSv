@@ -864,37 +864,40 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 
 		auto &texchain = modcache->TextureChainSky;
 
-		GL_DisableMultitexture();
-
-		GL_Bind(0);
-
-		int WSurfProgramState = 0;
-
-		if (r_draw_pass == r_draw_reflect && curwater)
+		if (texchain.iVertexCount > 0)
 		{
-			WSurfProgramState |= WSURF_CLIP_UNDER_ENABLED;
+			GL_DisableMultitexture();
+
+			GL_Bind(0);
+
+			int WSurfProgramState = 0;
+
+			if (r_draw_pass == r_draw_reflect && curwater)
+			{
+				WSurfProgramState |= WSURF_CLIP_UNDER_ENABLED;
+			}
+
+			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			{
+				WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+			}
+
+			if (drawgbuffer)
+			{
+				WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+			}
+
+			wsurf_program_t prog = { 0 };
+			R_UseWSurfProgram(WSurfProgramState, &prog);
+
+			if (prog.speed != -1)
+				qglUniform1fARB(prog.speed, 0);
+
+			qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
+
+			r_wsurf_drawcall++;
+			r_wsurf_polys += texchain.iFaceCount;
 		}
-
-		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
-		{
-			WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
-		}
-
-		if (drawgbuffer)
-		{
-			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
-		}
-
-		wsurf_program_t prog = { 0 };
-		R_UseWSurfProgram(WSurfProgramState, &prog);
-
-		if (prog.speed != -1)
-			qglUniform1fARB(prog.speed, 0);
-
-		qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
-
-		r_wsurf_drawcall++;
-		r_wsurf_polys += texchain.iFaceCount;
 
 		qglColorMask(1, 1, 1, 1);
 	}
@@ -931,198 +934,23 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 	{
 		auto &texchain = modcache->vTextureChainStatic[i];
 
-		GL_Bind(texchain.pTexture->gl_texturenum);
-
-		R_BeginDetailTexture(texchain.pTexture->gl_texturenum);
-
-		int WSurfProgramState = 0;
-
-		if (r_wsurf.bDiffuseTexture)
+		if (texchain.iVertexCount > 0)
 		{
-			WSurfProgramState |= WSURF_DIFFUSE_ENABLED;
-		}
-
-		if (r_wsurf.bLightmapTexture)
-		{
-			WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
-		}
-
-		if (r_wsurf.bDetailTexture)
-		{
-			WSurfProgramState |= WSURF_DETAILTEXTURE_ENABLED;
-		}
-
-		if (r_wsurf.bNormalTexture)
-		{
-			WSurfProgramState |= WSURF_NORMALTEXTURE_ENABLED;
-		}
-
-		if (r_wsurf.bParallaxTexture)
-		{
-			WSurfProgramState |= WSURF_PARALLAXTEXTURE_ENABLED;
-		}
-
-		if (r_draw_pass == r_draw_reflect && curwater)
-		{
-			WSurfProgramState |= WSURF_CLIP_UNDER_ENABLED;
-		}
-
-		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
-		{
-			WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
-		}
-
-		if (drawgbuffer)
-		{
-			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
-		}
-
-		if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
-		{
-			WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
-		}
-
-		wsurf_program_t prog = { 0 };
-		R_UseWSurfProgram(WSurfProgramState, &prog);
-
-		if (prog.speed != -1)
-			qglUniform1fARB(prog.speed, 0);
-
-		qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
-
-		R_EndDetailTexture();
-
-		r_wsurf_drawcall++;
-		r_wsurf_polys += texchain.iFaceCount;
-	}
-
-	//Animated texchain
-
-	for (size_t i = 0; i < modcache->vTextureChainAnim.size(); ++i)
-	{
-		auto &texchain = modcache->vTextureChainAnim[i];
-
-		auto base = texchain.pTexture;
-
-		if ((*currententity)->curstate.effects & EF_SNIPERLASER)
-		{
-			int frame_count = 0;
-			int total_frame = (*currententity)->curstate.frame;
-			do
-			{
-				if (base->anim_next)
-					base = base->anim_next;
-				++frame_count;
-			} while (frame_count < (*currententity)->curstate.frame);
-		}
-		else
-		{
-			if ((*currententity)->curstate.frame && base->alternate_anims)
-				base = base->alternate_anims;
-
-			if (!((*currententity)->curstate.effects & EF_NIGHTVISION))
-			{
-				int reletive = (int)((*cl_time) * 10.0f) % base->anim_total;
-
-				int loop_count = 0;
-
-				while (base->anim_min > reletive || base->anim_max <= reletive)
-				{
-					base = base->anim_next;
-
-					if (!base)
-						Sys_ErrorEx("R_TextureAnimation: broken cycle");
-
-					if (++loop_count > 100)
-						Sys_ErrorEx("R_TextureAnimation: infinite cycle");
-				}
-			}
-		}
-
-		GL_Bind(base->gl_texturenum);
-
-		R_BeginDetailTexture(base->gl_texturenum);
-
-		int WSurfProgramState = 0;
-
-		if (r_wsurf.bDiffuseTexture)
-		{
-			WSurfProgramState |= WSURF_DIFFUSE_ENABLED;
-		}
-
-		if (r_wsurf.bLightmapTexture)
-		{
-			WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
-		}
-
-		if (r_wsurf.bDetailTexture)
-		{
-			WSurfProgramState |= WSURF_DETAILTEXTURE_ENABLED;
-		}
-
-		if (r_wsurf.bNormalTexture)
-		{
-			WSurfProgramState |= WSURF_NORMALTEXTURE_ENABLED;
-		}
-
-		if (r_wsurf.bParallaxTexture)
-		{
-			WSurfProgramState |= WSURF_PARALLAXTEXTURE_ENABLED;
-		}
-
-		if (r_draw_pass == r_draw_reflect && curwater)
-		{
-			WSurfProgramState |= WSURF_CLIP_UNDER_ENABLED;
-		}
-
-		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
-		{
-			WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
-		}
-
-		if (drawgbuffer)
-		{
-			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
-		}
-
-		if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
-		{
-			WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
-		}
-
-		wsurf_program_t prog = { 0 };
-		R_UseWSurfProgram(WSurfProgramState, &prog);
-
-		if (prog.speed != -1)
-			qglUniform1fARB(prog.speed, 0);
-
-		qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
-
-		R_EndDetailTexture();
-
-		r_wsurf_drawcall++;
-		r_wsurf_polys += texchain.iFaceCount;
-	}
-
-	//Use scrolling shader
-	if (modcache->vTextureChainScroll.size())
-	{
-		float scrollSpeed = ((*currententity)->curstate.rendercolor.b + ((*currententity)->curstate.rendercolor.g << 8)) / 16.0;
-		if ((*currententity)->curstate.rendercolor.r == 0)
-			scrollSpeed = -scrollSpeed;
-		scrollSpeed *= (*cl_time);
-
-		for (size_t i = 0; i < modcache->vTextureChainScroll.size(); ++i)
-		{
-			auto &texchain = modcache->vTextureChainScroll[i];
-
 			GL_Bind(texchain.pTexture->gl_texturenum);
 
 			R_BeginDetailTexture(texchain.pTexture->gl_texturenum);
 
-			wsurf_program_t wprog = { 0 };
+			int WSurfProgramState = 0;
 
-			int WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_LIGHTMAP_ENABLED;
+			if (r_wsurf.bDiffuseTexture)
+			{
+				WSurfProgramState |= WSURF_DIFFUSE_ENABLED;
+			}
+
+			if (r_wsurf.bLightmapTexture)
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
+			}
 
 			if (r_wsurf.bDetailTexture)
 			{
@@ -1163,7 +991,7 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 			R_UseWSurfProgram(WSurfProgramState, &prog);
 
 			if (prog.speed != -1)
-				qglUniform1fARB(prog.speed, scrollSpeed);
+				qglUniform1fARB(prog.speed, 0);
 
 			qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
 
@@ -1171,6 +999,192 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 
 			r_wsurf_drawcall++;
 			r_wsurf_polys += texchain.iFaceCount;
+		}
+	}
+
+	//Animated texchain
+
+	for (size_t i = 0; i < modcache->vTextureChainAnim.size(); ++i)
+	{
+		auto &texchain = modcache->vTextureChainAnim[i];
+
+		if (texchain.iVertexCount > 0)
+		{
+
+			auto base = texchain.pTexture;
+
+			if ((*currententity)->curstate.effects & EF_SNIPERLASER)
+			{
+				int frame_count = 0;
+				int total_frame = (*currententity)->curstate.frame;
+				do
+				{
+					if (base->anim_next)
+						base = base->anim_next;
+					++frame_count;
+				} while (frame_count < (*currententity)->curstate.frame);
+			}
+			else
+			{
+				if ((*currententity)->curstate.frame && base->alternate_anims)
+					base = base->alternate_anims;
+
+				if (!((*currententity)->curstate.effects & EF_NIGHTVISION))
+				{
+					int reletive = (int)((*cl_time) * 10.0f) % base->anim_total;
+
+					int loop_count = 0;
+
+					while (base->anim_min > reletive || base->anim_max <= reletive)
+					{
+						base = base->anim_next;
+
+						if (!base)
+							Sys_ErrorEx("R_TextureAnimation: broken cycle");
+
+						if (++loop_count > 100)
+							Sys_ErrorEx("R_TextureAnimation: infinite cycle");
+					}
+				}
+			}
+
+			GL_Bind(base->gl_texturenum);
+
+			R_BeginDetailTexture(base->gl_texturenum);
+
+			int WSurfProgramState = 0;
+
+			if (r_wsurf.bDiffuseTexture)
+			{
+				WSurfProgramState |= WSURF_DIFFUSE_ENABLED;
+			}
+
+			if (r_wsurf.bLightmapTexture)
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
+			}
+
+			if (r_wsurf.bDetailTexture)
+			{
+				WSurfProgramState |= WSURF_DETAILTEXTURE_ENABLED;
+			}
+
+			if (r_wsurf.bNormalTexture)
+			{
+				WSurfProgramState |= WSURF_NORMALTEXTURE_ENABLED;
+			}
+
+			if (r_wsurf.bParallaxTexture)
+			{
+				WSurfProgramState |= WSURF_PARALLAXTEXTURE_ENABLED;
+			}
+
+			if (r_draw_pass == r_draw_reflect && curwater)
+			{
+				WSurfProgramState |= WSURF_CLIP_UNDER_ENABLED;
+			}
+
+			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			{
+				WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+			}
+
+			if (drawgbuffer)
+			{
+				WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+			}
+
+			if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
+			{
+				WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
+			}
+
+			wsurf_program_t prog = { 0 };
+			R_UseWSurfProgram(WSurfProgramState, &prog);
+
+			if (prog.speed != -1)
+				qglUniform1fARB(prog.speed, 0);
+
+			qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
+
+			R_EndDetailTexture();
+
+			r_wsurf_drawcall++;
+			r_wsurf_polys += texchain.iFaceCount;
+		}
+	}
+
+	//Use scrolling shader
+	if (modcache->vTextureChainScroll.size())
+	{
+		float scrollSpeed = ((*currententity)->curstate.rendercolor.b + ((*currententity)->curstate.rendercolor.g << 8)) / 16.0;
+		if ((*currententity)->curstate.rendercolor.r == 0)
+			scrollSpeed = -scrollSpeed;
+		scrollSpeed *= (*cl_time);
+
+		for (size_t i = 0; i < modcache->vTextureChainScroll.size(); ++i)
+		{
+			auto &texchain = modcache->vTextureChainScroll[i];
+
+			if (texchain.iVertexCount > 0)
+			{
+
+				GL_Bind(texchain.pTexture->gl_texturenum);
+
+				R_BeginDetailTexture(texchain.pTexture->gl_texturenum);
+
+				wsurf_program_t wprog = { 0 };
+
+				int WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_LIGHTMAP_ENABLED;
+
+				if (r_wsurf.bDetailTexture)
+				{
+					WSurfProgramState |= WSURF_DETAILTEXTURE_ENABLED;
+				}
+
+				if (r_wsurf.bNormalTexture)
+				{
+					WSurfProgramState |= WSURF_NORMALTEXTURE_ENABLED;
+				}
+
+				if (r_wsurf.bParallaxTexture)
+				{
+					WSurfProgramState |= WSURF_PARALLAXTEXTURE_ENABLED;
+				}
+
+				if (r_draw_pass == r_draw_reflect && curwater)
+				{
+					WSurfProgramState |= WSURF_CLIP_UNDER_ENABLED;
+				}
+
+				if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+				{
+					WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+				}
+
+				if (drawgbuffer)
+				{
+					WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+				}
+
+				if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
+				{
+					WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
+				}
+
+				wsurf_program_t prog = { 0 };
+				R_UseWSurfProgram(WSurfProgramState, &prog);
+
+				if (prog.speed != -1)
+					qglUniform1fARB(prog.speed, scrollSpeed);
+
+				qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
+
+				R_EndDetailTexture();
+
+				r_wsurf_drawcall++;
+				r_wsurf_polys += texchain.iFaceCount;
+			}
 		}
 	}
 

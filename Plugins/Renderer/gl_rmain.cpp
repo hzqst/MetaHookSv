@@ -1569,7 +1569,7 @@ void R_RenderView_SvEngine(int a1)
 
 		auto time2 = gEngfuncs.GetAbsoluteTime();
 
-		gEngfuncs.Con_Printf("%3ifps %3i ms, %4i brushpolys, %4i brushdraw, %4i studiopolys, %4i studiodraw\n",
+		gEngfuncs.Con_Printf("%3ifps %3i ms, %d brushpolys, %4i brushdraw, %d studiopolys, %4i studiodraw\n",
 			(int)(framerate + 0.5), (int)((time2 - time1) * 1000), 
 			r_wsurf_polys, r_wsurf_drawcall,
 			r_studio_polys, r_studio_drawcall
