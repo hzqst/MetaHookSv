@@ -736,8 +736,6 @@ void R_SetRenderMode(cl_entity_t *pEntity)
 void R_DrawViewModel(void)
 {
 	float lightvec[3];
-	colorVec c;
-	float oldShadows;
 
 	lightvec[0] = -1;
 	lightvec[1] = 0;
@@ -745,63 +743,21 @@ void R_DrawViewModel(void)
 
 	(*currententity) = cl_viewent;
 
-	if (!r_drawviewmodel->value)
+	if (!r_drawviewmodel->value ||
+		gExportfuncs.CL_IsThirdPerson() ||
+		chase_active->value ||
+		(*envmap) ||
+		!r_drawentities->value ||
+		cl_stats[0] <= 0 ||
+		!(*currententity)->model ||
+		r_params.viewentity > r_params.maxclients)
 	{
-		c = R_LightPoint((*currententity)->origin);
+		auto c = R_LightPoint((*currententity)->origin);
 		(*cl_light_level) = (c.r + c.g + c.b) / 3;
 		return;
 	}
 
-	if (gExportfuncs.CL_IsThirdPerson())
-	{
-		c = R_LightPoint((*currententity)->origin);
-		(*cl_light_level) = (c.r + c.g + c.b) / 3;
-		return;
-	}
-
-	if (chase_active->value)
-	{
-		c = R_LightPoint((*currententity)->origin);
-		(*cl_light_level) = (c.r + c.g + c.b) / 3;
-		return;
-	}
-
-	if ((*envmap))
-	{
-		c = R_LightPoint((*currententity)->origin);
-		(*cl_light_level) = (c.r + c.g + c.b) / 3;
-		return;
-	}
-
-	if (!r_drawentities->value)
-	{
-		c = R_LightPoint((*currententity)->origin);
-		(*cl_light_level) = (c.r + c.g + c.b) / 3;
-		return;
-	}
-
-	if (cl_stats[0] <= 0)
-	{
-		c = R_LightPoint((*currententity)->origin);
-		(*cl_light_level) = (c.r + c.g + c.b) / 3;
-		return;
-	}
-
-	if (!(*currententity)->model)
-	{
-		c = R_LightPoint((*currententity)->origin);
-		(*cl_light_level) = (c.r + c.g + c.b) / 3;
-		return;
-	}
-
-	if (r_params.viewentity > r_params.maxclients)
-	{
-		c = R_LightPoint((*currententity)->origin);
-		(*cl_light_level) = (c.r + c.g + c.b) / 3;
-		return;
-	}
-
-	qglDepthRange(0, 0.3f);
+	qglDepthRange(0, 0.3);
 
 	switch ((*currententity)->model->type)
 	{
@@ -810,10 +766,8 @@ void R_DrawViewModel(void)
 		if (!(*cl_weaponstarttime))
 			(*cl_weaponstarttime) = (*cl_time);
 
-		int playernum = r_params.playernum;
-
 		hud_player_info_t hudPlayerInfo;
-		gEngfuncs.pfnGetPlayerInfo(r_params.playernum, &hudPlayerInfo);
+		gEngfuncs.pfnGetPlayerInfo(r_params.playernum + 1, &hudPlayerInfo);
 
 		(*currententity)->curstate.frame = 0;
 		(*currententity)->curstate.framerate = 1;
@@ -821,9 +775,9 @@ void R_DrawViewModel(void)
 		(*currententity)->curstate.animtime = (*cl_weaponstarttime);
 		(*currententity)->curstate.colormap = ((hudPlayerInfo.topcolor) % 0xFFFF) | ((hudPlayerInfo.bottomcolor << 8) % 0xFFFF);
 
-		c = R_LightPoint((*currententity)->origin);
+		auto c = R_LightPoint((*currententity)->origin);
 
-		oldShadows = r_shadows->value;
+		auto oldShadows = r_shadows->value;
 		r_shadows->value = 0;
 		(*cl_light_level) = (c.r + c.g + c.b) / 3;
 		(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER);
@@ -1453,15 +1407,6 @@ void R_PreDrawViewModel(void)
 	if (!r_drawviewmodel->value)
 		return;
 
-	if (gExportfuncs.CL_IsThirdPerson())
-		return;
-
-	if (chase_active->value)
-		return;
-
-	if ((*envmap))
-		return;
-
 	if (!r_drawentities->value)
 		return;
 
@@ -1486,13 +1431,16 @@ void R_PreDrawViewModel(void)
 		(*currententity)->curstate.framerate = 1;
 		(*currententity)->curstate.animtime = (*cl_weaponstarttime);
 
-		auto ent = gEngfuncs.GetEntityByIndex((*currententity)->index);
-		for (int i = 0; i < 4; i++)
+		if (!gExportfuncs.CL_IsThirdPerson() && !chase_active->value && !(*envmap) && cl_stats[0] > 0)
 		{
-			VectorCopy(ent->origin, (*currententity)->attachment[i]);
-		}
+			auto ent = gEngfuncs.GetEntityByIndex((*currententity)->index);
+			for (int i = 0; i < 4; i++)
+			{
+				VectorCopy(ent->origin, (*currententity)->attachment[i]);
+			}
 
-		(*gpStudioInterface)->StudioDrawModel(STUDIO_EVENTS);
+			(*gpStudioInterface)->StudioDrawModel(STUDIO_EVENTS);
+		}
 		break;
 	}
 	}
