@@ -330,6 +330,13 @@ float GlowBlend(cl_entity_t *entity)
 
 int CL_FxBlend(cl_entity_t *entity)
 {
+	//Hack for R_DrawSpriteModel
+
+	if (entity->model && entity->model->type == mod_sprite && entity->curstate.rendermode == kRenderNormal)
+	{
+		return 255;
+	}
+
 	return gRefFuncs.CL_FxBlend(entity);
 }
 

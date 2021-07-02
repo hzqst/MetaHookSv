@@ -613,6 +613,9 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		}
 	}
 
+	//Hack for R_DrawSpriteModel
+	g_pMetaHookAPI->InlineHook(gRefFuncs.CL_FxBlend, CL_FxBlend, (void *&)gRefFuncs.CL_FxBlend);
+
 	return gExportfuncs.HUD_GetStudioModelInterface(version, ppinterface, pstudio);
 }
 

@@ -1436,6 +1436,7 @@ void R_InstallHook(void)
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_GLStudioDrawPoints, R_GLStudioDrawPoints, (void *&)gRefFuncs.R_GLStudioDrawPoints);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawBrushModel, R_DrawBrushModel, (void *&)gRefFuncs.R_DrawBrushModel);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_AddTEntity, R_AddTEntity, (void *&)gRefFuncs.R_AddTEntity);
+	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawTEntitiesOnList, R_DrawTEntitiesOnList, (void *&)gRefFuncs.R_DrawTEntitiesOnList);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DecalShootInternal, R_DecalShootInternal, (void *&)gRefFuncs.R_DecalShootInternal);
 
 }
