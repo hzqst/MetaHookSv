@@ -344,6 +344,9 @@ void R_AddTEntity(cl_entity_t *pEnt)
 {
 	if (pEnt->model && pEnt->model->type == mod_brush && pEnt->curstate.rendermode == kRenderTransAlpha)
 	{
+		if (pEnt->curstate.renderamt == 0)
+			return;
+
 		cl_entity_t *backup_curentity = (*currententity);
 
 		(*currententity) = pEnt;
