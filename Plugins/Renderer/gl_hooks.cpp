@@ -13,7 +13,7 @@
 
 #define R_RENDERSCENE_SIG "\x51\xDB\x05\x2A\x2A\x2A\x2A\xD9\x5C\x24\x00\xD9\x05\x2A\x2A\x2A\x2A\xD8\x5C\x24\x00\xDF\xE0\xF6\xC4\x2A\x2A\x2A\xA1"
 #define R_RENDERSCENE_SIG_NEW "\xE8\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\xE8\x2A\x2A\x2A\x2A\xE8"
-#define R_RENDERSCENE_SIG_SVENGINE "\x83\xEC\x1C\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x18\xE8\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8"
+#define R_RENDERSCENE_SIG_SVENGINE "\xDD\xD8\xDD\xD8\xE8"
 
 #define R_NEWMAP_SIG "\x55\x8B\xEC\x83\xEC\x0C\xC7\x45\xFC\x00\x00\x00\x00\x2A\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC"
 #define R_NEWMAP_SIG_NEW "\x55\x8B\xEC\x83\xEC\x08\xC7\x45\xFC\x00\x00\x00\x00\x2A\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC\x81\x7D\xFC\x00\x01\x00\x00\x2A\x2A\x8B\x4D\xFC"
@@ -261,11 +261,14 @@ void R_FillAddress(void)
 
 		gRefFuncs.R_Clear = NULL;//inlined
 
-		gRefFuncs.R_RenderScene = (void(*)(void))Search_Pattern(R_RENDERSCENE_SIG_SVENGINE);
-		Sig_FuncNotFound(R_RenderScene);
-
 		gRefFuncs.R_RenderView_SvEngine = (void(*)(int))Search_Pattern(R_RENDERVIEW_SIG_SVENGINE);
 		Sig_FuncNotFound(R_RenderView_SvEngine);
+
+		{
+			addr = (DWORD)Search_Pattern_From(R_RenderView_SvEngine, R_RENDERSCENE_SIG_SVENGINE);
+			Sig_AddrNotFound(R_RenderScene);
+			gRefFuncs.R_RenderScene = (void(*)(void))(addr + 5 + 4 + *(int *)(addr + 5));
+		}
 
 		gRefFuncs.R_NewMap = (void(*)(void))Search_Pattern(R_NEWMAP_SIG_SVENGINE);
 		Sig_FuncNotFound(R_NewMap);
@@ -321,14 +324,16 @@ void R_FillAddress(void)
 		gRefFuncs.R_DrawSkyChain = (void(*)(msurface_t *))Search_Pattern(R_DRAWSKYCHAIN_SIG_SVENGINE);
 		Sig_FuncNotFound(R_DrawSkyChain);
 
-		DWORD addr = (DWORD)Search_Pattern(VID_UPDATEWINDOWVARS_SIG_SVENGINE);
-		Sig_AddrNotFound(VID_UpdateWindowVars);
+		{
+			addr = (DWORD)Search_Pattern(VID_UPDATEWINDOWVARS_SIG_SVENGINE);
+			Sig_AddrNotFound(VID_UpdateWindowVars);
 
-		DWORD addr2 = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x50, "\x50\xE8", 2);
-		Sig_AddrNotFound(VID_UpdateWindowVars);
+			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x50, "\x50\xE8", 2);
+			Sig_AddrNotFound(VID_UpdateWindowVars);
 
-		gRefFuncs.VID_UpdateWindowVars = (void(*)(RECT *prc, int x, int y))(addr2 + 2 + 4 + *(int *)(addr2 + 2));
-		Sig_FuncNotFound(VID_UpdateWindowVars);
+			gRefFuncs.VID_UpdateWindowVars = (void(*)(RECT *prc, int x, int y))(addr + 2 + 4 + *(int *)(addr + 2));
+			Sig_FuncNotFound(VID_UpdateWindowVars);
+		}
 
 		gRefFuncs.Mod_PointInLeaf = (mleaf_t *(*)(vec3_t, model_t *))Search_Pattern(MOD_POINTINLEAF_SIG_SVENGINE);
 		Sig_FuncNotFound(Mod_PointInLeaf);
@@ -370,27 +375,31 @@ void R_FillAddress(void)
 		gRefFuncs.R_DecalShootInternal = (decltype(gRefFuncs.R_DecalShootInternal))Search_Pattern(R_DECALSHOTINTERNAL_SVENGINE);
 		Sig_FuncNotFound(R_DecalShootInternal);
 
-		addr = (DWORD)Search_Pattern_From(R_DrawSequentialPoly, R_BEGINDETAILTEXTURE_SVENGINE);
-		Sig_AddrNotFound(R_BeginDetailTexture);
-		addr += sizeof(R_BEGINDETAILTEXTURE_SVENGINE) - 1;
-		addr --;
-		gRefFuncs.R_BeginDetailTexture = (int(*)(int))GetCallAddress(addr);
+		{
+			addr = (DWORD)Search_Pattern_From(R_DrawSequentialPoly, R_BEGINDETAILTEXTURE_SVENGINE);
+			Sig_AddrNotFound(R_BeginDetailTexture);
+			addr += sizeof(R_BEGINDETAILTEXTURE_SVENGINE) - 1;
+			addr--;
+			gRefFuncs.R_BeginDetailTexture = (int(*)(int))GetCallAddress(addr);
+		}
 
 		gRefFuncs.R_RotateForEntity = (void(*)(float *,cl_entity_t *))Search_Pattern(R_ROTATEFORENTITY_SVENGINE);
 		Sig_FuncNotFound(R_RotateForEntity);
 
 #define R_ADDTENTITY_STRING_SIG "Can't add transparent entity. Too many"
-		addr = (DWORD)Search_Pattern(R_ADDTENTITY_STRING_SIG);
-		Sig_AddrNotFound(R_AddTEntity_String);
-		char pattern[] = "\x50\x68\x2A\x2A\x2A\x2A\xE8";
-		*(DWORD *)(pattern + 2) = addr;
-		addr = (DWORD)Search_Pattern(pattern);
-		Sig_AddrNotFound(R_AddTEntity_Call);
+		{
+			addr = (DWORD)Search_Pattern(R_ADDTENTITY_STRING_SIG);
+			Sig_AddrNotFound(R_AddTEntity_String);
+			char pattern[] = "\x50\x68\x2A\x2A\x2A\x2A\xE8";
+			*(DWORD *)(pattern + 2) = addr;
+			addr = (DWORD)Search_Pattern(pattern);
+			Sig_AddrNotFound(R_AddTEntity_Call);
 
-		char pattern2[] = "\xCC\xCC\xCC\x83\xEC";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((PUCHAR)addr - 0x50, 0x50, pattern2, sizeof(pattern2) - 1);
-		Sig_AddrNotFound(R_AddTEntity_Call);
-		gRefFuncs.R_AddTEntity = (decltype(gRefFuncs.R_AddTEntity))(addr + 3);
+			char pattern2[] = "\xCC\xCC\xCC\x83\xEC";
+			addr = (DWORD)g_pMetaHookAPI->SearchPattern((PUCHAR)addr - 0x50, 0x50, pattern2, sizeof(pattern2) - 1);
+			Sig_AddrNotFound(R_AddTEntity_Call);
+			gRefFuncs.R_AddTEntity = (decltype(gRefFuncs.R_AddTEntity))(addr + 3);
+		}
 	}
 	else if (g_dwEngineBuildnum >= 5953)
 	{
@@ -844,14 +853,18 @@ void R_FillAddress(void)
 		Sig_AddrNotFound(rtable);
 		rtable = (decltype(rtable))(*(DWORD *)(addr + 2));
 
-#define R_ORIGIN_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xD9\x1D\x2A\x2A\x2A\x2A\xE8"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x300, R_ORIGIN_SIG_SVENGINE, sizeof(R_ORIGIN_SIG_SVENGINE) - 1);
+#define R_ORIGIN_SIG_SVENGINE "\x83\xBC\x24\xF0\x00\x00\x00\x00\x2A\x2A\xD9\x05"
+		addr = (DWORD)Search_Pattern(R_ORIGIN_SIG_SVENGINE);
 		Sig_AddrNotFound(r_origin);
-		vright = (vec_t *)(*(DWORD *)(addr + 1));
-		vpn = (vec_t *)(*(DWORD *)(addr + 6));
-		vup = (vec_t *)((char *)vpn - sizeof(float[3]));
-		r_refdef = (refdef_t *)(*(DWORD *)(addr + 11) - offsetof(refdef_t, viewangles));
-		r_origin = (vec_t *)(*(DWORD *)(addr + 17) - 8);
+		r_origin = (vec_t *)(*(DWORD *)(addr + sizeof(R_ORIGIN_SIG_SVENGINE) - 1));
+
+#define R_REFDEF_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\xD9\x1D\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x68"
+		addr = (DWORD)Search_Pattern(R_REFDEF_SIG_SVENGINE);
+		vup = (vec_t *)(*(DWORD *)(addr + 1));
+		vright = (vec_t *)(*(DWORD *)(addr + 18));
+		vpn = (vec_t *)(*(DWORD *)(addr + 23));
+		auto r_refdef_viewangles = (vec_t *)(*(DWORD *)(addr + 28));
+		r_refdef = (refdef_t *)((char *)r_refdef_viewangles - offsetof(refdef_t, viewangles));
 
 #define G_USERFOGON_SIG "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\x60\x0B\x00\x00"
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x600, G_USERFOGON_SIG, sizeof(G_USERFOGON_SIG) - 1);
@@ -1091,13 +1104,13 @@ void R_FillAddress(void)
 		Sig_AddrNotFound(r_plightvec);
 		r_plightvec = *(decltype(r_plightvec) *)(addr + 4);
 
-#define GWATERCOLOR_SIG_SVENGINE "\xDB\x05\x2A\x2A\x2A\x2A\x68\x01\x26\x00\x00"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x150, GWATERCOLOR_SIG_SVENGINE, sizeof(GWATERCOLOR_SIG_SVENGINE) - 1);
+#define GWATERCOLOR_SIG_SVENGINE "\xDB\x05\x2A\x2A\x2A\x2A\x68\x01\x26\x00\x00\x68\x65\x0B\x00\x00"
+		addr = (DWORD)Search_Pattern(GWATERCOLOR_SIG_SVENGINE);
 		Sig_AddrNotFound(gWaterColor);
 		gWaterColor = *(decltype(gWaterColor) *)(addr + 2);
 
-#define CSHIFTWATER_SIG_SVENGINE "\xFF\xD7\xA1\x2A\x2A\x2A\x2A\xB9\x00\x06\x00\x00"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x150, CSHIFTWATER_SIG_SVENGINE, sizeof(CSHIFTWATER_SIG_SVENGINE) - 1);
+#define CSHIFTWATER_SIG_SVENGINE "\xFF\x2A\xA1\x2A\x2A\x2A\x2A\xB9\x00\x06\x00\x00"
+		addr = (DWORD)Search_Pattern(CSHIFTWATER_SIG_SVENGINE);
 		Sig_AddrNotFound(cshift_water);
 		cshift_water = *(decltype(cshift_water) *)(addr + 3);
 
