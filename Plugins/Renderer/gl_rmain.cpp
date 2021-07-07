@@ -1732,7 +1732,7 @@ void R_ForceCVars(qboolean mp)
 	if (r_draw_pass)
 		return;
 
-	gRefFuncs.R_ForceCVars(mp);
+	//gRefFuncs.R_ForceCVars(mp);
 }
 
 void R_NewMap(void)

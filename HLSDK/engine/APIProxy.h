@@ -218,11 +218,11 @@ typedef struct
 // ********************************************************
 
 // Function type declarations for engine exports
-typedef HSPRITE						(*pfnEngSrc_pfnSPR_Load_t )			( const char *szPicName );
-typedef int							(*pfnEngSrc_pfnSPR_Frames_t )			( HSPRITE hPic );
-typedef int							(*pfnEngSrc_pfnSPR_Height_t )			( HSPRITE hPic, int frame );
-typedef int							(*pfnEngSrc_pfnSPR_Width_t )			( HSPRITE hPic, int frame );
-typedef void						(*pfnEngSrc_pfnSPR_Set_t )				( HSPRITE hPic, int r, int g, int b );
+typedef int							(*pfnEngSrc_pfnSPR_Load_t )			( const char *szPicName );
+typedef int							(*pfnEngSrc_pfnSPR_Frames_t )			( int hPic );
+typedef int							(*pfnEngSrc_pfnSPR_Height_t )			( int hPic, int frame );
+typedef int							(*pfnEngSrc_pfnSPR_Width_t )			( int hPic, int frame );
+typedef void						(*pfnEngSrc_pfnSPR_Set_t )				( int hPic, int r, int g, int b );
 typedef void						(*pfnEngSrc_pfnSPR_Draw_t )			( int frame, int x, int y, const struct rect_s *prc );
 typedef void						(*pfnEngSrc_pfnSPR_DrawHoles_t )		( int frame, int x, int y, const struct rect_s *prc );
 typedef void						(*pfnEngSrc_pfnSPR_DrawAdditive_t )	( int frame, int x, int y, const struct rect_s *prc );
@@ -231,7 +231,7 @@ typedef void						(*pfnEngSrc_pfnSPR_DisableScissor_t )	( void );
 typedef struct client_sprite_s	*	(*pfnEngSrc_pfnSPR_GetList_t )			( char *psz, int *piCount );
 typedef void						(*pfnEngSrc_pfnFillRGBA_t )			( int x, int y, int width, int height, int r, int g, int b, int a );
 typedef int							(*pfnEngSrc_pfnGetScreenInfo_t ) 		( struct SCREENINFO_s *pscrinfo );
-typedef void						(*pfnEngSrc_pfnSetCrosshair_t )		( HSPRITE hspr, wrect_t rc, int r, int g, int b );
+typedef void						(*pfnEngSrc_pfnSetCrosshair_t )		( int hspr, wrect_t rc, int r, int g, int b );
 typedef struct cvar_s *				(*pfnEngSrc_pfnRegisterVariable_t )	( char *szName, char *szValue, int flags );
 typedef float						(*pfnEngSrc_pfnGetCvarFloat_t )		( char *szName );
 typedef char*						(*pfnEngSrc_pfnGetCvarString_t )		( char *szName );
@@ -283,7 +283,7 @@ typedef int							(*pfnEngSrc_PM_WaterEntity_t )			( float *p );
 typedef struct pmtrace_s *			(*pfnEngSrc_PM_TraceLine_t )			( float *start, float *end, int flags, int usehull, int ignore_pe );
 typedef struct model_s *			(*pfnEngSrc_CL_LoadModel_t )			( const char *modelname, int *index );
 typedef int							(*pfnEngSrc_CL_CreateVisibleEntity_t )	( int type, struct cl_entity_s *ent );
-typedef const struct model_s *		(*pfnEngSrc_GetSpritePointer_t )		( HSPRITE hSprite );
+typedef const struct model_s *		(*pfnEngSrc_GetSpritePointer_t )		( int, int );
 typedef void						(*pfnEngSrc_pfnPlaySoundByNameAtLocation_t )	( char *szSound, float volume, float *origin );
 typedef unsigned short				(*pfnEngSrc_pfnPrecacheEvent_t )		( int type, const char* psz );
 typedef void						(*pfnEngSrc_pfnPlaybackEvent_t )		( int flags, const struct edict_s *pInvoker, unsigned short eventindex, float delay, float *origin, float *angles, float fparam1, float fparam2, int iparam1, int iparam2, int bparam1, int bparam2 );
@@ -495,10 +495,10 @@ typedef struct cl_enginefuncs_s
 
 // Function type declarations for engine destination functions
 typedef void	(*pfnEngDst_pfnSPR_Load_t )				( const char ** );
-typedef void	(*pfnEngDst_pfnSPR_Frames_t )			( HSPRITE * );
-typedef void	(*pfnEngDst_pfnSPR_Height_t )			( HSPRITE *, int * );
-typedef void	(*pfnEngDst_pfnSPR_Width_t )			( HSPRITE *, int * );
-typedef void	(*pfnEngDst_pfnSPR_Set_t )				( HSPRITE *, int *, int *, int * );
+typedef void	(*pfnEngDst_pfnSPR_Frames_t )			( int * );
+typedef void	(*pfnEngDst_pfnSPR_Height_t )			( int *, int * );
+typedef void	(*pfnEngDst_pfnSPR_Width_t )			( int *, int * );
+typedef void	(*pfnEngDst_pfnSPR_Set_t )				( int *, int *, int *, int * );
 typedef void	(*pfnEngDst_pfnSPR_Draw_t )				( int *, int *, int *, const struct rect_s ** );
 typedef void	(*pfnEngDst_pfnSPR_DrawHoles_t )		( int *, int *, int *, const struct rect_s ** );
 typedef void	(*pfnEngDst_pfnSPR_DrawAdditive_t )		( int *, int *, int *, const struct rect_s ** );
@@ -507,7 +507,7 @@ typedef void	(*pfnEngDst_pfnSPR_DisableScissor_t )	( void );
 typedef void	(*pfnEngDst_pfnSPR_GetList_t )			( char **, int ** );
 typedef void	(*pfnEngDst_pfnFillRGBA_t )				( int *, int *, int *, int *, int *, int *, int *, int * );
 typedef void	(*pfnEngDst_pfnGetScreenInfo_t ) 		( struct SCREENINFO_s ** );
-typedef void	(*pfnEngDst_pfnSetCrosshair_t )			( HSPRITE *, struct rect_s *, int *, int *, int * );
+typedef void	(*pfnEngDst_pfnSetCrosshair_t )			( int *, struct rect_s *, int *, int *, int * );
 typedef void	(*pfnEngDst_pfnRegisterVariable_t )		( char **, char **, int * );
 typedef void	(*pfnEngDst_pfnGetCvarFloat_t )			( char ** );
 typedef void	(*pfnEngDst_pfnGetCvarString_t )		( char ** );
@@ -559,7 +559,7 @@ typedef void	(*pfnEngDst_PM_WaterEntity_t )			( float ** );
 typedef void	(*pfnEngDst_PM_TraceLine_t )			( float **, float **, int *, int *, int * );
 typedef void	(*pfnEngDst_CL_LoadModel_t )			( const char **, int ** );
 typedef void	(*pfnEngDst_CL_CreateVisibleEntity_t )	( int *, struct cl_entity_s ** );
-typedef void	(*pfnEngDst_GetSpritePointer_t )		( HSPRITE * );
+typedef void	(*pfnEngDst_GetSpritePointer_t )		( int * );
 typedef void	(*pfnEngDst_pfnPlaySoundByNameAtLocation_t )	( char **, float *, float ** );
 typedef void	(*pfnEngDst_pfnPrecacheEvent_t )		( int *, const char* * );
 typedef void	(*pfnEngDst_pfnPlaybackEvent_t )		( int *, const struct edict_s **, unsigned short *, float *, float **, float **, float *, float *, int *, int *, int *, int * );

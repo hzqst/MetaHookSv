@@ -164,6 +164,7 @@ void R_StudioSaveBones(void);
 void R_GLStudioDrawPoints(void);
 void R_StudioRenderFinal(void);
 
+void studioapi_StudioDrawBones(void);
 void studioapi_SetupRenderer(int rendermode);
 void studioapi_RestoreRenderer(void);
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);

@@ -101,6 +101,7 @@ typedef struct
 	void (*studioapi_SetupRenderer)(int rendermode);
 	void (*studioapi_RestoreRenderer)(void);
 	void (*studioapi_SetupModel)(int bodypart, void **ppbodypart, void **ppsubmodel);
+	void (*studioapi_StudioDrawBones)(void);
 
 	//Client Studio
 	void (__fastcall *StudioSetupBones)(void *pthis, int);

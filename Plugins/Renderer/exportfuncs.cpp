@@ -513,6 +513,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	gRefFuncs.studioapi_SetupRenderer = pstudio->SetupRenderer;
 	gRefFuncs.studioapi_RestoreRenderer = pstudio->RestoreRenderer;
 	gRefFuncs.studioapi_StudioDynamicLight = pstudio->StudioDynamicLight;
+	gRefFuncs.studioapi_StudioDrawBones = pstudio->StudioDrawBones;
 	gRefFuncs.studioapi_SetupModel = pstudio->StudioSetupModel;
 
 	//Vars in Engine Studio API
@@ -583,6 +584,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	InstallHook(studioapi_SetupRenderer);
 	InstallHook(studioapi_RestoreRenderer);
 	InstallHook(studioapi_StudioDynamicLight);
+	InstallHook(studioapi_StudioDrawBones);
 
 	cl_sprite_white = IEngineStudio.Mod_ForName("sprites/white.spr", 1);
 
@@ -606,10 +608,10 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			g_pMetaHookAPI->InlineHook(gRefFuncs.PortalManager_ResetAll, PortalManager_ResetAll, (void *&)gRefFuncs.PortalManager_ResetAll);
 
 #define SVCLIENT_STUDIO_SETUP_BONES_SIG "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x4F\x40"
-			gRefFuncs.StudioSetupBones = (decltype(gRefFuncs.StudioSetupBones))g_pMetaHookAPI->SearchPattern((void *)ClientBase, ClientSize, SVCLIENT_STUDIO_SETUP_BONES_SIG, sizeof(SVCLIENT_STUDIO_SETUP_BONES_SIG) - 1);
-			Sig_FuncNotFound(StudioSetupBones);
+			//gRefFuncs.StudioSetupBones = (decltype(gRefFuncs.StudioSetupBones))g_pMetaHookAPI->SearchPattern((void *)ClientBase, ClientSize, SVCLIENT_STUDIO_SETUP_BONES_SIG, sizeof(SVCLIENT_STUDIO_SETUP_BONES_SIG) - 1);
+			//Sig_FuncNotFound(StudioSetupBones);
 
-			g_pMetaHookAPI->InlineHook(gRefFuncs.StudioSetupBones, StudioSetupBones, (void *&)gRefFuncs.StudioSetupBones);
+			//g_pMetaHookAPI->InlineHook(gRefFuncs.StudioSetupBones, StudioSetupBones, (void *&)gRefFuncs.StudioSetupBones);
 		}
 	}
 

@@ -50,7 +50,6 @@ void IPlugins::LoadEngine(void)
 	g_dwEngineSize = g_pMetaHookAPI->GetEngineSize();
 
 	R_FillAddress();
-	R_InstallHook();
 }
 
 void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
@@ -65,6 +64,8 @@ void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 	{
 		Sys_ErrorEx("Software mode is not supported.");
 	}
+
+	R_InstallHook();
 
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
 	memcpy(&gEngfuncs, g_pMetaSave->pEngineFuncs, sizeof(gEngfuncs));
@@ -85,8 +86,6 @@ void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_Init = HUD_Init;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 	pExportFunc->HUD_DrawNormalTriangles = HUD_DrawNormalTriangles;
-	//pExportFunc->HUD_VidInit = HUD_VidInit;
-	//pExportFunc->HUD_DrawTransparentTriangles = HUD_DrawTransparentTriangles;
 }
 
 void IPlugins::ExitGame(int iResult)
