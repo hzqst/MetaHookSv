@@ -1,0 +1,233 @@
+﻿#pragma once
+#include <unordered_map>
+#include <vector>
+#include "btBulletDynamicsCommon.h"
+#include "studio.h"
+
+class CRigBody
+{
+public:
+	CRigBody()
+	{
+		rigbody = NULL;
+	}
+	CRigBody(btRigidBody *a1, const btVector3 &a2, const btVector3 &a3, int a4) : rigbody(a1), origin(a2), dir(a3), boneindex(a4)
+	{
+
+	}
+
+	btRigidBody *rigbody;
+	btVector3 origin;
+	btVector3 dir;
+	int boneindex;
+};
+
+ATTRIBUTE_ALIGNED16(class)
+CRagdoll
+{
+public:
+	int m_tentindex;
+	std::vector<int> m_keyBones;
+	std::vector<int> m_nonKeyBones;
+	btTransform m_boneRelativeTransform[128];
+	std::unordered_map <std::string, CRigBody> m_rigbodyMap;
+	std::vector <btTypedConstraint *> m_constraintArray;
+};
+
+typedef struct brushvertex_s
+{
+	vec3_t	pos;
+}brushvertex_t;
+
+typedef struct brushface_s
+{
+	int index;
+	int start_vertex;
+	int num_vertexes;
+}brushface_t;
+
+typedef struct indexvertexarray_s
+{
+	indexvertexarray_s()
+	{
+		iNumFaces = 0;
+		iCurFace = 0;
+		iNumVerts = 0;
+		iCurVert = 0;
+		vVertexBuffer = NULL;
+		vFaceBuffer = NULL;
+	}
+
+	int iNumFaces;
+	int iCurFace;
+	int iNumVerts;
+	int iCurVert;
+	brushvertex_t *vVertexBuffer;
+	brushface_t *vFaceBuffer;
+	std::vector<int> vIndiceBuffer;
+}indexvertexarray_t;
+
+#define RAGDOLL_SHAPE_SPHERE 1
+#define RAGDOLL_SHAPE_CAPSULE 2
+
+#define RAGDOLL_CONSTRAINT_CONETWIST 1
+#define RAGDOLL_CONSTRAINT_HINGE 2
+#define RAGDOLL_CONSTRAINT_POINT 3
+
+typedef struct ragdoll_rig_control_s
+{
+	ragdoll_rig_control_s(const char *n, int i, int p, int sh, float off, float s, float s2)
+	{
+		name = n;
+		boneindex = i;
+		pboneindex = p;
+		shape = sh;
+		offset = off;
+		size = s;
+		size2 = s2;
+	}
+	std::string name;
+	int boneindex;
+	int pboneindex;
+	int shape;
+	float offset;
+	float size;
+	float size2;
+}ragdoll_rig_control_t;
+
+typedef struct ragdoll_cst_control_s
+{
+	ragdoll_cst_control_s(const char *n, const char *l, int t, float o1, float o2, float f1, float f2, float f3)
+	{
+		name = n;
+		linktarget = l;
+
+		type = t;
+
+		offset1 = o1;
+		offset2 = o2;
+
+		factor1 = f1;
+		factor2 = f2;
+		factor3 = f3;
+	}
+
+	std::string name;
+	std::string linktarget;
+	int type;
+	float offset1;
+	float offset2;
+	float factor1;
+	float factor2;
+	float factor3;
+}ragdoll_cst_control_t;
+
+typedef struct ragdoll_config_s
+{
+	std::vector<ragdoll_cst_control_t> cstcontrol;
+	std::vector<ragdoll_rig_control_t> rigcontrol;
+}ragdoll_config_t;
+
+ATTRIBUTE_ALIGNED16(class)
+BoneMotionState : public btMotionState
+{
+public:
+	BoneMotionState(const btTransform &bm, const btTransform &om) : bonematrix(bm), offsetmatrix(om)
+	{
+
+	}
+	virtual void getWorldTransform(btTransform& worldTrans) const;
+	virtual void setWorldTransform(const btTransform& worldTrans);
+
+	btTransform bonematrix;
+	btTransform offsetmatrix;
+};
+
+#define BT_LINE_BATCH_SIZE 512
+
+ATTRIBUTE_ALIGNED16(class)
+CPhysicsDebugDraw : public btIDebugDraw
+{
+	int m_debugMode;
+
+	DefaultColors m_ourColors;
+
+public:
+	BT_DECLARE_ALIGNED_ALLOCATOR();
+
+	CPhysicsDebugDraw() :  m_debugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb)
+	{
+	}
+
+	virtual ~CPhysicsDebugDraw()
+	{
+	}
+	virtual DefaultColors getDefaultColors() const
+	{
+		return m_ourColors;
+	}
+	///the default implementation for setDefaultColors has no effect. A derived class can implement it and store the colors.
+	virtual void setDefaultColors(const DefaultColors& colors)
+	{
+		m_ourColors = colors;
+	}
+
+	virtual void drawLine(const btVector3& from1, const btVector3& to1, const btVector3& color1);
+
+	virtual void drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& color)
+	{
+		drawLine(PointOnB, PointOnB + normalOnB * distance, color);
+		btVector3 ncolor(0, 0, 0);
+		drawLine(PointOnB, PointOnB + normalOnB * 0.01, ncolor);
+	}
+
+	virtual void reportErrorWarning(const char* warningString)
+	{
+	}
+
+	virtual void draw3dText(const btVector3& location, const char* textString)
+	{
+	}
+
+	virtual void setDebugMode(int debugMode)
+	{
+		m_debugMode = debugMode;
+	}
+
+	virtual int getDebugMode() const
+	{
+		return m_debugMode;
+	}
+};
+
+class CPhysicsManager
+{
+public:
+	CPhysicsManager();
+	void Init(void);
+	void NewMap(void);
+	void DebugDraw(void);
+	void GenerateIndexedVertexArray(model_t *r_worldmodel, indexvertexarray_t *v);
+	void SetGravity(float velocity);
+	void StepSimulation(double framerate);
+	void ReloadConfig(void);
+	ragdoll_config_t *LoadRagdollConfig(const std::string &modelname);
+	void SetupBones(studiohdr_t *hdr, int tentindex);
+	void RemoveRagdoll(int tentindex);
+	bool CreateRagdoll(int tentindex, model_t *model, studiohdr_t *hdr, float *velocity);
+	bool CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol, CRigBody &rig);
+	btTypedConstraint *CreateConstraint(CRagdoll *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
+private:
+	btDefaultCollisionConfiguration* m_collisionConfiguration;
+	btCollisionDispatcher* m_dispatcher;
+	btBroadphaseInterface* m_overlappingPairCache;
+	btSequentialImpulseConstraintSolver* m_solver;
+	btDiscreteDynamicsWorld* m_dynamicsWorld;
+	CPhysicsDebugDraw *m_debugDraw;
+	std::vector<btRigidBody *> m_staticRigBody;
+	std::unordered_map<int, CRagdoll *> m_ragdollMap;
+	indexvertexarray_t *m_worldmodel_va;
+	std::unordered_map<std::string, ragdoll_config_t *> m_ragdoll_config;
+};
+
+extern CPhysicsManager gPhysicsManager;
