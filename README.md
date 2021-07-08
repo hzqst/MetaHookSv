@@ -120,6 +120,12 @@ You can even play with 200k epolys models and still keep a high framerate.
 
 11. Normal texture and Parallax texture support for BSP terrain and brush model. Check svencoop/maps/restriction02_detail.txt for usage sample.
 
+### BulletPhysics
+
+Bullet physics engine are introduced to perform ragdoll simulatation.
+
+
+
 #### Console Vars
 
 r_hdr 1 / 0 : to enable or disable HDR(high-dynamic-range) post-processor. recommended value : 1
