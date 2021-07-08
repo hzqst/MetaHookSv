@@ -5,6 +5,16 @@
 
 #define FTENT_KILLCALLBACK		0x00100000
 
+bool IsEntityCorpse(cl_entity_t* ent)
+{
+	if (ent->curstate.iuser3 == PhyCorpseFlag1 && ent->curstate.iuser4 == PhyCorpseFlag2)
+	{
+		return true;
+	}
+
+	return false;
+}
+
 CorpseManager gCorpseManager;
 
 CorpseManager::CorpseManager(void)
@@ -81,14 +91,4 @@ TEMPENTITY* CorpseManager::CreateCorpseForEntity(cl_entity_t* ent, model_t *mode
 	m_corpseMap[ent->index] = tempent;
 
 	return tempent;
-}
-
-bool CorpseManager::IsEntityCorpse(cl_entity_t* ent)
-{
-	if (ent->curstate.iuser3 == PhyCorpseFlag1 && ent->curstate.iuser4 == PhyCorpseFlag2)
-	{
-		return true;
-	}
-
-	return false;
 }

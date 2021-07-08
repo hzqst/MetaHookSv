@@ -7,11 +7,8 @@
 #include "qgl.h"
 #include "mathlib.h"
 
-const float G2BScale = 0.02540f;
-const float B2GScale = 1 / 0.02540f;
-const int ValuesX = 0;
-const int ValuesY = 2;
-const int ValuesZ = 1;
+const float G2BScale = 0.1f;
+const float B2GScale = 1 / G2BScale;
 
 extern studiohdr_t **pstudiohdr;
 extern model_t **r_model;
@@ -21,12 +18,94 @@ extern cvar_t *bv_debug;
 extern cvar_t *bv_simrate;
 extern model_t *r_worldmodel;
 
+bool IsEntityCorpse(cl_entity_t* ent);
+
 const float r_identity_matrix[4][4] = {
 	{1.0f, 0.0f, 0.0f, 0.0f},
 	{0.0f, 1.0f, 0.0f, 0.0f},
 	{0.0f, 0.0f, 1.0f, 0.0f},
 	{0.0f, 0.0f, 0.0f, 1.0f}
 };
+
+void Matrix3x4ToTransform(const float matrix3x4[3][4], btTransform &trans)
+{
+	float matrix4x4[4][4] = {
+		{1.0f, 0.0f, 0.0f, 0.0f},
+		{0.0f, 1.0f, 0.0f, 0.0f},
+		{0.0f, 0.0f, 1.0f, 0.0f},
+		{0.0f, 0.0f, 0.0f, 1.0f}
+	};
+	memcpy(matrix4x4, matrix3x4, sizeof(float[3][4]));
+
+	float matrix4x4_transposed[4][4];
+	Matrix4x4_Transpose(matrix4x4_transposed, matrix4x4);
+
+	trans.setFromOpenGLMatrix((float *)matrix4x4_transposed);
+}
+
+void TransformToMatrix3x4(const btTransform &trans, float matrix3x4[3][4])
+{
+	float matrix4x4_transposed[4][4];
+	trans.getOpenGLMatrix((float *)matrix4x4_transposed);
+
+	float matrix4x4[4][4];
+	Matrix4x4_Transpose(matrix4x4, matrix4x4_transposed);
+
+	memcpy(matrix3x4, matrix4x4, sizeof(float[3][4]));
+}
+
+//GoldSrcToBullet Scaling
+
+void FloatGoldSrcToBullet(float *trans)
+{
+	(*trans) *= G2BScale;
+}
+
+void TransformGoldSrcToBullet(btTransform &trans)
+{
+	auto &org = trans.getOrigin();
+
+	org.m_floats[0] *= G2BScale;
+	org.m_floats[1] *= G2BScale;
+	org.m_floats[2] *= G2BScale;
+}
+
+void Vec3GoldSrcToBullet(vec3_t vec)
+{
+	vec[0] *= G2BScale;
+	vec[1] *= G2BScale;
+	vec[2] *= G2BScale;
+}
+
+void Vector3GoldSrcToBullet(btVector3& vec)
+{
+	vec.m_floats[0] *= G2BScale;
+	vec.m_floats[1] *= G2BScale;
+	vec.m_floats[2] *= G2BScale;
+}
+
+//BulletToGoldSrc Scaling
+
+void TransformBulletToGoldSrc(btTransform &trans)
+{
+	trans.getOrigin().m_floats[0] *= B2GScale;
+	trans.getOrigin().m_floats[1] *= B2GScale;
+	trans.getOrigin().m_floats[2] *= B2GScale;
+}
+
+void Vec3BulletToGoldSrc(vec3_t vec)
+{
+	vec[0] *= B2GScale;
+	vec[1] *= B2GScale;
+	vec[2] *= B2GScale;
+}
+
+void Vector3BulletToGoldSrc(btVector3& vec)
+{
+	vec.m_floats[0] *= B2GScale;
+	vec.m_floats[1] *= B2GScale;
+	vec.m_floats[2] *= B2GScale;
+}
 
 void CPhysicsDebugDraw::drawLine(const btVector3& from1, const btVector3& to1, const btVector3& color1)
 {
@@ -39,8 +118,12 @@ void CPhysicsDebugDraw::drawLine(const btVector3& from1, const btVector3& to1, c
 	gEngfuncs.pTriAPI->Color4f(color1.getX(), color1.getY(), color1.getZ(), 1.0f);
 	gEngfuncs.pTriAPI->Begin(TRI_LINES);
 
-	float from[3] = { from1.getX(), from1.getY(), from1.getZ() };
-	float to[3] = { to1.getX(), to1.getY(), to1.getZ() };
+	vec3_t from = { from1.getX(), from1.getY(), from1.getZ() };
+	vec3_t to = { to1.getX(), to1.getY(), to1.getZ() };
+
+	Vec3BulletToGoldSrc(from);
+	Vec3BulletToGoldSrc(to);
+
 	gEngfuncs.pTriAPI->Vertex3fv(from);
 	gEngfuncs.pTriAPI->Vertex3fv(to);
 	gEngfuncs.pTriAPI->End();
@@ -110,6 +193,7 @@ void CPhysicsManager::GenerateIndexedVertexArray(model_t *mod, indexvertexarray_
 					pVertexes[j].pos[0] = v[0];
 					pVertexes[j].pos[1] = v[1];
 					pVertexes[j].pos[2] = v[2];
+					Vec3GoldSrcToBullet(pVertexes[j].pos);
 				}
 				memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[0], sizeof(brushvertex_t)); va->iCurVert++;
 				memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[1], sizeof(brushvertex_t)); va->iCurVert++;
@@ -122,6 +206,8 @@ void CPhysicsManager::GenerateIndexedVertexArray(model_t *mod, indexvertexarray_
 					pVertexes[2].pos[0] = v[0];
 					pVertexes[2].pos[1] = v[1];
 					pVertexes[2].pos[2] = v[2];
+					Vec3GoldSrcToBullet(pVertexes[2].pos);
+
 					memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[0], sizeof(brushvertex_t)); va->iCurVert++;
 					memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[1], sizeof(brushvertex_t)); va->iCurVert++;
 					memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[2], sizeof(brushvertex_t)); va->iCurVert++;
@@ -170,6 +256,7 @@ void CPhysicsManager::GenerateIndexedVertexArray(model_t *mod, indexvertexarray_
 					pVertexes[j].pos[0] = v[0];
 					pVertexes[j].pos[1] = v[1];
 					pVertexes[j].pos[2] = v[2];
+					Vec3GoldSrcToBullet(pVertexes[j].pos);
 				}
 				memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[0], sizeof(brushvertex_t)); va->iCurVert++;
 				memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[1], sizeof(brushvertex_t)); va->iCurVert++;
@@ -182,6 +269,8 @@ void CPhysicsManager::GenerateIndexedVertexArray(model_t *mod, indexvertexarray_
 					pVertexes[2].pos[0] = v[0];
 					pVertexes[2].pos[1] = v[1];
 					pVertexes[2].pos[2] = v[2];
+					Vec3GoldSrcToBullet(pVertexes[2].pos);
+
 					memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[0], sizeof(brushvertex_t)); va->iCurVert++;
 					memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[1], sizeof(brushvertex_t)); va->iCurVert++;
 					memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[2], sizeof(brushvertex_t)); va->iCurVert++;
@@ -310,6 +399,8 @@ void CPhysicsManager::CreateForBrushModel(cl_entity_t *ent)
 				btTransform worldtrans;
 				worldtrans.setFromOpenGLMatrix((float *)matrix_transposed);
 
+				TransformGoldSrcToBullet(worldtrans);
+
 				staticbody->m_rigbody->setWorldTransform(worldtrans);
 			}
 		}
@@ -352,31 +443,72 @@ void CPhysicsManager::Init(void)
 
 void CPhysicsManager::DebugDraw(void)
 {
-	for (auto &p : m_staticMap)
+	if (bv_debug->value)
 	{
-		auto &staticbody = p.second;
-
-		if (staticbody->m_entindex)
+		for (auto &p : m_staticMap)
 		{
-			btVector3 color(0, 0.75, 0.75f);
-			m_dynamicsWorld->debugDrawObject(staticbody->m_rigbody->getWorldTransform(), staticbody->m_rigbody->getCollisionShape(), color);
+			auto &staticbody = p.second;
+
+			if (staticbody->m_entindex)
+			{
+				btVector3 color(0, 0.75, 0.75f);
+				m_dynamicsWorld->debugDrawObject(staticbody->m_rigbody->getWorldTransform(), staticbody->m_rigbody->getCollisionShape(), color);
+			}
+			else if (bv_debug->value >= 2)
+			{
+				btVector3 color(0.25, 0.25, 0.25f);
+				m_dynamicsWorld->debugDrawObject(staticbody->m_rigbody->getWorldTransform(), staticbody->m_rigbody->getCollisionShape(), color);
+			}
+		}
+
+		for (auto &p : m_ragdollMap)
+		{
+			auto &rigmap = p.second->m_rigbodyMap;
+			for (auto &rig : rigmap)
+			{
+				auto rigbody = rig.second->rigbody;
+
+				btVector3 color(1, 1, 1);
+				m_dynamicsWorld->debugDrawObject(rigbody->getWorldTransform(), rigbody->getCollisionShape(), color);
+			}
+			auto &cstarray = p.second->m_constraintArray;
+
+			for (auto p : cstarray)
+			{
+				m_dynamicsWorld->debugDrawConstraint(p);
+			}
 		}
 	}
+}
 
-	for (auto &p : m_ragdollMap)
+void CPhysicsManager::SynchronizeTempEntntity(TEMPENTITY **ppTempEntActive)
+{
+	auto pTemp = *ppTempEntActive;
+
+	while (pTemp)
 	{
-		auto &rigmap = p.second->m_rigbodyMap;
-		for (auto &r : rigmap)
+		auto life = pTemp->die - gEngfuncs.GetClientTime();
+		if (life > 0 && 
+			pTemp->entity.model && 
+			IsEntityCorpse(&pTemp->entity))
 		{
-			btVector3 color(1, 1, 1);
-			m_dynamicsWorld->debugDrawObject(r.second.rigbody->getWorldTransform(), r.second.rigbody->getCollisionShape(), color);
-		}
-		auto &cstarray = p.second->m_constraintArray;
+			auto ragdoll = FindRagdoll(pTemp->entity.index);
+			if (ragdoll && ragdoll->m_pelvisRigBody)
+			{
+				auto worldtrans = ragdoll->m_pelvisRigBody->rigbody->getWorldTransform();
 
-		for (auto p : cstarray)
-		{
-			m_dynamicsWorld->debugDrawConstraint(p);
+				auto bullet_worldpos = worldtrans.getOrigin();
+
+				vec3_t goldsrc_worldpos = { bullet_worldpos.x(), bullet_worldpos.y(), bullet_worldpos.z() };
+
+				Vec3BulletToGoldSrc(goldsrc_worldpos);
+
+				VectorCopy(goldsrc_worldpos, pTemp->entity.origin);
+				VectorCopy(goldsrc_worldpos, pTemp->entity.curstate.origin);
+			}
 		}
+		
+		pTemp = pTemp->next;
 	}
 }
 
@@ -392,7 +524,11 @@ void CPhysicsManager::StepSimulation(double frametime)
 
 void CPhysicsManager::SetGravity(float velocity)
 {
-	m_dynamicsWorld->setGravity(btVector3(0, 0, -velocity));
+	float goldsrc_velocity = -velocity;
+
+	FloatGoldSrcToBullet(&goldsrc_velocity);
+
+	m_dynamicsWorld->setGravity(btVector3(0, 0, goldsrc_velocity));
 }
 
 void CPhysicsManager::ReloadConfig(void)
@@ -618,33 +754,6 @@ void BoneMotionState::setWorldTransform(const btTransform& worldTrans)
 	bonematrix.mult(worldTrans, offsetmatrix.inverse());
 }
 
-void Matrix3x4ToTransform(const float matrix3x4[3][4] , btTransform &trans)
-{
-	float matrix4x4[4][4] = {
-		{1.0f, 0.0f, 0.0f, 0.0f},
-		{0.0f, 1.0f, 0.0f, 0.0f},
-		{0.0f, 0.0f, 1.0f, 0.0f},
-		{0.0f, 0.0f, 0.0f, 1.0f}
-	};
-	memcpy(matrix4x4, matrix3x4, sizeof(float[3][4]));
-
-	float matrix4x4_transposed[4][4];
-	Matrix4x4_Transpose(matrix4x4_transposed, matrix4x4);
-
-	trans.setFromOpenGLMatrix((float *)matrix4x4_transposed);
-}
-
-void TransformToMatrix3x4(const btTransform &trans, float matrix3x4[3][4])
-{
-	float matrix4x4_transposed[4][4];
-	trans.getOpenGLMatrix((float *)matrix4x4_transposed);
-
-	float matrix4x4[4][4];
-	Matrix4x4_Transpose(matrix4x4, matrix4x4_transposed);
-
-	memcpy(matrix3x4, matrix4x4, sizeof(float[3][4]));
-}
-
 btQuaternion FromToRotaion(btVector3 fromDirection, btVector3 toDirection)
 {
 	fromDirection = fromDirection.normalize();
@@ -710,13 +819,19 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdoll *ragdoll, studiohd
 		return NULL;
 	}
 
+	float offset1 = cstcontrol->offset1;
+	FloatGoldSrcToBullet(&offset1);
+
+	float offset2 = cstcontrol->offset2;
+	FloatGoldSrcToBullet(&offset2);
+
 	auto rig1 = itor->second;
 	auto rig2 = itor2->second;
 
 	if (cstcontrol->type == RAGDOLL_CONSTRAINT_CONETWIST)
 	{
-		auto origin1 = rig1.origin + rig1.dir * cstcontrol->offset1;
-		auto origin2 = rig2.origin + rig2.dir * cstcontrol->offset2;
+		auto origin1 = rig1->origin + rig1->dir * offset1;
+		auto origin2 = rig2->origin + rig2->dir * offset2;
 
 		btTransform matrix1;
 		matrix1.setIdentity();
@@ -725,8 +840,8 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdoll *ragdoll, studiohd
 		btVector3 fwd(1, 0, 0);
 		auto jointtrans = MatrixLookAt(matrix1, origin2, fwd);
 
-		auto inv1 = rig1.rigbody->getWorldTransform().inverse();
-		auto inv2 = rig2.rigbody->getWorldTransform().inverse();
+		auto inv1 = rig1->rigbody->getWorldTransform().inverse();
+		auto inv2 = rig2->rigbody->getWorldTransform().inverse();
 
 		btTransform localrig1;
 		localrig1.mult(inv1, jointtrans);
@@ -734,7 +849,7 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdoll *ragdoll, studiohd
 		btTransform localrig2;
 		localrig2.mult(inv2, jointtrans);
 
-		auto cst = new btConeTwistConstraint(*rig1.rigbody, *rig2.rigbody, localrig1, localrig2);
+		auto cst = new btConeTwistConstraint(*rig1->rigbody, *rig2->rigbody, localrig1, localrig2);
 		cst->setDbgDrawSize(20);
 		cst->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, cstcontrol->factor3 * M_PI);
 
@@ -742,8 +857,8 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdoll *ragdoll, studiohd
 	}
 	else if (cstcontrol->type == RAGDOLL_CONSTRAINT_HINGE)
 	{
-		auto origin1 = rig1.origin + rig1.dir * cstcontrol->offset1;
-		auto origin2 = rig2.origin + rig2.dir * cstcontrol->offset2;
+		auto origin1 = rig1->origin + rig1->dir * offset1;
+		auto origin2 = rig2->origin + rig2->dir * offset2;
 
 		btTransform matrix1;
 		matrix1.setIdentity();
@@ -752,8 +867,8 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdoll *ragdoll, studiohd
 		btVector3 fwd(0, 0, 1);
 		auto jointtrans = MatrixLookAt(matrix1, origin2, fwd);
 
-		auto inv1 = rig1.rigbody->getWorldTransform().inverse();
-		auto inv2 = rig2.rigbody->getWorldTransform().inverse();
+		auto inv1 = rig1->rigbody->getWorldTransform().inverse();
+		auto inv2 = rig2->rigbody->getWorldTransform().inverse();
 
 		btTransform localrig1;
 		localrig1.mult(inv1, jointtrans);
@@ -761,7 +876,7 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdoll *ragdoll, studiohd
 		btTransform localrig2;
 		localrig2.mult(inv2, jointtrans);
 
-		auto cst = new btHingeConstraint(*rig1.rigbody, *rig2.rigbody, localrig1, localrig2);
+		auto cst = new btHingeConstraint(*rig1->rigbody, *rig2->rigbody, localrig1, localrig2);
 		cst->setAxis(fwd);
 		cst->setDbgDrawSize(20);
 		cst->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI);
@@ -770,13 +885,13 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdoll *ragdoll, studiohd
 	}
 	else if (cstcontrol->type == RAGDOLL_CONSTRAINT_POINT)
 	{
-		auto origin1 = rig1.origin + rig1.dir * cstcontrol->offset1;
-		auto origin2 = rig2.origin + rig2.dir * cstcontrol->offset2;
+		auto origin1 = rig1->origin + rig1->dir * offset1;
+		auto origin2 = rig2->origin + rig2->dir * offset2;
 
-		btVector3 local1 = rig1.rigbody->getWorldTransform().inverse() * origin1;
-		btVector3 local2 = rig1.rigbody->getWorldTransform().inverse() * origin2;
+		btVector3 local1 = rig1->rigbody->getWorldTransform().inverse() * origin1;
+		btVector3 local2 = rig1->rigbody->getWorldTransform().inverse() * origin2;
 
-		auto cst = new btPoint2PointConstraint(*rig1.rigbody, *rig2.rigbody, local1, local2);		
+		auto cst = new btPoint2PointConstraint(*rig1->rigbody, *rig2->rigbody, local1, local2);		
 		cst->setDbgDrawSize(20);
 		return cst;
 	}
@@ -785,47 +900,52 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdoll *ragdoll, studiohd
 	return NULL;
 }
 
-bool CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol, CRigBody &rig)
+CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol)
 {
 	if (rigcontrol->boneindex >= studiohdr->numbones)
 	{
 		gEngfuncs.Con_Printf("CreateRigBody: Failed to create rigbody for bone %s, boneindex too large (%d >= %d)\n", rigcontrol->name.c_str(), rigcontrol->boneindex, studiohdr->numbones);
-		return false;
+		return NULL;
 	}
 
 	if (rigcontrol->pboneindex >= studiohdr->numbones)
 	{
 		gEngfuncs.Con_Printf("CreateRigBody: Failed to create rigbody for bone %s, pboneindex too large (%d >= %d)\n", rigcontrol->name.c_str(), rigcontrol->pboneindex, studiohdr->numbones);
-		return false;
+		return NULL;
 	}
 
 	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->boneindex);
 
 	btTransform bonematrix, offsetmatrix;
 	Matrix3x4ToTransform((*pbonetransform)[rigcontrol->boneindex], bonematrix);
-	
+	TransformGoldSrcToBullet(bonematrix);
+
 	auto boneorigin = bonematrix.getOrigin();
 	
-	btVector3 pboneorigin;
-	pboneorigin.setX((*pbonetransform)[rigcontrol->pboneindex][0][3]);
-	pboneorigin.setY((*pbonetransform)[rigcontrol->pboneindex][1][3]);
-	pboneorigin.setZ((*pbonetransform)[rigcontrol->pboneindex][2][3]);
+	btVector3 pboneorigin((*pbonetransform)[rigcontrol->pboneindex][0][3], (*pbonetransform)[rigcontrol->pboneindex][1][3], (*pbonetransform)[rigcontrol->pboneindex][2][3]);
+	Vector3GoldSrcToBullet(pboneorigin);
 
 	btVector3 dir = pboneorigin - boneorigin;
 	dir = dir.normalize();
 
-	btTransform rigidtransform;
+	float offset = rigcontrol->offset;
+	FloatGoldSrcToBullet(&offset);
 
 	auto origin = bonematrix.getOrigin();
-	origin = origin + dir * rigcontrol->offset;	
+
+	origin = origin + dir * offset;
 
 	if (rigcontrol->shape == RAGDOLL_SHAPE_SPHERE)
 	{
+		btTransform rigidtransform;
 		rigidtransform.setIdentity();
 		rigidtransform.setOrigin(origin);
 		offsetmatrix.mult(bonematrix.inverse(), rigidtransform);
 
-		auto shape = new btSphereShape(rigcontrol->size);
+		float rigsize = rigcontrol->size;
+		FloatGoldSrcToBullet(&rigsize);
+
+		auto shape = new btSphereShape(rigsize);
 
 		BoneMotionState* motionState = new BoneMotionState(bonematrix, offsetmatrix);
 		
@@ -835,25 +955,31 @@ bool CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_
 
 		btRigidBody::btRigidBodyConstructionInfo cInfo(mass, motionState, shape, localInertia);
 
-		rig.rigbody = new btRigidBody(cInfo);
-		rig.origin = origin;
-		rig.dir = dir;
-		rig.boneindex = rigcontrol->boneindex;
+		auto rig = new CRigBody;
 
-		return true;
+		rig->rigbody = new btRigidBody(cInfo);
+		rig->origin = origin;
+		rig->dir = dir;
+		rig->boneindex = rigcontrol->boneindex;
+
+		return rig;
 	}
 	else if (rigcontrol->shape == RAGDOLL_SHAPE_CAPSULE)
 	{
-		float height = rigcontrol->size2;
+		float rigsize = rigcontrol->size;
+		FloatGoldSrcToBullet(&rigsize);
+
+		float rigsize2 = rigcontrol->size2;
+		FloatGoldSrcToBullet(&rigsize2);
 
 		auto bonematrix2 = bonematrix;
 		bonematrix2.setOrigin(origin);
 		
 		btVector3 fwd(0, 1, 0);
-		rigidtransform = MatrixLookAt(bonematrix2, pboneorigin, fwd);
+		auto rigidtransform = MatrixLookAt(bonematrix2, pboneorigin, fwd);
 		offsetmatrix.mult(bonematrix.inverse(), rigidtransform);
 
-		auto shape = new btCapsuleShape(rigcontrol->size, height);
+		auto shape = new btCapsuleShape(rigsize, rigsize2);
 
 		BoneMotionState* motionState = new BoneMotionState(bonematrix, offsetmatrix);
 
@@ -863,16 +989,18 @@ bool CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_
 
 		btRigidBody::btRigidBodyConstructionInfo cInfo(mass, motionState, shape, localInertia);
 
-		rig.rigbody = new btRigidBody(cInfo);
-		rig.origin = origin;
-		rig.dir = dir;
-		rig.boneindex = rigcontrol->boneindex;
+		auto rig = new CRigBody;
 
-		return true;
+		rig->rigbody = new btRigidBody(cInfo);
+		rig->origin = origin;
+		rig->dir = dir;
+		rig->boneindex = rigcontrol->boneindex;
+
+		return rig;
 	}
 
 	gEngfuncs.Con_Printf("CreateRigBody: Failed to create rigbody %s, invalid shape type %d\n", rigcontrol->name.c_str(), rigcontrol->shape);
-	return false;
+	return NULL;
 }
 
 void CPhysicsManager::RemoveIndexedVertexArray()
@@ -922,8 +1050,9 @@ void CPhysicsManager::RemoveAllRagdolls()
 
 		for (auto p : ragdoll->m_rigbodyMap)
 		{
-			m_dynamicsWorld->removeRigidBody(p.second.rigbody);
-			delete p.second.rigbody;
+			m_dynamicsWorld->removeRigidBody(p.second->rigbody);
+			delete p.second->rigbody;
+			delete p.second;
 		}
 
 		ragdoll->m_rigbodyMap.clear();
@@ -955,8 +1084,8 @@ void CPhysicsManager::RemoveRagdoll(int tentindex)
 
 	for (auto p : ragdoll->m_rigbodyMap)
 	{
-		m_dynamicsWorld->removeRigidBody(p.second.rigbody);
-		delete p.second.rigbody;
+		m_dynamicsWorld->removeRigidBody(p.second->rigbody);
+		delete p.second;
 	}
 
 	ragdoll->m_rigbodyMap.clear();
@@ -980,17 +1109,21 @@ void CPhysicsManager::SetupBones(studiohdr_t *hdr, int tentindex)
 
 	auto ragdoll = itor->second;
 
-	for (auto &rig : ragdoll->m_rigbodyMap)
+	for (auto &p : ragdoll->m_rigbodyMap)
 	{
-		auto rigbody = rig.second.rigbody;
+		auto rig = p.second;
 
-		auto motionState = (BoneMotionState *)rig.second.rigbody->getMotionState();
+		auto motionState = (BoneMotionState *)rig->rigbody->getMotionState();
 
-		float bonematrix[3][4];
-		TransformToMatrix3x4(motionState->bonematrix, bonematrix);
+		auto bonematrix = motionState->bonematrix;
 
-		memcpy((*pbonetransform)[rig.second.boneindex], bonematrix, sizeof(float[3][4]));
-		memcpy((*plighttransform)[rig.second.boneindex], bonematrix, sizeof(float[3][4]));
+		TransformBulletToGoldSrc(bonematrix);
+
+		float bonematrix_3x4[3][4];
+		TransformToMatrix3x4(bonematrix, bonematrix_3x4);
+
+		memcpy((*pbonetransform)[rig->boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
+		memcpy((*plighttransform)[rig->boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
 	}
 
 	for (size_t index = 0; index < ragdoll->m_nonKeyBones.size(); index++)
@@ -1004,21 +1137,31 @@ void CPhysicsManager::SetupBones(studiohdr_t *hdr, int tentindex)
 		btTransform parentmatrix;
 		Matrix3x4ToTransform(parentmatrix3x4, parentmatrix);
 
-		btTransform matrix;
-		matrix = parentmatrix * ragdoll->m_boneRelativeTransform[i];
+		btTransform mergedmatrix;
+		mergedmatrix = parentmatrix * ragdoll->m_boneRelativeTransform[i];
 
-		TransformToMatrix3x4(matrix, (*pbonetransform)[i]);
+		TransformToMatrix3x4(mergedmatrix, (*pbonetransform)[i]);
 	}
+}
+
+CRagdoll *CPhysicsManager::FindRagdoll(int tentindex)
+{
+	auto itor = m_ragdollMap.find(tentindex);
+
+	if (itor != m_ragdollMap.end())
+	{
+		return itor->second;
+	}
+
+	return NULL;
 }
 
 bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_t *model, studiohdr_t *studiohdr, float *velocity)
 {
-	auto itor = m_ragdollMap.find(tentindex);
-	
-	if(itor != m_ragdollMap.end())
+	if(FindRagdoll(tentindex))
 	{
 		gEngfuncs.Con_Printf("CreateRagdoll: Already exists\n");
-		return false;
+		return true;
 	}
 
 	std::string modelname(model->name);
@@ -1026,6 +1169,8 @@ bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_
 	auto ragdoll = new CRagdoll();
 
 	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->boneindex);
+
+	//Save bone relative transform
 
 	for (int i = 0; i < studiohdr->numbones; ++i)
 	{
@@ -1058,21 +1203,26 @@ bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_
 	{
 		auto rigcontrol = &cfg->rigcontrol[i];
 
-		CRigBody rig;
-		if (CreateRigBody(studiohdr, rigcontrol, rig))
+		CRigBody *rig = CreateRigBody(studiohdr, rigcontrol);
+		if (rig)
 		{
 			ragdoll->m_keyBones.emplace_back(rigcontrol->boneindex);
 			ragdoll->m_rigbodyMap[rigcontrol->name] = rig;
 
+			if (rigcontrol->name == "Pelvis")
+				ragdoll->m_pelvisRigBody = rig;
+
 			btVector3 vel(velocity[0], velocity[1], velocity[2]);
 
-			rig.rigbody->setLinearVelocity(vel);
+			Vector3GoldSrcToBullet(vel);
 
-			rig.rigbody->setFriction(0.25f);
+			rig->rigbody->setLinearVelocity(vel);
 
-			rig.rigbody->setRollingFriction(0.25f);
+			rig->rigbody->setFriction(0.25f);
 
-			m_dynamicsWorld->addRigidBody(rig.rigbody);
+			rig->rigbody->setRollingFriction(0.25f);
+
+			m_dynamicsWorld->addRigidBody(rig->rigbody);
 		}
 	}
 
@@ -1091,6 +1241,7 @@ bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_
 		if (cst)
 		{
 			ragdoll->m_constraintArray.emplace_back(cst);
+
 			m_dynamicsWorld->addConstraint(cst, true);
 		}
 	}

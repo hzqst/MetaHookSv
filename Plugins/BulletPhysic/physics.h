@@ -30,13 +30,15 @@ public:
 	CRagdoll()
 	{
 		m_tentindex = -1;
+		m_pelvisRigBody = NULL;
 	}
 
 	int m_tentindex;
+	CRigBody *m_pelvisRigBody;
 	std::vector<int> m_keyBones;
 	std::vector<int> m_nonKeyBones;
 	btTransform m_boneRelativeTransform[128];
-	std::unordered_map <std::string, CRigBody> m_rigbodyMap;
+	std::unordered_map <std::string, CRigBody *> m_rigbodyMap;
 	std::vector <btTypedConstraint *> m_constraintArray;
 };
 
@@ -239,11 +241,13 @@ public:
 	void RemoveAllStatics(); 
 	void RemoveIndexedVertexArray();
 	bool CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_t *model, studiohdr_t *hdr, float *velocity);
-	bool CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol, CRigBody &rig);
+	CRigBody *CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol);
 	btTypedConstraint *CreateConstraint(CRagdoll *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
 	void CreateStatic(int entindex, indexvertexarray_t *va);
 	void CreateForBrushModel(cl_entity_t *ent);
 	void RotateForEntity(cl_entity_t *ent, float matrix[4][4]);
+	void SynchronizeTempEntntity(TEMPENTITY **ppTempEntActive);
+	CRagdoll *FindRagdoll(int tentindex);
 private:
 	btDefaultCollisionConfiguration* m_collisionConfiguration;
 	btCollisionDispatcher* m_dispatcher;

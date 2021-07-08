@@ -26,7 +26,7 @@ model_t *r_worldmodel = NULL;
 float(*pbonetransform)[MAXSTUDIOBONES][3][4] = NULL;
 float(*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;
 
-vec3_t velocity;
+bool IsEntityCorpse(cl_entity_t* ent);
 
 void Sys_ErrorEx(const char *fmt, ...)
 {
@@ -56,7 +56,7 @@ int Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 
 void __fastcall StudioSetupBones(void *pthis, int)
 {
-	if(gCorpseManager.IsEntityCorpse(IEngineStudio.GetCurrentEntity()))
+	if(IsEntityCorpse(IEngineStudio.GetCurrentEntity()))
 	{
 		gPhysicsManager.SetupBones((*pstudiohdr), IEngineStudio.GetCurrentEntity()->index);
 		return;
@@ -93,6 +93,14 @@ int StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 						tempent = gCorpseManager.CreateCorpseForEntity(currententity, (*r_model));
 						if (tempent)
 						{
+							float frametime = currententity->curstate.animtime - currententity->latched.prevanimtime;
+
+							vec3_t velocity;
+							VectorSubtract(currententity->curstate.origin, currententity->latched.prevorigin, velocity);
+							velocity[0] /= frametime;
+							velocity[1] /= frametime;
+							velocity[2] /= frametime;
+
 							if (gPhysicsManager.CreateRagdoll(cfg, tempent->entity.index, (*r_model), (*pstudiohdr), velocity))
 							{
 								bRagdoll = true;
@@ -119,6 +127,18 @@ int StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 	return gPrivateFuncs.StudioDrawPlayer(flags, pplayer);
 }
 
+/*int StudioCheckBBox(void)
+{
+	auto currententity = IEngineStudio.GetCurrentEntity();
+	if (gCorpseManager.IsEntityCorpse(currententity))
+	{
+
+		return true;
+	}
+
+	return IEngineStudio.StudioCheckBBox();
+}*/
+
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
 {
 	memcpy(&IEngineStudio, pstudio, sizeof(IEngineStudio));
@@ -138,6 +158,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	plighttransform = (float(*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetLightTransform();
 
 	g_pMetaHookAPI->InlineHook(gPrivateFuncs.StudioSetupBones, StudioSetupBones, (void *&)gPrivateFuncs.StudioSetupBones);
+	//g_pMetaHookAPI->InlineHook(IEngineStudio.StudioCheckBBox, StudioCheckBBox, (void *&)IEngineStudio.StudioCheckBBox);
 
 	gPrivateFuncs.StudioDrawPlayer = (*ppinterface)->StudioDrawPlayer;
 	(*ppinterface)->StudioDrawPlayer = StudioDrawPlayer;
@@ -183,6 +204,7 @@ void HUD_TempEntUpdate(
 	{
 		gPhysicsManager.SetGravity(cl_gravity);
 		gPhysicsManager.StepSimulation(frametime);
+		gPhysicsManager.SynchronizeTempEntntity(ppTempEntActive);
 	}
 
 	return gExportfuncs.HUD_TempEntUpdate(frametime, client_time, cl_gravity, ppTempEntFree, ppTempEntActive, Callback_AddVisibleEntity, Callback_TempEntPlaySound);
@@ -192,6 +214,5 @@ void HUD_DrawTransparentTriangles(void)
 {
 	gExportfuncs.HUD_DrawTransparentTriangles();
 
-	if(bv_debug->value)
-		gPhysicsManager.DebugDraw();
+	gPhysicsManager.DebugDraw();
 }
