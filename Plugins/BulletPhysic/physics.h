@@ -4,9 +4,11 @@
 #include "btBulletDynamicsCommon.h"
 #include "studio.h"
 
-class CRigBody
+ATTRIBUTE_ALIGNED16(class)
+CRigBody
 {
 public:
+	BT_DECLARE_ALIGNED_ALLOCATOR();
 	CRigBody()
 	{
 		rigbody = NULL;
@@ -42,19 +44,6 @@ public:
 	std::vector <btTypedConstraint *> m_constraintArray;
 };
 
-ATTRIBUTE_ALIGNED16(class)
-CStaticBody
-{
-public:
-	BT_DECLARE_ALIGNED_ALLOCATOR();
-	CStaticBody()
-	{
-		m_entindex = -1;
-	}
-	int m_entindex;
-	btRigidBody *m_rigbody;
-};
-
 typedef struct brushvertex_s
 {
 	vec3_t	pos;
@@ -87,6 +76,21 @@ typedef struct indexvertexarray_s
 	brushface_t *vFaceBuffer;
 	std::vector<int> vIndiceBuffer;
 }indexvertexarray_t;
+
+ATTRIBUTE_ALIGNED16(class)
+CStaticBody
+{
+public:
+	BT_DECLARE_ALIGNED_ALLOCATOR();
+	CStaticBody()
+	{
+		m_entindex = -1;
+		m_iva = NULL;
+	}
+	int m_entindex;
+	btRigidBody *m_rigbody;
+	indexvertexarray_t *m_iva;
+};
 
 #define RAGDOLL_SHAPE_SPHERE 1
 #define RAGDOLL_SHAPE_CAPSULE 2
@@ -239,7 +243,6 @@ public:
 	void RemoveRagdoll(int tentindex);
 	void RemoveAllRagdolls();
 	void RemoveAllStatics(); 
-	void RemoveIndexedVertexArray();
 	bool CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_t *model, studiohdr_t *hdr, float *velocity);
 	CRigBody *CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol);
 	btTypedConstraint *CreateConstraint(CRagdoll *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
@@ -255,8 +258,6 @@ private:
 	btSequentialImpulseConstraintSolver* m_solver;
 	btDiscreteDynamicsWorld* m_dynamicsWorld;
 	CPhysicsDebugDraw *m_debugDraw;
-	indexvertexarray_t *m_worldmodel_iva;
-	std::unordered_map<int, indexvertexarray_t *> m_brushmodel_iva;
 	std::unordered_map<int, CRagdoll *> m_ragdollMap;
 	std::unordered_map<int, CStaticBody *> m_staticMap;
 	std::unordered_map<std::string, ragdoll_config_t *> m_ragdoll_config;

@@ -143,7 +143,6 @@ CPhysicsManager::CPhysicsManager()
 	 m_solver = NULL;
 	 m_dynamicsWorld = NULL;
 	 m_debugDraw = NULL;
-	 m_worldmodel_iva = NULL;
 }
 
 void CPhysicsManager::GenerateIndexedVertexArray(model_t *mod, indexvertexarray_t *va)
@@ -167,6 +166,12 @@ void CPhysicsManager::GenerateIndexedVertexArray(model_t *mod, indexvertexarray_
 
 			va->iNumFaces++;
 		}
+
+		if (!va->iNumVerts)
+			return;
+
+		if (!va->iNumFaces)
+			return;
 
 		va->vVertexBuffer = new brushvertex_t[va->iNumVerts];
 
@@ -231,6 +236,12 @@ void CPhysicsManager::GenerateIndexedVertexArray(model_t *mod, indexvertexarray_
 
 			va->iNumFaces++;
 		}
+
+		if (!va->iNumVerts)
+			return;
+
+		if (!va->iNumFaces)
+			return;
 
 		va->vVertexBuffer = new brushvertex_t[va->iNumVerts];
 
@@ -298,6 +309,18 @@ void CPhysicsManager::CreateStatic(int entindex, indexvertexarray_t *va)
 		}
 	}
 
+	if (!iNumTris)
+	{
+		auto staticbody = new CStaticBody;
+
+		staticbody->m_rigbody = NULL;
+		staticbody->m_entindex = entindex;
+		staticbody->m_iva = va;
+
+		m_staticMap[entindex] = staticbody;
+		return;
+	}
+
 	const int vertStride = sizeof(float[3]);
 	const int indexStride = 3 * sizeof(int);
 
@@ -324,6 +347,7 @@ void CPhysicsManager::CreateStatic(int entindex, indexvertexarray_t *va)
 
 	staticbody->m_rigbody = body;
 	staticbody->m_entindex = entindex;
+	staticbody->m_iva = va;
 
 	m_staticMap[entindex] = staticbody;
 }
@@ -384,15 +408,15 @@ void CPhysicsManager::CreateForBrushModel(cl_entity_t *ent)
 
 	if (itor != m_staticMap.end())
 	{
-		if (ent->index > 0)
+		auto staticBody = itor->second;
+
+		if (ent->index > 0 && staticBody->m_rigbody)
 		{
 			float matrix[4][4];
 			RotateForEntity(ent, matrix);
 			
 			if (0 != memcmp(matrix, r_identity_matrix, sizeof(matrix)))
 			{
-				auto staticbody = itor->second;
-
 				float matrix_transposed[4][4];
 				Matrix4x4_Transpose(matrix_transposed, matrix);
 
@@ -401,7 +425,7 @@ void CPhysicsManager::CreateForBrushModel(cl_entity_t *ent)
 
 				TransformGoldSrcToBullet(worldtrans);
 
-				staticbody->m_rigbody->setWorldTransform(worldtrans);
+				staticBody->m_rigbody->setWorldTransform(worldtrans);
 			}
 		}
 
@@ -417,9 +441,9 @@ void CPhysicsManager::CreateForBrushModel(cl_entity_t *ent)
 
 void CPhysicsManager::NewMap(void)
 {
+	ReloadConfig();
 	RemoveAllRagdolls();
 	RemoveAllStatics();
-	RemoveIndexedVertexArray();
 
 	auto r_worldentity = gEngfuncs.GetEntityByIndex(0);
 
@@ -449,15 +473,18 @@ void CPhysicsManager::DebugDraw(void)
 		{
 			auto &staticbody = p.second;
 
-			if (staticbody->m_entindex)
+			if (staticbody->m_rigbody)
 			{
-				btVector3 color(0, 0.75, 0.75f);
-				m_dynamicsWorld->debugDrawObject(staticbody->m_rigbody->getWorldTransform(), staticbody->m_rigbody->getCollisionShape(), color);
-			}
-			else if (bv_debug->value >= 2)
-			{
-				btVector3 color(0.25, 0.25, 0.25f);
-				m_dynamicsWorld->debugDrawObject(staticbody->m_rigbody->getWorldTransform(), staticbody->m_rigbody->getCollisionShape(), color);
+				if (staticbody->m_entindex)
+				{
+					btVector3 color(0, 0.75, 0.75f);
+					m_dynamicsWorld->debugDrawObject(staticbody->m_rigbody->getWorldTransform(), staticbody->m_rigbody->getCollisionShape(), color);
+				}
+				else if (bv_debug->value >= 2)
+				{
+					btVector3 color(0.25, 0.25, 0.25f);
+					m_dynamicsWorld->debugDrawObject(staticbody->m_rigbody->getWorldTransform(), staticbody->m_rigbody->getCollisionShape(), color);
+				}
 			}
 		}
 
@@ -1003,31 +1030,26 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 	return NULL;
 }
 
-void CPhysicsManager::RemoveIndexedVertexArray()
-{
-	if (m_worldmodel_iva)
-	{
-		delete m_worldmodel_iva;
-		m_worldmodel_iva = NULL;
-	}
-
-	for (auto iva : m_brushmodel_iva)
-	{
-		delete iva.second;
-	}
-	m_brushmodel_iva.clear();
-}
-
 void CPhysicsManager::RemoveAllStatics()
 {
 	for (auto p : m_staticMap)
 	{
-		if (p.second)
+		auto staticBody = p.second;
+		if (staticBody)
 		{
-			m_dynamicsWorld->removeRigidBody(p.second->m_rigbody);
+			if (staticBody->m_rigbody)
+			{
+				m_dynamicsWorld->removeRigidBody(staticBody->m_rigbody);
+				delete staticBody->m_rigbody;
+			}
+			if (staticBody->m_iva)
+			{
+				delete[]staticBody->m_iva->vFaceBuffer;
+				delete[]staticBody->m_iva->vVertexBuffer;
+				delete staticBody->m_iva;
+			}
 
-			delete p.second->m_rigbody;
-			delete p.second;
+			delete staticBody;
 		}
 	}
 
