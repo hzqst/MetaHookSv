@@ -1,5 +1,6 @@
 [DeathAnim]
 12 120
+18 0
 
 [RigidBody]
 Head   15  6  sphere  -4.0   5.0  0.0
