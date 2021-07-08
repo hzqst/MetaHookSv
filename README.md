@@ -52,17 +52,17 @@ Use a separate account to play Sven-Coop if you worry about getting banned, sinc
 
 A subtitle plugin designed for displaying subtitles and translate in-game HUD text.
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/1.png)
-
 [DOCUMENTATION](CaptionDoc.md)
+
+![](https://github.com/hzqst/MetaHookSv/raw/main/img/1.png)
 
 ### BulletPhysics
 
 Bullet physics engine are introduced to perform ragdoll simulatation.
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/6.png)
-
 [DOCUMENTATION](BPhysicsDoc.md)
+
+![](https://github.com/hzqst/MetaHookSv/raw/main/img/6.png)
 
 ### MetaRenderer
 
@@ -70,12 +70,6 @@ A graphic enhancement plugin that modifiy the original render engine.
 
 You can even play with 200k epolys models and still keep a high framerate.
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/2.png)
+[DOCUMENTATION](RendererDoc.md)
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/3.png)
-
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/4.png)
-
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/5.png)
-
-[DOCUMENTATION](RendererDoc.md)
