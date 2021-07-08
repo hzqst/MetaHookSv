@@ -352,6 +352,17 @@ void CPhysicsManager::Init(void)
 
 void CPhysicsManager::DebugDraw(void)
 {
+	for (auto &p : m_staticMap)
+	{
+		auto &staticbody = p.second;
+
+		if (staticbody->m_entindex)
+		{
+			btVector3 color(0, 0.75, 0.75f);
+			m_dynamicsWorld->debugDrawObject(staticbody->m_rigbody->getWorldTransform(), staticbody->m_rigbody->getCollisionShape(), color);
+		}
+	}
+
 	for (auto &p : m_ragdollMap)
 	{
 		auto &rigmap = p.second->m_rigbodyMap;
