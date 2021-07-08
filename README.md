@@ -90,8 +90,6 @@ A graphic enhancement plugin that modifiy the original render engine.
 
 You can even play with 200k epolys models and still keep a high framerate.
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/2.png)
-
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/3.png)
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/4.png)
@@ -119,12 +117,6 @@ You can even play with 200k epolys models and still keep a high framerate.
 10. Vertex-Buffer-Object (VBO) "Batch-Draw" optimization for BSP terrain and brush model. With VBO enabled you will get higher framerate and lower CPU usage. Warning: this feature may cause the render result differs from the one in original game (e.g. random textures are disabled, non-visible terrain in current BSP-node are always visible.)
 
 11. Normal texture and Parallax texture support for BSP terrain and brush model. Check svencoop/maps/restriction02_detail.txt for usage sample.
-
-### BulletPhysics
-
-Bullet physics engine are introduced to perform ragdoll simulatation.
-
-
 
 #### Console Vars
 
@@ -209,3 +201,15 @@ r_wsurf_sky_occlusion 1 / 0 : when set to 1, scenes occluded by "sky" surfaces (
 r_fxaa 1 / 0 : enable or disable Fast Approximate Anti-Aliasing (FXAA). recommended value : 1
 
 r_msaa 0 / 2 / 4 / 8 / 16 : enable or disable MultiSampling Anti-Aliasing (MSAA), number >= 2 for MSAA sample count. recommended value : 0 if SSAO enabled or 4 if SSAO disabled.
+
+### BulletPhysics
+
+Use "Bullet3" physics engine to perform ragdoll simulatation.
+
+![](https://github.com/hzqst/MetaHookSv/raw/main/img/6.png)
+
+#### Console Vars
+
+bv_simrate 16 ~ 128 : how many times to perform simulation per persond ? higher frequency get more accurate simulation result, while eating more CPU resource.
+
+bv_debug 0 / 1 / 2 : enable bullet engine's wireframe debug-drawing.
