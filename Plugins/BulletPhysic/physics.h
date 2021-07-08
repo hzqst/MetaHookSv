@@ -26,12 +26,31 @@ ATTRIBUTE_ALIGNED16(class)
 CRagdoll
 {
 public:
+	BT_DECLARE_ALIGNED_ALLOCATOR();
+	CRagdoll()
+	{
+		m_tentindex = -1;
+	}
+
 	int m_tentindex;
 	std::vector<int> m_keyBones;
 	std::vector<int> m_nonKeyBones;
 	btTransform m_boneRelativeTransform[128];
 	std::unordered_map <std::string, CRigBody> m_rigbodyMap;
 	std::vector <btTypedConstraint *> m_constraintArray;
+};
+
+ATTRIBUTE_ALIGNED16(class)
+CStaticBody
+{
+public:
+	BT_DECLARE_ALIGNED_ALLOCATOR();
+	CStaticBody()
+	{
+		m_entindex = -1;
+	}
+	int m_entindex;
+	btRigidBody *m_rigbody;
 };
 
 typedef struct brushvertex_s
@@ -124,6 +143,7 @@ typedef struct ragdoll_cst_control_s
 
 typedef struct ragdoll_config_s
 {
+	std::unordered_map<int, float> animcontrol;
 	std::vector<ragdoll_cst_control_t> cstcontrol;
 	std::vector<ragdoll_rig_control_t> rigcontrol;
 }ragdoll_config_t;
@@ -132,6 +152,7 @@ ATTRIBUTE_ALIGNED16(class)
 BoneMotionState : public btMotionState
 {
 public:
+	BT_DECLARE_ALIGNED_ALLOCATOR();
 	BoneMotionState(const btTransform &bm, const btTransform &om) : bonematrix(bm), offsetmatrix(om)
 	{
 
@@ -207,16 +228,22 @@ public:
 	void Init(void);
 	void NewMap(void);
 	void DebugDraw(void);
-	void GenerateIndexedVertexArray(model_t *r_worldmodel, indexvertexarray_t *v);
+	void GenerateIndexedVertexArray(model_t *mod, indexvertexarray_t *v);
 	void SetGravity(float velocity);
 	void StepSimulation(double framerate);
 	void ReloadConfig(void);
 	ragdoll_config_t *LoadRagdollConfig(const std::string &modelname);
 	void SetupBones(studiohdr_t *hdr, int tentindex);
 	void RemoveRagdoll(int tentindex);
-	bool CreateRagdoll(int tentindex, model_t *model, studiohdr_t *hdr, float *velocity);
+	void RemoveAllRagdolls();
+	void RemoveAllStatics(); 
+	void RemoveIndexedVertexArray();
+	bool CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_t *model, studiohdr_t *hdr, float *velocity);
 	bool CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol, CRigBody &rig);
 	btTypedConstraint *CreateConstraint(CRagdoll *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
+	void CreateStatic(int entindex, indexvertexarray_t *va);
+	void CreateForBrushModel(cl_entity_t *ent);
+	void RotateForEntity(cl_entity_t *ent, float matrix[4][4]);
 private:
 	btDefaultCollisionConfiguration* m_collisionConfiguration;
 	btCollisionDispatcher* m_dispatcher;
@@ -224,9 +251,10 @@ private:
 	btSequentialImpulseConstraintSolver* m_solver;
 	btDiscreteDynamicsWorld* m_dynamicsWorld;
 	CPhysicsDebugDraw *m_debugDraw;
-	std::vector<btRigidBody *> m_staticRigBody;
+	indexvertexarray_t *m_worldmodel_iva;
+	std::unordered_map<int, indexvertexarray_t *> m_brushmodel_iva;
 	std::unordered_map<int, CRagdoll *> m_ragdollMap;
-	indexvertexarray_t *m_worldmodel_va;
+	std::unordered_map<int, CStaticBody *> m_staticMap;
 	std::unordered_map<std::string, ragdoll_config_t *> m_ragdoll_config;
 };
 

@@ -1,3 +1,6 @@
+[DeathAnim]
+12 100
+
 [RigidBody]
 Head   15  6  sphere  -4.0   5.0  0.0
 Spine  5   6  capsule  3.0   6.0  1.0
@@ -8,17 +11,17 @@ RLeg   46  47 capsule  5.0   2.0  18.0
 RLeg2  47  48 capsule  10.0  2.0  14.0
 LArm   7   9  capsule  5.0   1.8  5.0
 LArm2  9   10 capsule  3.5   1.8  5.0
-LHand  10  9  sphere   -2.0  1.8  0.0
+LHand  10  9  sphere   -1.0  2.2  0.0
 RArm   11  13 capsule  5.0   1.8  5.0
 RArm2  13  14 capsule  3.5   1.8  5.0
-RHand  14  13 sphere   -2.0  1.8  0.0
+RHand  14  13 sphere   -1.0  2.2  0.0
 
 [Constraint]
 Head   Spine   conetwist  0.0  0.0  0.0   0.0   0.12
 Spine  Pelvis  conetwist  0.0  0.0  0.0   0.0   0.02
-Pelvis LLeg    conetwist  0.0  0.0  0.12  0.12  0.12
+Pelvis LLeg    conetwist  0.0  0.0  0.05  0.05  0.08
 LLeg   LLeg2   conetwist  10.0 0.0  0.1   0.1   0.08
-Pelvis RLeg    conetwist  0.0  0.0  0.12  0.12  0.1
+Pelvis RLeg    conetwist  0.0  0.0  0.05  0.05  0.08
 RLeg   RLeg2   conetwist  10.0 0.0  0.1   0.1   0.08
 Spine  LArm    conetwist  6.0  0.0  0.08  0.08  0.08
 LArm   LArm2   conetwist  0.0  0.0  0.05  0.05  0.05

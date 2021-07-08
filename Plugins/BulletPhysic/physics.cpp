@@ -18,6 +18,15 @@ extern model_t **r_model;
 extern float(*pbonetransform)[128][3][4];
 extern float(*plighttransform)[128][3][4]; 
 extern cvar_t *bv_debug;
+extern cvar_t *bv_simrate;
+extern model_t *r_worldmodel;
+
+const float r_identity_matrix[4][4] = {
+	{1.0f, 0.0f, 0.0f, 0.0f},
+	{0.0f, 1.0f, 0.0f, 0.0f},
+	{0.0f, 0.0f, 1.0f, 0.0f},
+	{0.0f, 0.0f, 0.0f, 1.0f}
+};
 
 void CPhysicsDebugDraw::drawLine(const btVector3& from1, const btVector3& to1, const btVector3& color1)
 {
@@ -25,7 +34,7 @@ void CPhysicsDebugDraw::drawLine(const btVector3& from1, const btVector3& to1, c
 	qglDisable(GL_BLEND);
 	qglDisable(GL_DEPTH_TEST);
 
-	qglLineWidth(1);
+	qglLineWidth(0.5f);
 
 	gEngfuncs.pTriAPI->Color4f(color1.getX(), color1.getY(), color1.getZ(), 1.0f);
 	gEngfuncs.pTriAPI->Begin(TRI_LINES);
@@ -50,100 +59,143 @@ CPhysicsManager::CPhysicsManager()
 	 m_overlappingPairCache = NULL;
 	 m_solver = NULL;
 	 m_dynamicsWorld = NULL;
+	 m_debugDraw = NULL;
+	 m_worldmodel_iva = NULL;
 }
 
-void CPhysicsManager::GenerateIndexedVertexArray(model_t *r_worldmodel, indexvertexarray_t *va)
+void CPhysicsManager::GenerateIndexedVertexArray(model_t *mod, indexvertexarray_t *va)
 {
-	brushvertex_t pVertexes[3];
-	glpoly_t *poly;
-	msurface_t *surf;
-	float *v;
-	int i, j;
-
 	va->iNumFaces = 0;
 	va->iCurFace = 0;
 	va->iNumVerts = 0;
 	va->iCurVert = 0;
 
-	surf = r_worldmodel->surfaces;
-
-	for (i = 0; i < r_worldmodel->numsurfaces; i++)
+	if (r_worldmodel == mod)
 	{
-		if ((surf[i].flags & (SURF_DRAWTURB | SURF_UNDERWATER)))
-			continue;
+		auto surf = r_worldmodel->surfaces;
 
-		for (poly = surf[i].polys; poly; poly = poly->next)
-			va->iNumVerts += 3 + (poly->numverts - 3) * 3;
-
-		va->iNumFaces++;
-	}
-
-	va->vVertexBuffer = new brushvertex_t[va->iNumVerts];
-
-	va->vFaceBuffer = new brushface_t[va->iNumFaces];
-
-	for (i = 0; i < r_worldmodel->numsurfaces; i++)
-	{
-		if ((surf[i].flags & (SURF_DRAWTURB | SURF_UNDERWATER)))
-			continue;
-
-		poly = surf[i].polys;
-
-		brushface_t *face = &va->vFaceBuffer[va->iCurFace];
-		face->index = i;
-
-		face->start_vertex = va->iCurVert;
-		for (poly = surf[i].polys; poly; poly = poly->next)
+		for (int i = 0; i < r_worldmodel->numsurfaces; i++)
 		{
-			v = poly->verts[0];
+			if ((surf[i].flags & (SURF_DRAWTURB | SURF_UNDERWATER)))
+				continue;
 
-			for (j = 0; j < 3; j++, v += VERTEXSIZE)
+			for (auto poly = surf[i].polys; poly; poly = poly->next)
+				va->iNumVerts += 3 + (poly->numverts - 3) * 3;
+
+			va->iNumFaces++;
+		}
+
+		va->vVertexBuffer = new brushvertex_t[va->iNumVerts];
+
+		va->vFaceBuffer = new brushface_t[va->iNumFaces];
+
+		for (int i = 0; i < r_worldmodel->numsurfaces; i++)
+		{
+			if ((surf[i].flags & (SURF_DRAWTURB | SURF_UNDERWATER)))
+				continue;
+
+			auto poly = surf[i].polys;
+
+			brushface_t *face = &va->vFaceBuffer[va->iCurFace];
+			face->index = i;
+
+			face->start_vertex = va->iCurVert;
+			for (poly = surf[i].polys; poly; poly = poly->next)
 			{
-				pVertexes[j].pos[0] = v[0];
-				pVertexes[j].pos[1] = v[1];
-				pVertexes[j].pos[2] = v[2];
-			}
-			memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[0], sizeof(brushvertex_t)); va->iCurVert++;
-			memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[1], sizeof(brushvertex_t)); va->iCurVert++;
-			memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[2], sizeof(brushvertex_t)); va->iCurVert++;
+				auto v = poly->verts[0];
+				brushvertex_t pVertexes[3];
 
-			for (j = 0; j < (poly->numverts - 3); j++, v += VERTEXSIZE)
-			{
-				memcpy(&pVertexes[1], &pVertexes[2], sizeof(brushvertex_t));
-
-				pVertexes[2].pos[0] = v[0];
-				pVertexes[2].pos[1] = v[1];
-				pVertexes[2].pos[2] = v[2];
+				for (int j = 0; j < 3; j++, v += VERTEXSIZE)
+				{
+					pVertexes[j].pos[0] = v[0];
+					pVertexes[j].pos[1] = v[1];
+					pVertexes[j].pos[2] = v[2];
+				}
 				memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[0], sizeof(brushvertex_t)); va->iCurVert++;
 				memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[1], sizeof(brushvertex_t)); va->iCurVert++;
 				memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[2], sizeof(brushvertex_t)); va->iCurVert++;
+
+				for (int j = 0; j < (poly->numverts - 3); j++, v += VERTEXSIZE)
+				{
+					memcpy(&pVertexes[1], &pVertexes[2], sizeof(brushvertex_t));
+
+					pVertexes[2].pos[0] = v[0];
+					pVertexes[2].pos[1] = v[1];
+					pVertexes[2].pos[2] = v[2];
+					memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[0], sizeof(brushvertex_t)); va->iCurVert++;
+					memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[1], sizeof(brushvertex_t)); va->iCurVert++;
+					memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[2], sizeof(brushvertex_t)); va->iCurVert++;
+				}
 			}
+
+			face->num_vertexes = va->iCurVert - face->start_vertex;
+			va->iCurFace++;
+		}
+	}
+	else
+	{
+		auto psurf = &mod->surfaces[mod->firstmodelsurface];
+		for (int i = 0; i < mod->nummodelsurfaces; i++, psurf++)
+		{
+			if (psurf->flags & (SURF_DRAWTURB | SURF_UNDERWATER))
+				continue;
+
+			for (auto poly = psurf->polys; poly; poly = poly->next)
+				va->iNumVerts += 3 + (poly->numverts - 3) * 3;
+
+			va->iNumFaces++;
 		}
 
-		face->num_vertexes = va->iCurVert - face->start_vertex;
-		va->iCurFace++;
-	}
+		va->vVertexBuffer = new brushvertex_t[va->iNumVerts];
 
+		va->vFaceBuffer = new brushface_t[va->iNumFaces];
+
+		psurf = &mod->surfaces[mod->firstmodelsurface];
+		for (int i = 0; i < mod->nummodelsurfaces; i++, psurf++)
+		{
+			if (psurf->flags & (SURF_DRAWTURB | SURF_UNDERWATER))
+				continue;
+
+			brushface_t *face = &va->vFaceBuffer[va->iCurFace];
+			face->index = i;
+
+			face->start_vertex = va->iCurVert;
+			for (auto poly = psurf->polys; poly; poly = poly->next)
+			{
+				auto v = poly->verts[0];
+				brushvertex_t pVertexes[3];
+
+				for (int j = 0; j < 3; j++, v += VERTEXSIZE)
+				{
+					pVertexes[j].pos[0] = v[0];
+					pVertexes[j].pos[1] = v[1];
+					pVertexes[j].pos[2] = v[2];
+				}
+				memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[0], sizeof(brushvertex_t)); va->iCurVert++;
+				memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[1], sizeof(brushvertex_t)); va->iCurVert++;
+				memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[2], sizeof(brushvertex_t)); va->iCurVert++;
+
+				for (int j = 0; j < (poly->numverts - 3); j++, v += VERTEXSIZE)
+				{
+					memcpy(&pVertexes[1], &pVertexes[2], sizeof(brushvertex_t));
+
+					pVertexes[2].pos[0] = v[0];
+					pVertexes[2].pos[1] = v[1];
+					pVertexes[2].pos[2] = v[2];
+					memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[0], sizeof(brushvertex_t)); va->iCurVert++;
+					memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[1], sizeof(brushvertex_t)); va->iCurVert++;
+					memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[2], sizeof(brushvertex_t)); va->iCurVert++;
+				}
+			}
+
+			face->num_vertexes = va->iCurVert - face->start_vertex;
+			va->iCurFace++;
+		}
+	}	
 }
 
-void CPhysicsManager::NewMap(void)
+void CPhysicsManager::CreateStatic(int entindex, indexvertexarray_t *va)
 {
-	auto r_worldentity = gEngfuncs.GetEntityByIndex(0);
-
-	auto r_worldmodel = r_worldentity->model;
-
-	if (!r_worldmodel)
-	{
-		Sys_ErrorEx("CPhysicsManager::NewMap worldmodel = NULL");
-	}
-
-	m_worldmodel_va = new indexvertexarray_t;
-
-	auto va = m_worldmodel_va;
-
-	GenerateIndexedVertexArray(r_worldmodel, va);
-
-	//make triangles
 	int iNumTris = 0;
 	for (int i = 0; i < va->iNumFaces; i++)
 	{
@@ -157,8 +209,8 @@ void CPhysicsManager::NewMap(void)
 		}
 	}
 
-	int vertStride = sizeof(float[3]);
-	int indexStride = 3 * sizeof(int);
+	const int vertStride = sizeof(float[3]);
+	const int indexStride = 3 * sizeof(int);
 
 	auto vertexArray = new btTriangleIndexVertexArray(iNumTris, va->vIndiceBuffer.data(), indexStride,
 		va->iNumVerts, (float *)va->vVertexBuffer->pos, vertStride);
@@ -170,12 +222,119 @@ void CPhysicsManager::NewMap(void)
 	btRigidBody::btRigidBodyConstructionInfo cInfo(0.0f, motionState, meshShape);
 
 	btRigidBody* body = new btRigidBody(cInfo);
-	
-	body->setUserIndex(-1);
+
+	body->setUserIndex(entindex);
+
+	body->setFriction(1.0f);
+
+	body->setRollingFriction(1.0f);
 
 	m_dynamicsWorld->addRigidBody(body);
 
-	m_staticRigBody.emplace_back(body);
+	auto staticbody = new CStaticBody;
+
+	staticbody->m_rigbody = body;
+	staticbody->m_entindex = entindex;
+
+	m_staticMap[entindex] = staticbody;
+}
+
+void CPhysicsManager::RotateForEntity(cl_entity_t *e, float matrix[4][4])
+{
+	int i;
+	vec3_t angles;
+	vec3_t modelpos;
+
+	VectorCopy(e->origin, modelpos);
+	VectorCopy(e->angles, angles);
+
+	if (e->curstate.movetype != MOVETYPE_NONE)
+	{
+		float f;
+		float d;
+
+		if (e->curstate.animtime + 0.2f > gEngfuncs.GetClientTime() && e->curstate.animtime != e->latched.prevanimtime)
+		{
+			f = (gEngfuncs.GetClientTime() - e->curstate.animtime) / (e->curstate.animtime - e->latched.prevanimtime);
+		}
+		else
+		{
+			f = 0;
+		}
+
+		for (i = 0; i < 3; i++)
+		{
+			modelpos[i] -= (e->latched.prevorigin[i] - e->origin[i]) * f;
+		}
+
+		if (f != 0.0f && f < 1.5f)
+		{
+			f = 1.0f - f;
+
+			for (i = 0; i < 3; i++)
+			{
+				d = e->latched.prevangles[i] - e->angles[i];
+
+				if (d > 180.0)
+					d -= 360.0;
+				else if (d < -180.0)
+					d += 360.0;
+
+				angles[i] += d * f;
+			}
+		}
+	}
+
+	memcpy(matrix, r_identity_matrix, sizeof(r_identity_matrix));
+	Matrix4x4_CreateFromEntity(matrix, angles, modelpos, 1);
+}
+
+void CPhysicsManager::CreateForBrushModel(cl_entity_t *ent)
+{
+	auto itor = m_staticMap.find(ent->index);
+
+	if (itor != m_staticMap.end())
+	{
+		if (ent->index > 0)
+		{
+			float matrix[4][4];
+			RotateForEntity(ent, matrix);
+			
+			if (0 != memcmp(matrix, r_identity_matrix, sizeof(matrix)))
+			{
+				auto staticbody = itor->second;
+
+				float matrix_transposed[4][4];
+				Matrix4x4_Transpose(matrix_transposed, matrix);
+
+				btTransform worldtrans;
+				worldtrans.setFromOpenGLMatrix((float *)matrix_transposed);
+
+				staticbody->m_rigbody->setWorldTransform(worldtrans);
+			}
+		}
+
+		return;
+	}
+
+	auto iva = new indexvertexarray_t;
+
+	GenerateIndexedVertexArray(ent->model, iva);
+
+	CreateStatic(ent->index, iva);
+}
+
+void CPhysicsManager::NewMap(void)
+{
+	RemoveAllRagdolls();
+	RemoveAllStatics();
+	RemoveIndexedVertexArray();
+
+	auto r_worldentity = gEngfuncs.GetEntityByIndex(0);
+
+	r_worldmodel = r_worldentity->model;
+
+	CreateForBrushModel(r_worldentity);
 }
 
 void CPhysicsManager::Init(void)
@@ -212,7 +371,12 @@ void CPhysicsManager::DebugDraw(void)
 
 void CPhysicsManager::StepSimulation(double frametime)
 {
-	m_dynamicsWorld->stepSimulation(frametime);
+	if (bv_simrate->value < 16)
+		bv_simrate->value = 16;
+	else if (bv_simrate->value > 128)
+		bv_simrate->value = 128;
+
+	m_dynamicsWorld->stepSimulation(frametime, 16, 1.0f / bv_simrate->value);
 }
 
 void CPhysicsManager::SetGravity(float velocity)
@@ -224,7 +388,8 @@ void CPhysicsManager::ReloadConfig(void)
 {
 	for (auto p : m_ragdoll_config)
 	{
-		delete p.second;
+		if(p.second)
+			delete p.second;
 	}
 	m_ragdoll_config.clear();
 }
@@ -244,13 +409,14 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(const std::string &modelnam
 	char *pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
 	if (!pfile)
 	{
+		m_ragdoll_config[modelname] = NULL;
 		gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to load %s\n", name.c_str());
 		return NULL;
 	}
 
 	auto cfg = new ragdoll_config_t;
 
-	int iParsingState = 0;
+	int iParsingState = -1;
 
 	char *ptext = pfile;
 	while (1)
@@ -262,7 +428,12 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(const std::string &modelnam
 		if (!ptext)
 			break;
 
-		if (!strcmp(subname, "[RigidBody]"))
+		if (!strcmp(subname, "[DeathAnim]"))
+		{
+			iParsingState = 0;
+			continue;
+		}
+		else if (!strcmp(subname, "[RigidBody]"))
 		{
 			iParsingState = 1;
 			continue;
@@ -273,7 +444,20 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(const std::string &modelnam
 			continue;
 		}
 
-		if (iParsingState == 1)
+		if (iParsingState == 0)
+		{
+			char frame[16] = { 0 };
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, frame);
+			if (!ptext)
+				break;
+
+			float i_sequence = atof(subname);
+			float f_frame = atof(frame);
+
+			cfg->animcontrol[i_sequence] = f_frame;
+		}
+		else if (iParsingState == 1)
 		{
 			char boneindex[16] = { 0 };
 			char pboneindex[16] = { 0 };
@@ -595,18 +779,16 @@ bool CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_
 	if (rigcontrol->boneindex >= studiohdr->numbones)
 	{
 		gEngfuncs.Con_Printf("CreateRigBody: Failed to create rigbody for bone %s, boneindex too large (%d >= %d)\n", rigcontrol->name.c_str(), rigcontrol->boneindex, studiohdr->numbones);
-		return NULL;
+		return false;
 	}
 
 	if (rigcontrol->pboneindex >= studiohdr->numbones)
 	{
 		gEngfuncs.Con_Printf("CreateRigBody: Failed to create rigbody for bone %s, pboneindex too large (%d >= %d)\n", rigcontrol->name.c_str(), rigcontrol->pboneindex, studiohdr->numbones);
-		return NULL;
+		return false;
 	}
 
-	mstudiobone_t *pbones;
-
-	pbones = (mstudiobone_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->boneindex);
+	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->boneindex);
 
 	btTransform bonematrix, offsetmatrix;
 	Matrix3x4ToTransform((*pbonetransform)[rigcontrol->boneindex], bonematrix);
@@ -682,6 +864,64 @@ bool CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_
 	return false;
 }
 
+void CPhysicsManager::RemoveIndexedVertexArray()
+{
+	if (m_worldmodel_iva)
+	{
+		delete m_worldmodel_iva;
+		m_worldmodel_iva = NULL;
+	}
+
+	for (auto iva : m_brushmodel_iva)
+	{
+		delete iva.second;
+	}
+	m_brushmodel_iva.clear();
+}
+
+void CPhysicsManager::RemoveAllStatics()
+{
+	for (auto p : m_staticMap)
+	{
+		if (p.second)
+		{
+			m_dynamicsWorld->removeRigidBody(p.second->m_rigbody);
+
+			delete p.second->m_rigbody;
+			delete p.second;
+		}
+	}
+
+	m_staticMap.clear();
+}
+
+void CPhysicsManager::RemoveAllRagdolls()
+{
+	for (auto rag : m_ragdollMap)
+	{
+		auto ragdoll = rag.second;
+
+		for (auto p : ragdoll->m_constraintArray)
+		{
+			m_dynamicsWorld->removeConstraint(p);
+			delete p;
+		}
+
+		ragdoll->m_constraintArray.clear();
+
+		for (auto p : ragdoll->m_rigbodyMap)
+		{
+			m_dynamicsWorld->removeRigidBody(p.second.rigbody);
+			delete p.second.rigbody;
+		}
+
+		ragdoll->m_rigbodyMap.clear();
+
+		delete ragdoll;
+	}
+	m_ragdollMap.clear();
+}
+
 void CPhysicsManager::RemoveRagdoll(int tentindex)
 {
 	auto itor = m_ragdollMap.find(tentindex);
@@ -721,13 +961,11 @@ void CPhysicsManager::SetupBones(studiohdr_t *hdr, int tentindex)
 
 	if (itor == m_ragdollMap.end())
 	{
-		gEngfuncs.Con_Printf("SetupBones: not found\n");
+		//gEngfuncs.Con_Printf("SetupBones: not found\n");
 		return;
 	}
 
-	mstudiobone_t *pbones;
-
-	pbones = (mstudiobone_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->boneindex);
+	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->boneindex);
 
 	auto ragdoll = itor->second;
 
@@ -744,7 +982,7 @@ void CPhysicsManager::SetupBones(studiohdr_t *hdr, int tentindex)
 		memcpy((*plighttransform)[rig.second.boneindex], bonematrix, sizeof(float[3][4]));
 	}
 
-	for (int index = 0; index < ragdoll->m_nonKeyBones.size(); index++)
+	for (size_t index = 0; index < ragdoll->m_nonKeyBones.size(); index++)
 	{
 		auto i = ragdoll->m_nonKeyBones[index];
 		if (i == -1)
@@ -762,7 +1000,7 @@ void CPhysicsManager::SetupBones(studiohdr_t *hdr, int tentindex)
 	}
 }
 
-bool CPhysicsManager::CreateRagdoll(int tentindex, model_t *model, studiohdr_t *studiohdr, float *velocity)
+bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_t *model, studiohdr_t *studiohdr, float *velocity)
 {
 	auto itor = m_ragdollMap.find(tentindex);
 	
@@ -772,26 +1010,11 @@ bool CPhysicsManager::CreateRagdoll(int tentindex, model_t *model, studiohdr_t *
 		return false;
 	}
 
-	if (model->type != modtype_t::mod_studio)
-	{
-		gEngfuncs.Con_Printf("CreateRagdoll: Invalid model->type\n");
-		return false;
-	}
-
 	std::string modelname(model->name);
-
-	ragdoll_config_t *cfg = LoadRagdollConfig(model->name);
-
-	if (!cfg)
-	{
-		return false;
-	}
 
 	auto ragdoll = new CRagdoll();
 
-	mstudiobone_t *pbones;
-
-	pbones = (mstudiobone_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->boneindex);
+	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->boneindex);
 
 	for (int i = 0; i < studiohdr->numbones; ++i)
 	{
@@ -831,7 +1054,13 @@ bool CPhysicsManager::CreateRagdoll(int tentindex, model_t *model, studiohdr_t *
 			ragdoll->m_rigbodyMap[rigcontrol->name] = rig;
 
 			btVector3 vel(velocity[0], velocity[1], velocity[2]);
+
 			rig.rigbody->setLinearVelocity(vel);
+
+			rig.rigbody->setFriction(0.25f);
+
+			rig.rigbody->setRollingFriction(0.25f);
+
 			m_dynamicsWorld->addRigidBody(rig.rigbody);
 		}
 	}

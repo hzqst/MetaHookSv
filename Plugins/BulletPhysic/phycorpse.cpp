@@ -9,12 +9,12 @@ CorpseManager gCorpseManager;
 
 CorpseManager::CorpseManager(void)
 {
-	m_corpseIndex = MAX_ENTITIES;
+	m_corpseBaseIndex = 512;
 }
 
-bool CorpseManager::IsPlayingDeathAnimation(entity_state_t* entstate)
+bool CorpseManager::IsPlayerDeathAnimation(entity_state_t* entstate)
 {
-	if (entstate->sequence >= 12 && entstate->sequence <= 18 && entstate->animtime > 5.0f)
+	if (entstate->sequence >= 12 && entstate->sequence <= 18)
 		return true;
 
 	return false;
@@ -47,9 +47,12 @@ TEMPENTITY* CorpseManager::FindCorpseForEntity(cl_entity_t* ent)
 	return NULL;
 }
 
-TEMPENTITY* CorpseManager::CreateCorpseForEntity(cl_entity_t* ent)
+TEMPENTITY* CorpseManager::CreateCorpseForEntity(cl_entity_t* ent, model_t *model)
 {
-	TEMPENTITY* tempent = gEngfuncs.pEfxAPI->CL_TempEntAllocNoModel(ent->curstate.origin);
+	TEMPENTITY* tempent = gEngfuncs.pEfxAPI->CL_TempEntAlloc(ent->curstate.origin, model);
+	if (!tempent)
+		return NULL;
+
 	tempent->entity.curstate.iuser1 = ent->index;
 	tempent->entity.curstate.iuser3 = PhyCorpseFlag1;
 	tempent->entity.curstate.iuser4 = PhyCorpseFlag2;
@@ -62,14 +65,18 @@ TEMPENTITY* CorpseManager::CreateCorpseForEntity(cl_entity_t* ent)
 	VectorCopy(ent->curstate.angles, tempent->entity.curstate.angles);
 	tempent->entity.curstate.animtime = ent->curstate.animtime;
 	tempent->entity.curstate.sequence = ent->curstate.sequence;
-	tempent->entity.curstate.aiment = ent->curstate.aiment;
+	tempent->entity.curstate.gaitsequence = ent->curstate.gaitsequence;
+	tempent->entity.curstate.framerate = ent->curstate.framerate;
+	tempent->entity.curstate.weaponanim = 0;
+	tempent->entity.curstate.weaponmodel = 0;
+	tempent->entity.curstate.aiment = 0;
 	tempent->entity.curstate.frame = ent->curstate.frame;
 	tempent->entity.curstate.modelindex = ent->curstate.modelindex;
 	tempent->flags = 0;
 	tempent->callback = NULL;
 
 	tempent->die = gEngfuncs.GetClientTime() + 999999;
-	tempent->entity.index = m_corpseIndex++;
+	tempent->entity.index = ent->index;// m_corpseBaseIndex++;
 
 	m_corpseMap[ent->index] = tempent;
 

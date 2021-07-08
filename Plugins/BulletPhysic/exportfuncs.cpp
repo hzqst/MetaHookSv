@@ -8,6 +8,7 @@
 #include "exportfuncs.h"
 #include "enghook.h"
 
+#include "pm_defs.h"
 #include "mathlib.h"
 #include "phycorpse.h"
 #include "physics.h"
@@ -17,10 +18,15 @@ engine_studio_api_t IEngineStudio;
 r_studio_interface_t **gpStudioInterface;
 
 cvar_t *bv_debug = NULL;
+cvar_t *bv_simrate = NULL;
 studiohdr_t **pstudiohdr = NULL;
 model_t **r_model = NULL;
+model_t *r_worldmodel = NULL;
+
 float(*pbonetransform)[MAXSTUDIOBONES][3][4] = NULL;
 float(*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;
+
+vec3_t velocity;
 
 void Sys_ErrorEx(const char *fmt, ...)
 {
@@ -60,26 +66,54 @@ void __fastcall StudioSetupBones(void *pthis, int)
 
 int StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 {
-	//Default death animation
-	if (gCorpseManager.IsPlayingDeathAnimation(pplayer))
+	int result = 0;
+
+	if (flags & STUDIO_RENDER)
 	{
-		if (!gCorpseManager.FindCorpseForEntity(IEngineStudio.GetCurrentEntity()))
+		if (gCorpseManager.IsPlayerDeathAnimation(pplayer))
 		{
-			TEMPENTITY* tempent = gCorpseManager.CreateCorpseForEntity(IEngineStudio.GetCurrentEntity());
-			if (tempent)
+			auto currententity = IEngineStudio.GetCurrentEntity();
+			auto tempent = gCorpseManager.FindCorpseForEntity(currententity);
+			if (!tempent)
 			{
+				bool bRagdoll = false;
+
 				gPrivateFuncs.StudioDrawPlayer(0, pplayer);
 
-				tempent->entity.model = (*r_model);
+				std::string modelname((*r_model)->name);
 
-				gPhysicsManager.CreateRagdoll(tempent->entity.index, tempent->entity.model, (*pstudiohdr), pplayer->velocity);
+				auto cfg = gPhysicsManager.LoadRagdollConfig(modelname);
+
+				if (cfg)
+				{
+					auto itor = cfg->animcontrol.find(pplayer->sequence);
+
+					if (itor == cfg->animcontrol.end() || (itor != cfg->animcontrol.end() && pplayer->frame > itor->second))
+					{
+						tempent = gCorpseManager.CreateCorpseForEntity(currententity, (*r_model));
+						if (tempent)
+						{
+							if (gPhysicsManager.CreateRagdoll(cfg, tempent->entity.index, (*r_model), (*pstudiohdr), velocity))
+							{
+								bRagdoll = true;
+							}
+						}
+					}
+				}
+
+				if(!bRagdoll)
+					result = gPrivateFuncs.StudioDrawPlayer(flags, pplayer);
 			}
+			else
+			{
+				tempent->entity.curstate.colormap = pplayer->colormap;
+			}
+			return result;
 		}
-		return 0;
-	}
-	else
-	{
-		gCorpseManager.FreeCorpseForEntity(IEngineStudio.GetCurrentEntity());
+		else
+		{
+			gCorpseManager.FreeCorpseForEntity(IEngineStudio.GetCurrentEntity());
+		}
 	}
 
 	return gPrivateFuncs.StudioDrawPlayer(flags, pplayer);
@@ -87,12 +121,8 @@ int StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
 {
-	//Save Studio API
 	memcpy(&IEngineStudio, pstudio, sizeof(IEngineStudio));
 	gpStudioInterface = ppinterface;
-
-	//InitPhysicsInterface(NULL);
-	//gPhysics.InitSystem("svencoop", &IEngineStudio);
 
 	int result = gExportfuncs.HUD_GetStudioModelInterface(version, ppinterface, pstudio);
 
@@ -125,21 +155,15 @@ void HUD_Init(void)
 	gExportfuncs.HUD_Init();
 
 	bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
+	bv_simrate = gEngfuncs.pfnRegisterVariable("bv_simrate", "64", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	gEngfuncs.pfnAddCommand("bv_reload", BV_Reload_f);
 }
 
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 {
-	if (ent->index && ent->index < 512)
+	if (type == 0 && ent->model && ent->model->type == modtype_t::mod_brush && ent->curstate.solid == SOLID_BSP)
 	{
-		if (ent->model->type == modtype_t::mod_brush)
-		{
-			//gPhysics.AddCollider(ent);
-		}
-		else if (ent->model->type == modtype_t::mod_studio)
-		{
-			//gPhysics.AddCollider(ent);
-		}
+		gPhysicsManager.CreateForBrushModel(ent);
 	}
 
 	return gExportfuncs.HUD_AddEntity(type, ent, model);
