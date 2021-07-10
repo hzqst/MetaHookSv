@@ -101,7 +101,7 @@ public:
 
 typedef struct ragdoll_rig_control_s
 {
-	ragdoll_rig_control_s(const char *n, int i, int p, int sh, float off, float s, float s2)
+	ragdoll_rig_control_s(const char *n, int i, int p, int sh, float off, float s, float s2, float m)
 	{
 		name = n;
 		boneindex = i;
@@ -110,6 +110,7 @@ typedef struct ragdoll_rig_control_s
 		offset = off;
 		size = s;
 		size2 = s2;
+		mass = m;
 	}
 	std::string name;
 	int boneindex;
@@ -118,19 +119,27 @@ typedef struct ragdoll_rig_control_s
 	float offset;
 	float size;
 	float size2;
+	float mass;
 }ragdoll_rig_control_t;
 
 typedef struct ragdoll_cst_control_s
 {
-	ragdoll_cst_control_s(const char *n, const char *l, int t, float o1, float o2, float f1, float f2, float f3)
+	ragdoll_cst_control_s(const char *n, const char *l, int t, int b1, int b2, float of1, float of2, float of3, float of4, float of5, float of6, float f1, float f2, float f3)
 	{
 		name = n;
 		linktarget = l;
 
 		type = t;
 
-		offset1 = o1;
-		offset2 = o2;
+		boneindex1 = b1;
+		boneindex2 = b2;
+		
+		offset1 = of1;
+		offset2 = of2;
+		offset3 = of3;
+		offset4 = of4;
+		offset5 = of5;
+		offset6 = of6;
 
 		factor1 = f1;
 		factor2 = f2;
@@ -139,9 +148,20 @@ typedef struct ragdoll_cst_control_s
 
 	std::string name;
 	std::string linktarget;
+
 	int type;
+
+	int boneindex1;
+	int boneindex2;
+
 	float offset1;
 	float offset2;
+	float offset3;
+
+	float offset4;
+	float offset5;
+	float offset6;
+
 	float factor1;
 	float factor2;
 	float factor3;
@@ -182,7 +202,7 @@ CPhysicsDebugDraw : public btIDebugDraw
 public:
 	BT_DECLARE_ALIGNED_ALLOCATOR();
 
-	CPhysicsDebugDraw() :  m_debugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb)
+	CPhysicsDebugDraw() :  m_debugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb | btIDebugDraw::DBG_DrawConstraints | btIDebugDraw::DBG_DrawConstraintLimits)
 	{
 	}
 

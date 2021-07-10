@@ -19,7 +19,7 @@ CorpseManager gCorpseManager;
 
 CorpseManager::CorpseManager(void)
 {
-	m_corpseBaseIndex = 512;
+
 }
 
 bool CorpseManager::IsPlayerDeathAnimation(entity_state_t* entstate)
@@ -55,6 +55,11 @@ TEMPENTITY* CorpseManager::FindCorpseForEntity(cl_entity_t* ent)
 		return itor->second;
 	}
 	return NULL;
+}
+
+bool CorpseManager::HasCorpse(void) const
+{
+	return m_corpseMap.size();
 }
 
 TEMPENTITY* CorpseManager::CreateCorpseForEntity(cl_entity_t* ent, model_t *model)

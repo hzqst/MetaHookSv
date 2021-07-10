@@ -7,8 +7,8 @@
 #include "qgl.h"
 #include "mathlib.h"
 
-const float G2BScale = 0.1f;
-const float B2GScale = 1 / G2BScale;
+float G2BScale = 0.2f;
+float B2GScale = 1 / G2BScale;
 
 extern studiohdr_t **pstudiohdr;
 extern model_t **r_model;
@@ -16,6 +16,7 @@ extern float(*pbonetransform)[128][3][4];
 extern float(*plighttransform)[128][3][4]; 
 extern cvar_t *bv_debug;
 extern cvar_t *bv_simrate;
+extern cvar_t *bv_scale;
 extern model_t *r_worldmodel;
 
 bool IsEntityCorpse(cl_entity_t* ent);
@@ -441,6 +442,9 @@ void CPhysicsManager::CreateForBrushModel(cl_entity_t *ent)
 
 void CPhysicsManager::NewMap(void)
 {
+	G2BScale = bv_scale->value;
+	B2GScale = 1 / bv_scale->value;
+
 	ReloadConfig();
 	RemoveAllRagdolls();
 	RemoveAllStatics();
@@ -475,12 +479,12 @@ void CPhysicsManager::DebugDraw(void)
 
 			if (staticbody->m_rigbody)
 			{
-				if (staticbody->m_entindex)
+				if (bv_debug->value == 2 && staticbody->m_entindex)
 				{
 					btVector3 color(0, 0.75, 0.75f);
 					m_dynamicsWorld->debugDrawObject(staticbody->m_rigbody->getWorldTransform(), staticbody->m_rigbody->getCollisionShape(), color);
 				}
-				else if (bv_debug->value >= 2)
+				else if (bv_debug->value == 3)
 				{
 					btVector3 color(0.25, 0.25, 0.25f);
 					m_dynamicsWorld->debugDrawObject(staticbody->m_rigbody->getWorldTransform(), staticbody->m_rigbody->getCollisionShape(), color);
@@ -639,6 +643,7 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(const std::string &modelnam
 			char offset[16] = { 0 };
 			char size[16] = { 0 };
 			char size2[16] = { 0 };
+			char mass[16] = { 0 };
 			
 			ptext = gEngfuncs.COM_ParseFile(ptext, boneindex);
 			if (!ptext)
@@ -690,14 +695,26 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(const std::string &modelnam
 
 			float f_size2 = atof(size2);
 
-			cfg->rigcontrol.emplace_back(subname, i_boneindex, i_pboneindex, i_shape, f_offset, f_size, f_size2);
+			ptext = gEngfuncs.COM_ParseFile(ptext, mass);
+			if (!ptext)
+				break;
+
+			float f_mass = atof(mass);
+
+			cfg->rigcontrol.emplace_back(subname, i_boneindex, i_pboneindex, i_shape, f_offset, f_size, f_size2, f_mass);
 		}
 		else if (iParsingState == 2)
 		{
 			char linktarget[64] = { 0 };
 			char type[16] = { 0 };
+			char boneindex1[16] = { 0 };
+			char boneindex2[16] = { 0 };
 			char offset1[16] = { 0 };
 			char offset2[16] = { 0 };
+			char offset3[16] = { 0 };
+			char offset4[16] = { 0 };
+			char offset5[16] = { 0 };
+			char offset6[16] = { 0 };
 			char factor1[16] = { 0 };
 			char factor2[16] = { 0 };
 			char factor3[16] = { 0 };
@@ -730,6 +747,18 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(const std::string &modelnam
 				break;
 			}
 
+			ptext = gEngfuncs.COM_ParseFile(ptext, boneindex1);
+			if (!ptext)
+				break;
+
+			int i_boneindex1 = atoi(boneindex1);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, boneindex2);
+			if (!ptext)
+				break;
+
+			int i_boneindex2 = atoi(boneindex2);
+
 			ptext = gEngfuncs.COM_ParseFile(ptext, offset1);
 			if (!ptext)
 				break;
@@ -741,6 +770,30 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(const std::string &modelnam
 				break;
 
 			float f_offset2 = atof(offset2);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, offset3);
+			if (!ptext)
+				break;
+
+			float f_offset3 = atof(offset3);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, offset4);
+			if (!ptext)
+				break;
+
+			float f_offset4 = atof(offset4);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, offset5);
+			if (!ptext)
+				break;
+
+			float f_offset5 = atof(offset5);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, offset6);
+			if (!ptext)
+				break;
+
+			float f_offset6 = atof(offset6);
 
 			ptext = gEngfuncs.COM_ParseFile(ptext, factor1);
 			if (!ptext)
@@ -760,7 +813,7 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(const std::string &modelnam
 
 			float f_factor3 = atof(factor3);
 
-			cfg->cstcontrol.emplace_back(subname, linktarget, i_type, f_offset1, f_offset2, f_factor1, f_factor2, f_factor3);
+			cfg->cstcontrol.emplace_back(subname, linktarget, i_type, i_boneindex1, i_boneindex2, f_offset1, f_offset2, f_offset3, f_offset4, f_offset5, f_offset6, f_factor1, f_factor2, f_factor3);
 		}
 	}
 
@@ -831,102 +884,6 @@ btTransform MatrixLookAt(const btTransform &transform, const btVector3 &at, cons
 	return transform * rotMatrix;
 }
 
-btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdoll *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol)
-{
-	auto itor = ragdoll->m_rigbodyMap.find(cstcontrol->name);
-	if (itor == ragdoll->m_rigbodyMap.end())
-	{
-		gEngfuncs.Con_Printf("CreateConstraint: Failed to create constraint, rig %s not found\n", cstcontrol->name.c_str());
-		return NULL;
-	}
-	auto itor2 = ragdoll->m_rigbodyMap.find(cstcontrol->linktarget);
-	if (itor2 == ragdoll->m_rigbodyMap.end())
-	{
-		gEngfuncs.Con_Printf("CreateConstraint: Failed to create constraint, linked rig %s not found\n", cstcontrol->name.c_str());
-		return NULL;
-	}
-
-	float offset1 = cstcontrol->offset1;
-	FloatGoldSrcToBullet(&offset1);
-
-	float offset2 = cstcontrol->offset2;
-	FloatGoldSrcToBullet(&offset2);
-
-	auto rig1 = itor->second;
-	auto rig2 = itor2->second;
-
-	if (cstcontrol->type == RAGDOLL_CONSTRAINT_CONETWIST)
-	{
-		auto origin1 = rig1->origin + rig1->dir * offset1;
-		auto origin2 = rig2->origin + rig2->dir * offset2;
-
-		btTransform matrix1;
-		matrix1.setIdentity();
-		matrix1.setOrigin(origin1);
-
-		btVector3 fwd(1, 0, 0);
-		auto jointtrans = MatrixLookAt(matrix1, origin2, fwd);
-
-		auto inv1 = rig1->rigbody->getWorldTransform().inverse();
-		auto inv2 = rig2->rigbody->getWorldTransform().inverse();
-
-		btTransform localrig1;
-		localrig1.mult(inv1, jointtrans);
-
-		btTransform localrig2;
-		localrig2.mult(inv2, jointtrans);
-
-		auto cst = new btConeTwistConstraint(*rig1->rigbody, *rig2->rigbody, localrig1, localrig2);
-		cst->setDbgDrawSize(20);
-		cst->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, cstcontrol->factor3 * M_PI);
-
-		return cst;
-	}
-	else if (cstcontrol->type == RAGDOLL_CONSTRAINT_HINGE)
-	{
-		auto origin1 = rig1->origin + rig1->dir * offset1;
-		auto origin2 = rig2->origin + rig2->dir * offset2;
-
-		btTransform matrix1;
-		matrix1.setIdentity();
-		matrix1.setOrigin(origin1);
-
-		btVector3 fwd(0, 0, 1);
-		auto jointtrans = MatrixLookAt(matrix1, origin2, fwd);
-
-		auto inv1 = rig1->rigbody->getWorldTransform().inverse();
-		auto inv2 = rig2->rigbody->getWorldTransform().inverse();
-
-		btTransform localrig1;
-		localrig1.mult(inv1, jointtrans);
-
-		btTransform localrig2;
-		localrig2.mult(inv2, jointtrans);
-
-		auto cst = new btHingeConstraint(*rig1->rigbody, *rig2->rigbody, localrig1, localrig2);
-		cst->setAxis(fwd);
-		cst->setDbgDrawSize(20);
-		cst->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI);
-
-		return cst;
-	}
-	else if (cstcontrol->type == RAGDOLL_CONSTRAINT_POINT)
-	{
-		auto origin1 = rig1->origin + rig1->dir * offset1;
-		auto origin2 = rig2->origin + rig2->dir * offset2;
-
-		btVector3 local1 = rig1->rigbody->getWorldTransform().inverse() * origin1;
-		btVector3 local2 = rig1->rigbody->getWorldTransform().inverse() * origin2;
-
-		auto cst = new btPoint2PointConstraint(*rig1->rigbody, *rig2->rigbody, local1, local2);		
-		cst->setDbgDrawSize(20);
-		return cst;
-	}
-
-	gEngfuncs.Con_Printf("CreateConstraint: Failed to create constraint for %s, invalid type %d\n", cstcontrol->name.c_str(), cstcontrol->type);
-	return NULL;
-}
-
 CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol)
 {
 	if (rigcontrol->boneindex >= studiohdr->numbones)
@@ -976,7 +933,7 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 
 		BoneMotionState* motionState = new BoneMotionState(bonematrix, offsetmatrix);
 		
-		float mass = 1;
+		float mass = rigcontrol->mass;
 		btVector3 localInertia;
 		shape->calculateLocalInertia(mass, localInertia);
 
@@ -1010,7 +967,7 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 
 		BoneMotionState* motionState = new BoneMotionState(bonematrix, offsetmatrix);
 
-		float mass = 1;
+		float mass = rigcontrol->mass;
 		btVector3 localInertia;
 		shape->calculateLocalInertia(mass, localInertia);
 
@@ -1027,6 +984,196 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 	}
 
 	gEngfuncs.Con_Printf("CreateRigBody: Failed to create rigbody %s, invalid shape type %d\n", rigcontrol->name.c_str(), rigcontrol->shape);
+	return NULL;
+}
+
+btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdoll *ragdoll, studiohdr_t *studiohdr, ragdoll_cst_control_t *cstcontrol)
+{
+	auto itor = ragdoll->m_rigbodyMap.find(cstcontrol->name);
+	if (itor == ragdoll->m_rigbodyMap.end())
+	{
+		gEngfuncs.Con_Printf("CreateConstraint: Failed to create constraint, rig %s not found\n", cstcontrol->name.c_str());
+		return NULL;
+	}
+	auto itor2 = ragdoll->m_rigbodyMap.find(cstcontrol->linktarget);
+	if (itor2 == ragdoll->m_rigbodyMap.end())
+	{
+		gEngfuncs.Con_Printf("CreateConstraint: Failed to create constraint, linked rig %s not found\n", cstcontrol->linktarget.c_str());
+		return NULL;
+	}
+
+	if (cstcontrol->boneindex1 >= studiohdr->numbones)
+	{
+		gEngfuncs.Con_Printf("CreateRigBody: Failed to create rigbody for bone %s, boneindex1 too large (%d >= %d)\n", cstcontrol->name.c_str(), cstcontrol->boneindex1, studiohdr->numbones);
+		return NULL;
+	}
+
+	if (cstcontrol->boneindex2 >= studiohdr->numbones)
+	{
+		gEngfuncs.Con_Printf("CreateRigBody: Failed to create rigbody for bone %s, boneindex2 too large (%d >= %d)\n", cstcontrol->name.c_str(), cstcontrol->boneindex2, studiohdr->numbones);
+		return NULL;
+	}
+
+	btTransform bonematrix1;
+	Matrix3x4ToTransform((*pbonetransform)[cstcontrol->boneindex1], bonematrix1);
+	TransformGoldSrcToBullet(bonematrix1);
+
+	btTransform bonematrix2;
+	Matrix3x4ToTransform((*pbonetransform)[cstcontrol->boneindex2], bonematrix2);
+	TransformGoldSrcToBullet(bonematrix2);
+
+	float offset1 = cstcontrol->offset1;
+	float offset2 = cstcontrol->offset2;
+	float offset3 = cstcontrol->offset3;
+	float offset4 = cstcontrol->offset4;
+	float offset5 = cstcontrol->offset5;
+	float offset6 = cstcontrol->offset6;
+
+	FloatGoldSrcToBullet(&offset1);
+	FloatGoldSrcToBullet(&offset2);
+	FloatGoldSrcToBullet(&offset3);
+	FloatGoldSrcToBullet(&offset4);
+	FloatGoldSrcToBullet(&offset5);
+	FloatGoldSrcToBullet(&offset6);
+
+	auto rig1 = itor->second;
+	auto rig2 = itor2->second;
+
+	if (cstcontrol->type == RAGDOLL_CONSTRAINT_CONETWIST)
+	{
+		auto trans1 = rig1->rigbody->getWorldTransform();
+		auto trans2 = rig2->rigbody->getWorldTransform();
+
+		auto inv1 = trans1.inverse();
+		auto inv2 = trans2.inverse();
+
+		btTransform localrig1;
+		localrig1.mult(inv1, bonematrix1);
+		localrig1.setOrigin(btVector3(offset1, offset2, offset3));
+
+		btTransform localrig2;
+		localrig2.mult(inv2, bonematrix2);
+		localrig2.setOrigin(btVector3(offset4, offset5, offset6));
+
+		if (offset1 == 0 && offset1 == 0 && offset3 == 0 && !(offset4 == 0 && offset5 == 0 && offset6 == 0))
+		{
+			btTransform globaljoint;
+			globaljoint.mult(trans2, localrig2);
+
+			btTransform localrig1_org;
+			localrig1_org.mult(inv1, globaljoint);
+
+			localrig1.setOrigin(localrig1_org.getOrigin());
+		}
+		else if (offset4 == 0 && offset5 == 0 && offset6 == 0 && !(offset1 == 0 && offset1 == 0 && offset3 == 0))
+		{
+			btTransform globaljoint;
+			globaljoint.mult(trans1, localrig1);
+
+			btTransform localrig2_org;
+			localrig2_org.mult(inv2, globaljoint);
+
+			localrig2.setOrigin(localrig2_org.getOrigin());
+		}
+
+		auto cst = new btConeTwistConstraint(*rig1->rigbody, *rig2->rigbody, localrig1, localrig2);
+
+		if (bv_debug->value == 4 && (rig1->rigbody->getMass() != 0 || rig2->rigbody->getMass() != 0))
+		{
+			cst->setDbgDrawSize(1);
+		}
+		else
+		{
+			cst->setDbgDrawSize(0.25f);
+		}
+		
+		cst->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, cstcontrol->factor3 * M_PI);
+
+		return cst;
+	}
+
+	else if (cstcontrol->type == RAGDOLL_CONSTRAINT_HINGE)
+	{
+		auto trans1 = rig1->rigbody->getWorldTransform();
+		auto trans2 = rig2->rigbody->getWorldTransform();
+
+		auto inv1 = trans1.inverse();
+		auto inv2 = trans2.inverse();
+
+		btTransform localrig1;
+		localrig1.mult(inv1, bonematrix1);
+		localrig1.setOrigin(btVector3(offset1, offset2, offset3));
+
+		btTransform localrig2;
+		localrig2.mult(inv2, bonematrix2);
+		localrig2.setOrigin(btVector3(offset4, offset5, offset6));
+
+		if (offset1 == 0 && offset1 == 0 && offset3 == 0 && !(offset4 == 0 && offset5 == 0 && offset6 == 0))
+		{
+			btTransform globaljoint;
+			globaljoint.mult(trans2, localrig2);
+
+			btTransform localrig1_org;
+			localrig1_org.mult(inv1, globaljoint);
+
+			localrig1.setOrigin(localrig1_org.getOrigin());
+		}
+		else if (offset4 == 0 && offset5 == 0 && offset6 == 0 && !(offset1 == 0 && offset1 == 0 && offset3 == 0))
+		{
+			btTransform globaljoint;
+			globaljoint.mult(trans1, localrig1);
+
+			btTransform localrig2_org;
+			localrig2_org.mult(inv2, globaljoint);
+
+			localrig2.setOrigin(localrig2_org.getOrigin());
+		}
+
+		auto cst = new btHingeConstraint(*rig1->rigbody, *rig2->rigbody, localrig1, localrig2);
+	
+		if (bv_debug->value == 5 && (rig1->rigbody->getMass() != 0 || rig2->rigbody->getMass() != 0))
+		{
+			cst->setDbgDrawSize(1);
+		}
+		else
+		{
+			cst->setDbgDrawSize(0.25f);
+		}
+
+		cst->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, 0.5f);
+		return cst;
+	}
+	else if (cstcontrol->type == RAGDOLL_CONSTRAINT_POINT)
+	{
+		auto trans1 = rig1->rigbody->getWorldTransform();
+		auto trans2 = rig2->rigbody->getWorldTransform();
+
+		auto inv1 = trans1.inverse();
+		auto inv2 = trans2.inverse();
+
+		btTransform localrig1;
+		localrig1.mult(inv1, bonematrix1);
+		localrig1.setOrigin(btVector3(offset1, offset2, offset3));
+
+		btTransform localrig2;
+		localrig2.mult(inv2, bonematrix2);
+		localrig2.setOrigin(btVector3(offset4, offset5, offset6));
+
+		auto cst = new btPoint2PointConstraint(*rig1->rigbody, *rig2->rigbody, localrig1.getOrigin(), localrig2.getOrigin());
+
+		if (bv_debug->value == 6 && (rig1->rigbody->getMass() != 0 || rig2->rigbody->getMass() != 0))
+		{
+			cst->setDbgDrawSize(1);
+		}
+		else
+		{
+			cst->setDbgDrawSize(0.25f);
+		}
+
+		return cst;
+	}
+
+	gEngfuncs.Con_Printf("CreateConstraint: Failed to create constraint for %s, invalid type %d\n", cstcontrol->name.c_str(), cstcontrol->type);
 	return NULL;
 }
 
@@ -1236,13 +1383,16 @@ bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_
 
 			btVector3 vel(velocity[0], velocity[1], velocity[2]);
 
+			if (vel.length() > 500)
+				vel = vel.normalize() * 500;
+
 			Vector3GoldSrcToBullet(vel);
 
 			rig->rigbody->setLinearVelocity(vel);
 
-			rig->rigbody->setFriction(0.25f);
+			rig->rigbody->setFriction(0.5f);
 
-			rig->rigbody->setRollingFriction(0.25f);
+			rig->rigbody->setRollingFriction(0.5f);
 
 			m_dynamicsWorld->addRigidBody(rig->rigbody);
 		}

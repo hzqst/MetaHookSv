@@ -21,8 +21,8 @@ public:
 
 	TEMPENTITY* CreateCorpseForEntity(cl_entity_t* ent, model_t *model);
 
+	bool HasCorpse(void) const;
 private:
-	int m_corpseBaseIndex;
 	std::unordered_map<int, TEMPENTITY*> m_corpseMap;
 };
 

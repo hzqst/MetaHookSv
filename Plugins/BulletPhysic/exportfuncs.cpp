@@ -19,6 +19,8 @@ r_studio_interface_t **gpStudioInterface;
 
 cvar_t *bv_debug = NULL;
 cvar_t *bv_simrate = NULL;
+cvar_t *bv_scale = NULL;
+
 studiohdr_t **pstudiohdr = NULL;
 model_t **r_model = NULL;
 model_t *r_worldmodel = NULL;
@@ -88,7 +90,7 @@ int StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 				{
 					auto itor = cfg->animcontrol.find(pplayer->sequence);
 
-					if (itor == cfg->animcontrol.end() || (itor != cfg->animcontrol.end() && pplayer->frame > itor->second))
+					if (itor == cfg->animcontrol.end() || (itor != cfg->animcontrol.end() && pplayer->frame >= itor->second))
 					{
 						tempent = gCorpseManager.CreateCorpseForEntity(currententity, (*r_model));
 						if (tempent)
@@ -177,6 +179,7 @@ void HUD_Init(void)
 
 	bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
 	bv_simrate = gEngfuncs.pfnRegisterVariable("bv_simrate", "64", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_scale = gEngfuncs.pfnRegisterVariable("bv_scale", "0.1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	gEngfuncs.pfnAddCommand("bv_reload", BV_Reload_f);
 }
 
@@ -200,7 +203,7 @@ void HUD_TempEntUpdate(
 	void(*Callback_TempEntPlaySound)(TEMPENTITY *pTemp, float damp))
 {
 	auto levelname = gEngfuncs.pfnGetLevelName();
-	if (levelname && levelname[0])
+	if (levelname && levelname[0] && gCorpseManager.HasCorpse())
 	{
 		gPhysicsManager.SetGravity(cl_gravity);
 		gPhysicsManager.StepSimulation(frametime);
