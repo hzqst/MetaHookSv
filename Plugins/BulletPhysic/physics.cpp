@@ -463,7 +463,6 @@ void CPhysicsManager::Init(void)
 	m_dispatcher = new btCollisionDispatcher(m_collisionConfiguration);
 	m_overlappingPairCache = new btDbvtBroadphase();
 	m_solver = new btSequentialImpulseConstraintSolver;
-	//btSetTaskScheduler(btCreateDefaultTaskScheduler());
 	m_dynamicsWorld = new btDiscreteDynamicsWorld(m_dispatcher, m_overlappingPairCache, m_solver, m_collisionConfiguration);
 
 	m_debugDraw = new CPhysicsDebugDraw;

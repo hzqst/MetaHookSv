@@ -30,9 +30,9 @@ bool CorpseManager::IsPlayerDeathAnimation(entity_state_t* entstate)
 	return false;
 }
 
-void CorpseManager::FreeCorpseForEntity(cl_entity_t* ent)
+void CorpseManager::FreeCorpseForEntity(int entindex)
 {
-	auto itor = m_corpseMap.find(ent->index);
+	auto itor = m_corpseMap.find(entindex);
 	if (itor != m_corpseMap.end())
 	{
 		auto tempent = itor->second;
@@ -47,9 +47,9 @@ void CorpseManager::FreeCorpseForEntity(cl_entity_t* ent)
 	}
 }
 
-TEMPENTITY* CorpseManager::FindCorpseForEntity(cl_entity_t* ent)
+TEMPENTITY* CorpseManager::FindCorpseForEntity(int entindex)
 {
-	auto itor = m_corpseMap.find(ent->index);
+	auto itor = m_corpseMap.find(entindex);
 	if (itor != m_corpseMap.end())
 	{
 		return itor->second;

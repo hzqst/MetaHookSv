@@ -6,6 +6,7 @@
 #include "triangleapi.h"
 #include "cvardef.h"
 #include "exportfuncs.h"
+#include "entity_types.h"
 #include "enghook.h"
 
 #include "pm_defs.h"
@@ -24,6 +25,7 @@ cvar_t *bv_scale = NULL;
 studiohdr_t **pstudiohdr = NULL;
 model_t **r_model = NULL;
 model_t *r_worldmodel = NULL;
+void *g_pGameStudioRenderer = NULL;
 
 float(*pbonetransform)[MAXSTUDIOBONES][3][4] = NULL;
 float(*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;
@@ -56,7 +58,7 @@ int Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 	return gExportfuncs.Initialize(pEnginefuncs, iVersion);
 }
 
-void __fastcall StudioSetupBones(void *pthis, int)
+void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
 {
 	if(IsEntityCorpse(IEngineStudio.GetCurrentEntity()))
 	{
@@ -66,7 +68,7 @@ void __fastcall StudioSetupBones(void *pthis, int)
 	gPrivateFuncs.StudioSetupBones(pthis, 0);
 }
 
-int StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
+int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int flags, struct entity_state_s *pplayer)
 {
 	int result = 0;
 
@@ -75,12 +77,12 @@ int StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 		if (gCorpseManager.IsPlayerDeathAnimation(pplayer))
 		{
 			auto currententity = IEngineStudio.GetCurrentEntity();
-			auto tempent = gCorpseManager.FindCorpseForEntity(currententity);
+			auto tempent = gCorpseManager.FindCorpseForEntity(pplayer->number);
 			if (!tempent)
 			{
 				bool bRagdoll = false;
 
-				gPrivateFuncs.StudioDrawPlayer(0, pplayer);
+				gPrivateFuncs.StudioDrawPlayer(pthis, 0, 0, pplayer);
 
 				std::string modelname((*r_model)->name);
 
@@ -98,16 +100,13 @@ int StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 							float frametime = currententity->curstate.animtime - currententity->latched.prevanimtime;
 
 							vec3_t velocity = { 0 };
-							if (currententity->curstate.usehull == 1)
+							if (currententity->curstate.usehull != 1)
 							{
-
+								VectorSubtract(currententity->curstate.origin, currententity->latched.prevorigin, velocity);
+								velocity[0] /= frametime;
+								velocity[1] /= frametime;
+								velocity[2] /= frametime;
 							}
-							VectorSubtract(currententity->curstate.origin, currententity->latched.prevorigin, velocity);
-							velocity[0] /= frametime;
-							velocity[1] /= frametime;
-							velocity[2] /= frametime;
-
-
 
 							if (gPhysicsManager.CreateRagdoll(cfg, tempent->entity.index, (*r_model), (*pstudiohdr), velocity))
 							{
@@ -118,34 +117,23 @@ int StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 				}
 
 				if(!bRagdoll)
-					result = gPrivateFuncs.StudioDrawPlayer(flags, pplayer);
+					result = gPrivateFuncs.StudioDrawPlayer(pthis, 0, flags, pplayer);
 			}
 			else
 			{
 				tempent->entity.curstate.colormap = pplayer->colormap;
+				VectorCopy(pplayer->origin, tempent->entity.curstate.vuser1);
 			}
 			return result;
 		}
 		else
 		{
-			gCorpseManager.FreeCorpseForEntity(IEngineStudio.GetCurrentEntity());
+			gCorpseManager.FreeCorpseForEntity(pplayer->number);
 		}
 	}
 
-	return gPrivateFuncs.StudioDrawPlayer(flags, pplayer);
+	return gPrivateFuncs.StudioDrawPlayer(pthis, 0, flags, pplayer);
 }
-
-/*int StudioCheckBBox(void)
-{
-	auto currententity = IEngineStudio.GetCurrentEntity();
-	if (gCorpseManager.IsEntityCorpse(currententity))
-	{
-
-		return true;
-	}
-
-	return IEngineStudio.StudioCheckBBox();
-}*/
 
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
 {
@@ -165,11 +153,18 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	pbonetransform = (float(*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetBoneTransform();
 	plighttransform = (float(*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetLightTransform();
 
-	g_pMetaHookAPI->InlineHook(gPrivateFuncs.StudioSetupBones, StudioSetupBones, (void *&)gPrivateFuncs.StudioSetupBones);
-	//g_pMetaHookAPI->InlineHook(IEngineStudio.StudioCheckBBox, StudioCheckBBox, (void *&)IEngineStudio.StudioCheckBBox);
+	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)(*ppinterface)->StudioDrawPlayer, 0x50, "\xFF\x74\x2A\x2A\xB9", sizeof("\xFF\x74\x2A\x2A\xB9") - 1);
+	Sig_AddrNotFound("g_pGameStudioRenderer");
 
-	gPrivateFuncs.StudioDrawPlayer = (*ppinterface)->StudioDrawPlayer;
-	(*ppinterface)->StudioDrawPlayer = StudioDrawPlayer;
+	g_pGameStudioRenderer = *(void **)(addr + sizeof("\xFF\x74\x2A\x2A\xB9") - 1);
+
+	DWORD *vftable = *(DWORD **)g_pGameStudioRenderer;
+
+	gPrivateFuncs.StudioDrawPlayer = (decltype(gPrivateFuncs.StudioDrawPlayer))vftable[3];
+	gPrivateFuncs.StudioSetupBones = (decltype(gPrivateFuncs.StudioSetupBones))vftable[7];
+
+	g_pMetaHookAPI->InlineHook(gPrivateFuncs.StudioSetupBones, GameStudioRenderer_StudioSetupBones, (void *&)gPrivateFuncs.StudioSetupBones);
+	g_pMetaHookAPI->InlineHook(gPrivateFuncs.StudioDrawPlayer, GameStudioRenderer_StudioDrawPlayer, (void *&)gPrivateFuncs.StudioDrawPlayer);
 
 	return result;
 }
@@ -192,7 +187,7 @@ void HUD_Init(void)
 
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 {
-	if (type == 0 && ent->model && ent->model->type == modtype_t::mod_brush && ent->curstate.solid == SOLID_BSP)
+	if (type == ET_NORMAL && ent->model && ent->model->type == modtype_t::mod_brush && ent->curstate.solid == SOLID_BSP)
 	{
 		gPhysicsManager.CreateForBrushModel(ent);
 	}

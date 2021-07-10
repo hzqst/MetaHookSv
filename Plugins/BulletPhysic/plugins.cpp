@@ -54,14 +54,6 @@ void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 	QGL_Init();
 
 	g_pMetaHookAPI->InlineHook(gPrivateFuncs.R_NewMap, R_NewMap, (void *&)gPrivateFuncs.R_NewMap);
-
-	PUCHAR ClientBase = (PUCHAR)GetModuleHandleA("client.dll");
-	if (ClientBase)
-	{
-		auto ClientSize = g_pMetaHookAPI->GetModuleSize((HMODULE)ClientBase);
-#define SVCLIENT_STUDIO_SETUP_BONES_SIG "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x4F\x40"
-		gPrivateFuncs.StudioSetupBones = (decltype(gPrivateFuncs.StudioSetupBones))g_pMetaHookAPI->SearchPattern((void *)ClientBase, ClientSize, SVCLIENT_STUDIO_SETUP_BONES_SIG, sizeof(SVCLIENT_STUDIO_SETUP_BONES_SIG) - 1);
-	}
 }
 
 void IPlugins::ExitGame(int iResult)

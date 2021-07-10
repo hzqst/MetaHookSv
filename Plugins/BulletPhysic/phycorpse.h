@@ -15,10 +15,9 @@ public:
 
 	bool IsPlayerDeathAnimation(entity_state_t* entstate);
 
-	void FreeCorpseForEntity(cl_entity_t* ent);
+	void FreeCorpseForEntity(int entindex);
 
-	TEMPENTITY* FindCorpseForEntity(cl_entity_t* ent);
-
+	TEMPENTITY* FindCorpseForEntity(int entindex);
 	TEMPENTITY* CreateCorpseForEntity(cl_entity_t* ent, model_t *model);
 
 	bool HasCorpse(void) const;
