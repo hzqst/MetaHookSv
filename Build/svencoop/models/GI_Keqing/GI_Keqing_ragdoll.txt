@@ -23,7 +23,7 @@ RLeg   36  37 capsule  6.0   2.5  12.0 2
 RLeg2  37  38 capsule  9.0   2.0  14.0 2
 
 [Constraint]
-Spine  Head   conetwist 6 21   0 6 0     0  0 -5.5      0.05 0.05 0.2
+Spine  Head   conetwist 6 21   0 6 0     0  0 -5.5      0.0  0.0  0.2
 Pelvis Spine  conetwist 1 5    0 0 4     0 -4  0        0.0  0.0  0.15
 
 Spine  LArm   conetwist 7 8    0 0 0     0 -4  0        0.33 0.33 1.0

@@ -97,11 +97,17 @@ int StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 						{
 							float frametime = currententity->curstate.animtime - currententity->latched.prevanimtime;
 
-							vec3_t velocity;
+							vec3_t velocity = { 0 };
+							if (currententity->curstate.usehull == 1)
+							{
+
+							}
 							VectorSubtract(currententity->curstate.origin, currententity->latched.prevorigin, velocity);
 							velocity[0] /= frametime;
 							velocity[1] /= frametime;
 							velocity[2] /= frametime;
+
+
 
 							if (gPhysicsManager.CreateRagdoll(cfg, tempent->entity.index, (*r_model), (*pstudiohdr), velocity))
 							{
@@ -180,6 +186,7 @@ void HUD_Init(void)
 	bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
 	bv_simrate = gEngfuncs.pfnRegisterVariable("bv_simrate", "64", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_scale = gEngfuncs.pfnRegisterVariable("bv_scale", "0.1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
 	gEngfuncs.pfnAddCommand("bv_reload", BV_Reload_f);
 }
 

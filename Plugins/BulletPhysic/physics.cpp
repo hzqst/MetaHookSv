@@ -6,9 +6,10 @@
 #include "physics.h"
 #include "qgl.h"
 #include "mathlib.h"
+#include <BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolverMt.h>
 
-float G2BScale = 0.2f;
-float B2GScale = 1 / G2BScale;
+const float G2BScale = 0.2f;
+const float B2GScale = 1 / G2BScale;
 
 extern studiohdr_t **pstudiohdr;
 extern model_t **r_model;
@@ -442,8 +443,8 @@ void CPhysicsManager::CreateForBrushModel(cl_entity_t *ent)
 
 void CPhysicsManager::NewMap(void)
 {
-	G2BScale = bv_scale->value;
-	B2GScale = 1 / bv_scale->value;
+	//G2BScale = bv_scale->value;
+	//B2GScale = 1 / bv_scale->value;
 
 	ReloadConfig();
 	RemoveAllRagdolls();
@@ -462,6 +463,7 @@ void CPhysicsManager::Init(void)
 	m_dispatcher = new btCollisionDispatcher(m_collisionConfiguration);
 	m_overlappingPairCache = new btDbvtBroadphase();
 	m_solver = new btSequentialImpulseConstraintSolver;
+	//btSetTaskScheduler(btCreateDefaultTaskScheduler());
 	m_dynamicsWorld = new btDiscreteDynamicsWorld(m_dispatcher, m_overlappingPairCache, m_solver, m_collisionConfiguration);
 
 	m_debugDraw = new CPhysicsDebugDraw;
