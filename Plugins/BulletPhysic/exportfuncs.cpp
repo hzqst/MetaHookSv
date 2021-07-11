@@ -193,7 +193,7 @@ void HUD_Init(void)
 
 	bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
 	bv_simrate = gEngfuncs.pfnRegisterVariable("bv_simrate", "64", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	bv_scale = gEngfuncs.pfnRegisterVariable("bv_scale", "0.25", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_scale = gEngfuncs.pfnRegisterVariable("bv_scale", "0.1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gEngfuncs.pfnAddCommand("bv_reload", BV_Reload_f);
 }

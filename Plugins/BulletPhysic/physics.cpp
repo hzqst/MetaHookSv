@@ -778,7 +778,7 @@ void CPhysicsManager::StepSimulation(double frametime)
 	{
 		gEngfuncs.Cvar_SetValue("bv_simrate", 128);
 	}
-	m_dynamicsWorld->stepSimulation(frametime, 4, 1.0f / bv_simrate->value);
+	m_dynamicsWorld->stepSimulation(frametime, 16, 1.0f / bv_simrate->value);
 }
 
 void CPhysicsManager::SetGravity(float velocity)
