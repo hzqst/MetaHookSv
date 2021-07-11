@@ -9,6 +9,11 @@ void main(void)
 {
 	vec4 diffuseColor = texture2D(diffuseTex, gl_TexCoord[0].xy);
 
+#ifdef STUDIO_NF_MASKED
+    if(diffuseColor.a < 0.5)
+        discard;
+#endif
+
 #ifdef GBUFFER_ENABLED
 
 	#ifdef TRANSPARENT_ENABLED

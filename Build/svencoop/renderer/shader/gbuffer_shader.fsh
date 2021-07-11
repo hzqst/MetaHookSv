@@ -56,6 +56,11 @@ void main()
     vec4 detailColor = vec4(1.0, 1.0, 1.0, 1.0);
 #endif
 
+#ifdef MASKED_ENABLED
+    if(diffuseColor.a < 0.5)
+        discard;
+#endif
+
 #ifdef TRANSPARENT_ENABLED
 
     #ifdef ADDITIVE_ENABLED

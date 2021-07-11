@@ -396,7 +396,7 @@ tryagain:
 
 int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal, int filter)
 {
-	int texnum = GL_AllocTexture((char *)identifier, textureType, width, height, mipmap);
+	/*int texnum = GL_AllocTexture((char *)identifier, textureType, width, height, mipmap);
 
 	if(!texnum)
 		return 0;
@@ -411,9 +411,14 @@ int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int
 	else
 		GL_Upload16( data, width, height, mipmap, iType, pPal, ansio );
 
-	return texnum;
+	return texnum;*/
 
-	//return gRefFuncs.GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iType, pPal, filter);
+	if (textureType == GLT_STUDIO && iType == TEX_TYPE_NONE && pPal == tmp_palette)
+	{
+		iType = TEX_TYPE_ALPHA;
+	}
+
+	return gRefFuncs.GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iType, pPal, filter);
 }
 
 void GL_UploadDXT(byte *data, int width, int height, qboolean mipmap, qboolean ansio)

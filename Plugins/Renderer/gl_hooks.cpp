@@ -1169,6 +1169,11 @@ void R_FillAddress(void)
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x500, R_PROJ_MATRIX_SIG_SVENGINE, sizeof(R_PROJ_MATRIX_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(r_projection_matrix);
 		r_projection_matrix = *(float **)(addr + 1);
+
+#define TMP_PALETTE_SVENGINE "\x68\x2A\x2A\x2A\x2A\x6A\x00\x6A\x00"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_StudioSetupSkin, 0x600, TMP_PALETTE_SVENGINE, sizeof(TMP_PALETTE_SVENGINE) - 1);
+		Sig_AddrNotFound(tmp_palette);
+		tmp_palette = *(void **)(addr + 1);
 	}
 	else
 	{
@@ -1432,7 +1437,6 @@ void R_InstallHook(void)
 	else
 		g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderView, R_RenderView, (void *&)gRefFuncs.R_RenderView);
 
-	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_RenderScene, R_RenderScene, (void *&)gRefFuncs.R_RenderScene);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawWorld, R_DrawWorld, (void *&)gRefFuncs.R_DrawWorld);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawSpriteModel, R_DrawSpriteModel, (void *&)gRefFuncs.R_DrawSpriteModel);	
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_NewMap, R_NewMap, (void *&)gRefFuncs.R_NewMap);
@@ -1449,6 +1453,7 @@ void R_InstallHook(void)
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_GLStudioDrawPoints, R_GLStudioDrawPoints, (void *&)gRefFuncs.R_GLStudioDrawPoints);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawBrushModel, R_DrawBrushModel, (void *&)gRefFuncs.R_DrawBrushModel);
 	g_pMetaHookAPI->InlineHook(gRefFuncs.R_AddTEntity, R_AddTEntity, (void *&)gRefFuncs.R_AddTEntity);
+	g_pMetaHookAPI->InlineHook(gRefFuncs.GL_LoadTexture2, GL_LoadTexture2, (void *&)gRefFuncs.GL_LoadTexture2);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DrawTEntitiesOnList, R_DrawTEntitiesOnList, (void *&)gRefFuncs.R_DrawTEntitiesOnList);
 	//g_pMetaHookAPI->InlineHook(gRefFuncs.R_DecalShootInternal, R_DecalShootInternal, (void *&)gRefFuncs.R_DecalShootInternal);
 

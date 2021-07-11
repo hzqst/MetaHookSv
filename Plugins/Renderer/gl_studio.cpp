@@ -32,6 +32,7 @@ float *r_shadelight;
 vec3_t *r_blightvec;
 float *r_plightvec;
 float *r_colormix;
+void *tmp_palette;
 
 //renderer
 vec3_t r_studionormal[MAXSTUDIOVERTS];
@@ -99,6 +100,9 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 
 		if (state & STUDIO_NF_ADDITIVE)
 			defs << "#define STUDIO_NF_ADDITIVE\n";
+
+		if (state & STUDIO_NF_MASKED)
+			defs << "#define STUDIO_NF_MASKED\n";
 
 		if (state & STUDIO_GBUFFER_ENABLED)
 			defs << "#define GBUFFER_ENABLED\n";
@@ -684,6 +688,9 @@ void R_GLStudioDrawPoints(void)
 				qglEnable(GL_ALPHA_TEST);
 				qglAlphaFunc(GL_GREATER, 0.5);
 				qglDepthMask(GL_TRUE);
+
+				//GBufferProgramState |= GBUFFER_MASKED_ENABLED;
+				//StudioProgramState |= STUDIO_NF_MASKED;
 			}
 			else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
 			{
@@ -873,6 +880,8 @@ void R_GLStudioDrawPoints(void)
 				qglEnable(GL_ALPHA_TEST);
 				qglAlphaFunc(GL_GREATER, 0.5);
 				qglDepthMask(GL_TRUE);
+
+				//GBufferProgramState |= GBUFFER_MASKED_ENABLED;
 			}
 			else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
 			{

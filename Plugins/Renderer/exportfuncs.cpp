@@ -41,6 +41,7 @@ char *UTIL_VarArgs(char *format, ...)
 cl_enginefunc_t gEngfuncs;
 engine_studio_api_t IEngineStudio;
 r_studio_interface_t **gpStudioInterface;
+void *g_pGameStudioRenderer = NULL;
 
 shaderapi_t ShaderAPI = 
 {
@@ -590,6 +591,8 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 	cl_shellchrome = IEngineStudio.Mod_ForName("sprites/shellchrome.spr", 1);
 
+	int result = gExportfuncs.HUD_GetStudioModelInterface(version, ppinterface, pstudio);
+
 	//Fix SvClient Portal Rendering Confliction
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -599,26 +602,31 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			auto ClientSize = g_pMetaHookAPI->GetModuleSize((HMODULE)ClientBase);
 
 #define SVCLIENT_PORTALMANAGER_RESETALL_SIG "\xC7\x45\x2A\xFF\xFF\xFF\xFF\xA3\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x0D"
-		 DWORD addr = (DWORD)
-				g_pMetaHookAPI->SearchPattern((void *)ClientBase, ClientSize, SVCLIENT_PORTALMANAGER_RESETALL_SIG, sizeof(SVCLIENT_PORTALMANAGER_RESETALL_SIG) - 1);
+			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)ClientBase, ClientSize, SVCLIENT_PORTALMANAGER_RESETALL_SIG, sizeof(SVCLIENT_PORTALMANAGER_RESETALL_SIG) - 1);
 			Sig_AddrNotFound("PortalManager_ResetAll");
 
 			gRefFuncs.PortalManager_ResetAll = (decltype(gRefFuncs.PortalManager_ResetAll))GetCallAddress(addr + 12);
 
 			g_pMetaHookAPI->InlineHook(gRefFuncs.PortalManager_ResetAll, PortalManager_ResetAll, (void *&)gRefFuncs.PortalManager_ResetAll);
 
-#define SVCLIENT_STUDIO_SETUP_BONES_SIG "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x4F\x40"
-			//gRefFuncs.StudioSetupBones = (decltype(gRefFuncs.StudioSetupBones))g_pMetaHookAPI->SearchPattern((void *)ClientBase, ClientSize, SVCLIENT_STUDIO_SETUP_BONES_SIG, sizeof(SVCLIENT_STUDIO_SETUP_BONES_SIG) - 1);
-			//Sig_FuncNotFound(StudioSetupBones);
+			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)(*ppinterface)->StudioDrawPlayer, 0x50, "\xFF\x74\x2A\x2A\xB9", sizeof("\xFF\x74\x2A\x2A\xB9") - 1);
+			Sig_AddrNotFound("g_pGameStudioRenderer");
 
-			//g_pMetaHookAPI->InlineHook(gRefFuncs.StudioSetupBones, StudioSetupBones, (void *&)gRefFuncs.StudioSetupBones);
+			g_pGameStudioRenderer = *(void **)(addr + sizeof("\xFF\x74\x2A\x2A\xB9") - 1);
+
+			DWORD *vftable = *(DWORD **)g_pGameStudioRenderer;
+
+#define SVCLIENT_STUDIO_SETUP_BONES_SIG "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x4F\x40"
+			gRefFuncs.StudioSetupBones = (decltype(gRefFuncs.StudioSetupBones))vftable[7];
+
+			g_pMetaHookAPI->InlineHook(gRefFuncs.StudioSetupBones, StudioSetupBones, (void *&)gRefFuncs.StudioSetupBones);
 		}
 	}
 
 	//Hack for R_DrawSpriteModel
 	g_pMetaHookAPI->InlineHook(gRefFuncs.CL_FxBlend, CL_FxBlend, (void *&)gRefFuncs.CL_FxBlend);
 
-	return gExportfuncs.HUD_GetStudioModelInterface(version, ppinterface, pstudio);
+	return result;
 }
 
 int HUD_UpdateClientData(client_data_t *pcldata, float flTime)
