@@ -3,6 +3,7 @@
 typedef struct
 {
 	void(*R_NewMap)(void);
+	void(*R_RecursiveWorldNode)(void *node);
 
 	//Client Studio
 	int (__fastcall *StudioDrawPlayer)(void *pthis, int, int flags, struct entity_state_s *pplayer);

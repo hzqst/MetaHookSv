@@ -6,7 +6,6 @@
 #include "physics.h"
 #include "qgl.h"
 #include "mathlib.h"
-#include <BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolverMt.h>
 
 const float G2BScale = 0.2f;
 const float B2GScale = 1 / G2BScale;
@@ -19,8 +18,12 @@ extern cvar_t *bv_debug;
 extern cvar_t *bv_simrate;
 extern cvar_t *bv_scale;
 extern model_t *r_worldmodel;
+extern int *r_visframecount;
 
 bool IsEntityCorpse(cl_entity_t* ent);
+bool IsPlayerDeathAnimation(entity_state_t* entstate);
+bool IsPlayerBarnacleAnimation(entity_state_t* entstate);
+void GlobalFreeCorpseForEntity(int entindex);
 
 const float r_identity_matrix[4][4] = {
 	{1.0f, 0.0f, 0.0f, 0.0f},
@@ -495,7 +498,9 @@ void CPhysicsManager::DebugDraw(void)
 
 		for (auto &p : m_ragdollMap)
 		{
-			auto &rigmap = p.second->m_rigbodyMap;
+			auto ragdoll = p.second;
+
+			auto &rigmap = ragdoll->m_rigbodyMap;
 			for (auto &rig : rigmap)
 			{
 				auto rigbody = rig.second->rigbody;
@@ -503,9 +508,17 @@ void CPhysicsManager::DebugDraw(void)
 				btVector3 color(1, 1, 1);
 				m_dynamicsWorld->debugDrawObject(rigbody->getWorldTransform(), rigbody->getCollisionShape(), color);
 			}
-			auto &cstarray = p.second->m_constraintArray;
+
+			auto &cstarray = ragdoll->m_constraintArray;
 
 			for (auto p : cstarray)
+			{
+				m_dynamicsWorld->debugDrawConstraint(p);
+			}
+
+			auto &cstarray2 = ragdoll->m_barnacleConstraintArray;
+
+			for (auto p : cstarray2)
 			{
 				m_dynamicsWorld->debugDrawConstraint(p);
 			}
@@ -513,30 +526,69 @@ void CPhysicsManager::DebugDraw(void)
 	}
 }
 
-void CPhysicsManager::SynchronizeTempEntntity(TEMPENTITY **ppTempEntActive)
+void CPhysicsManager::SynchronizeTempEntntity(TEMPENTITY **ppTempEntActive, double client_time)
 {
 	auto pTemp = *ppTempEntActive;
 
 	while (pTemp)
 	{
-		auto life = pTemp->die - gEngfuncs.GetClientTime();
+		auto life = pTemp->die - client_time;
 		if (life > 0 && 
 			pTemp->entity.model && 
 			IsEntityCorpse(&pTemp->entity))
 		{
 			auto ragdoll = FindRagdoll(pTemp->entity.index);
-			if (ragdoll && ragdoll->m_pelvisRigBody)
+			if (ragdoll)
 			{
-				auto worldtrans = ragdoll->m_pelvisRigBody->rigbody->getWorldTransform();
+				auto pelvis = ragdoll->m_pelvisRigBody;
+				if (pelvis)
+				{
+					auto worldtrans = pelvis->rigbody->getWorldTransform();
 
-				auto bullet_worldpos = worldtrans.getOrigin();
+					auto bulletorigin = worldtrans.getOrigin();
 
-				vec3_t goldsrc_worldpos = { bullet_worldpos.x(), bullet_worldpos.y(), bullet_worldpos.z() };
+					vec3_t goldsrcorigin = { bulletorigin.x(), bulletorigin.y(), bulletorigin.z() };
 
-				Vec3BulletToGoldSrc(goldsrc_worldpos);
+					Vec3BulletToGoldSrc(goldsrcorigin);
 
-				VectorCopy(goldsrc_worldpos, pTemp->entity.origin);
-				VectorCopy(goldsrc_worldpos, pTemp->entity.curstate.origin);
+					VectorCopy(goldsrcorigin, pTemp->entity.origin);
+					VectorCopy(goldsrcorigin, pTemp->entity.curstate.origin);
+
+					if (IsPlayerBarnacleAnimation(&pTemp->entity.curstate) && ragdoll->m_barnacleRigBody.size())
+					{
+						auto playerEntity = gEngfuncs.GetEntityByIndex(pTemp->entity.index);
+						
+						if (playerEntity && playerEntity->player && IsPlayerBarnacleAnimation(&playerEntity->curstate))
+						{
+							for (size_t i = 0; i < ragdoll->m_barnacleRigBody.size(); ++i)
+							{
+								auto rig = ragdoll->m_barnacleRigBody[i];
+
+								btVector3 vel(0, 0, rig->barnacle_vel);
+								rig->rigbody->setLinearVelocity(vel);
+							}
+						}
+						else
+						{
+							//Released by barnacle or gibbed
+							if (playerEntity->visframe == *r_visframecount)
+							{
+								ragdoll->m_barnacleRigBody.clear();
+								ragdoll->m_barnacleindex = -1;
+								for (auto cst : ragdoll->m_barnacleConstraintArray)
+								{
+									m_dynamicsWorld->removeConstraint(cst);
+									delete cst;
+								}
+								ragdoll->m_barnacleConstraintArray.clear();
+							}
+							else
+							{
+								GlobalFreeCorpseForEntity(ragdoll->m_tentindex);
+							}
+						}
+					}
+				}
 			}
 		}
 		
@@ -600,221 +652,265 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(const std::string &modelnam
 	char *ptext = pfile;
 	while (1)
 	{
-		char subname[256] = { 0 };
+		char text[256] = { 0 };
 
-		ptext = gEngfuncs.COM_ParseFile(ptext, subname);
+		ptext = gEngfuncs.COM_ParseFile(ptext, text);
 
 		if (!ptext)
 			break;
 
-		if (!strcmp(subname, "[DeathAnim]"))
+		if (!strcmp(text, "[DeathAnim]"))
 		{
 			iParsingState = 0;
 			continue;
 		}
-		else if (!strcmp(subname, "[RigidBody]"))
+		else if (!strcmp(text, "[RigidBody]"))
 		{
 			iParsingState = 1;
 			continue;
 		}
-		else if (!strcmp(subname, "[Constraint]"))
+		else if (!strcmp(text, "[Constraint]"))
 		{
 			iParsingState = 2;
 			continue;
 		}
+		else if (!strcmp(text, "[Barnacle]"))
+		{
+			iParsingState = 3;
+			continue;
+		}
+
+		std::string subname = text;
 
 		if (iParsingState == 0)
 		{
-			char frame[16] = { 0 };
+			int i_sequence = atoi(subname.c_str());
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, frame);
+			if (i_sequence < 0)
+				break;
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			float i_sequence = atof(subname);
-			float f_frame = atof(frame);
+			float f_frame = atof(text);
 
 			cfg->animcontrol[i_sequence] = f_frame;
 		}
 		else if (iParsingState == 1)
 		{
-			char boneindex[16] = { 0 };
-			char pboneindex[16] = { 0 };
-			char shape[16] = { 0 };
-			char offset[16] = { 0 };
-			char size[16] = { 0 };
-			char size2[16] = { 0 };
-			char mass[16] = { 0 };
-			
-			ptext = gEngfuncs.COM_ParseFile(ptext, boneindex);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			int i_boneindex = atoi(boneindex);
+			int i_boneindex = atoi(text);
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, pboneindex);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			int i_pboneindex = atoi(pboneindex);
+			int i_pboneindex = atoi(text);
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, shape);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
 			int i_shape = -1;
 
-			if (!strcmp(shape, "sphere"))
+			if (!strcmp(text, "sphere"))
 			{
 				i_shape = RAGDOLL_SHAPE_SPHERE;
 			}
-			else if (!strcmp(shape, "capsule"))
+			else if (!strcmp(text, "capsule"))
 			{
 				i_shape = RAGDOLL_SHAPE_CAPSULE;
 			}
 			else
 			{
-				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse shape name %s for %s\n", shape, name.c_str());
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse shape name %s for %s\n", text, name.c_str());
 				break;
 			}
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, offset);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			float f_offset = atof(offset);
+			float f_offset = atof(text);
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, size);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			float f_size = atof(size);
+			float f_size = atof(text);
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, size2);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			float f_size2 = atof(size2);
+			float f_size2 = atof(text);
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, mass);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			float f_mass = atof(mass);
+			float f_mass = atof(text);
 
 			cfg->rigcontrol.emplace_back(subname, i_boneindex, i_pboneindex, i_shape, f_offset, f_size, f_size2, f_mass);
 		}
 		else if (iParsingState == 2)
 		{
-			char linktarget[64] = { 0 };
-			char type[16] = { 0 };
-			char boneindex1[16] = { 0 };
-			char boneindex2[16] = { 0 };
-			char offset1[16] = { 0 };
-			char offset2[16] = { 0 };
-			char offset3[16] = { 0 };
-			char offset4[16] = { 0 };
-			char offset5[16] = { 0 };
-			char offset6[16] = { 0 };
-			char factor1[16] = { 0 };
-			char factor2[16] = { 0 };
-			char factor3[16] = { 0 };
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, linktarget);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
+			
+			std::string linktarget = text;
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, type);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
 			int i_type = -1;
 
-			if (!strcmp(type, "conetwist"))
+			if (!strcmp(text, "conetwist"))
 			{
 				i_type = RAGDOLL_CONSTRAINT_CONETWIST;
 			}
-			else if (!strcmp(type, "hinge"))
+			else if (!strcmp(text, "hinge"))
 			{
 				i_type = RAGDOLL_CONSTRAINT_HINGE;
 			}
-			else if (!strcmp(type, "point"))
+			else if (!strcmp(text, "point"))
 			{
 				i_type = RAGDOLL_CONSTRAINT_POINT;
 			}
 			else
 			{
-				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse constraint type %s for %s\n", type, name.c_str());
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse constraint type %s for %s\n", text, name.c_str());
 				break;
 			}
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, boneindex1);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			int i_boneindex1 = atoi(boneindex1);
+			int i_boneindex1 = atoi(text);
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, boneindex2);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			int i_boneindex2 = atoi(boneindex2);
+			int i_boneindex2 = atoi(text);
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, offset1);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			float f_offset1 = atof(offset1);
+			float f_offset1 = atof(text);
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, offset2);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			float f_offset2 = atof(offset2);
+			float f_offset2 = atof(text);
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, offset3);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			float f_offset3 = atof(offset3);
+			float f_offset3 = atof(text);
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, offset4);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			float f_offset4 = atof(offset4);
+			float f_offset4 = atof(text);
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, offset5);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			float f_offset5 = atof(offset5);
+			float f_offset5 = atof(text);
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, offset6);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			float f_offset6 = atof(offset6);
+			float f_offset6 = atof(text);
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, factor1);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			float f_factor1 = atof(factor1);
+			float f_factor1 = atof(text);
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, factor2);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			float f_factor2 = atof(factor2);
+			float f_factor2 = atof(text);
 
-			ptext = gEngfuncs.COM_ParseFile(ptext, factor3);
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			float f_factor3 = atof(factor3);
+			float f_factor3 = atof(text);
 
 			cfg->cstcontrol.emplace_back(subname, linktarget, i_type, i_boneindex1, i_boneindex2, f_offset1, f_offset2, f_offset3, f_offset4, f_offset5, f_offset6, f_factor1, f_factor2, f_factor3);
+		}
+		else if (iParsingState == 3)
+		{
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+				break;
+
+			int i_type = -1;
+
+			if (!strcmp(text, "slider"))
+			{
+				i_type = RAGDOLL_BARNACLE_SLIDER;
+			}
+			else if (!strcmp(text, "dof6"))
+			{
+				i_type = RAGDOLL_BARNACLE_DOF6;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse barnacle type %s for %s\n", text, name.c_str());
+				break;
+			}
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+				break;
+
+			float f_offsetX = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+				break;
+
+			float f_offsetY = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+				break;
+
+			float f_offsetZ = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+				break;
+
+			float f_vel = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+				break;
+
+			float f_barZ = atof(text);
+			
+			cfg->barcontrol.emplace_back(subname, f_offsetX, f_offsetY, f_offsetZ, i_type, f_vel, f_barZ);
 		}
 	}
 
@@ -942,6 +1038,7 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 
 		auto rig = new CRigBody;
 
+		rig->name = rigcontrol->name;
 		rig->rigbody = new btRigidBody(cInfo);
 		rig->origin = origin;
 		rig->dir = dir;
@@ -976,6 +1073,7 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 
 		auto rig = new CRigBody;
 
+		rig->name = rigcontrol->name;
 		rig->rigbody = new btRigidBody(cInfo);
 		rig->origin = origin;
 		rig->dir = dir;
@@ -993,13 +1091,13 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdoll *ragdoll, studiohd
 	auto itor = ragdoll->m_rigbodyMap.find(cstcontrol->name);
 	if (itor == ragdoll->m_rigbodyMap.end())
 	{
-		gEngfuncs.Con_Printf("CreateConstraint: Failed to create constraint, rig %s not found\n", cstcontrol->name.c_str());
+		gEngfuncs.Con_Printf("CreateConstraint: Failed to create constraint, rigidbody %s not found\n", cstcontrol->name.c_str());
 		return NULL;
 	}
 	auto itor2 = ragdoll->m_rigbodyMap.find(cstcontrol->linktarget);
 	if (itor2 == ragdoll->m_rigbodyMap.end())
 	{
-		gEngfuncs.Con_Printf("CreateConstraint: Failed to create constraint, linked rig %s not found\n", cstcontrol->linktarget.c_str());
+		gEngfuncs.Con_Printf("CreateConstraint: Failed to create constraint, linked rigidbody %s not found\n", cstcontrol->linktarget.c_str());
 		return NULL;
 	}
 
@@ -1141,7 +1239,7 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdoll *ragdoll, studiohd
 			cst->setDbgDrawSize(0.25f);
 		}
 
-		cst->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, 0.5f);
+		cst->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, 0.1f);
 		return cst;
 	}
 	else if (cstcontrol->type == RAGDOLL_CONSTRAINT_POINT)
@@ -1217,6 +1315,12 @@ void CPhysicsManager::RemoveAllRagdolls()
 		}
 
 		ragdoll->m_constraintArray.clear();
+
+		for (auto p : ragdoll->m_barnacleConstraintArray)
+		{
+			m_dynamicsWorld->removeConstraint(p);
+			delete p;
+		}
 
 		for (auto p : ragdoll->m_rigbodyMap)
 		{
@@ -1326,13 +1430,16 @@ CRagdoll *CPhysicsManager::FindRagdoll(int tentindex)
 	return NULL;
 }
 
-bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_t *model, studiohdr_t *studiohdr, float *velocity)
+bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_t *model, studiohdr_t *studiohdr, float *origin, float *velocity, bool bBarnacle, cl_entity_t *barnacle)
 {
 	if(FindRagdoll(tentindex))
 	{
 		gEngfuncs.Con_Printf("CreateRagdoll: Already exists\n");
 		return true;
 	}
+
+	btVector3 player_origin(origin[0], origin[1], origin[2]);
+	Vector3GoldSrcToBullet(player_origin);
 
 	std::string modelname(model->name);
 
@@ -1379,7 +1486,7 @@ bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_
 			ragdoll->m_keyBones.emplace_back(rigcontrol->boneindex);
 			ragdoll->m_rigbodyMap[rigcontrol->name] = rig;
 
-			if (rigcontrol->name == "Pelvis")
+			if (rig->name == "Pelvis")
 				ragdoll->m_pelvisRigBody = rig;
 
 			btVector3 vel(velocity[0], velocity[1], velocity[2]);
@@ -1396,6 +1503,91 @@ bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_
 			rig->rigbody->setRollingFriction(0.5f);
 
 			m_dynamicsWorld->addRigidBody(rig->rigbody);
+
+			if (bBarnacle && barnacle)
+			{
+				ragdoll->m_barnacleindex = barnacle->index;
+
+				for (size_t j = 0; j < cfg->barcontrol.size(); ++j)
+				{
+					auto barcontrol = &cfg->barcontrol[j];
+
+					if (barcontrol->name == rig->name)
+					{
+						btVector3 barnacle_origin(barnacle->origin[0], barnacle->origin[1], barnacle->origin[2] + barcontrol->barZ);
+						Vector3GoldSrcToBullet(barnacle_origin);
+
+						if (std::find(ragdoll->m_barnacleRigBody.begin(), ragdoll->m_barnacleRigBody.end(), rig) == ragdoll->m_barnacleRigBody.end())
+							ragdoll->m_barnacleRigBody.emplace_back(rig);
+
+						if (barcontrol->type == RAGDOLL_BARNACLE_SLIDER)
+						{
+							btVector3 fwd(1, 0, 0);
+
+							btTransform rigtrans = rig->rigbody->getWorldTransform();
+
+							auto transat = MatrixLookAt(rigtrans, barnacle_origin, fwd);
+
+							auto inv = rigtrans.inverse();
+
+							btTransform localrig1;
+							localrig1.mult(inv, transat);
+
+							btVector3 offset(barcontrol->offsetX, barcontrol->offsetY, barcontrol->offsetZ);
+							Vector3GoldSrcToBullet(offset);
+							localrig1.setOrigin(offset);
+
+							auto constraint = new btSliderConstraint(*rig->rigbody, localrig1, true);
+
+							auto distance = barnacle_origin.distance(rigtrans.getOrigin());
+
+							constraint->setLowerAngLimit(M_PI * -1);
+							constraint->setUpperAngLimit(M_PI * 1);
+							constraint->setLowerLinLimit(0);
+							constraint->setUpperLinLimit(distance);
+							constraint->setDbgDrawSize(1);
+
+							rig->barnacle_vel = barcontrol->velocity;
+
+							ragdoll->m_barnacleConstraintArray.emplace_back(constraint);
+							m_dynamicsWorld->addConstraint(constraint);
+							break;
+						}
+						else if (barcontrol->type == RAGDOLL_BARNACLE_DOF6)
+						{
+							btVector3 fwd(1, 0, 0);
+
+							btTransform rigtrans = rig->rigbody->getWorldTransform();
+
+							auto transat = MatrixLookAt(rigtrans, barnacle_origin, fwd);
+
+							auto inv = rigtrans.inverse();
+
+							btTransform localrig1;
+							localrig1.mult(inv, transat);
+
+							btVector3 offset(barcontrol->offsetX, barcontrol->offsetY, barcontrol->offsetZ);
+							Vector3GoldSrcToBullet(offset);
+							localrig1.setOrigin(offset);
+
+							auto constraint = new btGeneric6DofConstraint(*rig->rigbody, localrig1, true);
+
+							auto distance = barnacle_origin.distance(rigtrans.getOrigin());
+
+							constraint->setAngularLowerLimit(btVector3(M_PI * -1, M_PI * -1, M_PI * -1));
+							constraint->setAngularUpperLimit(btVector3(M_PI * 1, M_PI * 1, M_PI * 1));
+							constraint->setLinearLowerLimit(btVector3(0, 0, 0));
+							constraint->setLinearUpperLimit(btVector3(distance, 0, 0));
+							constraint->setDbgDrawSize(1);
+
+							rig->barnacle_vel = barcontrol->velocity;
+
+							ragdoll->m_barnacleConstraintArray.emplace_back(constraint);
+							m_dynamicsWorld->addConstraint(constraint);
+						}
+					}
+				}
+			}
 		}
 	}
 
@@ -1409,15 +1601,16 @@ bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_
 	{
 		auto cstcontrol = &cfg->cstcontrol[i];
 
-		auto cst = CreateConstraint(ragdoll, studiohdr, cstcontrol);
+		auto constraint = CreateConstraint(ragdoll, studiohdr, cstcontrol);
 
-		if (cst)
+		if (constraint)
 		{
-			ragdoll->m_constraintArray.emplace_back(cst);
-
-			m_dynamicsWorld->addConstraint(cst, true);
+			ragdoll->m_constraintArray.emplace_back(constraint);
+			m_dynamicsWorld->addConstraint(constraint, true);
 		}
 	}
+
+	
 
 	ragdoll->m_tentindex = tentindex;
 	m_ragdollMap[tentindex] = ragdoll;

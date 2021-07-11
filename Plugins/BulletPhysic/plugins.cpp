@@ -14,6 +14,8 @@ DWORD g_dwEngineBase, g_dwEngineSize;
 DWORD g_dwEngineBuildnum;
 int g_iEngineType;
 
+extern int *r_visframecount;
+
 void IPlugins::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
 	g_pInterface = pInterface;
@@ -27,6 +29,7 @@ void IPlugins::Shutdown(void)
 }
 
 #define R_NEWMAP_SIG_SVENGINE "\x55\x8B\xEC\x51\xC7\x45\xFC\x00\x00\x00\x00\xEB\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC\x81\x7D\xFC\x00\x01\x00\x00"
+#define R_RECURSIVEWORLDNODE_SIG_SVENGINE "\x83\xEC\x08\x53\x8B\x5C\x24\x10\x83\x3B\xFE"
 
 void IPlugins::LoadEngine(void)
 {
@@ -37,7 +40,21 @@ void IPlugins::LoadEngine(void)
 	g_dwEngineBase = g_pMetaHookAPI->GetEngineBase();
 	g_dwEngineSize = g_pMetaHookAPI->GetEngineSize();
 
+	gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))g_pMetaHookAPI->SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, R_RECURSIVEWORLDNODE_SIG_SVENGINE, sizeof(R_RECURSIVEWORLDNODE_SIG_SVENGINE) - 1);
+	if (!gPrivateFuncs.R_RecursiveWorldNode)
+		Sys_ErrorEx("R_RecursiveWorldNode not found");
+
+	//mov     eax, [edi+4]
+	//mov     ecx, r_visframecount
+#define R_VISFRAMECOUNT_SIG_SVENGINE "\x8B\x43\x04\x3B\x05"
+	DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_RecursiveWorldNode, 0x100, R_VISFRAMECOUNT_SIG_SVENGINE, sizeof(R_VISFRAMECOUNT_SIG_SVENGINE) - 1);
+	if (!addr)
+		Sys_ErrorEx("r_visframecount not found");
+	r_visframecount = *(int **)(addr + 5);
+
 	gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))g_pMetaHookAPI->SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, R_NEWMAP_SIG_SVENGINE, sizeof(R_NEWMAP_SIG_SVENGINE) - 1);
+	if (!gPrivateFuncs.R_NewMap)
+		Sys_ErrorEx("R_NewMap not found");
 }
 
 void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)

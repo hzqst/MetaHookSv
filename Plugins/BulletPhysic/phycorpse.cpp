@@ -15,19 +15,32 @@ bool IsEntityCorpse(cl_entity_t* ent)
 	return false;
 }
 
-CorpseManager gCorpseManager;
-
-CorpseManager::CorpseManager(void)
-{
-
-}
-
-bool CorpseManager::IsPlayerDeathAnimation(entity_state_t* entstate)
+bool IsPlayerDeathAnimation(entity_state_t* entstate)
 {
 	if (entstate->sequence >= 12 && entstate->sequence <= 18)
 		return true;
 
 	return false;
+}
+
+bool IsPlayerBarnacleAnimation(entity_state_t* entstate)
+{
+	if (entstate->sequence >= 182 && entstate->sequence <= 185)
+		return true;
+
+	return false;
+}
+
+void GlobalFreeCorpseForEntity(int entindex)
+{
+	gCorpseManager.FreeCorpseForEntity(entindex);
+}
+
+CorpseManager gCorpseManager;
+
+CorpseManager::CorpseManager(void)
+{
+
 }
 
 void CorpseManager::FreeCorpseForEntity(int entindex)
@@ -47,6 +60,30 @@ void CorpseManager::FreeCorpseForEntity(int entindex)
 	}
 }
 
+cl_entity_t* CorpseManager::FindBarnacleForPlayer(cl_entity_t *player)
+{
+	for (int i = 33; i < 512; ++i)
+	{
+		auto ent = gEngfuncs.GetEntityByIndex(i);
+		if (ent && ent->model && ent->model->type == modtype_t::mod_studio && !strcmp(ent->model->name, "models/barnacle.mdl"))
+		{
+			if (ent->curstate.sequence >= 3 && ent->curstate.sequence <= 5)
+			{
+				if (fabs(player->origin[0] - ent->origin[0]) < 1 &&
+					fabs(player->origin[1] - ent->origin[1]) < 1)
+				{
+					return ent;
+				}
+			}
+		}
+
+		if (!ent)
+			break;
+	}
+
+	return NULL;
+}
+
 TEMPENTITY* CorpseManager::FindCorpseForEntity(int entindex)
 {
 	auto itor = m_corpseMap.find(entindex);
@@ -62,6 +99,30 @@ bool CorpseManager::HasCorpse(void) const
 	return m_corpseMap.size();
 }
 
+void CorpseManager::AddBarnacle(int entindex)
+{
+	m_barnacles.emplace(entindex);
+}
+
+cl_entity_t *CorpseManager::FindBarnacleForPlayer(entity_state_t *player)
+{
+	for (auto index : m_barnacles)
+	{
+		auto ent = gEngfuncs.GetEntityByIndex(index);
+		if (ent && ent->index == index && ent->model && ent->model->type == mod_studio &&
+			!strcmp(ent->model->name, "models/barnacle.mdl") && ent->curstate.sequence >= 3)
+		{
+			if (fabs(player->origin[0] - ent->origin[0]) < 1 &&
+				fabs(player->origin[1] - ent->origin[1]) < 1)
+			{
+				return ent;
+			}
+		}
+	}
+
+	return NULL;
+}
+
 TEMPENTITY* CorpseManager::CreateCorpseForEntity(cl_entity_t* ent, model_t *model)
 {
 	TEMPENTITY* tempent = gEngfuncs.pEfxAPI->CL_TempEntAlloc(ent->curstate.origin, model);
@@ -69,6 +130,7 @@ TEMPENTITY* CorpseManager::CreateCorpseForEntity(cl_entity_t* ent, model_t *mode
 		return NULL;
 
 	tempent->entity.curstate.iuser1 = ent->index;
+	tempent->entity.curstate.iuser2 = 0;
 	tempent->entity.curstate.iuser3 = PhyCorpseFlag1;
 	tempent->entity.curstate.iuser4 = PhyCorpseFlag2;
 	tempent->entity.curstate.body = ent->curstate.body;

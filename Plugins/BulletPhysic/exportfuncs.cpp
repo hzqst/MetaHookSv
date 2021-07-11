@@ -26,11 +26,14 @@ studiohdr_t **pstudiohdr = NULL;
 model_t **r_model = NULL;
 model_t *r_worldmodel = NULL;
 void *g_pGameStudioRenderer = NULL;
+int *r_visframecount = NULL;
 
 float(*pbonetransform)[MAXSTUDIOBONES][3][4] = NULL;
 float(*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;
 
 bool IsEntityCorpse(cl_entity_t* ent);
+bool IsPlayerDeathAnimation(entity_state_t* entstate);
+bool IsPlayerBarnacleAnimation(entity_state_t* entstate);
 
 void Sys_ErrorEx(const char *fmt, ...)
 {
@@ -74,7 +77,9 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 
 	if (flags & STUDIO_RENDER)
 	{
-		if (gCorpseManager.IsPlayerDeathAnimation(pplayer))
+		bool bPlayerDeath = IsPlayerDeathAnimation(pplayer);
+		bool bPlayerBarnacle = bPlayerDeath ? false : IsPlayerBarnacleAnimation(pplayer);
+		if (bPlayerDeath || bPlayerBarnacle)
 		{
 			auto currententity = IEngineStudio.GetCurrentEntity();
 			auto tempent = gCorpseManager.FindCorpseForEntity(pplayer->number);
@@ -92,23 +97,28 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 				{
 					auto itor = cfg->animcontrol.find(pplayer->sequence);
 
-					if (itor == cfg->animcontrol.end() || (itor != cfg->animcontrol.end() && pplayer->frame >= itor->second))
+					if (itor != cfg->animcontrol.end() && pplayer->frame >= itor->second)
 					{
 						tempent = gCorpseManager.CreateCorpseForEntity(currententity, (*r_model));
 						if (tempent)
 						{
-							float frametime = currententity->curstate.animtime - currententity->latched.prevanimtime;
-
 							vec3_t velocity = { 0 };
-							if (currententity->curstate.usehull != 1)
+							if (bPlayerDeath && currententity->curstate.usehull != 1)
 							{
+								float frametime = currententity->curstate.animtime - currententity->latched.prevanimtime;
 								VectorSubtract(currententity->curstate.origin, currententity->latched.prevorigin, velocity);
 								velocity[0] /= frametime;
 								velocity[1] /= frametime;
 								velocity[2] /= frametime;
 							}
 
-							if (gPhysicsManager.CreateRagdoll(cfg, tempent->entity.index, (*r_model), (*pstudiohdr), velocity))
+							cl_entity_t *barnacle = NULL;
+							if (bPlayerBarnacle)
+							{
+								barnacle = gCorpseManager.FindBarnacleForPlayer(pplayer);
+							}
+
+							if (gPhysicsManager.CreateRagdoll(cfg, tempent->entity.index, (*r_model), (*pstudiohdr), pplayer->origin, velocity, bPlayerBarnacle, barnacle))
 							{
 								bRagdoll = true;
 							}
@@ -122,7 +132,9 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 			else
 			{
 				tempent->entity.curstate.colormap = pplayer->colormap;
-				VectorCopy(pplayer->origin, tempent->entity.curstate.vuser1);
+				tempent->entity.curstate.gaitsequence = pplayer->gaitsequence;
+				tempent->entity.curstate.sequence = pplayer->sequence;
+				tempent->entity.curstate.frame = pplayer->frame;
 			}
 			return result;
 		}
@@ -187,9 +199,20 @@ void HUD_Init(void)
 
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 {
-	if (type == ET_NORMAL && ent->model && ent->model->type == modtype_t::mod_brush && ent->curstate.solid == SOLID_BSP)
+	if (type == ET_NORMAL && ent->model)
 	{
-		gPhysicsManager.CreateForBrushModel(ent);
+		if (ent->model->type == modtype_t::mod_brush && ent->curstate.solid == SOLID_BSP)
+		{
+			gPhysicsManager.CreateForBrushModel(ent);
+		}
+
+		if (ent->model->type == modtype_t::mod_studio && !strcmp(ent->model->name, "models/barnacle.mdl"))
+		{
+			if (ent->curstate.sequence >= 3)
+			{
+				gCorpseManager.AddBarnacle(ent->index);
+			}
+		}
 	}
 
 	return gExportfuncs.HUD_AddEntity(type, ent, model);
@@ -208,8 +231,8 @@ void HUD_TempEntUpdate(
 	if (levelname && levelname[0] && gCorpseManager.HasCorpse())
 	{
 		gPhysicsManager.SetGravity(cl_gravity);
+		gPhysicsManager.SynchronizeTempEntntity(ppTempEntActive, client_time);
 		gPhysicsManager.StepSimulation(frametime);
-		gPhysicsManager.SynchronizeTempEntntity(ppTempEntActive);
 	}
 
 	return gExportfuncs.HUD_TempEntUpdate(frametime, client_time, cl_gravity, ppTempEntFree, ppTempEntActive, Callback_AddVisibleEntity, Callback_TempEntPlaySound);

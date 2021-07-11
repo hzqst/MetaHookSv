@@ -4,6 +4,7 @@
 #include <cl_entity.h>
 #include <com_model.h>
 #include <unordered_map>
+#include <set>
 
 #define PhyCorpseFlag1 (753951)
 #define PhyCorpseFlag2 (152359)
@@ -13,16 +14,16 @@ class CorpseManager
 public:
 	CorpseManager(void);
 
-	bool IsPlayerDeathAnimation(entity_state_t* entstate);
-
 	void FreeCorpseForEntity(int entindex);
-
+	cl_entity_t* FindBarnacleForPlayer(cl_entity_t *player);
 	TEMPENTITY* FindCorpseForEntity(int entindex);
 	TEMPENTITY* CreateCorpseForEntity(cl_entity_t* ent, model_t *model);
-
+	void AddBarnacle(int entindex);
 	bool HasCorpse(void) const;
+	cl_entity_t *FindBarnacleForPlayer(entity_state_t *);
 private:
 	std::unordered_map<int, TEMPENTITY*> m_corpseMap;
+	std::set<int> m_barnacles;
 };
 
 extern CorpseManager gCorpseManager;
