@@ -2,6 +2,10 @@
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/6.png)
 
+![](https://github.com/hzqst/MetaHookSv/raw/main/img/7.png)
+
+[中文DOC](BPhysicsDocCN.md)
+
 ### Console Vars
 
 bv_simrate 32 ~ 128 : how many times to perform simulation per persond ? higher simulation frequency get more accurate result, while eating more CPU resource. default : 64
@@ -28,7 +32,7 @@ bv_debug 6 : enable bullet-engine's debug-drawing. both ragdoll rigidbodies and 
 
 #### [DeathAnim]
 
-example: 12 120
+##### example: 12 120
 
 "12" for the sequence number of death animation 
 

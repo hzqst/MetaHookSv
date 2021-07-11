@@ -60,7 +60,7 @@ A subtitle plugin designed for displaying subtitles and translate in-game HUD te
 
 Bullet physics engine are introduced to perform ragdoll simulatation.
 
-[DOCUMENTATION](BPhysicsDoc.md)
+[DOCUMENTATION](BPhysicsDoc.md) [中文文档](BPhysicsDocCN.md)
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/6.png)
 
