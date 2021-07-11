@@ -15,7 +15,6 @@ public:
 	CorpseManager(void);
 
 	void FreeCorpseForEntity(int entindex);
-	cl_entity_t* FindBarnacleForPlayer(cl_entity_t *player);
 	TEMPENTITY* FindCorpseForEntity(int entindex);
 	TEMPENTITY* CreateCorpseForEntity(cl_entity_t* ent, model_t *model);
 	void AddBarnacle(int entindex);

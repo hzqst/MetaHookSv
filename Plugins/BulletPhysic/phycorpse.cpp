@@ -36,6 +36,14 @@ void GlobalFreeCorpseForEntity(int entindex)
 	gCorpseManager.FreeCorpseForEntity(entindex);
 }
 
+bool IsEntityBarnacle(cl_entity_t* ent)
+{
+	if (ent && ent->model && ent->model->type == mod_studio &&
+		!strcmp(ent->model->name, "models/barnacle.mdl") && ent->curstate.sequence >= 3 && ent->curstate.sequence <= 5)
+		return true;
+
+	return false;
+}
 CorpseManager gCorpseManager;
 
 CorpseManager::CorpseManager(void)
@@ -58,30 +66,6 @@ void CorpseManager::FreeCorpseForEntity(int entindex)
 
 		return;
 	}
-}
-
-cl_entity_t* CorpseManager::FindBarnacleForPlayer(cl_entity_t *player)
-{
-	for (int i = 33; i < 512; ++i)
-	{
-		auto ent = gEngfuncs.GetEntityByIndex(i);
-		if (ent && ent->model && ent->model->type == modtype_t::mod_studio && !strcmp(ent->model->name, "models/barnacle.mdl"))
-		{
-			if (ent->curstate.sequence >= 3 && ent->curstate.sequence <= 5)
-			{
-				if (fabs(player->origin[0] - ent->origin[0]) < 1 &&
-					fabs(player->origin[1] - ent->origin[1]) < 1)
-				{
-					return ent;
-				}
-			}
-		}
-
-		if (!ent)
-			break;
-	}
-
-	return NULL;
 }
 
 TEMPENTITY* CorpseManager::FindCorpseForEntity(int entindex)
@@ -109,11 +93,11 @@ cl_entity_t *CorpseManager::FindBarnacleForPlayer(entity_state_t *player)
 	for (auto index : m_barnacles)
 	{
 		auto ent = gEngfuncs.GetEntityByIndex(index);
-		if (ent && ent->index == index && ent->model && ent->model->type == mod_studio &&
-			!strcmp(ent->model->name, "models/barnacle.mdl") && ent->curstate.sequence >= 3)
+		if (IsEntityBarnacle(ent))
 		{
 			if (fabs(player->origin[0] - ent->origin[0]) < 1 &&
-				fabs(player->origin[1] - ent->origin[1]) < 1)
+				fabs(player->origin[1] - ent->origin[1]) < 1 && 
+				player->origin[2] < ent->origin[2] + 16)
 			{
 				return ent;
 			}
@@ -153,7 +137,7 @@ TEMPENTITY* CorpseManager::CreateCorpseForEntity(cl_entity_t* ent, model_t *mode
 	tempent->callback = NULL;
 
 	tempent->die = gEngfuncs.GetClientTime() + 999999;
-	tempent->entity.index = ent->index;// m_corpseBaseIndex++;
+	tempent->entity.index = ent->index;
 
 	m_corpseMap[ent->index] = tempent;
 

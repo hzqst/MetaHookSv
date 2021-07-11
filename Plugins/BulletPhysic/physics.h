@@ -75,23 +75,23 @@ typedef struct ragdoll_cst_control_s
 
 typedef struct ragdoll_bar_control_s
 {
-	ragdoll_bar_control_s(const std::string &n, float x, float y, float z, int t, float v, float bz)
+	ragdoll_bar_control_s(const std::string &n, float x, float y, float z, int t, float f1, float f2)
 	{
 		name = n;
+		type = t;
 		offsetX = x;
 		offsetY = y;
 		offsetZ = z;
-		type = t;
-		velocity = v;
-		barZ = bz;
+		factor1 = f1;
+		factor2 = f2;
 	}
 	std::string name;
+	int type;
 	float offsetX;
 	float offsetY;
 	float offsetZ;
-	int type;
-	float velocity;
-	float barZ;
+	float factor1;
+	float factor2;
 }ragdoll_bar_control_t;
 
 typedef struct ragdoll_config_s
@@ -111,10 +111,16 @@ public:
 	{
 		rigbody = NULL;
 		barnacle_vel = 0;
+		barnacle_chew_vel = 0;
+		barnacle_chew_time = 0;
+		barnacle_chew_duration = 0;
 	}
 	CRigBody(const std::string &n, btRigidBody *a1, const btVector3 &a2, const btVector3 &a3, int a4) : name(n), rigbody(a1), origin(a2), dir(a3), boneindex(a4)
 	{
 		barnacle_vel = 0;
+		barnacle_chew_vel = 0;
+		barnacle_chew_time = 0;
+		barnacle_chew_duration = 0;
 	}
 	std::string name;
 	btRigidBody *rigbody;
@@ -122,6 +128,10 @@ public:
 	btVector3 dir;
 	int boneindex;
 	float barnacle_vel;
+	float barnacle_chew_vel;
+	float barnacle_chew_time;
+	float barnacle_chew_duration;
+	btVector3 barnacle_drag_offset;
 };
 
 ATTRIBUTE_ALIGNED16(class)
@@ -139,7 +149,8 @@ public:
 	int m_tentindex;
 	int m_barnacleindex;
 	CRigBody *m_pelvisRigBody;
-	std::vector<CRigBody *> m_barnacleRigBody;
+	std::vector<CRigBody *> m_barnacleDragRigBody;
+	std::vector<CRigBody *> m_barnacleChewRigBody;
 	std::vector<int> m_keyBones;
 	std::vector<int> m_nonKeyBones;
 	btTransform m_boneRelativeTransform[128];
@@ -155,7 +166,7 @@ typedef struct brushvertex_s
 
 typedef struct brushface_s
 {
-	int index;
+	//int index;
 	int start_vertex;
 	int num_vertexes;
 }brushface_t;
@@ -189,6 +200,7 @@ public:
 	CStaticBody()
 	{
 		m_entindex = -1;
+		m_rigbody = NULL;
 		m_iva = NULL;
 	}
 	int m_entindex;
@@ -205,6 +217,7 @@ public:
 
 #define RAGDOLL_BARNACLE_SLIDER  1
 #define RAGDOLL_BARNACLE_DOF6    2
+#define RAGDOLL_BARNACLE_CHEW    3
 
 ATTRIBUTE_ALIGNED16(class)
 BoneMotionState : public btMotionState
@@ -298,11 +311,13 @@ public:
 	bool CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_t *model, studiohdr_t *hdr, float *origin, float *velocity, bool bBarnacle, cl_entity_t *barnacle);
 	CRigBody *CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol);
 	btTypedConstraint *CreateConstraint(CRagdoll *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
-	void CreateStatic(int entindex, indexvertexarray_t *va);
+	void CreateStatic(cl_entity_t *ent, indexvertexarray_t *va);
 	void CreateForBrushModel(cl_entity_t *ent);
+	void CreateForBarnacle(cl_entity_t *ent);
 	void RotateForEntity(cl_entity_t *ent, float matrix[4][4]);
-	void SynchronizeTempEntntity(TEMPENTITY **ppTempEntActive, double client_time);
+	void SynchronizeTempEntntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time);
 	CRagdoll *FindRagdoll(int tentindex);
+	void ReleaseRagdollFromBarnacle(CRagdoll *ragdoll);
 private:
 	btDefaultCollisionConfiguration* m_collisionConfiguration;
 	btCollisionDispatcher* m_dispatcher;

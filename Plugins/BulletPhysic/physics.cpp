@@ -7,8 +7,8 @@
 #include "qgl.h"
 #include "mathlib.h"
 
-const float G2BScale = 0.2f;
-const float B2GScale = 1 / G2BScale;
+float G2BScale = 0.2f;
+float B2GScale = 1 / G2BScale;
 
 extern studiohdr_t **pstudiohdr;
 extern model_t **r_model;
@@ -20,6 +20,7 @@ extern cvar_t *bv_scale;
 extern model_t *r_worldmodel;
 extern int *r_visframecount;
 
+bool IsEntityBarnacle(cl_entity_t* ent);
 bool IsEntityCorpse(cl_entity_t* ent);
 bool IsPlayerDeathAnimation(entity_state_t* entstate);
 bool IsPlayerBarnacleAnimation(entity_state_t* entstate);
@@ -148,6 +149,8 @@ CPhysicsManager::CPhysicsManager()
 	 m_solver = NULL;
 	 m_dynamicsWorld = NULL;
 	 m_debugDraw = NULL;
+
+	
 }
 
 void CPhysicsManager::GenerateIndexedVertexArray(model_t *mod, indexvertexarray_t *va)
@@ -190,7 +193,6 @@ void CPhysicsManager::GenerateIndexedVertexArray(model_t *mod, indexvertexarray_
 			auto poly = surf[i].polys;
 
 			brushface_t *face = &va->vFaceBuffer[va->iCurFace];
-			face->index = i;
 
 			face->start_vertex = va->iCurVert;
 			for (poly = surf[i].polys; poly; poly = poly->next)
@@ -259,7 +261,6 @@ void CPhysicsManager::GenerateIndexedVertexArray(model_t *mod, indexvertexarray_
 				continue;
 
 			brushface_t *face = &va->vFaceBuffer[va->iCurFace];
-			face->index = i;
 
 			face->start_vertex = va->iCurVert;
 			for (auto poly = psurf->polys; poly; poly = poly->next)
@@ -299,7 +300,7 @@ void CPhysicsManager::GenerateIndexedVertexArray(model_t *mod, indexvertexarray_
 	}	
 }
 
-void CPhysicsManager::CreateStatic(int entindex, indexvertexarray_t *va)
+void CPhysicsManager::CreateStatic(cl_entity_t *ent, indexvertexarray_t *va)
 {
 	int iNumTris = 0;
 	for (int i = 0; i < va->iNumFaces; i++)
@@ -319,10 +320,10 @@ void CPhysicsManager::CreateStatic(int entindex, indexvertexarray_t *va)
 		auto staticbody = new CStaticBody;
 
 		staticbody->m_rigbody = NULL;
-		staticbody->m_entindex = entindex;
+		staticbody->m_entindex = ent->index;
 		staticbody->m_iva = va;
 
-		m_staticMap[entindex] = staticbody;
+		m_staticMap[ent->index] = staticbody;
 		return;
 	}
 
@@ -340,21 +341,35 @@ void CPhysicsManager::CreateStatic(int entindex, indexvertexarray_t *va)
 
 	btRigidBody* body = new btRigidBody(cInfo);
 
-	body->setUserIndex(entindex);
-
 	body->setFriction(1.0f);
 
 	body->setRollingFriction(1.0f);
+
+	float matrix[4][4];
+	RotateForEntity(ent, matrix);
+
+	if (0 != memcmp(matrix, r_identity_matrix, sizeof(matrix)))
+	{
+		float matrix_transposed[4][4];
+		Matrix4x4_Transpose(matrix_transposed, matrix);
+
+		btTransform worldtrans;
+		worldtrans.setFromOpenGLMatrix((float *)matrix_transposed);
+
+		TransformGoldSrcToBullet(worldtrans);
+
+		body->setWorldTransform(worldtrans);
+	}
 
 	m_dynamicsWorld->addRigidBody(body);
 
 	auto staticbody = new CStaticBody;
 
 	staticbody->m_rigbody = body;
-	staticbody->m_entindex = entindex;
+	staticbody->m_entindex = ent->index;
 	staticbody->m_iva = va;
 
-	m_staticMap[entindex] = staticbody;
+	m_staticMap[ent->index] = staticbody;
 }
 
 void CPhysicsManager::RotateForEntity(cl_entity_t *e, float matrix[4][4])
@@ -407,6 +422,118 @@ void CPhysicsManager::RotateForEntity(cl_entity_t *e, float matrix[4][4])
 	Matrix4x4_CreateFromEntity(matrix, angles, modelpos, 1);
 }
 
+void CPhysicsManager::CreateForBarnacle(cl_entity_t *ent)
+{
+	auto itor = m_staticMap.find(ent->index);
+
+	if (itor != m_staticMap.end())
+	{
+		return;
+	}
+
+	int BARNACLE_SEGMENTS = 12;
+
+	float BARNACLE_RADIUS1 = 22;
+	float BARNACLE_RADIUS2 = 16;
+	float BARNACLE_RADIUS3 = 10;
+
+	float BARNACLE_HEIGHT1 = 0;
+	float BARNACLE_HEIGHT2 = -10;
+	float BARNACLE_HEIGHT3 = -36;
+
+	FloatGoldSrcToBullet(&BARNACLE_RADIUS1);
+	FloatGoldSrcToBullet(&BARNACLE_RADIUS2);
+	FloatGoldSrcToBullet(&BARNACLE_RADIUS3);
+	FloatGoldSrcToBullet(&BARNACLE_HEIGHT1);
+	FloatGoldSrcToBullet(&BARNACLE_HEIGHT2);
+	FloatGoldSrcToBullet(&BARNACLE_HEIGHT3);
+
+	auto iva = new indexvertexarray_t;
+
+	iva->iNumVerts = BARNACLE_SEGMENTS * 8;
+	iva->iNumFaces = BARNACLE_SEGMENTS * 2;
+
+	iva->vVertexBuffer = new brushvertex_t[iva->iNumVerts];
+
+	iva->vFaceBuffer = new brushface_t[iva->iNumFaces];
+
+	int iStartVertex = 0;
+	int iNumVerts = 0;
+	int iNumFace = 0;
+
+	for (int x = 0; x < BARNACLE_SEGMENTS; x++)
+	{
+		float xSegment = (float)x / (float)BARNACLE_SEGMENTS;
+		float xSegment2 = (float)(x + 1) / (float)BARNACLE_SEGMENTS;
+
+		//layer 1
+
+		iva->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment * 2 * M_PI) * BARNACLE_RADIUS1;
+		iva->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment * 2 * M_PI) * BARNACLE_RADIUS1;
+		iva->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT1;
+
+		iNumVerts ++;
+
+		iva->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment * 2 * M_PI) * BARNACLE_RADIUS2;
+		iva->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment * 2 * M_PI) * BARNACLE_RADIUS2;
+		iva->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT2;
+
+		iNumVerts++;
+
+		iva->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS2;
+		iva->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS2;
+		iva->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT2;
+
+		iNumVerts++;
+
+		iva->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS1;
+		iva->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS1;
+		iva->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT1;
+
+		iNumVerts++;
+
+		iva->vFaceBuffer[iNumFace].start_vertex = iStartVertex;
+		iva->vFaceBuffer[iNumFace].num_vertexes = 4;
+		iNumFace++;
+
+		iStartVertex = iNumVerts;
+
+		// layer 2
+
+		iva->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment * 2 * M_PI) * BARNACLE_RADIUS2;
+		iva->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment * 2 * M_PI) * BARNACLE_RADIUS2;
+		iva->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT2;
+
+		iNumVerts++;
+
+		iva->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment * 2 * M_PI) * BARNACLE_RADIUS3;
+		iva->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment * 2 * M_PI) * BARNACLE_RADIUS3;
+		iva->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT3;
+
+		iNumVerts++;
+
+		iva->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS3;
+		iva->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS3;
+		iva->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT3;
+
+		iNumVerts++;
+
+		iva->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS2;
+		iva->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS2;
+		iva->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT2;
+
+		iNumVerts++;
+
+		iva->vFaceBuffer[iNumFace].start_vertex = iStartVertex;
+		iva->vFaceBuffer[iNumFace].num_vertexes = 4;
+		iNumFace++;
+
+		iStartVertex = iNumVerts;
+	}
+
+	CreateStatic(ent, iva);
+}
+
 void CPhysicsManager::CreateForBrushModel(cl_entity_t *ent)
 {
 	auto itor = m_staticMap.find(ent->index);
@@ -441,13 +568,13 @@ void CPhysicsManager::CreateForBrushModel(cl_entity_t *ent)
 
 	GenerateIndexedVertexArray(ent->model, iva);
 
-	CreateStatic(ent->index, iva);
+	CreateStatic(ent, iva);
 }
 
 void CPhysicsManager::NewMap(void)
 {
-	//G2BScale = bv_scale->value;
-	//B2GScale = 1 / bv_scale->value;
+	G2BScale = bv_scale->value;
+	B2GScale = 1 / bv_scale->value;
 
 	ReloadConfig();
 	RemoveAllRagdolls();
@@ -526,7 +653,21 @@ void CPhysicsManager::DebugDraw(void)
 	}
 }
 
-void CPhysicsManager::SynchronizeTempEntntity(TEMPENTITY **ppTempEntActive, double client_time)
+void CPhysicsManager::ReleaseRagdollFromBarnacle(CRagdoll *ragdoll)
+{
+	ragdoll->m_barnacleindex = -1;
+	ragdoll->m_barnacleDragRigBody.clear();
+	ragdoll->m_barnacleChewRigBody.clear();
+	for (auto cst : ragdoll->m_barnacleConstraintArray)
+	{
+		m_dynamicsWorld->removeConstraint(cst);
+		delete cst;
+	}
+	ragdoll->m_barnacleConstraintArray.clear();
+
+}
+
+void CPhysicsManager::SynchronizeTempEntntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time)
 {
 	auto pTemp = *ppTempEntActive;
 
@@ -545,27 +686,65 @@ void CPhysicsManager::SynchronizeTempEntntity(TEMPENTITY **ppTempEntActive, doub
 				{
 					auto worldtrans = pelvis->rigbody->getWorldTransform();
 
-					auto bulletorigin = worldtrans.getOrigin();
+					auto worldrorg = worldtrans.getOrigin();
 
-					vec3_t goldsrcorigin = { bulletorigin.x(), bulletorigin.y(), bulletorigin.z() };
+					vec3_t goldsrcorg = { worldrorg.x(), worldrorg.y(), worldrorg.z() };
 
-					Vec3BulletToGoldSrc(goldsrcorigin);
+					Vec3BulletToGoldSrc(goldsrcorg);
 
-					VectorCopy(goldsrcorigin, pTemp->entity.origin);
-					VectorCopy(goldsrcorigin, pTemp->entity.curstate.origin);
+					VectorCopy(goldsrcorg, pTemp->entity.origin);
+					VectorCopy(goldsrcorg, pTemp->entity.curstate.origin);
 
-					if (IsPlayerBarnacleAnimation(&pTemp->entity.curstate) && ragdoll->m_barnacleRigBody.size())
+					if (IsPlayerBarnacleAnimation(&pTemp->entity.curstate) && ragdoll->m_barnacleindex != -1)
 					{
 						auto playerEntity = gEngfuncs.GetEntityByIndex(pTemp->entity.index);
 						
 						if (playerEntity && playerEntity->player && IsPlayerBarnacleAnimation(&playerEntity->curstate))
 						{
-							for (size_t i = 0; i < ragdoll->m_barnacleRigBody.size(); ++i)
-							{
-								auto rig = ragdoll->m_barnacleRigBody[i];
+							bool bDraging = true;
 
-								btVector3 vel(0, 0, rig->barnacle_vel);
-								rig->rigbody->setLinearVelocity(vel);
+							auto barnacle = gEngfuncs.GetEntityByIndex(ragdoll->m_barnacleindex);
+						
+							if (IsEntityBarnacle(barnacle))
+							{
+								if (barnacle->curstate.sequence == 5)
+								{
+									bDraging = false;
+
+									//if (barnacle->curstate.frame < 10 || (barnacle->curstate.frame >= 118 && barnacle->curstate.frame <= 138))
+									{
+										for (size_t i = 0; i < ragdoll->m_barnacleChewRigBody.size(); ++i)
+										{
+											auto rig = ragdoll->m_barnacleChewRigBody[i];
+
+											if (client_time > rig->barnacle_chew_time)
+											{
+												rig->rigbody->applyCentralImpulse(btVector3(0, 0, rig->barnacle_chew_vel));
+												rig->barnacle_chew_time = client_time + rig->barnacle_chew_duration;
+											}
+										}
+									}
+								}
+							}
+
+							for (size_t i = 0; i < ragdoll->m_barnacleDragRigBody.size(); ++i)
+							{
+								auto rig = ragdoll->m_barnacleDragRigBody[i];
+								
+								btVector3 force(0, 0, rig->barnacle_vel);
+
+								if (bDraging)
+								{
+									if(goldsrcorg[2] > playerEntity->origin[2] + 24)
+										continue;
+
+									if (goldsrcorg[2] > playerEntity->origin[2])
+									{
+										force[2] *= (playerEntity->origin[2] + 24 - goldsrcorg[2]) / 24;
+									}
+								}
+
+								rig->rigbody->applyCentralForce(force);
 							}
 						}
 						else
@@ -573,14 +752,7 @@ void CPhysicsManager::SynchronizeTempEntntity(TEMPENTITY **ppTempEntActive, doub
 							//Released by barnacle or gibbed
 							if (playerEntity->visframe == *r_visframecount)
 							{
-								ragdoll->m_barnacleRigBody.clear();
-								ragdoll->m_barnacleindex = -1;
-								for (auto cst : ragdoll->m_barnacleConstraintArray)
-								{
-									m_dynamicsWorld->removeConstraint(cst);
-									delete cst;
-								}
-								ragdoll->m_barnacleConstraintArray.clear();
+								ReleaseRagdollFromBarnacle(ragdoll);
 							}
 							else
 							{
@@ -598,12 +770,15 @@ void CPhysicsManager::SynchronizeTempEntntity(TEMPENTITY **ppTempEntActive, doub
 
 void CPhysicsManager::StepSimulation(double frametime)
 {
-	if (bv_simrate->value < 16)
-		bv_simrate->value = 16;
+	if (bv_simrate->value < 32)
+	{
+		gEngfuncs.Cvar_SetValue("bv_simrate", 32);
+	}
 	else if (bv_simrate->value > 128)
-		bv_simrate->value = 128;
-
-	m_dynamicsWorld->stepSimulation(frametime, 16, 1.0f / bv_simrate->value);
+	{
+		gEngfuncs.Cvar_SetValue("bv_simrate", 128);
+	}
+	m_dynamicsWorld->stepSimulation(frametime, 4, 1.0f / bv_simrate->value);
 }
 
 void CPhysicsManager::SetGravity(float velocity)
@@ -874,6 +1049,10 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(const std::string &modelnam
 			{
 				i_type = RAGDOLL_BARNACLE_DOF6;
 			}
+			else if (!strcmp(text, "chew"))
+			{
+				i_type = RAGDOLL_BARNACLE_CHEW;
+			}
 			else
 			{
 				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse barnacle type %s for %s\n", text, name.c_str());
@@ -902,15 +1081,15 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(const std::string &modelnam
 			if (!ptext)
 				break;
 
-			float f_vel = atof(text);
+			float f_factor1 = atof(text);
 
 			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
 
-			float f_barZ = atof(text);
+			float f_factor2 = atof(text);
 			
-			cfg->barcontrol.emplace_back(subname, f_offsetX, f_offsetY, f_offsetZ, i_type, f_vel, f_barZ);
+			cfg->barcontrol.emplace_back(subname, f_offsetX, f_offsetY, f_offsetZ, i_type, f_factor1, f_factor2);
 		}
 	}
 
@@ -1295,7 +1474,7 @@ void CPhysicsManager::RemoveAllStatics()
 				delete staticBody->m_iva;
 			}
 
-			delete staticBody;
+			delete staticBody; 
 		}
 	}
 
@@ -1514,17 +1693,18 @@ bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_
 
 					if (barcontrol->name == rig->name)
 					{
-						btVector3 barnacle_origin(barnacle->origin[0], barnacle->origin[1], barnacle->origin[2] + barcontrol->barZ);
-						Vector3GoldSrcToBullet(barnacle_origin);
-
-						if (std::find(ragdoll->m_barnacleRigBody.begin(), ragdoll->m_barnacleRigBody.end(), rig) == ragdoll->m_barnacleRigBody.end())
-							ragdoll->m_barnacleRigBody.emplace_back(rig);
-
+						
 						if (barcontrol->type == RAGDOLL_BARNACLE_SLIDER)
 						{
+							if (std::find(ragdoll->m_barnacleDragRigBody.begin(), ragdoll->m_barnacleDragRigBody.end(), rig) == ragdoll->m_barnacleDragRigBody.end())
+								ragdoll->m_barnacleDragRigBody.emplace_back(rig);
+
 							btVector3 fwd(1, 0, 0);
 
 							btTransform rigtrans = rig->rigbody->getWorldTransform();
+						
+							btVector3 barnacle_origin(barnacle->origin[0], barnacle->origin[1], barnacle->origin[2] + barcontrol->factor2);
+							Vector3GoldSrcToBullet(barnacle_origin);
 
 							auto transat = MatrixLookAt(rigtrans, barnacle_origin, fwd);
 
@@ -1536,6 +1716,8 @@ bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_
 							btVector3 offset(barcontrol->offsetX, barcontrol->offsetY, barcontrol->offsetZ);
 							Vector3GoldSrcToBullet(offset);
 							localrig1.setOrigin(offset);
+
+							rig->barnacle_drag_offset = offset;
 
 							auto constraint = new btSliderConstraint(*rig->rigbody, localrig1, true);
 
@@ -1547,7 +1729,9 @@ bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_
 							constraint->setUpperLinLimit(distance);
 							constraint->setDbgDrawSize(1);
 
-							rig->barnacle_vel = barcontrol->velocity;
+							rig->barnacle_vel = barcontrol->factor1;
+
+							FloatGoldSrcToBullet(&rig->barnacle_vel);
 
 							ragdoll->m_barnacleConstraintArray.emplace_back(constraint);
 							m_dynamicsWorld->addConstraint(constraint);
@@ -1555,9 +1739,15 @@ bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_
 						}
 						else if (barcontrol->type == RAGDOLL_BARNACLE_DOF6)
 						{
+							if (std::find(ragdoll->m_barnacleDragRigBody.begin(), ragdoll->m_barnacleDragRigBody.end(), rig) == ragdoll->m_barnacleDragRigBody.end())
+								ragdoll->m_barnacleDragRigBody.emplace_back(rig);
+
 							btVector3 fwd(1, 0, 0);
 
 							btTransform rigtrans = rig->rigbody->getWorldTransform();
+
+							btVector3 barnacle_origin(barnacle->origin[0], barnacle->origin[1], barnacle->origin[2] + barcontrol->factor2);
+							Vector3GoldSrcToBullet(barnacle_origin);
 
 							auto transat = MatrixLookAt(rigtrans, barnacle_origin, fwd);
 
@@ -1570,6 +1760,8 @@ bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_
 							Vector3GoldSrcToBullet(offset);
 							localrig1.setOrigin(offset);
 
+							rig->barnacle_drag_offset = offset;
+
 							auto constraint = new btGeneric6DofConstraint(*rig->rigbody, localrig1, true);
 
 							auto distance = barnacle_origin.distance(rigtrans.getOrigin());
@@ -1580,10 +1772,21 @@ bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_
 							constraint->setLinearUpperLimit(btVector3(distance, 0, 0));
 							constraint->setDbgDrawSize(1);
 
-							rig->barnacle_vel = barcontrol->velocity;
+							rig->barnacle_vel = barcontrol->factor1;
+							FloatGoldSrcToBullet(&rig->barnacle_vel);
 
 							ragdoll->m_barnacleConstraintArray.emplace_back(constraint);
 							m_dynamicsWorld->addConstraint(constraint);
+						}
+						else if (barcontrol->type == RAGDOLL_BARNACLE_CHEW)
+						{
+							if (std::find(ragdoll->m_barnacleChewRigBody.begin(), ragdoll->m_barnacleChewRigBody.end(), rig) == ragdoll->m_barnacleChewRigBody.end())
+								ragdoll->m_barnacleChewRigBody.emplace_back(rig);
+
+							rig->barnacle_chew_vel = barcontrol->factor1;
+							FloatGoldSrcToBullet(&rig->barnacle_chew_vel);
+
+							rig->barnacle_chew_duration = barcontrol->factor2;
 						}
 					}
 				}

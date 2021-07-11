@@ -31,6 +31,7 @@ int *r_visframecount = NULL;
 float(*pbonetransform)[MAXSTUDIOBONES][3][4] = NULL;
 float(*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;
 
+bool IsEntityBarnacle(cl_entity_t* ent);
 bool IsEntityCorpse(cl_entity_t* ent);
 bool IsPlayerDeathAnimation(entity_state_t* entstate);
 bool IsPlayerBarnacleAnimation(entity_state_t* entstate);
@@ -192,7 +193,7 @@ void HUD_Init(void)
 
 	bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
 	bv_simrate = gEngfuncs.pfnRegisterVariable("bv_simrate", "64", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	bv_scale = gEngfuncs.pfnRegisterVariable("bv_scale", "0.1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_scale = gEngfuncs.pfnRegisterVariable("bv_scale", "0.25", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gEngfuncs.pfnAddCommand("bv_reload", BV_Reload_f);
 }
@@ -206,12 +207,10 @@ int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 			gPhysicsManager.CreateForBrushModel(ent);
 		}
 
-		if (ent->model->type == modtype_t::mod_studio && !strcmp(ent->model->name, "models/barnacle.mdl"))
+		if (IsEntityBarnacle(ent))
 		{
-			if (ent->curstate.sequence >= 3)
-			{
-				gCorpseManager.AddBarnacle(ent->index);
-			}
+			gPhysicsManager.CreateForBarnacle(ent);
+			gCorpseManager.AddBarnacle(ent->index);
 		}
 	}
 
@@ -231,7 +230,7 @@ void HUD_TempEntUpdate(
 	if (levelname && levelname[0] && gCorpseManager.HasCorpse())
 	{
 		gPhysicsManager.SetGravity(cl_gravity);
-		gPhysicsManager.SynchronizeTempEntntity(ppTempEntActive, client_time);
+		gPhysicsManager.SynchronizeTempEntntity(ppTempEntActive, frametime, client_time);
 		gPhysicsManager.StepSimulation(frametime);
 	}
 
