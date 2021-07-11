@@ -30,7 +30,7 @@ bv_debug 6 : 启用Bullet Engine的调试绘制功能. 只有布娃娃和点对�
 
 2. "[model_name]_ragdoll.txt" 格式如下（以下全部都是参数说明，完整格式可以参考GFL_M14_ragdoll.txt） :
 
-#### [DeathAnim]
+#### [DeathAnim] 指定哪些动画会将玩家转换为布娃娃（注：目前只支持12 ~ 18，182 ~ 185）
 
 ##### 例子: 12 120
 
