@@ -103,6 +103,9 @@ void R_InitShadow(void)
 	r_shadow_low_scale = gEngfuncs.pfnRegisterVariable("r_shadow_low_scale", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
+#define PhyCorpseFlag1 (753951)
+#define PhyCorpseFlag2 (152359)
+
 qboolean R_ShouldCastShadow(cl_entity_t *ent)
 {
 	if(!ent)
@@ -116,6 +119,10 @@ qboolean R_ShouldCastShadow(cl_entity_t *ent)
 
 	if (ent->model->type == mod_studio)
 	{
+		if (ent->curstate.iuser3 == PhyCorpseFlag1 && ent->curstate.iuser4 == PhyCorpseFlag2)
+		{
+			return true;
+		}
 		if (ent->index == 0)
 			return false;
 		if (ent->curstate.movetype == MOVETYPE_NONE)
