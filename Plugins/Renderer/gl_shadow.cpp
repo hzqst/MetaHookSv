@@ -487,7 +487,7 @@ void R_DrawBrushModelShadow(cl_entity_t *e)
 
 		R_EnableWSurfVBO(modcache);
 
-		R_DrawWSurfVBO(modcache);
+		R_DrawWSurfVBOSolid(modcache);
 
 		R_EnableWSurfVBO(NULL);
 	}
@@ -533,11 +533,6 @@ void R_DrawEntitiesOnListShadow(void)
 	for (i = 0; i < numvisedicts; i++)
 	{
 		(*currententity) = cl_visedicts[i];
-
-		if ((*currententity)->curstate.rendermode != kRenderNormal)
-		{
-			continue;
-		}
 
 		switch ((*currententity)->model->type)
 		{
