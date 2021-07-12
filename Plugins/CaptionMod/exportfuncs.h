@@ -15,7 +15,7 @@
 #include <usercmd.h>
 #include "enginedef.h"
 
-#define CAPTION_MOD_VERSION "Caption Mod 3.5"
+#define CAPTION_MOD_VERSION "Caption Mod 2021-07-12"
 
 extern cl_enginefunc_t gEngfuncs;
 
@@ -46,6 +46,7 @@ sfx_t *S_FindName(char *name, int *pfInCache);
 int __fastcall SvClient_FindSoundEx(int pthis, int, const char *sound);
 void Sys_ErrorEx(const char *fmt, ...);
 
-extern cvar_t *cap_enabled;
-extern cvar_t *cap_debug;
+extern cvar_t* cap_debug;
+extern cvar_t* cap_enabled;
+extern cvar_t* cap_max_distance;
 extern cvar_t *cap_netmessage;

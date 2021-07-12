@@ -789,7 +789,7 @@ IImage *CSchemeManager::GetImage(const char *imageName, bool hardwareFiltered)
 {
 	s_pszSearchString = imageName;
 
-	if (!imageName || strlen(imageName) <= 0)
+	if (!imageName /*|| strlen(imageName) <= 0*/)
 	{
 		return NULL;
 	}
@@ -804,7 +804,7 @@ IImage *CSchemeManager::GetImage(const char *imageName, bool hardwareFiltered)
 
 	Bitmap *pBitmap = new Bitmap(imageName, hardwareFiltered);
 
-	if (!pBitmap->IsValid())
+	if (imageName[0] && !pBitmap->IsValid())
 	{
 		delete pBitmap;
 		return NULL;

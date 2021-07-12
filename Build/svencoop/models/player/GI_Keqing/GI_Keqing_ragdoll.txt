@@ -48,6 +48,8 @@ Pelvis RLeg   conetwist 36 36  0 0 0     0 -7  0        0.2  0.2  0.25
 RLeg2  RLeg   hinge     36 36  0 0 0     0 8 0          -0.5  0.0    0
 
 [Barnacle]
-LLeg2   dof6     0  8  0     40000    0
-RLeg    dof6     0  0  0     30000   -20
-Pelvis  chew     0  0  0     5000     1.0
+LLeg2   dof6           0  8  0    40000   4    16
+LLeg2   chewlimit     0  0  0     0       1.0  3
+RLeg    dof6           0  0  0    30000   -20  16
+RLeg    chewlimit     0  0  0     0       1.0  3
+Pelvis  chewforce     0  0  0     8000    1.0  0

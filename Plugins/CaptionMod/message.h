@@ -50,10 +50,10 @@ public:
 public:
 	int MsgFunc_HudText(const char *pszName, int iSize, void *pbuf);
 	int MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf);
-
+	int MsgFunc_SendAudio(const char* pszName, int iSize, void* pbuf);
 public:
 	void MessageAdd(client_textmessage_t *newMessage);
-	int MessageAdd(client_textmessage_t *newMessage, float time, int hintMessage, int useSlot, unsigned int font);
+	int MessageAdd(client_textmessage_t *newMessage, float time, int hintMessage, int useSlot, unsigned int m_hFont);
 	void MessageScanNextChar(unsigned int font);
 	void MessageScanStart(void);
 	void MessageDrawScan(client_message_t *pClientMessage, float time, unsigned int font);

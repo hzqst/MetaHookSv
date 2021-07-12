@@ -435,6 +435,9 @@
     <ClCompile Include="SourceSDK\tier0\assert_dialog.cpp">
       <Filter>SourceSDK\tier0</Filter>
     </ClCompile>
+    <ClCompile Include="encode.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BaseUI.h">
@@ -991,6 +994,9 @@
     </ClInclude>
     <ClInclude Include="libcsv\csv_document.h">
       <Filter>libcsv</Filter>
+    </ClInclude>
+    <ClInclude Include="encode.h">
+      <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

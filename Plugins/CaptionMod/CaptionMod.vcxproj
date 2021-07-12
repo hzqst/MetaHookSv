@@ -112,6 +112,7 @@
       <XMLDocumentationFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.xdc</XMLDocumentationFileName>
     </ClCompile>
     <ClCompile Include="ClientVGUI.cpp" />
+    <ClCompile Include="encode.cpp" />
     <ClCompile Include="engfuncs.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="FontAmalgam.cpp" />
@@ -256,6 +257,7 @@
     <ClInclude Include="BaseUI.h" />
     <ClInclude Include="Bitmap.h" />
     <ClInclude Include="Border.h" />
+    <ClInclude Include="encode.h" />
     <ClInclude Include="engfuncs.h" />
     <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />

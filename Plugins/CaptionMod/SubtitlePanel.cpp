@@ -357,7 +357,6 @@ void SubtitlePanel::StartSubtitle(CDictionary *Dict, float flStartTime)
 		{
 			if (m_BackLines[i]->m_StartTime > flLatestStart)
 				flLatestStart = m_BackLines[i]->m_StartTime;
-
 		}
 		//Already in list, do not start one subtitle for twice at the same time.
 		if(m_BackLines[i]->m_Dict == Dict)
@@ -374,16 +373,15 @@ void SubtitlePanel::StartSubtitle(CDictionary *Dict, float flStartTime)
 		}
 	}
 
-	Dict->ReplaceKey();
+	std::wstring sentence;
 
-	if(m_iPrefix)
-		Dict->AddPrefix();
+	Dict->FinalizeString(sentence);
 
 	int iPanelWidth = GetWide();
 	int iMaxTextWidth = iPanelWidth - (m_iScaledXSpace << 1);
 
 	wchar_t szBuf[4096];
-	wchar_t *pStart = &Dict->m_szSentence[0];
+	wchar_t *pStart = &sentence[0];
 	wchar_t *p = pStart;
 
 	if(!pStart[0])

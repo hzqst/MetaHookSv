@@ -12,6 +12,7 @@
 #include "message.h"
 #include "engfuncs.h"
 #include "exportfuncs.h"
+#include "encode.h"
 #include <stdexcept>
 
 using namespace vgui;
@@ -68,7 +69,7 @@ CDictionary *CViewport::FindDictionary(const char *szValue)
 
 	while (item->dict)
 	{
-		if (!Q_strcmp(item->dict->m_szTitle, szValue))
+		if (!Q_strcmp(item->dict->m_szTitle.c_str(), szValue))
 			break;
 
 		hash = (hash + 1) % count;
@@ -100,7 +101,7 @@ CDictionary *CViewport::FindDictionary(const char *szValue, dict_t Type)
 
 	while (item->dict)
 	{
-		if (!Q_strcmp(item->dict->m_szTitle, szValue) && item->dict->m_Type == Type)
+		if (!Q_strcmp(item->dict->m_szTitle.c_str(), szValue) && item->dict->m_Type == Type)
 			break;
 
 		hash = (hash + 1) % count;
@@ -126,8 +127,7 @@ CDictionary *CViewport::FindDictionaryRegex(const std::string &str, dict_t Type,
 	{
 		if (m_Dictionary[i]->m_Type == Type && m_Dictionary[i]->m_bRegex)
 		{
-			auto &title = m_Dictionary[i]->m_szTitle;
-			std::regex pattern(title);
+			std::regex pattern(m_Dictionary[i]->m_szTitle);
 
 			if (std::regex_search(str, result, pattern))
 			{
@@ -206,7 +206,7 @@ void CViewport::AddDictionaryHash(CDictionary *dict, const char *value)
 
 	while (item->dict)
 	{
-		if (!Q_strcmp(item->dict->m_szTitle, dict->m_szTitle))
+		if (!Q_strcmp(item->dict->m_szTitle.c_str(), dict->m_szTitle.c_str()))
 			break;
 
 		hash = (hash + 1) % count;
@@ -281,7 +281,7 @@ void CViewport::RemoveDictionaryHash(CDictionary *dict, const char *value)
 
 	while (item->dict)
 	{
-		if (!Q_strcmp(item->dict->m_szTitle, dict->m_szTitle))
+		if (!Q_strcmp(item->dict->m_szTitle.c_str(), dict->m_szTitle.c_str()))
 			break;
 
 		hash = (hash + 1) % count;
@@ -334,21 +334,13 @@ void CViewport::RemoveDictionaryHash(CDictionary *dict, const char *value)
 CDictionary::CDictionary()
 {
 	m_Type = DICT_CUSTOM;
-	m_szTitle[0] = 0;
 	m_Color = Color(255, 255, 255, 255);
 	m_flDuration = 0;
 	m_flNextDelay = 0;
-	m_szNext[0] = 0;
 	m_pNext = NULL;
 	m_pTextMessage = NULL;
 	m_iTextAlign = ALIGN_DEFAULT;
-	m_bKeyReplaced = false;
-	m_bPrefixAdded = false;
 	m_bRegex = false;
-	m_szSentence.RemoveAll();
-	m_szSentence.AddToTail(L'\0');
-	m_szSpeaker.RemoveAll();
-	m_szSpeaker.AddToTail(L'\0');
 }
 
 CDictionary::~CDictionary()
@@ -358,84 +350,33 @@ CDictionary::~CDictionary()
 		if(m_pTextMessage->pMessage)
 			delete m_pTextMessage->pMessage;
 		delete m_pTextMessage;
-
 		m_pTextMessage = NULL;
 	}
 }
 
-//2015-11-27 added
-//Purpose: replace all "\r" "\n" to '\r' '\n'
-void ReplaceReturnW(wchar_t *str)
+void StringReplaceW(std::wstring &strBase, const std::wstring &strSrc, const std::wstring &strDst)
 {
-	wchar_t *p = str;
-
-	wchar_t *pBackSlash = NULL;
-
-	//empty sentence?
-	if (!p[0])
-		return;
-
-	//make sure we have at least two characters
-	while (*p && *(p + 1))
+	size_t pos = 0;
+	auto srcLen = strSrc.size();
+	auto desLen = strDst.size();
+	pos = strBase.find(strSrc, pos);
+	while ((pos != std::wstring::npos))
 	{
-		if (*p == L'\\')
-		{
-			int bMove = false;
-			if (*(p + 1) == L'r')
-			{
-				*p = L'\r';
-				bMove = true;
-			}
-			else if (*(p + 1) == L'n')
-			{
-				*p = L'\n';
-				bMove = true;
-			}
-			if (bMove)
-			{
-				int nCharsToMove = Q_wcslen(p + 2);
-				memcpy(p + 1, p + 2, (nCharsToMove + 1) * sizeof(wchar_t));
-			}
-		}
-
-		p++;
+		strBase.replace(pos, srcLen, strDst);
+		pos = strBase.find(strSrc, (pos + desLen));
 	}
 }
 
-void ReplaceReturnA(char *str)
+void StringReplaceA(std::string &strBase, const std::string &strSrc, const std::string &strDst)
 {
-	char *p = str;
-
-	char *pBackSlash = NULL;
-
-	//empty sentence?
-	if (!p[0])
-		return;
-
-	//make sure we have at least two characters
-	while (*p && *(p + 1))
+	size_t pos = 0;
+	auto srcLen = strSrc.size();
+	auto desLen = strDst.size();
+	pos = strBase.find(strSrc, pos);
+	while ((pos != std::string::npos))
 	{
-		if (*p == '\\')
-		{
-			int bMove = false;
-			if (*(p + 1) == 'r')
-			{
-				*p = '\r';
-				bMove = true;
-			}
-			else if (*(p + 1) == 'n')
-			{
-				*p = '\n';
-				bMove = true;
-			}
-			if (bMove)
-			{
-				int nCharsToMove = Q_strlen(p + 2);
-				memcpy(p + 1, p + 2, (nCharsToMove + 1) * sizeof(char));
-			}
-		}
-
-		p++;
+		strBase.replace(pos, srcLen, strDst);
+		pos = strBase.find(strSrc, (pos + desLen));
 	}
 }
 
@@ -443,26 +384,26 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 {
 	m_Color = defaultColor;
 
-	const char *title = row[0].c_str();
-
-	Q_memset(m_szTitle, 0, sizeof(m_szTitle));
-	Q_strncpy(m_szTitle, title, sizeof(m_szTitle) - 1);
+	m_szTitle = row[0];
 
 	//If title ended with .wav
-	int titlelen = strlen(title);
-	if (!Q_stricmp(&title[titlelen - 4], ".wav"))
+
+	if(m_szTitle.length() > 4 && !Q_stricmp(&m_szTitle[m_szTitle.length() - 4], ".wav"))
 	{
 		m_Type = DICT_SOUND;
 	}
 
-	//2015-11-26 added to support !SENTENCE and #SENTENCE
-	if (title[0] == '!' || title[0] == '#')
+	if (m_szTitle[0] == '%' && m_szTitle[1] == '!')
+	{
+		m_Type = DICT_SENDAUDIO;
+	}
+	else if (m_szTitle[0] == '!' || m_szTitle[0] == '#')
 	{
 		m_Type = DICT_SENTENCE;
 	}
 
 	//If it's a textmessage found in engine (gamedir/titles.txt)
-	client_textmessage_t *textmsg = gEngfuncs.pfnTextMessageGet(title);
+	client_textmessage_t *textmsg = gEngfuncs.pfnTextMessageGet(m_szTitle.c_str());
 	if (textmsg)
 	{
 		m_Type = DICT_MESSAGE;
@@ -472,53 +413,46 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 	}
 
 	//2015-11-26 added to support NETMESSAGE:
-	if (!Q_strncmp(title, "NETMESSAGE_REGEX:", sizeof("NETMESSAGE_REGEX:") - 1))
+	if (!Q_strncmp(m_szTitle.c_str(), "NETMESSAGE_REGEX:", sizeof("NETMESSAGE_REGEX:") - 1))
 	{
 		m_Type = DICT_NETMESSAGE;
-		memcpy(m_szTitle, title + sizeof("NETMESSAGE_REGEX:") - 1, titlelen - (sizeof("NETMESSAGE_REGEX:") - 1));
-		m_szTitle[titlelen - (sizeof("NETMESSAGE_REGEX:") - 1)] = 0;
+		m_szTitle = m_szTitle.substr(sizeof("NETMESSAGE_REGEX:") - 1);
 		m_bRegex = true;
 	}
-	else if (!Q_strncmp(title, "NETMESSAGE:", sizeof("NETMESSAGE:") - 1))
+	else if (!Q_strncmp(m_szTitle.c_str(), "NETMESSAGE:", sizeof("NETMESSAGE:") - 1))
 	{
 		m_Type = DICT_NETMESSAGE;
-		memcpy(m_szTitle, title + sizeof("NETMESSAGE:") - 1, titlelen - (sizeof("NETMESSAGE:") - 1));
-		m_szTitle[titlelen - (sizeof("NETMESSAGE:") - 1)] = 0;
+		m_szTitle = m_szTitle.substr(sizeof("NETMESSAGE:") - 1);
 		m_bRegex = false;
 	}
 
 	//Translated text
 	const char *sentence = row[1].c_str();
-	wchar_t *pLocalized = NULL;
-	int localizedLength;
+	wchar_t* pLocalized = NULL;
 	if (sentence[0] == '#')
 	{
 		pLocalized = localize()->Find(sentence);
 		if (pLocalized)
 		{
-			localizedLength = Q_wcslen(pLocalized);
-			m_szSentence.SetSize(localizedLength + 1);
-			Q_wcsncpy(&m_szSentence[0], pLocalized, (localizedLength + 1) * sizeof(wchar_t));
+			int localizedLength = Q_wcslen(pLocalized);
+			m_szSentence.resize(localizedLength);
+			memcpy(&m_szSentence[0], pLocalized, (localizedLength + 1) * sizeof(wchar_t));
 		}
 	}
 	if (!pLocalized)
 	{
-		localizedLength = MultiByteToWideChar(CP_ACP, 0, sentence, -1, NULL, 0);
-		m_szSentence.SetSize(localizedLength + 1);
+		int localizedLength = MultiByteToWideChar(CP_ACP, 0, sentence, -1, NULL, 0);
+		m_szSentence.resize(localizedLength - 1);
 		MultiByteToWideChar(CP_ACP, 0, sentence, -1, &m_szSentence[0], localizedLength);
-		m_szSentence[localizedLength] = L'0';
 	}
 
-	//There is no <pattern> in text, marked as replaced
-
-	if (!wcschr(&m_szSentence[0], L'<'))
+	if (m_Type == DICT_NETMESSAGE && !m_bRegex)
 	{
-		m_bKeyReplaced = true;
+		StringReplaceA(m_szTitle, "\\n", "\n");
+		StringReplaceA(m_szTitle, "\\r", "\r");
 	}
-
-	if(m_Type == DICT_NETMESSAGE && !m_bRegex)
-		ReplaceReturnA(m_szTitle);
-	ReplaceReturnW(m_szSentence.Base());
+	StringReplaceW(m_szSentence, L"\\n", L"\n");
+	StringReplaceW(m_szSentence, L"\\r", L"\r");
 
 	const char *color = row[2].c_str();
 	if(color[0])
@@ -564,19 +498,18 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 		if(speaker[0] == '#')
 		{
 			pLocalized = localize()->Find(speaker);
-			if(pLocalized)
+			if (pLocalized)
 			{
-				localizedLength = Q_wcslen(pLocalized);
-				m_szSpeaker.SetSize(localizedLength + 1);
-				Q_wcsncpy(&m_szSpeaker[0], pLocalized, (localizedLength + 1) * sizeof(wchar_t));
+				int localizedLength = Q_wcslen(pLocalized);
+				m_szSpeaker.resize(localizedLength);
+				memcpy(&m_szSpeaker[0], pLocalized, (localizedLength + 1) * sizeof(wchar_t));
 			}
 		}
-		if(!pLocalized)
+		if (!pLocalized)
 		{
-			localizedLength = MultiByteToWideChar(CP_ACP, 0, speaker, -1, NULL, 0);
-			m_szSpeaker.SetSize(localizedLength + 1);
+			int localizedLength = MultiByteToWideChar(CP_ACP, 0, speaker, -1, NULL, 0);
+			m_szSpeaker.resize(localizedLength - 1);
 			MultiByteToWideChar(CP_ACP, 0, speaker, -1, &m_szSpeaker[0], localizedLength);
-			m_szSpeaker[localizedLength] = L'0';
 		}
 	}
 
@@ -586,7 +519,7 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 		std::string sentence;
 		sentence.resize(HUDMESSAGE_MAXLENGTH);
 
-		int finalLength = localize()->ConvertUnicodeToANSI(m_szSentence.Base(), (char *)sentence.data(), sentence.length());
+		int finalLength = localize()->ConvertUnicodeToANSI(m_szSentence.data(), (char *)sentence.data(), sentence.length());
 
 		sentence.resize(finalLength);
 
@@ -597,14 +530,11 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 	//Next dictionary
 	if(row.size() >= 7)
 	{
-		const char *next = row[5].c_str();
-		if(next[0])
-		{
-			Q_strncpy(m_szNext, next, sizeof(m_szNext));
-		}
+		m_szNext = row[5];
 
-		const char *nextdelay = row[6].c_str();
-		if(nextdelay[0])
+		const char* nextdelay = row[6].c_str();
+
+		if (nextdelay[0])
 		{
 			m_flNextDelay = Q_atof(nextdelay);
 		}
@@ -670,7 +600,7 @@ void CViewport::LoadCustomDictionary(const char *dict_name)
 
 		m_Dictionary.AddToTail(Dict);
 
-		AddDictionaryHash(Dict, Dict->m_szTitle);
+		AddDictionaryHash(Dict, Dict->m_szTitle.c_str());
 	}
 }
 
@@ -681,7 +611,7 @@ void CViewport::LinkDictionary(void)
 		CDictionary *Dict = m_Dictionary[i];
 		if (Dict->m_szNext[0])
 		{
-			Dict->m_pNext = FindDictionary(Dict->m_szNext);
+			Dict->m_pNext = FindDictionary(Dict->m_szNext.c_str());
 		}
 	}
 }
@@ -741,16 +671,20 @@ void CViewport::LoadBaseDictionary(void)
 
 		m_Dictionary.AddToTail(Dict);
 
-		AddDictionaryHash(Dict, Dict->m_szTitle);
+		AddDictionaryHash(Dict, Dict->m_szTitle.c_str());
 	}
-	
 }
+
+extern char *m_pSenderName;
 
 //KeyBinding Name(jump) -> Key Name(SPACE)
 const char *PrimaryKey_ForBinding(const char *binding)
 {
 	if(binding[0] == '+')
 		binding ++;
+
+	if (!strcmp(binding, "sender") && m_pSenderName)
+		return m_pSenderName;
 
 	for (int i = 255; i >= 0; --i)
 	{
@@ -773,132 +707,71 @@ const char *PrimaryKey_ForBinding(const char *binding)
 	return "<not bound>";
 }
 
-void CDictionary::AddPrefix(void)
+void CDictionary::FinalizeString(std::wstring &output)
 {
-	if(m_bPrefixAdded)
-		return;
+	auto finalize = m_szSentence;
 
-	m_bPrefixAdded = true;
+	std::wregex pattern(L"(<([A-Za-z_]+)>)");
+	std::wsmatch result;
+	std::regex_search(output, result, pattern);
 
-	int nSentenceLength = Q_wcslen(&m_szSentence[0]);
-	int nSpeakerLength = Q_wcslen(&m_szSpeaker[0]);
+	std::wstring skipped;
 
-	if(!nSentenceLength || !nSpeakerLength)
-		return;
+	std::wstring::const_iterator searchStart(finalize.cbegin());
 
-	//No enough space for new sentence?
-	int nCharToAdd = (nSentenceLength + nSpeakerLength + 1) - m_szSentence.Count();
-
-	if(nCharToAdd > 0)
-		m_szSentence.AddMultipleToTail(nCharToAdd);
-
-	memcpy(&m_szSentence[0] + nSpeakerLength, &m_szSentence[0], sizeof(wchar_t) * nSentenceLength);
-	memcpy(&m_szSentence[0], &m_szSpeaker[0], sizeof(wchar_t) * nSpeakerLength);
-	m_szSentence[nSentenceLength + nSpeakerLength] = L'\0';
-}
-
-void CDictionary::ReplaceKey(void)
-{
-	wchar_t *p = &m_szSentence[0];
-	wchar_t *pLeftQuote = NULL;
-	wchar_t *pRightQuote = NULL;
-	const char *pszBinding = NULL;
-	wchar_t wszKey[32];
-	char szKey[32];
-
-	if(m_bKeyReplaced)
-		return;
-
-	m_bKeyReplaced = true;
-
-	bool bReplaced = false;
-
-	while(*p++)
+	while (std::regex_search(searchStart, finalize.cend(), result, pattern) && result.size() > 2)
 	{
-		if(!pRightQuote && *p == L'<')
-			pLeftQuote = p;
-		if(pLeftQuote && *p == L'>')
-			pRightQuote = p;
+		std::wstring prefix = result.prefix();
+		std::wstring suffix = result.suffix();
 
-		if(pLeftQuote && pRightQuote)
+		auto wkeybind = result[2].str();
+
+		std::string akeybind;
+		UnicodeToANSI(wkeybind, akeybind);
+		const char *pszBinding = PrimaryKey_ForBinding(akeybind.c_str());
+
+		if (pszBinding)
 		{
-			int maxBytes = min(sizeof(wchar_t)*(pRightQuote-pLeftQuote), sizeof(wszKey));
-			Q_wcsncpy(wszKey, pLeftQuote + 1, maxBytes);
+			std::string abinding = pszBinding;
+			std::wstring wbinding;
+			ANSIToUnicode(abinding, wbinding);
 
-			if(!wszKey[0])
-				continue;
-
-			int OldKeyLength = Q_wcslen(wszKey);
-
-			WideCharToMultiByte(CP_ACP, 0, wszKey, -1, szKey, sizeof(szKey), NULL, NULL);
-			szKey[sizeof(szKey)-1] = '\0';
-
-			pszBinding = PrimaryKey_ForBinding(szKey);
-
-			if(pszBinding)
+			if (searchStart != finalize.cbegin())
 			{
-				bReplaced = true;
-				MultiByteToWideChar(CP_ACP, 0, pszBinding, -1, wszKey, sizeof(wszKey)/sizeof(wchar_t));
-
-				//make it upper case
-				wcsupr(wszKey);
-
-				int NewKeyLength = Q_wcslen(wszKey);
-
-				if(NewKeyLength != OldKeyLength + 2)
-				{
-					//The new key is too long, we need to extend the vector!
-					if(NewKeyLength > OldKeyLength + 2)
-					{
-						int nExtendLength = NewKeyLength - OldKeyLength + 2;
-
-						//save the relative position of all pointers
-						int Position_p = p - &m_szSentence[0];
-						int Position_pLeftQuote = pLeftQuote - &m_szSentence[0];
-						int Position_pRightQuote = pRightQuote - &m_szSentence[0];
-						//The memory is reallocated to another place
-						m_szSentence.AddMultipleToTail(nExtendLength);
-						//So we need to fix all pointers
-						p = &m_szSentence[0] + Position_p;
-						pLeftQuote = &m_szSentence[0] + Position_pLeftQuote;
-						pRightQuote = &m_szSentence[0] + Position_pRightQuote;
-					}
-
-					//Move the right part of text to new place
-					int nRightLength = Q_wcslen(pRightQuote + 1);
-					memcpy(pLeftQuote + NewKeyLength, pRightQuote + 1, sizeof(wchar_t) * (nRightLength + 1));
-
-					//reset the pointer to position after the key
-					p = pLeftQuote + NewKeyLength;
-				}
-				else
-				{
-					//Do nothing since the total length did not change, skip the <pattern>
-					p = pRightQuote + 1;
-				}
-				
-				//Paste the key
-				memcpy(pLeftQuote, wszKey, sizeof(wchar_t) * NewKeyLength);
+				finalize = skipped + prefix;
 			}
+			else
+			{
+				finalize = prefix;
+			}
+			finalize += wbinding;
 
-			//Find next left/right quote
-			pLeftQuote = NULL;
-			pRightQuote = NULL;
+			auto currentLength = finalize.length();
+
+			finalize += suffix;
+
+			skipped = finalize.substr(0, currentLength);
+			searchStart = finalize.cbegin() + currentLength;
+			continue;
 		}
+
+		searchStart = result.suffix().first;
 	}
 
-	if(bReplaced && m_pTextMessage)
+	/*if (bReplaced && m_pTextMessage)
 	{
-		if(m_pTextMessage->pMessage)
+		if (m_pTextMessage->pMessage)
 			delete m_pTextMessage->pMessage;
 
 		//Covert the text to UTF8
-		int utf8Length = WideCharToMultiByte(CP_UTF8, 0, &m_szSentence[0], -1, NULL, 0, NULL, NULL);
-		char *utf8Text = new char[utf8Length + 1];
-		WideCharToMultiByte(CP_UTF8, 0, &m_szSentence[0], -1, utf8Text, utf8Length, NULL, NULL);
+		int utf8Length = WideCharToMultiByte(CP_UTF8, 0, &output[0], -1, NULL, 0, NULL, NULL);
+		char* utf8Text = new char[utf8Length + 1];
+		WideCharToMultiByte(CP_UTF8, 0, &output[0], -1, utf8Text, utf8Length, NULL, NULL);
 		utf8Text[utf8Length] = '\0';
 		m_pTextMessage->pMessage = utf8Text;
-	}
+	}*/
+
+	output = m_szSpeaker + finalize;
 }
 
 void CViewport::Start(void)
@@ -917,19 +790,20 @@ void CViewport::SetParent(VPANEL vPanel)
 
 void CViewport::Think(void)
 {
-	if (!gEngfuncs.pfnGetLevelName() || !gEngfuncs.pfnGetLevelName()[0])
+	auto levelname = gEngfuncs.pfnGetLevelName();
+	if (!levelname || !levelname[0])
 		return;
 
-	if (0 != strcmp(gEngfuncs.pfnGetLevelName(), m_szLevelName))
+	if (0 != strcmp(levelname, m_szLevelName))
 	{
-		std::string name = gEngfuncs.pfnGetLevelName();
+		std::string name = levelname;
 		name = name.substr(0, name.length() - 4);
 		name += "_dictionary.csv";
 
 		LoadCustomDictionary(name.c_str());
 		LinkDictionary();
 
-		strcpy(m_szLevelName, gEngfuncs.pfnGetLevelName());
+		strcpy(m_szLevelName, levelname);
 	}
 }
 
@@ -949,14 +823,16 @@ void CViewport::Init(void)
 
 void CViewport::StartSubtitle(CDictionary *dict)
 {
-	if(cap_enabled->value)
+	if (cap_enabled && cap_enabled->value) {
 		m_pSubtitle->StartSubtitle(dict, cl_time);
+	}
 }
 
-void CViewport::StartNextSubtitle(CDictionary *dict)
+void CViewport::StartNextSubtitle(CDictionary* dict)
 {
-	if (cap_enabled->value)
+	if (cap_enabled && cap_enabled->value) {
 		m_pSubtitle->StartNextSubtitle(dict);
+	}
 }
 
 void CViewport::ActivateClientUI(void)

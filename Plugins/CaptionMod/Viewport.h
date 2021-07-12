@@ -30,6 +30,7 @@ enum dict_t
 	DICT_MESSAGE,
 	DICT_SENTENCE,
 	DICT_NETMESSAGE,
+	DICT_SENDAUDIO,
 };
 
 enum textalign_t
@@ -46,22 +47,19 @@ public:
 	CDictionary();
 	~CDictionary();
 	void Load(CSV::CSVDocument::row_type &row, Color &defaultColor, vgui::IScheme *ischeme);
-	void ReplaceKey(void);
-	void AddPrefix(void);
+	void FinalizeString(std::wstring &output);
 
 	dict_t					m_Type;
-	char					m_szTitle[256];
-	CUtlVector<wchar_t>		m_szSentence;
+	std::string				m_szTitle;
+	std::wstring			m_szSentence;
 	Color					m_Color;
 	float					m_flDuration;
-	CUtlVector<wchar_t>		m_szSpeaker;
+	std::wstring			m_szSpeaker;
 	float					m_flNextDelay;
-	char					m_szNext[64];
+	std::string				m_szNext;
 	CDictionary				*m_pNext;
 	client_textmessage_t	*m_pTextMessage;
 	textalign_t				m_iTextAlign;
-	bool					m_bKeyReplaced;
-	bool					m_bPrefixAdded;
 	bool					m_bRegex;
 };
 

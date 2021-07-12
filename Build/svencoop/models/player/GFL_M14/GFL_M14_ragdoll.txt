@@ -1,5 +1,5 @@
 [DeathAnim]
-12 100
+12 80
 13 60
 14 60
 15 120
@@ -7,7 +7,7 @@
 183 0
 
 [RigidBody]
-Head   15  6  sphere  -4.0   5.0  0.0   6
+Head   15  6  capsule  -4.0  5.0  0.1   6
 Spine  5   6  capsule  3.0   6.0  1.0   10
 Pelvis 1   2  sphere   3.0   6.0  0.0   10
 
@@ -26,7 +26,7 @@ RLeg   46  47 capsule  5.0   2.0  16.0  4
 RLeg2  47  48 capsule  9.0   2.0  14.0  4
 
 [Constraint]
-Spine  Head   conetwist 6 15   0 4 0     0  0  4         0.0  0.0  0.2
+Spine  Head   conetwist 6 15   0 0 0     0  6  0        0.01  0.01  0.2
 Pelvis Spine  conetwist 1 5    0 0 4     0 -4  0        0.0  0.0  0.1
 
 Spine  LArm   conetwist 7 8    0 0 0     0 -4  0        0.33 0.33 1.0
@@ -44,6 +44,8 @@ Pelvis RLeg   conetwist 46 46  0 0 0     0 -7  0        0.1  0.1  0.25
 RLeg2  RLeg   hinge     46 46  0 0 0     0 8 0         -0.6  0.0  0
 
 [Barnacle]
-LLeg2   dof6     0  8  0     40000    0
-RLeg    dof6     0  0  0     30000   -20
-Pelvis  chew     0  0  0     5000     1.0
+LLeg2   dof6           0  8  0    40000   4    16
+LLeg2   chewlimit     0  0  0     0       1.0  3
+RLeg    dof6           0  0  0    30000   -20  16
+RLeg    chewlimit     0  0  0     0       1.0  3
+Pelvis  chewforce     0  0  0     8000    1.0  0

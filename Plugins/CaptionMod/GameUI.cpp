@@ -156,7 +156,7 @@ void GameUI_InstallHook(void)
 
 	DWORD *pVFTable = *(DWORD **)&s_GameUI;
 
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  1, (void *)pVFTable[1], (void *&)g_pfnCGameUI_Initialize);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  8, (void *)pVFTable[8], (void *&)g_pfnCGameUI_ConnectToServer);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  9, (void *)pVFTable[9], (void *&)g_pfnCGameUI_DisconnectFromServer);
+	//g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  1, (void *)pVFTable[1], (void *&)g_pfnCGameUI_Initialize);
+	//g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  8, (void *)pVFTable[8], (void *&)g_pfnCGameUI_ConnectToServer);
+	//g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  9, (void *)pVFTable[9], (void *&)g_pfnCGameUI_DisconnectFromServer);
 }

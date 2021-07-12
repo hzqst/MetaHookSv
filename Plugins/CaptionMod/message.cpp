@@ -13,12 +13,15 @@
 
 using namespace vgui;
 
+char *m_pSenderName = NULL;
+
 CHudMessage m_HudMessage;
 
 //2015-11-27 added, support for Counter-Strike's HudTextPro message
 pfnUserMsgHook m_pfnHudText;
 pfnUserMsgHook m_pfnHudTextPro;
 pfnUserMsgHook m_pfnHudTextArgs;
+pfnUserMsgHook m_pfnSendAudio;
 
 int __MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 {
@@ -44,11 +47,26 @@ int __MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
 	return m_pfnHudTextArgs(pszName, iSize, pbuf);
 }
 
+int __MsgFunc_SendAudio(const char* pszName, int iSize, void* pbuf)
+{
+	BEGIN_READ(pbuf, iSize);
+
+	if (m_HudMessage.MsgFunc_SendAudio(pszName, iSize, pbuf) != 0)
+		return 1;
+
+	int result =  m_pfnSendAudio(pszName, iSize, pbuf);
+
+	m_pSenderName = NULL;
+
+	return result;
+}
+
 void CHudMessage::Init(void)
 {
 	m_pfnHudText = HOOK_MESSAGE(HudText);
 	m_pfnHudTextPro = HOOK_MESSAGE(HudTextPro);
 	m_pfnHudTextArgs = HOOK_MESSAGE(HudTextArgs);
+	m_pfnSendAudio = HOOK_MESSAGE(SendAudio);
 }
 
 void CHudMessage::Reset(void)
@@ -409,6 +427,7 @@ void CHudMessage::MessageDrawScan(client_message_t *pClientMessage, float time, 
 
 int CHudMessage::Draw(void)
 {
+
 	int i;
 	client_textmessage_t *pMessage;
 	float endTime;
@@ -524,7 +543,7 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 				std::string sentence;
 				sentence.resize(HUDMESSAGE_MAXLENGTH);
 
-				int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.Base(), (char *)sentence.data(), sentence.length());
+				int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.data(), (char *)sentence.data(), sentence.length());
 
 				sentence.resize(finalLength);
 
@@ -564,7 +583,7 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 
 				char sentence[HUDMESSAGE_MAXLENGTH];
 
-				int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.Base(), (char *)sentence, HUDMESSAGE_MAXLENGTH);
+				int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.data(), (char *)sentence, HUDMESSAGE_MAXLENGTH);
 
 				sentence[finalLength] = 0;
 
@@ -595,7 +614,7 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 			gEngfuncs.Con_Printf((dict) ? "CaptionMod: TextMessage [%s] found.\n" : "CaptionMod: TextMessage [%s] not found.\n", pString);
 		}
 
-		if (dict)
+		if (dict && dict->m_pTextMessage)
 		{
 			MessageAdd(dict->m_pTextMessage, cl_time, hintMessage, -1, m_hFont);
 			m_parms.time = cl_time;
@@ -622,7 +641,6 @@ int CHudMessage::MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
 
 	if(dict && dict->m_pTextMessage)
 	{
-		dict->ReplaceKey();
 
 		int slotNum = MessageAdd(dict->m_pTextMessage, cl_time, hintMessage, -1, m_hFont);
 
@@ -645,6 +663,37 @@ int CHudMessage::MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
 
 		m_parms.time = cl_time;
 		return 1;
+	}
+
+	return 0;
+}
+
+int CHudMessage::MsgFunc_SendAudio(const char* pszName, int iSize, void* pbuf)
+{
+	BEGIN_READ(pbuf, iSize);
+
+	int entIndex = READ_BYTE();
+	char* pString = READ_STRING();
+	int pitch = READ_SHORT();
+
+	if (!READ_OK())
+		pitch = 0;
+
+	hud_player_info_t info;
+	gEngfuncs.pfnGetPlayerInfo(entIndex, &info);
+
+	m_pSenderName = info.name;
+
+	CDictionary* dict = g_pViewPort->FindDictionary(pString, DICT_SENDAUDIO);
+
+	if (cap_debug && cap_debug->value)
+	{
+		gEngfuncs.Con_Printf((dict) ? "CaptionMod: SendAudio [%s] found.\n" : "CaptionMod: SendAudio [%s] not found.\n", pString);
+	}
+
+	if (dict)
+	{
+		g_pViewPort->StartSubtitle(dict);
 	}
 
 	return 0;

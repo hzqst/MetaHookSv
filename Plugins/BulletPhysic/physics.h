@@ -75,7 +75,7 @@ typedef struct ragdoll_cst_control_s
 
 typedef struct ragdoll_bar_control_s
 {
-	ragdoll_bar_control_s(const std::string &n, float x, float y, float z, int t, float f1, float f2)
+	ragdoll_bar_control_s(const std::string &n, float x, float y, float z, int t, float f1, float f2, float f3)
 	{
 		name = n;
 		type = t;
@@ -84,6 +84,7 @@ typedef struct ragdoll_bar_control_s
 		offsetZ = z;
 		factor1 = f1;
 		factor2 = f2;
+		factor3 = f3;
 	}
 	std::string name;
 	int type;
@@ -92,6 +93,7 @@ typedef struct ragdoll_bar_control_s
 	float offsetZ;
 	float factor1;
 	float factor2;
+	float factor3;
 }ragdoll_bar_control_t;
 
 typedef struct ragdoll_config_s
@@ -110,27 +112,45 @@ public:
 	CRigBody()
 	{
 		rigbody = NULL;
-		barnacle_vel = 0;
-		barnacle_chew_vel = 0;
-		barnacle_chew_time = 0;
+		barnacle_constraint_dof6 = NULL;
+		barnacle_constraint_slider = NULL;
+		barnacle_force = 0;
+		barnacle_chew_force = 0;
 		barnacle_chew_duration = 0;
+		barnacle_chew_time = 0;
+		barnacle_chew_up_z = 0;
+		barnacle_z_offset = 0;
+		barnacle_z_init = 0;
+		barnacle_z_final = 0;
 	}
 	CRigBody(const std::string &n, btRigidBody *a1, const btVector3 &a2, const btVector3 &a3, int a4) : name(n), rigbody(a1), origin(a2), dir(a3), boneindex(a4)
 	{
-		barnacle_vel = 0;
-		barnacle_chew_vel = 0;
-		barnacle_chew_time = 0;
+		barnacle_constraint_dof6 = NULL;
+		barnacle_constraint_slider = NULL;
+		barnacle_force = 0;
+		barnacle_chew_force = 0;
 		barnacle_chew_duration = 0;
+		barnacle_chew_time = 0;
+		barnacle_chew_up_z = 0;
+		barnacle_z_offset = 0;
+		barnacle_z_init = 0;
+		barnacle_z_final = 0;
 	}
 	std::string name;
 	btRigidBody *rigbody;
+	btGeneric6DofConstraint *barnacle_constraint_dof6;
+	btSliderConstraint *barnacle_constraint_slider;
 	btVector3 origin;
 	btVector3 dir;
 	int boneindex;
-	float barnacle_vel;
-	float barnacle_chew_vel;
-	float barnacle_chew_time;
+	float barnacle_force;
+	float barnacle_chew_force;
 	float barnacle_chew_duration;
+	float barnacle_chew_time;
+	float barnacle_chew_up_z;
+	float barnacle_z_offset;
+	float barnacle_z_init;
+	float barnacle_z_final;
 	btVector3 barnacle_drag_offset;
 };
 
@@ -215,9 +235,10 @@ public:
 #define RAGDOLL_CONSTRAINT_HINGE 2
 #define RAGDOLL_CONSTRAINT_POINT 3
 
-#define RAGDOLL_BARNACLE_SLIDER  1
-#define RAGDOLL_BARNACLE_DOF6    2
-#define RAGDOLL_BARNACLE_CHEW    3
+#define RAGDOLL_BARNACLE_SLIDER			1
+#define RAGDOLL_BARNACLE_DOF6			2
+#define RAGDOLL_BARNACLE_CHEWFORCE    3
+#define RAGDOLL_BARNACLE_CHEWLIMIT    4
 
 ATTRIBUTE_ALIGNED16(class)
 BoneMotionState : public btMotionState
@@ -249,6 +270,7 @@ public:
 
 	CPhysicsDebugDraw() :  m_debugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb | btIDebugDraw::DBG_DrawConstraints | btIDebugDraw::DBG_DrawConstraintLimits)
 	{
+
 	}
 
 	virtual ~CPhysicsDebugDraw()
