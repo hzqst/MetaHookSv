@@ -20,7 +20,7 @@ Use a separate account to play Sven-Coop if you worry about getting banned, sinc
 
 0. git pull https://github.com/hzqst/MetaHookSv or download from https://github.com/hzqst/MetaHookSv/archive/main.zip
 
-1. All required binaries and files are in "Build" folder, copy them to "\SteamLibrary\steamapps\common\Sven Co-op\".
+1. All required executable and resource files are in "Build" folder, pick [whatever resource you need](Build/README.md) and copy them to "\SteamLibrary\steamapps\common\Sven Co-op\".
 
 2. Launch game from "\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe"
 
