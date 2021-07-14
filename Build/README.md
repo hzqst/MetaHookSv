@@ -46,7 +46,7 @@ An example for CaptionMod Plugin to display chinese translation of subtitles and
 
 ### svencoop_addons/models/player/* (optional)
 
-<font color=FF0000> NSFW Warning! NSFW Warning! NSFW Warning! </font>
+#### NSFW Warning! NSFW Warning! NSFW Warning!
 
 The following models: [GFL_HK416](https://gamebanana.com/mods/167185), [GFL_M14](https://gamebanana.com/mods/167065), [GFL_M14-c2](https://gamebanana.com/mods/167065), [GI_Keqing](https://gamebanana.com/mods/290942), touhou_mystia, helmet
 
