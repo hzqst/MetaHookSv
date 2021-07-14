@@ -1,0 +1,60 @@
+[DeathAnim]
+12 80
+13 120
+14 120
+15 80
+16 120
+17 150
+18 30
+182 255
+183 0
+
+[RigidBody]
+Head   15  6  capsule  -4.0  5.0  0.1   6
+Spine  5   6  capsule  3.0   6.0  1.0   10
+Pelvis 1   2  sphere   3.0   4.5  0.0   10
+
+LArm   7   9  capsule  5.0   1.8  5.0   3
+LArm2  9   10 capsule  3.5   1.8  5.0   3
+LHand  10  9  capsule -2.0   1.8  1.5   1
+
+RArm   11  13 capsule  5.0   1.8  5.0   3
+RArm2  13  14 capsule  3.5   1.8  5.0   3
+RHand  14  13 capsule -2.0   1.8  1.5   1
+
+LLeg   17  18 capsule  5.0   2.0  16.0  4
+LLeg2  18  49 capsule  10.0   2.0  15.0  4
+
+RLeg   21  22 capsule  5.0   2.0  16.0  4
+RLeg2  22  50 capsule  10.0   2.0  15.0  4
+
+LWing  26  27  capsule  11.0   2.0  10.0  2
+RWing  28  29  capsule  11.0   2.0  10.0  2
+
+[Constraint]
+Spine  Head   conetwist 6 15   0 0 0     0  6  0        0.01  0.01  0.2
+Pelvis Spine  conetwist 1 5    0 0 4     0 -4  0        0.0  0.0  0.1
+
+Spine  LArm   conetwist 7 8    0 0 0     0 -4  0        0.33 0.33 1.0
+LArm   LArm2  conetwist 8 9    0 0 0     0 -4  0        0.2  0.2  0.2
+LArm2  LHand  conetwist 9 10   0 0 0     0  3  0        0.2  0.2  0.3
+
+Spine  RArm   conetwist 11 12  0 0 0     0 -4  0        0.33 0.33 1.0
+RArm   RArm2  conetwist 12 13  0 0 0     0 -4  0        0.2  0.2  0.2
+RArm2  RHand  conetwist 13 14  0 0 0     0  3  0        0.2  0.2  0.3
+
+Pelvis LLeg   conetwist 17 17  0 0 0     0 -7  0        0.1  0.1  0.25
+LLeg2  LLeg   hinge     17 17  0 0 0     0 8 0         -0.6  0.0  0
+
+Pelvis RLeg   conetwist 21 21  0 0 0     0 -7  0        0.1  0.1  0.25
+RLeg2  RLeg   hinge     21 21  0 0 0     0 8 0         -0.6  0.0  0
+
+Spine  LWing  hinge    26 26  0 0 0     0 7 0           -0.25 0 0
+Spine  RWing  hinge    28 28  0 0 0     0 7 0           -0.25 0 0
+
+[Barnacle]
+LLeg2   dof6          0  8  0     40000   4   16
+LLeg2   chewlimit     0  0  0     0       1.0  4
+RLeg    dof6          0  0  0     30000  -16  16
+RLeg    chewlimit     0  0  0     0       1.0  4
+Pelvis  chewforce     0  0  0     8000    1.0  0

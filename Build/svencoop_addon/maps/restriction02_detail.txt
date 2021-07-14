@@ -1,0 +1,2 @@
+xfloor_c05_PARALLAX disp.png 8 8
+xfloor_c05_NORMAL norm.png 8 8
