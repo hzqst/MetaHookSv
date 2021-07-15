@@ -32,6 +32,8 @@ int *r_visframecount = NULL;
 float(*pbonetransform)[MAXSTUDIOBONES][3][4] = NULL;
 float(*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;
 
+extern model_t *g_barnacle_model;
+
 bool IsEntityBarnacle(cl_entity_t* ent);
 bool IsEntityCorpse(cl_entity_t* ent);
 bool IsPlayerDeathAnimation(entity_state_t* entstate);
@@ -67,12 +69,24 @@ int Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 
 void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
 {
-	if(IsEntityCorpse(IEngineStudio.GetCurrentEntity()))
+	auto currententity = IEngineStudio.GetCurrentEntity();
+
+	if (IsEntityCorpse(currententity))
 	{
-		gPhysicsManager.SetupBones((*pstudiohdr), IEngineStudio.GetCurrentEntity()->index);
+		gPhysicsManager.SetupPlayerBones((*pstudiohdr), currententity->index);
 		return;
 	}
+
 	gPrivateFuncs.StudioSetupBones(pthis, 0);
+
+	if (IsEntityBarnacle(currententity))
+	{
+		auto player = gCorpseManager.FindPlayerForBarnacle(currententity->index);
+		if (player)
+		{
+			gPhysicsManager.SetupBarnacleBones((*pstudiohdr), player->index);
+		}
+	}
 }
 
 int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int flags)
@@ -124,10 +138,13 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 								if (bPlayerDeath && currententity->curstate.usehull != 1)
 								{
 									float frametime = currententity->curstate.animtime - currententity->latched.prevanimtime;
-									VectorSubtract(currententity->curstate.origin, currententity->latched.prevorigin, velocity);
-									velocity[0] /= frametime;
-									velocity[1] /= frametime;
-									velocity[2] /= frametime;
+									if (frametime > 0)
+									{
+										VectorSubtract(currententity->curstate.origin, currententity->latched.prevorigin, velocity);
+										velocity[0] /= frametime;
+										velocity[1] /= frametime;
+										velocity[2] /= frametime;
+									}
 								}
 
 								cl_entity_t *barnacle = NULL;
@@ -269,7 +286,7 @@ int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 		if (IsEntityBarnacle(ent))
 		{
 			gPhysicsManager.CreateForBarnacle(ent);
-			gCorpseManager.AddBarnacle(ent->index);
+			gCorpseManager.AddBarnacle(ent->index, 0);
 		}
 	}
 
@@ -289,11 +306,28 @@ void HUD_TempEntUpdate(
 	if (levelname && levelname[0] && gCorpseManager.HasCorpse())
 	{
 		gPhysicsManager.SetGravity(cl_gravity);
-		gPhysicsManager.SynchronizeTempEntntity(ppTempEntActive, frametime, client_time);
+		gPhysicsManager.UpdateTempEntity(ppTempEntActive, frametime, client_time);
 		gPhysicsManager.StepSimulation(frametime);
 	}
 
 	return gExportfuncs.HUD_TempEntUpdate(frametime, client_time, cl_gravity, ppTempEntFree, ppTempEntActive, Callback_AddVisibleEntity, Callback_TempEntPlaySound);
+}
+
+void Vector3BulletToGoldSrc(btVector3& vec);
+
+void V_CalcRefdef(struct ref_params_s *pparams)
+{
+	if (gExportfuncs.CL_IsThirdPerson())
+	{
+		auto local = gEngfuncs.GetLocalPlayer();
+
+		if (local && local->player && (IsPlayerDeathAnimation(&local->curstate) || IsPlayerBarnacleAnimation(&local->curstate)))
+		{
+			gPhysicsManager.SyncView(local, pparams);
+		}
+	}
+
+	gExportfuncs.V_CalcRefdef(pparams);
 }
 
 void HUD_DrawTransparentTriangles(void)

@@ -5,6 +5,8 @@
 
 #define FTENT_KILLCALLBACK		0x00100000
 
+model_t *g_barnacle_model = NULL;
+
 bool IsEntityCorpse(cl_entity_t* ent)
 {
 	if (ent->curstate.iuser3 == PhyCorpseFlag1 && ent->curstate.iuser4 == PhyCorpseFlag2)
@@ -38,9 +40,22 @@ void GlobalFreeCorpseForEntity(int entindex)
 
 bool IsEntityBarnacle(cl_entity_t* ent)
 {
-	if (ent && ent->model && ent->model->type == mod_studio &&
-		!strcmp(ent->model->name, "models/barnacle.mdl") && ent->curstate.sequence >= 3 && ent->curstate.sequence <= 5)
-		return true;
+	if (ent && ent->model && ent->model->type == mod_studio)
+	{
+		if (g_barnacle_model)
+		{
+			if (g_barnacle_model == ent->model)
+			{
+				return (ent->curstate.sequence >= 3 && ent->curstate.sequence <= 5);
+			}
+		}
+		else if (!strcmp(ent->model->name, "models/barnacle.mdl"))
+		{
+			g_barnacle_model = ent->model;
+
+			return (ent->curstate.sequence >= 3 && ent->curstate.sequence <= 5);
+		}
+	}
 
 	return false;
 }
@@ -50,6 +65,20 @@ CorpseManager gCorpseManager;
 CorpseManager::CorpseManager(void)
 {
 
+}
+
+void CorpseManager::FreeCorpseForBarnacle(int entindex)
+{
+	for (auto itor = m_barnacleMap.begin(); itor != m_barnacleMap.end(); )
+	{
+		if (itor->second == entindex)
+		{
+			itor->second = 0;
+			return;
+		}
+
+		itor++;
+	}
 }
 
 void CorpseManager::FreeCorpseForEntity(int entindex)
@@ -62,6 +91,7 @@ void CorpseManager::FreeCorpseForEntity(int entindex)
 		tempent->die = 0;
 
 		gPhysicsManager.RemoveRagdoll(tempent->entity.index);
+		FreeCorpseForBarnacle(tempent->entity.index);
 
 		m_corpseMap.erase(itor);
 
@@ -84,22 +114,57 @@ bool CorpseManager::HasCorpse(void) const
 	return m_corpseMap.size();
 }
 
-void CorpseManager::AddBarnacle(int entindex)
+void CorpseManager::NewMap(void)
 {
-	m_barnacles.emplace(entindex);
+	g_barnacle_model = NULL;
+	m_barnacleMap.clear();
+}
+
+void CorpseManager::AddBarnacle(int entindex, int playerindex)
+{
+	auto itor = m_barnacleMap.find(entindex);
+	if (itor == m_barnacleMap.end())
+	{
+		m_barnacleMap[entindex] = playerindex;
+	}
+	else if(itor->second == 0 && playerindex != 0)
+	{
+		itor->second = playerindex;
+	}
+}
+
+cl_entity_t *CorpseManager::FindPlayerForBarnacle(int entindex)
+{
+	auto itor = m_barnacleMap.find(entindex);
+	if (itor != m_barnacleMap.end())
+	{
+		if (itor->second != 0)
+		{
+			auto playerEntity = gEngfuncs.GetEntityByIndex(itor->second);
+			if (playerEntity &&
+				playerEntity->player &&
+				IsPlayerBarnacleAnimation(&playerEntity->curstate))
+			{
+				return playerEntity;
+			}
+		}
+	}
+
+	return NULL;
 }
 
 cl_entity_t *CorpseManager::FindBarnacleForPlayer(entity_state_t *player)
 {
-	for (auto index : m_barnacles)
+	for (auto itor = m_barnacleMap.begin(); itor != m_barnacleMap.end(); itor++ )
 	{
-		auto ent = gEngfuncs.GetEntityByIndex(index);
+		auto ent = gEngfuncs.GetEntityByIndex(itor->first);
 		if (IsEntityBarnacle(ent))
 		{
 			if (fabs(player->origin[0] - ent->origin[0]) < 1 &&
 				fabs(player->origin[1] - ent->origin[1]) < 1 && 
 				player->origin[2] < ent->origin[2] + 16)
 			{
+				itor->second = player->number;
 				return ent;
 			}
 		}

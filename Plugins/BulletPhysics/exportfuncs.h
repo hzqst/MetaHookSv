@@ -12,7 +12,6 @@ extern IFileSystem *g_pFileSystem;
 extern DWORD g_dwEngineBuildnum;
 
 void R_NewMap(void);
-int StudioDrawPlayer(int flags, struct entity_state_s *pplayer);
 int Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion);
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model);
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio);
@@ -26,7 +25,7 @@ void HUD_TempEntUpdate(
 	void(*Callback_TempEntPlaySound)(TEMPENTITY *pTemp, float damp));
 void HUD_DrawTransparentTriangles(void);
 void HUD_Init(void);
-void HUD_StudioEvent(const struct mstudioevent_s *ev, const struct cl_entity_s *ent);
+void V_CalcRefdef(struct ref_params_s *pparams);
 
 void Sys_ErrorEx(const char *fmt, ...);
 

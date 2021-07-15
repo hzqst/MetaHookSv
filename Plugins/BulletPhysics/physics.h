@@ -164,11 +164,13 @@ public:
 		m_entindex = -1;
 		m_barnacleindex = -1;
 		m_pelvisRigBody = NULL;
+		m_headRigBody = NULL;
 	}
 
 	int m_entindex;
 	int m_barnacleindex;
 	CRigBody *m_pelvisRigBody;
+	CRigBody *m_headRigBody;
 	std::vector<CRigBody *> m_barnacleDragRigBody;
 	std::vector<CRigBody *> m_barnacleChewRigBody;
 	std::vector<int> m_keyBones;
@@ -326,11 +328,11 @@ public:
 	void StepSimulation(double framerate);
 	void ReloadConfig(void);
 	ragdoll_config_t *LoadRagdollConfig(model_t *mod);
-	void SetupBones(studiohdr_t *hdr, int tentindex);
+	void SetupPlayerBones(studiohdr_t *hdr, int entindex);
+	void SetupBarnacleBones(studiohdr_t *hdr, int entindex);
 	void RemoveRagdoll(int tentindex);
 	void RemoveAllRagdolls();
 	void RemoveAllStatics(); 
-	bool ChangeRagdollOwner(int tentindex, int newentindex);
 	bool CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_t *model, studiohdr_t *hdr, float *origin, float *velocity, bool bBarnacle, cl_entity_t *barnacle);
 	CRigBody *CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol);
 	btTypedConstraint *CreateConstraint(CRagdoll *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
@@ -338,9 +340,10 @@ public:
 	void CreateForBrushModel(cl_entity_t *ent);
 	void CreateForBarnacle(cl_entity_t *ent);
 	void RotateForEntity(cl_entity_t *ent, float matrix[4][4]);
-	void SynchronizeTempEntntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time);
 	CRagdoll *FindRagdoll(int tentindex);
 	void ReleaseRagdollFromBarnacle(CRagdoll *ragdoll);
+	void UpdateTempEntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time);
+	void SyncView(cl_entity_t *local, struct ref_params_s *pparams);
 private:
 	btDefaultCollisionConfiguration* m_collisionConfiguration;
 	btCollisionDispatcher* m_dispatcher;

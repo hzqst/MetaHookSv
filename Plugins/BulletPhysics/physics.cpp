@@ -671,7 +671,22 @@ void CPhysicsManager::ReleaseRagdollFromBarnacle(CRagdoll *ragdoll)
 
 }
 
-void CPhysicsManager::SynchronizeTempEntntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time)
+void CPhysicsManager::SyncView(cl_entity_t *local, struct ref_params_s *pparams)
+{
+	auto ragdoll = gPhysicsManager.FindRagdoll(local->index);
+	if (ragdoll && ragdoll->m_pelvisRigBody)
+	{
+		auto worldorg = ragdoll->m_pelvisRigBody->rigbody->getWorldTransform().getOrigin();
+
+		Vector3BulletToGoldSrc(worldorg);
+
+		pparams->simorg[0] = worldorg[0];
+		pparams->simorg[1] = worldorg[1];
+		pparams->simorg[2] = worldorg[2];
+	}
+}
+
+void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time)
 {
 	auto localPlayer = gEngfuncs.GetLocalPlayer();
 
@@ -1686,13 +1701,60 @@ void CPhysicsManager::RemoveRagdoll(int tentindex)
 	delete ragdoll;
 }
 
-void CPhysicsManager::SetupBones(studiohdr_t *hdr, int tentindex)
+void CPhysicsManager::SetupBarnacleBones(studiohdr_t *hdr, int entindex)
 {
-	auto itor = m_ragdollMap.find(tentindex);
+	auto itor = m_ragdollMap.find(entindex);
 
 	if (itor == m_ragdollMap.end())
 	{
-		//gEngfuncs.Con_Printf("SetupBones: not found\n");
+		//gEngfuncs.Con_Printf("SetupBarnacleBones: not found\n");
+		return;
+	}
+
+	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->boneindex);
+
+	auto ragdoll = itor->second;
+
+	if (ragdoll->m_barnacleDragRigBody.size() == 0)
+		return;
+
+	auto dragrig = ragdoll->m_barnacleDragRigBody[0];
+
+	auto worldtrans = dragrig->rigbody->getWorldTransform();
+
+	auto inv = worldtrans.inverse();
+
+	btTransform localrig;
+	localrig.setIdentity();
+	localrig.setOrigin(dragrig->barnacle_drag_offset);
+
+	btTransform worldtrans2;
+	worldtrans2.mult(worldtrans, localrig);
+
+	auto rigorgin = worldtrans2.getOrigin();
+	
+	Vector3BulletToGoldSrc(rigorgin);
+
+	for (int i = 11; i <= 16; ++i)
+	{
+		(*pbonetransform)[i][0][3] = rigorgin.x();
+		(*pbonetransform)[i][1][3] = rigorgin.y();
+		(*pbonetransform)[i][2][3] = rigorgin.z() + 8;
+	}
+
+	/*for (int i = 0; i < hdr->numbones; ++i)
+	{
+		gEngfuncs.Con_Printf("SetupBarnacleBones: pbones[%d] = %s, parent = %d\n", i, pbones[i].name, pbones[i].parent);
+	}*/
+}
+
+void CPhysicsManager::SetupPlayerBones(studiohdr_t *hdr, int entindex)
+{
+	auto itor = m_ragdollMap.find(entindex);
+
+	if (itor == m_ragdollMap.end())
+	{
+		//gEngfuncs.Con_Printf("SetupPlayerBones: not found\n");
 		return;
 	}
 
@@ -1805,6 +1867,8 @@ bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int entindex, model_t
 
 			if (rig->name == "Pelvis")
 				ragdoll->m_pelvisRigBody = rig;
+			else if (rig->name == "Head")
+				ragdoll->m_headRigBody = rig;
 
 			btVector3 vel(velocity[0], velocity[1], velocity[2]);
 

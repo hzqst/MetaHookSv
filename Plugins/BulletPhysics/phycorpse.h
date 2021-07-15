@@ -17,12 +17,15 @@ public:
 	void FreeCorpseForEntity(int entindex);
 	TEMPENTITY* FindCorpseForEntity(int entindex);
 	TEMPENTITY* CreateCorpseForEntity(cl_entity_t* ent, model_t *model);
-	void AddBarnacle(int entindex);
+	void AddBarnacle(int entindex, int playerindex);
 	bool HasCorpse(void) const;
-	cl_entity_t *FindBarnacleForPlayer(entity_state_t *);
+	void NewMap(void);
+	cl_entity_t *FindBarnacleForPlayer(entity_state_t *entstate);
+	cl_entity_t *FindPlayerForBarnacle(int entindex);
+	void FreeCorpseForBarnacle(int entindex);
 private:
 	std::unordered_map<int, TEMPENTITY*> m_corpseMap;
-	std::set<int> m_barnacles;
+	std::unordered_map<int, int> m_barnacleMap;
 };
 
 extern CorpseManager gCorpseManager;

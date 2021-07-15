@@ -67,6 +67,7 @@ void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_AddEntity = HUD_AddEntity;
 	pExportFunc->HUD_Init = HUD_Init;
 	pExportFunc->HUD_DrawTransparentTriangles = HUD_DrawTransparentTriangles;
+	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 
 	QGL_Init();
 

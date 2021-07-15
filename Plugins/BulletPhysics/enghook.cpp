@@ -9,4 +9,5 @@ void R_NewMap(void)
 {
 	gPrivateFuncs.R_NewMap();
 	gPhysicsManager.NewMap();
+	gCorpseManager.NewMap();
 }
