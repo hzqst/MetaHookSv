@@ -124,17 +124,17 @@ You can check each sequence of animation from HLMV or https://github.com/danakt/
 
 ** Warning : there must be a rigidbody named "Pelvis" to get barnacle-ragdoll work correctly. **
 
-##### example2: Pelvis  chewlimit     0  0  0     0     1.0  3
+##### example2: LLeg2  chewlimit     0  0  0     0     1.0  3
 
-"Pelvis" for the name of rigidbody to apply impulse on
+"LLeg2" for the name of rigidbody to raise up the Z limit.
 
-"0" "0" "0" for local offset X, Y, Z from origin of Pelvis, aka center.
+"0" "0" "0" for nothing.
 
 "0" for nothing.
 
-"1.0" "3" for every 1 second the Pelvis's Z axis limit is added by 3.
+"1.0"  "3" for every 1 second the Pelvis's Z axis limit is raised up by 3.
 
-** This example line raise the Z axis limit of "Pelvis" every 1 second with 3 units in GoldSrc world. **
+** This example line raise the Z axis limit up 3 units for "Pelvis" every 1 second in GoldSrc world. **
 
 ** Warning : there must be a rigidbody named "Pelvis" to get barnacle-ragdoll work correctly. **
 
