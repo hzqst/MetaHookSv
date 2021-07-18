@@ -92,7 +92,7 @@ You can check each sequence of animation from HLMV or https://github.com/danakt/
 
 #### [Barnacle]
 
-##### example: LLeg2   dof6     0  8  0     40000    -24
+##### example: LLeg2   dof6     0  8  0     40000    4  16
 
 "LLeg2" for the name of rigidbody to controll
 
@@ -102,21 +102,39 @@ You can check each sequence of animation from HLMV or https://github.com/danakt/
 
 "40000" for magnitude of force to pull ragdoll up.
 
-"-24" for offset of barnacle Z axis in GoldSrc world.
+"4" for final height (Z axis) offset of rigidbody height limit in GoldSrc world.
 
-** This example line creates a "dof6" constraint for "LLeg2", pulling "LLeg2" up with a power/force of 40000 N. "LLeg2" can go up to (barnacle.z - 24) at most. **
+"16" for initial height (Z axis) offset to "4", the initial offset is 4 - 16 = -12
 
-##### example2: Pelvis  chew     0  0  0     5000     1.0
+** This example line creates a "dof6" constraint for "LLeg2", pulling "LLeg2" up with a power/force of 40000 N. "LLeg2" can go up to (barnacle.z - 12) at initial. **
+
+##### example2: Pelvis  chewforce     0  0  0     8000     1.0  0
 
 "Pelvis" for the name of rigidbody to apply impulse on
 
 "0" "0" "0" for local offset X, Y, Z from origin of Pelvis, aka center.
 
-"5000" for magnitude of impulse to pull ragdoll up.
+"8000" for magnitude of impulse to pull ragdoll up.
 
 "1.0" for every 1 second the Pelvis is applied a impulse of 5000 unit.
 
-** This example line applies an impulse of 5000unit to "Pelvis" every 1 second only when barnacle is chewing. **
+0 for nothing.
+
+** This example line applies an impulse force of 8000 to "Pelvis" every 1 second only when barnacle is chewing. **
+
+** Warning : there must be a rigidbody named "Pelvis" to get barnacle-ragdoll work correctly. **
+
+##### example2: Pelvis  chewlimit     0  0  0     0     1.0  3
+
+"Pelvis" for the name of rigidbody to apply impulse on
+
+"0" "0" "0" for local offset X, Y, Z from origin of Pelvis, aka center.
+
+"0" for nothing.
+
+"1.0" "3" for every 1 second the Pelvis's Z axis limit is added by 3.
+
+** This example line raise the Z axis limit of "Pelvis" every 1 second with 3 units in GoldSrc world. **
 
 ** Warning : there must be a rigidbody named "Pelvis" to get barnacle-ragdoll work correctly. **
 
