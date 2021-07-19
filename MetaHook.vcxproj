@@ -15,6 +15,9 @@
     <RootNamespace>MetaHook</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
+  <PropertyGroup>
+    <CapstonePath>I:\code\capstone</CapstonePath>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -55,7 +58,7 @@
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.\;..\;HLSDK\common;HLSDK\cl_dll;HLSDK\engine;HLSDK\pm_shared;HLSDK\public;Interface;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\;HLSDK\common;HLSDK\cl_dll;HLSDK\engine;HLSDK\pm_shared;HLSDK\public;Interface;$(CapstonePath)\include\capstone;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -69,6 +72,8 @@
       <SubSystem>Windows</SubSystem>
       <BaseAddress>0x1400000</BaseAddress>
       <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>capstone.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CapstonePath)\msvc\Debug\</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(OutDir)$(ProjectName).exe" "I:\SteamLibrary\steamapps\common\Sven Co-op\metahook.exe"</Command>
@@ -80,7 +85,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>.\;..\;HLSDK\common;HLSDK\cl_dll;HLSDK\engine;HLSDK\pm_shared;HLSDK\public;Interface;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\;HLSDK\common;HLSDK\cl_dll;HLSDK\engine;HLSDK\pm_shared;HLSDK\public;Interface;$(CapstonePath)\include\capstone;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -97,6 +102,8 @@
       <BaseAddress>0x1400000</BaseAddress>
       <TargetMachine>MachineX86</TargetMachine>
       <LargeAddressAware>true</LargeAddressAware>
+      <AdditionalLibraryDirectories>$(CapstonePath)\msvc\Release\</AdditionalLibraryDirectories>
+      <AdditionalDependencies>capstone.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(OutDir)$(ProjectName).exe" "$(OutDir)..\Build\svencoop.exe"</Command>

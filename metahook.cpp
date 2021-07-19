@@ -2,8 +2,13 @@
 #include "LoadBlob.h"
 #include "Detours\detours.h"
 #include "interface.h"
-
+#include <capstone.h>
 #include <IPluginsV1.h>
+
+extern "C"
+{
+	NTSYSAPI PIMAGE_NT_HEADERS NTAPI RtlImageNtHeader(PVOID Base);
+}
 
 struct hook_s
 {
@@ -28,7 +33,7 @@ hook_t *g_phClientDLL_Init;
 
 BOOL g_bEngineIsBlob;
 HMODULE g_hEngineModule;
-DWORD g_dwEngineBase;
+PVOID g_dwEngineBase;
 DWORD g_dwEngineSize;
 hook_t *g_pHookBase;
 cl_exportfuncs_t *g_pExportFuncs;
@@ -45,9 +50,9 @@ hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void *&pCallBackFu
 hook_t *MH_VFTHook(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFuncAddr, void *&pCallBackFuncAddr);
 hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, void *pNewFuncAddr, void *&pCallBackFuncAddr);
 void *MH_GetClassFuncAddr(...);
-DWORD MH_GetModuleBase(HMODULE hModule);
+PVOID MH_GetModuleBase(HMODULE hModule);
 DWORD MH_GetModuleSize(HMODULE hModule);
-void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, char *pPattern, DWORD dwPatternLen);
+void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
 void MH_WriteDWORD(void *pAddress, DWORD dwValue);
 DWORD MH_ReadDWORD(void *pAddress);
 void MH_WriteBYTE(void *pAddress, BYTE ucValue);
@@ -163,9 +168,9 @@ void MH_Init(const char *pszGameName)
 
 			if (!hModule)
 			{
-				static char msg[512];
-				wsprintf(msg, "Could not load %s.\nPlease try again at a later time.", plugins);
-				MessageBox(NULL, msg, "Warning", MB_ICONWARNING);
+				char msg[1024];
+				sprintf(msg, "Could not load metahook plugin %s.", plugins);
+				MessageBoxA(NULL, msg, "Warning", MB_ICONWARNING);
 				continue;
 			}
 
@@ -232,7 +237,7 @@ void MH_LoadEngine(HMODULE hModule)
 	}
 	else
 	{
-		g_dwEngineBase = 0x1D01000;
+		g_dwEngineBase = (PVOID)0x1D01000;
 		g_dwEngineSize = 0x1000000;
 		g_hEngineModule = GetModuleHandle(NULL);
 		g_bEngineIsBlob = TRUE;
@@ -573,14 +578,14 @@ void *MH_GetClassFuncAddr(...)
 	return (void *)address;
 }
 
-DWORD MH_GetModuleBase(HMODULE hModule)
+PVOID MH_GetModuleBase(HMODULE hModule)
 {
 	MEMORY_BASIC_INFORMATION mem;
 
 	if (!VirtualQuery(hModule, &mem, sizeof(MEMORY_BASIC_INFORMATION)))
 		return 0;
 
-	return (DWORD)mem.AllocationBase;
+	return mem.AllocationBase;
 }
 
 DWORD MH_GetModuleSize(HMODULE hModule)
@@ -593,7 +598,7 @@ HMODULE MH_GetEngineModule(void)
 	return g_hEngineModule;
 }
 
-DWORD MH_GetEngineBase(void)
+PVOID MH_GetEngineBase(void)
 {
 	return g_dwEngineBase;
 }
@@ -603,10 +608,10 @@ DWORD MH_GetEngineSize(void)
 	return g_dwEngineSize;
 }
 
-void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, char *pPattern, DWORD dwPatternLen)
+void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen)
 {
-	DWORD dwStartAddr = (DWORD)pStartSearch;
-	DWORD dwEndAddr = dwStartAddr + dwSearchLen - dwPatternLen;
+	PUCHAR dwStartAddr = (PUCHAR)pStartSearch;
+	PUCHAR dwEndAddr = dwStartAddr + dwSearchLen - dwPatternLen;
 
 	while (dwStartAddr < dwEndAddr)
 	{
@@ -629,7 +634,7 @@ void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, char *pPattern, DW
 		dwStartAddr++;
 	}
 
-	return 0;
+	return NULL;
 }
 
 void MH_WriteDWORD(void *pAddress, DWORD dwValue)
@@ -923,6 +928,170 @@ int MH_GetEngineType(void)
 	return ENGINE_GOLDSRC;
 }
 
+const char *engines[] = {
+	"GoldSrc_Legacy",
+	"GoldSrc_Blob",
+	"GoldSrc_New",
+	"SvEngine",
+};
+
+const char *MH_GetEngineTypeName(void)
+{
+	return engines[MH_GetEngineType()];
+}
+
+PVOID MH_GetSectionByName(PVOID ImageBase, const char *SectionName, ULONG *SectionSize)
+{
+	PIMAGE_NT_HEADERS NtHeader = RtlImageNtHeader(ImageBase);
+	if (NtHeader)
+	{
+		PIMAGE_SECTION_HEADER SectionHdr = (PIMAGE_SECTION_HEADER)((PUCHAR)NtHeader + offsetof(IMAGE_NT_HEADERS, OptionalHeader) + NtHeader->FileHeader.SizeOfOptionalHeader);
+		for (USHORT i = 0; i < NtHeader->FileHeader.NumberOfSections; i++)
+		{
+			if (0 == memcmp(SectionHdr[i].Name, SectionName, 8))
+			{
+				if (SectionSize)
+					*SectionSize = max(SectionHdr[i].SizeOfRawData, SectionHdr[i].Misc.VirtualSize);
+
+				return (PUCHAR)ImageBase + SectionHdr[i].VirtualAddress;
+			}
+		}
+	}
+
+	return NULL;
+}
+
+PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize)
+{
+	PUCHAR SearchPtr = (PUCHAR)SearchBegin;
+	PUCHAR SearchEnd = (PUCHAR)SearchBegin - SearchSize;
+
+	while (SearchPtr > SearchEnd)
+	{
+		if (*(DWORD *)SearchPtr == 0xCCCCCCCC || *(DWORD *)SearchPtr == 0x90909090)
+		{
+			//.text:01D01000 55                                                  push    ebp
+			//.text:01D01001 8B EC                                               mov     ebp, esp
+			//if(!memcmp(SearchPtr + 4, "\x55\x8B\xEC", 3))
+			//	return (SearchPtr + 4);
+
+			//.text:01D03CA0 81 EC 04 04 00 00                                   sub     esp, 404h
+			//.text:01D03CA6 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
+			//if (!memcmp(SearchPtr + 4, "\x81\xEC", 2) && !memcmp(SearchPtr + 8, "\x00\x00", 2) && !memcmp(SearchPtr + 10, "\xA1", 1))
+			//	return (SearchPtr + 4);
+
+			//.text:01D02BC0 83 EC 18                                            sub     esp, 18h
+			//.text:01D02BC3 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
+			//if (!memcmp(SearchPtr + 4, "\x83\xEC", 2) && !memcmp(SearchPtr + 7, "\xA1", 1))
+			//	return (SearchPtr + 4);
+			if (SearchPtr[4] != 0x90 && SearchPtr[4] != 0xCC)
+				return SearchPtr + 4;
+		}
+		
+		SearchPtr--;
+	}
+
+	return NULL;
+}
+
+int MH_DisasmSingleInstruction(PVOID address, DisasmSingleCallback callback, void *context)
+{
+	int instLen = 0;
+	csh handle = 0;
+	if (cs_open(CS_ARCH_X86, CS_MODE_32, &handle) == CS_ERR_OK)
+	{
+		if (cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON) == CS_ERR_OK)
+		{
+			cs_insn *insts = NULL;
+			size_t count = 0;
+
+			const uint8_t *addr = (uint8_t *)address;
+			uint64_t vaddr = ((uint64_t)address & 0x00000000FFFFFFFFull);
+			size_t size = 15;
+
+			bool accessable = !IsBadReadPtr(addr, size);
+
+			if (accessable)
+			{
+				count = cs_disasm(handle, addr, size, vaddr, 1, &insts);
+				if (count)
+				{
+					callback(insts, (PUCHAR)address, insts->size, context);
+
+					instLen += insts->size;
+				}
+			}
+
+			if (insts) {
+				cs_free(insts, count);
+				insts = NULL;
+			}
+		}
+		cs_close(&handle);
+	}
+
+	return instLen;
+}
+
+BOOL MH_DisasmRanges(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callback, int depth, PVOID context)
+{
+	BOOL success = FALSE;
+
+	csh handle = 0;
+	if (cs_open(CS_ARCH_X86, CS_MODE_32, &handle) == CS_ERR_OK)
+	{
+		cs_insn *insts = NULL;
+		size_t count = 0;
+		int instCount = 1;
+
+		if (cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON) == CS_ERR_OK)
+		{
+			PUCHAR pAddress = (PUCHAR)DisasmBase;
+
+			do
+			{
+				const uint8_t *addr = (uint8_t *)pAddress;
+				uint64_t vaddr = ((uint64_t)pAddress & 0x00000000FFFFFFFFull);
+				size_t size = 15;
+
+				if (insts) {
+					cs_free(insts, count);
+					insts = NULL;
+				}
+
+				bool accessable = !IsBadReadPtr(addr, size);
+
+				if(!accessable)
+					break;
+				count = cs_disasm(handle, addr, size, vaddr, 1, &insts);
+				if (!count)
+					break;
+
+				SIZE_T instLen = insts[0].size;
+				if (!instLen)
+					break;
+
+				if (callback(&insts[0], pAddress, instLen, instCount, depth, context))
+				{
+					success = TRUE;
+					break;
+				}
+
+				pAddress += instLen;
+				instCount++;
+			} while (pAddress < (PUCHAR)DisasmBase + DisasmSize);
+		}
+
+		if (insts) {
+			cs_free(insts, count);
+			insts = NULL;
+		}
+
+		cs_close(&handle);
+	}
+	return success;
+}
+
 metahook_api_t gMetaHookAPI =
 {
 	MH_UnHook,
@@ -948,4 +1117,9 @@ metahook_api_t gMetaHookAPI =
 	MH_ReadBYTE,
 	MH_WriteNOP,
 	MH_GetEngineType,
+	MH_GetEngineTypeName,
+	MH_ReverseSearchFunctionBegin,
+	MH_GetSectionByName,
+	MH_DisasmSingleInstruction,
+	MH_DisasmRanges
 };

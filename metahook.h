@@ -29,6 +29,9 @@ typedef struct hook_s hook_t;
 #define ENGINE_GOLDSRC_NEW 2
 #define ENGINE_SVENGINE 3
 
+typedef void (*DisasmSingleCallback)(void *inst, PUCHAR address, size_t instLen, PVOID context);
+typedef BOOL (*DisasmCallback)(void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context);
+
 typedef struct metahook_api_s
 {
 	BOOL (*UnHook)(hook_t *pHook);
@@ -36,12 +39,12 @@ typedef struct metahook_api_s
 	hook_t *(*VFTHook)(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFuncAddr, void *&pCallBackFuncAddr);
 	hook_t *(*IATHook)(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, void *pNewFuncAddr, void *&pCallBackFuncAddr);
 	void *(*GetClassFuncAddr)(...);
-	DWORD (*GetModuleBase)(HMODULE hModule);
+	PVOID (*GetModuleBase)(HMODULE hModule);
 	DWORD (*GetModuleSize)(HMODULE hModule);
 	HMODULE (*GetEngineModule)(void);
-	DWORD (*GetEngineBase)(void);
+	PVOID (*GetEngineBase)(void);
 	DWORD (*GetEngineSize)(void);
-	void *(*SearchPattern)(void *pStartSearch, DWORD dwSearchLen, char *pPattern, DWORD dwPatternLen);
+	void *(*SearchPattern)(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
 	void (*WriteDWORD)(void *pAddress, DWORD dwValue);
 	DWORD (*ReadDWORD)(void *pAddress);
 	DWORD (*WriteMemory)(void *pAddress, BYTE *pData, DWORD dwDataSize);
@@ -54,6 +57,11 @@ typedef struct metahook_api_s
 	BYTE (*ReadBYTE)(void *pAddress);
 	void (*WriteNOP)(void *pAddress, DWORD dwCount);
 	int (*GetEngineType)(void);
+	const char *(*GetEngineTypeName)(void);
+	PVOID(*ReverseSearchFunctionBegin)(PVOID SearchBegin, DWORD SearchSize);
+	PVOID(*GetSectionByName)(PVOID ImageBase, const char *SectionName, ULONG *SectionSize);
+	int (*DisasmSingleInstruction)(PVOID address, DisasmSingleCallback callback, void *context);
+	BOOL (*DisasmRanges)(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callback, int depth, PVOID context);
 }
 metahook_api_t;
 

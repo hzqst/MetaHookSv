@@ -57,12 +57,20 @@ typedef enum _PROCESSINFOCLASS
 }
 PROCESSINFOCLASS;
 
+extern "C"
+{
+	NTSYSAPI NTSTATUS NTAPI NtSetInformationProcess(
+		HANDLE ProcessHandle,
+		PROCESSINFOCLASS ProcessInformationClass,
+		PVOID ProcessInformation,
+		ULONG ProcessInformationLength);
+}
+
 BOOL Sys_CloseDEP(void)
 {
-	static NTSTATUS (WINAPI *pfnNtSetInformationProcess)(HANDLE ProcessHandle, PROCESSINFOCLASS ProcessInformationClass, PVOID ProcessInformation, ULONG ProcessInformationLength) = (NTSTATUS (WINAPI *)(HANDLE, PROCESSINFOCLASS, PVOID, ULONG))GetProcAddress(GetModuleHandle("ntdll.dll"), "NtSetInformationProcess");
 	ULONG ExecuteFlags = MEM_EXECUTE_OPTION_ENABLE;
 
-	return (pfnNtSetInformationProcess(GetCurrentProcess(), ProcessExecuteFlags, &ExecuteFlags, sizeof(ExecuteFlags)) == 0);
+	return NtSetInformationProcess((HANDLE)-1, ProcessExecuteFlags, &ExecuteFlags, sizeof(ExecuteFlags)) == 0;
 }
 
 BOOL Sys_GetExecutableName(char *pszName, int nSize)
