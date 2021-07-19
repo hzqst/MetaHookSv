@@ -28,23 +28,17 @@ Use a separate account to play Sven-Coop if you worry about getting banned, sinc
 
 * The SDL2.dll fixes a bug that the IME input handler from original SDL library provided by valve was causing buffer overflow and game crash when using non-english IME. you don't need to copy it if you don't have a non-english IME.
 
-## Build Instruction
+## Build Instruction (launcher only)
 
 1. git clone https://github.com/hzqst/MetaHookSv
 
-2. Open "MetaHook.sln" with MSVC 2015 or MSVC 2017 (not tested yet with MSVC2019)
+2. git clone https://github.com/aquynh/capstone somtwhere if you don't have capstone installed in your dev environment.
 
-3. Build with Release configuration
+3. Edit "MetaHook.vcxproj" and change `<CapstonePath>I:\code\capstone</CapstonePath>` to where your capstone install path.
 
-4. Open "Plugins\CaptionMod\CaptionMod.sln" with MSVC 2015 or MSVC 2017 (not tested yet with MSVC2019)
+4. Open "MetaHook.sln" with MSVC 2015 or MSVC 2017 (not tested yet with MSVC 2019)
 
 5. Build with Release configuration
-
-6. Open "Plugins\Renderer\Renderer.sln" with MSVC 2015 or MSVC 2017 (not tested yet with MSVC2019)
-
-7. Build with Release configuration
-
-9. If there is no compile error(s), all binaries should be generated under "Build" directory.
 
 ## Plugins
 
