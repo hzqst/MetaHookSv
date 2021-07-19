@@ -1,5 +1,16 @@
 # MetaRenderer documentation
 
+### Compatibility
+
+|        Engine            |      |
+|        ----              | ---- |
+| GoldSrc_blob   (< 4554)  | -    |
+| GoldSrc_legacy (< 6153)  | -    |
+| GoldSrc_new    (8684 ~)  | √    |
+| SvEngine       (8832 ~)  | √    |
+
+For GoldSrc engine: Only compatible with metahook.exe from https://github.com/hzqst/MetaHookSv, not from other source.
+
 #### Features
 
 1. High-Dynamic-Range (HDR) post-processor.
