@@ -129,9 +129,14 @@ typedef struct studio_bone_s
 
 //engine
 extern mstudiomodel_t **psubmodel;
+extern mstudiobodyparts_t **pbodypart;
 extern studiohdr_t **pstudiohdr;
 extern model_t **r_model;
 extern float *r_blend;
+extern auxvert_t **pauxverts;
+extern float **pvlightvalues;
+extern auxvert_t(*auxverts)[MAXSTUDIOVERTS];
+extern vec3_t(*lightvalues)[MAXSTUDIOVERTS];
 extern float (*pbonetransform)[MAXSTUDIOBONES][3][4];
 extern float (*plighttransform)[MAXSTUDIOBONES][3][4];
 extern int (*g_NormalIndex)[MAXSTUDIOVERTS];
@@ -141,7 +146,6 @@ extern cl_entity_t *cl_viewent;
 extern int *g_ForcedFaceFlags;
 extern int *lightgammatable;
 extern float *g_ChromeOrigin;
-extern int *r_smodels_total;
 extern int *r_ambientlight;
 extern float *r_shadelight;
 extern vec3_t *r_blightvec;
@@ -162,9 +166,7 @@ void R_InitStudio(void);
 bool R_StudioRestoreBones(void);
 void R_StudioSaveBones(void);
 void R_GLStudioDrawPoints(void);
-void R_StudioRenderFinal(void);
 
-void studioapi_StudioDrawBones(void);
 void studioapi_SetupRenderer(int rendermode);
 void studioapi_RestoreRenderer(void);
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);

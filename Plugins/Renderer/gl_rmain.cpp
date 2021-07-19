@@ -16,8 +16,6 @@ RECT *window_rect;
 
 float *videowindowaspect;
 float *windowvideoaspect;
-float videowindowaspect_old;
-float windowvideoaspect_old;
 
 int *cl_numvisedicts;
 cl_entity_t **cl_visedicts;
@@ -28,10 +26,6 @@ transObjRef **transObjects;
 
 float scr_fov_value;
 GLint r_viewport[4];
-
-mplane_t custom_frustum[4];
-mplane_t *frustum;
-mleaf_t **r_viewleaf, **r_oldviewleaf;
 
 float yfov;
 
@@ -53,7 +47,7 @@ float *g_UserFogEnd;
 int *r_framecount;
 int *r_visframecount;
 
-frame_t *cl_frames;
+void *cl_frames;
 int size_of_frame = sizeof(frame_t);
 int *cl_parsecount;
 int *cl_waterlevel;
@@ -282,21 +276,8 @@ void R_DrawSpriteModel(cl_entity_t *entity)
 	gRefFuncs.R_DrawSpriteModel(entity);
 }
 
-void R_GetSpriteAxes(cl_entity_t *entity, int type, float *vforwrad, float *vright, float *vup)
-{
-	gRefFuncs.R_GetSpriteAxes(entity, type, vforwrad, vright, vup);
-}
-
-void R_SpriteColor(mcolor24_t *col, cl_entity_t *entity, int renderamt)
-{
-	gRefFuncs.R_SpriteColor(col, entity, renderamt);
-}
-
 float GlowBlend(cl_entity_t *entity)
 {
-	if(gRefFuncs.GlowBlend)
-		return gRefFuncs.GlowBlend(entity);
-
 	vec3_t tmp;
 	float dist, brightness;
 
@@ -831,65 +812,6 @@ float CalcFov(float fov_x, float width, float height)
 	a = a * 360 / M_PI;
 
 	return a;
-}
-
-void R_SetCustomFrustum(float *org, float *vpn2, float *vright2, float *vup2, float fov)
-{
-	//Seems does't work well with SvEngine
-	if (fov == 90)
-	{
-		VectorAdd(vpn2, vright2, custom_frustum[0].normal);
-		VectorSubtract(vpn2, vright2, custom_frustum[1].normal);
-
-		VectorAdd(vpn2, vup2, custom_frustum[2].normal);
-		VectorSubtract(vpn2, vup2, custom_frustum[3].normal);
-	}
-	else
-	{
-		float yfov = CalcFov(fov, glwidth, glheight);
-
-		RotatePointAroundVector(custom_frustum[0].normal, vup2, vpn2, -(90 - fov / 2));
-		RotatePointAroundVector(custom_frustum[1].normal, vup2, vpn2, 90 - fov / 2);
-		RotatePointAroundVector(custom_frustum[2].normal, vright2, vpn2, 90 - yfov / 2);
-		RotatePointAroundVector(custom_frustum[3].normal, vright2, vpn2, -(90 - yfov / 2));
-	}
-
-	for (int i = 0; i < 4; i++)
-	{
-		custom_frustum[i].type = PLANE_ANYZ;
-		custom_frustum[i].dist = DotProduct(org, custom_frustum[i].normal);
-		custom_frustum[i].signbits = SignbitsForPlane(&custom_frustum[i]);
-	}
-}
-
-void R_SetFrustum(void)
-{
-	if(gRefFuncs.R_SetFrustum)
-		return gRefFuncs.R_SetFrustum();
-
-	//Seems does't work well with SvEngine
-	if (scr_fov_value == 90)
-	{
-		VectorAdd(vpn, vright, frustum[0].normal);
-		VectorSubtract(vpn, vright, frustum[1].normal);
-
-		VectorAdd(vpn, vup, frustum[2].normal);
-		VectorSubtract(vpn, vup, frustum[3].normal);
-	}
-	else
-	{
-		RotatePointAroundVector(frustum[0].normal, vup, vpn, -(90 - scr_fov_value / 2));
-		RotatePointAroundVector(frustum[1].normal, vup, vpn, 90 - scr_fov_value / 2);
-		RotatePointAroundVector(frustum[2].normal, vright, vpn, 90 - yfov / 2);
-		RotatePointAroundVector(frustum[3].normal, vright, vpn, -(90 - yfov / 2));
-	}
-
-	for (int i = 0; i < 4; i++)
-	{
-		frustum[i].type = PLANE_ANYZ;
-		frustum[i].dist = DotProduct(r_origin, frustum[i].normal);
-		frustum[i].signbits = SignbitsForPlane(&frustum[i]);
-	}
 }
 
 int SignbitsForPlane(mplane_t *out)

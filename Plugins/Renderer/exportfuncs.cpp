@@ -1,4 +1,5 @@
 #include <metahook.h>
+#include <capstone.h>
 #include "exportfuncs.h"
 #include "gl_local.h"
 #include "command.h"
@@ -65,22 +66,6 @@ shaderapi_t ShaderAPI =
 	GL_MultiTexCoord2f,
 	GL_MultiTexCoord3f
 };
-
-engrefapi_t RefAPI = 
-{
-	GL_Bind,
-	GL_SelectTexture,
-	GL_DisableMultitexture,
-	GL_EnableMultitexture,
-	R_DrawBrushModel,
-	R_DrawSpriteModel,
-	R_GetSpriteAxes,
-	R_SpriteColor,
-	GlowBlend,
-	CL_FxBlend,
-	R_CullBox
-};
-
 ref_export_t gRefExports =
 {
 	//common
@@ -108,7 +93,6 @@ ref_export_t gRefExports =
 	//cloak
 	//shader
 	ShaderAPI,
-	RefAPI
 };
 
 HWND GetMainHWND()
@@ -508,72 +492,504 @@ void __fastcall StudioSetupBones(void *pthis, int)
 
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
 {
-	DWORD addr;
-
 	//Save StudioAPI Funcs
-	gRefFuncs.studioapi_SetupRenderer = pstudio->SetupRenderer;
 	gRefFuncs.studioapi_RestoreRenderer = pstudio->RestoreRenderer;
 	gRefFuncs.studioapi_StudioDynamicLight = pstudio->StudioDynamicLight;
-	gRefFuncs.studioapi_StudioDrawBones = pstudio->StudioDrawBones;
 	gRefFuncs.studioapi_SetupModel = pstudio->StudioSetupModel;
 
 	//Vars in Engine Studio API
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->GetCurrentEntity, 0x10, "\xA1", 1);
-	Sig_AddrNotFound("currententity");
-	currententity = *(cl_entity_t ***)(addr + 0x1);
 
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->GetTimes, 0x10, "\xA1\x2A\x2A\x2A\x2A\x89", 6);
-	Sig_AddrNotFound("r_framecount");
-	r_framecount = *(int **)(addr + 1);
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(pstudio->GetCurrentEntity, 0x10, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
 
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x20, "\xDD\x05\x2A\x2A\x2A\x2A\xDD\x18", 8);
-	cl_time = *(double **)(addr + 2);
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == X86_REG_EAX &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				pinst->detail->x86.operands[1].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				currententity = (decltype(currententity))pinst->detail->x86.operands[1].mem.disp;
+			}
 
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)(addr + 8) , 0x20, "\xDD\x05\x2A\x2A\x2A\x2A\xDD\x18", 8);
-	cl_oldtime = *(double **)(addr + 2);
+			if (currententity)
+				return TRUE;
 
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->SetRenderModel, 0x10, "\xA3", 1);
-	Sig_AddrNotFound("r_model");
-	r_model = *(model_t ***)(addr + 1);
+			if (address[0] == 0xCC)
+				return TRUE;
 
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->StudioSetHeader, 0x10, "\xA3", 1);
-	Sig_AddrNotFound("pstudiohdr");
-	pstudiohdr = *(studiohdr_t ***)(addr + 1);
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
 
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->SetForceFaceFlags, 0x10, "\xA3", 1);
-	Sig_AddrNotFound("g_ForcedFaceFlags");
-	g_ForcedFaceFlags = *(int **)(addr + 1);
-	
-	//call	CL_FxBlend
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->StudioSetRenderamt, 0x50, "\xE8", 1);
-	Sig_AddrNotFound("CL_FxBlend");
-	gRefFuncs.CL_FxBlend = (int (*)(cl_entity_t *))GetCallAddress(addr);
+			return FALSE;
+		}, 0, NULL);
 
-	//fstp    r_blend
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->StudioSetRenderamt, 0x50, "\xD9\x1D", sizeof("\xD9\x1D")-1);
-	Sig_AddrNotFound("r_blend");
-	r_blend = *(float **)(addr + 2);
+		Sig_VarNotFound(currententity);
+	}
 
-#define G_CHROMEORIGIN_SIG_SVENGINE "\xD9\x05\x2A\x2A\x2A\x2A\xD9\x1D"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->SetChromeOrigin, 0x150, G_CHROMEORIGIN_SIG_SVENGINE, sizeof(G_CHROMEORIGIN_SIG_SVENGINE) - 1);
-	Sig_AddrNotFound("g_ChromeOrigin");
-	g_ChromeOrigin = *(decltype(g_ChromeOrigin) *)(addr + 8);
+	if (1)
+	{
+		typedef struct
+		{
+			DWORD candidate[10];
+			int candidate_count;
+		}GetTimes_ctx;
+
+		GetTimes_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(pstudio->GetTimes, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+			auto ctx = (GetTimes_ctx *)context;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				pinst->detail->x86.operands[1].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{//.text:01D87E06 8B 0D EC 97 BC 02                                   mov     ecx, r_framecount  
+				if (ctx->candidate_count < 10)
+				{
+					ctx->candidate[ctx->candidate_count] = (DWORD)pinst->detail->x86.operands[1].mem.disp;
+					ctx->candidate_count++;
+				}
+			}
+			else if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{//.text:01D87E06 8B 0D EC 97 BC 02                                   mov     ecx, r_framecount  
+			
+				if (ctx->candidate_count < 10)
+				{
+					ctx->candidate[ctx->candidate_count] = (DWORD)pinst->detail->x86.operands[1].imm;
+					ctx->candidate_count++;
+				}
+			}
+			else if (pinst->id == X86_INS_FLD &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{//.text:01D87E06 8B 0D EC 97 BC 02                                   mov     ecx, r_framecount  
+				
+				if (!cl_time)
+					cl_time = (decltype(cl_time))pinst->detail->x86.operands[0].mem.disp;
+				else if (!cl_oldtime)
+					cl_oldtime = (decltype(cl_oldtime))pinst->detail->x86.operands[0].mem.disp;
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, &ctx);
+
+		if (ctx.candidate_count >= 1)
+		{
+			r_framecount = (decltype(r_framecount))ctx.candidate[0];
+		}
+		if (ctx.candidate_count == 5)
+		{
+			cl_time = (decltype(cl_time))ctx.candidate[1];
+			cl_oldtime = (decltype(cl_time))ctx.candidate[3];
+		}
+
+		Sig_VarNotFound(r_framecount);
+		Sig_VarNotFound(cl_time);
+		Sig_VarNotFound(cl_oldtime);
+	}
+
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(pstudio->SetRenderModel, 0x10, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG )
+			{
+				r_model = (decltype(r_model))pinst->detail->x86.operands[0].mem.disp;
+			}
+
+			if (r_model)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(r_model);
+	}
+
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(pstudio->StudioSetHeader, 0x10, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG)
+			{
+				pstudiohdr = (decltype(pstudiohdr))pinst->detail->x86.operands[0].mem.disp;
+			}
+
+			if (pstudiohdr)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(pstudiohdr);
+	}
+
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(pstudio->SetForceFaceFlags, 0x10, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG)
+			{
+				g_ForcedFaceFlags = (decltype(g_ForcedFaceFlags))pinst->detail->x86.operands[0].mem.disp;
+			}
+
+			if (g_ForcedFaceFlags)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(g_ForcedFaceFlags);
+	}
+
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(pstudio->StudioSetRenderamt, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+
+			if (address[0] == 0xE8 && instLen == 5)
+			{
+				gRefFuncs.CL_FxBlend = (decltype(gRefFuncs.CL_FxBlend))pinst->detail->x86.operands[0].imm;
+			}
+			else if (pinst->id == X86_INS_FSTP &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0)
+			{
+				r_blend = (decltype(r_blend))pinst->detail->x86.operands[0].mem.disp;
+			}
+
+			if (gRefFuncs.CL_FxBlend && r_blend)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(r_blend);
+		Sig_FuncNotFound(CL_FxBlend);
+	}
+
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(pstudio->SetupRenderer, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+
+			if (address[0] == 0xC7 && address[1] == 0x05 && instLen == 10)//C7 05 C0 7D 73 02 98 14 36 02 mov     pauxverts, offset auxverts
+			{
+				if (!pauxverts)
+				{
+					pauxverts = *(decltype(pauxverts)*)(address + 2);
+					auxverts = *(decltype(auxverts)*)(address + 6);
+				}
+				else if (!pvlightvalues)
+				{
+					pvlightvalues = *(decltype(pvlightvalues)*)(address + 2);
+					lightvalues = *(decltype(lightvalues)*)(address + 6);
+				}
+			}
+
+			if (pvlightvalues && lightvalues)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(pauxverts);
+		Sig_VarNotFound(pvlightvalues);
+	}
+
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(pstudio->StudioSetupModel, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base != 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				pinst->detail->x86.operands[0].mem.disp == 0 &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize  )
+			{//.text:01D87E55 C7 01 B8 94 37 02                                   mov     dword ptr [ecx], offset pbodypart
+				if (!pbodypart)
+				{
+					pbodypart = (decltype(pbodypart))pinst->detail->x86.operands[1].imm;
+				}
+				else if (!psubmodel)
+				{
+					psubmodel = (decltype(psubmodel))pinst->detail->x86.operands[1].imm;
+				}
+			}
+
+			if (pbodypart && psubmodel)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(pbodypart);
+		Sig_VarNotFound(psubmodel);
+	}
+
+	if(1)
+	{
+		typedef struct
+		{
+			DWORD r_origin_candidate;
+			DWORD g_ChromeOrigin_candidate;
+		}SetChromeOrigin_ctx;
+
+		SetChromeOrigin_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(pstudio->SetChromeOrigin, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+			auto ctx = (SetChromeOrigin_ctx *)context;
+
+			if (address[0] == 0xD9 && address[1] == 0x05 && instLen == 6)//D9 05 00 40 F5 03 fld     r_origin
+			{
+				DWORD imm = *(DWORD *)(address + 2);
+
+				if (!ctx->r_origin_candidate || imm < ctx->r_origin_candidate)
+					ctx->r_origin_candidate = imm;
+			}
+			else if (address[0] == 0xD9 && address[1] == 0x1D && instLen == 6)//D9 1D A0 39 DB 08 fstp    g_ChromeOrigin
+			{
+				DWORD imm = *(DWORD *)(address + 2);
+
+				if (!ctx->g_ChromeOrigin_candidate || imm < ctx->g_ChromeOrigin_candidate)
+					ctx->g_ChromeOrigin_candidate = imm;
+			}
+			else if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0)
+			{//A1 F0 98 BC 02 mov     eax, r_origin
+				DWORD imm = pinst->detail->x86.operands[1].mem.disp;
+
+				if (!ctx->r_origin_candidate || imm < ctx->r_origin_candidate)
+					ctx->r_origin_candidate = imm;
+			}
+			else if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG)
+			{//A3 40 88 35 02 mov     g_ChromeOrigin, eax
+				DWORD imm = pinst->detail->x86.operands[0].mem.disp;
+
+				if (!ctx->g_ChromeOrigin_candidate || imm < ctx->g_ChromeOrigin_candidate)
+					ctx->g_ChromeOrigin_candidate = imm;
+			}
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, &ctx);
+
+		if (ctx.r_origin_candidate)
+			r_origin = (decltype(r_origin))ctx.r_origin_candidate;
+
+		if (ctx.g_ChromeOrigin_candidate)
+			g_ChromeOrigin = (decltype(g_ChromeOrigin))ctx.g_ChromeOrigin_candidate;
+
+		Sig_VarNotFound(r_origin);
+		Sig_VarNotFound(g_ChromeOrigin);
+	}
+
+	if (1)
+	{
+		typedef struct
+		{
+			int and_FF00_start;
+			DWORD candidate[10];
+			int candidate_count;
+		}StudioSetupLighting_ctx;
+
+		StudioSetupLighting_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(pstudio->StudioSetupLighting, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+			auto ctx = (StudioSetupLighting_ctx *)context;
+			
+			if (pinst->id == X86_INS_AND &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 0xFF00 )
+			{
+				ctx->candidate_count = 0;
+				ctx->and_FF00_start = 1;
+			}
+			else if (ctx->and_FF00_start && 
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG )
+			{//.text:01D84A49 89 0D 04 AE 75 02                                   mov     r_colormix+4, ecx
+				if (ctx->candidate_count < 10)
+				{
+					ctx->candidate[ctx->candidate_count] = (DWORD)pinst->detail->x86.operands[0].mem.disp;
+					ctx->candidate_count++;
+				}
+			}
+			else if (ctx->and_FF00_start &&
+				pinst->id == X86_INS_FSTP &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{//.text:01D8F6AD D9 1D F0 EA 51 08                                   fstp    r_colormix
+
+				if (ctx->candidate_count < 10)
+				{
+					ctx->candidate[ctx->candidate_count] = (DWORD)pinst->detail->x86.operands[0].mem.disp;
+					ctx->candidate_count++;
+				}
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, &ctx);
+
+
+		if (ctx.candidate_count >= 3)
+		{
+			std::qsort(ctx.candidate, ctx.candidate_count, sizeof(int), [](const void*a, const void*b) {
+				return (int)(*(LONG_PTR *)a - *(LONG_PTR *)b);
+			});
+
+			//other, other, other, r_colormix[0], r_colormix[1], r_colormix[2]
+			if (ctx.candidate[ctx.candidate_count - 3] + 4 == ctx.candidate[ctx.candidate_count - 2] &&
+				ctx.candidate[ctx.candidate_count - 2] + 4 == ctx.candidate[ctx.candidate_count - 1])
+			{
+				r_colormix = (decltype(r_colormix))ctx.candidate[ctx.candidate_count - 3];
+			}
+			//r_colormix[0], r_colormix[1], r_colormix[2], other, other, other
+			else if (ctx.candidate[0] + 4 == ctx.candidate[1] &&
+				ctx.candidate[1] + 4 == ctx.candidate[2])
+			{
+				r_colormix = (decltype(r_colormix))ctx.candidate[0];
+			}
+		}
+
+		Sig_VarNotFound(r_colormix);
+	}
 
 	pbonetransform = (float (*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetBoneTransform();
 	plighttransform = (float (*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetLightTransform();
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-#define PSUBMODEL_SIG_SVENGINE "\xC7\x00\x2A\x2A\x2A\x2A\xC3"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->StudioSetupModel, 0x50, PSUBMODEL_SIG_SVENGINE, sizeof(PSUBMODEL_SIG_SVENGINE) - 1);
-		Sig_AddrNotFound("psubmodel");
-		psubmodel = *(decltype(psubmodel)*)(addr + 2);
-
-#define R_COLORMIX_SIG_SVENGINE "\xD9\x46\x08\xD9\x1D\x2A\x2A\x2A\x2A\xD9\x46\x0C"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->StudioSetupLighting, 0x150, R_COLORMIX_SIG_SVENGINE, sizeof(R_COLORMIX_SIG_SVENGINE) - 1);
-		Sig_AddrNotFound("psubmodel");
-		r_colormix = *(decltype(r_colormix)*)(addr + 5);
-	}
 
 	cl_viewent = gEngfuncs.GetViewModel();
 
@@ -582,10 +998,8 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	gpStudioInterface = ppinterface;
 
 	//InlineHook StudioAPI
-	InstallHook(studioapi_SetupRenderer);
 	InstallHook(studioapi_RestoreRenderer);
 	InstallHook(studioapi_StudioDynamicLight);
-	InstallHook(studioapi_StudioDrawBones);
 
 	cl_sprite_white = IEngineStudio.Mod_ForName("sprites/white.spr", 1);
 

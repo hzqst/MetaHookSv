@@ -3,7 +3,6 @@
 
 msurface_t **skychain = NULL;
 msurface_t **waterchain = NULL;
-int *gl_texsort_value = NULL;
 
 //engine
 byte *lightmaps;
@@ -18,10 +17,6 @@ int *gDecalSurfCount;
 msurface_t **gDecalSurfs;
 decal_t *gDecalPool;
 decalcache_t *gDecalCache;
-int *skytexturenum;
-int *r_detail_texid;
-float *r_detail_texcoord;
-float *r_polygon_offset;
 
 void R_RecursiveWorldNode(mnode_t *node)
 {

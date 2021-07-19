@@ -2534,7 +2534,15 @@ void R_DrawWorld(void)
 	*currenttexture = -1;
 
 	qglColor3f(1.0f, 1.0f, 1.0f);
-	memset(lightmap_polys, 0, sizeof(glpoly_t *) * 1024);
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		memset(lightmap_polys, 0, sizeof(glpoly_t *) * 1024);
+	}
+	else
+	{
+		memset(lightmap_polys, 0, sizeof(glpoly_t *) * 64);
+	}
 
 	GL_DisableMultitexture();
 	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);

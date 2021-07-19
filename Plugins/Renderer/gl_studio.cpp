@@ -14,9 +14,14 @@ std::unordered_map<int, studio_program_t> g_StudioProgramTable;
 model_t *cl_sprite_white;
 model_t *cl_shellchrome;
 mstudiomodel_t **psubmodel;
+mstudiobodyparts_t **pbodypart;
 studiohdr_t **pstudiohdr;
 model_t **r_model;
 float *r_blend;
+auxvert_t **pauxverts;
+float **pvlightvalues;
+auxvert_t (*auxverts)[MAXSTUDIOVERTS];
+vec3_t (*lightvalues)[MAXSTUDIOVERTS];
 float (*pbonetransform)[MAXSTUDIOBONES][3][4];
 float (*plighttransform)[MAXSTUDIOBONES][3][4];
 int (*g_NormalIndex)[MAXSTUDIOVERTS];
@@ -26,7 +31,6 @@ cl_entity_t *cl_viewent;
 int *g_ForcedFaceFlags;
 int *lightgammatable;
 float *g_ChromeOrigin;
-int *r_smodels_total;
 int *r_ambientlight;
 float *r_shadelight;
 vec3_t *r_blightvec;
@@ -34,13 +38,13 @@ float *r_plightvec;
 float *r_colormix;
 void *tmp_palette;
 
+
 //renderer
 vec3_t r_studionormal[MAXSTUDIOVERTS];
 float lightpos[MAXSTUDIOVERTS][3][4];
-auxvert_t auxverts[MAXSTUDIOVERTS];
-vec3_t lightvalues[MAXSTUDIOVERTS];
-auxvert_t *pauxverts;
-float *pvlightvalues;
+//auxvert_t auxverts[MAXSTUDIOVERTS];
+//vec3_t lightvalues[MAXSTUDIOVERTS];
+
 int r_studio_drawcall;
 int r_studio_polys;
 int r_studio_framecount;
@@ -296,9 +300,6 @@ void BuildNormalIndexTable(void)
 
 studiohdr_t *R_LoadTextures(model_t *psubm)
 {
-	if (gRefFuncs.R_LoadTextures)
-		return gRefFuncs.R_LoadTextures(psubm);
-
 	model_t *texmodel;
 
 	if ((*pstudiohdr)->textureindex == 0)
@@ -325,9 +326,6 @@ studiohdr_t *R_LoadTextures(model_t *psubm)
 
 void BuildGlowShellVerts(vec3_t *pstudioverts, auxvert_t *paux)
 {
-	if (gRefFuncs.BuildGlowShellVerts)
-		return gRefFuncs.BuildGlowShellVerts(pstudioverts, paux);
-
 	int					i;
 	byte				*pvertbone;
 	vec3_t				*pstudionorms;
@@ -457,15 +455,20 @@ void R_GLStudioDrawPoints(void)
 		qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	}
 
-	pvertbone = ((byte *)(*pstudiohdr) + (*psubmodel)->vertinfoindex);
-	pnormbone = ((byte *)(*pstudiohdr) + (*psubmodel)->norminfoindex);
+	auto engine_pauxverts = (*pauxverts);
+	auto engine_pvlightvalues = (*pvlightvalues);
+	auto engine_pstudiohdr = (*pstudiohdr);
+	auto engine_psubmodel = (*psubmodel);
+
+	pvertbone = ((byte *)engine_pstudiohdr + engine_psubmodel->vertinfoindex);
+	pnormbone = ((byte *)engine_pstudiohdr + engine_psubmodel->norminfoindex);
 	ptexturehdr = R_LoadTextures(*r_model);
 	ptexture = (mstudiotexture_t *)((byte *)ptexturehdr + ptexturehdr->textureindex);
 
-	pmesh = (mstudiomesh_t *)((byte *)(*pstudiohdr) + (*psubmodel)->meshindex);
+	pmesh = (mstudiomesh_t *)((byte *)engine_pstudiohdr + engine_psubmodel->meshindex);
 
-	pstudioverts = (vec3_t *)((byte *)(*pstudiohdr) + (*psubmodel)->vertindex);
-	pstudionorms = (vec3_t *)((byte *)(*pstudiohdr) + (*psubmodel)->normindex);
+	pstudioverts = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->vertindex);
+	pstudionorms = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->normindex);
 
 	pskinref = (short *)((byte *)ptexturehdr + ptexturehdr->skinindex);
 
@@ -479,11 +482,11 @@ void R_GLStudioDrawPoints(void)
 
 	if (r_studio_vbo->value)
 	{
-		auto itor = g_StudioVBOTable.find((*pstudiohdr));
+		auto itor = g_StudioVBOTable.find(engine_pstudiohdr);
 		if (itor != g_StudioVBOTable.end())
 		{
 			VBOData = itor->second;
-			auto itor2 = VBOData->vSubmodel.find((*psubmodel));
+			auto itor2 = VBOData->vSubmodel.find(engine_psubmodel);
 			if (itor2 != VBOData->vSubmodel.end())
 			{
 				VBOSubmodel = itor2->second;
@@ -491,7 +494,7 @@ void R_GLStudioDrawPoints(void)
 			else
 			{
 				VBOSubmodel = new studio_vbo_submodel_t;
-				VBOData->vSubmodel[(*psubmodel)] = VBOSubmodel;
+				VBOData->vSubmodel[engine_psubmodel] = VBOSubmodel;
 				iInitVBO = 2;
 			}
 		}
@@ -499,16 +502,16 @@ void R_GLStudioDrawPoints(void)
 		{
 			VBOData = new studio_vbo_t;
 			VBOSubmodel = new studio_vbo_submodel_t;
-			VBOData->vSubmodel[(*psubmodel)] = VBOSubmodel;
+			VBOData->vSubmodel[engine_psubmodel] = VBOSubmodel;
 
-			g_StudioVBOTable[(*pstudiohdr)] = VBOData;
+			g_StudioVBOTable[engine_pstudiohdr] = VBOData;
 			iInitVBO = 3;
 		}
 	}
 
 	if (iInitVBO & 2)
 	{
-		VBOSubmodel->iNumMesh = (*psubmodel)->nummesh;
+		VBOSubmodel->iNumMesh = engine_psubmodel->nummesh;
 		VBOSubmodel->vMesh = new studio_vbo_mesh_t[VBOSubmodel->iNumMesh];
 	}
 
@@ -534,25 +537,25 @@ void R_GLStudioDrawPoints(void)
 		if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
 		{
 			BuildNormalIndexTable();
-			BuildGlowShellVerts(pstudioverts, pauxverts);
+			BuildGlowShellVerts(pstudioverts, engine_pauxverts);
 		}
 		else
 		{
-			for (i = 0; i < (*psubmodel)->numverts; i++)
+			for (i = 0; i < engine_psubmodel->numverts; i++)
 			{
-				av = &(pauxverts[i]);
+				av = &(engine_pauxverts[i]);
 				R_StudioTransformAuxVert(av, pvertbone[i], pstudioverts[i]);
 			}
 		}
 
-		for (i = 0; i < (*psubmodel)->numverts; i++)
+		for (i = 0; i < engine_psubmodel->numverts; i++)
 		{
 			R_LightStrength(pvertbone[i], pstudioverts[i], lightpos[i]);
 		}
 
-		lv = pvlightvalues;
+		lv = engine_pvlightvalues;
 
-		for (j = 0; j < (*psubmodel)->nummesh; j++)
+		for (j = 0; j < engine_psubmodel->nummesh; j++)
 		{
 			flags = ptexture[pskinref[pmesh[j].skinref]].flags | (*g_ForcedFaceFlags);
 
@@ -569,7 +572,7 @@ void R_GLStudioDrawPoints(void)
 
 					if (flags & STUDIO_NF_CHROME)
 					{
-						int m = (int)((char *)lv - (char *)pvlightvalues) / 12;
+						int m = (int)((char *)lv - (char *)engine_pvlightvalues) / 12;
 						gRefFuncs.R_StudioChrome((*chrome)[m], *pnormbone, *pstudionorms);
 					}
 				}
@@ -583,7 +586,7 @@ void R_GLStudioDrawPoints(void)
 
 					if (flags & STUDIO_NF_CHROME)
 					{
-						int m = (int)((char *)lv - (char *)pvlightvalues) / 12;
+						int m = (int)((char *)lv - (char *)engine_pvlightvalues) / 12;
 						gRefFuncs.R_StudioChrome((*chrome)[m], *pnormbone, *pstudionorms);
 					}
 
@@ -603,8 +606,8 @@ void R_GLStudioDrawPoints(void)
 		iFlippedVModel = 1;
 	}
 
-	pstudionorms = (vec3_t *)((byte *)(*pstudiohdr) + (*psubmodel)->normindex);
-	pnormbone = ((byte *)(*pstudiohdr) + (*psubmodel)->norminfoindex);
+	pstudionorms = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->normindex);
+	pnormbone = ((byte *)engine_pstudiohdr + engine_psubmodel->norminfoindex);
 
 	if (!iInitVBO && VBOSubmodel && r_studio_vbo->value)
 	{
@@ -630,11 +633,11 @@ void R_GLStudioDrawPoints(void)
 		else
 			r_g3 = 0.125f - (v_brightness->value * v_brightness->value) * 0.075f;
 
-		for (j = 0; j < (*psubmodel)->nummesh; j++)
+		for (j = 0; j < engine_psubmodel->nummesh; j++)
 		{
 			auto &VBOMesh = VBOSubmodel->vMesh[j];
 
-			pmesh = (mstudiomesh_t *)((byte *)(*pstudiohdr) + (*psubmodel)->meshindex) + j;
+			pmesh = (mstudiomesh_t *)((byte *)engine_pstudiohdr + engine_psubmodel->meshindex) + j;
 
 			r_studio_polys += pmesh->numtris;
 
@@ -827,11 +830,11 @@ void R_GLStudioDrawPoints(void)
 	}
 	else
 	{
-		for (j = 0; j < (*psubmodel)->nummesh; j++)
+		for (j = 0; j < engine_psubmodel->nummesh; j++)
 		{
-			pmesh = (mstudiomesh_t *)((byte *)(*pstudiohdr) + (*psubmodel)->meshindex) + j;
+			pmesh = (mstudiomesh_t *)((byte *)engine_pstudiohdr + engine_psubmodel->meshindex) + j;
 
-			auto ptricmds = (short *)((byte *)(*pstudiohdr) + pmesh->triindex);
+			auto ptricmds = (short *)((byte *)engine_pstudiohdr + pmesh->triindex);
 
 			r_studio_polys += pmesh->numtris;
 
@@ -972,7 +975,7 @@ void R_GLStudioDrawPoints(void)
 							col[3] = 1.0f;
 							qglColor4fv(col);
 
-							av = &pauxverts[ptricmds[0]];
+							av = &engine_pauxverts[ptricmds[0]];
 							qglVertex3fv(av->fv);
 
 							if (iInitVBO & 2)
@@ -1028,7 +1031,7 @@ void R_GLStudioDrawPoints(void)
 						{
 							qglTexCoord2f((*chrome)[ptricmds[1]][0] * s, (*chrome)[ptricmds[1]][1] * t);
 
-							lv = &pvlightvalues[ptricmds[1] * 3];
+							lv = &engine_pvlightvalues[ptricmds[1] * 3];
 
 							vec3_t vNormal;
 							VectorCopy(pstudionorms[ptricmds[1]], vNormal);
@@ -1043,7 +1046,7 @@ void R_GLStudioDrawPoints(void)
 							qglNormal3fv(r_studionormal[ptricmds[1]]);
 							qglColor4f(fl[0], fl[1], fl[2], *r_blend);
 
-							av = &pauxverts[ptricmds[0]];
+							av = &engine_pauxverts[ptricmds[0]];
 							qglVertex3fv(av->fv);
 
 							if (iInitVBO & 2)
@@ -1100,7 +1103,7 @@ void R_GLStudioDrawPoints(void)
 						vec2_t st = { ptricmds[2] * s, ptricmds[3] * t };
 						qglTexCoord2fv(st);
 
-						lv = &(pvlightvalues[ptricmds[1] * 3]);
+						lv = &(engine_pvlightvalues[ptricmds[1] * 3]);
 
 						vec3_t vNormal;
 						VectorCopy(pstudionorms[ptricmds[1]], vNormal);
@@ -1123,7 +1126,7 @@ void R_GLStudioDrawPoints(void)
 							qglColor4f(fl[0], fl[1], fl[2], *r_blend);
 						}
 
-						av = &(pauxverts[ptricmds[0]]);
+						av = &(engine_pauxverts[ptricmds[0]]);
 						qglVertex3fv(av->fv);
 
 						if (iInitVBO & 2)
@@ -1247,14 +1250,6 @@ void R_GLStudioDrawPoints(void)
 	}
 }
 
-void R_StudioRenderFinal(void)
-{
-	pauxverts = &auxverts[0];
-	pvlightvalues = (float *)&lightvalues[0];
-
-	gRefFuncs.R_StudioRenderFinal();
-}
-
 //StudioAPI
 
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight)
@@ -1301,174 +1296,8 @@ void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight)
 	}
 }
 
-void studioapi_SetupRenderer(int rendermode)
-{
-	pauxverts = &auxverts[0];
-	pvlightvalues = (float *)&lightvalues[0];
-
-	gRefFuncs.studioapi_SetupRenderer(rendermode);
-}
-
 void studioapi_RestoreRenderer(void)
 {
 	qglDepthMask(1);
 	gRefFuncs.studioapi_RestoreRenderer();
-}
-
-void studioapi_StudioDrawBones(void)
-{
-	int			i, j, k;
-	float		lv;
-	vec3_t		tmp;
-	vec3_t		p[8];
-	vec3_t		up, right, forward;
-	vec3_t		a1;
-	mstudiobone_t		*pbones;
-
-	pbones = (mstudiobone_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->boneindex);
-
-	gEngfuncs.pTriAPI->SpriteTexture(cl_sprite_white, 0);
-
-	int	boxpnt[6][4] =
-	{
-		{ 0, 4, 6, 2 },
-		{ 0, 1, 5, 4 },
-		{ 0, 2, 3, 1 },
-		{ 7, 5, 1, 3 },
-		{ 7, 3, 2, 6 },
-		{ 7, 6, 4, 5 }
-	};
-
-	for (i = 0; i < (*pstudiohdr)->numbones; i++)
-	{
-		if (pbones[i].parent == -1)
-			continue;
-
-		k = pbones[i].parent;
-
-		a1[0] = a1[1] = a1[2] = 1.0;
-		up[0] = (*plighttransform)[i][0][3] - (*plighttransform)[k][0][3];
-		up[1] = (*plighttransform)[i][1][3] - (*plighttransform)[k][1][3];
-		up[2] = (*plighttransform)[i][2][3] - (*plighttransform)[k][2][3];
-		if (up[0] > up[1])
-			if (up[0] > up[2])
-				a1[0] = 0.0;
-			else
-				a1[2] = 0.0;
-		else
-			if (up[1] > up[2])
-				a1[1] = 0.0;
-			else
-				a1[2] = 0.0;
-		CrossProduct(up, a1, right);
-		VectorNormalize(right);
-		CrossProduct(up, right, forward);
-		VectorNormalize(forward);
-		VectorScale(right, 2.0, right);
-		VectorScale(forward, 2.0, forward);
-
-		for (j = 0; j < 8; j++)
-		{
-			p[j][0] = (*plighttransform)[k][0][3];
-			p[j][1] = (*plighttransform)[k][1][3];
-			p[j][2] = (*plighttransform)[k][2][3];
-
-			if (j & 1)
-			{
-				VectorSubtract(p[j], right, p[j]);
-			}
-			else
-			{
-				VectorAdd(p[j], right, p[j]);
-			}
-
-			if (j & 2)
-			{
-				VectorSubtract(p[j], forward, p[j]);
-			}
-			else
-			{
-				VectorAdd(p[j], forward, p[j]);
-			}
-
-			if (j & 4)
-			{
-			}
-			else
-			{
-				VectorAdd(p[j], up, p[j]);
-			}
-		}
-
-		VectorNormalize(up);
-		VectorNormalize(right);
-		VectorNormalize(forward);
-
-		gEngfuncs.pTriAPI->Begin(TRI_QUADS);
-		gEngfuncs.pTriAPI->Color4f(1.0, 1.0, 1.0, 1.0);
-		gEngfuncs.pTriAPI->TexCoord2f(0, 0);
-
-		float centerOfCube[3] = {0};
-
-		for (j = 0; j < 6; j++)
-		{
-			switch (j)
-			{
-			case 0:	VectorCopy(right, tmp); break;
-			case 1:	VectorCopy(forward, tmp); break;
-			case 2:	VectorCopy(up, tmp); break;
-			case 3:	VectorScale(right, -1, tmp); break;
-			case 4:	VectorScale(forward, -1, tmp); break;
-			case 5:	VectorScale(up, -1, tmp); break;
-			}
-			R_StudioLighting(&lv, -1, 0, tmp);
-
-			gEngfuncs.pTriAPI->Brightness(lv);
-
-			float centerOfQuad[3] = { 0 };
-
-			for (k = 0; k < 4; ++k)
-			{
-				gEngfuncs.pTriAPI->Vertex3fv(p[boxpnt[j][k]]);
-
-				VectorAdd(centerOfQuad, p[boxpnt[j][k]], centerOfQuad);
-			}
-
-			centerOfQuad[0] /= 4;
-			centerOfQuad[1] /= 4;
-			centerOfQuad[2] /= 4;
-
-			VectorAdd(centerOfCube, centerOfQuad, centerOfCube);
-		}
-
-		centerOfCube[0] /= 6;
-		centerOfCube[1] /= 6;
-		centerOfCube[2] /= 6;
-
-		gEngfuncs.pTriAPI->End();
-
-		if (!r_draw_pass && !g_SvEngine_DrawPortalView)
-		{
-			GL_Begin2D();
-			qglDisable(GL_BLEND);
-
-			float screen[3];
-			gEngfuncs.pTriAPI->WorldToScreen(centerOfCube, screen);
-
-#define XPROJECT(x)	( (1.0f+(x))*glwidth*0.5f )
-#define YPROJECT(y) ( (1.0f-(y))*glheight*0.5f )
-
-			int x = XPROJECT(screen[0]);
-			int y = YPROJECT(screen[1]);
-
-			char name[256];
-			sprintf(name, "%s (%d)\n", pbones[i].name, i);
-
-			gEngfuncs.pfnDrawConsoleString(x, y, name);
-
-			gEngfuncs.Con_Printf(name);
-
-			GL_End2D();
-		}
-	}
 }
