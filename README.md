@@ -34,7 +34,7 @@ Use a separate account to play Sven-Coop if you worry about getting banned, sinc
 
 2. git clone https://github.com/aquynh/capstone somtwhere if you don't have capstone installed in your dev environment.
 
-3. Edit "MetaHook.vcxproj" and change `<CapstonePath>I:\code\capstone</CapstonePath>` to where your capstone install path.
+3. Edit "MetaHook.vcxproj" and change `<CapstonePath>I:\code\capstone</CapstonePath>` to your capstone install path.
 
 4. Open "MetaHook.sln" with MSVC 2015 or MSVC 2017 (not tested yet with MSVC 2019)
 
