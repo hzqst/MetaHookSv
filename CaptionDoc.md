@@ -1,5 +1,11 @@
 # CaptionMod documentation
 
+### Build Instruction
+
+1. Open "MetaHookSv\Plugins\CaptionMod\CaptionMod.sln"
+
+2. Build with Release configuration
+
 #### Features
 
 1. Display subtitles when sound is played.
@@ -31,9 +37,3 @@ cap_enabled 0 / 1 : to enable or disable CaptionMod's subtitle display.
 cap_netmessage 0 / 1 : to enable or disable CaptionMod's HUD TextMessage translation.
 
 cap_debug 0 / 1 : to output debug message when there is a HUD TextMessage or sound playing.
-
-### Build Instruction
-
-1. Open "MetaHookSv\Plugins\CaptionMod\CaptionMod.sln"
-
-2. Build with Release configuration
