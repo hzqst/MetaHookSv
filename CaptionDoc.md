@@ -6,6 +6,17 @@
 
 2. Build with Release configuration
 
+### Compatibility
+
+|        Engine            |      |
+|        ----              | ---- |
+| GoldSrc_blob   (< 4554)  | -    |
+| GoldSrc_legacy (< 6153)  | -    |
+| GoldSrc_new    (8684 ~)  | -    |
+| SvEngine       (8832 ~)  | √    |
+
+Try https://github.com/hzqst/CaptionMod if you are playing GoldSrc mod.
+
 #### Features
 
 1. Display subtitles when sound is played.
