@@ -15,7 +15,7 @@
 | GoldSrc_new    (8684 ~)  | -    |
 | SvEngine       (8832 ~)  | √    |
 
-Try https://github.com/hzqst/CaptionMod if you are playing GoldSrc mod.
+For GoldSrc engine: Try https://github.com/hzqst/CaptionMod
 
 #### Features
 
