@@ -28,7 +28,7 @@ Use a separate account to play Sven-Coop if you worry about getting banned, sinc
 
 * The SDL2.dll fixes a bug that the IME input handler from original SDL library provided by valve was causing buffer overflow and game crash when using non-english IME. you don't need to copy it if you don't have a non-english IME.
 
-## Build Instruction (launcher only)
+## Build Instruction (launcher only, not plugins)
 
 1. git clone https://github.com/hzqst/MetaHookSv
 
@@ -39,6 +39,15 @@ Use a separate account to play Sven-Coop if you worry about getting banned, sinc
 4. Open "MetaHook.sln"
 
 5. Build with Release configuration
+
+### Compatibility (launcher only, not plugins)
+
+|        Engine            |      |
+|        ----              | ---- |
+| GoldSrc_blob   (< 4554)  | √    |
+| GoldSrc_legacy (< 6153)  | √    |
+| GoldSrc_new    (8684 ~)  | √    |
+| SvEngine       (8832 ~)  | √    |
 
 ## Plugins
 
