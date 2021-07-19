@@ -6,6 +6,15 @@
 
 [中文DOC](BPhysicsDocCN.md)
 
+### Compatibility
+
+|        Engine            |      |
+|        ----              | ---- |
+| GoldSrc_blob   (< 4554)  | -    |
+| GoldSrc_legacy (< 6153)  | -    |
+| GoldSrc_new    (8684 ~)  | √    |
+| SvEngine       (8832 ~)  | √    |
+
 ### Build Instruction
 
 1. git clone https://github.com/bulletphysics/bullet3 somewhere if you don't have bullet3 source code installed in your dev environment.
