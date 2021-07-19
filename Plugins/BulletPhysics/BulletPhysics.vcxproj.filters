@@ -27,9 +27,6 @@
     <ClCompile Include="physics.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="enghook.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="phycorpse.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -40,6 +37,9 @@
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="command.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="privatehook.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -59,9 +59,6 @@
     <ClInclude Include="physics.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="enghook.h">
-      <Filter>Header</Filter>
-    </ClInclude>
     <ClInclude Include="phycorpse.h">
       <Filter>Header</Filter>
     </ClInclude>
@@ -72,6 +69,9 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="qgl.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="privatehook.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

@@ -7,7 +7,7 @@
 #include "cvardef.h"
 #include "exportfuncs.h"
 #include "entity_types.h"
-#include "enghook.h"
+#include "privatehook.h"
 #include "command.h"
 
 #include "pm_defs.h"

@@ -1,5 +1,5 @@
 #include <metahook.h>
-#include "enghook.h"
+#include "privatehook.h"
 #include "phycorpse.h"
 #include "physics.h"
 

@@ -106,7 +106,7 @@
     <ClCompile Include="command.cpp" />
     <ClCompile Include="mathlib.cpp" />
     <ClCompile Include="phycorpse.cpp" />
-    <ClCompile Include="enghook.cpp" />
+    <ClCompile Include="privatehook.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="physics.cpp" />
     <ClCompile Include="plugins.cpp" />
@@ -116,7 +116,7 @@
     <ClInclude Include="..\..\HLSDK\common\interface.h" />
     <ClInclude Include="..\..\metahook.h" />
     <ClInclude Include="engfuncs.h" />
-    <ClInclude Include="enghook.h" />
+    <ClInclude Include="privatehook.h" />
     <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />
     <ClInclude Include="mathlib.h" />

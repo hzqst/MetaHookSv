@@ -14,4 +14,5 @@ typedef struct
 	void (*ThreadPerson_f)(void);
 }privte_funcs_t;
 
+extern int *r_visframecount;
 extern privte_funcs_t gPrivateFuncs;
