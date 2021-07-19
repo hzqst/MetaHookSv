@@ -6,6 +6,18 @@
 
 [中文DOC](BPhysicsDocCN.md)
 
+### Build Instruction
+
+1. git clone https://github.com/bulletphysics/bullet3 somewhere if you don't have bullet3 source code installed in your dev environment.
+
+2. Build bullet3 from source code (cmake)
+
+3. Edit "MetaHookSv\Plugins\BulletPhysics\BulletPhysics.vcxproj" and change `<Bullet3Path>I:\code\bullet3</Bullet3Path>` to your bullet3 install path.
+
+4. Open "MetaHookSv\Plugins\BulletPhysics\BulletPhysics.sln"
+
+5. Build with Release configuration
+
 ### Console Vars
 
 bv_simrate 32 ~ 128 : how many times to perform simulation per persond ? higher simulation frequency get more accurate result, while eating more CPU resource. default : 64
