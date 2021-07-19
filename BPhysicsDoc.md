@@ -15,6 +15,8 @@
 | GoldSrc_new    (8684 ~)  | √    |
 | SvEngine       (8832 ~)  | √    |
 
+For GoldSrc engine: Only compatible with metahook.exe from https://github.com/hzqst/MetaHookSv, not from other source.
+
 ### Build Instruction
 
 1. git clone https://github.com/bulletphysics/bullet3 somewhere if you don't have bullet3 source code installed in your dev environment.
