@@ -1,5 +1,11 @@
 # MetaRenderer documentation
 
+### Build Instruction
+
+1. Open "MetaHookSv\Plugins\Renderer\Renderer.sln"
+
+2. Build with Release configuration
+
 ### Compatibility
 
 |        Engine            |      |
