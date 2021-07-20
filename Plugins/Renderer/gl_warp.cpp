@@ -398,7 +398,7 @@ void MakeSkyVec(float s, float t, int axis, float zFar, vec3_t position, vec2_t 
 	// AV - I'm commenting this out since our skyboxes aren't 512x512 and we don't
 	//      modify the textures to deal with the border seam fixup correctly.
 	//      The code below was causing seams in the skyboxes.
-	/*
+	
 	if (s < 1.0/512)
 		s = 1.0/512;
 	else if (s > 511.0/512)
@@ -407,7 +407,7 @@ void MakeSkyVec(float s, float t, int axis, float zFar, vec3_t position, vec2_t 
 		t = 1.0/512;
 	else if (t > 511.0/512)
 		t = 511.0/512;
-	*/
+	
 
 	t = 1.0 - t;
 	VectorCopy(v, position);

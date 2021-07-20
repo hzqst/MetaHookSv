@@ -150,7 +150,6 @@ typedef struct r_worldsurf_s
 
 		bDiffuseTexture = false;
 		bLightmapTexture = false;
-		bLightmapTextureArray = false;
 		bDetailTexture = false;
 		bNormalTexture = false;
 		bParallaxTexture = false;
@@ -176,7 +175,6 @@ typedef struct r_worldsurf_s
 
 	bool				bDiffuseTexture;
 	bool				bLightmapTexture;
-	bool				bLightmapTextureArray;
 	bool				bDetailTexture;
 	bool				bNormalTexture;
 	bool				bParallaxTexture;

@@ -908,11 +908,10 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 	if (r_wsurf.bLightmapTexture)
 	{
 		GL_EnableMultitexture();
-		qglDisable(GL_TEXTURE_2D);
+		qglDisable(GL_TEXTURE_2D);		
 		qglEnable(GL_TEXTURE_2D_ARRAY);
 		qglBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
-
-		r_wsurf.bLightmapTextureArray = true;
+		*currenttexture = -1;
 	}
 	else
 	{
@@ -1194,7 +1193,7 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		qglEnable(GL_TEXTURE_2D);
 	}
 
-	if (r_wsurf.bLightmapTextureArray)
+	if (r_wsurf.bLightmapTexture)
 	{
 		GL_SelectTexture(TEXTURE1_SGIS);
 		qglDisable(GL_TEXTURE_2D_ARRAY);
@@ -1444,7 +1443,7 @@ void R_LoadDetailTextures(void)
 			if (!V_GetFileExtension(detailtexture))
 				texturePath += ".tga";
 
-			int texId = R_LoadTexture(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD);
+			int texId = R_LoadTextureEx(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, true, true);
 			if (!texId)
 			{
 				texturePath = "renderer/texture/";
@@ -1452,7 +1451,7 @@ void R_LoadDetailTextures(void)
 				if (!V_GetFileExtension(detailtexture))
 					texturePath += ".tga";
 
-				texId = R_LoadTexture(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD);
+				texId = R_LoadTextureEx(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, true, true);
 			}
 
 			if (!texId)
@@ -1696,6 +1695,7 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 		qglDisable(GL_TEXTURE_2D);
 		qglEnable(GL_TEXTURE_2D_ARRAY);
 		qglBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
+		*currenttexture = -1;
 
 		int lightmapnum = s->lightmaptexturenum;
 

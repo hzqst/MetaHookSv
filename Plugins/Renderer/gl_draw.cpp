@@ -460,12 +460,6 @@ int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int wid
 
 	if (gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT || gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT || gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT)
 	{
-		if (!gl_s3tc_compression_support)
-		{
-			Sys_ErrorEx("Failed to load DXT texture, missing extension GL_EXT_texture_compression_s3tc!");
-			return 0;
-		}
-
 		GL_UploadDXT(data, width, height, mipmap, ansio);
 		return texnum;
 	}
@@ -815,7 +809,7 @@ int SaveImageGeneric(const char *filename, int width, int height, byte *data)
 	return TRUE;
 }
 
-int R_LoadTexture(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type)
+/*int R_LoadTexture(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type)
 {
 	int w, h;
 
@@ -835,7 +829,8 @@ int R_LoadTexture(const char *filepath, const char *name, int *width, int *heigh
 				*width = w;
 			if (height)
 				*height = h;
-			return gRefFuncs.GL_LoadTexture2((char *)name, type, w, h, texloader_buffer, 1, 3, NULL, 0x2703);
+
+			return GL_LoadTextureEx(name, type, w, h, texloader_buffer, 1, 1);
 		}
 	}
 	else if (LoadImageGeneric(filepath, texloader_buffer, sizeof(texloader_buffer), &w, &h))
@@ -844,12 +839,13 @@ int R_LoadTexture(const char *filepath, const char *name, int *width, int *heigh
 			*width = w;
 		if (height)
 			*height = h;
-		return gRefFuncs.GL_LoadTexture2((char *)name, type, w, h, texloader_buffer, 1, 3, NULL, 0x2703);
+
+		return gRefFuncs.GL_LoadTexture2((char *)name, type, w, h, texloader_buffer, 1, TEX_TYPE_RGBA, NULL, GL_LINEAR_MIPMAP_LINEAR);
 	}
 
 	gEngfuncs.Con_Printf("R_LoadTexture: Cannot load texture %s.\n", filepath);
 	return 0;
-}
+}*/
 
 int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio)
 {

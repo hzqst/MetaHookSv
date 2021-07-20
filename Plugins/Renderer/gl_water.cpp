@@ -230,14 +230,7 @@ r_water_t *R_GetActiveWater(cl_entity_t *ent, vec3_t p, vec3_t n, colorVec *colo
 	//Load if normalmap not exists.
 	if (!water_normalmap)
 	{
-		if (g_iEngineType == ENGINE_SVENGINE)
-		{
-			water_normalmap = R_LoadTexture("renderer\\texture\\water_normalmap.tga", "water_normalmap", NULL, NULL, GLT_SYSTEM);
-		}
-		else
-		{
-			water_normalmap = R_LoadTextureEx("renderer\\texture\\water_normalmap.tga", "water_normalmap", NULL, NULL, GLT_SYSTEM, true, true);
-		}
+		water_normalmap = R_LoadTextureEx("renderer\\texture\\water_normalmap.tga", "water_normalmap", NULL, NULL, GLT_SYSTEM, true, true);
 	}
 
 	//Upload color textures and depth textures.
