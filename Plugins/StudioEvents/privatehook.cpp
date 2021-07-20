@@ -1,4 +1,4 @@
 #include <metahook.h>
-#include "enghook.h"
+#include "privatehook.h"
 
 privte_funcs_t gPrivateFuncs;

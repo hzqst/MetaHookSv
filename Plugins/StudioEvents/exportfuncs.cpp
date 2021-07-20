@@ -7,10 +7,7 @@
 #include "cvardef.h"
 #include "exportfuncs.h"
 #include "entity_types.h"
-#include "enghook.h"
-
-#include "pm_defs.h"
-#include "mathlib.h"
+#include "privatehook.h"
 
 #include <vector>
 

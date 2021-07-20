@@ -1,6 +1,6 @@
 #include <metahook.h>
 #include "exportfuncs.h"
-#include "enghook.h"
+#include "privatehook.h"
 
 cl_exportfuncs_t gExportfuncs;
 mh_interface_t *g_pInterface;

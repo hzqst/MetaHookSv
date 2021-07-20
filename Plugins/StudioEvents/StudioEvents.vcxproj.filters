@@ -24,10 +24,10 @@
     <ClCompile Include="plugins.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="enghook.cpp">
+    <ClCompile Include="mathlib.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="mathlib.cpp">
+    <ClCompile Include="privatehook.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -44,9 +44,6 @@
     <ClInclude Include="..\..\metahook.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="enghook.h">
-      <Filter>Header</Filter>
-    </ClInclude>
     <ClInclude Include="mathlib.h">
       <Filter>Header</Filter>
     </ClInclude>
@@ -54,6 +51,9 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="plugins.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="privatehook.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>
