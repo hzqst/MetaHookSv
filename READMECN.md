@@ -4,7 +4,7 @@ MetaHook的SvenCoop移植版本 (https://github.com/nagist/metahook)
 
 用黑科技提升你的SvenCoop游戏体验
 
-目前暂时跟原版GoldSrc不兼容，不过后续可以改进成兼容版本。
+大部分插件都兼容原版GoldSrc引擎，具体的兼容性情况请逐个查阅插件文档。
 
 [英文README](README.md)
 
