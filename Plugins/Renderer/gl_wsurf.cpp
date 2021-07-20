@@ -609,18 +609,18 @@ void R_GenerateVertexBuffer(void)
 			R_BeginDetailTexture(t->gl_texturenum);
 			if (r_wsurf.bDetailTexture)
 			{
-				detailScale[0] = 1.0f / r_wsurf.pDetailTextureCache->tex[WSURF_DETAIL_TEXTURE].scaleX;
-				detailScale[1] = 1.0f / r_wsurf.pDetailTextureCache->tex[WSURF_DETAIL_TEXTURE].scaleY;
+				detailScale[0] = r_wsurf.pDetailTextureCache->tex[WSURF_DETAIL_TEXTURE].scaleX;
+				detailScale[1] = r_wsurf.pDetailTextureCache->tex[WSURF_DETAIL_TEXTURE].scaleY;
 			}
 			if (r_wsurf.bNormalTexture)
 			{
-				normalScale[0] = 1.0f / r_wsurf.pDetailTextureCache->tex[WSURF_NORMAL_TEXTURE].scaleX;
-				normalScale[1] = 1.0f / r_wsurf.pDetailTextureCache->tex[WSURF_NORMAL_TEXTURE].scaleY;
+				normalScale[0] = r_wsurf.pDetailTextureCache->tex[WSURF_NORMAL_TEXTURE].scaleX;
+				normalScale[1] = r_wsurf.pDetailTextureCache->tex[WSURF_NORMAL_TEXTURE].scaleY;
 			}
 			if (r_wsurf.bParallaxTexture)
 			{
-				parallaxScale[0] = 1.0f / r_wsurf.pDetailTextureCache->tex[WSURF_PARALLAX_TEXTURE].scaleX;
-				parallaxScale[1] = 1.0f / r_wsurf.pDetailTextureCache->tex[WSURF_PARALLAX_TEXTURE].scaleY;
+				parallaxScale[0] = r_wsurf.pDetailTextureCache->tex[WSURF_PARALLAX_TEXTURE].scaleX;
+				parallaxScale[1] = r_wsurf.pDetailTextureCache->tex[WSURF_PARALLAX_TEXTURE].scaleY;
 			}
 			R_EndDetailTexture();
 		}

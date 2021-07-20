@@ -14,6 +14,15 @@ IFileSystem *g_pFileSystem;
 #include <shlobj.h>
 #pragma comment(lib,"dbghelp.lib")
 
+extern "C"
+{
+	NTSYSAPI PIMAGE_NT_HEADERS NTAPI RtlImageNtHeader(PVOID Base);
+	NTSYSAPI NTSTATUS NTAPI NtTerminateProcess(
+		HANDLE   ProcessHandle,
+		NTSTATUS ExitStatus
+	);
+}
+
 LONG WINAPI MinidumpCallback(EXCEPTION_POINTERS* pException)
 {
 	HANDLE hDumpFile = CreateFile("minidump.dmp", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -336,6 +345,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	WSACleanup();
 	MH_Shutdown();
-	TerminateProcess(GetCurrentProcess(), 1);
+	NtTerminateProcess((HANDLE)-1, 1);
 	return 1;
 }

@@ -73,7 +73,7 @@
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(ProjectName).dll" "I:\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\plugins"
+      <Command>copy "$(OutDir)$(ProjectName).dll" "I:\SteamLibrary\steamapps\common\Half-Life\czero\metahook\plugins"
 xcopy "$(OutDir)\..\..\..\Build\svencoop\renderer\" "I:\SteamLibrary\steamapps\common\Sven Co-op\svencoop\renderer\" /y /e</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -102,7 +102,7 @@ xcopy "$(OutDir)\..\..\..\Build\svencoop\renderer\" "I:\SteamLibrary\steamapps\c
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(ProjectName).dll" "$(OutDir)\..\..\..\Build\svencoop\metahook\plugins"</Command>
+      <Command>copy $(OutDir)$(ProjectName).dll "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\$(ProjectName).dll"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

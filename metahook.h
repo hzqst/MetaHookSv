@@ -24,9 +24,9 @@ typedef struct hook_s hook_t;
 #define VIDEOMODE_OPENGL 1
 #define VIDEOMODE_D3D 2
 
-#define ENGINE_GOLDSRC 0
+#define ENGINE_UNKNOWN 0
 #define ENGINE_GOLDSRC_BLOB 1
-#define ENGINE_GOLDSRC_NEW 2
+#define ENGINE_GOLDSRC 2
 #define ENGINE_SVENGINE 3
 
 typedef void (*DisasmSingleCallback)(void *inst, PUCHAR address, size_t instLen, PVOID context);
@@ -62,6 +62,7 @@ typedef struct metahook_api_s
 	PVOID(*GetSectionByName)(PVOID ImageBase, const char *SectionName, ULONG *SectionSize);
 	int (*DisasmSingleInstruction)(PVOID address, DisasmSingleCallback callback, void *context);
 	BOOL (*DisasmRanges)(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callback, int depth, PVOID context);
+	const char *(*GetEngineGameDirectory)(void);
 }
 metahook_api_t;
 

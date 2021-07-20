@@ -76,7 +76,7 @@
       <AdditionalLibraryDirectories>capstone\msvc\Debug\</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(ProjectName).exe" "I:\SteamLibrary\steamapps\common\Sven Co-op\metahook.exe"</Command>
+      <Command>copy "$(OutDir)$(ProjectName).exe" "I:\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe"</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableDpiAwareness>true</EnableDpiAwareness>

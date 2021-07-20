@@ -8,6 +8,10 @@
 extern "C"
 {
 	NTSYSAPI PIMAGE_NT_HEADERS NTAPI RtlImageNtHeader(PVOID Base);
+	NTSYSAPI NTSTATUS NTAPI NtTerminateProcess(
+		HANDLE   ProcessHandle,
+		NTSTATUS ExitStatus
+	);
 }
 
 struct hook_s
@@ -24,8 +28,8 @@ struct hook_s
 	void *pInfo;
 };
 
+char *com_gamedir = NULL;
 DWORD *g_pVideoMode = NULL;
-void (*g_pfnGetVideoMode)(int *videomode, int *width, int *height);
 int (*g_pfnbuild_number)(void);
 void *g_pClientDLL_Init;
 int (*g_pfnClientDLL_Init)(void);
@@ -39,8 +43,7 @@ hook_t *g_pHookBase;
 cl_exportfuncs_t *g_pExportFuncs;
 bool g_bSaveVideo;
 char g_szTempFile[MAX_PATH];
-bool g_bIsNewEngine = false;
-bool g_bIsSvEngine = false;
+int g_iEngineType = ENGINE_UNKNOWN;
 
 hook_t *MH_FindInlineHooked(void *pOldFuncAddr);
 hook_t *MH_FindVFTHooked(void *pClass, int iTableIndex, int iFuncIndex);
@@ -62,14 +65,11 @@ DWORD MH_WriteMemory(void *pAddress, BYTE *pData, DWORD dwDataSize);
 DWORD MH_ReadMemory(void *pAddress, BYTE *pData, DWORD dwDataSize);
 DWORD MH_GetVideoMode(int *wide, int *height, int *bpp, bool *windowed);
 DWORD MH_GetEngineVersion(void);
+BOOL MH_DisasmRanges(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callback, int depth, PVOID context);
+PVOID MH_GetSectionByName(PVOID ImageBase, const char *SectionName, ULONG *SectionSize);
+PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize);
 
-#define BUILD_NUMBER_SIG "\xA1\x2A\x2A\x2A\x2A\x83\xEC\x08\x2A\x33\x2A\x85\xC0"
-#define BUILD_NUMBER_SIG_NEW "\x55\x8B\xEC\x83\xEC\x08\xA1\x2A\x2A\x2A\x2A\x56\x33\xF6\x85\xC0\x0F\x85\x2A\x2A\x2A\x2A\x53\x33\xDB\x8B\x04\x9D"
-#define BUILD_NUMBER_SIG_SVENGINE "\x51\xA1\x2A\x2A\x2A\x2A\x2A\x33\x2A\x85\xC0\x0F\x85\x2A\x2A\x2A\x2A\x2A\x2A\x33\x2A\xEB"
-#define CLIENTDLL_INIT_SIG "\x81\xEC\x00\x04\x00\x00\x8D\x44\x24\x00\x68\x2A\x2A\x2A\x2A\x68\x00\x02\x00\x00\x50\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x0C\x85\xC0"
-#define CLIENTDLL_INIT_SIG_NEW "\x55\x8B\xEC\x81\xEC\x00\x02\x00\x00\x68\x2A\x2A\x2A\x2A\x8D\x85\x00\xFE\xFF\xFF\x68\x00\x02\x00\x00\x50\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x0C\x85\xC0\x74\x2A\xE8"
-#define CLIENTDLL_INIT_SIG_SVENGINE "\x81\xEC\x2A\x02\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\x68\x2A\x2A\x2A\x2A\x8D\x44\x24\x2A\x68\x00\x02\x00\x00\x50\xE8"
-#define GETVIDEOMODE_SIG_SVENGINE "\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x01\xFF\x50\x10\x8B\xD0"
+#define BUILD_NUMBER_SIG "\xE8\x2A\x2A\x2A\x2A\x50\x68\x2A\x2A\x2A\x2A\x6A\x30\x68"
 
 typedef struct plugin_s
 {
@@ -124,8 +124,8 @@ void MH_Init(const char *pszGameName)
 	g_pfnbuild_number = NULL;
 	g_pfnClientDLL_Init = NULL;
 	g_phClientDLL_Init = NULL;
-	g_pfnGetVideoMode = NULL;
 	g_pVideoMode = NULL;
+	com_gamedir = NULL;
 
 	g_dwEngineBase = 0;
 	g_dwEngineSize = 0;
@@ -138,7 +138,7 @@ void MH_Init(const char *pszGameName)
 	gInterface.FileSystem = g_pFileSystem;
 	gInterface.Registry = registry;
 
-	char metapath[MAX_PATH], filename[MAX_PATH];
+	char metapath[1024], filename[1024];
 	sprintf(metapath, "%s/metahook", pszGameName);
 	sprintf(filename, "%s/configs/plugins.lst", metapath);
 
@@ -169,7 +169,7 @@ void MH_Init(const char *pszGameName)
 			if (!hModule)
 			{
 				char msg[1024];
-				sprintf(msg, "Could not load metahook plugin %s.", plugins);
+				sprintf(msg, "MH_Init: Could not load %s.", plugins);
 				MessageBoxA(NULL, msg, "Warning", MB_ICONWARNING);
 				continue;
 			}
@@ -207,6 +207,8 @@ void MH_ClientDLL_Init(void)
 
 	if (!dwResult)
 	{
+		MessageBox(NULL, "MH_ClientDLL_Init: Failed to locate result.", "Fatal Error", MB_ICONERROR);
+		NtTerminateProcess((HANDLE)-1, 0);
 		return;
 	}
 
@@ -241,47 +243,141 @@ void MH_LoadEngine(HMODULE hModule)
 		g_dwEngineSize = 0x1000000;
 		g_hEngineModule = GetModuleHandle(NULL);
 		g_bEngineIsBlob = TRUE;
+
+		g_iEngineType = ENGINE_GOLDSRC_BLOB;
 	}
 
-	g_bIsNewEngine = false;
-	g_pfnbuild_number = (int (*)(void))MH_SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, BUILD_NUMBER_SIG, sizeof(BUILD_NUMBER_SIG) - 1);
+	ULONG textSize = 0;
+	PVOID textBase = MH_GetSectionByName(g_dwEngineBase, ".text\0\0\0", &textSize);
 
-	if (!g_pfnbuild_number)
+	if (!textBase)
 	{
-		g_pfnbuild_number = (int (*)(void))MH_SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, BUILD_NUMBER_SIG_NEW, sizeof(BUILD_NUMBER_SIG_NEW) - 1);
-		g_bIsNewEngine = true;
+		textBase = g_dwEngineBase;
+		textSize = g_dwEngineSize;
 	}
+	auto buildnumber_call = MH_SearchPattern(textBase, textSize, BUILD_NUMBER_SIG, sizeof(BUILD_NUMBER_SIG) - 1);
 
-	if (!g_pfnbuild_number)
+	if (!buildnumber_call)
 	{
-		g_pfnbuild_number = (int(*)(void))MH_SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, BUILD_NUMBER_SIG_SVENGINE, sizeof(BUILD_NUMBER_SIG_SVENGINE) - 1);
-		g_bIsSvEngine = true;
+		MessageBox(NULL, "MH_LoadEngine: Failed to locate buildnumber.", "Fatal Error", MB_ICONERROR);
+		NtTerminateProcess((HANDLE)-1, 0);
 	}
 
-	if (!g_pfnbuild_number)
+	g_pfnbuild_number = (decltype(g_pfnbuild_number))((PUCHAR)buildnumber_call + *(int *)((PUCHAR)buildnumber_call + 1) + 5);
+	
+	char *pEngineName = *(char **)((PUCHAR)buildnumber_call + sizeof(BUILD_NUMBER_SIG) - 1);
+	if (g_iEngineType != ENGINE_GOLDSRC_BLOB)
 	{
-		MessageBox(NULL, "Failed to locate buildnumber.", "Fatal Error", MB_ICONERROR);
-		ExitProcess(0);
+		if (!strncmp(pEngineName, "Svengine", sizeof("Svengine") - 1))
+		{
+			g_iEngineType = ENGINE_SVENGINE;
+		}
+		else if (!strncmp(pEngineName, "Half-Life", sizeof("Half-Life") - 1))
+		{
+			g_iEngineType = ENGINE_GOLDSRC;
+		}
+		else
+		{
+			g_iEngineType = ENGINE_UNKNOWN;
+		}
 	}
 
-	if(g_bIsSvEngine)
-		g_pClientDLL_Init = MH_SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, CLIENTDLL_INIT_SIG_SVENGINE, sizeof(CLIENTDLL_INIT_SIG_SVENGINE) - 1);
-	else if (g_bIsNewEngine)
-		g_pClientDLL_Init = MH_SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, CLIENTDLL_INIT_SIG_NEW, sizeof(CLIENTDLL_INIT_SIG_NEW) - 1);
-	else
-		g_pClientDLL_Init = MH_SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, CLIENTDLL_INIT_SIG, sizeof(CLIENTDLL_INIT_SIG) - 1);
+	if (1)
+	{
+#define CLDLL_INIT_STRING_SIG "ScreenShake"
+		auto ClientDll_Init_String = MH_SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, CLDLL_INIT_STRING_SIG, sizeof(CLDLL_INIT_STRING_SIG) - 1);
+		if (ClientDll_Init_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8";
+			*(DWORD *)(pattern + 6) = (DWORD)ClientDll_Init_String;
+			auto ClientDll_Init_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
+			if (ClientDll_Init_PushString)
+			{
+				auto ClientDll_Init = MH_ReverseSearchFunctionBegin(ClientDll_Init_PushString, 0x200);
+				if (ClientDll_Init)
+				{
+					g_pClientDLL_Init = (decltype(g_pClientDLL_Init))ClientDll_Init;
+				}
+			}
+		}
+	}
 
 	if (!g_pClientDLL_Init)
 	{
-		MessageBox(NULL, "Failed to locate ClientDLL_Init.", "Fatal Error", MB_ICONERROR);
-		ExitProcess(0);
+		MessageBox(NULL, "MH_LoadEngine: Failed to locate ClientDLL_Init.", "Fatal Error", MB_ICONERROR);
+		NtTerminateProcess((HANDLE)-1, 0);
 	}
 
-	if (g_bIsSvEngine)
+	if (1)
 	{
-		g_pfnGetVideoMode = (decltype(g_pfnGetVideoMode))MH_SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, GETVIDEOMODE_SIG_SVENGINE, sizeof(GETVIDEOMODE_SIG_SVENGINE) - 1);
-		if (g_pfnGetVideoMode)
-			g_pVideoMode = *(decltype(g_pVideoMode)*)((char *)g_pfnGetVideoMode + 0x2);
+#define FULLSCREEN_STRING_SIG "-fullscreen"
+		auto FullScreen_String = MH_SearchPattern(g_dwEngineBase, g_dwEngineSize, FULLSCREEN_STRING_SIG, sizeof(FULLSCREEN_STRING_SIG) - 1);
+		if (FullScreen_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x85\xC0";
+			*(DWORD *)(pattern + 1) = (DWORD)FullScreen_String;
+			auto FullScreen_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
+			if (FullScreen_PushString)
+			{
+				FullScreen_PushString = (PUCHAR)FullScreen_PushString + sizeof(pattern) - 1;
+				MH_DisasmRanges(FullScreen_PushString, 0x400, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+				{
+					auto pinst = (cs_insn *)inst;
+
+					if (pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[0].mem.base == 0 &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineBase &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize &&
+						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+						pinst->detail->x86.operands[1].imm == 0)
+					{
+						g_pVideoMode = (decltype(g_pVideoMode))pinst->detail->x86.operands[0].mem.disp;
+					}
+
+					if (g_pVideoMode)
+						return TRUE;
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					return FALSE;
+				}, 0, NULL);
+			}
+		}
+	}
+
+	if (!g_pVideoMode)
+	{
+		MessageBox(NULL, "MH_LoadEngine: Failed to locate g_pVideoMode.", "Fatal Error", MB_ICONERROR);
+		NtTerminateProcess((HANDLE)-1, 0);
+	}
+
+#define GAMEDIR_STRING_SIG_SVENGINE "Current gamedir is \"%s\"\n"
+#define GAMEDIR_STRING_SIG "gamedir is %s\n"
+	
+	const char *pGameDirString = (g_iEngineType == ENGINE_SVENGINE) ? GAMEDIR_STRING_SIG_SVENGINE : GAMEDIR_STRING_SIG;
+	size_t nGameDirString = (g_iEngineType == ENGINE_SVENGINE) ? sizeof(GAMEDIR_STRING_SIG_SVENGINE) - 1 : sizeof(GAMEDIR_STRING_SIG)-1;
+	if (1)
+	{
+		auto GameDir_String = MH_SearchPattern(g_dwEngineBase, g_dwEngineSize, pGameDirString, nGameDirString);
+		if (GameDir_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8";
+			*(DWORD *)(pattern + 6) = (DWORD)GameDir_String;
+			auto GameDir_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
+			if (GameDir_PushString)
+			{
+				com_gamedir = *(char **)((PUCHAR)GameDir_PushString + 1);
+			}
+		}
+	}
+
+	if (!com_gamedir)
+	{
+		MessageBox(NULL, "MH_LoadEngine: Failed to locate com_gamedir.", "Fatal Error", MB_ICONERROR);
+		NtTerminateProcess((HANDLE)-1, 0);
 	}
 
 	g_phClientDLL_Init = MH_InlineHook(g_pClientDLL_Init, MH_ClientDLL_Init, (void *&)g_pfnClientDLL_Init);
@@ -752,7 +848,7 @@ DWORD MH_GetVideoMode(int *width, int *height, int *bpp, bool *windowed)
 	static int iSaveWidth, iSaveHeight, iSaveBPP;
 	static bool bSaveWindowed;
 
-	if (g_pfnGetVideoMode && g_pVideoMode && *g_pVideoMode)
+	if (g_pVideoMode && *g_pVideoMode)
 	{
 		IVideoMode *pVideoMode = (IVideoMode *)(*g_pVideoMode);
 
@@ -916,28 +1012,19 @@ DWORD MH_GetEngineVersion(void)
 
 int MH_GetEngineType(void)
 {
-	if (g_bIsSvEngine)
-		return ENGINE_SVENGINE;
-
-	if (g_bIsNewEngine)
-		return ENGINE_GOLDSRC_NEW;
-
-	if (g_bEngineIsBlob)
-		return ENGINE_GOLDSRC_BLOB;
-
-	return ENGINE_GOLDSRC;
+	return g_iEngineType;
 }
 
-const char *engines[] = {
-	"GoldSrc_Legacy",
+const char *engineTypeNames[] = {
+	"Unknown",
 	"GoldSrc_Blob",
-	"GoldSrc_New",
+	"GoldSrc",
 	"SvEngine",
 };
 
 const char *MH_GetEngineTypeName(void)
 {
-	return engines[MH_GetEngineType()];
+	return engineTypeNames[MH_GetEngineType()];
 }
 
 PVOID MH_GetSectionByName(PVOID ImageBase, const char *SectionName, ULONG *SectionSize)
@@ -1092,6 +1179,11 @@ BOOL MH_DisasmRanges(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callbac
 	return success;
 }
 
+const char *MH_GetEngineGameDirectory(void)
+{
+	return com_gamedir;
+}
+
 metahook_api_t gMetaHookAPI =
 {
 	MH_UnHook,
@@ -1121,5 +1213,6 @@ metahook_api_t gMetaHookAPI =
 	MH_ReverseSearchFunctionBegin,
 	MH_GetSectionByName,
 	MH_DisasmSingleInstruction,
-	MH_DisasmRanges
+	MH_DisasmRanges,
+	MH_GetEngineGameDirectory,
 };
