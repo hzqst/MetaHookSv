@@ -4,19 +4,21 @@
 
 ### Features
 
-1. Display subtitles when sound is played.
+1. Display subtitles when sound is played
 
-2. Display subtitles when sentence is played.
+2. Display subtitles when sentence is played
 
-3. Display subtitles when there is a HUD TextMessage.
+3. Display subtitles when client receives HudText message
 
-4. Translate HUD TextMessage dynamically (regex supported).
+4. Display subtitles when client receives SendAudio message
 
-5. Hook original client's old-style HUD TextMessage and draw it with multi-byte character support.
+5. Translate HUDText message dynamically (regex supported)
 
-6. Hook VGUI1's TextImage control paint procedure and draw it with multi-byte character support.
+6. Hook original client's old-style HudText and draw it with multi-byte character support.
 
-7. Custom dictionary for each map, put dictionary file at "/maps/[mapname]_dictionary.csv"
+7. Hook VGUI1 TextImage's paint procedure and draw it with multi-byte character support.
+
+8. Custom dictionary support for specified map, put dictionary file at "/maps/[mapname]_dictionary.csv"
 
 There is a example demo shows you how to translate constant HUD TextMessage into other language in "Build\svencoop\maps\restrictionXX_dictionary.csv".
 
