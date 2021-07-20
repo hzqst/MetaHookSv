@@ -14,6 +14,8 @@ extern IEngineSurface *staticSurface;
 
 extern vgui::ISurface *g_pSurface;
 
+void Sys_ErrorEx(const char *fmt, ...);
+
 using namespace vgui;
 
 class CSurfaceProxy : public ISurface
@@ -907,6 +909,11 @@ void Surface_InstallHook(void)
 	DWORD *pVFTable = *(DWORD **)&g_SurfaceProxy;
 
 	m_pfnCWin32Font_GetCharRGBA = (void (__fastcall *)(void *, int, int, int, int, int, int, unsigned char *))g_pMetaHookAPI->SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, CWIN32FONT_GETCHARABCWIDTHS_SIG, sizeof(CWIN32FONT_GETCHARABCWIDTHS_SIG) - 1);
+	if (!m_pfnCWin32Font_GetCharRGBA)
+	{
+		Sys_ErrorEx("CWin32Font_GetCharRGBA not found");
+	}
+	
 	g_hCWin32Font_GetCharRGBA = g_pMetaHookAPI->InlineHook(m_pfnCWin32Font_GetCharRGBA, CWin32Font_GetCharRGBA, (void *&)m_pfnCWin32Font_GetCharRGBA);
 
 	g_pMetaHookAPI->VFTHook(g_pSurface, 0, 1, (void *)pVFTable[1], (void *&)m_pfnSurface_Shutdown);

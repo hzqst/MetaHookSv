@@ -116,6 +116,7 @@
     <ClInclude Include="..\..\HLSDK\common\interface.h" />
     <ClInclude Include="..\..\metahook.h" />
     <ClInclude Include="engfuncs.h" />
+    <ClInclude Include="plugins.h" />
     <ClInclude Include="privatehook.h" />
     <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />

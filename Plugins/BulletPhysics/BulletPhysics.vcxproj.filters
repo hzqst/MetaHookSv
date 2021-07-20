@@ -74,5 +74,8 @@
     <ClInclude Include="privatehook.h">
       <Filter>Header</Filter>
     </ClInclude>
+    <ClInclude Include="plugins.h">
+      <Filter>Header</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

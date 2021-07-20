@@ -87,60 +87,6 @@ ref_export_t gRefExports =
 	ShaderAPI,
 };
 
-HWND GetMainHWND()
-{
-	//todo
-	return 0;
-}
-
-void hudGetMousePos(struct tagPOINT *ppt)
-{
-	gEngfuncs.pfnGetMousePos(ppt);
-
-	int iVideoWidth, iVideoHeight, iBPP;
-	bool bWindowed = false;
-
-	g_pMetaHookAPI->GetVideoMode(&iVideoWidth, &iVideoHeight, &iBPP, &bWindowed);
-
-	if ( !bWindowed )
-	{
-		RECT rectWin;
-		GetWindowRect(GetMainHWND(), &rectWin);
-		int videoW = iVideoWidth;
-		int videoH = iVideoHeight;
-		int winW = rectWin.right - rectWin.left;
-		int winH = rectWin.bottom - rectWin.top;
-		ppt->x *= (float)videoW / winW;
-		ppt->y *= (float)videoH / winH;
-		ppt->x *= (*windowvideoaspect - 1) * (ppt->x - videoW / 2);
-		ppt->y *= (*videowindowaspect - 1) * (ppt->y - videoH / 2);
-	}
-}
-
-void hudGetMousePosition(int *x, int *y)
-{
-	gEngfuncs.GetMousePosition(x, y);
-
-	int iVideoWidth, iVideoHeight, iBPP;
-	bool bWindowed = false;
-
-	g_pMetaHookAPI->GetVideoMode(&iVideoWidth, &iVideoHeight, &iBPP, &bWindowed);
-
-	if ( !bWindowed )
-	{
-		RECT rectWin;
-		GetWindowRect(GetMainHWND(), &rectWin);
-		int videoW = iVideoWidth;
-		int videoH = iVideoHeight;
-		int winW = rectWin.right - rectWin.left;
-		int winH = rectWin.bottom - rectWin.top;
-		*x *= (float)videoW / winW;
-		*y *= (float)videoH / winH;
-		*x *= (*windowvideoaspect - 1) * (*x - videoW / 2);
-		*y *= (*videowindowaspect - 1) * (*y - videoH / 2);
-	}
-}
-
 void R_Version_f(void)
 {
 	gEngfuncs.Con_Printf("Renderer Version:\n%s\n", META_RENDERER_VERSION);
@@ -472,12 +418,12 @@ void __fastcall PortalManager_ResetAll(int pthis, int)
 	gRefFuncs.PortalManager_ResetAll(pthis, 0);
 }
 
-void __fastcall StudioSetupBones(void *pthis, int)
+void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
 {
 	if (R_StudioRestoreBones())
 		return;
 
-	gRefFuncs.StudioSetupBones(pthis, 0);
+	gRefFuncs.GameStudioRenderer_StudioSetupBones(pthis, 0);
 
 	R_StudioSaveBones();
 }
@@ -990,8 +936,8 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	gpStudioInterface = ppinterface;
 
 	//InlineHook StudioAPI
-	g_pMetaHookAPI->InlineHook((void *)gRefFuncs.studioapi_RestoreRenderer, studioapi_RestoreRenderer, (void *&)gRefFuncs.studioapi_RestoreRenderer);
-	g_pMetaHookAPI->InlineHook((void *)gRefFuncs.studioapi_StudioDynamicLight, studioapi_StudioDynamicLight, (void *&)gRefFuncs.studioapi_StudioDynamicLight);
+	Install_InlineHook(studioapi_RestoreRenderer);
+	Install_InlineHook(studioapi_StudioDynamicLight);
 
 	cl_sprite_white = IEngineStudio.Mod_ForName("sprites/white.spr", 1);
 
@@ -1009,28 +955,28 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 #define SVCLIENT_PORTALMANAGER_RESETALL_SIG "\xC7\x45\x2A\xFF\xFF\xFF\xFF\xA3\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x0D"
 			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)ClientBase, ClientSize, SVCLIENT_PORTALMANAGER_RESETALL_SIG, sizeof(SVCLIENT_PORTALMANAGER_RESETALL_SIG) - 1);
-			Sig_AddrNotFound("PortalManager_ResetAll");
+			Sig_AddrNotFound(PortalManager_ResetAll);
 
 			gRefFuncs.PortalManager_ResetAll = (decltype(gRefFuncs.PortalManager_ResetAll))GetCallAddress(addr + 12);
 
-			g_pMetaHookAPI->InlineHook(gRefFuncs.PortalManager_ResetAll, PortalManager_ResetAll, (void *&)gRefFuncs.PortalManager_ResetAll);
+			Install_InlineHook(PortalManager_ResetAll);
 
 			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)(*ppinterface)->StudioDrawPlayer, 0x50, "\xFF\x74\x2A\x2A\xB9", sizeof("\xFF\x74\x2A\x2A\xB9") - 1);
-			Sig_AddrNotFound("g_pGameStudioRenderer");
+			Sig_AddrNotFound(GameStudioRenderer);
 
 			g_pGameStudioRenderer = *(void **)(addr + sizeof("\xFF\x74\x2A\x2A\xB9") - 1);
 
 			DWORD *vftable = *(DWORD **)g_pGameStudioRenderer;
 
 #define SVCLIENT_STUDIO_SETUP_BONES_SIG "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x4F\x40"
-			gRefFuncs.StudioSetupBones = (decltype(gRefFuncs.StudioSetupBones))vftable[7];
+			gRefFuncs.GameStudioRenderer_StudioSetupBones = (decltype(gRefFuncs.GameStudioRenderer_StudioSetupBones))vftable[7];
 
-			g_pMetaHookAPI->InlineHook(gRefFuncs.StudioSetupBones, StudioSetupBones, (void *&)gRefFuncs.StudioSetupBones);
+			Install_InlineHook(GameStudioRenderer_StudioSetupBones);
 		}
 	}
 
 	//Hack for R_DrawSpriteModel
-	g_pMetaHookAPI->InlineHook(gRefFuncs.CL_FxBlend, CL_FxBlend, (void *&)gRefFuncs.CL_FxBlend);
+	Install_InlineHook(CL_FxBlend);
 
 	return result;
 }

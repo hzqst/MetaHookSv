@@ -85,7 +85,7 @@ typedef struct
 	void (*studioapi_SetupModel)(int bodypart, void **ppbodypart, void **ppsubmodel);
 
 	//Client Studio
-	void (__fastcall *StudioSetupBones)(void *pthis, int);
+	void (__fastcall *GameStudioRenderer_StudioSetupBones)(void *pthis, int);
 }ref_funcs_t;
 
 typedef struct

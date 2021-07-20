@@ -87,12 +87,6 @@ void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	Cmd_GetCmdBase = *(cmd_function_t *(**)(void))((DWORD)g_pMetaSave->pEngineFuncs + 0x198);
 
-	if(g_iEngineType != ENGINE_SVENGINE && g_dwEngineBuildnum < 5953)
-	{
-		g_pMetaHookAPI->InlineHook(gEngfuncs.pfnGetMousePos, hudGetMousePos, (void *&)gEngfuncs.pfnGetMousePos);
-		g_pMetaHookAPI->InlineHook(gEngfuncs.GetMousePosition, hudGetMousePosition, (void *&)gEngfuncs.GetMousePosition);
-	}
-
 	GL_Init();
 
 	pExportFunc->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;

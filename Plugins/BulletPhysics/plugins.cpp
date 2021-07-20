@@ -1,6 +1,7 @@
 #include <metahook.h>
 #include "exportfuncs.h"
 #include "privatehook.h"
+#include "plugins.h"
 #include "qgl.h"
 
 cl_exportfuncs_t gExportfuncs;
@@ -59,38 +60,32 @@ void IPlugins::LoadEngine(void)
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))Search_Pattern(R_RECURSIVEWORLDNODE_SIG_SVENGINE);
-		if (!gPrivateFuncs.R_RecursiveWorldNode)
-			Sys_ErrorEx("R_RecursiveWorldNode not found");
+		Sig_FuncNotFound(R_RecursiveWorldNode);
 
 		//mov     eax, [edi+4]
 		//mov     ecx, r_visframecount
 #define R_VISFRAMECOUNT_SIG_SVENGINE "\x8B\x43\x04\x3B\x05"
 		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_RecursiveWorldNode, 0x100, R_VISFRAMECOUNT_SIG_SVENGINE, sizeof(R_VISFRAMECOUNT_SIG_SVENGINE) - 1);
-		if (!addr)
-			Sys_ErrorEx("r_visframecount not found");
+		Sig_AddrNotFound(r_visframecount);
 		r_visframecount = *(int **)(addr + 5);
 
 		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern( R_NEWMAP_SIG_SVENGINE );
-		if (!gPrivateFuncs.R_NewMap)
-			Sys_ErrorEx("R_NewMap not found");
+		Sig_FuncNotFound(R_NewMap);
 	}
 	else
 	{
 		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))Search_Pattern(R_RECURSIVEWORLDNODE_SIG_NEW);
-		if (!gPrivateFuncs.R_RecursiveWorldNode)
-			Sys_ErrorEx("R_RecursiveWorldNode not found");
+		Sig_FuncNotFound(R_RecursiveWorldNode);
 
 		//mov     eax, [edi+4]
 		//mov     ecx, r_visframecount
 #define R_VISFRAMECOUNT_SIG_NEW "\x8B\x47\x04\x8B\x0D"
 		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_RecursiveWorldNode, 0x100, R_VISFRAMECOUNT_SIG_NEW, sizeof(R_VISFRAMECOUNT_SIG_NEW) - 1);
-		if (!addr)
-			Sys_ErrorEx("r_visframecount not found");
+		Sig_AddrNotFound(r_visframecount);
 		r_visframecount = *(int **)(addr + 5);
 
 		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_SVENGINE);
-		if (!gPrivateFuncs.R_NewMap)
-			Sys_ErrorEx("R_NewMap not found");
+		Sig_FuncNotFound(R_NewMap);
 	}
 }
 
@@ -108,7 +103,7 @@ void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	QGL_Init();
 
-	g_pMetaHookAPI->InlineHook(gPrivateFuncs.R_NewMap, R_NewMap, (void *&)gPrivateFuncs.R_NewMap);
+	Install_InlineHook(R_NewMap);
 }
 
 void IPlugins::ExitGame(int iResult)

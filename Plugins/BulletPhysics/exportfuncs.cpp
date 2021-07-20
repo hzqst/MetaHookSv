@@ -8,6 +8,7 @@
 #include "exportfuncs.h"
 #include "entity_types.h"
 #include "privatehook.h"
+#include "plugins.h"
 #include "command.h"
 
 #include "pm_defs.h"
@@ -31,8 +32,6 @@ int *r_visframecount = NULL;
 
 float(*pbonetransform)[MAXSTUDIOBONES][3][4] = NULL;
 float(*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;
-
-extern model_t *g_barnacle_model;
 
 bool IsEntityBarnacle(cl_entity_t* ent);
 bool IsEntityCorpse(cl_entity_t* ent);
@@ -77,7 +76,7 @@ void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
 		return;
 	}
 
-	gPrivateFuncs.StudioSetupBones(pthis, 0);
+	gPrivateFuncs.GameStudioRenderer_StudioSetupBones(pthis, 0);
 
 	if (IsEntityBarnacle(currententity))
 	{
@@ -98,7 +97,7 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 		flags &= ~STUDIO_EVENTS;
 	}
 
-	return gPrivateFuncs.StudioDrawModel(pthis, 0, flags);
+	return gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, flags);
 }
 
 int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int flags, struct entity_state_s *pplayer)
@@ -121,7 +120,7 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 				//Create ragdoll only for dead players, not for corpse entities.
 				if (currententity->player)
 				{
-					gPrivateFuncs.StudioDrawPlayer(pthis, 0, 0, pplayer);
+					gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, 0, pplayer);
 
 					auto cfg = gPhysicsManager.LoadRagdollConfig((*r_model));
 
@@ -163,14 +162,14 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 				}
 
 				if (!bCreatingRagdoll)
-					result = gPrivateFuncs.StudioDrawPlayer(pthis, 0, flags, pplayer);
+					result = gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, flags, pplayer);
 				else if (flags & STUDIO_EVENTS)
-					result = gPrivateFuncs.StudioDrawPlayer(pthis, 0, STUDIO_EVENTS, pplayer);
+					result = gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, STUDIO_EVENTS, pplayer);
 			}
 			else
 			{
 				if (flags & STUDIO_EVENTS)
-					result = gPrivateFuncs.StudioDrawPlayer(pthis, 0, STUDIO_EVENTS, pplayer);
+					result = gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, STUDIO_EVENTS, pplayer);
 
 				tempent->entity.curstate.colormap = pplayer->colormap;
 				tempent->entity.curstate.gaitsequence = pplayer->gaitsequence;
@@ -185,7 +184,7 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 		}
 	}
 
-	return gPrivateFuncs.StudioDrawPlayer(pthis, 0, flags, pplayer);
+	return gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, flags, pplayer);
 }
 
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
@@ -196,30 +195,30 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	int result = gExportfuncs.HUD_GetStudioModelInterface(version, ppinterface, pstudio);
 
 	DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->StudioSetHeader, 0x10, "\xA3", 1);
-	Sig_AddrNotFound("pstudiohdr");
+	Sig_AddrNotFound(pstudiohdr);
 	pstudiohdr = *(studiohdr_t ***)(addr + 1);
 
 	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->SetRenderModel, 0x10, "\xA3", 1);
-	Sig_AddrNotFound("r_model");
+	Sig_AddrNotFound(r_model);
 	r_model = *(model_t ***)(addr + 1);
 
 	pbonetransform = (float(*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetBoneTransform();
 	plighttransform = (float(*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetLightTransform();
 
 	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)(*ppinterface)->StudioDrawPlayer, 0x50, "\xFF\x74\x2A\x2A\xB9", sizeof("\xFF\x74\x2A\x2A\xB9") - 1);
-	Sig_AddrNotFound("g_pGameStudioRenderer");
+	Sig_AddrNotFound(GameStudioRenderer);
 
 	g_pGameStudioRenderer = *(void **)(addr + sizeof("\xFF\x74\x2A\x2A\xB9") - 1);
 
 	DWORD *vftable = *(DWORD **)g_pGameStudioRenderer;
 
-	gPrivateFuncs.StudioDrawModel = (decltype(gPrivateFuncs.StudioDrawModel))vftable[2];
-	gPrivateFuncs.StudioDrawPlayer = (decltype(gPrivateFuncs.StudioDrawPlayer))vftable[3];
-	gPrivateFuncs.StudioSetupBones = (decltype(gPrivateFuncs.StudioSetupBones))vftable[7];
+	gPrivateFuncs.GameStudioRenderer_StudioDrawModel = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawModel))vftable[2];
+	gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer))vftable[3];
+	gPrivateFuncs.GameStudioRenderer_StudioSetupBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioSetupBones))vftable[7];
 
-	g_pMetaHookAPI->InlineHook(gPrivateFuncs.StudioSetupBones, GameStudioRenderer_StudioSetupBones, (void *&)gPrivateFuncs.StudioSetupBones);
-	g_pMetaHookAPI->InlineHook(gPrivateFuncs.StudioDrawPlayer, GameStudioRenderer_StudioDrawPlayer, (void *&)gPrivateFuncs.StudioDrawPlayer);
-	g_pMetaHookAPI->InlineHook(gPrivateFuncs.StudioDrawModel, GameStudioRenderer_StudioDrawModel, (void *&)gPrivateFuncs.StudioDrawModel);
+	Install_InlineHook(GameStudioRenderer_StudioSetupBones);
+	Install_InlineHook(GameStudioRenderer_StudioDrawPlayer);
+	Install_InlineHook(GameStudioRenderer_StudioDrawModel);
 
 	return result;
 }
