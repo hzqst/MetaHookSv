@@ -18,6 +18,7 @@ r_studio_interface_t **gpStudioInterface;
 cvar_t *cl_studiosnd_anti_spam_diff = NULL;
 cvar_t *cl_studiosnd_anti_spam_same = NULL;
 cvar_t *cl_studiosnd_anti_spam_delay = NULL;
+cvar_t *cl_studiosnd_debug = NULL;
 
 typedef struct studio_event_sound_s
 {
@@ -69,6 +70,7 @@ void HUD_Init(void)
 	cl_studiosnd_anti_spam_diff = gEngfuncs.pfnRegisterVariable("cl_studiosnd_anti_spam_diff", "0.5", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cl_studiosnd_anti_spam_same = gEngfuncs.pfnRegisterVariable("cl_studiosnd_anti_spam_same", "1.0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cl_studiosnd_anti_spam_delay = gEngfuncs.pfnRegisterVariable("cl_studiosnd_anti_spam_delay", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	cl_studiosnd_debug = gEngfuncs.pfnRegisterVariable("cl_studiosnd_debug", "0", FCVAR_CLIENTDLL);
 }
 
 void HUD_Frame(double )
@@ -156,11 +158,25 @@ void HUD_StudioEvent(const struct mstudioevent_s *ev, const struct cl_entity_s *
 		{
 			if (cl_studiosnd_anti_spam_delay->value)
 			{
+				//blocked
+				if (cl_studiosnd_debug->value)
+					gEngfuncs.Con_Printf("[StudioEvents] Delayed %s\n", ev->options);
+
 				g_StudioEventSoundDelayed.emplace_back(ev->options, ent->index, ev->frame, max_time);
+			}
+			else
+			{
+				//blocked
+				if (cl_studiosnd_debug->value)
+					gEngfuncs.Con_Printf("[StudioEvents] Block %s\n", ev->options);
 			}
 
 			return;
 		}
+
+		//blocked
+		if (cl_studiosnd_debug->value)
+			gEngfuncs.Con_Printf("[StudioEvents] Played %s\n", ev->options);
 
 		g_StudioEventSoundPlayed.emplace_back(ev->options, ent->index, ev->frame, clientTime);
 	}

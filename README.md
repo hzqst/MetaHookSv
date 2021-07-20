@@ -64,15 +64,15 @@ Let's assume that you have all requirements installed correctly.
 
 A subtitle plugin designed for displaying subtitles and translate in-game HUD text.
 
-[DOCUMENTATION](CaptionDoc.md)
+[DOCUMENTATION](CaptionMod.md) [中文文档](CaptionModCN.md)
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/1.png)
 
 ### BulletPhysics
 
-Bullet physics engine are introduced to perform ragdoll simulatation.
+A plugin that transform player model into ragdoll when player is dead or being caught by barnacle.
 
-[DOCUMENTATION](BPhysicsDoc.md) [中文文档](BPhysicsDocCN.md)
+[DOCUMENTATION](BulletPhysics.md) [中文文档](BulletPhysicsCN.md)
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/6.png)
 
@@ -82,6 +82,14 @@ A graphic enhancement plugin that modifiy the original render engine.
 
 You can even play with 200k epolys models and still keep a high framerate.
 
-[DOCUMENTATION](RendererDoc.md)
+[DOCUMENTATION](Renderer.md) [中文文档](RendererCN.md)
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/3.png)
+
+### StudioEvents
+
+This plugin can block studio-event sound spamming with controllable cvars.
+
+[DOCUMENTATION](StudioEvents.md) [中文文档](StudioEventsCN.md)
+
+![](https://github.com/hzqst/MetaHookSv/raw/main/img/8.png)
