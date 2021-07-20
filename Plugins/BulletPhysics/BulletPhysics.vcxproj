@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C5}</ProjectGuid>
+    <ProjectGuid>{B93184CE-AACC-4538-B471-1F9A26B65DDC}</ProjectGuid>
     <RootNamespace>BulletPhysics</RootNamespace>
     <Keyword>Win32Proj</Keyword>
     <ProjectName>BulletPhysics</ProjectName>

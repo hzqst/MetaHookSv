@@ -58,7 +58,7 @@
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.\;..\;HLSDK\common;HLSDK\cl_dll;HLSDK\engine;HLSDK\pm_shared;HLSDK\public;Interface;capnstone\include\capstone;Detours\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\;HLSDK\common;HLSDK\cl_dll;HLSDK\engine;HLSDK\pm_shared;HLSDK\public;Interface;capstone\include\capstone;Detours\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>

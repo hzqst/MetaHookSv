@@ -1258,6 +1258,39 @@ void R_FillAddress(void)
 		Sig_VarNotFound(currenttexture);
 	}
 
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.GL_SelectTexture, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].reg == X86_REG_ESI)
+			{//.text:01D4FE37 89 35 08 82 ED 01 mov     oldtarget, esi
+				DWORD imm = pinst->detail->x86.operands[0].mem.disp;
+
+				oldtarget = (decltype(oldtarget))imm;
+			}
+
+			if (oldtarget)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(oldtarget);
+	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char sigs[] = "\xDB\x05\x2A\x2A\x2A\x2A\x2A\xD9\x1C\x2A\x68\x01\x28\x00\x00\x68\xE1\x0D\x00\x00\xFF\x2A\xDB\x05";

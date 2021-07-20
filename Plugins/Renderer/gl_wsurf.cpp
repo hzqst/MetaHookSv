@@ -911,6 +911,8 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		qglDisable(GL_TEXTURE_2D);
 		qglEnable(GL_TEXTURE_2D_ARRAY);
 		qglBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
+
+		r_wsurf.bLightmapTextureArray = true;
 	}
 	else
 	{
@@ -1010,7 +1012,6 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 
 		if (texchain.iVertexCount > 0)
 		{
-
 			auto base = texchain.pTexture;
 
 			if ((*currententity)->curstate.effects & EF_SNIPERLASER)
@@ -1193,7 +1194,7 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		qglEnable(GL_TEXTURE_2D);
 	}
 
-	if (r_wsurf.bLightmapTexture)
+	if (r_wsurf.bLightmapTextureArray)
 	{
 		GL_SelectTexture(TEXTURE1_SGIS);
 		qglDisable(GL_TEXTURE_2D_ARRAY);
@@ -1614,10 +1615,7 @@ void R_EndDetailTexture(void)
 
 	if (bRestore)
 	{
-		if ((*mtexenabled))
-			qglActiveTextureARB(TEXTURE1_SGIS);
-		else
-			qglActiveTextureARB(TEXTURE0_SGIS);
+		qglActiveTextureARB(*oldtarget);
 	}
 }
 

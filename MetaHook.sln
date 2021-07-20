@@ -5,6 +5,14 @@ VisualStudioVersion = 15.0.28307.168
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MetaHook", "MetaHook.vcxproj", "{0931F284-681C-41F1-AF30-97D1DCE2283C}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Renderer", "Plugins\Renderer\Renderer.vcxproj", "{076D2FBC-CAB6-4E26-931A-E5E8E9A4EBA7}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CaptionMod", "Plugins\CaptionMod\CaptionMod.vcxproj", "{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C5}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BulletPhysics", "Plugins\BulletPhysics\BulletPhysics.vcxproj", "{B93184CE-AACC-4538-B471-1F9A26B65DDC}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "StudioEvents", "Plugins\StudioEvents\StudioEvents.vcxproj", "{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -15,6 +23,22 @@ Global
 		{0931F284-681C-41F1-AF30-97D1DCE2283C}.Debug|Win32.Build.0 = Debug|Win32
 		{0931F284-681C-41F1-AF30-97D1DCE2283C}.Release|Win32.ActiveCfg = Release|Win32
 		{0931F284-681C-41F1-AF30-97D1DCE2283C}.Release|Win32.Build.0 = Release|Win32
+		{076D2FBC-CAB6-4E26-931A-E5E8E9A4EBA7}.Debug|Win32.ActiveCfg = Debug|Win32
+		{076D2FBC-CAB6-4E26-931A-E5E8E9A4EBA7}.Debug|Win32.Build.0 = Debug|Win32
+		{076D2FBC-CAB6-4E26-931A-E5E8E9A4EBA7}.Release|Win32.ActiveCfg = Release|Win32
+		{076D2FBC-CAB6-4E26-931A-E5E8E9A4EBA7}.Release|Win32.Build.0 = Release|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C5}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C5}.Debug|Win32.Build.0 = Debug|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C5}.Release|Win32.ActiveCfg = Release|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C5}.Release|Win32.Build.0 = Release|Win32
+		{B93184CE-AACC-4538-B471-1F9A26B65DDC}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B93184CE-AACC-4538-B471-1F9A26B65DDC}.Debug|Win32.Build.0 = Debug|Win32
+		{B93184CE-AACC-4538-B471-1F9A26B65DDC}.Release|Win32.ActiveCfg = Release|Win32
+		{B93184CE-AACC-4538-B471-1F9A26B65DDC}.Release|Win32.Build.0 = Release|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C6}.Debug|Win32.Build.0 = Debug|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C6}.Release|Win32.ActiveCfg = Release|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C6}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

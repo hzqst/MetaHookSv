@@ -26,6 +26,8 @@
 
 12. 修复一个引擎BUG：模型的remap贴图不支持STUDIO_NF_MASKED标记.
 
+* Meta Renderer for Sven-Coop 不再支持一切破解引擎硬编码限制的功能（因为SvEngine本来就会提升这些最大限制），如：允许加载的最大纹理尺寸、最大动态光源数量、最大可见实体数量、lightmap大小限制，以及任何Sven-Coop本身就支持的功能，如：3d skybox、镜子等。
+
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/2.png)
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/3.png)

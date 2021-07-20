@@ -149,8 +149,7 @@ void BaseUI_InstallHook(void)
 		DWORD *vft = *(DWORD **)baseuifuncs;
 
 		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)vft[1], 0x200, CLIENTFACTORY_SIG_SVENGINE, Sig_Length(CLIENTFACTORY_SIG_SVENGINE));
-		if (!addr)
-			Sig_NotFound(ClientFactory);
+		Sig_AddrNotFound(ClientFactory);
 		gCapFuncs.pfnClientFactory = (void *(**)(void))*(DWORD *)(addr + 5);
 
 		DWORD *pVFTable = *(DWORD **)&s_BaseUI;
@@ -162,8 +161,7 @@ void BaseUI_InstallHook(void)
 #define CLIENTFACTORY_SIG "\xCC\xA1\x2A\x2A\x2A\x2A\x85\xC0\x74"
 		DWORD *vft = *(DWORD **)baseuifuncs;
 		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)vft[1], 0x200, CLIENTFACTORY_SIG, Sig_Length(CLIENTFACTORY_SIG));
-		if (!addr)
-			Sig_NotFound(ClientFactory);
+		Sig_AddrNotFound(ClientFactory);
 		gCapFuncs.pfnClientFactory = (void *(**)(void))*(DWORD *)(addr + 2);
 
 		DWORD *pVFTable = *(DWORD **)&s_BaseUI;

@@ -24,6 +24,7 @@ int *numgltextures = NULL;
 int *gHostSpawnCount = NULL;
 int *currenttexid = NULL;//for 3xxx~4xxx
 int *currenttexture = NULL;
+int *oldtarget = NULL;
 gltexture_t *currentglt = NULL;
 
 int *gl_filter_min = NULL;
