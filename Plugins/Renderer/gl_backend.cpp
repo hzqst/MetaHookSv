@@ -75,10 +75,3 @@ void CL_ScreenShot_f(void)
 
 	R_CaptureScreen(szExt);
 }
-
-byte *R_GetSCRCaptureBuffer(int *bufsize)
-{
-	if(bufsize)
-		*bufsize = scrcapture_bufsize;
-	return scrcapture_buffer;
-}

@@ -228,7 +228,7 @@ void R_FillAddress(void)
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.GL_SelectTexture = (void(*)(GLenum))Search_Pattern_From(GL_Bind, GL_SELECTTEXTURE_SIG_SVENGINE);
+		gRefFuncs.GL_SelectTexture = (void(*)(GLenum))Search_Pattern_From(gRefFuncs.GL_Bind, GL_SELECTTEXTURE_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_SelectTexture);
 	}
 	else
@@ -248,12 +248,12 @@ void R_FillAddress(void)
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_CullBox = (qboolean(*)(vec3_t, vec3_t))Search_Pattern_From(GL_LoadTexture2, R_CULLBOX_SIG_SVENGINE);
+		gRefFuncs.R_CullBox = (qboolean(*)(vec3_t, vec3_t))Search_Pattern_From(gRefFuncs.GL_LoadTexture2, R_CULLBOX_SIG_SVENGINE);
 		Sig_FuncNotFound(R_CullBox);
 	}
 	else
 	{
-		gRefFuncs.R_CullBox = (qboolean(*)(vec3_t, vec3_t))Search_Pattern_From(GL_LoadTexture2, R_CULLBOX_SIG_NEW);
+		gRefFuncs.R_CullBox = (qboolean(*)(vec3_t, vec3_t))Search_Pattern_From(gRefFuncs.GL_LoadTexture2, R_CULLBOX_SIG_NEW);
 		Sig_FuncNotFound(R_CullBox);
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -272,7 +272,7 @@ void R_FillAddress(void)
 	}
 	else
 	{
-		gRefFuncs.R_SetupGL = (void(*)(void))Search_Pattern_From(R_SetupFrame, R_SETUPGL_SIG_NEW);
+		gRefFuncs.R_SetupGL = (void(*)(void))Search_Pattern_From(gRefFuncs.R_SetupFrame, R_SETUPGL_SIG_NEW);
 		Sig_FuncNotFound(R_SetupGL);
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -300,7 +300,7 @@ void R_FillAddress(void)
 		gRefFuncs.R_RenderView_SvEngine = (void(*)(int))Search_Pattern(R_RENDERVIEW_SIG_SVENGINE);
 		Sig_FuncNotFound(R_RenderView_SvEngine);
 
-		addr = (DWORD)Search_Pattern_From(R_RenderView_SvEngine, R_RENDERSCENE_SIG_SVENGINE);
+		addr = (DWORD)Search_Pattern_From(gRefFuncs.R_RenderView_SvEngine, R_RENDERSCENE_SIG_SVENGINE);
 		Sig_AddrNotFound(R_RenderScene);
 		gRefFuncs.R_RenderScene = (void(*)(void))(addr + 5 + 4 + *(int *)(addr + 5));
 	}
@@ -349,7 +349,7 @@ void R_FillAddress(void)
 	}
 	else
 	{
-		gRefFuncs.GL_DisableMultitexture = (void(*)(void))Search_Pattern_From(R_NewMap, GL_DISABLEMULTITEXTURE_SIG_NEW);
+		gRefFuncs.GL_DisableMultitexture = (void(*)(void))Search_Pattern_From(gRefFuncs.R_NewMap, GL_DISABLEMULTITEXTURE_SIG_NEW);
 		Sig_FuncNotFound(GL_DisableMultitexture);
 
 	}
@@ -360,7 +360,7 @@ void R_FillAddress(void)
 	}
 	else
 	{
-		gRefFuncs.GL_EnableMultitexture = (void(*)(void))Search_Pattern_From(GL_DisableMultitexture, GL_ENABLEMULTITEXTURE_SIG_NEW);
+		gRefFuncs.GL_EnableMultitexture = (void(*)(void))Search_Pattern_From(gRefFuncs.GL_DisableMultitexture, GL_ENABLEMULTITEXTURE_SIG_NEW);
 		Sig_FuncNotFound(GL_EnableMultitexture);
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -370,7 +370,7 @@ void R_FillAddress(void)
 	}
 	else
 	{
-		gRefFuncs.R_RenderDynamicLightmaps = (void(*)(msurface_t *))Search_Pattern_From(GL_EnableMultitexture, R_RENDERDYNAMICLIGHTMAPS_SIG_NEW);
+		gRefFuncs.R_RenderDynamicLightmaps = (void(*)(msurface_t *))Search_Pattern_From(gRefFuncs.GL_EnableMultitexture, R_RENDERDYNAMICLIGHTMAPS_SIG_NEW);
 		Sig_FuncNotFound(R_RenderDynamicLightmaps);
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -380,7 +380,7 @@ void R_FillAddress(void)
 	}
 	else
 	{
-		gRefFuncs.R_DrawBrushModel = (void(*)(cl_entity_t *))Search_Pattern_From(R_RenderDynamicLightmaps, R_DRAWBRUSHMODEL_SIG_NEW);
+		gRefFuncs.R_DrawBrushModel = (void(*)(cl_entity_t *))Search_Pattern_From(gRefFuncs.R_RenderDynamicLightmaps, R_DRAWBRUSHMODEL_SIG_NEW);
 		Sig_FuncNotFound(R_DrawBrushModel);
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -390,7 +390,7 @@ void R_FillAddress(void)
 	}
 	else
 	{
-		gRefFuncs.R_RecursiveWorldNode = (void(*)(mnode_t *))Search_Pattern_From(R_DrawBrushModel, R_RECURSIVEWORLDNODE_SIG_NEW);
+		gRefFuncs.R_RecursiveWorldNode = (void(*)(mnode_t *))Search_Pattern_From(gRefFuncs.R_DrawBrushModel, R_RECURSIVEWORLDNODE_SIG_NEW);
 		Sig_FuncNotFound(R_RecursiveWorldNode);
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -400,7 +400,7 @@ void R_FillAddress(void)
 	}
 	else
 	{
-		gRefFuncs.R_DrawWorld = (void(*)(void))Search_Pattern_From(R_RecursiveWorldNode, R_DRAWWORLD_SIG_NEW);
+		gRefFuncs.R_DrawWorld = (void(*)(void))Search_Pattern_From(gRefFuncs.R_RecursiveWorldNode, R_DRAWWORLD_SIG_NEW);
 		Sig_FuncNotFound(R_DrawWorld);
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -410,7 +410,7 @@ void R_FillAddress(void)
 	}
 	else
 	{
-		gRefFuncs.R_MarkLeaves = (void(*)(void))Search_Pattern_From(R_DrawWorld, R_MARKLEAVES_SIG_NEW);
+		gRefFuncs.R_MarkLeaves = (void(*)(void))Search_Pattern_From(gRefFuncs.R_DrawWorld, R_MARKLEAVES_SIG_NEW);
 		Sig_FuncNotFound(R_MarkLeaves);
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -431,7 +431,7 @@ void R_FillAddress(void)
 	}
 	else
 	{
-		gRefFuncs.GL_EndRendering = (void(*)(void))Search_Pattern_From(GL_BeginRendering, GL_ENDRENDERING_SIG_NEW);
+		gRefFuncs.GL_EndRendering = (void(*)(void))Search_Pattern_From(gRefFuncs.GL_BeginRendering, GL_ENDRENDERING_SIG_NEW);
 		Sig_FuncNotFound(GL_EndRendering);
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)

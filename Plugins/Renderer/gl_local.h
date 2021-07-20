@@ -307,7 +307,6 @@ void GL_Begin2DEx(int width, int height);
 void GL_End2D(void);
 
 //for screenshot
-byte *R_GetSCRCaptureBuffer(int *bufsize);
 void CL_ScreenShot_f(void);
 
 //for hud or post-processing

@@ -82,16 +82,8 @@ ref_export_t gRefExports =
 	R_LoadTextureEx,
 	GL_LoadTextureEx,
 	R_GetCurrentGLTexture,
-	GL_UploadDXT,
-	LoadDDS,
 	LoadImageGeneric,
 	SaveImageGeneric,
-	//capture screen
-	R_GetSCRCaptureBuffer,
-	//2d postprocess
-	R_BeginFXAA,
-	//cloak
-	//shader
 	ShaderAPI,
 };
 
@@ -998,8 +990,8 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	gpStudioInterface = ppinterface;
 
 	//InlineHook StudioAPI
-	InstallHook(studioapi_RestoreRenderer);
-	InstallHook(studioapi_StudioDynamicLight);
+	g_pMetaHookAPI->InlineHook((void *)gRefFuncs.studioapi_RestoreRenderer, studioapi_RestoreRenderer, (void *&)gRefFuncs.studioapi_RestoreRenderer);
+	g_pMetaHookAPI->InlineHook((void *)gRefFuncs.studioapi_StudioDynamicLight, studioapi_StudioDynamicLight, (void *&)gRefFuncs.studioapi_StudioDynamicLight);
 
 	cl_sprite_white = IEngineStudio.Mod_ForName("sprites/white.spr", 1);
 

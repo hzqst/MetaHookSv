@@ -120,7 +120,7 @@ void IRenderer::GetInterface(ref_export_t *pRefExports, const char *version)
 	}
 	else
 	{
-		Sys_ErrorEx("Meta Renderer interface version (%s) should be (%s)\n", version, META_RENDERER_VERSION);
+		Sys_ErrorEx("Meta Renderer interface version mismatch, expect [%s], got [%s] \n", META_RENDERER_VERSION, version);
 	}
 }
 

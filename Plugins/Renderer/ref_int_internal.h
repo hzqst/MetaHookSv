@@ -127,14 +127,8 @@ typedef struct
 	int (*R_LoadTextureEx)(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio);
 	int (*GL_LoadTextureEx)(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, qboolean ansio);
 	gltexture_t *(*R_GetCurrentGLTexture)(void);
-	void (*GL_UploadDXT)(byte *data, int width, int height, qboolean mipmap, qboolean ansio);
-	int (*LoadDDS)(const char *filename, byte *buf, int bufSize, int *width, int *height);
 	int (*LoadImageGeneric)(const char *filename, byte *buf, int bufSize, int *width, int *height);	
 	int (*SaveImageGeneric)(const char *filename, int width, int height, byte *data);
-	//capture screen
-	byte *(*R_GetSCRCaptureBuffer)(int *bufsize);
-	//2d postprocess
-	void (*R_BeginFXAA)(int w, int h);
 	//shader
 	shaderapi_t ShaderAPI;
 }ref_export_t;
@@ -147,18 +141,4 @@ extern ref_export_t gRefExports;
 #define r_draw_refract 2
 #define r_draw_shadow 3
 
-#define r_ext_fbo (1<<0)
-#define r_ext_msaa (1<<1)
-#define r_ext_water (1<<2)
-#define r_ext_shader (1<<3)
-#define r_ext_shadow (1<<4)
-
-enum
-{
-	kRenderFxCloak = 22,
-	kRenderFxShadow,
-	kRenderFxFireLayer,
-	kRenderFxInvulnLayer
-};
-
-#define META_RENDERER_VERSION "Meta Renderer 3.0"
+#define META_RENDERER_VERSION "Meta Renderer 2021-07-20"
