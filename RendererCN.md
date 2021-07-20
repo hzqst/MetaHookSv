@@ -2,7 +2,7 @@
 
 [English DOC](Renderer.md)
 
-### Features
+### 功能
 
 1. HDR后处理
 

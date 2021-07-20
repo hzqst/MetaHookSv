@@ -37,7 +37,7 @@
 
 GoldSrc引擎: 建议使用 https://github.com/hzqst/CaptionMod
 
-#### Console Vars
+#### 控制台参数
 
 cap_enabled 0 / 1 : 是否显示字幕
 

@@ -2,7 +2,7 @@
 
 [English DOC](StudioEvents.md)
 
-### Features
+### 功能
 
 该插件可以防止重复播放模型自带音效，防止音效反复刷屏
 
