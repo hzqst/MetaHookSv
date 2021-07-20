@@ -34,10 +34,8 @@ Modify and overwrite "dictionary_english.txt" is the best option if you are expe
 |        ----              | ---- |
 | GoldSrc_blob   (< 4554)  | -    |
 | GoldSrc_legacy (< 6153)  | -    |
-| GoldSrc_new    (8684 ~)  | -    |
+| GoldSrc_new    (8684 ~)  | √    |
 | SvEngine       (8832 ~)  | √    |
-
-For GoldSrc engine: please try https://github.com/hzqst/CaptionMod instead
 
 #### Console Vars
 

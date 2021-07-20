@@ -34,10 +34,8 @@
 |        ----              | ---- |
 | GoldSrc_blob   (< 4554)  | -    |
 | GoldSrc_legacy (< 6153)  | -    |
-| GoldSrc_new    (8684 ~)  | -    |
+| GoldSrc_new    (8684 ~)  | √    |
 | SvEngine       (8832 ~)  | √    |
-
-GoldSrc引擎: 建议使用 https://github.com/hzqst/CaptionMod
 
 #### 控制台参数
 
