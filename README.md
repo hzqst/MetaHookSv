@@ -28,26 +28,39 @@ Use a separate account to play Sven-Coop if you worry about getting banned, sinc
 
 * The SDL2.dll fixes a bug that the IME input handler from original SDL library provided by valve was causing buffer overflow and game crash when using non-english IME. you don't need to copy it if you don't have a non-english IME.
 
-## Build Instruction (launcher only, not plugins)
+## Build Requirements
+
+1. Visual Studio 2017 or higher, with C++ (MSVC toolset).
+
+2. CMake
+
+3. git client
+
+## Build Instruction
+
+Let's assume that you have all requirements installed correctly.
 
 1. git clone https://github.com/hzqst/MetaHookSv
 
-2. git clone https://github.com/aquynh/capstone somewhere if you don't have capstone installed in your dev environment.
+2. Run init-deps.bat, wait until all required submodules / dependencies are pulled. (this may takes couple of minutes, depending on your network connection and download speed)
 
-3. Edit "MetaHook.vcxproj" and change `<CapstonePath>I:\code\capstone</CapstonePath>` to your capstone install path.
+3. Run "build-capstone.bat", wait until capstone's static lib(s) are generated.
 
-4. Open "MetaHook.sln"
+4. Run "build-bullet3.bat", wait until bullet3's static lib(s) are generated.
 
-5. Build with Release configuration
+5. Run "build-MetaHook.bat", wait until "svencoop.exe" is generated under "Build" directory. Remember to redirect the Windows SDK version from Visual Studio IDE if you have installed a different version of Windows SDK other than "10.0.17763.0".
+
+6. Run "build-CaptionMod.bat", wait until "CaptionMod.dll" is generated under "Build\svencoop\metahook\plugins\" directory.
+
+7. Run "build-Renderer.bat", wait until "Renderer.dll" is generated under "Build\svencoop\metahook\plugins\" directory.
+
+8. Run "build-BulletPhysics.bat", wait until "BulletPhysics.dll" is generated under "Build\svencoop\metahook\plugins\" directory.
+
+9. Run "build-StudioEvents.bat", wait until "StudioEvents.dll" is generated under "Build\svencoop\metahook\plugins\" directory.
 
 ### Compatibility (launcher only, not plugins)
 
-|        Engine            |      |
-|        ----              | ---- |
-| GoldSrc_blob   (< 4554)  | √    |
-| GoldSrc_legacy (< 6153)  | √    |
-| GoldSrc_new    (8684 ~)  | √    |
-| SvEngine       (8832 ~)  | √    |
+See docs of plugins
 
 ## Plugins
 
