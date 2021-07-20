@@ -1516,6 +1516,14 @@ void R_FillAddress(void)
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x200, sigs4, sizeof(sigs4) - 1);
 		Sig_AddrNotFound(gHostSpawnCount);
 		gHostSpawnCount = *(int **)(addr + 3);
+
+		const char sigs5[] = "\x03\x35\x2A\x2A\x2A\x2A\x3B\x15";
+		//Search in GL_LoadTexture2
+		//.text:01D4EDE8 03 35 EC C6 0F 03                                   add     esi, gltextures
+		//.text : 01D4EDEE 3B 15 00 C7 0F 03                                   cmp     edx, peakgltextures
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x200, sigs5, sizeof(sigs5) - 1);
+		Sig_AddrNotFound(peakgltextures);
+		peakgltextures_SvEngine = *(int **)(addr + 8);
 	}
 	else
 	{

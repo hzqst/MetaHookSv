@@ -126,7 +126,6 @@ typedef struct
 	GLuint (*GL_GenTextureRGBA8)(int w, int h);
 	int (*R_LoadTextureEx)(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio);
 	int (*GL_LoadTextureEx)(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, qboolean ansio);
-	gltexture_t *(*R_GetCurrentGLTexture)(void);
 	int (*LoadImageGeneric)(const char *filename, byte *buf, int bufSize, int *width, int *height);	
 	int (*SaveImageGeneric)(const char *filename, int width, int height, byte *data);
 	//shader

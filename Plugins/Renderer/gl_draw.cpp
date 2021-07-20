@@ -20,12 +20,11 @@ static byte texloader_buffer[4096 * 4096 * 4];
 gltexture_t *gltextures = NULL;
 gltexture_t **gltextures_SvEngine = NULL;//for SvEngine
 int *maxgltextures_SvEngine = NULL;//for SvEngine
+int *peakgltextures_SvEngine = NULL;//for SvEngine
 int *numgltextures = NULL;
 int *gHostSpawnCount = NULL;
-int *currenttexid = NULL;//for 3xxx~4xxx
 int *currenttexture = NULL;
 int *oldtarget = NULL;
-gltexture_t *currentglt = NULL;
 
 int *gl_filter_min = NULL;
 int *gl_filter_max = NULL;
@@ -38,15 +37,7 @@ int gl_loadtexture_size;
 GLuint GL_GenTexture(void)
 {
 	GLuint tex;
-	if(g_dwEngineBuildnum < 5953)
-	{
-		tex = (*currenttexid);
-		(*currenttexid) ++;
-	}
-	else
-	{
-		qglGenTextures(1, &tex);
-	}
+	qglGenTextures(1, &tex);
 	return tex;
 }
 
@@ -332,7 +323,6 @@ tryagain:
 				if (slot->servercount > 0)
 					slot->servercount = *gHostSpawnCount;
 
-				currentglt = slot;
 				return slot->texnum;
 			}
 		}
@@ -369,7 +359,7 @@ tryagain:
 		{
 			if ((*numgltextures) + 1 >= MAX_GLTEXTURES)
 			{
-				gEngfuncs.Con_Printf("Texture Overflow: MAX_GLTEXTURES\n");
+				Sys_ErrorEx("Texture Overflow: MAX_GLTEXTURES\n");
 				return 0;
 			}
 		}
@@ -378,8 +368,21 @@ tryagain:
 		(*numgltextures)++;
 	}
 
-	if (!glt->texnum)
+	if (peakgltextures_SvEngine)
+	{
+		if ((*numgltextures) > (*peakgltextures_SvEngine))
+			(*peakgltextures_SvEngine) = (*numgltextures);
+	}
+
+	if (maxgltextures_SvEngine)
+	{
 		glt->texnum = GL_GenTexture();
+	}
+	else
+	{
+		if (!glt->texnum)
+			glt->texnum = GL_GenTexture();
+	}
 
 	strncpy(glt->identifier, identifier, sizeof(glt->identifier) - 1);
 	glt->identifier[sizeof(glt->identifier) - 1] = 0;
@@ -388,8 +391,6 @@ tryagain:
 	glt->mipmap = mipmap;
 	glt->servercount = (textureType != GLT_SYSTEM && textureType != GLT_DECAL && textureType != GLT_HUDSPRITE) ? *gHostSpawnCount : 0;
 	glt->paletteIndex = -1;
-
-	currentglt = glt;
 
 	return glt->texnum;
 }
@@ -466,11 +467,6 @@ int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int wid
 
 	GL_Upload32((unsigned *)data, width, height, mipmap, ansio);
 	return texnum;
-}
-
-gltexture_t *R_GetCurrentGLTexture(void)
-{
-	return currentglt;
 }
 
 extern cvar_t *r_wsurf_decal;
@@ -808,44 +804,6 @@ int SaveImageGeneric(const char *filename, int width, int height, byte *data)
 	FreeImage_Unload(fiB);
 	return TRUE;
 }
-
-/*int R_LoadTexture(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type)
-{
-	int w, h;
-
-	const char *extension = V_GetFileExtension(filepath);
-
-	if (!extension)
-	{
-		gEngfuncs.Con_Printf("R_LoadTexture: File %s has no extension.\n", filepath);
-		return 0;
-	}
-
-	if (!stricmp(extension, "dds") && gl_s3tc_compression_support)
-	{
-		if (LoadDDS(filepath, texloader_buffer, sizeof(texloader_buffer), &w, &h))
-		{
-			if (width)
-				*width = w;
-			if (height)
-				*height = h;
-
-			return GL_LoadTextureEx(name, type, w, h, texloader_buffer, 1, 1);
-		}
-	}
-	else if (LoadImageGeneric(filepath, texloader_buffer, sizeof(texloader_buffer), &w, &h))
-	{
-		if (width)
-			*width = w;
-		if (height)
-			*height = h;
-
-		return gRefFuncs.GL_LoadTexture2((char *)name, type, w, h, texloader_buffer, 1, TEX_TYPE_RGBA, NULL, GL_LINEAR_MIPMAP_LINEAR);
-	}
-
-	gEngfuncs.Con_Printf("R_LoadTexture: Cannot load texture %s.\n", filepath);
-	return 0;
-}*/
 
 int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio)
 {

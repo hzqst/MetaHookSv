@@ -81,7 +81,6 @@ ref_export_t gRefExports =
 	GL_GenTextureRGBA8,
 	R_LoadTextureEx,
 	GL_LoadTextureEx,
-	R_GetCurrentGLTexture,
 	LoadImageGeneric,
 	SaveImageGeneric,
 	ShaderAPI,
