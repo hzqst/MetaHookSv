@@ -74,9 +74,9 @@ void Engine_FillAddress(void)
 		gCapFuncs.S_StartStaticSound = (void (*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern_From(gCapFuncs.S_StartDynamicSound, S_STARTSTATICSOUND_SIG_NEW);
 		Sig_FuncNotFound(S_StartStaticSound);
 
-		gCapFuncs.S_LoadSound = (sfxcache_t *(*)(sfx_t *, channel_t *))Search_Pattern_From(S_StartStaticSound, S_LOADSOUND_SIG_NEW);
+		gCapFuncs.S_LoadSound = (sfxcache_t *(*)(sfx_t *, channel_t *))Search_Pattern(S_LOADSOUND_SIG_NEW);
 		if(!gCapFuncs.S_LoadSound)
-			gCapFuncs.S_LoadSound = (sfxcache_t *(*)(sfx_t *, channel_t *))Search_Pattern_From(S_StartStaticSound, S_LOADSOUND_8308_SIG);
+			gCapFuncs.S_LoadSound = (sfxcache_t *(*)(sfx_t *, channel_t *))Search_Pattern( S_LOADSOUND_8308_SIG);
 		Sig_FuncNotFound(S_LoadSound);
 	}
 	else

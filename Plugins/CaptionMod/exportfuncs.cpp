@@ -398,11 +398,31 @@ void Steam_Init(void)
 {
 	gCapFuncs.szLanguage[0] = '\0';
 
-	if(SteamAPI_Init())
+	auto steam_api = GetModuleHandleA("steam_api.dll");
+
+	if (!steam_api)
+		return;
+
+	auto pfnSteamAPI_Init = (decltype(SteamAPI_Init) *)GetProcAddress(steam_api, "SteamAPI_Init");
+
+	if (!pfnSteamAPI_Init)
+		return;
+
+	auto pfnSteamAPI_IsSteamRunning = (decltype(SteamAPI_IsSteamRunning) *)GetProcAddress(steam_api, "SteamAPI_IsSteamRunning");
+
+	if (!pfnSteamAPI_IsSteamRunning)
+		return;
+
+	auto pfnSteamApps = (decltype(SteamApps) *)GetProcAddress(steam_api, "SteamApps");
+
+	if (!pfnSteamApps)
+		return;
+
+	if(pfnSteamAPI_Init())
 	{
-		if (SteamAPI_IsSteamRunning())
+		if (pfnSteamAPI_IsSteamRunning())
 		{
-			const char *pszLanguage = SteamApps()->GetCurrentGameLanguage();
+			const char *pszLanguage = pfnSteamApps()->GetCurrentGameLanguage();
 
 			if (pszLanguage)
 				Q_strncpy(gCapFuncs.szLanguage, pszLanguage, sizeof(gCapFuncs.szLanguage));
