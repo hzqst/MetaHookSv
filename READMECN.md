@@ -66,12 +66,6 @@ MetaHook的SvenCoop移植版本 (https://github.com/nagist/metahook)
 
 [中文文档](CaptionModCN.md) [英文文档](CaptionMod.md)
 
-### MetaRenderer
-
-替换了原版的图形渲染引擎，使用了黑科技提升你的游戏体验。
-
-[中文文档](RendererCN.md) [英文文档](Renderer.md)
-
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/1.png)
 
 ### BulletPhysics
@@ -81,6 +75,14 @@ MetaHook的SvenCoop移植版本 (https://github.com/nagist/metahook)
 [中文文档](BulletPhysicsCN.md) [DOCUMENTATION](BulletPhysics.md)
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/6.png)
+
+### MetaRenderer
+
+替换了原版的图形渲染引擎，极大提升了渲染性能，使用了黑科技提升你的游戏体验。
+
+[中文文档](RendererCN.md) [英文文档](Renderer.md)
+
+![](https://github.com/hzqst/MetaHookSv/raw/main/img/3.png)
 
 ### StudioEvents
 
