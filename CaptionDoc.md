@@ -1,11 +1,5 @@
 # CaptionMod documentation
 
-### Build Instruction
-
-1. Open "MetaHookSv\Plugins\CaptionMod\CaptionMod.sln"
-
-2. Build with Release configuration
-
 ### Compatibility
 
 |        Engine            |      |
@@ -15,7 +9,7 @@
 | GoldSrc_new    (8684 ~)  | -    |
 | SvEngine       (8832 ~)  | √    |
 
-For GoldSrc engine: Try https://github.com/hzqst/CaptionMod
+For GoldSrc engine : please try https://github.com/hzqst/CaptionMod
 
 #### Features
 
