@@ -1386,6 +1386,7 @@ void R_LoadDetailTextures(void)
 		if (!ptext)
 			break;
 
+		//Default: load as detail texture
 		int texType = WSURF_DETAIL_TEXTURE;
 
 		std::string base = basetexture;
@@ -1399,6 +1400,11 @@ void R_LoadDetailTextures(void)
 		{
 			base = base.substr(0, base.length() - (sizeof("_NORMAL") - 1));
 			texType = WSURF_NORMAL_TEXTURE;
+		}
+		else if (base.find("_REPLACE") == base.length() - (sizeof("_REPLACE") - 1))
+		{
+			base = base.substr(0, base.length() - (sizeof("_REPLACE") - 1));
+			texType = WSURF_REPLACE_TEXTURE;
 		}
 
 		auto glt = GL_FindTexture(base.c_str(), GLT_WORLD, NULL, NULL);
@@ -1428,11 +1434,18 @@ void R_LoadDetailTextures(void)
 			g_DetailTextureTable[glt] = cache;
 		}
 
+		const char *textypeNames[] = {
+			"WSURF_REPLACE_TEXTURE",
+			"WSURF_DETAIL_TEXTURE",
+			"WSURF_NORMAL_TEXTURE",
+			"WSURF_PARALLAX_TEXTURE",
+		};
+
 		if (cache)
 		{
 			if (cache->tex[texType].gltexturenum)
 			{
-				gEngfuncs.Con_Printf("R_LoadDetailTextures: Textype %d already loaded for basetexture %s\n", texType, base.c_str());
+				gEngfuncs.Con_Printf("R_LoadDetailTextures: %s already exists for basetexture %s\n", textypeNames[texType], base.c_str());
 				continue;
 			}
 
@@ -1456,7 +1469,7 @@ void R_LoadDetailTextures(void)
 
 			if (!texId)
 			{
-				gEngfuncs.Con_Printf("R_LoadDetailTextures: Missing detailtexture %s\n", detailtexture);
+				gEngfuncs.Con_Printf("R_LoadDetailTextures: Failed to load %s as %s for basetexture %s\n", detailtexture, textypeNames[texType], base.c_str());
 				continue;
 			}
 
