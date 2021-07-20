@@ -4,3 +4,6 @@
 [submodule "bullet3"]
 	path = bullet3
 	url = https://github.com/bulletphysics/bullet3
+[submodule "Detours"]
+	path = Detours
+	url = https://github.com/microsoft/Detours

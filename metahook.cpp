@@ -1,6 +1,6 @@
 #include "metahook.h"
 #include "LoadBlob.h"
-#include "Detours\detours.h"
+#include <detours.h>
 #include "interface.h"
 #include <capstone.h>
 #include <IPluginsV1.h>

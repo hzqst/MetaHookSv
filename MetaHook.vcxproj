@@ -58,7 +58,7 @@
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.\;..\;HLSDK\common;HLSDK\cl_dll;HLSDK\engine;HLSDK\pm_shared;HLSDK\public;Interface;$(CapstonePath)\include\capstone;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\;HLSDK\common;HLSDK\cl_dll;HLSDK\engine;HLSDK\pm_shared;HLSDK\public;Interface;capnstone\include\capstone;Detours\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -73,7 +73,7 @@
       <BaseAddress>0x1400000</BaseAddress>
       <TargetMachine>MachineX86</TargetMachine>
       <AdditionalDependencies>capstone.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(CapstonePath)\msvc\Debug\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>capstone\msvc\Debug\</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(OutDir)$(ProjectName).exe" "I:\SteamLibrary\steamapps\common\Sven Co-op\metahook.exe"</Command>
@@ -85,7 +85,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>.\;..\;HLSDK\common;HLSDK\cl_dll;HLSDK\engine;HLSDK\pm_shared;HLSDK\public;Interface;$(CapstonePath)\include\capstone;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;..\;HLSDK\common;HLSDK\cl_dll;HLSDK\engine;HLSDK\pm_shared;HLSDK\public;Interface;capstone\include\capstone;Detours\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -102,7 +102,7 @@
       <BaseAddress>0x1400000</BaseAddress>
       <TargetMachine>MachineX86</TargetMachine>
       <LargeAddressAware>true</LargeAddressAware>
-      <AdditionalLibraryDirectories>$(CapstonePath)\msvc\Release\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>capstone\msvc\Release\</AdditionalLibraryDirectories>
       <AdditionalDependencies>capstone.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
@@ -114,10 +114,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="commandline.cpp" />
-    <ClCompile Include="Detours\detours.cpp" />
-    <ClCompile Include="Detours\disasm.cpp" />
-    <ClCompile Include="Detours\image.cpp" />
-    <ClCompile Include="Detours\modules.cpp" />
+    <ClCompile Include="Detours\src\detours.cpp" />
+    <ClCompile Include="Detours\src\disasm.cpp" />
+    <ClCompile Include="Detours\src\modules.cpp" />
     <ClCompile Include="HLSDK\common\interface.cpp" />
     <ClCompile Include="launcher.cpp" />
     <ClCompile Include="LoadBlob.cpp" />
@@ -127,8 +126,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cdll_export.h" />
-    <ClInclude Include="Detours\detours.h" />
-    <ClInclude Include="Detours\detver.h" />
     <ClInclude Include="ExceptHandle.h" />
     <ClInclude Include="Interface\ICommandLine.h" />
     <ClInclude Include="Interface\IEngine.h" />

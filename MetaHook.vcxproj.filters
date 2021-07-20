@@ -42,16 +42,13 @@
     <ClCompile Include="sys_launcher.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="Detours\detours.cpp">
+    <ClCompile Include="Detours\src\detours.cpp">
       <Filter>Detours</Filter>
     </ClCompile>
-    <ClCompile Include="Detours\disasm.cpp">
+    <ClCompile Include="Detours\src\disasm.cpp">
       <Filter>Detours</Filter>
     </ClCompile>
-    <ClCompile Include="Detours\image.cpp">
-      <Filter>Detours</Filter>
-    </ClCompile>
-    <ClCompile Include="Detours\modules.cpp">
+    <ClCompile Include="Detours\src\modules.cpp">
       <Filter>Detours</Filter>
     </ClCompile>
   </ItemGroup>
@@ -88,12 +85,6 @@
     </ClInclude>
     <ClInclude Include="Interface\IRegistry.h">
       <Filter>Interface</Filter>
-    </ClInclude>
-    <ClInclude Include="Detours\detours.h">
-      <Filter>Detours</Filter>
-    </ClInclude>
-    <ClInclude Include="Detours\detver.h">
-      <Filter>Detours</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
