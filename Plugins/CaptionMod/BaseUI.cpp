@@ -143,7 +143,7 @@ void BaseUI_InstallHook(void)
 	gameuifuncs = (IGameUIFuncs *)fnCreateInterface(VENGINE_GAMEUIFUNCS_VERSION, NULL);
 
 	//Search CBaseUI::Initialize for ClientFactory
-	if (g_EngineType == ENGINE_SVENGINE)
+	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 #define CLIENTFACTORY_SIG_SVENGINE "\x83\xC4\x0C\x83\x3D"
 		DWORD *vft = *(DWORD **)baseuifuncs;

@@ -18,7 +18,7 @@ void MSG_Init(void)
 {
 	DWORD address = (DWORD)g_pMetaSave->pEngineFuncs->pfnHookUserMsg;
 
-	if (g_EngineType == ENGINE_SVENGINE)
+	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		if (*(BYTE *)(address + 8) == 0xE8)
 			address += 8;

@@ -133,7 +133,7 @@ void HUD_Init(void)
 	cap_netmessage = gEngfuncs.pfnRegisterVariable("cap_netmessage", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	gEngfuncs.pfnAddCommand("cap_version", Cap_Version_f);
 
-	if (g_EngineType == ENGINE_SVENGINE)
+	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gCapFuncs.fmodex = GetModuleHandleA("fmodex.dll");
 		Sig_FuncNotFound(fmodex);
@@ -372,8 +372,6 @@ sfx_t *S_FindName(char *name, int *pfInCache)
 
 IBaseInterface *NewCreateInterface(const char *pName, int *pReturnCode)
 {
-	//MessageBoxA(NULL, pName, "NewCreateInterface", 0);
-
 	auto fnCreateInterface = (decltype(NewCreateInterface) *)Sys_GetFactoryThis();
 	auto fn = fnCreateInterface(pName, pReturnCode);
 	if (fn)
@@ -391,7 +389,6 @@ FARPROC WINAPI NewGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 {
 	if(hModule == g_hClientDll && (DWORD)lpProcName > 0xFFFF && !strcmp(lpProcName, CREATEINTERFACE_PROCNAME))
 	{
-		//MessageBoxA(NULL, lpProcName, "NewGetProcAddress", 0);
 		return (FARPROC)NewCreateInterface;
 	}
 	return gCapFuncs.GetProcAddress(hModule, lpProcName);
@@ -403,9 +400,7 @@ void Steam_Init(void)
 
 	if(SteamAPI_Init())
 	{
-		g_bIsRunningSteam = SteamAPI_IsSteamRunning();
-		
-		if (g_bIsRunningSteam)
+		if (SteamAPI_IsSteamRunning())
 		{
 			const char *pszLanguage = SteamApps()->GetCurrentGameLanguage();
 

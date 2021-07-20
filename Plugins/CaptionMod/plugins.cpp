@@ -10,15 +10,19 @@ IFileSystem *g_pFileSystem;
 BOOL g_IsClientVGUI2 = false;
 HMODULE g_hClientDll = NULL;
 DWORD g_dwClientSize = 0;
+int g_iVideoWidth = 0;
+int g_iVideoHeight = 0;
 
-DWORD g_dwEngineBase, g_dwEngineSize;
+PVOID g_dwEngineBase;
+DWORD g_dwEngineSize;
+PVOID g_dwEngineTextBase;
+DWORD g_dwEngineTextSize;
+PVOID g_dwEngineDataBase;
+DWORD g_dwEngineDataSize;
+PVOID g_dwEngineRdataBase;
+DWORD g_dwEngineRdataSize;
 DWORD g_dwEngineBuildnum;
-DWORD g_iVideoMode;
-int g_EngineType;
-int g_iVideoWidth, g_iVideoHeight, g_iBPP;
-bool g_bWindowed;
-bool g_bIsUseSteam;
-bool g_bIsRunningSteam;
+int g_iEngineType;
 
 extern IFileSystem *g_pFullFileSystem;
 
@@ -44,12 +48,15 @@ void IPlugins::Shutdown(void)
 void IPlugins::LoadEngine(void)
 {
 	g_pFileSystem = g_pInterface->FileSystem;
-	g_iVideoMode = g_pMetaHookAPI->GetVideoMode(&g_iVideoWidth, &g_iVideoHeight, &g_iBPP, &g_bWindowed);
-	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
-	g_EngineType = g_pMetaHookAPI->GetEngineType();
+	g_pMetaHookAPI->GetVideoMode(&g_iVideoWidth, &g_iVideoHeight, NULL, NULL);
 
+	g_iEngineType = g_pMetaHookAPI->GetEngineType();
+	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
 	g_dwEngineBase = g_pMetaHookAPI->GetEngineBase();
 	g_dwEngineSize = g_pMetaHookAPI->GetEngineSize();
+	g_dwEngineTextBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".text\x0\x0\x0", &g_dwEngineTextSize);
+	g_dwEngineDataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".data\x0\x0\x0", &g_dwEngineDataSize);
+	g_dwEngineRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".rdata\x0\x0", &g_dwEngineRdataSize);
 
 	Steam_Init();
 	Engine_FillAddress();
@@ -60,8 +67,8 @@ void IPlugins::LoadEngine(void)
 
 void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 {
-	//Get video settings again since W&H might change during initialization.
-	g_iVideoMode = g_pMetaHookAPI->GetVideoMode(&g_iVideoWidth, &g_iVideoHeight, &g_iBPP, &g_bWindowed);
+	//Get video settings again since width and height might have been changed during initialization.
+	g_pMetaHookAPI->GetVideoMode(&g_iVideoWidth, &g_iVideoHeight, NULL, NULL);
 
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
 
