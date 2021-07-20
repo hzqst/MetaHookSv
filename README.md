@@ -58,7 +58,7 @@ Let's assume that you have all requirements installed correctly.
 
 9. Run "build-StudioEvents.bat", wait until "StudioEvents.dll" is generated under "Build\svencoop\metahook\plugins\" directory.
 
-### Compatibility (launcher only, not plugins)
+### Compatibility
 
 See docs of plugins
 
