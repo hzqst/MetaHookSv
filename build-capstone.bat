@@ -13,4 +13,5 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
     MSBuild.exe "capstone\msvc\capstone.sln" /t:capstone_static /p:Configuration=Release /p:Platform="Win32" /p:PlatformToolset=v141
 
     copy /y "capstone\msvc\capstone_static\capstone_static.vcxproj.bak" "capstone\msvc\capstone_static\capstone_static.vcxproj"
+    del "capstone\msvc\capstone_static\capstone_static.vcxproj.bak"
 )
