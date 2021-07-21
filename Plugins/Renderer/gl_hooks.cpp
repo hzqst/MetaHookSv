@@ -2474,7 +2474,6 @@ void R_InstallHook(void)
 	Install_InlineHook(R_SetupGL);
 	Install_InlineHook(R_ForceCVars);
 	Install_InlineHook(R_CullBox);
-	Install_InlineHook(R_MarkLeaves);
 	Install_InlineHook(Mod_PointInLeaf);
 	Install_InlineHook(R_DrawSequentialPoly);
 	Install_InlineHook(EmitWaterPolys);

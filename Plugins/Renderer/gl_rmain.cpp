@@ -1554,7 +1554,7 @@ void R_InitCvars(void)
 	r_wadtextures = gEngfuncs.pfnGetCvarPointer("r_wadtextures");
 	r_glowshellfreq = gEngfuncs.pfnGetCvarPointer("r_glowshellfreq");
 	r_novis = gEngfuncs.pfnGetCvarPointer("r_novis");
-	r_novis->flags &= ~FCVAR_SPONLY;
+	//r_novis->flags &= ~FCVAR_SPONLY;
 
 	r_detailtextures = gEngfuncs.pfnGetCvarPointer("r_detailtextures");
 

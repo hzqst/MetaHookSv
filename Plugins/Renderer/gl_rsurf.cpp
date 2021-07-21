@@ -23,19 +23,6 @@ void R_RecursiveWorldNode(mnode_t *node)
 	gRefFuncs.R_RecursiveWorldNode(node);
 }
 
-void R_MarkLeaves(void)
-{
-	//Don't clip bsp nodes when rendering refract or reflect view for non-transparent water.
-	if (r_draw_pass == r_draw_reflect)
-	{
-		r_novis->value = 1;
-	}
-
-	gRefFuncs.R_MarkLeaves();
-
-	r_novis->value = 0;
-}
-
 void R_AddDynamicLights(msurface_t *surf)
 {
 	if (r_light_dynamic->value)

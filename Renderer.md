@@ -57,15 +57,15 @@ r_hdr_darkness : To control the darkness for HDR. recommended value : 4
 
 r_hdr_adaptation : To control the dark / bright adaptation speed for HDR. recommended value : 50
 
-r_water 2 / 1 / 0 : Enable or disable water reflection and refraction. 2 = draw all entities and terrains in reflection view, 1 = draw only terrains in reflection view. recommended value : 1
+r_water 2 / 1 / 0 : Enable or disable simple water reflection and refraction. 2 = draw all entities and terrains in reflection view, 1 = draw only terrains in reflection view. recommended value : 1
 
-r_water_fresnel (0.0 ~ 2.0) : To determine how to lerp and mix the refraction color and reflection color. recommended value : 1.5
+r_water_fresnelfactor (0.0 ~ 1.0) : To determine how to lerp and mix the refraction color and reflection color. recommended value : 0.4
 
-r_water_depthfactor (0.0 ~ 1000.0) : To determine if we can see through water in a close distance. recommended value : 50
+r_water_depthfactor1 (0.0 ~ 1.0) : To determine the strength of water edge feathering. recommended value : 0.02
 
-r_water_normfactor (0.0 ~ 1000.0) : To determine the size of water wave (offset to the normalmap). recommended value : 1.5
+r_water_depthfactor2 (0.0 ~ 1.0) : To determine the base strength of water edge feathering. recommended value : 0.01
 
-r_water_novis 1 / 0 : Force engine to render the scene which should have been removed by visleaf when rendering refraction or reflection view. recommended value : 1
+r_water_normfactor (0.0 ~ 1.0) : To determine the size of water wave. recommended value : 1.5
 
 r_water_minheight : Water entity which has height < this value will not be rendered with shader program. recommended value : 7.5
 

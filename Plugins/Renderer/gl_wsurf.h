@@ -248,6 +248,7 @@ void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride);
 void DrawGLPoly(glpoly_t *p);
 void DrawGLPoly(msurface_t *fa);
 void R_DrawDecals(qboolean bMultitexture);
+detail_texture_cache_t *R_FindDetailTextureCache(int texId);
 void R_BeginDetailTexture(int texId);
 void R_EndDetailTexture(void);
 

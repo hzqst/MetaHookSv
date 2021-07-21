@@ -149,7 +149,6 @@ extern cvar_t *r_shadows;
 extern cvar_t *r_mirroralpha;
 extern cvar_t *r_wateralpha;
 extern cvar_t *r_dynamic;
-extern cvar_t *r_novis;
 extern cvar_t *r_mmx;
 extern cvar_t *r_traceglow;
 extern cvar_t *r_wadtextures;

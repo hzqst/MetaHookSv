@@ -5,12 +5,12 @@
 typedef struct
 {
 	int program;
-	int waterfogcolor;
+	int watercolor;
 	int entitymatrix;
+	int worldmatrix;
 	int eyepos;
-	int clipinfo;
 	int time;
-	int fresnel;
+	int fresnelfactor;
 	int depthfactor;
 	int normfactor;
 	int normalmap;//0
@@ -62,10 +62,10 @@ extern SHADER_DEFINE(drawdepth);
 //cvar
 extern cvar_t *r_water;
 extern cvar_t *r_water_debug;
-extern cvar_t *r_water_fresnel;
-extern cvar_t *r_water_depthfactor;
+extern cvar_t *r_water_fresnelfactor;
+extern cvar_t *r_water_depthfactor1;
+extern cvar_t *r_water_depthfactor2;
 extern cvar_t *r_water_normfactor;
-extern cvar_t *r_water_novis;
 extern cvar_t *r_water_minheight;
 extern cvar_t *r_water_maxalpha;
 
@@ -89,3 +89,4 @@ void R_UseWaterProgram(int state, water_program_t *progOutput);
 #define WATER_UNDERWATER_ENABLED		1
 #define WATER_GBUFFER_ENABLED			2
 #define WATER_DEPTH_ENABLED				4
+#define WATER_REFRACT_ENABLED			8

@@ -24,8 +24,9 @@ int saved_cl_waterlevel;
 //cvar
 cvar_t *r_water = NULL;
 cvar_t *r_water_debug = NULL;
-cvar_t *r_water_fresnel = NULL;
-cvar_t *r_water_depthfactor = NULL;
+cvar_t *r_water_fresnelfactor = NULL;
+cvar_t *r_water_depthfactor1 = NULL;
+cvar_t *r_water_depthfactor2 = NULL;
 cvar_t *r_water_normfactor = NULL;
 cvar_t *r_water_minheight = NULL;
 cvar_t *r_water_maxalpha = NULL;
@@ -50,17 +51,20 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 		if (state & WATER_DEPTH_ENABLED)
 			defs << "#define DEPTH_ENABLED\n";
 
+		if (state & WATER_REFRACT_ENABLED)
+			defs << "#define REFRACT_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\water_shader.vsh", NULL, "renderer\\shader\\water_shader.fsh", def.c_str(), NULL, def.c_str());
 		if (prog.program)
 		{
-			SHADER_UNIFORM(prog, waterfogcolor, "waterfogcolor");
+			SHADER_UNIFORM(prog, watercolor, "watercolor");
 			SHADER_UNIFORM(prog, eyepos, "eyepos");
 			SHADER_UNIFORM(prog, entitymatrix, "entitymatrix");
-			SHADER_UNIFORM(prog, clipinfo, "clipinfo");
+			SHADER_UNIFORM(prog, worldmatrix, "worldmatrix");
 			SHADER_UNIFORM(prog, time, "time");
-			SHADER_UNIFORM(prog, fresnel, "fresnel");
+			SHADER_UNIFORM(prog, fresnelfactor, "fresnelfactor");
 			SHADER_UNIFORM(prog, depthfactor, "depthfactor");
 			SHADER_UNIFORM(prog, normfactor, "normfactor");
 			SHADER_UNIFORM(prog, normalmap, "normalmap");
@@ -95,7 +99,19 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 			else
 				qglUniformMatrix4fvARB(prog.entitymatrix, 1, false, (float *)r_identity_matrix);
 		}
-
+		if (prog.worldmatrix != -1)
+		{
+			if (g_SvEngine_DrawPortalView)
+			{
+				float mvmatrix[16];
+				qglGetFloatv(GL_MODELVIEW_MATRIX, mvmatrix);
+				qglUniformMatrix4fvARB(prog.worldmatrix, 1, false, (float *)mvmatrix);
+			}
+			else
+			{
+				qglUniformMatrix4fvARB(prog.worldmatrix, 1, true, (float *)r_world_matrix);
+			}
+		}
 		if (progOutput)
 			*progOutput = prog;
 	}
@@ -176,11 +192,12 @@ void R_InitWater(void)
 
 	r_water = gEngfuncs.pfnRegisterVariable("r_water", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_debug = gEngfuncs.pfnRegisterVariable("r_water_debug", "0", FCVAR_CLIENTDLL);
-	r_water_fresnel = gEngfuncs.pfnRegisterVariable("r_water_fresnel", "1.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_water_depthfactor = gEngfuncs.pfnRegisterVariable("r_water_depthfactor", "50", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_water_normfactor = gEngfuncs.pfnRegisterVariable("r_water_normfactor", "1.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_water_fresnelfactor = gEngfuncs.pfnRegisterVariable("r_water_fresnelfactor", "0.4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_water_depthfactor1 = gEngfuncs.pfnRegisterVariable("r_water_depthfactor1", "0.02", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_water_depthfactor2 = gEngfuncs.pfnRegisterVariable("r_water_depthfactor2", "0.01", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_water_normfactor = gEngfuncs.pfnRegisterVariable("r_water_normfactor", "1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_minheight = gEngfuncs.pfnRegisterVariable("r_water_minheight", "7.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_water_maxalpha = gEngfuncs.pfnRegisterVariable("r_water_maxalpha", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_water_maxalpha = gEngfuncs.pfnRegisterVariable("r_water_maxalpha", "0.75", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	curwater = NULL;
 
@@ -189,11 +206,7 @@ void R_InitWater(void)
 
 bool R_ShouldReflect(r_water_t *w) 
 {
-	//The camera is above water?
-	if(w->vecs[2] > r_refdef->vieworg[2] || *cl_waterlevel >= 3)
-		return false;
-
-	return true;
+	return r_refdef->vieworg[2] > w->vecs[2];
 }
 
 r_water_t *R_GetActiveWater(cl_entity_t *ent, vec3_t p, vec3_t n, colorVec *color)
@@ -333,10 +346,11 @@ void R_RenderReflectView(r_water_t *w)
 	w->ready = true;
 }
 
+#if 0
 void R_RenderRefractView(r_water_t *w)
 {
 	if (refractmap_ready)
-		goto end;
+		return;
 
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
 	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, refractmap, 0);
@@ -384,6 +398,7 @@ end:
 	w->ready = true;
 	refractmap_ready = true;
 }
+#endif
 
 void R_FreeDeadWaters(void)
 {
@@ -435,7 +450,7 @@ void R_RenderWaterView(void)
 			R_RenderReflectView(w);
 		}
 
-		R_RenderRefractView(w);
+		//R_RenderRefractView(w);
 
 		curwater = NULL;
 	}

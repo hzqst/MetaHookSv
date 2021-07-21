@@ -606,23 +606,25 @@ void R_GenerateVertexBuffer(void)
 
 		if (t)
 		{
-			R_BeginDetailTexture(t->gl_texturenum);
-			if (r_wsurf.bDetailTexture)
+			auto pcache = R_FindDetailTextureCache(t->gl_texturenum);
+			if (pcache)
 			{
-				detailScale[0] = r_wsurf.pDetailTextureCache->tex[WSURF_DETAIL_TEXTURE].scaleX;
-				detailScale[1] = r_wsurf.pDetailTextureCache->tex[WSURF_DETAIL_TEXTURE].scaleY;
+				if (pcache->tex[WSURF_DETAIL_TEXTURE].gltexturenum)
+				{
+					detailScale[0] = pcache->tex[WSURF_DETAIL_TEXTURE].scaleX;
+					detailScale[1] = pcache->tex[WSURF_DETAIL_TEXTURE].scaleY;
+				}
+				if (pcache->tex[WSURF_NORMAL_TEXTURE].gltexturenum)
+				{
+					normalScale[0] = pcache->tex[WSURF_NORMAL_TEXTURE].scaleX;
+					normalScale[1] = pcache->tex[WSURF_NORMAL_TEXTURE].scaleY;
+				}
+				if (pcache->tex[WSURF_PARALLAX_TEXTURE].gltexturenum)
+				{
+					parallaxScale[0] = pcache->tex[WSURF_PARALLAX_TEXTURE].scaleX;
+					parallaxScale[1] = pcache->tex[WSURF_PARALLAX_TEXTURE].scaleY;
+				}
 			}
-			if (r_wsurf.bNormalTexture)
-			{
-				normalScale[0] = r_wsurf.pDetailTextureCache->tex[WSURF_NORMAL_TEXTURE].scaleX;
-				normalScale[1] = r_wsurf.pDetailTextureCache->tex[WSURF_NORMAL_TEXTURE].scaleY;
-			}
-			if (r_wsurf.bParallaxTexture)
-			{
-				parallaxScale[0] = r_wsurf.pDetailTextureCache->tex[WSURF_PARALLAX_TEXTURE].scaleX;
-				parallaxScale[1] = r_wsurf.pDetailTextureCache->tex[WSURF_PARALLAX_TEXTURE].scaleY;
-			}
-			R_EndDetailTexture();
 		}
 
 		face->start_vertex = iCurVert;
@@ -1538,6 +1540,26 @@ void R_DrawWireFrame(brushface_t *brushface, void(*draw)(brushface_t *face))
 		if (gl_wireframe->value == 2)
 			qglEnable(GL_DEPTH_TEST);
 	}
+}
+
+detail_texture_cache_t *R_FindDetailTextureCache(int texId)
+{
+	auto itor = g_DetailTextureTable.find(texId);
+
+	if (itor != g_DetailTextureTable.end())
+	{
+		auto cache = itor->second;
+
+		if (cache->tex[WSURF_DETAIL_TEXTURE].gltexturenum ||
+			cache->tex[WSURF_NORMAL_TEXTURE].gltexturenum ||
+			cache->tex[WSURF_PARALLAX_TEXTURE].gltexturenum
+			)
+		{
+			return cache;
+		}
+	}
+
+	return NULL;
 }
 
 void R_BeginDetailTexture(int texId)

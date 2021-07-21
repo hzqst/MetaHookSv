@@ -172,11 +172,52 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 
 		if(waterObject && waterObject->ready)
 		{
+			int programState = 0;
+
 			float alpha = 1;
 			if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
+			{
 				alpha = (*r_blend);
 
-			int programState = 0;
+				if (alpha > r_water_maxalpha->value)
+					alpha = r_water_maxalpha->value;
+
+				programState |= WATER_REFRACT_ENABLED;
+
+				if (bAboveWater)
+					programState |= WATER_DEPTH_ENABLED;
+
+				if (!refractmap_ready)
+				{
+					s_WaterFBO.s_hBackBufferTex = refractmap;
+					s_WaterFBO.s_hBackBufferDepthTex = depthrefrmap;
+
+					qglBindFramebufferEXT(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
+					qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferTex, 0);
+					qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferDepthTex, 0);
+					if (R_UseMSAA())
+					{
+						qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
+						qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
+						qglBlitFramebufferEXT(
+							0, 0, s_MSAAFBO.iWidth, s_MSAAFBO.iHeight, 
+							0, 0, s_WaterFBO.iWidth, s_WaterFBO.iHeight, 
+							GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+						qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
+					}
+					else
+					{
+						qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
+						qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+						qglBlitFramebufferEXT(
+							0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight,
+							0, 0, s_WaterFBO.iWidth, s_WaterFBO.iHeight,
+							GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+						qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+					}
+					refractmap_ready = true;
+				}
+			}
 
 			if (!bAboveWater)
 				programState |= WATER_UNDERWATER_ENABLED;
@@ -184,27 +225,19 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 			if (drawgbuffer)
 				programState |= WATER_GBUFFER_ENABLED;
 
-			if (bAboveWater && alpha < 1)
-				programState |= WATER_DEPTH_ENABLED;
-
-			if (alpha > r_water_maxalpha->value)
-				alpha = r_water_maxalpha->value;
-
 			water_program_t prog = { 0 };
 			R_UseWaterProgram(programState, &prog);
 
-			if (prog.waterfogcolor != -1)
-				qglUniform4fARB(prog.waterfogcolor, waterObject->color.r / 255.0f, waterObject->color.g / 255.0f, waterObject->color.b / 255.0f, alpha);
+			if (prog.watercolor != -1)
+				qglUniform4fARB(prog.watercolor, waterObject->color.r / 255.0f, waterObject->color.g / 255.0f, waterObject->color.b / 255.0f, alpha);
 			if (prog.eyepos != -1)
 				qglUniform4fARB(prog.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0);
-			if (prog.clipinfo != -1)
-				qglUniform2fARB(prog.clipinfo, 4.0, r_params.movevars->zmax);
 			if (prog.time != -1)
 				qglUniform1fARB(prog.time, clientTime);
-			if (prog.fresnel != -1)
-				qglUniform1fARB(prog.fresnel, clamp(r_water_fresnel->value, 0.0, 10.0));
+			if (prog.fresnelfactor != -1)
+				qglUniform1fARB(prog.fresnelfactor, clamp(r_water_fresnelfactor->value, 0.0, 10.0));
 			if (prog.depthfactor != -1)
-				qglUniform1fARB(prog.depthfactor, clamp(r_water_depthfactor->value, 0.0, 1000.0));
+				qglUniform2fARB(prog.depthfactor, r_water_depthfactor1->value, r_water_depthfactor2->value);
 			if (prog.normfactor != -1)
 				qglUniform1fARB(prog.normfactor, clamp(r_water_normfactor->value, 0.0, 1000.0));
 
