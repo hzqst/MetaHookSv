@@ -84,7 +84,7 @@ void IPlugins::LoadEngine(void)
 		Sig_AddrNotFound(r_visframecount);
 		r_visframecount = *(int **)(addr + 5);
 
-		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_SVENGINE);
+		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_NEW);
 		Sig_FuncNotFound(R_NewMap);
 	}
 }

@@ -1393,20 +1393,25 @@ void R_LoadDetailTextures(void)
 
 		std::string base = basetexture;
 
-		if (base.find("_PARALLAX") == base.length() - (sizeof("_PARALLAX") - 1))
+		if (base.length() > (sizeof("_PARALLAX") - 1) && !strcmp(&base[base.length() - (sizeof("_PARALLAX") - 1)], "_PARALLAX"))
 		{
 			base = base.substr(0, base.length() - (sizeof("_PARALLAX") - 1));
 			texType = WSURF_PARALLAX_TEXTURE;
 		}
-		else if (base.find("_NORMAL") == base.length() - (sizeof("_NORMAL") - 1))
+		else if (base.length() > (sizeof("_NORMAL") - 1) && !strcmp(&base[base.length() - (sizeof("_NORMAL") - 1)], "_NORMAL"))
 		{
 			base = base.substr(0, base.length() - (sizeof("_NORMAL") - 1));
 			texType = WSURF_NORMAL_TEXTURE;
 		}
-		else if (base.find("_REPLACE") == base.length() - (sizeof("_REPLACE") - 1))
+		if (base.length() > (sizeof("_REPLACE") - 1) && !strcmp(&base[base.length() - (sizeof("_REPLACE") - 1)], "_REPLACE"))
 		{
 			base = base.substr(0, base.length() - (sizeof("_REPLACE") - 1));
 			texType = WSURF_REPLACE_TEXTURE;
+		}
+		if (base.length() > (sizeof("_DETAIL") - 1) && !strcmp(&base[base.length() - (sizeof("_DETAIL") - 1)], "_DETAIL"))
+		{
+			base = base.substr(0, base.length() - (sizeof("_DETAIL") - 1));
+			texType = WSURF_DETAIL_TEXTURE;
 		}
 
 		auto glt = GL_FindTexture(base.c_str(), GLT_WORLD, NULL, NULL);

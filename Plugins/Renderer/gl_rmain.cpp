@@ -768,11 +768,19 @@ void R_DrawViewModel(void)
 
 		auto c = R_LightPoint((*currententity)->origin);
 
-		auto oldShadows = r_shadows->value;
-		r_shadows->value = 0;
-		(*cl_light_level) = (c.r + c.g + c.b) / 3;
-		(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER);
-		r_shadows->value = oldShadows;
+		if (r_shadows)
+		{
+			auto oldShadows = r_shadows->value;
+			r_shadows->value = 0;
+			(*cl_light_level) = (c.r + c.g + c.b) / 3;
+			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER);
+			r_shadows->value = oldShadows;
+		}
+		else
+		{
+			(*cl_light_level) = (c.r + c.g + c.b) / 3;
+			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER);
+		}
 		break;
 	}
 
@@ -1462,11 +1470,7 @@ void R_RenderView_SvEngine(int a1)
 
 void R_RenderView(void)
 {
-	R_PreRenderView(0);
-
-	gRefFuncs.R_RenderView();
-
-	R_PostRenderView();
+	R_RenderView_SvEngine(0);
 }
 
 void R_RenderScene(void)
