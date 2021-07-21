@@ -42,8 +42,6 @@ void *tmp_palette;
 //renderer
 vec3_t r_studionormal[MAXSTUDIOVERTS];
 float lightpos[MAXSTUDIOVERTS][3][4];
-//auxvert_t auxverts[MAXSTUDIOVERTS];
-//vec3_t lightvalues[MAXSTUDIOVERTS];
 
 int r_studio_drawcall;
 int r_studio_polys;
@@ -119,6 +117,9 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 
 		if (state & STUDIO_LINEAR_FOG_ENABLED)
 			defs << "#define LINEAR_FOG_ENABLED\n";
+
+		if (state & STUDIO_SHADOW_ENABLED)
+			defs << "#define SHADOW_ENABLED\n";
 
 		auto def = defs.str();
 
@@ -719,6 +720,9 @@ void R_GLStudioDrawPoints(void)
 
 			if (r_fog_mode == GL_LINEAR)
 				StudioProgramState |= STUDIO_LINEAR_FOG_ENABLED;
+
+			if (r_draw_pass == r_draw_shadow_caster)
+				StudioProgramState |= STUDIO_SHADOW_ENABLED;
 
 			R_UseGBufferProgram(GBufferProgramState);
 			R_SetGBufferMask(GBufferMask);

@@ -195,7 +195,7 @@ int R_GetDrawPass(void)
 
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
-	if (r_draw_pass == r_draw_shadow)
+	if (r_draw_pass == r_draw_shadow_caster)
 		return false;
 
 	if ((*currententity)->model && (*currententity)->model->type == mod_studio && (*currententity)->curstate.scale != 1.0f)

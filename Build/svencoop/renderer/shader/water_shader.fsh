@@ -21,7 +21,6 @@ uniform sampler2D depthrefrmap;
 
 varying vec4 projpos;
 varying vec4 worldpos;
-varying vec4 posToCameraDir;
 
 #ifdef DEPTH_ENABLED
 varying mat4 viewprojmatrix_inv;
@@ -38,8 +37,6 @@ vec3 decodeWorldSpacePosition(vec2 texCoord){
 
 void main()
 {
-	vec3 vPositionToCameraDir = normalize( posToCameraDir.xyz );
-
 	float flWaterColorAlpha = clamp(watercolor.a, 0.01, 0.99);
 	vec4 vWaterColor = vec4(watercolor.x, watercolor.y, watercolor.z, 1.0);
 

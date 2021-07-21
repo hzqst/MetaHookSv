@@ -1,4 +1,5 @@
 #version 130
+
 uniform mat3x4 bonematrix[128];
 uniform float v_lambert;
 uniform float v_brightness;

@@ -462,6 +462,11 @@ void R_DrawSkyBox(void)
 		WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
 	}
 
+	if (r_draw_pass == r_draw_reflect && curwater)
+	{
+		WSurfProgramState |= WSURF_CLIP_UNDER_ENABLED;
+	}
+
 	if (drawgbuffer)
 	{
 		WSurfProgramState |= WSURF_GBUFFER_ENABLED;

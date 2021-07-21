@@ -154,42 +154,51 @@ void main()
 		discard;
 #endif
 
-#ifdef GBUFFER_ENABLED
+#ifdef SHADOW_ENABLED
 
-	gl_FragData[0] = diffuseColor * detailColor;
-	gl_FragData[1] = lightmapColor;
-	gl_FragData[2] = worldpos;
-	gl_FragData[3] = normal;
-	gl_FragData[4] = vec4(0.0, 0.0, 0.0, 1.0);
-
-	#ifdef NORMALTEXTURE_ENABLED
-
-		gl_FragData[3] = vec4(NormalMapping(), 0.0);
-
-	#endif
+	gl_FragColor = worldpos;
 
 #else
 
-	#ifdef TRANSPARENT_ENABLED
+	#ifdef GBUFFER_ENABLED
 
-		gl_FragColor = diffuseColor * lightmapColor * detailColor * color;
+		gl_FragData[0] = diffuseColor * detailColor;
+		gl_FragData[1] = lightmapColor;
+		gl_FragData[2] = worldpos;
+		gl_FragData[3] = normal;
+		gl_FragData[4] = vec4(0.0, 0.0, 0.0, 1.0);
+
+		#ifdef NORMALTEXTURE_ENABLED
+
+			gl_FragData[3] = vec4(NormalMapping(), 0.0);
+
+		#endif
 
 	#else
 
-		gl_FragColor = diffuseColor * lightmapColor * detailColor;
+		#ifdef TRANSPARENT_ENABLED
+
+			gl_FragColor = diffuseColor * lightmapColor * detailColor * color;
+
+		#else
+
+			gl_FragColor = diffuseColor * lightmapColor * detailColor;
+
+		#endif
+
+		#ifdef LINEAR_FOG_ENABLED
+
+			float z = gl_FragCoord.z / gl_FragCoord.w;
+			float fogFactor = ( gl_Fog.end - z ) / ( gl_Fog.end - gl_Fog.start );
+			fogFactor = clamp(fogFactor, 0.0, 1.0);
+
+			vec3 finalColor = gl_FragColor.xyz;
+
+			gl_FragColor.xyz = mix(gl_Fog.color.xyz, finalColor, fogFactor );
+			
+		#endif
 
 	#endif
 
-#endif
-
-#ifdef LINEAR_FOG_ENABLED
-
-	float z = gl_FragCoord.z / gl_FragCoord.w;
-	float fogFactor = ( gl_Fog.end - z ) / ( gl_Fog.end - gl_Fog.start );
-	fogFactor = clamp(fogFactor, 0.0, 1.0);
-
-	vec3 finalColor = gl_FragColor.xyz;
-
-	gl_FragColor.xyz = mix(gl_Fog.color.xyz, finalColor, fogFactor );
 #endif
 }

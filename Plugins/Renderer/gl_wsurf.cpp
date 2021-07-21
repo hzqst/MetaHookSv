@@ -76,6 +76,9 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		if (state & WSURF_TRANSPARENT_ENABLED)
 			defs << "#define TRANSPARENT_ENABLED\n";
 
+		if (state & WSURF_SHADOW_ENABLED)
+			defs << "#define SHADOW_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\wsurf_shader.vsh", NULL, "renderer\\shader\\wsurf_shader.fsh", def.c_str(), NULL, def.c_str());
@@ -889,6 +892,11 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 				WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 			}
 
+			if (r_draw_pass == r_draw_shadow_caster)
+			{
+				WSurfProgramState |= WSURF_SHADOW_ENABLED;
+			}
+
 			wsurf_program_t prog = { 0 };
 			R_UseWSurfProgram(WSurfProgramState, &prog);
 
@@ -983,6 +991,11 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 			if (drawgbuffer)
 			{
 				WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+			}
+
+			if (r_draw_pass == r_draw_shadow_caster)
+			{
+				WSurfProgramState |= WSURF_SHADOW_ENABLED;
 			}
 
 			if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
@@ -1169,6 +1182,11 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 					WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 				}
 
+				if (r_draw_pass == r_draw_shadow_caster)
+				{
+					WSurfProgramState |= WSURF_SHADOW_ENABLED;
+				}
+
 				if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
 				{
 					WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
@@ -1238,6 +1256,11 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		if (drawgbuffer)
 		{
 			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+		}
+
+		if (r_draw_pass == r_draw_shadow_caster)
+		{
+			WSurfProgramState |= WSURF_SHADOW_ENABLED;
 		}
 
 		wsurf_program_t prog = { 0 };
@@ -1823,6 +1846,11 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 	if (drawgbuffer)
 	{
 		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+	}
+
+	if (r_draw_pass == r_draw_shadow_caster)
+	{
+		WSurfProgramState |= WSURF_SHADOW_ENABLED;
 	}
 
 	if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)

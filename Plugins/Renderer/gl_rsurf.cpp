@@ -659,6 +659,11 @@ void R_DrawDecals(qboolean bMultitexture)
 		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 	}
 
+	if (r_draw_pass == r_draw_shadow_caster)
+	{
+		WSurfProgramState |= WSURF_SHADOW_ENABLED;
+	}
+
 	wsurf_program_t prog = {0};
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 	

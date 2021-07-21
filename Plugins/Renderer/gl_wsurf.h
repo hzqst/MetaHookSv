@@ -271,3 +271,4 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
 #define WSURF_LINEAR_FOG_ENABLED		0x80
 #define WSURF_GBUFFER_ENABLED			0x100
 #define WSURF_TRANSPARENT_ENABLED		0x200
+#define WSURF_SHADOW_ENABLED			0x400

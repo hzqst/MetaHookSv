@@ -61,30 +61,38 @@ void main()
         discard;
 #endif
 
-#ifdef TRANSPARENT_ENABLED
+#ifdef SHADOW_ENABLED
 
-    #ifdef ADDITIVE_ENABLED
+	gl_FragColor = worldpos;
 
-        gl_FragColor = diffuseColor * lightmapColor;
+#else
+
+    #ifdef TRANSPARENT_ENABLED
+
+        #ifdef ADDITIVE_ENABLED
+
+            gl_FragColor = diffuseColor * lightmapColor;
+
+        #else
+
+            gl_FragData[0] = diffuseColor;
+            gl_FragData[1] = lightmapColor;
+            gl_FragData[2] = worldpos;
+            gl_FragData[3] = normal;
+            gl_FragData[4] = vec4(0.0, 0.0, 0.0, 1.0);
+
+        #endif
 
     #else
 
-        gl_FragData[0] = diffuseColor;
+        vec4 mixedColor = diffuseColor * detailColor;
+        gl_FragData[0] = mixedColor;
         gl_FragData[1] = lightmapColor;
         gl_FragData[2] = worldpos;
         gl_FragData[3] = normal;
         gl_FragData[4] = vec4(0.0, 0.0, 0.0, 1.0);
 
     #endif
-
-#else
-
-    vec4 mixedColor = diffuseColor * detailColor;
-    gl_FragData[0] = mixedColor;
-    gl_FragData[1] = lightmapColor;
-    gl_FragData[2] = worldpos;
-    gl_FragData[3] = normal;
-    gl_FragData[4] = vec4(0.0, 0.0, 0.0, 1.0);
 
 #endif
 }

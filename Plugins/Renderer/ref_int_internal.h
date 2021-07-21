@@ -138,6 +138,6 @@ extern ref_export_t gRefExports;
 #define r_draw_normal 0
 #define r_draw_reflect 1
 #define r_draw_refract 2
-#define r_draw_shadow 3
+#define r_draw_shadow_caster 3
 
 #define META_RENDERER_VERSION "Meta Renderer 2021-07-20"
