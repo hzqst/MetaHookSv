@@ -6,9 +6,10 @@ typedef struct
 	int texoffset_high;
 	int texoffset_medium;
 	int texoffset_low;
-	int texture_high;
-	int texture_medium;
-	int texture_low;
+	int texmatrix_high;
+	int texmatrix_medium;
+	int texmatrix_low;
+	int texture_array;
 	int entitymatrix;
 	int alpha;
 	int fadefactor;
@@ -26,14 +27,10 @@ extern vec3_t shadow_light_mins;
 extern vec3_t shadow_light_maxs;
 
 extern int shadow_texture_depth;
-extern int shadow_texture_high;
-extern int shadow_texture_medium;
-extern int shadow_texture_low;
+extern int shadow_texture_color;
 extern int shadow_texture_size;
 
-extern int shadow_numvisedicts_high;
-extern int shadow_numvisedicts_medium;
-extern int shadow_numvisedicts_low;
+extern int shadow_numvisedicts[3];
 
 //cvar
 extern cvar_t *r_shadow;

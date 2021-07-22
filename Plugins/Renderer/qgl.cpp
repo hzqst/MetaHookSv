@@ -418,6 +418,8 @@ PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC qglFramebufferRenderbufferEXT = NULL;
 PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC qglCheckFramebufferStatusEXT = NULL;
 PFNGLRENDERBUFFERSTORAGEEXTPROC qglRenderbufferStorageEXT = NULL;
 PFNGLFRAMEBUFFERTEXTURE2DEXTPROC qglFramebufferTexture2DEXT = NULL;
+PFNGLFRAMEBUFFERTEXTURE3DEXTPROC qglFramebufferTexture3DEXT = NULL;
+PFNGLFRAMEBUFFERTEXTURELAYEREXTPROC qglFramebufferTextureLayerEXT = NULL;
 PFNGLFRAMEBUFFERTEXTUREPROC qglFramebufferTexture = NULL;
 PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC qglRenderbufferStorageMultisampleEXT = NULL;
 PFNGLBLITFRAMEBUFFEREXTPROC qglBlitFramebufferEXT = NULL;
@@ -985,6 +987,8 @@ void QGL_InitExtension(void)
 		qglCheckFramebufferStatusEXT = (PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC)qwglGetProcAddress("glCheckFramebufferStatusEXT");
 		qglRenderbufferStorageEXT = (PFNGLRENDERBUFFERSTORAGEEXTPROC)qwglGetProcAddress("glRenderbufferStorageEXT");
 		qglFramebufferTexture2DEXT = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC)qwglGetProcAddress("glFramebufferTexture2DEXT");
+		qglFramebufferTexture3DEXT = (PFNGLFRAMEBUFFERTEXTURE3DEXTPROC)qwglGetProcAddress("glFramebufferTexture3DEXT");
+		qglFramebufferTextureLayerEXT = (PFNGLFRAMEBUFFERTEXTURELAYEREXTPROC)qwglGetProcAddress("glFramebufferTextureLayerEXT");
 		qglFramebufferTexture = (PFNGLFRAMEBUFFERTEXTUREPROC)qwglGetProcAddress("glFramebufferTexture");
 		qglDrawBuffers = (PFNGLDRAWBUFFERSPROC)qwglGetProcAddress("glDrawBuffers");
 

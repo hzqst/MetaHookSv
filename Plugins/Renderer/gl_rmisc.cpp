@@ -190,6 +190,23 @@ GLuint GL_GenTextureColorFormat(int w, int h, int iInternalFormat)
 	return texid;
 }
 
+void GL_UploadTextureArrayColorFormat(int texid, int w, int h, int levels, int iInternalFormat)
+{
+	qglBindTexture(GL_TEXTURE_2D_ARRAY, texid);
+	qglTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	qglTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	qglTexImage3D(GL_TEXTURE_2D_ARRAY, 0, iInternalFormat, w, h, levels, 0, GL_RGBA, 
+		(iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, NULL);
+	qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+}
+
+GLuint GL_GenTextureArrayColorFormat(int w, int h, int levels, int iInternalFormat)
+{
+	GLuint texid = GL_GenTexture();
+	GL_UploadTextureArrayColorFormat(texid, w, h, levels, iInternalFormat);
+	return texid;
+}
+
 GLuint GL_GenTextureRGBA8(int w, int h)
 {
 	return GL_GenTextureColorFormat(w, h, GL_RGBA8);
@@ -202,6 +219,9 @@ void GL_UploadDepthTexture(int texId, int w, int h)
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	//qglTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);???
+
 	//glTexStorage2D doesnt work with qglCopyTexImage2D so we use glTexImage2D here
 	qglTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 	qglBindTexture(GL_TEXTURE_2D, 0);
@@ -221,9 +241,12 @@ void GL_UploadShadowTexture(int texid, int w, int h)
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
 	//qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
 	//qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+
 	qglTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
+
 	qglTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 	qglBindTexture(GL_TEXTURE_2D, 0);
 }

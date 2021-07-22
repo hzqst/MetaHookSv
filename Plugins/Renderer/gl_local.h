@@ -265,6 +265,9 @@ GLuint GL_GenDepthTexture(int w, int h);
 GLuint GL_GenTextureColorFormat(int w, int h, int iInternalFormat);
 void GL_UploadTextureColorFormat(int texid, int w, int h, int iInternalFormat);
 
+GLuint GL_GenTextureArrayColorFormat(int w, int h, int levels, int iInternalFormat);
+void GL_UploadTextureArrayColorFormat(int texid, int w, int h, int levels, int iInternalFormat);
+
 GLuint GL_GenShadowTexture(int w, int h);
 void GL_UploadShadowTexture(int texid, int w, int h);
 

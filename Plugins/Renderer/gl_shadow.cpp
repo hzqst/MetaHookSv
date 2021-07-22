@@ -7,27 +7,14 @@ vec3_t shadow_light_mins;
 vec3_t shadow_light_maxs;
 
 int shadow_texture_depth = 0;
-int shadow_texture_high = 0;
-int shadow_texture_medium = 0;
-int shadow_texture_low = 0;
+int shadow_texture_color = 0;
 int shadow_texture_size = 0;
 
-float shadow_projmatrix_high[16];
-float shadow_mvmatrix_high[16];
+float shadow_projmatrix[3][16];
+float shadow_mvmatrix[3][16];
 
-float shadow_projmatrix_medium[16];
-float shadow_mvmatrix_medium[16];
-
-float shadow_projmatrix_low[16];
-float shadow_mvmatrix_low[16];
-
-cl_entity_t *shadow_visedicts_high[512];
-cl_entity_t *shadow_visedicts_medium[512];
-cl_entity_t *shadow_visedicts_low[512];
-
-int shadow_numvisedicts_high = 0;
-int shadow_numvisedicts_medium = 0;
-int shadow_numvisedicts_low = 0;
+cl_entity_t *shadow_visedicts[3][512] = { 0 };
+int shadow_numvisedicts[3] = {0};
 
 //cvar
 cvar_t *r_shadow = NULL;
@@ -74,9 +61,10 @@ void R_UseShadowProgram(int state, shadow_program_t *progOutput)
 		SHADER_UNIFORM(prog, texoffset_high, "texoffset_high");
 		SHADER_UNIFORM(prog, texoffset_medium, "texoffset_medium");
 		SHADER_UNIFORM(prog, texoffset_low, "texoffset_low");
-		SHADER_UNIFORM(prog, texture_high, "texture_high");
-		SHADER_UNIFORM(prog, texture_medium, "texture_medium");
-		SHADER_UNIFORM(prog, texture_low, "texture_low");
+		SHADER_UNIFORM(prog, texmatrix_high, "texmatrix_high");
+		SHADER_UNIFORM(prog, texmatrix_medium, "texmatrix_medium");
+		SHADER_UNIFORM(prog, texmatrix_low, "texmatrix_low");
+		SHADER_UNIFORM(prog, texture_array, "texture_array");
 		SHADER_UNIFORM(prog, entitymatrix, "entitymatrix");
 		SHADER_UNIFORM(prog, alpha, "alpha");
 		SHADER_UNIFORM(prog, fadefactor, "fadefactor");
@@ -92,14 +80,8 @@ void R_UseShadowProgram(int state, shadow_program_t *progOutput)
 	{
 		qglUseProgramObjectARB(prog.program);
 
-		if (prog.texture_high != -1)
-			qglUniform1iARB(prog.texture_high, 0);
-
-		if (prog.texture_medium != -1)
-			qglUniform1iARB(prog.texture_medium, 1);
-
-		if (prog.texture_low != -1)
-			qglUniform1iARB(prog.texture_low, 2);
+		if (prog.texture_array != -1)
+			qglUniform1iARB(prog.texture_array, 0);
 
 		if (prog.texoffset_high != -1)
 			qglUniform1fARB(prog.texoffset_high, 1.0f / shadow_texture_size);
@@ -178,20 +160,10 @@ void R_FreeShadow(void)
 		GL_DeleteTexture(shadow_texture_depth);
 		shadow_texture_depth = 0;
 	}
-	if (shadow_texture_high)
+	if (shadow_texture_color)
 	{
-		GL_DeleteTexture(shadow_texture_high);
-		shadow_texture_high = 0;
-	}
-	if (shadow_texture_medium)
-	{
-		GL_DeleteTexture(shadow_texture_medium);
-		shadow_texture_medium = 0;
-	}
-	if (shadow_texture_low)
-	{
-		GL_DeleteTexture(shadow_texture_low);
-		shadow_texture_low = NULL;
+		GL_DeleteTexture(shadow_texture_color);
+		shadow_texture_color = 0;
 	}
 
 	g_ShadowProgramTable.clear();
@@ -202,9 +174,7 @@ void R_InitShadow(void)
 {
 	shadow_texture_size = min(gl_max_texture_size, 4096);
 	shadow_texture_depth = GL_GenShadowTexture(shadow_texture_size, shadow_texture_size);
-	shadow_texture_high = GL_GenTextureColorFormat(shadow_texture_size, shadow_texture_size, gl_color_format);
-	shadow_texture_medium = GL_GenTextureColorFormat(shadow_texture_size, shadow_texture_size, gl_color_format);
-	shadow_texture_low = GL_GenTextureColorFormat(shadow_texture_size, shadow_texture_size, gl_color_format);
+	shadow_texture_color = GL_GenTextureArrayColorFormat(shadow_texture_size, shadow_texture_size, 3, gl_color_format);
 
 	r_shadow = gEngfuncs.pfnRegisterVariable("r_shadow", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_map_override = gEngfuncs.pfnRegisterVariable("r_shadow_map_override", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -271,9 +241,9 @@ void R_RenderShadowMap(void)
 		sangles[2] = r_shadow_angle_r->value;
 	}
 
-	shadow_numvisedicts_high = 0;
-	shadow_numvisedicts_medium = 0;
-	shadow_numvisedicts_low = 0;
+	shadow_numvisedicts[0] = 0;
+	shadow_numvisedicts[1] = 0;
+	shadow_numvisedicts[2] = 0;
 
 	for (int j = 0; j < *cl_numvisedicts; ++j)
 	{
@@ -288,54 +258,53 @@ void R_RenderShadowMap(void)
 
 			if (distance < r_shadow_high_distance->value)
 			{
-				if (shadow_numvisedicts_high < 512)
+				if (shadow_numvisedicts[0] < 512)
 				{
-					shadow_visedicts_high[shadow_numvisedicts_high] = cl_visedicts[j];
-					shadow_numvisedicts_high++;
+					shadow_visedicts[0][shadow_numvisedicts[0]] = cl_visedicts[j];
+					shadow_numvisedicts[0]++;
 				}
 			}
 			else if (distance < r_shadow_medium_distance->value)
 			{
-				if (shadow_numvisedicts_medium < 512)
+				if (shadow_numvisedicts[1] < 512)
 				{
-					shadow_visedicts_medium[shadow_numvisedicts_medium] = cl_visedicts[j];
-					shadow_numvisedicts_medium++;
+					shadow_visedicts[1][shadow_numvisedicts[1]] = cl_visedicts[j];
+					shadow_numvisedicts[1]++;
 				}
 			}
 			else
 			{
-				if (shadow_numvisedicts_low < 512)
+				if (shadow_numvisedicts[2] < 512)
 				{
-					shadow_visedicts_low[shadow_numvisedicts_low] = cl_visedicts[j];
-					shadow_numvisedicts_low++;
+					shadow_visedicts[2][shadow_numvisedicts[2]] = cl_visedicts[j];
+					shadow_numvisedicts[2]++;
 				}
 			}
 		}
 	}
 
-	int total_numvisedicts = shadow_numvisedicts_high + shadow_numvisedicts_medium + shadow_numvisedicts_low;
+	int total_numvisedicts = shadow_numvisedicts[0] + shadow_numvisedicts[1] + shadow_numvisedicts[2];
 
 	if (!total_numvisedicts)
 		return;
 
-	int textureArray[3] = { shadow_texture_high, shadow_texture_medium, shadow_texture_low };
 	float scaleArray[3] = { r_shadow_high_scale->value, r_shadow_medium_scale->value, r_shadow_low_scale->value };
-	int numvisedictsArray[3] = { shadow_numvisedicts_high , shadow_numvisedicts_medium, shadow_numvisedicts_low };
-	cl_entity_t **visedictsArray[3] = { shadow_visedicts_high , shadow_visedicts_medium, shadow_visedicts_low };
-	float *projmatrixArray[3] = { shadow_projmatrix_high , shadow_projmatrix_medium, shadow_projmatrix_low };
-	float *mvmatrixArray[3] = { shadow_mvmatrix_high , shadow_mvmatrix_medium, shadow_mvmatrix_low };
 
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_ShadowFBO.s_hBackBufferFBO);
 	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+	qglDisable(GL_BLEND);
+	qglDisable(GL_ALPHA_TEST);
+	qglEnable(GL_DEPTH_TEST);
 
 	r_draw_pass = r_draw_shadow_caster;
 
 	for (int i = 0; i < 3; ++i)
 	{
-		if (!numvisedictsArray[i])
+		if (!shadow_numvisedicts[i])
 			continue;
 
-		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureArray[i], 0);
+		qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadow_texture_color, 0, i);
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_texture_depth, 0);
 
 		qglMatrixMode(GL_PROJECTION);
@@ -354,13 +323,11 @@ void R_RenderShadowMap(void)
 		qglRotatef(-sangles[1], 0, 0, 1);
 		qglTranslatef(-r_refdef->vieworg[0], -r_refdef->vieworg[1], -r_refdef->vieworg[2]);
 
-		qglGetFloatv(GL_PROJECTION_MATRIX, projmatrixArray[i]);
-		qglGetFloatv(GL_MODELVIEW_MATRIX, mvmatrixArray[i]);
+		qglGetFloatv(GL_PROJECTION_MATRIX, shadow_projmatrix[i]);
+		qglGetFloatv(GL_MODELVIEW_MATRIX, shadow_mvmatrix[i]);
 
 		qglViewport(0, 0, shadow_texture_size, shadow_texture_size);
 
-		qglDisable(GL_BLEND);
-		qglDisable(GL_ALPHA_TEST);
 		qglDepthMask(1);
 		qglColorMask(1, 1, 1, 1);
 		qglClearColor(-99999, -99999, -99999, 1);
@@ -368,9 +335,9 @@ void R_RenderShadowMap(void)
 
 		cl_entity_t *backup_curentity = (*currententity);
 
-		for (int j = 0; j < numvisedictsArray[i]; ++j)
+		for (int j = 0; j < shadow_numvisedicts[i]; ++j)
 		{
-			(*currententity) = visedictsArray[i][j];
+			(*currententity) = shadow_visedicts[i][j];
 			R_DrawCurrentEntity();
 		}
 
@@ -627,84 +594,6 @@ void R_DrawEntitiesOnListShadow(void)
 	}
 }
 
-GLfloat g_SaveTextureEnv[32];
-
-void R_BeginShadowTexture(int unitId, int textureId, float *mvmatrix, float *projmatrix, float *invmvmatrix)
-{
-	if (unitId == TEXTURE0_SGIS)
-	{
-		GL_SelectTexture(TEXTURE0_SGIS);
-	}
-	else if (unitId == TEXTURE1_SGIS)
-	{
-		GL_EnableMultitexture();
-	}
-	else
-	{
-		qglActiveTextureARB(unitId);
-	}
-
-	const float bias[16] = {
-		0.5f, 0.0f, 0.0f, 0.0f,
-		0.0f, 0.5f, 0.0f, 0.0f,
-		0.0f, 0.0f, 0.5f, 0.0f,
-		0.5f, 0.5f, 0.5f, 1.0f };
-
-	const GLfloat planeS[] = { 1.0, 0.0, 0.0, 0.0 };
-	const GLfloat planeT[] = { 0.0, 1.0, 0.0, 0.0 };
-	const GLfloat planeR[] = { 0.0, 0.0, 1.0, 0.0 };
-	const GLfloat planeQ[] = { 0.0, 0.0, 0.0, 1.0 };
-
-	qglGetTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, &g_SaveTextureEnv[unitId - TEXTURE0_SGIS]);
-	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	qglEnable(GL_TEXTURE_GEN_S);
-	qglEnable(GL_TEXTURE_GEN_T);
-	qglEnable(GL_TEXTURE_GEN_R);
-	qglEnable(GL_TEXTURE_GEN_Q);
-	qglTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-	qglTexGenfv(GL_S, GL_EYE_PLANE, planeS);
-	qglTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-	qglTexGenfv(GL_T, GL_EYE_PLANE, planeT);
-	qglTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-	qglTexGenfv(GL_R, GL_EYE_PLANE, planeR);
-	qglTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-	qglTexGenfv(GL_Q, GL_EYE_PLANE, planeQ);
-
-	if (unitId == TEXTURE0_SGIS || unitId == TEXTURE1_SGIS)
-	{
-		GL_Bind(textureId);
-	}
-	else
-	{
-		qglBindTexture(GL_TEXTURE_2D, textureId);
-	}
-
-	qglMatrixMode(GL_TEXTURE);
-	qglLoadIdentity();
-	qglLoadMatrixf(bias);
-	qglMultMatrixf(projmatrix);
-	qglMultMatrixf(mvmatrix);
-	qglMultMatrixf(invmvmatrix);
-}
-
-void R_EndShadowTexture(int unitId)
-{
-	qglActiveTextureARB(unitId);
-	qglMatrixMode(GL_TEXTURE);
-	qglLoadIdentity();
-	qglMatrixMode(GL_MODELVIEW);
-	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, g_SaveTextureEnv[unitId - TEXTURE0_SGIS]);
-	qglDisable(GL_TEXTURE_GEN_S);
-	qglDisable(GL_TEXTURE_GEN_T);
-	qglDisable(GL_TEXTURE_GEN_R);
-	qglDisable(GL_TEXTURE_GEN_Q);
-	if (unitId > TEXTURE1_SGIS)
-	{
-		qglBindTexture(GL_TEXTURE_2D, 0);
-		qglDisable(GL_TEXTURE_2D);
-	}
-}
-
 void R_RenderShadowScenes(void)
 {
 	if(!r_shadow->value)
@@ -739,24 +628,61 @@ void R_RenderShadowScenes(void)
 	qglEnable(GL_BLEND);
 	qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	GL_SelectTexture(TEXTURE0_SGIS);
+
+	const float bias[16] = {
+		0.5f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.5f, 0.0f, 0.0f,
+		0.0f, 0.0f, 0.5f, 0.0f,
+		0.5f, 0.5f, 0.5f, 1.0f };
+
+	const GLfloat planeS[] = { 1.0, 0.0, 0.0, 0.0 };
+	const GLfloat planeT[] = { 0.0, 1.0, 0.0, 0.0 };
+	const GLfloat planeR[] = { 0.0, 0.0, 1.0, 0.0 };
+	const GLfloat planeQ[] = { 0.0, 0.0, 0.0, 1.0 };
+
+	GLfloat saveTextureEnv;
+	qglGetTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, &saveTextureEnv);
+	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	qglEnable(GL_TEXTURE_GEN_S);
+	qglEnable(GL_TEXTURE_GEN_T);
+	qglEnable(GL_TEXTURE_GEN_R);
+	qglEnable(GL_TEXTURE_GEN_Q);
+	qglTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+	qglTexGenfv(GL_S, GL_EYE_PLANE, planeS);
+	qglTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+	qglTexGenfv(GL_T, GL_EYE_PLANE, planeT);
+	qglTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+	qglTexGenfv(GL_R, GL_EYE_PLANE, planeR);
+	qglTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+	qglTexGenfv(GL_Q, GL_EYE_PLANE, planeQ);
+	
+	qglDisable(GL_TEXTURE_2D);
+	qglEnable(GL_TEXTURE_2D_ARRAY);
+	qglBindTexture(GL_TEXTURE_2D_ARRAY, shadow_texture_color);
+
+	float tex_matrix[3][16];
+
+	qglMatrixMode(GL_TEXTURE);
+
 	int ShadowProgramState = 0;
 
-	if (shadow_numvisedicts_high > 0)
+	for (int i = 0; i < 3; ++i)
 	{
-		R_BeginShadowTexture(TEXTURE0_SGIS, shadow_texture_high, shadow_mvmatrix_high, shadow_projmatrix_high, invmvmatrix);
-		ShadowProgramState |= SHADOW_HIGH_ENABLED;
-	}
-	if (shadow_numvisedicts_medium > 0)
-	{
-		R_BeginShadowTexture(TEXTURE1_SGIS, shadow_texture_medium, shadow_mvmatrix_medium, shadow_projmatrix_medium, invmvmatrix);
-		ShadowProgramState |= SHADOW_MEDIUM_ENABLED;
-	}
-	if (shadow_numvisedicts_low > 0)
-	{
-		R_BeginShadowTexture(TEXTURE2_SGIS, shadow_texture_low, shadow_mvmatrix_low, shadow_projmatrix_low, invmvmatrix);
-		ShadowProgramState |= SHADOW_LOW_ENABLED;
+		if (shadow_numvisedicts[i] > 0)
+		{
+			ShadowProgramState |= (1 << i);
+
+			qglLoadIdentity();
+			qglLoadMatrixf(bias);
+			qglMultMatrixf(shadow_projmatrix[i]);
+			qglMultMatrixf(shadow_mvmatrix[i]);
+			qglMultMatrixf(invmvmatrix);
+			qglGetFloatv(GL_TEXTURE_MATRIX, tex_matrix[i]);
+		}
 	}
 
+	qglLoadIdentity();
 	qglMatrixMode(GL_MODELVIEW);
 
 	shadow_light_mins[0] = r_refdef->vieworg[0] - r_shadow_low_distance->value;
@@ -766,7 +692,24 @@ void R_RenderShadowScenes(void)
 	shadow_light_maxs[1] = r_refdef->vieworg[1] + r_shadow_low_distance->value;
 	shadow_light_maxs[2] = r_refdef->vieworg[2] + r_shadow_low_distance->value;
 
-	R_UseShadowProgram(ShadowProgramState, NULL);
+	shadow_program_t prog = {0};
+
+	R_UseShadowProgram(ShadowProgramState, &prog);
+
+	if (prog.texmatrix_high != -1)
+	{
+		qglUniformMatrix4fvARB(prog.texmatrix_high, 1, false, (float *)tex_matrix[0]);
+	}
+
+	if (prog.texmatrix_medium != -1)
+	{
+		qglUniformMatrix4fvARB(prog.texmatrix_medium, 1, false, (float *)tex_matrix[1]);
+	}
+
+	if (prog.texmatrix_low != -1)
+	{
+		qglUniformMatrix4fvARB(prog.texmatrix_low, 1, false, (float *)tex_matrix[2]);
+	}
 
 	cl_entity_t *backup_curentity = (*currententity);
 	(*currententity) = r_worldentity;
@@ -793,14 +736,16 @@ void R_RenderShadowScenes(void)
 
 	qglUseProgramObjectARB(0);
 
-	if(ShadowProgramState & SHADOW_LOW_ENABLED)
-		R_EndShadowTexture(TEXTURE2_SGIS);
+	qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+	qglDisable(GL_TEXTURE_2D_ARRAY);
+	qglEnable(GL_TEXTURE_2D);
 
-	if (ShadowProgramState & SHADOW_MEDIUM_ENABLED)
-		R_EndShadowTexture(TEXTURE1_SGIS);
-
-	if (ShadowProgramState & SHADOW_HIGH_ENABLED)
-		R_EndShadowTexture(TEXTURE0_SGIS);
+	qglMatrixMode(GL_MODELVIEW);
+	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, saveTextureEnv);
+	qglDisable(GL_TEXTURE_GEN_S);
+	qglDisable(GL_TEXTURE_GEN_T);
+	qglDisable(GL_TEXTURE_GEN_R);
+	qglDisable(GL_TEXTURE_GEN_Q);
 
 	qglActiveTextureARB(*oldtarget);
 
