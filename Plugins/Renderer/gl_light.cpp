@@ -64,6 +64,9 @@ void R_UseGBufferProgram(int state, gbuffer_program_t *progOutput)
 		if (state & GBUFFER_MASKED_ENABLED)
 			defs << "#define MASKED_ENABLED\n";
 
+		if (state & GBUFFER_SHADOW_ENABLED)
+			defs << "#define SHADOW_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\gbuffer_shader.vsh", NULL, "renderer\\shader\\gbuffer_shader.fsh", def.c_str(), NULL, def.c_str());

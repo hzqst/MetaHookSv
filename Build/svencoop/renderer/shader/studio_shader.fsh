@@ -6,6 +6,10 @@ varying vec4 worldpos;
 varying vec4 normal;
 varying vec4 color;
 
+#ifdef SHADOW_ENABLED
+uniform vec3 entitypos;
+#endif
+
 void main(void)
 {
 	vec4 diffuseColor = texture2D(diffuseTex, gl_TexCoord[0].xy);
@@ -17,7 +21,7 @@ void main(void)
 
 #ifdef SHADOW_ENABLED
 
-	gl_FragColor = worldpos;
+	gl_FragColor = vec4(entitypos.x, entitypos.y, entitypos.z, gl_FragCoord.z);
 
 #else
 

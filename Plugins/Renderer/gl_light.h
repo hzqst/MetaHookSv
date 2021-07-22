@@ -88,6 +88,7 @@ void R_UseGBufferProgram(int state, gbuffer_program_t *progOutput);
 #define GBUFFER_TRANSPARENT_ENABLED		16
 #define GBUFFER_ADDITIVE_ENABLED		32
 #define GBUFFER_MASKED_ENABLED			64
+#define GBUFFER_SHADOW_ENABLED			128
 
 #define DLIGHT_LIGHT_PASS				2
 #define DLIGHT_LIGHT_PASS_SPOT			4

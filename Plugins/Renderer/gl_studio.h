@@ -21,10 +21,12 @@ typedef struct
 	int r_g3;
 	int r_plightvec;
 	int r_colormix;
-	//chrome only
+	//chrome
 	int r_origin;
 	int r_vright;
 	int r_scale;
+	//shadow caster
+	int entitypos;
 	//attribute
 	int attr_bone;
 }studio_program_t;
@@ -139,6 +141,7 @@ extern auxvert_t(*auxverts)[MAXSTUDIOVERTS];
 extern vec3_t(*lightvalues)[MAXSTUDIOVERTS];
 extern float (*pbonetransform)[MAXSTUDIOBONES][3][4];
 extern float (*plighttransform)[MAXSTUDIOBONES][3][4];
+extern float(*rotationmatrix)[3][4];
 extern int (*g_NormalIndex)[MAXSTUDIOVERTS];
 extern int (*chromeage)[MAXSTUDIOBONES];
 extern int(*chrome)[MAXSTUDIOVERTS][2];
@@ -177,8 +180,8 @@ extern r_studio_interface_t **gpStudioInterface;
 
 extern cvar_t *r_studio_vbo;
 
-#define STUDIO_GBUFFER_ENABLED			0x1000
-#define STUDIO_TRANSPARENT_ENABLED		0x2000
-#define STUDIO_TRANSADDITIVE_ENABLED	0x4000
-#define STUDIO_LINEAR_FOG_ENABLED		0x8000
-#define STUDIO_SHADOW_ENABLED			0x10000
+#define STUDIO_GBUFFER_ENABLED			0x10000
+#define STUDIO_TRANSPARENT_ENABLED		0x20000
+#define STUDIO_TRANSADDITIVE_ENABLED	0x40000
+#define STUDIO_LINEAR_FOG_ENABLED		0x80000
+#define STUDIO_SHADOW_ENABLED			0x100000

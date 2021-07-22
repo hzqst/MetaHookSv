@@ -156,7 +156,8 @@ void main()
 
 #ifdef SHADOW_ENABLED
 
-	gl_FragColor = worldpos;
+	gl_FragColor.xyz = worldpos.xyz;
+	gl_FragColor.w = gl_FragCoord.z;
 
 #else
 

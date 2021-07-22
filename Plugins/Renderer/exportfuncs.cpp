@@ -240,9 +240,9 @@ int HUD_Redraw(float time, int intermission)
 		qglColor4f(1,1,1,1);
 
 		qglEnable(GL_TEXTURE_2D);
-		qglBindTexture(GL_TEXTURE_2D, shadow_depthmap_high);
+		qglBindTexture(GL_TEXTURE_2D, shadow_texture_high);
 
-		qglUseProgramObjectARB(drawdepth.program);
+		//qglUseProgramObjectARB(drawdepth.program);
 
 		qglBegin(GL_QUADS);
 		qglTexCoord2f(0,1);
@@ -256,32 +256,7 @@ int HUD_Redraw(float time, int intermission)
 		qglEnd();
 		qglEnable(GL_ALPHA_TEST);
 
-		qglUseProgramObjectARB(0);
-	}
-	else if (r_shadow_debug && r_shadow_debug->value == 2)
-	{
-		qglDisable(GL_BLEND);
-		qglDisable(GL_ALPHA_TEST);
-		qglColor4f(1, 1, 1, 1);
-
-		qglEnable(GL_TEXTURE_2D);
-		qglBindTexture(GL_TEXTURE_2D, shadow_posmap_high);
-
-		qglUseProgramObjectARB(0);
-
-		qglBegin(GL_QUADS);
-		qglTexCoord2f(0, 1);
-		qglVertex3f(0, 0, 0);
-		qglTexCoord2f(1, 1);
-		qglVertex3f(glwidth / 2, 0, 0);
-		qglTexCoord2f(1, 0);
-		qglVertex3f(glwidth / 2, glheight / 2, 0);
-		qglTexCoord2f(0, 0);
-		qglVertex3f(0, glheight / 2, 0);
-		qglEnd();
-		qglEnable(GL_ALPHA_TEST);
-
-		qglUseProgramObjectARB(0);
+		//qglUseProgramObjectARB(0);
 	}
 	else if(r_light_debug && r_light_debug->value)
 	{
@@ -949,9 +924,9 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		Sig_VarNotFound(r_colormix);
 	}
 
-	pbonetransform = (float (*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetBoneTransform();
-	plighttransform = (float (*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetLightTransform();
-
+	pbonetransform = (decltype(pbonetransform))pstudio->StudioGetBoneTransform();
+	plighttransform = (decltype(plighttransform))pstudio->StudioGetLightTransform();
+	rotationmatrix = (decltype(rotationmatrix))pstudio->StudioGetRotationMatrix();
 	cl_viewent = gEngfuncs.GetViewModel();
 
 	//Save Studio API
