@@ -221,6 +221,7 @@ extern int r_wsurf_polys;
 extern int r_fog_mode;
 extern float r_fog_control[2];
 extern float r_fog_color[4];
+extern float r_shadow_matrix[3][16];
 
 void R_InitWSurf(void);
 void R_VidInitWSurf(void);

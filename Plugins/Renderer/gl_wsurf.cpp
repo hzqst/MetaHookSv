@@ -12,6 +12,7 @@ cvar_t *r_wsurf_sky_occlusion;
 int r_fog_mode = 0;
 float r_fog_control[2] = { 0 };
 float r_fog_color[4] = {0};
+float r_shadow_matrix[3][16];
 int r_wsurf_drawcall = 0;
 int r_wsurf_polys = 0;
 
@@ -936,22 +937,8 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 	//World alway use stencil = 0
 	qglStencilFunc(GL_ALWAYS, 0, 0xFF);
 
-	float shadow_matrix[3][16];
-
 	if (r_wsurf.bShadowmapTexture)
 	{
-		float mvmatrix[16];
-		float invmvmatrix[16];
-
-		memcpy(mvmatrix, r_world_matrix, sizeof(mvmatrix));
-		InvertMatrix(mvmatrix, invmvmatrix);
-
-		const float bias[16] = {
-		0.5f, 0.0f, 0.0f, 0.0f,
-		0.0f, 0.5f, 0.0f, 0.0f,
-		0.0f, 0.0f, 0.5f, 0.0f,
-		0.5f, 0.5f, 0.5f, 1.0f };
-
 		const GLfloat planeS[] = { 1.0, 0.0, 0.0, 0.0 };
 		const GLfloat planeT[] = { 0.0, 1.0, 0.0, 0.0 };
 		const GLfloat planeR[] = { 0.0, 0.0, 1.0, 0.0 };
@@ -959,8 +946,6 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 
 		qglActiveTextureARB(GL_TEXTURE5_ARB);
 
-		//GLfloat saveTextureEnv;
-		//qglGetTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, &saveTextureEnv);
 		qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 		qglEnable(GL_TEXTURE_GEN_S);
 		qglEnable(GL_TEXTURE_GEN_T);
@@ -978,24 +963,6 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		qglDisable(GL_TEXTURE_2D);
 		qglEnable(GL_TEXTURE_2D_ARRAY);
 		qglBindTexture(GL_TEXTURE_2D_ARRAY, shadow_texture_color);
-
-		qglMatrixMode(GL_TEXTURE);
-
-		for (int i = 0; i < 3; ++i)
-		{
-			if (shadow_numvisedicts[i] > 0)
-			{
-				qglLoadIdentity();
-				qglLoadMatrixf(bias);
-				qglMultMatrixf(shadow_projmatrix[i]);
-				qglMultMatrixf(shadow_mvmatrix[i]);
-				qglMultMatrixf(invmvmatrix);
-				qglGetFloatv(GL_TEXTURE_MATRIX, shadow_matrix[i]);
-			}
-		}
-
-		qglLoadIdentity();
-		qglMatrixMode(GL_MODELVIEW);
 
 		qglActiveTextureARB(*oldtarget);
 	}
@@ -1108,7 +1075,7 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 				qglUniform1fARB(prog.speed, 0);
 
 			if(prog.shadowMatrix != -1)
-				qglUniformMatrix4fvARB(prog.shadowMatrix, 3, false, (float *)shadow_matrix);
+				qglUniformMatrix4fvARB(prog.shadowMatrix, 3, false, (float *)r_shadow_matrix);
 
 			qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
 
@@ -1240,7 +1207,7 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 				qglUniform1fARB(prog.speed, 0);
 
 			if (prog.shadowMatrix != -1)
-				qglUniformMatrix4fvARB(prog.shadowMatrix, 3, false, (float *)shadow_matrix);
+				qglUniformMatrix4fvARB(prog.shadowMatrix, 3, false, (float *)r_shadow_matrix);
 
 			qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
 
@@ -1343,7 +1310,7 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 					qglUniform1fARB(prog.speed, scrollSpeed);
 
 				if (prog.shadowMatrix != -1)
-					qglUniformMatrix4fvARB(prog.shadowMatrix, 3, false, (float *)shadow_matrix);
+					qglUniformMatrix4fvARB(prog.shadowMatrix, 3, false, (float *)r_shadow_matrix);
 
 				qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
 
@@ -1357,6 +1324,14 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 
 	if (!r_wsurf.bDiffuseTexture)
 	{
+		GL_SelectTexture(TEXTURE0_SGIS);
+		qglEnable(GL_TEXTURE_2D);
+	}
+
+	if (r_wsurf.bLightmapTexture)
+	{
+		GL_SelectTexture(TEXTURE1_SGIS);
+		qglDisable(GL_TEXTURE_2D_ARRAY);
 		qglEnable(GL_TEXTURE_2D);
 	}
 
@@ -1372,13 +1347,6 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		qglDisable(GL_TEXTURE_GEN_Q);
 
 		qglActiveTextureARB(*oldtarget);
-	}
-
-	if (r_wsurf.bLightmapTexture)
-	{
-		GL_SelectTexture(TEXTURE1_SGIS);
-		qglDisable(GL_TEXTURE_2D_ARRAY);
-		qglEnable(GL_TEXTURE_2D);
 	}
 
 	if (modcache->pModel == r_worldmodel)
@@ -2732,7 +2700,7 @@ void R_DrawBrushModel(cl_entity_t *e)
 
 	r_wsurf.bShadowmapTexture = false;
 
-	if(r_shadow->value >= 2 && r_draw_pass == r_draw_normal)
+	if(R_ShouldRenderShadowScene(2))
 		r_wsurf.bShadowmapTexture = true;
 
 	if (r_wsurf_vbo->value)
@@ -2889,8 +2857,40 @@ void R_DrawWorld(void)
 
 	r_wsurf.bShadowmapTexture = false;
 
-	if (r_shadow->value && r_draw_pass == r_draw_normal)
+	if (R_ShouldRenderShadowScene(1))
+	{
 		r_wsurf.bShadowmapTexture = true;
+
+		const float bias[16] = {
+		0.5f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.5f, 0.0f, 0.0f,
+		0.0f, 0.0f, 0.5f, 0.0f,
+		0.5f, 0.5f, 0.5f, 1.0f };
+
+		float mvmatrix[16];
+		float invmvmatrix[16];
+
+		memcpy(mvmatrix, r_world_matrix, sizeof(mvmatrix));
+		InvertMatrix(mvmatrix, invmvmatrix);
+
+		qglMatrixMode(GL_TEXTURE);
+
+		for (int i = 0; i < 3; ++i)
+		{
+			if (shadow_numvisedicts[i] > 0)
+			{
+				qglLoadIdentity();
+				qglLoadMatrixf(bias);
+				qglMultMatrixf(shadow_projmatrix[i]);
+				qglMultMatrixf(shadow_mvmatrix[i]);
+				qglMultMatrixf(invmvmatrix);
+				qglGetFloatv(GL_TEXTURE_MATRIX, r_shadow_matrix[i]);
+			}
+		}
+
+		qglLoadIdentity();
+		qglMatrixMode(GL_MODELVIEW);
+	}
 
 	if (r_wsurf_vbo->value)
 	{

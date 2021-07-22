@@ -30,126 +30,6 @@ cvar_t *r_shadow_low_distance = NULL;
 cvar_t *r_shadow_low_scale = NULL;
 cvar_t *r_shadow_map_override = NULL;
 
-//std::unordered_map <int, shadow_program_t> g_ShadowProgramTable;
-
-std::unordered_map <int, cshadow_program_t> g_CastShadowProgramTable;
-
-/*void R_UseShadowProgram(int state, shadow_program_t *progOutput)
-{
-	shadow_program_t prog = { 0 };
-
-	auto itor = g_ShadowProgramTable.find(state);
-	if (itor == g_ShadowProgramTable.end())
-	{
-		std::stringstream defs;
-
-		if (state & SHADOW_HIGH_ENABLED)
-			defs << "#define HIGH_ENABLED\n";
-
-		if (state & SHADOW_MEDIUM_ENABLED)
-			defs << "#define MEDIUM_ENABLED\n";
-
-		if (state & SHADOW_LOW_ENABLED)
-			defs << "#define LOW_ENABLED\n";
-
-		auto def = defs.str();
-
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\shadow_shader.vsh", NULL, "renderer\\shader\\shadow_shader.fsh", def.c_str(), NULL, def.c_str());
-		SHADER_UNIFORM(prog, texoffset_high, "texoffset_high");
-		SHADER_UNIFORM(prog, texoffset_medium, "texoffset_medium");
-		SHADER_UNIFORM(prog, texoffset_low, "texoffset_low");
-		SHADER_UNIFORM(prog, texmatrix_high, "texmatrix_high");
-		SHADER_UNIFORM(prog, texmatrix_medium, "texmatrix_medium");
-		SHADER_UNIFORM(prog, texmatrix_low, "texmatrix_low");
-		SHADER_UNIFORM(prog, texture_array, "texture_array");
-		SHADER_UNIFORM(prog, entitymatrix, "entitymatrix");
-		SHADER_UNIFORM(prog, alpha, "alpha");
-		SHADER_UNIFORM(prog, fadefactor, "fadefactor");
-
-		g_ShadowProgramTable[state] = prog;
-	}
-	else
-	{
-		prog = itor->second;
-	}
-
-	if (prog.program)
-	{
-		qglUseProgramObjectARB(prog.program);
-
-		if (prog.texture_array != -1)
-			qglUniform1iARB(prog.texture_array, 0);
-
-		if (prog.texoffset_high != -1)
-			qglUniform1fARB(prog.texoffset_high, 1.0f / shadow_texture_size);
-
-		if (prog.texoffset_medium != -1)
-			qglUniform1fARB(prog.texoffset_medium, 1.0f / shadow_texture_size);
-
-		if (prog.texoffset_low != -1)
-			qglUniform1fARB(prog.texoffset_low, 1.0f / shadow_texture_size);
-
-		if (prog.alpha != -1)
-			qglUniform1fARB(prog.alpha, r_shadow_alpha->value);
-
-		if (prog.fadefactor != -1)
-			qglUniform2fARB(prog.fadefactor, r_shadow_fade_start->value, r_shadow_fade_end->value - r_shadow_fade_start->value);
-
-		if (prog.entitymatrix != -1)
-		{
-			if (r_rotate_entity)
-				qglUniformMatrix4fvARB(prog.entitymatrix, 1, true, (float *)r_rotate_entity_matrix);
-			else
-				qglUniformMatrix4fvARB(prog.entitymatrix, 1, false, (float *)r_identity_matrix);
-		}
-
-		if (progOutput)
-			*progOutput = prog;
-	}
-	else
-	{
-		Sys_ErrorEx("R_UseShadowProgram: Failed to load program!");
-	}
-}*/
-
-void R_UseCastShadowProgram(int state, cshadow_program_t *progOutput)
-{
-	cshadow_program_t prog = { 0 };
-
-	auto itor = g_CastShadowProgramTable.find(state);
-	if (itor == g_CastShadowProgramTable.end())
-	{
-		std::stringstream defs;
-
-		auto def = defs.str();
-
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\cshadow_shader.vsh", NULL, "renderer\\shader\\cshadow_shader.fsh", def.c_str(), NULL, def.c_str());
-
-		SHADER_UNIFORM(prog, entitypos, "entitypos");
-
-		g_CastShadowProgramTable[state] = prog;
-	}
-	else
-	{
-		prog = itor->second;
-	}
-
-	if (prog.program)
-	{
-		qglUseProgramObjectARB(prog.program);
-
-		if (prog.entitypos != -1)
-			qglUniform3fARB(prog.entitypos, (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3]);
-
-		if (progOutput)
-			*progOutput = prog;
-	}
-	else
-	{
-		Sys_ErrorEx("R_UseCastShadowProgram: Failed to load program!");
-	}
-}
-
 void R_FreeShadow(void)
 {
 	if (shadow_texture_depth)
@@ -162,9 +42,6 @@ void R_FreeShadow(void)
 		GL_DeleteTexture(shadow_texture_color);
 		shadow_texture_color = 0;
 	}
-
-	//g_ShadowProgramTable.clear();
-	g_CastShadowProgramTable.clear();
 }
 
 void R_InitShadow(void)
@@ -193,7 +70,18 @@ void R_InitShadow(void)
 #define PhyCorpseFlag1 (753951)
 #define PhyCorpseFlag2 (152359)
 
-qboolean R_ShouldCastShadow(cl_entity_t *ent)
+bool R_ShouldRenderShadowScene(int level)
+{
+	if(r_draw_pass != r_draw_normal)
+		return false;
+
+	if (!shadow_visedicts[0] && !shadow_visedicts[1] && !shadow_visedicts[2])
+		return false;
+
+	return r_shadow->value >= level;
+}
+
+bool R_ShouldCastShadow(cl_entity_t *ent)
 {
 	if(!ent)
 		return false;
@@ -210,8 +98,10 @@ qboolean R_ShouldCastShadow(cl_entity_t *ent)
 		{
 			return true;
 		}
+
 		if (ent->index == 0)
 			return false;
+
 		if (ent->curstate.movetype == MOVETYPE_NONE)
 			return false;
 
@@ -293,6 +183,10 @@ void R_RenderShadowMap(void)
 	qglDisable(GL_BLEND);
 	qglDisable(GL_ALPHA_TEST);
 	qglEnable(GL_DEPTH_TEST);
+	qglDepthFunc(GL_GEQUAL);
+	
+	qglDepthMask(1);
+	qglColorMask(1, 1, 1, 1);
 
 	r_draw_pass = r_draw_shadow_caster;
 
@@ -325,8 +219,7 @@ void R_RenderShadowMap(void)
 
 		qglViewport(0, 0, shadow_texture_size, shadow_texture_size);
 
-		qglDepthMask(1);
-		qglColorMask(1, 1, 1, 1);
+		qglClearDepth(0);
 		qglClearColor(-99999, -99999, -99999, 1);
 		qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -341,6 +234,9 @@ void R_RenderShadowMap(void)
 		(*currententity) = backup_curentity;
 
 	}
+
+	qglClearDepth(1);
+	qglDepthFunc(GL_LEQUAL);
 
 	r_draw_pass = r_draw_normal;
 }

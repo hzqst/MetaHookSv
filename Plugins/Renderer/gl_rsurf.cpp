@@ -627,17 +627,22 @@ void R_DrawDecals(qboolean bMultitexture)
 	if (!(*gDecalSurfCount))
 		return;
 
-	if (drawgbuffer)
+	qglEnable(GL_BLEND);
+	qglEnable(GL_ALPHA_TEST);
+	qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	qglDepthMask(0);
+
+	if (gl_polyoffset && gl_polyoffset->value)
 	{
-		/*if (bMultitexture)
-		{
-			R_SetGBufferMask(GBUFFER_MASK_DIFFUSE | GBUFFER_MASK_LIGHTMAP);
-		}
+		qglEnable(GL_POLYGON_OFFSET_FILL);
+
+		if (gl_ztrick && gl_ztrick->value)
+			qglPolygonOffset(1, gl_polyoffset->value);
 		else
-		{*/
-			R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
-		//}
+			qglPolygonOffset(-1, -gl_polyoffset->value);
 	}
+
+	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
 
 	int WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_TRANSPARENT_ENABLED;
 
@@ -674,33 +679,24 @@ void R_DrawDecals(qboolean bMultitexture)
 		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 	}
 
-	qglEnable(GL_BLEND);
-	qglEnable(GL_ALPHA_TEST);
-	qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	qglDepthMask(0);
+	wsurf_program_t prog = { 0 };
+	R_UseWSurfProgram(WSurfProgramState, &prog);
 
-	float shadow_matrix[3][16];
+	if (prog.speed != -1)
+		qglUniform1fARB(prog.speed, 0);
+
+	if (prog.shadowMatrix != -1)
+		qglUniformMatrix4fvARB(prog.shadowMatrix, 3, false, (float *)r_shadow_matrix);
 
 	if (r_wsurf.bShadowmapTexture && !drawgbuffer)
 	{
-		float mvmatrix[16];
-		float invmvmatrix[16];
-
-		memcpy(mvmatrix, r_world_matrix, sizeof(mvmatrix));
-		InvertMatrix(mvmatrix, invmvmatrix);
-
-		const float bias[16] = {
-		0.5f, 0.0f, 0.0f, 0.0f,
-		0.0f, 0.5f, 0.0f, 0.0f,
-		0.0f, 0.0f, 0.5f, 0.0f,
-		0.5f, 0.5f, 0.5f, 1.0f };
-
 		const GLfloat planeS[] = { 1.0, 0.0, 0.0, 0.0 };
 		const GLfloat planeT[] = { 0.0, 1.0, 0.0, 0.0 };
 		const GLfloat planeR[] = { 0.0, 0.0, 1.0, 0.0 };
 		const GLfloat planeQ[] = { 0.0, 0.0, 0.0, 1.0 };
 
 		qglActiveTextureARB(GL_TEXTURE5_ARB);
+
 		qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 		qglEnable(GL_TEXTURE_GEN_S);
 		qglEnable(GL_TEXTURE_GEN_T);
@@ -719,24 +715,6 @@ void R_DrawDecals(qboolean bMultitexture)
 		qglEnable(GL_TEXTURE_2D_ARRAY);
 		qglBindTexture(GL_TEXTURE_2D_ARRAY, shadow_texture_color);
 
-		qglMatrixMode(GL_TEXTURE);
-
-		for (int i = 0; i < 3; ++i)
-		{
-			if (shadow_numvisedicts[i] > 0)
-			{
-				qglLoadIdentity();
-				qglLoadMatrixf(bias);
-				qglMultMatrixf(shadow_projmatrix[i]);
-				qglMultMatrixf(shadow_mvmatrix[i]);
-				qglMultMatrixf(invmvmatrix);
-				qglGetFloatv(GL_TEXTURE_MATRIX, shadow_matrix[i]);
-			}
-		}
-
-		qglLoadIdentity();
-		qglMatrixMode(GL_MODELVIEW);
-
 		qglActiveTextureARB(*oldtarget);
 	}
 
@@ -749,25 +727,6 @@ void R_DrawDecals(qboolean bMultitexture)
 	}
 
 	GL_SelectTexture(TEXTURE0_SGIS);
-
-	if (gl_polyoffset && gl_polyoffset->value)
-	{
-		qglEnable(GL_POLYGON_OFFSET_FILL);
-
-		if (gl_ztrick && gl_ztrick->value)
-			qglPolygonOffset(1, gl_polyoffset->value);
-		else
-			qglPolygonOffset(-1, -gl_polyoffset->value);
-	}
-
-	wsurf_program_t prog = { 0 };
-	R_UseWSurfProgram(WSurfProgramState, &prog);
-
-	if (prog.speed != -1)
-		qglUniform1fARB(prog.speed, 0);
-
-	if (prog.shadowMatrix != -1)
-		qglUniformMatrix4fvARB(prog.shadowMatrix, 3, false, (float *)shadow_matrix);
 
 	for (i = 0; i < (*gDecalSurfCount); i++)
 	{
@@ -802,11 +761,6 @@ void R_DrawDecals(qboolean bMultitexture)
 		}
 	}
 
-	if (gl_polyoffset && gl_polyoffset->value)
-	{
-		qglDisable(GL_POLYGON_OFFSET_FILL);
-	}
-
 	qglUseProgramObjectARB(0);
 
 	if (r_wsurf.bShadowmapTexture && !drawgbuffer)
@@ -828,6 +782,11 @@ void R_DrawDecals(qboolean bMultitexture)
 		GL_SelectTexture(TEXTURE1_SGIS);
 		qglDisable(GL_TEXTURE_2D_ARRAY);
 		qglEnable(GL_TEXTURE_2D);
+	}
+
+	if (gl_polyoffset && gl_polyoffset->value)
+	{
+		qglDisable(GL_POLYGON_OFFSET_FILL);
 	}
 
 	qglDisable(GL_ALPHA_TEST);
