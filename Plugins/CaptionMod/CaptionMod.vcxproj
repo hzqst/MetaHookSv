@@ -74,7 +74,8 @@
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(OutDir)$(ProjectName).dll "I:\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\plugins\"</Command>
+      <Command>copy $(OutDir)$(ProjectName).dll "I:\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\plugins\"
+copy $(OutDir)$(ProjectName).dll "I:\SteamLibrary\steamapps\common\Half-Life\czero\metahook\plugins\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

@@ -425,6 +425,27 @@ void CHudMessage::MessageDrawScan(client_message_t *pClientMessage, float time, 
 	}
 }
 
+void CHudMessage::RetireDynamicMessage(client_textmessage_t *pMsg)
+{
+	for (auto itor = m_DynamicTextMessages.begin(); itor != m_DynamicTextMessages.end();)
+	{
+		if ((*itor) == pMsg)
+		{
+			itor = m_DynamicTextMessages.erase(itor);
+
+			delete pMsg->pMessage;
+			delete pMsg;
+
+			return;
+		}
+		else
+		{
+			itor++;
+		}
+	}
+
+}
+
 int CHudMessage::Draw(void)
 {
 
@@ -475,6 +496,8 @@ int CHudMessage::Draw(void)
 			}
 			else
 			{
+				RetireDynamicMessage(m_pMessages[i].pMessage);
+
 				m_pMessages[i].pMessage = NULL;
 				m_pMessages[i].font = 0;
 			}
@@ -504,13 +527,6 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 	{
 		if (cap_netmessage && cap_netmessage->value)
 		{
-			int useSlot = -1;
-			char *slotString = &pString[sizeof("__NETMESSAGE__") - 1];
-			if (isdigit(*slotString))
-			{
-				useSlot = atoi(slotString);
-			}
-
 			client_textmessage_t *pTextMessage = NULL;
 
 			if (pString[0] == '#')
@@ -518,88 +534,143 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 			else
 				pTextMessage = pfnTextMessageGet(pString);
 
-			std::smatch result;
-			std::string str = pTextMessage->pMessage;
-
-			dict = g_pViewPort->FindDictionary(str.c_str(), DICT_NETMESSAGE);
-			
-			if(!dict)
-				dict = g_pViewPort->FindDictionaryRegex(str, DICT_NETMESSAGE, result);
-
-			if (cap_debug && cap_debug->value)
+			if (pTextMessage)
 			{
-				gEngfuncs.Con_Printf((dict) ? "CaptionMod: NetMessage [%s] found.\n" : "CaptionMod: NetMessage [%s] not found.\n", pTextMessage->pMessage);
-			}
-
-			if (dict && dict->m_bRegex && result.size() > 1)
-			{
-				if (!dict->m_pTextMessage)
+				int useSlot = -1;
+				char *slotString = &pString[sizeof("__NETMESSAGE__") - 1];
+				if (isdigit(*slotString))
 				{
-					dict->m_pTextMessage = new client_textmessage_t;
-					memcpy(dict->m_pTextMessage, pTextMessage, sizeof(*pTextMessage));
-					dict->m_pTextMessage->pMessage = (const char *)new char[HUDMESSAGE_MAXLENGTH];
+					useSlot = atoi(slotString);
 				}
 
-				std::string sentence;
-				sentence.resize(HUDMESSAGE_MAXLENGTH);
+				std::smatch result;
+				std::string str = pTextMessage->pMessage;
 
-				int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.data(), (char *)sentence.data(), sentence.length());
+				dict = g_pViewPort->FindDictionary(str.c_str(), DICT_NETMESSAGE);
 
-				sentence.resize(finalLength);
+				if (!dict)
+					dict = g_pViewPort->FindDictionaryRegex(str, DICT_NETMESSAGE, result);
 
-				for (size_t i = 1; i < result.size(); ++i)
+				if (cap_debug && cap_debug->value)
 				{
-					char temp[32] = {0};
-					V_snprintf(temp, sizeof(temp), "{%d}", i);
+					gEngfuncs.Con_Printf((dict) ? "CaptionMod: NetMessage [%s] found.\n" : "CaptionMod: NetMessage [%s] not found.\n", pTextMessage->pMessage);
+				}
 
-					std::string src = temp;
-					auto dst = result[i].str();
+				if (dict && dict->m_bRegex && result.size() > 1)
+				{
+					auto pMsg = new client_textmessage_t;
+					memcpy(pMsg, pTextMessage, sizeof(*pTextMessage));
+					pMsg->pMessage = (const char *)new char[HUDMESSAGE_MAXLENGTH];
 
-					int pos = -1;
-					int curPos = 0;
-					while (-1 != (pos = sentence.find(src, curPos)))
+					if (dict->m_bOverrideColor)
 					{
-						sentence.replace(pos, src.size(), dst);
-						curPos = pos + dst.size();
+						pMsg->r1 = dict->m_Color1.r();
+						pMsg->g1 = dict->m_Color1.g();
+						pMsg->b1 = dict->m_Color1.b();
+						pMsg->a1 = dict->m_Color1.a();
+
+						pMsg->r2 = dict->m_Color2.r();
+						pMsg->g2 = dict->m_Color2.g();
+						pMsg->b2 = dict->m_Color2.b();
+						pMsg->a1 = dict->m_Color2.a();
 					}
+
+					if (dict->m_bOverrideDuration)
+					{
+						pMsg->holdtime = dict->m_flDuration;
+					}
+
+					std::string sentence;
+					sentence.resize(HUDMESSAGE_MAXLENGTH);
+
+					int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.data(), (char *)sentence.data(), sentence.length());
+
+					sentence.resize(finalLength);
+
+					for (size_t i = 1; i < result.size(); ++i)
+					{
+						char temp[32] = { 0 };
+						V_snprintf(temp, sizeof(temp), "{%d}", i);
+
+						std::string src = temp;
+						auto dst = result[i].str();
+
+						int pos = -1;
+						int curPos = 0;
+						while (-1 != (pos = sentence.find(src, curPos)))
+						{
+							sentence.replace(pos, src.size(), dst);
+							curPos = pos + dst.size();
+						}
+					}
+
+					V_strncpy((char *)pMsg->pMessage, sentence.data(), HUDMESSAGE_MAXLENGTH - 1);
+					((char *)pMsg->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
+
+					int slotNum = MessageAdd(pMsg, cl_time, hintMessage, useSlot, m_hFont, true);
+
+					if (slotNum == -1)
+					{
+						delete pMsg->pMessage;
+						delete pMsg;
+					}
+
+					g_pViewPort->StartNextSubtitle(dict);
+					m_parms.time = cl_time;
+					return 1;
 				}
-
-				V_strncpy((char *)dict->m_pTextMessage->pMessage, sentence.data(), HUDMESSAGE_MAXLENGTH - 1);
-				((char *)dict->m_pTextMessage->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
-
-				MessageAdd(dict->m_pTextMessage, cl_time, hintMessage, useSlot, m_hFont);
-				g_pViewPort->StartNextSubtitle(dict);
-				m_parms.time = cl_time;
-				return 1;
-			}
-			else if (dict && !dict->m_bRegex)
-			{
-				if (!dict->m_pTextMessage)
+				else if (dict && !dict->m_bRegex)
 				{
-					dict->m_pTextMessage = new client_textmessage_t;
-					memcpy(dict->m_pTextMessage, pTextMessage, sizeof(*pTextMessage));
-					dict->m_pTextMessage->pMessage = (const char *)new char[HUDMESSAGE_MAXLENGTH];
+					auto pMsg = new client_textmessage_t;
+					memcpy(pMsg, pTextMessage, sizeof(*pTextMessage));
+					pMsg->pMessage = (const char *)new char[HUDMESSAGE_MAXLENGTH];
+
+					if (dict->m_bOverrideColor)
+					{
+						pMsg->r1 = dict->m_Color1.r();
+						pMsg->g1 = dict->m_Color1.g();
+						pMsg->b1 = dict->m_Color1.b();
+						pMsg->a1 = dict->m_Color1.a();
+
+						pMsg->r2 = dict->m_Color2.r();
+						pMsg->g2 = dict->m_Color2.g();
+						pMsg->b2 = dict->m_Color2.b();
+						pMsg->a1 = dict->m_Color2.a();
+					}
+
+					if (dict->m_bOverrideDuration)
+					{
+						pMsg->holdtime = dict->m_flDuration;
+					}
+
+					char sentence[HUDMESSAGE_MAXLENGTH];
+
+					int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.data(), (char *)sentence, HUDMESSAGE_MAXLENGTH);
+
+					sentence[finalLength] = 0;
+
+					V_strncpy((char *)pMsg->pMessage, sentence, HUDMESSAGE_MAXLENGTH - 1);
+					((char *)pMsg->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
+
+					int slotNum = MessageAdd(pMsg, cl_time, hintMessage, useSlot, m_hFont, true);
+
+					if (slotNum == -1)
+					{
+						delete pMsg->pMessage;
+						delete pMsg;
+					}
+
+					g_pViewPort->StartNextSubtitle(dict);
+					m_parms.time = cl_time;
+					return 1;
 				}
+				else if (pTextMessage)
+				{
+					int slotNum = MessageAdd(pTextMessage, cl_time, hintMessage, useSlot, m_hFont, false);
 
-				char sentence[HUDMESSAGE_MAXLENGTH];
-
-				int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.data(), (char *)sentence, HUDMESSAGE_MAXLENGTH);
-
-				sentence[finalLength] = 0;
-
-				V_strncpy((char *)dict->m_pTextMessage->pMessage, sentence, HUDMESSAGE_MAXLENGTH - 1);
-				((char *)dict->m_pTextMessage->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
-
-				MessageAdd(dict->m_pTextMessage, cl_time, hintMessage, useSlot, m_hFont);
-				g_pViewPort->StartNextSubtitle(dict);
-				m_parms.time = cl_time;
-				return 1;
-			}
-			else if(pTextMessage)
-			{
-				MessageAdd(pTextMessage, cl_time, hintMessage, useSlot, m_hFont);
-				m_parms.time = cl_time;
-				return 1;
+					m_parms.time = cl_time;
+					return 1;
+				}
 			}
 		}
 
@@ -614,11 +685,60 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 			gEngfuncs.Con_Printf((dict) ? "CaptionMod: TextMessage [%s] found.\n" : "CaptionMod: TextMessage [%s] not found.\n", pString);
 		}
 
-		if (dict && dict->m_pTextMessage)
+		if (dict)
 		{
-			MessageAdd(dict->m_pTextMessage, cl_time, hintMessage, -1, m_hFont);
-			m_parms.time = cl_time;
-			return 1;
+			client_textmessage_t *pTextMessage = NULL;
+
+			if (pString[0] == '#')
+				pTextMessage = pfnTextMessageGet(pString + 1);
+			else
+				pTextMessage = pfnTextMessageGet(pString);
+
+			if (pTextMessage)
+			{
+				auto pMsg = new client_textmessage_t;
+				memcpy(pMsg, pTextMessage, sizeof(*pTextMessage));
+
+				if (dict->m_bOverrideColor)
+				{
+					pMsg->r1 = dict->m_Color1.r();
+					pMsg->g1 = dict->m_Color1.g();
+					pMsg->b1 = dict->m_Color1.b();
+					pMsg->a1 = dict->m_Color1.a();
+
+					pMsg->r2 = dict->m_Color2.r();
+					pMsg->g2 = dict->m_Color2.g();
+					pMsg->b2 = dict->m_Color2.b();
+					pMsg->a1 = dict->m_Color2.a();
+				}
+
+				if (dict->m_bOverrideDuration)
+				{
+					pMsg->holdtime = dict->m_flDuration;
+				}
+
+				pMsg->pMessage = (const char *)new char[HUDMESSAGE_MAXLENGTH];
+
+				char sentence[HUDMESSAGE_MAXLENGTH];
+
+				int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.data(), (char *)sentence, HUDMESSAGE_MAXLENGTH);
+
+				sentence[finalLength] = 0;
+
+				V_strncpy((char *)pMsg->pMessage, sentence, HUDMESSAGE_MAXLENGTH - 1);
+				((char *)pMsg->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
+
+				int slotNum = MessageAdd(pMsg, cl_time, hintMessage, -1, m_hFont, true);
+
+				if (slotNum == -1)
+				{
+					delete pMsg->pMessage;
+					delete pMsg;
+				}
+
+				m_parms.time = cl_time;
+				return 1;
+			}
 		}
 	}
 	
@@ -639,30 +759,74 @@ int CHudMessage::MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
 		gEngfuncs.Con_Printf((dict) ? "CaptionMod: TextMessage [%s] found.\n" : "CaptionMod: TextMessage [%s] not found.\n", pString);
 	}
 
-	if(dict && dict->m_pTextMessage)
+	if(dict)
 	{
+		client_textmessage_t *pTextMessage = NULL;
 
-		int slotNum = MessageAdd(dict->m_pTextMessage, cl_time, hintMessage, -1, m_hFont);
+		if (pString[0] == '#')
+			pTextMessage = pfnTextMessageGet(pString + 1);
+		else
+			pTextMessage = pfnTextMessageGet(pString);
 
-		if (slotNum > -1)
+		if (pTextMessage)
 		{
-			m_pMessages[slotNum].numArgs = max(min(0, READ_BYTE()), MAX_MESSAGE_ARGS);
+			auto pMsg = new client_textmessage_t;
+			memcpy(pMsg, pTextMessage, sizeof(*pTextMessage));
 
-			for (int i = 0; i < m_pMessages[slotNum].numArgs; i++)
+			if (dict->m_bOverrideColor)
 			{
-				char *tmp = READ_STRING();
+				pMsg->r1 = dict->m_Color1.r();
+				pMsg->g1 = dict->m_Color1.g();
+				pMsg->b1 = dict->m_Color1.b();
+				pMsg->a1 = dict->m_Color1.a();
 
-				if (!tmp)
-					tmp = "";
-
-				vgui::localize()->ConvertANSIToUnicode(tmp, m_pMessages[slotNum].args[i], MESSAGE_ARG_LEN);
+				pMsg->r2 = dict->m_Color2.r();
+				pMsg->g2 = dict->m_Color2.g();
+				pMsg->b2 = dict->m_Color2.b();
+				pMsg->a1 = dict->m_Color2.a();
 			}
-		}
 
-		g_pViewPort->StartNextSubtitle(dict);
+			if (dict->m_bOverrideDuration)
+			{
+				pMsg->holdtime = dict->m_flDuration;
+			}
 
-		m_parms.time = cl_time;
-		return 1;
+			pMsg->pMessage = (const char *)new char[HUDMESSAGE_MAXLENGTH];
+
+			char sentence[HUDMESSAGE_MAXLENGTH];
+
+			int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.data(), (char *)sentence, HUDMESSAGE_MAXLENGTH);
+
+			sentence[finalLength] = 0;
+
+			V_strncpy((char *)pMsg->pMessage, sentence, HUDMESSAGE_MAXLENGTH - 1);
+			((char *)pMsg->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
+
+			int slotNum = MessageAdd(pMsg, cl_time, hintMessage, -1, m_hFont, true);
+
+			if (slotNum != -1)
+			{
+				m_pMessages[slotNum].numArgs = max(min(0, READ_BYTE()), MAX_MESSAGE_ARGS);
+
+				for (int i = 0; i < m_pMessages[slotNum].numArgs; i++)
+				{
+					char *tmp = READ_STRING();
+
+					if (!tmp)
+						tmp = "";
+
+					vgui::localize()->ConvertANSIToUnicode(tmp, m_pMessages[slotNum].args[i], MESSAGE_ARG_LEN);
+				}
+			}
+			else
+			{
+				delete pMsg->pMessage;
+				delete pMsg;
+			}
+
+			m_parms.time = cl_time;
+			return 1;
+		}		
 	}
 
 	return 0;
@@ -699,7 +863,7 @@ int CHudMessage::MsgFunc_SendAudio(const char* pszName, int iSize, void* pbuf)
 	return 0;
 }
 
-int CHudMessage::MessageAdd(client_textmessage_t *newMessage, float time, int hintMessage, int useSlot, unsigned int m_hFont)
+int CHudMessage::MessageAdd(client_textmessage_t *newMessage, float time, int hintMessage, int useSlot, unsigned int m_hFont, bool bIsDynamicMessage)
 {
 	int i;
 	client_textmessage_t *tempMessage;
@@ -758,10 +922,14 @@ int CHudMessage::MessageAdd(client_textmessage_t *newMessage, float time, int hi
 	m_pMessages[emptySlot].font = m_hFont;
 	m_pMessages[emptySlot].hintMessage = hintMessage;
 	m_startTime[emptySlot] = time;
+
+	if (bIsDynamicMessage)
+		m_DynamicTextMessages.emplace_back(newMessage);
+
 	return emptySlot;
 }
 
-void CHudMessage::MessageAdd(client_textmessage_t *newMessage)
+void CHudMessage::MessageAdd(client_textmessage_t *newMessage, bool bIsDynamicMessage)
 {
 	m_parms.time = cl_time;
 
@@ -775,6 +943,9 @@ void CHudMessage::MessageAdd(client_textmessage_t *newMessage)
 			return;
 		}
 	}
+
+	if (bIsDynamicMessage)
+		m_DynamicTextMessages.emplace_back(newMessage);
 }
 
 client_textmessage_t *pfnTextMessageGet(const char *pName)
@@ -783,7 +954,7 @@ client_textmessage_t *pfnTextMessageGet(const char *pName)
 	{
 		CDictionary *dict = g_pViewPort->FindDictionary(pName);
 
-		if (dict && dict->m_pTextMessage)
+		if (dict)
 		{
 			return NULL;
 		}

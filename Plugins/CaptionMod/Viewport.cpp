@@ -338,20 +338,15 @@ CDictionary::CDictionary()
 	m_flDuration = 0;
 	m_flNextDelay = 0;
 	m_pNext = NULL;
-	m_pTextMessage = NULL;
 	m_iTextAlign = ALIGN_DEFAULT;
 	m_bRegex = false;
+	m_bOverrideColor = false;
+	m_bOverrideDuration = false;
 }
 
 CDictionary::~CDictionary()
 {
-	if(m_pTextMessage)
-	{
-		if(m_pTextMessage->pMessage)
-			delete m_pTextMessage->pMessage;
-		delete m_pTextMessage;
-		m_pTextMessage = NULL;
-	}
+
 }
 
 void StringReplaceW(std::wstring &strBase, const std::wstring &strSrc, const std::wstring &strDst)
@@ -393,23 +388,19 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 		m_Type = DICT_SOUND;
 	}
 
-	if (m_szTitle[0] == '%' && m_szTitle[1] == '!')
+	//If it's a textmessage found in engine (gamedir/titles.txt)
+	client_textmessage_t *textmsg = gEngfuncs.pfnTextMessageGet(m_szTitle[0] == '#' ? &m_szTitle[1] : &m_szTitle[0]);
+	if (textmsg)
+	{
+		m_Type = DICT_MESSAGE;
+	}
+	else if (m_szTitle[0] == '%' && m_szTitle[1] == '!')
 	{
 		m_Type = DICT_SENDAUDIO;
 	}
 	else if (m_szTitle[0] == '!' || m_szTitle[0] == '#')
 	{
 		m_Type = DICT_SENTENCE;
-	}
-
-	//If it's a textmessage found in engine (gamedir/titles.txt)
-	client_textmessage_t *textmsg = gEngfuncs.pfnTextMessageGet(m_szTitle.c_str());
-	if (textmsg)
-	{
-		m_Type = DICT_MESSAGE;
-		m_pTextMessage = new client_textmessage_t;
-		memcpy(m_pTextMessage, textmsg, sizeof(client_textmessage_t));
-		m_pTextMessage->pMessage = (const char *)new char[HUDMESSAGE_MAXLENGTH];
 	}
 
 	//2015-11-26 added to support NETMESSAGE:
@@ -423,6 +414,24 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 	{
 		m_Type = DICT_NETMESSAGE;
 		m_szTitle = m_szTitle.substr(sizeof("NETMESSAGE:") - 1);
+		m_bRegex = false;
+	}
+	else if (!Q_strncmp(m_szTitle.c_str(), "MESSAGE:", sizeof("MESSAGE:") - 1))
+	{
+		m_Type = DICT_MESSAGE;
+		m_szTitle = m_szTitle.substr(sizeof("MESSAGE:") - 1);
+		m_bRegex = false;
+	}
+	else if (!Q_strncmp(m_szTitle.c_str(), "SENTENCE:", sizeof("SENTENCE:") - 1))
+	{
+		m_Type = DICT_SENTENCE;
+		m_szTitle = m_szTitle.substr(sizeof("SENTENCE:") - 1);
+		m_bRegex = false;
+	}
+	else if (!Q_strncmp(m_szTitle.c_str(), "SENDAUDIO:", sizeof("SENDAUDIO:") - 1))
+	{
+		m_Type = DICT_SENDAUDIO;
+		m_szTitle = m_szTitle.substr(sizeof("SENDAUDIO:") - 1);
 		m_bRegex = false;
 	}
 
@@ -455,30 +464,29 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 	StringReplaceW(m_szSentence, L"\\r", L"\r");
 
 	const char *color = row[2].c_str();
+
 	if(color[0])
 	{
+		CUtlVector<char *> splitColor;
+		V_SplitString(color, " ", splitColor);
+
 		m_Color = ischeme->GetColor(color, defaultColor);
 
-		if(m_pTextMessage)
+		if(splitColor.Size() >= 2)
 		{
-			char szColor1[16];
-			char szColor2[16];
-			sscanf(color, "%s %s", szColor1, szColor2);
-			if(szColor2[0])
+			if(splitColor[0][0])
 			{
-				Color clrColor2 = ischeme->GetColor(szColor2, defaultColor);
-				m_pTextMessage->r2 = clrColor2.r();
-				m_pTextMessage->g2 = clrColor2.g();
-				m_pTextMessage->b2 = clrColor2.b();
+				m_Color1 = ischeme->GetColor(splitColor[0], defaultColor);
 			}
-			if(szColor1[0])
+			if(splitColor[1][0])
 			{
-				Color clrColor1 = ischeme->GetColor(szColor1, defaultColor);
-				m_pTextMessage->r1 = clrColor1.r();
-				m_pTextMessage->g1 = clrColor1.g();
-				m_pTextMessage->b1 = clrColor1.b();
+				m_Color2 = ischeme->GetColor(splitColor[1], defaultColor);
 			}
+
+			m_bOverrideColor = true;
 		}
+
+		splitColor.PurgeAndDeleteElements();
 	}
 
 	const char *duration = row[3].c_str();
@@ -486,10 +494,8 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 	{
 		m_flDuration = Q_atof(duration);
 
-		if(m_pTextMessage)
-		{
-			m_pTextMessage->holdtime = m_flDuration;
-		}
+		if(m_flDuration > 0)
+			m_bOverrideDuration = true;
 	}
 
 	const char *speaker = row[4].c_str();
@@ -511,20 +517,6 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 			m_szSpeaker.resize(localizedLength - 1);
 			MultiByteToWideChar(CP_ACP, 0, speaker, -1, &m_szSpeaker[0], localizedLength);
 		}
-	}
-
-	if(m_pTextMessage)
-	{
-		//Covert the sentence text to UTF8
-		std::string sentence;
-		sentence.resize(HUDMESSAGE_MAXLENGTH);
-
-		int finalLength = localize()->ConvertUnicodeToANSI(m_szSentence.data(), (char *)sentence.data(), sentence.length());
-
-		sentence.resize(finalLength);
-
-		V_strncpy((char *)m_pTextMessage->pMessage, sentence.data(), HUDMESSAGE_MAXLENGTH - 1);
-		((char *)m_pTextMessage->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
 	}
 
 	//Next dictionary

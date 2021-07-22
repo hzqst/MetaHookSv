@@ -60,6 +60,25 @@ void Cap_Version_f(void)
 	gEngfuncs.Con_Printf("%s\n", CAPTION_MOD_VERSION);
 }
 
+void Cap_Reload_f(void)
+{
+	if (g_pViewPort)
+	{
+		g_pViewPort->LoadBaseDictionary();
+
+		auto levelname = gEngfuncs.pfnGetLevelName();
+		if (levelname[0])
+		{
+			std::string name = levelname;
+			name = name.substr(0, name.length() - 4);
+			name += "_dictionary.csv";
+
+			g_pViewPort->LoadCustomDictionary(name.c_str());
+			g_pViewPort->LinkDictionary();
+		}
+	}
+}
+
 void SvClient_StartWave(const char *name, float duration)
 {
 	if (!g_pViewPort)
@@ -131,7 +150,9 @@ void HUD_Init(void)
 	cap_enabled = gEngfuncs.pfnRegisterVariable("cap_enabled", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cap_max_distance = gEngfuncs.pfnRegisterVariable("cap_max_distance", "1500", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cap_netmessage = gEngfuncs.pfnRegisterVariable("cap_netmessage", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	
 	gEngfuncs.pfnAddCommand("cap_version", Cap_Version_f);
+	gEngfuncs.pfnAddCommand("cap_reload", Cap_Reload_f);
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{

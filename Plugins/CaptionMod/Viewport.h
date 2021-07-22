@@ -58,9 +58,13 @@ public:
 	float					m_flNextDelay;
 	std::string				m_szNext;
 	CDictionary				*m_pNext;
-	client_textmessage_t	*m_pTextMessage;
 	textalign_t				m_iTextAlign;
 	bool					m_bRegex;
+
+	bool					m_bOverrideColor;
+	bool					m_bOverrideDuration;
+	Color					m_Color1;
+	Color					m_Color2;
 };
 
 typedef struct hash_item_s

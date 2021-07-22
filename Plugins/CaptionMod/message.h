@@ -1,6 +1,7 @@
 #pragma once
 
 #include <sequence.h>
+#include <vector>
 
 const int maxHUDMessages = 16;
 
@@ -52,11 +53,13 @@ public:
 	int MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf);
 	int MsgFunc_SendAudio(const char* pszName, int iSize, void* pbuf);
 public:
-	void MessageAdd(client_textmessage_t *newMessage);
-	int MessageAdd(client_textmessage_t *newMessage, float time, int hintMessage, int useSlot, unsigned int m_hFont);
+	void MessageAdd(client_textmessage_t *newMessage, bool bIsDynamicMessage);
+	int MessageAdd(client_textmessage_t *newMessage, float time, int hintMessage, int useSlot, unsigned int m_hFont, bool bIsDynamicMessage);
 	void MessageScanNextChar(unsigned int font);
 	void MessageScanStart(void);
 	void MessageDrawScan(client_message_t *pClientMessage, float time, unsigned int font);
+
+	void RetireDynamicMessage(client_textmessage_t *pMsg);
 
 private:
 	client_message_t m_pMessages[maxHUDMessages];
@@ -65,6 +68,8 @@ private:
 	float m_gameTitleTime;
 	client_textmessage_t *m_pGameTitle;
 	vgui::HFont	m_hFont;
+
+	std::vector<client_textmessage_t *> m_DynamicTextMessages;
 };
 
 struct message_parms_svclient_t
