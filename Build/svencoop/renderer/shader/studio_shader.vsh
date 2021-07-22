@@ -21,6 +21,20 @@ varying vec4 worldpos;
 varying vec4 normal;
 varying vec4 color;
 
+#ifdef LEGACY_BONE_ENABLED
+
+void main(void)
+{
+	worldpos = gl_Vertex;
+	normal = vec4(gl_Normal, 0.0);
+	color = gl_Color;
+	gl_TexCoord[0] = gl_MultiTexCoord0;
+	
+	gl_Position = ftransform();
+}
+
+#else
+
 void main(void)
 {
 	vec3 vert = gl_Vertex.xyz;
@@ -166,3 +180,5 @@ void main(void)
 
 	gl_Position = gl_ModelViewProjectionMatrix * vec4(outvert, 1.0);
 }
+
+#endif

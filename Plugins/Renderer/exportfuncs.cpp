@@ -121,11 +121,6 @@ void HUD_DrawNormalTriangles(void)
 
 	GL_DisableMultitexture();
 
-	if (!r_draw_pass)
-	{
-		R_RenderShadowScenes();
-	}
-
 	if (!r_refdef->onlyClientDraws && !r_draw_pass && !g_SvEngine_DrawPortalView)
 	{
 		if (R_UseMSAA())

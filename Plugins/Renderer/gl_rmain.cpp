@@ -1293,7 +1293,7 @@ void R_PreRenderView(int a1)
 		{
 			R_RenderWaterView();
 		}
-		if (r_shadow && r_shadow->value && !g_SvEngine_DrawPortalView)
+		if (r_shadow && r_shadow->value && !g_SvEngine_DrawPortalView && r_draw_pass == r_draw_normal)
 		{
 			R_RenderShadowMap();
 		}

@@ -150,6 +150,7 @@ typedef struct r_worldsurf_s
 
 		bDiffuseTexture = false;
 		bLightmapTexture = false;
+		bShadowmapTexture = false;
 		bDetailTexture = false;
 		bNormalTexture = false;
 		bParallaxTexture = false;
@@ -175,6 +176,7 @@ typedef struct r_worldsurf_s
 
 	bool				bDiffuseTexture;
 	bool				bLightmapTexture;
+	bool				bShadowmapTexture;
 	bool				bDetailTexture;
 	bool				bNormalTexture;
 	bool				bParallaxTexture;
@@ -196,11 +198,14 @@ typedef struct
 	int program;
 	int diffuseTex;
 	int lightmapTexArray;
+	int shadowmapTexArray;
 	int detailTex;
 	int normalTex;
 	int parallaxTex;
 	int speed;
-	int entitymatrix;
+	int entityMatrix;
+	int shadowMatrix;
+	int shadowControl;
 	int clipPlane;
 	int viewpos;
 	int parallaxScale;
@@ -271,4 +276,8 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
 #define WSURF_LINEAR_FOG_ENABLED		0x80
 #define WSURF_GBUFFER_ENABLED			0x100
 #define WSURF_TRANSPARENT_ENABLED		0x200
-#define WSURF_SHADOW_ENABLED			0x400
+#define WSURF_SHADOW_CASTER_ENABLED		0x400
+#define WSURF_SHADOWMAP_ENABLED			0x800
+#define WSURF_SHADOWMAP_HIGH_ENABLED	0x1000
+#define WSURF_SHADOWMAP_MEDIUM_ENABLED	0x2000
+#define WSURF_SHADOWMAP_LOW_ENABLED		0x4000

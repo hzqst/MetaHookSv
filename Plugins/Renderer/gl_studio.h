@@ -26,7 +26,7 @@ typedef struct
 	int r_vright;
 	int r_scale;
 	//shadow caster
-	int entitypos;
+	int entityPos;
 	//attribute
 	int attr_bone;
 }studio_program_t;
@@ -184,4 +184,5 @@ extern cvar_t *r_studio_vbo;
 #define STUDIO_TRANSPARENT_ENABLED		0x20000
 #define STUDIO_TRANSADDITIVE_ENABLED	0x40000
 #define STUDIO_LINEAR_FOG_ENABLED		0x80000
-#define STUDIO_SHADOW_ENABLED			0x100000
+#define STUDIO_SHADOW_CASTER_ENABLED	0x100000
+#define STUDIO_LEGACY_BONE_ENABLED		0x200000

@@ -22,13 +22,12 @@ typedef struct
 	int entitypos;
 }cshadow_program_t;
 
-//renderer 
-extern vec3_t shadow_light_mins;
-extern vec3_t shadow_light_maxs;
-
 extern int shadow_texture_depth;
 extern int shadow_texture_color;
 extern int shadow_texture_size;
+
+extern float shadow_projmatrix[3][16];
+extern float shadow_mvmatrix[3][16];
 
 extern int shadow_numvisedicts[3];
 
@@ -49,10 +48,7 @@ extern cvar_t *r_shadow_map_override;
 void R_RenderShadowMap(void);
 void R_InitShadow(void);
 void R_FreeShadow(void);
-void R_RecursiveWorldNodeShadow(mnode_t *node);
-void R_RenderShadowScenes(void);
 qboolean R_ShouldCastShadow(cl_entity_t *ent);
-void R_UseShadowProgram(int state, shadow_program_t *progOutput);
 void R_UseCastShadowProgram(int state, cshadow_program_t *progOutput);
 
 #define SHADOW_HIGH_ENABLED			1

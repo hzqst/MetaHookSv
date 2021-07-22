@@ -118,8 +118,11 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		if (state & STUDIO_LINEAR_FOG_ENABLED)
 			defs << "#define LINEAR_FOG_ENABLED\n";
 
-		if (state & STUDIO_SHADOW_ENABLED)
-			defs << "#define SHADOW_ENABLED\n";
+		if (state & STUDIO_SHADOW_CASTER_ENABLED)
+			defs << "#define SHADOW_CASTER_ENABLED\n";
+
+		if (state & STUDIO_LEGACY_BONE_ENABLED)
+			defs << "#define LEGACY_BONE_ENABLED\n";
 
 		auto def = defs.str();
 
@@ -142,7 +145,7 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 			SHADER_UNIFORM(prog, r_origin, "r_origin");
 			SHADER_UNIFORM(prog, r_vright, "r_vright");
 			SHADER_UNIFORM(prog, r_scale, "r_scale");
-			SHADER_UNIFORM(prog, entitypos, "entitypos");
+			SHADER_UNIFORM(prog, entityPos, "entityPos");
 
 			SHADER_ATTRIB(prog, attr_bone, "attr_bone");
 		}
@@ -160,6 +163,64 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 
 		if (prog.diffuseTex != -1)
 			qglUniform1iARB(prog.diffuseTex, 0);
+
+		if (prog.bonematrix != -1)
+			qglUniformMatrix3x4fvARB(prog.bonematrix, 128, 0, (float *)(*pbonetransform));
+
+		if (prog.r_blend != -1)
+			qglUniform1fARB(prog.r_blend, (*r_blend));
+
+		if (prog.r_g1 != -1 || prog.r_g3 != -1)
+		{
+			float r_g = 1.0f / v_gamma->value;
+
+			float r_g3;
+			if (v_brightness->value <= 0.0f)
+				r_g3 = 0.125f;
+			else if (v_brightness->value > 1.0f)
+				r_g3 = 0.05f;
+			else
+				r_g3 = 0.125f - (v_brightness->value * v_brightness->value) * 0.075f;
+
+			if (prog.r_g1 != -1)
+				qglUniform1fARB(prog.r_g1, r_g);
+
+			if(prog.r_g3 != -1)
+				qglUniform1fARB(prog.r_g3, r_g3);
+		}
+
+		if (prog.r_ambientlight != -1)
+			qglUniform1fARB(prog.r_ambientlight, (float)(*r_ambientlight));
+
+		if (prog.r_shadelight != -1)
+			qglUniform1fARB(prog.r_shadelight, (*r_shadelight));
+
+		if (prog.v_brightness != -1)
+			qglUniform1fARB(prog.v_brightness, v_brightness->value);
+
+		if (prog.v_lightgamma != -1)
+			qglUniform1fARB(prog.v_lightgamma, v_lightgamma->value);
+
+		if (prog.v_lambert != -1)
+			qglUniform1fARB(prog.v_lambert, v_lambert->value);
+
+		if (prog.r_plightvec != -1)
+			qglUniform3fARB(prog.r_plightvec, r_plightvec[0], r_plightvec[1], r_plightvec[2]);
+
+		if (prog.r_colormix != -1)
+			qglUniform3fARB(prog.r_colormix, r_colormix[0], r_colormix[1], r_colormix[2]);
+
+		if (prog.r_origin != -1)
+			qglUniform3fARB(prog.r_origin, g_ChromeOrigin[0], g_ChromeOrigin[1], g_ChromeOrigin[2]);
+
+		if (prog.r_vright != -1)
+			qglUniform3fARB(prog.r_vright, vright[0], vright[1], vright[2]);
+
+		if (prog.r_scale != -1)
+			qglUniform1fARB(prog.r_scale, ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME) ? (*currententity)->curstate.renderamt * 0.05f : 0);
+
+		if (prog.entityPos != -1)
+			qglUniform3fARB(prog.entityPos, (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3]);
 
 		if (progOutput)
 			*progOutput = prog;
@@ -630,16 +691,6 @@ void R_GLStudioDrawPoints(void)
 		qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		qglTexCoordPointer(2, GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, texcoord));
 
-		float r_g = 1.0f / v_gamma->value;
-
-		float r_g3;
-		if (v_brightness->value <= 0.0f)
-			r_g3 = 0.125f;
-		else if (v_brightness->value > 1.0f)
-			r_g3 = 0.05f;
-		else
-			r_g3 = 0.125f - (v_brightness->value * v_brightness->value) * 0.075f;
-
 		for (j = 0; j < engine_psubmodel->nummesh; j++)
 		{
 			auto &VBOMesh = VBOSubmodel->vMesh[j];
@@ -655,13 +706,12 @@ void R_GLStudioDrawPoints(void)
 				flags = flags & 0xFC;
 			}
 
-			int GBufferProgramState = GBUFFER_DIFFUSE_ENABLED;
 			int GBufferMask = GBUFFER_MASK_ALL;
 			int StudioProgramState = flags;
 
 			if (r_draw_pass == r_draw_shadow_caster)
 			{
-				StudioProgramState |= STUDIO_SHADOW_ENABLED;
+				StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
 			}
 			else if (r_draw_nontransparent)
 			{
@@ -695,7 +745,6 @@ void R_GLStudioDrawPoints(void)
 				qglShadeModel(GL_SMOOTH);
 
 				GBufferMask = GBUFFER_MASK_ADDITIVE;
-				GBufferProgramState |= GBUFFER_TRANSPARENT_ENABLED | GBUFFER_ADDITIVE_ENABLED;
 				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
 			}
 			else if (flags & STUDIO_NF_MASKED)
@@ -704,7 +753,6 @@ void R_GLStudioDrawPoints(void)
 				qglAlphaFunc(GL_GREATER, 0.5);
 				qglDepthMask(GL_TRUE);
 
-				//GBufferProgramState |= GBUFFER_MASKED_ENABLED;
 				//StudioProgramState |= STUDIO_NF_MASKED;
 			}
 			else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
@@ -715,7 +763,6 @@ void R_GLStudioDrawPoints(void)
 				qglShadeModel(GL_SMOOTH);
 
 				GBufferMask = GBUFFER_MASK_ADDITIVE;
-				GBufferProgramState |= GBUFFER_TRANSPARENT_ENABLED | GBUFFER_ADDITIVE_ENABLED;
 				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
 			}
 			else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
@@ -725,7 +772,6 @@ void R_GLStudioDrawPoints(void)
 				qglShadeModel(GL_SMOOTH);
 
 				GBufferMask = GBUFFER_MASK_ADDITIVE;
-				GBufferProgramState |= GBUFFER_TRANSPARENT_ENABLED | GBUFFER_ADDITIVE_ENABLED;
 				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE | STUDIO_TRANSADDITIVE_ENABLED;
 			}
 
@@ -739,9 +785,6 @@ void R_GLStudioDrawPoints(void)
 				StudioProgramState |= STUDIO_LINEAR_FOG_ENABLED;
 			}
 
-			//R_UseGBufferProgram(GBufferProgramState);
-			R_SetGBufferMask(GBufferMask);
-
 			if (r_fullbright->value >= 2)
 			{
 				gEngfuncs.pTriAPI->SpriteTexture(cl_sprite_white, 0);
@@ -751,62 +794,18 @@ void R_GLStudioDrawPoints(void)
 				gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
 			}
 
-			int attr_bone = -1;
+			int using_attr_bone = -1;
 
 			studio_program_t prog = { 0 };
 
 			R_UseStudioProgram(StudioProgramState, &prog);
+			R_SetGBufferMask(GBufferMask);
 			
-			if(prog.bonematrix != -1)
-				qglUniformMatrix3x4fvARB(prog.bonematrix, 128, 0, (float *)(*pbonetransform));
-
-			if (prog.r_blend != -1)
-				qglUniform1fARB(prog.r_blend, (*r_blend));
-
-			if (prog.r_g1 != -1)
-				qglUniform1fARB(prog.r_g1, r_g);
-
-			if (prog.r_g3 != -1)
-				qglUniform1fARB(prog.r_g3, r_g3);
-
-			if (prog.r_ambientlight != -1)
-				qglUniform1fARB(prog.r_ambientlight, (float)(*r_ambientlight));
-
-			if (prog.r_shadelight != -1)
-				qglUniform1fARB(prog.r_shadelight, (*r_shadelight));
-
-			if (prog.v_brightness != -1)
-				qglUniform1fARB(prog.v_brightness, v_brightness->value);
-			
-			if (prog.v_lightgamma != -1)
-				qglUniform1fARB(prog.v_lightgamma, v_lightgamma->value);
-
-			if (prog.v_lambert != -1)
-				qglUniform1fARB(prog.v_lambert, v_lambert->value);
-
-			if (prog.r_plightvec != -1)
-				qglUniform3fARB(prog.r_plightvec, r_plightvec[0], r_plightvec[1], r_plightvec[2]);
-
-			if (prog.r_colormix != -1)
-				qglUniform3fARB(prog.r_colormix, r_colormix[0], r_colormix[1], r_colormix[2]);
-
-			if (prog.r_origin != -1)
-				qglUniform3fARB(prog.r_origin, g_ChromeOrigin[0], g_ChromeOrigin[1], g_ChromeOrigin[2]);
-
-			if (prog.r_vright != -1)
-				qglUniform3fARB(prog.r_vright, vright[0], vright[1], vright[2]);
-
-			if (prog.r_scale != -1)
-				qglUniform1fARB(prog.r_scale, ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME) ? (*currententity)->curstate.renderamt * 0.05f : 0);
-		
-			if (prog.entitypos != -1)
-				qglUniform3fARB(prog.entitypos, (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3]);
-
 			if (prog.attr_bone != -1)
 			{
 				qglVertexAttribIPointer(prog.attr_bone, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
 				qglEnableVertexAttribArray(prog.attr_bone);
-				attr_bone = prog.attr_bone;
+				using_attr_bone = prog.attr_bone;
 			}
 
 			if (VBOMesh.iTriStripVertexCount)
@@ -842,9 +841,9 @@ void R_GLStudioDrawPoints(void)
 				qglShadeModel(GL_FLAT);
 			}
 
-			if (attr_bone != -1)
+			if (using_attr_bone != -1)
 			{
-				qglDisableVertexAttribArray(attr_bone);
+				qglDisableVertexAttribArray(using_attr_bone);
 			}
 		}
 
@@ -873,16 +872,14 @@ void R_GLStudioDrawPoints(void)
 				flags = flags & 0xFC;
 			}
 
-			int GBufferProgramState = GBUFFER_DIFFUSE_ENABLED;
 			int GBufferMask = GBUFFER_MASK_ALL;
+			int StudioProgramState = STUDIO_LEGACY_BONE_ENABLED;
 
 			qglUseProgramObjectARB(0);
 
 			if (r_draw_pass == r_draw_shadow_caster)
 			{
-				int CastShadowProgramState = 0;
-
-				R_UseCastShadowProgram(CastShadowProgramState, NULL);
+				StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
 			}
 			else if (r_draw_nontransparent)
 			{
@@ -916,7 +913,7 @@ void R_GLStudioDrawPoints(void)
 				qglShadeModel(GL_SMOOTH);
 
 				GBufferMask = GBUFFER_MASK_ADDITIVE;
-				GBufferProgramState |= GBUFFER_TRANSPARENT_ENABLED | GBUFFER_ADDITIVE_ENABLED;
+				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
 			}
 			else if (flags & STUDIO_NF_MASKED)
 			{
@@ -924,7 +921,7 @@ void R_GLStudioDrawPoints(void)
 				qglAlphaFunc(GL_GREATER, 0.5);
 				qglDepthMask(GL_TRUE);
 
-				//GBufferProgramState |= GBUFFER_MASKED_ENABLED;
+				//StudioProgramState |= STUDIO_NF_MASKED;
 			}
 			else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
 			{
@@ -934,13 +931,26 @@ void R_GLStudioDrawPoints(void)
 				qglShadeModel(GL_SMOOTH);
 
 				GBufferMask = GBUFFER_MASK_ADDITIVE;
-				GBufferProgramState |= GBUFFER_TRANSPARENT_ENABLED | GBUFFER_ADDITIVE_ENABLED;
+				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
+			}
+			else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
+			{
+				qglBlendFunc(GL_ONE, GL_ONE);
+				qglEnable(GL_BLEND);
+				qglShadeModel(GL_SMOOTH);
+
+				GBufferMask = GBUFFER_MASK_ADDITIVE;
+				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE | STUDIO_TRANSADDITIVE_ENABLED;
 			}
 
 			if (drawgbuffer)
 			{
-				R_UseGBufferProgram(GBufferProgramState);
-				R_SetGBufferMask(GBufferMask);
+				StudioProgramState |= STUDIO_GBUFFER_ENABLED;
+			}
+
+			if (r_fog_mode == GL_LINEAR)
+			{
+				StudioProgramState |= STUDIO_LINEAR_FOG_ENABLED;
 			}
 
 			float s, t;
@@ -958,6 +968,11 @@ void R_GLStudioDrawPoints(void)
 
 				gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
 			}
+
+			studio_program_t prog = { 0 };
+
+			R_UseStudioProgram(StudioProgramState, &prog);
+			R_SetGBufferMask(GBufferMask);
 
 			int iStartDrawVertex;
 			int iNumDrawVertex;
@@ -1204,6 +1219,11 @@ void R_GLStudioDrawPoints(void)
 			{
 				qglDisable(GL_BLEND);
 				qglDepthMask(1);
+				qglShadeModel(GL_FLAT);
+			}
+			else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
+			{
+				qglDisable(GL_BLEND);
 				qglShadeModel(GL_FLAT);
 			}
 

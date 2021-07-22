@@ -1,6 +1,6 @@
 #version 130
 
-uniform mat4 entitymatrix;
+uniform mat4 entityMatrix;
 
 uniform float speed;
 varying vec4 worldpos;
@@ -17,6 +17,13 @@ uniform vec4 viewpos;
 
 varying vec3 tangentViewPos;
 varying vec3 tangentFragPos;
+
+#endif
+
+#ifdef SHADOWMAP_ENABLED
+
+uniform mat4 shadowMatrix[3];
+varying vec4 shadowcoord[3];
 
 #endif
 
@@ -44,13 +51,13 @@ mat3 inverse_mat3(mat3 m)
 
 void main(void)
 {
-	worldpos = entitymatrix * gl_Vertex;
+	worldpos = entityMatrix * gl_Vertex;
 	normal = vec4(gl_Normal, 0.0);
-	normal = normalize(entitymatrix * normal);
+	normal = normalize(entityMatrix * normal);
 
 #ifdef NORMALTEXTURE_ENABLED
     tangent = vec4(s_tangent, 0.0);
-    tangent = normalize(entitymatrix * tangent);
+    tangent = normalize(entityMatrix * tangent);
 #endif
 
 #ifdef DIFFUSE_ENABLED
@@ -73,7 +80,7 @@ void main(void)
 	gl_TexCoord[4] = gl_MultiTexCoord4;
 
     //world to tangent
-	mat3 normalMatrix = transpose(inverse_mat3(mat3(entitymatrix)));
+	mat3 normalMatrix = transpose(inverse_mat3(mat3(entityMatrix)));
     vec3 T = normalize(normalMatrix * s_tangent);
     vec3 N = normalize(normalMatrix * gl_Normal);
     T = normalize(T - dot(T, N) * N);
@@ -82,6 +89,22 @@ void main(void)
 	mat3 TBN = transpose(mat3(T, B, N));    
     tangentViewPos = TBN * viewpos.xyz;
     tangentFragPos = TBN * worldpos.xyz;
+#endif
+
+#ifdef SHADOWMAP_ENABLED
+
+	#ifdef SHADOWMAP_HIGH_ENABLED
+        shadowcoord[0] = shadowMatrix[0] * gl_ModelViewMatrix * gl_Vertex;
+    #endif
+
+    #ifdef SHADOWMAP_MEDIUM_ENABLED
+        shadowcoord[1] = shadowMatrix[1] * gl_ModelViewMatrix * gl_Vertex;
+    #endif
+
+    #ifdef SHADOWMAP_LOW_ENABLED
+        shadowcoord[2] = shadowMatrix[2] * gl_ModelViewMatrix * gl_Vertex;
+    #endif
+
 #endif
 
 	color = gl_Color;

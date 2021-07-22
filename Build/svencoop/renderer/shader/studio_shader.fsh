@@ -6,9 +6,18 @@ varying vec4 worldpos;
 varying vec4 normal;
 varying vec4 color;
 
-#ifdef SHADOW_ENABLED
-uniform vec3 entitypos;
+#ifdef SHADOW_CASTER_ENABLED
+uniform vec3 entityPos;
 #endif
+
+#ifdef CLIP_ABOVE_ENABLED
+uniform float clipPlane;
+#endif
+
+#ifdef CLIP_UNDER_ENABLED
+uniform float clipPlane;
+#endif
+
 
 void main(void)
 {
@@ -19,9 +28,19 @@ void main(void)
         discard;
 #endif
 
-#ifdef SHADOW_ENABLED
+#ifdef CLIP_ABOVE_ENABLED
+	if (worldpos.z > clipPlane)
+		discard;
+#endif
 
-	gl_FragColor = vec4(entitypos.x, entitypos.y, entitypos.z, gl_FragCoord.z);
+#ifdef CLIP_UNDER_ENABLED
+	if (worldpos.z < clipPlane)
+		discard;
+#endif
+
+#ifdef SHADOW_CASTER_ENABLED
+
+	gl_FragColor = vec4(entityPos.x, entityPos.y, entityPos.z, gl_FragCoord.z);
 
 #else
 
