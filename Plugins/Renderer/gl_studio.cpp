@@ -662,7 +662,6 @@ void R_GLStudioDrawPoints(void)
 			if (r_draw_pass == r_draw_shadow_caster)
 			{
 				StudioProgramState |= STUDIO_SHADOW_ENABLED;
-				goto notex1;
 			}
 			else if (r_draw_nontransparent)
 			{
@@ -751,8 +750,6 @@ void R_GLStudioDrawPoints(void)
 			{
 				gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
 			}
-
-notex1:
 
 			int attr_bone = -1;
 
@@ -879,13 +876,13 @@ notex1:
 			int GBufferProgramState = GBUFFER_DIFFUSE_ENABLED;
 			int GBufferMask = GBUFFER_MASK_ALL;
 
+			qglUseProgramObjectARB(0);
+
 			if (r_draw_pass == r_draw_shadow_caster)
 			{
 				int CastShadowProgramState = 0;
 
 				R_UseCastShadowProgram(CastShadowProgramState, NULL);
-
-				goto notex2;
 			}
 			else if (r_draw_nontransparent)
 			{
@@ -945,10 +942,6 @@ notex1:
 				R_UseGBufferProgram(GBufferProgramState);
 				R_SetGBufferMask(GBufferMask);
 			}
-			else
-			{
-				qglUseProgramObjectARB(0);
-			}
 
 			float s, t;
 			//setup texture and texcoord
@@ -965,8 +958,6 @@ notex1:
 
 				gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
 			}
-
-	notex2:
 
 			int iStartDrawVertex;
 			int iNumDrawVertex;

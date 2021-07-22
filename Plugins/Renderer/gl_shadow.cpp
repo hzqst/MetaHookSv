@@ -210,8 +210,8 @@ void R_InitShadow(void)
 	r_shadow_map_override = gEngfuncs.pfnRegisterVariable("r_shadow_map_override", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_debug = gEngfuncs.pfnRegisterVariable("r_shadow_debug", "0",  FCVAR_CLIENTDLL);
 	r_shadow_alpha = gEngfuncs.pfnRegisterVariable("r_shadow_alpha", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_fade_start = gEngfuncs.pfnRegisterVariable("r_shadow_fade_start", "60", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_fade_end = gEngfuncs.pfnRegisterVariable("r_shadow_fade_end", "100", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_fade_start = gEngfuncs.pfnRegisterVariable("r_shadow_fade_start", "64", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_fade_end = gEngfuncs.pfnRegisterVariable("r_shadow_fade_end", "128", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_angle_p = gEngfuncs.pfnRegisterVariable("r_shadow_angle_pitch", "90", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_angle_y = gEngfuncs.pfnRegisterVariable("r_shadow_angle_yaw", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_angle_r = gEngfuncs.pfnRegisterVariable("r_shadow_angle_roll", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
