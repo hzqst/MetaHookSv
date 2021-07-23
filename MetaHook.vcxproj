@@ -79,8 +79,7 @@
       <AdditionalLibraryDirectories>capstone\msvc\Debug\</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(ProjectName).exe" "I:\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe"
-copy "$(OutDir)$(ProjectName).exe" "I:\SteamLibrary\steamapps\common\Half-Life\metahook.exe"</Command>
+      <Command>copy "$(OutDir)$(ProjectName).exe" "$(MetaHookGameDirectory)\$(MetaHookLaunchName)"</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableDpiAwareness>true</EnableDpiAwareness>

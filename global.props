@@ -4,5 +4,6 @@
     <MetaHookLaunchName></MetaHookLaunchName>
     <MetaHookLaunchCommnand></MetaHookLaunchCommnand>
     <MetaHookGameDirectory></MetaHookGameDirectory>
+    <MetaHookModName></MetaHookModName>
   </PropertyGroup>
 </Project>
