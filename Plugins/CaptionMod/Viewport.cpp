@@ -562,7 +562,10 @@ void CViewport::LoadCustomDictionary(const char *dict_name)
 	}
 
 	if (row_count < 2)
+	{
+		gEngfuncs.Con_Printf("LoadCustomDictionary: too few lines in the dictionary file.\n");
 		return;
+	}
 
 	IScheme *ischeme = scheme()->GetIScheme(GetScheme());
 
@@ -594,6 +597,8 @@ void CViewport::LoadCustomDictionary(const char *dict_name)
 
 		AddDictionaryHash(Dict, Dict->m_szTitle.c_str());
 	}
+
+	gEngfuncs.Con_Printf("LoadCustomDictionary: %s lines are loaded.\n", nRowCount-1);
 }
 
 void CViewport::LinkDictionary(void)
@@ -624,8 +629,11 @@ void CViewport::LoadBaseDictionary(void)
 		Sys_ErrorEx("LoadBaseDictionary: %s\n", err.what());
 	}
 
-	if(row_count < 2)
+	if (row_count < 2)
+	{
+		gEngfuncs.Con_Printf("LoadBaseDictionary: too few lines in the dictionary file.\n");
 		return;
+	}
 
 	IScheme *ischeme = scheme()->GetIScheme(GetScheme());
 
@@ -665,6 +673,8 @@ void CViewport::LoadBaseDictionary(void)
 
 		AddDictionaryHash(Dict, Dict->m_szTitle.c_str());
 	}
+
+	gEngfuncs.Con_Printf("LoadBaseDictionary: %s lines are loaded.\n", nRowCount - 1);
 }
 
 extern char *m_pSenderName;

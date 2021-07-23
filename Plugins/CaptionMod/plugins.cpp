@@ -37,8 +37,8 @@ void IPlugins::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_engines
 	g_pMetaHookAPI = pAPI;
 	g_pMetaSave = pSave;
 
-	CommandLine()->AppendParm("-nomaster", NULL);
-	CommandLine()->AppendParm("-insecure", NULL);
+	//CommandLine()->AppendParm("-nomaster", NULL);
+	//CommandLine()->AppendParm("-insecure", NULL);
 }
 
 void IPlugins::Shutdown(void)
