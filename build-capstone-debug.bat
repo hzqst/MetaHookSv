@@ -10,7 +10,7 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
 
     "%InstallDir%\Common7\Tools\vsdevcmd.bat" -arch=x86
     
-    MSBuild.exe "capstone\msvc\capstone.sln" /t:capstone_static /p:Configuration=Release /p:Platform="Win32"
+    MSBuild.exe "capstone\msvc\capstone.sln" /t:capstone_static /p:Configuration=Debug /p:Platform="Win32"
 
     copy /y "capstone\msvc\capstone_static\capstone_static.vcxproj.bak" "capstone\msvc\capstone_static\capstone_static.vcxproj"
     del "capstone\msvc\capstone_static\capstone_static.vcxproj.bak"
