@@ -584,8 +584,7 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 	qglBindTexture(GL_TEXTURE_2D, 0);
 	qglDisable(GL_TEXTURE_2D);
 
-	qglActiveTextureARB(TEXTURE1_SGIS);
-	
+	qglActiveTextureARB(*oldtarget);
 	GL_DisableMultitexture();
 
 	qglUseProgramObjectARB(0);

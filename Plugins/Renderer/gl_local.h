@@ -28,6 +28,19 @@
 #include "gl_wsurf.h"
 #include "gl_draw.h"
 
+typedef struct
+{
+	GLboolean polygon_offset_fill;
+	GLboolean cullface;
+	GLboolean alphatest;
+	GLboolean depthtest;
+	GLboolean depthmask;
+	GLboolean blend;
+	int blendsrc;
+	int blenddst;
+	qboolean mtex;
+}gl_draw_context;
+
 extern refdef_t *r_refdef;
 extern ref_params_t r_params;
 

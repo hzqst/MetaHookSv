@@ -783,6 +783,8 @@ void R_EndRenderGBuffer(void)
 	qglDisable(GL_TEXTURE_2D);
 	qglBindTexture(GL_TEXTURE_2D, 0);
 
+	qglActiveTextureARB(*oldtarget);
+
 	GL_Begin2D();
 	qglDisable(GL_BLEND);
 
@@ -825,12 +827,15 @@ void R_EndRenderGBuffer(void)
 
 	R_DrawHUDQuad(glwidth, glheight);
 
+	qglActiveTextureARB(TEXTURE3_SGIS);
 	qglBindTexture(GL_TEXTURE_2D, 0);
 	qglDisable(GL_TEXTURE_2D);
 
 	qglActiveTextureARB(TEXTURE2_SGIS);
 	qglBindTexture(GL_TEXTURE_2D, 0);
 	qglDisable(GL_TEXTURE_2D);
+
+	qglActiveTextureARB(*oldtarget);
 
 	qglStencilMask(0);
 	qglDisable(GL_STENCIL_TEST);

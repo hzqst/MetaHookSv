@@ -1322,19 +1322,6 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		}
 	}
 
-	if (!r_wsurf.bDiffuseTexture)
-	{
-		GL_SelectTexture(TEXTURE0_SGIS);
-		qglEnable(GL_TEXTURE_2D);
-	}
-
-	if (r_wsurf.bLightmapTexture)
-	{
-		GL_SelectTexture(TEXTURE1_SGIS);
-		qglDisable(GL_TEXTURE_2D_ARRAY);
-		qglEnable(GL_TEXTURE_2D);
-	}
-
 	if (r_wsurf.bShadowmapTexture)
 	{
 		qglActiveTextureARB(GL_TEXTURE5_ARB);
@@ -1347,6 +1334,25 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		qglDisable(GL_TEXTURE_GEN_Q);
 
 		qglActiveTextureARB(*oldtarget);
+	}
+
+	if (r_wsurf.bLightmapTexture)
+	{
+		qglActiveTextureARB(TEXTURE1_SGIS);
+
+		qglDisable(GL_TEXTURE_2D_ARRAY);
+		if (*mtexenabled)
+			qglEnable(GL_TEXTURE_2D);
+		else
+			qglDisable(GL_TEXTURE_2D);
+
+		qglActiveTextureARB(*oldtarget);
+	}
+
+	if (!r_wsurf.bDiffuseTexture)
+	{
+		GL_SelectTexture(TEXTURE0_SGIS);
+		qglEnable(GL_TEXTURE_2D);
 	}
 
 	if (modcache->pModel == r_worldmodel)
@@ -2107,13 +2113,16 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 
 	if (r_wsurf.bLightmapTexture)
 	{
-		GL_SelectTexture(TEXTURE1_SGIS);
+		qglActiveTextureARB(TEXTURE1_SGIS);
+
 		qglDisable(GL_TEXTURE_2D_ARRAY);
 
 		if(*mtexenabled)
 			qglEnable(GL_TEXTURE_2D);
 		else
 			qglDisable(GL_TEXTURE_2D);
+
+		qglActiveTextureARB(*oldtarget);
 	}
 
 	if (!r_wsurf.bDiffuseTexture)

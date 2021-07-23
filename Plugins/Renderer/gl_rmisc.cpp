@@ -2,19 +2,6 @@
 
 #define MAX_SAVESTACK 16
 
-typedef struct
-{
-	GLboolean polygon_offset_fill;
-	GLboolean cullface;
-	GLboolean alphatest;
-	GLboolean depthtest;
-	GLboolean depthmask;
-	GLboolean blend;
-	int blendsrc;
-	int blenddst;
-	qboolean mtex;
-}gl_draw_context;
-
 vec3_t save_vieworg[MAX_SAVESTACK];
 
 vec3_t save_viewang[MAX_SAVESTACK];

@@ -1331,6 +1331,16 @@ void R_PostRenderView()
 		R_DoHDR();
 	}
 
+	qglDisable(GL_BLEND);
+	/*qglActiveTextureARB(TEXTURE2_SGIS);
+	qglBindTexture(GL_TEXTURE_2D, 0);
+	qglDisable(GL_TEXTURE_2D);*/
+
+	/*qglActiveTextureARB(TEXTURE1_SGIS);
+	qglBindTexture(GL_TEXTURE_2D, 0);
+	qglDisable(GL_TEXTURE_2D);*/
+
+	qglActiveTextureARB(*oldtarget);
 	GL_DisableMultitexture();
 	qglEnable(GL_TEXTURE_2D);
 	qglColor4f(1, 1, 1, 1);

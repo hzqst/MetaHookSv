@@ -351,8 +351,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		qglBindTexture(GL_TEXTURE_2D, 0);
 		qglDisable(GL_TEXTURE_2D);
 
-		qglActiveTextureARB(TEXTURE1_SGIS);
-
+		qglActiveTextureARB(*oldtarget);
 		GL_DisableMultitexture();
 
 		qglUseProgramObjectARB(0);

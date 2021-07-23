@@ -73,8 +73,10 @@ void HUD_Init(void)
 	cl_studiosnd_debug = gEngfuncs.pfnRegisterVariable("cl_studiosnd_debug", "0", FCVAR_CLIENTDLL);
 }
 
-void HUD_Frame(double )
+void HUD_Frame(double a1)
 {
+	gExportfuncs.HUD_Frame(a1);
+
 	auto clientTime = gEngfuncs.GetClientTime();
 	auto local = gEngfuncs.GetLocalPlayer();
 
@@ -168,7 +170,7 @@ void HUD_StudioEvent(const struct mstudioevent_s *ev, const struct cl_entity_s *
 			{
 				//blocked
 				if (cl_studiosnd_debug->value)
-					gEngfuncs.Con_Printf("[StudioEvents] Block %s\n", ev->options);
+					gEngfuncs.Con_Printf("[StudioEvents] Blocked %s\n", ev->options);
 			}
 
 			return;
