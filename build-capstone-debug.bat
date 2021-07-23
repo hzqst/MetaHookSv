@@ -10,7 +10,13 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
 
     "%InstallDir%\Common7\Tools\vsdevcmd.bat" -arch=x86
     
-    MSBuild.exe "capstone\msvc\capstone.sln" /t:capstone_static /p:Configuration=Debug /p:Platform="Win32"
+    if "%VisualStudioVersion%"=="16.0" (
+      set force_platform_toolset=v142
+    ) else (
+      set force_platform_toolset=v141
+    )
+
+    MSBuild.exe "capstone\msvc\capstone.sln" /t:capstone_static /p:Configuration=Debug /p:Platform="Win32" /p:PlatformToolset=%force_platform_toolset%
 
     copy /y "capstone\msvc\capstone_static\capstone_static.vcxproj.bak" "capstone\msvc\capstone_static\capstone_static.vcxproj"
     del "capstone\msvc\capstone_static\capstone_static.vcxproj.bak"

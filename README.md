@@ -30,7 +30,7 @@ Use a separate account to play Sven-Coop if you worry about getting banned, sinc
 
 ## Build Requirements
 
-1. Visual Studio 2017 or higher, with C++ (MSVC toolset).
+1. Visual Studio 2017 or 2019, with vc141 or vc142 toolset.
 
 2. CMake
 
@@ -48,7 +48,7 @@ Let's assume that you have all requirements installed correctly.
 
 4. Run "build-bullet3.bat", wait until bullet3's static lib(s) are generated.
 
-5. Run "build-MetaHook.bat", wait until "svencoop.exe" is generated under "Build" directory. Remember to redirect the Windows SDK version from Visual Studio IDE if you have installed a different version of Windows SDK other than "10.0.17763.0".
+5. Run "build-MetaHook.bat", wait until "svencoop.exe" is generated under "Build" directory. You may have to redirect the Windows SDK version from Visual Studio IDE if you have installed a different version of Windows SDK other than "10.0.17763.0".
 
 6. Run "build-CaptionMod.bat", wait until "CaptionMod.dll" is generated under "Build\svencoop\metahook\plugins\" directory.
 

@@ -8,11 +8,17 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
 
     "%InstallDir%\Common7\Tools\vsdevcmd.bat" -arch=x86
     
-    MSBuild.exe "bullet3\build\BULLET_PHYSICS.sln" /t:Bullet3Collision /p:Configuration=Release /p:Platform="Win32"
-    MSBuild.exe "bullet3\build\BULLET_PHYSICS.sln" /t:Bullet3Common /p:Configuration=Release /p:Platform="Win32"
-    MSBuild.exe "bullet3\build\BULLET_PHYSICS.sln" /t:Bullet3Dynamics /p:Configuration=Release /p:Platform="Win32"
-    MSBuild.exe "bullet3\build\BULLET_PHYSICS.sln" /t:Bullet3Geometry /p:Configuration=Release /p:Platform="Win32"
-    MSBuild.exe "bullet3\build\BULLET_PHYSICS.sln" /t:BulletCollision /p:Configuration=Release /p:Platform="Win32"
-    MSBuild.exe "bullet3\build\BULLET_PHYSICS.sln" /t:BulletDynamics /p:Configuration=Release /p:Platform="Win32"
-    MSBuild.exe "bullet3\build\BULLET_PHYSICS.sln" /t:LinearMath /p:Configuration=Release /p:Platform="Win32"
+    if "%VisualStudioVersion%"=="16.0" (
+      set force_platform_toolset=v142
+    ) else (
+      set force_platform_toolset=v141
+    )
+
+    MSBuild.exe "bullet3\build\BULLET_PHYSICS.sln" /t:Bullet3Collision /p:Configuration=Release /p:Platform="Win32" /p:PlatformToolset=%force_platform_toolset%
+    MSBuild.exe "bullet3\build\BULLET_PHYSICS.sln" /t:Bullet3Common /p:Configuration=Release /p:Platform="Win32" /p:PlatformToolset=%force_platform_toolset%
+    MSBuild.exe "bullet3\build\BULLET_PHYSICS.sln" /t:Bullet3Dynamics /p:Configuration=Release /p:Platform="Win32" /p:PlatformToolset=%force_platform_toolset%
+    MSBuild.exe "bullet3\build\BULLET_PHYSICS.sln" /t:Bullet3Geometry /p:Configuration=Release /p:Platform="Win32" /p:PlatformToolset=%force_platform_toolset%
+    MSBuild.exe "bullet3\build\BULLET_PHYSICS.sln" /t:BulletCollision /p:Configuration=Release /p:Platform="Win32" /p:PlatformToolset=%force_platform_toolset%
+    MSBuild.exe "bullet3\build\BULLET_PHYSICS.sln" /t:BulletDynamics /p:Configuration=Release /p:Platform="Win32" /p:PlatformToolset=%force_platform_toolset%
+    MSBuild.exe "bullet3\build\BULLET_PHYSICS.sln" /t:LinearMath /p:Configuration=Release /p:Platform="Win32" /p:PlatformToolset=%force_platform_toolset%
 )
