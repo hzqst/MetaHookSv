@@ -417,8 +417,6 @@ FARPROC WINAPI NewGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 
 void Steam_Init(void)
 {
-	gCapFuncs.szLanguage[0] = '\0';
-
 	auto steam_api = GetModuleHandleA("steam_api.dll");
 
 	if (!steam_api)
