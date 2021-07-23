@@ -29,5 +29,3 @@
 # Executables
 *.out
 *.app
-
-*.vcxproj.user
