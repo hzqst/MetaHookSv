@@ -676,7 +676,9 @@ const char *PrimaryKey_ForBinding(const char *binding)
 		binding ++;
 
 	if (!strcmp(binding, "sender") && m_pSenderName)
+	{
 		return m_pSenderName;
+	}
 
 	for (int i = 255; i >= 0; --i)
 	{
@@ -726,7 +728,7 @@ void CDictionary::FinalizeString(std::wstring &output)
 		{
 			std::string abinding = pszBinding;
 			std::wstring wbinding;
-			ANSIToUnicode(abinding, wbinding);
+			UTF8ToUnicode(abinding, wbinding);
 
 			if (searchStart != finalize.cbegin())
 			{
