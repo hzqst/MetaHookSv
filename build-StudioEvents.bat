@@ -6,5 +6,5 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
 
     "%InstallDir%\Common7\Tools\vsdevcmd.bat" -arch=x86
     
-    MSBuild.exe "Plugins\StudioEvents\StudioEvents.sln" /t:StudioEvents /p:Configuration=Release /p:Platform="Win32" /p:PlatformToolset=v141
+    MSBuild.exe "Plugins\StudioEvents\StudioEvents.sln" /t:StudioEvents /p:Configuration=Release /p:Platform="Win32"
 )
