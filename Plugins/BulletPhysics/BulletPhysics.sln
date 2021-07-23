@@ -7,14 +7,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BulletPhysics", "BulletPhys
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|x86 = Debug|x86
-		Release|x86 = Release|x86
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C5}.Debug|x86.ActiveCfg = Debug|Win32
-		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C5}.Debug|x86.Build.0 = Debug|Win32
-		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C5}.Release|x86.ActiveCfg = Release|Win32
-		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C5}.Release|x86.Build.0 = Release|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C5}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C5}.Debug|Win32.Build.0 = Debug|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C5}.Release|Win32.ActiveCfg = Release|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C5}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

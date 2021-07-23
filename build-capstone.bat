@@ -6,17 +6,19 @@ for /f "usebackq tokens=*" %%i in (`vswhere -latest -products * -requires Micros
   set InstallDir=%%i
 )
 
+for /f "usebackq tokens=*" %%i in (`vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property catalog_productLineVersion`) do (
+  set InstallVsVersion=%%i
+)
+
+set ForcePlatformToolset=v141
+
+if "%InstallVsVersion%"=="2019" set ForcePlatformToolset=v142
+
 if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
 
     "%InstallDir%\Common7\Tools\vsdevcmd.bat" -arch=x86
-    
-    if "%VisualStudioVersion%"=="16.0" (
-      set force_platform_toolset=v142
-    ) else (
-      set force_platform_toolset=v141
-    )
 
-    MSBuild.exe "capstone\msvc\capstone.sln" /t:capstone_static /p:Configuration=Release /p:Platform="Win32" /p:PlatformToolset=%force_platform_toolset%
+    MSBuild.exe "capstone\msvc\capstone.sln" /t:capstone_static /p:Configuration=Release /p:Platform="Win32" /p:PlatformToolset=%ForcePlatformToolset%
 
     copy /y "capstone\msvc\capstone_static\capstone_static.vcxproj.bak" "capstone\msvc\capstone_static\capstone_static.vcxproj"
     del "capstone\msvc\capstone_static\capstone_static.vcxproj.bak"

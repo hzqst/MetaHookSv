@@ -140,4 +140,4 @@ extern ref_export_t gRefExports;
 #define r_draw_refract 2
 #define r_draw_shadow_caster 3
 
-#define META_RENDERER_VERSION "Meta Renderer 2021-07-20"
+#define META_RENDERER_VERSION "Meta Renderer 2021-07-23"
