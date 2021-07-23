@@ -93,3 +93,17 @@ This plugin can block studio-event sound spamming with controllable cvars.
 [DOCUMENTATION](StudioEvents.md) [中文文档](StudioEventsCN.md)
 
 ![](https://github.com/hzqst/MetaHookSv/raw/main/img/8.png)
+
+### HUDColor (third-party) (SvEngine only)
+
+This plugin basically changes HUD colors in game.
+
+https://github.com/DrAbcrealone/HUDColor
+
+### MetaAudio (third-party) (GoldSrc only)
+
+This is a plugin for GoldSrc that adds OpenAL support to its sound system. This fork fixes some bugs and uses Alure instead of OpenAL directly for easier source management.
+
+Since SvEngine uses FMOD as it's sound system, you really shouldn't use this plugin in SvenCoop.
+
+https://github.com/LAGonauta/MetaAudio
