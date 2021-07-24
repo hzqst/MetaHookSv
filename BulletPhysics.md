@@ -2,7 +2,7 @@
 
 [中文DOC](BulletPhysicsCN.md)
 
-### 功能
+### Features
 
 1. Transform player model into ragdoll when player is dead or being caught by barnacle.
 
