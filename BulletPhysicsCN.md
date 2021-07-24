@@ -8,9 +8,9 @@
 
 2. 怪物死亡时将怪物模型转化为布娃娃（暂未支持）
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/6.png)
+![](/hzqst/MetaHookSv/raw/main/img/6.png)
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/7.png)
+![](/hzqst/MetaHookSv/raw/main/img/7.png)
 
 ### 兼容性
 
@@ -21,7 +21,7 @@
 | GoldSrc_new    (8684 ~)  | √    |
 | SvEngine       (8832 ~)  | √    |
 
-GoldSrc引擎: 只兼容从 https://github.com/hzqst/MetaHookSv 构建的改进版metahook启动器(metahook.exe), 不兼容其他来源的metahook启动器。
+GoldSrc引擎: 只兼容从MetaHookSv构建的改进版metahook启动器(metahook.exe), 不兼容其他来源的metahook启动器。
 
 ### 控制台参数
 
@@ -43,9 +43,11 @@ bv_debug 6 : 启用Bullet Engine的调试绘制功能. 只有布娃娃和点对�
 
 ### 如何制作玩家布娃娃
 
-1. 创建名为 "[model_name]_ragdoll.txt" 的文件到 "\steamapps\common\Sven Co-op\svencoop(_addons, _download等)\models\[model_name]\" 目录下, 比如："\svencoop\models\player\GFL_M14\GFL_M14_ragdoll.txt". (模型来自 https://gamebanana.com/mods/167065)
+1. 创建名为 `[model_name]_ragdoll.txt` 的文件到 `Sven Co-op\steamapps\common\Sven Co-op\svencoop(_addons, _download)\models\[model_name]\` 目录下, 比如: `\Sven Co-op\svencoop_addon\models\player\GFL_M14\GFL_M14_ragdoll.txt`. 
 
-2. "[model_name]_ragdoll.txt" 格式如下（以下全部都是参数说明，完整格式可以参考GFL_M14_ragdoll.txt） :
+2. "[model_name]_ragdoll.txt" 格式如下 :
+
+* [GFL_M14_ragdoll.txt](/hzqst/MetaHookSv/raw/main/Build/svencoop_addon/models/player/GFL_M14/GFL_M14_ragdoll.txt)，模型来自(香蕉网)[https://gamebanana.com/mods/167065]
 
 #### [DeathAnim] 指定哪些动画会将玩家转换为布娃娃（注：目前只支持12 ~ 18，182 ~ 185）
 

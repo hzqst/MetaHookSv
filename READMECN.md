@@ -54,7 +54,7 @@
 
 1. git clone https://github.com/hzqst/MetaHookSv
 
-2. 运行 init-deps.bat, 等待所有子模块和依赖项目下载完成。 (这一步可能需要花费几分钟时间, 具体取决于你的网速，如果速度很慢或者下载出错建议尝试使用proxy)
+2. 运行 `init-deps.bat`, 等待所有子模块和依赖项目下载完成。 (这一步可能需要花费几分钟时间, 具体取决于你的网速，如果速度很慢或者下载出错建议尝试使用proxy)
 
 3. 运行 `build-capstone.bat`, 等待 capstone 的静态库生成完毕
 

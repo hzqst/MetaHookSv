@@ -8,9 +8,9 @@
 
 2. Transform monster model into ragdoll when monster is dead. (Not supported yet)
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/6.png)
+![](/hzqst/MetaHookSv/raw/main/img/6.png)
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/7.png)
+![](/hzqst/MetaHookSv/raw/main/img/7.png)
 
 ### Compatibility
 
@@ -21,7 +21,7 @@
 | GoldSrc_new    (8684 ~)  | √    |
 | SvEngine       (8832 ~)  | √    |
 
-For GoldSrc engine: Only compatible with metahook launcher (metahook.exe) from https://github.com/hzqst/MetaHookSv, not from other source.
+For GoldSrc engine: Only compatible with MetaHookSv launcher, not from other source.
 
 ### Console Vars
 
@@ -43,9 +43,11 @@ bv_debug 6 : Enable bullet-engine's debug-drawing. both ragdoll rigidbodies and 
 
 ### How to make dead players being ragdoll
 
-1. You have to create a file named "[model_name]_ragdoll.txt" at "\steamapps\common\Sven Co-op\svencoop(_addons, _download etc)\models\[model_name]\", just like what I did in "Build\svencoop\models\player\GFL_M14\GFL_M14_ragdoll.txt". (The model is from https://gamebanana.com/mods/167065)
+1. You have to create a file named `[model_name]_ragdoll.txt` at `\Sven Co-op\steamapps\common\Sven Co-op\svencoop(_addons, _download etc)\models\[model_name]\`, for example `\Sven Co-op\svencoop_addon\models\player\GFL_M14\GFL_M14_ragdoll.txt`. (The model is from https://gamebanana.com/mods/167065)
 
 2. The content of "[model_name]_ragdoll.txt" should follow the format :
+
+* [GFL_M14_ragdoll.txt](/hzqst/MetaHookSv/raw/main/Build/svencoop_addon/models/player/GFL_M14/GFL_M14_ragdoll.txt), model from (gamebanana)[https://gamebanana.com/mods/167065]
 
 #### [DeathAnim]
 
