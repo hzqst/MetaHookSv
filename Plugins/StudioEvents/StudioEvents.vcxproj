@@ -76,7 +76,7 @@
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(ProjectName).dll" "$(MetaHookGameDirectory)\$(MetaHookModName)\metahook\plugins\"</Command>
+      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(MetaHookGameDirectory)\$(MetaHookModName)\metahook\plugins\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -100,7 +100,7 @@
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(OutDir)$(ProjectName).dll "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\$(ProjectName).dll"</Command>
+      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

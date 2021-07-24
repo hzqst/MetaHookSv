@@ -79,7 +79,7 @@
       <AdditionalLibraryDirectories>capstone\msvc\Debug\</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(ProjectName).exe" "$(MetaHookGameDirectory)\$(MetaHookLaunchName)"</Command>
+      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(MetaHookGameDirectory)\$(MetaHookLaunchName)"</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableDpiAwareness>true</EnableDpiAwareness>
@@ -109,7 +109,7 @@
       <AdditionalDependencies>capstone.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(ProjectName).exe" "$(OutDir)..\Build\svencoop.exe"</Command>
+      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(OutDir)..\Build\svencoop.exe"</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableDpiAwareness>true</EnableDpiAwareness>

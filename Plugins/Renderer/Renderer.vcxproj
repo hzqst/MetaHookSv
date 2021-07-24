@@ -75,7 +75,7 @@
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(ProjectName).dll" "$(MetaHookGameDirectory)\$(MetaHookModName)\metahook\plugins\"
+      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(MetaHookGameDirectory)\$(MetaHookModName)\metahook\plugins\"
 xcopy "$(OutDir)\..\..\..\Build\svencoop\renderer\" "$(MetaHookGameDirectory)\$(MetaHookModName)\renderer\" /y /e</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -104,7 +104,7 @@ xcopy "$(OutDir)\..\..\..\Build\svencoop\renderer\" "$(MetaHookGameDirectory)\$(
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(OutDir)$(ProjectName).dll "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\$(ProjectName).dll"</Command>
+      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
