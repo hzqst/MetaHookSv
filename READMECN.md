@@ -1,8 +1,8 @@
 # MetaHookSv
 
-[MetaHook](https://github.com/nagist/metahook)的SvenCoop移植版本
+[MetaHook](https://github.com/nagist/metahook)的Sven Co-op移植版本
 
-用黑科技提升你的SvenCoop游戏体验
+用黑科技提升你的Sven Co-op游戏体验
 
 大部分插件都兼容原版GoldSrc引擎，具体的兼容性情况请逐个查阅插件文档。
 
@@ -12,9 +12,9 @@
 
 虽然在游戏中使用hook之类的行为可能看上去很危险，但是目前为止还没有人反馈因为使用此插件导致VAC封禁。
 
-并且SvenCoop并不属于[受VAC保护的游戏](https://store.steampowered.com/search/?term=coop&category2=8)
+并且Sven Co-op并不属于[受VAC保护的游戏](https://store.steampowered.com/search/?term=coop&category2=8)
 
-如果你实在不放心，那么请使用小号进行游戏，毕竟Sven-Coop是免费游戏。
+如果你实在不放心，那么请使用小号进行游戏，毕竟Sven Co-op是免费游戏。
 
 ## 手动安装方式
 
