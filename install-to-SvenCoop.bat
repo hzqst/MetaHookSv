@@ -7,20 +7,15 @@ for /f "delims=" %%a in ('%~dp0SteamAppsLocation/SteamAppsLocation 225840 Instal
 
 if "%GameDir%"=="" goto fail
 
+echo -----------------------------------------------------
+
+echo Copying files...
+
 copy "%~dp0Build\svencoop.exe" "%GameDir%\" /y
 copy "%~dp0Build\SDL2.dll" "%GameDir%\" /y
 copy "%~dp0Build\FreeImage.dll" "%GameDir%\" /y
 xcopy "%~dp0Build\svencoop\" "%GameDir%\%LauncherMod%\" /y /e
 xcopy "%~dp0Build\svencoop_addon\" "%GameDir%\%LauncherMod%_addon\" /y /e
-
-echo -----------------------------------------------------
-
-echo Writing debug configuration...
-
-call powershell -Command "(gc global.props) -replace '<MetaHookLaunchName>.*</MetaHookLaunchName>', '<MetaHookLaunchName>%LauncherExe%</MetaHookLaunchName>' | Out-File global.props"
-call powershell -Command "(gc global.props) -replace '<MetaHookLaunchCommnand>.*</MetaHookLaunchCommnand>', '<MetaHookLaunchCommnand>-game %LauncherMod%</MetaHookLaunchCommnand>' | Out-File global.props"
-call powershell -Command "(gc global.props) -replace '<MetaHookGameDirectory>.*</MetaHookGameDirectory>', '<MetaHookGameDirectory>%GameDir%\</MetaHookGameDirectory>' | Out-File global.props"
-call powershell -Command "(gc global.props) -replace '<MetaHookModName>.*</MetaHookModName>', '<MetaHookModName>%LauncherMod%</MetaHookModName>' | Out-File global.props"
 
 echo -----------------------------------------------------
 
