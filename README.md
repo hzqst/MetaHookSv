@@ -1,8 +1,8 @@
 # MetaHookSv
 
-This is a porting of MetaHook (https://github.com/nagist/metahook) for SvEngine (GoldSrc engine modified by Sven-Coop Team),
+This is a porting of [MetaHook](https://github.com/nagist/metahook) for SvEngine (GoldSrc engine modified by Sven Co-op Team),
 
-Mainly to keep you a good game experience in Sven-Coop.
+Mainly to keep you a good game experience in Sven Co-op.
 
 Most of plugins are still compatible with vanilla GoldSrc engine. please check plugin docs for compatibility.
 
@@ -12,9 +12,9 @@ Most of plugins are still compatible with vanilla GoldSrc engine. please check p
 
 Although using hook is likely to be dangerous in games, there is no VAC ban reported yet.
 
-As you can see Sven-Coop is not protected by VAC : https://store.steampowered.com/search/?term=coop&category2=8
+As you can see Sven Co-op is not protected by VAC : https://store.steampowered.com/search/?term=coop&category2=8
 
-Use a separate account to play Sven-Coop if you worry about getting banned, since Sven-Coop is a free game.
+Use a separate account to play Sven Co-op if you worry about getting banned, since Sven Co-op is a free game.
 
 ## Manual Installation
 
