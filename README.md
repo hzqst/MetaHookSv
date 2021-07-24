@@ -12,7 +12,7 @@ Most of plugins are still compatible with vanilla GoldSrc engine. please check p
 
 Although using hook is likely to be dangerous in games, there is no VAC ban reported yet.
 
-As you can see Sven Co-op is not protected by VAC : https://store.steampowered.com/search/?term=coop&category2=8
+Btw Sven Co-op is not a [Game that protected by VAC](https://store.steampowered.com/search/?term=coop&category2=8)
 
 Use a separate account to play Sven Co-op if you worry about getting banned, since Sven Co-op is a free game.
 
@@ -116,6 +116,6 @@ https://github.com/DrAbcrealone/HUDColor
 
 This is a plugin for GoldSrc that adds OpenAL support to its sound system. This fork fixes some bugs and uses Alure instead of OpenAL directly for easier source management.
 
-Since SvEngine uses FMOD as it's sound system, you really shouldn't use this plugin in SvenCoop.
+Since SvEngine uses FMOD as it's sound system, you really shouldn't use this plugin in Sven Co-op.
 
 https://github.com/LAGonauta/MetaAudio
