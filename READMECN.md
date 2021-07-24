@@ -24,9 +24,9 @@
 
 3. 从`\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe` 启动游戏。
 
-* Build中的 `svencoop.exe` 原来叫 `metahook.exe`，它会替换你自带的游戏启动器`svencoop.exe`，请注意备份。当然你也可以选择不替换`svencoop.exe`，以命令行或启动项方式`metahook.exe -game svencoop`启动SvenCoop。不过不推荐这么做，因为这么做会导致更改视频模式的时候游戏闪退（可能是游戏自己对进程名有校验）。
+* `Build`目录中的 `svencoop.exe` 原来叫 `metahook.exe`，它会替换你自带的游戏启动器`svencoop.exe`，请注意备份。当然你也可以选择不替换`svencoop.exe`，以命令行或启动项方式`metahook.exe -game svencoop`启动SvenCoop。不过不推荐这么做，因为这么做会导致更改视频模式的时候游戏闪退（可能是游戏自己对进程名有校验）。
 
-* Build中的`SDL2.dll`文件是用来修复原版SDL使用中文输入法进行游戏时可能发生的内存越界写入导致游戏崩溃的问题。如果你全程都关闭中文输入法的话也可以选择不替换`SDL2.dll`。
+* `Build`目录中的`SDL2.dll`文件是用来修复原版SDL使用中文输入法进行游戏时可能发生的内存越界写入导致游戏崩溃的问题。如果你全程都关闭中文输入法的话也可以选择不替换`SDL2.dll`。
 
 ## 一键安装方式
 
