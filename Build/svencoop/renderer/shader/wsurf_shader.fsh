@@ -223,6 +223,7 @@ void main()
 			shadow_final = clamp(shadow_final, 0.0, 1.0) * shadow_alpha;
 
 			lightmapColor.xyz *= (1.0 - shadow_final);
+			
 		}
 	#endif
 

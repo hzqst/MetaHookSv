@@ -18,6 +18,7 @@ GLuint depthrefrmap = 0;
 qboolean refractmap_ready = 0;
 
 SHADER_DEFINE(drawdepth);
+SHADER_DEFINE(drawcolor)
 
 int saved_cl_waterlevel;
 
@@ -179,6 +180,24 @@ const char *drawdepth_fscode =
 "	gl_FragColor = vec4(vec3(pow(vDepthColor.z, 50.0)), 1.0);"
 "}";
 
+const char *drawcolor_vscode =
+"void main(void)\n"
+"{\n"
+"   gl_TexCoord[0].xy = gl_MultiTexCoord0.xy;\n"
+"	gl_Position = ftransform();\n"
+"}";
+
+const char *drawcolor_fscode =
+"#version 130\n"
+""
+"#extension GL_EXT_texture_array : enable\n"
+""
+"uniform sampler2DArray colormap;\n"
+"void main(void)\n"
+"{\n"
+"	gl_FragColor = texture2DArray(colormap, vec3(gl_TexCoord[0].xy, 0.0));\n"
+"}";
+
 void R_InitWater(void)
 {
 	if(gl_shader_support)
@@ -187,6 +206,15 @@ void R_InitWater(void)
 		if (drawdepth.program)
 		{
 			SHADER_UNIFORM(drawdepth, depthmap, "depthmap");
+		}
+	}	
+	
+	if (gl_shader_support)
+	{
+		drawcolor.program = R_CompileShader(drawcolor_vscode, NULL, drawcolor_fscode, "drawcolor_shader.vsh", NULL, "drawcolor_shader.fsh");
+		if (drawcolor.program)
+		{
+			SHADER_UNIFORM(drawcolor, colormap, "colormap");
 		}
 	}
 
@@ -346,60 +374,6 @@ void R_RenderReflectView(r_water_t *w)
 	w->ready = true;
 }
 
-#if 0
-void R_RenderRefractView(r_water_t *w)
-{
-	if (refractmap_ready)
-		return;
-
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
-	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, refractmap, 0);
-	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthrefrmap, 0);
-	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
-
-	s_WaterFBO.s_hBackBufferTex = refractmap;
-	s_WaterFBO.s_hBackBufferDepthTex = depthrefrmap;
-
-	qglClearColor(w->color.r / 255.0f, w->color.g / 255.0f, w->color.b / 255.0f, 1);
-	qglStencilMask(0xFF);
-	qglClearStencil(0);
-	qglDepthMask(GL_TRUE);
-	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	qglStencilMask(0);
-
-	R_PushRefDef();
-
-	VectorCopy(r_refdef->vieworg, water_view);
-
-	r_draw_pass = r_draw_refract;
-
-	saved_cl_waterlevel = *cl_waterlevel;
-	*cl_waterlevel = 0;
-	auto saved_r_drawentities = r_drawentities->value;
-	if (r_water->value >= 2)
-	{
-		r_drawentities->value = 1;
-	}
-	else
-	{
-		r_drawentities->value = 0;
-	}
-
-	gRefFuncs.R_RenderScene();
-	
-	r_drawentities->value = saved_r_drawentities;
-	*cl_waterlevel = saved_cl_waterlevel;
-
-	R_PopRefDef();
-
-	r_draw_pass = r_draw_normal;
-
-end:
-	w->ready = true;
-	refractmap_ready = true;
-}
-#endif
-
 void R_FreeDeadWaters(void)
 {
 	r_water_t *kill;
@@ -449,8 +423,6 @@ void R_RenderWaterView(void)
 		{
 			R_RenderReflectView(w);
 		}
-
-		//R_RenderRefractView(w);
 
 		curwater = NULL;
 	}

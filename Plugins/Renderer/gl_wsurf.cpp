@@ -2883,7 +2883,7 @@ void R_DrawWorld(void)
 		InvertMatrix(mvmatrix, invmvmatrix);
 
 		qglMatrixMode(GL_TEXTURE);
-
+		qglPushMatrix();
 		for (int i = 0; i < 3; ++i)
 		{
 			if (shadow_numvisedicts[i] > 0)
@@ -2897,7 +2897,7 @@ void R_DrawWorld(void)
 			}
 		}
 
-		qglLoadIdentity();
+		qglPopMatrix();
 		qglMatrixMode(GL_MODELVIEW);
 	}
 

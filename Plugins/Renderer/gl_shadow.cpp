@@ -75,7 +75,7 @@ bool R_ShouldRenderShadowScene(int level)
 	if(r_draw_pass != r_draw_normal)
 		return false;
 
-	if (!shadow_visedicts[0] && !shadow_visedicts[1] && !shadow_visedicts[2])
+	if (!shadow_numvisedicts[0] && !shadow_numvisedicts[1] && !shadow_numvisedicts[2])
 		return false;
 
 	return r_shadow->value >= level;

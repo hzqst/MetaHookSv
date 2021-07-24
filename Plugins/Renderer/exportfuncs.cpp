@@ -228,15 +228,18 @@ int HUD_Redraw(float time, int intermission)
 			qglUseProgramObjectARB(0);
 		}
 	}
-	/*else if(r_shadow_debug && r_shadow_debug->value == 1)
+	else if(r_shadow_debug && r_shadow_debug->value == 1)
 	{
 		qglDisable(GL_BLEND);
 		qglDisable(GL_ALPHA_TEST);
 		qglColor4f(1,1,1,1);
 
-		qglEnable(GL_TEXTURE_2D);
-		//qglBindTexture(GL_TEXTURE_2D, shadow_texture_color[0]);
+		qglDisable(GL_TEXTURE_2D);
+		qglEnable(GL_TEXTURE_2D_ARRAY);
+		qglBindTexture(GL_TEXTURE_2D_ARRAY, shadow_texture_color);
 
+		qglUseProgramObjectARB(drawcolor.program);
+		qglUniform1iARB(drawcolor.colormap, 0);
 		qglBegin(GL_QUADS);
 		qglTexCoord2f(0,1);
 		qglVertex3f(0,0,0);
@@ -247,8 +250,13 @@ int HUD_Redraw(float time, int intermission)
 		qglTexCoord2f(0,0);
 		qglVertex3f(0,glheight/2,0);
 		qglEnd();
+		qglUseProgramObjectARB(0);
+
+		qglDisable(GL_TEXTURE_2D_ARRAY);
+		qglEnable(GL_TEXTURE_2D);
 		qglEnable(GL_ALPHA_TEST);
-	}*/
+
+	}
 	else if(r_light_debug && r_light_debug->value)
 	{
 		qglDisable(GL_BLEND);
