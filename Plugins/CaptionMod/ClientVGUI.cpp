@@ -135,18 +135,17 @@ void ClientVGUI_InstallHook(void)
 	{
 		DWORD *pVFTable = *(DWORD **)&s_ClientVGUI;
 
-		g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0,  1, (void *)pVFTable[1], (void *&)m_pfnCClientVGUI_Initialize);
-		g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0,  2, (void *)pVFTable[2], (void *&)m_pfnCClientVGUI_Start);
-		g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0,  3, (void *)pVFTable[3], (void *&)m_pfnCClientVGUI_SetParent);
-		g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0,  7, (void *)pVFTable[7], (void *&)m_pfnCClientVGUI_ActivateClientUI);
-		g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0,  8, (void *)pVFTable[8], (void *&)m_pfnCClientVGUI_HideClientUI);
+		g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0,  1, (void *)pVFTable[1], (void **)&m_pfnCClientVGUI_Initialize);
+		g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0,  2, (void *)pVFTable[2], (void **)&m_pfnCClientVGUI_Start);
+		g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0,  3, (void *)pVFTable[3], (void **)&m_pfnCClientVGUI_SetParent);
+		g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0,  7, (void *)pVFTable[7], (void **)&m_pfnCClientVGUI_ActivateClientUI);
+		g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0,  8, (void *)pVFTable[8], (void **)&m_pfnCClientVGUI_HideClientUI);
 
 		g_IsClientVGUI2 = true;
 	}
 	else
 	{
-		auto pfnGetProcAddress = GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetProcAddress");
-		gCapFuncs.hk_GetProcAddress = g_pMetaHookAPI->InlineHook(pfnGetProcAddress, NewGetProcAddress, (void *&)gCapFuncs.GetProcAddress);
+		gCapFuncs.hk_GetProcAddress = g_pMetaHookAPI->InlineHook(gCapFuncs.GetProcAddress, NewGetProcAddress, (void **)&gCapFuncs.GetProcAddress);
 	}
 }
 
@@ -412,7 +411,7 @@ void VGUI1_InstallHook(void)
 	vftable_TextImage = (void **)GetProcAddress(g_hVGui1, "??_7TextImage@vgui@@6B@");
 	vftable_Color = (void **)GetProcAddress(g_hVGui1, "??_7Color@vgui@@6B@");
 
-	g_pMetaHookAPI->InlineHook(vftable_TextImage[22], vgui_TextImage_paint, (void *&)vgui_TextImage_paint_orig);
+	g_pMetaHookAPI->InlineHook(vftable_TextImage[22], vgui_TextImage_paint, (void **)&vgui_TextImage_paint_orig);
 }
 
 void ClientVGUI_Shutdown(void)

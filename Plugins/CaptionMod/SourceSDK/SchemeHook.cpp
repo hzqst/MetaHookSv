@@ -88,14 +88,14 @@ void Scheme_InstallHook(void)
 {
 	DWORD *pVFTable = *(DWORD **)&g_SchemeProxy;
 
-	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 1, (void *)pVFTable[1], (void *&)m_pfnLoadSchemeFromFile);
-	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 2, (void *)pVFTable[2], (void *&)m_pfnReloadSchemes);
-	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 3, (void *)pVFTable[3], (void *&)m_pfnGetDefaultScheme);
-	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 4, (void *)pVFTable[4], (void *&)m_pfnGetScheme);
-	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 5, (void *)pVFTable[5], (void *&)m_pfnGetImage);
-	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 6, (void *)pVFTable[6], (void *&)m_pfnGetImageID);
-	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 7, (void *)pVFTable[7], (void *&)m_pfnGetIScheme);
-	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 8, (void *)pVFTable[8], (void *&)m_pfnShutdown);
-	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 9, (void *)pVFTable[9], (void *&)m_pfnGetProportionalScaledValue);
-	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 10, (void *)pVFTable[10], (void *&)m_pfnGetProportionalNormalizedValue);
+	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 1, (void *)pVFTable[1], (void **)&m_pfnLoadSchemeFromFile);
+	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 2, (void *)pVFTable[2], (void **)&m_pfnReloadSchemes);
+	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 3, (void *)pVFTable[3], (void **)&m_pfnGetDefaultScheme);
+	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 4, (void *)pVFTable[4], (void **)&m_pfnGetScheme);
+	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 5, (void *)pVFTable[5], (void **)&m_pfnGetImage);
+	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 6, (void *)pVFTable[6], (void **)&m_pfnGetImageID);
+	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 7, (void *)pVFTable[7], (void **)&m_pfnGetIScheme);
+	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 8, (void *)pVFTable[8], (void **)&m_pfnShutdown);
+	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 9, (void *)pVFTable[9], (void **)&m_pfnGetProportionalScaledValue);
+	g_pMetaHookAPI->VFTHook(g_pScheme, 0, 10, (void *)pVFTable[10], (void **)&m_pfnGetProportionalNormalizedValue);
 }

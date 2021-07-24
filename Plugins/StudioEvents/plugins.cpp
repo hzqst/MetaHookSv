@@ -20,7 +20,7 @@ DWORD g_dwEngineRdataSize;
 DWORD g_dwEngineBuildnum;
 int g_iEngineType;
 
-void IPlugins::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
+void IPluginsV3::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
 	g_pInterface = pInterface;
 	g_pMetaHookAPI = pAPI;
@@ -28,11 +28,11 @@ void IPlugins::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_engines
 	g_hInstance = GetModuleHandle(NULL);
 }
 
-void IPlugins::Shutdown(void)
+void IPluginsV3::Shutdown(void)
 {
 }
 
-void IPlugins::LoadEngine(void)
+void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
 	g_pFileSystem = g_pInterface->FileSystem;
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();
@@ -43,21 +43,21 @@ void IPlugins::LoadEngine(void)
 	g_dwEngineTextBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".text\x0\x0\x0", &g_dwEngineTextSize);
 	g_dwEngineDataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".data\x0\x0\x0", &g_dwEngineDataSize);
 	g_dwEngineRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".rdata\x0\x0", &g_dwEngineRdataSize);
+
+	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 }
 
-void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
+void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 {
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
 
-	pExportFunc->Initialize = Initialize;
 	pExportFunc->HUD_Init = HUD_Init;
 	pExportFunc->HUD_Frame = HUD_Frame;
 	pExportFunc->HUD_StudioEvent = HUD_StudioEvent;
-
 }
 
-void IPlugins::ExitGame(int iResult)
+void IPluginsV3::ExitGame(int iResult)
 {
 }
 
-EXPOSE_SINGLE_INTERFACE(IPlugins, IPlugins, METAHOOK_PLUGIN_API_VERSION);
+EXPOSE_SINGLE_INTERFACE(IPluginsV3, IPluginsV3, METAHOOK_PLUGIN_API_VERSION_V3);

@@ -28,15 +28,6 @@ void *NewClientFactory(void)
 	return Sys_GetFactoryThis();
 }
 
-int Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
-{
-	memcpy(&gEngfuncs, pEnginefuncs, sizeof(gEngfuncs));
-
-	pEnginefuncs->pfnTextMessageGet = pfnTextMessageGet;
-
-	return gExportfuncs.Initialize(pEnginefuncs, iVersion);
-}
-
 int HUD_VidInit(void)
 {
 	int result = gExportfuncs.HUD_VidInit();

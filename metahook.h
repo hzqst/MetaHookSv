@@ -35,9 +35,15 @@ typedef BOOL (*DisasmCallback)(void *inst, PUCHAR address, size_t instLen, int i
 typedef struct metahook_api_s
 {
 	BOOL (*UnHook)(hook_t *pHook);
-	hook_t *(*InlineHook)(void *pOldFuncAddr, void *pNewFuncAddr, void *&pCallBackFuncAddr);
-	hook_t *(*VFTHook)(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFuncAddr, void *&pCallBackFuncAddr);
-	hook_t *(*IATHook)(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, void *pNewFuncAddr, void *&pCallBackFuncAddr);
+	hook_t *(*InlineHook)(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCall);
+	/*
+		Install JMP hook at begin of function,
+		Warning : this hook operation will be delayed until LoadEngine or LoadClient from all plugins called, if it is requseted from inside LoadEngine or LoadClient.
+		otherwise the hook operation is executed immediately.
+	*/
+
+	hook_t *(*VFTHook)(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFuncAddr, void **pOrginalCall);
+	hook_t *(*IATHook)(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, void *pNewFuncAddr, void **pOrginalCall);
 	void *(*GetClassFuncAddr)(...);
 	PVOID (*GetModuleBase)(HMODULE hModule);
 	DWORD (*GetModuleSize)(HMODULE hModule);
@@ -57,12 +63,33 @@ typedef struct metahook_api_s
 	BYTE (*ReadBYTE)(void *pAddress);
 	void (*WriteNOP)(void *pAddress, DWORD dwCount);
 	int (*GetEngineType)(void);
+	/*
+		Return one of them :  ENGINE_UNKNOWN, ENGINE_GOLDSRC_BLOB, ENGINE_GOLDSRC, ENGINE_SVENGINE
+	*/
+
 	const char *(*GetEngineTypeName)(void);
+	/*
+		Return one of them : "Unknown", "GoldSrc_Blob", "GoldSrc", "SvEngine"
+	*/
+
 	PVOID(*ReverseSearchFunctionBegin)(PVOID SearchBegin, DWORD SearchSize);
+	/*
+		Reverse search from given base to lower address, find 90 90 90 99 + ??, or CC CC CC CC + ??
+	*/
+
 	PVOID(*GetSectionByName)(PVOID ImageBase, const char *SectionName, ULONG *SectionSize);
+	/*
+		Return the section base and section size of given image and section name.
+	*/
+
 	int (*DisasmSingleInstruction)(PVOID address, DisasmSingleCallback callback, void *context);
+
 	BOOL (*DisasmRanges)(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callback, int depth, PVOID context);
+
 	const char *(*GetEngineGameDirectory)(void);
+	/*
+		Return mod name such as "valve" "cstrike" "svencoop"
+	*/
 }
 metahook_api_t;
 

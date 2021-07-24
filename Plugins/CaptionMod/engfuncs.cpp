@@ -7,7 +7,6 @@
 #define S_STARTDYNAMICSOUND_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x54\x8B\x44\x24\x5C\x55"
 #define S_STARTSTATICSOUND_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x48\x57\x8B\x7C\x24\x5C"
 #define S_LOADSOUND_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\x8B\x8C\x24\x2A\x2A\x00\x00\x56\x8B\xB4\x24\x2A\x2A\x00\x00\x8A\x06\x3C\x2A"
-#define SV_FINDSOUND_SIG_SVENGINE "\x51\x55\x8B\x6C\x24\x0C\x89\x4C\x24\x04\x85\xED\x0F\x84\x2A\x2A\x2A\x2A\x80\x7D\x00\x00"
 
 #define S_INIT_SIG_NEW "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x85\xC0"
 #define S_FINDNAME_SIG_NEW "\x55\x8B\xEC\x53\x56\x8B\x75\x08\x33\xDB\x85\xF6"
@@ -100,22 +99,7 @@ void Engine_FillAddress(void)
 
 void Engine_InstallHook(void)
 {
-	DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_pMetaSave->pEngineFuncs->GetClientTime, 0x20, "\xDD\x05", Sig_Length("\xDD\x05"));
-	Sig_AddrNotFound("cl_time");
-	gCapFuncs.pcl_time = (double *)*(DWORD *)(addr + 2);
-	gCapFuncs.pcl_oldtime = gCapFuncs.pcl_time + 1;
-
 	Install_InlineHook(S_FindName);
 	Install_InlineHook(S_StartDynamicSound);
 	Install_InlineHook(S_StartStaticSound);
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		gCapFuncs.SvClient_FindSoundEx = (decltype(gCapFuncs.SvClient_FindSoundEx))
-			g_pMetaHookAPI->SearchPattern((void *)g_hClientDll, g_dwClientSize, SV_FINDSOUND_SIG_SVENGINE, Sig_Length(SV_FINDSOUND_SIG_SVENGINE));
-		
-		Sig_FuncNotFound(SvClient_FindSoundEx);
-
-		Install_InlineHook(SvClient_FindSoundEx);
-	}
 }

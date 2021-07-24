@@ -2,6 +2,7 @@
 #include "exportfuncs.h"
 #include "privatehook.h"
 #include "plugins.h"
+#include "command.h"
 #include "qgl.h"
 
 cl_exportfuncs_t gExportfuncs;
@@ -22,7 +23,7 @@ DWORD g_dwEngineRdataSize;
 DWORD g_dwEngineBuildnum;
 int g_iEngineType;
 
-void IPlugins::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
+void IPluginsV3::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
 	g_pInterface = pInterface;
 	g_pMetaHookAPI = pAPI;
@@ -30,7 +31,7 @@ void IPlugins::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_engines
 	g_hInstance = GetModuleHandle(NULL);
 }
 
-void IPlugins::Shutdown(void)
+void IPluginsV3::Shutdown(void)
 {
 }
 
@@ -40,7 +41,7 @@ void IPlugins::Shutdown(void)
 #define R_RECURSIVEWORLDNODE_SIG_SVENGINE "\x83\xEC\x08\x53\x8B\x5C\x24\x10\x83\x3B\xFE"
 #define R_RECURSIVEWORLDNODE_SIG_NEW "\x55\x8B\xEC\x83\xEC\x08\x53\x56\x57\x8B\x7D\x08\x83\x3F\xFE\x0F\x2A\x2A\x2A\x2A\x2A\x8B\x47\x04"
 
-void IPlugins::LoadEngine(void)
+void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
 	g_pFileSystem = g_pInterface->FileSystem;
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();
@@ -51,6 +52,10 @@ void IPlugins::LoadEngine(void)
 	g_dwEngineTextBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".text\x0\x0\x0", &g_dwEngineTextSize);
 	g_dwEngineDataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".data\x0\x0\x0", &g_dwEngineDataSize);
 	g_dwEngineRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".rdata\x0\x0", &g_dwEngineRdataSize);
+
+	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
+
+	Cmd_GetCmdBase = *(cmd_function_t *(**)(void))((PUCHAR)pEngfuncs + 0x198);
 
 	if (g_iEngineType != ENGINE_SVENGINE && g_iEngineType != ENGINE_GOLDSRC)
 	{
@@ -87,27 +92,28 @@ void IPlugins::LoadEngine(void)
 		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_NEW);
 		Sig_FuncNotFound(R_NewMap);
 	}
+
+	Install_InlineHook(R_NewMap);
+
+	
 }
 
-void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
+void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 {
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
 
-	pExportFunc->Initialize = Initialize;
+	pExportFunc->HUD_Init = HUD_Init;
 	pExportFunc->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
 	pExportFunc->HUD_TempEntUpdate = HUD_TempEntUpdate;
 	pExportFunc->HUD_AddEntity = HUD_AddEntity;
-	pExportFunc->HUD_Init = HUD_Init;
 	pExportFunc->HUD_DrawTransparentTriangles = HUD_DrawTransparentTriangles;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 
 	QGL_Init();
-
-	Install_InlineHook(R_NewMap);
 }
 
-void IPlugins::ExitGame(int iResult)
+void IPluginsV3::ExitGame(int iResult)
 {
 }
 
-EXPOSE_SINGLE_INTERFACE(IPlugins, IPlugins, METAHOOK_PLUGIN_API_VERSION);
+EXPOSE_SINGLE_INTERFACE(IPluginsV3, IPluginsV3, METAHOOK_PLUGIN_API_VERSION_V3);

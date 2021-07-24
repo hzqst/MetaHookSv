@@ -20,6 +20,8 @@ typedef struct
 	HMODULE fmodex;
 	int(__stdcall *FMOD_Sound_getLength)(int a1, void* a2, int a3);//?getLength@Sound@FMOD@@QAG?AW4FMOD_RESULT@@PAII@Z
 
+	client_textmessage_t *(*pfnTextMessageGet)(const char *pName);
+
 	sfxcache_t *(*S_LoadSound)(sfx_t *s, channel_t *ch);
 	void *(**pfnClientFactory)(void);
 	FARPROC (WINAPI *GetProcAddress)(HMODULE hModule, LPCSTR lpProcName);

@@ -56,13 +56,6 @@ void Sys_ErrorEx(const char *fmt, ...)
 	TerminateProcess((HANDLE)(-1), 0);
 }
 
-int Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
-{
-	memcpy(&gEngfuncs, pEnginefuncs, sizeof(gEngfuncs));
-
-	return gExportfuncs.Initialize(pEnginefuncs, iVersion);
-}
-
 void HUD_Init(void)
 {
 	gExportfuncs.HUD_Init();

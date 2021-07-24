@@ -31,21 +31,18 @@ ICommandLine *CommandLine(void)
 	return g_pInterface->CommandLine;
 }
 
-void IPlugins::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
+void IPluginsV3::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
 	g_pInterface = pInterface;
 	g_pMetaHookAPI = pAPI;
 	g_pMetaSave = pSave;
-
-	//CommandLine()->AppendParm("-nomaster", NULL);
-	//CommandLine()->AppendParm("-insecure", NULL);
 }
 
-void IPlugins::Shutdown(void)
+void IPluginsV3::Shutdown(void)
 {
 }
 
-void IPlugins::LoadEngine(void)
+void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
 	g_pFileSystem = g_pInterface->FileSystem;
 	g_pMetaHookAPI->GetVideoMode(&g_iVideoWidth, &g_iVideoHeight, NULL, NULL);
@@ -58,21 +55,32 @@ void IPlugins::LoadEngine(void)
 	g_dwEngineDataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".data\x0\x0\x0", &g_dwEngineDataSize);
 	g_dwEngineRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".rdata\x0\x0", &g_dwEngineRdataSize);
 
+	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
+
+	gCapFuncs.GetProcAddress = (decltype(gCapFuncs.GetProcAddress))GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetProcAddress");
+
+	gCapFuncs.pfnTextMessageGet = pfnTextMessageGet;
+
+	DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gEngfuncs.GetClientTime, 0x20, "\xDD\x05", Sig_Length("\xDD\x05"));
+	Sig_AddrNotFound("cl_time");
+	gCapFuncs.pcl_time = (double *)*(DWORD *)(addr + 2);
+	gCapFuncs.pcl_oldtime = gCapFuncs.pcl_time + 1;
+
 	Steam_Init();
 	Engine_FillAddress();
+	Engine_InstallHook();
 	BaseUI_InstallHook();
 
 	g_pFullFileSystem = g_pFileSystem;
 }
 
-void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
+void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 {
 	//Get video settings again since width and height might have been changed during initialization.
 	g_pMetaHookAPI->GetVideoMode(&g_iVideoWidth, &g_iVideoHeight, NULL, NULL);
 
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
 
-	pExportFunc->Initialize = Initialize;
 	pExportFunc->HUD_Init = HUD_Init;
 	pExportFunc->HUD_VidInit = HUD_VidInit;
 	pExportFunc->HUD_Frame = HUD_Frame;
@@ -86,7 +94,19 @@ void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	g_dwClientSize = g_pMetaHookAPI->GetModuleSize(g_hClientDll);
 
-	gCapFuncs.GetProcAddress = GetProcAddress;
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+#define SV_FINDSOUND_SIG_SVENGINE "\x51\x55\x8B\x6C\x24\x0C\x89\x4C\x24\x04\x85\xED\x0F\x84\x2A\x2A\x2A\x2A\x80\x7D\x00\x00"
+
+		gCapFuncs.SvClient_FindSoundEx = (decltype(gCapFuncs.SvClient_FindSoundEx))
+			g_pMetaHookAPI->SearchPattern((void *)g_hClientDll, g_dwClientSize, SV_FINDSOUND_SIG_SVENGINE, Sig_Length(SV_FINDSOUND_SIG_SVENGINE));
+
+		Sig_FuncNotFound(SvClient_FindSoundEx);
+
+		Install_InlineHook(SvClient_FindSoundEx);
+	}
+
+	Install_InlineHook(pfnTextMessageGet);
 
 	//Try installing hook to interface VClientVGUI001
 	ClientVGUI_InstallHook();
@@ -95,12 +115,9 @@ void IPlugins::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	//hook textmsg
 	MSG_Init();
-
-	//hook engine audio
-	Engine_InstallHook();
 }
 
-void IPlugins::ExitGame(int iResult)
+void IPluginsV3::ExitGame(int iResult)
 {
 	if (gCapFuncs.hk_GetProcAddress)
 		g_pMetaHookAPI->UnHook(gCapFuncs.hk_GetProcAddress);
@@ -108,4 +125,4 @@ void IPlugins::ExitGame(int iResult)
 	ClientVGUI_Shutdown();
 }
 
-EXPOSE_SINGLE_INTERFACE(IPlugins, IPlugins, METAHOOK_PLUGIN_API_VERSION);
+EXPOSE_SINGLE_INTERFACE(IPluginsV3, IPluginsV3, METAHOOK_PLUGIN_API_VERSION_V3);

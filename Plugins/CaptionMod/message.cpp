@@ -960,5 +960,5 @@ client_textmessage_t *pfnTextMessageGet(const char *pName)
 		}
 	}
 
-	return gEngfuncs.pfnTextMessageGet(pName);
+	return gCapFuncs.pfnTextMessageGet(pName);
 }

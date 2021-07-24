@@ -77,13 +77,13 @@ void KeyValuesSystem_InstallHook(void)
 	CKeyValuesSystem KeyValuesSystem;
 	DWORD *pVFTable = *(DWORD **)&KeyValuesSystem;
 
-	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 1, (void *)pVFTable[1], (void *&)g_pfnRegisterSizeofKeyValues);
-	g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 2, (void *)pVFTable[2], (void *&)g_pfnAllocKeyValuesMemory);
-	g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 3, (void *)pVFTable[3], (void *&)g_pfnFreeKeyValuesMemory);
-	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 4, (void *)pVFTable[4], (void *&)g_pfnGetSymbolForString);
-	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 5, (void *)pVFTable[5], (void *&)g_pfnGetStringForSymbol);
-	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 6, (void *)pVFTable[6], (void *&)g_pfnGetLocalizedFromANSI);
-	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 7, (void *)pVFTable[7], (void *&)g_pfnGetANSIFromLocalized);
-	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 8, (void *)pVFTable[8], (void *&)g_pfnAddKeyValuesToMemoryLeakList);
-	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 9, (void *)pVFTable[9], (void *&)g_pfnRemoveKeyValuesFromMemoryLeakList);
+	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 1, (void *)pVFTable[1], (void **)&g_pfnRegisterSizeofKeyValues);
+	g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 2, (void *)pVFTable[2], (void **)&g_pfnAllocKeyValuesMemory);
+	g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 3, (void *)pVFTable[3], (void **)&g_pfnFreeKeyValuesMemory);
+	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 4, (void *)pVFTable[4], (void **)&g_pfnGetSymbolForString);
+	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 5, (void *)pVFTable[5], (void **)&g_pfnGetStringForSymbol);
+	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 6, (void *)pVFTable[6], (void **)&g_pfnGetLocalizedFromANSI);
+	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 7, (void *)pVFTable[7], (void **)&g_pfnGetANSIFromLocalized);
+	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 8, (void *)pVFTable[8], (void **)&g_pfnAddKeyValuesToMemoryLeakList);
+	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 9, (void *)pVFTable[9], (void **)&g_pfnRemoveKeyValuesFromMemoryLeakList);
 }

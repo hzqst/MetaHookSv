@@ -14,10 +14,17 @@ extern "C"
 	);
 }
 
+#define MH_HOOK_INLINE 1
+#define MH_HOOK_VFTABLE 2
+#define MH_HOOK_IAT 3
+
 struct hook_s
 {
+	int iType;
+	int bOriginalCallWritten;
 	void *pOldFuncAddr;
 	void *pNewFuncAddr;
+	void **pOrginalCall;
 	void *pClass;
 	int iTableIndex;
 	int iFuncIndex;
@@ -30,28 +37,30 @@ struct hook_s
 
 char *com_gamedir = NULL;
 DWORD *g_pVideoMode = NULL;
-int (*g_pfnbuild_number)(void);
-void *g_pClientDLL_Init;
-int (*g_pfnClientDLL_Init)(void);
-hook_t *g_phClientDLL_Init;
+int (*g_pfnbuild_number)(void) = NULL;
+void *g_pClientDLL_Init = NULL;
+int (*g_original_ClientDLL_Init)(void) = NULL;
+hook_t *g_phClientDLL_Init = NULL;
 
-BOOL g_bEngineIsBlob;
-HMODULE g_hEngineModule;
-PVOID g_dwEngineBase;
-DWORD g_dwEngineSize;
-hook_t *g_pHookBase;
-cl_exportfuncs_t *g_pExportFuncs;
-bool g_bSaveVideo;
-char g_szTempFile[MAX_PATH];
+BOOL g_bEngineIsBlob = FALSE;
+HMODULE g_hEngineModule = NULL;
+PVOID g_dwEngineBase = NULL;
+DWORD g_dwEngineSize = NULL;
+hook_t *g_pHookBase = NULL;
+cl_exportfuncs_t *g_pExportFuncs = NULL;
+void *g_ppExportFuncs = NULL;
+void *g_ppEngfuncs = NULL;
+bool g_bSaveVideo = false;
+bool g_bTransactionInlineHook = false;
 int g_iEngineType = ENGINE_UNKNOWN;
 
 hook_t *MH_FindInlineHooked(void *pOldFuncAddr);
 hook_t *MH_FindVFTHooked(void *pClass, int iTableIndex, int iFuncIndex);
 hook_t *MH_FindIATHooked(HMODULE hModule, const char *pszModuleName, const char *pszFuncName);
 BOOL MH_UnHook(hook_t *pHook);
-hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void *&pCallBackFuncAddr);
-hook_t *MH_VFTHook(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFuncAddr, void *&pCallBackFuncAddr);
-hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, void *pNewFuncAddr, void *&pCallBackFuncAddr);
+hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOriginalCall);
+hook_t *MH_VFTHook(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFuncAddr, void **pOriginalCall);
+hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, void *pNewFuncAddr, void **pOriginalCall);
 void *MH_GetClassFuncAddr(...);
 PVOID MH_GetModuleBase(HMODULE hModule);
 DWORD MH_GetModuleSize(HMODULE hModule);
@@ -100,17 +109,26 @@ bool HM_LoadPlugins(char *filename, HINTERFACEMODULE hModule)
 
 	if (plug->pPluginAPI)
 	{
-		((IPlugins *)plug->pPluginAPI)->Init(&gMetaHookAPI, &gInterface, &gMetaSave);
 		plug->iInterfaceVersion = 2;
+		((IPlugins *)plug->pPluginAPI)->Init(&gMetaHookAPI, &gInterface, &gMetaSave);
 	}
 	else
 	{
-		plug->pPluginAPI = fnCreateInterface(METAHOOK_PLUGIN_API_VERSION_V1, NULL);
-
+		plug->pPluginAPI = fnCreateInterface(METAHOOK_PLUGIN_API_VERSION_V3, NULL);
 		if (plug->pPluginAPI)
-			plug->iInterfaceVersion = 1;
+		{
+			plug->iInterfaceVersion = 3;
+			((IPluginsV3 *)plug->pPluginAPI)->Init(&gMetaHookAPI, &gInterface, &gMetaSave);
+		}
 		else
-			plug->iInterfaceVersion = 0;
+		{
+			plug->pPluginAPI = fnCreateInterface(METAHOOK_PLUGIN_API_VERSION_V1, NULL);
+
+			if (plug->pPluginAPI)
+				plug->iInterfaceVersion = 1;
+			else
+				plug->iInterfaceVersion = 0;
+		}
 	}
 
 	plug->filename = strdup(filename);
@@ -122,17 +140,21 @@ bool HM_LoadPlugins(char *filename, HINTERFACEMODULE hModule)
 void MH_Init(const char *pszGameName)
 {
 	g_pfnbuild_number = NULL;
-	g_pfnClientDLL_Init = NULL;
+	g_original_ClientDLL_Init = NULL;
 	g_phClientDLL_Init = NULL;
 	g_pVideoMode = NULL;
 	com_gamedir = NULL;
+
+	gMetaSave.pExportFuncs = new cl_exportfuncs_t;
+	gMetaSave.pEngineFuncs = new cl_enginefunc_t;
+	memset(gMetaSave.pEngineFuncs, 0, sizeof(cl_enginefunc_t));
+	memset(gMetaSave.pExportFuncs, 0, sizeof(cl_exportfuncs_t));
 
 	g_dwEngineBase = 0;
 	g_dwEngineSize = 0;
 	g_pHookBase = NULL;
 	g_pExportFuncs = NULL;
 	g_bSaveVideo = false;
-	g_szTempFile[0] = 0;
 
 	gInterface.CommandLine = CommandLine();
 	gInterface.FileSystem = g_pFileSystem;
@@ -184,11 +206,10 @@ void MH_Init(const char *pszGameName)
 
 int ClientDLL_Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 {
-	gMetaSave.pExportFuncs = new cl_exportfuncs_t;
-	gMetaSave.pEngineFuncs = new cl_enginefunc_t;
-
 	memcpy(gMetaSave.pExportFuncs, g_pExportFuncs, sizeof(cl_exportfuncs_t));
 	memcpy(gMetaSave.pEngineFuncs, pEnginefuncs, sizeof(cl_enginefunc_t));
+
+	g_bTransactionInlineHook = true;
 
 	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next)
 	{
@@ -198,32 +219,36 @@ int ClientDLL_Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 			((IPluginsV1 *)plug->pPluginAPI)->Init(g_pExportFuncs);
 	}
 
+	g_bTransactionInlineHook = false;
+
+	for (auto pHook = g_pHookBase; pHook; pHook = pHook->pNext)
+	{
+		if (pHook->iType == MH_HOOK_INLINE && !pHook->bOriginalCallWritten)
+		{
+			DetourTransactionBegin();
+			DetourAttach(&(void *&)pHook->pOldFuncAddr, pHook->pNewFuncAddr);
+			DetourTransactionCommit();
+
+			*pHook->pOrginalCall = pHook->pOldFuncAddr;
+			pHook->bOriginalCallWritten = true;
+		}
+	}
+
 	return g_pExportFuncs->Initialize(pEnginefuncs, iVersion);
 }
 
 void MH_ClientDLL_Init(void)
 {
-	DWORD dwResult = (DWORD)MH_SearchPattern((void *)((DWORD)g_pClientDLL_Init + 0xB0), 0xFF, "\x6A\x07\x68", 3);
-
-	if (!dwResult)
-	{
-		MessageBox(NULL, "MH_ClientDLL_Init: Failed to locate result.", "Fatal Error", MB_ICONERROR);
-		NtTerminateProcess((HANDLE)-1, 0);
-		return;
-	}
-
-	g_pExportFuncs = *(cl_exportfuncs_t **)(dwResult + 0x9);
+	g_pExportFuncs = *(cl_exportfuncs_t **)g_ppExportFuncs;
 
 	static DWORD dwClientDLL_Initialize[1];
 	dwClientDLL_Initialize[0] = (DWORD)&ClientDLL_Initialize;
 
-	MH_WriteDWORD((void *)(dwResult + 0x9), (DWORD)dwClientDLL_Initialize);
+	MH_WriteDWORD(g_ppExportFuncs, (DWORD)dwClientDLL_Initialize);
 
-	g_pfnClientDLL_Init();
+	g_original_ClientDLL_Init();
 
-	MH_WriteDWORD((void *)(dwResult + 0x9), (DWORD)g_pExportFuncs);
-
-	//SetUnhandledExceptionFilter(MinidumpCallback);
+	MH_WriteDWORD(g_ppExportFuncs, (DWORD)g_pExportFuncs);
 }
 
 void MH_LoadEngine(HMODULE hModule)
@@ -266,6 +291,7 @@ void MH_LoadEngine(HMODULE hModule)
 	g_pfnbuild_number = (decltype(g_pfnbuild_number))((PUCHAR)buildnumber_call + *(int *)((PUCHAR)buildnumber_call + 1) + 5);
 	
 	char *pEngineName = *(char **)((PUCHAR)buildnumber_call + sizeof(BUILD_NUMBER_SIG) - 1);
+
 	if (g_iEngineType != ENGINE_GOLDSRC_BLOB)
 	{
 		if (!strncmp(pEngineName, "Svengine", sizeof("Svengine") - 1))
@@ -293,10 +319,32 @@ void MH_LoadEngine(HMODULE hModule)
 			auto ClientDll_Init_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
 			if (ClientDll_Init_PushString)
 			{
-				auto ClientDll_Init = MH_ReverseSearchFunctionBegin(ClientDll_Init_PushString, 0x200);
-				if (ClientDll_Init)
+				auto ClientDll_Init_FunctionBase = MH_ReverseSearchFunctionBegin(ClientDll_Init_PushString, 0x200);
+				if (ClientDll_Init_FunctionBase)
 				{
-					g_pClientDLL_Init = (decltype(g_pClientDLL_Init))ClientDll_Init;
+					g_pClientDLL_Init = (decltype(g_pClientDLL_Init))ClientDll_Init_FunctionBase;
+
+					MH_DisasmRanges(ClientDll_Init_PushString, 0x30, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+					{
+						auto pinst = (cs_insn *)inst;
+
+						if (address[0] == 0x6A && address[1] == 0x07 && address[2] == 0x68)
+						{
+							g_ppEngfuncs = (decltype(g_ppEngfuncs))(address + 3);
+						}
+						else if (address[0] == 0xFF && address[1] == 0x15)
+						{
+							g_ppExportFuncs = (decltype(g_ppExportFuncs))(address + 2);
+						}
+
+						if (g_ppExportFuncs && g_ppEngfuncs)
+							return TRUE;
+
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						return FALSE;
+					}, 0, NULL);
 				}
 			}
 		}
@@ -305,6 +353,18 @@ void MH_LoadEngine(HMODULE hModule)
 	if (!g_pClientDLL_Init)
 	{
 		MessageBox(NULL, "MH_LoadEngine: Failed to locate ClientDLL_Init.", "Fatal Error", MB_ICONERROR);
+		NtTerminateProcess((HANDLE)-1, 0);
+	}
+
+	if (!g_ppEngfuncs)
+	{
+		MessageBox(NULL, "MH_LoadEngine: Failed to locate ppEngfuncs.", "Fatal Error", MB_ICONERROR);
+		NtTerminateProcess((HANDLE)-1, 0);
+	}
+
+	if (!g_ppExportFuncs)
+	{
+		MessageBox(NULL, "MH_LoadEngine: Failed to locate ppExportFuncs.", "Fatal Error", MB_ICONERROR);
 		NtTerminateProcess((HANDLE)-1, 0);
 	}
 
@@ -380,12 +440,37 @@ void MH_LoadEngine(HMODULE hModule)
 		NtTerminateProcess((HANDLE)-1, 0);
 	}
 
-	g_phClientDLL_Init = MH_InlineHook(g_pClientDLL_Init, MH_ClientDLL_Init, (void *&)g_pfnClientDLL_Init);
+	memcpy(gMetaSave.pEngineFuncs, *(void **)g_ppEngfuncs, sizeof(cl_enginefunc_t));
+
+	g_phClientDLL_Init = MH_InlineHook(g_pClientDLL_Init, MH_ClientDLL_Init, (void **)&g_original_ClientDLL_Init);
+
+	g_bTransactionInlineHook = true;
 
 	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next)
 	{
-		if (plug->iInterfaceVersion > 1)
+		if (plug->iInterfaceVersion == 3)
+		{
+			((IPluginsV3 *)plug->pPluginAPI)->LoadEngine((cl_enginefunc_t *)*(void **)g_ppEngfuncs);
+		}
+		else if (plug->iInterfaceVersion > 1)
+		{
 			((IPlugins *)plug->pPluginAPI)->LoadEngine();
+		}
+	}
+
+	g_bTransactionInlineHook = false;
+
+	for (auto pHook = g_pHookBase; pHook; pHook = pHook->pNext)
+	{
+		if (pHook->iType == MH_HOOK_INLINE && !pHook->bOriginalCallWritten)
+		{
+			DetourTransactionBegin();
+			DetourAttach(&(void *&)pHook->pOldFuncAddr, pHook->pNewFuncAddr);
+			DetourTransactionCommit();
+
+			*pHook->pOrginalCall = pHook->pOldFuncAddr;
+			pHook->bOriginalCallWritten = true;
+		}
 	}
 }
 
@@ -465,10 +550,11 @@ void MH_Shutdown(void)
 	}
 }
 
-hook_t *MH_NewHook(void)
+hook_t *MH_NewHook(int iType)
 {
 	hook_t *h = new hook_t;
 	memset(h, 0, sizeof(hook_t));
+	h->iType = iType;
 	h->pNext = g_pHookBase;
 	g_pHookBase = h;
 	return h;
@@ -542,7 +628,6 @@ void MH_FreeHook(hook_t *pHook)
 	else
 	{
 		DetourTransactionBegin();
-		DetourUpdateThread(GetCurrentThread());
 		DetourDetach(&(void *&)pHook->pOldFuncAddr, pHook->pNewFuncAddr);
 		DetourTransactionCommit();
 	}
@@ -594,22 +679,37 @@ BOOL MH_UnHook(hook_t *pHook)
 	return FALSE;
 }
 
-hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void *&pCallBackFuncAddr)
+hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCall)
 {
-	hook_t *h = MH_NewHook();
+	hook_t *h = MH_NewHook(MH_HOOK_INLINE);
 	h->pOldFuncAddr = pOldFuncAddr;
 	h->pNewFuncAddr = pNewFuncAddr;
 
-	DetourTransactionBegin();
-	DetourUpdateThread(GetCurrentThread());
-	DetourAttach(&(void *&)h->pOldFuncAddr, pNewFuncAddr);
-	DetourTransactionCommit();
+	if (!pOrginalCall)
+	{
+		MessageBox(NULL, "MH_InlineHook: pOrginalCall can not be NULL.", "Fatal Error", MB_ICONERROR);
+		NtTerminateProcess((HANDLE)-1, 0);
+	}
 
-	pCallBackFuncAddr = h->pOldFuncAddr; 
+	if (g_bTransactionInlineHook)
+	{
+		h->pOrginalCall = pOrginalCall;
+		h->bOriginalCallWritten = false;
+	}
+	else
+	{
+		DetourTransactionBegin();
+		DetourAttach(&(void *&)h->pOldFuncAddr, pNewFuncAddr);
+		DetourTransactionCommit();
+		h->pOrginalCall = pOrginalCall;
+		*pOrginalCall = h->pOldFuncAddr;
+		h->bOriginalCallWritten = true;
+	}
+
 	return h;
 }
 
-hook_t *MH_VFTHook(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFuncAddr, void *&pCallBackFuncAddr)
+hook_t *MH_VFTHook(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFuncAddr, void **pOrginalCall)
 {
 	tagVTABLEDATA *info = new tagVTABLEDATA;
 	info->pInstance = (tagCLASS *)pClass;
@@ -617,7 +717,7 @@ hook_t *MH_VFTHook(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFunc
 	DWORD *pVMT = ((tagCLASS *)pClass + iTableIndex)->pVMT;
 	info->pVFTInfoAddr = pVMT + iFuncIndex;
 
-	hook_t *h = MH_NewHook();
+	hook_t *h = MH_NewHook(MH_HOOK_VFTABLE);
 	h->pOldFuncAddr = (void *)pVMT[iFuncIndex];
 	h->pNewFuncAddr = pNewFuncAddr;
 	h->pInfo = info;
@@ -625,12 +725,14 @@ hook_t *MH_VFTHook(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFunc
 	h->iTableIndex = iTableIndex;
 	h->iFuncIndex = iFuncIndex;
 
-	pCallBackFuncAddr = h->pOldFuncAddr;
+	*pOrginalCall = h->pOldFuncAddr;
+	h->bOriginalCallWritten = true;
+
 	MH_WriteMemory(info->pVFTInfoAddr, (BYTE *)&pNewFuncAddr, sizeof(DWORD));
 	return h;
 }
 
-hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, void *pNewFuncAddr, void *&pCallBackFuncAddr)
+hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, void *pNewFuncAddr, void **pOrginalCall)
 {
 	IMAGE_NT_HEADERS *pHeader = (IMAGE_NT_HEADERS *)((DWORD)hModule + ((IMAGE_DOS_HEADER *)hModule)->e_lfanew);
 	IMAGE_IMPORT_DESCRIPTOR *pImport = (IMAGE_IMPORT_DESCRIPTOR *)((DWORD)hModule + pHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
@@ -647,7 +749,7 @@ hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFu
 	tagIATDATA *info = new tagIATDATA;
 	info->pAPIInfoAddr = &pThunk->u1.Function;
 
-	hook_t *h = MH_NewHook();
+	hook_t *h = MH_NewHook(MH_HOOK_IAT);
 	h->pOldFuncAddr = (void *)pThunk->u1.Function;
 	h->pNewFuncAddr = pNewFuncAddr;
 	h->pInfo = info;
@@ -655,7 +757,9 @@ hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFu
 	h->pszModuleName = pszModuleName;
 	h->pszFuncName = pszFuncName;
 
-	pCallBackFuncAddr = h->pOldFuncAddr;
+	*pOrginalCall = h->pOldFuncAddr;
+	h->bOriginalCallWritten = true;
+
 	MH_WriteMemory(info->pAPIInfoAddr, (BYTE *)&pNewFuncAddr, sizeof(DWORD));
 	return h;
 }

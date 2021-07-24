@@ -55,17 +55,6 @@ void Sys_ErrorEx(const char *fmt, ...)
 	TerminateProcess((HANDLE)(-1), 0);
 }
 
-int Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
-{
-	memcpy(&gEngfuncs, pEnginefuncs, sizeof(gEngfuncs));
-
-	gPhysicsManager.Init();
-
-	Cmd_GetCmdBase = *(cmd_function_t *(**)(void))((DWORD)g_pMetaSave->pEngineFuncs + 0x198);
-
-	return gExportfuncs.Initialize(pEnginefuncs, iVersion);
-}
-
 void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
 {
 	auto currententity = IEngineStudio.GetCurrentEntity();
@@ -263,6 +252,8 @@ void BV_FirstPerson_f(void)
 void HUD_Init(void)
 {
 	gExportfuncs.HUD_Init();
+
+	gPhysicsManager.Init();
 
 	bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
 	bv_simrate = gEngfuncs.pfnRegisterVariable("bv_simrate", "64", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
