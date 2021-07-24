@@ -72,6 +72,18 @@
 
 10. 所有插件应该会生成到`Build\svencoop\metahook\plugins\`目录
 
+## 调试
+
+1. 运行 `build-bullet3-debug.bat` (可选，只在以调试模式构建BulletPhysics时需要), 等待 bullet3 的调试模式静态库生成完毕
+
+2. 运行 `build-capstone-debug.bat` (可选，只在以调试模式构建MetaHook时需要), 等待 capstone 的调试模式静态库生成完毕
+
+3. 运行 `debug-SvenCoop.bat`  (其他游戏就选择该游戏对应的debug-bat)
+
+4. 打开 `MetaHook.sln`, 在解决方案资源管理器中找到对应的项目，右键->设置为启动项目，然后以Debug模式重新编译该项目后，F5即可开启本地调试。
+
+* 编译完的二进制文件会被自动复制到游戏的metahook插件目录下，不需要自己复制
+
 ## 插件
 
 ### CaptionMod
