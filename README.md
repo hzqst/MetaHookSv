@@ -16,7 +16,7 @@ As you can see Sven-Coop is not protected by VAC : https://store.steampowered.co
 
 Use a separate account to play Sven-Coop if you worry about getting banned, since Sven-Coop is a free game.
 
-## Installation
+## Manual Installation
 
 0. git pull https://github.com/hzqst/MetaHookSv or download from https://github.com/hzqst/MetaHookSv/archive/main.zip
 
@@ -27,6 +27,16 @@ Use a separate account to play Sven-Coop if you worry about getting banned, sinc
 * The new "svencoop.exe" is renamed from "metahook.exe", you could run game from "metahook.exe -game svencoop" however it will cause game crash when changing video settings.
 
 * The SDL2.dll fixes a bug that the IME input handler from original SDL library provided by valve was causing buffer overflow and game crash when using non-english IME. you don't need to copy it if you don't have a non-english IME.
+
+## One Click Installation
+
+0. git pull https://github.com/hzqst/MetaHookSv or download from https://github.com/hzqst/MetaHookSv/archive/main.zip
+
+1. Run "install-to-SvenCoop.bat"
+
+2. Launch game from "\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe"
+
+3. Other games follow the same instruction.
 
 ## Build Requirements
 
@@ -48,15 +58,17 @@ Let's assume that you have all requirements installed correctly.
 
 4. Run "build-bullet3.bat", wait until bullet3's static lib(s) are generated.
 
-5. Run "build-MetaHook.bat", wait until "svencoop.exe" is generated under "Build" directory. You may have to redirect the Windows SDK version from Visual Studio IDE if you have installed a different version of Windows SDK other than "10.0.17763.0".
+5. Run "build-MetaHook.bat", wait until "svencoop.exe" generated at "Build" directory.
 
-6. Run "build-CaptionMod.bat", wait until "CaptionMod.dll" is generated under "Build\svencoop\metahook\plugins\" directory.
+6. Run "build-CaptionMod.bat", wait until "CaptionMod.dll" generated.
 
-7. Run "build-Renderer.bat", wait until "Renderer.dll" is generated under "Build\svencoop\metahook\plugins\" directory.
+7. Run "build-Renderer.bat", wait until "Renderer.dll" generated.
 
-8. Run "build-BulletPhysics.bat", wait until "BulletPhysics.dll" is generated under "Build\svencoop\metahook\plugins\" directory.
+8. Run "build-BulletPhysics.bat", wait until "BulletPhysics.dll" generated.
 
-9. Run "build-StudioEvents.bat", wait until "StudioEvents.dll" is generated under "Build\svencoop\metahook\plugins\" directory.
+9. Run "build-StudioEvents.bat", wait until "StudioEvents.dll" generated.
+
+10. All generated plugins should be at "Build\svencoop\metahook\plugins\" directory.
 
 ## Plugins
 
