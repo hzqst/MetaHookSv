@@ -1,11 +1,96 @@
 #include <metahook.h>
+#include "exportfuncs.h"
 #include "phycorpse.h"
 #include "physics.h"
 #include "mathlib.h"
 
-#define FTENT_KILLCALLBACK		0x00100000
+typedef enum
+{
+	ACT_RESET,
+	ACT_IDLE,
+	ACT_GUARD,
+	ACT_WALK,
+	ACT_RUN,
+	ACT_FLY,
+	ACT_SWIM,
+	ACT_HOP,
+	ACT_LEAP,
+	ACT_FALL,
+	ACT_LAND,
+	ACT_STRAFE_LEFT,
+	ACT_STRAFE_RIGHT,
+	ACT_ROLL_LEFT,
+	ACT_ROLL_RIGHT,
+	ACT_TURN_LEFT,
+	ACT_TURN_RIGHT,
+	ACT_CROUCH,
+	ACT_CROUCHIDLE,
+	ACT_STAND,
+	ACT_USE,
+	ACT_SIGNAL1,
+	ACT_SIGNAL2,
+	ACT_SIGNAL3,
+	ACT_TWITCH,
+	ACT_COWER,
+	ACT_SMALL_FLINCH,
+	ACT_BIG_FLINCH,
+	ACT_RANGE_ATTACK1,
+	ACT_RANGE_ATTACK2,
+	ACT_MELEE_ATTACK1,
+	ACT_MELEE_ATTACK2,
+	ACT_RELOAD,
+	ACT_ARM,
+	ACT_DISARM,
+	ACT_EAT,
+	ACT_DIESIMPLE,
+	ACT_DIEBACKWARD,
+	ACT_DIEFORWARD,
+	ACT_DIEVIOLENT,
+	ACT_BARNACLE_HIT,
+	ACT_BARNACLE_PULL,
+	ACT_BARNACLE_CHOMP,
+	ACT_BARNACLE_CHEW,
+	ACT_SLEEP,
+	ACT_INSPECT_FLOOR,
+	ACT_INSPECT_WALL,
+	ACT_IDLE_ANGRY,
+	ACT_WALK_HURT,
+	ACT_RUN_HURT,
+	ACT_HOVER,
+	ACT_GLIDE,
+	ACT_FLY_LEFT,
+	ACT_FLY_RIGHT,
+	ACT_DETECT_SCENT,
+	ACT_SNIFF,
+	ACT_BITE,
+	ACT_THREAT_DISPLAY,
+	ACT_FEAR_DISPLAY,
+	ACT_EXCITED,
+	ACT_SPECIAL_ATTACK1,
+	ACT_SPECIAL_ATTACK2,
+	ACT_COMBAT_IDLE,
+	ACT_WALK_SCARED,
+	ACT_RUN_SCARED,
+	ACT_VICTORY_DANCE,
+	ACT_DIE_HEADSHOT,
+	ACT_DIE_CHESTSHOT,
+	ACT_DIE_GUTSHOT,
+	ACT_DIE_BACKSHOT,
+	ACT_FLINCH_HEAD,
+	ACT_FLINCH_CHEST,
+	ACT_FLINCH_STOMACH,
+	ACT_FLINCH_LEFTARM,
+	ACT_FLINCH_RIGHTARM,
+	ACT_FLINCH_LEFTLEG,
+	ACT_FLINCH_RIGHTLEG,
+	ACT_FLINCH_SMALL,
+	ACT_FLINCH_LARGE,
+	ACT_HOLDBOMB
+};
 
 model_t *g_barnacle_model = NULL;
+model_t *g_player_model = NULL;
+int g_sequence_table[1024] = {0};
 
 bool IsEntityCorpse(cl_entity_t* ent)
 {
@@ -17,9 +102,55 @@ bool IsEntityCorpse(cl_entity_t* ent)
 	return false;
 }
 
+void InitializePlayerSequenceTable(model_t *mod)
+{
+	if (g_player_model)
+		return;
+
+	if (mod->type != mod_studio)
+		return;
+
+	g_player_model = mod;
+
+	auto studiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(mod);
+
+	if (!studiohdr)
+		return;
+
+	for (int i = 0; i < studiohdr->numseq; ++i)
+	{
+		auto pseqdesc = (mstudioseqdesc_t*)((byte*)studiohdr + studiohdr->seqindex) + i;
+		if (
+			pseqdesc->activity == ACT_DIESIMPLE ||
+			pseqdesc->activity == ACT_DIEBACKWARD ||
+			pseqdesc->activity == ACT_DIEFORWARD ||
+			pseqdesc->activity == ACT_DIEVIOLENT ||
+			pseqdesc->activity == ACT_DIEVIOLENT ||
+			pseqdesc->activity == ACT_DIE_HEADSHOT ||
+			pseqdesc->activity == ACT_DIE_CHESTSHOT ||
+			pseqdesc->activity == ACT_DIE_GUTSHOT ||
+			pseqdesc->activity == ACT_DIE_BACKSHOT
+			)
+		{
+			if (i < 1024)
+				g_sequence_table[i] = 1;
+		}
+		else if (
+			pseqdesc->activity == ACT_BARNACLE_HIT ||
+			pseqdesc->activity == ACT_BARNACLE_PULL ||
+			pseqdesc->activity == ACT_BARNACLE_CHOMP ||
+			pseqdesc->activity == ACT_BARNACLE_CHEW 
+			)
+		{
+			if (i < 1024)
+				g_sequence_table[i] = 2;
+		}
+	}
+}
+
 bool IsPlayerDeathAnimation(entity_state_t* entstate)
 {
-	if (entstate->sequence >= 12 && entstate->sequence <= 18)
+	if (entstate->sequence < 1024 && g_sequence_table[entstate->sequence] == 1)
 		return true;
 
 	return false;
@@ -27,7 +158,7 @@ bool IsPlayerDeathAnimation(entity_state_t* entstate)
 
 bool IsPlayerBarnacleAnimation(entity_state_t* entstate)
 {
-	if (entstate->sequence >= 182 && entstate->sequence <= 185)
+	if (entstate->sequence < 1024 && g_sequence_table[entstate->sequence] == 2)
 		return true;
 
 	return false;
@@ -117,7 +248,12 @@ bool CorpseManager::HasCorpse(void) const
 void CorpseManager::NewMap(void)
 {
 	g_barnacle_model = NULL;
+
 	m_barnacleMap.clear();
+
+	g_player_model = NULL;
+
+	memset(g_sequence_table, 0, sizeof(g_sequence_table));
 }
 
 void CorpseManager::AddBarnacle(int entindex, int playerindex)

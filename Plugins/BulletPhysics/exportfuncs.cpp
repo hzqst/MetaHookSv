@@ -17,7 +17,6 @@
 #include "phycorpse.h"
 #include "physics.h"
 
-
 cl_enginefunc_t gEngfuncs;
 engine_studio_api_t IEngineStudio;
 r_studio_interface_t **gpStudioInterface;
@@ -25,6 +24,7 @@ r_studio_interface_t **gpStudioInterface;
 cvar_t *bv_debug = NULL;
 cvar_t *bv_simrate = NULL;
 cvar_t *bv_scale = NULL;
+cvar_t *bv_force_player_ragdoll = NULL;
 
 studiohdr_t **pstudiohdr = NULL;
 model_t **r_model = NULL;
@@ -39,6 +39,7 @@ bool IsEntityBarnacle(cl_entity_t* ent);
 bool IsEntityCorpse(cl_entity_t* ent);
 bool IsPlayerDeathAnimation(entity_state_t* entstate);
 bool IsPlayerBarnacleAnimation(entity_state_t* entstate);
+void InitializePlayerSequenceTable(model_t *mod);
 
 void Sys_ErrorEx(const char *fmt, ...)
 {
@@ -99,8 +100,12 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 	{
 		auto currententity = IEngineStudio.GetCurrentEntity();
 
+		InitializePlayerSequenceTable(currententity->model);
+
 		bool bPlayerDeath = IsPlayerDeathAnimation(pplayer);
+
 		bool bPlayerBarnacle = bPlayerDeath ? false : IsPlayerBarnacleAnimation(pplayer);
+
 		if (bPlayerDeath || bPlayerBarnacle)
 		{
 			auto tempent = gCorpseManager.FindCorpseForEntity(pplayer->number);
@@ -117,9 +122,22 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 
 					if (cfg)
 					{
-						auto itor = cfg->animcontrol.find(pplayer->sequence);
+						bool bTransformToRagdoll = false;
 
-						if (itor != cfg->animcontrol.end() && pplayer->frame >= itor->second)
+						if (bv_force_player_ragdoll->value)
+							bTransformToRagdoll = true;
+
+						if (!bTransformToRagdoll)
+						{
+							auto itor = cfg->animcontrol.find(pplayer->sequence);
+
+							if ((itor != cfg->animcontrol.end() && pplayer->frame >= itor->second))
+							{
+								bTransformToRagdoll = true;
+							}
+						}
+
+						if(bTransformToRagdoll)
 						{
 							tempent = gCorpseManager.CreateCorpseForEntity(currententity, (*r_model));
 							if (tempent)
@@ -351,6 +369,7 @@ void HUD_Init(void)
 	bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
 	bv_simrate = gEngfuncs.pfnRegisterVariable("bv_simrate", "64", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_scale = gEngfuncs.pfnRegisterVariable("bv_scale", "0.1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_force_player_ragdoll = gEngfuncs.pfnRegisterVariable("bv_force_player_ragdoll", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gEngfuncs.pfnAddCommand("bv_reload", BV_Reload_f);
 	gPrivateFuncs.ThreadPerson_f = Cmd_HookCmd("thirdperson", BV_ThreadPerson_f);

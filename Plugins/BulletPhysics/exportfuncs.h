@@ -5,6 +5,7 @@
 
 extern cl_enginefunc_t gEngfuncs;
 extern cl_exportfuncs_t gExportfuncs;
+extern engine_studio_api_t IEngineStudio;
 
 void R_NewMap(void);
 int Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion);

@@ -17,6 +17,7 @@ extern float(*plighttransform)[128][3][4];
 extern cvar_t *bv_debug;
 extern cvar_t *bv_simrate;
 extern cvar_t *bv_scale;
+extern cvar_t *bv_force_player_ragdoll;
 extern model_t *r_worldmodel;
 extern int *r_visframecount;
 
