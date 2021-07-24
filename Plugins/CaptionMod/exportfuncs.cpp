@@ -18,6 +18,7 @@ cvar_t *cap_debug = NULL;
 cvar_t *cap_enabled = NULL;
 cvar_t *cap_max_distance = NULL;
 cvar_t *cap_netmessage = NULL;
+cvar_t *cap_hudmessage = NULL;
 
 static CDictionary *m_SentenceDictionary = NULL;
 static qboolean m_bSentenceSound = false;
@@ -141,11 +142,15 @@ void HUD_Init(void)
 	cap_enabled = gEngfuncs.pfnRegisterVariable("cap_enabled", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cap_max_distance = gEngfuncs.pfnRegisterVariable("cap_max_distance", "1500", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cap_netmessage = gEngfuncs.pfnRegisterVariable("cap_netmessage", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	cap_hudmessage = gEngfuncs.pfnRegisterVariable("cap_hudmessage", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	
 	gEngfuncs.pfnAddCommand("cap_version", Cap_Version_f);
 	gEngfuncs.pfnAddCommand("cap_reload", Cap_Reload_f);
 
-	if (g_iEngineType == ENGINE_SVENGINE)
+	auto pfnClientCreateInterface = Sys_GetFactory((HINTERFACEMODULE)g_hClientDll);
+
+	//Fix SvClient Portal Rendering Confliction
+	if (pfnClientCreateInterface && pfnClientCreateInterface("SCClientDLL001", 0))
 	{
 		gCapFuncs.fmodex = GetModuleHandleA("fmodex.dll");
 		Sig_FuncNotFound(fmodex);

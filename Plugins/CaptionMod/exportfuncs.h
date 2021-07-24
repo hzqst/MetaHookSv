@@ -15,7 +15,7 @@
 #include <usercmd.h>
 #include "enginedef.h"
 
-#define CAPTION_MOD_VERSION "Caption Mod 2021-07-23"
+#define CAPTION_MOD_VERSION "Caption Mod 2021-07-24"
 
 extern cl_enginefunc_t gEngfuncs;
 
@@ -50,3 +50,4 @@ extern cvar_t* cap_debug;
 extern cvar_t* cap_enabled;
 extern cvar_t* cap_max_distance;
 extern cvar_t *cap_netmessage;
+extern cvar_t *cap_hudmessage;

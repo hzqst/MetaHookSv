@@ -14,6 +14,8 @@ extern DWORD g_dwEngineRdataSize;
 extern DWORD g_dwEngineBuildnum;
 extern int g_iEngineType;
 extern IFileSystem *g_pFileSystem;
+extern PVOID g_dwClientBase;
+extern DWORD g_dwClientSize;
 
 #define GetCallAddress(addr) ((PUCHAR)addr + *(int *)((PUCHAR)addr + 1) + 5)
 #define Sig_NotFound(name) Sys_ErrorEx("Could not found: %s\nEngine buildnum£º%d", #name, g_dwEngineBuildnum);

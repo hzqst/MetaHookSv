@@ -19,6 +19,8 @@ PVOID g_dwEngineRdataBase;
 DWORD g_dwEngineRdataSize;
 DWORD g_dwEngineBuildnum;
 int g_iEngineType;
+PVOID g_dwClientBase;
+DWORD g_dwClientSize;
 
 void IPluginsV3::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
@@ -50,6 +52,9 @@ void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 {
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
+
+	g_dwClientBase = (PVOID)GetModuleHandleA("client.dll");
+	g_dwClientSize = g_pMetaHookAPI->GetModuleSize((HMODULE)g_dwClientBase);
 
 	pExportFunc->HUD_Init = HUD_Init;
 	pExportFunc->HUD_Frame = HUD_Frame;

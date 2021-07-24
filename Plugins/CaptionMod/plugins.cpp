@@ -59,7 +59,7 @@ void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	gCapFuncs.GetProcAddress = (decltype(gCapFuncs.GetProcAddress))GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetProcAddress");
 
-	gCapFuncs.pfnTextMessageGet = pfnTextMessageGet;
+	gCapFuncs.pfnTextMessageGet = pEngfuncs->pfnTextMessageGet;
 
 	DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gEngfuncs.GetClientTime, 0x20, "\xDD\x05", Sig_Length("\xDD\x05"));
 	Sig_AddrNotFound("cl_time");
@@ -86,15 +86,12 @@ void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_Frame = HUD_Frame;
 
 	g_hClientDll = GetModuleHandle("client.dll");
-
-	if (!g_hClientDll)
-	{
-		Sys_ErrorEx("CaptionMod: client.dll not found.");
-	}
-
 	g_dwClientSize = g_pMetaHookAPI->GetModuleSize(g_hClientDll);
 
-	if (g_iEngineType == ENGINE_SVENGINE)
+	auto pfnClientCreateInterface = Sys_GetFactory((HINTERFACEMODULE)g_hClientDll);
+
+	//Fix SvClient Portal Rendering Confliction
+	if (pfnClientCreateInterface && pfnClientCreateInterface("SCClientDLL001", 0))
 	{
 #define SV_FINDSOUND_SIG_SVENGINE "\x51\x55\x8B\x6C\x24\x0C\x89\x4C\x24\x04\x85\xED\x0F\x84\x2A\x2A\x2A\x2A\x80\x7D\x00\x00"
 

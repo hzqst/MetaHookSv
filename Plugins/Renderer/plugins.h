@@ -13,6 +13,9 @@ extern PVOID g_dwEngineRdataBase;
 extern DWORD g_dwEngineRdataSize;
 extern DWORD g_dwEngineBuildnum;
 extern int g_iEngineType;
+extern PVOID g_dwClientBase;
+extern DWORD g_dwClientSize;
+
 extern IFileSystem *g_pFileSystem;
 
 #define GetCallAddress(addr) ((PUCHAR)addr + *(int *)((PUCHAR)addr + 1) + 5)

@@ -678,7 +678,86 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 	}
 	else
 	{
-		dict = g_pViewPort->FindDictionary(pString, DICT_MESSAGE);
+		if (cap_hudmessage && cap_hudmessage->value)
+		{
+			dict = g_pViewPort->FindDictionary(pString, DICT_MESSAGE);
+
+			if (cap_debug && cap_debug->value)
+			{
+				gEngfuncs.Con_Printf((dict) ? "CaptionMod: TextMessage [%s] found.\n" : "CaptionMod: TextMessage [%s] not found.\n", pString);
+			}
+
+			if (dict)
+			{
+				client_textmessage_t *pTextMessage = NULL;
+
+				if (pString[0] == '#')
+					pTextMessage = pfnTextMessageGet(pString + 1);
+				else
+					pTextMessage = pfnTextMessageGet(pString);
+
+				if (pTextMessage)
+				{
+					auto pMsg = new client_textmessage_t;
+					memcpy(pMsg, pTextMessage, sizeof(*pTextMessage));
+
+					if (dict->m_bOverrideColor)
+					{
+						pMsg->r1 = dict->m_Color1.r();
+						pMsg->g1 = dict->m_Color1.g();
+						pMsg->b1 = dict->m_Color1.b();
+						pMsg->a1 = dict->m_Color1.a();
+
+						pMsg->r2 = dict->m_Color2.r();
+						pMsg->g2 = dict->m_Color2.g();
+						pMsg->b2 = dict->m_Color2.b();
+						pMsg->a1 = dict->m_Color2.a();
+					}
+
+					if (dict->m_bOverrideDuration)
+					{
+						pMsg->holdtime = dict->m_flDuration;
+					}
+
+					pMsg->pMessage = (const char *)new char[HUDMESSAGE_MAXLENGTH];
+
+					char sentence[HUDMESSAGE_MAXLENGTH];
+
+					int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.data(), (char *)sentence, HUDMESSAGE_MAXLENGTH);
+
+					sentence[finalLength] = 0;
+
+					V_strncpy((char *)pMsg->pMessage, sentence, HUDMESSAGE_MAXLENGTH - 1);
+					((char *)pMsg->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
+
+					int slotNum = MessageAdd(pMsg, cl_time, hintMessage, -1, m_hFont, true);
+
+					if (slotNum == -1)
+					{
+						delete pMsg->pMessage;
+						delete pMsg;
+					}
+
+					m_parms.time = cl_time;
+					return 1;
+				}
+			}
+		}
+	}
+	
+	return 0;
+}
+
+int CHudMessage::MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
+{
+	BEGIN_READ(pbuf, iSize);
+
+	char *pString = READ_STRING();
+	int hintMessage = READ_BYTE();
+
+	if (cap_hudmessage && cap_hudmessage->value)
+	{
+		CDictionary *dict = g_pViewPort->FindDictionary(pString, DICT_MESSAGE);
 
 		if (cap_debug && cap_debug->value)
 		{
@@ -730,7 +809,21 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 
 				int slotNum = MessageAdd(pMsg, cl_time, hintMessage, -1, m_hFont, true);
 
-				if (slotNum == -1)
+				if (slotNum != -1)
+				{
+					m_pMessages[slotNum].numArgs = max(min(0, READ_BYTE()), MAX_MESSAGE_ARGS);
+
+					for (int i = 0; i < m_pMessages[slotNum].numArgs; i++)
+					{
+						char *tmp = READ_STRING();
+
+						if (!tmp)
+							tmp = "";
+
+						vgui::localize()->ConvertANSIToUnicode(tmp, m_pMessages[slotNum].args[i], MESSAGE_ARG_LEN);
+					}
+				}
+				else
 				{
 					delete pMsg->pMessage;
 					delete pMsg;
@@ -740,93 +833,6 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 				return 1;
 			}
 		}
-	}
-	
-	return 0;
-}
-
-int CHudMessage::MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
-{
-	BEGIN_READ(pbuf, iSize);
-
-	char *pString = READ_STRING();
-	int hintMessage = READ_BYTE();
-
-	CDictionary *dict = g_pViewPort->FindDictionary(pString, DICT_MESSAGE);
-
-	if(cap_debug && cap_debug->value)
-	{
-		gEngfuncs.Con_Printf((dict) ? "CaptionMod: TextMessage [%s] found.\n" : "CaptionMod: TextMessage [%s] not found.\n", pString);
-	}
-
-	if(dict)
-	{
-		client_textmessage_t *pTextMessage = NULL;
-
-		if (pString[0] == '#')
-			pTextMessage = pfnTextMessageGet(pString + 1);
-		else
-			pTextMessage = pfnTextMessageGet(pString);
-
-		if (pTextMessage)
-		{
-			auto pMsg = new client_textmessage_t;
-			memcpy(pMsg, pTextMessage, sizeof(*pTextMessage));
-
-			if (dict->m_bOverrideColor)
-			{
-				pMsg->r1 = dict->m_Color1.r();
-				pMsg->g1 = dict->m_Color1.g();
-				pMsg->b1 = dict->m_Color1.b();
-				pMsg->a1 = dict->m_Color1.a();
-
-				pMsg->r2 = dict->m_Color2.r();
-				pMsg->g2 = dict->m_Color2.g();
-				pMsg->b2 = dict->m_Color2.b();
-				pMsg->a1 = dict->m_Color2.a();
-			}
-
-			if (dict->m_bOverrideDuration)
-			{
-				pMsg->holdtime = dict->m_flDuration;
-			}
-
-			pMsg->pMessage = (const char *)new char[HUDMESSAGE_MAXLENGTH];
-
-			char sentence[HUDMESSAGE_MAXLENGTH];
-
-			int finalLength = localize()->ConvertUnicodeToANSI(dict->m_szSentence.data(), (char *)sentence, HUDMESSAGE_MAXLENGTH);
-
-			sentence[finalLength] = 0;
-
-			V_strncpy((char *)pMsg->pMessage, sentence, HUDMESSAGE_MAXLENGTH - 1);
-			((char *)pMsg->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
-
-			int slotNum = MessageAdd(pMsg, cl_time, hintMessage, -1, m_hFont, true);
-
-			if (slotNum != -1)
-			{
-				m_pMessages[slotNum].numArgs = max(min(0, READ_BYTE()), MAX_MESSAGE_ARGS);
-
-				for (int i = 0; i < m_pMessages[slotNum].numArgs; i++)
-				{
-					char *tmp = READ_STRING();
-
-					if (!tmp)
-						tmp = "";
-
-					vgui::localize()->ConvertANSIToUnicode(tmp, m_pMessages[slotNum].args[i], MESSAGE_ARG_LEN);
-				}
-			}
-			else
-			{
-				delete pMsg->pMessage;
-				delete pMsg;
-			}
-
-			m_parms.time = cl_time;
-			return 1;
-		}		
 	}
 
 	return 0;

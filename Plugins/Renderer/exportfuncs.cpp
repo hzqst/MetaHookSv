@@ -942,34 +942,60 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 	int result = gExportfuncs.HUD_GetStudioModelInterface(version, ppinterface, pstudio);
 
+	auto pfnClientCreateInterface = Sys_GetFactory((HINTERFACEMODULE)g_dwClientBase);
+
 	//Fix SvClient Portal Rendering Confliction
-	if (g_iEngineType == ENGINE_SVENGINE)
+	if (pfnClientCreateInterface && pfnClientCreateInterface("SCClientDLL001", 0))
 	{
-		PUCHAR ClientBase = (PUCHAR)GetModuleHandleA("client.dll");
-		if (ClientBase)
-		{
-			auto ClientSize = g_pMetaHookAPI->GetModuleSize((HMODULE)ClientBase);
-
 #define SVCLIENT_PORTALMANAGER_RESETALL_SIG "\xC7\x45\x2A\xFF\xFF\xFF\xFF\xA3\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x0D"
-			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)ClientBase, ClientSize, SVCLIENT_PORTALMANAGER_RESETALL_SIG, sizeof(SVCLIENT_PORTALMANAGER_RESETALL_SIG) - 1);
-			Sig_AddrNotFound(PortalManager_ResetAll);
+		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SVCLIENT_PORTALMANAGER_RESETALL_SIG, sizeof(SVCLIENT_PORTALMANAGER_RESETALL_SIG) - 1);
+		Sig_AddrNotFound(PortalManager_ResetAll);
 
-			gRefFuncs.PortalManager_ResetAll = (decltype(gRefFuncs.PortalManager_ResetAll))GetCallAddress(addr + 12);
+		gRefFuncs.PortalManager_ResetAll = (decltype(gRefFuncs.PortalManager_ResetAll))GetCallAddress(addr + 12);
 
-			Install_InlineHook(PortalManager_ResetAll);
+		Install_InlineHook(PortalManager_ResetAll);
+	}
 
-			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)(*ppinterface)->StudioDrawPlayer, 0x50, "\xFF\x74\x2A\x2A\xB9", sizeof("\xFF\x74\x2A\x2A\xB9") - 1);
-			Sig_AddrNotFound(GameStudioRenderer);
+	if ((void *)(*ppinterface)->StudioDrawPlayer > g_dwClientBase && (void *)(*ppinterface)->StudioDrawPlayer < (PUCHAR)g_dwClientBase + g_dwClientSize)
+	{
+		g_pMetaHookAPI->DisasmRanges((void *)(*ppinterface)->StudioDrawPlayer, 0x30, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
 
-			g_pGameStudioRenderer = *(void **)(addr + sizeof("\xFF\x74\x2A\x2A\xB9") - 1);
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == X86_REG_ECX &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwClientBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwClientBase + g_dwClientSize)
+			{
+				g_pGameStudioRenderer = (decltype(g_pGameStudioRenderer))pinst->detail->x86.operands[1].imm;
+			}
 
-			DWORD *vftable = *(DWORD **)g_pGameStudioRenderer;
+			if (g_pGameStudioRenderer)
+				return TRUE;
 
-#define SVCLIENT_STUDIO_SETUP_BONES_SIG "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x4F\x40"
-			gRefFuncs.GameStudioRenderer_StudioSetupBones = (decltype(gRefFuncs.GameStudioRenderer_StudioSetupBones))vftable[7];
+			if (address[0] == 0xCC)
+				return TRUE;
 
-			Install_InlineHook(GameStudioRenderer_StudioSetupBones);
-		}
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(g_pGameStudioRenderer);
+
+		DWORD *vftable = *(DWORD **)g_pGameStudioRenderer;
+
+		gRefFuncs.GameStudioRenderer_StudioSetupBones = (decltype(gRefFuncs.GameStudioRenderer_StudioSetupBones))vftable[7];
+
+		Install_InlineHook(GameStudioRenderer_StudioSetupBones);
+	}
+	else
+	{
+		Sig_NotFound(g_pGameStudioRenderer);
 	}
 
 	//Hack for R_DrawSpriteModel

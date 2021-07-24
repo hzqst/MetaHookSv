@@ -1,6 +1,7 @@
 #include <metahook.h>
 #include <studio.h>
 #include <r_studioint.h>
+#include <capstone.h>
 #include "cl_entity.h"
 #include "com_model.h"
 #include "triangleapi.h"
@@ -15,6 +16,7 @@
 #include "mathlib.h"
 #include "phycorpse.h"
 #include "physics.h"
+
 
 cl_enginefunc_t gEngfuncs;
 engine_studio_api_t IEngineStudio;
@@ -183,31 +185,122 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 	int result = gExportfuncs.HUD_GetStudioModelInterface(version, ppinterface, pstudio);
 
-	DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->StudioSetHeader, 0x10, "\xA3", 1);
-	Sig_AddrNotFound(pstudiohdr);
-	pstudiohdr = *(studiohdr_t ***)(addr + 1);
-
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)pstudio->SetRenderModel, 0x10, "\xA3", 1);
-	Sig_AddrNotFound(r_model);
-	r_model = *(model_t ***)(addr + 1);
-
 	pbonetransform = (float(*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetBoneTransform();
 	plighttransform = (float(*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetLightTransform();
 
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)(*ppinterface)->StudioDrawPlayer, 0x50, "\xFF\x74\x2A\x2A\xB9", sizeof("\xFF\x74\x2A\x2A\xB9") - 1);
-	Sig_AddrNotFound(GameStudioRenderer);
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(pstudio->StudioSetHeader, 0x10, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
 
-	g_pGameStudioRenderer = *(void **)(addr + sizeof("\xFF\x74\x2A\x2A\xB9") - 1);
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG)
+			{
+				pstudiohdr = (decltype(pstudiohdr))pinst->detail->x86.operands[0].mem.disp;
+			}
 
-	DWORD *vftable = *(DWORD **)g_pGameStudioRenderer;
+			if (pstudiohdr)
+				return TRUE;
 
-	gPrivateFuncs.GameStudioRenderer_StudioDrawModel = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawModel))vftable[2];
-	gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer))vftable[3];
-	gPrivateFuncs.GameStudioRenderer_StudioSetupBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioSetupBones))vftable[7];
+			if (address[0] == 0xCC)
+				return TRUE;
 
-	Install_InlineHook(GameStudioRenderer_StudioSetupBones);
-	Install_InlineHook(GameStudioRenderer_StudioDrawPlayer);
-	Install_InlineHook(GameStudioRenderer_StudioDrawModel);
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(pstudiohdr);
+	}
+
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(pstudio->SetRenderModel, 0x10, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG)
+			{
+				r_model = (decltype(r_model))pinst->detail->x86.operands[0].mem.disp;
+			}
+
+			if (r_model)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(r_model);
+	}
+
+	if ((void *)(*ppinterface)->StudioDrawPlayer > g_dwClientBase && (void *)(*ppinterface)->StudioDrawPlayer < (PUCHAR)g_dwClientBase + g_dwClientSize)
+	{
+		g_pMetaHookAPI->DisasmRanges((void *)(*ppinterface)->StudioDrawPlayer, 0x30, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == X86_REG_ECX &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwClientBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwClientBase + g_dwClientSize)
+			{
+				g_pGameStudioRenderer = (decltype(g_pGameStudioRenderer))pinst->detail->x86.operands[1].imm;
+			}
+
+			if (g_pGameStudioRenderer)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(g_pGameStudioRenderer);
+
+		DWORD *vftable = *(DWORD **)g_pGameStudioRenderer;
+
+		gPrivateFuncs.GameStudioRenderer_StudioDrawModel = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawModel))vftable[2];
+		gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer = (decltype(gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer))vftable[3];
+		gPrivateFuncs.GameStudioRenderer_StudioSetupBones = (decltype(gPrivateFuncs.GameStudioRenderer_StudioSetupBones))vftable[7];
+
+		Install_InlineHook(GameStudioRenderer_StudioSetupBones);
+		Install_InlineHook(GameStudioRenderer_StudioDrawPlayer);
+		Install_InlineHook(GameStudioRenderer_StudioDrawModel);
+
+		Install_InlineHook(GameStudioRenderer_StudioSetupBones);
+	}
+	else
+	{
+		Sig_NotFound(g_pGameStudioRenderer);
+	}
 
 	return result;
 }
