@@ -453,6 +453,7 @@ void R_DrawSkyBox(void)
 {
 	qglDisable(GL_BLEND);
 	qglColor4f(1, 1, 1, 1);
+	qglDepthMask(0);
 
 	int WSurfProgramState = WSURF_DIFFUSE_ENABLED;
 
@@ -511,5 +512,6 @@ void R_DrawSkyBox(void)
 		qglEnd();
 	}
 
+	qglDepthMask(1);
 	qglUseProgramObjectARB(0);
 }
