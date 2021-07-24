@@ -8,9 +8,9 @@
 
 2. Transform monster model into ragdoll when monster is dead. (Not supported yet)
 
-![](hzqst/MetaHookSv/raw/main/img/6.png)
+![](/img/6.png)
 
-![](hzqst/MetaHookSv/raw/main/img/7.png)
+![](/img/7.png)
 
 ### Compatibility
 
