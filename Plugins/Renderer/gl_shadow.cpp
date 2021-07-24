@@ -198,6 +198,7 @@ void R_RenderShadowMap(void)
 		qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadow_texture_color, 0, i);
 		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_texture_depth, 0);
 
+
 		qglMatrixMode(GL_PROJECTION);
 		qglLoadIdentity();
 

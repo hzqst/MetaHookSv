@@ -36,7 +36,7 @@ struct hook_s
 };
 
 char *com_gamedir = NULL;
-DWORD *g_pVideoMode = NULL;
+void **g_pVideoMode = NULL;
 int (*g_pfnbuild_number)(void) = NULL;
 void *g_pClientDLL_Init = NULL;
 int (*g_original_ClientDLL_Init)(void) = NULL;
@@ -101,10 +101,14 @@ extern metahook_api_t gMetaHookAPI;
 
 bool HM_LoadPlugins(char *filename, HINTERFACEMODULE hModule)
 {
+	CreateInterfaceFn fnCreateInterface = Sys_GetFactory(hModule);
+
+	if (!fnCreateInterface)
+		return false;
+
 	plugin_t *plug = new plugin_t;
 	plug->module = hModule;
 
-	CreateInterfaceFn fnCreateInterface = Sys_GetFactory(plug->module);
 	plug->pPluginAPI = fnCreateInterface(METAHOOK_PLUGIN_API_VERSION, NULL);
 
 	if (plug->pPluginAPI)
@@ -145,9 +149,10 @@ void MH_Init(const char *pszGameName)
 	g_pVideoMode = NULL;
 	com_gamedir = NULL;
 
-	gMetaSave.pExportFuncs = new cl_exportfuncs_t;
 	gMetaSave.pEngineFuncs = new cl_enginefunc_t;
 	memset(gMetaSave.pEngineFuncs, 0, sizeof(cl_enginefunc_t));
+
+	gMetaSave.pExportFuncs = new cl_exportfuncs_t;
 	memset(gMetaSave.pExportFuncs, 0, sizeof(cl_exportfuncs_t));
 
 	g_dwEngineBase = 0;
@@ -280,6 +285,7 @@ void MH_LoadEngine(HMODULE hModule)
 		textBase = g_dwEngineBase;
 		textSize = g_dwEngineSize;
 	}
+
 	auto buildnumber_call = MH_SearchPattern(textBase, textSize, BUILD_NUMBER_SIG, sizeof(BUILD_NUMBER_SIG) - 1);
 
 	if (!buildnumber_call)
@@ -702,7 +708,7 @@ hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCal
 		DetourAttach(&(void *&)h->pOldFuncAddr, pNewFuncAddr);
 		DetourTransactionCommit();
 		h->pOrginalCall = pOrginalCall;
-		*pOrginalCall = h->pOldFuncAddr;
+		*h->pOrginalCall = h->pOldFuncAddr;
 		h->bOriginalCallWritten = true;
 	}
 

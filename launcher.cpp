@@ -250,7 +250,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			if (!hEngine)
 			{
 				static char msg[512];
-				wsprintf(msg, "Could not load metahook plugin: %s.", pszEngineDLL);
+				wsprintf(msg, "Could not load engine : %s.", pszEngineDLL);
 				MessageBox(NULL, msg, "Fatal Error", MB_ICONERROR);
 				ExitProcess(0);
 			}
@@ -329,6 +329,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		CommandLine()->AppendParm(szNewCommandParams, NULL);
 
 		g_pFileSystem->Unmount();
+
 		Sys_FreeModule(hFileSystem);
 
 		if (!bContinue)
