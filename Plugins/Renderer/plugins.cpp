@@ -61,6 +61,8 @@ void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 
+	Cmd_GetCmdBase = *(cmd_function_t *(**)(void))((DWORD)pEngfuncs + 0x198);
+
 	if(g_iEngineType != ENGINE_SVENGINE && g_iEngineType != ENGINE_GOLDSRC)
 	{
 		Sys_ErrorEx("Unsupported engine: %s, buildnum %d", g_pMetaHookAPI->GetEngineTypeName(), g_dwEngineBuildnum);
@@ -84,8 +86,6 @@ void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 	}
 
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
-
-	Cmd_GetCmdBase = *(cmd_function_t *(**)(void))((DWORD)g_pMetaSave->pEngineFuncs + 0x198);
 
 	GL_Init();
 

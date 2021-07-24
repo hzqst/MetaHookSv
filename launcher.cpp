@@ -157,9 +157,10 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	Sys_GetExecutableName(szFileName, sizeof(szFileName));
 	char *szExeName = strrchr(szFileName, '\\') + 1;
 
-	if(INVALID_FILE_ATTRIBUTES != GetFileAttributesA("svends.exe") && !stricmp(szExeName, "svencoop.exe"))
+	if (!stricmp(szExeName, "svencoop.exe") && CommandLine()->CheckParm("-game") == NULL)
+	{
 		CommandLine()->AppendParm("-game", "svencoop");
-
+	}
 	if (stricmp(szExeName, "hl.exe") && CommandLine()->CheckParm("-game") == NULL)
 	{
 		szExeName[strlen(szExeName) - 4] = '\0';
