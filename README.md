@@ -20,11 +20,11 @@ Use a separate account to play Sven-Coop if you worry about getting banned, sinc
 
 0. git pull https://github.com/hzqst/MetaHookSv or download from https://github.com/hzqst/MetaHookSv/archive/main.zip
 
-1. All required executable and resource files are in "Build" folder, pick [whatever resource you need](Build/README.md) and copy them to "\SteamLibrary\steamapps\common\Sven Co-op\".
+1. All required executable and resource files are in `Build` folder, pick [whatever resource you need](Build/README.md) and copy them to `\SteamLibrary\steamapps\common\Sven Co-op\`.
 
-2. Launch game from "\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe"
+2. Launch game from `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`
 
-* The new "svencoop.exe" is renamed from "metahook.exe", you could run game from "metahook.exe -game svencoop" however it will cause game crash when changing video settings.
+* The new `svencoop.exe` is renamed from `metahook.exe`, you could run game from "metahook.exe -game svencoop" however it will cause game crash when changing video settings.
 
 * The SDL2.dll fixes a bug that the IME input handler from original SDL library provided by valve was causing buffer overflow and game crash when using non-english IME. you don't need to copy it if you don't have a non-english IME.
 
@@ -32,9 +32,9 @@ Use a separate account to play Sven-Coop if you worry about getting banned, sinc
 
 0. git pull https://github.com/hzqst/MetaHookSv or download from https://github.com/hzqst/MetaHookSv/archive/main.zip
 
-1. Run "install-to-SvenCoop.bat"
+1. Run `install-to-SvenCoop.bat`
 
-2. Launch game from "\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe"
+2. Launch game from `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`
 
 3. Other games follow the same instruction.
 
@@ -52,23 +52,23 @@ Let's assume that you have all requirements installed correctly.
 
 1. git clone https://github.com/hzqst/MetaHookSv
 
-2. Run init-deps.bat, wait until all required submodules / dependencies are pulled. (this may takes couple of minutes, depending on your network connection and download speed)
+2. Run `init-deps.bat`, wait until all required submodules / dependencies are pulled. (this may takes couple of minutes, depending on your network connection and download speed)
 
-3. Run "build-capstone.bat", wait until capstone's static lib(s) are generated.
+3. Run `build-capstone.bat`, wait until capstone's static lib(s) are generated.
 
-4. Run "build-bullet3.bat", wait until bullet3's static lib(s) are generated.
+4. Run `build-bullet3.bat`, wait until bullet3's static lib(s) are generated.
 
-5. Run "build-MetaHook.bat", wait until "svencoop.exe" generated at "Build" directory.
+5. Run `build-MetaHook.bat`, wait until `svencoop.exe` generated at `Build` directory.
 
-6. Run "build-CaptionMod.bat", wait until "CaptionMod.dll" generated.
+6. Run `build-CaptionMod.bat`, wait until `CaptionMod.dll` generated.
 
-7. Run "build-Renderer.bat", wait until "Renderer.dll" generated.
+7. Run `build-Renderer.bat`, wait until `Renderer.dll` generated.
 
-8. Run "build-BulletPhysics.bat", wait until "BulletPhysics.dll" generated.
+8. Run `build-BulletPhysics.bat`, wait until `BulletPhysics.dll` generated.
 
-9. Run "build-StudioEvents.bat", wait until "StudioEvents.dll" generated.
+9. Run `build-StudioEvents.bat`, wait until `StudioEvents.dll` generated.
 
-10. All generated plugins should be at "Build\svencoop\metahook\plugins\" directory.
+10. All generated plugins should be at `Build\svencoop\metahook\plugins\` directory.
 
 ## Plugins
 
