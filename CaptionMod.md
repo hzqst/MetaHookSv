@@ -26,7 +26,7 @@ There is a example demo shows you how to translate dynamic HUD TextMessage into 
 
 Modify and overwrite "dictionary_english.txt" is the best option if you are expected to use non-English language in game.
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/1.png)
+![](/img/1.png)
 
 ### Compatibility
 

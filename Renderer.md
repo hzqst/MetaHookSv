@@ -26,13 +26,13 @@
 
 12. Fixed an engine (both GoldSrc and SvEngine) bug that STUDIO_NF_MASKED was not working with remapped / colormap textures for studio-models.
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/2.png)
+![](/img/2.png)
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/3.png)
+![](/img/3.png)
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/4.png)
+![](/img/4.png)
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/5.png)
+![](/img/5.png)
 
 ### Compatibility
 
@@ -42,8 +42,6 @@
 | GoldSrc_legacy (< 6153)  | -    |
 | GoldSrc_new    (8684 ~)  | √    |
 | SvEngine       (8832 ~)  | √    |
-
-For GoldSrc engine: Only compatible with metahook launcher (metahook.exe) from https://github.com/hzqst/MetaHookSv, not from other source.
 
 #### Console Vars
 

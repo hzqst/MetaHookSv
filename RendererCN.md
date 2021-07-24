@@ -28,13 +28,13 @@
 
 * Meta Renderer for Sven-Coop 不再支持一切破解引擎硬编码限制的功能（因为SvEngine本来就会提升这些最大限制），如：允许加载的最大纹理尺寸、最大动态光源数量、最大可见实体数量、lightmap大小限制，以及任何Sven-Coop本身就支持的功能，如：3d skybox、镜子等。
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/2.png)
+![](/img/2.png)
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/3.png)
+![](/img/3.png)
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/4.png)
+![](/img/4.png)
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/5.png)
+![](/img/5.png)
 
 ### 兼容性
 
@@ -44,8 +44,6 @@
 | GoldSrc_legacy (< 6153)  | -    |
 | GoldSrc_new    (8684 ~)  | √    |
 | SvEngine       (8832 ~)  | √    |
-
-GoldSrc引擎: 只兼容从 https://github.com/hzqst/MetaHookSv 构建的改进版metahook启动器(metahook.exe), 不兼容其他来源的metahook启动器。
 
 #### 控制台参数
 

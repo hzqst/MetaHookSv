@@ -21,8 +21,6 @@
 | GoldSrc_new    (8684 ~)  | √    |
 | SvEngine       (8832 ~)  | √    |
 
-For GoldSrc engine: Only compatible with MetaHookSv launcher, not from other source.
-
 ### Console Vars
 
 bv_simrate 32 ~ 128 : How many times to perform simulation per persond ? higher simulation frequency get more accurate result, while eating more CPU resource. default : 64

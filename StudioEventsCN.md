@@ -6,7 +6,7 @@
 
 该插件可以防止重复播放模型自带音效，防止音效反复刷屏
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/8.png)
+![](/img/8.png)
 
 ### 兼容性
 

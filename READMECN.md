@@ -92,7 +92,7 @@
 
 [中文文档](CaptionModCN.md) [英文文档](CaptionMod.md)
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/1.png)
+![](/img/1.png)
 
 ### BulletPhysics
 
@@ -100,7 +100,7 @@
 
 [中文文档](BulletPhysicsCN.md) [DOCUMENTATION](BulletPhysics.md)
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/6.png)
+![](/img/6.png)
 
 ### MetaRenderer
 
@@ -108,7 +108,7 @@
 
 [中文文档](RendererCN.md) [英文文档](Renderer.md)
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/3.png)
+![](/img/3.png)
 
 ### StudioEvents
 
@@ -116,4 +116,4 @@
 
 [DOCUMENTATION](StudioEvents.md) [中文文档](StudioEventsCN.md)
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/8.png)
+![](/img/8.png)

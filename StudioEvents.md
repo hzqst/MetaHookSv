@@ -6,7 +6,7 @@
 
 This plugin can block studio-event sound spamming with controllable cvars.
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/8.png)
+![](/img/8.png)
 
 ### Compatibility
 

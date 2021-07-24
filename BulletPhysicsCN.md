@@ -8,9 +8,9 @@
 
 2. 怪物死亡时将怪物模型转化为布娃娃（暂未支持）
 
-![](/hzqst/MetaHookSv/raw/main/img/6.png)
+![](/img/6.png)
 
-![](/hzqst/MetaHookSv/raw/main/img/7.png)
+![](/img/7.png)
 
 ### 兼容性
 
@@ -20,8 +20,6 @@
 | GoldSrc_legacy (< 6153)  | -    |
 | GoldSrc_new    (8684 ~)  | √    |
 | SvEngine       (8832 ~)  | √    |
-
-GoldSrc引擎: 只兼容从MetaHookSv构建的改进版metahook启动器(metahook.exe), 不兼容其他来源的metahook启动器。
 
 ### 控制台参数
 

@@ -90,7 +90,7 @@ A subtitle plugin designed for displaying subtitles and translate in-game HUD te
 
 [DOCUMENTATION](CaptionMod.md) [中文文档](CaptionModCN.md)
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/1.png)
+![](/img/1.png)
 
 ### BulletPhysics
 
@@ -98,7 +98,7 @@ A plugin that transform player model into ragdoll when player is dead or being c
 
 [DOCUMENTATION](BulletPhysics.md) [中文文档](BulletPhysicsCN.md)
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/6.png)
+![](/img/6.png)
 
 ### MetaRenderer
 
@@ -108,7 +108,7 @@ You can even play with 200k epolys models and still keep a high framerate.
 
 [DOCUMENTATION](Renderer.md) [中文文档](RendererCN.md)
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/3.png)
+![](/img/3.png)
 
 ### StudioEvents
 
@@ -116,7 +116,7 @@ This plugin can block studio-event sound spamming with controllable cvars.
 
 [DOCUMENTATION](StudioEvents.md) [中文文档](StudioEventsCN.md)
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/8.png)
+![](/img/8.png)
 
 ### HUDColor (third-party) (SvEngine only)
 

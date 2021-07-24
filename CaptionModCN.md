@@ -26,7 +26,7 @@
 
 所以如果你需要翻译游戏文本请直接用 "dictionary_[你的语言].txt" 替换 "dictionary_english.txt"。
 
-![](https://github.com/hzqst/MetaHookSv/raw/main/img/1.png)
+![](/img/1.png)
 
 ### 兼容性
 
