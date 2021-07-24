@@ -18,11 +18,11 @@ Use a separate account to play Sven Co-op if you worry about getting banned, sin
 
 ## Manual Installation
 
-0. git pull https://github.com/hzqst/MetaHookSv or download from https://github.com/hzqst/MetaHookSv/archive/main.zip
+1. git pull https://github.com/hzqst/MetaHookSv or download from https://github.com/hzqst/MetaHookSv/archive/main.zip
 
-1. All required executable and resource files are in `Build` folder, pick [whatever resource you need](Build/README.md) and copy them to `\SteamLibrary\steamapps\common\Sven Co-op\`.
+2. All required executable and resource files are in `Build` folder, pick [whatever resource you need](Build/README.md) and copy them to `\SteamLibrary\steamapps\common\Sven Co-op\`.
 
-2. Launch game from `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`
+3. Launch game from `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`
 
 * The new `svencoop.exe` is renamed from `metahook.exe`, you could run game from "metahook.exe -game svencoop" however it will cause game crash when changing video settings.
 
@@ -30,13 +30,15 @@ Use a separate account to play Sven Co-op if you worry about getting banned, sin
 
 ## One Click Installation
 
-0. git pull https://github.com/hzqst/MetaHookSv or download from https://github.com/hzqst/MetaHookSv/archive/main.zip
+1. git pull https://github.com/hzqst/MetaHookSv or download from https://github.com/hzqst/MetaHookSv/archive/main.zip
 
-1. Run `install-to-SvenCoop.bat`
+2. Run `install-to-SvenCoop.bat`
 
-2. Launch game from `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`
+3. Launch game from `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`
 
-3. Other games follow the same instruction.
+* Other games follow the same instruction.
+
+* You should have [.NET Framework 4.5](https://www.microsoft.com/en-us/download/details.aspx?id=30653) installed in your system otherwise the [SteamAppsLocation](SteamAppsLocation/README.md) will probably not work.
 
 ## Build Requirements
 

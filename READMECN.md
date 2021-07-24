@@ -36,7 +36,9 @@
 
 3. 从 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe` 启动游戏
 
-4. 其他游戏也可以按照此种方式安装，只需要运行其他install-to-批处理即可。
+* 其他游戏也可以按照此种方式安装，只需要运行其他install-to-批处理即可。
+
+* 至少需要 [.NET Framework 4.5](https://www.microsoft.com/en-us/download/details.aspx?id=30653) 否则 [SteamAppsLocation](SteamAppsLocation/README.md) 可能会无法工作.
 
 ## 构建需求
 

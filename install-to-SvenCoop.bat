@@ -25,6 +25,6 @@ exit
 
 :fail
 
-echo Failed to locate GameInstallDir of Sv-en Coop, please make sure Steam is running and you have Sv-en Coop installed correctly.
+echo Failed to locate GameInstallDir of Sven Co-op, please make sure Steam is running and you have Sven Co-op installed correctly.
 pause
 exit
