@@ -72,13 +72,13 @@
 
 10. 所有插件应该会生成到`Build\svencoop\metahook\plugins\`目录
 
-* 如果你的网络经常无法访问github导致clone失败，你可以从国内镜像gitee分别拉取(MetaHookSv)[https://gitee.com/hzqst/MetaHookSv]、(Detours)[https://gitee.com/mirrors/detours]、(Capstone)[https://gitee.com/mirrors/capstone]、(Bullet3 Physics SDK)[https://gitee.com/mirrors/bullet3]
+* 如果你的网络经常无法访问github导致clone失败，你可以从国内镜像gitee分别拉取[MetaHookSv](https://gitee.com/hzqst/MetaHookSv)、[Detours](https://gitee.com/mirrors/detours)、[Capstone](https://gitee.com/mirrors/capstone)、[Bullet3 Physics SDK](https://gitee.com/mirrors/bullet3)
 
 ## 调试
 
 1. 运行 `debug-SvenCoop.bat`  (其他游戏就选择该游戏对应的debug-bat)
 
-2. 打开 `MetaHook.sln`, 在解决方案资源管理器中找到对应的项目，右键->设置为启动项目，然后以Debug模式重新编译该项目后，按F5即可开启本地调试。
+2. 打开 `MetaHook.sln`, 在解决方案资源管理器中找到对应的项目，右键设置为启动项目，然后以Debug模式重新编译该项目后，按F5即可开启本地调试。
 
 ## MetaHookSv (V3) 相比 MetaHook (V2) 的新功能
 
