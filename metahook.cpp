@@ -1265,8 +1265,7 @@ PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize)
 			if (SearchPtr[1] == 0xCC || SearchPtr[1] == 0x90)
 			{
 				if (SearchPtr[2] != 0x90 &&
-					SearchPtr[2] != 0xCC &&
-					(((ULONG_PTR)SearchPtr + 2) % 0x10) == 0)
+					SearchPtr[2] != 0xCC)
 				{
 					bShouldCheck = true;
 					Candidate = SearchPtr + 2;
@@ -1274,8 +1273,7 @@ PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize)
 			}
 			else if (
 				SearchPtr[1] != 0x90 &&
-				SearchPtr[1] != 0xCC &&
-				(((ULONG_PTR)SearchPtr + 1) % 0x10) == 0)
+				SearchPtr[1] != 0xCC)
 			{
 				MH_ReverseSearchFunctionBegin_ctx2 ctx2 = { 0 };
 
