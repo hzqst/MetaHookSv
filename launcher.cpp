@@ -127,7 +127,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	HANDLE hObject = NULL;
 
 	CommandLine()->CreateCmdLine(GetCommandLine());
-	CommandLine()->RemoveParm("-steam");
+	//CommandLine()->RemoveParm("-steam");
 
 #ifndef _DEBUG
 	BOOL (*IsDebuggerPresent)(void) = (BOOL (*)(void))GetProcAddress(GetModuleHandle("kernel32.dll"), "IsDebuggerPresent");
