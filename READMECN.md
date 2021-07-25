@@ -72,6 +72,8 @@
 
 10. 所有插件应该会生成到`Build\svencoop\metahook\plugins\`目录
 
+* 如果你的网络经常无法访问github导致clone失败，你可以从国内镜像gitee分别拉取(MetaHookSv)[https://gitee.com/hzqst/MetaHookSv]、(Detours)[https://gitee.com/mirrors/detours]、(Capstone)[https://gitee.com/mirrors/capstone]、(Bullet3 Physics SDK)[https://gitee.com/mirrors/bullet3]
+
 ## 调试
 
 1. 运行 `build-bullet3-debug.bat` (可选，只在以调试模式构建BulletPhysics时需要), 等待 bullet3 的调试模式静态库生成完毕
@@ -125,3 +127,17 @@
 [DOCUMENTATION](StudioEvents.md) [中文文档](StudioEventsCN.md)
 
 ![](/img/8.png)
+
+### HUDColor (第三方) (只支持SvEngine)
+
+该插件可以修改HUD颜色
+
+https://github.com/DrAbcrealone/HUDColor
+
+### MetaAudio (第三方) (只支持GoldSrc)
+
+该插件使用alure2+OpenAL替换了GoldSrc原本的声音系统
+
+由于SvEngine已经使用FMOD作为声音引擎了，你不应该在Sven Co-op上使用该插件.
+
+https://github.com/LAGonauta/MetaAudio

@@ -88,7 +88,7 @@ Let's assume that you have all requirements installed correctly.
 
 2. Blocking duplicate plugins (which may introduce infinite-recursive calling) from loading.
 
-3. A transaction will be there at stage `LoadEngine` and `LoadClient`, to prevent `InlineHook` issued by multiple plugins from immediately taking effects on engine code. Allowing multiple plugins to `SearchPattern` and `InlineHook` same function without conflict.
+3. A transaction will be there at stage `LoadEngine` and `LoadClient`, to prevent `InlineHook` issued by multiple plugins from immediately taking effect. Allowing multiple plugins to `SearchPattern` and `InlineHook` same function without conflict.
 
 ## Plugins
 
