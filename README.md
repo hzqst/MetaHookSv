@@ -74,13 +74,9 @@ Let's assume that you have all requirements installed correctly.
 
 ## Debugging
 
-1. Run `build-bullet3-debug.bat` (Optional, only necessary when build BulletPhysics), wait until bullet3's debug-static-libs generated.
+1. Run `debug-SvenCoop.bat` (or other games)
 
-2. Run `build-capstone-debug.bat` (Optional, only necessary when build MetaHook), wait until capstone's debug-static-libs generated.
-
-3. Run `debug-SvenCoop.bat`
-
-4. Open `MetaHook.sln` with Visual Studio, set the specified project as launch project, compile the project, then F5 to start debugging.
+2. Open `MetaHook.sln` with Visual Studio, set specified project as launch project, compile the project, then press F5 to start debugging.
 
 ## MetaHookSv (V3) new features compare to nagist's old metahook (V2)
 
