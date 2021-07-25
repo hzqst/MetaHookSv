@@ -4,6 +4,8 @@
 #include "interface.h"
 #include <capstone.h>
 #include <IPluginsV1.h>
+#include <fstream>
+#include <sstream>
 
 extern "C"
 {
@@ -42,7 +44,6 @@ void *g_pClientDLL_Init = NULL;
 int (*g_original_ClientDLL_Init)(void) = NULL;
 hook_t *g_phClientDLL_Init = NULL;
 
-BOOL g_bEngineIsBlob = FALSE;
 HMODULE g_hEngineModule = NULL;
 PVOID g_dwEngineBase = NULL;
 DWORD g_dwEngineSize = NULL;
@@ -82,7 +83,8 @@ PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize);
 
 typedef struct plugin_s
 {
-	char *filename;
+	std::string filename;
+	std::string filepath;
 	HINTERFACEMODULE module;
 	IBaseInterface *pPluginAPI;
 	int iInterfaceVersion;
@@ -99,12 +101,70 @@ mh_enginesave_t gMetaSave;
 
 extern metahook_api_t gMetaHookAPI;
 
-bool HM_LoadPlugins(char *filename, HINTERFACEMODULE hModule)
+bool MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 {
+	bool bDuplicate = false;
+
+	for (plugin_t *p = g_pPluginBase; p; p = p->next)
+	{
+		if (!stricmp(p->filename.c_str(), filename.c_str()))
+		{
+			bDuplicate = true;
+			break;
+		}
+	}
+
+	if (!bDuplicate && GetModuleHandleA(filename.c_str()))
+		bDuplicate = true;
+
+	if (bDuplicate)
+	{
+		std::stringstream ss;
+		ss << "MH_LoadPlugin: Duplicate plugin " << filename << ", ignored.";
+		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
+		return false;
+	}
+
+	HINTERFACEMODULE hModule = Sys_LoadModule(filepath.c_str());
+
+	if (!hModule)
+	{
+		std::stringstream ss;
+		ss << "MH_LoadPlugin: Could not load " << filename;
+		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
+		return false;
+	}
+
+	for (plugin_t *p = g_pPluginBase; p; p = p->next)
+	{
+		if (p->module == hModule)
+		{
+			bDuplicate = true;
+			break;
+		}
+	}
+
+	if (bDuplicate)
+	{
+		Sys_FreeModule(hModule);
+
+		std::stringstream ss;
+		ss << "MH_LoadPlugin: Duplicate plugin " << filename << ", ignored.";
+		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
+		return false;
+	}
+
 	CreateInterfaceFn fnCreateInterface = Sys_GetFactory(hModule);
 
 	if (!fnCreateInterface)
+	{
+		Sys_FreeModule(hModule);
+
+		std::stringstream ss;
+		ss << "MH_LoadPlugin: Invalid plugin " << filename << ", ignored.";
+		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
 		return false;
+	}
 
 	plugin_t *plug = new plugin_t;
 	plug->module = hModule;
@@ -135,77 +195,51 @@ bool HM_LoadPlugins(char *filename, HINTERFACEMODULE hModule)
 		}
 	}
 
-	plug->filename = strdup(filename);
+	plug->filename = filename;
+	plug->filepath = filepath;
 	plug->next = g_pPluginBase;
 	g_pPluginBase = plug;
 	return true;
 }
 
-void MH_Init(const char *pszGameName)
+void MH_LoadPlugins(const char *gamedir)
 {
-	g_pfnbuild_number = NULL;
-	g_original_ClientDLL_Init = NULL;
-	g_phClientDLL_Init = NULL;
-	g_pVideoMode = NULL;
-	com_gamedir = NULL;
+	std::string aConfigFile = gamedir;
+	aConfigFile += "/metahook/configs/plugins.lst";
 
-	gMetaSave.pEngineFuncs = new cl_enginefunc_t;
-	memset(gMetaSave.pEngineFuncs, 0, sizeof(cl_enginefunc_t));
-
-	gMetaSave.pExportFuncs = new cl_exportfuncs_t;
-	memset(gMetaSave.pExportFuncs, 0, sizeof(cl_exportfuncs_t));
-
-	g_dwEngineBase = 0;
-	g_dwEngineSize = 0;
-	g_pHookBase = NULL;
-	g_pExportFuncs = NULL;
-	g_bSaveVideo = false;
-
-	gInterface.CommandLine = CommandLine();
-	gInterface.FileSystem = g_pFileSystem;
-	gInterface.Registry = registry;
-
-	char metapath[1024], filename[1024];
-	sprintf(metapath, "%s/metahook", pszGameName);
-	sprintf(filename, "%s/configs/plugins.lst", metapath);
-
-	FILE *fp = fopen(filename, "rt");
-
-	if (fp)
+	std::ifstream infile;
+	infile.open(aConfigFile);
+	if (infile.is_open())
 	{
-		static char line[1024];
-
-		while (!feof(fp))
+		while (!infile.eof())
 		{
-			static char plugins[64];
-			fgets(line, sizeof(line), fp);
-
-			if (line[0] == '\0' || line[0] == ';')
-				continue;
-
-			if (sscanf(line, "%s", plugins) != 1)
-				continue;
-
-			if (!isalnum(plugins[0]))
-				continue;
-
-			sprintf(filename, "%s/plugins/%s", metapath, plugins);
-
-			HINTERFACEMODULE hModule = Sys_LoadModule(filename);
-
-			if (!hModule)
+			std::string stringLine;
+			std::getline(infile, stringLine);
+			if (stringLine.length() > 1)
 			{
-				char msg[1024];
-				sprintf(msg, "MH_Init: Could not load %s.", plugins);
-				MessageBoxA(NULL, msg, "Warning", MB_ICONWARNING);
-				continue;
+				if (stringLine[0] == '\r' || stringLine[0] == '\n')
+					continue;
+				if (stringLine[0] == '\0')
+					continue;
+				if (stringLine[0] == ';')
+					continue;
+				if (stringLine[0] == '/' && stringLine[1] == '/')
+					continue;
+
+				std::string aPluginPath = gamedir;
+				aPluginPath += "/metahook/plugins/";
+				aPluginPath += stringLine;
+
+				MH_LoadPlugin(aPluginPath, stringLine);
 			}
-
-			if (!HM_LoadPlugins(plugins, hModule))
-				continue;
 		}
-
-		fclose(fp);
+		infile.close();
+	}
+	else
+	{
+		std::stringstream ss;
+		ss << "MH_LoadPlugin: Could not open " << aConfigFile;
+		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
 	}
 }
 
@@ -256,8 +290,33 @@ void MH_ClientDLL_Init(void)
 	MH_WriteDWORD(g_ppExportFuncs, (DWORD)g_pExportFuncs);
 }
 
-void MH_LoadEngine(HMODULE hModule)
+void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 {
+	g_pfnbuild_number = NULL;
+	g_original_ClientDLL_Init = NULL;
+	g_phClientDLL_Init = NULL;
+	g_pVideoMode = NULL;
+	com_gamedir = NULL;
+
+	if(!gMetaSave.pEngineFuncs)
+		gMetaSave.pEngineFuncs = new cl_enginefunc_t;
+
+	memset(gMetaSave.pEngineFuncs, 0, sizeof(cl_enginefunc_t));
+
+	if(!gMetaSave.pExportFuncs)
+		gMetaSave.pExportFuncs = new cl_exportfuncs_t;
+
+	memset(gMetaSave.pExportFuncs, 0, sizeof(cl_exportfuncs_t));
+
+	g_dwEngineBase = 0;
+	g_dwEngineSize = 0;
+	g_pHookBase = NULL;
+	g_pExportFuncs = NULL;
+	g_bSaveVideo = false;
+
+	gInterface.CommandLine = CommandLine();
+	gInterface.FileSystem = g_pFileSystem;
+	gInterface.Registry = registry;
 	gInterface.FileSystem = g_pFileSystem;
 
 	if (hModule)
@@ -265,14 +324,14 @@ void MH_LoadEngine(HMODULE hModule)
 		g_dwEngineBase = MH_GetModuleBase(hModule);
 		g_dwEngineSize = MH_GetModuleSize(hModule);
 		g_hEngineModule = hModule;
-		g_bEngineIsBlob = FALSE;
+
+		g_iEngineType = ENGINE_UNKNOWN;
 	}
 	else
 	{
 		g_dwEngineBase = (PVOID)0x1D01000;
 		g_dwEngineSize = 0x1000000;
 		g_hEngineModule = GetModuleHandle(NULL);
-		g_bEngineIsBlob = TRUE;
 
 		g_iEngineType = ENGINE_GOLDSRC_BLOB;
 	}
@@ -450,6 +509,8 @@ void MH_LoadEngine(HMODULE hModule)
 
 	g_phClientDLL_Init = MH_InlineHook(g_pClientDLL_Init, MH_ClientDLL_Init, (void **)&g_original_ClientDLL_Init);
 
+	MH_LoadPlugins(szGameName);
+
 	g_bTransactionInlineHook = true;
 
 	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next)
@@ -504,7 +565,6 @@ void MH_FreeAllPlugin(void)
 				((IPlugins *)pfree->pPluginAPI)->Shutdown();
 		}
 
-		free(pfree->filename);
 		Sys_FreeModule(pfree->module);
 		delete pfree;
 	}
@@ -527,7 +587,6 @@ void MH_ShutdownPlugins(void)
 				((IPlugins *)pfree->pPluginAPI)->Shutdown();
 		}
 
-		free(pfree->filename);
 		FreeLibrary((HMODULE)pfree->module);
 		delete pfree;
 	}
@@ -1068,7 +1127,7 @@ DWORD MH_GetVideoMode(int *width, int *height, int *bpp, bool *windowed)
 
 CreateInterfaceFn MH_GetEngineFactory(void)
 {
-	if (!g_bEngineIsBlob)
+	if (g_iEngineType != ENGINE_GOLDSRC_BLOB)
 		return (CreateInterfaceFn)GetProcAddress(g_hEngineModule, "CreateInterface");
 
 	static DWORD factoryAddr = 0;
@@ -1167,20 +1226,6 @@ PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize)
 	{
 		if (*(DWORD *)SearchPtr == 0xCCCCCCCC || *(DWORD *)SearchPtr == 0x90909090)
 		{
-			//.text:01D01000 55                                                  push    ebp
-			//.text:01D01001 8B EC                                               mov     ebp, esp
-			//if(!memcmp(SearchPtr + 4, "\x55\x8B\xEC", 3))
-			//	return (SearchPtr + 4);
-
-			//.text:01D03CA0 81 EC 04 04 00 00                                   sub     esp, 404h
-			//.text:01D03CA6 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
-			//if (!memcmp(SearchPtr + 4, "\x81\xEC", 2) && !memcmp(SearchPtr + 8, "\x00\x00", 2) && !memcmp(SearchPtr + 10, "\xA1", 1))
-			//	return (SearchPtr + 4);
-
-			//.text:01D02BC0 83 EC 18                                            sub     esp, 18h
-			//.text:01D02BC3 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
-			//if (!memcmp(SearchPtr + 4, "\x83\xEC", 2) && !memcmp(SearchPtr + 7, "\xA1", 1))
-			//	return (SearchPtr + 4);
 			if (SearchPtr[4] != 0x90 && SearchPtr[4] != 0xCC)
 				return SearchPtr + 4;
 		}

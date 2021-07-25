@@ -101,9 +101,8 @@ typedef struct mh_enginesave_s
 mh_enginesave_t;
 
 void MH_FreeAllHook(void);
-void MH_Init(const char *pszGameName);
-void MH_LoadClient(cl_exportfuncs_t *pExportFuncs, cl_exportfuncs_t *pCallExportFuncs);
-void MH_LoadEngine(HMODULE hModule);
+void MH_LoadPlugins(const char *gamedir);
+void MH_LoadEngine(HMODULE hModule, const char *szGameName);
 void MH_ExitGame(int iResult);
 void MH_Shutdown(void);
 

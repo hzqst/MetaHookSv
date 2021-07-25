@@ -167,12 +167,12 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		CommandLine()->AppendParm("-game", szExeName);
 	}
 
-	static char szGameName[32];
-	const char *_szGameName;
-	const char *szGameStr = CommandLine()->CheckParm("-game", &_szGameName);
+	static char szGameName[32] = {0};
+	const char *pszGameName = NULL;
+	const char *szGameStr = CommandLine()->CheckParm("-game", &pszGameName);
 
 	if (szGameStr)
-		strcpy(szGameName, _szGameName);
+		strcpy(szGameName, pszGameName);
 	else
 		strcpy(szGameName, "valve");
 
@@ -219,8 +219,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		g_pFileSystem->Mount();
 		g_pFileSystem->AddSearchPath(Sys_GetLongPathName(), "ROOT");
 
-		MH_Init(szGameName);
-
 		static char szNewCommandParams[2048];
 		const char *pszEngineDLL;
 		int iResult = ENGINE_RESULT_NONE;
@@ -265,7 +263,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 		if (engineAPI)
 		{
-			MH_LoadEngine(bUseBlobDLL ? NULL : (HMODULE)hEngine);
+			MH_LoadEngine(bUseBlobDLL ? NULL : (HMODULE)hEngine, szGameName);
 			iResult = engineAPI->Run(hInstance, Sys_GetLongPathName(), CommandLine()->GetCmdLine(), szNewCommandParams, Sys_GetFactoryThis(), Sys_GetFactory(hFileSystem));
 			MH_ExitGame(iResult);
 			MH_Shutdown();
