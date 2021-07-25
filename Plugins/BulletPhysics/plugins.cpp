@@ -93,10 +93,7 @@ void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_NEW);
 		Sig_FuncNotFound(R_NewMap);
-	}
-
-	Install_InlineHook(R_NewMap);
-	
+	}	
 }
 
 void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
@@ -114,6 +111,8 @@ void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 
 	QGL_Init();
+
+	Install_InlineHook(R_NewMap);
 }
 
 void IPluginsV3::ExitGame(int iResult)

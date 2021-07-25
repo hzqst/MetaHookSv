@@ -75,9 +75,9 @@
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(MetaHookGameDirectory)\$(MetaHookModName)\metahook\plugins\"
-mkdir "$(MetaHookGameDirectory)\$(MetaHookModName)\renderer\"
-xcopy "$(ProjectDir)..\..\Build\svencoop\renderer\" "$(MetaHookGameDirectory)\$(MetaHookModName)\renderer\" /y /e</Command>
+      <Command>if exist "$(MetaHookGameDirectory)" copy "$(OutDir)$(TargetName)$(TargetExt)" "$(MetaHookGameDirectory)\$(MetaHookModName)\metahook\plugins\"
+if exist "$(MetaHookGameDirectory)" mkdir "$(MetaHookGameDirectory)\$(MetaHookModName)\renderer\"
+if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\renderer\" "$(MetaHookGameDirectory)\$(MetaHookModName)\renderer\" /y /e</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -105,9 +105,7 @@ xcopy "$(ProjectDir)..\..\Build\svencoop\renderer\" "$(MetaHookGameDirectory)\$(
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(MetaHookGameDirectory)\$(MetaHookModName)\metahook\plugins\"
-mkdir "$(MetaHookGameDirectory)\$(MetaHookModName)\renderer\"
-xcopy "$(ProjectDir)..\..\Build\svencoop\renderer\" "$(MetaHookGameDirectory)\$(MetaHookModName)\renderer\" /y /e</Command>
+      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

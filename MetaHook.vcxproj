@@ -79,7 +79,7 @@
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(MetaHookGameDirectory)\$(MetaHookLaunchName)"</Command>
+      <Command>if exist copy "$(OutDir)$(TargetName)$(TargetExt)" "$(MetaHookGameDirectory)\$(MetaHookLaunchName)"</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableDpiAwareness>true</EnableDpiAwareness>

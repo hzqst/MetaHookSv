@@ -71,7 +71,6 @@ void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	}
 
 	R_FillAddress();
-	R_InstallHook();
 }
 
 void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
@@ -93,6 +92,7 @@ void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
 
 	GL_Init();
+	R_InstallHook();
 
 	pExportFunc->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
 	pExportFunc->HUD_UpdateClientData = HUD_UpdateClientData;

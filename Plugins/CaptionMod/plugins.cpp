@@ -45,6 +45,7 @@ void IPluginsV3::Shutdown(void)
 void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
 	g_pFileSystem = g_pInterface->FileSystem;
+	g_pFullFileSystem = g_pFileSystem;
 	g_pMetaHookAPI->GetVideoMode(&g_iVideoWidth, &g_iVideoHeight, NULL, NULL);
 
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();
@@ -70,8 +71,6 @@ void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	Engine_FillAddress();
 	Engine_InstallHook();
 	BaseUI_InstallHook();
-
-	g_pFullFileSystem = g_pFileSystem;
 }
 
 void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)

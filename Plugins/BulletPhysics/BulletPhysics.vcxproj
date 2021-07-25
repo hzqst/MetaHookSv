@@ -75,7 +75,7 @@
       <AdditionalDependencies>Bullet3Collision_Debug.lib;Bullet3Common_Debug.lib;Bullet3Dynamics_Debug.lib;Bullet3Geometry_Debug.lib;BulletCollision_Debug.lib;BulletDynamics_Debug.lib;LinearMath_Debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(MetaHookGameDirectory)\$(MetaHookModName)\metahook\plugins\"</Command>
+      <Command>if exist copy "$(OutDir)$(TargetName)$(TargetExt)" "$(MetaHookGameDirectory)\$(MetaHookModName)\metahook\plugins\"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if not exist "$(ProjectDir)..\..\bullet3\build\lib\Debug\Bullet3Common_Debug.lib" call "$(ProjectDir)..\..\build-bullet3-debug.bat"</Command>
