@@ -54,7 +54,7 @@ Let's assume that you have all requirements installed correctly.
 
 1. git clone https://github.com/hzqst/MetaHookSv
 
-2. Run `init-deps.bat`, wait until all required submodules / dependencies are pulled. (this may takes couple of minutes, depending on your network connection and download speed)
+2. Run `build-initdeps.bat`, wait until all required submodules / dependencies are pulled. (this may takes couple of minutes, depending on your network connection and download speed)
 
 3. Run `build-capstone.bat`, wait until capstone's static lib(s) are generated.
 
