@@ -1346,7 +1346,7 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		else
 			qglDisable(GL_TEXTURE_2D);
 
-		qglActiveTextureARB(*oldtarget);
+		GL_DisableMultitexture();
 	}
 
 	if (!r_wsurf.bDiffuseTexture)
@@ -2122,7 +2122,7 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 		else
 			qglDisable(GL_TEXTURE_2D);
 
-		qglActiveTextureARB(*oldtarget);
+		GL_DisableMultitexture();
 	}
 
 	if (!r_wsurf.bDiffuseTexture)

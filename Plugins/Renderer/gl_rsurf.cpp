@@ -780,12 +780,13 @@ void R_DrawDecals(qboolean bMultitexture)
 	if (bMultitexture && !drawgbuffer)
 	{
 		qglActiveTextureARB(TEXTURE1_SGIS);
+		qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 		qglDisable(GL_TEXTURE_2D_ARRAY);
 		if(*mtexenabled)
 			qglEnable(GL_TEXTURE_2D);
 		else
 			qglDisable(GL_TEXTURE_2D);
-		qglActiveTextureARB(*oldtarget);
+		GL_DisableMultitexture();
 	}
 
 	if (gl_polyoffset && gl_polyoffset->value)
