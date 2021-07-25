@@ -903,12 +903,6 @@ void QGL_InitExtension(void)
 		*(FARPROC *)&qglDisableVertexAttribArray = qwglGetProcAddress("glDisableVertexAttribArray");
 	}
 
-	if (strstr(extension, "GL_EXT_compiled_vertex_array"))
-	{
-		qglLockArraysEXT = (PFNGLLOCKARRAYSEXTPROC)qwglGetProcAddress("glLockArraysEXT");
-		qglUnlockArraysEXT = (PFNGLUNLOCKARRAYSEXTPROC)qwglGetProcAddress("glUnlockArraysEXT");
-	}
-
 	if (strstr(extension, "GL_EXT_texture3D"))
 	{
 		qglTexImage3DEXT = (PFNGLTEXIMAGE3DEXTPROC)qwglGetProcAddress("glTexImage3DEXT");
@@ -994,12 +988,6 @@ void QGL_InitExtension(void)
 
 		gl_framebuffer_object = true;
 	}
-
-	qglGenQueries = (PFNGLGENQUERIESPROC)qwglGetProcAddress("glGenQueries");
-	qglBeginQuery = (PFNGLBEGINQUERYPROC)qwglGetProcAddress("glBeginQuery");
-	qglEndQuery = (PFNGLENDQUERYPROC)qwglGetProcAddress("glEndQuery");
-	qglBeginConditionalRender = (PFNGLBEGINCONDITIONALRENDERPROC)qwglGetProcAddress("glBeginConditionalRender");
-	qglEndConditionalRender = (PFNGLENDCONDITIONALRENDERPROC)qwglGetProcAddress("glEndConditionalRender");
 
 	if (strstr(extension, "GL_EXT_framebuffer_multisample"))
 	{
