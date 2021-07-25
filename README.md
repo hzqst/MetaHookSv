@@ -20,13 +20,13 @@ Use a separate account to play Sven Co-op if you worry about getting banned, sin
 
 1. git pull https://github.com/hzqst/MetaHookSv or download from https://github.com/hzqst/MetaHookSv/archive/main.zip
 
-2. All required executable and resource files are in `Build` folder, pick [whatever resource you need](Build/README.md) and copy them to `\SteamLibrary\steamapps\common\Sven Co-op\`.
+2. All required executable and resource files are in `Build` folder, pick [whatever resource you want](Build/README.md) and copy them to `\SteamLibrary\steamapps\common\Sven Co-op\`.
 
 3. Launch game from `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`
 
 * The new `svencoop.exe` is renamed from `metahook.exe`, you could run game from "metahook.exe -game svencoop" however it will cause game crash when changing video settings.
 
-* The `SDL2.dll` fixes a bug that the IME input handler from original SDL library provided by valve was causing buffer overflow and game crash when using non-english IME. you don't need to copy it if you don't have a non-english IME.
+* The `SDL2.dll` fixes a bug that the IME input handler from original SDL library provided by Valve was causing buffer overflow and game crash when using non-english IME. you don't need to copy it if you don't have a non-english IME.
 
 ## One Click Installation
 
@@ -81,6 +81,14 @@ Let's assume that you have all requirements installed correctly.
 3. Run `debug-SvenCoop.bat`
 
 4. Open `MetaHook.sln` with Visual Studio, set the specified project as launch project, compile the project, then F5 to start debugging.
+
+## MetaHookSv (V3) new features compare to nagist's old metahook (V2)
+
+1. New and better capstone API to disassemble and analyze engine or client code.
+
+2. Blocking duplicate plugins (which may introduce infinite-recursive calling) from loading.
+
+3. A transaction will be there at stage `LoadEngine` and `LoadClient`, to prevent `InlineHook` issued by multiple plugins from immediately taking effects on engine code. Allowing multiple plugins to `SearchPattern` and `InlineHook` same function without conflict.
 
 ## Plugins
 

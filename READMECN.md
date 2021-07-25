@@ -84,6 +84,14 @@
 
 * 编译完的二进制文件会被自动复制到游戏的metahook插件目录下，不需要自己复制
 
+## MetaHookSv (V3) 相比 MetaHook (V2) 的新功能
+
+1. 提供反汇编 API 用于分析引擎代码
+
+2. 防止插件重复加载（重复加载会导致插件自调用，引发无限递归）
+
+3. `LoadEngine` 和 `LoadClient` 阶段会对所有`InlineHook`请求开启“事务”，直到所有插件的`LoadEngine` 和 `LoadClient`结束才会让`InlineHook`生效, 这样就可以允许不同插件`SearchPattern` 和 `InlineHook` 同一个函数，也不会引发冲突了
+
 ## 插件
 
 ### CaptionMod
