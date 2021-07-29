@@ -45,21 +45,25 @@
 
 ## Console Vars
 
-r_hdr 1 / 0 : To enable or disable HDR(high-dynamic-range) post-processor. recommended value : 1
+### High-Dynamic-Range (HDR)
 
-r_hdr_blurwidth : To control the intensity of blur for HDR. recommended value : 0.1
+`r_hdr` Set to 1 to enable High-Dynamic-Range (HDR) post-processor rendering.
 
-r_hdr_exposure : To control the intensity of exposure for HDR. recommended value : 5
+`r_hdr_blurwidth` Controls the intensity of blur for HDR.
 
-r_hdr_darkness : To control the darkness for HDR. recommended value : 4
+`r_hdr_exposure` Controls the intensity of exposure for HDR. recommended value : 5
 
-r_hdr_adaptation : To control the dark / bright adaptation speed for HDR. recommended value : 50
+`r_hdr_darkness` Controls the darkness for HDR. recommended value : 4
 
-r_water 2 / 1 / 0 : Enable or disable simple water reflection and refraction. 2 = draw all entities and terrains in reflection view, 1 = draw only terrains in reflection view. recommended value : 1
+`r_hdr_adaptation` Controls the dark / bright adaptation speed for HDR. recommended value : 50
 
-r_water_fresnelfactor (0.0 ~ 1.0) : To determine how to lerp and mix the refraction color and reflection color. recommended value : 0.4
+### Water
 
-r_water_depthfactor1 (0.0 ~ 1.0) : To determine the strength of water edge feathering. recommended value : 0.02
+`r_water` Set to 1 to enable reflection and refraction in water rendering. Set to 2 to draw all visible entities in reflection (relatively expensive to render), otherwise only BSP world terrains are rendered in reflection.
+
+`r_water_fresnelfactor` To control the intensity of reflection. higher value gives more ratio to reflection instead of refraction.
+
+r_water_depthfactor1 : To determine the strength of water edge feathering. recommended value : 0.02
 
 r_water_depthfactor2 (0.0 ~ 1.0) : To determine the base strength of water edge feathering. recommended value : 0.01
 
