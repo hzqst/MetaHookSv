@@ -2,7 +2,7 @@
 
 [中文DOC](RendererCN.md)
 
-## Features
+# Features
 
 1. High-Dynamic-Range (HDR) post-processor.
 
@@ -34,7 +34,7 @@
 
 ![](/img/5.png)
 
-## Compatibility
+# Compatibility
 
 |        Engine            |      |
 |        ----              | ---- |
@@ -43,9 +43,9 @@
 | GoldSrc_new    (8684 ~)  | √    |
 | SvEngine       (8832 ~)  | √    |
 
-## Console Vars
+# Console Vars
 
-### High-Dynamic-Range (HDR)
+## High-Dynamic-Range (HDR)
 
 `r_hdr` Set to 1 to enable High-Dynamic-Range (HDR) post-processor rendering.
 
@@ -57,7 +57,7 @@
 
 `r_hdr_adaptation` Controls the dark / bright adaptation speed for HDR. recommended value : 50
 
-### Water
+## Water
 
 `r_water` Set to 1 to enable reflection and refraction in water rendering. Set to 2 to draw all visible entities in reflection (relatively expensive to render), otherwise only BSP world terrains are rendered in reflection.
 
@@ -131,19 +131,19 @@ r_fxaa 1 / 0 : Enable or disable Fast Approximate Anti-Aliasing (FXAA). recommen
 
 r_msaa 0 / 2 / 4 / 8 / 16 : Enable or disable MultiSampling Anti-Aliasing (MSAA), number >= 2 for MSAA sample count. recommended value : 0 if SSAO enabled or 4 if SSAO disabled.
 
-## Per-Object Dynamic Shadows
+# Per-Object Dynamic Shadows
 
 Dynamic Shadows are cast only by world models (Players, monsters, weaponbox, corpses, etc), and only onto brush surfaces. They are calculated at runtime, so they are quite crude and relatively expensive to render.
 
 Dynamic Shadows can sometimes project through walls and floors, giving away the location of players or objects. Use info_no_dynamic_shadow to workaround this problem if you encounter it.
 
-## New Entities
+# New Entities
 
-### shadow_control
+## shadow_control
 
 `shadow_control` is a point entity used to control Dynamic Shadow projections for the entire map, including maximum distance cast, direction cast, and shadow color.
 
-#### Available Keyvalues
+### Available Keyvalues
 
 `angles` is the direction of shadows, in PitchYawRoll format. for example `"angles" "90 0 0"`
 
@@ -152,3 +152,15 @@ Dynamic Shadows can sometimes project through walls and floors, giving away the 
 `color` is the color of the shadows, in RGBA8 format. for example `"color" "0 0 0 128"`
 
 `disableallshadows` disables shadows entirely. for example `"disableallshadows" "1"`
+
+`high_distance` is the maximum distance that entities are being rendered in high-quality shadow map.
+
+`high_scale` is scale factor to scale the size of entity model up or down in high-quality shadow map.
+
+`medium_distance` is the maximum distance that entities are being rendered in medium-quality shadow map.
+
+`medium_scale` is scale factor to scale the size of entity model up or down in medium-quality shadow map.
+
+`low_distance` is the maximum distance that entities are being rendered in low-quality shadow map.
+
+`low_scale` is scale factor to scale the size of entity model up or down in low-quality shadow map.
