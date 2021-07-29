@@ -2,13 +2,13 @@
 
 [中文DOC](RendererCN.md)
 
-### Features
+## Features
 
 1. High-Dynamic-Range (HDR) post-processor.
 
 2. Simple water reflection and refraction. (Warning: this may cause a significant performance hit.)
 
-3. Simple Per-Object Shadow. (Warning: this may cause a significant performance hit.)
+3. Per-Object Dynamic Shadows.
 
 4. Screen Space Ambient Occlusion (SSAO) using horizon-based ambient occlusion (HBAO). the implementation is taken from nvidia. (Warning: this may cause a significant performance hit when sampling radius is too large.) (Warning: you might see SSAO's black pixel fighting on wall or terrain if your defalt_fov is not 90)
 
@@ -34,7 +34,7 @@
 
 ![](/img/5.png)
 
-### Compatibility
+## Compatibility
 
 |        Engine            |      |
 |        ----              | ---- |
@@ -43,7 +43,7 @@
 | GoldSrc_new    (8684 ~)  | √    |
 | SvEngine       (8832 ~)  | √    |
 
-#### Console Vars
+## Console Vars
 
 r_hdr 1 / 0 : To enable or disable HDR(high-dynamic-range) post-processor. recommended value : 1
 
@@ -126,3 +126,25 @@ r_wsurf_sky_occlusion 1 / 0 : When set to 1, scenes occluded by "sky" surfaces (
 r_fxaa 1 / 0 : Enable or disable Fast Approximate Anti-Aliasing (FXAA). recommended value : 1
 
 r_msaa 0 / 2 / 4 / 8 / 16 : Enable or disable MultiSampling Anti-Aliasing (MSAA), number >= 2 for MSAA sample count. recommended value : 0 if SSAO enabled or 4 if SSAO disabled.
+
+## Per-Object Dynamic Shadows
+
+Dynamic Shadows are cast only by world models (Players, monsters, weaponbox, corpses, etc), and only onto brush surfaces. They are calculated at runtime, so they are quite crude and relatively expensive to render.
+
+Dynamic Shadows can sometimes project through walls and floors, giving away the location of players or objects. Use info_no_dynamic_shadow to workaround this problem if you encounter it.
+
+## New Entities
+
+### shadow_control
+
+`shadow_control` is a point entity used to control Dynamic Shadow projections for the entire map, including maximum distance cast, direction cast, and shadow color.
+
+#### Available Keyvalues
+
+`angles` is the direction of shadows, in PitchYawRoll format. for example `"angles" "90 0 0"`
+
+`fade` is the distance where the shadow begins to fade-out and the maximum distance the shadow is allowed to cast and, in inches. for example `"fade" "64 128"`
+
+`color` is the color of the shadows, in RGBA8 format. for example `"color" "0 0 0 128"`
+
+`disableallshadows` disables shadows entirely. for example `"disableallshadows" "1"`
