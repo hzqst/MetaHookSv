@@ -43,55 +43,63 @@
 | GoldSrc_new    (8684 ~)  | √    |
 | SvEngine       (8832 ~)  | √    |
 
-# Console Vars
+# Features
 
-## High-Dynamic-Range (HDR)
+## HDR
 
-`r_hdr` Set to 1 to enable High-Dynamic-Range (HDR) post-processor rendering.
+HDR (High Dynamic Range) rendering simulates brightness above that which a computer monitor is actually capable of displaying. This mainly involves "blooming" colours above 100% brightness into neighbouring areas, and adjusting a virtual camera aperture to compensate for any over-exposure that results.
 
-`r_hdr_blurwidth` Controls the intensity of blur for HDR.
+### Console vars
 
-`r_hdr_exposure` Controls the intensity of exposure for HDR. recommended value : 5
+`r_hdr` Set to 1 to enable HDR post-processor rendering.
 
-`r_hdr_darkness` Controls the darkness for HDR. recommended value : 4
+`r_hdr_blurwidth` Controls the intensity of blooming for HDR.
 
-`r_hdr_adaptation` Controls the dark / bright adaptation speed for HDR. recommended value : 50
+`r_hdr_exposure` Controls the intensity of exposure for HDR.
 
-## Water
+`r_hdr_darkness` Controls the intensity of darkness for HDR.
+
+`r_hdr_adaptation` Controls the dark / bright adaptation speed for HDR.
+
+## Water Shader
+
+It renders water that realistically reflects and refracts the world.
+
+### Console vars
 
 `r_water` Set to 1 to enable reflection and refraction in water rendering. Set to 2 to draw all visible entities in reflection (relatively expensive to render), otherwise only BSP world terrains are rendered in reflection.
 
-`r_water_fresnelfactor` To control the intensity of reflection. higher value gives more ratio to reflection instead of refraction.
+`r_water_fresnelfactor` Controls the intensity of reflection. higher value gives more ratio to reflection instead of refraction.
 
-r_water_depthfactor1 : To determine the strength of water edge feathering. recommended value : 0.02
+`r_water_depthfactor1` Controls the strength of water edge feathering.
 
-r_water_depthfactor2 (0.0 ~ 1.0) : To determine the base strength of water edge feathering. recommended value : 0.01
+`r_water_depthfactor2` Controls the base strength of water edge feathering.
 
-r_water_normfactor (0.0 ~ 1.0) : To determine the size of water wave. recommended value : 1.5
+`r_water_normfactor` Controls the intensity of water wave.
 
-r_water_minheight : Water entity which has height < this value will not be rendered with shader program. recommended value : 7.5
+`r_water_minheight` Water entity with height smaller than this value will not be rendered with shader program.
 
-r_shadow 1 / 0 : Enable or disable Per-Object Shadow. recommended value : 1
+## Per-Object Dynamic Shadow
 
-r_shadow_angle_pitch (0.0 ~ 360.0) : To control the angle(pitch) of shadow caster (light source).
+`r_shadow` : Set to 1 to enable Per-Object Dynamic Shadow.
 
-r_shadow_angle_yaw (0.0 ~ 360.0) : To control the angle(yaw) of shadow caster (light source).
+`r_shadow_angles` Control the direction of shadows, in PitchYawRoll format. for example `r_shadow_angles 90 0 0`
 
-r_shadow_angle_roll (0.0 ~ 360.0) : To control the angle(roll) of shadow caster (light source).
+`r_shadow_high_distance` : is the maximum distance that entities are being rendered in high-quality shadow map. for example `r_shadow_high_distance 400`
 
-r_shadow_high_distance : Entities within this distance are rendered into high-quality shadow map. recommended value : 400
+`r_shadow_high_scale` is scale factor to scale the size of entity model up or down in high-quality shadow map. for example `r_shadow_high_scale 4`
 
-r_shadow_high_scale : Scale factor when render shadow-caster entity in high-quality shadow map. larger scale factor gets better quality shadow but will cause incorrect render result when the entity is scaled too much. recommended value : 4.0
+`r_shadow_medium_distance` is the maximum distance that entities are being rendered in medium-quality shadow map. for example `r_shadow_medium_distance 800`
 
-r_shadow_medium_distance : Entities within this distance are rendered into medium-quality shadow map. recommended value : 1024
+`r_shadow_medium_scale` is scale factor to scale the size of entity model up or down in medium-quality shadow map. for example `r_shadow_medium_scale 2`
 
-r_shadow_medium_scale : Scale factor when render shadow-caster entity in low-quality shadow map. recommended value : 2.0
+`r_shadow_low_distance` is the maximum distance that entities are being rendered in low-quality shadow map. for example `r_shadow_low_distance 1200`
 
-r_shadow_low_distance : Entities within this distance are rendered into low-quality shadow map. recommended value : 4096
+`r_shadow_low_scale` is scale factor to scale the size of entity model up or down in low-quality shadow map. for example `r_shadow_low_scale 0.5`
 
-r_shadow_low_scale : Scale factor when render shadow-caster entity in medium quality shadow map. recommended value : 0.5
+## Screen Space Ambient Occlusion
 
-r_ssao 1 / 0 : Enable or disable Screen Space Ambient Occlusion (SSAO). recommended value : 1
+`r_ssao` Set to 1 to enable SSAO
 
 (Warning: you might see SSAO's black pixel fighting on wall or terrain if your defalt_fov is not 90. you have to either turn SSAO off or change default_fov back to 90)
 
@@ -153,14 +161,14 @@ Dynamic Shadows can sometimes project through walls and floors, giving away the 
 
 `disableallshadows` disables shadows entirely. for example `"disableallshadows" "1"`
 
-`high_distance` is the maximum distance that entities are being rendered in high-quality shadow map.
+`high_distance` is the maximum distance that entities are being rendered in high-quality shadow map. for example `"high_distance" "400"`
 
-`high_scale` is scale factor to scale the size of entity model up or down in high-quality shadow map.
+`high_scale` is scale factor to scale the size of entity model up or down in high-quality shadow map. for example `"high_scale" "4"`
 
-`medium_distance` is the maximum distance that entities are being rendered in medium-quality shadow map.
+`medium_distance` is the maximum distance that entities are being rendered in medium-quality shadow map. for example `"medium_distance" "800"`
 
-`medium_scale` is scale factor to scale the size of entity model up or down in medium-quality shadow map.
+`medium_scale` is scale factor to scale the size of entity model up or down in medium-quality shadow map. for example `"medium_scale" "2"`
 
-`low_distance` is the maximum distance that entities are being rendered in low-quality shadow map.
+`low_distance` is the maximum distance that entities are being rendered in low-quality shadow map. for example `"low_distance" "1200"`
 
-`low_scale` is scale factor to scale the size of entity model up or down in low-quality shadow map.
+`low_scale` is scale factor to scale the size of entity model up or down in low-quality shadow map. for example `"low_scale" "0.5"`
