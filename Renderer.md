@@ -93,17 +93,21 @@ Dynamic Shadows can sometimes project through walls and floors, giving away the 
 
 `r_shadow` set to 1 to enable Per-Object Dynamic Shadow.
 
-`r_shadow_angles` control the direction of shadows, in PitchYawRoll format. for example `r_shadow_angles 90 0 0`
+`r_shadow_angles` control the direction of shadows, in PitchYawRoll format. for example `r_shadow_angles "90 0 0"`
 
-`r_shadow_high_distance` is the maximum distance that entities are being rendered in high-quality shadow map. for example `r_shadow_high_distance 400`
+`r_shadow_color` control the color of shadows, in RGBA8 format. for example `r_shadow_color "0 0 0 128"`
+
+`r_shadow_minlum` is the minimum luminance the shadow is allowed to cast, in from 0 to 255. for example `r_shadow_minlum 64`
+
+`r_shadow_high_distance` is the maximum distance that entities are being rendered in high-quality shadow map, in inches. for example `r_shadow_high_distance 400`
 
 `r_shadow_high_scale` is scale factor to scale the size of entity model up or down in high-quality shadow map. for example `r_shadow_high_scale 4`
 
-`r_shadow_medium_distance` is the maximum distance that entities are being rendered in medium-quality shadow map. for example `r_shadow_medium_distance 800`
+`r_shadow_medium_distance` is the maximum distance that entities are being rendered in medium-quality shadow map, in inches. for example `r_shadow_medium_distance 800`
 
 `r_shadow_medium_scale` is scale factor to scale the size of entity model up or down in medium-quality shadow map. for example `r_shadow_medium_scale 2`
 
-`r_shadow_low_distance` is the maximum distance that entities are being rendered in low-quality shadow map. for example `r_shadow_low_distance 1200`
+`r_shadow_low_distance` is the maximum distance that entities are being rendered in low-quality shadow map, in inches. for example `r_shadow_low_distance 1200`
 
 `r_shadow_low_scale` is scale factor to scale the size of entity model up or down in low-quality shadow map. for example `r_shadow_low_scale 0.5`
 
@@ -159,21 +163,23 @@ r_msaa 0 / 2 / 4 / 8 / 16 : Enable or disable MultiSampling Anti-Aliasing (MSAA)
 
 `angles` is the direction of shadows, in PitchYawRoll format. for example `"angles" "90 0 0"`
 
-`fade` is the distance where the shadow begins to fade-out and the maximum distance the shadow is allowed to cast and, in inches. for example `"fade" "64 128"`
+`fade` is the distance where the shadow begins to fade-out and the maximum distance the shadow is allowed to cast, in inches. for example `"fade" "64 128"`
+
+`minlum` is the minimum luminance the shadow is allowed to cast, in from 0 to 255. for example `"minlum" "64"`
 
 `color` is the color of the shadows, in RGBA8 format. for example `"color" "0 0 0 128"`
 
 `disableallshadows` disables shadows entirely. for example `"disableallshadows" "1"`
 
-`high_distance` is the maximum distance that entities are being rendered in high-quality shadow map. for example `"high_distance" "400"`
+`high_distance` is the maximum distance that entities are being rendered in high-quality shadow map, in inches. for example `"high_distance" "400"`
 
 `high_scale` is scale factor to scale the size of entity model up or down in high-quality shadow map. for example `"high_scale" "4"`
 
-`medium_distance` is the maximum distance that entities are being rendered in medium-quality shadow map. for example `"medium_distance" "800"`
+`medium_distance` is the maximum distance that entities are being rendered in medium-quality shadow map, in inches. for example `"medium_distance" "800"`
 
 `medium_scale` is scale factor to scale the size of entity model up or down in medium-quality shadow map. for example `"medium_scale" "2"`
 
-`low_distance` is the maximum distance that entities are being rendered in low-quality shadow map. for example `"low_distance" "1200"`
+`low_distance` is the maximum distance that entities are being rendered in low-quality shadow map, in inches. for example `"low_distance" "1200"`
 
 `low_scale` is scale factor to scale the size of entity model up or down in low-quality shadow map. for example `"low_scale" "0.5"`
 
@@ -190,3 +196,5 @@ r_msaa 0 / 2 / 4 / 8 / 16 : Enable or disable MultiSampling Anti-Aliasing (MSAA)
 `darkness` is the intensity of darkness for HDR, forexample `"darkness" "4.5"`
 
 `adaptation` is the brightness adaptation speed for HDR, for example `"adaptation" "50"`
+
+`disablehdr` disables HDR entirely. for example `"disablehdr" "1"`
