@@ -151,11 +151,11 @@ r_msaa 0 / 2 / 4 / 8 / 16 : Enable or disable MultiSampling Anti-Aliasing (MSAA)
 
 # New Entities
 
-## shadow_control
+## env_shadow_control
 
-`shadow_control` is a point entity used to control Dynamic Shadow projections for the entire map, including maximum distance cast, direction cast, and shadow color.
+`env_shadow_control` is a point entity used to control Dynamic Shadow projections for the entire map, including maximum distance cast, direction cast, and shadow color.
 
-### Available Keyvalues
+### Keyvalues
 
 `angles` is the direction of shadows, in PitchYawRoll format. for example `"angles" "90 0 0"`
 
@@ -176,3 +176,17 @@ r_msaa 0 / 2 / 4 / 8 / 16 : Enable or disable MultiSampling Anti-Aliasing (MSAA)
 `low_distance` is the maximum distance that entities are being rendered in low-quality shadow map. for example `"low_distance" "1200"`
 
 `low_scale` is scale factor to scale the size of entity model up or down in low-quality shadow map. for example `"low_scale" "0.5"`
+
+## env_hdr_controller
+
+env_hdr_controller is a point entity used to controls the HDR effects for local player.
+
+### Keyvalues
+
+`blurwidth` is the intensity of blooming for HDR, for example `"blurwidth" "0.1"`
+
+`exposure` is the intensity of exposure for HDR, forexample `"exposure" "4.5"`
+
+`darkness` is the intensity of darkness for HDR, forexample `"darkness" "4.5"`
+
+`adaptation` is the brightness adaptation speed for HDR, for example `"adaptation" "50"`
