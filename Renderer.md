@@ -49,7 +49,7 @@ Expensive water reflects and refracts the whole world in real-time, while cheap 
 
 `r_water_normfactor` controls the intensity of turbulence based on normalmap.
 
-`r_water_minheight` Water entity with height smaller than this value will not be rendered with shader program.
+`r_water_minheight` water entity with height smaller than this value will not be rendered with shader program.
 
 ## Per-Object Dynamic Shadow
 
@@ -177,7 +177,7 @@ You can use console command `r_reload` to reload entities from both two sources.
 
 ## env_hdr_control
 
-`env_hdr_control` is a point entity used to controls the HDR effects for local player.
+`env_hdr_control` is a point entity used to control the HDR effects for local player.
 
 ### Keyvalues
 
@@ -190,3 +190,23 @@ You can use console command `r_reload` to reload entities from both two sources.
 `adaptation` is the brightness adaptation speed for HDR, for example `"adaptation" "50"`
 
 `disablehdr` disables HDR entirely. for example `"disablehdr" "1"`
+
+## env_water_control
+
+`env_water_control` is a point entity used to control the water shader.
+
+### Keyvalues
+
+`basetexture` is the name of basetexture of water to control. for example `"basetexture" "!radio"`
+
+`disablewater` disables water shader entirely for water with specified `basetexture`. for example `"disablewater" "1"`
+
+`normalmap` is the path to the normalmap for turbulence effect.
+
+`fresnelfactor` controls the intensity of reflection.
+
+`depthfactor1` controls the strength of water edge feathering.
+
+`depthfactor2` controls the base strength of water edge feathering.
+
+`normfactor` controls the intensity of turbulence based on normalmap.
