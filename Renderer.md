@@ -137,7 +137,7 @@ Entity chunks should follow the format :
 
 You can use console command `r_reload` to reload entities from both two sources.
 
-You can use (bspguy)[https://github.com/wootguy/bspguy] to add entity to BSP file or write entities into `/maps/(MapName)_entity.txt`.
+You can use [bspguy](https://github.com/wootguy/bspguy) to add entity to BSP file or write entities into `/maps/(MapName)_entity.txt`.
 
 ## env_shadow_control
 
