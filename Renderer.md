@@ -63,29 +63,39 @@ HDR (High Dynamic Range) rendering simulates brightness above that which a compu
 
 ## Water Shader
 
-It renders water that realistically reflects and refracts the world.
+Water Shader basically creates water that realistically reflects and refracts the world.
+
+All water surfaces fall into two types: expensive and cheap.
+
+Expensive water reflects and refracts the whole world in real-time, while cheap water uses a cubemap to reflect.
 
 ### Console vars
 
-`r_water` Set to 1 to enable reflection and refraction in water rendering. Set to 2 to draw all visible entities in reflection (relatively expensive to render), otherwise only BSP world terrains are rendered in reflection.
+`r_water` set to 1 to enable reflection and refraction for water. set to 2 to draw all visible entities in reflection (relatively expensive to render), otherwise only BSP world terrains are rendered in reflection.
 
-`r_water_fresnelfactor` Controls the intensity of reflection. higher value gives more ratio to reflection instead of refraction.
+`r_water_fresnelfactor` controls the intensity of reflection.
 
-`r_water_depthfactor1` Controls the strength of water edge feathering.
+`r_water_depthfactor1` controls the strength of water edge feathering.
 
-`r_water_depthfactor2` Controls the base strength of water edge feathering.
+`r_water_depthfactor2` controls the base strength of water edge feathering.
 
-`r_water_normfactor` Controls the intensity of water wave.
+`r_water_normfactor` controls the intensity of turbulence based on normalmap.
 
 `r_water_minheight` Water entity with height smaller than this value will not be rendered with shader program.
 
 ## Per-Object Dynamic Shadow
 
-`r_shadow` : Set to 1 to enable Per-Object Dynamic Shadow.
+Dynamic Shadows are cast only by world models (Players, monsters, weaponbox, corpses, etc), and only onto brush surfaces. They are calculated at runtime, so they are quite crude and relatively expensive to render.
 
-`r_shadow_angles` Control the direction of shadows, in PitchYawRoll format. for example `r_shadow_angles 90 0 0`
+Dynamic Shadows can sometimes project through walls and floors, giving away the location of players or objects. Use info_no_dynamic_shadow to workaround this problem if you encounter it.
 
-`r_shadow_high_distance` : is the maximum distance that entities are being rendered in high-quality shadow map. for example `r_shadow_high_distance 400`
+### Console vars
+
+`r_shadow` set to 1 to enable Per-Object Dynamic Shadow.
+
+`r_shadow_angles` control the direction of shadows, in PitchYawRoll format. for example `r_shadow_angles 90 0 0`
+
+`r_shadow_high_distance` is the maximum distance that entities are being rendered in high-quality shadow map. for example `r_shadow_high_distance 400`
 
 `r_shadow_high_scale` is scale factor to scale the size of entity model up or down in high-quality shadow map. for example `r_shadow_high_scale 4`
 
@@ -139,19 +149,13 @@ r_fxaa 1 / 0 : Enable or disable Fast Approximate Anti-Aliasing (FXAA). recommen
 
 r_msaa 0 / 2 / 4 / 8 / 16 : Enable or disable MultiSampling Anti-Aliasing (MSAA), number >= 2 for MSAA sample count. recommended value : 0 if SSAO enabled or 4 if SSAO disabled.
 
-# Per-Object Dynamic Shadows
-
-Dynamic Shadows are cast only by world models (Players, monsters, weaponbox, corpses, etc), and only onto brush surfaces. They are calculated at runtime, so they are quite crude and relatively expensive to render.
-
-Dynamic Shadows can sometimes project through walls and floors, giving away the location of players or objects. Use info_no_dynamic_shadow to workaround this problem if you encounter it.
-
 # New Entities
 
-## shadow_control
+## env_shadow_control
 
-`shadow_control` is a point entity used to control Dynamic Shadow projections for the entire map, including maximum distance cast, direction cast, and shadow color.
+`env_shadow_control` is a point entity used to control Dynamic Shadow projections for the entire map, including maximum distance cast, direction cast, and shadow color.
 
-### Available Keyvalues
+### Keyvalues
 
 `angles` is the direction of shadows, in PitchYawRoll format. for example `"angles" "90 0 0"`
 
@@ -172,3 +176,17 @@ Dynamic Shadows can sometimes project through walls and floors, giving away the 
 `low_distance` is the maximum distance that entities are being rendered in low-quality shadow map. for example `"low_distance" "1200"`
 
 `low_scale` is scale factor to scale the size of entity model up or down in low-quality shadow map. for example `"low_scale" "0.5"`
+
+## env_hdr_controller
+
+`env_hdr_controller` is a point entity used to controls the HDR effects for local player.
+
+### Keyvalues
+
+`blurwidth` is the intensity of blooming for HDR, for example `"blurwidth" "0.1"`
+
+`exposure` is the intensity of exposure for HDR, forexample `"exposure" "4.5"`
+
+`darkness` is the intensity of darkness for HDR, forexample `"darkness" "4.5"`
+
+`adaptation` is the brightness adaptation speed for HDR, for example `"adaptation" "50"`
