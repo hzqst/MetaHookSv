@@ -175,9 +175,9 @@ You can use console command `r_reload` to reload entities from both two sources.
 
 `low_scale` is scale factor to scale the size of entity model up or down in low-quality shadow map. for example `"low_scale" "0.5"`
 
-## env_hdr_controller
+## env_hdr_control
 
-`env_hdr_controller` is a point entity used to controls the HDR effects for local player.
+`env_hdr_control` is a point entity used to controls the HDR effects for local player.
 
 ### Keyvalues
 
