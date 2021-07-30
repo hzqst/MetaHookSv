@@ -155,6 +155,20 @@ r_msaa 0 / 2 / 4 / 8 / 16 : Enable or disable MultiSampling Anti-Aliasing (MSAA)
 
 # New Entities
 
+Entities are loaded from two sources : internal and external. BSP entity chunk of current map is loaded as internal, and `/maps/(CurrentMapName)_entity.txt` is loaded as external.
+
+If `/maps/(CurrentMapName)_entity.txt` is not found, `/renderer/default_entity.txt` will be loaded instead.
+
+Entity chunks should follow the format :
+
+```
+{
+"origin" "123 456 789"
+"angles" "0 0 0"
+"classname" "info_player_start"
+}
+```
+
 ## env_shadow_control
 
 `env_shadow_control` is a point entity used to control Dynamic Shadow projections for the entire map, including maximum distance cast, direction cast, and shadow color.
