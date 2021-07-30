@@ -187,7 +187,7 @@ You can use console command `r_reload` to reload entities from both two sources.
 
 ### Keyvalues
 
-`basetexture` is the name of basetexture of water to control, `*` is for wildcard. for example `"basetexture" "!radio"` or `"basetexture" "*"`
+`basetexture` is the name of basetexture of water to control, `*` is for wildcard (only suffix wildcard supported). for example `"basetexture" "!radio"` or `"basetexture" "!toxi*"`
 
 `disablewater` disables water shader entirely for water with specified `basetexture`. for example `"disablewater" "1"`
 
