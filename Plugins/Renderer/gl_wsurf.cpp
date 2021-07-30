@@ -3207,6 +3207,19 @@ void R_DrawWorld(void)
 	GL_DisableMultitexture();
 	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
+	//Capture previous fog settings from R_RenderScene
+	if (qglIsEnabled(GL_FOG))
+	{
+		qglGetIntegerv(GL_FOG_MODE, &r_fog_mode);
+
+		if (r_fog_mode == GL_LINEAR)
+		{
+			qglGetFloatv(GL_FOG_START, &r_fog_control[0]);
+			qglGetFloatv(GL_FOG_END, &r_fog_control[1]);
+			qglGetFloatv(GL_FOG_COLOR, r_fog_color);
+		}
+	}
+
 	//Skybox uses stencil = 1
 
 	qglEnable(GL_STENCIL_TEST);

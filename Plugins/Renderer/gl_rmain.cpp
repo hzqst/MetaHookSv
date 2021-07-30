@@ -1277,6 +1277,7 @@ void R_PreRenderView(int a1)
 
 	if (!r_refdef->onlyClientDraws)
 	{
+		//Capture previous fog settings from client.dll
 		if (qglIsEnabled(GL_FOG))
 		{
 			qglGetIntegerv(GL_FOG_MODE, &r_fog_mode);

@@ -7,6 +7,13 @@
 }
 {
 "classname" "env_water_control"
+"basetexture" "!radio"
+"disablewater" "1"
+"origin" "0 0 0"
+"angles" "0 0 0"
+}
+{
+"classname" "env_water_control"
 "basetexture" "*"
 "normalmap" "renderer/texture/water_normalmap.tga"
 "fresnelfactor" "0.4"
