@@ -45,7 +45,7 @@ void R_InitShadow(void)
 {
 	shadow_texture_size = min(gl_max_texture_size, 4096);
 	shadow_texture_depth = GL_GenShadowTexture(shadow_texture_size, shadow_texture_size);
-	shadow_texture_color = GL_GenTextureArrayColorFormat(shadow_texture_size, shadow_texture_size, 3, gl_color_format);
+	shadow_texture_color = GL_GenTextureArrayColorFormat(shadow_texture_size, shadow_texture_size, 3, GL_RGBA16F);
 
 	r_shadow = gEngfuncs.pfnRegisterVariable("r_shadow", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_debug = gEngfuncs.pfnRegisterVariable("r_shadow_debug", "0",  FCVAR_CLIENTDLL);
