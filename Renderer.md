@@ -179,7 +179,7 @@ r_msaa 0 / 2 / 4 / 8 / 16 : Enable or disable MultiSampling Anti-Aliasing (MSAA)
 
 ## env_hdr_controller
 
-env_hdr_controller is a point entity used to controls the HDR effects for local player.
+`env_hdr_controller` is a point entity used to controls the HDR effects for local player.
 
 ### Keyvalues
 
