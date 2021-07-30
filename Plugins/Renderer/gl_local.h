@@ -30,7 +30,7 @@
 
 typedef struct
 {
-	GLboolean polygon_offset_fill;
+	//GLboolean polygon_offset_fill;
 	GLboolean cullface;
 	GLboolean alphatest;
 	GLboolean depthtest;

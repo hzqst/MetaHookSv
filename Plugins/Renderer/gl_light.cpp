@@ -1,10 +1,7 @@
 #include "gl_local.h"
 #include <sstream>
 
-int r_light_env_color[4] = { 0 };
-qboolean r_light_env_color_exists = false;
-vec3_t r_light_env_angles = {0};
-qboolean r_light_env_angles_exists = false;
+shadow_control_t r_shadow_control;
 
 cvar_t *r_light_dynamic = NULL;
 cvar_t *r_light_darkness = NULL;
@@ -24,8 +21,6 @@ bool drawgbuffer = false;
 int gbuffer_mask = -1;
 
 std::unordered_map<int, gbuffer_program_t> g_GBufferProgramTable;
-
-std::vector<deferred_light_t> g_DeferredLights;
 
 GLuint r_sphere_vbo = 0;
 GLuint r_sphere_ebo = 0;
@@ -222,18 +217,6 @@ void R_ShutdownLight(void)
 
 void R_InitLight(void)
 {
-	r_light_env_color[0] = 0;
-	r_light_env_color[1] = 0;
-	r_light_env_color[2] = 0;
-	r_light_env_color[3] = 0;
-
-	r_light_env_angles[0] = 90;
-	r_light_env_angles[1] = 0;
-	r_light_env_angles[2] = 0;
-
-	r_light_env_color_exists = false;
-	r_light_env_angles_exists = false;
-
 	r_light_dynamic = gEngfuncs.pfnRegisterVariable("r_light_dynamic", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_light_debug = gEngfuncs.pfnRegisterVariable("r_light_debug", "0", FCVAR_CLIENTDLL);
 	r_light_darkness = gEngfuncs.pfnRegisterVariable("r_light_darkness", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -477,25 +460,6 @@ void R_EndRenderGBuffer(void)
 
 	GL_DisableMultitexture();
 
-	if (r_light_dynamic->value >= 2.0f && g_DeferredLights.size())
-	{
-		GL_Begin2D();
-		
-		qglDisable(GL_TEXTURE_2D);
-		qglColor4f(0, 0, 0, clamp(r_light_darkness->value, 0, 1));
-
-		qglEnable(GL_BLEND);
-		qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		
-		qglUseProgramObjectARB(0);
-
-		R_DrawHUDQuad(glwidth, glheight);
-
-		qglEnable(GL_TEXTURE_2D);
-
-		GL_End2D();
-	}
-
 	qglEnable(GL_BLEND);
 	qglBlendFunc(GL_ONE, GL_ONE);
 
@@ -515,85 +479,6 @@ void R_EndRenderGBuffer(void)
 	qglTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-	if (r_light_dynamic->value >= 2.0f && g_DeferredLights.size())
-	{
-		for (size_t i = 0; i < g_DeferredLights.size(); i++)
-		{
-			auto &sl = g_DeferredLights[i];
-
-			if (sl.type == DLIGHT_POINT)
-			{
-				//Point Light
-
-				float sl_radius = r_light_radius->value / sl.fade;
-
-				vec3_t dist;
-				VectorSubtract(r_refdef->vieworg, sl.origin, dist);
-
-				if (VectorLength(dist) > sl_radius + 32)
-				{
-					vec3_t mins, maxs;
-					for (int j = 0; j < 3; j++)
-					{
-						mins[j] = sl.origin[j] - sl_radius;
-						maxs[j] = sl.origin[j] + sl_radius;
-					}
-
-					if (R_CullBox(mins, maxs))
-						continue;
-
-					dlight_program_t prog = { 0 };
-					R_UseDLightProgram(DLIGHT_LIGHT_PASS | DLIGHT_LIGHT_PASS_POINT | DLIGHT_LIGHT_PASS_VOLUME, &prog);
-					qglUniform4fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0f);
-					qglUniform4fARB(prog.lightpos, sl.origin[0], sl.origin[1], sl.origin[2], 1.0f);
-					qglUniform3fARB(prog.lightcolor, sl.color[0], sl.color[1], sl.color[2]);
-					qglUniform1fARB(prog.lightradius, sl_radius);
-					qglUniform1fARB(prog.lightambient, r_light_ambient->value * sl.color[3]);
-					qglUniform1fARB(prog.lightdiffuse, r_light_diffuse->value * sl.color[3]);
-					qglUniform1fARB(prog.lightspecular, r_light_specular->value * sl.color[3]);
-					qglUniform1fARB(prog.lightspecularpow, r_light_specularpow->value);
-
-					qglEnableClientState(GL_VERTEX_ARRAY);
-					qglBindBufferARB(GL_ARRAY_BUFFER_ARB, r_sphere_vbo);
-					qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, r_sphere_ebo);
-					qglVertexPointer(3, GL_FLOAT, sizeof(float[3]), 0);
-
-					qglPushMatrix();
-
-					qglTranslatef(sl.origin[0], sl.origin[1], sl.origin[2]);
-					qglScalef(sl_radius, sl_radius, sl_radius);
-
-					qglDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
-
-					qglPopMatrix();
-
-					qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-					qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-					qglDisableClientState(GL_VERTEX_ARRAY);
-				}
-				else
-				{
-					dlight_program_t prog = { 0 };
-					R_UseDLightProgram(DLIGHT_LIGHT_PASS | DLIGHT_LIGHT_PASS_POINT, &prog);
-					qglUniform4fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0f);
-					qglUniform4fARB(prog.lightpos, sl.origin[0], sl.origin[1], sl.origin[2], 1.0f);
-					qglUniform3fARB(prog.lightcolor, sl.color[0], sl.color[1], sl.color[2]);
-					qglUniform1fARB(prog.lightradius, sl_radius);
-					qglUniform1fARB(prog.lightambient, r_light_ambient->value * sl.color[3]);
-					qglUniform1fARB(prog.lightdiffuse, r_light_diffuse->value * sl.color[3]);
-					qglUniform1fARB(prog.lightspecular, r_light_specular->value * sl.color[3]);
-					qglUniform1fARB(prog.lightspecularpow, r_light_specularpow->value);
-
-					GL_Begin2D();
-
-					R_DrawHUDQuad(glwidth, glheight);
-
-					GL_End2D();
-				}
-			}
-		}
-	}
 
 	int max_dlight;
 

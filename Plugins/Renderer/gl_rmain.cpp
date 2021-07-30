@@ -957,7 +957,7 @@ void GL_GenerateFBO(void)
 
 	qglEnable(GL_TEXTURE_2D);
 
-	gl_color_format = GL_RGBA32F;
+	gl_color_format = GL_RGBA16F;
 
 	if (bDoMSAA)
 	{

@@ -53,7 +53,7 @@ void GL_PushDrawState(void)
 		Sys_ErrorEx("GL_PushDrawState: MAX_SAVESTACK exceed");
 		return;
 	}
-	qglGetBooleanv(GL_POLYGON_OFFSET_FILL, &save_drawcontext[save_drawcontext_stack].polygon_offset_fill);
+	//qglGetBooleanv(GL_POLYGON_OFFSET_FILL, &save_drawcontext[save_drawcontext_stack].polygon_offset_fill);
 	qglGetBooleanv(GL_CULL_FACE, &save_drawcontext[save_drawcontext_stack].cullface);
 	qglGetBooleanv(GL_ALPHA_TEST, &save_drawcontext[save_drawcontext_stack].alphatest);
 	qglGetBooleanv(GL_DEPTH_TEST, &save_drawcontext[save_drawcontext_stack].depthtest);
@@ -84,10 +84,10 @@ void GL_PopDrawState(void)
 	else if (!save_drawcontext[save_drawcontext_stack].mtex && (*mtexenabled))
 		GL_DisableMultitexture();
 
-	if(save_drawcontext[save_drawcontext_stack].polygon_offset_fill)
+	/*if(save_drawcontext[save_drawcontext_stack].polygon_offset_fill)
 		qglEnable(GL_POLYGON_OFFSET_FILL);
 	else
-		qglDisable(GL_POLYGON_OFFSET_FILL);
+		qglDisable(GL_POLYGON_OFFSET_FILL);*/
 
 	if (save_drawcontext[save_drawcontext_stack].cullface)
 		qglEnable(GL_CULL_FACE);

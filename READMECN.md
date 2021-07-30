@@ -12,7 +12,7 @@
 
 虽然在游戏中使用hook之类的行为可能看上去很危险，但是目前为止还没有人反馈因为使用此插件导致VAC封禁。
 
-并且Sven Co-op并不属于[受VAC保护的游戏](https://store.steampowered.com/search/?term=coop&category2=8)
+并且Sven Co-op并不属于[受VAC保护的游戏](https://store.steampowered.com/search/?term=Sven&category2=8)
 
 如果你实在不放心，那么请使用小号进行游戏，毕竟Sven Co-op是免费游戏。
 
@@ -56,21 +56,17 @@
 
 2. 运行 `build-initdeps.bat`, 等待所有子模块和依赖项目下载完成。 (这一步可能需要花费几分钟时间, 具体取决于你的网速，如果速度很慢或者下载出错建议尝试使用proxy)
 
-3. 运行 `build-capstone.bat`, 等待 capstone 的静态库生成完毕
+3. 运行 `build-MetaHook.bat`, 等待 `svencoop.exe` 生成到 `Build` 目录
 
-4. 运行 `build-bullet3.bat`, 等待 bullet3 的静态库生成完毕
+4. 运行 `build-CaptionMod.bat`, 等待 `CaptionMod.dll` 生成
 
-5. 运行 `build-MetaHook.bat`, 等待 `svencoop.exe` 生成到 `Build` 目录
+5. 运行 `build-Renderer.bat`, 等待 `Renderer.dll` 生成
 
-6. 运行 `build-CaptionMod.bat`, 等待 `CaptionMod.dll` 生成
+6. 运行 `build-BulletPhysics.bat`, 等待 `BulletPhysics.dll` 生成
 
-7. 运行 `build-Renderer.bat`, 等待 `Renderer.dll` 生成
+7. 运行 `build-StudioEvents.bat`, 等待 `StudioEvents.dll` 生成
 
-8. 运行 `build-BulletPhysics.bat`, 等待 `BulletPhysics.dll` 生成
-
-9. 运行 `build-StudioEvents.bat`, 等待 `StudioEvents.dll` 生成
-
-10. 所有插件应该会生成到`Build\svencoop\metahook\plugins\`目录
+8. 所有插件应该会生成到`Build\svencoop\metahook\plugins\`目录
 
 * 如果你的网络经常无法访问github导致clone失败，你可以从国内镜像gitee分别拉取[MetaHookSv](https://gitee.com/hzqst/MetaHookSv)、[Detours](https://gitee.com/mirrors/detours)、[Capstone](https://gitee.com/mirrors/capstone)、[Bullet3 Physics SDK](https://gitee.com/mirrors/bullet3)
 
@@ -82,7 +78,7 @@
 
 ## MetaHookSv (V3) 相比 MetaHook (V2) 的新功能
 
-1. 提供反汇编 API 用于分析引擎代码
+1. 提供反汇编 API 用于分析引擎代码，提供反向（往前）搜索函数头部的API
 
 2. 防止插件重复加载（重复加载会导致插件自调用，引发无限递归）
 

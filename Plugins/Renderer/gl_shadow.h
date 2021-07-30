@@ -12,16 +12,16 @@ extern int shadow_numvisedicts[3];
 //cvar
 extern cvar_t *r_shadow;
 extern cvar_t *r_shadow_debug;
-extern cvar_t *r_shadow_alpha;
-extern cvar_t *r_shadow_fade_start;
-extern cvar_t *r_shadow_fade_end;
-extern cvar_t *r_shadow_angle_p;
-extern cvar_t *r_shadow_angle_y;
-extern cvar_t *r_shadow_angle_r;
+extern cvar_t *r_shadow_fade;
+extern cvar_t *r_shadow_minlum;
+extern cvar_t *r_shadow_angles;
+extern cvar_t *r_shadow_color;
 extern cvar_t *r_shadow_high_distance;
+extern cvar_t *r_shadow_high_scale;
 extern cvar_t *r_shadow_medium_distance;
+extern cvar_t *r_shadow_medium_scale;
 extern cvar_t *r_shadow_low_distance;
-extern cvar_t *r_shadow_map_override;
+extern cvar_t *r_shadow_low_scale;
 
 bool R_ShouldCastShadow(cl_entity_t *ent);
 bool R_ShouldRenderShadowScene(int level);

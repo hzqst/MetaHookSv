@@ -8,6 +8,17 @@
 #define LUMIN_BUFFERS 3
 #define BLUR_BUFFERS 3
 
+typedef struct r_hdr_control_s
+{
+	bool enabled;
+	float blurwidth;
+	float exposure;
+	float darkness;
+	float adaptation;
+}r_hdr_control_t;
+
+extern r_hdr_control_t r_hdr_control;
+
 typedef struct
 {
 	int program;
@@ -117,8 +128,12 @@ typedef struct
 	int program;	
 }hbao_blur_program_t, hbao_blur2_program_t;
 
-extern cvar_t *r_hdr;
-extern cvar_t *r_hdr_debug;
+extern cvar_t *r_hdr ;
+extern cvar_t *r_hdr_blurwidth ;
+extern cvar_t *r_hdr_exposure ;
+extern cvar_t *r_hdr_darkness ;
+extern cvar_t *r_hdr_adaptation ;
+extern cvar_t *r_hdr_debug ;
 extern cvar_t *r_ssao;
 extern cvar_t *r_ssao_debug;
 extern cvar_t *r_ssao_radius;

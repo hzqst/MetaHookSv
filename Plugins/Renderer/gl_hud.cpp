@@ -1,6 +1,8 @@
 #include "gl_local.h"
 #include <sstream>
 
+r_hdr_control_t r_hdr_control;
+
 //HDR
 int last_luminance = 0;
 
@@ -330,8 +332,8 @@ void R_InitGLHUD(void)
 	r_hdr = gEngfuncs.pfnRegisterVariable("r_hdr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_blurwidth = gEngfuncs.pfnRegisterVariable("r_hdr_blurwidth", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_exposure = gEngfuncs.pfnRegisterVariable("r_hdr_exposure", "5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_hdr_darkness = gEngfuncs.pfnRegisterVariable("r_hdr_darkness", "4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_hdr_adaptation = gEngfuncs.pfnRegisterVariable("r_hdr_adaptation", "50.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_hdr_darkness = gEngfuncs.pfnRegisterVariable("r_hdr_darkness", "4.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_hdr_adaptation = gEngfuncs.pfnRegisterVariable("r_hdr_adaptation", "50", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_debug = gEngfuncs.pfnRegisterVariable("r_hdr_debug", "0",  FCVAR_CLIENTDLL);
 
 	r_fxaa = gEngfuncs.pfnRegisterVariable("r_fxaa", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -455,7 +457,7 @@ void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container
 	qglUseProgramObjectARB(pp_luminadapt.program);
 	qglUniform1iARB(pp_luminadapt.curtex, 0);
 	qglUniform1iARB(pp_luminadapt.adatex, 1);
-	qglUniform1fARB(pp_luminadapt.frametime, frametime * clamp(r_hdr_adaptation->value, 1, 100));
+	qglUniform1fARB(pp_luminadapt.frametime, frametime * clamp(r_hdr_control.adaptation, 0.1, 100));
 
 	GL_SelectTexture(TEXTURE0_SGIS);
 	GL_Bind(src->s_hBackBufferTex);
@@ -561,9 +563,9 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 	qglUniform1iARB(pp_tonemap.basetex, 0);
 	qglUniform1iARB(pp_tonemap.blurtex, 1);
 	qglUniform1iARB(pp_tonemap.lumtex, 2);
-	qglUniform1fARB(pp_tonemap.blurfactor, clamp(r_hdr_blurwidth->value, 0, 1));
-	qglUniform1fARB(pp_tonemap.exposure, clamp(r_hdr_exposure->value, 0.001, 10));
-	qglUniform1fARB(pp_tonemap.darkness, clamp(r_hdr_darkness->value, 0.001, 10));
+	qglUniform1fARB(pp_tonemap.blurfactor, clamp(r_hdr_control.blurwidth, 0, 1));
+	qglUniform1fARB(pp_tonemap.exposure, clamp(r_hdr_control.exposure, 0.001, 10));
+	qglUniform1fARB(pp_tonemap.darkness, clamp(r_hdr_control.darkness, 0.001, 10));
 	qglUniform1fARB(pp_tonemap.gamma, 1.0 / v_gamma->value);
 	
 	GL_SelectTexture(TEXTURE0_SGIS);

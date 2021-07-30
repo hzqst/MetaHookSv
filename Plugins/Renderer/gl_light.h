@@ -1,9 +1,20 @@
 #pragma once
 
-extern int r_light_env_color[4];
-extern qboolean r_light_env_color_exists;
-extern vec3_t r_light_env_angles;
-extern qboolean r_light_env_angles_exists;
+typedef struct shadow_control_s
+{
+	bool enabled;
+	vec3_t vforward;
+	vec3_t vright;
+	vec3_t vup;
+	vec3_t angles;
+	float color[4];
+	float fade[2];
+	float minlum;
+	float quality[3][2];
+}shadow_control_t;
+
+extern shadow_control_t r_shadow_control;
+
 extern cvar_t *r_light_dynamic;
 extern cvar_t *r_light_debug;
 extern cvar_t *r_light_darkness;

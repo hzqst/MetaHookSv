@@ -239,11 +239,14 @@ void R_ShutdownStudio(void)
 void R_InitStudio(void)
 {
 	r_studio_vbo = gEngfuncs.pfnRegisterVariable("r_studio_vbo", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_studio_cache_bone = gEngfuncs.pfnRegisterVariable("r_studio_cache_bone", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	//r_studio_cache_bone = gEngfuncs.pfnRegisterVariable("r_studio_cache_bone", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
 bool R_StudioRestoreBones(void)
 {
+	if (!r_studio_cache_bone)
+		return false;
+
 	if (!r_studio_cache_bone->value)
 		return false;
 
@@ -274,6 +277,9 @@ bool R_StudioRestoreBones(void)
 
 void R_StudioSaveBones(void)
 {
+	if (!r_studio_cache_bone)
+		return;
+
 	if (!r_studio_cache_bone->value)
 		return;
 

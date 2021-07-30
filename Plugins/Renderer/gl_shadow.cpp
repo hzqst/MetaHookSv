@@ -16,19 +16,16 @@ int shadow_numvisedicts[3] = {0};
 //cvar
 cvar_t *r_shadow = NULL;
 cvar_t *r_shadow_debug = NULL;
-cvar_t *r_shadow_alpha = NULL;
-cvar_t *r_shadow_fade_start = NULL;
-cvar_t *r_shadow_fade_end = NULL;
-cvar_t *r_shadow_angle_p = NULL;
-cvar_t *r_shadow_angle_y = NULL;
-cvar_t *r_shadow_angle_r = NULL;
+cvar_t *r_shadow_fade = NULL;
+cvar_t *r_shadow_minlum = NULL;
+cvar_t *r_shadow_angles = NULL;
+cvar_t *r_shadow_color = NULL;
 cvar_t *r_shadow_high_distance = NULL;
 cvar_t *r_shadow_high_scale = NULL;
 cvar_t *r_shadow_medium_distance = NULL;
 cvar_t *r_shadow_medium_scale = NULL;
 cvar_t *r_shadow_low_distance = NULL;
 cvar_t *r_shadow_low_scale = NULL;
-cvar_t *r_shadow_map_override = NULL;
 
 void R_FreeShadow(void)
 {
@@ -51,14 +48,11 @@ void R_InitShadow(void)
 	shadow_texture_color = GL_GenTextureArrayColorFormat(shadow_texture_size, shadow_texture_size, 3, gl_color_format);
 
 	r_shadow = gEngfuncs.pfnRegisterVariable("r_shadow", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_map_override = gEngfuncs.pfnRegisterVariable("r_shadow_map_override", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_debug = gEngfuncs.pfnRegisterVariable("r_shadow_debug", "0",  FCVAR_CLIENTDLL);
-	r_shadow_alpha = gEngfuncs.pfnRegisterVariable("r_shadow_alpha", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_fade_start = gEngfuncs.pfnRegisterVariable("r_shadow_fade_start", "64", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_fade_end = gEngfuncs.pfnRegisterVariable("r_shadow_fade_end", "128", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_angle_p = gEngfuncs.pfnRegisterVariable("r_shadow_angle_pitch", "90", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_angle_y = gEngfuncs.pfnRegisterVariable("r_shadow_angle_yaw", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_angle_r = gEngfuncs.pfnRegisterVariable("r_shadow_angle_roll", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_fade = gEngfuncs.pfnRegisterVariable("r_shadow_fade", "64 128", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_minlum = gEngfuncs.pfnRegisterVariable("r_shadow_minlum", "64", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_angles = gEngfuncs.pfnRegisterVariable("r_shadow_angles", "90 0 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_color = gEngfuncs.pfnRegisterVariable("r_shadow_color", "0 0 0 128", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_high_distance = gEngfuncs.pfnRegisterVariable("r_shadow_high_distance", "400", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_high_scale = gEngfuncs.pfnRegisterVariable("r_shadow_high_scale", "4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_medium_distance = gEngfuncs.pfnRegisterVariable("r_shadow_medium_distance", "800", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -113,20 +107,11 @@ bool R_ShouldCastShadow(cl_entity_t *ent)
 
 void R_RenderShadowMap(void)
 {
-	vec3_t sangles;
+	vec3_t sangles = {r_shadow_control.angles[0], r_shadow_control.angles[1] , r_shadow_control.angles[2] };
 
-	if (r_light_env_angles_exists && r_shadow_map_override->value)
-	{
-		sangles[0] = r_light_env_angles[0];
-		sangles[1] = r_light_env_angles[1];
-		sangles[2] = r_light_env_angles[2];
-	}
-	else
-	{
-		sangles[0] = r_shadow_angle_p->value;
-		sangles[1] = r_shadow_angle_y->value;
-		sangles[2] = r_shadow_angle_r->value;
-	}
+	float max_distance[3] = { r_shadow_control.quality[0][0], r_shadow_control.quality[1][0], r_shadow_control.quality[2][0] };
+
+	float scales[3] = { r_shadow_control.quality[0][1], r_shadow_control.quality[1][1], r_shadow_control.quality[2][1] };
 
 	shadow_numvisedicts[0] = 0;
 	shadow_numvisedicts[1] = 0;
@@ -140,10 +125,7 @@ void R_RenderShadowMap(void)
 			VectorSubtract(cl_visedicts[j]->origin, r_refdef->vieworg, vec);
 			float distance = VectorLength(vec);
 
-			if (distance > r_shadow_low_distance->value)
-				continue;
-
-			if (distance < r_shadow_high_distance->value)
+			if (distance < max_distance[0])
 			{
 				if (shadow_numvisedicts[0] < 512)
 				{
@@ -151,7 +133,7 @@ void R_RenderShadowMap(void)
 					shadow_numvisedicts[0]++;
 				}
 			}
-			else if (distance < r_shadow_medium_distance->value)
+			else if (distance < max_distance[1])
 			{
 				if (shadow_numvisedicts[1] < 512)
 				{
@@ -159,7 +141,7 @@ void R_RenderShadowMap(void)
 					shadow_numvisedicts[1]++;
 				}
 			}
-			else
+			else if (distance < max_distance[2])
 			{
 				if (shadow_numvisedicts[2] < 512)
 				{
@@ -174,8 +156,6 @@ void R_RenderShadowMap(void)
 
 	if (!total_numvisedicts)
 		return;
-
-	float scaleArray[3] = { r_shadow_high_scale->value, r_shadow_medium_scale->value, r_shadow_low_scale->value };
 
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_ShadowFBO.s_hBackBufferFBO);
 	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -202,7 +182,7 @@ void R_RenderShadowMap(void)
 		qglMatrixMode(GL_PROJECTION);
 		qglLoadIdentity();
 
-		float texsize = (float)shadow_texture_size / scaleArray[i];
+		float texsize = (float)shadow_texture_size / scales[i];
 		qglOrtho(-texsize / 2, texsize / 2, -texsize / 2, texsize / 2, -4096, 4096);
 
 		qglMatrixMode(GL_MODELVIEW);

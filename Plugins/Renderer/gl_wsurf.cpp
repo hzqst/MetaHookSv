@@ -108,7 +108,9 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		SHADER_UNIFORM(prog, speed, "speed");
 		SHADER_UNIFORM(prog, entityMatrix, "entityMatrix");
 		SHADER_UNIFORM(prog, shadowMatrix, "shadowMatrix");
-		SHADER_UNIFORM(prog, shadowControl, "shadowControl");
+		SHADER_UNIFORM(prog, shadowDirection, "shadowDirection");
+		SHADER_UNIFORM(prog, shadowFade, "shadowFade");
+		SHADER_UNIFORM(prog, shadowColor, "shadowColor");
 		SHADER_UNIFORM(prog, clipPlane, "clipPlane");
 		SHADER_UNIFORM(prog, viewpos, "viewpos");
 		SHADER_UNIFORM(prog, parallaxScale, "parallaxScale");
@@ -145,8 +147,14 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		if (prog.shadowmapTexArray != -1)
 			qglUniform1iARB(prog.shadowmapTexArray, 5);
 
-		if (prog.shadowControl != -1)
-			qglUniform3fARB(prog.shadowControl, r_shadow_alpha->value, r_shadow_fade_start->value, r_shadow_fade_end->value - r_shadow_fade_start->value);
+		if (prog.shadowDirection != -1)
+			qglUniform3fARB(prog.shadowDirection, r_shadow_control.vforward[0], r_shadow_control.vforward[1], r_shadow_control.vforward[2]);
+
+		if (prog.shadowFade != -1)
+			qglUniform3fARB(prog.shadowFade, r_shadow_control.fade[0], r_shadow_control.fade[1], r_shadow_control.minlum);
+
+		if (prog.shadowColor != -1)
+			qglUniform4fARB(prog.shadowColor, r_shadow_control.color[0], r_shadow_control.color[1], r_shadow_control.color[2], r_shadow_control.color[3]);
 
 		if (prog.entityMatrix != -1)
 		{
@@ -1447,6 +1455,16 @@ void R_DrawWSurfVBOSolid(wsurf_model_t *modcache)
 	}
 }
 
+void R_Reload_f(void)
+{
+	R_ClearBSPEntities();
+	R_ParseBSPEntities(r_worldmodel->entities);
+	R_LoadExternalEntities();
+	R_LoadBSPEntities();
+
+	gEngfuncs.Con_Printf("Entities reloaded\n");
+}
+
 void R_InitWSurf(void)
 {
 	r_wsurf.hVBO = 0;
@@ -1470,6 +1488,8 @@ void R_InitWSurf(void)
 	r_wsurf_parallax_scale = gEngfuncs.pfnRegisterVariable("r_wsurf_parallax_scale", "0.03", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_detail = gEngfuncs.pfnRegisterVariable("r_wsurf_detail", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_sky_occlusion = gEngfuncs.pfnRegisterVariable("r_wsurf_sky_occlusion", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	gEngfuncs.pfnAddCommand("r_reload", R_Reload_f);
 }
 
 void R_ShutdownWSurf(void)
@@ -1491,7 +1511,7 @@ void R_LoadDetailTextures(void)
 	char *pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
 	if (!pfile)
 	{
-		gEngfuncs.Con_Printf("R_LoadDetailTextures: Failed to load detail texture file %s\n", name.c_str());
+		gEngfuncs.Con_Printf("R_LoadDetailTextures: No detail texture file %s\n", name.c_str());
 		return;
 	}
 
@@ -1663,6 +1683,7 @@ void R_VidInitWSurf(void)
 	R_ClearWSurfModelCache();
 	R_ClearBSPEntities();
 	R_ParseBSPEntities(r_worldmodel->entities);
+	R_LoadExternalEntities();
 	R_LoadBSPEntities();
 }
 
@@ -2176,11 +2197,6 @@ void R_ClearBSPEntities(void)
 	}
 	
 	r_wsurf.iNumBSPEntities = 0;
-
-	r_light_env_angles_exists = false;
-	r_light_env_color_exists = false;
-	VectorClear(r_light_env_angles);
-	g_DeferredLights.clear();
 }
 
 bspentity_t *current_parse_entity = NULL;
@@ -2351,8 +2367,107 @@ void R_ParseBSPEntities(char *data)
 	}
 }
 
+void R_LoadExternalEntities(void)
+{
+	std::string name;
+	
+	name = gEngfuncs.pfnGetLevelName();
+	name = name.substr(0, name.length() - 4);
+	name += "_entity.txt";
+
+	char *pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
+	if (!pfile)
+	{
+		gEngfuncs.Con_Printf("R_LoadExternalEntities: No external entity file %s\n", name.c_str());
+
+		name = "renderer/default_entity.txt";
+
+		pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
+		if (!pfile)
+		{
+			gEngfuncs.Con_Printf("R_LoadExternalEntities: No default external entity file %s\n", name.c_str());
+
+			return;
+		}
+	}
+
+	R_ParseBSPEntities(pfile);
+
+	gEngfuncs.COM_FreeFile(pfile);
+}
+
 void R_LoadBSPEntities(void)
 {
+	//Initialize shadow control, enabled by default
+
+	r_shadow_control.enabled = true;
+
+	float temp[4];
+	if (sscanf(r_shadow_color->string, "%f %f %f %f", &temp[0], &temp[1], &temp[2], &temp[3]) == 4)
+	{
+		r_shadow_control.color[0] = clamp(temp[0], 0, 255) / 255.0f;
+		r_shadow_control.color[1] = clamp(temp[1], 0, 255) / 255.0f;
+		r_shadow_control.color[2] = clamp(temp[2], 0, 255) / 255.0f;
+		r_shadow_control.color[3] = clamp(temp[3], 0, 255) / 255.0f;
+	}
+	else
+	{
+		r_shadow_control.color[0] = 0;
+		r_shadow_control.color[1] = 0;
+		r_shadow_control.color[2] = 0;
+		r_shadow_control.color[3] = 0.5f;
+
+		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse r_shadow_color\n");
+	}
+
+	if (sscanf(r_shadow_angles->string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
+	{
+		r_shadow_control.angles[0] = clamp(temp[0], -360, 360);
+		r_shadow_control.angles[1] = clamp(temp[1], -360, 360);
+		r_shadow_control.angles[2] = clamp(temp[2], -360, 360);
+	}
+	else
+	{
+		r_shadow_control.angles[0] = 90;
+		r_shadow_control.angles[1] = 0;
+		r_shadow_control.angles[2] = 0;
+
+		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse r_shadow_angles\n");
+	}
+
+	if (sscanf(r_shadow_fade->string, "%f %f", &temp[0], &temp[1]) == 3)
+	{
+		r_shadow_control.fade[0] = clamp(temp[0], 0, 10000);
+		r_shadow_control.fade[1] = clamp(temp[1], r_shadow_control.fade[0], 10000) - r_shadow_control.fade[0];
+	}
+	else
+	{
+		r_shadow_control.fade[0] = 64;
+		r_shadow_control.fade[1] = 128 - 64;
+
+		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse r_shadow_fade\n");
+	}
+
+	r_shadow_control.minlum = clamp(r_shadow_minlum->value, 0, 255) / 255.0f;
+
+	r_shadow_control.quality[0][0] = clamp(r_shadow_high_distance->value, 0, 100000);
+	r_shadow_control.quality[0][1] = clamp(r_shadow_high_scale->value, 0.1, 8);
+
+	r_shadow_control.quality[1][0] = clamp(r_shadow_medium_distance->value, 0, 100000);
+	r_shadow_control.quality[1][1] = clamp(r_shadow_medium_scale->value, 0.1, 8);
+
+	r_shadow_control.quality[2][0] = clamp(r_shadow_low_distance->value, 0, 100000);
+	r_shadow_control.quality[2][1] = clamp(r_shadow_low_scale->value, 0.1, 8);
+
+	//Initialize hdr control, enabled by default
+
+	r_hdr_control.enabled = true;
+
+	r_hdr_control.adaptation = clamp(r_hdr_adaptation->value, 0.1, 100);
+	r_hdr_control.blurwidth = clamp(r_hdr_blurwidth->value, 0, 1);
+	r_hdr_control.darkness = clamp(r_hdr_darkness->value, 0.01, 10);
+	r_hdr_control.exposure = clamp(r_hdr_exposure->value, 0.01, 10);
+
 	for(int i = 0; i < r_wsurf.iNumBSPEntities; i++)
 	{
 		bspentity_t *ent = &r_wsurf.pBSPEntities[i];
@@ -2362,78 +2477,216 @@ void R_LoadBSPEntities(void)
 		if(!classname)
 			continue;
 
-		if (!strcmp(classname, "light"))
+		if (!strcmp(classname, "env_hdr_control"))
 		{
-			int color[4] = {255, 255, 255, 255};
-			char *s_light = ValueForKey(ent, "_light");
-			if (s_light)
+			char *adaptation_string = ValueForKey(ent, "adaptation");
+			if (adaptation_string)
 			{
-				sscanf(s_light, "%d %d %d %d", &color[0], &color[1], &color[2], &color[3]);
-			}
-
-			float org[3] = { 0 };
-			char *s_origin = ValueForKey(ent, "origin");
-			if (s_origin)
-			{
-				sscanf(s_origin, "%f %f %f", &org[0], &org[1], &org[2]);
-			}
-
-			float fade = 1;
-			char *s_fade = ValueForKey(ent, "_fade");
-			if (s_fade)
-			{
-				sscanf(s_fade, "%f", &fade);
-			}
-
-			float col[4] = { color[0] / 255.0f, color[1] / 255.0f, color[2] / 255.0f, color[3] / 255.0f };
-
-			g_DeferredLights.emplace_back(0, org, col, fade);
-		}
-
-		else if (!strcmp(classname, "light_environment"))
-		{
-			char *light = ValueForKey(ent, "_light");
-			if (light)
-			{
-				sscanf(light, "%d %d %d %d", &r_light_env_color[0], &r_light_env_color[1], &r_light_env_color[2], &r_light_env_color[3]);
-				r_light_env_color_exists = true;
-			}
-			
-			char *pitch = ValueForKey(ent, "pitch");
-			if (pitch)
-			{
-				sscanf(pitch, "%f", &r_light_env_angles[0]);
-
-				r_light_env_angles[0] += 180;
-				if (r_light_env_angles[0] > 360)
-					r_light_env_angles[0] -= 360;
-			}
-
-			char *angle = ValueForKey(ent, "angles");
-			if (angle)
-			{
-				vec3_t ang = { 0 };
-				sscanf(angle, "%f %f %f", &ang[0], &ang[1], &ang[2]);
-				if (ang[0] == 0 && ang[1] == 0 && ang[2] == 0)
+				if (sscanf(adaptation_string, "%f", &temp[0]) == 1)
 				{
-
+					r_hdr_control.adaptation = clamp(temp[0], 0.1, 100);
 				}
 				else
 				{
-					if (pitch)
-					{
-						ang[0] = r_light_env_angles[0];
-					}
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"adaptation\" in entity \"env_hdr_control\"\n");
+				}
+			}
+			char *blurwidth_string = ValueForKey(ent, "blurwidth");
+			if (blurwidth_string)
+			{
+				if (sscanf(blurwidth_string, "%f", &temp[0]) == 1)
+				{
+					r_hdr_control.blurwidth = clamp(temp[0], 0, 1);
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"blurwidth\" in entity \"env_hdr_control\"\n");
+				}
+			}
+			char *darkness_string = ValueForKey(ent, "darkness");
+			if (darkness_string)
+			{
+				if (sscanf(darkness_string, "%f", &temp[0]) == 1)
+				{
+					r_hdr_control.darkness = clamp(temp[0], 0.01, 10);
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"darkness\" in entity \"env_hdr_control\"\n");
+				}
+			}
+			char *exposure_string = ValueForKey(ent, "exposure");
+			if (exposure_string)
+			{
+				if (sscanf(exposure_string, "%f", &temp[0]) == 1)
+				{
+					r_hdr_control.exposure = clamp(temp[0], 0.01, 10);
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"exposure\" in entity \"env_hdr_control\"\n");
+				}
+			}
+			char *disablehdr_string = ValueForKey(ent, "disablehdr");
+			if (disablehdr_string)
+			{
+				if (atoi(disablehdr_string) > 0)
+				{
+					r_hdr_control.enabled = false;
+				}
+			}
+		}
 
-					VectorCopy(ang, r_light_env_angles);
-					r_light_env_angles[1] += 180;
-					if (r_light_env_angles[1] > 360)
-						r_light_env_angles[1] -= 360;
-					r_light_env_angles_exists = true;
+		if (!strcmp(classname, "env_shadow_control"))
+		{
+			char *color_string = ValueForKey(ent, "color");
+			if (color_string)
+			{
+				if (sscanf(color_string, "%f %f %f %f", &temp[0], &temp[1], &temp[2], &temp[3]) == 3)
+				{
+					r_shadow_control.color[0] = clamp(temp[0], 0, 255) / 255.0f;
+					r_shadow_control.color[1] = clamp(temp[1], 0, 255) / 255.0f;
+					r_shadow_control.color[2] = clamp(temp[2], 0, 255) / 255.0f;
+					r_shadow_control.color[3] = clamp(temp[3], 0, 255) / 255.0f;
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"color\" in entity \"env_shadow_control\"\n");
+				}
+			}
+
+			char *angles_string = ValueForKey(ent, "angles");
+			if (angles_string)
+			{
+				if (sscanf(angles_string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
+				{
+					r_shadow_control.angles[0] = clamp(temp[0], -360, 360);
+					r_shadow_control.angles[1] = clamp(temp[1], -360, 360);
+					r_shadow_control.angles[2] = clamp(temp[2], -360, 360);
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"angles\" in entity \"env_shadow_control\"\n");
+				}
+			}
+
+			char *fade_string = ValueForKey(ent, "fade");
+			if (fade_string)
+			{
+				if (sscanf(fade_string, "%f %f", &temp[0], &temp[1]) == 2)
+				{
+					r_shadow_control.fade[0] = clamp(temp[0], 0, 10000);
+					r_shadow_control.fade[1] = clamp(temp[1], r_shadow_control.fade[0], 10000) - r_shadow_control.fade[0];
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"fade\" in entity \"env_shadow_control\"\n");
+				}
+			}
+
+			char *minlum_string = ValueForKey(ent, "minlum");
+			if (minlum_string)
+			{
+				if (sscanf(minlum_string, "%f", &temp[0]) == 1)
+				{
+					r_shadow_control.minlum = clamp(temp[0], 0, 255) / 255.0f;
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"minlum\" in entity \"env_shadow_control\"\n");
+				}
+			}
+
+			char *disableallshadows_string = ValueForKey(ent, "disableallshadows");
+			if (disableallshadows_string)
+			{
+				if (atoi(disableallshadows_string) > 0)
+				{
+					r_shadow_control.enabled = false;
+				}
+			}
+
+			char *high_distance_string = ValueForKey(ent, "high_distance");
+			if (high_distance_string)
+			{
+				if (sscanf(high_distance_string, "%f", &temp[0]) == 1)
+				{
+					r_shadow_control.quality[0][0] = clamp(temp[0], 0, 100000);
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"high_distance\" in entity \"env_shadow_control\"\n");
+				}
+			}
+
+			char *high_scale_string = ValueForKey(ent, "high_scale");
+			if (high_scale_string)
+			{
+				if (sscanf(high_scale_string, "%f", &temp[0]) == 1)
+				{
+					r_shadow_control.quality[0][1] = clamp(temp[0], 0.1, 8);
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"high_scale\" in entity \"env_shadow_control\"\n");
+				}
+			}
+
+			char *medium_distance_string = ValueForKey(ent, "medium_distance");
+			if (medium_distance_string)
+			{
+				if (sscanf(medium_distance_string, "%f", &temp[0]) == 1)
+				{
+					r_shadow_control.quality[1][0] = clamp(temp[0], 0, 100000);
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"medium_distance\" in entity \"env_shadow_control\"\n");
+				}
+			}
+
+			char *medium_scale_string = ValueForKey(ent, "medium_scale");
+			if (medium_scale_string)
+			{
+				if (sscanf(medium_scale_string, "%f", &temp[0]) == 1)
+				{
+					r_shadow_control.quality[1][1] = clamp(temp[0], 0.1, 8);
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"medium_scale\" in entity \"env_shadow_control\"\n");
+				}
+			}
+
+			char *low_distance_string = ValueForKey(ent, "low_distance");
+			if (low_distance_string)
+			{
+				if (sscanf(low_distance_string, "%f", &temp[0]) == 1)
+				{
+					r_shadow_control.quality[2][0] = clamp(temp[0], 0, 100000);
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"low_distance\" in entity \"env_shadow_control\"\n");
+				}
+			}
+
+			char *low_scale_string = ValueForKey(ent, "low_scale");
+			if (low_scale_string)
+			{
+				if (sscanf(low_scale_string, "%f", &temp[0]) == 1)
+				{
+					r_shadow_control.quality[2][1] = clamp(temp[0], 0.1, 8);
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"low_scale\" in entity \"env_shadow_control\"\n");
 				}
 			}
 		}
 	}//end for
+
+	gEngfuncs.pfnAngleVectors(r_shadow_control.angles, r_shadow_control.vforward, r_shadow_control.vright, r_shadow_control.vup);
 }
 
 void R_DrawSequentialPolyVBO(msurface_t *s)

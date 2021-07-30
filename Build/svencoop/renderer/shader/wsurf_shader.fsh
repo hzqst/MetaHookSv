@@ -12,7 +12,9 @@ uniform sampler2DArray lightmapTexArray;
 
 #ifdef SHADOWMAP_ENABLED
 uniform sampler2DArray shadowmapTexArray;
-uniform vec3 shadowControl;
+uniform vec3 shadowFade;
+uniform vec3 shadowDirection;
+uniform vec4 shadowColor;
 varying vec4 shadowcoord[3];
 #endif
 
@@ -159,120 +161,125 @@ void main()
 
 #ifdef SHADOWMAP_ENABLED
 
-	float shadow_high = 1.0;
-
-	#ifdef SHADOWMAP_HIGH_ENABLED
-		shadow_high = 0.0;
-		shadow_high += shadowCompareDepth(shadowcoord[0], vec2(0.0,0.0), 0.0) * 0.25;
-		shadow_high += shadowCompareDepth(shadowcoord[0], vec2( -1.0, -1.0), 0.0) * 0.0625;
-		shadow_high += shadowCompareDepth(shadowcoord[0], vec2( -1.0, 0.0), 0.0) * 0.125;
-		shadow_high += shadowCompareDepth(shadowcoord[0], vec2( -1.0, 1.0), 0.0) * 0.0625;
-		shadow_high += shadowCompareDepth(shadowcoord[0], vec2( 0.0, -1.0), 0.0) * 0.125;
-		shadow_high += shadowCompareDepth(shadowcoord[0], vec2( 0.0, 1.0), 0.0) * 0.125;
-		shadow_high += shadowCompareDepth(shadowcoord[0], vec2( 1.0, -1.0), 0.0) * 0.0625;
-		shadow_high += shadowCompareDepth(shadowcoord[0], vec2( 1.0, 0.0), 0.0) * 0.125;
-		shadow_high += shadowCompareDepth(shadowcoord[0], vec2( 1.0, 1.0), 0.0) * 0.0625;
-	#endif
-
-	float shadow_medium = 1.0;
-
-	#ifdef SHADOWMAP_MEDIUM_ENABLED
-		shadow_medium = 0.0;
-		shadow_medium += shadowCompareDepth(shadowcoord[1], vec2(0.0,0.0), 1.0);
-		shadow_medium += shadowCompareDepth(shadowcoord[1], vec2(0.035,0.0), 1.0);
-		shadow_medium += shadowCompareDepth(shadowcoord[1], vec2(-0.035,0.0), 1.0);
-		shadow_medium += shadowCompareDepth(shadowcoord[1], vec2(0.0,0.035), 1.0);
-		shadow_medium += shadowCompareDepth(shadowcoord[1], vec2(0.0,-0.035), 1.0);
-		shadow_medium *= 0.2;
-	#endif
-
-	float shadow_low = 1.0;
-
-	#ifdef SHADOWMAP_LOW_ENABLED
-		shadow_low = 0.0;
-		shadow_low += shadowCompareDepth(shadowcoord[2], vec2(0.0,0.0), 2.0);
-		shadow_low += shadowCompareDepth(shadowcoord[2], vec2(0.035,0.0), 2.0);
-		shadow_low += shadowCompareDepth(shadowcoord[2], vec2(-0.035,0.0), 2.0);
-		shadow_low += shadowCompareDepth(shadowcoord[2], vec2(0.0,0.035), 2.0);
-		shadow_low += shadowCompareDepth(shadowcoord[2], vec2(0.0,-0.035), 2.0);
-		shadow_low *= 0.2;
-	#endif
-
-	if(false)
+	if(dot(normal.xyz, shadowDirection.xyz) < 0)
 	{
-		//nothing here
-	}
-	
-	#ifdef SHADOWMAP_HIGH_ENABLED
-		else if(shadow_high < 0.95)
+		float lightmapLum = 0.299 * lightmapColor.x + 0.587 * lightmapColor.y + 0.114 * lightmapColor.z;
+		if(lightmapLum > shadowFade.z)
 		{
-			float shadow_alpha = shadowControl.x;
+			float shadow_high = 1.0;
 
-			vec3 scene = worldpos.xyz;
-			vec3 caster = shadowGetPosition(shadowcoord[0], 0.0);
+			#ifdef SHADOWMAP_HIGH_ENABLED
+				shadow_high = 0.0;
+				shadow_high += shadowCompareDepth(shadowcoord[0], vec2(0.0,0.0), 0.0) * 0.25;
+				shadow_high += shadowCompareDepth(shadowcoord[0], vec2( -1.0, -1.0), 0.0) * 0.0625;
+				shadow_high += shadowCompareDepth(shadowcoord[0], vec2( -1.0, 0.0), 0.0) * 0.125;
+				shadow_high += shadowCompareDepth(shadowcoord[0], vec2( -1.0, 1.0), 0.0) * 0.0625;
+				shadow_high += shadowCompareDepth(shadowcoord[0], vec2( 0.0, -1.0), 0.0) * 0.125;
+				shadow_high += shadowCompareDepth(shadowcoord[0], vec2( 0.0, 1.0), 0.0) * 0.125;
+				shadow_high += shadowCompareDepth(shadowcoord[0], vec2( 1.0, -1.0), 0.0) * 0.0625;
+				shadow_high += shadowCompareDepth(shadowcoord[0], vec2( 1.0, 0.0), 0.0) * 0.125;
+				shadow_high += shadowCompareDepth(shadowcoord[0], vec2( 1.0, 1.0), 0.0) * 0.0625;
+			#endif
 
-			float dist = distance(caster, scene);
-			float fade_val = (dist - shadowControl.y) / shadowControl.z;
-			shadow_alpha *= 1.0 - clamp(fade_val, 0.0, 1.0);
+			float shadow_medium = 1.0;
 
-			shadow_high = 1.0 - shadow_high;
-			shadow_medium = 1.0 - shadow_medium;
-			shadow_low = 1.0 - shadow_low;
+			#ifdef SHADOWMAP_MEDIUM_ENABLED
+				shadow_medium = 0.0;
+				shadow_medium += shadowCompareDepth(shadowcoord[1], vec2(0.0,0.0), 1.0);
+				shadow_medium += shadowCompareDepth(shadowcoord[1], vec2(0.035,0.0), 1.0);
+				shadow_medium += shadowCompareDepth(shadowcoord[1], vec2(-0.035,0.0), 1.0);
+				shadow_medium += shadowCompareDepth(shadowcoord[1], vec2(0.0,0.035), 1.0);
+				shadow_medium += shadowCompareDepth(shadowcoord[1], vec2(0.0,-0.035), 1.0);
+				shadow_medium *= 0.2;
+			#endif
 
-			float shadow_final = shadow_high + shadow_medium + shadow_low;
-			shadow_final = clamp(shadow_final, 0.0, 1.0) * shadow_alpha;
+			float shadow_low = 1.0;
 
-			lightmapColor.xyz *= (1.0 - shadow_final);
+			#ifdef SHADOWMAP_LOW_ENABLED
+				shadow_low = 0.0;
+				shadow_low += shadowCompareDepth(shadowcoord[2], vec2(0.0,0.0), 2.0);
+				shadow_low += shadowCompareDepth(shadowcoord[2], vec2(0.035,0.0), 2.0);
+				shadow_low += shadowCompareDepth(shadowcoord[2], vec2(-0.035,0.0), 2.0);
+				shadow_low += shadowCompareDepth(shadowcoord[2], vec2(0.0,0.035), 2.0);
+				shadow_low += shadowCompareDepth(shadowcoord[2], vec2(0.0,-0.035), 2.0);
+				shadow_low *= 0.2;
+			#endif
+
+			if(false)
+			{
+				//nothing here
+			}
 			
+		#ifdef SHADOWMAP_HIGH_ENABLED
+			else if(shadow_high < 0.95)
+			{
+				float shadow_alpha = shadowColor.a;
+
+				vec3 scene = worldpos.xyz;
+				vec3 caster = shadowGetPosition(shadowcoord[0], 0.0);
+
+				float dist = distance(caster, scene);
+				float fade_val = (dist - shadowFade.x) / shadowFade.y;
+				shadow_alpha *= 1.0 - clamp(fade_val, 0.0, 1.0);
+
+				shadow_high = 1.0 - shadow_high;
+				shadow_medium = 1.0 - shadow_medium;
+				shadow_low = 1.0 - shadow_low;
+
+				float shadow_final = shadow_high + shadow_medium + shadow_low;
+				shadow_final = clamp(shadow_final, 0.0, 1.0) * shadow_alpha;
+
+				lightmapColor.xyz = mix(lightmapColor.xyz, shadowColor.xyz, shadow_final);
+			}
+		#endif
+
+		#ifdef SHADOWMAP_MEDIUM_ENABLED
+			else if(shadow_medium < 0.95)
+			{
+				float shadow_alpha = shadowColor.a;
+
+				vec3 scene = worldpos.xyz;
+				vec3 caster = shadowGetPosition(shadowcoord[1], 1.0);
+
+				float dist = distance(caster, scene);
+				float fade_val = (dist - shadowFade.x) / shadowFade.y;
+				shadow_alpha *= 1.0 - clamp(fade_val, 0.0, 1.0);
+
+				shadow_high = 1.0 - shadow_high;
+				shadow_medium = 1.0 - shadow_medium;
+				shadow_low = 1.0 - shadow_low;
+
+				float shadow_final = shadow_high + shadow_medium + shadow_low;
+				shadow_final = clamp(shadow_final, 0.0, 1.0) * shadow_alpha;
+
+				lightmapColor.xyz = mix(lightmapColor.xyz, shadowColor.xyz, shadow_final);
+			}
+		#endif
+
+		#ifdef SHADOWMAP_LOW_ENABLED
+			else if(shadow_low < 0.95)
+			{
+				float shadow_alpha = shadowColor.a;
+
+				vec3 scene = worldpos.xyz;
+				vec3 caster = shadowGetPosition(shadowcoord[2], 2.0);
+
+				float dist = distance(caster, scene);
+				float fade_val = (dist - shadowFade.x) / shadowFade.y;
+				shadow_alpha *= 1.0 - clamp(fade_val, 0.0, 1.0);
+
+				shadow_high = 1.0 - shadow_high;
+				shadow_medium = 1.0 - shadow_medium;
+				shadow_low = 1.0 - shadow_low;
+
+				float shadow_final = shadow_high + shadow_medium + shadow_low;
+				shadow_final = clamp(shadow_final, 0.0, 1.0) * shadow_alpha;
+
+				lightmapColor.xyz = mix(lightmapColor.xyz, shadowColor.xyz, shadow_final);
+			}
+		#endif
 		}
-	#endif
-
-	#ifdef SHADOWMAP_MEDIUM_ENABLED
-		else if(shadow_medium < 0.95)
-		{
-			float shadow_alpha = shadowControl.x;
-
-			vec3 scene = worldpos.xyz;
-			vec3 caster = shadowGetPosition(shadowcoord[1], 1.0);
-
-			float dist = distance(caster, scene);
-			float fade_val = (dist - shadowControl.y) / shadowControl.z;
-			shadow_alpha *= 1.0 - clamp(fade_val, 0.0, 1.0);
-
-			shadow_high = 1.0 - shadow_high;
-			shadow_medium = 1.0 - shadow_medium;
-			shadow_low = 1.0 - shadow_low;
-
-			float shadow_final = shadow_high + shadow_medium + shadow_low;
-			shadow_final = clamp(shadow_final, 0.0, 1.0) * shadow_alpha;
-
-			lightmapColor.xyz *= (1.0 - shadow_final);
-		}
-	#endif
-
-	#ifdef SHADOWMAP_LOW_ENABLED
-		else if(shadow_low < 0.95)
-		{
-			float shadow_alpha = shadowControl.x;
-
-			vec3 scene = worldpos.xyz;
-			vec3 caster = shadowGetPosition(shadowcoord[2], 2.0);
-
-			float dist = distance(caster, scene);
-			float fade_val = (dist - shadowControl.y) / shadowControl.z;
-			shadow_alpha *= 1.0 - clamp(fade_val, 0.0, 1.0);
-
-			shadow_high = 1.0 - shadow_high;
-			shadow_medium = 1.0 - shadow_medium;
-			shadow_low = 1.0 - shadow_low;
-
-			float shadow_final = shadow_high + shadow_medium + shadow_low;
-			shadow_final = clamp(shadow_final, 0.0, 1.0) * shadow_alpha;
-
-			lightmapColor.xyz *= (1.0 - shadow_final);
-		}
-	#endif
-
+	}
 #endif
 
 

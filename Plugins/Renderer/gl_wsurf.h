@@ -205,7 +205,9 @@ typedef struct
 	int speed;
 	int entityMatrix;
 	int shadowMatrix;
-	int shadowControl;
+	int shadowDirection;
+	int shadowFade;
+	int shadowColor;
 	int clipPlane;
 	int viewpos;
 	int parallaxScale;
@@ -247,7 +249,7 @@ void R_ClearBSPEntities(void);
 void R_ParseBSPEntities(char *data);
 char *ValueForKey(bspentity_t *ent, char *key);
 void R_LoadBSPEntities(void);
-
+void R_LoadExternalEntities(void);
 void R_AddDynamicLights(msurface_t *surf);
 void R_RenderDynamicLightmaps(msurface_t *fa);
 void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride);

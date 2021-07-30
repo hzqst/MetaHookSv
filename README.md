@@ -12,7 +12,7 @@ Most of plugins are still compatible with vanilla GoldSrc engine. please check p
 
 Although using hook is likely to be dangerous in games, there is no VAC ban reported yet.
 
-Btw Sven Co-op is not a [Game that protected by VAC](https://store.steampowered.com/search/?term=coop&category2=8)
+Btw Sven Co-op is not a [game that protected by VAC](https://store.steampowered.com/search/?term=Sven&category2=8)
 
 Use a separate account to play Sven Co-op if you worry about getting banned, since Sven Co-op is a free game.
 
@@ -56,21 +56,17 @@ Let's assume that you have all requirements installed correctly.
 
 2. Run `build-initdeps.bat`, wait until all required submodules / dependencies are pulled. (this may takes couple of minutes, depending on your network connection and download speed)
 
-3. Run `build-capstone.bat`, wait until capstone's static lib(s) are generated.
+3. Run `build-MetaHook.bat`, wait until `svencoop.exe` generated at `Build` directory.
 
-4. Run `build-bullet3.bat`, wait until bullet3's static lib(s) are generated.
+4. Run `build-CaptionMod.bat`, wait until `CaptionMod.dll` generated.
 
-5. Run `build-MetaHook.bat`, wait until `svencoop.exe` generated at `Build` directory.
+5. Run `build-Renderer.bat`, wait until `Renderer.dll` generated.
 
-6. Run `build-CaptionMod.bat`, wait until `CaptionMod.dll` generated.
+6. Run `build-BulletPhysics.bat`, wait until `BulletPhysics.dll` generated.
 
-7. Run `build-Renderer.bat`, wait until `Renderer.dll` generated.
+7. Run `build-StudioEvents.bat`, wait until `StudioEvents.dll` generated.
 
-8. Run `build-BulletPhysics.bat`, wait until `BulletPhysics.dll` generated.
-
-9. Run `build-StudioEvents.bat`, wait until `StudioEvents.dll` generated.
-
-10. All generated plugins should be at `Build\svencoop\metahook\plugins\` directory.
+8. All generated plugins should be at `Build\svencoop\metahook\plugins\` directory.
 
 ## Debugging
 
@@ -80,7 +76,7 @@ Let's assume that you have all requirements installed correctly.
 
 ## MetaHookSv (V3) new features compare to nagist's old metahook (V2)
 
-1. New and better capstone API to disassemble and analyze engine or client code.
+1. New and better capstone API to disassemble and analyze engine code, new API to reverse search the function begin.
 
 2. Blocking duplicate plugins (which may introduce infinite-recursive calling) from loading.
 
