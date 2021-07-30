@@ -41,16 +41,6 @@ Expensive water reflects and refracts the whole world in real-time, while cheap 
 
 `r_water` set to 1 to enable reflection and refraction for water. set to 2 to draw all visible entities in reflection (relatively expensive to render), otherwise only BSP world terrains are rendered in reflection.
 
-`r_water_fresnelfactor` controls the intensity of reflection.
-
-`r_water_depthfactor1` controls the strength of water edge feathering.
-
-`r_water_depthfactor2` controls the base strength of water edge feathering.
-
-`r_water_normfactor` controls the intensity of turbulence based on normalmap.
-
-`r_water_minheight` water entity with height smaller than this value will not be rendered with shader program.
-
 ## Per-Object Dynamic Shadow
 
 Dynamic Shadows are cast only by world models (players, monsters, weaponbox, corpses, etc), and only onto brush surfaces. They are calculated at runtime, so they are quite crude and relatively expensive to render.
@@ -201,12 +191,14 @@ You can use console command `r_reload` to reload entities from both two sources.
 
 `disablewater` disables water shader entirely for water with specified `basetexture`. for example `"disablewater" "1"`
 
-`normalmap` is the path to the normalmap for turbulence effect.
+`normalmap` is the path to the normalmap for turbulence effect. for example `"normalmap" "renderer/texture/water_normalmap.tga"`
 
-`fresnelfactor` controls the intensity of reflection.
+`fresnelfactor` controls the intensity of reflection. for example `"fresnelfactor" "0.4"`
 
-`depthfactor1` controls the strength of water edge feathering.
+`depthfactor` controls the strength of water edge feathering. for example `"depthfactor" "0.02 0.01"`
 
-`depthfactor2` controls the base strength of water edge feathering.
+`normfactor` controls the intensity of turbulence based on normalmap. for example `"normfactor" "1.0"`
 
-`normfactor` controls the intensity of turbulence based on normalmap.
+`minheight` water entity with height smaller than this value will not be rendered with shader program. for example `"minheight" "7.5"`
+
+`maxtrans` controls the maximum transparency of water, in from 0 ~ 255. for example `"maxtrans" "128"`
