@@ -131,7 +131,7 @@ Dynamic Shadows can sometimes project through walls and floors, giving away the 
 
 # New Entities
 
-Entities are loaded from two sources : internal and external. BSP entity chunk of current map is loaded as internal, and `/maps/(CurrentMapName)_entity.txt` is loaded as external.
+Entities are loaded from two sources : internal and external. BSP entity chunk of current map is loaded as internal, `/maps/(CurrentMapName)_entity.txt` is loaded as external.
 
 If `/maps/(CurrentMapName)_entity.txt` is not found, `/renderer/default_entity.txt` will be loaded instead.
 
@@ -144,6 +144,8 @@ Entity chunks should follow the format :
 "classname" "info_player_start"
 }
 ```
+
+You can use console command `r_reload` to reload entities from both two sources.
 
 ## env_shadow_control
 
