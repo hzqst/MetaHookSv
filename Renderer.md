@@ -137,6 +137,8 @@ Entity chunks should follow the format :
 
 You can use console command `r_reload` to reload entities from both two sources.
 
+You can use (bspguy)[https://github.com/wootguy/bspguy] to add entity to BSP file or write entities into `/maps/(MapName)_entity.txt`.
+
 ## env_shadow_control
 
 `env_shadow_control` is a point entity used to control Dynamic Shadow projections for the entire map, including maximum distance cast, direction cast, and shadow color.
