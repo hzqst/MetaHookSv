@@ -11,8 +11,6 @@ r_water_t *waters_free;
 r_water_t *waters_active;
 
 //shader
-
-int water_normalmap = 0;
 GLuint refractmap = 0;
 GLuint depthrefrmap = 0;
 qboolean refractmap_ready = 0;
@@ -25,14 +23,10 @@ int saved_cl_waterlevel;
 //cvar
 cvar_t *r_water = NULL;
 cvar_t *r_water_debug = NULL;
-cvar_t *r_water_fresnelfactor = NULL;
-cvar_t *r_water_depthfactor1 = NULL;
-cvar_t *r_water_depthfactor2 = NULL;
-cvar_t *r_water_normfactor = NULL;
-cvar_t *r_water_minheight = NULL;
-cvar_t *r_water_maxalpha = NULL;
 
 std::unordered_map<int, water_program_t> g_WaterProgramTable;
+
+std::vector<water_control_t> r_water_controls;
 
 void R_UseWaterProgram(int state, water_program_t *progOutput)
 {
@@ -220,28 +214,56 @@ void R_InitWater(void)
 
 	r_water = gEngfuncs.pfnRegisterVariable("r_water", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_debug = gEngfuncs.pfnRegisterVariable("r_water_debug", "0", FCVAR_CLIENTDLL);
-	r_water_fresnelfactor = gEngfuncs.pfnRegisterVariable("r_water_fresnelfactor", "0.4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_water_depthfactor1 = gEngfuncs.pfnRegisterVariable("r_water_depthfactor1", "0.02", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_water_depthfactor2 = gEngfuncs.pfnRegisterVariable("r_water_depthfactor2", "0.01", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_water_normfactor = gEngfuncs.pfnRegisterVariable("r_water_normfactor", "1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_water_minheight = gEngfuncs.pfnRegisterVariable("r_water_minheight", "7.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_water_maxalpha = gEngfuncs.pfnRegisterVariable("r_water_maxalpha", "0.75", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	curwater = NULL;
 
 	R_ClearWater();
 }
 
-bool R_ShouldReflect(r_water_t *w) 
+bool R_IsAboveWater(float *v)
 {
-	return r_refdef->vieworg[2] > w->vecs[2];
+	return r_refdef->vieworg[2] > v[2];
 }
 
-r_water_t *R_GetActiveWater(cl_entity_t *ent, vec3_t p, vec3_t n, colorVec *color)
+r_water_t *R_GetActiveWater(cl_entity_t *ent, const char *texname, vec3_t p, vec3_t n, colorVec *color, bool bAboveWater)
 {
-	r_water_t *w;
+	water_control_t *pControl = NULL;
+	for (size_t i = 0; i < r_water_controls.size(); ++i)
+	{
+		auto &control = r_water_controls[i];
 
-	for (w = waters_active; w; w = w->next)
+		if (control.basetexture[0] == '*')
+		{
+			pControl = &control;
+			break;
+		}
+		else if (control.wildcard.length() > 0)
+		{
+			if (!strncmp(control.wildcard.c_str(), texname, control.wildcard.length()))
+			{
+				pControl = &control;
+				break;
+			}
+		}
+		else
+		{
+			if (!strcmp(control.basetexture.c_str(), texname))
+			{
+				pControl = &control;
+				break;
+			}
+		}
+	}
+
+	if (!pControl || !pControl->enabled)
+		return NULL;
+
+	if ((*currententity) != r_worldentity && bAboveWater && (*currententity)->model->maxs[2] - (*currententity)->model->mins[2] < pControl->minheight)
+	{
+		return NULL;
+	}
+
+	for (auto w = waters_active; w; w = w->next)
 	{
 		if ((ent != r_worldentity && w->ent == ent) || (fabs(w->vecs[2] - p[2]) < 1.0f) )
 		{
@@ -249,6 +271,13 @@ r_water_t *R_GetActiveWater(cl_entity_t *ent, vec3_t p, vec3_t n, colorVec *colo
 			VectorCopy(p, w->vecs);
 			w->free = false;
 			w->framecount = (*r_framecount);
+
+			w->fresnelfactor = pControl->fresnelfactor;
+			w->depthfactor[0] = pControl->depthfactor[0];
+			w->depthfactor[1] = pControl->depthfactor[1];
+			w->normfactor = pControl->normfactor;
+			w->maxtrans = pControl->maxtrans;
+			w->minheight = pControl->minheight;
 			return w;
 		}
 	}
@@ -261,18 +290,24 @@ r_water_t *R_GetActiveWater(cl_entity_t *ent, vec3_t p, vec3_t n, colorVec *colo
 	}
 
 	//Get one from free list
-	w = waters_free;
+	auto w = waters_free;
 	waters_free = w->next;
 
 	//Link to active list
 	w->next = waters_active;
 	waters_active = w;
 
-	//Load if normalmap not exists.
-	if (!water_normalmap)
-	{
-		water_normalmap = R_LoadTextureEx("renderer/texture/water_normalmap.tga", "water_normalmap", NULL, NULL, GLT_SYSTEM, true, true);
-	}
+	//Load if normalmap does not exists.
+	int found_normalmap = GL_FindTexture(pControl->normalmap.c_str(), GLT_WORLD, NULL, NULL);
+
+	w->normalmap = found_normalmap ? found_normalmap : R_LoadTextureEx(pControl->normalmap.c_str(), pControl->normalmap.c_str(), NULL, NULL, GLT_WORLD, true, true);
+
+	w->fresnelfactor = pControl->fresnelfactor;
+	w->depthfactor[0] = pControl->depthfactor[0];
+	w->depthfactor[1] = pControl->depthfactor[1];
+	w->normfactor = pControl->normfactor;
+	w->maxtrans = pControl->maxtrans;
+	w->minheight = pControl->minheight;
 
 	//Upload color textures and depth textures.
 	if (!refractmap)
@@ -419,7 +454,7 @@ void R_RenderWaterView(void)
 	{
 		curwater = w;
 
-		if(R_ShouldReflect(w))
+		if(R_IsAboveWater(w->vecs))
 		{
 			R_RenderReflectView(w);
 		}

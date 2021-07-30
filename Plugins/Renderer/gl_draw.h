@@ -51,3 +51,4 @@ typedef struct
 
 int GL_FindTexture(const char *identifier, GL_TEXTURETYPE textureType, int *width, int *height);
 const char * V_GetFileExtension(const char * path);
+const char * V_UnqualifiedFileName(const char * in);

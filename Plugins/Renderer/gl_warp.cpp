@@ -90,15 +90,6 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	if (r_draw_pass == r_draw_reflect)
 		return;
 
-	if (fa->texinfo->texture)
-	{
-		if (0 == strncmp(fa->texinfo->texture->name, "!toxi", sizeof("!toxi") - 1) ||
-			0 == strcmp(fa->texinfo->texture->name, "!radio"))
-		{
-			dontShader = true;
-		}
-	}
-
 	if (r_draw_pass == r_draw_refract)
 	{
 		if ((*currententity) == r_worldentity)
@@ -157,18 +148,8 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 
 	if(r_water && r_water->value && !dontShader)
 	{
-		r_water_t *waterObject = NULL;
-
-		bool bAboveWater = *cl_waterlevel <= 2 ? true : false;
-
-		if ((*currententity) != r_worldentity && bAboveWater && (*currententity)->model->maxs[2] - (*currententity)->model->mins[2] < r_water_minheight->value)
-		{
-
-		}
-		else
-		{
-			waterObject = R_GetActiveWater((*currententity), tempVert, normal, gWaterColor);
-		}
+		auto bAboveWater = R_IsAboveWater(tempVert);
+		auto waterObject = R_GetActiveWater((*currententity), fa->texinfo->texture ? fa->texinfo->texture->name : "", tempVert, normal, gWaterColor, bAboveWater);
 
 		if(waterObject && waterObject->ready)
 		{
@@ -179,8 +160,8 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 			{
 				alpha = (*r_blend);
 
-				if (alpha > r_water_maxalpha->value)
-					alpha = r_water_maxalpha->value;
+				if (alpha > waterObject->maxtrans)
+					alpha = waterObject->maxtrans;
 
 				programState |= WATER_REFRACT_ENABLED;
 
@@ -235,17 +216,17 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 			if (prog.time != -1)
 				qglUniform1fARB(prog.time, clientTime);
 			if (prog.fresnelfactor != -1)
-				qglUniform1fARB(prog.fresnelfactor, clamp(r_water_fresnelfactor->value, 0.0, 10.0));
+				qglUniform1fARB(prog.fresnelfactor, waterObject->fresnelfactor);
 			if (prog.depthfactor != -1)
-				qglUniform2fARB(prog.depthfactor, r_water_depthfactor1->value, r_water_depthfactor2->value);
+				qglUniform2fARB(prog.depthfactor, waterObject->depthfactor[0], waterObject->depthfactor[1]);
 			if (prog.normfactor != -1)
-				qglUniform1fARB(prog.normfactor, clamp(r_water_normfactor->value, 0.0, 1000.0));
+				qglUniform1fARB(prog.normfactor, waterObject->normfactor);
 
 			qglEnable(GL_BLEND);
 			qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 			GL_SelectTexture(TEXTURE0_SGIS);
-			GL_Bind(water_normalmap);
+			GL_Bind(waterObject->normalmap);
 
 			GL_EnableMultitexture();
 			GL_Bind(refractmap);

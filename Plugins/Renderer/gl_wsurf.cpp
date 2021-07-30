@@ -2197,6 +2197,7 @@ void R_ClearBSPEntities(void)
 	}
 	
 	r_wsurf.iNumBSPEntities = 0;
+	r_water_controls.clear();
 }
 
 bspentity_t *current_parse_entity = NULL;
@@ -2476,6 +2477,114 @@ void R_LoadBSPEntities(void)
 
 		if(!classname)
 			continue;
+
+		if (!strcmp(classname, "env_water_control"))
+		{
+			water_control_t control;
+			control.enabled = true;
+			control.fresnelfactor = 0;
+			control.depthfactor[0] = 0;
+			control.depthfactor[1] = 0;
+			control.normfactor = 0;
+			control.minheight = 0;
+			control.maxtrans = 0;
+
+			char *basetexture_string = ValueForKey(ent, "basetexture");
+			if (basetexture_string)
+			{
+				control.basetexture = basetexture_string;
+				if (control.basetexture[control.basetexture.length() - 1] == '*')
+				{
+					control.wildcard = control.basetexture.substr(0, control.basetexture.length() - 1);
+				}
+			}
+
+			char *disablewater_string = ValueForKey(ent, "disablewater");
+			if (disablewater_string)
+			{
+				if (atoi(disablewater_string) > 0)
+				{
+					control.enabled = false;
+				}
+			}
+
+			char *normalmap_string = ValueForKey(ent, "normalmap");
+			if (normalmap_string)
+			{
+				control.normalmap = normalmap_string;
+			}
+
+			char *fresnelfactor_string = ValueForKey(ent, "fresnelfactor");
+			if (fresnelfactor_string)
+			{
+				if (sscanf(fresnelfactor_string, "%f", &temp[0]) == 1)
+				{
+					control.fresnelfactor = clamp(temp[0], 0, 10);
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"fresnelfactor\" in entity \"env_water_control\"\n");
+				}
+			}
+
+			char *normfactor_string = ValueForKey(ent, "normfactor");
+			if (normfactor_string)
+			{
+				if (sscanf(normfactor_string, "%f", &temp[0]) == 1)
+				{
+					control.normfactor = clamp(temp[0], 0, 10);
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"normfactor\" in entity \"env_water_control\"\n");
+				}
+			}
+
+			char *depthfactor_string = ValueForKey(ent, "depthfactor");
+			if (depthfactor_string)
+			{
+				if (sscanf(depthfactor_string, "%f %f", &temp[0], &temp[1]) == 2)
+				{
+					control.depthfactor[0] = clamp(temp[0], 0, 10);
+					control.depthfactor[1] = clamp(temp[1], 0, 10);
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"depthfactor\" in entity \"env_water_control\"\n");
+				}
+			}
+
+			char *minheight_string = ValueForKey(ent, "minheight");
+			if (minheight_string)
+			{
+				if (sscanf(minheight_string, "%f", &temp[0]) == 1)
+				{
+					control.minheight = clamp(temp[0], 0, 10000);
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"minheight\" in entity \"env_water_control\"\n");
+				}
+			}
+
+			char *maxtrans_string = ValueForKey(ent, "maxtrans");
+			if (maxtrans_string)
+			{
+				if (sscanf(maxtrans_string, "%f", &temp[0]) == 1)
+				{
+					control.maxtrans = clamp(temp[0], 0, 255) / 255.0f;
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"maxtrans\" in entity \"env_water_control\"\n");
+				}
+			}
+
+			if (control.basetexture.length())
+			{
+				r_water_controls.emplace_back(control);
+			}
+		}
 
 		if (!strcmp(classname, "env_hdr_control"))
 		{

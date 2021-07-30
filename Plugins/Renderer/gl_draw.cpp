@@ -620,6 +620,24 @@ int LoadDDS(const char *filename, byte *buf, int bufsize, int *width, int *heigh
 	return TRUE;
 }
 
+
+#define PATHSEPARATOR(c) ((c) == '\\' || (c) == '/')
+//-----------------------------------------------------------------------------
+// Purpose: Returns a pointer to the beginning of the unqualified file name 
+//			(no path information)
+// Input:	in - file name (may be unqualified, relative or absolute path)
+// Output:	pointer to unqualified file name
+//-----------------------------------------------------------------------------
+const char * V_UnqualifiedFileName(const char * in)
+{
+	// back up until the character after the first path separator we find,
+	// or the beginning of the string
+	const char * out = in + strlen(in) - 1;
+	while ((out > in) && (!PATHSEPARATOR(*(out - 1))))
+		out--;
+	return out;
+}
+
 const char * V_GetFileExtension( const char * path )
 {
 	const char    *src;

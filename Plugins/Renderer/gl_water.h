@@ -1,6 +1,23 @@
 #pragma once
 
+#include <vector>
+
 #define MAX_WATERS 32
+
+typedef struct water_control_s
+{
+	bool enabled;
+	std::string basetexture;
+	std::string wildcard;
+	std::string normalmap;
+	float fresnelfactor;
+	float depthfactor[2];
+	float normfactor;
+	float minheight;
+	float maxtrans;
+}water_control_t;
+
+extern std::vector<water_control_t> r_water_controls;
 
 typedef struct
 {
@@ -37,9 +54,14 @@ extern qboolean refractmap_ready;
 
 typedef struct r_water_s
 {
+	GLuint normalmap;
 	GLuint reflectmap;
 	GLuint depthreflmap;
-
+	float fresnelfactor;
+	float depthfactor[2];
+	float normfactor;
+	float maxtrans;
+	float minheight;
 	vec3_t vecs;
 	vec3_t norm;
 	float distances;
@@ -61,7 +83,6 @@ extern r_water_t *waters_free;
 extern r_water_t *waters_active;
 
 //shader
-extern int water_normalmap;
 
 extern SHADER_DEFINE(drawdepth);
 extern SHADER_DEFINE(drawcolor);
@@ -69,12 +90,6 @@ extern SHADER_DEFINE(drawcolor);
 //cvar
 extern cvar_t *r_water;
 extern cvar_t *r_water_debug;
-extern cvar_t *r_water_fresnelfactor;
-extern cvar_t *r_water_depthfactor1;
-extern cvar_t *r_water_depthfactor2;
-extern cvar_t *r_water_normfactor;
-extern cvar_t *r_water_minheight;
-extern cvar_t *r_water_maxalpha;
 
 typedef struct
 {
@@ -85,7 +100,9 @@ typedef struct
 extern colorVec *gWaterColor;
 extern cshift_t *cshift_water;
 
-r_water_t *R_GetActiveWater(cl_entity_t *ent, vec3_t p, vec3_t n, colorVec *color);
+bool R_IsAboveWater(float *v);
+
+r_water_t *R_GetActiveWater(cl_entity_t *ent, const char *texname, vec3_t p, vec3_t n, colorVec *color, bool bAboveWater);
 void R_InitWater(void);
 void R_FreeWater(void);
 void R_ClearWater(void);
