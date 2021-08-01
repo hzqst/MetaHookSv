@@ -48,9 +48,9 @@ int r_studio_polys;
 int r_studio_framecount;
 
 cvar_t *r_studio_vbo = NULL;
-cvar_t *r_studio_cache_bone = NULL;
+//cvar_t *r_studio_cache_bone = NULL;
 
-void R_StudioClearBoneCache(void)
+/*void R_StudioClearBoneCache(void)
 {
 	for (auto &itor = g_StudioBoneTable.begin(); itor != g_StudioBoneTable.end(); ++itor)
 	{
@@ -58,6 +58,7 @@ void R_StudioClearBoneCache(void)
 	}
 	g_StudioBoneTable.clear();
 }
+*/
 
 void R_StudioClearVBOCache(void)
 {
@@ -242,7 +243,7 @@ void R_InitStudio(void)
 	//r_studio_cache_bone = gEngfuncs.pfnRegisterVariable("r_studio_cache_bone", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
-bool R_StudioRestoreBones(void)
+/*bool R_StudioRestoreBones(void)
 {
 	if (!r_studio_cache_bone)
 		return false;
@@ -308,7 +309,7 @@ void R_StudioSaveBones(void)
 		memcpy(b->cached_bonetransform, (*pbonetransform), sizeof(float[3][4]) * b->numbones);
 		memcpy(b->cached_lighttransform, (*plighttransform), sizeof(float[3][4]) * b->numbones);
 	}
-}
+}*/
 
 inline void R_StudioTransformAuxVert(auxvert_t *av, int bone, vec3_t vert)
 {

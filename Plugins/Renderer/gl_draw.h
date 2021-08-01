@@ -19,6 +19,10 @@ extern int *gl_filter_max;
 
 extern float gl_max_ansio;
 
+extern int gl_loadtexture_format;
+extern int gl_loadtexture_cubemap;
+extern int gl_loadtexture_size;
+
 //DXT
 
 #define DDS_MAGIC 0x20534444

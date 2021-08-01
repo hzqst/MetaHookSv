@@ -13,7 +13,7 @@ cshift_t *cshift_water;
 
 void EmitWaterPolysWireFrame(msurface_t *fa, int direction, qboolean useProgram)
 {
-	glpoly_t *p;
+	/*glpoly_t *p;
 	float *v;
 	int i;
 	float s;
@@ -74,7 +74,7 @@ void EmitWaterPolysWireFrame(msurface_t *fa, int direction, qboolean useProgram)
 
 		if (gl_wireframe->value == 2)
 			qglEnable(GL_DEPTH_TEST);
-	}
+	}*/
 }
 
 void EmitWaterPolys(msurface_t *fa, int direction)
@@ -89,14 +89,6 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 
 	if (r_draw_pass == r_draw_reflect)
 		return;
-
-	if (r_draw_pass == r_draw_refract)
-	{
-		if ((*currententity) == r_worldentity)
-			dontShader = true;
-		else
-			return;
-	}
 
 	qglEnable(GL_STENCIL_TEST);
 	qglStencilMask(0xFF);
@@ -138,7 +130,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		VectorAdd(tempVert, (*currententity)->curstate.origin, tempVert);
 	}
 	
-	R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED);
+	//R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
 	vec3_t normal;
@@ -249,13 +241,15 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		}
 	}
 
+	if (!useProgram)
+	{
+		R_UseWSurfProgram(WSURF_DIFFUSE_ENABLED, NULL);
+	}
+
 	if (fa->polys->verts[0][2] >= r_refdef->vieworg[2])
 		scale = -(*currententity)->curstate.scale;
 	else
 		scale = (*currententity)->curstate.scale;
-
-	if (r_draw_pass == r_draw_refract)
-		scale = 0;
 
 	if (useProgram)
 		scale = 0;
@@ -334,14 +328,14 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 
 		qglActiveTextureARB(TEXTURE1_SGIS);
 		GL_DisableMultitexture();
-
-		qglUseProgramObjectARB(0);
 	}
+
+	qglUseProgramObjectARB(0);
 
 	qglStencilMask(0);
 	qglDisable(GL_STENCIL_TEST);
 
-	EmitWaterPolysWireFrame(fa, direction, useProgram);
+	//EmitWaterPolysWireFrame(fa, direction, useProgram);
 }
 
 int *gSkyTexNumber;

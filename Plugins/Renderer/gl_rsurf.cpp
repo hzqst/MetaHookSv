@@ -695,7 +695,7 @@ void R_DrawDecals(qboolean bMultitexture)
 		const GLfloat planeR[] = { 0.0, 0.0, 1.0, 0.0 };
 		const GLfloat planeQ[] = { 0.0, 0.0, 0.0, 1.0 };
 
-		qglActiveTextureARB(GL_TEXTURE5_ARB);
+		qglActiveTextureARB(GL_TEXTURE6_ARB);
 
 		qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 		qglEnable(GL_TEXTURE_GEN_S);
@@ -765,7 +765,7 @@ void R_DrawDecals(qboolean bMultitexture)
 
 	if (r_wsurf.bShadowmapTexture && !drawgbuffer)
 	{
-		qglActiveTextureARB(GL_TEXTURE5_ARB);
+		qglActiveTextureARB(GL_TEXTURE6_ARB);
 
 		qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 		qglDisable(GL_TEXTURE_2D_ARRAY);

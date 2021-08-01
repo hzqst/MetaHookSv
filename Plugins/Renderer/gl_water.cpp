@@ -28,6 +28,8 @@ std::unordered_map<int, water_program_t> g_WaterProgramTable;
 
 std::vector<water_control_t> r_water_controls;
 
+//std::vector<cubemap_t> r_cubemaps;
+
 void R_UseWaterProgram(int state, water_program_t *progOutput)
 {
 	water_program_t prog = { 0 };

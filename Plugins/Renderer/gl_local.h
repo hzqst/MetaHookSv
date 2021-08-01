@@ -41,9 +41,12 @@ typedef struct
 	qboolean mtex;
 }gl_draw_context;
 
+extern vrect_t *r_refdef_vrect;
 extern refdef_t *r_refdef;
 extern ref_params_t r_params;
-
+extern float *r_xfov;
+extern float r_yfov;
+extern float r_screenaspect;
 extern cl_entity_t *r_worldentity;
 extern model_t *r_worldmodel;
 extern int *cl_numvisedicts;
@@ -259,7 +262,6 @@ void GL_InitShaders(void);
 void GL_FreeShaders(void);
 texture_t *Draw_DecalTexture(int index);
 void Draw_MiptexTexture(cachewad_t *wad, byte *data);
-void Draw_Init(void);
 void EmitWaterPolys(msurface_t *fa, int direction);
 void R_DecalShootInternal(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
 void MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar);
@@ -292,12 +294,16 @@ void GL_FrameBufferColorTextureDeferred(FBO_Container_t *s, int iInternalColorFo
 
 int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, qboolean ansio);
 int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio);
-int R_LoadTexture(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type);
 
 void GL_UploadDXT(byte *data, int width, int height, qboolean mipmap, qboolean ansio);
 int LoadDDS(const char *filename, byte *buf, int bufSize, int *width, int *height);
 int LoadImageGeneric(const char *filename, byte *buf, int bufSize, int *width, int *height);
 int SaveImageGeneric(const char *filename, int width, int height, byte *data);
+
+cubemap_t *R_FindCubemap(float *origin);
+void R_LoadCubemap(cubemap_t *cubemap);
+void R_BuildCubemaps_f(void);
+void COM_FileBase(const char *in, char *out);
 
 //framebuffer
 void GL_PushFrameBuffer(void);

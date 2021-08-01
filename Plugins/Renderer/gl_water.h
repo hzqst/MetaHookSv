@@ -4,6 +4,16 @@
 
 #define MAX_WATERS 32
 
+typedef struct cubemap_s
+{
+	std::string name;
+	std::string extension;
+	int cubetex;
+	int size;
+	float radius;
+	vec3_t origin;
+}cubemap_t;
+
 typedef struct water_control_s
 {
 	bool enabled;
@@ -18,6 +28,8 @@ typedef struct water_control_s
 }water_control_t;
 
 extern std::vector<water_control_t> r_water_controls;
+
+//extern std::vector<cubemap_t> r_cubemaps;
 
 typedef struct
 {

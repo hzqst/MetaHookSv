@@ -128,6 +128,13 @@ typedef struct
 	int program;	
 }hbao_blur_program_t, hbao_blur2_program_t;
 
+typedef struct
+{
+	int program;
+	int basetex;
+	int layer;
+}hud_debug_program_t;
+
 extern cvar_t *r_hdr ;
 extern cvar_t *r_hdr_blurwidth ;
 extern cvar_t *r_hdr_exposure ;
@@ -153,3 +160,7 @@ void R_BlitToScreen(FBO_Container_t *src);
 void R_BlitToFBO(FBO_Container_t *src, FBO_Container_t *dst);
 void R_DrawHUDQuad(int w, int h);
 void R_DrawHUDQuad_Texture(int tex, int w, int h);
+void R_DrawHUDQuadFrustum(int w, int h);
+#define HUD_DEBUG_TEXARRAY 1
+
+void R_UseHudDebugProgram(int state, hud_debug_program_t *progOutput);

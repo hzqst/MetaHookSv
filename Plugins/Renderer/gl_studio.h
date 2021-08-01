@@ -162,7 +162,7 @@ extern int r_studio_drawcall;
 extern int r_studio_polys;
 extern int r_studio_framecount;
 
-void R_StudioClearBoneCache(void);
+//void R_StudioClearBoneCache(void);
 void R_StudioClearVBOCache(void);
 void R_ShutdownStudio(void);
 void R_InitStudio(void);

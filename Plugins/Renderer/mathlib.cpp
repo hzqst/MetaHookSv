@@ -721,14 +721,6 @@ int GreatestCommonDivisor(int i1, int i2)
 	}
 }
 
-fixed16_t Invert24To16(fixed16_t val)
-{
-	if (val < 256)
-		return (0xFFFFFFFF);
-
-	return (fixed16_t)(((double)0x10000 * (double)0x1000000 / (double)val) + 0.5);
-}
-
 int InvertMatrix(const float *m, float *out)
 {
 #define SWAP_ROWS(a, b) { float *_tmp = a; (a)=(b); (b)=_tmp; }

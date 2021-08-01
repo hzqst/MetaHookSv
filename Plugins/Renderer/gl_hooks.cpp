@@ -1369,6 +1369,29 @@ void R_FillAddress(void)
 		addr += 5;
 	}
 
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		const char sigs[] = "\xD9\x54\x24\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD9\xE8";
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x100, sigs, sizeof(sigs) - 1);
+		Sig_AddrNotFound(r_xfov);
+		r_xfov = *(decltype(r_xfov)*)(addr + 6);
+	}
+	else
+	{
+		const char sigs[] = "\x8B\x15\x2A\x2A\x2A\x2A\xD9\x5D\x2A\xDB\x05";
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x100, sigs, sizeof(sigs) - 1);
+		Sig_AddrNotFound(r_xfov);
+		r_xfov = *(decltype(r_xfov)*)(addr + 2);
+	}
+
+	if (1)
+	{
+		const char sigs[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x50, sigs, sizeof(sigs) - 1);
+		Sig_AddrNotFound(r_refdef_vrect);
+		r_refdef_vrect = *(decltype(r_refdef_vrect)*)(addr + 1);
+	}
+
 	if (1)
 	{
 		PVOID R_RenderFinalFog = NULL;

@@ -4,7 +4,6 @@
 shadow_control_t r_shadow_control;
 
 cvar_t *r_light_dynamic = NULL;
-cvar_t *r_light_darkness = NULL;
 cvar_t *r_light_debug = NULL;
 
 cvar_t *r_light_radius = NULL;
@@ -20,57 +19,39 @@ bool drawgbuffer = false;
 
 int gbuffer_mask = -1;
 
-std::unordered_map<int, gbuffer_program_t> g_GBufferProgramTable;
 
 GLuint r_sphere_vbo = 0;
 GLuint r_sphere_ebo = 0;
 GLuint r_cone_vbo = 0;
 
-void R_UseGBufferProgram(int state, gbuffer_program_t *progOutput)
+std::vector<light_dynamic_t> g_DynamicLights;
+
+std::unordered_map<int, dfinal_program_t> g_DFinalProgramTable;
+
+void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 {
-	if (!drawgbuffer)
-		return;
+	dfinal_program_t prog = { 0 };
 
-	gbuffer_program_t prog = { 0 };
-
-	auto itor = g_GBufferProgramTable.find(state);
-	if (itor == g_GBufferProgramTable.end())
+	auto itor = g_DFinalProgramTable.find(state);
+	if (itor == g_DFinalProgramTable.end())
 	{
 		std::stringstream defs;
 
-		if (state & GBUFFER_DIFFUSE_ENABLED)
-			defs << "#define DIFFUSE_ENABLED\n";
-
-		if (state & GBUFFER_LIGHTMAP_ENABLED)
-			defs << "#define LIGHTMAP_ENABLED\n";
-
-		if (state & GBUFFER_DETAILTEXTURE_ENABLED)
-			defs << "#define DETAILTEXTURE_ENABLED\n";
-
-		if (state & GBUFFER_LIGHTMAP_ARRAY_ENABLED)
-			defs << "#define LIGHTMAP_ARRAY_ENABLED\n";
-
-		if (state & GBUFFER_TRANSPARENT_ENABLED)
-			defs << "#define TRANSPARENT_ENABLED\n";
-
-		if (state & GBUFFER_ADDITIVE_ENABLED)
-			defs << "#define ADDITIVE_ENABLED\n";
-
-		if (state & GBUFFER_MASKED_ENABLED)
-			defs << "#define MASKED_ENABLED\n";
+		if (state & DFINAL_LINEAR_FOG_ENABLED)
+			defs << "#define LINEAR_FOG_ENABLED\n";
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\gbuffer_shader.vsh", NULL, "renderer\\shader\\gbuffer_shader.fsh", def.c_str(), NULL, def.c_str());
+		prog.program = R_CompileShaderFileEx("renderer\\shader\\dfinal_shader.vsh", NULL, "renderer\\shader\\dfinal_shader.fsh", def.c_str(), NULL, def.c_str());
 		if (prog.program)
 		{
-			SHADER_UNIFORM(prog, diffuseTex, "diffuseTex");
-			SHADER_UNIFORM(prog, lightmapTex, "lightmapTex");
-			SHADER_UNIFORM(prog, lightmapTexArray, "lightmapTexArray");
-			SHADER_UNIFORM(prog, detailTex, "detailTex");
+			SHADER_UNIFORM(prog, gbufferTex, "gbufferTex");
+			SHADER_UNIFORM(prog, depthTex, "depthTex");
+			SHADER_UNIFORM(prog, stencilTex, "stencilTex");
+			SHADER_UNIFORM(prog, clipInfo, "clipInfo");
 		}
 
-		g_GBufferProgramTable[state] = prog;
+		g_DFinalProgramTable[state] = prog;
 	}
 	else
 	{
@@ -81,27 +62,22 @@ void R_UseGBufferProgram(int state, gbuffer_program_t *progOutput)
 	{
 		qglUseProgramObjectARB(prog.program);
 
-		if (prog.diffuseTex != -1)
-			qglUniform1iARB(prog.diffuseTex, 0);
-		if (prog.lightmapTexArray != -1)
-			qglUniform1iARB(prog.lightmapTexArray, 1);
-		if (prog.lightmapTex != -1)
-			qglUniform1iARB(prog.lightmapTex, 1);
-		if (prog.detailTex != -1)
-			qglUniform1iARB(prog.detailTex, 2);
+		if (prog.gbufferTex != -1)
+			qglUniform1iARB(prog.gbufferTex, 0);
+		if (prog.depthTex != -1)
+			qglUniform1iARB(prog.depthTex, 1);
+		if (prog.stencilTex != -1)
+			qglUniform1iARB(prog.stencilTex, 2);
+		if (prog.clipInfo != -1)
+			qglUniform3fARB(prog.clipInfo, 4 * r_params.movevars->zmax, 4 - r_params.movevars->zmax, r_params.movevars->zmax);
 
 		if (progOutput)
 			*progOutput = prog;
 	}
 	else
 	{
-		Sys_ErrorEx("R_UseGBufferProgram: Failed to load program!");
+		Sys_ErrorEx("R_UseDFinalProgram: Failed to load program!");
 	}
-}
-
-void R_UseGBufferProgram(int state)
-{
-	return R_UseGBufferProgram(state, NULL);
 }
 
 std::unordered_map<int, dlight_program_t> g_DLightProgramTable;
@@ -115,32 +91,26 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 	{
 		std::stringstream defs;
 
-		if (state & DLIGHT_LIGHT_PASS)
-			defs << "#define LIGHT_PASS\n";
+		if (state & DLIGHT_SPOT_ENABLED)
+			defs << "#define SPOT_ENABLED\n";
 
-		if (state & DLIGHT_LIGHT_PASS_SPOT)
-			defs << "#define LIGHT_PASS_SPOT\n";
+		if (state & DLIGHT_POINT_ENABLED)
+			defs << "#define POINT_ENABLED\n";
 
-		if (state & DLIGHT_LIGHT_PASS_POINT)
-			defs << "#define LIGHT_PASS_POINT\n";
-
-		if (state & DLIGHT_LIGHT_PASS_VOLUME)
-			defs << "#define LIGHT_PASS_VOLUME\n";
-
-		if (state & DLIGHT_FINAL_PASS)
-			defs << "#define FINAL_PASS\n";
-
-		if (state & DLIGHT_LINEAR_FOG_ENABLED)
-			defs << "#define LINEAR_FOG_ENABLED\n";
+		if (state & DLIGHT_VOLUME_ENABLED)
+			defs << "#define VOLUME_ENABLED\n";
 
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\dlight_shader.vsh", NULL, "renderer\\shader\\dlight_shader.fsh", def.c_str(), NULL, def.c_str());
 		if (prog.program)
 		{
-			SHADER_UNIFORM(prog, positionTex, "positionTex");
-			SHADER_UNIFORM(prog, normalTex, "normalTex");
+			SHADER_UNIFORM(prog, gbufferTex, "gbufferTex");
 			SHADER_UNIFORM(prog, stencilTex, "stencilTex");
+			SHADER_UNIFORM(prog, depthTex, "depthTex");
+			SHADER_UNIFORM(prog, invworldmatrix, "invworldmatrix");
+			SHADER_UNIFORM(prog, invprojmatrix, "invprojmatrix");
+			SHADER_UNIFORM(prog, fov, "fov");
 			SHADER_UNIFORM(prog, viewpos, "viewpos");
 			SHADER_UNIFORM(prog, lightdir, "lightdir");
 			SHADER_UNIFORM(prog, lightpos, "lightpos");
@@ -151,12 +121,6 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 			SHADER_UNIFORM(prog, lightdiffuse, "lightdiffuse");
 			SHADER_UNIFORM(prog, lightspecular, "lightspecular");
 			SHADER_UNIFORM(prog, lightspecularpow, "lightspecularpow");
-
-			SHADER_UNIFORM(prog, diffuseTex, "diffuseTex");
-			SHADER_UNIFORM(prog, lightmapTex, "lightmapTex");
-			SHADER_UNIFORM(prog, additiveTex, "additiveTex");
-			SHADER_UNIFORM(prog, depthTex, "depthTex");
-			SHADER_UNIFORM(prog, clipInfo, "clipInfo");
 		}
 
 		g_DLightProgramTable[state] = prog;
@@ -170,21 +134,16 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 	{
 		qglUseProgramObjectARB(prog.program);
 
-		if (prog.positionTex != -1)
-			qglUniform1iARB(prog.positionTex, 0);
-		if (prog.normalTex != -1)
-			qglUniform1iARB(prog.normalTex, 1);
+		if (prog.gbufferTex != -1)
+			qglUniform1iARB(prog.gbufferTex, 0);
+		if (prog.depthTex != -1)
+			qglUniform1iARB(prog.depthTex, 1);
 		if (prog.stencilTex != -1)
 			qglUniform1iARB(prog.stencilTex, 2);
-
-		if (prog.diffuseTex != -1)
-			qglUniform1iARB(prog.diffuseTex, 0);
-		if (prog.lightmapTex != -1)
-			qglUniform1iARB(prog.lightmapTex, 1);
-		if (prog.additiveTex != -1)
-			qglUniform1iARB(prog.additiveTex, 2);
-		if (prog.depthTex != -1)
-			qglUniform1iARB(prog.depthTex, 3);
+		if (prog.fov != -1)
+			qglUniform3fARB(prog.fov, *r_xfov, r_yfov, r_screenaspect);
+		if (prog.viewpos != -1)
+			qglUniform3fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
 
 		if (progOutput)
 			*progOutput = prog;
@@ -195,14 +154,9 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 	}
 }
 
-void R_UseDLightProgram(int state)
-{
-	return R_UseDLightProgram(state, NULL);
-}
-
 void R_ShutdownLight(void)
 {
-	g_GBufferProgramTable.clear();
+	g_DFinalProgramTable.clear();
 	g_DLightProgramTable.clear();
 
 	if(r_sphere_vbo)
@@ -219,7 +173,6 @@ void R_InitLight(void)
 {
 	r_light_dynamic = gEngfuncs.pfnRegisterVariable("r_light_dynamic", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_light_debug = gEngfuncs.pfnRegisterVariable("r_light_debug", "0", FCVAR_CLIENTDLL);
-	r_light_darkness = gEngfuncs.pfnRegisterVariable("r_light_darkness", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_light_radius = gEngfuncs.pfnRegisterVariable("r_light_radius", "300.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_light_ambient = gEngfuncs.pfnRegisterVariable("r_light_ambient", "0.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -463,22 +416,88 @@ void R_EndRenderGBuffer(void)
 	qglEnable(GL_BLEND);
 	qglBlendFunc(GL_ONE, GL_ONE);
 
-	//Position texture for unit0
-	GL_SelectTexture(TEXTURE0_SGIS);
-	GL_Bind(s_GBufferFBO.s_hBackBufferTex3);
+	//GBuffer textures at unit0
+	qglDisable(GL_TEXTURE_2D);
+	qglEnable(GL_TEXTURE_2D_ARRAY);
+	qglBindTexture(GL_TEXTURE_2D_ARRAY, s_GBufferFBO.s_hBackBufferTex);
 
-	//Normal texture for unit1
+	//Depth texture at unit1
 	GL_EnableMultitexture();
-	GL_Bind(s_GBufferFBO.s_hBackBufferTex4);
+	GL_Bind(s_GBufferFBO.s_hBackBufferDepthTex);
 
-	//Stencil texture for unit2
+	//Stencil texture at unit2
 	qglActiveTextureARB(TEXTURE2_SGIS);
 	qglEnable(GL_TEXTURE_2D);
 	qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferStencilView);
 	
-	qglTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	if (g_DynamicLights.size())
+	{
+		for (size_t i = 0; i < g_DynamicLights.size(); i++)
+		{
+			auto &dynlight = g_DynamicLights[i];
+
+			if (dynlight.type == DLIGHT_POINT)
+			{
+				//Point Light
+
+				float radius = r_light_radius->value / dynlight.fade;
+
+				vec3_t dist;
+				VectorSubtract(r_refdef->vieworg, dynlight.origin, dist);
+
+				if (VectorLength(dist) > radius + 32)
+				{
+					dlight_program_t prog = { 0 };
+					R_UseDLightProgram(DLIGHT_POINT_ENABLED | DLIGHT_VOLUME_ENABLED, &prog);
+					qglUniform3fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
+					qglUniform3fARB(prog.lightpos, dynlight.origin[0], dynlight.origin[1], dynlight.origin[2]);
+					qglUniform3fARB(prog.lightcolor, dynlight.color[0], dynlight.color[1], dynlight.color[2]);
+					qglUniform1fARB(prog.lightradius, radius);
+					qglUniform1fARB(prog.lightambient, dynlight.ambient);
+					qglUniform1fARB(prog.lightdiffuse, dynlight.diffuse);
+					qglUniform1fARB(prog.lightspecular,dynlight.specular);
+					qglUniform1fARB(prog.lightspecularpow, dynlight.specularpow);
+
+					qglEnableClientState(GL_VERTEX_ARRAY);
+					qglBindBufferARB(GL_ARRAY_BUFFER_ARB, r_sphere_vbo);
+					qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, r_sphere_ebo);
+					qglVertexPointer(3, GL_FLOAT, sizeof(float[3]), 0);
+
+					qglPushMatrix();
+
+					qglTranslatef(dynlight.origin[0], dynlight.origin[1], dynlight.origin[2]);
+					qglScalef(radius, radius, radius);
+
+					qglDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
+
+					qglPopMatrix();
+
+					qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+					qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+					qglDisableClientState(GL_VERTEX_ARRAY);
+				}
+				else
+				{
+					dlight_program_t prog = { 0 };
+					R_UseDLightProgram(DLIGHT_POINT_ENABLED, &prog);
+					qglUniform3fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
+					qglUniform3fARB(prog.lightpos, dynlight.origin[0], dynlight.origin[1], dynlight.origin[2]);
+					qglUniform3fARB(prog.lightcolor, dynlight.color[0], dynlight.color[1], dynlight.color[2]);
+					qglUniform1fARB(prog.lightradius, radius);
+					qglUniform1fARB(prog.lightambient, dynlight.ambient);
+					qglUniform1fARB(prog.lightdiffuse, dynlight.diffuse);
+					qglUniform1fARB(prog.lightspecular, dynlight.specular);
+					qglUniform1fARB(prog.lightspecularpow, dynlight.specularpow);
+
+					GL_Begin2D();
+
+					R_DrawHUDQuad(glwidth, glheight);
+
+					GL_End2D();
+				}
+			}
+		}
+	}
 
 	int max_dlight;
 
@@ -537,10 +556,10 @@ void R_EndRenderGBuffer(void)
 			if (Util_IsOriginInCone(r_refdef->vieworg, dlight_origin, dlight_vforward, r_flashlight_cone->value, r_flashlight_distance->value))
 			{
 				dlight_program_t prog = { 0 };
-				R_UseDLightProgram(DLIGHT_LIGHT_PASS | DLIGHT_LIGHT_PASS_SPOT, &prog);
-				qglUniform4fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0f);
-				qglUniform4fARB(prog.lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2], 0.0f);
-				qglUniform4fARB(prog.lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2], 1.0f);
+				R_UseDLightProgram(DLIGHT_SPOT_ENABLED, &prog);
+				qglUniform3fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
+				qglUniform3fARB(prog.lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2]);
+				qglUniform3fARB(prog.lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2]);
 				qglUniform3fARB(prog.lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
 				qglUniform1fARB(prog.lightcone, r_flashlight_cone->value);
 				qglUniform1fARB(prog.lightradius, r_flashlight_distance->value);
@@ -558,10 +577,10 @@ void R_EndRenderGBuffer(void)
 			else
 			{
 				dlight_program_t prog = { 0 };
-				R_UseDLightProgram(DLIGHT_LIGHT_PASS | DLIGHT_LIGHT_PASS_SPOT | DLIGHT_LIGHT_PASS_VOLUME, &prog);
-				qglUniform4fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0f);
-				qglUniform4fARB(prog.lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2], 0.0f);
-				qglUniform4fARB(prog.lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2], 1.0f);
+				R_UseDLightProgram(DLIGHT_SPOT_ENABLED | DLIGHT_VOLUME_ENABLED, &prog);
+				qglUniform3fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
+				qglUniform3fARB(prog.lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2]);
+				qglUniform3fARB(prog.lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2]);
 				qglUniform3fARB(prog.lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
 				qglUniform1fARB(prog.lightcone, r_flashlight_cone->value);
 				qglUniform1fARB(prog.lightradius, r_flashlight_distance->value);
@@ -614,9 +633,9 @@ void R_EndRenderGBuffer(void)
 					continue;
 
 				dlight_program_t prog = { 0 };
-				R_UseDLightProgram(DLIGHT_LIGHT_PASS | DLIGHT_LIGHT_PASS_POINT | DLIGHT_LIGHT_PASS_VOLUME, &prog);
-				qglUniform4fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0f);
-				qglUniform4fARB(prog.lightpos, dl->origin[0], dl->origin[1], dl->origin[2], 1.0f);
+				R_UseDLightProgram(DLIGHT_POINT_ENABLED | DLIGHT_VOLUME_ENABLED, &prog);
+				qglUniform3fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
+				qglUniform3fARB(prog.lightpos, dl->origin[0], dl->origin[1], dl->origin[2]);
 				qglUniform3fARB(prog.lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
 				qglUniform1fARB(prog.lightradius, dl->radius);
 				qglUniform1fARB(prog.lightambient, r_light_ambient->value);
@@ -634,8 +653,8 @@ void R_EndRenderGBuffer(void)
 				qglTranslatef(dl->origin[0], dl->origin[1], dl->origin[2]);
 				qglScalef(dl->radius, dl->radius, dl->radius);
 
-				qglDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
-
+				qglDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);				
+			
 				qglPopMatrix();
 
 				qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
@@ -645,9 +664,9 @@ void R_EndRenderGBuffer(void)
 			else
 			{
 				dlight_program_t prog = { 0 };
-				R_UseDLightProgram(DLIGHT_LIGHT_PASS | DLIGHT_LIGHT_PASS_POINT, &prog);
-				qglUniform4fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0f);
-				qglUniform4fARB(prog.lightpos, dl->origin[0], dl->origin[1], dl->origin[2], 1.0f);
+				R_UseDLightProgram(DLIGHT_POINT_ENABLED, &prog);
+				qglUniform3fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
+				qglUniform3fARB(prog.lightpos, dl->origin[0], dl->origin[1], dl->origin[2]);
 				qglUniform3fARB(prog.lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
 				qglUniform1fARB(prog.lightradius, dl->radius);
 				qglUniform1fARB(prog.lightambient, r_light_ambient->value);
@@ -664,65 +683,32 @@ void R_EndRenderGBuffer(void)
 		}
 	}
 
-	qglActiveTextureARB(TEXTURE2_SGIS);
-	qglDisable(GL_TEXTURE_2D);
-	qglBindTexture(GL_TEXTURE_2D, 0);
-
-	qglActiveTextureARB(TEXTURE1_SGIS);
-	GL_DisableMultitexture();
-
 	GL_Begin2D();
 	qglDisable(GL_BLEND);
+
+	qglActiveTextureARB(TEXTURE2_SGIS);
+	qglBindTexture(GL_TEXTURE_2D, 0);
+	qglDisable(GL_TEXTURE_2D);
+	qglActiveTextureARB(TEXTURE1_SGIS);
 
 	//Begin shading pass, write to main FBO?
 	GL_PopFrameBuffer();
 	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-	int FinalProgramState = DLIGHT_FINAL_PASS;
+	int FinalProgramState = 0;
 
 	if (r_fog_mode == GL_LINEAR)
-		FinalProgramState |= DLIGHT_LINEAR_FOG_ENABLED;
+		FinalProgramState |= DFINAL_LINEAR_FOG_ENABLED;
 
-	dlight_program_t finalProg = { 0 };
+	R_UseDFinalProgram(FinalProgramState, NULL);
 
-	R_UseDLightProgram(FinalProgramState, &finalProg);
-
-	if (finalProg.clipInfo != -1)
-	{
-		qglUniform4fARB(finalProg.clipInfo, 4 * r_params.movevars->zmax, 4 - r_params.movevars->zmax, r_params.movevars->zmax, 1.0f);
-	}
-
-	//Diffuse texture (for merging)
-	GL_SelectTexture(TEXTURE0_SGIS);
-	qglEnable(GL_TEXTURE_2D);
-	GL_Bind(s_GBufferFBO.s_hBackBufferTex);
-
-	//Lightmap texture (for merging)
-	GL_EnableMultitexture();
-	GL_Bind(s_GBufferFBO.s_hBackBufferTex2);
-
-	//Additive texture
-	qglActiveTextureARB(TEXTURE2_SGIS);
-	qglEnable(GL_TEXTURE_2D);
-	qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex5);
-	
 	//Depth texture
-	qglActiveTextureARB(TEXTURE3_SGIS);
-	qglEnable(GL_TEXTURE_2D);
-	qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
 
 	R_DrawHUDQuad(glwidth, glheight);
 
-	qglActiveTextureARB(TEXTURE3_SGIS);
-	qglBindTexture(GL_TEXTURE_2D, 0);
-	qglDisable(GL_TEXTURE_2D);
-
-	qglActiveTextureARB(TEXTURE2_SGIS);
-	qglBindTexture(GL_TEXTURE_2D, 0);
-	qglDisable(GL_TEXTURE_2D);
-
-	qglActiveTextureARB(TEXTURE1_SGIS);
 	GL_DisableMultitexture();
+	qglDisable(GL_TEXTURE_2D_ARRAY);
+	qglEnable(GL_TEXTURE_2D);
 
 	qglStencilMask(0);
 	qglDisable(GL_STENCIL_TEST);

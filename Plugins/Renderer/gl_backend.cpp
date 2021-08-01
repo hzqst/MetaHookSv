@@ -1,77 +1,52 @@
 #include "gl_local.h"
 
-byte *scrcapture_buffer = NULL;
-int scrcapture_bufsize = 0;
-
-void R_CaptureScreen(const char *szExt)
+void VID_CaptureScreen(const char *szExtension)
 {
 	int iFileIndex = 0;
-	char *pLevelName;
 	char szLevelName[64];
-	char szFileName[260];
+	char szFileName[1024];
 
-	if(s_BackBufferFBO.s_hBackBufferFBO)
+	byte *pBuf = (byte *)malloc(glwidth * glheight * 3);
+
+	GL_PushFrameBuffer();
+
+	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	qglReadPixels(0, 0, glwidth, glheight, GL_RGB, GL_UNSIGNED_BYTE, pBuf);
+
+	GL_PopFrameBuffer();
+
+	if(r_worldmodel && r_worldmodel->name[0])
 	{
-		int current_readframebuffer;
-		qglGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &current_readframebuffer);
-
-		if(current_readframebuffer != s_BackBufferFBO.s_hBackBufferFBO)
-		{
-			qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-			qglReadPixels(0, 0, glwidth, glheight, GL_RGB, GL_UNSIGNED_BYTE, scrcapture_buffer);
-			qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, current_readframebuffer);
-		}
-		else
-		{
-			qglReadPixels(0, 0, glwidth, glheight, GL_RGB, GL_UNSIGNED_BYTE, scrcapture_buffer);
-		}
+		COM_FileBase(r_worldmodel->name, szLevelName);
 	}
 	else
-	{
-		qglReadPixels(0, 0, glwidth, glheight, GL_RGB, GL_UNSIGNED_BYTE, scrcapture_buffer);
-	}
-
-	const char *pLevel = gEngfuncs.pfnGetLevelName();
-	if(!pLevel || !pLevel[0])
-	{
+	{		
 		strcpy(szLevelName, "screenshot");
-	}
-	else
-	{
-		pLevelName = (char *)pLevel + strlen(pLevel) - 1;
-		while( *pLevelName != '/' && *pLevelName != '\\')
-			pLevelName --;
-		strcpy(szLevelName, pLevelName+1);
-		szLevelName[strlen(szLevelName)-4] = 0;
 	}
 
 	do
 	{
-		sprintf(szFileName, "%s%.4d.%s", szLevelName, iFileIndex, szExt);
+		snprintf(szFileName, 1023, "%s%.4d.%s", szLevelName, iFileIndex, szExtension);
+		szFileName[1023] = 0;
+
 		++iFileIndex;
 	}while( true == g_pFileSystem->FileExists(szFileName) );
 
-	if(TRUE == SaveImageGeneric(szFileName, glwidth, glheight, scrcapture_buffer))
+	if(TRUE == SaveImageGeneric(szFileName, glwidth, glheight, pBuf))
 	{
 		gEngfuncs.Con_Printf("Screenshot %s saved.\n", szFileName);
 	}
+
+	free(pBuf);
 }
 
 void CL_ScreenShot_f(void)
 {
-	if(scrcapture_bufsize < glwidth*glheight*3)
-	{
-		if(scrcapture_buffer)
-			delete []scrcapture_buffer;
-		scrcapture_bufsize = glwidth*glheight*3;
-		scrcapture_buffer = new byte[scrcapture_bufsize];
-	}
-
-	char *szExt = "jpg";
+	char *szExtension = "jpg";
 	if(gEngfuncs.Cmd_Argc() > 1)
 	{
-		szExt = gEngfuncs.Cmd_Argv(1);
+		szExtension = gEngfuncs.Cmd_Argv(1);
 	}
 
-	R_CaptureScreen(szExt);
+	VID_CaptureScreen(szExtension);
 }

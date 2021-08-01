@@ -1,10 +1,14 @@
 #include "gl_local.h"
 #include "pm_defs.h"
+#include <sstream>
 
 ref_funcs_t gRefFuncs;
 
+vrect_t *r_refdef_vrect;
 refdef_t *r_refdef;
-
+float *r_xfov;
+float r_yfov;
+float r_screenaspect;
 ref_params_t r_params;
 
 float gldepthmin, gldepthmax;
@@ -869,9 +873,6 @@ void GL_ClearFBO(FBO_Container_t *s)
 	s->s_hBackBufferDB = 0;
 	s->s_hBackBufferTex = 0;
 	s->s_hBackBufferTex2 = 0;
-	s->s_hBackBufferTex3 = 0;
-	s->s_hBackBufferTex4 = 0;
-	s->s_hBackBufferTex5 = 0;
 	s->s_hBackBufferDepthTex = 0;
 	s->iWidth = s->iHeight = s->iTextureColorFormat = 0;
 }
@@ -892,15 +893,6 @@ void GL_FreeFBO(FBO_Container_t *s)
 
 	if (s->s_hBackBufferTex2)
 		qglDeleteTextures(1, &s->s_hBackBufferTex2);
-
-	if (s->s_hBackBufferTex3)
-		qglDeleteTextures(1, &s->s_hBackBufferTex3);
-
-	if (s->s_hBackBufferTex4)
-		qglDeleteTextures(1, &s->s_hBackBufferTex4);
-
-	if (s->s_hBackBufferTex5)
-		qglDeleteTextures(1, &s->s_hBackBufferTex5);
 
 	if (s->s_hBackBufferDepthTex)
 		qglDeleteTextures(1, &s->s_hBackBufferDepthTex);
@@ -1277,19 +1269,6 @@ void R_PreRenderView(int a1)
 
 	if (!r_refdef->onlyClientDraws)
 	{
-		//Capture previous fog settings from client.dll
-		if (qglIsEnabled(GL_FOG))
-		{
-			qglGetIntegerv(GL_FOG_MODE, &r_fog_mode);
-
-			if (r_fog_mode == GL_LINEAR)
-			{
-				qglGetFloatv(GL_FOG_START, &r_fog_control[0]);
-				qglGetFloatv(GL_FOG_END, &r_fog_control[1]);
-				qglGetFloatv(GL_FOG_COLOR, r_fog_color);
-			}
-		}
-
 		if (r_water && r_water->value && waters_active)
 		{
 			R_RenderWaterView();
@@ -1332,19 +1311,10 @@ void R_PostRenderView()
 		R_DoHDR();
 	}
 
-	qglDisable(GL_BLEND);
-	/*qglActiveTextureARB(TEXTURE2_SGIS);
-	qglBindTexture(GL_TEXTURE_2D, 0);
-	qglDisable(GL_TEXTURE_2D);*/
-
-	/*qglActiveTextureARB(TEXTURE1_SGIS);
-	qglBindTexture(GL_TEXTURE_2D, 0);
-	qglDisable(GL_TEXTURE_2D);*/
-
-	qglActiveTextureARB(*oldtarget);
 	GL_DisableMultitexture();
 	qglEnable(GL_TEXTURE_2D);
 	qglColor4f(1, 1, 1, 1);
+	qglDisable(GL_BLEND);
 
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 
@@ -1651,8 +1621,6 @@ void R_Init(void)
 	R_InitWSurf();
 	R_InitGLHUD();
 	R_InitLight();
-
-	Draw_Init();
 }
 
 void R_Shutdown(void)
@@ -1686,7 +1654,7 @@ void R_NewMap(void)
 	R_VidInitWSurf();
 
 	R_StudioClearVBOCache();
-	R_StudioClearBoneCache();
+	//R_StudioClearBoneCache();
 }
 
 mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
@@ -1781,3 +1749,160 @@ qboolean R_ParseVectorCvar(cvar_t *a1, float *vec)
 	}
 	return result;
 }
+
+#if 0
+
+void R_BuildCubemap_Snapshot(cubemap_t *cubemap, int index)
+{
+	char name[64];
+	COM_FileBase(r_worldmodel->name, name);
+
+	if (!g_pFileSystem->IsDirectory("gfx/cubemap"))
+		g_pFileSystem->CreateDirHierarchy("gfx/cubemap");
+
+	char path[64];
+	snprintf(path, sizeof(path) - 1, "gfx/cubemap/%s", name);
+	path[sizeof(path) - 1] = 0;
+
+	if (!g_pFileSystem->IsDirectory(path))
+		g_pFileSystem->CreateDirHierarchy(path);
+
+	char filepath[1024];
+	snprintf(filepath, sizeof(filepath) - 1, "gfx/cubemap/%s/%s_%d.%s", name, cubemap->name.c_str(), index, cubemap->extension.c_str());
+	filepath[sizeof(filepath) - 1] = 0;
+
+	byte *pBuf = (byte *)malloc(cubemap->size * cubemap->size * 3);
+
+	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	qglPixelStorei(GL_PACK_ALIGNMENT, 1);
+	qglReadPixels(0, 0, cubemap->size, cubemap->size, GL_RGB, GL_UNSIGNED_BYTE, pBuf);
+
+	if (TRUE == SaveImageGeneric(filepath, cubemap->size, cubemap->size, pBuf))
+	{
+		gEngfuncs.Con_Printf("Cubemap %s saved.\n", filepath);
+	}
+
+	free(pBuf);
+}
+
+void R_BuildCubemap(cubemap_t *cubemap)
+{
+	gEngfuncs.Con_Printf("Building cubemap \"%s\" , cubemap size = %d\n", cubemap->name.c_str(), cubemap->size);
+
+	vrect_t saveVrect;
+	memcpy(&saveVrect, &(*r_refdef_vrect), sizeof(vrect_t));
+
+	vec3_t viewangles_array[6] = {
+		{0, 0, 0},
+		{0, 180, 0},
+		{0, 90, 0},
+		{0, 270, 0},
+		{-90, 270, 0},
+		{90, 0, 0},
+	};
+
+	(*r_refdef_vrect).x = 0;
+	(*r_refdef_vrect).y = 0;
+	(*r_refdef_vrect).width = cubemap->size;
+	(*r_refdef_vrect).height = cubemap->size;
+
+	(*envmap) = true;
+
+	float saved_gl_envmapsize = gl_envmapsize->value;
+
+	gl_envmapsize->value = cubemap->size;
+
+	R_PushRefDef();
+
+	GL_PushFrameBuffer();
+
+	for (int i = 0; i < 6; ++i)
+	{
+		VectorCopy(cubemap->origin, (*r_refdef).vieworg);
+		VectorCopy(viewangles_array[i], (*r_refdef).viewangles);
+
+		GL_BeginRendering(&glx, &gly, &glwidth, &glheight);
+
+		if (g_iEngineType == ENGINE_SVENGINE)
+			R_RenderView_SvEngine(0);
+		else
+			R_RenderView();
+
+		R_BuildCubemap_Snapshot(cubemap, i);
+
+		GL_EndRendering();
+	}
+
+	(*envmap) = false;
+
+	gl_envmapsize->value = saved_gl_envmapsize;
+
+	GL_PopFrameBuffer();
+
+	R_PopRefDef();
+
+	memcpy(&(*r_refdef_vrect), &saveVrect, sizeof(vrect_t));
+}
+
+void R_BuildCubemaps_f(void)
+{
+	if (!r_worldmodel || !r_worldmodel->name[0])
+	{
+		gEngfuncs.Con_Printf("Cannot build cubemap, no map loaded!\n");
+		return;
+	}
+
+	gEngfuncs.Con_Printf("Building %d cubemap(s)...\n", r_cubemaps.size());
+
+	for (size_t i = 0; i < r_cubemaps.size(); ++i)
+		R_BuildCubemap(&r_cubemaps[i]);
+}
+
+cubemap_t *R_FindCubemap(float *origin)
+{
+	if (*envmap)
+		return NULL;
+
+	float max_dist = 99999;
+	cubemap_t *cubemap = NULL;
+
+	for (size_t i = 0; i < r_cubemaps.size(); ++i)
+	{
+		float dir[3];
+		VectorSubtract(origin, r_cubemaps[i].origin, dir);
+		float dist = VectorLength(dir);
+		if (dist < max_dist && dist < r_cubemaps[i].radius)
+		{
+			cubemap = &r_cubemaps[i];
+			max_dist = dist;
+		}
+	}
+
+	return cubemap;
+}
+
+void R_LoadCubemap(cubemap_t *cubemap)
+{
+	char name[64];
+	COM_FileBase(r_worldmodel->name, name);
+
+	char filepath[1024];
+	char identifier[256];
+
+	for (int i = 0; i < 6; ++i)
+	{
+		snprintf(filepath, sizeof(filepath) - 1, "gfx/cubemap/%s/%s_%d.%s", name, cubemap->name.c_str(), i, cubemap->extension.c_str());
+		filepath[sizeof(filepath) - 1] = 0;
+
+		snprintf(identifier, sizeof(identifier) - 1, "cubemap_%s", cubemap->name.c_str());
+		identifier[sizeof(identifier) - 1] = 0;
+
+		gl_loadtexture_cubemap = i + 1;
+
+		cubemap->cubetex = R_LoadTextureEx(filepath, identifier, NULL, NULL, GLT_WORLD, tre, true);
+	}
+
+	gl_loadtexture_cubemap = 0;
+}
+
+#endif

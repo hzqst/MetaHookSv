@@ -13,8 +13,6 @@ GLenum TEXTURE1_SGIS;
 GLenum TEXTURE2_SGIS;
 GLenum TEXTURE3_SGIS;
 
-float current_ansio = -1.0;
-
 static byte texloader_buffer[4096 * 4096 * 4];
 
 gltexture_t *gltextures = NULL;
@@ -30,7 +28,8 @@ int *gl_filter_min = NULL;
 int *gl_filter_max = NULL;
 
 int gl_loadtexture_format = GL_RGBA;
-int gl_loadtexture_size;
+int gl_loadtexture_cubemap = 0;
+int gl_loadtexture_size = 0;
 
 //GL Start
 
@@ -66,47 +65,91 @@ void GL_EnableMultitexture(void)
 	gRefFuncs.GL_EnableMultitexture();
 }
 
-void Draw_Init(void)
+void GL_UploadDXT(byte *data, int width, int height, qboolean mipmap, qboolean ansio)
 {
-	if (!Cmd_HookCmd("screenshot", CL_ScreenShot_f))
-		Cmd_HookCmd("snapshot", CL_ScreenShot_f);
+	int iTextureTarget = GL_TEXTURE_2D;
+
+	if (gl_loadtexture_cubemap)
+		iTextureTarget = GL_TEXTURE_CUBE_MAP;
+
+	if (mipmap)
+	{
+		qglTexParameterf(iTextureTarget, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
+		qglTexParameterf(iTextureTarget, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+		qglTexParameterf(iTextureTarget, GL_GENERATE_MIPMAP, GL_TRUE);
+	}
+	else
+	{
+		qglTexParameterf(iTextureTarget, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
+		qglTexParameterf(iTextureTarget, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+		qglTexParameterf(iTextureTarget, GL_GENERATE_MIPMAP, GL_FALSE);
+	}
+
+	if (ansio)
+	{
+		qglTexParameterf(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+	}
+	else
+	{
+		qglTexParameterf(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
+	}
+
+	if (gl_loadtexture_cubemap)
+	{
+		qglCompressedTexImage2DARB(GL_TEXTURE_CUBE_MAP_POSITIVE_X + gl_loadtexture_cubemap - 1, 0, gl_loadtexture_format, width, height, 0, gl_loadtexture_size, data);
+	}
+	else
+	{
+		qglCompressedTexImage2DARB(iTextureTarget, 0, gl_loadtexture_format, width, height, 0, gl_loadtexture_size, data);
+	}
 }
 
 void GL_Upload32(unsigned int *data, int width, int height, qboolean mipmap, qboolean ansio)
 {
-	int iComponent, iFormat;
+	int iComponent, iFormat, iTextureTarget;
 
 	int bbp = 0;
 	g_pMetaHookAPI->GetVideoMode(NULL, NULL, &bbp, NULL);
 
 	iFormat = GL_RGBA;
 	iComponent = (bbp == 16) ? GL_RGB5_A1 : GL_RGBA8;
+	iTextureTarget = GL_TEXTURE_2D;
 
-	qglTexParameterf(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, (mipmap) ? GL_TRUE : GL_FALSE);
+	if (gl_loadtexture_cubemap)
+		iTextureTarget = GL_TEXTURE_CUBE_MAP;
+
+	qglTexParameterf(iTextureTarget, GL_GENERATE_MIPMAP, (mipmap) ? GL_TRUE : GL_FALSE);
 
 	if (mipmap)
 	{
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-		qglTexParameterf(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+		qglTexParameterf(iTextureTarget, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
+		qglTexParameterf(iTextureTarget, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+		qglTexParameterf(iTextureTarget, GL_GENERATE_MIPMAP, GL_TRUE);
 	}
 	else
 	{
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-		qglTexParameterf(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
+		qglTexParameterf(iTextureTarget, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
+		qglTexParameterf(iTextureTarget, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+		qglTexParameterf(iTextureTarget, GL_GENERATE_MIPMAP, GL_FALSE);
 	}
 
 	if(ansio && gl_ansio)
 	{
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+		qglTexParameterf(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
 	}
 	else
 	{
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
+		qglTexParameterf(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
 	}
 
-	qglTexImage2D(GL_TEXTURE_2D, 0, iComponent, width, height, 0, iFormat, GL_UNSIGNED_BYTE, data);
+	if (gl_loadtexture_cubemap)
+	{
+		qglTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + gl_loadtexture_cubemap - 1, 0, iComponent, width, height, 0, iFormat, GL_UNSIGNED_BYTE, data);
+	}
+	else
+	{
+		qglTexImage2D(iTextureTarget, 0, iComponent, width, height, 0, iFormat, GL_UNSIGNED_BYTE, data);
+	}
 }
 
 void GL_Upload16(byte *data, int width, int height, qboolean mipmap, int iType, unsigned char *pPal, qboolean ansio)
@@ -397,56 +440,12 @@ tryagain:
 
 int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal, int filter)
 {
-	/*int texnum = GL_AllocTexture((char *)identifier, textureType, width, height, mipmap);
-
-	if(!texnum)
-		return 0;
-
-	GL_Bind(texnum);
-	(*currenttexture) = -1;
-
-	qboolean ansio = (textureType == GLT_WORLD || textureType == GLT_SPRITE || textureType == GLT_STUDIO) ? true : false;
-
-	if ( iType == TEX_TYPE_RGBA && textureType == GLT_SPRITE )
-		GL_Upload32( (unsigned *)data, width, height, mipmap, ansio );
-	else
-		GL_Upload16( data, width, height, mipmap, iType, pPal, ansio );
-
-	return texnum;*/
-
 	if (textureType == GLT_STUDIO && iType == TEX_TYPE_NONE && pPal == tmp_palette)
 	{
 		iType = TEX_TYPE_ALPHA;
 	}
 
 	return gRefFuncs.GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iType, pPal, filter);
-}
-
-void GL_UploadDXT(byte *data, int width, int height, qboolean mipmap, qboolean ansio)
-{
-	if (mipmap)
-	{
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-		qglTexParameterf(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-	}
-	else
-	{
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-		qglTexParameterf(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
-	}
-
-	if(ansio)
-	{
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
-	}
-	else
-	{
-		qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
-	}		
-
-	qglCompressedTexImage2DARB(GL_TEXTURE_2D, 0, gl_loadtexture_format, width, height, 0, gl_loadtexture_size, data);
 }
 
 int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, qboolean ansio)
@@ -456,20 +455,27 @@ int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int wid
 	if(!texnum)
 		return 0;
 
-	GL_Bind(texnum);
+	int iTextureTarget = GL_TEXTURE_2D;
+
+	if (gl_loadtexture_cubemap)
+		iTextureTarget = GL_TEXTURE_CUBE_MAP;
+
+	qglBindTexture(iTextureTarget, texnum);
 	(*currenttexture) = -1;
 
 	if (gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT || gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT || gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT)
 	{
 		GL_UploadDXT(data, width, height, mipmap, ansio);
-		return texnum;
+	}
+	else
+	{
+		GL_Upload32((unsigned *)data, width, height, mipmap, ansio);
 	}
 
-	GL_Upload32((unsigned *)data, width, height, mipmap, ansio);
+	qglBindTexture(iTextureTarget, 0);
+
 	return texnum;
 }
-
-extern cvar_t *r_wsurf_decal;
 
 texture_t *Draw_DecalTexture(int index)
 {
@@ -619,7 +625,6 @@ int LoadDDS(const char *filename, byte *buf, int bufsize, int *width, int *heigh
 	g_pFileSystem->Close(fileHandle);
 	return TRUE;
 }
-
 
 #define PATHSEPARATOR(c) ((c) == '\\' || (c) == '/')
 //-----------------------------------------------------------------------------

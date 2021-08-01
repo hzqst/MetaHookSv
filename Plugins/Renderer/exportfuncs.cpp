@@ -98,6 +98,12 @@ void HUD_Init(void)
 	R_Init();
 
 	gEngfuncs.pfnAddCommand("r_version", R_Version_f);
+	gEngfuncs.pfnAddCommand("r_reload", R_Reload_f);
+//	gEngfuncs.pfnAddCommand("r_buildcubemaps", R_BuildCubemaps_f);
+//	gEngfuncs.pfnAddCommand("buildcubemaps", R_BuildCubemaps_f);
+
+	gEngfuncs.pfnAddCommand("r_snapshot", CL_ScreenShot_f);
+	gEngfuncs.pfnAddCommand("r_screenshot", CL_ScreenShot_f);
 }
 
 int HUD_VidInit(void)
@@ -141,29 +147,14 @@ void HUD_DrawNormalTriangles(void)
 
 	//Allow SCClient to write stencil buffer (but not bit 1)?
 
-	/*if (gl_polyoffset && gl_polyoffset->value)
-	{
-		qglEnable(GL_POLYGON_OFFSET_FILL);
-
-		if (gl_ztrick && gl_ztrick->value)
-			qglPolygonOffset(1, gl_polyoffset->value);
-		else
-			qglPolygonOffset(-1, -gl_polyoffset->value);
-	}*/
-
 	qglStencilMask(0xFF);
 	qglClear(GL_STENCIL_BUFFER_BIT);
 	gExportfuncs.HUD_DrawNormalTriangles();
 	qglStencilMask(0);
 
-	/*if (gl_polyoffset && gl_polyoffset->value)
-	{
-		qglDisable(GL_POLYGON_OFFSET_FILL);
-	}*/
-
 	//Restore current framebuffer just in case that Sven-Coop client changes it
 	
-	if (r_draw_pass == r_draw_reflect || r_draw_pass == r_draw_refract)
+	if (r_draw_pass == r_draw_reflect)
 	{
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
 	}
@@ -263,22 +254,16 @@ int HUD_Redraw(float time, int intermission)
 		qglDisable(GL_ALPHA_TEST);
 		qglColor4f(1,1,1,1);
 
-		qglEnable(GL_TEXTURE_2D);
-		if(r_light_debug->value == 1)
-			qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex);
-		else if (r_light_debug->value == 2)
-			qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex2);
-		else if (r_light_debug->value == 3)
-			qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex3);
-		else if (r_light_debug->value == 4)
-			qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex4);
-		else if (r_light_debug->value == 5)
-			qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferTex5);
-		else
-		{
-			qglUseProgramObjectARB(drawdepth.program);
-			qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
-		}
+		qglDisable(GL_TEXTURE_2D);
+		qglEnable(GL_TEXTURE_2D_ARRAY);
+
+		hud_debug_program_t prog = {0};
+		R_UseHudDebugProgram(HUD_DEBUG_TEXARRAY, &prog);
+
+		qglBindTexture(GL_TEXTURE_2D_ARRAY, s_GBufferFBO.s_hBackBufferTex);
+
+		if (prog.layer != -1)
+			qglUniform1fARB(prog.layer, r_light_debug->value - 1);
 
 		qglBegin(GL_QUADS);
 		qglTexCoord2f(0,1);
@@ -290,6 +275,10 @@ int HUD_Redraw(float time, int intermission)
 		qglTexCoord2f(0,0);
 		qglVertex3f(0,glheight/2,0);
 		qglEnd();
+
+		qglEnable(GL_TEXTURE_2D);
+		qglDisable(GL_TEXTURE_2D_ARRAY);
+
 		qglEnable(GL_ALPHA_TEST);
 
 		qglUseProgramObjectARB(0);
@@ -415,7 +404,7 @@ void __fastcall PortalManager_ResetAll(int pthis, int)
 	gRefFuncs.PortalManager_ResetAll(pthis, 0);
 }
 
-void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
+/*void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
 {
 	if (R_StudioRestoreBones())
 		return;
@@ -423,7 +412,7 @@ void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
 	gRefFuncs.GameStudioRenderer_StudioSetupBones(pthis, 0);
 
 	R_StudioSaveBones();
-}
+}*/
 
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
 {

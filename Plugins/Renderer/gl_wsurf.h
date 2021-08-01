@@ -41,6 +41,7 @@ typedef struct brushvertex_s
 	float	detailtexcoord[2];
 	float	normaltexcoord[2];
 	float	parallaxtexcoord[2];
+	float	speculartexcoord[2];
 }brushvertex_t;
 
 typedef struct brushface_s
@@ -95,7 +96,8 @@ typedef struct
 #define WSURF_DETAIL_TEXTURE		1
 #define WSURF_NORMAL_TEXTURE		2
 #define WSURF_PARALLAX_TEXTURE		3
-#define WSURF_MAX_TEXTURE			4
+#define WSURF_SPECULAR_TEXTURE		4
+#define WSURF_MAX_TEXTURE			5
 
 typedef struct detail_texture_s
 {
@@ -154,6 +156,7 @@ typedef struct r_worldsurf_s
 		bDetailTexture = false;
 		bNormalTexture = false;
 		bParallaxTexture = false;
+		bSpecularTexture = false;
 
 		pDetailTextureCache = NULL;
 		pCurrentModel = NULL;
@@ -180,6 +183,7 @@ typedef struct r_worldsurf_s
 	bool				bDetailTexture;
 	bool				bNormalTexture;
 	bool				bParallaxTexture;
+	bool				bSpecularTexture;
 	int					iS_Tangent;
 	int					iT_Tangent;
 
@@ -202,6 +206,7 @@ typedef struct
 	int detailTex;
 	int normalTex;
 	int parallaxTex;
+	int specularTex;
 	int speed;
 	int entityMatrix;
 	int shadowMatrix;
@@ -209,6 +214,7 @@ typedef struct
 	int shadowFade;
 	int shadowColor;
 	int clipPlane;
+	int clipInfo;
 	int viewpos;
 	int parallaxScale;
 	int s_tangent;
@@ -224,6 +230,9 @@ extern int r_fog_mode;
 extern float r_fog_control[2];
 extern float r_fog_color[4];
 extern float r_shadow_matrix[3][16];
+extern vec3_t r_frustum_origin[4];
+extern vec3_t r_frustum_vec[4];
+extern float r_world_matrix_inv[16];
 
 void R_InitWSurf(void);
 void R_VidInitWSurf(void);
@@ -266,6 +275,7 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache);
 void R_EnableWSurfVBOSolid(wsurf_model_t *modcache);
 void R_DrawWSurfVBOSolid(wsurf_model_t *modcache);
 void R_ShutdownWSurf(void);
+void R_Reload_f(void);
 
 void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
 
@@ -274,13 +284,14 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
 #define WSURF_DETAILTEXTURE_ENABLED		4
 #define WSURF_NORMALTEXTURE_ENABLED		8
 #define WSURF_PARALLAXTEXTURE_ENABLED	0x10
-#define WSURF_CLIP_ABOVE_ENABLED		0x20
-#define WSURF_CLIP_UNDER_ENABLED		0x40
-#define WSURF_LINEAR_FOG_ENABLED		0x80
-#define WSURF_GBUFFER_ENABLED			0x100
-#define WSURF_TRANSPARENT_ENABLED		0x200
-#define WSURF_SHADOW_CASTER_ENABLED		0x400
-#define WSURF_SHADOWMAP_ENABLED			0x800
-#define WSURF_SHADOWMAP_HIGH_ENABLED	0x1000
-#define WSURF_SHADOWMAP_MEDIUM_ENABLED	0x2000
-#define WSURF_SHADOWMAP_LOW_ENABLED		0x4000
+#define WSURF_SPECULARTEXTURE_ENABLED	0x20
+#define WSURF_CLIP_ABOVE_ENABLED		0x40
+#define WSURF_CLIP_UNDER_ENABLED		0x80
+#define WSURF_LINEAR_FOG_ENABLED		0x100
+#define WSURF_GBUFFER_ENABLED			0x200
+#define WSURF_TRANSPARENT_ENABLED		0x400
+#define WSURF_SHADOW_CASTER_ENABLED		0x800
+#define WSURF_SHADOWMAP_ENABLED			0x1000
+#define WSURF_SHADOWMAP_HIGH_ENABLED	0x2000
+#define WSURF_SHADOWMAP_MEDIUM_ENABLED	0x4000
+#define WSURF_SHADOWMAP_LOW_ENABLED		0x8000

@@ -383,11 +383,11 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat, qboo
 		s->s_hBackBufferStencilView = GL_GenTexture();
 		qglTextureView(s->s_hBackBufferStencilView, tex2D, s->s_hBackBufferDepthTex, GL_DEPTH24_STENCIL8, 0, 1, 0, 1);
 		
-		/*qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferStencilView);
+		qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferStencilView);
 		qglTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
 		qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		qglBindTexture(GL_TEXTURE_2D, 0);*/
+		qglBindTexture(GL_TEXTURE_2D, 0);
 	}
 }
 
@@ -435,47 +435,19 @@ void GL_FrameBufferColorTextureHBAO(FBO_Container_t *s)
 void GL_FrameBufferColorTextureDeferred(FBO_Container_t *s, int iInternalColorFormat)
 {
 	s->s_hBackBufferTex = GL_GenTexture();
-	qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferTex);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	qglTexImage2D(GL_TEXTURE_2D, 0, iInternalColorFormat, s->iWidth, s->iHeight, 0, GL_RGB, GL_FLOAT, NULL);
-	qglBindTexture(GL_TEXTURE_2D, 0);
-
-	s->s_hBackBufferTex2 = GL_GenTexture();
-	qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferTex2);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	qglTexImage2D(GL_TEXTURE_2D, 0, iInternalColorFormat, s->iWidth, s->iHeight, 0, GL_RGB, GL_FLOAT, NULL);
-	qglBindTexture(GL_TEXTURE_2D, 0);
-
-	s->s_hBackBufferTex3 = GL_GenTexture();
-	qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferTex3);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	qglTexImage2D(GL_TEXTURE_2D, 0, iInternalColorFormat, s->iWidth, s->iHeight, 0, GL_RGB, GL_FLOAT, NULL);
-	qglBindTexture(GL_TEXTURE_2D, 0);
-
-	s->s_hBackBufferTex4 = GL_GenTexture();
-	qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferTex4);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	qglTexImage2D(GL_TEXTURE_2D, 0, iInternalColorFormat, s->iWidth, s->iHeight, 0, GL_RGB, GL_FLOAT, NULL);
-	qglBindTexture(GL_TEXTURE_2D, 0);
-
-	s->s_hBackBufferTex5 = GL_GenTexture();
-	qglBindTexture(GL_TEXTURE_2D, s->s_hBackBufferTex5);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	qglTexImage2D(GL_TEXTURE_2D, 0, iInternalColorFormat, s->iWidth, s->iHeight, 0, GL_RGB, GL_FLOAT, NULL);
-	qglBindTexture(GL_TEXTURE_2D, 0);
+	qglBindTexture(GL_TEXTURE_2D_ARRAY, s->s_hBackBufferTex);
+	qglTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	qglTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	qglTexImage3D(GL_TEXTURE_2D_ARRAY, 0, iInternalColorFormat, s->iWidth, s->iHeight, 5, 0, GL_RGB, GL_FLOAT, NULL);
+	qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 
 	s->iTextureColorFormat = iInternalColorFormat;
 
-	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s->s_hBackBufferTex, 0);
-	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, s->s_hBackBufferTex2, 0);
-	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, s->s_hBackBufferTex3, 0);
-	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, s->s_hBackBufferTex4, 0);
-	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, s->s_hBackBufferTex5, 0);
+	qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, s->s_hBackBufferTex, 0, GBUFFER_INDEX_DIFFUSE);
+	qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, s->s_hBackBufferTex, 0, GBUFFER_INDEX_LIGHTMAP);
+	qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, s->s_hBackBufferTex, 0, GBUFFER_INDEX_WORLD);
+	qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, s->s_hBackBufferTex, 0, GBUFFER_INDEX_NORMAL);
+	qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, s->s_hBackBufferTex, 0, GBUFFER_INDEX_ADDITIVE);
 }
 
 void GL_Begin2D(void)
@@ -518,4 +490,39 @@ void GL_End2D(void)
 
 	qglEnable(GL_DEPTH_TEST);
 	qglEnable(GL_CULL_FACE);
+}
+
+void COM_FileBase(const char *in, char *out)
+{
+	int len, start, end;
+
+	len = strlen(in);
+
+	// scan backward for '.'
+	end = len - 1;
+	while (end && in[end] != '.' && in[end] != '/' && in[end] != '\\')
+		end--;
+
+	if (in[end] != '.')		// no '.', copy to end
+		end = len - 1;
+	else
+		end--;					// Found ',', copy to left of '.'
+
+
+	// Scan backward for '/'
+	start = len - 1;
+	while (start >= 0 && in[start] != '/' && in[start] != '\\')
+		start--;
+
+	if (start < 0 || (in[start] != '/' && in[start] != '\\'))
+		start = 0;
+	else
+		start++;
+
+	// Length of new sting
+	len = end - start + 1;
+
+	// Copy partial string
+	strncpy(out, &in[start], len);
+	out[len] = 0;
 }

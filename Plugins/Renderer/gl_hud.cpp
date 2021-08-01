@@ -57,6 +57,52 @@ cvar_t *r_ssao_bias = NULL;
 cvar_t *r_ssao_blur_sharpness = NULL;
 cvar_t *r_ssao_studio_model = NULL;
 
+std::unordered_map<int, hud_debug_program_t> g_HudDebugProgramTable;
+
+void R_UseHudDebugProgram(int state, hud_debug_program_t *progOutput)
+{
+	hud_debug_program_t prog = { 0 };
+
+	auto itor = g_HudDebugProgramTable.find(state);
+	if (itor == g_HudDebugProgramTable.end())
+	{
+		std::stringstream defs;
+
+		if (state & HUD_DEBUG_TEXARRAY)
+			defs << "#define TEXARRAY_ENABLED\n";
+
+		auto def = defs.str();
+
+		prog.program = R_CompileShaderFileEx("renderer\\shader\\hud_debug.vsh", NULL, "renderer\\shader\\hud_debug.fsh", def.c_str(), NULL, def.c_str());
+		if (prog.program)
+		{
+			SHADER_UNIFORM(prog, basetex, "basetex");
+			SHADER_UNIFORM(prog, layer , "layer");
+		}
+
+		g_HudDebugProgramTable[state] = prog;
+	}
+	else
+	{
+		prog = itor->second;
+	}
+
+	if (prog.program)
+	{
+		qglUseProgramObjectARB(prog.program);
+
+		if (prog.basetex != -1)
+			qglUniform1iARB(prog.basetex, 0);
+
+		if (progOutput)
+			*progOutput = prog;
+	}
+	else
+	{
+		Sys_ErrorEx("R_UseHudDebugProgram: Failed to load program!");
+	}
+}
+
 float *R_GenerateGaussianWeights(int kernelRadius)
 {
 	int size = kernelRadius * 2 + 1;
@@ -348,17 +394,45 @@ void R_InitGLHUD(void)
 	last_luminance = 0;
 }
 
+void R_DrawHUDQuadFrustum(int w, int h)
+{
+	qglBegin(GL_QUADS);
+
+	qglTexCoord2f(0, 0);
+	qglColor3fv(r_frustum_origin[0]);
+	qglVertex3f(0, h, -1);
+
+	qglTexCoord2f(0, 1);
+	qglColor3fv(r_frustum_origin[1]);
+	qglVertex3f(0, 0, -1);
+
+	qglTexCoord2f(1, 1);
+	qglColor3fv(r_frustum_origin[2]);
+	qglVertex3f(w, 0, -1);
+
+	qglTexCoord2f(1, 0);
+	qglColor3fv(r_frustum_origin[3]);
+	qglVertex3f(w, h, -1);
+
+	qglEnd();
+}
+
 void R_DrawHUDQuad(int w, int h)
 {
 	qglBegin(GL_QUADS);
+
 	qglTexCoord2f(0, 0);
 	qglVertex3f(0, h, -1);
+
 	qglTexCoord2f(0, 1);
 	qglVertex3f(0, 0, -1);
+
 	qglTexCoord2f(1, 1);
 	qglVertex3f(w, 0, -1);
+
 	qglTexCoord2f(1, 0);
 	qglVertex3f(w, h, -1);
+
 	qglEnd();
 }
 
