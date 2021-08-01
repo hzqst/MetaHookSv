@@ -2,8 +2,8 @@ echo off
 
 set LauncherExe=svencoop.exe
 set LauncherMod=svencoop
-
-for /f "delims=" %%a in ('%~dp0SteamAppsLocation/SteamAppsLocation 225840 InstallDir') do set GameDir=%%a
+set PsCmdLine='call powershell -File %~dp0SteamAppsLocation.ps1 225840 InstallDir'
+for /f "delims=" %%a in (%pscmdline%) do set GameDir=%%a
 
 if "%GameDir%"=="" goto fail
 
