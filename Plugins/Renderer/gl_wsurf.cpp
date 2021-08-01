@@ -2546,7 +2546,7 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 	dynlight.type = DLIGHT_POINT;
 	VectorClear(dynlight.origin);
 	VectorClear(dynlight.color);
-	dynlight.fade = 0;
+	dynlight.distance = 0;
 	dynlight.ambient = 0;
 	dynlight.diffuse = 0;
 	dynlight.specular = 0;
@@ -2582,16 +2582,16 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 		}
 	}
 
-	char *fade_string = ValueForKey(ent, "_fade");
-	if (fade_string)
+	char *distance_string = ValueForKey(ent, "_distance");
+	if (distance_string)
 	{
-		if (sscanf(fade_string, "%f", &temp[0]) == 1)
+		if (sscanf(distance_string, "%f", &temp[0]) == 1)
 		{
-			dynlight.fade = temp[0];
+			dynlight.distance = temp[0];
 		}
 		else
 		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"_fade\" in entity \"light_dynamic\"\n");
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"_distance\" in entity \"light_dynamic\"\n");
 		}
 	}
 

@@ -20,7 +20,7 @@ typedef struct light_dynamic_s
 	int type;
 	vec3_t origin;
 	float color[3];
-	float fade;
+	float distance;
 	float ambient;
 	float diffuse;
 	float specular;

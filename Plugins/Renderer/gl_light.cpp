@@ -440,7 +440,7 @@ void R_EndRenderGBuffer(void)
 			{
 				//Point Light
 
-				float radius = r_light_radius->value / dynlight.fade;
+				float radius = dynlight.distance;
 
 				vec3_t dist;
 				VectorSubtract(r_refdef->vieworg, dynlight.origin, dist);
