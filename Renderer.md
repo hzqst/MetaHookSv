@@ -241,7 +241,9 @@ You can use [bspguy](https://github.com/wootguy/bspguy) to add entity to BSP fil
 
 ## light_dynamic
 
-`light_dynamic` is a point entity as an invisible point light source, dynamic lights are calculated on the fly in the game, which means they have a higher processing cost but are much more flexible than static lighting. dynamic lights works only if `r_light_dynamic` is set to 1.
+`light_dynamic` is a point entity as an invisible point light source. 
+
+Dynamic lights are calculated on the fly in the game, which means they have a higher processing cost but are much more flexible than static lighting. dynamic lights works only if `r_light_dynamic` is set to 1.
 
 ### Keyvalues
 
