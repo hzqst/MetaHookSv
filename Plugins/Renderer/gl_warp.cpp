@@ -130,7 +130,6 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		VectorAdd(tempVert, (*currententity)->curstate.origin, tempVert);
 	}
 	
-	//R_UseGBufferProgram(GBUFFER_DIFFUSE_ENABLED);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
 	vec3_t normal;
@@ -243,7 +242,11 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 
 	if (!useProgram)
 	{
-		R_UseWSurfProgram(WSURF_DIFFUSE_ENABLED, NULL);
+		int WSurfProgramState = WSURF_DIFFUSE_ENABLED;
+		if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
+			WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
+
+		R_UseWSurfProgram(WSurfProgramState, NULL);
 	}
 
 	if (fa->polys->verts[0][2] >= r_refdef->vieworg[2])

@@ -4,7 +4,8 @@
 #define GBUFFER_INDEX_LIGHTMAP		1.0
 #define GBUFFER_INDEX_WORLD			2.0
 #define GBUFFER_INDEX_NORMAL		3.0
-#define GBUFFER_INDEX_ADDITIVE		4.0
+#define GBUFFER_INDEX_SPECULAR		4.0
+#define GBUFFER_INDEX_ADDITIVE		5.0
 
 uniform sampler2DArray gbufferTex;
 uniform sampler2D depthTex;
@@ -109,13 +110,14 @@ void main()
 
     vec4 positionColor = texture2DArray(gbufferTex, vec3(vBaseTexCoord, GBUFFER_INDEX_WORLD));
     vec4 normalColor = texture2DArray(gbufferTex, vec3(vBaseTexCoord, GBUFFER_INDEX_NORMAL));
+    vec4 specularColor = texture2DArray(gbufferTex, vec3(vBaseTexCoord, GBUFFER_INDEX_SPECULAR));
 
     //float depthColor = texture2D(depthTex, vBaseTexCoord.xy).r;
     uint stencilColor = texture(stencilTex, vBaseTexCoord).r;
 
     vec3 worldpos = positionColor.xyz;
-    vec3 normal = normalize(decodeNormal(normalColor.xy));
-    float specularValue = normalColor.z;
+    vec3 normal = normalColor.xyz;      //normalize(decodeNormal(normalColor.xy));
+    float specularValue = specularColor.x;
 
 #ifdef SPOT_ENABLED
     gl_FragColor = CalcSpotLight(worldpos, normal, stencilColor, specularValue);

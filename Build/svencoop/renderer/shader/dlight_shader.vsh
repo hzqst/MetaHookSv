@@ -5,11 +5,10 @@ varying vec4 projpos;
 void main(void)
 {
 	gl_TexCoord[0] = gl_MultiTexCoord0;
-
+	
+	gl_Position = ftransform();
+	
 #ifdef VOLUME_ENABLED
 	projpos = gl_Position;
-#else
-	gl_Position = ftransform();
 #endif
-	
 }

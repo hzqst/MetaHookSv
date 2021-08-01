@@ -438,7 +438,7 @@ void GL_FrameBufferColorTextureDeferred(FBO_Container_t *s, int iInternalColorFo
 	qglBindTexture(GL_TEXTURE_2D_ARRAY, s->s_hBackBufferTex);
 	qglTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	qglTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	qglTexImage3D(GL_TEXTURE_2D_ARRAY, 0, iInternalColorFormat, s->iWidth, s->iHeight, 5, 0, GL_RGB, GL_FLOAT, NULL);
+	qglTexImage3D(GL_TEXTURE_2D_ARRAY, 0, iInternalColorFormat, s->iWidth, s->iHeight, GBUFFER_INDEX_MAX, 0, GL_RGB, GL_FLOAT, NULL);
 	qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 
 	s->iTextureColorFormat = iInternalColorFormat;
@@ -447,7 +447,8 @@ void GL_FrameBufferColorTextureDeferred(FBO_Container_t *s, int iInternalColorFo
 	qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, s->s_hBackBufferTex, 0, GBUFFER_INDEX_LIGHTMAP);
 	qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, s->s_hBackBufferTex, 0, GBUFFER_INDEX_WORLD);
 	qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, s->s_hBackBufferTex, 0, GBUFFER_INDEX_NORMAL);
-	qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, s->s_hBackBufferTex, 0, GBUFFER_INDEX_ADDITIVE);
+	qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, s->s_hBackBufferTex, 0, GBUFFER_INDEX_SPECULAR);
+	qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT5, s->s_hBackBufferTex, 0, GBUFFER_INDEX_ADDITIVE);
 }
 
 void GL_Begin2D(void)

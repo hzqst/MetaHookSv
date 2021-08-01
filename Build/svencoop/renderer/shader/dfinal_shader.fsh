@@ -4,7 +4,8 @@
 #define GBUFFER_INDEX_LIGHTMAP		1.0
 #define GBUFFER_INDEX_WORLD			2.0
 #define GBUFFER_INDEX_NORMAL		3.0
-#define GBUFFER_INDEX_ADDITIVE		4.0
+#define GBUFFER_INDEX_SPECULAR		4.0
+#define GBUFFER_INDEX_ADDITIVE		5.0
 
 uniform sampler2DArray gbufferTex;
 uniform sampler2D depthTex;

@@ -108,9 +108,6 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 			SHADER_UNIFORM(prog, gbufferTex, "gbufferTex");
 			SHADER_UNIFORM(prog, stencilTex, "stencilTex");
 			SHADER_UNIFORM(prog, depthTex, "depthTex");
-			SHADER_UNIFORM(prog, invworldmatrix, "invworldmatrix");
-			SHADER_UNIFORM(prog, invprojmatrix, "invprojmatrix");
-			SHADER_UNIFORM(prog, fov, "fov");
 			SHADER_UNIFORM(prog, viewpos, "viewpos");
 			SHADER_UNIFORM(prog, lightdir, "lightdir");
 			SHADER_UNIFORM(prog, lightpos, "lightpos");
@@ -140,8 +137,6 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 			qglUniform1iARB(prog.depthTex, 1);
 		if (prog.stencilTex != -1)
 			qglUniform1iARB(prog.stencilTex, 2);
-		if (prog.fov != -1)
-			qglUniform3fARB(prog.fov, *r_xfov, r_yfov, r_screenaspect);
 		if (prog.viewpos != -1)
 			qglUniform3fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
 
@@ -310,35 +305,18 @@ void R_SetGBufferMask(int mask)
 
 	gbuffer_mask = mask;
 
-	GLuint attachments[6] = {0};
+	GLuint attachments[10] = {0};
 	int attachCount = 0;
 
-	if (mask & GBUFFER_MASK_DIFFUSE)
+	for (int i = 0; i < GBUFFER_INDEX_MAX; ++i)
 	{
-		attachments[attachCount] = GL_COLOR_ATTACHMENT0;
-		attachCount++;
+		if (mask & (1 << i))
+		{
+			attachments[attachCount] = GL_COLOR_ATTACHMENT0 + i;
+			attachCount++;
+		}
 	}
-	if (mask & GBUFFER_MASK_LIGHTMAP)
-	{
-		attachments[attachCount] = GL_COLOR_ATTACHMENT1;
-		attachCount++;
-	}
-	if (mask & GBUFFER_MASK_WORLD)
-	{
-		attachments[attachCount] = GL_COLOR_ATTACHMENT2;
-		attachCount++;
-	}
-	if (mask & GBUFFER_MASK_NORMAL)
-	{
-		attachments[attachCount] = GL_COLOR_ATTACHMENT3;
-		attachCount++;
-	}
-	if (mask & GBUFFER_MASK_ADDITIVE)
-	{
-		attachments[attachCount] = GL_COLOR_ATTACHMENT4;
-		attachCount++;
-	}
-
+	
 	qglDrawBuffers(attachCount, attachments);
 }
 

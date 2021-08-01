@@ -1,5 +1,12 @@
 #version 130
 
+#define GBUFFER_INDEX_DIFFUSE		0
+#define GBUFFER_INDEX_LIGHTMAP		1
+#define GBUFFER_INDEX_WORLD			2
+#define GBUFFER_INDEX_NORMAL		3
+#define GBUFFER_INDEX_SPECULAR		4
+#define GBUFFER_INDEX_ADDITIVE		5
+
 uniform sampler2D diffuseTex;
 
 varying vec3 worldpos;
@@ -76,13 +83,14 @@ void main(void)
 
 		#else
 
-			vec2 normalenc = encodeNormal(normal.xyz);
+			//vec2 normalenc = encodeNormal(normal.xyz);
 
-			gl_FragData[0] = diffuseColor;
-			gl_FragData[1] = color;
-			gl_FragData[2] = vec4(worldpos.xyz, 0.0);
-			gl_FragData[3] = vec4(normalenc.x, normalenc.y, 0.0, 0.0);
-			gl_FragData[4] = vec4(0.0, 0.0, 0.0, 1.0);
+			gl_FragData[GBUFFER_INDEX_DIFFUSE] = diffuseColor;
+			gl_FragData[GBUFFER_INDEX_LIGHTMAP] = color;
+			gl_FragData[GBUFFER_INDEX_WORLD] = vec4(worldpos.xyz, 0.0);
+			gl_FragData[GBUFFER_INDEX_NORMAL] = vec4(normal.xyz, 0.0);
+			gl_FragData[GBUFFER_INDEX_SPECULAR] = vec4(0.0, 0.0, 0.0, 0.0);
+			gl_FragData[GBUFFER_INDEX_ADDITIVE] = vec4(0.0, 0.0, 0.0, 0.0);
 
 		#endif
 

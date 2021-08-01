@@ -2,6 +2,13 @@
 
 #extension GL_EXT_texture_array : enable
 
+#define GBUFFER_INDEX_DIFFUSE		0
+#define GBUFFER_INDEX_LIGHTMAP		1
+#define GBUFFER_INDEX_WORLD			2
+#define GBUFFER_INDEX_NORMAL		3
+#define GBUFFER_INDEX_SPECULAR		4
+#define GBUFFER_INDEX_ADDITIVE		5
+
 #ifdef DIFFUSE_ENABLED
 uniform sampler2D diffuseTex;
 #endif
@@ -54,7 +61,7 @@ uniform vec3 clipInfo;
 uniform vec3 viewpos;
 
 varying vec3 worldpos;
-varying vec4 normal;
+varying vec3 normal;
 varying vec4 tangent;
 varying vec4 color;
 
@@ -333,13 +340,13 @@ void main()
 
 	#ifdef GBUFFER_ENABLED
 
-		vec3 final_normal = normal.xyz;
+		vec3 finalnormal = normal.xyz;
 
 		#ifdef NORMALTEXTURE_ENABLED
-			final_normal = NormalMapping();
+			finalnormal = NormalMapping();
 		#endif
 
-		vec2 normalenc = encodeNormal(final_normal);
+		//vec2 normalenc = encodeNormal(finalnormal);
 
 	#ifdef SPECULARTEXTURE_ENABLED
 		vec2 specularTexCoord = vec2(gl_TexCoord[0].x * gl_TexCoord[5].x, gl_TexCoord[0].y * gl_TexCoord[5].y);
@@ -348,11 +355,12 @@ void main()
 		vec4 specularColor = vec4(0.0, 0.0, 0.0, 0.0);
 	#endif
 
-		gl_FragData[0] = diffuseColor * detailColor;
-		gl_FragData[1] = lightmapColor;
-		gl_FragData[2] = vec4(worldpos.xyz, 0.0);
-		gl_FragData[3] = vec4(normalenc.x, normalenc.y, specularColor.x, 0.0);
-		gl_FragData[4] = vec4(0.0, 0.0, 0.0, 1.0);
+		gl_FragData[GBUFFER_INDEX_DIFFUSE] = diffuseColor * detailColor;
+		gl_FragData[GBUFFER_INDEX_LIGHTMAP] = lightmapColor;
+		gl_FragData[GBUFFER_INDEX_WORLD] = vec4(worldpos.xyz, 0.0);
+		gl_FragData[GBUFFER_INDEX_NORMAL] = vec4(finalnormal.xyz, 0.0);
+		gl_FragData[GBUFFER_INDEX_SPECULAR] = specularColor;
+		gl_FragData[GBUFFER_INDEX_ADDITIVE] = vec4(0.0, 0.0, 0.0, 0.0);
 
 	#else
 

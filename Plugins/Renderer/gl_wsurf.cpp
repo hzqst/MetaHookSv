@@ -3585,7 +3585,6 @@ void R_DrawWorld(void)
 				qglGetFloatv(GL_TEXTURE_MATRIX, r_shadow_matrix[i]);
 			}
 		}
-
 		qglPopMatrix();
 		qglMatrixMode(GL_MODELVIEW);
 	}
