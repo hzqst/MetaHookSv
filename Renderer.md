@@ -111,9 +111,39 @@ Dynamic Shadows can sometimes project through walls and floors, giving away the 
 
 ## Detail textures
 
-`r_wsurf_detail` set to 1 to enable detail textures, normal textures, parallax textures.
+A detail texture is a high resolution external image (Supported format: BMP, TGA, DDS, JPG, PNG) that is placed over the top of a map texture. This gives the impression of a small details when you get up close to a texture instead of the usual blurred image you get when the texture fills the screen.
+
+`r_wsurf_detail` set to 1 to enable detail textures, normal textures, parallax textures and specular textures.
+
+Detail texture list is read from `/maps/[map name]_detail.txt`, with `_DETAIL` as suffix in basetexture name (basetexture with no suffix will be treated as detail texture).
+
+Detail textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` and `/Sven Co-op/svencoop/renderer/texture`.
+
+### Normal textures
+
+Normal textures are external images applied to specified brush surfaces and change the direction of surface normal.
+
+Normal texture list is read from `/maps/[map name]_detail.txt`, with `_NORMAL` as suffix in basetexture name.
+
+Normal textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` and `/Sven Co-op/svencoop/renderer/texture`.
+
+### Parallax textures
+
+Parallax textures are external images applied to specified brush surfaces which will have more apparent depth.
+
+Parallax texture list is read from `/maps/[map name]_detail.txt`, with `_PARALLAX` as suffix in basetexture name.
+
+Parallax textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` and `/Sven Co-op/svencoop/renderer/texture`.
 
 `r_wsurf_parallax_scale` is the intensity of parallax textures.
+
+### Specular textures
+
+Specular textures are external images applied to specified brush surfaces which will increase the intensity of specularity of surfaces.
+
+Specular texture list is read from `/maps/[map name]_detail.txt`, with `_SPECULAR` as suffix in basetexture name.
+
+Specular textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` and `/Sven Co-op/svencoop/renderer/texture`.
 
 ## Misc
 
