@@ -29,6 +29,8 @@ HDR (High Dynamic Range) rendering simulates brightness above that which a compu
 
 `r_hdr_adaptation` Controls the dark / bright adaptation speed for HDR.
 
+* Changes to some of the cvars will not take effect immediately, unless using `r_reload` to force those cvars being reloaded.
+
 ## Water Shader
 
 Water Shader creates water that realistically reflects and refracts the world.
@@ -68,6 +70,8 @@ Dynamic Shadows can sometimes project through walls and floors, giving away the 
 `r_shadow_low_distance` is the maximum distance that entities are being rendered in low-quality shadow map, in inches. for example `r_shadow_low_distance 1200`
 
 `r_shadow_low_scale` is scale factor to scale the size of entity model up or down in low-quality shadow map. for example `r_shadow_low_scale 0.5`
+
+* * Changes to some of the cvars will not take effect immediately, unless using `r_reload` to force those cvars being reloaded.
 
 ## Screen Space Ambient Occlusion
 
@@ -204,3 +208,23 @@ You can use [bspguy](https://github.com/wootguy/bspguy) to add entity to BSP fil
 `minheight` water entity with height smaller than this value will not be rendered with shader program. for example `"minheight" "7.5"`
 
 `maxtrans` controls the maximum transparency of water, in from 0 ~ 255. for example `"maxtrans" "128"`
+
+## light_dynamic
+
+`light_dynamic` is a point entity as an invisible point light source, dynamic lights are calculated on the fly in the game, which means they have a higher processing cost but are much more flexible than static lighting. dynamic lights works only if `r_light_dynamic` is set to 1.
+
+### Keyvalues
+
+`origin` is the position of this entity's center in the world. for example `"origin" "123 456 789"`
+
+`_light` is the RGB render color of the dynamic light. Colors must be between 0 and 255. for example `"_light" "192 192 192"`
+
+`_distance` is the distance that light is allowed to cast, in inches. for example `"_distance" "300"`
+
+`_ambient` is the ambient intensity of dynamic light. for example `"_ambient" "0.0"`
+
+`_diffuse` is the diffuse intensity of dynamic light. for example `"_diffuse" "0.1"`
+
+`_specular` is the specular intensity of dynamic light. for example `"_specular" "0.1"`
+
+`_specularpow` is the specular power of dynamic light. for example `"_specularpow" "10.0"`
