@@ -37,7 +37,7 @@ Water Shader creates water that realistically reflects and refracts the world.
 
 All water surfaces fall into two types: expensive and cheap.
 
-Expensive water reflects and refracts the whole world in real-time using Planar Reflections, which basically cause your entire scene to be rendered twice. while cheap water uses a simple cubemap to reflect.
+Expensive water reflects and refracts the whole world in real-time using Planar Reflections, which basically cause your entire scene to be rendered twice. while cheap water only reflects skybox.
 
 ### Console vars
 
