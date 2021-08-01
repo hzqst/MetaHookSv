@@ -1,4 +1,4 @@
-Add-Type -LiteralPath "$(Get-Location)\Indieteur.SAMAPI.dll"
+Add-Type -LiteralPath "$(Get-Location)\SteamAppsLocation\Indieteur.SAMAPI.dll"
 try{
 $SAM = New-Object Indieteur.SAMAPI.SteamAppsManager
 if ($args.Count -le 0){
