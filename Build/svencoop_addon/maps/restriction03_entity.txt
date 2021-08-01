@@ -3,7 +3,7 @@
 "_distance" "300.0"
 "_light" "192 192 192 100"
 "classname" "light_dynamic"
-"_specular" "0.1"
+"_specular" "1.0"
 "_specularpow" "10"
 }
 {
@@ -11,6 +11,6 @@
 "_distance" "300.0"
 "_light" "192 192 192 100"
 "classname" "light_dynamic"
-"_specular" "0.1"
+"_specular" "1.0"
 "_specularpow" "10"
 }
