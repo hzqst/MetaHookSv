@@ -60,7 +60,7 @@ vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, uint stenci
             float SpecularFactor = dot(VertexToEye, LightReflect);
             if (SpecularFactor > 0.0) {
                 SpecularFactor = pow(SpecularFactor, lightspecularpow);
-                SpecularColor = vec4(lightcolor * (lightspecular + specularValue) * SpecularFactor, 1.0);
+                SpecularColor = vec4(lightcolor * lightspecular * SpecularFactor * specularValue, 1.0);
             }
         }
     }
