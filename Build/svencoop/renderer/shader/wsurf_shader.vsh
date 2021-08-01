@@ -1,10 +1,10 @@
 #version 130
 
 uniform mat4 entityMatrix;
-
+uniform vec3 viewpos;
 uniform float speed;
-varying vec4 worldpos;
-varying vec4 normal;
+varying vec3 worldpos;
+varying vec3 normal;
 varying vec4 tangent;
 varying vec4 color;
 
@@ -12,8 +12,6 @@ attribute vec3 s_tangent;
 attribute vec3 t_tangent;
 
 #ifdef PARALLAXTEXTURE_ENABLED
-
-uniform vec4 viewpos;
 
 varying vec3 tangentViewPos;
 varying vec3 tangentFragPos;
@@ -51,9 +49,11 @@ mat3 inverse_mat3(mat3 m)
 
 void main(void)
 {
-	worldpos = entityMatrix * gl_Vertex;
-	normal = vec4(gl_Normal, 0.0);
-	normal = normalize(entityMatrix * normal);
+	vec4 worldpos4 = entityMatrix * gl_Vertex;
+    worldpos = worldpos4.xyz;
+
+	vec4 normal4 = vec4(gl_Normal, 0.0);
+	normal = normalize(entityMatrix * normal4).xyz;
 
 #ifdef NORMALTEXTURE_ENABLED
     tangent = vec4(s_tangent, 0.0);
@@ -82,13 +82,17 @@ void main(void)
     //world to tangent
 	mat3 normalMatrix = transpose(inverse_mat3(mat3(entityMatrix)));
     vec3 T = normalize(normalMatrix * s_tangent);
-    vec3 N = normalize(normalMatrix * gl_Normal);
+    vec3 N = normal;
     T = normalize(T - dot(T, N) * N);
     vec3 B = cross(N, T);
 
 	mat3 TBN = transpose(mat3(T, B, N));    
     tangentViewPos = TBN * viewpos.xyz;
     tangentFragPos = TBN * worldpos.xyz;
+#endif
+
+#ifdef SPECULARTEXTURE_ENABLED
+	gl_TexCoord[5] = gl_MultiTexCoord5;
 #endif
 
 #ifdef SHADOWMAP_ENABLED

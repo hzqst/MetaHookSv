@@ -17,16 +17,16 @@ uniform float r_scale;
 
 attribute ivec2 attr_bone;
 
-varying vec4 worldpos;
-varying vec4 normal;
+varying vec3 worldpos;
+varying vec3 normal;
 varying vec4 color;
 
 #ifdef LEGACY_BONE_ENABLED
 
 void main(void)
 {
-	worldpos = gl_Vertex;
-	normal = vec4(gl_Normal, 0.0);
+	worldpos = gl_Vertex.xyz;
+	normal = gl_Normal;
 	color = gl_Color;
 	gl_TexCoord[0] = gl_MultiTexCoord0;
 	
@@ -65,8 +65,8 @@ void main(void)
 
 	outnorm = normalize(outnorm);
 
-	worldpos = vec4(outvert, 1.0);
-	normal = vec4(outnorm, 1.0);
+	worldpos = outvert;
+	normal = outnorm;
 
 #ifdef TRANSADDITIVE_ENABLED
 
@@ -127,7 +127,7 @@ void main(void)
 #ifdef STUDIO_NF_CHROME
 
 	outvert = outvert + outnorm * r_scale;
-	worldpos = vec4(outvert, 1.0);
+	worldpos = outvert;
 
 	vec3 tmp = vec3(
 		normbone_matrix[0][3] - r_origin.x,

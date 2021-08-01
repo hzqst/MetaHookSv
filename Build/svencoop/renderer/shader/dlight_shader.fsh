@@ -1,7 +1,13 @@
-#ifdef LIGHT_PASS
+#extension GL_EXT_texture_array : enable
 
-uniform sampler2D positionTex;
-uniform sampler2D normalTex;
+#define GBUFFER_INDEX_DIFFUSE		0.0
+#define GBUFFER_INDEX_LIGHTMAP		1.0
+#define GBUFFER_INDEX_WORLD			2.0
+#define GBUFFER_INDEX_NORMAL		3.0
+#define GBUFFER_INDEX_ADDITIVE		4.0
+
+uniform sampler2DArray gbufferTex;
+uniform sampler2D depthTex;
 uniform usampler2D stencilTex;
 
 uniform vec3 lightcolor;
@@ -12,28 +18,31 @@ uniform float lightdiffuse;
 uniform float lightspecular;
 uniform float lightspecularpow;
 
-uniform vec4 viewpos;
-uniform vec4 lightdir;
-uniform vec4 lightpos;
+uniform vec3 viewpos;
+uniform vec3 lightdir;
+uniform vec3 lightpos;
 
-#ifdef LIGHT_PASS_VOLUME
-    varying vec4 projpos;
+#ifdef VOLUME_ENABLED
+varying vec4 projpos;
 #endif
 
-#endif
+vec2 encodeNormal(vec3 n)
+{
+    vec2 enc = normalize(n.xy) * (sqrt(-n.z*0.5+0.5));
+    enc = vec2(enc.x*0.5+0.5, enc.y*0.5+0.5);
+    return enc;
+}
 
-#ifdef FINAL_PASS
+vec3 decodeNormal(vec2 enc)
+{
+    vec4 nn = vec4(enc.x * 2.0, enc.y * 2.0, 0.0, 0.0) + vec4(-1.0, -1.0, 1.0, -1.0);
+    float l = dot(nn.xyz, -nn.xyw);
+    nn.z = l;
+    nn.xy *= sqrt(l);
+    return vec3(nn.x * 2.0, nn.y * 2.0, nn.z * 2.0) + vec3(0.0, 0.0, -1.0);
+}
 
-uniform sampler2D diffuseTex;
-uniform sampler2D lightmapTex;
-uniform sampler2D additiveTex;
-uniform sampler2D depthTex;
-uniform vec4 clipInfo;
-
-#endif
-
-#ifdef LIGHT_PASS
-vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, uint stencil)
+vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, uint stencil, float specularValue)
 {
     vec4 AmbientColor = vec4(lightcolor, 1.0) * lightambient;
     vec4 DiffuseColor = vec4(0.0, 0.0, 0.0, 0.0);
@@ -50,7 +59,7 @@ vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, uint stenci
             float SpecularFactor = dot(VertexToEye, LightReflect);
             if (SpecularFactor > 0.0) {
                 SpecularFactor = pow(SpecularFactor, lightspecularpow);
-                SpecularColor = vec4(lightcolor * lightspecular * SpecularFactor, 1.0);
+                SpecularColor = vec4(lightcolor * (lightspecular + specularValue) * SpecularFactor, 1.0);
             }
         }
     }
@@ -62,13 +71,13 @@ vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, uint stenci
     return (AmbientColor + DiffuseColor + SpecularColor);
 }
 
-vec4 CalcPointLight(vec3 World, vec3 Normal, uint stencil)
+vec4 CalcPointLight(vec3 World, vec3 Normal, uint stencil, float specularValue)
 {
     vec3 LightDirection = World - lightpos.xyz;
     float Distance = length(LightDirection);
     LightDirection = normalize(LightDirection);
  
-    vec4 Color = CalcLightInternal(World, LightDirection, Normal, stencil);
+    vec4 Color = CalcLightInternal(World, LightDirection, Normal, stencil, specularValue);
 
     float r2 = lightradius * lightradius;
     float Attenuation = clamp(( r2 - (Distance * Distance)) / r2, 0.0, 1.0);
@@ -76,12 +85,12 @@ vec4 CalcPointLight(vec3 World, vec3 Normal, uint stencil)
     return Color * Attenuation;
 }
 
-vec4 CalcSpotLight(vec3 World, vec3 Normal, uint stencil)
+vec4 CalcSpotLight(vec3 World, vec3 Normal, uint stencil, float specularValue)
 {
     vec3 LightToPixel = normalize(World - lightpos.xyz);
     float SpotFactor = dot(LightToPixel, lightdir.xyz);
     if (SpotFactor > lightcone) {
-        vec4 Color = CalcPointLight(World, Normal, stencil);
+        vec4 Color = CalcPointLight(World, Normal, stencil, specularValue);
         return Color * (1.0 - (1.0 - SpotFactor) * 1.0/(1.0 - lightcone));
     }
     else {
@@ -91,58 +100,29 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, uint stencil)
 
 void main()
 {
-#ifdef LIGHT_PASS_VOLUME
-    vec2 vBaseTexCoord = projpos.xy / projpos.w * 0.5 + 0.5;
-    vec4 positionColor = texture2D(positionTex, vBaseTexCoord);
-    vec4 normalColor = texture2D(normalTex, vBaseTexCoord);
-    uint stencilColor = texture(stencilTex, vBaseTexCoord).r;
-#else
-    vec4 positionColor = texture2D(positionTex, gl_TexCoord[0].xy);
-    vec4 normalColor = texture2D(normalTex, gl_TexCoord[0].xy);
-    uint stencilColor = texture(stencilTex, gl_TexCoord[0].xy).r;
-#endif
-    vec3 worldpos = positionColor.xyz;
-    vec3 normal = normalColor.xyz;
-
-#ifdef LIGHT_PASS_SPOT
-    gl_FragColor = CalcSpotLight(worldpos, normal, stencilColor);
-#endif
-
-#ifdef LIGHT_PASS_POINT
-    gl_FragColor = CalcPointLight(worldpos, normal, stencilColor);
-#endif
-}
-#endif
-
-#ifdef FINAL_PASS
-
-#ifdef LINEAR_FOG_ENABLED
-
-    float reconstructCSZ(float d) {
-        return (clipInfo[0] / (clipInfo[1] * d + clipInfo[2]));
-    }
-
-#endif
-
-void main()
-{
-    vec4 diffuseColor = texture2D(diffuseTex, gl_TexCoord[0].xy);
-    vec4 lightmapColor = texture2D(lightmapTex, gl_TexCoord[0].xy);
-    vec4 additiveColor = texture2D(additiveTex, gl_TexCoord[0].xy);
     
-    vec4 finalColor = diffuseColor * lightmapColor + additiveColor;
+#ifdef VOLUME_ENABLED
+    vec2 vBaseTexCoord = projpos.xy / projpos.w * 0.5 + 0.5;
+#else
+    vec2 vBaseTexCoord = gl_TexCoord[0].xy;
+#endif
 
-    gl_FragColor = finalColor;
+    vec4 positionColor = texture2DArray(gbufferTex, vec3(vBaseTexCoord, GBUFFER_INDEX_WORLD));
+    vec4 normalColor = texture2DArray(gbufferTex, vec3(vBaseTexCoord, GBUFFER_INDEX_NORMAL));
 
-#ifdef LINEAR_FOG_ENABLED
-    vec4 depthColor = texture2D(depthTex, gl_TexCoord[0].xy);
+    //float depthColor = texture2D(depthTex, vBaseTexCoord.xy).r;
+    uint stencilColor = texture(stencilTex, vBaseTexCoord).r;
 
-	float z = reconstructCSZ(depthColor.x);
-	float fogFactor = ( gl_Fog.end - z ) / ( gl_Fog.end - gl_Fog.start );
-	fogFactor = clamp(fogFactor, 0.0, 1.0);
+    vec3 worldpos = positionColor.xyz;
+    vec3 normal = normalize(decodeNormal(normalColor.xy));
+    float specularValue = normalColor.z;
 
-	gl_FragColor.xyz = mix(gl_Fog.color.xyz, finalColor.xyz, fogFactor );
+#ifdef SPOT_ENABLED
+    gl_FragColor = CalcSpotLight(worldpos, normal, stencilColor, specularValue);
+#endif
+
+#ifdef POINT_ENABLED
+    gl_FragColor = CalcPointLight(worldpos, normal, stencilColor, specularValue);
 #endif
 
 }
-#endif
