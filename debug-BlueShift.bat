@@ -2,9 +2,8 @@ echo off
 
 set LauncherExe=metahook.exe
 set LauncherMod=bshift
-
-for /f "delims=" %%a in ('%~dp0SteamAppsLocation/SteamAppsLocation 130 InstallDir') do set GameDir=%%a
-
+set PsCmdLine='call powershell -File %~dp0SteamAppsLocation/SteamAppsLocation.ps1 130 InstallDir'
+for /f "delims=" %%a in (%PsCmdLine%) do set GameDir=%%a
 if "%GameDir%"=="" goto fail
 
 echo -----------------------------------------------------
