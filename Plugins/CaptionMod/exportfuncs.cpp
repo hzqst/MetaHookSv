@@ -433,12 +433,15 @@ void Steam_Init(void)
 	if (!pfnSteamApps)
 		return;
 
-	if (pfnSteamAPI_IsSteamRunning())
+	if (pfnSteamAPI_Init())
 	{
-		const char *pszLanguage = pfnSteamApps()->GetCurrentGameLanguage();
+		if (pfnSteamAPI_IsSteamRunning())
+		{
+			const char *pszLanguage = pfnSteamApps()->GetCurrentGameLanguage();
 
-		if (pszLanguage)
-			Q_strncpy(gCapFuncs.szLanguage, pszLanguage, sizeof(gCapFuncs.szLanguage));
+			if (pszLanguage)
+				Q_strncpy(gCapFuncs.szLanguage, pszLanguage, sizeof(gCapFuncs.szLanguage));
+		}
 	}
 
 	if(!gCapFuncs.szLanguage[0])

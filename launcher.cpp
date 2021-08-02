@@ -223,7 +223,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		const char *pszEngineDLL;
 		int iResult = ENGINE_RESULT_NONE;
 
-		SetActiveProcess();
+		//SetActiveProcess();
 		SetEngineDLL(pszEngineDLL);
 
 		szNewCommandParams[0] = 0;
