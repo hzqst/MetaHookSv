@@ -264,6 +264,7 @@ texture_t *Draw_DecalTexture(int index);
 void Draw_MiptexTexture(cachewad_t *wad, byte *data);
 void EmitWaterPolys(msurface_t *fa, int direction);
 void R_DecalShootInternal(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
+void __fastcall enginesurface_drawFlushText(void *pthis, int dummy);
 void MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar);
 float CalcFov(float fov_x, float width, float height);
 int SignbitsForPlane(mplane_t *out);

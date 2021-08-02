@@ -860,6 +860,8 @@ void R_EnableWSurfVBO(wsurf_model_t *modcache)
 
 		qglDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
+		qglClientActiveTextureARB(GL_TEXTURE5_ARB);
+		qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
 		qglClientActiveTextureARB(GL_TEXTURE4_ARB);
 		qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
 		qglClientActiveTextureARB(GL_TEXTURE3_ARB);

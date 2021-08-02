@@ -1008,3 +1008,13 @@ void HUD_Frame(double time)
 {
 	return gExportfuncs.HUD_Frame(time);
 }
+
+//fuck Valve called qglEnableClientState(GL_VERTEX_ARRAY) and forgot to disable it.
+
+void __fastcall enginesurface_drawFlushText(void *pthis, int dummy)
+{
+	gRefFuncs.enginesurface_drawFlushText(pthis, dummy);
+
+	qglDisableClientState(GL_VERTEX_ARRAY);
+	qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
+}

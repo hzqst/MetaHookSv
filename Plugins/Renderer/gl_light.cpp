@@ -398,11 +398,12 @@ void R_EndRenderGBuffer(void)
 	qglDisable(GL_TEXTURE_2D);
 	qglEnable(GL_TEXTURE_2D_ARRAY);
 	qglBindTexture(GL_TEXTURE_2D_ARRAY, s_GBufferFBO.s_hBackBufferTex);
+	*currenttexture = -1;
 
 	//Depth texture at unit1
 	GL_EnableMultitexture();
 	GL_Bind(s_GBufferFBO.s_hBackBufferDepthTex);
-
+	
 	//Stencil texture at unit2
 	qglActiveTextureARB(TEXTURE2_SGIS);
 	qglEnable(GL_TEXTURE_2D);
@@ -679,8 +680,6 @@ void R_EndRenderGBuffer(void)
 		FinalProgramState |= DFINAL_LINEAR_FOG_ENABLED;
 
 	R_UseDFinalProgram(FinalProgramState, NULL);
-
-	//Depth texture
 
 	R_DrawHUDQuad(glwidth, glheight);
 

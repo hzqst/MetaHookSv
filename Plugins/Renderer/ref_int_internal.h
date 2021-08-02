@@ -63,7 +63,7 @@ typedef struct
 	void(*R_DecalShootInternal)(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
 	void(*R_LoadSkys)(void);
 	void(*R_MarkLights)(dlight_t *light, int bit, mnode_t *node);
-
+	void(__fastcall *enginesurface_drawFlushText)(void *pthis, int);
 	//SvClient
 	void(__fastcall *PortalManager_ResetAll)(int pthis, int);
 

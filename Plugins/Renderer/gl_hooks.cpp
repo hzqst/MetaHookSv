@@ -197,6 +197,13 @@ void Sys_ErrorEx(const char *fmt, ...);
 void R_FillAddress(void)
 {
 	DWORD addr;
+
+	auto engineFactory = Sys_GetFactory((HINTERFACEMODULE)g_dwEngineBase); 
+#define ENGINE_SURFACE_VERSION "EngineSurface007"
+	void *engineSurface = (void *)engineFactory(ENGINE_SURFACE_VERSION, NULL);
+
+	gRefFuncs.enginesurface_drawFlushText = *(decltype(gRefFuncs.enginesurface_drawFlushText) *)(*(DWORD *)engineSurface + 0x58);
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_MarkLights = (decltype(gRefFuncs.R_MarkLights))Search_Pattern(R_MARKLIGHTS_SVENGINE);
@@ -2517,5 +2524,5 @@ void R_InstallHook(void)
 	Install_InlineHook(R_DrawBrushModel);
 	Install_InlineHook(R_AddTEntity);
 	Install_InlineHook(GL_LoadTexture2);
-
+	Install_InlineHook(enginesurface_drawFlushText);
 }
