@@ -15,6 +15,9 @@ typedef struct walk_context_s
 	int depth;
 }walk_context_t;
 
+#define R_MARKLIGHTS_SVENGINE "\x83\xEC\x0C\x2A\x8B\x7C\x24\x2A\x83\x3F\x00"
+#define R_MARKLIGHTS_NEW "\x55\x8B\xEC\x83\xEC\x18\x2A\x8B\x2A\x10\x83\x2A\x00"
+
 #define R_POLYBLEND_SVENGINE "\x55\x8B\xEC\x83\xE4\xC0\x83\xEC\x34\x2A\x2A\x2A\xE8"
 #define R_POLYBLEND_NEW "\x55\x8B\xEC\x83\xEC\x0C\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x2A\x85\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\xC0\x0B\x00\x00"
 
@@ -194,7 +197,16 @@ void Sys_ErrorEx(const char *fmt, ...);
 void R_FillAddress(void)
 {
 	DWORD addr;
-
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		gRefFuncs.R_MarkLights = (decltype(gRefFuncs.R_MarkLights))Search_Pattern(R_MARKLIGHTS_SVENGINE);
+		Sig_FuncNotFound(R_MarkLights);
+	}
+	else
+	{
+		gRefFuncs.R_MarkLights = (decltype(gRefFuncs.R_MarkLights))Search_Pattern(R_MARKLIGHTS_NEW);
+		Sig_FuncNotFound(R_MarkLights);
+	}
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_PolyBlend = (decltype(gRefFuncs.R_PolyBlend))Search_Pattern(R_POLYBLEND_SVENGINE);

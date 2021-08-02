@@ -815,9 +815,6 @@ wsurf_model_t *R_PrepareWSurfVBO(model_t *mod)
 
 void R_EnableWSurfVBOSolid(wsurf_model_t *modcache)
 {
-	if (!r_wsurf_vbo->value)
-		return;
-
 	if (r_wsurf.pCurrentModel == modcache)
 		return;
 
@@ -851,9 +848,6 @@ void R_EnableWSurfVBOSolid(wsurf_model_t *modcache)
 
 void R_EnableWSurfVBO(wsurf_model_t *modcache)
 {
-	if (!r_wsurf_vbo->value)
-		return;
-
 	if (r_wsurf.pCurrentModel == modcache)
 		return;
 
@@ -3294,6 +3288,9 @@ void R_DrawBrushModel(cl_entity_t *e)
 			else
 			{
 				max_dlights = 32;
+
+				if (gl_flashblend && gl_flashblend->value)
+					goto skip_marklight;
 			}
 
 			for (k = 0; k < max_dlights; k++)
@@ -3306,11 +3303,12 @@ void R_DrawBrushModel(cl_entity_t *e)
 				VectorCopy(cl_dlights[k].origin, saveOrigin);
 				VectorSubtract(cl_dlights[k].origin, e->origin, cl_dlights[k].origin);
 
-				//R_MarkLights(&cl_dlights[k], 1 << k, clmodel->nodes + clmodel->hulls[0].firstclipnode);
+				gRefFuncs.R_MarkLights(&cl_dlights[k], 1 << k, clmodel->nodes + clmodel->hulls[0].firstclipnode);
 				VectorCopy(saveOrigin, cl_dlights[k].origin);
 			}
 		}
 	}
+skip_marklight:
 
 	qglPushMatrix();
 	R_RotateForEntity(e->origin, e);

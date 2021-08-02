@@ -62,6 +62,7 @@ typedef struct
 	void(*R_PolyBlend)(void);
 	void(*R_DecalShootInternal)(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
 	void(*R_LoadSkys)(void);
+	void(*R_MarkLights)(dlight_t *light, int bit, mnode_t *node);
 
 	//SvClient
 	void(__fastcall *PortalManager_ResetAll)(int pthis, int);
