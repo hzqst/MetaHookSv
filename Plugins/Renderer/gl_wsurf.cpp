@@ -2041,24 +2041,13 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 		if (lightmap_modified[lightmapnum])
 		{
 			lightmap_modified[lightmapnum] = 0;
-			if (g_iEngineType == ENGINE_SVENGINE)
-			{
-				glRect_SvEngine_t *theRect = (glRect_SvEngine_t *)((char *)lightmap_rectchange + sizeof(glRect_SvEngine_t) * lightmapnum);
-				qglTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, theRect->t, lightmapnum, BLOCK_WIDTH, theRect->h, 1, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + (lightmapnum * BLOCK_HEIGHT + theRect->t) * BLOCK_WIDTH * LIGHTMAP_BYTES);
-				theRect->l = BLOCK_WIDTH;
-				theRect->t = BLOCK_HEIGHT;
-				theRect->h = 0;
-				theRect->w = 0;
-			}
-			else
-			{
-				glRect_GoldSrc_t *theRect = (glRect_GoldSrc_t *)((char *)lightmap_rectchange + sizeof(glRect_GoldSrc_t) * lightmapnum);
-				qglTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, theRect->t, lightmapnum, BLOCK_WIDTH, theRect->h, 1, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + (lightmapnum * BLOCK_HEIGHT + theRect->t) * BLOCK_WIDTH * LIGHTMAP_BYTES);
-				theRect->l = BLOCK_WIDTH;
-				theRect->t = BLOCK_HEIGHT;
-				theRect->h = 0;
-				theRect->w = 0;
-			}
+
+			glRect_t *theRect = (glRect_t *)((char *)lightmap_rectchange + sizeof(glRect_t) * lightmapnum);
+			qglTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, theRect->t, lightmapnum, BLOCK_WIDTH, theRect->h, 1, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + (lightmapnum * BLOCK_HEIGHT + theRect->t) * BLOCK_WIDTH * LIGHTMAP_BYTES);
+			theRect->l = BLOCK_WIDTH;
+			theRect->t = BLOCK_HEIGHT;
+			theRect->h = 0;
+			theRect->w = 0;
 		}
 	}
 	else
@@ -3093,28 +3082,15 @@ void R_DrawSequentialPolyVBO(msurface_t *s)
 	if (lightmap_modified[lightmapnum])
 	{
 		lightmap_modified[lightmapnum] = 0;
-		if (g_iEngineType == ENGINE_SVENGINE)
-		{
-			glRect_SvEngine_t *theRect = (glRect_SvEngine_t *)((char *)lightmap_rectchange + sizeof(glRect_SvEngine_t) * lightmapnum);
-			qglBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
-			qglTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, theRect->t, lightmapnum, BLOCK_WIDTH, theRect->h, 1, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + (lightmapnum * BLOCK_HEIGHT + theRect->t) * BLOCK_WIDTH * LIGHTMAP_BYTES);
-			qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-			theRect->l = BLOCK_WIDTH;
-			theRect->t = BLOCK_HEIGHT;
-			theRect->h = 0;
-			theRect->w = 0;
-		}
-		else
-		{
-			glRect_GoldSrc_t *theRect = (glRect_GoldSrc_t *)((char *)lightmap_rectchange + sizeof(glRect_GoldSrc_t) * lightmapnum);
-			qglBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
-			qglTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, theRect->t, lightmapnum, BLOCK_WIDTH, theRect->h, 1, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + (lightmapnum * BLOCK_HEIGHT + theRect->t) * BLOCK_WIDTH * LIGHTMAP_BYTES);
-			qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-			theRect->l = BLOCK_WIDTH;
-			theRect->t = BLOCK_HEIGHT;
-			theRect->h = 0;
-			theRect->w = 0;
-		}
+
+		glRect_t *theRect = (glRect_t *)((char *)lightmap_rectchange + sizeof(glRect_t) * lightmapnum);
+		qglBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
+		qglTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, theRect->t, lightmapnum, BLOCK_WIDTH, theRect->h, 1, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + (lightmapnum * BLOCK_HEIGHT + theRect->t) * BLOCK_WIDTH * LIGHTMAP_BYTES);
+		qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+		theRect->l = BLOCK_WIDTH;
+		theRect->t = BLOCK_HEIGHT;
+		theRect->h = 0;
+		theRect->w = 0;
 	}
 
 	if (s->pdecals)
@@ -3281,7 +3257,15 @@ void R_DrawBrushModel(cl_entity_t *e)
 		return;
 
 	qglColor3f(1, 1, 1);
-	memset(lightmap_polys, 0, sizeof(glpoly_t *) * 1024);
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		memset(lightmap_polys, 0, sizeof(glpoly_t *) * 1024);
+	}
+	else
+	{
+		memset(lightmap_polys, 0, sizeof(glpoly_t *) * 64);
+	}
 
 	VectorSubtract(r_refdef->vieworg, e->origin, modelorg);
 

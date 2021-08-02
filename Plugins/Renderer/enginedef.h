@@ -53,15 +53,10 @@ typedef struct
 
 //gl_rsurf
 
-typedef struct glRect_GoldSrc_s
-{
-	unsigned char l, t, w, h;
-}glRect_GoldSrc_t;
-
-typedef struct glRect_SvEngine_s
+typedef struct glRect_s
 {
 	int l, t, w, h;
-}glRect_SvEngine_t;
+}glRect_t;
 
 typedef struct vrect_s
 {
