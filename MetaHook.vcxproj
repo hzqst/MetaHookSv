@@ -82,7 +82,7 @@
       <Command>if exist "$(MetaHookGameDirectory)" copy "$(OutDir)$(TargetName)$(TargetExt)" "$(MetaHookGameDirectory)$(MetaHookLaunchName)"</Command>
     </PostBuildEvent>
     <Manifest>
-      <EnableDpiAwareness>true</EnableDpiAwareness>
+      <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
     </Manifest>
     <PreBuildEvent>
       <Command>if not exist "$(ProjectDir)capstone\msvc\Debug\capstone.lib" call "$(ProjectDir)build-capstone-debug.bat"</Command>
@@ -115,7 +115,7 @@
       <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(OutDir)..\Build\svencoop.exe"</Command>
     </PostBuildEvent>
     <Manifest>
-      <EnableDpiAwareness>true</EnableDpiAwareness>
+      <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
     </Manifest>
     <PreBuildEvent>
       <Command>if not exist "$(ProjectDir)capstone\msvc\Release\capstone.lib" call "$(ProjectDir)build-capstone.bat"</Command>
