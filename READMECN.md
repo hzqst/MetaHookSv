@@ -38,7 +38,7 @@
 
 * 其他游戏也可以按照此种方式安装，只需要运行其他install-to-批处理即可。
 
-* 至少需要 [.NET Framework 4.5](https://www.microsoft.com/en-us/download/details.aspx?id=30653) 否则 [SteamAppsLocation](SteamAppsLocation/README.md) 可能会无法工作.
+* 请确保已经登录Steam否则 [SteamAppsLocation](SteamAppsLocation/README.md) 可能会无法寻找游戏安装目录.
 
 ## 构建需求
 
@@ -70,11 +70,17 @@
 
 * 如果你的网络经常无法访问github导致clone失败，你可以从国内镜像gitee分别拉取[MetaHookSv](https://gitee.com/hzqst/MetaHookSv)、[Detours](https://gitee.com/mirrors/detours)、[Capstone](https://gitee.com/mirrors/capstone)、[Bullet3 Physics SDK](https://gitee.com/mirrors/bullet3)
 
+* 上述国内镜像可能不是最新，如果需要最新版本可以自行创建gitee仓库并设置源镜像为对应的github仓库，然后从github同步到gitee。
+
 ## 调试
 
 1. 运行 `debug-SvenCoop.bat`  (其他游戏就选择该游戏对应的debug-bat)
 
 2. 打开 `MetaHook.sln`, 在解决方案资源管理器中找到对应的项目，右键设置为启动项目，然后以Debug模式重新编译该项目后，按F5即可开启本地调试。
+
+* 如果Visual Studio处在运行中，请重启一次Visual Studio，否则调试设置可能不会生效。
+
+* 请确保已经登录Steam否则 [SteamAppsLocation](SteamAppsLocation/README.md) 可能会无法寻找游戏安装目录。
 
 ## MetaHookSv (V3) 相比 MetaHook (V2) 的新功能
 
