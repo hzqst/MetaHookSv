@@ -34,11 +34,11 @@ Use a separate account to play Sven Co-op if you worry about getting banned, sin
 
 2. Run `install-to-SvenCoop.bat`
 
-3. Launch game from `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`
+3. Launch game from shortcut `MetaHook for SvenCoop` or `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`
 
 * Other games follow the same instruction.
 
-* You should have [.NET Framework 4.5](https://www.microsoft.com/en-us/download/details.aspx?id=30653) installed in your system otherwise the [SteamAppsLocation](SteamAppsLocation/README.md) will probably not work.
+* You should have your Steam running otherwise the [SteamAppsLocation](SteamAppsLocation/README.md) will probably not going to find GameInstallDir.
 
 ## Build Requirements
 
@@ -70,9 +70,13 @@ Let's assume that you have all requirements installed correctly.
 
 ## Debugging
 
-1. Run `debug-SvenCoop.bat` (or other games)
+1. Run `debug-SvenCoop.bat`
 
-2. Open `MetaHook.sln` with Visual Studio, set specified project as launch project, compile the project, then press F5 to start debugging.
+2. Open `MetaHook.sln` with Visual Studio IDE, set specified project as launch project, compile the project, then press F5 to start debugging.
+
+* Other games follow the same instruction.
+
+* You should restart Visual Studio IDE to apply changes to debugging profile, if it is running.
 
 ## MetaHookSv (V3) new features compare to nagist's old metahook (V2)
 
