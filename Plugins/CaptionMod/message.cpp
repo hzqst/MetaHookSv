@@ -20,7 +20,6 @@ char *m_pSenderName = NULL;
 
 CHudMessage m_HudMessage;
 
-//2015-11-27 added, support for Counter-Strike's HudTextPro message
 pfnUserMsgHook m_pfnHudText;
 pfnUserMsgHook m_pfnHudTextPro;
 pfnUserMsgHook m_pfnHudTextArgs;
@@ -681,9 +680,9 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 			client_textmessage_t *pTextMessage = NULL;
 
 			if (pString[0] == '#')
-				pTextMessage = pfnTextMessageGet(pString + 1);
+				pTextMessage = gCapFuncs.pfnTextMessageGet(pString + 1);
 			else
-				pTextMessage = pfnTextMessageGet(pString);
+				pTextMessage = gCapFuncs.pfnTextMessageGet(pString);
 
 			if (pTextMessage)
 			{
@@ -843,9 +842,9 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 				client_textmessage_t *pTextMessage = NULL;
 
 				if (pString[0] == '#')
-					pTextMessage = pfnTextMessageGet(pString + 1);
+					pTextMessage = gCapFuncs.pfnTextMessageGet(pString + 1);
 				else
-					pTextMessage = pfnTextMessageGet(pString);
+					pTextMessage = gCapFuncs.pfnTextMessageGet(pString);
 
 				if (pTextMessage)
 				{
@@ -920,9 +919,9 @@ int CHudMessage::MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
 			client_textmessage_t *pTextMessage = NULL;
 
 			if (pString[0] == '#')
-				pTextMessage = pfnTextMessageGet(pString + 1);
+				pTextMessage = gCapFuncs.pfnTextMessageGet(pString + 1);
 			else
-				pTextMessage = pfnTextMessageGet(pString);
+				pTextMessage = gCapFuncs.pfnTextMessageGet(pString);
 
 			if (pTextMessage)
 			{
