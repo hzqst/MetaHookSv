@@ -782,7 +782,7 @@ void CDictionary::FinalizeString(std::wstring &output)
 void CViewport::Start(void)
 {
 	m_pSubtitle = new SubtitlePanel(NULL);
-	m_pChatDialog = new CCSChatDialog();
+	m_pChatDialog = new CCSChatDialog(this);
 
 	SetVisible(false);
 }
@@ -860,6 +860,9 @@ void CViewport::Paint(void)
 
 bool CViewport::AllowedToPrintText(void)
 {
+	if (gCapFuncs.GameViewport_AllowedToPrintText)
+		return gCapFuncs.GameViewport_AllowedToPrintText(gCapFuncs.GameViewport, 0);
+
 	return true;
 }
 

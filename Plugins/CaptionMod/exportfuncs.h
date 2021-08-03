@@ -26,6 +26,9 @@ void HUD_Init(void);
 int HUD_VidInit(void);
 void HUD_Frame(double time);
 int HUD_Redraw(float time, int intermission);
+void IN_MouseEvent(int mstate);
+void IN_Accumulate(void);
+void CL_CreateMove(float frametime, struct usercmd_s *cmd, int active);
 
 client_textmessage_t *pfnTextMessageGet(const char *pName);
 void Engine_FillAddress(void);
@@ -44,12 +47,14 @@ void *NewClientFactory(void);
 
 void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);
 void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);
-sfxcache_t *S_LoadSound(sfx_t *s, channel_t *ch);
 sfx_t *S_FindName(char *name, int *pfInCache);
+
 void MessageMode_f(void);
 void MessageMode2_f(void);
 
-int __fastcall ScClient_FindSoundEx(int pthis, int, const char *sound);
+int __fastcall ScClient_FindSoundEx(void* pthis, int, const char *sound);
+void __fastcall GameViewport_UpdateCursorState(void *pthis, int);
+
 void Sys_ErrorEx(const char *fmt, ...);
 
 extern cvar_t* cap_debug;

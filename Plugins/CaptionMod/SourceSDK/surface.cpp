@@ -358,7 +358,7 @@ void CSurface::SetCursor( HCursor cursor )
 
 bool CSurface::IsCursorVisible( void )
 {
-	return true;
+	return g_pSurface->IsCursorVisible();
 }
 
 //-----------------------------------------------------------------------------

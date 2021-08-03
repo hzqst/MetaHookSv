@@ -1364,6 +1364,9 @@ void CHudMessage::EnsureTextFitsInOneLineAndWrapIfHaveTo(int line)
 
 int CHudMessage::SayTextPrint(const char *pszBuf, int iBufSize, int clientIndex, char *sstr1, char *sstr2, char *sstr3, char *sstr4)
 {
+	if (!g_pViewPort->AllowedToPrintText())
+		return 0;
+
 	int lineNum;
 	wchar_t finalBuffer[MAX_CHARS_PER_LINE];
 	const char *localized;
@@ -1444,6 +1447,9 @@ int CHudMessage::SayTextPrint(const char *pszBuf, int iBufSize, int clientIndex,
 						if (vgui::localize()->ConvertUnicodeToANSI(locTerm, buf, sizeof(buf)))
 							localizedTerm = vgui::localize()->Find(buf);
 						else
+							localizedTerm = locTerm;
+
+						if (!localizedTerm)
 							localizedTerm = locTerm;
 
 						num = min((int)wcslen(localizedTerm), MAX_CHARS_PER_LINE - outPos);

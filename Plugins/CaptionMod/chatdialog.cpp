@@ -253,7 +253,7 @@ void CChatDialogHistory::Paint(void)
 
 int CChatDialog::m_nLineCounter = 1;
 
-CChatDialog::CChatDialog(void) : BaseClass(NULL, PANEL_CHAT)
+CChatDialog::CChatDialog(Panel *parent) : BaseClass(parent, PANEL_CHAT)
 {
 	//MakePopup();
 	SetZPos(-30);

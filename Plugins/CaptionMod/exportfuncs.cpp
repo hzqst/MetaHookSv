@@ -58,6 +58,57 @@ void HUD_Frame(double time)
 	gExportfuncs.HUD_Frame(time);
 }
 
+void IN_MouseEvent(int mstate)
+{
+	if (vgui::surface()->IsCursorVisible())
+	{
+		int iVisibleMouse = *gCapFuncs.g_iVisibleMouse;
+		*gCapFuncs.g_iVisibleMouse = 1;
+
+		gExportfuncs.IN_MouseEvent(mstate);
+
+		*gCapFuncs.g_iVisibleMouse = iVisibleMouse;
+	}
+	else
+	{
+		gExportfuncs.IN_MouseEvent(mstate);
+	}
+}
+
+void IN_Accumulate(void)
+{
+	if (vgui::surface()->IsCursorVisible())
+	{
+		int iVisibleMouse = *gCapFuncs.g_iVisibleMouse;
+		*gCapFuncs.g_iVisibleMouse = 1;
+
+		gExportfuncs.IN_Accumulate();
+
+		*gCapFuncs.g_iVisibleMouse = iVisibleMouse;
+	}
+	else
+	{
+		gExportfuncs.IN_Accumulate();
+	}
+}
+
+void CL_CreateMove(float frametime, struct usercmd_s *cmd, int active)
+{
+	if (vgui::surface()->IsCursorVisible())
+	{
+		int iVisibleMouse = *gCapFuncs.g_iVisibleMouse;
+		*gCapFuncs.g_iVisibleMouse = 1;
+
+		gExportfuncs.CL_CreateMove(frametime, cmd, active);
+
+		*gCapFuncs.g_iVisibleMouse = iVisibleMouse;
+	}
+	else
+	{
+		gExportfuncs.CL_CreateMove(frametime, cmd, active);
+	}
+}
+
 void Cap_Version_f(void)
 {
 	gEngfuncs.Con_Printf("%s\n", CAPTION_MOD_VERSION);
@@ -127,7 +178,18 @@ void SvClient_StartWave(const char *name, float duration)
 	g_pViewPort->StartSubtitle(Dict);
 }
 
-int __fastcall ScClient_FindSoundEx(int pthis, int, const char *sound)
+/*void __fastcall GameViewport_UpdateCursorState(void *pthis, int dummy)
+{
+	if (vgui::surface()->IsCursorVisible())
+	{
+		*gCapFuncs.g_iVisibleMouse = 1;
+		return;
+	}
+
+	gCapFuncs.GameViewport_UpdateCursorState(pthis, dummy);
+}*/
+
+int __fastcall ScClient_FindSoundEx(void *pthis, int, const char *sound)
 {
 	auto result = gCapFuncs.ScClient_FindSoundEx(pthis, 0, sound);
 

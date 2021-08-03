@@ -5,7 +5,7 @@ extern int m_iIntermission;
 
 using namespace vgui;
 
-CCSChatDialog::CCSChatDialog(void) : BaseClass()
+CCSChatDialog::CCSChatDialog(Panel *parent) : BaseClass(parent)
 {
 	SetProportional(true);
 	SetSizeable(false);

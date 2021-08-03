@@ -12,7 +12,7 @@ class CCSChatDialog : public CChatDialog
 	DECLARE_CLASS_SIMPLE(CCSChatDialog, CChatDialog);
 
 public:
-	CCSChatDialog(void);
+	CCSChatDialog(Panel *parent);
 
 public:
 	virtual void CreateChatInputLine(void);

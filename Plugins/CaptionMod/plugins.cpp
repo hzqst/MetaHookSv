@@ -89,6 +89,9 @@ void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_VidInit = HUD_VidInit;
 	pExportFunc->HUD_Frame = HUD_Frame;
 	pExportFunc->HUD_Redraw = HUD_Redraw;
+	pExportFunc->IN_MouseEvent = IN_MouseEvent;
+	pExportFunc->IN_Accumulate = IN_Accumulate;
+	pExportFunc->CL_CreateMove = CL_CreateMove;
 
 	g_hClientDll = GetModuleHandle("client.dll");
 	g_dwClientSize = g_pMetaHookAPI->GetModuleSize(g_hClientDll);
@@ -100,20 +103,43 @@ void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 		g_IsSCClient = true;
 
 #define SC_FINDSOUND_SIG "\x51\x55\x8B\x6C\x24\x0C\x89\x4C\x24\x04\x85\xED\x0F\x84\x2A\x2A\x2A\x2A\x80\x7D\x00\x00"
+		{
+			gCapFuncs.ScClient_FindSoundEx = (decltype(gCapFuncs.ScClient_FindSoundEx))
+				g_pMetaHookAPI->SearchPattern((void *)g_hClientDll, g_dwClientSize, SC_FINDSOUND_SIG, Sig_Length(SC_FINDSOUND_SIG));
 
-		gCapFuncs.ScClient_FindSoundEx = (decltype(gCapFuncs.ScClient_FindSoundEx))
-			g_pMetaHookAPI->SearchPattern((void *)g_hClientDll, g_dwClientSize, SC_FINDSOUND_SIG, Sig_Length(SC_FINDSOUND_SIG));
-
-		Sig_FuncNotFound(ScClient_FindSoundEx);
-
-		Install_InlineHook(ScClient_FindSoundEx);
+			Sig_FuncNotFound(ScClient_FindSoundEx);
+			Install_InlineHook(ScClient_FindSoundEx);
+		}
 
 #define SC_GETCLIENTCOLOR_SIG "\x8B\x4C\x24\x04\x85\xC9\x2A\x2A\x6B\xC1\x58"
+		{
+			gCapFuncs.GetClientColor = (decltype(gCapFuncs.GetClientColor))
+				g_pMetaHookAPI->SearchPattern((void *)g_hClientDll, g_dwClientSize, SC_GETCLIENTCOLOR_SIG, Sig_Length(SC_GETCLIENTCOLOR_SIG));
 
-		gCapFuncs.GetClientColor = (decltype(gCapFuncs.GetClientColor))
-			g_pMetaHookAPI->SearchPattern((void *)g_hClientDll, g_dwClientSize, SC_GETCLIENTCOLOR_SIG, Sig_Length(SC_GETCLIENTCOLOR_SIG));
-		
-		Sig_FuncNotFound(GetClientColor);
+			Sig_FuncNotFound(GetClientColor);
+		}
+
+#define SC_VIEWPORT_SIG "\x8B\x0D\x2A\x2A\x2A\x2A\x85\xC9\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x84\xC0\x0F"
+		{
+			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_hClientDll, g_dwClientSize, SC_VIEWPORT_SIG, Sig_Length(SC_VIEWPORT_SIG));
+
+			Sig_AddrNotFound(GameViewport);
+
+			gCapFuncs.GameViewport = *(decltype(gCapFuncs.GameViewport) *)(addr + 2);
+			gCapFuncs.GameViewport_AllowedToPrintText = (decltype(gCapFuncs.GameViewport_AllowedToPrintText))GetCallAddress(addr + 10);
+		}
+
+#define SC_UPDATECURSORSTATE_SIG "\x8B\x40\x28\xFF\xD0\x84\xC0\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00"
+		{
+			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_hClientDll, g_dwClientSize, SC_UPDATECURSORSTATE_SIG, Sig_Length(SC_UPDATECURSORSTATE_SIG));
+			Sig_AddrNotFound(GameViewport_UpdateCursorState);
+
+			gCapFuncs.g_iVisibleMouse = *(decltype(gCapFuncs.g_iVisibleMouse) *)(addr + 11);
+			gCapFuncs.GameViewport_UpdateCursorState = (decltype(gCapFuncs.GameViewport_UpdateCursorState))
+				g_pMetaHookAPI->ReverseSearchFunctionBegin((PVOID)addr, 0x80);
+
+			//Install_InlineHook(GameViewport_UpdateCursorState);
+		}
 	}
 
 	Install_InlineHook(pfnTextMessageGet);

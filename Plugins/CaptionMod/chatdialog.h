@@ -117,7 +117,7 @@ public:
 	};
 
 public:
-	CChatDialog(void);
+	CChatDialog(Panel *parent);
 
 public:
 	virtual void CreateChatInputLine(void);

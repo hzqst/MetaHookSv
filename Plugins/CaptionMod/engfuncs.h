@@ -16,11 +16,15 @@ typedef struct
 	void (*S_StartDynamicSound)(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);//hooked
 	void (*S_StartStaticSound)(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);//hooked
 
-	int(__fastcall *ScClient_FindSoundEx)(int pthis, int, const char *soundName);
+	int(__fastcall *ScClient_FindSoundEx)(void *pthis, int, const char *soundName);
 	HMODULE fmodex;
 	int(__stdcall *FMOD_Sound_getLength)(int a1, void* a2, int a3);//?getLength@Sound@FMOD@@QAG?AW4FMOD_RESULT@@PAII@Z
 
 	float *(*GetClientColor)(int clientIndex);
+	void *GameViewport;
+	bool (__fastcall *GameViewport_AllowedToPrintText)(void *pthis, int);
+	int *g_iVisibleMouse;
+	void(__fastcall *GameViewport_UpdateCursorState)(void *pthis, int);
 
 	client_textmessage_t *(*pfnTextMessageGet)(const char *pName);
 	void(*MessageMode_f)(void);
