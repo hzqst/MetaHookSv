@@ -1183,7 +1183,7 @@ void SayTextLine::Colorize(void)
 		wchar_t wName[128];
 		hud_player_info_t playerinfo = { 0 };
 		gEngfuncs.pfnGetPlayerInfo(m_clientIndex, &playerinfo);
-		char *pName = playerinfo.name;
+		char *pName = playerinfo.name ? playerinfo.name : "";
 
 		vgui::localize()->ConvertANSIToUnicode(pName, wName, sizeof(wName));
 
@@ -1230,9 +1230,11 @@ void SayTextLine::SetText(wchar_t *buf, int clientIndex)
 
 		if (clientIndex > 0)
 		{
-			hud_player_info_t playerinfo = { 0 };
-			gEngfuncs.pfnGetPlayerInfo(clientIndex, &playerinfo);
-			//m_teamColor = GetClientColor(clientIndex);
+			if (gCapFuncs.GetClientColor)
+			{
+				m_teamColor = gCapFuncs.GetClientColor(clientIndex);
+			}
+
 			Colorize();
 		}
 		else
@@ -1371,10 +1373,6 @@ int CHudMessage::SayTextPrint(const char *pszBuf, int iBufSize, int clientIndex,
 	wchar_t *msg;
 	wchar_t temp[MAX_CHARS_PER_LINE];
 	wchar_t out[MAX_CHARS_PER_LINE];
-	hud_player_info_t playerinfo = { 0 };
-
-	if (clientIndex >= 0 && clientIndex <= 32)
-		gEngfuncs.pfnGetPlayerInfo(clientIndex, &playerinfo);
 
 	for (lineNum = 0; lineNum < MAX_LINES; lineNum++)
 	{
@@ -1581,7 +1579,10 @@ int CHudMessage::MsgFunc_SayText(const char* pszName, int iSize, void* pbuf)
 	{
 		hud_player_info_t playerinfo = { 0 };
 		gEngfuncs.pfnGetPlayerInfo(client_index, &playerinfo);
-		strcpy(sstr1, playerinfo.name);
+		if (playerinfo.name)
+		{
+			strcpy(sstr1, playerinfo.name);
+		}
 	}
 
 	return SayTextPrint(formatStr, iSize - 1, client_index, sstr1, sstr2, sstr3, sstr4);

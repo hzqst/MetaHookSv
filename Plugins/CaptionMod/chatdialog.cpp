@@ -892,7 +892,7 @@ void CChatDialog::ChatPrintf(int iPlayerIndex, const char *fmt, ...)
 	int iNameStart = 0;
 	int iNameLength = 0;
 
-	hud_player_info_t sPlayerInfo;
+	hud_player_info_t sPlayerInfo = {0};
 
 	if (iPlayerIndex == 0)
 	{
@@ -982,7 +982,7 @@ void CChatDialog::ChatPrintf(int iPlayerIndex, const wchar_t *fmt, ...)
 	int iNameStart = 0;
 	int iNameLength = 0;
 
-	hud_player_info_t sPlayerInfo;
+	hud_player_info_t sPlayerInfo = {0};
 
 	if (iPlayerIndex == 0)
 	{
