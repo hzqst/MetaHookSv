@@ -59,6 +59,17 @@ enum EMatchMakingServerResponse
 	eNoServersListedOnMasterServer // for the Internet query type, returned in response callback if no servers of this type match
 };
 
+enum EMatchMakingType
+{
+	eInternetServer = 0,
+	eLANServer,
+	eFriendsServer,
+	eFavoritesServer,
+	eHistoryServer,
+	eSpectatorServer,
+	eInvalidServer
+};
+
 // servernetadr_t is all the addressing info the serverbrowser needs to know about a game server,
 // namely: its IP, its connection port, and its query port.
 class servernetadr_t 
@@ -212,7 +223,7 @@ public:
 	uint32 m_ulTimeLastPlayed;									///< time (in unix time) when this server was last played on (for favorite/history servers)
 	int	m_nServerVersion;										///< server version as reported to Steam
 
-private:
+public:
 
 	/// Game server name
 	char m_szServerName[k_cbMaxGameServerName];

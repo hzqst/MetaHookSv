@@ -8,6 +8,7 @@
 #include "BaseUI.h"
 #include "viewport.h"
 #include "SubtitlePanel.h"
+#include "cstrikechatdialog.h"
 #include "MemPool.h"
 #include "message.h"
 #include "engfuncs.h"
@@ -781,6 +782,7 @@ void CDictionary::FinalizeString(std::wstring &output)
 void CViewport::Start(void)
 {
 	m_pSubtitle = new SubtitlePanel(NULL);
+	m_pChatDialog = new CCSChatDialog();
 
 	SetVisible(false);
 }
@@ -854,4 +856,24 @@ void CViewport::Paint(void)
 	BaseClass::Paint();
 
 	m_HudMessage.Draw();
+}
+
+bool CViewport::AllowedToPrintText(void)
+{
+	return true;
+}
+
+void CViewport::StartMessageMode(void)
+{
+	m_pChatDialog->StartMessageMode(MM_SAY);
+}
+
+void CViewport::StartMessageMode2(void)
+{
+	m_pChatDialog->StartMessageMode(MM_SAY_TEAM);
+}
+
+void CViewport::ChatPrintf(int iPlayerIndex, const wchar_t *buffer)
+{
+	m_pChatDialog->ChatPrintf(iPlayerIndex, buffer);
 }

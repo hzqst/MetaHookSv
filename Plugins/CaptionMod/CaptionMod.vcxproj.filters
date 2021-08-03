@@ -46,27 +46,18 @@
     <Filter Include="vgui_controls">
       <UniqueIdentifier>{27da8815-49cc-4df4-85c2-1393164c30e5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="VGUIFont">
-      <UniqueIdentifier>{7ca0e99c-9048-4b3a-85eb-af09ac2cf41b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="libcsv">
       <UniqueIdentifier>{7c335b3e-5266-4100-a6d5-d540438ab320}</UniqueIdentifier>
     </Filter>
+    <Filter Include="VGUI2">
+      <UniqueIdentifier>{7ca0e99c-9048-4b3a-85eb-af09ac2cf41b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BaseUI.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="ClientVGUI.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="engfuncs.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="exportfuncs.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="GameUI.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\HLSDK\common\interface.cpp">
@@ -87,13 +78,7 @@
     <ClCompile Include="plugins.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="SubtitlePanel.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="sys_dll.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="Viewport.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="SourceSDK\filesystem.cpp">
@@ -394,40 +379,40 @@
       <Filter>vgui_controls</Filter>
     </ClCompile>
     <ClCompile Include="Bitmap.cpp">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="Border.cpp">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="FontAmalgam.cpp">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="FontManager.cpp">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="FontTextureCache.cpp">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="Scheme.cpp">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="SourceSDK\SchemeHook.cpp">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="SourceSDK\Surface.cpp">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="SurfaceHook.cpp">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="VPanel.cpp">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="SourceSDK\VPanelWrapper.cpp">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="Win32Font.cpp">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="libcsv\csv_document.cpp">
       <Filter>libcsv</Filter>
@@ -438,11 +423,32 @@
     <ClCompile Include="encode.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="chatdialog.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="cstrikechatdialog.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="SubtitlePanel.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="Viewport.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientVGUI.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseUI.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="GameUI.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="command.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BaseUI.h">
-      <Filter>Source</Filter>
-    </ClInclude>
     <ClInclude Include="engfuncs.h">
       <Filter>Header</Filter>
     </ClInclude>
@@ -972,30 +978,42 @@
       <Filter>vgui_controls</Filter>
     </ClInclude>
     <ClInclude Include="Bitmap.h">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="Border.h">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="FontAmalgam.h">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="FontManager.h">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="FontTextureCache.h">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="vgui_internal.h">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="Win32Font.h">
-      <Filter>VGUIFont</Filter>
+      <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="libcsv\csv_document.h">
       <Filter>libcsv</Filter>
     </ClInclude>
     <ClInclude Include="encode.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="chatdialog.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="cstrikechatdialog.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseUI.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="command.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

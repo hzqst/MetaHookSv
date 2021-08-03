@@ -25,15 +25,14 @@ struct message_parms_t
 const int MESSAGE_ARG_LEN = 64;
 const int MAX_MESSAGE_ARGS = 4;
 
-typedef struct
+typedef struct client_message_s
 {
 	client_textmessage_t *pMessage;
 	unsigned int font;
 	wchar_t args[MAX_MESSAGE_ARGS][MESSAGE_ARG_LEN];
 	int numArgs;
 	int hintMessage;
-}
-client_message_t;
+}client_message_t;
 
 class CHudMessage
 {
@@ -44,15 +43,20 @@ public:
 	void Reset(void);
 
 public:
+	int MsgFunc_HudText(const char *pszName, int iSize, void *pbuf);
+	int MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf);
+	int MsgFunc_SendAudio(const char* pszName, int iSize, void* pbuf);
+	int MsgFunc_SayText(const char* pszName, int iSize, void* pbuf);
+
+public:	
+	void EnsureTextFitsInOneLineAndWrapIfHaveTo(int line);
+	int GetHudFontHeight(void);
+	void GetStringSize(const wchar_t *string, int *width, int *height);
+	int DrawVGUI2String(wchar_t *msg, int x, int y, float r, float g, float b);
 	float FadeBlend(float fadein, float fadeout, float hold, float localTime);
 	int XPosition(float x, int width, int lineWidth);
 	int YPosition(float y, int height);
 
-public:
-	int MsgFunc_HudText(const char *pszName, int iSize, void *pbuf);
-	int MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf);
-	int MsgFunc_SendAudio(const char* pszName, int iSize, void* pbuf);
-public:
 	void MessageAdd(client_textmessage_t *newMessage, bool bIsDynamicMessage);
 	int MessageAdd(client_textmessage_t *newMessage, float time, int hintMessage, int useSlot, unsigned int m_hFont, bool bIsDynamicMessage);
 	void MessageScanNextChar(unsigned int font);
@@ -60,6 +64,7 @@ public:
 	void MessageDrawScan(client_message_t *pClientMessage, float time, unsigned int font);
 
 	void RetireDynamicMessage(client_textmessage_t *pMsg);
+	int SayTextPrint(const char *pszBuf, int iBufSize, int clientIndex, char *sstr1, char *sstr2, char *sstr3, char *sstr4);
 
 private:
 	client_message_t m_pMessages[maxHUDMessages];

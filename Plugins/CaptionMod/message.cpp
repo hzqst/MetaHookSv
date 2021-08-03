@@ -13,6 +13,9 @@
 
 using namespace vgui;
 
+extern cvar_t *hud_saytext_time;
+extern cvar_t *cap_newchat;
+
 char *m_pSenderName = NULL;
 
 CHudMessage m_HudMessage;
@@ -22,6 +25,17 @@ pfnUserMsgHook m_pfnHudText;
 pfnUserMsgHook m_pfnHudTextPro;
 pfnUserMsgHook m_pfnHudTextArgs;
 pfnUserMsgHook m_pfnSendAudio;
+pfnUserMsgHook m_pfnSayText;
+
+int __MsgFunc_SayText(const char *pszName, int iSize, void *pbuf)
+{
+	BEGIN_READ(pbuf, iSize);
+
+	if (m_HudMessage.MsgFunc_SayText(pszName, iSize, pbuf) != 0)
+		return 1;
+
+	return m_pfnSayText(pszName, iSize, pbuf);
+}
 
 int __MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 {
@@ -49,8 +63,6 @@ int __MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
 
 int __MsgFunc_SendAudio(const char* pszName, int iSize, void* pbuf)
 {
-	BEGIN_READ(pbuf, iSize);
-
 	if (m_HudMessage.MsgFunc_SendAudio(pszName, iSize, pbuf) != 0)
 		return 1;
 
@@ -67,6 +79,7 @@ void CHudMessage::Init(void)
 	m_pfnHudTextPro = HOOK_MESSAGE(HudTextPro);
 	m_pfnHudTextArgs = HOOK_MESSAGE(HudTextArgs);
 	m_pfnSendAudio = HOOK_MESSAGE(SendAudio);
+	m_pfnSayText = HOOK_MESSAGE(SayText);
 }
 
 void CHudMessage::Reset(void)
@@ -99,6 +112,144 @@ int CHudMessage::VidInit(void)
 	Reset();
 
 	return 1;
+}
+
+int CHudMessage::GetHudFontHeight(void)
+{
+	if (!m_hFont)
+		return 0;
+
+	return vgui::surface()->GetFontTall(m_hFont);
+}
+
+void CHudMessage::GetStringSize(const wchar_t *string, int *width, int *height)
+{
+	int i;
+	int len;
+	int a, b, c;
+
+	if (width)
+		*width = 0;
+
+	if (height)
+		*height = 0;
+
+	if (!m_hFont)
+		return;
+
+	len = wcslen(string);
+
+	if (width)
+	{
+		for (i = 0; i < len; i++)
+		{
+			vgui::surface()->GetCharABCwide(m_hFont, string[i], a, b, c);
+			*width += a + b + c;
+		}
+	}
+
+	if (height)
+	{
+		*height = GetHudFontHeight();
+	}
+}
+
+int CHudMessage::DrawVGUI2String(wchar_t *msg, int x, int y, float r, float g, float b)
+{
+	int i;
+	int iOriginalX;
+	int iTotalLines;
+	int iCurrentLine;
+	int w1, w2, w3;
+	bool bHorzCenter;
+	int len;
+	wchar_t *strTemp;
+	int fontheight;
+
+	if (!m_hFont)
+		return 0;
+
+	iCurrentLine = 0;
+	iOriginalX = x;
+	iTotalLines = 1;
+	bHorzCenter = false;
+	len = wcslen(msg);
+
+	for (strTemp = msg; *strTemp; strTemp++)
+	{
+		if (*strTemp == '\r')
+			iTotalLines++;
+	}
+
+	if (x == -1)
+	{
+		bHorzCenter = true;
+	}
+
+	if (y == -1)
+	{
+		fontheight = vgui::surface()->GetFontTall(m_hFont);
+		y = (g_iVideoHeight - fontheight) / 2;
+	}
+
+	for (i = 0; i < iTotalLines; i++)
+	{
+		wchar_t line[1024];
+		int iWidth;
+		int iHeight;
+		int iTempCount;
+		int j;
+		int shadow_x;
+
+		iTempCount = 0;
+		iWidth = 0;
+		iHeight = 0;
+
+		for (strTemp = &msg[iCurrentLine]; *strTemp; strTemp++, iCurrentLine++)
+		{
+			if (*strTemp == '\r')
+				break;
+
+			if (*strTemp != '\n')
+				line[iTempCount++] = *strTemp;
+		}
+
+		line[iTempCount] = 0;
+
+		GetStringSize(line, &iWidth, &iHeight);
+
+		if (bHorzCenter)
+			x = (g_iVideoWidth - iWidth) / 2;
+		else
+			x = iOriginalX;
+
+		gEngfuncs.pfnDrawSetTextColor(0, 0, 0);
+
+		shadow_x = x;
+
+		for (j = 0; j < iTempCount; j++)
+		{
+			gEngfuncs.pfnVGUI2DrawCharacter(shadow_x, y, line[j], m_hFont);
+			vgui::surface()->GetCharABCwide(m_hFont, line[j], w1, w2, w3);
+
+			shadow_x += w1 + w2 + w3;
+		}
+
+		gEngfuncs.pfnDrawSetTextColor(r, g, b);
+
+		for (j = 0; j < iTempCount; j++)
+		{
+			gEngfuncs.pfnVGUI2DrawCharacter(x, y, line[j], m_hFont);
+			vgui::surface()->GetCharABCwide(m_hFont, line[j], w1, w2, w3);
+
+			x += w1 + w2 + w3;
+		}
+
+		y += iHeight;
+		iCurrentLine++;
+	}
+
+	return x;
 }
 
 float CHudMessage::FadeBlend(float fadein, float fadeout, float hold, float localTime)
@@ -838,6 +989,7 @@ int CHudMessage::MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
 	return 0;
 }
 
+
 int CHudMessage::MsgFunc_SendAudio(const char* pszName, int iSize, void* pbuf)
 {
 	BEGIN_READ(pbuf, iSize);
@@ -867,6 +1019,572 @@ int CHudMessage::MsgFunc_SendAudio(const char* pszName, int iSize, void* pbuf)
 	}
 
 	return 0;
+}
+
+#define MAX_LINES 5
+#define MAX_CHARS_PER_LINE 256
+
+#define MAX_LINE_WIDTH (g_iVideoWidth - 40)
+#define LINE_START 10
+
+#define MAX_PLAYER_NAME_LENGTH 128
+#define TEXTCOLOR_NORMAL 1
+#define TEXTCOLOR_USEOLDCOLORS 2
+#define TEXTCOLOR_PLAYERNAME 3
+#define TEXTCOLOR_LOCATION 4
+#define TEXTCOLOR_MAX 5
+
+static float SCROLL_SPEED = 5;
+
+struct TextRange
+{
+	int start;
+	int end;
+	float *color;
+};
+
+class SayTextLine
+{
+public:
+	SayTextLine(void);
+
+public:
+	void Clear(void);
+	void Draw(int x, int y, float r, float g, float b);
+	void Colorize(void);
+	void SetText(wchar_t *buf, int clientIndex);
+
+public:
+	wchar_t m_line[MAX_CHARS_PER_LINE];
+	CUtlVector<TextRange> m_textRanges;
+	int m_clientIndex;
+	float *m_teamColor;
+
+public:
+	SayTextLine &operator = (SayTextLine &other);
+};
+
+SayTextLine::SayTextLine(void)
+{
+	Clear();
+}
+
+void SayTextLine::Clear(void)
+{
+	m_textRanges.RemoveAll();
+	m_line[0] = 0;
+}
+
+void SayTextLine::Draw(int x, int y, float r, float g, float b)
+{
+	return;
+
+	int rangeIndex;
+	TextRange *range;
+	wchar_t ch;
+
+	if (m_textRanges.Size() != 0)
+	{
+		for (rangeIndex = 0; rangeIndex < m_textRanges.Size(); rangeIndex++)
+		{
+			range = &m_textRanges[rangeIndex];
+
+			ch = m_line[range->end];
+			m_line[range->end] = 0;
+
+			if (range->color)
+				x = m_HudMessage.DrawVGUI2String(m_line + range->start, x, y, range->color[0], range->color[1], range->color[2]);
+			else
+				x = m_HudMessage.DrawVGUI2String(m_line + range->start, x, y, r, g, b);
+
+			m_line[range->end] = ch;
+		}
+	}
+	else
+	{
+		m_HudMessage.DrawVGUI2String(m_line, x, y, r, g, b);
+		return;
+	}
+}
+
+SayTextLine &SayTextLine::operator = (SayTextLine &other)
+{
+	m_textRanges.RemoveAll();
+	m_textRanges.SetCount(other.m_textRanges.Count());
+
+	for (int i = 0; i < other.m_textRanges.Size(); i++)
+		m_textRanges[i] = other.m_textRanges[i];
+
+	m_clientIndex = other.m_clientIndex;
+	m_teamColor[0] = other.m_teamColor[0];
+	m_teamColor[1] = other.m_teamColor[1];
+	m_teamColor[2] = other.m_teamColor[2];
+
+	memcpy(m_line, other.m_line, sizeof(m_line));
+	return *this;
+}
+
+void SayTextLine::Colorize(void)
+{
+	wchar_t *txt = m_line;
+	int lineLen = wcslen(m_line);
+
+	if (m_line[0] == TEXTCOLOR_PLAYERNAME || m_line[0] == TEXTCOLOR_LOCATION || m_line[0] == TEXTCOLOR_NORMAL)
+	{
+		while (txt && *txt)
+		{
+			TextRange range;
+			int count;
+
+			switch (*txt)
+			{
+			case TEXTCOLOR_PLAYERNAME:
+			case TEXTCOLOR_LOCATION:
+			case TEXTCOLOR_NORMAL:
+			{
+				range.start = (txt - m_line) + 1;
+
+				switch (*txt)
+				{
+				case TEXTCOLOR_PLAYERNAME:
+				{
+					range.color = m_teamColor;
+					break;
+				}
+
+				/*case TEXTCOLOR_LOCATION:
+				{
+					range.color = g_LocationColor;
+					break;
+				}*/
+
+				default:
+				{
+					range.color = NULL;
+				}
+				}
+
+				range.end = lineLen;
+				count = m_textRanges.Count();
+
+				if (count)
+					m_textRanges[count - 1].end = range.start - 1;
+
+				m_textRanges.AddToTail(range);
+				break;
+			}
+			}
+
+			txt++;
+		}
+	}
+	else if (m_line[0] == TEXTCOLOR_USEOLDCOLORS)
+	{
+		wchar_t wName[128];
+		hud_player_info_t playerinfo = { 0 };
+		gEngfuncs.pfnGetPlayerInfo(m_clientIndex, &playerinfo);
+		char *pName = playerinfo.name;
+
+		vgui::localize()->ConvertANSIToUnicode(pName, wName, sizeof(wName));
+
+		if (pName)
+		{
+			wchar_t *nameInString = wcsstr(m_line, wName);
+
+			if (nameInString)
+			{
+				TextRange range;
+				range.start = 1;
+				range.end = wcslen(wName) + (nameInString - m_line);
+				//range.color = GetClientColor(m_clientIndex);
+				m_textRanges.AddToTail(range);
+
+				range.start = range.end;
+				range.end = wcslen(m_line);
+				range.color = NULL;
+				m_textRanges.AddToTail(range);
+			}
+		}
+	}
+
+	if (!m_textRanges.Size())
+	{
+		TextRange range;
+		range.start = 0;
+		range.end = wcslen(m_line);
+		range.color = NULL;
+		m_textRanges.AddToTail(range);
+	}
+}
+
+void SayTextLine::SetText(wchar_t *buf, int clientIndex)
+{
+	Clear();
+
+	if (buf)
+	{
+		wcsncpy(m_line, buf, MAX_CHARS_PER_LINE);
+		m_line[MAX_CHARS_PER_LINE - 1] = 0;
+		m_clientIndex = clientIndex;
+		m_teamColor = NULL;
+
+		if (clientIndex > 0)
+		{
+			hud_player_info_t playerinfo = { 0 };
+			gEngfuncs.pfnGetPlayerInfo(clientIndex, &playerinfo);
+			//m_teamColor = GetClientColor(clientIndex);
+			Colorize();
+		}
+		else
+		{
+			TextRange range;
+			range.start = 0;
+			range.end = wcslen(m_line);
+			range.color = NULL;
+			m_textRanges.AddToTail(range);
+		}
+	}
+}
+
+static SayTextLine g_sayTextLine[MAX_LINES + 1];
+static float flScrollTime = 0;
+
+static int Y_START = 0;
+static int line_height = 0;
+
+int ScrollTextUp(void)
+{
+	g_sayTextLine[MAX_LINES].Clear();
+	memmove(&g_sayTextLine[0], &g_sayTextLine[1], sizeof(g_sayTextLine) - sizeof(g_sayTextLine[0]));
+	g_sayTextLine[MAX_LINES - 1].Clear();
+
+	if (g_sayTextLine[0].m_line[0] == ' ')
+	{
+		g_sayTextLine[0].m_line[0] = 2;
+		return 1 + ScrollTextUp();
+	}
+
+	return 1;
+}
+
+void CHudMessage::EnsureTextFitsInOneLineAndWrapIfHaveTo(int line)
+{
+	int line_width = 0;
+	GetStringSize(g_sayTextLine[line].m_line, &line_width, &line_height);
+
+	if ((line_width + LINE_START) > MAX_LINE_WIDTH)
+	{
+		int length = LINE_START;
+		int tmp_len = 0;
+		wchar_t *last_break = NULL;
+
+		for (wchar_t *x = g_sayTextLine[line].m_line; *x != 0; x++)
+		{
+			if (x[0] == '/' && x[1] == '(')
+			{
+				x += 2;
+
+				while (*x != 0 && *x != ')')
+					x++;
+
+				if (*x != 0)
+					x++;
+
+				if (*x == 0)
+					break;
+			}
+
+			wchar_t buf[2];
+			buf[1] = 0;
+
+			if (*x == ' ' && x != g_sayTextLine[line].m_line)
+				last_break = x;
+
+			buf[0] = *x;
+			GetStringSize(buf, &tmp_len, &line_height);
+			length += tmp_len;
+
+			if (length > MAX_LINE_WIDTH)
+			{
+				if (!last_break)
+					last_break = x - 1;
+
+				x = last_break;
+
+				int j;
+
+				do
+				{
+					for (j = 0; j < MAX_LINES; j++)
+					{
+						if (!*g_sayTextLine[j].m_line)
+							break;
+					}
+
+					if (j == MAX_LINES)
+					{
+						int linesmoved = ScrollTextUp();
+						line -= linesmoved;
+						last_break = last_break - (sizeof(g_sayTextLine[0].m_line) * linesmoved);
+					}
+				} while (j == MAX_LINES);
+
+				if ((wchar_t)*last_break == (wchar_t)' ')
+				{
+					int linelen = wcslen(g_sayTextLine[j].m_line);
+					int remaininglen = wcslen(last_break);
+
+					if ((linelen - remaininglen) <= MAX_CHARS_PER_LINE)
+					{
+						wcsncat(g_sayTextLine[j].m_line, last_break, MAX_CHARS_PER_LINE);
+						g_sayTextLine[j].m_line[MAX_CHARS_PER_LINE - 1] = 0;
+						g_sayTextLine[j].Colorize();
+					}
+				}
+				else
+				{
+					if ((wcslen(g_sayTextLine[j].m_line) - wcslen(last_break) - 2) < MAX_CHARS_PER_LINE)
+					{
+						wcsncat(g_sayTextLine[j].m_line, L" ", MAX_CHARS_PER_LINE);
+						wcsncat(g_sayTextLine[j].m_line, last_break, MAX_CHARS_PER_LINE);
+						g_sayTextLine[j].m_line[MAX_CHARS_PER_LINE - 1] = 0;
+						g_sayTextLine[j].Colorize();
+					}
+				}
+
+				*last_break = 0;
+
+				EnsureTextFitsInOneLineAndWrapIfHaveTo(j);
+				break;
+			}
+		}
+	}
+}
+
+int CHudMessage::SayTextPrint(const char *pszBuf, int iBufSize, int clientIndex, char *sstr1, char *sstr2, char *sstr3, char *sstr4)
+{
+	int lineNum;
+	wchar_t finalBuffer[MAX_CHARS_PER_LINE];
+	const char *localized;
+	char buf[MAX_CHARS_PER_LINE];
+	int len;
+	wchar_t *msg;
+	wchar_t temp[MAX_CHARS_PER_LINE];
+	wchar_t out[MAX_CHARS_PER_LINE];
+	hud_player_info_t playerinfo = { 0 };
+
+	if (clientIndex >= 0 && clientIndex <= 32)
+		gEngfuncs.pfnGetPlayerInfo(clientIndex, &playerinfo);
+
+	for (lineNum = 0; lineNum < MAX_LINES; lineNum++)
+	{
+		if (!g_sayTextLine[lineNum].m_line[0])
+			break;
+	}
+
+	if (lineNum == MAX_LINES)
+	{
+		ScrollTextUp();
+		lineNum = MAX_LINES - 1;
+	}
+
+	len = strlen(pszBuf);
+
+	if (pszBuf[len - 1] == '\n' || pszBuf[len - 1] == '\r')
+	{
+		strncpy(buf, pszBuf, sizeof(buf) - 1);
+		buf[len - 1] = 0;
+		localized = buf;
+	}
+	else
+	{
+		strncpy(buf, pszBuf, sizeof(buf) - 1);
+		buf[sizeof(buf) - 1] = 0;
+		localized = buf;
+	}
+
+	msg = vgui::localize()->Find(localized);
+
+	if (!msg)
+	{
+		wchar_t *wsz;
+		wchar_t locTerm[128];
+		bool inword;
+		int charsLeft;
+		wchar_t *wordPtr;
+		int outPos;
+		wchar_t ch;
+		int wordLen;
+		wchar_t *localizedTerm;
+		int num;
+
+		vgui::localize()->ConvertANSIToUnicode(localized, temp, sizeof(temp));
+
+		if (temp[0])
+		{
+			wsz = temp;
+			charsLeft = wcslen(temp);
+			inword = false;
+			wordPtr = NULL;
+			outPos = 0;
+
+			while (charsLeft)
+			{
+				ch = *wsz;
+
+				if (inword)
+				{
+					if (iswspace(ch) || charsLeft == 1)
+					{
+						wordLen = wsz - wordPtr;
+						wcsncpy(locTerm, wordPtr, wordLen + 1);
+
+						if (charsLeft == 1)
+							locTerm[wordLen + 1] = 0;
+						else
+							locTerm[wordLen] = 0;
+
+						if (vgui::localize()->ConvertUnicodeToANSI(locTerm, buf, sizeof(buf)))
+							localizedTerm = vgui::localize()->Find(buf);
+						else
+							localizedTerm = locTerm;
+
+						num = min((int)wcslen(localizedTerm), MAX_CHARS_PER_LINE - outPos);
+						wcsncpy(&out[outPos], localizedTerm, num);
+						outPos += num;
+
+						if (charsLeft > 1)
+						{
+							out[outPos] = ch;
+							outPos++;
+						}
+
+						inword = false;
+					}
+				}
+				else
+				{
+					if (ch == '#')
+					{
+						inword = true;
+						wordPtr = wsz;
+					}
+					else
+					{
+						if (outPos < MAX_CHARS_PER_LINE)
+						{
+							out[outPos] = ch;
+							outPos++;
+						}
+					}
+				}
+
+				wsz++;
+				charsLeft--;
+			}
+
+			if (outPos < MAX_CHARS_PER_LINE)
+				out[outPos] = 0;
+			else
+				out[MAX_CHARS_PER_LINE - 1] = 0;
+		}
+
+		msg = out;
+	}
+
+	static wchar_t wstr[4][256];
+	wchar_t *w[4];
+	char *sptrs[4];
+	int j;
+	bool useStdPrintf;
+	const wchar_t *test;
+
+	sptrs[0] = sstr1;
+	sptrs[1] = sstr2;
+	sptrs[2] = sstr3;
+	sptrs[3] = sstr4;
+
+	w[0] = NULL;
+	w[1] = NULL;
+	w[2] = NULL;
+	w[3] = NULL;
+
+	for (j = 0; j < 4; j++)
+	{
+		if (sptrs[j][0] == '#')
+		{
+			w[j] = vgui::localize()->Find(sptrs[j]);
+		}
+
+		if (!w[j])
+		{
+			vgui::localize()->ConvertANSIToUnicode(sptrs[j], wstr[j], sizeof(wstr[j]));
+			w[j] = wstr[j];
+		}
+	}
+
+	test = wcsstr(msg, L"%s");
+	useStdPrintf = (test && !(test[2] > '0' && test[2] < '9'));
+
+	if (useStdPrintf)
+	{
+		_snwprintf(finalBuffer, sizeof(finalBuffer), msg, w[0], w[1], w[2], w[3]);
+	}
+	else
+	{
+		vgui::localize()->ConstructString(finalBuffer, sizeof(finalBuffer), msg, 4, w[0], w[1], w[2], w[3]);
+	}
+
+	g_sayTextLine[lineNum].SetText(finalBuffer, clientIndex);
+
+	EnsureTextFitsInOneLineAndWrapIfHaveTo(lineNum);
+
+	if (lineNum == 0)
+		flScrollTime = cl_time + hud_saytext_time->value;
+
+	//m_iFlags |= HUD_ACTIVE;
+
+	//Y_START = GetTextPrintY();
+
+	g_pViewPort->ChatPrintf(clientIndex, finalBuffer);
+
+	return 1;
+}
+
+int CHudMessage::MsgFunc_SayText(const char* pszName, int iSize, void* pbuf)
+{
+	if (!cap_newchat->value)
+		return 0;
+
+	BEGIN_READ(pbuf, iSize);
+
+	int client_index = READ_BYTE();
+
+	char formatStr[256];
+	strncpy(formatStr, READ_STRING(), sizeof(formatStr) - 1);
+	formatStr[255] = 0;
+
+	char sstr1[256], sstr2[256], sstr3[256], sstr4[256];
+	strncpy(sstr1, READ_STRING(), sizeof(sstr1) - 1);
+	sstr1[255] = 0;
+
+	strncpy(sstr2, READ_STRING(), sizeof(sstr2) - 1);
+	sstr2[255] = 0;
+
+	strncpy(sstr3, READ_STRING(), sizeof(sstr3) - 1);
+	sstr3[255] = 0;
+
+	strncpy(sstr4, READ_STRING(), sizeof(sstr4) - 1);
+	sstr4[255] = 0;
+
+	if (!sstr1[0] && client_index > 0)
+	{
+		hud_player_info_t playerinfo = { 0 };
+		gEngfuncs.pfnGetPlayerInfo(client_index, &playerinfo);
+		strcpy(sstr1, playerinfo.name);
+	}
+
+	return SayTextPrint(formatStr, iSize - 1, client_index, sstr1, sstr2, sstr3, sstr4);
 }
 
 int CHudMessage::MessageAdd(client_textmessage_t *newMessage, float time, int hintMessage, int useSlot, unsigned int m_hFont, bool bIsDynamicMessage)

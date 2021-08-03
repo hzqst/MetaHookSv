@@ -1,13 +1,16 @@
 #include <metahook.h>
 #include "exportfuncs.h"
 #include "engfuncs.h"
+#include "command.h"
 
 cl_exportfuncs_t gExportfuncs;
 mh_interface_t *g_pInterface;
 metahook_api_t *g_pMetaHookAPI;
 mh_enginesave_t *g_pMetaSave;
 IFileSystem *g_pFileSystem;
-BOOL g_IsClientVGUI2 = false;
+
+bool g_IsClientVGUI2 = false;
+bool g_IsSCClient = false;
 HMODULE g_hClientDll = NULL;
 DWORD g_dwClientSize = 0;
 int g_iVideoWidth = 0;
@@ -67,6 +70,8 @@ void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	gCapFuncs.pcl_time = (double *)*(DWORD *)(addr + 2);
 	gCapFuncs.pcl_oldtime = gCapFuncs.pcl_time + 1;
 
+	Cmd_GetCmdBase = *(cmd_function_t *(**)(void))((DWORD)pEngfuncs + 0x198);
+
 	Steam_Init();
 	Engine_FillAddress();
 	Engine_InstallHook();
@@ -83,23 +88,32 @@ void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_Init = HUD_Init;
 	pExportFunc->HUD_VidInit = HUD_VidInit;
 	pExportFunc->HUD_Frame = HUD_Frame;
+	pExportFunc->HUD_Redraw = HUD_Redraw;
 
 	g_hClientDll = GetModuleHandle("client.dll");
 	g_dwClientSize = g_pMetaHookAPI->GetModuleSize(g_hClientDll);
 
 	auto pfnClientCreateInterface = Sys_GetFactory((HINTERFACEMODULE)g_hClientDll);
 
-	//Fix SvClient Portal Rendering Confliction
 	if (pfnClientCreateInterface && pfnClientCreateInterface("SCClientDLL001", 0))
 	{
-#define SV_FINDSOUND_SIG_SVENGINE "\x51\x55\x8B\x6C\x24\x0C\x89\x4C\x24\x04\x85\xED\x0F\x84\x2A\x2A\x2A\x2A\x80\x7D\x00\x00"
+		g_IsSCClient = true;
 
-		gCapFuncs.SvClient_FindSoundEx = (decltype(gCapFuncs.SvClient_FindSoundEx))
-			g_pMetaHookAPI->SearchPattern((void *)g_hClientDll, g_dwClientSize, SV_FINDSOUND_SIG_SVENGINE, Sig_Length(SV_FINDSOUND_SIG_SVENGINE));
+#define SC_FINDSOUND_SIG "\x51\x55\x8B\x6C\x24\x0C\x89\x4C\x24\x04\x85\xED\x0F\x84\x2A\x2A\x2A\x2A\x80\x7D\x00\x00"
 
-		Sig_FuncNotFound(SvClient_FindSoundEx);
+		gCapFuncs.ScClient_FindSoundEx = (decltype(gCapFuncs.ScClient_FindSoundEx))
+			g_pMetaHookAPI->SearchPattern((void *)g_hClientDll, g_dwClientSize, SC_FINDSOUND_SIG, Sig_Length(SC_FINDSOUND_SIG));
 
-		Install_InlineHook(SvClient_FindSoundEx);
+		Sig_FuncNotFound(ScClient_FindSoundEx);
+
+		Install_InlineHook(ScClient_FindSoundEx);
+
+#define SC_GETCLIENTCOLOR_SIG "\x8B\x4C\x24\x04\x85\xC9\x2A\x2A\x6B\xC1\x58"
+
+		gCapFuncs.GetClientColor = (decltype(gCapFuncs.GetClientColor))
+			g_pMetaHookAPI->SearchPattern((void *)g_hClientDll, g_dwClientSize, SC_GETCLIENTCOLOR_SIG, Sig_Length(SC_GETCLIENTCOLOR_SIG));
+		
+		Sig_FuncNotFound(GetClientColor);
 	}
 
 	Install_InlineHook(pfnTextMessageGet);

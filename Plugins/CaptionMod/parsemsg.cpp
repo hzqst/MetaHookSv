@@ -26,7 +26,7 @@ int READ_CHAR(void)
 		giBadRead = TRUE;
 		return -1;
 	}
-		
+
 	c = (signed char)gpBuf[giRead];
 	giRead++;
 	

@@ -10,7 +10,6 @@
 
 using namespace vgui;
 
-//2015-11-28 fixed a bug that panel too small in high resolution.
 SubtitlePanel::SubtitlePanel(Panel *parent)  : EditablePanel(parent, "Subtitle")
 {
 	SetPaintBackgroundEnabled(true);

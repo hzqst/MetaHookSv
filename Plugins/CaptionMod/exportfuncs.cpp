@@ -1,6 +1,7 @@
 #include <metahook.h>
 #include "exportfuncs.h"
 #include "engfuncs.h"
+#include "command.h"
 
 //Steam API
 #include "steam_api.h"
@@ -9,7 +10,7 @@
 #include <VGUI/VGUI.h>
 #include "Viewport.h"
 
-#include <intrin.h>
+#include "command.h"
 
 cl_enginefunc_t gEngfuncs;
 
@@ -19,10 +20,13 @@ cvar_t *cap_enabled = NULL;
 cvar_t *cap_max_distance = NULL;
 cvar_t *cap_netmessage = NULL;
 cvar_t *cap_hudmessage = NULL;
+cvar_t *cap_newchat = NULL;
+cvar_t *hud_saytext_time = NULL;
 
 static CDictionary *m_SentenceDictionary = NULL;
 static qboolean m_bSentenceSound = false;
 static float m_flSentenceDuration = 0;
+int m_iIntermission = 0;
 
 void *NewClientFactory(void)
 {
@@ -37,6 +41,13 @@ int HUD_VidInit(void)
 		g_pViewPort->VidInit();
 
 	return result;
+}
+
+int HUD_Redraw(float time, int intermission)
+{
+	m_iIntermission = intermission;
+
+	return gExportfuncs.HUD_Redraw(time, intermission);
 }
 
 void HUD_Frame(double time)
@@ -116,9 +127,9 @@ void SvClient_StartWave(const char *name, float duration)
 	g_pViewPort->StartSubtitle(Dict);
 }
 
-int __fastcall SvClient_FindSoundEx(int pthis, int, const char *sound)
+int __fastcall ScClient_FindSoundEx(int pthis, int, const char *sound)
 {
-	auto result = gCapFuncs.SvClient_FindSoundEx(pthis, 0, sound);
+	auto result = gCapFuncs.ScClient_FindSoundEx(pthis, 0, sound);
 
 	if (result)
 	{
@@ -138,14 +149,23 @@ void HUD_Init(void)
 		g_pViewPort->Init();
 
 	al_enable = gEngfuncs.pfnGetCvarPointer("al_enable");
+
+	hud_saytext_time = gEngfuncs.pfnGetCvarPointer("hud_saytext_time");
+	if(!hud_saytext_time)
+		hud_saytext_time = gEngfuncs.pfnRegisterVariable("hud_saytext_time", "10.0f", FCVAR_CLIENTDLL);
+
 	cap_debug = gEngfuncs.pfnRegisterVariable("cap_debug", "0", FCVAR_CLIENTDLL);
 	cap_enabled = gEngfuncs.pfnRegisterVariable("cap_enabled", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cap_max_distance = gEngfuncs.pfnRegisterVariable("cap_max_distance", "1500", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cap_netmessage = gEngfuncs.pfnRegisterVariable("cap_netmessage", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cap_hudmessage = gEngfuncs.pfnRegisterVariable("cap_hudmessage", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	cap_newchat = gEngfuncs.pfnRegisterVariable("cap_newchat", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	
 	gEngfuncs.pfnAddCommand("cap_version", Cap_Version_f);
 	gEngfuncs.pfnAddCommand("cap_reload", Cap_Reload_f);
+
+	gCapFuncs.MessageMode_f = Cmd_HookCmd("messagemode", MessageMode_f);
+	gCapFuncs.MessageMode2_f = Cmd_HookCmd("messagemode2", MessageMode2_f);
 
 	auto pfnClientCreateInterface = Sys_GetFactory((HINTERFACEMODULE)g_hClientDll);
 
@@ -448,4 +468,20 @@ void Steam_Init(void)
 	{
 		Sys_GetRegKeyValueUnderRoot("Software\\Valve\\Steam", "Language", gCapFuncs.szLanguage, sizeof(gCapFuncs.szLanguage), "english");
 	}
+}
+
+void MessageMode_f(void)
+{
+	if (!m_iIntermission && gEngfuncs.Cmd_Argc() == 1 && cap_newchat->value)
+		return g_pViewPort->StartMessageMode();
+
+	return gCapFuncs.MessageMode_f();
+}
+
+void MessageMode2_f(void)
+{
+	if (!m_iIntermission && gEngfuncs.Cmd_Argc() == 1 && cap_newchat->value)
+		return g_pViewPort->StartMessageMode2();
+
+	return gCapFuncs.MessageMode2_f();
 }

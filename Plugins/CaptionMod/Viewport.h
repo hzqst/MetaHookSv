@@ -19,6 +19,7 @@
 
 #define HUDMESSAGE_MAXLENGTH 2048
 
+class CCSChatDialog;
 class SubtitlePanel;
 class CHudMessage;
 class ISchemel;
@@ -110,8 +111,13 @@ public:
 	void AddDictionaryHash(CDictionary *dict, const char *value);
 	void RemoveDictionaryHash(CDictionary *dict, const char *value);
 
+	bool AllowedToPrintText(void);
+	void StartMessageMode(void);
+	void StartMessageMode2(void);
+	void ChatPrintf(int iPlayerIndex, const wchar_t *buffer);
 private:
 	SubtitlePanel *m_pSubtitle;
+	CCSChatDialog *m_pChatDialog;
 	CUtlVector<CDictionary *> m_Dictionary;	
 	CUtlVector<hash_item_t> m_StringsHashTable;
 	char m_szLevelName[256];

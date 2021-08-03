@@ -113,7 +113,10 @@
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
       <XMLDocumentationFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.xdc</XMLDocumentationFileName>
     </ClCompile>
+    <ClCompile Include="chatdialog.cpp" />
     <ClCompile Include="ClientVGUI.cpp" />
+    <ClCompile Include="command.cpp" />
+    <ClCompile Include="cstrikechatdialog.cpp" />
     <ClCompile Include="encode.cpp" />
     <ClCompile Include="engfuncs.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
@@ -259,6 +262,9 @@
     <ClInclude Include="BaseUI.h" />
     <ClInclude Include="Bitmap.h" />
     <ClInclude Include="Border.h" />
+    <ClInclude Include="chatdialog.h" />
+    <ClInclude Include="command.h" />
+    <ClInclude Include="cstrikechatdialog.h" />
     <ClInclude Include="encode.h" />
     <ClInclude Include="engfuncs.h" />
     <ClInclude Include="enginedef.h" />

@@ -16,12 +16,15 @@ typedef struct
 	void (*S_StartDynamicSound)(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);//hooked
 	void (*S_StartStaticSound)(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);//hooked
 
-	int(__fastcall *SvClient_FindSoundEx)(int pthis, int, const char *soundName);
+	int(__fastcall *ScClient_FindSoundEx)(int pthis, int, const char *soundName);
 	HMODULE fmodex;
 	int(__stdcall *FMOD_Sound_getLength)(int a1, void* a2, int a3);//?getLength@Sound@FMOD@@QAG?AW4FMOD_RESULT@@PAII@Z
 
-	client_textmessage_t *(*pfnTextMessageGet)(const char *pName);
+	float *(*GetClientColor)(int clientIndex);
 
+	client_textmessage_t *(*pfnTextMessageGet)(const char *pName);
+	void(*MessageMode_f)(void);
+	void(*MessageMode2_f)(void);
 	sfxcache_t *(*S_LoadSound)(sfx_t *s, channel_t *ch);
 	void *(**pfnClientFactory)(void);
 	FARPROC (WINAPI *GetProcAddress)(HMODULE hModule, LPCSTR lpProcName);
