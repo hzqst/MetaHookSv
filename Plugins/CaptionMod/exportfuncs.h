@@ -15,7 +15,7 @@
 #include <usercmd.h>
 #include "enginedef.h"
 
-#define CAPTION_MOD_VERSION "Caption Mod 2021-07-24"
+#define CAPTION_MOD_VERSION "Caption Mod 2021-08-04"
 
 extern cl_enginefunc_t gEngfuncs;
 

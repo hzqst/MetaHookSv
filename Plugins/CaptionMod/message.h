@@ -47,8 +47,10 @@ public:
 	int MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf);
 	int MsgFunc_SendAudio(const char* pszName, int iSize, void* pbuf);
 	int MsgFunc_SayText(const char* pszName, int iSize, void* pbuf);
-
+	int MsgFunc_TextMsg(const char* pszName, int iSize, void* pbuf);
 public:	
+	char *LookupString(const char *msg, int *msg_dest);
+
 	void EnsureTextFitsInOneLineAndWrapIfHaveTo(int line);
 	int GetHudFontHeight(void);
 	void GetStringSize(const wchar_t *string, int *width, int *height);

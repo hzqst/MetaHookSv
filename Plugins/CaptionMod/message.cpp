@@ -13,6 +13,7 @@
 
 using namespace vgui;
 
+extern cvar_t *hud_saytext;
 extern cvar_t *hud_saytext_time;
 extern cvar_t *cap_newchat;
 
@@ -25,6 +26,17 @@ pfnUserMsgHook m_pfnHudTextPro;
 pfnUserMsgHook m_pfnHudTextArgs;
 pfnUserMsgHook m_pfnSendAudio;
 pfnUserMsgHook m_pfnSayText;
+pfnUserMsgHook m_pfnTextMsg;
+
+int __MsgFunc_TextMsg(const char *pszName, int iSize, void *pbuf)
+{
+	BEGIN_READ(pbuf, iSize);
+
+	if (m_HudMessage.MsgFunc_TextMsg(pszName, iSize, pbuf) != 0)
+		return 1;
+
+	return m_pfnTextMsg(pszName, iSize, pbuf);
+}
 
 int __MsgFunc_SayText(const char *pszName, int iSize, void *pbuf)
 {
@@ -79,6 +91,7 @@ void CHudMessage::Init(void)
 	m_pfnHudTextArgs = HOOK_MESSAGE(HudTextArgs);
 	m_pfnSendAudio = HOOK_MESSAGE(SendAudio);
 	m_pfnSayText = HOOK_MESSAGE(SayText);
+	m_pfnTextMsg = HOOK_MESSAGE(TextMsg);
 }
 
 void CHudMessage::Reset(void)
@@ -1591,6 +1604,158 @@ int CHudMessage::MsgFunc_SayText(const char* pszName, int iSize, void* pbuf)
 	}
 
 	return SayTextPrint(formatStr, iSize - 1, client_index, sstr1, sstr2, sstr3, sstr4);
+}
+
+#define HUD_PRINTNOTIFY 1
+#define HUD_PRINTCONSOLE 2
+#define HUD_PRINTTALK 3
+#define HUD_PRINTCENTER 4
+#define HUD_PRINTRADIO 5
+#define MSG_BUF_SIZE 128
+
+char *CHudMessage::LookupString(const char *msg, int *msg_dest)
+{
+	if (!msg)
+		return "";
+
+	if (msg[0] == '#')
+	{
+		client_textmessage_t *clmsg = gCapFuncs.pfnTextMessageGet(msg + 1);
+
+		if (!clmsg || !(clmsg->pMessage))
+		{
+			return (char *)msg;
+		}
+
+		if (msg_dest)
+		{
+			if (clmsg->effect < 0)
+				*msg_dest = -clmsg->effect;
+		}
+
+		return (char *)clmsg->pMessage;
+	}
+	else
+	{
+		return (char *)msg;
+	}
+}
+
+void StripEndNewlineFromString(char *str)
+{
+	int s = strlen(str) - 1;
+
+	if (s >= 0)
+	{
+		if (str[s] == '\n' || str[s] == '\r')
+			str[s] = 0;
+	}
+}
+
+int CHudMessage::MsgFunc_TextMsg(const char* pszName, int iSize, void* pbuf)
+{
+	if (!cap_newchat->value)
+		return 0;
+
+	BEGIN_READ(pbuf, iSize);
+
+	int msg_dest = READ_BYTE();
+	
+	if (msg_dest == HUD_PRINTTALK || msg_dest == HUD_PRINTRADIO)
+	{
+		int playerIndex = -1;
+
+		if (msg_dest == HUD_PRINTRADIO)
+		{
+			char *tmp = READ_STRING();
+
+			if (tmp)
+				playerIndex = atoi(tmp);
+		}
+
+		char szBuf[6][MSG_BUF_SIZE];
+
+		char *msg_text = LookupString(READ_STRING(), &msg_dest);
+		msg_text = strncpy(szBuf[0], msg_text, MSG_BUF_SIZE - 1);
+		szBuf[0][MSG_BUF_SIZE - 1] = 0;
+
+		char *sstr1 = LookupString(READ_STRING(), NULL);
+		sstr1 = strncpy(szBuf[1], sstr1, MSG_BUF_SIZE);
+		szBuf[1][MSG_BUF_SIZE - 1] = 0;
+		StripEndNewlineFromString(sstr1);
+
+		char *sstr2 = LookupString(READ_STRING(), NULL);
+		sstr2 = strncpy(szBuf[2], sstr2, MSG_BUF_SIZE);
+		szBuf[2][MSG_BUF_SIZE - 1] = 0;
+		StripEndNewlineFromString(sstr2);
+
+		char *sstr3 = LookupString(READ_STRING(), NULL);
+		sstr3 = strncpy(szBuf[3], sstr3, MSG_BUF_SIZE);
+		szBuf[3][MSG_BUF_SIZE - 1] = 0;
+		StripEndNewlineFromString(sstr3);
+
+		char *sstr4 = LookupString(READ_STRING(), NULL);
+		sstr4 = strncpy(szBuf[4], sstr4, MSG_BUF_SIZE);
+		szBuf[4][MSG_BUF_SIZE - 1] = 0;
+		StripEndNewlineFromString(sstr4);
+
+		if (g_pViewPort && !g_pViewPort->AllowedToPrintText())
+			return 0;
+
+		switch (msg_dest)
+		{
+		case HUD_PRINTRADIO:
+		{
+			char szNewBuf[6][MSG_BUF_SIZE];
+
+			if (strlen(sstr1) > 0)
+			{
+				snprintf(szNewBuf[1], MSG_BUF_SIZE-1, "#%s", sstr1);
+				szNewBuf[1][MSG_BUF_SIZE - 1] = 0;
+
+				if (vgui::localize()->Find(szNewBuf[1]))
+					sstr1 = szNewBuf[1];
+			}
+
+			if (strlen(sstr2) > 0)
+			{
+				snprintf(szNewBuf[2], MSG_BUF_SIZE, "#%s", sstr2);
+				szNewBuf[2][MSG_BUF_SIZE - 1] = 0;
+
+				if (vgui::localize()->Find(szNewBuf[2]))
+					sstr2 = szNewBuf[2];
+			}
+
+			if (strlen(sstr3) > 0)
+			{
+				snprintf(szNewBuf[3], MSG_BUF_SIZE, "#%s", sstr3);
+				szNewBuf[3][MSG_BUF_SIZE - 1] = 0;
+
+				if (vgui::localize()->Find(szNewBuf[3]))
+					sstr3 = szNewBuf[3];
+			}
+
+			if (strlen(sstr4) > 0)
+			{
+				snprintf(szNewBuf[4], MSG_BUF_SIZE, "#%s", sstr4);
+				szNewBuf[4][MSG_BUF_SIZE - 1] = 0;
+
+				if (vgui::localize()->Find(szNewBuf[4]))
+					sstr4 = szNewBuf[4];
+			}
+
+			return SayTextPrint(msg_text, MSG_BUF_SIZE, playerIndex, sstr1, sstr2, sstr3, sstr4);
+			break;
+		}
+		case HUD_PRINTTALK:
+		{
+			return SayTextPrint(msg_text, MSG_BUF_SIZE, -1, sstr1, sstr2, sstr3, sstr4);
+			break;
+		}
+		}
+	}
+
+	return 0;
 }
 
 int CHudMessage::MessageAdd(client_textmessage_t *newMessage, float time, int hintMessage, int useSlot, unsigned int m_hFont, bool bIsDynamicMessage)
