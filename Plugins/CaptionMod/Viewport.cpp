@@ -861,7 +861,7 @@ void CViewport::Paint(void)
 bool CViewport::AllowedToPrintText(void)
 {
 	if (gCapFuncs.GameViewport_AllowedToPrintText)
-		return gCapFuncs.GameViewport_AllowedToPrintText(gCapFuncs.GameViewport, 0);
+		return gCapFuncs.GameViewport_AllowedToPrintText(GameViewport, 0);
 
 	return true;
 }

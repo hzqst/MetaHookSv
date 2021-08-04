@@ -53,7 +53,6 @@ void MessageMode_f(void);
 void MessageMode2_f(void);
 
 int __fastcall ScClient_FindSoundEx(void* pthis, int, const char *sound);
-void __fastcall GameViewport_UpdateCursorState(void *pthis, int);
 
 void Sys_ErrorEx(const char *fmt, ...);
 

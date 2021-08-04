@@ -8,6 +8,7 @@ extern IFileSystem *g_pFileSystem;
 extern bool g_IsClientVGUI2;
 extern bool g_IsSCClient;
 extern HMODULE g_hClientDll;
+extern PVOID g_dwClientBase;
 extern DWORD g_dwClientSize;
 extern int g_iVideoWidth;
 extern int g_iVideoHeight;

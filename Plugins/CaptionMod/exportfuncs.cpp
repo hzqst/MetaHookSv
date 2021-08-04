@@ -29,6 +29,9 @@ static qboolean m_bSentenceSound = false;
 static float m_flSentenceDuration = 0;
 int m_iIntermission = 0;
 
+void *GameViewport = NULL;
+int *g_iVisibleMouse = NULL;
+
 void *NewClientFactory(void)
 {
 	return Sys_GetFactoryThis();
@@ -61,14 +64,14 @@ void HUD_Frame(double time)
 
 void IN_MouseEvent(int mstate)
 {
-	if (vgui::surface()->IsCursorVisible())
+	if (g_iVisibleMouse && vgui::surface()->IsCursorVisible())
 	{
-		int iVisibleMouse = *gCapFuncs.g_iVisibleMouse;
-		*gCapFuncs.g_iVisibleMouse = 1;
+		int iVisibleMouse = *g_iVisibleMouse;
+		*g_iVisibleMouse = 1;
 
 		gExportfuncs.IN_MouseEvent(mstate);
 
-		*gCapFuncs.g_iVisibleMouse = iVisibleMouse;
+		*g_iVisibleMouse = iVisibleMouse;
 	}
 	else
 	{
@@ -78,14 +81,14 @@ void IN_MouseEvent(int mstate)
 
 void IN_Accumulate(void)
 {
-	if (vgui::surface()->IsCursorVisible())
+	if (g_iVisibleMouse && vgui::surface()->IsCursorVisible())
 	{
-		int iVisibleMouse = *gCapFuncs.g_iVisibleMouse;
-		*gCapFuncs.g_iVisibleMouse = 1;
+		int iVisibleMouse = *g_iVisibleMouse;
+		*g_iVisibleMouse = 1;
 
 		gExportfuncs.IN_Accumulate();
 
-		*gCapFuncs.g_iVisibleMouse = iVisibleMouse;
+		*g_iVisibleMouse = iVisibleMouse;
 	}
 	else
 	{
@@ -95,14 +98,14 @@ void IN_Accumulate(void)
 
 void CL_CreateMove(float frametime, struct usercmd_s *cmd, int active)
 {
-	if (vgui::surface()->IsCursorVisible())
+	if (g_iVisibleMouse && vgui::surface()->IsCursorVisible())
 	{
-		int iVisibleMouse = *gCapFuncs.g_iVisibleMouse;
-		*gCapFuncs.g_iVisibleMouse = 1;
+		int iVisibleMouse = *g_iVisibleMouse;
+		*g_iVisibleMouse = 1;
 
 		gExportfuncs.CL_CreateMove(frametime, cmd, active);
 
-		*gCapFuncs.g_iVisibleMouse = iVisibleMouse;
+		*g_iVisibleMouse = iVisibleMouse;
 	}
 	else
 	{
@@ -178,17 +181,6 @@ void SvClient_StartWave(const char *name, float duration)
 
 	g_pViewPort->StartSubtitle(Dict);
 }
-
-/*void __fastcall GameViewport_UpdateCursorState(void *pthis, int dummy)
-{
-	if (vgui::surface()->IsCursorVisible())
-	{
-		*gCapFuncs.g_iVisibleMouse = 1;
-		return;
-	}
-
-	gCapFuncs.GameViewport_UpdateCursorState(pthis, dummy);
-}*/
 
 int __fastcall ScClient_FindSoundEx(void *pthis, int, const char *sound)
 {

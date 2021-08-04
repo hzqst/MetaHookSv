@@ -21,10 +21,7 @@ typedef struct
 	int(__stdcall *FMOD_Sound_getLength)(int a1, void* a2, int a3);//?getLength@Sound@FMOD@@QAG?AW4FMOD_RESULT@@PAII@Z
 
 	float *(*GetClientColor)(int clientIndex);
-	void *GameViewport;
 	bool (__fastcall *GameViewport_AllowedToPrintText)(void *pthis, int);
-	int *g_iVisibleMouse;
-	void(__fastcall *GameViewport_UpdateCursorState)(void *pthis, int);
 
 	client_textmessage_t *(*pfnTextMessageGet)(const char *pName);
 	void(*MessageMode_f)(void);
@@ -37,6 +34,9 @@ typedef struct
 	double *pcl_oldtime;
 	char szLanguage[32];
 }cap_funcs_t;
+
+extern void *GameViewport;
+extern int *g_iVisibleMouse;
 
 #define cl_time (*gCapFuncs.pcl_time)
 #define cl_oldtime (*gCapFuncs.pcl_oldtime)
