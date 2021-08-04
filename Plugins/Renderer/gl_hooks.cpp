@@ -1405,6 +1405,15 @@ void R_FillAddress(void)
 
 	if (1)
 	{
+		const char sigs[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x600, sigs, sizeof(sigs) - 1);
+		Sig_AddrNotFound(gWorldToScreen);
+		gWorldToScreen = *(decltype(gWorldToScreen)*)(addr + 6);
+		gScreenToWorld = *(decltype(gScreenToWorld)*)(addr + 1);
+	}
+
+	if (1)
+	{
 		const char sigs[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x50, sigs, sizeof(sigs) - 1);
 		Sig_AddrNotFound(r_refdef_vrect);
@@ -1523,6 +1532,68 @@ void R_FillAddress(void)
 		Sig_VarNotFound(g_UserFogColor);
 		Sig_VarNotFound(g_UserFogStart);
 		Sig_VarNotFound(g_UserFogEnd);
+	}
+
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_RenderScene, 0x30, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+
+			if (address[0] == 0xE8)
+			{//.text:01D58B66 BE F0 5B 00 08 mov     esi, offset rtable
+
+				gRefFuncs.CL_IsDevOverviewMode = (decltype(gRefFuncs.CL_IsDevOverviewMode))pinst->detail->x86.operands[0].imm;
+			}
+
+			if (gRefFuncs.CL_IsDevOverviewMode)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_FuncNotFound(CL_IsDevOverviewMode);
+	}
+
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_CullBox, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == X86_REG_ESI &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize
+				
+				)
+			{//BE 80 98 BC 02                                      mov     esi, offset frustum
+
+				frustum = (decltype(frustum))pinst->detail->x86.operands[1].imm;
+			}
+
+			if (frustum)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(frustum);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)

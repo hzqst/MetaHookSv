@@ -61,10 +61,6 @@ extern RECT *window_rect;
 extern float *videowindowaspect;
 extern float *windowvideoaspect;
 
-extern float scr_fov_value;
-
-extern float yfov;
-
 extern vec_t *vup;
 extern vec_t *vpn;
 extern vec_t *vright;
@@ -73,6 +69,10 @@ extern vec_t *modelorg;
 extern vec_t *r_entorigin;
 extern float *r_world_matrix;
 extern float *r_projection_matrix;
+extern float *gWorldToScreen;
+extern float *gScreenToWorld;
+extern float *gDevOverview;
+extern mplane_t *frustum;
 
 extern int *r_framecount;
 extern int *r_visframecount;

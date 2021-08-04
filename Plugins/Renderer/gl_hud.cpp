@@ -848,7 +848,7 @@ int R_DoSSAO(int sampleIndex)
 	}
 	else
 	{
-		projScale = float(glheight) / (tanf(scr_fov_value * 0.5f) * 2.0f);
+		projScale = float(glheight) / (tanf( (*r_xfov)  * 0.5f) * 2.0f);
 	}
 
 	// radius

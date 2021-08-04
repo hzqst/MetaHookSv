@@ -28,10 +28,7 @@ int *numTransObjs;
 int *maxTransObjs;
 transObjRef **transObjects;
 
-float scr_fov_value;
 GLint r_viewport[4];
-
-float yfov;
 
 vec_t *vup;
 vec_t *vpn;
@@ -41,6 +38,10 @@ vec_t *modelorg;
 vec_t *r_entorigin;
 float *r_world_matrix;
 float *r_projection_matrix;
+float *gWorldToScreen;
+float *gScreenToWorld;
+float *gDevOverview;
+mplane_t *frustum;
 
 int *g_bUserFogOn;
 float *g_UserFogColor;
@@ -71,6 +72,7 @@ float gl_max_ansio = 0;
 GLuint gl_color_format = 0;
 int gl_msaa_samples = 0;
 cvar_t *r_msaa = NULL;
+cvar_t *r_vertical_fov = NULL;
 
 int *gl_msaa_fbo = 0;
 int *gl_backbuffer_fbo = 0;
@@ -620,12 +622,24 @@ void MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble z
 	qglFrustum(xmin, xmax, ymin, ymax, zNear, zFar);
 }
 
-void R_SetupGL(void)
+void MYgluPerspectiveV(double fovy, double aspect, double zNear, double zFar)
+{
+	auto right = tan(fovy * 0.008726646259971648) * zNear;
+	glFrustum(-right, right, aspect * -right, right * aspect, zNear, zFar);
+}
+
+void MYgluPerspectiveH(double fovy, double aspect, double zNear, double zFar)
+{
+	auto top = tan(fovy * 0.008726646259971648) * zNear;
+	glFrustum(aspect * -top, top * aspect, -top, top, zNear, zFar);
+}
+
+/*void R_SetupGL(void)
 {
 	gRefFuncs.R_SetupGL();
 
 	qglGetIntegerv(GL_VIEWPORT, r_viewport);
-}
+}*/
 
 void R_CalcRefdef(struct ref_params_s *pparams)
 {
@@ -1376,6 +1390,7 @@ void R_InitCvars(void)
 	chase_active = gEngfuncs.pfnGetCvarPointer("chase_active");
 
 	r_msaa = gEngfuncs.pfnRegisterVariable("r_msaa", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_vertical_fov = gEngfuncs.pfnRegisterVariable("r_vertical_fov", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 }
 
 void R_Init(void)
@@ -1514,6 +1529,200 @@ qboolean R_ParseVectorCvar(cvar_t *a1, float *vec)
 		result = 0;
 	}
 	return result;
+}
+
+double V_CalcFovV(float a1, float a2, float a3)
+{
+	double v3; // st7
+
+	v3 = a1;
+	if (a1 < 1.0 || v3 > 179.0)
+		v3 = 90.0;
+	return atan2(a2 / (a3 / tan(v3 * 0.0027777778 * 3.141592653589793)), 1.0) * 360.0 * 0.3183098861837907;
+}
+
+double V_CalcFovH(float a1, float a2, float a3)
+{
+	double v3; // st7
+
+	v3 = a1;
+	if (a1 < 1.0 || v3 > 179.0)
+		v3 = 90.0;
+	return atan2(a3 / (a2 / tan(v3 * 0.0027777778 * 3.141592653589793)), 1.0) * 360.0 * 0.3183098861837907;
+}
+
+void R_SetFrustumNew(void)
+{
+	float yfov;
+	auto fov = (*r_xfov);
+	if (r_vertical_fov->value)
+	{
+		auto v0 = (double)glheight;
+		auto v1 = (double)glwidth;
+		yfov = V_CalcFovV((*r_xfov), v1, v0);
+	}
+	else
+	{
+		auto v3 = (*r_xfov);
+		auto v4 = (double)glheight;
+		auto v5 = (double)glwidth;
+		fov = V_CalcFovH((*r_xfov), v5, v4);
+		yfov = v3;
+	}
+
+	auto v6 = 90.0 - yfov * 0.5;
+	auto v7 = v6;
+	auto v8 = -v6;
+	RotatePointAroundVector(frustum[0].normal, vup, vpn, v8);
+	RotatePointAroundVector(frustum[1].normal, vup, vpn, v7);
+	auto v9 = 90.0 - 0.5 * fov;
+	auto v10 = v9;
+	auto v11 = v9;
+	RotatePointAroundVector(frustum[2].normal, vright, vpn, v11);
+	auto v12 = -v10;
+	RotatePointAroundVector(frustum[3].normal, vright, vpn, v12);
+
+	for (int i = 0; i < 4; i++)
+	{
+		frustum[i].type = PLANE_ANYZ;
+		frustum[i].dist = DotProduct(r_origin, frustum[i].normal);
+		frustum[i].signbits = SignbitsForPlane(&frustum[i]);
+	}
+}
+
+void R_SetupGL(void)
+{
+	R_SetFrustumNew();
+
+	qglMatrixMode(GL_PROJECTION);
+	qglLoadIdentity();
+	auto v0 = r_refdef_vrect->x;
+	auto v1 = glheight - r_refdef_vrect->y;
+	auto v2 = r_refdef_vrect->x + r_refdef_vrect->width;
+	auto v3 = glheight - r_refdef_vrect->height - r_refdef_vrect->y;
+	if (r_refdef_vrect->x > 0)
+		v0 = r_refdef_vrect->x - 1;
+	if (v2 < glwidth)
+		++v2;
+	if (v3 < 0)
+		--v3;
+	if (v1 < glheight)
+		++v1;
+	auto v4 = v2 - v0;
+	auto v5 = v1 - v3;
+	if ((*envmap))
+	{
+		v3 = 0;
+		v0 = 0;
+		glheight = gl_envmapsize->value;
+		glwidth = gl_envmapsize->value;
+	}
+	qglViewport(v0 + glx, v3 + gly, v4, v5);
+
+	r_viewport[0] = v0 + glx;
+	r_viewport[1] = v3 + gly;
+	r_viewport[2] = v4;
+	r_viewport[3] = v5;
+
+	if (r_vertical_fov->value)
+	{
+		auto v6 = (double)r_refdef_vrect->height;
+		auto v7 = (double)r_refdef_vrect->width;
+		auto v42 = v6 / v7;
+		auto v8 = (*r_xfov);
+		if ((*r_xfov) < 1.0 || v8 > 179.0)
+			v8 = 90.0;
+		auto v9 = v7 / (v6 / tan(v8 * 0.0027777778 * 3.141592653589793));
+		auto v10 = v6 / v7;
+		auto v11 = atan2(v9, 1.0) * 360.0 * 0.3183098861837907;
+		if (r_refdef->onlyClientDraws)
+		{
+			auto right = tan(v11 * 0.008726646259971648) * 4.0;
+			qglFrustum(-right, right, v10 * -right, right * v10, 4.0, 16000.0);
+		}
+		else if (gRefFuncs.CL_IsDevOverviewMode())
+		{
+			auto v14 = gDevOverview[2];
+			auto v15 = 4096.0 / gDevOverview[2];
+			qglOrtho(
+				-v14,
+				v14,
+				-v15,
+				v15,
+				16000.0 - gDevOverview[0],
+				16000.0 - gDevOverview[1]);
+		}
+		else
+		{
+			MYgluPerspectiveV(v11, v42, 4.0, r_params.movevars->zmax);
+		}
+	}
+	else
+	{
+		auto v16 = (double)r_refdef_vrect->width;
+		auto v17 = (double)r_refdef_vrect->height;
+		auto v43 = v16 / v17;
+		auto v18 = (*r_xfov);
+		if ((*r_xfov) < 1.0 || v18 > 179.0)
+			v18 = 90.0;
+		auto v19 = v17 / (v16 / tan(v18 * 0.0027777778 * 3.141592653589793));
+		auto v20 = v16 / v17;
+		auto fovy = atan2(v19, 1.0) * 360.0 * 0.3183098861837907;
+		if (r_refdef->onlyClientDraws)
+		{
+			auto top = tan(fovy * 0.008726646259971648) * 4.0;
+			qglFrustum(v20 * -top, top * v20, -top, top, 4.0, 16000.0);
+		}
+		else if (gRefFuncs.CL_IsDevOverviewMode())
+		{
+			auto v23 = gDevOverview[2];
+			auto v24 = 4096.0;
+			auto v25 = 4096.0 / (v23 * v43);
+			qglOrtho(
+				-v24,
+				v24,
+				-v25,
+				v25,
+				16000.0 - gDevOverview[0],
+				16000.0 - gDevOverview[1]);
+		}
+		else
+		{
+			MYgluPerspectiveH(fovy, v43, 4.0, r_params.movevars->zmax);
+		}
+	}
+	qglCullFace(GL_FRONT);
+	qglGetFloatv(GL_PROJECTION_MATRIX, r_projection_matrix);
+	qglMatrixMode(GL_MODELVIEW);
+	qglLoadIdentity();
+	qglRotatef(-90, 1, 0, 0);
+	qglRotatef(90, 0, 0, 1);
+	qglRotatef(-r_refdef->viewangles[2], 1, 0, 0);
+	qglRotatef(-r_refdef->viewangles[0], 0, 1, 0);
+	qglRotatef(-r_refdef->viewangles[1], 0, 0, 1);
+	qglTranslatef(-r_refdef->vieworg[0], -r_refdef->vieworg[1], -r_refdef->vieworg[2]);
+
+	qglGetFloatv(GL_MODELVIEW_MATRIX, r_world_matrix);
+	if (!gl_cull->value)
+		qglDisable(GL_CULL_FACE);
+	else
+		qglEnable(GL_CULL_FACE);
+	qglDisable(GL_BLEND);
+	qglDisable(GL_ALPHA_TEST);
+	qglEnable(GL_DEPTH_TEST);
+
+	for (int i = 0; i < 16; i += 4)
+	{
+		for (int j = 0; j < 4; j++)
+		{
+			gWorldToScreen[i + j] = 0;
+
+			for (int k = 0; k < 4; k++)
+				gWorldToScreen[i + j] += r_world_matrix[i + k] * r_projection_matrix[k * 4 + j];
+		}
+	}
+
+	InvertMatrix(gWorldToScreen, gScreenToWorld);
 }
 
 #if 0

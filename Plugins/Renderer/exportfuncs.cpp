@@ -993,12 +993,6 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	return result;
 }
 
-int HUD_UpdateClientData(client_data_t *pcldata, float flTime)
-{
-	scr_fov_value = pcldata->fov;
-	return gExportfuncs.HUD_UpdateClientData(pcldata, flTime);
-}
-
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 {
 	return gExportfuncs.HUD_AddEntity(type, ent, model);
