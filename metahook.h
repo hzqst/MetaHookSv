@@ -86,10 +86,7 @@ typedef struct metahook_api_s
 
 	BOOL (*DisasmRanges)(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callback, int depth, PVOID context);
 
-	const char *(*GetEngineGameDirectory)(void);
-	/*
-		Return mod name such as "valve" "cstrike" "svencoop"
-	*/
+
 }
 metahook_api_t;
 

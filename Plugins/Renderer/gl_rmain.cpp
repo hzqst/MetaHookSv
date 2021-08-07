@@ -625,13 +625,13 @@ void MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble z
 void MYgluPerspectiveV(double fovy, double aspect, double zNear, double zFar)
 {
 	auto right = tan(fovy * 0.008726646259971648) * zNear;
-	glFrustum(-right, right, aspect * -right, right * aspect, zNear, zFar);
+	qglFrustum(-right, right, aspect * -right, right * aspect, zNear, zFar);
 }
 
 void MYgluPerspectiveH(double fovy, double aspect, double zNear, double zFar)
 {
 	auto top = tan(fovy * 0.008726646259971648) * zNear;
-	glFrustum(aspect * -top, top * aspect, -top, top, zNear, zFar);
+	qglFrustum(aspect * -top, top * aspect, -top, top, zNear, zFar);
 }
 
 /*void R_SetupGL(void)
@@ -1723,6 +1723,96 @@ void R_SetupGL(void)
 	}
 
 	InvertMatrix(gWorldToScreen, gScreenToWorld);
+}
+
+typedef struct
+{
+	char *name;
+	int minimize, maximize;
+}glmode_t;
+
+static glmode_t gl_texture_modes[] =
+{
+	{ "GL_NEAREST", GL_NEAREST, GL_NEAREST },
+	{ "GL_LINEAR", GL_LINEAR, GL_LINEAR },
+	{ "GL_NEAREST_MIPMAP_NEAREST", GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST },
+	{ "GL_LINEAR_MIPMAP_NEAREST", GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR },
+	{ "GL_NEAREST_MIPMAP_LINEAR", GL_NEAREST_MIPMAP_LINEAR, GL_NEAREST },
+	{ "GL_LINEAR_MIPMAP_LINEAR", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR }
+};
+
+void GL_Texturemode_internal(const char *value)
+{
+	int i;
+
+	for (i = 0; i < 6; i++)
+	{
+		if (!stricmp(gl_texture_modes[i].name, value))
+			break;
+	}
+
+	if (i == 6)
+	{
+		gEngfuncs.Con_Printf("bad filter name\n");
+		return;
+	}
+
+	*gl_filter_min = gl_texture_modes[i].minimize;
+	*gl_filter_max = gl_texture_modes[i].maximize;
+
+	if (gltextures_SvEngine)
+	{
+		for (int j = 0; j < (*numgltextures); ++j)
+		{
+			if ((*gltextures_SvEngine)[j].mipmap)
+			{
+				GL_Bind((*gltextures_SvEngine)[j].texnum);
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+			}
+		}
+	}
+	else
+	{
+		for (int j = 0; j < (*numgltextures); ++j)
+		{
+			if (gltextures[j].mipmap)
+			{
+				GL_Bind(gltextures[j].texnum);
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+			}
+		}
+	}
+
+	for (int j = 0; j < 6; ++j)
+	{
+		if (gSkyTexNumber[j])
+		{
+			GL_Bind(gSkyTexNumber[j]);
+			if ((*gl_filter_min) == GL_NEAREST_MIPMAP_NEAREST || (*gl_filter_min) == GL_NEAREST_MIPMAP_LINEAR)
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			else if ((*gl_filter_min) == GL_LINEAR_MIPMAP_NEAREST || (*gl_filter_min) == GL_LINEAR_MIPMAP_LINEAR)
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			else
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
+			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+		}
+	}
+}
+
+void GL_Texturemode_cb(cvar_t *pcvar)
+{
+	GL_Texturemode_internal(pcvar->string);
+}
+
+void GL_Texturemode_f(void)
+{
+	if(gEngfuncs.Cmd_Argc() >= 2)
+		GL_Texturemode_internal(gEngfuncs.Cmd_Argv(1));
 }
 
 #if 0

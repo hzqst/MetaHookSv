@@ -27,9 +27,31 @@ int *oldtarget = NULL;
 int *gl_filter_min = NULL;
 int *gl_filter_max = NULL;
 
+cvar_callback_entry_t **cvar_callbacks = NULL;
+
 int gl_loadtexture_format = GL_RGBA;
 int gl_loadtexture_cubemap = 0;
 int gl_loadtexture_size = 0;
+
+cvar_callback_t Cvar_HookCallback(const char *cvar_name, cvar_callback_t callback)
+{
+	auto cvar = gEngfuncs.pfnGetCvarPointer(cvar_name);
+	auto v3 = (*cvar_callbacks);
+	if (v3)
+	{
+		while (v3->pcvar != cvar)
+		{
+			v3 = v3->next;
+			if (!v3)
+				return NULL;
+		}
+		auto orig = v3->callback;
+		v3->callback = callback;
+		return orig;
+	}
+
+	return NULL;
+}
 
 //GL Start
 

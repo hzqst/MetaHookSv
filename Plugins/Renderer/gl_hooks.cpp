@@ -651,6 +651,47 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(R_AddTEntity);
 	}
 
+	if (g_iEngineType == ENGINE_GOLDSRC)
+	{
+		typedef struct
+		{
+			int a1;
+		}Cvar_Set_ctx;
+
+		Cvar_Set_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(g_pMetaSave->pEngineFuncs->Cvar_Set, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+			auto ctx = (Cvar_Set_ctx *)context;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == X86_REG_EAX &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0)
+			{//A1 40 77 7B 02 mov     eax, gl_backbuffer_fbo
+				DWORD imm = pinst->detail->x86.operands[1].mem.disp;
+
+				if (!cvar_callbacks)
+				{
+					cvar_callbacks = (decltype(cvar_callbacks))imm;
+				}
+			}
+
+			if (cvar_callbacks)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			return FALSE;
+		}, 0, &ctx);
+
+		Sig_VarNotFound(cvar_callbacks);
+	}
+
 	if (1)
 	{
 		typedef struct

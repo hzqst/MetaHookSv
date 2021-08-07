@@ -334,6 +334,13 @@ void CL_ScreenShot_f(void);
 void R_InitGLHUD(void);
 bool R_UseMSAA(void);
 
+void GL_Texturemode_f(void);
+void GL_Texturemode_cb(cvar_t *);
+
+extern cvar_callback_entry_t **cvar_callbacks;
+
+cvar_callback_t Cvar_HookCallback(const char *cvar_name, cvar_callback_t callback);
+
 extern GLint r_viewport[4];
 extern float r_identity_matrix[4][4];
 extern float r_rotate_entity_matrix[4][4];

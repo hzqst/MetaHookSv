@@ -99,8 +99,8 @@ plugin_t *g_pPluginBase;
 
 extern IFileSystem *g_pFileSystem;
 
-mh_interface_t gInterface;
-mh_enginesave_t gMetaSave;
+mh_interface_t gInterface = {0};
+mh_enginesave_t gMetaSave = {0};
 
 extern metahook_api_t gMetaHookAPI;
 
@@ -300,6 +300,8 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 	g_phClientDLL_Init = NULL;
 	g_pVideoMode = NULL;
 	com_gamedir = NULL;
+	g_ppExportFuncs = NULL;
+	g_ppEngfuncs = NULL;
 
 	if(!gMetaSave.pEngineFuncs)
 		gMetaSave.pEngineFuncs = new cl_enginefunc_t;
@@ -481,7 +483,7 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 		MessageBox(NULL, "MH_LoadEngine: Failed to locate g_pVideoMode.", "Fatal Error", MB_ICONERROR);
 		NtTerminateProcess((HANDLE)-1, 0);
 	}
-
+#if 0
 #define GAMEDIR_STRING_SIG_SVENGINE "Current gamedir is \"%s\"\n"
 #define GAMEDIR_STRING_SIG "gamedir is %s\n"
 	
@@ -507,6 +509,7 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 		MessageBox(NULL, "MH_LoadEngine: Failed to locate com_gamedir.", "Fatal Error", MB_ICONERROR);
 		NtTerminateProcess((HANDLE)-1, 0);
 	}
+#endif
 
 	memcpy(gMetaSave.pEngineFuncs, *(void **)g_ppEngfuncs, sizeof(cl_enginefunc_t));
 
@@ -616,6 +619,23 @@ void MH_Shutdown(void)
 		delete gMetaSave.pEngineFuncs;
 		gMetaSave.pEngineFuncs = NULL;
 	}
+
+	//com_gamedir = NULL;
+	g_pVideoMode = NULL;
+	g_pfnbuild_number = NULL;
+	g_pClientDLL_Init = NULL;
+	g_original_ClientDLL_Init = NULL;
+	g_phClientDLL_Init = NULL;
+
+	g_hEngineModule = NULL;
+	g_dwEngineBase = NULL;
+	g_dwEngineSize = NULL;
+	g_pHookBase = NULL;
+	g_pExportFuncs = NULL;
+	g_ppExportFuncs = NULL;
+	g_ppEngfuncs = NULL;
+	g_bSaveVideo = false;
+	g_iEngineType = ENGINE_UNKNOWN;
 }
 
 hook_t *MH_NewHook(int iType)
@@ -1478,11 +1498,6 @@ BOOL MH_DisasmRanges(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callbac
 	return success;
 }
 
-const char *MH_GetEngineGameDirectory(void)
-{
-	return com_gamedir;
-}
-
 metahook_api_t gMetaHookAPI =
 {
 	MH_UnHook,
@@ -1512,6 +1527,5 @@ metahook_api_t gMetaHookAPI =
 	MH_ReverseSearchFunctionBegin,
 	MH_GetSectionByName,
 	MH_DisasmSingleInstruction,
-	MH_DisasmRanges,
-	MH_GetEngineGameDirectory,
+	MH_DisasmRanges
 };

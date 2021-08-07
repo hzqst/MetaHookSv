@@ -104,6 +104,11 @@ void HUD_Init(void)
 
 	gEngfuncs.pfnAddCommand("r_snapshot", CL_ScreenShot_f);
 	gEngfuncs.pfnAddCommand("r_screenshot", CL_ScreenShot_f);
+
+	if (!Cmd_HookCmd("gl_texturemode", GL_Texturemode_f))
+	{
+		Cvar_HookCallback("gl_texturemode", GL_Texturemode_cb);
+	}
 }
 
 int HUD_VidInit(void)
