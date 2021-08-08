@@ -140,6 +140,15 @@ void GL_Upload32(unsigned int *data, int width, int height, qboolean mipmap, qbo
 	if (gl_loadtexture_cubemap)
 		iTextureTarget = GL_TEXTURE_CUBE_MAP;
 
+	if (gl_loadtexture_cubemap)
+	{
+		qglTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + gl_loadtexture_cubemap - 1, 0, iComponent, width, height, 0, iFormat, GL_UNSIGNED_BYTE, data);
+	}
+	else
+	{
+		qglTexImage2D(iTextureTarget, 0, iComponent, width, height, 0, iFormat, GL_UNSIGNED_BYTE, data);
+	}
+
 	qglTexParameterf(iTextureTarget, GL_GENERATE_MIPMAP, (mipmap) ? GL_TRUE : GL_FALSE);
 
 	if (mipmap)
@@ -162,15 +171,6 @@ void GL_Upload32(unsigned int *data, int width, int height, qboolean mipmap, qbo
 	else
 	{
 		qglTexParameterf(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
-	}
-
-	if (gl_loadtexture_cubemap)
-	{
-		qglTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + gl_loadtexture_cubemap - 1, 0, iComponent, width, height, 0, iFormat, GL_UNSIGNED_BYTE, data);
-	}
-	else
-	{
-		qglTexImage2D(iTextureTarget, 0, iComponent, width, height, 0, iFormat, GL_UNSIGNED_BYTE, data);
 	}
 }
 
