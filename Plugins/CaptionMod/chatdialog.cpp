@@ -682,7 +682,7 @@ void CChatDialogLine::InsertAndColorizeText(wchar_t *buf, int clientIndex)
 	wchar_t *txt = m_text;
 	int lineLen = wcslen(m_text);
 
-	if (m_text[0] == TEXTCOLOR_USEOLDCOLORS || m_text[0] == TEXTCOLOR_PLAYERNAME || m_text[0] == TEXTCOLOR_LOCATION || m_text[0] == TEXTCOLOR_NORMAL)
+	if (m_text[0] == TEXTCOLOR_PLAYERNAME || m_text[0] == TEXTCOLOR_LOCATION || m_text[0] == TEXTCOLOR_NORMAL)
 	{
 		while (txt && *txt)
 		{
@@ -690,7 +690,6 @@ void CChatDialogLine::InsertAndColorizeText(wchar_t *buf, int clientIndex)
 
 			switch (*txt)
 			{
-				case TEXTCOLOR_USEOLDCOLORS:
 				case TEXTCOLOR_PLAYERNAME:
 				case TEXTCOLOR_LOCATION:
 				case TEXTCOLOR_NORMAL:

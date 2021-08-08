@@ -779,7 +779,8 @@ int R_DoSSAO(int sampleIndex)
 		return 0;
 
 	GLfloat ProjMatrix[16];
-	qglGetFloatv(GL_PROJECTION_MATRIX, ProjMatrix);
+	memcpy(ProjMatrix, r_projection_matrix, sizeof(ProjMatrix));
+	//qglGetFloatv(GL_PROJECTION_MATRIX, ProjMatrix);
 
 	GL_PushFrameBuffer();
 	GL_PushMatrix();
@@ -848,7 +849,7 @@ int R_DoSSAO(int sampleIndex)
 	}
 	else
 	{
-		projScale = float(glheight) / (tanf( (*r_xfov)  * 0.5f) * 2.0f);
+		projScale = float(glheight) / (tanf( (r_yfov / (M_PI * 2)) * 0.5f) * 2.0f);
 	}
 
 	// radius

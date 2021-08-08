@@ -1634,10 +1634,11 @@ void R_SetupGL(void)
 			v8 = 90.0;
 		auto v9 = v7 / (v6 / tan(v8 * 0.0027777778 * 3.141592653589793));
 		auto v10 = v6 / v7;
-		auto v11 = atan2(v9, 1.0) * 360.0 * 0.3183098861837907;
+		auto fovy = atan2(v9, 1.0) * 360.0 * 0.3183098861837907;
+		r_yfov = fovy;
 		if (r_refdef->onlyClientDraws)
 		{
-			auto right = tan(v11 * 0.008726646259971648) * 4.0;
+			auto right = tan(fovy * 0.008726646259971648) * 4.0;
 			qglFrustum(-right, right, v10 * -right, right * v10, 4.0, 16000.0);
 		}
 		else if (gRefFuncs.CL_IsDevOverviewMode())
@@ -1654,7 +1655,7 @@ void R_SetupGL(void)
 		}
 		else
 		{
-			MYgluPerspectiveV(v11, v42, 4.0, r_params.movevars->zmax);
+			MYgluPerspectiveV(fovy, v42, 4.0, r_params.movevars->zmax);
 		}
 	}
 	else
@@ -1668,6 +1669,7 @@ void R_SetupGL(void)
 		auto v19 = v17 / (v16 / tan(v18 * 0.0027777778 * 3.141592653589793));
 		auto v20 = v16 / v17;
 		auto fovy = atan2(v19, 1.0) * 360.0 * 0.3183098861837907;
+		r_yfov = fovy;
 		if (r_refdef->onlyClientDraws)
 		{
 			auto top = tan(fovy * 0.008726646259971648) * 4.0;
