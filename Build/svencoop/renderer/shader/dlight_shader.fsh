@@ -2,10 +2,9 @@
 
 #define GBUFFER_INDEX_DIFFUSE		0.0
 #define GBUFFER_INDEX_LIGHTMAP		1.0
-#define GBUFFER_INDEX_WORLD			2.0
-#define GBUFFER_INDEX_NORMAL		3.0
-#define GBUFFER_INDEX_SPECULAR		4.0
-#define GBUFFER_INDEX_ADDITIVE		5.0
+#define GBUFFER_INDEX_WORLDNORM		2.0
+#define GBUFFER_INDEX_SPECULAR		3.0
+#define GBUFFER_INDEX_ADDITIVE		4.0
 
 uniform sampler2DArray gbufferTex;
 uniform sampler2D depthTex;
@@ -27,20 +26,56 @@ uniform vec3 lightpos;
 varying vec4 projpos;
 #endif
 
-vec2 encodeNormal(vec3 n)
-{
-    vec2 enc = normalize(n.xy) * (sqrt(-n.z*0.5+0.5));
-    enc = vec2(enc.x*0.5+0.5, enc.y*0.5+0.5);
-    return enc;
+varying vec3 fragpos;
+
+vec2 UnitVectorToHemiOctahedron(vec3 dir) {
+
+	dir.y = max(dir.y, 0.0001);
+	dir.xz /= dot(abs(dir), vec3(1.0));
+
+	return clamp(0.5 * vec2(dir.x + dir.z, dir.x - dir.z) + 0.5, 0.0, 1.0);
+
 }
 
-vec3 decodeNormal(vec2 enc)
-{
-    vec4 nn = vec4(enc.x * 2.0, enc.y * 2.0, 0.0, 0.0) + vec4(-1.0, -1.0, 1.0, -1.0);
-    float l = dot(nn.xyz, -nn.xyw);
-    nn.z = l;
-    nn.xy *= sqrt(l);
-    return vec3(nn.x * 2.0, nn.y * 2.0, nn.z * 2.0) + vec3(0.0, 0.0, -1.0);
+vec3 HemiOctahedronToUnitVector(vec2 coord) {
+
+	coord = 2.0 * coord - 1.0;
+	coord = 0.5 * vec2(coord.x + coord.y, coord.x - coord.y);
+
+	float y = 1.0 - dot(vec2(1.0), abs(coord));
+	return normalize(vec3(coord.x, y + 0.0001, coord.y));
+
+}
+
+vec2 UnitVectorToOctahedron(vec3 dir) {
+
+    dir.xz /= dot(abs(dir), vec3(1.0));
+
+	// Lower hemisphere
+	if (dir.y < 0.0) {
+		vec2 orig = dir.xz;
+		dir.x = (orig.x >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.y));
+        dir.z = (orig.y >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.x));
+	}
+
+	return clamp(0.5 * vec2(dir.x, dir.z) + 0.5, 0.0, 1.0);
+
+}
+
+vec3 OctahedronToUnitVector(vec2 coord) {
+
+	coord = 2.0 * coord - 1.0;
+	float y = 1.0 - dot(abs(coord), vec2(1.0));
+
+	// Lower hemisphere
+	if (y < 0.0) {
+		vec2 orig = coord;
+		coord.x = (orig.x >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.y));
+		coord.y = (orig.y >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.x));
+	}
+
+	return normalize(vec3(coord.x, y + 0.0001, coord.y));
+
 }
 
 vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, uint stencil, float specularValue)
@@ -108,15 +143,17 @@ void main()
     vec2 vBaseTexCoord = gl_TexCoord[0].xy;
 #endif
 
-    vec4 positionColor = texture2DArray(gbufferTex, vec3(vBaseTexCoord, GBUFFER_INDEX_WORLD));
-    vec4 normalColor = texture2DArray(gbufferTex, vec3(vBaseTexCoord, GBUFFER_INDEX_NORMAL));
+    vec4 worldnormColor = texture2DArray(gbufferTex, vec3(vBaseTexCoord, GBUFFER_INDEX_WORLDNORM));
     vec4 specularColor = texture2DArray(gbufferTex, vec3(vBaseTexCoord, GBUFFER_INDEX_SPECULAR));
 
     //float depthColor = texture2D(depthTex, vBaseTexCoord.xy).r;
+
     uint stencilColor = texture(stencilTex, vBaseTexCoord).r;
 
-    vec3 worldpos = positionColor.xyz;
-    vec3 normal = normalColor.xyz;      //normalize(decodeNormal(normalColor.xy));
+    vec3 normal = OctahedronToUnitVector(worldnormColor.xy);
+
+    vec3 worldpos = viewpos.xyz + normalize(fragpos.xyz - viewpos.xyz) * worldnormColor.z;
+
     float specularValue = specularColor.x;
 
 #ifdef SPOT_ENABLED

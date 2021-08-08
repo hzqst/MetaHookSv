@@ -2,16 +2,17 @@
 
 #define GBUFFER_INDEX_DIFFUSE		0
 #define GBUFFER_INDEX_LIGHTMAP		1
-#define GBUFFER_INDEX_WORLD			2
-#define GBUFFER_INDEX_NORMAL		3
-#define GBUFFER_INDEX_SPECULAR		4
-#define GBUFFER_INDEX_ADDITIVE		5
+#define GBUFFER_INDEX_WORLDNORM		2
+#define GBUFFER_INDEX_SPECULAR		3
+#define GBUFFER_INDEX_ADDITIVE		4
 
 uniform sampler2D diffuseTex;
 
 varying vec3 worldpos;
 varying vec3 normal;
 varying vec4 color;
+
+uniform vec3 viewpos;
 
 #ifdef SHADOW_CASTER_ENABLED
 uniform vec3 entityPos;
@@ -25,20 +26,54 @@ uniform float clipPlane;
 uniform float clipPlane;
 #endif
 
-vec2 encodeNormal(vec3 n)
-{
-    vec2 enc = normalize(n.xy) * (sqrt(-n.z*0.5+0.5));
-    enc = vec2(enc.x*0.5+0.5, enc.y*0.5+0.5);
-    return enc;
+vec2 UnitVectorToHemiOctahedron(vec3 dir) {
+
+	dir.y = max(dir.y, 0.0001);
+	dir.xz /= dot(abs(dir), vec3(1.0));
+
+	return clamp(0.5 * vec2(dir.x + dir.z, dir.x - dir.z) + 0.5, 0.0, 1.0);
+
 }
 
-vec3 decodeNormal(vec2 enc)
-{
-    vec4 nn = vec4(enc.x * 2.0, enc.y * 2.0, 0.0, 0.0) + vec4(-1.0, -1.0, 1.0, -1.0);
-    float l = dot(nn.xyz, -nn.xyw);
-    nn.z = l;
-    nn.xy *= sqrt(l);
-    return vec3(nn.x * 2.0, nn.y * 2.0, nn.z * 2.0) + vec3(0.0, 0.0, -1.0);
+vec3 HemiOctahedronToUnitVector(vec2 coord) {
+
+	coord = 2.0 * coord - 1.0;
+	coord = 0.5 * vec2(coord.x + coord.y, coord.x - coord.y);
+
+	float y = 1.0 - dot(vec2(1.0), abs(coord));
+	return normalize(vec3(coord.x, y + 0.0001, coord.y));
+
+}
+
+vec2 UnitVectorToOctahedron(vec3 dir) {
+
+    dir.xz /= dot(abs(dir), vec3(1.0));
+
+	// Lower hemisphere
+	if (dir.y < 0.0) {
+		vec2 orig = dir.xz;
+		dir.x = (orig.x >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.y));
+        dir.z = (orig.y >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.x));
+	}
+
+	return clamp(0.5 * vec2(dir.x, dir.z) + 0.5, 0.0, 1.0);
+
+}
+
+vec3 OctahedronToUnitVector(vec2 coord) {
+
+	coord = 2.0 * coord - 1.0;
+	float y = 1.0 - dot(abs(coord), vec2(1.0));
+
+	// Lower hemisphere
+	if (y < 0.0) {
+		vec2 orig = coord;
+		coord.x = (orig.x >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.y));
+		coord.y = (orig.y >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.x));
+	}
+
+	return normalize(vec3(coord.x, y + 0.0001, coord.y));
+
 }
 
 void main(void)
@@ -83,12 +118,15 @@ void main(void)
 
 		#else
 
-			//vec2 normalenc = encodeNormal(normal.xyz);
+			vec3 vNormal = normal.xyz;
+
+			vec2 vOctNormal = UnitVectorToOctahedron(vNormal);
+
+			float flDistanceToFragment = distance(worldpos.xyz, viewpos.xyz);
 
 			gl_FragData[GBUFFER_INDEX_DIFFUSE] = diffuseColor;
 			gl_FragData[GBUFFER_INDEX_LIGHTMAP] = color;
-			gl_FragData[GBUFFER_INDEX_WORLD] = vec4(worldpos.xyz, 0.0);
-			gl_FragData[GBUFFER_INDEX_NORMAL] = vec4(normal.xyz, 0.0);
+			gl_FragData[GBUFFER_INDEX_WORLDNORM] = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, 0.0);
 			gl_FragData[GBUFFER_INDEX_SPECULAR] = vec4(0.0, 0.0, 0.0, 0.0);
 			gl_FragData[GBUFFER_INDEX_ADDITIVE] = vec4(0.0, 0.0, 0.0, 0.0);
 

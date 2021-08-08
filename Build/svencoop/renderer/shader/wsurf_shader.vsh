@@ -5,7 +5,7 @@ uniform vec3 viewpos;
 uniform float speed;
 varying vec3 worldpos;
 varying vec3 normal;
-varying vec4 tangent;
+varying vec3 tangent;
 varying vec4 color;
 
 attribute vec3 s_tangent;
@@ -55,11 +55,6 @@ void main(void)
 	vec4 normal4 = vec4(gl_Normal, 0.0);
 	normal = normalize(entityMatrix * normal4).xyz;
 
-#ifdef NORMALTEXTURE_ENABLED
-    tangent = vec4(s_tangent, 0.0);
-    tangent = normalize(entityMatrix * tangent);
-#endif
-
 #ifdef DIFFUSE_ENABLED
 	gl_TexCoord[0] = vec4(gl_MultiTexCoord0.x + gl_MultiTexCoord0.z * speed, gl_MultiTexCoord0.y, 0.0, 0.0);
 #endif
@@ -73,6 +68,9 @@ void main(void)
 #endif
 
 #ifdef NORMALTEXTURE_ENABLED
+    vec4 tangent4 = vec4(s_tangent, 0.0);
+    tangent = normalize(entityMatrix * tangent4).xyz;
+
 	gl_TexCoord[3] = gl_MultiTexCoord3;
 #endif
 

@@ -4,10 +4,9 @@
 
 #define GBUFFER_INDEX_DIFFUSE		0
 #define GBUFFER_INDEX_LIGHTMAP		1
-#define GBUFFER_INDEX_WORLD			2
-#define GBUFFER_INDEX_NORMAL		3
-#define GBUFFER_INDEX_SPECULAR		4
-#define GBUFFER_INDEX_ADDITIVE		5
+#define GBUFFER_INDEX_WORLDNORM		2
+#define GBUFFER_INDEX_SPECULAR		3
+#define GBUFFER_INDEX_ADDITIVE		4
 
 #ifdef DIFFUSE_ENABLED
 uniform sampler2D diffuseTex;
@@ -62,35 +61,70 @@ uniform vec3 viewpos;
 
 varying vec3 worldpos;
 varying vec3 normal;
-varying vec4 tangent;
+varying vec3 tangent;
 varying vec4 color;
 
-vec2 encodeNormal(vec3 n)
-{
-    vec2 enc = normalize(n.xy) * (sqrt(-n.z*0.5+0.5));
-    enc = vec2(enc.x*0.5+0.5, enc.y*0.5+0.5);
-    return enc;
+vec2 UnitVectorToHemiOctahedron(vec3 dir) {
+
+	dir.y = max(dir.y, 0.0001);
+	dir.xz /= dot(abs(dir), vec3(1.0));
+
+	return clamp(0.5 * vec2(dir.x + dir.z, dir.x - dir.z) + 0.5, 0.0, 1.0);
+
 }
 
-vec3 decodeNormal(vec2 enc)
-{
-    vec4 nn = vec4(enc.x * 2.0, enc.y * 2.0, 0.0, 0.0) + vec4(-1.0, -1.0, 1.0, -1.0);
-    float l = dot(nn.xyz, -nn.xyw);
-    nn.z = l;
-    nn.xy *= sqrt(l);
-    return vec3(nn.x * 2.0, nn.y * 2.0, nn.z * 2.0) + vec3(0.0, 0.0, -1.0);
+vec3 HemiOctahedronToUnitVector(vec2 coord) {
+
+	coord = 2.0 * coord - 1.0;
+	coord = 0.5 * vec2(coord.x + coord.y, coord.x - coord.y);
+
+	float y = 1.0 - dot(vec2(1.0), abs(coord));
+	return normalize(vec3(coord.x, y + 0.0001, coord.y));
+
+}
+
+vec2 UnitVectorToOctahedron(vec3 dir) {
+
+    dir.xz /= dot(abs(dir), vec3(1.0));
+
+	// Lower hemisphere
+	if (dir.y < 0.0) {
+		vec2 orig = dir.xz;
+		dir.x = (orig.x >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.y));
+        dir.z = (orig.y >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.x));
+	}
+
+	return clamp(0.5 * vec2(dir.x, dir.z) + 0.5, 0.0, 1.0);
+
+}
+
+vec3 OctahedronToUnitVector(vec2 coord) {
+
+	coord = 2.0 * coord - 1.0;
+	float y = 1.0 - dot(abs(coord), vec2(1.0));
+
+	// Lower hemisphere
+	if (y < 0.0) {
+		vec2 orig = coord;
+		coord.x = (orig.x >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.y));
+		coord.y = (orig.y >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.x));
+	}
+
+	return normalize(vec3(coord.x, y + 0.0001, coord.y));
+
 }
 
 #ifdef NORMALTEXTURE_ENABLED
 
 vec3 NormalMapping()
 {
-    // Create TBN matrix. tangent to world?
+    // Create TBN matrix. from tangent to world
 	vec3 bitangent = cross(normalize(normal.xyz), normalize(tangent.xyz));
     mat3 TBN = mat3(normalize(tangent.xyz), normalize(bitangent.xyz), normalize(normal.xyz));
 
+	vec2 vNormTexcoord = vec2(gl_TexCoord[0].x * gl_TexCoord[3].x, gl_TexCoord[0].y * gl_TexCoord[3].y);
     // Sample tangent space normal vector from normal map and remap it from [0, 1] to [-1, 1] range.
-    vec3 n = texture2D(normalTex, vec2(gl_TexCoord[0].x * gl_TexCoord[3].x, gl_TexCoord[0].y * gl_TexCoord[3].y)).xyz;
+    vec3 n = texture2D(normalTex, vNormTexcoord).xyz;
     n = normalize(n * 2.0 - 1.0);
 
     // Multiple vector by the TBN matrix to transform the normal from tangent space to world space.
@@ -340,13 +374,15 @@ void main()
 
 	#ifdef GBUFFER_ENABLED
 
-		vec3 finalnormal = normal.xyz;
-
 		#ifdef NORMALTEXTURE_ENABLED
-			finalnormal = NormalMapping();
+			vec3 vNormal = NormalMapping();
+		#else
+			vec3 vNormal = normal.xyz;
 		#endif
 
-		//vec2 normalenc = encodeNormal(finalnormal);
+		vec2 vOctNormal = UnitVectorToOctahedron(vNormal);
+
+		float flDistanceToFragment = distance(worldpos.xyz, viewpos.xyz);
 
 	#ifdef SPECULARTEXTURE_ENABLED
 		vec2 specularTexCoord = vec2(gl_TexCoord[0].x * gl_TexCoord[5].x, gl_TexCoord[0].y * gl_TexCoord[5].y);
@@ -357,8 +393,7 @@ void main()
 
 		gl_FragData[GBUFFER_INDEX_DIFFUSE] = diffuseColor * detailColor;
 		gl_FragData[GBUFFER_INDEX_LIGHTMAP] = lightmapColor;
-		gl_FragData[GBUFFER_INDEX_WORLD] = vec4(worldpos.xyz, 0.0);
-		gl_FragData[GBUFFER_INDEX_NORMAL] = vec4(finalnormal.xyz, 0.0);
+		gl_FragData[GBUFFER_INDEX_WORLDNORM] = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, 0.0);
 		gl_FragData[GBUFFER_INDEX_SPECULAR] = specularColor;
 		gl_FragData[GBUFFER_INDEX_ADDITIVE] = vec4(0.0, 0.0, 0.0, 0.0);
 
