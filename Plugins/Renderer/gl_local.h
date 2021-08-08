@@ -229,7 +229,6 @@ void R_InitTextures(void);
 void R_FreeTextures(void);
 void R_SetupGL(void);
 void R_MarkLeaves(void);
-void R_CalcRefdef(struct ref_params_s *pparams);
 void R_DrawWorld(void);
 void R_DrawSkyBox(void);
 void R_ClearSkyBox(void);

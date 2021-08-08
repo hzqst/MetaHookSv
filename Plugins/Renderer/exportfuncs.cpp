@@ -120,7 +120,7 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 {
 	gExportfuncs.V_CalcRefdef(pparams);
 
-	R_CalcRefdef(pparams);
+	memcpy(&r_params, pparams, sizeof(struct ref_params_s));
 }
 
 void HUD_DrawNormalTriangles(void)

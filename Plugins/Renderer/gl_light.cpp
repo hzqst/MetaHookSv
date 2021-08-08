@@ -118,6 +118,7 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 			SHADER_UNIFORM(prog, lightdiffuse, "lightdiffuse");
 			SHADER_UNIFORM(prog, lightspecular, "lightspecular");
 			SHADER_UNIFORM(prog, lightspecularpow, "lightspecularpow");
+			SHADER_UNIFORM(prog, modelmatrix, "modelmatrix");
 		}
 
 		g_DLightProgramTable[state] = prog;
@@ -443,13 +444,17 @@ void R_EndRenderGBuffer(void)
 					qglVertexPointer(3, GL_FLOAT, sizeof(float[3]), 0);
 
 					qglPushMatrix();
-
+					qglLoadIdentity();
 					qglTranslatef(dynlight.origin[0], dynlight.origin[1], dynlight.origin[2]);
 					qglScalef(radius, radius, radius);
 
-					qglDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
-
+					float modelmatrix[16];
+					qglGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
 					qglPopMatrix();
+
+					qglUniformMatrix4fvARB(prog.modelmatrix, 1, false, modelmatrix);
+
+					qglDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
 
 					qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 					qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
@@ -470,7 +475,7 @@ void R_EndRenderGBuffer(void)
 
 					GL_Begin2D();
 
-					R_DrawHUDQuad(glwidth, glheight);
+					R_DrawHUDQuadFrustum(glwidth, glheight);
 
 					GL_End2D();
 				}
@@ -507,6 +512,8 @@ void R_EndRenderGBuffer(void)
 			//Spot Light
 			auto ent = gEngfuncs.GetEntityByIndex(dl->key);
 
+			float dlight_max_distance = r_flashlight_distance->value;
+
 			vec3_t org;
 			if (ent == gEngfuncs.GetLocalPlayer() && !gExportfuncs.CL_IsThirdPerson())
 			{
@@ -518,6 +525,9 @@ void R_EndRenderGBuffer(void)
 				VectorMA(org, 10, dlight_vright, org);
 
 				VectorCopy(org, dlight_origin);
+
+				if (dl->radius == 80)
+					dlight_max_distance = VectorDistance(dlight_origin, dl->origin);
 			}
 			else
 			{
@@ -549,7 +559,7 @@ void R_EndRenderGBuffer(void)
 
 				GL_Begin2D();
 
-				R_DrawHUDQuad(glwidth, glheight);
+				R_DrawHUDQuadFrustum(glwidth, glheight);
 
 				GL_End2D();
 			}
@@ -577,18 +587,20 @@ void R_EndRenderGBuffer(void)
 				float radius = r_flashlight_distance->value * tan;
 
 				qglPushMatrix();
-
+				qglLoadIdentity();
 				qglTranslatef(dlight_origin[0], dlight_origin[1], dlight_origin[2]);
-
 				qglRotatef(dlight_angle[1], 0, 0, 1);
 				qglRotatef(dlight_angle[0], 0, 1, 0);
 				qglRotatef(dlight_angle[2], 1, 0, 0);
-
 				qglScalef(r_flashlight_distance->value, radius, radius);
 
-				qglDrawArrays(GL_TRIANGLES, 0, X_SEGMENTS * 6);
-
+				float modelmatrix[16];
+				qglGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
 				qglPopMatrix();
+
+				qglUniformMatrix4fvARB(prog.modelmatrix, 1, false, modelmatrix);
+
+				qglDrawArrays(GL_TRIANGLES, 0, X_SEGMENTS * 6);
 
 				qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 				qglDisableClientState(GL_VERTEX_ARRAY);
@@ -628,13 +640,17 @@ void R_EndRenderGBuffer(void)
 				qglVertexPointer(3, GL_FLOAT, sizeof(float[3]), 0);
 
 				qglPushMatrix();
-
+				qglLoadIdentity();
 				qglTranslatef(dl->origin[0], dl->origin[1], dl->origin[2]);
 				qglScalef(dl->radius, dl->radius, dl->radius);
 
-				qglDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);				
-			
+				float modelmatrix[16];
+				qglGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
 				qglPopMatrix();
+
+				qglUniformMatrix4fvARB(prog.modelmatrix, 1, false, modelmatrix);
+
+				qglDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);				
 
 				qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 				qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
@@ -655,7 +671,7 @@ void R_EndRenderGBuffer(void)
 
 				GL_Begin2D();
 
-				R_DrawHUDQuad(glwidth, glheight);
+				R_DrawHUDQuadFrustum(glwidth, glheight);
 
 				GL_End2D();
 			}

@@ -577,23 +577,6 @@ void S_ExtraUpdate(void)
 	gRefFuncs.S_ExtraUpdate();
 }
 
-float CalcFov(float fov_x, float width, float height)
-{
-	float a;
-	float x;
-
-	if (fov_x < 1 || fov_x > 179)
-		fov_x = 90;
-
-	x = width / tan(fov_x / 360 * M_PI);
-
-	a = atan(height / x);
-
-	a = a * 360 / M_PI;
-
-	return a;
-}
-
 int SignbitsForPlane(mplane_t *out)
 {
 	int bits, j;
@@ -609,41 +592,64 @@ int SignbitsForPlane(mplane_t *out)
 	return bits;
 }
 
-void MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar)
-{
-	GLdouble xmin, xmax, ymin, ymax;
-
-	ymax = zNear * tan(fovy * M_PI / 360.0);
-	ymin = -ymax;
-
-	xmin = ymin * aspect;
-	xmax = ymax * aspect;
-
-	qglFrustum(xmin, xmax, ymin, ymax, zNear, zFar);
-}
-
 void MYgluPerspectiveV(double fovy, double aspect, double zNear, double zFar)
 {
-	auto right = tan(fovy * 0.008726646259971648) * zNear;
-	qglFrustum(-right, right, aspect * -right, right * aspect, zNear, zFar);
-}
+	auto right = tan(fovy * (M_PI / 360.0)) * zNear;
+	auto top = right * aspect;
+	qglFrustum(-right, right, -top, top, zNear, zFar);
+
+	vec3_t farplane;
+	VectorMA(r_refdef->vieworg, zNear, vpn, farplane);
+
+	VectorMA(farplane, -right, vright, r_frustum_origin[0]);
+	VectorMA(r_frustum_origin[0], -top, vup, r_frustum_origin[0]);
+	VectorSubtract(r_frustum_origin[0], r_refdef->vieworg, r_frustum_vec[0]);
+	VectorNormalize(r_frustum_vec[0]);
+
+	VectorMA(farplane, -right, vright, r_frustum_origin[1]);
+	VectorMA(r_frustum_origin[1], top, vup, r_frustum_origin[1]);
+	VectorSubtract(r_frustum_origin[1], r_refdef->vieworg, r_frustum_vec[1]);
+	VectorNormalize(r_frustum_vec[1]);
+
+	VectorMA(farplane, right, vright, r_frustum_origin[2]);
+	VectorMA(r_frustum_origin[2], top, vup, r_frustum_origin[2]);
+	VectorSubtract(r_frustum_origin[2], r_refdef->vieworg, r_frustum_vec[2]);
+	VectorNormalize(r_frustum_vec[2]);
+
+	VectorMA(farplane, right, vright, r_frustum_origin[3]);
+	VectorMA(r_frustum_origin[3], -top, vup, r_frustum_origin[3]);
+	VectorSubtract(r_frustum_origin[3], r_refdef->vieworg, r_frustum_vec[3]);
+	VectorNormalize(r_frustum_vec[3]);
+ }
 
 void MYgluPerspectiveH(double fovy, double aspect, double zNear, double zFar)
 {
-	auto top = tan(fovy * 0.008726646259971648) * zNear;
-	qglFrustum(aspect * -top, top * aspect, -top, top, zNear, zFar);
-}
+	auto top = tan(fovy * (M_PI / 360.0)) * zNear;
+	auto right = top * aspect;
+	qglFrustum(-right, right, -top, top, zNear, zFar);
 
-/*void R_SetupGL(void)
-{
-	gRefFuncs.R_SetupGL();
+	vec3_t farplane;
+	VectorMA(r_refdef->vieworg, zNear, vpn, farplane);
 
-	qglGetIntegerv(GL_VIEWPORT, r_viewport);
-}*/
+	VectorMA(farplane, -right, vright, r_frustum_origin[0]);
+	VectorMA(r_frustum_origin[0], -top, vup, r_frustum_origin[0]);
+	VectorSubtract(r_frustum_origin[0], r_refdef->vieworg, r_frustum_vec[0]);
+	VectorNormalize(r_frustum_vec[0]);
 
-void R_CalcRefdef(struct ref_params_s *pparams)
-{
-	memcpy(&r_params, pparams, sizeof(struct ref_params_s));
+	VectorMA(farplane, -right, vright, r_frustum_origin[1]);
+	VectorMA(r_frustum_origin[1], top, vup, r_frustum_origin[1]);
+	VectorSubtract(r_frustum_origin[1], r_refdef->vieworg, r_frustum_vec[1]);
+	VectorNormalize(r_frustum_vec[1]);
+
+	VectorMA(farplane, right, vright, r_frustum_origin[2]);
+	VectorMA(r_frustum_origin[2], top, vup, r_frustum_origin[2]);
+	VectorSubtract(r_frustum_origin[2], r_refdef->vieworg, r_frustum_vec[2]);
+	VectorNormalize(r_frustum_vec[2]);
+
+	VectorMA(farplane, right, vright, r_frustum_origin[3]);
+	VectorMA(r_frustum_origin[3], -top, vup, r_frustum_origin[3]);
+	VectorSubtract(r_frustum_origin[3], r_refdef->vieworg, r_frustum_vec[3]);
+	VectorNormalize(r_frustum_vec[3]);
 }
 
 void GL_ClearFBO(FBO_Container_t *s)
@@ -1418,7 +1424,7 @@ void R_ForceCVars(qboolean mp)
 	if (r_draw_pass)
 		return;
 
-	//gRefFuncs.R_ForceCVars(mp);
+	gRefFuncs.R_ForceCVars(mp);
 }
 
 void R_NewMap(void)
@@ -1727,104 +1733,7 @@ void R_SetupGL(void)
 	InvertMatrix(gWorldToScreen, gScreenToWorld);
 }
 
-typedef struct
-{
-	char *name;
-	int minimize, maximize;
-}glmode_t;
 
-static glmode_t gl_texture_modes[] =
-{
-	{ "GL_NEAREST", GL_NEAREST, GL_NEAREST },
-	{ "GL_LINEAR", GL_LINEAR, GL_LINEAR },
-	{ "GL_NEAREST_MIPMAP_NEAREST", GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST },
-	{ "GL_LINEAR_MIPMAP_NEAREST", GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR },
-	{ "GL_NEAREST_MIPMAP_LINEAR", GL_NEAREST_MIPMAP_LINEAR, GL_NEAREST },
-	{ "GL_LINEAR_MIPMAP_LINEAR", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR }
-};
-
-void GL_Texturemode_internal(const char *value)
-{
-	int i;
-
-	for (i = 0; i < 6; i++)
-	{
-		if (!stricmp(gl_texture_modes[i].name, value))
-			break;
-	}
-
-	if (i == 6)
-	{
-		gEngfuncs.Con_Printf("bad filter name\n");
-		return;
-	}
-
-	*gl_filter_min = gl_texture_modes[i].minimize;
-	*gl_filter_max = gl_texture_modes[i].maximize;
-
-	if (gltextures_SvEngine)
-	{
-		for (int j = 0; j < (*numgltextures); ++j)
-		{
-			if ((*gltextures_SvEngine)[j].mipmap)
-			{
-				GL_Bind((*gltextures_SvEngine)[j].texnum);
-				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
-				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
-			}
-			else
-			{
-				GL_Bind((*gltextures_SvEngine)[j].texnum);
-				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
-				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
-			}
-		}
-	}
-	else
-	{
-		for (int j = 0; j < (*numgltextures); ++j)
-		{
-			if (gltextures[j].mipmap)
-			{
-				GL_Bind(gltextures[j].texnum);
-				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
-				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
-			}
-			else
-			{
-				GL_Bind(gltextures[j].texnum);
-				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
-				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
-			}
-		}
-	}
-
-	for (int j = 0; j < 6; ++j)
-	{
-		if (gSkyTexNumber[j])
-		{
-			GL_Bind(gSkyTexNumber[j]);
-			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
-			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
-		}
-	}
-}
-
-void GL_Texturemode_cb(cvar_t *pcvar)
-{
-	GL_Texturemode_internal(pcvar->string);
-}
-
-void GL_Texturemode_f(void)
-{
-	if(gEngfuncs.Cmd_Argc() >= 2)
-		GL_Texturemode_internal(gEngfuncs.Cmd_Argv(1));
-}
 
 #if 0
 

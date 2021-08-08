@@ -48,6 +48,7 @@ void _VectorAdd(vec3_t veca, vec3_t vecb, vec3_t out);
 void _VectorCopy(vec3_t in, vec3_t out);
 
 int VectorCompare(const vec3_t v1, const vec3_t v2);
+double VectorDistance(vec3_t v1, vec3_t v2);
 double VectorLength(vec3_t v);
 void CrossProduct(const vec3_t v1, const vec3_t v2, vec3_t cross);
 float VectorNormalize(vec3_t v);

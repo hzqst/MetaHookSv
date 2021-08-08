@@ -48,17 +48,6 @@ int r_studio_polys;
 int r_studio_framecount;
 
 cvar_t *r_studio_vbo = NULL;
-//cvar_t *r_studio_cache_bone = NULL;
-
-/*void R_StudioClearBoneCache(void)
-{
-	for (auto &itor = g_StudioBoneTable.begin(); itor != g_StudioBoneTable.end(); ++itor)
-	{
-		delete itor->second;
-	}
-	g_StudioBoneTable.clear();
-}
-*/
 
 void R_StudioClearVBOCache(void)
 {
@@ -147,6 +136,7 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 			SHADER_UNIFORM(prog, r_vright, "r_vright");
 			SHADER_UNIFORM(prog, r_scale, "r_scale");
 			SHADER_UNIFORM(prog, entityPos, "entityPos");
+			SHADER_UNIFORM(prog, viewpos, "viewpos");
 
 			SHADER_ATTRIB(prog, attr_bone, "attr_bone");
 		}
@@ -222,6 +212,9 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 
 		if (prog.entityPos != -1)
 			qglUniform3fARB(prog.entityPos, (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3]);
+
+		if (prog.viewpos != -1)
+			qglUniform3fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
 
 		if (progOutput)
 			*progOutput = prog;

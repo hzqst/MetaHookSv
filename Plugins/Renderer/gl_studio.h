@@ -9,6 +9,8 @@ typedef struct
 	int program;
 	int diffuseTex;
 
+	int viewpos;
+
 	int bonematrix;
 
 	int v_lambert;

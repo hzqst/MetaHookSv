@@ -443,12 +443,8 @@ void GL_FrameBufferColorTextureDeferred(FBO_Container_t *s, int iInternalColorFo
 
 	s->iTextureColorFormat = iInternalColorFormat;
 
-	qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, s->s_hBackBufferTex, 0, GBUFFER_INDEX_DIFFUSE);
-	qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, s->s_hBackBufferTex, 0, GBUFFER_INDEX_LIGHTMAP);
-	qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, s->s_hBackBufferTex, 0, GBUFFER_INDEX_WORLD);
-	qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, s->s_hBackBufferTex, 0, GBUFFER_INDEX_NORMAL);
-	qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, s->s_hBackBufferTex, 0, GBUFFER_INDEX_SPECULAR);
-	qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT5, s->s_hBackBufferTex, 0, GBUFFER_INDEX_ADDITIVE);
+	for(int i = 0;i < GBUFFER_INDEX_MAX; ++i)
+		qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, s->s_hBackBufferTex, 0, i);
 }
 
 void GL_Begin2D(void)

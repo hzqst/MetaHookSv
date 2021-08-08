@@ -52,7 +52,104 @@ cvar_callback_t Cvar_HookCallback(const char *cvar_name, cvar_callback_t callbac
 
 	return NULL;
 }
+typedef struct
+{
+	char *name;
+	int minimize, maximize;
+}glmode_t;
 
+static glmode_t gl_texture_modes[] =
+{
+	{ "GL_NEAREST", GL_NEAREST, GL_NEAREST },
+	{ "GL_LINEAR", GL_LINEAR, GL_LINEAR },
+	{ "GL_NEAREST_MIPMAP_NEAREST", GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST },
+	{ "GL_LINEAR_MIPMAP_NEAREST", GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR },
+	{ "GL_NEAREST_MIPMAP_LINEAR", GL_NEAREST_MIPMAP_LINEAR, GL_NEAREST },
+	{ "GL_LINEAR_MIPMAP_LINEAR", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR }
+};
+
+void GL_Texturemode_internal(const char *value)
+{
+	int i;
+
+	for (i = 0; i < 6; i++)
+	{
+		if (!stricmp(gl_texture_modes[i].name, value))
+			break;
+	}
+
+	if (i == 6)
+	{
+		gEngfuncs.Con_Printf("bad filter name\n");
+		return;
+	}
+
+	*gl_filter_min = gl_texture_modes[i].minimize;
+	*gl_filter_max = gl_texture_modes[i].maximize;
+
+	if (gltextures_SvEngine)
+	{
+		for (int j = 0; j < (*numgltextures); ++j)
+		{
+			if ((*gltextures_SvEngine)[j].mipmap)
+			{
+				GL_Bind((*gltextures_SvEngine)[j].texnum);
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+			}
+			else
+			{
+				GL_Bind((*gltextures_SvEngine)[j].texnum);
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+			}
+		}
+	}
+	else
+	{
+		for (int j = 0; j < (*numgltextures); ++j)
+		{
+			if (gltextures[j].mipmap)
+			{
+				GL_Bind(gltextures[j].texnum);
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+			}
+			else
+			{
+				GL_Bind(gltextures[j].texnum);
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+				qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+			}
+		}
+	}
+
+	for (int j = 0; j < 6; ++j)
+	{
+		if (gSkyTexNumber[j])
+		{
+			GL_Bind(gSkyTexNumber[j]);
+			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
+			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+			qglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+		}
+	}
+}
+
+void GL_Texturemode_cb(cvar_t *pcvar)
+{
+	GL_Texturemode_internal(pcvar->string);
+}
+
+void GL_Texturemode_f(void)
+{
+	if (gEngfuncs.Cmd_Argc() >= 2)
+		GL_Texturemode_internal(gEngfuncs.Cmd_Argv(1));
+}
 //GL Start
 
 GLuint GL_GenTexture(void)
@@ -126,7 +223,7 @@ void GL_UploadDXT(byte *data, int width, int height, qboolean mipmap, qboolean a
 	}
 }
 
-void GL_Upload32(unsigned int *data, int width, int height, qboolean mipmap, qboolean ansio)
+void GL_Upload32(unsigned int *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap)
 {
 	int iComponent, iFormat, iTextureTarget;
 
@@ -140,6 +237,8 @@ void GL_Upload32(unsigned int *data, int width, int height, qboolean mipmap, qbo
 	if (gl_loadtexture_cubemap)
 		iTextureTarget = GL_TEXTURE_CUBE_MAP;
 
+	qglTexParameterf(iTextureTarget, GL_GENERATE_MIPMAP, (mipmap) ? GL_TRUE : GL_FALSE);
+
 	if (gl_loadtexture_cubemap)
 	{
 		qglTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + gl_loadtexture_cubemap - 1, 0, iComponent, width, height, 0, iFormat, GL_UNSIGNED_BYTE, data);
@@ -149,19 +248,15 @@ void GL_Upload32(unsigned int *data, int width, int height, qboolean mipmap, qbo
 		qglTexImage2D(iTextureTarget, 0, iComponent, width, height, 0, iFormat, GL_UNSIGNED_BYTE, data);
 	}
 
-	qglTexParameterf(iTextureTarget, GL_GENERATE_MIPMAP, (mipmap) ? GL_TRUE : GL_FALSE);
-
 	if (mipmap)
 	{
 		qglTexParameterf(iTextureTarget, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
 		qglTexParameterf(iTextureTarget, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-		qglTexParameterf(iTextureTarget, GL_GENERATE_MIPMAP, GL_TRUE);
 	}
 	else
 	{
 		qglTexParameterf(iTextureTarget, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
 		qglTexParameterf(iTextureTarget, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-		qglTexParameterf(iTextureTarget, GL_GENERATE_MIPMAP, GL_FALSE);
 	}
 
 	if(ansio && gl_ansio)
@@ -172,9 +267,12 @@ void GL_Upload32(unsigned int *data, int width, int height, qboolean mipmap, qbo
 	{
 		qglTexParameterf(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
 	}
+
+	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
+	qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
 }
 
-void GL_Upload16(byte *data, int width, int height, qboolean mipmap, int iType, unsigned char *pPal, qboolean ansio)
+void GL_Upload16(byte *data, int width, int height, qboolean mipmap, int iType, unsigned char *pPal, qboolean ansio, int wrap)
 {
 	static unsigned int *trans = NULL;//[640*480];
 	static int transSize = 0;
@@ -313,7 +411,7 @@ void GL_Upload16(byte *data, int width, int height, qboolean mipmap, int iType, 
 		gEngfuncs.Con_Printf( "Upload16:Bogus texture type!/n" );
 	}
 
-	GL_Upload32(trans, width, height, mipmap, ansio);
+	GL_Upload32(trans, width, height, mipmap, ansio, wrap);
 }
 
 int GL_FindTexture(const char *identifier, GL_TEXTURETYPE textureType, int *width, int *height)
@@ -482,6 +580,11 @@ int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int wid
 	if (gl_loadtexture_cubemap)
 		iTextureTarget = GL_TEXTURE_CUBE_MAP;
 
+	int iWrap = GL_REPEAT;
+
+	if (textureType == GLT_HUDSPRITE || textureType == GLT_SPRITE)
+		iWrap = GL_CLAMP_TO_EDGE;
+
 	qglBindTexture(iTextureTarget, texnum);
 	(*currenttexture) = -1;
 
@@ -491,7 +594,7 @@ int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int wid
 	}
 	else
 	{
-		GL_Upload32((unsigned *)data, width, height, mipmap, ansio);
+		GL_Upload32((unsigned *)data, width, height, mipmap, ansio, iWrap);
 	}
 
 	qglBindTexture(iTextureTarget, 0);
