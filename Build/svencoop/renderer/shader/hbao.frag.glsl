@@ -24,7 +24,6 @@ uniform  float   control_PowExponent;
   
 uniform  vec4    control_projInfo;
 uniform  vec2    control_projScale;
-uniform  int     control_projOrtho;
 uniform  vec2    control_Fog;
 
 // The pragma below is critical for optimal performance
@@ -117,7 +116,7 @@ in vec2 texCoord;
 
 vec3 UVToView(vec2 uv, float eye_z)
 {
-  return vec3((uv * control_projInfo.xy + control_projInfo.zw) * (control_projOrtho != 0 ? 1. : eye_z), eye_z);
+  return vec3((uv * control_projInfo.xy + control_projInfo.zw) * (eye_z), eye_z);
 }
 
 #if AO_DEINTERLEAVED
@@ -258,7 +257,7 @@ void main()
 #endif
 
   // Compute projection of disk of radius control.R into screen space
-  float RadiusPixels = control_RadiusToScreen / (control_projOrtho != 0 ? 1.0 : ViewPosition.z);
+  float RadiusPixels = control_RadiusToScreen / ViewPosition.z;
 
   // Get jitter vector for the current full-res pixel
   vec4 Rand = GetJitter();

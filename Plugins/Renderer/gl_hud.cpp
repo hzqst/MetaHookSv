@@ -832,26 +832,9 @@ int R_DoSSAO(int sampleIndex)
 		-(1.0f + ProjMatrix[4 * 2 + 1]) / ProjMatrix[4 * 1 + 1], // B/N
 	};
 
-	float projInfoOrtho[] = {
-		2.0f / (ProjMatrix[4 * 0 + 0]),      // ((x) * R - L)
-		2.0f / (ProjMatrix[4 * 1 + 1]),      // ((y) * T - B)
-		-(1.0f + ProjMatrix[4 * 3 + 0]) / ProjMatrix[4 * 0 + 0], // L
-		-(1.0f - ProjMatrix[4 * 3 + 1]) / ProjMatrix[4 * 1 + 1], // B
-	};
+	auto projInfo = projInfoPerspective;
 
-	int useOrtho = 0;
-	int projOrtho = useOrtho;
-	auto projInfo = useOrtho ? projInfoOrtho : projInfoPerspective;
-
-	float projScale;
-	if (useOrtho) 
-	{
-		projScale = float(glheight) / (projInfoOrtho[1]);
-	}
-	else
-	{
-		projScale = float(glheight) / (tanf( (r_yfov / (M_PI * 2)) * 0.5f) * 2.0f);
-	}
+	float projScale = float(glheight) / (tanf(r_yfov * 0.5f) * 2.0f);
 
 	// radius
 	float meters2viewspace = 1.0f;
@@ -884,7 +867,7 @@ int R_DoSSAO(int sampleIndex)
 		qglUniform4fvARB(hbao_calc_blur_fog.control_projInfo, 1, projInfo);
 		qglUniform2fvARB(hbao_calc_blur_fog.control_InvFullResolution, 1, InvFullResolution);
 		qglUniform2fvARB(hbao_calc_blur_fog.control_InvQuarterResolution, 1, InvQuarterResolution);
-		qglUniform1iARB(hbao_calc_blur_fog.control_projOrtho, projOrtho);
+		qglUniform1iARB(hbao_calc_blur_fog.control_projOrtho, 0);
 		qglUniform1fARB(hbao_calc_blur_fog.control_RadiusToScreen, RadiusToScreen);
 		qglUniform1fARB(hbao_calc_blur_fog.control_AOMultiplier, AOMultiplier);
 		qglUniform1fARB(hbao_calc_blur_fog.control_NDotVBias, NDotVBias);
@@ -898,7 +881,7 @@ int R_DoSSAO(int sampleIndex)
 		qglUniform4fvARB(hbao_calc_blur.control_projInfo, 1, projInfo);
 		qglUniform2fvARB(hbao_calc_blur.control_InvFullResolution, 1, InvFullResolution);
 		qglUniform2fvARB(hbao_calc_blur.control_InvQuarterResolution, 1, InvQuarterResolution);
-		qglUniform1iARB(hbao_calc_blur.control_projOrtho, projOrtho);
+		qglUniform1iARB(hbao_calc_blur.control_projOrtho, 0);
 		qglUniform1fARB(hbao_calc_blur.control_RadiusToScreen, RadiusToScreen);
 		qglUniform1fARB(hbao_calc_blur.control_AOMultiplier, AOMultiplier);
 		qglUniform1fARB(hbao_calc_blur.control_NDotVBias, NDotVBias);
