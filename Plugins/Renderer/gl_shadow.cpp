@@ -16,8 +16,8 @@ int shadow_numvisedicts[3] = {0};
 //cvar
 cvar_t *r_shadow = NULL;
 cvar_t *r_shadow_debug = NULL;
-cvar_t *r_shadow_fade = NULL;
-cvar_t *r_shadow_minlum = NULL;
+cvar_t *r_shadow_distfade = NULL;
+cvar_t *r_shadow_lumfade = NULL;
 cvar_t *r_shadow_angles = NULL;
 cvar_t *r_shadow_color = NULL;
 cvar_t *r_shadow_high_distance = NULL;
@@ -44,13 +44,13 @@ void R_FreeShadow(void)
 void R_InitShadow(void)
 {
 	shadow_texture_size = min(gl_max_texture_size, 4096);
-	shadow_texture_depth = GL_GenShadowTexture(shadow_texture_size, shadow_texture_size);
+	shadow_texture_depth = GL_GenDepthTexture(shadow_texture_size, shadow_texture_size);
 	shadow_texture_color = GL_GenTextureArrayColorFormat(shadow_texture_size, shadow_texture_size, 3, GL_RGBA16F);
 
 	r_shadow = gEngfuncs.pfnRegisterVariable("r_shadow", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_debug = gEngfuncs.pfnRegisterVariable("r_shadow_debug", "0",  FCVAR_CLIENTDLL);
-	r_shadow_fade = gEngfuncs.pfnRegisterVariable("r_shadow_fade", "64 128", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_minlum = gEngfuncs.pfnRegisterVariable("r_shadow_minlum", "64", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_distfade = gEngfuncs.pfnRegisterVariable("r_shadow_distfade", "64 128", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_lumfade = gEngfuncs.pfnRegisterVariable("r_shadow_lumfade", "64 32", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_angles = gEngfuncs.pfnRegisterVariable("r_shadow_angles", "90 0 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_color = gEngfuncs.pfnRegisterVariable("r_shadow_color", "0 0 0 128", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_high_distance = gEngfuncs.pfnRegisterVariable("r_shadow_high_distance", "400", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);

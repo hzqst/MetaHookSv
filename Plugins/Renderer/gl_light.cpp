@@ -42,7 +42,7 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\dfinal_shader.vsh", NULL, "renderer\\shader\\dfinal_shader.fsh", def.c_str(), NULL, def.c_str());
+		prog.program = R_CompileShaderFileEx("renderer\\shader\\dfinal_shader.vsh", "renderer\\shader\\dfinal_shader.fsh", def.c_str(), def.c_str(), NULL);
 		if (prog.program)
 		{
 			SHADER_UNIFORM(prog, gbufferTex, "gbufferTex");
@@ -102,7 +102,7 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\dlight_shader.vsh", NULL, "renderer\\shader\\dlight_shader.fsh", def.c_str(), NULL, def.c_str());
+		prog.program = R_CompileShaderFileEx("renderer\\shader\\dlight_shader.vsh", "renderer\\shader\\dlight_shader.fsh", def.c_str(), def.c_str(), NULL);
 		if (prog.program)
 		{
 			SHADER_UNIFORM(prog, gbufferTex, "gbufferTex");

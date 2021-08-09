@@ -18,6 +18,8 @@ typedef struct FBO_Container_s
 	int iTextureColorFormat;
 }FBO_Container_t;
 
+typedef void(*ExtraShaderStageCallback)(GLuint *objs, int *used);
+
 typedef struct
 {
 	void (*R_ForceCVars)(qboolean mp);
@@ -90,9 +92,9 @@ typedef struct
 
 typedef struct
 {
-	GLuint (*R_CompileShader)(const char *vscode, const char *gscode, const char *fscode, const char *vsfile, const char *gsfile, const char *fsfile);
-	GLuint (*R_CompileShaderFile)(const char *vsfile, const char *gsfile, const char *fsfile);
-	GLuint (*R_CompileShaderFileEx)(const char *vsfile, const char *gsfile, const char *fsfile, const char *vsdefine, const char *gsdefine, const char *fsdefine);
+	GLuint (*R_CompileShader)(const char *vscode, const char *fscode, const char *vsfile, const char *fsfile, ExtraShaderStageCallback callback);
+	GLuint (*R_CompileShaderFile)(const char *vsfile, const char *fsfile, ExtraShaderStageCallback callback);
+	GLuint (*R_CompileShaderFileEx)(const char *vsfile, const char *fsfile, const char *vsdefine, const char *fsdefine, ExtraShaderStageCallback callback);
 	void (*GL_UseProgram)(GLuint program);
 	void (*GL_EndProgram)(void);
 	GLuint (*GL_GetUniformLoc)(GLuint program, const char *name);

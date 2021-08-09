@@ -12,8 +12,8 @@ extern int shadow_numvisedicts[3];
 //cvar
 extern cvar_t *r_shadow;
 extern cvar_t *r_shadow_debug;
-extern cvar_t *r_shadow_fade;
-extern cvar_t *r_shadow_minlum;
+extern cvar_t *r_shadow_distfade;
+extern cvar_t *r_shadow_lumfade;
 extern cvar_t *r_shadow_angles;
 extern cvar_t *r_shadow_color;
 extern cvar_t *r_shadow_high_distance;

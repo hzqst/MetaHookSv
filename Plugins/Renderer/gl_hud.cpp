@@ -73,7 +73,7 @@ void R_UseHudDebugProgram(int state, hud_debug_program_t *progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\hud_debug.vsh", NULL, "renderer\\shader\\hud_debug.fsh", def.c_str(), NULL, def.c_str());
+		prog.program = R_CompileShaderFileEx("renderer\\shader\\hud_debug.vsh", "renderer\\shader\\hud_debug.fsh", def.c_str(), def.c_str(), NULL);
 		if (prog.program)
 		{
 			SHADER_UNIFORM(prog, basetex, "basetex");
@@ -179,7 +179,7 @@ void R_InitBlur(int samples)
 	}
 	ss << " gl_FragColor = sample;\n}";
 
-	pp_gaussianblurh.program = R_CompileShader(pp_common_vscode, NULL, ss.str().c_str(), "pp_common.vsh", NULL, "pp_gaussianblur_h.fsh");
+	pp_gaussianblurh.program = R_CompileShader(pp_common_vscode, ss.str().c_str(), "pp_common.vsh", "pp_gaussianblur_h.fsh", NULL);
 	if (pp_gaussianblurh.program)
 	{
 		SHADER_UNIFORM(pp_gaussianblurh, tex, "tex");
@@ -202,7 +202,7 @@ void R_InitBlur(int samples)
 	}
 	ss2 << " gl_FragColor = sample;\n}";
 
-	pp_gaussianblurv.program = R_CompileShader(pp_common_vscode, NULL, ss2.str().c_str(), "pp_common.vsh", NULL, "pp_gaussianblur_v.fsh");
+	pp_gaussianblurv.program = R_CompileShader(pp_common_vscode, ss2.str().c_str(), "pp_common.vsh", "pp_gaussianblur_v.fsh", NULL);
 	if (pp_gaussianblurv.program)
 	{
 		SHADER_UNIFORM(pp_gaussianblurv, tex, "tex");
@@ -256,7 +256,7 @@ void R_InitGLHUD(void)
 	}
 
 	//FXAA Pass
-	pp_fxaa.program = R_CompileShaderFile("renderer\\shader\\pp_fxaa.vsh", NULL, "renderer\\shader\\pp_fxaa.fsh");
+	pp_fxaa.program = R_CompileShaderFile("renderer\\shader\\pp_fxaa.vsh", "renderer\\shader\\pp_fxaa.fsh", NULL);
 	if (pp_fxaa.program)
 	{
 		SHADER_UNIFORM(pp_fxaa, tex0, "tex0");
@@ -265,14 +265,14 @@ void R_InitGLHUD(void)
 	}
 
 	//DownSample Pass
-	pp_downsample.program = R_CompileShaderFile("renderer\\shader\\pp_common.vsh", NULL, "renderer\\shader\\pp_downsample.fsh");
+	pp_downsample.program = R_CompileShaderFile("renderer\\shader\\pp_common.vsh", "renderer\\shader\\pp_downsample.fsh", NULL);
 	if (pp_downsample.program)
 	{
 		SHADER_UNIFORM(pp_downsample, tex, "tex");
 	}
 
 	//2x2 Downsample Pass
-	pp_downsample2x2.program = R_CompileShaderFile("renderer\\shader\\pp_common2x2.vsh", NULL, "renderer\\shader\\pp_downsample2x2.fsh");
+	pp_downsample2x2.program = R_CompileShaderFile("renderer\\shader\\pp_common2x2.vsh", "renderer\\shader\\pp_downsample2x2.fsh", NULL);
 	if (pp_downsample2x2.program)
 	{
 		SHADER_UNIFORM(pp_downsample2x2, tex, "tex");
@@ -280,7 +280,7 @@ void R_InitGLHUD(void)
 	}
 
 	//Luminance Downsample Pass
-	pp_lumin.program = R_CompileShaderFile("renderer\\shader\\pp_common2x2.vsh", NULL, "renderer\\shader\\pp_lumin.fsh");
+	pp_lumin.program = R_CompileShaderFile("renderer\\shader\\pp_common2x2.vsh", "renderer\\shader\\pp_lumin.fsh", NULL);
 	if (pp_lumin.program)
 	{
 		SHADER_UNIFORM(pp_lumin, tex, "tex");
@@ -288,7 +288,7 @@ void R_InitGLHUD(void)
 	}
 
 	//Log Luminance Downsample Pass
-	pp_luminlog.program = R_CompileShaderFile("renderer\\shader\\pp_common2x2.vsh", NULL, "renderer\\shader\\pp_luminlog.fsh");
+	pp_luminlog.program = R_CompileShaderFile("renderer\\shader\\pp_common2x2.vsh", "renderer\\shader\\pp_luminlog.fsh", NULL);
 	if (pp_luminlog.program)
 	{
 		SHADER_UNIFORM(pp_luminlog, tex, "tex");
@@ -296,7 +296,7 @@ void R_InitGLHUD(void)
 	}
 
 	//Exp Luminance Downsample Pass
-	pp_luminexp.program = R_CompileShaderFile("renderer\\shader\\pp_common2x2.vsh", NULL, "renderer\\shader\\pp_luminexp.fsh");
+	pp_luminexp.program = R_CompileShaderFile("renderer\\shader\\pp_common2x2.vsh", "renderer\\shader\\pp_luminexp.fsh", NULL);
 	if (pp_luminexp.program)
 	{
 		SHADER_UNIFORM(pp_luminexp, tex, "tex");
@@ -304,7 +304,7 @@ void R_InitGLHUD(void)
 	}
 
 	//Luminance Adaptation Downsample Pass
-	pp_luminadapt.program = R_CompileShaderFile("renderer\\shader\\pp_common.vsh", NULL, "renderer\\shader\\pp_luminadapt.fsh");
+	pp_luminadapt.program = R_CompileShaderFile("renderer\\shader\\pp_common.vsh", "renderer\\shader\\pp_luminadapt.fsh", NULL);
 	if (pp_luminadapt.program)
 	{
 		SHADER_UNIFORM(pp_luminadapt, curtex, "curtex");
@@ -313,7 +313,7 @@ void R_InitGLHUD(void)
 	}
 
 	//Bright Pass
-	pp_brightpass.program = R_CompileShaderFile("renderer\\shader\\pp_brightpass.vsh", NULL, "renderer\\shader\\pp_brightpass.fsh");
+	pp_brightpass.program = R_CompileShaderFile("renderer\\shader\\pp_brightpass.vsh", "renderer\\shader\\pp_brightpass.fsh", NULL);
 	if (pp_brightpass.program)
 	{
 		SHADER_UNIFORM(pp_brightpass, tex, "tex");
@@ -321,7 +321,7 @@ void R_InitGLHUD(void)
 	}
 
 	//Tone mapping
-	pp_tonemap.program = R_CompileShaderFile("renderer\\shader\\pp_tonemap.vsh", NULL, "renderer\\shader\\pp_tonemap.fsh");
+	pp_tonemap.program = R_CompileShaderFile("renderer\\shader\\pp_tonemap.vsh", "renderer\\shader\\pp_tonemap.fsh", NULL);
 	if (pp_tonemap.program)
 	{
 		SHADER_UNIFORM(pp_tonemap, basetex, "basetex");
@@ -334,12 +334,13 @@ void R_InitGLHUD(void)
 	}
 
 	//SSAO
-	depth_linearize.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", NULL, "renderer\\shader\\depthlinearize.frag.glsl");
+	depth_linearize.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\depthlinearize.frag.glsl", NULL);
 
-	depth_linearize_msaa.program = R_CompileShaderFileEx("renderer\\shader\\fullscreenquad.vert.glsl", NULL, "renderer\\shader\\depthlinearize.frag.glsl",
-		"#define DEPTHLINEARIZE_MSAA 1\n", NULL, "#define DEPTHLINEARIZE_MSAA 1\n");
+	depth_linearize_msaa.program = R_CompileShaderFileEx("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\depthlinearize.frag.glsl",
+		"#define DEPTHLINEARIZE_MSAA 1\n", "#define DEPTHLINEARIZE_MSAA 1\n", NULL);
 
-	hbao_calc_blur.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", NULL, "renderer\\shader\\hbao.frag.glsl");
+	hbao_calc_blur.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\hbao.frag.glsl", NULL);
+
 	SHADER_UNIFORM(hbao_calc_blur, texLinearDepth, "texLinearDepth");
 	SHADER_UNIFORM(hbao_calc_blur, texRandom, "texRandom");
 	SHADER_UNIFORM(hbao_calc_blur, control_RadiusToScreen, "control_RadiusToScreen");
@@ -352,8 +353,9 @@ void R_InitGLHUD(void)
 	SHADER_UNIFORM(hbao_calc_blur, control_NDotVBias, "control_NDotVBias");
 	SHADER_UNIFORM(hbao_calc_blur, control_NegInvR2, "control_NegInvR2");
 
-	hbao_calc_blur_fog.program = R_CompileShaderFileEx("renderer\\shader\\fullscreenquad.vert.glsl", NULL, "renderer\\shader\\hbao.frag.glsl", 
-		"#define LINEAR_FOG_ENABLED\n", NULL, "#define LINEAR_FOG_ENABLED\n");
+	hbao_calc_blur_fog.program = R_CompileShaderFileEx("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\hbao.frag.glsl", 
+		"#define LINEAR_FOG_ENABLED\n", "#define LINEAR_FOG_ENABLED\n", NULL);
+
 	SHADER_UNIFORM(hbao_calc_blur_fog, texLinearDepth, "texLinearDepth");
 	SHADER_UNIFORM(hbao_calc_blur_fog, texRandom, "texRandom");
 	SHADER_UNIFORM(hbao_calc_blur_fog, control_RadiusToScreen, "control_RadiusToScreen");
@@ -367,11 +369,10 @@ void R_InitGLHUD(void)
 	SHADER_UNIFORM(hbao_calc_blur_fog, control_NegInvR2, "control_NegInvR2");
 	SHADER_UNIFORM(hbao_calc_blur_fog, control_Fog, "control_Fog");
 
-	hbao_blur.program = R_CompileShaderFileEx("renderer\\shader\\fullscreenquad.vert.glsl", NULL, "renderer\\shader\\hbao_blur.frag.glsl",
-		"", NULL, "");
+	hbao_blur.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\hbao_blur.frag.glsl", NULL);
 
-	hbao_blur2.program = R_CompileShaderFileEx("renderer\\shader\\fullscreenquad.vert.glsl", NULL, "renderer\\shader\\hbao_blur.frag.glsl",
-		"#define AO_BLUR_PRESENT\n", NULL, "#define AO_BLUR_PRESENT\n");
+	hbao_blur2.program = R_CompileShaderFileEx("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\hbao_blur.frag.glsl",
+		"#define AO_BLUR_PRESENT\n", "#define AO_BLUR_PRESENT\n", NULL);
 
 	R_InitBlur(16);
 

@@ -1,23 +1,24 @@
 #pragma once
 
+#include <vector>
+
 typedef struct glshader_s
 {
-	struct glshader_s(GLuint a, GLuint b, GLuint c, GLuint d)
+	struct glshader_s(GLuint prog, GLuint *objs, int used)
 	{
-		vs = a;
-		gs = b;
-		fs = c;
-		program = d;
+		program = prog;
+		shader_objects.resize(used);
+		memcpy(shader_objects.data(), objs, used * sizeof(GLuint));
 	}
-	GLuint vs;
-	GLuint gs;
-	GLuint fs;
 	GLuint program;
+	std::vector<GLuint> shader_objects;
 }glshader_t;
 
-GLuint R_CompileShader(const char *vscode, const char *gscode, const char *fscode, const char *vsfile, const char *gsfile, const char *fsfile);
-GLuint R_CompileShaderFile(const char *vsfile, const char *gsfile, const char *fsfile);
-GLuint R_CompileShaderFileEx(const char *vsfile, const char *gsfile, const char *fsfile, const char *vsdefine, const char *gsdefine, const char *fsdefine);
+typedef void(*ExtraShaderStageCallback)(GLuint *objs, int *used);
+GLuint R_CompileShaderObject(int type, const char *code, const char *filename);
+GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfile, const char *fsfile, ExtraShaderStageCallback callback);
+GLuint R_CompileShaderFile(const char *vsfile, const char *fsfile, ExtraShaderStageCallback callback);
+GLuint R_CompileShaderFileEx(const char *vsfile, const char *fsfile, const char *vsdefine, const char *fsdefine, ExtraShaderStageCallback callback);
 void GL_UseProgram(GLuint program);
 void GL_EndProgram(void);
 GLuint GL_GetUniformLoc(GLuint program, const char *name);

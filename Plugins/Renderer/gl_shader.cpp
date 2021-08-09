@@ -14,20 +14,11 @@ void GL_FreeShaders(void)
 {
 	for(size_t i = 0;i < g_ShaderTable.size(); ++i)
 	{
-		if (g_ShaderTable[i].vs)
+		auto &objs = g_ShaderTable[i].shader_objects;
+		for (size_t j = 0; j < objs.size(); ++j)
 		{
-			qglDetachObjectARB(g_ShaderTable[i].program, g_ShaderTable[i].vs);
-			qglDeleteObjectARB(g_ShaderTable[i].vs);
-		}
-		if (g_ShaderTable[i].gs)
-		{
-			qglDetachObjectARB(g_ShaderTable[i].program, g_ShaderTable[i].gs);
-			qglDeleteObjectARB(g_ShaderTable[i].gs);
-		}
-		if (g_ShaderTable[i].fs)
-		{
-			qglDetachObjectARB(g_ShaderTable[i].program, g_ShaderTable[i].fs);
-			qglDeleteObjectARB(g_ShaderTable[i].fs);
+			qglDetachObjectARB(g_ShaderTable[i].program, objs[j]);
+			qglDeleteObjectARB(objs[j]);
 		}
 		qglDeleteProgramsARB(1, &g_ShaderTable[i].program);
 	}
@@ -38,58 +29,51 @@ void GL_FreeShaders(void)
 void GL_CheckShaderError(GLuint shader, const char *filename)
 {
 	int iStatus;
-
 	qglGetShaderiv(shader, GL_COMPILE_STATUS, &iStatus); 
 
 	if(!iStatus)
 	{
 		int nInfoLength;
 		char szCompilerLog[1024] = { 0 };
-		qglGetInfoLogARB(shader, sizeof(szCompilerLog), &nInfoLength, szCompilerLog);
+		qglGetInfoLogARB(shader, sizeof(szCompilerLog) - 1, &nInfoLength, szCompilerLog);
+		szCompilerLog[nInfoLength] = 0;
 
 		Sys_ErrorEx("Shader %s compiled with error:\n%s", filename, szCompilerLog);
 		return;
 	}
 }
 
-GLuint R_CompileShader(const char *vscode, const char *gscode, const char *fscode, const char *vsfile, const char *gsfile, const char *fsfile)
+GLuint R_CompileShaderObject(int type, const char *code, const char *filename)
 {
-	GLuint vs = 0, gs = 0, fs = 0;
+	auto obj = qglCreateShaderObjectARB(type);
+	qglShaderSourceARB(obj, 1, &code, NULL);
+	qglCompileShaderARB(obj);
 
-	if (vscode && vscode[0])
-	{
-		vs = qglCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
-		qglShaderSourceARB(vs, 1, &vscode, NULL);
-		qglCompileShaderARB(vs);
-		GL_CheckShaderError(vs, vsfile);
-	}
+	GL_CheckShaderError(obj, filename);
 
-	if (gscode && gscode[0])
-	{
-		gs = qglCreateShaderObjectARB(GL_GEOMETRY_SHADER_ARB);
-		qglShaderSourceARB(gs, 1, &gscode, NULL);
-		qglCompileShaderARB(gs);
-		GL_CheckShaderError(gs, gsfile);
-	}
+	return obj;
+}
 
-	fs = qglCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
-	qglShaderSourceARB(fs, 1, &fscode, NULL);
-	qglCompileShaderARB(fs);
-	GL_CheckShaderError(fs, fsfile);
+GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfile, const char *fsfile, ExtraShaderStageCallback callback)
+{
+	GLuint shader_objects[32];
+	int shader_object_used = 0;
+
+	shader_objects[shader_object_used] = R_CompileShaderObject(GL_VERTEX_SHADER_ARB, vscode, vsfile);
+	shader_object_used++;
+
+	if(callback)
+		callback(shader_objects, &shader_object_used);
+
+	shader_objects[shader_object_used] = R_CompileShaderObject(GL_FRAGMENT_SHADER_ARB, fscode, fsfile);
+	shader_object_used++;
 
 	GLuint program = qglCreateProgramObjectARB();
-	if (vs)
-	{
-		qglAttachObjectARB(program, vs);
-	}
-	if (gs)
-	{
-		qglAttachObjectARB(program, gs);
-	}
-	qglAttachObjectARB(program, fs);
+	for(int i = 0;i < shader_object_used; ++i)
+		qglAttachObjectARB(program, shader_objects[i]);
 	qglLinkProgramARB(program);
 
-	/*int iStatus;
+	int iStatus;
 	qglGetProgramiv(program, GL_LINK_STATUS, &iStatus);
 	if (!iStatus)
 	{
@@ -98,20 +82,19 @@ GLuint R_CompileShader(const char *vscode, const char *gscode, const char *fscod
 		qglGetProgramInfoLog(program, sizeof(szCompilerLog), &nInfoLength, szCompilerLog);
 
 		Sys_ErrorEx("Shader linked with error:\n%s", szCompilerLog);
-		return 0;
-	}*/
+	}
 
-	g_ShaderTable.emplace_back(vs, gs, fs, program);
+	g_ShaderTable.emplace_back(program, shader_objects, shader_object_used);
 
 	return program;
 }
 
 GLuint R_CompileShaderFileEx(
-	const char *vsfile, const char *gsfile, const char *fsfile, 
-	const char *vsdefine, const char *gsdefine, const char *fsdefine)
+	const char *vsfile, const char *fsfile, 
+	const char *vsdefine, const char *fsdefine,
+	ExtraShaderStageCallback callback)
 {
 	char *vscode = NULL;
-	char *gscode = NULL;
 	char *fscode = NULL;
 	
 	std::stringstream vss, gss, fss;
@@ -120,15 +103,6 @@ GLuint R_CompileShaderFileEx(
 	if (!vscode)
 	{
 		Sys_ErrorEx("R_CompileShaderFileEx: %s not found!", vsfile);
-	}
-
-	if (gsfile)
-	{
-		gscode = (char *)gEngfuncs.COM_LoadFile((char *)gsfile, 5, 0);
-		if (!fscode)
-		{
-			Sys_ErrorEx("R_CompileShaderFileEx: %s not found!", vsfile);
-		}
 	}
 
 	fscode = (char *)gEngfuncs.COM_LoadFile((char *)fsfile, 5, 0);
@@ -161,30 +135,6 @@ GLuint R_CompileShaderFileEx(
 		vss << vscode;
 	}
 
-	if (gscode && gsdefine)
-	{
-		if (!strncmp(gscode, "#version ", sizeof("#version ") - 1))
-		{
-			char *pcode = gscode + sizeof("#version ") - 1;
-			while (*pcode && (isdigit(*pcode) || *pcode == ' ' || *pcode == '\r' || *pcode == '\n'))
-			{
-				pcode++;
-			}
-			gss << std::string(gscode, pcode - gscode);
-			gss << gsdefine << "\n";
-			gss << pcode;
-		}
-		else
-		{
-			gss << gsdefine << "\n";
-			gss << gscode;
-		}
-	}
-	else if (gscode)
-	{
-		gss << gscode;
-	}
-
 	if (fscode && fsdefine)
 	{
 		if (!strncmp(fscode, "#version ", sizeof("#version ") - 1))
@@ -209,15 +159,12 @@ GLuint R_CompileShaderFileEx(
 		fss << fscode;
 	}
 
-	auto r = R_CompileShader(vss.str().c_str(), gss.str().c_str(), fss.str().c_str(), vsfile, gsfile, fsfile);
-
-	return r;
+	return R_CompileShader(vss.str().c_str(), fss.str().c_str(), vsfile, fsfile, callback);
 }
 
-
-GLuint R_CompileShaderFile(const char *vsfile, const char *gsfile, const char *fsfile)
+GLuint R_CompileShaderFile(const char *vsfile, const char *fsfile, ExtraShaderStageCallback callback)
 {
-	return R_CompileShaderFileEx(vsfile, gsfile, fsfile, NULL, NULL, NULL);
+	return R_CompileShaderFileEx(vsfile, fsfile, NULL, NULL, callback);
 }
 
 void GL_UseProgram(GLuint program)

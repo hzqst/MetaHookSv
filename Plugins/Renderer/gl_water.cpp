@@ -53,7 +53,7 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\water_shader.vsh", NULL, "renderer\\shader\\water_shader.fsh", def.c_str(), NULL, def.c_str());
+		prog.program = R_CompileShaderFileEx("renderer\\shader\\water_shader.vsh", "renderer\\shader\\water_shader.fsh", def.c_str(), def.c_str(), NULL);
 		if (prog.program)
 		{
 			SHADER_UNIFORM(prog, watercolor, "watercolor");
@@ -198,7 +198,7 @@ void R_InitWater(void)
 {
 	if(gl_shader_support)
 	{
-		drawdepth.program = R_CompileShader(drawdepth_vscode, NULL, drawdepth_fscode, "drawdepth_shader.vsh", NULL, "drawdepth_shader.fsh");
+		drawdepth.program = R_CompileShader(drawdepth_vscode, drawdepth_fscode, "drawdepth_shader.vsh", "drawdepth_shader.fsh", NULL);
 		if (drawdepth.program)
 		{
 			SHADER_UNIFORM(drawdepth, depthmap, "depthmap");
@@ -207,7 +207,7 @@ void R_InitWater(void)
 	
 	if (gl_shader_support)
 	{
-		drawcolor.program = R_CompileShader(drawcolor_vscode, NULL, drawcolor_fscode, "drawcolor_shader.vsh", NULL, "drawcolor_shader.fsh");
+		drawcolor.program = R_CompileShader(drawcolor_vscode, drawcolor_fscode, "drawcolor_shader.vsh", "drawcolor_shader.fsh", NULL);
 		if (drawcolor.program)
 		{
 			SHADER_UNIFORM(drawcolor, colormap, "colormap");

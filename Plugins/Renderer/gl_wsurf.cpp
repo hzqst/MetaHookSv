@@ -101,7 +101,7 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\wsurf_shader.vsh", NULL, "renderer\\shader\\wsurf_shader.fsh", def.c_str(), NULL, def.c_str());
+		prog.program = R_CompileShaderFileEx("renderer\\shader\\wsurf_shader.vsh", "renderer\\shader\\wsurf_shader.fsh", def.c_str(), def.c_str(), NULL);
 		SHADER_UNIFORM(prog, diffuseTex, "diffuseTex");
 		SHADER_UNIFORM(prog, lightmapTexArray, "lightmapTexArray");
 		SHADER_UNIFORM(prog, shadowmapTexArray, "shadowmapTexArray");
@@ -158,7 +158,7 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 			qglUniform3fARB(prog.shadowDirection, r_shadow_control.vforward[0], r_shadow_control.vforward[1], r_shadow_control.vforward[2]);
 
 		if (prog.shadowFade != -1)
-			qglUniform3fARB(prog.shadowFade, r_shadow_control.fade[0], r_shadow_control.fade[1], r_shadow_control.minlum);
+			qglUniform4fARB(prog.shadowFade, r_shadow_control.distfade[0], r_shadow_control.distfade[1], r_shadow_control.lumfade[0], r_shadow_control.lumfade[1]);
 
 		if (prog.shadowColor != -1)
 			qglUniform4fARB(prog.shadowColor, r_shadow_control.color[0], r_shadow_control.color[1], r_shadow_control.color[2], r_shadow_control.color[3]);
@@ -2842,30 +2842,34 @@ void R_ParseBSPEntity_Env_Shadow_Control(bspentity_t *ent)
 		}
 	}
 
-	char *fade_string = ValueForKey(ent, "fade");
-	if (fade_string)
+	char *distfade_string = ValueForKey(ent, "distfade");
+	if (distfade_string)
 	{
-		if (sscanf(fade_string, "%f %f", &temp[0], &temp[1]) == 2)
+		if (sscanf(distfade_string, "%f %f", &temp[0], &temp[1]) == 2)
 		{
-			r_shadow_control.fade[0] = clamp(temp[0], 0, 10000);
-			r_shadow_control.fade[1] = clamp(temp[1], r_shadow_control.fade[0], 10000) - r_shadow_control.fade[0];
+			r_shadow_control.distfade[0] = clamp(temp[0], 0, 10000);
+			r_shadow_control.distfade[1] = clamp(temp[1], r_shadow_control.distfade[0], 10000) - r_shadow_control.distfade[0];
 		}
 		else
 		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"fade\" in entity \"env_shadow_control\"\n");
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"distfade\" in entity \"env_shadow_control\"\n");
 		}
 	}
 
-	char *minlum_string = ValueForKey(ent, "minlum");
-	if (minlum_string)
+	char *lumfade_string = ValueForKey(ent, "lumfade");
+	if (lumfade_string)
 	{
-		if (sscanf(minlum_string, "%f", &temp[0]) == 1)
+		if (sscanf(lumfade_string, "%f %f", &temp[0], &temp[1]) == 2)
 		{
-			r_shadow_control.minlum = clamp(temp[0], 0, 255) / 255.0f;
+			r_shadow_control.lumfade[0] = clamp(temp[0], 0, 255) / 255.0f;
+			r_shadow_control.lumfade[1] = clamp(temp[1], 0, 255) / 255.0f;
+
+			if (r_shadow_control.lumfade[0] < r_shadow_control.lumfade[1] + 0.01f)
+				r_shadow_control.lumfade[0] = r_shadow_control.lumfade[1] + 0.01f;
 		}
 		else
 		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"minlum\" in entity \"env_shadow_control\"\n");
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"lumfade\" in entity \"env_shadow_control\"\n");
 		}
 	}
 
@@ -2996,20 +3000,34 @@ void R_LoadBSPEntities(void)
 		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse r_shadow_angles\n");
 	}
 
-	if (sscanf(r_shadow_fade->string, "%f %f", &temp[0], &temp[1]) == 2)
+	if (sscanf(r_shadow_distfade->string, "%f %f", &temp[0], &temp[1]) == 2)
 	{
-		r_shadow_control.fade[0] = clamp(temp[0], 0, 10000);
-		r_shadow_control.fade[1] = clamp(temp[1], r_shadow_control.fade[0], 10000) - r_shadow_control.fade[0];
+		r_shadow_control.distfade[0] = clamp(temp[0], 0, 10000);
+		r_shadow_control.distfade[1] = clamp(temp[1], r_shadow_control.distfade[0], 10000) - r_shadow_control.distfade[0];
 	}
 	else
 	{
-		r_shadow_control.fade[0] = 64;
-		r_shadow_control.fade[1] = 128 - 64;
+		r_shadow_control.distfade[0] = 64;
+		r_shadow_control.distfade[1] = 128 - 64;
 
-		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse r_shadow_fade\n");
+		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse r_shadow_distfade\n");
 	}
 
-	r_shadow_control.minlum = clamp(r_shadow_minlum->value, 0, 255) / 255.0f;
+	if (sscanf(r_shadow_lumfade->string, "%f %f", &temp[0], &temp[1]) == 2)
+	{
+		r_shadow_control.lumfade[0] = clamp(temp[0], 0, 255) / 255.0f;
+		r_shadow_control.lumfade[1] = clamp(temp[1], 0, 255) / 255.0f;
+
+		if (r_shadow_control.lumfade[0] < r_shadow_control.lumfade[1] + 0.01f)
+			r_shadow_control.lumfade[0] = r_shadow_control.lumfade[1] + 0.01f;
+	}
+	else
+	{
+		r_shadow_control.lumfade[0] = clamp(64, 0, 255) / 255.0f;
+		r_shadow_control.lumfade[1] = clamp(0, 0, 255) / 255.0f;
+
+		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse r_shadow_lumfade\n");
+	}
 
 	r_shadow_control.quality[0][0] = clamp(r_shadow_high_distance->value, 0, 100000);
 	r_shadow_control.quality[0][1] = clamp(r_shadow_high_scale->value, 0.1, 8);

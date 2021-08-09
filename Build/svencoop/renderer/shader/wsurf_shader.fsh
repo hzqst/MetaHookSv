@@ -18,8 +18,8 @@ uniform sampler2DArray lightmapTexArray;
 
 #ifdef SHADOWMAP_ENABLED
 uniform sampler2DArray shadowmapTexArray;
-uniform vec3 shadowFade;
 uniform vec3 shadowDirection;
+uniform vec4 shadowFade;
 uniform vec4 shadowColor;
 varying vec4 shadowcoord[3];
 #endif
@@ -223,7 +223,7 @@ void main()
 	if(dot(normal.xyz, shadowDirection.xyz) < 0)
 	{
 		float lightmapLum = 0.299 * lightmapColor.x + 0.587 * lightmapColor.y + 0.114 * lightmapColor.z;
-		if(lightmapLum > shadowFade.z)
+		if(lightmapLum > shadowFade.w)
 		{
 			float shadow_high = 1.0;
 
@@ -278,9 +278,12 @@ void main()
 				vec3 caster = shadowGetPosition(shadowcoord[0], 0.0);
 
 				float dist = distance(caster, scene);
-				float fade_val = (dist - shadowFade.x) / shadowFade.y;
-				shadow_alpha *= 1.0 - clamp(fade_val, 0.0, 1.0);
-
+				float distlerp = (dist - shadowFade.x) / shadowFade.y;
+				shadow_alpha *= 1.0 - clamp(distlerp, 0.0, 1.0);
+				
+				float lumlerp = (lightmapLum - shadowFade.w) / (shadowFade.z - shadowFade.w);
+				shadow_alpha *= clamp(lumlerp, 0.0, 1.0);
+				
 				shadow_high = 1.0 - shadow_high;
 				shadow_medium = 1.0 - shadow_medium;
 				shadow_low = 1.0 - shadow_low;
@@ -301,8 +304,11 @@ void main()
 				vec3 caster = shadowGetPosition(shadowcoord[1], 1.0);
 
 				float dist = distance(caster, scene);
-				float fade_val = (dist - shadowFade.x) / shadowFade.y;
-				shadow_alpha *= 1.0 - clamp(fade_val, 0.0, 1.0);
+				float distlerp = (dist - shadowFade.x) / shadowFade.y;
+				shadow_alpha *= 1.0 - clamp(distlerp, 0.0, 1.0);
+				
+				float lumlerp = (lightmapLum - shadowFade.w) / (shadowFade.z - shadowFade.w);
+				shadow_alpha *= clamp(lumlerp, 0.0, 1.0);
 
 				shadow_high = 1.0 - shadow_high;
 				shadow_medium = 1.0 - shadow_medium;
@@ -324,8 +330,11 @@ void main()
 				vec3 caster = shadowGetPosition(shadowcoord[2], 2.0);
 
 				float dist = distance(caster, scene);
-				float fade_val = (dist - shadowFade.x) / shadowFade.y;
-				shadow_alpha *= 1.0 - clamp(fade_val, 0.0, 1.0);
+				float distlerp = (dist - shadowFade.x) / shadowFade.y;
+				shadow_alpha *= 1.0 - clamp(distlerp, 0.0, 1.0);
+				
+				float lumlerp = (lightmapLum - shadowFade.w) / (shadowFade.z - shadowFade.w);
+				shadow_alpha *= clamp(lumlerp, 0.0, 1.0);
 
 				shadow_high = 1.0 - shadow_high;
 				shadow_medium = 1.0 - shadow_medium;
