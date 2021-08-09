@@ -37,9 +37,6 @@ uniform sampler2D normalTex;
 uniform sampler2D parallaxTex;
 uniform float parallaxScale;
 
-varying vec3 tangentViewPos;
-varying vec3 tangentFragPos;
-
 #endif
 
 #ifdef SPECULARTEXTURE_ENABLED
@@ -137,31 +134,53 @@ vec3 NormalMapping()
 
 #ifdef PARALLAXTEXTURE_ENABLED
 
-vec2 ParallaxMapping(vec3 viewDir)
-{ 
-    const float numLayers = 100;
+vec2 ParallaxMapping(vec3 viewDirWorld)
+{
+    // Create TBN matrix. from tangent to world
+	vec3 bitangent = cross(normalize(normal.xyz), normalize(tangent.xyz));
+    mat3 TBN = mat3(normalize(tangent.xyz), normalize(bitangent.xyz), normalize(normal.xyz));
+
+	vec3 viewDir = normalize(transpose(TBN) * viewDirWorld);
+
+	const float minLayers = 20;
+	const float maxLayers = 40;	
+	float numLayers = mix(maxLayers, minLayers, abs(dot(vec3(0.0f, 0.0f, 1.0f), viewDir)));
 
     float layerDepth = 1.0 / numLayers;
 
     float currentLayerDepth = 0.0;
 
-    vec2 p = viewDir.xy * parallaxScale;
+    vec2 p = viewDir.xy / viewDir.z * parallaxScale;
 
     vec2 deltaTexCoords = p / numLayers;
 
 	vec2 mainTexCoods = gl_TexCoord[0].xy;
 
     vec2 currentTexCoords = mainTexCoods;
-    float currentDepthMapValue = texture2D(parallaxTex, vec2(currentTexCoords.x * gl_TexCoord[4].x, currentTexCoords.y * gl_TexCoord[4].y) ).r;
+
+	vec2 ddx = dFdx(mainTexCoods);
+	vec2 ddy = dFdy(mainTexCoods);
+
+    float currentDepthMapValue = 1.0 - textureGrad(parallaxTex, vec2(currentTexCoords.x * gl_TexCoord[4].x, currentTexCoords.y * gl_TexCoord[4].y), ddx, ddy ).r;
 
     while(currentLayerDepth < currentDepthMapValue)
     {
         currentTexCoords -= deltaTexCoords;
-        currentDepthMapValue = texture2D(parallaxTex, vec2(currentTexCoords.x * gl_TexCoord[4].x, currentTexCoords.y * gl_TexCoord[4].y) ).r;
+        currentDepthMapValue = 1.0 - textureGrad(parallaxTex, vec2(currentTexCoords.x * gl_TexCoord[4].x, currentTexCoords.y * gl_TexCoord[4].y), ddx, ddy ).r;
         currentLayerDepth += layerDepth;
     }
 
-    return currentTexCoords;   
+	vec2 prevTexCoords = currentTexCoords + deltaTexCoords;
+
+	// get depth after and before collision for linear interpolation
+	float afterDepth  = currentDepthMapValue - currentLayerDepth;
+	float beforeDepth = 1.0 - textureGrad(parallaxTex, vec2(prevTexCoords.x * gl_TexCoord[4].x, prevTexCoords.y * gl_TexCoord[4].y), ddx, ddy ).r - currentLayerDepth + layerDepth;
+	 
+	// interpolation of texture coordinates
+	float weight = afterDepth / (afterDepth - beforeDepth);
+	vec2 finalTexCoords = mix(currentTexCoords, prevTexCoords, weight);
+
+	return finalTexCoords;
 }
 
 #endif
@@ -191,8 +210,8 @@ void main()
 #ifdef DIFFUSE_ENABLED
 
 	#ifdef PARALLAXTEXTURE_ENABLED
-		
-		vec3 viewDir = normalize(tangentViewPos - tangentFragPos);
+
+		vec3 viewDir = normalize(worldpos.xyz - viewpos.xyz);
 
 		vec4 diffuseColor = texture2D(diffuseTex, ParallaxMapping(viewDir));
 
