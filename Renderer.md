@@ -29,7 +29,7 @@ HDR (High Dynamic Range) rendering simulates brightness above that which a compu
 
 `r_hdr_adaptation` Controls the dark / bright adaptation speed for HDR.
 
-* Changes to some of the cvars will not take effect immediately, unless using `r_reload` to force those cvars being reloaded.
+* Changes to some of the cvars will not take effect immediately, using `r_reload` to reload those cvars.
 
 ## Water Shader
 
@@ -57,7 +57,9 @@ Dynamic Shadows can sometimes project through walls and floors, giving away the 
 
 `r_shadow_color` control the color of shadows, in RGBA8 format. for example `r_shadow_color "0 0 0 128"`
 
-`r_shadow_minlum` is the minimum luminance the shadow is allowed to cast, in from 0 to 255. for example `r_shadow_minlum 64`
+`r_shadow_distfade` is the distance where the shadow begins to fade-out, and the maximum distance the shadow is allowed to cast, in inches. for example `r_shadow_distfade 64 128`
+
+`r_shadow_lumfade` is the luminance the shadow begins to fade-out, and minimum luminance the shadow is allowed to cast, must be between 0 ~ 255. for example `r_shadow_lumfade 64 32`
 
 `r_shadow_high_distance` is the maximum distance that entities are being rendered in high-quality shadow map, in inches. for example `r_shadow_high_distance 400`
 
@@ -71,19 +73,17 @@ Dynamic Shadows can sometimes project through walls and floors, giving away the 
 
 `r_shadow_low_scale` is scale factor to scale the size of entity model up or down in low-quality shadow map. for example `r_shadow_low_scale 0.5`
 
-* * Changes to some of the cvars will not take effect immediately, unless using `r_reload` to force those cvars being reloaded.
+* Changes to some of the cvars will not take effect immediately, using `r_reload` to reload those cvars.
 
 ## Screen Space Ambient Occlusion
 
 `r_ssao` Set to 1 to enable SSAO
 
-(Warning: you might see SSAO's black pixel fighting on wall or terrain if your defalt_fov is not 90. you have to either turn SSAO off or change default_fov back to 90)
+`r_ssao_intensity` control the intensity of SSAO shadow.
 
-`r_ssao_intensity` control the intensity of SSAO shadow. recommended value : 0.6 ~ 1.0
+`r_ssao_radius` control the sample size of SSAO shadow.
 
-`r_ssao_radius` control the sample size of SSAO shadow. recommended value : 30.0 ~ 100.0
-
-`r_ssao_blur_sharpness` control the sharpness of SSAO shadow. recommended value : 1.0
+`r_ssao_blur_sharpness` control the sharpness of SSAO shadow.
 
 `r_ssao_bias` unknown. recommended value : 0.1 ~ 0.2
 
@@ -95,13 +95,13 @@ Dynamic Shadows can sometimes project through walls and floors, giving away the 
 
 `r_flashlight_distance` is the illumination distance of flashlight.
 
-`r_light_ambient` is ambient intensity of dynamic light. recommended value : 0.2
+`r_light_ambient` is ambient intensity of dynamic light.
 
-`r_light_diffuse` is diffuse intensity of dynamic light. recommended value : 0.3
+`r_light_diffuse` is diffuse intensity of dynamic light.
 
-`r_light_specular` is specular intensity of dynamic light. recommended value : 0.1
+`r_light_specular` is specular intensity of dynamic light.
 
-`r_light_specularpow` is specular power of dynamic light. recommended value : 10.0
+`r_light_specularpow` is specular power of dynamic light.
 
 ## Vertex Buffer Object (VBO) "Batch-Draw" optimization
 
@@ -181,9 +181,9 @@ You can use [bspguy](https://github.com/wootguy/bspguy) to add entity to BSP fil
 
 `angles` is the direction of shadows, in PitchYawRoll format. for example `"angles" "90 0 0"`
 
-`fade` is the distance where the shadow begins to fade-out and the maximum distance the shadow is allowed to cast, in inches. for example `"fade" "64 128"`
+`distfade` is the distance where the shadow begins to fade-out, and the maximum distance the shadow is allowed to cast, in inches. for example `"distfade" "64 128"`
 
-`minlum` is the minimum luminance the shadow is allowed to cast, in from 0 to 255. for example `"minlum" "64"`
+`lumfade` is the luminance the shadow begins to fade-out, and minimum luminance the shadow is allowed to cast, must be between 0 ~ 255. for example `"lumfade" "64 32"`
 
 `color` is the color of the shadows, in RGBA8 format. for example `"color" "0 0 0 128"`
 
