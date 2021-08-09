@@ -19,7 +19,6 @@ bool drawgbuffer = false;
 
 int gbuffer_mask = -1;
 
-
 GLuint r_sphere_vbo = 0;
 GLuint r_sphere_ebo = 0;
 GLuint r_cone_vbo = 0;
@@ -512,8 +511,6 @@ void R_EndRenderGBuffer(void)
 			//Spot Light
 			auto ent = gEngfuncs.GetEntityByIndex(dl->key);
 
-			float dlight_max_distance = r_flashlight_distance->value;
-
 			vec3_t org;
 			if (ent == gEngfuncs.GetLocalPlayer() && !gExportfuncs.CL_IsThirdPerson())
 			{
@@ -521,13 +518,10 @@ void R_EndRenderGBuffer(void)
 				gEngfuncs.pfnAngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
 
 				VectorCopy(r_refdef->vieworg, org);
-				VectorMA(org, 8, dlight_vup, org);
+				VectorMA(org, 2, dlight_vup, org);
 				VectorMA(org, 10, dlight_vright, org);
 
 				VectorCopy(org, dlight_origin);
-
-				if (dl->radius == 80)
-					dlight_max_distance = VectorDistance(dlight_origin, dl->origin);
 			}
 			else
 			{
