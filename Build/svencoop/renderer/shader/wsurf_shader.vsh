@@ -6,6 +6,7 @@ uniform float speed;
 varying vec3 worldpos;
 varying vec3 normal;
 varying vec3 tangent;
+varying vec3 bitangent;
 varying vec4 color;
 
 attribute vec3 s_tangent;
@@ -41,6 +42,8 @@ void main(void)
 #if defined(NORMALTEXTURE_ENABLED) || defined(PARALLAXTEXTURE_ENABLED)
     vec4 tangent4 = vec4(s_tangent, 0.0);
     tangent = normalize(entityMatrix * tangent4).xyz;
+	vec4 bitangent4 = vec4(t_tangent, 0.0);
+    bitangent = normalize(entityMatrix * bitangent4).xyz;
 #endif
 
 #ifdef NORMALTEXTURE_ENABLED

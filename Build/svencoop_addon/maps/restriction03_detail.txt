@@ -1,4 +1,6 @@
 xfloor_c03b_NORMAL detail/norm.png    12 12
+xfloor_c03b_PARALLAX detail/disp2.png  12 12
 xfloor_c03b_SPECULAR detail/disp3.png 12 12
 xfloor_c07_NORMAL detail/norm.png     12 12
+xfloor_c07_PARALLAX detail/disp2.png  12 12
 xfloor_c07_SPECULAR detail/disp3.png  12 12

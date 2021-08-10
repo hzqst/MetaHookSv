@@ -59,6 +59,7 @@ uniform vec3 viewpos;
 varying vec3 worldpos;
 varying vec3 normal;
 varying vec3 tangent;
+varying vec3 bitangent;
 varying vec4 color;
 
 vec2 UnitVectorToHemiOctahedron(vec3 dir) {
@@ -116,7 +117,7 @@ vec3 OctahedronToUnitVector(vec2 coord) {
 vec3 NormalMapping()
 {
     // Create TBN matrix. from tangent to world
-	vec3 bitangent = cross(normalize(normal.xyz), normalize(tangent.xyz));
+	//vec3 bitangent = cross(normalize(normal.xyz), normalize(tangent.xyz));
     mat3 TBN = mat3(normalize(tangent.xyz), normalize(bitangent.xyz), normalize(normal.xyz));
 
 	vec2 vNormTexcoord = vec2(gl_TexCoord[0].x * gl_TexCoord[3].x, gl_TexCoord[0].y * gl_TexCoord[3].y);
@@ -137,7 +138,7 @@ vec3 NormalMapping()
 vec2 ParallaxMapping(vec3 viewDirWorld)
 {
     // Create TBN matrix. from tangent to world
-	vec3 bitangent = cross(normalize(normal.xyz), normalize(tangent.xyz));
+	//vec3 bitangent = cross(normalize(normal.xyz), normalize(tangent.xyz));
     mat3 TBN = mat3(normalize(tangent.xyz), normalize(bitangent.xyz), normalize(normal.xyz));
 
 	vec3 viewDir = normalize(transpose(TBN) * viewDirWorld);

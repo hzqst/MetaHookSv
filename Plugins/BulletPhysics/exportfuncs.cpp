@@ -415,8 +415,6 @@ void HUD_TempEntUpdate(
 	return gExportfuncs.HUD_TempEntUpdate(frametime, client_time, cl_gravity, ppTempEntFree, ppTempEntActive, Callback_AddVisibleEntity, Callback_TempEntPlaySound);
 }
 
-void Vector3BulletToGoldSrc(btVector3& vec);
-
 void V_CalcRefdef(struct ref_params_s *pparams)
 {
 	if (gExportfuncs.CL_IsThirdPerson())
