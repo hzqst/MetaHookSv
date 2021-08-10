@@ -50,7 +50,6 @@ shaderapi_t ShaderAPI =
 	R_CompileShaderFile,
 	R_CompileShaderFileEx,
 	GL_UseProgram,
-	GL_EndProgram,
 	GL_GetUniformLoc,
 	GL_GetAttribLoc,
 	GL_Uniform1i,
@@ -197,11 +196,11 @@ int HUD_Redraw(float time, int intermission)
 			break;
 		case 3:
 			debugTextureID = depthrefrmap;
-			qglUseProgramObjectARB(drawdepth.program);
+			GL_UseProgram(drawdepth.program);
 			break;
 		case 4:
 			debugTextureID = waters_active->depthreflmap;
-			qglUseProgramObjectARB(drawdepth.program);
+			GL_UseProgram(drawdepth.program);
 			break;
 		default:
 			break;
@@ -221,7 +220,7 @@ int HUD_Redraw(float time, int intermission)
 			qglVertex3f(0, glheight / 2, 0);
 			qglEnd();
 
-			qglUseProgramObjectARB(0);
+			GL_UseProgram(0);
 		}
 	}
 	else if(r_shadow_debug && r_shadow_debug->value)
@@ -251,14 +250,13 @@ int HUD_Redraw(float time, int intermission)
 		qglTexCoord2f(0,0);
 		qglVertex3f(0,glheight/2,0);
 		qglEnd();
-		qglUseProgramObjectARB(0);
 
 		qglDisable(GL_TEXTURE_2D_ARRAY);
 		qglEnable(GL_TEXTURE_2D);
 
 		qglEnable(GL_ALPHA_TEST);
 
-		qglUseProgramObjectARB(0);
+		GL_UseProgram(0);
 	}
 	else if(r_light_debug && r_light_debug->value)
 	{
@@ -293,7 +291,7 @@ int HUD_Redraw(float time, int intermission)
 
 		qglEnable(GL_ALPHA_TEST);
 
-		qglUseProgramObjectARB(0);
+		GL_UseProgram(0);
 	}
 	else if(r_hdr_debug && r_hdr_debug->value)
 	{
@@ -359,7 +357,7 @@ int HUD_Redraw(float time, int intermission)
 		switch ((int)r_ssao_debug->value)
 		{	
 		case 1:
-			qglUseProgramObjectARB(drawdepth.program);
+			GL_UseProgram(drawdepth.program);
 			texId = s_BackBufferFBO.s_hBackBufferDepthTex; break;
 		case 2:
 			texId = s_DepthLinearFBO.s_hBackBufferTex; break;
@@ -385,7 +383,7 @@ int HUD_Redraw(float time, int intermission)
 			qglVertex3f(0, glheight / 2, 0);
 			qglEnd();
 
-			qglUseProgramObjectARB(0);
+			GL_UseProgram(0);
 		}
 	}
 	return gExportfuncs.HUD_Redraw(time, intermission);

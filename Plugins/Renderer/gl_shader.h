@@ -20,7 +20,6 @@ GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfil
 GLuint R_CompileShaderFile(const char *vsfile, const char *fsfile, ExtraShaderStageCallback callback);
 GLuint R_CompileShaderFileEx(const char *vsfile, const char *fsfile, const char *vsdefine, const char *fsdefine, ExtraShaderStageCallback callback);
 void GL_UseProgram(GLuint program);
-void GL_EndProgram(void);
 GLuint GL_GetUniformLoc(GLuint program, const char *name);
 GLuint GL_GetAttribLoc(GLuint program, const char *name);
 void GL_Uniform1i(GLuint loc, int v0);

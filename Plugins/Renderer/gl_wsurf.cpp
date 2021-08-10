@@ -131,7 +131,7 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 
 	if (prog.program)
 	{
-		qglUseProgramObjectARB(prog.program);
+		GL_UseProgram(prog.program);
 
 		if (prog.diffuseTex != -1)
 			qglUniform1iARB(prog.diffuseTex, 0);
@@ -1453,7 +1453,7 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 		qglColorMask(1, 1, 1, 1);
 	}
 
-	qglUseProgramObjectARB(0);
+	GL_UseProgram(0);
 }
 
 void R_DrawWSurfVBOSolid(wsurf_model_t *modcache)
@@ -2162,7 +2162,7 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 
 	DrawGLPoly(p);
 
-	qglUseProgramObjectARB(0);
+	GL_UseProgram(0);
 
 	R_EndDetailTexture();
 

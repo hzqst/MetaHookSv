@@ -59,7 +59,7 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 
 	if (prog.program)
 	{
-		qglUseProgramObjectARB(prog.program);
+		GL_UseProgram(prog.program);
 
 		if (prog.gbufferTex != -1)
 			qglUniform1iARB(prog.gbufferTex, 0);
@@ -129,7 +129,7 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 
 	if (prog.program)
 	{
-		qglUseProgramObjectARB(prog.program);
+		GL_UseProgram(prog.program);
 
 		if (prog.gbufferTex != -1)
 			qglUniform1iARB(prog.gbufferTex, 0);
@@ -747,7 +747,7 @@ void R_EndRenderGBuffer(void)
 		R_DrawHUDQuad_Texture(s_BackBufferFBO.s_hBackBufferTex, glwidth, glheight);
 	}
 
-	qglUseProgramObjectARB(0);
+	GL_UseProgram(0);
 
 	GL_PopMatrix();
 	GL_PopDrawState();

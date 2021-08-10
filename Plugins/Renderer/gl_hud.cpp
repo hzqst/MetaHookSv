@@ -89,7 +89,7 @@ void R_UseHudDebugProgram(int state, hud_debug_program_t *progOutput)
 
 	if (prog.program)
 	{
-		qglUseProgramObjectARB(prog.program);
+		GL_UseProgram(prog.program);
 
 		if (prog.basetex != -1)
 			qglUniform1iARB(prog.basetex, 0);
@@ -472,12 +472,12 @@ void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2
 
 	if(!filter2x2)
 	{
-		qglUseProgramObjectARB(pp_downsample.program);
+		GL_UseProgram(pp_downsample.program);
 		qglUniform1iARB(pp_downsample.tex, 0);
 	}
 	else
 	{
-		qglUseProgramObjectARB(pp_downsample2x2.program);
+		GL_UseProgram(pp_downsample2x2.program);
 		qglUniform1iARB(pp_downsample2x2.tex, 0);
 		qglUniform2fARB(pp_downsample2x2.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
 	}
@@ -485,8 +485,6 @@ void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2
 	GL_Begin2DEx(dst->iWidth, dst->iHeight);
 
 	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, dst->iWidth, dst->iHeight);
-
-	qglUseProgramObjectARB(0);
 }
 
 void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int logexp)
@@ -498,19 +496,19 @@ void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int logexp)
 
 	if(!logexp)
 	{
-		qglUseProgramObjectARB(pp_lumin.program);
+		GL_UseProgram(pp_lumin.program);
 		qglUniform1iARB(pp_lumin.tex, 0);
 		qglUniform2fARB(pp_lumin.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
 	}
 	else if(logexp == 1)
 	{
-		qglUseProgramObjectARB(pp_luminlog.program);
+		GL_UseProgram(pp_luminlog.program);
 		qglUniform1iARB(pp_luminlog.tex, 0);
 		qglUniform2fARB(pp_luminlog.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
 	}
 	else
 	{
-		qglUseProgramObjectARB(pp_luminexp.program);
+		GL_UseProgram(pp_luminexp.program);
 		qglUniform1iARB(pp_luminexp.tex, 0);
 		qglUniform2fARB(pp_luminexp.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
 	}
@@ -518,8 +516,6 @@ void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int logexp)
 	GL_Begin2DEx(dst->iWidth, dst->iHeight);
 
 	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, dst->iWidth, dst->iHeight);
-
-	qglUseProgramObjectARB(0);
 }
 
 void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *ada, double frametime)
@@ -529,7 +525,7 @@ void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container
 	qglClearColor(0, 0, 0, 0);
 	qglClear(GL_COLOR_BUFFER_BIT);
 
-	qglUseProgramObjectARB(pp_luminadapt.program);
+	GL_UseProgram(pp_luminadapt.program);
 	qglUniform1iARB(pp_luminadapt.curtex, 0);
 	qglUniform1iARB(pp_luminadapt.adatex, 1);
 	qglUniform1fARB(pp_luminadapt.frametime, frametime * clamp(r_hdr_control.adaptation, 0.1, 100));
@@ -545,8 +541,6 @@ void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container
 	R_DrawHUDQuad(dst->iWidth, dst->iHeight);
 
 	GL_DisableMultitexture();
-
-	qglUseProgramObjectARB(0);
 }
 
 void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *lum)
@@ -556,7 +550,7 @@ void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *l
 	qglClearColor(0, 0, 0, 0);
 	qglClear(GL_COLOR_BUFFER_BIT);
 
-	qglUseProgramObjectARB(pp_brightpass.program);
+	GL_UseProgram(pp_brightpass.program);
 	qglUniform1iARB(pp_brightpass.tex, 0);
 	qglUniform1iARB(pp_brightpass.lumtex, 1);
 
@@ -572,7 +566,7 @@ void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *l
 
 	GL_DisableMultitexture();
 
-	qglUseProgramObjectARB(0);
+	GL_UseProgram(0);
 }
 
 void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
@@ -584,13 +578,13 @@ void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
 
 	if(!vertical)
 	{
-		qglUseProgramObjectARB(pp_gaussianblurh.program);
+		GL_UseProgram(pp_gaussianblurh.program);
 		qglUniform1iARB(pp_gaussianblurh.tex, 0);
 		qglUniform1fARB(pp_gaussianblurh.du, 1.0f / src->iWidth);
 	}
 	else
 	{
-		qglUseProgramObjectARB(pp_gaussianblurv.program);
+		GL_UseProgram(pp_gaussianblurv.program);
 		qglUniform1iARB(pp_gaussianblurv.tex, 0);
 		qglUniform1fARB(pp_gaussianblurv.du, 1.0f / src->iHeight);
 	}
@@ -598,8 +592,6 @@ void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
 	GL_Begin2DEx(dst->iWidth, dst->iHeight);
 
 	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, dst->iWidth, dst->iHeight);
-
-	qglUseProgramObjectARB(0);
 }
 
 void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container_t *blur3, FBO_Container_t *dst)
@@ -612,9 +604,9 @@ void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container
 	qglEnable(GL_BLEND);
 	qglBlendFunc(GL_ONE, GL_ONE);
 
+	GL_UseProgram(0);
 	GL_Begin2DEx(dst->iWidth, dst->iHeight);
 
-	GL_SelectTexture(TEXTURE0_SGIS);
 	GL_Bind(blur1->s_hBackBufferTex);
 	R_DrawHUDQuad(dst->iWidth, dst->iHeight);
 
@@ -634,7 +626,7 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 	qglClearColor(0, 0, 0, 0);
 	qglClear(GL_COLOR_BUFFER_BIT);
 
-	qglUseProgramObjectARB(pp_tonemap.program);
+	GL_UseProgram(pp_tonemap.program);
 	qglUniform1iARB(pp_tonemap.basetex, 0);
 	qglUniform1iARB(pp_tonemap.blurtex, 1);
 	qglUniform1iARB(pp_tonemap.lumtex, 2);
@@ -664,7 +656,7 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 	qglActiveTextureARB(TEXTURE1_SGIS);
 	GL_DisableMultitexture();
 
-	qglUseProgramObjectARB(0);
+	GL_UseProgram(0);
 }
 
 void R_DoHDR(void)
@@ -729,7 +721,7 @@ void R_DoHDR(void)
 
 void R_BeginFXAA(int w, int h)
 {
-	qglUseProgramObjectARB(pp_fxaa.program);
+	GL_UseProgram(pp_fxaa.program);
 	qglUniform1iARB(pp_fxaa.tex0, 0);
 	qglUniform1fARB(pp_fxaa.rt_w, w);
 	qglUniform1fARB(pp_fxaa.rt_h, h);
@@ -765,7 +757,7 @@ void R_DoFXAA(void)
 
 	R_DrawHUDQuad_Texture(s_BackBufferFBO2.s_hBackBufferTex, glwidth, glheight);
 
-	qglUseProgramObjectARB(0);
+	GL_UseProgram(0);
 
 	GL_PopMatrix();
 	GL_PopDrawState();
@@ -799,7 +791,7 @@ int R_DoSSAO(int sampleIndex)
 	//MSAA?
 	if (sampleIndex >= 0)
 	{
-		qglUseProgramObjectARB(depth_linearize_msaa.program);
+		GL_UseProgram(depth_linearize_msaa.program);
 		qglUniform4fARB(0, 4 * r_params.movevars->zmax, 4 - r_params.movevars->zmax, r_params.movevars->zmax, 1.0f);
 		qglUniform1iARB(1, sampleIndex);
 
@@ -813,14 +805,12 @@ int R_DoSSAO(int sampleIndex)
 	}
 	else
 	{
-		qglUseProgramObjectARB(depth_linearize.program);
+		GL_UseProgram(depth_linearize.program);
 		qglUniform4fARB(0, 4 * r_params.movevars->zmax, 4 - r_params.movevars->zmax, r_params.movevars->zmax, 1.0f);
 
 		GL_Bind(s_BackBufferFBO.s_hBackBufferDepthTex);
 		R_DrawHUDQuad(glwidth, glheight);
 	}
-
-	qglUseProgramObjectARB(0);
 
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_HBAOCalcFBO.s_hBackBufferFBO);
 	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -863,7 +853,7 @@ int R_DoSSAO(int sampleIndex)
 	//setup args for hbao_calc
 	if (r_fog_mode == GL_LINEAR)
 	{
-		qglUseProgramObjectARB(hbao_calc_blur_fog.program);
+		GL_UseProgram(hbao_calc_blur_fog.program);
 		qglUniform4fvARB(hbao_calc_blur_fog.control_projInfo, 1, projInfo);
 		qglUniform2fvARB(hbao_calc_blur_fog.control_InvFullResolution, 1, InvFullResolution);
 		qglUniform2fvARB(hbao_calc_blur_fog.control_InvQuarterResolution, 1, InvQuarterResolution);
@@ -877,7 +867,7 @@ int R_DoSSAO(int sampleIndex)
 	}
 	else
 	{
-		qglUseProgramObjectARB(hbao_calc_blur.program);
+		GL_UseProgram(hbao_calc_blur.program);
 		qglUniform4fvARB(hbao_calc_blur.control_projInfo, 1, projInfo);
 		qglUniform2fvARB(hbao_calc_blur.control_InvFullResolution, 1, InvFullResolution);
 		qglUniform2fvARB(hbao_calc_blur.control_InvQuarterResolution, 1, InvQuarterResolution);
@@ -897,14 +887,12 @@ int R_DoSSAO(int sampleIndex)
 
 	R_DrawHUDQuad(glwidth, glheight);
 
-	qglUseProgramObjectARB(0);
-
 	//SSAO blur stage
 
 	//Write to HBAO texture2
 	qglDrawBuffer(GL_COLOR_ATTACHMENT1);
 
-	qglUseProgramObjectARB(hbao_blur.program);
+	GL_UseProgram(hbao_blur.program);
 	qglUniform1fARB(0, r_ssao_blur_sharpness->value / meters2viewspace);
 	qglUniform2fARB(1, 1.0f / float(glwidth), 0);
 
@@ -912,8 +900,6 @@ int R_DoSSAO(int sampleIndex)
 	GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex);
 
 	R_DrawHUDQuad(glwidth, glheight);
-
-	qglUseProgramObjectARB(0);
 
 	//Final output stage, write to main FBO or MSAA FBO.
 	if (R_UseMSAA())
@@ -940,7 +926,7 @@ int R_DoSSAO(int sampleIndex)
 	qglStencilFunc(GL_EQUAL, 0, 0xFF);
 	qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-	qglUseProgramObjectARB(hbao_blur2.program);
+	GL_UseProgram(hbao_blur2.program);
 	qglUniform1fARB(0, r_ssao_blur_sharpness->value / meters2viewspace);
 	qglUniform2fARB(1, 0, 1.0f / float(glheight));
 
@@ -948,7 +934,7 @@ int R_DoSSAO(int sampleIndex)
 
 	R_DrawHUDQuad(glwidth, glheight);
 
-	qglUseProgramObjectARB(0);
+	GL_UseProgram(0);
 
 	qglStencilMask(0);
 	qglDisable(GL_STENCIL_TEST);

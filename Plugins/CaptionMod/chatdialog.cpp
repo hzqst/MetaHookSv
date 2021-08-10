@@ -27,7 +27,7 @@ CChatDialogLine::CChatDialogLine(vgui::Panel *parent, const char *panelName) : v
 
 	//SetScheme("ChatScheme");
 
-	SetPaintBackgroundEnabled(true);
+	SetPaintBackgroundEnabled(false);
 	SetVerticalScrollbar(false);
 }
 
@@ -298,7 +298,7 @@ void CChatDialog::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 	SetPaintBackgroundType(2);
 	SetPaintBorderEnabled(true);
-	SetPaintBackgroundEnabled(true);
+	SetPaintBackgroundEnabled(false);
 
 	SetKeyBoardInputEnabled(false);
 	SetMouseInputEnabled(false);

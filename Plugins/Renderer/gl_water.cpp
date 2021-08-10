@@ -79,7 +79,7 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 
 	if (prog.program)
 	{
-		qglUseProgramObjectARB(prog.program);
+		GL_UseProgram(prog.program);
 
 		if (prog.normalmap != -1)
 			qglUniform1iARB(prog.normalmap, 0);

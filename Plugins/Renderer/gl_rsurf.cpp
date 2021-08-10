@@ -730,7 +730,7 @@ void R_DrawDecals(qboolean bMultitexture)
 		}
 	}
 
-	qglUseProgramObjectARB(0);
+	GL_UseProgram(0);
 
 	if (r_wsurf.bShadowmapTexture && !drawgbuffer)
 	{

@@ -169,12 +169,13 @@ GLuint R_CompileShaderFile(const char *vsfile, const char *fsfile, ExtraShaderSt
 
 void GL_UseProgram(GLuint program)
 {
-	qglUseProgramObjectARB(program);
-}
+	static int currentprogram = -1;
 
-void GL_EndProgram(void)
-{
-	qglUseProgramObjectARB(0);
+	if (currentprogram != program)
+	{
+		currentprogram = program;
+		qglUseProgramObjectARB(program);
+	}
 }
 
 GLuint GL_GetUniformLoc(GLuint program, const char *name)

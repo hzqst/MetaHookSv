@@ -70,4 +70,18 @@ int CCSChatDialog::GetChatInputOffset(void)
 void CCSChatDialog::SetVisible(bool state)
 {
 	BaseClass::SetVisible(state);
+
+	if (state && !IsMouseInputEnabled())
+	{
+		if (GetChatHistory())
+		{
+			GetChatHistory()->SetPaintBorderEnabled(false);
+			GetChatHistory()->GotoTextEnd();
+			GetChatHistory()->SetMouseInputEnabled(false);
+			GetChatHistory()->SetVerticalScrollbar(false);
+			GetChatHistory()->ResetAllFades(false, true, CHAT_HISTORY_FADE_TIME);
+			GetChatHistory()->SelectNoText();
+			GetChatHistory()->SetCursor(vgui::dc_none);
+		}
+	}
 }

@@ -150,7 +150,7 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 
 	if (prog.program)
 	{
-		qglUseProgramObjectARB(prog.program);
+		GL_UseProgram(prog.program);
 
 		if (prog.diffuseTex != -1)
 			qglUniform1iARB(prog.diffuseTex, 0);
@@ -847,7 +847,6 @@ void R_GLStudioDrawPoints(void)
 			}
 		}
 
-		qglUseProgramObjectARB(0);
 		qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
 		qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 		qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
@@ -874,8 +873,6 @@ void R_GLStudioDrawPoints(void)
 
 			int GBufferMask = GBUFFER_MASK_ALL;
 			int StudioProgramState = STUDIO_LEGACY_BONE_ENABLED;
-
-			qglUseProgramObjectARB(0);
 
 			if (r_draw_pass == r_draw_shadow_caster)
 			{
@@ -1227,8 +1224,6 @@ void R_GLStudioDrawPoints(void)
 				qglShadeModel(GL_FLAT);
 			}
 
-			qglUseProgramObjectARB(0);
-
 			if (iInitVBO & 2)
 			{
 				//Convert vTri into indices
@@ -1293,6 +1288,8 @@ void R_GLStudioDrawPoints(void)
 		qglStencilMask(0);
 		qglDisable(GL_STENCIL_TEST);
 	}
+
+	GL_UseProgram(0);
 
 	//upload all data and indices to GPU
 	if (iInitVBO & 2)

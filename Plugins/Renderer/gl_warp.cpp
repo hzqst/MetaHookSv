@@ -333,7 +333,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		GL_DisableMultitexture();
 	}
 
-	qglUseProgramObjectARB(0);
+	GL_UseProgram(0);
 
 	qglStencilMask(0);
 	qglDisable(GL_STENCIL_TEST);
@@ -491,5 +491,5 @@ void R_DrawSkyBox(void)
 	}
 
 	qglDepthMask(1);
-	qglUseProgramObjectARB(0);
+	GL_UseProgram(0);
 }
