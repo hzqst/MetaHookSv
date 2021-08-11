@@ -57,9 +57,13 @@ typedef struct
 {
 	int program;
 	int gbufferTex;
-	int stencilTex;
+	//int stencilTex;
 	int depthTex;
-	int clipInfo;
+	int linearDepthTex;
+	int viewpos;
+	int viewmatrix;
+	int projmatrix;
+	int invprojmatrix;
 }dfinal_program_t;
 
 void R_InitLight(void);

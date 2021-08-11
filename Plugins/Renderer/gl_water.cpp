@@ -98,16 +98,16 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 		}
 		if (prog.worldmatrix != -1)
 		{
-			if (g_SvEngine_DrawPortalView)
+			/*if (g_SvEngine_DrawPortalView)
 			{
 				float mvmatrix[16];
 				qglGetFloatv(GL_MODELVIEW_MATRIX, mvmatrix);
 				qglUniformMatrix4fvARB(prog.worldmatrix, 1, false, (float *)mvmatrix);
 			}
 			else
-			{
-				qglUniformMatrix4fvARB(prog.worldmatrix, 1, true, (float *)r_world_matrix);
-			}
+			{*/
+				qglUniformMatrix4fvARB(prog.worldmatrix, 1, false, (float *)r_world_matrix);
+			//}
 		}
 		if (progOutput)
 			*progOutput = prog;

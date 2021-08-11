@@ -14,8 +14,12 @@ float r_fog_control[2] = { 0 };
 float r_fog_color[4] = {0};
 float r_shadow_matrix[3][16];
 float r_world_matrix_inv[16];
+float r_proj_matrix_inv[16];
 vec3_t r_frustum_origin[4];
 vec3_t r_frustum_vec[4];
+float r_near_z = 0;
+float r_far_z = 0;
+bool r_ortho = false;
 int r_wsurf_drawcall = 0;
 int r_wsurf_polys = 0;
 
@@ -116,7 +120,6 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		SHADER_UNIFORM(prog, shadowFade, "shadowFade");
 		SHADER_UNIFORM(prog, shadowColor, "shadowColor");
 		SHADER_UNIFORM(prog, clipPlane, "clipPlane");
-		SHADER_UNIFORM(prog, clipInfo, "clipInfo");
 		SHADER_UNIFORM(prog, viewpos, "viewpos");
 		SHADER_UNIFORM(prog, parallaxScale, "parallaxScale");
 		SHADER_ATTRIB(prog, s_tangent, "s_tangent");
@@ -176,9 +179,6 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 
 		if (prog.viewpos != -1)
 			qglUniform3fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
-
-		if (prog.clipInfo != -1)
-			qglUniform3fARB(prog.clipInfo, 4 * r_params.movevars->zmax, 4 - r_params.movevars->zmax, r_params.movevars->zmax);
 
 		if (prog.parallaxScale != -1)
 			qglUniform1fARB(prog.parallaxScale, r_wsurf_parallax_scale->value);
@@ -3466,41 +3466,12 @@ skip_marklight:
 
 void R_DrawWorld(void)
 {
-	InvertMatrix(r_world_matrix, r_world_matrix_inv);
-#if 0
-	r_yfov = CalcFov((*r_xfov), r_refdef_vrect->width, r_refdef_vrect->height);
-
-	float zNear = 4;
-	float zFar = r_params.movevars->zmax;
-	r_screenaspect = (float)r_refdef_vrect->width / r_refdef_vrect->height;
-
-	float ymax = zNear * tan(r_yfov * M_PI / 360.0);
-	float xmax = ymax * r_screenaspect;
-
-	float yfar = ymax * zFar / zNear;
-	float xfar = xmax * zFar / zNear;
-
-	vec3_t farplane;
-	VectorMA(r_refdef->vieworg, r_params.movevars->zmax, vpn, farplane);
-	
-	VectorMA(farplane, -xfar, vright, r_frustum_origin[0]);
-	VectorMA(r_frustum_origin[0], -yfar, vup, r_frustum_origin[0]);
-	VectorSubtract(r_frustum_origin[0], r_refdef->vieworg, r_frustum_vec[0]);
-
-	VectorMA(farplane, -xfar, vright, r_frustum_origin[1]);
-	VectorMA(r_frustum_origin[1], yfar, vup, r_frustum_origin[1]);
-	VectorSubtract(r_frustum_origin[1], r_refdef->vieworg, r_frustum_vec[1]);
-
-	VectorMA(farplane, xfar, vright, r_frustum_origin[2]);
-	VectorMA(r_frustum_origin[2], yfar, vup, r_frustum_origin[2]);
-	VectorSubtract(r_frustum_origin[2], r_refdef->vieworg, r_frustum_vec[2]);
-
-	VectorMA(farplane, xfar, vright, r_frustum_origin[3]);
-	VectorMA(r_frustum_origin[3], -yfar, vup, r_frustum_origin[3]);
-	VectorSubtract(r_frustum_origin[3], r_refdef->vieworg, r_frustum_vec[3]);
-#endif
+	r_depth_linearized = false;
 
 	r_draw_nontransparent = true;
+
+	InvertMatrix(r_world_matrix, r_world_matrix_inv);
+	InvertMatrix(r_projection_matrix, r_proj_matrix_inv);
 
 	R_BeginRenderGBuffer();
 

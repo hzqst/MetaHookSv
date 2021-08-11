@@ -214,7 +214,6 @@ typedef struct
 	int shadowFade;
 	int shadowColor;
 	int clipPlane;
-	int clipInfo;
 	int viewpos;
 	int parallaxScale;
 	int s_tangent;
@@ -233,6 +232,10 @@ extern float r_shadow_matrix[3][16];
 extern vec3_t r_frustum_origin[4];
 extern vec3_t r_frustum_vec[4];
 extern float r_world_matrix_inv[16];
+extern float r_proj_matrix_inv[16];
+extern float r_near_z;
+extern float r_far_z;
+extern bool r_ortho;
 
 void R_InitWSurf(void);
 void R_VidInitWSurf(void);

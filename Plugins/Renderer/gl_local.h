@@ -113,7 +113,7 @@ extern int gl_max_texture_size;
 extern float gl_max_ansio;
 extern GLuint gl_color_format;
 extern int gl_msaa_samples;
-extern cvar_t *r_msaa;
+//extern cvar_t *r_msaa;
 
 extern int *gl_msaa_fbo;
 extern int *gl_backbuffer_fbo;
@@ -129,7 +129,7 @@ extern int glheight;
 extern qboolean bDoMSAA;
 extern qboolean bNoStretchAspect;
 
-extern FBO_Container_t s_MSAAFBO;
+//extern FBO_Container_t s_MSAAFBO;
 extern FBO_Container_t s_GBufferFBO;
 extern FBO_Container_t s_BackBufferFBO, s_BackBufferFBO2;
 extern FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];
@@ -331,7 +331,7 @@ void CL_ScreenShot_f(void);
 
 //for hud or post-processing
 void R_InitGLHUD(void);
-bool R_UseMSAA(void);
+//bool R_UseMSAA(void);
 
 void GL_Texturemode_f(void);
 void GL_Texturemode_cb(cvar_t *);

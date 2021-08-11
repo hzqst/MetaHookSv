@@ -41,9 +41,9 @@ void main(void)
 
 #if defined(NORMALTEXTURE_ENABLED) || defined(PARALLAXTEXTURE_ENABLED)
     vec4 tangent4 = vec4(s_tangent, 0.0);
-    tangent = normalize(entityMatrix * tangent4).xyz;
+    tangent = normalize((entityMatrix * tangent4).xyz);
 	vec4 bitangent4 = vec4(t_tangent, 0.0);
-    bitangent = normalize(entityMatrix * bitangent4).xyz;
+    bitangent = normalize((entityMatrix * bitangent4).xyz);
 #endif
 
 #ifdef NORMALTEXTURE_ENABLED

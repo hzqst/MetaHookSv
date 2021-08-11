@@ -53,7 +53,6 @@ uniform float clipPlane;
 uniform float clipPlane;
 #endif
 
-uniform vec3 clipInfo;
 uniform vec3 viewpos;
 
 varying vec3 worldpos;
@@ -116,9 +115,8 @@ vec3 OctahedronToUnitVector(vec2 coord) {
 
 vec3 NormalMapping()
 {
-    // Create TBN matrix. from tangent to world
-	//vec3 bitangent = cross(normalize(normal.xyz), normalize(tangent.xyz));
-    mat3 TBN = mat3(normalize(tangent.xyz), normalize(bitangent.xyz), normalize(normal.xyz));
+    // Create TBN matrix. from tangent to world space
+    mat3 TBN = mat3(normalize(tangent), normalize(bitangent), normalize(normal));
 
 	vec2 vNormTexcoord = vec2(gl_TexCoord[0].x * gl_TexCoord[3].x, gl_TexCoord[0].y * gl_TexCoord[3].y);
     // Sample tangent space normal vector from normal map and remap it from [0, 1] to [-1, 1] range.
@@ -137,9 +135,8 @@ vec3 NormalMapping()
 
 vec2 ParallaxMapping(vec3 viewDirWorld)
 {
-    // Create TBN matrix. from tangent to world
-	//vec3 bitangent = cross(normalize(normal.xyz), normalize(tangent.xyz));
-    mat3 TBN = mat3(normalize(tangent.xyz), normalize(bitangent.xyz), normalize(normal.xyz));
+    // Create TBN matrix. from tangent to world space
+    mat3 TBN = mat3(normalize(tangent), normalize(bitangent), normalize(normal));
 
 	vec3 viewDir = normalize(transpose(TBN) * viewDirWorld);
 

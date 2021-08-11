@@ -2,30 +2,41 @@
 
 #define MAX_SAVESTACK 16
 
-vec3_t save_vieworg[MAX_SAVESTACK];
-
-vec3_t save_viewang[MAX_SAVESTACK];
-
+vec3_t save_vieworg[MAX_SAVESTACK] = { 0 };
+vec3_t save_viewang[MAX_SAVESTACK] = { 0 };
 int save_refdef_stack = 0;
 
 gl_draw_context save_drawcontext[MAX_SAVESTACK];
-
 int save_drawcontext_stack = 0;
 
-GLint save_readframebuffer = 0;
-
-GLint save_drawframebuffer = 0;
+GLint save_readframebuffer[MAX_SAVESTACK] = { 0 };
+GLint save_drawframebuffer[MAX_SAVESTACK] = { 0 };
+int save_framebuffer_stack = 0;
 
 void GL_PushFrameBuffer(void)
 {
-	qglGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &save_readframebuffer);
-	qglGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &save_drawframebuffer);
+	if (save_framebuffer_stack == MAX_SAVESTACK)
+	{
+		Sys_ErrorEx("GL_PushFrameBuffer: MAX_SAVESTACK exceed");
+		return;
+	}
+	qglGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &save_readframebuffer[save_framebuffer_stack]);
+	qglGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &save_drawframebuffer[save_framebuffer_stack]);
+	save_framebuffer_stack++;
 }
 
 void GL_PopFrameBuffer(void)
 {
-	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, save_readframebuffer);
-	qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, save_drawframebuffer);
+	if (save_framebuffer_stack == 0)
+	{
+		Sys_ErrorEx("GL_PopFrameBuffer: no framebuffer saved");
+		return;
+	}
+
+	--save_framebuffer_stack;
+
+	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, save_readframebuffer[save_framebuffer_stack]);
+	qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, save_drawframebuffer[save_framebuffer_stack]);
 }
 
 void GL_PushMatrix(void)

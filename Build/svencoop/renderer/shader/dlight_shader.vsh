@@ -3,8 +3,6 @@ varying vec4 projpos;
 uniform mat4 modelmatrix;
 #endif
 
-uniform vec3 viewpos;
-
 varying vec3 fragpos;
 
 void main(void)

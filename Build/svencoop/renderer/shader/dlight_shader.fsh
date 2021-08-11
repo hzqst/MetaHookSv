@@ -7,7 +7,6 @@
 #define GBUFFER_INDEX_ADDITIVE		4.0
 
 uniform sampler2DArray gbufferTex;
-uniform sampler2D depthTex;
 uniform usampler2D stencilTex;
 
 uniform vec3 lightcolor;
@@ -27,15 +26,6 @@ varying vec4 projpos;
 #endif
 
 varying vec3 fragpos;
-
-vec2 UnitVectorToHemiOctahedron(vec3 dir) {
-
-	dir.y = max(dir.y, 0.0001);
-	dir.xz /= dot(abs(dir), vec3(1.0));
-
-	return clamp(0.5 * vec2(dir.x + dir.z, dir.x - dir.z) + 0.5, 0.0, 1.0);
-
-}
 
 vec3 HemiOctahedronToUnitVector(vec2 coord) {
 
@@ -145,8 +135,6 @@ void main()
 
     vec4 worldnormColor = texture2DArray(gbufferTex, vec3(vBaseTexCoord, GBUFFER_INDEX_WORLDNORM));
     vec4 specularColor = texture2DArray(gbufferTex, vec3(vBaseTexCoord, GBUFFER_INDEX_SPECULAR));
-
-    //float depthColor = texture2D(depthTex, vBaseTexCoord.xy).r;
 
     uint stencilColor = texture(stencilTex, vBaseTexCoord).r;
 

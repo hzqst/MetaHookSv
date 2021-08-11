@@ -151,9 +151,11 @@ extern cvar_t *r_ssao_studio_model;
 extern cvar_t *r_fxaa;
 
 extern int last_luminance;
+extern bool r_depth_linearized;
 
 void R_BeginFXAA(int w, int h);
-int R_DoSSAO(int sampleIndex);
+void R_LinearizeDepth(FBO_Container_t *src);
+void R_DoSSAO(void);
 void R_DoHDR(void);
 void R_DoFXAA(void);
 void R_BlitToScreen(FBO_Container_t *src);

@@ -128,26 +128,8 @@ void HUD_DrawNormalTriangles(void)
 
 	//Transfer everything from gbuffer into backbuffer
 	R_EndRenderGBuffer();
-
-	GL_DisableMultitexture();
-
-	if (!r_refdef->onlyClientDraws && !r_draw_pass && !g_SvEngine_DrawPortalView)
-	{
-		if (R_UseMSAA())
-		{
-			for (int sampleIndex = 0; sampleIndex < max(1, gl_msaa_samples); sampleIndex++)
-			{
-				if (!R_DoSSAO(sampleIndex))
-				{
-					break;
-				}
-			}
-		}
-		else
-		{
-			R_DoSSAO(-1);
-		}
-	}
+	
+	R_DoSSAO();
 
 	//Allow SCClient to write stencil buffer (but not bit 1)?
 
@@ -164,10 +146,7 @@ void HUD_DrawNormalTriangles(void)
 	}
 	else
 	{
-		if (R_UseMSAA())
-			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
-		else
-			qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	}
 }
 

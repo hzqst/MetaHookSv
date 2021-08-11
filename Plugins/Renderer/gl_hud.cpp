@@ -5,6 +5,7 @@ r_hdr_control_t r_hdr_control;
 
 //HDR
 int last_luminance = 0;
+bool r_depth_linearized = false;
 
 //HBAO
 #define AO_RANDOMTEX_SIZE 4
@@ -763,57 +764,37 @@ void R_DoFXAA(void)
 	GL_PopDrawState();
 }
 
-int R_DoSSAO(int sampleIndex)
+void R_LinearizeDepth(FBO_Container_t *fbo)
 {
-	if (!r_ssao || !r_ssao->value)
-		return 0;
+	if (r_depth_linearized)
+		return;
 
-	if (!s_DepthLinearFBO.s_hBackBufferFBO || !s_HBAOCalcFBO.s_hBackBufferFBO)
-		return 0;
+	r_depth_linearized = true;
 
-	GLfloat ProjMatrix[16];
-	memcpy(ProjMatrix, r_projection_matrix, sizeof(ProjMatrix));
-	//qglGetFloatv(GL_PROJECTION_MATRIX, ProjMatrix);
-
-	GL_PushFrameBuffer();
-	GL_PushMatrix();
-	GL_PushDrawState();
-
-	GL_Begin2D();
-	GL_DisableMultitexture();
-	qglEnable(GL_TEXTURE_2D);
-	qglDisable(GL_BLEND);
-
-	//write to depthlinear
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_DepthLinearFBO.s_hBackBufferFBO);
 	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-	//MSAA?
-	if (sampleIndex >= 0)
-	{
-		GL_UseProgram(depth_linearize_msaa.program);
-		qglUniform4fARB(0, 4 * r_params.movevars->zmax, 4 - r_params.movevars->zmax, r_params.movevars->zmax, 1.0f);
-		qglUniform1iARB(1, sampleIndex);
+	GL_UseProgram(depth_linearize.program);
+	qglUniform4fARB(0, r_near_z * r_far_z, r_near_z - r_far_z, r_far_z, r_ortho ? 0 : 1);
+	
+	GL_DisableMultitexture();
+	qglDisable(GL_BLEND);
+	GL_Bind(fbo->s_hBackBufferDepthTex);
 
-		qglActiveTextureARB(GL_TEXTURE_2D_MULTISAMPLE);
-		qglBindTexture(GL_TEXTURE_2D_MULTISAMPLE, s_MSAAFBO.s_hBackBufferDepthTex);
+	R_DrawHUDQuad(glwidth, glheight);
+}
 
-		R_DrawHUDQuad(glwidth, glheight);
+void R_DoSSAO(void)
+{
+	if (!r_ssao->value)
+		return;
 
-		qglActiveTextureARB(GL_TEXTURE_2D_MULTISAMPLE);
-		qglBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-	}
-	else
-	{
-		GL_UseProgram(depth_linearize.program);
-		qglUniform4fARB(0, 4 * r_params.movevars->zmax, 4 - r_params.movevars->zmax, r_params.movevars->zmax, 1.0f);
+	if (r_refdef->onlyClientDraws || r_draw_pass || g_SvEngine_DrawPortalView)
+		return;
 
-		GL_Bind(s_BackBufferFBO.s_hBackBufferDepthTex);
-		R_DrawHUDQuad(glwidth, glheight);
-	}
+	//Prepare parameters
 
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_HBAOCalcFBO.s_hBackBufferFBO);
-	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
+	const float *ProjMatrix = r_projection_matrix;
 
 	float projInfoPerspective[] = {
 		2.0f / (ProjMatrix[4 * 0 + 0]),       // (x) * (R - L)/N
@@ -821,8 +802,6 @@ int R_DoSSAO(int sampleIndex)
 		-(1.0f - ProjMatrix[4 * 2 + 0]) / ProjMatrix[4 * 0 + 0], // L/N
 		-(1.0f + ProjMatrix[4 * 2 + 1]) / ProjMatrix[4 * 1 + 1], // B/N
 	};
-
-	auto projInfo = projInfoPerspective;
 
 	float projScale = float(glheight) / (tanf(r_yfov * 0.5f) * 2.0f);
 
@@ -850,11 +829,23 @@ int R_DoSSAO(int sampleIndex)
 	InvFullResolution[0] = 1.0f / float(glwidth);
 	InvFullResolution[1] = 1.0f / float(glheight);
 
+	GL_PushFrameBuffer();
+	GL_PushDrawState();
+
+	GL_Begin2D();
+
+	//depth linearize?
+
+	R_LinearizeDepth(&s_BackBufferFBO);
+
+	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_HBAOCalcFBO.s_hBackBufferFBO);
+	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
+
 	//setup args for hbao_calc
 	if (r_fog_mode == GL_LINEAR)
 	{
 		GL_UseProgram(hbao_calc_blur_fog.program);
-		qglUniform4fvARB(hbao_calc_blur_fog.control_projInfo, 1, projInfo);
+		qglUniform4fvARB(hbao_calc_blur_fog.control_projInfo, 1, projInfoPerspective);
 		qglUniform2fvARB(hbao_calc_blur_fog.control_InvFullResolution, 1, InvFullResolution);
 		qglUniform2fvARB(hbao_calc_blur_fog.control_InvQuarterResolution, 1, InvQuarterResolution);
 		qglUniform1iARB(hbao_calc_blur_fog.control_projOrtho, 0);
@@ -868,7 +859,7 @@ int R_DoSSAO(int sampleIndex)
 	else
 	{
 		GL_UseProgram(hbao_calc_blur.program);
-		qglUniform4fvARB(hbao_calc_blur.control_projInfo, 1, projInfo);
+		qglUniform4fvARB(hbao_calc_blur.control_projInfo, 1, projInfoPerspective);
 		qglUniform2fvARB(hbao_calc_blur.control_InvFullResolution, 1, InvFullResolution);
 		qglUniform2fvARB(hbao_calc_blur.control_InvQuarterResolution, 1, InvQuarterResolution);
 		qglUniform1iARB(hbao_calc_blur.control_projOrtho, 0);
@@ -879,11 +870,13 @@ int R_DoSSAO(int sampleIndex)
 		qglUniform1fARB(hbao_calc_blur.control_PowExponent, PowExponent);
 	}
 
+	//Texture unit 0 = linearized depth
 	GL_SelectTexture(TEXTURE0_SGIS);
 	GL_Bind(s_DepthLinearFBO.s_hBackBufferTex);
 
+	//Texture unit 1 = random texture
 	GL_EnableMultitexture();
-	GL_Bind(hbao_randomview[sampleIndex >= 0 ? sampleIndex : 0]);
+	GL_Bind(hbao_randomview[0]);
 
 	R_DrawHUDQuad(glwidth, glheight);
 
@@ -896,17 +889,13 @@ int R_DoSSAO(int sampleIndex)
 	qglUniform1fARB(0, r_ssao_blur_sharpness->value / meters2viewspace);
 	qglUniform2fARB(1, 1.0f / float(glwidth), 0);
 
+	//Texture unit 0 = calc
 	GL_DisableMultitexture();
 	GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex);
 
 	R_DrawHUDQuad(glwidth, glheight);
 
-	//Final output stage, write to main FBO or MSAA FBO.
-	if (R_UseMSAA())
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
-	else
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-
+	GL_PopFrameBuffer();
 	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	//Merge SSAO result into main scene
@@ -914,11 +903,6 @@ int R_DoSSAO(int sampleIndex)
 	qglEnable(GL_BLEND);
 	qglBlendFunc(GL_ZERO, GL_SRC_COLOR);
 	qglColor4f(1, 1, 1, 1);
-
-	if (sampleIndex >= 0) {
-		qglEnable(GL_SAMPLE_MASK);
-		qglSampleMaski(0, 1 << sampleIndex);
-	}
 
 	//Don't draw SSAO shadow on studio models, water, etc...
 	qglEnable(GL_STENCIL_TEST);
@@ -930,6 +914,7 @@ int R_DoSSAO(int sampleIndex)
 	qglUniform1fARB(0, r_ssao_blur_sharpness->value / meters2viewspace);
 	qglUniform2fARB(1, 0, 1.0f / float(glheight));
 
+	//Texture unit 0 = calc2
 	GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex2);
 
 	R_DrawHUDQuad(glwidth, glheight);
@@ -939,12 +924,6 @@ int R_DoSSAO(int sampleIndex)
 	qglStencilMask(0);
 	qglDisable(GL_STENCIL_TEST);
 
-	qglDisable(GL_SAMPLE_MASK);
-	qglSampleMaski(0, ~0);
-
 	GL_PopDrawState();
-	GL_PopMatrix();
-	GL_PopFrameBuffer();
-
-	return 1;
+	GL_End2D();
 }

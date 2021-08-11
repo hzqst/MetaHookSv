@@ -46,8 +46,11 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 		{
 			SHADER_UNIFORM(prog, gbufferTex, "gbufferTex");
 			SHADER_UNIFORM(prog, depthTex, "depthTex");
-			SHADER_UNIFORM(prog, stencilTex, "stencilTex");
-			SHADER_UNIFORM(prog, clipInfo, "clipInfo");
+			SHADER_UNIFORM(prog, linearDepthTex, "linearDepthTex");
+			SHADER_UNIFORM(prog, viewpos, "viewpos");
+			SHADER_UNIFORM(prog, viewmatrix, "viewmatrix");
+			SHADER_UNIFORM(prog, projmatrix, "projmatrix");
+			SHADER_UNIFORM(prog, invprojmatrix, "invprojmatrix");
 		}
 
 		g_DFinalProgramTable[state] = prog;
@@ -65,10 +68,18 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 			qglUniform1iARB(prog.gbufferTex, 0);
 		if (prog.depthTex != -1)
 			qglUniform1iARB(prog.depthTex, 1);
-		if (prog.stencilTex != -1)
-			qglUniform1iARB(prog.stencilTex, 2);
-		if (prog.clipInfo != -1)
-			qglUniform3fARB(prog.clipInfo, 4 * r_params.movevars->zmax, 4 - r_params.movevars->zmax, r_params.movevars->zmax);
+
+		if (prog.linearDepthTex != -1)
+			qglUniform1iARB(prog.linearDepthTex, 2);
+		if (prog.viewpos != -1)
+			qglUniform3fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
+
+		if (prog.viewmatrix != -1)
+			qglUniformMatrix4fvARB(prog.viewmatrix, 1, false, r_world_matrix);
+		if (prog.projmatrix != -1)
+			qglUniformMatrix4fvARB(prog.projmatrix, 1, false, r_projection_matrix);
+		if (prog.invprojmatrix != -1)
+			qglUniformMatrix4fvARB(prog.invprojmatrix, 1, false, r_proj_matrix_inv);
 
 		if (progOutput)
 			*progOutput = prog;
@@ -377,8 +388,14 @@ void R_EndRenderGBuffer(void)
 
 	qglStencilMask(0);
 	qglDisable(GL_STENCIL_TEST);
-	
-	//Light Pass
+
+	//Write linearized depth
+
+	GL_PushFrameBuffer();
+	GL_Begin2D();
+	R_LinearizeDepth(&s_GBufferFBO);
+	GL_End2D();
+	GL_PopFrameBuffer();
 
 	//Write to GBuffer->lightmap only
 
@@ -389,25 +406,20 @@ void R_EndRenderGBuffer(void)
 	qglEnable(GL_CULL_FACE);
 	qglDepthMask(0);
 
-	GL_DisableMultitexture();
-
 	qglEnable(GL_BLEND);
 	qglBlendFunc(GL_ONE, GL_ONE);
 
 	//GBuffer textures at unit0
+
+	GL_SelectTexture(TEXTURE0_SGIS);
 	qglDisable(GL_TEXTURE_2D);
 	qglEnable(GL_TEXTURE_2D_ARRAY);
 	qglBindTexture(GL_TEXTURE_2D_ARRAY, s_GBufferFBO.s_hBackBufferTex);
 	*currenttexture = -1;
 
-	//Depth texture at unit1
+	//Stencil texture at unit1
 	GL_EnableMultitexture();
-	GL_Bind(s_GBufferFBO.s_hBackBufferDepthTex);
-	
-	//Stencil texture at unit2
-	qglActiveTextureARB(TEXTURE2_SGIS);
-	qglEnable(GL_TEXTURE_2D);
-	qglBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferStencilView);
+	GL_Bind(s_GBufferFBO.s_hBackBufferStencilView);
 	
 	if (g_DynamicLights.size())
 	{
@@ -675,12 +687,8 @@ void R_EndRenderGBuffer(void)
 	GL_Begin2D();
 	qglDisable(GL_BLEND);
 
-	qglActiveTextureARB(TEXTURE2_SGIS);
-	qglBindTexture(GL_TEXTURE_2D, 0);
-	qglDisable(GL_TEXTURE_2D);
-	qglActiveTextureARB(TEXTURE1_SGIS);
-
 	//Begin shading pass, write to main FBO?
+
 	GL_PopFrameBuffer();
 	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
 
@@ -691,63 +699,39 @@ void R_EndRenderGBuffer(void)
 
 	R_UseDFinalProgram(FinalProgramState, NULL);
 
-	R_DrawHUDQuad(glwidth, glheight);
+	//Texture unit 1 = (depth)
+	GL_Bind(s_GBufferFBO.s_hBackBufferDepthTex);
 
+	//Texture unit 2 = (linearized depth)
+	qglActiveTextureARB(TEXTURE2_SGIS);
+	qglEnable(GL_TEXTURE_2D);
+	GL_Bind(s_DepthLinearFBO.s_hBackBufferTex);
+
+	R_DrawHUDQuadFrustum(glwidth, glheight);
+
+	//Disable texture unit 2 (linearized depth)
+	qglDisable(GL_TEXTURE_2D);
+	qglActiveTextureARB(TEXTURE1_SGIS);
+
+	//Disable texture unit 1 (depth)
 	GL_DisableMultitexture();
+	//Disable texture unit 0 (GBuffer texture array)
+	qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 	qglDisable(GL_TEXTURE_2D_ARRAY);
 	qglEnable(GL_TEXTURE_2D);
 
 	qglStencilMask(0);
 	qglDisable(GL_STENCIL_TEST);
 
-	if (R_UseMSAA())
-	{
-		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
-		qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
-		qglBlitFramebufferEXT(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight,
-			0, 0, s_MSAAFBO.iWidth, s_MSAAFBO.iHeight,
-			GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
-			/*
-			According to OpenGL API document
-			https://www.khronos.org/opengl/wiki_opengl/index.php?title=GLAPI/glBlitFramebuffer&printable=yes
-
-			 GL_LINEAR is only a valid interpolation method for the color buffer.
-			 If filter is not GL_NEAREST and mask includes GL_DEPTH_BUFFER_BIT or GL_STENCIL_BUFFER_BIT,
-			 no data is transferred and a GL_INVALID_OPERATION error is generated.
-			*/
-			GL_NEAREST);
-
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
-	}
-	else
-	{
-		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-		qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
-		qglBlitFramebufferEXT(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight,
-			0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight,
-			GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
-			GL_NEAREST);
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-	}
-
-	//FXAA for shading stage when MSAA available for all other render stage
-	if (r_fxaa->value && R_UseMSAA() && (!r_draw_pass && !g_SvEngine_DrawPortalView))
-	{
-		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-		qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
-		qglBlitFramebufferEXT(0, 0, s_MSAAFBO.iWidth, s_MSAAFBO.iHeight, 0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
-
-		GL_DisableMultitexture();
-		qglDisable(GL_BLEND);
-		qglDisable(GL_DEPTH_TEST);
-		qglDisable(GL_ALPHA_TEST);
-
-		R_BeginFXAA(glwidth, glheight);		
-		R_DrawHUDQuad_Texture(s_BackBufferFBO.s_hBackBufferTex, glwidth, glheight);
-	}
-
 	GL_UseProgram(0);
+
+	qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
+	qglBlitFramebufferEXT(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight,
+		0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight,
+		GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
+		GL_NEAREST);
+	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 
 	GL_PopMatrix();
 	GL_PopDrawState();

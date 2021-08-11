@@ -71,7 +71,7 @@ int gl_max_texture_size = 0;
 float gl_max_ansio = 0;
 GLuint gl_color_format = 0;
 int gl_msaa_samples = 0;
-cvar_t *r_msaa = NULL;
+//cvar_t *r_msaa = NULL;
 cvar_t *r_vertical_fov = NULL;
 
 int *gl_msaa_fbo = 0;
@@ -109,7 +109,7 @@ int gly = 0;
 int glwidth = 0;
 int glheight = 0;
 
-FBO_Container_t s_MSAAFBO;
+//FBO_Container_t s_MSAAFBO;
 FBO_Container_t s_GBufferFBO;
 FBO_Container_t s_BackBufferFBO, s_BackBufferFBO2;
 FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];
@@ -598,6 +598,10 @@ void MYgluPerspectiveV(double fovy, double aspect, double zNear, double zFar)
 	auto top = right * aspect;
 	qglFrustum(-right, right, -top, top, zNear, zFar);
 
+	r_near_z = zNear;
+	r_far_z = zFar;
+	r_ortho = false;
+
 	vec3_t farplane;
 	VectorMA(r_refdef->vieworg, zNear, vpn, farplane);
 
@@ -627,6 +631,10 @@ void MYgluPerspectiveH(double fovy, double aspect, double zNear, double zFar)
 	auto top = tan(fovy * (M_PI / 360.0)) * zNear;
 	auto right = top * aspect;
 	qglFrustum(-right, right, -top, top, zNear, zFar);
+
+	r_near_z = zNear;
+	r_far_z = zFar;
+	r_ortho = false;
 
 	vec3_t farplane;
 	VectorMA(r_refdef->vieworg, zNear, vpn, farplane);
@@ -689,6 +697,7 @@ void GL_FreeFBO(FBO_Container_t *s)
 	GL_ClearFBO(s);
 }
 
+/*
 bool GL_IsValidSampleCount(int msaa_samples)
 {
 	return (msaa_samples == 2 || msaa_samples == 4 || msaa_samples == 8 || msaa_samples == 16);
@@ -698,12 +707,13 @@ bool R_UseMSAA(void)
 {
 	return s_MSAAFBO.s_hBackBufferFBO && GL_IsValidSampleCount((int)r_msaa->value) && !r_draw_pass && !g_SvEngine_DrawPortalView;
 }
+*/
 
 void GL_GenerateFBO(void)
 {
 	bNoStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
 
-	GL_ClearFBO(&s_MSAAFBO);
+	//GL_ClearFBO(&s_MSAAFBO);
 	GL_ClearFBO(&s_GBufferFBO);
 	GL_ClearFBO(&s_BackBufferFBO);
 	GL_ClearFBO(&s_BackBufferFBO2);
@@ -737,7 +747,7 @@ void GL_GenerateFBO(void)
 
 	gl_color_format = GL_RGB16F;
 
-	if (bDoMSAA)
+	/*if (bDoMSAA)
 	{
 		gl_msaa_samples = 4;
 
@@ -756,7 +766,7 @@ void GL_GenerateFBO(void)
 		}
 
 		qglEnable(GL_MULTISAMPLE);
-	}
+	}*/
 
 	s_BackBufferFBO.iWidth = glwidth;
 	s_BackBufferFBO.iHeight = glheight;
@@ -989,7 +999,7 @@ void GL_Shutdown(void)
 {
 	GL_FreeShaders();
 
-	GL_FreeFBO(&s_MSAAFBO);
+	//GL_FreeFBO(&s_MSAAFBO);
 	GL_FreeFBO(&s_BackBufferFBO);
 	GL_FreeFBO(&s_BackBufferFBO2);
 	for (int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
@@ -1029,7 +1039,7 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 	qglStencilMask(0);*/
 
 	//Re-Generate MSAA framebuffer
-	if (bDoMSAA)
+	/*if (bDoMSAA)
 	{
 		int msaa_samples = (int)r_msaa->value;
 		if (GL_IsValidSampleCount(msaa_samples) && msaa_samples != gl_msaa_samples)
@@ -1043,7 +1053,7 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 			GL_FrameBufferColorTexture(&s_MSAAFBO, gl_color_format, true);
 			GL_FrameBufferDepthTexture(&s_MSAAFBO, GL_DEPTH24_STENCIL8, true);
 		}
-	}
+	}*/
 }
 
 void R_PreRenderView(int a1)
@@ -1065,9 +1075,9 @@ void R_PreRenderView(int a1)
 		}
 	}
 
-	if (R_UseMSAA())
+	/*if (R_UseMSAA())
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
-	else
+	else*/
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 }
 
@@ -1082,7 +1092,7 @@ void R_PostRenderView()
 		}
 	}
 
-	if (R_UseMSAA())
+	/*if (R_UseMSAA())
 	{
 		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 		qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
@@ -1091,11 +1101,11 @@ void R_PostRenderView()
 		R_DoHDR();
 	}
 	else
-	{
+	{*/
 		R_DoFXAA();
 
 		R_DoHDR();
-	}
+	//}
 
 	GL_DisableMultitexture();
 	qglEnable(GL_TEXTURE_2D);
@@ -1395,7 +1405,7 @@ void R_InitCvars(void)
 	cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
 	chase_active = gEngfuncs.pfnGetCvarPointer("chase_active");
 
-	r_msaa = gEngfuncs.pfnRegisterVariable("r_msaa", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	//r_msaa = gEngfuncs.pfnRegisterVariable("r_msaa", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_vertical_fov = gEngfuncs.pfnRegisterVariable("r_vertical_fov", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 }
 
@@ -1634,23 +1644,24 @@ void R_SetupGL(void)
 	{
 		auto v6 = (double)r_refdef_vrect->height;
 		auto v7 = (double)r_refdef_vrect->width;
-		auto v42 = v6 / v7;
+		auto aspect = v6 / v7;
 		auto v8 = (*r_xfov);
 		if ((*r_xfov) < 1.0 || v8 > 179.0)
 			v8 = 90.0;
 		auto v9 = v7 / (v6 / tan(v8 * 0.0027777778 * 3.141592653589793));
-		auto v10 = v6 / v7;
+
 		auto fovy = atan2(v9, 1.0) * 360.0 * 0.3183098861837907;
 		r_yfov = fovy;
+
 		if (r_refdef->onlyClientDraws)
 		{
-			auto right = tan(fovy * 0.008726646259971648) * 4.0;
-			qglFrustum(-right, right, v10 * -right, right * v10, 4.0, 16000.0);
+			MYgluPerspectiveV(fovy, aspect, 4.0, 16000.0);
 		}
 		else if (gRefFuncs.CL_IsDevOverviewMode())
 		{
 			auto v14 = gDevOverview[2];
 			auto v15 = 4096.0 / gDevOverview[2];
+
 			qglOrtho(
 				-v14,
 				v14,
@@ -1658,34 +1669,36 @@ void R_SetupGL(void)
 				v15,
 				16000.0 - gDevOverview[0],
 				16000.0 - gDevOverview[1]);
+
+			r_near_z = 16000.0 - gDevOverview[0];
+			r_far_z = 16000.0 - gDevOverview[1];
+			r_ortho = true;
 		}
 		else
 		{
-			MYgluPerspectiveV(fovy, v42, 4.0, r_params.movevars->zmax);
+			MYgluPerspectiveV(fovy, aspect, 4.0, r_params.movevars->zmax);
 		}
 	}
 	else
 	{
 		auto v16 = (double)r_refdef_vrect->width;
 		auto v17 = (double)r_refdef_vrect->height;
-		auto v43 = v16 / v17;
+		auto aspect = v16 / v17;
 		auto v18 = (*r_xfov);
 		if ((*r_xfov) < 1.0 || v18 > 179.0)
 			v18 = 90.0;
 		auto v19 = v17 / (v16 / tan(v18 * 0.0027777778 * 3.141592653589793));
-		auto v20 = v16 / v17;
 		auto fovy = atan2(v19, 1.0) * 360.0 * 0.3183098861837907;
 		r_yfov = fovy;
 		if (r_refdef->onlyClientDraws)
 		{
-			auto top = tan(fovy * 0.008726646259971648) * 4.0;
-			qglFrustum(v20 * -top, top * v20, -top, top, 4.0, 16000.0);
+			MYgluPerspectiveH(fovy, aspect, 4.0, 16000.0);
 		}
 		else if (gRefFuncs.CL_IsDevOverviewMode())
 		{
 			auto v23 = gDevOverview[2];
 			auto v24 = 4096.0;
-			auto v25 = 4096.0 / (v23 * v43);
+			auto v25 = 4096.0 / (v23 * aspect);
 			qglOrtho(
 				-v24,
 				v24,
@@ -1693,10 +1706,14 @@ void R_SetupGL(void)
 				v25,
 				16000.0 - gDevOverview[0],
 				16000.0 - gDevOverview[1]);
+
+			r_near_z = 16000.0 - gDevOverview[0];
+			r_far_z = 16000.0 - gDevOverview[1];
+			r_ortho = true;
 		}
 		else
 		{
-			MYgluPerspectiveH(fovy, v43, 4.0, r_params.movevars->zmax);
+			MYgluPerspectiveH(fovy, aspect, 4.0, r_params.movevars->zmax);
 		}
 	}
 	qglCullFace(GL_FRONT);
