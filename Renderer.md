@@ -77,6 +77,12 @@ Dynamic Shadows can sometimes project through walls and floors, giving away the 
 
 ## Screen Space Ambient Occlusion
 
+SSAO or Screen-Space Ambient Occlusion is the type of post-processing effect that approximating the ambient occlusion effect in real time.
+
+The implementation credits to [HBAO or Horizon-Based-Ambient-Occlusion](https://github.com/nvpro-samples/gl_ssao).
+
+### Console vars
+
 `r_ssao` Set to 1 to enable SSAO
 
 `r_ssao_intensity` control the intensity of SSAO shadow.
@@ -85,23 +91,57 @@ Dynamic Shadows can sometimes project through walls and floors, giving away the 
 
 `r_ssao_blur_sharpness` control the sharpness of SSAO shadow.
 
-`r_ssao_bias` unknown. recommended value : 0.1 ~ 0.2
+`r_ssao_bias` bias to avoid incorrect occlusion effect on curved surfaces.
 
-## Deferred Shading
+## Deferred Shading and Dynamic Lights
 
-`r_light_dynamic` set to 1 to enable Deferred Shading.
+[Deferred-Shading](https://en.wikipedia.org/wiki/Deferred_shading) pipeline is used to render opaque objects, and lights are calculated in real time using [Blinn-Phong](https://en.wikipedia.org/wiki/Blinn%E2%80%93Phong_reflection_model) model.
+
+### Console vars
+
+`r_light_dynamic` set to 1 to enable Deferred Shading and Dynamic Lights.
 
 `r_flashlight_cone` is the cosine of angle of flashlight cone.
 
-`r_flashlight_distance` is the illumination distance of flashlight.
+`r_flashlight_distance` is the max illumination distance of flashlight.
 
-`r_light_ambient` is ambient intensity of dynamic light.
+`r_light_ambient` is ambient intensity of dynamic lights.
 
-`r_light_diffuse` is diffuse intensity of dynamic light.
+`r_light_diffuse` is diffuse intensity of dynamic lights.
 
-`r_light_specular` is specular intensity of dynamic light.
+`r_light_specular` is specular intensity of dynamic lights.
 
-`r_light_specularpow` is specular power of dynamic light.
+`r_light_specularpow` is specular power of dynamic lights.
+
+## Screen Space Reflection
+
+Screen Space Reflection or SSR reflect pixels on screen by traces reflection rays in screen space in real time.
+
+Only brush surfaces marked with specular textures (`_SPECULAR` suffix) in `/maps/[map name]_detail.txt` can reflect.
+
+Green channel of `_SPECULAR` texture determines the intensity of reflection. 0 = no reflection, 1 = full reflection.
+
+* Screen Space Reflection only works when `r_light_dynamic` set to 1.
+
+### Console vars
+
+`r_ssr` set to 1 to enable Screen Space Reflection
+
+`r_ssr_ray_step` controls the step length to iterate the ray-marching. for example `r_ssr_ray_step 5.0`
+
+`r_ssr_iter_count` controls the maximum iteration count for ray-marching. for example `r_ssr_iter_count 64`
+
+`r_ssr_distance_bias` ray-marching hits object if distance smaller than this value. for example `r_ssr_distance_bias 0.2`
+
+`r_ssr_adaptive_step` set to 1 to enable Adaptiveg-Step to accelerate the ray-marching procedure. for example `r_ssr_adaptive_step 1`
+
+`r_ssr_exponential_step` set to 1 to enable Exponential-Step to accelerate the ray-marching procedure. for example `r_ssr_exponential_step 1`
+
+`r_ssr_binary_search` set to 1 to enable Binary-Search to accelerate the ray-marching procedure. for example `r_ssr_binary_search 1`
+
+`r_ssr_fade` controls the fade-out effect if the reflected ray hit a pixel close to the screen border. for example `r_ssr_fade "0.8 1.0"`
+
+* Changes to some of the cvars will not take effect immediately, using `r_reload` to reload those cvars.
 
 ## Vertex Buffer Object (VBO) "Batch-Draw" optimization
 
@@ -151,8 +191,6 @@ Specular textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/de
 
 `r_fxaa` set to 1 to enable Fast Approximate Anti-Aliasing (FXAA).
 
-`r_msaa` MultiSampling Anti-Aliasing (MSAA), number >= 2 for MSAA sample count. recommended value : 0 if SSAO enabled or 4 if SSAO disabled.
-
 # New Entities
 
 Entities are loaded from two sources : internal and external. BSP entity chunk of current map is loaded as internal, `/maps/(CurrentMapName)_entity.txt` is loaded as external.
@@ -201,17 +239,35 @@ You can use [bspguy](https://github.com/wootguy/bspguy) to add entity to BSP fil
 
 `low_scale` is scale factor to scale the size of entity model up or down in low-quality shadow map. for example `"low_scale" "0.5"`
 
+## env_ssr_control
+
+`env_ssr_control` is a point entity used to control the Screen Space Reflection of SSR effects.
+
+### Keyvalues
+
+`ray_step` controls the step length to iterate the ray-marching, for example `"ray_step" "5.0"`
+
+`iter_count` controls the maximum iteration count for ray-marching. for example `"distance_bias" "0.2"`
+
+`adaptive_step` enable or disable Adaptiveg-Step to accelerate the ray-marching procedure. for example `"adaptive_step" "1"` or `"adaptive_step" "0"`
+
+`exponential_step` enable or disable Exponential-Step to accelerate the ray-marching procedure. for example `"exponential_step" "1"` or `"exponential_step" "0"`
+
+`binary_search` enable or disable Binary-Search to accelerate the ray-marching procedure. for example `"binary_search" "1"` or `"binary_search" "0"`
+
+`fade` controls the fade-out effect if the reflected ray hit a pixel close to the screen border.  for example `"fade" "0.8 1.0"`
+
 ## env_hdr_control
 
-`env_hdr_control` is a point entity used to control the HDR effects for local player.
+`env_hdr_control` is a point entity used to control the HDR effects.
 
 ### Keyvalues
 
 `blurwidth` is the intensity of blooming for HDR, for example `"blurwidth" "0.1"`
 
-`exposure` is the intensity of exposure for HDR, forexample `"exposure" "4.5"`
+`exposure` is the intensity of exposure for HDR, for example `"exposure" "4.5"`
 
-`darkness` is the intensity of darkness for HDR, forexample `"darkness" "4.5"`
+`darkness` is the intensity of darkness for HDR, for example `"darkness" "4.5"`
 
 `adaptation` is the brightness adaptation speed for HDR, for example `"adaptation" "50"`
 
