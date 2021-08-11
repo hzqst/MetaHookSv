@@ -15,6 +15,20 @@ typedef struct shadow_control_s
 
 extern shadow_control_t r_shadow_control;
 
+typedef struct ssr_control_s
+{
+	bool enabled;
+	float ray_step;
+	int iter_count;
+	float distance_bias;
+	bool exponential_step;
+	bool adaptive_step;
+	bool binary_search;
+	float fade[2];
+}ssr_control_t;
+
+extern ssr_control_t r_ssr_control;
+
 typedef struct light_dynamic_s
 {
 	int type;
@@ -31,6 +45,15 @@ extern std::vector<light_dynamic_t> g_DynamicLights;
 
 extern cvar_t *r_light_dynamic;
 extern cvar_t *r_light_debug;
+
+extern cvar_t *r_ssr;
+extern cvar_t *r_ssr_ray_step;
+extern cvar_t *r_ssr_iter_count;
+extern cvar_t *r_ssr_distance_bias;
+extern cvar_t *r_ssr_exponential_step;
+extern cvar_t *r_ssr_adaptive_step;
+extern cvar_t *r_ssr_binary_search;
+extern cvar_t *r_ssr_fade;
 
 extern bool drawgbuffer;
 
@@ -64,6 +87,11 @@ typedef struct
 	int viewmatrix;
 	int projmatrix;
 	int invprojmatrix;
+
+	int ssrRayStep;
+	int ssrIterCount;
+	int ssrDistanceBias;
+	int ssrFade;
 }dfinal_program_t;
 
 void R_InitLight(void);
@@ -91,7 +119,11 @@ void R_SetGBufferMask(int mask);
 #define DLIGHT_POINT_ENABLED		2
 #define DLIGHT_VOLUME_ENABLED		4
 
-#define DFINAL_LINEAR_FOG_ENABLED		1
+#define DFINAL_LINEAR_FOG_ENABLED				1
+#define DFINAL_SSR_ENABLED						2
+#define DFINAL_SSR_ADAPTIVE_STEP_ENABLED		4
+#define DFINAL_SSR_EXPONENTIAL_STEP_ENABLED		8
+#define DFINAL_SSR_BINARY_SEARCH_ENABLED		0x10
 
 #define DLIGHT_POINT					0
 #define DLIGHT_SPOT						1

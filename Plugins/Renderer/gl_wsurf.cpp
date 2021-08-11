@@ -2246,6 +2246,7 @@ void R_ClearBSPEntities(void)
 	
 	r_wsurf.iNumBSPEntities = 0;
 	r_water_controls.clear();
+	g_DynamicLights.clear();
 	//r_cubemaps.clear();
 }
 
@@ -2961,7 +2962,114 @@ void R_ParseBSPEntity_Env_Shadow_Control(bspentity_t *ent)
 	}
 }
 
-void R_LoadBSPEntities(void)
+void R_ParseBSPEntity_Env_SSR_Control(bspentity_t *ent)
+{
+	float temp[4];
+
+	char *ray_step_string = ValueForKey(ent, "ray_step");
+	if (ray_step_string)
+	{
+		if (sscanf(ray_step_string, "%f", &temp[0]) == 1)
+		{
+			r_ssr_control.ray_step = clamp(temp[0], 0.01, 10.0);
+		}
+		else
+		{
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"ray_step\" in entity \"env_ssr_control\"\n");
+		}
+	}
+
+	char *iter_count_string = ValueForKey(ent, "iter_count");
+	if (iter_count_string)
+	{
+		int temp1 = 0;
+		if (sscanf(iter_count_string, "%d", &temp1) == 1)
+		{
+			r_ssr_control.iter_count = clamp(temp1, 10, 300);
+		}
+		else
+		{
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"iter_count\" in entity \"env_ssr_control\"\n");
+		}
+	}
+
+	char *distance_bias_string = ValueForKey(ent, "distance_bias");
+	if (distance_bias_string)
+	{
+		if (sscanf(distance_bias_string, "%f", &temp[0]) == 1)
+		{
+			r_ssr_control.distance_bias = clamp(temp[0], 0.01, 10.0);
+		}
+		else
+		{
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"distance_bias\" in entity \"env_ssr_control\"\n");
+		}
+	}
+
+	char *exponential_step_string = ValueForKey(ent, "exponential_step");
+	if (exponential_step_string)
+	{
+		if (atoi(exponential_step_string) > 0)
+		{
+			r_ssr_control.exponential_step = true;
+		}
+		else
+		{
+			r_ssr_control.exponential_step = false;
+		}
+	}
+
+	char *adaptive_step_string = ValueForKey(ent, "adaptive_step");
+	if (adaptive_step_string)
+	{
+		if (atoi(adaptive_step_string) > 0)
+		{
+			r_ssr_control.adaptive_step = true;
+		}
+		else
+		{
+			r_ssr_control.adaptive_step = false;
+		}
+	}
+
+	char *binary_search_string = ValueForKey(ent, "binary_search");
+	if (binary_search_string)
+	{
+		if (atoi(binary_search_string) > 0)
+		{
+			r_ssr_control.binary_search = true;
+		}
+		else
+		{
+			r_ssr_control.binary_search = false;
+		}
+	}
+
+	char *fade_string = ValueForKey(ent, "fade");
+	if (fade_string)
+	{
+		if (sscanf(fade_string, "%f %f", &temp[0], &temp[1]) == 2)
+		{
+			r_ssr_control.fade[0] = clamp(temp[0], 0, 10);
+			r_ssr_control.fade[1] = clamp(temp[1], 0, 10);
+		}
+		else
+		{
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"fade\" in entity \"env_ssr_control\"\n");
+		}
+	}
+
+	char *disablessr_string = ValueForKey(ent, "disablessr");
+	if (disablessr_string)
+	{
+		if (atoi(disablessr_string) > 0)
+		{
+			r_ssr_control.enabled = false;
+		}
+	}
+}
+
+void R_LoadShadowControl(void)
 {
 	//Initialize shadow control, enabled by default
 
@@ -3038,6 +3146,10 @@ void R_LoadBSPEntities(void)
 	r_shadow_control.quality[2][0] = clamp(r_shadow_low_distance->value, 0, 100000);
 	r_shadow_control.quality[2][1] = clamp(r_shadow_low_scale->value, 0.1, 8);
 
+}
+
+void R_LoadHDRControl(void)
+{
 	//Initialize hdr control, enabled by default
 
 	r_hdr_control.enabled = true;
@@ -3046,8 +3158,45 @@ void R_LoadBSPEntities(void)
 	r_hdr_control.blurwidth = clamp(r_hdr_blurwidth->value, 0, 1);
 	r_hdr_control.darkness = clamp(r_hdr_darkness->value, 0.01, 10);
 	r_hdr_control.exposure = clamp(r_hdr_exposure->value, 0.01, 10);
+}
 
-	//Initialize water control
+void R_LoadWaterControl(void)
+{
+
+}
+
+void R_LoadSSRControl(void)
+{
+	r_ssr_control.enabled = true;
+
+	r_ssr_control.ray_step = clamp(r_ssr_ray_step->value, 0.01, 10.0);
+	r_ssr_control.iter_count = clamp((int)r_ssr_iter_count->value, 10, 300);
+	r_ssr_control.distance_bias = clamp(r_ssr_distance_bias->value, 0.01, 10.0);
+	r_ssr_control.adaptive_step = r_ssr_adaptive_step->value ? true : false;
+	r_ssr_control.exponential_step = r_ssr_exponential_step->value ? true : false;
+	r_ssr_control.binary_search = r_ssr_binary_search->value ? true : false;
+
+	float temp[4];
+	if (sscanf(r_ssr_fade->string, "%f %f", &temp[0], &temp[1]) == 2)
+	{
+		r_ssr_control.fade[0] = clamp(temp[0], 0, 10.0);
+		r_ssr_control.fade[1] = clamp(temp[1], 0, 10.0);
+	}
+	else
+	{
+		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"r_ssr_fade\"\n");
+	}
+}
+
+void R_LoadBSPEntities(void)
+{
+	R_LoadShadowControl();
+
+	R_LoadHDRControl();
+
+	R_LoadWaterControl();
+
+	R_LoadSSRControl();
 
 	for(int i = 0; i < r_wsurf.iNumBSPEntities; i++)
 	{
@@ -3081,6 +3230,11 @@ void R_LoadBSPEntities(void)
 		else if (!strcmp(classname, "env_shadow_control"))
 		{
 			R_ParseBSPEntity_Env_Shadow_Control(ent);			
+		}
+
+		else if (!strcmp(classname, "env_ssr_control"))
+		{
+			R_ParseBSPEntity_Env_SSR_Control(ent);
 		}
 	}//end for
 

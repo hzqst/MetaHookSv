@@ -15,16 +15,10 @@ uniform mat4 viewmatrix;
 uniform mat4 projmatrix;
 uniform mat4 invprojmatrix;
 
-uniform float rayStep = 3.0;
-uniform int iterationCount = 100;
-uniform float distanceBias = 0.1;
-uniform int sampleCount = 4;
-uniform bool isSamplingEnabled = false;
-uniform bool isExponentialStepEnabled = true;
-uniform bool isAdaptiveStepEnabled = true;
-uniform bool isBinarySearchEnabled = true;
-
-varying vec3 fragpos;
+uniform float ssrRayStep = 3.0;
+uniform int ssrIterCount = 100;
+uniform float ssrDistanceBias = 0.1;
+uniform vec2 ssrFade;
 
 vec2 UnitVectorToHemiOctahedron(vec3 dir) {
 
@@ -80,13 +74,24 @@ float random (vec2 uv) {
 	return fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453123); //simple random function
 }
 
-vec4 GenerateFinalColor(vec2 texcoord)
+vec4 GenerateBasicColor(vec2 texcoord)
 {
     vec4 diffuseColor = texture2DArray(gbufferTex, vec3(texcoord, GBUFFER_INDEX_DIFFUSE));
-    vec4 lightmapColor = texture2DArray(gbufferTex, vec3(texcoord, GBUFFER_INDEX_LIGHTMAP));
+
+    vec4 resultColor = diffuseColor;
+    resultColor.a = 1.0;
+
+    return resultColor;
+}
+
+vec4 GenerateAdditiveColor(vec2 texcoord)
+{
     vec4 additiveColor = texture2DArray(gbufferTex, vec3(texcoord, GBUFFER_INDEX_ADDITIVE));
 
-    return diffuseColor * lightmapColor + additiveColor;
+    vec4 resultColor = additiveColor;
+    resultColor.a = 1.0;
+
+    return resultColor;
 }
 
 vec3 GeneratePositionFromDepth(vec2 texcoord, float depth) {
@@ -103,41 +108,73 @@ vec2 GenerateProjectedPosition(vec3 pos){
 	return samplePosition.xy;
 }
 
+vec3 GenerateWorldNormal(vec2 texcoord)
+{
+    vec4 worldnormColor = texture2DArray(gbufferTex, vec3(texcoord, GBUFFER_INDEX_WORLDNORM));
+    vec3 normalworld = OctahedronToUnitVector(worldnormColor.xy);
+
+    return normalworld;
+}
+
+vec3 GenerateViewNormal(vec2 texcoord)
+{
+    return normalize((viewmatrix * vec4(GenerateWorldNormal(texcoord), 0.0) ).xyz);
+}
+
+vec4 VignetteColor(vec4 c, vec2 win_bias)
+{
+    // convert window coord to [-1, 1] range
+    vec2 wpos = 2.0*(win_bias - vec2(0.5, 0.5)); 
+
+    // calculate distance from origin
+    float r = length(wpos);
+    r = 1.0 - smoothstep(ssrFade.x, ssrFade.y, r);
+	
+    c.a *= r;
+
+    return c;
+}
+
 vec4 ScreenSpaceReflectionInternal(vec3 position, vec3 reflection)
 {
-	vec3 step = rayStep * reflection;
+	vec3 step = ssrRayStep * reflection;
 	vec3 marchingPosition = position + step;
 	float delta;
 	float depthFromScreen;
 	vec2 screenPosition;
 
     int i = 0;
-	for (; i < iterationCount; i++) {
+	for (; i < ssrIterCount; i++) {
 		screenPosition = GenerateProjectedPosition(marchingPosition);
 		depthFromScreen = abs(GeneratePositionFromDepth(screenPosition, texture2D(depthTex, screenPosition).x).z);
 		delta = abs(marchingPosition.z) - depthFromScreen;
-		if (abs(delta) < distanceBias) {
-			return GenerateFinalColor(screenPosition);
+		if (abs(delta) < ssrDistanceBias) {
+            if(screenPosition.x < 0.0 || screenPosition.x > 1.0 || screenPosition.y < 0.0 || screenPosition.y > 1.0){
+                return vec4(0.0);
+            }
+
+			return VignetteColor(GenerateBasicColor(screenPosition), screenPosition);
 		}
-		if (isBinarySearchEnabled && delta > 0.0) {
+        #ifdef SSR_BINARY_SEARCH_ENABLED
+		if (delta > 0.0) {
 			break;
 		}
-		if (isAdaptiveStepEnabled){
+        #endif
+		#ifdef SSR_ADAPTIVE_STEP_ENABLED
 			float directionSign = sign(abs(marchingPosition.z) - depthFromScreen);
 			//this is sort of adapting step, should prevent lining reflection by doing sort of iterative converging
 			//some implementation doing it by binary search, but I found this idea more cheaty and way easier to implement
-			step = step * (1.0 - rayStep * max(directionSign, 0.0));
+			step = step * (1.0 - ssrRayStep * max(directionSign, 0.0));
 			marchingPosition += step * (-directionSign);
-		}
-		else {
+		#else
 			marchingPosition += step;
-		}
-		if (isExponentialStepEnabled){
+		#endif
+		#ifdef SSR_EXPONENTIAL_STEP_ENABLED
 			step *= 1.05;
-		}
+		#endif
     }
-	if(isBinarySearchEnabled){
-		for(; i < iterationCount; i++){
+	#ifdef SSR_BINARY_SEARCH_ENABLED
+		for(; i < ssrIterCount; i++){
 			
 			step *= 0.5;
 			marchingPosition = marchingPosition - step * sign(delta);
@@ -146,11 +183,15 @@ vec4 ScreenSpaceReflectionInternal(vec3 position, vec3 reflection)
 			depthFromScreen = abs(GeneratePositionFromDepth(screenPosition, texture2D(depthTex, screenPosition).x).z);
 			delta = abs(marchingPosition.z) - depthFromScreen;
 			
-			if (abs(delta) < distanceBias) {
-				return GenerateFinalColor(screenPosition);
+			if (abs(delta) < ssrDistanceBias) {
+                if(screenPosition.x < 0.0 || screenPosition.x > 1.0 || screenPosition.y < 0.0 || screenPosition.y > 1.0){
+                    return vec4(0.0);
+                }
+
+				return VignetteColor(GenerateBasicColor(screenPosition), screenPosition);
 			}
 		}
-	}
+	#endif
 	
     return vec4(0.0);
 }
@@ -158,28 +199,38 @@ vec4 ScreenSpaceReflectionInternal(vec3 position, vec3 reflection)
 vec4 ScreenSpaceReflection()
 {
     vec3 position = GeneratePositionFromDepth(gl_TexCoord[0].xy, texture2D(depthTex, gl_TexCoord[0].xy).x);
-    
-    vec4 worldnormColor = texture2DArray(gbufferTex, vec3(gl_TexCoord[0].xy, GBUFFER_INDEX_WORLDNORM));
-    vec3 normalworld = OctahedronToUnitVector(worldnormColor.xy);
+    vec3 viewnormal = GenerateViewNormal(gl_TexCoord[0].xy);
 
-    vec4 normal = viewmatrix * vec4(normalworld, 0.0);
-
-    vec3 reflectionDirection = normalize(reflect(position, normalize(normal.xyz)));
+    vec3 reflectionDirection = normalize(reflect(position, viewnormal));
 
     return ScreenSpaceReflectionInternal(position, reflectionDirection);
+}
+
+vec4 GenerateFinalColor(vec2 texcoord)
+{
+    vec4 diffuseColor = texture2DArray(gbufferTex, vec3(texcoord, GBUFFER_INDEX_DIFFUSE));
+    vec4 lightmapColor = texture2DArray(gbufferTex, vec3(texcoord, GBUFFER_INDEX_LIGHTMAP));
+
+#ifdef SSR_ENABLED
+    vec4 specularColor = texture2DArray(gbufferTex, vec3(texcoord, GBUFFER_INDEX_SPECULAR));
+    if(specularColor.g > 0.0)
+    {
+        vec4 ssr = ScreenSpaceReflection();
+
+        diffuseColor.xyz = mix(diffuseColor.xyz, ssr.xyz, specularColor.g * ssr.a);
+    }
+#endif
+
+    vec4 resultColor = diffuseColor * lightmapColor + GenerateAdditiveColor(texcoord);
+
+    resultColor.a = 1.0;
+
+    return resultColor;
 }
 
 void main()
 {
     vec4 finalColor = GenerateFinalColor(gl_TexCoord[0].xy);
-    vec4 specularColor = texture2DArray(gbufferTex, vec3(gl_TexCoord[0].xy, GBUFFER_INDEX_SPECULAR));
-
-    if(specularColor.g > 0.0)
-    {
-        vec4 ssr = ScreenSpaceReflection();
-
-        finalColor = mix(finalColor, ssr, 0.5);
-    }
 
 #ifdef LINEAR_FOG_ENABLED
 

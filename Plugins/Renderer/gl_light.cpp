@@ -1,7 +1,9 @@
 #include "gl_local.h"
 #include <sstream>
 
-shadow_control_t r_shadow_control;
+shadow_control_t r_shadow_control; 
+
+ssr_control_t r_ssr_control;
 
 cvar_t *r_light_dynamic = NULL;
 cvar_t *r_light_debug = NULL;
@@ -14,6 +16,15 @@ cvar_t *r_light_specularpow = NULL;
 
 cvar_t *r_flashlight_distance = NULL;
 cvar_t *r_flashlight_cone = NULL;
+
+cvar_t *r_ssr = NULL;
+cvar_t *r_ssr_ray_step = NULL;
+cvar_t *r_ssr_iter_count = NULL;
+cvar_t *r_ssr_distance_bias = NULL;
+cvar_t *r_ssr_exponential_step= NULL;
+cvar_t *r_ssr_adaptive_step = NULL;
+cvar_t *r_ssr_binary_search = NULL;
+cvar_t *r_ssr_fade = NULL;
 
 bool drawgbuffer = false;
 
@@ -39,6 +50,18 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 		if (state & DFINAL_LINEAR_FOG_ENABLED)
 			defs << "#define LINEAR_FOG_ENABLED\n";
 
+		if (state & DFINAL_SSR_ENABLED)
+			defs << "#define SSR_ENABLED\n";
+
+		if (state & DFINAL_SSR_ADAPTIVE_STEP_ENABLED)
+			defs << "#define SSR_ADAPTIVE_STEP_ENABLED\n";
+
+		if (state & DFINAL_SSR_EXPONENTIAL_STEP_ENABLED)
+			defs << "#define SSR_EXPONENTIAL_STEP_ENABLED\n";
+
+		if (state & DFINAL_SSR_BINARY_SEARCH_ENABLED)
+			defs << "#define SSR_BINARY_SEARCH_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\dfinal_shader.vsh", "renderer\\shader\\dfinal_shader.fsh", def.c_str(), def.c_str(), NULL);
@@ -51,6 +74,10 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 			SHADER_UNIFORM(prog, viewmatrix, "viewmatrix");
 			SHADER_UNIFORM(prog, projmatrix, "projmatrix");
 			SHADER_UNIFORM(prog, invprojmatrix, "invprojmatrix");
+			SHADER_UNIFORM(prog, ssrRayStep, "ssrRayStep");
+			SHADER_UNIFORM(prog, ssrIterCount, "ssrIterCount");
+			SHADER_UNIFORM(prog, ssrDistanceBias, "ssrDistanceBias");
+			SHADER_UNIFORM(prog, ssrFade, "ssrFade");
 		}
 
 		g_DFinalProgramTable[state] = prog;
@@ -80,6 +107,18 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 			qglUniformMatrix4fvARB(prog.projmatrix, 1, false, r_projection_matrix);
 		if (prog.invprojmatrix != -1)
 			qglUniformMatrix4fvARB(prog.invprojmatrix, 1, false, r_proj_matrix_inv);
+
+		if (prog.ssrRayStep != -1)
+			qglUniform1fARB(prog.ssrRayStep, r_ssr_control.ray_step);
+
+		if (prog.ssrIterCount != -1)
+			qglUniform1iARB(prog.ssrIterCount, r_ssr_control.iter_count);
+
+		if (prog.ssrDistanceBias != -1)
+			qglUniform1fARB(prog.ssrDistanceBias, r_ssr_control.distance_bias);
+
+		if (prog.ssrFade != -1)
+			qglUniform2fARB(prog.ssrFade, r_ssr_control.fade[0], r_ssr_control.fade[1]);
 
 		if (progOutput)
 			*progOutput = prog;
@@ -185,6 +224,15 @@ void R_InitLight(void)
 	r_light_diffuse = gEngfuncs.pfnRegisterVariable("r_light_diffuse", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_light_specular = gEngfuncs.pfnRegisterVariable("r_light_specular", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_light_specularpow = gEngfuncs.pfnRegisterVariable("r_light_specularpow", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+
+	r_ssr = gEngfuncs.pfnRegisterVariable("r_ssr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssr_ray_step = gEngfuncs.pfnRegisterVariable("r_ssr_ray_step", "5.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssr_iter_count = gEngfuncs.pfnRegisterVariable("r_ssr_iter_count", "64", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssr_distance_bias = gEngfuncs.pfnRegisterVariable("r_ssr_distance_bias", "0.2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssr_adaptive_step = gEngfuncs.pfnRegisterVariable("r_ssr_adaptive_step", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssr_exponential_step = gEngfuncs.pfnRegisterVariable("r_ssr_exponential_step", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssr_binary_search = gEngfuncs.pfnRegisterVariable("r_ssr_binary_search", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssr_fade = gEngfuncs.pfnRegisterVariable("r_ssr_fade", "0.8 1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_flashlight_distance = gEngfuncs.pfnRegisterVariable("r_flashlight_distance", "2000", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_cone = gEngfuncs.pfnRegisterVariable("r_flashlight_cone", "0.9", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -696,6 +744,20 @@ void R_EndRenderGBuffer(void)
 
 	if (r_fog_mode == GL_LINEAR)
 		FinalProgramState |= DFINAL_LINEAR_FOG_ENABLED;
+
+	if (r_ssr->value && r_ssr_control.enabled)
+	{
+		FinalProgramState |= DFINAL_SSR_ENABLED;
+
+		if (r_ssr_control.adaptive_step)
+			FinalProgramState |= DFINAL_SSR_ADAPTIVE_STEP_ENABLED;
+
+		if (r_ssr_control.exponential_step)
+			FinalProgramState |= DFINAL_SSR_EXPONENTIAL_STEP_ENABLED;
+
+		if (r_ssr_control.binary_search)
+			FinalProgramState |= DFINAL_SSR_BINARY_SEARCH_ENABLED;
+	}
 
 	R_UseDFinalProgram(FinalProgramState, NULL);
 
