@@ -106,7 +106,7 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 			}
 			else
 			{*/
-				qglUniformMatrix4fvARB(prog.worldmatrix, 1, false, (float *)r_world_matrix);
+				qglUniformMatrix4fvARB(prog.worldmatrix, 1, true, (float *)r_world_matrix);
 			//}
 		}
 		if (progOutput)

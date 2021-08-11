@@ -94,7 +94,7 @@ vec4 GenerateAdditiveColor(vec2 texcoord)
     return resultColor;
 }
 
-vec3 GeneratePositionFromDepth(vec2 texcoord, float depth) {
+vec3 GenerateViewPositionFromDepth(vec2 texcoord, float depth) {
     vec2 texcoord2 = vec2((texcoord.x - 0.5) * 2.0, (texcoord.y - 0.5) * 2.0);
 	vec4 ndc = vec4(texcoord2.xy, depth, 1.0);
 	vec4 inversed = invprojmatrix * ndc;// going back from projected
@@ -146,7 +146,7 @@ vec4 ScreenSpaceReflectionInternal(vec3 position, vec3 reflection)
     int i = 0;
 	for (; i < ssrIterCount; i++) {
 		screenPosition = GenerateProjectedPosition(marchingPosition);
-		depthFromScreen = abs(GeneratePositionFromDepth(screenPosition, texture2D(depthTex, screenPosition).x).z);
+		depthFromScreen = abs(GenerateViewPositionFromDepth(screenPosition, texture2D(depthTex, screenPosition).x).z);
 		delta = abs(marchingPosition.z) - depthFromScreen;
 		if (abs(delta) < ssrDistanceBias) {
             if(screenPosition.x < 0.0 || screenPosition.x > 1.0 || screenPosition.y < 0.0 || screenPosition.y > 1.0){
@@ -180,7 +180,7 @@ vec4 ScreenSpaceReflectionInternal(vec3 position, vec3 reflection)
 			marchingPosition = marchingPosition - step * sign(delta);
 			
 			screenPosition = GenerateProjectedPosition(marchingPosition);
-			depthFromScreen = abs(GeneratePositionFromDepth(screenPosition, texture2D(depthTex, screenPosition).x).z);
+			depthFromScreen = abs(GenerateViewPositionFromDepth(screenPosition, texture2D(depthTex, screenPosition).x).z);
 			delta = abs(marchingPosition.z) - depthFromScreen;
 			
 			if (abs(delta) < ssrDistanceBias) {
@@ -198,7 +198,7 @@ vec4 ScreenSpaceReflectionInternal(vec3 position, vec3 reflection)
 
 vec4 ScreenSpaceReflection()
 {
-    vec3 position = GeneratePositionFromDepth(gl_TexCoord[0].xy, texture2D(depthTex, gl_TexCoord[0].xy).x);
+    vec3 position = GenerateViewPositionFromDepth(gl_TexCoord[0].xy, texture2D(depthTex, gl_TexCoord[0].xy).x);
     vec3 viewnormal = GenerateViewNormal(gl_TexCoord[0].xy);
 
     vec3 reflectionDirection = normalize(reflect(position, viewnormal));

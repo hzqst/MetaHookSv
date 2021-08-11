@@ -168,26 +168,14 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 					qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferTex, 0);
 					qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferDepthTex, 0);
 					
-					/*if (R_UseMSAA())
-					{
-						qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
-						qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
-						qglBlitFramebufferEXT(
-							0, 0, s_MSAAFBO.iWidth, s_MSAAFBO.iHeight, 
-							0, 0, s_WaterFBO.iWidth, s_WaterFBO.iHeight, 
-							GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-						qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
-					}
-					else
-					{*/
-						qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
-						qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-						qglBlitFramebufferEXT(
-							0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight,
-							0, 0, s_WaterFBO.iWidth, s_WaterFBO.iHeight,
-							GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-						qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-					//}
+					qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
+					qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+					qglBlitFramebufferEXT(
+						0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight,
+						0, 0, s_WaterFBO.iWidth, s_WaterFBO.iHeight,
+						GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+					qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+
 					refractmap_ready = true;
 				}
 			}

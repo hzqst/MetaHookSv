@@ -1506,7 +1506,6 @@ void R_InitWSurf(void)
 	r_wsurf.bDetailTexture = false;
 	r_wsurf.bNormalTexture = false;
 	r_wsurf.bParallaxTexture = false;
-	r_wsurf.pDetailTextureCache = NULL;
 	r_wsurf.pCurrentModel = NULL;
 	r_wsurf.iNumBSPEntities = 0;
 	r_wsurf.iNumLightmapTextures = 0;
@@ -1835,12 +1834,6 @@ void R_BeginDetailTexture(int texId)
 
 			r_wsurf.bSpecularTexture = true;
 		}
-
-		if (r_wsurf.bDetailTexture || r_wsurf.bNormalTexture || r_wsurf.bParallaxTexture || r_wsurf.bSpecularTexture)
-		{
-			r_wsurf.pDetailTextureCache = cache;
-			return;
-		}
 	}
 }
 
@@ -1917,7 +1910,7 @@ void DrawGLVertex(brushface_t *brushface)
 			qglMultiTexCoord2fARB(GL_TEXTURE4_ARB, vert->parallaxtexcoord[0], vert->parallaxtexcoord[1]);
 
 		if (r_wsurf.bSpecularTexture)
-			qglMultiTexCoord2fARB(GL_TEXTURE4_ARB, vert->speculartexcoord[0], vert->speculartexcoord[1]);
+			qglMultiTexCoord2fARB(GL_TEXTURE5_ARB, vert->speculartexcoord[0], vert->speculartexcoord[1]);
 
 		if (r_wsurf.iS_Tangent != -1)
 			qglVertexAttrib3fv(r_wsurf.iS_Tangent, vert->s_tangent);
@@ -1968,16 +1961,8 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 	auto p = s->polys;
 	auto t = gRefFuncs.R_TextureAnimation(s);
 
-	float shadow_matrix[3][16];
-
 	if (r_wsurf.bShadowmapTexture)
 	{
-		const float bias[16] = {
-		0.5f, 0.0f, 0.0f, 0.0f,
-		0.0f, 0.5f, 0.0f, 0.0f,
-		0.0f, 0.0f, 0.5f, 0.0f,
-		0.5f, 0.5f, 0.5f, 1.0f };
-
 		const GLfloat planeS[] = { 1.0, 0.0, 0.0, 0.0 };
 		const GLfloat planeT[] = { 0.0, 1.0, 0.0, 0.0 };
 		const GLfloat planeR[] = { 0.0, 0.0, 1.0, 0.0 };
@@ -2002,24 +1987,6 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 		qglDisable(GL_TEXTURE_2D);
 		qglEnable(GL_TEXTURE_2D_ARRAY);
 		qglBindTexture(GL_TEXTURE_2D_ARRAY, shadow_texture_color);
-
-		qglMatrixMode(GL_TEXTURE);
-
-		for (int i = 0; i < 3; ++i)
-		{
-			if (shadow_numvisedicts[i] > 0)
-			{
-				qglLoadIdentity();
-				qglLoadMatrixf(bias);
-				qglMultMatrixf(shadow_projmatrix[i]);
-				qglMultMatrixf(shadow_mvmatrix[i]);
-				qglMultMatrixf(r_world_matrix_inv);
-				qglGetFloatv(GL_TEXTURE_MATRIX, shadow_matrix[i]);
-			}
-		}
-
-		qglLoadIdentity();
-		qglMatrixMode(GL_MODELVIEW);
 
 		qglActiveTextureARB(*oldtarget);
 	}
@@ -2151,9 +2118,10 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 	}
 
 	if (prog.speed != -1)
-	{
 		qglUniform1fARB(prog.speed, speed);
-	}
+
+	if (prog.shadowMatrix != -1)
+		qglUniformMatrix4fvARB(prog.shadowMatrix, 3, false, (float *)r_shadow_matrix);
 
 	r_wsurf.iS_Tangent = prog.s_tangent;
 	r_wsurf.iT_Tangent = prog.t_tangent;
@@ -2247,7 +2215,6 @@ void R_ClearBSPEntities(void)
 	r_wsurf.iNumBSPEntities = 0;
 	r_water_controls.clear();
 	g_DynamicLights.clear();
-	//r_cubemaps.clear();
 }
 
 bspentity_t *current_parse_entity = NULL;
@@ -3620,8 +3587,6 @@ skip_marklight:
 
 void R_DrawWorld(void)
 {
-	r_depth_linearized = false;
-
 	r_draw_nontransparent = true;
 
 	InvertMatrix(r_world_matrix, r_world_matrix_inv);
@@ -3651,9 +3616,6 @@ void R_DrawWorld(void)
 		memset(lightmap_polys, 0, sizeof(glpoly_t *) * 64);
 	}
 
-	GL_DisableMultitexture();
-	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
 	//Capture previous fog settings from R_RenderScene
 	if (qglIsEnabled(GL_FOG))
 	{
@@ -3666,6 +3628,9 @@ void R_DrawWorld(void)
 			qglGetFloatv(GL_FOG_COLOR, r_fog_color);
 		}
 	}
+
+	GL_DisableMultitexture();
+	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 	//Skybox uses stencil = 1
 
@@ -3685,7 +3650,6 @@ void R_DrawWorld(void)
 
 	r_wsurf.bDiffuseTexture = true;
 	r_wsurf.bLightmapTexture = true;
-
 	r_wsurf.bShadowmapTexture = false;
 
 	if (R_ShouldRenderShadowScene(1))

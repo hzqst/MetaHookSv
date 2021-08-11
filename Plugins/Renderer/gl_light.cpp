@@ -390,8 +390,6 @@ bool R_BeginRenderGBuffer(void)
 	drawgbuffer = true;
 	gbuffer_mask = -1;
 
-	GL_PushFrameBuffer();
-
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
@@ -432,21 +430,18 @@ void R_EndRenderGBuffer(void)
 	gbuffer_mask = -1;
 
 	GL_PushDrawState();
-	GL_PushMatrix();
 
 	qglStencilMask(0);
 	qglDisable(GL_STENCIL_TEST);
 
 	//Write linearized depth
 
-	GL_PushFrameBuffer();
 	GL_Begin2D();
 	R_LinearizeDepth(&s_GBufferFBO);
 	GL_End2D();
-	GL_PopFrameBuffer();
 
 	//Write to GBuffer->lightmap only
-
+	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
 	qglDrawBuffer(GL_COLOR_ATTACHMENT1);
 
 	qglDisable(GL_ALPHA_TEST);
@@ -457,7 +452,7 @@ void R_EndRenderGBuffer(void)
 	qglEnable(GL_BLEND);
 	qglBlendFunc(GL_ONE, GL_ONE);
 
-	//GBuffer textures at unit0
+	//Texture unit 0 = GBuffer texture array
 
 	GL_SelectTexture(TEXTURE0_SGIS);
 	qglDisable(GL_TEXTURE_2D);
@@ -465,7 +460,7 @@ void R_EndRenderGBuffer(void)
 	qglBindTexture(GL_TEXTURE_2D_ARRAY, s_GBufferFBO.s_hBackBufferTex);
 	*currenttexture = -1;
 
-	//Stencil texture at unit1
+	//Texture unit 1 = Stencil texture
 	GL_EnableMultitexture();
 	GL_Bind(s_GBufferFBO.s_hBackBufferStencilView);
 	
@@ -735,9 +730,16 @@ void R_EndRenderGBuffer(void)
 	GL_Begin2D();
 	qglDisable(GL_BLEND);
 
-	//Begin shading pass, write to main FBO?
+	//Write GBuffer depth stencil into main framebuffer
+	qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
+	qglBlitFramebufferEXT(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight,
+		0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight,
+		GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
+		GL_NEAREST);
 
-	GL_PopFrameBuffer();
+	//Shading pass
+	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);	
 	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	int FinalProgramState = 0;
@@ -759,6 +761,7 @@ void R_EndRenderGBuffer(void)
 			FinalProgramState |= DFINAL_SSR_BINARY_SEARCH_ENABLED;
 	}
 
+	//Setup final program
 	R_UseDFinalProgram(FinalProgramState, NULL);
 
 	//Texture unit 1 = (depth)
@@ -767,34 +770,31 @@ void R_EndRenderGBuffer(void)
 	//Texture unit 2 = (linearized depth)
 	qglActiveTextureARB(TEXTURE2_SGIS);
 	qglEnable(GL_TEXTURE_2D);
-	GL_Bind(s_DepthLinearFBO.s_hBackBufferTex);
+	qglBindTexture(GL_TEXTURE_2D, s_DepthLinearFBO.s_hBackBufferTex);
 
 	R_DrawHUDQuadFrustum(glwidth, glheight);
 
 	//Disable texture unit 2 (linearized depth)
+	qglBindTexture(GL_TEXTURE_2D, 0);
 	qglDisable(GL_TEXTURE_2D);
 	qglActiveTextureARB(TEXTURE1_SGIS);
 
 	//Disable texture unit 1 (depth)
 	GL_DisableMultitexture();
+
 	//Disable texture unit 0 (GBuffer texture array)
-	qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 	qglDisable(GL_TEXTURE_2D_ARRAY);
 	qglEnable(GL_TEXTURE_2D);
+	*currenttexture = -1;
+
+	//Disable final program
+	GL_UseProgram(0);
+
+	//Restore 3D matrix
+	GL_End2D();
 
 	qglStencilMask(0);
 	qglDisable(GL_STENCIL_TEST);
 
-	GL_UseProgram(0);
-
-	qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
-	qglBlitFramebufferEXT(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight,
-		0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight,
-		GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
-		GL_NEAREST);
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-
-	GL_PopMatrix();
 	GL_PopDrawState();
 }

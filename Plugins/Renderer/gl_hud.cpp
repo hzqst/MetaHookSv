@@ -5,7 +5,6 @@ r_hdr_control_t r_hdr_control;
 
 //HDR
 int last_luminance = 0;
-bool r_depth_linearized = false;
 
 //HBAO
 #define AO_RANDOMTEX_SIZE 4
@@ -766,19 +765,15 @@ void R_DoFXAA(void)
 
 void R_LinearizeDepth(FBO_Container_t *fbo)
 {
-	if (r_depth_linearized)
-		return;
-
-	r_depth_linearized = true;
-
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_DepthLinearFBO.s_hBackBufferFBO);
 	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+	qglDisable(GL_BLEND);
 
 	GL_UseProgram(depth_linearize.program);
 	qglUniform4fARB(0, r_near_z * r_far_z, r_near_z - r_far_z, r_far_z, r_ortho ? 0 : 1);
 	
 	GL_DisableMultitexture();
-	qglDisable(GL_BLEND);
 	GL_Bind(fbo->s_hBackBufferDepthTex);
 
 	R_DrawHUDQuad(glwidth, glheight);
@@ -829,7 +824,6 @@ void R_DoSSAO(void)
 	InvFullResolution[0] = 1.0f / float(glwidth);
 	InvFullResolution[1] = 1.0f / float(glheight);
 
-	GL_PushFrameBuffer();
 	GL_PushDrawState();
 
 	GL_Begin2D();
@@ -895,7 +889,8 @@ void R_DoSSAO(void)
 
 	R_DrawHUDQuad(glwidth, glheight);
 
-	GL_PopFrameBuffer();
+	//Write to main framebuffer
+	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	//Merge SSAO result into main scene
@@ -925,5 +920,6 @@ void R_DoSSAO(void)
 	qglDisable(GL_STENCIL_TEST);
 
 	GL_PopDrawState();
+
 	GL_End2D();
 }

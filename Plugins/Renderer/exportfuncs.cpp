@@ -148,6 +148,7 @@ void HUD_DrawNormalTriangles(void)
 	{
 		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	}
+
 }
 
 void HUD_DrawTransparentTriangles(void)

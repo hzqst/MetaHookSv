@@ -66,7 +66,7 @@ void R_InitShadow(void)
 
 bool R_ShouldRenderShadowScene(int level)
 {
-	if(r_draw_pass != r_draw_normal)
+	if(r_draw_pass)
 		return false;
 
 	if (!shadow_numvisedicts[0] && !shadow_numvisedicts[1] && !shadow_numvisedicts[2])

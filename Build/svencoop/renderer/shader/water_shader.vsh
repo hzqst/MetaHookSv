@@ -5,7 +5,7 @@ varying vec4 projpos;
 varying vec4 worldpos;
 
 #ifdef DEPTH_ENABLED
-varying mat4 viewprojmatrix_inv;
+varying mat4 invviewprojmatrix;
 #endif
 
 void main()
@@ -14,7 +14,7 @@ void main()
 	worldpos = entitymatrix * gl_Vertex;
 
 #ifdef DEPTH_ENABLED
-	viewprojmatrix_inv = inverse(gl_ModelViewProjectionMatrix) * entitymatrix;
+	invviewprojmatrix = inverse(gl_ModelViewProjectionMatrix) * entitymatrix;
 #endif
 
 	gl_TexCoord[0].xy = gl_MultiTexCoord0.xy / 128.0;

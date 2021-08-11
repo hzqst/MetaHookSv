@@ -151,7 +151,6 @@ extern cvar_t *r_ssao_studio_model;
 extern cvar_t *r_fxaa;
 
 extern int last_luminance;
-extern bool r_depth_linearized;
 
 void R_BeginFXAA(int w, int h);
 void R_LinearizeDepth(FBO_Container_t *src);

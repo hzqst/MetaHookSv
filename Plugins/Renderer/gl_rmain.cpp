@@ -1075,10 +1075,7 @@ void R_PreRenderView(int a1)
 		}
 	}
 
-	/*if (R_UseMSAA())
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
-	else*/
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 }
 
 void R_PostRenderView()

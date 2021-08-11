@@ -158,7 +158,6 @@ typedef struct r_worldsurf_s
 		bParallaxTexture = false;
 		bSpecularTexture = false;
 
-		pDetailTextureCache = NULL;
 		pCurrentModel = NULL;
 
 		iNumLightmapTextures = 0;
@@ -187,7 +186,6 @@ typedef struct r_worldsurf_s
 	int					iS_Tangent;
 	int					iT_Tangent;
 
-	detail_texture_cache_t *pDetailTextureCache;
 	wsurf_model_t		*pCurrentModel;
 
 	int					iNumLightmapTextures;

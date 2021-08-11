@@ -23,14 +23,14 @@ varying vec4 projpos;
 varying vec4 worldpos;
 
 #ifdef DEPTH_ENABLED
-varying mat4 viewprojmatrix_inv;
+varying mat4 invviewprojmatrix;
 
-vec3 decodeWorldSpacePosition(vec2 texCoord){
+vec3 GenerateWorldPositionFromDepth(vec2 texCoord){
 	vec4 clipSpaceLocation;	
 	clipSpaceLocation.xy = texCoord * 2.0-1.0;
 	clipSpaceLocation.z  = texture2D(depthrefrmap, texCoord).x * 2.0-1.0;
 	clipSpaceLocation.w  = 1.0;
-	vec4 homogenousLocation = viewprojmatrix_inv * clipSpaceLocation;
+	vec4 homogenousLocation = invviewprojmatrix * clipSpaceLocation;
 	return homogenousLocation.xyz / homogenousLocation.w;
 }
 #endif
@@ -97,8 +97,8 @@ void main()
 #else
 
 	#ifdef DEPTH_ENABLED
-		vec3 vSceneWorld = decodeWorldSpacePosition(vBaseTexCoord);
-		float flDiffZ = worldpos.z - vSceneWorld.z;
+		vec3 WorldScene = GenerateWorldPositionFromDepth(vBaseTexCoord);
+		float flDiffZ = worldpos.z - WorldScene.z;
 		float flWaterBlendAlpha = clamp( clamp( depthfactor.x * flDiffZ, 0.0, 1.0 ) + depthfactor.y, 0.0, 1.0 );
 	#else
 		float flWaterBlendAlpha = 1.0;
