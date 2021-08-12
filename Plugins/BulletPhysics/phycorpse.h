@@ -8,6 +8,7 @@
 
 #define PhyCorpseFlag1 (753951)
 #define PhyCorpseFlag2 (152359)
+#define PhyCorpseFlag3 (152360)
 
 class CorpseManager
 {

@@ -22,10 +22,9 @@ extern model_t *r_worldmodel;
 extern int *r_visframecount;
 
 bool IsEntityBarnacle(cl_entity_t* ent);
-bool IsEntityCorpse(cl_entity_t* ent);
-bool IsPlayerDeathAnimation(entity_state_t* entstate);
-bool IsPlayerBarnacleAnimation(entity_state_t* entstate);
+bool IsEntityPlayerCorpse(cl_entity_t* ent);
 void GlobalFreeCorpseForEntity(int entindex);
+int GetSequenceActivityType(model_t *mod, entity_state_t* entstate);
 
 const float r_identity_matrix[4][4] = {
 	{1.0f, 0.0f, 0.0f, 0.0f},
@@ -687,6 +686,11 @@ void CPhysicsManager::SyncView(cl_entity_t *local, struct ref_params_s *pparams)
 	}
 }
 
+bool CPhysicsManager::HasRagdolls(void)
+{
+	return m_ragdollMap.size() ? true : false;
+}
+
 void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time)
 {
 	auto localPlayer = gEngfuncs.GetLocalPlayer();
@@ -698,7 +702,7 @@ void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double fram
 		auto life = pTemp->die - client_time;
 		if (life > 0 && 
 			pTemp->entity.model && 
-			IsEntityCorpse(&pTemp->entity))
+			IsEntityPlayerCorpse(&pTemp->entity))
 		{
 			auto ragdoll = FindRagdoll(pTemp->entity.index);
 			if (ragdoll)
@@ -713,7 +717,7 @@ void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double fram
 					//Remove corpse if player goes revived or respawned
 					if (localPlayer &&
 						localPlayer->curstate.messagenum == playerEntity->curstate.messagenum &&
-						(!IsPlayerDeathAnimation(&playerEntity->curstate) && !IsPlayerBarnacleAnimation(&playerEntity->curstate)))
+						(!GetSequenceActivityType(playerEntity->model, &playerEntity->curstate) ))
 					{
 						GlobalFreeCorpseForEntity(ragdoll->m_entindex);
 						goto next;
@@ -734,9 +738,9 @@ void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double fram
 					VectorCopy(goldsrcorg, pTemp->entity.origin);
 					VectorCopy(goldsrcorg, pTemp->entity.curstate.origin);
 
-					if (IsPlayerBarnacleAnimation(&pTemp->entity.curstate) && ragdoll->m_barnacleindex != -1)
+					if (GetSequenceActivityType(pTemp->entity.model, &pTemp->entity.curstate) == 2 && ragdoll->m_barnacleindex != -1)
 					{
-						if (IsPlayerBarnacleAnimation(&playerEntity->curstate))
+						if (GetSequenceActivityType(playerEntity->model, &playerEntity->curstate))
 						{
 							bool bDraging = true;
 
@@ -1810,7 +1814,7 @@ CRagdoll *CPhysicsManager::FindRagdoll(int tentindex)
 	return NULL;
 }
 
-bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int entindex, model_t *model, studiohdr_t *studiohdr, float *origin, float *velocity, bool bBarnacle, cl_entity_t *barnacle)
+bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int entindex, model_t *model, studiohdr_t *studiohdr, float *origin, float *velocity, int iActivityType, cl_entity_t *barnacle)
 {
 	if(FindRagdoll(entindex))
 	{
@@ -1886,7 +1890,7 @@ bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int entindex, model_t
 
 			m_dynamicsWorld->addRigidBody(rig->rigbody);
 
-			if (bBarnacle && barnacle)
+			if (iActivityType == 2 && barnacle)
 			{
 				ragdoll->m_barnacleindex = barnacle->index;
 

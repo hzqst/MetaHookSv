@@ -330,10 +330,11 @@ public:
 	ragdoll_config_t *LoadRagdollConfig(model_t *mod);
 	void SetupPlayerBones(studiohdr_t *hdr, int entindex);
 	void SetupBarnacleBones(studiohdr_t *hdr, int entindex);
+	bool HasRagdolls(void);
 	void RemoveRagdoll(int tentindex);
 	void RemoveAllRagdolls();
 	void RemoveAllStatics(); 
-	bool CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_t *model, studiohdr_t *hdr, float *origin, float *velocity, bool bBarnacle, cl_entity_t *barnacle);
+	bool CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_t *model, studiohdr_t *hdr, float *origin, float *velocity, int iActivityType, cl_entity_t *barnacle);
 	CRigBody *CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol);
 	btTypedConstraint *CreateConstraint(CRagdoll *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
 	void CreateStatic(cl_entity_t *ent, indexvertexarray_t *va);

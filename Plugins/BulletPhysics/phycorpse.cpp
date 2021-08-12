@@ -89,10 +89,8 @@ typedef enum
 };
 
 model_t *g_barnacle_model = NULL;
-model_t *g_player_model = NULL;
-int g_sequence_table[1024] = {0};
 
-bool IsEntityCorpse(cl_entity_t* ent)
+bool IsEntityPlayerCorpse(cl_entity_t* ent)
 {
 	if (ent->curstate.iuser3 == PhyCorpseFlag1 && ent->curstate.iuser4 == PhyCorpseFlag2)
 	{
@@ -102,66 +100,58 @@ bool IsEntityCorpse(cl_entity_t* ent)
 	return false;
 }
 
-void InitializePlayerSequenceTable(model_t *mod)
+bool IsEntityMonsterCorpse(cl_entity_t* ent)
 {
-	if (g_player_model)
-		return;
+	if (ent->curstate.iuser3 == PhyCorpseFlag1 && ent->curstate.iuser4 == PhyCorpseFlag3)
+	{
+		return true;
+	}
 
+	return false;
+}
+
+int GetSequenceActivityType(model_t *mod, entity_state_t* entstate)
+{
 	if (mod->type != mod_studio)
-		return;
-
-	g_player_model = mod;
+		return 0;
 
 	auto studiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(mod);
 
 	if (!studiohdr)
-		return;
+		return 0;
 
-	for (int i = 0; i < studiohdr->numseq; ++i)
+	int sequence = entstate->sequence;
+	if (sequence >= studiohdr->numseq)
+		return 0;
+
+	auto pseqdesc = (mstudioseqdesc_t*)((byte*)studiohdr + studiohdr->seqindex) + sequence;
+
+	if (
+		pseqdesc->activity == ACT_DIESIMPLE ||
+		pseqdesc->activity == ACT_DIEBACKWARD ||
+		pseqdesc->activity == ACT_DIEFORWARD ||
+		pseqdesc->activity == ACT_DIEVIOLENT ||
+		pseqdesc->activity == ACT_DIEVIOLENT ||
+		pseqdesc->activity == ACT_DIE_HEADSHOT ||
+		pseqdesc->activity == ACT_DIE_CHESTSHOT ||
+		pseqdesc->activity == ACT_DIE_GUTSHOT ||
+		pseqdesc->activity == ACT_DIE_BACKSHOT
+		)
 	{
-		auto pseqdesc = (mstudioseqdesc_t*)((byte*)studiohdr + studiohdr->seqindex) + i;
-		if (
-			pseqdesc->activity == ACT_DIESIMPLE ||
-			pseqdesc->activity == ACT_DIEBACKWARD ||
-			pseqdesc->activity == ACT_DIEFORWARD ||
-			pseqdesc->activity == ACT_DIEVIOLENT ||
-			pseqdesc->activity == ACT_DIEVIOLENT ||
-			pseqdesc->activity == ACT_DIE_HEADSHOT ||
-			pseqdesc->activity == ACT_DIE_CHESTSHOT ||
-			pseqdesc->activity == ACT_DIE_GUTSHOT ||
-			pseqdesc->activity == ACT_DIE_BACKSHOT
-			)
-		{
-			if (i < 1024)
-				g_sequence_table[i] = 1;
-		}
-		else if (
-			pseqdesc->activity == ACT_BARNACLE_HIT ||
-			pseqdesc->activity == ACT_BARNACLE_PULL ||
-			pseqdesc->activity == ACT_BARNACLE_CHOMP ||
-			pseqdesc->activity == ACT_BARNACLE_CHEW 
-			)
-		{
-			if (i < 1024)
-				g_sequence_table[i] = 2;
-		}
+		return 1;
 	}
-}
 
-bool IsPlayerDeathAnimation(entity_state_t* entstate)
-{
-	if (entstate->sequence < 1024 && g_sequence_table[entstate->sequence] == 1)
-		return true;
+	if (
+		pseqdesc->activity == ACT_BARNACLE_HIT ||
+		pseqdesc->activity == ACT_BARNACLE_PULL ||
+		pseqdesc->activity == ACT_BARNACLE_CHOMP ||
+		pseqdesc->activity == ACT_BARNACLE_CHEW
+		)
+	{
+		return 2;
+	}
 
-	return false;
-}
-
-bool IsPlayerBarnacleAnimation(entity_state_t* entstate)
-{
-	if (entstate->sequence < 1024 && g_sequence_table[entstate->sequence] == 2)
-		return true;
-
-	return false;
+	return 0;
 }
 
 void GlobalFreeCorpseForEntity(int entindex)
@@ -250,10 +240,6 @@ void CorpseManager::NewMap(void)
 	g_barnacle_model = NULL;
 
 	m_barnacleMap.clear();
-
-	g_player_model = NULL;
-
-	memset(g_sequence_table, 0, sizeof(g_sequence_table));
 }
 
 void CorpseManager::AddBarnacle(int entindex, int playerindex)
@@ -279,7 +265,7 @@ cl_entity_t *CorpseManager::FindPlayerForBarnacle(int entindex)
 			auto playerEntity = gEngfuncs.GetEntityByIndex(itor->second);
 			if (playerEntity &&
 				playerEntity->player &&
-				IsPlayerBarnacleAnimation(&playerEntity->curstate))
+				GetSequenceActivityType(playerEntity->model, &playerEntity->curstate) == 2)
 			{
 				return playerEntity;
 			}
