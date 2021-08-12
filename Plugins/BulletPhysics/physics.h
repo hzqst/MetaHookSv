@@ -1,9 +1,11 @@
 ﻿#pragma once
+
 #include <unordered_map>
 #include <vector>
 
-#include "btBulletDynamicsCommon.h"
-#include "studio.h"
+#include <btBulletDynamicsCommon.h>
+#include <studio.h>
+#include <com_model.h>
 
 typedef struct ragdoll_rig_control_s
 {
@@ -163,12 +165,14 @@ public:
 	{
 		m_entindex = -1;
 		m_barnacleindex = -1;
+		m_isPlayer = false;
 		m_pelvisRigBody = NULL;
 		m_headRigBody = NULL;
 	}
 
 	int m_entindex;
 	int m_barnacleindex;
+	bool m_isPlayer;
 	CRigBody *m_pelvisRigBody;
 	CRigBody *m_headRigBody;
 	std::vector<CRigBody *> m_barnacleDragRigBody;
@@ -316,6 +320,8 @@ public:
 	}
 };
 
+typedef std::unordered_map<int, CRagdoll *>::iterator ragdoll_itor;
+
 class CPhysicsManager
 {
 public:
@@ -328,23 +334,30 @@ public:
 	void StepSimulation(double framerate);
 	void ReloadConfig(void);
 	ragdoll_config_t *LoadRagdollConfig(model_t *mod);
-	void SetupPlayerBones(studiohdr_t *hdr, int entindex);
-	void SetupBarnacleBones(studiohdr_t *hdr, int entindex);
+	void SetupBones(studiohdr_t *hdr, int entindex);
+	void MergeBarnacleBones(studiohdr_t *hdr, int entindex);
 	bool HasRagdolls(void);
 	void RemoveRagdoll(int tentindex);
+	void RemoveRagdollEx(ragdoll_itor &itor);
 	void RemoveAllRagdolls();
 	void RemoveAllStatics(); 
-	bool CreateRagdoll(ragdoll_config_t *cfg, int tentindex, model_t *model, studiohdr_t *hdr, float *origin, float *velocity, int iActivityType, cl_entity_t *barnacle);
+	bool IsValidRagdoll(ragdoll_itor &itor);
+	CRagdoll *FindRagdoll(int tentindex);
+	ragdoll_itor FindRagdollEx(int tentindex);
+	bool CreateRagdoll(ragdoll_config_t *cfg, int tentindex, studiohdr_t *studiohdr, int iActivityType, float *origin, float *velocity, cl_entity_t *barnacle, bool isplayer);
 	CRigBody *CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol);
 	btTypedConstraint *CreateConstraint(CRagdoll *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
 	void CreateStatic(cl_entity_t *ent, indexvertexarray_t *va);
-	void CreateForBrushModel(cl_entity_t *ent);
-	void CreateForBarnacle(cl_entity_t *ent);
+	void CreateBrushModel(cl_entity_t *ent);
+	void CreateBarnacle(cl_entity_t *ent);
 	void RotateForEntity(cl_entity_t *ent, float matrix[4][4]);
-	CRagdoll *FindRagdoll(int tentindex);
 	void ReleaseRagdollFromBarnacle(CRagdoll *ragdoll);
+	bool GetRagdollOrigin(CRagdoll *ragdoll, float *origin);
+	bool UpdateRagdoll(cl_entity_t *ent, CRagdoll *ragdoll, double frame_time, double client_time);
 	void UpdateTempEntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time);
-	void SyncView(cl_entity_t *local, struct ref_params_s *pparams);
+	void SyncPlayerView(cl_entity_t *local, struct ref_params_s *pparams);
+private:
+	ragdoll_itor FreeRagdollInternal(ragdoll_itor &itor);
 private:
 	btDefaultCollisionConfiguration* m_collisionConfiguration;
 	btCollisionDispatcher* m_dispatcher;

@@ -8,7 +8,6 @@ extern cl_exportfuncs_t gExportfuncs;
 extern engine_studio_api_t IEngineStudio;
 
 void R_NewMap(void);
-int Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion);
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model);
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio);
 void HUD_TempEntUpdate(

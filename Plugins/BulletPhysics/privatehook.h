@@ -15,4 +15,5 @@ typedef struct
 }privte_funcs_t;
 
 extern int *r_visframecount;
+extern int *cl_parsecount;
 extern privte_funcs_t gPrivateFuncs;

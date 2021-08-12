@@ -27,9 +27,6 @@
     <ClCompile Include="physics.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="phycorpse.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="mathlib.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -42,11 +39,11 @@
     <ClCompile Include="privatehook.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="corpse.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="engfuncs.h">
-      <Filter>Header</Filter>
-    </ClInclude>
     <ClInclude Include="exportfuncs.h">
       <Filter>Header</Filter>
     </ClInclude>
@@ -57,9 +54,6 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="physics.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="phycorpse.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="mathlib.h">
@@ -75,6 +69,9 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="plugins.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="corpse.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

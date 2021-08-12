@@ -2,6 +2,7 @@
 
 #include "bspfile.h"
 #include "studio.h"
+#include "com_model.h"
 
 #define	MAX_QPATH 64
 
@@ -171,19 +172,6 @@ typedef enum
 
 //gl_studio
 
-typedef struct auxvert_s
-{
-	float	fv[3];
-}auxvert_t;
-
-typedef struct alight_s
-{
-	int ambientlight;
-	int shadelight;
-	vec3_t color;
-	float *plightvec;
-}alight_t;
-
 #define STUDIO_RENDER 1
 #define STUDIO_EVENTS 2
 
@@ -201,39 +189,9 @@ typedef struct alight_s
 #include "modelgen.h"
 #include "spritegn.h"
 
-typedef struct
-{
-	vec3_t position;
-}
-mvertex_t;
-
 #define SIDE_FRONT 0
 #define SIDE_BACK 1
 #define SIDE_ON 2
-
-typedef struct mplane_s
-{
-	vec3_t normal;
-	float dist;
-	byte type;
-	byte signbits;
-	byte pad[2];
-}
-mplane_t;
-
-typedef struct texture_s
-{
-	char name[16];
-	unsigned width, height;
-	int gl_texturenum;
-	struct msurface_s *texturechain;
-	int anim_total;
-	int anim_min, anim_max;
-	struct texture_s *anim_next;
-	struct texture_s *alternate_anims;
-	unsigned offsets[MIPLEVELS];
-	unsigned char *pPal;
-}texture_t;
 
 #define SURF_PLANEBACK 2
 #define SURF_DRAWSKY 4
@@ -244,114 +202,11 @@ typedef struct texture_s
 #define SURF_UNDERWATER 0x80
 #define SURF_DONTWARP 0x100
 
-typedef struct
-{
-	unsigned short v[2];
-	unsigned int cachededgeoffset;
-}
-medge_t;
-
-typedef struct
-{
-	float vecs[2][4];
-	float mipadjust;
-	texture_t *texture;
-	int flags;
-}
-mtexinfo_t;
-
-#define VERTEXSIZE 7
-
-typedef struct glpoly_s
-{
-	struct glpoly_s *next;
-	struct glpoly_s *chain;
-	int numverts;
-	int flags;
-	float verts[4][VERTEXSIZE];
-}glpoly_t;
-
-typedef struct msurface_s
-{
-	int visframe;
-	mplane_t *plane;
-	int flags;
-	int firstedge;
-	int numedges;
-	short texturemins[2];
-	short extents[2];
-	int light_s, light_t;
-	glpoly_t *polys;
-	struct msurface_s *texturechain;
-	mtexinfo_t *texinfo;
-	int dlightframe;
-	int dlightbits;
-	int lightmaptexturenum;
-	byte styles[MAXLIGHTMAPS];
-	int cached_light[MAXLIGHTMAPS];
-	qboolean cached_dlight;
-	byte *samples;
-	struct decal_s *pdecals;
-}
-msurface_t;
-
-typedef struct decal_s
-{
-	struct decal_s *pnext;
-	struct msurface_s *psurface;
-	float dx;
-	float dy;
-	float scale;
-	short texture;
-	short flags;
-	short entityIndex;
-}
-decal_t;
-
 typedef struct decalcache_s
 {
 	int		decalIndex;
 	float	decalVert[4][VERTEXSIZE];
 } decalcache_t;
-
-typedef struct mnode_s
-{
-	int contents;
-	int visframe;
-	float minmaxs[6];
-	struct mnode_s *parent;
-	mplane_t *plane;
-	struct mnode_s *children[2];
-	unsigned short firstsurface;
-	unsigned short numsurfaces;
-}
-mnode_t;
-
-typedef struct mleaf_s
-{
-	int contents;
-	int visframe;
-	float minmaxs[6];
-	struct mnode_s *parent;
-	byte *compressed_vis;
-	struct efrag_s *efrags;
-	msurface_t **firstmarksurface;
-	int nummarksurfaces;
-	int key;
-	byte ambient_sound_level[NUM_AMBIENTS];
-}
-mleaf_t;
-
-typedef struct hull_s
-{
-	dclipnode_t *clipnodes;
-	mplane_t *planes;
-	int firstclipnode;
-	int lastclipnode;
-	vec3_t clip_mins;
-	vec3_t clip_maxs;
-}
-hull_t;
 
 typedef struct mspriteframe_s
 {
@@ -462,65 +317,3 @@ extern aliashdr_t *pheader;
 extern stvert_t stverts[MAXALIASVERTS];
 extern mtriangle_t triangles[MAXALIASTRIS];
 extern trivertx_t *poseverts[MAXALIASFRAMES];
-
-typedef enum
-{
-	mod_brush,
-	mod_sprite,
-	mod_alias,
-	mod_studio
-}
-modtype_t;
-
-#define FMODEL_ROCKET 0x1
-#define FMODEL_GRENADE 0x2
-#define FMODEL_GIB 0x4
-#define FMODEL_ROTATE 0x8
-#define FMODEL_TRACER 0x10
-#define FMODEL_ZOMGIB 0x20
-#define FMODEL_TRACER2 0x40
-#define FMODEL_TRACER3 0x80
-#define FMODEL_DYNAMIC_LIGHT 0x100
-#define FMODEL_TRACE_HITBOX 0x200
-
-typedef struct model_s
-{
-	char name[MAX_QPATH];
-	qboolean needload;
-	modtype_t type;
-	int numframes;
-	synctype_t synctype;
-	int flags;
-	vec3_t mins, maxs;
-	float radius;
-	int firstmodelsurface, nummodelsurfaces;
-	int numsubmodels;
-	dmodel_t *submodels;
-	int numplanes;
-	mplane_t *planes;
-	int numleafs;
-	mleaf_t *leafs;
-	int numvertexes;
-	mvertex_t *vertexes;
-	int numedges;
-	medge_t *edges;
-	int numnodes;
-	mnode_t *nodes;
-	int numtexinfo;
-	mtexinfo_t *texinfo;
-	int numsurfaces;
-	msurface_t *surfaces;
-	int numsurfedges;
-	int *surfedges;
-	int numclipnodes;
-	dclipnode_t *clipnodes;
-	int nummarksurfaces;
-	msurface_t **marksurfaces;
-	hull_t hulls[MAX_MAP_HULLS];
-	int numtextures;
-	texture_t **textures;
-	byte *visdata;
-	byte *lightdata;
-	char *entities;
-	cache_user_t cache;
-}model_t;

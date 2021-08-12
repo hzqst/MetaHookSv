@@ -72,9 +72,18 @@ void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 		//mov     eax, [edi+4]
 		//mov     ecx, r_visframecount
 #define R_VISFRAMECOUNT_SIG_SVENGINE "\x8B\x43\x04\x3B\x05"
-		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_RecursiveWorldNode, 0x100, R_VISFRAMECOUNT_SIG_SVENGINE, sizeof(R_VISFRAMECOUNT_SIG_SVENGINE) - 1);
-		Sig_AddrNotFound(r_visframecount);
-		r_visframecount = *(int **)(addr + 5);
+		{
+			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_RecursiveWorldNode, 0x100, R_VISFRAMECOUNT_SIG_SVENGINE, sizeof(R_VISFRAMECOUNT_SIG_SVENGINE) - 1);
+			Sig_AddrNotFound(r_visframecount);
+			r_visframecount = *(int **)(addr + 5);
+		}
+#define CL_PARSECOUNT_SIG_SVENGINE "\x23\x05\x2A\x2A\x2A\x2A\x69\xC8\xD8\x84\x00\x00"
+		
+		{
+			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_dwEngineTextBase, g_dwEngineTextSize, CL_PARSECOUNT_SIG_SVENGINE, sizeof(CL_PARSECOUNT_SIG_SVENGINE) - 1);
+			Sig_AddrNotFound(cl_parsecount);
+			cl_parsecount = *(int **)(addr + 2);
+		}
 
 		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern( R_NEWMAP_SIG_SVENGINE );
 		Sig_FuncNotFound(R_NewMap);
@@ -87,9 +96,17 @@ void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 		//mov     eax, [edi+4]
 		//mov     ecx, r_visframecount
 #define R_VISFRAMECOUNT_SIG_NEW "\x8B\x47\x04\x8B\x0D"
-		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_RecursiveWorldNode, 0x100, R_VISFRAMECOUNT_SIG_NEW, sizeof(R_VISFRAMECOUNT_SIG_NEW) - 1);
-		Sig_AddrNotFound(r_visframecount);
-		r_visframecount = *(int **)(addr + 5);
+		{
+			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_RecursiveWorldNode, 0x100, R_VISFRAMECOUNT_SIG_NEW, sizeof(R_VISFRAMECOUNT_SIG_NEW) - 1);
+			Sig_AddrNotFound(r_visframecount);
+			r_visframecount = *(int **)(addr + 5);
+		}
+#define CL_PARSECOUNT_SIG_NEW "\x8B\x0D\x2A\x2A\x2A\x2A\x23\xC1\x8B\x12"
+		{
+			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_dwEngineTextBase, g_dwEngineTextSize, CL_PARSECOUNT_SIG_NEW, sizeof(CL_PARSECOUNT_SIG_NEW) - 1);
+			Sig_AddrNotFound(cl_parsecount);
+			cl_parsecount = *(int **)(addr + 2);
+		}
 
 		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_NEW);
 		Sig_FuncNotFound(R_NewMap);

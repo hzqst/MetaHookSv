@@ -1,6 +1,6 @@
 #include <metahook.h>
 #include "privatehook.h"
-#include "phycorpse.h"
+#include "corpse.h"
 #include "physics.h"
 
 privte_funcs_t gPrivateFuncs;

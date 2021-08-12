@@ -111,7 +111,7 @@
     <ClCompile Include="..\..\HLSDK\common\interface.cpp" />
     <ClCompile Include="command.cpp" />
     <ClCompile Include="mathlib.cpp" />
-    <ClCompile Include="phycorpse.cpp" />
+    <ClCompile Include="corpse.cpp" />
     <ClCompile Include="privatehook.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="physics.cpp" />
@@ -121,14 +121,13 @@
   <ItemGroup>
     <ClInclude Include="..\..\HLSDK\common\interface.h" />
     <ClInclude Include="..\..\metahook.h" />
-    <ClInclude Include="engfuncs.h" />
     <ClInclude Include="plugins.h" />
     <ClInclude Include="privatehook.h" />
     <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />
     <ClInclude Include="mathlib.h" />
     <ClInclude Include="physics.h" />
-    <ClInclude Include="phycorpse.h" />
+    <ClInclude Include="corpse.h" />
     <ClInclude Include="qgl.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,8 +1,9 @@
 #include "exportfuncs.h"
-#include "triangleapi.h"
+#include <triangleapi.h>
+#include <studio.h>
+#include <cvardef.h>
 #include "enginedef.h"
-#include "studio.h"
-#include "cvardef.h"
+#include "privatehook.h"
 #include "physics.h"
 #include "qgl.h"
 #include "mathlib.h"
@@ -21,10 +22,10 @@ extern cvar_t *bv_force_player_ragdoll;
 extern model_t *r_worldmodel;
 extern int *r_visframecount;
 
+bool IsEntityPresent(cl_entity_t* ent);
 bool IsEntityBarnacle(cl_entity_t* ent);
-bool IsEntityPlayerCorpse(cl_entity_t* ent);
-void GlobalFreeCorpseForEntity(int entindex);
 int GetSequenceActivityType(model_t *mod, entity_state_t* entstate);
+void RagdollDestroyCallback(int entindex);
 
 const float r_identity_matrix[4][4] = {
 	{1.0f, 0.0f, 0.0f, 0.0f},
@@ -420,7 +421,7 @@ void CPhysicsManager::RotateForEntity(cl_entity_t *e, float matrix[4][4])
 	Matrix4x4_CreateFromEntity(matrix, angles, modelpos, 1);
 }
 
-void CPhysicsManager::CreateForBarnacle(cl_entity_t *ent)
+void CPhysicsManager::CreateBarnacle(cl_entity_t *ent)
 {
 	auto itor = m_staticMap.find(ent->index);
 
@@ -532,7 +533,7 @@ void CPhysicsManager::CreateForBarnacle(cl_entity_t *ent)
 	CreateStatic(ent, iva);
 }
 
-void CPhysicsManager::CreateForBrushModel(cl_entity_t *ent)
+void CPhysicsManager::CreateBrushModel(cl_entity_t *ent)
 {
 	auto itor = m_staticMap.find(ent->index);
 
@@ -582,7 +583,7 @@ void CPhysicsManager::NewMap(void)
 
 	r_worldmodel = r_worldentity->model;
 
-	CreateForBrushModel(r_worldentity);
+	CreateBrushModel(r_worldentity);
 }
 
 void CPhysicsManager::Init(void)
@@ -668,10 +669,9 @@ void CPhysicsManager::ReleaseRagdollFromBarnacle(CRagdoll *ragdoll)
 		rig->barnacle_constraint_dof6 = NULL;
 	}
 	ragdoll->m_barnacleConstraintArray.clear();
-
 }
 
-void CPhysicsManager::SyncView(cl_entity_t *local, struct ref_params_s *pparams)
+void CPhysicsManager::SyncPlayerView(cl_entity_t *local, struct ref_params_s *pparams)
 {
 	auto ragdoll = gPhysicsManager.FindRagdoll(local->index);
 	if (ragdoll && ragdoll->m_pelvisRigBody)
@@ -691,10 +691,133 @@ bool CPhysicsManager::HasRagdolls(void)
 	return m_ragdollMap.size() ? true : false;
 }
 
+bool CPhysicsManager::GetRagdollOrigin(CRagdoll *ragdoll, float *origin)
+{
+	auto pelvis = ragdoll->m_pelvisRigBody;
+	if (pelvis)
+	{
+		auto worldtrans = pelvis->rigbody->getWorldTransform();
+
+		auto worldrorg = worldtrans.getOrigin();
+
+		origin[0] = worldrorg.x();
+		origin[1] = worldrorg.y();
+		origin[2] = worldrorg.z();
+
+		Vec3BulletToGoldSrc(origin);
+		return true;
+	}
+	return false;
+}
+
+bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdoll *ragdoll, double frame_time, double client_time)
+{
+	if (ragdoll->m_barnacleindex != -1)
+	{
+		bool bDraging = true;
+
+		if (GetSequenceActivityType(ent->model, &ent->curstate) != 2)
+		{
+			ReleaseRagdollFromBarnacle(ragdoll);
+			return true;
+		}
+
+		auto barnacle = gEngfuncs.GetEntityByIndex(ragdoll->m_barnacleindex);
+
+		if (!IsEntityBarnacle(barnacle))
+		{
+			ReleaseRagdollFromBarnacle(ragdoll);
+			return true;
+		}
+
+		if (barnacle->curstate.sequence == 5)
+		{
+			bDraging = false;
+
+			for (size_t i = 0; i < ragdoll->m_barnacleChewRigBody.size(); ++i)
+			{
+				auto rig = ragdoll->m_barnacleChewRigBody[i];
+
+				if (client_time > rig->barnacle_chew_time)
+				{
+					if (rig->barnacle_constraint_dof6 && rig->barnacle_chew_up_z > 0)
+					{
+						btVector3 currentLimit;
+						rig->barnacle_constraint_dof6->getLinearUpperLimit(currentLimit);
+						if (currentLimit.x() + rig->barnacle_chew_up_z < rig->barnacle_z_final + 0.01f)
+						{
+							currentLimit.setX(currentLimit.x() + rig->barnacle_chew_up_z);
+							rig->barnacle_constraint_dof6->setLinearUpperLimit(currentLimit);
+						}
+					}
+					else if (rig->barnacle_constraint_slider && rig->barnacle_chew_up_z > 0)
+					{
+						btScalar currentLimit = rig->barnacle_constraint_slider->getUpperLinLimit();
+						if (currentLimit + rig->barnacle_chew_up_z < rig->barnacle_z_final + 0.01f)
+						{
+							currentLimit = currentLimit + rig->barnacle_chew_up_z;
+							rig->barnacle_constraint_slider->setUpperLinLimit(currentLimit);
+						}
+					}
+
+					if (rig->barnacle_chew_force != 0)
+					{
+						rig->rigbody->applyCentralImpulse(btVector3(0, 0, rig->barnacle_chew_force));
+					}
+
+					rig->barnacle_chew_time = client_time + rig->barnacle_chew_duration;
+				}
+			}
+		}
+
+		vec3_t origin;
+		if (GetRagdollOrigin(ragdoll, origin))
+		{
+			for (size_t i = 0; i < ragdoll->m_barnacleDragRigBody.size(); ++i)
+			{
+				auto rig = ragdoll->m_barnacleDragRigBody[i];
+
+				btVector3 force(0, 0, rig->barnacle_force);
+
+				if (bDraging)
+				{
+					if (origin[2] > ent->origin[2] + 24)
+						continue;
+
+					if (origin[2] > ent->origin[2])
+					{
+						force[2] *= (ent->origin[2] + 24 - origin[2]) / 24;
+					}
+				}
+
+				rig->rigbody->applyCentralForce(force);
+			}
+		}
+	}
+
+	return true;
+}
+
 void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time)
 {
-	auto localPlayer = gEngfuncs.GetLocalPlayer();
+	for (auto itor = m_ragdollMap.begin(); itor != m_ragdollMap.end();)
+	{
+		auto pRagdoll = itor->second;
 
+		auto ent = gEngfuncs.GetEntityByIndex(itor->first);
+
+		if (!IsEntityPresent(ent) ||
+			!UpdateRagdoll(ent, itor->second, frame_time, client_time))
+		{
+			itor = FreeRagdollInternal(itor);
+		}
+		else
+		{
+			itor++;
+		}
+	}
+
+#if 0
 	auto pTemp = *ppTempEntActive;
 
 	while (pTemp)
@@ -719,118 +842,18 @@ void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double fram
 						localPlayer->curstate.messagenum == playerEntity->curstate.messagenum &&
 						(!GetSequenceActivityType(playerEntity->model, &playerEntity->curstate) ))
 					{
-						GlobalFreeCorpseForEntity(ragdoll->m_entindex);
+						GlobalFreeCorpseForBarnacle(ragdoll->m_entindex);
 						goto next;
 					}
 				}
 
-				auto pelvis = ragdoll->m_pelvisRigBody;
-				if (pelvis)
-				{
-					auto worldtrans = pelvis->rigbody->getWorldTransform();
-
-					auto worldrorg = worldtrans.getOrigin();
-
-					vec3_t goldsrcorg = { worldrorg.x(), worldrorg.y(), worldrorg.z() };
-
-					Vec3BulletToGoldSrc(goldsrcorg);
-
-					VectorCopy(goldsrcorg, pTemp->entity.origin);
-					VectorCopy(goldsrcorg, pTemp->entity.curstate.origin);
-
-					if (GetSequenceActivityType(pTemp->entity.model, &pTemp->entity.curstate) == 2 && ragdoll->m_barnacleindex != -1)
-					{
-						if (GetSequenceActivityType(playerEntity->model, &playerEntity->curstate))
-						{
-							bool bDraging = true;
-
-							auto barnacle = gEngfuncs.GetEntityByIndex(ragdoll->m_barnacleindex);
-						
-							if (IsEntityBarnacle(barnacle))
-							{
-								if (barnacle->curstate.sequence == 5)
-								{
-									bDraging = false;
-
-									//if (barnacle->curstate.frame < 10 || (barnacle->curstate.frame >= 118 && barnacle->curstate.frame <= 138))
-									{
-										for (size_t i = 0; i < ragdoll->m_barnacleChewRigBody.size(); ++i)
-										{
-											auto rig = ragdoll->m_barnacleChewRigBody[i];
-
-											if (client_time > rig->barnacle_chew_time)
-											{
-												if (rig->barnacle_constraint_dof6 && rig->barnacle_chew_up_z > 0)
-												{
-													btVector3 currentLimit;
-													rig->barnacle_constraint_dof6->getLinearUpperLimit(currentLimit);
-													if (currentLimit.x() + rig->barnacle_chew_up_z < rig->barnacle_z_final + 0.01f)
-													{
-														currentLimit.setX(currentLimit.x() + rig->barnacle_chew_up_z);
-														rig->barnacle_constraint_dof6->setLinearUpperLimit(currentLimit);
-													}
-												}
-												else if (rig->barnacle_constraint_slider && rig->barnacle_chew_up_z > 0)
-												{
-													btScalar currentLimit = rig->barnacle_constraint_slider->getUpperLinLimit();
-													if (currentLimit + rig->barnacle_chew_up_z < rig->barnacle_z_final + 0.01f)
-													{
-														currentLimit = currentLimit + rig->barnacle_chew_up_z;
-														rig->barnacle_constraint_slider->setUpperLinLimit(currentLimit);
-													}
-												}
-
-												if (rig->barnacle_chew_force != 0)
-												{
-													rig->rigbody->applyCentralImpulse(btVector3(0, 0, rig->barnacle_chew_force));
-												}
-
-												rig->barnacle_chew_time = client_time + rig->barnacle_chew_duration;
-											}
-										}
-									}
-								}
-							}
-
-							for (size_t i = 0; i < ragdoll->m_barnacleDragRigBody.size(); ++i)
-							{
-								auto rig = ragdoll->m_barnacleDragRigBody[i];
-								
-								btVector3 force(0, 0, rig->barnacle_force);
-
-								if (bDraging)
-								{
-									if (goldsrcorg[2] > playerEntity->origin[2] + 24)
-										continue;
-
-									if (goldsrcorg[2] > playerEntity->origin[2])
-									{
-										force[2] *= (playerEntity->origin[2] + 24 - goldsrcorg[2]) / 24;
-									}
-								}
-
-								rig->rigbody->applyCentralForce(force);
-							}
-						}
-						else
-						{
-							//Released by barnacle or gibbed
-							if (playerEntity->visframe == *r_visframecount)
-							{
-								ReleaseRagdollFromBarnacle(ragdoll);
-							}
-							else
-							{
-								GlobalFreeCorpseForEntity(ragdoll->m_entindex);
-							}
-						}
-					}
-				}
+				
 			}
 		}
 	next:
 		pTemp = pTemp->next;
 	}
+#endif
 }
 
 void CPhysicsManager::StepSimulation(double frametime)
@@ -1673,17 +1696,11 @@ void CPhysicsManager::RemoveAllRagdolls()
 	m_ragdollMap.clear();
 }
 
-void CPhysicsManager::RemoveRagdoll(int tentindex)
+ragdoll_itor CPhysicsManager::FreeRagdollInternal(ragdoll_itor &itor)
 {
-	auto itor = m_ragdollMap.find(tentindex);
-
-	if (itor == m_ragdollMap.end())
-	{
-		gEngfuncs.Con_Printf("RemoveRagdoll: not found\n");
-		return;
-	}
-
 	auto ragdoll = itor->second;
+
+	RagdollDestroyCallback(ragdoll->m_entindex);
 
 	for (auto p : ragdoll->m_constraintArray)
 	{
@@ -1701,18 +1718,34 @@ void CPhysicsManager::RemoveRagdoll(int tentindex)
 
 	ragdoll->m_rigbodyMap.clear();
 
-	m_ragdollMap.erase(itor);
-
 	delete ragdoll;
+
+	return m_ragdollMap.erase(itor);
 }
 
-void CPhysicsManager::SetupBarnacleBones(studiohdr_t *hdr, int entindex)
+void CPhysicsManager::RemoveRagdollEx(ragdoll_itor &itor)
+{
+	if (itor == m_ragdollMap.end())
+	{
+		gEngfuncs.Con_Printf("RemoveRagdollEx: not found\n");
+		return;
+	}
+
+	FreeRagdollInternal(itor);
+}
+
+void CPhysicsManager::RemoveRagdoll(int tentindex)
+{
+	RemoveRagdollEx(m_ragdollMap.find(tentindex));
+}
+
+void CPhysicsManager::MergeBarnacleBones(studiohdr_t *hdr, int entindex)
 {
 	auto itor = m_ragdollMap.find(entindex);
 
 	if (itor == m_ragdollMap.end())
 	{
-		//gEngfuncs.Con_Printf("SetupBarnacleBones: not found\n");
+		//gEngfuncs.Con_Printf("MergeBarnacleBones: not found\n");
 		return;
 	}
 
@@ -1753,7 +1786,7 @@ void CPhysicsManager::SetupBarnacleBones(studiohdr_t *hdr, int entindex)
 	}*/
 }
 
-void CPhysicsManager::SetupPlayerBones(studiohdr_t *hdr, int entindex)
+void CPhysicsManager::SetupBones(studiohdr_t *hdr, int entindex)
 {
 	auto itor = m_ragdollMap.find(entindex);
 
@@ -1802,9 +1835,19 @@ void CPhysicsManager::SetupPlayerBones(studiohdr_t *hdr, int entindex)
 	}
 }
 
+bool CPhysicsManager::IsValidRagdoll(ragdoll_itor &itor)
+{
+	return (itor != m_ragdollMap.end()) ? true : false;
+}
+
+ragdoll_itor CPhysicsManager::FindRagdollEx(int tentindex)
+{
+	return m_ragdollMap.find(tentindex);
+}
+
 CRagdoll *CPhysicsManager::FindRagdoll(int tentindex)
 {
-	auto itor = m_ragdollMap.find(tentindex);
+	auto itor = FindRagdollEx(tentindex);
 
 	if (itor != m_ragdollMap.end())
 	{
@@ -1814,7 +1857,15 @@ CRagdoll *CPhysicsManager::FindRagdoll(int tentindex)
 	return NULL;
 }
 
-bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int entindex, model_t *model, studiohdr_t *studiohdr, float *origin, float *velocity, int iActivityType, cl_entity_t *barnacle)
+bool CPhysicsManager::CreateRagdoll(
+	ragdoll_config_t *cfg,
+	int entindex, 
+	studiohdr_t *studiohdr,
+	int iActivityType,
+	float *origin, 
+	float *velocity, 
+	cl_entity_t *barnacle,
+	bool isplayer)
 {
 	if(FindRagdoll(entindex))
 	{
@@ -1824,8 +1875,6 @@ bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int entindex, model_t
 
 	btVector3 player_origin(origin[0], origin[1], origin[2]);
 	Vector3GoldSrcToBullet(player_origin);
-
-	std::string modelname(model->name);
 
 	auto ragdoll = new CRagdoll();
 
@@ -2046,6 +2095,7 @@ bool CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int entindex, model_t
 	}
 
 	ragdoll->m_entindex = entindex;
+	ragdoll->m_isPlayer = isplayer;
 	m_ragdollMap[entindex] = ragdoll;
 
 	return true;

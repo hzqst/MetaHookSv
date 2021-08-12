@@ -57,16 +57,6 @@ lump_t;
 
 typedef struct
 {
-	float mins[3], maxs[3];
-	float origin[3];
-	int headnode[MAX_MAP_HULLS];
-	int visleafs;
-	int firstface, numfaces;
-}
-dmodel_t;
-
-typedef struct
-{
 	int version;
 	lump_t lumps[HEADER_LUMPS];
 }
@@ -139,13 +129,6 @@ typedef struct
 	unsigned short numfaces;
 }
 dnode_t;
-
-typedef struct
-{
-	int planenum;
-	short children[2];
-}
-dclipnode_t;
 
 typedef struct texinfo_s
 {
