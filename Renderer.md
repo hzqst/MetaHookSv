@@ -303,7 +303,9 @@ You can use [bspguy](https://github.com/wootguy/bspguy) to add entity to BSP fil
 
 `minheight` water entity with height smaller than this value will not be rendered with shader program. for example `"minheight" "7.5"`
 
-`maxtrans` controls the maximum transparency of water, in from 0 ~ 255. for example `"maxtrans" "128"`
+`maxtrans` controls the maximum transparency of water, must be between 0 and 255. for example `"maxtrans" "128"`
+
+`level` . controls the reflection level. 0 = only skybox is reflected. 1 = skybox and world are reflected. 2 = both skybox, world and entities are reflected. 3 = use SSR to reflect. for example `"level" "1"`
 
 ## light_dynamic
 
@@ -315,7 +317,7 @@ Dynamic lights are calculated on the fly in the game, which means they have a hi
 
 `origin` is the position of this entity's center in the world. for example `"origin" "123 456 789"`
 
-`_light` is the RGB render color of the dynamic light. Colors must be between 0 and 255. for example `"_light" "192 192 192"`
+`_light` is the RGB render color of the dynamic light, must be between 0 and 255. for example `"_light" "192 192 192"`
 
 `_distance` is the distance that light is allowed to cast, in inches. for example `"_distance" "300"`
 
