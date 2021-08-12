@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 
-#define MAX_WATERS 32
+#define MAX_WATERS 64
 
 typedef struct cubemap_s
 {
@@ -26,6 +26,7 @@ typedef struct water_control_s
 	float normfactor;
 	float minheight;
 	float maxtrans;
+	int level;
 }water_control_t;
 
 extern std::vector<water_control_t> r_water_controls;
@@ -73,8 +74,9 @@ typedef struct r_water_s
 	float fresnelfactor;
 	float depthfactor[2];
 	float normfactor;
-	float maxtrans;
 	float minheight;
+	float maxtrans;
+	int level;
 	vec3_t vecs;
 	vec3_t norm;
 	float distances;
@@ -127,3 +129,8 @@ void R_UseWaterProgram(int state, water_program_t *progOutput);
 #define WATER_GBUFFER_ENABLED			2
 #define WATER_DEPTH_ENABLED				4
 #define WATER_REFRACT_ENABLED			8
+
+#define WATER_LEVEL_REFLECT_SKYBOX		0
+#define WATER_LEVEL_REFLECT_WORLD		1
+#define WATER_LEVEL_REFLECT_ENTITY		2
+#define WATER_LEVEL_REFLECT_SSR			3

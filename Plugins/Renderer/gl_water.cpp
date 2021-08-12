@@ -278,8 +278,9 @@ r_water_t *R_GetActiveWater(cl_entity_t *ent, const char *texname, vec3_t p, vec
 			w->depthfactor[0] = pControl->depthfactor[0];
 			w->depthfactor[1] = pControl->depthfactor[1];
 			w->normfactor = pControl->normfactor;
-			w->maxtrans = pControl->maxtrans;
 			w->minheight = pControl->minheight;
+			w->maxtrans = pControl->maxtrans;
+			w->level = pControl->level;
 			return w;
 		}
 	}
@@ -308,8 +309,9 @@ r_water_t *R_GetActiveWater(cl_entity_t *ent, const char *texname, vec3_t p, vec
 	w->depthfactor[0] = pControl->depthfactor[0];
 	w->depthfactor[1] = pControl->depthfactor[1];
 	w->normfactor = pControl->normfactor;
-	w->maxtrans = pControl->maxtrans;
 	w->minheight = pControl->minheight;
+	w->maxtrans = pControl->maxtrans;
+	w->level = pControl->level;
 
 	//Upload color textures and depth textures.
 	if (!refractmap)
@@ -390,7 +392,7 @@ void R_RenderReflectView(r_water_t *w)
 	saved_cl_waterlevel = *cl_waterlevel;
 	*cl_waterlevel = 0;
 	auto saved_r_drawentities = r_drawentities->value;
-	if (r_water->value >= 2)
+	if (curwater->level == WATER_LEVEL_REFLECT_ENTITY)
 	{
 		r_drawentities->value = 1;
 	}

@@ -2615,6 +2615,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 	control.normfactor = 0;
 	control.minheight = 0;
 	control.maxtrans = 0;
+	control.level = WATER_LEVEL_REFLECT_SKYBOX;
 
 	char *basetexture_string = ValueForKey(ent, "basetexture");
 	if (basetexture_string)
@@ -2704,6 +2705,20 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		else
 		{
 			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"maxtrans\" in entity \"env_water_control\"\n");
+		}
+	}
+
+	char *level_string = ValueForKey(ent, "level");
+	if (level_string)
+	{
+		int lv;
+		if (sscanf(level_string, "%d", &lv) == 1)
+		{
+			control.level = clamp(lv, WATER_LEVEL_REFLECT_SKYBOX, WATER_LEVEL_REFLECT_SSR);
+		}
+		else
+		{
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"level\" in entity \"env_water_control\"\n");
 		}
 	}
 
@@ -3644,6 +3659,9 @@ void R_DrawWorld(void)
 
 	R_DrawSkyBox();
 
+	if (r_draw_pass == r_draw_reflect && curwater->level == WATER_LEVEL_REFLECT_SKYBOX)
+		goto skip_world;
+
 	//World uses stencil = 0
 
 	qglStencilFunc(GL_ALWAYS, 0, 0xFF);
@@ -3715,6 +3733,10 @@ void R_DrawWorld(void)
 		}
 		(*waterchain) = 0;
 	}
+
+skip_world:
+
+	GL_DisableMultitexture();
 
 	//No stencil write later
 	qglStencilMask(0);

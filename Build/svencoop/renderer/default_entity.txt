@@ -23,4 +23,5 @@
 "maxtrans" "200"
 "origin" "0 0 0"
 "angles" "0 0 0"
+"level" "1"
 }
