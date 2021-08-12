@@ -167,6 +167,10 @@ Normal texture list is read from `/maps/[map name]_detail.txt`, with `_NORMAL` a
 
 Normal textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` and `/Sven Co-op/svencoop/renderer/texture`.
 
+* Normal textures only work when `r_wsurf_detail` and `r_light_dynamic` both set to 1.
+
+* Normal textures change nothing but the direction of surface normal, thus only work when there are dynamic lights or flashlights.
+
 ### Parallax textures
 
 Parallax textures are external images applied to specified brush surfaces which will have more apparent depth.
@@ -175,7 +179,7 @@ Parallax texture list is read from `/maps/[map name]_detail.txt`, with `_PARALLA
 
 Parallax textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` and `/Sven Co-op/svencoop/renderer/texture`.
 
-`r_wsurf_parallax_scale` is the intensity of parallax textures.
+* `r_wsurf_parallax_scale` controls the intensity (and direction if negative value is given) of parallax textures.
 
 ### Specular textures
 
@@ -184,6 +188,10 @@ Specular textures are external images applied to specified brush surfaces which 
 Specular texture list is read from `/maps/[map name]_detail.txt`, with `_SPECULAR` as suffix in basetexture name.
 
 Specular textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` and `/Sven Co-op/svencoop/renderer/texture`.
+
+* Red channel of specular texture controls the intensity of specular lighting, while green channel of specular texture controls intensity of Screen-Space-Reflection or SSR.
+
+* Blue channel is not used yet.
 
 ## Misc
 
