@@ -186,7 +186,7 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 		if (prog.depthTex != -1)
 			qglUniform1iARB(prog.depthTex, 1);
 		if (prog.stencilTex != -1)
-			qglUniform1iARB(prog.stencilTex, 2);
+			qglUniform1iARB(prog.stencilTex, 1);
 		if (prog.viewpos != -1)
 			qglUniform3fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
 

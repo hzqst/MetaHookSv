@@ -24,8 +24,7 @@ r_studio_interface_t **gpStudioInterface;
 cvar_t *bv_debug = NULL;
 cvar_t *bv_simrate = NULL;
 cvar_t *bv_scale = NULL;
-cvar_t *bv_force_player_ragdoll = NULL;
-cvar_t *bv_force_monster_ragdoll = NULL;
+cvar_t *bv_force_ragdoll_sequence = NULL;
 
 studiohdr_t **pstudiohdr = NULL;
 model_t **r_model = NULL;
@@ -116,9 +115,6 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 				if (cfg)
 				{
 					bool bTransformToRagdoll = false;
-
-					if (bv_force_monster_ragdoll->value)
-						bTransformToRagdoll = true;
 
 					if (!bTransformToRagdoll)
 					{
@@ -220,7 +216,7 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 				{
 					bool bTransformToRagdoll = false;
 
-					if (bv_force_player_ragdoll->value)
+					if (bv_force_ragdoll_sequence->value == currententity->curstate.sequence)
 						bTransformToRagdoll = true;
 
 					if (!bTransformToRagdoll)
@@ -475,8 +471,7 @@ void HUD_Init(void)
 	bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
 	bv_simrate = gEngfuncs.pfnRegisterVariable("bv_simrate", "64", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_scale = gEngfuncs.pfnRegisterVariable("bv_scale", "0.1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	bv_force_player_ragdoll = gEngfuncs.pfnRegisterVariable("bv_force_player_ragdoll", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	bv_force_monster_ragdoll = gEngfuncs.pfnRegisterVariable("bv_force_monster_ragdoll", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_force_ragdoll_sequence = gEngfuncs.pfnRegisterVariable("bv_force_ragdoll_sequence", "0", FCVAR_CLIENTDLL);
 
 	gEngfuncs.pfnAddCommand("bv_reload", BV_Reload_f);
 
