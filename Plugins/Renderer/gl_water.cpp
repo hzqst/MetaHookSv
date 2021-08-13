@@ -16,7 +16,6 @@ GLuint depthrefrmap = 0;
 qboolean refractmap_ready = 0;
 
 SHADER_DEFINE(drawdepth);
-SHADER_DEFINE(drawcolor)
 
 int saved_cl_waterlevel;
 
@@ -205,15 +204,6 @@ void R_InitWater(void)
 		}
 	}	
 	
-	if (gl_shader_support)
-	{
-		drawcolor.program = R_CompileShader(drawcolor_vscode, drawcolor_fscode, "drawcolor_shader.vsh", "drawcolor_shader.fsh", NULL);
-		if (drawcolor.program)
-		{
-			SHADER_UNIFORM(drawcolor, colormap, "colormap");
-		}
-	}
-
 	r_water = gEngfuncs.pfnRegisterVariable("r_water", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_debug = gEngfuncs.pfnRegisterVariable("r_water_debug", "0", FCVAR_CLIENTDLL);
 

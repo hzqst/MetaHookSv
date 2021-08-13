@@ -602,6 +602,11 @@ void R_GLStudioDrawPoints(void)
 	}
 	else
 	{
+		if (engine_psubmodel->numverts > MAXSTUDIOVERTS)
+		{
+			Sys_ErrorEx("R_StudioDrawPoints: %s numverts (%d) > MAXSTUDIOVERTS (%d)", engine_pstudiohdr->name, engine_psubmodel->numverts, MAXSTUDIOVERTS);
+		}
+
 		if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
 		{
 			BuildNormalIndexTable();

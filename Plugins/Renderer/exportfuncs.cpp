@@ -394,16 +394,6 @@ void __fastcall PortalManager_ResetAll(int pthis, int)
 	gRefFuncs.PortalManager_ResetAll(pthis, 0);
 }
 
-/*void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
-{
-	if (R_StudioRestoreBones())
-		return;
-
-	gRefFuncs.GameStudioRenderer_StudioSetupBones(pthis, 0);
-
-	R_StudioSaveBones();
-}*/
-
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
 {
 	//Save StudioAPI Funcs
@@ -934,7 +924,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 		Install_InlineHook(PortalManager_ResetAll);
 	}
-
+#if 0
 	if ((void *)(*ppinterface)->StudioDrawPlayer > g_dwClientBase && (void *)(*ppinterface)->StudioDrawPlayer < (PUCHAR)g_dwClientBase + g_dwClientSize)
 	{
 		g_pMetaHookAPI->DisasmRanges((void *)(*ppinterface)->StudioDrawPlayer, 0x30, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
@@ -970,13 +960,13 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 		gRefFuncs.GameStudioRenderer_StudioSetupBones = (decltype(gRefFuncs.GameStudioRenderer_StudioSetupBones))vftable[7];
 
-		//Install_InlineHook(GameStudioRenderer_StudioSetupBones);
+		Install_InlineHook(GameStudioRenderer_StudioSetupBones);
 	}
 	else
 	{
 		Sig_NotFound(g_pGameStudioRenderer);
 	}
-
+#endif
 	//Hack for R_DrawSpriteModel
 	Install_InlineHook(CL_FxBlend);
 

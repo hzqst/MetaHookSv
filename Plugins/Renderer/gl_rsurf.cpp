@@ -684,18 +684,18 @@ void R_DrawDecals(qboolean bMultitexture)
 		qglEnable(GL_TEXTURE_2D_ARRAY);
 		qglBindTexture(GL_TEXTURE_2D_ARRAY, shadow_texture_color);
 
-		qglActiveTextureARB(*oldtarget);
+		qglActiveTextureARB(TEXTURE0_SGIS);
 	}
 
 	if (bMultitexture && !drawgbuffer)
 	{
-		GL_EnableMultitexture();
-		qglDisable(GL_TEXTURE_2D);
+		qglActiveTextureARB(TEXTURE1_SGIS);
+
 		qglEnable(GL_TEXTURE_2D_ARRAY);
 		qglBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
-	}
 
-	GL_SelectTexture(TEXTURE0_SGIS);
+		qglActiveTextureARB(TEXTURE0_SGIS);
+	}
 
 	for (i = 0; i < (*gDecalSurfCount); i++)
 	{
@@ -743,7 +743,7 @@ void R_DrawDecals(qboolean bMultitexture)
 		qglDisable(GL_TEXTURE_GEN_R);
 		qglDisable(GL_TEXTURE_GEN_Q);
 
-		qglActiveTextureARB(*oldtarget);
+		qglActiveTextureARB(TEXTURE0_SGIS);
 	}
 
 	if (bMultitexture && !drawgbuffer)
@@ -751,11 +751,7 @@ void R_DrawDecals(qboolean bMultitexture)
 		qglActiveTextureARB(TEXTURE1_SGIS);
 		qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 		qglDisable(GL_TEXTURE_2D_ARRAY);
-		if(*mtexenabled)
-			qglEnable(GL_TEXTURE_2D);
-		else
-			qglDisable(GL_TEXTURE_2D);
-		GL_DisableMultitexture();
+		qglActiveTextureARB(TEXTURE0_SGIS);
 	}
 
 	if (gl_polyoffset && gl_polyoffset->value)

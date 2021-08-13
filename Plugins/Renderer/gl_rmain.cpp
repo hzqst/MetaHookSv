@@ -747,27 +747,6 @@ void GL_GenerateFBO(void)
 
 	gl_color_format = GL_RGB16F;
 
-	/*if (bDoMSAA)
-	{
-		gl_msaa_samples = 4;
-
-		s_MSAAFBO.iWidth = glwidth;
-		s_MSAAFBO.iHeight = glheight;
-		GL_GenFrameBuffer(&s_MSAAFBO);
-		GL_FrameBufferColorTexture(&s_MSAAFBO, gl_color_format, true);
-		GL_FrameBufferDepthTexture(&s_MSAAFBO, GL_DEPTH24_STENCIL8, true);
-		
-		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		{
-			GL_FreeFBO(&s_MSAAFBO);
-			bDoMSAA = false;
-
-			Sys_ErrorEx("Failed to initialize MSAA framebuffer!\n");
-		}
-
-		qglEnable(GL_MULTISAMPLE);
-	}*/
-
 	s_BackBufferFBO.iWidth = glwidth;
 	s_BackBufferFBO.iHeight = glheight;
 	GL_GenFrameBuffer(&s_BackBufferFBO);
@@ -1030,30 +1009,6 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 	glheight = *height;
 
 	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-
-	/*qglClearColor(0.0, 0.0, 0.0, 1);
-	qglStencilMask(0xFF);
-	qglClearStencil(0);
-	qglDepthMask(GL_TRUE);
-	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	qglStencilMask(0);*/
-
-	//Re-Generate MSAA framebuffer
-	/*if (bDoMSAA)
-	{
-		int msaa_samples = (int)r_msaa->value;
-		if (GL_IsValidSampleCount(msaa_samples) && msaa_samples != gl_msaa_samples)
-		{
-			gl_msaa_samples = msaa_samples;
-
-			GL_FreeFBO(&s_MSAAFBO);
-			s_MSAAFBO.iWidth = glwidth;
-			s_MSAAFBO.iHeight = glheight;
-			GL_GenFrameBuffer(&s_MSAAFBO);
-			GL_FrameBufferColorTexture(&s_MSAAFBO, gl_color_format, true);
-			GL_FrameBufferDepthTexture(&s_MSAAFBO, GL_DEPTH24_STENCIL8, true);
-		}
-	}*/
 }
 
 void R_PreRenderView(int a1)
@@ -1089,20 +1044,8 @@ void R_PostRenderView()
 		}
 	}
 
-	/*if (R_UseMSAA())
-	{
-		qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-		qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_MSAAFBO.s_hBackBufferFBO);
-		qglBlitFramebufferEXT(0, 0, s_MSAAFBO.iWidth, s_MSAAFBO.iHeight, 0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-
-		R_DoHDR();
-	}
-	else
-	{*/
-		R_DoFXAA();
-
-		R_DoHDR();
-	//}
+	R_DoFXAA();
+	R_DoHDR();
 
 	GL_DisableMultitexture();
 	qglEnable(GL_TEXTURE_2D);

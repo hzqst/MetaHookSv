@@ -56,12 +56,6 @@ typedef struct
 	int depthmap;
 }drawdepth_program_t;
 
-typedef struct
-{
-	int program;
-	int colormap;
-}drawcolor_program_t;
-
 extern GLuint refractmap;
 extern GLuint depthrefrmap;
 extern qboolean refractmap_ready;
@@ -100,7 +94,6 @@ extern r_water_t *waters_active;
 //shader
 
 extern SHADER_DEFINE(drawdepth);
-extern SHADER_DEFINE(drawcolor);
 
 //cvar
 extern cvar_t *r_water;

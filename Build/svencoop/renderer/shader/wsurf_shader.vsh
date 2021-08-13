@@ -3,6 +3,7 @@
 uniform mat4 entityMatrix;
 uniform vec3 viewpos;
 uniform float speed;
+
 varying vec3 worldpos;
 varying vec3 normal;
 varying vec3 tangent;
