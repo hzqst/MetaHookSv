@@ -334,7 +334,7 @@ public:
 	void StepSimulation(double framerate);
 	void ReloadConfig(void);
 	ragdoll_config_t *LoadRagdollConfig(model_t *mod);
-	void SetupBones(studiohdr_t *hdr, int entindex);
+	bool SetupBones(studiohdr_t *hdr, int entindex);
 	void MergeBarnacleBones(studiohdr_t *hdr, int entindex);
 	bool HasRagdolls(void);
 	void RemoveRagdoll(int tentindex);

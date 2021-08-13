@@ -68,13 +68,13 @@ void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
 
 	if (currententity->curstate.iuser4 == 114514)
 	{
-		gPhysicsManager.SetupBones((*pstudiohdr), currententity->index);
-		return;
+		if (gPhysicsManager.SetupBones((*pstudiohdr), currententity->index))
+			return;
 	}
 	else if (currententity->curstate.iuser4 == 1919810)
 	{
-		gPhysicsManager.SetupBones((*pstudiohdr), currententity->curstate.number);
-		return;
+		if(gPhysicsManager.SetupBones((*pstudiohdr), currententity->curstate.number))
+			return;
 	}
 
 	gPrivateFuncs.GameStudioRenderer_StudioSetupBones(pthis, 0);
@@ -206,6 +206,7 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 		int iActivityType = GetSequenceActivityType(model, pplayer);
 
 		auto ragdoll = gPhysicsManager.FindRagdoll(playerindex);
+
 		if (!ragdoll)
 		{
 			if (iActivityType)
@@ -278,7 +279,9 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 				return gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, flags, pplayer);
 			}
 
+			int number = currententity->curstate.number;
 			int iuser4 = currententity->curstate.iuser4;
+			currententity->curstate.number = pplayer->number;
 			currententity->curstate.iuser4 = 1919810;
 
 			vec3_t saved_origin;
@@ -289,6 +292,7 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 
 			VectorCopy(saved_origin, currententity->origin);
 
+			currententity->curstate.number = number;
 			currententity->curstate.iuser4 = iuser4;
 
 			return result;

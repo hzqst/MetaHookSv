@@ -8,8 +8,8 @@
 #include "qgl.h"
 #include "mathlib.h"
 
-float G2BScale = 0.2f;
-float B2GScale = 1 / G2BScale;
+btScalar G2BScale = 0.2;
+btScalar B2GScale = 1 / G2BScale;
 
 extern studiohdr_t **pstudiohdr;
 extern model_t **r_model;
@@ -1786,14 +1786,14 @@ void CPhysicsManager::MergeBarnacleBones(studiohdr_t *hdr, int entindex)
 	}*/
 }
 
-void CPhysicsManager::SetupBones(studiohdr_t *hdr, int entindex)
+bool CPhysicsManager::SetupBones(studiohdr_t *hdr, int entindex)
 {
 	auto itor = m_ragdollMap.find(entindex);
 
 	if (itor == m_ragdollMap.end())
 	{
 		//gEngfuncs.Con_Printf("SetupPlayerBones: not found\n");
-		return;
+		return false;
 	}
 
 	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->boneindex);
@@ -1833,6 +1833,8 @@ void CPhysicsManager::SetupBones(studiohdr_t *hdr, int entindex)
 
 		TransformToMatrix3x4(mergedmatrix, (*pbonetransform)[i]);
 	}
+
+	return true;
 }
 
 bool CPhysicsManager::IsValidRagdoll(ragdoll_itor &itor)
