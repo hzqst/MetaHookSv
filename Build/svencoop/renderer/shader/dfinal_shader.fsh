@@ -15,9 +15,9 @@ uniform mat4 viewmatrix;
 uniform mat4 projmatrix;
 uniform mat4 invprojmatrix;
 
-uniform float ssrRayStep = 3.0;
-uniform int ssrIterCount = 100;
-uniform float ssrDistanceBias = 0.1;
+uniform float ssrRayStep;
+uniform int ssrIterCount;
+uniform float ssrDistanceBias;
 uniform vec2 ssrFade;
 
 vec2 UnitVectorToHemiOctahedron(vec3 dir) {
