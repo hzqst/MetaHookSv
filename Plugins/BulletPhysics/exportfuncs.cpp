@@ -32,6 +32,7 @@ model_t *r_worldmodel = NULL;
 void *g_pGameStudioRenderer = NULL;
 int *r_visframecount = NULL;
 int *cl_parsecount = NULL;
+void *mod_known = NULL;
 
 float(*pbonetransform)[MAXSTUDIOBONES][3][4] = NULL;
 float(*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;
@@ -39,6 +40,34 @@ float(*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;
 bool IsEntityBarnacle(cl_entity_t* ent);
 
 int GetSequenceActivityType(model_t *mod, entity_state_t* entstate);
+
+int EngineGetMaxKnownModel(void)
+{
+	if (g_iEngineType == ENGINE_SVENGINE)
+		return 16384;
+
+	return 1024;
+}
+
+int EngineGetModelIndex(model_t *mod)
+{
+	int index = (mod - (model_t *)(mod_known));
+
+	if (index >= 0 && index < EngineGetMaxKnownModel())
+		return index;
+
+	return -1;
+}
+
+model_t *EngineGetModelByIndex(int index)
+{
+	auto pmod_known = (model_t *)(mod_known);
+	
+	if (index >= 0 && index < EngineGetMaxKnownModel())
+		return &pmod_known[index];
+
+	return NULL;
+}
 
 void Sys_ErrorEx(const char *fmt, ...)
 {
@@ -112,7 +141,7 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 			{
 				auto cfg = gPhysicsManager.LoadRagdollConfig(model);
 
-				if (cfg)
+				if (cfg && cfg->state == 1)
 				{
 					bool bTransformToRagdoll = false;
 
@@ -213,7 +242,7 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 			{
 				auto cfg = gPhysicsManager.LoadRagdollConfig(model);
 
-				if (cfg)
+				if (cfg&& cfg->state == 1)
 				{
 					bool bTransformToRagdoll = false;
 
@@ -273,7 +302,8 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 		}
 		else
 		{
-			if (!iActivityType)
+			//or model changed ?
+			if (!iActivityType || ragdoll->m_studiohdr != IEngineStudio.Mod_Extradata(model))
 			{
 				gPhysicsManager.RemoveRagdoll(playerindex);
 				return gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, flags, pplayer);

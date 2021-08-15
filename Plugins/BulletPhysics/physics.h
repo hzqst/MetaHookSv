@@ -100,6 +100,7 @@ typedef struct ragdoll_bar_control_s
 
 typedef struct ragdoll_config_s
 {
+	int state;
 	std::unordered_map<int, float> animcontrol;
 	std::vector<ragdoll_cst_control_t> cstcontrol;
 	std::vector<ragdoll_rig_control_t> rigcontrol;
@@ -166,6 +167,7 @@ public:
 		m_entindex = -1;
 		m_barnacleindex = -1;
 		m_isPlayer = false;
+		m_studiohdr = NULL;
 		m_pelvisRigBody = NULL;
 		m_headRigBody = NULL;
 	}
@@ -173,6 +175,7 @@ public:
 	int m_entindex;
 	int m_barnacleindex;
 	bool m_isPlayer;
+	studiohdr_t *m_studiohdr;
 	CRigBody *m_pelvisRigBody;
 	CRigBody *m_headRigBody;
 	std::vector<CRigBody *> m_barnacleDragRigBody;
@@ -367,7 +370,7 @@ private:
 	CPhysicsDebugDraw *m_debugDraw;
 	std::unordered_map<int, CRagdoll *> m_ragdollMap;
 	std::unordered_map<int, CStaticBody *> m_staticMap;
-	std::unordered_map<void *, ragdoll_config_t *> m_ragdoll_config;
+	std::vector<ragdoll_config_t> m_ragdoll_config;
 };
 
 extern CPhysicsManager gPhysicsManager;

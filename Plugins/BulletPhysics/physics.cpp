@@ -23,6 +23,9 @@ extern cvar_t *bv_force_player_ragdoll;
 extern model_t *r_worldmodel;
 extern int *r_visframecount;
 
+int EngineGetMaxKnownModel(void);
+int EngineGetModelIndex(model_t *mod);
+model_t *EngineGetModelByIndex(int index);
 bool IsEntityPresent(cl_entity_t* ent);
 bool IsEntityBarnacle(cl_entity_t* ent);
 int GetSequenceActivityType(model_t *mod, entity_state_t* entstate);
@@ -817,44 +820,6 @@ void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double fram
 			itor++;
 		}
 	}
-
-#if 0
-	auto pTemp = *ppTempEntActive;
-
-	while (pTemp)
-	{
-		auto life = pTemp->die - client_time;
-		if (life > 0 && 
-			pTemp->entity.model && 
-			IsEntityPlayerCorpse(&pTemp->entity))
-		{
-			auto ragdoll = FindRagdoll(pTemp->entity.index);
-			if (ragdoll)
-			{
-				auto playerEntity = gEngfuncs.GetEntityByIndex(pTemp->entity.curstate.iuser1);
-				if (!playerEntity || !playerEntity->player)
-				{
-					goto next;
-				}
-				else
-				{
-					//Remove corpse if player goes revived or respawned
-					if (localPlayer &&
-						localPlayer->curstate.messagenum == playerEntity->curstate.messagenum &&
-						(!GetSequenceActivityType(playerEntity->model, &playerEntity->curstate) ))
-					{
-						GlobalFreeCorpseForBarnacle(ragdoll->m_entindex);
-						goto next;
-					}
-				}
-
-				
-			}
-		}
-	next:
-		pTemp = pTemp->next;
-	}
-#endif
 }
 
 void CPhysicsManager::StepSimulation(double frametime)
@@ -879,38 +844,60 @@ void CPhysicsManager::SetGravity(float velocity)
 	m_dynamicsWorld->setGravity(btVector3(0, 0, goldsrc_velocity));
 }
 
+#define NL_PRESENT 0
+#define NL_NEEDS_LOADED 1
+#define NL_UNREFERENCED 2
+#define NL_CLIENT 3
+
 void CPhysicsManager::ReloadConfig(void)
 {
-	for (auto p : m_ragdoll_config)
+	int maxNum = EngineGetMaxKnownModel();
+	if (!m_ragdoll_config.size())
+		m_ragdoll_config.resize(maxNum);
+
+	for (int i = 0; i < maxNum; ++i)
 	{
-		if(p.second)
-			delete p.second;
+		m_ragdoll_config[i].state = 0;
+		m_ragdoll_config[i].animcontrol.clear();
+		m_ragdoll_config[i].barcontrol.clear();
+		m_ragdoll_config[i].cstcontrol.clear();
+		m_ragdoll_config[i].rigcontrol.clear();
+
+		auto mod = EngineGetModelByIndex(i);
+		if (mod->type == mod_studio && mod->name[0])
+		{
+			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
+			{
+				auto moddata = IEngineStudio.Mod_Extradata(mod);
+				if (moddata)
+				{
+					LoadRagdollConfig(mod);
+				}
+			}
+		}
 	}
-	m_ragdoll_config.clear();
-}
-
-void CPhysicsManager::LoadConfigList(void)
-{
-	FileFindHandle_t Handle;
-	auto result = g_pFileSystem->FindFirst("models/*.mdl", &Handle);
-
-	g_pFileSystem->FindNext()
 }
 
 ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 {
-	auto itor = m_ragdoll_config.find(mod);
-	if (itor != m_ragdoll_config.end())
+	int modelindex = EngineGetModelIndex(mod);
+	if (modelindex == -1)
 	{
-		return itor->second;
+		//invalid model index?
+		Sys_ErrorEx("LoadRagdollConfig: Invalid model index\n");
+		return NULL;
 	}
+
+	auto cfg = &m_ragdoll_config[modelindex];
+
+	if (cfg->state)
+		return cfg;
 
 	std::string fullname = mod->name;
 
 	if(fullname.length() < 4)
 	{
-		m_ragdoll_config[mod] = NULL;
-		gEngfuncs.Con_Printf("LoadRagdollConfig: Invalid name %s\n", fullname.c_str());
+		Sys_ErrorEx("LoadRagdollConfig: Invalid name %s\n", fullname.c_str());
 		return NULL;
 	}
 
@@ -920,12 +907,12 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 	char *pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
 	if (!pfile)
 	{
-		m_ragdoll_config[mod] = NULL;
-		gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to load %s\n", name.c_str());
-		return NULL;
+		cfg->state = 2;
+		//gEngfuncs.Con_DPrintf("LoadRagdollConfig: Failed to load config file for %s\n", name.c_str());
+		return cfg;
 	}
 
-	auto cfg = new ragdoll_config_t;
+	cfg->state = 1;
 
 	int iParsingState = -1;
 
@@ -1284,8 +1271,6 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 	}
 
 	gEngfuncs.COM_FreeFile(pfile);
-
-	m_ragdoll_config[mod] = cfg;
 
 	return cfg;
 }
@@ -2107,6 +2092,7 @@ bool CPhysicsManager::CreateRagdoll(
 
 	ragdoll->m_entindex = entindex;
 	ragdoll->m_isPlayer = isplayer;
+	ragdoll->m_studiohdr = studiohdr;
 	m_ragdollMap[entindex] = ragdoll;
 
 	return true;

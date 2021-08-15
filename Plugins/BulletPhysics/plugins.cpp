@@ -1,4 +1,5 @@
 #include <metahook.h>
+#include <com_model.h>
 #include "exportfuncs.h"
 #include "privatehook.h"
 #include "plugins.h"
@@ -85,8 +86,9 @@ void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 			cl_parsecount = *(int **)(addr + 2);
 		}
 
-		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern( R_NEWMAP_SIG_SVENGINE );
+		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_SVENGINE);
 		Sig_FuncNotFound(R_NewMap);
+		
 	}
 	else
 	{
@@ -110,7 +112,15 @@ void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_NEW);
 		Sig_FuncNotFound(R_NewMap);
-	}	
+	}
+
+#define MOD_KNOWN_SIG "\xB8\x9D\x82\x97\x53\x81\xE9"
+
+	{
+		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_dwEngineTextBase, g_dwEngineTextSize, MOD_KNOWN_SIG, sizeof(MOD_KNOWN_SIG) - 1);
+		Sig_AddrNotFound(mod_known);
+		mod_known = *(void **)(addr + 7);
+	}
 }
 
 void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
