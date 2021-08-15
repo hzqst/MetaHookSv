@@ -3,6 +3,7 @@
 #include <studio.h>
 #include <cvardef.h>
 #include "enginedef.h"
+#include "plugins.h"
 #include "privatehook.h"
 #include "physics.h"
 #include "qgl.h"
@@ -886,6 +887,14 @@ void CPhysicsManager::ReloadConfig(void)
 			delete p.second;
 	}
 	m_ragdoll_config.clear();
+}
+
+void CPhysicsManager::LoadConfigList(void)
+{
+	FileFindHandle_t Handle;
+	auto result = g_pFileSystem->FindFirst("models/*.mdl", &Handle);
+
+	g_pFileSystem->FindNext()
 }
 
 ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
