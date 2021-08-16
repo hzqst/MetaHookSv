@@ -800,7 +800,7 @@ wsurf_vbo_t *R_PrepareWSurfVBO(model_t *mod)
 	if (modelindex == -1)
 		return NULL;
 
-	if (modelindex >= g_WSurfVBOCache.size())
+	if (modelindex >= (int)g_WSurfVBOCache.size())
 	{
 		g_WSurfVBOCache.resize(modelindex + 1);
 	}

@@ -198,7 +198,7 @@ void R_StudioPrepareVBO(studiohdr_t *studiohdr)
 
 void R_StudioReloadVBOCache(void)
 {
-	for (int i = 0; i < g_StudioVBOCache.size(); ++i)
+	for (size_t i = 0; i < g_StudioVBOCache.size(); ++i)
 	{
 		if (g_StudioVBOCache[i])
 		{
@@ -690,6 +690,11 @@ void R_GLStudioDrawPoints(void)
 	if ((*currententity)->curstate.skin != 0 && (*currententity)->curstate.skin < ptexturehdr->numskinfamilies)
 		pskinref += ((*currententity)->curstate.skin * ptexturehdr->numskinref);
 
+	if (engine_pstudiohdr->numbones > MAXSTUDIOBONES)
+	{
+		Sys_ErrorEx("R_GLStudioDrawPoints: %s numbones (%d) > MAXSTUDIOBONES (%d)", engine_pstudiohdr->name, engine_pstudiohdr->numbones, MAXSTUDIOBONES);
+	}
+
 	//Setup light, chrome...
 	if (VBOData)
 	{
@@ -708,7 +713,7 @@ void R_GLStudioDrawPoints(void)
 	{
 		if (engine_psubmodel->numverts > MAXSTUDIOVERTS)
 		{
-			Sys_ErrorEx("R_StudioDrawPoints: %s numverts (%d) > MAXSTUDIOVERTS (%d)", engine_pstudiohdr->name, engine_psubmodel->numverts, MAXSTUDIOVERTS);
+			Sys_ErrorEx("R_GLStudioDrawPoints: %s -> %s numverts (%d) > MAXSTUDIOVERTS (%d)", engine_pstudiohdr->name, engine_psubmodel->name, engine_psubmodel->numverts, MAXSTUDIOVERTS);
 		}
 
 		if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
