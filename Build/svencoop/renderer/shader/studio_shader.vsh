@@ -14,6 +14,7 @@ uniform vec3 r_colormix;
 uniform vec3 r_origin;
 uniform vec3 r_vright;
 uniform float r_scale;
+uniform vec2 r_uvscale;
 
 attribute ivec2 attr_bone;
 
@@ -142,12 +143,14 @@ void main(void)
 	vec3 chromerightvec = cross(tmp, chromeupvec);
 	chromerightvec = normalize(chromerightvec);
 
+	//VectorIRotate
 	vec3 chromeup = vec3(
 		chromeupvec.x * normbone_matrix[0][0] + chromeupvec.y * normbone_matrix[1][0] + chromeupvec.z * normbone_matrix[2][0],
 		chromeupvec.x * normbone_matrix[0][1] + chromeupvec.y * normbone_matrix[1][1] + chromeupvec.z * normbone_matrix[2][1],
 		chromeupvec.x * normbone_matrix[0][2] + chromeupvec.y * normbone_matrix[1][2] + chromeupvec.z * normbone_matrix[2][2]
 	);
 
+	//VectorIRotate
 	vec3 chromeright = vec3(
 		chromerightvec.x * normbone_matrix[0][0] + chromerightvec.y * normbone_matrix[1][0] + chromerightvec.z * normbone_matrix[2][0],
 		chromerightvec.x * normbone_matrix[0][1] + chromerightvec.y * normbone_matrix[1][1] + chromerightvec.z * normbone_matrix[2][1],
@@ -155,26 +158,18 @@ void main(void)
 	);
 	
 	vec2 texcoord = vec2(
-		(dot(norm, chromeright) + 1.0),
-		(dot(norm, chromeup) + 1.0)
+		(dot(norm, chromeright) + 1.0) * 1024.0,
+		(dot(norm, chromeup) + 1.0) * 1024.0
 	);
 
-	if(r_scale > 0.0)
-	{
-		texcoord.x *= gl_MultiTexCoord0.x;
-		texcoord.y *= gl_MultiTexCoord0.y;
-	}
-	else
-	{
-		texcoord.x *= 1024.0 / 2048.0;
-		texcoord.y *= 1024.0 / 2048.0;
-	}
+	texcoord.x *= r_uvscale.x;
+	texcoord.y *= r_uvscale.y;
 
 	gl_TexCoord[0] = vec4(texcoord.x, texcoord.y, 0.0, 0.0);
 
 #else
 
-	gl_TexCoord[0] = gl_MultiTexCoord0;
+	gl_TexCoord[0] = vec4(gl_MultiTexCoord0.x * r_uvscale.x, gl_MultiTexCoord0.y * r_uvscale.y, 0.0, 0.0);
 
 #endif
 

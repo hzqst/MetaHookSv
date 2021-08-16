@@ -33,6 +33,7 @@ void *g_pGameStudioRenderer = NULL;
 int *r_visframecount = NULL;
 int *cl_parsecount = NULL;
 void *mod_known = NULL;
+int *mod_numknown = NULL;
 
 float(*pbonetransform)[MAXSTUDIOBONES][3][4] = NULL;
 float(*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;
@@ -53,7 +54,7 @@ int EngineGetModelIndex(model_t *mod)
 {
 	int index = (mod - (model_t *)(mod_known));
 
-	if (index >= 0 && index < EngineGetMaxKnownModel())
+	if (index >= 0 && index < *mod_numknown)
 		return index;
 
 	return -1;
@@ -63,7 +64,7 @@ model_t *EngineGetModelByIndex(int index)
 {
 	auto pmod_known = (model_t *)(mod_known);
 	
-	if (index >= 0 && index < EngineGetMaxKnownModel())
+	if (index >= 0 && index < *mod_numknown)
 		return &pmod_known[index];
 
 	return NULL;

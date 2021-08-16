@@ -895,6 +895,8 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	pbonetransform = (decltype(pbonetransform))pstudio->StudioGetBoneTransform();
 	plighttransform = (decltype(plighttransform))pstudio->StudioGetLightTransform();
 	rotationmatrix = (decltype(rotationmatrix))pstudio->StudioGetRotationMatrix();
+	pstudio->GetModelCounters(&r_smodels_total, &r_amodels_drawn);
+
 	cl_viewent = gEngfuncs.GetViewModel();
 
 	//Save Studio API

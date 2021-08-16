@@ -1,5 +1,6 @@
 #include <metahook.h>
 #include <com_model.h>
+#include <capstone.h>
 #include "exportfuncs.h"
 #include "privatehook.h"
 #include "plugins.h"
@@ -120,6 +121,55 @@ void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_dwEngineTextBase, g_dwEngineTextSize, MOD_KNOWN_SIG, sizeof(MOD_KNOWN_SIG) - 1);
 		Sig_AddrNotFound(mod_known);
 		mod_known = *(void **)(addr + 7);
+	}
+
+	{
+		const char sigs1[] = "Cached models:\n";
+		auto Mod_Print_String = Search_Pattern_Data(sigs1);
+		if (!Mod_Print_String)
+			Mod_Print_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(Mod_Print_String);
+		char pattern[] = "\x57\x68\x2A\x2A\x2A\x2A\xE8";
+		*(DWORD *)(pattern + 2) = (DWORD)Mod_Print_String;
+		auto Mod_Print_Call = Search_Pattern(pattern);
+		Sig_VarNotFound(Mod_Print_Call);
+
+		g_pMetaHookAPI->DisasmRanges(Mod_Print_Call, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0)
+			{//A1 84 5C 32 02 mov     eax, mod_numknown
+				DWORD imm = pinst->detail->x86.operands[1].mem.disp;
+
+				mod_numknown = (decltype(mod_numknown))imm;
+			}
+			else if (pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG)
+			{//39 3D 44 32 90 03 cmp     mod_numknown, edi
+				DWORD imm = pinst->detail->x86.operands[0].mem.disp;
+
+				mod_numknown = (decltype(mod_numknown))imm;
+			}
+
+			if (mod_numknown)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
 	}
 }
 

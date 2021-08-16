@@ -100,6 +100,9 @@ extern float *g_UserFogDensity;
 extern float *g_UserFogStart;
 extern float *g_UserFogEnd;
 
+extern model_t *mod_known;
+extern int *mod_numknown;
+
 //gl extension
 extern qboolean gl_framebuffer_object;
 extern qboolean gl_shader_support;
@@ -113,8 +116,6 @@ extern int gl_max_texture_size;
 extern float gl_max_ansio;
 extern GLuint gl_color_format;
 extern int gl_msaa_samples;
-//extern cvar_t *r_msaa;
-
 extern int *gl_msaa_fbo;
 extern int *gl_backbuffer_fbo;
 extern int *gl_mtexable;
@@ -331,10 +332,13 @@ void CL_ScreenShot_f(void);
 
 //for hud or post-processing
 void R_InitGLHUD(void);
-//bool R_UseMSAA(void);
 
 void GL_Texturemode_f(void);
 void GL_Texturemode_cb(cvar_t *);
+
+int EngineGetMaxKnownModel(void);
+int EngineGetModelIndex(model_t *mod);
+model_t *EngineGetModelByIndex(int index);
 
 extern cvar_callback_entry_t **cvar_callbacks;
 

@@ -4,11 +4,9 @@
 
 #include "mathlib.h"
 
-std::unordered_map<cl_entity_t *, studio_bone_t *> g_StudioBoneTable;
-
-std::unordered_map<studiohdr_t *, studio_vbo_t *> g_StudioVBOTable;
-
 std::unordered_map<int, studio_program_t> g_StudioProgramTable;
+
+std::vector<studio_vbo_t *> g_StudioVBOCache;
 
 //engine
 model_t *cl_sprite_white;
@@ -38,8 +36,13 @@ vec3_t *r_blightvec;
 float *r_plightvec;
 float *r_colormix;
 void *tmp_palette;
+int *r_smodels_total;
+int *r_amodels_drawn;
 
 //renderer
+float r_chrome[MAXSTUDIOVERTS][2];
+vec3_t r_chromeup[MAXSTUDIOBONES];
+vec3_t r_chromeright[MAXSTUDIOBONES];
 vec3_t r_studionormal[MAXSTUDIOVERTS];
 float lightpos[MAXSTUDIOVERTS][3][4];
 
@@ -49,27 +52,192 @@ int r_studio_framecount;
 
 cvar_t *r_studio_vbo = NULL;
 
-void R_StudioClearVBOCache(void)
+studio_vbo_t *R_StudioPrepareVBOSubmodel(studiohdr_t *studiohdr, mstudiomodel_t *submodel)
 {
-	for (auto &itor = g_StudioVBOTable.begin(); itor != g_StudioVBOTable.end();++itor)
+	studio_vbo_t *VBOData = NULL;
+	if (submodel->groupindex > 0 && submodel->groupindex - 1 < g_StudioVBOCache.size())
 	{
-		if (itor->second->hDataBuffer)
+		VBOData = (studio_vbo_t *)g_StudioVBOCache[submodel->groupindex - 1];
+		if (VBOData)
 		{
-			qglDeleteBuffersARB(1, &itor->second->hDataBuffer);
+			return VBOData;
 		}
-		if (itor->second->hIndexBuffer)
-		{
-			qglDeleteBuffersARB(1, &itor->second->hIndexBuffer);
-		}
-
-		for (auto &submodel : itor->second->vSubmodel)
-		{
-			delete[]submodel.second->vMesh;
-		}
-
-		delete itor->second;
 	}
-	g_StudioVBOTable.clear();
+
+	VBOData = new studio_vbo_t;
+	VBOData->studiohdr = studiohdr;
+	g_StudioVBOCache.emplace_back(VBOData);
+	submodel->groupindex = g_StudioVBOCache.size();
+
+	std::vector<studio_vbo_vertex_t> vVertex;
+	std::vector<unsigned int> vIndices;
+	
+	auto pstudioverts = (vec3_t *)((byte *)studiohdr + submodel->vertindex);
+	auto pstudionorms = (vec3_t *)((byte *)studiohdr + submodel->normindex);
+	auto pvertbone = ((byte *)studiohdr + submodel->vertinfoindex);
+	auto pnormbone = ((byte *)studiohdr + submodel->norminfoindex);
+
+	for (int k = 0; k < submodel->nummesh; k++)
+	{
+		auto pmesh = (mstudiomesh_t *)((byte *)studiohdr + submodel->meshindex) + k;
+
+		auto ptricmds = (short *)((byte *)studiohdr + pmesh->triindex);
+
+		int iStartVertex = vVertex.size();
+		int iNumVertex = 0;
+
+		studio_vbo_mesh_t VBOMesh;
+		VBOMesh.iStartIndex = vIndices.size();
+
+		int t;
+		while (t = *(ptricmds++))
+		{
+			if (t < 0)
+			{
+				t = -t;
+				//GL_TRIANGLE_FAN;
+				int first = -1;
+				int prv0 = -1;
+				int prv1 = -1;
+				int prv2 = -1;
+				for (; t > 0; t--, ptricmds += 4)
+				{
+					if (prv0 != -1 && prv1 != -1 && prv2 != -1)
+					{
+						vIndices.emplace_back(iStartVertex + first);
+						vIndices.emplace_back(iStartVertex + prv2);
+						VBOMesh.iIndiceCount += 2;
+					}
+
+					vIndices.emplace_back(iStartVertex + iNumVertex);
+					VBOMesh.iIndiceCount++;
+
+					if (first == -1)
+						first = iNumVertex;
+
+					prv0 = prv1;
+					prv1 = prv2;
+					prv2 = iNumVertex;
+
+					vVertex.emplace_back(pstudioverts[ptricmds[0]], pstudionorms[ptricmds[1]], (float)ptricmds[2], (float)ptricmds[3], (int)pvertbone[ptricmds[0]], (int)pnormbone[ptricmds[1]]);
+					iNumVertex++;
+				}
+			}
+			else
+			{
+				//GL_TRIANGLE_STRIP;
+				int prv0 = -1;
+				int prv1 = -1;
+				int prv2 = -1;
+				int iNumTri = 0;
+				for (; t > 0; t--, ptricmds += 4)
+				{
+					if (prv0 != -1 && prv1 != -1 && prv2 != -1)
+					{
+						if ((iNumTri + 1) % 2 == 0)
+						{
+							vIndices.emplace_back(iStartVertex + prv2);
+							vIndices.emplace_back(iStartVertex + prv1);
+						}
+						else
+						{
+							vIndices.emplace_back(iStartVertex + prv1);
+							vIndices.emplace_back(iStartVertex + prv2);
+						}
+						VBOMesh.iIndiceCount += 2;
+					}
+
+					vIndices.emplace_back(iStartVertex + iNumVertex);
+					VBOMesh.iIndiceCount++;
+					iNumTri++;
+
+					prv0 = prv1;
+					prv1 = prv2;
+					prv2 = iNumVertex;
+
+					vVertex.emplace_back(pstudioverts[ptricmds[0]], pstudionorms[ptricmds[1]], (float)ptricmds[2], (float)ptricmds[3], (int)pvertbone[ptricmds[0]], (int)pnormbone[ptricmds[1]]);
+					iNumVertex++;
+				}
+			}
+		}
+
+		VBOData->vMesh.emplace_back(VBOMesh);
+	}
+
+	qglGenBuffersARB(1, &VBOData->hDataBuffer);
+	qglGenBuffersARB(1, &VBOData->hIndexBuffer);
+
+	qglBindBufferARB(GL_ARRAY_BUFFER_ARB, VBOData->hDataBuffer);
+	qglBufferDataARB(GL_ARRAY_BUFFER_ARB, vVertex.size() * sizeof(studio_vbo_vertex_t), vVertex.data(), GL_STATIC_DRAW_ARB);
+	qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+
+	qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->hIndexBuffer);
+	qglBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vIndices.size() * sizeof(unsigned int), vIndices.data(), GL_STATIC_DRAW_ARB);
+	qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+
+	return VBOData;
+}
+
+void R_StudioPrepareVBO(studiohdr_t *studiohdr)
+{
+	for (int i = 0; i < studiohdr->numbodyparts; i++)
+	{
+		auto pbodypart = (mstudiobodyparts_t *)((byte *)studiohdr + studiohdr->bodypartindex) + i;
+
+		if (pbodypart->modelindex && pbodypart->nummodels)
+		{
+			for (int j = 0; j < pbodypart->nummodels; ++j)
+			{
+				auto psubmodel = (mstudiomodel_t *)((byte *)studiohdr + pbodypart->modelindex) + j;
+
+				R_StudioPrepareVBOSubmodel(studiohdr, psubmodel);
+			}
+		}
+	}
+}
+
+void R_StudioReloadVBOCache(void)
+{
+	for (int i = 0; i < g_StudioVBOCache.size(); ++i)
+	{
+		if (g_StudioVBOCache[i])
+		{
+			auto VBOData = g_StudioVBOCache[i];
+
+			if (VBOData->hDataBuffer)
+			{
+				qglDeleteBuffersARB(1, &VBOData->hDataBuffer);
+			}
+			if (VBOData->hIndexBuffer)
+			{
+				qglDeleteBuffersARB(1, &VBOData->hIndexBuffer);
+			}
+
+			delete g_StudioVBOCache[i];
+
+			g_StudioVBOCache[i] = NULL;
+		}
+	}
+
+#define NL_PRESENT 0
+#define NL_NEEDS_LOADED 1
+#define NL_UNREFERENCED 2
+#define NL_CLIENT 3
+	for (int i = 0; i < *mod_numknown; ++i)
+	{
+		auto mod = EngineGetModelByIndex(i);
+		if (mod->type == mod_studio && mod->name[0])
+		{
+			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
+			{
+				auto studiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(mod);
+				if (studiohdr)
+				{
+					R_StudioPrepareVBO(studiohdr);
+				}
+			}
+		}
+	}
 }
 
 void R_UseStudioProgram(int state, studio_program_t *progOutput)
@@ -114,6 +282,9 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		if (state & STUDIO_LEGACY_BONE_ENABLED)
 			defs << "#define LEGACY_BONE_ENABLED\n";
 
+		if (state & STUDIO_GLOW_SHELL_ENABLED)
+			defs << "#define GLOW_SHELL_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\studio_shader.vsh", "renderer\\shader\\studio_shader.fsh", def.c_str(), def.c_str(), NULL);
@@ -135,6 +306,7 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 			SHADER_UNIFORM(prog, r_origin, "r_origin");
 			SHADER_UNIFORM(prog, r_vright, "r_vright");
 			SHADER_UNIFORM(prog, r_scale, "r_scale");
+			SHADER_UNIFORM(prog, r_uvscale, "r_uvscale");
 			SHADER_UNIFORM(prog, entityPos, "entityPos");
 			SHADER_UNIFORM(prog, viewpos, "viewpos");
 
@@ -233,76 +405,7 @@ void R_ShutdownStudio(void)
 void R_InitStudio(void)
 {
 	r_studio_vbo = gEngfuncs.pfnRegisterVariable("r_studio_vbo", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	//r_studio_cache_bone = gEngfuncs.pfnRegisterVariable("r_studio_cache_bone", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
-
-/*bool R_StudioRestoreBones(void)
-{
-	if (!r_studio_cache_bone)
-		return false;
-
-	if (!r_studio_cache_bone->value)
-		return false;
-
-	if (g_SvEngine_DrawPortalView)
-		return false;
-
-	auto ent = (*currententity);
-
-	studio_bone_t *b = NULL;
-
-	auto itor = g_StudioBoneTable.find(ent);
-	if (itor != g_StudioBoneTable.end())
-	{
-		b = itor->second;
-	}
-
-	if (b && r_studio_framecount == b->framecount)
-	{
-		b->numbones = (*pstudiohdr)->numbones;
-		memcpy((*pbonetransform), b->cached_bonetransform, sizeof(float[3][4]) * b->numbones);
-		memcpy((*plighttransform), b->cached_lighttransform, sizeof(float[3][4]) * b->numbones);
-
-		return true;
-	}
-
-	return false;
-}
-
-void R_StudioSaveBones(void)
-{
-	if (!r_studio_cache_bone)
-		return;
-
-	if (!r_studio_cache_bone->value)
-		return;
-
-	if (g_SvEngine_DrawPortalView)
-		return;
-
-	auto ent = (*currententity);
-
-	studio_bone_t *b = NULL;
-
-	auto itor = g_StudioBoneTable.find(ent);
-	if (itor == g_StudioBoneTable.end())
-	{
-		b = new studio_bone_t;
-		g_StudioBoneTable[ent] = b;
-	}
-	else
-	{
-		b = itor->second;
-	}
-
-	if (b)
-	{
-		b->framecount = r_studio_framecount;
-		b->numbones = (*pstudiohdr)->numbones;
-		memcpy(b->cached_bonetransform, (*pbonetransform), sizeof(float[3][4]) * b->numbones);
-		memcpy(b->cached_lighttransform, (*plighttransform), sizeof(float[3][4]) * b->numbones);
-	}
-}*/
 
 inline void R_StudioTransformAuxVert(auxvert_t *av, int bone, vec3_t vert)
 {
@@ -427,6 +530,41 @@ void R_LightStrength(int bone, float *vert, float light[3][4])
 		return gRefFuncs.R_LightStrength(bone, vert, light);
 }
 
+void R_StudioChrome(float *pchrome, int bone, vec3_t normal)
+{
+	float n;
+
+	if ((*chromeage)[bone] != (*r_smodels_total))
+	{
+		// calculate vectors from the viewer to the bone. This roughly adjusts for position
+		vec3_t chromeupvec;		// chrome t vector in world reference frame
+		vec3_t chromerightvec;	// chrome s vector in world reference frame
+		vec3_t tmp;				// vector pointing at bone in world reference frame
+		VectorScale(g_ChromeOrigin, -1, tmp);
+		tmp[0] += (*pbonetransform)[bone][0][3];
+		tmp[1] += (*pbonetransform)[bone][1][3];
+		tmp[2] += (*pbonetransform)[bone][2][3];
+		//bonepos - chromeorg
+		VectorNormalize(tmp);
+		CrossProduct(tmp, vright, chromeupvec);
+		VectorNormalize(chromeupvec);
+		CrossProduct(tmp, chromeupvec, chromerightvec);
+		VectorNormalize(chromerightvec);
+
+		VectorIRotate(chromeupvec, (*pbonetransform)[bone], r_chromeup[bone]);
+		VectorIRotate(chromerightvec, (*pbonetransform)[bone], r_chromeright[bone]);
+
+		(*chromeage)[bone] = (*r_smodels_total);
+	}
+	// calc s coord
+	n = DotProduct(normal, r_chromeright[bone]);
+	pchrome[0] = (n + 1.0) * 1024; // FIX: make this a float
+
+	// calc t coord
+	n = DotProduct(normal, r_chromeup[bone]);
+	pchrome[1] = (n + 1.0) * 1024; // FIX: make this a float
+}
+
 void R_StudioLighting(float *lv, int bone, int flags, vec3_t normal)
 {
 	if (gRefFuncs.R_StudioLighting)
@@ -542,52 +680,18 @@ void R_GLStudioDrawPoints(void)
 
 	int iFlippedVModel = 0;
 
-	int iInitVBO = 0;
-
 	studio_vbo_t *VBOData = NULL;
-
-	studio_vbo_submodel_t *VBOSubmodel = NULL;
 
 	if (r_studio_vbo->value)
 	{
-		auto itor = g_StudioVBOTable.find(engine_pstudiohdr);
-		if (itor != g_StudioVBOTable.end())
-		{
-			VBOData = itor->second;
-			auto itor2 = VBOData->vSubmodel.find(engine_psubmodel);
-			if (itor2 != VBOData->vSubmodel.end())
-			{
-				VBOSubmodel = itor2->second;
-			}
-			else
-			{
-				VBOSubmodel = new studio_vbo_submodel_t;
-				VBOData->vSubmodel[engine_psubmodel] = VBOSubmodel;
-				iInitVBO = 2;
-			}
-		}
-		else
-		{
-			VBOData = new studio_vbo_t;
-			VBOSubmodel = new studio_vbo_submodel_t;
-			VBOData->vSubmodel[engine_psubmodel] = VBOSubmodel;
-
-			g_StudioVBOTable[engine_pstudiohdr] = VBOData;
-			iInitVBO = 3;
-		}
-	}
-
-	if (iInitVBO & 2)
-	{
-		VBOSubmodel->iNumMesh = engine_psubmodel->nummesh;
-		VBOSubmodel->vMesh = new studio_vbo_mesh_t[VBOSubmodel->iNumMesh];
+		VBOData = R_StudioPrepareVBOSubmodel(engine_pstudiohdr, engine_psubmodel);
 	}
 
 	if ((*currententity)->curstate.skin != 0 && (*currententity)->curstate.skin < ptexturehdr->numskinfamilies)
 		pskinref += ((*currententity)->curstate.skin * ptexturehdr->numskinref);
 
 	//Setup light, chrome...
-	if (!iInitVBO && VBOSubmodel && r_studio_vbo->value)
+	if (VBOData)
 	{
 		if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
 		{
@@ -646,7 +750,7 @@ void R_GLStudioDrawPoints(void)
 					if (flags & STUDIO_NF_CHROME)
 					{
 						int m = (int)((char *)lv - (char *)engine_pvlightvalues) / 12;
-						gRefFuncs.R_StudioChrome((*chrome)[m], *pnormbone, *pstudionorms);
+						R_StudioChrome(r_chrome[m], *pnormbone, *pstudionorms);
 					}
 				}
 			}
@@ -660,7 +764,7 @@ void R_GLStudioDrawPoints(void)
 					if (flags & STUDIO_NF_CHROME)
 					{
 						int m = (int)((char *)lv - (char *)engine_pvlightvalues) / 12;
-						gRefFuncs.R_StudioChrome((*chrome)[m], *pnormbone, *pstudionorms);
+						R_StudioChrome(r_chrome[m], *pnormbone, *pstudionorms);
 					}
 
 					lv[0] = lv_tmp * r_colormix[0];
@@ -682,7 +786,7 @@ void R_GLStudioDrawPoints(void)
 	pstudionorms = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->normindex);
 	pnormbone = ((byte *)engine_pstudiohdr + engine_psubmodel->norminfoindex);
 
-	if (!iInitVBO && VBOSubmodel && r_studio_vbo->value)
+	if (VBOData)
 	{
 		qglEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 		qglEnableClientState(GL_VERTEX_ARRAY);
@@ -698,7 +802,7 @@ void R_GLStudioDrawPoints(void)
 
 		for (j = 0; j < engine_psubmodel->nummesh; j++)
 		{
-			auto &VBOMesh = VBOSubmodel->vMesh[j];
+			auto &VBOMesh = VBOData->vMesh[j];
 
 			pmesh = (mstudiomesh_t *)((byte *)engine_pstudiohdr + engine_psubmodel->meshindex) + j;
 
@@ -790,38 +894,58 @@ void R_GLStudioDrawPoints(void)
 				StudioProgramState |= STUDIO_LINEAR_FOG_ENABLED;
 			}
 
+			float s, t;
+			//setup texture and texcoord
 			if (r_fullbright->value >= 2)
 			{
 				gEngfuncs.pTriAPI->SpriteTexture(cl_sprite_white, 0);
+
+				s = 1.0f / 256.0f;
+				t = 1.0f / 256.0f;
 			}
 			else
 			{
+				s = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].width;
+				t = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].height;
+
 				gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
 			}
 
-			int using_attr_bone = -1;
+			if (flags & STUDIO_NF_CHROME)
+			{
+				if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
+				{
+					StudioProgramState |= STUDIO_GLOW_SHELL_ENABLED;
+					s /= 32.0f;
+					t /= 32.0f;
+				}
+				else
+				{
+					s = 1.0f / 2048.0f;
+					t = 1.0f / 2048.0f;
+				}
+			}
 
 			studio_program_t prog = { 0 };
 
 			R_UseStudioProgram(StudioProgramState, &prog);
 			R_SetGBufferMask(GBufferMask);
+
+			if (prog.r_uvscale != -1)
+			{
+				qglUniform2fARB(prog.r_uvscale, s, t);
+			}
 			
 			if (prog.attr_bone != -1)
 			{
-				qglVertexAttribIPointer(prog.attr_bone, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
 				qglEnableVertexAttribArray(prog.attr_bone);
-				using_attr_bone = prog.attr_bone;
+				qglVertexAttribIPointer(prog.attr_bone, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
 			}
 
-			if (VBOMesh.iTriStripVertexCount)
+			if (VBOMesh.iIndiceCount)
 			{
-				qglDrawElements(GL_TRIANGLE_STRIP, VBOMesh.iTriStripVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(VBOMesh.iTriStripStartIndex));
-				++r_studio_drawcall;
-			}
-
-			if (VBOMesh.iTriFanVertexCount)
-			{
-				qglDrawElements(GL_TRIANGLE_FAN, VBOMesh.iTriFanVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(VBOMesh.iTriFanStartIndex));
+				qglDrawElements(GL_TRIANGLES, VBOMesh.iIndiceCount, GL_UNSIGNED_INT, BUFFER_OFFSET(VBOMesh.iStartIndex));
+				
 				++r_studio_drawcall;
 			}
 
@@ -846,9 +970,9 @@ void R_GLStudioDrawPoints(void)
 				qglShadeModel(GL_FLAT);
 			}
 
-			if (using_attr_bone != -1)
+			if (prog.attr_bone != -1)
 			{
-				qglDisableVertexAttribArray(using_attr_bone);
+				qglDisableVertexAttribArray(prog.attr_bone);
 			}
 		}
 
@@ -960,6 +1084,7 @@ void R_GLStudioDrawPoints(void)
 			if (r_fullbright->value >= 2)
 			{
 				gEngfuncs.pTriAPI->SpriteTexture(cl_sprite_white, 0);
+
 				s = 1.0f / 256.0f;
 				t = 1.0f / 256.0f;
 			}
@@ -976,21 +1101,12 @@ void R_GLStudioDrawPoints(void)
 			R_UseStudioProgram(StudioProgramState, &prog);
 			R_SetGBufferMask(GBufferMask);
 
-			int iStartDrawVertex;
-			int iNumDrawVertex;
-			int iCurrentDrawType;
-
-			studio_vbo_mesh_t *VBOMesh = NULL;
-
-			if (iInitVBO & 2)
-				VBOMesh = &VBOSubmodel->vMesh[j];
-
 			if (flags & STUDIO_NF_CHROME)//chrome start
 			{
 				if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)//force chrome, the fucking glowshell
 				{
-					s /= 32.0f;
-					t /= 32.0f;
+					s *= 1.0f / 32.0f;
+					t *= 1.0f / 32.0f;
 
 					while (i = *(ptricmds++))
 					{
@@ -998,31 +1114,17 @@ void R_GLStudioDrawPoints(void)
 						{
 							qglBegin(GL_TRIANGLE_FAN);
 							i = -i;
-
-							if (iInitVBO & 2)
-							{
-								iCurrentDrawType = GL_TRIANGLE_FAN;
-								iStartDrawVertex = VBOData->vVertex.size();
-								iNumDrawVertex = 0;
-							}
 						}
 						else
 						{
 							qglBegin(GL_TRIANGLE_STRIP);
-
-							if (iInitVBO & 2)
-							{
-								iCurrentDrawType = GL_TRIANGLE_STRIP;
-								iStartDrawVertex = VBOData->vVertex.size();
-								iNumDrawVertex = 0;
-							}
 						}
 
 						for (; i > 0; i--, ptricmds += 4)
 						{
 							int normalIndex = (*g_NormalIndex)[ptricmds[0]];
 
-							qglTexCoord2f((*chrome)[normalIndex][0] * s, (*chrome)[normalIndex][1] * t);
+							qglTexCoord2f(r_chrome[normalIndex][0] * s, r_chrome[normalIndex][1] * t);
 
 							VectorRotate(pstudionorms[ptricmds[1]], (*pbonetransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[1]]);
 
@@ -1037,29 +1139,19 @@ void R_GLStudioDrawPoints(void)
 
 							av = &engine_pauxverts[ptricmds[0]];
 							qglVertex3fv(av->fv);
-
-							if (iInitVBO & 2)
-							{
-								vec2_t stChrome = { (float)s, (float)t };
-								VBOData->vVertex.emplace_back(pstudioverts[ptricmds[0]], pstudionorms[ptricmds[1]], stChrome, (int)pvertbone[ptricmds[0]], (int)pnormbone[ptricmds[1]]);
-								iNumDrawVertex++;
-							}
 						}
 
 						qglEnd();
 
 						r_studio_drawcall++;
-
-						if (iInitVBO & 2)
-						{
-							VBOMesh->vTri.emplace_back(iStartDrawVertex, iNumDrawVertex, iCurrentDrawType);
-						}
 					}
 				}
 				else
 				{//standard chrome, not glowshell
-					s = 1.0f / 2048.0f;
-					t = 1.0f / 2048.0f;
+					s *= 1.0f / 2048.0f;
+					t *= 1.0f / 2048.0f;
+					s *= (float)ptexture[pskinref[pmesh->skinref]].width;
+					t *= (float)ptexture[pskinref[pmesh->skinref]].height;
 
 					while (i = *(ptricmds++))
 					{
@@ -1067,29 +1159,15 @@ void R_GLStudioDrawPoints(void)
 						{
 							qglBegin(GL_TRIANGLE_FAN);
 							i = -i;
-
-							if (iInitVBO & 2)
-							{
-								iCurrentDrawType = GL_TRIANGLE_FAN;
-								iStartDrawVertex = VBOData->vVertex.size();
-								iNumDrawVertex = 0;
-							}
 						}
 						else
 						{
 							qglBegin(GL_TRIANGLE_STRIP);
-
-							if (iInitVBO & 2)
-							{
-								iCurrentDrawType = GL_TRIANGLE_STRIP;
-								iStartDrawVertex = VBOData->vVertex.size();
-								iNumDrawVertex = 0;
-							}
 						}
 
 						for (; i > 0; i--, ptricmds += 4)
 						{
-							qglTexCoord2f((*chrome)[ptricmds[1]][0] * s, (*chrome)[ptricmds[1]][1] * t);
+							qglTexCoord2f(r_chrome[ptricmds[1]][0] * s, r_chrome[ptricmds[1]][1] * t);
 
 							lv = &engine_pvlightvalues[ptricmds[1] * 3];
 
@@ -1108,23 +1186,11 @@ void R_GLStudioDrawPoints(void)
 
 							av = &engine_pauxverts[ptricmds[0]];
 							qglVertex3fv(av->fv);
-
-							if (iInitVBO & 2)
-							{
-								vec2_t stChrome = { (float)s, (float)t };
-								VBOData->vVertex.emplace_back(pstudioverts[ptricmds[0]], pstudionorms[ptricmds[1]], stChrome, (int)pvertbone[ptricmds[0]], (int)pnormbone[ptricmds[1]]);
-								iNumDrawVertex++;
-							}
 						}
 
 						qglEnd();
 
 						r_studio_drawcall++;
-
-						if (iInitVBO & 2)
-						{
-							VBOMesh->vTri.emplace_back(iStartDrawVertex, iNumDrawVertex, iCurrentDrawType);
-						}
 					}
 				}//no force chrome end
 
@@ -1138,24 +1204,10 @@ void R_GLStudioDrawPoints(void)
 					{
 						qglBegin(GL_TRIANGLE_FAN);
 						i = -i;
-
-						if (iInitVBO & 2)
-						{
-							iCurrentDrawType = GL_TRIANGLE_FAN;
-							iStartDrawVertex = VBOData->vVertex.size();
-							iNumDrawVertex = 0;
-						}
 					}
 					else
 					{
 						qglBegin(GL_TRIANGLE_STRIP);
-
-						if (iInitVBO & 2)
-						{
-							iCurrentDrawType = GL_TRIANGLE_STRIP;
-							iStartDrawVertex = VBOData->vVertex.size();
-							iNumDrawVertex = 0;
-						}
 					}
 
 					for (; i > 0; i--, ptricmds += 4)
@@ -1188,22 +1240,11 @@ void R_GLStudioDrawPoints(void)
 
 						av = &(engine_pauxverts[ptricmds[0]]);
 						qglVertex3fv(av->fv);
-
-						if (iInitVBO & 2)
-						{
-							VBOData->vVertex.emplace_back(pstudioverts[ptricmds[0]], pstudionorms[ptricmds[1]], st, (int)pvertbone[ptricmds[0]], (int)pnormbone[ptricmds[1]]);
-							iNumDrawVertex++;
-						}
 					}
 
 					qglEnd();
 
 					r_studio_drawcall++;
-
-					if (iInitVBO & 2)
-					{
-						VBOMesh->vTri.emplace_back(iStartDrawVertex, iNumDrawVertex, iCurrentDrawType);
-					}
 				}
 
 			}//normal draw end
@@ -1229,59 +1270,6 @@ void R_GLStudioDrawPoints(void)
 				qglShadeModel(GL_FLAT);
 			}
 
-			if (iInitVBO & 2)
-			{
-				//Convert vTri into indices
-				for (size_t t = 0; t < VBOMesh->vTri.size(); ++t)
-				{
-					auto &tri = VBOMesh->vTri[t];
-					if (tri.draw_type == GL_TRIANGLE_STRIP)
-					{
-						for (int k = 0; k < tri.num_vertex; ++k)
-						{
-							VBOMesh->vTriStrip.emplace_back((unsigned int)(tri.start_vertex + k));
-						}
-						//Restart Primitives
-						VBOMesh->vTriStrip.emplace_back((unsigned int)0xFFFFFFFF);
-					}
-					else if (tri.draw_type == GL_TRIANGLE_FAN)
-					{
-						for (int k = 0; k < tri.num_vertex; ++k)
-						{
-							VBOMesh->vTriFan.emplace_back((unsigned int)(tri.start_vertex + k));
-						}
-						//Restart Primitives
-						VBOMesh->vTriFan.emplace_back((unsigned int)0xFFFFFFFF);
-					}
-					
-				}
-
-				//Push indices into indices buffer
-				if (VBOMesh->vTriStrip.size() > 0)
-				{
-					VBOMesh->iTriStripStartIndex = VBOData->vIndices.size();
-					for (size_t k = 0; k < VBOMesh->vTriStrip.size(); ++k)
-					{
-						VBOData->vIndices.emplace_back(VBOMesh->vTriStrip[k]);
-						VBOMesh->iTriStripVertexCount++;
-					}
-
-					VBOMesh->vTriStrip.shrink_to_fit();
-				}
-
-				if (VBOMesh->vTriFan.size() > 0)
-				{
-					VBOMesh->iTriFanStartIndex = VBOData->vIndices.size();
-					for (size_t k = 0; k < VBOMesh->vTriFan.size(); ++k)
-					{
-						VBOData->vIndices.emplace_back(VBOMesh->vTriFan[k]);
-						VBOMesh->iTriFanVertexCount++;
-					}
-
-					VBOMesh->vTriFan.shrink_to_fit();
-				}
-			}
-
 		}//mesh draw end
 
 	}//non-VBO way
@@ -1295,30 +1283,6 @@ void R_GLStudioDrawPoints(void)
 	}
 
 	GL_UseProgram(0);
-
-	//upload all data and indices to GPU
-	if (iInitVBO & 2)
-	{
-		if (!VBOData->hDataBuffer)
-		{
-			qglGenBuffersARB(1, &VBOData->hDataBuffer);
-		}
-		if (!VBOData->hIndexBuffer)
-		{
-			qglGenBuffersARB(1, &VBOData->hIndexBuffer);
-		}
-
-		qglBindBufferARB(GL_ARRAY_BUFFER_ARB, VBOData->hDataBuffer);
-		qglBufferDataARB(GL_ARRAY_BUFFER_ARB, VBOData->vVertex.size() * sizeof(studio_vbo_vertex_t), VBOData->vVertex.data(), GL_STATIC_DRAW_ARB);
-		qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-
-		qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->hIndexBuffer);
-		qglBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->vIndices.size() * sizeof(unsigned int), VBOData->vIndices.data(), GL_STATIC_DRAW_ARB);
-		qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-
-		VBOData->vVertex.shrink_to_fit();
-		VBOData->vIndices.shrink_to_fit();
-	}
 }
 
 //StudioAPI

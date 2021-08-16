@@ -370,7 +370,7 @@ private:
 	CPhysicsDebugDraw *m_debugDraw;
 	std::unordered_map<int, CRagdoll *> m_ragdollMap;
 	std::unordered_map<int, CStaticBody *> m_staticMap;
-	std::vector<ragdoll_config_t> m_ragdoll_config;
+	std::vector<ragdoll_config_t *> m_ragdoll_config;
 };
 
 extern CPhysicsManager gPhysicsManager;

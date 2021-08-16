@@ -23,6 +23,7 @@ typedef struct
 	int r_g3;
 	int r_plightvec;
 	int r_colormix;
+	int r_uvscale;
 	//chrome
 	int r_origin;
 	int r_vright;
@@ -35,11 +36,12 @@ typedef struct
 
 typedef struct studio_vbo_vertex_s
 {
-	studio_vbo_vertex_s(float *a, float *b, float *c, int d, int e)
+	studio_vbo_vertex_s(float *a, float *b, float s, float t, int d, int e)
 	{
 		memcpy(pos, a, sizeof(vec3_t));
 		memcpy(normal, b, sizeof(vec3_t));
-		memcpy(texcoord, c, sizeof(vec2_t));
+		texcoord[0] = s;
+		texcoord[1] = t;
 		vertbone = d;
 		normbone = e;
 	}
@@ -75,61 +77,27 @@ typedef struct studio_vbo_mesh_s
 {
 	studio_vbo_mesh_s()
 	{
-		iTriStripStartIndex = -1;
-		iTriStripVertexCount = 0;
-		iTriFanStartIndex = -1;
-		iTriFanVertexCount = 0;
+		iStartIndex = -1;
+		iIndiceCount = 0;
 	}
 
-	std::vector<studio_vbo_trilist_t> vTri;
-	std::vector<unsigned int> vTriStrip;
-	std::vector<unsigned int> vTriFan;
-	int iTriStripStartIndex;
-	int iTriStripVertexCount;
-	int iTriFanStartIndex;
-	int iTriFanVertexCount;
+	int iStartIndex;
+	int iIndiceCount;
 }studio_vbo_mesh_t;
-
-typedef struct studio_vbo_submodel_s
-{
-	studio_vbo_submodel_s()
-	{
-		vMesh = NULL;
-		iNumMesh = 0;
-	}
-	studio_vbo_mesh_t *vMesh;
-	int iNumMesh;
-}studio_vbo_submodel_t;
 
 typedef struct studio_vbo_s
 {
 	studio_vbo_s()
 	{
+		studiohdr = NULL;
 		hDataBuffer = 0;
 		hIndexBuffer = 0;
-		iStartIndices = 0;
 	}
-
+	studiohdr_t	*		studiohdr;
 	GLuint				hDataBuffer;
 	GLuint				hIndexBuffer;
-	std::unordered_map<mstudiomodel_t *, studio_vbo_submodel_t *> vSubmodel;
-	std::vector<studio_vbo_vertex_t> vVertex;
-	std::vector<unsigned int> vIndices;
-	int					iStartIndices;
+	std::vector<studio_vbo_mesh_t> vMesh;
 }studio_vbo_t;
-
-typedef struct studio_bone_s
-{
-	studio_bone_s()
-	{
-		
-	}
-
-	int framecount;
-	int numbones;
-	float cached_bonetransform[MAXSTUDIOBONES][3][4];
-	float cached_lighttransform[MAXSTUDIOBONES][3][4];
-}studio_bone_t;
 
 //engine
 extern mstudiomodel_t **psubmodel;
@@ -156,6 +124,9 @@ extern float *r_shadelight;
 extern vec3_t *r_blightvec;
 extern float *r_plightvec;
 extern float *r_colormix;
+extern int *r_smodels_total;
+extern int *r_amodels_drawn;
+
 extern model_t *cl_sprite_white;
 extern model_t *cl_shellchrome;
 
@@ -164,15 +135,12 @@ extern int r_studio_drawcall;
 extern int r_studio_polys;
 extern int r_studio_framecount;
 
-//void R_StudioClearBoneCache(void);
-void R_StudioClearVBOCache(void);
+void R_StudioReloadVBOCache(void);
 void R_ShutdownStudio(void);
 void R_InitStudio(void);
-bool R_StudioRestoreBones(void);
-void R_StudioSaveBones(void);
 void R_GLStudioDrawPoints(void);
+studiohdr_t *R_LoadTextures(model_t *psubm);
 
-void studioapi_SetupRenderer(int rendermode);
 void studioapi_RestoreRenderer(void);
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
 void studioapi_SetupModel(int bodypart, void **ppbodypart, void **ppsubmodel);
@@ -182,9 +150,10 @@ extern r_studio_interface_t **gpStudioInterface;
 
 extern cvar_t *r_studio_vbo;
 
-#define STUDIO_GBUFFER_ENABLED			0x10000
-#define STUDIO_TRANSPARENT_ENABLED		0x20000
-#define STUDIO_TRANSADDITIVE_ENABLED	0x40000
-#define STUDIO_LINEAR_FOG_ENABLED		0x80000
-#define STUDIO_SHADOW_CASTER_ENABLED	0x100000
-#define STUDIO_LEGACY_BONE_ENABLED		0x200000
+#define STUDIO_GBUFFER_ENABLED					0x10000
+#define STUDIO_TRANSPARENT_ENABLED				0x20000
+#define STUDIO_TRANSADDITIVE_ENABLED			0x40000
+#define STUDIO_LINEAR_FOG_ENABLED				0x80000
+#define STUDIO_SHADOW_CASTER_ENABLED			0x100000
+#define STUDIO_LEGACY_BONE_ENABLED				0x200000
+#define STUDIO_GLOW_SHELL_ENABLED				0x400000

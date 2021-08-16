@@ -120,23 +120,21 @@ typedef struct detail_texture_cache_s
 	detail_texture_t tex[WSURF_MAX_TEXTURE];
 }detail_texture_cache_t;
 
-typedef struct wsurf_model_s
+typedef struct wsurf_vbo_s
 {
-	wsurf_model_s()
+	wsurf_vbo_s()
 	{
-		hEBO = 0;
 		pModel = NULL;
+		hEBO = 0;
 	}
 
-	GLuint	hEBO;
 	model_t	*pModel;
-
+	GLuint	hEBO;
 	std::vector<brushtexchain_t> vTextureChainStatic;
 	std::vector<brushtexchain_t> vTextureChainScroll;
 	std::vector<brushtexchain_t> vTextureChainAnim;
 	brushtexchain_t TextureChainSky;
-	std::vector<unsigned int> vIndicesBuffer;
-}wsurf_model_t;
+}wsurf_vbo_t;
 
 typedef struct r_worldsurf_s
 {
@@ -186,7 +184,7 @@ typedef struct r_worldsurf_s
 	int					iS_Tangent;
 	int					iT_Tangent;
 
-	wsurf_model_t		*pCurrentModel;
+	wsurf_vbo_t		*pCurrentModel;
 
 	int					iNumLightmapTextures;
 	int					iLightmapTextureArray;
@@ -270,11 +268,11 @@ detail_texture_cache_t *R_FindDetailTextureCache(int texId);
 void R_BeginDetailTexture(int texId);
 void R_EndDetailTexture(void);
 
-wsurf_model_t *R_PrepareWSurfVBO(model_t *mod);
-void R_EnableWSurfVBO(wsurf_model_t *modcache);
-void R_DrawWSurfVBO(wsurf_model_t *modcache);
-void R_EnableWSurfVBOSolid(wsurf_model_t *modcache);
-void R_DrawWSurfVBOSolid(wsurf_model_t *modcache);
+wsurf_vbo_t *R_PrepareWSurfVBO(model_t *mod);
+void R_EnableWSurfVBO(wsurf_vbo_t *modcache);
+void R_DrawWSurfVBO(wsurf_vbo_t *modcache);
+void R_EnableWSurfVBOSolid(wsurf_vbo_t *modcache);
+void R_DrawWSurfVBOSolid(wsurf_vbo_t *modcache);
 void R_ShutdownWSurf(void);
 void R_Reload_f(void);
 

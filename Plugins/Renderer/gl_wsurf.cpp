@@ -27,20 +27,20 @@ std::unordered_map <int, wsurf_program_t> g_WSurfProgramTable;
 
 std::unordered_map<int, detail_texture_cache_t *> g_DetailTextureTable;
 
-std::unordered_map<model_t *, wsurf_model_t *> g_WSurfModelCache;
+std::vector<wsurf_vbo_t *> g_WSurfVBOCache;
 
-void R_ClearWSurfModelCache(void)
+void R_ClearWSurfVBOCache(void)
 {
-	for (auto &itor = g_WSurfModelCache.begin(); itor != g_WSurfModelCache.end(); ++itor)
+	for (size_t i =0 ;i < g_WSurfVBOCache.size(); ++i)
 	{
-		if (itor->second->hEBO)
+		if (g_WSurfVBOCache[i]->hEBO)
 		{
-			qglDeleteBuffersARB(1, &itor->second->hEBO);
+			qglDeleteBuffersARB(1, &g_WSurfVBOCache[i]->hEBO);
 		}
 
-		delete itor->second;
+		delete g_WSurfVBOCache[i];
 	}
-	g_WSurfModelCache.clear();
+	g_WSurfVBOCache.clear();
 }
 
 void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
@@ -266,7 +266,7 @@ void R_RecursiveWorldNodeGenerateTextureChain(mnode_t *node)
 	R_RecursiveWorldNodeGenerateTextureChain(node->children[1]);
 }
 
-void R_GenerateElementBufferIndices(msurface_t *s, brushtexchain_t *texchain, wsurf_model_t *modcache)
+void R_GenerateElementBufferIndices(msurface_t *s, brushtexchain_t *texchain, wsurf_vbo_t *modcache, std::vector<unsigned int> &vIndicesBuffer)
 {
 	auto p = s->polys;
 	auto brushface = &r_wsurf.vFaceBuffer[p->flags];
@@ -277,10 +277,10 @@ void R_GenerateElementBufferIndices(msurface_t *s, brushtexchain_t *texchain, ws
 		{
 			for (int i = 0; i < brushface->num_vertexes; ++i)
 			{
-				modcache->vIndicesBuffer.emplace_back(brushface->start_vertex + i);
+				vIndicesBuffer.emplace_back(brushface->start_vertex + i);
 				texchain->iVertexCount++;
 			}
-			modcache->vIndicesBuffer.emplace_back((unsigned int)0xFFFFFFFF);
+			vIndicesBuffer.emplace_back((unsigned int)0xFFFFFFFF);
 			texchain->iVertexCount++;
 			texchain->iFaceCount++;
 		}
@@ -299,10 +299,10 @@ void R_GenerateElementBufferIndices(msurface_t *s, brushtexchain_t *texchain, ws
 		{
 			for (int i = 0; i < brushface->num_vertexes; ++i)
 			{
-				modcache->vIndicesBuffer.emplace_back(brushface->start_vertex + i);
+				vIndicesBuffer.emplace_back(brushface->start_vertex + i);
 				texchain->iVertexCount++;
 			}
-			modcache->vIndicesBuffer.emplace_back((unsigned int)0xFFFFFFFF);
+			vIndicesBuffer.emplace_back((unsigned int)0xFFFFFFFF);
 			texchain->iVertexCount++;
 			texchain->iFaceCount++;
 		}
@@ -314,18 +314,20 @@ void R_GenerateElementBufferIndices(msurface_t *s, brushtexchain_t *texchain, ws
 		{
 			for (int i = 0; i < brushface->num_vertexes; ++i)
 			{
-				modcache->vIndicesBuffer.emplace_back(brushface->start_vertex + i);
+				vIndicesBuffer.emplace_back(brushface->start_vertex + i);
 				texchain->iVertexCount++;
 			}
-			modcache->vIndicesBuffer.emplace_back((unsigned int)0xFFFFFFFF);
+			vIndicesBuffer.emplace_back((unsigned int)0xFFFFFFFF);
 			texchain->iVertexCount++;
 			texchain->iFaceCount++;
 		}
 	}
 }
 
-void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
+void R_GenerateElementBuffer(model_t *mod, wsurf_vbo_t *modcache)
 {
+	std::vector<unsigned int> vIndicesBuffer;
+
 	if (mod == r_worldmodel)
 	{
 		R_RecursiveWorldNodeGenerateTextureChain(mod->nodes);
@@ -369,12 +371,12 @@ void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
 				texchain.pTexture = t;
 				texchain.iVertexCount = 0;
 				texchain.iFaceCount = 0;
-				texchain.iStartIndex = modcache->vIndicesBuffer.size();
+				texchain.iStartIndex = vIndicesBuffer.size();
 				texchain.iType = TEXCHAIN_SKY;
 
 				for (; s; s = s->texturechain)
 				{
-					R_GenerateElementBufferIndices(s, &texchain, modcache);
+					R_GenerateElementBufferIndices(s, &texchain, modcache, vIndicesBuffer);
 				}
 
 				if (texchain.iVertexCount > 0)
@@ -444,13 +446,13 @@ void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
 								texchain.pTexture = t2;
 								texchain.iVertexCount = 0;
 								texchain.iFaceCount = 0;
-								texchain.iStartIndex = modcache->vIndicesBuffer.size();
+								texchain.iStartIndex = vIndicesBuffer.size();
 								texchain.iType = TEXCHAIN_STATIC;
 
 								for (int n = 0; n < numtexturechain; ++n)
 								{
 									if (texchainMapper[n] == k)
-										R_GenerateElementBufferIndices(texchainSurface[n], &texchain, modcache);
+										R_GenerateElementBufferIndices(texchainSurface[n], &texchain, modcache, vIndicesBuffer);
 								}
 
 								if (texchain.iVertexCount > 0)
@@ -490,12 +492,12 @@ void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
 						texchain.pTexture = t;
 						texchain.iVertexCount = 0;
 						texchain.iFaceCount = 0;
-						texchain.iStartIndex = modcache->vIndicesBuffer.size();
+						texchain.iStartIndex = vIndicesBuffer.size();
 						texchain.iType = TEXCHAIN_STATIC;
 
 						for (; s; s = s->texturechain)
 						{
-							R_GenerateElementBufferIndices(s, &texchain, modcache);
+							R_GenerateElementBufferIndices(s, &texchain, modcache, vIndicesBuffer);
 						}
 
 						if (texchain.iVertexCount > 0)
@@ -530,12 +532,12 @@ void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
 					texchain.pTexture = t;
 					texchain.iVertexCount = 0;
 					texchain.iFaceCount = 0;
-					texchain.iStartIndex = modcache->vIndicesBuffer.size();
+					texchain.iStartIndex = vIndicesBuffer.size();
 					texchain.iType = TEXCHAIN_STATIC;
 
 					for (; s; s = s->texturechain)
 					{
-						R_GenerateElementBufferIndices(s, &texchain, modcache);
+						R_GenerateElementBufferIndices(s, &texchain, modcache, vIndicesBuffer);
 					}
 
 					if (texchain.iVertexCount > 0)
@@ -565,12 +567,12 @@ void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
 				texchain.pTexture = t;
 				texchain.iVertexCount = 0;
 				texchain.iFaceCount = 0;
-				texchain.iStartIndex = modcache->vIndicesBuffer.size();
+				texchain.iStartIndex = vIndicesBuffer.size();
 				texchain.iType = TEXCHAIN_SCROLL;
 
 				for (; s; s = s->texturechain)
 				{
-					R_GenerateElementBufferIndices(s, &texchain, modcache);
+					R_GenerateElementBufferIndices(s, &texchain, modcache, vIndicesBuffer);
 				}
 
 				if (texchain.iVertexCount > 0)
@@ -586,11 +588,10 @@ void R_GenerateElementBuffer(model_t *mod, wsurf_model_t *modcache)
 	modcache->vTextureChainStatic.shrink_to_fit();
 	modcache->vTextureChainScroll.shrink_to_fit();
 	modcache->vTextureChainAnim.shrink_to_fit();
-	modcache->vIndicesBuffer.shrink_to_fit();
 
 	qglGenBuffersARB(1, &modcache->hEBO);
 	qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, modcache->hEBO);
-	qglBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(unsigned int) * modcache->vIndicesBuffer.size(), modcache->vIndicesBuffer.data(), GL_STATIC_DRAW_ARB);
+	qglBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, sizeof(unsigned int) * vIndicesBuffer.size(), vIndicesBuffer.data(), GL_STATIC_DRAW_ARB);
 	qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 }
 
@@ -792,31 +793,35 @@ void R_GenerateLightmapArray(void)
 	qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
 
-wsurf_model_t *R_PrepareWSurfVBO(model_t *mod)
+wsurf_vbo_t *R_PrepareWSurfVBO(model_t *mod)
 {
-	wsurf_model_t *modcache = NULL;
+	auto modelindex = EngineGetModelIndex(mod);
 
-	auto itor = g_WSurfModelCache.find(mod);
+	if (modelindex == -1)
+		return NULL;
 
-	if (itor == g_WSurfModelCache.end())
+	if (modelindex >= g_WSurfVBOCache.size())
 	{
-		modcache = new wsurf_model_t;
+		g_WSurfVBOCache.resize(modelindex + 1);
+	}
+
+	wsurf_vbo_t *modcache = g_WSurfVBOCache[modelindex];
+
+	if (!modcache)
+	{
+		modcache = new wsurf_vbo_t;
 
 		R_GenerateElementBuffer(mod, modcache);
 
 		modcache->pModel = mod;
 
-		g_WSurfModelCache[mod] = modcache;
-	}
-	else
-	{
-		modcache = itor->second;
+		g_WSurfVBOCache[modelindex] = modcache;
 	}
 
 	return modcache;
 }
 
-void R_EnableWSurfVBOSolid(wsurf_model_t *modcache)
+void R_EnableWSurfVBOSolid(wsurf_vbo_t *modcache)
 {
 	if (r_wsurf.pCurrentModel == modcache)
 		return;
@@ -849,7 +854,7 @@ void R_EnableWSurfVBOSolid(wsurf_model_t *modcache)
 	}
 }
 
-void R_EnableWSurfVBO(wsurf_model_t *modcache)
+void R_EnableWSurfVBO(wsurf_vbo_t *modcache)
 {
 	if (r_wsurf.pCurrentModel == modcache)
 		return;
@@ -910,7 +915,7 @@ void R_EnableWSurfVBO(wsurf_model_t *modcache)
 	}
 }
 
-void R_DrawWSurfVBO(wsurf_model_t *modcache)
+void R_DrawWSurfVBO(wsurf_vbo_t *modcache)
 {
 	//This only applies to world rendering
 	if(modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value)
@@ -1467,7 +1472,7 @@ void R_DrawWSurfVBO(wsurf_model_t *modcache)
 	GL_UseProgram(0);
 }
 
-void R_DrawWSurfVBOSolid(wsurf_model_t *modcache)
+void R_DrawWSurfVBOSolid(wsurf_vbo_t *modcache)
 {
 	for (size_t i = 0; i < modcache->vTextureChainStatic.size(); ++i)
 	{
@@ -1540,7 +1545,7 @@ void R_ShutdownWSurf(void)
 
 	R_FreeLightmapArray();
 	R_FreeVertexBuffer();
-	R_ClearWSurfModelCache();
+	R_ClearWSurfVBOCache();
 	R_ClearBSPEntities();
 }
 
@@ -1728,7 +1733,7 @@ void R_VidInitWSurf(void)
 	R_FreeVertexBuffer();
 	R_GenerateVertexBuffer();
 	R_GenerateLightmapArray();
-	R_ClearWSurfModelCache();
+	R_ClearWSurfVBOCache();
 	R_ClearBSPEntities();
 	R_ParseBSPEntities(r_worldmodel->entities);
 	R_LoadExternalEntities();

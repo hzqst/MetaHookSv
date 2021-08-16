@@ -852,17 +852,21 @@ void CPhysicsManager::SetGravity(float velocity)
 void CPhysicsManager::ReloadConfig(void)
 {
 	int maxNum = EngineGetMaxKnownModel();
-	if (!m_ragdoll_config.size())
+
+	if (m_ragdoll_config.size() < maxNum)
 		m_ragdoll_config.resize(maxNum);
 
 	for (int i = 0; i < maxNum; ++i)
 	{
-		m_ragdoll_config[i].state = 0;
-		m_ragdoll_config[i].animcontrol.clear();
-		m_ragdoll_config[i].barcontrol.clear();
-		m_ragdoll_config[i].cstcontrol.clear();
-		m_ragdoll_config[i].rigcontrol.clear();
+		if (m_ragdoll_config[i])
+		{
+			delete m_ragdoll_config[i];
+			m_ragdoll_config[i] = NULL;
+		}
+	}
 
+	for (int i = 0; i < *mod_numknown; ++i)
+	{
 		auto mod = EngineGetModelByIndex(i);
 		if (mod->type == mod_studio && mod->name[0])
 		{
@@ -888,10 +892,13 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 		return NULL;
 	}
 
-	auto cfg = &m_ragdoll_config[modelindex];
+	auto cfg = m_ragdoll_config[modelindex];
 
-	if (cfg->state)
+	if (cfg)
 		return cfg;
+
+	cfg = new ragdoll_config_t;
+	m_ragdoll_config[modelindex] = cfg;
 
 	std::string fullname = mod->name;
 
@@ -908,10 +915,12 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 	if (!pfile)
 	{
 		cfg->state = 2;
-		//gEngfuncs.Con_DPrintf("LoadRagdollConfig: Failed to load config file for %s\n", name.c_str());
+
+		gEngfuncs.Con_DPrintf("LoadRagdollConfig: Failed to load config file for %s\n", name.c_str());
+		
 		return cfg;
 	}
-
+	
 	cfg->state = 1;
 
 	int iParsingState = -1;

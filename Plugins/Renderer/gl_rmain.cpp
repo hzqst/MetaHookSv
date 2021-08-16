@@ -67,6 +67,9 @@ int *c_alias_polys;
 int *c_brush_polys;
 int(*rtable)[20][20];
 
+model_t *mod_known = NULL;
+int *mod_numknown = NULL;
+
 int gl_max_texture_size = 0;
 float gl_max_ansio = 0;
 GLuint gl_color_format = 0;
@@ -1390,8 +1393,7 @@ void R_NewMap(void)
 	R_ClearWater();
 	R_VidInitWSurf();
 
-	R_StudioClearVBOCache();
-	//R_StudioClearBoneCache();
+	R_StudioReloadVBOCache();
 }
 
 mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
@@ -1691,6 +1693,33 @@ void R_SetupGL(void)
 }
 
 
+int EngineGetMaxKnownModel(void)
+{
+	if (g_iEngineType == ENGINE_SVENGINE)
+		return 16384;
+
+	return 1024;
+}
+
+int EngineGetModelIndex(model_t *mod)
+{
+	int index = (mod - (model_t *)(mod_known));
+
+	if (index >= 0 && index < *mod_numknown)
+		return index;
+
+	return -1;
+}
+
+model_t *EngineGetModelByIndex(int index)
+{
+	auto pmod_known = (model_t *)(mod_known);
+
+	if (index >= 0 && index < *mod_numknown)
+		return &pmod_known[index];
+
+	return NULL;
+}
 
 #if 0
 
