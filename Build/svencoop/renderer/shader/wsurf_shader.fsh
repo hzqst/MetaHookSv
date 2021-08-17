@@ -20,7 +20,8 @@ uniform sampler2DArray lightmapTexArray;
 uniform sampler2DArray shadowmapTexArray;
 uniform vec3 shadowDirection;
 uniform vec4 shadowFade;
-uniform vec4 shadowColor;
+uniform vec3 shadowColor;
+uniform float shadowIntensity;
 varying vec4 shadowcoord[3];
 #endif
 
@@ -201,45 +202,12 @@ vec3 shadowGetPosition(vec4 coord, float layer)
 	return texture2DArray(shadowmapTexArray, vec3(coord.xy / coord.w, layer) ).xyz;
 }
 
-#endif
-
-void main()
+float CalcShadowIntensity(vec3 lightmap, vec3 norm, vec3 lightdir)
 {
-#ifdef DIFFUSE_ENABLED
-
-	#ifdef PARALLAXTEXTURE_ENABLED
-
-		vec3 viewDir = normalize(worldpos.xyz - viewpos.xyz);
-
-		vec4 diffuseColor = texture2D(diffuseTex, ParallaxMapping(viewDir));
-
-	#else
-
-		vec4 diffuseColor = texture2D(diffuseTex, gl_TexCoord[0].xy);
-
-	#endif
-
-#else
-
-	vec4 diffuseColor = color;
-
-#endif
-
-#ifdef LIGHTMAP_ENABLED
-
-	vec4 lightmapColor = texture2DArray(lightmapTexArray, gl_TexCoord[1].xyz);
-
-#else
-
-	vec4 lightmapColor = vec4(1.0, 1.0, 1.0, 1.0);
-
-#endif
-
-#ifdef SHADOWMAP_ENABLED
-
-	if(dot(normal.xyz, shadowDirection.xyz) < 0)
+	float shadow_final = 0;
+	if(dot(norm.xyz, lightdir.xyz) < 0)
 	{
-		float lightmapLum = 0.299 * lightmapColor.x + 0.587 * lightmapColor.y + 0.114 * lightmapColor.z;
+		float lightmapLum = 0.299 * lightmap.x + 0.587 * lightmap.y + 0.114 * lightmap.z;
 		if(lightmapLum > shadowFade.w)
 		{
 			float shadow_high = 1.0;
@@ -289,7 +257,7 @@ void main()
 		#ifdef SHADOWMAP_HIGH_ENABLED
 			else if(shadow_high < 0.95)
 			{
-				float shadow_alpha = shadowColor.a;
+				float shadow_alpha = 1.0;
 
 				vec3 scene = worldpos.xyz;
 				vec3 caster = shadowGetPosition(shadowcoord[0], 0.0);
@@ -305,17 +273,15 @@ void main()
 				shadow_medium = 1.0 - shadow_medium;
 				shadow_low = 1.0 - shadow_low;
 
-				float shadow_final = shadow_high + shadow_medium + shadow_low;
+				shadow_final = shadow_high + shadow_medium + shadow_low;
 				shadow_final = clamp(shadow_final, 0.0, 1.0) * shadow_alpha;
-
-				lightmapColor.xyz = mix(lightmapColor.xyz, shadowColor.xyz, shadow_final);
 			}
 		#endif
 
 		#ifdef SHADOWMAP_MEDIUM_ENABLED
 			else if(shadow_medium < 0.95)
 			{
-				float shadow_alpha = shadowColor.a;
+				float shadow_alpha = 1.0;
 
 				vec3 scene = worldpos.xyz;
 				vec3 caster = shadowGetPosition(shadowcoord[1], 1.0);
@@ -331,17 +297,15 @@ void main()
 				shadow_medium = 1.0 - shadow_medium;
 				shadow_low = 1.0 - shadow_low;
 
-				float shadow_final = shadow_high + shadow_medium + shadow_low;
+				shadow_final = shadow_high + shadow_medium + shadow_low;
 				shadow_final = clamp(shadow_final, 0.0, 1.0) * shadow_alpha;
-
-				lightmapColor.xyz = mix(lightmapColor.xyz, shadowColor.xyz, shadow_final);
 			}
 		#endif
 
 		#ifdef SHADOWMAP_LOW_ENABLED
 			else if(shadow_low < 0.95)
 			{
-				float shadow_alpha = shadowColor.a;
+				float shadow_alpha = 1.0;
 
 				vec3 scene = worldpos.xyz;
 				vec3 caster = shadowGetPosition(shadowcoord[2], 2.0);
@@ -357,14 +321,53 @@ void main()
 				shadow_medium = 1.0 - shadow_medium;
 				shadow_low = 1.0 - shadow_low;
 
-				float shadow_final = shadow_high + shadow_medium + shadow_low;
+				shadow_final = shadow_high + shadow_medium + shadow_low;
 				shadow_final = clamp(shadow_final, 0.0, 1.0) * shadow_alpha;
-
-				lightmapColor.xyz = mix(lightmapColor.xyz, shadowColor.xyz, shadow_final);
 			}
 		#endif
 		}
 	}
+	return shadow_final;
+}
+
+#endif
+
+void main()
+{
+#ifdef DIFFUSE_ENABLED
+
+	#ifdef PARALLAXTEXTURE_ENABLED
+
+		vec3 viewDir = normalize(worldpos.xyz - viewpos.xyz);
+
+		vec4 diffuseColor = texture2D(diffuseTex, ParallaxMapping(viewDir));
+
+	#else
+
+		vec4 diffuseColor = texture2D(diffuseTex, gl_TexCoord[0].xy);
+
+	#endif
+
+#else
+
+	vec4 diffuseColor = color;
+
+#endif
+
+#ifdef LIGHTMAP_ENABLED
+
+	vec4 lightmapColor = texture2DArray(lightmapTexArray, gl_TexCoord[1].xyz);
+
+#else
+
+	vec4 lightmapColor = vec4(1.0, 1.0, 1.0, 1.0);
+
+#endif
+
+#ifdef SHADOWMAP_ENABLED
+
+	lightmapColor.xyz = mix(lightmapColor.xyz, shadowColor.xyz, CalcShadowIntensity(lightmapColor.xyz, normal.xyz, shadowDirection.xyz) * shadowIntensity);
+
 #endif
 
 
@@ -403,7 +406,7 @@ void main()
 		#ifdef NORMALTEXTURE_ENABLED
 			vec3 vNormal = NormalMapping();
 		#else
-			vec3 vNormal = normal.xyz;
+			vec3 vNormal = normalize(normal.xyz);
 		#endif
 
 		vec2 vOctNormal = UnitVectorToOctahedron(vNormal);

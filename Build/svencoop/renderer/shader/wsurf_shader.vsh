@@ -62,15 +62,15 @@ void main(void)
 #ifdef SHADOWMAP_ENABLED
 
 	#ifdef SHADOWMAP_HIGH_ENABLED
-        shadowcoord[0] = shadowMatrix[0] * gl_ModelViewMatrix * gl_Vertex;
+        shadowcoord[0] = shadowMatrix[0] * vec4(worldpos, 1.0);
     #endif
 
     #ifdef SHADOWMAP_MEDIUM_ENABLED
-        shadowcoord[1] = shadowMatrix[1] * gl_ModelViewMatrix * gl_Vertex;
+        shadowcoord[1] = shadowMatrix[1] * vec4(worldpos, 1.0);
     #endif
 
     #ifdef SHADOWMAP_LOW_ENABLED
-        shadowcoord[2] = shadowMatrix[2] * gl_ModelViewMatrix * gl_Vertex;
+        shadowcoord[2] = shadowMatrix[2] * vec4(worldpos, 1.0);
     #endif
 
 #endif

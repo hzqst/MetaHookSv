@@ -125,6 +125,13 @@ void main(void)
 
 #endif
 
+#ifdef OUTLINE_ENABLED
+
+	outvert = outvert + outnorm * r_scale;
+	worldpos = outvert;
+
+#endif
+
 #ifdef STUDIO_NF_CHROME
 
 	outvert = outvert + outnorm * r_scale;
