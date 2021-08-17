@@ -7,7 +7,8 @@ typedef struct shadow_control_s
 	vec3_t vright;
 	vec3_t vup;
 	vec3_t angles;
-	float color[4];
+	float color[3];
+	float intensity;
 	float distfade[2];
 	float lumfade[2];
 	float quality[3][2];

@@ -189,6 +189,22 @@ typedef struct alight_s
 #define STUDIO_NF_ALPHA         0x0010
 #define STUDIO_NF_ADDITIVE      0x0020
 #define STUDIO_NF_MASKED        0x0040
+#define STUDIO_NF_CELSHADE		0x1000
+#define STUDIO_NF_CELSHADE_FACE	0x2000
+
+#define EF_ROCKET			1			//! leave a trail
+#define EF_GRENADE			2			//! leave a trail
+#define EF_GIB				4			//! leave a trail
+#define EF_ROTATE			8			//! rotate (bonus items)
+#define EF_TRACER			0x10			//! green split trail
+#define EF_ZOMGIB			0x20			//! small blood trail
+#define EF_TRACER2			0x40			//! orange split trail + rotate
+#define EF_TRACER3			0x80			//! purple trail
+#define EF_NOSHADELIGHT		0x100			//! No shade lighting
+#define EF_HITBOXCOLLISIONS	0x200			//! Use hitbox collisions
+#define EF_FORCESKYLIGHT	0x400		//! Forces the model to be lit by skybox lighting
+
+#define EF_OUTLINE			0x1000
 
 //gl_model
 

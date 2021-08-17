@@ -66,6 +66,7 @@ typedef struct
 	void(*R_LoadSkys)(void);
 	void(*R_MarkLights)(dlight_t *light, int bit, mnode_t *node);
 	int(*CL_IsDevOverviewMode)(void);
+	void (*Mod_LoadStudioModel)(model_t *mod, void *buffer);
 
 	void(__fastcall *enginesurface_drawFlushText)(void *pthis, int);
 	//SvClient
@@ -87,7 +88,8 @@ typedef struct
 	void (*studioapi_SetupModel)(int bodypart, void **ppbodypart, void **ppsubmodel);
 
 	//Client Studio
-	//void (__fastcall *GameStudioRenderer_StudioSetupBones)(void *pthis, int);
+	void (__fastcall *GameStudioRenderer_StudioRenderModel)(void *pthis, int);
+	void(__fastcall *GameStudioRenderer_StudioRenderFinal)(void *pthis, int);
 }ref_funcs_t;
 
 typedef struct
@@ -140,4 +142,6 @@ extern ref_export_t gRefExports;
 #define r_draw_reflect 1
 #define r_draw_shadow_caster 3
 
-#define META_RENDERER_VERSION "Meta Renderer 2021-08-02"
+#define kRenderFxOutline 100
+
+#define META_RENDERER_VERSION "Meta Renderer 2021-08-17"

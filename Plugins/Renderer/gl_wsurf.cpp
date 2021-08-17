@@ -33,12 +33,16 @@ void R_ClearWSurfVBOCache(void)
 {
 	for (size_t i =0 ;i < g_WSurfVBOCache.size(); ++i)
 	{
-		if (g_WSurfVBOCache[i]->hEBO)
+		if (g_WSurfVBOCache[i])
 		{
-			qglDeleteBuffersARB(1, &g_WSurfVBOCache[i]->hEBO);
-		}
+			if (g_WSurfVBOCache[i]->hEBO)
+			{
+				qglDeleteBuffersARB(1, &g_WSurfVBOCache[i]->hEBO);
+			}
 
-		delete g_WSurfVBOCache[i];
+			delete g_WSurfVBOCache[i];
+		}
+		g_WSurfVBOCache[i] = NULL;
 	}
 	g_WSurfVBOCache.clear();
 }
@@ -119,6 +123,7 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		SHADER_UNIFORM(prog, shadowDirection, "shadowDirection");
 		SHADER_UNIFORM(prog, shadowFade, "shadowFade");
 		SHADER_UNIFORM(prog, shadowColor, "shadowColor");
+		SHADER_UNIFORM(prog, shadowIntensity, "shadowIntensity");
 		SHADER_UNIFORM(prog, clipPlane, "clipPlane");
 		SHADER_UNIFORM(prog, viewpos, "viewpos");
 		SHADER_UNIFORM(prog, parallaxScale, "parallaxScale");
@@ -157,6 +162,9 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		if (prog.shadowmapTexArray != -1)
 			qglUniform1iARB(prog.shadowmapTexArray, 6);
 
+		if (prog.shadowMatrix != -1)
+			qglUniformMatrix4fvARB(prog.shadowMatrix, 3, false, (float *)r_shadow_matrix);
+
 		if (prog.shadowDirection != -1)
 			qglUniform3fARB(prog.shadowDirection, r_shadow_control.vforward[0], r_shadow_control.vforward[1], r_shadow_control.vforward[2]);
 
@@ -164,7 +172,14 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 			qglUniform4fARB(prog.shadowFade, r_shadow_control.distfade[0], r_shadow_control.distfade[1], r_shadow_control.lumfade[0], r_shadow_control.lumfade[1]);
 
 		if (prog.shadowColor != -1)
-			qglUniform4fARB(prog.shadowColor, r_shadow_control.color[0], r_shadow_control.color[1], r_shadow_control.color[2], r_shadow_control.color[3]);
+		{
+			qglUniform3fARB(prog.shadowColor, r_shadow_control.color[0], r_shadow_control.color[1], r_shadow_control.color[2]);
+		}
+
+		if (prog.shadowIntensity != -1)
+		{
+			qglUniform1fARB(prog.shadowIntensity, r_shadow_control.intensity);
+		}
 
 		if (prog.entityMatrix != -1)
 		{
@@ -975,7 +990,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache)
 
 		qglActiveTextureARB(GL_TEXTURE6_ARB);
 
-		qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		/*qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 		qglEnable(GL_TEXTURE_GEN_S);
 		qglEnable(GL_TEXTURE_GEN_T);
 		qglEnable(GL_TEXTURE_GEN_R);
@@ -987,7 +1002,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache)
 		qglTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
 		qglTexGenfv(GL_R, GL_EYE_PLANE, planeR);
 		qglTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-		qglTexGenfv(GL_Q, GL_EYE_PLANE, planeQ);
+		qglTexGenfv(GL_Q, GL_EYE_PLANE, planeQ);*/
 
 		qglEnable(GL_TEXTURE_2D_ARRAY);
 		qglBindTexture(GL_TEXTURE_2D_ARRAY, shadow_texture_color);
@@ -1103,9 +1118,6 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache)
 
 			if (prog.speed != -1)
 				qglUniform1fARB(prog.speed, 0);
-
-			if(prog.shadowMatrix != -1)
-				qglUniformMatrix4fvARB(prog.shadowMatrix, 3, false, (float *)r_shadow_matrix);
 
 			qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
 
@@ -1249,9 +1261,6 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache)
 			if (prog.speed != -1)
 				qglUniform1fARB(prog.speed, 0);
 
-			if (prog.shadowMatrix != -1)
-				qglUniformMatrix4fvARB(prog.shadowMatrix, 3, false, (float *)r_shadow_matrix);
-
 			qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
 
 			if (prog.s_tangent != -1)
@@ -1367,9 +1376,6 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache)
 				if (prog.speed != -1)
 					qglUniform1fARB(prog.speed, scrollSpeed);
 
-				if (prog.shadowMatrix != -1)
-					qglUniformMatrix4fvARB(prog.shadowMatrix, 3, false, (float *)r_shadow_matrix);
-
 				qglDrawElements(GL_POLYGON, texchain.iVertexCount, GL_UNSIGNED_INT, BUFFER_OFFSET(texchain.iStartIndex));
 
 				if (prog.s_tangent != -1)
@@ -1392,10 +1398,10 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache)
 
 		qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 		qglDisable(GL_TEXTURE_2D_ARRAY);
-		qglDisable(GL_TEXTURE_GEN_S);
+		/*qglDisable(GL_TEXTURE_GEN_S);
 		qglDisable(GL_TEXTURE_GEN_T);
 		qglDisable(GL_TEXTURE_GEN_R);
-		qglDisable(GL_TEXTURE_GEN_Q);
+		qglDisable(GL_TEXTURE_GEN_Q);*/
 
 		qglActiveTextureARB(TEXTURE0_SGIS);
 	}
@@ -1508,7 +1514,7 @@ void R_DrawWSurfVBOSolid(wsurf_vbo_t *modcache)
 void R_Reload_f(void)
 {
 	R_ClearBSPEntities();
-	R_ParseBSPEntities(r_worldmodel->entities);
+	R_ParseBSPEntities(r_worldmodel->entities, NULL);
 	R_LoadExternalEntities();
 	R_LoadBSPEntities();
 
@@ -1523,7 +1529,6 @@ void R_InitWSurf(void)
 	r_wsurf.bNormalTexture = false;
 	r_wsurf.bParallaxTexture = false;
 	r_wsurf.pCurrentModel = NULL;
-	r_wsurf.iNumBSPEntities = 0;
 	r_wsurf.iNumLightmapTextures = 0;
 	r_wsurf.iLightmapTextureArray = 0;
 	r_wsurf.vVertexBuffer = 0;
@@ -1558,7 +1563,7 @@ void R_LoadDetailTextures(void)
 	char *pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
 	if (!pfile)
 	{
-		gEngfuncs.Con_Printf("R_LoadDetailTextures: No detail texture file %s\n", name.c_str());
+		gEngfuncs.Con_DPrintf("R_LoadDetailTextures: No detail texture file %s\n", name.c_str());
 		return;
 	}
 
@@ -1735,7 +1740,7 @@ void R_VidInitWSurf(void)
 	R_GenerateLightmapArray();
 	R_ClearWSurfVBOCache();
 	R_ClearBSPEntities();
-	R_ParseBSPEntities(r_worldmodel->entities);
+	R_ParseBSPEntities(r_worldmodel->entities, NULL);
 	R_LoadExternalEntities();
 	R_LoadBSPEntities();
 }
@@ -1987,7 +1992,7 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 
 		qglActiveTextureARB(GL_TEXTURE6_ARB);
 
-		qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		/*qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 		qglEnable(GL_TEXTURE_GEN_S);
 		qglEnable(GL_TEXTURE_GEN_T);
 		qglEnable(GL_TEXTURE_GEN_R);
@@ -1999,7 +2004,7 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 		qglTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
 		qglTexGenfv(GL_R, GL_EYE_PLANE, planeR);
 		qglTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-		qglTexGenfv(GL_Q, GL_EYE_PLANE, planeQ);
+		qglTexGenfv(GL_Q, GL_EYE_PLANE, planeQ);*/
 
 		qglEnable(GL_TEXTURE_2D_ARRAY);
 		qglBindTexture(GL_TEXTURE_2D_ARRAY, shadow_texture_color);
@@ -2125,9 +2130,6 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 	if (prog.speed != -1)
 		qglUniform1fARB(prog.speed, speed);
 
-	if (prog.shadowMatrix != -1)
-		qglUniformMatrix4fvARB(prog.shadowMatrix, 3, false, (float *)r_shadow_matrix);
-
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
 	DrawGLPoly(p);
@@ -2142,10 +2144,10 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 
 		qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 		qglDisable(GL_TEXTURE_2D_ARRAY);
-		qglDisable(GL_TEXTURE_GEN_S);
+		/*qglDisable(GL_TEXTURE_GEN_S);
 		qglDisable(GL_TEXTURE_GEN_T);
 		qglDisable(GL_TEXTURE_GEN_R);
-		qglDisable(GL_TEXTURE_GEN_Q);
+		qglDisable(GL_TEXTURE_GEN_Q);*/
 
 		qglActiveTextureARB(TEXTURE0_SGIS);
 	}
@@ -2189,42 +2191,54 @@ char *ValueForKey(bspentity_t *ent, char *key)
    return NULL;
 }
 
+void FreeBSPEntity(bspentity_t *ent)
+{
+	epair_t *pPair = ent->epairs;
+	while (pPair)
+	{
+		epair_t *pFree = pPair;
+		pPair = pFree->next;
+
+		delete[] pFree->key;
+		delete[] pFree->value;
+		delete pFree;
+	}
+	ent->epairs = NULL;
+	ent->classname = NULL;
+	VectorClear(ent->origin);
+}
+
 void R_ClearBSPEntities(void)
 {
-	for(int i = 0; i < r_wsurf.iNumBSPEntities; i++)
+	for(int i = 0; i < r_wsurf.vBSPEntities.size(); i++)
 	{
-		epair_t *pPair = r_wsurf.pBSPEntities[i].epairs;
-		while(pPair)
-		{
-			epair_t *pFree = pPair;
-			pPair = pFree->next;
-
-			delete [] pFree->key;
-			delete [] pFree->value;
-			delete pFree;
-		}
-		r_wsurf.pBSPEntities[i].epairs = NULL;
-		r_wsurf.pBSPEntities[i].classname = NULL;
-		VectorClear(r_wsurf.pBSPEntities[i].origin);
+		FreeBSPEntity(&r_wsurf.vBSPEntities[i]);
 	}
-	
-	r_wsurf.iNumBSPEntities = 0;
+	r_wsurf.vBSPEntities.clear();
 	r_water_controls.clear();
 	g_DynamicLights.clear();
 }
 
-bspentity_t *current_parse_entity = NULL;
-char com_token[4096];
+static fnParseBSPEntity_Allocator current_parse_allocator = NULL;
+static bspentity_t *current_parse_entity = NULL;
+static char com_token[4096];
 
-bool R_ParseBSPEntityKeyValue(const char *classname, const char *keyname, const char *value)
+bspentity_t *R_ParseBSPEntity_DefaultAllocator(void)
+{
+	size_t len = r_wsurf.vBSPEntities.size();
+
+	r_wsurf.vBSPEntities.resize(len + 1);
+
+	return &r_wsurf.vBSPEntities[len];
+}
+
+static bool R_ParseBSPEntityKeyValue(const char *classname, const char *keyname, const char *value)
 {
 	if (classname == NULL)
 	{
-		if (r_wsurf.iNumBSPEntities >= MAX_MAP_BSPENTITY)
+		current_parse_entity = current_parse_allocator();
+		if(!current_parse_entity)
 			return false;
-
-		current_parse_entity = &r_wsurf.pBSPEntities[r_wsurf.iNumBSPEntities];
-		r_wsurf.iNumBSPEntities++;
 
 		current_parse_entity->classname = NULL;
 		current_parse_entity->epairs = NULL;
@@ -2263,7 +2277,7 @@ bool R_ParseBSPEntityKeyValue(const char *classname, const char *keyname, const 
 	return false;
 }
 
-bool R_ParseBSPEntityClassname(char *szInputStream, char *classname)
+static bool R_ParseBSPEntityClassname(char *szInputStream, char *classname)
 {
 	char szKeyName[256];
 
@@ -2280,7 +2294,8 @@ bool R_ParseBSPEntityClassname(char *szInputStream, char *classname)
 		{
 			R_ParseBSPEntityKeyValue(NULL, szKeyName, com_token);
 
-			strcpy(classname, com_token);
+			strncpy(classname, com_token, 255);
+			classname[255] = 0;
 
 			return true;
 		}
@@ -2296,7 +2311,7 @@ bool R_ParseBSPEntityClassname(char *szInputStream, char *classname)
 	return false;
 }
 
-char *R_ParseBSPEntity(char *data)
+static char *R_ParseBSPEntity(char *data)
 {
 	char keyname[256] = { 0 };
 	char classname[256] = { 0 };
@@ -2363,8 +2378,14 @@ char *R_ParseBSPEntity(char *data)
 	return data;
 }
 
-void R_ParseBSPEntities(char *data)
+void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator allocator)
 {
+
+	if (allocator)
+		current_parse_allocator = allocator; 
+	else
+		current_parse_allocator = R_ParseBSPEntity_DefaultAllocator;
+
 	while (1)
 	{
 		data = gEngfuncs.COM_ParseFile(data, com_token);
@@ -2379,6 +2400,7 @@ void R_ParseBSPEntities(char *data)
 		}
 		data = R_ParseBSPEntity(data);
 	}
+	current_parse_allocator = NULL;
 }
 
 void R_LoadExternalEntities(void)
@@ -2404,8 +2426,7 @@ void R_LoadExternalEntities(void)
 			return;
 		}
 	}
-
-	R_ParseBSPEntities(pfile);
+	R_ParseBSPEntities(pfile, NULL);
 
 	gEngfuncs.COM_FreeFile(pfile);
 }
@@ -3054,19 +3075,17 @@ void R_LoadShadowControl(void)
 	r_shadow_control.enabled = true;
 
 	float temp[4];
-	if (sscanf(r_shadow_color->string, "%f %f %f %f", &temp[0], &temp[1], &temp[2], &temp[3]) == 4)
+	if (sscanf(r_shadow_color->string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
 	{
 		r_shadow_control.color[0] = clamp(temp[0], 0, 255) / 255.0f;
 		r_shadow_control.color[1] = clamp(temp[1], 0, 255) / 255.0f;
 		r_shadow_control.color[2] = clamp(temp[2], 0, 255) / 255.0f;
-		r_shadow_control.color[3] = clamp(temp[3], 0, 255) / 255.0f;
 	}
 	else
 	{
 		r_shadow_control.color[0] = 0;
 		r_shadow_control.color[1] = 0;
 		r_shadow_control.color[2] = 0;
-		r_shadow_control.color[3] = 0.5f;
 
 		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse r_shadow_color\n");
 	}
@@ -3114,6 +3133,8 @@ void R_LoadShadowControl(void)
 
 		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse r_shadow_lumfade\n");
 	}
+
+	r_shadow_control.intensity = clamp(r_shadow_intensity->value, 0, 1);
 
 	r_shadow_control.quality[0][0] = clamp(r_shadow_high_distance->value, 0, 100000);
 	r_shadow_control.quality[0][1] = clamp(r_shadow_high_scale->value, 0.1, 8);
@@ -3176,9 +3197,9 @@ void R_LoadBSPEntities(void)
 
 	R_LoadSSRControl();
 
-	for(int i = 0; i < r_wsurf.iNumBSPEntities; i++)
+	for(int i = 0; i < r_wsurf.vBSPEntities.size(); i++)
 	{
-		bspentity_t *ent = &r_wsurf.pBSPEntities[i];
+		bspentity_t *ent = &r_wsurf.vBSPEntities[i];
 
 		char *classname = ent->classname;
 
@@ -3686,7 +3707,7 @@ void R_DrawWorld(void)
 				qglLoadMatrixf(bias);
 				qglMultMatrixf(shadow_projmatrix[i]);
 				qglMultMatrixf(shadow_mvmatrix[i]);
-				qglMultMatrixf(r_world_matrix_inv);
+				//qglMultMatrixf(r_world_matrix_inv);
 				qglGetFloatv(GL_TEXTURE_MATRIX, r_shadow_matrix[i]);
 			}
 		}

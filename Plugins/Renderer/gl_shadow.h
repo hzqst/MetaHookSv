@@ -16,6 +16,7 @@ extern cvar_t *r_shadow_distfade;
 extern cvar_t *r_shadow_lumfade;
 extern cvar_t *r_shadow_angles;
 extern cvar_t *r_shadow_color;
+extern cvar_t *r_shadow_intensity;
 extern cvar_t *r_shadow_high_distance;
 extern cvar_t *r_shadow_high_scale;
 extern cvar_t *r_shadow_medium_distance;

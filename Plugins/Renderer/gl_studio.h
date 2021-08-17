@@ -10,7 +10,7 @@ typedef struct
 	int diffuseTex;
 
 	int viewpos;
-
+	int viewdir;
 	int bonematrix;
 
 	int v_lambert;
@@ -28,6 +28,17 @@ typedef struct
 	int r_origin;
 	int r_vright;
 	int r_scale;
+	//celshade
+	int r_celshade_midpoint;
+	int r_celshade_softness;
+	int r_celshade_shadow_color;
+	int r_rimlight_power;
+	int r_rimlight_smooth;
+	int r_rimlight_color;
+	int r_rimdark_power;
+	int r_rimdark_smooth;
+	int r_rimdark_color;
+	int r_outline_dark;
 	//shadow caster
 	int entityPos;
 	//attribute
@@ -79,10 +90,12 @@ typedef struct studio_vbo_mesh_s
 	{
 		iStartIndex = -1;
 		iIndiceCount = 0;
+		iPolyCount = 0;
 	}
 
 	int iStartIndex;
 	int iIndiceCount;
+	int iPolyCount;
 }studio_vbo_mesh_t;
 
 typedef struct studio_vbo_s
@@ -135,15 +148,17 @@ extern int r_studio_drawcall;
 extern int r_studio_polys;
 extern int r_studio_framecount;
 
+void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr);
 void R_StudioReloadVBOCache(void);
 void R_ShutdownStudio(void);
 void R_InitStudio(void);
+
 void R_GLStudioDrawPoints(void);
 studiohdr_t *R_LoadTextures(model_t *psubm);
-
 void studioapi_RestoreRenderer(void);
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
 void studioapi_SetupModel(int bodypart, void **ppbodypart, void **ppsubmodel);
+void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int);
 
 extern engine_studio_api_t IEngineStudio;
 extern r_studio_interface_t **gpStudioInterface;
@@ -157,3 +172,4 @@ extern cvar_t *r_studio_vbo;
 #define STUDIO_SHADOW_CASTER_ENABLED			0x100000
 #define STUDIO_LEGACY_BONE_ENABLED				0x200000
 #define STUDIO_GLOW_SHELL_ENABLED				0x400000
+#define STUDIO_OUTLINE_ENABLED					0x800000

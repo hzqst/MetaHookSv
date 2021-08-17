@@ -217,6 +217,8 @@ extern cvar_t *chase_active;
 
 void R_FillAddress(void);
 void R_InstallHook(void);
+
+void Mod_LoadStudioModel(model_t *mod, void *buffer);
 void R_RenderView(void);
 void R_RenderScene(void);
 void R_RenderView_SvEngine(int a1);

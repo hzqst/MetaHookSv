@@ -1721,6 +1721,17 @@ model_t *EngineGetModelByIndex(int index)
 	return NULL;
 }
 
+void Mod_LoadStudioModel(model_t *mod, void *buffer)
+{
+	gRefFuncs.Mod_LoadStudioModel(mod, buffer);
+
+	studiohdr_t *studiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(mod);
+	if (studiohdr)
+	{
+		R_StudioLoadExternalFile(mod, studiohdr);
+	}
+}
+
 #if 0
 
 void R_BuildCubemap_Snapshot(cubemap_t *cubemap, int index)

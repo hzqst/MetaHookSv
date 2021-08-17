@@ -92,6 +92,8 @@ typedef struct
    char		*classname;
 }bspentity_t;
 
+typedef bspentity_t *(*fnParseBSPEntity_Allocator)(void);
+
 #define WSURF_REPLACE_TEXTURE		0
 #define WSURF_DETAIL_TEXTURE		1
 #define WSURF_NORMAL_TEXTURE		2
@@ -161,7 +163,6 @@ typedef struct r_worldsurf_s
 		iNumLightmapTextures = 0;
 		iLightmapTextureArray = 0;
 
-		iNumBSPEntities = 0;
 		iS_Tangent = 0;
 		iT_Tangent = 0;
 	}
@@ -189,8 +190,7 @@ typedef struct r_worldsurf_s
 	int					iNumLightmapTextures;
 	int					iLightmapTextureArray;
 
-	int					iNumBSPEntities;
-	bspentity_t			pBSPEntities[MAX_MAP_BSPENTITY];
+	std::vector <bspentity_t> vBSPEntities;
 }r_worldsurf_t;
 
 typedef struct
@@ -209,6 +209,7 @@ typedef struct
 	int shadowDirection;
 	int shadowFade;
 	int shadowColor;
+	int shadowIntensity;
 	int clipPlane;
 	int viewpos;
 	int parallaxScale;
@@ -252,9 +253,10 @@ extern decalcache_t *gDecalCache;
 
 //cvar
 extern cvar_t *r_wsurf_vbo;
-
+void FreeBSPEntity(bspentity_t *ent);
 void R_ClearBSPEntities(void);
-void R_ParseBSPEntities(char *data);
+void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator fn);
+bspentity_t *R_ParseBSPEntity_DefaultAllocator(void);
 char *ValueForKey(bspentity_t *ent, char *key);
 void R_LoadBSPEntities(void);
 void R_LoadExternalEntities(void);

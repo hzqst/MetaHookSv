@@ -2662,6 +2662,21 @@ void R_FillAddress(void)
 			return FALSE;
 		}, 0, NULL);
 	}
+
+	{
+		const char sigs1[] = "bogus\0";
+		auto Bogus_String = Search_Pattern_Data(sigs1);
+		if (!Bogus_String)
+			Bogus_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(Bogus_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x2A\xE8";
+		*(DWORD *)(pattern + 1) = (DWORD)Bogus_String;
+		auto Bogus_Call = Search_Pattern(pattern);
+		Sig_VarNotFound(Bogus_Call);
+
+		gRefFuncs.Mod_LoadStudioModel = (decltype(gRefFuncs.Mod_LoadStudioModel))g_pMetaHookAPI->ReverseSearchFunctionBegin(Bogus_Call, 0x50);
+		Sig_FuncNotFound(Mod_LoadStudioModel);
+	}
 }
 
 void R_InstallHook(void)
@@ -2694,4 +2709,5 @@ void R_InstallHook(void)
 	Install_InlineHook(R_AddTEntity);
 	Install_InlineHook(GL_LoadTexture2);
 	Install_InlineHook(enginesurface_drawFlushText);
+	Install_InlineHook(Mod_LoadStudioModel);
 }

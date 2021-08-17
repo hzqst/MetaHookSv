@@ -51,6 +51,18 @@ int r_studio_polys;
 int r_studio_framecount;
 
 cvar_t *r_studio_vbo = NULL;
+cvar_t *r_studio_celshade = NULL;
+cvar_t *r_studio_celshade_midpoint = NULL;
+cvar_t *r_studio_celshade_softness = NULL;
+cvar_t *r_studio_celshade_shadow_color = NULL;
+cvar_t *r_studio_rimlight_power = NULL;
+cvar_t *r_studio_rimlight_smooth = NULL;
+cvar_t *r_studio_rimlight_color = NULL;
+cvar_t *r_studio_rimdark_power = NULL;
+cvar_t *r_studio_rimdark_smooth = NULL;
+cvar_t *r_studio_rimdark_color = NULL;
+cvar_t *r_studio_outline_size = NULL;
+cvar_t *r_studio_outline_dark = NULL;
 
 studio_vbo_t *R_StudioPrepareVBOSubmodel(studiohdr_t *studiohdr, mstudiomodel_t *submodel)
 {
@@ -111,6 +123,7 @@ studio_vbo_t *R_StudioPrepareVBOSubmodel(studiohdr_t *studiohdr, mstudiomodel_t 
 
 					vIndices.emplace_back(iStartVertex + iNumVertex);
 					VBOMesh.iIndiceCount++;
+					VBOMesh.iPolyCount++;
 
 					if (first == -1)
 						first = iNumVertex;
@@ -149,6 +162,8 @@ studio_vbo_t *R_StudioPrepareVBOSubmodel(studiohdr_t *studiohdr, mstudiomodel_t 
 
 					vIndices.emplace_back(iStartVertex + iNumVertex);
 					VBOMesh.iIndiceCount++;
+					VBOMesh.iPolyCount++;
+
 					iNumTri++;
 
 					prv0 = prv1;
@@ -182,15 +197,15 @@ void R_StudioPrepareVBO(studiohdr_t *studiohdr)
 {
 	for (int i = 0; i < studiohdr->numbodyparts; i++)
 	{
-		auto pbodypart = (mstudiobodyparts_t *)((byte *)studiohdr + studiohdr->bodypartindex) + i;
+		auto bodypart = (mstudiobodyparts_t *)((byte *)studiohdr + studiohdr->bodypartindex) + i;
 
-		if (pbodypart->modelindex && pbodypart->nummodels)
+		if (bodypart->modelindex && bodypart->nummodels)
 		{
-			for (int j = 0; j < pbodypart->nummodels; ++j)
+			for (int j = 0; j < bodypart->nummodels; ++j)
 			{
-				auto psubmodel = (mstudiomodel_t *)((byte *)studiohdr + pbodypart->modelindex) + j;
+				auto submodel = (mstudiomodel_t *)((byte *)studiohdr + bodypart->modelindex) + j;
 
-				R_StudioPrepareVBOSubmodel(studiohdr, psubmodel);
+				R_StudioPrepareVBOSubmodel(studiohdr, submodel);
 			}
 		}
 	}
@@ -264,6 +279,12 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		if (state & STUDIO_NF_MASKED)
 			defs << "#define STUDIO_NF_MASKED\n";
 
+		if (state & STUDIO_NF_CELSHADE)
+			defs << "#define STUDIO_NF_CELSHADE\n";
+
+		if (state & STUDIO_NF_CELSHADE_FACE)
+			defs << "#define STUDIO_NF_CELSHADE_FACE\n";
+
 		if (state & STUDIO_GBUFFER_ENABLED)
 			defs << "#define GBUFFER_ENABLED\n";
 
@@ -284,6 +305,9 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 
 		if (state & STUDIO_GLOW_SHELL_ENABLED)
 			defs << "#define GLOW_SHELL_ENABLED\n";
+
+		if (state & STUDIO_OUTLINE_ENABLED)
+			defs << "#define OUTLINE_ENABLED\n";
 
 		auto def = defs.str();
 
@@ -307,8 +331,19 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 			SHADER_UNIFORM(prog, r_vright, "r_vright");
 			SHADER_UNIFORM(prog, r_scale, "r_scale");
 			SHADER_UNIFORM(prog, r_uvscale, "r_uvscale");
+			SHADER_UNIFORM(prog, r_celshade_midpoint, "r_celshade_midpoint");
+			SHADER_UNIFORM(prog, r_celshade_softness, "r_celshade_softness");
+			SHADER_UNIFORM(prog, r_celshade_shadow_color, "r_celshade_shadow_color");
+			SHADER_UNIFORM(prog, r_rimlight_power, "r_rimlight_power");
+			SHADER_UNIFORM(prog, r_rimlight_smooth, "r_rimlight_smooth");
+			SHADER_UNIFORM(prog, r_rimlight_color, "r_rimlight_color");
+			SHADER_UNIFORM(prog, r_rimdark_power, "r_rimdark_power");
+			SHADER_UNIFORM(prog, r_rimdark_smooth, "r_rimdark_smooth");
+			SHADER_UNIFORM(prog, r_rimdark_color, "r_rimdark_color");
+			SHADER_UNIFORM(prog, r_outline_dark, "r_outline_dark");
 			SHADER_UNIFORM(prog, entityPos, "entityPos");
 			SHADER_UNIFORM(prog, viewpos, "viewpos");
+			SHADER_UNIFORM(prog, viewdir, "viewdir");
 
 			SHADER_ATTRIB(prog, attr_bone, "attr_bone");
 		}
@@ -380,7 +415,12 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 			qglUniform3fARB(prog.r_vright, vright[0], vright[1], vright[2]);
 
 		if (prog.r_scale != -1)
-			qglUniform1fARB(prog.r_scale, ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME) ? (*currententity)->curstate.renderamt * 0.05f : 0);
+		{
+			qglUniform1fARB(prog.r_scale,
+				((*currententity)->curstate.renderfx == kRenderFxGlowShell ||
+				(*currententity)->curstate.renderfx == kRenderFxOutline )/*(*g_ForcedFaceFlags) & STUDIO_NF_CHROME*/
+				? (*currententity)->curstate.renderamt * 0.05f : 0);
+		}
 
 		if (prog.entityPos != -1)
 			qglUniform3fARB(prog.entityPos, (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3]);
@@ -388,6 +428,54 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		if (prog.viewpos != -1)
 			qglUniform3fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
 
+		if (prog.viewdir != -1)
+			qglUniform3fARB(prog.viewdir, vpn[0], vpn[1], vpn[2]);
+
+		if (prog.r_celshade_midpoint != -1)
+			qglUniform1fARB(prog.r_celshade_midpoint, r_studio_celshade_midpoint->value);
+
+		if (prog.r_celshade_softness != -1)
+			qglUniform1fARB(prog.r_celshade_softness, r_studio_celshade_softness->value);
+
+		if (prog.r_celshade_shadow_color != -1)
+		{
+			vec3_t color = { 0 };
+			R_ParseVectorCvar(r_studio_celshade_shadow_color, color);
+			qglUniform3fARB(prog.r_celshade_shadow_color, color[0], color[1], color[2]);
+		}
+
+		if (prog.r_rimlight_power != -1)
+		{
+			qglUniform1fARB(prog.r_rimlight_power, r_studio_rimlight_power->value);
+		}
+		if (prog.r_rimlight_smooth != -1)
+		{
+			qglUniform1fARB(prog.r_rimlight_smooth, r_studio_rimlight_smooth->value);
+		}
+		if (prog.r_rimlight_color != -1)
+		{
+			vec3_t color = { 0 };
+			R_ParseVectorCvar(r_studio_rimlight_color, color);
+			qglUniform3fARB(prog.r_rimlight_color, color[0], color[1], color[2]);
+		}
+		if (prog.r_rimdark_power != -1)
+		{
+			qglUniform1fARB(prog.r_rimdark_power, r_studio_rimdark_power->value);
+		}
+		if (prog.r_rimdark_smooth != -1)
+		{
+			qglUniform1fARB(prog.r_rimdark_smooth, r_studio_rimdark_smooth->value);
+		}
+		if (prog.r_rimdark_color != -1)
+		{
+			vec3_t color = { 0 };
+			R_ParseVectorCvar(r_studio_rimdark_color, color);
+			qglUniform3fARB(prog.r_rimdark_color, color[0], color[1], color[2]);
+		}
+		if (prog.r_outline_dark != -1)
+		{
+			qglUniform1fARB(prog.r_outline_dark, r_studio_outline_dark->value);
+		}
 		if (progOutput)
 			*progOutput = prog;
 	}
@@ -405,6 +493,19 @@ void R_ShutdownStudio(void)
 void R_InitStudio(void)
 {
 	r_studio_vbo = gEngfuncs.pfnRegisterVariable("r_studio_vbo", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_celshade = gEngfuncs.pfnRegisterVariable("r_studio_celshade", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_celshade_midpoint = gEngfuncs.pfnRegisterVariable("r_studio_celshade_midpoint", "-0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_celshade_softness = gEngfuncs.pfnRegisterVariable("r_studio_celshade_softness", "0.05", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_outline_size = gEngfuncs.pfnRegisterVariable("r_studio_outline_size", "3.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_outline_dark = gEngfuncs.pfnRegisterVariable("r_studio_outline_dark", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_celshade_shadow_color = gEngfuncs.pfnRegisterVariable("r_studio_celshade_shadow_color", "220 210 210", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+
+	r_studio_rimlight_power = gEngfuncs.pfnRegisterVariable("r_studio_rimlight_power", "5.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_rimlight_smooth = gEngfuncs.pfnRegisterVariable("r_studio_rimlight_smooth", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_rimlight_color = gEngfuncs.pfnRegisterVariable("r_studio_rimlight_color", "40 40 40", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_rimdark_power = gEngfuncs.pfnRegisterVariable("r_studio_rimdark_power", "5.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_rimdark_smooth = gEngfuncs.pfnRegisterVariable("r_studio_rimdark_smooth", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_rimdark_color = gEngfuncs.pfnRegisterVariable("r_studio_rimdark_color", "50 50 50", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
 inline void R_StudioTransformAuxVert(auxvert_t *av, int bone, vec3_t vert)
@@ -716,7 +817,7 @@ void R_GLStudioDrawPoints(void)
 			Sys_ErrorEx("R_GLStudioDrawPoints: %s -> %s numverts (%d) > MAXSTUDIOVERTS (%d)", engine_pstudiohdr->name, engine_psubmodel->name, engine_psubmodel->numverts, MAXSTUDIOVERTS);
 		}
 
-		if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
+		if ((*currententity)->curstate.renderfx == kRenderFxGlowShell || (*currententity)->curstate.renderfx == kRenderFxOutline)
 		{
 			BuildNormalIndexTable();
 			BuildGlowShellVerts(pstudioverts, engine_pauxverts);
@@ -811,8 +912,6 @@ void R_GLStudioDrawPoints(void)
 
 			pmesh = (mstudiomesh_t *)((byte *)engine_pstudiohdr + engine_psubmodel->meshindex) + j;
 
-			r_studio_polys += pmesh->numtris;
-
 			flags = ptexture[pskinref[pmesh->skinref]].flags | (*g_ForcedFaceFlags);
 
 			if (r_fullbright->value >= 2)
@@ -851,6 +950,18 @@ void R_GLStudioDrawPoints(void)
 			{
 
 			}
+			else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
+			{
+				qglStencilFunc(GL_EQUAL, 0, 0xFF);
+				qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+				StudioProgramState |= STUDIO_OUTLINE_ENABLED;
+				StudioProgramState &= ~STUDIO_NF_CHROME;
+				StudioProgramState &= ~STUDIO_NF_ADDITIVE;
+				StudioProgramState &= ~STUDIO_NF_MASKED;
+				StudioProgramState &= ~STUDIO_NF_CELSHADE;
+				StudioProgramState &= ~STUDIO_NF_CELSHADE_FACE;
+			}
 			else if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
 			{
 				qglBlendFunc(GL_ONE, GL_ONE);
@@ -866,8 +977,6 @@ void R_GLStudioDrawPoints(void)
 				qglEnable(GL_ALPHA_TEST);
 				qglAlphaFunc(GL_GREATER, 0.5);
 				qglDepthMask(GL_TRUE);
-
-				//StudioProgramState |= STUDIO_NF_MASKED;
 			}
 			else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
 			{
@@ -952,11 +1061,17 @@ void R_GLStudioDrawPoints(void)
 				qglDrawElements(GL_TRIANGLES, VBOMesh.iIndiceCount, GL_UNSIGNED_INT, BUFFER_OFFSET(VBOMesh.iStartIndex));
 				
 				++r_studio_drawcall;
+				r_studio_polys += VBOMesh.iPolyCount;
 			}
 
 			if (r_draw_pass == r_draw_shadow_caster)
 			{
 				
+			}
+			else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
+			{
+				qglStencilFunc(GL_ALWAYS, stencilState, 0xFF);
+				qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 			}
 			else if (flags & STUDIO_NF_MASKED)
 			{
@@ -1036,6 +1151,18 @@ void R_GLStudioDrawPoints(void)
 			{
 
 			}
+			else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
+			{
+				qglStencilFunc(GL_EQUAL, 0, 0xFF);
+				qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+				StudioProgramState |= STUDIO_OUTLINE_ENABLED;
+				StudioProgramState &= ~STUDIO_NF_CHROME;
+				StudioProgramState &= ~STUDIO_NF_ADDITIVE;
+				StudioProgramState &= ~STUDIO_NF_MASKED;
+				StudioProgramState &= ~STUDIO_NF_CELSHADE;
+				StudioProgramState &= ~STUDIO_NF_CELSHADE_FACE;
+			}
 			else if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
 			{
 				qglBlendFunc(GL_ONE, GL_ONE);
@@ -1051,8 +1178,6 @@ void R_GLStudioDrawPoints(void)
 				qglEnable(GL_ALPHA_TEST);
 				qglAlphaFunc(GL_GREATER, 0.5);
 				qglDepthMask(GL_TRUE);
-
-				//StudioProgramState |= STUDIO_NF_MASKED;
 			}
 			else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
 			{
@@ -1258,6 +1383,11 @@ void R_GLStudioDrawPoints(void)
 			{
 
 			}
+			else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
+			{
+				qglStencilFunc(GL_ALWAYS, stencilState, 0xFF);
+				qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+			}
 			else if (flags & STUDIO_NF_MASKED)
 			{
 				qglAlphaFunc(GL_NOTEQUAL, 0);
@@ -1340,4 +1470,233 @@ void studioapi_RestoreRenderer(void)
 {
 	qglDepthMask(1);
 	gRefFuncs.studioapi_RestoreRenderer();
+}
+
+void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
+{
+	if ((*pstudiohdr)->flags & EF_OUTLINE)
+	{
+		gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
+
+		int saved_renderfx = (*currententity)->curstate.renderfx;
+		int savbed_renderamt = (*currententity)->curstate.renderamt;
+
+		(*currententity)->curstate.renderfx = kRenderFxOutline;
+		(*currententity)->curstate.renderamt = clamp(r_studio_outline_size->value, 0, 255);
+
+		gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
+
+		(*currententity)->curstate.renderfx = saved_renderfx;
+		(*currententity)->curstate.renderamt = savbed_renderamt;
+		return;
+	}
+	return gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
+}
+
+void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr)
+{
+	char *basetexture_string = ValueForKey(ent, "basetexture");
+	if (!basetexture_string)
+	{
+		gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"basetexture\" in entity \"studio_texture\"\n");
+		return;
+	}
+	if (!studiohdr->textureindex)
+	{
+		gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Model %s has no texture\n", studiohdr->name);
+		return;
+	}
+	char *flags_string = ValueForKey(ent, "flags");
+	char *replacetexture_string = ValueForKey(ent, "replacetexture");
+
+	for (int i = 0; i < studiohdr->numtextures; ++i)
+	{
+		auto ptexture = (mstudiotexture_t *)((byte *)studiohdr + studiohdr->textureindex) + i;
+
+		bool bSelected = false;
+
+		if (!strcmp(basetexture_string, "*"))
+		{
+			bSelected = true;
+		}
+		else if (!strcmp(ptexture->name, basetexture_string))
+		{
+			bSelected = true;
+		}
+		if (bSelected)
+		{
+			if (flags_string && !strcmp(flags_string, "STUDIO_NF_FLATSHADE"))
+			{
+				ptexture->flags |= STUDIO_NF_FLATSHADE;
+			}
+			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CHROME"))
+			{
+				ptexture->flags |= STUDIO_NF_CHROME;
+			}
+			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_FULLBRIGHT"))
+			{
+				ptexture->flags |= STUDIO_NF_FULLBRIGHT;
+			}
+			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_NOMIPS"))
+			{
+				ptexture->flags |= STUDIO_NF_NOMIPS;
+			}
+			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_ALPHA"))
+			{
+				ptexture->flags |= STUDIO_NF_ALPHA;
+			}
+			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_ADDITIVE"))
+			{
+				ptexture->flags |= STUDIO_NF_ADDITIVE;
+			}
+			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_MASKED"))
+			{
+				ptexture->flags |= STUDIO_NF_MASKED;
+			}
+			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE"))
+			{
+				ptexture->flags |= STUDIO_NF_CELSHADE;
+			}
+			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE_FACE"))
+			{
+				ptexture->flags |= STUDIO_NF_CELSHADE_FACE;
+			}
+			if (replacetexture_string && replacetexture_string[0])
+			{
+				int width = 0;
+				int height = 0;
+				std::string texturePath = "gfx/";
+				texturePath += replacetexture_string;
+				if (!V_GetFileExtension(replacetexture_string))
+					texturePath += ".tga";
+
+				int texId = R_LoadTextureEx(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO, 
+					(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true);
+				if (!texId)
+				{
+					texturePath = "renderer/texture/";
+					texturePath += replacetexture_string;
+					if (!V_GetFileExtension(replacetexture_string))
+						texturePath += ".tga";
+
+					texId = R_LoadTextureEx(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO, 
+						(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true);
+				}
+				if (texId)
+				{
+					ptexture->index = texId;
+					ptexture->width = width;
+					ptexture->height = height;
+				}
+			}
+		}
+	}
+}
+
+void R_StudioLoadExternalFile_Efx(bspentity_t *ent, studiohdr_t *studiohdr)
+{
+	char *flags_string = ValueForKey(ent, "flags");
+	if (flags_string && !strcmp(flags_string, "EF_ROCKET"))
+	{
+		studiohdr->flags |= EF_ROCKET;
+	}
+	if (flags_string && !strcmp(flags_string, "EF_GRENADE"))
+	{
+		studiohdr->flags |= EF_GRENADE;
+	}
+	if (flags_string && !strcmp(flags_string, "EF_GIB"))
+	{
+		studiohdr->flags |= EF_GIB;
+	}
+	if (flags_string && !strcmp(flags_string, "EF_ROTATE"))
+	{
+		studiohdr->flags |= EF_ROTATE;
+	}
+	if (flags_string && !strcmp(flags_string, "EF_TRACER"))
+	{
+		studiohdr->flags |= EF_TRACER;
+	}
+	if (flags_string && !strcmp(flags_string, "EF_ZOMGIB"))
+	{
+		studiohdr->flags |= EF_ZOMGIB;
+	}
+	if (flags_string && !strcmp(flags_string, "EF_TRACER2"))
+	{
+		studiohdr->flags |= EF_TRACER2;
+	}
+	if (flags_string && !strcmp(flags_string, "EF_TRACER3"))
+	{
+		studiohdr->flags |= EF_TRACER3;
+	}
+	if (flags_string && !strcmp(flags_string, "EF_NOSHADELIGHT"))
+	{
+		studiohdr->flags |= EF_NOSHADELIGHT;
+	}
+	if (flags_string && !strcmp(flags_string, "EF_HITBOXCOLLISIONS"))
+	{
+		studiohdr->flags |= EF_HITBOXCOLLISIONS;
+	}
+	if (flags_string && !strcmp(flags_string, "EF_FORCESKYLIGHT"))
+	{
+		studiohdr->flags |= EF_FORCESKYLIGHT;
+	}
+	if (flags_string && !strcmp(flags_string, "EF_OUTLINE"))
+	{
+		studiohdr->flags |= EF_OUTLINE;
+	}
+}
+
+static std::vector<bspentity_t> g_StudioBSPEntities;
+
+bspentity_t *R_ParseBSPEntity_StudioAllocator(void)
+{
+	size_t len = g_StudioBSPEntities.size();
+
+	g_StudioBSPEntities.resize(len + 1);
+
+	return &g_StudioBSPEntities[len];
+}
+
+void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr)
+{
+	std::string name = mod->name;
+	name = name.substr(0, name.length() - 4);
+	name += "_external.txt";
+
+	char *pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
+	if (!pfile)
+	{
+		gEngfuncs.Con_DPrintf("R_StudioLoadExternalFile: No external file %s\n", name.c_str());
+		return;
+	}
+	
+	R_ParseBSPEntities(pfile, R_ParseBSPEntity_StudioAllocator);
+
+	for (size_t i = 0; i < g_StudioBSPEntities.size(); ++i)
+	{
+		bspentity_t *ent = &g_StudioBSPEntities[i];
+
+		char *classname = ent->classname;
+
+		if (!classname)
+			continue;
+
+		if (!strcmp(classname, "studio_texture"))
+		{
+			R_StudioLoadExternalFile_Texture(ent, studiohdr);
+		}
+		else if (!strcmp(classname, "studio_efx"))
+		{
+			R_StudioLoadExternalFile_Efx(ent, studiohdr);
+		}
+	}
+
+	for (int i = 0; i < g_StudioBSPEntities.size(); i++)
+	{
+		FreeBSPEntity(&g_StudioBSPEntities[i]);
+	}
+
+	g_StudioBSPEntities.clear();
+
+	gEngfuncs.COM_FreeFile(pfile);
 }
