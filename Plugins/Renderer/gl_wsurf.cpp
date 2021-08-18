@@ -95,7 +95,7 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		if (state & WSURF_SHADOWMAP_ENABLED)
 		{
 			defs << "#define SHADOWMAP_ENABLED\n";
-			defs << "const float SHADOW_TEXTURE_OFFSET = 1.0 / " << shadow_texture_size << ".0; \n";
+			defs << "const float SHADOW_TEXTURE_OFFSET = 1.0 / " << std::dec << shadow_texture_size << ".0; \n";
 		}
 
 		if (state & WSURF_SHADOWMAP_HIGH_ENABLED)
@@ -1108,7 +1108,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache)
 				WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
 			}
 
-			if (r_draw_pass == r_draw_shadow_caster)
+			if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
 			{
 				WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 			}
@@ -1250,7 +1250,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache)
 				WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
 			}
 
-			if (r_draw_pass == r_draw_shadow_caster)
+			if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
 			{
 				WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 			}
@@ -1365,7 +1365,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache)
 					WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
 				}
 
-				if (r_draw_pass == r_draw_shadow_caster)
+				if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
 				{
 					WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 				}
@@ -1457,7 +1457,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache)
 			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 		}
 
-		if (r_draw_pass == r_draw_shadow_caster)
+		if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
 		{
 			WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 		}
@@ -1992,20 +1992,6 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 
 		qglActiveTextureARB(GL_TEXTURE6_ARB);
 
-		/*qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		qglEnable(GL_TEXTURE_GEN_S);
-		qglEnable(GL_TEXTURE_GEN_T);
-		qglEnable(GL_TEXTURE_GEN_R);
-		qglEnable(GL_TEXTURE_GEN_Q);
-		qglTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-		qglTexGenfv(GL_S, GL_EYE_PLANE, planeS);
-		qglTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-		qglTexGenfv(GL_T, GL_EYE_PLANE, planeT);
-		qglTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-		qglTexGenfv(GL_R, GL_EYE_PLANE, planeR);
-		qglTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-		qglTexGenfv(GL_Q, GL_EYE_PLANE, planeQ);*/
-
 		qglEnable(GL_TEXTURE_2D_ARRAY);
 		qglBindTexture(GL_TEXTURE_2D_ARRAY, shadow_texture_color);
 
@@ -2109,7 +2095,7 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 		WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
 	}
 
-	if (r_draw_pass == r_draw_shadow_caster)
+	if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
 	{
 		WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 	}

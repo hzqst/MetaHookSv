@@ -55,7 +55,6 @@ uniform float clipPlane;
 uniform float clipPlane;
 #endif
 
-
 vec2 UnitVectorToHemiOctahedron(vec3 dir) {
 
 	dir.y = max(dir.y, 0.0001);
@@ -155,23 +154,27 @@ vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
 
 void main(void)
 {
+
+#ifndef SHADOW_CASTER_ENABLED
 	vec4 diffuseColor = texture2D(diffuseTex, gl_TexCoord[0].xy);
 
 	vec3 vNormal = normalize(normal.xyz);
 
 	vec4 lightmapColor = color;
 
-#ifdef STUDIO_NF_CELSHADE
-	lightmapColor.xyz = CelShade(vNormal, r_plightvec);
-#endif
+	#ifdef STUDIO_NF_CELSHADE
+		lightmapColor.xyz = CelShade(vNormal, r_plightvec);
+	#endif
 
-#ifdef OUTLINE_ENABLED
-	diffuseColor *= r_outline_dark;
-#endif
+	#ifdef OUTLINE_ENABLED
+		diffuseColor *= r_outline_dark;
+	#endif
 
-#ifdef STUDIO_NF_MASKED
-    if(diffuseColor.a < 0.5)
-        discard;
+	#ifdef STUDIO_NF_MASKED
+		if(diffuseColor.a < 0.5)
+			discard;
+	#endif
+
 #endif
 
 #ifdef CLIP_ABOVE_ENABLED
@@ -224,7 +227,7 @@ void main(void)
 		gl_FragColor = diffuseColor * lightmapColor;
 
 		#ifdef LINEAR_FOG_ENABLED
-		
+
 			float z = gl_FragCoord.z / gl_FragCoord.w;
 			float fogFactor = ( gl_Fog.end - z ) / ( gl_Fog.end - gl_Fog.start );
 			fogFactor = clamp(fogFactor, 0.0, 1.0);

@@ -88,6 +88,7 @@ qboolean gl_framebuffer_object = false;
 qboolean gl_shader_support = false;
 qboolean gl_program_support = false;
 qboolean gl_msaa_support = false;
+qboolean gl_multi_draw_support = false;
 qboolean gl_blit_support = false;
 qboolean gl_float_buffer_support = false;
 qboolean gl_s3tc_compression_support = false;
@@ -204,7 +205,7 @@ int R_GetDrawPass(void)
 
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
-	if (r_draw_pass == r_draw_shadow_caster)
+	if((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
 		return false;
 
 	if ((*currententity)->model && (*currententity)->model->type == mod_studio && (*currententity)->curstate.scale != 1.0f)
@@ -700,23 +701,10 @@ void GL_FreeFBO(FBO_Container_t *s)
 	GL_ClearFBO(s);
 }
 
-/*
-bool GL_IsValidSampleCount(int msaa_samples)
-{
-	return (msaa_samples == 2 || msaa_samples == 4 || msaa_samples == 8 || msaa_samples == 16);
-}
-
-bool R_UseMSAA(void)
-{
-	return s_MSAAFBO.s_hBackBufferFBO && GL_IsValidSampleCount((int)r_msaa->value) && !r_draw_pass && !g_SvEngine_DrawPortalView;
-}
-*/
-
 void GL_GenerateFBO(void)
 {
 	bNoStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
 
-	//GL_ClearFBO(&s_MSAAFBO);
 	GL_ClearFBO(&s_GBufferFBO);
 	GL_ClearFBO(&s_BackBufferFBO);
 	GL_ClearFBO(&s_BackBufferFBO2);
@@ -973,6 +961,12 @@ void GL_Init(void)
 		return;
 	}
 
+	if (!gl_multi_draw_support)
+	{
+		Sys_ErrorEx("Missing OpenGL extension GL_EXT_multi_draw_support!\n");
+		return;
+	}
+
 	GL_GenerateFBO();
 	GL_InitShaders();
 }
@@ -1018,7 +1012,6 @@ void R_PreRenderView(int a1)
 {
 	g_SvEngine_DrawPortalView = a1 ? true : false;
 
-	r_studio_framecount++;
 	r_fog_mode = 0;
 
 	if (!r_refdef->onlyClientDraws)
@@ -1386,7 +1379,6 @@ void R_NewMap(void)
 
 	r_worldentity = gEngfuncs.GetEntityByIndex(0);
 	r_worldmodel = r_worldentity->model;
-	r_studio_framecount = 0;
 
 	memset(&r_params, 0, sizeof(r_params));
 
@@ -1728,7 +1720,11 @@ void Mod_LoadStudioModel(model_t *mod, void *buffer)
 	studiohdr_t *studiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(mod);
 	if (studiohdr)
 	{
+		studiohdr->transitionindex = 0;
+
 		R_StudioLoadExternalFile(mod, studiohdr);
+
+		R_StudioPrepareVBO(studiohdr);
 	}
 }
 

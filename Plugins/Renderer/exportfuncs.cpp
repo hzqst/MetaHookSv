@@ -399,7 +399,6 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	//Save StudioAPI Funcs
 	gRefFuncs.studioapi_RestoreRenderer = pstudio->RestoreRenderer;
 	gRefFuncs.studioapi_StudioDynamicLight = pstudio->StudioDynamicLight;
-	gRefFuncs.studioapi_SetupModel = pstudio->StudioSetupModel;
 
 	//Vars in Engine Studio API
 
@@ -964,6 +963,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		gRefFuncs.GameStudioRenderer_StudioRenderFinal = (decltype(gRefFuncs.GameStudioRenderer_StudioRenderFinal))vftable[21];
 
 		Install_InlineHook(GameStudioRenderer_StudioRenderModel);
+		Install_InlineHook(GameStudioRenderer_StudioRenderFinal);
 	}
 	else
 	{

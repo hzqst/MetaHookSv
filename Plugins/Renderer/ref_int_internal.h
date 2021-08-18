@@ -85,11 +85,10 @@ typedef struct
 	//Engine Studio Exported API
 	void (*studioapi_StudioDynamicLight)(struct cl_entity_s *ent, struct alight_s *plight);
 	void (*studioapi_RestoreRenderer)(void);
-	void (*studioapi_SetupModel)(int bodypart, void **ppbodypart, void **ppsubmodel);
 
 	//Client Studio
 	void (__fastcall *GameStudioRenderer_StudioRenderModel)(void *pthis, int);
-	void(__fastcall *GameStudioRenderer_StudioRenderFinal)(void *pthis, int);
+	void (__fastcall *GameStudioRenderer_StudioRenderFinal)(void *pthis, int);
 }ref_funcs_t;
 
 typedef struct
@@ -140,8 +139,5 @@ extern ref_export_t gRefExports;
 
 #define r_draw_normal 0
 #define r_draw_reflect 1
-#define r_draw_shadow_caster 3
-
-#define kRenderFxOutline 100
 
 #define META_RENDERER_VERSION "Meta Renderer 2021-08-17"

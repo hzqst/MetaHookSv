@@ -42,7 +42,7 @@ typedef struct
 	//shadow caster
 	int entityPos;
 	//attribute
-	int attr_bone;
+	int vertnormbone;
 }studio_program_t;
 
 typedef struct studio_vbo_vertex_s
@@ -98,6 +98,16 @@ typedef struct studio_vbo_mesh_s
 	int iPolyCount;
 }studio_vbo_mesh_t;
 
+typedef struct studio_vbo_submodel_s
+{
+	studio_vbo_submodel_s()
+	{
+		submodel = NULL;
+	}
+	mstudiomodel_t *submodel;
+	std::vector<studio_vbo_mesh_t> vMesh;
+}studio_vbo_submodel_t;
+
 typedef struct studio_vbo_s
 {
 	studio_vbo_s()
@@ -109,7 +119,7 @@ typedef struct studio_vbo_s
 	studiohdr_t	*		studiohdr;
 	GLuint				hDataBuffer;
 	GLuint				hIndexBuffer;
-	std::vector<studio_vbo_mesh_t> vMesh;
+	std::vector<studio_vbo_submodel_t *> vSubmodel;
 }studio_vbo_t;
 
 //engine
@@ -146,8 +156,8 @@ extern model_t *cl_shellchrome;
 //renderer
 extern int r_studio_drawcall;
 extern int r_studio_polys;
-extern int r_studio_framecount;
 
+studio_vbo_t *R_StudioPrepareVBO(studiohdr_t *studiohdr);
 void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr);
 void R_StudioReloadVBOCache(void);
 void R_ShutdownStudio(void);
@@ -157,8 +167,8 @@ void R_GLStudioDrawPoints(void);
 studiohdr_t *R_LoadTextures(model_t *psubm);
 void studioapi_RestoreRenderer(void);
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
-void studioapi_SetupModel(int bodypart, void **ppbodypart, void **ppsubmodel);
 void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int);
+void __fastcall GameStudioRenderer_StudioRenderFinal(void *pthis, int);
 
 extern engine_studio_api_t IEngineStudio;
 extern r_studio_interface_t **gpStudioInterface;

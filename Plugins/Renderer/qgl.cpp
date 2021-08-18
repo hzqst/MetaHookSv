@@ -470,6 +470,8 @@ PFNGLGETPROGRAMIVPROC qglGetProgramiv = NULL;
 PFNGLGETSHADERINFOLOGPROC qglGetShaderInfoLog = NULL;
 PFNGLGETPROGRAMINFOLOGPROC qglGetProgramInfoLog = NULL;
 PFNGLGETINFOLOGARBPROC qglGetInfoLogARB = NULL;
+PFNGLMULTIDRAWELEMENTSEXTPROC qglMultiDrawElementsEXT = NULL;
+PFNGLMULTIDRAWARRAYSEXTPROC qglMultiDrawArraysEXT = NULL;
 
 void QGL_Init(void)
 {
@@ -987,6 +989,14 @@ void QGL_InitExtension(void)
 		qglDrawBuffers = (PFNGLDRAWBUFFERSPROC)qwglGetProcAddress("glDrawBuffers");
 
 		gl_framebuffer_object = true;
+	}
+
+	if (strstr(extension, "GL_EXT_multi_draw_arrays"))
+	{
+		 qglMultiDrawElementsEXT = (PFNGLMULTIDRAWELEMENTSEXTPROC)qwglGetProcAddress("glMultiDrawElementsEXT");
+		 qglMultiDrawArraysEXT = (PFNGLMULTIDRAWARRAYSEXTPROC)qwglGetProcAddress("glMultiDrawArraysEXT");
+
+		 gl_multi_draw_support = true;
 	}
 
 	if (strstr(extension, "GL_EXT_framebuffer_multisample"))

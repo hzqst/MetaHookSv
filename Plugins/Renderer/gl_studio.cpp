@@ -48,7 +48,6 @@ float lightpos[MAXSTUDIOVERTS][3][4];
 
 int r_studio_drawcall;
 int r_studio_polys;
-int r_studio_framecount;
 
 cvar_t *r_studio_vbo = NULL;
 cvar_t *r_studio_celshade = NULL;
@@ -64,30 +63,18 @@ cvar_t *r_studio_rimdark_color = NULL;
 cvar_t *r_studio_outline_size = NULL;
 cvar_t *r_studio_outline_dark = NULL;
 
-studio_vbo_t *R_StudioPrepareVBOSubmodel(studiohdr_t *studiohdr, mstudiomodel_t *submodel)
+void R_StudioPrepareVBOSubmodel(
+	studiohdr_t *studiohdr, mstudiomodel_t *submodel, 
+	std::vector<studio_vbo_vertex_t> &vVertex,
+	std::vector<unsigned int> &vIndices,
+	studio_vbo_submodel_t *vboSubmodel)
 {
-	studio_vbo_t *VBOData = NULL;
-	if (submodel->groupindex > 0 && submodel->groupindex - 1 < g_StudioVBOCache.size())
-	{
-		VBOData = (studio_vbo_t *)g_StudioVBOCache[submodel->groupindex - 1];
-		if (VBOData)
-		{
-			return VBOData;
-		}
-	}
-
-	VBOData = new studio_vbo_t;
-	VBOData->studiohdr = studiohdr;
-	g_StudioVBOCache.emplace_back(VBOData);
-	submodel->groupindex = g_StudioVBOCache.size();
-
-	std::vector<studio_vbo_vertex_t> vVertex;
-	std::vector<unsigned int> vIndices;
-	
 	auto pstudioverts = (vec3_t *)((byte *)studiohdr + submodel->vertindex);
 	auto pstudionorms = (vec3_t *)((byte *)studiohdr + submodel->normindex);
 	auto pvertbone = ((byte *)studiohdr + submodel->vertinfoindex);
 	auto pnormbone = ((byte *)studiohdr + submodel->norminfoindex);
+
+	vboSubmodel->vMesh.reserve(submodel->nummesh);
 
 	for (int k = 0; k < submodel->nummesh; k++)
 	{
@@ -176,7 +163,52 @@ studio_vbo_t *R_StudioPrepareVBOSubmodel(studiohdr_t *studiohdr, mstudiomodel_t 
 			}
 		}
 
-		VBOData->vMesh.emplace_back(VBOMesh);
+		vboSubmodel->vMesh.emplace_back(VBOMesh);
+	}
+}
+
+studio_vbo_t *R_StudioPrepareVBO(studiohdr_t *studiohdr)
+{
+	studio_vbo_t *VBOData = NULL;
+	if (studiohdr->transitionindex > 0 && studiohdr->transitionindex - 1 < (int)g_StudioVBOCache.size())
+	{
+		VBOData = (studio_vbo_t *)g_StudioVBOCache[studiohdr->transitionindex - 1];
+		if (VBOData)
+		{
+			return VBOData;
+		}
+	}
+
+	VBOData = new studio_vbo_t;
+	VBOData->studiohdr = studiohdr;
+
+	g_StudioVBOCache.emplace_back(VBOData);
+
+	studiohdr->transitionindex = g_StudioVBOCache.size();
+
+	std::vector<studio_vbo_vertex_t> vVertex;
+	std::vector<unsigned int> vIndices;
+
+	for (int i = 0; i < studiohdr->numbodyparts; i++)
+	{
+		auto bodypart = (mstudiobodyparts_t *)((byte *)studiohdr + studiohdr->bodypartindex) + i;
+
+		if (bodypart->modelindex && bodypart->nummodels)
+		{
+			for (int j = 0; j < bodypart->nummodels; ++j)
+			{
+				auto submodel = (mstudiomodel_t *)((byte *)studiohdr + bodypart->modelindex) + j;
+
+				studio_vbo_submodel_t *vboSubmodel = new studio_vbo_submodel_t;
+				vboSubmodel->submodel = submodel;
+
+				R_StudioPrepareVBOSubmodel(studiohdr, submodel, vVertex, vIndices, vboSubmodel);
+
+				VBOData->vSubmodel.emplace_back(vboSubmodel);
+
+				submodel->groupindex = VBOData->vSubmodel.size();
+			}
+		}
 	}
 
 	qglGenBuffersARB(1, &VBOData->hDataBuffer);
@@ -189,26 +221,6 @@ studio_vbo_t *R_StudioPrepareVBOSubmodel(studiohdr_t *studiohdr, mstudiomodel_t 
 	qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->hIndexBuffer);
 	qglBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vIndices.size() * sizeof(unsigned int), vIndices.data(), GL_STATIC_DRAW_ARB);
 	qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-
-	return VBOData;
-}
-
-void R_StudioPrepareVBO(studiohdr_t *studiohdr)
-{
-	for (int i = 0; i < studiohdr->numbodyparts; i++)
-	{
-		auto bodypart = (mstudiobodyparts_t *)((byte *)studiohdr + studiohdr->bodypartindex) + i;
-
-		if (bodypart->modelindex && bodypart->nummodels)
-		{
-			for (int j = 0; j < bodypart->nummodels; ++j)
-			{
-				auto submodel = (mstudiomodel_t *)((byte *)studiohdr + bodypart->modelindex) + j;
-
-				R_StudioPrepareVBOSubmodel(studiohdr, submodel);
-			}
-		}
-	}
 }
 
 void R_StudioReloadVBOCache(void)
@@ -345,7 +357,7 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 			SHADER_UNIFORM(prog, viewpos, "viewpos");
 			SHADER_UNIFORM(prog, viewdir, "viewdir");
 
-			SHADER_ATTRIB(prog, attr_bone, "attr_bone");
+			SHADER_ATTRIB(prog, vertnormbone, "vertnormbone");
 		}
 
 		g_StudioProgramTable[state] = prog;
@@ -359,6 +371,12 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 	{
 		GL_UseProgram(prog.program);
 
+		if (prog.vertnormbone != -1)
+		{
+			qglEnableVertexAttribArray(prog.vertnormbone);
+			qglVertexAttribIPointer(prog.vertnormbone, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
+		}
+	
 		if (prog.diffuseTex != -1)
 			qglUniform1iARB(prog.diffuseTex, 0);
 
@@ -418,7 +436,7 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		{
 			qglUniform1fARB(prog.r_scale,
 				((*currententity)->curstate.renderfx == kRenderFxGlowShell ||
-				(*currententity)->curstate.renderfx == kRenderFxOutline )/*(*g_ForcedFaceFlags) & STUDIO_NF_CHROME*/
+				(*currententity)->curstate.renderfx == kRenderFxOutline )
 				? (*currententity)->curstate.renderamt * 0.05f : 0);
 		}
 
@@ -496,9 +514,9 @@ void R_InitStudio(void)
 	r_studio_celshade = gEngfuncs.pfnRegisterVariable("r_studio_celshade", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_celshade_midpoint = gEngfuncs.pfnRegisterVariable("r_studio_celshade_midpoint", "-0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_celshade_softness = gEngfuncs.pfnRegisterVariable("r_studio_celshade_softness", "0.05", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_celshade_shadow_color = gEngfuncs.pfnRegisterVariable("r_studio_celshade_shadow_color", "220 210 210", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_outline_size = gEngfuncs.pfnRegisterVariable("r_studio_outline_size", "3.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_outline_dark = gEngfuncs.pfnRegisterVariable("r_studio_outline_dark", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_studio_celshade_shadow_color = gEngfuncs.pfnRegisterVariable("r_studio_celshade_shadow_color", "220 210 210", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_studio_rimlight_power = gEngfuncs.pfnRegisterVariable("r_studio_rimlight_power", "5.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_rimlight_smooth = gEngfuncs.pfnRegisterVariable("r_studio_rimlight_smooth", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -725,11 +743,6 @@ void R_StudioLighting(float *lv, int bone, int flags, vec3_t normal)
 	*lv = lightgammatable[(int)(illum * 4)] / 1023.0;	// Light from 0 to 1.0
 }
 
-void studioapi_SetupModel(int bodypart, void **ppbodypart, void **ppsubmodel)
-{
-	gRefFuncs.studioapi_SetupModel(bodypart, ppbodypart, ppsubmodel);
-}
-
 void R_GLStudioDrawPoints(void)
 {
 	int i, j, k;
@@ -749,7 +762,7 @@ void R_GLStudioDrawPoints(void)
 
 	int stencilState = 1;
 
-	if (r_draw_pass == r_draw_shadow_caster)
+	if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
 	{
 		//the fxxking StudioRenderFinal which will enable GL_BLEND and mess everything up.
 		qglDisable(GL_BLEND);
@@ -782,10 +795,17 @@ void R_GLStudioDrawPoints(void)
 	int iFlippedVModel = 0;
 
 	studio_vbo_t *VBOData = NULL;
+	studio_vbo_submodel_t *VBOSubmodel = NULL;
 
 	if (r_studio_vbo->value)
 	{
-		VBOData = R_StudioPrepareVBOSubmodel(engine_pstudiohdr, engine_psubmodel);
+		VBOData = R_StudioPrepareVBO(engine_pstudiohdr);
+
+		if (engine_psubmodel->groupindex < 1 || engine_psubmodel->groupindex >(int)VBOData->vSubmodel.size()) {
+			Sys_ErrorEx("R_StudioFindVBOCache: invalid index");
+		}
+
+		VBOSubmodel = VBOData->vSubmodel[engine_psubmodel->groupindex - 1];
 	}
 
 	if ((*currententity)->curstate.skin != 0 && (*currententity)->curstate.skin < ptexturehdr->numskinfamilies)
@@ -797,7 +817,7 @@ void R_GLStudioDrawPoints(void)
 	}
 
 	//Setup light, chrome...
-	if (VBOData)
+	if (VBOSubmodel)
 	{
 		if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
 		{
@@ -892,9 +912,8 @@ void R_GLStudioDrawPoints(void)
 	pstudionorms = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->normindex);
 	pnormbone = ((byte *)engine_pstudiohdr + engine_psubmodel->norminfoindex);
 
-	if (VBOData)
+	if (VBOSubmodel)
 	{
-		qglEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 		qglEnableClientState(GL_VERTEX_ARRAY);
 		qglEnableClientState(GL_NORMAL_ARRAY);
 		qglBindBufferARB(GL_ARRAY_BUFFER_ARB, VBOData->hDataBuffer);
@@ -908,7 +927,7 @@ void R_GLStudioDrawPoints(void)
 
 		for (j = 0; j < engine_psubmodel->nummesh; j++)
 		{
-			auto &VBOMesh = VBOData->vMesh[j];
+			auto &VBOMesh = VBOSubmodel->vMesh[j];
 
 			pmesh = (mstudiomesh_t *)((byte *)engine_pstudiohdr + engine_psubmodel->meshindex) + j;
 
@@ -922,7 +941,7 @@ void R_GLStudioDrawPoints(void)
 			int GBufferMask = GBUFFER_MASK_ALL;
 			int StudioProgramState = flags;
 
-			if (r_draw_pass == r_draw_shadow_caster)
+			if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
 			{
 				StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
 			}
@@ -946,13 +965,13 @@ void R_GLStudioDrawPoints(void)
 				}
 			}
 
-			if (r_draw_pass == r_draw_shadow_caster)
+			if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
 			{
 
 			}
 			else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
 			{
-				qglStencilFunc(GL_EQUAL, 0, 0xFF);
+				qglStencilFunc(GL_NOTEQUAL, 2, 0xFF);
 				qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 				StudioProgramState |= STUDIO_OUTLINE_ENABLED;
@@ -1050,12 +1069,6 @@ void R_GLStudioDrawPoints(void)
 				qglUniform2fARB(prog.r_uvscale, s, t);
 			}
 			
-			if (prog.attr_bone != -1)
-			{
-				qglEnableVertexAttribArray(prog.attr_bone);
-				qglVertexAttribIPointer(prog.attr_bone, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
-			}
-
 			if (VBOMesh.iIndiceCount)
 			{
 				qglDrawElements(GL_TRIANGLES, VBOMesh.iIndiceCount, GL_UNSIGNED_INT, BUFFER_OFFSET(VBOMesh.iStartIndex));
@@ -1064,7 +1077,12 @@ void R_GLStudioDrawPoints(void)
 				r_studio_polys += VBOMesh.iPolyCount;
 			}
 
-			if (r_draw_pass == r_draw_shadow_caster)
+			if (prog.vertnormbone != -1)
+			{
+				qglDisableVertexAttribArray(prog.vertnormbone);
+			}
+
+			if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
 			{
 				
 			}
@@ -1089,11 +1107,6 @@ void R_GLStudioDrawPoints(void)
 				qglDisable(GL_BLEND);
 				qglShadeModel(GL_FLAT);
 			}
-
-			if (prog.attr_bone != -1)
-			{
-				qglDisableVertexAttribArray(prog.attr_bone);
-			}
 		}
 
 		qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -1101,7 +1114,6 @@ void R_GLStudioDrawPoints(void)
 		qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 		qglDisableClientState(GL_VERTEX_ARRAY);
 		qglDisableClientState(GL_NORMAL_ARRAY);
-		qglDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 	}
 	else
 	{
@@ -1121,9 +1133,9 @@ void R_GLStudioDrawPoints(void)
 			}
 
 			int GBufferMask = GBUFFER_MASK_ALL;
-			int StudioProgramState = STUDIO_LEGACY_BONE_ENABLED;
+			int StudioProgramState = flags | STUDIO_LEGACY_BONE_ENABLED;
 
-			if (r_draw_pass == r_draw_shadow_caster)
+			if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
 			{
 				StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
 			}
@@ -1147,13 +1159,13 @@ void R_GLStudioDrawPoints(void)
 				}
 			}
 
-			if (r_draw_pass == r_draw_shadow_caster)
+			if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
 			{
 
 			}
 			else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
 			{
-				qglStencilFunc(GL_EQUAL, 0, 0xFF);
+				qglStencilFunc(GL_NOTEQUAL, 2, 0xFF);
 				qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 				StudioProgramState |= STUDIO_OUTLINE_ENABLED;
@@ -1379,7 +1391,7 @@ void R_GLStudioDrawPoints(void)
 
 			}//normal draw end
 
-			if (r_draw_pass == r_draw_shadow_caster)
+			if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
 			{
 
 			}
@@ -1472,8 +1484,117 @@ void studioapi_RestoreRenderer(void)
 	gRefFuncs.studioapi_RestoreRenderer();
 }
 
+void R_StudioDrawBatch(void)
+{
+	void *vStartIndex[MAXSTUDIOMESHES];
+	int vIndiceCount[MAXSTUDIOMESHES];
+	int arrayCount = 0;
+
+	auto VBOData = R_StudioPrepareVBO(*pstudiohdr);
+
+	for (int i = 0; i < (*pstudiohdr)->numbodyparts; i++)
+	{
+		void *temp_bodypart;
+		void *temp_submodel;
+
+		IEngineStudio.StudioSetupModel(i, &temp_bodypart, &temp_submodel);
+
+		if ((*psubmodel)->groupindex < 1 || (*psubmodel)->groupindex >(int)VBOData->vSubmodel.size()) {
+			Sys_ErrorEx("R_StudioFindVBOCache: invalid index");
+		}
+
+		auto VBOSubmodel = VBOData->vSubmodel[(*psubmodel)->groupindex - 1];
+
+		for (size_t j = 0; j < VBOSubmodel->vMesh.size(); ++j)
+		{
+			if (arrayCount == MAXSTUDIOMESHES)
+			{
+				Sys_ErrorEx("R_StudioFindVBOCache: too many meshes.");
+			}
+
+			vStartIndex[arrayCount] = BUFFER_OFFSET(VBOSubmodel->vMesh[j].iStartIndex);
+			vIndiceCount[arrayCount] = VBOSubmodel->vMesh[j].iIndiceCount;
+			r_studio_polys += VBOSubmodel->vMesh[j].iIndiceCount;
+			arrayCount++;
+		}
+	}
+
+	int StudioProgramState = 0;
+	int GBufferMask = GBUFFER_MASK_ALL;
+
+	if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
+	{
+		qglDisable(GL_BLEND);
+		StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
+	}
+
+	if (drawgbuffer)
+	{
+		StudioProgramState |= STUDIO_GBUFFER_ENABLED;
+	}
+
+	if (r_fog_mode == GL_LINEAR)
+	{
+		StudioProgramState |= STUDIO_LINEAR_FOG_ENABLED;
+	}
+
+	qglCullFace(GL_FRONT);
+
+	qglEnableClientState(GL_VERTEX_ARRAY);
+	qglEnableClientState(GL_NORMAL_ARRAY);
+	qglBindBufferARB(GL_ARRAY_BUFFER_ARB, VBOData->hDataBuffer);
+	qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->hIndexBuffer);
+	qglVertexPointer(3, GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, pos));
+	qglNormalPointer(GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, normal));
+
+	studio_program_t prog = { 0 };
+
+	R_UseStudioProgram(StudioProgramState, &prog);
+	R_SetGBufferMask(GBufferMask);
+
+	qglMultiDrawElementsEXT(GL_TRIANGLES, vIndiceCount, GL_UNSIGNED_INT, (const void **)vStartIndex, arrayCount);
+
+	r_studio_drawcall++;
+
+	if (prog.vertnormbone != -1)
+	{
+		qglDisableVertexAttribArray(prog.vertnormbone);
+	}
+
+	GL_UseProgram(0);
+	qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+	qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	qglDisableClientState(GL_VERTEX_ARRAY);
+	qglDisableClientState(GL_NORMAL_ARRAY);
+}
+
+void __fastcall GameStudioRenderer_StudioRenderFinal(void *pthis, int)
+{
+	if (r_studio_vbo->value)
+	{
+		if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
+		{
+			int rendermode = IEngineStudio.GetForceFaceFlags() ? kRenderTransAdd : (*currententity)->curstate.rendermode;
+			IEngineStudio.SetupRenderer(rendermode);
+			IEngineStudio.GL_SetRenderMode(rendermode);
+
+			R_StudioDrawBatch();
+
+			IEngineStudio.RestoreRenderer();
+			return;
+		}
+	}
+
+	return gRefFuncs.GameStudioRenderer_StudioRenderFinal(pthis, 0);
+}
+
 void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 {
+	if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
+	{
+		return gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
+	}
+
 	if ((*pstudiohdr)->flags & EF_OUTLINE)
 	{
 		gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
@@ -1490,6 +1611,7 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 		(*currententity)->curstate.renderamt = savbed_renderamt;
 		return;
 	}
+
 	return gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
 }
 
@@ -1691,7 +1813,7 @@ void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr)
 		}
 	}
 
-	for (int i = 0; i < g_StudioBSPEntities.size(); i++)
+	for (size_t i = 0; i < g_StudioBSPEntities.size(); i++)
 	{
 		FreeBSPEntity(&g_StudioBSPEntities[i]);
 	}

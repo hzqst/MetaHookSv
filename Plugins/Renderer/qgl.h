@@ -473,5 +473,7 @@ extern PFNGLBEGINQUERYPROC qglBeginQuery ;
 extern PFNGLENDQUERYPROC qglEndQuery ;
 extern PFNGLBEGINCONDITIONALRENDERPROC qglBeginConditionalRender ;
 extern PFNGLENDCONDITIONALRENDERPROC qglEndConditionalRender ;
+extern PFNGLMULTIDRAWELEMENTSEXTPROC qglMultiDrawElementsEXT ;
+extern PFNGLMULTIDRAWARRAYSEXTPROC qglMultiDrawArraysEXT;
 void QGL_Init(void);
 void QGL_InitExtension(void);

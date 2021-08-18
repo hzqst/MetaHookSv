@@ -170,8 +170,6 @@ void R_RenderShadowMap(void)
 	qglDepthMask(1);
 	qglColorMask(1, 1, 1, 1);
 
-	r_draw_pass = r_draw_shadow_caster;
-
 	for (int i = 0; i < 3; ++i)
 	{
 		if (!shadow_numvisedicts[i])
@@ -210,7 +208,14 @@ void R_RenderShadowMap(void)
 		for (int j = 0; j < shadow_numvisedicts[i]; ++j)
 		{
 			(*currententity) = shadow_visedicts[i][j];
+
+			int saved_renderfx = (*currententity)->curstate.renderfx;
+
+			(*currententity)->curstate.renderfx = kRenderFxShadowCaster;
+
 			R_DrawCurrentEntity();
+
+			(*currententity)->curstate.renderfx = saved_renderfx;
 		}
 
 		(*currententity) = backup_curentity;
@@ -219,6 +224,4 @@ void R_RenderShadowMap(void)
 
 	qglClearDepth(1);
 	qglDepthFunc(GL_LEQUAL);
-
-	r_draw_pass = r_draw_normal;
 }

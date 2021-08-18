@@ -108,6 +108,7 @@ extern qboolean gl_framebuffer_object;
 extern qboolean gl_shader_support;
 extern qboolean gl_program_support;
 extern qboolean gl_msaa_support;
+extern qboolean gl_multi_draw_support;
 extern qboolean gl_blit_support;
 extern qboolean gl_float_buffer_support;
 extern qboolean gl_s3tc_compression_support;
