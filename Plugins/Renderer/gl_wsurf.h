@@ -138,11 +138,17 @@ typedef struct wsurf_vbo_s
 	brushtexchain_t TextureChainSky;
 }wsurf_vbo_t;
 
+typedef struct r_worldsurf_ubo_s
+{
+	GLuint64 texture_handles[16384];
+}r_worldsurf_ubo_t;
+
 typedef struct r_worldsurf_s
 {
 	r_worldsurf_s()
 	{
 		hVBO = 0;
+		hUBO = 0;
 
 		vVertexBuffer = NULL;
 		iNumVerts = 0;
@@ -168,6 +174,7 @@ typedef struct r_worldsurf_s
 	}
 
 	GLuint				hVBO;
+	GLuint				hUBO;
 
 	brushvertex_t		*vVertexBuffer;
 	int					iNumVerts;

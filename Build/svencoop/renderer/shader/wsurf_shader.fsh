@@ -1,6 +1,15 @@
-#version 130
+#version 420 compatibility
 
+#extension GL_NV_bindless_texture : require
+#extension GL_NV_gpu_shader5 : require
 #extension GL_EXT_texture_array : enable
+
+layout(std140) uniform BlobSettings{    
+vec3  A;
+vec3  B;
+vec3  C;
+vec3  D;
+}Blob;
 
 #define GBUFFER_INDEX_DIFFUSE		0
 #define GBUFFER_INDEX_LIGHTMAP		1

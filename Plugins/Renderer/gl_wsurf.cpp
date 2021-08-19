@@ -792,6 +792,13 @@ void R_GenerateVertexBuffer(void)
 	qglBindBufferARB( GL_ARRAY_BUFFER_ARB, r_wsurf.hVBO );
 	qglBufferDataARB( GL_ARRAY_BUFFER_ARB, sizeof(brushvertex_t) * r_wsurf.iNumVerts, r_wsurf.vVertexBuffer, GL_STATIC_DRAW_ARB );
 	qglBindBufferARB( GL_ARRAY_BUFFER_ARB, 0 );
+	
+	r_worldsurf_ubo_t ubo;
+
+	qglGenBuffersARB(1, &r_wsurf.hUBO);
+	qglBindBufferARB(GL_UNIFORM_BUFFER, r_wsurf.hUBO);
+	qglBufferDataARB(GL_UNIFORM_BUFFER, sizeof(r_worldsurf_ubo_t), &ubo, GL_STATIC_DRAW_ARB);
+	qglBindBufferARB(GL_UNIFORM_BUFFER, 0);
 }
 
 void R_GenerateLightmapArray(void)

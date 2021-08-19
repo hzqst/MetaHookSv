@@ -472,6 +472,13 @@ PFNGLGETPROGRAMINFOLOGPROC qglGetProgramInfoLog = NULL;
 PFNGLGETINFOLOGARBPROC qglGetInfoLogARB = NULL;
 PFNGLMULTIDRAWELEMENTSEXTPROC qglMultiDrawElementsEXT = NULL;
 PFNGLMULTIDRAWARRAYSEXTPROC qglMultiDrawArraysEXT = NULL;
+PFNGLGETUNIFORMINDICESPROC qglGetUniformIndices = NULL;
+PFNGLGETACTIVEUNIFORMSIVPROC qglGetActiveUniformsiv = NULL;
+PFNGLGETACTIVEUNIFORMNAMEPROC qglGetActiveUniformName = NULL;
+PFNGLGETUNIFORMBLOCKINDEXPROC qglGetUniformBlockIndex = NULL;
+PFNGLGETACTIVEUNIFORMBLOCKIVPROC qglGetActiveUniformBlockiv = NULL;
+PFNGLGETACTIVEUNIFORMBLOCKNAMEPROC qglGetActiveUniformBlockName = NULL;
+PFNGLUNIFORMBLOCKBINDINGPROC qglUniformBlockBinding = NULL;
 
 void QGL_Init(void)
 {
@@ -842,6 +849,12 @@ void QGL_Init(void)
 		*(FARPROC *)&qwglSwapIntervalEXT = qwglGetProcAddress("wglSwapIntervalEXT");
 		*(FARPROC *)&qglTexSubImage3D = qwglGetProcAddress("glTexSubImage3D");
 		*(FARPROC *)&qglSampleMaski = qwglGetProcAddress("glSampleMaski");
+	
+		
+		
+		
+		
+		
 	}
 
 	QGL_InitExtension();
@@ -998,7 +1011,17 @@ void QGL_InitExtension(void)
 
 		 gl_multi_draw_support = true;
 	}
+	if (strstr(extension, "GL_EXT_"))
+	{
+		qglGetUniformIndices = (PFNGLGETUNIFORMINDICESPROC)qwglGetProcAddress("glGetUniformIndices");
+		qglGetActiveUniformsiv = (PFNGLGETACTIVEUNIFORMSIVPROC)qwglGetProcAddress("glGetActiveUniformsiv");
+		qglGetActiveUniformName = (PFNGLGETACTIVEUNIFORMNAMEPROC)qwglGetProcAddress("glGetActiveUniformName");
+		qglGetUniformBlockIndex = (PFNGLGETUNIFORMBLOCKINDEXPROC)qwglGetProcAddress("glGetUniformBlockIndex");
+		qglGetActiveUniformBlockiv = (PFNGLGETACTIVEUNIFORMBLOCKIVPROC)qwglGetProcAddress("glGetActiveUniformBlockiv");
+		qglGetActiveUniformBlockName = (PFNGLGETACTIVEUNIFORMBLOCKNAMEPROC)qwglGetProcAddress("glGetActiveUniformBlockName");
+		qglUniformBlockBinding = (PFNGLUNIFORMBLOCKBINDINGPROC)qwglGetProcAddress("glUniformBlockBinding");
 
+	}
 	if (strstr(extension, "GL_EXT_framebuffer_multisample"))
 	{
 		qglRenderbufferStorageMultisampleEXT = (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC)qwglGetProcAddress("glRenderbufferStorageMultisampleEXT");
