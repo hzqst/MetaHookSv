@@ -125,6 +125,9 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		if (state & WSURF_LEGACY_ENABLED)
 			defs << "#define LEGACY_ENABLED\n";
 
+		if(glewIsSupported("GL_NV_bindless_texture"))
+			defs << "#define UINT64_ENABLE\n";
+	
 		defs << "#define SHADOW_TEXTURE_OFFSET (1.0 / " << std::dec << shadow_texture_size << ".0)\n";
 
 		auto def = defs.str();
@@ -1420,8 +1423,8 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache)
 	if (modcache->pModel == r_worldmodel)
 	{
 		(*gDecalSurfCount) = 0;
-		//R_RecursiveWorldNodeVBO(r_worldmodel->nodes);
-		(*gDecalSurfCount) = 0;
+		R_RecursiveWorldNodeVBO(r_worldmodel->nodes);
+		//(*gDecalSurfCount) = 0;
 	}
 
 	//This only applies to world rendering, clear depth for sky surface
@@ -2102,7 +2105,7 @@ void R_DrawSequentialPoly(msurface_t *s, int face)
 
 		if (r_wsurf.bDiffuseTexture)
 		{
-			//R_DrawDecals(r_wsurf.bLightmapTexture ? true : false);
+			R_DrawDecals(r_wsurf.bLightmapTexture ? true : false);
 		}
 	}
 }

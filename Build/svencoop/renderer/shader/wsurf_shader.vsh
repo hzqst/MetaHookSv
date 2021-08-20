@@ -1,9 +1,9 @@
 #version 460
 
-#extension GL_NV_bindless_texture : require
-#extension GL_NV_gpu_shader5 : require
+#extension GL_ARB_bindless_texture : require
 #extension GL_EXT_texture_array : require
 #extension GL_ARB_shader_draw_parameters : require
+#extension GL_ARB_gpu_shader5 : require
 
 struct scene_ubo_t{
 	mat4 viewMatrix;
@@ -29,7 +29,16 @@ struct entity_ubo_t{
 };
 
 struct texture_ssbo_t{
+
+#ifdef UINT64_ENABLE
+
 	uint64_t handles[5 * 1];
+
+#else
+
+	uvec2 handles[5 * 1];
+
+#endif
 };
 
 layout (std140, binding = 0) uniform SceneBlock
