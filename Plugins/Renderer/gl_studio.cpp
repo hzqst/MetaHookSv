@@ -211,16 +211,18 @@ studio_vbo_t *R_StudioPrepareVBO(studiohdr_t *studiohdr)
 		}
 	}
 
-	qglGenBuffersARB(1, &VBOData->hDataBuffer);
-	qglGenBuffersARB(1, &VBOData->hIndexBuffer);
+	glGenBuffers(1, &VBOData->hDataBuffer);
+	glGenBuffers(1, &VBOData->hIndexBuffer);
 
-	qglBindBufferARB(GL_ARRAY_BUFFER_ARB, VBOData->hDataBuffer);
-	qglBufferDataARB(GL_ARRAY_BUFFER_ARB, vVertex.size() * sizeof(studio_vbo_vertex_t), vVertex.data(), GL_STATIC_DRAW_ARB);
-	qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
+	glBindBuffer(GL_ARRAY_BUFFER_ARB, VBOData->hDataBuffer);
+	glBufferData(GL_ARRAY_BUFFER_ARB, vVertex.size() * sizeof(studio_vbo_vertex_t), vVertex.data(), GL_STATIC_DRAW_ARB);
+	glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
 
-	qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->hIndexBuffer);
-	qglBufferDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, vIndices.size() * sizeof(unsigned int), vIndices.data(), GL_STATIC_DRAW_ARB);
-	qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->hIndexBuffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER_ARB, vIndices.size() * sizeof(unsigned int), vIndices.data(), GL_STATIC_DRAW_ARB);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+
+	return VBOData;
 }
 
 void R_StudioReloadVBOCache(void)
@@ -233,11 +235,11 @@ void R_StudioReloadVBOCache(void)
 
 			if (VBOData->hDataBuffer)
 			{
-				qglDeleteBuffersARB(1, &VBOData->hDataBuffer);
+				glDeleteBuffersARB(1, &VBOData->hDataBuffer);
 			}
 			if (VBOData->hIndexBuffer)
 			{
-				qglDeleteBuffersARB(1, &VBOData->hIndexBuffer);
+				glDeleteBuffersARB(1, &VBOData->hIndexBuffer);
 			}
 
 			delete g_StudioVBOCache[i];
@@ -373,18 +375,18 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 
 		if (prog.vertnormbone != -1)
 		{
-			qglEnableVertexAttribArray(prog.vertnormbone);
-			qglVertexAttribIPointer(prog.vertnormbone, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
+			glEnableVertexAttribArray(prog.vertnormbone);
+			glVertexAttribIPointer(prog.vertnormbone, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
 		}
 	
 		if (prog.diffuseTex != -1)
-			qglUniform1iARB(prog.diffuseTex, 0);
+			glUniform1i(prog.diffuseTex, 0);
 
 		if (prog.bonematrix != -1)
-			qglUniformMatrix3x4fvARB(prog.bonematrix, 128, 0, (float *)(*pbonetransform));
+			glUniformMatrix3x4fv(prog.bonematrix, 128, 0, (float *)(*pbonetransform));
 
 		if (prog.r_blend != -1)
-			qglUniform1fARB(prog.r_blend, (*r_blend));
+			glUniform1f(prog.r_blend, (*r_blend));
 
 		if (prog.r_g1 != -1 || prog.r_g3 != -1)
 		{
@@ -399,100 +401,100 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 				r_g3 = 0.125f - (v_brightness->value * v_brightness->value) * 0.075f;
 
 			if (prog.r_g1 != -1)
-				qglUniform1fARB(prog.r_g1, r_g);
+				glUniform1f(prog.r_g1, r_g);
 
 			if(prog.r_g3 != -1)
-				qglUniform1fARB(prog.r_g3, r_g3);
+				glUniform1f(prog.r_g3, r_g3);
 		}
 
 		if (prog.r_ambientlight != -1)
-			qglUniform1fARB(prog.r_ambientlight, (float)(*r_ambientlight));
+			glUniform1f(prog.r_ambientlight, (float)(*r_ambientlight));
 
 		if (prog.r_shadelight != -1)
-			qglUniform1fARB(prog.r_shadelight, (*r_shadelight));
+			glUniform1f(prog.r_shadelight, (*r_shadelight));
 
 		if (prog.v_brightness != -1)
-			qglUniform1fARB(prog.v_brightness, v_brightness->value);
+			glUniform1f(prog.v_brightness, v_brightness->value);
 
 		if (prog.v_lightgamma != -1)
-			qglUniform1fARB(prog.v_lightgamma, v_lightgamma->value);
+			glUniform1f(prog.v_lightgamma, v_lightgamma->value);
 
 		if (prog.v_lambert != -1)
-			qglUniform1fARB(prog.v_lambert, v_lambert->value);
+			glUniform1f(prog.v_lambert, v_lambert->value);
 
 		if (prog.r_plightvec != -1)
-			qglUniform3fARB(prog.r_plightvec, r_plightvec[0], r_plightvec[1], r_plightvec[2]);
+			glUniform3f(prog.r_plightvec, r_plightvec[0], r_plightvec[1], r_plightvec[2]);
 
 		if (prog.r_colormix != -1)
-			qglUniform3fARB(prog.r_colormix, r_colormix[0], r_colormix[1], r_colormix[2]);
+			glUniform3f(prog.r_colormix, r_colormix[0], r_colormix[1], r_colormix[2]);
 
 		if (prog.r_origin != -1)
-			qglUniform3fARB(prog.r_origin, g_ChromeOrigin[0], g_ChromeOrigin[1], g_ChromeOrigin[2]);
+			glUniform3f(prog.r_origin, g_ChromeOrigin[0], g_ChromeOrigin[1], g_ChromeOrigin[2]);
 
 		if (prog.r_vright != -1)
-			qglUniform3fARB(prog.r_vright, vright[0], vright[1], vright[2]);
+			glUniform3f(prog.r_vright, vright[0], vright[1], vright[2]);
 
 		if (prog.r_scale != -1)
 		{
-			qglUniform1fARB(prog.r_scale,
+			glUniform1f(prog.r_scale,
 				((*currententity)->curstate.renderfx == kRenderFxGlowShell ||
 				(*currententity)->curstate.renderfx == kRenderFxOutline )
 				? (*currententity)->curstate.renderamt * 0.05f : 0);
 		}
 
 		if (prog.entityPos != -1)
-			qglUniform3fARB(prog.entityPos, (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3]);
+			glUniform3f(prog.entityPos, (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3]);
 
 		if (prog.viewpos != -1)
-			qglUniform3fARB(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
+			glUniform3f(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
 
 		if (prog.viewdir != -1)
-			qglUniform3fARB(prog.viewdir, vpn[0], vpn[1], vpn[2]);
+			glUniform3f(prog.viewdir, vpn[0], vpn[1], vpn[2]);
 
 		if (prog.r_celshade_midpoint != -1)
-			qglUniform1fARB(prog.r_celshade_midpoint, r_studio_celshade_midpoint->value);
+			glUniform1f(prog.r_celshade_midpoint, r_studio_celshade_midpoint->value);
 
 		if (prog.r_celshade_softness != -1)
-			qglUniform1fARB(prog.r_celshade_softness, r_studio_celshade_softness->value);
+			glUniform1f(prog.r_celshade_softness, r_studio_celshade_softness->value);
 
 		if (prog.r_celshade_shadow_color != -1)
 		{
 			vec3_t color = { 0 };
 			R_ParseVectorCvar(r_studio_celshade_shadow_color, color);
-			qglUniform3fARB(prog.r_celshade_shadow_color, color[0], color[1], color[2]);
+			glUniform3f(prog.r_celshade_shadow_color, color[0], color[1], color[2]);
 		}
 
 		if (prog.r_rimlight_power != -1)
 		{
-			qglUniform1fARB(prog.r_rimlight_power, r_studio_rimlight_power->value);
+			glUniform1f(prog.r_rimlight_power, r_studio_rimlight_power->value);
 		}
 		if (prog.r_rimlight_smooth != -1)
 		{
-			qglUniform1fARB(prog.r_rimlight_smooth, r_studio_rimlight_smooth->value);
+			glUniform1f(prog.r_rimlight_smooth, r_studio_rimlight_smooth->value);
 		}
 		if (prog.r_rimlight_color != -1)
 		{
 			vec3_t color = { 0 };
 			R_ParseVectorCvar(r_studio_rimlight_color, color);
-			qglUniform3fARB(prog.r_rimlight_color, color[0], color[1], color[2]);
+			glUniform3f(prog.r_rimlight_color, color[0], color[1], color[2]);
 		}
 		if (prog.r_rimdark_power != -1)
 		{
-			qglUniform1fARB(prog.r_rimdark_power, r_studio_rimdark_power->value);
+			glUniform1f(prog.r_rimdark_power, r_studio_rimdark_power->value);
 		}
 		if (prog.r_rimdark_smooth != -1)
 		{
-			qglUniform1fARB(prog.r_rimdark_smooth, r_studio_rimdark_smooth->value);
+			glUniform1f(prog.r_rimdark_smooth, r_studio_rimdark_smooth->value);
 		}
 		if (prog.r_rimdark_color != -1)
 		{
 			vec3_t color = { 0 };
 			R_ParseVectorCvar(r_studio_rimdark_color, color);
-			qglUniform3fARB(prog.r_rimdark_color, color[0], color[1], color[2]);
+			glUniform3f(prog.r_rimdark_color, color[0], color[1], color[2]);
 		}
 		if (prog.r_outline_dark != -1)
 		{
-			qglUniform1fARB(prog.r_outline_dark, r_studio_outline_dark->value);
+			glUniform1f(prog.r_outline_dark, r_studio_outline_dark->value);
 		}
 		if (progOutput)
 			*progOutput = prog;
@@ -640,7 +642,7 @@ void BuildGlowShellVerts(vec3_t *pstudioverts, auxvert_t *paux)
 	g_ChromeOrigin[1] = sin(r_glowshellfreq->value * (*cl_time)) * 4000.0;
 	g_ChromeOrigin[2] = cos(r_glowshellfreq->value * (*cl_time) * 0.33) * 4000.0;
 
-	qglColor4ub((*currententity)->curstate.rendercolor.r, (*currententity)->curstate.rendercolor.g, (*currententity)->curstate.rendercolor.b, 255);
+	glColor4ub((*currententity)->curstate.rendercolor.r, (*currententity)->curstate.rendercolor.g, (*currententity)->curstate.rendercolor.b, 255);
 }
 
 void R_LightStrength(int bone, float *vert, float light[3][4])
@@ -765,14 +767,14 @@ void R_GLStudioDrawPoints(void)
 	if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
 	{
 		//the fxxking StudioRenderFinal which will enable GL_BLEND and mess everything up.
-		qglDisable(GL_BLEND);
+		glDisable(GL_BLEND);
 	}
 	else if (r_draw_nontransparent)
 	{
-		qglEnable(GL_STENCIL_TEST);
-		qglStencilMask(0xFF);
-		qglStencilFunc(GL_ALWAYS, stencilState, 0xFF);
-		qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		glEnable(GL_STENCIL_TEST);
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	}
 
 	auto engine_pauxverts = (*pauxverts);
@@ -901,11 +903,11 @@ void R_GLStudioDrawPoints(void)
 		}
 	}
 
-	qglCullFace(GL_FRONT);
+	glCullFace(GL_FRONT);
 
 	if (R_IsFlippedViewModel())
 	{
-		qglDisable(GL_CULL_FACE);
+		glDisable(GL_CULL_FACE);
 		iFlippedVModel = 1;
 	}
 
@@ -914,16 +916,16 @@ void R_GLStudioDrawPoints(void)
 
 	if (VBOSubmodel)
 	{
-		qglEnableClientState(GL_VERTEX_ARRAY);
-		qglEnableClientState(GL_NORMAL_ARRAY);
-		qglBindBufferARB(GL_ARRAY_BUFFER_ARB, VBOData->hDataBuffer);
-		qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->hIndexBuffer);
-		qglVertexPointer(3, GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, pos));
-		qglNormalPointer(GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, normal));
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_NORMAL_ARRAY);
+		glBindBuffer(GL_ARRAY_BUFFER_ARB, VBOData->hDataBuffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->hIndexBuffer);
+		glVertexPointer(3, GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, pos));
+		glNormalPointer(GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, normal));
 
-		qglClientActiveTextureARB(GL_TEXTURE0_ARB);
-		qglEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		qglTexCoordPointer(2, GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, texcoord));
+		glClientActiveTextureARB(GL_TEXTURE0_ARB);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+		glTexCoordPointer(2, GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, texcoord));
 
 		for (j = 0; j < engine_psubmodel->nummesh; j++)
 		{
@@ -952,7 +954,7 @@ void R_GLStudioDrawPoints(void)
 					if (stencilState != 2)
 					{
 						stencilState = 2;
-						qglStencilFunc(GL_ALWAYS, stencilState, 0xFF);
+						glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
 					}
 				}
 				else
@@ -960,7 +962,7 @@ void R_GLStudioDrawPoints(void)
 					if (stencilState != 1)
 					{
 						stencilState = 1;
-						qglStencilFunc(GL_ALWAYS, stencilState, 0xFF);
+						glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
 					}
 				}
 			}
@@ -971,8 +973,8 @@ void R_GLStudioDrawPoints(void)
 			}
 			else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
 			{
-				qglStencilFunc(GL_NOTEQUAL, 2, 0xFF);
-				qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+				glStencilFunc(GL_NOTEQUAL, 2, 0xFF);
+				glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 				StudioProgramState |= STUDIO_OUTLINE_ENABLED;
 				StudioProgramState &= ~STUDIO_NF_CHROME;
@@ -983,35 +985,35 @@ void R_GLStudioDrawPoints(void)
 			}
 			else if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
 			{
-				qglBlendFunc(GL_ONE, GL_ONE);
-				qglEnable(GL_BLEND);
-				qglDepthMask(GL_FALSE);
-				qglShadeModel(GL_SMOOTH);
+				glBlendFunc(GL_ONE, GL_ONE);
+				glEnable(GL_BLEND);
+				glDepthMask(GL_FALSE);
+				glShadeModel(GL_SMOOTH);
 
 				GBufferMask = GBUFFER_MASK_ADDITIVE;
 				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
 			}
 			else if (flags & STUDIO_NF_MASKED)
 			{
-				qglEnable(GL_ALPHA_TEST);
-				qglAlphaFunc(GL_GREATER, 0.5);
-				qglDepthMask(GL_TRUE);
+				glEnable(GL_ALPHA_TEST);
+				glAlphaFunc(GL_GREATER, 0.5);
+				glDepthMask(GL_TRUE);
 			}
 			else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
 			{
-				qglBlendFunc(GL_ONE, GL_ONE);
-				qglEnable(GL_BLEND);
-				qglDepthMask(GL_FALSE);
-				qglShadeModel(GL_SMOOTH);
+				glBlendFunc(GL_ONE, GL_ONE);
+				glEnable(GL_BLEND);
+				glDepthMask(GL_FALSE);
+				glShadeModel(GL_SMOOTH);
 
 				GBufferMask = GBUFFER_MASK_ADDITIVE;
 				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
 			}
 			else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
 			{
-				qglBlendFunc(GL_ONE, GL_ONE);
-				qglEnable(GL_BLEND);
-				qglShadeModel(GL_SMOOTH);
+				glBlendFunc(GL_ONE, GL_ONE);
+				glEnable(GL_BLEND);
+				glShadeModel(GL_SMOOTH);
 
 				GBufferMask = GBUFFER_MASK_ADDITIVE;
 				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE | STUDIO_TRANSADDITIVE_ENABLED;
@@ -1066,12 +1068,12 @@ void R_GLStudioDrawPoints(void)
 
 			if (prog.r_uvscale != -1)
 			{
-				qglUniform2fARB(prog.r_uvscale, s, t);
+				glUniform2fARB(prog.r_uvscale, s, t);
 			}
 			
 			if (VBOMesh.iIndiceCount)
 			{
-				qglDrawElements(GL_TRIANGLES, VBOMesh.iIndiceCount, GL_UNSIGNED_INT, BUFFER_OFFSET(VBOMesh.iStartIndex));
+				glDrawElements(GL_TRIANGLES, VBOMesh.iIndiceCount, GL_UNSIGNED_INT, BUFFER_OFFSET(VBOMesh.iStartIndex));
 				
 				++r_studio_drawcall;
 				r_studio_polys += VBOMesh.iPolyCount;
@@ -1079,7 +1081,7 @@ void R_GLStudioDrawPoints(void)
 
 			if (prog.vertnormbone != -1)
 			{
-				qglDisableVertexAttribArray(prog.vertnormbone);
+				glDisableVertexAttribArray(prog.vertnormbone);
 			}
 
 			if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
@@ -1088,32 +1090,32 @@ void R_GLStudioDrawPoints(void)
 			}
 			else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
 			{
-				qglStencilFunc(GL_ALWAYS, stencilState, 0xFF);
-				qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+				glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
+				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 			}
 			else if (flags & STUDIO_NF_MASKED)
 			{
-				qglAlphaFunc(GL_NOTEQUAL, 0);
-				qglDisable(GL_ALPHA_TEST);
+				glAlphaFunc(GL_NOTEQUAL, 0);
+				glDisable(GL_ALPHA_TEST);
 			}
 			else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
 			{
-				qglDisable(GL_BLEND);
-				qglDepthMask(1);
-				qglShadeModel(GL_FLAT);
+				glDisable(GL_BLEND);
+				glDepthMask(1);
+				glShadeModel(GL_FLAT);
 			}
 			else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
 			{
-				qglDisable(GL_BLEND);
-				qglShadeModel(GL_FLAT);
+				glDisable(GL_BLEND);
+				glShadeModel(GL_FLAT);
 			}
 		}
 
-		qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-		qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-		qglDisableClientState(GL_VERTEX_ARRAY);
-		qglDisableClientState(GL_NORMAL_ARRAY);
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+		glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_NORMAL_ARRAY);
 	}
 	else
 	{
@@ -1146,7 +1148,7 @@ void R_GLStudioDrawPoints(void)
 					if (stencilState != 2)
 					{
 						stencilState = 2;
-						qglStencilFunc(GL_ALWAYS, stencilState, 0xFF);
+						glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
 					}
 				}
 				else
@@ -1154,7 +1156,7 @@ void R_GLStudioDrawPoints(void)
 					if (stencilState != 1)
 					{
 						stencilState = 1;
-						qglStencilFunc(GL_ALWAYS, stencilState, 0xFF);
+						glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
 					}
 				}
 			}
@@ -1165,8 +1167,8 @@ void R_GLStudioDrawPoints(void)
 			}
 			else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
 			{
-				qglStencilFunc(GL_NOTEQUAL, 2, 0xFF);
-				qglStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+				glStencilFunc(GL_NOTEQUAL, 2, 0xFF);
+				glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 				StudioProgramState |= STUDIO_OUTLINE_ENABLED;
 				StudioProgramState &= ~STUDIO_NF_CHROME;
@@ -1177,35 +1179,35 @@ void R_GLStudioDrawPoints(void)
 			}
 			else if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
 			{
-				qglBlendFunc(GL_ONE, GL_ONE);
-				qglEnable(GL_BLEND);
-				qglDepthMask(GL_FALSE);
-				qglShadeModel(GL_SMOOTH);
+				glBlendFunc(GL_ONE, GL_ONE);
+				glEnable(GL_BLEND);
+				glDepthMask(GL_FALSE);
+				glShadeModel(GL_SMOOTH);
 
 				GBufferMask = GBUFFER_MASK_ADDITIVE;
 				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
 			}
 			else if (flags & STUDIO_NF_MASKED)
 			{
-				qglEnable(GL_ALPHA_TEST);
-				qglAlphaFunc(GL_GREATER, 0.5);
-				qglDepthMask(GL_TRUE);
+				glEnable(GL_ALPHA_TEST);
+				glAlphaFunc(GL_GREATER, 0.5);
+				glDepthMask(GL_TRUE);
 			}
 			else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
 			{
-				qglBlendFunc(GL_ONE, GL_ONE);
-				qglEnable(GL_BLEND);
-				qglDepthMask(GL_FALSE);
-				qglShadeModel(GL_SMOOTH);
+				glBlendFunc(GL_ONE, GL_ONE);
+				glEnable(GL_BLEND);
+				glDepthMask(GL_FALSE);
+				glShadeModel(GL_SMOOTH);
 
 				GBufferMask = GBUFFER_MASK_ADDITIVE;
 				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
 			}
 			else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
 			{
-				qglBlendFunc(GL_ONE, GL_ONE);
-				qglEnable(GL_BLEND);
-				qglShadeModel(GL_SMOOTH);
+				glBlendFunc(GL_ONE, GL_ONE);
+				glEnable(GL_BLEND);
+				glShadeModel(GL_SMOOTH);
 
 				GBufferMask = GBUFFER_MASK_ADDITIVE;
 				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE | STUDIO_TRANSADDITIVE_ENABLED;
@@ -1254,36 +1256,36 @@ void R_GLStudioDrawPoints(void)
 					{
 						if (i < 0)
 						{
-							qglBegin(GL_TRIANGLE_FAN);
+							glBegin(GL_TRIANGLE_FAN);
 							i = -i;
 						}
 						else
 						{
-							qglBegin(GL_TRIANGLE_STRIP);
+							glBegin(GL_TRIANGLE_STRIP);
 						}
 
 						for (; i > 0; i--, ptricmds += 4)
 						{
 							int normalIndex = (*g_NormalIndex)[ptricmds[0]];
 
-							qglTexCoord2f(r_chrome[normalIndex][0] * s, r_chrome[normalIndex][1] * t);
+							glTexCoord2f(r_chrome[normalIndex][0] * s, r_chrome[normalIndex][1] * t);
 
 							VectorRotate(pstudionorms[ptricmds[1]], (*pbonetransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[1]]);
 
-							qglNormal3fv(r_studionormal[ptricmds[1]]);
+							glNormal3fv(r_studionormal[ptricmds[1]]);
 
 							vec4_t col;
 							col[0] = (float)(*currententity)->curstate.rendercolor.r / 255.0f;
 							col[1] = (float)(*currententity)->curstate.rendercolor.g / 255.0f;
 							col[2] = (float)(*currententity)->curstate.rendercolor.b / 255.0f;
 							col[3] = 1.0f;
-							qglColor4fv(col);
+							glColor4fv(col);
 
 							av = &engine_pauxverts[ptricmds[0]];
-							qglVertex3fv(av->fv);
+							glVertex3fv(av->fv);
 						}
 
-						qglEnd();
+						glEnd();
 
 						r_studio_drawcall++;
 					}
@@ -1299,17 +1301,17 @@ void R_GLStudioDrawPoints(void)
 					{
 						if (i < 0)
 						{
-							qglBegin(GL_TRIANGLE_FAN);
+							glBegin(GL_TRIANGLE_FAN);
 							i = -i;
 						}
 						else
 						{
-							qglBegin(GL_TRIANGLE_STRIP);
+							glBegin(GL_TRIANGLE_STRIP);
 						}
 
 						for (; i > 0; i--, ptricmds += 4)
 						{
-							qglTexCoord2f(r_chrome[ptricmds[1]][0] * s, r_chrome[ptricmds[1]][1] * t);
+							glTexCoord2f(r_chrome[ptricmds[1]][0] * s, r_chrome[ptricmds[1]][1] * t);
 
 							lv = &engine_pvlightvalues[ptricmds[1] * 3];
 
@@ -1323,14 +1325,14 @@ void R_GLStudioDrawPoints(void)
 
 							VectorRotate(pstudionorms[ptricmds[1]], (*pbonetransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[1]]);
 
-							qglNormal3fv(r_studionormal[ptricmds[1]]);
-							qglColor4f(fl[0], fl[1], fl[2], *r_blend);
+							glNormal3fv(r_studionormal[ptricmds[1]]);
+							glColor4f(fl[0], fl[1], fl[2], *r_blend);
 
 							av = &engine_pauxverts[ptricmds[0]];
-							qglVertex3fv(av->fv);
+							glVertex3fv(av->fv);
 						}
 
-						qglEnd();
+						glEnd();
 
 						r_studio_drawcall++;
 					}
@@ -1344,18 +1346,18 @@ void R_GLStudioDrawPoints(void)
 				{
 					if (i < 0)
 					{
-						qglBegin(GL_TRIANGLE_FAN);
+						glBegin(GL_TRIANGLE_FAN);
 						i = -i;
 					}
 					else
 					{
-						qglBegin(GL_TRIANGLE_STRIP);
+						glBegin(GL_TRIANGLE_STRIP);
 					}
 
 					for (; i > 0; i--, ptricmds += 4)
 					{
 						vec2_t st = { ptricmds[2] * s, ptricmds[3] * t };
-						qglTexCoord2fv(st);
+						glTexCoord2fv(st);
 
 						lv = &(engine_pvlightvalues[ptricmds[1] * 3]);
 
@@ -1369,22 +1371,22 @@ void R_GLStudioDrawPoints(void)
 
 						VectorRotate(pstudionorms[ptricmds[1]], (*pbonetransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[1]]);
 
-						qglNormal3fv(r_studionormal[ptricmds[1]]);
+						glNormal3fv(r_studionormal[ptricmds[1]]);
 
 						if (flags & STUDIO_NF_FULLBRIGHT)
 						{
-							qglColor4f(1, 1, 1, *r_blend);
+							glColor4f(1, 1, 1, *r_blend);
 						}
 						else
 						{
-							qglColor4f(fl[0], fl[1], fl[2], *r_blend);
+							glColor4f(fl[0], fl[1], fl[2], *r_blend);
 						}
 
 						av = &(engine_pauxverts[ptricmds[0]]);
-						qglVertex3fv(av->fv);
+						glVertex3fv(av->fv);
 					}
 
-					qglEnd();
+					glEnd();
 
 					r_studio_drawcall++;
 				}
@@ -1397,36 +1399,36 @@ void R_GLStudioDrawPoints(void)
 			}
 			else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
 			{
-				qglStencilFunc(GL_ALWAYS, stencilState, 0xFF);
-				qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+				glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
+				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 			}
 			else if (flags & STUDIO_NF_MASKED)
 			{
-				qglAlphaFunc(GL_NOTEQUAL, 0);
-				qglDisable(GL_ALPHA_TEST);
+				glAlphaFunc(GL_NOTEQUAL, 0);
+				glDisable(GL_ALPHA_TEST);
 			}
 			else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
 			{
-				qglDisable(GL_BLEND);
-				qglDepthMask(1);
-				qglShadeModel(GL_FLAT);
+				glDisable(GL_BLEND);
+				glDepthMask(1);
+				glShadeModel(GL_FLAT);
 			}
 			else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
 			{
-				qglDisable(GL_BLEND);
-				qglShadeModel(GL_FLAT);
+				glDisable(GL_BLEND);
+				glShadeModel(GL_FLAT);
 			}
 
 		}//mesh draw end
 
 	}//non-VBO way
 
-	qglEnable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 
 	if (r_draw_nontransparent)
 	{
-		qglStencilMask(0);
-		qglDisable(GL_STENCIL_TEST);
+		glStencilMask(0);
+		glDisable(GL_STENCIL_TEST);
 	}
 
 	GL_UseProgram(0);
@@ -1480,7 +1482,7 @@ void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight)
 
 void studioapi_RestoreRenderer(void)
 {
-	qglDepthMask(1);
+	glDepthMask(1);
 	gRefFuncs.studioapi_RestoreRenderer();
 }
 
@@ -1524,7 +1526,7 @@ void R_StudioDrawBatch(void)
 
 	if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
 	{
-		qglDisable(GL_BLEND);
+		glDisable(GL_BLEND);
 		StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
 	}
 
@@ -1538,34 +1540,34 @@ void R_StudioDrawBatch(void)
 		StudioProgramState |= STUDIO_LINEAR_FOG_ENABLED;
 	}
 
-	qglCullFace(GL_FRONT);
+	glCullFace(GL_FRONT);
 
-	qglEnableClientState(GL_VERTEX_ARRAY);
-	qglEnableClientState(GL_NORMAL_ARRAY);
-	qglBindBufferARB(GL_ARRAY_BUFFER_ARB, VBOData->hDataBuffer);
-	qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->hIndexBuffer);
-	qglVertexPointer(3, GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, pos));
-	qglNormalPointer(GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, normal));
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_NORMAL_ARRAY);
+	glBindBuffer(GL_ARRAY_BUFFER_ARB, VBOData->hDataBuffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->hIndexBuffer);
+	glVertexPointer(3, GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, pos));
+	glNormalPointer(GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, normal));
 
 	studio_program_t prog = { 0 };
 
 	R_UseStudioProgram(StudioProgramState, &prog);
 	R_SetGBufferMask(GBufferMask);
 
-	qglMultiDrawElementsEXT(GL_TRIANGLES, vIndiceCount, GL_UNSIGNED_INT, (const void **)vStartIndex, arrayCount);
+	glMultiDrawElementsEXT(GL_TRIANGLES, vIndiceCount, GL_UNSIGNED_INT, (const void **)vStartIndex, arrayCount);
 
 	r_studio_drawcall++;
 
 	if (prog.vertnormbone != -1)
 	{
-		qglDisableVertexAttribArray(prog.vertnormbone);
+		glDisableVertexAttribArray(prog.vertnormbone);
 	}
 
 	GL_UseProgram(0);
-	qglBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-	qglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
-	qglDisableClientState(GL_VERTEX_ARRAY);
-	qglDisableClientState(GL_NORMAL_ARRAY);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+	glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_NORMAL_ARRAY);
 }
 
 void __fastcall GameStudioRenderer_StudioRenderFinal(void *pthis, int)

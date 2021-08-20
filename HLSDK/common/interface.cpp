@@ -68,7 +68,7 @@ EXPORT_FUNCTION IBaseInterface *CreateInterface( const char *pName, int *pReturn
 #ifdef _WIN32
 HINTERFACEMODULE Sys_LoadModule(const char *pModuleName)
 {
-	return (HINTERFACEMODULE)LoadLibrary(pModuleName);
+	return (HINTERFACEMODULE)LoadLibraryA(pModuleName);
 }
 
 #else  // LINUX

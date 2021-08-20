@@ -36,18 +36,10 @@ extern std::vector<water_control_t> r_water_controls;
 typedef struct
 {
 	int program;
-	int watercolor;
-	int entitymatrix;
-	int worldmatrix;
-	int eyepos;
-	int time;
-	int fresnelfactor;
-	int depthfactor;
-	int normfactor;
-	int normalmap;//0
-	int refractmap;//1
-	int reflectmap;//2
-	int depthrefrmap;//3
+	int u_watercolor;
+	int u_depthfactor;
+	int u_fresnelfactor;
+	int u_normfactor;
 }water_program_t;
 
 typedef struct

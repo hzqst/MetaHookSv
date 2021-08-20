@@ -57,24 +57,26 @@ typedef struct brushface_s
 
 #define TEXCHAIN_STATIC 1
 #define TEXCHAIN_SCROLL 2
-#define TEXCHAIN_RANDOM 3
-#define TEXCHAIN_ANIMATION 4
-#define TEXCHAIN_SKY 5
+#define TEXCHAIN_RANDOM 2
+#define TEXCHAIN_ANIMATION 3
+#define TEXCHAIN_SKY 4
 
 typedef struct brushtexchain_s
 {
 	struct brushtexchain_s()
 	{
 		iStartIndex = 0;
-		iVertexCount = 0;
-		iFaceCount = 0;
+		iIndiceCount = 0;
+		iPolyCount = 0;
 		pTexture = 0;
+		iDetailTextureFlags = 0;
 		iType = 0;
 	}
 	int iStartIndex;
-	int iVertexCount;
-	int iFaceCount;
+	int iIndiceCount;
+	int iPolyCount;
 	texture_t *pTexture;
+	int iDetailTextureFlags;
 	int iType;
 }brushtexchain_t;
 
@@ -101,6 +103,14 @@ typedef bspentity_t *(*fnParseBSPEntity_Allocator)(void);
 #define WSURF_SPECULAR_TEXTURE		4
 #define WSURF_MAX_TEXTURE			5
 
+#define WSURF_TEXCHAIN_STATIC		0
+#define WSURF_TEXCHAIN_ANIM			1
+#define WSURF_TEXCHAIN_MAX			2
+
+#define WSURF_DRAWBATCH_STATIC		0
+#define WSURF_DRAWBATCH_SOLID		1
+#define WSURF_DRAWBATCH_MAX			2
+
 typedef struct detail_texture_s
 {
 	detail_texture_s()
@@ -122,33 +132,77 @@ typedef struct detail_texture_cache_s
 	detail_texture_t tex[WSURF_MAX_TEXTURE];
 }detail_texture_cache_t;
 
+typedef struct wsurf_vbo_batch_s
+{
+	wsurf_vbo_batch_s()
+	{
+		iDetailTextureFlags = 0;
+		iDrawCount = 0;
+		iPolyCount = 0;
+	}
+	int iDetailTextureFlags;
+	int iDrawCount;
+	int iPolyCount;
+	std::vector<void *> vStartIndex;
+	std::vector<GLsizei> vIndiceCount;
+}wsurf_vbo_batch_t;
+
 typedef struct wsurf_vbo_s
 {
 	wsurf_vbo_s()
 	{
 		pModel = NULL;
 		hEBO = 0;
+		hEntityUBO = NULL;
+		hTextureSSBO = 0;
 	}
 
 	model_t	*pModel;
 	GLuint	hEBO;
-	std::vector<brushtexchain_t> vTextureChainStatic;
-	std::vector<brushtexchain_t> vTextureChainScroll;
-	std::vector<brushtexchain_t> vTextureChainAnim;
+	GLuint	hEntityUBO;
+	GLuint	hTextureSSBO;
+	std::vector<brushtexchain_t> vTextureChain[WSURF_TEXCHAIN_MAX];
+	std::vector<wsurf_vbo_batch_t *> vDrawBatch[WSURF_DRAWBATCH_MAX];
 	brushtexchain_t TextureChainSky;
 }wsurf_vbo_t;
 
-typedef struct r_worldsurf_ubo_s
+#pragma pack(push, 16)
+
+typedef struct scene_ubo_s
 {
-	GLuint64 texture_handles[16384];
-}r_worldsurf_ubo_t;
+	mat4 viewMatrix;
+	mat4 projMatrix;
+	mat4 invViewMatrix;
+	mat4 invProjMatrix;
+	mat4 shadowMatrix[3];
+	vec4 viewpos;
+	vec4 fogColor;
+	float fogStart;
+	float fogEnd;
+	float time;
+	float padding;
+}scene_ubo_t;
+
+typedef struct entity_ubo_s
+{
+	mat4 entityMatrix;
+	float scrollSpeed;
+	float padding[3];
+}entity_ubo_t;
+
+#pragma pack(pop)
+
+typedef struct texture_ssbo_s
+{
+	GLuint64 handles[5 * 10000];
+}texture_ssbo_t;
 
 typedef struct r_worldsurf_s
 {
 	r_worldsurf_s()
 	{
 		hVBO = 0;
-		hUBO = 0;
+		hSceneUBO = 0;
 
 		vVertexBuffer = NULL;
 		iNumVerts = 0;
@@ -174,7 +228,7 @@ typedef struct r_worldsurf_s
 	}
 
 	GLuint				hVBO;
-	GLuint				hUBO;
+	GLuint				hSceneUBO;
 
 	brushvertex_t		*vVertexBuffer;
 	int					iNumVerts;
@@ -203,25 +257,13 @@ typedef struct r_worldsurf_s
 typedef struct
 {
 	int program;
-	int diffuseTex;
-	int lightmapTexArray;
-	int shadowmapTexArray;
-	int detailTex;
-	int normalTex;
-	int parallaxTex;
-	int specularTex;
-	int speed;
-	int entityMatrix;
-	int shadowMatrix;
-	int shadowDirection;
-	int shadowFade;
-	int shadowColor;
-	int shadowIntensity;
-	int clipPlane;
-	int viewpos;
-	int parallaxScale;
-	int s_tangent;
-	int t_tangent;
+	int u_clipPlane;
+	int u_parallaxScale;
+	int u_shadowDirection;
+	int u_shadowFade;
+	int u_shadowColor;
+	int u_shadowIntensity;
+	int u_color;
 }wsurf_program_t;
 
 #define OFFSET(type, variable) ((const void*)&(((type*)NULL)->variable))
@@ -242,7 +284,7 @@ extern float r_far_z;
 extern bool r_ortho;
 
 void R_InitWSurf(void);
-void R_VidInitWSurf(void);
+void R_NewMapWSurf(void);
 
 //engine
 extern byte *lightmaps;
@@ -303,3 +345,5 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
 #define WSURF_SHADOWMAP_HIGH_ENABLED	0x2000
 #define WSURF_SHADOWMAP_MEDIUM_ENABLED	0x4000
 #define WSURF_SHADOWMAP_LOW_ENABLED		0x8000
+#define WSURF_BINDLESS_ENABLED			0x10000
+#define WSURF_LEGACY_ENABLED			0x20000

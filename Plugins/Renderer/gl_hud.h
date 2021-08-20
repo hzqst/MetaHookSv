@@ -108,6 +108,12 @@ typedef struct
 typedef struct
 {
 	int program;
+}depth_clear_program_t;
+
+
+typedef struct
+{
+	int program;
 	int texLinearDepth;
 	int texRandom;
 	int control_RadiusToScreen;
@@ -152,6 +158,8 @@ extern cvar_t *r_fxaa;
 
 extern int last_luminance;
 
+extern SHADER_DEFINE(depth_clear);
+
 void R_BeginFXAA(int w, int h);
 void R_LinearizeDepth(FBO_Container_t *src);
 void R_DoSSAO(void);
@@ -162,6 +170,7 @@ void R_BlitToFBO(FBO_Container_t *src, FBO_Container_t *dst);
 void R_DrawHUDQuad(int w, int h);
 void R_DrawHUDQuad_Texture(int tex, int w, int h);
 void R_DrawHUDQuadFrustum(int w, int h);
+
 #define HUD_DEBUG_TEXARRAY 1
 
 void R_UseHudDebugProgram(int state, hud_debug_program_t *progOutput);

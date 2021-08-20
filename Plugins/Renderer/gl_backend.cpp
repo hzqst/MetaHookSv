@@ -10,8 +10,8 @@ void VID_CaptureScreen(const char *szExtension)
 
 	GL_PushFrameBuffer();
 
-	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-	qglReadPixels(0, 0, glwidth, glheight, GL_RGB, GL_UNSIGNED_BYTE, pBuf);
+	glBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	glReadPixels(0, 0, glwidth, glheight, GL_RGB, GL_UNSIGNED_BYTE, pBuf);
 
 	GL_PopFrameBuffer();
 

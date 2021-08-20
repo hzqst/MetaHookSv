@@ -11,72 +11,6 @@ float turbsin[] =
 colorVec *gWaterColor;
 cshift_t *cshift_water;
 
-void EmitWaterPolysWireFrame(msurface_t *fa, int direction, qboolean useProgram)
-{
-	/*glpoly_t *p;
-	float *v;
-	int i;
-	float s;
-	float scale;
-	float tempVert[3];
-
-	float clientTime = (*cl_time);
-
-	if (gl_wireframe->value)
-	{
-		R_UseGBufferProgram(GBUFFER_TRANSPARENT_ENABLED);
-		R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
-
-		if (fa->polys->verts[0][2] >= r_refdef->vieworg[2])
-			scale = (*currententity)->curstate.scale;
-		else
-			scale = -(*currententity)->curstate.scale;
-
-		if (gl_wireframe->value == 2)
-			qglDisable(GL_DEPTH_TEST);
-
-		qglColor3f(1, 1, 1);
-
-		for (p = fa->polys; p; p = p->next)
-		{
-			qglBegin(GL_LINE_LOOP);
-
-			if (direction)
-				v = p->verts[p->numverts - 1];
-			else
-				v = p->verts[0];
-
-			for (i = 0; i < p->numverts; i++)
-			{
-				tempVert[0] = v[0];
-				tempVert[1] = v[1];
-				tempVert[2] = v[2];
-
-				if(!useProgram)
-				{
-					s = turbsin[(int)((clientTime * 160) + v[0] + v[1]) & 255];
-					s += 8;
-					s += turbsin[(int)((clientTime * 171) + v[0] * 5 - v[1]) & 255];
-					s *= 8;
-					s *= scale * 0.8;
-					tempVert[2] += s;
-				}
-
-				qglVertex3fv(tempVert);
-
-				if (direction)
-					v -= VERTEXSIZE;
-				else
-					v += VERTEXSIZE;
-			}
-			qglEnd();
-		}
-
-		if (gl_wireframe->value == 2)
-			qglEnable(GL_DEPTH_TEST);
-	}*/
-}
-
 void EmitWaterPolys(msurface_t *fa, int direction)
 {
 	float *v;
@@ -90,10 +24,10 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	if (r_draw_pass == r_draw_reflect)
 		return;
 
-	qglEnable(GL_STENCIL_TEST);
-	qglStencilMask(0xFF);
-	qglStencilFunc(GL_ALWAYS, 1, 0xFF);
-	qglStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glEnable(GL_STENCIL_TEST);
+	glStencilMask(0xFF);
+	glStencilFunc(GL_ALWAYS, 1, 0xFF);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	float clientTime = (*cl_time);
 
@@ -164,17 +98,17 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 					s_WaterFBO.s_hBackBufferTex = refractmap;
 					s_WaterFBO.s_hBackBufferDepthTex = depthrefrmap;
 
-					qglBindFramebufferEXT(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
-					qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferTex, 0);
-					qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferDepthTex, 0);
+					glBindFramebufferEXT(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
+					glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferTex, 0);
+					glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferDepthTex, 0);
 					
-					qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
-					qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-					qglBlitFramebufferEXT(
+					glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
+					glBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+					glBlitFramebufferEXT(
 						0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight,
 						0, 0, s_WaterFBO.iWidth, s_WaterFBO.iHeight,
 						GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-					qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+					glBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 
 					refractmap_ready = true;
 				}
@@ -189,41 +123,34 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 			water_program_t prog = { 0 };
 			R_UseWaterProgram(programState, &prog);
 
-			if (prog.watercolor != -1)
-				qglUniform4fARB(prog.watercolor, waterObject->color.r / 255.0f, waterObject->color.g / 255.0f, waterObject->color.b / 255.0f, alpha);
-			if (prog.eyepos != -1)
-				qglUniform4fARB(prog.eyepos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1.0);
-			if (prog.time != -1)
-				qglUniform1fARB(prog.time, clientTime);
-			if (prog.fresnelfactor != -1)
-				qglUniform1fARB(prog.fresnelfactor, waterObject->fresnelfactor);
-			if (prog.depthfactor != -1)
-				qglUniform2fARB(prog.depthfactor, waterObject->depthfactor[0], waterObject->depthfactor[1]);
-			if (prog.normfactor != -1)
-				qglUniform1fARB(prog.normfactor, waterObject->normfactor);
+			if (prog.u_watercolor != -1)
+				glUniform4f(prog.u_watercolor, waterObject->color.r / 255.0f, waterObject->color.g / 255.0f, waterObject->color.b / 255.0f, alpha);
 
-			qglEnable(GL_BLEND);
-			qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			if (prog.u_depthfactor != -1)
+				glUniform2fARB(prog.u_depthfactor, waterObject->depthfactor[0], waterObject->depthfactor[1]);
 
-			GL_SelectTexture(TEXTURE0_SGIS);
+			if (prog.u_fresnelfactor != -1)
+				glUniform1f(prog.u_fresnelfactor, waterObject->fresnelfactor);
+
+			if (prog.u_normfactor != -1)
+				glUniform1f(prog.u_normfactor, waterObject->normfactor);
+
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+			GL_SelectTexture(GL_TEXTURE0);
 			GL_Bind(waterObject->normalmap);
 
 			GL_EnableMultitexture();
 			GL_Bind(refractmap);
 
-			if (prog.reflectmap != -1)
-			{
-				qglActiveTextureARB(TEXTURE2_SGIS);
-				qglEnable(GL_TEXTURE_2D);
-				qglBindTexture(GL_TEXTURE_2D, waterObject->reflectmap);
-			}
+			glActiveTexture(GL_TEXTURE2);
+			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, waterObject->reflectmap);
 
-			if (prog.depthrefrmap != -1)
-			{
-				qglActiveTextureARB(TEXTURE3_SGIS);
-				qglEnable(GL_TEXTURE_2D);
-				qglBindTexture(GL_TEXTURE_2D, depthrefrmap);
-			}
+			glActiveTexture(GL_TEXTURE3);
+			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, depthrefrmap);
 
 			useProgram = 1;
 		}
@@ -246,9 +173,17 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	if (useProgram)
 		scale = 0;
 
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(4);
+
+	vec3_t vertexArray[128];
+	vec3_t normalArray[128];
+	vec2_t texcoordArray[128];
+
 	for (p = fa->polys; p; p = p->next)
 	{
-		qglBegin(GL_POLYGON);
+		int numVertex = 0;
 
 		if (direction)
 			v = p->verts[p->numverts - 1];
@@ -273,6 +208,9 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 
 				t = ot + turbsin[(int)((os * 0.125 + clientTime) * TURBSCALE) & 255];
 				t *= (1.0 / 64);
+
+				texcoordArray[numVertex][0] = s;
+				texcoordArray[numVertex][1] = t;
 			}
 			else
 			{
@@ -282,19 +220,15 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 
 				os = v[3];
 				ot = v[4];
+
+				texcoordArray[numVertex][0] = os / 128;
+				texcoordArray[numVertex][1] = ot / 128;
 			}
 
-			if(!useProgram)
-			{
-				qglTexCoord2f(s, t);
-			}
-			else
-			{
-				qglMultiTexCoord2fARB(TEXTURE0_SGIS, os, ot);
-			}
+			VectorCopy(tempVert, vertexArray[numVertex]);
+			VectorCopy(normal, normalArray[numVertex]);
 
-			qglNormal3fv(normal);
-			qglVertex3fv(tempVert);
+			numVertex++;
 
 			if (direction)
 				v -= VERTEXSIZE;
@@ -302,32 +236,37 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 				v += VERTEXSIZE;
 		}
 
-		qglEnd();
+		glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, vertexArray);
+		glVertexAttribPointer(1, 3, GL_FLOAT, false, 0, normalArray);
+		glVertexAttribPointer(4, 2, GL_FLOAT, false, 0, texcoordArray);
+		glDrawArrays(GL_POLYGON, 0, numVertex);
 
 		r_wsurf_drawcall++;
 		r_wsurf_polys++;
 	}
 
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(4);
+
 	if(useProgram)
 	{
-		qglActiveTextureARB(TEXTURE3_SGIS);
-		qglBindTexture(GL_TEXTURE_2D, 0);
-		qglDisable(GL_TEXTURE_2D);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glDisable(GL_TEXTURE_2D);
 
-		qglActiveTextureARB(TEXTURE2_SGIS);
-		qglBindTexture(GL_TEXTURE_2D, 0);
-		qglDisable(GL_TEXTURE_2D);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glDisable(GL_TEXTURE_2D);
 
-		qglActiveTextureARB(TEXTURE1_SGIS);
+		glActiveTexture(GL_TEXTURE1);
 		GL_DisableMultitexture();
 	}
 
 	GL_UseProgram(0);
 
-	qglStencilMask(0);
-	qglDisable(GL_STENCIL_TEST);
-
-	//EmitWaterPolysWireFrame(fa, direction, useProgram);
+	glStencilMask(0);
+	glDisable(GL_STENCIL_TEST);
 }
 
 int *gSkyTexNumber;
@@ -418,11 +357,11 @@ int skytexorder[6] = { 0, 2, 1, 3, 4, 5 };
 
 void R_DrawSkyBox(void)
 {
-	qglDisable(GL_BLEND);
-	qglColor4f(1, 1, 1, 1);
-	qglDepthMask(0);
+	glDisable(GL_BLEND);
+	glColor4f(1, 1, 1, 1);
+	glDepthMask(0);
 
-	int WSurfProgramState = WSURF_DIFFUSE_ENABLED;
+	int WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_LEGACY_ENABLED;
 
 	if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 	{
@@ -442,10 +381,10 @@ void R_DrawSkyBox(void)
 	wsurf_program_t prog = { 0 };
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 
-	if (prog.speed != -1)
-		qglUniform1fARB(prog.speed, 0);
-
 	float zFar = (r_params.movevars) ? r_params.movevars->zmax : 4096;
+
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(4);
 
 	for (int i = 0; i < 6; i++)
 	{
@@ -460,25 +399,23 @@ void R_DrawSkyBox(void)
 			order = skytexorder[i];
 		}
 
-		vec3_t positionArray[4];
-		vec2_t texCoordArray[4];
+		vec3_t vertexArray[4];
+		vec2_t texcoordArray[4];
 
 		GL_Bind(gSkyTexNumber[order]);
 
-		MakeSkyVec(-1.0f, -1.0f, i, zFar, positionArray[0], texCoordArray[0]);
-		MakeSkyVec(-1.0f, 1.0f, i, zFar, positionArray[1], texCoordArray[1]);
-		MakeSkyVec(1.0f, 1.0f, i, zFar, positionArray[2], texCoordArray[2]);
-		MakeSkyVec(1.0f, -1.0f, i, zFar, positionArray[3], texCoordArray[3]);
+		MakeSkyVec(-1.0f, -1.0f, i, zFar, vertexArray[0], texcoordArray[0]);
+		MakeSkyVec(-1.0f, 1.0f, i, zFar, vertexArray[1], texcoordArray[1]);
+		MakeSkyVec(1.0f, 1.0f, i, zFar, vertexArray[2], texcoordArray[2]);
+		MakeSkyVec(1.0f, -1.0f, i, zFar, vertexArray[3], texcoordArray[3]);
 
-		qglBegin(GL_QUADS);
-		for (int j = 0; j < 4; ++j)
-		{
-			qglTexCoord2fv(texCoordArray[j]);
-			qglVertex3fv(positionArray[j]);
-		}
-		qglEnd();
+		glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, vertexArray);
+		glVertexAttribPointer(4, 2, GL_FLOAT, false, 0, texcoordArray);
+		glDrawArrays(GL_QUADS, 0, 4);
 	}
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(4);
 
-	qglDepthMask(1);
+	glDepthMask(1);
 	GL_UseProgram(0);
 }

@@ -73,8 +73,6 @@ int *mod_numknown = NULL;
 int gl_max_texture_size = 0;
 float gl_max_ansio = 0;
 GLuint gl_color_format = 0;
-int gl_msaa_samples = 0;
-//cvar_t *r_msaa = NULL;
 cvar_t *r_vertical_fov = NULL;
 
 int *gl_msaa_fbo = 0;
@@ -84,15 +82,6 @@ qboolean *mtexenabled = 0;
 
 bool g_SvEngine_DrawPortalView = 0;
 
-qboolean gl_framebuffer_object = false;
-qboolean gl_shader_support = false;
-qboolean gl_program_support = false;
-qboolean gl_msaa_support = false;
-qboolean gl_multi_draw_support = false;
-qboolean gl_blit_support = false;
-qboolean gl_float_buffer_support = false;
-qboolean gl_s3tc_compression_support = false;
-
 float r_identity_matrix[4][4] = {
 	{1.0f, 0.0f, 0.0f, 0.0f},
 	{0.0f, 1.0f, 0.0f, 0.0f},
@@ -100,9 +89,7 @@ float r_identity_matrix[4][4] = {
 	{0.0f, 0.0f, 0.0f, 1.0f}
 };
 
-float r_rotate_entity_matrix[4][4];
-
-bool r_rotate_entity = false;
+float r_entity_matrix[4][4];
 
 bool r_draw_nontransparent = false;
 
@@ -129,7 +116,6 @@ FBO_Container_t s_ShadowFBO;
 FBO_Container_t s_WaterFBO;
 
 qboolean bNoStretchAspect = false;
-qboolean bDoMSAA = true;
 
 cvar_t *ati_subdiv = NULL;
 cvar_t *ati_npatch = NULL;
@@ -217,7 +203,7 @@ qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 	return gRefFuncs.R_CullBox(mins, maxs);
 }
 
-void R_RotateForEntity(vec_t *origin, cl_entity_t *e)
+void R_RotateForEntity(float *origin, cl_entity_t *e)
 {
 	int i;
 	vec3_t angles;
@@ -263,15 +249,10 @@ void R_RotateForEntity(vec_t *origin, cl_entity_t *e)
 		}
 	}
 
-	memcpy(r_rotate_entity_matrix, r_identity_matrix, sizeof(r_identity_matrix));
-	Matrix4x4_CreateFromEntity(r_rotate_entity_matrix, angles, modelpos, 1);
-
-	qglTranslatef(modelpos[0], modelpos[1], modelpos[2]);
-	qglRotatef(angles[1], 0, 0, 1);
-	qglRotatef(angles[0], 0, 1, 0);
-	qglRotatef(angles[2], 1, 0, 0);
-
-	r_rotate_entity = true;
+	float entity_matrix[4][4];
+	memcpy(entity_matrix, r_identity_matrix, sizeof(r_identity_matrix));
+	Matrix4x4_CreateFromEntity(entity_matrix, angles, modelpos, 1);
+	Matrix4x4_Transpose(r_entity_matrix, entity_matrix);
 }
 
 //All sprite models goes transentities
@@ -451,16 +432,16 @@ void R_SetRenderMode(cl_entity_t *pEntity)
 	{
 	case kRenderNormal:
 	{
-		qglColor4f(1, 1, 1, 1);
+		glColor4f(1, 1, 1, 1);
 		break;
 	}
 
 	case kRenderTransColor:
 	{
-		qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ALPHA);
-		qglEnable(GL_BLEND);
-		qglColor4f(
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ALPHA);
+		glEnable(GL_BLEND);
+		glColor4f(
 			(*currententity)->curstate.rendercolor.r / 255.0,
 			(*currententity)->curstate.rendercolor.g / 255.0,
 			(*currententity)->curstate.rendercolor.b / 255.0,
@@ -470,31 +451,31 @@ void R_SetRenderMode(cl_entity_t *pEntity)
 
 	case kRenderTransAdd:
 	{
-		qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		qglBlendFunc(GL_ONE, GL_ONE);
-		qglColor4f(*r_blend, *r_blend, *r_blend, 1);
-		qglDepthMask(0);
-		qglEnable(GL_BLEND);
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		glBlendFunc(GL_ONE, GL_ONE);
+		glColor4f(*r_blend, *r_blend, *r_blend, 1);
+		glDepthMask(0);
+		glEnable(GL_BLEND);
 		break;
 	}
 
 	case kRenderTransAlpha:
 	{
-		qglEnable(GL_ALPHA_TEST);
-		qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		qglColor4f(1, 1, 1, 1);
-		qglDisable(GL_BLEND);
-		qglAlphaFunc(GL_GREATER, gl_alphamin->value);
+		glEnable(GL_ALPHA_TEST);
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		glColor4f(1, 1, 1, 1);
+		glDisable(GL_BLEND);
+		glAlphaFunc(GL_GREATER, gl_alphamin->value);
 		break;
 	}
 
 	default:
 	{
-		qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		qglColor4f(1, 1, 1, *r_blend);
-		qglDepthMask(0);
-		qglEnable(GL_BLEND);
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glColor4f(1, 1, 1, *r_blend);
+		glDepthMask(0);
+		glEnable(GL_BLEND);
 		break;
 	}
 	}
@@ -524,7 +505,7 @@ void R_DrawViewModel(void)
 		return;
 	}
 
-	qglDepthRange(0, 0.3);
+	glDepthRange(0, 0.3);
 
 	switch ((*currententity)->model->type)
 	{
@@ -567,8 +548,8 @@ void R_DrawViewModel(void)
 	}
 	}
 
-	qglDepthRange(0, 1);
-	qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glDepthRange(0, 1);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 }
 
 void R_PolyBlend(void)
@@ -600,7 +581,7 @@ void MYgluPerspectiveV(double fovy, double aspect, double zNear, double zFar)
 {
 	auto right = tan(fovy * (M_PI / 360.0)) * zNear;
 	auto top = right * aspect;
-	qglFrustum(-right, right, -top, top, zNear, zFar);
+	glFrustum(-right, right, -top, top, zNear, zFar);
 
 	r_near_z = zNear;
 	r_far_z = zFar;
@@ -634,7 +615,7 @@ void MYgluPerspectiveH(double fovy, double aspect, double zNear, double zFar)
 {
 	auto top = tan(fovy * (M_PI / 360.0)) * zNear;
 	auto right = top * aspect;
-	qglFrustum(-right, right, -top, top, zNear, zFar);
+	glFrustum(-right, right, -top, top, zNear, zFar);
 
 	r_near_z = zNear;
 	r_far_z = zFar;
@@ -678,25 +659,25 @@ void GL_ClearFBO(FBO_Container_t *s)
 void GL_FreeFBO(FBO_Container_t *s)
 {
 	if (s->s_hBackBufferFBO)
-		qglDeleteFramebuffersEXT(1, &s->s_hBackBufferFBO);
+		glDeleteFramebuffersEXT(1, &s->s_hBackBufferFBO);
 
 	if (s->s_hBackBufferCB)
-		qglDeleteRenderbuffersEXT(1, &s->s_hBackBufferCB);
+		glDeleteRenderbuffersEXT(1, &s->s_hBackBufferCB);
 
 	if (s->s_hBackBufferDB)
-		qglDeleteRenderbuffersEXT(1, &s->s_hBackBufferDB);
+		glDeleteRenderbuffersEXT(1, &s->s_hBackBufferDB);
 
 	if (s->s_hBackBufferTex)
-		qglDeleteTextures(1, &s->s_hBackBufferTex);
+		glDeleteTextures(1, &s->s_hBackBufferTex);
 
 	if (s->s_hBackBufferTex2)
-		qglDeleteTextures(1, &s->s_hBackBufferTex2);
+		glDeleteTextures(1, &s->s_hBackBufferTex2);
 
 	if (s->s_hBackBufferDepthTex)
-		qglDeleteTextures(1, &s->s_hBackBufferDepthTex);
+		glDeleteTextures(1, &s->s_hBackBufferDepthTex);
 
 	if (s->s_hBackBufferStencilView)
-		qglDeleteTextures(1, &s->s_hBackBufferStencilView);
+		glDeleteTextures(1, &s->s_hBackBufferStencilView);
 
 	GL_ClearFBO(s);
 }
@@ -727,24 +708,17 @@ void GL_GenerateFBO(void)
 	GL_ClearFBO(&s_WaterFBO);
 	GL_ClearFBO(&s_ShadowFBO);
 
-	if (!gl_msaa_support)
-	{
-		bDoMSAA = false;
-
-		gEngfuncs.Con_Printf("MSAA disabled due to lack of GL_EXT_framebuffer_multisample.\n");
-	}
-
-	qglEnable(GL_TEXTURE_2D);
+	glEnable(GL_TEXTURE_2D);
 
 	gl_color_format = GL_RGB16F;
 
 	s_BackBufferFBO.iWidth = glwidth;
 	s_BackBufferFBO.iHeight = glheight;
 	GL_GenFrameBuffer(&s_BackBufferFBO);
-	GL_FrameBufferColorTexture(&s_BackBufferFBO, gl_color_format, false);
-	GL_FrameBufferDepthTexture(&s_BackBufferFBO, GL_DEPTH24_STENCIL8, false);
+	GL_FrameBufferColorTexture(&s_BackBufferFBO, gl_color_format);
+	GL_FrameBufferDepthTexture(&s_BackBufferFBO, GL_DEPTH24_STENCIL8);
 
-	if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BackBufferFBO);
 		Sys_ErrorEx("Failed to initialize backbuffer framebuffer!\n");
@@ -753,10 +727,10 @@ void GL_GenerateFBO(void)
 	s_BackBufferFBO2.iWidth = glwidth;
 	s_BackBufferFBO2.iHeight = glheight;
 	GL_GenFrameBuffer(&s_BackBufferFBO2);
-	GL_FrameBufferColorTexture(&s_BackBufferFBO2, gl_color_format, false);
-	GL_FrameBufferDepthTexture(&s_BackBufferFBO2, GL_DEPTH24_STENCIL8, false);
+	GL_FrameBufferColorTexture(&s_BackBufferFBO2, gl_color_format);
+	GL_FrameBufferDepthTexture(&s_BackBufferFBO2, GL_DEPTH24_STENCIL8);
 
-	if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BackBufferFBO2);
 		Sys_ErrorEx("Failed to initialize backbuffer2 framebuffer!\n");
@@ -766,9 +740,9 @@ void GL_GenerateFBO(void)
 	s_GBufferFBO.iHeight = glheight;
 	GL_GenFrameBuffer(&s_GBufferFBO);
 	GL_FrameBufferColorTextureDeferred(&s_GBufferFBO, gl_color_format);
-	GL_FrameBufferDepthTexture(&s_GBufferFBO, GL_DEPTH24_STENCIL8, false);
+	GL_FrameBufferDepthTexture(&s_GBufferFBO, GL_DEPTH24_STENCIL8);
 
-	if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_GBufferFBO);
 		Sys_ErrorEx("Failed to initialize GBuffer framebuffer.\n");
@@ -777,9 +751,9 @@ void GL_GenerateFBO(void)
 	s_DepthLinearFBO.iWidth = glwidth;
 	s_DepthLinearFBO.iHeight = glheight;
 	GL_GenFrameBuffer(&s_DepthLinearFBO);
-	GL_FrameBufferColorTexture(&s_DepthLinearFBO, GL_R32F, false);
+	GL_FrameBufferColorTexture(&s_DepthLinearFBO, GL_R32F);
 
-	if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_DepthLinearFBO);
 		Sys_ErrorEx("Failed to initialize DepthLinear framebuffer!\n");
@@ -790,7 +764,7 @@ void GL_GenerateFBO(void)
 	GL_GenFrameBuffer(&s_HBAOCalcFBO);
 	GL_FrameBufferColorTextureHBAO(&s_HBAOCalcFBO);
 
-	if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_HBAOCalcFBO);
 		Sys_ErrorEx("Failed to initialize HBAOCalc framebuffer.\n");
@@ -818,9 +792,9 @@ void GL_GenerateFBO(void)
 		//fbo
 		GL_GenFrameBuffer(&s_DownSampleFBO[i]);
 		//color
-		GL_FrameBufferColorTexture(&s_DownSampleFBO[i], gl_color_format, false);
+		GL_FrameBufferColorTexture(&s_DownSampleFBO[i], gl_color_format);
 
-		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			GL_FreeFBO(&s_DownSampleFBO[i]);
 			Sys_ErrorEx("Failed to initialize DownSample #%d framebuffer.\n", i);
@@ -841,9 +815,9 @@ void GL_GenerateFBO(void)
 		s_LuminFBO[i].iWidth = downW;
 		s_LuminFBO[i].iHeight = downH;
 		GL_GenFrameBuffer(&s_LuminFBO[i]);
-		GL_FrameBufferColorTexture(&s_LuminFBO[i], GL_R32F, false);
+		GL_FrameBufferColorTexture(&s_LuminFBO[i], GL_R32F);
 
-		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			GL_FreeFBO(&s_LuminFBO[i]);
 			Sys_ErrorEx("Failed to initialize Luminance #%d framebuffer.\n", i);
@@ -859,9 +833,9 @@ void GL_GenerateFBO(void)
 		s_Lumin1x1FBO[i].iWidth = 1;
 		s_Lumin1x1FBO[i].iHeight = 1;
 		GL_GenFrameBuffer(&s_Lumin1x1FBO[i]);
-		GL_FrameBufferColorTexture(&s_Lumin1x1FBO[i], GL_R32F, false);
+		GL_FrameBufferColorTexture(&s_Lumin1x1FBO[i], GL_R32F);
 
-		if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			GL_FreeFBO(&s_Lumin1x1FBO[i]);
 			Sys_ErrorEx("Failed to initialize Luminance1x1 #%d framebuffer.\n", i);
@@ -872,9 +846,9 @@ void GL_GenerateFBO(void)
 	s_BrightPassFBO.iWidth = (glwidth >> DOWNSAMPLE_BUFFERS);
 	s_BrightPassFBO.iHeight = (glheight >> DOWNSAMPLE_BUFFERS);
 	GL_GenFrameBuffer(&s_BrightPassFBO);
-	GL_FrameBufferColorTexture(&s_BrightPassFBO, gl_color_format, false);
+	GL_FrameBufferColorTexture(&s_BrightPassFBO, gl_color_format);
 
-	if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BrightPassFBO);
 		Sys_ErrorEx("Failed to initialize BrightPass framebuffer.\n");
@@ -892,9 +866,9 @@ void GL_GenerateFBO(void)
 			s_BlurPassFBO[i][j].iHeight = downH;
 
 			GL_GenFrameBuffer(&s_BlurPassFBO[i][j]);
-			GL_FrameBufferColorTexture(&s_BlurPassFBO[i][j], gl_color_format, false);
+			GL_FrameBufferColorTexture(&s_BlurPassFBO[i][j], gl_color_format);
 
-			if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+			if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 			{
 				GL_FreeFBO(&s_BlurPassFBO[i][j]);
 				Sys_ErrorEx("Failed to initialize Blur #%d framebuffer.\n", i);
@@ -907,8 +881,8 @@ void GL_GenerateFBO(void)
 	s_BrightAccumFBO.iWidth = glwidth >> DOWNSAMPLE_BUFFERS;
 	s_BrightAccumFBO.iHeight = glheight >> DOWNSAMPLE_BUFFERS;
 	GL_GenFrameBuffer(&s_BrightAccumFBO);
-	GL_FrameBufferColorTexture(&s_BrightAccumFBO, gl_color_format, false);
-	if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	GL_FrameBufferColorTexture(&s_BrightAccumFBO, gl_color_format);
+	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BrightAccumFBO);
 		Sys_ErrorEx("Failed to initialize BrightAccumulate #%d framebuffer.\n");
@@ -917,19 +891,24 @@ void GL_GenerateFBO(void)
 	s_ToneMapFBO.iWidth = glwidth;
 	s_ToneMapFBO.iHeight = glheight;
 	GL_GenFrameBuffer(&s_ToneMapFBO);
-	GL_FrameBufferColorTexture(&s_ToneMapFBO, GL_RGBA8, false);
-	if (qglCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	GL_FrameBufferColorTexture(&s_ToneMapFBO, GL_RGBA8);
+	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_ToneMapFBO);
 		gEngfuncs.Con_Printf("Failed to initialize ToneMapping #%d framebuffer.\n");
 	}
 
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, 0);
+	glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
 }
 
 void GL_Init(void)
 {
-	QGL_Init();
+	auto err = glewInit();
+	if (GLEW_OK != err)
+	{
+		Sys_ErrorEx("glewInit failed, %s", glewGetErrorString(err));
+		return;
+	}
 
 	if (!(*gl_mtexable))
 	{
@@ -937,34 +916,43 @@ void GL_Init(void)
 		return;
 	}
 
-	if (!gl_shader_support)
+	if (!glewIsSupported("GL_ARB_shader_objects"))
 	{
 		Sys_ErrorEx("Missing OpenGL extension GL_ARB_shader_objects!\n");
 		return;
 	}
 
-	if (!gl_framebuffer_object)
+	if (!glewIsSupported("GL_EXT_framebuffer_object"))
 	{
 		Sys_ErrorEx("Missing OpenGL extension GL_EXT_framebuffer_object!\n");
 		return;
 	}
 
-	if (!gl_blit_support)
+	if (!glewIsSupported("GL_EXT_framebuffer_blit"))
 	{
 		Sys_ErrorEx("Missing OpenGL extension GL_EXT_framebuffer_blit!\n");
 		return;
 	}
 
-	if (!gl_float_buffer_support)
+	if (!glewIsSupported("GL_NV_float_buffer"))
 	{
 		Sys_ErrorEx("Missing OpenGL extension GL_NV_float_buffer!\n");
 		return;
 	}
 
-	if (!gl_multi_draw_support)
+	if (!glewIsSupported("GL_EXT_multi_draw_arrays"))
 	{
-		Sys_ErrorEx("Missing OpenGL extension GL_EXT_multi_draw_support!\n");
+		Sys_ErrorEx("Missing OpenGL extension GL_EXT_multi_draw_arrays!\n");
 		return;
+	}
+
+	gl_max_texture_size = 128;
+	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &gl_max_texture_size);
+
+	gl_max_ansio = 1;
+	if (glewIsSupported("GL_EXT_texture_filter_anisotropic"))
+	{
+		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &gl_max_ansio);
 	}
 
 	GL_GenerateFBO();
@@ -975,7 +963,6 @@ void GL_Shutdown(void)
 {
 	GL_FreeShaders();
 
-	//GL_FreeFBO(&s_MSAAFBO);
 	GL_FreeFBO(&s_BackBufferFBO);
 	GL_FreeFBO(&s_BackBufferFBO2);
 	for (int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
@@ -1005,7 +992,7 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 	glwidth = *width; 
 	glheight = *height;
 
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	glBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 }
 
 void R_PreRenderView(int a1)
@@ -1026,7 +1013,7 @@ void R_PreRenderView(int a1)
 		}
 	}
 
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	glBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 }
 
 void R_PostRenderView()
@@ -1044,11 +1031,11 @@ void R_PostRenderView()
 	R_DoHDR();
 
 	GL_DisableMultitexture();
-	qglEnable(GL_TEXTURE_2D);
-	qglColor4f(1, 1, 1, 1);
-	qglDisable(GL_BLEND);
+	glEnable(GL_TEXTURE_2D);
+	glColor4f(1, 1, 1, 1);
+	glDisable(GL_BLEND);
 
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	glBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 
 	g_SvEngine_DrawPortalView = false;	
 }
@@ -1131,21 +1118,21 @@ void R_RenderView_SvEngine(int a1)
 	float clearColor[3];
 	R_ParseVectorCvar(gl_clearcolor, clearColor);
 
-	qglClearColor(clearColor[0], clearColor[1], clearColor[2], 1);
+	glClearColor(clearColor[0], clearColor[1], clearColor[2], 1);
 
-	qglStencilMask(0xFF);
-	qglClearStencil(0);
-	qglDepthMask(GL_TRUE);
+	glStencilMask(0xFF);
+	glClearStencil(0);
+	glDepthMask(GL_TRUE);
 
 	if (!gl_clear->value || a1)
-		qglClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	else
-		qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-	qglStencilMask(0);
+	glStencilMask(0);
 
-	qglDepthFunc(GL_LEQUAL);
-	qglDepthRange(0, 1);
+	glDepthFunc(GL_LEQUAL);
+	glDepthRange(0, 1);
 
 	if (!r_refdef->onlyClientDraws)
 		R_PreDrawViewModel();
@@ -1233,14 +1220,14 @@ void GL_EndRendering(void)
 	}
 
 	//Blit to screen
-	qglBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0);
-	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0);
+	glBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 
-	qglClearColor(0, 0, 0, 1);
-	qglClear(GL_COLOR_BUFFER_BIT);
+	glClearColor(0, 0, 0, 1);
+	glClear(GL_COLOR_BUFFER_BIT);
 
-	qglBlitFramebufferEXT(0, 0, glwidth, glheight, dstX, dstY, dstX2, dstY2, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, 0);
+	glBlitFramebufferEXT(0, 0, glwidth, glheight, dstX, dstY, dstX2, dstY2, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+	glBindFramebufferEXT(GL_READ_FRAMEBUFFER, 0);
 
 	//VID_FlipScreen for us.
 	gRefFuncs.GL_EndRendering();
@@ -1322,7 +1309,7 @@ void R_InitCvars(void)
 	gl_round_down = gEngfuncs.pfnGetCvarPointer("gl_round_down");
 	gl_picmip = gEngfuncs.pfnGetCvarPointer("gl_picmip");
 	gl_max_size = gEngfuncs.pfnGetCvarPointer("gl_max_size");
-	gl_max_size->value = gl_max_texture_size;
+	//gl_max_size->value = gl_max_texture_size;
 
 	developer = gEngfuncs.pfnGetCvarPointer("developer");
 
@@ -1383,7 +1370,7 @@ void R_NewMap(void)
 	memset(&r_params, 0, sizeof(r_params));
 
 	R_ClearWater();
-	R_VidInitWSurf();
+	R_NewMapWSurf();
 
 	R_StudioReloadVBOCache();
 }
@@ -1544,8 +1531,8 @@ void R_SetupGL(void)
 {
 	R_SetFrustumNew();
 
-	qglMatrixMode(GL_PROJECTION);
-	qglLoadIdentity();
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
 	auto v0 = r_refdef_vrect->x;
 	auto v1 = glheight - r_refdef_vrect->y;
 	auto v2 = r_refdef_vrect->x + r_refdef_vrect->width;
@@ -1567,7 +1554,7 @@ void R_SetupGL(void)
 		glheight = gl_envmapsize->value;
 		glwidth = gl_envmapsize->value;
 	}
-	qglViewport(v0 + glx, v3 + gly, v4, v5);
+	glViewport(v0 + glx, v3 + gly, v4, v5);
 
 	r_viewport[0] = v0 + glx;
 	r_viewport[1] = v3 + gly;
@@ -1596,7 +1583,7 @@ void R_SetupGL(void)
 			auto v14 = gDevOverview[2];
 			auto v15 = 4096.0 / gDevOverview[2];
 
-			qglOrtho(
+			glOrtho(
 				-v14,
 				v14,
 				-v15,
@@ -1633,7 +1620,7 @@ void R_SetupGL(void)
 			auto v23 = gDevOverview[2];
 			auto v24 = 4096.0;
 			auto v25 = 4096.0 / (v23 * aspect);
-			qglOrtho(
+			glOrtho(
 				-v24,
 				v24,
 				-v25,
@@ -1650,25 +1637,25 @@ void R_SetupGL(void)
 			MYgluPerspectiveH(fovy, aspect, 4.0, r_params.movevars->zmax);
 		}
 	}
-	qglCullFace(GL_FRONT);
-	qglGetFloatv(GL_PROJECTION_MATRIX, r_projection_matrix);
-	qglMatrixMode(GL_MODELVIEW);
-	qglLoadIdentity();
-	qglRotatef(-90, 1, 0, 0);
-	qglRotatef(90, 0, 0, 1);
-	qglRotatef(-r_refdef->viewangles[2], 1, 0, 0);
-	qglRotatef(-r_refdef->viewangles[0], 0, 1, 0);
-	qglRotatef(-r_refdef->viewangles[1], 0, 0, 1);
-	qglTranslatef(-r_refdef->vieworg[0], -r_refdef->vieworg[1], -r_refdef->vieworg[2]);
+	glCullFace(GL_FRONT);
+	glGetFloatv(GL_PROJECTION_MATRIX, r_projection_matrix);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	glRotatef(-90, 1, 0, 0);
+	glRotatef(90, 0, 0, 1);
+	glRotatef(-r_refdef->viewangles[2], 1, 0, 0);
+	glRotatef(-r_refdef->viewangles[0], 0, 1, 0);
+	glRotatef(-r_refdef->viewangles[1], 0, 0, 1);
+	glTranslatef(-r_refdef->vieworg[0], -r_refdef->vieworg[1], -r_refdef->vieworg[2]);
 
-	qglGetFloatv(GL_MODELVIEW_MATRIX, r_world_matrix);
+	glGetFloatv(GL_MODELVIEW_MATRIX, r_world_matrix);
 	if (!gl_cull->value)
-		qglDisable(GL_CULL_FACE);
+		glDisable(GL_CULL_FACE);
 	else
-		qglEnable(GL_CULL_FACE);
-	qglDisable(GL_BLEND);
-	qglDisable(GL_ALPHA_TEST);
-	qglEnable(GL_DEPTH_TEST);
+		glEnable(GL_CULL_FACE);
+	glDisable(GL_BLEND);
+	glDisable(GL_ALPHA_TEST);
+	glEnable(GL_DEPTH_TEST);
 
 	for (int i = 0; i < 16; i += 4)
 	{
@@ -1751,9 +1738,9 @@ void R_BuildCubemap_Snapshot(cubemap_t *cubemap, int index)
 
 	byte *pBuf = (byte *)malloc(cubemap->size * cubemap->size * 3);
 
-	qglBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-	qglPixelStorei(GL_PACK_ALIGNMENT, 1);
-	qglReadPixels(0, 0, cubemap->size, cubemap->size, GL_RGB, GL_UNSIGNED_BYTE, pBuf);
+	glBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
+	glReadPixels(0, 0, cubemap->size, cubemap->size, GL_RGB, GL_UNSIGNED_BYTE, pBuf);
 
 	if (TRUE == SaveImageGeneric(filepath, cubemap->size, cubemap->size, pBuf))
 	{

@@ -159,49 +159,49 @@ void R_RenderShadowMap(void)
 	if (!total_numvisedicts)
 		return;
 
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_ShadowFBO.s_hBackBufferFBO);
-	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glBindFramebufferEXT(GL_FRAMEBUFFER, s_ShadowFBO.s_hBackBufferFBO);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-	qglDisable(GL_BLEND);
-	qglDisable(GL_ALPHA_TEST);
-	qglEnable(GL_DEPTH_TEST);
-	qglDepthFunc(GL_GEQUAL);
+	glDisable(GL_BLEND);
+	glDisable(GL_ALPHA_TEST);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_GEQUAL);
 	
-	qglDepthMask(1);
-	qglColorMask(1, 1, 1, 1);
+	glDepthMask(1);
+	glColorMask(1, 1, 1, 1);
 
 	for (int i = 0; i < 3; ++i)
 	{
 		if (!shadow_numvisedicts[i])
 			continue;
 
-		qglFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadow_texture_color, 0, i);
-		qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_texture_depth, 0);
+		glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadow_texture_color, 0, i);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_texture_depth, 0);
 
-		qglMatrixMode(GL_PROJECTION);
-		qglLoadIdentity();
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
 
 		float texsize = (float)shadow_texture_size / scales[i];
-		qglOrtho(-texsize / 2, texsize / 2, -texsize / 2, texsize / 2, -4096, 4096);
+		glOrtho(-texsize / 2, texsize / 2, -texsize / 2, texsize / 2, -4096, 4096);
 
-		qglMatrixMode(GL_MODELVIEW);
-		qglLoadIdentity();
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
 
-		qglRotatef(-90, 1, 0, 0);
-		qglRotatef(90, 0, 0, 1);
-		qglRotatef(-sangles[2], 1, 0, 0);
-		qglRotatef(-sangles[0], 0, 1, 0);
-		qglRotatef(-sangles[1], 0, 0, 1);
-		qglTranslatef(-r_refdef->vieworg[0], -r_refdef->vieworg[1], -r_refdef->vieworg[2]);
+		glRotatef(-90, 1, 0, 0);
+		glRotatef(90, 0, 0, 1);
+		glRotatef(-sangles[2], 1, 0, 0);
+		glRotatef(-sangles[0], 0, 1, 0);
+		glRotatef(-sangles[1], 0, 0, 1);
+		glTranslatef(-r_refdef->vieworg[0], -r_refdef->vieworg[1], -r_refdef->vieworg[2]);
 
-		qglGetFloatv(GL_PROJECTION_MATRIX, shadow_projmatrix[i]);
-		qglGetFloatv(GL_MODELVIEW_MATRIX, shadow_mvmatrix[i]);
+		glGetFloatv(GL_PROJECTION_MATRIX, shadow_projmatrix[i]);
+		glGetFloatv(GL_MODELVIEW_MATRIX, shadow_mvmatrix[i]);
 
-		qglViewport(0, 0, shadow_texture_size, shadow_texture_size);
+		glViewport(0, 0, shadow_texture_size, shadow_texture_size);
 
-		qglClearDepth(0);
-		qglClearColor(-99999, -99999, -99999, 1);
-		qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClearDepth(0);
+		glClearColor(-99999, -99999, -99999, 1);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		cl_entity_t *backup_curentity = (*currententity);
 
@@ -219,9 +219,8 @@ void R_RenderShadowMap(void)
 		}
 
 		(*currententity) = backup_curentity;
-
 	}
 
-	qglClearDepth(1);
-	qglDepthFunc(GL_LEQUAL);
+	glClearDepth(1);
+	glDepthFunc(GL_LEQUAL);
 }

@@ -20,7 +20,7 @@ void Sys_ErrorEx(const char *fmt, ...)
 	if(gEngfuncs.pfnClientCmd)
 		gEngfuncs.pfnClientCmd("escape\n");
 
-	MessageBox(NULL, msg, "Fatal Error", MB_ICONERROR);
+	MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
 	TerminateProcess((HANDLE)(-1), 0);
 }
 
@@ -133,20 +133,20 @@ void HUD_DrawNormalTriangles(void)
 
 	//Allow SCClient to write stencil buffer (but not bit 1)?
 
-	qglStencilMask(0xFF);
-	qglClear(GL_STENCIL_BUFFER_BIT);
+	glStencilMask(0xFF);
+	glClear(GL_STENCIL_BUFFER_BIT);
 	gExportfuncs.HUD_DrawNormalTriangles();
-	qglStencilMask(0);
+	glStencilMask(0);
 
 	//Restore current framebuffer just in case that Sven-Coop client changes it
 	
 	if (r_draw_pass == r_draw_reflect)
 	{
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
+		glBindFramebufferEXT(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
 	}
 	else
 	{
-		qglBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+		glBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	}
 
 }
@@ -160,11 +160,11 @@ int HUD_Redraw(float time, int intermission)
 {
 	if(waters_active && r_water_debug && r_water_debug->value > 0 && r_water_debug->value <= 3)
 	{
-		qglDisable(GL_BLEND);
-		qglDisable(GL_ALPHA_TEST);
-		qglColor4f(1, 1, 1, 1);
+		glDisable(GL_BLEND);
+		glDisable(GL_ALPHA_TEST);
+		glColor4f(1, 1, 1, 1);
 
-		qglEnable(GL_TEXTURE_2D);
+		glEnable(GL_TEXTURE_2D);
 		int debugTextureID = 0;
 		switch ((int)r_water_debug->value)
 		{
@@ -176,11 +176,11 @@ int HUD_Redraw(float time, int intermission)
 			break;
 		case 3:
 			debugTextureID = depthrefrmap;
-			GL_UseProgram(drawdepth.program);
+			//GL_UseProgram(drawdepth.program);
 			break;
 		case 4:
 			debugTextureID = waters_active->depthreflmap;
-			GL_UseProgram(drawdepth.program);
+			//GL_UseProgram(drawdepth.program);
 			break;
 		default:
 			break;
@@ -188,98 +188,98 @@ int HUD_Redraw(float time, int intermission)
 
 		if (debugTextureID)
 		{
-			qglBindTexture(GL_TEXTURE_2D, debugTextureID);
-			qglBegin(GL_QUADS);
-			qglTexCoord2f(0, 1);
-			qglVertex3f(0, 0, 0);
-			qglTexCoord2f(1, 1);
-			qglVertex3f(glwidth / 2, 0, 0);
-			qglTexCoord2f(1, 0);
-			qglVertex3f(glwidth / 2, glheight / 2, 0);
-			qglTexCoord2f(0, 0);
-			qglVertex3f(0, glheight / 2, 0);
-			qglEnd();
+			glBindTexture(GL_TEXTURE_2D, debugTextureID);
+			glBegin(GL_QUADS);
+			glTexCoord2f(0, 1);
+			glVertex3f(0, 0, 0);
+			glTexCoord2f(1, 1);
+			glVertex3f(glwidth / 2, 0, 0);
+			glTexCoord2f(1, 0);
+			glVertex3f(glwidth / 2, glheight / 2, 0);
+			glTexCoord2f(0, 0);
+			glVertex3f(0, glheight / 2, 0);
+			glEnd();
 
 			GL_UseProgram(0);
 		}
 	}
 	else if(r_shadow_debug && r_shadow_debug->value)
 	{
-		qglDisable(GL_BLEND);
-		qglDisable(GL_ALPHA_TEST);
-		qglColor4f(1,1,1,1);
+		glDisable(GL_BLEND);
+		glDisable(GL_ALPHA_TEST);
+		glColor4f(1,1,1,1);
 
-		qglDisable(GL_TEXTURE_2D);
-		qglEnable(GL_TEXTURE_2D_ARRAY);
+		glDisable(GL_TEXTURE_2D);
+		glEnable(GL_TEXTURE_2D_ARRAY);
 
 		hud_debug_program_t prog = { 0 };
 		R_UseHudDebugProgram(HUD_DEBUG_TEXARRAY, &prog);
 
-		qglBindTexture(GL_TEXTURE_2D_ARRAY, shadow_texture_color);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, shadow_texture_color);
 
 		if (prog.layer != -1)
-			qglUniform1fARB(prog.layer, r_shadow_debug->value - 1);
+			glUniform1f(prog.layer, r_shadow_debug->value - 1);
 
-		qglBegin(GL_QUADS);
-		qglTexCoord2f(0,1);
-		qglVertex3f(0,0,0);
-		qglTexCoord2f(1,1);
-		qglVertex3f(glwidth/2,0,0);
-		qglTexCoord2f(1,0);
-		qglVertex3f(glwidth/2,glheight/2,0);
-		qglTexCoord2f(0,0);
-		qglVertex3f(0,glheight/2,0);
-		qglEnd();
+		glBegin(GL_QUADS);
+		glTexCoord2f(0,1);
+		glVertex3f(0,0,0);
+		glTexCoord2f(1,1);
+		glVertex3f(glwidth/2,0,0);
+		glTexCoord2f(1,0);
+		glVertex3f(glwidth/2,glheight/2,0);
+		glTexCoord2f(0,0);
+		glVertex3f(0,glheight/2,0);
+		glEnd();
 
-		qglDisable(GL_TEXTURE_2D_ARRAY);
-		qglEnable(GL_TEXTURE_2D);
+		glDisable(GL_TEXTURE_2D_ARRAY);
+		glEnable(GL_TEXTURE_2D);
 
-		qglEnable(GL_ALPHA_TEST);
+		glEnable(GL_ALPHA_TEST);
 
 		GL_UseProgram(0);
 	}
 	else if(r_light_debug && r_light_debug->value)
 	{
-		qglDisable(GL_BLEND);
-		qglDisable(GL_ALPHA_TEST);
-		qglColor4f(1,1,1,1);
+		glDisable(GL_BLEND);
+		glDisable(GL_ALPHA_TEST);
+		glColor4f(1,1,1,1);
 
-		qglDisable(GL_TEXTURE_2D);
-		qglEnable(GL_TEXTURE_2D_ARRAY);
+		glDisable(GL_TEXTURE_2D);
+		glEnable(GL_TEXTURE_2D_ARRAY);
 
 		hud_debug_program_t prog = {0};
 		R_UseHudDebugProgram(HUD_DEBUG_TEXARRAY, &prog);
 
-		qglBindTexture(GL_TEXTURE_2D_ARRAY, s_GBufferFBO.s_hBackBufferTex);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, s_GBufferFBO.s_hBackBufferTex);
 
 		if (prog.layer != -1)
-			qglUniform1fARB(prog.layer, r_light_debug->value - 1);
+			glUniform1f(prog.layer, r_light_debug->value - 1);
 
-		qglBegin(GL_QUADS);
-		qglTexCoord2f(0,1);
-		qglVertex3f(0,0,0);
-		qglTexCoord2f(1,1);
-		qglVertex3f(glwidth/2,0,0);
-		qglTexCoord2f(1,0);
-		qglVertex3f(glwidth/2,glheight/2,0);
-		qglTexCoord2f(0,0);
-		qglVertex3f(0,glheight/2,0);
-		qglEnd();
+		glBegin(GL_QUADS);
+		glTexCoord2f(0,1);
+		glVertex3f(0,0,0);
+		glTexCoord2f(1,1);
+		glVertex3f(glwidth/2,0,0);
+		glTexCoord2f(1,0);
+		glVertex3f(glwidth/2,glheight/2,0);
+		glTexCoord2f(0,0);
+		glVertex3f(0,glheight/2,0);
+		glEnd();
 
-		qglEnable(GL_TEXTURE_2D);
-		qglDisable(GL_TEXTURE_2D_ARRAY);
+		glEnable(GL_TEXTURE_2D);
+		glDisable(GL_TEXTURE_2D_ARRAY);
 
-		qglEnable(GL_ALPHA_TEST);
+		glEnable(GL_ALPHA_TEST);
 
 		GL_UseProgram(0);
 	}
 	else if(r_hdr_debug && r_hdr_debug->value)
 	{
-		qglDisable(GL_BLEND);
-		qglDisable(GL_ALPHA_TEST);
-		qglColor4f(1,1,1,1);
+		glDisable(GL_BLEND);
+		glDisable(GL_ALPHA_TEST);
+		glColor4f(1,1,1,1);
 
-		qglEnable(GL_TEXTURE_2D);
+		glEnable(GL_TEXTURE_2D);
 		FBO_Container_t *pFBO = NULL;
 		switch((int)r_hdr_debug->value)
 		{
@@ -313,31 +313,31 @@ int HUD_Redraw(float time, int intermission)
 
 		if(pFBO)
 		{
-			qglBindTexture(GL_TEXTURE_2D, pFBO->s_hBackBufferTex);
-			qglBegin(GL_QUADS);
-			qglTexCoord2f(0,1);
-			qglVertex3f(0,0,0);
-			qglTexCoord2f(1,1);
-			qglVertex3f(glwidth/2, 0,0);
-			qglTexCoord2f(1,0);
-			qglVertex3f(glwidth/2, glheight/2,0);
-			qglTexCoord2f(0,0);
-			qglVertex3f(0, glheight/2,0);
-			qglEnd();
+			glBindTexture(GL_TEXTURE_2D, pFBO->s_hBackBufferTex);
+			glBegin(GL_QUADS);
+			glTexCoord2f(0,1);
+			glVertex3f(0,0,0);
+			glTexCoord2f(1,1);
+			glVertex3f(glwidth/2, 0,0);
+			glTexCoord2f(1,0);
+			glVertex3f(glwidth/2, glheight/2,0);
+			glTexCoord2f(0,0);
+			glVertex3f(0, glheight/2,0);
+			glEnd();
 		}
 	}
 	else if (r_ssao_debug && r_ssao_debug->value)
 	{
-		qglDisable(GL_BLEND);
-		qglDisable(GL_ALPHA_TEST);
-		qglColor4f(1, 1, 1, 1);
+		glDisable(GL_BLEND);
+		glDisable(GL_ALPHA_TEST);
+		glColor4f(1, 1, 1, 1);
 
-		qglEnable(GL_TEXTURE_2D);
+		glEnable(GL_TEXTURE_2D);
 		int texId = 0;
 		switch ((int)r_ssao_debug->value)
 		{	
 		case 1:
-			GL_UseProgram(drawdepth.program);
+			//GL_UseProgram(drawdepth.program);
 			texId = s_BackBufferFBO.s_hBackBufferDepthTex; break;
 		case 2:
 			texId = s_DepthLinearFBO.s_hBackBufferTex; break;
@@ -351,17 +351,17 @@ int HUD_Redraw(float time, int intermission)
 
 		if (texId)
 		{
-			qglBindTexture(GL_TEXTURE_2D, texId);
-			qglBegin(GL_QUADS);
-			qglTexCoord2f(0, 1);
-			qglVertex3f(0, 0, 0);
-			qglTexCoord2f(1, 1);
-			qglVertex3f(glwidth / 2, 0, 0);
-			qglTexCoord2f(1, 0);
-			qglVertex3f(glwidth / 2, glheight / 2, 0);
-			qglTexCoord2f(0, 0);
-			qglVertex3f(0, glheight / 2, 0);
-			qglEnd();
+			glBindTexture(GL_TEXTURE_2D, texId);
+			glBegin(GL_QUADS);
+			glTexCoord2f(0, 1);
+			glVertex3f(0, 0, 0);
+			glTexCoord2f(1, 1);
+			glVertex3f(glwidth / 2, 0, 0);
+			glTexCoord2f(1, 0);
+			glVertex3f(glwidth / 2, glheight / 2, 0);
+			glTexCoord2f(0, 0);
+			glVertex3f(0, glheight / 2, 0);
+			glEnd();
 
 			GL_UseProgram(0);
 		}
@@ -385,7 +385,7 @@ void __fastcall PortalManager_ResetAll(int pthis, int)
 	{
 		do
 		{
-			//qglDeleteTextures(1, &ptextures->gl_texturenum2);
+			//glDeleteTextures(1, &ptextures->gl_texturenum2);
 			ptextures->gl_texturenum2 = 0;
 			ptextures = ptextures->next;
 		} while (ptextures != *(portal_texture_t **)(pthis + 0x9C) );
@@ -986,12 +986,12 @@ void HUD_Frame(double time)
 	return gExportfuncs.HUD_Frame(time);
 }
 
-//fuck Valve called qglEnableClientState(GL_VERTEX_ARRAY) and forgot to disable it.
+//fuck Valve called glEnableClientState(GL_VERTEX_ARRAY) and forgot to disable it.
 
 void __fastcall enginesurface_drawFlushText(void *pthis, int dummy)
 {
 	gRefFuncs.enginesurface_drawFlushText(pthis, dummy);
 
-	qglDisableClientState(GL_VERTEX_ARRAY);
-	qglDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }

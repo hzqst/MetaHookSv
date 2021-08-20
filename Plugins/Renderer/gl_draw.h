@@ -1,10 +1,5 @@
 #pragma once
 
-extern GLenum TEXTURE0_SGIS;
-extern GLenum TEXTURE1_SGIS;
-extern GLenum TEXTURE2_SGIS;
-extern GLenum TEXTURE3_SGIS;
-
 extern gltexture_t *gltextures;
 extern gltexture_t **gltextures_SvEngine;
 extern int *maxgltextures_SvEngine;

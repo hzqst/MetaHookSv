@@ -15,8 +15,6 @@ GLuint refractmap = 0;
 GLuint depthrefrmap = 0;
 qboolean refractmap_ready = 0;
 
-SHADER_DEFINE(drawdepth);
-
 int saved_cl_waterlevel;
 
 //cvar
@@ -55,18 +53,10 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\water_shader.vsh", "renderer\\shader\\water_shader.fsh", def.c_str(), def.c_str(), NULL);
 		if (prog.program)
 		{
-			SHADER_UNIFORM(prog, watercolor, "watercolor");
-			SHADER_UNIFORM(prog, eyepos, "eyepos");
-			SHADER_UNIFORM(prog, entitymatrix, "entitymatrix");
-			SHADER_UNIFORM(prog, worldmatrix, "worldmatrix");
-			SHADER_UNIFORM(prog, time, "time");
-			SHADER_UNIFORM(prog, fresnelfactor, "fresnelfactor");
-			SHADER_UNIFORM(prog, depthfactor, "depthfactor");
-			SHADER_UNIFORM(prog, normfactor, "normfactor");
-			SHADER_UNIFORM(prog, normalmap, "normalmap");
-			SHADER_UNIFORM(prog, refractmap, "refractmap");
-			SHADER_UNIFORM(prog, reflectmap, "reflectmap");
-			SHADER_UNIFORM(prog, depthrefrmap, "depthrefrmap");
+			SHADER_UNIFORM(prog, u_watercolor, "u_watercolor");
+			SHADER_UNIFORM(prog, u_depthfactor, "u_depthfactor");
+			SHADER_UNIFORM(prog, u_fresnelfactor, "u_fresnelfactor");
+			SHADER_UNIFORM(prog, u_normfactor, "u_normfactor");
 		}
 
 		g_WaterProgramTable[state] = prog;
@@ -80,34 +70,6 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 	{
 		GL_UseProgram(prog.program);
 
-		if (prog.normalmap != -1)
-			qglUniform1iARB(prog.normalmap, 0);
-		if (prog.refractmap != -1)
-			qglUniform1iARB(prog.refractmap, 1);
-		if (prog.reflectmap != -1)
-			qglUniform1iARB(prog.reflectmap, 2);
-		if (prog.depthrefrmap != -1)
-			qglUniform1iARB(prog.depthrefrmap, 3);
-		if (prog.entitymatrix != -1)
-		{
-			if (r_rotate_entity)
-				qglUniformMatrix4fvARB(prog.entitymatrix, 1, true, (float *)r_rotate_entity_matrix);
-			else
-				qglUniformMatrix4fvARB(prog.entitymatrix, 1, false, (float *)r_identity_matrix);
-		}
-		if (prog.worldmatrix != -1)
-		{
-			/*if (g_SvEngine_DrawPortalView)
-			{
-				float mvmatrix[16];
-				qglGetFloatv(GL_MODELVIEW_MATRIX, mvmatrix);
-				qglUniformMatrix4fvARB(prog.worldmatrix, 1, false, (float *)mvmatrix);
-			}
-			else
-			{*/
-				qglUniformMatrix4fvARB(prog.worldmatrix, 1, true, (float *)r_world_matrix);
-			//}
-		}
 		if (progOutput)
 			*progOutput = prog;
 	}
@@ -157,53 +119,8 @@ void R_ClearWater(void)
 	waters_active = NULL;
 }
 
-const char *drawdepth_vscode = 
-"varying vec4 projpos;"
-"void main(void)"
-"{"
-"	projpos = gl_ModelViewProjectionMatrix * gl_Vertex;"
-"	gl_Position = ftransform();"
-"}";
-
-const char *drawdepth_fscode = 
-"uniform sampler2D depthmap;"
-"varying vec4 projpos;"
-"void main(void)"
-"{"
-"	vec2 vBaseTexCoord = projpos.xy / projpos.w * 0.5 + 0.5;"
-"	vec4 vDepthColor = texture2D(depthmap, vBaseTexCoord);"
-"	gl_FragColor = vec4(vec3(pow(vDepthColor.z, 50.0)), 1.0);"
-"}";
-
-const char *drawcolor_vscode =
-"void main(void)\n"
-"{\n"
-"   gl_TexCoord[0].xy = gl_MultiTexCoord0.xy;\n"
-"	gl_Position = ftransform();\n"
-"}";
-
-const char *drawcolor_fscode =
-"#version 130\n"
-""
-"#extension GL_EXT_texture_array : enable\n"
-""
-"uniform sampler2DArray colormap;\n"
-"void main(void)\n"
-"{\n"
-"	gl_FragColor = texture2DArray(colormap, vec3(gl_TexCoord[0].xy, 0.0));\n"
-"}";
-
 void R_InitWater(void)
 {
-	if(gl_shader_support)
-	{
-		drawdepth.program = R_CompileShader(drawdepth_vscode, drawdepth_fscode, "drawdepth_shader.vsh", "drawdepth_shader.fsh", NULL);
-		if (drawdepth.program)
-		{
-			SHADER_UNIFORM(drawdepth, depthmap, "depthmap");
-		}
-	}	
-	
 	r_water = gEngfuncs.pfnRegisterVariable("r_water", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_debug = gEngfuncs.pfnRegisterVariable("r_water_debug", "0", FCVAR_CLIENTDLL);
 
@@ -341,20 +258,20 @@ r_water_t *R_GetActiveWater(cl_entity_t *ent, const char *texname, vec3_t p, vec
 
 void R_RenderReflectView(r_water_t *w)
 {
-	qglBindFramebufferEXT(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
-	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, w->reflectmap, 0);
-	qglFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, w->depthreflmap, 0);
-	qglDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glBindFramebufferEXT(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, w->reflectmap, 0);
+	glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, w->depthreflmap, 0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	s_WaterFBO.s_hBackBufferTex = w->reflectmap;
 	s_WaterFBO.s_hBackBufferDepthTex = w->depthreflmap;
 
-	qglClearColor(w->color.r / 255.0f, w->color.g / 255.0f, w->color.b / 255.0f, 1);
-	qglStencilMask(0xFF);
-	qglClearStencil(0);
-	qglDepthMask(GL_TRUE);
-	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	qglStencilMask(0);
+	glClearColor(w->color.r / 255.0f, w->color.g / 255.0f, w->color.b / 255.0f, 1);
+	glStencilMask(0xFF);
+	glClearStencil(0);
+	glDepthMask(GL_TRUE);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	glStencilMask(0);
 
 	R_PushRefDef();
 

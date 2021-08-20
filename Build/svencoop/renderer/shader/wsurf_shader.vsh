@@ -1,81 +1,158 @@
-#version 130
+#version 460
 
-uniform mat4 entityMatrix;
-uniform vec3 viewpos;
-uniform float speed;
+#extension GL_NV_bindless_texture : require
+#extension GL_NV_gpu_shader5 : require
+#extension GL_EXT_texture_array : require
+#extension GL_ARB_shader_draw_parameters : require
 
-varying vec3 worldpos;
-varying vec3 normal;
-varying vec3 tangent;
-varying vec3 bitangent;
-varying vec4 color;
+struct scene_ubo_t{
+	mat4 viewMatrix;
+	mat4 projMatrix;
+	mat4 invViewMatrix;
+	mat4 invProjMatrix;
+	mat4 shadowMatrix[3];
+	vec4 viewpos;
+	vec4 fogColor;
+	float fogStart;
+	float fogEnd;
+	float time;
+	float padding;
+};
 
-attribute vec3 s_tangent;
-attribute vec3 t_tangent;
+struct entity_ubo_t{
+	mat4 entityMatrix;
+	float scrollSpeed;
+	float padding[3];
+};
 
-#ifdef SHADOWMAP_ENABLED
+struct texture_ssbo_t{
+	uint64_t handles[5 * 1];
+};
 
-uniform mat4 shadowMatrix[3];
-varying vec4 shadowcoord[3];
+layout (std140, binding = 0) uniform SceneBlock
+{
+   scene_ubo_t SceneUBO;
+};
 
-#endif
+layout (std140, binding = 1) uniform EntityBlock
+{
+   entity_ubo_t EntityUBO;
+};
+
+layout (std430, binding = 2) buffer TextureBlock
+{
+    texture_ssbo_t TextureSSBO;
+};
+
+uniform mat4 u_clipPlane;
+uniform float u_parallaxScale;
+uniform vec3 u_shadowDirection;
+uniform vec4 u_shadowFade;
+uniform vec3 u_shadowColor;
+uniform float u_shadowIntensity;
+uniform float u_fogStart;
+uniform float u_fogEnd;
+uniform vec3 u_fogColor;
+uniform vec4 u_color;
+uniform mat4 u_shadowMatrix[3];
+
+layout(location = 0) in vec3 in_vertex;
+layout(location = 1) in vec3 in_normal;
+layout(location = 2) in vec3 in_tangent;
+layout(location = 3) in vec3 in_bitangent;
+layout(location = 4) in vec3 in_diffusetexcoord;
+layout(location = 5) in vec3 in_lightmaptexcoord;
+layout(location = 6) in vec2 in_detailtexcoord;
+layout(location = 7) in vec2 in_normaltexcoord;
+layout(location = 8) in vec2 in_parallaxtexcoord;
+layout(location = 9) in vec2 in_speculartexcoord;
+
+out vec3 v_worldpos;
+out vec3 v_normal;
+out vec3 v_tangent;
+out vec3 v_bitangent;
+out vec4 v_color;
+out vec2 v_diffusetexcoord;
+out vec3 v_lightmaptexcoord;
+out vec2 v_detailtexcoord;
+out vec2 v_normaltexcoord;
+out vec2 v_parallaxtexcoord;
+out vec2 v_speculartexcoord;
+out vec4 v_shadowcoord[3];
+flat out int v_drawid;
 
 void main(void)
 {
-	vec4 worldpos4 = entityMatrix * gl_Vertex;
-    worldpos = worldpos4.xyz;
+#ifdef LEGACY_ENABLED
 
-	vec4 normal4 = vec4(gl_Normal, 0.0);
-	normal = normalize(entityMatrix * normal4).xyz;
+	vec4 worldpos4 = vec4(in_vertex, 1.0);
+    v_worldpos = worldpos4.xyz;
 
-#ifdef DIFFUSE_ENABLED
-	gl_TexCoord[0] = vec4(gl_MultiTexCoord0.x + gl_MultiTexCoord0.z * speed, gl_MultiTexCoord0.y, 0.0, 0.0);
+	vec4 normal4 = vec4(in_normal, 0.0);
+	v_normal = normalize((normal4).xyz);
+
+	#ifdef DIFFUSE_ENABLED
+		v_diffusetexcoord = vec2(in_diffusetexcoord.x, in_diffusetexcoord.y);
+	#endif
+
+#else
+
+	vec4 worldpos4 = EntityUBO.entityMatrix * vec4(in_vertex, 1.0);
+    v_worldpos = worldpos4.xyz;
+
+	vec4 normal4 = vec4(in_normal, 0.0);
+	v_normal = normalize((EntityUBO.entityMatrix * normal4).xyz);
+
+	#ifdef DIFFUSE_ENABLED
+		v_diffusetexcoord = vec2(in_diffusetexcoord.x + in_diffusetexcoord.z * EntityUBO.scrollSpeed, in_diffusetexcoord.y);
+	#endif
+
 #endif
 
 #ifdef LIGHTMAP_ENABLED
-	gl_TexCoord[1] = gl_MultiTexCoord1;
+	v_lightmaptexcoord = in_lightmaptexcoord;
 #endif
 
 #ifdef DETAILTEXTURE_ENABLED
-	gl_TexCoord[2] = gl_MultiTexCoord2;
+	v_detailtexcoord = in_detailtexcoord;
 #endif
 
 #if defined(NORMALTEXTURE_ENABLED) || defined(PARALLAXTEXTURE_ENABLED)
-    vec4 tangent4 = vec4(s_tangent, 0.0);
-    tangent = normalize((entityMatrix * tangent4).xyz);
-	vec4 bitangent4 = vec4(t_tangent, 0.0);
-    bitangent = normalize((entityMatrix * bitangent4).xyz);
+    vec4 tangent4 = vec4(in_tangent, 0.0);
+    v_tangent = normalize((EntityUBO.entityMatrix * tangent4).xyz);
+	vec4 bitangent4 = vec4(in_bitangent, 0.0);
+    v_bitangent = normalize((EntityUBO.entityMatrix * bitangent4).xyz);
 #endif
 
 #ifdef NORMALTEXTURE_ENABLED
-	gl_TexCoord[3] = gl_MultiTexCoord3;
+	v_normaltexcoord = in_normaltexcoord;
 #endif
 
 #ifdef PARALLAXTEXTURE_ENABLED
-	gl_TexCoord[4] = gl_MultiTexCoord4;
+	v_parallaxtexcoord = in_parallaxtexcoord;
 #endif
 
 #ifdef SPECULARTEXTURE_ENABLED
-	gl_TexCoord[5] = gl_MultiTexCoord5;
+	v_speculartexcoord = in_speculartexcoord;
 #endif
 
 #ifdef SHADOWMAP_ENABLED
 
 	#ifdef SHADOWMAP_HIGH_ENABLED
-        shadowcoord[0] = shadowMatrix[0] * vec4(worldpos, 1.0);
+        v_shadowcoord[0] = SceneUBO.shadowMatrix[0] * vec4(v_worldpos, 1.0);
     #endif
 
     #ifdef SHADOWMAP_MEDIUM_ENABLED
-        shadowcoord[1] = shadowMatrix[1] * vec4(worldpos, 1.0);
+        v_shadowcoord[1] = SceneUBO.shadowMatrix[1] * vec4(v_worldpos, 1.0);
     #endif
 
     #ifdef SHADOWMAP_LOW_ENABLED
-        shadowcoord[2] = shadowMatrix[2] * vec4(worldpos, 1.0);
+        v_shadowcoord[2] = SceneUBO.shadowMatrix[2] * vec4(v_worldpos, 1.0);
     #endif
 
 #endif
 
-	color = gl_Color;
-
-	gl_Position = ftransform();
+	v_color = u_color;
+	v_drawid = gl_DrawID;
+	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * worldpos4;
 }

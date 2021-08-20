@@ -71,9 +71,6 @@
     <ClCompile Include="plugins.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="qgl.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\HLSDK\common\interface.cpp">
       <Filter>Source</Filter>
     </ClCompile>

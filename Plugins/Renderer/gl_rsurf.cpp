@@ -556,13 +556,13 @@ static void R_DecalPoly(float *v, texture_t *ptexture, msurface_t *psurf, int ve
 {
 	GL_Bind(ptexture->gl_texturenum);
 
-	qglBegin(GL_POLYGON);
+	glBegin(GL_POLYGON);
 	for (int j = 0; j < vertCount; j++, v += VERTEXSIZE)
 	{
-		qglTexCoord2f(v[3], v[4]);
-		qglVertex3fv(v);
+		glTexCoord2f(v[3], v[4]);
+		glVertex3fv(v);
 	}
-	qglEnd();
+	glEnd();
 
 	r_wsurf_polys++;
 	r_wsurf_drawcall++;
@@ -572,14 +572,14 @@ static void R_DecalMPoly(float *v, texture_t *ptexture, msurface_t *psurf, int v
 {
 	GL_Bind(ptexture->gl_texturenum);
 
-	qglBegin(GL_POLYGON);
+	glBegin(GL_POLYGON);
 	for (int j = 0; j < vertCount; j++, v += VERTEXSIZE)
 	{
-		qglMultiTexCoord3fARB(TEXTURE0_SGIS, v[3], v[4], 1.0f);
-		qglMultiTexCoord3fARB(TEXTURE1_SGIS, v[5], v[6], psurf->lightmaptexturenum);
-		qglVertex3fv(v);
+		glMultiTexCoord3fARB(GL_TEXTURE0, v[3], v[4], 1.0f);
+		glMultiTexCoord3fARB(GL_TEXTURE1, v[5], v[6], psurf->lightmaptexturenum);
+		glVertex3fv(v);
 	}
-	qglEnd();
+	glEnd();
 
 	r_wsurf_polys++;
 	r_wsurf_drawcall++;
@@ -596,19 +596,19 @@ void R_DrawDecals(qboolean bMultitexture)
 	if (!(*gDecalSurfCount))
 		return;
 
-	qglEnable(GL_BLEND);
-	qglEnable(GL_ALPHA_TEST);
-	qglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	qglDepthMask(0);
+	glEnable(GL_BLEND);
+	glEnable(GL_ALPHA_TEST);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glDepthMask(0);
 
 	if (gl_polyoffset && gl_polyoffset->value)
 	{
-		qglEnable(GL_POLYGON_OFFSET_FILL);
+		glEnable(GL_POLYGON_OFFSET_FILL);
 
 		if (gl_ztrick && gl_ztrick->value)
-			qglPolygonOffset(1, gl_polyoffset->value);
+			glPolygonOffset(1, gl_polyoffset->value);
 		else
-			qglPolygonOffset(-1, -gl_polyoffset->value);
+			glPolygonOffset(-1, -gl_polyoffset->value);
 	}
 
 	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
@@ -651,50 +651,25 @@ void R_DrawDecals(qboolean bMultitexture)
 	wsurf_program_t prog = { 0 };
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 
-	if (prog.speed != -1)
-		qglUniform1fARB(prog.speed, 0);
-
-	if (prog.shadowMatrix != -1)
-		qglUniformMatrix4fvARB(prog.shadowMatrix, 3, false, (float *)r_shadow_matrix);
-
 	if (r_wsurf.bShadowmapTexture && !drawgbuffer)
 	{
-		const GLfloat planeS[] = { 1.0, 0.0, 0.0, 0.0 };
-		const GLfloat planeT[] = { 0.0, 1.0, 0.0, 0.0 };
-		const GLfloat planeR[] = { 0.0, 0.0, 1.0, 0.0 };
-		const GLfloat planeQ[] = { 0.0, 0.0, 0.0, 1.0 };
+		glActiveTexture(GL_TEXTURE6);
 
-		qglActiveTextureARB(GL_TEXTURE6_ARB);
+		glDisable(GL_TEXTURE_2D);
+		glEnable(GL_TEXTURE_2D_ARRAY);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, shadow_texture_color);
 
-		qglTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		qglEnable(GL_TEXTURE_GEN_S);
-		qglEnable(GL_TEXTURE_GEN_T);
-		qglEnable(GL_TEXTURE_GEN_R);
-		qglEnable(GL_TEXTURE_GEN_Q);
-		qglTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-		qglTexGenfv(GL_S, GL_EYE_PLANE, planeS);
-		qglTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-		qglTexGenfv(GL_T, GL_EYE_PLANE, planeT);
-		qglTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-		qglTexGenfv(GL_R, GL_EYE_PLANE, planeR);
-		qglTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-		qglTexGenfv(GL_Q, GL_EYE_PLANE, planeQ);
-
-		qglDisable(GL_TEXTURE_2D);
-		qglEnable(GL_TEXTURE_2D_ARRAY);
-		qglBindTexture(GL_TEXTURE_2D_ARRAY, shadow_texture_color);
-
-		qglActiveTextureARB(TEXTURE0_SGIS);
+		glActiveTexture(GL_TEXTURE0);
 	}
 
 	if (bMultitexture && !drawgbuffer)
 	{
-		qglActiveTextureARB(TEXTURE1_SGIS);
+		glActiveTexture(GL_TEXTURE1);
 
-		qglEnable(GL_TEXTURE_2D_ARRAY);
-		qglBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
+		glEnable(GL_TEXTURE_2D_ARRAY);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
 
-		qglActiveTextureARB(TEXTURE0_SGIS);
+		glActiveTexture(GL_TEXTURE0);
 	}
 
 	for (i = 0; i < (*gDecalSurfCount); i++)
@@ -734,34 +709,34 @@ void R_DrawDecals(qboolean bMultitexture)
 
 	if (r_wsurf.bShadowmapTexture && !drawgbuffer)
 	{
-		qglActiveTextureARB(GL_TEXTURE6_ARB);
+		glActiveTexture(GL_TEXTURE6);
 
-		qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-		qglDisable(GL_TEXTURE_2D_ARRAY);
-		qglDisable(GL_TEXTURE_GEN_S);
-		qglDisable(GL_TEXTURE_GEN_T);
-		qglDisable(GL_TEXTURE_GEN_R);
-		qglDisable(GL_TEXTURE_GEN_Q);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+		glDisable(GL_TEXTURE_2D_ARRAY);
+		glDisable(GL_TEXTURE_GEN_S);
+		glDisable(GL_TEXTURE_GEN_T);
+		glDisable(GL_TEXTURE_GEN_R);
+		glDisable(GL_TEXTURE_GEN_Q);
 
-		qglActiveTextureARB(TEXTURE0_SGIS);
+		glActiveTexture(GL_TEXTURE0);
 	}
 
 	if (bMultitexture && !drawgbuffer)
 	{
-		qglActiveTextureARB(TEXTURE1_SGIS);
-		qglBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-		qglDisable(GL_TEXTURE_2D_ARRAY);
-		qglActiveTextureARB(TEXTURE0_SGIS);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+		glDisable(GL_TEXTURE_2D_ARRAY);
+		glActiveTexture(GL_TEXTURE0);
 	}
 
 	if (gl_polyoffset && gl_polyoffset->value)
 	{
-		qglDisable(GL_POLYGON_OFFSET_FILL);
+		glDisable(GL_POLYGON_OFFSET_FILL);
 	}
 
-	qglDisable(GL_ALPHA_TEST);
-	qglDisable(GL_BLEND);
-	qglDepthMask(1);
+	glDisable(GL_ALPHA_TEST);
+	glDisable(GL_BLEND);
+	glDepthMask(1);
 
 	(*gDecalSurfCount) = 0;
 }

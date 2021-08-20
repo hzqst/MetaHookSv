@@ -104,19 +104,10 @@ extern model_t *mod_known;
 extern int *mod_numknown;
 
 //gl extension
-extern qboolean gl_framebuffer_object;
-extern qboolean gl_shader_support;
-extern qboolean gl_program_support;
-extern qboolean gl_msaa_support;
-extern qboolean gl_multi_draw_support;
-extern qboolean gl_blit_support;
-extern qboolean gl_float_buffer_support;
-extern qboolean gl_s3tc_compression_support;
 
 extern int gl_max_texture_size;
 extern float gl_max_ansio;
 extern GLuint gl_color_format;
-extern int gl_msaa_samples;
 extern int *gl_msaa_fbo;
 extern int *gl_backbuffer_fbo;
 extern int *gl_mtexable;
@@ -128,10 +119,8 @@ extern int gly;
 extern int glwidth;
 extern int glheight;
 
-extern qboolean bDoMSAA;
 extern qboolean bNoStretchAspect;
 
-//extern FBO_Container_t s_MSAAFBO;
 extern FBO_Container_t s_GBufferFBO;
 extern FBO_Container_t s_BackBufferFBO, s_BackBufferFBO2;
 extern FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];
@@ -291,8 +280,8 @@ GLuint GL_GenShadowTexture(int w, int h);
 void GL_UploadShadowTexture(int texid, int w, int h);
 
 void GL_GenFrameBuffer(FBO_Container_t *s);
-void GL_FrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat, qboolean multisample);
-void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat, qboolean multisample);
+void GL_FrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat);
+void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat);
 void GL_FrameBufferColorTextureHBAO(FBO_Container_t *s);
 void GL_FrameBufferColorTextureDeferred(FBO_Container_t *s, int iInternalColorFormat);
 
@@ -349,8 +338,7 @@ cvar_callback_t Cvar_HookCallback(const char *cvar_name, cvar_callback_t callbac
 
 extern GLint r_viewport[4];
 extern float r_identity_matrix[4][4];
-extern float r_rotate_entity_matrix[4][4];
-extern bool r_rotate_entity;
+extern float r_entity_matrix[4][4];
 extern bool r_draw_nontransparent;
 
 extern bool g_SvEngine_DrawPortalView;
