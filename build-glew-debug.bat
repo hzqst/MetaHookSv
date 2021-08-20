@@ -14,6 +14,6 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
 
     "%InstallDir%\Common7\Tools\vsdevcmd.bat" -arch=x86
 
-    MSBuild.exe "glew-cmake\build\glew.sln" /t:glew_s /p:Configuration=Debug /p:Platform="Win32"
+    MSBuild.exe "%~dp0glew-cmake\build\glew.sln" /t:glew_s /p:Configuration=Debug /p:Platform="Win32"
     
 )

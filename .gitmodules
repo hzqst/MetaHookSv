@@ -7,6 +7,6 @@
 [submodule "Detours"]
 	path = Detours
 	url = https://github.com/microsoft/Detours
-[submodule "glew-cmake"]
-	path = glew-cmake
+[submodule "glew"]
+	path = glew
 	url = https://github.com/Perlmint/glew-cmake
