@@ -16,7 +16,12 @@ struct scene_ubo_t{
 	float fogStart;
 	float fogEnd;
 	float time;
-	float padding;
+	float clipPlane;
+	vec4 shadowDirection;
+	vec4 shadowColor;
+	vec4 shadowFade;
+	float shadowIntensity;
+	float padding[3];
 };
 
 struct entity_ubo_t{

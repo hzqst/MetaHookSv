@@ -16,7 +16,12 @@ struct scene_ubo_t{
 	float fogStart;
 	float fogEnd;
 	float time;
-	float padding;
+	float clipPlane;
+	vec4 shadowDirection;
+	vec4 shadowColor;
+	vec4 shadowFade;
+	float shadowIntensity;
+	float padding[3];
 };
 
 struct entity_ubo_t{
@@ -44,17 +49,12 @@ layout (std430, binding = 2) buffer TextureBlock
     texture_ssbo_t TextureSSBO;
 };
 
-uniform mat4 u_clipPlane;
 uniform float u_parallaxScale;
 uniform vec3 u_shadowDirection;
 uniform vec4 u_shadowFade;
 uniform vec3 u_shadowColor;
 uniform float u_shadowIntensity;
-uniform float u_fogStart;
-uniform float u_fogEnd;
-uniform vec3 u_fogColor;
 uniform vec4 u_color;
-uniform mat4 u_shadowMatrix[3];
 
 layout(location = 0) in vec3 in_vertex;
 layout(location = 1) in vec3 in_normal;

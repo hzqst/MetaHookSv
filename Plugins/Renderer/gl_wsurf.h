@@ -180,7 +180,12 @@ typedef struct scene_ubo_s
 	float fogStart;
 	float fogEnd;
 	float time;
-	float padding;
+	float clipPlane;
+	vec4 shadowDirection;
+	vec4 shadowColor;
+	vec4 shadowFade;
+	float shadowIntensity;
+	float padding[3];
 }scene_ubo_t;
 
 typedef struct entity_ubo_s
@@ -257,12 +262,7 @@ typedef struct r_worldsurf_s
 typedef struct
 {
 	int program;
-	int u_clipPlane;
 	int u_parallaxScale;
-	int u_shadowDirection;
-	int u_shadowFade;
-	int u_shadowColor;
-	int u_shadowIntensity;
 	int u_color;
 }wsurf_program_t;
 

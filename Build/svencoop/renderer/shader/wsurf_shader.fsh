@@ -22,7 +22,12 @@ struct scene_ubo_t{
 	float fogStart;
 	float fogEnd;
 	float time;
-	float padding;
+	float clipPlane;
+	vec4 shadowDirection;
+	vec4 shadowColor;
+	vec4 shadowFade;
+	float shadowIntensity;
+	float padding[3];
 };
 
 struct entity_ubo_t{
@@ -50,12 +55,7 @@ layout (std430, binding = 2) buffer TextureBlock
     texture_ssbo_t TextureSSBO;
 };
 
-uniform float u_clipPlane;
 uniform float u_parallaxScale;
-uniform vec3 u_shadowDirection;
-uniform vec4 u_shadowFade;
-uniform vec3 u_shadowColor;
-uniform float u_shadowIntensity;
 uniform vec4 u_color;
 
 #ifdef BINDLESS_ENABLED
@@ -400,12 +400,12 @@ void main()
 #endif
 
 #ifdef CLIP_ABOVE_ENABLED
-	if (v_worldpos.z > u_clipPlane)
+	if (v_worldpos.z > SceneUBO.clipPlane)
 		discard;
 #endif
 
 #ifdef CLIP_UNDER_ENABLED
-	if (v_worldpos.z < u_clipPlane)
+	if (v_worldpos.z < SceneUBO.clipPlane)
 		discard;
 #endif
 

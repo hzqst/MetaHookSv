@@ -131,12 +131,7 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\wsurf_shader.vsh", "renderer\\shader\\wsurf_shader.fsh", def.c_str(), def.c_str(), NULL);
 
-		SHADER_UNIFORM(prog, u_clipPlane, "u_clipPlane");
 		SHADER_UNIFORM(prog, u_parallaxScale, "u_parallaxScale");
-		SHADER_UNIFORM(prog, u_shadowDirection, "u_shadowDirection");
-		SHADER_UNIFORM(prog, u_shadowFade, "u_shadowFade");
-		SHADER_UNIFORM(prog, u_shadowColor, "u_shadowColor");
-		SHADER_UNIFORM(prog, u_shadowIntensity, "u_shadowIntensity");
 		SHADER_UNIFORM(prog, u_color, "u_color");
 
 		g_WSurfProgramTable[state] = prog;
@@ -150,32 +145,11 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 	{
 		GL_UseProgram(prog.program);
 
-		if (prog.u_clipPlane != -1)
-			glUniform1f(prog.u_clipPlane, curwater->vecs[2]);
-
 		if (prog.u_parallaxScale != -1)
 			glUniform1f(prog.u_parallaxScale, r_wsurf_parallax_scale->value);
 
-		if (prog.u_shadowDirection != -1)
-			glUniform3f(prog.u_shadowDirection, r_shadow_control.vforward[0], r_shadow_control.vforward[1], r_shadow_control.vforward[2]);
-
-		if (prog.u_shadowFade != -1)
-			glUniform4f(prog.u_shadowFade, r_shadow_control.distfade[0], r_shadow_control.distfade[1], r_shadow_control.lumfade[0], r_shadow_control.lumfade[1]);
-
-		if (prog.u_shadowColor != -1)
-		{
-			glUniform3f(prog.u_shadowColor, r_shadow_control.color[0], r_shadow_control.color[1], r_shadow_control.color[2]);
-		}
-
-		if (prog.u_shadowIntensity != -1)
-		{
-			glUniform1f(prog.u_shadowIntensity, r_shadow_control.intensity);
-		}
-
 		if (prog.u_color != -1)
-		{
 			glUniform4f(prog.u_color, 1, 1, 1, 1);
-		}
 
 		if (progOutput)
 			*progOutput = prog;
@@ -3629,6 +3603,13 @@ void R_DrawWorld(void)
 	SceneUBO.fogStart = r_fog_control[0];
 	SceneUBO.fogEnd = r_fog_control[1];
 	SceneUBO.time = (*cl_time);
+	SceneUBO.clipPlane = (curwater) ? curwater->vecs[2] : 0;
+	memcpy(SceneUBO.shadowDirection, &r_shadow_control.vforward, sizeof(vec3_t));
+	memcpy(SceneUBO.shadowColor, &r_shadow_control.color, sizeof(vec3_t));
+	memcpy(SceneUBO.shadowFade, &r_shadow_control.distfade, sizeof(vec2_t));
+	memcpy(&SceneUBO.shadowFade[2], &r_shadow_control.lumfade, sizeof(vec2_t));
+	SceneUBO.shadowIntensity = r_shadow_control.intensity;
+
 	glNamedBufferSubData(r_wsurf.hSceneUBO, 0, sizeof(SceneUBO), &SceneUBO);
 
 	//Skybox use stencil = 1
