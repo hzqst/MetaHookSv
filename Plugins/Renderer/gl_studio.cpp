@@ -259,6 +259,8 @@ void R_StudioReloadVBOCache(void)
 		{
 			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
 			{
+				if (!strcmp(mod->name, "models/player.mdl"))
+					r_playermodel = mod;
 				auto studiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(mod);
 				if (studiohdr)
 				{

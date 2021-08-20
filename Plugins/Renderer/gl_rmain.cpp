@@ -13,8 +13,9 @@ ref_params_t r_params;
 
 float gldepthmin, gldepthmax;
 
-cl_entity_t *r_worldentity;
-model_t *r_worldmodel;
+cl_entity_t *r_worldentity = NULL;
+model_t *r_worldmodel = NULL;
+model_t *r_playermodel = NULL;
 
 RECT *window_rect;
 
@@ -1366,6 +1367,7 @@ void R_NewMap(void)
 
 	r_worldentity = gEngfuncs.GetEntityByIndex(0);
 	r_worldmodel = r_worldentity->model;
+	r_playermodel = NULL;
 
 	memset(&r_params, 0, sizeof(r_params));
 
