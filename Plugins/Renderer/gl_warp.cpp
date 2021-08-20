@@ -135,8 +135,11 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 			if (prog.u_normfactor != -1)
 				glUniform1f(prog.u_normfactor, waterObject->normfactor);
 
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			if (!r_draw_nontransparent)
+			{
+				glEnable(GL_BLEND);
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			}
 
 			GL_SelectTexture(GL_TEXTURE0);
 			GL_Bind(waterObject->normalmap);

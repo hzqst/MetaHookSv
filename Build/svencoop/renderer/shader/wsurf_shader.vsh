@@ -20,8 +20,6 @@ struct scene_ubo_t{
 	vec4 shadowDirection;
 	vec4 shadowColor;
 	vec4 shadowFade;
-	float shadowIntensity;
-	float padding[3];
 };
 
 struct entity_ubo_t{
@@ -50,10 +48,6 @@ layout (std430, binding = 2) buffer TextureBlock
 };
 
 uniform float u_parallaxScale;
-uniform vec3 u_shadowDirection;
-uniform vec4 u_shadowFade;
-uniform vec3 u_shadowColor;
-uniform float u_shadowIntensity;
 uniform vec4 u_color;
 
 layout(location = 0) in vec3 in_vertex;

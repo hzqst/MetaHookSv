@@ -26,8 +26,6 @@ struct scene_ubo_t{
 	vec4 shadowDirection;
 	vec4 shadowColor;
 	vec4 shadowFade;
-	float shadowIntensity;
-	float padding[3];
 };
 
 struct entity_ubo_t{
@@ -237,10 +235,10 @@ float CalcShadowIntensityInternal(vec3 worldpos, float lightmapLum, float layer,
 	vec3 caster = ShadowGetWorldPosition(v_shadowcoord[ilayer], layer);
 
 	float dist = distance(caster, scene);
-	float distlerp = (dist - u_shadowFade.x) / u_shadowFade.y;
+	float distlerp = (dist - SceneUBO.shadowFade.x) / SceneUBO.shadowFade.y;
 	shadow_intensity *= 1.0 - clamp(distlerp, 0.0, 1.0);
 	
-	float lumlerp = (lightmapLum - u_shadowFade.w) / (u_shadowFade.z - u_shadowFade.w);
+	float lumlerp = (lightmapLum - SceneUBO.shadowFade.w) / (SceneUBO.shadowFade.z - SceneUBO.shadowFade.w);
 	shadow_intensity *= clamp(lumlerp, 0.0, 1.0);
 	
 	shadow_high = 1.0 - shadow_high;
@@ -259,7 +257,7 @@ float CalcShadowIntensity(vec3 worldpos, vec3 lightmap, vec3 norm, vec3 lightdir
 	if(dot(norm.xyz, lightdir.xyz) < 0.0) 
 	{
 		float lightmapLum = 0.299 * lightmap.x + 0.587 * lightmap.y + 0.114 * lightmap.z;
-		if(lightmapLum > u_shadowFade.w)
+		if(lightmapLum > SceneUBO.shadowFade.w)
 		{
 			float shadow_high = 1.0;
 
@@ -377,7 +375,7 @@ void main()
 
 #ifdef SHADOWMAP_ENABLED
 
-	lightmapColor.xyz = mix(lightmapColor.xyz, u_shadowColor.xyz, CalcShadowIntensity(v_worldpos, lightmapColor.xyz, vNormal, u_shadowDirection) * u_shadowIntensity);
+	lightmapColor.xyz = mix(lightmapColor.xyz, SceneUBO.shadowColor.xyz, CalcShadowIntensity(v_worldpos, lightmapColor.xyz, vNormal, SceneUBO.shadowDirection.xyz) * SceneUBO.shadowColor.a);
 
 #endif
 

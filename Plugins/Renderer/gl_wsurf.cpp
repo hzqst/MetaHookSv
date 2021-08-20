@@ -3606,9 +3606,9 @@ void R_DrawWorld(void)
 	SceneUBO.clipPlane = (curwater) ? curwater->vecs[2] : 0;
 	memcpy(SceneUBO.shadowDirection, &r_shadow_control.vforward, sizeof(vec3_t));
 	memcpy(SceneUBO.shadowColor, &r_shadow_control.color, sizeof(vec3_t));
+	SceneUBO.shadowColor[3] = r_shadow_control.intensity;
 	memcpy(SceneUBO.shadowFade, &r_shadow_control.distfade, sizeof(vec2_t));
 	memcpy(&SceneUBO.shadowFade[2], &r_shadow_control.lumfade, sizeof(vec2_t));
-	SceneUBO.shadowIntensity = r_shadow_control.intensity;
 
 	glNamedBufferSubData(r_wsurf.hSceneUBO, 0, sizeof(SceneUBO), &SceneUBO);
 

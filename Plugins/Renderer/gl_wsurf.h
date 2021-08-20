@@ -184,8 +184,6 @@ typedef struct scene_ubo_s
 	vec4 shadowDirection;
 	vec4 shadowColor;
 	vec4 shadowFade;
-	float shadowIntensity;
-	float padding[3];
 }scene_ubo_t;
 
 typedef struct entity_ubo_s
