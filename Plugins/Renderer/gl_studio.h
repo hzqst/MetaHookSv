@@ -7,27 +7,6 @@
 typedef struct
 {
 	int program;
-	int diffuseTex;
-
-	int viewpos;
-	int viewdir;
-	int bonematrix;
-
-	int v_lambert;
-	int v_brightness;
-	int v_lightgamma;
-	int r_ambientlight;
-	int r_shadelight;
-	int r_blend;
-	int r_g1;
-	int r_g3;
-	int r_plightvec;
-	int r_colormix;
-	int r_uvscale;
-	//chrome
-	int r_origin;
-	int r_vright;
-	int r_scale;
 	//celshade
 	int r_celshade_midpoint;
 	int r_celshade_softness;
@@ -41,8 +20,6 @@ typedef struct
 	int r_outline_dark;
 	//shadow caster
 	int entityPos;
-	//attribute
-	int vertnormbone;
 }studio_program_t;
 
 typedef struct studio_vbo_vertex_s
@@ -88,11 +65,13 @@ typedef struct studio_vbo_mesh_s
 {
 	studio_vbo_mesh_s()
 	{
+		mesh = NULL;
 		iStartIndex = -1;
 		iIndiceCount = 0;
 		iPolyCount = 0;
 	}
 
+	mstudiomesh_t *mesh;
 	int iStartIndex;
 	int iIndiceCount;
 	int iPolyCount;
@@ -113,12 +92,14 @@ typedef struct studio_vbo_s
 	studio_vbo_s()
 	{
 		studiohdr = NULL;
-		hDataBuffer = 0;
-		hIndexBuffer = 0;
+		hVBO = 0;
+		hEBO = 0;
+		hStudioUBO = 0;
 	}
 	studiohdr_t	*		studiohdr;
-	GLuint				hDataBuffer;
-	GLuint				hIndexBuffer;
+	GLuint				hVBO;
+	GLuint				hEBO;
+	GLuint				hStudioUBO;
 	std::vector<studio_vbo_submodel_t *> vSubmodel;
 }studio_vbo_t;
 
@@ -157,7 +138,7 @@ extern model_t *cl_shellchrome;
 extern int r_studio_drawcall;
 extern int r_studio_polys;
 
-studio_vbo_t *R_StudioPrepareVBO(studiohdr_t *studiohdr);
+studio_vbo_t *R_PrepareStudioVBO(studiohdr_t *studiohdr);
 void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr);
 void R_StudioReloadVBOCache(void);
 void R_ShutdownStudio(void);
@@ -173,8 +154,6 @@ void __fastcall GameStudioRenderer_StudioRenderFinal(void *pthis, int);
 extern engine_studio_api_t IEngineStudio;
 extern r_studio_interface_t **gpStudioInterface;
 
-extern cvar_t *r_studio_vbo;
-
 #define STUDIO_GBUFFER_ENABLED					0x10000
 #define STUDIO_TRANSPARENT_ENABLED				0x20000
 #define STUDIO_TRANSADDITIVE_ENABLED			0x40000
@@ -183,3 +162,5 @@ extern cvar_t *r_studio_vbo;
 #define STUDIO_LEGACY_BONE_ENABLED				0x200000
 #define STUDIO_GLOW_SHELL_ENABLED				0x400000
 #define STUDIO_OUTLINE_ENABLED					0x800000
+#define STUDIO_CLIP_ENABLED						0x1000000
+#define STUDIO_BINDLESS_ENABLED					0x2000000

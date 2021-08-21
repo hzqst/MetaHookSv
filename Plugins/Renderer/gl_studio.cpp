@@ -1,6 +1,7 @@
 #include "gl_local.h"
 #include "triangleapi.h"
 #include <sstream>
+#include <algorithm>
 
 #include "mathlib.h"
 
@@ -49,7 +50,6 @@ float lightpos[MAXSTUDIOVERTS][3][4];
 int r_studio_drawcall;
 int r_studio_polys;
 
-cvar_t *r_studio_vbo = NULL;
 cvar_t *r_studio_celshade = NULL;
 cvar_t *r_studio_celshade_midpoint = NULL;
 cvar_t *r_studio_celshade_softness = NULL;
@@ -63,7 +63,7 @@ cvar_t *r_studio_rimdark_color = NULL;
 cvar_t *r_studio_outline_size = NULL;
 cvar_t *r_studio_outline_dark = NULL;
 
-void R_StudioPrepareVBOSubmodel(
+void R_PrepareStudioVBOSubmodel(
 	studiohdr_t *studiohdr, mstudiomodel_t *submodel, 
 	std::vector<studio_vbo_vertex_t> &vVertex,
 	std::vector<unsigned int> &vIndices,
@@ -111,6 +111,7 @@ void R_StudioPrepareVBOSubmodel(
 					vIndices.emplace_back(iStartVertex + iNumVertex);
 					VBOMesh.iIndiceCount++;
 					VBOMesh.iPolyCount++;
+					VBOMesh.mesh = pmesh;
 
 					if (first == -1)
 						first = iNumVertex;
@@ -150,6 +151,7 @@ void R_StudioPrepareVBOSubmodel(
 					vIndices.emplace_back(iStartVertex + iNumVertex);
 					VBOMesh.iIndiceCount++;
 					VBOMesh.iPolyCount++;
+					VBOMesh.mesh = pmesh;
 
 					iNumTri++;
 
@@ -167,7 +169,7 @@ void R_StudioPrepareVBOSubmodel(
 	}
 }
 
-studio_vbo_t *R_StudioPrepareVBO(studiohdr_t *studiohdr)
+studio_vbo_t *R_PrepareStudioVBO(studiohdr_t *studiohdr)
 {
 	studio_vbo_t *VBOData = NULL;
 	if (studiohdr->transitionindex > 0 && studiohdr->transitionindex - 1 < (int)g_StudioVBOCache.size())
@@ -187,7 +189,7 @@ studio_vbo_t *R_StudioPrepareVBO(studiohdr_t *studiohdr)
 	studiohdr->transitionindex = g_StudioVBOCache.size();
 
 	std::vector<studio_vbo_vertex_t> vVertex;
-	std::vector<unsigned int> vIndices;
+	std::vector<GLuint> vIndices;
 
 	for (int i = 0; i < studiohdr->numbodyparts; i++)
 	{
@@ -202,7 +204,7 @@ studio_vbo_t *R_StudioPrepareVBO(studiohdr_t *studiohdr)
 				studio_vbo_submodel_t *vboSubmodel = new studio_vbo_submodel_t;
 				vboSubmodel->submodel = submodel;
 
-				R_StudioPrepareVBOSubmodel(studiohdr, submodel, vVertex, vIndices, vboSubmodel);
+				R_PrepareStudioVBOSubmodel(studiohdr, submodel, vVertex, vIndices, vboSubmodel);
 
 				VBOData->vSubmodel.emplace_back(vboSubmodel);
 
@@ -211,16 +213,20 @@ studio_vbo_t *R_StudioPrepareVBO(studiohdr_t *studiohdr)
 		}
 	}
 
-	VBOData->hDataBuffer = GL_GenBuffer();
-	VBOData->hIndexBuffer = GL_GenBuffer();
+	VBOData->hVBO = GL_GenBuffer();
+	glBindBuffer(GL_ARRAY_BUFFER, VBOData->hVBO);
+	glBufferData(GL_ARRAY_BUFFER, vVertex.size() * sizeof(studio_vbo_vertex_t), vVertex.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER_ARB, VBOData->hDataBuffer);
-	glBufferData(GL_ARRAY_BUFFER_ARB, vVertex.size() * sizeof(studio_vbo_vertex_t), vVertex.data(), GL_STATIC_DRAW_ARB);
-	glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
+	VBOData->hEBO = GL_GenBuffer();
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOData->hEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, vIndices.size() * sizeof(GLuint), vIndices.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->hIndexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER_ARB, vIndices.size() * sizeof(unsigned int), vIndices.data(), GL_STATIC_DRAW_ARB);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+	VBOData->hStudioUBO = GL_GenBuffer();
+	glBindBuffer(GL_UNIFORM_BUFFER, VBOData->hStudioUBO);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(studio_ubo_t), NULL, GL_STREAM_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	return VBOData;
 }
@@ -233,16 +239,20 @@ void R_StudioReloadVBOCache(void)
 		{
 			auto VBOData = g_StudioVBOCache[i];
 
-			if (VBOData->hDataBuffer)
+			if (VBOData->hVBO)
 			{
-				GL_DeleteBuffer(VBOData->hDataBuffer);
+				GL_DeleteBuffer(VBOData->hVBO);
 			}
-			if (VBOData->hIndexBuffer)
+			if (VBOData->hEBO)
 			{
-				GL_DeleteBuffer(VBOData->hIndexBuffer);
+				GL_DeleteBuffer(VBOData->hEBO);
+			}
+			if (VBOData->hStudioUBO)
+			{
+				GL_DeleteBuffer(VBOData->hStudioUBO);
 			}
 
-			delete g_StudioVBOCache[i];
+			delete VBOData;
 
 			g_StudioVBOCache[i] = NULL;
 		}
@@ -261,10 +271,11 @@ void R_StudioReloadVBOCache(void)
 			{
 				if (!strcmp(mod->name, "models/player.mdl"))
 					r_playermodel = mod;
+
 				auto studiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(mod);
 				if (studiohdr)
 				{
-					R_StudioPrepareVBO(studiohdr);
+					R_PrepareStudioVBO(studiohdr);
 				}
 			}
 		}
@@ -325,28 +336,20 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		if (state & STUDIO_OUTLINE_ENABLED)
 			defs << "#define OUTLINE_ENABLED\n";
 
+		if (state & STUDIO_CLIP_ENABLED)
+			defs << "#define CLIP_ENABLED\n";
+
+		if (state & STUDIO_BINDLESS_ENABLED)
+			defs << "#define BINDLESS_ENABLED\n";
+
+		if (glewIsSupported("GL_NV_bindless_texture"))
+			defs << "#define UINT64_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\studio_shader.vsh", "renderer\\shader\\studio_shader.fsh", def.c_str(), def.c_str(), NULL);
 		if (prog.program)
 		{
-			SHADER_UNIFORM(prog, bonematrix, "bonematrix");
-
-			SHADER_UNIFORM(prog, diffuseTex, "diffuseTex");
-			SHADER_UNIFORM(prog, v_lambert, "v_lambert");
-			SHADER_UNIFORM(prog, v_brightness, "v_brightness");
-			SHADER_UNIFORM(prog, v_lightgamma, "v_lightgamma");
-			SHADER_UNIFORM(prog, r_ambientlight, "r_ambientlight");
-			SHADER_UNIFORM(prog, r_shadelight, "r_shadelight");
-			SHADER_UNIFORM(prog, r_blend, "r_blend");
-			SHADER_UNIFORM(prog, r_g1, "r_g1");
-			SHADER_UNIFORM(prog, r_g3, "r_g3");
-			SHADER_UNIFORM(prog, r_plightvec, "r_plightvec");
-			SHADER_UNIFORM(prog, r_colormix, "r_colormix");
-			SHADER_UNIFORM(prog, r_origin, "r_origin");
-			SHADER_UNIFORM(prog, r_vright, "r_vright");
-			SHADER_UNIFORM(prog, r_scale, "r_scale");
-			SHADER_UNIFORM(prog, r_uvscale, "r_uvscale");
 			SHADER_UNIFORM(prog, r_celshade_midpoint, "r_celshade_midpoint");
 			SHADER_UNIFORM(prog, r_celshade_softness, "r_celshade_softness");
 			SHADER_UNIFORM(prog, r_celshade_shadow_color, "r_celshade_shadow_color");
@@ -358,10 +361,6 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 			SHADER_UNIFORM(prog, r_rimdark_color, "r_rimdark_color");
 			SHADER_UNIFORM(prog, r_outline_dark, "r_outline_dark");
 			SHADER_UNIFORM(prog, entityPos, "entityPos");
-			SHADER_UNIFORM(prog, viewpos, "viewpos");
-			SHADER_UNIFORM(prog, viewdir, "viewdir");
-
-			SHADER_ATTRIB(prog, vertnormbone, "vertnormbone");
 		}
 
 		g_StudioProgramTable[state] = prog;
@@ -375,83 +374,8 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 	{
 		GL_UseProgram(prog.program);
 
-		if (prog.vertnormbone != -1)
-		{
-			glEnableVertexAttribArray(prog.vertnormbone);
-			glVertexAttribIPointer(prog.vertnormbone, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
-		}
-	
-		if (prog.diffuseTex != -1)
-			glUniform1i(prog.diffuseTex, 0);
-
-		if (prog.bonematrix != -1)
-			glUniformMatrix3x4fv(prog.bonematrix, 128, 0, (float *)(*pbonetransform));
-
-		if (prog.r_blend != -1)
-			glUniform1f(prog.r_blend, (*r_blend));
-
-		if (prog.r_g1 != -1 || prog.r_g3 != -1)
-		{
-			float r_g = 1.0f / v_gamma->value;
-
-			float r_g3;
-			if (v_brightness->value <= 0.0f)
-				r_g3 = 0.125f;
-			else if (v_brightness->value > 1.0f)
-				r_g3 = 0.05f;
-			else
-				r_g3 = 0.125f - (v_brightness->value * v_brightness->value) * 0.075f;
-
-			if (prog.r_g1 != -1)
-				glUniform1f(prog.r_g1, r_g);
-
-			if(prog.r_g3 != -1)
-				glUniform1f(prog.r_g3, r_g3);
-		}
-
-		if (prog.r_ambientlight != -1)
-			glUniform1f(prog.r_ambientlight, (float)(*r_ambientlight));
-
-		if (prog.r_shadelight != -1)
-			glUniform1f(prog.r_shadelight, (*r_shadelight));
-
-		if (prog.v_brightness != -1)
-			glUniform1f(prog.v_brightness, v_brightness->value);
-
-		if (prog.v_lightgamma != -1)
-			glUniform1f(prog.v_lightgamma, v_lightgamma->value);
-
-		if (prog.v_lambert != -1)
-			glUniform1f(prog.v_lambert, v_lambert->value);
-
-		if (prog.r_plightvec != -1)
-			glUniform3f(prog.r_plightvec, r_plightvec[0], r_plightvec[1], r_plightvec[2]);
-
-		if (prog.r_colormix != -1)
-			glUniform3f(prog.r_colormix, r_colormix[0], r_colormix[1], r_colormix[2]);
-
-		if (prog.r_origin != -1)
-			glUniform3f(prog.r_origin, g_ChromeOrigin[0], g_ChromeOrigin[1], g_ChromeOrigin[2]);
-
-		if (prog.r_vright != -1)
-			glUniform3f(prog.r_vright, vright[0], vright[1], vright[2]);
-
-		if (prog.r_scale != -1)
-		{
-			glUniform1f(prog.r_scale,
-				((*currententity)->curstate.renderfx == kRenderFxGlowShell ||
-				(*currententity)->curstate.renderfx == kRenderFxOutline )
-				? (*currententity)->curstate.renderamt * 0.05f : 0);
-		}
-
 		if (prog.entityPos != -1)
 			glUniform3f(prog.entityPos, (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3]);
-
-		if (prog.viewpos != -1)
-			glUniform3f(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
-
-		if (prog.viewdir != -1)
-			glUniform3f(prog.viewdir, vpn[0], vpn[1], vpn[2]);
 
 		if (prog.r_celshade_midpoint != -1)
 			glUniform1f(prog.r_celshade_midpoint, r_studio_celshade_midpoint->value);
@@ -514,7 +438,6 @@ void R_ShutdownStudio(void)
 
 void R_InitStudio(void)
 {
-	r_studio_vbo = gEngfuncs.pfnRegisterVariable("r_studio_vbo", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_celshade = gEngfuncs.pfnRegisterVariable("r_studio_celshade", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_celshade_midpoint = gEngfuncs.pfnRegisterVariable("r_studio_celshade_midpoint", "-0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_celshade_softness = gEngfuncs.pfnRegisterVariable("r_studio_celshade_softness", "0.05", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -613,157 +536,80 @@ studiohdr_t *R_LoadTextures(model_t *psubm)
 	return (*pstudiohdr);
 }
 
-void BuildGlowShellVerts(vec3_t *pstudioverts, auxvert_t *paux)
+void R_EnableStudioVBO(studio_vbo_t *VBOData)
 {
-	int					i;
-	byte				*pvertbone;
-	vec3_t				*pstudionorms;
-	auxvert_t			*av;
-	float				vscale;
-
-	pvertbone = ((byte *)(*pstudiohdr) + (*psubmodel)->vertinfoindex);
-	pstudionorms = (vec3_t *)((byte *)(*pstudiohdr) + (*psubmodel)->normindex);
-
-	vscale = (*currententity)->curstate.renderamt * 0.05;
-
-	for (i = 0; i < (*pstudiohdr)->numbones; i++)
+	if (VBOData)
 	{
-		(*chromeage)[i] = 0;
-	}
+		//setup ubo
+		if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
+		{
+			g_ChromeOrigin[0] = cos(r_glowshellfreq->value * (*cl_time)) * 4000.0f;
+			g_ChromeOrigin[1] = sin(r_glowshellfreq->value * (*cl_time)) * 4000.0f;
+			g_ChromeOrigin[2] = cos(r_glowshellfreq->value * (*cl_time) * 0.33f) * 4000.0f;
 
-	for (i = 0; i < (*psubmodel)->numverts; i++)
-	{
-		vec3_t vert;
-		VectorMA(pstudioverts[i], vscale, pstudionorms[(*g_NormalIndex)[i]], vert);
+			r_colormix[0] = (float)(*currententity)->curstate.rendercolor.r / 255.0f;
+			r_colormix[1] = (float)(*currententity)->curstate.rendercolor.g / 255.0f;
+			r_colormix[2] = (float)(*currententity)->curstate.rendercolor.b / 255.0f;
+		}
+		else
+		{
+			r_colormix[0] = 1;
+			r_colormix[1] = 1;
+			r_colormix[2] = 1;
+		}
 
-		av = &paux[i];
-		R_StudioTransformAuxVert(av, pvertbone[i], vert);
-	}
+		studio_ubo_t StudioUBO;
 
-	g_ChromeOrigin[0] = cos(r_glowshellfreq->value * (*cl_time)) * 4000.0;
-	g_ChromeOrigin[1] = sin(r_glowshellfreq->value * (*cl_time)) * 4000.0;
-	g_ChromeOrigin[2] = cos(r_glowshellfreq->value * (*cl_time) * 0.33) * 4000.0;
+		StudioUBO.r_ambientlight = (float)(*r_ambientlight);
+		StudioUBO.r_shadelight = (*r_shadelight);
+		StudioUBO.r_blend = (*r_blend);
 
-	glColor4ub((*currententity)->curstate.rendercolor.r, (*currententity)->curstate.rendercolor.g, (*currententity)->curstate.rendercolor.b, 255);
-}
+		StudioUBO.r_scale = ((*currententity)->curstate.renderfx == kRenderFxGlowShell ||
+			(*currententity)->curstate.renderfx == kRenderFxOutline)
+			? (*currententity)->curstate.renderamt * 0.05f : 0;
 
-void R_LightStrength(int bone, float *vert, float light[3][4])
-{
-	if (gRefFuncs.R_LightStrength)
-		return gRefFuncs.R_LightStrength(bone, vert, light);
-}
+		memcpy(StudioUBO.r_colormix, r_colormix, sizeof(vec3_t));
+		memcpy(StudioUBO.r_origin, g_ChromeOrigin, sizeof(vec3_t));
+		memcpy(StudioUBO.r_plightvec, r_plightvec, sizeof(vec3_t));
 
-void R_StudioChrome(float *pchrome, int bone, vec3_t normal)
-{
-	float n;
+		vec3_t entity_origin = { (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3] };
+		memcpy(StudioUBO.entity_origin, entity_origin, sizeof(vec3_t));
 
-	if ((*chromeage)[bone] != (*r_smodels_total))
-	{
-		// calculate vectors from the viewer to the bone. This roughly adjusts for position
-		vec3_t chromeupvec;		// chrome t vector in world reference frame
-		vec3_t chromerightvec;	// chrome s vector in world reference frame
-		vec3_t tmp;				// vector pointing at bone in world reference frame
-		VectorScale(g_ChromeOrigin, -1, tmp);
-		tmp[0] += (*pbonetransform)[bone][0][3];
-		tmp[1] += (*pbonetransform)[bone][1][3];
-		tmp[2] += (*pbonetransform)[bone][2][3];
-		//bonepos - chromeorg
-		VectorNormalize(tmp);
-		CrossProduct(tmp, vright, chromeupvec);
-		VectorNormalize(chromeupvec);
-		CrossProduct(tmp, chromeupvec, chromerightvec);
-		VectorNormalize(chromerightvec);
+		memcpy(StudioUBO.bonematrix, (*pbonetransform), sizeof(mat3x4) * 128);
 
-		VectorIRotate(chromeupvec, (*pbonetransform)[bone], r_chromeup[bone]);
-		VectorIRotate(chromerightvec, (*pbonetransform)[bone], r_chromeright[bone]);
+		glNamedBufferSubData(VBOData->hStudioUBO, 0, sizeof(StudioUBO), &StudioUBO);
 
-		(*chromeage)[bone] = (*r_smodels_total);
-	}
-	// calc s coord
-	n = DotProduct(normal, r_chromeright[bone]);
-	pchrome[0] = (n + 1.0) * 1024; // FIX: make this a float
+		//bind ubo
 
-	// calc t coord
-	n = DotProduct(normal, r_chromeup[bone]);
-	pchrome[1] = (n + 1.0) * 1024; // FIX: make this a float
-}
+		glBindBuffer(GL_ARRAY_BUFFER_ARB, VBOData->hVBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->hEBO);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 4, VBOData->hStudioUBO);
 
-void R_StudioLighting(float *lv, int bone, int flags, vec3_t normal)
-{
-	if (gRefFuncs.R_StudioLighting)
-		return gRefFuncs.R_StudioLighting(lv, bone, flags, normal);
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		glEnableVertexAttribArray(2);
+		glEnableVertexAttribArray(3);
 
-	float 	illum;
-	float	lightcos;
-
-	illum = (*r_ambientlight);
-
-	if (flags & STUDIO_NF_FLATSHADE)
-	{
-		illum += (*r_shadelight) * 0.8;
+		glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, pos));
+		glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, normal));
+		glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, texcoord));
+		glVertexAttribIPointer(3, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
 	}
 	else
 	{
-		float r;
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
+		glDisableVertexAttribArray(3);
 
-		if (bone != -1)
-		{
-			lightcos = DotProduct(normal, r_blightvec[bone]);
-		}
-		else
-		{
-			lightcos = DotProduct(normal, r_plightvec); // -1 colinear, 1 opposite
-		}
-
-		if (lightcos > 1.0)
-			lightcos = 1;
-
-		r = v_lambert->value;
-		if (r < 1.0)
-		{
-			lightcos = (r - lightcos) / (r + 1.0f); 		// do modified hemispherical lighting
-			if (lightcos > 0.0)
-			{
-				illum += (*r_shadelight) * lightcos;
-			}
-		}
-		else
-		{
-			illum += (*r_shadelight);
-			lightcos = (lightcos + (r - 1.0)) / r; 		// do modified hemispherical lighting
-			if (lightcos > 0.0)
-			{
-				illum -= (*r_shadelight) * lightcos;
-			}
-		}
-
-		if (illum <= 0)
-			illum = 0;
+		glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 4, 0);
 	}
-
-	if (illum > 255)
-		illum = 255;
-
-	*lv = lightgammatable[(int)(illum * 4)] / 1023.0;	// Light from 0 to 1.0
 }
 
 void R_GLStudioDrawPoints(void)
 {
-	int i, j, k;
-	byte *pvertbone;
-	byte *pnormbone;
-	vec3_t *pstudioverts;
-	vec3_t *pstudionorms;
-	studiohdr_t *ptexturehdr;
-	mstudiotexture_t *ptexture;
-	mstudiomesh_t *pmesh;
-	auxvert_t *av;
-	float *lv;
-	vec3_t fl;
-	float lv_tmp;
-	short *pskinref;
-	int flags;
-
 	int stencilState = 1;
 
 	if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
@@ -784,33 +630,32 @@ void R_GLStudioDrawPoints(void)
 	auto engine_pstudiohdr = (*pstudiohdr);
 	auto engine_psubmodel = (*psubmodel);
 
-	pvertbone = ((byte *)engine_pstudiohdr + engine_psubmodel->vertinfoindex);
-	pnormbone = ((byte *)engine_pstudiohdr + engine_psubmodel->norminfoindex);
-	ptexturehdr = R_LoadTextures(*r_model);
-	ptexture = (mstudiotexture_t *)((byte *)ptexturehdr + ptexturehdr->textureindex);
+	auto pvertbone = ((byte *)engine_pstudiohdr + engine_psubmodel->vertinfoindex);
+	auto pnormbone = ((byte *)engine_pstudiohdr + engine_psubmodel->norminfoindex);
+	auto ptexturehdr = R_LoadTextures(*r_model);
+	auto ptexture = (mstudiotexture_t *)((byte *)ptexturehdr + ptexturehdr->textureindex);
 
-	pmesh = (mstudiomesh_t *)((byte *)engine_pstudiohdr + engine_psubmodel->meshindex);
+	auto pmesh = (mstudiomesh_t *)((byte *)engine_pstudiohdr + engine_psubmodel->meshindex);
 
-	pstudioverts = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->vertindex);
-	pstudionorms = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->normindex);
+	auto pstudioverts = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->vertindex);
+	auto pstudionorms = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->normindex);
 
-	pskinref = (short *)((byte *)ptexturehdr + ptexturehdr->skinindex);
+	auto pskinref = (short *)((byte *)ptexturehdr + ptexturehdr->skinindex);
 
 	int iFlippedVModel = 0;
 
 	studio_vbo_t *VBOData = NULL;
 	studio_vbo_submodel_t *VBOSubmodel = NULL;
 
-	if (r_studio_vbo->value)
-	{
-		VBOData = R_StudioPrepareVBO(engine_pstudiohdr);
+	VBOData = R_PrepareStudioVBO(engine_pstudiohdr);
 
-		if (engine_psubmodel->groupindex < 1 || engine_psubmodel->groupindex >(int)VBOData->vSubmodel.size()) {
-			Sys_ErrorEx("R_StudioFindVBOCache: invalid index");
-		}
+	R_EnableStudioVBO(VBOData);
 
-		VBOSubmodel = VBOData->vSubmodel[engine_psubmodel->groupindex - 1];
+	if (engine_psubmodel->groupindex < 1 || engine_psubmodel->groupindex >(int)VBOData->vSubmodel.size()) {
+		Sys_ErrorEx("R_StudioFindVBOCache: invalid index");
 	}
+
+	VBOSubmodel = VBOData->vSubmodel[engine_psubmodel->groupindex - 1];
 
 	if ((*currententity)->curstate.skin != 0 && (*currententity)->curstate.skin < ptexturehdr->numskinfamilies)
 		pskinref += ((*currententity)->curstate.skin * ptexturehdr->numskinref);
@@ -818,91 +663,6 @@ void R_GLStudioDrawPoints(void)
 	if (engine_pstudiohdr->numbones > MAXSTUDIOBONES)
 	{
 		Sys_ErrorEx("R_GLStudioDrawPoints: %s numbones (%d) > MAXSTUDIOBONES (%d)", engine_pstudiohdr->name, engine_pstudiohdr->numbones, MAXSTUDIOBONES);
-	}
-
-	//Setup light, chrome...
-	if (VBOSubmodel)
-	{
-		if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
-		{
-			g_ChromeOrigin[0] = cos(r_glowshellfreq->value * (*cl_time)) * 4000.0f;
-			g_ChromeOrigin[1] = sin(r_glowshellfreq->value * (*cl_time)) * 4000.0f;
-			g_ChromeOrigin[2] = cos(r_glowshellfreq->value * (*cl_time) * 0.33f) * 4000.0f;
-
-			r_colormix[0] = (float)(*currententity)->curstate.rendercolor.r / 255.0f;
-			r_colormix[1] = (float)(*currententity)->curstate.rendercolor.g / 255.0f;
-			r_colormix[2] = (float)(*currententity)->curstate.rendercolor.b / 255.0f;
-		}
-	}
-	else
-	{
-		if (engine_psubmodel->numverts > MAXSTUDIOVERTS)
-		{
-			Sys_ErrorEx("R_GLStudioDrawPoints: %s -> %s numverts (%d) > MAXSTUDIOVERTS (%d)", engine_pstudiohdr->name, engine_psubmodel->name, engine_psubmodel->numverts, MAXSTUDIOVERTS);
-		}
-
-		if ((*currententity)->curstate.renderfx == kRenderFxGlowShell || (*currententity)->curstate.renderfx == kRenderFxOutline)
-		{
-			BuildNormalIndexTable();
-			BuildGlowShellVerts(pstudioverts, engine_pauxverts);
-		}
-		else
-		{
-			for (i = 0; i < engine_psubmodel->numverts; i++)
-			{
-				av = &(engine_pauxverts[i]);
-				R_StudioTransformAuxVert(av, pvertbone[i], pstudioverts[i]);
-			}
-		}
-
-		for (i = 0; i < engine_psubmodel->numverts; i++)
-		{
-			R_LightStrength(pvertbone[i], pstudioverts[i], lightpos[i]);
-		}
-
-		lv = engine_pvlightvalues;
-
-		for (j = 0; j < engine_psubmodel->nummesh; j++)
-		{
-			flags = ptexture[pskinref[pmesh[j].skinref]].flags | (*g_ForcedFaceFlags);
-
-			if (r_fullbright->value >= 2)
-				flags |= STUDIO_NF_FULLBRIGHT;
-
-			if ((*currententity)->curstate.rendermode == kRenderTransAdd)
-			{
-				for (k = 0; k < pmesh[j].numnorms; k++, lv += 3, pstudionorms++, pnormbone++)
-				{
-					lv[0] = *r_blend;
-					lv[1] = *r_blend;
-					lv[2] = *r_blend;
-
-					if (flags & STUDIO_NF_CHROME)
-					{
-						int m = (int)((char *)lv - (char *)engine_pvlightvalues) / 12;
-						R_StudioChrome(r_chrome[m], *pnormbone, *pstudionorms);
-					}
-				}
-			}
-			else
-			{
-				for (k = 0; k < pmesh[j].numnorms; k++, lv += 3, pstudionorms++, pnormbone++)
-				{
-					gRefFuncs.R_StudioLighting(&lv_tmp, *pnormbone, flags, *pstudionorms);
-					//R_StudioLighting(&lv_tmp, *pnormbone, flags, *pstudionorms);
-
-					if (flags & STUDIO_NF_CHROME)
-					{
-						int m = (int)((char *)lv - (char *)engine_pvlightvalues) / 12;
-						R_StudioChrome(r_chrome[m], *pnormbone, *pstudionorms);
-					}
-
-					lv[0] = lv_tmp * r_colormix[0];
-					lv[1] = lv_tmp * r_colormix[1];
-					lv[2] = lv_tmp * r_colormix[2];
-				}
-			}
-		}
 	}
 
 	glCullFace(GL_FRONT);
@@ -916,514 +676,189 @@ void R_GLStudioDrawPoints(void)
 	pstudionorms = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->normindex);
 	pnormbone = ((byte *)engine_pstudiohdr + engine_psubmodel->norminfoindex);
 
-	if (VBOSubmodel)
+	for (size_t j = 0; j < VBOSubmodel->vMesh.size(); j++)
 	{
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glEnableClientState(GL_NORMAL_ARRAY);
-		glBindBuffer(GL_ARRAY_BUFFER_ARB, VBOData->hDataBuffer);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->hIndexBuffer);
-		glVertexPointer(3, GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, pos));
-		glNormalPointer(GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, normal));
+		auto &VBOMesh = VBOSubmodel->vMesh[j];
 
-		glClientActiveTextureARB(GL_TEXTURE0_ARB);
-		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		glTexCoordPointer(2, GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, texcoord));
+		pmesh = VBOMesh.mesh;
 
-		for (j = 0; j < engine_psubmodel->nummesh; j++)
+		int flags = ptexture[pskinref[pmesh->skinref]].flags | (*g_ForcedFaceFlags);
+
+		if (r_fullbright->value >= 2)
 		{
-			auto &VBOMesh = VBOSubmodel->vMesh[j];
+			flags = flags & 0xFC;
+		}
 
-			pmesh = (mstudiomesh_t *)((byte *)engine_pstudiohdr + engine_psubmodel->meshindex) + j;
+		int GBufferMask = GBUFFER_MASK_ALL;
+		int StudioProgramState = flags;
 
-			flags = ptexture[pskinref[pmesh->skinref]].flags | (*g_ForcedFaceFlags);
+		//if (!bNoBindless)
+		//{
+		//	StudioProgramState |= STUDIO_BINDLESS_ENABLED;
+		//}
 
-			if (r_fullbright->value >= 2)
+		if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
+		{
+			StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
+		}
+		else if (r_draw_nontransparent)
+		{
+			if (flags & STUDIO_NF_FLATSHADE)
 			{
-				flags = flags & 0xFC;
-			}
-
-			int GBufferMask = GBUFFER_MASK_ALL;
-			int StudioProgramState = flags;
-
-			if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
-			{
-				StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
-			}
-			else if (r_draw_nontransparent)
-			{
-				if (flags & STUDIO_NF_FLATSHADE)
+				if (stencilState != 2)
 				{
-					if (stencilState != 2)
-					{
-						stencilState = 2;
-						glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
-					}
+					stencilState = 2;
+					glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
 				}
-				else
-				{
-					if (stencilState != 1)
-					{
-						stencilState = 1;
-						glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
-					}
-				}
-			}
-
-			if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
-			{
-
-			}
-			else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
-			{
-				glStencilFunc(GL_NOTEQUAL, 2, 0xFF);
-				glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-
-				StudioProgramState |= STUDIO_OUTLINE_ENABLED;
-				StudioProgramState &= ~STUDIO_NF_CHROME;
-				StudioProgramState &= ~STUDIO_NF_ADDITIVE;
-				StudioProgramState &= ~STUDIO_NF_MASKED;
-				StudioProgramState &= ~STUDIO_NF_CELSHADE;
-				StudioProgramState &= ~STUDIO_NF_CELSHADE_FACE;
-			}
-			else if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
-			{
-				glBlendFunc(GL_ONE, GL_ONE);
-				glEnable(GL_BLEND);
-				glDepthMask(GL_FALSE);
-				glShadeModel(GL_SMOOTH);
-
-				GBufferMask = GBUFFER_MASK_ADDITIVE;
-				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
-			}
-			else if (flags & STUDIO_NF_MASKED)
-			{
-				glEnable(GL_ALPHA_TEST);
-				glAlphaFunc(GL_GREATER, 0.5);
-				glDepthMask(GL_TRUE);
-			}
-			else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
-			{
-				glBlendFunc(GL_ONE, GL_ONE);
-				glEnable(GL_BLEND);
-				glDepthMask(GL_FALSE);
-				glShadeModel(GL_SMOOTH);
-
-				GBufferMask = GBUFFER_MASK_ADDITIVE;
-				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
-			}
-			else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
-			{
-				glBlendFunc(GL_ONE, GL_ONE);
-				glEnable(GL_BLEND);
-				glShadeModel(GL_SMOOTH);
-
-				GBufferMask = GBUFFER_MASK_ADDITIVE;
-				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE | STUDIO_TRANSADDITIVE_ENABLED;
-			}
-
-			if (drawgbuffer)
-			{
-				StudioProgramState |= STUDIO_GBUFFER_ENABLED;
-			}
-
-			if (r_fog_mode == GL_LINEAR)
-			{
-				StudioProgramState |= STUDIO_LINEAR_FOG_ENABLED;
-			}
-
-			float s, t;
-			//setup texture and texcoord
-			if (r_fullbright->value >= 2)
-			{
-				gEngfuncs.pTriAPI->SpriteTexture(cl_sprite_white, 0);
-
-				s = 1.0f / 256.0f;
-				t = 1.0f / 256.0f;
 			}
 			else
 			{
-				s = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].width;
-				t = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].height;
-
-				gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
-			}
-
-			if (flags & STUDIO_NF_CHROME)
-			{
-				if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
+				if (stencilState != 1)
 				{
-					StudioProgramState |= STUDIO_GLOW_SHELL_ENABLED;
-					s /= 32.0f;
-					t /= 32.0f;
+					stencilState = 1;
+					glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
 				}
-				else
-				{
-					s = 1.0f / 2048.0f;
-					t = 1.0f / 2048.0f;
-				}
-			}
-
-			studio_program_t prog = { 0 };
-
-			R_UseStudioProgram(StudioProgramState, &prog);
-			R_SetGBufferMask(GBufferMask);
-
-			if (prog.r_uvscale != -1)
-			{
-				glUniform2fARB(prog.r_uvscale, s, t);
-			}
-			
-			if (VBOMesh.iIndiceCount)
-			{
-				glDrawElements(GL_TRIANGLES, VBOMesh.iIndiceCount, GL_UNSIGNED_INT, BUFFER_OFFSET(VBOMesh.iStartIndex));
-				
-				++r_studio_drawcall;
-				r_studio_polys += VBOMesh.iPolyCount;
-			}
-
-			if (prog.vertnormbone != -1)
-			{
-				glDisableVertexAttribArray(prog.vertnormbone);
-			}
-
-			if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
-			{
-				
-			}
-			else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
-			{
-				glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
-				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-			}
-			else if (flags & STUDIO_NF_MASKED)
-			{
-				glAlphaFunc(GL_NOTEQUAL, 0);
-				glDisable(GL_ALPHA_TEST);
-			}
-			else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
-			{
-				glDisable(GL_BLEND);
-				glDepthMask(1);
-				glShadeModel(GL_FLAT);
-			}
-			else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
-			{
-				glDisable(GL_BLEND);
-				glShadeModel(GL_FLAT);
 			}
 		}
 
-		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-		glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
-		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisableClientState(GL_NORMAL_ARRAY);
-	}
-	else
-	{
-		for (j = 0; j < engine_psubmodel->nummesh; j++)
+		if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
 		{
-			pmesh = (mstudiomesh_t *)((byte *)engine_pstudiohdr + engine_psubmodel->meshindex) + j;
 
-			auto ptricmds = (short *)((byte *)engine_pstudiohdr + pmesh->triindex);
+		}
+		else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
+		{
+			glStencilFunc(GL_NOTEQUAL, 2, 0xFF);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-			r_studio_polys += pmesh->numtris;
+			StudioProgramState |= STUDIO_OUTLINE_ENABLED;
+			StudioProgramState &= ~STUDIO_NF_CHROME;
+			StudioProgramState &= ~STUDIO_NF_ADDITIVE;
+			StudioProgramState &= ~STUDIO_NF_MASKED;
+			StudioProgramState &= ~STUDIO_NF_CELSHADE;
+			StudioProgramState &= ~STUDIO_NF_CELSHADE_FACE;
+		}
+		else if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
+		{
+			glBlendFunc(GL_ONE, GL_ONE);
+			glEnable(GL_BLEND);
+			glDepthMask(GL_FALSE);
+			glShadeModel(GL_SMOOTH);
 
-			flags = ptexture[pskinref[pmesh->skinref]].flags | (*g_ForcedFaceFlags);
+			GBufferMask = GBUFFER_MASK_ADDITIVE;
+			StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
+		}
+		else if (flags & STUDIO_NF_MASKED)
+		{
+			glEnable(GL_ALPHA_TEST);
+			glAlphaFunc(GL_GREATER, 0.5);
+			glDepthMask(GL_TRUE);
+		}
+		else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
+		{
+			glBlendFunc(GL_ONE, GL_ONE);
+			glEnable(GL_BLEND);
+			glDepthMask(GL_FALSE);
+			glShadeModel(GL_SMOOTH);
 
-			if (r_fullbright->value >= 2)
+			GBufferMask = GBUFFER_MASK_ADDITIVE;
+			StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
+		}
+		else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
+		{
+			glBlendFunc(GL_ONE, GL_ONE);
+			glEnable(GL_BLEND);
+			glShadeModel(GL_SMOOTH);
+
+			GBufferMask = GBUFFER_MASK_ADDITIVE;
+			StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE | STUDIO_TRANSADDITIVE_ENABLED;
+		}
+
+		if (r_draw_pass == r_draw_reflect && curwater)
+		{
+			StudioProgramState |= STUDIO_CLIP_ENABLED;
+		}
+
+		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+		{
+			StudioProgramState |= STUDIO_LINEAR_FOG_ENABLED;
+		}
+
+		if (drawgbuffer)
+		{
+			StudioProgramState |= STUDIO_GBUFFER_ENABLED;
+		}
+
+		float s, t;
+		//setup texture and texcoord
+		if (r_fullbright->value >= 2)
+		{
+			gEngfuncs.pTriAPI->SpriteTexture(cl_sprite_white, 0);
+
+			s = 1.0f / 256.0f;
+			t = 1.0f / 256.0f;
+		}
+		else
+		{
+			s = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].width;
+			t = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].height;
+
+			gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
+		}
+
+		if (flags & STUDIO_NF_CHROME)
+		{
+			if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
 			{
-				flags = flags & 0xFC;
-			}
-
-			int GBufferMask = GBUFFER_MASK_ALL;
-			int StudioProgramState = flags | STUDIO_LEGACY_BONE_ENABLED;
-
-			if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
-			{
-				StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
-			}
-			else if (r_draw_nontransparent)
-			{
-				if (flags & STUDIO_NF_FLATSHADE)
-				{
-					if (stencilState != 2)
-					{
-						stencilState = 2;
-						glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
-					}
-				}
-				else
-				{
-					if (stencilState != 1)
-					{
-						stencilState = 1;
-						glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
-					}
-				}
-			}
-
-			if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
-			{
-
-			}
-			else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
-			{
-				glStencilFunc(GL_NOTEQUAL, 2, 0xFF);
-				glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-
-				StudioProgramState |= STUDIO_OUTLINE_ENABLED;
-				StudioProgramState &= ~STUDIO_NF_CHROME;
-				StudioProgramState &= ~STUDIO_NF_ADDITIVE;
-				StudioProgramState &= ~STUDIO_NF_MASKED;
-				StudioProgramState &= ~STUDIO_NF_CELSHADE;
-				StudioProgramState &= ~STUDIO_NF_CELSHADE_FACE;
-			}
-			else if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
-			{
-				glBlendFunc(GL_ONE, GL_ONE);
-				glEnable(GL_BLEND);
-				glDepthMask(GL_FALSE);
-				glShadeModel(GL_SMOOTH);
-
-				GBufferMask = GBUFFER_MASK_ADDITIVE;
-				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
-			}
-			else if (flags & STUDIO_NF_MASKED)
-			{
-				glEnable(GL_ALPHA_TEST);
-				glAlphaFunc(GL_GREATER, 0.5);
-				glDepthMask(GL_TRUE);
-			}
-			else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
-			{
-				glBlendFunc(GL_ONE, GL_ONE);
-				glEnable(GL_BLEND);
-				glDepthMask(GL_FALSE);
-				glShadeModel(GL_SMOOTH);
-
-				GBufferMask = GBUFFER_MASK_ADDITIVE;
-				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
-			}
-			else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
-			{
-				glBlendFunc(GL_ONE, GL_ONE);
-				glEnable(GL_BLEND);
-				glShadeModel(GL_SMOOTH);
-
-				GBufferMask = GBUFFER_MASK_ADDITIVE;
-				StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE | STUDIO_TRANSADDITIVE_ENABLED;
-			}
-
-			if (drawgbuffer)
-			{
-				StudioProgramState |= STUDIO_GBUFFER_ENABLED;
-			}
-
-			if (r_fog_mode == GL_LINEAR)
-			{
-				StudioProgramState |= STUDIO_LINEAR_FOG_ENABLED;
-			}
-
-			float s, t;
-			//setup texture and texcoord
-			if (r_fullbright->value >= 2)
-			{
-				gEngfuncs.pTriAPI->SpriteTexture(cl_sprite_white, 0);
-
-				s = 1.0f / 256.0f;
-				t = 1.0f / 256.0f;
+				StudioProgramState |= STUDIO_GLOW_SHELL_ENABLED;
+				s /= 32.0f;
+				t /= 32.0f;
 			}
 			else
 			{
-				s = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].width;
-				t = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].height;
-
-				gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
+				s = 1.0f / 2048.0f;
+				t = 1.0f / 2048.0f;
 			}
+		}
 
-			studio_program_t prog = { 0 };
+		studio_program_t prog = { 0 };
 
-			R_UseStudioProgram(StudioProgramState, &prog);
-			R_SetGBufferMask(GBufferMask);
+		R_UseStudioProgram(StudioProgramState, &prog);
+		R_SetGBufferMask(GBufferMask);
 
-			if (flags & STUDIO_NF_CHROME)//chrome start
-			{
-				if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)//force chrome, the fucking glowshell
-				{
-					s *= 1.0f / 32.0f;
-					t *= 1.0f / 32.0f;
+		if (VBOMesh.iIndiceCount)
+		{
+			glDrawElements(GL_TRIANGLES, VBOMesh.iIndiceCount, GL_UNSIGNED_INT, BUFFER_OFFSET(VBOMesh.iStartIndex));
+				
+			++r_studio_drawcall;
+			r_studio_polys += VBOMesh.iPolyCount;
+		}
 
-					while (i = *(ptricmds++))
-					{
-						if (i < 0)
-						{
-							glBegin(GL_TRIANGLE_FAN);
-							i = -i;
-						}
-						else
-						{
-							glBegin(GL_TRIANGLE_STRIP);
-						}
-
-						for (; i > 0; i--, ptricmds += 4)
-						{
-							int normalIndex = (*g_NormalIndex)[ptricmds[0]];
-
-							glTexCoord2f(r_chrome[normalIndex][0] * s, r_chrome[normalIndex][1] * t);
-
-							VectorRotate(pstudionorms[ptricmds[1]], (*pbonetransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[1]]);
-
-							glNormal3fv(r_studionormal[ptricmds[1]]);
-
-							vec4_t col;
-							col[0] = (float)(*currententity)->curstate.rendercolor.r / 255.0f;
-							col[1] = (float)(*currententity)->curstate.rendercolor.g / 255.0f;
-							col[2] = (float)(*currententity)->curstate.rendercolor.b / 255.0f;
-							col[3] = 1.0f;
-							glColor4fv(col);
-
-							av = &engine_pauxverts[ptricmds[0]];
-							glVertex3fv(av->fv);
-						}
-
-						glEnd();
-
-						r_studio_drawcall++;
-					}
-				}
-				else
-				{//standard chrome, not glowshell
-					s *= 1.0f / 2048.0f;
-					t *= 1.0f / 2048.0f;
-					s *= (float)ptexture[pskinref[pmesh->skinref]].width;
-					t *= (float)ptexture[pskinref[pmesh->skinref]].height;
-
-					while (i = *(ptricmds++))
-					{
-						if (i < 0)
-						{
-							glBegin(GL_TRIANGLE_FAN);
-							i = -i;
-						}
-						else
-						{
-							glBegin(GL_TRIANGLE_STRIP);
-						}
-
-						for (; i > 0; i--, ptricmds += 4)
-						{
-							glTexCoord2f(r_chrome[ptricmds[1]][0] * s, r_chrome[ptricmds[1]][1] * t);
-
-							lv = &engine_pvlightvalues[ptricmds[1] * 3];
-
-							vec3_t vNormal;
-							VectorCopy(pstudionorms[ptricmds[1]], vNormal);
-
-							if (iFlippedVModel == 1)
-								VectorInverse(vNormal);
-
-							gRefFuncs.R_LightLambert(lightpos[ptricmds[0]], vNormal, lv, fl);
-
-							VectorRotate(pstudionorms[ptricmds[1]], (*pbonetransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[1]]);
-
-							glNormal3fv(r_studionormal[ptricmds[1]]);
-							glColor4f(fl[0], fl[1], fl[2], *r_blend);
-
-							av = &engine_pauxverts[ptricmds[0]];
-							glVertex3fv(av->fv);
-						}
-
-						glEnd();
-
-						r_studio_drawcall++;
-					}
-				}//no force chrome end
-
-			}//chrome end
-			else
-			{//normal render
-
-				while (i = *(ptricmds++))
-				{
-					if (i < 0)
-					{
-						glBegin(GL_TRIANGLE_FAN);
-						i = -i;
-					}
-					else
-					{
-						glBegin(GL_TRIANGLE_STRIP);
-					}
-
-					for (; i > 0; i--, ptricmds += 4)
-					{
-						vec2_t st = { ptricmds[2] * s, ptricmds[3] * t };
-						glTexCoord2fv(st);
-
-						lv = &(engine_pvlightvalues[ptricmds[1] * 3]);
-
-						vec3_t vNormal;
-						VectorCopy(pstudionorms[ptricmds[1]], vNormal);
-
-						if (iFlippedVModel)
-							VectorInverse(vNormal);
-
-						gRefFuncs.R_LightLambert(lightpos[ptricmds[0]], vNormal, lv, fl);
-
-						VectorRotate(pstudionorms[ptricmds[1]], (*pbonetransform)[pnormbone[ptricmds[1]]], r_studionormal[ptricmds[1]]);
-
-						glNormal3fv(r_studionormal[ptricmds[1]]);
-
-						if (flags & STUDIO_NF_FULLBRIGHT)
-						{
-							glColor4f(1, 1, 1, *r_blend);
-						}
-						else
-						{
-							glColor4f(fl[0], fl[1], fl[2], *r_blend);
-						}
-
-						av = &(engine_pauxverts[ptricmds[0]]);
-						glVertex3fv(av->fv);
-					}
-
-					glEnd();
-
-					r_studio_drawcall++;
-				}
-
-			}//normal draw end
-
-			if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
-			{
-
-			}
-			else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
-			{
-				glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
-				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-			}
-			else if (flags & STUDIO_NF_MASKED)
-			{
-				glAlphaFunc(GL_NOTEQUAL, 0);
-				glDisable(GL_ALPHA_TEST);
-			}
-			else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
-			{
-				glDisable(GL_BLEND);
-				glDepthMask(1);
-				glShadeModel(GL_FLAT);
-			}
-			else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
-			{
-				glDisable(GL_BLEND);
-				glShadeModel(GL_FLAT);
-			}
-
-		}//mesh draw end
-
-	}//non-VBO way
+		if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
+		{
+				
+		}
+		else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
+		{
+			glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		}
+		else if (flags & STUDIO_NF_MASKED)
+		{
+			glAlphaFunc(GL_NOTEQUAL, 0);
+			glDisable(GL_ALPHA_TEST);
+		}
+		else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
+		{
+			glDisable(GL_BLEND);
+			glDepthMask(1);
+			glShadeModel(GL_FLAT);
+		}
+		else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
+		{
+			glDisable(GL_BLEND);
+			glShadeModel(GL_FLAT);
+		}
+	}
 
 	glEnable(GL_CULL_FACE);
 
@@ -1434,6 +869,8 @@ void R_GLStudioDrawPoints(void)
 	}
 
 	GL_UseProgram(0);
+
+	R_EnableStudioVBO(NULL);
 }
 
 //StudioAPI
@@ -1494,7 +931,9 @@ void R_StudioDrawBatch(void)
 	int vIndiceCount[MAXSTUDIOMESHES];
 	int arrayCount = 0;
 
-	auto VBOData = R_StudioPrepareVBO(*pstudiohdr);
+	auto VBOData = R_PrepareStudioVBO(*pstudiohdr);
+
+	R_EnableStudioVBO(VBOData);
 
 	for (int i = 0; i < (*pstudiohdr)->numbodyparts; i++)
 	{
@@ -1526,6 +965,11 @@ void R_StudioDrawBatch(void)
 	int StudioProgramState = 0;
 	int GBufferMask = GBUFFER_MASK_ALL;
 
+	//if (!bNoBindless)
+	//{
+	//	StudioProgramState |= STUDIO_BINDLESS_ENABLED;
+	//}
+
 	if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
 	{
 		glDisable(GL_BLEND);
@@ -1537,19 +981,7 @@ void R_StudioDrawBatch(void)
 		StudioProgramState |= STUDIO_GBUFFER_ENABLED;
 	}
 
-	if (r_fog_mode == GL_LINEAR)
-	{
-		StudioProgramState |= STUDIO_LINEAR_FOG_ENABLED;
-	}
-
 	glCullFace(GL_FRONT);
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_NORMAL_ARRAY);
-	glBindBuffer(GL_ARRAY_BUFFER_ARB, VBOData->hDataBuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->hIndexBuffer);
-	glVertexPointer(3, GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, pos));
-	glNormalPointer(GL_FLOAT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, normal));
 
 	studio_program_t prog = { 0 };
 
@@ -1559,36 +991,27 @@ void R_StudioDrawBatch(void)
 	glMultiDrawElements(GL_TRIANGLES, vIndiceCount, GL_UNSIGNED_INT, (const void **)vStartIndex, arrayCount);
 	r_studio_drawcall++;
 
-	if (prog.vertnormbone != -1)
-	{
-		glDisableVertexAttribArray(prog.vertnormbone);
-	}
-
 	GL_UseProgram(0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-	glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_NORMAL_ARRAY);
+
+	R_EnableStudioVBO(NULL);
 }
 
 void __fastcall GameStudioRenderer_StudioRenderFinal(void *pthis, int)
 {
-	if (r_studio_vbo->value)
+	if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
 	{
-		if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
-		{
-			int rendermode = IEngineStudio.GetForceFaceFlags() ? kRenderTransAdd : (*currententity)->curstate.rendermode;
-			IEngineStudio.SetupRenderer(rendermode);
-			IEngineStudio.GL_SetRenderMode(rendermode);
+		int rendermode = IEngineStudio.GetForceFaceFlags() ? kRenderTransAdd : (*currententity)->curstate.rendermode;
+		IEngineStudio.SetupRenderer(rendermode);
+		IEngineStudio.GL_SetRenderMode(rendermode);
 
-			R_StudioDrawBatch();
+		R_StudioDrawBatch();
 
-			IEngineStudio.RestoreRenderer();
-			return;
-		}
+		IEngineStudio.RestoreRenderer();
 	}
-
-	return gRefFuncs.GameStudioRenderer_StudioRenderFinal(pthis, 0);
+	else
+	{
+		gRefFuncs.GameStudioRenderer_StudioRenderFinal(pthis, 0);
+	}
 }
 
 void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)

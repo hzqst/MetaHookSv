@@ -192,15 +192,21 @@ typedef struct scene_ubo_s
 	mat4 invProjMatrix;
 	mat4 shadowMatrix[3];
 	vec4 viewpos;
-	vec4 fogColor;
-	float fogStart;
-	float fogEnd;
-	float time;
-	float padding;
+	vec4 vpn;
+	vec4 vright;
 	vec4 shadowDirection;
 	vec4 shadowColor;
 	vec4 shadowFade;
 	vec4 clipPlane;
+	vec4 fogColor;
+	float fogStart;
+	float fogEnd;
+	float time;
+	float r_g1;
+	float r_g3;
+	float v_brightness;
+	float v_lightgamma;
+	float v_lambert;
 }scene_ubo_t;
 
 typedef struct entity_ubo_s
@@ -209,6 +215,19 @@ typedef struct entity_ubo_s
 	vec4 color;
 	float scrollSpeed;
 }entity_ubo_t;
+
+typedef struct studio_ubo_s
+{
+	float r_ambientlight;
+	float r_shadelight;
+	float r_blend;
+	float r_scale;
+	vec4 r_plightvec;
+	vec4 r_colormix;
+	vec4 r_origin;
+	vec4 entity_origin;
+	mat3x4 bonematrix[128];
+}studio_ubo_t;
 
 #pragma pack(pop)
 

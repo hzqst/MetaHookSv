@@ -1,50 +1,26 @@
-#version 130
+#version 460
 
-uniform mat3x4 bonematrix[128];
-uniform float v_lambert;
-uniform float v_brightness;
-uniform float v_lightgamma;
-uniform float r_ambientlight;
-uniform float r_shadelight;
-uniform float r_blend;
-uniform float r_g1;
-uniform float r_g3;
-uniform vec3 r_plightvec;
-uniform vec3 r_colormix;
-uniform vec3 r_origin;
-uniform vec3 r_vright;
-uniform float r_scale;
-uniform vec2 r_uvscale;
+#include "common.h"
 
-attribute ivec2 vertnormbone;
+layout(location = 0) in vec3 in_vertex;
+layout(location = 1) in vec3 in_normal;
+layout(location = 2) in vec2 in_texcoord;
+layout(location = 3) in ivec2 in_vertnormbone;
 
-varying vec3 worldpos;
-varying vec3 normal;
-varying vec4 color;
-
-#ifdef LEGACY_BONE_ENABLED
+out vec3 v_worldpos;
+out vec3 v_normal;
+out vec4 v_color;
+out vec2 v_texcoord;
 
 void main(void)
 {
-	worldpos = gl_Vertex.xyz;
-	normal = gl_Normal;
-	color = gl_Color;
-	gl_TexCoord[0] = gl_MultiTexCoord0;
-	
-	gl_Position = ftransform();
-}
+	vec3 vert = in_vertex;
+	vec3 norm = in_normal;
 
-#else
+	int vertbone = in_vertnormbone.x;
+	int normbone = in_vertnormbone.y;
 
-void main(void)
-{
-	vec3 vert = gl_Vertex.xyz;
-	vec3 norm = gl_Normal;
-
-	int vertbone = vertnormbone.x;
-	int normbone = vertnormbone.y;
-
-	mat3x4 vertbone_matrix = bonematrix[vertbone];
+	mat3x4 vertbone_matrix = StudioUBO.bonematrix[vertbone];
     vec3 vertbone_matrix_0 = vec3(vertbone_matrix[0][0], vertbone_matrix[0][1], vertbone_matrix[0][2]);
   	vec3 vertbone_matrix_1 = vec3(vertbone_matrix[1][0], vertbone_matrix[1][1], vertbone_matrix[1][2]);
     vec3 vertbone_matrix_2 = vec3(vertbone_matrix[2][0], vertbone_matrix[2][1], vertbone_matrix[2][2]);
@@ -54,7 +30,7 @@ void main(void)
 		dot(vert, vertbone_matrix_2) + vertbone_matrix[2][3]
 	);
 
-	mat3x4 normbone_matrix = bonematrix[normbone];
+	mat3x4 normbone_matrix = StudioUBO.bonematrix[normbone];
 	vec3 normbone_matrix_0 = vec3(normbone_matrix[0][0], normbone_matrix[0][1], normbone_matrix[0][2]);
     vec3 normbone_matrix_1 = vec3(normbone_matrix[1][0], normbone_matrix[1][1], normbone_matrix[1][2]);
     vec3 normbone_matrix_2 = vec3(normbone_matrix[2][0], normbone_matrix[2][1], normbone_matrix[2][2]);
@@ -66,43 +42,43 @@ void main(void)
 
 	outnorm = normalize(outnorm);
 
-	worldpos = outvert;
-	normal = outnorm;
+	v_worldpos = outvert;
+	v_normal = outnorm;
 
 #ifndef SHADOW_CASTER_ENABLED
 
 	#ifdef TRANSADDITIVE_ENABLED
 
-		color = vec4(r_blend, r_blend, r_blend, r_blend);
+		v_color = vec4(StudioUBO.r_blend, StudioUBO.r_blend, StudioUBO.r_blend, StudioUBO.r_blend);
 
 	#else
 
 		#ifdef STUDIO_NF_FULLBRIGHT
 
-			color = vec4(1.0, 1.0, 1.0, r_blend);
+			v_color = vec4(1.0, 1.0, 1.0, StudioUBO.r_blend);
 
 		#else
 
-			float illum = r_ambientlight;
+			float illum = StudioUBO.r_ambientlight;
 
 			#ifdef STUDIO_NF_FLATSHADE
 
-				illum += r_shadelight * 0.8;
+				illum += StudioUBO.r_shadelight * 0.8;
 
 			#else
 
-				float lightcos = dot(outnorm, r_plightvec);
+				float lightcos = dot(outnorm, StudioUBO.r_plightvec.xyz);
 
-				if(v_lambert < 1.0)
+				if(SceneUBO.v_lambert < 1.0)
 				{
-					lightcos = (v_lambert - lightcos) / (v_lambert + 1.0); 
-					illum += r_shadelight * max(lightcos, 0.0); 			
+					lightcos = (SceneUBO.v_lambert - lightcos) / (SceneUBO.v_lambert + 1.0); 
+					illum += StudioUBO.r_shadelight * max(lightcos, 0.0); 			
 				}
 				else
 				{
-					illum += r_shadelight;
-					lightcos = (lightcos + v_lambert - 1.0) / v_lambert;
-					illum -= r_shadelight * max(lightcos, 0.0);
+					illum += StudioUBO.r_shadelight;
+					lightcos = (lightcos + SceneUBO.v_lambert - 1.0) / SceneUBO.v_lambert;
+					illum -= StudioUBO.r_shadelight * max(lightcos, 0.0);
 				}
 
 			#endif
@@ -110,43 +86,41 @@ void main(void)
 			illum = clamp(illum, 0.0, 255.0);
 
 			float fv = illum / 255.0;
-			fv = pow(fv, v_lightgamma);
+			fv = pow(fv, SceneUBO.v_lightgamma);
 
-			fv = fv * max(v_brightness, 1.0);
+			fv = fv * max(SceneUBO.v_brightness, 1.0);
 
-			if (fv > r_g3)
-				fv = 0.125 + ((fv - r_g3) / (1.0 - r_g3)) * 0.875;
+			if (fv > SceneUBO.r_g3)
+				fv = 0.125 + ((fv - SceneUBO.r_g3) / (1.0 - SceneUBO.r_g3)) * 0.875;
 			else 
-				fv = (fv / r_g3) * 0.125;
+				fv = (fv / SceneUBO.r_g3) * 0.125;
 
-			float lv = clamp(pow( fv, r_g1 ), 0.0, 1.0);
+			float lv = clamp(pow( fv, SceneUBO.r_g1 ), 0.0, 1.0);
 
-			color = vec4(lv * r_colormix.x, lv * r_colormix.y, lv * r_colormix.z, r_blend);
+			v_color = vec4(lv * StudioUBO.r_colormix.x, lv * StudioUBO.r_colormix.y, lv * StudioUBO.r_colormix.z, StudioUBO.r_blend);
 
 		#endif
 
 	#endif
 
-	#ifdef OUTLINE_ENABLED
+	#if defined(OUTLINE_ENABLED)
 
-		outvert = outvert + outnorm * r_scale;
-		worldpos = outvert;
+		outvert = outvert + outnorm * StudioUBO.r_scale;
+		v_worldpos = outvert;
 
-	#endif
+	#elif defined(STUDIO_NF_CHROME)
 
-	#ifdef STUDIO_NF_CHROME
-
-		outvert = outvert + outnorm * r_scale;
-		worldpos = outvert;
+		outvert = outvert + outnorm * StudioUBO.r_scale;
+		v_worldpos = outvert;
 
 		vec3 tmp = vec3(
-			normbone_matrix[0][3] - r_origin.x,
-			normbone_matrix[1][3] - r_origin.y,
-			normbone_matrix[2][3] - r_origin.z
+			normbone_matrix[0][3] - StudioUBO.r_origin.x,
+			normbone_matrix[1][3] - StudioUBO.r_origin.y,
+			normbone_matrix[2][3] - StudioUBO.r_origin.z
 		);
 		tmp = normalize(tmp);
 
-		vec3 chromeupvec = cross(tmp, r_vright);
+		vec3 chromeupvec = cross(tmp, SceneUBO.vright.xyz);
 		chromeupvec = normalize(chromeupvec);
 
 		vec3 chromerightvec = cross(tmp, chromeupvec);
@@ -171,20 +145,15 @@ void main(void)
 			(dot(norm, chromeup) + 1.0) * 1024.0
 		);
 
-		texcoord.x *= r_uvscale.x;
-		texcoord.y *= r_uvscale.y;
-
-		gl_TexCoord[0] = vec4(texcoord.x, texcoord.y, 0.0, 0.0);
+		v_texcoord = texcoord.xy;
 
 	#else
 
-		gl_TexCoord[0] = vec4(gl_MultiTexCoord0.x * r_uvscale.x, gl_MultiTexCoord0.y * r_uvscale.y, 0.0, 0.0);
+		v_texcoord = in_texcoord.xy;
 
 	#endif
 
 #endif
 
-	gl_Position = gl_ModelViewProjectionMatrix * vec4(outvert, 1.0);
+	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * vec4(outvert, 1.0);
 }
-
-#endif

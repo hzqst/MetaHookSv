@@ -199,6 +199,9 @@ void R_RenderShadowMap(void)
 		glClearColor(-99999, -99999, -99999, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, viewMatrix), sizeof(mat4), shadow_mvmatrix[i]);
+		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), shadow_projmatrix[i]);
+
 		cl_entity_t *backup_curentity = (*currententity);
 
 		for (int j = 0; j < shadow_numvisedicts[i]; ++j)

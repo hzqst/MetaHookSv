@@ -1728,7 +1728,7 @@ void Mod_LoadStudioModel(model_t *mod, void *buffer)
 
 		R_StudioLoadExternalFile(mod, studiohdr);
 
-		R_StudioPrepareVBO(studiohdr);
+		R_PrepareStudioVBO(studiohdr);
 	}
 }
 

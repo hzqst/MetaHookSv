@@ -131,7 +131,7 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 			defs << "#define CLIP_ENABLED\n";
 
 		if(glewIsSupported("GL_NV_bindless_texture"))
-			defs << "#define UINT64_ENABLE\n";
+			defs << "#define UINT64_ENABLED\n";
 	
 		defs << "#define SHADOW_TEXTURE_OFFSET (1.0 / " << std::dec << shadow_texture_size << ".0)\n";
 
@@ -1004,27 +1004,7 @@ void R_EnableWSurfVBO(wsurf_vbo_t *modcache)
 
 	r_wsurf.pCurrentModel = modcache;
 
-	if (!modcache)
-	{
-		glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-
-		glDisableVertexAttribArray(0);
-		glDisableVertexAttribArray(1);
-		glDisableVertexAttribArray(2);
-		glDisableVertexAttribArray(3);
-		glDisableVertexAttribArray(4);
-		glDisableVertexAttribArray(5);
-		glDisableVertexAttribArray(6);
-		glDisableVertexAttribArray(7);
-		glDisableVertexAttribArray(8);
-		glDisableVertexAttribArray(9);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		//glBindBufferBase(GL_UNIFORM_BUFFER, 2, 0);
-		//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, 0);
-	}
-	else
+	if (modcache)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hSceneVBO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modcache->hEBO);
@@ -1054,6 +1034,26 @@ void R_EnableWSurfVBO(wsurf_vbo_t *modcache)
 		glVertexAttribPointer(9, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, speculartexcoord));
 
 		glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+	}
+	else
+	{
+		glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
+		glDisableVertexAttribArray(3);
+		glDisableVertexAttribArray(4);
+		glDisableVertexAttribArray(5);
+		glDisableVertexAttribArray(6);
+		glDisableVertexAttribArray(7);
+		glDisableVertexAttribArray(8);
+		glDisableVertexAttribArray(9);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBufferBase(GL_UNIFORM_BUFFER, 2, 0);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, 0);		
 	}
 }
 
@@ -3315,6 +3315,58 @@ skip_marklight:
 	memcpy(r_entity_matrix, r_identity_matrix, sizeof(r_entity_matrix));
 }
 
+void R_SetupSceneUBO(void)
+{
+	scene_ubo_t SceneUBO;
+
+	memcpy(SceneUBO.viewMatrix, r_world_matrix, sizeof(mat4));
+	memcpy(SceneUBO.projMatrix, r_projection_matrix, sizeof(mat4));
+	memcpy(SceneUBO.invViewMatrix, r_world_matrix_inv, sizeof(mat4));
+	memcpy(SceneUBO.invProjMatrix, r_proj_matrix_inv, sizeof(mat4));
+	memcpy(SceneUBO.shadowMatrix[0], r_shadow_matrix[0], sizeof(mat4));
+	memcpy(SceneUBO.shadowMatrix[1], r_shadow_matrix[1], sizeof(mat4));
+	memcpy(SceneUBO.shadowMatrix[2], r_shadow_matrix[2], sizeof(mat4));
+	memcpy(SceneUBO.viewpos, r_refdef->vieworg, sizeof(vec3_t));
+	memcpy(SceneUBO.vpn, vpn, sizeof(vec3_t));
+	memcpy(SceneUBO.vright, vright, sizeof(vec3_t));
+	memcpy(SceneUBO.shadowDirection, &r_shadow_control.vforward, sizeof(vec3_t));
+	memcpy(SceneUBO.shadowColor, &r_shadow_control.color, sizeof(vec3_t));
+	SceneUBO.shadowColor[3] = r_shadow_control.intensity;
+	memcpy(SceneUBO.shadowFade, &r_shadow_control.distfade, sizeof(vec2_t));
+	memcpy(&SceneUBO.shadowFade[2], &r_shadow_control.lumfade, sizeof(vec2_t));
+
+	//normal[0] * x+ normal[1] * y+ normal[2] * z = normal[0] * vert[0] +normal[1] * vert[1] +normal[2] * vert[2]
+
+	if (r_draw_pass == r_draw_reflect && curwater)
+	{
+		float equation[4] = { curwater->normal[0], curwater->normal[1], curwater->normal[2], -curwater->plane };
+		memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
+	}
+
+	memcpy(SceneUBO.fogColor, r_fog_color, sizeof(vec4_t));
+	SceneUBO.fogStart = r_fog_control[0];
+	SceneUBO.fogEnd = r_fog_control[1];
+	SceneUBO.time = (*cl_time);
+
+	float r_g = 1.0f / v_gamma->value;
+
+	float r_g3;
+	if (v_brightness->value <= 0.0f)
+		r_g3 = 0.125f;
+	else if (v_brightness->value > 1.0f)
+		r_g3 = 0.05f;
+	else
+		r_g3 = 0.125f - (v_brightness->value * v_brightness->value) * 0.075f;
+
+	SceneUBO.r_g1 = r_g;
+	SceneUBO.r_g3 = r_g3;
+	SceneUBO.v_brightness = v_brightness->value;
+	SceneUBO.v_lightgamma = v_lightgamma->value;
+	SceneUBO.v_lambert = v_lambert->value;
+
+	glNamedBufferSubData(r_wsurf.hSceneUBO, 0, sizeof(SceneUBO), &SceneUBO);
+}
+
 void R_DrawWorld(void)
 {
 	r_draw_nontransparent = true;
@@ -3398,36 +3450,7 @@ void R_DrawWorld(void)
 
 	//Setup Scene UBO
 
-	scene_ubo_t SceneUBO;
-
-	memcpy(SceneUBO.viewMatrix, r_world_matrix, sizeof(mat4));
-	memcpy(SceneUBO.projMatrix, r_projection_matrix, sizeof(mat4));
-	memcpy(SceneUBO.invViewMatrix, r_world_matrix_inv, sizeof(mat4));
-	memcpy(SceneUBO.invProjMatrix, r_proj_matrix_inv, sizeof(mat4));
-	memcpy(SceneUBO.shadowMatrix[0], r_shadow_matrix[0], sizeof(mat4));
-	memcpy(SceneUBO.shadowMatrix[1], r_shadow_matrix[1], sizeof(mat4));
-	memcpy(SceneUBO.shadowMatrix[2], r_shadow_matrix[2], sizeof(mat4));
-	memcpy(SceneUBO.viewpos, r_refdef->vieworg, sizeof(vec3_t));
-	memcpy(SceneUBO.fogColor, r_fog_color, sizeof(vec4_t));
-	SceneUBO.fogStart = r_fog_control[0];
-	SceneUBO.fogEnd = r_fog_control[1];
-	SceneUBO.time = (*cl_time);
-
-	memcpy(SceneUBO.shadowDirection, &r_shadow_control.vforward, sizeof(vec3_t));
-	memcpy(SceneUBO.shadowColor, &r_shadow_control.color, sizeof(vec3_t));
-	SceneUBO.shadowColor[3] = r_shadow_control.intensity;
-	memcpy(SceneUBO.shadowFade, &r_shadow_control.distfade, sizeof(vec2_t));
-	memcpy(&SceneUBO.shadowFade[2], &r_shadow_control.lumfade, sizeof(vec2_t));
-
-	//normal[0] * x+ normal[1] * y+ normal[2] * z = normal[0] * vert[0] +normal[1] * vert[1] +normal[2] * vert[2]
-
-	if (r_draw_pass == r_draw_reflect && curwater)
-	{
-		float equation[4] = { curwater->normal[0], curwater->normal[1], curwater->normal[2], -curwater->plane };
-		memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
-	}
-
-	glNamedBufferSubData(r_wsurf.hSceneUBO, 0, sizeof(SceneUBO), &SceneUBO);
+	R_SetupSceneUBO();
 
 	//Skybox use stencil = 1
 

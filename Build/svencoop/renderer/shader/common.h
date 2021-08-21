@@ -1,6 +1,6 @@
 #ifdef BINDLESS_ENABLED
 
-#ifdef UINT64_ENABLE
+#ifdef UINT64_ENABLED
 #extension GL_NV_bindless_texture : require
 #extension GL_NV_gpu_shader5 : require
 #else
@@ -29,15 +29,21 @@ struct scene_ubo_t{
 	mat4 invProjMatrix;
 	mat4 shadowMatrix[3];
 	vec4 viewpos;
-	vec4 fogColor;
-	float fogStart;
-	float fogEnd;
-	float time;
-	float padding;
+	vec4 vpn;
+	vec4 vright;
 	vec4 shadowDirection;
 	vec4 shadowColor;
 	vec4 shadowFade;
 	vec4 clipPlane;
+	vec4 fogColor;
+	float fogStart;
+	float fogEnd;
+	float time;
+	float r_g1;
+	float r_g3;
+	float v_brightness;
+	float v_lightgamma;
+	float v_lambert;
 };
 
 struct entity_ubo_t{
@@ -46,9 +52,21 @@ struct entity_ubo_t{
 	float scrollSpeed;
 };
 
+struct studio_ubo_t{
+	float r_ambientlight;
+	float r_shadelight;
+	float r_blend;
+	float r_scale;
+	vec4 r_plightvec;
+	vec4 r_colormix;
+	vec4 r_origin;
+	vec4 entity_origin;
+	mat3x4 bonematrix[128];
+};
+
 struct texture_ssbo_t{
 
-#if defined(BINDLESS_ENABLED) && defined(UINT64_ENABLE)
+#if defined(BINDLESS_ENABLED) && defined(UINT64_ENABLED)
 
 	uint64_t handles[5 * 1];
 
@@ -83,3 +101,58 @@ layout (std430, binding = 3) buffer TextureBlock
 {
     texture_ssbo_t TextureSSBO;
 };
+
+layout (std140, binding = 4) uniform StudioBlock
+{
+   studio_ubo_t StudioUBO;
+};
+
+vec2 UnitVectorToHemiOctahedron(vec3 dir) {
+
+	dir.y = max(dir.y, 0.0001);
+	dir.xz /= dot(abs(dir), vec3(1.0));
+
+	return clamp(0.5 * vec2(dir.x + dir.z, dir.x - dir.z) + 0.5, 0.0, 1.0);
+
+}
+
+vec3 HemiOctahedronToUnitVector(vec2 coord) {
+
+	coord = 2.0 * coord - 1.0;
+	coord = 0.5 * vec2(coord.x + coord.y, coord.x - coord.y);
+
+	float y = 1.0 - dot(vec2(1.0), abs(coord));
+	return normalize(vec3(coord.x, y + 0.0001, coord.y));
+
+}
+
+vec2 UnitVectorToOctahedron(vec3 dir) {
+
+    dir.xz /= dot(abs(dir), vec3(1.0));
+
+	// Lower hemisphere
+	if (dir.y < 0.0) {
+		vec2 orig = dir.xz;
+		dir.x = (orig.x >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.y));
+        dir.z = (orig.y >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.x));
+	}
+
+	return clamp(0.5 * vec2(dir.x, dir.z) + 0.5, 0.0, 1.0);
+
+}
+
+vec3 OctahedronToUnitVector(vec2 coord) {
+
+	coord = 2.0 * coord - 1.0;
+	float y = 1.0 - dot(abs(coord), vec2(1.0));
+
+	// Lower hemisphere
+	if (y < 0.0) {
+		vec2 orig = coord;
+		coord.x = (orig.x >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.y));
+		coord.y = (orig.y >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.x));
+	}
+
+	return normalize(vec3(coord.x, y + 0.0001, coord.y));
+
+}

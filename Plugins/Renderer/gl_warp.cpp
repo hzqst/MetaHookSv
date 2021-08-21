@@ -11,6 +11,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, WaterVBOCache->hEBO);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, WaterVBOCache->hTextureSSBO);
+	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
 	bool bIsAboveWater = R_IsAboveWater(WaterVBOCache->vert, WaterVBOCache->normal);
 
@@ -154,6 +155,8 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 		r_wsurf_drawcall++;
 		r_wsurf_polys += WaterVBOCache->iPolyCount;
 	}
+
+	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
 

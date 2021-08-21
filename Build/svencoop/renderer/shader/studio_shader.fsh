@@ -1,27 +1,10 @@
-#version 130
+#version 460
 
-#extension GL_EXT_texture_array : enable
+#include "common.h"
 
-#define GBUFFER_INDEX_DIFFUSE		0
-#define GBUFFER_INDEX_LIGHTMAP		1
-#define GBUFFER_INDEX_WORLDNORM		2
-#define GBUFFER_INDEX_SPECULAR		3
-#define GBUFFER_INDEX_ADDITIVE		4
-
-uniform sampler2D diffuseTex;
-
-/* legacy shade */
-
-uniform float v_lambert;
-uniform float v_brightness;
-uniform float v_lightgamma;
-uniform float r_ambientlight;
-uniform float r_shadelight;
-uniform float r_blend;
-uniform float r_g1;
-uniform float r_g3;
-uniform vec3 r_plightvec;
-uniform vec3 r_colormix;
+#ifndef BINDLESS_ENABLED
+layout(binding = 0) uniform sampler2D diffuseTex;
+#endif
 
 /* celshade */
 
@@ -36,81 +19,23 @@ uniform float r_rimdark_smooth;
 uniform vec3 r_rimdark_color;
 uniform float r_outline_dark;
 
-varying vec3 worldpos;
-varying vec3 normal;
-varying vec4 color;
+in vec3 v_worldpos;
+in vec3 v_normal;
+in vec4 v_color;
+in vec2 v_texcoord;
 
-uniform vec3 viewpos;
-uniform vec3 viewdir;
-
-#ifdef SHADOW_CASTER_ENABLED
-uniform vec3 entityPos;
-#endif
-
-#ifdef CLIP_ABOVE_ENABLED
-uniform float clipPlane;
-#endif
-
-#ifdef CLIP_UNDER_ENABLED
-uniform float clipPlane;
-#endif
-
-vec2 UnitVectorToHemiOctahedron(vec3 dir) {
-
-	dir.y = max(dir.y, 0.0001);
-	dir.xz /= dot(abs(dir), vec3(1.0));
-
-	return clamp(0.5 * vec2(dir.x + dir.z, dir.x - dir.z) + 0.5, 0.0, 1.0);
-
-}
-
-vec3 HemiOctahedronToUnitVector(vec2 coord) {
-
-	coord = 2.0 * coord - 1.0;
-	coord = 0.5 * vec2(coord.x + coord.y, coord.x - coord.y);
-
-	float y = 1.0 - dot(vec2(1.0), abs(coord));
-	return normalize(vec3(coord.x, y + 0.0001, coord.y));
-
-}
-
-vec2 UnitVectorToOctahedron(vec3 dir) {
-
-    dir.xz /= dot(abs(dir), vec3(1.0));
-
-	// Lower hemisphere
-	if (dir.y < 0.0) {
-		vec2 orig = dir.xz;
-		dir.x = (orig.x >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.y));
-        dir.z = (orig.y >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.x));
-	}
-
-	return clamp(0.5 * vec2(dir.x, dir.z) + 0.5, 0.0, 1.0);
-
-}
-
-vec3 OctahedronToUnitVector(vec2 coord) {
-
-	coord = 2.0 * coord - 1.0;
-	float y = 1.0 - dot(abs(coord), vec2(1.0));
-
-	// Lower hemisphere
-	if (y < 0.0) {
-		vec2 orig = coord;
-		coord.x = (orig.x >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.y));
-		coord.y = (orig.y >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.x));
-	}
-
-	return normalize(vec3(coord.x, y + 0.0001, coord.y));
-
-}
+layout(location = 0) out vec4 out_Diffuse;
+layout(location = 1) out vec4 out_Lightmap;
+layout(location = 2) out vec4 out_WorldNorm;
+layout(location = 3) out vec4 out_Specular;
+layout(location = 4) out vec4 out_Additive;
 
 #ifdef STUDIO_NF_CELSHADE
 
 vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
 {
 	vec3 N = normalWS;
-	vec3 V = normalize(worldpos - viewpos);
+	vec3 V = normalize(v_worldpos.xyz - SceneUBO.viewpos.xyz);
     vec3 L = lightdirWS;
 
 	L.z *= 0.01;
@@ -147,27 +72,42 @@ vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
     rimDarkColor = pow(rimIntensity, 5.0) * r_rimdark_color;
 #endif
 
-	return color.xyz * litOrShadowColor + rimColor + rimDarkColor;
+	return v_color.xyz * litOrShadowColor + rimColor + rimDarkColor;
 }
 
 #endif
 
 void main(void)
 {
-
 #ifndef SHADOW_CASTER_ENABLED
-	vec4 diffuseColor = texture2D(diffuseTex, gl_TexCoord[0].xy);
 
-	vec3 vNormal = normalize(normal.xyz);
+	#ifdef STUDIO_NF_CHROME
 
-	vec4 lightmapColor = color;
+		#ifdef GLOW_SHELL_ENABLED
+			ivec2 textureSize2d = textureSize(diffuseTex, 0);
+			vec2 texcoord_scale = vec2(1.0 / float(textureSize2d.x), 1.0 / float(textureSize2d.y));
+			vec2 texcoord = v_texcoord * texcoord_scale * vec2(1.0 / 32.0f, 1.0 / 32.0f);
+		#else
+			vec2 texcoord_scale = vec2(1.0 / 2048.0, 1.0 / 2048.0);
+			vec2 texcoord = v_texcoord * texcoord_scale;
+		#endif
 
-	#ifdef STUDIO_NF_CELSHADE
-		lightmapColor.xyz = CelShade(vNormal, r_plightvec);
+	#else
+
+		ivec2 textureSize2d = textureSize(diffuseTex, 0);
+		vec2 texcoord_scale = vec2(1.0 / float(textureSize2d.x), 1.0 / float(textureSize2d.y));
+		vec2 texcoord = v_texcoord * texcoord_scale;
+
 	#endif
 
-	#ifdef OUTLINE_ENABLED
-		diffuseColor *= r_outline_dark;
+	vec4 diffuseColor = texture2D(diffuseTex, texcoord);
+
+	vec3 vNormal = normalize(v_normal.xyz);
+
+	vec4 lightmapColor = v_color;
+
+	#ifdef STUDIO_NF_CELSHADE
+		lightmapColor.xyz = CelShade(vNormal, StudioUBO.r_plightvec.xyz);
 	#endif
 
 	#ifdef STUDIO_NF_MASKED
@@ -175,21 +115,26 @@ void main(void)
 			discard;
 	#endif
 
+	#ifdef OUTLINE_ENABLED
+		diffuseColor *= r_outline_dark;
+	#endif
+
 #endif
 
-#ifdef CLIP_ABOVE_ENABLED
-	if (worldpos.z > clipPlane)
+#ifdef CLIP_ENABLED
+	vec4 clipVec = vec4(v_worldpos.xyz, 1);
+	vec4 clipPlane = SceneUBO.clipPlane;
+	if(dot(clipVec, clipPlane) < 0)
 		discard;
-#endif
 
-#ifdef CLIP_UNDER_ENABLED
-	if (worldpos.z < clipPlane)
+	clipPlane.w += 32.0;
+	if(dot(clipVec, clipPlane) < 0 && dot(v_normal.xyz, -clipPlane.xyz) > 0.866)
 		discard;
 #endif
 
 #ifdef SHADOW_CASTER_ENABLED
 
-	gl_FragColor = vec4(entityPos.x, entityPos.y, entityPos.z, gl_FragCoord.z);
+	out_Diffuse = vec4(StudioUBO.entity_origin.x, StudioUBO.entity_origin.y, StudioUBO.entity_origin.z, gl_FragCoord.z);
 
 #else
 
@@ -199,12 +144,12 @@ void main(void)
 
 			#ifdef STUDIO_NF_ADDITIVE
 
-				gl_FragColor = diffuseColor * lightmapColor;
+				out_Diffuse = diffuseColor * lightmapColor;
 
 			#else
 
-				gl_FragData[0] = diffuseColor;
-				gl_FragData[1] = lightmapColor;
+				out_Diffuse = diffuseColor;
+				out_Lightmap = lightmapColor;
 
 			#endif
 
@@ -212,30 +157,30 @@ void main(void)
 
 			vec2 vOctNormal = UnitVectorToOctahedron(vNormal);
 
-			float flDistanceToFragment = distance(worldpos.xyz, viewpos.xyz);
+			float flDistanceToFragment = distance(v_worldpos.xyz, SceneUBO.viewpos.xyz);
 
-			gl_FragData[GBUFFER_INDEX_DIFFUSE] = diffuseColor;
-			gl_FragData[GBUFFER_INDEX_LIGHTMAP] = lightmapColor;
-			gl_FragData[GBUFFER_INDEX_WORLDNORM] = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, 0.0);
-			gl_FragData[GBUFFER_INDEX_SPECULAR] = vec4(0.0, 0.0, 0.0, 0.0);
-			gl_FragData[GBUFFER_INDEX_ADDITIVE] = vec4(0.0, 0.0, 0.0, 0.0);
+			out_Diffuse = diffuseColor;
+			out_Lightmap = lightmapColor;
+			out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, 0.0);
+			out_Specular = vec4(0.0);
+			out_Additive = vec4(0.0);
 
 		#endif
 
 	#else
 
-		gl_FragColor = diffuseColor * lightmapColor;
+		out_Diffuse = diffuseColor * lightmapColor;
 
 		#ifdef LINEAR_FOG_ENABLED
 
 			float z = gl_FragCoord.z / gl_FragCoord.w;
-			float fogFactor = ( gl_Fog.end - z ) / ( gl_Fog.end - gl_Fog.start );
+			float fogFactor = ( SceneUBO.fogEnd - z ) / ( SceneUBO.fogEnd - SceneUBO.fogStart );
 			fogFactor = clamp(fogFactor, 0.0, 1.0);
 
-			vec3 finalColor = gl_FragColor.xyz;
+			vec3 finalColor = out_Diffuse.xyz;
 
-			gl_FragColor.xyz = mix(gl_Fog.color.xyz, finalColor, fogFactor );
-
+			out_Diffuse.xyz = mix(SceneUBO.fogColor.xyz, finalColor, fogFactor );
+			
 		#endif
 
 	#endif

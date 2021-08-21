@@ -41,13 +41,13 @@ void GL_CheckShaderError(GLuint shader, const char *code, const char *filename)
 
 		g_pFileSystem->CreateDirHierarchy("logs");
 		g_pFileSystem->CreateDirHierarchy("logs/renderer");
-		auto FileHandle = g_pFileSystem->Open("logs/renderer/error.log", "wt");
+		auto FileHandle = g_pFileSystem->Open("logs/renderer/error.log", "wb");
 		if (FileHandle)
 		{
 			g_pFileSystem->Write(code, strlen(code), FileHandle);
-			g_pFileSystem->Write("\r\n\r\nFilename: ", sizeof("\r\n\r\nFilename: ") - 1, FileHandle);
+			g_pFileSystem->Write("\n\nFilename: ", sizeof("\n\nFilename: ") - 1, FileHandle);
 			g_pFileSystem->Write(filename, strlen(filename), FileHandle);
-			g_pFileSystem->Write("\r\n\r\nLogs: ", sizeof("\r\n\r\nLogs: ") - 1, FileHandle);
+			g_pFileSystem->Write("\n\nLogs: ", sizeof("\n\nLogs: ") - 1, FileHandle);
 			g_pFileSystem->Write(szCompilerLog, nInfoLength, FileHandle);
 			g_pFileSystem->Close(FileHandle);
 		}
