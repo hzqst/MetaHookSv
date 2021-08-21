@@ -244,7 +244,9 @@ void GL_Init(void);
 void GL_BeginRendering(int *x, int *y, int *width, int *height);
 void GL_EndRendering(void);
 GLuint GL_GenTexture(void);
+GLuint GL_GenBuffer(void);
 void GL_DeleteTexture(GLuint tex);
+void GL_DeleteBuffer(GLuint buf);
 void GL_Bind(int texnum);
 void GL_SelectTexture(GLenum target);
 void GL_DisableMultitexture(void);
@@ -340,6 +342,7 @@ cvar_callback_t Cvar_HookCallback(const char *cvar_name, cvar_callback_t callbac
 extern GLint r_viewport[4];
 extern float r_identity_matrix[4][4];
 extern float r_entity_matrix[4][4];
+extern float r_entity_color[4];
 extern bool r_draw_nontransparent;
 
 extern bool g_SvEngine_DrawPortalView;

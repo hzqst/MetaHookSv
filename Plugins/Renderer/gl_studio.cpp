@@ -211,8 +211,8 @@ studio_vbo_t *R_StudioPrepareVBO(studiohdr_t *studiohdr)
 		}
 	}
 
-	glGenBuffers(1, &VBOData->hDataBuffer);
-	glGenBuffers(1, &VBOData->hIndexBuffer);
+	VBOData->hDataBuffer = GL_GenBuffer();
+	VBOData->hIndexBuffer = GL_GenBuffer();
 
 	glBindBuffer(GL_ARRAY_BUFFER_ARB, VBOData->hDataBuffer);
 	glBufferData(GL_ARRAY_BUFFER_ARB, vVertex.size() * sizeof(studio_vbo_vertex_t), vVertex.data(), GL_STATIC_DRAW_ARB);
@@ -235,11 +235,11 @@ void R_StudioReloadVBOCache(void)
 
 			if (VBOData->hDataBuffer)
 			{
-				glDeleteBuffersARB(1, &VBOData->hDataBuffer);
+				GL_DeleteBuffer(VBOData->hDataBuffer);
 			}
 			if (VBOData->hIndexBuffer)
 			{
-				glDeleteBuffersARB(1, &VBOData->hIndexBuffer);
+				GL_DeleteBuffer(VBOData->hIndexBuffer);
 			}
 
 			delete g_StudioVBOCache[i];
@@ -1556,8 +1556,7 @@ void R_StudioDrawBatch(void)
 	R_UseStudioProgram(StudioProgramState, &prog);
 	R_SetGBufferMask(GBufferMask);
 
-	glMultiDrawElementsEXT(GL_TRIANGLES, vIndiceCount, GL_UNSIGNED_INT, (const void **)vStartIndex, arrayCount);
-
+	glMultiDrawElements(GL_TRIANGLES, vIndiceCount, GL_UNSIGNED_INT, (const void **)vStartIndex, arrayCount);
 	r_studio_drawcall++;
 
 	if (prog.vertnormbone != -1)

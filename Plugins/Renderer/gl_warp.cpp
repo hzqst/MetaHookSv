@@ -1,44 +1,191 @@
 #include "gl_local.h"
 #include "gl_water.h"
 
-float turbsin[] =
-{
-	#include "gl_warp_sin.h"
-};
-
-#define TURBSCALE (256.0 / (2 * M_PI))
-
 colorVec *gWaterColor;
 cshift_t *cshift_water;
 
-void EmitWaterPolys(msurface_t *fa, int direction)
+void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 {
-	float *v;
-	int i;
-	float s, t, os, ot;
-	float scale;
-	float tempVert[3];
-	unsigned char *pSourcePalette;
-	int useProgram = 0, dontShader = false;
-
 	if (r_draw_pass == r_draw_reflect)
 		return;
 
-	glEnable(GL_STENCIL_TEST);
-	glStencilMask(0xFF);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, WaterVBOCache->hEBO);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, WaterVBOCache->hTextureSSBO);
+
+	bool bIsAboveWater = R_IsAboveWater(WaterVBOCache->vert, WaterVBOCache->normal);
+
+	if (WaterVBOCache->level >= WATER_LEVEL_REFLECT_SKYBOX && WaterVBOCache->level <= WATER_LEVEL_REFLECT_ENTITY && r_water->value)
+	{
+		int programState = 0;
+
+		if (r_wsurf_bindless->value)
+			programState |= WSURF_BINDLESS_ENABLED;
+
+		if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
+		{
+			if (gWaterColor->a > WaterVBOCache->maxtrans * 255)
+				gWaterColor->a = WaterVBOCache->maxtrans * 255;
+
+			programState |= WATER_REFRACT_ENABLED;
+
+			if (bIsAboveWater)
+				programState |= WATER_DEPTH_ENABLED;
+
+			if (!refractmap_ready)
+			{
+				s_WaterFBO.s_hBackBufferTex = refractmap;
+				s_WaterFBO.s_hBackBufferDepthTex = depthrefrmap;
+
+				glBindFramebuffer(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferTex, 0);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferDepthTex, 0);
+
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
+				glBindFramebuffer(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+				glBlitFramebuffer(
+					0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight,
+					0, 0, s_WaterFBO.iWidth, s_WaterFBO.iHeight,
+					GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+				glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+
+				refractmap_ready = true;
+			}
+		}
+
+		if (!bIsAboveWater)
+			programState |= WATER_UNDERWATER_ENABLED;
+
+		if (drawgbuffer)
+			programState |= WATER_GBUFFER_ENABLED;
+
+		water_program_t prog = { 0 };
+		R_UseWaterProgram(programState, &prog);
+
+		if (prog.u_watercolor != -1)
+			glUniform4f(prog.u_watercolor, gWaterColor->r / 255.0f, gWaterColor->g / 255.0f, gWaterColor->b / 255.0f, gWaterColor->a / 255.0f);
+
+		if (prog.u_depthfactor != -1)
+			glUniform2fARB(prog.u_depthfactor, WaterVBOCache->depthfactor[0], WaterVBOCache->depthfactor[1]);
+
+		if (prog.u_fresnelfactor != -1)
+			glUniform1f(prog.u_fresnelfactor, WaterVBOCache->fresnelfactor);
+
+		if (prog.u_normfactor != -1)
+			glUniform1f(prog.u_normfactor, WaterVBOCache->normfactor);
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		if (!(programState & WATER_BINDLESS_ENABLED))
+		{
+			glActiveTexture(GL_TEXTURE2);
+			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, WaterVBOCache->normalmap);
+
+			glActiveTexture(GL_TEXTURE3);
+			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, WaterVBOCache->reflectmap);
+
+			glActiveTexture(GL_TEXTURE4);
+			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, refractmap);
+
+			glActiveTexture(GL_TEXTURE5);
+			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, depthrefrmap);
+		}
+
+		glDrawElements(GL_POLYGON,  WaterVBOCache->vIndicesBuffer.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+
+		r_wsurf_drawcall++;
+		r_wsurf_polys += WaterVBOCache->iPolyCount;
+
+		if (!(programState & WATER_BINDLESS_ENABLED))
+		{
+			glActiveTexture(GL_TEXTURE5);
+			glDisable(GL_TEXTURE_2D);
+
+			glActiveTexture(GL_TEXTURE4);
+			glDisable(GL_TEXTURE_2D);
+
+			glActiveTexture(GL_TEXTURE3);
+			glDisable(GL_TEXTURE_2D);
+
+			glActiveTexture(GL_TEXTURE2);
+			glDisable(GL_TEXTURE_2D);
+
+			glActiveTexture(*oldtarget);
+		}
+
+		glDisable(GL_BLEND);
+	}
+	else
+	{
+		float scale;
+
+		if (bIsAboveWater)
+			scale = (*currententity)->curstate.scale;
+		else
+			scale = -(*currententity)->curstate.scale;
+
+		int programState = WATER_LEGACY_ENABLED;
+
+		if (r_wsurf_bindless->value)
+			programState |= WSURF_BINDLESS_ENABLED;
+
+		water_program_t prog = { 0 };
+		R_UseWaterProgram(programState, &prog);
+
+		if (prog.u_watercolor != -1)
+			glUniform4f(prog.u_watercolor, WaterVBOCache->color.r / 255.0f, WaterVBOCache->color.g / 255.0f, WaterVBOCache->color.b / 255.0f, gWaterColor->a / 255.0f);
+
+		if (prog.u_scale != -1)
+			glUniform1f(prog.u_scale, scale);
+
+		if (!(programState & WATER_BINDLESS_ENABLED))
+		{
+			GL_Bind(WaterVBOCache->texture->gl_texturenum);
+		}
+
+		glDrawElements(GL_POLYGON, WaterVBOCache->vIndicesBuffer.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+
+		r_wsurf_drawcall++;
+		r_wsurf_polys += WaterVBOCache->iPolyCount;
+	}
+
 	glStencilFunc(GL_ALWAYS, 1, 0xFF);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
-	float clientTime = (*cl_time);
+	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
-	auto p = fa->polys;
-	tempVert[0] = p->verts[0][0];
-	tempVert[1] = p->verts[0][1];
-	tempVert[2] = p->verts[0][2];
+	GL_UseProgram(0);
+}
 
-	auto brushface = &r_wsurf.vFaceBuffer[p->flags];
+void R_DrawWaters(void)
+{
+	if (r_draw_pass == r_draw_reflect)
+		return;
 
-	pSourcePalette = fa->texinfo->texture->pPal;
+	for (size_t i = 0; i < g_WaterVBOCache.size(); ++i)
+	{
+		curwater = g_WaterVBOCache[i];
+
+		if (curwater->framecount == (*r_framecount))
+		{
+			R_DrawWaterVBO(curwater);
+		}
+
+		curwater = NULL;
+	}
+}
+
+void EmitWaterPolys(msurface_t *fa, int direction)
+{
+	if (r_draw_pass == r_draw_reflect)
+		return;
+
+	auto pSourcePalette = fa->texinfo->texture->pPal;
 	gWaterColor->r = pSourcePalette[9];
 	gWaterColor->g = pSourcePalette[10];
 	gWaterColor->b = pSourcePalette[11];
@@ -59,217 +206,9 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	if ((*currententity)->curstate.rendermode == kRenderTransTexture)
 		gWaterColor->a = (*r_blend) * 255;
 
-	if ((*currententity) != r_worldentity)
-	{
-		VectorAdd(tempVert, (*currententity)->curstate.origin, tempVert);
-	}
-	
-	R_SetGBufferMask(GBUFFER_MASK_ALL);
+	auto VBOCache = R_PrepareWaterVBO((*currententity), fa);
 
-	vec3_t normal;
-	VectorCopy(brushface->normal, normal);
-	if (direction == 1)
-		VectorInverse(normal);
-
-	if(r_water && r_water->value && !dontShader)
-	{
-		auto bAboveWater = R_IsAboveWater(tempVert);
-		auto waterObject = R_GetActiveWater((*currententity), fa->texinfo->texture ? fa->texinfo->texture->name : "", tempVert, normal, gWaterColor, bAboveWater);
-
-		if(waterObject && waterObject->ready)
-		{
-			int programState = 0;
-
-			float alpha = 1;
-			if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
-			{
-				alpha = (*r_blend);
-
-				if (alpha > waterObject->maxtrans)
-					alpha = waterObject->maxtrans;
-
-				programState |= WATER_REFRACT_ENABLED;
-
-				if (bAboveWater)
-					programState |= WATER_DEPTH_ENABLED;
-
-				if (!refractmap_ready)
-				{
-					s_WaterFBO.s_hBackBufferTex = refractmap;
-					s_WaterFBO.s_hBackBufferDepthTex = depthrefrmap;
-
-					glBindFramebufferEXT(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
-					glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferTex, 0);
-					glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferDepthTex, 0);
-					
-					glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
-					glBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-					glBlitFramebufferEXT(
-						0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight,
-						0, 0, s_WaterFBO.iWidth, s_WaterFBO.iHeight,
-						GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-					glBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-
-					refractmap_ready = true;
-				}
-			}
-
-			if (!bAboveWater)
-				programState |= WATER_UNDERWATER_ENABLED;
-
-			if (drawgbuffer)
-				programState |= WATER_GBUFFER_ENABLED;
-
-			water_program_t prog = { 0 };
-			R_UseWaterProgram(programState, &prog);
-
-			if (prog.u_watercolor != -1)
-				glUniform4f(prog.u_watercolor, waterObject->color.r / 255.0f, waterObject->color.g / 255.0f, waterObject->color.b / 255.0f, alpha);
-
-			if (prog.u_depthfactor != -1)
-				glUniform2fARB(prog.u_depthfactor, waterObject->depthfactor[0], waterObject->depthfactor[1]);
-
-			if (prog.u_fresnelfactor != -1)
-				glUniform1f(prog.u_fresnelfactor, waterObject->fresnelfactor);
-
-			if (prog.u_normfactor != -1)
-				glUniform1f(prog.u_normfactor, waterObject->normfactor);
-
-			if (!r_draw_nontransparent)
-			{
-				glEnable(GL_BLEND);
-				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			}
-
-			GL_SelectTexture(GL_TEXTURE0);
-			GL_Bind(waterObject->normalmap);
-
-			GL_EnableMultitexture();
-			GL_Bind(refractmap);
-
-			glActiveTexture(GL_TEXTURE2);
-			glEnable(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, waterObject->reflectmap);
-
-			glActiveTexture(GL_TEXTURE3);
-			glEnable(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, depthrefrmap);
-
-			useProgram = 1;
-		}
-	}
-
-	if (!useProgram)
-	{
-		int WSurfProgramState = WSURF_DIFFUSE_ENABLED;
-		if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
-			WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
-
-		R_UseWSurfProgram(WSurfProgramState, NULL);
-	}
-
-	if (fa->polys->verts[0][2] >= r_refdef->vieworg[2])
-		scale = -(*currententity)->curstate.scale;
-	else
-		scale = (*currententity)->curstate.scale;
-
-	if (useProgram)
-		scale = 0;
-
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glEnableVertexAttribArray(4);
-
-	vec3_t vertexArray[128];
-	vec3_t normalArray[128];
-	vec2_t texcoordArray[128];
-
-	for (p = fa->polys; p; p = p->next)
-	{
-		int numVertex = 0;
-
-		if (direction)
-			v = p->verts[p->numverts - 1];
-		else
-			v = p->verts[0];
-
-		for (i = 0; i < p->numverts; i++)
-		{
-			if(!useProgram)
-			{
-				s = (turbsin[(int)((clientTime * 160) + v[0] + v[1]) & 255] + 8) + (turbsin[(int)((clientTime * 171) + v[0] * 5 - v[1]) & 255] + 8) * 0.8;
-
-				tempVert[0] = v[0];
-				tempVert[1] = v[1];
-				tempVert[2] = v[2] + (s * scale);
-
-				os = v[3];
-				ot = v[4];
-
-				s = os + turbsin[(int)((ot * 0.125 + clientTime) * TURBSCALE) & 255];
-				s *= (1.0 / 64);
-
-				t = ot + turbsin[(int)((os * 0.125 + clientTime) * TURBSCALE) & 255];
-				t *= (1.0 / 64);
-
-				texcoordArray[numVertex][0] = s;
-				texcoordArray[numVertex][1] = t;
-			}
-			else
-			{
-				tempVert[0] = v[0];
-				tempVert[1] = v[1];
-				tempVert[2] = v[2];
-
-				os = v[3];
-				ot = v[4];
-
-				texcoordArray[numVertex][0] = os / 128;
-				texcoordArray[numVertex][1] = ot / 128;
-			}
-
-			VectorCopy(tempVert, vertexArray[numVertex]);
-			VectorCopy(normal, normalArray[numVertex]);
-
-			numVertex++;
-
-			if (direction)
-				v -= VERTEXSIZE;
-			else
-				v += VERTEXSIZE;
-		}
-
-		glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, vertexArray);
-		glVertexAttribPointer(1, 3, GL_FLOAT, false, 0, normalArray);
-		glVertexAttribPointer(4, 2, GL_FLOAT, false, 0, texcoordArray);
-		glDrawArrays(GL_POLYGON, 0, numVertex);
-
-		r_wsurf_drawcall++;
-		r_wsurf_polys++;
-	}
-
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
-	glDisableVertexAttribArray(4);
-
-	if(useProgram)
-	{
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
-
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glDisable(GL_TEXTURE_2D);
-
-		glActiveTexture(GL_TEXTURE1);
-		GL_DisableMultitexture();
-	}
-
-	GL_UseProgram(0);
-
-	glStencilMask(0);
-	glDisable(GL_STENCIL_TEST);
+	VBOCache->framecount = (*r_framecount);
 }
 
 int *gSkyTexNumber;
@@ -369,11 +308,6 @@ void R_DrawSkyBox(void)
 	if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 	{
 		WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
-	}
-
-	if (r_draw_pass == r_draw_reflect && curwater)
-	{
-		WSurfProgramState |= WSURF_CLIP_UNDER_ENABLED;
 	}
 
 	if (drawgbuffer)

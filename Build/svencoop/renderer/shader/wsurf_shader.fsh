@@ -1,74 +1,14 @@
 #version 460
 
-#extension GL_ARB_bindless_texture : require
 #extension GL_EXT_texture_array : require
 #extension GL_ARB_shader_draw_parameters : require
-#extension GL_ARB_gpu_shader5 : require
 
-#define TEXTURE_SSBO_DIFFUSE 0
-#define TEXTURE_SSBO_DETAIL 1
-#define TEXTURE_SSBO_NORMAL 2
-#define TEXTURE_SSBO_PARALLAX 3
-#define TEXTURE_SSBO_SPECULAR 4
-
-struct scene_ubo_t{
-	mat4 viewMatrix;
-	mat4 projMatrix;
-	mat4 invViewMatrix;
-	mat4 invProjMatrix;
-	mat4 shadowMatrix[3];
-	vec4 viewpos;
-	vec4 fogColor;
-	float fogStart;
-	float fogEnd;
-	float time;
-	float clipPlane;
-	vec4 shadowDirection;
-	vec4 shadowColor;
-	vec4 shadowFade;
-};
-
-struct entity_ubo_t{
-	mat4 entityMatrix;
-	float scrollSpeed;
-	float padding[3];
-};
-
-struct texture_ssbo_t{
-
-#ifdef UINT64_ENABLE
-
-	uint64_t handles[5 * 1];
-
-#else
-
-	uvec2 handles[5 * 1];
-
-#endif
-};
-
-layout (std140, binding = 0) uniform SceneBlock
-{
-   scene_ubo_t SceneUBO;
-};
-
-layout (std140, binding = 1) uniform EntityBlock
-{
-   entity_ubo_t EntityUBO;
-};
-
-layout (std430, binding = 2) buffer TextureBlock
-{
-    texture_ssbo_t TextureSSBO;
-};
+#include "common.h"
 
 uniform float u_parallaxScale;
-uniform vec4 u_color;
 
-#ifdef BINDLESS_ENABLED
-layout(binding = 1) uniform sampler2DArray lightmapTexArray;
-layout(binding = 6) uniform sampler2DArray shadowmapTexArray;
-#else
+#ifndef BINDLESS_ENABLED
+
 layout(binding = 0) uniform sampler2D diffuseTex;
 layout(binding = 1) uniform sampler2DArray lightmapTexArray;
 layout(binding = 2) uniform sampler2D detailTex;
@@ -76,13 +16,18 @@ layout(binding = 3) uniform sampler2D normalTex;
 layout(binding = 4) uniform sampler2D parallaxTex;
 layout(binding = 5) uniform sampler2D specularTex;
 layout(binding = 6) uniform sampler2DArray shadowmapTexArray;
+
+#else
+
+layout(binding = 1) uniform sampler2DArray lightmapTexArray;
+layout(binding = 6) uniform sampler2DArray shadowmapTexArray;
+
 #endif
 
 in vec3 v_worldpos;
 in vec3 v_normal;
 in vec3 v_tangent;
 in vec3 v_bitangent;
-in vec4 v_color;
 in vec2 v_diffusetexcoord;
 in vec3 v_lightmaptexcoord;
 in vec2 v_detailtexcoord;
@@ -91,6 +36,10 @@ in vec2 v_parallaxtexcoord;
 in vec2 v_speculartexcoord;
 in vec4 v_shadowcoord[3];
 flat in int v_drawid;
+
+#ifdef DECAL_ENABLED
+flat in int v_decalindex;
+#endif
 
 layout(location = 0) out vec4 out_Diffuse;
 layout(location = 1) out vec4 out_Lightmap;
@@ -342,7 +291,11 @@ void main()
 #ifdef DIFFUSE_ENABLED
 
 	#ifdef BINDLESS_ENABLED
-		sampler2D diffuseTex = sampler2D(TextureSSBO.handles[v_drawid * 5 + TEXTURE_SSBO_DIFFUSE]);
+		#ifdef DECAL_ENABLED
+			sampler2D diffuseTex = sampler2D(DecalSSBO.handles[v_decalindex]);
+		#else
+			sampler2D diffuseTex = sampler2D(TextureSSBO.handles[v_drawid * 5 + TEXTURE_SSBO_DIFFUSE]);
+		#endif
 	#endif
 
 	#ifdef PARALLAXTEXTURE_ENABLED
@@ -358,7 +311,7 @@ void main()
 	#endif
 #else
 
-	vec4 diffuseColor = v_color;
+	vec4 diffuseColor = vec4(1.0, 1.0, 1.0, 1.0);
 
 #endif
 
@@ -406,16 +359,6 @@ void main()
 
 #endif
 
-#ifdef CLIP_ABOVE_ENABLED
-	if (v_worldpos.z > SceneUBO.clipPlane)
-		discard;
-#endif
-
-#ifdef CLIP_UNDER_ENABLED
-	if (v_worldpos.z < SceneUBO.clipPlane)
-		discard;
-#endif
-
 #ifdef SHADOW_CASTER_ENABLED
 
 	out_Diffuse.xyz = v_worldpos.xyz;
@@ -429,16 +372,16 @@ void main()
 
 		float flDistanceToFragment = distance(v_worldpos.xyz, SceneUBO.viewpos.xyz);
 
-	#ifdef SPECULARTEXTURE_ENABLED
-	
-		#ifdef BINDLESS_ENABLED
-			sampler2D specularTex = sampler2D(TextureSSBO.handles[v_drawid * 5 + TEXTURE_SSBO_SPECULAR]);
+		#ifdef SPECULARTEXTURE_ENABLED
+		
+			#ifdef BINDLESS_ENABLED
+				sampler2D specularTex = sampler2D(TextureSSBO.handles[v_drawid * 5 + TEXTURE_SSBO_SPECULAR]);
+			#endif
+			vec2 specularTexCoord = vec2(v_diffusetexcoord.x * v_speculartexcoord.x, v_diffusetexcoord.y * v_speculartexcoord.y);
+			vec4 specularColor = texture2D(specularTex, specularTexCoord);
+		#else
+			vec4 specularColor = vec4(0.0);
 		#endif
-		vec2 specularTexCoord = vec2(v_diffusetexcoord.x * v_speculartexcoord.x, v_diffusetexcoord.y * v_speculartexcoord.y);
-		vec4 specularColor = texture2D(specularTex, specularTexCoord);
-	#else
-		vec4 specularColor = vec4(0.0);
-	#endif
 
 		out_Diffuse = diffuseColor * detailColor;
 		out_Lightmap = lightmapColor;
@@ -450,7 +393,7 @@ void main()
 
 		#ifdef TRANSPARENT_ENABLED
 
-			out_Diffuse = diffuseColor * lightmapColor * detailColor * v_color;
+			out_Diffuse = diffuseColor * lightmapColor * detailColor * EntityUBO.color;
 
 		#else
 

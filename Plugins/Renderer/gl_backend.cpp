@@ -10,7 +10,7 @@ void VID_CaptureScreen(const char *szExtension)
 
 	GL_PushFrameBuffer();
 
-	glBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	glReadPixels(0, 0, glwidth, glheight, GL_RGB, GL_UNSIGNED_BYTE, pBuf);
 
 	GL_PopFrameBuffer();

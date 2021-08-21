@@ -18,6 +18,7 @@ int *numgltextures = NULL;
 int *gHostSpawnCount = NULL;
 int *currenttexture = NULL;
 int *oldtarget = NULL;
+cachewad_t **decal_wad = NULL;
 
 int *gl_filter_min = NULL;
 int *gl_filter_max = NULL;
@@ -27,6 +28,11 @@ cvar_callback_entry_t **cvar_callbacks = NULL;
 int gl_loadtexture_format = GL_RGBA;
 int gl_loadtexture_cubemap = 0;
 int gl_loadtexture_size = 0;
+
+gltexture_t *gltextures_get()
+{
+	return (gltextures_SvEngine) ? (*gltextures_SvEngine) : gltextures;
+}
 
 cvar_callback_t Cvar_HookCallback(const char *cvar_name, cvar_callback_t callback)
 {
@@ -47,6 +53,7 @@ cvar_callback_t Cvar_HookCallback(const char *cvar_name, cvar_callback_t callbac
 
 	return NULL;
 }
+
 typedef struct
 {
 	char *name;
@@ -82,44 +89,23 @@ void GL_Texturemode_internal(const char *value)
 	*gl_filter_min = gl_texture_modes[i].minimize;
 	*gl_filter_max = gl_texture_modes[i].maximize;
 
-	if (gltextures_SvEngine)
+	gltexture_t *pgltextures = gltextures_get();
+
+	for (int j = 0; j < (*numgltextures); ++j)
 	{
-		for (int j = 0; j < (*numgltextures); ++j)
+		if (pgltextures[j].mipmap)
 		{
-			if ((*gltextures_SvEngine)[j].mipmap)
-			{
-				GL_Bind((*gltextures_SvEngine)[j].texnum);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
-			}
-			else
-			{
-				GL_Bind((*gltextures_SvEngine)[j].texnum);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
-			}
+			GL_Bind(pgltextures[j].texnum);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
 		}
-	}
-	else
-	{
-		for (int j = 0; j < (*numgltextures); ++j)
+		else
 		{
-			if (gltextures[j].mipmap)
-			{
-				GL_Bind(gltextures[j].texnum);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
-			}
-			else
-			{
-				GL_Bind(gltextures[j].texnum);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
-			}
+			GL_Bind(pgltextures[j].texnum);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
 		}
 	}
 
@@ -152,6 +138,18 @@ GLuint GL_GenTexture(void)
 	GLuint tex;
 	glGenTextures(1, &tex);
 	return tex;
+}
+
+GLuint GL_GenBuffer(void)
+{
+	GLuint buf;
+	glGenBuffers(1, &buf);
+	return buf;
+}
+
+void GL_DeleteBuffer(GLuint buf)
+{
+	glDeleteBuffers(1, &buf);
 }
 
 void GL_DeleteTexture(GLuint tex)
@@ -603,9 +601,6 @@ int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int wid
 texture_t *Draw_DecalTexture(int index)
 {
 	texture_t *t = gRefFuncs.Draw_DecalTexture(index);
-
-	if(index < 0)
-		return t;
 
 	return t;
 }

@@ -305,8 +305,7 @@ typedef struct msurface_s
 	qboolean cached_dlight;
 	byte *samples;
 	struct decal_s *pdecals;
-}
-msurface_t;
+}msurface_t;
 
 typedef struct decal_s
 {

@@ -142,11 +142,11 @@ void HUD_DrawNormalTriangles(void)
 	
 	if (r_draw_pass == r_draw_reflect)
 	{
-		glBindFramebufferEXT(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
+		glBindFramebuffer(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
 	}
 	else
 	{
-		glBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+		glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	}
 
 }
@@ -158,49 +158,24 @@ void HUD_DrawTransparentTriangles(void)
 
 int HUD_Redraw(float time, int intermission)
 {
-	if(waters_active && r_water_debug && r_water_debug->value > 0 && r_water_debug->value <= 3)
+	//TODO
+	if(r_water_debug && r_water_debug->value > 0 && r_water_debug->value <= 2)
 	{
 		glDisable(GL_BLEND);
 		glDisable(GL_ALPHA_TEST);
 		glColor4f(1, 1, 1, 1);
 
 		glEnable(GL_TEXTURE_2D);
-		int debugTextureID = 0;
 		switch ((int)r_water_debug->value)
 		{
 		case 1:
-			debugTextureID = waters_active->reflectmap;
+			R_DrawHUDQuad_Texture(g_WaterVBOCache[0]->reflectmap, glwidth / 2, glheight / 2);
 			break;
 		case 2:
-			debugTextureID = refractmap;
-			break;
-		case 3:
-			debugTextureID = depthrefrmap;
-			//GL_UseProgram(drawdepth.program);
-			break;
-		case 4:
-			debugTextureID = waters_active->depthreflmap;
-			//GL_UseProgram(drawdepth.program);
+			R_DrawHUDQuad_Texture(refractmap, glwidth / 2, glheight / 2);
 			break;
 		default:
 			break;
-		}
-
-		if (debugTextureID)
-		{
-			glBindTexture(GL_TEXTURE_2D, debugTextureID);
-			glBegin(GL_QUADS);
-			glTexCoord2f(0, 1);
-			glVertex3f(0, 0, 0);
-			glTexCoord2f(1, 1);
-			glVertex3f(glwidth / 2, 0, 0);
-			glTexCoord2f(1, 0);
-			glVertex3f(glwidth / 2, glheight / 2, 0);
-			glTexCoord2f(0, 0);
-			glVertex3f(0, glheight / 2, 0);
-			glEnd();
-
-			GL_UseProgram(0);
 		}
 	}
 	else if(r_shadow_debug && r_shadow_debug->value)

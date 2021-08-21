@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 
-#define MAX_WATERS 64
+#define MAX_WATERS 256
 
 typedef struct cubemap_s
 {
@@ -17,7 +17,7 @@ typedef struct cubemap_s
 
 typedef struct water_control_s
 {
-	bool enabled;
+	int level;
 	std::string basetexture;
 	std::string wildcard;
 	std::string normalmap;
@@ -26,7 +26,6 @@ typedef struct water_control_s
 	float normfactor;
 	float minheight;
 	float maxtrans;
-	int level;
 }water_control_t;
 
 extern std::vector<water_control_t> r_water_controls;
@@ -40,6 +39,7 @@ typedef struct
 	int u_depthfactor;
 	int u_fresnelfactor;
 	int u_normfactor;
+	int u_scale;
 }water_program_t;
 
 typedef struct
@@ -50,38 +50,74 @@ typedef struct
 
 extern GLuint refractmap;
 extern GLuint depthrefrmap;
-extern qboolean refractmap_ready;
+extern bool refractmap_ready;
 
-typedef struct r_water_s
+typedef struct water_vbo_s
 {
-	GLuint normalmap;
+	water_vbo_s()
+	{
+		hEBO = 0;
+		hTextureSSBO = 0;
+
+		index = -1;
+		ent = NULL;
+		texture = NULL;
+
+		reflectmap = 0;
+		depthreflmap = 0;
+		normalmap = 0;
+
+		reflectmap_handle = 0;
+		normalmap_handle = 0;
+
+		fresnelfactor = 0;
+		depthfactor[0] = 0;
+		depthfactor[1] = 0;
+		normfactor = 0;
+		minheight = 0;
+		maxtrans = 0;
+		level = 0;
+		plane = 0;
+		iPolyCount = 0;
+		framecount = 0;
+	}
+	GLuint hEBO;
+	GLuint hTextureSSBO;
+
+	int index;
+	cl_entity_t *ent;
+	texture_t *texture;
+
 	GLuint reflectmap;
 	GLuint depthreflmap;
+	GLuint normalmap;
+
+	GLuint basetexture_handle;
+	GLuint reflectmap_handle;
+	GLuint normalmap_handle;
+
 	float fresnelfactor;
 	float depthfactor[2];
 	float normfactor;
 	float minheight;
 	float maxtrans;
 	int level;
-	vec3_t vecs;
-	vec3_t norm;
-	float distances;
-	cl_entity_t *ent;
-	vec3_t org;
+	float plane;
+	vec3_t vert;
+	vec3_t normal;
 	colorVec color;
-	int free;
+	std::vector<GLuint> vIndicesBuffer;
+	int iPolyCount;
 	int framecount;
-	qboolean ready;
-	struct r_water_s *next;
-}r_water_t;
+}water_vbo_t;
 
 //renderer
 extern vec3_t water_view;
 
 //water
-extern r_water_t *curwater;
-extern r_water_t *waters_free;
-extern r_water_t *waters_active;
+extern water_vbo_t *curwater;
+
+extern std::vector<water_vbo_t *> g_WaterVBOCache;
 
 //shader
 
@@ -100,22 +136,25 @@ typedef struct
 extern colorVec *gWaterColor;
 extern cshift_t *cshift_water;
 
-bool R_IsAboveWater(float *v);
+bool R_IsAboveWater(float *v, float *n);
 
-r_water_t *R_GetActiveWater(cl_entity_t *ent, const char *texname, vec3_t p, vec3_t n, colorVec *color, bool bAboveWater);
+water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf);
 void R_InitWater(void);
 void R_FreeWater(void);
-void R_ClearWater(void);
 void R_RenderWaterView(void);
-void R_FreeDeadWaters(void);
+void R_NewMapWater(void);
 void R_UseWaterProgram(int state, water_program_t *progOutput);
+void R_DrawWaters(void);
 
-#define WATER_UNDERWATER_ENABLED		1
-#define WATER_GBUFFER_ENABLED			2
-#define WATER_DEPTH_ENABLED				4
-#define WATER_REFRACT_ENABLED			8
+#define WATER_LEGACY_ENABLED			1
+#define WATER_UNDERWATER_ENABLED		2
+#define WATER_GBUFFER_ENABLED			4
+#define WATER_DEPTH_ENABLED				8
+#define WATER_REFRACT_ENABLED			0x10
+#define WATER_BINDLESS_ENABLED			0x20
 
-#define WATER_LEVEL_REFLECT_SKYBOX		0
-#define WATER_LEVEL_REFLECT_WORLD		1
-#define WATER_LEVEL_REFLECT_ENTITY		2
-#define WATER_LEVEL_REFLECT_SSR			3
+#define WATER_LEVEL_LEGACY				0
+#define WATER_LEVEL_REFLECT_SKYBOX		1
+#define WATER_LEVEL_REFLECT_WORLD		2
+#define WATER_LEVEL_REFLECT_ENTITY		3
+#define WATER_LEVEL_REFLECT_SSR			4

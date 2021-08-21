@@ -1,16 +1,16 @@
 {
 "classname" "env_water_control"
 "basetexture" "!toxi*"
-"disablewater" "1"
 "origin" "0 0 0"
 "angles" "0 0 0"
+"level" "WATER_LEVEL_LEGACY"
 }
 {
 "classname" "env_water_control"
 "basetexture" "!radio"
-"disablewater" "1"
 "origin" "0 0 0"
 "angles" "0 0 0"
+"level" "WATER_LEVEL_LEGACY"
 }
 {
 "classname" "env_water_control"
@@ -23,5 +23,5 @@
 "maxtrans" "200"
 "origin" "0 0 0"
 "angles" "0 0 0"
-"level" "1"
+"level" "WATER_LEVEL_REFLECT_WORLD"
 }

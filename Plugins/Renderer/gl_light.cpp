@@ -29,6 +29,8 @@ cvar_t *r_ssr_fade = NULL;
 bool drawgbuffer = false;
 
 int gbuffer_mask = -1;
+GLuint gbuffer_attachments[GBUFFER_INDEX_MAX] = {0};
+int gbuffer_attachment_count = 0;
 
 GLuint r_sphere_vbo = 0;
 GLuint r_sphere_ebo = 0;
@@ -205,13 +207,13 @@ void R_ShutdownLight(void)
 	g_DLightProgramTable.clear();
 
 	if(r_sphere_vbo)
-		glDeleteBuffersARB(1, &r_sphere_vbo);
+		GL_DeleteBuffer(r_sphere_vbo);
 
 	if (r_sphere_ebo)
-		glDeleteBuffersARB(1, &r_sphere_ebo);
+		GL_DeleteBuffer(r_sphere_ebo);
 
 	if (r_cone_vbo)
-		glDeleteBuffersARB(1, &r_cone_vbo);
+		GL_DeleteBuffer(r_cone_vbo);
 }
 
 void R_InitLight(void)
@@ -271,12 +273,12 @@ void R_InitLight(void)
 		}
 	}
 
-	glGenBuffers(1, &r_sphere_vbo);
+	r_sphere_vbo = GL_GenBuffer();
 	glBindBuffer(GL_ARRAY_BUFFER_ARB, r_sphere_vbo);
 	glBufferData(GL_ARRAY_BUFFER_ARB, sphereVertices.size() * sizeof(float), sphereVertices.data(), GL_STATIC_DRAW_ARB);
 	glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
 
-	glGenBuffers(1, &r_sphere_ebo);
+	r_sphere_ebo = GL_GenBuffer();
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, r_sphere_ebo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER_ARB, sphereIndices.size() * sizeof(int), sphereIndices.data(), GL_STATIC_DRAW_ARB);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
@@ -331,7 +333,7 @@ void R_InitLight(void)
 		}
 	}
 
-	glGenBuffers(1, &r_cone_vbo);
+	r_cone_vbo = GL_GenBuffer();
 	glBindBuffer(GL_ARRAY_BUFFER_ARB, r_cone_vbo);
 	glBufferData(GL_ARRAY_BUFFER_ARB, coneVertices.size() * sizeof(float), coneVertices.data(), GL_STATIC_DRAW_ARB);
 	glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
@@ -354,6 +356,30 @@ bool R_IsDLightFlashlight(dlight_t *dl)
 	return false;
 }
 
+void R_SetGBufferBlend(int blendsrc, int blenddst)
+{
+	if (!drawgbuffer)
+		return;
+
+	for (int i = 0; i < gbuffer_attachment_count; ++i)
+	{
+		if (gbuffer_attachments[i] == GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_DIFFUSE)
+			glBlendFunci(GL_DRAW_BUFFER0 + GBUFFER_INDEX_DIFFUSE, blendsrc, blenddst);
+
+		if (gbuffer_attachments[i] == GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_LIGHTMAP)
+			glBlendFunci(GL_DRAW_BUFFER0 + GBUFFER_INDEX_LIGHTMAP, blendsrc, blenddst);
+
+		if (gbuffer_attachments[i] == GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_WORLDNORM)
+			glBlendFunci(GL_DRAW_BUFFER0 + GBUFFER_INDEX_WORLDNORM, GL_ONE, GL_ZERO);
+
+		if (gbuffer_attachments[i] == GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_SPECULAR)
+			glBlendFunci(GL_DRAW_BUFFER0 + GBUFFER_INDEX_SPECULAR, GL_ONE, GL_ZERO);
+
+		if (gbuffer_attachments[i] == GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_ADDITIVE)
+			glBlendFunci(GL_DRAW_BUFFER0 + GBUFFER_INDEX_ADDITIVE, GL_ONE, GL_ONE);
+	}
+}
+
 void R_SetGBufferMask(int mask)
 {
 	if (!drawgbuffer)
@@ -364,19 +390,18 @@ void R_SetGBufferMask(int mask)
 
 	gbuffer_mask = mask;
 
-	GLuint attachments[10] = {0};
-	int attachCount = 0;
+	gbuffer_attachment_count = 0;
 
 	for (int i = 0; i < GBUFFER_INDEX_MAX; ++i)
 	{
 		if (mask & (1 << i))
 		{
-			attachments[attachCount] = GL_COLOR_ATTACHMENT0 + i;
-			attachCount++;
+			gbuffer_attachments[gbuffer_attachment_count] = GL_COLOR_ATTACHMENT0 + i;
+			gbuffer_attachment_count++;
 		}
 	}
 	
-	glDrawBuffers(attachCount, attachments);
+	glDrawBuffers(gbuffer_attachment_count, gbuffer_attachments);
 }
 
 bool R_BeginRenderGBuffer(void)
@@ -390,9 +415,10 @@ bool R_BeginRenderGBuffer(void)
 	drawgbuffer = true;
 	gbuffer_mask = -1;
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
+	R_SetGBufferBlend(GL_ONE, GL_ZERO);
 
 	glClearColor(0, 0, 0, 1);
 	glStencilMask(0xFF);
@@ -441,7 +467,7 @@ void R_EndRenderGBuffer(void)
 	GL_End2D();
 
 	//Write to GBuffer->lightmap only
-	glBindFramebufferEXT(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
 	glDrawBuffer(GL_COLOR_ATTACHMENT1);
 
 	glDisable(GL_ALPHA_TEST);
@@ -731,15 +757,15 @@ void R_EndRenderGBuffer(void)
 	glDisable(GL_BLEND);
 
 	//Write GBuffer depth stencil into main framebuffer
-	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-	glBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
-	glBlitFramebufferEXT(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight,
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
+	glBlitFramebuffer(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight,
 		0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight,
 		GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
 		GL_NEAREST);
 
 	//Shading pass
-	glBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);	
+	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);	
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	int FinalProgramState = 0;

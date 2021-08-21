@@ -21,6 +21,9 @@
 #define MAX_MODELS 512
 #define COLINEAR_EPSILON 0.001
 
+#define MAX_DECALVERTS 32
+#define MAX_DECALS 4096
+
 #define FDECAL_PERMANENT			0x01		// This decal should not be removed in favor of any new decals
 #define FDECAL_REFERENCE			0x02		// This is a decal that's been moved from another level
 #define FDECAL_CUSTOM               0x04        // This is a custom clan logo and should not be saved/restored
@@ -28,6 +31,15 @@
 #define FDECAL_VFLIP				0x10		// Flip vertical (V/T) axis
 #define FDECAL_CLIPTEST				0x20		// Decal needs to be clip-tested
 #define FDECAL_NOCLIP				0x40		// Decal is not clipped by containing polygon
+#define FDECAL_VBO					0x1000		// Decalvertex is bufferred in VBO
+
+typedef struct decalvertex_s
+{
+	vec3_t	pos;
+	float	texcoord[3];//[2]=unused
+	float	lightmaptexcoord[3];//[2]=lightmaptexnum
+	int		decalindex;
+}decalvertex_t;
 
 typedef struct brushvertex_s
 {
@@ -47,8 +59,10 @@ typedef struct brushvertex_s
 typedef struct brushface_s
 {
 	int index;
-	int start_vertex;
-	int num_vertexes;
+	int flags;
+	std::vector<int> start_vertex;
+	std::vector<int> num_vertexes;
+	int num_polys;
 
 	vec3_t	normal;
 	vec3_t	s_tangent;
@@ -153,14 +167,16 @@ typedef struct wsurf_vbo_s
 	{
 		pModel = NULL;
 		hEBO = 0;
-		hEntityUBO = NULL;
+		hEntityUBO = 0;
 		hTextureSSBO = 0;
+		hDecalEBO = 0;
 	}
 
 	model_t	*pModel;
 	GLuint	hEBO;
 	GLuint	hEntityUBO;
 	GLuint	hTextureSSBO;
+	GLuint	hDecalEBO;
 	std::vector<brushtexchain_t> vTextureChain[WSURF_TEXCHAIN_MAX];
 	std::vector<wsurf_vbo_batch_t *> vDrawBatch[WSURF_DRAWBATCH_MAX];
 	brushtexchain_t TextureChainSky;
@@ -180,7 +196,7 @@ typedef struct scene_ubo_s
 	float fogStart;
 	float fogEnd;
 	float time;
-	float clipPlane;
+	float padding;
 	vec4 shadowDirection;
 	vec4 shadowColor;
 	vec4 shadowFade;
@@ -189,8 +205,8 @@ typedef struct scene_ubo_s
 typedef struct entity_ubo_s
 {
 	mat4 entityMatrix;
+	vec4 color;
 	float scrollSpeed;
-	float padding[3];
 }entity_ubo_t;
 
 #pragma pack(pop)
@@ -204,14 +220,10 @@ typedef struct r_worldsurf_s
 {
 	r_worldsurf_s()
 	{
-		hVBO = 0;
+		hSceneVBO = 0;
 		hSceneUBO = 0;
-
-		vVertexBuffer = NULL;
-		iNumVerts = 0;
-
-		vFaceBuffer = NULL;
-		iNumFaces = 0;
+		hDecalVBO = 0;
+		hDecalTextureSSBO = 0;
 
 		bDiffuseTexture = false;
 		bLightmapTexture = false;
@@ -230,14 +242,13 @@ typedef struct r_worldsurf_s
 		iT_Tangent = 0;
 	}
 
-	GLuint				hVBO;
+	GLuint				hSceneVBO;
 	GLuint				hSceneUBO;
+	GLuint				hDecalVBO;
+	GLuint				hDecalTextureSSBO;
 
-	brushvertex_t		*vVertexBuffer;
-	int					iNumVerts;
-
-	brushface_t			*vFaceBuffer;
-	int					iNumFaces;
+	std::vector<brushvertex_t> vVertexBuffer;
+	std::vector <brushface_t> vFaceBuffer;
 
 	bool				bDiffuseTexture;
 	bool				bLightmapTexture;
@@ -249,12 +260,19 @@ typedef struct r_worldsurf_s
 	int					iS_Tangent;
 	int					iT_Tangent;
 
-	wsurf_vbo_t		*pCurrentModel;
+	wsurf_vbo_t			*pCurrentModel;
+	water_vbo_t			*pCurrentWater;
 
 	int					iNumLightmapTextures;
 	int					iLightmapTextureArray;
 
 	std::vector <bspentity_t> vBSPEntities;
+
+	std::vector <int> vDecalGLTextures;
+	std::vector <GLuint64> vDecalGLTextureHandles;
+
+	std::vector <GLint> vDecalStartIndex;
+	std::vector <GLsizei> vDecalVertexCount;
 }r_worldsurf_t;
 
 typedef struct
@@ -300,6 +318,8 @@ extern decalcache_t *gDecalCache;
 
 //cvar
 extern cvar_t *r_wsurf_vbo;
+extern cvar_t *r_wsurf_bindless;
+
 void FreeBSPEntity(bspentity_t *ent);
 void R_ClearBSPEntities(void);
 void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator fn);
@@ -312,15 +332,14 @@ void R_RenderDynamicLightmaps(msurface_t *fa);
 void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride);
 void DrawGLPoly(glpoly_t *p);
 void DrawGLPoly(msurface_t *fa);
-void R_DrawDecals(qboolean bMultitexture);
+void R_DrawDecals(void);
 detail_texture_cache_t *R_FindDetailTextureCache(int texId);
 void R_BeginDetailTexture(int texId);
 void R_EndDetailTexture(void);
-
+void R_DrawSequentialPolyVBO(msurface_t *s);
 wsurf_vbo_t *R_PrepareWSurfVBO(model_t *mod);
 void R_EnableWSurfVBO(wsurf_vbo_t *modcache);
-void R_DrawWSurfVBO(wsurf_vbo_t *modcache);
-void R_EnableWSurfVBOSolid(wsurf_vbo_t *modcache);
+void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent);
 void R_DrawWSurfVBOSolid(wsurf_vbo_t *modcache);
 void R_ShutdownWSurf(void);
 void R_Reload_f(void);
@@ -333,15 +352,14 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
 #define WSURF_NORMALTEXTURE_ENABLED		8
 #define WSURF_PARALLAXTEXTURE_ENABLED	0x10
 #define WSURF_SPECULARTEXTURE_ENABLED	0x20
-#define WSURF_CLIP_ABOVE_ENABLED		0x40
-#define WSURF_CLIP_UNDER_ENABLED		0x80
-#define WSURF_LINEAR_FOG_ENABLED		0x100
-#define WSURF_GBUFFER_ENABLED			0x200
-#define WSURF_TRANSPARENT_ENABLED		0x400
-#define WSURF_SHADOW_CASTER_ENABLED		0x800
-#define WSURF_SHADOWMAP_ENABLED			0x1000
-#define WSURF_SHADOWMAP_HIGH_ENABLED	0x2000
-#define WSURF_SHADOWMAP_MEDIUM_ENABLED	0x4000
-#define WSURF_SHADOWMAP_LOW_ENABLED		0x8000
-#define WSURF_BINDLESS_ENABLED			0x10000
-#define WSURF_LEGACY_ENABLED			0x20000
+#define WSURF_LINEAR_FOG_ENABLED		0x40
+#define WSURF_GBUFFER_ENABLED			0x80
+#define WSURF_TRANSPARENT_ENABLED		0x100
+#define WSURF_SHADOW_CASTER_ENABLED		0x200
+#define WSURF_SHADOWMAP_ENABLED			0x400
+#define WSURF_SHADOWMAP_HIGH_ENABLED	0x800
+#define WSURF_SHADOWMAP_MEDIUM_ENABLED	0x1000
+#define WSURF_SHADOWMAP_LOW_ENABLED		0x2000
+#define WSURF_BINDLESS_ENABLED			0x4000
+#define WSURF_LEGACY_ENABLED			0x8000
+#define WSURF_DECAL_ENABLED				0x10000

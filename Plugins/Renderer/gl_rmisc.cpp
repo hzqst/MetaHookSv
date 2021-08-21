@@ -35,8 +35,8 @@ void GL_PopFrameBuffer(void)
 
 	--save_framebuffer_stack;
 
-	glBindFramebufferEXT(GL_READ_FRAMEBUFFER, save_readframebuffer[save_framebuffer_stack]);
-	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, save_drawframebuffer[save_framebuffer_stack]);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, save_readframebuffer[save_framebuffer_stack]);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, save_drawframebuffer[save_framebuffer_stack]);
 }
 
 void GL_PushMatrix(void)
@@ -278,7 +278,7 @@ void R_FreeTextures(void)
 void GL_GenFrameBuffer(FBO_Container_t *s)
 {
 	glGenFramebuffersEXT(1, &s->s_hBackBufferFBO);
-	glBindFramebufferEXT(GL_FRAMEBUFFER, s->s_hBackBufferFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, s->s_hBackBufferFBO);
 }
 
 void GL_GenRenderBuffer(FBO_Container_t *s, int type)
@@ -418,8 +418,8 @@ void GL_FrameBufferColorTextureHBAO(FBO_Container_t *s)
 
 	s->iTextureColorFormat = GL_RG16F;
 
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s->s_hBackBufferTex, 0);
-	glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, s->s_hBackBufferTex2, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s->s_hBackBufferTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, s->s_hBackBufferTex2, 0);
 }
 
 void GL_FrameBufferColorTextureDeferred(FBO_Container_t *s, int iInternalColorFormat)

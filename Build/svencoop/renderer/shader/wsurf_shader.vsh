@@ -1,63 +1,11 @@
 #version 460
 
-#extension GL_ARB_bindless_texture : require
 #extension GL_EXT_texture_array : require
 #extension GL_ARB_shader_draw_parameters : require
-#extension GL_ARB_gpu_shader5 : require
 
-struct scene_ubo_t{
-	mat4 viewMatrix;
-	mat4 projMatrix;
-	mat4 invViewMatrix;
-	mat4 invProjMatrix;
-	mat4 shadowMatrix[3];
-	vec4 viewpos;
-	vec4 fogColor;
-	float fogStart;
-	float fogEnd;
-	float time;
-	float clipPlane;
-	vec4 shadowDirection;
-	vec4 shadowColor;
-	vec4 shadowFade;
-};
-
-struct entity_ubo_t{
-	mat4 entityMatrix;
-	float scrollSpeed;
-	float padding[3];
-};
-
-struct texture_ssbo_t{
-
-#ifdef UINT64_ENABLE
-
-	uint64_t handles[5 * 1];
-
-#else
-
-	uvec2 handles[5 * 1];
-
-#endif
-};
-
-layout (std140, binding = 0) uniform SceneBlock
-{
-   scene_ubo_t SceneUBO;
-};
-
-layout (std140, binding = 1) uniform EntityBlock
-{
-   entity_ubo_t EntityUBO;
-};
-
-layout (std430, binding = 2) buffer TextureBlock
-{
-    texture_ssbo_t TextureSSBO;
-};
+#include "common.h"
 
 uniform float u_parallaxScale;
-uniform vec4 u_color;
 
 layout(location = 0) in vec3 in_vertex;
 layout(location = 1) in vec3 in_normal;
@@ -69,12 +17,14 @@ layout(location = 6) in vec2 in_detailtexcoord;
 layout(location = 7) in vec2 in_normaltexcoord;
 layout(location = 8) in vec2 in_parallaxtexcoord;
 layout(location = 9) in vec2 in_speculartexcoord;
+#ifdef DECAL_ENABLED
+layout(location = 10) in int in_decalindex;
+#endif
 
 out vec3 v_worldpos;
 out vec3 v_normal;
 out vec3 v_tangent;
 out vec3 v_bitangent;
-out vec4 v_color;
 out vec2 v_diffusetexcoord;
 out vec3 v_lightmaptexcoord;
 out vec2 v_detailtexcoord;
@@ -83,6 +33,10 @@ out vec2 v_parallaxtexcoord;
 out vec2 v_speculartexcoord;
 out vec4 v_shadowcoord[3];
 flat out int v_drawid;
+
+#ifdef DECAL_ENABLED
+flat out int v_decalindex;
+#endif
 
 void main(void)
 {
@@ -155,7 +109,10 @@ void main(void)
 
 #endif
 
-	v_color = u_color;
+#ifdef DECAL_ENABLED
+	v_decalindex = in_decalindex;
+#endif
+
 	v_drawid = gl_DrawID;
 	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * worldpos4;
 }

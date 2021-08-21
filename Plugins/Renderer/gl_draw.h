@@ -11,12 +11,15 @@ extern int *currenttexture;
 extern int *oldtarget;
 extern int *gl_filter_min;
 extern int *gl_filter_max;
+extern cachewad_t **decal_wad;
 
 extern float gl_max_ansio;
 
 extern int gl_loadtexture_format;
 extern int gl_loadtexture_cubemap;
 extern int gl_loadtexture_size;
+
+gltexture_t *gltextures_get();
 
 //DXT
 

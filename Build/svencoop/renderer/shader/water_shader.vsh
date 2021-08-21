@@ -4,39 +4,9 @@ uniform vec4 u_watercolor;
 uniform vec2 u_depthfactor;
 uniform float u_fresnelfactor;
 uniform float u_normfactor;
+uniform float u_scale;
 
-struct scene_ubo_t{
-	mat4 viewMatrix;
-	mat4 projMatrix;
-	mat4 invViewMatrix;
-	mat4 invProjMatrix;
-	mat4 shadowMatrix[3];
-	vec4 viewpos;
-	vec4 fogColor;
-	float fogStart;
-	float fogEnd;
-	float time;
-	float clipPlane;
-	vec4 shadowDirection;
-	vec4 shadowColor;
-	vec4 shadowFade;
-};
-
-struct entity_ubo_t{
-	mat4 entityMatrix;
-	float scrollSpeed;
-	float padding[3];
-};
-
-layout (std140, binding = 0) uniform SceneBlock
-{
-   scene_ubo_t SceneUBO;
-};
-
-layout (std140, binding = 1) uniform EntityBlock
-{
-   entity_ubo_t EntityUBO;
-};
+#include "common.h"
 
 layout(location = 0) in vec3 in_vertex;
 layout(location = 1) in vec3 in_normal;
@@ -47,15 +17,79 @@ out vec3 v_worldpos;
 out vec3 v_normal;
 out vec2 v_diffusetexcoord;
 
+#ifdef LEGACY_ENABLED
+
+const float turbsin[] = {
+ 0, 0.19633, 0.392541, 0.588517, 0.784137, 0.979285, 1.17384, 1.3677,
+ 1.56072, 1.75281, 1.94384, 2.1337, 2.32228, 2.50945, 2.69512, 2.87916,
+ 3.06147, 3.24193, 3.42044, 3.59689, 3.77117, 3.94319, 4.11282, 4.27998,
+ 4.44456, 4.60647, 4.76559, 4.92185, 5.07515, 5.22538, 5.37247, 5.51632,
+ 5.65685, 5.79398, 5.92761, 6.05767, 6.18408, 6.30677, 6.42566, 6.54068,
+ 6.65176, 6.75883, 6.86183, 6.9607, 7.05537, 7.14579, 7.23191, 7.31368,
+ 7.39104, 7.46394, 7.53235, 7.59623, 7.65552, 7.71021, 7.76025, 7.80562,
+ 7.84628, 7.88222, 7.91341, 7.93984, 7.96148, 7.97832, 7.99036, 7.99759,
+ 8, 7.99759, 7.99036, 7.97832, 7.96148, 7.93984, 7.91341, 7.88222,
+ 7.84628, 7.80562, 7.76025, 7.71021, 7.65552, 7.59623, 7.53235, 7.46394,
+ 7.39104, 7.31368, 7.23191, 7.14579, 7.05537, 6.9607, 6.86183, 6.75883,
+ 6.65176, 6.54068, 6.42566, 6.30677, 6.18408, 6.05767, 5.92761, 5.79398,
+ 5.65685, 5.51632, 5.37247, 5.22538, 5.07515, 4.92185, 4.76559, 4.60647,
+ 4.44456, 4.27998, 4.11282, 3.94319, 3.77117, 3.59689, 3.42044, 3.24193,
+ 3.06147, 2.87916, 2.69512, 2.50945, 2.32228, 2.1337, 1.94384, 1.75281,
+ 1.56072, 1.3677, 1.17384, 0.979285, 0.784137, 0.588517, 0.392541, 0.19633,
+ 9.79717e-16, -0.19633, -0.392541, -0.588517, -0.784137, -0.979285, -1.17384, -1.3677,
+ -1.56072, -1.75281, -1.94384, -2.1337, -2.32228, -2.50945, -2.69512, -2.87916,
+ -3.06147, -3.24193, -3.42044, -3.59689, -3.77117, -3.94319, -4.11282, -4.27998,
+ -4.44456, -4.60647, -4.76559, -4.92185, -5.07515, -5.22538, -5.37247, -5.51632,
+ -5.65685, -5.79398, -5.92761, -6.05767, -6.18408, -6.30677, -6.42566, -6.54068,
+ -6.65176, -6.75883, -6.86183, -6.9607, -7.05537, -7.14579, -7.23191, -7.31368,
+ -7.39104, -7.46394, -7.53235, -7.59623, -7.65552, -7.71021, -7.76025, -7.80562,
+ -7.84628, -7.88222, -7.91341, -7.93984, -7.96148, -7.97832, -7.99036, -7.99759,
+ -8, -7.99759, -7.99036, -7.97832, -7.96148, -7.93984, -7.91341, -7.88222,
+ -7.84628, -7.80562, -7.76025, -7.71021, -7.65552, -7.59623, -7.53235, -7.46394,
+ -7.39104, -7.31368, -7.23191, -7.14579, -7.05537, -6.9607, -6.86183, -6.75883,
+ -6.65176, -6.54068, -6.42566, -6.30677, -6.18408, -6.05767, -5.92761, -5.79398,
+ -5.65685, -5.51632, -5.37247, -5.22538, -5.07515, -4.92185, -4.76559, -4.60647,
+ -4.44456, -4.27998, -4.11282, -3.94319, -3.77117, -3.59689, -3.42044, -3.24193,
+ -3.06147, -2.87916, -2.69512, -2.50945, -2.32228, -2.1337, -1.94384, -1.75281,
+ -1.56072, -1.3677, -1.17384, -0.979285, -0.784137, -0.588517, -0.392541, -0.19633,
+};
+
+#endif
+
+#define TURBSCALE (256.0 / (2.0 * 3.141593))
+
 void main()
 {
-	vec4 worldpos4 = /*EntityUBO.entityMatrix * */vec4(in_vertex, 1.0);
+	vec3 vertpos = in_vertex;
+
+#ifdef LEGACY_ENABLED
+
+	int s1 = int(SceneUBO.time * 160.0 + in_vertex.x + in_vertex.y);
+	int s2 = int(SceneUBO.time * 171.0 + in_vertex.x * 5.0 - in_vertex.y);
+	vertpos.z += ((turbsin[s1 & 255] + 8.0) + (turbsin[s2 & 255] + 8.0) * 0.8) * u_scale;
+
+	int s3 = int((in_diffusetexcoord.y * 0.125 + SceneUBO.time) * TURBSCALE);
+	float s = in_diffusetexcoord.x + turbsin[s3 & 255];
+	s *= (1.0 / 64);
+
+	int s4 = int((in_diffusetexcoord.x * 0.125 + SceneUBO.time) * TURBSCALE);
+	float t = in_diffusetexcoord.y + turbsin[s4 & 255];
+	t *= (1.0 / 64);
+
+	v_diffusetexcoord = vec2(s, t);
+
+#else
+
+	v_diffusetexcoord = vec2(in_diffusetexcoord.x / 128.0, in_diffusetexcoord.y / 128.0);
+
+#endif
+
+	vec4 worldpos4 = EntityUBO.entityMatrix * vec4(vertpos, 1.0);
     v_worldpos = worldpos4.xyz;
 
 	vec4 normal4 = vec4(in_normal, 0.0);
 	v_normal = normalize((EntityUBO.entityMatrix * normal4).xyz);
 
-	v_diffusetexcoord = in_diffusetexcoord.xy;
 	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * worldpos4;
 
 	v_projpos = gl_Position;

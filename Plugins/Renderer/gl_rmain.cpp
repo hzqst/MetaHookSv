@@ -91,6 +91,7 @@ float r_identity_matrix[4][4] = {
 };
 
 float r_entity_matrix[4][4];
+float r_entity_color[4];
 
 bool r_draw_nontransparent = false;
 
@@ -433,50 +434,71 @@ void R_SetRenderMode(cl_entity_t *pEntity)
 	{
 	case kRenderNormal:
 	{
-		glColor4f(1, 1, 1, 1);
+		glDisable(GL_BLEND);
+
+		r_entity_color[0] = 1;
+		r_entity_color[1] = 1;
+		r_entity_color[2] = 1;
+		r_entity_color[3] = 1;
 		break;
 	}
 
 	case kRenderTransColor:
 	{
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ALPHA);
 		glEnable(GL_BLEND);
-		glColor4f(
-			(*currententity)->curstate.rendercolor.r / 255.0,
-			(*currententity)->curstate.rendercolor.g / 255.0,
-			(*currententity)->curstate.rendercolor.b / 255.0,
-			(*r_blend));
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		r_entity_color[0] = (*currententity)->curstate.rendercolor.r / 255.0;
+		r_entity_color[1] = (*currententity)->curstate.rendercolor.g / 255.0;
+		r_entity_color[2] = (*currententity)->curstate.rendercolor.b / 255.0;
+		r_entity_color[3] = (*r_blend);
+
+		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		break;
 	}
 
 	case kRenderTransAdd:
 	{
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		glBlendFunc(GL_ONE, GL_ONE);
-		glColor4f(*r_blend, *r_blend, *r_blend, 1);
-		glDepthMask(0);
 		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE, GL_ONE);
+
+		glDepthMask(0);
+
+		r_entity_color[0] = (*r_blend);
+		r_entity_color[1] = (*r_blend);
+		r_entity_color[2] = (*r_blend);
+		r_entity_color[3] = 1;
+
+		R_SetGBufferBlend(GL_ONE, GL_ONE);
 		break;
 	}
 
 	case kRenderTransAlpha:
 	{
-		glEnable(GL_ALPHA_TEST);
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		glColor4f(1, 1, 1, 1);
 		glDisable(GL_BLEND);
+		glEnable(GL_ALPHA_TEST);
 		glAlphaFunc(GL_GREATER, gl_alphamin->value);
+
+		r_entity_color[0] = 1;
+		r_entity_color[1] = 1;
+		r_entity_color[2] = 1;
+		r_entity_color[3] = 1;
+		
 		break;
 	}
 
 	default:
 	{
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glColor4f(1, 1, 1, *r_blend);
-		glDepthMask(0);
 		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		r_entity_color[0] = 1;
+		r_entity_color[1] = 1;
+		r_entity_color[2] = 1;
+		r_entity_color[3] = (*r_blend);
+		glDepthMask(0);
+
+		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		break;
 	}
 	}
@@ -899,7 +921,7 @@ void GL_GenerateFBO(void)
 		gEngfuncs.Con_Printf("Failed to initialize ToneMapping #%d framebuffer.\n");
 	}
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void GL_Init(void)
@@ -935,9 +957,9 @@ void GL_Init(void)
 		return;
 	}
 
-	if (!glewIsSupported("GL_NV_float_buffer"))
+	if (!glewIsSupported("GL_ARB_texture_float"))
 	{
-		Sys_ErrorEx("Missing OpenGL extension GL_NV_float_buffer!\n");
+		Sys_ErrorEx("Missing OpenGL extension GL_ARB_texture_float!\n");
 		return;
 	}
 
@@ -993,7 +1015,7 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 	glwidth = *width; 
 	glheight = *height;
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 }
 
 void R_PreRenderView(int a1)
@@ -1004,7 +1026,7 @@ void R_PreRenderView(int a1)
 
 	if (!r_refdef->onlyClientDraws)
 	{
-		if (r_water && r_water->value && waters_active)
+		if (r_water && r_water->value)
 		{
 			R_RenderWaterView();
 		}
@@ -1014,20 +1036,11 @@ void R_PreRenderView(int a1)
 		}
 	}
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 }
 
 void R_PostRenderView()
 {
-	if (!r_draw_pass && !g_SvEngine_DrawPortalView)
-	{
-		R_FreeDeadWaters();
-		for (r_water_t *water = waters_active; water; water = water->next)
-		{
-			water->free = true;
-		}
-	}
-
 	R_DoFXAA();
 	R_DoHDR();
 
@@ -1036,7 +1049,7 @@ void R_PostRenderView()
 	glColor4f(1, 1, 1, 1);
 	glDisable(GL_BLEND);
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 
 	g_SvEngine_DrawPortalView = false;	
 }
@@ -1221,14 +1234,14 @@ void GL_EndRendering(void)
 	}
 
 	//Blit to screen
-	glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER, 0);
-	glBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	glBlitFramebufferEXT(0, 0, glwidth, glheight, dstX, dstY, dstX2, dstY2, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-	glBindFramebufferEXT(GL_READ_FRAMEBUFFER, 0);
+	glBlitFramebuffer(0, 0, glwidth, glheight, dstX, dstY, dstX2, dstY2, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
 	//VID_FlipScreen for us.
 	gRefFuncs.GL_EndRendering();
@@ -1371,7 +1384,7 @@ void R_NewMap(void)
 
 	memset(&r_params, 0, sizeof(r_params));
 
-	R_ClearWater();
+	R_NewMapWater();
 	R_NewMapWSurf();
 
 	R_StudioReloadVBOCache();
@@ -1659,6 +1672,18 @@ void R_SetupGL(void)
 	glDisable(GL_ALPHA_TEST);
 	glEnable(GL_DEPTH_TEST);
 
+	//TODO
+
+	if (r_draw_pass == r_draw_reflect && curwater)
+	{
+		//normal[0] * x+ normal[1] * y+ normal[2] * z = normal[0] * vert[0] +normal[1] * vert[1] +normal[2] * vert[2]
+
+		double equation[4] = { curwater->normal[0], curwater->normal[1], curwater->normal[2], curwater->plane };
+
+		glEnable(GL_CLIP_PLANE0);
+		glClipPlane(GL_CLIP_PLANE0, equation);
+	}
+
 	for (int i = 0; i < 16; i += 4)
 	{
 		for (int j = 0; j < 4; j++)
@@ -1740,7 +1765,7 @@ void R_BuildCubemap_Snapshot(cubemap_t *cubemap, int index)
 
 	byte *pBuf = (byte *)malloc(cubemap->size * cubemap->size * 3);
 
-	glBindFramebufferEXT(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
 	glReadPixels(0, 0, cubemap->size, cubemap->size, GL_RGB, GL_UNSIGNED_BYTE, pBuf);
 

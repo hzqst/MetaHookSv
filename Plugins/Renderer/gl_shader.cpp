@@ -2,6 +2,7 @@
 #include "gl_shader.h"
 #include <string>
 #include <sstream>
+#include <regex>
 
 std::vector<glshader_t> g_ShaderTable;
 
@@ -26,7 +27,7 @@ void GL_FreeShaders(void)
 	g_ShaderTable.clear();
 }
 
-void GL_CheckShaderError(GLuint shader, const char *filename)
+void GL_CheckShaderError(GLuint shader, const char *code, const char *filename)
 {
 	int iStatus;
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &iStatus); 
@@ -38,6 +39,18 @@ void GL_CheckShaderError(GLuint shader, const char *filename)
 		glGetInfoLogARB(shader, sizeof(szCompilerLog) - 1, &nInfoLength, szCompilerLog);
 		szCompilerLog[nInfoLength] = 0;
 
+		g_pFileSystem->CreateDirHierarchy("logs");
+		g_pFileSystem->CreateDirHierarchy("logs/renderer");
+		auto FileHandle = g_pFileSystem->Open("logs/renderer/error.log", "wt");
+		if (FileHandle)
+		{
+			g_pFileSystem->Write(code, strlen(code), FileHandle);
+			g_pFileSystem->Write("\r\n\r\nFilename: ", sizeof("\r\n\r\nFilename: ") - 1, FileHandle);
+			g_pFileSystem->Write(filename, strlen(filename), FileHandle);
+			g_pFileSystem->Write("\r\n\r\nLogs: ", sizeof("\r\n\r\nLogs: ") - 1, FileHandle);
+			g_pFileSystem->Write(szCompilerLog, nInfoLength, FileHandle);
+			g_pFileSystem->Close(FileHandle);
+		}
 		Sys_ErrorEx("Shader %s compiled with error:\n%s", filename, szCompilerLog);
 		return;
 	}
@@ -46,10 +59,12 @@ void GL_CheckShaderError(GLuint shader, const char *filename)
 GLuint R_CompileShaderObject(int type, const char *code, const char *filename)
 {
 	auto obj = glCreateShaderObjectARB(type);
-	glShaderSourceARB(obj, 1, &code, NULL);
-	glCompileShaderARB(obj);
 
-	GL_CheckShaderError(obj, filename);
+	glShaderSource(obj, 1, &code, NULL);
+
+	glCompileShader(obj);
+
+	GL_CheckShaderError(obj, code, filename);
 
 	return obj;
 }
@@ -89,77 +104,142 @@ GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfil
 	return program;
 }
 
+void R_CompileShaderAppendInclude(std::string &str, const char *filename)
+{
+	std::regex pattern("#include[< \"]+([a-zA-Z_\\.]+)[> \"]");
+	std::smatch result;
+	std::regex_search(str, result, pattern);
+
+	std::string skipped;
+
+	std::string::const_iterator searchStart(str.cbegin());
+
+	while (std::regex_search(searchStart, str.cend(), result, pattern) && result.size() >= 2)
+	{
+		std::string prefix = result.prefix();
+		std::string suffix = result.suffix();
+
+		auto includeFileName = result[1].str();
+
+		char slash;
+
+		std::string includePath = filename;
+		for (size_t j = includePath.length() - 1; j > 0; --j)
+		{
+			if (includePath[j] == '\\' || includePath[j] == '/')
+			{
+				slash = includePath[j];
+				includePath.resize(j);
+				break;
+			}
+		}
+
+		includePath += slash;
+		includePath += includeFileName;
+
+		auto pFile = gEngfuncs.COM_LoadFile((char *)includePath.c_str(), 5, NULL);
+		if (pFile)
+		{
+			std::string wbinding((char *)pFile);
+
+			gEngfuncs.COM_FreeFile(pFile);
+
+			if (searchStart != str.cbegin())
+			{
+				str = skipped + prefix;
+			}
+			else
+			{
+				str = prefix;
+			}
+			str += wbinding;
+
+			auto currentLength = str.length();
+
+			str += suffix;
+
+			skipped = str.substr(0, currentLength);
+			searchStart = str.cbegin() + currentLength;
+			continue;
+		}
+
+		searchStart = result.suffix().first;
+	}
+}
+
+void R_CompileShaderAppendDefine(std::string &str, const std::string &def)
+{
+	std::regex pattern("(#version [0-9]+)");
+	std::smatch result;
+	std::regex_search(str, result, pattern);
+
+	if (result.size() >= 1)
+	{
+		std::string prefix = result[0];
+		std::string suffix = result.suffix();
+
+		str = prefix;
+		str += "\n\n";
+		str += def;
+		str += "\n\n";
+		str += suffix;
+	}
+	else
+	{
+		std::string suffix = str;
+
+		str = def;
+		str += "\n\n";
+		str += suffix;
+	}
+}
+
 GLuint R_CompileShaderFileEx(
 	const char *vsfile, const char *fsfile, 
 	const char *vsdefine, const char *fsdefine,
 	ExtraShaderStageCallback callback)
 {
-	char *vscode = NULL;
-	char *fscode = NULL;
-	
-	std::stringstream vss, gss, fss;
-
-	vscode = (char *)gEngfuncs.COM_LoadFile((char *)vsfile, 5, 0);
+	auto vscode = (char *)gEngfuncs.COM_LoadFile((char *)vsfile, 5, 0);
 	if (!vscode)
 	{
 		Sys_ErrorEx("R_CompileShaderFileEx: %s not found!", vsfile);
 	}
 
-	fscode = (char *)gEngfuncs.COM_LoadFile((char *)fsfile, 5, 0);
+	std::string vs(vscode);
+
+	if (vsdefine)
+	{
+		R_CompileShaderAppendDefine(vs, vsdefine);
+	}
+
+	gEngfuncs.COM_FreeFile(vscode);
+
+	auto fscode = (char *)gEngfuncs.COM_LoadFile((char *)fsfile, 5, 0);
 	if (!fscode)
 	{
 		Sys_ErrorEx("R_CompileShaderFileEx: %s not found!", fsfile);
 	}
 
-	if (vscode && vsdefine)
+	std::string fs(fscode);
+
+	if (fsdefine)
 	{
-		if (!strncmp(vscode, "#version ", sizeof("#version ") - 1))
-		{
-			char *pcode = vscode + sizeof("#version ") - 1;
-			while (*pcode && (isdigit(*pcode) ||  *pcode == ' ' || *pcode == '\r' || *pcode == '\n'))
-			{
-				pcode++;
-			}
-			vss << std::string(vscode, pcode - vscode);
-			vss << vsdefine << "\n";
-			vss << pcode;
-		}
-		else
-		{
-			vss << vsdefine << "\n";
-			vss << vscode;
-		}
-	}
-	else if (vscode)
-	{
-		vss << vscode;
+		R_CompileShaderAppendDefine(fs, fsdefine);
 	}
 
-	if (fscode && fsdefine)
+	gEngfuncs.COM_FreeFile(fscode);
+
+	if (vs.find("#include") != std::string::npos)
 	{
-		if (!strncmp(fscode, "#version ", sizeof("#version ") - 1))
-		{
-			char *pcode = fscode + sizeof("#version ") - 1;
-			while (*pcode && (isdigit(*pcode) || *pcode == ' ' || *pcode == '\r' || *pcode == '\n'))
-			{
-				pcode++;
-			}
-			fss << std::string(fscode, pcode - fscode);
-			fss << fsdefine << "\n";
-			fss << pcode;
-		}
-		else
-		{
-			fss << fsdefine << "\n";
-			fss << fscode;
-		}
-	}
-	else if (fscode)
-	{
-		fss << fscode;
+		R_CompileShaderAppendInclude(vs, vsfile);
 	}
 
-	return R_CompileShader(vss.str().c_str(), fss.str().c_str(), vsfile, fsfile, callback);
+	if (fs.find("#include") != std::string::npos)
+	{
+		R_CompileShaderAppendInclude(fs, fsfile);
+	}
+
+	return R_CompileShader(vs.c_str(), fs.c_str(), vsfile, fsfile, callback);
 }
 
 GLuint R_CompileShaderFile(const char *vsfile, const char *fsfile, ExtraShaderStageCallback callback)

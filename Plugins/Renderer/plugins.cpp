@@ -4,9 +4,6 @@
 #include "command.h"
 #include <IRenderer.h>
 
-#pragma comment(lib,"OpenGL32.lib")
-#pragma comment(lib, "I:\\MetaHookSv\\glew-cmake\\lib\\Release\\Win32\\glew32s.lib")
-
 cl_exportfuncs_t gExportfuncs;
 mh_interface_t *g_pInterface;
 metahook_api_t *g_pMetaHookAPI;

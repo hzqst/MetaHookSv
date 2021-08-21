@@ -18,6 +18,11 @@ msurface_t **gDecalSurfs;
 decal_t *gDecalPool;
 decalcache_t *gDecalCache;
 
+GLint g_DrawDecalTextureId[MAX_DECALS];
+GLint g_DrawDecalStartIndex[MAX_DECALS];
+GLsizei g_DrawDecalVertexCount[MAX_DECALS];
+int g_DrawDecalCount = 0;
+
 void R_RecursiveWorldNode(mnode_t *node)
 {
 	gRefFuncs.R_RecursiveWorldNode(node);
@@ -585,7 +590,7 @@ static void R_DecalMPoly(float *v, texture_t *ptexture, msurface_t *psurf, int v
 	r_wsurf_drawcall++;
 }
 
-void R_DrawDecals(qboolean bMultitexture)
+void R_DrawDecals(void)
 {
 	decal_t *plist;
 	int i, outCount;
@@ -595,6 +600,98 @@ void R_DrawDecals(qboolean bMultitexture)
 
 	if (!(*gDecalSurfCount))
 		return;
+
+	g_DrawDecalCount = 0;
+
+	for (i = 0; i < (*gDecalSurfCount); i++)
+	{
+		psurf = gDecalSurfs[i];
+		plist = psurf->pdecals;
+
+		while (plist)
+		{
+			int decalIndex = R_DecalIndex(plist);
+
+			if (!(plist->flags & FDECAL_VBO))
+			{
+				ptexture = Draw_DecalTexture(plist->texture);
+
+				if (plist->flags & FDECAL_NOCLIP)
+				{
+					v = R_DecalVertsNoclip(plist, psurf, ptexture, r_wsurf.bLightmapTexture);
+					outCount = 4;
+				}
+				else
+				{
+					v = R_DecalVertsClip(NULL, plist, psurf, ptexture, &outCount);
+					if (outCount && r_wsurf.bLightmapTexture)
+					{
+						R_DecalVertsLight(v, psurf, outCount);
+					}
+				}
+
+				if (outCount)
+				{
+					GLuint64 handle = 0;
+					//Texture handle changed ?
+					if (r_wsurf.vDecalGLTextures[decalIndex] != ptexture->gl_texturenum)
+					{
+						r_wsurf.vDecalGLTextures[decalIndex] = ptexture->gl_texturenum;
+
+						handle = glGetTextureHandleARB(ptexture->gl_texturenum);
+						glMakeTextureHandleResidentARB(handle);
+
+						r_wsurf.vDecalGLTextureHandles[decalIndex] = handle;
+
+						glNamedBufferSubData(r_wsurf.hDecalTextureSSBO, sizeof(GLuint64) * decalIndex, sizeof(GLuint64), &handle);
+					}
+					else
+					{
+						handle = r_wsurf.vDecalGLTextureHandles[decalIndex];
+					}
+
+					decalvertex_t vertex[MAX_DECALVERTS];
+
+					for (int j = 0; j < outCount && j < MAX_DECALVERTS; ++j)
+					{
+						memcpy(&vertex[j].pos, &v[0], sizeof(float) * 3);
+
+						memcpy(&vertex[j].texcoord, &v[3], sizeof(float) * 2);
+						vertex[j].texcoord[2] = 0;
+
+						memcpy(&vertex[j].lightmaptexcoord, &v[5], sizeof(float) * 2);
+						vertex[j].lightmaptexcoord[2] = psurf->lightmaptexturenum;
+
+						vertex[j].decalindex = decalIndex;
+
+						v += VERTEXSIZE;
+					}
+
+					glNamedBufferSubData(r_wsurf.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * outCount, vertex);
+
+					r_wsurf.vDecalStartIndex[decalIndex] = MAX_DECALVERTS * decalIndex;
+					r_wsurf.vDecalVertexCount[decalIndex] = outCount;
+				}
+				else
+				{
+					r_wsurf.vDecalStartIndex[decalIndex] = 0;
+					r_wsurf.vDecalVertexCount[decalIndex] = 0;
+				}
+
+				plist->flags |= FDECAL_VBO;
+			}
+
+			if (r_wsurf.vDecalVertexCount[decalIndex] && g_DrawDecalCount < MAX_DECALS)
+			{
+				g_DrawDecalTextureId[g_DrawDecalCount] = r_wsurf.vDecalGLTextures[decalIndex];
+				g_DrawDecalStartIndex[g_DrawDecalCount] = r_wsurf.vDecalStartIndex[decalIndex];
+				g_DrawDecalVertexCount[g_DrawDecalCount] = r_wsurf.vDecalVertexCount[decalIndex];
+				++g_DrawDecalCount;
+			}
+
+			plist = plist->pnext;
+		}
+	}
 
 	glEnable(GL_BLEND);
 	glEnable(GL_ALPHA_TEST);
@@ -610,16 +707,25 @@ void R_DrawDecals(qboolean bMultitexture)
 		else
 			glPolygonOffset(-1, -gl_polyoffset->value);
 	}
-
+	
+	//Decal only affects diffuse channel
 	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
+	R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	int WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_TRANSPARENT_ENABLED;
+	int WSurfProgramState = WSURF_DECAL_ENABLED | WSURF_DIFFUSE_ENABLED | WSURF_TRANSPARENT_ENABLED;
 
-	if (bMultitexture && !drawgbuffer)
+	if (r_wsurf_bindless->value)
+	{
+		WSurfProgramState |= WSURF_BINDLESS_ENABLED;
+	}
+
+	//Mix lightmap if not deferred
+	if (r_wsurf.bLightmapTexture && !drawgbuffer)
 	{
 		WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
 	}
 
+	//Mix shadow if not deferred
 	if (r_wsurf.bShadowmapTexture && !drawgbuffer)
 	{
 		WSurfProgramState |= WSURF_SHADOWMAP_ENABLED;
@@ -631,11 +737,6 @@ void R_DrawDecals(qboolean bMultitexture)
 				WSurfProgramState |= (WSURF_SHADOWMAP_HIGH_ENABLED << i);
 			}
 		}
-	}
-
-	if (r_draw_pass == r_draw_reflect && curwater)
-	{
-		WSurfProgramState |= WSURF_CLIP_UNDER_ENABLED;
 	}
 
 	if (!drawgbuffer && r_fog_mode == GL_LINEAR)
@@ -651,83 +752,39 @@ void R_DrawDecals(qboolean bMultitexture)
 	wsurf_program_t prog = { 0 };
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 
-	if (r_wsurf.bShadowmapTexture && !drawgbuffer)
+	glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hDecalVBO);
+
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(4);
+	glEnableVertexAttribArray(5);
+	glEnableVertexAttribArray(10);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, pos));
+	glVertexAttribPointer(4, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, texcoord));
+	glVertexAttribPointer(5, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, lightmaptexcoord));
+	glVertexAttribIPointer(10, 1, GL_INT, sizeof(decalvertex_t), OFFSET(decalvertex_t, decalindex));
+
+	if (WSurfProgramState & WSURF_BINDLESS_ENABLED)
 	{
-		glActiveTexture(GL_TEXTURE6);
-
-		glDisable(GL_TEXTURE_2D);
-		glEnable(GL_TEXTURE_2D_ARRAY);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, shadow_texture_color);
-
-		glActiveTexture(GL_TEXTURE0);
+		glMultiDrawArrays(GL_POLYGON, g_DrawDecalStartIndex, g_DrawDecalVertexCount, g_DrawDecalCount);
+		r_studio_drawcall++;
 	}
-
-	if (bMultitexture && !drawgbuffer)
+	else
 	{
-		glActiveTexture(GL_TEXTURE1);
-
-		glEnable(GL_TEXTURE_2D_ARRAY);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
-
-		glActiveTexture(GL_TEXTURE0);
-	}
-
-	for (i = 0; i < (*gDecalSurfCount); i++)
-	{
-		psurf = gDecalSurfs[i];
-		plist = psurf->pdecals;
-
-		while (plist)
+		for (int i = 0; i < g_DrawDecalCount; ++i)
 		{
-			ptexture = Draw_DecalTexture(plist->texture);
-			if (plist->flags & FDECAL_NOCLIP)
-			{
-				v = R_DecalVertsNoclip(plist, psurf, ptexture, bMultitexture);
-				outCount = 4;
-			}
-			else
-			{
-				v = R_DecalVertsClip(NULL, plist, psurf, ptexture, &outCount);
-				if (outCount && bMultitexture)
-				{
-					R_DecalVertsLight(v, psurf, outCount);
-				}
-			}
-
-			if (outCount)
-			{
-				if (bMultitexture)
-					R_DecalMPoly(v, ptexture, psurf, outCount);
-				else
-					R_DecalPoly(v, ptexture, psurf, outCount);
-			}
-			plist = plist->pnext;
+			GL_Bind(g_DrawDecalTextureId[i]);
+			glDrawArrays(GL_POLYGON, g_DrawDecalStartIndex[i], g_DrawDecalVertexCount[i]);			
 		}
+		r_studio_drawcall += g_DrawDecalCount;
 	}
 
-	GL_UseProgram(0);
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(4);
+	glDisableVertexAttribArray(5);
+	glDisableVertexAttribArray(10);
 
-	if (r_wsurf.bShadowmapTexture && !drawgbuffer)
-	{
-		glActiveTexture(GL_TEXTURE6);
-
-		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-		glDisable(GL_TEXTURE_2D_ARRAY);
-		glDisable(GL_TEXTURE_GEN_S);
-		glDisable(GL_TEXTURE_GEN_T);
-		glDisable(GL_TEXTURE_GEN_R);
-		glDisable(GL_TEXTURE_GEN_Q);
-
-		glActiveTexture(GL_TEXTURE0);
-	}
-
-	if (bMultitexture && !drawgbuffer)
-	{
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-		glDisable(GL_TEXTURE_2D_ARRAY);
-		glActiveTexture(GL_TEXTURE0);
-	}
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	if (gl_polyoffset && gl_polyoffset->value)
 	{
@@ -739,4 +796,5 @@ void R_DrawDecals(qboolean bMultitexture)
 	glDepthMask(1);
 
 	(*gDecalSurfCount) = 0;
+	g_DrawDecalCount = 0;
 }

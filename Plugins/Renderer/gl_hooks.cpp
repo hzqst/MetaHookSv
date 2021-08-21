@@ -2459,147 +2459,147 @@ void R_FillAddress(void)
 	}
 
 #define GWATERCOLOR_SIG_SVENGINE "\xDB\x05\x2A\x2A\x2A\x2A\x68\x01\x26\x00\x00\x68\x65\x0B\x00\x00"
-		auto gWaterColor_Pattern = Search_Pattern(GWATERCOLOR_SIG_SVENGINE);
-		Sig_VarNotFound(gWaterColor_Pattern);
-		gWaterColor = *(decltype(gWaterColor) *)((PUCHAR)gWaterColor_Pattern + 2);
-		cshift_water = (decltype(cshift_water))((PUCHAR)gWaterColor + 12);
+	auto gWaterColor_Pattern = Search_Pattern(GWATERCOLOR_SIG_SVENGINE);
+	Sig_VarNotFound(gWaterColor_Pattern);
+	gWaterColor = *(decltype(gWaterColor) *)((PUCHAR)gWaterColor_Pattern + 2);
+	cshift_water = (decltype(cshift_water))((PUCHAR)gWaterColor + 12);
 
-		if (1)
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.GL_EnableMultitexture, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
-			g_pMetaHookAPI->DisasmRanges(gRefFuncs.GL_EnableMultitexture, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-			{
-				auto pinst = (cs_insn *)inst;
+			auto pinst = (cs_insn *)inst;
 
-				if (!gl_mtexable &&
-					pinst->id == X86_INS_CMP &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					pinst->detail->x86.operands[0].mem.index == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					pinst->detail->x86.operands[1].imm == 0)
-				{//01D57970 83 3D 80 66 00 08 00                                cmp     gl_mtexable, 0
-					gl_mtexable = (decltype(gl_mtexable))pinst->detail->x86.operands[0].mem.disp;
-				}
-				else if (!gl_mtexable &&
-					pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[1].mem.base == 0 &&
-					pinst->detail->x86.operands[1].mem.index == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-				{//.text:01D478D0 A1 44 34 34 02                                      mov     eax, gl_mtexable
-					gl_mtexable = (decltype(gl_mtexable))pinst->detail->x86.operands[1].mem.disp;
-				}
-				else if (!mtexenabled &&
-					pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					pinst->detail->x86.operands[0].mem.index == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
-					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					pinst->detail->x86.operands[1].imm == 1)
-				{//.text:01D478F2 C7 05 10 33 34 02 01 00 00 00                       mov     mtexenabled, 1
-					mtexenabled = (decltype(mtexenabled))pinst->detail->x86.operands[0].mem.disp;
-				}
+			if (!gl_mtexable &&
+				pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 0)
+			{//01D57970 83 3D 80 66 00 08 00                                cmp     gl_mtexable, 0
+				gl_mtexable = (decltype(gl_mtexable))pinst->detail->x86.operands[0].mem.disp;
+			}
+			else if (!gl_mtexable &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				pinst->detail->x86.operands[1].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{//.text:01D478D0 A1 44 34 34 02                                      mov     eax, gl_mtexable
+				gl_mtexable = (decltype(gl_mtexable))pinst->detail->x86.operands[1].mem.disp;
+			}
+			else if (!mtexenabled &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 1)
+			{//.text:01D478F2 C7 05 10 33 34 02 01 00 00 00                       mov     mtexenabled, 1
+				mtexenabled = (decltype(mtexenabled))pinst->detail->x86.operands[0].mem.disp;
+			}
 
-				if (gl_mtexable && mtexenabled)
-					return TRUE;
+			if (gl_mtexable && mtexenabled)
+				return TRUE;
 
-				if (address[0] == 0xCC)
-					return TRUE;
+			if (address[0] == 0xCC)
+				return TRUE;
 
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
 
-				return FALSE;
-			}, 0, NULL);
+			return FALSE;
+		}, 0, NULL);
 
-			Sig_VarNotFound(gl_mtexable);
-			Sig_VarNotFound(mtexenabled);
-		}
+		Sig_VarNotFound(gl_mtexable);
+		Sig_VarNotFound(mtexenabled);
+	}
 
-		if (g_iEngineType == ENGINE_SVENGINE)
-		{
-			const char sigs[] = "\xFF\x35\x2A\x2A\x2A\x2A\xDC\x0D\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xE8";
-			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView_SvEngine, 0x800, sigs, sizeof(sigs) - 1);
-			Sig_AddrNotFound(c_brush_polys);
-			c_alias_polys = *(int **)(addr + 2);
-			c_brush_polys = *(int **)(addr + 14);
-		}
-		else
-		{
-			const char sigs[] = "\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x50\x51";
-			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView, 0x150, sigs, sizeof(sigs) - 1);
-			Sig_AddrNotFound(c_brush_polys);
-			c_alias_polys = *(int **)(addr + 1);
-			c_brush_polys = *(int **)(addr + 7);
-		}
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		const char sigs[] = "\xFF\x35\x2A\x2A\x2A\x2A\xDC\x0D\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xE8";
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView_SvEngine, 0x800, sigs, sizeof(sigs) - 1);
+		Sig_AddrNotFound(c_brush_polys);
+		c_alias_polys = *(int **)(addr + 2);
+		c_brush_polys = *(int **)(addr + 14);
+	}
+	else
+	{
+		const char sigs[] = "\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x50\x51";
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView, 0x150, sigs, sizeof(sigs) - 1);
+		Sig_AddrNotFound(c_brush_polys);
+		c_alias_polys = *(int **)(addr + 1);
+		c_brush_polys = *(int **)(addr + 7);
+	}
 
-		if (g_iEngineType == ENGINE_SVENGINE)
-		{
-			const char sigs[] = "\xF6\xC4\x44\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F";
-			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView_SvEngine, 0x400, sigs, sizeof(sigs) - 1);
-			Sig_AddrNotFound(envmap);
-			envmap = *(int **)(addr + 11);
-			cl_stats = *(int **)(addr + 24);
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		const char sigs[] = "\xF6\xC4\x44\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F";
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView_SvEngine, 0x400, sigs, sizeof(sigs) - 1);
+		Sig_AddrNotFound(envmap);
+		envmap = *(int **)(addr + 11);
+		cl_stats = *(int **)(addr + 24);
 
-			const char sigs3[] = "\xD9\x1D\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x89\x81\xDC\x02\x00\x00";
-			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView_SvEngine, 0x600, sigs3, sizeof(sigs3) - 1);
-			Sig_AddrNotFound(cl_weaponstarttime);
-			cl_weaponstarttime = *(float **)(addr + 2);
-			cl_weaponsequence = *(int **)(addr + 7);
+		const char sigs3[] = "\xD9\x1D\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x89\x81\xDC\x02\x00\x00";
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView_SvEngine, 0x600, sigs3, sizeof(sigs3) - 1);
+		Sig_AddrNotFound(cl_weaponstarttime);
+		cl_weaponstarttime = *(float **)(addr + 2);
+		cl_weaponsequence = *(int **)(addr + 7);
 
-			const char sigs4[] = "\xD1\xEA\x89\x15\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
-			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView_SvEngine, 0x600, sigs4, sizeof(sigs4) - 1);
-			Sig_AddrNotFound(cl_light_level);
-			cl_light_level = *(int **)(addr + 4);
-		}
-		else
-		{
-			const char sigs[] = "\x39\x3D\x2A\x2A\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xD9\x05";
-			addr = (DWORD)Search_Pattern(sigs);
-			Sig_AddrNotFound(envmap);
-			envmap = *(int **)(addr + 2);
+		const char sigs4[] = "\xD1\xEA\x89\x15\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView_SvEngine, 0x600, sigs4, sizeof(sigs4) - 1);
+		Sig_AddrNotFound(cl_light_level);
+		cl_light_level = *(int **)(addr + 4);
+	}
+	else
+	{
+		const char sigs[] = "\x39\x3D\x2A\x2A\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xD9\x05";
+		addr = (DWORD)Search_Pattern(sigs);
+		Sig_AddrNotFound(envmap);
+		envmap = *(int **)(addr + 2);
 
-			const char sigs2[] = "\x39\x3D\x2A\x2A\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xA1";
-			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x50, sigs2, sizeof(sigs2) - 1);
-			Sig_AddrNotFound(cl_stats);
-			cl_stats = *(int **)(addr + 2);
+		const char sigs2[] = "\x39\x3D\x2A\x2A\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xA1";
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x50, sigs2, sizeof(sigs2) - 1);
+		Sig_AddrNotFound(cl_stats);
+		cl_stats = *(int **)(addr + 2);
 
-			const char sigs3[] = "\xD9\x1D\x2A\x2A\x2A\x2A\xA1";
-			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x500, sigs3, sizeof(sigs3) - 1);
-			Sig_AddrNotFound(cl_weaponstarttime);
-			cl_weaponstarttime = *(float **)(addr + 2);
-			cl_weaponsequence = *(int **)(addr + 7);
+		const char sigs3[] = "\xD9\x1D\x2A\x2A\x2A\x2A\xA1";
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x500, sigs3, sizeof(sigs3) - 1);
+		Sig_AddrNotFound(cl_weaponstarttime);
+		cl_weaponstarttime = *(float **)(addr + 2);
+		cl_weaponsequence = *(int **)(addr + 7);
 
-			const char sigs4[] = "\x6A\x01\x89\x15\x2A\x2A\x2A\x2A\x89";
-			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x600, sigs4, sizeof(sigs4) - 1);
-			Sig_AddrNotFound(cl_light_level);
-			cl_light_level = *(int **)(addr + 4);
+		const char sigs4[] = "\x6A\x01\x89\x15\x2A\x2A\x2A\x2A\x89";
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x600, sigs4, sizeof(sigs4) - 1);
+		Sig_AddrNotFound(cl_light_level);
+		cl_light_level = *(int **)(addr + 4);
 
-		}
+	}
 
 #define R_WORLD_MATRIX_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x68\xA6\x0B\x00\x00"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x600, R_WORLD_MATRIX_SIG_SVENGINE, sizeof(R_WORLD_MATRIX_SIG_SVENGINE) - 1);
-		Sig_AddrNotFound(r_world_matrix);
-		r_world_matrix = *(float **)(addr + 1);
+	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x600, R_WORLD_MATRIX_SIG_SVENGINE, sizeof(R_WORLD_MATRIX_SIG_SVENGINE) - 1);
+	Sig_AddrNotFound(r_world_matrix);
+	r_world_matrix = *(float **)(addr + 1);
 
 #define R_PROJ_MATRIX_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x68\xA7\x0B\x00\x00"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x500, R_PROJ_MATRIX_SIG_SVENGINE, sizeof(R_PROJ_MATRIX_SIG_SVENGINE) - 1);
-		Sig_AddrNotFound(r_projection_matrix);
-		r_projection_matrix = *(float **)(addr + 1);
+	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x500, R_PROJ_MATRIX_SIG_SVENGINE, sizeof(R_PROJ_MATRIX_SIG_SVENGINE) - 1);
+	Sig_AddrNotFound(r_projection_matrix);
+	r_projection_matrix = *(float **)(addr + 1);
 
 #define TMP_PALETTE_SVENGINE "\x68\x2A\x2A\x2A\x2A\x6A\x00\x6A\x00"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_StudioSetupSkin, 0x600, TMP_PALETTE_SVENGINE, sizeof(TMP_PALETTE_SVENGINE) - 1);
-		Sig_AddrNotFound(tmp_palette);
-		tmp_palette = *(void **)(addr + 1);
+	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_StudioSetupSkin, 0x600, TMP_PALETTE_SVENGINE, sizeof(TMP_PALETTE_SVENGINE) - 1);
+	Sig_AddrNotFound(tmp_palette);
+	tmp_palette = *(void **)(addr + 1);
 
 	//get cl. vars by offsets
 	cl_waterlevel = cl_parsecount + 274;
@@ -2677,6 +2677,50 @@ void R_FillAddress(void)
 		gRefFuncs.Mod_LoadStudioModel = (decltype(gRefFuncs.Mod_LoadStudioModel))g_pMetaHookAPI->ReverseSearchFunctionBegin(Bogus_Call, 0x50);
 		Sig_FuncNotFound(Mod_LoadStudioModel);
 	}
+
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.Draw_DecalTexture, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+
+			if (!decal_wad &&
+				pinst->id == X86_INS_PUSH &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				decal_wad = (decltype(decal_wad))pinst->detail->x86.operands[0].mem.disp;
+			}
+			else if (!decal_wad &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				pinst->detail->x86.operands[1].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				decal_wad = (decltype(decal_wad))pinst->detail->x86.operands[1].mem.disp;
+			}
+			if (decal_wad)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(decal_wad);
+	}
 }
 
 void R_InstallHook(void)
@@ -2700,8 +2744,6 @@ void R_InstallHook(void)
 	Install_InlineHook(R_ForceCVars);
 	Install_InlineHook(R_CullBox);
 	Install_InlineHook(Mod_PointInLeaf);
-	Install_InlineHook(R_DrawSequentialPoly);
-	Install_InlineHook(EmitWaterPolys);
 	Install_InlineHook(R_BuildLightMap);
 	Install_InlineHook(R_AddDynamicLights);
 	Install_InlineHook(R_GLStudioDrawPoints);

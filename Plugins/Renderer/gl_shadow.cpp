@@ -155,7 +155,7 @@ void R_RenderShadowMap(void)
 	if (!total_numvisedicts)
 		return;
 
-	glBindFramebufferEXT(GL_FRAMEBUFFER, s_ShadowFBO.s_hBackBufferFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, s_ShadowFBO.s_hBackBufferFBO);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	glDisable(GL_BLEND);

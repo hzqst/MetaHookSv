@@ -100,6 +100,7 @@ void R_ShutdownLight(void);
 bool R_BeginRenderGBuffer(void);
 void R_EndRenderGBuffer(void);
 void R_SetGBufferMask(int mask);
+void R_SetGBufferBlend(int blendsrc, int blenddst);
 
 #define GBUFFER_INDEX_DIFFUSE		0
 #define GBUFFER_INDEX_LIGHTMAP		1
