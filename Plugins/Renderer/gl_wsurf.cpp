@@ -4,7 +4,6 @@
 
 r_worldsurf_t r_wsurf;
 
-cvar_t *r_wsurf_bindless;
 cvar_t *r_wsurf_parallax_scale;
 cvar_t *r_wsurf_sky_occlusion;
 cvar_t *r_wsurf_detail;
@@ -127,6 +126,9 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 
 		if (state & WSURF_DECAL_ENABLED)
 			defs << "#define DECAL_ENABLED\n";
+
+		if (state & WSURF_CLIP_ENABLED)
+			defs << "#define CLIP_ENABLED\n";
 
 		if(glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define UINT64_ENABLE\n";
@@ -313,7 +315,7 @@ void R_SortTextureChain(wsurf_vbo_t *modcache, int iTexchainType)
 		auto pcache = R_FindDetailTextureCache(texchain.pTexture->gl_texturenum);
 		if (pcache)
 		{
-			for (int j = WSURF_REPLACE_TEXTURE; j < WSURF_MAX_TEXTURE; ++i)
+			for (int j = WSURF_REPLACE_TEXTURE; j < WSURF_MAX_TEXTURE; ++j)
 			{
 				if (pcache->tex[j].gltexturenum)
 				{
@@ -332,7 +334,7 @@ void R_SortTextureChain(wsurf_vbo_t *modcache, int iTexchainType)
 	});
 }
 
-void R_GenerateDrawBatch(wsurf_vbo_t *modcache, int iTexchainType, int iDrawBatchType, texture_ssbo_t *ssbo, int *drawCount)
+void R_GenerateDrawBatch(wsurf_vbo_t *modcache, int iTexchainType, int iDrawBatchType, std::vector<GLuint64> *ssbo)
 {
 	int detailTextureFlags = -1;
 	wsurf_vbo_batch_t *batch = NULL;
@@ -343,25 +345,29 @@ void R_GenerateDrawBatch(wsurf_vbo_t *modcache, int iTexchainType, int iDrawBatc
 
 		if (ssbo)
 		{
-			if ((*drawCount) * 5 == _ARRAYSIZE(ssbo->handles))
+			if (!bNoBindless)
 			{
-				Sys_ErrorEx("R_GenerateElementBuffer: Too many texchains!");
-			}
+				auto handle = glGetTextureHandleARB(texchain.pTexture->gl_texturenum);
+				glMakeTextureHandleResidentARB(handle);
 
-			auto handle = glGetTextureHandleARB(texchain.pTexture->gl_texturenum);
-			glMakeTextureHandleResidentARB(handle);
-			ssbo->handles[(*drawCount) * 5 + 0] = handle;
+				int drawIndex = ssbo->size();
 
-			auto pcache = R_FindDetailTextureCache(texchain.pTexture->gl_texturenum);
-			if (pcache)
-			{
-				for (int j = WSURF_REPLACE_TEXTURE; j < WSURF_MAX_TEXTURE; ++i)
+				(*ssbo).resize(drawIndex + 5);
+
+				(*ssbo)[drawIndex + 0] = handle;
+
+				auto pcache = R_FindDetailTextureCache(texchain.pTexture->gl_texturenum);
+				if (pcache)
 				{
-					if (pcache->tex[j].gltexturenum)
+					for (int j = WSURF_REPLACE_TEXTURE; j < WSURF_MAX_TEXTURE; ++j)
 					{
-						auto handle = glGetTextureHandleARB(pcache->tex[j].gltexturenum);
-						glMakeTextureHandleResidentARB(handle);
-						ssbo->handles[(*drawCount) * 5 + j] = handle;
+						if (pcache->tex[j].gltexturenum)
+						{
+							auto handle = glGetTextureHandleARB(pcache->tex[j].gltexturenum);
+							glMakeTextureHandleResidentARB(handle);
+
+							(*ssbo)[drawIndex + j] = handle;
+						}
 					}
 				}
 			}
@@ -388,9 +394,6 @@ void R_GenerateDrawBatch(wsurf_vbo_t *modcache, int iTexchainType, int iDrawBatc
 		batch->iDrawCount++;
 		batch->iPolyCount += texchain.iPolyCount;
 		batch->iDetailTextureFlags = texchain.iDetailTextureFlags;
-
-		if(drawCount)
-			(*drawCount)++;
 	}
 
 	if (batch)
@@ -668,20 +671,19 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modcache)
 	R_GenerateTexChain(mod, modcache, vIndicesBuffer);
 
 	//Generate detailtexture flags and Sort texchains by detailtexture flags
-	texture_ssbo_t ssbo;
-	int ssboCount = 0;
+	std::vector<GLuint64> ssbo;
 
 	R_SortTextureChain(modcache, WSURF_TEXCHAIN_STATIC);
 	R_SortTextureChain(modcache, WSURF_TEXCHAIN_ANIM);
 
-	R_GenerateDrawBatch(modcache, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_STATIC, &ssbo, &ssboCount);
+	R_GenerateDrawBatch(modcache, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_STATIC, &ssbo);
 
-	R_GenerateDrawBatch(modcache, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID, NULL, NULL);
-	R_GenerateDrawBatch(modcache, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID, NULL, NULL);
+	R_GenerateDrawBatch(modcache, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID, NULL);
+	R_GenerateDrawBatch(modcache, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID, NULL);
 
 	modcache->hTextureSSBO = GL_GenBuffer();
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, modcache->hTextureSSBO);	
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * (ssboCount * 5), &ssbo, GL_STATIC_DRAW);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * (ssbo.size()), ssbo.data(), GL_STATIC_DRAW);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 	modcache->hEBO = GL_GenBuffer();
@@ -1072,7 +1074,7 @@ void R_DrawWSurfVBOSolid(wsurf_vbo_t *modcache)
 
 void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 {
-	if(r_wsurf_bindless->value)
+	if(!bNoBindless)
 	{
 		int WSurfProgramState = WSURF_BINDLESS_ENABLED;
 
@@ -1097,6 +1099,11 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 					WSurfProgramState |= (WSURF_SHADOWMAP_HIGH_ENABLED << i);
 				}
 			}
+		}
+
+		if (r_draw_pass == r_draw_reflect && curwater)
+		{
+			WSurfProgramState |= WSURF_CLIP_ENABLED;
 		}
 
 		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
@@ -1212,6 +1219,11 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 			if (r_wsurf.bSpecularTexture)
 			{
 				WSurfProgramState |= WSURF_SPECULARTEXTURE_ENABLED;
+			}
+
+			if (r_draw_pass == r_draw_reflect && curwater)
+			{
+				WSurfProgramState |= WSURF_CLIP_ENABLED;
 			}
 
 			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
@@ -1339,6 +1351,11 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_t *modcache)
 		if (r_wsurf.bSpecularTexture)
 		{
 			WSurfProgramState |= WSURF_SPECULARTEXTURE_ENABLED;
+		}
+
+		if (r_draw_pass == r_draw_reflect && curwater)
+		{
+			WSurfProgramState |= WSURF_CLIP_ENABLED;
 		}
 
 		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
@@ -1595,8 +1612,7 @@ void R_InitWSurf(void)
 	r_wsurf.iLightmapTextureArray = 0;
 
 	R_ClearBSPEntities();
-
-	r_wsurf_bindless = gEngfuncs.pfnRegisterVariable("r_wsurf_bindless", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	
 	r_wsurf_parallax_scale = gEngfuncs.pfnRegisterVariable("r_wsurf_parallax_scale", "-0.02", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_sky_occlusion = gEngfuncs.pfnRegisterVariable("r_wsurf_sky_occlusion", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_detail = gEngfuncs.pfnRegisterVariable("r_wsurf_detail", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
@@ -3402,6 +3418,14 @@ void R_DrawWorld(void)
 	SceneUBO.shadowColor[3] = r_shadow_control.intensity;
 	memcpy(SceneUBO.shadowFade, &r_shadow_control.distfade, sizeof(vec2_t));
 	memcpy(&SceneUBO.shadowFade[2], &r_shadow_control.lumfade, sizeof(vec2_t));
+
+	//normal[0] * x+ normal[1] * y+ normal[2] * z = normal[0] * vert[0] +normal[1] * vert[1] +normal[2] * vert[2]
+
+	if (r_draw_pass == r_draw_reflect && curwater)
+	{
+		float equation[4] = { curwater->normal[0], curwater->normal[1], curwater->normal[2], -curwater->plane };
+		memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
+	}
 
 	glNamedBufferSubData(r_wsurf.hSceneUBO, 0, sizeof(SceneUBO), &SceneUBO);
 

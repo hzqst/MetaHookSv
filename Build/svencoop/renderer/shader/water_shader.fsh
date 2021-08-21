@@ -1,5 +1,7 @@
 #version 430
 
+#include "common.h"
+
 uniform vec4 u_watercolor;
 uniform vec2 u_depthfactor;
 uniform float u_fresnelfactor;
@@ -15,7 +17,6 @@ layout(binding = 4) uniform sampler2D refractTex;
 layout(binding = 5) uniform sampler2D depthTex;
 #endif
 
-#include "common.h"
 
 in vec4 v_projpos;
 in vec3 v_worldpos;

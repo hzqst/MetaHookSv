@@ -120,7 +120,8 @@ extern int gly;
 extern int glwidth;
 extern int glheight;
 
-extern qboolean bNoStretchAspect;
+extern bool bNoStretchAspect;
+extern bool bNoBindless;
 
 extern FBO_Container_t s_GBufferFBO;
 extern FBO_Container_t s_BackBufferFBO, s_BackBufferFBO2;

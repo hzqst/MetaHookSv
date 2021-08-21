@@ -288,6 +288,17 @@ float CalcShadowIntensity(vec3 worldpos, vec3 lightmap, vec3 norm, vec3 lightdir
 
 void main()
 {
+#ifdef CLIP_ENABLED
+	vec4 clipVec = vec4(v_worldpos.xyz, 1);
+	vec4 clipPlane = SceneUBO.clipPlane;
+	if(dot(clipVec, clipPlane) < 0)
+		discard;
+
+	clipPlane.w += 32.0;
+	if(dot(clipVec, clipPlane) < 0 && dot(v_normal.xyz, -clipPlane.xyz) > 0.866)
+		discard;
+#endif
+
 #ifdef DIFFUSE_ENABLED
 
 	#ifdef BINDLESS_ENABLED

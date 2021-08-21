@@ -200,6 +200,7 @@ typedef struct scene_ubo_s
 	vec4 shadowDirection;
 	vec4 shadowColor;
 	vec4 shadowFade;
+	vec4 clipPlane;
 }scene_ubo_t;
 
 typedef struct entity_ubo_s
@@ -213,7 +214,7 @@ typedef struct entity_ubo_s
 
 typedef struct texture_ssbo_s
 {
-	GLuint64 handles[5 * 10000];
+	GLuint64 handles[5 * 1];
 }texture_ssbo_t;
 
 typedef struct r_worldsurf_s
@@ -317,8 +318,6 @@ extern decal_t *gDecalPool;
 extern decalcache_t *gDecalCache;
 
 //cvar
-extern cvar_t *r_wsurf_vbo;
-extern cvar_t *r_wsurf_bindless;
 
 void FreeBSPEntity(bspentity_t *ent);
 void R_ClearBSPEntities(void);
@@ -363,3 +362,4 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
 #define WSURF_BINDLESS_ENABLED			0x4000
 #define WSURF_LEGACY_ENABLED			0x8000
 #define WSURF_DECAL_ENABLED				0x10000
+#define WSURF_CLIP_ENABLED				0x20000

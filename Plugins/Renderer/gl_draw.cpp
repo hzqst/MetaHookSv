@@ -415,12 +415,9 @@ int GL_FindTexture(const char *identifier, GL_TEXTURETYPE textureType, int *widt
 	int i;
 	gltexture_t *slot;
 
-	if (gltextures_SvEngine)
-		gltextures = *gltextures_SvEngine;
-
 	if (identifier[0])
 	{
-		for (i = 0, slot = gltextures; i < *numgltextures; i++, slot++)
+		for (i = 0, slot = gltextures_get(); i < *numgltextures; i++, slot++)
 		{
 			if (!stricmp(identifier, slot->identifier))
 			{
@@ -455,13 +452,10 @@ int GL_AllocTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int
 
 	glt = NULL;
 
-	if (gltextures_SvEngine)
-		gltextures = *gltextures_SvEngine;
-
 tryagain:
 	if (identifier[0])
 	{
-		for (i = 0, slot = gltextures; i < *numgltextures; i++, slot++)
+		for (i = 0, slot = gltextures_get(); i < *numgltextures; i++, slot++)
 		{
 			if (slot->servercount < 0)
 			{
@@ -511,7 +505,7 @@ tryagain:
 
 				*maxgltextures_SvEngine += v16;
 				*gltextures_SvEngine = (gltexture_t *)gRefFuncs.realloc_SvEngine((void *)(*gltextures_SvEngine), (*maxgltextures_SvEngine) * sizeof(gltexture_t));
-				gltextures = *gltextures_SvEngine;
+				//gltextures = *gltextures_SvEngine;
 			}
 		}
 		else
@@ -523,7 +517,7 @@ tryagain:
 			}
 		}
 
-		glt = &gltextures[(*numgltextures)];
+		glt = &(gltextures_get()[(*numgltextures)]);
 		(*numgltextures)++;
 	}
 

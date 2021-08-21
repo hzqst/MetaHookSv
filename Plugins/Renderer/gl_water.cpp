@@ -111,20 +111,26 @@ void R_InitWater(void)
 	{
 		refractmap = GL_GenTextureRGBA8(glwidth, glheight);
 
-		auto handle = glGetTextureHandleARB(refractmap);
-		glMakeTextureHandleResidentARB(handle);
+		if (!!bNoBindless)
+		{
+			auto handle = glGetTextureHandleARB(refractmap);
+			glMakeTextureHandleResidentARB(handle);
 
-		refractmap_handle = handle;
+			refractmap_handle = handle;
+		}
 	}
 
 	if (!depthrefrmap)
 	{
 		depthrefrmap = GL_GenDepthTexture(glwidth, glheight);
 
-		auto handle = glGetTextureHandleARB(depthrefrmap);
-		glMakeTextureHandleResidentARB(handle);
+		if (!!bNoBindless)
+		{
+			auto handle = glGetTextureHandleARB(depthrefrmap);
+			glMakeTextureHandleResidentARB(handle);
 
-		depthrefrmap_handle = handle;
+			depthrefrmap_handle = handle;
+		}
 	}
 }
 
@@ -258,15 +264,21 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf)
 
 			VBOCache->reflectmap = GL_GenTextureRGBA8(glwidth, glheight);
 
-			auto handle = glGetTextureHandleARB(VBOCache->texture->gl_texturenum);
-			glMakeTextureHandleResidentARB(handle);
+			if (!bNoBindless)
+			{
+				auto handle = glGetTextureHandleARB(VBOCache->texture->gl_texturenum);
+				glMakeTextureHandleResidentARB(handle);
 
-			VBOCache->basetexture_handle = handle;
+				VBOCache->basetexture_handle = handle;
+			}
 
-			handle = glGetTextureHandleARB(VBOCache->reflectmap);
-			glMakeTextureHandleResidentARB(handle);
+			if (!bNoBindless)
+			{
+				auto handle = glGetTextureHandleARB(VBOCache->reflectmap);
+				glMakeTextureHandleResidentARB(handle);
 
-			VBOCache->reflectmap_handle = handle;
+				VBOCache->reflectmap_handle = handle;
+			}
 
 			VBOCache->hEBO = GL_GenBuffer();
 			VBOCache->hTextureSSBO = GL_GenBuffer();
@@ -305,10 +317,13 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf)
 
 				if (VBOCache->normalmap)
 				{
-					auto handle = glGetTextureHandleARB(VBOCache->normalmap);
-					glMakeTextureHandleResidentARB(handle);
+					if (!bNoBindless)
+					{
+						auto handle = glGetTextureHandleARB(VBOCache->normalmap);
+						glMakeTextureHandleResidentARB(handle);
 
-					VBOCache->normalmap_handle = handle;
+						VBOCache->normalmap_handle = handle;
+					}
 				}
 
 				VBOCache->fresnelfactor = waterControl->fresnelfactor;
@@ -413,8 +428,6 @@ void R_RenderReflectView(water_vbo_t *w)
 	}
 
 	gRefFuncs.R_RenderScene();
-
-	glDisable(GL_CLIP_PLANE0);
 
 	r_drawentities->value = saved_r_drawentities;
 	*cl_waterlevel = saved_cl_waterlevel;

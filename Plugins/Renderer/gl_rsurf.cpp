@@ -632,22 +632,25 @@ void R_DrawDecals(void)
 
 				if (outCount)
 				{
-					GLuint64 handle = 0;
-					//Texture handle changed ?
-					if (r_wsurf.vDecalGLTextures[decalIndex] != ptexture->gl_texturenum)
+					if (!bNoBindless)
 					{
-						r_wsurf.vDecalGLTextures[decalIndex] = ptexture->gl_texturenum;
+						GLuint64 handle = 0;
+						//Texture handle changed ?
+						if (r_wsurf.vDecalGLTextures[decalIndex] != ptexture->gl_texturenum)
+						{
+							r_wsurf.vDecalGLTextures[decalIndex] = ptexture->gl_texturenum;
 
-						handle = glGetTextureHandleARB(ptexture->gl_texturenum);
-						glMakeTextureHandleResidentARB(handle);
+							handle = glGetTextureHandleARB(ptexture->gl_texturenum);
+							glMakeTextureHandleResidentARB(handle);
 
-						r_wsurf.vDecalGLTextureHandles[decalIndex] = handle;
+							r_wsurf.vDecalGLTextureHandles[decalIndex] = handle;
 
-						glNamedBufferSubData(r_wsurf.hDecalTextureSSBO, sizeof(GLuint64) * decalIndex, sizeof(GLuint64), &handle);
-					}
-					else
-					{
-						handle = r_wsurf.vDecalGLTextureHandles[decalIndex];
+							glNamedBufferSubData(r_wsurf.hDecalTextureSSBO, sizeof(GLuint64) * decalIndex, sizeof(GLuint64), &handle);
+						}
+						else
+						{
+							handle = r_wsurf.vDecalGLTextureHandles[decalIndex];
+						}
 					}
 
 					decalvertex_t vertex[MAX_DECALVERTS];
@@ -714,7 +717,7 @@ void R_DrawDecals(void)
 
 	int WSurfProgramState = WSURF_DECAL_ENABLED | WSURF_DIFFUSE_ENABLED | WSURF_TRANSPARENT_ENABLED;
 
-	if (r_wsurf_bindless->value)
+	if (!bNoBindless)
 	{
 		WSurfProgramState |= WSURF_BINDLESS_ENABLED;
 	}
@@ -737,6 +740,11 @@ void R_DrawDecals(void)
 				WSurfProgramState |= (WSURF_SHADOWMAP_HIGH_ENABLED << i);
 			}
 		}
+	}
+
+	if (r_draw_pass == r_draw_reflect && curwater)
+	{
+		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}
 
 	if (!drawgbuffer && r_fog_mode == GL_LINEAR)

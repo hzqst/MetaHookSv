@@ -1,12 +1,12 @@
 #version 430
 
+#include "common.h"
+
 uniform vec4 u_watercolor;
 uniform vec2 u_depthfactor;
 uniform float u_fresnelfactor;
 uniform float u_normfactor;
 uniform float u_scale;
-
-#include "common.h"
 
 layout(location = 0) in vec3 in_vertex;
 layout(location = 1) in vec3 in_normal;

@@ -37,6 +37,7 @@ struct scene_ubo_t{
 	vec4 shadowDirection;
 	vec4 shadowColor;
 	vec4 shadowFade;
+	vec4 clipPlane;
 };
 
 struct entity_ubo_t{

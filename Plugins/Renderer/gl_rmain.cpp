@@ -117,7 +117,8 @@ FBO_Container_t s_HBAOCalcFBO;
 FBO_Container_t s_ShadowFBO;
 FBO_Container_t s_WaterFBO;
 
-qboolean bNoStretchAspect = false;
+bool bNoStretchAspect = false;
+bool bNoBindless = false;
 
 cvar_t *ati_subdiv = NULL;
 cvar_t *ati_npatch = NULL;
@@ -705,10 +706,8 @@ void GL_FreeFBO(FBO_Container_t *s)
 	GL_ClearFBO(s);
 }
 
-void GL_GenerateFBO(void)
+void GL_GenerateFrameBuffers(void)
 {
-	bNoStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
-
 	GL_ClearFBO(&s_GBufferFBO);
 	GL_ClearFBO(&s_BackBufferFBO);
 	GL_ClearFBO(&s_BackBufferFBO2);
@@ -978,7 +977,10 @@ void GL_Init(void)
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &gl_max_ansio);
 	}
 
-	GL_GenerateFBO();
+	bNoStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
+	bNoBindless = (gEngfuncs.CheckParm("-nobindless", NULL)) ? true : false;
+
+	GL_GenerateFrameBuffers();
 	GL_InitShaders();
 }
 
@@ -1671,18 +1673,6 @@ void R_SetupGL(void)
 	glDisable(GL_BLEND);
 	glDisable(GL_ALPHA_TEST);
 	glEnable(GL_DEPTH_TEST);
-
-	//TODO
-
-	if (r_draw_pass == r_draw_reflect && curwater)
-	{
-		//normal[0] * x+ normal[1] * y+ normal[2] * z = normal[0] * vert[0] +normal[1] * vert[1] +normal[2] * vert[2]
-
-		double equation[4] = { curwater->normal[0], curwater->normal[1], curwater->normal[2], curwater->plane };
-
-		glEnable(GL_CLIP_PLANE0);
-		glClipPlane(GL_CLIP_PLANE0, equation);
-	}
 
 	for (int i = 0; i < 16; i += 4)
 	{

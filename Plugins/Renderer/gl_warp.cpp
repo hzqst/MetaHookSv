@@ -18,7 +18,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 	{
 		int programState = 0;
 
-		if (r_wsurf_bindless->value)
+		if (!bNoBindless)
 			programState |= WSURF_BINDLESS_ENABLED;
 
 		if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
@@ -132,7 +132,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 
 		int programState = WATER_LEGACY_ENABLED;
 
-		if (r_wsurf_bindless->value)
+		if (!bNoBindless)
 			programState |= WSURF_BINDLESS_ENABLED;
 
 		water_program_t prog = { 0 };
@@ -304,6 +304,11 @@ void R_DrawSkyBox(void)
 	glDepthMask(0);
 
 	int WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_LEGACY_ENABLED;
+
+	if (r_draw_pass == r_draw_reflect && curwater)
+	{
+		WSurfProgramState |= WSURF_CLIP_ENABLED;
+	}
 
 	if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 	{
