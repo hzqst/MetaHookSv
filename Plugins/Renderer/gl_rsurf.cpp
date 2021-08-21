@@ -672,11 +672,13 @@ void R_DrawDecals(void)
 
 					glNamedBufferSubData(r_wsurf.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * outCount, vertex);
 
+					r_wsurf.vDecalGLTextures[decalIndex] = ptexture->gl_texturenum;
 					r_wsurf.vDecalStartIndex[decalIndex] = MAX_DECALVERTS * decalIndex;
 					r_wsurf.vDecalVertexCount[decalIndex] = outCount;
 				}
 				else
 				{
+					r_wsurf.vDecalGLTextures[decalIndex] = ptexture->gl_texturenum;
 					r_wsurf.vDecalStartIndex[decalIndex] = 0;
 					r_wsurf.vDecalVertexCount[decalIndex] = 0;
 				}

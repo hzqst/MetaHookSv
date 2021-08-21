@@ -225,7 +225,7 @@ studio_vbo_t *R_PrepareStudioVBO(studiohdr_t *studiohdr)
 
 	VBOData->hStudioUBO = GL_GenBuffer();
 	glBindBuffer(GL_UNIFORM_BUFFER, VBOData->hStudioUBO);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(studio_ubo_t), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(studio_ubo_t), NULL, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	return VBOData;

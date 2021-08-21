@@ -38,6 +38,7 @@ extern int nanmask;
 #define VectorCopy(a, b) { (b)[0] = (a)[0]; (b)[1] = (a)[1]; (b)[2] = (a)[2]; }
 #define VectorClear(a) { (a)[0] = 0.0; (a)[1] = 0.0; (a)[2] = 0.0; }
 #define DotProduct(x, y) ((x)[0] * (y)[0] + (x)[1] * (y)[1] + (x)[2] * (y)[2])
+#define DotProduct4(x, y) ((x)[0] * (y)[0] + (x)[1] * (y)[1] + (x)[2] * (y)[2]+ (x)[3] * (y)[3])
 void MatrixCopy(float in[4][3], float out[4][3]);
 
 void VectorMA(const vec3_t veca, float scale, const vec3_t vecb, vec3_t vecc);

@@ -166,9 +166,9 @@ void R_NewMapWater(void)
 
 bool R_IsAboveWater(float *v, float *n)
 {
-	float dir[3];
-	VectorSubtract(r_refdef->vieworg, v, dir);
-	return DotProduct(dir, n) > 0;
+	float org[4] = { r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1 };
+	float equation[4] = { curwater->normal[0], curwater->normal[1], curwater->normal[2], -curwater->plane };
+	return DotProduct4(org, equation) > 0;
 }
 
 water_vbo_t *R_FindWaterVBOFlat(cl_entity_t *ent, msurface_t *surf)
@@ -452,7 +452,7 @@ void R_RenderWaterView(void)
 		{
 			curwater = g_WaterVBOCache[i];
 
-			if (R_IsAboveWater(curwater->vert, curwater->normal))
+			if (R_IsAboveWater(curwater->vert, curwater->normal) && curwater->framecount >= (*r_framecount) - 10)
 			{
 				R_RenderReflectView(curwater);
 			}

@@ -6,6 +6,7 @@ r_worldsurf_t r_wsurf;
 
 cvar_t *r_wsurf_parallax_scale;
 cvar_t *r_wsurf_sky_occlusion;
+cvar_t *r_wsurf_zprepass;
 cvar_t *r_wsurf_detail;
 
 int r_fog_mode = 0;
@@ -693,7 +694,7 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modcache)
 
 	modcache->hEntityUBO = GL_GenBuffer();
 	glBindBuffer(GL_UNIFORM_BUFFER, modcache->hEntityUBO);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(entity_ubo_t), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(entity_ubo_t), NULL, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
@@ -915,7 +916,7 @@ void R_GenerateSceneUBO(void)
 
 	r_wsurf.hSceneUBO = GL_GenBuffer();
 	glBindBuffer(GL_UNIFORM_BUFFER, r_wsurf.hSceneUBO);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(scene_ubo_t), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(scene_ubo_t), NULL, GL_DYNAMIC_DRAW);
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, r_wsurf.hSceneUBO);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
@@ -1412,6 +1413,8 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 
 	glNamedBufferSubData(modcache->hEntityUBO, 0, sizeof(EntityUBO), &EntityUBO);
 
+	bool bUseZPrePasss = false;
+
 	//This only applies to world rendering
 	if(modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value)
 	{
@@ -1423,11 +1426,6 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 		auto &texchain = modcache->TextureChainSky;
 
 		int WSurfProgramState = 0;
-
-		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
-		{
-			WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
-		}
 
 		if (drawgbuffer)
 		{
@@ -1442,11 +1440,14 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 		r_wsurf_polys += texchain.iPolyCount;
 		r_wsurf_drawcall++;
 
+		if (r_wsurf_zprepass->value)
+		{
+			R_DrawWSurfVBOSolid(modcache);
+			bUseZPrePasss = true;
+		}
+
 		glColorMask(1, 1, 1, 1);
 	}
-
-	//World alway use stencil = 0
-	glStencilFunc(GL_ALWAYS, 0, 0xFF);
 
 	if (r_wsurf.bShadowmapTexture)
 	{
@@ -1468,10 +1469,14 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 		glActiveTexture(GL_TEXTURE0);
 	}
 
-	//Static texchain
+	//Static texchain always use stencil = 0
+
+	glStencilFunc(GL_ALWAYS, 0, 0xFF);
+
+	if (bUseZPrePasss)
+		glDepthFunc(GL_EQUAL);
 
 	R_DrawWSurfVBOStatic(modcache);
-
 	R_DrawWSurfVBOAnim(modcache);
 
 	//Prepare to collect decals
@@ -1537,6 +1542,9 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 	//World, Entity paints decals here
 	
 	R_DrawDecals();
+
+	if(bUseZPrePasss)
+		glDepthFunc(GL_LEQUAL);
 
 	R_DrawWaters();
 
@@ -1616,6 +1624,7 @@ void R_InitWSurf(void)
 	r_wsurf_parallax_scale = gEngfuncs.pfnRegisterVariable("r_wsurf_parallax_scale", "-0.02", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_sky_occlusion = gEngfuncs.pfnRegisterVariable("r_wsurf_sky_occlusion", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_detail = gEngfuncs.pfnRegisterVariable("r_wsurf_detail", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_wsurf_zprepass = gEngfuncs.pfnRegisterVariable("r_wsurf_zprepass", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 }
 
 void R_ShutdownWSurf(void)
@@ -3463,10 +3472,6 @@ void R_DrawWorld(void)
 
 	if (r_draw_pass == r_draw_reflect && curwater->level == WATER_LEVEL_REFLECT_SKYBOX)
 		goto skip_world;
-
-	//World uses stencil = 0
-
-	glStencilFunc(GL_ALWAYS, 0, 0xFF);
 
 	r_wsurf.bDiffuseTexture = true;
 	r_wsurf.bLightmapTexture = true;

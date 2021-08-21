@@ -980,6 +980,9 @@ void GL_Init(void)
 	bNoStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
 	bNoBindless = (gEngfuncs.CheckParm("-nobindless", NULL)) ? true : false;
 
+	if (!bNoBindless && !glewIsSupported("GL_NV_bindless_texture") && !glewIsSupported("GL_ARB_bindless_texture"))
+		bNoBindless = true;
+
 	GL_GenerateFrameBuffers();
 	GL_InitShaders();
 }
