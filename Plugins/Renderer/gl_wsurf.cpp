@@ -1540,11 +1540,11 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 	}
 
 	//World, Entity paints decals here
-	
-	R_DrawDecals();
 
-	if(bUseZPrePasss)
+	if (bUseZPrePasss)
 		glDepthFunc(GL_LEQUAL);
+
+	R_DrawDecals();
 
 	R_DrawWaters();
 

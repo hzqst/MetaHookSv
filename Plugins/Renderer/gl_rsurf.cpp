@@ -794,7 +794,7 @@ void R_DrawDecals(void)
 	glDisableVertexAttribArray(5);
 	glDisableVertexAttribArray(10);
 
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	if (gl_polyoffset && gl_polyoffset->value)
 	{
