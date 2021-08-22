@@ -107,7 +107,7 @@ void HUD_StudioEvent(const struct mstudioevent_s *ev, const struct cl_entity_s *
 {
 	if (ev->event == 5004 && ev->options[0])
 	{
-		auto clientTime = gEngfuncs.GetClientTime();
+		float clientTime = (float)gEngfuncs.GetAbsoluteTime();
 
 		bool bFound = false;
 		float max_time = 0;
