@@ -80,6 +80,7 @@ typedef struct water_vbo_s
 		plane = 0;
 		iPolyCount = 0;
 		framecount = 0;
+		rendered_framecount = 0;
 	}
 	GLuint hEBO;
 	GLuint hTextureSSBO;
@@ -109,6 +110,7 @@ typedef struct water_vbo_s
 	std::vector<GLuint> vIndicesBuffer;
 	int iPolyCount;
 	int framecount;
+	int rendered_framecount;
 }water_vbo_t;
 
 //renderer

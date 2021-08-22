@@ -6,8 +6,13 @@ cshift_t *cshift_water;
 
 void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 {
-	if (r_draw_pass == r_draw_reflect)
+	if (curwater->framecount != (*r_framecount))
 		return;
+
+	if (curwater->rendered_framecount == (*r_framecount))
+		return;
+
+	curwater->rendered_framecount = (*r_framecount);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, WaterVBOCache->hEBO);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, WaterVBOCache->hTextureSSBO);
@@ -20,7 +25,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 		int programState = 0;
 
 		if (!bNoBindless)
-			programState |= WSURF_BINDLESS_ENABLED;
+			programState |= WATER_BINDLESS_ENABLED;
 
 		if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
 		{
@@ -134,7 +139,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 		int programState = WATER_LEGACY_ENABLED;
 
 		if (!bNoBindless)
-			programState |= WSURF_BINDLESS_ENABLED;
+			programState |= WATER_BINDLESS_ENABLED;
 
 		water_program_t prog = { 0 };
 		R_UseWaterProgram(programState, &prog);
@@ -174,10 +179,7 @@ void R_DrawWaters(void)
 	{
 		curwater = g_WaterVBOCache[i];
 
-		if (curwater->framecount == (*r_framecount))
-		{
-			R_DrawWaterVBO(curwater);
-		}
+		R_DrawWaterVBO(curwater);
 
 		curwater = NULL;
 	}

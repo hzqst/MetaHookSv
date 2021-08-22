@@ -304,7 +304,7 @@ typedef struct
 
 #define OFFSET(type, variable) ((const void*)&(((type*)NULL)->variable))
 
-extern r_worldsurf_t	r_wsurf;
+extern r_worldsurf_t r_wsurf;
 extern int r_wsurf_drawcall;
 extern int r_wsurf_polys;
 extern int r_fog_mode;
@@ -338,6 +338,12 @@ extern decalcache_t *gDecalCache;
 
 //cvar
 
+extern cvar_t *r_wsurf_parallax_scale;
+extern cvar_t *r_wsurf_sky_occlusion;
+extern cvar_t *r_wsurf_zprepass;
+extern cvar_t *r_wsurf_detail;
+
+
 void FreeBSPEntity(bspentity_t *ent);
 void R_ClearBSPEntities(void);
 void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator fn);
@@ -348,8 +354,6 @@ void R_LoadExternalEntities(void);
 void R_AddDynamicLights(msurface_t *surf);
 void R_RenderDynamicLightmaps(msurface_t *fa);
 void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride);
-void DrawGLPoly(glpoly_t *p);
-void DrawGLPoly(msurface_t *fa);
 void R_DrawDecals(void);
 detail_texture_cache_t *R_FindDetailTextureCache(int texId);
 void R_BeginDetailTexture(int texId);

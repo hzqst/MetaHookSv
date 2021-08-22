@@ -7,8 +7,6 @@ GLuint64 refractmap_handle = 0;
 GLuint64 depthrefrmap_handle = 0;
 bool refractmap_ready = false;
 
-int saved_cl_waterlevel;
-
 vec3_t water_view;
 
 water_vbo_t *curwater;
@@ -50,7 +48,7 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 			defs << "#define REFRACT_ENABLED\n";
 
 		if (state & WATER_BINDLESS_ENABLED)
-			defs << "#definen BINDLESS_ENABLED\n";
+			defs << "#define BINDLESS_ENABLED\n";
 
 		if (glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define UINT64_ENABLED\n";
@@ -114,7 +112,7 @@ void R_InitWater(void)
 	{
 		refractmap = GL_GenTextureRGBA8(glwidth, glheight);
 
-		if (!!bNoBindless)
+		if (!bNoBindless)
 		{
 			auto handle = glGetTextureHandleARB(refractmap);
 			glMakeTextureHandleResidentARB(handle);
@@ -127,7 +125,7 @@ void R_InitWater(void)
 	{
 		depthrefrmap = GL_GenDepthTexture(glwidth, glheight);
 
-		if (!!bNoBindless)
+		if (!bNoBindless)
 		{
 			auto handle = glGetTextureHandleARB(depthrefrmap);
 			glMakeTextureHandleResidentARB(handle);
@@ -264,7 +262,6 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf)
 			VBOCache->texture = surf->texinfo->texture;
 
 			VBOCache->depthreflmap = GL_GenDepthTexture(glwidth, glheight);
-
 			VBOCache->reflectmap = GL_GenTextureRGBA8(glwidth, glheight);
 
 			if (!bNoBindless)
@@ -338,6 +335,18 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf)
 				VBOCache->level = waterControl->level;
 			}
 
+			GLuint64 ssbo[5] = {
+				VBOCache->basetexture_handle,
+				VBOCache->normalmap_handle,
+				VBOCache->reflectmap_handle,
+				refractmap_handle,
+				depthrefrmap_handle
+			};
+
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, VBOCache->hTextureSSBO);
+			glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ssbo), &ssbo, GL_STATIC_DRAW);
+			glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
 			g_WaterVBOCache.emplace_back(VBOCache);
 		}
 
@@ -355,18 +364,6 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf)
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOCache->hEBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * VBOCache->vIndicesBuffer.size(), VBOCache->vIndicesBuffer.data(), GL_STATIC_DRAW);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		GLuint64 ssbo[5] = {
-			VBOCache->basetexture_handle,
-			VBOCache->normalmap_handle,
-			VBOCache->reflectmap_handle,
-			refractmap_handle,
-			depthrefrmap_handle
-		};
-
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, VBOCache->hTextureSSBO);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ssbo), &ssbo, GL_STATIC_DRAW);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 		VBOCache->iPolyCount += brushface->num_polys;
 	}
@@ -417,8 +414,11 @@ void R_RenderReflectView(water_vbo_t *w)
 	r_refdef->viewangles[1] = atan2(vForward[1], vForward[0]) / M_PI * 180;
 	r_refdef->viewangles[2] = -r_refdef->viewangles[2];
 
-	saved_cl_waterlevel = *cl_waterlevel;
+	auto saved_cl_waterlevel = *cl_waterlevel;
 	*cl_waterlevel = 0;
+
+	auto saved_r_wsurf_sky_occlusion = r_wsurf_sky_occlusion->value;
+	r_wsurf_sky_occlusion->value = 0;
 
 	auto saved_r_drawentities = r_drawentities->value;
 	if (curwater->level == WATER_LEVEL_REFLECT_ENTITY)
@@ -432,6 +432,7 @@ void R_RenderReflectView(water_vbo_t *w)
 
 	gRefFuncs.R_RenderScene();
 
+	r_wsurf_sky_occlusion->value = saved_r_wsurf_sky_occlusion;
 	r_drawentities->value = saved_r_drawentities;
 	*cl_waterlevel = saved_cl_waterlevel;
 
