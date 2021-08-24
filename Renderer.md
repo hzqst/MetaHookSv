@@ -35,13 +35,13 @@ HDR (High Dynamic Range) rendering simulates brightness above that which a compu
 
 Water Shader creates water that realistically reflects and refracts the world.
 
-All water surfaces fall into two types: expensive and cheap.
+All water surfaces fall into two types: reflective and legacy.
 
-Expensive water reflects and refracts the whole world in real-time using Planar Reflections, which basically renders the entire scene twice. while cheap water only reflects skybox.
+Reflective water reflects and refracts the whole world in real-time using Planar Reflections, which basically renders the entire scene twice, while legacy water rendered only with base texture just like what it does in vanilla GoldSrc.
 
 ### Console vars
 
-`r_water` set to 1 to enable reflection and refraction for water. set to 2 to draw all visible entities in reflection (relatively expensive to render), otherwise only BSP world terrains are rendered in reflection.
+`r_water` set to 1 to enable reflective water.
 
 ## Per-Object Dynamic Shadow
 
@@ -115,7 +115,7 @@ The implementation credits to [HBAO or Horizon-Based-Ambient-Occlusion](https://
 
 ## Screen Space Reflection
 
-Screen Space Reflection or SSR reflect pixels on screen by traces reflection rays in screen space in real time.
+Screen Space Reflection or SSR reflects pixels on screen by traces reflection rays in screen space in real time.
 
 Only brush surfaces marked with specular textures (`_SPECULAR` suffix) in `/maps/[map name]_detail.txt` can reflect.
 
@@ -142,12 +142,6 @@ Green channel of `_SPECULAR` texture determines the intensity of reflection. 0 =
 `r_ssr_fade` controls the fade-out effect if the reflected ray hit a pixel close to the screen border. for example `r_ssr_fade "0.8 1.0"`
 
 * Changes to some of the cvars will not take effect immediately, using `r_reload` to reload those cvars.
-
-## Vertex Buffer Object (VBO) "Batch-Draw" optimization
-
-`r_studio_vbo` set to 1 to enable VBO batch-draw optmization for studio model.
-
-`r_wsurf_vbo` set to 1 to enable VBO batch-draw optmization for BSP terrain and brush entities.
 
 ## Detail textures
 
@@ -193,9 +187,15 @@ Specular textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/de
 
 * Blue channel is not used yet.
 
+## Vertex Buffer Object (aka VBO) "Batch-Draw" optimization
+
+Brush surfaces, studio models, decals are rendered with VBO, instead of legacy OpenGL1.x immediate mode method, decreasing amount of vertex data required to transfer to GPU every frame, costing less CPU and GPU resources on rendering.
+
 ## Misc
 
-`r_wsurf_sky_occlusion` 1 / 0 : When set to 1, scenes occluded by "sky" surfaces (surfaces with sky texture) will be invisible. this only works when `r_wsurf_vbo` set to 1.
+`r_wsurf_sky_occlusion` 1 / 0 : When set to 1, scenes occluded by "sky" surfaces (surfaces with sky texture) will be invisible.
+
+`r_wsurf_zprepass` 1 / 0 : When set to 1, Z-Prepass will be enabled. The world will be rendered twice every frame. The first time with only depth write-in, the second time with actual fragment color write-in, which decreases the fragment shader cost when there is significant overdraw cost (like when shadow and SSR are calculated for unnecessary fragments ) for world rendering.
 
 `r_fxaa` set to 1 to enable Fast Approximate Anti-Aliasing (FXAA).
 
