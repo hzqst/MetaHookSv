@@ -169,18 +169,16 @@ void main(void)
 
 	#else
 
-		out_Diffuse = diffuseColor * lightmapColor;
+		vec4 color = CalcFog(diffuseColor * lightmapColor);
 
-		#ifdef LINEAR_FOG_ENABLED
+		#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED) 
 
-			float z = gl_FragCoord.z / gl_FragCoord.w;
-			float fogFactor = ( SceneUBO.fogEnd - z ) / ( SceneUBO.fogEnd - SceneUBO.fogStart );
-			fogFactor = clamp(fogFactor, 0.0, 1.0);
+			GatherFragment(color);
 
-			vec3 finalColor = out_Diffuse.xyz;
+		#else
 
-			out_Diffuse.xyz = mix(SceneUBO.fogColor.xyz, finalColor, fogFactor );
-			
+			out_Diffuse = color;
+
 		#endif
 
 	#endif

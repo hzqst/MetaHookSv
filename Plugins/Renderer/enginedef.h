@@ -4,6 +4,12 @@
 
 #define	MAX_QPATH 64
 
+
+#define NL_PRESENT 0
+#define NL_NEEDS_LOADED 1
+#define NL_UNREFERENCED 2
+#define NL_CLIENT 3
+
 //wad
 
 #pragma pack(1)
@@ -371,6 +377,7 @@ typedef struct mspriteframe_s
 	int height;
 	float up, down, left, right;
 	int gl_texturenum;
+	int ssbo_index;//Added by hooking Hunk_Alloc
 }mspriteframe_t;
 
 typedef struct
@@ -385,8 +392,7 @@ typedef struct
 {
 	spriteframetype_t type;
 	mspriteframe_t *frameptr;
-}
-mspriteframedesc_t;
+}mspriteframedesc_t;
 
 typedef struct msprite_s
 {

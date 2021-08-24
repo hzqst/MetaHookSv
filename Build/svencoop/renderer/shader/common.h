@@ -10,7 +10,7 @@
 
 #endif
 
-#ifdef OIT_BLEND_ENABLED
+#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED)
 
 // See https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_shader_image_load_store.txt
 #extension GL_ARB_shader_image_load_store : require
@@ -54,6 +54,8 @@ layout(pixel_center_integer) in vec4 gl_FragCoord;
 #define BINDING_POINT_OIT_FRAGMENT_SSBO 4
 #define BINDING_POINT_OIT_STARTOFFSET_SSBO 5
 #define BINDING_POINT_OIT_ATOMIC_COUNTER 6
+
+#define MAX_DEPTH_COMPLEXITY 8
 
 #define SPR_VP_PARALLEL_UPRIGHT 0
 #define SPR_FACING_UPRIGHT 1
@@ -120,23 +122,17 @@ struct texture_ssbo_t{
 };
 
 struct spriteframe_ssbo_t{
-	int type;
-	int width;
-	int height;
-	int texturenum;
+	ivec4 type_width_height_texturenum;
 
-	float up;
-	float down;
-	float left;
-	float right;
+	vec4 up_down_left_right;
 
 #if defined(BINDLESS_ENABLED) && defined(UINT64_ENABLED)
 
-	uint64_t texturehandle;
+	uint64_t texturehandle[2];
 
 #else
 
-	uvec2 texturehandle;
+	uvec2 texturehandle[2];
 
 #endif
 };
@@ -149,8 +145,8 @@ struct spriteentry_ssbo_t
 {
 	vec4 color;
 	vec4 origin;//origin[3] = scale
-	vec3 angles;
-	int frameindex;
+	vec4 angles;
+	ivec4 frameindex;
 };
 
 struct spriteentries_ssbo_t{
@@ -196,7 +192,7 @@ layout (std140, binding = BINDING_POINT_STUDIO_UBO) uniform StudioBlock
 	studio_ubo_t StudioUBO;
 };
 
-#ifdef OIT_BLEND_ENABLED
+#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED)
 
 // A fragment node stores rendering information about one specific fragment
 struct LinkedListFragmentNode
@@ -240,6 +236,12 @@ void GatherFragment(vec4 color)
 	frag.color = packUnorm4x8(color);
 	frag.depth = gl_FragCoord.z;
 	frag.next = -1;
+
+	#ifdef OIT_ADDITIVE_BLEND_ENABLED
+
+		frag.depth = -frag.depth;
+
+	#endif
 
 	uint insertIndex = atomicCounterIncrement(OITFragCounter);
 
@@ -302,3 +304,27 @@ vec3 OctahedronToUnitVector(vec2 coord) {
 	return normalize(vec3(coord.x, y + 0.0001, coord.y));
 
 }
+
+#if defined(LINEAR_FOG_ENABLED) && defined(IS_FRAGMENT_SHADER)
+
+vec4 CalcFog(vec4 color)
+{
+	float z = gl_FragCoord.z / gl_FragCoord.w;
+	float fogFactor = ( SceneUBO.fogEnd - z ) / ( SceneUBO.fogEnd - SceneUBO.fogStart );
+	fogFactor = clamp(fogFactor, 0.0, 1.0);
+
+	vec3 finalColor = color.xyz;
+
+	color.xyz = mix(SceneUBO.fogColor.xyz, finalColor, fogFactor );
+
+	return color;
+}
+
+#else
+
+vec4 CalcFog(vec4 color)
+{
+	return color;
+}
+
+#endif

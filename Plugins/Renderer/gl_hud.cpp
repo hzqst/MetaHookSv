@@ -489,7 +489,7 @@ void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2
 	{
 		GL_UseProgram(pp_downsample2x2.program);
 		glUniform1i(pp_downsample2x2.tex, 0);
-		glUniform2fARB(pp_downsample2x2.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
+		glUniform2f(pp_downsample2x2.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
 	}
 
 	GL_Begin2DEx(dst->iWidth, dst->iHeight);
@@ -508,19 +508,19 @@ void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int logexp)
 	{
 		GL_UseProgram(pp_lumin.program);
 		glUniform1i(pp_lumin.tex, 0);
-		glUniform2fARB(pp_lumin.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
+		glUniform2f(pp_lumin.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
 	}
 	else if(logexp == 1)
 	{
 		GL_UseProgram(pp_luminlog.program);
 		glUniform1i(pp_luminlog.tex, 0);
-		glUniform2fARB(pp_luminlog.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
+		glUniform2f(pp_luminlog.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
 	}
 	else
 	{
 		GL_UseProgram(pp_luminexp.program);
 		glUniform1i(pp_luminexp.tex, 0);
-		glUniform2fARB(pp_luminexp.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
+		glUniform2f(pp_luminexp.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
 	}
 
 	GL_Begin2DEx(dst->iWidth, dst->iHeight);
@@ -797,6 +797,9 @@ void R_DoSSAO(void)
 	if (r_refdef->onlyClientDraws || r_draw_pass || g_SvEngine_DrawPortalView)
 		return;
 
+	if ((*r_xfov) < 75)
+		return;
+
 	//Prepare parameters
 
 	const float *ProjMatrix = r_projection_matrix;
@@ -850,22 +853,22 @@ void R_DoSSAO(void)
 	{
 		GL_UseProgram(hbao_calc_blur_fog.program);
 		glUniform4fv(hbao_calc_blur_fog.control_projInfo, 1, projInfoPerspective);
-		glUniform2fvARB(hbao_calc_blur_fog.control_InvFullResolution, 1, InvFullResolution);
-		glUniform2fvARB(hbao_calc_blur_fog.control_InvQuarterResolution, 1, InvQuarterResolution);
+		glUniform2fv(hbao_calc_blur_fog.control_InvFullResolution, 1, InvFullResolution);
+		glUniform2fv(hbao_calc_blur_fog.control_InvQuarterResolution, 1, InvQuarterResolution);
 		glUniform1i(hbao_calc_blur_fog.control_projOrtho, 0);
 		glUniform1f(hbao_calc_blur_fog.control_RadiusToScreen, RadiusToScreen);
 		glUniform1f(hbao_calc_blur_fog.control_AOMultiplier, AOMultiplier);
 		glUniform1f(hbao_calc_blur_fog.control_NDotVBias, NDotVBias);
 		glUniform1f(hbao_calc_blur_fog.control_NegInvR2, NegInvR2);
 		glUniform1f(hbao_calc_blur_fog.control_PowExponent, PowExponent);
-		glUniform2fARB(hbao_calc_blur_fog.control_Fog, r_fog_control[0], r_fog_control[1]);
+		glUniform2f(hbao_calc_blur_fog.control_Fog, r_fog_control[0], r_fog_control[1]);
 	}
 	else
 	{
 		GL_UseProgram(hbao_calc_blur.program);
 		glUniform4fv(hbao_calc_blur.control_projInfo, 1, projInfoPerspective);
-		glUniform2fvARB(hbao_calc_blur.control_InvFullResolution, 1, InvFullResolution);
-		glUniform2fvARB(hbao_calc_blur.control_InvQuarterResolution, 1, InvQuarterResolution);
+		glUniform2fv(hbao_calc_blur.control_InvFullResolution, 1, InvFullResolution);
+		glUniform2fv(hbao_calc_blur.control_InvQuarterResolution, 1, InvQuarterResolution);
 		glUniform1i(hbao_calc_blur.control_projOrtho, 0);
 		glUniform1f(hbao_calc_blur.control_RadiusToScreen, RadiusToScreen);
 		glUniform1f(hbao_calc_blur.control_AOMultiplier, AOMultiplier);
@@ -891,7 +894,7 @@ void R_DoSSAO(void)
 
 	GL_UseProgram(hbao_blur.program);
 	glUniform1f(0, r_ssao_blur_sharpness->value / meters2viewspace);
-	glUniform2fARB(1, 1.0f / float(glwidth), 0);
+	glUniform2f(1, 1.0f / float(glwidth), 0);
 
 	//Texture unit 0 = calc
 	GL_DisableMultitexture();
@@ -917,7 +920,7 @@ void R_DoSSAO(void)
 
 	GL_UseProgram(hbao_blur2.program);
 	glUniform1f(0, r_ssao_blur_sharpness->value / meters2viewspace);
-	glUniform2fARB(1, 0, 1.0f / float(glheight));
+	glUniform2f(1, 0, 1.0f / float(glheight));
 
 	//Texture unit 0 = calc2
 	GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex2);

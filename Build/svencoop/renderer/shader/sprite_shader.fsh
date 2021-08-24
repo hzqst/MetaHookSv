@@ -33,7 +33,7 @@ layout(location = 0) out vec4 out_Diffuse;
 void main(void)
 {
 	#ifdef BINDLESS_ENABLED
-		sampler2D baseTex = sampler2D(SpriteFrameSSBO.frames[v_frameindex].texturehandle);
+		sampler2D baseTex = sampler2D(SpriteFrameSSBO.frames[v_frameindex].texturehandle[0]);
 	#endif
 
 	vec4 baseColor = texture2D(baseTex, v_texcoord);
@@ -65,27 +65,15 @@ void main(void)
 
 #else
 
-	#ifdef OIT_BLEND_ENABLED
+	vec4 color = CalcFog(baseColor * v_color);
 
-		vec4 color = baseColor * v_color;
+	#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED) 
 		
 		GatherFragment(color);
 
 	#else
 
-		out_Diffuse = baseColor * v_color;
-
-		#ifdef LINEAR_FOG_ENABLED
-
-			float z = gl_FragCoord.z / gl_FragCoord.w;
-			float fogFactor = ( SceneUBO.fogEnd - z ) / ( SceneUBO.fogEnd - SceneUBO.fogStart );
-			fogFactor = clamp(fogFactor, 0.0, 1.0);
-
-			vec3 finalColor = out_Diffuse.xyz;
-
-			out_Diffuse.xyz = mix(SceneUBO.fogColor.xyz, finalColor, fogFactor );
-
-		#endif
+		out_Diffuse = color;
 
 	#endif
 

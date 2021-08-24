@@ -1,10 +1,12 @@
 #version 460
 
-#define OIT_BLEND_ENABLED
+#define OIT_ALPHA_BLEND_ENABLED
 
 #include "common.h"
 
 in vec2 texCoord;
+
+layout(binding = 0) uniform sampler2D screenTex;
 
 uint colorList[MAX_NUM_FRAGS];
 float depthList[MAX_NUM_FRAGS];
@@ -20,18 +22,23 @@ void swapFrags(uint i, uint j) {
     depthList[j] = dTemp;
 }
 
-vec4 blendFTB(uint fragsCount)
+vec4 blendFTB(uint fragsCount, vec4 screenColor)
 {
-    vec4 color = vec4(0.0);
+    vec4 color = screenColor;
     for (uint i = 0; i < fragsCount; i++) {
         // Front-to-Back (FTB) blending
         // Blend the accumulated color with the color of the fragment node
         vec4 colorSrc = unpackUnorm4x8(colorList[i]);
-        float alphaSrc = colorSrc.a;
-        color.rgb = color.rgb + (1.0 - color.a) * alphaSrc * colorSrc.rgb;
-        color.a = color.a + (1.0 - color.a) * alphaSrc;
+
+        //AlphaBlend
+        float useAlphaBlend = step(0.0, depthList[i]);
+
+        vec4 alphaBlendColor = vec4(color.rgb * (1.0 - colorSrc.a) + colorSrc.a * colorSrc.rgb, 1.0);
+        vec4 additiveBlendColor = vec4(color.rgb + colorSrc.rgb, 1.0);
+
+        color = mix(additiveBlendColor, alphaBlendColor, useAlphaBlend);
     }
-    return vec4(color.rgb / color.a, color.a);
+    return color;
 }
 
 void maxHeapSink(uint x, uint fragsCount)
@@ -39,12 +46,12 @@ void maxHeapSink(uint x, uint fragsCount)
     uint c; // Child
     while((c = 2 * x + 1) < fragsCount) {
         // While children exist
-        if(c + 1 < fragsCount && depthList[c] < depthList[c+1]) {
+        if(c + 1 < fragsCount && abs(depthList[c]) > abs(depthList[c+1]) ) {
             // Find the biggest of both
             ++c;
         }
 
-        if(depthList[x] >= depthList[c]) {
+        if( abs(depthList[x]) <= abs(depthList[c]) ) {
             // Does it have to sink
             return;
         } else {
@@ -54,7 +61,7 @@ void maxHeapSink(uint x, uint fragsCount)
     }
 }
 
-vec4 heapSort(uint fragsCount)
+vec4 heapSort(uint fragsCount, vec4 screenColor)
 {
     uint i;
     for (i = (fragsCount + 1)/2 ; i > 0 ; --i) {
@@ -67,7 +74,7 @@ vec4 heapSort(uint fragsCount)
         maxHeapSink(0, fragsCount-i); // Sink the max to obtain correct heap
     }
 
-    return blendFTB(fragsCount);
+    return blendFTB(fragsCount, screenColor);
 }
 
 void main() {
@@ -103,5 +110,7 @@ void main() {
         discard;
     }
 
-    fragColor = heapSort(numFrags);
+    vec4 screenColor = texture2D(screenTex, texCoord);
+
+    fragColor = heapSort(numFrags, screenColor);
 }

@@ -94,12 +94,12 @@ void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 	GL_Init();
 	R_InstallHook();
 
+	pExportFunc->HUD_PlayerMoveInit = HUD_PlayerMoveInit;
 	pExportFunc->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
 	pExportFunc->HUD_Redraw = HUD_Redraw;
 	pExportFunc->HUD_Init = HUD_Init;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 	pExportFunc->HUD_DrawNormalTriangles = HUD_DrawNormalTriangles;
-	pExportFunc->HUD_DrawTransparentTriangles = HUD_DrawTransparentTriangles;
 }
 
 void IPluginsV3::ExitGame(int iResult)

@@ -47,8 +47,17 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 		if (state & WATER_REFRACT_ENABLED)
 			defs << "#define REFRACT_ENABLED\n";
 
+		if (state & WATER_LINEAR_FOG_ENABLED)
+			defs << "#define LINEAR_FOG_ENABLED\n";
+
 		if (state & WATER_BINDLESS_ENABLED)
 			defs << "#define BINDLESS_ENABLED\n";
+
+		if (state & WATER_OIT_ALPHA_BLEND_ENABLED)
+			defs << "#define OIT_ALPHA_BLEND_ENABLED\n";
+
+		if (state & WATER_OIT_ADDITIVE_BLEND_ENABLED)
+			defs << "#define OIT_ADDITIVE_BLEND_ENABLED\n";
 
 		if (glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define UINT64_ENABLED\n";

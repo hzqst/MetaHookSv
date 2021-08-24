@@ -2748,8 +2748,29 @@ void R_InstallHook(void)
 	Install_InlineHook(R_AddDynamicLights);
 	Install_InlineHook(R_GLStudioDrawPoints);
 	Install_InlineHook(R_DrawBrushModel);
+	Install_InlineHook(R_DrawTEntitiesOnList);
 	Install_InlineHook(R_AddTEntity);
 	Install_InlineHook(GL_LoadTexture2);
 	Install_InlineHook(enginesurface_drawFlushText);
 	Install_InlineHook(Mod_LoadStudioModel);
+
+	//Allocate 32bytes instead of 28 bytes for mspriteframe_t
+#define Mod_LoadSpriteFrame_Sig "\x6A\x1C\x89\x44\x28\x2A\xE8\x2A\x2A\x2A\x2A\x6A\x1C"
+	PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
+	PUCHAR SearchLimit = (PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize;
+	while (SearchBegin < SearchLimit)
+	{
+		auto pFound = (PUCHAR)g_pMetaHookAPI->SearchPattern(SearchBegin, SearchLimit - SearchBegin, Mod_LoadSpriteFrame_Sig, sizeof(Mod_LoadSpriteFrame_Sig)-1);
+		if (pFound)
+		{
+			g_pMetaHookAPI->WriteBYTE(pFound + 1, 0x20);
+			g_pMetaHookAPI->WriteBYTE(pFound + 12, 0x20);
+
+			SearchBegin = pFound + sizeof(Mod_LoadSpriteFrame_Sig) - 1;
+		}
+		else
+		{
+			break;
+		}
+	}
 }

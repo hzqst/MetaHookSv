@@ -24,7 +24,6 @@
 #define MAX_DECALVERTS 32
 #define MAX_DECALS 4096
 
-#define MAX_DEPTH_COMPLEXITY 8
 
 #define FDECAL_PERMANENT			0x01		// This decal should not be removed in favor of any new decals
 #define FDECAL_REFERENCE			0x02		// This is a decal that's been moved from another level
@@ -34,6 +33,8 @@
 #define FDECAL_CLIPTEST				0x20		// Decal needs to be clip-tested
 #define FDECAL_NOCLIP				0x40		// Decal is not clipped by containing polygon
 #define FDECAL_VBO					0x1000		// Decalvertex is bufferred in VBO
+
+#define MAX_DEPTH_COMPLEXITY 8
 
 #define BINDING_POINT_SCENE_UBO 0
 #define BINDING_POINT_DECAL_SSBO 1
@@ -331,7 +332,7 @@ typedef struct r_worldsurf_s
 	std::vector <GLuint64> vDecalGLTextureHandles;
 	std::vector <GLint> vDecalStartIndex;
 	std::vector <GLsizei> vDecalVertexCount;
-	std::vector<spriteframe_ssbo_t> vSpriteSSBO;
+	std::vector<spriteframe_ssbo_t> vSpriteFrameSSBO;
 }r_worldsurf_t;
 
 typedef struct
@@ -358,6 +359,9 @@ extern float r_near_z;
 extern float r_far_z;
 extern bool r_ortho;
 
+extern cl_entity_t *g_OITBlendObjects[512];
+extern int g_iNumOITBlendObjects;
+
 void R_InitWSurf(void);
 void R_NewMapWSurf(void);
 
@@ -381,7 +385,6 @@ extern cvar_t *r_wsurf_parallax_scale;
 extern cvar_t *r_wsurf_sky_occlusion;
 extern cvar_t *r_wsurf_zprepass;
 extern cvar_t *r_wsurf_detail;
-
 
 void FreeBSPEntity(bspentity_t *ent);
 void R_ClearBSPEntities(void);
@@ -407,21 +410,23 @@ void R_Reload_f(void);
 
 void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
 
-#define WSURF_DIFFUSE_ENABLED			1
-#define WSURF_LIGHTMAP_ENABLED			2
-#define WSURF_DETAILTEXTURE_ENABLED		4
-#define WSURF_NORMALTEXTURE_ENABLED		8
-#define WSURF_PARALLAXTEXTURE_ENABLED	0x10
-#define WSURF_SPECULARTEXTURE_ENABLED	0x20
-#define WSURF_LINEAR_FOG_ENABLED		0x40
-#define WSURF_GBUFFER_ENABLED			0x80
-#define WSURF_TRANSPARENT_ENABLED		0x100
-#define WSURF_SHADOW_CASTER_ENABLED		0x200
-#define WSURF_SHADOWMAP_ENABLED			0x400
-#define WSURF_SHADOWMAP_HIGH_ENABLED	0x800
-#define WSURF_SHADOWMAP_MEDIUM_ENABLED	0x1000
-#define WSURF_SHADOWMAP_LOW_ENABLED		0x2000
-#define WSURF_BINDLESS_ENABLED			0x4000
-#define WSURF_LEGACY_ENABLED			0x8000
-#define WSURF_DECAL_ENABLED				0x10000
-#define WSURF_CLIP_ENABLED				0x20000
+#define WSURF_DIFFUSE_ENABLED				1
+#define WSURF_LIGHTMAP_ENABLED				2
+#define WSURF_DETAILTEXTURE_ENABLED			4
+#define WSURF_NORMALTEXTURE_ENABLED			8
+#define WSURF_PARALLAXTEXTURE_ENABLED		0x10
+#define WSURF_SPECULARTEXTURE_ENABLED		0x20
+#define WSURF_LINEAR_FOG_ENABLED			0x40
+#define WSURF_GBUFFER_ENABLED				0x80
+#define WSURF_TRANSPARENT_ENABLED			0x100
+#define WSURF_SHADOW_CASTER_ENABLED			0x200
+#define WSURF_SHADOWMAP_ENABLED				0x400
+#define WSURF_SHADOWMAP_HIGH_ENABLED		0x800
+#define WSURF_SHADOWMAP_MEDIUM_ENABLED		0x1000
+#define WSURF_SHADOWMAP_LOW_ENABLED			0x2000
+#define WSURF_BINDLESS_ENABLED				0x4000
+#define WSURF_LEGACY_ENABLED				0x8000
+#define WSURF_DECAL_ENABLED					0x10000
+#define WSURF_CLIP_ENABLED					0x20000
+#define WSURF_OIT_ALPHA_BLEND_ENABLED		0x40000
+#define WSURF_OIT_ADDITIVE_BLEND_ENABLED	0x80000

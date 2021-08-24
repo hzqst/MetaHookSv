@@ -6,6 +6,8 @@
 #include "parsemsg.h"
 #include "qgl.h"
 
+struct playermove_s *playermove = NULL;
+
 //Error when can't find sig
 void Sys_ErrorEx(const char *fmt, ...)
 {
@@ -90,6 +92,11 @@ void R_Version_f(void)
 	gEngfuncs.Con_Printf("Renderer Version:\n%s\n", META_RENDERER_VERSION);
 }
 
+void HUD_PlayerMoveInit(struct playermove_s *ppmove)
+{
+	playermove = ppmove;
+}
+
 void HUD_Init(void)
 {
 	gExportfuncs.HUD_Init();
@@ -150,39 +157,10 @@ void HUD_DrawNormalTriangles(void)
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	}
-
 }
 
 void HUD_DrawTransparentTriangles(void)
 {
-	/*glColorMask(0, 0, 0, 0);
-
-	//Initialize linked list
-	GL_Begin2D();
-	GL_UseProgram(linkedlist_clear.program);
-	R_DrawHUDQuad(glwidth, glheight);
-	GL_End2D();
-	
-	//Initialize atomic counter
-	GLuint val = 0;
-	glClearNamedBufferData(r_wsurf.hOITAtomicCounter, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, (const void*)&val);
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-	R_DrawSpriteEntris(kRenderTransAlpha);
-	R_DrawSpriteEntris(kRenderTransTexture);
-	R_DrawSpriteEntris(kRenderTransColor);
-
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-	glColorMask(1, 1, 1, 1);
-
-	R_BlitOITBlendBuffer();
-
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);*/
-
-	R_DrawSpriteEntris(kRenderTransAdd);
-	R_DrawSpriteEntris(kRenderGlow);
-
 	gExportfuncs.HUD_DrawTransparentTriangles();
 }
 

@@ -74,7 +74,6 @@ int *mod_numknown = NULL;
 int gl_max_texture_size = 0;
 float gl_max_ansio = 0;
 GLuint gl_color_format = 0;
-cvar_t *r_vertical_fov = NULL;
 
 int *gl_msaa_fbo = 0;
 int *gl_backbuffer_fbo = 0;
@@ -94,6 +93,7 @@ float r_entity_matrix[4][4];
 float r_entity_color[4];
 
 bool r_draw_opaque = false;
+bool r_draw_oitblend = false;
 
 int r_draw_pass = 0;
 
@@ -188,6 +188,9 @@ cvar_t *v_lambert = NULL;
 cvar_t *cl_righthand = NULL;
 cvar_t *chase_active = NULL;
 
+cvar_t *r_vertical_fov = NULL;
+cvar_t *r_oit_blend = NULL;
+
 int R_GetDrawPass(void)
 {
 	return r_draw_pass;
@@ -267,9 +270,9 @@ float GlowBlend(cl_entity_t *entity)
 	VectorSubtract(r_entorigin, r_origin, tmp);
 	dist = VectorLength(tmp);
 
-	auto trace = gEngfuncs.PM_TraceLine(r_origin, r_entorigin, r_traceglow->value ? PM_GLASS_IGNORE : (PM_GLASS_IGNORE | PM_STUDIO_IGNORE), 2, -1);
+	auto trace = playermove->PM_PlayerTrace(r_origin, r_entorigin, r_traceglow->value ? PM_GLASS_IGNORE : (PM_GLASS_IGNORE | PM_STUDIO_IGNORE), -1);
 
-	if ((1.0 - trace->fraction) * dist > 8)
+	if ((1.0 - trace.fraction) * dist > 8)
 		return 0;
 
 	if (entity->curstate.renderfx == kRenderFxNoDissipation)
@@ -295,7 +298,6 @@ float GlowBlend(cl_entity_t *entity)
 int CL_FxBlend(cl_entity_t *entity)
 {
 	//Hack for R_DrawSpriteModel
-
 	if (entity->model && entity->model->type == mod_sprite && entity->curstate.rendermode == kRenderNormal)
 	{
 		return 255;
@@ -304,60 +306,168 @@ int CL_FxBlend(cl_entity_t *entity)
 	return gRefFuncs.CL_FxBlend(entity);
 }
 
-void R_AddTEntity(cl_entity_t *pEnt)
+void R_DrawTEntitiesOnList(int onlyClientDraw)
 {
-	if (pEnt->model && pEnt->model->type == mod_brush && pEnt->curstate.rendermode == kRenderTransAlpha)
+	if (!r_drawentities->value)
+		return;
+
+	if (onlyClientDraw)
+		return;
+
+	if (r_oit_blend->value)
 	{
-		if (pEnt->curstate.renderamt == 0)
+		glColorMask(0, 0, 0, 0);
+
+		//Clear linked list
+		GL_Begin2D();
+		GL_UseProgram(linkedlist_clear.program);
+		R_DrawHUDQuad(glwidth, glheight);
+		GL_End2D();
+
+		//Initialize atomic counter
+		GLuint val = 0;
+		glClearNamedBufferData(r_wsurf.hOITAtomicCounter, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, (const void*)&val);
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+		r_draw_oitblend = true;
+
+		//Render studiomodels and brushmodels into Blend SSBO
+		for (int i = 0; i < (*numTransObjs); i++)
+		{
+			(*currententity) = (*transObjects)[i].pEnt;
+			R_DrawCurrentEntity(true);
+		}
+
+		(*numTransObjs) = 0;
+
+		//Render sprites into Blend SSBO
+
+		R_DrawSpriteEntris(kRenderTransAlpha);
+		R_DrawSpriteEntris(kRenderTransColor);
+		R_DrawSpriteEntris(kRenderTransTexture);
+		R_DrawSpriteEntris(kRenderTransAdd);
+		R_DrawSpriteEntris(kRenderGlow);
+
+		r_draw_oitblend = false;
+
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+		glColorMask(1, 1, 1, 1);
+
+		R_BlitOITBlendBuffer();
+
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+	}
+
+	gRefFuncs.R_DrawTEntitiesOnList(onlyClientDraw);
+}
+
+void R_AddTEntity(cl_entity_t *ent)
+{
+	if (!ent->model)
+		return;
+
+	//Brush models with kRenderTransAlpha are forced to be opaque, except renderamt = 0 
+	if (ent->model->type == mod_brush && ent->curstate.rendermode == kRenderTransAlpha)
+	{
+		if (ent->curstate.renderamt == 0)
 			return;
 
-		cl_entity_t *backup_curentity = (*currententity);
+		(*currententity) = ent;
+		R_DrawCurrentEntity(false);
 
-		(*currententity) = pEnt;
-		R_DrawCurrentEntity();
-
-		(*currententity) = backup_curentity;
 		return;
 	}
-
-
-
-	float dist;
-	vec3_t v;
-
-	if ((*numTransObjs) >= (*maxTransObjs))
+	
+	if (r_oit_blend->value)
 	{
-		gEngfuncs.Con_Printf("R_AddTEntity: Too many objects");
-		return;
-	}
+		switch (ent->model->type)
+		{
+		case mod_brush: case mod_studio:
+		{
+			if ((*numTransObjs) >= (*maxTransObjs))
+			{
+				Sys_ErrorEx("R_AddTEntity: Too many objects");
+				return;
+			}
 
-	if (!pEnt->model || pEnt->model->type != mod_brush || pEnt->curstate.rendermode != kRenderTransAlpha)
-	{
-		VectorAdd(pEnt->model->mins, pEnt->model->maxs, v);
-		VectorScale(v, 0.5, v);
-		VectorAdd(v, pEnt->origin, v);
-		VectorSubtract(r_origin, v, v);
-		dist = DotProduct(v, v);
+			(*transObjects)[(*numTransObjs)].pEnt = ent;
+			(*transObjects)[(*numTransObjs)].distance = 0;
+			(*numTransObjs)++;
+			break;
+		}
+		case mod_sprite:
+		{
+			//Sprites are saved in sprite_entry and upload to SSBO for later usage.
+			(*r_blend) = CL_FxBlend(ent);
+
+			if ((*r_blend) <= 0)
+				return;
+
+			(*r_blend) = (*r_blend) / 255.0;
+
+			if (ent->curstate.body)
+			{
+				auto pAttachment = R_GetAttachmentPoint(ent->curstate.skin, ent->curstate.body);
+				VectorCopy(pAttachment, r_entorigin);
+			}
+			else
+			{
+				VectorCopy((*currententity)->origin, r_entorigin);
+			}
+
+			if ((*currententity)->curstate.rendermode == kRenderGlow)
+				(*r_blend) *= GlowBlend(ent);
+
+			if ((*r_blend) != 0)
+			{
+				(*currententity) = ent;
+				R_DrawSpriteModel(ent);
+			}
+
+			break;
+		}
+		}
 	}
 	else
 	{
-		dist = 1000000000;
+		float dist;
+		vec3_t v;
+
+		if ((*numTransObjs) >= (*maxTransObjs))
+		{
+			gEngfuncs.Con_Printf("R_AddTEntity: Too many objects");
+			return;
+		}
+
+		if (!ent->model || ent->model->type != mod_brush || ent->curstate.rendermode != kRenderTransAlpha)
+		{
+			VectorAdd(ent->model->mins, ent->model->maxs, v);
+			VectorScale(v, 0.5, v);
+			VectorAdd(v, ent->origin, v);
+			VectorSubtract(r_origin, v, v);
+			dist = DotProduct(v, v);
+		}
+		else
+		{
+			dist = 1000000000;
+		}
+
+		int i;
+
+		for (i = (*numTransObjs); i > 0; i--)
+		{
+			if ((*transObjects)[i - 1].distance >= dist)
+				break;
+
+			(*transObjects)[i].pEnt = (*transObjects)[i - 1].pEnt;
+			(*transObjects)[i].distance = (*transObjects)[i - 1].distance;
+		}
+
+		(*transObjects)[i].pEnt = ent;
+		(*transObjects)[i].distance = dist;
+		(*numTransObjs)++;
 	}
-
-	int i;
-
-	for ( i = (*numTransObjs); i > 0; i-- )
-	{
-		if ( (*transObjects)[i - 1].distance >= dist )
-			break;
-
-		(*transObjects)[i].pEnt = (*transObjects)[i - 1].pEnt;
-		(*transObjects)[i].distance = (*transObjects)[i - 1].distance;
-	}
-
-	(*transObjects)[i].pEnt = pEnt;
-	(*transObjects)[i].distance = dist;
-	(*numTransObjs)++;
 }
 
 entity_state_t *R_GetPlayerState(int index)
@@ -365,12 +475,67 @@ entity_state_t *R_GetPlayerState(int index)
 	return ((entity_state_t *)((char *)cl_frames + size_of_frame * ((*cl_parsecount) & 63) + sizeof(entity_state_t) * index));
 }
 
-void R_DrawCurrentEntity(void)
+void R_DrawCurrentEntity(bool bTransparent)
 {
+	if (bTransparent)
+	{
+		glDisable(GL_FOG);
+
+		(*r_blend) = CL_FxBlend((*currententity));
+
+		if ((*r_blend) <= 0)
+			return;
+
+		(*r_blend) = (*r_blend) / 255.0;
+
+		//if ((*currententity)->curstate.rendermode == kRenderGlow && (*currententity)->model->type != mod_sprite)
+		//	gEngfuncs.Con_DPrintf("Non-sprite set to glow!\n");
+	}
+
 	switch ((*currententity)->model->type)
 	{
+	case mod_sprite:
+	{
+		if ((*currententity)->curstate.body)
+		{
+			float *pAttachment;
+
+			pAttachment = R_GetAttachmentPoint((*currententity)->curstate.skin, (*currententity)->curstate.body);
+			VectorCopy(pAttachment, r_entorigin);
+		}
+		else
+		{
+			VectorCopy((*currententity)->origin, r_entorigin);
+		}
+
+		if (bTransparent)
+		{
+			(*r_blend) = CL_FxBlend((*currententity));
+
+			if ((*currententity)->curstate.rendermode == kRenderGlow)
+				(*r_blend) *= GlowBlend((*currententity));
+		}
+		else
+		{
+			(*r_blend) = 1;
+		}
+
+		if ((*r_blend) != 0)
+			R_DrawSpriteModel((*currententity));
+
+		break;
+	}
 	case mod_brush:
 	{
+		if (bTransparent)
+		{
+			if ((*g_bUserFogOn))
+			{
+				if ((*currententity)->curstate.rendermode != kRenderGlow && (*currententity)->curstate.rendermode != kRenderTransAdd)
+					glEnable(GL_FOG);
+			}
+		}
+
 		R_DrawBrushModel((*currententity));
 		break;
 	}
@@ -412,11 +577,6 @@ void R_DrawCurrentEntity(void)
 
 		break;
 	}
-
-	default:
-	{
-		break;
-	}
 	}
 }
 
@@ -426,70 +586,64 @@ void R_SetRenderMode(cl_entity_t *pEntity)
 	{
 	case kRenderNormal:
 	{
-		glDisable(GL_BLEND);
-
 		r_entity_color[0] = 1;
 		r_entity_color[1] = 1;
 		r_entity_color[2] = 1;
 		r_entity_color[3] = 1;
+		glDisable(GL_BLEND);
 		break;
 	}
 
 	case kRenderTransColor:
 	{
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 		r_entity_color[0] = (*currententity)->curstate.rendercolor.r / 255.0;
 		r_entity_color[1] = (*currententity)->curstate.rendercolor.g / 255.0;
 		r_entity_color[2] = (*currententity)->curstate.rendercolor.b / 255.0;
 		r_entity_color[3] = (*r_blend);
-
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_BLEND);
 		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		break;
 	}
 
 	case kRenderTransAdd:
 	{
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_ONE, GL_ONE);
-
-		glDepthMask(0);
-
 		r_entity_color[0] = (*r_blend);
 		r_entity_color[1] = (*r_blend);
 		r_entity_color[2] = (*r_blend);
 		r_entity_color[3] = 1;
 
+		glBlendFunc(GL_ONE, GL_ONE);
+		glDepthMask(0);
+		glEnable(GL_BLEND);
 		R_SetGBufferBlend(GL_ONE, GL_ONE);
 		break;
 	}
 
 	case kRenderTransAlpha:
 	{
-		glDisable(GL_BLEND);
-		glEnable(GL_ALPHA_TEST);
-		glAlphaFunc(GL_GREATER, gl_alphamin->value);
-
 		r_entity_color[0] = 1;
 		r_entity_color[1] = 1;
 		r_entity_color[2] = 1;
 		r_entity_color[3] = 1;
+
+		glEnable(GL_ALPHA_TEST);
+		glDisable(GL_BLEND);
+		glAlphaFunc(GL_GREATER, gl_alphamin->value);
 		
 		break;
 	}
 
 	default:
 	{
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 		r_entity_color[0] = 1;
 		r_entity_color[1] = 1;
 		r_entity_color[2] = 1;
 		r_entity_color[3] = (*r_blend);
-		glDepthMask(0);
 
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glDepthMask(0);
+		glEnable(GL_BLEND);
 		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		break;
 	}
@@ -1347,8 +1501,8 @@ void R_InitCvars(void)
 	cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
 	chase_active = gEngfuncs.pfnGetCvarPointer("chase_active");
 
-	//r_msaa = gEngfuncs.pfnRegisterVariable("r_msaa", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_vertical_fov = gEngfuncs.pfnRegisterVariable("r_vertical_fov", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_oit_blend = gEngfuncs.pfnRegisterVariable("r_oit_blend", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 }
 
 void R_Init(void)

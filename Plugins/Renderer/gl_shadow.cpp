@@ -212,7 +212,7 @@ void R_RenderShadowMap(void)
 
 			(*currententity)->curstate.renderfx = kRenderFxShadowCaster;
 
-			R_DrawCurrentEntity();
+			R_DrawCurrentEntity(false);
 
 			(*currententity)->curstate.renderfx = saved_renderfx;
 		}

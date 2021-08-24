@@ -12,6 +12,7 @@
 #include <studio.h>
 #include <r_studioint.h>
 #include <pm_movevars.h>
+#include <pm_shared.h>
 
 #include "plugins.h"
 #include "exportfuncs.h"
@@ -104,6 +105,8 @@ extern float *g_UserFogEnd;
 
 extern model_t *mod_known;
 extern int *mod_numknown;
+
+extern struct playermove_s *playermove;
 
 //gl extension
 
@@ -240,7 +243,7 @@ void R_DrawBrushModel(cl_entity_t *entity);
 void R_DrawSpriteModel(cl_entity_t *entity);
 entity_state_t *R_GetPlayerState(int index);
 int CL_FxBlend(cl_entity_t *entity);
-void R_DrawCurrentEntity(void);
+void R_DrawCurrentEntity(bool bTransparent);
 void R_DrawTEntitiesOnList(int onlyClientDraw);
 void R_AddTEntity(cl_entity_t *pEnt);
 void GL_Shutdown(void);
@@ -348,8 +351,11 @@ extern float r_identity_matrix[4][4];
 extern float r_entity_matrix[4][4];
 extern float r_entity_color[4];
 extern bool r_draw_opaque;
+extern bool r_draw_oitblend;
 
 extern bool g_SvEngine_DrawPortalView;
 extern int r_draw_pass;
+
+extern cvar_t *r_oit_blend;
 
 #define BUFFER_OFFSET(i) ((unsigned int *)NULL + (i))

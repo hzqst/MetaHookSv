@@ -342,10 +342,14 @@ void main()
 			#ifdef BINDLESS_ENABLED
 				sampler2D specularTex = sampler2D(TextureSSBO.handles[v_drawid * 5 + TEXTURE_SSBO_SPECULAR]);
 			#endif
+
 			vec2 specularTexCoord = vec2(v_diffusetexcoord.x * v_speculartexcoord.x, v_diffusetexcoord.y * v_speculartexcoord.y);
 			vec4 specularColor = texture2D(specularTex, specularTexCoord);
+
 		#else
+
 			vec4 specularColor = vec4(0.0);
+
 		#endif
 
 		out_Diffuse = diffuseColor * detailColor;
@@ -357,25 +361,19 @@ void main()
 	#else
 
 		#ifdef TRANSPARENT_ENABLED
+		vec4 color = CalcFog(diffuseColor * lightmapColor * detailColor * EntityUBO.color);
+		#else
+		vec4 color = CalcFog(diffuseColor * lightmapColor * detailColor);
+		#endif
 
-			out_Diffuse = diffuseColor * lightmapColor * detailColor * EntityUBO.color;
+		#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED) 
+
+			GatherFragment(color);
 
 		#else
 
-			out_Diffuse = diffuseColor * lightmapColor * detailColor;
+			out_Diffuse = color;
 
-		#endif
-
-		#ifdef LINEAR_FOG_ENABLED
-
-			float z = gl_FragCoord.z / gl_FragCoord.w;
-			float fogFactor = ( SceneUBO.fogEnd - z ) / ( SceneUBO.fogEnd - SceneUBO.fogStart );
-			fogFactor = clamp(fogFactor, 0.0, 1.0);
-
-			vec3 finalColor = out_Diffuse.xyz;
-
-			out_Diffuse.xyz = mix(SceneUBO.fogColor.xyz, finalColor, fogFactor );
-			
 		#endif
 
 	#endif

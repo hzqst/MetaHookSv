@@ -131,6 +131,12 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		if (state & WSURF_CLIP_ENABLED)
 			defs << "#define CLIP_ENABLED\n";
 
+		if (state & WSURF_OIT_ALPHA_BLEND_ENABLED)
+			defs << "#define OIT_ALPHA_BLEND_ENABLED\n";
+
+		if (state & WSURF_OIT_ADDITIVE_BLEND_ENABLED)
+			defs << "#define OIT_ADDITIVE_BLEND_ENABLED\n";
+
 		if(glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define UINT64_ENABLED\n";
 	
@@ -141,7 +147,6 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\wsurf_shader.vsh", "renderer\\shader\\wsurf_shader.fsh", def.c_str(), def.c_str(), NULL);
 
 		SHADER_UNIFORM(prog, u_parallaxScale, "u_parallaxScale");
-		SHADER_UNIFORM(prog, u_color, "u_color");
 
 		g_WSurfProgramTable[state] = prog;
 	}
@@ -156,9 +161,6 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 
 		if (prog.u_parallaxScale != -1)
 			glUniform1f(prog.u_parallaxScale, r_wsurf_parallax_scale->value);
-
-		if (prog.u_color != -1)
-			glUniform4f(prog.u_color, 1, 1, 1, 1);
 
 		if (progOutput)
 			*progOutput = prog;
@@ -1003,11 +1005,6 @@ void R_GenerateSceneUBO(void)
 	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 }
 
-void R_ClearSpriteCache(void)
-{
-	r_wsurf.vSpriteSSBO.clear();
-}
-
 void R_ClearDecalCache(void)
 {
 	if(r_wsurf.vDecalGLTextures.size() < MAX_DECALS)
@@ -1190,6 +1187,14 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 		}
 
+		if (r_draw_oitblend)
+		{
+			if((*currententity)->curstate.rendermode == kRenderTransAdd)
+				WSurfProgramState |= WSURF_OIT_ADDITIVE_BLEND_ENABLED;
+			else
+				WSurfProgramState |= WSURF_OIT_ALPHA_BLEND_ENABLED;
+		}
+
 		if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
 		{
 			WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
@@ -1308,6 +1313,14 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 			if (drawgbuffer)
 			{
 				WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+			}
+
+			if (r_draw_oitblend)
+			{
+				if ((*currententity)->curstate.rendermode == kRenderTransAdd)
+					WSurfProgramState |= WSURF_OIT_ADDITIVE_BLEND_ENABLED;
+				else
+					WSurfProgramState |= WSURF_OIT_ALPHA_BLEND_ENABLED;
 			}
 
 			if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
@@ -1888,7 +1901,7 @@ void R_NewMapWSurf(void)
 {
 	R_GenerateSceneUBO();
 
-	R_ClearSpriteCache();
+	R_ReloadSpriteFrameCache();
 	R_ClearDecalCache();
 
 	for (auto p : g_DetailTextureTable)
@@ -3257,21 +3270,18 @@ void R_RecursiveWorldNodeVBO(mnode_t *node)
 
 void R_DrawBrushModel(cl_entity_t *e)
 {
-	int i;
-	int k;
-	model_t *clmodel;
 	qboolean rotated;
 
 	(*currententity) = e;
 	(*currenttexture) = -1;
 
-	clmodel = e->model;
+	auto clmodel = e->model;
 
 	if (e->angles[0] || e->angles[1] || e->angles[2])
 	{
 		rotated = true;
 
-		for (i = 0; i < 3; i++)
+		for (int i = 0; i < 3; i++)
 		{
 			r_entity_mins[i] = e->origin[i] - clmodel->radius;
 			r_entity_maxs[i] = e->origin[i] + clmodel->radius;
@@ -3329,7 +3339,7 @@ void R_DrawBrushModel(cl_entity_t *e)
 					goto skip_marklight;
 			}
 
-			for (k = 0; k < max_dlights; k++)
+			for (int k = 0; k < max_dlights; k++)
 			{
 				vec3_t saveOrigin;
 
@@ -3458,9 +3468,13 @@ void R_SetupSceneUBO(void)
 void R_DrawWorld(void)
 {
 	r_draw_opaque = true;
+	r_draw_oitblend = false;
+	(*numTransObjs) = 0;
 
 	for (int i = 0; i < kRenderTransAdd + 1; ++i)
+	{
 		g_iNumSpriteEntries[i] = 0;
+	}
 
 	InvertMatrix(r_world_matrix, r_world_matrix_inv);
 	InvertMatrix(r_projection_matrix, r_proj_matrix_inv);

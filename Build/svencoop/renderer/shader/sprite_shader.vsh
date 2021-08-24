@@ -90,20 +90,19 @@ void R_GetSpriteAxes_Oriented(vec3 angles, inout vec3 forward, inout vec3 right,
 
 void main()
 {
-	vec4 in_color = SpriteEntrySSBO.entries[gl_InstanceID].color;
-	vec4 in_origin = SpriteEntrySSBO.entries[gl_InstanceID].origin;
-	vec3 in_angles = SpriteEntrySSBO.entries[gl_InstanceID].angles;
-	int in_frameindex = SpriteEntrySSBO.entries[gl_InstanceID].frameindex;
+	vec4 in_color = SpriteEntrySSBO.entries[gl_InstanceID].color.xyzw;
+	vec3 in_origin = SpriteEntrySSBO.entries[gl_InstanceID].origin.xyz;
+	float in_scale = SpriteEntrySSBO.entries[gl_InstanceID].origin.w;
+	vec3 in_angles = SpriteEntrySSBO.entries[gl_InstanceID].angles.xyz;
+	int in_frameindex = SpriteEntrySSBO.entries[gl_InstanceID].frameindex.x;
 
-	int type = SpriteFrameSSBO.frames[in_frameindex].type;
-	int width = SpriteFrameSSBO.frames[in_frameindex].width;
-	int height = SpriteFrameSSBO.frames[in_frameindex].height;
-	float up = SpriteFrameSSBO.frames[in_frameindex].up;
-	float down = SpriteFrameSSBO.frames[in_frameindex].down;
-	float left = SpriteFrameSSBO.frames[in_frameindex].left;
-	float right = SpriteFrameSSBO.frames[in_frameindex].right;
-
-	float scale = in_origin.w;
+	int type = SpriteFrameSSBO.frames[in_frameindex].type_width_height_texturenum.x;
+	int width = SpriteFrameSSBO.frames[in_frameindex].type_width_height_texturenum.y;
+	int height = SpriteFrameSSBO.frames[in_frameindex].type_width_height_texturenum.z;
+	float up = SpriteFrameSSBO.frames[in_frameindex].up_down_left_right.x;
+	float down = SpriteFrameSSBO.frames[in_frameindex].up_down_left_right.y;
+	float left = SpriteFrameSSBO.frames[in_frameindex].up_down_left_right.z;
+	float right = SpriteFrameSSBO.frames[in_frameindex].up_down_left_right.w;
 
 	uint idx = gl_VertexID % 4;
 
@@ -121,21 +120,21 @@ void main()
 	vec3 vRight = vRightArray[type];
 	vec3 vUp = vUpArray[type];
 
-	vec3 vertex[4];
+	vec3 vertexArray[4];
 
-	vertex[0] = in_origin.xyz + (scale * down) * vUp;
-	vertex[0] = vertex[0] + (scale * left) * vRight;
+	vertexArray[0] = in_origin + (in_scale * down) * vUp;
+	vertexArray[0] = vertexArray[0] + (in_scale * left) * vRight;
 
-	vertex[1] = in_origin.xyz + (scale * up) * vUp;
-	vertex[1] = vertex[1] + (scale * left) * vRight;
+	vertexArray[1] = in_origin + (in_scale * up) * vUp;
+	vertexArray[1] = vertexArray[1] + (in_scale * left) * vRight;
 	
-	vertex[2] = in_origin.xyz + (scale * up) * vUp;
-	vertex[2] = vertex[2] + (scale * right) * vRight;
+	vertexArray[2] = in_origin + (in_scale * up) * vUp;
+	vertexArray[2] = vertexArray[2] + (in_scale * right) * vRight;
 
-	vertex[3] = in_origin.xyz + (scale * down) * vUp;
-	vertex[3] = vertex[3] + (scale * right) * vRight;
+	vertexArray[3] = in_origin + (in_scale * down) * vUp;
+	vertexArray[3] = vertexArray[3] + (in_scale * right) * vRight;
 
-	vec3 outvert = vertex[idx];
+	vec3 outvert = vertexArray[idx];
 
 	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * vec4(outvert, 1.0);
 

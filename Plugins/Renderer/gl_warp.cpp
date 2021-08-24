@@ -59,10 +59,26 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 		}
 
 		if (!bIsAboveWater)
+		{
 			programState |= WATER_UNDERWATER_ENABLED;
+		}
+		else
+		{
+			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			{
+				programState |= WATER_LINEAR_FOG_ENABLED;
+			}
+		}
 
 		if (drawgbuffer)
+		{
 			programState |= WATER_GBUFFER_ENABLED;
+		}
+
+		if (r_draw_oitblend)
+		{
+			programState |= WATER_OIT_ALPHA_BLEND_ENABLED;
+		}
 
 		water_program_t prog = { 0 };
 		R_UseWaterProgram(programState, &prog);
@@ -140,6 +156,31 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 
 		if (!bNoBindless)
 			programState |= WATER_BINDLESS_ENABLED;
+
+		if (!bIsAboveWater)
+		{
+		
+		}
+		else
+		{
+			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			{
+				programState |= WATER_LINEAR_FOG_ENABLED;
+			}
+		}
+
+		if (drawgbuffer)
+		{
+			programState |= WATER_GBUFFER_ENABLED;
+		}
+
+		if (r_draw_oitblend)
+		{
+			if ((*currententity)->curstate.rendermode == kRenderTransAdd)
+				programState |= WATER_OIT_ADDITIVE_BLEND_ENABLED;
+			else
+				programState |= WATER_OIT_ALPHA_BLEND_ENABLED;
+		}
 
 		water_program_t prog = { 0 };
 		R_UseWaterProgram(programState, &prog);

@@ -153,9 +153,6 @@ void main()
 
 #endif
 
-//todo, blend with fog ?
-float flFogFactor = 0.0;
-
 #ifdef GBUFFER_ENABLED
 
 	vec2 vOctNormal = UnitVectorToOctahedron(vNormal);
@@ -170,7 +167,17 @@ float flFogFactor = 0.0;
 
 #else
 
-	out_Diffuse = vFinalColor;
+	vec4 color = CalcFog(vFinalColor);
+
+	#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED) 
+
+		GatherFragment(color);
+
+	#else
+
+		out_Diffuse = color;
+
+	#endif	
 
 #endif
 }

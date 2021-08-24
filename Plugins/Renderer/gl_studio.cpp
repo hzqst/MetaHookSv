@@ -258,10 +258,6 @@ void R_StudioReloadVBOCache(void)
 		}
 	}
 
-#define NL_PRESENT 0
-#define NL_NEEDS_LOADED 1
-#define NL_UNREFERENCED 2
-#define NL_CLIENT 3
 	for (int i = 0; i < *mod_numknown; ++i)
 	{
 		auto mod = EngineGetModelByIndex(i);
@@ -341,6 +337,12 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 
 		if (state & STUDIO_BINDLESS_ENABLED)
 			defs << "#define BINDLESS_ENABLED\n";
+
+		if (state & STUDIO_OIT_ALPHA_BLEND_ENABLED)
+			defs << "#define OIT_ALPHA_BLEND_ENABLED\n";
+
+		if (state & STUDIO_OIT_ADDITIVE_BLEND_ENABLED)
+			defs << "#define OIT_ADDITIVE_BLEND_ENABLED\n";
 
 		if (glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define UINT64_ENABLED\n";
@@ -785,6 +787,14 @@ void R_GLStudioDrawPoints(void)
 		if (drawgbuffer)
 		{
 			StudioProgramState |= STUDIO_GBUFFER_ENABLED;
+		}
+
+		if (r_draw_oitblend)
+		{
+			if((*currententity)->curstate.rendermode == kRenderTransAdd)
+				StudioProgramState |= STUDIO_OIT_ADDITIVE_BLEND_ENABLED;
+			else
+				StudioProgramState |= STUDIO_OIT_ALPHA_BLEND_ENABLED;
 		}
 
 		float s, t;

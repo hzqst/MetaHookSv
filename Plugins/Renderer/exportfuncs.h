@@ -1,7 +1,5 @@
 #pragma once
 
-void Memory_Init(void);
-
 int Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion);
 void HUD_Init(void);
 int HUD_VidInit(void);
@@ -15,9 +13,6 @@ void HUD_Shutdown(void);
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model);
 int HUD_Redraw(float time, int intermission);
 void HUD_Frame(double time);
-
+void HUD_PlayerMoveInit(struct playermove_s *ppmove);
 void Sys_ErrorEx(const char *fmt, ...);
 char *UTIL_VarArgs(char *format, ...);
-void hudGetMousePos(struct tagPOINT *ppt);
-
-void hudGetMousePosition(int *x, int *y);
