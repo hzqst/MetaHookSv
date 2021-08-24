@@ -41,6 +41,8 @@ SHADER_DEFINE(hbao_blur);
 SHADER_DEFINE(hbao_blur2);
 
 SHADER_DEFINE(depth_clear);
+SHADER_DEFINE(linkedlist_clear);
+SHADER_DEFINE(blit_oitblend);
 
 cvar_t *r_hdr = NULL;
 cvar_t *r_hdr_blurwidth = NULL;
@@ -344,6 +346,10 @@ void R_InitGLHUD(void)
 	hbao_calc_blur.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\hbao.frag.glsl", NULL);
 	
 	depth_clear.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\depthclear.frag.glsl", NULL);
+
+	linkedlist_clear.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\linkedlist_clear.frag.glsl", NULL);
+	
+	blit_oitblend.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\blit_oitblend.frag.glsl", NULL);
 
 	SHADER_UNIFORM(hbao_calc_blur, texLinearDepth, "texLinearDepth");
 	SHADER_UNIFORM(hbao_calc_blur, texRandom, "texRandom");

@@ -124,7 +124,9 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 
 void HUD_DrawNormalTriangles(void)
 {
-	r_draw_nontransparent = false;
+	R_DrawSpriteEntris(kRenderNormal);
+
+	r_draw_opaque = false;
 
 	//Transfer everything from gbuffer into backbuffer
 	R_EndRenderGBuffer();
@@ -153,6 +155,34 @@ void HUD_DrawNormalTriangles(void)
 
 void HUD_DrawTransparentTriangles(void)
 {
+	/*glColorMask(0, 0, 0, 0);
+
+	//Initialize linked list
+	GL_Begin2D();
+	GL_UseProgram(linkedlist_clear.program);
+	R_DrawHUDQuad(glwidth, glheight);
+	GL_End2D();
+	
+	//Initialize atomic counter
+	GLuint val = 0;
+	glClearNamedBufferData(r_wsurf.hOITAtomicCounter, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, (const void*)&val);
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+	R_DrawSpriteEntris(kRenderTransAlpha);
+	R_DrawSpriteEntris(kRenderTransTexture);
+	R_DrawSpriteEntris(kRenderTransColor);
+
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+	glColorMask(1, 1, 1, 1);
+
+	R_BlitOITBlendBuffer();
+
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);*/
+
+	R_DrawSpriteEntris(kRenderTransAdd);
+	R_DrawSpriteEntris(kRenderGlow);
+
 	gExportfuncs.HUD_DrawTransparentTriangles();
 }
 

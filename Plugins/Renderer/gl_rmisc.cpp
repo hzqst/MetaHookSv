@@ -437,6 +437,28 @@ void GL_FrameBufferColorTextureDeferred(FBO_Container_t *s, int iInternalColorFo
 		glFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, s->s_hBackBufferTex, 0, i);
 }
 
+void GL_FrameBufferColorTextureOITBlend(FBO_Container_t *s)
+{
+	s->s_hBackBufferTex = GL_GenTexture();	
+	glBindTexture(GL_TEXTURE_2D, s->s_hBackBufferTex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, s->iWidth, s->iHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	s->s_hBackBufferTex2 = GL_GenTexture();
+	glBindTexture(GL_TEXTURE_2D, s->s_hBackBufferTex2);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, s->iWidth, s->iHeight, 0, GL_RED, GL_FLOAT, NULL);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	s->iTextureColorFormat = GL_RGBA16F;
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s->s_hBackBufferTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, s->s_hBackBufferTex2, 0);
+}
+
 void GL_Begin2D(void)
 {
 	glViewport(glx, gly, glwidth, glheight);

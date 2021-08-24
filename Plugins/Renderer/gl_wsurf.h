@@ -24,6 +24,8 @@
 #define MAX_DECALVERTS 32
 #define MAX_DECALS 4096
 
+#define MAX_DEPTH_COMPLEXITY 8
+
 #define FDECAL_PERMANENT			0x01		// This decal should not be removed in favor of any new decals
 #define FDECAL_REFERENCE			0x02		// This is a decal that's been moved from another level
 #define FDECAL_CUSTOM               0x04        // This is a custom clan logo and should not be saved/restored
@@ -32,6 +34,17 @@
 #define FDECAL_CLIPTEST				0x20		// Decal needs to be clip-tested
 #define FDECAL_NOCLIP				0x40		// Decal is not clipped by containing polygon
 #define FDECAL_VBO					0x1000		// Decalvertex is bufferred in VBO
+
+#define BINDING_POINT_SCENE_UBO 0
+#define BINDING_POINT_DECAL_SSBO 1
+#define BINDING_POINT_TEXTURE_SSBO 1
+#define BINDING_POINT_SPRITEFRAME_SSBO 1
+#define BINDING_POINT_SPRITEENTRY_SSBO 2
+#define BINDING_POINT_ENTITY_UBO 3
+#define BINDING_POINT_STUDIO_UBO 3
+#define BINDING_POINT_OIT_FRAGMENT_SSBO 4
+#define BINDING_POINT_OIT_STARTOFFSET_SSBO 5
+#define BINDING_POINT_OIT_ATOMIC_COUNTER 6
 
 typedef struct decalvertex_s
 {
@@ -191,9 +204,11 @@ typedef struct scene_ubo_s
 	mat4 invViewMatrix;
 	mat4 invProjMatrix;
 	mat4 shadowMatrix[3];
+	ivec4 viewport;//viewport.z=linkListSize
 	vec4 viewpos;
 	vec4 vpn;
 	vec4 vright;
+	vec4 vup;
 	vec4 shadowDirection;
 	vec4 shadowColor;
 	vec4 shadowFade;
@@ -236,6 +251,16 @@ typedef struct texture_ssbo_s
 	GLuint64 handles[5 * 1];
 }texture_ssbo_t;
 
+typedef struct LinkedListFragmentNode_s
+{
+	// RGBA color of the node
+	uint32_t color;
+	// Depth value of the fragment (in view space)
+	float depth;
+	// The index of the next node in "nodes" array
+	uint32_t next;
+}LinkedListFragmentNode;
+
 typedef struct r_worldsurf_s
 {
 	r_worldsurf_s()
@@ -243,7 +268,17 @@ typedef struct r_worldsurf_s
 		hSceneVBO = 0;
 		hSceneUBO = 0;
 		hDecalVBO = 0;
-		hDecalTextureSSBO = 0;
+		hDecalSSBO = 0;
+		hSpriteFramesSSBO = 0;
+		hSpriteEntriesSSBO[0] = 0;
+		hSpriteEntriesSSBO[1] = 0;
+		hSpriteEntriesSSBO[2] = 0;
+		hSpriteEntriesSSBO[3] = 0;
+		hSpriteEntriesSSBO[4] = 0;
+		hSpriteEntriesSSBO[5] = 0;
+		hOITFragmentSSBO = 0;
+		hOITStartOffsetSSBO = 0;
+		hOITAtomicCounter = 0;
 
 		bDiffuseTexture = false;
 		bLightmapTexture = false;
@@ -258,16 +293,20 @@ typedef struct r_worldsurf_s
 		iNumLightmapTextures = 0;
 		iLightmapTextureArray = 0;
 
-		iS_Tangent = 0;
-		iT_Tangent = 0;
+		iLinkedListSize = 0;
 	}
 
 	GLuint				hSceneVBO;
 	GLuint				hSceneUBO;
 	GLuint				hDecalVBO;
-	GLuint				hDecalTextureSSBO;
+	GLuint				hDecalSSBO;
+	GLuint				hSpriteFramesSSBO;
+	GLuint				hSpriteEntriesSSBO[kRenderTransAdd + 1];
+	GLuint				hOITFragmentSSBO;
+	GLuint				hOITStartOffsetSSBO;
+	GLuint				hOITAtomicCounter;
 
-	std::vector<brushvertex_t> vVertexBuffer;
+	std::vector <brushvertex_t> vVertexBuffer;
 	std::vector <brushface_t> vFaceBuffer;
 
 	bool				bDiffuseTexture;
@@ -277,8 +316,6 @@ typedef struct r_worldsurf_s
 	bool				bNormalTexture;
 	bool				bParallaxTexture;
 	bool				bSpecularTexture;
-	int					iS_Tangent;
-	int					iT_Tangent;
 
 	wsurf_vbo_t			*pCurrentModel;
 	water_vbo_t			*pCurrentWater;
@@ -286,13 +323,15 @@ typedef struct r_worldsurf_s
 	int					iNumLightmapTextures;
 	int					iLightmapTextureArray;
 
+	int					iLinkedListSize;
+
 	std::vector <bspentity_t> vBSPEntities;
 
 	std::vector <int> vDecalGLTextures;
 	std::vector <GLuint64> vDecalGLTextureHandles;
-
 	std::vector <GLint> vDecalStartIndex;
 	std::vector <GLsizei> vDecalVertexCount;
+	std::vector<spriteframe_ssbo_t> vSpriteSSBO;
 }r_worldsurf_t;
 
 typedef struct

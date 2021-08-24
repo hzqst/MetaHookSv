@@ -21,6 +21,7 @@
 #include "gl_shader.h"
 #include "gl_model.h"
 #include "gl_water.h"
+#include "gl_sprite.h"
 #include "gl_studio.h"
 #include "gl_hud.h"
 #include "gl_shadow.h"
@@ -124,7 +125,9 @@ extern bool bNoStretchAspect;
 extern bool bNoBindless;
 
 extern FBO_Container_t s_GBufferFBO;
-extern FBO_Container_t s_BackBufferFBO, s_BackBufferFBO2;
+extern FBO_Container_t s_BackBufferFBO;
+extern FBO_Container_t s_BackBufferFBO2;
+extern FBO_Container_t s_BlendBufferFBO;
 extern FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];
 extern FBO_Container_t s_LuminFBO[LUMIN_BUFFERS];
 extern FBO_Container_t s_Lumin1x1FBO[LUMIN1x1_BUFFERS];
@@ -288,7 +291,7 @@ void GL_FrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat);
 void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat);
 void GL_FrameBufferColorTextureHBAO(FBO_Container_t *s);
 void GL_FrameBufferColorTextureDeferred(FBO_Container_t *s, int iInternalColorFormat);
-
+void GL_FrameBufferColorTextureOITBlend(FBO_Container_t *s);
 int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, qboolean ansio);
 int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio);
 
@@ -344,7 +347,7 @@ extern GLint r_viewport[4];
 extern float r_identity_matrix[4][4];
 extern float r_entity_matrix[4][4];
 extern float r_entity_color[4];
-extern bool r_draw_nontransparent;
+extern bool r_draw_opaque;
 
 extern bool g_SvEngine_DrawPortalView;
 extern int r_draw_pass;

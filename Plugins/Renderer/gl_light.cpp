@@ -364,19 +364,19 @@ void R_SetGBufferBlend(int blendsrc, int blenddst)
 	for (int i = 0; i < gbuffer_attachment_count; ++i)
 	{
 		if (gbuffer_attachments[i] == GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_DIFFUSE)
-			glBlendFunci(GL_DRAW_BUFFER0 + GBUFFER_INDEX_DIFFUSE, blendsrc, blenddst);
+			glBlendFunci(i, blendsrc, blenddst);
 
 		if (gbuffer_attachments[i] == GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_LIGHTMAP)
-			glBlendFunci(GL_DRAW_BUFFER0 + GBUFFER_INDEX_LIGHTMAP, blendsrc, blenddst);
+			glBlendFunci(i, blendsrc, blenddst);
 
 		if (gbuffer_attachments[i] == GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_WORLDNORM)
-			glBlendFunci(GL_DRAW_BUFFER0 + GBUFFER_INDEX_WORLDNORM, GL_ONE, GL_ZERO);
+			glBlendFunci(i, GL_ONE, GL_ZERO);
 
 		if (gbuffer_attachments[i] == GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_SPECULAR)
-			glBlendFunci(GL_DRAW_BUFFER0 + GBUFFER_INDEX_SPECULAR, GL_ONE, GL_ZERO);
+			glBlendFunci(i, GL_ONE, GL_ZERO);
 
 		if (gbuffer_attachments[i] == GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_ADDITIVE)
-			glBlendFunci(GL_DRAW_BUFFER0 + GBUFFER_INDEX_ADDITIVE, GL_ONE, GL_ONE);
+			glBlendFunci(i, GL_ONE, GL_ONE);
 	}
 }
 

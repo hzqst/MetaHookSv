@@ -171,22 +171,55 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 
 void R_FreeSceneUBO(void)
 {
-	if (r_wsurf.hSceneUBO)
-	{
-		GL_DeleteBuffer(r_wsurf.hSceneUBO);
-		r_wsurf.hSceneUBO = 0;
-		glBindBufferBase(GL_UNIFORM_BUFFER, 0, r_wsurf.hSceneUBO);
-	}
 	if (r_wsurf.hDecalVBO)
 	{
 		GL_DeleteBuffer(r_wsurf.hDecalVBO);
 		r_wsurf.hDecalVBO = 0;
 	}
-	if (r_wsurf.hDecalTextureSSBO)
+
+	if (r_wsurf.hSceneUBO)
 	{
-		GL_DeleteBuffer(r_wsurf.hDecalTextureSSBO);
-		r_wsurf.hDecalTextureSSBO = 0;
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, r_wsurf.hDecalTextureSSBO);
+		GL_DeleteBuffer(r_wsurf.hSceneUBO);
+		r_wsurf.hSceneUBO = 0;
+	}
+
+	if (r_wsurf.hDecalSSBO)
+	{
+		GL_DeleteBuffer(r_wsurf.hDecalSSBO);
+		r_wsurf.hDecalSSBO = 0;
+	}
+
+	if (r_wsurf.hSpriteFramesSSBO)
+	{
+		GL_DeleteBuffer(r_wsurf.hSpriteFramesSSBO);
+		r_wsurf.hSpriteFramesSSBO = 0;
+	}
+
+	for (int i = 0; i < kRenderTransAdd + 1; ++i)
+	{
+		if (r_wsurf.hSpriteEntriesSSBO[i])
+		{
+			GL_DeleteBuffer(r_wsurf.hSpriteEntriesSSBO[i]);
+			r_wsurf.hSpriteFramesSSBO = 0;
+		}
+	}
+
+	if (r_wsurf.hOITFragmentSSBO)
+	{
+		GL_DeleteBuffer(r_wsurf.hOITFragmentSSBO);
+		r_wsurf.hOITFragmentSSBO = 0;
+	}
+
+	if (r_wsurf.hOITStartOffsetSSBO)
+	{
+		GL_DeleteBuffer(r_wsurf.hOITStartOffsetSSBO);
+		r_wsurf.hOITStartOffsetSSBO = 0;
+	}
+
+	if (r_wsurf.hOITAtomicCounter)
+	{
+		GL_DeleteBuffer(r_wsurf.hOITAtomicCounter);
+		r_wsurf.hOITAtomicCounter = 0;
 	}
 }
 
@@ -917,7 +950,7 @@ void R_GenerateSceneUBO(void)
 	r_wsurf.hSceneUBO = GL_GenBuffer();
 	glBindBuffer(GL_UNIFORM_BUFFER, r_wsurf.hSceneUBO);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(scene_ubo_t), NULL, GL_DYNAMIC_DRAW);
-	glBindBufferBase(GL_UNIFORM_BUFFER, 0, r_wsurf.hSceneUBO);
+	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_SCENE_UBO, r_wsurf.hSceneUBO);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	//3.5 MBytes of VRAM
@@ -926,11 +959,53 @@ void R_GenerateSceneUBO(void)
 	glBufferData(GL_ARRAY_BUFFER, sizeof(decalvertex_t) * MAX_DECALVERTS * MAX_DECALS, NULL, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	r_wsurf.hDecalTextureSSBO = GL_GenBuffer();
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hDecalTextureSSBO);
+	r_wsurf.hDecalSSBO = GL_GenBuffer();
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hDecalSSBO);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * MAX_DECALS, NULL, GL_DYNAMIC_DRAW);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, r_wsurf.hDecalTextureSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+	r_wsurf.hSpriteFramesSSBO = GL_GenBuffer();
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hSpriteFramesSSBO);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(spriteframe_ssbo_t) * MAX_SPRITE_FRAMES, NULL, GL_STATIC_DRAW);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+	for (int i = 0; i < kRenderTransAdd + 1; ++i)
+	{
+		r_wsurf.hSpriteEntriesSSBO[i] = GL_GenBuffer();
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hSpriteEntriesSSBO[i]);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(spriteentry_ssbo_t) * MAX_SPRITE_ENTRIES, NULL, GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	}
+
+	size_t fragmentBufferSize = MAX_DEPTH_COMPLEXITY * glwidth * glheight;
+	size_t fragmentBufferSizeBytes = sizeof(LinkedListFragmentNode) * fragmentBufferSize;
+
+	r_wsurf.hOITFragmentSSBO = GL_GenBuffer();
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hOITFragmentSSBO);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, fragmentBufferSizeBytes, NULL, GL_STATIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_OIT_FRAGMENT_SSBO, r_wsurf.hOITFragmentSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+	r_wsurf.iLinkedListSize = fragmentBufferSize;
+
+	size_t startOffsetBufferSizeBytes = sizeof(uint32_t) * glwidth * glheight;
+
+	r_wsurf.hOITStartOffsetSSBO = GL_GenBuffer();
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hOITStartOffsetSSBO);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, startOffsetBufferSizeBytes, NULL, GL_STATIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_OIT_STARTOFFSET_SSBO, r_wsurf.hOITStartOffsetSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+	r_wsurf.hOITAtomicCounter = GL_GenBuffer();
+	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, r_wsurf.hOITAtomicCounter);
+	glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(uint32_t), NULL, GL_STATIC_DRAW);
+	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, BINDING_POINT_OIT_ATOMIC_COUNTER, r_wsurf.hOITAtomicCounter);
+	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
+}
+
+void R_ClearSpriteCache(void)
+{
+	r_wsurf.vSpriteSSBO.clear();
 }
 
 void R_ClearDecalCache(void)
@@ -1009,8 +1084,8 @@ void R_EnableWSurfVBO(wsurf_vbo_t *modcache)
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hSceneVBO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modcache->hEBO);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 2, modcache->hEntityUBO);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, modcache->hTextureSSBO);
+		glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_ENTITY_UBO, modcache->hEntityUBO);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_TEXTURE_SSBO, modcache->hTextureSSBO);
 
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
@@ -1053,8 +1128,6 @@ void R_EnableWSurfVBO(wsurf_vbo_t *modcache)
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 2, 0);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, 0);		
 	}
 }
 
@@ -1583,7 +1656,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 		GL_UseProgram(depth_clear.program);
-		R_DrawHUDQuad(glwidth, glheight);		
+		R_DrawHUDQuad(glwidth, glheight);
 
 		glStencilFunc(GL_ALWAYS, 0, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
@@ -1815,6 +1888,7 @@ void R_NewMapWSurf(void)
 {
 	R_GenerateSceneUBO();
 
+	R_ClearSpriteCache();
 	R_ClearDecalCache();
 
 	for (auto p : g_DetailTextureTable)
@@ -3301,7 +3375,7 @@ skip_marklight:
 
 	r_wsurf.bShadowmapTexture = false;
 
-	if(R_ShouldRenderShadowScene(1) && r_draw_nontransparent)
+	if(R_ShouldRenderShadowScene(1) && r_draw_opaque)
 		r_wsurf.bShadowmapTexture = true;
 
 	auto modcache = R_PrepareWSurfVBO(clmodel);
@@ -3335,9 +3409,14 @@ void R_SetupSceneUBO(void)
 	memcpy(SceneUBO.shadowMatrix[0], r_shadow_matrix[0], sizeof(mat4));
 	memcpy(SceneUBO.shadowMatrix[1], r_shadow_matrix[1], sizeof(mat4));
 	memcpy(SceneUBO.shadowMatrix[2], r_shadow_matrix[2], sizeof(mat4));
+	SceneUBO.viewport[0] = glwidth;
+	SceneUBO.viewport[1] = glheight;
+	SceneUBO.viewport[2] = r_wsurf.iLinkedListSize;
+	SceneUBO.viewport[3] = 0;
 	memcpy(SceneUBO.viewpos, r_refdef->vieworg, sizeof(vec3_t));
 	memcpy(SceneUBO.vpn, vpn, sizeof(vec3_t));
 	memcpy(SceneUBO.vright, vright, sizeof(vec3_t));
+	memcpy(SceneUBO.vup, vup, sizeof(vec3_t));
 	memcpy(SceneUBO.shadowDirection, &r_shadow_control.vforward, sizeof(vec3_t));
 	memcpy(SceneUBO.shadowColor, &r_shadow_control.color, sizeof(vec3_t));
 	SceneUBO.shadowColor[3] = r_shadow_control.intensity;
@@ -3378,7 +3457,10 @@ void R_SetupSceneUBO(void)
 
 void R_DrawWorld(void)
 {
-	r_draw_nontransparent = true;
+	r_draw_opaque = true;
+
+	for (int i = 0; i < kRenderTransAdd + 1; ++i)
+		g_iNumSpriteEntries[i] = 0;
 
 	InvertMatrix(r_world_matrix, r_world_matrix_inv);
 	InvertMatrix(r_projection_matrix, r_proj_matrix_inv);

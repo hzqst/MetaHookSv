@@ -207,6 +207,7 @@ GLuint R_CompileShaderFileEx(
 
 	std::string vs(vscode);
 
+	R_CompileShaderAppendDefine(vs, "#define IS_VERTEX_SHADER\n");
 	if (vsdefine)
 	{
 		R_CompileShaderAppendDefine(vs, vsdefine);
@@ -222,6 +223,7 @@ GLuint R_CompileShaderFileEx(
 
 	std::string fs(fscode);
 
+	R_CompileShaderAppendDefine(fs, "#define IS_FRAGMENT_SHADER\n");
 	if (fsdefine)
 	{
 		R_CompileShaderAppendDefine(fs, fsdefine);

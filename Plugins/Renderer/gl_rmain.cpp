@@ -93,7 +93,7 @@ float r_identity_matrix[4][4] = {
 float r_entity_matrix[4][4];
 float r_entity_color[4];
 
-bool r_draw_nontransparent = false;
+bool r_draw_opaque = false;
 
 int r_draw_pass = 0;
 
@@ -104,7 +104,8 @@ int glheight = 0;
 
 //FBO_Container_t s_MSAAFBO;
 FBO_Container_t s_GBufferFBO;
-FBO_Container_t s_BackBufferFBO, s_BackBufferFBO2;
+FBO_Container_t s_BackBufferFBO;
+FBO_Container_t s_BackBufferFBO2;
 FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];
 FBO_Container_t s_LuminFBO[LUMIN_BUFFERS];
 FBO_Container_t s_Lumin1x1FBO[LUMIN1x1_BUFFERS];
@@ -258,18 +259,6 @@ void R_RotateForEntity(float *origin, cl_entity_t *e)
 	Matrix4x4_Transpose(r_entity_matrix, entity_matrix);
 }
 
-//All sprite models goes transentities
-void R_DrawSpriteModel(cl_entity_t *entity)
-{
-	if (drawgbuffer)
-	{
-		R_AddTEntity(entity);
-		return;
-	}
-
-	gRefFuncs.R_DrawSpriteModel(entity);
-}
-
 float GlowBlend(cl_entity_t *entity)
 {
 	vec3_t tmp;
@@ -330,6 +319,8 @@ void R_AddTEntity(cl_entity_t *pEnt)
 		(*currententity) = backup_curentity;
 		return;
 	}
+
+
 
 	float dist;
 	vec3_t v;
@@ -968,6 +959,12 @@ void GL_Init(void)
 		return;
 	}
 
+	if (!glewIsSupported("GL_ARB_shader_atomic_counters"))
+	{
+		Sys_ErrorEx("Missing OpenGL extension GL_ARB_shader_atomic_counters!\n");
+		return;
+	}
+
 	gl_max_texture_size = 128;
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &gl_max_texture_size);
 
@@ -1113,6 +1110,8 @@ void R_RenderView_SvEngine(int a1)
 		r_wsurf_polys = 0;
 		r_studio_drawcall = 0;
 		r_studio_polys = 0;
+		r_sprite_drawcall = 0;
+		r_sprite_polys = 0;
 	}
 
 	if (r_norefresh->value)
@@ -1176,10 +1175,11 @@ void R_RenderView_SvEngine(int a1)
 
 		auto time2 = gEngfuncs.GetAbsoluteTime();
 
-		gEngfuncs.Con_Printf("%3ifps %3i ms, %d brushpolys, %4i brushdraw, %d studiopolys, %4i studiodraw\n",
+		gEngfuncs.Con_Printf("%3ifps %3i ms, %d brushpolys, %d brushdraw, %d studiopolys, %d studiodraw, %d spritepolys, %d spritedraw\n",
 			(int)(framerate + 0.5), (int)((time2 - time1) * 1000), 
 			r_wsurf_polys, r_wsurf_drawcall,
-			r_studio_polys, r_studio_drawcall
+			r_studio_polys, r_studio_drawcall,
+			r_sprite_polys, r_sprite_drawcall
 		);
 
 		*c_alias_polys = r_studio_polys;

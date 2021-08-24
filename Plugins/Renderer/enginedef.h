@@ -371,8 +371,7 @@ typedef struct mspriteframe_s
 	int height;
 	float up, down, left, right;
 	int gl_texturenum;
-}
-mspriteframe_t;
+}mspriteframe_t;
 
 typedef struct
 {

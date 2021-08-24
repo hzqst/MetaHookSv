@@ -10,6 +10,28 @@
 
 #endif
 
+#ifdef OIT_BLEND_ENABLED
+
+// See https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_shader_image_load_store.txt
+#extension GL_ARB_shader_image_load_store : require
+
+// See https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_fragment_shader_interlock.txt
+#extension GL_ARB_fragment_shader_interlock : require
+
+#ifdef IS_FRAGMENT_SHADER
+
+// Use early z-test to cull transparent fragments occluded by opaque fragments.
+// Additionaly, use fragment interlock.
+layout(early_fragment_tests) in;
+
+// gl_FragCoord will be used for pixel centers at integer coordinates.
+// See https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/gl_FragCoord.xhtml
+layout(pixel_center_integer) in vec4 gl_FragCoord;
+
+#endif
+
+#endif
+
 #define TEXTURE_SSBO_DIFFUSE 0
 #define TEXTURE_SSBO_DETAIL 1
 #define TEXTURE_SSBO_NORMAL 2
@@ -22,15 +44,34 @@
 #define TEXTURE_SSBO_WATER_REFRACT 3
 #define TEXTURE_SSBO_WATER_DEPTH 4
 
+#define BINDING_POINT_SCENE_UBO 0
+#define BINDING_POINT_DECAL_SSBO 1
+#define BINDING_POINT_TEXTURE_SSBO 1
+#define BINDING_POINT_SPRITEFRAME_SSBO 1
+#define BINDING_POINT_SPRITEENTRY_SSBO 2
+#define BINDING_POINT_ENTITY_UBO 3
+#define BINDING_POINT_STUDIO_UBO 3
+#define BINDING_POINT_OIT_FRAGMENT_SSBO 4
+#define BINDING_POINT_OIT_STARTOFFSET_SSBO 5
+#define BINDING_POINT_OIT_ATOMIC_COUNTER 6
+
+#define SPR_VP_PARALLEL_UPRIGHT 0
+#define SPR_FACING_UPRIGHT 1
+#define SPR_VP_PARALLEL 2
+#define SPR_ORIENTED 3
+#define SPR_VP_PARALLEL_ORIENTED 4
+
 struct scene_ubo_t{
 	mat4 viewMatrix;
 	mat4 projMatrix;
 	mat4 invViewMatrix;
 	mat4 invProjMatrix;
 	mat4 shadowMatrix[3];
+	ivec4 viewport;//viewport.z=linkListSize
 	vec4 viewpos;
 	vec4 vpn;
 	vec4 vright;
+	vec4 vup;
 	vec4 shadowDirection;
 	vec4 shadowColor;
 	vec4 shadowFade;
@@ -78,34 +119,139 @@ struct texture_ssbo_t{
 
 };
 
+struct spriteframe_ssbo_t{
+	int type;
+	int width;
+	int height;
+	int texturenum;
+
+	float up;
+	float down;
+	float left;
+	float right;
+
+#if defined(BINDLESS_ENABLED) && defined(UINT64_ENABLED)
+
+	uint64_t texturehandle;
+
+#else
+
+	uvec2 texturehandle;
+
+#endif
+};
+
+struct spriteframes_ssbo_t{
+	spriteframe_ssbo_t frames[1];
+};
+
+struct spriteentry_ssbo_t
+{
+	vec4 color;
+	vec4 origin;//origin[3] = scale
+	vec3 angles;
+	int frameindex;
+};
+
+struct spriteentries_ssbo_t{
+	spriteentry_ssbo_t entries[1];
+};
+
 //Scene level
 
-layout (std140, binding = 0) uniform SceneBlock
+layout (std140, binding = BINDING_POINT_SCENE_UBO) uniform SceneBlock
 {
    scene_ubo_t SceneUBO;
 };
 
-layout (std430, binding = 1) buffer DecalBlock
+layout (std430, binding = BINDING_POINT_DECAL_SSBO) buffer DecalBlock
 {
-    texture_ssbo_t DecalSSBO;
+	texture_ssbo_t DecalSSBO;
+};
+
+layout (std430, binding = BINDING_POINT_SPRITEFRAME_SSBO) buffer SpriteFrameBlock
+{
+	spriteframes_ssbo_t SpriteFrameSSBO;
+};
+
+layout (std430, binding = BINDING_POINT_SPRITEENTRY_SSBO) buffer SpriteEntryBlock
+{
+	spriteentries_ssbo_t SpriteEntrySSBO;
 };
 
 //Entity level
 
-layout (std140, binding = 2) uniform EntityBlock
+layout (std140, binding = BINDING_POINT_ENTITY_UBO) uniform EntityBlock
 {
-   entity_ubo_t EntityUBO;
+	entity_ubo_t EntityUBO;
 };
 
-layout (std430, binding = 3) buffer TextureBlock
+layout (std430, binding = BINDING_POINT_TEXTURE_SSBO) buffer TextureBlock
 {
-    texture_ssbo_t TextureSSBO;
+	texture_ssbo_t TextureSSBO;
 };
 
-layout (std140, binding = 4) uniform StudioBlock
+layout (std140, binding = BINDING_POINT_STUDIO_UBO) uniform StudioBlock
 {
-   studio_ubo_t StudioUBO;
+	studio_ubo_t StudioUBO;
 };
+
+#ifdef OIT_BLEND_ENABLED
+
+// A fragment node stores rendering information about one specific fragment
+struct LinkedListFragmentNode
+{
+    // RGBA color of the node
+    uint color;
+    // Depth value of the fragment (in view space)
+    float depth;
+    // The index of the next node in "nodes" array
+    uint next;
+};
+
+// Fragment-and-link buffer (linked list). Stores "nodesPerPixel" number of fragments.
+layout (std430, binding = BINDING_POINT_OIT_FRAGMENT_SSBO) coherent buffer FragmentBuffer
+{
+    LinkedListFragmentNode OITFragmentSSBO[];
+};
+
+// Start-offset buffer (mapping pixels to first pixel in the buffer) of size viewportW*viewportH.
+layout (std430, binding = BINDING_POINT_OIT_STARTOFFSET_SSBO) coherent buffer StartOffsetBuffer
+{
+    uint OITStartOffsetSSBO[];
+};
+
+layout(binding = BINDING_POINT_OIT_ATOMIC_COUNTER, offset = 0) uniform atomic_uint OITFragCounter;
+
+#define MAX_NUM_FRAGS 32
+
+#ifdef IS_FRAGMENT_SHADER
+void GatherFragment(vec4 color)
+{
+    int x = int(gl_FragCoord.x);
+    int y = int(gl_FragCoord.y);
+
+	int viewportW = SceneUBO.viewport.x;
+	int linkListSize = SceneUBO.viewport.z;
+
+	int pixelIndex = viewportW * y + x;
+
+	LinkedListFragmentNode frag;
+	frag.color = packUnorm4x8(color);
+	frag.depth = gl_FragCoord.z;
+	frag.next = -1;
+
+	uint insertIndex = atomicCounterIncrement(OITFragCounter);
+
+	if (insertIndex < linkListSize) {
+		// Insert the fragment into the linked list
+		frag.next = atomicExchange(OITStartOffsetSSBO[pixelIndex], insertIndex);
+		OITFragmentSSBO[insertIndex] = frag;
+	}
+}
+#endif
+
+#endif
 
 vec2 UnitVectorToHemiOctahedron(vec3 dir) {
 

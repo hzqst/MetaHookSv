@@ -15,7 +15,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 	curwater->rendered_framecount = (*r_framecount);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, WaterVBOCache->hEBO);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, WaterVBOCache->hTextureSSBO);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_TEXTURE_SSBO, WaterVBOCache->hTextureSSBO);
 	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
 	bool bIsAboveWater = R_IsAboveWater(WaterVBOCache->vert, WaterVBOCache->normal);

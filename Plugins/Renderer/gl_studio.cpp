@@ -583,7 +583,7 @@ void R_EnableStudioVBO(studio_vbo_t *VBOData)
 
 		glBindBuffer(GL_ARRAY_BUFFER_ARB, VBOData->hVBO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->hEBO);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 4, VBOData->hStudioUBO);
+		glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_STUDIO_UBO, VBOData->hStudioUBO);
 
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
@@ -604,7 +604,6 @@ void R_EnableStudioVBO(studio_vbo_t *VBOData)
 
 		glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-		glBindBufferBase(GL_UNIFORM_BUFFER, 4, 0);
 	}
 }
 
@@ -617,7 +616,7 @@ void R_GLStudioDrawPoints(void)
 		//the fxxking StudioRenderFinal which will enable GL_BLEND and mess everything up.
 		glDisable(GL_BLEND);
 	}
-	else if (r_draw_nontransparent)
+	else if (r_draw_opaque)
 	{
 		glEnable(GL_STENCIL_TEST);
 		glStencilMask(0xFF);
@@ -701,7 +700,7 @@ void R_GLStudioDrawPoints(void)
 		{
 			StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
 		}
-		else if (r_draw_nontransparent)
+		else if (r_draw_opaque)
 		{
 			if (flags & STUDIO_NF_FLATSHADE)
 			{
@@ -749,8 +748,8 @@ void R_GLStudioDrawPoints(void)
 		}
 		else if (flags & STUDIO_NF_MASKED)
 		{
-			glEnable(GL_ALPHA_TEST);
-			glAlphaFunc(GL_GREATER, 0.5);
+			//glEnable(GL_ALPHA_TEST);
+			//glAlphaFunc(GL_GREATER, 0.5);
 			glDepthMask(GL_TRUE);
 		}
 		else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
@@ -844,8 +843,8 @@ void R_GLStudioDrawPoints(void)
 		}
 		else if (flags & STUDIO_NF_MASKED)
 		{
-			glAlphaFunc(GL_NOTEQUAL, 0);
-			glDisable(GL_ALPHA_TEST);
+			//glAlphaFunc(GL_NOTEQUAL, 0);
+			//glDisable(GL_ALPHA_TEST);
 		}
 		else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
 		{
@@ -862,7 +861,7 @@ void R_GLStudioDrawPoints(void)
 
 	glEnable(GL_CULL_FACE);
 
-	if (r_draw_nontransparent)
+	if (r_draw_opaque)
 	{
 		glStencilMask(0);
 		glDisable(GL_STENCIL_TEST);

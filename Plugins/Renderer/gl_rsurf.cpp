@@ -279,7 +279,6 @@ colorVec R_LightPoint(vec3_t p)
 	return RecursiveLightPoint(r_worldmodel->nodes, p, end);
 }
 
-
 static int R_DecalIndex(decal_t *pdecal)
 {
 	return (pdecal - gDecalPool);
@@ -292,7 +291,6 @@ static int R_DecalCacheIndex(int index)
 	return index & (DECAL_CACHEENTRY - 1);
 }
 
-
 static decalcache_t *R_DecalCacheSlot(int decalIndex)
 {
 	int				cacheIndex;
@@ -301,7 +299,6 @@ static decalcache_t *R_DecalCacheSlot(int decalIndex)
 
 	return gDecalCache + cacheIndex;
 }
-
 
 // Release the cache entry for this decal
 static void R_DecalCacheClear(decal_t *pdecal)
@@ -373,7 +370,6 @@ int Inside(float *vert, int edge)
 	}
 	return 0;
 }
-
 
 void Intersect(float *one, float *two, int edge, float *out)
 {
@@ -557,39 +553,6 @@ static float *R_DecalVertsNoclip(decal_t *pdecal, msurface_t *psurf, texture_t *
 	return vlist;
 }
 
-static void R_DecalPoly(float *v, texture_t *ptexture, msurface_t *psurf, int vertCount)
-{
-	GL_Bind(ptexture->gl_texturenum);
-
-	glBegin(GL_POLYGON);
-	for (int j = 0; j < vertCount; j++, v += VERTEXSIZE)
-	{
-		glTexCoord2f(v[3], v[4]);
-		glVertex3fv(v);
-	}
-	glEnd();
-
-	r_wsurf_polys++;
-	r_wsurf_drawcall++;
-}
-
-static void R_DecalMPoly(float *v, texture_t *ptexture, msurface_t *psurf, int vertCount)
-{
-	GL_Bind(ptexture->gl_texturenum);
-
-	glBegin(GL_POLYGON);
-	for (int j = 0; j < vertCount; j++, v += VERTEXSIZE)
-	{
-		glMultiTexCoord3fARB(GL_TEXTURE0, v[3], v[4], 1.0f);
-		glMultiTexCoord3fARB(GL_TEXTURE1, v[5], v[6], psurf->lightmaptexturenum);
-		glVertex3fv(v);
-	}
-	glEnd();
-
-	r_wsurf_polys++;
-	r_wsurf_drawcall++;
-}
-
 void R_DrawDecals(void)
 {
 	decal_t *plist;
@@ -645,7 +608,7 @@ void R_DrawDecals(void)
 
 							r_wsurf.vDecalGLTextureHandles[decalIndex] = handle;
 
-							glNamedBufferSubData(r_wsurf.hDecalTextureSSBO, sizeof(GLuint64) * decalIndex, sizeof(GLuint64), &handle);
+							glNamedBufferSubData(r_wsurf.hDecalSSBO, sizeof(GLuint64) * decalIndex, sizeof(GLuint64), &handle);
 						}
 						else
 						{
@@ -763,6 +726,7 @@ void R_DrawDecals(void)
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 
 	glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hDecalVBO);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_DECAL_SSBO, r_wsurf.hDecalSSBO);
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(4);
@@ -777,7 +741,8 @@ void R_DrawDecals(void)
 	if (WSurfProgramState & WSURF_BINDLESS_ENABLED)
 	{
 		glMultiDrawArrays(GL_POLYGON, g_DrawDecalStartIndex, g_DrawDecalVertexCount, g_DrawDecalCount);
-		r_studio_drawcall++;
+		r_wsurf_polys += g_DrawDecalCount;
+		r_wsurf_drawcall++;
 	}
 	else
 	{
@@ -786,7 +751,8 @@ void R_DrawDecals(void)
 			GL_Bind(g_DrawDecalTextureId[i]);
 			glDrawArrays(GL_POLYGON, g_DrawDecalStartIndex[i], g_DrawDecalVertexCount[i]);			
 		}
-		r_studio_drawcall += g_DrawDecalCount;
+		r_wsurf_polys += g_DrawDecalCount;
+		r_wsurf_drawcall += g_DrawDecalCount;
 	}
 
 	glDisableVertexAttribArray(0);
