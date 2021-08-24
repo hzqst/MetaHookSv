@@ -189,17 +189,25 @@ Specular textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/de
 
 ## Vertex Buffer Object (aka VBO) "Batch-Draw" optimization
 
-Brush surfaces, studio models, decals are rendered with VBO, instead of legacy OpenGL1.x immediate mode method, decreasing amount of vertex data required to transfer to GPU every frame, costing less CPU and GPU resources on rendering.
+Brush surfaces, studio models, decals and sprites are rendered with Vertex Buffer Object, offering substantial performance gains over OpenGL 1.x immediate mode rendering primarily because the data reside in video memory rather than system memory and so it can be rendered directly by the video device.
+
+## Order-Independent Transparency Blend (aka OIT blend)
+
+Transparent objects are not required to be sorted by CPU before rendering. pixel colors are stored in linked-list and sorted by GPU.
+
+`r_oit_blend` set to 1 to enable Order-Independent Transparency Blend.
+
+## Anti-Aliasing
+
+`r_fxaa` set to 1 to enable Fast Approximate Anti-Aliasing (FXAA).
+
+* Since MultiSample Anti-Aliasing (or MSAA) is not able to works with Deferred Shading, it's completely disabled and removed from current version of renderer plugin.
 
 ## Misc
 
 `r_wsurf_sky_occlusion` 1 / 0 : When set to 1, scenes occluded by "sky" surfaces (surfaces with sky texture) will be invisible.
 
 `r_wsurf_zprepass` 1 / 0 : When set to 1, Z-Prepass will be enabled. The world will be rendered twice every frame. The first time with only depth write-in, the second time with actual fragment color write-in, which decreases the fragment shader cost when there is significant overdraw cost (like when shadow and SSR are calculated for unnecessary fragments ) for world rendering.
-
-`r_fxaa` set to 1 to enable Fast Approximate Anti-Aliasing (FXAA).
-
-* Since MultiSample Anti-Aliasing (or MSAA) is not able to works with Deferred Shading, it's completely disabled and removed from current version of renderer plugin.
 
 # New Entities
 
