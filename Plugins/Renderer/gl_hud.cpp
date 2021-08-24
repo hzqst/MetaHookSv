@@ -773,6 +773,27 @@ void R_DoFXAA(void)
 	GL_PopDrawState();
 }
 
+void R_BlitOITBlendBuffer(void)
+{
+	R_BlitToFBO(&s_BackBufferFBO, &s_BackBufferFBO2);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+
+	GL_Begin2D();
+
+	GL_UseProgram(blit_oitblend.program);
+
+	GL_DisableMultitexture();
+	glEnable(GL_TEXTURE_2D);
+	glDisable(GL_BLEND);
+
+	R_DrawHUDQuad_Texture(s_BackBufferFBO2.s_hBackBufferTex, glwidth, glheight);
+
+	GL_UseProgram(0);
+
+	GL_End2D();
+}
+
 void R_LinearizeDepth(FBO_Container_t *fbo)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, s_DepthLinearFBO.s_hBackBufferFBO);

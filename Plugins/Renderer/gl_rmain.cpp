@@ -264,35 +264,7 @@ void R_RotateForEntity(float *origin, cl_entity_t *e)
 
 float GlowBlend(cl_entity_t *entity)
 {
-	vec3_t tmp;
-	float dist, brightness;
-
-	VectorSubtract(r_entorigin, r_origin, tmp);
-	dist = VectorLength(tmp);
-
-	auto trace = playermove->PM_PlayerTrace(r_origin, r_entorigin, r_traceglow->value ? PM_GLASS_IGNORE : (PM_GLASS_IGNORE | PM_STUDIO_IGNORE), -1);
-
-	if ((1.0 - trace.fraction) * dist > 8)
-		return 0;
-
-	if (entity->curstate.renderfx == kRenderFxNoDissipation)
-	{
-		return (float)entity->curstate.renderamt * (1.0f / 255.0f);
-	}
-
-	brightness = 19000 / (dist * dist);
-
-	if (brightness < 0.05)
-	{
-		brightness = 0.05;
-	}
-	else if (brightness > 1.0)
-	{
-		brightness = 1.0;
-	}
-
-	entity->curstate.scale = dist * (1.0 / 200.0);
-	return brightness;
+	return gRefFuncs.GlowBlend(entity);
 }
 
 int CL_FxBlend(cl_entity_t *entity)
@@ -326,7 +298,7 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 		//Initialize atomic counter
 		GLuint val = 0;
-		glClearNamedBufferData(r_wsurf.hOITAtomicCounter, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE, (const void*)&val);
+		glClearNamedBufferData(r_wsurf.hOITAtomicCounter, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, (const void*)&val);
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
 		r_draw_oitblend = true;
@@ -381,19 +353,11 @@ void R_AddTEntity(cl_entity_t *ent)
 	
 	if (r_oit_blend->value)
 	{
-		switch (ent->model->type)
+		/*switch (ent->model->type)
 		{
 		case mod_brush: case mod_studio:
 		{
-			if ((*numTransObjs) >= (*maxTransObjs))
-			{
-				Sys_ErrorEx("R_AddTEntity: Too many objects");
-				return;
-			}
-
-			(*transObjects)[(*numTransObjs)].pEnt = ent;
-			(*transObjects)[(*numTransObjs)].distance = 0;
-			(*numTransObjs)++;
+			
 			break;
 		}
 		case mod_sprite:
@@ -427,7 +391,16 @@ void R_AddTEntity(cl_entity_t *ent)
 
 			break;
 		}
+		}*/
+		if ((*numTransObjs) >= (*maxTransObjs))
+		{
+			Sys_ErrorEx("R_AddTEntity: Too many objects");
+			return;
 		}
+
+		(*transObjects)[(*numTransObjs)].pEnt = ent;
+		(*transObjects)[(*numTransObjs)].distance = 0;
+		(*numTransObjs)++;
 	}
 	else
 	{
@@ -488,8 +461,8 @@ void R_DrawCurrentEntity(bool bTransparent)
 
 		(*r_blend) = (*r_blend) / 255.0;
 
-		//if ((*currententity)->curstate.rendermode == kRenderGlow && (*currententity)->model->type != mod_sprite)
-		//	gEngfuncs.Con_DPrintf("Non-sprite set to glow!\n");
+		if ((*currententity)->curstate.rendermode == kRenderGlow && (*currententity)->model->type != mod_sprite)
+			gEngfuncs.Con_DPrintf("Non-sprite set to glow!\n");
 	}
 
 	switch ((*currententity)->model->type)
@@ -510,8 +483,6 @@ void R_DrawCurrentEntity(bool bTransparent)
 
 		if (bTransparent)
 		{
-			(*r_blend) = CL_FxBlend((*currententity));
-
 			if ((*currententity)->curstate.rendermode == kRenderGlow)
 				(*r_blend) *= GlowBlend((*currententity));
 		}
@@ -1116,6 +1087,12 @@ void GL_Init(void)
 	if (!glewIsSupported("GL_ARB_shader_atomic_counters"))
 	{
 		Sys_ErrorEx("Missing OpenGL extension GL_ARB_shader_atomic_counters!\n");
+		return;
+	}
+
+	if (!glewIsSupported("GL_ARB_fragment_shader_interlock"))
+	{
+		Sys_ErrorEx("Missing OpenGL extension GL_ARB_fragment_shader_interlock!\n");
 		return;
 	}
 

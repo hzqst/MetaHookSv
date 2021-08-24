@@ -22,22 +22,24 @@ void swapFrags(uint i, uint j) {
     depthList[j] = dTemp;
 }
 
-vec4 blendFTB(uint fragsCount, vec4 screenColor)
+vec4 blendBackToFront(uint fragsCount, vec4 screenColor)
 {
     vec4 color = screenColor;
+
     for (uint i = 0; i < fragsCount; i++) {
-        // Front-to-Back (FTB) blending
+ 
         // Blend the accumulated color with the color of the fragment node
         vec4 colorSrc = unpackUnorm4x8(colorList[i]);
 
         //AlphaBlend
         float useAlphaBlend = step(0.0, depthList[i]);
 
-        vec4 alphaBlendColor = vec4(color.rgb * (1.0 - colorSrc.a) + colorSrc.a * colorSrc.rgb, 1.0);
+        vec4 alphaBlendColor = vec4(color.rgb * (1.0 - colorSrc.a) + colorSrc.rgb * colorSrc.a, 1.0);
         vec4 additiveBlendColor = vec4(color.rgb + colorSrc.rgb, 1.0);
 
         color = mix(additiveBlendColor, alphaBlendColor, useAlphaBlend);
     }
+
     return color;
 }
 
@@ -74,7 +76,7 @@ vec4 heapSort(uint fragsCount, vec4 screenColor)
         maxHeapSink(0, fragsCount-i); // Sink the max to obtain correct heap
     }
 
-    return blendFTB(fragsCount, screenColor);
+    return blendBackToFront(fragsCount, screenColor);
 }
 
 void main() {
@@ -88,7 +90,7 @@ void main() {
     uint fragOffset = OITStartOffsetSSBO[pixelIndex];
 
     // Collect all fragments for this pixel
-    int numFrags = 0;
+    uint numFrags = 0;
     LinkedListFragmentNode fragment;
     for (int i = 0; i < MAX_NUM_FRAGS; i++)
     {

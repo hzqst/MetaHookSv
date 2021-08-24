@@ -191,6 +191,8 @@ typedef struct walk_context_s
 #define R_LIGHTSTRENGTH_SIG_SVENGINE "\x8B\x15\x2A\x2A\x2A\x2A\x2A\x8B\x35\x2A\x2A\x2A\x2A\x2A\x8B\x7C\x24\x0C"
 #define R_LIGHTSTRENGTH_SIG_NEW "\x55\x8B\xEC\x83\xEC\x0C\x8B\x4D\x08\x8B\x15\x2A\x2A\x2A\x2A\x2A\x8B\x04\x2A\x2A\x2A\x2A\x2A"
 
+#define GLOW_BLEND_SVENGINE "\x55\x8B\xEC\x83\x2A\x2A\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\xA0\x00"
+#define GLOW_BLEND_SIG_NEW ""
 
 void Sys_ErrorEx(const char *fmt, ...);
 
@@ -620,6 +622,15 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(BuildNormalIndexTable);
 	}
 	
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		gRefFuncs.GlowBlend = (float(*)(cl_entity_t *))Search_Pattern(GLOW_BLEND_SVENGINE);
+		Sig_FuncNotFound(GlowBlend);
+	}
+	else
+	{
+		
+	}
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char sigs1[] = "Can't add transparent entity. Too many";
@@ -2721,6 +2732,26 @@ void R_FillAddress(void)
 
 		Sig_VarNotFound(decal_wad);
 	}
+
+	//Allocate 32bytes instead of 28 bytes for mspriteframe_t
+#define Mod_LoadSpriteFrame_Sig "\x6A\x1C\x89\x44\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x6A\x1C"
+	PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
+	PUCHAR SearchLimit = (PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize;
+	while (SearchBegin < SearchLimit)
+	{
+		auto pFound = (PUCHAR)g_pMetaHookAPI->SearchPattern(SearchBegin, SearchLimit - SearchBegin, Mod_LoadSpriteFrame_Sig, sizeof(Mod_LoadSpriteFrame_Sig) - 1);
+		if (pFound)
+		{
+			g_pMetaHookAPI->WriteBYTE(pFound + 1, 0x20);
+			g_pMetaHookAPI->WriteBYTE(pFound + 12, 0x20);
+
+			SearchBegin = pFound + sizeof(Mod_LoadSpriteFrame_Sig) - 1;
+		}
+		else
+		{
+			break;
+		}
+	}
 }
 
 void R_InstallHook(void)
@@ -2754,23 +2785,5 @@ void R_InstallHook(void)
 	Install_InlineHook(enginesurface_drawFlushText);
 	Install_InlineHook(Mod_LoadStudioModel);
 
-	//Allocate 32bytes instead of 28 bytes for mspriteframe_t
-#define Mod_LoadSpriteFrame_Sig "\x6A\x1C\x89\x44\x28\x2A\xE8\x2A\x2A\x2A\x2A\x6A\x1C"
-	PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
-	PUCHAR SearchLimit = (PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize;
-	while (SearchBegin < SearchLimit)
-	{
-		auto pFound = (PUCHAR)g_pMetaHookAPI->SearchPattern(SearchBegin, SearchLimit - SearchBegin, Mod_LoadSpriteFrame_Sig, sizeof(Mod_LoadSpriteFrame_Sig)-1);
-		if (pFound)
-		{
-			g_pMetaHookAPI->WriteBYTE(pFound + 1, 0x20);
-			g_pMetaHookAPI->WriteBYTE(pFound + 12, 0x20);
 
-			SearchBegin = pFound + sizeof(Mod_LoadSpriteFrame_Sig) - 1;
-		}
-		else
-		{
-			break;
-		}
-	}
 }

@@ -765,6 +765,8 @@ void R_DrawDecals(void)
 		r_wsurf_polys += g_DrawDecalCount;
 		r_wsurf_drawcall += g_DrawDecalCount;
 	}
+	
+	GL_UseProgram(0);
 
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(4);
