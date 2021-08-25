@@ -2705,13 +2705,14 @@ void R_FillAddress(void)
 	}
 
 	{
-		const char sigs1[] = "palette.lmp\0";
+		/*const char sigs1[] = "palette.lmp\0";
 		auto palette_String = Search_Pattern_Data(sigs1);
 		if (!palette_String)
 			palette_String = Search_Pattern_Rdata(sigs1);
-		Sig_VarNotFound(palette_String);
+		Sig_VarNotFound(palette_String);*/
+
 		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x68\x00\x08\x00\x00\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\xA3";
-		*(DWORD *)(pattern + 1) = (DWORD)palette_String;
+		//*(DWORD *)(pattern + 1) = (DWORD)palette_String;
 		auto palette_Call = Search_Pattern(pattern);
 		Sig_VarNotFound(palette_Call);
 
