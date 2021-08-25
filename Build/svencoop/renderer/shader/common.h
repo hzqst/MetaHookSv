@@ -21,15 +21,13 @@
 
 // Use early z-test to cull transparent fragments occluded by opaque fragments.
 // Additionaly, use fragment interlock.
-layout(early_fragment_tests) in;
+layout(early_fragment_tests, pixel_interlock_ordered) in;
 
 // gl_FragCoord will be used for pixel centers at integer coordinates.
 // See https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/gl_FragCoord.xhtml
 layout(pixel_center_integer) in vec4 gl_FragCoord;
 
-#define MAX_DEPTH_COMPLEXITY 8
-
-#define MAX_NUM_FRAGS 32
+#define MAX_NUM_NODES 8
 
 #endif
 
@@ -55,8 +53,7 @@ layout(pixel_center_integer) in vec4 gl_FragCoord;
 #define BINDING_POINT_ENTITY_UBO 3
 #define BINDING_POINT_STUDIO_UBO 3
 #define BINDING_POINT_OIT_FRAGMENT_SSBO 4
-#define BINDING_POINT_OIT_STARTOFFSET_SSBO 5
-#define BINDING_POINT_OIT_ATOMIC_COUNTER 6
+#define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 5
 
 #define SPR_VP_PARALLEL_UPRIGHT 0
 #define SPR_FACING_UPRIGHT 1
@@ -70,7 +67,7 @@ struct scene_ubo_t{
 	mat4 invViewMatrix;
 	mat4 invProjMatrix;
 	mat4 shadowMatrix[3];
-	ivec4 viewport;//viewport.z=linkListSize
+	uvec4 viewport;
 	vec4 viewpos;
 	vec4 vpn;
 	vec4 vright;
@@ -196,47 +193,107 @@ layout (std140, binding = BINDING_POINT_STUDIO_UBO) uniform StudioBlock
 #if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED)
 
 // A fragment node stores rendering information about one specific fragment
-struct LinkedListFragmentNode
+struct FragmentNode
 {
     // RGBA color of the node
     uint color;
     // Depth value of the fragment (in view space)
     float depth;
-    // The index of the next node in "nodes" array
-    uint next;
 };
 
 // Fragment-and-link buffer (linked list). Stores "nodesPerPixel" number of fragments.
-layout (std430, binding = BINDING_POINT_OIT_FRAGMENT_SSBO) coherent buffer FragmentBuffer
+layout (std430, binding = BINDING_POINT_OIT_FRAGMENT_SSBO) coherent buffer FragmentNodes
 {
-    LinkedListFragmentNode OITFragmentSSBO[];
+    FragmentNode nodes[];
 };
 
 // Start-offset buffer (mapping pixels to first pixel in the buffer) of size viewportW*viewportH.
-layout (std430, binding = BINDING_POINT_OIT_STARTOFFSET_SSBO) coherent buffer StartOffsetBuffer
+layout (std430, binding = BINDING_POINT_OIT_NUMFRAGMENT_SSBO) coherent buffer NumFragmentsBuffer
 {
-    uvec2 OITStartOffsetSSBO[];
+    uint numFragmentsBuffer[];
 };
 
-layout(binding = BINDING_POINT_OIT_ATOMIC_COUNTER, offset = 0) uniform atomic_uint OITFragCounter;
-
 #ifdef IS_FRAGMENT_SHADER
+
+#if defined(ADRESSING_MORTON_CODE_8x8)
+// Space-filling and locality-preserving curve mapping pixel positions in an 8x8 tile to
+// a linearized memory offset in the tile.
+uint mortonCodeLookupTable[64] = {
+    0,  1,  4,  5,  16, 17, 20, 21,
+    2,  3,  6,  7,  18, 19, 22, 23,
+    8,  9,  12, 13, 24, 25, 28, 29,
+    10, 11, 14, 15, 26, 27, 30, 31,
+    32, 33, 36, 37, 48, 49, 52, 53,
+    34, 35, 38, 39, 50, 51, 54, 55,
+    40, 41, 44, 45, 56, 57, 60, 61,
+    42, 43, 46, 47, 58, 59, 62, 63
+};
+#endif
+
+// Address 1D structured buffers as tiled to better data exploit locality
+// "OIT to Volumetric Shadow Mapping, 101 Uses for Raster Ordered Views using DirectX 12",
+// by Leigh Davies (Intel), March 05, 2015
+uint addrGen(uvec2 addr2D, uint viewportW)
+{
+#if defined(ADRESSING_MORTON_CODE_8x8)
+    uint surfaceWidth = viewportW >> 3U; // / 8U
+    uvec2 tileAddr2D = addr2D >> 3U; // / 8U
+    uint tileAddr1D = (tileAddr2D.x + surfaceWidth * tileAddr2D.y) << 6U; // * 64U
+    uvec2 pixelAddr2D = addr2D & 7U;
+    uint pixelAddr1D = pixelAddr2D.x + (pixelAddr2D.y << 3U);
+    return tileAddr1D | mortonCodeLookupTable[pixelAddr1D];
+#elif defined(ADDRESSING_TILED_2x2)
+    uint surfaceWidth = viewportW >> 1U; // / 2U
+    uvec2 tileAddr2D = addr2D >> 1U; // / 2U
+    uint tileAddr1D = (tileAddr2D.x + surfaceWidth * tileAddr2D.y) << 2U; // * 4U
+    uvec2 pixelAddr2D = addr2D & 1U;
+    uint pixelAddr1D = (pixelAddr2D.x) + (pixelAddr2D.y << 1U);
+    return tileAddr1D | pixelAddr1D;
+#elif defined(ADDRESSING_TILED_2x8)
+    uint surfaceWidth = viewportW >> 1U; // / 2U;
+    uvec2 tileAddr2D = addr2D / uvec2(2U, 8U);
+    uint tileAddr1D = (tileAddr2D.x + surfaceWidth * tileAddr2D.y) << 4U; // * 16U;
+    uvec2 pixelAddr2D = addr2D & uvec2(1U, 7U);
+    uint pixelAddr1D = pixelAddr2D.x + pixelAddr2D.y * 2U;
+    return tileAddr1D | pixelAddr1D;
+#elif defined(ADDRESSING_TILED_NxM)
+    uint surfaceWidth = viewportW / TILE_N;
+    uvec2 tileAddr2D = addr2D / uvec2(TILE_N, TILE_M);
+    uint tileAddr1D = (tileAddr2D.x + surfaceWidth * tileAddr2D.y) * (TILE_N * TILE_M);
+    uvec2 pixelAddr2D = addr2D & uvec2(TILE_N-1, TILE_M-1);
+    uint pixelAddr1D = pixelAddr2D.x + pixelAddr2D.y * TILE_N;
+    return tileAddr1D | pixelAddr1D;
+#else
+    return addr2D.x + viewportW * addr2D.y;
+#endif
+}
+
+// For use with Image Load/Store
+ivec2 addrGen2D(ivec2 addr2D, uint viewportW)
+{
+    int addr1D = int(addrGen(addr2D, viewportW));
+    return ivec2(addr1D % viewportW, addr1D / viewportW);
+}
+
 void GatherFragment(vec4 color)
 {
-    int x = int(gl_FragCoord.x);
-    int y = int(gl_FragCoord.y);
+  if (color.a < 0.01) {
+        discard;
+    }
 
-	int viewportW = SceneUBO.viewport.x;
-	int linkListSize = SceneUBO.viewport.z;
+    uint x = uint(gl_FragCoord.x);
+    uint y = uint(gl_FragCoord.y);
+	uint viewportW = SceneUBO.viewport.x;
 
-	int pixelIndex = viewportW * y + x;
+	uint pixelIndex = addrGen(uvec2(x,y), viewportW);
+	// Fragment index (in nodes buffer):
+    uint index = MAX_NUM_NODES * pixelIndex;
 
-	float z = gl_FragCoord.z / gl_FragCoord.w;
+	//float z = gl_FragCoord.z / gl_FragCoord.w;
 
-	LinkedListFragmentNode frag;
-	frag.color = packUnorm4x8(color);
-	frag.depth = gl_FragCoord.z;
-	frag.next = -1;
+	FragmentNode frag;
+    frag.color = packUnorm4x8(color);
+    frag.depth = gl_FragCoord.z;
 
 	#ifdef OIT_ADDITIVE_BLEND_ENABLED
 
@@ -244,26 +301,50 @@ void GatherFragment(vec4 color)
 
 	#endif
 
-	uint insertIndex = atomicCounterIncrement(OITFragCounter);
-	uint insertFragCount = OITStartOffsetSSBO[pixelIndex].y;
+	memoryBarrierBuffer();
 
-	if (insertIndex < linkListSize && insertFragCount < MAX_NUM_FRAGS) {
+	uint numFragments = numFragmentsBuffer[pixelIndex];
+    for (uint i = 0; i < numFragments; i++)
+    {
+        if (abs(frag.depth) < abs(nodes[index].depth))
+        {
+            FragmentNode temp = frag;
+            frag = nodes[index];
+            nodes[index] = temp;
+        }
+        index++;
+    }
 
-		OITStartOffsetSSBO[pixelIndex].y ++;
-		
-		frag.next = atomicExchange(OITStartOffsetSSBO[pixelIndex].x, insertIndex);
-
-		OITFragmentSSBO[insertIndex] = frag;
-
+	if (numFragments < MAX_NUM_NODES) {
+		numFragmentsBuffer[pixelIndex]++;
+		nodes[index] = frag;
 	} else {
 
-	#ifdef OIT_ADDITIVE_BLEND_ENABLED
+#ifdef OIT_ADDITIVE_BLEND_ENABLED
 
-		uint oldPixelIndex = OITStartOffsetSSBO[pixelIndex].x;
+		// Additive blend with last fragment
+		vec4 colorDst = unpackUnorm4x8(nodes[index-1].color);
+		vec4 colorSrc = color;
 
-		OITFragmentSSBO[oldPixelIndex] = frag;
+		vec4 colorOut;
+		colorOut.rgb = colorDst.rgb + colorSrc.rgb;
+        colorOut.a = colorDst.a + colorSrc.a;
 
-	#endif
+		nodes[index-1].color = packUnorm4x8(colorOut);
+
+#else
+
+		// Alpha blend with last fragment
+		vec4 colorDst = unpackUnorm4x8(nodes[index-1].color);
+		vec4 colorSrc = color;
+
+		vec4 colorOut;
+		colorOut.rgb = colorDst.a * colorDst.rgb + (1.0 - colorDst.a) * colorSrc.a * colorSrc.rgb;
+        colorOut.a = colorDst.a + (1.0 - colorDst.a) * colorSrc.a;
+
+		nodes[index-1].color = packUnorm4x8(vec4(colorOut.rgb / colorOut.a, colorOut.a));
+
+#endif
 
 	}
 }

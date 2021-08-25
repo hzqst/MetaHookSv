@@ -34,7 +34,7 @@
 #define FDECAL_NOCLIP				0x40		// Decal is not clipped by containing polygon
 #define FDECAL_VBO					0x1000		// Decalvertex is bufferred in VBO
 
-#define MAX_DEPTH_COMPLEXITY 8
+#define MAX_NUM_NODES 8
 
 #define BINDING_POINT_SCENE_UBO 0
 #define BINDING_POINT_DECAL_SSBO 1
@@ -44,8 +44,7 @@
 #define BINDING_POINT_ENTITY_UBO 3
 #define BINDING_POINT_STUDIO_UBO 3
 #define BINDING_POINT_OIT_FRAGMENT_SSBO 4
-#define BINDING_POINT_OIT_STARTOFFSET_SSBO 5
-#define BINDING_POINT_OIT_ATOMIC_COUNTER 6
+#define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 5
 
 typedef struct decalvertex_s
 {
@@ -205,7 +204,7 @@ typedef struct scene_ubo_s
 	mat4 invViewMatrix;
 	mat4 invProjMatrix;
 	mat4 shadowMatrix[3];
-	ivec4 viewport;//viewport.z=linkListSize
+	uvec4 viewport;//viewport.z=linkListSize
 	vec4 viewpos;
 	vec4 vpn;
 	vec4 vright;
@@ -252,15 +251,14 @@ typedef struct texture_ssbo_s
 	GLuint64 handles[5 * 1];
 }texture_ssbo_t;
 
-typedef struct LinkedListFragmentNode_s
+// A fragment node stores rendering information about one specific fragment
+typedef struct FragmentNode_s
 {
 	// RGBA color of the node
 	uint32_t color;
 	// Depth value of the fragment (in view space)
 	float depth;
-	// The index of the next node in "nodes" array
-	uint32_t next;
-}LinkedListFragmentNode;
+}FragmentNode;
 
 typedef struct r_worldsurf_s
 {
@@ -278,8 +276,7 @@ typedef struct r_worldsurf_s
 		hSpriteEntriesSSBO[4] = 0;
 		hSpriteEntriesSSBO[5] = 0;
 		hOITFragmentSSBO = 0;
-		hOITStartOffsetSSBO = 0;
-		hOITAtomicCounter = 0;
+		hOITNumFragmentSSBO = 0;
 
 		bDiffuseTexture = false;
 		bLightmapTexture = false;
@@ -293,8 +290,6 @@ typedef struct r_worldsurf_s
 
 		iNumLightmapTextures = 0;
 		iLightmapTextureArray = 0;
-
-		iLinkedListSize = 0;
 	}
 
 	GLuint				hSceneVBO;
@@ -304,8 +299,7 @@ typedef struct r_worldsurf_s
 	GLuint				hSpriteFramesSSBO;
 	GLuint				hSpriteEntriesSSBO[kRenderTransAdd + 1];
 	GLuint				hOITFragmentSSBO;
-	GLuint				hOITStartOffsetSSBO;
-	GLuint				hOITAtomicCounter;
+	GLuint				hOITNumFragmentSSBO;
 
 	std::vector <brushvertex_t> vVertexBuffer;
 	std::vector <brushface_t> vFaceBuffer;
@@ -323,8 +317,6 @@ typedef struct r_worldsurf_s
 
 	int					iNumLightmapTextures;
 	int					iLightmapTextureArray;
-
-	int					iLinkedListSize;
 
 	std::vector <bspentity_t> vBSPEntities;
 

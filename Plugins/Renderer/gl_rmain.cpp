@@ -510,16 +510,15 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 	{
 		glColorMask(0, 0, 0, 0);
 
-		//Clear linked list
+		//Clear buffer
 		GL_Begin2D();
-		GL_UseProgram(linkedlist_clear.program);
+		GL_UseProgram(oitbuffer_clear.program);
 		R_DrawHUDQuad(glwidth, glheight);
 		GL_End2D();
 
-		//Initialize atomic counter
-		GLuint val = 0;
-		glClearNamedBufferData(r_wsurf.hOITAtomicCounter, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, (const void*)&val);
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+		//Initialize atomic counter
 
 		glEnable(GL_STENCIL_TEST);
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);

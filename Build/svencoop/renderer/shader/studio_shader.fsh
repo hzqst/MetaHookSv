@@ -172,8 +172,10 @@ void main(void)
 		vec4 color = CalcFog(diffuseColor * lightmapColor);
 
 		#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED) 
-
+			
+			beginInvocationInterlockARB();
 			GatherFragment(color);
+			endInvocationInterlockARB();
 
 		#else
 

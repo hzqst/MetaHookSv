@@ -212,16 +212,10 @@ void R_FreeSceneUBO(void)
 		r_wsurf.hOITFragmentSSBO = 0;
 	}
 
-	if (r_wsurf.hOITStartOffsetSSBO)
+	if (r_wsurf.hOITNumFragmentSSBO)
 	{
-		GL_DeleteBuffer(r_wsurf.hOITStartOffsetSSBO);
-		r_wsurf.hOITStartOffsetSSBO = 0;
-	}
-
-	if (r_wsurf.hOITAtomicCounter)
-	{
-		GL_DeleteBuffer(r_wsurf.hOITAtomicCounter);
-		r_wsurf.hOITAtomicCounter = 0;
+		GL_DeleteBuffer(r_wsurf.hOITNumFragmentSSBO);
+		r_wsurf.hOITNumFragmentSSBO = 0;
 	}
 }
 
@@ -979,8 +973,7 @@ void R_GenerateSceneUBO(void)
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 	}
 
-	size_t fragmentBufferSize = MAX_DEPTH_COMPLEXITY * glwidth * glheight;
-	size_t fragmentBufferSizeBytes = sizeof(LinkedListFragmentNode) * fragmentBufferSize;
+	size_t fragmentBufferSizeBytes = sizeof(FragmentNode) * MAX_NUM_NODES * glwidth * glheight;
 
 	r_wsurf.hOITFragmentSSBO = GL_GenBuffer();
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hOITFragmentSSBO);
@@ -988,21 +981,13 @@ void R_GenerateSceneUBO(void)
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_OIT_FRAGMENT_SSBO, r_wsurf.hOITFragmentSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-	r_wsurf.iLinkedListSize = fragmentBufferSize;
+	size_t numFragmentBufferSizeBytes = sizeof(uint32_t) * glwidth * glheight;
 
-	size_t startOffsetBufferSizeBytes = (sizeof(uint32_t) * 2) * glwidth * glheight;
-
-	r_wsurf.hOITStartOffsetSSBO = GL_GenBuffer();
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hOITStartOffsetSSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, startOffsetBufferSizeBytes, NULL, GL_STATIC_DRAW);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_OIT_STARTOFFSET_SSBO, r_wsurf.hOITStartOffsetSSBO);
+	r_wsurf.hOITNumFragmentSSBO = GL_GenBuffer();
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hOITNumFragmentSSBO);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, numFragmentBufferSizeBytes, NULL, GL_STATIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_OIT_NUMFRAGMENT_SSBO, r_wsurf.hOITNumFragmentSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-	r_wsurf.hOITAtomicCounter = GL_GenBuffer();
-	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, r_wsurf.hOITAtomicCounter);
-	glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(uint32_t) * 1, NULL, GL_STATIC_DRAW);
-	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, BINDING_POINT_OIT_ATOMIC_COUNTER, r_wsurf.hOITAtomicCounter);
-	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 }
 
 void R_ClearDecalCache(void)
@@ -3421,7 +3406,7 @@ void R_SetupSceneUBO(void)
 	memcpy(SceneUBO.shadowMatrix[2], r_shadow_matrix[2], sizeof(mat4));
 	SceneUBO.viewport[0] = glwidth;
 	SceneUBO.viewport[1] = glheight;
-	SceneUBO.viewport[2] = r_wsurf.iLinkedListSize;
+	SceneUBO.viewport[2] = 0;
 	SceneUBO.viewport[3] = 0;
 	memcpy(SceneUBO.viewpos, r_refdef->vieworg, sizeof(vec3_t));
 	memcpy(SceneUBO.vpn, vpn, sizeof(vec3_t));
