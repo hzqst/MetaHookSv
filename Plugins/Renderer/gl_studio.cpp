@@ -693,7 +693,7 @@ void R_GLStudioDrawPoints(void)
 		int GBufferMask = GBUFFER_MASK_ALL;
 		int StudioProgramState = flags;
 
-		//if (!bNoBindless)
+		//if (bUseBindless)
 		//{
 		//	StudioProgramState |= STUDIO_BINDLESS_ENABLED;
 		//}
@@ -974,7 +974,7 @@ void R_StudioDrawBatch(void)
 	int StudioProgramState = 0;
 	int GBufferMask = GBUFFER_MASK_ALL;
 
-	//if (!bNoBindless)
+	//if (bUseBindless)
 	//{
 	//	StudioProgramState |= STUDIO_BINDLESS_ENABLED;
 	//}

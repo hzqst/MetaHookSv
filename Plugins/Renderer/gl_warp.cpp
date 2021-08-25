@@ -24,7 +24,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 	{
 		int programState = 0;
 
-		if (!bNoBindless)
+		if (bUseBindless)
 			programState |= WATER_BINDLESS_ENABLED;
 
 		if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
@@ -154,7 +154,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 
 		int programState = WATER_LEGACY_ENABLED;
 
-		if (!bNoBindless)
+		if (bUseBindless)
 			programState |= WATER_BINDLESS_ENABLED;
 
 		if (!bIsAboveWater)

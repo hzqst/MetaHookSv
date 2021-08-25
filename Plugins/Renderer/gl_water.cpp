@@ -121,7 +121,7 @@ void R_InitWater(void)
 	{
 		refractmap = GL_GenTextureRGBA8(glwidth, glheight);
 
-		if (!bNoBindless)
+		if (bUseBindless)
 		{
 			auto handle = glGetTextureHandleARB(refractmap);
 			glMakeTextureHandleResidentARB(handle);
@@ -134,7 +134,7 @@ void R_InitWater(void)
 	{
 		depthrefrmap = GL_GenDepthTexture(glwidth, glheight);
 
-		if (!bNoBindless)
+		if (bUseBindless)
 		{
 			auto handle = glGetTextureHandleARB(depthrefrmap);
 			glMakeTextureHandleResidentARB(handle);
@@ -273,7 +273,7 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf)
 			VBOCache->depthreflmap = GL_GenDepthTexture(glwidth, glheight);
 			VBOCache->reflectmap = GL_GenTextureRGBA8(glwidth, glheight);
 
-			if (!bNoBindless)
+			if (bUseBindless)
 			{
 				auto handle = glGetTextureHandleARB(VBOCache->texture->gl_texturenum);
 				glMakeTextureHandleResidentARB(handle);
@@ -281,7 +281,7 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf)
 				VBOCache->basetexture_handle = handle;
 			}
 
-			if (!bNoBindless)
+			if (bUseBindless)
 			{
 				auto handle = glGetTextureHandleARB(VBOCache->reflectmap);
 				glMakeTextureHandleResidentARB(handle);
@@ -326,7 +326,7 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf)
 
 				if (VBOCache->normalmap)
 				{
-					if (!bNoBindless)
+					if (bUseBindless)
 					{
 						auto handle = glGetTextureHandleARB(VBOCache->normalmap);
 						glMakeTextureHandleResidentARB(handle);

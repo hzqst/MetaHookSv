@@ -13,6 +13,8 @@
 #include <r_studioint.h>
 #include <pm_movevars.h>
 #include <pm_shared.h>
+#include <particledef.h>
+#include <triangleapi.h>
 
 #include "plugins.h"
 #include "exportfuncs.h"
@@ -125,7 +127,8 @@ extern int glwidth;
 extern int glheight;
 
 extern bool bNoStretchAspect;
-extern bool bNoBindless;
+extern bool bUseBindless;
+extern bool bUseOITBlend;
 
 extern FBO_Container_t s_GBufferFBO;
 extern FBO_Container_t s_BackBufferFBO;
@@ -236,6 +239,7 @@ void R_ClearSkyBox(void);
 void R_RecursiveWorldNode(mnode_t *node);
 void R_RecursiveWorldNodeVBO(mnode_t *node);
 void R_DrawSequentialPoly(msurface_t *s, int face);
+void R_DrawParticles(void);
 void R_RotateForEntity(float *origin, cl_entity_t *ent);
 void R_SetRenderMode(cl_entity_t *pEntity);
 float *R_GetAttachmentPoint(int entity, int attachment);
@@ -258,6 +262,7 @@ void GL_Bind(int texnum);
 void GL_SelectTexture(GLenum target);
 void GL_DisableMultitexture(void);
 void GL_EnableMultitexture(void);
+void triapi_RenderMode(int mode);
 int GL_LoadTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal);
 int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal, int filter);
 void GL_InitShaders(void);
@@ -355,7 +360,5 @@ extern bool r_draw_oitblend;
 
 extern bool g_SvEngine_DrawPortalView;
 extern int r_draw_pass;
-
-extern cvar_t *r_oit_blend;
 
 #define BUFFER_OFFSET(i) ((unsigned int *)NULL + (i))

@@ -5,20 +5,19 @@
 #extension GL_NV_gpu_shader5 : require
 #else
 #extension GL_ARB_bindless_texture : require
-#extension GL_ARB_gpu_shader_int64 : require
 #endif
 
 #endif
 
 #if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED)
 
+#ifdef IS_FRAGMENT_SHADER
+
 // See https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_shader_image_load_store.txt
 #extension GL_ARB_shader_image_load_store : require
 
 // See https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_fragment_shader_interlock.txt
 #extension GL_ARB_fragment_shader_interlock : require
-
-#ifdef IS_FRAGMENT_SHADER
 
 // Use early z-test to cull transparent fragments occluded by opaque fragments.
 // Additionaly, use fragment interlock.
@@ -27,6 +26,10 @@ layout(early_fragment_tests) in;
 // gl_FragCoord will be used for pixel centers at integer coordinates.
 // See https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/gl_FragCoord.xhtml
 layout(pixel_center_integer) in vec4 gl_FragCoord;
+
+#define MAX_DEPTH_COMPLEXITY 8
+
+#define MAX_NUM_FRAGS 32
 
 #endif
 
@@ -54,8 +57,6 @@ layout(pixel_center_integer) in vec4 gl_FragCoord;
 #define BINDING_POINT_OIT_FRAGMENT_SSBO 4
 #define BINDING_POINT_OIT_STARTOFFSET_SSBO 5
 #define BINDING_POINT_OIT_ATOMIC_COUNTER 6
-
-#define MAX_DEPTH_COMPLEXITY 8
 
 #define SPR_VP_PARALLEL_UPRIGHT 0
 #define SPR_FACING_UPRIGHT 1
@@ -214,12 +215,10 @@ layout (std430, binding = BINDING_POINT_OIT_FRAGMENT_SSBO) coherent buffer Fragm
 // Start-offset buffer (mapping pixels to first pixel in the buffer) of size viewportW*viewportH.
 layout (std430, binding = BINDING_POINT_OIT_STARTOFFSET_SSBO) coherent buffer StartOffsetBuffer
 {
-    uint OITStartOffsetSSBO[];
+    uvec2 OITStartOffsetSSBO[];
 };
 
 layout(binding = BINDING_POINT_OIT_ATOMIC_COUNTER, offset = 0) uniform atomic_uint OITFragCounter;
-
-#define MAX_NUM_FRAGS 32
 
 #ifdef IS_FRAGMENT_SHADER
 void GatherFragment(vec4 color)
@@ -246,11 +245,26 @@ void GatherFragment(vec4 color)
 	#endif
 
 	uint insertIndex = atomicCounterIncrement(OITFragCounter);
+	uint insertFragCount = OITStartOffsetSSBO[pixelIndex].y;
 
-	if (insertIndex < linkListSize) {
-		// Insert the fragment into the linked list
-		frag.next = atomicExchange(OITStartOffsetSSBO[pixelIndex], insertIndex);
+	if (insertIndex < linkListSize && insertFragCount < MAX_NUM_FRAGS) {
+
+		OITStartOffsetSSBO[pixelIndex].y ++;
+		
+		frag.next = atomicExchange(OITStartOffsetSSBO[pixelIndex].x, insertIndex);
+
 		OITFragmentSSBO[insertIndex] = frag;
+
+	} else {
+
+	#ifdef OIT_ADDITIVE_BLEND_ENABLED
+
+		uint oldPixelIndex = OITStartOffsetSSBO[pixelIndex].x;
+
+		OITFragmentSSBO[oldPixelIndex] = frag;
+
+	#endif
+
 	}
 }
 #endif

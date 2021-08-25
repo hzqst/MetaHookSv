@@ -87,7 +87,7 @@ void main() {
     int pixelIndex = viewportW*y + x;
 
     // Get start offset from array
-    uint fragOffset = OITStartOffsetSSBO[pixelIndex];
+    uint fragOffset = OITStartOffsetSSBO[pixelIndex].x;
 
     // Collect all fragments for this pixel
     uint numFrags = 0;

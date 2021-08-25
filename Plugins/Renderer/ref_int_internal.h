@@ -24,11 +24,15 @@ typedef struct
 {
 	void (*R_ForceCVars)(qboolean mp);
 	void (*R_RenderView)(void);
-	void(*R_RenderView_SvEngine)(int a1);
+	void (*R_RenderView_SvEngine)(int a1);
 	void (*R_RenderScene)(void);
 	void (*R_NewMap)(void);
+	void (*R_DrawParticles)(void);
+	void (*R_TracerDraw)(void);
+	void (*R_BeamDrawList)(void);
+	void (*R_FreeDeadParticles)(particle_t **);
 	void (*R_DrawTEntitiesOnList)(int onlyClientDraw);
-	void(*R_AddTEntity)(cl_entity_t *pEnt);
+	void (*R_AddTEntity)(cl_entity_t *pEnt);
 	void (*R_DrawWorld)(void);
 	void (*R_SetupFrame)(void);
 	void (*R_SetupGL)(void);
@@ -68,7 +72,7 @@ typedef struct
 	void(*R_MarkLights)(dlight_t *light, int bit, mnode_t *node);
 	int(*CL_IsDevOverviewMode)(void);
 	void (*Mod_LoadStudioModel)(model_t *mod, void *buffer);
-
+	void(*triapi_RenderMode)(int mode);
 	void(__fastcall *enginesurface_drawFlushText)(void *pthis, int);
 	//SvClient
 	void(__fastcall *PortalManager_ResetAll)(int pthis, int);

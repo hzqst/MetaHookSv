@@ -169,7 +169,7 @@ void R_CompileShaderAppendInclude(std::string &str, const char *filename)
 
 void R_CompileShaderAppendDefine(std::string &str, const std::string &def)
 {
-	std::regex pattern("(#version [0-9]+)");
+	std::regex pattern("(#version [0-9a-z ]+)");
 	std::smatch result;
 	std::regex_search(str, result, pattern);
 

@@ -595,7 +595,7 @@ void R_DrawDecals(void)
 
 				if (outCount)
 				{
-					if (!bNoBindless)
+					if (bUseBindless)
 					{
 						GLuint64 handle = 0;
 						//Texture handle changed ?
@@ -685,7 +685,7 @@ void R_DrawDecals(void)
 
 	int WSurfProgramState = WSURF_DECAL_ENABLED | WSURF_DIFFUSE_ENABLED | WSURF_TRANSPARENT_ENABLED;
 
-	if (!bNoBindless)
+	if (bUseBindless)
 	{
 		WSurfProgramState |= WSURF_BINDLESS_ENABLED;
 	}

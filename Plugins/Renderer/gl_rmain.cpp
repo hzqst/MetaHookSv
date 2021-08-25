@@ -119,7 +119,8 @@ FBO_Container_t s_ShadowFBO;
 FBO_Container_t s_WaterFBO;
 
 bool bNoStretchAspect = false;
-bool bNoBindless = false;
+bool bUseBindless = true;
+bool bUseOITBlend = true;
 
 cvar_t *ati_subdiv = NULL;
 cvar_t *ati_npatch = NULL;
@@ -189,7 +190,6 @@ cvar_t *cl_righthand = NULL;
 cvar_t *chase_active = NULL;
 
 cvar_t *r_vertical_fov = NULL;
-cvar_t *r_oit_blend = NULL;
 
 int R_GetDrawPass(void)
 {
@@ -278,6 +278,226 @@ int CL_FxBlend(cl_entity_t *entity)
 	return gRefFuncs.CL_FxBlend(entity);
 }
 
+const int		ramp1[8] = { 0x6f, 0x6d, 0x6b, 0x69, 0x67, 0x65, 0x63, 0x61 };
+const int		ramp2[8] = { 0x6f, 0x6e, 0x6d, 0x6c, 0x6b, 0x6a, 0x68, 0x66 };
+const int		ramp3[8] = { 0x6d, 0x6b, 6, 5, 4, 3 };
+
+#define SPARK_COLORCOUNT	9
+const int		gSparkRamp[SPARK_COLORCOUNT] = { 0xfe, 0xfd, 0xfc, 0x6f, 0x6e, 0x6d, 0x6c, 0x67, 0x60 };
+
+const color24 gTracerColors[] =
+{
+	{ 255, 255, 255 },		// White
+	{ 255, 0, 0 },			// Red
+	{ 0, 255, 0 },			// Green
+	{ 0, 0, 255 },			// Blue
+	{ 0, 0, 0 },			// Tracer default, filled in from cvars, etc.
+	{ 255, 167, 17 },		// Yellow-orange sparks
+	{ 255, 130, 90 },		// Yellowish streaks (garg)
+	{ 55, 60, 144 },		// Blue egon streak
+	{ 255, 130, 90 },		// More Yellowish streaks (garg)
+	{ 255, 140, 90 },		// More Yellowish streaks (garg)
+	{ 200, 130, 90 },		// More red streaks (garg)
+	{ 255, 120, 70 },		// Darker red streaks (garg)
+};
+
+void R_DrawParticles(void)
+{
+	return;
+
+	vec3_t			up, right;
+	float			scale;
+
+	GL_Bind((*particletexture));
+	glEnable(GL_ALPHA_TEST);
+	glEnable(GL_BLEND);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBegin(GL_TRIANGLES);
+
+	VectorScale(vup, 1.5, up);
+	VectorScale(vright, 1.5, right);
+
+	float frametime = (*cl_time) - (*cl_oldtime);
+	float time3 = frametime * 15;
+	float time2 = frametime * 10; // 15;
+	float time1 = frametime * 5;
+	float grav = frametime * r_params.movevars->gravity * 0.05;
+	float dvel = 4 * frametime;
+
+	gRefFuncs.R_FreeDeadParticles(&(*active_particles));
+
+	for (auto p = (*active_particles); p; p = p->next)
+	{
+		if (p->type != pt_blob)
+		{
+			// hack a scale up to keep particles from disapearing
+			scale = (p->org[0] - r_origin[0])*vpn[0] + (p->org[1] - r_origin[1])*vpn[1]
+				+ (p->org[2] - r_origin[2])*vpn[2];
+			if (scale < 20)
+				scale = 1;
+			else
+				scale = 1 + scale * 0.004;
+
+			auto pb = &(*host_basepal)[(int)p->color * 4];
+
+			byte rgba[4];
+			rgba[0] = pb[2];
+			rgba[1] = pb[1];
+			rgba[2] = pb[0];
+			rgba[3] = 255;
+
+			glColor3ubv(rgba);
+			glTexCoord2f(0, 0);
+			glVertex3fv(p->org);
+			glTexCoord2f(1, 0);
+			glVertex3f(p->org[0] + up[0] * scale, p->org[1] + up[1] * scale, p->org[2] + up[2] * scale);
+			glTexCoord2f(0, 1);
+			glVertex3f(p->org[0] + right[0] * scale, p->org[1] + right[1] * scale, p->org[2] + right[2] * scale);
+		}
+
+		if (p->type != pt_clientcustom)
+		{
+			p->org[0] += p->vel[0] * frametime;
+			p->org[1] += p->vel[1] * frametime;
+			p->org[2] += p->vel[2] * frametime;
+		}
+
+		switch (p->type)
+		{
+		case pt_static:
+			break;
+
+		case pt_fire:
+			p->ramp += time1;
+			if (p->ramp >= 6)
+				p->die = -1;
+			else
+			{
+				p->color = ramp3[(int)p->ramp];
+				p->packedColor = 0;
+			}
+			p->vel[2] += grav;
+			break;
+
+		case pt_explode:
+			p->ramp += time2;
+			if (p->ramp >= 8)
+				p->die = -1;
+			else
+			{
+				p->color = ramp1[(int)p->ramp];
+				p->packedColor = 0;
+			}
+			for (int i = 0; i < 3; i++)
+				p->vel[i] += p->vel[i] * dvel;
+			p->vel[2] -= grav;
+			break;
+
+		case pt_explode2:
+			p->ramp += time3;
+			if (p->ramp >= 8)
+				p->die = -1;
+			else
+			{
+				p->color = ramp2[(int)p->ramp];
+				p->packedColor = 0;
+			}
+			for (int i = 0; i < 3; i++)
+				p->vel[i] -= p->vel[i] * frametime;
+			p->vel[2] -= grav;
+			break;
+
+		case pt_blob:
+		case pt_blob2:
+			p->ramp += time2;
+			if (p->ramp >= SPARK_COLORCOUNT)
+				p->ramp = 0;
+
+			p->color = gSparkRamp[(int)p->ramp];
+			p->packedColor = 0;
+
+			for (int i = 0; i < 3; i++)
+				p->vel[i] += p->vel[i] * frametime * 0.5;
+			p->vel[2] -= grav * 5;
+			p->type = gEngfuncs.pfnRandomLong(0, 3) ? pt_blob : pt_blob2;
+			break;
+
+		case pt_grav:
+#ifdef QUAKE2
+			p->vel[2] -= grav * 20;
+			break;
+#endif
+		case pt_slowgrav:
+			p->vel[2] -= grav;
+			break;
+
+		case pt_vox_grav:
+			p->vel[2] -= grav * 8;
+			break;
+
+		case pt_vox_slowgrav:
+			p->vel[2] -= grav * 4;
+			break;
+
+		case pt_clientcustom:
+
+			if (p->callback)
+				p->callback(p, frametime);
+
+			break;
+		}
+	}
+
+	glEnd();
+
+	//R_TracerDraw();
+	//R_BeamDrawList();
+
+	glDisable(GL_BLEND);
+	glDisable(GL_ALPHA_TEST);
+}
+
+void triapi_RenderMode(int mode)
+{
+	gRefFuncs.triapi_RenderMode(mode);
+
+	switch (mode)
+	{
+	case kRenderNormal:
+	{
+		
+		break;
+	}
+
+	case kRenderTransAdd:
+	{
+		R_SetGBufferBlend(GL_ONE, GL_ONE);
+		if(r_draw_oitblend)
+			R_UseLegacySpriteProgram(SPRITE_OIT_ADDITIVE_BLEND_ENABLED, NULL);
+		break;
+	}
+
+	case kRenderTransAlpha:
+	{
+		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		if (r_draw_oitblend)
+			R_UseLegacySpriteProgram(SPRITE_OIT_ALPHA_BLEND_ENABLED, NULL);
+		break;
+	}
+
+	case kRenderTransColor:
+	case kRenderTransTexture:
+	{
+		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		if (r_draw_oitblend)
+			R_UseLegacySpriteProgram(SPRITE_OIT_ALPHA_BLEND_ENABLED, NULL);
+		break;
+	}
+	}
+
+}
+
 void R_DrawTEntitiesOnList(int onlyClientDraw)
 {
 	if (!r_drawentities->value)
@@ -286,7 +506,7 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 	if (onlyClientDraw)
 		return;
 
-	if (r_oit_blend->value)
+	if (bUseOITBlend)
 	{
 		glColorMask(0, 0, 0, 0);
 
@@ -300,6 +520,12 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 		GLuint val = 0;
 		glClearNamedBufferData(r_wsurf.hOITAtomicCounter, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, (const void*)&val);
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+		glEnable(GL_STENCIL_TEST);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		glStencilMask(0xFF);
+		glClear(GL_STENCIL_BUFFER_BIT);
 
 		r_draw_oitblend = true;
 
@@ -320,18 +546,31 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 		R_DrawSpriteEntris(kRenderTransAdd);
 		R_DrawSpriteEntris(kRenderGlow);
 
+		gRefFuncs.R_DrawTEntitiesOnList(onlyClientDraw);
+		gRefFuncs.R_DrawParticles();
+
+		GL_UseProgram(0);
+
 		r_draw_oitblend = false;
 
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
 		glColorMask(1, 1, 1, 1);
 
+		glStencilFunc(GL_EQUAL, 1, 0xFF);
+		glStencilMask(0x00);
+
 		R_BlitOITBlendBuffer();
 
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-	}
 
-	gRefFuncs.R_DrawTEntitiesOnList(onlyClientDraw);
+		glDisable(GL_STENCIL_TEST);
+	}
+	else
+	{
+		gRefFuncs.R_DrawTEntitiesOnList(onlyClientDraw);
+		gRefFuncs.R_DrawParticles();
+	}
 }
 
 void R_AddTEntity(cl_entity_t *ent)
@@ -351,47 +590,8 @@ void R_AddTEntity(cl_entity_t *ent)
 		return;
 	}
 	
-	if (r_oit_blend->value)
+	if (bUseOITBlend)
 	{
-		/*switch (ent->model->type)
-		{
-		case mod_brush: case mod_studio:
-		{
-			
-			break;
-		}
-		case mod_sprite:
-		{
-			//Sprites are saved in sprite_entry and upload to SSBO for later usage.
-			(*r_blend) = CL_FxBlend(ent);
-
-			if ((*r_blend) <= 0)
-				return;
-
-			(*r_blend) = (*r_blend) / 255.0;
-
-			if (ent->curstate.body)
-			{
-				auto pAttachment = R_GetAttachmentPoint(ent->curstate.skin, ent->curstate.body);
-				VectorCopy(pAttachment, r_entorigin);
-			}
-			else
-			{
-				VectorCopy((*currententity)->origin, r_entorigin);
-			}
-
-			if ((*currententity)->curstate.rendermode == kRenderGlow)
-				(*r_blend) *= GlowBlend(ent);
-
-			if ((*r_blend) != 0)
-			{
-				(*currententity) = ent;
-				R_DrawSpriteModel(ent);
-			}
-
-			break;
-		}
-		}*/
 		if ((*numTransObjs) >= (*maxTransObjs))
 		{
 			Sys_ErrorEx("R_AddTEntity: Too many objects");
@@ -1106,10 +1306,21 @@ void GL_Init(void)
 	}
 
 	bNoStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
-	bNoBindless = (gEngfuncs.CheckParm("-nobindless", NULL)) ? true : false;
 
-	if (!bNoBindless && !glewIsSupported("GL_NV_bindless_texture") && !glewIsSupported("GL_ARB_bindless_texture"))
-		bNoBindless = true;
+	if(gEngfuncs.CheckParm("-nobindless", NULL))
+		bUseBindless = false;
+
+	if (bUseBindless && !glewIsSupported("GL_NV_bindless_texture") && !glewIsSupported("GL_ARB_bindless_texture"))
+		bUseBindless = false;
+	
+	if (gEngfuncs.CheckParm("-nooitblend", NULL))
+		bUseOITBlend = false;
+
+	if (bUseOITBlend && !glewIsSupported("GL_ARB_shader_image_load_store"))
+		bUseOITBlend = false;
+
+	if (bUseOITBlend && !glewIsSupported("GL_ARB_fragment_shader_interlock"))
+		bUseOITBlend = false;
 
 	GL_GenerateFrameBuffers();
 	GL_InitShaders();
@@ -1479,7 +1690,6 @@ void R_InitCvars(void)
 	chase_active = gEngfuncs.pfnGetCvarPointer("chase_active");
 
 	r_vertical_fov = gEngfuncs.pfnRegisterVariable("r_vertical_fov", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	r_oit_blend = gEngfuncs.pfnRegisterVariable("r_oit_blend", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 }
 
 void R_Init(void)

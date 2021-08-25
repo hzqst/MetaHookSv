@@ -12,5 +12,6 @@ void main() {
     int y = int(gl_FragCoord.y);
     int index = viewportW * y + x;
     
-    OITStartOffsetSSBO[index] = -1;
+    OITStartOffsetSSBO[index].x = -1;
+    OITStartOffsetSSBO[index].y = 0;
 }

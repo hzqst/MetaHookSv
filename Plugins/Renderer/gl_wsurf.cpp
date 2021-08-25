@@ -381,7 +381,7 @@ void R_GenerateDrawBatch(wsurf_vbo_t *modcache, int iTexchainType, int iDrawBatc
 
 		if (ssbo)
 		{
-			if (!bNoBindless)
+			if (bUseBindless)
 			{
 				auto handle = glGetTextureHandleARB(texchain.pTexture->gl_texturenum);
 				glMakeTextureHandleResidentARB(handle);
@@ -990,7 +990,7 @@ void R_GenerateSceneUBO(void)
 
 	r_wsurf.iLinkedListSize = fragmentBufferSize;
 
-	size_t startOffsetBufferSizeBytes = sizeof(uint32_t) * glwidth * glheight;
+	size_t startOffsetBufferSizeBytes = (sizeof(uint32_t) * 2) * glwidth * glheight;
 
 	r_wsurf.hOITStartOffsetSSBO = GL_GenBuffer();
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hOITStartOffsetSSBO);
@@ -1000,7 +1000,7 @@ void R_GenerateSceneUBO(void)
 
 	r_wsurf.hOITAtomicCounter = GL_GenBuffer();
 	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, r_wsurf.hOITAtomicCounter);
-	glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(uint32_t), NULL, GL_STATIC_DRAW);
+	glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(uint32_t) * 1, NULL, GL_STATIC_DRAW);
 	glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, BINDING_POINT_OIT_ATOMIC_COUNTER, r_wsurf.hOITAtomicCounter);
 	glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 }
@@ -1145,7 +1145,7 @@ void R_DrawWSurfVBOSolid(wsurf_vbo_t *modcache)
 
 void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 {
-	if(!bNoBindless)
+	if(bUseBindless)
 	{
 		int WSurfProgramState = WSURF_BINDLESS_ENABLED;
 

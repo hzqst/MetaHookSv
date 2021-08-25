@@ -15,6 +15,9 @@ typedef struct walk_context_s
 	int depth;
 }walk_context_t;
 
+#define R_DRAWPARTICLES_SVENGINE "\x81\xEC\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x00\x00\x00\x2A\xFF\x35"
+#define R_DRAWPARTICLES_NEW "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x68\xC0\x0B\x00\x00"
+
 #define R_MARKLIGHTS_SVENGINE "\x83\xEC\x0C\x2A\x8B\x7C\x24\x2A\x83\x3F\x00"
 #define R_MARKLIGHTS_NEW "\x55\x8B\xEC\x83\xEC\x18\x2A\x8B\x2A\x10\x83\x2A\x00"
 
@@ -205,6 +208,8 @@ void R_FillAddress(void)
 	void *engineSurface = (void *)engineFactory(ENGINE_SURFACE_VERSION, NULL);
 
 	gRefFuncs.enginesurface_drawFlushText = *(decltype(gRefFuncs.enginesurface_drawFlushText) *)(*(DWORD *)engineSurface + 0x58);
+
+	gRefFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -510,6 +515,16 @@ void R_FillAddress(void)
 	{
 		gRefFuncs.R_DrawTEntitiesOnList = (void(*)(int))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_NEW);
 		Sig_FuncNotFound(R_DrawTEntitiesOnList);
+	}
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		gRefFuncs.R_DrawParticles = (void(*)(void))Search_Pattern(R_DRAWPARTICLES_SVENGINE);
+		Sig_FuncNotFound(R_DrawParticles);
+	}
+	else
+	{
+		gRefFuncs.R_DrawParticles = (void(*)(void))Search_Pattern(R_DRAWPARTICLES_NEW);
+		Sig_FuncNotFound(R_DrawParticles);
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -2689,6 +2704,21 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(Mod_LoadStudioModel);
 	}
 
+	{
+		const char sigs1[] = "palette.lmp\0";
+		auto palette_String = Search_Pattern_Data(sigs1);
+		if (!palette_String)
+			palette_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(palette_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x68\x00\x08\x00\x00\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\xA3";
+		*(DWORD *)(pattern + 1) = (DWORD)palette_String;
+		auto palette_Call = Search_Pattern(pattern);
+		Sig_VarNotFound(palette_Call);
+
+		host_basepal = (decltype(host_basepal))*(void **)((PUCHAR)palette_Call + sizeof(pattern) - 1);
+		Sig_VarNotFound(host_basepal);
+	}
+
 	if (1)
 	{
 		g_pMetaHookAPI->DisasmRanges(gRefFuncs.Draw_DecalTexture, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
@@ -2733,25 +2763,135 @@ void R_FillAddress(void)
 		Sig_VarNotFound(decal_wad);
 	}
 
-	//Allocate 32bytes instead of 28 bytes for mspriteframe_t
-#define Mod_LoadSpriteFrame_Sig "\x6A\x1C\x89\x44\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x6A\x1C"
-	PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
-	PUCHAR SearchLimit = (PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize;
-	while (SearchBegin < SearchLimit)
+	if (1)
 	{
-		auto pFound = (PUCHAR)g_pMetaHookAPI->SearchPattern(SearchBegin, SearchLimit - SearchBegin, Mod_LoadSpriteFrame_Sig, sizeof(Mod_LoadSpriteFrame_Sig) - 1);
-		if (pFound)
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_DrawParticles, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
-			g_pMetaHookAPI->WriteBYTE(pFound + 1, 0x20);
-			g_pMetaHookAPI->WriteBYTE(pFound + 12, 0x20);
+			auto pinst = (cs_insn *)inst;
 
-			SearchBegin = pFound + sizeof(Mod_LoadSpriteFrame_Sig) - 1;
-		}
-		else
-		{
-			break;
-		}
+			if (!particletexture &&
+				g_iEngineType == ENGINE_SVENGINE &&
+				pinst->id == X86_INS_PUSH &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				particletexture = (decltype(particletexture))pinst->detail->x86.operands[0].mem.disp;
+			}
+			else if (!particletexture &&
+				g_iEngineType != ENGINE_SVENGINE &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				pinst->detail->x86.operands[1].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				particletexture = (decltype(particletexture))pinst->detail->x86.operands[1].mem.disp;
+			}
+
+			if (!active_particles &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == X86_REG_ESI &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				pinst->detail->x86.operands[1].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				if (address[-5] == 0xE8)
+				{
+					gRefFuncs.R_FreeDeadParticles = (decltype(gRefFuncs.R_FreeDeadParticles))GetCallAddress(address - 5);
+					active_particles = (decltype(active_particles))pinst->detail->x86.operands[1].mem.disp;
+				}
+			}
+
+			if (particletexture && active_particles)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(particletexture);
 	}
+
+	if (1)
+	{
+#define R_TRACERDRAW_SIG "\xFF\x15\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x00\xE8\x2A\x2A\x2A\x00"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawParticles, 0x800, R_TRACERDRAW_SIG, sizeof(R_TRACERDRAW_SIG) - 1);
+		Sig_AddrNotFound(R_TracerDraw);
+		gRefFuncs.R_TracerDraw = (decltype(gRefFuncs.R_TracerDraw))GetCallAddress(addr + 6);
+		gRefFuncs.R_BeamDrawList = (decltype(gRefFuncs.R_BeamDrawList))GetCallAddress(addr + 11);
+	}
+
+	//Allocate 32bytes instead of 28 bytes for mspriteframe_t
+	
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		bool bModified = false;
+#define Mod_LoadSpriteFrame_Sig_SvEngine  "\x6A\x1C\x89\x44\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x6A\x1C"
+		PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
+		PUCHAR SearchLimit = (PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize;
+		while (SearchBegin < SearchLimit)
+		{
+			auto pFound = (PUCHAR)g_pMetaHookAPI->SearchPattern(SearchBegin, SearchLimit - SearchBegin, Mod_LoadSpriteFrame_Sig_SvEngine, sizeof(Mod_LoadSpriteFrame_Sig_SvEngine) - 1);
+			if (pFound)
+			{
+				g_pMetaHookAPI->WriteBYTE(pFound + 1, 0x20);
+				g_pMetaHookAPI->WriteBYTE(pFound + 12, 0x20);
+				bModified = true;
+
+				SearchBegin = pFound + sizeof(Mod_LoadSpriteFrame_Sig_SvEngine) - 1;
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		if (!bModified)
+			Sig_NotFound(Mod_LoadSpriteFrame);
+	}
+	else
+	{
+		bool bModified = false;
+#define Mod_LoadSpriteFrame_Sig "\x68\x2A\x2A\x2A\x2A\x6A\x1C\x89\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x2A\x6A\x1C"
+		PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
+		PUCHAR SearchLimit = (PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize;
+		while (SearchBegin < SearchLimit)
+		{
+			auto pFound = (PUCHAR)g_pMetaHookAPI->SearchPattern(SearchBegin, SearchLimit - SearchBegin, Mod_LoadSpriteFrame_Sig, sizeof(Mod_LoadSpriteFrame_Sig) - 1);
+			if (pFound)
+			{
+				g_pMetaHookAPI->WriteBYTE(pFound + 6, 0x20);
+				g_pMetaHookAPI->WriteBYTE(pFound + 18, 0x20);
+				bModified = true;
+
+				SearchBegin = pFound + sizeof(Mod_LoadSpriteFrame_Sig) - 1;
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		if (!bModified)
+			Sig_NotFound(Mod_LoadSpriteFrame);
+	}
+	
 }
 
 void R_InstallHook(void)
@@ -2780,10 +2920,12 @@ void R_InstallHook(void)
 	Install_InlineHook(R_GLStudioDrawPoints);
 	Install_InlineHook(R_DrawBrushModel);
 	Install_InlineHook(R_DrawTEntitiesOnList);
+	Install_InlineHook(R_DrawParticles);
 	Install_InlineHook(R_AddTEntity);
 	Install_InlineHook(GL_LoadTexture2);
 	Install_InlineHook(enginesurface_drawFlushText);
 	Install_InlineHook(Mod_LoadStudioModel);
+	Install_InlineHook(triapi_RenderMode);
 
 
 }
