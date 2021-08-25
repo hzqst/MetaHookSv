@@ -520,11 +520,11 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 		//Initialize atomic counter
 
-		glEnable(GL_STENCIL_TEST);
+		/*glEnable(GL_STENCIL_TEST);
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 		glStencilMask(0xFF);
-		glClear(GL_STENCIL_BUFFER_BIT);
+		glClear(GL_STENCIL_BUFFER_BIT);*/
 
 		r_draw_oitblend = true;
 
@@ -556,14 +556,14 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 		glColorMask(1, 1, 1, 1);
 
-		glStencilFunc(GL_EQUAL, 1, 0xFF);
-		glStencilMask(0x00);
+		//glStencilFunc(GL_EQUAL, 1, 0xFF);
+		//glStencilMask(0x0);
 
 		R_BlitOITBlendBuffer();
 
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-		glDisable(GL_STENCIL_TEST);
+		//glDisable(GL_STENCIL_TEST);
 	}
 	else
 	{

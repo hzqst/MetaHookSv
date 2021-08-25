@@ -277,9 +277,11 @@ ivec2 addrGen2D(ivec2 addr2D, uint viewportW)
 
 void GatherFragment(vec4 color)
 {
-  if (color.a < 0.01) {
+#ifdef OIT_ALPHA_BLEND_ENABLED
+	if (color.a < 0.01) {
         discard;
     }
+#endif
 
     uint x = uint(gl_FragCoord.x);
     uint y = uint(gl_FragCoord.y);
