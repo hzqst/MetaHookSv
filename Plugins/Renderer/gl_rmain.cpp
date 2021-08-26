@@ -526,25 +526,6 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 		r_draw_oitblend = true;
 
-#if 0
-		//Render studiomodels and brushmodels into Blend SSBO
-		for (int i = 0; i < (*numTransObjs); i++)
-		{
-			(*currententity) = (*transObjects)[i].pEnt;
-			R_DrawCurrentEntity(true);
-		}
-
-		(*numTransObjs) = 0;
-
-		//Render sprites into Blend SSBO
-
-		R_DrawSpriteEntris(kRenderTransAlpha);
-		R_DrawSpriteEntris(kRenderTransColor);
-		R_DrawSpriteEntris(kRenderTransTexture);
-		R_DrawSpriteEntris(kRenderTransAdd);
-		R_DrawSpriteEntris(kRenderGlow);
-#endif
-
 		gRefFuncs.R_DrawTEntitiesOnList(onlyClientDraw);
 		gRefFuncs.R_DrawParticles();
 

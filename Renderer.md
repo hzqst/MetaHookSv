@@ -187,15 +187,48 @@ Specular textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/de
 
 * Blue channel is not used yet.
 
+## Outline, Celshade and Rimlight
+
+Some flags are added to render Outline, Celshade and Rimlight effects for studiomodels.
+
+You will have to create a txt file named `[modelname]_external.txt` along with `.mdl` file, with the following content:
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "*"
+    "flags" "STUDIO_NF_CELSHADE"
+}
+```
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "face.bmp"
+    "flags" "STUDIO_NF_CELSHADE_FACE"
+}
+```
+
+```
+{
+    "classname" "studio_efx"
+    "flags" "EF_OUTLINE"
+}
+```
+
+Just like what I did in `Build\svencoop_addon\models\player\GI_Keqing\GI_Keqing_external.txt`.
+
 ## Vertex Buffer Object (aka VBO) "Batch-Draw" optimization
 
 Brush surfaces, studio models, decals and sprites are rendered with Vertex Buffer Object, offering substantial performance gains over OpenGL 1.x immediate mode rendering primarily because the data reside in video memory rather than system memory and so it can be rendered directly by the video device.
 
 ## Order-Independent Transparency Blend (aka OIT blend)
 
-Transparent objects are not required to be sorted by CPU before rendering. pixel colors are stored in linked-list and sorted by GPU.
+Transparent pixels are stored in linked-list and sorted by GPU.
 
-`r_oit_blend` set to 1 to enable Order-Independent Transparency Blend.
+Add `-oitblend` to the launch parameters to enable Order-Independent Transparency Blend (it's disabled by default).
+
+* Warning : It may dramatically hurt performance.
 
 ## Anti-Aliasing
 
