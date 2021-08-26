@@ -48,12 +48,12 @@ layout(pixel_center_integer) in vec4 gl_FragCoord;
 #define BINDING_POINT_SCENE_UBO 0
 #define BINDING_POINT_DECAL_SSBO 1
 #define BINDING_POINT_TEXTURE_SSBO 1
-#define BINDING_POINT_SPRITEFRAME_SSBO 1
-#define BINDING_POINT_SPRITEENTRY_SSBO 2
-#define BINDING_POINT_ENTITY_UBO 3
-#define BINDING_POINT_STUDIO_UBO 3
-#define BINDING_POINT_OIT_FRAGMENT_SSBO 4
-#define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 5
+//#define BINDING_POINT_SPRITEFRAME_SSBO 1
+//#define BINDING_POINT_SPRITEENTRY_SSBO 2
+#define BINDING_POINT_ENTITY_UBO 2
+#define BINDING_POINT_STUDIO_UBO 2
+#define BINDING_POINT_OIT_FRAGMENT_SSBO 3
+#define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 4
 
 #define SPR_VP_PARALLEL_UPRIGHT 0
 #define SPR_FACING_UPRIGHT 1
@@ -105,20 +105,6 @@ struct studio_ubo_t{
 	mat3x4 bonematrix[128];
 };
 
-struct texture_ssbo_t{
-
-#if defined(BINDLESS_ENABLED) && defined(UINT64_ENABLED)
-
-	uint64_t handles[5 * 1];
-
-#else
-
-	uvec2 handles[5 * 1];
-
-#endif
-
-};
-
 struct spriteframe_ssbo_t{
 	ivec4 type_width_height_texturenum;
 
@@ -126,11 +112,11 @@ struct spriteframe_ssbo_t{
 
 #if defined(BINDLESS_ENABLED) && defined(UINT64_ENABLED)
 
-	uint64_t texturehandle[2];
+	uint64_t texturehandle[1];
 
 #else
 
-	uvec2 texturehandle[2];
+	uvec2 texturehandle[1];
 
 #endif
 };
@@ -158,20 +144,28 @@ layout (std140, binding = BINDING_POINT_SCENE_UBO) uniform SceneBlock
    scene_ubo_t SceneUBO;
 };
 
-layout (std430, binding = BINDING_POINT_DECAL_SSBO) buffer DecalBlock
+layout (std430, binding = BINDING_POINT_DECAL_SSBO) coherent buffer DecalBlock
 {
-	texture_ssbo_t DecalSSBO;
+#if defined(BINDLESS_ENABLED) && defined(UINT64_ENABLED)
+
+	uint64_t DecalSSBO[];
+
+#else
+
+	uvec2 DecalSSBO[];
+
+#endif
 };
 
-layout (std430, binding = BINDING_POINT_SPRITEFRAME_SSBO) buffer SpriteFrameBlock
-{
-	spriteframes_ssbo_t SpriteFrameSSBO;
-};
+//layout (std430, binding = BINDING_POINT_SPRITEFRAME_SSBO) buffer SpriteFrameBlock
+//{
+//	spriteframes_ssbo_t SpriteFrameSSBO;
+//};
 
-layout (std430, binding = BINDING_POINT_SPRITEENTRY_SSBO) buffer SpriteEntryBlock
-{
-	spriteentries_ssbo_t SpriteEntrySSBO;
-};
+//layout (std430, binding = BINDING_POINT_SPRITEENTRY_SSBO) buffer SpriteEntryBlock
+//{
+//	spriteentries_ssbo_t SpriteEntrySSBO;
+//};
 
 //Entity level
 
@@ -180,9 +174,17 @@ layout (std140, binding = BINDING_POINT_ENTITY_UBO) uniform EntityBlock
 	entity_ubo_t EntityUBO;
 };
 
-layout (std430, binding = BINDING_POINT_TEXTURE_SSBO) buffer TextureBlock
+layout (std430, binding = BINDING_POINT_TEXTURE_SSBO) coherent buffer TextureBlock
 {
-	texture_ssbo_t TextureSSBO;
+#if defined(BINDLESS_ENABLED) && defined(UINT64_ENABLED)
+
+	uint64_t TextureSSBO[];
+
+#else
+
+	uvec2 TextureSSBO[];
+
+#endif
 };
 
 layout (std140, binding = BINDING_POINT_STUDIO_UBO) uniform StudioBlock

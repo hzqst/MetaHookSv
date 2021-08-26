@@ -131,7 +131,7 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 
 void HUD_DrawNormalTriangles(void)
 {
-	R_DrawSpriteEntris(kRenderNormal);
+	//R_DrawSpriteEntris(kRenderNormal);
 
 	r_draw_opaque = false;
 

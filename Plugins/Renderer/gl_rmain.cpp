@@ -528,6 +528,7 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 		r_draw_oitblend = true;
 
+#if 0
 		//Render studiomodels and brushmodels into Blend SSBO
 		for (int i = 0; i < (*numTransObjs); i++)
 		{
@@ -544,6 +545,7 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 		R_DrawSpriteEntris(kRenderTransTexture);
 		R_DrawSpriteEntris(kRenderTransAdd);
 		R_DrawSpriteEntris(kRenderGlow);
+#endif
 
 		gRefFuncs.R_DrawTEntitiesOnList(onlyClientDraw);
 		gRefFuncs.R_DrawParticles();

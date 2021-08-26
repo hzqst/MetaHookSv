@@ -32,7 +32,7 @@ layout(location = 4) out vec4 out_Additive;
 vec3 GenerateWorldPositionFromDepth(vec2 texCoord)
 {
 	#ifdef BINDLESS_ENABLED
-		sampler2D depthTex = sampler2D(TextureSSBO.handles[TEXTURE_SSBO_WATER_DEPTH]);
+		sampler2D depthTex = sampler2D(TextureSSBO[TEXTURE_SSBO_WATER_DEPTH]);
 	#endif
 
 	vec4 clipSpaceLocation;	
@@ -53,7 +53,7 @@ void main()
 #ifdef LEGACY_ENABLED
 
 	#ifdef BINDLESS_ENABLED
-		sampler2D baseTex = sampler2D(TextureSSBO.handles[TEXTURE_SSBO_WATER_BASE]);
+		sampler2D baseTex = sampler2D(TextureSSBO[TEXTURE_SSBO_WATER_BASE]);
 	#endif
 
 	vFinalColor.xyz = texture2D(baseTex, v_diffusetexcoord.xy).xyz;
@@ -62,7 +62,7 @@ void main()
 #else
 
 	#ifdef BINDLESS_ENABLED
-		sampler2D normalTex = sampler2D(TextureSSBO.handles[TEXTURE_SSBO_WATER_NORMAL]);
+		sampler2D normalTex = sampler2D(TextureSSBO[TEXTURE_SSBO_WATER_NORMAL]);
 	#endif
 
 	//calculate the normal texcoord and sample the normal vector from texture
@@ -94,7 +94,7 @@ void main()
 	#ifdef REFRACT_ENABLED
 
 		#ifdef BINDLESS_ENABLED
-			sampler2D refractTex = sampler2D(TextureSSBO.handles[TEXTURE_SSBO_WATER_REFRACT]);
+			sampler2D refractTex = sampler2D(TextureSSBO[TEXTURE_SSBO_WATER_REFRACT]);
 		#endif
 
 		vec2 vRefractTexCoord = vBaseTexCoord + vOffsetTexCoord;
@@ -131,7 +131,7 @@ void main()
 		vec2 vBaseTexCoord2 = vec2(v_projpos.x, -v_projpos.y) / v_projpos.w * 0.5 + 0.5;
 
 		#ifdef BINDLESS_ENABLED
-			sampler2D reflectTex = sampler2D(TextureSSBO.handles[TEXTURE_SSBO_WATER_REFLECT]);
+			sampler2D reflectTex = sampler2D(TextureSSBO[TEXTURE_SSBO_WATER_REFLECT]);
 		#endif
 
 		vec2 vReflectTexCoord = vBaseTexCoord2 + vOffsetTexCoord;

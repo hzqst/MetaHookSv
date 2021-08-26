@@ -1,4 +1,4 @@
-#version 460
+#version 430
 
 #extension GL_EXT_texture_array : require
 #extension GL_ARB_shader_draw_parameters : require
@@ -113,6 +113,6 @@ void main(void)
 	v_decalindex = in_decalindex;
 #endif
 
-	v_drawid = gl_DrawID;
+	v_drawid = gl_DrawIDARB;
 	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * worldpos4;
 }

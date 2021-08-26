@@ -2,15 +2,19 @@
 
 #include "common.h"
 
-#ifndef BINDLESS_ENABLED
+layout (location = 0) uniform ivec2 width_height;
+layout (location = 1) uniform vec4 up_down_left_right;
+layout (location = 2) uniform vec4 in_color;
+layout (location = 3) uniform vec3 in_origin;
+layout (location = 4) uniform vec3 in_angles;
+layout (location = 5) uniform float in_scale;
+
 layout(binding = 0) uniform sampler2D baseTex;
-#endif
 
 in vec3 v_worldpos;
 in vec3 v_normal;
 in vec4 v_color;
 in vec2 v_texcoord;
-flat in int v_frameindex;
 
 #if defined(OIT_BLEND_ENABLED)
 
@@ -32,10 +36,6 @@ layout(location = 0) out vec4 out_Diffuse;
 
 void main(void)
 {
-	#ifdef BINDLESS_ENABLED
-		sampler2D baseTex = sampler2D(SpriteFrameSSBO.frames[v_frameindex].texturehandle[0]);
-	#endif
-
 	vec4 baseColor = texture2D(baseTex, v_texcoord);
 
 	vec3 vNormal = normalize(v_normal.xyz);

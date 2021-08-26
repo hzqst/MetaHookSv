@@ -2,11 +2,17 @@
 
 #include "common.h"
 
+layout (location = 0) uniform ivec2 width_height;
+layout (location = 1) uniform vec4 up_down_left_right;
+layout (location = 2) uniform vec4 in_color;
+layout (location = 3) uniform vec3 in_origin;
+layout (location = 4) uniform vec3 in_angles;
+layout (location = 5) uniform float in_scale;
+
 out vec3 v_worldpos;
 out vec3 v_normal;
 out vec4 v_color;
 out vec2 v_texcoord;
-flat out int v_frameindex;
 
 const vec4 texcoord_s = vec4(0.0, 0.0, 1.0, 1.0);
 const vec4 texcoord_t = vec4(1.0, 0.0, 0.0, 1.0);
@@ -49,16 +55,9 @@ void R_GetSpriteAxes_ParallelOriented(vec3 angles, inout vec3 forward, inout vec
 
 void R_GetSpriteAxes_Parallel(vec3 angles, inout vec3 forward, inout vec3 right, inout vec3 up)
 {
-	float use_oriented = abs(sign(angles.z));
-
-	vec3 oriented_forward;
-	vec3 oriented_right;
-	vec3 oriented_up;
-	R_GetSpriteAxes_ParallelOriented(angles, oriented_forward, oriented_right, oriented_up);
-
-	up = mix(SceneUBO.vup.xyz, oriented_up, use_oriented);
-	right = mix(SceneUBO.vright.xyz, oriented_right, use_oriented);
-	forward = mix(SceneUBO.vpn.xyz, oriented_forward, use_oriented);
+	up = SceneUBO.vup.xyz;
+	right = SceneUBO.vright.xyz;
+	forward = SceneUBO.vpn.xyz;
 }
 
 void AngleVectors(vec3 angles, inout vec3 forward, inout vec3 right, inout vec3 up)
@@ -90,35 +89,36 @@ void R_GetSpriteAxes_Oriented(vec3 angles, inout vec3 forward, inout vec3 right,
 
 void main()
 {
-	vec4 in_color = SpriteEntrySSBO.entries[gl_InstanceID].color.xyzw;
-	vec3 in_origin = SpriteEntrySSBO.entries[gl_InstanceID].origin.xyz;
-	float in_scale = SpriteEntrySSBO.entries[gl_InstanceID].origin.w;
-	vec3 in_angles = SpriteEntrySSBO.entries[gl_InstanceID].angles.xyz;
-	int in_frameindex = SpriteEntrySSBO.entries[gl_InstanceID].frameindex.x;
-
-	int type = SpriteFrameSSBO.frames[in_frameindex].type_width_height_texturenum.x;
-	int width = SpriteFrameSSBO.frames[in_frameindex].type_width_height_texturenum.y;
-	int height = SpriteFrameSSBO.frames[in_frameindex].type_width_height_texturenum.z;
-	float up = SpriteFrameSSBO.frames[in_frameindex].up_down_left_right.x;
-	float down = SpriteFrameSSBO.frames[in_frameindex].up_down_left_right.y;
-	float left = SpriteFrameSSBO.frames[in_frameindex].up_down_left_right.z;
-	float right = SpriteFrameSSBO.frames[in_frameindex].up_down_left_right.w;
+	int width = width_height.x;
+	int height = width_height.y;
+	float up = up_down_left_right.x;
+	float down = up_down_left_right.y;
+	float left = up_down_left_right.z;
+	float right = up_down_left_right.w;
 
 	uint idx = gl_VertexID % 4;
 
-	vec3 vForwardArray[5];
-	vec3 vRightArray[5];
-	vec3 vUpArray[5];
+	vec3 vForward, vRight, vUp;
+	
+#ifdef PARALLEL_UPRIGHT_ENABLED
+	R_GetSpriteAxes_ParallelUpright(in_angles, vForward, vRight, vUp);
+#endif
+	
+#ifdef FACING_UPRIGHT_ENABLED
+	R_GetSpriteAxes_FacingUpright(in_angles, vForward, vRight, vUp);
+#endif
 
-	R_GetSpriteAxes_ParallelUpright(in_angles, vForwardArray[SPR_VP_PARALLEL_UPRIGHT], vRightArray[SPR_VP_PARALLEL_UPRIGHT], vUpArray[SPR_VP_PARALLEL_UPRIGHT]);
-	R_GetSpriteAxes_FacingUpright(in_angles, vForwardArray[SPR_FACING_UPRIGHT], vRightArray[SPR_FACING_UPRIGHT], vUpArray[SPR_FACING_UPRIGHT]);
-	R_GetSpriteAxes_Parallel(in_angles, vForwardArray[SPR_VP_PARALLEL], vRightArray[SPR_VP_PARALLEL], vUpArray[SPR_VP_PARALLEL]);
-	R_GetSpriteAxes_Oriented(in_angles, vForwardArray[SPR_ORIENTED], vRightArray[SPR_ORIENTED], vUpArray[SPR_ORIENTED]);
-	R_GetSpriteAxes_ParallelOriented(in_angles, vForwardArray[SPR_VP_PARALLEL_ORIENTED], vRightArray[SPR_VP_PARALLEL_ORIENTED], vUpArray[SPR_VP_PARALLEL_ORIENTED]);
+#ifdef PARALLEL_ENABLED
+	R_GetSpriteAxes_Parallel(in_angles, vForward, vRight, vUp);
+#endif
 
-	vec3 vForward = vForwardArray[type];
-	vec3 vRight = vRightArray[type];
-	vec3 vUp = vUpArray[type];
+#ifdef ORIENTED_ENABLED
+	R_GetSpriteAxes_Oriented(in_angles, vForward, vRight, vUp);
+#endif
+
+#ifdef PARALLEL_ORIENTED_ENABLED
+	R_GetSpriteAxes_ParallelOriented(in_angles, vForward, vRight, vUp);
+#endif
 
 	vec3 vertexArray[4];
 
@@ -142,5 +142,4 @@ void main()
 	v_normal = normalize(vForward);
 	v_color = in_color;
 	v_texcoord = vec2( texcoord_s[idx], texcoord_t[idx] );
-	v_frameindex = in_frameindex;
 }

@@ -147,6 +147,7 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\wsurf_shader.vsh", "renderer\\shader\\wsurf_shader.fsh", def.c_str(), def.c_str(), NULL);
 
 		SHADER_UNIFORM(prog, u_parallaxScale, "u_parallaxScale");
+		SHADER_UNIFORM(prog, u_baseDrawId, "u_baseDrawId");
 
 		g_WSurfProgramTable[state] = prog;
 	}
@@ -190,7 +191,7 @@ void R_FreeSceneUBO(void)
 		GL_DeleteBuffer(r_wsurf.hDecalSSBO);
 		r_wsurf.hDecalSSBO = 0;
 	}
-
+#if 0
 	if (r_wsurf.hSpriteFramesSSBO)
 	{
 		GL_DeleteBuffer(r_wsurf.hSpriteFramesSSBO);
@@ -205,7 +206,7 @@ void R_FreeSceneUBO(void)
 			r_wsurf.hSpriteFramesSSBO = 0;
 		}
 	}
-
+#endif
 	if (r_wsurf.hOITFragmentSSBO)
 	{
 		GL_DeleteBuffer(r_wsurf.hOITFragmentSSBO);
@@ -360,7 +361,7 @@ void R_SortTextureChain(wsurf_vbo_t *modcache, int iTexchainType)
 	}
 
 	std::sort(modcache->vTextureChain[iTexchainType].begin(), modcache->vTextureChain[iTexchainType].end(), [](const brushtexchain_t &a, const brushtexchain_t &b) {
-		return b.iDetailTextureFlags < a.iDetailTextureFlags;
+		return b.iDetailTextureFlags > a.iDetailTextureFlags;
 	});
 }
 
@@ -393,7 +394,7 @@ void R_GenerateDrawBatch(wsurf_vbo_t *modcache, int iTexchainType, int iDrawBatc
 					{
 						if (pcache->tex[j].gltexturenum)
 						{
-							auto handle = glGetTextureHandleARB(pcache->tex[j].gltexturenum);
+							handle = glGetTextureHandleARB(pcache->tex[j].gltexturenum);
 							glMakeTextureHandleResidentARB(handle);
 
 							(*ssbo)[drawIndex + j] = handle;
@@ -416,8 +417,11 @@ void R_GenerateDrawBatch(wsurf_vbo_t *modcache, int iTexchainType, int iDrawBatc
 			detailTextureFlags = texchain.iDetailTextureFlags;			
 		}
 
-		if(!batch)
+		if (!batch)
+		{
 			batch = new wsurf_vbo_batch_t;
+			batch->iBaseDrawId = i * 5;
+		}
 
 		batch->vStartIndex.emplace_back(BUFFER_OFFSET(texchain.iStartIndex));
 		batch->vIndiceCount.emplace_back(texchain.iIndiceCount);
@@ -431,6 +435,7 @@ void R_GenerateDrawBatch(wsurf_vbo_t *modcache, int iTexchainType, int iDrawBatc
 		batch->vStartIndex.shrink_to_fit();
 		batch->vIndiceCount.shrink_to_fit();
 		modcache->vDrawBatch[iDrawBatchType].emplace_back(batch);
+		batch = NULL;
 	}
 }
 
@@ -703,6 +708,8 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modcache)
 	//Generate detailtexture flags and Sort texchains by detailtexture flags
 	std::vector<GLuint64> ssbo;
 
+	ssbo.reserve(4096);
+
 	R_SortTextureChain(modcache, WSURF_TEXCHAIN_STATIC);
 	R_SortTextureChain(modcache, WSURF_TEXCHAIN_ANIM);
 
@@ -713,7 +720,7 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modcache)
 
 	modcache->hTextureSSBO = GL_GenBuffer();
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, modcache->hTextureSSBO);	
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * (ssbo.size()), ssbo.data(), GL_STATIC_DRAW);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * ssbo.size(), ssbo.data(), GL_STATIC_DRAW);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 	modcache->hEBO = GL_GenBuffer();
@@ -959,7 +966,7 @@ void R_GenerateSceneUBO(void)
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hDecalSSBO);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * MAX_DECALS, NULL, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
+#if 0
 	r_wsurf.hSpriteFramesSSBO = GL_GenBuffer();
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hSpriteFramesSSBO);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(spriteframe_ssbo_t) * MAX_SPRITE_FRAMES, NULL, GL_STATIC_DRAW);
@@ -972,22 +979,26 @@ void R_GenerateSceneUBO(void)
 		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(spriteentry_ssbo_t) * MAX_SPRITE_ENTRIES, NULL, GL_DYNAMIC_DRAW);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 	}
+#endif
 
-	size_t fragmentBufferSizeBytes = sizeof(FragmentNode) * MAX_NUM_NODES * glwidth * glheight;
+	if (bUseOITBlend)
+	{
+		size_t fragmentBufferSizeBytes = sizeof(FragmentNode) * MAX_NUM_NODES * glwidth * glheight;
 
-	r_wsurf.hOITFragmentSSBO = GL_GenBuffer();
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hOITFragmentSSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, fragmentBufferSizeBytes, NULL, GL_STATIC_DRAW);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_OIT_FRAGMENT_SSBO, r_wsurf.hOITFragmentSSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+		r_wsurf.hOITFragmentSSBO = GL_GenBuffer();
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hOITFragmentSSBO);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, fragmentBufferSizeBytes, NULL, GL_STATIC_DRAW);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_OIT_FRAGMENT_SSBO, r_wsurf.hOITFragmentSSBO);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-	size_t numFragmentBufferSizeBytes = sizeof(uint32_t) * glwidth * glheight;
+		size_t numFragmentBufferSizeBytes = sizeof(uint32_t) * glwidth * glheight;
 
-	r_wsurf.hOITNumFragmentSSBO = GL_GenBuffer();
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hOITNumFragmentSSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, numFragmentBufferSizeBytes, NULL, GL_STATIC_DRAW);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_OIT_NUMFRAGMENT_SSBO, r_wsurf.hOITNumFragmentSSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+		r_wsurf.hOITNumFragmentSSBO = GL_GenBuffer();
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hOITNumFragmentSSBO);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, numFragmentBufferSizeBytes, NULL, GL_STATIC_DRAW);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_OIT_NUMFRAGMENT_SSBO, r_wsurf.hOITNumFragmentSSBO);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	}
 }
 
 void R_ClearDecalCache(void)
@@ -1219,6 +1230,9 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 
 			wsurf_program_t prog = { 0 };
 			R_UseWSurfProgram(WSurfProgramStateBatch, &prog);
+
+			if (prog.u_baseDrawId != -1)
+				glUniform1i(prog.u_baseDrawId, batch->iBaseDrawId);
 
 			glMultiDrawElements(GL_POLYGON, batch->vIndiceCount.data(), GL_UNSIGNED_INT, (const void **)batch->vStartIndex.data(), batch->iDrawCount);
 
@@ -1886,7 +1900,7 @@ void R_NewMapWSurf(void)
 {
 	R_GenerateSceneUBO();
 
-	R_ReloadSpriteFrameCache();
+	//R_ReloadSpriteFrameCache();
 	R_ClearDecalCache();
 
 	for (auto p : g_DetailTextureTable)

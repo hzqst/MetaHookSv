@@ -6,6 +6,7 @@
 #include "common.h"
 
 uniform float u_parallaxScale;
+uniform int u_baseDrawId;
 
 #ifndef BINDLESS_ENABLED
 
@@ -50,7 +51,7 @@ layout(location = 4) out vec4 out_Additive;
 vec3 NormalMapping(vec3 T, vec3 B, vec3 N)
 {
 #ifdef BINDLESS_ENABLED
-	sampler2D normalTex = sampler2D(TextureSSBO.handles[v_drawid * 5 + TEXTURE_SSBO_NORMAL]);
+	sampler2D normalTex = sampler2D(TextureSSBO[u_baseDrawId + v_drawid * 5 + TEXTURE_SSBO_NORMAL]);
 #endif
 
     // Create TBN matrix. from tangent to world space
@@ -71,7 +72,7 @@ vec3 NormalMapping(vec3 T, vec3 B, vec3 N)
 vec2 ParallaxMapping(vec3 T, vec3 B, vec3 N, vec3 viewDirWorld)
 {
 #ifdef BINDLESS_ENABLED
-	sampler2D parallaxTex = sampler2D(TextureSSBO.handles[v_drawid * 5 + TEXTURE_SSBO_PARALLAX]);
+	sampler2D parallaxTex = sampler2D(TextureSSBO[u_baseDrawId + v_drawid * 5 + TEXTURE_SSBO_PARALLAX]);
 #endif
 
     // Create TBN matrix.
@@ -257,9 +258,9 @@ void main()
 
 	#ifdef BINDLESS_ENABLED
 		#ifdef DECAL_ENABLED
-			sampler2D diffuseTex = sampler2D(DecalSSBO.handles[v_decalindex]);
+			sampler2D diffuseTex = sampler2D(DecalSSBO[v_decalindex]);
 		#else
-			sampler2D diffuseTex = sampler2D(TextureSSBO.handles[v_drawid * 5 + TEXTURE_SSBO_DIFFUSE]);
+			sampler2D diffuseTex = sampler2D(TextureSSBO[u_baseDrawId + v_drawid * 5 + TEXTURE_SSBO_DIFFUSE]);
 		#endif
 	#endif
 
@@ -310,7 +311,7 @@ void main()
 #ifdef DETAILTEXTURE_ENABLED
 
 #ifdef BINDLESS_ENABLED
-	sampler2D detailTex = sampler2D(TextureSSBO.handles[v_drawid * 5 + TEXTURE_SSBO_DETAIL]);
+	sampler2D detailTex = sampler2D(TextureSSBO[u_baseDrawId + v_drawid * 5 + TEXTURE_SSBO_DETAIL]);
 #endif
 
 	vec2 detailTexCoord = vec2(v_diffusetexcoord.x * v_detailtexcoord.x, v_diffusetexcoord.y * v_detailtexcoord.y);
@@ -340,7 +341,7 @@ void main()
 		#ifdef SPECULARTEXTURE_ENABLED
 		
 			#ifdef BINDLESS_ENABLED
-				sampler2D specularTex = sampler2D(TextureSSBO.handles[v_drawid * 5 + TEXTURE_SSBO_SPECULAR]);
+				sampler2D specularTex = sampler2D(TextureSSBO[u_baseDrawId + v_drawid * 5 + TEXTURE_SSBO_SPECULAR]);
 			#endif
 
 			vec2 specularTexCoord = vec2(v_diffusetexcoord.x * v_speculartexcoord.x, v_diffusetexcoord.y * v_speculartexcoord.y);

@@ -2839,7 +2839,7 @@ void R_FillAddress(void)
 	}
 
 	//Allocate 32bytes instead of 28 bytes for mspriteframe_t
-	
+#if 0
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		bool bModified = false;
@@ -2892,7 +2892,7 @@ void R_FillAddress(void)
 		if (!bModified)
 			Sig_NotFound(Mod_LoadSpriteFrame);
 	}
-	
+#endif
 }
 
 void R_InstallHook(void)

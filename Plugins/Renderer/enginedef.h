@@ -377,7 +377,7 @@ typedef struct mspriteframe_s
 	int height;
 	float up, down, left, right;
 	int gl_texturenum;
-	int ssbo_index;//Added by hooking Hunk_Alloc
+	//int ssbo_index;//Added by hooking Hunk_Alloc
 }mspriteframe_t;
 
 typedef struct

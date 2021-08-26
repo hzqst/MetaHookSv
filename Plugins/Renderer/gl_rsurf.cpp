@@ -661,11 +661,16 @@ void R_DrawDecals(void)
 		}
 	}
 
-	
 	glEnable(GL_ALPHA_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(0);
+
+	//Decal only affects diffuse channel
+	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
+
+	//Use alphablend to blend with gbuffer
+	R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	if (gl_polyoffset && gl_polyoffset->value)
 	{
@@ -677,12 +682,6 @@ void R_DrawDecals(void)
 			glPolygonOffset(-1, -gl_polyoffset->value);
 	}
 	
-	//Decal only affects diffuse channel
-	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE);
-
-	//Use alphablend to blend with gbuffer
-	R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 	int WSurfProgramState = WSURF_DECAL_ENABLED | WSURF_DIFFUSE_ENABLED | WSURF_TRANSPARENT_ENABLED;
 
 	if (bUseBindless)
@@ -727,10 +726,11 @@ void R_DrawDecals(void)
 
 	if (r_draw_oitblend)
 	{
-		if ((*currententity)->curstate.rendermode == kRenderTransAdd)
+		/*if ((*currententity)->curstate.rendermode == kRenderTransAdd)
 			WSurfProgramState |= WSURF_OIT_ADDITIVE_BLEND_ENABLED;
-		else
-			WSurfProgramState |= WSURF_OIT_ALPHA_BLEND_ENABLED;
+		else*/
+
+		WSurfProgramState |= WSURF_OIT_ALPHA_BLEND_ENABLED;
 	}
 
 	wsurf_program_t prog = { 0 };

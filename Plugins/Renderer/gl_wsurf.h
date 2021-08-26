@@ -39,12 +39,12 @@
 #define BINDING_POINT_SCENE_UBO 0
 #define BINDING_POINT_DECAL_SSBO 1
 #define BINDING_POINT_TEXTURE_SSBO 1
-#define BINDING_POINT_SPRITEFRAME_SSBO 1
-#define BINDING_POINT_SPRITEENTRY_SSBO 2
-#define BINDING_POINT_ENTITY_UBO 3
-#define BINDING_POINT_STUDIO_UBO 3
-#define BINDING_POINT_OIT_FRAGMENT_SSBO 4
-#define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 5
+//#define BINDING_POINT_SPRITEFRAME_SSBO 1
+//#define BINDING_POINT_SPRITEENTRY_SSBO 2
+#define BINDING_POINT_ENTITY_UBO 2
+#define BINDING_POINT_STUDIO_UBO 2
+#define BINDING_POINT_OIT_FRAGMENT_SSBO 3
+#define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 4
 
 typedef struct decalvertex_s
 {
@@ -164,10 +164,12 @@ typedef struct wsurf_vbo_batch_s
 	wsurf_vbo_batch_s()
 	{
 		iDetailTextureFlags = 0;
+		iBaseDrawId = 0;
 		iDrawCount = 0;
 		iPolyCount = 0;
 	}
 	int iDetailTextureFlags;
+	int iBaseDrawId;
 	int iDrawCount;
 	int iPolyCount;
 	std::vector<void *> vStartIndex;
@@ -268,13 +270,13 @@ typedef struct r_worldsurf_s
 		hSceneUBO = 0;
 		hDecalVBO = 0;
 		hDecalSSBO = 0;
-		hSpriteFramesSSBO = 0;
+		/*hSpriteFramesSSBO = 0;
 		hSpriteEntriesSSBO[0] = 0;
 		hSpriteEntriesSSBO[1] = 0;
 		hSpriteEntriesSSBO[2] = 0;
 		hSpriteEntriesSSBO[3] = 0;
 		hSpriteEntriesSSBO[4] = 0;
-		hSpriteEntriesSSBO[5] = 0;
+		hSpriteEntriesSSBO[5] = 0;*/
 		hOITFragmentSSBO = 0;
 		hOITNumFragmentSSBO = 0;
 
@@ -296,8 +298,8 @@ typedef struct r_worldsurf_s
 	GLuint				hSceneUBO;
 	GLuint				hDecalVBO;
 	GLuint				hDecalSSBO;
-	GLuint				hSpriteFramesSSBO;
-	GLuint				hSpriteEntriesSSBO[kRenderTransAdd + 1];
+	//GLuint				hSpriteFramesSSBO;
+	//GLuint				hSpriteEntriesSSBO[kRenderTransAdd + 1];
 	GLuint				hOITFragmentSSBO;
 	GLuint				hOITNumFragmentSSBO;
 
@@ -331,7 +333,7 @@ typedef struct
 {
 	int program;
 	int u_parallaxScale;
-	int u_color;
+	int u_baseDrawId;
 }wsurf_program_t;
 
 #define OFFSET(type, variable) ((const void*)&(((type*)NULL)->variable))
