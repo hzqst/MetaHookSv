@@ -219,9 +219,9 @@ void GatherFragment(inout vec4 color)
         // Insert the fragment into the linked list
 		frag.next = atomicExchange(numFragments[pixelIndex], insertIndex);
         nodes[insertIndex] = frag;
-
-		color = vec4(0.0);
     }
+	
+	discard;
 }
 #endif
 

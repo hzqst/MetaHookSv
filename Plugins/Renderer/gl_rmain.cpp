@@ -479,13 +479,6 @@ void triapi_RenderMode(int mode)
 	}
 
 	case kRenderTransAlpha:
-	{
-		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		if (r_draw_oitblend)
-			R_UseLegacySpriteProgram(SPRITE_OIT_ALPHA_BLEND_ENABLED, NULL);
-		break;
-	}
-
 	case kRenderTransColor:
 	case kRenderTransTexture:
 	{

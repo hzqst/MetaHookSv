@@ -16,11 +16,7 @@ in vec3 v_normal;
 in vec4 v_color;
 in vec2 v_texcoord;
 
-#if defined(OIT_BLEND_ENABLED)
-
-//No color output
-
-#elif defined(GBUFFER_ENABLED)
+#ifdef GBUFFER_ENABLED
 
 layout(location = 0) out vec4 out_Diffuse;
 layout(location = 1) out vec4 out_Lightmap;
