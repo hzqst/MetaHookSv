@@ -120,7 +120,7 @@ FBO_Container_t s_WaterFBO;
 
 bool bNoStretchAspect = false;
 bool bUseBindless = true;
-bool bUseOITBlend = true;
+bool bUseOITBlend = false;
 
 cvar_t *ati_subdiv = NULL;
 cvar_t *ati_npatch = NULL;
@@ -516,6 +516,11 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 		R_DrawHUDQuad(glwidth, glheight);
 		GL_End2D();
 
+		GLuint val = 0;
+		glClearNamedBufferData(r_wsurf.hOITAtomicSSBO, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, (const void*)&val);
+
+		glColorMask(1, 1, 1, 1);
+
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
 		//Initialize atomic counter
@@ -550,8 +555,6 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 		gRefFuncs.R_DrawTEntitiesOnList(onlyClientDraw);
 		gRefFuncs.R_DrawParticles();
 
-		GL_UseProgram(0);
-
 		r_draw_oitblend = false;
 
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
@@ -572,6 +575,8 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 		gRefFuncs.R_DrawTEntitiesOnList(onlyClientDraw);
 		gRefFuncs.R_DrawParticles();
 	}
+
+	GL_UseProgram(0);
 }
 
 void R_AddTEntity(cl_entity_t *ent)
@@ -1314,8 +1319,8 @@ void GL_Init(void)
 	if (bUseBindless && !glewIsSupported("GL_NV_bindless_texture") && !glewIsSupported("GL_ARB_bindless_texture"))
 		bUseBindless = false;
 	
-	if (gEngfuncs.CheckParm("-nooitblend", NULL))
-		bUseOITBlend = false;
+	if (gEngfuncs.CheckParm("-oitblend", NULL))
+		bUseOITBlend = true;
 
 	if (bUseOITBlend && !glewIsSupported("GL_ARB_shader_image_load_store"))
 		bUseOITBlend = false;
@@ -1375,6 +1380,11 @@ void R_PreRenderView(int a1)
 		{
 			R_RenderWaterView();
 		}
+
+		shadow_numvisedicts[0] = 0;
+		shadow_numvisedicts[1] = 0;
+		shadow_numvisedicts[2] = 0;
+
 		if (r_shadow && r_shadow->value && !g_SvEngine_DrawPortalView && r_draw_pass == r_draw_normal)
 		{
 			R_RenderShadowMap();

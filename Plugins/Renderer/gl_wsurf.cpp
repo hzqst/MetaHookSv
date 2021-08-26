@@ -218,6 +218,12 @@ void R_FreeSceneUBO(void)
 		GL_DeleteBuffer(r_wsurf.hOITNumFragmentSSBO);
 		r_wsurf.hOITNumFragmentSSBO = 0;
 	}
+
+	if (r_wsurf.hOITAtomicSSBO)
+	{
+		GL_DeleteBuffer(r_wsurf.hOITAtomicSSBO);
+		r_wsurf.hOITAtomicSSBO = 0;
+	}
 }
 
 void R_FreeLightmapArray(void)
@@ -998,6 +1004,12 @@ void R_GenerateSceneUBO(void)
 		glBufferData(GL_SHADER_STORAGE_BUFFER, numFragmentBufferSizeBytes, NULL, GL_STATIC_DRAW);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_OIT_NUMFRAGMENT_SSBO, r_wsurf.hOITNumFragmentSSBO);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+		r_wsurf.hOITAtomicSSBO = GL_GenBuffer();
+		glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, r_wsurf.hOITAtomicSSBO);
+		glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(uint32_t), NULL, GL_STATIC_DRAW);
+		glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, BINDING_POINT_OIT_COUNTER_SSBO, r_wsurf.hOITAtomicSSBO);
+		glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, 0);
 	}
 }
 
@@ -1555,8 +1567,8 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 	}
 
 	//Static texchain always use stencil = 0
-
-	glStencilFunc(GL_ALWAYS, 0, 0xFF);
+	if(r_draw_opaque)
+		glStencilFunc(GL_ALWAYS, 0, 0xFF);
 
 	if (bUseZPrePasss)
 		glDepthFunc(GL_EQUAL);
@@ -3359,10 +3371,13 @@ skip_marklight:
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
-	glEnable(GL_STENCIL_TEST);
-	glStencilMask(0xFF);
-	glStencilFunc(GL_ALWAYS, 0, 0xFF);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	if (r_draw_opaque)
+	{
+		//glEnable(GL_STENCIL_TEST);
+		//glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 0, 0xFF);
+		//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	}
 
 	R_SetRenderMode(e);
 
@@ -3420,7 +3435,7 @@ void R_SetupSceneUBO(void)
 	memcpy(SceneUBO.shadowMatrix[2], r_shadow_matrix[2], sizeof(mat4));
 	SceneUBO.viewport[0] = glwidth;
 	SceneUBO.viewport[1] = glheight;
-	SceneUBO.viewport[2] = 0;
+	SceneUBO.viewport[2] = MAX_NUM_NODES * glwidth * glheight;
 	SceneUBO.viewport[3] = 0;
 	memcpy(SceneUBO.viewpos, r_refdef->vieworg, sizeof(vec3_t));
 	memcpy(SceneUBO.vpn, vpn, sizeof(vec3_t));

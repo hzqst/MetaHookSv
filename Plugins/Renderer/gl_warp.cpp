@@ -18,6 +18,9 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_TEXTURE_SSBO, WaterVBOCache->hTextureSSBO);
 	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
+	if(r_draw_opaque)
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+
 	bool bIsAboveWater = R_IsAboveWater(WaterVBOCache->vert, WaterVBOCache->normal);
 
 	if (WaterVBOCache->level >= WATER_LEVEL_REFLECT_SKYBOX && WaterVBOCache->level <= WATER_LEVEL_REFLECT_ENTITY && r_water->value)
@@ -203,8 +206,6 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 	}
 
 	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-
-	glStencilFunc(GL_ALWAYS, 1, 0xFF);
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 

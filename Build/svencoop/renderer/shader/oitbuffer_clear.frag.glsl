@@ -12,5 +12,7 @@ void main() {
     uint y = uint(gl_FragCoord.y);
     uint viewportW = SceneUBO.viewport.x;
 
-    numFragmentsBuffer[addrGen(uvec2(x,y), viewportW)] = 0;
+    uint index = viewportW*y + x;
+    
+    numFragments[index] = -1;
 }

@@ -34,17 +34,16 @@
 #define FDECAL_NOCLIP				0x40		// Decal is not clipped by containing polygon
 #define FDECAL_VBO					0x1000		// Decalvertex is bufferred in VBO
 
-#define MAX_NUM_NODES 8
+#define MAX_NUM_NODES 16
 
 #define BINDING_POINT_SCENE_UBO 0
 #define BINDING_POINT_DECAL_SSBO 1
 #define BINDING_POINT_TEXTURE_SSBO 1
-//#define BINDING_POINT_SPRITEFRAME_SSBO 1
-//#define BINDING_POINT_SPRITEENTRY_SSBO 2
 #define BINDING_POINT_ENTITY_UBO 2
 #define BINDING_POINT_STUDIO_UBO 2
 #define BINDING_POINT_OIT_FRAGMENT_SSBO 3
 #define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 4
+#define BINDING_POINT_OIT_COUNTER_SSBO 5
 
 typedef struct decalvertex_s
 {
@@ -256,10 +255,9 @@ typedef struct texture_ssbo_s
 // A fragment node stores rendering information about one specific fragment
 typedef struct FragmentNode_s
 {
-	// RGBA color of the node
 	uint32_t color;
-	// Depth value of the fragment (in view space)
 	float depth;
+	uint32_t next;
 }FragmentNode;
 
 typedef struct r_worldsurf_s
@@ -279,6 +277,7 @@ typedef struct r_worldsurf_s
 		hSpriteEntriesSSBO[5] = 0;*/
 		hOITFragmentSSBO = 0;
 		hOITNumFragmentSSBO = 0;
+		hOITAtomicSSBO = 0;
 
 		bDiffuseTexture = false;
 		bLightmapTexture = false;
@@ -302,6 +301,7 @@ typedef struct r_worldsurf_s
 	//GLuint				hSpriteEntriesSSBO[kRenderTransAdd + 1];
 	GLuint				hOITFragmentSSBO;
 	GLuint				hOITNumFragmentSSBO;
+	GLuint				hOITAtomicSSBO;
 
 	std::vector <brushvertex_t> vVertexBuffer;
 	std::vector <brushface_t> vFaceBuffer;

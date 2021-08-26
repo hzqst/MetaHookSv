@@ -1,4 +1,4 @@
-#version 460
+#version 430
 
 #extension GL_EXT_texture_array : require
 #extension GL_ARB_shader_draw_parameters : require
@@ -369,15 +369,11 @@ void main()
 
 		#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED) 
 
-			beginInvocationInterlockARB();
 			GatherFragment(color);
-			endInvocationInterlockARB();
-
-		#else
-
-			out_Diffuse = color;
 
 		#endif
+
+		out_Diffuse = color;
 
 	#endif
 

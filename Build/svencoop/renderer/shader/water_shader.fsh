@@ -171,15 +171,11 @@ void main()
 
 	#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED) 
 
-		beginInvocationInterlockARB();
 		GatherFragment(color);
-		endInvocationInterlockARB();
 
-	#else
+	#endif
 
-		out_Diffuse = color;
-
-	#endif	
+	out_Diffuse = color;
 
 #endif
 }
