@@ -122,7 +122,7 @@ This plugin can block studio-event sound spamming with controllable cvars.
 
 ![](/img/8.png)
 
-### StudioEvents
+### SteamScreenshots
 
 This plugin intercepts original snapshot command and replace it with ISteamScreenshots interface which will upload the snapshot to Steam Screenshot Manager.
 
