@@ -1,21 +1,47 @@
+#version 430
+
+#include "common.h"
+
 #ifdef VOLUME_ENABLED
-varying vec4 projpos;
-uniform mat4 modelmatrix;
+
+layout(location = 0) in vec3 in_vertex;
+
+layout(location = 0) uniform mat4 u_modelmatrix;
+
+#else
+
+
+
 #endif
 
-varying vec3 fragpos;
+out vec3 v_fragpos;
+out vec4 v_projpos;
+out vec2 v_texcoord;
 
 void main(void)
 {
-	gl_TexCoord[0] = gl_MultiTexCoord0;
-	
 #ifdef VOLUME_ENABLED
-	vec4 worldp = modelmatrix * gl_Vertex;
-	gl_Position = gl_ModelViewProjectionMatrix * worldp;
-	fragpos = worldp.xyz;
-	projpos = gl_Position;
+	vec4 worldpos4 = u_modelmatrix * vec4(in_vertex, 1.0);
+
+	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * worldpos4;
+
+	v_fragpos = worldpos4.xyz;
+
+	v_projpos = gl_Position;
+
+	v_texcoord = vec2(0);
 #else
-	fragpos = gl_Color;
-	gl_Position = ftransform();
+	uint idx = gl_VertexID % 4;
+
+	vec2 vertices[4]= vec2[4](vec2(-1, -1), vec2(-1, 1), vec2(1, 1), vec2(1, -1));
+	vec2 texcoords[4]= vec2[4](vec2(0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+
+	gl_Position = vec4(vertices[idx], 0, 1);
+
+	v_fragpos = SceneUBO.frustumpos[idx].xyz;
+
+	v_projpos = gl_Position;
+
+	v_texcoord = texcoords[idx];
 #endif
 }

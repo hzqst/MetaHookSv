@@ -206,6 +206,7 @@ typedef struct scene_ubo_s
 	mat4 invProjMatrix;
 	mat4 shadowMatrix[3];
 	uvec4 viewport;//viewport.z=linkListSize
+	vec4 frustumpos[4];
 	vec4 viewpos;
 	vec4 vpn;
 	vec4 vright;

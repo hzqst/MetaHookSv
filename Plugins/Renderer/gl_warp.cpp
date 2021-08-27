@@ -12,14 +12,21 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 	if (curwater->rendered_framecount == (*r_framecount))
 		return;
 
+	
+
 	curwater->rendered_framecount = (*r_framecount);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, WaterVBOCache->hEBO);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_TEXTURE_SSBO, WaterVBOCache->hTextureSSBO);
 	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
-	if(r_draw_opaque)
+	if (r_draw_opaque)
+	{
+		glEnable(GL_STENCIL_TEST);
+		glStencilMask(0xFF);
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	}
 
 	bool bIsAboveWater = R_IsAboveWater(WaterVBOCache->vert, WaterVBOCache->normal);
 
@@ -205,11 +212,13 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 		r_wsurf_polys += WaterVBOCache->iPolyCount;
 	}
 
+	GL_UseProgram(0);
+
 	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
-	GL_UseProgram(0);
+	glDisable(GL_STENCIL_TEST);
 }
 
 void R_DrawWaters(void)

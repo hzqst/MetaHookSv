@@ -66,20 +66,13 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 
 		auto def = defs.str();
 
-		prog.program = R_CompileShaderFileEx("renderer\\shader\\dfinal_shader.vsh", "renderer\\shader\\dfinal_shader.fsh", def.c_str(), def.c_str(), NULL);
+		prog.program = R_CompileShaderFileEx("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\dfinal_shader.fsh", def.c_str(), def.c_str(), NULL);
 		if (prog.program)
 		{
-			SHADER_UNIFORM(prog, gbufferTex, "gbufferTex");
-			SHADER_UNIFORM(prog, depthTex, "depthTex");
-			SHADER_UNIFORM(prog, linearDepthTex, "linearDepthTex");
-			SHADER_UNIFORM(prog, viewpos, "viewpos");
-			SHADER_UNIFORM(prog, viewmatrix, "viewmatrix");
-			SHADER_UNIFORM(prog, projmatrix, "projmatrix");
-			SHADER_UNIFORM(prog, invprojmatrix, "invprojmatrix");
-			SHADER_UNIFORM(prog, ssrRayStep, "ssrRayStep");
-			SHADER_UNIFORM(prog, ssrIterCount, "ssrIterCount");
-			SHADER_UNIFORM(prog, ssrDistanceBias, "ssrDistanceBias");
-			SHADER_UNIFORM(prog, ssrFade, "ssrFade");
+			SHADER_UNIFORM(prog, u_ssrRayStep, "u_ssrRayStep");
+			SHADER_UNIFORM(prog, u_ssrIterCount, "u_ssrIterCount");
+			SHADER_UNIFORM(prog, u_ssrDistanceBias, "u_ssrDistanceBias");
+			SHADER_UNIFORM(prog, u_ssrFade, "u_ssrFade");
 		}
 
 		g_DFinalProgramTable[state] = prog;
@@ -93,34 +86,17 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 	{
 		GL_UseProgram(prog.program);
 
-		if (prog.gbufferTex != -1)
-			glUniform1i(prog.gbufferTex, 0);
-		if (prog.depthTex != -1)
-			glUniform1i(prog.depthTex, 1);
+		if (prog.u_ssrRayStep != -1)
+			glUniform1f(prog.u_ssrRayStep, r_ssr_control.ray_step);
 
-		if (prog.linearDepthTex != -1)
-			glUniform1i(prog.linearDepthTex, 2);
-		if (prog.viewpos != -1)
-			glUniform3f(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
+		if (prog.u_ssrIterCount != -1)
+			glUniform1i(prog.u_ssrIterCount, r_ssr_control.iter_count);
 
-		if (prog.viewmatrix != -1)
-			glUniformMatrix4fv(prog.viewmatrix, 1, false, r_world_matrix);
-		if (prog.projmatrix != -1)
-			glUniformMatrix4fv(prog.projmatrix, 1, false, r_projection_matrix);
-		if (prog.invprojmatrix != -1)
-			glUniformMatrix4fv(prog.invprojmatrix, 1, false, r_proj_matrix_inv);
+		if (prog.u_ssrDistanceBias != -1)
+			glUniform1f(prog.u_ssrDistanceBias, r_ssr_control.distance_bias);
 
-		if (prog.ssrRayStep != -1)
-			glUniform1f(prog.ssrRayStep, r_ssr_control.ray_step);
-
-		if (prog.ssrIterCount != -1)
-			glUniform1i(prog.ssrIterCount, r_ssr_control.iter_count);
-
-		if (prog.ssrDistanceBias != -1)
-			glUniform1f(prog.ssrDistanceBias, r_ssr_control.distance_bias);
-
-		if (prog.ssrFade != -1)
-			glUniform2fARB(prog.ssrFade, r_ssr_control.fade[0], r_ssr_control.fade[1]);
+		if (prog.u_ssrFade != -1)
+			glUniform2fARB(prog.u_ssrFade, r_ssr_control.fade[0], r_ssr_control.fade[1]);
 
 		if (progOutput)
 			*progOutput = prog;
@@ -156,20 +132,16 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\dlight_shader.vsh", "renderer\\shader\\dlight_shader.fsh", def.c_str(), def.c_str(), NULL);
 		if (prog.program)
 		{
-			SHADER_UNIFORM(prog, gbufferTex, "gbufferTex");
-			SHADER_UNIFORM(prog, stencilTex, "stencilTex");
-			SHADER_UNIFORM(prog, depthTex, "depthTex");
-			SHADER_UNIFORM(prog, viewpos, "viewpos");
-			SHADER_UNIFORM(prog, lightdir, "lightdir");
-			SHADER_UNIFORM(prog, lightpos, "lightpos");
-			SHADER_UNIFORM(prog, lightcolor, "lightcolor");
-			SHADER_UNIFORM(prog, lightcone, "lightcone");
-			SHADER_UNIFORM(prog, lightradius, "lightradius");
-			SHADER_UNIFORM(prog, lightambient, "lightambient");
-			SHADER_UNIFORM(prog, lightdiffuse, "lightdiffuse");
-			SHADER_UNIFORM(prog, lightspecular, "lightspecular");
-			SHADER_UNIFORM(prog, lightspecularpow, "lightspecularpow");
-			SHADER_UNIFORM(prog, modelmatrix, "modelmatrix");
+			SHADER_UNIFORM(prog, u_lightdir, "u_lightdir");
+			SHADER_UNIFORM(prog, u_lightpos, "u_lightpos");
+			SHADER_UNIFORM(prog, u_lightcolor, "u_lightcolor");
+			SHADER_UNIFORM(prog, u_lightcone, "u_lightcone");
+			SHADER_UNIFORM(prog, u_lightradius, "u_lightradius");
+			SHADER_UNIFORM(prog, u_lightambient, "u_lightambient");
+			SHADER_UNIFORM(prog, u_lightdiffuse, "u_lightdiffuse");
+			SHADER_UNIFORM(prog, u_lightspecular, "u_lightspecular");
+			SHADER_UNIFORM(prog, u_lightspecularpow, "u_lightspecularpow");
+			SHADER_UNIFORM(prog, u_modelmatrix, "u_modelmatrix");
 		}
 
 		g_DLightProgramTable[state] = prog;
@@ -182,15 +154,6 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 	if (prog.program)
 	{
 		GL_UseProgram(prog.program);
-
-		if (prog.gbufferTex != -1)
-			glUniform1i(prog.gbufferTex, 0);
-		if (prog.depthTex != -1)
-			glUniform1i(prog.depthTex, 1);
-		if (prog.stencilTex != -1)
-			glUniform1i(prog.stencilTex, 1);
-		if (prog.viewpos != -1)
-			glUniform3f(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
 
 		if (progOutput)
 			*progOutput = prog;
@@ -449,30 +412,24 @@ bool Util_IsOriginInCone(float *org, float *cone_origin, float *cone_forward, fl
 
 void R_EndRenderGBuffer(void)
 {
-	if (!drawgbuffer)
-		return;
+	GL_BeginFullScreenQuad(false);
 
-	drawgbuffer = false;
-	gbuffer_mask = -1;
-
-	GL_PushDrawState();
-
-	glStencilMask(0);
-	glDisable(GL_STENCIL_TEST);
-
-	//Write linearized depth
-
-	GL_Begin2D();
 	R_LinearizeDepth(&s_GBufferFBO);
-	GL_End2D();
 
-	//Write to GBuffer->lightmap only
-	glBindFramebuffer(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
-	glDrawBuffer(GL_COLOR_ATTACHMENT1);
+	if (R_IsSSAOEnabled())
+	{
+		R_AmbientOcclusion();
+	}
+	else
+	{
+		//Write to GBuffer->lightmap only
+		glBindFramebuffer(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
+		glDrawBuffer(GL_COLOR_ATTACHMENT1);
+	}
 
-	glDisable(GL_ALPHA_TEST);
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
+	GL_EndFullScreenQuad();
+
+	//Disable depth write and re-enable later after light pass.
 	glDepthMask(0);
 
 	glEnable(GL_BLEND);
@@ -488,7 +445,11 @@ void R_EndRenderGBuffer(void)
 
 	//Texture unit 1 = Stencil texture
 	GL_EnableMultitexture();
-	GL_Bind(s_GBufferFBO.s_hBackBufferStencilView);
+	GL_Bind(s_GBufferFBO.s_hBackBufferDepthTex);
+
+	glActiveTexture(GL_TEXTURE2);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferStencilView);
 	
 	if (g_DynamicLights.size())
 	{
@@ -507,21 +468,10 @@ void R_EndRenderGBuffer(void)
 
 				if (VectorLength(dist) > radius + 32)
 				{
-					dlight_program_t prog = { 0 };
-					R_UseDLightProgram(DLIGHT_POINT_ENABLED | DLIGHT_VOLUME_ENABLED, &prog);
-					glUniform3f(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
-					glUniform3f(prog.lightpos, dynlight.origin[0], dynlight.origin[1], dynlight.origin[2]);
-					glUniform3f(prog.lightcolor, dynlight.color[0], dynlight.color[1], dynlight.color[2]);
-					glUniform1f(prog.lightradius, radius);
-					glUniform1f(prog.lightambient, dynlight.ambient);
-					glUniform1f(prog.lightdiffuse, dynlight.diffuse);
-					glUniform1f(prog.lightspecular,dynlight.specular);
-					glUniform1f(prog.lightspecularpow, dynlight.specularpow);
-
-					glEnableClientState(GL_VERTEX_ARRAY);
 					glBindBuffer(GL_ARRAY_BUFFER_ARB, r_sphere_vbo);
 					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, r_sphere_ebo);
-					glVertexPointer(3, GL_FLOAT, sizeof(float[3]), 0);
+					glEnableVertexAttribArray(0);
+					glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
 
 					glPushMatrix();
 					glLoadIdentity();
@@ -532,32 +482,41 @@ void R_EndRenderGBuffer(void)
 					glGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
 					glPopMatrix();
 
-					glUniformMatrix4fv(prog.modelmatrix, 1, false, modelmatrix);
+					dlight_program_t prog = { 0 };
+					R_UseDLightProgram(DLIGHT_POINT_ENABLED | DLIGHT_VOLUME_ENABLED, &prog);
+
+					glUniformMatrix4fv(prog.u_modelmatrix, 1, false, modelmatrix);
+					glUniform3f(prog.u_lightpos, dynlight.origin[0], dynlight.origin[1], dynlight.origin[2]);
+					glUniform3f(prog.u_lightcolor, dynlight.color[0], dynlight.color[1], dynlight.color[2]);
+					glUniform1f(prog.u_lightradius, radius);
+					glUniform1f(prog.u_lightambient, dynlight.ambient);
+					glUniform1f(prog.u_lightdiffuse, dynlight.diffuse);
+					glUniform1f(prog.u_lightspecular, dynlight.specular);
+					glUniform1f(prog.u_lightspecularpow, dynlight.specularpow);
 
 					glDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
 
+					glDisableVertexAttribArray(0);
 					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 					glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
-					glDisableClientState(GL_VERTEX_ARRAY);
 				}
 				else
 				{
+					GL_BeginFullScreenQuad(false);
+
 					dlight_program_t prog = { 0 };
 					R_UseDLightProgram(DLIGHT_POINT_ENABLED, &prog);
-					glUniform3f(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
-					glUniform3f(prog.lightpos, dynlight.origin[0], dynlight.origin[1], dynlight.origin[2]);
-					glUniform3f(prog.lightcolor, dynlight.color[0], dynlight.color[1], dynlight.color[2]);
-					glUniform1f(prog.lightradius, radius);
-					glUniform1f(prog.lightambient, dynlight.ambient);
-					glUniform1f(prog.lightdiffuse, dynlight.diffuse);
-					glUniform1f(prog.lightspecular, dynlight.specular);
-					glUniform1f(prog.lightspecularpow, dynlight.specularpow);
+					glUniform3f(prog.u_lightpos, dynlight.origin[0], dynlight.origin[1], dynlight.origin[2]);
+					glUniform3f(prog.u_lightcolor, dynlight.color[0], dynlight.color[1], dynlight.color[2]);
+					glUniform1f(prog.u_lightradius, radius);
+					glUniform1f(prog.u_lightambient, dynlight.ambient);
+					glUniform1f(prog.u_lightdiffuse, dynlight.diffuse);
+					glUniform1f(prog.u_lightspecular, dynlight.specular);
+					glUniform1f(prog.u_lightspecularpow, dynlight.specularpow);
 
-					GL_Begin2D();
+					glDrawArrays(GL_QUADS, 0, 4);
 
-					R_DrawHUDQuadFrustum(glwidth, glheight);
-
-					GL_End2D();
+					GL_EndFullScreenQuad();
 				}
 			}
 		}
@@ -575,10 +534,11 @@ void R_EndRenderGBuffer(void)
 	}
 
 	dlight_t *dl = cl_dlights;
+	float curtime = (*cl_time);
 
 	for (int i = 0; i < max_dlight; i++, dl++)
 	{
-		if (dl->die < (*cl_time) || !dl->radius)
+		if (dl->die < curtime || !dl->radius)
 			continue;
 
 		if (R_IsDLightFlashlight(dl))
@@ -617,45 +577,11 @@ void R_EndRenderGBuffer(void)
 				VectorCopy(org, dlight_origin);
 			}
 
-			if (Util_IsOriginInCone(r_refdef->vieworg, dlight_origin, dlight_vforward, r_flashlight_cone->value, r_flashlight_distance->value))
+			if (!Util_IsOriginInCone(r_refdef->vieworg, dlight_origin, dlight_vforward, r_flashlight_cone->value, r_flashlight_distance->value))
 			{
-				dlight_program_t prog = { 0 };
-				R_UseDLightProgram(DLIGHT_SPOT_ENABLED, &prog);
-				glUniform3f(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
-				glUniform3f(prog.lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2]);
-				glUniform3f(prog.lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2]);
-				glUniform3f(prog.lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
-				glUniform1f(prog.lightcone, r_flashlight_cone->value);
-				glUniform1f(prog.lightradius, r_flashlight_distance->value);
-				glUniform1f(prog.lightambient, r_light_ambient->value);
-				glUniform1f(prog.lightdiffuse, r_light_diffuse->value);
-				glUniform1f(prog.lightspecular, r_light_specular->value);
-				glUniform1f(prog.lightspecularpow, r_light_specularpow->value);
-
-				GL_Begin2D();
-
-				R_DrawHUDQuadFrustum(glwidth, glheight);
-
-				GL_End2D();
-			}
-			else
-			{
-				dlight_program_t prog = { 0 };
-				R_UseDLightProgram(DLIGHT_SPOT_ENABLED | DLIGHT_VOLUME_ENABLED, &prog);
-				glUniform3f(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
-				glUniform3f(prog.lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2]);
-				glUniform3f(prog.lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2]);
-				glUniform3f(prog.lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
-				glUniform1f(prog.lightcone, r_flashlight_cone->value);
-				glUniform1f(prog.lightradius, r_flashlight_distance->value);
-				glUniform1f(prog.lightambient, r_light_ambient->value);
-				glUniform1f(prog.lightdiffuse, r_light_diffuse->value);
-				glUniform1f(prog.lightspecular, r_light_specular->value);
-				glUniform1f(prog.lightspecularpow, r_light_specularpow->value);
-
-				glEnableClientState(GL_VERTEX_ARRAY);
 				glBindBuffer(GL_ARRAY_BUFFER_ARB, r_cone_vbo);
-				glVertexPointer(3, GL_FLOAT, sizeof(float[3]), 0);
+				glEnableVertexAttribArray(0);
+				glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
 
 				float ang = acosf(r_flashlight_cone->value);
 				float tan = tanf(ang);
@@ -673,12 +599,45 @@ void R_EndRenderGBuffer(void)
 				glGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
 				glPopMatrix();
 
-				glUniformMatrix4fv(prog.modelmatrix, 1, false, modelmatrix);
+				dlight_program_t prog = { 0 };
+				R_UseDLightProgram(DLIGHT_SPOT_ENABLED | DLIGHT_VOLUME_ENABLED, &prog);
+
+				glUniformMatrix4fv(prog.u_modelmatrix, 1, false, modelmatrix);
+				glUniform3f(prog.u_lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2]);
+				glUniform3f(prog.u_lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2]);
+				glUniform3f(prog.u_lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
+				glUniform1f(prog.u_lightcone, r_flashlight_cone->value);
+				glUniform1f(prog.u_lightradius, r_flashlight_distance->value);
+				glUniform1f(prog.u_lightambient, r_light_ambient->value);
+				glUniform1f(prog.u_lightdiffuse, r_light_diffuse->value);
+				glUniform1f(prog.u_lightspecular, r_light_specular->value);
+				glUniform1f(prog.u_lightspecularpow, r_light_specularpow->value);
 
 				glDrawArrays(GL_TRIANGLES, 0, X_SEGMENTS * 6);
 
 				glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
-				glDisableClientState(GL_VERTEX_ARRAY);
+				glDisableVertexAttribArray(0);				
+			}
+			else
+			{
+				GL_BeginFullScreenQuad(false);
+
+				dlight_program_t prog = { 0 };
+				R_UseDLightProgram(DLIGHT_SPOT_ENABLED, &prog);
+
+				glUniform3f(prog.u_lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2]);
+				glUniform3f(prog.u_lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2]);
+				glUniform3f(prog.u_lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
+				glUniform1f(prog.u_lightcone, r_flashlight_cone->value);
+				glUniform1f(prog.u_lightradius, r_flashlight_distance->value);
+				glUniform1f(prog.u_lightambient, r_light_ambient->value);
+				glUniform1f(prog.u_lightdiffuse, r_light_diffuse->value);
+				glUniform1f(prog.u_lightspecular, r_light_specular->value);
+				glUniform1f(prog.u_lightspecularpow, r_light_specularpow->value);
+				
+				glDrawArrays(GL_QUADS, 0, 4);
+
+				GL_EndFullScreenQuad();
 			}
 		}
 		else
@@ -698,22 +657,6 @@ void R_EndRenderGBuffer(void)
 				if (R_CullBox(mins, maxs))
 					continue;
 
-				dlight_program_t prog = { 0 };
-				R_UseDLightProgram(DLIGHT_POINT_ENABLED | DLIGHT_VOLUME_ENABLED, &prog);
-				glUniform3f(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
-				glUniform3f(prog.lightpos, dl->origin[0], dl->origin[1], dl->origin[2]);
-				glUniform3f(prog.lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
-				glUniform1f(prog.lightradius, dl->radius);
-				glUniform1f(prog.lightambient, r_light_ambient->value);
-				glUniform1f(prog.lightdiffuse, r_light_diffuse->value);
-				glUniform1f(prog.lightspecular, r_light_specular->value);
-				glUniform1f(prog.lightspecularpow, r_light_specularpow->value);
-
-				glEnableClientState(GL_VERTEX_ARRAY);
-				glBindBuffer(GL_ARRAY_BUFFER_ARB, r_sphere_vbo);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, r_sphere_ebo);
-				glVertexPointer(3, GL_FLOAT, sizeof(float[3]), 0);
-
 				glPushMatrix();
 				glLoadIdentity();
 				glTranslatef(dl->origin[0], dl->origin[1], dl->origin[2]);
@@ -723,38 +666,53 @@ void R_EndRenderGBuffer(void)
 				glGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
 				glPopMatrix();
 
-				glUniformMatrix4fv(prog.modelmatrix, 1, false, modelmatrix);
+				dlight_program_t prog = { 0 };
+				R_UseDLightProgram(DLIGHT_POINT_ENABLED | DLIGHT_VOLUME_ENABLED, &prog);
+				
+				glUniformMatrix4fv(prog.u_modelmatrix, 1, false, modelmatrix);
+				glUniform3f(prog.u_lightpos, dl->origin[0], dl->origin[1], dl->origin[2]);
+				glUniform3f(prog.u_lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
+				glUniform1f(prog.u_lightradius, dl->radius);
+				glUniform1f(prog.u_lightambient, r_light_ambient->value);
+				glUniform1f(prog.u_lightdiffuse, r_light_diffuse->value);
+				glUniform1f(prog.u_lightspecular, r_light_specular->value);
+				glUniform1f(prog.u_lightspecularpow, r_light_specularpow->value);
+
+				glBindBuffer(GL_ARRAY_BUFFER_ARB, r_sphere_vbo);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, r_sphere_ebo);
+				glEnableVertexAttribArray(0);
+				glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
 
 				glDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);				
 
+				glDisableVertexAttribArray(0);
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 				glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
-				glDisableClientState(GL_VERTEX_ARRAY);
 			}
 			else
 			{
+				GL_BeginFullScreenQuad(false);
+
 				dlight_program_t prog = { 0 };
 				R_UseDLightProgram(DLIGHT_POINT_ENABLED, &prog);
-				glUniform3f(prog.viewpos, r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2]);
-				glUniform3f(prog.lightpos, dl->origin[0], dl->origin[1], dl->origin[2]);
-				glUniform3f(prog.lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
-				glUniform1f(prog.lightradius, dl->radius);
-				glUniform1f(prog.lightambient, r_light_ambient->value);
-				glUniform1f(prog.lightdiffuse, r_light_diffuse->value);
-				glUniform1f(prog.lightspecular, r_light_specular->value);
-				glUniform1f(prog.lightspecularpow, r_light_specularpow->value);
 
-				GL_Begin2D();
+				glUniform3f(prog.u_lightpos, dl->origin[0], dl->origin[1], dl->origin[2]);
+				glUniform3f(prog.u_lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
+				glUniform1f(prog.u_lightradius, dl->radius);
+				glUniform1f(prog.u_lightambient, r_light_ambient->value);
+				glUniform1f(prog.u_lightdiffuse, r_light_diffuse->value);
+				glUniform1f(prog.u_lightspecular, r_light_specular->value);
+				glUniform1f(prog.u_lightspecularpow, r_light_specularpow->value);
 
-				R_DrawHUDQuadFrustum(glwidth, glheight);
+				glDrawArrays(GL_QUADS, 0, 4);
 
-				GL_End2D();
+				GL_EndFullScreenQuad();
 			}
 		}
 	}
 
-	GL_Begin2D();
-	glDisable(GL_BLEND);
+	//re-enable depth write
+	glDepthMask(1);
 
 	//Write GBuffer depth stencil into main framebuffer
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
@@ -767,6 +725,11 @@ void R_EndRenderGBuffer(void)
 	//Shading pass
 	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);	
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+	GL_BeginFullScreenQuad(false);
+
+	//No blend for final shading pass
+	glDisable(GL_BLEND);
 
 	int FinalProgramState = 0;
 
@@ -790,15 +753,10 @@ void R_EndRenderGBuffer(void)
 	//Setup final program
 	R_UseDFinalProgram(FinalProgramState, NULL);
 
-	//Texture unit 1 = (depth)
-	GL_Bind(s_GBufferFBO.s_hBackBufferDepthTex);
-
-	//Texture unit 2 = (linearized depth)
-	glActiveTexture(GL_TEXTURE2);
-	glEnable(GL_TEXTURE_2D);
+	//Texture unit 0 = (GBuffer texture array), Texture unit 1 = (depth), Texture unit 2 = (linearized depth)
 	glBindTexture(GL_TEXTURE_2D, s_DepthLinearFBO.s_hBackBufferTex);
 
-	R_DrawHUDQuadFrustum(glwidth, glheight);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	//Disable texture unit 2 (linearized depth)
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -813,14 +771,10 @@ void R_EndRenderGBuffer(void)
 	glEnable(GL_TEXTURE_2D);
 	*currenttexture = -1;
 
-	//Disable final program
 	GL_UseProgram(0);
 
-	//Restore 3D matrix
-	GL_End2D();
+	GL_EndFullScreenQuad();
 
-	glStencilMask(0);
-	glDisable(GL_STENCIL_TEST);
-
-	GL_PopDrawState();
+	drawgbuffer = false;
+	gbuffer_mask = -1;
 }

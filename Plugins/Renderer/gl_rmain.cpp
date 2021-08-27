@@ -488,7 +488,6 @@ void triapi_RenderMode(int mode)
 		break;
 	}
 	}
-
 }
 
 void R_DrawTEntitiesOnList(int onlyClientDraw)
@@ -503,26 +502,9 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 	{
 		glColorMask(0, 0, 0, 0);
 
-		//Clear buffer
-		GL_Begin2D();
-		GL_UseProgram(oitbuffer_clear.program);
-		R_DrawHUDQuad(glwidth, glheight);
-		GL_End2D();
-
-		GLuint val = 0;
-		glClearNamedBufferData(r_wsurf.hOITAtomicSSBO, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, (const void*)&val);
-
-		glColorMask(1, 1, 1, 1);
+		R_ClearOITBuffer();
 
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-		//Initialize atomic counter
-
-		/*glEnable(GL_STENCIL_TEST);
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-		glStencilMask(0xFF);
-		glClear(GL_STENCIL_BUFFER_BIT);*/
 
 		r_draw_oitblend = true;
 
@@ -535,14 +517,9 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 		glColorMask(1, 1, 1, 1);
 
-		//glStencilFunc(GL_EQUAL, 1, 0xFF);
-		//glStencilMask(0x0);
-
-		R_BlitOITBlendBuffer();
+		R_BlendOITBuffer();
 
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-
-		//glDisable(GL_STENCIL_TEST);
 	}
 	else
 	{

@@ -128,14 +128,23 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 
 void HUD_DrawNormalTriangles(void)
 {
-	//R_DrawSpriteEntris(kRenderNormal);
+	glDisable(GL_ALPHA_TEST);
+	glDisable(GL_STENCIL_TEST);
 
 	r_draw_opaque = false;
 
 	//Transfer everything from gbuffer into backbuffer
-	R_EndRenderGBuffer();
-	
-	R_DoSSAO();
+	if (drawgbuffer)
+	{
+		R_EndRenderGBuffer();
+	}
+	else if (R_IsSSAOEnabled()) 
+	{		
+		GL_BeginFullScreenQuad(false);
+		R_LinearizeDepth(&s_BackBufferFBO);
+		R_AmbientOcclusion();
+		GL_EndFullScreenQuad();
+	}
 
 	//Allow SCClient to write stencil buffer (but not bit 1)?
 

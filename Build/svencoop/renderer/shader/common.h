@@ -67,6 +67,7 @@ struct scene_ubo_t{
 	mat4 invProjMatrix;
 	mat4 shadowMatrix[3];
 	uvec4 viewport;
+	vec4 frustumpos[4];
 	vec4 viewpos;
 	vec4 vpn;
 	vec4 vright;
@@ -292,9 +293,26 @@ vec4 CalcFog(vec4 color)
 	return color;
 }
 
+vec4 CalcFogWithLinearDepth(vec4 color, sampler2D linearDepthTex, vec2 texcoord)
+{
+	float fogFactor = ( SceneUBO.fogEnd - texture2D(linearDepthTex, texcoord.xy).r ) / ( SceneUBO.fogEnd - SceneUBO.fogStart );
+	fogFactor = clamp(fogFactor, 0.0, 1.0);
+
+	vec3 finalColor = color.xyz;
+
+	color.xyz = mix(SceneUBO.fogColor.xyz, finalColor, fogFactor );
+
+	return color;
+}
+
 #else
 
 vec4 CalcFog(vec4 color)
+{
+	return color;
+}
+
+vec4 CalcFogWithLinearDepth(vec4 color, sampler2D linearDepthTex, vec2 texcoord)
 {
 	return color;
 }

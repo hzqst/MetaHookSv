@@ -34,7 +34,6 @@ SHADER_DEFINE(pp_tonemap);
 
 //HBAO
 SHADER_DEFINE(depth_linearize);
-SHADER_DEFINE(depth_linearize_msaa);
 SHADER_DEFINE(hbao_calc_blur);
 SHADER_DEFINE(hbao_calc_blur_fog);
 SHADER_DEFINE(hbao_blur);
@@ -261,19 +260,13 @@ void R_InitGLHUD(void)
 
 	//FXAA Pass
 	pp_fxaa.program = R_CompileShaderFile("renderer\\shader\\pp_fxaa.vsh", "renderer\\shader\\pp_fxaa.fsh", NULL);
-	if (pp_fxaa.program)
-	{
-		SHADER_UNIFORM(pp_fxaa, tex0, "tex0");
-		SHADER_UNIFORM(pp_fxaa, rt_w, "rt_w");
-		SHADER_UNIFORM(pp_fxaa, rt_h, "rt_h");
-	}
+	SHADER_UNIFORM(pp_fxaa, tex0, "tex0");
+	SHADER_UNIFORM(pp_fxaa, rt_w, "rt_w");
+	SHADER_UNIFORM(pp_fxaa, rt_h, "rt_h");
 
 	//DownSample Pass
 	pp_downsample.program = R_CompileShaderFile("renderer\\shader\\pp_common.vsh", "renderer\\shader\\pp_downsample.fsh", NULL);
-	if (pp_downsample.program)
-	{
-		SHADER_UNIFORM(pp_downsample, tex, "tex");
-	}
+	SHADER_UNIFORM(pp_downsample, tex, "tex");
 
 	//2x2 Downsample Pass
 	pp_downsample2x2.program = R_CompileShaderFile("renderer\\shader\\pp_common2x2.vsh", "renderer\\shader\\pp_downsample2x2.fsh", NULL);
@@ -340,9 +333,6 @@ void R_InitGLHUD(void)
 	//SSAO
 	depth_linearize.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\depthlinearize.frag.glsl", NULL);
 
-	depth_linearize_msaa.program = R_CompileShaderFileEx("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\depthlinearize.frag.glsl",
-		"#define DEPTHLINEARIZE_MSAA 1\n", "#define DEPTHLINEARIZE_MSAA 1\n", NULL);
-
 	hbao_calc_blur.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\hbao.frag.glsl", NULL);
 	
 	depth_clear.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\depthclear.frag.glsl", NULL);
@@ -405,29 +395,6 @@ void R_InitGLHUD(void)
 	last_luminance = 0;
 }
 
-void R_DrawHUDQuadFrustum(int w, int h)
-{
-	glBegin(GL_QUADS);
-
-	glTexCoord2f(0, 0);
-	glColor3fv(r_frustum_origin[0]);
-	glVertex3f(0, h, -1);
-
-	glTexCoord2f(0, 1);
-	glColor3fv(r_frustum_origin[1]);
-	glVertex3f(0, 0, -1);
-
-	glTexCoord2f(1, 1);
-	glColor3fv(r_frustum_origin[2]);
-	glVertex3f(w, 0, -1);
-
-	glTexCoord2f(1, 0);
-	glColor3fv(r_frustum_origin[3]);
-	glVertex3f(w, h, -1);
-
-	glEnd();
-}
-
 void R_DrawHUDQuad(int w, int h)
 {
 	glBegin(GL_QUADS);
@@ -454,7 +421,7 @@ void R_DrawHUDQuad_Texture(int tex, int w, int h)
 	R_DrawHUDQuad(w, h);
 }
 
-void R_BlitToScreen(FBO_Container_t *src)
+void GL_BlitToScreen(FBO_Container_t *src)
 {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
@@ -465,7 +432,7 @@ void R_BlitToScreen(FBO_Container_t *src)
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, glwidth, glheight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
 
-void R_BlitToFBO(FBO_Container_t *src, FBO_Container_t *dst)
+void GL_BlitToFrameBuffer(FBO_Container_t *src, FBO_Container_t *dst)
 {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
@@ -724,7 +691,7 @@ void R_DoHDR(void)
 	//Tone mapping
 	R_ToneMapping(&s_BackBufferFBO, &s_ToneMapFBO, &s_BrightAccumFBO, &s_Lumin1x1FBO[last_luminance]);
 
-	R_BlitToFBO(&s_ToneMapFBO, &s_BackBufferFBO);
+	GL_BlitToFrameBuffer(&s_ToneMapFBO, &s_BackBufferFBO);
 
 	GL_PopDrawState();
 }
@@ -754,7 +721,7 @@ void R_DoFXAA(void)
 	GL_PushDrawState();
 	GL_PushMatrix();
 
-	R_BlitToFBO(&s_BackBufferFBO, &s_BackBufferFBO2);
+	GL_BlitToFrameBuffer(&s_BackBufferFBO, &s_BackBufferFBO2);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 
@@ -773,25 +740,41 @@ void R_DoFXAA(void)
 	GL_PopDrawState();
 }
 
-void R_BlitOITBlendBuffer(void)
+void R_ClearOITBuffer(void)
 {
-	R_BlitToFBO(&s_BackBufferFBO, &s_BackBufferFBO2);
+	GL_BeginFullScreenQuad(false);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	GL_UseProgram(oitbuffer_clear.program);
 
-	GL_Begin2D();
-
-	GL_UseProgram(blit_oitblend.program);
-
-	GL_DisableMultitexture();
-	glEnable(GL_TEXTURE_2D);
-	glDisable(GL_BLEND);
-
-	R_DrawHUDQuad_Texture(s_BackBufferFBO2.s_hBackBufferTex, glwidth, glheight);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	GL_UseProgram(0);
 
-	GL_End2D();
+	GL_EndFullScreenQuad();
+
+	GLuint val = 0;
+	glClearNamedBufferData(r_wsurf.hOITAtomicSSBO, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, (const void*)&val);
+}
+
+void R_BlendOITBuffer(void)
+{
+	GL_BlitToFrameBuffer(&s_BackBufferFBO, &s_BackBufferFBO2);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	
+	GL_BeginFullScreenQuad(false);
+
+	glDisable(GL_BLEND);
+
+	GL_UseProgram(blit_oitblend.program);	
+
+	GL_Bind(s_BackBufferFBO2.s_hBackBufferTex);
+
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	GL_UseProgram(0);
+
+	GL_EndFullScreenQuad();
 }
 
 void R_LinearizeDepth(FBO_Container_t *fbo)
@@ -802,25 +785,30 @@ void R_LinearizeDepth(FBO_Container_t *fbo)
 	glDisable(GL_BLEND);
 
 	GL_UseProgram(depth_linearize.program);
+
 	glUniform4f(0, r_near_z * r_far_z, r_near_z - r_far_z, r_far_z, r_ortho ? 0 : 1);
 	
-	GL_DisableMultitexture();
 	GL_Bind(fbo->s_hBackBufferDepthTex);
 
-	R_DrawHUDQuad(glwidth, glheight);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-void R_DoSSAO(void)
+bool R_IsSSAOEnabled(void)
 {
 	if (!r_ssao->value)
-		return;
+		return false;
 
 	if (r_refdef->onlyClientDraws || r_draw_pass || g_SvEngine_DrawPortalView)
-		return;
+		return false;
 
 	if ((*r_xfov) < 75)
-		return;
+		return false;
 
+	return true;
+}
+
+void R_AmbientOcclusion(void)
+{
 	//Prepare parameters
 
 	const float *ProjMatrix = r_projection_matrix;
@@ -858,16 +846,10 @@ void R_DoSSAO(void)
 	InvFullResolution[0] = 1.0f / float(glwidth);
 	InvFullResolution[1] = 1.0f / float(glheight);
 
-	GL_PushDrawState();
-
-	GL_Begin2D();
-
-	//depth linearize?
-
-	R_LinearizeDepth(&s_BackBufferFBO);
-
 	glBindFramebuffer(GL_FRAMEBUFFER, s_HBAOCalcFBO.s_hBackBufferFBO);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+	glDisable(GL_BLEND);
 
 	//setup args for hbao_calc
 	if (r_fog_mode == GL_LINEAR)
@@ -899,14 +881,16 @@ void R_DoSSAO(void)
 	}
 
 	//Texture unit 0 = linearized depth
-	GL_SelectTexture(GL_TEXTURE0);
 	GL_Bind(s_DepthLinearFBO.s_hBackBufferTex);
 
 	//Texture unit 1 = random texture
 	GL_EnableMultitexture();
 	GL_Bind(hbao_randomview[0]);
 
-	R_DrawHUDQuad(glwidth, glheight);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	//Disable texture unit 1
+	GL_DisableMultitexture();
 
 	//SSAO blur stage
 
@@ -918,22 +902,28 @@ void R_DoSSAO(void)
 	glUniform2f(1, 1.0f / float(glwidth), 0);
 
 	//Texture unit 0 = calc
-	GL_DisableMultitexture();
 	GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex);
 
-	R_DrawHUDQuad(glwidth, glheight);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	//Write to main framebuffer
-	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	//Write to main framebuffer or GBuffer lightmap channel
+	if (drawgbuffer)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
+		glDrawBuffer(GL_COLOR_ATTACHMENT1);
+	}
+	else
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	}
 
-	//Merge SSAO result into main scene
-	glDisable(GL_DEPTH_TEST);
+	//Merged with rgb channel
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ZERO, GL_SRC_COLOR);
 	glColor4f(1, 1, 1, 1);
 
-	//Don't draw SSAO shadow on studio models, water, etc...
+	//Only draw on brush surfaces
 	glEnable(GL_STENCIL_TEST);
 	glStencilMask(0xFF);
 	glStencilFunc(GL_EQUAL, 0, 0xFF);
@@ -946,14 +936,12 @@ void R_DoSSAO(void)
 	//Texture unit 0 = calc2
 	GL_Bind(s_HBAOCalcFBO.s_hBackBufferTex2);
 
-	R_DrawHUDQuad(glwidth, glheight);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	GL_UseProgram(0);
 
-	glStencilMask(0);
 	glDisable(GL_STENCIL_TEST);
+	glDisable(GL_BLEND);
 
-	GL_PopDrawState();
-
-	GL_End2D();
+	GL_EndFullScreenQuad();
 }

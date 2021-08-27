@@ -204,8 +204,13 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 	int SpriteProgramState = 0;
 
-	if(r_draw_opaque)
+	if (r_draw_opaque)
+	{
+		glEnable(GL_STENCIL_TEST);
+		glStencilMask(0xFF);
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	}
 
 	if (!gl_spriteblend->value && ent->curstate.rendermode == kRenderNormal)
 	{
@@ -389,6 +394,8 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 	glDisable(GL_ALPHA_TEST);
 	glDepthMask(1);
+
+	glDisable(GL_STENCIL_TEST);
 
 	if (ent->curstate.rendermode != kRenderNormal || gl_spriteblend->value)
 	{

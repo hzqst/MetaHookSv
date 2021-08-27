@@ -334,8 +334,8 @@ void GL_Begin2D(void);
 void GL_Begin2DEx(int width, int height);
 void GL_End2D(void);
 
-//for screenshot
-void CL_ScreenShot_f(void);
+void GL_BeginFullScreenQuad(bool enableDepthTest);
+void GL_EndFullScreenQuad(void);
 
 //for hud or post-processing
 void R_InitGLHUD(void);

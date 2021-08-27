@@ -61,38 +61,25 @@ extern bool drawgbuffer;
 typedef struct
 {
 	int program;
-	int gbufferTex;
-	int stencilTex;
-	int depthTex;
-	int viewpos;
-	int lightdir;
-	int lightpos;
-	int lightcolor;
-	int lightcone;
-	int lightradius;
-	int lightambient;
-	int lightdiffuse;
-	int lightspecular;
-	int lightspecularpow;
-	int modelmatrix;
+	int u_lightdir;
+	int u_lightpos;
+	int u_lightcolor;
+	int u_lightcone;
+	int u_lightradius;
+	int u_lightambient;
+	int u_lightdiffuse;
+	int u_lightspecular;
+	int u_lightspecularpow;
+	int u_modelmatrix;
 }dlight_program_t;
 
 typedef struct
 {
 	int program;
-	int gbufferTex;
-	//int stencilTex;
-	int depthTex;
-	int linearDepthTex;
-	int viewpos;
-	int viewmatrix;
-	int projmatrix;
-	int invprojmatrix;
-
-	int ssrRayStep;
-	int ssrIterCount;
-	int ssrDistanceBias;
-	int ssrFade;
+	int u_ssrRayStep;
+	int u_ssrIterCount;
+	int u_ssrDistanceBias;
+	int u_ssrFade;
 }dfinal_program_t;
 
 void R_InitLight(void);

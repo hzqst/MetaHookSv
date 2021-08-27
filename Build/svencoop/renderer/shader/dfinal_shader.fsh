@@ -1,4 +1,8 @@
-#extension GL_EXT_texture_array : enable
+#version 430
+
+#include "common.h"
+
+#extension GL_EXT_texture_array : require
 
 #define GBUFFER_INDEX_DIFFUSE		0.0
 #define GBUFFER_INDEX_LIGHTMAP		1.0
@@ -6,69 +10,18 @@
 #define GBUFFER_INDEX_SPECULAR		3.0
 #define GBUFFER_INDEX_ADDITIVE		4.0
 
-uniform sampler2DArray gbufferTex;
-uniform sampler2D depthTex;
-uniform sampler2D linearDepthTex;
+layout(binding = 0) uniform sampler2DArray gbufferTex;
+layout(binding = 1) uniform sampler2D depthTex;
+layout(binding = 2) uniform sampler2D linearDepthTex;
 
-uniform vec3 viewpos;
-uniform mat4 viewmatrix;
-uniform mat4 projmatrix;
-uniform mat4 invprojmatrix;
+uniform float u_ssrRayStep;
+uniform int u_ssrIterCount;
+uniform float u_ssrDistanceBias;
+uniform vec2 u_ssrFade;
 
-uniform float ssrRayStep;
-uniform int ssrIterCount;
-uniform float ssrDistanceBias;
-uniform vec2 ssrFade;
+in vec2 texCoord;
 
-vec2 UnitVectorToHemiOctahedron(vec3 dir) {
-
-	dir.y = max(dir.y, 0.0001);
-	dir.xz /= dot(abs(dir), vec3(1.0));
-
-	return clamp(0.5 * vec2(dir.x + dir.z, dir.x - dir.z) + 0.5, 0.0, 1.0);
-
-}
-
-vec3 HemiOctahedronToUnitVector(vec2 coord) {
-
-	coord = 2.0 * coord - 1.0;
-	coord = 0.5 * vec2(coord.x + coord.y, coord.x - coord.y);
-
-	float y = 1.0 - dot(vec2(1.0), abs(coord));
-	return normalize(vec3(coord.x, y + 0.0001, coord.y));
-
-}
-
-vec2 UnitVectorToOctahedron(vec3 dir) {
-
-    dir.xz /= dot(abs(dir), vec3(1.0));
-
-	// Lower hemisphere
-	if (dir.y < 0.0) {
-		vec2 orig = dir.xz;
-		dir.x = (orig.x >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.y));
-        dir.z = (orig.y >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.x));
-	}
-
-	return clamp(0.5 * vec2(dir.x, dir.z) + 0.5, 0.0, 1.0);
-
-}
-
-vec3 OctahedronToUnitVector(vec2 coord) {
-
-	coord = 2.0 * coord - 1.0;
-	float y = 1.0 - dot(abs(coord), vec2(1.0));
-
-	// Lower hemisphere
-	if (y < 0.0) {
-		vec2 orig = coord;
-		coord.x = (orig.x >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.y));
-		coord.y = (orig.y >= 0.0 ? 1.0 : -1.0) * (1.0 - abs(orig.x));
-	}
-
-	return normalize(vec3(coord.x, y + 0.0001, coord.y));
-
-}
+layout(location = 0) out vec4 out_FragColor;
 
 float random (vec2 uv) {
 	return fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453123); //simple random function
@@ -97,13 +50,13 @@ vec4 GenerateAdditiveColor(vec2 texcoord)
 vec3 GenerateViewPositionFromDepth(vec2 texcoord, float depth) {
     vec2 texcoord2 = vec2((texcoord.x - 0.5) * 2.0, (texcoord.y - 0.5) * 2.0);
 	vec4 ndc = vec4(texcoord2.xy, depth, 1.0);
-	vec4 inversed = invprojmatrix * ndc;// going back from projected
+	vec4 inversed = SceneUBO.invProjMatrix * ndc;// going back from projected
 	inversed /= inversed.w;
 	return inversed.xyz;
 }
 
 vec2 GenerateProjectedPosition(vec3 pos){
-	vec4 samplePosition = projmatrix * vec4(pos, 1.0);
+	vec4 samplePosition = SceneUBO.projMatrix * vec4(pos, 1.0);
 	samplePosition.xy = (samplePosition.xy / samplePosition.w) * 0.5 + 0.5;
 	return samplePosition.xy;
 }
@@ -118,7 +71,7 @@ vec3 GenerateWorldNormal(vec2 texcoord)
 
 vec3 GenerateViewNormal(vec2 texcoord)
 {
-    return normalize((viewmatrix * vec4(GenerateWorldNormal(texcoord), 0.0) ).xyz);
+    return normalize((SceneUBO.viewMatrix * vec4(GenerateWorldNormal(texcoord), 0.0) ).xyz);
 }
 
 vec4 VignetteColor(vec4 c, vec2 win_bias)
@@ -128,7 +81,7 @@ vec4 VignetteColor(vec4 c, vec2 win_bias)
 
     // calculate distance from origin
     float r = length(wpos);
-    r = 1.0 - smoothstep(ssrFade.x, ssrFade.y, r);
+    r = 1.0 - smoothstep(u_ssrFade.x, u_ssrFade.y, r);
 	
     c.a *= r;
 
@@ -137,18 +90,18 @@ vec4 VignetteColor(vec4 c, vec2 win_bias)
 
 vec4 ScreenSpaceReflectionInternal(vec3 position, vec3 reflection)
 {
-	vec3 step = ssrRayStep * reflection;
+	vec3 step = u_ssrRayStep * reflection;
 	vec3 marchingPosition = position + step;
 	float delta;
 	float depthFromScreen;
 	vec2 screenPosition;
 
     int i = 0;
-	for (; i < ssrIterCount; i++) {
+	for (; i < u_ssrIterCount; i++) {
 		screenPosition = GenerateProjectedPosition(marchingPosition);
 		depthFromScreen = abs(GenerateViewPositionFromDepth(screenPosition, texture2D(depthTex, screenPosition).x).z);
 		delta = abs(marchingPosition.z) - depthFromScreen;
-		if (abs(delta) < ssrDistanceBias) {
+		if (abs(delta) < u_ssrDistanceBias) {
             if(screenPosition.x < 0.0 || screenPosition.x > 1.0 || screenPosition.y < 0.0 || screenPosition.y > 1.0){
                 return vec4(0.0);
             }
@@ -164,7 +117,7 @@ vec4 ScreenSpaceReflectionInternal(vec3 position, vec3 reflection)
 			float directionSign = sign(abs(marchingPosition.z) - depthFromScreen);
 			//this is sort of adapting step, should prevent lining reflection by doing sort of iterative converging
 			//some implementation doing it by binary search, but I found this idea more cheaty and way easier to implement
-			step = step * (1.0 - ssrRayStep * max(directionSign, 0.0));
+			step = step * (1.0 - u_ssrRayStep * max(directionSign, 0.0));
 			marchingPosition += step * (-directionSign);
 		#else
 			marchingPosition += step;
@@ -174,7 +127,7 @@ vec4 ScreenSpaceReflectionInternal(vec3 position, vec3 reflection)
 		#endif
     }
 	#ifdef SSR_BINARY_SEARCH_ENABLED
-		for(; i < ssrIterCount; i++){
+		for(; i < u_ssrIterCount; i++){
 			
 			step *= 0.5;
 			marchingPosition = marchingPosition - step * sign(delta);
@@ -183,7 +136,7 @@ vec4 ScreenSpaceReflectionInternal(vec3 position, vec3 reflection)
 			depthFromScreen = abs(GenerateViewPositionFromDepth(screenPosition, texture2D(depthTex, screenPosition).x).z);
 			delta = abs(marchingPosition.z) - depthFromScreen;
 			
-			if (abs(delta) < ssrDistanceBias) {
+			if (abs(delta) < u_ssrDistanceBias) {
                 if(screenPosition.x < 0.0 || screenPosition.x > 1.0 || screenPosition.y < 0.0 || screenPosition.y > 1.0){
                     return vec4(0.0);
                 }
@@ -198,21 +151,21 @@ vec4 ScreenSpaceReflectionInternal(vec3 position, vec3 reflection)
 
 vec4 ScreenSpaceReflection()
 {
-    vec3 position = GenerateViewPositionFromDepth(gl_TexCoord[0].xy, texture2D(depthTex, gl_TexCoord[0].xy).x);
-    vec3 viewnormal = GenerateViewNormal(gl_TexCoord[0].xy);
+    vec3 position = GenerateViewPositionFromDepth(texCoord.xy, texture2D(depthTex, texCoord.xy).x);
+    vec3 viewnormal = GenerateViewNormal(texCoord.xy);
 
     vec3 reflectionDirection = normalize(reflect(position, viewnormal));
 
     return ScreenSpaceReflectionInternal(position, reflectionDirection);
 }
 
-vec4 GenerateFinalColor(vec2 texcoord)
+void main()
 {
-    vec4 diffuseColor = texture2DArray(gbufferTex, vec3(texcoord, GBUFFER_INDEX_DIFFUSE));
-    vec4 lightmapColor = texture2DArray(gbufferTex, vec3(texcoord, GBUFFER_INDEX_LIGHTMAP));
+    vec4 diffuseColor = texture2DArray(gbufferTex, vec3(texCoord, GBUFFER_INDEX_DIFFUSE));
+    vec4 lightmapColor = texture2DArray(gbufferTex, vec3(texCoord, GBUFFER_INDEX_LIGHTMAP));
 
 #ifdef SSR_ENABLED
-    vec4 specularColor = texture2DArray(gbufferTex, vec3(texcoord, GBUFFER_INDEX_SPECULAR));
+    vec4 specularColor = texture2DArray(gbufferTex, vec3(texCoord, GBUFFER_INDEX_SPECULAR));
     if(specularColor.g > 0.0)
     {
         vec4 ssr = ScreenSpaceReflection();
@@ -221,31 +174,7 @@ vec4 GenerateFinalColor(vec2 texcoord)
     }
 #endif
 
-    vec4 resultColor = diffuseColor * lightmapColor + GenerateAdditiveColor(texcoord);
+    vec4 finalColor = diffuseColor * lightmapColor + GenerateAdditiveColor(texCoord);
 
-    resultColor.a = 1.0;
-
-    return resultColor;
-}
-
-void main()
-{
-    vec4 finalColor = GenerateFinalColor(gl_TexCoord[0].xy);
-
-#ifdef LINEAR_FOG_ENABLED
-
-    vec4 linearDepthColor = texture2D(linearDepthTex, gl_TexCoord[0].xy);
-
-	float z = linearDepthColor.x;
-	float fogFactor = ( gl_Fog.end - z ) / ( gl_Fog.end - gl_Fog.start );
-	fogFactor = clamp(fogFactor, 0.0, 1.0);
-
-	gl_FragColor.xyz = mix(gl_Fog.color.xyz, finalColor.xyz, fogFactor );
-
-#else
-
-    gl_FragColor = finalColor;
-
-#endif
-
+	out_FragColor = CalcFogWithLinearDepth(finalColor, linearDepthTex, texCoord);
 }

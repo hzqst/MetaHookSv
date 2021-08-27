@@ -45,9 +45,6 @@ extern word **host_basepal;
 
 void R_UseSpriteProgram(int state, sprite_program_t *progOutput);
 void R_UseLegacySpriteProgram(int state, legacysprite_program_t *progOutput);
-//void R_DrawSpriteEntris(int kRenderMode);
-void R_BlitOITBlendBuffer(void);
-void R_ReloadSpriteFrameCache(void);
 
 #define SPRITE_BINDLESS_ENABLED				1
 #define SPRITE_GBUFFER_ENABLED				2

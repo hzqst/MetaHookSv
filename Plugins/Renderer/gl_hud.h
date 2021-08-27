@@ -103,11 +103,6 @@ typedef struct
 typedef struct
 {
 	int program;
-}depth_linearize_msaa_program_t;
-
-typedef struct
-{
-	int program;
 }depth_clear_program_t;
 
 typedef struct
@@ -171,16 +166,18 @@ extern SHADER_DEFINE(depth_clear);
 extern SHADER_DEFINE(oitbuffer_clear);
 extern SHADER_DEFINE(blit_oitblend);
 
+void R_BlendOITBuffer(void);
+void R_ClearOITBuffer(void);
 void R_BeginFXAA(int w, int h);
 void R_LinearizeDepth(FBO_Container_t *src);
-void R_DoSSAO(void);
+void R_AmbientOcclusion(void);
+bool R_IsSSAOEnabled(void);
 void R_DoHDR(void);
 void R_DoFXAA(void);
-void R_BlitToScreen(FBO_Container_t *src);
-void R_BlitToFBO(FBO_Container_t *src, FBO_Container_t *dst);
+void GL_BlitToScreen(FBO_Container_t *src);
+void GL_BlitToFrameBuffer(FBO_Container_t *src, FBO_Container_t *dst);
 void R_DrawHUDQuad(int w, int h);
 void R_DrawHUDQuad_Texture(int tex, int w, int h);
-void R_DrawHUDQuadFrustum(int w, int h);
 
 #define HUD_DEBUG_TEXARRAY 1
 

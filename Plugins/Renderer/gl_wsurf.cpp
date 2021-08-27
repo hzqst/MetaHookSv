@@ -1499,7 +1499,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 	bool bUseZPrePasss = false;
 
 	//This only applies to world rendering
-	if(modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value)
+	if (modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value)
 	{
 		//Sky surface uses stencil = 1
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
@@ -1552,12 +1552,19 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 		glActiveTexture(GL_TEXTURE0);
 	}
 
-	//Static texchain always use stencil = 0
-	if(r_draw_opaque)
+	//Brush surfaces always use stencil = 0
+	if (r_draw_opaque)
+	{
+		glEnable(GL_STENCIL_TEST);
+		glStencilMask(0xFF);
 		glStencilFunc(GL_ALWAYS, 0, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	}
 
 	if (bUseZPrePasss)
+	{
 		glDepthFunc(GL_EQUAL);
+	}
 
 	R_DrawWSurfVBOStatic(modcache);
 	R_DrawWSurfVBOAnim(modcache);
@@ -1654,27 +1661,25 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 	//This only applies to world rendering, clear depth for sky surface
 	if (modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value)
 	{
-		//Overwrite sky surface (stencil = 1) with initial depth
+		//Overwrite sky surface (stencil = 1) with initial depth (depth = 1)
 
-		GL_Begin2D();
+		GL_BeginFullScreenQuad(true);
 
-		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_ALWAYS);
-		glStencilMask(1);
 		glColorMask(0, 0, 0, 0);
+
 		glStencilFunc(GL_EQUAL, 1, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 		GL_UseProgram(depth_clear.program);
-		R_DrawHUDQuad(glwidth, glheight);
+
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 
 		glStencilFunc(GL_ALWAYS, 0, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-		glStencilMask(0xFF);
-		glColorMask(1, 1, 1, 1);
-		glDepthFunc(GL_LEQUAL);
 
-		GL_End2D();
+		glColorMask(1, 1, 1, 1);
+
+		GL_EndFullScreenQuad();
 	}
 
 	GL_UseProgram(0);
@@ -3357,14 +3362,6 @@ skip_marklight:
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
-	if (r_draw_opaque)
-	{
-		//glEnable(GL_STENCIL_TEST);
-		//glStencilMask(0xFF);
-		glStencilFunc(GL_ALWAYS, 0, 0xFF);
-		//glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	}
-
 	R_SetRenderMode(e);
 
 	if ((*currententity)->curstate.rendermode == kRenderTransColor)
@@ -3401,11 +3398,8 @@ skip_marklight:
 	glAlphaFunc(GL_NOTEQUAL, 0);
 	glDisable(GL_BLEND);
 
-	glStencilMask(0);
-	glEnable(GL_STENCIL_TEST);
-
-	//Restore matrix
-	memcpy(r_entity_matrix, r_identity_matrix, sizeof(r_entity_matrix));
+	//No stencil write later
+	glDisable(GL_STENCIL_TEST);
 }
 
 void R_SetupSceneUBO(void)
@@ -3423,6 +3417,10 @@ void R_SetupSceneUBO(void)
 	SceneUBO.viewport[1] = glheight;
 	SceneUBO.viewport[2] = MAX_NUM_NODES * glwidth * glheight;
 	SceneUBO.viewport[3] = 0;
+	memcpy(SceneUBO.frustumpos[0], r_frustum_origin[0], sizeof(vec3_t));
+	memcpy(SceneUBO.frustumpos[1], r_frustum_origin[1], sizeof(vec3_t));
+	memcpy(SceneUBO.frustumpos[2], r_frustum_origin[2], sizeof(vec3_t));
+	memcpy(SceneUBO.frustumpos[3], r_frustum_origin[3], sizeof(vec3_t));
 	memcpy(SceneUBO.viewpos, r_refdef->vieworg, sizeof(vec3_t));
 	memcpy(SceneUBO.vpn, vpn, sizeof(vec3_t));
 	memcpy(SceneUBO.vright, vright, sizeof(vec3_t));
@@ -3585,6 +3583,5 @@ skip_world:
 	GL_DisableMultitexture();
 
 	//No stencil write later
-	glStencilMask(0);
 	glDisable(GL_STENCIL_TEST);
 }

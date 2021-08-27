@@ -459,6 +459,30 @@ void GL_FrameBufferColorTextureOITBlend(FBO_Container_t *s)
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, s->s_hBackBufferTex2, 0);
 }
 
+void GL_BeginFullScreenQuad(bool enableDepthTest)
+{
+	if (enableDepthTest)
+	{
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_ALWAYS);
+	}
+	else
+	{
+		glDisable(GL_DEPTH_TEST);
+	}
+	glDisable(GL_CULL_FACE);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+void GL_EndFullScreenQuad(void)
+{
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+}
+
 void GL_Begin2D(void)
 {
 	glViewport(glx, gly, glwidth, glheight);

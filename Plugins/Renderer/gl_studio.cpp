@@ -873,7 +873,6 @@ void R_GLStudioDrawPoints(void)
 
 	if (r_draw_opaque)
 	{
-		glStencilMask(0);
 		glDisable(GL_STENCIL_TEST);
 	}
 

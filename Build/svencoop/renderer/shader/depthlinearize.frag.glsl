@@ -2,12 +2,7 @@
 
 layout(location=0) uniform vec4 clipInfo;
 
-#if DEPTHLINEARIZE_MSAA
-layout(location=1) uniform int sampleIndex;
-layout(binding=0)  uniform sampler2DMS inputTexture;
-#else
 layout(binding=0)  uniform sampler2D inputTexture;
-#endif
 
 layout(location=0,index=0) out float out_Color;
 
