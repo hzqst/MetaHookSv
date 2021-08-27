@@ -2838,6 +2838,13 @@ void R_FillAddress(void)
 		gRefFuncs.R_BeamDrawList = (decltype(gRefFuncs.R_BeamDrawList))GetCallAddress(addr + 11);
 	}
 
+	if (1)
+	{
+#define DEVOVERVIEW_SIG "\x83\xEC\x30\xDD\x5C\x24\x2A\xD9\x05"
+		addr = (DWORD)Search_Pattern(DEVOVERVIEW_SIG);
+		Sig_AddrNotFound(gDevOverview);
+		gDevOverview = *(decltype(gDevOverview) *)(addr + 9);
+	}
 	//Allocate 32bytes instead of 28 bytes for mspriteframe_t
 #if 0
 	if (g_iEngineType == ENGINE_SVENGINE)
