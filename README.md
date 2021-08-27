@@ -122,6 +122,12 @@ This plugin can block studio-event sound spamming with controllable cvars.
 
 ![](/img/8.png)
 
+### StudioEvents
+
+This plugin intercepts original snapshot command and replace it with ISteamScreenshots interface which will upload the snapshot to Steam Screenshot Manager.
+
+[DOCUMENTATION](StudioEvents.md) [中文文档](StudioEventsCN.md)
+
 ### HUDColor (third-party) (SvEngine only)
 
 This plugin basically changes HUD colors in game.
