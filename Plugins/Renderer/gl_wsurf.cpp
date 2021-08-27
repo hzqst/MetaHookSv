@@ -972,20 +972,6 @@ void R_GenerateSceneUBO(void)
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hDecalSSBO);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * MAX_DECALS, NULL, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-#if 0
-	r_wsurf.hSpriteFramesSSBO = GL_GenBuffer();
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hSpriteFramesSSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(spriteframe_ssbo_t) * MAX_SPRITE_FRAMES, NULL, GL_STATIC_DRAW);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-	for (int i = 0; i < kRenderTransAdd + 1; ++i)
-	{
-		r_wsurf.hSpriteEntriesSSBO[i] = GL_GenBuffer();
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hSpriteEntriesSSBO[i]);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(spriteentry_ssbo_t) * MAX_SPRITE_ENTRIES, NULL, GL_DYNAMIC_DRAW);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-	}
-#endif
 
 	if (bUseOITBlend)
 	{
