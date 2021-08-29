@@ -232,6 +232,29 @@ GLuint GL_GenDepthTexture(int w, int h)
 	return texid;
 }
 
+void GL_UploadDepthStencilTexture(int texId, int w, int h)
+{
+	glBindTexture(GL_TEXTURE_2D, texId);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	//glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);???
+
+	//glTexStorage2D doesnt work with qglCopyTexImage2D so we use glTexImage2D here
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH24_STENCIL8, w, h);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+GLuint GL_GenDepthStencilTexture(int w, int h)
+{
+	GLuint texid = GL_GenTexture();
+	GL_UploadDepthStencilTexture(texid, w, h);
+	return texid;
+}
+
 void GL_UploadShadowTexture(int texid, int w, int h)
 {
 	glBindTexture(GL_TEXTURE_2D, texid);
@@ -300,11 +323,11 @@ void GL_RenderBufferStorage(FBO_Container_t *s, int type, GLuint iInternalFormat
 	glRenderbufferStorageEXT(GL_RENDERBUFFER, iInternalFormat, s->iWidth, s->iHeight);
 
 	if (type == 2)
-		glFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, s->s_hBackBufferDB);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, s->s_hBackBufferDB);
 	else if (type == 1)
-		glFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, s->s_hBackBufferDB);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, s->s_hBackBufferDB);
 	else if (type == 0)
-		glFramebufferRenderbufferEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, s->s_hBackBufferCB);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, s->s_hBackBufferCB);
 }
 
 void GL_FrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat)
@@ -357,7 +380,7 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 			glTexImage2D(tex2D, 0, iInternalFormat, s->iWidth, s->iHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 	}
 
-	if (iInternalFormat == GL_DEPTH24_STENCIL8 || iInternalFormat == GL_DEPTH24_STENCIL8_EXT)
+	if (iInternalFormat == GL_DEPTH24_STENCIL8)
 	{
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, s->s_hBackBufferDepthTex, 0);
 	}
@@ -368,7 +391,9 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 
 	glBindTexture(tex2D, 0);
 
-	if (iInternalFormat == GL_DEPTH24_STENCIL8 || iInternalFormat == GL_DEPTH24_STENCIL8_EXT)
+	s->iTextureDepthFormat = iInternalFormat;
+
+	if (iInternalFormat == GL_DEPTH24_STENCIL8)
 	{
 		s->s_hBackBufferStencilView = GL_GenTexture();
 		glTextureView(s->s_hBackBufferStencilView, tex2D, s->s_hBackBufferDepthTex, GL_DEPTH24_STENCIL8, 0, 1, 0, 1);
@@ -418,8 +443,8 @@ void GL_FrameBufferColorTextureHBAO(FBO_Container_t *s)
 
 	s->iTextureColorFormat = GL_RG16F;
 
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s->s_hBackBufferTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, s->s_hBackBufferTex2, 0);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, s->s_hBackBufferTex, 0);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, s->s_hBackBufferTex2, 0);
 }
 
 void GL_FrameBufferColorTextureDeferred(FBO_Container_t *s, int iInternalColorFormat)
@@ -455,8 +480,8 @@ void GL_FrameBufferColorTextureOITBlend(FBO_Container_t *s)
 
 	s->iTextureColorFormat = GL_RGBA16F;
 
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s->s_hBackBufferTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, s->s_hBackBufferTex2, 0);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, s->s_hBackBufferTex, 0);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, s->s_hBackBufferTex2, 0);
 }
 
 void GL_BeginFullScreenQuad(bool enableDepthTest)

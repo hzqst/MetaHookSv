@@ -219,11 +219,13 @@ typedef struct scene_ubo_s
 	float fogStart;
 	float fogEnd;
 	float time;
-	float r_g1;
+	float r_g;
 	float r_g3;
 	float v_brightness;
 	float v_lightgamma;
 	float v_lambert;
+	float v_gamma;
+	float v_texgamma;
 }scene_ubo_t;
 
 typedef struct entity_ubo_s
@@ -269,13 +271,6 @@ typedef struct r_worldsurf_s
 		hSceneUBO = 0;
 		hDecalVBO = 0;
 		hDecalSSBO = 0;
-		/*hSpriteFramesSSBO = 0;
-		hSpriteEntriesSSBO[0] = 0;
-		hSpriteEntriesSSBO[1] = 0;
-		hSpriteEntriesSSBO[2] = 0;
-		hSpriteEntriesSSBO[3] = 0;
-		hSpriteEntriesSSBO[4] = 0;
-		hSpriteEntriesSSBO[5] = 0;*/
 		hOITFragmentSSBO = 0;
 		hOITNumFragmentSSBO = 0;
 		hOITAtomicSSBO = 0;
@@ -288,8 +283,6 @@ typedef struct r_worldsurf_s
 		bParallaxTexture = false;
 		bSpecularTexture = false;
 
-		pCurrentModel = NULL;
-
 		iNumLightmapTextures = 0;
 		iLightmapTextureArray = 0;
 	}
@@ -298,8 +291,6 @@ typedef struct r_worldsurf_s
 	GLuint				hSceneUBO;
 	GLuint				hDecalVBO;
 	GLuint				hDecalSSBO;
-	//GLuint				hSpriteFramesSSBO;
-	//GLuint				hSpriteEntriesSSBO[kRenderTransAdd + 1];
 	GLuint				hOITFragmentSSBO;
 	GLuint				hOITNumFragmentSSBO;
 	GLuint				hOITAtomicSSBO;
@@ -315,9 +306,6 @@ typedef struct r_worldsurf_s
 	bool				bParallaxTexture;
 	bool				bSpecularTexture;
 
-	wsurf_vbo_t			*pCurrentModel;
-	water_vbo_t			*pCurrentWater;
-
 	int					iNumLightmapTextures;
 	int					iLightmapTextureArray;
 
@@ -327,7 +315,6 @@ typedef struct r_worldsurf_s
 	std::vector <GLuint64> vDecalGLTextureHandles;
 	std::vector <GLint> vDecalStartIndex;
 	std::vector <GLsizei> vDecalVertexCount;
-	std::vector<spriteframe_ssbo_t> vSpriteFrameSSBO;
 }r_worldsurf_t;
 
 typedef struct

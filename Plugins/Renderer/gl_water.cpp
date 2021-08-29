@@ -1,8 +1,6 @@
 #include "gl_local.h"
 #include <sstream>
 
-GLuint refractmap = 0;
-GLuint depthrefrmap = 0;
 GLuint64 refractmap_handle = 0;
 GLuint64 depthrefrmap_handle = 0;
 bool refractmap_ready = false;
@@ -16,6 +14,8 @@ cvar_t *r_water = NULL;
 cvar_t *r_water_debug = NULL;
 
 std::vector<water_vbo_t *> g_WaterVBOCache;
+water_vbo_t *g_RenderWaterVBOCache[512];
+int g_iNumRenderWaterVBOCache = 0;
 
 std::unordered_map<int, water_program_t> g_WaterProgramTable;
 
@@ -96,19 +96,6 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 
 void R_FreeWater(void)
 {
-	if (refractmap)
-	{
-		GL_DeleteTexture(refractmap);
-		refractmap = 0;
-		refractmap_handle = 0;
-	}
-	if (depthrefrmap)
-	{
-		GL_DeleteTexture(depthrefrmap);
-		depthrefrmap = 0;
-		depthrefrmap_handle = 0;
-	}
-
 	g_WaterProgramTable.clear();
 }
 
@@ -116,32 +103,6 @@ void R_InitWater(void)
 {
 	r_water = gEngfuncs.pfnRegisterVariable("r_water", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_debug = gEngfuncs.pfnRegisterVariable("r_water_debug", "0", FCVAR_CLIENTDLL);
-
-	if (!refractmap)
-	{
-		refractmap = GL_GenTextureRGBA8(glwidth, glheight);
-
-		if (bUseBindless)
-		{
-			auto handle = glGetTextureHandleARB(refractmap);
-			glMakeTextureHandleResidentARB(handle);
-
-			refractmap_handle = handle;
-		}
-	}
-
-	if (!depthrefrmap)
-	{
-		depthrefrmap = GL_GenDepthTexture(glwidth, glheight);
-
-		if (bUseBindless)
-		{
-			auto handle = glGetTextureHandleARB(depthrefrmap);
-			glMakeTextureHandleResidentARB(handle);
-
-			depthrefrmap_handle = handle;
-		}
-	}
 }
 
 void R_NewMapWater(void)
@@ -171,10 +132,10 @@ void R_NewMapWater(void)
 	g_WaterVBOCache.clear();
 }
 
-bool R_IsAboveWater(float *v, float *n)
+bool R_IsAboveWater(water_vbo_t *water)
 {
 	float org[4] = { r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1 };
-	float equation[4] = { curwater->normal[0], curwater->normal[1], curwater->normal[2], -curwater->plane };
+	float equation[4] = { water->normal[0], water->normal[1], water->normal[2], -water->plane };
 	return DotProduct4(org, equation) > 0;
 }
 
@@ -270,7 +231,7 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf)
 			VBOCache->ent = ent;
 			VBOCache->texture = surf->texinfo->texture;
 
-			VBOCache->depthreflmap = GL_GenDepthTexture(glwidth, glheight);
+			VBOCache->depthreflmap = GL_GenDepthStencilTexture(glwidth, glheight);
 			VBOCache->reflectmap = GL_GenTextureRGBA8(glwidth, glheight);
 
 			if (bUseBindless)
@@ -287,6 +248,22 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf)
 				glMakeTextureHandleResidentARB(handle);
 
 				VBOCache->reflectmap_handle = handle;
+			}
+
+			if (bUseBindless && !refractmap_handle)
+			{
+				auto handle = glGetTextureHandleARB(s_WaterFBO.s_hBackBufferTex);
+				glMakeTextureHandleResidentARB(handle);
+
+				refractmap_handle = handle;
+			}
+
+			if (bUseBindless && !depthrefrmap_handle)
+			{
+				auto handle = glGetTextureHandleARB(s_WaterFBO.s_hBackBufferDepthTex);
+				glMakeTextureHandleResidentARB(handle);
+
+				depthrefrmap_handle = handle;
 			}
 
 			VBOCache->hEBO = GL_GenBuffer();
@@ -386,14 +363,11 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf)
 
 void R_RenderReflectView(water_vbo_t *w)
 {
+	curwater = w;
 	r_draw_pass = r_draw_reflect;
 
-	s_WaterFBO.s_hBackBufferTex = w->reflectmap;
-	s_WaterFBO.s_hBackBufferDepthTex = w->depthreflmap;
-
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferDepthTex, 0);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, w->reflectmap, 0);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, w->depthreflmap, 0);
 
 	glClearColor(w->color.r / 255.0f, w->color.g / 255.0f, w->color.b / 255.0f, 1);
 	glStencilMask(0xFF);
@@ -448,6 +422,7 @@ void R_RenderReflectView(water_vbo_t *w)
 	R_PopRefDef();
 
 	r_draw_pass = r_draw_normal;
+	curwater = NULL;
 }
 
 void R_RenderWaterView(void)
@@ -456,18 +431,13 @@ void R_RenderWaterView(void)
 
 	if (g_WaterVBOCache.size())
 	{
-		glBindFramebuffer(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
-
+		glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 		for (size_t i = 0; i < g_WaterVBOCache.size(); ++i)
 		{
-			curwater = g_WaterVBOCache[i];
-
-			if (R_IsAboveWater(curwater->vert, curwater->normal) && curwater->framecount >= (*r_framecount) - 10)
+			if (R_IsAboveWater(g_WaterVBOCache[i]) && g_WaterVBOCache[i]->framecount >= (*r_framecount) - 10)
 			{
-				R_RenderReflectView(curwater);
+				R_RenderReflectView(g_WaterVBOCache[i]);
 			}
-
-			curwater = NULL;
 		}
 	}
 }

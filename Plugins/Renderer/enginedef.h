@@ -550,3 +550,11 @@ typedef struct cvar_callback_entry_s
 	cvar_t *pcvar;
 	struct cvar_callback_entry_s *next;
 }cvar_callback_entry_t;
+
+typedef struct overviewInfo_s
+{
+	vec3_t origin;
+	float z_min, z_max;
+	float zoom;
+	qboolean rotated;
+}overviewInfo_t;

@@ -30,6 +30,7 @@ int (*chromeage)[MAXSTUDIOBONES];
 cl_entity_t *cl_viewent;
 int *g_ForcedFaceFlags;
 int *lightgammatable;
+byte *texgammatable;
 float *g_ChromeOrigin;
 int *r_ambientlight;
 float *r_shadelight;
@@ -583,8 +584,8 @@ void R_EnableStudioVBO(studio_vbo_t *VBOData)
 
 		//bind ubo
 
-		glBindBuffer(GL_ARRAY_BUFFER_ARB, VBOData->hVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, VBOData->hEBO);
+		glBindBuffer(GL_ARRAY_BUFFER, VBOData->hVBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOData->hEBO);
 		glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_STUDIO_UBO, VBOData->hStudioUBO);
 
 		glEnableVertexAttribArray(0);
@@ -604,8 +605,8 @@ void R_EnableStudioVBO(studio_vbo_t *VBOData)
 		glDisableVertexAttribArray(2);
 		glDisableVertexAttribArray(3);
 
-		glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	}
 }
 

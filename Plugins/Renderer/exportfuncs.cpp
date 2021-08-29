@@ -155,14 +155,7 @@ void HUD_DrawNormalTriangles(void)
 
 	//Restore current framebuffer just in case that Sven-Coop client changes it
 	
-	if (r_draw_pass == r_draw_reflect)
-	{
-		glBindFramebuffer(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
-	}
-	else
-	{
-		glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-	}
+	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 }
 
 void HUD_DrawTransparentTriangles(void)
@@ -186,7 +179,7 @@ int HUD_Redraw(float time, int intermission)
 			R_DrawHUDQuad_Texture(g_WaterVBOCache[0]->reflectmap, glwidth / 2, glheight / 2);
 			break;
 		case 2:
-			R_DrawHUDQuad_Texture(refractmap, glwidth / 2, glheight / 2);
+			R_DrawHUDQuad_Texture(s_WaterFBO.s_hBackBufferTex, glwidth / 2, glheight / 2);
 			break;
 		default:
 			break;

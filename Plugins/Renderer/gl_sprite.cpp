@@ -5,9 +5,6 @@
 std::unordered_map<int, sprite_program_t> g_SpriteProgramTable;
 std::unordered_map<int, legacysprite_program_t> g_LegacySpriteProgramTable;
 
-spriteentry_ssbo_t g_SpriteEntry[kRenderTransAdd + 1][512];
-int g_iNumSpriteEntries[kRenderTransAdd + 1];
-
 int r_sprite_drawcall = 0;
 int r_sprite_polys = 0;
 
@@ -232,8 +229,8 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 			glDepthMask(0);
 			glEnable(GL_BLEND);
-			glBlendFunc(GL_TEXTURE_ENV, GL_ONE_MINUS_SRC_ALPHA);
-			R_SetGBufferBlend(GL_TEXTURE_ENV, GL_ONE_MINUS_SRC_ALPHA);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 			if (r_draw_oitblend)
 				SpriteProgramState |= SPRITE_OIT_ALPHA_BLEND_ENABLED;
@@ -290,8 +287,8 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 			
 			glDepthMask(0);
 			glEnable(GL_BLEND);
-			glBlendFunc(GL_TEXTURE_ENV, GL_ONE_MINUS_SRC_ALPHA);
-			R_SetGBufferBlend(GL_TEXTURE_ENV, GL_ONE_MINUS_SRC_ALPHA);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 			if (r_draw_oitblend)
 				SpriteProgramState |= SPRITE_OIT_ALPHA_BLEND_ENABLED;
@@ -309,8 +306,8 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 			glDepthMask(0);
 			glEnable(GL_BLEND);
-			glBlendFunc(GL_TEXTURE_ENV, GL_ONE_MINUS_SRC_ALPHA);
-			R_SetGBufferBlend(GL_TEXTURE_ENV, GL_ONE_MINUS_SRC_ALPHA);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 			if (r_draw_oitblend)
 				SpriteProgramState |= SPRITE_OIT_ALPHA_BLEND_ENABLED;
@@ -403,5 +400,4 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 		glDisable(GL_BLEND);
 		glEnable(GL_DEPTH_TEST);
 	}
-
 }

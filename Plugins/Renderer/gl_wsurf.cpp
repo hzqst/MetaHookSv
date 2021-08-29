@@ -1064,64 +1064,6 @@ wsurf_vbo_t *R_PrepareWSurfVBO(model_t *mod)
 	return modcache;
 }
 
-void R_EnableWSurfVBO(wsurf_vbo_t *modcache)
-{
-	if (r_wsurf.pCurrentModel == modcache)
-		return;
-
-	r_wsurf.pCurrentModel = modcache;
-
-	if (modcache)
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hSceneVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modcache->hEBO);
-		glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_ENTITY_UBO, modcache->hEntityUBO);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_TEXTURE_SSBO, modcache->hTextureSSBO);
-
-		glEnableVertexAttribArray(0);
-		glEnableVertexAttribArray(1);
-		glEnableVertexAttribArray(2);
-		glEnableVertexAttribArray(3);
-		glEnableVertexAttribArray(4);
-		glEnableVertexAttribArray(5);
-		glEnableVertexAttribArray(6);
-		glEnableVertexAttribArray(7);
-		glEnableVertexAttribArray(8);
-		glEnableVertexAttribArray(9);
-
-		glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
-		glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
-		glVertexAttribPointer(2, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, s_tangent));
-		glVertexAttribPointer(3, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, t_tangent));
-		glVertexAttribPointer(4, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
-		glVertexAttribPointer(5, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, lightmaptexcoord));
-		glVertexAttribPointer(6, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, detailtexcoord));
-		glVertexAttribPointer(7, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normaltexcoord));
-		glVertexAttribPointer(8, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, parallaxtexcoord));
-		glVertexAttribPointer(9, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, speculartexcoord));
-
-		glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-	}
-	else
-	{
-		glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-
-		glDisableVertexAttribArray(0);
-		glDisableVertexAttribArray(1);
-		glDisableVertexAttribArray(2);
-		glDisableVertexAttribArray(3);
-		glDisableVertexAttribArray(4);
-		glDisableVertexAttribArray(5);
-		glDisableVertexAttribArray(6);
-		glDisableVertexAttribArray(7);
-		glDisableVertexAttribArray(8);
-		glDisableVertexAttribArray(9);
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-	}
-}
-
 void R_DrawWSurfVBOSolid(wsurf_vbo_t *modcache)
 {
 	auto &drawBatches = modcache->vDrawBatch[WSURF_DRAWBATCH_SOLID];
@@ -1496,6 +1438,37 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 
 	glNamedBufferSubData(modcache->hEntityUBO, 0, sizeof(EntityUBO), &EntityUBO);
 
+	//Begin WorldSurface Rendering
+
+	glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hSceneVBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modcache->hEBO);
+	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_ENTITY_UBO, modcache->hEntityUBO);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_TEXTURE_SSBO, modcache->hTextureSSBO);
+
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(3);
+	glEnableVertexAttribArray(4);
+	glEnableVertexAttribArray(5);
+	glEnableVertexAttribArray(6);
+	glEnableVertexAttribArray(7);
+	glEnableVertexAttribArray(8);
+	glEnableVertexAttribArray(9);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
+	glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
+	glVertexAttribPointer(2, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, s_tangent));
+	glVertexAttribPointer(3, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, t_tangent));
+	glVertexAttribPointer(4, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
+	glVertexAttribPointer(5, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, lightmaptexcoord));
+	glVertexAttribPointer(6, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, detailtexcoord));
+	glVertexAttribPointer(7, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normaltexcoord));
+	glVertexAttribPointer(8, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, parallaxtexcoord));
+	glVertexAttribPointer(9, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, speculartexcoord));
+
+	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+
 	bool bUseZPrePasss = false;
 
 	//This only applies to world rendering
@@ -1569,24 +1542,64 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 	R_DrawWSurfVBOStatic(modcache);
 	R_DrawWSurfVBOAnim(modcache);
 
-	//Prepare to collect decals
+	//This only applies to world rendering, clear depth for sky surface
+	if (modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value)
+	{
+		//Overwrite sky surface (stencil = 1) with initial depth (depth = 1)
+
+		GL_BeginFullScreenQuad(true);
+		glDisable(GL_BLEND);
+		glDisable(GL_ALPHA_TEST);
+
+		glColorMask(0, 0, 0, 0);
+
+		glStencilFunc(GL_EQUAL, 1, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+		GL_UseProgram(depth_clear.program);
+
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
+		glStencilFunc(GL_ALWAYS, 0, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+		glColorMask(1, 1, 1, 1);
+
+		GL_EndFullScreenQuad();
+	}
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
+	glDisableVertexAttribArray(3);
+	glDisableVertexAttribArray(4);
+	glDisableVertexAttribArray(5);
+	glDisableVertexAttribArray(6);
+	glDisableVertexAttribArray(7);
+	glDisableVertexAttribArray(8);
+	glDisableVertexAttribArray(9);
+
+	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+
+	if (bUseZPrePasss)
+	{
+		glDepthFunc(GL_LEQUAL);
+	}
+
+	//End WorldSurface Rendering
+
+	//Collect decals and waters
+
 	(*gDecalSurfCount) = 0;
 
-	//No draw, collect waterchain and decals
 	if (modcache->pModel == r_worldmodel)
 	{
+		(*currententity) = r_worldentity;
+
 		R_RecursiveWorldNodeVBO(r_worldmodel->nodes);
-
-		(*currententity) = gEngfuncs.GetEntityByIndex(0);
-
-		if ((*waterchain))
-		{
-			for (auto s = (*waterchain); s; s = s->texturechain)
-			{
-				EmitWaterPolys(s, 0);
-			}
-			(*waterchain) = 0;
-		}
 	}
 	else
 	{
@@ -1615,7 +1628,6 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 				}
 				else
 				{
-					//No draw, collect decals
 					R_DrawSequentialPolyVBO(psurf);
 				}
 			}
@@ -1629,14 +1641,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 		}
 	}
 
-	//World, Entity paints decals here
-
-	if (bUseZPrePasss)
-		glDepthFunc(GL_LEQUAL);
-
 	R_DrawDecals();
-
-	R_DrawWaters();
 
 	if (r_wsurf.bShadowmapTexture)
 	{
@@ -1658,29 +1663,8 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 		glActiveTexture(GL_TEXTURE0);
 	}
 
-	//This only applies to world rendering, clear depth for sky surface
-	if (modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value)
-	{
-		//Overwrite sky surface (stencil = 1) with initial depth (depth = 1)
-
-		GL_BeginFullScreenQuad(true);
-
-		glColorMask(0, 0, 0, 0);
-
-		glStencilFunc(GL_EQUAL, 1, 0xFF);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-
-		GL_UseProgram(depth_clear.program);
-
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-
-		glStencilFunc(GL_ALWAYS, 0, 0xFF);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-
-		glColorMask(1, 1, 1, 1);
-
-		GL_EndFullScreenQuad();
-	}
+	//Waters don't have lightmap textures
+	R_DrawWaters();
 
 	GL_UseProgram(0);
 }
@@ -1703,7 +1687,6 @@ void R_InitWSurf(void)
 	r_wsurf.bDetailTexture = false;
 	r_wsurf.bNormalTexture = false;
 	r_wsurf.bParallaxTexture = false;
-	r_wsurf.pCurrentModel = NULL;
 	r_wsurf.iNumLightmapTextures = 0;
 	r_wsurf.iLightmapTextureArray = 0;
 
@@ -3252,13 +3235,14 @@ void R_RecursiveWorldNodeVBO(mnode_t *node)
 
 			if (surf->flags & SURF_DRAWSKY)
 			{
-				surf->texturechain = (*skychain);
-				(*skychain) = surf;
+				//surf->texturechain = (*skychain);
+				//(*skychain) = surf;
 			}
 			else if (surf->flags & SURF_DRAWTURB)
 			{
-				surf->texturechain = (*waterchain);
-				(*waterchain) = surf;
+				//surf->texturechain = (*waterchain);
+				//(*waterchain) = surf;
+				EmitWaterPolys(surf, 0);
 			}
 			else
 			{
@@ -3387,11 +3371,7 @@ skip_marklight:
 
 	auto modcache = R_PrepareWSurfVBO(clmodel);
 
-	R_EnableWSurfVBO(modcache);
-
 	R_DrawWSurfVBO(modcache, e);
-
-	R_EnableWSurfVBO(NULL);
 
 	glDepthMask(1);
 	glDisable(GL_ALPHA_TEST);
@@ -3454,11 +3434,13 @@ void R_SetupSceneUBO(void)
 	else
 		r_g3 = 0.125f - (v_brightness->value * v_brightness->value) * 0.075f;
 
-	SceneUBO.r_g1 = r_g;
+	SceneUBO.r_g = r_g;
 	SceneUBO.r_g3 = r_g3;
 	SceneUBO.v_brightness = v_brightness->value;
 	SceneUBO.v_lightgamma = v_lightgamma->value;
 	SceneUBO.v_lambert = v_lambert->value;
+	SceneUBO.v_gamma = v_gamma->value;
+	SceneUBO.v_texgamma = v_texgamma->value;
 
 	glNamedBufferSubData(r_wsurf.hSceneUBO, 0, sizeof(SceneUBO), &SceneUBO);
 }
@@ -3466,17 +3448,15 @@ void R_SetupSceneUBO(void)
 void R_DrawWorld(void)
 {
 	r_draw_opaque = true;
-	r_draw_oitblend = false;
-	(*numTransObjs) = 0;
-
-	for (int i = 0; i < kRenderTransAdd + 1; ++i)
-	{
-		g_iNumSpriteEntries[i] = 0;
-	}
 
 	InvertMatrix(r_world_matrix, r_world_matrix_inv);
 	InvertMatrix(r_projection_matrix, r_proj_matrix_inv);
+
 	memcpy(r_entity_matrix, r_identity_matrix, sizeof(r_entity_matrix));
+	r_entity_color[0] = 1;
+	r_entity_color[1] = 1;
+	r_entity_color[2] = 1;
+	r_entity_color[3] = 1;
 
 	R_BeginRenderGBuffer();
 
@@ -3572,11 +3552,7 @@ void R_DrawWorld(void)
 
 	auto modcache = R_PrepareWSurfVBO(r_worldmodel);
 
-	R_EnableWSurfVBO(modcache);
-
 	R_DrawWSurfVBO(modcache, (*currententity));
-
-	R_EnableWSurfVBO(NULL);
 
 skip_world:
 

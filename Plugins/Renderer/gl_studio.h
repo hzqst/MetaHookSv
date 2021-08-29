@@ -122,6 +122,7 @@ extern int(*chrome)[MAXSTUDIOVERTS][2];
 extern cl_entity_t *cl_viewent;
 extern int *g_ForcedFaceFlags;
 extern int *lightgammatable;
+extern byte *texgammatable;
 extern float *g_ChromeOrigin;
 extern int *r_ambientlight;
 extern float *r_shadelight;

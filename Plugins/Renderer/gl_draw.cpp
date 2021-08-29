@@ -977,3 +977,19 @@ int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *hei
 	gEngfuncs.Con_Printf("R_LoadTextureEx: Cannot load texture %s.\n", filepath);
 	return 0;
 }
+
+void BuildGammaTable(float g)
+{
+	gRefFuncs.BuildGammaTable(g);
+
+	//Gamma Space -> Texture Gamma Space, pow(color, texgamma / gamma)
+	for (int i = 0; i < 256; i++)
+	{
+		texgammatable[i] = i;
+	}
+
+	for (int i = 0; i < 1024; i++)
+	{
+		lightgammatable[i] = i;//Remove Gamma Correction, SRGB to linear space
+	}
+}

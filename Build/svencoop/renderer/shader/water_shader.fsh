@@ -17,7 +17,6 @@ layout(binding = 4) uniform sampler2D refractTex;
 layout(binding = 5) uniform sampler2D depthTex;
 #endif
 
-
 in vec4 v_projpos;
 in vec3 v_worldpos;
 in vec3 v_normal;
@@ -48,6 +47,9 @@ void main()
 	vec4 vFinalColor = vec4(0.0);
 	float flWaterColorAlpha = clamp(u_watercolor.a, 0.0, 1.0);
 	vec4 vWaterColor = vec4(u_watercolor.xyz, 1.0);
+
+	vWaterColor = GammaToLinear(vWaterColor);
+
 	vec3 vNormal = normalize(v_normal);
 
 #ifdef LEGACY_ENABLED
@@ -58,6 +60,9 @@ void main()
 
 	vFinalColor.xyz = texture2D(baseTex, v_diffusetexcoord.xy).xyz;
 	vFinalColor.a = flWaterColorAlpha;
+
+	//The basetexture of water is in TexGamme Space and will need to convert to Linear Space
+	vFinalColor = TexGammaToLinear(vFinalColor);
 
 #else
 
@@ -138,10 +143,10 @@ void main()
 		vec4 vReflectColor = texture2D(reflectTex, vReflectTexCoord);
 		vReflectColor.a = 1.0;
 
-		if(vReflectColor.x == u_watercolor.x && vReflectColor.y == u_watercolor.y && vReflectColor.z == u_watercolor.z)
+		/*if(vReflectColor.x == u_watercolor.x && vReflectColor.y == u_watercolor.y && vReflectColor.z == u_watercolor.z)
 		{
 			vReflectColor = u_watercolor;
-		}
+		}*/
 
 		float flRefractFactor = clamp(flFresnel * u_fresnelfactor, 0.0, 1.0);
 

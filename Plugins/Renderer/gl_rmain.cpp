@@ -41,7 +41,7 @@ float *r_world_matrix;
 float *r_projection_matrix;
 float *gWorldToScreen;
 float *gScreenToWorld;
-float *gDevOverview;
+overviewInfo_t *gDevOverview;
 mplane_t *frustum;
 
 int *g_bUserFogOn;
@@ -71,6 +71,7 @@ int(*rtable)[20][20];
 model_t *mod_known = NULL;
 int *mod_numknown = NULL;
 
+int gl_max_ubo_size = 0;
 int gl_max_texture_size = 0;
 float gl_max_ansio = 0;
 GLuint gl_color_format = 0;
@@ -102,7 +103,6 @@ int gly = 0;
 int glwidth = 0;
 int glheight = 0;
 
-//FBO_Container_t s_MSAAFBO;
 FBO_Container_t s_GBufferFBO;
 FBO_Container_t s_BackBufferFBO;
 FBO_Container_t s_BackBufferFBO2;
@@ -1072,6 +1072,8 @@ void GL_GenerateFrameBuffers(void)
 	s_WaterFBO.iWidth = glwidth;
 	s_WaterFBO.iHeight = glheight;
 	GL_GenFrameBuffer(&s_WaterFBO);
+	GL_FrameBufferColorTexture(&s_WaterFBO, gl_color_format);
+	GL_FrameBufferDepthTexture(&s_WaterFBO, GL_DEPTH24_STENCIL8);
 
 	//DownSample FBO 1->1/4->1/16
 	int downW, downH;
@@ -1241,18 +1243,6 @@ void GL_Init(void)
 		return;
 	}
 
-	if (!glewIsSupported("GL_ARB_shader_atomic_counters"))
-	{
-		Sys_ErrorEx("Missing OpenGL extension GL_ARB_shader_atomic_counters!\n");
-		return;
-	}
-
-	if (!glewIsSupported("GL_ARB_fragment_shader_interlock"))
-	{
-		Sys_ErrorEx("Missing OpenGL extension GL_ARB_fragment_shader_interlock!\n");
-		return;
-	}
-
 	gl_max_texture_size = 128;
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &gl_max_texture_size);
 
@@ -1261,6 +1251,8 @@ void GL_Init(void)
 	{
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &gl_max_ansio);
 	}
+
+	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &gl_max_ubo_size);
 
 	bNoStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
 
@@ -1327,11 +1319,6 @@ void R_PreRenderView(int a1)
 
 	if (!r_refdef->onlyClientDraws)
 	{
-		if (r_water && r_water->value)
-		{
-			R_RenderWaterView();
-		}
-
 		shadow_numvisedicts[0] = 0;
 		shadow_numvisedicts[1] = 0;
 		shadow_numvisedicts[2] = 0;
@@ -1340,15 +1327,23 @@ void R_PreRenderView(int a1)
 		{
 			R_RenderShadowMap();
 		}
+
+		if (r_water && r_water->value)
+		{
+			R_RenderWaterView();
+		}
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, s_BackBufferFBO.s_hBackBufferTex, 0);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, s_BackBufferFBO.s_hBackBufferDepthTex, 0);
 }
 
 void R_PostRenderView()
 {
 	R_DoFXAA();
-	R_DoHDR();
+	R_GammaCorrection();
+	//R_DoHDR();
 
 	GL_DisableMultitexture();
 	glEnable(GL_TEXTURE_2D);
@@ -1903,19 +1898,19 @@ void R_SetupGL(void)
 		}
 		else if (gRefFuncs.CL_IsDevOverviewMode())
 		{
-			auto v14 = gDevOverview[2];
-			auto v15 = 4096.0 / gDevOverview[2];
+			auto v14 = gDevOverview->zoom;
+			auto v15 = 4096.0 / gDevOverview->zoom;
 
 			glOrtho(
 				-v14,
 				v14,
 				-v15,
 				v15,
-				16000.0 - gDevOverview[0],
-				16000.0 - gDevOverview[1]);
+				16000.0 - gDevOverview->z_min,
+				16000.0 - gDevOverview->z_max);
 
-			r_near_z = 16000.0 - gDevOverview[0];
-			r_far_z = 16000.0 - gDevOverview[1];
+			r_near_z = 16000.0 - gDevOverview->z_min;
+			r_far_z = 16000.0 - gDevOverview->z_max;
 			r_ortho = true;
 		}
 		else
@@ -1940,7 +1935,7 @@ void R_SetupGL(void)
 		}
 		else if (gRefFuncs.CL_IsDevOverviewMode())
 		{
-			auto v23 = gDevOverview[2];
+			auto v23 = gDevOverview->zoom;
 			auto v24 = 4096.0;
 			auto v25 = 4096.0 / (v23 * aspect);
 			glOrtho(
@@ -1948,11 +1943,11 @@ void R_SetupGL(void)
 				v24,
 				-v25,
 				v25,
-				16000.0 - gDevOverview[0],
-				16000.0 - gDevOverview[1]);
+				16000.0 - gDevOverview->z_min,
+				16000.0 - gDevOverview->z_max);
 
-			r_near_z = 16000.0 - gDevOverview[0];
-			r_far_z = 16000.0 - gDevOverview[1];
+			r_near_z = 16000.0 - gDevOverview->z_min;
+			r_far_z = 16000.0 - gDevOverview->z_max;
 			r_ortho = true;
 		}
 		else

@@ -118,6 +118,11 @@ typedef struct
 typedef struct
 {
 	int program;
+}gamma_correction_program_t;
+
+typedef struct
+{
+	int program;
 	int texLinearDepth;
 	int texRandom;
 	int control_RadiusToScreen;
@@ -171,13 +176,16 @@ void R_ClearOITBuffer(void);
 void R_BeginFXAA(int w, int h);
 void R_LinearizeDepth(FBO_Container_t *src);
 void R_AmbientOcclusion(void);
+void R_GammaCorrection(void);
 bool R_IsSSAOEnabled(void);
 void R_DoHDR(void);
 void R_DoFXAA(void);
-void GL_BlitToScreen(FBO_Container_t *src);
-void GL_BlitToFrameBuffer(FBO_Container_t *src, FBO_Container_t *dst);
+void GL_BlitFrameFufferToScreen(FBO_Container_t *src);
+void GL_BlitFrameBufferToFrameBufferColorOnly(FBO_Container_t *src, FBO_Container_t *dst);
+void GL_BlitFrameBufferToFrameBufferColorDepth(FBO_Container_t *src, FBO_Container_t *dst);
 void R_DrawHUDQuad(int w, int h);
 void R_DrawHUDQuad_Texture(int tex, int w, int h);
+void R_BlitGBufferToFrameBuffer(FBO_Container_t *fbo);
 
 #define HUD_DEBUG_TEXARRAY 1
 

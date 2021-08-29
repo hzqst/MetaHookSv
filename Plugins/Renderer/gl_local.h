@@ -76,7 +76,7 @@ extern float *r_world_matrix;
 extern float *r_projection_matrix;
 extern float *gWorldToScreen;
 extern float *gScreenToWorld;
-extern float *gDevOverview;
+extern overviewInfo_t *gDevOverview;
 extern mplane_t *frustum;
 
 extern int *r_framecount;
@@ -220,6 +220,7 @@ void R_FillAddress(void);
 void R_InstallHook(void);
 
 void Mod_LoadStudioModel(model_t *mod, void *buffer);
+void BuildGammaTable(float g);
 void R_RenderView(void);
 void R_RenderScene(void);
 void R_RenderView_SvEngine(int a1);
@@ -284,6 +285,9 @@ GLuint GL_GenTextureRGBA8(int w, int h);
 
 void GL_UploadDepthTexture(int texid, int w, int h);
 GLuint GL_GenDepthTexture(int w, int h);
+
+void GL_UploadDepthStencilTexture(int texid, int w, int h);
+GLuint GL_GenDepthStencilTexture(int w, int h);
 
 GLuint GL_GenTextureColorFormat(int w, int h, int iInternalFormat);
 void GL_UploadTextureColorFormat(int texid, int w, int h, int iInternalFormat);

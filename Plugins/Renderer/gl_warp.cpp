@@ -6,19 +6,10 @@ cshift_t *cshift_water;
 
 void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 {
-	if (curwater->framecount != (*r_framecount))
-		return;
-
-	if (curwater->rendered_framecount == (*r_framecount))
-		return;
-
-	
-
-	curwater->rendered_framecount = (*r_framecount);
-
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, WaterVBOCache->hEBO);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_TEXTURE_SSBO, WaterVBOCache->hTextureSSBO);
-	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+
+	glDisable(GL_CULL_FACE);
 
 	if (r_draw_opaque)
 	{
@@ -28,7 +19,18 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	}
 
-	bool bIsAboveWater = R_IsAboveWater(WaterVBOCache->vert, WaterVBOCache->normal);
+	R_SetGBufferMask(GBUFFER_MASK_ALL);
+
+	bool bIsAboveWater = R_IsAboveWater(WaterVBOCache);
+
+	float color[4];
+	color[0] = WaterVBOCache->color.r / 255.0f;
+	color[1] = WaterVBOCache->color.g / 255.0f;
+	color[2] = WaterVBOCache->color.b / 255.0f;
+	color[3] = 1;
+
+	if((*currententity)->curstate.rendermode == kRenderTransTexture)
+		color[3] = (*r_blend);
 
 	if (WaterVBOCache->level >= WATER_LEVEL_REFLECT_SKYBOX && WaterVBOCache->level <= WATER_LEVEL_REFLECT_ENTITY && r_water->value)
 	{
@@ -49,20 +51,18 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 
 			if (!refractmap_ready)
 			{
-				s_WaterFBO.s_hBackBufferTex = refractmap;
-				s_WaterFBO.s_hBackBufferDepthTex = depthrefrmap;
+				if (drawgbuffer)
+				{
+					R_BlitGBufferToFrameBuffer(&s_WaterFBO);
 
-				glBindFramebuffer(GL_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
-				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferTex, 0);
-				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferDepthTex, 0);
+					glBindFramebuffer(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
+				}
+				else
+				{
+					GL_BlitFrameBufferToFrameBufferColorDepth(&s_BackBufferFBO, &s_WaterFBO);
 
-				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, s_WaterFBO.s_hBackBufferFBO);
-				glBindFramebuffer(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-				glBlitFramebuffer(
-					0, 0, s_BackBufferFBO.iWidth, s_BackBufferFBO.iHeight,
-					0, 0, s_WaterFBO.iWidth, s_WaterFBO.iHeight,
-					GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-				glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+					glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+				}
 
 				refractmap_ready = true;
 			}
@@ -94,7 +94,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 		R_UseWaterProgram(programState, &prog);
 
 		if (prog.u_watercolor != -1)
-			glUniform4f(prog.u_watercolor, gWaterColor->r / 255.0f, gWaterColor->g / 255.0f, gWaterColor->b / 255.0f, gWaterColor->a / 255.0f);
+			glUniform4f(prog.u_watercolor, color[0], color[1], color[2], color[3]);
 
 		if (prog.u_depthfactor != -1)
 			glUniform2fARB(prog.u_depthfactor, WaterVBOCache->depthfactor[0], WaterVBOCache->depthfactor[1]);
@@ -122,11 +122,11 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 
 			glActiveTexture(GL_TEXTURE4);
 			glEnable(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, refractmap);
+			glBindTexture(GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferTex);
 
 			glActiveTexture(GL_TEXTURE5);
 			glEnable(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, depthrefrmap);
+			glBindTexture(GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferDepthTex);
 		}
 
 		glDrawElements(GL_POLYGON,  WaterVBOCache->vIndicesBuffer.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(0));
@@ -196,7 +196,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 		R_UseWaterProgram(programState, &prog);
 
 		if (prog.u_watercolor != -1)
-			glUniform4f(prog.u_watercolor, WaterVBOCache->color.r / 255.0f, WaterVBOCache->color.g / 255.0f, WaterVBOCache->color.b / 255.0f, gWaterColor->a / 255.0f);
+			glUniform4f(prog.u_watercolor, color[0], color[1], color[2], color[3]);
 
 		if (prog.u_scale != -1)
 			glUniform1f(prog.u_scale, scale);
@@ -214,11 +214,9 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 
 	GL_UseProgram(0);
 
-	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-
-	R_SetGBufferMask(GBUFFER_MASK_ALL);
-
 	glDisable(GL_STENCIL_TEST);
+	glDisable(GL_BLEND); 
+	glEnable(GL_CULL_FACE);
 }
 
 void R_DrawWaters(void)
@@ -226,13 +224,36 @@ void R_DrawWaters(void)
 	if (r_draw_pass == r_draw_reflect)
 		return;
 
-	for (size_t i = 0; i < g_WaterVBOCache.size(); ++i)
+	if (g_iNumRenderWaterVBOCache)
 	{
-		curwater = g_WaterVBOCache[i];
+		glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hSceneVBO);
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		glEnableVertexAttribArray(2);
+		glEnableVertexAttribArray(3);
+		glEnableVertexAttribArray(4);
+		glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
+		glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
+		glVertexAttribPointer(2, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, s_tangent));
+		glVertexAttribPointer(3, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, t_tangent));
+		glVertexAttribPointer(4, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
+		glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
-		R_DrawWaterVBO(curwater);
+		for (int i = 0; i < g_iNumRenderWaterVBOCache; ++i)
+		{
+			R_DrawWaterVBO(g_RenderWaterVBOCache[i]);
+		}
 
-		curwater = NULL;
+		glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
+		glDisableVertexAttribArray(3);
+		glDisableVertexAttribArray(4);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+		g_iNumRenderWaterVBOCache = 0;
 	}
 }
 
@@ -259,13 +280,24 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 
 	gWaterColor->a = 255;
 
-	if ((*currententity)->curstate.rendermode == kRenderTransTexture)
-		gWaterColor->a = (*r_blend) * 255;
+	//if ((*currententity)->curstate.rendermode == kRenderTransTexture)
+	//	gWaterColor->a = (*r_blend) * 255;
 
 	auto VBOCache = R_PrepareWaterVBO((*currententity), fa);
 
-	VBOCache->framecount = (*r_framecount);
+	if (g_iNumRenderWaterVBOCache == 512)
+	{
+		Sys_ErrorEx("EmitWaterPolys: Too many waters!");
+	}
+
+	if (VBOCache->framecount != (*r_framecount))
+	{
+		VBOCache->framecount = (*r_framecount);
+		g_RenderWaterVBOCache[g_iNumRenderWaterVBOCache] = VBOCache;
+		g_iNumRenderWaterVBOCache++;
+	}
 }
+
 
 int *gSkyTexNumber;
 

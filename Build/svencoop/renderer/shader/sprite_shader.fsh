@@ -34,6 +34,12 @@ void main(void)
 {
 	vec4 baseColor = texture2D(baseTex, v_texcoord);
 
+	baseColor = TexGammaToLinear(baseColor);
+
+	vec4 lightmapColor = v_color;
+
+	lightmapColor = GammaToLinear(lightmapColor);
+
 	vec3 vNormal = normalize(v_normal.xyz);
 
 #ifdef CLIP_ENABLED
@@ -54,14 +60,14 @@ void main(void)
 	float flDistanceToFragment = distance(v_worldpos.xyz, SceneUBO.viewpos.xyz);
 
 	out_Diffuse = baseColor;
-	out_Lightmap = v_color;
+	out_Lightmap = lightmapColor;
 	out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, 0.0);
 	out_Specular = vec4(0.0);
 	out_Additive = vec4(0.0);
 
 #else
 
-	vec4 color = CalcFog(baseColor * v_color);
+	vec4 color = CalcFog(baseColor * lightmapColor);
 
 	#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED) 
 		

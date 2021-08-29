@@ -237,14 +237,14 @@ void R_InitLight(void)
 	}
 
 	r_sphere_vbo = GL_GenBuffer();
-	glBindBuffer(GL_ARRAY_BUFFER_ARB, r_sphere_vbo);
-	glBufferData(GL_ARRAY_BUFFER_ARB, sphereVertices.size() * sizeof(float), sphereVertices.data(), GL_STATIC_DRAW_ARB);
-	glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, r_sphere_vbo);
+	glBufferData(GL_ARRAY_BUFFER, sphereVertices.size() * sizeof(float), sphereVertices.data(), GL_STATIC_DRAW_ARB);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	r_sphere_ebo = GL_GenBuffer();
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, r_sphere_ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER_ARB, sphereIndices.size() * sizeof(int), sphereIndices.data(), GL_STATIC_DRAW_ARB);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r_sphere_ebo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphereIndices.size() * sizeof(int), sphereIndices.data(), GL_STATIC_DRAW_ARB);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	std::vector<float> coneVertices;
 
@@ -297,9 +297,9 @@ void R_InitLight(void)
 	}
 
 	r_cone_vbo = GL_GenBuffer();
-	glBindBuffer(GL_ARRAY_BUFFER_ARB, r_cone_vbo);
-	glBufferData(GL_ARRAY_BUFFER_ARB, coneVertices.size() * sizeof(float), coneVertices.data(), GL_STATIC_DRAW_ARB);
-	glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, r_cone_vbo);
+	glBufferData(GL_ARRAY_BUFFER, coneVertices.size() * sizeof(float), coneVertices.data(), GL_STATIC_DRAW_ARB);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	drawgbuffer = false;
 }
@@ -373,6 +373,9 @@ bool R_BeginRenderGBuffer(void)
 		return false;
 
 	if (!r_light_dynamic->value)
+		return false;
+
+	if (gRefFuncs.CL_IsDevOverviewMode())
 		return false;
 
 	drawgbuffer = true;
@@ -468,8 +471,8 @@ void R_EndRenderGBuffer(void)
 
 				if (VectorLength(dist) > radius + 32)
 				{
-					glBindBuffer(GL_ARRAY_BUFFER_ARB, r_sphere_vbo);
-					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, r_sphere_ebo);
+					glBindBuffer(GL_ARRAY_BUFFER, r_sphere_vbo);
+					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r_sphere_ebo);
 					glEnableVertexAttribArray(0);
 					glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
 
@@ -497,8 +500,8 @@ void R_EndRenderGBuffer(void)
 					glDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
 
 					glDisableVertexAttribArray(0);
-					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-					glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
+					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+					glBindBuffer(GL_ARRAY_BUFFER, 0);
 				}
 				else
 				{
@@ -579,7 +582,7 @@ void R_EndRenderGBuffer(void)
 
 			if (!Util_IsOriginInCone(r_refdef->vieworg, dlight_origin, dlight_vforward, r_flashlight_cone->value, r_flashlight_distance->value))
 			{
-				glBindBuffer(GL_ARRAY_BUFFER_ARB, r_cone_vbo);
+				glBindBuffer(GL_ARRAY_BUFFER, r_cone_vbo);
 				glEnableVertexAttribArray(0);
 				glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
 
@@ -615,7 +618,7 @@ void R_EndRenderGBuffer(void)
 
 				glDrawArrays(GL_TRIANGLES, 0, X_SEGMENTS * 6);
 
-				glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
+				glBindBuffer(GL_ARRAY_BUFFER, 0);
 				glDisableVertexAttribArray(0);				
 			}
 			else
@@ -678,16 +681,16 @@ void R_EndRenderGBuffer(void)
 				glUniform1f(prog.u_lightspecular, r_light_specular->value);
 				glUniform1f(prog.u_lightspecularpow, r_light_specularpow->value);
 
-				glBindBuffer(GL_ARRAY_BUFFER_ARB, r_sphere_vbo);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, r_sphere_ebo);
+				glBindBuffer(GL_ARRAY_BUFFER, r_sphere_vbo);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r_sphere_ebo);
 				glEnableVertexAttribArray(0);
 				glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
 
 				glDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);				
 
 				glDisableVertexAttribArray(0);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-				glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+				glBindBuffer(GL_ARRAY_BUFFER, 0);
 			}
 			else
 			{
@@ -714,7 +717,7 @@ void R_EndRenderGBuffer(void)
 	//re-enable depth write
 	glDepthMask(1);
 
-	//Write GBuffer depth stencil into main framebuffer
+	//Write GBuffer depth and stencil buffer into main framebuffer
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
 	glBlitFramebuffer(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight,
@@ -723,7 +726,7 @@ void R_EndRenderGBuffer(void)
 		GL_NEAREST);
 
 	//Shading pass
-	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);	
+	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	GL_BeginFullScreenQuad(false);
@@ -777,4 +780,81 @@ void R_EndRenderGBuffer(void)
 
 	drawgbuffer = false;
 	gbuffer_mask = -1;
+}
+
+void R_BlitGBufferToFrameBuffer(FBO_Container_t *fbo)
+{
+	//Write GBuffer depth and stencil buffer into main framebuffer
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->s_hBackBufferFBO);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
+	glBlitFramebuffer(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight,
+		0, 0, fbo->iWidth, fbo->iHeight,
+		GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
+		GL_NEAREST);
+
+	//Shading pass
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo->s_hBackBufferFBO);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+	GL_BeginFullScreenQuad(false);
+
+	//No blend for final shading pass
+	glDisable(GL_BLEND);
+
+	int FinalProgramState = 0;
+
+	/*if (r_fog_mode == GL_LINEAR)
+		FinalProgramState |= DFINAL_LINEAR_FOG_ENABLED;
+
+	if (r_ssr->value && r_ssr_control.enabled)
+	{
+		FinalProgramState |= DFINAL_SSR_ENABLED;
+
+		if (r_ssr_control.adaptive_step)
+			FinalProgramState |= DFINAL_SSR_ADAPTIVE_STEP_ENABLED;
+
+		if (r_ssr_control.exponential_step)
+			FinalProgramState |= DFINAL_SSR_EXPONENTIAL_STEP_ENABLED;
+
+		if (r_ssr_control.binary_search)
+			FinalProgramState |= DFINAL_SSR_BINARY_SEARCH_ENABLED;
+	}*/
+
+	//Setup final program
+	R_UseDFinalProgram(FinalProgramState, NULL);
+
+	//Texture unit 0 = (GBuffer texture array), Texture unit 1 = (depth), Texture unit 2 = (linearized depth)
+	glActiveTexture(GL_TEXTURE0);
+	glDisable(GL_TEXTURE_2D);
+	glEnable(GL_TEXTURE_2D_ARRAY);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, s_GBufferFBO.s_hBackBufferTex);
+
+	glActiveTexture(GL_TEXTURE1);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
+
+	glActiveTexture(GL_TEXTURE2);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, s_DepthLinearFBO.s_hBackBufferTex);
+
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	//Disable texture unit 2 (linearized depth)
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glDisable(GL_TEXTURE_2D);
+
+	//Disable texture unit 1 (depth)
+	glActiveTexture(GL_TEXTURE1);
+	GL_DisableMultitexture();
+
+	//Disable texture unit 0 (GBuffer texture array)
+	glActiveTexture(GL_TEXTURE0);
+	glDisable(GL_TEXTURE_2D_ARRAY);
+	glEnable(GL_TEXTURE_2D);
+	*currenttexture = -1;
+
+	GL_UseProgram(0);
+
+	GL_EndFullScreenQuad();
 }

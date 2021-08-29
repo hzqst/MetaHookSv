@@ -80,11 +80,13 @@ struct scene_ubo_t{
 	float fogStart;
 	float fogEnd;
 	float time;
-	float r_g1;
+	float r_g;
 	float r_g3;
 	float v_brightness;
 	float v_lightgamma;
 	float v_lambert;
+	float v_gamma;
+	float v_texgamma;
 };
 
 struct entity_ubo_t{
@@ -318,3 +320,67 @@ vec4 CalcFogWithLinearDepth(vec4 color, sampler2D linearDepthTex, vec2 texcoord)
 }
 
 #endif
+
+vec4 GammaToLinear(vec4 color)
+{
+	color.rgb = pow(color.rgb, vec3(SceneUBO.v_gamma));
+	return color;
+}
+
+vec4 TexGammaToLinear(vec4 color)
+{
+	color.rgb = pow(color.rgb, vec3(SceneUBO.v_texgamma));
+	return color;
+}
+
+//This was being applied for GL_Upload16
+vec4 TexGammaToGamma(vec4 color)
+{
+	color.rgb = pow(color.rgb, vec3(SceneUBO.v_texgamma * SceneUBO.r_g));//r_g = 1.0 / v_gamma
+	return color;
+}
+
+vec4 LinearToGamma(vec4 color)
+{
+	color.rgb = pow(color.rgb, vec3(SceneUBO.r_g));//r_g = 1.0 / v_gamma
+	return color;
+}
+
+//This was being applied for R_BuildLightMap and R_StudioLighting
+float LightGammaToGammaInternal(float color)
+{
+	float fv = pow(color, SceneUBO.v_lightgamma);
+
+	fv = fv * max(SceneUBO.v_brightness, 1.0);
+
+	if (fv > SceneUBO.r_g3)
+		fv = 0.125 + ((fv - SceneUBO.r_g3) / (1.0 - SceneUBO.r_g3)) * 0.875;
+	else 
+		fv = (fv / SceneUBO.r_g3) * 0.125;
+
+	return clamp(pow( fv, SceneUBO.r_g ), 0.0, 1.0);
+}
+
+vec4 LightGammaToGamma(vec4 color)
+{
+	return vec4(LightGammaToGammaInternal(color.r), LightGammaToGammaInternal(color.g), LightGammaToGammaInternal(color.b), color.a);
+}
+
+float LightGammaToLinearInternal(float color)
+{
+	float fv = pow(color, SceneUBO.v_lightgamma);
+
+	fv = fv * max(SceneUBO.v_brightness, 1.0);
+
+	if (fv > SceneUBO.r_g3)
+		fv = 0.125 + ((fv - SceneUBO.r_g3) / (1.0 - SceneUBO.r_g3)) * 0.875;
+	else 
+		fv = (fv / SceneUBO.r_g3) * 0.125;
+
+	return clamp(fv, 0.0, 1.0);
+}
+
+vec4 LightGammaToLinear(vec4 color)
+{
+	return vec4(LightGammaToLinearInternal(color.r), LightGammaToLinearInternal(color.g), LightGammaToLinearInternal(color.b), color.a);
+}

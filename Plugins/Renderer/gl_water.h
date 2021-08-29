@@ -48,8 +48,8 @@ typedef struct
 	int depthmap;
 }drawdepth_program_t;
 
-extern GLuint refractmap;
-extern GLuint depthrefrmap;
+//extern GLuint refractmap;
+//extern GLuint depthrefrmap;
 extern bool refractmap_ready;
 
 typedef struct water_vbo_s
@@ -80,7 +80,6 @@ typedef struct water_vbo_s
 		plane = 0;
 		iPolyCount = 0;
 		framecount = 0;
-		rendered_framecount = 0;
 	}
 	GLuint hEBO;
 	GLuint hTextureSSBO;
@@ -93,9 +92,9 @@ typedef struct water_vbo_s
 	GLuint depthreflmap;
 	GLuint normalmap;
 
-	GLuint basetexture_handle;
-	GLuint reflectmap_handle;
-	GLuint normalmap_handle;
+	GLuint64 basetexture_handle;
+	GLuint64 reflectmap_handle;
+	GLuint64 normalmap_handle;
 
 	float fresnelfactor;
 	float depthfactor[2];
@@ -110,7 +109,6 @@ typedef struct water_vbo_s
 	std::vector<GLuint> vIndicesBuffer;
 	int iPolyCount;
 	int framecount;
-	int rendered_framecount;
 }water_vbo_t;
 
 //renderer
@@ -120,7 +118,8 @@ extern vec3_t water_view;
 extern water_vbo_t *curwater;
 
 extern std::vector<water_vbo_t *> g_WaterVBOCache;
-
+extern water_vbo_t *g_RenderWaterVBOCache[512];
+extern int g_iNumRenderWaterVBOCache;
 //shader
 
 extern SHADER_DEFINE(drawdepth);
@@ -138,7 +137,7 @@ typedef struct
 extern colorVec *gWaterColor;
 extern cshift_t *cshift_water;
 
-bool R_IsAboveWater(float *v, float *n);
+bool R_IsAboveWater(water_vbo_t *water);
 
 water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf);
 void R_InitWater(void);

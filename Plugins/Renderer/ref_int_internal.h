@@ -16,12 +16,14 @@ typedef struct FBO_Container_s
 	int iWidth;
 	int iHeight;
 	int iTextureColorFormat;
+	int iTextureDepthFormat;
 }FBO_Container_t;
 
 typedef void(*ExtraShaderStageCallback)(GLuint *objs, int *used);
 
 typedef struct
 {
+	void (*BuildGammaTable)(float gamma);
 	void (*R_ForceCVars)(qboolean mp);
 	void (*R_RenderView)(void);
 	void (*R_RenderView_SvEngine)(int a1);

@@ -168,7 +168,7 @@ void R_RenderShadowMap(void)
 			continue;
 
 		glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadow_texture_color, 0, i);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_texture_depth, 0);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadow_texture_depth, 0);
 
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();

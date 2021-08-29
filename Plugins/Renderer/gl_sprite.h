@@ -10,32 +10,6 @@ typedef struct legacysprite_program_s
 	int program;
 }legacysprite_program_t;
 
-#pragma pack(push, 16)
-
-typedef struct spriteframe_ssbo_t
-{
-	ivec4 type_width_height_texturenum;
-	vec4 up_down_left_right;
-
-	GLuint64 texturehandle[2];
-}spriteframe_ssbo_t;
-
-#pragma pack(pop)
-
-#pragma pack(push, 16)
-
-typedef struct spriteentry_ssbo_s
-{
-	vec4 color;
-	vec4 origin;//origin[3] = scale
-	vec4 angles;
-	ivec4 frameindex;
-}spriteentry_ssbo_t;
-
-#pragma pack(pop)
-
-extern int g_iNumSpriteEntries[kRenderTransAdd + 1];
-
 extern int r_sprite_drawcall;
 extern int r_sprite_polys;
 

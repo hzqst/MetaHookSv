@@ -50,12 +50,14 @@ void main(void)
 	#ifdef TRANSADDITIVE_ENABLED
 
 		v_color = vec4(StudioUBO.r_blend, StudioUBO.r_blend, StudioUBO.r_blend, StudioUBO.r_blend);
+		v_color = GammaToLinear(v_color);
 
 	#else
 
 		#ifdef STUDIO_NF_FULLBRIGHT
 
 			v_color = vec4(1.0, 1.0, 1.0, StudioUBO.r_blend);
+			v_color = GammaToLinear(v_color);
 
 		#else
 
@@ -83,19 +85,9 @@ void main(void)
 
 			#endif
 
-			illum = clamp(illum, 0.0, 255.0);
+			float lv = clamp(illum, 0.0, 255.0) / 255.0;
 
-			float fv = illum / 255.0;
-			fv = pow(fv, SceneUBO.v_lightgamma);
-
-			fv = fv * max(SceneUBO.v_brightness, 1.0);
-
-			if (fv > SceneUBO.r_g3)
-				fv = 0.125 + ((fv - SceneUBO.r_g3) / (1.0 - SceneUBO.r_g3)) * 0.875;
-			else 
-				fv = (fv / SceneUBO.r_g3) * 0.125;
-
-			float lv = clamp(pow( fv, SceneUBO.r_g1 ), 0.0, 1.0);
+			lv = LightGammaToLinearInternal(lv);
 
 			v_color = vec4(lv * StudioUBO.r_colormix.x, lv * StudioUBO.r_colormix.y, lv * StudioUBO.r_colormix.z, StudioUBO.r_blend);
 

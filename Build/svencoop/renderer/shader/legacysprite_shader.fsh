@@ -14,14 +14,20 @@ void main()
 {
 	vec4 diffuseColor = texture2D(diffuseTex, v_diffusetexcoord.xy);
 
-	vec4 color = diffuseColor * v_color;
+	diffuseColor = TexGammaToLinear(diffuseColor);
+
+	vec4 lightmapColor = v_color;
+
+	lightmapColor = GammaToLinear(lightmapColor);
+
+	vec4 finalColor = diffuseColor * lightmapColor;
 
 	#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED) 
 		
-		GatherFragment(color);
+		GatherFragment(finalColor);
 
 	#endif
 
-	out_Diffuse = color;
+	out_Diffuse = finalColor;
 	
 }

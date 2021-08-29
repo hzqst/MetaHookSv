@@ -275,6 +275,8 @@ void main()
 		vec4 diffuseColor = texture2D(diffuseTex, v_diffusetexcoord.xy);
 
 	#endif
+
+	diffuseColor = TexGammaToLinear(diffuseColor);
 #else
 
 	vec4 diffuseColor = vec4(1.0, 1.0, 1.0, 1.0);
@@ -285,9 +287,13 @@ void main()
 
 	vec4 lightmapColor = texture2DArray(lightmapTexArray, v_lightmaptexcoord.xyz);
 
+	lightmapColor = LightGammaToLinear(lightmapColor);
+
 #else
 
 	vec4 lightmapColor = vec4(1.0, 1.0, 1.0, 1.0);
+
+	lightmapColor = GammaToLinear(lightmapColor);
 
 #endif
 

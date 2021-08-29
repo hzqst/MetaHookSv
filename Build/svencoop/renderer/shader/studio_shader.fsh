@@ -102,8 +102,11 @@ void main(void)
 
 	vec4 diffuseColor = texture2D(diffuseTex, texcoord);
 
+	diffuseColor = TexGammaToLinear(diffuseColor);
+
 	vec3 vNormal = normalize(v_normal.xyz);
 
+	//The light colors are already in linear space
 	vec4 lightmapColor = v_color;
 
 	#ifdef STUDIO_NF_CELSHADE

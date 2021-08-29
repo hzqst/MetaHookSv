@@ -43,6 +43,8 @@ SHADER_DEFINE(depth_clear);
 SHADER_DEFINE(oitbuffer_clear);
 SHADER_DEFINE(blit_oitblend);
 
+SHADER_DEFINE(gamma_correction);
+
 cvar_t *r_hdr = NULL;
 cvar_t *r_hdr_blurwidth = NULL;
 cvar_t *r_hdr_exposure = NULL;
@@ -340,6 +342,8 @@ void R_InitGLHUD(void)
 	oitbuffer_clear.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\oitbuffer_clear.frag.glsl", NULL);
 	
 	blit_oitblend.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\blit_oitblend.frag.glsl", NULL);
+	
+	gamma_correction.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\gamma_correction.frag.glsl", NULL);
 
 	SHADER_UNIFORM(hbao_calc_blur, texLinearDepth, "texLinearDepth");
 	SHADER_UNIFORM(hbao_calc_blur, texRandom, "texRandom");
@@ -421,7 +425,7 @@ void R_DrawHUDQuad_Texture(int tex, int w, int h)
 	R_DrawHUDQuad(w, h);
 }
 
-void GL_BlitToScreen(FBO_Container_t *src)
+void GL_BlitFrameFufferToScreen(FBO_Container_t *src)
 {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
@@ -432,12 +436,20 @@ void GL_BlitToScreen(FBO_Container_t *src)
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, glwidth, glheight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
 
-void GL_BlitToFrameBuffer(FBO_Container_t *src, FBO_Container_t *dst)
+void GL_BlitFrameBufferToFrameBufferColorOnly(FBO_Container_t *src, FBO_Container_t *dst)
 {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
 
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+}
+
+void GL_BlitFrameBufferToFrameBufferColorDepth(FBO_Container_t *src, FBO_Container_t *dst)
+{
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
+
+	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 }
 
 void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2)
@@ -638,6 +650,9 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 
 void R_DoHDR(void)
 {
+	//Temporarily disabled, requiring update
+	return;
+
 	if (!r_hdr->value)
 		return;
 
@@ -691,7 +706,7 @@ void R_DoHDR(void)
 	//Tone mapping
 	R_ToneMapping(&s_BackBufferFBO, &s_ToneMapFBO, &s_BrightAccumFBO, &s_Lumin1x1FBO[last_luminance]);
 
-	GL_BlitToFrameBuffer(&s_ToneMapFBO, &s_BackBufferFBO);
+	GL_BlitFrameBufferToFrameBufferColorOnly(&s_ToneMapFBO, &s_BackBufferFBO);
 
 	GL_PopDrawState();
 }
@@ -721,7 +736,7 @@ void R_DoFXAA(void)
 	GL_PushDrawState();
 	GL_PushMatrix();
 
-	GL_BlitToFrameBuffer(&s_BackBufferFBO, &s_BackBufferFBO2);
+	GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 
@@ -738,6 +753,26 @@ void R_DoFXAA(void)
 
 	GL_PopMatrix();
 	GL_PopDrawState();
+}
+
+void R_GammaCorrection(void)
+{
+	GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+
+	GL_BeginFullScreenQuad(false);
+	glDisable(GL_BLEND);
+
+	GL_UseProgram(gamma_correction.program);
+
+	GL_Bind(s_BackBufferFBO2.s_hBackBufferTex);
+
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	GL_UseProgram(0);
+
+	GL_EndFullScreenQuad();
 }
 
 void R_ClearOITBuffer(void)
@@ -758,7 +793,7 @@ void R_ClearOITBuffer(void)
 
 void R_BlendOITBuffer(void)
 {
-	GL_BlitToFrameBuffer(&s_BackBufferFBO, &s_BackBufferFBO2);
+	GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	
@@ -802,6 +837,9 @@ bool R_IsSSAOEnabled(void)
 		return false;
 
 	if ((*r_xfov) < 75)
+		return false;
+
+	if (gRefFuncs.CL_IsDevOverviewMode())
 		return false;
 
 	return true;
@@ -915,6 +953,7 @@ void R_AmbientOcclusion(void)
 	else
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+		//Should we reset drawbuffer?
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	}
 
@@ -942,6 +981,4 @@ void R_AmbientOcclusion(void)
 
 	glDisable(GL_STENCIL_TEST);
 	glDisable(GL_BLEND);
-
-	GL_EndFullScreenQuad();
 }
