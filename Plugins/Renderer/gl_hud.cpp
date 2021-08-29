@@ -382,8 +382,8 @@ void R_InitGLHUD(void)
 
 	r_hdr = gEngfuncs.pfnRegisterVariable("r_hdr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_blurwidth = gEngfuncs.pfnRegisterVariable("r_hdr_blurwidth", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_hdr_exposure = gEngfuncs.pfnRegisterVariable("r_hdr_exposure", "5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_hdr_darkness = gEngfuncs.pfnRegisterVariable("r_hdr_darkness", "4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_hdr_exposure = gEngfuncs.pfnRegisterVariable("r_hdr_exposure", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_hdr_darkness = gEngfuncs.pfnRegisterVariable("r_hdr_darkness", "1.6", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_adaptation = gEngfuncs.pfnRegisterVariable("r_hdr_adaptation", "50", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_debug = gEngfuncs.pfnRegisterVariable("r_hdr_debug", "0",  FCVAR_CLIENTDLL);
 
@@ -650,18 +650,6 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 
 void R_DoHDR(void)
 {
-	//Temporarily disabled, requiring update
-	return;
-
-	if (!r_hdr->value)
-		return;
-
-	if (r_draw_pass)
-		return;
-
-	if (g_SvEngine_DrawPortalView)
-		return;
-
 	GL_PushDrawState();
 
 	GL_Begin2D();

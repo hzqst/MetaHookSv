@@ -1342,8 +1342,15 @@ void R_PreRenderView(int a1)
 void R_PostRenderView()
 {
 	R_DoFXAA();
-	R_GammaCorrection();
-	//R_DoHDR();
+
+	if (r_hdr->value && !r_draw_pass && !g_SvEngine_DrawPortalView)
+	{
+		R_DoHDR();
+	}
+	else
+	{
+		R_GammaCorrection();
+	}
 
 	GL_DisableMultitexture();
 	glEnable(GL_TEXTURE_2D);

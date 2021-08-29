@@ -20,7 +20,9 @@ vec3 vignette(vec3 c, vec2 win_bias)
 
 void main() 
 {
-    vec3 vColor = (1.0f - blurfactor) * texture2D(basetex, gl_TexCoord[0].xy).xyz + blurfactor * texture2D(blurtex, gl_TexCoord[0].xy).xyz * 0.33;
+	vec3 baseColor = texture2D(basetex, gl_TexCoord[0].xy).xyz;
+	vec3 blurColor = texture2D(blurtex, gl_TexCoord[0].xy).xyz * 0.33;
+    vec3 vColor = mix(baseColor, blurColor, blurfactor);
 
 	vColor.x = pow(vColor.x, darkness);
 	vColor.y = pow(vColor.y, darkness);
