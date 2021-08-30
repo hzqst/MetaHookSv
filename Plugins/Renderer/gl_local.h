@@ -362,6 +362,7 @@ extern float r_entity_matrix[4][4];
 extern float r_entity_color[4];
 extern bool r_draw_opaque;
 extern bool r_draw_oitblend;
+extern bool r_draw_legacysprite;
 
 extern bool g_SvEngine_DrawPortalView;
 extern int r_draw_pass;

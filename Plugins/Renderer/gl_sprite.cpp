@@ -138,7 +138,7 @@ void R_SpriteColor(colorVec *pColor, cl_entity_t *pEntity, int alpha)
 	int a;
 
 	if (pEntity->curstate.rendermode == kRenderGlow || pEntity->curstate.rendermode == kRenderTransAdd)
-		a = alpha;
+		a = clamp(alpha, 0, 255);//some entities > 255 wtf?
 	else
 		a = 256;
 

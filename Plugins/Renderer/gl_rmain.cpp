@@ -95,6 +95,7 @@ float r_entity_color[4];
 
 bool r_draw_opaque = false;
 bool r_draw_oitblend = false;
+bool r_draw_legacysprite = false;
 
 int r_draw_pass = 0;
 
@@ -301,10 +302,8 @@ const color24 gTracerColors[] =
 	{ 255, 120, 70 },		// Darker red streaks (garg)
 };
 
-void R_DrawParticles(void)
+void R_DrawParticlesNew(void)
 {
-	return;
-
 	vec3_t			up, right;
 	float			scale;
 
@@ -313,6 +312,26 @@ void R_DrawParticles(void)
 	glEnable(GL_BLEND);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	int LegacySpriteProgramState = 0;
+
+	if (r_draw_oitblend)
+	{
+		LegacySpriteProgramState |= SPRITE_OIT_ALPHA_BLEND_ENABLED;
+	}
+
+	if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+	{
+		LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+	}
+
+	if (r_draw_pass == r_draw_reflect && curwater)
+	{
+		LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
+	}
+
+	R_UseLegacySpriteProgram(LegacySpriteProgramState, NULL);
+
 	glBegin(GL_TRIANGLES);
 
 	VectorScale(vup, 1.5, up);
@@ -451,11 +470,16 @@ void R_DrawParticles(void)
 
 	glEnd();
 
-	//R_TracerDraw();
-	//R_BeamDrawList();
+	gRefFuncs.R_TracerDraw();
+	gRefFuncs.R_BeamDrawList();
 
 	glDisable(GL_BLEND);
 	glDisable(GL_ALPHA_TEST);
+}
+
+void R_DrawParticles(void)
+{
+	return;
 }
 
 void triapi_RenderMode(int mode)
@@ -473,9 +497,9 @@ void triapi_RenderMode(int mode)
 	case kRenderTransAdd:
 	{
 		R_SetGBufferBlend(GL_ONE, GL_ONE);
-		if (r_draw_oitblend)
+		if (r_draw_legacysprite)
 		{
-			int LegacySpriteProgramState = SPRITE_OIT_ADDITIVE_BLEND_ENABLED;
+			int LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ADDITIVE_BLEND_ENABLED : 0;
 
 			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 			{
@@ -497,9 +521,9 @@ void triapi_RenderMode(int mode)
 	case kRenderTransTexture:
 	{
 		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		if (r_draw_oitblend)
+		if (r_draw_legacysprite)
 		{
-			int LegacySpriteProgramState = SPRITE_OIT_ALPHA_BLEND_ENABLED;
+			int LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ALPHA_BLEND_ENABLED : 0;
 
 			if (r_draw_pass == r_draw_reflect && curwater)
 			{
@@ -536,8 +560,13 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 		r_draw_oitblend = true;
 
+		r_draw_legacysprite = true;
+
 		gRefFuncs.R_DrawTEntitiesOnList(onlyClientDraw);
-		gRefFuncs.R_DrawParticles();
+		
+		R_DrawParticlesNew();
+
+		r_draw_legacysprite = false;
 
 		r_draw_oitblend = false;
 
@@ -551,8 +580,13 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 	}
 	else
 	{
+		r_draw_legacysprite = true;
+
 		gRefFuncs.R_DrawTEntitiesOnList(onlyClientDraw);
-		gRefFuncs.R_DrawParticles();
+
+		R_DrawParticlesNew();
+
+		r_draw_legacysprite = false;
 	}
 
 	GL_UseProgram(0);
