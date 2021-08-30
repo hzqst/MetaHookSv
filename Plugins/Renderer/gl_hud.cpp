@@ -827,7 +827,7 @@ bool R_IsSSAOEnabled(void)
 	if ((*r_xfov) < 75)
 		return false;
 
-	if (gRefFuncs.CL_IsDevOverviewMode())
+	if (CL_IsDevOverviewMode())
 		return false;
 
 	return true;

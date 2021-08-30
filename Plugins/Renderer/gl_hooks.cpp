@@ -2901,6 +2901,4 @@ void R_InstallHook(void)
 	Install_InlineHook(Mod_LoadStudioModel);
 	Install_InlineHook(triapi_RenderMode);
 	Install_InlineHook(BuildGammaTable);
-
-
 }

@@ -68,6 +68,9 @@ bool R_ShouldRenderShadowScene(int level)
 	if(r_draw_pass)
 		return false;
 
+	if (gRefFuncs.CL_IsDevOverviewMode())
+		return false;
+
 	if (!shadow_numvisedicts[0] && !shadow_numvisedicts[1] && !shadow_numvisedicts[2])
 		return false;
 

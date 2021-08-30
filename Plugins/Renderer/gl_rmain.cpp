@@ -1343,7 +1343,7 @@ void R_PostRenderView()
 {
 	R_DoFXAA();
 
-	if (r_hdr->value && !r_draw_pass && !g_SvEngine_DrawPortalView)
+	if (r_hdr->value && !r_draw_pass && !g_SvEngine_DrawPortalView && !CL_IsDevOverviewMode())
 	{
 		R_DoHDR();
 	}
@@ -1852,6 +1852,11 @@ void R_SetFrustumNew(void)
 	}
 }
 
+bool CL_IsDevOverviewMode(void)
+{
+	return gRefFuncs.CL_IsDevOverviewMode();
+}
+
 void R_SetupGL(void)
 {
 	R_SetFrustumNew();
@@ -1872,6 +1877,7 @@ void R_SetupGL(void)
 		++v1;
 	auto v4 = v2 - v0;
 	auto v5 = v1 - v3;
+
 	if ((*envmap))
 	{
 		v3 = 0;
@@ -1879,6 +1885,7 @@ void R_SetupGL(void)
 		glheight = gl_envmapsize->value;
 		glwidth = gl_envmapsize->value;
 	}
+
 	glViewport(v0 + glx, v3 + gly, v4, v5);
 
 	r_viewport[0] = v0 + glx;
@@ -1903,16 +1910,13 @@ void R_SetupGL(void)
 		{
 			MYgluPerspectiveV(fovy, aspect, 4.0, 16000.0);
 		}
-		else if (gRefFuncs.CL_IsDevOverviewMode())
+		else if (CL_IsDevOverviewMode())
 		{
-			auto v14 = gDevOverview->zoom;
-			auto v15 = 4096.0 / gDevOverview->zoom;
-
 			glOrtho(
-				-v14,
-				v14,
-				-v15,
-				v15,
+				-(4096.0 / (gDevOverview->zoom * aspect)),
+				(4096.0 / (gDevOverview->zoom * aspect)),
+				-(4096.0 / gDevOverview->zoom),
+				(4096.0 / gDevOverview->zoom),
 				16000.0 - gDevOverview->z_min,
 				16000.0 - gDevOverview->z_max);
 
@@ -1940,16 +1944,13 @@ void R_SetupGL(void)
 		{
 			MYgluPerspectiveH(fovy, aspect, 4.0, 16000.0);
 		}
-		else if (gRefFuncs.CL_IsDevOverviewMode())
+		else if (CL_IsDevOverviewMode())
 		{
-			auto v23 = gDevOverview->zoom;
-			auto v24 = 4096.0;
-			auto v25 = 4096.0 / (v23 * aspect);
 			glOrtho(
-				-v24,
-				v24,
-				-v25,
-				v25,
+				-(4096.0 / gDevOverview->zoom),
+				(4096.0 / gDevOverview->zoom),
+				-(4096.0 / (gDevOverview->zoom * aspect)),
+				(4096.0 / (gDevOverview->zoom * aspect)),
 				16000.0 - gDevOverview->z_min,
 				16000.0 - gDevOverview->z_max);
 
@@ -1995,7 +1996,6 @@ void R_SetupGL(void)
 
 	InvertMatrix(gWorldToScreen, gScreenToWorld);
 }
-
 
 int EngineGetMaxKnownModel(void)
 {

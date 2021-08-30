@@ -564,6 +564,9 @@ void R_DrawDecals(void)
 	if (!(*gDecalSurfCount))
 		return;
 
+	if (CL_IsDevOverviewMode())
+		return;
+
 	g_DrawDecalCount = 0;
 
 	for (i = 0; i < (*gDecalSurfCount); i++)

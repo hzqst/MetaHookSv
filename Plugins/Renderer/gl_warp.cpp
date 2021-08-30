@@ -387,6 +387,9 @@ int skytexorder[6] = { 0, 2, 1, 3, 4, 5 };
 
 void R_DrawSkyBox(void)
 {
+	if (CL_IsDevOverviewMode())
+		return;
+
 	glDisable(GL_BLEND);
 	glColor4f(1, 1, 1, 1);
 	glDepthMask(0);

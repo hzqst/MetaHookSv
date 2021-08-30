@@ -363,6 +363,7 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 			SHADER_UNIFORM(prog, r_rimdark_smooth, "r_rimdark_smooth");
 			SHADER_UNIFORM(prog, r_rimdark_color, "r_rimdark_color");
 			SHADER_UNIFORM(prog, r_outline_dark, "r_outline_dark");
+			SHADER_UNIFORM(prog, r_uvscale, "r_uvscale");
 			SHADER_UNIFORM(prog, entityPos, "entityPos");
 		}
 
@@ -833,6 +834,12 @@ void R_GLStudioDrawPoints(void)
 		studio_program_t prog = { 0 };
 
 		R_UseStudioProgram(StudioProgramState, &prog);
+
+		if (prog.r_uvscale != -1)
+		{
+			glUniform2f(prog.r_uvscale, s, t);
+		}
+
 		R_SetGBufferMask(GBufferMask);
 
 		if (VBOMesh.iIndiceCount)

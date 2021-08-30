@@ -18,6 +18,7 @@ uniform float r_rimdark_power;
 uniform float r_rimdark_smooth;
 uniform vec3 r_rimdark_color;
 uniform float r_outline_dark;
+uniform vec2 r_uvscale;
 
 in vec3 v_worldpos;
 in vec3 v_normal;
@@ -81,24 +82,7 @@ void main(void)
 {
 #ifndef SHADOW_CASTER_ENABLED
 
-	#ifdef STUDIO_NF_CHROME
-
-		#ifdef GLOW_SHELL_ENABLED
-			ivec2 textureSize2d = textureSize(diffuseTex, 0);
-			vec2 texcoord_scale = vec2(1.0 / float(textureSize2d.x), 1.0 / float(textureSize2d.y));
-			vec2 texcoord = v_texcoord * texcoord_scale * vec2(1.0 / 32.0f, 1.0 / 32.0f);
-		#else
-			vec2 texcoord_scale = vec2(1.0 / 2048.0, 1.0 / 2048.0);
-			vec2 texcoord = v_texcoord * texcoord_scale;
-		#endif
-
-	#else
-
-		ivec2 textureSize2d = textureSize(diffuseTex, 0);
-		vec2 texcoord_scale = vec2(1.0 / float(textureSize2d.x), 1.0 / float(textureSize2d.y));
-		vec2 texcoord = v_texcoord * texcoord_scale;
-
-	#endif
+	vec2 texcoord = v_texcoord * r_uvscale;
 
 	vec4 diffuseColor = texture2D(diffuseTex, texcoord);
 

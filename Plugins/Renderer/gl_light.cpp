@@ -375,7 +375,7 @@ bool R_BeginRenderGBuffer(void)
 	if (!r_light_dynamic->value)
 		return false;
 
-	if (gRefFuncs.CL_IsDevOverviewMode())
+	if (CL_IsDevOverviewMode())
 		return false;
 
 	drawgbuffer = true;

@@ -1472,7 +1472,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 	bool bUseZPrePasss = false;
 
 	//This only applies to world rendering
-	if (modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value)
+	if (modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value && !CL_IsDevOverviewMode())
 	{
 		//Sky surface uses stencil = 1
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
@@ -1543,7 +1543,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 	R_DrawWSurfVBOAnim(modcache);
 
 	//This only applies to world rendering, clear depth for sky surface
-	if (modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value)
+	if (modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value && !CL_IsDevOverviewMode())
 	{
 		//Overwrite sky surface (stencil = 1) with initial depth (depth = 1)
 

@@ -18,6 +18,7 @@ typedef struct
 	int r_rimdark_smooth;
 	int r_rimdark_color;
 	int r_outline_dark;
+	int r_uvscale;
 	//shadow caster
 	int entityPos;
 }studio_program_t;

@@ -247,6 +247,7 @@ float *R_GetAttachmentPoint(int entity, int attachment);
 void R_DrawBrushModel(cl_entity_t *entity);
 void R_DrawSpriteModel(cl_entity_t *entity);
 entity_state_t *R_GetPlayerState(int index);
+bool CL_IsDevOverviewMode(void);
 int CL_FxBlend(cl_entity_t *entity);
 void R_DrawCurrentEntity(bool bTransparent);
 void R_DrawTEntitiesOnList(int onlyClientDraw);
