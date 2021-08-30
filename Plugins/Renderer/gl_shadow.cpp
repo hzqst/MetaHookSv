@@ -54,7 +54,7 @@ void R_InitShadow(void)
 	r_shadow_lumfade = gEngfuncs.pfnRegisterVariable("r_shadow_lumfade", "64 32", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_angles = gEngfuncs.pfnRegisterVariable("r_shadow_angles", "90 0 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_color = gEngfuncs.pfnRegisterVariable("r_shadow_color", "0 0 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_shadow_intensity = gEngfuncs.pfnRegisterVariable("r_shadow_intensity", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_shadow_intensity = gEngfuncs.pfnRegisterVariable("r_shadow_intensity", "0.75", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_high_distance = gEngfuncs.pfnRegisterVariable("r_shadow_high_distance", "400", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_high_scale = gEngfuncs.pfnRegisterVariable("r_shadow_high_scale", "4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_medium_distance = gEngfuncs.pfnRegisterVariable("r_shadow_medium_distance", "800", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);

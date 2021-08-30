@@ -353,10 +353,12 @@ float LightGammaToGammaInternal(float color)
 
 	fv = fv * max(SceneUBO.v_brightness, 1.0);
 
-	if (fv > SceneUBO.r_g3)
-		fv = 0.125 + ((fv - SceneUBO.r_g3) / (1.0 - SceneUBO.r_g3)) * 0.875;
-	else 
-		fv = (fv / SceneUBO.r_g3) * 0.125;
+	//if (fv > SceneUBO.r_g3)
+	float fv1 = 0.125 + ((fv - SceneUBO.r_g3) / (1.0 - SceneUBO.r_g3)) * 0.875;
+	//else 
+	float fv2 = (fv / SceneUBO.r_g3) * 0.125;
+
+	fv = clamp(fv1, fv2, step(fv, SceneUBO.r_g3));
 
 	return clamp(pow( fv, SceneUBO.r_g ), 0.0, 1.0);
 }
@@ -372,10 +374,12 @@ float LightGammaToLinearInternal(float color)
 
 	fv = fv * max(SceneUBO.v_brightness, 1.0);
 
-	if (fv > SceneUBO.r_g3)
-		fv = 0.125 + ((fv - SceneUBO.r_g3) / (1.0 - SceneUBO.r_g3)) * 0.875;
-	else 
-		fv = (fv / SceneUBO.r_g3) * 0.125;
+	//if (fv > SceneUBO.r_g3)
+	float fv1 = 0.125 + ((fv - SceneUBO.r_g3) / (1.0 - SceneUBO.r_g3)) * 0.875;
+	//else 
+	float fv2 = (fv / SceneUBO.r_g3) * 0.125;
+
+	fv = clamp(fv1, fv2, step(fv, SceneUBO.r_g3));
 
 	return clamp(fv, 0.0, 1.0);
 }
