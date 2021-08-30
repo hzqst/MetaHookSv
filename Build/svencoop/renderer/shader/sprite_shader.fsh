@@ -32,6 +32,8 @@ layout(location = 0) out vec4 out_Diffuse;
 
 void main(void)
 {
+	ClipPlaneTest(v_worldpos.xyz, v_normal.xyz);
+
 	vec4 baseColor = texture2D(baseTex, v_texcoord);
 
 	baseColor = TexGammaToLinear(baseColor);
@@ -41,17 +43,6 @@ void main(void)
 	lightmapColor = GammaToLinear(lightmapColor);
 
 	vec3 vNormal = normalize(v_normal.xyz);
-
-#ifdef CLIP_ENABLED
-	vec4 clipVec = vec4(v_worldpos.xyz, 1);
-	vec4 clipPlane = SceneUBO.clipPlane;
-	if(dot(clipVec, clipPlane) < 0)
-		discard;
-
-	clipPlane.w += 32.0;
-	if(dot(clipVec, clipPlane) < 0 && dot(v_normal.xyz, -clipPlane.xyz) > 0.866)
-		discard;
-#endif
 
 #ifdef GBUFFER_ENABLED
 
@@ -67,15 +58,17 @@ void main(void)
 
 #else
 
-	vec4 color = CalcFog(baseColor * lightmapColor);
+	vec4 finalColor = baseColor * lightmapColor;
+
+	finalColor = CalcFog(finalColor);
 
 	#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED) 
 		
-		GatherFragment(color);
+		GatherFragment(finalColor);
 
 	#endif
 
-	out_Diffuse = color;	
+	out_Diffuse = finalColor;	
 
 #endif
 }

@@ -138,22 +138,18 @@ vec3 ShadowGetWorldPosition(vec4 coord, float layer)
 	return texture2DArray(shadowmapTexArray, vec3(coord.xy / coord.w, layer) ).xyz;
 }
 
-float CalcShadowIntensityInternal(vec3 worldpos, float lightmapLum, float layer, float shadow_high, float shadow_medium, float shadow_low)
+float CalcShadowIntensityInternal(vec3 worldpos, int ilayer, float layer, float shadow_high, float shadow_medium, float shadow_low)
 {
 	float shadow_intensity = 1.0;
 
 	vec3 scene = worldpos.xyz;
 	
-	int ilayer = int(layer);
 	vec3 caster = ShadowGetWorldPosition(v_shadowcoord[ilayer], layer);
 
 	float dist = distance(caster, scene);
 	float distlerp = (dist - SceneUBO.shadowFade.x) / SceneUBO.shadowFade.y;
 	shadow_intensity *= 1.0 - clamp(distlerp, 0.0, 1.0);
-	
-	float lumlerp = (lightmapLum - SceneUBO.shadowFade.w) / (SceneUBO.shadowFade.z - SceneUBO.shadowFade.w);
-	shadow_intensity *= clamp(lumlerp, 0.0, 1.0);
-	
+
 	shadow_high = 1.0 - shadow_high;
 	shadow_medium = 1.0 - shadow_medium;
 	shadow_low = 1.0 - shadow_low;
@@ -164,95 +160,92 @@ float CalcShadowIntensityInternal(vec3 worldpos, float lightmapLum, float layer,
 	return shadow_final;
 }
 
-float CalcShadowIntensity(vec3 worldpos, vec3 lightmap, vec3 norm, vec3 lightdir)
+float CalcShadowIntensity(vec3 worldpos, vec3 norm, vec3 lightdir)
 {
 	float shadow_final = 0.0;
 	if(dot(norm.xyz, lightdir.xyz) < 0.0) 
 	{
-		float lightmapLum = 0.299 * lightmap.x + 0.587 * lightmap.y + 0.114 * lightmap.z;
-		if(lightmapLum > SceneUBO.shadowFade.w)
-		{
-			float shadow_high = 1.0;
+		float shadow_high = 1.0;
 
-			#ifdef SHADOWMAP_HIGH_ENABLED
-				shadow_high = 0.0;
-				shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2(0.0,0.0), 0.0) * 0.25;
-				shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( -1.0, -1.0), 0.0) * 0.0625;
-				shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( -1.0, 0.0), 0.0) * 0.125;
-				shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( -1.0, 1.0), 0.0) * 0.0625;
-				shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( 0.0, -1.0), 0.0) * 0.125;
-				shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( 0.0, 1.0), 0.0) * 0.125;
-				shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( 1.0, -1.0), 0.0) * 0.0625;
-				shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( 1.0, 0.0), 0.0) * 0.125;
-				shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( 1.0, 1.0), 0.0) * 0.0625;
-			#endif
-
-			float shadow_medium = 1.0;
-
-			#ifdef SHADOWMAP_MEDIUM_ENABLED
-				shadow_medium = 0.0;
-				shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.0,0.0), 1.0);
-				shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.035,0.0), 1.0);
-				shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(-0.035,0.0), 1.0);
-				shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.0,0.035), 1.0);
-				shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.0,-0.035), 1.0);
-				shadow_medium *= 0.2;
-			#endif
-
-			float shadow_low = 1.0;
-
-			#ifdef SHADOWMAP_LOW_ENABLED
-				shadow_low = 0.0;
-				shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.0,0.0), 2.0);
-				shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.035,0.0), 2.0);
-				shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(-0.035,0.0), 2.0);
-				shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.0,0.035), 2.0);
-				shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.0,-0.035), 2.0);
-				shadow_low *= 0.2;
-			#endif
-
-			if(false)
-			{
-				//nothing here
-			}
-			
 		#ifdef SHADOWMAP_HIGH_ENABLED
-			else if(shadow_high < 0.95)
-			{
-				shadow_final = CalcShadowIntensityInternal(worldpos, lightmapLum, 0.0, shadow_high, shadow_medium, shadow_low);
-			}
+			shadow_high = 0.0;
+			shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2(0.0,0.0), 0.0) * 0.25;
+			shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( -1.0, -1.0), 0.0) * 0.0625;
+			shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( -1.0, 0.0), 0.0) * 0.125;
+			shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( -1.0, 1.0), 0.0) * 0.0625;
+			shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( 0.0, -1.0), 0.0) * 0.125;
+			shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( 0.0, 1.0), 0.0) * 0.125;
+			shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( 1.0, -1.0), 0.0) * 0.0625;
+			shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( 1.0, 0.0), 0.0) * 0.125;
+			shadow_high += ShadowCompareDepth(v_shadowcoord[0], vec2( 1.0, 1.0), 0.0) * 0.0625;
 		#endif
+
+		float shadow_medium = 1.0;
 
 		#ifdef SHADOWMAP_MEDIUM_ENABLED
-			else if(shadow_medium < 0.95)
-			{
-				shadow_final = CalcShadowIntensityInternal(worldpos, lightmapLum, 1.0, shadow_high, shadow_medium, shadow_low);
-			}
+			shadow_medium = 0.0;
+			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.0,0.0), 1.0);
+			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.035,0.0), 1.0);
+			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(-0.035,0.0), 1.0);
+			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.0,0.035), 1.0);
+			shadow_medium += ShadowCompareDepth(v_shadowcoord[1], vec2(0.0,-0.035), 1.0);
+			shadow_medium *= 0.2;
 		#endif
 
+		float shadow_low = 1.0;
+
 		#ifdef SHADOWMAP_LOW_ENABLED
-			else if(shadow_low < 0.95)
-			{
-				shadow_final = CalcShadowIntensityInternal(worldpos, lightmapLum, 2.0, shadow_high, shadow_medium, shadow_low);
-			}
+			shadow_low = 0.0;
+			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.0,0.0), 2.0);
+			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.035,0.0), 2.0);
+			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(-0.035,0.0), 2.0);
+			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.0,0.035), 2.0);
+			shadow_low += ShadowCompareDepth(v_shadowcoord[2], vec2(0.0,-0.035), 2.0);
+			shadow_low *= 0.2;
 		#endif
+
+		if(false)
+		{
+			//nothing here
 		}
+		
+	#ifdef SHADOWMAP_HIGH_ENABLED
+		else if(shadow_high < 0.95)
+		{
+			shadow_final = CalcShadowIntensityInternal(worldpos, 0, 0.0, shadow_high, shadow_medium, shadow_low);
+		}
+	#endif
+
+	#ifdef SHADOWMAP_MEDIUM_ENABLED
+		else if(shadow_medium < 0.95)
+		{
+			shadow_final = CalcShadowIntensityInternal(worldpos, 1, 1.0, shadow_high, shadow_medium, shadow_low);
+		}
+	#endif
+
+	#ifdef SHADOWMAP_LOW_ENABLED
+		else if(shadow_low < 0.95)
+		{
+			shadow_final = CalcShadowIntensityInternal(worldpos, 2, 2.0, shadow_high, shadow_medium, shadow_low);
+		}
+	#endif
 	}
 	return shadow_final;
 }
 
+float CalcShadowIntensityLumFadeout(vec4 lightmapColor, float intensity)
+{
+	float lightmapLum = 0.299 * lightmapColor.x + 0.587 * lightmapColor.y + 0.114 * lightmapColor.z;
+	float shadowLerp = (lightmapLum - SceneUBO.shadowFade.w) / (SceneUBO.shadowFade.z - SceneUBO.shadowFade.w);
+	float shadowIntensity = intensity * clamp(shadowLerp, 0.0, 1.0);
+	shadowIntensity *= SceneUBO.shadowColor.a;
+
+	return shadowIntensity;
+}
+
 void main()
 {
-#ifdef CLIP_ENABLED
-	vec4 clipVec = vec4(v_worldpos.xyz, 1);
-	vec4 clipPlane = SceneUBO.clipPlane;
-	if(dot(clipVec, clipPlane) < 0)
-		discard;
-
-	clipPlane.w += 32.0;
-	if(dot(clipVec, clipPlane) < 0 && dot(v_normal.xyz, -clipPlane.xyz) > 0.866)
-		discard;
-#endif
+	ClipPlaneTest(v_worldpos.xyz, v_normal.xyz);
 
 #ifdef DIFFUSE_ENABLED
 
@@ -307,13 +300,6 @@ void main()
 
 #endif
 
-#ifdef SHADOWMAP_ENABLED
-
-	lightmapColor.xyz = mix(lightmapColor.xyz, SceneUBO.shadowColor.xyz, CalcShadowIntensity(v_worldpos, lightmapColor.xyz, vNormal, SceneUBO.shadowDirection.xyz) * SceneUBO.shadowColor.a);
-
-#endif
-
-
 #ifdef DETAILTEXTURE_ENABLED
 
 #ifdef BINDLESS_ENABLED
@@ -338,7 +324,15 @@ void main()
 
 #else
 
+#ifdef SHADOWMAP_ENABLED
+
+	float shadowIntensity = CalcShadowIntensity(v_worldpos, vNormal, SceneUBO.shadowDirection.xyz);
+
+#endif
+
 	#ifdef GBUFFER_ENABLED
+
+		vec4 specularColor = vec4(0.0);
 
 		vec2 vOctNormal = UnitVectorToOctahedron(vNormal);
 
@@ -351,13 +345,13 @@ void main()
 			#endif
 
 			vec2 specularTexCoord = vec2(v_diffusetexcoord.x * v_speculartexcoord.x, v_diffusetexcoord.y * v_speculartexcoord.y);
-			vec4 specularColor = texture2D(specularTex, specularTexCoord);
-
-		#else
-
-			vec4 specularColor = vec4(0.0);
+			specularColor.xy = texture2D(specularTex, specularTexCoord).xy;
 
 		#endif
+
+#ifdef SHADOWMAP_ENABLED
+		specularColor.z = shadowIntensity;
+#endif
 
 		out_Diffuse = diffuseColor * detailColor;
 		out_Lightmap = lightmapColor;
@@ -366,6 +360,13 @@ void main()
 		out_Additive = vec4(0.0);
 
 	#else
+
+#ifdef SHADOWMAP_ENABLED
+
+		shadowIntensity = CalcShadowIntensityLumFadeout(lightmapColor, shadowIntensity);
+		lightmapColor.xyz = mix(lightmapColor.xyz, SceneUBO.shadowColor.xyz, shadowIntensity);
+
+#endif
 
 		#ifdef TRANSPARENT_ENABLED
 		vec4 color = CalcFog(diffuseColor * lightmapColor * detailColor * EntityUBO.color);

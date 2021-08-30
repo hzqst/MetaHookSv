@@ -12,6 +12,8 @@ layout(location = 0) out vec4 out_Diffuse;
 
 void main()
 {
+	ClipPlaneTest(v_worldpos.xyz, -SceneUBO.vpn.xyz);
+
 	vec4 diffuseColor = texture2D(diffuseTex, v_diffusetexcoord.xy);
 
 	diffuseColor = TexGammaToLinear(diffuseColor);
@@ -21,6 +23,8 @@ void main()
 	lightmapColor = GammaToLinear(lightmapColor);
 
 	vec4 finalColor = diffuseColor * lightmapColor;
+
+	finalColor = CalcFog(finalColor);
 
 	#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED) 
 		

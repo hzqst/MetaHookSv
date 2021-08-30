@@ -473,8 +473,22 @@ void triapi_RenderMode(int mode)
 	case kRenderTransAdd:
 	{
 		R_SetGBufferBlend(GL_ONE, GL_ONE);
-		if(r_draw_oitblend)
-			R_UseLegacySpriteProgram(SPRITE_OIT_ADDITIVE_BLEND_ENABLED, NULL);
+		if (r_draw_oitblend)
+		{
+			int LegacySpriteProgramState = SPRITE_OIT_ADDITIVE_BLEND_ENABLED;
+
+			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			{
+				LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+			}
+
+			if (r_draw_pass == r_draw_reflect && curwater)
+			{
+				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
+			}
+
+			R_UseLegacySpriteProgram(LegacySpriteProgramState, NULL);
+		}
 		break;
 	}
 
@@ -484,7 +498,21 @@ void triapi_RenderMode(int mode)
 	{
 		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		if (r_draw_oitblend)
-			R_UseLegacySpriteProgram(SPRITE_OIT_ALPHA_BLEND_ENABLED, NULL);
+		{
+			int LegacySpriteProgramState = SPRITE_OIT_ALPHA_BLEND_ENABLED;
+
+			if (r_draw_pass == r_draw_reflect && curwater)
+			{
+				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
+			}
+
+			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			{
+				LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+			}
+
+			R_UseLegacySpriteProgram(LegacySpriteProgramState, NULL);
+		}
 		break;
 	}
 	}

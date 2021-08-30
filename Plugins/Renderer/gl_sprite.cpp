@@ -33,6 +33,14 @@ void R_UseSpriteProgram(int state, sprite_program_t *progOutput)
 		if (state & SPRITE_OIT_ADDITIVE_BLEND_ENABLED)
 			defs << "#define OIT_ADDITIVE_BLEND_ENABLED\n";
 
+		if (state & SPRITE_LINEAR_FOG_ENABLED)
+			defs << "#define LINEAR_FOG_ENABLED\n";
+
+		if (state & SPRITE_CLIP_ENABLED)
+			defs << "#define CLIP_ENABLED\n";
+
+		//...
+
 		if (state & SPRITE_PARALLEL_UPRIGHT_ENABLED)
 			defs << "#define PARALLEL_UPRIGHT_ENABLED\n";
 
@@ -90,6 +98,12 @@ void R_UseLegacySpriteProgram(int state, legacysprite_program_t *progOutput)
 
 		if (state & SPRITE_OIT_ADDITIVE_BLEND_ENABLED)
 			defs << "#define OIT_ADDITIVE_BLEND_ENABLED\n";
+
+		if (state & SPRITE_LINEAR_FOG_ENABLED)
+			defs << "#define LINEAR_FOG_ENABLED\n";
+
+		if (state & SPRITE_CLIP_ENABLED)
+			defs << "#define CLIP_ENABLED\n";
 
 		auto def = defs.str();
 
@@ -321,6 +335,16 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 		}
 	}
 	glEnable(GL_ALPHA_TEST);
+
+	if (r_draw_pass == r_draw_reflect && curwater)
+	{
+		SpriteProgramState |= SPRITE_CLIP_ENABLED;
+	}
+
+	if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+	{
+		SpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+	}
 
 	if (drawgbuffer)
 	{
