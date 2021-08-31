@@ -250,8 +250,10 @@ void main()
 #ifdef DIFFUSE_ENABLED
 
 	#ifdef BINDLESS_ENABLED
-		#ifdef DECAL_ENABLED
+		#if defined(DECAL_ENABLED)
 			sampler2D diffuseTex = sampler2D(DecalSSBO[v_decalindex]);
+		#elif defined(SKYBOX_ENABLED)
+			sampler2D diffuseTex = sampler2D(SkyboxSSBO[v_drawid]);
 		#else
 			sampler2D diffuseTex = sampler2D(TextureSSBO[u_baseDrawId + v_drawid * 5 + TEXTURE_SSBO_DIFFUSE]);
 		#endif
@@ -270,6 +272,7 @@ void main()
 	#endif
 
 	diffuseColor = TexGammaToLinear(diffuseColor);
+
 #else
 
 	vec4 diffuseColor = vec4(1.0, 1.0, 1.0, 1.0);

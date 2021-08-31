@@ -1,15 +1,14 @@
 #include "gl_local.h"
 #include "gl_water.h"
 
-colorVec *gWaterColor;
-cshift_t *cshift_water;
+colorVec *gWaterColor = NULL;
+cshift_t *cshift_water = NULL;
+int *gSkyTexNumber = NULL;
 
 void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, WaterVBOCache->hEBO);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_TEXTURE_SSBO, WaterVBOCache->hTextureSSBO);
-
-	//glDisable(GL_CULL_FACE);
 
 	if (r_draw_opaque)
 	{
@@ -215,8 +214,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 	GL_UseProgram(0);
 
 	glDisable(GL_STENCIL_TEST);
-	glDisable(GL_BLEND); 
-	//glEnable(GL_CULL_FACE);
+	glDisable(GL_BLEND);
 }
 
 void R_DrawWaters(void)
@@ -298,103 +296,20 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	}
 }
 
-
-int *gSkyTexNumber;
-
-int st_to_vec[6][3] =
-{
-	{ 3, -1, 2 },
-	{ -3, 1, 2 },
-
-	{ 1, 3, 2 },
-	{ -1, -3, 2 },
-
-	{ -2, -1, 3 },
-	{ 2, -1, -3 }
-};
-
-int vec_to_st[6][3] =
-{
-	{ -2, 3, 1 },
-	{ 2, 3, -1 },
-
-	{ 1, 3, 2 },
-	{ -1, 3, -2 },
-
-	{ -2, -1, 3 },
-	{ -2, 1, -3 }
-};
-
-#define SQRT3INV		(0.57735f)		// a little less than 1 / sqrt(3)
-
-void MakeSkyVec(float s, float t, int axis, float zFar, vec3_t position, vec2_t texCoord)
-{
-	vec3_t		v, b;
-	int			j, k;
-	float		width;
-
-	static float flScale = SQRT3INV;
-	width = zFar * flScale;
-
-	if (s < -1)
-		s = -1;
-	else if (s > 1)
-		s = 1;
-	if (t < -1)
-		t = -1;
-	else if (t > 1)
-		t = 1;
-
-	b[0] = s * width;
-	b[1] = t * width;
-	b[2] = width;
-
-	for (j = 0; j < 3; j++)
-	{
-		k = st_to_vec[axis][j];
-		if (k < 0)
-			v[j] = -b[-k - 1];
-		else
-			v[j] = b[k - 1];
-		v[j] += r_origin[j];
-	}
-
-	// avoid bilerp seam
-	s = (s + 1)*0.5;
-	t = (t + 1)*0.5;
-
-	// AV - I'm commenting this out since our skyboxes aren't 512x512 and we don't
-	//      modify the textures to deal with the border seam fixup correctly.
-	//      The code below was causing seams in the skyboxes.
-	
-	if (s < 1.0/512)
-		s = 1.0/512;
-	else if (s > 511.0/512)
-		s = 511.0/512;
-	if (t < 1.0/512)
-		t = 1.0/512;
-	else if (t > 511.0/512)
-		t = 511.0/512;
-	
-
-	t = 1.0 - t;
-	VectorCopy(v, position);
-	texCoord[0] = s;
-	texCoord[1] = t;
-}
-
-int skytexorder[6] = { 0, 2, 1, 3, 4, 5 };
-
 void R_DrawSkyBox(void)
 {
 	if (CL_IsDevOverviewMode())
 		return;
 
 	glDisable(GL_BLEND);
-	glColor4f(1, 1, 1, 1);
 	glDepthMask(0);
 
-	int WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_LEGACY_ENABLED;
+	int WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_SKYBOX_ENABLED;
+
+	if (bUseBindless)
+	{
+		WSurfProgramState |= WSURF_BINDLESS_ENABLED;
+	}
 
 	if (r_draw_pass == r_draw_reflect && curwater)
 	{
@@ -414,41 +329,36 @@ void R_DrawSkyBox(void)
 	wsurf_program_t prog = { 0 };
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 
-	float zFar = (r_params.movevars) ? r_params.movevars->zmax : 4096;
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_SKYBOX_SSBO, r_wsurf.hSkyboxSSBO);
 
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(4);
-
-	for (int i = 0; i < 6; i++)
+	if (WSurfProgramState & WSURF_BINDLESS_ENABLED)
 	{
-		int order;
-
+		glDrawArrays(GL_QUADS, 0, 4 * 6);
+	}
+	else
+	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			order = i;
+			for (int i = 0; i < 6; ++i)
+			{
+				GL_Bind(gSkyTexNumber[i]);
+				glDrawArrays(GL_QUADS, 0, 4);
+			}
 		}
 		else
 		{
-			order = skytexorder[i];
+			const int skytexorder[6] = { 0, 2, 1, 3, 4, 5 };
+			for (int i = 0; i < 6; ++i)
+			{
+				GL_Bind(gSkyTexNumber[skytexorder[i]]);
+				glDrawArrays(GL_QUADS, 0, 4);
+			}
 		}
-
-		vec3_t vertexArray[4];
-		vec2_t texcoordArray[4];
-
-		GL_Bind(gSkyTexNumber[order]);
-
-		MakeSkyVec(-1.0f, -1.0f, i, zFar, vertexArray[0], texcoordArray[0]);
-		MakeSkyVec(-1.0f, 1.0f, i, zFar, vertexArray[1], texcoordArray[1]);
-		MakeSkyVec(1.0f, 1.0f, i, zFar, vertexArray[2], texcoordArray[2]);
-		MakeSkyVec(1.0f, -1.0f, i, zFar, vertexArray[3], texcoordArray[3]);
-
-		glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, vertexArray);
-		glVertexAttribPointer(4, 2, GL_FLOAT, false, 0, texcoordArray);
-		glDrawArrays(GL_QUADS, 0, 4);
 	}
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(4);
+
+	GL_UseProgram(0);
 
 	glDepthMask(1);
-	GL_UseProgram(0);
 }

@@ -37,6 +37,7 @@
 #define MAX_NUM_NODES 16
 
 #define BINDING_POINT_SCENE_UBO 0
+#define BINDING_POINT_SKYBOX_SSBO 1
 #define BINDING_POINT_DECAL_SSBO 1
 #define BINDING_POINT_TEXTURE_SSBO 1
 #define BINDING_POINT_ENTITY_UBO 2
@@ -226,6 +227,8 @@ typedef struct scene_ubo_s
 	float v_lambert;
 	float v_gamma;
 	float v_texgamma;
+	float z_near;
+	float z_far;
 }scene_ubo_t;
 
 typedef struct entity_ubo_s
@@ -271,6 +274,7 @@ typedef struct r_worldsurf_s
 		hSceneUBO = 0;
 		hDecalVBO = 0;
 		hDecalSSBO = 0;
+		hSkyboxSSBO = 0;
 		hOITFragmentSSBO = 0;
 		hOITNumFragmentSSBO = 0;
 		hOITAtomicSSBO = 0;
@@ -285,12 +289,14 @@ typedef struct r_worldsurf_s
 
 		iNumLightmapTextures = 0;
 		iLightmapTextureArray = 0;
+		memset(vSkyboxTextureHandles, 0, sizeof(vSkyboxTextureHandles));
 	}
 
 	GLuint				hSceneVBO;
 	GLuint				hSceneUBO;
 	GLuint				hDecalVBO;
 	GLuint				hDecalSSBO;
+	GLuint				hSkyboxSSBO;
 	GLuint				hOITFragmentSSBO;
 	GLuint				hOITNumFragmentSSBO;
 	GLuint				hOITAtomicSSBO;
@@ -308,6 +314,8 @@ typedef struct r_worldsurf_s
 
 	int					iNumLightmapTextures;
 	int					iLightmapTextureArray;
+
+	GLuint64			vSkyboxTextureHandles[6];
 
 	std::vector <bspentity_t> vBSPEntities;
 
@@ -337,8 +345,8 @@ extern vec3_t r_frustum_origin[4];
 extern vec3_t r_frustum_vec[4];
 extern float r_world_matrix_inv[16];
 extern float r_proj_matrix_inv[16];
-extern float r_near_z;
-extern float r_far_z;
+extern float r_znear;
+extern float r_zfar;
 extern bool r_ortho;
 
 extern cl_entity_t *g_OITBlendObjects[512];
@@ -384,7 +392,6 @@ void R_BeginDetailTexture(int texId);
 void R_EndDetailTexture(void);
 void R_DrawSequentialPolyVBO(msurface_t *s);
 wsurf_vbo_t *R_PrepareWSurfVBO(model_t *mod);
-void R_EnableWSurfVBO(wsurf_vbo_t *modcache);
 void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent);
 void R_DrawWSurfVBOSolid(wsurf_vbo_t *modcache);
 void R_ShutdownWSurf(void);
@@ -407,7 +414,7 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
 #define WSURF_SHADOWMAP_MEDIUM_ENABLED		0x1000
 #define WSURF_SHADOWMAP_LOW_ENABLED			0x2000
 #define WSURF_BINDLESS_ENABLED				0x4000
-#define WSURF_LEGACY_ENABLED				0x8000
+#define WSURF_SKYBOX_ENABLED				0x8000
 #define WSURF_DECAL_ENABLED					0x10000
 #define WSURF_CLIP_ENABLED					0x20000
 #define WSURF_OIT_ALPHA_BLEND_ENABLED		0x40000

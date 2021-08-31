@@ -809,7 +809,7 @@ void R_LinearizeDepth(FBO_Container_t *fbo)
 
 	GL_UseProgram(depth_linearize.program);
 
-	glUniform4f(0, r_near_z * r_far_z, r_near_z - r_far_z, r_far_z, r_ortho ? 0 : 1);
+	glUniform4f(0, r_znear * r_zfar, r_znear - r_zfar, r_zfar, r_ortho ? 0 : 1);
 	
 	GL_Bind(fbo->s_hBackBufferDepthTex);
 

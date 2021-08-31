@@ -38,19 +38,75 @@ flat out int v_drawid;
 flat out int v_decalindex;
 #endif
 
+#ifdef SKYBOX_ENABLED
+
+void MakeSkyVec(float s, float t, int axis, float zFar, out vec3 position, out vec2 texCoord)
+{
+	const float flScale = 0.57735;
+	const ivec3 st_to_vec[6] =
+	{
+		ivec3( 3, -1, 2 ),
+		ivec3( -3, 1, 2 ),
+
+		ivec3( 1, 3, 2 ),
+		ivec3( -1, -3, 2 ),
+
+		ivec3( -2, -1, 3 ),
+		ivec3( 2, -1, -3 )
+	};
+
+	float width = zFar * flScale;
+
+	vec3 b = vec3(s * width, t * width, width);
+
+	vec3 v = SceneUBO.viewpos.xyz;
+	for (int j = 0; j < 3; j++)
+	{
+		int k = st_to_vec[axis][j];
+		float v_negetive = -b[-k - 1];
+		float v_positive = b[k - 1];
+		v[j] += mix(v_negetive, v_positive, float(step(0, k)) );
+	}
+
+	// avoid bilerp seam
+	s = (s + 1)*0.5;
+	t = (t + 1)*0.5;
+	
+	// AV - I'm commenting this out since our skyboxes aren't 512x512 and we don't
+	//      modify the textures to deal with the border seam fixup correctly.
+	//      The code below was causing seams in the skyboxes.
+	s = clamp(s, 1.0 / 512.0, 511.0 / 512.0);
+	t = clamp(t, 1.0 / 512.0, 511.0 / 512.0);
+	
+	t = 1.0 - t;
+
+	position = v;
+	texCoord = vec2(s, t);
+}
+
+#endif
+
+
 void main(void)
 {
-#ifdef LEGACY_ENABLED
+#ifdef SKYBOX_ENABLED
 
-	vec4 worldpos4 = vec4(in_vertex, 1.0);
+	int vertidx = gl_VertexID % 4;
+	int quadidx = gl_VertexID / 4;
+	const vec4 s_array = vec4(-1.0, -1.0, 1.0, 1.0);
+	const vec4 t_array = vec4(-1.0, 1.0, 1.0, -1.0);
+
+	vec3 vertex = vec3(0.0);
+	vec2 texcoord = vec2(0.0);
+	MakeSkyVec(s_array[vertidx], t_array[vertidx], quadidx, SceneUBO.z_far, vertex, texcoord);
+
+	vec4 worldpos4 = vec4(vertex, 1.0);
     v_worldpos = worldpos4.xyz;
 
 	vec4 normal4 = vec4(in_normal, 0.0);
 	v_normal = normalize((normal4).xyz);
 
-	#ifdef DIFFUSE_ENABLED
-		v_diffusetexcoord = vec2(in_diffusetexcoord.x, in_diffusetexcoord.y);
-	#endif
+	v_diffusetexcoord = texcoord;
 
 #else
 
@@ -113,6 +169,11 @@ void main(void)
 	v_decalindex = in_decalindex;
 #endif
 
+#ifdef SKYBOX_ENABLED
+	v_drawid = quadidx;
+#else
 	v_drawid = gl_DrawIDARB;
+#endif
+
 	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * worldpos4;
 }

@@ -46,6 +46,7 @@ layout(pixel_center_integer) in vec4 gl_FragCoord;
 #define TEXTURE_SSBO_WATER_DEPTH 4
 
 #define BINDING_POINT_SCENE_UBO 0
+#define BINDING_POINT_SKYBOX_SSBO 1
 #define BINDING_POINT_DECAL_SSBO 1
 #define BINDING_POINT_TEXTURE_SSBO 1
 #define BINDING_POINT_ENTITY_UBO 2
@@ -87,6 +88,8 @@ struct scene_ubo_t{
 	float v_lambert;
 	float v_gamma;
 	float v_texgamma;
+	float z_near;
+	float z_far;
 };
 
 struct entity_ubo_t{
@@ -139,6 +142,19 @@ layout (std430, binding = BINDING_POINT_DECAL_SSBO) coherent buffer DecalBlock
 #else
 
 	uvec2 DecalSSBO[];
+
+#endif
+};
+
+layout (std430, binding = BINDING_POINT_SKYBOX_SSBO) coherent buffer SkyboxBlock
+{
+#if defined(BINDLESS_ENABLED) && defined(UINT64_ENABLED)
+
+	uint64_t SkyboxSSBO[];
+
+#else
+
+	uvec2 SkyboxSSBO[];
 
 #endif
 };

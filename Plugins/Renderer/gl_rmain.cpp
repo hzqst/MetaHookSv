@@ -942,8 +942,8 @@ void MYgluPerspectiveV(double fovy, double aspect, double zNear, double zFar)
 	auto top = right * aspect;
 	glFrustum(-right, right, -top, top, zNear, zFar);
 
-	r_near_z = zNear;
-	r_far_z = zFar;
+	r_znear = zNear;
+	r_zfar = zFar;
 	r_ortho = false;
 
 	vec3_t farplane;
@@ -976,8 +976,8 @@ void MYgluPerspectiveH(double fovy, double aspect, double zNear, double zFar)
 	auto right = top * aspect;
 	glFrustum(-right, right, -top, top, zNear, zFar);
 
-	r_near_z = zNear;
-	r_far_z = zFar;
+	r_znear = zNear;
+	r_zfar = zFar;
 	r_ortho = false;
 
 	vec3_t farplane;
@@ -1982,8 +1982,8 @@ void R_SetupGL(void)
 				16000.0 - gDevOverview->z_min,
 				16000.0 - gDevOverview->z_max);
 
-			r_near_z = 16000.0 - gDevOverview->z_min;
-			r_far_z = 16000.0 - gDevOverview->z_max;
+			r_znear = 16000.0 - gDevOverview->z_min;
+			r_zfar = 16000.0 - gDevOverview->z_max;
 			r_ortho = true;
 		}
 		else
@@ -2016,8 +2016,8 @@ void R_SetupGL(void)
 				16000.0 - gDevOverview->z_min,
 				16000.0 - gDevOverview->z_max);
 
-			r_near_z = 16000.0 - gDevOverview->z_min;
-			r_far_z = 16000.0 - gDevOverview->z_max;
+			r_znear = 16000.0 - gDevOverview->z_min;
+			r_zfar = 16000.0 - gDevOverview->z_max;
 			r_ortho = true;
 		}
 		else

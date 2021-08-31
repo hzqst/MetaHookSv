@@ -17,8 +17,8 @@ float r_world_matrix_inv[16];
 float r_proj_matrix_inv[16];
 vec3_t r_frustum_origin[4];
 vec3_t r_frustum_vec[4];
-float r_near_z = 0;
-float r_far_z = 0;
+float r_znear = 0;
+float r_zfar = 0;
 bool r_ortho = false;
 int r_wsurf_drawcall = 0;
 int r_wsurf_polys = 0;
@@ -122,8 +122,8 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		if (state & WSURF_BINDLESS_ENABLED)
 			defs << "#define BINDLESS_ENABLED\n";
 
-		if (state & WSURF_LEGACY_ENABLED)
-			defs << "#define LEGACY_ENABLED\n";
+		if (state & WSURF_SKYBOX_ENABLED)
+			defs << "#define SKYBOX_ENABLED\n";
 
 		if (state & WSURF_DECAL_ENABLED)
 			defs << "#define DECAL_ENABLED\n";
@@ -191,22 +191,13 @@ void R_FreeSceneUBO(void)
 		GL_DeleteBuffer(r_wsurf.hDecalSSBO);
 		r_wsurf.hDecalSSBO = 0;
 	}
-#if 0
-	if (r_wsurf.hSpriteFramesSSBO)
+
+	if (r_wsurf.hSkyboxSSBO)
 	{
-		GL_DeleteBuffer(r_wsurf.hSpriteFramesSSBO);
-		r_wsurf.hSpriteFramesSSBO = 0;
+		GL_DeleteBuffer(r_wsurf.hSkyboxSSBO);
+		r_wsurf.hSkyboxSSBO = 0;
 	}
 
-	for (int i = 0; i < kRenderTransAdd + 1; ++i)
-	{
-		if (r_wsurf.hSpriteEntriesSSBO[i])
-		{
-			GL_DeleteBuffer(r_wsurf.hSpriteEntriesSSBO[i]);
-			r_wsurf.hSpriteFramesSSBO = 0;
-		}
-	}
-#endif
 	if (r_wsurf.hOITFragmentSSBO)
 	{
 		GL_DeleteBuffer(r_wsurf.hOITFragmentSSBO);
@@ -234,6 +225,18 @@ void R_FreeLightmapArray(void)
 		r_wsurf.iLightmapTextureArray = 0;
 	}
 	r_wsurf.iNumLightmapTextures = 0;
+
+	if (bUseBindless)
+	{
+		for (int i = 0; i < 6; ++i)
+		{
+			if (r_wsurf.vSkyboxTextureHandles[i])
+			{
+				//glMakeTextureHandleNonResidentARB(r_wsurf.vSkyboxTextureHandles[i]);
+				r_wsurf.vSkyboxTextureHandles[i] = 0;
+			}
+		}
+	}
 }
 
 void R_FreeVertexBuffer(void)
@@ -973,6 +976,11 @@ void R_GenerateSceneUBO(void)
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * MAX_DECALS, NULL, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
+	r_wsurf.hSkyboxSSBO = GL_GenBuffer();
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hSkyboxSSBO);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * 6, NULL, GL_STATIC_DRAW);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
 	if (bUseOITBlend)
 	{
 		size_t fragmentBufferSizeBytes = sizeof(FragmentNode) * MAX_NUM_NODES * glwidth * glheight;
@@ -1024,16 +1032,50 @@ void R_ClearDecalCache(void)
 
 void R_GenerateLightmapArray(void)
 {
-	r_wsurf.iLightmapTextureArray = GL_GenTexture();
-	glBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, BLOCK_WIDTH, BLOCK_HEIGHT, r_wsurf.iNumLightmapTextures, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
-	for (int i = 0; i < r_wsurf.iNumLightmapTextures; ++i)
+	if (!r_wsurf.iLightmapTextureArray)
 	{
-		glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, BLOCK_WIDTH, BLOCK_HEIGHT, 1, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + 0x10000 * i);
+		r_wsurf.iLightmapTextureArray = GL_GenTexture();
+
+		glBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, BLOCK_WIDTH, BLOCK_HEIGHT, r_wsurf.iNumLightmapTextures, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
+		for (int i = 0; i < r_wsurf.iNumLightmapTextures; ++i)
+		{
+			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, BLOCK_WIDTH, BLOCK_HEIGHT, 1, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + 0x10000 * i);
+		}
+		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 	}
-	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+
+	if (bUseBindless)
+	{
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			for (int i = 0; i < 6; ++i)
+			{
+				if (!r_wsurf.vSkyboxTextureHandles[i])
+				{
+					auto handle = glGetTextureHandleARB(gSkyTexNumber[i]);
+					glMakeTextureHandleResidentARB(handle);
+					r_wsurf.vSkyboxTextureHandles[i] = handle;
+				}
+			}
+		}
+		else
+		{
+			const int skytexorder[6] = { 0, 2, 1, 3, 4, 5 };
+			for (int i = 0; i < 6; ++i)
+			{
+				if (!r_wsurf.vSkyboxTextureHandles[i])
+				{
+					auto handle = glGetTextureHandleARB(gSkyTexNumber[skytexorder[i]]);
+					glMakeTextureHandleResidentARB(handle);
+					r_wsurf.vSkyboxTextureHandles[i] = handle;
+				}
+			}
+		}
+		glNamedBufferSubData(r_wsurf.hSkyboxSSBO, 0, sizeof(r_wsurf.vSkyboxTextureHandles), r_wsurf.vSkyboxTextureHandles);
+	}
 }
 
 wsurf_vbo_t *R_PrepareWSurfVBO(model_t *mod)
@@ -1886,7 +1928,6 @@ void R_NewMapWSurf(void)
 {
 	R_GenerateSceneUBO();
 
-	//R_ReloadSpriteFrameCache();
 	R_ClearDecalCache();
 
 	for (auto p : g_DetailTextureTable)
@@ -3441,7 +3482,8 @@ void R_SetupSceneUBO(void)
 	SceneUBO.v_lambert = v_lambert->value;
 	SceneUBO.v_gamma = v_gamma->value;
 	SceneUBO.v_texgamma = v_texgamma->value;
-
+	SceneUBO.z_near = r_znear;
+	SceneUBO.z_far = r_zfar;
 	glNamedBufferSubData(r_wsurf.hSceneUBO, 0, sizeof(SceneUBO), &SceneUBO);
 }
 
