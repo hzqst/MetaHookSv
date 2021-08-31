@@ -712,7 +712,7 @@ const char *PrimaryKey_ForBinding(const char *binding)
 	return "<not bound>";
 }
 
-void CDictionary::FinalizeString(std::wstring &output)
+void CDictionary::FinalizeString(std::wstring &output, int iPrefix)
 {
 	auto finalize = m_szSentence;
 
@@ -776,7 +776,10 @@ void CDictionary::FinalizeString(std::wstring &output)
 		m_pTextMessage->pMessage = utf8Text;
 	}*/
 
-	output = m_szSpeaker + finalize;
+	if(iPrefix)
+		output = m_szSpeaker + finalize;
+	else
+		output = finalize;
 }
 
 void CViewport::Start(void)

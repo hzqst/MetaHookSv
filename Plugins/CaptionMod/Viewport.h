@@ -48,7 +48,7 @@ public:
 	CDictionary();
 	~CDictionary();
 	void Load(CSV::CSVDocument::row_type &row, Color &defaultColor, vgui::IScheme *ischeme);
-	void FinalizeString(std::wstring &output);
+	void FinalizeString(std::wstring &output, int iPrefix);
 
 	dict_t					m_Type;
 	std::string				m_szTitle;

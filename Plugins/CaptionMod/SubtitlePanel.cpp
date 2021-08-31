@@ -374,7 +374,7 @@ void SubtitlePanel::StartSubtitle(CDictionary *Dict, float flStartTime)
 
 	std::wstring sentence;
 
-	Dict->FinalizeString(sentence);
+	Dict->FinalizeString(sentence, m_iPrefix);
 
 	int iPanelWidth = GetWide();
 	int iMaxTextWidth = iPanelWidth - (m_iScaledXSpace << 1);
