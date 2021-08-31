@@ -236,6 +236,22 @@ Add `-oitblend` to the launch parameters to enable Order-Independent Transparenc
 
 * Since MultiSample Anti-Aliasing (or MSAA) is not able to works with Deferred Shading, it's completely disabled and removed from current version of renderer plugin.
 
+## Gamma Correction
+
+Unlike vanilla GoldSrc, the gamma correction is applied on the fly (no restart required).
+
+All textures are converted from texgamma color space to linear color space, and dynamic lights are calculated in linear color space to get correct lighting result.
+
+### Console vars
+
+`gamma` is used to control the final output gamma, convert colors from linear space to screen gamma space.
+
+`texgamma` is used to convert textures from gamma color space to linear color space.
+
+`lightgamma` is used to convert lightmaps from gamma color space to linear color space.
+
+`brightness` is used to shift up the lightgamma and make lightmaps brighter.
+
 ## Misc
 
 `r_wsurf_sky_occlusion` 1 / 0 : When set to 1, scenes occluded by "sky" surfaces (surfaces with sky texture) will be invisible.
