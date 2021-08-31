@@ -322,7 +322,7 @@ vec4 CalcFog(vec4 color)
 	return color;
 }
 
-vec4 CalcFogWithLinearDepth(vec4 color, sampler2D linearDepthTex, vec2 texcoord)
+vec4 CalcFogWithDistance(vec4 color, float z)
 {
 	return color;
 }
