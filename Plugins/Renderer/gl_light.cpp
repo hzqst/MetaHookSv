@@ -432,6 +432,9 @@ void R_EndRenderGBuffer(void)
 
 	GL_EndFullScreenQuad();
 
+	static glprofile_t profile_EndRenderGBuffer;
+	GL_BeginProfile(&profile_EndRenderGBuffer, "R_EndRenderGBuffer");
+
 	//Disable depth write and re-enable later after light pass.
 	glDepthMask(0);
 
@@ -467,7 +470,7 @@ void R_EndRenderGBuffer(void)
 				float radius = dynlight.distance;
 
 				vec3_t dist;
-				VectorSubtract(r_refdef->vieworg, dynlight.origin, dist);
+				VectorSubtract((*r_refdef.vieworg), dynlight.origin, dist);
 
 				if (VectorLength(dist) > radius + 32)
 				{
@@ -558,10 +561,10 @@ void R_EndRenderGBuffer(void)
 			vec3_t org;
 			if (ent == gEngfuncs.GetLocalPlayer() && !gExportfuncs.CL_IsThirdPerson())
 			{
-				VectorCopy(r_refdef->viewangles, dlight_angle);
+				VectorCopy((*r_refdef.viewangles), dlight_angle);
 				gEngfuncs.pfnAngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
 
-				VectorCopy(r_refdef->vieworg, org);
+				VectorCopy((*r_refdef.vieworg), org);
 				VectorMA(org, 2, dlight_vup, org);
 				VectorMA(org, 10, dlight_vright, org);
 
@@ -580,7 +583,7 @@ void R_EndRenderGBuffer(void)
 				VectorCopy(org, dlight_origin);
 			}
 
-			if (!Util_IsOriginInCone(r_refdef->vieworg, dlight_origin, dlight_vforward, r_flashlight_cone->value, r_flashlight_distance->value))
+			if (!Util_IsOriginInCone((*r_refdef.vieworg), dlight_origin, dlight_vforward, r_flashlight_cone->value, r_flashlight_distance->value))
 			{
 				glBindBuffer(GL_ARRAY_BUFFER, r_cone_vbo);
 				glEnableVertexAttribArray(0);
@@ -646,7 +649,7 @@ void R_EndRenderGBuffer(void)
 		else
 		{
 			vec3_t dist;
-			VectorSubtract(r_refdef->vieworg, dl->origin, dist);
+			VectorSubtract((*r_refdef.vieworg), dl->origin, dist);
 
 			if (VectorLength(dist) > dl->radius + 32)
 			{
@@ -780,6 +783,8 @@ void R_EndRenderGBuffer(void)
 
 	drawgbuffer = false;
 	gbuffer_mask = -1;
+
+	GL_EndProfile(&profile_EndRenderGBuffer);
 }
 
 void R_BlitGBufferToFrameBuffer(FBO_Container_t *fbo)

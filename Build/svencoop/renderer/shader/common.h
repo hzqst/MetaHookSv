@@ -298,9 +298,8 @@ vec3 OctahedronToUnitVector(vec2 coord) {
 
 #if defined(LINEAR_FOG_ENABLED) && defined(IS_FRAGMENT_SHADER)
 
-vec4 CalcFog(vec4 color)
+vec4 CalcFogWithDistance(vec4 color, float z)
 {
-	float z = gl_FragCoord.z / gl_FragCoord.w;
 	float fogFactor = ( SceneUBO.fogEnd - z ) / ( SceneUBO.fogEnd - SceneUBO.fogStart );
 	fogFactor = clamp(fogFactor, 0.0, 1.0);
 
@@ -311,16 +310,9 @@ vec4 CalcFog(vec4 color)
 	return color;
 }
 
-vec4 CalcFogWithLinearDepth(vec4 color, sampler2D linearDepthTex, vec2 texcoord)
+vec4 CalcFog(vec4 color)
 {
-	float fogFactor = ( SceneUBO.fogEnd - texture2D(linearDepthTex, texcoord.xy).r ) / ( SceneUBO.fogEnd - SceneUBO.fogStart );
-	fogFactor = clamp(fogFactor, 0.0, 1.0);
-
-	vec3 finalColor = color.xyz;
-
-	color.xyz = mix(SceneUBO.fogColor.xyz, finalColor, fogFactor );
-
-	return color;
+	return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
 }
 
 #else

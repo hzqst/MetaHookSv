@@ -131,9 +131,9 @@ void GL_PopDrawState(void)
 	}
 }
 
-refdef_t *R_GetRefDef(void)
+void *R_GetRefDef(void)
 {
-	return r_refdef;
+	return r_refdef_SvEngine ? (void *)r_refdef_SvEngine : (void *)r_refdef_GoldSrc;
 }
 
 void R_PushRefDef(void)
@@ -143,15 +143,15 @@ void R_PushRefDef(void)
 		Sys_ErrorEx("R_PushRefDef: MAX_SAVESTACK exceed");
 		return;
 	}
-	VectorCopy(r_refdef->vieworg, save_vieworg[save_refdef_stack]);
-	VectorCopy(r_refdef->viewangles, save_viewang[save_refdef_stack]);
+	VectorCopy((*r_refdef.vieworg), save_vieworg[save_refdef_stack]);
+	VectorCopy((*r_refdef.viewangles), save_viewang[save_refdef_stack]);
 	++save_refdef_stack;
 }
 
 void R_UpdateRefDef(void)
 {
-	VectorCopy(r_refdef->vieworg, r_origin);
-	AngleVectors(r_refdef->viewangles, vpn, vright, vup);
+	VectorCopy((*r_refdef.vieworg), r_origin);
+	AngleVectors((*r_refdef.viewangles), vpn, vright, vup);
 }
 
 void R_PopRefDef(void)
@@ -162,8 +162,8 @@ void R_PopRefDef(void)
 		return;
 	}
 	--save_refdef_stack;
-	VectorCopy(save_vieworg[save_refdef_stack], r_refdef->vieworg);
-	VectorCopy(save_viewang[save_refdef_stack], r_refdef->viewangles);
+	VectorCopy(save_vieworg[save_refdef_stack], (*r_refdef.vieworg));
+	VectorCopy(save_viewang[save_refdef_stack], (*r_refdef.viewangles));
 }
 
 void GL_UploadTextureColorFormat(int texid, int w, int h, int iInternalFormat)

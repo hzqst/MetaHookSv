@@ -1472,6 +1472,9 @@ float R_ScrollSpeed(void)
 
 void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 {
+	static glprofile_t profile_DrawWSurfVBO;
+	GL_BeginProfile(&profile_DrawWSurfVBO, "R_DrawWSurfVBO");
+
 	entity_ubo_t EntityUBO;
 
 	memcpy(EntityUBO.entityMatrix, r_entity_matrix, sizeof(mat4));
@@ -1709,6 +1712,8 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 	R_DrawWaters();
 
 	GL_UseProgram(0);
+
+	GL_EndProfile(&profile_DrawWSurfVBO);
 }
 
 void R_Reload_f(void)
@@ -3225,25 +3230,25 @@ void R_RecursiveWorldNodeVBO(mnode_t *node)
 	{
 	case PLANE_X:
 	{
-		dot = r_refdef->vieworg[0] - plane->dist;
+		dot = (*r_refdef.vieworg)[0] - plane->dist;
 		break;
 	}
 
 	case PLANE_Y:
 	{
-		dot = r_refdef->vieworg[1] - plane->dist;
+		dot = (*r_refdef.vieworg)[1] - plane->dist;
 		break;
 	}
 
 	case PLANE_Z:
 	{
-		dot = r_refdef->vieworg[2] - plane->dist;
+		dot = (*r_refdef.vieworg)[2] - plane->dist;
 		break;
 	}
 
 	default:
 	{
-		dot = DotProduct(r_refdef->vieworg, plane->normal) - plane->dist;
+		dot = DotProduct((*r_refdef.vieworg), plane->normal) - plane->dist;
 		break;
 	}
 	}
@@ -3334,7 +3339,7 @@ void R_DrawBrushModel(cl_entity_t *e)
 		memset(lightmap_polys, 0, sizeof(glpoly_t *) * 64);
 	}
 
-	VectorSubtract(r_refdef->vieworg, e->origin, modelorg);
+	VectorSubtract((*r_refdef.vieworg), e->origin, modelorg);
 
 	if (rotated)
 	{
@@ -3442,7 +3447,7 @@ void R_SetupSceneUBO(void)
 	memcpy(SceneUBO.frustumpos[1], r_frustum_origin[1], sizeof(vec3_t));
 	memcpy(SceneUBO.frustumpos[2], r_frustum_origin[2], sizeof(vec3_t));
 	memcpy(SceneUBO.frustumpos[3], r_frustum_origin[3], sizeof(vec3_t));
-	memcpy(SceneUBO.viewpos, r_refdef->vieworg, sizeof(vec3_t));
+	memcpy(SceneUBO.viewpos, (*r_refdef.vieworg), sizeof(vec3_t));
 	memcpy(SceneUBO.vpn, vpn, sizeof(vec3_t));
 	memcpy(SceneUBO.vright, vright, sizeof(vec3_t));
 	memcpy(SceneUBO.vup, vup, sizeof(vec3_t));
@@ -3502,7 +3507,7 @@ void R_DrawWorld(void)
 
 	R_BeginRenderGBuffer();
 
-	VectorCopy(r_refdef->vieworg, modelorg);
+	VectorCopy((*r_refdef.vieworg), modelorg);
 
 	cl_entity_t tempent = { 0 };
 	tempent.model = r_worldmodel;
@@ -3586,17 +3591,15 @@ void R_DrawWorld(void)
 
 	R_DrawSkyBox();
 
-	if (r_draw_pass == r_draw_reflect && curwater->level == WATER_LEVEL_REFLECT_SKYBOX)
-		goto skip_world;
+	if (!(r_draw_pass == r_draw_reflect && curwater->level == WATER_LEVEL_REFLECT_SKYBOX))
+	{
+		r_wsurf.bDiffuseTexture = true;
+		r_wsurf.bLightmapTexture = true;
 
-	r_wsurf.bDiffuseTexture = true;
-	r_wsurf.bLightmapTexture = true;
+		auto modcache = R_PrepareWSurfVBO(r_worldmodel);
 
-	auto modcache = R_PrepareWSurfVBO(r_worldmodel);
-
-	R_DrawWSurfVBO(modcache, (*currententity));
-
-skip_world:
+		R_DrawWSurfVBO(modcache, (*currententity));
+	}
 
 	GL_DisableMultitexture();
 

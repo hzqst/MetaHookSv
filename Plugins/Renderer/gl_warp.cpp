@@ -224,6 +224,9 @@ void R_DrawWaters(void)
 
 	if (g_iNumRenderWaterVBOCache)
 	{
+		static glprofile_t profile_DrawWaters;
+		GL_BeginProfile(&profile_DrawWaters, "R_DrawWaters");
+
 		glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hSceneVBO);
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
@@ -252,6 +255,8 @@ void R_DrawWaters(void)
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 		g_iNumRenderWaterVBOCache = 0;
+
+		GL_EndProfile(&profile_DrawWaters);
 	}
 }
 
@@ -300,6 +305,9 @@ void R_DrawSkyBox(void)
 {
 	if (CL_IsDevOverviewMode())
 		return;
+
+	static glprofile_t profile_DrawSkyBox;
+	GL_BeginProfile(&profile_DrawSkyBox, "R_DrawSkyBox");
 
 	glDisable(GL_BLEND);
 	glDepthMask(0);
@@ -361,4 +369,6 @@ void R_DrawSkyBox(void)
 	GL_UseProgram(0);
 
 	glDepthMask(1);
+
+	GL_EndProfile(&profile_DrawSkyBox);
 }

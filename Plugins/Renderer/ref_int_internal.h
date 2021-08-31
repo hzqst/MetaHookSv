@@ -25,6 +25,8 @@ typedef struct
 {
 	void (*BuildGammaTable)(float gamma);
 	void (*R_ForceCVars)(qboolean mp);
+	void (*R_CheckVariables)(void);
+	void (*R_AnimateLight)(void);
 	void (*R_RenderView)(void);
 	void (*R_RenderView_SvEngine)(int a1);
 	void (*R_RenderScene)(void);
@@ -73,6 +75,7 @@ typedef struct
 	void(*R_LoadSkys)(void);
 	void(*R_MarkLights)(dlight_t *light, int bit, mnode_t *node);
 	int(*CL_IsDevOverviewMode)(void);
+	void(*CL_SetDevOverView)(void *a1);
 	void (*Mod_LoadStudioModel)(model_t *mod, void *buffer);
 	void(*triapi_RenderMode)(int mode);
 	void(__fastcall *enginesurface_drawFlushText)(void *pthis, int);
@@ -127,7 +130,7 @@ typedef struct
 	//refdef
 	void (*R_PushRefDef)(void);
 	void (*R_PopRefDef)(void);
-	refdef_t *(*R_GetRefDef)(void);
+	void *(*R_GetRefDef)(void);
 	//framebuffer
 	void (*GL_PushFrameBuffer)(void);
 	void (*GL_PopFrameBuffer)(void);

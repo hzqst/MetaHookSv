@@ -33,6 +33,12 @@ void R_UseSpriteProgram(int state, sprite_program_t *progOutput)
 		if (state & SPRITE_OIT_ADDITIVE_BLEND_ENABLED)
 			defs << "#define OIT_ADDITIVE_BLEND_ENABLED\n";
 
+		if (state & SPRITE_ALPHA_BLEND_ENABLED)
+			defs << "#define ALPHA_BLEND_ENABLED\n";
+
+		if (state & SPRITE_ADDITIVE_BLEND_ENABLED)
+			defs << "#define ADDITIVE_BLEND_ENABLED\n";
+
 		if (state & SPRITE_LINEAR_FOG_ENABLED)
 			defs << "#define LINEAR_FOG_ENABLED\n";
 
@@ -98,6 +104,12 @@ void R_UseLegacySpriteProgram(int state, legacysprite_program_t *progOutput)
 
 		if (state & SPRITE_OIT_ADDITIVE_BLEND_ENABLED)
 			defs << "#define OIT_ADDITIVE_BLEND_ENABLED\n";
+
+		if (state & SPRITE_ALPHA_BLEND_ENABLED)
+			defs << "#define ALPHA_BLEND_ENABLED\n";
+
+		if (state & SPRITE_ADDITIVE_BLEND_ENABLED)
+			defs << "#define ADDITIVE_BLEND_ENABLED\n";
 
 		if (state & SPRITE_LINEAR_FOG_ENABLED)
 			defs << "#define LINEAR_FOG_ENABLED\n";
@@ -248,6 +260,8 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 			if (r_draw_oitblend)
 				SpriteProgramState |= SPRITE_OIT_ALPHA_BLEND_ENABLED;
+			else
+				SpriteProgramState |= SPRITE_ALPHA_BLEND_ENABLED;
 
 			u_color[0] = color.r / 255.0f;
 			u_color[1] = color.g / 255.0f;
@@ -267,6 +281,8 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 			if (r_draw_oitblend)
 				SpriteProgramState |= SPRITE_OIT_ADDITIVE_BLEND_ENABLED;
+			else
+				SpriteProgramState |= SPRITE_ADDITIVE_BLEND_ENABLED;
 
 			u_color[0] = color.r / 255.0f;
 			u_color[1] = color.g / 255.0f;
@@ -287,6 +303,8 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 			if (r_draw_oitblend)
 				SpriteProgramState |= SPRITE_OIT_ADDITIVE_BLEND_ENABLED;
+			else
+				SpriteProgramState |= SPRITE_ADDITIVE_BLEND_ENABLED;
 
 			u_color[0] = color.r / 255.0f;
 			u_color[1] = color.g / 255.0f;
@@ -306,6 +324,8 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 			if (r_draw_oitblend)
 				SpriteProgramState |= SPRITE_OIT_ALPHA_BLEND_ENABLED;
+			else
+				SpriteProgramState |= SPRITE_ALPHA_BLEND_ENABLED;
 
 			u_color[0] = color.r / 255.0f;
 			u_color[1] = color.g / 255.0f;
@@ -325,6 +345,8 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 			if (r_draw_oitblend)
 				SpriteProgramState |= SPRITE_OIT_ALPHA_BLEND_ENABLED;
+			else
+				SpriteProgramState |= SPRITE_ALPHA_BLEND_ENABLED;
 
 			u_color[0] = color.r / 255.0f;
 			u_color[1] = color.g / 255.0f;

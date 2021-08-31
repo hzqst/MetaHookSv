@@ -119,7 +119,7 @@ void R_RenderShadowMap(void)
 		if (R_ShouldCastShadow(cl_visedicts[j]))
 		{
 			vec3_t vec;
-			VectorSubtract(cl_visedicts[j]->origin, r_refdef->vieworg, vec);
+			VectorSubtract(cl_visedicts[j]->origin, (*r_refdef.vieworg), vec);
 			float distance = VectorLength(vec);
 
 			if (distance < max_distance[0])
@@ -151,74 +151,79 @@ void R_RenderShadowMap(void)
 
 	int total_numvisedicts = shadow_numvisedicts[0] + shadow_numvisedicts[1] + shadow_numvisedicts[2];
 
-	if (!total_numvisedicts)
-		return;
-
-	glBindFramebuffer(GL_FRAMEBUFFER, s_ShadowFBO.s_hBackBufferFBO);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
-
-	glDisable(GL_BLEND);
-	glDisable(GL_ALPHA_TEST);
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_GEQUAL);
-	
-	glDepthMask(1);
-	glColorMask(1, 1, 1, 1);
-
-	for (int i = 0; i < 3; ++i)
+	if (total_numvisedicts)
 	{
-		if (!shadow_numvisedicts[i])
-			continue;
+		static glprofile_t profile_RenderShadowMap;
+		GL_BeginProfile(&profile_RenderShadowMap, "R_RenderShadowMap");
 
-		glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadow_texture_color, 0, i);
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadow_texture_depth, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, s_ShadowFBO.s_hBackBufferFBO);
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
+		glDisable(GL_BLEND);
+		glDisable(GL_ALPHA_TEST);
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_GEQUAL);
 
-		float texsize = (float)shadow_texture_size / scales[i];
-		glOrtho(-texsize / 2, texsize / 2, -texsize / 2, texsize / 2, -4096, 4096);
+		glDepthMask(1);
+		glColorMask(1, 1, 1, 1);
 
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-
-		glRotatef(-90, 1, 0, 0);
-		glRotatef(90, 0, 0, 1);
-		glRotatef(-sangles[2], 1, 0, 0);
-		glRotatef(-sangles[0], 0, 1, 0);
-		glRotatef(-sangles[1], 0, 0, 1);
-		glTranslatef(-r_refdef->vieworg[0], -r_refdef->vieworg[1], -r_refdef->vieworg[2]);
-
-		glGetFloatv(GL_PROJECTION_MATRIX, shadow_projmatrix[i]);
-		glGetFloatv(GL_MODELVIEW_MATRIX, shadow_mvmatrix[i]);
-
-		glViewport(0, 0, shadow_texture_size, shadow_texture_size);
-
-		glClearDepth(0);
-		glClearColor(-99999, -99999, -99999, 1);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, viewMatrix), sizeof(mat4), shadow_mvmatrix[i]);
-		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), shadow_projmatrix[i]);
-
-		cl_entity_t *backup_curentity = (*currententity);
-
-		for (int j = 0; j < shadow_numvisedicts[i]; ++j)
+		for (int i = 0; i < 3; ++i)
 		{
-			(*currententity) = shadow_visedicts[i][j];
+			if (!shadow_numvisedicts[i])
+				continue;
 
-			int saved_renderfx = (*currententity)->curstate.renderfx;
+			glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadow_texture_color, 0, i);
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadow_texture_depth, 0);
 
-			(*currententity)->curstate.renderfx = kRenderFxShadowCaster;
+			glMatrixMode(GL_PROJECTION);
+			glLoadIdentity();
 
-			R_DrawCurrentEntity(false);
+			float texsize = (float)shadow_texture_size / scales[i];
+			glOrtho(-texsize / 2, texsize / 2, -texsize / 2, texsize / 2, -4096, 4096);
 
-			(*currententity)->curstate.renderfx = saved_renderfx;
+			glMatrixMode(GL_MODELVIEW);
+			glLoadIdentity();
+
+			glRotatef(-90, 1, 0, 0);
+			glRotatef(90, 0, 0, 1);
+			glRotatef(-sangles[2], 1, 0, 0);
+			glRotatef(-sangles[0], 0, 1, 0);
+			glRotatef(-sangles[1], 0, 0, 1);
+			glTranslatef(-(*r_refdef.vieworg)[0], -(*r_refdef.vieworg)[1], -(*r_refdef.vieworg)[2]);
+
+			glGetFloatv(GL_PROJECTION_MATRIX, shadow_projmatrix[i]);
+			glGetFloatv(GL_MODELVIEW_MATRIX, shadow_mvmatrix[i]);
+
+			glViewport(0, 0, shadow_texture_size, shadow_texture_size);
+
+			glClearDepth(0);
+			glClearColor(-99999, -99999, -99999, 1);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, viewMatrix), sizeof(mat4), shadow_mvmatrix[i]);
+			glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), shadow_projmatrix[i]);
+
+			cl_entity_t *backup_curentity = (*currententity);
+
+			for (int j = 0; j < shadow_numvisedicts[i]; ++j)
+			{
+				(*currententity) = shadow_visedicts[i][j];
+
+				int saved_renderfx = (*currententity)->curstate.renderfx;
+
+				(*currententity)->curstate.renderfx = kRenderFxShadowCaster;
+
+				R_DrawCurrentEntity(false);
+
+				(*currententity)->curstate.renderfx = saved_renderfx;
+			}
+
+			(*currententity) = backup_curentity;
 		}
 
-		(*currententity) = backup_curentity;
-	}
+		glClearDepth(1);
+		glDepthFunc(GL_LEQUAL);
 
-	glClearDepth(1);
-	glDepthFunc(GL_LEQUAL);
+		GL_EndProfile(&profile_RenderShadowMap);
+	}
 }

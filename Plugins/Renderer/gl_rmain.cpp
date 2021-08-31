@@ -4,19 +4,19 @@
 
 ref_funcs_t gRefFuncs;
 
-vrect_t *r_refdef_vrect;
-refdef_t *r_refdef;
-float *r_xfov;
+refdef_t r_refdef;
+ref_params_t r_params;
+refdef_GoldSrc_t *r_refdef_GoldSrc = NULL;
+refdef_SvEngine_t *r_refdef_SvEngine = NULL;
+float *r_xfov = NULL;
 float r_yfov;
 float r_screenaspect;
-ref_params_t r_params;
 
 float gldepthmin, gldepthmax;
 
 cl_entity_t *r_worldentity = NULL;
 model_t *r_worldmodel = NULL;
 model_t *r_playermodel = NULL;
-
 RECT *window_rect;
 
 float *videowindowaspect;
@@ -28,6 +28,8 @@ cl_entity_t **currententity;
 int *numTransObjs;
 int *maxTransObjs;
 transObjRef **transObjects;
+mleaf_t **r_viewleaf;
+mleaf_t **r_oldviewleaf;
 
 GLint r_viewport[4];
 
@@ -191,6 +193,7 @@ cvar_t *cl_righthand = NULL;
 cvar_t *chase_active = NULL;
 
 cvar_t *r_vertical_fov = NULL;
+cvar_t *gl_profile = NULL;
 
 int R_GetDrawPass(void)
 {
@@ -499,7 +502,7 @@ void triapi_RenderMode(int mode)
 		R_SetGBufferBlend(GL_ONE, GL_ONE);
 		if (r_draw_legacysprite)
 		{
-			int LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ADDITIVE_BLEND_ENABLED : 0;
+			int LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ADDITIVE_BLEND_ENABLED : SPRITE_ADDITIVE_BLEND_ENABLED;
 
 			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 			{
@@ -523,7 +526,7 @@ void triapi_RenderMode(int mode)
 		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		if (r_draw_legacysprite)
 		{
-			int LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ALPHA_BLEND_ENABLED : 0;
+			int LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ALPHA_BLEND_ENABLED : SPRITE_ALPHA_BLEND_ENABLED;
 
 			if (r_draw_pass == r_draw_reflect && curwater)
 			{
@@ -549,6 +552,9 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 	if (onlyClientDraw)
 		return;
+
+	static glprofile_t profile_DrawTEntitiesOnList;
+	GL_BeginProfile(&profile_DrawTEntitiesOnList, "R_DrawTEntitiesOnList");
 
 	if (bUseOITBlend)
 	{
@@ -590,6 +596,8 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 	}
 
 	GL_UseProgram(0);
+
+	GL_EndProfile(&profile_DrawTEntitiesOnList);
 }
 
 void R_AddTEntity(cl_entity_t *ent)
@@ -733,7 +741,7 @@ void R_DrawCurrentEntity(bool bTransparent)
 	{
 		if ((*currententity)->player)
 		{
-			(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER, R_GetPlayerState((*currententity)->index));
+			(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
 		}
 		else
 		{
@@ -762,7 +770,7 @@ void R_DrawCurrentEntity(bool bTransparent)
 				break;
 			}
 
-			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER);
+			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
 		}
 
 		break;
@@ -947,26 +955,26 @@ void MYgluPerspectiveV(double fovy, double aspect, double zNear, double zFar)
 	r_ortho = false;
 
 	vec3_t farplane;
-	VectorMA(r_refdef->vieworg, zNear, vpn, farplane);
+	VectorMA((*r_refdef.vieworg), zNear, vpn, farplane);
 
 	VectorMA(farplane, -right, vright, r_frustum_origin[0]);
 	VectorMA(r_frustum_origin[0], -top, vup, r_frustum_origin[0]);
-	VectorSubtract(r_frustum_origin[0], r_refdef->vieworg, r_frustum_vec[0]);
+	VectorSubtract(r_frustum_origin[0], (*r_refdef.vieworg), r_frustum_vec[0]);
 	VectorNormalize(r_frustum_vec[0]);
 
 	VectorMA(farplane, -right, vright, r_frustum_origin[1]);
 	VectorMA(r_frustum_origin[1], top, vup, r_frustum_origin[1]);
-	VectorSubtract(r_frustum_origin[1], r_refdef->vieworg, r_frustum_vec[1]);
+	VectorSubtract(r_frustum_origin[1], (*r_refdef.vieworg), r_frustum_vec[1]);
 	VectorNormalize(r_frustum_vec[1]);
 
 	VectorMA(farplane, right, vright, r_frustum_origin[2]);
 	VectorMA(r_frustum_origin[2], top, vup, r_frustum_origin[2]);
-	VectorSubtract(r_frustum_origin[2], r_refdef->vieworg, r_frustum_vec[2]);
+	VectorSubtract(r_frustum_origin[2], (*r_refdef.vieworg), r_frustum_vec[2]);
 	VectorNormalize(r_frustum_vec[2]);
 
 	VectorMA(farplane, right, vright, r_frustum_origin[3]);
 	VectorMA(r_frustum_origin[3], -top, vup, r_frustum_origin[3]);
-	VectorSubtract(r_frustum_origin[3], r_refdef->vieworg, r_frustum_vec[3]);
+	VectorSubtract(r_frustum_origin[3], (*r_refdef.vieworg), r_frustum_vec[3]);
 	VectorNormalize(r_frustum_vec[3]);
  }
 
@@ -981,26 +989,26 @@ void MYgluPerspectiveH(double fovy, double aspect, double zNear, double zFar)
 	r_ortho = false;
 
 	vec3_t farplane;
-	VectorMA(r_refdef->vieworg, zNear, vpn, farplane);
+	VectorMA((*r_refdef.vieworg), zNear, vpn, farplane);
 
 	VectorMA(farplane, -right, vright, r_frustum_origin[0]);
 	VectorMA(r_frustum_origin[0], -top, vup, r_frustum_origin[0]);
-	VectorSubtract(r_frustum_origin[0], r_refdef->vieworg, r_frustum_vec[0]);
+	VectorSubtract(r_frustum_origin[0], (*r_refdef.vieworg), r_frustum_vec[0]);
 	VectorNormalize(r_frustum_vec[0]);
 
 	VectorMA(farplane, -right, vright, r_frustum_origin[1]);
 	VectorMA(r_frustum_origin[1], top, vup, r_frustum_origin[1]);
-	VectorSubtract(r_frustum_origin[1], r_refdef->vieworg, r_frustum_vec[1]);
+	VectorSubtract(r_frustum_origin[1], (*r_refdef.vieworg), r_frustum_vec[1]);
 	VectorNormalize(r_frustum_vec[1]);
 
 	VectorMA(farplane, right, vright, r_frustum_origin[2]);
 	VectorMA(r_frustum_origin[2], top, vup, r_frustum_origin[2]);
-	VectorSubtract(r_frustum_origin[2], r_refdef->vieworg, r_frustum_vec[2]);
+	VectorSubtract(r_frustum_origin[2], (*r_refdef.vieworg), r_frustum_vec[2]);
 	VectorNormalize(r_frustum_vec[2]);
 
 	VectorMA(farplane, right, vright, r_frustum_origin[3]);
 	VectorMA(r_frustum_origin[3], -top, vup, r_frustum_origin[3]);
-	VectorSubtract(r_frustum_origin[3], r_refdef->vieworg, r_frustum_vec[3]);
+	VectorSubtract(r_frustum_origin[3], (*r_refdef.vieworg), r_frustum_vec[3]);
 	VectorNormalize(r_frustum_vec[3]);
 }
 
@@ -1340,6 +1348,7 @@ void GL_Init(void)
 void GL_Shutdown(void)
 {
 	GL_FreeShaders();
+	GL_FreeProfiles();
 
 	GL_FreeFBO(&s_BackBufferFBO);
 	GL_FreeFBO(&s_BackBufferFBO2);
@@ -1379,7 +1388,7 @@ void R_PreRenderView(int a1)
 
 	r_fog_mode = 0;
 
-	if (!r_refdef->onlyClientDraws)
+	if (!(*r_refdef.onlyClientDraws))
 	{
 		shadow_numvisedicts[0] = 0;
 		shadow_numvisedicts[1] = 0;
@@ -1520,12 +1529,12 @@ void R_RenderView_SvEngine(int a1)
 	glDepthFunc(GL_LEQUAL);
 	glDepthRange(0, 1);
 
-	if (!r_refdef->onlyClientDraws)
+	if (!(*r_refdef.onlyClientDraws))
 		R_PreDrawViewModel();
 
 	R_RenderScene();
 
-	if (!r_refdef->onlyClientDraws)
+	if (!(*r_refdef.onlyClientDraws))
 		R_DrawViewModel();
 
 	R_PolyBlend();
@@ -1558,11 +1567,6 @@ void R_RenderView_SvEngine(int a1)
 void R_RenderView(void)
 {
 	R_RenderView_SvEngine(0);
-}
-
-void R_RenderScene(void)
-{
-	gRefFuncs.R_RenderScene();
 }
 
 void GL_EndRendering(void)
@@ -1716,6 +1720,7 @@ void R_InitCvars(void)
 	chase_active = gEngfuncs.pfnGetCvarPointer("chase_active");
 
 	r_vertical_fov = gEngfuncs.pfnRegisterVariable("r_vertical_fov", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	gl_profile = gEngfuncs.pfnRegisterVariable("gl_profile", "0", FCVAR_CLIENTDLL );
 }
 
 void R_Init(void)
@@ -1764,11 +1769,6 @@ void R_NewMap(void)
 
 mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
 {
-	if (r_draw_pass == r_draw_reflect && model == r_worldmodel && VectorCompare(p, r_refdef->vieworg))
-	{
-		return gRefFuncs.Mod_PointInLeaf(water_view, model);
-	}
-
 	return gRefFuncs.Mod_PointInLeaf(p, model);
 }
 
@@ -1919,18 +1919,21 @@ bool CL_IsDevOverviewMode(void)
 	return gRefFuncs.CL_IsDevOverviewMode();
 }
 
+void CL_SetDevOverView(void *a1)
+{
+	return gRefFuncs.CL_SetDevOverView(a1);
+}
+
 void R_SetupGL(void)
 {
-	R_SetFrustumNew();
-
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	auto v0 = r_refdef_vrect->x;
-	auto v1 = glheight - r_refdef_vrect->y;
-	auto v2 = r_refdef_vrect->x + r_refdef_vrect->width;
-	auto v3 = glheight - r_refdef_vrect->height - r_refdef_vrect->y;
-	if (r_refdef_vrect->x > 0)
-		v0 = r_refdef_vrect->x - 1;
+	auto v0 = (*r_refdef.vrect).x;
+	auto v1 = glheight - (*r_refdef.vrect).y;
+	auto v2 = (*r_refdef.vrect).x + (*r_refdef.vrect).width;
+	auto v3 = glheight - (*r_refdef.vrect).height - (*r_refdef.vrect).y;
+	if ((*r_refdef.vrect).x > 0)
+		v0 = (*r_refdef.vrect).x - 1;
 	if (v2 < glwidth)
 		++v2;
 	if (v3 < 0)
@@ -1957,8 +1960,8 @@ void R_SetupGL(void)
 
 	if (r_vertical_fov->value)
 	{
-		auto v6 = (double)r_refdef_vrect->height;
-		auto v7 = (double)r_refdef_vrect->width;
+		auto v6 = (double)(*r_refdef.vrect).height;
+		auto v7 = (double)(*r_refdef.vrect).width;
 		auto aspect = v6 / v7;
 		auto v8 = (*r_xfov);
 		if ((*r_xfov) < 1.0 || v8 > 179.0)
@@ -1968,7 +1971,7 @@ void R_SetupGL(void)
 		auto fovy = atan2(v9, 1.0) * 360.0 * 0.3183098861837907;
 		r_yfov = fovy;
 
-		if (r_refdef->onlyClientDraws)
+		if ((*r_refdef.onlyClientDraws))
 		{
 			MYgluPerspectiveV(fovy, aspect, 4.0, 16000.0);
 		}
@@ -1993,8 +1996,8 @@ void R_SetupGL(void)
 	}
 	else
 	{
-		auto v16 = (double)r_refdef_vrect->width;
-		auto v17 = (double)r_refdef_vrect->height;
+		auto v16 = (double)(*r_refdef.vrect).width;
+		auto v17 = (double)(*r_refdef.vrect).height;
 		auto aspect = v16 / v17;
 		auto v18 = (*r_xfov);
 		if ((*r_xfov) < 1.0 || v18 > 179.0)
@@ -2002,7 +2005,7 @@ void R_SetupGL(void)
 		auto v19 = v17 / (v16 / tan(v18 * 0.0027777778 * 3.141592653589793));
 		auto fovy = atan2(v19, 1.0) * 360.0 * 0.3183098861837907;
 		r_yfov = fovy;
-		if (r_refdef->onlyClientDraws)
+		if ((*r_refdef.onlyClientDraws))
 		{
 			MYgluPerspectiveH(fovy, aspect, 4.0, 16000.0);
 		}
@@ -2031,10 +2034,10 @@ void R_SetupGL(void)
 	glLoadIdentity();
 	glRotatef(-90, 1, 0, 0);
 	glRotatef(90, 0, 0, 1);
-	glRotatef(-r_refdef->viewangles[2], 1, 0, 0);
-	glRotatef(-r_refdef->viewangles[0], 0, 1, 0);
-	glRotatef(-r_refdef->viewangles[1], 0, 0, 1);
-	glTranslatef(-r_refdef->vieworg[0], -r_refdef->vieworg[1], -r_refdef->vieworg[2]);
+	glRotatef(-(*r_refdef.viewangles)[2], 1, 0, 0);
+	glRotatef(-(*r_refdef.viewangles)[0], 0, 1, 0);
+	glRotatef(-(*r_refdef.viewangles)[1], 0, 0, 1);
+	glTranslatef(-(*r_refdef.vieworg)[0], -(*r_refdef.vieworg)[1], -(*r_refdef.vieworg)[2]);
 
 	glGetFloatv(GL_MODELVIEW_MATRIX, r_world_matrix);
 	if (!gl_cull->value)
@@ -2057,6 +2060,180 @@ void R_SetupGL(void)
 	}
 
 	InvertMatrix(gWorldToScreen, gScreenToWorld);
+}
+
+void R_CheckVariables(void)
+{
+	gRefFuncs.R_CheckVariables();
+}
+
+void R_AnimateLight(void)
+{
+	gRefFuncs.R_AnimateLight();
+}
+
+void R_SetupFrame(void)
+{
+	//No need to force cvars since we've already done this in R_RenderView
+	//R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
+
+	R_CheckVariables();
+	R_AnimateLight();
+
+	++(*r_framecount);
+
+	VectorCopy((*r_refdef.vieworg), r_origin);
+
+	gEngfuncs.pfnAngleVectors((*r_refdef.viewangles), vpn, vright, vup);
+
+	(*r_oldviewleaf) = (*r_viewleaf);
+
+	if (r_draw_pass == r_draw_reflect)
+	{
+		(*r_viewleaf) = Mod_PointInLeaf(water_view, r_worldmodel);
+	}
+	else if (r_refdef_SvEngine && r_refdef_SvEngine->useCamera)
+	{
+		(*r_viewleaf) = Mod_PointInLeaf(r_refdef_SvEngine->r_camera_origin, r_worldmodel);
+	}
+	else
+	{
+		(*r_viewleaf) = Mod_PointInLeaf(r_origin, r_worldmodel);
+	}
+
+	if ((*cl_waterlevel) > 2 && !(*r_refdef.onlyClientDraws))
+	{
+		float fogColor[4];
+		fogColor[0] = (double)cshift_water->destcolor[0] * 0.00392156862745098;
+		fogColor[1] = (double)cshift_water->destcolor[1] * 0.00392156862745098;
+		fogColor[2] = (double)cshift_water->destcolor[2] * 0.00392156862745098;
+		fogColor[3] = 1.0;
+
+		float fogEnd = (double)(1536 - 4 * cshift_water->percent);
+
+		glFogi(GL_FOG_MODE, 9729);
+		glFogfv(GL_FOG_COLOR, fogColor);
+		glFogf(GL_FOG_START, 0.0);
+		glFogf(GL_FOG_END, fogEnd);
+		glEnable(GL_FOG);
+	}
+}
+
+void R_MarkLeaves(void)
+{
+	gRefFuncs.R_MarkLeaves();
+}
+
+void R_DrawEntitiesOnList(void)
+{
+	if (!r_drawentities->value)
+		return;
+
+	for (int i = 0; i < (*cl_numvisedicts); ++i)
+	{
+		(*currententity) = cl_visedicts[i];
+
+		if ((*currententity)->curstate.rendermode != kRenderNormal)
+		{
+			R_AddTEntity((*currententity));
+			continue;
+		}
+
+		if ((*currententity)->curstate.rendermode == kRenderNormal &&
+			(*currententity)->model->type == mod_sprite &&
+			gl_spriteblend->value)
+		{
+			R_AddTEntity((*currententity));
+			continue;
+		}
+
+		if ((*currententity)->model->type != mod_sprite)
+		{
+			R_DrawCurrentEntity(false);
+		}
+	}
+}
+
+void R_RenderFinalFog(void)
+{
+	glEnable(GL_FOG);
+	glFogi(GL_FOG_MODE, GL_EXP2);
+	glFogf(GL_FOG_DENSITY, (*g_UserFogDensity));
+	glHint(GL_FOG_HINT, GL_NICEST);
+	glFogfv(GL_FOG_COLOR, g_UserFogColor);
+	glFogf(GL_FOG_START, (*g_UserFogStart));
+	glFogf(GL_FOG_END, (*g_UserFogEnd));
+}
+
+void AllowFog(int allowed)
+{
+	static GLboolean isFogEnabled;
+
+	if (allowed)
+	{
+		if (isFogEnabled)
+			glEnable(GL_FOG);
+	}
+	else
+	{
+		isFogEnabled = glIsEnabled(GL_FOG);
+
+		if (isFogEnabled)
+			glDisable(GL_FOG);
+	}
+}
+
+void R_RenderScene(void)
+{
+	static glprofile_t profile_RenderScene;
+	GL_BeginProfile(&profile_RenderScene, "R_RenderScene");
+
+	if (CL_IsDevOverviewMode())
+		CL_SetDevOverView(R_GetRefDef());
+
+	R_SetupFrame();
+	R_SetFrustumNew();
+	R_SetupGL();
+	R_MarkLeaves();
+
+	if (!(*r_refdef.onlyClientDraws))
+	{
+		if (CL_IsDevOverviewMode())
+		{
+			glClearColor(0, 1, 0, 0);
+			glClear(GL_COLOR_BUFFER_BIT);
+		}
+
+		R_DrawWorld();
+
+		S_ExtraUpdate();
+
+		R_DrawEntitiesOnList();
+	}
+
+	if ((*g_bUserFogOn))
+		R_RenderFinalFog();
+
+	AllowFog(false);
+	HUD_DrawNormalTriangles();
+	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
+	AllowFog(true);
+
+	R_DrawTEntitiesOnList((*r_refdef.onlyClientDraws));
+
+	if (((*cl_waterlevel) > 2 && (*r_refdef.onlyClientDraws)) || !(*g_bUserFogOn))
+		glDisable(GL_FOG);
+
+	S_ExtraUpdate();
+
+	//This already moved to DrawTEntities
+	/*if (!(*r_refdef.onlyClientDraws))
+	{
+		GL_DisableMultitexture();
+		R_DrawParticlesNew();
+	}*/
+
+	GL_EndProfile(&profile_RenderScene);
 }
 
 int EngineGetMaxKnownModel(void)
@@ -2142,7 +2319,7 @@ void R_BuildCubemap(cubemap_t *cubemap)
 	gEngfuncs.Con_Printf("Building cubemap \"%s\" , cubemap size = %d\n", cubemap->name.c_str(), cubemap->size);
 
 	vrect_t saveVrect;
-	memcpy(&saveVrect, &(*r_refdef_vrect), sizeof(vrect_t));
+	memcpy(&saveVrect, &(*r_refdef.vrect), sizeof(vrect_t));
 
 	vec3_t viewangles_array[6] = {
 		{0, 0, 0},
@@ -2153,10 +2330,10 @@ void R_BuildCubemap(cubemap_t *cubemap)
 		{90, 0, 0},
 	};
 
-	(*r_refdef_vrect).x = 0;
-	(*r_refdef_vrect).y = 0;
-	(*r_refdef_vrect).width = cubemap->size;
-	(*r_refdef_vrect).height = cubemap->size;
+	(*r_refdef.vrect).x = 0;
+	(*r_refdef.vrect).y = 0;
+	(*r_refdef.vrect).width = cubemap->size;
+	(*r_refdef.vrect).height = cubemap->size;
 
 	(*envmap) = true;
 
@@ -2193,7 +2370,7 @@ void R_BuildCubemap(cubemap_t *cubemap)
 
 	R_PopRefDef();
 
-	memcpy(&(*r_refdef_vrect), &saveVrect, sizeof(vrect_t));
+	memcpy(&(*r_refdef.vrect), &saveVrect, sizeof(vrect_t));
 }
 
 void R_BuildCubemaps_f(void)

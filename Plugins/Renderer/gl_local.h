@@ -21,6 +21,7 @@
 #include "qgl.h"
 #include "ref_int_internal.h"
 
+#include "gl_profile.h"
 #include "gl_shader.h"
 #include "gl_model.h"
 #include "gl_water.h"
@@ -45,8 +46,18 @@ typedef struct
 	qboolean mtex;
 }gl_draw_context;
 
-extern vrect_t *r_refdef_vrect;
-extern refdef_t *r_refdef;
+typedef struct refdef_s
+{
+	vrect_t *vrect;
+	vec3_t *vieworg;
+	vec3_t *viewangles;
+	color24 *ambientlight;
+	qboolean *onlyClientDraws;
+}refdef_t;
+
+extern refdef_t r_refdef;
+extern refdef_GoldSrc_t *r_refdef_GoldSrc;
+extern refdef_SvEngine_t *r_refdef_SvEngine;
 extern ref_params_t r_params;
 extern float *r_xfov;
 extern float r_yfov;
@@ -60,6 +71,8 @@ extern cl_entity_t **currententity;
 extern int *maxTransObjs;
 extern int *numTransObjs;
 extern transObjRef **transObjects;
+extern mleaf_t **r_viewleaf;
+extern mleaf_t **r_oldviewleaf;
 
 extern RECT *window_rect;
 
@@ -203,6 +216,7 @@ extern cvar_t *gl_monolights;
 extern cvar_t *gl_fog;
 extern cvar_t *gl_wireframe;
 extern cvar_t *gl_ansio;
+extern cvar_t *developer;
 extern cvar_t *gl_round_down;
 extern cvar_t *gl_picmip;
 extern cvar_t *gl_max_size;
@@ -236,10 +250,9 @@ void R_SetupGL(void);
 void R_MarkLeaves(void);
 void R_DrawWorld(void);
 void R_DrawSkyBox(void);
-void R_ClearSkyBox(void);
+mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model);
 void R_RecursiveWorldNode(mnode_t *node);
 void R_RecursiveWorldNodeVBO(mnode_t *node);
-void R_DrawSequentialPoly(msurface_t *s, int face);
 void R_DrawParticles(void);
 void R_RotateForEntity(float *origin, cl_entity_t *ent);
 void R_SetRenderMode(cl_entity_t *pEntity);
@@ -280,7 +293,7 @@ int SignbitsForPlane(mplane_t *out);
 qboolean R_ParseVectorCvar(cvar_t *a1, float *vec);
 void R_ForceCVars(qboolean mp);
 colorVec R_LightPoint(vec3_t p);
-refdef_t *R_GetRefDef(void);
+void *R_GetRefDef(void);
 int R_GetDrawPass(void);
 GLuint GL_GenTextureRGBA8(int w, int h);
 

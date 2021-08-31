@@ -134,7 +134,7 @@ void R_NewMapWater(void)
 
 bool R_IsAboveWater(water_vbo_t *water)
 {
-	float org[4] = { r_refdef->vieworg[0], r_refdef->vieworg[1], r_refdef->vieworg[2], 1 };
+	float org[4] = { (*r_refdef.vieworg)[0], (*r_refdef.vieworg)[1], (*r_refdef.vieworg)[2], 1 };
 	float equation[4] = { water->normal[0], water->normal[1], water->normal[2], -water->plane };
 	return DotProduct4(org, equation) > 0;
 }
@@ -387,13 +387,13 @@ void R_RenderReflectView(water_vbo_t *w)
 
 	R_PushRefDef();
 
-	VectorCopy(r_refdef->vieworg, water_view);
+	VectorCopy((*r_refdef.vieworg), water_view);
 
 	float vForward[3], vRight[3], vUp[3];
-	gEngfuncs.pfnAngleVectors(r_refdef->viewangles, vForward, vRight, vUp);
+	gEngfuncs.pfnAngleVectors((*r_refdef.viewangles), vForward, vRight, vUp);
 
-	float flDist = fabs(w->vert[2] - r_refdef->vieworg[2]);
-	VectorMA(r_refdef->vieworg, -2 * flDist, w->normal, r_refdef->vieworg);
+	float flDist = fabs(w->vert[2] - (*r_refdef.vieworg)[2]);
+	VectorMA((*r_refdef.vieworg), -2 * flDist, w->normal, (*r_refdef.vieworg));
 
 	float neg_norm[3];
 	VectorCopy(w->normal, neg_norm);
@@ -402,9 +402,9 @@ void R_RenderReflectView(water_vbo_t *w)
 	float flDist2 = DotProduct(vForward, neg_norm);
 	VectorMA(vForward, -2 * flDist2, neg_norm, vForward);
 
-	r_refdef->viewangles[0] = -asin(vForward[2]) / M_PI * 180;
-	r_refdef->viewangles[1] = atan2(vForward[1], vForward[0]) / M_PI * 180;
-	r_refdef->viewangles[2] = -r_refdef->viewangles[2];
+	(*r_refdef.viewangles)[0] = -asin(vForward[2]) / M_PI * 180;
+	(*r_refdef.viewangles)[1] = atan2(vForward[1], vForward[0]) / M_PI * 180;
+	(*r_refdef.viewangles)[2] = -(*r_refdef.viewangles)[2];
 
 	auto saved_cl_waterlevel = *cl_waterlevel;
 	*cl_waterlevel = 0;
@@ -440,6 +440,9 @@ void R_RenderWaterView(void)
 
 	if (g_WaterVBOCache.size())
 	{
+		static glprofile_t profile_RenderWaterView;
+		GL_BeginProfile(&profile_RenderWaterView, "R_RenderWaterView");
+
 		glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 		for (size_t i = 0; i < g_WaterVBOCache.size(); ++i)
 		{
@@ -448,5 +451,7 @@ void R_RenderWaterView(void)
 				R_RenderReflectView(g_WaterVBOCache[i]);
 			}
 		}
+
+		GL_EndProfile(&profile_RenderWaterView);
 	}
 }

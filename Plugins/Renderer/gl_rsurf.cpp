@@ -244,9 +244,12 @@ colorVec R_LightVec(vec3_t start, vec3_t end)
 	{
 		c = RecursiveLightPoint(r_worldmodel->nodes, start, end);
 
-		c.r += r_refdef->ambientlight.r;
-		c.g += r_refdef->ambientlight.g;
-		c.b += r_refdef->ambientlight.b;
+		if (r_refdef.ambientlight)
+		{
+			c.r += (*r_refdef.ambientlight).r;
+			c.g += (*r_refdef.ambientlight).g;
+			c.b += (*r_refdef.ambientlight).b;
+		}
 
 		if (c.r > 255)
 			c.r = 255;

@@ -67,7 +67,6 @@ typedef struct glRect_s
 typedef struct vrect_s
 {
 	int x, y, width, height;
-	struct vrect_s *pnext;
 }vrect_t;
 
 typedef struct
@@ -75,17 +74,27 @@ typedef struct
 	int r, g, b;
 }mcolor24_t;
 
-typedef struct refdef_s
+typedef struct refdef_SvEngine_s
 {
+	vrect_t vrect;
 	vec3_t vieworg;
 	vec3_t viewangles;
 	color24 ambientlight;
+	byte padding;
 	qboolean onlyClientDraws;
-
-	//Only available in SvEngine
 	qboolean useCamera;
 	vec3_t r_camera_origin;
-}refdef_t;
+}refdef_SvEngine_t;
+
+typedef struct refdef_GoldSrc_s
+{
+	vrect_t vrect;
+	char padding[96];
+	vec3_t vieworg;
+	vec3_t viewangles;
+	int padding2;
+	qboolean onlyClientDraws;
+}refdef_GoldSrc_t;
 
 typedef struct skybox_s
 {

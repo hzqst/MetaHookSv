@@ -58,9 +58,11 @@ void main(void)
 
 #else
 
+#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(ALPHA_BLEND_ENABLED)
+	vec4 finalColor = CalcFog(baseColor) * lightmapColor;
+#else
 	vec4 finalColor = baseColor * lightmapColor;
-
-	finalColor = CalcFog(finalColor);
+#endif
 
 	#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED) 
 		

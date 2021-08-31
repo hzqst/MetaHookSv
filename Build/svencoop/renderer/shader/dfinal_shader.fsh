@@ -173,6 +173,7 @@ void main()
 {
     vec4 diffuseColor = texture2DArray(gbufferTex, vec3(texCoord, GBUFFER_INDEX_DIFFUSE));
     vec4 lightmapColor = texture2DArray(gbufferTex, vec3(texCoord, GBUFFER_INDEX_LIGHTMAP));
+	vec4 worldnormColor = texture2DArray(gbufferTex, vec3(texCoord, GBUFFER_INDEX_WORLDNORM));
     vec4 specularColor = texture2DArray(gbufferTex, vec3(texCoord, GBUFFER_INDEX_SPECULAR));
 
 	float shadowIntensity = CalcShadowIntensityLumFadeout(lightmapColor, specularColor.z);
@@ -190,5 +191,5 @@ void main()
 
     vec4 finalColor = diffuseColor * lightmapColor + GenerateAdditiveColor(texCoord);
 
-	out_FragColor = CalcFogWithLinearDepth(finalColor, linearDepthTex, texCoord);
+	out_FragColor = CalcFogWithDistance(finalColor, worldnormColor.z);
 }

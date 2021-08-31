@@ -650,6 +650,9 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 
 void R_DoHDR(void)
 {
+	static glprofile_t profile_DoHDR;
+	GL_BeginProfile(&profile_DoHDR, "R_DoHDR");
+
 	GL_PushDrawState();
 
 	GL_Begin2D();
@@ -697,6 +700,8 @@ void R_DoHDR(void)
 	GL_BlitFrameBufferToFrameBufferColorOnly(&s_ToneMapFBO, &s_BackBufferFBO);
 
 	GL_PopDrawState();
+
+	GL_EndProfile(&profile_DoHDR);
 }
 
 void R_BeginFXAA(int w, int h)
@@ -721,6 +726,9 @@ void R_DoFXAA(void)
 	if (g_SvEngine_DrawPortalView)
 		return;
 
+	static glprofile_t profile_DoFXAA;
+	GL_BeginProfile(&profile_DoFXAA, "R_DoFXAA");
+
 	GL_PushDrawState();
 	GL_PushMatrix();
 
@@ -741,10 +749,15 @@ void R_DoFXAA(void)
 
 	GL_PopMatrix();
 	GL_PopDrawState();
+
+	GL_EndProfile(&profile_DoFXAA);
 }
 
 void R_GammaCorrection(void)
 {
+	static glprofile_t profile_GammaCorrection;
+	GL_BeginProfile(&profile_GammaCorrection, "R_GammaCorrection");
+
 	GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
@@ -761,6 +774,8 @@ void R_GammaCorrection(void)
 	GL_UseProgram(0);
 
 	GL_EndFullScreenQuad();
+
+	GL_EndProfile(&profile_GammaCorrection);
 }
 
 void R_ClearOITBuffer(void)
@@ -821,7 +836,7 @@ bool R_IsSSAOEnabled(void)
 	if (!r_ssao->value)
 		return false;
 
-	if (r_refdef->onlyClientDraws || r_draw_pass || g_SvEngine_DrawPortalView)
+	if ((*r_refdef.onlyClientDraws) || r_draw_pass || g_SvEngine_DrawPortalView)
 		return false;
 
 	if ((*r_xfov) < 75)
@@ -836,6 +851,8 @@ bool R_IsSSAOEnabled(void)
 void R_AmbientOcclusion(void)
 {
 	//Prepare parameters
+	static glprofile_t profile_AmbientOcclusion;
+	GL_BeginProfile(&profile_AmbientOcclusion, "R_AmbientOcclusion");
 
 	const float *ProjMatrix = r_projection_matrix;
 
@@ -969,4 +986,6 @@ void R_AmbientOcclusion(void)
 
 	glDisable(GL_STENCIL_TEST);
 	glDisable(GL_BLEND);
+
+	GL_EndProfile(&profile_AmbientOcclusion);
 }
