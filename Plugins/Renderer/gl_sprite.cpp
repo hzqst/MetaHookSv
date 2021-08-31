@@ -354,6 +354,14 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 	int type = psprite->type;
 
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		if (ent->curstate.effects & EF_FIBERCAMERA)
+		{
+			type = clamp(ent->curstate.sequence, SPR_VP_PARALLEL_UPRIGHT, SPR_VP_PARALLEL_ORIENTED);
+		}
+	}
+
 	if (ent->angles[2] != 0 && type == SPR_VP_PARALLEL)
 	{
 		type = SPR_VP_PARALLEL_ORIENTED;

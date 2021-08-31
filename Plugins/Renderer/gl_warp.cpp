@@ -9,7 +9,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, WaterVBOCache->hEBO);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_TEXTURE_SSBO, WaterVBOCache->hTextureSSBO);
 
-	glDisable(GL_CULL_FACE);
+	//glDisable(GL_CULL_FACE);
 
 	if (r_draw_opaque)
 	{
@@ -36,8 +36,8 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 	{
 		int programState = 0;
 
-		//if (bUseBindless)
-		//	programState |= WATER_BINDLESS_ENABLED;
+		if (bUseBindless)
+			programState |= WATER_BINDLESS_ENABLED;
 
 		if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
 		{
@@ -110,7 +110,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 
 		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-		//if (!(programState & WATER_BINDLESS_ENABLED))
+		if (!(programState & WATER_BINDLESS_ENABLED))
 		{
 			glActiveTexture(GL_TEXTURE2);
 			glEnable(GL_TEXTURE_2D);
@@ -134,7 +134,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 		r_wsurf_drawcall++;
 		r_wsurf_polys += WaterVBOCache->iPolyCount;
 
-		//if (!(programState & WATER_BINDLESS_ENABLED))
+		if (!(programState & WATER_BINDLESS_ENABLED))
 		{
 			glActiveTexture(GL_TEXTURE5);
 			glDisable(GL_TEXTURE_2D);
@@ -216,7 +216,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 
 	glDisable(GL_STENCIL_TEST);
 	glDisable(GL_BLEND); 
-	glEnable(GL_CULL_FACE);
+	//glEnable(GL_CULL_FACE);
 }
 
 void R_DrawWaters(void)
@@ -283,7 +283,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	//if ((*currententity)->curstate.rendermode == kRenderTransTexture)
 	//	gWaterColor->a = (*r_blend) * 255;
 
-	auto VBOCache = R_PrepareWaterVBO((*currententity), fa);
+	auto VBOCache = R_PrepareWaterVBO((*currententity), fa, direction);
 
 	if (g_iNumRenderWaterVBOCache == 512)
 	{

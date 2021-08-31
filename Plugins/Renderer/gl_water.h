@@ -139,7 +139,7 @@ extern cshift_t *cshift_water;
 
 bool R_IsAboveWater(water_vbo_t *water);
 
-water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf);
+water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction);
 void R_InitWater(void);
 void R_FreeWater(void);
 void R_RenderWaterView(void);

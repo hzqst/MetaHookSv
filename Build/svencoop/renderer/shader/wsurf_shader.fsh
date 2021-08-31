@@ -286,8 +286,6 @@ void main()
 
 	vec4 lightmapColor = vec4(1.0, 1.0, 1.0, 1.0);
 
-	lightmapColor = GammaToLinear(lightmapColor);
-
 #endif
 
 #ifdef NORMALTEXTURE_ENABLED
@@ -310,6 +308,8 @@ void main()
 	vec4 detailColor = texture2D(detailTex, detailTexCoord);
     detailColor.xyz *= 2.0;
     detailColor.a = 1.0;
+
+	detailColor = TexGammaToLinear(detailColor);
 
 #else
 

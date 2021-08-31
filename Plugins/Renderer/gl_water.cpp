@@ -139,11 +139,17 @@ bool R_IsAboveWater(water_vbo_t *water)
 	return DotProduct4(org, equation) > 0;
 }
 
-water_vbo_t *R_FindWaterVBOFlat(cl_entity_t *ent, msurface_t *surf)
+water_vbo_t *R_FindFlatWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction)
 {
 	auto poly = surf->polys;
 
 	auto brushface = &r_wsurf.vFaceBuffer[poly->flags];
+
+	vec3_t normal;
+	VectorCopy(brushface->normal, normal);
+
+	if (direction)
+		VectorInverse(normal);
 
 	for (size_t i = 0; i < g_WaterVBOCache.size(); ++i)
 	{
@@ -152,7 +158,7 @@ water_vbo_t *R_FindWaterVBOFlat(cl_entity_t *ent, msurface_t *surf)
 			surf->texinfo->texture == cache->texture &&
 			cache->normal[2] == brushface->normal[2])
 		{
-			auto plane = DotProduct(poly->verts[0], brushface->normal);
+			auto plane = DotProduct(poly->verts[0], normal);
 
 			bool bSkip = false;
 			for (int j = 0; j < poly->numverts; ++j)
@@ -210,7 +216,7 @@ water_control_t *R_FindWaterControl(cl_entity_t *ent, msurface_t *surf)
 	return pControl;
 }
 
-water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf)
+water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction)
 {
 	water_vbo_t *VBOCache = NULL;
 
@@ -222,7 +228,7 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf)
 
 		auto brushface = &r_wsurf.vFaceBuffer[poly->flags];
 
-		VBOCache = R_FindWaterVBOFlat(ent, surf);
+		VBOCache = R_FindFlatWaterVBO(ent, surf, direction);
 
 		if (!VBOCache)
 		{
@@ -271,6 +277,9 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf)
 
 			VectorCopy(poly->verts[0], VBOCache->vert);
 			VectorCopy(brushface->normal, VBOCache->normal);
+			if (direction)
+				VectorInverse(VBOCache->normal);
+
 			VBOCache->plane = DotProduct(VBOCache->normal, VBOCache->vert);
 
 			auto pSourcePalette = surf->texinfo->texture->pPal;
