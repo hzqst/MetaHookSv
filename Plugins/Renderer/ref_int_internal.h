@@ -23,6 +23,7 @@ typedef void(*ExtraShaderStageCallback)(GLuint *objs, int *used);
 
 typedef struct
 {
+	void (*Cvar_DirectSet)(cvar_t *var, char *value);
 	void (*BuildGammaTable)(float gamma);
 	void (*R_ForceCVars)(qboolean mp);
 	void (*R_CheckVariables)(void);

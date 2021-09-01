@@ -78,6 +78,24 @@ struct MessageMapItem_t
 	int secondParamSymbol;
 };
 
+typedef struct MessageMapItem_Legacy_s
+{
+	const char *name;//0
+	int padding[3];//4
+	void *func;//16
+	int param1;//20
+	int param2;//24
+	int param3;//28
+	int param4;//32
+	int param5;//36
+	int param6;//40
+	int param7;//48
+	int param8;//52
+	int param9;//56
+	int param10;//60
+	int param11;//64
+}MessageMapItem_Legacy_t;
+
 #define DECLARE_PANELMESSAGEMAP( className )												\
 	static void AddToMap( char const *scriptname, vgui::MessageFunc_t function, int paramCount, int p1type, const char *p1name, int p2type, const char *p2name ) 	\
 	{																					\

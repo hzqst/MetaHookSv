@@ -447,6 +447,12 @@
     <ClCompile Include="command.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="CvarSlider.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="CvarToggleCheckButton.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engfuncs.h">
@@ -1015,6 +1021,12 @@
     </ClInclude>
     <ClInclude Include="command.h">
       <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="CvarSlider.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="CvarToggleCheckButton.h">
+      <Filter>VGUI2</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,8 +1,6 @@
 #include "gl_local.h"
 #include <sstream>
 
-r_hdr_control_t r_hdr_control;
-
 //HDR
 int last_luminance = 0;
 
@@ -46,21 +44,20 @@ SHADER_DEFINE(blit_oitblend);
 SHADER_DEFINE(gamma_correction);
 
 cvar_t *r_hdr = NULL;
-cvar_t *r_hdr_blurwidth = NULL;
-cvar_t *r_hdr_exposure = NULL;
-cvar_t *r_hdr_darkness = NULL;
-cvar_t *r_hdr_adaptation = NULL;
 cvar_t *r_hdr_debug = NULL;
+MapConVar *r_hdr_blurwidth = NULL;
+MapConVar *r_hdr_exposure = NULL;
+MapConVar *r_hdr_darkness = NULL;
+MapConVar *r_hdr_adaptation = NULL;
 
 cvar_t *r_fxaa = NULL;
 
 cvar_t *r_ssao = NULL;
 cvar_t *r_ssao_debug = NULL;
-cvar_t *r_ssao_radius = NULL;
-cvar_t *r_ssao_intensity = NULL;
-cvar_t *r_ssao_bias = NULL;
-cvar_t *r_ssao_blur_sharpness = NULL;
-cvar_t *r_ssao_studio_model = NULL;
+MapConVar *r_ssao_radius = NULL;
+MapConVar *r_ssao_intensity = NULL;
+MapConVar *r_ssao_bias = NULL;
+MapConVar *r_ssao_blur_sharpness = NULL;
 
 std::unordered_map<int, hud_debug_program_t> g_HudDebugProgramTable;
 
@@ -381,20 +378,20 @@ void R_InitGLHUD(void)
 	R_InitBlur(16);
 
 	r_hdr = gEngfuncs.pfnRegisterVariable("r_hdr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_hdr_blurwidth = gEngfuncs.pfnRegisterVariable("r_hdr_blurwidth", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_hdr_exposure = gEngfuncs.pfnRegisterVariable("r_hdr_exposure", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_hdr_darkness = gEngfuncs.pfnRegisterVariable("r_hdr_darkness", "1.6", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_hdr_adaptation = gEngfuncs.pfnRegisterVariable("r_hdr_adaptation", "50", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_hdr_debug = gEngfuncs.pfnRegisterVariable("r_hdr_debug", "0",  FCVAR_CLIENTDLL);
+	r_hdr_debug = gEngfuncs.pfnRegisterVariable("r_hdr_debug", "0", FCVAR_CLIENTDLL);
+	r_hdr_blurwidth = R_RegisterMapCvar("r_hdr_blurwidth", "0.075", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_hdr_exposure = R_RegisterMapCvar("r_hdr_exposure", "0.8", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_hdr_darkness = R_RegisterMapCvar("r_hdr_darkness", "1.4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_hdr_adaptation = R_RegisterMapCvar("r_hdr_adaptation", "50", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_fxaa = gEngfuncs.pfnRegisterVariable("r_fxaa", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_ssao = gEngfuncs.pfnRegisterVariable("r_ssao", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssao_debug = gEngfuncs.pfnRegisterVariable("r_ssao_debug", "0",  FCVAR_CLIENTDLL);
-	r_ssao_radius = gEngfuncs.pfnRegisterVariable("r_ssao_radius", "30.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_ssao_intensity = gEngfuncs.pfnRegisterVariable("r_ssao_intensity", "0.6", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_ssao_bias = gEngfuncs.pfnRegisterVariable("r_ssao_bias", "0.2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_ssao_blur_sharpness = gEngfuncs.pfnRegisterVariable("r_ssao_blur_sharpness", "1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssao_radius = R_RegisterMapCvar("r_ssao_radius", "30.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssao_intensity = R_RegisterMapCvar("r_ssao_intensity", "3.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssao_bias = R_RegisterMapCvar("r_ssao_bias", "0.2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssao_blur_sharpness = R_RegisterMapCvar("r_ssao_blur_sharpness", "1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	last_luminance = 0;
 }
@@ -517,7 +514,7 @@ void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container
 	GL_UseProgram(pp_luminadapt.program);
 	glUniform1i(pp_luminadapt.curtex, 0);
 	glUniform1i(pp_luminadapt.adatex, 1);
-	glUniform1f(pp_luminadapt.frametime, frametime * clamp(r_hdr_control.adaptation, 0.1, 100));
+	glUniform1f(pp_luminadapt.frametime, frametime * clamp(r_hdr_adaptation->GetValue(), 0.1, 100));
 
 	GL_SelectTexture(GL_TEXTURE0);
 	GL_Bind(src->s_hBackBufferTex);
@@ -619,9 +616,9 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 	glUniform1i(pp_tonemap.basetex, 0);
 	glUniform1i(pp_tonemap.blurtex, 1);
 	glUniform1i(pp_tonemap.lumtex, 2);
-	glUniform1f(pp_tonemap.blurfactor, clamp(r_hdr_control.blurwidth, 0, 1));
-	glUniform1f(pp_tonemap.exposure, clamp(r_hdr_control.exposure, 0.001, 10));
-	glUniform1f(pp_tonemap.darkness, clamp(r_hdr_control.darkness, 0.001, 10));
+	glUniform1f(pp_tonemap.blurfactor, clamp(r_hdr_blurwidth->GetValue(), 0, 1));
+	glUniform1f(pp_tonemap.exposure, clamp(r_hdr_exposure->GetValue(), 0.001, 10));
+	glUniform1f(pp_tonemap.darkness, clamp(r_hdr_darkness->GetValue(), 0.001, 10));
 	glUniform1f(pp_tonemap.gamma, 1.0 / v_gamma->value);
 	
 	GL_SelectTexture(GL_TEXTURE0);
@@ -867,14 +864,14 @@ void R_AmbientOcclusion(void)
 
 	// radius
 	float meters2viewspace = 1.0f;
-	float R = r_ssao_radius->value * meters2viewspace;
+	float R = r_ssao_radius->GetValue() * meters2viewspace;
 	auto R2 = R * R;
 	auto NegInvR2 = -1.0f / R2;
 	auto RadiusToScreen = R * 0.5f * projScale;
 
 	// ao
-	auto PowExponent = max(r_ssao_intensity->value, 0.0f);
-	auto NDotVBias = min(max(0.0f, r_ssao_bias->value), 1.0f);
+	auto PowExponent = max(r_ssao_intensity->GetValue(), 0.0f);
+	auto NDotVBias = min(max(0.0f, r_ssao_bias->GetValue()), 1.0f);
 	auto AOMultiplier = 1.0f / (1.0f - NDotVBias);
 
 	// resolution
@@ -941,7 +938,7 @@ void R_AmbientOcclusion(void)
 	glDrawBuffer(GL_COLOR_ATTACHMENT1);
 
 	GL_UseProgram(hbao_blur.program);
-	glUniform1f(0, r_ssao_blur_sharpness->value / meters2viewspace);
+	glUniform1f(0, r_ssao_blur_sharpness->GetValue() / meters2viewspace);
 	glUniform2f(1, 1.0f / float(glwidth), 0);
 
 	//Texture unit 0 = calc
@@ -974,7 +971,7 @@ void R_AmbientOcclusion(void)
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 	GL_UseProgram(hbao_blur2.program);
-	glUniform1f(0, r_ssao_blur_sharpness->value / meters2viewspace);
+	glUniform1f(0, r_ssao_blur_sharpness->GetValue() / meters2viewspace);
 	glUniform2f(1, 0, 1.0f / float(glheight));
 
 	//Texture unit 0 = calc2

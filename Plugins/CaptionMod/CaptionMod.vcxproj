@@ -115,6 +115,8 @@
     <ClCompile Include="ClientVGUI.cpp" />
     <ClCompile Include="command.cpp" />
     <ClCompile Include="cstrikechatdialog.cpp" />
+    <ClCompile Include="CvarSlider.cpp" />
+    <ClCompile Include="CvarToggleCheckButton.cpp" />
     <ClCompile Include="encode.cpp" />
     <ClCompile Include="engfuncs.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
@@ -263,6 +265,8 @@
     <ClInclude Include="chatdialog.h" />
     <ClInclude Include="command.h" />
     <ClInclude Include="cstrikechatdialog.h" />
+    <ClInclude Include="CvarSlider.h" />
+    <ClInclude Include="CvarToggleCheckButton.h" />
     <ClInclude Include="encode.h" />
     <ClInclude Include="engfuncs.h" />
     <ClInclude Include="enginedef.h" />

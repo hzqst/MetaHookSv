@@ -374,7 +374,6 @@ extern decalcache_t *gDecalCache;
 extern cvar_t *r_wsurf_parallax_scale;
 extern cvar_t *r_wsurf_sky_occlusion;
 extern cvar_t *r_wsurf_zprepass;
-extern cvar_t *r_wsurf_detail;
 
 void FreeBSPEntity(bspentity_t *ent);
 void R_ClearBSPEntities(void);

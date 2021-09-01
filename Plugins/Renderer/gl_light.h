@@ -1,35 +1,5 @@
 #pragma once
 
-typedef struct shadow_control_s
-{
-	bool enabled;
-	vec3_t vforward;
-	vec3_t vright;
-	vec3_t vup;
-	vec3_t angles;
-	float color[3];
-	float intensity;
-	float distfade[2];
-	float lumfade[2];
-	float quality[3][2];
-}shadow_control_t;
-
-extern shadow_control_t r_shadow_control;
-
-typedef struct ssr_control_s
-{
-	bool enabled;
-	float ray_step;
-	int iter_count;
-	float distance_bias;
-	bool exponential_step;
-	bool adaptive_step;
-	bool binary_search;
-	float fade[2];
-}ssr_control_t;
-
-extern ssr_control_t r_ssr_control;
-
 typedef struct light_dynamic_s
 {
 	int type;
@@ -46,15 +16,23 @@ extern std::vector<light_dynamic_t> g_DynamicLights;
 
 extern cvar_t *r_light_dynamic;
 extern cvar_t *r_light_debug;
+extern MapConVar *r_flashlight_ambient;
+extern MapConVar *r_flashlight_diffuse;
+extern MapConVar *r_flashlight_specular;
+extern MapConVar *r_flashlight_specularpow;
+extern MapConVar *r_dynlight_ambient;
+extern MapConVar *r_dynlight_diffuse;
+extern MapConVar *r_dynlight_specular;
+extern MapConVar *r_dynlight_specularpow;
 
 extern cvar_t *r_ssr;
-extern cvar_t *r_ssr_ray_step;
-extern cvar_t *r_ssr_iter_count;
-extern cvar_t *r_ssr_distance_bias;
-extern cvar_t *r_ssr_exponential_step;
-extern cvar_t *r_ssr_adaptive_step;
-extern cvar_t *r_ssr_binary_search;
-extern cvar_t *r_ssr_fade;
+extern MapConVar *r_ssr_ray_step;
+extern MapConVar *r_ssr_iter_count;
+extern MapConVar *r_ssr_distance_bias;
+extern MapConVar *r_ssr_exponential_step;
+extern MapConVar *r_ssr_adaptive_step;
+extern MapConVar *r_ssr_binary_search;
+extern MapConVar *r_ssr_fade;
 
 extern bool drawgbuffer;
 

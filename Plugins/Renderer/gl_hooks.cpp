@@ -690,6 +690,22 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(R_AddTEntity);
 	}
 
+	if (1)
+	{
+		const char sigs1[] = "***PROTECTED***";
+		auto Cvar_DirectSet_String = Search_Pattern_Data(sigs1);
+		if (!Cvar_DirectSet_String)
+			Cvar_DirectSet_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(Cvar_DirectSet_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8";
+		*(DWORD *)(pattern + 1) = (DWORD)Cvar_DirectSet_String;
+		auto Cvar_DirectSet_Call = Search_Pattern(pattern);
+		Sig_VarNotFound(Cvar_DirectSet_Call);
+
+		gRefFuncs.Cvar_DirectSet = (decltype(gRefFuncs.Cvar_DirectSet))g_pMetaHookAPI->ReverseSearchFunctionBegin(Cvar_DirectSet_Call, 0x500);
+		Sig_FuncNotFound(Cvar_DirectSet);
+	}
+
 	if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		typedef struct
@@ -2974,4 +2990,5 @@ void R_InstallHook(void)
 	Install_InlineHook(Mod_LoadStudioModel);
 	Install_InlineHook(triapi_RenderMode);
 	Install_InlineHook(BuildGammaTable);
+	Install_InlineHook(Cvar_DirectSet);
 }

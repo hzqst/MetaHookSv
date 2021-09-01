@@ -1,30 +1,30 @@
 #include "gl_local.h"
 #include <sstream>
 
-shadow_control_t r_shadow_control; 
-
-ssr_control_t r_ssr_control;
-
 cvar_t *r_light_dynamic = NULL;
 cvar_t *r_light_debug = NULL;
 
-cvar_t *r_light_radius = NULL;
-cvar_t *r_light_ambient = NULL;
-cvar_t *r_light_diffuse = NULL;
-cvar_t *r_light_specular = NULL;
-cvar_t *r_light_specularpow = NULL;
+MapConVar *r_flashlight_ambient = NULL;
+MapConVar *r_flashlight_diffuse = NULL;
+MapConVar *r_flashlight_specular = NULL;
+MapConVar *r_flashlight_specularpow = NULL;
+
+MapConVar *r_dynlight_ambient = NULL;
+MapConVar *r_dynlight_diffuse = NULL;
+MapConVar *r_dynlight_specular = NULL;
+MapConVar *r_dynlight_specularpow = NULL;
 
 cvar_t *r_flashlight_distance = NULL;
 cvar_t *r_flashlight_cone = NULL;
 
 cvar_t *r_ssr = NULL;
-cvar_t *r_ssr_ray_step = NULL;
-cvar_t *r_ssr_iter_count = NULL;
-cvar_t *r_ssr_distance_bias = NULL;
-cvar_t *r_ssr_exponential_step= NULL;
-cvar_t *r_ssr_adaptive_step = NULL;
-cvar_t *r_ssr_binary_search = NULL;
-cvar_t *r_ssr_fade = NULL;
+MapConVar *r_ssr_ray_step = NULL;
+MapConVar *r_ssr_iter_count = NULL;
+MapConVar *r_ssr_distance_bias = NULL;
+MapConVar *r_ssr_exponential_step= NULL;
+MapConVar *r_ssr_adaptive_step = NULL;
+MapConVar *r_ssr_binary_search = NULL;
+MapConVar *r_ssr_fade = NULL;
 
 bool drawgbuffer = false;
 
@@ -87,16 +87,16 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 		GL_UseProgram(prog.program);
 
 		if (prog.u_ssrRayStep != -1)
-			glUniform1f(prog.u_ssrRayStep, r_ssr_control.ray_step);
+			glUniform1f(prog.u_ssrRayStep, r_ssr_ray_step->GetValue());
 
 		if (prog.u_ssrIterCount != -1)
-			glUniform1i(prog.u_ssrIterCount, r_ssr_control.iter_count);
+			glUniform1i(prog.u_ssrIterCount, r_ssr_iter_count->GetValue());
 
 		if (prog.u_ssrDistanceBias != -1)
-			glUniform1f(prog.u_ssrDistanceBias, r_ssr_control.distance_bias);
+			glUniform1f(prog.u_ssrDistanceBias, r_ssr_distance_bias->GetValue());
 
 		if (prog.u_ssrFade != -1)
-			glUniform2fARB(prog.u_ssrFade, r_ssr_control.fade[0], r_ssr_control.fade[1]);
+			glUniform2fARB(prog.u_ssrFade, r_ssr_fade->GetValues()[0], r_ssr_fade->GetValues()[1]);
 
 		if (progOutput)
 			*progOutput = prog;
@@ -184,20 +184,24 @@ void R_InitLight(void)
 	r_light_dynamic = gEngfuncs.pfnRegisterVariable("r_light_dynamic", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_light_debug = gEngfuncs.pfnRegisterVariable("r_light_debug", "0", FCVAR_CLIENTDLL);
 
-	r_light_radius = gEngfuncs.pfnRegisterVariable("r_light_radius", "300.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_light_ambient = gEngfuncs.pfnRegisterVariable("r_light_ambient", "0.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_light_diffuse = gEngfuncs.pfnRegisterVariable("r_light_diffuse", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_light_specular = gEngfuncs.pfnRegisterVariable("r_light_specular", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_light_specularpow = gEngfuncs.pfnRegisterVariable("r_light_specularpow", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_dynlight_ambient = R_RegisterMapCvar("r_dynlight_ambient", "0.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_dynlight_diffuse = R_RegisterMapCvar("r_dynlight_diffuse", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_dynlight_specular = R_RegisterMapCvar("r_dynlight_specular", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_dynlight_specularpow = R_RegisterMapCvar("r_dynlight_specularpow", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+
+	r_flashlight_ambient = R_RegisterMapCvar("r_flashlight_ambient", "0.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_flashlight_diffuse = R_RegisterMapCvar("r_flashlight_diffuse", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_flashlight_specular = R_RegisterMapCvar("r_flashlight_specular", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_flashlight_specularpow = R_RegisterMapCvar("r_flashlight_specularpow", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_ssr = gEngfuncs.pfnRegisterVariable("r_ssr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_ssr_ray_step = gEngfuncs.pfnRegisterVariable("r_ssr_ray_step", "5.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_ssr_iter_count = gEngfuncs.pfnRegisterVariable("r_ssr_iter_count", "64", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_ssr_distance_bias = gEngfuncs.pfnRegisterVariable("r_ssr_distance_bias", "0.2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_ssr_adaptive_step = gEngfuncs.pfnRegisterVariable("r_ssr_adaptive_step", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_ssr_exponential_step = gEngfuncs.pfnRegisterVariable("r_ssr_exponential_step", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_ssr_binary_search = gEngfuncs.pfnRegisterVariable("r_ssr_binary_search", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_ssr_fade = gEngfuncs.pfnRegisterVariable("r_ssr_fade", "0.8 1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssr_ray_step = R_RegisterMapCvar("r_ssr_ray_step", "5.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssr_iter_count = R_RegisterMapCvar("r_ssr_iter_count", "64", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssr_distance_bias = R_RegisterMapCvar("r_ssr_distance_bias", "0.2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssr_adaptive_step = R_RegisterMapCvar("r_ssr_adaptive_step", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssr_exponential_step = R_RegisterMapCvar("r_ssr_exponential_step", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssr_binary_search = R_RegisterMapCvar("r_ssr_binary_search", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_ssr_fade = R_RegisterMapCvar("r_ssr_fade", "0.8 1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL, 2);
 
 	r_flashlight_distance = gEngfuncs.pfnRegisterVariable("r_flashlight_distance", "2000", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_cone = gEngfuncs.pfnRegisterVariable("r_flashlight_cone", "0.9", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -614,10 +618,10 @@ void R_EndRenderGBuffer(void)
 				glUniform3f(prog.u_lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
 				glUniform1f(prog.u_lightcone, r_flashlight_cone->value);
 				glUniform1f(prog.u_lightradius, r_flashlight_distance->value);
-				glUniform1f(prog.u_lightambient, r_light_ambient->value);
-				glUniform1f(prog.u_lightdiffuse, r_light_diffuse->value);
-				glUniform1f(prog.u_lightspecular, r_light_specular->value);
-				glUniform1f(prog.u_lightspecularpow, r_light_specularpow->value);
+				glUniform1f(prog.u_lightambient, r_flashlight_ambient->GetValue());
+				glUniform1f(prog.u_lightdiffuse, r_flashlight_diffuse->GetValue());
+				glUniform1f(prog.u_lightspecular, r_flashlight_specular->GetValue());
+				glUniform1f(prog.u_lightspecularpow, r_flashlight_specularpow->GetValue());
 
 				glDrawArrays(GL_TRIANGLES, 0, X_SEGMENTS * 6);
 
@@ -636,10 +640,10 @@ void R_EndRenderGBuffer(void)
 				glUniform3f(prog.u_lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
 				glUniform1f(prog.u_lightcone, r_flashlight_cone->value);
 				glUniform1f(prog.u_lightradius, r_flashlight_distance->value);
-				glUniform1f(prog.u_lightambient, r_light_ambient->value);
-				glUniform1f(prog.u_lightdiffuse, r_light_diffuse->value);
-				glUniform1f(prog.u_lightspecular, r_light_specular->value);
-				glUniform1f(prog.u_lightspecularpow, r_light_specularpow->value);
+				glUniform1f(prog.u_lightambient, r_flashlight_ambient->GetValue());
+				glUniform1f(prog.u_lightdiffuse, r_flashlight_diffuse->GetValue());
+				glUniform1f(prog.u_lightspecular, r_flashlight_specular->GetValue());
+				glUniform1f(prog.u_lightspecularpow, r_flashlight_specularpow->GetValue());
 				
 				glDrawArrays(GL_QUADS, 0, 4);
 
@@ -679,10 +683,10 @@ void R_EndRenderGBuffer(void)
 				glUniform3f(prog.u_lightpos, dl->origin[0], dl->origin[1], dl->origin[2]);
 				glUniform3f(prog.u_lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
 				glUniform1f(prog.u_lightradius, dl->radius);
-				glUniform1f(prog.u_lightambient, r_light_ambient->value);
-				glUniform1f(prog.u_lightdiffuse, r_light_diffuse->value);
-				glUniform1f(prog.u_lightspecular, r_light_specular->value);
-				glUniform1f(prog.u_lightspecularpow, r_light_specularpow->value);
+				glUniform1f(prog.u_lightambient, r_dynlight_ambient->GetValue());
+				glUniform1f(prog.u_lightdiffuse, r_dynlight_diffuse->GetValue());
+				glUniform1f(prog.u_lightspecular, r_dynlight_specular->GetValue());
+				glUniform1f(prog.u_lightspecularpow, r_dynlight_specularpow->GetValue());
 
 				glBindBuffer(GL_ARRAY_BUFFER, r_sphere_vbo);
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r_sphere_ebo);
@@ -705,10 +709,10 @@ void R_EndRenderGBuffer(void)
 				glUniform3f(prog.u_lightpos, dl->origin[0], dl->origin[1], dl->origin[2]);
 				glUniform3f(prog.u_lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
 				glUniform1f(prog.u_lightradius, dl->radius);
-				glUniform1f(prog.u_lightambient, r_light_ambient->value);
-				glUniform1f(prog.u_lightdiffuse, r_light_diffuse->value);
-				glUniform1f(prog.u_lightspecular, r_light_specular->value);
-				glUniform1f(prog.u_lightspecularpow, r_light_specularpow->value);
+				glUniform1f(prog.u_lightambient, r_dynlight_ambient->GetValue());
+				glUniform1f(prog.u_lightdiffuse, r_dynlight_diffuse->GetValue());
+				glUniform1f(prog.u_lightspecular, r_dynlight_specular->GetValue());
+				glUniform1f(prog.u_lightspecularpow, r_dynlight_specularpow->GetValue());
 
 				glDrawArrays(GL_QUADS, 0, 4);
 
@@ -742,17 +746,17 @@ void R_EndRenderGBuffer(void)
 	if (r_fog_mode == GL_LINEAR)
 		FinalProgramState |= DFINAL_LINEAR_FOG_ENABLED;
 
-	if (r_ssr->value && r_ssr_control.enabled)
+	if (r_ssr->value)
 	{
 		FinalProgramState |= DFINAL_SSR_ENABLED;
 
-		if (r_ssr_control.adaptive_step)
+		if (r_ssr_adaptive_step->GetValue())
 			FinalProgramState |= DFINAL_SSR_ADAPTIVE_STEP_ENABLED;
 
-		if (r_ssr_control.exponential_step)
+		if (r_ssr_exponential_step->GetValue())
 			FinalProgramState |= DFINAL_SSR_EXPONENTIAL_STEP_ENABLED;
 
-		if (r_ssr_control.binary_search)
+		if (r_ssr_binary_search->GetValue())
 			FinalProgramState |= DFINAL_SSR_BINARY_SEARCH_ENABLED;
 	}
 
@@ -807,23 +811,6 @@ void R_BlitGBufferToFrameBuffer(FBO_Container_t *fbo)
 	glDisable(GL_BLEND);
 
 	int FinalProgramState = 0;
-
-	/*if (r_fog_mode == GL_LINEAR)
-		FinalProgramState |= DFINAL_LINEAR_FOG_ENABLED;
-
-	if (r_ssr->value && r_ssr_control.enabled)
-	{
-		FinalProgramState |= DFINAL_SSR_ENABLED;
-
-		if (r_ssr_control.adaptive_step)
-			FinalProgramState |= DFINAL_SSR_ADAPTIVE_STEP_ENABLED;
-
-		if (r_ssr_control.exponential_step)
-			FinalProgramState |= DFINAL_SSR_EXPONENTIAL_STEP_ENABLED;
-
-		if (r_ssr_control.binary_search)
-			FinalProgramState |= DFINAL_SSR_BINARY_SEARCH_ENABLED;
-	}*/
 
 	//Setup final program
 	R_UseDFinalProgram(FinalProgramState, NULL);

@@ -32,10 +32,10 @@
 #include "gl_light.h"
 #include "gl_wsurf.h"
 #include "gl_draw.h"
+#include "gl_cvar.h"
 
 typedef struct
 {
-	//GLboolean polygon_offset_fill;
 	GLboolean cullface;
 	GLboolean alphatest;
 	GLboolean depthtest;
@@ -166,6 +166,8 @@ extern int *gSkyTexNumber;
 
 extern float gldepthmin;
 extern float gldepthmax;
+
+extern cvar_t *dev_overview_color;
 
 extern cvar_t *r_bmodelinterp;
 extern cvar_t *r_bmodelhighfrac;

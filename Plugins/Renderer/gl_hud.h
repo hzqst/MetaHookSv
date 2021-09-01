@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gl_cvar.h"
 #include "enginedef.h"
 
 #define MAX_GAUSSIAN_SAMPLES 16
@@ -7,17 +8,6 @@
 #define DOWNSAMPLE_BUFFERS 2
 #define LUMIN_BUFFERS 3
 #define BLUR_BUFFERS 3
-
-typedef struct r_hdr_control_s
-{
-	bool enabled;
-	float blurwidth;
-	float exposure;
-	float darkness;
-	float adaptation;
-}r_hdr_control_t;
-
-extern r_hdr_control_t r_hdr_control;
 
 typedef struct
 {
@@ -150,19 +140,18 @@ typedef struct
 	int layer;
 }hud_debug_program_t;
 
-extern cvar_t *r_hdr ;
-extern cvar_t *r_hdr_blurwidth ;
-extern cvar_t *r_hdr_exposure ;
-extern cvar_t *r_hdr_darkness ;
-extern cvar_t *r_hdr_adaptation ;
-extern cvar_t *r_hdr_debug ;
+extern cvar_t *r_hdr;
+extern cvar_t *r_hdr_debug;
+extern MapConVar *r_hdr_blurwidth;
+extern MapConVar *r_hdr_exposure;
+extern MapConVar *r_hdr_darkness;
+extern MapConVar *r_hdr_adaptation;
 extern cvar_t *r_ssao;
 extern cvar_t *r_ssao_debug;
-extern cvar_t *r_ssao_radius;
-extern cvar_t *r_ssao_intensity;
-extern cvar_t *r_ssao_bias;
-extern cvar_t *r_ssao_blur_sharpness;
-extern cvar_t *r_ssao_studio_model;
+extern MapConVar *r_ssao_radius;
+extern MapConVar *r_ssao_intensity;
+extern MapConVar *r_ssao_bias;
+extern MapConVar *r_ssao_blur_sharpness;
 extern cvar_t *r_fxaa;
 
 extern int last_luminance;

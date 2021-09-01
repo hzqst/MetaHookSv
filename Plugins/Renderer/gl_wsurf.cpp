@@ -7,7 +7,6 @@ r_worldsurf_t r_wsurf;
 cvar_t *r_wsurf_parallax_scale;
 cvar_t *r_wsurf_sky_occlusion;
 cvar_t *r_wsurf_zprepass;
-cvar_t *r_wsurf_detail;
 
 int r_fog_mode = 0;
 float r_fog_control[2] = { 0 };
@@ -1741,7 +1740,6 @@ void R_InitWSurf(void)
 	
 	r_wsurf_parallax_scale = gEngfuncs.pfnRegisterVariable("r_wsurf_parallax_scale", "-0.02", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_sky_occlusion = gEngfuncs.pfnRegisterVariable("r_wsurf_sky_occlusion", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	r_wsurf_detail = gEngfuncs.pfnRegisterVariable("r_wsurf_detail", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_zprepass = gEngfuncs.pfnRegisterVariable("r_wsurf_zprepass", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 }
 
@@ -1982,7 +1980,7 @@ detail_texture_cache_t *R_FindDetailTextureCache(int texId)
 
 void R_BeginDetailTexture(int texId)
 {
-	if (!r_wsurf_detail->value)
+	if (!r_detailtextures->value)
 		return;
 
 	auto itor = g_DetailTextureTable.find(texId);
@@ -2413,9 +2411,8 @@ void R_ParseBSPEntity_Env_Cubemap(bspentity_t *ent)
 
 void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 {
-	float temp[4];
-
 	light_dynamic_t dynlight;
+
 	dynlight.type = DLIGHT_POINT;
 	VectorClear(dynlight.origin);
 	VectorClear(dynlight.color);
@@ -2428,6 +2425,8 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 	char *origin_string = ValueForKey(ent, "origin");
 	if (origin_string)
 	{
+		float temp[4];
+
 		if (sscanf(origin_string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
 		{
 			dynlight.origin[0] = temp[0];
@@ -2443,6 +2442,7 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 	char *color_string = ValueForKey(ent, "_light");
 	if (color_string)
 	{
+		float temp[4];
 		if (sscanf(color_string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
 		{
 			dynlight.color[0] = clamp(temp[0], 0, 255) / 255.0f;
@@ -2458,6 +2458,7 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 	char *distance_string = ValueForKey(ent, "_distance");
 	if (distance_string)
 	{
+		float temp[4];
 		if (sscanf(distance_string, "%f", &temp[0]) == 1)
 		{
 			dynlight.distance = temp[0];
@@ -2471,6 +2472,7 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 	char *ambient_string = ValueForKey(ent, "_ambient");
 	if (ambient_string)
 	{
+		float temp[4];
 		if (sscanf(ambient_string, "%f", &temp[0]) == 1)
 		{
 			dynlight.ambient = temp[0];
@@ -2484,6 +2486,7 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 	char *diffuse_string = ValueForKey(ent, "_diffuse");
 	if (diffuse_string)
 	{
+		float temp[4];
 		if (sscanf(diffuse_string, "%f", &temp[0]) == 1)
 		{
 			dynlight.diffuse = temp[0];
@@ -2497,6 +2500,7 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 	char *specular_string = ValueForKey(ent, "_specular");
 	if (specular_string)
 	{
+		float temp[4];
 		if (sscanf(specular_string, "%f", &temp[0]) == 1)
 		{
 			dynlight.specular = temp[0];
@@ -2510,6 +2514,7 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 	char *specularpow_string = ValueForKey(ent, "_specularpow");
 	if (specularpow_string)
 	{
+		float temp[4];
 		if (sscanf(specularpow_string, "%f", &temp[0]) == 1)
 		{
 			dynlight.specularpow = temp[0];
@@ -2525,8 +2530,6 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 
 void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 {
-	float temp[4];
-
 	water_control_t control;
 	control.fresnelfactor = 0;
 	control.depthfactor[0] = 0;
@@ -2555,6 +2558,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 	char *fresnelfactor_string = ValueForKey(ent, "fresnelfactor");
 	if (fresnelfactor_string)
 	{
+		float temp[4];
 		if (sscanf(fresnelfactor_string, "%f", &temp[0]) == 1)
 		{
 			control.fresnelfactor = clamp(temp[0], 0, 10);
@@ -2568,6 +2572,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 	char *normfactor_string = ValueForKey(ent, "normfactor");
 	if (normfactor_string)
 	{
+		float temp[4];
 		if (sscanf(normfactor_string, "%f", &temp[0]) == 1)
 		{
 			control.normfactor = clamp(temp[0], 0, 10);
@@ -2581,6 +2586,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 	char *depthfactor_string = ValueForKey(ent, "depthfactor");
 	if (depthfactor_string)
 	{
+		float temp[4];
 		if (sscanf(depthfactor_string, "%f %f", &temp[0], &temp[1]) == 2)
 		{
 			control.depthfactor[0] = clamp(temp[0], 0, 10);
@@ -2595,6 +2601,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 	char *minheight_string = ValueForKey(ent, "minheight");
 	if (minheight_string)
 	{
+		float temp[4];
 		if (sscanf(minheight_string, "%f", &temp[0]) == 1)
 		{
 			control.minheight = clamp(temp[0], 0, 10000);
@@ -2608,6 +2615,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 	char *maxtrans_string = ValueForKey(ent, "maxtrans");
 	if (maxtrans_string)
 	{
+		float temp[4];
 		if (sscanf(maxtrans_string, "%f", &temp[0]) == 1)
 		{
 			control.maxtrans = clamp(temp[0], 0, 255) / 255.0f;
@@ -2661,458 +2669,58 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 	}
 }
 
+void R_ParseBSPEntity_Env_DynamicLight_Control(bspentity_t *ent)
+{
+	R_ParseMapCvarSetMapValue(r_dynlight_ambient, ValueForKey(ent, "ambient"));
+	R_ParseMapCvarSetMapValue(r_dynlight_diffuse, ValueForKey(ent, "diffuse"));
+	R_ParseMapCvarSetMapValue(r_dynlight_specular, ValueForKey(ent, "specular"));
+	R_ParseMapCvarSetMapValue(r_dynlight_specularpow, ValueForKey(ent, "specularpow"));
+}
+
+void R_ParseBSPEntity_Env_FlashLight_Control(bspentity_t *ent)
+{
+	R_ParseMapCvarSetMapValue(r_flashlight_ambient, ValueForKey(ent, "ambient"));
+	R_ParseMapCvarSetMapValue(r_flashlight_diffuse, ValueForKey(ent, "diffuse"));
+	R_ParseMapCvarSetMapValue(r_flashlight_specular, ValueForKey(ent, "specular"));
+	R_ParseMapCvarSetMapValue(r_flashlight_specularpow, ValueForKey(ent, "specularpow"));
+}
+
 void R_ParseBSPEntity_Env_HDR_Control(bspentity_t *ent)
 {
-	float temp[4];
-
-	char *adaptation_string = ValueForKey(ent, "adaptation");
-	if (adaptation_string)
-	{
-		if (sscanf(adaptation_string, "%f", &temp[0]) == 1)
-		{
-			r_hdr_control.adaptation = clamp(temp[0], 0.1, 100);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"adaptation\" in entity \"env_hdr_control\"\n");
-		}
-	}
-	char *blurwidth_string = ValueForKey(ent, "blurwidth");
-	if (blurwidth_string)
-	{
-		if (sscanf(blurwidth_string, "%f", &temp[0]) == 1)
-		{
-			r_hdr_control.blurwidth = clamp(temp[0], 0, 1);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"blurwidth\" in entity \"env_hdr_control\"\n");
-		}
-	}
-	char *darkness_string = ValueForKey(ent, "darkness");
-	if (darkness_string)
-	{
-		if (sscanf(darkness_string, "%f", &temp[0]) == 1)
-		{
-			r_hdr_control.darkness = clamp(temp[0], 0.01, 10);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"darkness\" in entity \"env_hdr_control\"\n");
-		}
-	}
-	char *exposure_string = ValueForKey(ent, "exposure");
-	if (exposure_string)
-	{
-		if (sscanf(exposure_string, "%f", &temp[0]) == 1)
-		{
-			r_hdr_control.exposure = clamp(temp[0], 0.01, 10);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"exposure\" in entity \"env_hdr_control\"\n");
-		}
-	}
-	char *disablehdr_string = ValueForKey(ent, "disablehdr");
-	if (disablehdr_string)
-	{
-		if (atoi(disablehdr_string) > 0)
-		{
-			r_hdr_control.enabled = false;
-		}
-	}
+	R_ParseMapCvarSetMapValue(r_hdr_adaptation, ValueForKey(ent, "adaptation"));
+	R_ParseMapCvarSetMapValue(r_hdr_blurwidth, ValueForKey(ent, "blurwidth"));
+	R_ParseMapCvarSetMapValue(r_hdr_darkness, ValueForKey(ent, "darkness"));
+	R_ParseMapCvarSetMapValue(r_hdr_exposure, ValueForKey(ent, "exposure"));
 }
 
 void R_ParseBSPEntity_Env_Shadow_Control(bspentity_t *ent)
 {
-	float temp[4];
-
-	char *color_string = ValueForKey(ent, "color");
-	if (color_string)
-	{
-		if (sscanf(color_string, "%f %f %f %f", &temp[0], &temp[1], &temp[2], &temp[3]) == 4)
-		{
-			r_shadow_control.color[0] = clamp(temp[0], 0, 255) / 255.0f;
-			r_shadow_control.color[1] = clamp(temp[1], 0, 255) / 255.0f;
-			r_shadow_control.color[2] = clamp(temp[2], 0, 255) / 255.0f;
-			r_shadow_control.color[3] = clamp(temp[3], 0, 255) / 255.0f;
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"color\" in entity \"env_shadow_control\"\n");
-		}
-	}
-
-	char *angles_string = ValueForKey(ent, "angles");
-	if (angles_string)
-	{
-		if (sscanf(angles_string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
-		{
-			r_shadow_control.angles[0] = clamp(temp[0], -360, 360);
-			r_shadow_control.angles[1] = clamp(temp[1], -360, 360);
-			r_shadow_control.angles[2] = clamp(temp[2], -360, 360);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"angles\" in entity \"env_shadow_control\"\n");
-		}
-	}
-
-	char *distfade_string = ValueForKey(ent, "distfade");
-	if (distfade_string)
-	{
-		if (sscanf(distfade_string, "%f %f", &temp[0], &temp[1]) == 2)
-		{
-			r_shadow_control.distfade[0] = clamp(temp[0], 0, 10000);
-			r_shadow_control.distfade[1] = clamp(temp[1], r_shadow_control.distfade[0], 10000) - r_shadow_control.distfade[0];
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"distfade\" in entity \"env_shadow_control\"\n");
-		}
-	}
-
-	char *lumfade_string = ValueForKey(ent, "lumfade");
-	if (lumfade_string)
-	{
-		if (sscanf(lumfade_string, "%f %f", &temp[0], &temp[1]) == 2)
-		{
-			r_shadow_control.lumfade[0] = clamp(temp[0], 0, 255) / 255.0f;
-			r_shadow_control.lumfade[1] = clamp(temp[1], 0, 255) / 255.0f;
-
-			if (r_shadow_control.lumfade[0] < r_shadow_control.lumfade[1] + 0.01f)
-				r_shadow_control.lumfade[0] = r_shadow_control.lumfade[1] + 0.01f;
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"lumfade\" in entity \"env_shadow_control\"\n");
-		}
-	}
-
-	char *disableallshadows_string = ValueForKey(ent, "disableallshadows");
-	if (disableallshadows_string)
-	{
-		if (atoi(disableallshadows_string) > 0)
-		{
-			r_shadow_control.enabled = false;
-		}
-	}
-
-	char *high_distance_string = ValueForKey(ent, "high_distance");
-	if (high_distance_string)
-	{
-		if (sscanf(high_distance_string, "%f", &temp[0]) == 1)
-		{
-			r_shadow_control.quality[0][0] = clamp(temp[0], 0, 100000);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"high_distance\" in entity \"env_shadow_control\"\n");
-		}
-	}
-
-	char *high_scale_string = ValueForKey(ent, "high_scale");
-	if (high_scale_string)
-	{
-		if (sscanf(high_scale_string, "%f", &temp[0]) == 1)
-		{
-			r_shadow_control.quality[0][1] = clamp(temp[0], 0.1, 8);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"high_scale\" in entity \"env_shadow_control\"\n");
-		}
-	}
-
-	char *medium_distance_string = ValueForKey(ent, "medium_distance");
-	if (medium_distance_string)
-	{
-		if (sscanf(medium_distance_string, "%f", &temp[0]) == 1)
-		{
-			r_shadow_control.quality[1][0] = clamp(temp[0], 0, 100000);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"medium_distance\" in entity \"env_shadow_control\"\n");
-		}
-	}
-
-	char *medium_scale_string = ValueForKey(ent, "medium_scale");
-	if (medium_scale_string)
-	{
-		if (sscanf(medium_scale_string, "%f", &temp[0]) == 1)
-		{
-			r_shadow_control.quality[1][1] = clamp(temp[0], 0.1, 8);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"medium_scale\" in entity \"env_shadow_control\"\n");
-		}
-	}
-
-	char *low_distance_string = ValueForKey(ent, "low_distance");
-	if (low_distance_string)
-	{
-		if (sscanf(low_distance_string, "%f", &temp[0]) == 1)
-		{
-			r_shadow_control.quality[2][0] = clamp(temp[0], 0, 100000);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"low_distance\" in entity \"env_shadow_control\"\n");
-		}
-	}
-
-	char *low_scale_string = ValueForKey(ent, "low_scale");
-	if (low_scale_string)
-	{
-		if (sscanf(low_scale_string, "%f", &temp[0]) == 1)
-		{
-			r_shadow_control.quality[2][1] = clamp(temp[0], 0.1, 8);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"low_scale\" in entity \"env_shadow_control\"\n");
-		}
-	}
+	R_ParseMapCvarSetMapValue(r_shadow_color, ValueForKey(ent, "color"));
+	R_ParseMapCvarSetMapValue(r_shadow_intensity, ValueForKey(ent, "intensity"));
+	R_ParseMapCvarSetMapValue(r_shadow_angles, ValueForKey(ent, "angles"));
+	R_ParseMapCvarSetMapValue(r_shadow_distfade, ValueForKey(ent, "distfade"));
+	R_ParseMapCvarSetMapValue(r_shadow_lumfade, ValueForKey(ent, "lumfade"));
+	R_ParseMapCvarSetMapValue(r_shadow_high_distance, ValueForKey(ent, "high_distance"));
+	R_ParseMapCvarSetMapValue(r_shadow_high_scale, ValueForKey(ent, "high_scale"));
+	R_ParseMapCvarSetMapValue(r_shadow_medium_distance, ValueForKey(ent, "medium_distance"));
+	R_ParseMapCvarSetMapValue(r_shadow_medium_scale, ValueForKey(ent, "medium_scale"));
+	R_ParseMapCvarSetMapValue(r_shadow_low_distance, ValueForKey(ent, "low_distance"));
+	R_ParseMapCvarSetMapValue(r_shadow_low_scale, ValueForKey(ent, "low_scale"));
 }
 
 void R_ParseBSPEntity_Env_SSR_Control(bspentity_t *ent)
 {
-	float temp[4];
-
-	char *ray_step_string = ValueForKey(ent, "ray_step");
-	if (ray_step_string)
-	{
-		if (sscanf(ray_step_string, "%f", &temp[0]) == 1)
-		{
-			r_ssr_control.ray_step = clamp(temp[0], 0.01, 10.0);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"ray_step\" in entity \"env_ssr_control\"\n");
-		}
-	}
-
-	char *iter_count_string = ValueForKey(ent, "iter_count");
-	if (iter_count_string)
-	{
-		int temp1 = 0;
-		if (sscanf(iter_count_string, "%d", &temp1) == 1)
-		{
-			r_ssr_control.iter_count = clamp(temp1, 10, 300);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"iter_count\" in entity \"env_ssr_control\"\n");
-		}
-	}
-
-	char *distance_bias_string = ValueForKey(ent, "distance_bias");
-	if (distance_bias_string)
-	{
-		if (sscanf(distance_bias_string, "%f", &temp[0]) == 1)
-		{
-			r_ssr_control.distance_bias = clamp(temp[0], 0.01, 10.0);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"distance_bias\" in entity \"env_ssr_control\"\n");
-		}
-	}
-
-	char *exponential_step_string = ValueForKey(ent, "exponential_step");
-	if (exponential_step_string)
-	{
-		if (atoi(exponential_step_string) > 0)
-		{
-			r_ssr_control.exponential_step = true;
-		}
-		else
-		{
-			r_ssr_control.exponential_step = false;
-		}
-	}
-
-	char *adaptive_step_string = ValueForKey(ent, "adaptive_step");
-	if (adaptive_step_string)
-	{
-		if (atoi(adaptive_step_string) > 0)
-		{
-			r_ssr_control.adaptive_step = true;
-		}
-		else
-		{
-			r_ssr_control.adaptive_step = false;
-		}
-	}
-
-	char *binary_search_string = ValueForKey(ent, "binary_search");
-	if (binary_search_string)
-	{
-		if (atoi(binary_search_string) > 0)
-		{
-			r_ssr_control.binary_search = true;
-		}
-		else
-		{
-			r_ssr_control.binary_search = false;
-		}
-	}
-
-	char *fade_string = ValueForKey(ent, "fade");
-	if (fade_string)
-	{
-		if (sscanf(fade_string, "%f %f", &temp[0], &temp[1]) == 2)
-		{
-			r_ssr_control.fade[0] = clamp(temp[0], 0, 10);
-			r_ssr_control.fade[1] = clamp(temp[1], 0, 10);
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"fade\" in entity \"env_ssr_control\"\n");
-		}
-	}
-
-	char *disablessr_string = ValueForKey(ent, "disablessr");
-	if (disablessr_string)
-	{
-		if (atoi(disablessr_string) > 0)
-		{
-			r_ssr_control.enabled = false;
-		}
-	}
-}
-
-void R_LoadShadowControl(void)
-{
-	//Initialize shadow control, enabled by default
-
-	r_shadow_control.enabled = true;
-
-	float temp[4];
-	if (sscanf(r_shadow_color->string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
-	{
-		r_shadow_control.color[0] = clamp(temp[0], 0, 255) / 255.0f;
-		r_shadow_control.color[1] = clamp(temp[1], 0, 255) / 255.0f;
-		r_shadow_control.color[2] = clamp(temp[2], 0, 255) / 255.0f;
-	}
-	else
-	{
-		r_shadow_control.color[0] = 0;
-		r_shadow_control.color[1] = 0;
-		r_shadow_control.color[2] = 0;
-
-		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse r_shadow_color\n");
-	}
-
-	if (sscanf(r_shadow_angles->string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
-	{
-		r_shadow_control.angles[0] = clamp(temp[0], -360, 360);
-		r_shadow_control.angles[1] = clamp(temp[1], -360, 360);
-		r_shadow_control.angles[2] = clamp(temp[2], -360, 360);
-	}
-	else
-	{
-		r_shadow_control.angles[0] = 90;
-		r_shadow_control.angles[1] = 0;
-		r_shadow_control.angles[2] = 0;
-
-		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse r_shadow_angles\n");
-	}
-
-	if (sscanf(r_shadow_distfade->string, "%f %f", &temp[0], &temp[1]) == 2)
-	{
-		r_shadow_control.distfade[0] = clamp(temp[0], 0, 10000);
-		r_shadow_control.distfade[1] = clamp(temp[1], r_shadow_control.distfade[0], 10000) - r_shadow_control.distfade[0];
-	}
-	else
-	{
-		r_shadow_control.distfade[0] = 64;
-		r_shadow_control.distfade[1] = 128 - 64;
-
-		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse r_shadow_distfade\n");
-	}
-
-	if (sscanf(r_shadow_lumfade->string, "%f %f", &temp[0], &temp[1]) == 2)
-	{
-		r_shadow_control.lumfade[0] = clamp(temp[0], 0, 255) / 255.0f;
-		r_shadow_control.lumfade[1] = clamp(temp[1], 0, 255) / 255.0f;
-
-		if (r_shadow_control.lumfade[0] < r_shadow_control.lumfade[1] + 0.01f)
-			r_shadow_control.lumfade[0] = r_shadow_control.lumfade[1] + 0.01f;
-	}
-	else
-	{
-		r_shadow_control.lumfade[0] = clamp(64, 0, 255) / 255.0f;
-		r_shadow_control.lumfade[1] = clamp(0, 0, 255) / 255.0f;
-
-		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse r_shadow_lumfade\n");
-	}
-
-	r_shadow_control.intensity = clamp(r_shadow_intensity->value, 0, 1);
-
-	r_shadow_control.quality[0][0] = clamp(r_shadow_high_distance->value, 0, 100000);
-	r_shadow_control.quality[0][1] = clamp(r_shadow_high_scale->value, 0.1, 8);
-
-	r_shadow_control.quality[1][0] = clamp(r_shadow_medium_distance->value, 0, 100000);
-	r_shadow_control.quality[1][1] = clamp(r_shadow_medium_scale->value, 0.1, 8);
-
-	r_shadow_control.quality[2][0] = clamp(r_shadow_low_distance->value, 0, 100000);
-	r_shadow_control.quality[2][1] = clamp(r_shadow_low_scale->value, 0.1, 8);
-
-}
-
-void R_LoadHDRControl(void)
-{
-	//Initialize hdr control, enabled by default
-
-	r_hdr_control.enabled = true;
-
-	r_hdr_control.adaptation = clamp(r_hdr_adaptation->value, 0.1, 100);
-	r_hdr_control.blurwidth = clamp(r_hdr_blurwidth->value, 0, 1);
-	r_hdr_control.darkness = clamp(r_hdr_darkness->value, 0.01, 10);
-	r_hdr_control.exposure = clamp(r_hdr_exposure->value, 0.01, 10);
-}
-
-void R_LoadWaterControl(void)
-{
-
-}
-
-void R_LoadSSRControl(void)
-{
-	r_ssr_control.enabled = true;
-
-	r_ssr_control.ray_step = clamp(r_ssr_ray_step->value, 0.01, 10.0);
-	r_ssr_control.iter_count = clamp((int)r_ssr_iter_count->value, 10, 300);
-	r_ssr_control.distance_bias = clamp(r_ssr_distance_bias->value, 0.01, 10.0);
-	r_ssr_control.adaptive_step = r_ssr_adaptive_step->value ? true : false;
-	r_ssr_control.exponential_step = r_ssr_exponential_step->value ? true : false;
-	r_ssr_control.binary_search = r_ssr_binary_search->value ? true : false;
-
-	float temp[4];
-	if (sscanf(r_ssr_fade->string, "%f %f", &temp[0], &temp[1]) == 2)
-	{
-		r_ssr_control.fade[0] = clamp(temp[0], 0, 10.0);
-		r_ssr_control.fade[1] = clamp(temp[1], 0, 10.0);
-	}
-	else
-	{
-		gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"r_ssr_fade\"\n");
-	}
+	R_ParseMapCvarSetMapValue(r_ssr_ray_step, ValueForKey(ent, "ray_step"));
+	R_ParseMapCvarSetMapValue(r_ssr_iter_count, ValueForKey(ent, "iter_count"));
+	R_ParseMapCvarSetMapValue(r_ssr_distance_bias, ValueForKey(ent, "distance_bias"));
+	R_ParseMapCvarSetMapValue(r_ssr_exponential_step, ValueForKey(ent, "exponential_step"));
+	R_ParseMapCvarSetMapValue(r_ssr_adaptive_step, ValueForKey(ent, "adaptive_step"));
+	R_ParseMapCvarSetMapValue(r_ssr_binary_search, ValueForKey(ent, "binary_search"));
+	R_ParseMapCvarSetMapValue(r_ssr_fade, ValueForKey(ent, "fade"));
 }
 
 void R_LoadBSPEntities(void)
 {
-	R_LoadShadowControl();
-
-	R_LoadHDRControl();
-
-	R_LoadWaterControl();
-
-	R_LoadSSRControl();
-
 	for(size_t i = 0; i < r_wsurf.vBSPEntities.size(); i++)
 	{
 		bspentity_t *ent = &r_wsurf.vBSPEntities[i];
@@ -3132,6 +2740,16 @@ void R_LoadBSPEntities(void)
 			R_ParseBSPEntity_Light_Dynamic(ent);
 		}
 
+		else if (!strcmp(classname, "env_dynamiclight_control"))
+		{
+			R_ParseBSPEntity_Env_DynamicLight_Control(ent);
+		}
+
+		else if (!strcmp(classname, "env_flashlight_control"))
+		{
+			R_ParseBSPEntity_Env_FlashLight_Control(ent);
+		}
+
 		else if (!strcmp(classname, "env_water_control"))
 		{
 			R_ParseBSPEntity_Env_Water_Control(ent);
@@ -3144,7 +2762,7 @@ void R_LoadBSPEntities(void)
 
 		else if (!strcmp(classname, "env_shadow_control"))
 		{
-			R_ParseBSPEntity_Env_Shadow_Control(ent);			
+			R_ParseBSPEntity_Env_Shadow_Control(ent);
 		}
 
 		else if (!strcmp(classname, "env_ssr_control"))
@@ -3152,8 +2770,6 @@ void R_LoadBSPEntities(void)
 			R_ParseBSPEntity_Env_SSR_Control(ent);
 		}
 	}//end for
-
-	gEngfuncs.pfnAngleVectors(r_shadow_control.angles, r_shadow_control.vforward, r_shadow_control.vright, r_shadow_control.vup);
 }
 
 void R_DrawSequentialPolyVBO(msurface_t *s)
@@ -3451,11 +3067,14 @@ void R_SetupSceneUBO(void)
 	memcpy(SceneUBO.vpn, vpn, sizeof(vec3_t));
 	memcpy(SceneUBO.vright, vright, sizeof(vec3_t));
 	memcpy(SceneUBO.vup, vup, sizeof(vec3_t));
-	memcpy(SceneUBO.shadowDirection, &r_shadow_control.vforward, sizeof(vec3_t));
-	memcpy(SceneUBO.shadowColor, &r_shadow_control.color, sizeof(vec3_t));
-	SceneUBO.shadowColor[3] = r_shadow_control.intensity;
-	memcpy(SceneUBO.shadowFade, &r_shadow_control.distfade, sizeof(vec2_t));
-	memcpy(&SceneUBO.shadowFade[2], &r_shadow_control.lumfade, sizeof(vec2_t));
+
+	vec3_t vforward;
+	gEngfuncs.pfnAngleVectors(r_shadow_angles->GetValues(), vforward, NULL, NULL);
+	memcpy(SceneUBO.shadowDirection, vforward, sizeof(vec3_t));
+	memcpy(SceneUBO.shadowColor, r_shadow_color->GetValues(), sizeof(vec3_t));
+	SceneUBO.shadowColor[3] = r_shadow_intensity->GetValue();
+	memcpy(SceneUBO.shadowFade, r_shadow_distfade->GetValues(), sizeof(vec2_t));
+	memcpy(&SceneUBO.shadowFade[2], r_shadow_lumfade->GetValues(), sizeof(vec2_t));
 
 	//normal[0] * x+ normal[1] * y+ normal[2] * z = normal[0] * vert[0] +normal[1] * vert[1] +normal[2] * vert[2]
 

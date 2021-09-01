@@ -1,5 +1,19 @@
 #include <metahook.h>
+#include <cvardef.h>
 #include <IGameUI.h>
+#include <vgui/VGUI.h>
+#include <vgui/IPanel.h>
+
+#include "vgui_controls/Button.h"
+#include "vgui_controls/ComboBox.h"
+#include "vgui_controls/CheckButton.h"
+#include "vgui_controls/Frame.h"
+#include "vgui_controls/QueryBox.h"
+#include "vgui_controls/MessageMap.h"
+#include "CvarSlider.h"
+#include "CvarToggleCheckButton.h"
+
+void Sys_ErrorEx(const char *fmt, ...);
 
 namespace vgui
 {
@@ -28,6 +42,9 @@ int (__fastcall *g_pfnCGameUI_SetProgressBarStatusText)(void *pthis, int edx, co
 void (__fastcall *g_pfnCGameUI_SetSecondaryProgressBar)(void *pthis, int edx, float progress) = 0;
 void (__fastcall *g_pfnCGameUI_SetSecondaryProgressBarText)(void *pthis, int edx, const char *statusText) = 0;
 
+
+void *(__fastcall*g_pfnCOptionsSubVideo_ctor)(void *pthis, int a2, void *parent) = NULL;
+
 class CGameUI : public IGameUI
 {
 public:
@@ -54,6 +71,7 @@ public:
 
 CGameUI s_GameUI;
 
+
 void CGameUI::Initialize(CreateInterfaceFn *factories, int count)
 {
 	g_pfnCGameUI_Initialize(this, 0, factories, count);
@@ -61,6 +79,9 @@ void CGameUI::Initialize(CreateInterfaceFn *factories, int count)
 
 void CGameUI::Start(struct cl_enginefuncs_s *engineFuncs, int interfaceVersion, void *system)
 {
+	if (!vgui::localize()->AddFile(g_pFullFileSystem, "captionmod/gameui_%language%.txt"))
+		Sys_ErrorEx("Failed to load captionmod/gameui_%%language%%.txt");
+
 	return g_pfnCGameUI_Start(this, 0, engineFuncs, interfaceVersion, system);
 }
 
@@ -149,14 +170,237 @@ void CGameUI::SetSecondaryProgressBarText(const char *statusText)
 	return g_pfnCGameUI_SetSecondaryProgressBarText(this, 0, statusText);
 }
 
+class COptionsSubVideoAdvancedDlg : public vgui::Frame
+{
+	DECLARE_CLASS_SIMPLE(COptionsSubVideoAdvancedDlg, vgui::Frame);
+
+public:
+	COptionsSubVideoAdvancedDlg(vgui::Panel *parent) : BaseClass(parent, "OptionsSubVideoAdvancedDlg")
+	{
+		SetTitle("#GameUI_VideoAdvanced_Title", true);
+		SetSize(600, 400);
+		SetSizeable(false);
+		SetDeleteSelfOnClose(true);
+
+		m_pAnisotropicFiltering = new vgui::ComboBox(this, "AnisotropicFiltering", 5, false);
+		m_pAnisotropicFiltering->AddItem("1X", NULL);
+		m_pAnisotropicFiltering->AddItem("2X", NULL);
+		m_pAnisotropicFiltering->AddItem("4X", NULL);
+		m_pAnisotropicFiltering->AddItem("8X", NULL);
+		m_pAnisotropicFiltering->AddItem("16X", NULL);
+
+		m_pDetailTexture = new CCvarToggleCheckButton(this, "DetailTexture", "#GameUI_DetailTextures", "r_detailtextures");
+		m_pWaterShader = new CCvarToggleCheckButton(this, "WaterShader", "#GameUI_WaterShader", "r_water");
+		m_pDynamicShadow = new CCvarToggleCheckButton(this, "DynamicShadow", "#GameUI_DynamicShadow", "r_shadow");
+		m_pAmbientOcclusion = new CCvarToggleCheckButton(this, "AmbientOcclusion", "#GameUI_AmbientOcclusion", "r_ssao");
+		m_pDynamicLights = new CCvarToggleCheckButton(this, "DynamicLights", "#GameUI_DynamicLights", "r_light_dynamic");
+		m_pScreenSpaceReflection = new CCvarToggleCheckButton(this, "ScreenSpaceReflection", "#GameUI_ScreenSpaceReflection", "r_ssr");
+		m_pCelShade = new CCvarToggleCheckButton(this, "CelShade", "#GameUI_CelShade", "r_studio_celshade");
+		m_pAntiAliasing = new CCvarToggleCheckButton(this, "AntiAliasing", "#GameUI_AntiAliasing", "r_fxaa");
+		m_pSkyOcclusion = new CCvarToggleCheckButton(this, "SkyOcclusion", "#GameUI_SkyOcclusion", "r_wsurf_sky_occlusion");
+		m_pZPrepass = new CCvarToggleCheckButton(this, "ZPrepass", "#GameUI_ZPrepass", "r_wsurf_zprepass");
+		m_pHDR = new CCvarToggleCheckButton(this, "HDR", "#GameUI_HDR", "r_hdr");
+
+		m_pHDRExposure = new CCvarSlider(this, "HDRExposure", "#GameUI_HDRExposure", 0.1f, 2.0f, "r_hdr_exposure", false);
+		m_pHDRDarkness = new CCvarSlider(this, "HDRDarkness", "#GameUI_HDRDarkness", 0.1f, 2.0f, "r_hdr_darkness", false);
+		m_pBloomIntensity = new CCvarSlider(this, "BloomIntensity", "#GameUI_BloomIntensity", 0.0f, 1.0f, "r_hdr_blurwidth", false);
+		m_pShadowIntensity = new CCvarSlider(this, "ShadowIntensity", "#GameUI_ShadowIntensity", 0.0f, 1.0f, "r_shadow_intensity", false);
+
+		LoadControlSettings("captionmod/OptionsSubVideoAdvancedDlg.res");
+	}
+
+	virtual void Activate(void)
+	{
+		OnResetData();
+		BaseClass::Activate();
+
+		vgui::input()->SetAppModalSurface(GetVPanel());
+	}
+
+	MESSAGE_FUNC_PTR(OnTextChanged, "TextChanged", panel)
+	{
+	}
+
+	MESSAGE_FUNC(OnGameUIHidden, "GameUIHidden")
+	{
+		Close();
+	}
+
+	MESSAGE_FUNC(OK_Confirmed, "OK_Confirmed")
+	{
+		Close();
+	}
+
+	void ApplyChangesToConVar(const char *pConVarName, int value)
+	{
+		char szCmd[1024];
+		Q_snprintf(szCmd, sizeof(szCmd), "%s %d\n", pConVarName, value);
+		gEngfuncs.pfnClientCmd(szCmd);
+	}
+
+	virtual void ApplyChanges(void)
+	{
+		int activateItem = m_pAnisotropicFiltering->GetActiveItem();
+
+		switch (activateItem)
+		{
+		case 0: ApplyChangesToConVar("gl_ansio", 1); break;
+		case 1: ApplyChangesToConVar("gl_ansio", 2); break;
+		case 2: ApplyChangesToConVar("gl_ansio", 4); break;
+		case 3: ApplyChangesToConVar("gl_ansio", 8); break;
+		case 4: ApplyChangesToConVar("gl_ansio", 16); break;
+		}
+
+		ApplyChangesToConVar(m_pDetailTexture->GetCvarName(), m_pDetailTexture->IsSelected());
+		ApplyChangesToConVar(m_pWaterShader->GetCvarName(), m_pWaterShader->IsSelected());
+		ApplyChangesToConVar(m_pDynamicShadow->GetCvarName(), m_pDynamicShadow->IsSelected());
+		ApplyChangesToConVar(m_pAmbientOcclusion->GetCvarName(), m_pAmbientOcclusion->IsSelected());
+		ApplyChangesToConVar(m_pScreenSpaceReflection->GetCvarName(), m_pScreenSpaceReflection->IsSelected());
+		ApplyChangesToConVar(m_pCelShade->GetCvarName(), m_pCelShade->IsSelected());
+		ApplyChangesToConVar(m_pAntiAliasing->GetCvarName(), m_pAntiAliasing->IsSelected());
+		ApplyChangesToConVar(m_pSkyOcclusion->GetCvarName(), m_pSkyOcclusion->IsSelected());
+		ApplyChangesToConVar(m_pZPrepass->GetCvarName(), m_pZPrepass->IsSelected());
+		ApplyChangesToConVar(m_pHDR->GetCvarName(), m_pHDR->IsSelected());
+
+		m_pHDRExposure->ApplyChanges();
+		m_pHDRDarkness->ApplyChanges();
+		m_pBloomIntensity->ApplyChanges();
+		m_pShadowIntensity->ApplyChanges();
+	}
+
+	virtual void OnResetData(void)
+	{
+		m_pDetailTexture->Reset();
+		m_pWaterShader->Reset();
+		m_pDynamicShadow->Reset();
+		m_pDynamicLights->Reset();
+		m_pAmbientOcclusion->Reset();
+		m_pScreenSpaceReflection->Reset();
+		m_pCelShade->Reset();
+		m_pAntiAliasing->Reset();
+		m_pSkyOcclusion->Reset();
+		m_pZPrepass->Reset();
+		m_pHDR->Reset();
+
+		m_pHDRExposure->Reset();
+		m_pHDRDarkness->Reset();
+		m_pBloomIntensity->Reset();
+		m_pShadowIntensity->Reset();
+
+		auto gl_ansio = gEngfuncs.pfnGetCvarPointer("gl_ansio");
+		if (gl_ansio)
+		{
+			int ansio = gl_ansio->value;
+
+			if (ansio >= 16)
+				m_pAnisotropicFiltering->ActivateItem(4);
+			else if (ansio >= 8)
+				m_pAnisotropicFiltering->ActivateItem(3);
+			else if (ansio >= 4)
+				m_pAnisotropicFiltering->ActivateItem(2);
+			else if (ansio >= 2)
+				m_pAnisotropicFiltering->ActivateItem(1);
+			else
+				m_pAnisotropicFiltering->ActivateItem(0);
+		}
+		else
+		{
+			m_pAnisotropicFiltering->SetEnabled(false);
+		}
+	}
+
+	virtual void OnCommand(const char *command)
+	{
+		if (!stricmp(command, "OK"))
+		{
+			ApplyChanges();
+			Close();
+		}
+		else
+		{
+			BaseClass::OnCommand(command);
+		}
+	}
+
+	bool RequiresRestart(void)
+	{
+		return false;
+	}
+
+private:
+	bool m_bUseChanges;
+	vgui::ComboBox *m_pAnisotropicFiltering;
+	CCvarToggleCheckButton *m_pDetailTexture;
+	CCvarToggleCheckButton *m_pWaterShader;
+	CCvarToggleCheckButton *m_pDynamicShadow;
+	CCvarToggleCheckButton *m_pAmbientOcclusion;
+	CCvarToggleCheckButton *m_pDynamicLights;
+	CCvarToggleCheckButton *m_pScreenSpaceReflection;
+	CCvarToggleCheckButton *m_pCelShade;
+	CCvarToggleCheckButton *m_pAntiAliasing;
+	CCvarToggleCheckButton *m_pSkyOcclusion;
+	CCvarToggleCheckButton *m_pZPrepass;
+	CCvarToggleCheckButton *m_pHDR;
+
+	CCvarSlider *m_pHDRExposure;
+	CCvarSlider *m_pHDRDarkness;
+	CCvarSlider *m_pBloomIntensity;
+	CCvarSlider *m_pShadowIntensity;
+};
+
+vgui::Button *m_pVideoAdvanced = NULL;
+vgui::DHANDLE<class COptionsSubVideoAdvancedDlg> m_hOptionsSubVideoAdvancedDlg;
+
+void __fastcall COptionsSubVideo_OpenAdvanced(vgui::Panel *pthis, int a2)
+{
+	if (!m_hOptionsSubVideoAdvancedDlg.Get())
+		m_hOptionsSubVideoAdvancedDlg = new COptionsSubVideoAdvancedDlg(pthis->GetParent());
+
+	m_hOptionsSubVideoAdvancedDlg->Activate();
+}
+
+decltype(vgui::FindOrAddPanelMessageMap) *g_pfn_vgui_FindOrAddPanelMessageMap = NULL;
+
+void * (__fastcall *g_pfn_vgui_MessageMap_AddToMap)(vgui::PanelMessageMap *map, int, void *entry) = NULL;
+
+void * __fastcall COptionsSubVideo_ctor(vgui::Panel *pthis, int a2, vgui::Panel *parent)
+{
+	auto result = g_pfnCOptionsSubVideo_ctor(pthis, a2, parent);
+
+	auto map = vgui::FindOrAddPanelMessageMap("Button");
+
+	PVOID func = COptionsSubVideo_OpenAdvanced;
+
+	vgui::MessageMapItem_t entry;
+	memset(&entry, 0, sizeof(entry));
+	entry.name = "OpenAdvanced";
+	memcpy(&entry.func, &func, 4);
+
+	map->entries.AddToTail(entry);
+
+	m_pVideoAdvanced = new vgui::Button(pthis, "Advanced", "#GameUI_AdvancedEllipsis");
+	m_pVideoAdvanced->SetPos(248, 160);
+	m_pVideoAdvanced->SetSize(120, 24);
+
+	m_pVideoAdvanced->AddActionSignalTarget(m_pVideoAdvanced->GetVPanel());
+	m_pVideoAdvanced->SetCommand("OpenAdvanced");
+
+	return result;
+}
+
 void GameUI_InstallHook(void)
 {
-	CreateInterfaceFn GameUICreateInterface = Sys_GetFactory((HINTERFACEMODULE)GetModuleHandleA("GameUI.dll"));
+	auto hGameUI = GetModuleHandleA("GameUI.dll");
+	CreateInterfaceFn GameUICreateInterface = Sys_GetFactory((HINTERFACEMODULE)hGameUI);
 	g_pGameUI = (IGameUI *)GameUICreateInterface(GAMEUI_INTERFACE_VERSION, 0);
 
 	DWORD *pVFTable = *(DWORD **)&s_GameUI;
 
-	//g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  1, (void *)pVFTable[1], (void *&)g_pfnCGameUI_Initialize);
-	//g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  8, (void *)pVFTable[8], (void *&)g_pfnCGameUI_ConnectToServer);
-	//g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  9, (void *)pVFTable[9], (void *&)g_pfnCGameUI_DisconnectFromServer);
+	//g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  1, (void *)pVFTable[1], (void **)&g_pfnCGameUI_Initialize);
+	g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  2, (void *)pVFTable[2], (void **)&g_pfnCGameUI_Start);
+
+	g_pfnCOptionsSubVideo_ctor = (decltype(g_pfnCOptionsSubVideo_ctor))((PUCHAR)hGameUI + 0x1CB90);
+	g_pfn_vgui_FindOrAddPanelMessageMap = (decltype(g_pfn_vgui_FindOrAddPanelMessageMap))((PUCHAR)hGameUI + 0x21560);
+	g_pfn_vgui_MessageMap_AddToMap = (decltype(g_pfn_vgui_MessageMap_AddToMap))((PUCHAR)hGameUI + 0x4BF0);
+	g_pMetaHookAPI->InlineHook(g_pfnCOptionsSubVideo_ctor, COptionsSubVideo_ctor, (void **)&g_pfnCOptionsSubVideo_ctor);
 }

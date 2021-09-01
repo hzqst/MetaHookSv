@@ -194,6 +194,7 @@ cvar_t *chase_active = NULL;
 
 cvar_t *r_vertical_fov = NULL;
 cvar_t *gl_profile = NULL;
+cvar_t *dev_overview_color = NULL;
 
 int R_GetDrawPass(void)
 {
@@ -1511,7 +1512,15 @@ void R_RenderView_SvEngine(int a1)
 	R_PreRenderView(a1);
 
 	float clearColor[3];
-	R_ParseVectorCvar(gl_clearcolor, clearColor);
+
+	if (CL_IsDevOverviewMode())
+	{
+		R_ParseVectorCvar(dev_overview_color, clearColor);
+	}
+	else
+	{
+		R_ParseVectorCvar(gl_clearcolor, clearColor);
+	}
 
 	glClearColor(clearColor[0], clearColor[1], clearColor[2], 1);
 
@@ -1669,6 +1678,8 @@ void R_InitCvars(void)
 	if(!gl_clearcolor)
 		gl_clearcolor = gEngfuncs.pfnRegisterVariable("gl_clearcolor", "0 0 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
+	dev_overview_color = gEngfuncs.pfnRegisterVariable("dev_overview_color", "0 255 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+
 	gl_cull = gEngfuncs.pfnGetCvarPointer("gl_cull");
 	gl_texsort = gEngfuncs.pfnGetCvarPointer("gl_texsort");
 
@@ -1741,6 +1752,7 @@ void R_Shutdown(void)
 	R_ShutdownLight();
 	R_ShutdownWSurf();
 	R_ShutdownStudio();
+	R_FreeMapCvars();
 }
 
 void R_ForceCVars(qboolean mp)
@@ -2198,12 +2210,6 @@ void R_RenderScene(void)
 
 	if (!(*r_refdef.onlyClientDraws))
 	{
-		if (CL_IsDevOverviewMode())
-		{
-			glClearColor(0, 1, 0, 0);
-			glClear(GL_COLOR_BUFFER_BIT);
-		}
-
 		R_DrawWorld();
 
 		S_ExtraUpdate();
