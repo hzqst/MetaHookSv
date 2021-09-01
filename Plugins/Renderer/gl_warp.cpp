@@ -4,6 +4,7 @@
 colorVec *gWaterColor = NULL;
 cshift_t *cshift_water = NULL;
 int *gSkyTexNumber = NULL;
+int *r_loading_skybox = NULL;
 
 void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 {

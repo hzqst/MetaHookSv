@@ -224,18 +224,6 @@ void R_FreeLightmapArray(void)
 		r_wsurf.iLightmapTextureArray = 0;
 	}
 	r_wsurf.iNumLightmapTextures = 0;
-
-	if (bUseBindless)
-	{
-		for (int i = 0; i < 6; ++i)
-		{
-			if (r_wsurf.vSkyboxTextureHandles[i])
-			{
-				//glMakeTextureHandleNonResidentARB(r_wsurf.vSkyboxTextureHandles[i]);
-				r_wsurf.vSkyboxTextureHandles[i] = 0;
-			}
-		}
-	}
 }
 
 void R_FreeVertexBuffer(void)
@@ -1044,36 +1032,6 @@ void R_GenerateLightmapArray(void)
 			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, BLOCK_WIDTH, BLOCK_HEIGHT, 1, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + 0x10000 * i);
 		}
 		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-	}
-
-	if (bUseBindless)
-	{
-		if (g_iEngineType == ENGINE_SVENGINE)
-		{
-			for (int i = 0; i < 6; ++i)
-			{
-				if (!r_wsurf.vSkyboxTextureHandles[i])
-				{
-					auto handle = glGetTextureHandleARB(gSkyTexNumber[i]);
-					glMakeTextureHandleResidentARB(handle);
-					r_wsurf.vSkyboxTextureHandles[i] = handle;
-				}
-			}
-		}
-		else
-		{
-			const int skytexorder[6] = { 0, 2, 1, 3, 4, 5 };
-			for (int i = 0; i < 6; ++i)
-			{
-				if (!r_wsurf.vSkyboxTextureHandles[i])
-				{
-					auto handle = glGetTextureHandleARB(gSkyTexNumber[skytexorder[i]]);
-					glMakeTextureHandleResidentARB(handle);
-					r_wsurf.vSkyboxTextureHandles[i] = handle;
-				}
-			}
-		}
-		glNamedBufferSubData(r_wsurf.hSkyboxSSBO, 0, sizeof(r_wsurf.vSkyboxTextureHandles), r_wsurf.vSkyboxTextureHandles);
 	}
 }
 
@@ -1929,8 +1887,6 @@ void R_LoadDetailTextures(void)
 
 void R_NewMapWSurf(void)
 {
-	R_GenerateSceneUBO();
-
 	R_ClearDecalCache();
 
 	for (auto p : g_DetailTextureTable)

@@ -118,9 +118,6 @@
     <ClInclude Include="gl_studio.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="gl_warp_sin.h">
-      <Filter>Header</Filter>
-    </ClInclude>
     <ClInclude Include="gl_water.h">
       <Filter>Header</Filter>
     </ClInclude>

@@ -395,6 +395,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent);
 void R_DrawWSurfVBOSolid(wsurf_vbo_t *modcache);
 void R_ShutdownWSurf(void);
 void R_Reload_f(void);
+void R_GenerateSceneUBO(void);
 
 void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
 

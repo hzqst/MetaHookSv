@@ -1,4 +1,4 @@
-#version 460
+#version 430
 
 #define OIT_ALPHA_BLEND_ENABLED
 

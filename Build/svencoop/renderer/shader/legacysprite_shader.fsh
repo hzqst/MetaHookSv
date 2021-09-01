@@ -1,4 +1,4 @@
-#version 460 compatibility
+#version 430 compatibility
 
 #include "common.h"
 

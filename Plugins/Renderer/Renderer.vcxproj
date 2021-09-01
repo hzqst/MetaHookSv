@@ -147,7 +147,6 @@ if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\ren
     <ClInclude Include="gl_shadow.h" />
     <ClInclude Include="gl_sprite.h" />
     <ClInclude Include="gl_studio.h" />
-    <ClInclude Include="gl_warp_sin.h" />
     <ClInclude Include="gl_water.h" />
     <ClInclude Include="gl_wsurf.h" />
     <ClInclude Include="mathlib.h" />

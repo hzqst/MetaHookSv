@@ -13,6 +13,8 @@
 #include "CvarSlider.h"
 #include "CvarToggleCheckButton.h"
 
+#include "plugins.h"
+
 void Sys_ErrorEx(const char *fmt, ...);
 
 namespace vgui
@@ -359,10 +361,6 @@ void __fastcall COptionsSubVideo_OpenAdvanced(vgui::Panel *pthis, int a2)
 	m_hOptionsSubVideoAdvancedDlg->Activate();
 }
 
-decltype(vgui::FindOrAddPanelMessageMap) *g_pfn_vgui_FindOrAddPanelMessageMap = NULL;
-
-void * (__fastcall *g_pfn_vgui_MessageMap_AddToMap)(vgui::PanelMessageMap *map, int, void *entry) = NULL;
-
 void * __fastcall COptionsSubVideo_ctor(vgui::Panel *pthis, int a2, vgui::Panel *parent)
 {
 	auto result = g_pfnCOptionsSubVideo_ctor(pthis, a2, parent);
@@ -399,8 +397,19 @@ void GameUI_InstallHook(void)
 	//g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  1, (void *)pVFTable[1], (void **)&g_pfnCGameUI_Initialize);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  2, (void *)pVFTable[2], (void **)&g_pfnCGameUI_Start);
 
-	g_pfnCOptionsSubVideo_ctor = (decltype(g_pfnCOptionsSubVideo_ctor))((PUCHAR)hGameUI + 0x1CB90);
-	g_pfn_vgui_FindOrAddPanelMessageMap = (decltype(g_pfn_vgui_FindOrAddPanelMessageMap))((PUCHAR)hGameUI + 0x21560);
-	g_pfn_vgui_MessageMap_AddToMap = (decltype(g_pfn_vgui_MessageMap_AddToMap))((PUCHAR)hGameUI + 0x4BF0);
+	if (1)
+	{
+		const char sigs1[] = "#GameUI_Options";
+		auto GameUI_Options_String = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), sigs1, sizeof(sigs1) - 1);
+		Sig_VarNotFound(GameUI_Options_String);
+		char pattern[] = "\x6A\x01\x68\x2A\x2A\x2A\x2A\x8B\xCE";
+		*(DWORD *)(pattern + 3) = (DWORD)GameUI_Options_String;
+		auto GameUI_Options_Call = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), pattern, sizeof(pattern) - 1);
+		Sig_VarNotFound(GameUI_Options_Call);
+
+		g_pfnCOptionsSubVideo_ctor = (decltype(g_pfnCOptionsSubVideo_ctor))g_pMetaHookAPI->ReverseSearchFunctionBegin(GameUI_Options_Call, 0x300);
+		Sig_VarNotFound(g_pfnCOptionsSubVideo_ctor);
+	}
+
 	g_pMetaHookAPI->InlineHook(g_pfnCOptionsSubVideo_ctor, COptionsSubVideo_ctor, (void **)&g_pfnCOptionsSubVideo_ctor);
 }
