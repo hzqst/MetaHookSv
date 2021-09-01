@@ -352,7 +352,7 @@ void R_DrawSkyBox(void)
 			for (int i = 0; i < 6; ++i)
 			{
 				GL_Bind(gSkyTexNumber[i]);
-				glDrawArrays(GL_QUADS, 0, 4);
+				glDrawArrays(GL_QUADS, 4 * i, 4);
 			}
 		}
 		else
@@ -361,7 +361,7 @@ void R_DrawSkyBox(void)
 			for (int i = 0; i < 6; ++i)
 			{
 				GL_Bind(gSkyTexNumber[skytexorder[i]]);
-				glDrawArrays(GL_QUADS, 0, 4);
+				glDrawArrays(GL_QUADS, 4 * i, 4);
 			}
 		}
 	}

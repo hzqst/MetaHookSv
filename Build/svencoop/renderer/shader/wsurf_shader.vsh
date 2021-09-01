@@ -92,6 +92,7 @@ void main(void)
 #ifdef SKYBOX_ENABLED
 
 	int vertidx = gl_VertexID % 4;
+
 	int quadidx = gl_VertexID / 4;
 	const vec4 s_array = vec4(-1.0, -1.0, 1.0, 1.0);
 	const vec4 t_array = vec4(-1.0, 1.0, 1.0, -1.0);
