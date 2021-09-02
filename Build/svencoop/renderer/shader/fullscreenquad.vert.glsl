@@ -2,13 +2,14 @@
 
 out vec2 texCoord;
 
-void main()
+void main(void)
 {
-  uint idx = gl_VertexID % 3; // allows rendering multiple fullscreen triangles
-  vec4 pos =  vec4(
-      (float( idx     &1U)) * 4.0 - 1.0,
-      (float((idx>>1U)&1U)) * 4.0 - 1.0,
-      0, 1.0);
-  gl_Position = pos;
-  texCoord = pos.xy * 0.5 + 0.5;
+	uint idx = gl_VertexID % 4;
+
+	vec2 vertices[4]= vec2[4](vec2(-1, -1), vec2(-1, 1), vec2(1, 1), vec2(1, -1));
+	vec2 texcoords[4]= vec2[4](vec2(0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0));
+
+	gl_Position = vec4(vertices[idx], 0, 1);
+
+	texCoord = texcoords[idx];
 }

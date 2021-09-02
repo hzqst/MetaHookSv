@@ -354,6 +354,12 @@ vec4 LinearToGamma(vec4 color)
 	return color;
 }
 
+vec3 LinearToGamma3(vec3 color)
+{
+	color.rgb = pow(color.rgb, vec3(SceneUBO.r_g));//r_g = 1.0 / v_gamma
+	return color;
+}
+
 //This was being applied for R_BuildLightMap and R_StudioLighting
 float LightGammaToGammaInternal(float color)
 {
