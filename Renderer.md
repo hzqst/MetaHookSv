@@ -371,7 +371,20 @@ You can use [bspguy](https://github.com/wootguy/bspguy) to add entity to BSP fil
 
 `maxtrans` controls the maximum transparency of water, must be between 0 and 255. for example `"maxtrans" "128"`
 
-`level` controls the reflection level. 0 = only skybox is reflected. 1 = skybox and world are reflected. 2 = both skybox, world and entities are reflected. 3 = use SSR to reflect. for example `"level" "1"`
+`level` controls the reflection level. 
+
+|  Possible value                      | result                                                          |
+|        ----                          | ----                                                            |
+| "level" "0"                          | render as legacy water                                          |
+| "level" "WATER_LEVEL_LEGACY"         | render as legacy water                                          |
+| "level" "1"                          | only skybox is reflected                                        |
+| "level" "WATER_LEVEL_REFLECT_SKYBOX" | only skybox is reflected                                        |
+| "level" "2"                          | skybox and world are reflected                                  |
+| "level" "WATER_LEVEL_REFLECT_WORLD"  | skybox and world are reflected                                  |
+| "level" "3"                          | skybox, world, entities and particles are reflected             |
+| "level" "WATER_LEVEL_REFLECT_ENTITY" | skybox, world, entities and particles are reflected             |
+| "level" "4"                          | use SSR to reflect, only pixeles in screen-space are reflected  |
+| "level" "WATER_LEVEL_REFLECT_SSR"    | use SSR to reflect, only pixeles in screen-space are reflected  |
 
 ## light_dynamic
 
