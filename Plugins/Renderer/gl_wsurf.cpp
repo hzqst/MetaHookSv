@@ -1147,24 +1147,27 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 
 			int WSurfProgramStateBatch = WSurfProgramState;
 
-			if (batch->iDetailTextureFlags & (1 << WSURF_DETAIL_TEXTURE))
+			if (r_detailtextures->value)
 			{
-				WSurfProgramStateBatch |= WSURF_DETAILTEXTURE_ENABLED;
-			}
+				if (batch->iDetailTextureFlags & (1 << WSURF_DETAIL_TEXTURE))
+				{
+					WSurfProgramStateBatch |= WSURF_DETAILTEXTURE_ENABLED;
+				}
 
-			if (batch->iDetailTextureFlags & (1 << WSURF_NORMAL_TEXTURE))
-			{
-				WSurfProgramStateBatch |= WSURF_NORMALTEXTURE_ENABLED;
-			}
+				if (batch->iDetailTextureFlags & (1 << WSURF_NORMAL_TEXTURE))
+				{
+					WSurfProgramStateBatch |= WSURF_NORMALTEXTURE_ENABLED;
+				}
 
-			if (batch->iDetailTextureFlags & (1 << WSURF_PARALLAX_TEXTURE))
-			{
-				WSurfProgramStateBatch |= WSURF_PARALLAXTEXTURE_ENABLED;
-			}
+				if (batch->iDetailTextureFlags & (1 << WSURF_PARALLAX_TEXTURE))
+				{
+					WSurfProgramStateBatch |= WSURF_PARALLAXTEXTURE_ENABLED;
+				}
 
-			if (batch->iDetailTextureFlags & (1 << WSURF_SPECULAR_TEXTURE))
-			{
-				WSurfProgramStateBatch |= WSURF_SPECULARTEXTURE_ENABLED;
+				if (batch->iDetailTextureFlags & (1 << WSURF_SPECULAR_TEXTURE))
+				{
+					WSurfProgramStateBatch |= WSURF_SPECULARTEXTURE_ENABLED;
+				}
 			}
 
 			wsurf_program_t prog = { 0 };

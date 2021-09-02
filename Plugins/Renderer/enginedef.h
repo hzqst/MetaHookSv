@@ -92,7 +92,8 @@ typedef struct refdef_GoldSrc_s
 	char padding[96];
 	vec3_t vieworg;
 	vec3_t viewangles;
-	int padding2;
+	color24 ambientlight;
+	byte padding2;
 	qboolean onlyClientDraws;
 }refdef_GoldSrc_t;
 

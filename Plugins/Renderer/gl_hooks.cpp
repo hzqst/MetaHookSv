@@ -1630,12 +1630,11 @@ void R_FillAddress(void)
 					r_refdef.vrect = &r_refdef_GoldSrc->vrect;
 					r_refdef.vieworg = &r_refdef_GoldSrc->vieworg;
 					r_refdef.viewangles = &r_refdef_GoldSrc->viewangles;
-					r_refdef.ambientlight = NULL;
+					r_refdef.ambientlight = &r_refdef_GoldSrc->ambientlight;
 					r_refdef.onlyClientDraws = &r_refdef_GoldSrc->onlyClientDraws;
 				}
 
 				gRefFuncs.CL_SetDevOverView = (decltype(gRefFuncs.CL_SetDevOverView))pinst->detail->x86.operands[0].imm;
-
 			}
 
 			if (gRefFuncs.CL_IsDevOverviewMode && gRefFuncs.CL_SetDevOverView)
