@@ -128,7 +128,6 @@ extern struct playermove_s *playermove;
 
 extern int gl_max_texture_size;
 extern float gl_max_ansio;
-extern GLuint gl_color_format;
 extern int *gl_msaa_fbo;
 extern int *gl_backbuffer_fbo;
 extern int *gl_mtexable;

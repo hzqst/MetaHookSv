@@ -3,7 +3,6 @@
 #include "gl_cvar.h"
 #include "enginedef.h"
 
-#define MAX_GAUSSIAN_SAMPLES 16
 #define LUMIN1x1_BUFFERS 3
 #define DOWNSAMPLE_BUFFERS 2
 #define LUMIN_BUFFERS 3
@@ -20,65 +19,56 @@ typedef struct
 typedef struct
 {
 	int program;
-	int tex;
 }pp_downsample_program_t;
 
 typedef struct
 {
 	int program;
 	int texelsize;
-	int tex;
 }pp_downsample2x2_program_t;
 
 typedef struct
 {
 	int program;
 	int texelsize;
-	int tex;
-}pp_lumin_program_t;
+}pp_lumindown_program_t;
 
 typedef struct
 {
 	int program;
 	int texelsize;
-	int tex;
 }pp_luminlog_program_t;
 
 typedef struct
 {
 	int program;
 	int texelsize;
-	int tex;
 }pp_luminexp_program_t;
 
 typedef struct
 {
 	int program;
-	int curtex;
-	int adatex;
 	int frametime;
 }pp_luminadapt_program_t;
 
 typedef struct
 {
 	int program;
-	int tex;
-	int lumtex;
+	int baseTex;
+	int lumTex;
 }pp_brightpass_program_t;
 
 typedef struct
 {
 	int program;
-	int tex;
-	int du;
 }pp_gaussianblurv_program_t, pp_gaussianblurh_program_t;
 
 typedef struct
 {
 	int program;
-	int basetex;
-	int blurtex;
-	int lumtex;
+	int baseTex;
+	int blurTex;
+	int lumTex;
 	int blurfactor;
 	int exposure;
 	int darkness;
@@ -167,7 +157,7 @@ void R_LinearizeDepth(FBO_Container_t *src);
 void R_AmbientOcclusion(void);
 void R_GammaCorrection(void);
 bool R_IsSSAOEnabled(void);
-void R_DoHDR(void);
+void R_HDR(void);
 void R_DoFXAA(void);
 void GL_BlitFrameFufferToScreen(FBO_Container_t *src);
 void GL_BlitFrameBufferToFrameBufferColorOnly(FBO_Container_t *src, FBO_Container_t *dst);

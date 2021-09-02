@@ -11,6 +11,15 @@
 | GoldSrc_new    (8684 ~)  | √    |
 | SvEngine       (8832 ~)  | √    |
 
+# GPU Requirement
+
+|       Vendor      |           Intel                  |          Nvidia            |          AMD               |
+|       ----        |           ----                   |           ----             |           ----             |
+|      Minimum      | Intel Haswell series with HD4600 |      Geforce GTX 650       |  AMD Radeon HD 7000 Series |
+|     Recommend     |           ----                   |      Geforce GTX 1060 or better     |   AMD Radeon RX 560 or better        |
+
+* It's recommended to run game with at least 4GB of dedicated video memory.
+
 # Features
 
 ## HDR

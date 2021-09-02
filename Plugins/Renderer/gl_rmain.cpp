@@ -76,7 +76,6 @@ int *mod_numknown = NULL;
 int gl_max_ubo_size = 0;
 int gl_max_texture_size = 0;
 float gl_max_ansio = 0;
-GLuint gl_color_format = 0;
 
 int *gl_msaa_fbo = 0;
 int *gl_backbuffer_fbo = 0;
@@ -1076,12 +1075,10 @@ void GL_GenerateFrameBuffers(void)
 
 	glEnable(GL_TEXTURE_2D);
 
-	gl_color_format = GL_RGB16F;
-
 	s_BackBufferFBO.iWidth = glwidth;
 	s_BackBufferFBO.iHeight = glheight;
 	GL_GenFrameBuffer(&s_BackBufferFBO);
-	GL_FrameBufferColorTexture(&s_BackBufferFBO, gl_color_format);
+	GL_FrameBufferColorTexture(&s_BackBufferFBO, GL_RGB16F);
 	GL_FrameBufferDepthTexture(&s_BackBufferFBO, GL_DEPTH24_STENCIL8);
 
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -1093,7 +1090,7 @@ void GL_GenerateFrameBuffers(void)
 	s_BackBufferFBO2.iWidth = glwidth;
 	s_BackBufferFBO2.iHeight = glheight;
 	GL_GenFrameBuffer(&s_BackBufferFBO2);
-	GL_FrameBufferColorTexture(&s_BackBufferFBO2, gl_color_format);
+	GL_FrameBufferColorTexture(&s_BackBufferFBO2, GL_RGB16F);
 	GL_FrameBufferDepthTexture(&s_BackBufferFBO2, GL_DEPTH24_STENCIL8);
 
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -1105,7 +1102,7 @@ void GL_GenerateFrameBuffers(void)
 	s_GBufferFBO.iWidth = glwidth;
 	s_GBufferFBO.iHeight = glheight;
 	GL_GenFrameBuffer(&s_GBufferFBO);
-	GL_FrameBufferColorTextureDeferred(&s_GBufferFBO, gl_color_format);
+	GL_FrameBufferColorTextureDeferred(&s_GBufferFBO, GL_RGB16F);
 	GL_FrameBufferDepthTexture(&s_GBufferFBO, GL_DEPTH24_STENCIL8);
 
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -1143,7 +1140,7 @@ void GL_GenerateFrameBuffers(void)
 	s_WaterFBO.iWidth = glwidth;
 	s_WaterFBO.iHeight = glheight;
 	GL_GenFrameBuffer(&s_WaterFBO);
-	GL_FrameBufferColorTexture(&s_WaterFBO, gl_color_format);
+	GL_FrameBufferColorTexture(&s_WaterFBO, GL_RGB16F);
 	GL_FrameBufferDepthTexture(&s_WaterFBO, GL_DEPTH24_STENCIL8);
 
 	//DownSample FBO 1->1/4->1/16
@@ -1160,7 +1157,7 @@ void GL_GenerateFrameBuffers(void)
 		//fbo
 		GL_GenFrameBuffer(&s_DownSampleFBO[i]);
 		//color
-		GL_FrameBufferColorTexture(&s_DownSampleFBO[i], gl_color_format);
+		GL_FrameBufferColorTexture(&s_DownSampleFBO[i], GL_RGB16F);
 
 		if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
@@ -1214,7 +1211,7 @@ void GL_GenerateFrameBuffers(void)
 	s_BrightPassFBO.iWidth = (glwidth >> DOWNSAMPLE_BUFFERS);
 	s_BrightPassFBO.iHeight = (glheight >> DOWNSAMPLE_BUFFERS);
 	GL_GenFrameBuffer(&s_BrightPassFBO);
-	GL_FrameBufferColorTexture(&s_BrightPassFBO, gl_color_format);
+	GL_FrameBufferColorTexture(&s_BrightPassFBO, GL_RGB16F);
 
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
@@ -1234,7 +1231,7 @@ void GL_GenerateFrameBuffers(void)
 			s_BlurPassFBO[i][j].iHeight = downH;
 
 			GL_GenFrameBuffer(&s_BlurPassFBO[i][j]);
-			GL_FrameBufferColorTexture(&s_BlurPassFBO[i][j], gl_color_format);
+			GL_FrameBufferColorTexture(&s_BlurPassFBO[i][j], GL_RGB16F);
 
 			if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 			{
@@ -1249,7 +1246,7 @@ void GL_GenerateFrameBuffers(void)
 	s_BrightAccumFBO.iWidth = glwidth >> DOWNSAMPLE_BUFFERS;
 	s_BrightAccumFBO.iHeight = glheight >> DOWNSAMPLE_BUFFERS;
 	GL_GenFrameBuffer(&s_BrightAccumFBO);
-	GL_FrameBufferColorTexture(&s_BrightAccumFBO, gl_color_format);
+	GL_FrameBufferColorTexture(&s_BrightAccumFBO, GL_RGB16F);
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BrightAccumFBO);
@@ -1259,7 +1256,7 @@ void GL_GenerateFrameBuffers(void)
 	s_ToneMapFBO.iWidth = glwidth;
 	s_ToneMapFBO.iHeight = glheight;
 	GL_GenFrameBuffer(&s_ToneMapFBO);
-	GL_FrameBufferColorTexture(&s_ToneMapFBO, GL_RGBA8);
+	GL_FrameBufferColorTexture(&s_ToneMapFBO, GL_RGB8);
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_ToneMapFBO);
@@ -1417,7 +1414,7 @@ void R_PostRenderView()
 
 	if (r_hdr->value && !r_draw_pass && !g_SvEngine_DrawPortalView && !CL_IsDevOverviewMode())
 	{
-		R_DoHDR();
+		R_HDR();
 	}
 	else
 	{

@@ -4,6 +4,12 @@
 //HDR
 int last_luminance = 0;
 
+#define MAX_GAUSSIAN_SAMPLES 16
+
+#define LUMPASS_DOWN 0
+#define LUMPASS_LOG 1
+#define LUMPASS_EXP 2
+
 //HBAO
 #define AO_RANDOMTEX_SIZE 4
 static const int  NUM_MRT = 8;
@@ -21,7 +27,7 @@ SHADER_DEFINE(pp_fxaa);
 //HDR
 SHADER_DEFINE(pp_downsample);
 SHADER_DEFINE(pp_downsample2x2);
-SHADER_DEFINE(pp_lumin);
+SHADER_DEFINE(pp_lumindown);
 SHADER_DEFINE(pp_luminlog);
 SHADER_DEFINE(pp_luminexp);
 SHADER_DEFINE(pp_luminadapt);
@@ -105,18 +111,19 @@ void R_UseHudDebugProgram(int state, hud_debug_program_t *progOutput)
 	}
 }
 
-float *R_GenerateGaussianWeights(int kernelRadius)
+#if 0
+
+void R_GenerateGaussianWeights(float *weights)
 {
-	int size = kernelRadius * 2 + 1;
+	int size = MAX_GAUSSIAN_SAMPLES * 2 + 1;
 
 	float x;
-	float s = floor(kernelRadius / 4.0f);
-	float *weights = new float[size];
+	float s = floor(MAX_GAUSSIAN_SAMPLES / 4.0f);
 
 	float sum = 0.0f;
 	for (int i = 0; i < size; i++)
 	{
-		x = (float)(i - kernelRadius);
+		x = (float)(i - MAX_GAUSSIAN_SAMPLES);
 
 		// True Gaussian
 		weights[i] = expf(-x * x / (2.0f*s*s)) / (s*sqrtf(2.0f*M_PI));
@@ -128,91 +135,31 @@ float *R_GenerateGaussianWeights(int kernelRadius)
 
 	for (int i = 0; i < size; i++)
 		weights[i] /= sum;
-
-	return weights;
 }
 
-void R_CaculateGaussianBilinear(float *coordOffset, float *gaussWeight, int maxSamples)
+void R_CaculateGaussianBilinear(float *coordOffset, float *gaussWeight)
 {
-	int i = 0;
-
-	//  store all the intermediate offsets & weights, then compute the bilinear
-	//  taps in a second pass
-	float *tmpWeightArray = R_GenerateGaussianWeights(maxSamples);
+	//  Store all the intermediate offsets & weights, then compute the bilinear
+	//  Taps in a second pass
+	
+	float tmpWeightArray[MAX_GAUSSIAN_SAMPLES * 2 + 1];
+	R_GenerateGaussianWeights(tmpWeightArray);
 
 	// Bilinear filtering taps 
 	// Ordering is left to right.
-	float sScale;
-	float sFrac;
-
-	for (i = 0; i < maxSamples; i++)
+	
+	for (int i = 0; i < MAX_GAUSSIAN_SAMPLES; i++)
 	{
-		sScale = tmpWeightArray[i * 2 + 0] + tmpWeightArray[i * 2 + 1];
-		sFrac = tmpWeightArray[i * 2 + 1] / sScale;
+		auto sScale = tmpWeightArray[i * 2 + 0] + tmpWeightArray[i * 2 + 1];
+		auto sFrac = tmpWeightArray[i * 2 + 1] / sScale;
 
-		coordOffset[i] = ((2.0f*i - maxSamples) + sFrac);
+		coordOffset[i] = ((2.0f*i - MAX_GAUSSIAN_SAMPLES) + sFrac);
 		gaussWeight[i] = sScale;
 	}
-
-	delete[]tmpWeightArray;
 }
 
 char *UTIL_VarArgs(char *format, ...);
-
-void R_InitBlur(int samples)
-{
-	auto pp_common_vscode = (char *)gEngfuncs.COM_LoadFile((char *)"renderer\\shader\\pp_common.vsh", 5, 0);
-
-	if (!pp_common_vscode)
-		return;
-
-	float coord_offsets[MAX_GAUSSIAN_SAMPLES];
-	float gauss_weights[MAX_GAUSSIAN_SAMPLES];
-	
-	R_CaculateGaussianBilinear(coord_offsets, gauss_weights, min(samples, MAX_GAUSSIAN_SAMPLES));
-
-	std::stringstream ss;
-
-	//Generate horizonal blur code
-	ss << "#version 120\nuniform float du;\nuniform sampler2D tex;\nvoid main()\n{\n vec4 sample = vec4(0.0, 0.0, 0.0, 0.0);\n";
-	for (int i = 0; i < samples; ++i)
-	{
-		ss << UTIL_VarArgs(" sample += %f * texture2D( tex, gl_TexCoord[0].xy + vec2(%f * du, 0.0) );\n", gauss_weights[i], coord_offsets[i]);
-	}
-	ss << " gl_FragColor = sample;\n}";
-
-	pp_gaussianblurh.program = R_CompileShader(pp_common_vscode, ss.str().c_str(), "pp_common.vsh", "pp_gaussianblur_h.fsh", NULL);
-	if (pp_gaussianblurh.program)
-	{
-		SHADER_UNIFORM(pp_gaussianblurh, tex, "tex");
-		SHADER_UNIFORM(pp_gaussianblurh, du, "du");
-	}
-
-	//Generate vertical blur code
-	if (pp_gaussianblurv.program)
-	{
-		glDeleteObjectARB(pp_gaussianblurv.program);
-		pp_gaussianblurv.program = 0;
-	}
-
-	std::stringstream ss2;
-
-	ss2 << "#version 120\nuniform float du;\nuniform sampler2D tex;\nvoid main()\n{\n vec4 sample = vec4(0.0, 0.0, 0.0, 0.0);\n";
-	for (int i = 0; i < samples; ++i)
-	{
-		ss2 << UTIL_VarArgs(" sample += %f * texture2D( tex, gl_TexCoord[0].xy + vec2(0.0, %f * du) );\n", gauss_weights[i], coord_offsets[i]);
-	}
-	ss2 << " gl_FragColor = sample;\n}";
-
-	pp_gaussianblurv.program = R_CompileShader(pp_common_vscode, ss2.str().c_str(), "pp_common.vsh", "pp_gaussianblur_v.fsh", NULL);
-	if (pp_gaussianblurv.program)
-	{
-		SHADER_UNIFORM(pp_gaussianblurv, tex, "tex");
-		SHADER_UNIFORM(pp_gaussianblurv, du, "du");
-	}
-
-	gEngfuncs.COM_FreeFile(pp_common_vscode);
-}
+#endif
 
 void R_InitGLHUD(void)
 {
@@ -264,83 +211,54 @@ void R_InitGLHUD(void)
 	SHADER_UNIFORM(pp_fxaa, rt_h, "rt_h");
 
 	//DownSample Pass
-	pp_downsample.program = R_CompileShaderFile("renderer\\shader\\pp_common.vsh", "renderer\\shader\\pp_downsample.fsh", NULL);
-	SHADER_UNIFORM(pp_downsample, tex, "tex");
-
+	pp_downsample.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\down_sample.frag.glsl", NULL);
+	
 	//2x2 Downsample Pass
-	pp_downsample2x2.program = R_CompileShaderFile("renderer\\shader\\pp_common2x2.vsh", "renderer\\shader\\pp_downsample2x2.fsh", NULL);
-	if (pp_downsample2x2.program)
-	{
-		SHADER_UNIFORM(pp_downsample2x2, tex, "tex");
-		SHADER_UNIFORM(pp_downsample2x2, texelsize, "texelsize");
-	}
+	pp_downsample2x2.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\down_sample.frag.glsl", "", "#define DOWNSAMPLE_2X2\n", NULL);
+	SHADER_UNIFORM(pp_downsample2x2, texelsize, "texelsize");
 
 	//Luminance Downsample Pass
-	pp_lumin.program = R_CompileShaderFile("renderer\\shader\\pp_common2x2.vsh", "renderer\\shader\\pp_lumin.fsh", NULL);
-	if (pp_lumin.program)
-	{
-		SHADER_UNIFORM(pp_lumin, tex, "tex");
-		SHADER_UNIFORM(pp_lumin, texelsize, "texelsize");
-	}
+	pp_lumindown.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_lumpass.frag.glsl", "", "", NULL);
+	SHADER_UNIFORM(pp_lumindown, texelsize, "texelsize");
 
 	//Log Luminance Downsample Pass
-	pp_luminlog.program = R_CompileShaderFile("renderer\\shader\\pp_common2x2.vsh", "renderer\\shader\\pp_luminlog.fsh", NULL);
-	if (pp_luminlog.program)
-	{
-		SHADER_UNIFORM(pp_luminlog, tex, "tex");
-		SHADER_UNIFORM(pp_luminlog, texelsize, "texelsize");
-	}
+	pp_luminlog.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_lumpass.frag.glsl", "", "#define LUMPASS_LOG\n", NULL);
+	SHADER_UNIFORM(pp_luminlog, texelsize, "texelsize");
 
 	//Exp Luminance Downsample Pass
-	pp_luminexp.program = R_CompileShaderFile("renderer\\shader\\pp_common2x2.vsh", "renderer\\shader\\pp_luminexp.fsh", NULL);
-	if (pp_luminexp.program)
-	{
-		SHADER_UNIFORM(pp_luminexp, tex, "tex");
-		SHADER_UNIFORM(pp_luminexp, texelsize, "texelsize");
-	}
+	pp_luminexp.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_lumpass.frag.glsl", "", "#define LUMPASS_EXP\n", NULL);
+	SHADER_UNIFORM(pp_luminexp, texelsize, "texelsize");
 
 	//Luminance Adaptation Downsample Pass
-	pp_luminadapt.program = R_CompileShaderFile("renderer\\shader\\pp_common.vsh", "renderer\\shader\\pp_luminadapt.fsh", NULL);
-	if (pp_luminadapt.program)
-	{
-		SHADER_UNIFORM(pp_luminadapt, curtex, "curtex");
-		SHADER_UNIFORM(pp_luminadapt, adatex, "adatex");
-		SHADER_UNIFORM(pp_luminadapt, frametime, "frametime");
-	}
+	pp_luminadapt.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_adaption.frag.glsl", "", "", NULL);
+	SHADER_UNIFORM(pp_luminadapt, frametime, "frametime");
 
 	//Bright Pass
-	pp_brightpass.program = R_CompileShaderFile("renderer\\shader\\pp_brightpass.vsh", "renderer\\shader\\pp_brightpass.fsh", NULL);
-	if (pp_brightpass.program)
-	{
-		SHADER_UNIFORM(pp_brightpass, tex, "tex");
-		SHADER_UNIFORM(pp_brightpass, lumtex, "lumtex");
-	}
+	pp_brightpass.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_brightpass.frag.glsl", "#define LUMTEX_ENABLED\n", "", NULL);
+	SHADER_UNIFORM(pp_brightpass, baseTex, "baseTex");
+	SHADER_UNIFORM(pp_brightpass, lumTex, "lumTex");
 
 	//Tone mapping
-	pp_tonemap.program = R_CompileShaderFile("renderer\\shader\\pp_tonemap.vsh", "renderer\\shader\\pp_tonemap.fsh", NULL);
-	if (pp_tonemap.program)
-	{
-		SHADER_UNIFORM(pp_tonemap, basetex, "basetex");
-		SHADER_UNIFORM(pp_tonemap, blurtex, "blurtex");
-		SHADER_UNIFORM(pp_tonemap, lumtex, "lumtex");
-		SHADER_UNIFORM(pp_tonemap, blurfactor, "blurfactor");
-		SHADER_UNIFORM(pp_tonemap, exposure, "exposure");
-		SHADER_UNIFORM(pp_tonemap, darkness, "darkness");
-		SHADER_UNIFORM(pp_tonemap, gamma, "gamma");
-	}
+	pp_tonemap.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hdr_tonemap.frag.glsl", "#define LUMTEX_ENABLED\n#define TONEMAP_ENABLED\n", "", NULL);
+	SHADER_UNIFORM(pp_tonemap, baseTex, "baseTex");
+	SHADER_UNIFORM(pp_tonemap, blurTex, "blurTex");
+	SHADER_UNIFORM(pp_tonemap, lumTex, "lumTex");
+	SHADER_UNIFORM(pp_tonemap, blurfactor, "blurfactor");
+	SHADER_UNIFORM(pp_tonemap, exposure, "exposure");
+	SHADER_UNIFORM(pp_tonemap, darkness, "darkness");
 
 	//SSAO
-	depth_linearize.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\depthlinearize.frag.glsl", NULL);
+	depth_linearize.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\depthlinearize.frag.glsl", NULL);
 
-	hbao_calc_blur.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\hbao.frag.glsl", NULL);
+	hbao_calc_blur.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao.frag.glsl", NULL);
 	
-	depth_clear.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\depthclear.frag.glsl", NULL);
+	depth_clear.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\depthclear.frag.glsl", NULL);
 
-	oitbuffer_clear.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\oitbuffer_clear.frag.glsl", NULL);
+	oitbuffer_clear.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\oitbuffer_clear.frag.glsl", NULL);
 	
-	blit_oitblend.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\blit_oitblend.frag.glsl", NULL);
+	blit_oitblend.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\blit_oitblend.frag.glsl", NULL);
 	
-	gamma_correction.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\gamma_correction.frag.glsl", NULL);
+	gamma_correction.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gamma_correction.frag.glsl", NULL);
 
 	SHADER_UNIFORM(hbao_calc_blur, texLinearDepth, "texLinearDepth");
 	SHADER_UNIFORM(hbao_calc_blur, texRandom, "texRandom");
@@ -354,7 +272,7 @@ void R_InitGLHUD(void)
 	SHADER_UNIFORM(hbao_calc_blur, control_NDotVBias, "control_NDotVBias");
 	SHADER_UNIFORM(hbao_calc_blur, control_NegInvR2, "control_NegInvR2");
 
-	hbao_calc_blur_fog.program = R_CompileShaderFileEx("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\hbao.frag.glsl", 
+	hbao_calc_blur_fog.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao.frag.glsl", 
 		"#define LINEAR_FOG_ENABLED\n", "#define LINEAR_FOG_ENABLED\n", NULL);
 
 	SHADER_UNIFORM(hbao_calc_blur_fog, texLinearDepth, "texLinearDepth");
@@ -370,12 +288,14 @@ void R_InitGLHUD(void)
 	SHADER_UNIFORM(hbao_calc_blur_fog, control_NegInvR2, "control_NegInvR2");
 	SHADER_UNIFORM(hbao_calc_blur_fog, control_Fog, "control_Fog");
 
-	hbao_blur.program = R_CompileShaderFile("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\hbao_blur.frag.glsl", NULL);
+	hbao_blur.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao_blur.frag.glsl", NULL);
 
-	hbao_blur2.program = R_CompileShaderFileEx("renderer\\shader\\fullscreenquad.vert.glsl", "renderer\\shader\\hbao_blur.frag.glsl",
+	hbao_blur2.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao_blur.frag.glsl",
 		"#define AO_BLUR_PRESENT\n", "#define AO_BLUR_PRESENT\n", NULL);
 
-	R_InitBlur(16);
+	pp_gaussianblurh.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gaussian_blur_16x.frag.glsl", "", "#define BLUR_HORIZONAL\n", NULL);
+	
+	pp_gaussianblurv.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gaussian_blur_16x.frag.glsl", "", "#define BLUR_VERTICAL\n", NULL);
 
 	r_hdr = gEngfuncs.pfnRegisterVariable("r_hdr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_debug = gEngfuncs.pfnRegisterVariable("r_hdr_debug", "0", FCVAR_CLIENTDLL);
@@ -456,52 +376,51 @@ void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2
 	glClearColor(0, 0, 0, 1);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	if(!filter2x2)
+	if(filter2x2)
 	{
-		GL_UseProgram(pp_downsample.program);
-		glUniform1i(pp_downsample.tex, 0);
+		GL_UseProgram(pp_downsample2x2.program);
+		glUniform2f(pp_downsample2x2.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
 	}
 	else
 	{
-		GL_UseProgram(pp_downsample2x2.program);
-		glUniform1i(pp_downsample2x2.tex, 0);
-		glUniform2f(pp_downsample2x2.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
+		GL_UseProgram(pp_downsample.program);
 	}
 
-	GL_Begin2DEx(dst->iWidth, dst->iHeight);
+	glViewport(glx, gly, dst->iWidth, dst->iHeight);
 
-	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, dst->iWidth, dst->iHeight);
+	GL_Bind(src->s_hBackBufferTex);
+
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int logexp)
+void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int type)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
 
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	if(!logexp)
-	{
-		GL_UseProgram(pp_lumin.program);
-		glUniform1i(pp_lumin.tex, 0);
-		glUniform2f(pp_lumin.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
-	}
-	else if(logexp == 1)
+	if(type == LUMPASS_LOG)
 	{
 		GL_UseProgram(pp_luminlog.program);
-		glUniform1i(pp_luminlog.tex, 0);
 		glUniform2f(pp_luminlog.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
+	}
+	else if(type == LUMPASS_EXP)
+	{
+		GL_UseProgram(pp_luminexp.program);
+		glUniform2f(pp_luminexp.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
 	}
 	else
 	{
-		GL_UseProgram(pp_luminexp.program);
-		glUniform1i(pp_luminexp.tex, 0);
-		glUniform2f(pp_luminexp.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
+		GL_UseProgram(pp_lumindown.program);
+		glUniform2f(pp_lumindown.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
 	}
 
-	GL_Begin2DEx(dst->iWidth, dst->iHeight);
+	glViewport(glx, gly, dst->iWidth, dst->iHeight);
 
-	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, dst->iWidth, dst->iHeight);
+	GL_Bind(src->s_hBackBufferTex);
+
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *ada, double frametime)
@@ -512,9 +431,9 @@ void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	GL_UseProgram(pp_luminadapt.program);
-	glUniform1i(pp_luminadapt.curtex, 0);
-	glUniform1i(pp_luminadapt.adatex, 1);
 	glUniform1f(pp_luminadapt.frametime, frametime * clamp(r_hdr_adaptation->GetValue(), 0.1, 100));
+
+	glViewport(glx, gly, dst->iWidth, dst->iHeight);
 
 	GL_SelectTexture(GL_TEXTURE0);
 	GL_Bind(src->s_hBackBufferTex);
@@ -522,9 +441,7 @@ void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container
 	GL_EnableMultitexture();
 	GL_Bind(ada->s_hBackBufferTex);
 
-	GL_Begin2DEx(dst->iWidth, dst->iHeight);
-
-	R_DrawHUDQuad(dst->iWidth, dst->iHeight);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	GL_DisableMultitexture();
 }
@@ -537,8 +454,10 @@ void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *l
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	GL_UseProgram(pp_brightpass.program);
-	glUniform1i(pp_brightpass.tex, 0);
-	glUniform1i(pp_brightpass.lumtex, 1);
+	glUniform1i(pp_brightpass.baseTex, 0);
+	glUniform1i(pp_brightpass.lumTex, 1);
+
+	glViewport(glx, gly, dst->iWidth, dst->iHeight);
 
 	GL_SelectTexture(GL_TEXTURE0);
 	GL_Bind(src->s_hBackBufferTex);
@@ -546,13 +465,9 @@ void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *l
 	GL_EnableMultitexture();
 	GL_Bind(lum->s_hBackBufferTex);
 
-	GL_Begin2DEx(dst->iWidth, dst->iHeight);
-
-	R_DrawHUDQuad(dst->iWidth, dst->iHeight);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	GL_DisableMultitexture();
-
-	GL_UseProgram(0);
 }
 
 void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
@@ -562,22 +477,22 @@ void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	if(!vertical)
+	if(vertical)
 	{
-		GL_UseProgram(pp_gaussianblurh.program);
-		glUniform1i(pp_gaussianblurh.tex, 0);
-		glUniform1f(pp_gaussianblurh.du, 1.0f / src->iWidth);
+		GL_UseProgram(pp_gaussianblurv.program);
+		glUniform1f(0, 1.0f / src->iHeight); 
 	}
 	else
 	{
-		GL_UseProgram(pp_gaussianblurv.program);
-		glUniform1i(pp_gaussianblurv.tex, 0);
-		glUniform1f(pp_gaussianblurv.du, 1.0f / src->iHeight);
+		GL_UseProgram(pp_gaussianblurh.program);
+		glUniform1f(0, 1.0f / src->iWidth);
 	}
 
-	GL_Begin2DEx(dst->iWidth, dst->iHeight);
+	glViewport(glx, gly, dst->iWidth, dst->iHeight);
 
-	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, dst->iWidth, dst->iHeight);
+	GL_Bind(src->s_hBackBufferTex);
+
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container_t *blur3, FBO_Container_t *dst)
@@ -590,17 +505,18 @@ void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE, GL_ONE);
 
-	GL_UseProgram(0);
-	GL_Begin2DEx(dst->iWidth, dst->iHeight);
+	GL_UseProgram(pp_downsample.program);
+	
+	glViewport(glx, gly, dst->iWidth, dst->iHeight);
 
 	GL_Bind(blur1->s_hBackBufferTex);
-	R_DrawHUDQuad(dst->iWidth, dst->iHeight);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	GL_Bind(blur2->s_hBackBufferTex);
-	R_DrawHUDQuad(dst->iWidth, dst->iHeight);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	GL_Bind(blur3->s_hBackBufferTex);
-	R_DrawHUDQuad(dst->iWidth, dst->iHeight);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	glDisable(GL_BLEND);
 }
@@ -613,15 +529,13 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	GL_UseProgram(pp_tonemap.program);
-	glUniform1i(pp_tonemap.basetex, 0);
-	glUniform1i(pp_tonemap.blurtex, 1);
-	glUniform1i(pp_tonemap.lumtex, 2);
+	glUniform1i(pp_tonemap.baseTex, 0);
+	glUniform1i(pp_tonemap.blurTex, 1);
+	glUniform1i(pp_tonemap.lumTex, 2);
 	glUniform1f(pp_tonemap.blurfactor, clamp(r_hdr_blurwidth->GetValue(), 0, 1));
 	glUniform1f(pp_tonemap.exposure, clamp(r_hdr_exposure->GetValue(), 0.001, 10));
 	glUniform1f(pp_tonemap.darkness, clamp(r_hdr_darkness->GetValue(), 0.001, 10));
-	glUniform1f(pp_tonemap.gamma, 1.0 / v_gamma->value);
-	
-	GL_SelectTexture(GL_TEXTURE0);
+
 	GL_Bind(src->s_hBackBufferTex);
 
 	GL_EnableMultitexture();
@@ -631,45 +545,42 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, lum->s_hBackBufferTex);
 
-	GL_Begin2DEx(dst->iWidth, dst->iHeight);
+	glViewport(glx, gly, dst->iWidth, dst->iHeight);
 
-	R_DrawHUDQuad(dst->iWidth, dst->iHeight);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, 0);
 	glDisable(GL_TEXTURE_2D);
 
 	glActiveTexture(GL_TEXTURE1);
 	GL_DisableMultitexture();
-
-	GL_UseProgram(0);
 }
 
-void R_DoHDR(void)
+void R_HDR(void)
 {
 	static glprofile_t profile_DoHDR;
-	GL_BeginProfile(&profile_DoHDR, "R_DoHDR");
+	GL_BeginProfile(&profile_DoHDR, "R_HDR");
 
-	GL_PushDrawState();
+	GL_BeginFullScreenQuad(false);
 
-	GL_Begin2D();
-	glDisable(GL_BLEND);
 	GL_DisableMultitexture();
 	glEnable(GL_TEXTURE_2D);
+	glDisable(GL_BLEND);
 	glColor4f(1, 1, 1, 1);
 
 	//Downsample backbuffer
 	R_DownSample(&s_BackBufferFBO, &s_DownSampleFBO[0], false);//(1->1/4)
 	R_DownSample(&s_DownSampleFBO[0], &s_DownSampleFBO[1], false);//(1/4)->(1/16)
 
-	//Log Luminance DownSample from .. (HDRColor to 32RF)
-	R_LuminPass(&s_DownSampleFBO[1], &s_LuminFBO[0], 1);//(1/16)->64x64
+	//Log Luminance DownSample from .. (RGB16F to R32F)
+	R_LuminPass(&s_DownSampleFBO[1], &s_LuminFBO[0], LUMPASS_LOG);//(1/16)->64x64
 
 	//Luminance DownSample from..
-	R_LuminPass(&s_LuminFBO[0], &s_LuminFBO[1], 0);//64x64->16x16
-	R_LuminPass(&s_LuminFBO[1], &s_LuminFBO[2], 0);//16x16->4x4
+	R_LuminPass(&s_LuminFBO[0], &s_LuminFBO[1], LUMPASS_DOWN);//64x64->16x16
+	R_LuminPass(&s_LuminFBO[1], &s_LuminFBO[2], LUMPASS_DOWN);//16x16->4x4
+
 	//exp Luminance DownSample from..
-	R_LuminPass(&s_LuminFBO[2], &s_Lumin1x1FBO[2], 2);//4x4->1x1
+	R_LuminPass(&s_LuminFBO[2], &s_Lumin1x1FBO[2], LUMPASS_EXP);//4x4->1x1
 
 	//Luminance Adaptation
 	R_LuminAdaptation(&s_Lumin1x1FBO[2], &s_Lumin1x1FBO[!last_luminance], &s_Lumin1x1FBO[last_luminance], *cl_time - *cl_oldtime);
@@ -694,9 +605,11 @@ void R_DoHDR(void)
 	//Tone mapping
 	R_ToneMapping(&s_BackBufferFBO, &s_ToneMapFBO, &s_BrightAccumFBO, &s_Lumin1x1FBO[last_luminance]);
 
-	GL_BlitFrameBufferToFrameBufferColorOnly(&s_ToneMapFBO, &s_BackBufferFBO);
+	GL_UseProgram(0);
 
-	GL_PopDrawState();
+	GL_EndFullScreenQuad();
+
+	GL_BlitFrameBufferToFrameBufferColorOnly(&s_ToneMapFBO, &s_BackBufferFBO);
 
 	GL_EndProfile(&profile_DoHDR);
 }

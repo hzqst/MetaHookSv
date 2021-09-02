@@ -270,24 +270,36 @@ int HUD_Redraw(float time, int intermission)
 		case 2:
 			pFBO = &s_DownSampleFBO[1];break;
 		case 3:
-			pFBO = &s_BrightPassFBO;break;
+			pFBO = &s_LuminFBO[0]; break;
 		case 4:
-			pFBO = &s_BlurPassFBO[0][0];break;
+			pFBO = &s_LuminFBO[1]; break;
 		case 5:
-			pFBO = &s_BlurPassFBO[0][1];break;
+			pFBO = &s_LuminFBO[2]; break;
 		case 6:
-			pFBO = &s_BlurPassFBO[1][0];break;
+			pFBO = &s_Lumin1x1FBO[0]; break;
 		case 7:
-			pFBO = &s_BlurPassFBO[1][1];break;
+			pFBO = &s_Lumin1x1FBO[1]; break;
 		case 8:
-			pFBO = &s_BlurPassFBO[2][0];break;
+			pFBO = &s_Lumin1x1FBO[2]; break;
 		case 9:
-			pFBO = &s_BlurPassFBO[2][1];break;
+			pFBO = &s_BrightPassFBO;break;
 		case 10:
-			pFBO = &s_BrightAccumFBO;break;
+			pFBO = &s_BlurPassFBO[0][0];break;
 		case 11:
-			pFBO = &s_ToneMapFBO;break;
+			pFBO = &s_BlurPassFBO[0][1];break;
 		case 12:
+			pFBO = &s_BlurPassFBO[1][0];break;
+		case 13:
+			pFBO = &s_BlurPassFBO[1][1];break;
+		case 14:
+			pFBO = &s_BlurPassFBO[2][0];break;
+		case 15:
+			pFBO = &s_BlurPassFBO[2][1];break;
+		case 16:
+			pFBO = &s_BrightAccumFBO;break;
+		case 17:
+			pFBO = &s_ToneMapFBO;break;
+		case 18:
 			pFBO = &s_BackBufferFBO; break;
 		default:
 			break;
