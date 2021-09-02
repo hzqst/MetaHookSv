@@ -112,13 +112,21 @@ The implementation credits to [HBAO or Horizon-Based-Ambient-Occlusion](https://
 
 `r_flashlight_distance` is the max illumination distance of flashlight.
 
-`r_light_ambient` is ambient intensity of dynamic lights.
+`r_flashlight_ambient` is ambient intensity of flashlights.
 
-`r_light_diffuse` is diffuse intensity of dynamic lights.
+`r_flashlight_diffuse` is diffuse intensity of flashlights.
 
-`r_light_specular` is specular intensity of dynamic lights.
+`r_flashlight_specular` is specular intensity of flashlights.
 
-`r_light_specularpow` is specular power of dynamic lights.
+`r_flashlight_specularpow` is specular power of flashlights.
+
+`r_dynlight_ambient` is ambient intensity of dynamic lights.
+
+`r_dynlight_diffuse` is diffuse intensity of dynamic lights.
+
+`r_dynlight_specular` is specular intensity of dynamic lights.
+
+`r_dynlight_specularpow` is specular power of dynamic lights.
 
 ## Screen Space Reflection
 
