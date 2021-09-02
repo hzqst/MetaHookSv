@@ -38,8 +38,6 @@ HDR (High Dynamic Range) rendering simulates brightness above that which a compu
 
 `r_hdr_adaptation` Controls the dark / bright adaptation speed for HDR.
 
-* Changes to some of the cvars will not take effect immediately, using `r_reload` to reload those cvars.
-
 ## Water Shader
 
 Water Shader creates water that realistically reflects and refracts the world.
@@ -47,6 +45,8 @@ Water Shader creates water that realistically reflects and refracts the world.
 All water surfaces fall into two types: reflective and legacy.
 
 Reflective water reflects and refracts the whole world in real-time using Planar Reflections, which basically renders the entire scene twice, while legacy water rendered only with base texture just like what it does in vanilla GoldSrc.
+
+Reflection level and shader parameters can be configured by using [env_water_control](Renderer.md#env_water_control).
 
 ### Console vars
 
@@ -81,8 +81,6 @@ Dynamic Shadows can sometimes project through walls and floors, giving away the 
 `r_shadow_low_distance` is the maximum distance that entities are being rendered in low-quality shadow map, in inches. for example `r_shadow_low_distance 1200`
 
 `r_shadow_low_scale` is scale factor to scale the size of entity model up or down in low-quality shadow map. for example `r_shadow_low_scale 0.5`
-
-* Changes to some of the cvars will not take effect immediately, using `r_reload` to reload those cvars.
 
 ## Screen Space Ambient Occlusion
 
@@ -150,8 +148,6 @@ Green channel of `_SPECULAR` texture determines the intensity of reflection. 0 =
 
 `r_ssr_fade` controls the fade-out effect if the reflected ray hit a pixel close to the screen border. for example `r_ssr_fade "0.8 1.0"`
 
-* Changes to some of the cvars will not take effect immediately, using `r_reload` to reload those cvars.
-
 ## Detail textures
 
 A detail texture is a high resolution external image (Supported format: BMP, TGA, DDS, JPG, PNG) that is placed over the top of a map texture. This gives the impression of a small details when you get up close to a texture instead of the usual blurred image you get when the texture fills the screen.
@@ -172,7 +168,7 @@ Normal textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/deta
 
 * Normal textures only work when `r_wsurf_detail` and `r_light_dynamic` both set to 1.
 
-* Normal textures change nothing but the direction of surface normal, thus only work when there are dynamic lights or flashlights.
+* Normal textures change nothing but the direction of surface normal, thus only work when illuminated by dynamic lights or flashlights.
 
 ### Parallax textures
 
