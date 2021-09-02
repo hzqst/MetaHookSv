@@ -30,13 +30,13 @@ HDR (High Dynamic Range) rendering simulates brightness above that which a compu
 
 `r_hdr` Set to 1 to enable HDR post-processor rendering.
 
-`r_hdr_blurwidth` Controls the intensity of blooming for HDR.
+`r_hdr_blurwidth` Controls the intensity of blooming for HDR. recommend value : `0.0 ~ 0.1`
 
-`r_hdr_exposure` Controls the intensity of exposure for HDR.
+`r_hdr_exposure` Controls the intensity of exposure for HDR. recommend value : `0.0 ~ 1.2`
 
-`r_hdr_darkness` Controls the intensity of darkness for HDR.
+`r_hdr_darkness` Controls the intensity of darkness for HDR. recommend value : `0.0 ~ 1.6`
 
-`r_hdr_adaptation` Controls the dark / bright adaptation speed for HDR.
+`r_hdr_adaptation` Controls the dark / bright adaptation speed for HDR. recommend value : `0 ~ 50`
 
 ## Water Shader
 
@@ -297,8 +297,6 @@ You can use [bspguy](https://github.com/wootguy/bspguy) to add entity to BSP fil
 
 `color` is the color of the shadows, in RGBA8 format. for example `"color" "0 0 0 128"`
 
-`disableallshadows` disables shadows entirely. for example `"disableallshadows" "1"`
-
 `high_distance` is the maximum distance that entities are being rendered in high-quality shadow map, in inches. for example `"high_distance" "400"`
 
 `high_scale` is scale factor to scale the size of entity model up or down in high-quality shadow map. for example `"high_scale" "4"`
@@ -337,13 +335,11 @@ You can use [bspguy](https://github.com/wootguy/bspguy) to add entity to BSP fil
 
 `blurwidth` is the intensity of blooming for HDR, for example `"blurwidth" "0.1"`
 
-`exposure` is the intensity of exposure for HDR, for example `"exposure" "4.5"`
+`exposure` is the intensity of exposure for HDR, for example `"exposure" "0.8"`
 
-`darkness` is the intensity of darkness for HDR, for example `"darkness" "4.5"`
+`darkness` is the intensity of darkness for HDR, for example `"darkness" "1.4"`
 
 `adaptation` is the brightness adaptation speed for HDR, for example `"adaptation" "50"`
-
-`disablehdr` disables HDR entirely. for example `"disablehdr" "1"`
 
 ## env_water_control
 
@@ -352,8 +348,6 @@ You can use [bspguy](https://github.com/wootguy/bspguy) to add entity to BSP fil
 ### Keyvalues
 
 `basetexture` is the name of basetexture of water to control, `*` is for wildcard (only suffix wildcard supported). for example `"basetexture" "!radio"` or `"basetexture" "!toxi*"`
-
-`disablewater` disables water shader entirely for water with specified `basetexture`. for example `"disablewater" "1"`
 
 `normalmap` is the path to the normalmap for turbulence effect. for example `"normalmap" "renderer/texture/water_normalmap.tga"`
 
