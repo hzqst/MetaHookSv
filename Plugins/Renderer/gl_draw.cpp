@@ -219,7 +219,7 @@ void GL_UploadDXT(byte *data, int width, int height, qboolean mipmap, qboolean a
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
 }
 
-void GL_Upload32(unsigned int *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap)
+void GL_UploadRGBA8(byte *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap)
 {
 	int iComponent, iFormat, iTextureTarget;
 
@@ -266,148 +266,6 @@ void GL_Upload32(unsigned int *data, int width, int height, qboolean mipmap, qbo
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
-}
-
-void GL_Upload16(byte *data, int width, int height, qboolean mipmap, int iType, unsigned char *pPal, qboolean ansio, int wrap)
-{
-	static unsigned int *trans = NULL;//[640*480];
-	static int transSize = 0;
-
-	int			i, s;
-	qboolean	noalpha;
-	int			p;
-	unsigned char *pb;
-
-	s = width*height;
-
-	if(trans == NULL)
-	{
-		transSize = max(s, 640*480);
-		trans = new unsigned int[transSize];
-	}
-	else if(transSize < s)
-	{
-		delete [] trans;
-		transSize = s;
-		trans = new unsigned int[s];
-	}
-
-	if ( iType != TEX_TYPE_LUM )
-	{
-		if ( !pPal )
-			return;
-
-		//for ( i = 0; i < 768; i++ )
-		//	pPal[i] = texgammatable[pPal[i]];
-	}
-
-	// if there are no transparent pixels, make it a 3 component
-	// texture even if it was specified as otherwise
-	if ( TEX_IS_ALPHA( iType ) )
-	{
-		noalpha = true;
-
-		if ( iType == TEX_TYPE_ALPHA_GRADIENT )
-		{
-			for (i=0 ; i<s ; i++)
-			{
-				p = data[i];
-				pb = (unsigned char *)&trans[i];
-				pb[0] = pPal[765];
-				pb[1] = pPal[766];
-				pb[2] = pPal[767];
-				pb[3] = p;
-				noalpha = false;
-			}
-		}
-		else if ( iType == TEX_TYPE_RGBA )
-		{
-			for (i=0 ; i<s ; i++)
-			{
-				p = data[i];
-				pb = (unsigned char *)&trans[i];
-				pb[0] = pPal[p * 3 + 0];
-				pb[1] = pPal[p * 3 + 1];
-				pb[2] = pPal[p * 3 + 2];
-				pb[3] = p;
-				noalpha = false;
-			}
-		}
-		else if ( iType == TEX_TYPE_ALPHA )
-		{
-			for (i=0 ; i<s ; i++)
-			{
-				p = data[i];
-				pb = (unsigned char *)&trans[i];
-
-				if (p == 255)
-				{
-					noalpha = false;
-					pb[0] = 0;
-					pb[1] = 0;
-					pb[2] = 0;
-					pb[3] = 0;
-				}
-				else
-				{
-					pb[0] = pPal[p * 3 + 0];
-					pb[1] = pPal[p * 3 + 1];
-					pb[2] = pPal[p * 3 + 2];
-					pb[3] = 255;
-				}
-			}
-		}
-
-		if (noalpha)
-			iType = TEX_TYPE_NONE;
-	}
-	else if ( iType == TEX_TYPE_NONE )
-	{
-		if (s&3)
-			Sys_ErrorEx("GL_Upload16: s&3");
-
-		if ( gl_dither && gl_dither->value )
-		{
-			for (i=0 ; i<s ; i++)
-			{
-				unsigned char r, g, b, *ppix;
-
-				p = data[i];
-				pb = (unsigned char *)&trans[i];
-				ppix = &pPal[p * 3];
-				r = ppix[0] |= (ppix[0] >> 6); 
-				g = ppix[1] |= (ppix[1] >> 6);
-				b = ppix[2] |= (ppix[2] >> 6);
-
-				pb[0] = r;
-				pb[1] = g;
-				pb[2] = b;
-				pb[3] = 255;
-			}
-		}
-		else
-		{
-			for (i=0 ; i<s ; i++)
-			{
-				p = data[i];
-				pb = (unsigned char *)&trans[i];
-				pb[0] = pPal[p * 3 + 0];
-				pb[1] = pPal[p * 3 + 1];
-				pb[2] = pPal[p * 3 + 2];
-				pb[3] = 255;
-			}
-		}
-	}
-	else if ( iType == TEX_TYPE_LUM )
-	{
-		memcpy( trans, data, width * height );
-	}
-	else
-	{
-		gEngfuncs.Con_Printf( "Upload16:Bogus texture type!/n" );
-	}
-
-	GL_Upload32(trans, width, height, mipmap, ansio, wrap);
 }
 
 int GL_FindTexture(const char *identifier, GL_TEXTURETYPE textureType, int *width, int *height)
@@ -584,7 +442,7 @@ int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int wid
 	}
 	else
 	{
-		GL_Upload32((unsigned *)data, width, height, mipmap, ansio, iWrap);
+		GL_UploadRGBA8(data, width, height, mipmap, ansio, iWrap);
 	}
 
 	glBindTexture(iTextureTarget, 0);

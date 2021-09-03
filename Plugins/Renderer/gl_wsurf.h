@@ -396,7 +396,8 @@ void R_DrawWSurfVBOSolid(wsurf_vbo_t *modcache);
 void R_ShutdownWSurf(void);
 void R_Reload_f(void);
 void R_GenerateSceneUBO(void);
-
+void R_SaveWSurfProgramStates(void);
+void R_LoadWSurfProgramStates(void);
 void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
 
 #define WSURF_DIFFUSE_ENABLED				1

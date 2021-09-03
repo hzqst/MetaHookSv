@@ -28,4 +28,4 @@ bool R_ShouldCastShadow(cl_entity_t *ent);
 bool R_ShouldRenderShadowScene(int level);
 void R_RenderShadowMap(void);
 void R_InitShadow(void);
-void R_FreeShadow(void);
+void R_ShutdownShadow(void);

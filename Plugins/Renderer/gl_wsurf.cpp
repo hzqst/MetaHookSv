@@ -67,6 +67,116 @@ void R_ClearWSurfVBOCache(void)
 	g_WSurfVBOCache.clear();
 }
 
+const program_state_name_t s_WSurfProgramStateName[] = {
+{ WSURF_DIFFUSE_ENABLED				,"WSURF_DIFFUSE_ENABLED"},
+{ WSURF_LIGHTMAP_ENABLED			,"WSURF_LIGHTMAP_ENABLED"},
+{ WSURF_DETAILTEXTURE_ENABLED		,"WSURF_DETAILTEXTURE_ENABLED"},
+{ WSURF_NORMALTEXTURE_ENABLED		,"WSURF_NORMALTEXTURE_ENABLED"},
+{ WSURF_PARALLAXTEXTURE_ENABLED		,"WSURF_PARALLAXTEXTURE_ENABLED"},
+{ WSURF_SPECULARTEXTURE_ENABLED		,"WSURF_SPECULARTEXTURE_ENABLED"},
+{ WSURF_LINEAR_FOG_ENABLED			,"WSURF_LINEAR_FOG_ENABLED"},
+{ WSURF_GBUFFER_ENABLED				,"WSURF_GBUFFER_ENABLED"},
+{ WSURF_TRANSPARENT_ENABLED			,"WSURF_TRANSPARENT_ENABLED"},
+{ WSURF_SHADOW_CASTER_ENABLED		,"WSURF_SHADOW_CASTER_ENABLED"},
+{ WSURF_SHADOWMAP_ENABLED			,"WSURF_SHADOWMAP_ENABLED"},
+{ WSURF_SHADOWMAP_HIGH_ENABLED		,"WSURF_SHADOWMAP_HIGH_ENABLED"},
+{ WSURF_SHADOWMAP_MEDIUM_ENABLED	,"WSURF_SHADOWMAP_MEDIUM_ENABLED"},
+{ WSURF_SHADOWMAP_LOW_ENABLED		,"WSURF_SHADOWMAP_LOW_ENABLED"},
+{ WSURF_BINDLESS_ENABLED			,"WSURF_BINDLESS_ENABLED"},
+{ WSURF_SKYBOX_ENABLED				,"WSURF_SKYBOX_ENABLED"},
+{ WSURF_DECAL_ENABLED				,"WSURF_DECAL_ENABLED"},
+{ WSURF_CLIP_ENABLED				,"WSURF_CLIP_ENABLED"},
+{ WSURF_OIT_ALPHA_BLEND_ENABLED		,"WSURF_OIT_ALPHA_BLEND_ENABLED"},
+{ WSURF_OIT_ADDITIVE_BLEND_ENABLED	,"WSURF_OIT_ADDITIVE_BLEND_ENABLED"},
+};
+
+void R_SaveWSurfProgramStates(void)
+{
+	std::stringstream ss;
+	for (auto &p : g_WSurfProgramTable)
+	{
+		if (p.first == 0)
+		{
+			ss << "NONE";
+		}
+		else
+		{
+			for (int i = 0; i < _ARRAYSIZE(s_WSurfProgramStateName); ++i)
+			{
+				if (p.first & s_WSurfProgramStateName[i].state)
+				{
+					ss << s_WSurfProgramStateName[i].name << " ";
+				}
+			}
+		}
+		ss << "\n";
+	}
+
+	auto FileHandle = g_pFileSystem->Open("renderer/shader/wsurf_cache.txt", "wt");
+	if (FileHandle)
+	{
+		auto str = ss.str();
+		g_pFileSystem->Write(str.data(), str.length(), FileHandle);
+		g_pFileSystem->Close(FileHandle);
+	}
+}
+
+void R_LoadWSurfProgramStates(void)
+{
+	auto FileHandle = g_pFileSystem->Open("renderer/shader/wsurf_cache.txt", "rt");
+	if (FileHandle)
+	{
+		char szReadLine[4096];
+		while (!g_pFileSystem->EndOfFile(FileHandle))
+		{
+			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
+			szReadLine[sizeof(szReadLine) - 1] = 0;
+
+			int ProgramState = -1;
+			bool quoted = false;
+			char token[256];
+			char *p = szReadLine;
+			while (1)
+			{
+				p = g_pFileSystem->ParseFile(p, token, &quoted);
+				if (token[0])
+				{
+					if (!strcmp(token, "NONE"))
+					{
+						ProgramState = 0;
+						break;
+					}
+					else
+					{
+						for (int i = 0; i < _ARRAYSIZE(s_WSurfProgramStateName); ++i)
+						{
+							if (!strcmp(token, s_WSurfProgramStateName[i].name))
+							{
+								if(ProgramState == -1)
+									ProgramState = 0;
+								ProgramState |= s_WSurfProgramStateName[i].state;
+							}
+						}
+					}
+				}
+				else
+				{
+					break;
+				}
+
+				if (!p)
+					break;
+			}
+
+			if(ProgramState != -1)
+				R_UseWSurfProgram(ProgramState, NULL);
+		}
+		g_pFileSystem->Close(FileHandle);
+	}
+
+	GL_UseProgram(0);
+}
+
 void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 {
 	wsurf_program_t prog = { 0 };
@@ -1696,12 +1806,12 @@ void R_InitWSurf(void)
 	r_wsurf.bParallaxTexture = false;
 	r_wsurf.iNumLightmapTextures = 0;
 	r_wsurf.iLightmapTextureArray = 0;
-
-	R_ClearBSPEntities();
 	
 	r_wsurf_parallax_scale = gEngfuncs.pfnRegisterVariable("r_wsurf_parallax_scale", "-0.02", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_sky_occlusion = gEngfuncs.pfnRegisterVariable("r_wsurf_sky_occlusion", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_zprepass = gEngfuncs.pfnRegisterVariable("r_wsurf_zprepass", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	R_ClearBSPEntities();
 }
 
 void R_ShutdownWSurf(void)

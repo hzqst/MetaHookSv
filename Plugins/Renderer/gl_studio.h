@@ -145,7 +145,8 @@ void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr);
 void R_StudioReloadVBOCache(void);
 void R_ShutdownStudio(void);
 void R_InitStudio(void);
-
+void R_SaveStudioProgramStates(void);
+void R_LoadStudioProgramStates(void);
 void R_GLStudioDrawPoints(void);
 studiohdr_t *R_LoadTextures(model_t *psubm);
 void studioapi_RestoreRenderer(void);

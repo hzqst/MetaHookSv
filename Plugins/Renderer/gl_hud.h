@@ -165,6 +165,8 @@ void GL_BlitFrameBufferToFrameBufferColorDepth(FBO_Container_t *src, FBO_Contain
 void R_DrawHUDQuad(int w, int h);
 void R_DrawHUDQuad_Texture(int tex, int w, int h);
 void R_BlitGBufferToFrameBuffer(FBO_Container_t *fbo);
+void R_ShutdownPostProcess(void);
+void R_InitPostProcess(void);
 
 #define HUD_DEBUG_TEXARRAY 1
 

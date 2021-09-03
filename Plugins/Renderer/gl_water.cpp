@@ -94,7 +94,106 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 	}
 }
 
-void R_FreeWater(void)
+const program_state_name_t s_WaterProgramStateName[] = {
+{ WATER_LEGACY_ENABLED					, "WATER_LEGACY_ENABLED"			 },
+{ WATER_UNDERWATER_ENABLED				, "WATER_UNDERWATER_ENABLED"		 },
+{ WATER_GBUFFER_ENABLED					, "WATER_GBUFFER_ENABLED"			 },
+{ WATER_DEPTH_ENABLED					, "WATER_DEPTH_ENABLED"				 },
+{ WATER_REFRACT_ENABLED					, "WATER_REFRACT_ENABLED"			 },
+{ WATER_LINEAR_FOG_ENABLED				, "WATER_LINEAR_FOG_ENABLED"		 },
+{ WATER_BINDLESS_ENABLED				, "WATER_BINDLESS_ENABLED"			 },
+{ WATER_OIT_ALPHA_BLEND_ENABLED			, "WATER_OIT_ALPHA_BLEND_ENABLED"	 },
+{ WATER_OIT_ADDITIVE_BLEND_ENABLED		, "WATER_OIT_ADDITIVE_BLEND_ENABLED" },
+};
+
+void R_SaveWaterProgramStates(void)
+{
+	std::stringstream ss;
+	for (auto &p : g_WaterProgramTable)
+	{
+		if (p.first == 0)
+		{
+			ss << "NONE";
+		}
+		else
+		{
+			for (int i = 0; i < _ARRAYSIZE(s_WaterProgramStateName); ++i)
+			{
+				if (p.first & s_WaterProgramStateName[i].state)
+				{
+					ss << s_WaterProgramStateName[i].name << " ";
+				}
+			}
+		}
+		ss << "\n";
+	}
+
+	auto FileHandle = g_pFileSystem->Open("renderer/shader/water_cache.txt", "wt");
+	if (FileHandle)
+	{
+		auto str = ss.str();
+		g_pFileSystem->Write(str.data(), str.length(), FileHandle);
+		g_pFileSystem->Close(FileHandle);
+	}
+}
+
+void R_LoadWaterProgramStates(void)
+{
+	auto FileHandle = g_pFileSystem->Open("renderer/shader/water_cache.txt", "rt");
+	if (FileHandle)
+	{
+		char szReadLine[4096];
+		while (!g_pFileSystem->EndOfFile(FileHandle))
+		{
+			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
+			szReadLine[sizeof(szReadLine) - 1] = 0;
+
+			int ProgramState = -1;
+			bool quoted = false;
+			char token[256];
+			char *p = szReadLine;
+			while (1)
+			{
+				p = g_pFileSystem->ParseFile(p, token, &quoted);
+				if (token[0])
+				{
+					if (!strcmp(token, "NONE"))
+					{
+						ProgramState = 0;
+						break;
+					}
+					else
+					{
+						for (int i = 0; i < _ARRAYSIZE(s_WaterProgramStateName); ++i)
+						{
+							if (!strcmp(token, s_WaterProgramStateName[i].name))
+							{
+								if (ProgramState == -1)
+									ProgramState = 0;
+								ProgramState |= s_WaterProgramStateName[i].state;
+							}
+						}
+					}
+				}
+				else
+				{
+					break;
+				}
+
+				if (!p)
+					break;
+			}
+
+			if (ProgramState != -1)
+				R_UseWaterProgram(ProgramState, NULL);
+		}
+		g_pFileSystem->Close(FileHandle);
+	}
+
+	GL_UseProgram(0);
+}
+
+void R_ShutdownWater(void)
 {
 	g_WaterProgramTable.clear();
 }

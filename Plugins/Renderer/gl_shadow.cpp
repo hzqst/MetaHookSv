@@ -28,7 +28,7 @@ MapConVar *r_shadow_medium_scale = NULL;
 MapConVar *r_shadow_low_distance = NULL;
 MapConVar *r_shadow_low_scale = NULL;
 
-void R_FreeShadow(void)
+void R_ShutdownShadow(void)
 {
 	if (shadow_texture_depth)
 	{

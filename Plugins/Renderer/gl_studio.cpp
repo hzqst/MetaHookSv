@@ -435,6 +435,115 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 	}
 }
 
+const program_state_name_t s_StudioProgramStateName[] = {
+{ STUDIO_GBUFFER_ENABLED				,"STUDIO_GBUFFER_ENABLED"					},
+{ STUDIO_TRANSPARENT_ENABLED			,"STUDIO_TRANSPARENT_ENABLED"				},
+{ STUDIO_TRANSADDITIVE_ENABLED			,"STUDIO_TRANSADDITIVE_ENABLED"				},
+{ STUDIO_LINEAR_FOG_ENABLED				,"STUDIO_LINEAR_FOG_ENABLED"				},
+{ STUDIO_SHADOW_CASTER_ENABLED			,"STUDIO_SHADOW_CASTER_ENABLED"				},
+{ STUDIO_LEGACY_BONE_ENABLED			,"STUDIO_LEGACY_BONE_ENABLED"				},
+{ STUDIO_GLOW_SHELL_ENABLED				,"STUDIO_GLOW_SHELL_ENABLED"				},
+{ STUDIO_OUTLINE_ENABLED				,"STUDIO_OUTLINE_ENABLED"					},
+{ STUDIO_CLIP_ENABLED					,"STUDIO_CLIP_ENABLED"						},
+{ STUDIO_BINDLESS_ENABLED				,"STUDIO_BINDLESS_ENABLED"					},
+{ STUDIO_OIT_ALPHA_BLEND_ENABLED		,"STUDIO_OIT_ALPHA_BLEND_ENABLED"			},
+{ STUDIO_OIT_ADDITIVE_BLEND_ENABLED		,"STUDIO_OIT_ADDITIVE_BLEND_ENABLED"		},
+
+{ STUDIO_NF_FLATSHADE					,"STUDIO_NF_FLATSHADE"		},
+{ STUDIO_NF_CHROME						,"STUDIO_NF_CHROME"			},
+{ STUDIO_NF_FULLBRIGHT					,"STUDIO_NF_FULLBRIGHT"		},
+{ STUDIO_NF_ADDITIVE					,"STUDIO_NF_ADDITIVE"		},
+{ STUDIO_NF_CELSHADE					,"STUDIO_NF_CELSHADE"		},
+{ STUDIO_NF_CELSHADE_FACE				,"STUDIO_NF_CELSHADE_FACE"	},
+};
+
+void R_SaveStudioProgramStates(void)
+{
+	std::stringstream ss;
+	for (auto &p : g_StudioProgramTable)
+	{
+		if (p.first == 0)
+		{
+			ss << "NONE";
+		}
+		else
+		{
+			for (int i = 0; i < _ARRAYSIZE(s_StudioProgramStateName); ++i)
+			{
+				if (p.first & s_StudioProgramStateName[i].state)
+				{
+					ss << s_StudioProgramStateName[i].name << " ";
+				}
+			}
+		}
+		ss << "\n";
+	}
+
+	auto FileHandle = g_pFileSystem->Open("renderer/shader/studio_cache.txt", "wt");
+	if (FileHandle)
+	{
+		auto str = ss.str();
+		g_pFileSystem->Write(str.data(), str.length(), FileHandle);
+		g_pFileSystem->Close(FileHandle);
+	}
+}
+
+void R_LoadStudioProgramStates(void)
+{
+	auto FileHandle = g_pFileSystem->Open("renderer/shader/studio_cache.txt", "rt");
+	if (FileHandle)
+	{
+		char szReadLine[4096];
+		while (!g_pFileSystem->EndOfFile(FileHandle))
+		{
+			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
+			szReadLine[sizeof(szReadLine) - 1] = 0;
+
+			int ProgramState = -1;
+			bool quoted = false;
+			char token[256];
+			char *p = szReadLine;
+			while (1)
+			{
+				p = g_pFileSystem->ParseFile(p, token, &quoted);
+				if (token[0])
+				{
+					if (!strcmp(token, "NONE"))
+					{
+						ProgramState = 0;
+						break;
+					}
+					else
+					{
+						for (int i = 0; i < _ARRAYSIZE(s_StudioProgramStateName); ++i)
+						{
+							if (!strcmp(token, s_StudioProgramStateName[i].name))
+							{
+								if (ProgramState == -1)
+									ProgramState = 0;
+								ProgramState |= s_StudioProgramStateName[i].state;
+							}
+						}
+					}
+				}
+				else
+				{
+					break;
+				}
+
+				if (!p)
+					break;
+			}
+
+			if (ProgramState != -1)
+				R_UseStudioProgram(ProgramState, NULL);
+		}
+		g_pFileSystem->Close(FileHandle);
+	}
+
+	GL_UseProgram(0);
+}
+
 void R_ShutdownStudio(void)
 {
 	g_StudioProgramTable.clear();

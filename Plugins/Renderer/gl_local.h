@@ -325,7 +325,7 @@ void GL_FrameBufferColorTextureOITBlend(FBO_Container_t *s);
 int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, qboolean ansio);
 int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio);
 
-void GL_UploadDXT(byte *data, int width, int height, qboolean mipmap, qboolean ansio);
+void GL_UploadDXT(byte *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap);
 int LoadDDS(const char *filename, byte *buf, int bufSize, int *width, int *height);
 int LoadImageGeneric(const char *filename, byte *buf, int bufSize, int *width, int *height);
 int SaveImageGeneric(const char *filename, int width, int height, byte *data);
@@ -333,6 +333,10 @@ int SaveImageGeneric(const char *filename, int width, int height, byte *data);
 cubemap_t *R_FindCubemap(float *origin);
 void R_LoadCubemap(cubemap_t *cubemap);
 void R_BuildCubemaps_f(void);
+
+void R_SaveProgramStates_f(void);
+void R_LoadProgramStates_f(void);
+
 void COM_FileBase(const char *in, char *out);
 
 //framebuffer
@@ -358,9 +362,6 @@ void GL_End2D(void);
 
 void GL_BeginFullScreenQuad(bool enableDepthTest);
 void GL_EndFullScreenQuad(void);
-
-//for hud or post-processing
-void R_InitGLHUD(void);
 
 void GL_Texturemode_f(void);
 void GL_Texturemode_cb(cvar_t *);

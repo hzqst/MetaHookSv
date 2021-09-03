@@ -40,7 +40,8 @@ void IPluginsV3::Shutdown(void)
 
 void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
-	int iVideoMode = g_pMetaHookAPI->GetVideoMode(NULL, NULL, NULL, NULL);
+	int bbp = 0;
+	int iVideoMode = g_pMetaHookAPI->GetVideoMode(NULL, NULL, &bbp, NULL);
 
 	if (iVideoMode == 2)
 	{
@@ -49,6 +50,10 @@ void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	if (iVideoMode == 0)
 	{
 		Sys_ErrorEx("Software mode is not supported.");
+	}
+	if (bbp == 16)
+	{
+		Sys_ErrorEx("16bit mode is not supported.");
 	}
 
 	g_pFileSystem = g_pInterface->FileSystem;	
@@ -75,7 +80,8 @@ void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 {
-	int iVideoMode = g_pMetaHookAPI->GetVideoMode(&glwidth, &glheight, NULL, NULL);
+	int bbp = 0;
+	int iVideoMode = g_pMetaHookAPI->GetVideoMode(&glwidth, &glheight, &bbp, NULL);
 
 	if (iVideoMode == 2)
 	{
@@ -84,6 +90,10 @@ void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 	if (iVideoMode == 0)
 	{
 		Sys_ErrorEx("Software mode is not supported.");
+	}
+	if (bbp == 16)
+	{
+		Sys_ErrorEx("16bit mode is not supported.");
 	}
 
 	g_dwClientBase = (PVOID)GetModuleHandleA("client.dll");
@@ -101,6 +111,7 @@ void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 	pExportFunc->HUD_DrawNormalTriangles = HUD_DrawNormalTriangles;
 	pExportFunc->HUD_DrawTransparentTriangles = HUD_DrawTransparentTriangles;
+	pExportFunc->HUD_Shutdown = HUD_Shutdown;
 }
 
 void IPluginsV3::ExitGame(int iResult)

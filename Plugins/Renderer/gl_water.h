@@ -141,10 +141,12 @@ bool R_IsAboveWater(water_vbo_t *water);
 
 water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction);
 void R_InitWater(void);
-void R_FreeWater(void);
+void R_ShutdownWater(void);
 void R_RenderWaterView(void);
 void R_NewMapWater(void);
 void R_UseWaterProgram(int state, water_program_t *progOutput);
+void R_SaveWaterProgramStates(void);
+void R_LoadWaterProgramStates(void);
 void R_DrawWaters(void);
 
 #define WATER_LEGACY_ENABLED				1

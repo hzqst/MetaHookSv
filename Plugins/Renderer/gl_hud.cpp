@@ -111,57 +111,7 @@ void R_UseHudDebugProgram(int state, hud_debug_program_t *progOutput)
 	}
 }
 
-#if 0
-
-void R_GenerateGaussianWeights(float *weights)
-{
-	int size = MAX_GAUSSIAN_SAMPLES * 2 + 1;
-
-	float x;
-	float s = floor(MAX_GAUSSIAN_SAMPLES / 4.0f);
-
-	float sum = 0.0f;
-	for (int i = 0; i < size; i++)
-	{
-		x = (float)(i - MAX_GAUSSIAN_SAMPLES);
-
-		// True Gaussian
-		weights[i] = expf(-x * x / (2.0f*s*s)) / (s*sqrtf(2.0f*M_PI));
-
-		// This sum of exps is not really a separable kernel but produces a very interesting star-shaped effect
-		//weights[i] = expf( -0.0625f * x * x ) + 2 * expf( -0.25f * x * x ) + 4 * expf( - x * x ) + 8 * expf( - 4.0f * x * x ) + 16 * expf( - 16.0f * x * x ) ;
-		sum += weights[i];
-	}
-
-	for (int i = 0; i < size; i++)
-		weights[i] /= sum;
-}
-
-void R_CaculateGaussianBilinear(float *coordOffset, float *gaussWeight)
-{
-	//  Store all the intermediate offsets & weights, then compute the bilinear
-	//  Taps in a second pass
-	
-	float tmpWeightArray[MAX_GAUSSIAN_SAMPLES * 2 + 1];
-	R_GenerateGaussianWeights(tmpWeightArray);
-
-	// Bilinear filtering taps 
-	// Ordering is left to right.
-	
-	for (int i = 0; i < MAX_GAUSSIAN_SAMPLES; i++)
-	{
-		auto sScale = tmpWeightArray[i * 2 + 0] + tmpWeightArray[i * 2 + 1];
-		auto sFrac = tmpWeightArray[i * 2 + 1] / sScale;
-
-		coordOffset[i] = ((2.0f*i - MAX_GAUSSIAN_SAMPLES) + sFrac);
-		gaussWeight[i] = sScale;
-	}
-}
-
-char *UTIL_VarArgs(char *format, ...);
-#endif
-
-void R_InitGLHUD(void)
+void R_InitPostProcess(void)
 {
 	float numDir = 8; // keep in sync to glsl
 
@@ -314,6 +264,11 @@ void R_InitGLHUD(void)
 	r_ssao_blur_sharpness = R_RegisterMapCvar("r_ssao_blur_sharpness", "1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	last_luminance = 0;
+}
+
+void R_ShutdownPostProcess(void)
+{
+
 }
 
 void R_DrawHUDQuad(int w, int h)

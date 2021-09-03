@@ -19,6 +19,12 @@ extern word **host_basepal;
 
 void R_UseSpriteProgram(int state, sprite_program_t *progOutput);
 void R_UseLegacySpriteProgram(int state, legacysprite_program_t *progOutput);
+void R_InitSprite(void);
+void R_ShutdownSprite(void);
+void R_SaveLegacySpriteProgramStates(void);
+void R_LoadLegacySpriteProgramStates(void);
+void R_LoadSpriteProgramStates(void);
+void R_SaveSpriteProgramStates(void);
 
 #define SPRITE_BINDLESS_ENABLED				1
 #define SPRITE_GBUFFER_ENABLED				2

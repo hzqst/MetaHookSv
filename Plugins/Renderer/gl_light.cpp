@@ -107,6 +107,101 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 	}
 }
 
+const program_state_name_t s_DFinalProgramStateName[] = {
+{ DFINAL_LINEAR_FOG_ENABLED				,"DFINAL_LINEAR_FOG_ENABLED"			},	
+{ DFINAL_SSR_ENABLED					,"DFINAL_SSR_ENABLED"					},
+{ DFINAL_SSR_ADAPTIVE_STEP_ENABLED		,"DFINAL_SSR_ADAPTIVE_STEP_ENABLED"		},
+{ DFINAL_SSR_EXPONENTIAL_STEP_ENABLED	,"DFINAL_SSR_EXPONENTIAL_STEP_ENABLED"	},
+{ DFINAL_SSR_BINARY_SEARCH_ENABLED		,"DFINAL_SSR_BINARY_SEARCH_ENABLED"		},
+};
+
+void R_SaveDFinalProgramStates(void)
+{
+	std::stringstream ss;
+	for (auto &p : g_DFinalProgramTable)
+	{
+		if (p.first == 0)
+		{
+			ss << "NONE";
+		}
+		else
+		{
+			for (int i = 0; i < _ARRAYSIZE(s_DFinalProgramStateName); ++i)
+			{
+				if (p.first & s_DFinalProgramStateName[i].state)
+				{
+					ss << s_DFinalProgramStateName[i].name << " ";
+				}
+			}
+		}
+		ss << "\n";
+	}
+
+	auto FileHandle = g_pFileSystem->Open("renderer/shader/dfinal_cache.txt", "wt");
+	if (FileHandle)
+	{
+		auto str = ss.str();
+		g_pFileSystem->Write(str.data(), str.length(), FileHandle);
+		g_pFileSystem->Close(FileHandle);
+	}
+}
+
+void R_LoadDFinalProgramStates(void)
+{
+	auto FileHandle = g_pFileSystem->Open("renderer/shader/dfinal_cache.txt", "rt");
+	if (FileHandle)
+	{
+		char szReadLine[4096];
+		while (!g_pFileSystem->EndOfFile(FileHandle))
+		{
+			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
+			szReadLine[sizeof(szReadLine) - 1] = 0;
+
+			int ProgramState = -1;
+			bool quoted = false;
+			char token[256];
+			char *p = szReadLine;
+			while (1)
+			{
+				p = g_pFileSystem->ParseFile(p, token, &quoted);
+				if (token[0])
+				{
+					if (!strcmp(token, "NONE"))
+					{
+						ProgramState = 0;
+						break;
+					}
+					else
+					{
+						for (int i = 0; i < _ARRAYSIZE(s_DFinalProgramStateName); ++i)
+						{
+							if (!strcmp(token, s_DFinalProgramStateName[i].name))
+							{
+								if (ProgramState == -1)
+									ProgramState = 0;
+								ProgramState |= s_DFinalProgramStateName[i].state;
+							}
+						}
+					}
+				}
+				else
+				{
+					break;
+				}
+
+				if (!p)
+					break;
+			}
+
+			if (ProgramState != -1)
+				R_UseDFinalProgram(ProgramState, NULL);
+		}
+		g_pFileSystem->Close(FileHandle);
+	}
+
+	GL_UseProgram(0);
+}
+
 std::unordered_map<int, dlight_program_t> g_DLightProgramTable;
 
 void R_UseDLightProgram(int state, dlight_program_t *progOutput)
@@ -164,19 +259,121 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 	}
 }
 
+const program_state_name_t s_DLightProgramStateName[] = {
+{ DLIGHT_SPOT_ENABLED		,"DLIGHT_SPOT_ENABLED"	 },
+{ DLIGHT_POINT_ENABLED		,"DLIGHT_POINT_ENABLED"	 },
+{ DLIGHT_VOLUME_ENABLED		,"DLIGHT_VOLUME_ENABLED" },
+};
+
+void R_SaveDLightProgramStates(void)
+{
+	std::stringstream ss;
+	for (auto &p : g_DLightProgramTable)
+	{
+		if (p.first == 0)
+		{
+			ss << "NONE";
+		}
+		else
+		{
+			for (int i = 0; i < _ARRAYSIZE(s_DLightProgramStateName); ++i)
+			{
+				if (p.first & s_DLightProgramStateName[i].state)
+				{
+					ss << s_DLightProgramStateName[i].name << " ";
+				}
+			}
+		}
+		ss << "\n";
+	}
+
+	auto FileHandle = g_pFileSystem->Open("renderer/shader/dlight_cache.txt", "wt");
+	if (FileHandle)
+	{
+		auto str = ss.str();
+		g_pFileSystem->Write(str.data(), str.length(), FileHandle);
+		g_pFileSystem->Close(FileHandle);
+	}
+}
+
+void R_LoadDLightProgramStates(void)
+{
+	auto FileHandle = g_pFileSystem->Open("renderer/shader/dlight_cache.txt", "rt");
+	if (FileHandle)
+	{
+		char szReadLine[4096];
+		while (!g_pFileSystem->EndOfFile(FileHandle))
+		{
+			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
+			szReadLine[sizeof(szReadLine) - 1] = 0;
+
+			int ProgramState = -1;
+			bool quoted = false;
+			char token[256];
+			char *p = szReadLine;
+			while (1)
+			{
+				p = g_pFileSystem->ParseFile(p, token, &quoted);
+				if (token[0])
+				{
+					if (!strcmp(token, "NONE"))
+					{
+						ProgramState = 0;
+						break;
+					}
+					else
+					{
+						for (int i = 0; i < _ARRAYSIZE(s_DLightProgramStateName); ++i)
+						{
+							if (!strcmp(token, s_DLightProgramStateName[i].name))
+							{
+								if (ProgramState == -1)
+									ProgramState = 0;
+								ProgramState |= s_DLightProgramStateName[i].state;
+							}
+						}
+					}
+				}
+				else
+				{
+					break;
+				}
+
+				if (!p)
+					break;
+			}
+
+			if (ProgramState != -1)
+				R_UseDLightProgram(ProgramState, NULL);
+		}
+		g_pFileSystem->Close(FileHandle);
+	}
+
+	GL_UseProgram(0);
+}
+
 void R_ShutdownLight(void)
 {
 	g_DFinalProgramTable.clear();
 	g_DLightProgramTable.clear();
 
-	if(r_sphere_vbo)
+	if (r_sphere_vbo)
+	{
 		GL_DeleteBuffer(r_sphere_vbo);
+		r_sphere_vbo = NULL;
+	}
 
 	if (r_sphere_ebo)
+	{
 		GL_DeleteBuffer(r_sphere_ebo);
+		r_sphere_ebo = NULL;
+	}
 
 	if (r_cone_vbo)
+	{
 		GL_DeleteBuffer(r_cone_vbo);
+		r_cone_vbo = NULL;
+	}
 }
 
 void R_InitLight(void)

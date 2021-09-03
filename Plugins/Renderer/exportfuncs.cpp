@@ -980,6 +980,13 @@ void HUD_Frame(double time)
 	return gExportfuncs.HUD_Frame(time);
 }
 
+void HUD_Shutdown(void)
+{
+	gExportfuncs.HUD_Shutdown();
+
+	R_SaveProgramStates_f();
+}
+
 //fuck Valve called glEnableClientState(GL_VERTEX_ARRAY) and forgot to disable it.
 
 void __fastcall enginesurface_drawFlushText(void *pthis, int dummy)

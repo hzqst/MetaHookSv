@@ -66,6 +66,10 @@ bool R_BeginRenderGBuffer(void);
 void R_EndRenderGBuffer(void);
 void R_SetGBufferMask(int mask);
 void R_SetGBufferBlend(int blendsrc, int blenddst);
+void R_SaveDLightProgramStates(void);
+void R_SaveDFinalProgramStates(void);
+void R_LoadDLightProgramStates(void);
+void R_LoadDFinalProgramStates(void);
 
 #define GBUFFER_INDEX_DIFFUSE		0
 #define GBUFFER_INDEX_LIGHTMAP		1

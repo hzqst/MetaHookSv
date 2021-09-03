@@ -90,6 +90,109 @@ void R_UseSpriteProgram(int state, sprite_program_t *progOutput)
 	}
 }
 
+const program_state_name_t s_SpriteProgramStateName[] = {
+{ SPRITE_BINDLESS_ENABLED			  ,"SPRITE_BINDLESS_ENABLED"			},
+{ SPRITE_GBUFFER_ENABLED			  ,"SPRITE_GBUFFER_ENABLED"				},
+{ SPRITE_OIT_ALPHA_BLEND_ENABLED	  ,"SPRITE_OIT_ALPHA_BLEND_ENABLED"		},
+{ SPRITE_OIT_ADDITIVE_BLEND_ENABLED	  ,"SPRITE_OIT_ADDITIVE_BLEND_ENABLED"	},
+{ SPRITE_ALPHA_BLEND_ENABLED		  ,"SPRITE_ALPHA_BLEND_ENABLED"			},
+{ SPRITE_ADDITIVE_BLEND_ENABLED		  ,"SPRITE_ADDITIVE_BLEND_ENABLED"		},
+{ SPRITE_LINEAR_FOG_ENABLED			  ,"SPRITE_LINEAR_FOG_ENABLED"			},
+{ SPRITE_CLIP_ENABLED				  ,"SPRITE_CLIP_ENABLED"				},
+{ SPRITE_PARALLEL_UPRIGHT_ENABLED	  ,"SPRITE_PARALLEL_UPRIGHT_ENABLED"	},
+{ SPRITE_FACING_UPRIGHT_ENABLED		  ,"SPRITE_FACING_UPRIGHT_ENABLED"		},
+{ SPRITE_PARALLEL_ORIENTED_ENABLED	  ,"SPRITE_PARALLEL_ORIENTED_ENABLED"	},
+{ SPRITE_PARALLEL_ENABLED			  ,"SPRITE_PARALLEL_ENABLED"			},
+{ SPRITE_ORIENTED_ENABLED			  ,"SPRITE_ORIENTED_ENABLED"			},
+};
+
+void R_SaveSpriteProgramStates(void)
+{
+	std::stringstream ss;
+	for (auto &p : g_SpriteProgramTable)
+	{
+		if (p.first == 0)
+		{
+			ss << "NONE";
+		}
+		else
+		{
+			for (int i = 0; i < _ARRAYSIZE(s_SpriteProgramStateName); ++i)
+			{
+				if (p.first & s_SpriteProgramStateName[i].state)
+				{
+					ss << s_SpriteProgramStateName[i].name << " ";
+				}
+			}
+		}
+		ss << "\n";
+	}
+
+	auto FileHandle = g_pFileSystem->Open("renderer/shader/sprite_cache.txt", "wt");
+	if (FileHandle)
+	{
+		auto str = ss.str();
+		g_pFileSystem->Write(str.data(), str.length(), FileHandle);
+		g_pFileSystem->Close(FileHandle);
+	}
+}
+
+void R_LoadSpriteProgramStates(void)
+{
+	auto FileHandle = g_pFileSystem->Open("renderer/shader/sprite_cache.txt", "rt");
+	if (FileHandle)
+	{
+		char szReadLine[4096];
+		while (!g_pFileSystem->EndOfFile(FileHandle))
+		{
+			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
+			szReadLine[sizeof(szReadLine) - 1] = 0;
+
+			int ProgramState = -1;
+			bool quoted = false;
+			char token[256];
+			char *p = szReadLine;
+			while (1)
+			{
+				p = g_pFileSystem->ParseFile(p, token, &quoted);
+				if (token[0])
+				{
+					if (!strcmp(token, "NONE"))
+					{
+						ProgramState = 0;
+						break;
+					}
+					else
+					{
+						for (int i = 0; i < _ARRAYSIZE(s_SpriteProgramStateName); ++i)
+						{
+							if (!strcmp(token, s_SpriteProgramStateName[i].name))
+							{
+								if (ProgramState == -1)
+									ProgramState = 0;
+								ProgramState |= s_SpriteProgramStateName[i].state;
+							}
+						}
+					}
+				}
+				else
+				{
+					break;
+				}
+
+				if (!p)
+					break;
+			}
+
+			if (ProgramState != -1)
+				R_UseSpriteProgram(ProgramState, NULL);
+		}
+		g_pFileSystem->Close(FileHandle);
+	}
+
+	GL_UseProgram(0);
+}
+
 void R_UseLegacySpriteProgram(int state, legacysprite_program_t *progOutput)
 {
 	legacysprite_program_t prog = { 0 };
@@ -143,6 +246,103 @@ void R_UseLegacySpriteProgram(int state, legacysprite_program_t *progOutput)
 	{
 		Sys_ErrorEx("R_UseLegacySpriteProgram: Failed to load program!");
 	}
+}
+
+void R_SaveLegacySpriteProgramStates(void)
+{
+	std::stringstream ss;
+	for (auto &p : g_LegacySpriteProgramTable)
+	{
+		if (p.first == 0)
+		{
+			ss << "NONE";
+		}
+		else
+		{
+			for (int i = 0; i < _ARRAYSIZE(s_SpriteProgramStateName); ++i)
+			{
+				if (p.first & s_SpriteProgramStateName[i].state)
+				{
+					ss << s_SpriteProgramStateName[i].name << " ";
+				}
+			}
+		}
+		ss << "\n";
+	}
+
+	auto FileHandle = g_pFileSystem->Open("renderer/shader/legacysprite_cache.txt", "wt");
+	if (FileHandle)
+	{
+		auto str = ss.str();
+		g_pFileSystem->Write(str.data(), str.length(), FileHandle);
+		g_pFileSystem->Close(FileHandle);
+	}
+}
+
+void R_LoadLegacySpriteProgramStates(void)
+{
+	auto FileHandle = g_pFileSystem->Open("renderer/shader/legacysprite_cache.txt", "rt");
+	if (FileHandle)
+	{
+		char szReadLine[4096];
+		while (!g_pFileSystem->EndOfFile(FileHandle))
+		{
+			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
+			szReadLine[sizeof(szReadLine) - 1] = 0;
+
+			int ProgramState = -1;
+			bool quoted = false;
+			char token[256];
+			char *p = szReadLine;
+			while (1)
+			{
+				p = g_pFileSystem->ParseFile(p, token, &quoted);
+				if (token[0])
+				{
+					if (!strcmp(token, "NONE"))
+					{
+						ProgramState = 0;
+						break;
+					}
+					else
+					{
+						for (int i = 0; i < _ARRAYSIZE(s_SpriteProgramStateName); ++i)
+						{
+							if (!strcmp(token, s_SpriteProgramStateName[i].name))
+							{
+								if (ProgramState == -1)
+									ProgramState = 0;
+								ProgramState |= s_SpriteProgramStateName[i].state;
+							}
+						}
+					}
+				}
+				else
+				{
+					break;
+				}
+
+				if (!p)
+					break;
+			}
+
+			if (ProgramState != -1)
+				R_UseLegacySpriteProgram(ProgramState, NULL);
+		}
+		g_pFileSystem->Close(FileHandle);
+	}
+
+	GL_UseProgram(0);
+}
+
+void R_InitSprite(void)
+{
+
+}
+
+void R_ShutdownSprite(void)
+{
+
 }
 
 void R_SpriteColor(colorVec *pColor, cl_entity_t *pEntity, int alpha)

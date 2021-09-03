@@ -14,6 +14,12 @@ typedef struct glshader_s
 	std::vector<GLuint> shader_objects;
 }glshader_t;
 
+typedef struct program_state_name_s
+{
+	int state;
+	const char *name;
+}program_state_name_t;
+
 typedef void(*ExtraShaderStageCallback)(GLuint *objs, int *used);
 GLuint R_CompileShaderObject(int type, const char *code, const char *filename);
 GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfile, const char *fsfile, ExtraShaderStageCallback callback);

@@ -1729,26 +1729,36 @@ void R_InitCvars(void)
 
 	r_vertical_fov = gEngfuncs.pfnRegisterVariable("r_vertical_fov", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	gl_profile = gEngfuncs.pfnRegisterVariable("gl_profile", "0", FCVAR_CLIENTDLL );
+
+	gEngfuncs.pfnAddCommand("saveprogstate", R_SaveProgramStates_f);
+	gEngfuncs.pfnAddCommand("loadprogstate", R_LoadProgramStates_f);
 }
 
 void R_Init(void)
 {
 	R_InitCvars();
+
 	R_InitWater();
 	R_InitStudio();
 	R_InitShadow();
 	R_InitWSurf();
-	R_InitGLHUD();
 	R_InitLight();
+	R_InitSprite();
+	R_InitPostProcess();
+
+	R_LoadProgramStates_f();
 }
 
 void R_Shutdown(void)
 {
-	R_FreeShadow();
-	R_FreeWater();
-	R_ShutdownLight();
-	R_ShutdownWSurf();
+	R_ShutdownWater();
 	R_ShutdownStudio();
+	R_ShutdownShadow();
+	R_ShutdownWSurf();
+	R_ShutdownLight();
+	R_ShutdownSprite();
+	R_ShutdownPostProcess();
+
 	R_FreeMapCvars();
 }
 
@@ -2536,3 +2546,29 @@ void R_LoadCubemap(cubemap_t *cubemap)
 }
 
 #endif
+
+void R_SaveProgramStates_f(void)
+{
+	R_SaveWSurfProgramStates();
+	R_SaveWaterProgramStates();
+	R_SaveDLightProgramStates();
+	R_SaveDFinalProgramStates();
+	R_SaveStudioProgramStates();
+	R_SaveSpriteProgramStates();
+	R_SaveLegacySpriteProgramStates();
+
+	gEngfuncs.Con_Printf("Program states loaded.\n");
+}
+
+void R_LoadProgramStates_f(void)
+{
+	R_LoadWSurfProgramStates();
+	R_LoadWaterProgramStates();
+	R_LoadDLightProgramStates();
+	R_LoadDFinalProgramStates();
+	R_LoadStudioProgramStates();
+	R_LoadSpriteProgramStates();
+	R_LoadLegacySpriteProgramStates();
+
+	gEngfuncs.Con_Printf("Program states saved.\n");
+}

@@ -39,8 +39,16 @@ void main(void)
 	baseColor = TexGammaToLinear(baseColor);
 
 	vec4 lightmapColor = v_color;
-
+	lightmapColor.r = clamp(lightmapColor.r, 0.0, 1.0);
+	lightmapColor.g = clamp(lightmapColor.g, 0.0, 1.0);
+	lightmapColor.b = clamp(lightmapColor.b, 0.0, 1.0);
+	lightmapColor.a = clamp(lightmapColor.a, 0.0, 1.0);
+	
+#if defined(OIT_ADDITIVE_BLEND_ENABLED) || defined(ADDITIVE_BLEND_ENABLED)
+	
+#else
 	lightmapColor = GammaToLinear(lightmapColor);
+#endif
 
 	vec3 vNormal = normalize(v_normal.xyz);
 
