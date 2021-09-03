@@ -130,6 +130,19 @@ This plugin intercepts original snapshot command and replace it with ISteamScree
 
 ### HUDColor (third-party) (SvEngine only)
 
+ABCEnchance is a metabook plugin that provides experience improvement for Sven co-op.
+
+1. CSGO style health and ammo HUD
+2. Annular weapon menu
+3. Dynamic damage indicator 
+4. Dynamic crosshair
+5. Minimap which is rendered at real time
+6. Some useless blood efx
+
+https://github.com/DrAbcrealone/ABCEnchance
+
+### HUDColor (third-party) (SvEngine only)
+
 This plugin basically changes HUD colors in game.
 
 https://github.com/DrAbcrealone/HUDColor
