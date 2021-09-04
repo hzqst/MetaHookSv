@@ -83,7 +83,7 @@ You can check each sequence of animation from HLMV or https://github.com/danakt/
 
 ** The example line creates a rigidbody named "Head" at position of bone[15], with an offset of "-4.0" to the bone[6]. and the size of sphere rigidbody is 5.0 **
 
-** You can check bone information of studiomodel by setting "bv_debug" to 1 and check the game console for bone information.**
+** You can check bones by using [HLAM](https://github.com/SamVanheer/HL_Tools/wiki/Half-Life-Asset-Manager) or setting "bv_debug" to 1 and check the game console for bone information.**
 
 ** Make sure _ragdoll.txt is in the correct location if you got nothing in the console.**
 
