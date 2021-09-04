@@ -6,7 +6,7 @@
 
 1. Transform player model into ragdoll when player is dead or being caught by barnacle.
 
-2. Transform monster model into ragdoll when monster is dead. (Not supported yet)
+2. Transform monster model into ragdoll when monster is dead.
 
 ![](/img/6.png)
 
@@ -25,27 +25,29 @@
 
 bv_simrate 32 ~ 128 : How many times to perform simulation per persond ? higher simulation frequency get more accurate result, while eating more CPU resource. default : 64
 
-bv_scale : Scaling the size of world insize bullet-engine. default : 0.25, both too-large and too-small dynamic collision objects in bullet-engine world will be unstable.
+bv_scale : Scaling the size of world for bullet-engine. default : 0.25, Either too-large or too-small scale size will cause the physical simulation to be unstable.
 
-bv_debug 1 : Enable bullet-engine's debug-drawing. only ragdoll rigidbodies are drawn.
+bv_debug 1 : Enable debug-drawing. only ragdoll rigidbodies are drawn.
 
-bv_debug 2 : Enable bullet-engine's debug-drawing. both ragdoll, brush-entity rigidbodies are drawn.
+bv_debug 2 : Enable debug-drawing. both ragdoll, brush-entity rigidbodies are drawn.
 
-bv_debug 3 : Enable bullet-engine's debug-drawing. both ragdoll, world rigidbodies are drawn.
+bv_debug 3 : Enable debug-drawing. both ragdoll, world rigidbodies are drawn.
 
-bv_debug 4 : Enable bullet-engine's debug-drawing. both ragdoll rigidbodies and conetwist constraints are drawn.
+bv_debug 4 : Enable debug-drawing. both ragdoll rigidbodies and conetwist constraints are drawn.
 
-bv_debug 5 : Enable bullet-engine's debug-drawing. both ragdoll rigidbodies and hinge constraints are drawn.
+bv_debug 5 : Enable debug-drawing. both ragdoll rigidbodies and hinge constraints are drawn.
 
-bv_debug 6 : Enable bullet-engine's debug-drawing. both ragdoll rigidbodies and point constraints are drawn.
+bv_debug 6 : Enable debug-drawing. both ragdoll rigidbodies and point constraints are drawn.
 
-### How to make dead players being ragdoll
+### How to make ragdolls
 
 1. You have to create a file named `[model_name]_ragdoll.txt` at `\Sven Co-op\steamapps\common\Sven Co-op\svencoop(_addons, _download etc)\models\[model_name]\`, for example `\Sven Co-op\svencoop_addon\models\player\GFL_M14\GFL_M14_ragdoll.txt`. (The model is from https://gamebanana.com/mods/167065)
 
 2. The content of "[model_name]_ragdoll.txt" should follow the format :
 
 * [GFL_M14_ragdoll.txt](/hzqst/MetaHookSv/raw/main/Build/svencoop_addon/models/player/GFL_M14/GFL_M14_ragdoll.txt), model from (gamebanana)[https://gamebanana.com/mods/167065]
+
+* Monsters follow the same instruction.
 
 #### [DeathAnim]
 
@@ -81,7 +83,7 @@ You can check each sequence of animation from HLMV or https://github.com/danakt/
 
 ** The example line creates a rigidbody named "Head" at position of bone[15], with an offset of "-4.0" to the bone[6]. and the size of sphere rigidbody is 5.0 **
 
-** You can check bone information of studiomodel by setting "bv_debug" to 1 and check the game console for bone information.**
+** You can check bones by using [HLAM](https://github.com/SamVanheer/HL_Tools/wiki/Half-Life-Asset-Manager) or setting "bv_debug" to 1 and check the game console for bone information.**
 
 ** Make sure _ragdoll.txt is in the correct location if you got nothing in the console.**
 
@@ -154,7 +156,3 @@ You can check each sequence of animation from HLMV or https://github.com/danakt/
 ** This example line raise the Z axis limit up 3 units for "Pelvis" every 1 second in GoldSrc world. **
 
 ** Warning : there must be a rigidbody named "Pelvis" to get barnacle-ragdoll work correctly. **
-
-### How to make dead monsters being ragdoll
-
-Not supported yet
