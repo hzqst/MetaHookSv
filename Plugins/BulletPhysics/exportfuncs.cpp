@@ -172,6 +172,7 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 						}
 
 						cl_entity_t *barnacle = NULL;
+
 						if (iActivityType == 2)
 						{
 							barnacle = gCorpseManager.FindBarnacleForPlayer(&currententity->curstate);

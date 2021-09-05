@@ -301,11 +301,29 @@ vec3 OctahedronToUnitVector(vec2 coord) {
 vec4 CalcFogWithDistance(vec4 color, float z)
 {
 	float fogFactor = ( SceneUBO.fogEnd - z ) / ( SceneUBO.fogEnd - SceneUBO.fogStart );
+
 	fogFactor = clamp(fogFactor, 0.0, 1.0);
 
-	vec3 finalColor = color.xyz;
+	color.xyz = mix(SceneUBO.fogColor.xyz, color.xyz, fogFactor );
 
-	color.xyz = mix(SceneUBO.fogColor.xyz, finalColor, fogFactor );
+	return color;
+}
+
+vec4 CalcFog(vec4 color)
+{
+	return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
+}
+
+#elif defined(EXP2_FOG_ENABLED) && defined(IS_FRAGMENT_SHADER)
+
+vec4 CalcFogWithDistance(vec4 color, float z)
+{
+	const float LOG2 = 1.442695;
+	float fogFactor = exp2( -SceneUBO.fogDensity * SceneUBO.fogDensity * z * z * LOG2 );
+
+	fogFactor = clamp(fogFactor, 0.0, 1.0);
+
+	color.xyz = mix(SceneUBO.fogColor.xyz, color.xyz, fogFactor );
 
 	return color;
 }

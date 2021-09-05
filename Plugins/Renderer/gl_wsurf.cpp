@@ -1925,7 +1925,7 @@ void R_LoadDetailTextures(void)
 
 		if (!glt)
 		{
-			gEngfuncs.Con_Printf("R_LoadDetailTextures: Missing basetexture %s\n", base.c_str());
+			gEngfuncs.Con_DPrintf("R_LoadDetailTextures: Missing basetexture %s\n", base.c_str());
 			continue;
 		}
 
@@ -1960,7 +1960,7 @@ void R_LoadDetailTextures(void)
 		{
 			if (cache->tex[texType].gltexturenum)
 			{
-				gEngfuncs.Con_Printf("R_LoadDetailTextures: %s already exists for basetexture %s\n", textypeNames[texType], base.c_str());
+				gEngfuncs.Con_DPrintf("R_LoadDetailTextures: %s already exists for basetexture %s\n", textypeNames[texType], base.c_str());
 				continue;
 			}
 
@@ -1984,7 +1984,7 @@ void R_LoadDetailTextures(void)
 
 			if (!texId)
 			{
-				gEngfuncs.Con_Printf("R_LoadDetailTextures: Failed to load %s as %s for basetexture %s\n", detailtexture, textypeNames[texType], base.c_str());
+				gEngfuncs.Con_DPrintf("R_LoadDetailTextures: Failed to load %s as %s for basetexture %s\n", detailtexture, textypeNames[texType], base.c_str());
 				continue;
 			}
 

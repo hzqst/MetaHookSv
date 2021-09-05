@@ -2124,18 +2124,18 @@ void R_SetupFrame(void)
 
 	if ((*cl_waterlevel) > 2 && !(*r_refdef.onlyClientDraws))
 	{
-		float fogColor[4];
-		fogColor[0] = (double)cshift_water->destcolor[0] * 0.00392156862745098;
-		fogColor[1] = (double)cshift_water->destcolor[1] * 0.00392156862745098;
-		fogColor[2] = (double)cshift_water->destcolor[2] * 0.00392156862745098;
-		fogColor[3] = 1.0;
+		r_fog_color[0] = cshift_water->destcolor[0] * 0.00392156862745098;
+		r_fog_color[1] = cshift_water->destcolor[1] * 0.00392156862745098;
+		r_fog_color[2] = cshift_water->destcolor[2] * 0.00392156862745098;
+		r_fog_color[3] = 1.0;
 
-		float fogEnd = (double)(1536 - 4 * cshift_water->percent);
+		r_fog_control[0] = 0;
+		r_fog_control[1] = (1536 - 4 * cshift_water->percent);
 
-		glFogi(GL_FOG_MODE, 9729);
-		glFogfv(GL_FOG_COLOR, fogColor);
-		glFogf(GL_FOG_START, 0.0);
-		glFogf(GL_FOG_END, fogEnd);
+		glFogi(GL_FOG_MODE, GL_LINEAR);
+		glFogfv(GL_FOG_COLOR, r_fog_color);
+		glFogf(GL_FOG_START, r_fog_control[0]);
+		glFogf(GL_FOG_END, r_fog_control[1]);
 		glEnable(GL_FOG);
 	}
 }
