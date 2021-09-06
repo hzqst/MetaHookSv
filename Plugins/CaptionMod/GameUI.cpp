@@ -82,7 +82,12 @@ void CGameUI::Initialize(CreateInterfaceFn *factories, int count)
 void CGameUI::Start(struct cl_enginefuncs_s *engineFuncs, int interfaceVersion, void *system)
 {
 	if (!vgui::localize()->AddFile(g_pFullFileSystem, "captionmod/gameui_%language%.txt"))
-		Sys_ErrorEx("Failed to load captionmod/gameui_%%language%%.txt");
+	{
+		if (!vgui::localize()->AddFile(g_pFullFileSystem, "captionmod/gameui_english.txt"))
+		{
+			Sys_ErrorEx("Failed to load captionmod/gameui_english.txt");
+		}
+	}
 
 	return g_pfnCGameUI_Start(this, 0, engineFuncs, interfaceVersion, system);
 }

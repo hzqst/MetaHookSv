@@ -259,7 +259,7 @@ water_vbo_t *R_FindFlatWaterVBO(cl_entity_t *ent, msurface_t *surf, int directio
 		auto cache = g_WaterVBOCache[i];
 		if (cache->ent == ent &&
 			surf->texinfo->texture == cache->texture &&
-			cache->normal[2] == brushface->normal[2])
+			cache->normal[2] == normal[2])
 		{
 			auto plane = DotProduct(poly->verts[0], normal);
 
@@ -380,6 +380,7 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 
 			VectorCopy(poly->verts[0], VBOCache->vert);
 			VectorCopy(brushface->normal, VBOCache->normal);
+			
 			if (direction)
 				VectorInverse(VBOCache->normal);
 

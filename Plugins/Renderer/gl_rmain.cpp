@@ -2338,6 +2338,12 @@ void R_LoadSkyName_SvEngine(const char *name)
 				glMakeTextureHandleNonResidentARB(r_wsurf.vSkyboxTextureHandles[i]);
 				r_wsurf.vSkyboxTextureHandles[i] = 0;
 			}
+
+			if (gSkyTexNumber[i])
+			{
+				GL_DeleteTexture(gSkyTexNumber[i]);
+				gSkyTexNumber[i] = 0;
+			}
 		}
 	}
 
@@ -2384,6 +2390,11 @@ void R_LoadSkys(void)
 			{
 				glMakeTextureHandleNonResidentARB(r_wsurf.vSkyboxTextureHandles[i]);
 				r_wsurf.vSkyboxTextureHandles[i] = 0;
+			}
+			if (gSkyTexNumber[i])
+			{
+				GL_DeleteTexture(gSkyTexNumber[i]);
+				gSkyTexNumber[i] = 0;
 			}
 		}
 	}
