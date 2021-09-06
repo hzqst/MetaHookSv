@@ -38,6 +38,14 @@ enum
 	BUFFER_SIZE=999999,
 };
 
+extern bool g_bIMEComposing;
+extern double g_flImeComposingTime;
+
+double vgui2_GetCurrentTime()
+{
+	return vgui::system()->GetCurrentTime();
+}
+
 using namespace vgui;
 
 static const int DRAW_OFFSET_X = 3,DRAW_OFFSET_Y = 1; 
@@ -3018,6 +3026,12 @@ void TextEntry::InsertString(const char *text)
 void TextEntry::Backspace()
 {
 	if (!IsEditable())
+		return;
+
+	if (g_bIMEComposing)
+		return;
+
+	if (system()->GetCurrentTime() < g_flImeComposingTime + 0.1)
 		return;
 
 	//if you are at the first position don't do anything

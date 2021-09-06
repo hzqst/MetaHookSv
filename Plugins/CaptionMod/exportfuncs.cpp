@@ -549,9 +549,13 @@ void MessageMode2_f(void)
 	return gCapFuncs.MessageMode2_f();
 }
 
+bool g_bIMEComposing = false;
+double g_flImeComposingTime = 0;
+
+double vgui2_GetCurrentTime();
+
 LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	static bool s_bIMEComposing = false;
 	static HWND s_hLastHWnd;
 	if (hWnd != s_hLastHWnd)
 	{
@@ -564,12 +568,22 @@ LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 	case WM_SYSCHAR:
 	case WM_CHAR:
 	{
-		//if (s_bIMEComposing)
-		//	return 1;
+		if (g_bIMEComposing)
+			return 1;
 
 		break;
 	}
+	case WM_KEYDOWN:
+	case WM_KEYUP:
+	{
+		if (wParam == VK_BACK)
+		{
+			if (g_bIMEComposing)
+				return 1;
+		}
 
+		break;
+	}
 	case WM_INPUTLANGCHANGE:
 	{
 		vgui::input()->OnInputLanguageChanged();
@@ -579,7 +593,8 @@ LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 
 	case WM_IME_STARTCOMPOSITION:
 	{
-		s_bIMEComposing = true;
+		g_bIMEComposing = true;
+		g_flImeComposingTime = vgui2_GetCurrentTime();
 		vgui::input()->OnIMEStartComposition();
 		return 1;
 	}
@@ -593,7 +608,8 @@ LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 
 	case WM_IME_ENDCOMPOSITION:
 	{
-		s_bIMEComposing = false;
+		g_bIMEComposing = false;
+		g_flImeComposingTime = vgui2_GetCurrentTime();
 		vgui::input()->OnIMEEndComposition();
 		return 1;
 	}
@@ -646,16 +662,16 @@ LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 
 	case WM_IME_SETCONTEXT:
 	{
-		//lParam &= ~ISC_SHOWUICOMPOSITIONWINDOW;
-		//lParam &= ~ISC_SHOWUIGUIDELINE;
-		//lParam &= ~ISC_SHOWUIALLCANDIDATEWINDOW;
+		lParam &= ~ISC_SHOWUICOMPOSITIONWINDOW;
+		lParam &= ~ISC_SHOWUIGUIDELINE;
+		lParam &= ~ISC_SHOWUIALLCANDIDATEWINDOW;
 		break;
 	}
 
-	/*case WM_IME_CHAR:
+	case WM_IME_CHAR:
 	{
 		return 0;
-	}*/
+	}
 	}
 
 	return CallWindowProc(g_MainWndProc, hWnd, uMsg, wParam, lParam);
