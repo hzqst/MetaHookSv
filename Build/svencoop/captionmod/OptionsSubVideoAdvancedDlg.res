@@ -431,6 +431,92 @@
 		"selected"		"0"
 	}
 
+	"Label_TexGamma"
+	{
+		"ControlName"		"Label"
+		"fieldName"		"Label_TexGamma"
+		"xpos"		"410"
+		"ypos"		"40"
+		"wide"		"160"
+		"tall"		"24"
+		"autoResize"		"0"
+		"pinCorner"		"0"
+		"visible"		"1"
+		"enabled"		"1"
+		"tabPosition"		"0"
+		"labelText"		"#GameUI_TexGamma"
+		"textAlignment"		"west"
+		"associate"		"TexGamma"
+		"dulltext"		"0"
+		"brighttext"		"0"
+		"wrap"		"0"
+	}
+
+	"TexGamma"
+	{
+		"ControlName"		"CCvarSlider"
+		"fieldName"		"TexGamma"
+		"xpos"		"410"
+		"ypos"		"62"
+		"wide"		"160"
+		"tall"		"40"
+		"autoResize"		"0"
+		"pinCorner"		"0"
+		"visible"		"1"
+		"enabled"		"1"
+		"tabPosition"		"13"
+		"labelText"		"#GameUI_TexGamma"
+		"textAlignment"		"west"
+		"dulltext"		"0"
+		"brighttext"		"0"
+		"wrap"		"0"
+		"Default"		"0"
+		"selected"		"0"
+	}
+
+	"Label_LightGamma"
+	{
+		"ControlName"		"Label"
+		"fieldName"		"Label_LightGamma"
+		"xpos"		"410"
+		"ypos"		"100"
+		"wide"		"160"
+		"tall"		"24"
+		"autoResize"		"0"
+		"pinCorner"		"0"
+		"visible"		"1"
+		"enabled"		"1"
+		"tabPosition"		"0"
+		"labelText"		"#GameUI_LightGamma"
+		"textAlignment"		"west"
+		"associate"		"LightGamma"
+		"dulltext"		"0"
+		"brighttext"		"0"
+		"wrap"		"0"
+	}
+
+	"LightGamma"
+	{
+		"ControlName"		"CCvarSlider"
+		"fieldName"		"LightGamma"
+		"xpos"		"410"
+		"ypos"		"122"
+		"wide"		"160"
+		"tall"		"40"
+		"autoResize"		"0"
+		"pinCorner"		"0"
+		"visible"		"1"
+		"enabled"		"1"
+		"tabPosition"		"13"
+		"labelText"		"#GameUI_LightGamma"
+		"textAlignment"		"west"
+		"dulltext"		"0"
+		"brighttext"		"0"
+		"wrap"		"0"
+		"Default"		"0"
+		"selected"		"0"
+	}
+
 	"Label_AnisotropicFiltering"
 	{
 		"ControlName"		"Label"
@@ -472,10 +558,10 @@
 		"unicode"		"0"
 	}
 
-	"Button1"
+	"ButtonOK"
 	{
 		"ControlName"		"Button"
-		"fieldName"		"Button1"
+		"fieldName"		"ButtonOK"
 		"xpos"		"400"
 		"ypos"		"350"
 		"wide"		"80"
@@ -494,10 +580,10 @@
 		"Default"		"1"
 		"selected"		"0"
 	}
-	"Button2"
+	"ButtonCancel"
 	{
 		"ControlName"		"Button"
-		"fieldName"		"Button2"
+		"fieldName"		"ButtonCancel"
 		"xpos"		"500"
 		"ypos"		"350"
 		"wide"		"80"

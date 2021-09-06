@@ -1,4 +1,4 @@
-"captionmod/CaptionPageScheme.res"
+"captionmod/CaptionPageColor.res"
 {
 	"Cancel"
 	{

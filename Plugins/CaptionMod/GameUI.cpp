@@ -45,7 +45,9 @@ void (__fastcall *g_pfnCGameUI_SetSecondaryProgressBar)(void *pthis, int edx, fl
 void (__fastcall *g_pfnCGameUI_SetSecondaryProgressBarText)(void *pthis, int edx, const char *statusText) = 0;
 
 
+void *(__fastcall*g_pfnCOptionsDialog_ctor)(void *pthis, int a2, void *parent) = NULL;
 void *(__fastcall*g_pfnCOptionsSubVideo_ctor)(void *pthis, int a2, void *parent) = NULL;
+void (__fastcall *g_pfnCOptionsSubVideo_ApplyVidSettings)(void *pthis, int, bool bForceRestart) = NULL;
 
 class CGameUI : public IGameUI
 {
@@ -213,6 +215,9 @@ public:
 		m_pBloomIntensity = new CCvarSlider(this, "BloomIntensity", "#GameUI_BloomIntensity", 0.0f, 1.0f, "r_hdr_blurwidth", false);
 		m_pShadowIntensity = new CCvarSlider(this, "ShadowIntensity", "#GameUI_ShadowIntensity", 0.0f, 1.0f, "r_shadow_intensity", false);
 
+		m_pTexGamma = new CCvarSlider(this, "TexGamma", "#GameUI_TexGamma", 1.8f, 3.0f, "texgamma", false);
+		m_pLightGamma = new CCvarSlider(this, "LightGamma", "#GameUI_LightGamma", 1.8f, 3.0f, "lightgamma", false);
+
 		LoadControlSettings("captionmod/OptionsSubVideoAdvancedDlg.res");
 	}
 
@@ -273,6 +278,8 @@ public:
 		m_pHDRDarkness->ApplyChanges();
 		m_pBloomIntensity->ApplyChanges();
 		m_pShadowIntensity->ApplyChanges();
+		m_pTexGamma->ApplyChanges();
+		m_pLightGamma->ApplyChanges();
 	}
 
 	virtual void OnResetData(void)
@@ -293,6 +300,8 @@ public:
 		m_pHDRDarkness->Reset();
 		m_pBloomIntensity->Reset();
 		m_pShadowIntensity->Reset();
+		m_pTexGamma->Reset();
+		m_pLightGamma->Reset();
 
 		auto gl_ansio = gEngfuncs.pfnGetCvarPointer("gl_ansio");
 		if (gl_ansio)
@@ -353,15 +362,37 @@ private:
 	CCvarSlider *m_pHDRDarkness;
 	CCvarSlider *m_pBloomIntensity;
 	CCvarSlider *m_pShadowIntensity;
+	CCvarSlider *m_pTexGamma;
+	CCvarSlider *m_pLightGamma;
 };
 
-vgui::Button *m_pVideoAdvanced = NULL;
-vgui::DHANDLE<class COptionsSubVideoAdvancedDlg> m_hOptionsSubVideoAdvancedDlg;
+class CAdvancedButton : public vgui::Button
+{
+	DECLARE_CLASS_SIMPLE(CAdvancedButton, vgui::Button);
 
-void __fastcall COptionsSubVideo_OpenAdvanced(vgui::Panel *pthis, int a2)
+public:
+	CAdvancedButton(vgui::Panel *parent, const char *panelName, const char *text) : BaseClass(parent, panelName, text)
+	{
+	
+	}
+	~CAdvancedButton(void)
+	{
+
+	}
+
+private:
+	MESSAGE_FUNC(OnOpenAdvanced, "OpenAdvanced");
+
+private:
+
+	vgui::DHANDLE<class COptionsSubVideoAdvancedDlg> m_hOptionsSubVideoAdvancedDlg;
+};
+
+
+void CAdvancedButton::OnOpenAdvanced(void)
 {
 	if (!m_hOptionsSubVideoAdvancedDlg.Get())
-		m_hOptionsSubVideoAdvancedDlg = new COptionsSubVideoAdvancedDlg(pthis->GetParent());
+		m_hOptionsSubVideoAdvancedDlg = new COptionsSubVideoAdvancedDlg(this);
 
 	m_hOptionsSubVideoAdvancedDlg->Activate();
 }
@@ -370,25 +401,19 @@ void * __fastcall COptionsSubVideo_ctor(vgui::Panel *pthis, int a2, vgui::Panel 
 {
 	auto result = g_pfnCOptionsSubVideo_ctor(pthis, a2, parent);
 
-	auto map = vgui::FindOrAddPanelMessageMap("Button");
-
-	PVOID func = COptionsSubVideo_OpenAdvanced;
-
-	vgui::MessageMapItem_t entry;
-	memset(&entry, 0, sizeof(entry));
-	entry.name = "OpenAdvanced";
-	memcpy(&entry.func, &func, 4);
-
-	map->entries.AddToTail(entry);
-
-	m_pVideoAdvanced = new vgui::Button(pthis, "Advanced", "#GameUI_AdvancedEllipsis");
+	auto m_pVideoAdvanced = new CAdvancedButton(pthis, "Advanced", "#GameUI_AdvancedEllipsis");
 	m_pVideoAdvanced->SetPos(248, 160);
 	m_pVideoAdvanced->SetSize(120, 24);
 
 	m_pVideoAdvanced->AddActionSignalTarget(m_pVideoAdvanced->GetVPanel());
 	m_pVideoAdvanced->SetCommand("OpenAdvanced");
-
+	
 	return result;
+}
+
+void __fastcall COptionsSubVideo_ApplyVidSettings(vgui::Panel *pthis, int a2, bool bForceRestart)
+{
+	g_pfnCOptionsSubVideo_ApplyVidSettings(pthis, a2, false);
 }
 
 void GameUI_InstallHook(void)
@@ -412,9 +437,38 @@ void GameUI_InstallHook(void)
 		auto GameUI_Options_Call = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), pattern, sizeof(pattern) - 1);
 		Sig_VarNotFound(GameUI_Options_Call);
 
-		g_pfnCOptionsSubVideo_ctor = (decltype(g_pfnCOptionsSubVideo_ctor))g_pMetaHookAPI->ReverseSearchFunctionBegin(GameUI_Options_Call, 0x300);
+		g_pfnCOptionsDialog_ctor = (decltype(g_pfnCOptionsDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBegin(GameUI_Options_Call, 0x300);
+		Sig_VarNotFound(g_pfnCOptionsDialog_ctor);
+	}
+
+	if (1)
+	{
+		const char sigs1[] = "#GameUI_Video";
+		auto GameUI_Video_String = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), sigs1, sizeof(sigs1) - 1);
+		Sig_VarNotFound(GameUI_Video_String);
+		char pattern[] = "\xE8\x2A\x2A\x2A\x2A\x2A\x2A\x33\xC0\x68\x2A\x2A\x2A\x2A";
+		*(DWORD *)(pattern + 10) = (DWORD)GameUI_Video_String;
+		auto GameUI_Video_Call = g_pMetaHookAPI->SearchPattern(g_pfnCOptionsDialog_ctor, 0x300, pattern, sizeof(pattern) - 1);
+		Sig_VarNotFound(GameUI_Video_Call);
+
+		g_pfnCOptionsSubVideo_ctor = (decltype(g_pfnCOptionsSubVideo_ctor))GetCallAddress(GameUI_Video_Call);
 		Sig_VarNotFound(g_pfnCOptionsSubVideo_ctor);
 	}
 
+	if (1)
+	{
+		const char sigs1[] = "_setvideomode";
+		auto SetVideoMode_String = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), sigs1, sizeof(sigs1) - 1);
+		Sig_VarNotFound(SetVideoMode_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x50\xE8";
+		*(DWORD *)(pattern + 1) = (DWORD)SetVideoMode_String;
+		auto SetVideoMode_StringPush = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), pattern, sizeof(pattern) - 1);
+		Sig_VarNotFound(SetVideoMode_StringPush);
+
+		g_pfnCOptionsSubVideo_ApplyVidSettings = (decltype(g_pfnCOptionsSubVideo_ApplyVidSettings))g_pMetaHookAPI->ReverseSearchFunctionBegin(SetVideoMode_StringPush, 0x300);
+		Sig_VarNotFound(g_pfnCOptionsSubVideo_ApplyVidSettings);
+	}
+
 	g_pMetaHookAPI->InlineHook(g_pfnCOptionsSubVideo_ctor, COptionsSubVideo_ctor, (void **)&g_pfnCOptionsSubVideo_ctor);
+	g_pMetaHookAPI->InlineHook(g_pfnCOptionsSubVideo_ApplyVidSettings, COptionsSubVideo_ApplyVidSettings, (void **)&g_pfnCOptionsSubVideo_ApplyVidSettings);
 }
