@@ -2319,7 +2319,11 @@ void Mod_LoadStudioModel(model_t *mod, void *buffer)
 	studiohdr_t *studiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(mod);
 	if (studiohdr)
 	{
-		studiohdr->transitionindex = 0;
+		if (studiohdr->soundtable)
+		{
+			//gEngfuncs.Con_DPrintf("wtf");
+		}
+		studiohdr->soundtable = 0;
 
 		R_StudioLoadExternalFile(mod, studiohdr);
 

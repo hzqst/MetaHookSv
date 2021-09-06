@@ -173,9 +173,9 @@ void R_PrepareStudioVBOSubmodel(
 studio_vbo_t *R_PrepareStudioVBO(studiohdr_t *studiohdr)
 {
 	studio_vbo_t *VBOData = NULL;
-	if (studiohdr->transitionindex > 0 && studiohdr->transitionindex - 1 < (int)g_StudioVBOCache.size())
+	if (studiohdr->soundtable > 0 && studiohdr->soundtable - 1 < (int)g_StudioVBOCache.size())
 	{
-		VBOData = (studio_vbo_t *)g_StudioVBOCache[studiohdr->transitionindex - 1];
+		VBOData = (studio_vbo_t *)g_StudioVBOCache[studiohdr->soundtable - 1];
 		if (VBOData)
 		{
 			return VBOData;
@@ -187,7 +187,7 @@ studio_vbo_t *R_PrepareStudioVBO(studiohdr_t *studiohdr)
 
 	g_StudioVBOCache.emplace_back(VBOData);
 
-	studiohdr->transitionindex = g_StudioVBOCache.size();
+	studiohdr->soundtable = g_StudioVBOCache.size();
 
 	std::vector<studio_vbo_vertex_t> vVertex;
 	std::vector<GLuint> vIndices;
