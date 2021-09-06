@@ -707,7 +707,7 @@ bool R_IsSSAOEnabled(void)
 	if ((*r_refdef.onlyClientDraws) || r_draw_pass || g_SvEngine_DrawPortalView)
 		return false;
 
-	if ((*r_xfov) < 75)
+	if (r_xfov < 75 || r_yfov < 75)
 		return false;
 
 	if (CL_IsDevOverviewMode())

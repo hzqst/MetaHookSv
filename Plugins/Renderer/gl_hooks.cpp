@@ -1468,15 +1468,15 @@ void R_FillAddress(void)
 	{
 		const char sigs[] = "\xD9\x54\x24\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD9\xE8";
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x100, sigs, sizeof(sigs) - 1);
-		Sig_AddrNotFound(r_xfov);
-		r_xfov = *(decltype(r_xfov)*)(addr + 6);
+		Sig_AddrNotFound(scrfov);
+		scrfov = *(decltype(scrfov)*)(addr + 6);
 	}
 	else
 	{
 		const char sigs[] = "\x8B\x15\x2A\x2A\x2A\x2A\xD9\x5D\x2A\xDB\x05";
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x100, sigs, sizeof(sigs) - 1);
-		Sig_AddrNotFound(r_xfov);
-		r_xfov = *(decltype(r_xfov)*)(addr + 2);
+		Sig_AddrNotFound(scrfov);
+		scrfov = *(decltype(scrfov)*)(addr + 2);
 	}
 
 	if (1)
@@ -3005,6 +3005,23 @@ void R_FillAddress(void)
 		addr += 5;
 		vpn = (vec_t *)(*(DWORD *)addr);
 		addr += 5;
+	}
+
+	if (1)
+	{
+#define URL_INFO_STRING "url_info"
+		auto UrlInfo_String = Search_Pattern_Data(URL_INFO_STRING);
+		if (!UrlInfo_String)
+			UrlInfo_String = Search_Pattern_Rdata(URL_INFO_STRING);
+		Sig_VarNotFound(UrlInfo_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x56\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
+		*(DWORD *)(pattern + 1) = (DWORD)UrlInfo_String;
+		auto UrlInfo_PushString = Search_Pattern(pattern);
+		Sig_VarNotFound(UrlInfo_PushString);
+		gRefFuncs.DLL_SetModKey = (decltype(gRefFuncs.DLL_SetModKey))g_pMetaHookAPI->ReverseSearchFunctionBegin(UrlInfo_PushString, 0x300);
+		Sig_FuncNotFound(DLL_SetModKey);
+
+		Install_InlineHook(DLL_SetModKey);
 	}
 }
 

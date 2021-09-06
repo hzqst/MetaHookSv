@@ -8,7 +8,8 @@ refdef_t r_refdef;
 ref_params_t r_params;
 refdef_GoldSrc_t *r_refdef_GoldSrc = NULL;
 refdef_SvEngine_t *r_refdef_SvEngine = NULL;
-float *r_xfov = NULL;
+float *scrfov = NULL;
+float r_xfov;
 float r_yfov;
 float r_screenaspect;
 
@@ -123,6 +124,7 @@ FBO_Container_t s_WaterFBO;
 bool bNoStretchAspect = false;
 bool bUseBindless = true;
 bool bUseOITBlend = false;
+bool bVerticalFov = false;
 
 cvar_t *ati_subdiv = NULL;
 cvar_t *ati_npatch = NULL;
@@ -191,6 +193,7 @@ cvar_t *v_lambert = NULL;
 cvar_t *cl_righthand = NULL;
 cvar_t *chase_active = NULL;
 
+cvar_t *r_adjust_fov = NULL;
 cvar_t *r_vertical_fov = NULL;
 cvar_t *gl_profile = NULL;
 cvar_t *dev_overview_color = NULL;
@@ -956,9 +959,9 @@ int SignbitsForPlane(mplane_t *out)
 	return bits;
 }
 
-void MYgluPerspectiveV(double fovy, double aspect, double zNear, double zFar)
+void MYgluPerspectiveV(double fovx, double aspect, double zNear, double zFar)
 {
-	auto right = tan(fovy * (M_PI / 360.0)) * zNear;
+	auto right = tan(fovx * (M_PI / 360.0)) * zNear;
 	auto top = right * aspect;
 	glFrustum(-right, right, -top, top, zNear, zFar);
 
@@ -1647,6 +1650,16 @@ void GL_EndRendering(void)
 	}
 }
 
+void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue)
+{
+	gRefFuncs.DLL_SetModKey(pinfo, pkey, pvalue);
+
+	if (!strcmp(pkey, "vertical_fov"))
+	{
+		bVerticalFov = atoi(pvalue) ? true : false;
+	}
+}
+
 void R_InitCvars(void)
 {
 	r_bmodelinterp = gEngfuncs.pfnGetCvarPointer("r_bmodelinterp");
@@ -1739,7 +1752,14 @@ void R_InitCvars(void)
 	cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
 	chase_active = gEngfuncs.pfnGetCvarPointer("chase_active");
 
-	r_vertical_fov = gEngfuncs.pfnRegisterVariable("r_vertical_fov", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_vertical_fov = gEngfuncs.pfnRegisterVariable("r_vertical_fov", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_adjust_fov = gEngfuncs.pfnRegisterVariable("r_adjust_fov", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	if (bVerticalFov)
+	{
+		Cvar_DirectSet(r_vertical_fov, "1");
+	}
+
 	gl_profile = gEngfuncs.pfnRegisterVariable("gl_profile", "0", FCVAR_CLIENTDLL );
 
 	gEngfuncs.pfnAddCommand("saveprogstate", R_SaveProgramStates_f);
@@ -1888,56 +1908,72 @@ qboolean R_ParseVectorCvar(cvar_t *a1, float *vec)
 	return result;
 }
 
-double V_CalcFovV(float a1, float a2, float a3)
+double V_CalcFovV(float fov, float width, float height)
 {
-	double v3; // st7
-
-	v3 = a1;
-	if (a1 < 1.0 || v3 > 179.0)
-		v3 = 90.0;
-	return atan2(a2 / (a3 / tan(v3 * 0.0027777778 * 3.141592653589793)), 1.0) * 360.0 * 0.3183098861837907;
+	if (fov < 1.0 || fov > 179.0)
+		fov = 90.0;
+	return atan2(width / (height / tan(fov * (1.0 / 360.0) * M_PI)), 1.0) * 360.0 * (1 / M_PI);
 }
 
-double V_CalcFovH(float a1, float a2, float a3)
+double V_CalcFovH(float fov, float width, float height)
 {
-	double v3; // st7
-
-	v3 = a1;
-	if (a1 < 1.0 || v3 > 179.0)
-		v3 = 90.0;
-	return atan2(a3 / (a2 / tan(v3 * 0.0027777778 * 3.141592653589793)), 1.0) * 360.0 * 0.3183098861837907;
+	if (fov < 1.0 || fov > 179.0)
+		fov = 90.0;
+	return atan2(height / (width / tan(fov * (1.0 / 360.0) * M_PI)), 1.0) * 360.0 * (1 / M_PI);
 }
 
-void R_SetFrustumNew(void)
+float V_CalcFov(float *fov_x, float width, float height)
 {
-	float yfov;
-	auto fov = (*r_xfov);
+	float	x, half_fov_y;
+
+	if (*fov_x < 1.0f || *fov_x > 179.0f)
+		*fov_x = 90.0f; // default value
+
+	x = width / tan((*fov_x) * (M_PI / 360) * 0.5f);
+	half_fov_y = atan(height / x);
+
+	return (half_fov_y * 360 / M_PI) * 2;
+}
+
+void V_AdjustFov(float *fov_x, float *fov_y, float width, float height)
+{
+	float x, y;
+
+	if (width * 3 == 4 * height || width * 4 == height * 5)
+	{
+		// 4:3 or 5:4 ratio
+		return;
+	}
+
+	y = V_CalcFov(fov_x, 640, 480);
+	x = *fov_x;
+
+	*fov_x = V_CalcFov(&y, height, width);
+
+	if (*fov_x < x)
+		*fov_x = x;
+	else
+		*fov_y = y;
+}
+
+void R_SetFrustum(void)
+{
+	float xfov, yfov;
 	if (r_vertical_fov->value)
 	{
-		auto v0 = (double)glheight;
-		auto v1 = (double)glwidth;
-		yfov = V_CalcFovV((*r_xfov), v1, v0);
+		xfov = (*scrfov);
+		yfov = V_CalcFovV((*scrfov), glwidth, glheight);
 	}
 	else
 	{
-		auto v3 = (*r_xfov);
-		auto v4 = (double)glheight;
-		auto v5 = (double)glwidth;
-		fov = V_CalcFovH((*r_xfov), v5, v4);
-		yfov = v3;
+		xfov = V_CalcFovH((*scrfov), glwidth, glheight);
+		yfov = (*scrfov);
 	}
 
-	auto v6 = 90.0 - yfov * 0.5;
-	auto v7 = v6;
-	auto v8 = -v6;
-	RotatePointAroundVector(frustum[0].normal, vup, vpn, v8);
-	RotatePointAroundVector(frustum[1].normal, vup, vpn, v7);
-	auto v9 = 90.0 - 0.5 * fov;
-	auto v10 = v9;
-	auto v11 = v9;
-	RotatePointAroundVector(frustum[2].normal, vright, vpn, v11);
-	auto v12 = -v10;
-	RotatePointAroundVector(frustum[3].normal, vright, vpn, v12);
+	RotatePointAroundVector(frustum[0].normal, vup, vpn, -(90.0 - yfov * 0.5));
+	RotatePointAroundVector(frustum[1].normal, vup, vpn, 90.0 - yfov * 0.5);
+	RotatePointAroundVector(frustum[2].normal, vright, vpn, 90.0 - xfov * 0.5);
+	RotatePointAroundVector(frustum[3].normal, vright, vpn, -(90.0 - xfov * 0.5));
 
 	for (int i = 0; i < 4; i++)
 	{
@@ -1955,6 +1991,17 @@ bool CL_IsDevOverviewMode(void)
 void CL_SetDevOverView(void *a1)
 {
 	return gRefFuncs.CL_SetDevOverView(a1);
+}
+
+void MYgluPerspective2(double xfov, double yfov, double zNear, double zFar)
+{
+	auto yMax = zNear * tan(yfov * M_PI / 360.0f);
+	auto yMin = -yMax;
+
+	auto xMax = zNear * tan(xfov * M_PI / 360.0f);
+	auto xMin = -xMax;
+
+	glFrustum(xMin, xMax, yMin, yMax, zNear, zFar);
 }
 
 void R_SetupGL(void)
@@ -1993,20 +2040,20 @@ void R_SetupGL(void)
 
 	if (r_vertical_fov->value)
 	{
-		auto v6 = (double)(*r_refdef.vrect).height;
-		auto v7 = (double)(*r_refdef.vrect).width;
-		auto aspect = v6 / v7;
-		auto v8 = (*r_xfov);
-		if ((*r_xfov) < 1.0 || v8 > 179.0)
-			v8 = 90.0;
-		auto v9 = v7 / (v6 / tan(v8 * 0.0027777778 * 3.141592653589793));
+		auto height = (double)(*r_refdef.vrect).height;
+		auto width = (double)(*r_refdef.vrect).width;
+		auto aspect = height / width;
 
-		auto fovy = atan2(v9, 1.0) * 360.0 * 0.3183098861837907;
-		r_yfov = fovy;
+		auto fov = (*scrfov);
+		if (fov < 1.0 || fov > 179.0)
+			fov = 90.0;
+
+		r_yfov = fov;
+		r_xfov = atan2(width / (height / tan(fov * (1.0 / 360.0) * M_PI)), 1.0) * 360.0 * (1.0 / M_PI);
 
 		if ((*r_refdef.onlyClientDraws))
 		{
-			MYgluPerspectiveV(fovy, aspect, 4.0, 16000.0);
+			MYgluPerspectiveV(r_xfov, aspect, 4.0, 16000.0);
 		}
 		else if (CL_IsDevOverviewMode())
 		{
@@ -2024,23 +2071,31 @@ void R_SetupGL(void)
 		}
 		else
 		{
-			MYgluPerspectiveV(fovy, aspect, 4.0, r_params.movevars->zmax);
+			MYgluPerspectiveV(r_xfov, aspect, 4.0, r_params.movevars->zmax);
 		}
 	}
 	else
 	{
-		auto v16 = (double)(*r_refdef.vrect).width;
-		auto v17 = (double)(*r_refdef.vrect).height;
-		auto aspect = v16 / v17;
-		auto v18 = (*r_xfov);
-		if ((*r_xfov) < 1.0 || v18 > 179.0)
-			v18 = 90.0;
-		auto v19 = v17 / (v16 / tan(v18 * 0.0027777778 * 3.141592653589793));
-		auto fovy = atan2(v19, 1.0) * 360.0 * 0.3183098861837907;
-		r_yfov = fovy;
+		auto width = (double)(*r_refdef.vrect).width;
+		auto height = (double)(*r_refdef.vrect).height;
+		auto aspect = width / height;
+		auto fov = (*scrfov);
+		if (fov < 1.0 || fov > 179.0)
+			fov = 90.0;
+		r_xfov = fov;
+		r_yfov = atan2(height / (width / tan(fov * (1.0 / 360.0) * M_PI)), 1.0) * 360.0 * (1.0 / M_PI);
+
 		if ((*r_refdef.onlyClientDraws))
 		{
-			MYgluPerspectiveH(fovy, aspect, 4.0, 16000.0);
+			if (r_adjust_fov->value)
+			{
+				V_AdjustFov(&r_xfov, &r_yfov, width, height);
+				MYgluPerspectiveH(r_yfov, aspect, 4.0, 16000.0);
+			}
+			else
+			{
+				MYgluPerspectiveH(r_yfov, aspect, 4.0, 16000.0);
+			}
 		}
 		else if (CL_IsDevOverviewMode())
 		{
@@ -2058,7 +2113,15 @@ void R_SetupGL(void)
 		}
 		else
 		{
-			MYgluPerspectiveH(fovy, aspect, 4.0, r_params.movevars->zmax);
+			if (r_adjust_fov->value)
+			{
+				V_AdjustFov(&r_xfov, &r_yfov, width, height);
+				MYgluPerspectiveH(r_yfov, aspect, 4.0, r_params.movevars->zmax);
+			}
+			else
+			{
+				MYgluPerspectiveH(r_yfov, aspect, 4.0, r_params.movevars->zmax);
+			}
 		}
 	}
 	glCullFace(GL_FRONT);
@@ -2246,7 +2309,7 @@ void R_RenderScene(void)
 		CL_SetDevOverView(R_GetRefDef());
 
 	R_SetupFrame();
-	R_SetFrustumNew();
+	R_SetFrustum();
 	R_SetupGL();
 	R_MarkLeaves();
 

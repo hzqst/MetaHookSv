@@ -59,7 +59,8 @@ extern refdef_t r_refdef;
 extern refdef_GoldSrc_t *r_refdef_GoldSrc;
 extern refdef_SvEngine_t *r_refdef_SvEngine;
 extern ref_params_t r_params;
-extern float *r_xfov;
+extern float *scrfov;
+extern float r_xfov;
 extern float r_yfov;
 extern float r_screenaspect;
 extern cl_entity_t *r_worldentity;
@@ -291,7 +292,6 @@ void Draw_MiptexTexture(cachewad_t *wad, byte *data);
 void EmitWaterPolys(msurface_t *fa, int direction);
 void R_DecalShootInternal(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
 void __fastcall enginesurface_drawFlushText(void *pthis, int dummy);
-void MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar);
 float CalcFov(float fov_x, float width, float height);
 int SignbitsForPlane(mplane_t *out);
 qboolean R_ParseVectorCvar(cvar_t *a1, float *vec);
@@ -373,6 +373,8 @@ model_t *EngineGetModelByIndex(int index);
 extern cvar_callback_entry_t **cvar_callbacks;
 
 cvar_callback_t Cvar_HookCallback(const char *cvar_name, cvar_callback_t callback);
+
+void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue);
 
 extern GLint r_viewport[4];
 extern float r_identity_matrix[4][4];

@@ -81,6 +81,7 @@ typedef struct
 	void (*Mod_LoadStudioModel)(model_t *mod, void *buffer);
 	void(*triapi_RenderMode)(int mode);
 	void(__fastcall *enginesurface_drawFlushText)(void *pthis, int);
+	void(*DLL_SetModKey)(void *pinfo, char *pkey, char *pvalue);
 	//SvClient
 	void(__fastcall *PortalManager_ResetAll)(int pthis, int);
 

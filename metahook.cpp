@@ -39,12 +39,11 @@ struct hook_s
 	void *pInfo;
 };
 
-char *com_gamedir = NULL;
 void **g_pVideoMode = NULL;
 int (*g_pfnbuild_number)(void) = NULL;
-void *g_pClientDLL_Init = NULL;
-int (*g_original_ClientDLL_Init)(void) = NULL;
-hook_t *g_phClientDLL_Init = NULL;
+
+int(*g_original_ClientDLL_Init)(void) = NULL;
+int(*g_pfnClientDLL_Init)(void) = NULL;
 
 HMODULE g_hEngineModule = NULL;
 PVOID g_dwEngineBase = NULL;
@@ -297,9 +296,7 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 {
 	g_pfnbuild_number = NULL;
 	g_original_ClientDLL_Init = NULL;
-	g_phClientDLL_Init = NULL;
 	g_pVideoMode = NULL;
-	com_gamedir = NULL;
 	g_ppExportFuncs = NULL;
 	g_ppEngfuncs = NULL;
 
@@ -392,7 +389,7 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 				auto ClientDll_Init_FunctionBase = MH_ReverseSearchFunctionBegin(ClientDll_Init_PushString, 0x200);
 				if (ClientDll_Init_FunctionBase)
 				{
-					g_pClientDLL_Init = (decltype(g_pClientDLL_Init))ClientDll_Init_FunctionBase;
+					g_pfnClientDLL_Init = (decltype(g_pfnClientDLL_Init))ClientDll_Init_FunctionBase;
 
 					MH_DisasmRanges(ClientDll_Init_PushString, 0x30, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 					{
@@ -420,7 +417,7 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 		}
 	}
 
-	if (!g_pClientDLL_Init)
+	if (!g_pfnClientDLL_Init)
 	{
 		MessageBox(NULL, "MH_LoadEngine: Failed to locate ClientDLL_Init.", "Fatal Error", MB_ICONERROR);
 		NtTerminateProcess((HANDLE)-1, 0);
@@ -483,37 +480,10 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 		MessageBox(NULL, "MH_LoadEngine: Failed to locate g_pVideoMode.", "Fatal Error", MB_ICONERROR);
 		NtTerminateProcess((HANDLE)-1, 0);
 	}
-#if 0
-#define GAMEDIR_STRING_SIG_SVENGINE "Current gamedir is \"%s\"\n"
-#define GAMEDIR_STRING_SIG "gamedir is %s\n"
-	
-	const char *pGameDirString = (g_iEngineType == ENGINE_SVENGINE) ? GAMEDIR_STRING_SIG_SVENGINE : GAMEDIR_STRING_SIG;
-	size_t nGameDirString = (g_iEngineType == ENGINE_SVENGINE) ? sizeof(GAMEDIR_STRING_SIG_SVENGINE) - 1 : sizeof(GAMEDIR_STRING_SIG)-1;
-	if (1)
-	{
-		auto GameDir_String = MH_SearchPattern(g_dwEngineBase, g_dwEngineSize, pGameDirString, nGameDirString);
-		if (GameDir_String)
-		{
-			char pattern[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8";
-			*(DWORD *)(pattern + 6) = (DWORD)GameDir_String;
-			auto GameDir_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
-			if (GameDir_PushString)
-			{
-				com_gamedir = *(char **)((PUCHAR)GameDir_PushString + 1);
-			}
-		}
-	}
-
-	if (!com_gamedir)
-	{
-		MessageBox(NULL, "MH_LoadEngine: Failed to locate com_gamedir.", "Fatal Error", MB_ICONERROR);
-		NtTerminateProcess((HANDLE)-1, 0);
-	}
-#endif
 
 	memcpy(gMetaSave.pEngineFuncs, *(void **)g_ppEngfuncs, sizeof(cl_enginefunc_t));
 
-	g_phClientDLL_Init = MH_InlineHook(g_pClientDLL_Init, MH_ClientDLL_Init, (void **)&g_original_ClientDLL_Init);
+	MH_InlineHook(g_pfnClientDLL_Init, MH_ClientDLL_Init, (void **)&g_original_ClientDLL_Init);
 
 	MH_LoadPlugins(szGameName);
 
@@ -620,12 +590,10 @@ void MH_Shutdown(void)
 		gMetaSave.pEngineFuncs = NULL;
 	}
 
-	//com_gamedir = NULL;
 	g_pVideoMode = NULL;
 	g_pfnbuild_number = NULL;
-	g_pClientDLL_Init = NULL;
+	g_pfnClientDLL_Init = NULL;
 	g_original_ClientDLL_Init = NULL;
-	g_phClientDLL_Init = NULL;
 
 	g_hEngineModule = NULL;
 	g_dwEngineBase = NULL;
