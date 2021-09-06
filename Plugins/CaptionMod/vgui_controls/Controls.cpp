@@ -24,8 +24,9 @@ void Sys_ErrorEx(const char *fmt, ...);
 
 namespace vgui
 {
-
 static char g_szControlsModuleName[256];
+
+bool (__fastcall *g_pfnCWin32Input_PostKeyMessage)(void *pthis, int, KeyValues *message);
 
 bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryList, int numFactories)
 {
@@ -52,6 +53,8 @@ bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryL
 		Sys_ErrorEx("vgui_controls is missing a required interface!\n");
 		return false;
 	}
+
+	g_pfnCWin32Input_PostKeyMessage = (decltype(g_pfnCWin32Input_PostKeyMessage))((PUCHAR)GetModuleHandleA("vgui2.dll") + 0x86F0);
 
 	return true;
 }

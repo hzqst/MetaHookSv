@@ -32,6 +32,9 @@ int m_iIntermission = 0;
 void *GameViewport = NULL;
 int *g_iVisibleMouse = NULL;
 
+HWND g_MainWnd = NULL;
+WNDPROC g_MainWndProc = NULL;
+
 void *NewClientFactory(void)
 {
 	return Sys_GetFactoryThis();
@@ -544,4 +547,116 @@ void MessageMode2_f(void)
 		return g_pViewPort->StartMessageMode2();
 
 	return gCapFuncs.MessageMode2_f();
+}
+
+LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	static bool s_bIMEComposing = false;
+	static HWND s_hLastHWnd;
+	if (hWnd != s_hLastHWnd)
+	{
+		s_hLastHWnd = hWnd;
+		vgui::input()->SetIMEWindow(hWnd);
+	}
+
+	switch (uMsg)
+	{
+	case WM_SYSCHAR:
+	case WM_CHAR:
+	{
+		//if (s_bIMEComposing)
+		//	return 1;
+
+		break;
+	}
+
+	case WM_INPUTLANGCHANGE:
+	{
+		vgui::input()->OnInputLanguageChanged();
+		//break;
+		return 1;
+	}
+
+	case WM_IME_STARTCOMPOSITION:
+	{
+		s_bIMEComposing = true;
+		vgui::input()->OnIMEStartComposition();
+		return 1;
+	}
+
+	case WM_IME_COMPOSITION:
+	{
+		int flags = (int)lParam;
+		vgui::input()->OnIMEComposition(flags);
+		return 1;
+	}
+
+	case WM_IME_ENDCOMPOSITION:
+	{
+		s_bIMEComposing = false;
+		vgui::input()->OnIMEEndComposition();
+		return 1;
+	}
+
+	case WM_IME_NOTIFY:
+	{
+		switch (wParam)
+		{
+		case IMN_OPENCANDIDATE:
+		{
+			vgui::input()->OnIMEShowCandidates();
+			return 1;
+		}
+
+		case IMN_CHANGECANDIDATE:
+		{
+			vgui::input()->OnIMEChangeCandidates();
+			return 1;
+		}
+
+		case IMN_CLOSECANDIDATE:
+		{
+			vgui::input()->OnIMECloseCandidates();
+			//break;
+			return 1;
+		}
+
+		case IMN_SETCONVERSIONMODE:
+		case IMN_SETSENTENCEMODE:
+		case IMN_SETOPENSTATUS:
+		{
+			vgui::input()->OnIMERecomputeModes();
+			break;
+		}
+
+		case IMN_CLOSESTATUSWINDOW:
+		case IMN_GUIDELINE:
+		case IMN_OPENSTATUSWINDOW:
+		case IMN_SETCANDIDATEPOS:
+		case IMN_SETCOMPOSITIONFONT:
+		case IMN_SETCOMPOSITIONWINDOW:
+		case IMN_SETSTATUSWINDOWPOS:
+		{
+			break;
+		}
+		}
+
+		break;
+	}
+
+	case WM_IME_SETCONTEXT:
+	{
+		//lParam &= ~ISC_SHOWUICOMPOSITIONWINDOW;
+		//lParam &= ~ISC_SHOWUIGUIDELINE;
+		//lParam &= ~ISC_SHOWUIALLCANDIDATEWINDOW;
+		break;
+	}
+
+	/*case WM_IME_CHAR:
+	{
+		return 0;
+	}*/
+	}
+
+	return CallWindowProc(g_MainWndProc, hWnd, uMsg, wParam, lParam);
 }

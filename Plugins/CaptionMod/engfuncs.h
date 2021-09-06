@@ -38,6 +38,9 @@ typedef struct
 extern void *GameViewport;
 extern int *g_iVisibleMouse;
 
+extern HWND g_MainWnd;
+extern WNDPROC g_MainWndProc;
+
 #define cl_time (*gCapFuncs.pcl_time)
 #define cl_oldtime (*gCapFuncs.pcl_oldtime)
 

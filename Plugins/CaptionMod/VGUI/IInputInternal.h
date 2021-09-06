@@ -8,6 +8,8 @@ typedef int HInputContext;
 
 #define DEFAULT_INPUT_CONTEXT ((HInputContext)~0)
 
+class IInput;
+
 class IInputInternal : public IInput
 {
 public:

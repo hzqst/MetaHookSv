@@ -1419,7 +1419,7 @@ void TreeNode::OnMouseReleased(MouseCode code)
 {
 	BaseClass::OnMouseReleased( code );
 
-	if ( input()->GetMouseCapture() == GetVPanel() )
+	if ( inputinternal()->GetMouseCapture() == GetVPanel() )
 	{
 		input()->SetMouseCapture( NULL );
 		return;
@@ -1442,7 +1442,7 @@ void TreeNode::OnMouseReleased(MouseCode code)
 
 void TreeNode::OnCursorMoved( int x, int y )
 {
-	if ( input()->GetMouseCapture() != GetVPanel() )
+	if (inputinternal()->GetMouseCapture() != GetVPanel() )
 		return;
 
 	LocalToScreen( x, y );

@@ -52,6 +52,8 @@ sfx_t *S_FindName(char *name, int *pfInCache);
 void MessageMode_f(void);
 void MessageMode2_f(void);
 
+LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
 int __fastcall ScClient_FindSoundEx(void* pthis, int, const char *sound);
 
 void Sys_ErrorEx(const char *fmt, ...);

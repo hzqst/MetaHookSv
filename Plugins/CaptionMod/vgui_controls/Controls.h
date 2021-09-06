@@ -21,6 +21,7 @@
 
 #include <vgui/VGUI.h>
 #include <vgui/IInput.h>
+#include <vgui/IInputInternal.h>
 #include <vgui/IScheme.h>
 #include <vgui/ISurface.h>
 #include <vgui/ISurface2.h>
@@ -69,6 +70,11 @@ class IVGui;
 inline vgui::IInput *input()
 {
 	return g_pVGuiInput;
+}
+
+inline vgui::IInputInternal *inputinternal()
+{
+	return (vgui::IInputInternal *)g_pVGuiInput;
 }
 
 // #include <vgui/IScheme.h>

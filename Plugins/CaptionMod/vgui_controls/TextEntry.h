@@ -94,8 +94,8 @@ public:
 
 	virtual void SetText(const wchar_t *wszText);
 	virtual void SetText(const char *text);
-	virtual void GetText(char *buf, int bufLen);
-	virtual void GetText(wchar_t *buf, int bufLen);
+	virtual void GetText(char *buf, int bufLenInBytes);
+	virtual void GetText(wchar_t *buf, int bufLenInBytes);
 	virtual int GetTextLength() const;
 	virtual bool IsTextFullySelected() const;
 
@@ -113,7 +113,7 @@ public:
 
 	virtual void InsertChar(wchar_t ch);
 	virtual void InsertString(const char *text);
-	virtual void InsertString(wchar_t *wszText);
+	virtual void InsertString(const wchar_t *wszText);
 	virtual void Backspace();								   
 	virtual void Delete();
 	virtual void SelectNone();
@@ -131,6 +131,7 @@ public:
 	MESSAGE_FUNC( ShowIMECandidates, "DoShowIMECandidates" );
 	MESSAGE_FUNC( HideIMECandidates, "DoHideIMECandidates" );
 	MESSAGE_FUNC( UpdateIMECandidates, "DoUpdateIMECandidates" );
+	MESSAGE_FUNC_INT( CandidateSelected, "DoCandidateSelected", num );
 	
 	virtual void DeleteSelected();
 	virtual void Undo();

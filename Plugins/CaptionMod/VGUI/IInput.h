@@ -14,16 +14,18 @@
 
 #include <interface.h>
 
-#include "VGUI.h"
-#include "MouseCode.h"
-#include "KeyCode.h"
+#include "vgui/VGUI.h"
+#include "vgui/MouseCode.h"
+#include "vgui/KeyCode.h"
+#include <KeyValues.h>
 
 namespace vgui
 {
-
+typedef struct InputContext_s InputContext_t;
+class VPanel;
 class Cursor;
 typedef unsigned long HCursor;
-
+typedef int HInputContext;
 #define VGUI_GCS_COMPREADSTR                 0x0001
 #define VGUI_GCS_COMPREADATTR                0x0002
 #define VGUI_GCS_COMPREADCLAUSE              0x0004
@@ -148,37 +150,21 @@ public:
 
 	void SetCandidateListPageStart( int start );
 
-	// Passes in a keycode which allows hitting other mouse buttons w/o cancelling capture mode
-	void SetMouseCaptureEx(VPANEL panel, MouseCode captureStartMouseCode );
+	void GetCompositionString(wchar_t *dest, int destSizeBytes);
+	void OnIMESelectCandidate(int num);
+	bool PostKeyMessage(KeyValues *message);
+	void DestroyCandidateList(void);
+	void CreateNewCandidateList(void);
+	void InternalShowCandidateWindow(void);
+	void InternalHideCandidateWindow(void);
+	void InternalUpdateCandidateWindow(void);
+	void InternalSetCompositionString(const wchar_t *compstr);
+	void *GetInputContext(void);
+	void OnKeyCodeUnhandled(int keyCode);
+	bool ShouldModalSubTreeReceiveMessages() const;
+	VPANEL GetModalSubTree(void);
+private:
 
-	// Because OnKeyCodeTyped uses CallParentFunction and is therefore message based, there's no way
-	//  to know if handler actually swallowed the specified keycode.  To get around this, I set a global before calling the
-	//  kb focus OnKeyCodeTyped function and if we ever get to a Panel::OnKeyCodeTypes we know that nobody handled the message
-	//  and in that case we can post a message to any "unhandled keycode" listeners
-	// This will generate an MESSAGE_FUNC_INT( "KeyCodeUnhandled" "code" code ) message to each such listener
-	void RegisterKeyCodeUnhandledListener( VPANEL panel );
-	void UnregisterKeyCodeUnhandledListener( VPANEL panel );
-
-	// Posts unhandled message to all interested panels
-	void OnKeyCodeUnhandled( int keyCode );
-
-	// Assumes subTree is a child panel of the root panel for the vgui contect
-	//  if restrictMessagesToSubTree is true, then mouse and kb messages are only routed to the subTree and it's children and mouse/kb focus
-	//   can only be on one of the subTree children, if a mouse click occurs outside of the subtree, and "UnhandledMouseClick" message is sent to unhandledMouseClickListener panel
-	//   if it's set
-	//  if restrictMessagesToSubTree is false, then mouse and kb messages are routed as normal except that they are not routed down into the subtree
-	//   however, if a mouse click occurs outside of the subtree, and "UnhandleMouseClick" message is sent to unhandledMouseClickListener panel
-	//   if it's set
-	void	SetModalSubTree( VPANEL subTree, VPANEL unhandledMouseClickListener, bool restrictMessagesToSubTree = true );
-	void	ReleaseModalSubTree();
-	VPANEL	GetModalSubTree();
-
-	// These toggle whether the modal subtree is exclusively receiving messages or conversely whether it's being excluded from receiving messages
-	// Sends a "ModalSubTree", state message
-	void	SetModalSubTreeReceiveMessages( bool state );
-	bool	ShouldModalSubTreeReceiveMessages() const;
-
-	VPANEL 	GetMouseCapture();
 };
 
 #define VGUI_INPUT_INTERFACE_VERSION "VGUI_Input004"

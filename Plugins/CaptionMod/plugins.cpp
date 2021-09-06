@@ -218,6 +218,26 @@ void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	//hook textmsg
 	MSG_Init();
+
+	EnumWindows([](HWND hwnd, LPARAM lParam
+		)
+	{
+		DWORD pid = 0;
+		if (GetWindowThreadProcessId(hwnd, &pid) && pid == GetCurrentProcessId())
+		{
+			char windowClass[256] = { 0 };
+			RealGetWindowClassA(hwnd, windowClass, sizeof(windowClass));
+			if (!strcmp(windowClass, "Valve001") || !strcmp(windowClass, "SDL_app"))
+			{
+				g_MainWnd = hwnd;
+				return FALSE;
+			}
+		}
+		return TRUE;
+	}, NULL);
+
+	g_MainWndProc = (WNDPROC)GetWindowLong(g_MainWnd, GWL_WNDPROC);
+	SetWindowLong(g_MainWnd, GWL_WNDPROC, (LONG)VID_MainWndProc);
 }
 
 void IPluginsV3::ExitGame(int iResult)

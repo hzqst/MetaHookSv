@@ -1139,7 +1139,7 @@ void Menu::LayoutMenuBorder()
 void Menu::Paint()
 {
 	if ( m_pScroller->IsVisible() )
-	{			
+	{
 		// draw black bar
 		int wide, tall;
 		GetSize (wide, tall);

@@ -103,11 +103,16 @@ Scheme
 		ListPanel.SelectedOutOfFocusBgColor	"255 155 0 128"
 		ListPanel.EmptyListInfoTextColor	"OffWhite"
 
-		Menu.TextColor					"White"
-		Menu.BgColor					"160 160 160 64"
-		Menu.ArmedTextColor				"Black"
-		Menu.ArmedBgColor				"Orange"
-		Menu.TextInset					"6"
+		Menu
+		{
+			"FgColor"			"DimBaseText"
+			"BgColor"			"160 160 160 64"
+			"ArmedFgColor"			"BrightBaseText"
+			"ArmedBgColor"			"SelectionBG"
+			"DividerColor"			"BorderDark"
+
+			"TextInset"			"6"
+		}
 
 		Panel.FgColor					"Blank"
 		Panel.BgColor					"DullWhite"

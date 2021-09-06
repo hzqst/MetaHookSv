@@ -20,6 +20,7 @@
 #include <vgui/ISurface.h>
 #include <vgui/ILocalize.h>
 #include <vgui/IPanel.h>
+#include <KeyValues.h>
 #include <vgui/MouseCode.h>
 
 #include "Menu.h"
@@ -44,9 +45,30 @@ static const int DRAW_OFFSET_X = 3,DRAW_OFFSET_Y = 1;
 DECLARE_BUILD_FACTORY( TextEntry );
 
 //-----------------------------------------------------------------------------
+// Purpose:
+//-----------------------------------------------------------------------------
+class IMECandidatesMenu : public Menu
+{
+	typedef Menu BaseClass;
+
+public:
+	IMECandidatesMenu(Panel *parent) : Menu(parent, "IMECandidatesMenu")
+	{
+	}
+
+public:
+	void OnThink(void)
+	{
+		BaseClass::OnThink();
+
+		MoveToFront();
+	}
+};
+
+//-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-TextEntry::TextEntry(Panel *parent, const char *panelName) : Panel(parent, panelName)
+TextEntry::TextEntry(Panel *parent, const char *panelName) : BaseClass(parent, panelName)
 {
 	SetTriplePressAllowed( true );
 
@@ -109,6 +131,7 @@ TextEntry::TextEntry(Panel *parent, const char *panelName) : Panel(parent, panel
 
 	// If keyboard focus is in an edit control, don't chain keyboard mappings up to parents since it could mess with typing in text.
 	SetAllowKeyBindingChainToParent( false );
+
 }
 
 
@@ -1275,6 +1298,7 @@ void TextEntry::CreateEditMenu()
 		delete m_pEditMenu;
 	m_pEditMenu = new Menu(this, "EditMenu");
 	
+	m_pEditMenu->SetFont( _font );
 	
 	// add cut/copy/paste drop down options if its editable, just copy if it is not
 	if (_editable && !_hideText)
@@ -1306,6 +1330,8 @@ void TextEntry::CreateEditMenu()
 			// Create a submenu
 			Menu *subMenu = new Menu( this, "LanguageMenu" );
 
+			subMenu->SetFont( _font );
+
 			for ( int i = 0; i < count; ++i )
 			{
 				int id = subMenu->AddCheckableMenuItem( "Language", UnlocalizeUnicode( langs[ i ].menuname ), new KeyValues( "DoLanguageChanged", "handle", langs[ i ].handleValue ), this );
@@ -1332,6 +1358,8 @@ void TextEntry::CreateEditMenu()
 			// Create a submenu
 			Menu *subMenu = new Menu( this, "ConversionModeMenu" );
 
+			subMenu->SetFont( _font );
+
 			for ( int i = 0; i < count; ++i )
 			{
 				int id = subMenu->AddCheckableMenuItem( "ConversionMode", UnlocalizeUnicode( modes[ i ].menuname ), new KeyValues( "DoConversionModeChanged", "handle", modes[ i ].handleValue ), this );
@@ -1357,6 +1385,8 @@ void TextEntry::CreateEditMenu()
 
 			// Create a submenu
 			Menu *subMenu = new Menu( this, "SentenceModeMenu" );
+
+			subMenu->SetFont( _font );
 
 			for ( int i = 0; i < count; ++i )
 			{
@@ -2051,7 +2081,7 @@ void TextEntry::OnCreateDragData( KeyValues *msg )
 {
 	BaseClass::OnCreateDragData( msg );
 
-	char txt[ 256 ];
+	wchar_t txt[ 256 ];
 	GetText( txt, sizeof( txt ) );
 
 	int r0, r1;
@@ -2060,10 +2090,10 @@ void TextEntry::OnCreateDragData( KeyValues *msg )
 		int len = r1 - r0;
 		if ( len > 0 && r0 < 1024 )
 		{
-			char selection[ 512 ];
-			Q_strncpy( selection, &txt[ r0 ], len + 1 );
+			wchar_t selection[ 512 ];
+			wcsncpy( selection, &txt[ r0 ], len + 1 );
 			selection[ len ] = 0;
-			msg->SetString( "text", selection );
+			msg->SetWString( "text", selection );
 		}
 	}
 }
@@ -2943,7 +2973,7 @@ void TextEntry::CalcBreakIndex()
 // Purpose: Insert a string into the text buffer, this is just a series
 //			of char inserts because we have to check each char is ok to insert
 //-----------------------------------------------------------------------------
-void TextEntry::InsertString(wchar_t *wszText)
+void TextEntry::InsertString(const wchar_t *wszText)
 {
 	SaveUndoState();
 
@@ -3292,7 +3322,7 @@ void TextEntry::CopySelected()
 			buf.AddToTail(m_TextStream[i]);
 		}
 		buf.AddToTail('\0');
-		system()->SetClipboardText(buf.Base(), x1 - x0);
+		system()->SetClipboardText(buf.Base(), buf.Count());
 	}
 	
 	// have to request focus if we used the menu
@@ -3542,15 +3572,16 @@ int TextEntry::GetValueAsInt()
 //-----------------------------------------------------------------------------
 // Purpose: Get a string from text buffer
 // Input:	offset - index to Start reading from 
-//			bufLen - length of string
+//			bufLenInBytes - length of string
 //-----------------------------------------------------------------------------
-void TextEntry::GetText(char *buf, int bufLen)
+void TextEntry::GetText(char *buf, int bufLenInBytes)
 {
+	Assert(bufLenInBytes >= sizeof(buf[0]));
 	if (m_TextStream.Count())
 	{
 		// temporarily null terminate the text stream so we can use the conversion function
 		int nullTerminatorIndex = m_TextStream.AddToTail((wchar_t)0);
-		g_pVGuiLocalize->ConvertUnicodeToANSI(m_TextStream.Base(), buf, bufLen);
+		g_pVGuiLocalize->ConvertUnicodeToANSI(m_TextStream.Base(), buf, bufLenInBytes);
 		m_TextStream.FastRemove(nullTerminatorIndex);
 	}
 	else
@@ -3567,6 +3598,7 @@ void TextEntry::GetText(char *buf, int bufLen)
 //-----------------------------------------------------------------------------
 void TextEntry::GetText(wchar_t *wbuf, int bufLenInBytes)
 {
+	Assert(bufLenInBytes >= sizeof(wbuf[0]));
 	int len = m_TextStream.Count();
 	if (m_TextStream.Count())
 	{
@@ -3676,11 +3708,15 @@ void TextEntry::ApplySettings( KeyValues *inResourceData )
 //	_font = scheme()->GetFont(GetScheme(), "Default", IsProportional() );
 //	SetFont( _font );
 
+	_font = scheme()->GetIScheme( GetScheme() )->GetFont( inResourceData->GetString( "font", "Default" ), IsProportional() );
+	SetFont( _font );
+
 	SetTextHidden((bool)inResourceData->GetInt("textHidden", 0));
 	SetEditable((bool)inResourceData->GetInt("editable", 1));
 	SetMaximumCharCount(inResourceData->GetInt("maxchars", -1));
 	SetAllowNumericInputOnly(inResourceData->GetInt("NumericInputOnly", 0));
 	SetAllowNonAsciiCharacters(inResourceData->GetInt("unicode", 0));
+	SelectAllOnFirstFocus(inResourceData->GetInt("selectallonfirstfocus", 0));
 }
 
 //-----------------------------------------------------------------------------
@@ -3825,6 +3861,12 @@ void TextEntry::OnSetFocus()
 		SelectNone();
 	}
 	
+	if ( m_bAllowNonAsciiCharacters )
+	{
+		input()->GetCompositionString( m_szComposition, sizeof( m_szComposition ));
+		ShowIMECandidates();
+	}
+	
 	BaseClass::OnSetFocus();
 }
 
@@ -3923,8 +3965,9 @@ void TextEntry::ShowIMECandidates()
 		return;
 	}
 
-	m_pIMECandidates = new Menu( this, "IMECandidatesMenu" );
-	
+	m_pIMECandidates = new IMECandidatesMenu( this );
+	m_pIMECandidates->SetFont(_font);
+
 	int pageStart = input()->GetCandidateListPageStart();
 	int pageSize = input()->GetCandidateListPageSize();
 	int selected = input()->GetCandidateListSelectedItem();
@@ -4015,8 +4058,8 @@ void TextEntry::HideIMECandidates()
 	if ( m_pIMECandidates )
 	{
 		m_pIMECandidates->SetVisible( false );
+		delete m_pIMECandidates;
 	}
-	delete m_pIMECandidates;
 	m_pIMECandidates = NULL;
 }
 
@@ -4081,11 +4124,22 @@ void TextEntry::UpdateIMECandidates()
 		_snwprintf( label, sizeof( label ) / sizeof( wchar_t ) - 1, L"%i %s", i - pageStart + startAtOne, unicode );
 		label[ sizeof( label ) / sizeof( wchar_t ) - 1 ] = L'\0';
 		item->SetText( label );
+		item->SetCommand( new KeyValues( "DoCandidateSelected", "num", i - pageStart + startAtOne ) );
 		if ( isSelected )
 		{
 			m_pIMECandidates->SetCurrentlyHighlightedItem( id );
 		}
 	}
+
+	m_pIMECandidates->InvalidateLayout();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+void TextEntry::CandidateSelected( int num )
+{
+	input()->OnIMESelectCandidate(num);
 }
 
 //-----------------------------------------------------------------------------

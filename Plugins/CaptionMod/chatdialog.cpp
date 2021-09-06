@@ -25,8 +25,6 @@ CChatDialogLine::CChatDialogLine(vgui::Panel *parent, const char *panelName) : v
 	m_iNameLength = 0;
 	m_text = NULL;
 
-	//SetScheme("ChatScheme");
-
 	SetPaintBackgroundEnabled(false);
 	SetVerticalScrollbar(false);
 }
@@ -155,6 +153,7 @@ CChatDialogInputLine::CChatDialogInputLine(CChatDialog *parent, char const *pane
 	SetMouseInputEnabled(false);
 
 	m_pPrompt = new vgui::TextEntry(this, "ChatInputPrompt");
+	m_pPrompt->SetAllowNonAsciiCharacters(true);
 	m_pInput = new CChatDialogEntry(this, "ChatInput", parent);
 	m_pInput->SetMaximumCharCount(127);
 }
@@ -171,6 +170,7 @@ void CChatDialogInputLine::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 	SetPaintBackgroundEnabled( true );
 	m_pPrompt->SetPaintBackgroundEnabled( true );
+	m_pPrompt->SetAllowNonAsciiCharacters(true);
 
 	m_pInput->SetMouseInputEnabled(true);
 
@@ -267,7 +267,7 @@ CChatDialog::CChatDialog(Panel *parent) : BaseClass(parent, PANEL_CHAT)
 
 	m_nMessageMode = MM_NONE;
 	m_pChatHistory = new CChatDialogHistory(this, "ChatHistory");
-
+	
 	CreateChatLines();
 	CreateChatInputLine();
 }
