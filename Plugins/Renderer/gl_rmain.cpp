@@ -327,6 +327,10 @@ void R_DrawParticlesNew(void)
 	{
 		LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
 	}
+	else if (!drawgbuffer && r_fog_mode == GL_EXP2)
+	{
+		LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+	}
 
 	if (r_draw_pass == r_draw_reflect && curwater)
 	{
@@ -508,6 +512,10 @@ void triapi_RenderMode(int mode)
 			{
 				LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
 			}
+			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
+			{
+				LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+			}
 
 			if (r_draw_pass == r_draw_reflect && curwater)
 			{
@@ -536,6 +544,10 @@ void triapi_RenderMode(int mode)
 			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 			{
 				LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+			}
+			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
+			{
+				LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
 			}
 
 			R_UseLegacySpriteProgram(LegacySpriteProgramState, NULL);
@@ -2131,6 +2143,9 @@ void R_SetupFrame(void)
 
 		r_fog_control[0] = 0;
 		r_fog_control[1] = (1536 - 4 * cshift_water->percent);
+		r_fog_control[2] = 0;
+
+		r_fog_mode = GL_LINEAR;
 
 		glFogi(GL_FOG_MODE, GL_LINEAR);
 		glFogfv(GL_FOG_COLOR, r_fog_color);
@@ -2177,13 +2192,29 @@ void R_DrawEntitiesOnList(void)
 
 void R_RenderFinalFog(void)
 {
+	memcpy(r_fog_color, g_UserFogColor, sizeof(vec4_t));
+
+	r_fog_control[0] = (*g_UserFogStart);
+	r_fog_control[1] = (*g_UserFogEnd);
+	r_fog_control[2] = (*g_UserFogDensity);
+
+	r_fog_mode = GL_EXP2;
+
+	scene_ubo_t SceneUBO;
+	memcpy(SceneUBO.fogColor, r_fog_color, sizeof(vec4_t));
+	SceneUBO.fogStart = r_fog_control[0];
+	SceneUBO.fogEnd = r_fog_control[1];
+	SceneUBO.fogDensity = r_fog_control[2];
+
+	glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, fogColor), offsetof(scene_ubo_t, time) - offsetof(scene_ubo_t, fogColor), &SceneUBO.fogColor);
+
 	glEnable(GL_FOG);
 	glFogi(GL_FOG_MODE, GL_EXP2);
-	glFogf(GL_FOG_DENSITY, (*g_UserFogDensity));
+	glFogf(GL_FOG_DENSITY, r_fog_control[2]);
 	glHint(GL_FOG_HINT, GL_NICEST);
-	glFogfv(GL_FOG_COLOR, g_UserFogColor);
-	glFogf(GL_FOG_START, (*g_UserFogStart));
-	glFogf(GL_FOG_END, (*g_UserFogEnd));
+	glFogfv(GL_FOG_COLOR, r_fog_color);
+	glFogf(GL_FOG_START, r_fog_control[0]);
+	glFogf(GL_FOG_END, r_fog_control[1]);
 }
 
 void AllowFog(int allowed)

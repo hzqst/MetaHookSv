@@ -9,8 +9,8 @@ cvar_t *r_wsurf_sky_occlusion;
 cvar_t *r_wsurf_zprepass;
 
 int r_fog_mode = 0;
-float r_fog_control[2] = { 0 };
-float r_fog_color[4] = {0};
+float r_fog_control[3] = { 0 };
+float r_fog_color[4] = { 0 };
 float r_shadow_matrix[3][16];
 float r_world_matrix_inv[16];
 float r_proj_matrix_inv[16];
@@ -75,6 +75,7 @@ const program_state_name_t s_WSurfProgramStateName[] = {
 { WSURF_PARALLAXTEXTURE_ENABLED		,"WSURF_PARALLAXTEXTURE_ENABLED"},
 { WSURF_SPECULARTEXTURE_ENABLED		,"WSURF_SPECULARTEXTURE_ENABLED"},
 { WSURF_LINEAR_FOG_ENABLED			,"WSURF_LINEAR_FOG_ENABLED"},
+{ WSURF_EXP2_FOG_ENABLED			,"WSURF_EXP2_FOG_ENABLED"},
 { WSURF_GBUFFER_ENABLED				,"WSURF_GBUFFER_ENABLED"},
 { WSURF_TRANSPARENT_ENABLED			,"WSURF_TRANSPARENT_ENABLED"},
 { WSURF_SHADOW_CASTER_ENABLED		,"WSURF_SHADOW_CASTER_ENABLED"},
@@ -206,6 +207,9 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 
 		if (state & WSURF_LINEAR_FOG_ENABLED)
 			defs << "#define LINEAR_FOG_ENABLED\n";
+	
+		if (state & WSURF_EXP2_FOG_ENABLED)
+			defs << "#define EXP2_FOG_ENABLED\n";
 
 		if (state & WSURF_GBUFFER_ENABLED)
 			defs << "#define GBUFFER_ENABLED\n";
@@ -1226,6 +1230,10 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 		{
 			WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
 		}
+		else if (!drawgbuffer && r_fog_mode == GL_EXP2)
+		{
+			WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+		}
 
 		if (drawgbuffer)
 		{
@@ -1359,6 +1367,10 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 			{
 				WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+			}
+			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
+			{
+				WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
 			}
 
 			if (drawgbuffer)
@@ -1499,6 +1511,10 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_t *modcache)
 		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 		{
 			WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+		}
+		else if (!drawgbuffer && r_fog_mode == GL_EXP2)
+		{
+			WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
 		}
 
 		if (drawgbuffer)
@@ -3156,6 +3172,7 @@ void R_SetupSceneUBO(void)
 	memcpy(SceneUBO.fogColor, r_fog_color, sizeof(vec4_t));
 	SceneUBO.fogStart = r_fog_control[0];
 	SceneUBO.fogEnd = r_fog_control[1];
+	SceneUBO.fogDensity = r_fog_control[2];
 	SceneUBO.time = (*cl_time);
 
 	float r_g = 1.0f / v_gamma->value;
@@ -3221,6 +3238,8 @@ void R_DrawWorld(void)
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 	//Capture previous fog settings from R_RenderScene
+	r_fog_mode = 0;
+
 	if (glIsEnabled(GL_FOG))
 	{
 		glGetIntegerv(GL_FOG_MODE, &r_fog_mode);
@@ -3229,6 +3248,13 @@ void R_DrawWorld(void)
 		{
 			glGetFloatv(GL_FOG_START, &r_fog_control[0]);
 			glGetFloatv(GL_FOG_END, &r_fog_control[1]);
+			glGetFloatv(GL_FOG_COLOR, r_fog_color);
+		}
+		else if (r_fog_mode == GL_EXP2)
+		{
+			glGetFloatv(GL_FOG_START, &r_fog_control[0]);
+			glGetFloatv(GL_FOG_END, &r_fog_control[1]);
+			glGetFloatv(GL_FOG_DENSITY, &r_fog_control[2]);
 			glGetFloatv(GL_FOG_COLOR, r_fog_color);
 		}
 	}

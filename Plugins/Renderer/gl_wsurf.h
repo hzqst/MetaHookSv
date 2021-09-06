@@ -219,6 +219,7 @@ typedef struct scene_ubo_s
 	vec4 fogColor;
 	float fogStart;
 	float fogEnd;
+	float fogDensity;
 	float time;
 	float r_g;
 	float r_g3;
@@ -338,7 +339,7 @@ extern r_worldsurf_t r_wsurf;
 extern int r_wsurf_drawcall;
 extern int r_wsurf_polys;
 extern int r_fog_mode;
-extern float r_fog_control[2];
+extern float r_fog_control[3];
 extern float r_fog_color[4];
 extern float r_shadow_matrix[3][16];
 extern vec3_t r_frustum_origin[4];
@@ -407,16 +408,17 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
 #define WSURF_PARALLAXTEXTURE_ENABLED		0x10
 #define WSURF_SPECULARTEXTURE_ENABLED		0x20
 #define WSURF_LINEAR_FOG_ENABLED			0x40
-#define WSURF_GBUFFER_ENABLED				0x80
-#define WSURF_TRANSPARENT_ENABLED			0x100
-#define WSURF_SHADOW_CASTER_ENABLED			0x200
-#define WSURF_SHADOWMAP_ENABLED				0x400
-#define WSURF_SHADOWMAP_HIGH_ENABLED		0x800
-#define WSURF_SHADOWMAP_MEDIUM_ENABLED		0x1000
-#define WSURF_SHADOWMAP_LOW_ENABLED			0x2000
-#define WSURF_BINDLESS_ENABLED				0x4000
-#define WSURF_SKYBOX_ENABLED				0x8000
-#define WSURF_DECAL_ENABLED					0x10000
-#define WSURF_CLIP_ENABLED					0x20000
-#define WSURF_OIT_ALPHA_BLEND_ENABLED		0x40000
-#define WSURF_OIT_ADDITIVE_BLEND_ENABLED	0x80000
+#define WSURF_EXP2_FOG_ENABLED				0x80
+#define WSURF_GBUFFER_ENABLED				0x100
+#define WSURF_TRANSPARENT_ENABLED			0x200
+#define WSURF_SHADOW_CASTER_ENABLED			0x400
+#define WSURF_SHADOWMAP_ENABLED				0x800
+#define WSURF_SHADOWMAP_HIGH_ENABLED		0x1000
+#define WSURF_SHADOWMAP_MEDIUM_ENABLED		0x2000
+#define WSURF_SHADOWMAP_LOW_ENABLED			0x4000
+#define WSURF_BINDLESS_ENABLED				0x8000
+#define WSURF_SKYBOX_ENABLED				0x10000
+#define WSURF_DECAL_ENABLED					0x20000
+#define WSURF_CLIP_ENABLED					0x40000
+#define WSURF_OIT_ALPHA_BLEND_ENABLED		0x80000
+#define WSURF_OIT_ADDITIVE_BLEND_ENABLED	0x100000

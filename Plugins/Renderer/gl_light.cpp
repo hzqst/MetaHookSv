@@ -52,6 +52,9 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 		if (state & DFINAL_LINEAR_FOG_ENABLED)
 			defs << "#define LINEAR_FOG_ENABLED\n";
 
+		if (state & DFINAL_EXP2_FOG_ENABLED)
+			defs << "#define EXP2_FOG_ENABLED\n";
+
 		if (state & DFINAL_SSR_ENABLED)
 			defs << "#define SSR_ENABLED\n";
 
@@ -108,7 +111,8 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 }
 
 const program_state_name_t s_DFinalProgramStateName[] = {
-{ DFINAL_LINEAR_FOG_ENABLED				,"DFINAL_LINEAR_FOG_ENABLED"			},	
+{ DFINAL_LINEAR_FOG_ENABLED				,"DFINAL_LINEAR_FOG_ENABLED"			},
+{ DFINAL_EXP2_FOG_ENABLED				,"DFINAL_EXP2_FOG_ENABLED"				},
 { DFINAL_SSR_ENABLED					,"DFINAL_SSR_ENABLED"					},
 { DFINAL_SSR_ADAPTIVE_STEP_ENABLED		,"DFINAL_SSR_ADAPTIVE_STEP_ENABLED"		},
 { DFINAL_SSR_EXPONENTIAL_STEP_ENABLED	,"DFINAL_SSR_EXPONENTIAL_STEP_ENABLED"	},
@@ -941,6 +945,8 @@ void R_EndRenderGBuffer(void)
 	int FinalProgramState = 0;
 
 	if (r_fog_mode == GL_LINEAR)
+		FinalProgramState |= DFINAL_LINEAR_FOG_ENABLED;
+	else if (r_fog_mode == GL_EXP2)
 		FinalProgramState |= DFINAL_LINEAR_FOG_ENABLED;
 
 	if (r_ssr->value)

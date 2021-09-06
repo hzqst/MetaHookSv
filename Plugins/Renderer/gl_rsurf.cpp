@@ -721,6 +721,10 @@ void R_DrawDecals(void)
 	{
 		WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
 	}
+	else if (!drawgbuffer && r_fog_mode == GL_EXP2)
+	{
+		WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+	}
 
 	if (drawgbuffer)
 	{

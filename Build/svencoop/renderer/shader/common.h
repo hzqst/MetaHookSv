@@ -80,6 +80,7 @@ struct scene_ubo_t{
 	vec4 fogColor;
 	float fogStart;
 	float fogEnd;
+	float fogDensity;
 	float time;
 	float r_g;
 	float r_g3;
