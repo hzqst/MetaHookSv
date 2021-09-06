@@ -159,7 +159,6 @@ public:
 	void InternalHideCandidateWindow(void);
 	void InternalUpdateCandidateWindow(void);
 	void InternalSetCompositionString(const wchar_t *compstr);
-	void *GetInputContext(void);
 	void OnKeyCodeUnhandled(int keyCode);
 	bool ShouldModalSubTreeReceiveMessages() const;
 	VPANEL GetModalSubTree(void);

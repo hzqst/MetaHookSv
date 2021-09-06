@@ -5,6 +5,8 @@
 #include <IEngineSurface.h>
 #include "plugins.h"
 
+#include <capstone.h>
+
 vgui::IInput *g_pVGuiInput;
 vgui::ISystem *g_pVGuiSystem;
 vgui::IVGui *g_pVGui;
@@ -54,7 +56,58 @@ bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryL
 		return false;
 	}
 
-	g_pfnCWin32Input_PostKeyMessage = (decltype(g_pfnCWin32Input_PostKeyMessage))((PUCHAR)GetModuleHandleA("vgui2.dll") + 0x86F0);
+	HMODULE hVGUI2 = GetModuleHandleA("vgui2.dll");
+
+	if (1)
+	{
+		const char sigs1[] = "KeyCodeReleased";
+		auto KeyCodeRelease_String = g_pMetaHookAPI->SearchPattern(hVGUI2, g_pMetaHookAPI->GetModuleSize(hVGUI2), sigs1, sizeof(sigs1) - 1);
+		Sig_VarNotFound(KeyCodeRelease_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x8B\xC8";
+		*(DWORD *)(pattern + 6) = (DWORD)KeyCodeRelease_String;
+		auto KeyCodeRelease_StringPush = g_pMetaHookAPI->SearchPattern(hVGUI2, g_pMetaHookAPI->GetModuleSize(hVGUI2), pattern, sizeof(pattern) - 1);
+		Sig_VarNotFound(KeyCodeRelease_StringPush);
+
+		typedef struct
+		{
+			int iFoundPushEax;
+		}KeyCodeRelease_ctx;
+
+		KeyCodeRelease_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(KeyCodeRelease_StringPush, 0x250, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+			KeyCodeRelease_ctx *ctx = (KeyCodeRelease_ctx *)context;
+			if (!ctx->iFoundPushEax && pinst->id == X86_INS_PUSH &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == X86_REG_EAX)
+			{//.text:01D87E55 C7 01 B8 94 37 02                                   mov     dword ptr [ecx], offset pbodypart
+				ctx->iFoundPushEax = 1;
+				return FALSE;
+			}
+
+			if (ctx->iFoundPushEax)
+			{
+				if (address[0] == 0xE8 && instLen == 5)
+				{
+					g_pfnCWin32Input_PostKeyMessage = (decltype(g_pfnCWin32Input_PostKeyMessage))pinst->detail->x86.operands[0].imm;
+				}
+			}
+
+			if (g_pfnCWin32Input_PostKeyMessage)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, &ctx);
+	}
 
 	return true;
 }

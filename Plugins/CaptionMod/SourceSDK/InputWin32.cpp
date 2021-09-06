@@ -61,15 +61,6 @@ using namespace vgui;
 HWND _imeWnd;
 CANDIDATELIST *_imeCandidates;
 
-void *IInput::GetInputContext(void)
-{
-	auto v2 = *(DWORD *)((char *)this + 924);
-	if (v2 == -1)
-		return (char *)this + 440;
-
-	return (char *)(*(DWORD *)((char *)this + 928) + 492 * v2);
-}
-
 enum LANGFLAG
 {
 	ENGLISH,
@@ -1079,17 +1070,5 @@ void IInput::OnIMESelectCandidate(int num)
 
 bool IInput::PostKeyMessage(KeyValues *message)
 {
-	/*InputContext_t *pContext = GetInputContext(m_hContext);
-
-	if ((pContext->_keyFocus != NULL) && IsChildOfModalPanel((VPANEL)pContext->_keyFocus))
-	{
-#undef PostMessage
-		g_pVGui->PostMessage((VPANEL)pContext->_keyFocus, message, NULL);
-		return true;
-	}
-
-	message->deleteThis();
-	return false;*/
-
 	return g_pfnCWin32Input_PostKeyMessage(this, 0, message);
 }
