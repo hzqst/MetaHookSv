@@ -130,7 +130,7 @@ This plugin intercepts original snapshot command and replace it with ISteamScree
 
 ### ABCEnchance (third-party) (Sven Co-op only)
 
-ABCEnchance is a metabook plugin that provides experience improvement for Sven co-op.
+ABCEnchance is a metahook plugin that provides experience improvement for Sven co-op.
 
 1. CSGO style health and ammo HUD
 2. Annular weapon menu
