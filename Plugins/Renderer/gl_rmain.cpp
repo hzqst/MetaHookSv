@@ -1752,13 +1752,8 @@ void R_InitCvars(void)
 	cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
 	chase_active = gEngfuncs.pfnGetCvarPointer("chase_active");
 
-	r_vertical_fov = gEngfuncs.pfnRegisterVariable("r_vertical_fov", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_vertical_fov = gEngfuncs.pfnRegisterVariable("r_vertical_fov", bVerticalFov ? "1" : "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_adjust_fov = gEngfuncs.pfnRegisterVariable("r_adjust_fov", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-
-	if (bVerticalFov)
-	{
-		Cvar_DirectSet(r_vertical_fov, "1");
-	}
 
 	gl_profile = gEngfuncs.pfnRegisterVariable("gl_profile", "0", FCVAR_CLIENTDLL );
 
@@ -1958,22 +1953,27 @@ void V_AdjustFov(float *fov_x, float *fov_y, float width, float height)
 
 void R_SetFrustum(void)
 {
-	float xfov, yfov;
+	float yfov, xfov;
 	if (r_vertical_fov->value)
 	{
-		xfov = (*scrfov);
-		yfov = V_CalcFovV((*scrfov), glwidth, glheight);
+		yfov = (*scrfov);
+		xfov = V_CalcFovV((*scrfov), glwidth, glheight);
 	}
 	else
 	{
-		xfov = V_CalcFovH((*scrfov), glwidth, glheight);
-		yfov = (*scrfov);
+		yfov = V_CalcFovH((*scrfov), glwidth, glheight);
+		xfov = (*scrfov);
+
+		if (r_adjust_fov->value)
+		{
+			V_AdjustFov(&xfov, &yfov, glwidth, glheight);
+		}
 	}
 
-	RotatePointAroundVector(frustum[0].normal, vup, vpn, -(90.0 - yfov * 0.5));
-	RotatePointAroundVector(frustum[1].normal, vup, vpn, 90.0 - yfov * 0.5);
-	RotatePointAroundVector(frustum[2].normal, vright, vpn, 90.0 - xfov * 0.5);
-	RotatePointAroundVector(frustum[3].normal, vright, vpn, -(90.0 - xfov * 0.5));
+	RotatePointAroundVector(frustum[0].normal, vup, vpn, -(90.0 - xfov * 0.5));
+	RotatePointAroundVector(frustum[1].normal, vup, vpn, 90.0 - xfov * 0.5);
+	RotatePointAroundVector(frustum[2].normal, vright, vpn, 90.0 - yfov * 0.5);
+	RotatePointAroundVector(frustum[3].normal, vright, vpn, -(90.0 - yfov * 0.5));
 
 	for (int i = 0; i < 4; i++)
 	{
