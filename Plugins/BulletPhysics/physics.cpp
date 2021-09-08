@@ -19,7 +19,6 @@ extern float(*plighttransform)[128][3][4];
 extern cvar_t *bv_debug;
 extern cvar_t *bv_simrate;
 extern cvar_t *bv_scale;
-extern cvar_t *bv_force_player_ragdoll;
 extern model_t *r_worldmodel;
 extern int *r_visframecount;
 
@@ -123,8 +122,7 @@ void CPhysicsDebugDraw::drawLine(const btVector3& from1, const btVector3& to1, c
 	qglDisable(GL_TEXTURE_2D);
 	qglDisable(GL_BLEND);
 	qglDisable(GL_DEPTH_TEST);
-
-	qglLineWidth(0.5f);
+	qglLineWidth(1);
 
 	gEngfuncs.pTriAPI->Color4f(color1.getX(), color1.getY(), color1.getZ(), 1.0f);
 	gEngfuncs.pTriAPI->Begin(TRI_LINES);
@@ -154,187 +152,214 @@ CPhysicsManager::CPhysicsManager()
 	 m_solver = NULL;
 	 m_dynamicsWorld = NULL;
 	 m_debugDraw = NULL;
+	 m_worldVertexArray = NULL;
+	 m_barnacleIndexArray = NULL;
+	 m_barnacleVertexArray = NULL;
 }
 
-void CPhysicsManager::GenerateIndexedVertexArray(model_t *mod, indexvertexarray_t *va)
+void CPhysicsManager::GenerateBrushIndiceArray(void)
 {
-	va->iNumFaces = 0;
-	va->iCurFace = 0;
-	va->iNumVerts = 0;
-	va->iCurVert = 0;
+	int maxNum = EngineGetMaxKnownModel();
 
-	if (r_worldmodel == mod)
+	if (m_brushIndexArray.size() < maxNum)
+		m_brushIndexArray.resize(maxNum);
+
+	for (int i = 0; i < maxNum; ++i)
 	{
-		auto surf = r_worldmodel->surfaces;
-
-		for (int i = 0; i < r_worldmodel->numsurfaces; i++)
+		if (m_brushIndexArray[i])
 		{
-			if ((surf[i].flags & (SURF_DRAWTURB | SURF_UNDERWATER)))
-				continue;
-
-			for (auto poly = surf[i].polys; poly; poly = poly->next)
-				va->iNumVerts += 3 + (poly->numverts - 3) * 3;
-
-			va->iNumFaces++;
+			delete m_brushIndexArray[i];
+			m_brushIndexArray[i] = NULL;
 		}
+	}
 
-		if (!va->iNumVerts)
-			return;
-
-		if (!va->iNumFaces)
-			return;
-
-		va->vVertexBuffer = new brushvertex_t[va->iNumVerts];
-
-		va->vFaceBuffer = new brushface_t[va->iNumFaces];
-
-		for (int i = 0; i < r_worldmodel->numsurfaces; i++)
+	for (int i = 0; i < (*mod_numknown); ++i)
+	{
+		auto mod = EngineGetModelByIndex(i);
+		if (mod->type == mod_brush && mod->name[0])
 		{
-			if ((surf[i].flags & (SURF_DRAWTURB | SURF_UNDERWATER)))
-				continue;
-
-			auto poly = surf[i].polys;
-
-			brushface_t *face = &va->vFaceBuffer[va->iCurFace];
-
-			face->start_vertex = va->iCurVert;
-			for (poly = surf[i].polys; poly; poly = poly->next)
+			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
 			{
-				auto v = poly->verts[0];
-				brushvertex_t pVertexes[3];
-
-				for (int j = 0; j < 3; j++, v += VERTEXSIZE)
-				{
-					pVertexes[j].pos[0] = v[0];
-					pVertexes[j].pos[1] = v[1];
-					pVertexes[j].pos[2] = v[2];
-					Vec3GoldSrcToBullet(pVertexes[j].pos);
-				}
-				memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[0], sizeof(brushvertex_t)); va->iCurVert++;
-				memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[1], sizeof(brushvertex_t)); va->iCurVert++;
-				memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[2], sizeof(brushvertex_t)); va->iCurVert++;
-
-				for (int j = 0; j < (poly->numverts - 3); j++, v += VERTEXSIZE)
-				{
-					memcpy(&pVertexes[1], &pVertexes[2], sizeof(brushvertex_t));
-
-					pVertexes[2].pos[0] = v[0];
-					pVertexes[2].pos[1] = v[1];
-					pVertexes[2].pos[2] = v[2];
-					Vec3GoldSrcToBullet(pVertexes[2].pos);
-
-					memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[0], sizeof(brushvertex_t)); va->iCurVert++;
-					memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[1], sizeof(brushvertex_t)); va->iCurVert++;
-					memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[2], sizeof(brushvertex_t)); va->iCurVert++;
-				}
+				m_brushIndexArray[i] = new indexarray_t;
+				GenerateIndexedArrayForBrush(mod, m_worldVertexArray, m_brushIndexArray[i]);
 			}
-
-			face->num_vertexes = va->iCurVert - face->start_vertex;
-			va->iCurFace++;
 		}
+	}
+}
+
+void CPhysicsManager::GenerateWorldVerticeArray(void)
+{
+	if (m_worldVertexArray) {
+		delete m_worldVertexArray;
+		m_worldVertexArray = NULL;
+	}
+
+	m_worldVertexArray = new vertexarray_t;
+
+	brushvertex_t Vertexes[3];
+
+	int iNumFaces = 0;
+	int iNumVerts = 0;
+
+	auto surf = r_worldmodel->surfaces;
+
+	m_worldVertexArray->vFaceBuffer.resize(r_worldmodel->numsurfaces);
+
+	for (int i = 0; i < r_worldmodel->numsurfaces; i++)
+	{
+		if ((surf[i].flags & (SURF_DRAWTURB | SURF_UNDERWATER | SURF_DRAWSKY)))
+			continue;
+
+		auto poly = surf[i].polys;
+
+		poly->flags = i;
+
+		brushface_t *brushface = &m_worldVertexArray->vFaceBuffer[i];
+
+		int iStartVert = iNumVerts;
+
+		brushface->start_vertex = iStartVert;
+
+		for (poly = surf[i].polys; poly; poly = poly->next)
+		{
+			auto v = poly->verts[0];
+
+			for (int j = 0; j < 3; j++, v += VERTEXSIZE)
+			{
+				Vertexes[j].pos[0] = v[0];
+				Vertexes[j].pos[1] = v[1];
+				Vertexes[j].pos[2] = v[2];
+				Vec3GoldSrcToBullet(Vertexes[j].pos);
+			}
+			m_worldVertexArray->vVertexBuffer.emplace_back(Vertexes[0]);
+			m_worldVertexArray->vVertexBuffer.emplace_back(Vertexes[1]);
+			m_worldVertexArray->vVertexBuffer.emplace_back(Vertexes[2]);
+			iNumVerts += 3;
+
+			for (int j = 0; j < (poly->numverts - 3); j++, v += VERTEXSIZE)
+			{
+				memcpy(&Vertexes[1], &Vertexes[2], sizeof(brushvertex_t));
+
+				Vertexes[2].pos[0] = v[0];
+				Vertexes[2].pos[1] = v[1];
+				Vertexes[2].pos[2] = v[2];
+				Vec3GoldSrcToBullet(Vertexes[2].pos);
+
+				m_worldVertexArray->vVertexBuffer.emplace_back(Vertexes[0]);
+				m_worldVertexArray->vVertexBuffer.emplace_back(Vertexes[1]);
+				m_worldVertexArray->vVertexBuffer.emplace_back(Vertexes[2]);
+				iNumVerts += 3;
+			}
+		}
+
+		brushface->num_vertexes = iNumVerts - iStartVert;
+	}
+}
+
+void CPhysicsManager::GenerateIndexedArrayForBrushface(brushface_t *brushface, indexarray_t *indexarray)
+{
+	int first = -1;
+	int prv0 = -1;
+	int prv1 = -1;
+	int prv2 = -1;
+	for (int i = 0; i < brushface->num_vertexes; i++)
+	{
+		if (prv0 != -1 && prv1 != -1 && prv2 != -1)
+		{
+			indexarray->vIndiceBuffer.emplace_back(brushface->start_vertex + first);
+			indexarray->vIndiceBuffer.emplace_back(brushface->start_vertex + prv2);
+		}
+
+		indexarray->vIndiceBuffer.emplace_back(brushface->start_vertex + i);
+
+		if (first == -1)
+			first = i;
+
+		prv0 = prv1;
+		prv1 = prv2;
+		prv2 = i;
+	}
+}
+
+void CPhysicsManager::GenerateIndexedArrayForSurface(msurface_t *psurf, vertexarray_t *vertexarray, indexarray_t *indexarray)
+{
+	if (psurf->flags & SURF_DRAWTURB)
+	{
+		return;
+	}
+
+	if (psurf->flags & SURF_DRAWSKY)
+	{
+		return;
+	}
+
+	if (psurf->flags & SURF_UNDERWATER)
+	{
+		return;
+	}
+
+	GenerateIndexedArrayForBrushface(&vertexarray->vFaceBuffer[psurf->polys->flags], indexarray);	
+}
+
+void CPhysicsManager::GenerateIndexedArrayRecursiveWorldNode(mnode_t *node, vertexarray_t *vertexarray, indexarray_t *indexarray)
+{
+	if (node->contents == CONTENTS_SOLID)
+		return;
+
+	if (node->contents < 0)
+		return;
+
+	GenerateIndexedArrayRecursiveWorldNode(node->children[0], vertexarray, indexarray);
+
+	auto c = node->numsurfaces;
+
+	if (c)
+	{
+		auto psurf = r_worldmodel->surfaces + node->firstsurface;
+
+		for (; c; c--, psurf++)
+		{
+			GenerateIndexedArrayForSurface(psurf, vertexarray, indexarray);
+		}
+	}
+
+	GenerateIndexedArrayRecursiveWorldNode(node->children[1], vertexarray, indexarray);
+}
+
+void CPhysicsManager::GenerateIndexedArrayForBrush(model_t *mod, vertexarray_t *vertexarray, indexarray_t *indexarray)
+{
+	if (mod == r_worldmodel)
+	{
+		GenerateIndexedArrayRecursiveWorldNode(mod->nodes, vertexarray, indexarray);
 	}
 	else
 	{
 		auto psurf = &mod->surfaces[mod->firstmodelsurface];
 		for (int i = 0; i < mod->nummodelsurfaces; i++, psurf++)
 		{
-			if (psurf->flags & (SURF_DRAWTURB | SURF_UNDERWATER))
-				continue;
-
-			for (auto poly = psurf->polys; poly; poly = poly->next)
-				va->iNumVerts += 3 + (poly->numverts - 3) * 3;
-
-			va->iNumFaces++;
-		}
-
-		if (!va->iNumVerts)
-			return;
-
-		if (!va->iNumFaces)
-			return;
-
-		va->vVertexBuffer = new brushvertex_t[va->iNumVerts];
-
-		va->vFaceBuffer = new brushface_t[va->iNumFaces];
-
-		psurf = &mod->surfaces[mod->firstmodelsurface];
-		for (int i = 0; i < mod->nummodelsurfaces; i++, psurf++)
-		{
-			if (psurf->flags & (SURF_DRAWTURB | SURF_UNDERWATER))
-				continue;
-
-			brushface_t *face = &va->vFaceBuffer[va->iCurFace];
-
-			face->start_vertex = va->iCurVert;
-			for (auto poly = psurf->polys; poly; poly = poly->next)
-			{
-				auto v = poly->verts[0];
-				brushvertex_t pVertexes[3];
-
-				for (int j = 0; j < 3; j++, v += VERTEXSIZE)
-				{
-					pVertexes[j].pos[0] = v[0];
-					pVertexes[j].pos[1] = v[1];
-					pVertexes[j].pos[2] = v[2];
-					Vec3GoldSrcToBullet(pVertexes[j].pos);
-				}
-				memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[0], sizeof(brushvertex_t)); va->iCurVert++;
-				memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[1], sizeof(brushvertex_t)); va->iCurVert++;
-				memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[2], sizeof(brushvertex_t)); va->iCurVert++;
-
-				for (int j = 0; j < (poly->numverts - 3); j++, v += VERTEXSIZE)
-				{
-					memcpy(&pVertexes[1], &pVertexes[2], sizeof(brushvertex_t));
-
-					pVertexes[2].pos[0] = v[0];
-					pVertexes[2].pos[1] = v[1];
-					pVertexes[2].pos[2] = v[2];
-					Vec3GoldSrcToBullet(pVertexes[2].pos);
-
-					memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[0], sizeof(brushvertex_t)); va->iCurVert++;
-					memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[1], sizeof(brushvertex_t)); va->iCurVert++;
-					memcpy(&va->vVertexBuffer[va->iCurVert], &pVertexes[2], sizeof(brushvertex_t)); va->iCurVert++;
-				}
-			}
-
-			face->num_vertexes = va->iCurVert - face->start_vertex;
-			va->iCurFace++;
-		}
-	}	
-}
-
-void CPhysicsManager::CreateStatic(cl_entity_t *ent, indexvertexarray_t *va)
-{
-	int iNumTris = 0;
-	for (int i = 0; i < va->iNumFaces; i++)
-	{
-		auto &face = va->vFaceBuffer[i];
-		for (int j = 1; j < face.num_vertexes - 1; ++j)
-		{
-			va->vIndiceBuffer.emplace_back(face.start_vertex);
-			va->vIndiceBuffer.emplace_back(face.start_vertex + j);
-			va->vIndiceBuffer.emplace_back(face.start_vertex + j + 1);
-			iNumTris++;
+			GenerateIndexedArrayForSurface(psurf, vertexarray, indexarray);			
 		}
 	}
+}
 
-	if (!iNumTris)
+void CPhysicsManager::CreateStaticRigid(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray)
+{
+	if (!indexarray->vIndiceBuffer.size())
 	{
 		auto staticbody = new CStaticBody;
 
 		staticbody->m_rigbody = NULL;
 		staticbody->m_entindex = ent->index;
-		staticbody->m_iva = va;
+		staticbody->m_vertexarray = vertexarray;
+		staticbody->m_indexarray = indexarray;
 
 		m_staticMap[ent->index] = staticbody;
 		return;
 	}
 
-	const int vertStride = sizeof(float[3]);
-	const int indexStride = 3 * sizeof(int);
-
-	auto vertexArray = new btTriangleIndexVertexArray(iNumTris, va->vIndiceBuffer.data(), indexStride,
-		va->iNumVerts, (float *)va->vVertexBuffer->pos, vertStride);
+	auto vertexArray = new btTriangleIndexVertexArray(
+		indexarray->vIndiceBuffer.size() / 3, indexarray->vIndiceBuffer.data(), 3 * sizeof(int),
+		vertexarray->vVertexBuffer.size(), (float *)vertexarray->vVertexBuffer.data(), sizeof(brushvertex_t));
 
 	auto meshShape = new btBvhTriangleMeshShape(vertexArray, true, true);
 
@@ -370,7 +395,8 @@ void CPhysicsManager::CreateStatic(cl_entity_t *ent, indexvertexarray_t *va)
 
 	staticbody->m_rigbody = body;
 	staticbody->m_entindex = ent->index;
-	staticbody->m_iva = va;
+	staticbody->m_vertexarray = vertexarray;
+	staticbody->m_indexarray = indexarray;
 
 	m_staticMap[ent->index] = staticbody;
 }
@@ -434,111 +460,26 @@ void CPhysicsManager::CreateBarnacle(cl_entity_t *ent)
 		return;
 	}
 
-	int BARNACLE_SEGMENTS = 12;
-
-	float BARNACLE_RADIUS1 = 22;
-	float BARNACLE_RADIUS2 = 16;
-	float BARNACLE_RADIUS3 = 10;
-
-	float BARNACLE_HEIGHT1 = 0;
-	float BARNACLE_HEIGHT2 = -10;
-	float BARNACLE_HEIGHT3 = -36;
-
-	FloatGoldSrcToBullet(&BARNACLE_RADIUS1);
-	FloatGoldSrcToBullet(&BARNACLE_RADIUS2);
-	FloatGoldSrcToBullet(&BARNACLE_RADIUS3);
-	FloatGoldSrcToBullet(&BARNACLE_HEIGHT1);
-	FloatGoldSrcToBullet(&BARNACLE_HEIGHT2);
-	FloatGoldSrcToBullet(&BARNACLE_HEIGHT3);
-
-	auto iva = new indexvertexarray_t;
-
-	iva->iNumVerts = BARNACLE_SEGMENTS * 8;
-	iva->iNumFaces = BARNACLE_SEGMENTS * 2;
-
-	iva->vVertexBuffer = new brushvertex_t[iva->iNumVerts];
-
-	iva->vFaceBuffer = new brushface_t[iva->iNumFaces];
-
-	int iStartVertex = 0;
-	int iNumVerts = 0;
-	int iNumFace = 0;
-
-	for (int x = 0; x < BARNACLE_SEGMENTS; x++)
-	{
-		float xSegment = (float)x / (float)BARNACLE_SEGMENTS;
-		float xSegment2 = (float)(x + 1) / (float)BARNACLE_SEGMENTS;
-
-		//layer 1
-
-		iva->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment * 2 * M_PI) * BARNACLE_RADIUS1;
-		iva->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment * 2 * M_PI) * BARNACLE_RADIUS1;
-		iva->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT1;
-
-		iNumVerts ++;
-
-		iva->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment * 2 * M_PI) * BARNACLE_RADIUS2;
-		iva->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment * 2 * M_PI) * BARNACLE_RADIUS2;
-		iva->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT2;
-
-		iNumVerts++;
-
-		iva->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS2;
-		iva->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS2;
-		iva->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT2;
-
-		iNumVerts++;
-
-		iva->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS1;
-		iva->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS1;
-		iva->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT1;
-
-		iNumVerts++;
-
-		iva->vFaceBuffer[iNumFace].start_vertex = iStartVertex;
-		iva->vFaceBuffer[iNumFace].num_vertexes = 4;
-		iNumFace++;
-
-		iStartVertex = iNumVerts;
-
-		// layer 2
-
-		iva->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment * 2 * M_PI) * BARNACLE_RADIUS2;
-		iva->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment * 2 * M_PI) * BARNACLE_RADIUS2;
-		iva->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT2;
-
-		iNumVerts++;
-
-		iva->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment * 2 * M_PI) * BARNACLE_RADIUS3;
-		iva->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment * 2 * M_PI) * BARNACLE_RADIUS3;
-		iva->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT3;
-
-		iNumVerts++;
-
-		iva->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS3;
-		iva->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS3;
-		iva->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT3;
-
-		iNumVerts++;
-
-		iva->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS2;
-		iva->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS2;
-		iva->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT2;
-
-		iNumVerts++;
-
-		iva->vFaceBuffer[iNumFace].start_vertex = iStartVertex;
-		iva->vFaceBuffer[iNumFace].num_vertexes = 4;
-		iNumFace++;
-
-		iStartVertex = iNumVerts;
-	}
-
-	CreateStatic(ent, iva);
+	CreateStaticRigid(ent, m_barnacleVertexArray, m_barnacleIndexArray);
 }
 
 void CPhysicsManager::CreateBrushModel(cl_entity_t *ent)
 {
+	int modelindex = EngineGetModelIndex(ent->model);
+	if (modelindex == -1)
+	{
+		//invalid model index?
+		Sys_ErrorEx("CreateBrushModel: Invalid model index\n");
+		return;
+	}
+
+	if (!m_brushIndexArray[modelindex])
+	{
+		//invalid model index?
+		Sys_ErrorEx("CreateBrushModel: Invalid model index\n");
+		return;
+	}
+
 	auto itor = m_staticMap.find(ent->index);
 
 	if (itor != m_staticMap.end())
@@ -567,11 +508,7 @@ void CPhysicsManager::CreateBrushModel(cl_entity_t *ent)
 		return;
 	}
 
-	auto iva = new indexvertexarray_t;
-
-	GenerateIndexedVertexArray(ent->model, iva);
-
-	CreateStatic(ent, iva);
+	CreateStaticRigid(ent, m_worldVertexArray, m_brushIndexArray[modelindex]);
 }
 
 void CPhysicsManager::NewMap(void)
@@ -587,7 +524,127 @@ void CPhysicsManager::NewMap(void)
 
 	r_worldmodel = r_worldentity->model;
 
+	GenerateWorldVerticeArray();
+	GenerateBrushIndiceArray();
+	GenerateBarnacleIndiceVerticeArray();
+
 	CreateBrushModel(r_worldentity);
+}
+
+void CPhysicsManager::GenerateBarnacleIndiceVerticeArray(void)
+{
+	int BARNACLE_SEGMENTS = 12;
+
+	float BARNACLE_RADIUS1 = 22;
+	float BARNACLE_RADIUS2 = 16;
+	float BARNACLE_RADIUS3 = 10;
+
+	float BARNACLE_HEIGHT1 = 0;
+	float BARNACLE_HEIGHT2 = -10;
+	float BARNACLE_HEIGHT3 = -36;
+
+	FloatGoldSrcToBullet(&BARNACLE_RADIUS1);
+	FloatGoldSrcToBullet(&BARNACLE_RADIUS2);
+	FloatGoldSrcToBullet(&BARNACLE_RADIUS3);
+	FloatGoldSrcToBullet(&BARNACLE_HEIGHT1);
+	FloatGoldSrcToBullet(&BARNACLE_HEIGHT2);
+	FloatGoldSrcToBullet(&BARNACLE_HEIGHT3);
+
+	if (m_barnacleVertexArray)
+	{
+		delete m_barnacleVertexArray;
+		m_barnacleVertexArray = NULL;
+	}
+
+	if (m_barnacleIndexArray)
+	{
+		delete m_barnacleIndexArray;
+		m_barnacleIndexArray = NULL;
+	}
+
+	m_barnacleVertexArray = new vertexarray_t;
+	m_barnacleVertexArray->vVertexBuffer.resize(BARNACLE_SEGMENTS * 8);
+	m_barnacleVertexArray->vFaceBuffer.resize(BARNACLE_SEGMENTS * 2);
+
+	int iStartVertex = 0;
+	int iNumVerts = 0;
+	int iNumFace = 0;
+
+	for (int x = 0; x < BARNACLE_SEGMENTS; x++)
+	{
+		float xSegment = (float)x / (float)BARNACLE_SEGMENTS;
+		float xSegment2 = (float)(x + 1) / (float)BARNACLE_SEGMENTS;
+
+		//layer 1
+
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment * 2 * M_PI) * BARNACLE_RADIUS1;
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment * 2 * M_PI) * BARNACLE_RADIUS1;
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT1;
+
+		iNumVerts++;
+
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment * 2 * M_PI) * BARNACLE_RADIUS2;
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment * 2 * M_PI) * BARNACLE_RADIUS2;
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT2;
+
+		iNumVerts++;
+
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS2;
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS2;
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT2;
+
+		iNumVerts++;
+
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS1;
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS1;
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT1;
+
+		iNumVerts++;
+
+		m_barnacleVertexArray->vFaceBuffer[iNumFace].start_vertex = iStartVertex;
+		m_barnacleVertexArray->vFaceBuffer[iNumFace].num_vertexes = 4;
+		iNumFace++;
+
+		iStartVertex = iNumVerts;
+
+		// layer 2
+
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment * 2 * M_PI) * BARNACLE_RADIUS2;
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment * 2 * M_PI) * BARNACLE_RADIUS2;
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT2;
+
+		iNumVerts++;
+
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment * 2 * M_PI) * BARNACLE_RADIUS3;
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment * 2 * M_PI) * BARNACLE_RADIUS3;
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT3;
+
+		iNumVerts++;
+
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS3;
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS3;
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT3;
+
+		iNumVerts++;
+
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS2;
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment2 * 2 * M_PI) * BARNACLE_RADIUS2;
+		m_barnacleVertexArray->vVertexBuffer[iNumVerts].pos[2] = BARNACLE_HEIGHT2;
+
+		iNumVerts++;
+
+		m_barnacleVertexArray->vFaceBuffer[iNumFace].start_vertex = iStartVertex;
+		m_barnacleVertexArray->vFaceBuffer[iNumFace].num_vertexes = 4;
+		iNumFace++;
+
+		iStartVertex = iNumVerts;
+	}
+
+	m_barnacleIndexArray = new indexarray_t;
+	for (int i = 0; i < m_barnacleVertexArray->vFaceBuffer.size(); i++)
+	{
+		GenerateIndexedArrayForBrushface(&m_barnacleVertexArray->vFaceBuffer[i], m_barnacleIndexArray);
+	}
 }
 
 void CPhysicsManager::Init(void)
@@ -843,11 +900,6 @@ void CPhysicsManager::SetGravity(float velocity)
 
 	m_dynamicsWorld->setGravity(btVector3(0, 0, goldsrc_velocity));
 }
-
-#define NL_PRESENT 0
-#define NL_NEEDS_LOADED 1
-#define NL_UNREFERENCED 2
-#define NL_CLIENT 3
 
 void CPhysicsManager::ReloadConfig(void)
 {
@@ -1651,11 +1703,13 @@ void CPhysicsManager::RemoveAllStatics()
 				m_dynamicsWorld->removeRigidBody(staticBody->m_rigbody);
 				delete staticBody->m_rigbody;
 			}
-			if (staticBody->m_iva)
+			if (staticBody->m_vertexarray && staticBody->m_vertexarray->bIsDynamic)
 			{
-				delete[]staticBody->m_iva->vFaceBuffer;
-				delete[]staticBody->m_iva->vVertexBuffer;
-				delete staticBody->m_iva;
+				delete staticBody->m_vertexarray;
+			}
+			if (staticBody->m_indexarray && staticBody->m_indexarray->bIsDynamic)
+			{
+				delete staticBody->m_indexarray;
 			}
 
 			delete staticBody; 

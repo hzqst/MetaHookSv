@@ -200,26 +200,26 @@ typedef struct brushface_s
 	int num_vertexes;
 }brushface_t;
 
-typedef struct indexvertexarray_s
+typedef struct vertexarray_s
 {
-	indexvertexarray_s()
+	vertexarray_s()
 	{
-		iNumFaces = 0;
-		iCurFace = 0;
-		iNumVerts = 0;
-		iCurVert = 0;
-		vVertexBuffer = NULL;
-		vFaceBuffer = NULL;
+		bIsDynamic = false;
 	}
+	std::vector<brushvertex_t> vVertexBuffer;
+	std::vector<brushface_t> vFaceBuffer;
+	bool bIsDynamic;
+}vertexarray_t;
 
-	int iNumFaces;
-	int iCurFace;
-	int iNumVerts;
-	int iCurVert;
-	brushvertex_t *vVertexBuffer;
-	brushface_t *vFaceBuffer;
+typedef struct indexarray_s
+{
+	indexarray_s()
+	{
+		bIsDynamic = false;
+	}
 	std::vector<int> vIndiceBuffer;
-}indexvertexarray_t;
+	bool bIsDynamic;
+}indexarray_t;
 
 ATTRIBUTE_ALIGNED16(class)
 CStaticBody
@@ -230,11 +230,13 @@ public:
 	{
 		m_entindex = -1;
 		m_rigbody = NULL;
-		m_iva = NULL;
+		m_vertexarray = NULL;
+		m_indexarray = NULL;
 	}
 	int m_entindex;
 	btRigidBody *m_rigbody;
-	indexvertexarray_t *m_iva;
+	vertexarray_t *m_vertexarray;
+	indexarray_t *m_indexarray;
 };
 
 #define RAGDOLL_SHAPE_SPHERE 1
@@ -332,7 +334,13 @@ public:
 	void Init(void);
 	void NewMap(void);
 	void DebugDraw(void);
-	void GenerateIndexedVertexArray(model_t *mod, indexvertexarray_t *v);
+	void GenerateBarnacleIndiceVerticeArray(void);
+	void GenerateBrushIndiceArray(void);
+	void GenerateWorldVerticeArray(void);
+	void GenerateIndexedArrayRecursiveWorldNode(mnode_t *node, vertexarray_t *vertexarray, indexarray_t *indexarray);
+	void GenerateIndexedArrayForBrushface(brushface_t *brushface, indexarray_t *indexarray);
+	void GenerateIndexedArrayForSurface(msurface_t *psurf, vertexarray_t *vertexarray, indexarray_t *indexarray);
+	void GenerateIndexedArrayForBrush(model_t *mod, vertexarray_t *vertexarray, indexarray_t *indexarray);
 	void SetGravity(float velocity);
 	void StepSimulation(double framerate);
 	void ReloadConfig(void);
@@ -350,7 +358,7 @@ public:
 	bool CreateRagdoll(ragdoll_config_t *cfg, int tentindex, studiohdr_t *studiohdr, int iActivityType, float *origin, float *velocity, cl_entity_t *barnacle, bool isplayer);
 	CRigBody *CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol);
 	btTypedConstraint *CreateConstraint(CRagdoll *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
-	void CreateStatic(cl_entity_t *ent, indexvertexarray_t *va);
+	void CreateStaticRigid(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray);
 	void CreateBrushModel(cl_entity_t *ent);
 	void CreateBarnacle(cl_entity_t *ent);
 	void RotateForEntity(cl_entity_t *ent, float matrix[4][4]);
@@ -371,6 +379,10 @@ private:
 	std::unordered_map<int, CRagdoll *> m_ragdollMap;
 	std::unordered_map<int, CStaticBody *> m_staticMap;
 	std::vector<ragdoll_config_t *> m_ragdoll_config;
+	std::vector<indexarray_t *> m_brushIndexArray;
+	vertexarray_t *m_worldVertexArray;
+	indexarray_t *m_barnacleIndexArray;
+	vertexarray_t *m_barnacleVertexArray;
 };
 
 extern CPhysicsManager gPhysicsManager;

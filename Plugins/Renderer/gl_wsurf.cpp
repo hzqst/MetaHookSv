@@ -861,7 +861,7 @@ void R_GenerateVertexBuffer(void)
 
 		auto poly = surf[i].polys;
 
-		poly->flags = iNumFaces;
+		poly->flags = i;
 
 		brushface_t *brushface = &r_wsurf.vFaceBuffer[iNumFaces];
 

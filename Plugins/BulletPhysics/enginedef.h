@@ -4,6 +4,12 @@
 #include "studio.h"
 #include "com_model.h"
 
+
+#define NL_PRESENT 0
+#define NL_NEEDS_LOADED 1
+#define NL_UNREFERENCED 2
+#define NL_CLIENT 3
+
 #define	MAX_QPATH 64
 
 //wad

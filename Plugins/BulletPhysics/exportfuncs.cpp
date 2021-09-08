@@ -24,6 +24,7 @@ r_studio_interface_t **gpStudioInterface;
 cvar_t *bv_debug = NULL;
 cvar_t *bv_simrate = NULL;
 cvar_t *bv_scale = NULL;
+cvar_t *bv_enable = NULL;
 cvar_t *bv_force_ragdoll_sequence = NULL;
 
 studiohdr_t **pstudiohdr = NULL;
@@ -138,7 +139,7 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 		auto ragdoll = gPhysicsManager.FindRagdoll(entindex);
 		if (!ragdoll)
 		{
-			if (iActivityType)
+			if (iActivityType && bv_enable->value)
 			{
 				auto cfg = gPhysicsManager.LoadRagdollConfig(model);
 
@@ -240,7 +241,7 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 
 		if (!ragdoll)
 		{
-			if (iActivityType)
+			if (iActivityType && bv_enable->value)
 			{
 				auto cfg = gPhysicsManager.LoadRagdollConfig(model);
 
@@ -506,7 +507,8 @@ void HUD_Init(void)
 
 	bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
 	bv_simrate = gEngfuncs.pfnRegisterVariable("bv_simrate", "64", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	bv_scale = gEngfuncs.pfnRegisterVariable("bv_scale", "0.1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_scale = gEngfuncs.pfnRegisterVariable("bv_scale", "0.03", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_enable = gEngfuncs.pfnRegisterVariable("bv_enable", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_force_ragdoll_sequence = gEngfuncs.pfnRegisterVariable("bv_force_ragdoll_sequence", "0", FCVAR_CLIENTDLL);
 
 	gEngfuncs.pfnAddCommand("bv_reload", BV_Reload_f);
