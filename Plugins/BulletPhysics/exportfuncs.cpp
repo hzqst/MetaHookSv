@@ -119,7 +119,12 @@ void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
 		}
 	}
 
-	if (currententity->curstate.iuser4 == 1919811)
+	if (currententity->curstate.iuser4 == 114515)
+	{
+		if (gPhysicsManager.SetupJiggleBones((*pstudiohdr), currententity->index))
+			return;
+	}
+	else if (currententity->curstate.iuser4 == 1919811)
 	{
 		if (gPhysicsManager.SetupJiggleBones((*pstudiohdr), currententity->curstate.number))
 			return;
@@ -152,6 +157,7 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 				gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, 0);
 
 				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex, (*pstudiohdr), iActivityType, false);
+
 				goto has_ragdoll;
 			}
 		}
@@ -162,21 +168,48 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 				gPhysicsManager.RemoveRagdoll(entindex);
 				return gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, flags);
 			}*/
+
 		has_ragdoll:
-			int iuser4 = currententity->curstate.iuser4;
-			currententity->curstate.iuser4 = 114514;
 
-			vec3_t saved_origin;
-			VectorCopy(currententity->origin, saved_origin);
-			gPhysicsManager.GetRagdollOrigin(ragdoll, currententity->origin);
+			if (gPhysicsManager.UpdateKinematic(ragdoll, iActivityType, &currententity->curstate))
+			{
+				//Monster don't have barnacle animation
+				/*if (ragdoll->m_iActivityType == 2)
+				{
+					cl_entity_t *barnacleEntity = gCorpseManager.FindBarnacleForPlayer(&currententity->curstate);
 
-			int result = gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, flags);
+					gPhysicsManager.ApplyBarnacle(ragdoll, barnacleEntity);
+				}*/
+			}
 
-			VectorCopy(saved_origin, currententity->origin);
+			if (ragdoll->m_iActivityType > 0)
+			{
+				int iuser4 = currententity->curstate.iuser4;
+				currententity->curstate.iuser4 = 114514;
 
-			currententity->curstate.iuser4 = iuser4;
+				vec3_t saved_origin;
+				VectorCopy(currententity->origin, saved_origin);
+				gPhysicsManager.GetRagdollOrigin(ragdoll, currententity->origin);
 
-			return result;
+				int result = gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, flags);
+
+				VectorCopy(saved_origin, currententity->origin);
+
+				currententity->curstate.iuser4 = iuser4;
+
+				return result;
+			}
+			else
+			{
+				int iuser4 = currententity->curstate.iuser4;
+				currententity->curstate.iuser4 = 114515;
+
+				int result = gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, flags);
+
+				currententity->curstate.iuser4 = iuser4;
+
+				return result;
+			}
 		}
 	}
 
@@ -206,6 +239,8 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 				gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, 0, pplayer);
 
 				ragdoll = gPhysicsManager.CreateRagdoll(cfg, playerindex, (*pstudiohdr), iActivityType, true);
+
+				goto has_ragdoll;
 			}
 		}
 		else
@@ -219,13 +254,24 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 
 		has_ragdoll:
 
-			if (gPhysicsManager.UpdateRagdollKinematic(ragdoll, iActivityType, pplayer))
+			int oldActivityType = ragdoll->m_iActivityType;
+
+			if (gPhysicsManager.UpdateKinematic(ragdoll, iActivityType, pplayer))
 			{
+				//Transform from whatever to barnacle
 				if (ragdoll->m_iActivityType == 2)
 				{
 					cl_entity_t *barnacleEntity = gCorpseManager.FindBarnacleForPlayer(&currententity->curstate);
 					
 					gPhysicsManager.ApplyBarnacle(ragdoll, barnacleEntity);
+				}
+
+				//Transform from Death or barnacle to idle
+				if (oldActivityType > 0 && ragdoll->m_iActivityType == 0)
+				{
+					gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, 0, pplayer);
+
+					gPhysicsManager.ResetPose(ragdoll, pplayer);
 				}
 			}
 

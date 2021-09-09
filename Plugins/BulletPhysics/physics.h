@@ -184,11 +184,15 @@ public:
 		m_pelvisRigBody = NULL;
 		m_headRigBody = NULL;
 		m_iActivityType = -1;
+		m_nUpdateKinematicMessageNumber = 0;
+		m_bUpdateKinematic = false;
 	}
 
 	int m_entindex;
 	int m_barnacleindex;
 	int m_iActivityType;
+	float m_nUpdateKinematicMessageNumber;
+	float m_bUpdateKinematic;
 	bool m_isPlayer;
 	studiohdr_t *m_studiohdr;
 	CRigBody *m_pelvisRigBody;
@@ -249,11 +253,13 @@ public:
 		m_rigbody = NULL;
 		m_vertexarray = NULL;
 		m_indexarray = NULL;
+		m_kinematic = false;
 	}
 	int m_entindex;
 	btRigidBody *m_rigbody;
 	vertexarray_t *m_vertexarray;
 	indexarray_t *m_indexarray;
+	bool m_kinematic;
 };
 
 #define RAGDOLL_SHAPE_SPHERE 1
@@ -373,13 +379,13 @@ public:
 	bool IsValidRagdoll(ragdoll_itor &itor);
 	CRagdoll *FindRagdoll(int tentindex);
 	ragdoll_itor FindRagdollEx(int tentindex);
-	bool UpdateRagdollKinematic(CRagdoll *ragdoll, int iActivityType, entity_state_t *curstate);
-	void ResetRagdollPose(CRagdoll *ragdoll);
+	bool UpdateKinematic(CRagdoll *ragdoll, int iActivityType, entity_state_t *curstate);
+	void ResetPose(CRagdoll *ragdoll, entity_state_t *curstate);
 	void ApplyBarnacle(CRagdoll *ragdoll, cl_entity_t *barnacleEntity);
 	CRagdoll *CreateRagdoll(ragdoll_config_t *cfg, int tentindex, studiohdr_t *studiohdr, int iActivityType, bool isplayer);
 	CRigBody *CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol);
 	btTypedConstraint *CreateConstraint(CRagdoll *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
-	void CreateStaticRigid(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray);
+	void CreateStatic(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray);
 	void CreateBrushModel(cl_entity_t *ent);
 	void CreateBarnacle(cl_entity_t *ent);
 	void RotateForEntity(cl_entity_t *ent, float matrix[4][4]);

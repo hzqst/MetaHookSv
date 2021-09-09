@@ -87,7 +87,7 @@ typedef enum
 	ACT_FLINCH_SMALL,
 	ACT_FLINCH_LARGE,
 	ACT_HOLDBOMB
-};
+}activity_e;
 
 model_t *g_barnacle_model = NULL;
 

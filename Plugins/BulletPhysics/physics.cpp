@@ -342,7 +342,7 @@ void CPhysicsManager::GenerateIndexedArrayForBrush(model_t *mod, vertexarray_t *
 	}
 }
 
-void CPhysicsManager::CreateStaticRigid(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray)
+void CPhysicsManager::CreateStatic(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray)
 {
 	if (!indexarray->vIndiceBuffer.size())
 	{
@@ -365,9 +365,33 @@ void CPhysicsManager::CreateStaticRigid(cl_entity_t *ent, vertexarray_t *vertexa
 
 	btDefaultMotionState* motionState = new btDefaultMotionState();
 
-	btRigidBody::btRigidBodyConstructionInfo cInfo(0.0f, motionState, meshShape);
+	float mass = 0;
+
+	/*if (ent->curstate.movetype == MOVETYPE_PUSH || ent->curstate.movetype == MOVETYPE_PUSHSTEP)
+	{
+		mass = 1000;
+	}*/
+
+	btRigidBody::btRigidBodyConstructionInfo cInfo(mass, motionState, meshShape);
 
 	btRigidBody* body = new btRigidBody(cInfo);
+
+	m_dynamicsWorld->addRigidBody(body);
+
+	auto staticbody = new CStaticBody;
+
+	staticbody->m_rigbody = body;
+	staticbody->m_entindex = ent->index;
+	staticbody->m_vertexarray = vertexarray;
+	staticbody->m_indexarray = indexarray;
+
+	if (ent->curstate.movetype == MOVETYPE_PUSH || ent->curstate.movetype == MOVETYPE_PUSHSTEP)
+	{
+		//body->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
+		//body->setActivationState(DISABLE_DEACTIVATION);
+
+		staticbody->m_kinematic = true;
+	}
 
 	body->setFriction(1.0f);
 
@@ -382,21 +406,12 @@ void CPhysicsManager::CreateStaticRigid(cl_entity_t *ent, vertexarray_t *vertexa
 		Matrix4x4_Transpose(matrix_transposed, matrix);
 
 		btTransform worldtrans;
-		worldtrans.setFromOpenGLMatrix((float *)matrix_transposed);
+		worldtrans.setFromOpenGLMatrix((float *)matrix);
 
 		TransformGoldSrcToBullet(worldtrans);
 
 		body->setWorldTransform(worldtrans);
 	}
-
-	m_dynamicsWorld->addRigidBody(body);
-
-	auto staticbody = new CStaticBody;
-
-	staticbody->m_rigbody = body;
-	staticbody->m_entindex = ent->index;
-	staticbody->m_vertexarray = vertexarray;
-	staticbody->m_indexarray = indexarray;
 
 	m_staticMap[ent->index] = staticbody;
 }
@@ -460,7 +475,7 @@ void CPhysicsManager::CreateBarnacle(cl_entity_t *ent)
 		return;
 	}
 
-	CreateStaticRigid(ent, m_barnacleVertexArray, m_barnacleIndexArray);
+	CreateStatic(ent, m_barnacleVertexArray, m_barnacleIndexArray);
 }
 
 void CPhysicsManager::CreateBrushModel(cl_entity_t *ent)
@@ -508,7 +523,7 @@ void CPhysicsManager::CreateBrushModel(cl_entity_t *ent)
 		return;
 	}
 
-	CreateStaticRigid(ent, m_worldVertexArray, m_brushIndexArray[modelindex]);
+	CreateStatic(ent, m_worldVertexArray, m_brushIndexArray[modelindex]);
 }
 
 void CPhysicsManager::NewMap(void)
@@ -1424,7 +1439,7 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		return NULL;
 	}
 
-	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->boneindex);
+	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)studiohdr + studiohdr->boneindex);
 
 	btTransform bonematrix, offsetmatrix;
 	Matrix3x4ToTransform((*pbonetransform)[rigcontrol->boneindex], bonematrix);
@@ -1616,7 +1631,7 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdoll *ragdoll, studiohd
 			cst->setDbgDrawSize(0.25f);
 		}
 		
-		cst->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, cstcontrol->factor3 * M_PI);
+		cst->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, cstcontrol->factor3 * M_PI, 1, 1, 1);
 
 		return cst;
 	}
@@ -1973,9 +1988,41 @@ CRagdoll *CPhysicsManager::FindRagdoll(int tentindex)
 	return NULL;
 }
 
-void CPhysicsManager::ResetRagdollPose(CRagdoll *ragdoll)
+void CPhysicsManager::ResetPose(CRagdoll *ragdoll, entity_state_t *curstate)
 {
+	bool bNeedResetKinematic = false;
 
+	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)ragdoll->m_studiohdr + ragdoll->m_studiohdr->boneindex);
+
+	for (auto &p : ragdoll->m_rigbodyMap)
+	{
+		auto rig = p.second;
+
+		if (rig->flags & RIG_FL_JIGGLE)
+		{
+			auto motionState = (BoneMotionState *)rig->rigbody->getMotionState();
+
+			auto &bonematrix = motionState->bonematrix;
+
+			Matrix3x4ToTransform((*pbonetransform)[rig->boneindex], bonematrix);
+			TransformGoldSrcToBullet(bonematrix);
+
+			rig->rigbody->setAngularVelocity(btVector3(0, 0, 0));
+			rig->rigbody->setLinearVelocity(btVector3(0, 0, 0));
+
+			//Transform to dynamic at next tick
+			rig->rigbody->setCollisionFlags(rig->oldCollisionFlags | btCollisionObject::CF_KINEMATIC_OBJECT);
+			rig->rigbody->setActivationState(DISABLE_DEACTIVATION);
+
+			bNeedResetKinematic = true;
+		}
+	}
+
+	if (bNeedResetKinematic)
+	{
+		ragdoll->m_nUpdateKinematicMessageNumber = curstate->messagenum;
+		ragdoll->m_bUpdateKinematic = true;
+	}
 }
 
 void CPhysicsManager::ApplyBarnacle(CRagdoll *ragdoll, cl_entity_t *barnacleEntity)
@@ -2122,8 +2169,14 @@ void CPhysicsManager::ApplyBarnacle(CRagdoll *ragdoll, cl_entity_t *barnacleEnti
 	}
 }
 
-bool CPhysicsManager::UpdateRagdollKinematic(CRagdoll *ragdoll, int iActivityType, entity_state_t *curstate)
+bool CPhysicsManager::UpdateKinematic(CRagdoll *ragdoll, int iActivityType, entity_state_t *curstate)
 {
+	if (ragdoll->m_bUpdateKinematic && curstate->messagenum > ragdoll->m_nUpdateKinematicMessageNumber + 4)
+	{
+		ragdoll->m_bUpdateKinematic = false;
+		goto update_kinematic;
+	}
+
 	if (ragdoll->m_iActivityType == iActivityType)
 		return false;
 
@@ -2140,10 +2193,12 @@ bool CPhysicsManager::UpdateRagdollKinematic(CRagdoll *ragdoll, int iActivityTyp
 
 	ragdoll->m_iActivityType = iActivityType;
 
+update_kinematic:
+
 	for (auto &itor : ragdoll->m_rigbodyMap)
 	{
 		auto rig = itor.second;
-		if (!iActivityType && !(rig->flags & RIG_FL_JIGGLE))
+		if (!ragdoll->m_iActivityType && !(rig->flags & RIG_FL_JIGGLE))
 		{
 			rig->rigbody->setCollisionFlags(rig->oldCollisionFlags | btCollisionObject::CF_KINEMATIC_OBJECT);
 			rig->rigbody->setActivationState(DISABLE_DEACTIVATION); 
