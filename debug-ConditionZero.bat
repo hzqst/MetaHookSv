@@ -3,7 +3,7 @@ echo off
 set LauncherExe=metahook.exe
 set LauncherMod=czero
 
-for /f "delims=" %%a in ('%~dp0SteamAppsLocation/SteamAppsLocation 80 InstallDir') do set GameDir=%%a
+for /f "delims=" %%a in ('"%~dp0SteamAppsLocation/SteamAppsLocation" 80 InstallDir') do set GameDir=%%a
 
 if "%GameDir%"=="" goto fail
 

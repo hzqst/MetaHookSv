@@ -11,6 +11,8 @@
 | GoldSrc_new    (8684 ~)  | √    |
 | SvEngine       (8832 ~)  | √    |
 
+* Warning: This plugin is not compatible with ReShade. 
+
 # GPU Requirement
 
 |       Vendor      |           Intel                  |          Nvidia            |          AMD               |

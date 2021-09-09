@@ -975,6 +975,12 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 	
 	cfg->state = 1;
 
+#define RAGDOLL_PARSING_DEATHANIM 0
+#define RAGDOLL_PARSING_RIGIDBODY 1
+#define RAGDOLL_PARSING_JIGGLEBONE 2
+#define RAGDOLL_PARSING_CONSTRAINT 3
+#define RAGDOLL_PARSING_BARNACLE 4
+
 	int iParsingState = -1;
 
 	char *ptext = pfile;
@@ -989,28 +995,33 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 
 		if (!strcmp(text, "[DeathAnim]"))
 		{
-			iParsingState = 0;
+			iParsingState = RAGDOLL_PARSING_DEATHANIM;
 			continue;
 		}
 		else if (!strcmp(text, "[RigidBody]"))
 		{
-			iParsingState = 1;
+			iParsingState = RAGDOLL_PARSING_RIGIDBODY;
+			continue;
+		}
+		else if (!strcmp(text, "[JiggleBone]"))
+		{
+			iParsingState = RAGDOLL_PARSING_JIGGLEBONE;
 			continue;
 		}
 		else if (!strcmp(text, "[Constraint]"))
 		{
-			iParsingState = 2;
+			iParsingState = RAGDOLL_PARSING_CONSTRAINT;
 			continue;
 		}
 		else if (!strcmp(text, "[Barnacle]"))
 		{
-			iParsingState = 3;
+			iParsingState = RAGDOLL_PARSING_BARNACLE;
 			continue;
 		}
 
 		std::string subname = text;
 
-		if (iParsingState == 0)
+		if (iParsingState == RAGDOLL_PARSING_DEATHANIM)
 		{
 			int i_sequence = atoi(subname.c_str());
 
@@ -1023,9 +1034,13 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 
 			float f_frame = atof(text);
 
+			if (cfg->animcontrol.size() < i_sequence + 1)
+			{
+				cfg->animcontrol.resize(i_sequence + 1);
+			}
 			cfg->animcontrol[i_sequence] = f_frame;
 		}
-		else if (iParsingState == 1)
+		else if (iParsingState == RAGDOLL_PARSING_RIGIDBODY || iParsingState == RAGDOLL_PARSING_JIGGLEBONE)
 		{
 			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
@@ -1104,11 +1119,10 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 
 			float f_mass = atof(text);
 
-			cfg->rigcontrol.emplace_back(subname, i_boneindex, i_pboneindex, i_shape, f_offset, f_size, f_size2, f_mass);
+			cfg->rigcontrol.emplace_back(subname, i_boneindex, i_pboneindex, i_shape, f_offset, f_size, f_size2, f_mass, iParsingState == 2 ? RIG_FL_JIGGLE : 0);
 		}
-		else if (iParsingState == 2)
+		else if (iParsingState == RAGDOLL_PARSING_CONSTRAINT)
 		{
-
 			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 				break;
@@ -1240,7 +1254,7 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 
 			cfg->cstcontrol.emplace_back(subname, linktarget, i_type, i_boneindex1, i_boneindex2, f_offset1, f_offset2, f_offset3, f_offset4, f_offset5, f_offset6, f_factor1, f_factor2, f_factor3);
 		}
-		else if (iParsingState == 3)
+		else if (iParsingState == RAGDOLL_PARSING_BARNACLE)
 		{
 			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
@@ -1458,7 +1472,7 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		rig->origin = origin;
 		rig->dir = dir;
 		rig->boneindex = rigcontrol->boneindex;
-
+		rig->flags = rigcontrol->flags;
 		return rig;
 	}
 	else if (rigcontrol->shape == RAGDOLL_SHAPE_CAPSULE)
@@ -1493,6 +1507,7 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		rig->origin = origin;
 		rig->dir = dir;
 		rig->boneindex = rigcontrol->boneindex;
+		rig->flags = rigcontrol->flags;
 
 		return rig;
 	}
@@ -1843,13 +1858,55 @@ void CPhysicsManager::MergeBarnacleBones(studiohdr_t *hdr, int entindex)
 	}*/
 }
 
+bool CPhysicsManager::SetupJiggleBones(studiohdr_t *hdr, int entindex)
+{
+	auto itor = m_ragdollMap.find(entindex);
+
+	if (itor == m_ragdollMap.end())
+	{
+		return false;
+	}
+
+	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->boneindex);
+
+	auto ragdoll = itor->second;
+
+	for (auto &p : ragdoll->m_rigbodyMap)
+	{
+		auto rig = p.second;
+
+		auto motionState = (BoneMotionState *)rig->rigbody->getMotionState();
+
+		if (!(rig->flags & RIG_FL_JIGGLE))
+		{
+			auto &bonematrix = motionState->bonematrix;
+
+			Matrix3x4ToTransform((*pbonetransform)[rig->boneindex], bonematrix);
+			TransformGoldSrcToBullet(bonematrix);
+		}
+		else
+		{
+			auto bonematrix = motionState->bonematrix;
+
+			TransformBulletToGoldSrc(bonematrix);
+
+			float bonematrix_3x4[3][4];
+			TransformToMatrix3x4(bonematrix, bonematrix_3x4);
+
+			memcpy((*pbonetransform)[rig->boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
+			memcpy((*plighttransform)[rig->boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
+		}
+	}
+
+	return true;
+}
+
 bool CPhysicsManager::SetupBones(studiohdr_t *hdr, int entindex)
 {
 	auto itor = m_ragdollMap.find(entindex);
 
 	if (itor == m_ragdollMap.end())
 	{
-		//gEngfuncs.Con_Printf("SetupPlayerBones: not found\n");
 		return false;
 	}
 
@@ -1916,25 +1973,198 @@ CRagdoll *CPhysicsManager::FindRagdoll(int tentindex)
 	return NULL;
 }
 
-bool CPhysicsManager::CreateRagdoll(
+void CPhysicsManager::ResetRagdollPose(CRagdoll *ragdoll)
+{
+
+}
+
+void CPhysicsManager::ApplyBarnacle(CRagdoll *ragdoll, cl_entity_t *barnacleEntity)
+{
+	ragdoll->m_barnacleindex = barnacleEntity->index;
+
+	for (auto &p : ragdoll->m_rigbodyMap)
+	{
+		auto rig = p.second;
+
+		rig->rigbody->setLinearVelocity(btVector3(0, 0, 0));
+		rig->rigbody->setAngularVelocity(btVector3(0, 0, 0));
+
+		for (size_t j = 0; j < ragdoll->m_barcontrol.size(); ++j)
+		{
+			auto barcontrol = &ragdoll->m_barcontrol[j];
+
+			if (barcontrol->name == rig->name)
+			{
+				if (barcontrol->type == RAGDOLL_BARNACLE_SLIDER)
+				{
+					if (std::find(ragdoll->m_barnacleDragRigBody.begin(), ragdoll->m_barnacleDragRigBody.end(), rig) == ragdoll->m_barnacleDragRigBody.end())
+						ragdoll->m_barnacleDragRigBody.emplace_back(rig);
+
+					btVector3 fwd(1, 0, 0);
+
+					btTransform rigtrans = rig->rigbody->getWorldTransform();
+
+					btVector3 barnacle_origin(barnacleEntity->origin[0], barnacleEntity->origin[1], barnacleEntity->origin[2] + barcontrol->factor2);
+					Vector3GoldSrcToBullet(barnacle_origin);
+
+					rig->barnacle_z_offset = barcontrol->factor3;
+					FloatGoldSrcToBullet(&rig->barnacle_z_offset);
+
+					auto transat = MatrixLookAt(rigtrans, barnacle_origin, fwd);
+
+					auto inv = rigtrans.inverse();
+
+					btTransform localrig1;
+					localrig1.mult(inv, transat);
+
+					btVector3 offset(barcontrol->offsetX, barcontrol->offsetY, barcontrol->offsetZ);
+					Vector3GoldSrcToBullet(offset);
+					localrig1.setOrigin(offset);
+
+					rig->barnacle_drag_offset = offset;
+
+					auto constraint = new btSliderConstraint(*rig->rigbody, localrig1, true);
+
+					auto distance = barnacle_origin.distance(rigtrans.getOrigin());
+
+					rig->barnacle_z_init = distance - rig->barnacle_z_offset;
+					rig->barnacle_z_final = distance;
+
+					constraint->setLowerAngLimit(M_PI * -1);
+					constraint->setUpperAngLimit(M_PI * 1);
+					constraint->setLowerLinLimit(0);
+					constraint->setUpperLinLimit(rig->barnacle_z_init);
+					constraint->setDbgDrawSize(1);
+
+					rig->barnacle_force = barcontrol->factor1;
+
+					FloatGoldSrcToBullet(&rig->barnacle_force);
+
+					rig->barnacle_constraint_slider = constraint;
+
+					ragdoll->m_barnacleConstraintArray.emplace_back(constraint);
+
+					m_dynamicsWorld->addConstraint(constraint);
+					break;
+				}
+				else if (barcontrol->type == RAGDOLL_BARNACLE_DOF6)
+				{
+					if (std::find(ragdoll->m_barnacleDragRigBody.begin(), ragdoll->m_barnacleDragRigBody.end(), rig) == ragdoll->m_barnacleDragRigBody.end())
+						ragdoll->m_barnacleDragRigBody.emplace_back(rig);
+
+					btVector3 fwd(1, 0, 0);
+
+					btTransform rigtrans = rig->rigbody->getWorldTransform();
+
+					btVector3 barnacle_origin(barnacleEntity->origin[0], barnacleEntity->origin[1], barnacleEntity->origin[2] + barcontrol->factor2);
+					Vector3GoldSrcToBullet(barnacle_origin);
+
+					rig->barnacle_z_offset = barcontrol->factor3;
+					FloatGoldSrcToBullet(&rig->barnacle_z_offset);
+
+					auto transat = MatrixLookAt(rigtrans, barnacle_origin, fwd);
+
+					auto inv = rigtrans.inverse();
+
+					btTransform localrig1;
+					localrig1.mult(inv, transat);
+
+					btVector3 offset(barcontrol->offsetX, barcontrol->offsetY, barcontrol->offsetZ);
+					Vector3GoldSrcToBullet(offset);
+					localrig1.setOrigin(offset);
+
+					rig->barnacle_drag_offset = offset;
+
+					auto constraint = new btGeneric6DofConstraint(*rig->rigbody, localrig1, true);
+
+					auto distance = barnacle_origin.distance(rigtrans.getOrigin());
+
+					rig->barnacle_z_init = distance - rig->barnacle_z_offset;
+					rig->barnacle_z_final = distance;
+
+					constraint->setAngularLowerLimit(btVector3(M_PI * -1, M_PI * -1, M_PI * -1));
+					constraint->setAngularUpperLimit(btVector3(M_PI * 1, M_PI * 1, M_PI * 1));
+					constraint->setLinearLowerLimit(btVector3(0, 0, 0));
+					constraint->setLinearUpperLimit(btVector3(rig->barnacle_z_init, 0, 0));
+					constraint->setDbgDrawSize(1);
+
+					rig->barnacle_force = barcontrol->factor1;
+					FloatGoldSrcToBullet(&rig->barnacle_force);
+
+					rig->barnacle_constraint_dof6 = constraint;
+
+					ragdoll->m_barnacleConstraintArray.emplace_back(constraint);
+
+					m_dynamicsWorld->addConstraint(constraint);
+				}
+				else if (barcontrol->type == RAGDOLL_BARNACLE_CHEWFORCE)
+				{
+					if (std::find(ragdoll->m_barnacleChewRigBody.begin(), ragdoll->m_barnacleChewRigBody.end(), rig) == ragdoll->m_barnacleChewRigBody.end())
+						ragdoll->m_barnacleChewRigBody.emplace_back(rig);
+
+					rig->barnacle_chew_force = barcontrol->factor1;
+					FloatGoldSrcToBullet(&rig->barnacle_chew_force);
+
+					rig->barnacle_chew_duration = barcontrol->factor2;
+				}
+				else if (barcontrol->type == RAGDOLL_BARNACLE_CHEWLIMIT)
+				{
+					if (std::find(ragdoll->m_barnacleChewRigBody.begin(), ragdoll->m_barnacleChewRigBody.end(), rig) == ragdoll->m_barnacleChewRigBody.end())
+						ragdoll->m_barnacleChewRigBody.emplace_back(rig);
+
+					rig->barnacle_chew_duration = barcontrol->factor2;
+
+					rig->barnacle_chew_up_z = barcontrol->factor3;
+					FloatGoldSrcToBullet(&rig->barnacle_chew_up_z);
+				}
+			}
+		}
+	}
+}
+
+bool CPhysicsManager::UpdateRagdollKinematic(CRagdoll *ragdoll, int iActivityType, entity_state_t *curstate)
+{
+	if (ragdoll->m_iActivityType == iActivityType)
+		return false;
+
+	if (ragdoll->m_iActivityType == 0 && iActivityType > 0)
+	{
+		if (curstate->sequence < ragdoll->m_animcontrol.size())
+		{
+			if (curstate->frame < ragdoll->m_animcontrol[curstate->sequence])
+			{
+				return false;
+			}
+		}
+	}
+
+	ragdoll->m_iActivityType = iActivityType;
+
+	for (auto &itor : ragdoll->m_rigbodyMap)
+	{
+		auto rig = itor.second;
+		if (!iActivityType && !(rig->flags & RIG_FL_JIGGLE))
+		{
+			rig->rigbody->setCollisionFlags(rig->oldCollisionFlags | btCollisionObject::CF_KINEMATIC_OBJECT);
+			rig->rigbody->setActivationState(DISABLE_DEACTIVATION); 
+		}
+		else
+		{
+			rig->rigbody->setCollisionFlags(rig->oldCollisionFlags);
+			rig->rigbody->forceActivationState(ACTIVE_TAG);
+		}
+	}
+
+	return true;
+}
+
+CRagdoll *CPhysicsManager::CreateRagdoll(
 	ragdoll_config_t *cfg,
 	int entindex, 
 	studiohdr_t *studiohdr,
 	int iActivityType,
-	float *origin, 
-	float *velocity, 
-	cl_entity_t *barnacle,
 	bool isplayer)
 {
-	if(FindRagdoll(entindex))
-	{
-		gEngfuncs.Con_Printf("CreateRagdoll: Already exists\n");
-		return true;
-	}
-
-	btVector3 player_origin(origin[0], origin[1], origin[2]);
-	Vector3GoldSrcToBullet(player_origin);
-
 	auto ragdoll = new CRagdoll();
 
 	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->boneindex);
@@ -1943,10 +2173,10 @@ bool CPhysicsManager::CreateRagdoll(
 
 	for (int i = 0; i < studiohdr->numbones; ++i)
 	{
-		if (bv_debug->value)
+		/*if (bv_debug->value)
 		{
 			gEngfuncs.Con_Printf("CreateRagdoll: pbones[%d] = %s, parent = %d\n", i, pbones[i].name, pbones[i].parent);
-		}
+		}*/
 
 		int parent = pbones[i].parent;
 		if (parent == -1)
@@ -1983,154 +2213,13 @@ bool CPhysicsManager::CreateRagdoll(
 			else if (rig->name == "Head")
 				ragdoll->m_headRigBody = rig;
 
-			btVector3 vel(velocity[0], velocity[1], velocity[2]);
+			rig->rigbody->setFriction(1);
+			rig->rigbody->setRollingFriction(1);
 
-			if (vel.length() > 500)
-				vel = vel.normalize() * 500;
-
-			Vector3GoldSrcToBullet(vel);
-
-			rig->rigbody->setLinearVelocity(vel);
-
-			rig->rigbody->setFriction(0.5f);
-
-			rig->rigbody->setRollingFriction(0.5f);
+			rig->oldActivitionState = rig->rigbody->getActivationState();
+			rig->oldCollisionFlags = rig->rigbody->getCollisionFlags();
 
 			m_dynamicsWorld->addRigidBody(rig->rigbody);
-
-			if (iActivityType == 2 && barnacle)
-			{
-				ragdoll->m_barnacleindex = barnacle->index;
-
-				for (size_t j = 0; j < cfg->barcontrol.size(); ++j)
-				{
-					auto barcontrol = &cfg->barcontrol[j];
-
-					if (barcontrol->name == rig->name)
-					{
-						if (barcontrol->type == RAGDOLL_BARNACLE_SLIDER)
-						{
-							if (std::find(ragdoll->m_barnacleDragRigBody.begin(), ragdoll->m_barnacleDragRigBody.end(), rig) == ragdoll->m_barnacleDragRigBody.end())
-								ragdoll->m_barnacleDragRigBody.emplace_back(rig);
-
-							btVector3 fwd(1, 0, 0);
-
-							btTransform rigtrans = rig->rigbody->getWorldTransform();
-						
-							btVector3 barnacle_origin(barnacle->origin[0], barnacle->origin[1], barnacle->origin[2] + barcontrol->factor2);
-							Vector3GoldSrcToBullet(barnacle_origin);
-
-							rig->barnacle_z_offset = barcontrol->factor3;
-							FloatGoldSrcToBullet(&rig->barnacle_z_offset);
-
-							auto transat = MatrixLookAt(rigtrans, barnacle_origin, fwd);
-
-							auto inv = rigtrans.inverse();
-
-							btTransform localrig1;
-							localrig1.mult(inv, transat);
-
-							btVector3 offset(barcontrol->offsetX, barcontrol->offsetY, barcontrol->offsetZ);
-							Vector3GoldSrcToBullet(offset);
-							localrig1.setOrigin(offset);
-
-							rig->barnacle_drag_offset = offset;
-
-							auto constraint = new btSliderConstraint(*rig->rigbody, localrig1, true);
-
-							auto distance = barnacle_origin.distance(rigtrans.getOrigin());
-
-							rig->barnacle_z_init = distance - rig->barnacle_z_offset;
-							rig->barnacle_z_final = distance;
-
-							constraint->setLowerAngLimit(M_PI * -1);
-							constraint->setUpperAngLimit(M_PI * 1);
-							constraint->setLowerLinLimit(0);
-							constraint->setUpperLinLimit(rig->barnacle_z_init);
-							constraint->setDbgDrawSize(1);
-
-							rig->barnacle_force = barcontrol->factor1;
-
-							FloatGoldSrcToBullet(&rig->barnacle_force);
-
-							rig->barnacle_constraint_slider = constraint;
-
-							ragdoll->m_barnacleConstraintArray.emplace_back(constraint);
-							m_dynamicsWorld->addConstraint(constraint);
-							break;
-						}
-						else if (barcontrol->type == RAGDOLL_BARNACLE_DOF6)
-						{
-							if (std::find(ragdoll->m_barnacleDragRigBody.begin(), ragdoll->m_barnacleDragRigBody.end(), rig) == ragdoll->m_barnacleDragRigBody.end())
-								ragdoll->m_barnacleDragRigBody.emplace_back(rig);
-
-							btVector3 fwd(1, 0, 0);
-
-							btTransform rigtrans = rig->rigbody->getWorldTransform();
-
-							btVector3 barnacle_origin(barnacle->origin[0], barnacle->origin[1], barnacle->origin[2] + barcontrol->factor2);
-							Vector3GoldSrcToBullet(barnacle_origin);
-
-							rig->barnacle_z_offset = barcontrol->factor3;
-							FloatGoldSrcToBullet(&rig->barnacle_z_offset);
-
-							auto transat = MatrixLookAt(rigtrans, barnacle_origin, fwd);
-
-							auto inv = rigtrans.inverse();
-
-							btTransform localrig1;
-							localrig1.mult(inv, transat);
-
-							btVector3 offset(barcontrol->offsetX, barcontrol->offsetY, barcontrol->offsetZ);
-							Vector3GoldSrcToBullet(offset);
-							localrig1.setOrigin(offset);
-
-							rig->barnacle_drag_offset = offset;
-
-							auto constraint = new btGeneric6DofConstraint(*rig->rigbody, localrig1, true);
-
-							auto distance = barnacle_origin.distance(rigtrans.getOrigin());
-
-							rig->barnacle_z_init = distance - rig->barnacle_z_offset;
-							rig->barnacle_z_final = distance;
-
-							constraint->setAngularLowerLimit(btVector3(M_PI * -1, M_PI * -1, M_PI * -1));
-							constraint->setAngularUpperLimit(btVector3(M_PI * 1, M_PI * 1, M_PI * 1));
-							constraint->setLinearLowerLimit(btVector3(0, 0, 0));
-							constraint->setLinearUpperLimit(btVector3(rig->barnacle_z_init, 0, 0));
-							constraint->setDbgDrawSize(1);
-
-							rig->barnacle_force = barcontrol->factor1;
-							FloatGoldSrcToBullet(&rig->barnacle_force);
-
-							rig->barnacle_constraint_dof6 = constraint;
-
-							ragdoll->m_barnacleConstraintArray.emplace_back(constraint);
-							m_dynamicsWorld->addConstraint(constraint);
-						}
-						else if (barcontrol->type == RAGDOLL_BARNACLE_CHEWFORCE)
-						{
-							if (std::find(ragdoll->m_barnacleChewRigBody.begin(), ragdoll->m_barnacleChewRigBody.end(), rig) == ragdoll->m_barnacleChewRigBody.end())
-								ragdoll->m_barnacleChewRigBody.emplace_back(rig);
-
-							rig->barnacle_chew_force = barcontrol->factor1;
-							FloatGoldSrcToBullet(&rig->barnacle_chew_force);
-
-							rig->barnacle_chew_duration = barcontrol->factor2;
-						}
-						else if (barcontrol->type == RAGDOLL_BARNACLE_CHEWLIMIT)
-						{
-							if (std::find(ragdoll->m_barnacleChewRigBody.begin(), ragdoll->m_barnacleChewRigBody.end(), rig) == ragdoll->m_barnacleChewRigBody.end())
-								ragdoll->m_barnacleChewRigBody.emplace_back(rig);
-
-							rig->barnacle_chew_duration = barcontrol->factor2;
-
-							rig->barnacle_chew_up_z = barcontrol->factor3;
-							FloatGoldSrcToBullet(&rig->barnacle_chew_up_z);
-						}
-					}
-				}
-			}
 		}
 	}
 
@@ -2156,7 +2245,9 @@ bool CPhysicsManager::CreateRagdoll(
 	ragdoll->m_entindex = entindex;
 	ragdoll->m_isPlayer = isplayer;
 	ragdoll->m_studiohdr = studiohdr;
+	ragdoll->m_animcontrol = cfg->animcontrol;
+	ragdoll->m_barcontrol = cfg->barcontrol;
 	m_ragdollMap[entindex] = ragdoll;
 
-	return true;
+	return ragdoll;
 }

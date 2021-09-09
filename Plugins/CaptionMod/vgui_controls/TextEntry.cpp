@@ -41,10 +41,7 @@ enum
 extern bool g_bIMEComposing;
 extern double g_flImeComposingTime;
 
-double vgui2_GetCurrentTime()
-{
-	return vgui::system()->GetCurrentTime();
-}
+double GetAbsoluteTime();
 
 using namespace vgui;
 
@@ -3031,7 +3028,7 @@ void TextEntry::Backspace()
 	if (g_bIMEComposing)
 		return;
 
-	if (system()->GetCurrentTime() < g_flImeComposingTime + 0.1)
+	if (GetAbsoluteTime() < g_flImeComposingTime + 0.1)
 		return;
 
 	//if you are at the first position don't do anything

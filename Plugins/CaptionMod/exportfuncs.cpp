@@ -552,7 +552,10 @@ void MessageMode2_f(void)
 bool g_bIMEComposing = false;
 double g_flImeComposingTime = 0;
 
-double vgui2_GetCurrentTime();
+double GetAbsoluteTime()
+{
+	return gEngfuncs.GetAbsoluteTime();
+}
 
 LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -594,7 +597,7 @@ LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 	case WM_IME_STARTCOMPOSITION:
 	{
 		g_bIMEComposing = true;
-		g_flImeComposingTime = vgui2_GetCurrentTime();
+		g_flImeComposingTime = GetAbsoluteTime();
 		vgui::input()->OnIMEStartComposition();
 		return 1;
 	}
@@ -609,7 +612,7 @@ LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 	case WM_IME_ENDCOMPOSITION:
 	{
 		g_bIMEComposing = false;
-		g_flImeComposingTime = vgui2_GetCurrentTime();
+		g_flImeComposingTime = GetAbsoluteTime();
 		vgui::input()->OnIMEEndComposition();
 		return 1;
 	}

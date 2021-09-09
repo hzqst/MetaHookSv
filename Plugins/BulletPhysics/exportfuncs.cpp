@@ -118,6 +118,12 @@ void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
 			gPhysicsManager.MergeBarnacleBones((*pstudiohdr), player->index);
 		}
 	}
+
+	if (currententity->curstate.iuser4 == 1919811)
+	{
+		if (gPhysicsManager.SetupJiggleBones((*pstudiohdr), currententity->curstate.number))
+			return;
+	}
 }
 
 int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int flags)
@@ -139,72 +145,24 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 		auto ragdoll = gPhysicsManager.FindRagdoll(entindex);
 		if (!ragdoll)
 		{
-			if (iActivityType && bv_enable->value)
+			auto cfg = gPhysicsManager.LoadRagdollConfig(model);
+
+			if (cfg && cfg->state == 1)
 			{
-				auto cfg = gPhysicsManager.LoadRagdollConfig(model);
+				gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, 0);
 
-				if (cfg && cfg->state == 1)
-				{
-					bool bTransformToRagdoll = false;
-
-					if (!bTransformToRagdoll)
-					{
-						auto itor = cfg->animcontrol.find(currententity->curstate.sequence);
-
-						if ((itor != cfg->animcontrol.end() && currententity->curstate.frame >= itor->second))
-						{
-							bTransformToRagdoll = true;
-						}
-					}
-
-					if (bTransformToRagdoll)
-					{
-						vec3_t velocity = { 0 };						
-						if (iActivityType == 1)
-						{
-							float frametime = currententity->curstate.animtime - currententity->latched.prevanimtime;
-							if (frametime > 0)
-							{
-								VectorSubtract(currententity->curstate.origin, currententity->latched.prevorigin, velocity);
-								velocity[0] /= frametime;
-								velocity[1] /= frametime;
-								velocity[2] /= frametime;
-							}
-						}
-
-						cl_entity_t *barnacle = NULL;
-
-						if (iActivityType == 2)
-						{
-							barnacle = gCorpseManager.FindBarnacleForPlayer(&currententity->curstate);
-						}
-
-						gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, 0);
-
-						if (gPhysicsManager.CreateRagdoll(
-							cfg,
-							entindex,
-							(*pstudiohdr),
-							iActivityType,
-							currententity->origin,
-							velocity,
-							barnacle,
-							false))
-						{
-							return gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, flags);
-						}
-					}
-				}
+				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex, (*pstudiohdr), iActivityType, false);
+				goto has_ragdoll;
 			}
 		}
 		else
 		{
-			if (!iActivityType)
+			/*if (!iActivityType)
 			{
-				gPhysicsManager.RemoveRagdoll(entindex);			
+				gPhysicsManager.RemoveRagdoll(entindex);
 				return gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, flags);
-			}
-
+			}*/
+		has_ragdoll:
 			int iuser4 = currententity->curstate.iuser4;
 			currententity->curstate.iuser4 = 114514;
 
@@ -241,94 +199,68 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 
 		if (!ragdoll)
 		{
-			if (iActivityType && bv_enable->value)
+			auto cfg = gPhysicsManager.LoadRagdollConfig(model);
+
+			if (cfg && cfg->state == 1)
 			{
-				auto cfg = gPhysicsManager.LoadRagdollConfig(model);
+				gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, 0, pplayer);
 
-				if (cfg&& cfg->state == 1)
-				{
-					bool bTransformToRagdoll = false;
-
-					if (bv_force_ragdoll_sequence->value == currententity->curstate.sequence)
-						bTransformToRagdoll = true;
-
-					if (!bTransformToRagdoll)
-					{
-						auto itor = cfg->animcontrol.find(pplayer->sequence);
-
-						if ((itor != cfg->animcontrol.end() && pplayer->frame >= itor->second))
-						{
-							bTransformToRagdoll = true;
-						}
-					}
-
-					if(bTransformToRagdoll)
-					{
-						vec3_t velocity = { 0 };
-
-						if (iActivityType == 1 && currententity->curstate.usehull != 1)
-						{
-							float frametime = currententity->curstate.animtime - currententity->latched.prevanimtime;
-							if (frametime > 0)
-							{
-								VectorSubtract(currententity->curstate.origin, currententity->latched.prevorigin, velocity);
-								velocity[0] /= frametime;
-								velocity[1] /= frametime;
-								velocity[2] /= frametime;
-							}
-						}
-
-						cl_entity_t *barnacle = NULL;
-
-						if (iActivityType == 2)
-						{
-							barnacle = gCorpseManager.FindBarnacleForPlayer(pplayer);
-						}
-
-						gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, 0, pplayer);
-
-						if (gPhysicsManager.CreateRagdoll(
-							cfg,
-							playerindex,
-							(*pstudiohdr),
-							iActivityType,
-							pplayer->origin,
-							velocity,
-							barnacle, 
-							true))
-						{
-							return gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, flags, pplayer);
-						}
-					}
-				}
+				ragdoll = gPhysicsManager.CreateRagdoll(cfg, playerindex, (*pstudiohdr), iActivityType, true);
 			}
 		}
 		else
 		{
-			//or model changed ?
-			if (!iActivityType || ragdoll->m_studiohdr != IEngineStudio.Mod_Extradata(model))
+			//model changed ?
+			if (ragdoll->m_studiohdr != IEngineStudio.Mod_Extradata(model))
 			{
 				gPhysicsManager.RemoveRagdoll(playerindex);
 				return gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, flags, pplayer);
 			}
 
-			int number = currententity->curstate.number;
-			int iuser4 = currententity->curstate.iuser4;
-			currententity->curstate.number = pplayer->number;
-			currententity->curstate.iuser4 = 1919810;
+		has_ragdoll:
 
-			vec3_t saved_origin;
-			VectorCopy(currententity->origin, saved_origin);
-			gPhysicsManager.GetRagdollOrigin(ragdoll, currententity->origin);
+			if (gPhysicsManager.UpdateRagdollKinematic(ragdoll, iActivityType, pplayer))
+			{
+				if (ragdoll->m_iActivityType == 2)
+				{
+					cl_entity_t *barnacleEntity = gCorpseManager.FindBarnacleForPlayer(&currententity->curstate);
+					
+					gPhysicsManager.ApplyBarnacle(ragdoll, barnacleEntity);
+				}
+			}
 
-			int result = gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, flags, pplayer);
+			if (ragdoll->m_iActivityType > 0)
+			{
+				int number = currententity->curstate.number;
+				int iuser4 = currententity->curstate.iuser4;
+				currententity->curstate.number = pplayer->number;
+				currententity->curstate.iuser4 = 1919810;
 
-			VectorCopy(saved_origin, currententity->origin);
+				vec3_t saved_origin;
+				VectorCopy(currententity->origin, saved_origin);
+				gPhysicsManager.GetRagdollOrigin(ragdoll, currententity->origin);
 
-			currententity->curstate.number = number;
-			currententity->curstate.iuser4 = iuser4;
+				int result = gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, flags, pplayer);
 
-			return result;
+				VectorCopy(saved_origin, currententity->origin);
+
+				currententity->curstate.number = number;
+				currententity->curstate.iuser4 = iuser4;
+				return result;
+			}
+			else
+			{
+				int number = currententity->curstate.number;
+				int iuser4 = currententity->curstate.iuser4;
+				currententity->curstate.number = pplayer->number;
+				currententity->curstate.iuser4 = 1919811;
+
+				int result = gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, flags, pplayer);
+
+				currententity->curstate.number = number;
+				currententity->curstate.iuser4 = iuser4;
+				return result;
+			}
 		}
 	}
 
@@ -465,6 +397,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 void BV_Reload_f(void)
 {
 	gPhysicsManager.ReloadConfig();
+	gPhysicsManager.RemoveAllRagdolls();
 }
 
 void BV_ThreadPerson_f(void)

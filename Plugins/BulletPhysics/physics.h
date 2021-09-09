@@ -9,7 +9,7 @@
 
 typedef struct ragdoll_rig_control_s
 {
-	ragdoll_rig_control_s(const std::string &n, int i, int p, int sh, float off, float s, float s2, float m)
+	ragdoll_rig_control_s(const std::string &n, int i, int p, int sh, float off, float s, float s2, float m, int fl)
 	{
 		name = n;
 		boneindex = i;
@@ -19,6 +19,7 @@ typedef struct ragdoll_rig_control_s
 		size = s;
 		size2 = s2;
 		mass = m;
+		flags = fl;
 	}
 	std::string name;
 	int boneindex;
@@ -28,7 +29,10 @@ typedef struct ragdoll_rig_control_s
 	float size;
 	float size2;
 	float mass;
+	int flags;
 }ragdoll_rig_control_t;
+
+#define RIG_FL_JIGGLE 1
 
 typedef struct ragdoll_cst_control_s
 {
@@ -101,7 +105,7 @@ typedef struct ragdoll_bar_control_s
 typedef struct ragdoll_config_s
 {
 	int state;
-	std::unordered_map<int, float> animcontrol;
+	std::vector<float> animcontrol;
 	std::vector<ragdoll_cst_control_t> cstcontrol;
 	std::vector<ragdoll_rig_control_t> rigcontrol;
 	std::vector<ragdoll_bar_control_t> barcontrol;
@@ -125,6 +129,9 @@ public:
 		barnacle_z_offset = 0;
 		barnacle_z_init = 0;
 		barnacle_z_final = 0;
+		flags = 0;
+		oldActivitionState = 0;
+		oldCollisionFlags = 0;
 	}
 	CRigBody(const std::string &n, btRigidBody *a1, const btVector3 &a2, const btVector3 &a3, int a4) : name(n), rigbody(a1), origin(a2), dir(a3), boneindex(a4)
 	{
@@ -138,6 +145,9 @@ public:
 		barnacle_z_offset = 0;
 		barnacle_z_init = 0;
 		barnacle_z_final = 0;
+		flags = 0;
+		oldActivitionState = 0;
+		oldCollisionFlags = 0;
 	}
 	std::string name;
 	btRigidBody *rigbody;
@@ -146,6 +156,7 @@ public:
 	btVector3 origin;
 	btVector3 dir;
 	int boneindex;
+	int flags;
 	float barnacle_force;
 	float barnacle_chew_force;
 	float barnacle_chew_duration;
@@ -154,7 +165,9 @@ public:
 	float barnacle_z_offset;
 	float barnacle_z_init;
 	float barnacle_z_final;
-	btVector3 barnacle_drag_offset;
+	btVector3 barnacle_drag_offset;	
+	int oldActivitionState;
+	int oldCollisionFlags;
 };
 
 ATTRIBUTE_ALIGNED16(class)
@@ -170,10 +183,12 @@ public:
 		m_studiohdr = NULL;
 		m_pelvisRigBody = NULL;
 		m_headRigBody = NULL;
+		m_iActivityType = -1;
 	}
 
 	int m_entindex;
 	int m_barnacleindex;
+	int m_iActivityType;
 	bool m_isPlayer;
 	studiohdr_t *m_studiohdr;
 	CRigBody *m_pelvisRigBody;
@@ -186,6 +201,8 @@ public:
 	std::unordered_map <std::string, CRigBody *> m_rigbodyMap;
 	std::vector <btTypedConstraint *> m_constraintArray;
 	std::vector <btTypedConstraint *> m_barnacleConstraintArray;
+	std::vector<float> m_animcontrol;
+	std::vector<ragdoll_bar_control_t> m_barcontrol;
 };
 
 typedef struct brushvertex_s
@@ -346,6 +363,7 @@ public:
 	void ReloadConfig(void);
 	ragdoll_config_t *LoadRagdollConfig(model_t *mod);
 	bool SetupBones(studiohdr_t *hdr, int entindex);
+	bool SetupJiggleBones(studiohdr_t *hdr, int entindex);
 	void MergeBarnacleBones(studiohdr_t *hdr, int entindex);
 	bool HasRagdolls(void);
 	void RemoveRagdoll(int tentindex);
@@ -355,7 +373,10 @@ public:
 	bool IsValidRagdoll(ragdoll_itor &itor);
 	CRagdoll *FindRagdoll(int tentindex);
 	ragdoll_itor FindRagdollEx(int tentindex);
-	bool CreateRagdoll(ragdoll_config_t *cfg, int tentindex, studiohdr_t *studiohdr, int iActivityType, float *origin, float *velocity, cl_entity_t *barnacle, bool isplayer);
+	bool UpdateRagdollKinematic(CRagdoll *ragdoll, int iActivityType, entity_state_t *curstate);
+	void ResetRagdollPose(CRagdoll *ragdoll);
+	void ApplyBarnacle(CRagdoll *ragdoll, cl_entity_t *barnacleEntity);
+	CRagdoll *CreateRagdoll(ragdoll_config_t *cfg, int tentindex, studiohdr_t *studiohdr, int iActivityType, bool isplayer);
 	CRigBody *CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol);
 	btTypedConstraint *CreateConstraint(CRagdoll *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
 	void CreateStaticRigid(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray);
