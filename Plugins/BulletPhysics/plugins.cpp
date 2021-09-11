@@ -184,7 +184,7 @@ void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
 	pExportFunc->HUD_TempEntUpdate = HUD_TempEntUpdate;
 	pExportFunc->HUD_AddEntity = HUD_AddEntity;
-	pExportFunc->HUD_DrawTransparentTriangles = HUD_DrawTransparentTriangles;
+	pExportFunc->HUD_DrawNormalTriangles = HUD_DrawNormalTriangles;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 
 	QGL_Init();

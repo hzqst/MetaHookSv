@@ -6,8 +6,6 @@
 16 120
 17 150
 18 30
-182 255
-183 0
 
 [RigidBody]
 Head   15  6  capsule  -4.0  5.0  0.1   6
@@ -55,13 +53,13 @@ LLeg2  LLeg   hinge     41 41  0 0 0     0 8 0         -0.6  0.0  0
 Pelvis RLeg   conetwist 46 46  0 0 0     0 -7  0        0.1  0.1  0.25
 RLeg2  RLeg   hinge     46 46  0 0 0     0 8 0         -0.6  0.0  0
 
-Head          FakehairL1   conetwist  56 56  0 0 0   0 -4 0       0.25  0.25   0.05
-FakehairL1    FakehairL2   conetwist  57 57  0 0 0   0 -4 0       0.5   0.5   0.05
-FakehairL2    FakehairL3   conetwist  58 58  0 0 0   0  4 0       1.0   1.0    0.05
+Head          FakehairL1   conetwist  56 56  0 0 0   0 -4 0       0.5  0.5   0.05
+FakehairL1    FakehairL2   conetwist  57 57  0 0 0   0 -4 0       0.1  0.1   0.5
+FakehairL2    FakehairL3   conetwist  58 58  0 0 0   0  4 0       0.1   0.1    0.5
 
-Head          FakehairR1   conetwist  59 59  0 0 0   0 -4 0       0.25  0.25   0.05
-FakehairR1    FakehairR2   conetwist  60 60  0 0 0   0 -4 0       0.5   0.5   0.05
-FakehairR2    FakehairR3   conetwist  61 61  0 0 0   0  4 0       1.0   1.0    0.05
+Head          FakehairR1   conetwist  59 59  0 0 0   0 -4 0       0.5  0.5   0.05
+FakehairR1    FakehairR2   conetwist  60 60  0 0 0   0 -4 0       0.1  0.1   0.5
+FakehairR2    FakehairR3   conetwist  61 61  0 0 0   0  4 0       0.1   0.1    0.5
 
 [Barnacle]
 LLeg2   dof6          0  8  0     40000   4   16
@@ -69,3 +67,8 @@ LLeg2   chewlimit     0  0  0     0       1.0  4
 RLeg    dof6          0  0  0     30000  -16  16
 RLeg    chewlimit     0  0  0     0       1.0  4
 Pelvis  chewforce     0  0  0     8000    1.0  0
+
+[Gargantua]
+Head    GargMouth   dof6    0  0  0     20000  -8  16
+Spine   GargMouth   dof6    0  0  0     20000  -16  32
+Pelvis  GargMouth   dof6    0  0  0     20000  -24  64

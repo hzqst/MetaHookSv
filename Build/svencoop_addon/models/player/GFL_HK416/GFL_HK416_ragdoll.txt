@@ -6,8 +6,6 @@
 16 120
 17 150
 18 30
-182 255
-183 0
 
 [RigidBody]
 Head   15  6  capsule  -4.0  5.0  0.1   6
@@ -52,3 +50,8 @@ LLeg2   chewlimit     0  0  0     0       1.0  4
 RLeg    dof6          0  0  0     30000  -16  16
 RLeg    chewlimit     0  0  0     0       1.0  4
 Pelvis  chewforce     0  0  0     8000    1.0  0
+
+[Gargantua]
+Head    GargMouth   dof6    0  0  0     20000  -8  16
+Spine   GargMouth   dof6    0  0  0     20000  -16  32
+Pelvis  GargMouth   dof6    0  0  0     20000  -24  64

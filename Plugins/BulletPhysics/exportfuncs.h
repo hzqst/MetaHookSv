@@ -18,7 +18,7 @@ void HUD_TempEntUpdate(
 	TEMPENTITY **ppTempEntActive, // List 
 	int(*Callback_AddVisibleEntity)(cl_entity_t *pEntity),
 	void(*Callback_TempEntPlaySound)(TEMPENTITY *pTemp, float damp));
-void HUD_DrawTransparentTriangles(void);
+void HUD_DrawNormalTriangles(void);
 void HUD_Init(void);
 void V_CalcRefdef(struct ref_params_s *pparams);
 

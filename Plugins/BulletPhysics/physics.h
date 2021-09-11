@@ -33,6 +33,7 @@ typedef struct ragdoll_rig_control_s
 }ragdoll_rig_control_t;
 
 #define RIG_FL_JIGGLE 1
+#define RIG_FL_KINEMATIC 2
 
 typedef struct ragdoll_cst_control_s
 {
@@ -102,6 +103,30 @@ typedef struct ragdoll_bar_control_s
 	float factor3;
 }ragdoll_bar_control_t;
 
+typedef struct ragdoll_gar_control_s
+{
+	ragdoll_gar_control_s(const std::string &n, const std::string &n2, float x, float y, float z, int t, float f1, float f2, float f3)
+	{
+		name = n;
+		name2 = n2;
+		type = t;
+		offsetX = x;
+		offsetY = y;
+		offsetZ = z;
+		factor1 = f1;
+		factor2 = f2;
+		factor3 = f3;
+	}
+	std::string name, name2;
+	int type;
+	float offsetX;
+	float offsetY;
+	float offsetZ;
+	float factor1;
+	float factor2;
+	float factor3;
+}ragdoll_gar_control_t;
+
 typedef struct ragdoll_config_s
 {
 	int state;
@@ -109,6 +134,7 @@ typedef struct ragdoll_config_s
 	std::vector<ragdoll_cst_control_t> cstcontrol;
 	std::vector<ragdoll_rig_control_t> rigcontrol;
 	std::vector<ragdoll_bar_control_t> barcontrol;
+	std::vector<ragdoll_gar_control_t> garcontrol;
 }ragdoll_config_t;
 
 ATTRIBUTE_ALIGNED16(class)
@@ -121,6 +147,7 @@ public:
 		rigbody = NULL;
 		barnacle_constraint_dof6 = NULL;
 		barnacle_constraint_slider = NULL;
+		gargantua_target = NULL;
 		barnacle_force = 0;
 		barnacle_chew_force = 0;
 		barnacle_chew_duration = 0;
@@ -129,6 +156,7 @@ public:
 		barnacle_z_offset = 0;
 		barnacle_z_init = 0;
 		barnacle_z_final = 0;
+		gargantua_force = 0;
 		flags = 0;
 		oldActivitionState = 0;
 		oldCollisionFlags = 0;
@@ -137,6 +165,7 @@ public:
 	{
 		barnacle_constraint_dof6 = NULL;
 		barnacle_constraint_slider = NULL;
+		gargantua_target = NULL;
 		barnacle_force = 0;
 		barnacle_chew_force = 0;
 		barnacle_chew_duration = 0;
@@ -145,6 +174,7 @@ public:
 		barnacle_z_offset = 0;
 		barnacle_z_init = 0;
 		barnacle_z_final = 0;
+		gargantua_force = 0;
 		flags = 0;
 		oldActivitionState = 0;
 		oldCollisionFlags = 0;
@@ -153,6 +183,7 @@ public:
 	btRigidBody *rigbody;
 	btGeneric6DofConstraint *barnacle_constraint_dof6;
 	btSliderConstraint *barnacle_constraint_slider;
+	btRigidBody *gargantua_target;
 	btVector3 origin;
 	btVector3 dir;
 	int boneindex;
@@ -165,48 +196,64 @@ public:
 	float barnacle_z_offset;
 	float barnacle_z_init;
 	float barnacle_z_final;
-	btVector3 barnacle_drag_offset;	
+	btVector3 barnacle_drag_offset;
+	float gargantua_force;
+
 	int oldActivitionState;
 	int oldCollisionFlags;
 };
 
 ATTRIBUTE_ALIGNED16(class)
-CRagdoll
+CPhysicBody
 {
 public:
 	BT_DECLARE_ALIGNED_ALLOCATOR();
-	CRagdoll()
+	CPhysicBody()
 	{
 		m_entindex = -1;
-		m_barnacleindex = -1;
-		m_isPlayer = false;
-		m_studiohdr = NULL;
-		m_pelvisRigBody = NULL;
-		m_headRigBody = NULL;
-		m_iActivityType = -1;
-		m_nUpdateKinematicMessageNumber = 0;
-		m_bUpdateKinematic = false;
 	}
 
 	int m_entindex;
+};
+
+ATTRIBUTE_ALIGNED16(class)
+CRagdollBody : public CPhysicBody
+{
+public:
+	BT_DECLARE_ALIGNED_ALLOCATOR();
+	CRagdollBody() : CPhysicBody()
+	{
+		m_barnacleindex = -1;
+		m_gargantuaindex = -1;
+		m_isPlayer = false;
+		m_studiohdr = NULL;
+		m_pelvisRigBody = NULL;
+		m_iActivityType = -1;
+		m_flUpdateKinematicTime = 0;
+		m_bUpdateKinematic = false;
+	}
+
 	int m_barnacleindex;
+	int m_gargantuaindex;
 	int m_iActivityType;
-	float m_nUpdateKinematicMessageNumber;
+	float m_flUpdateKinematicTime;
 	float m_bUpdateKinematic;
 	bool m_isPlayer;
 	studiohdr_t *m_studiohdr;
 	CRigBody *m_pelvisRigBody;
-	CRigBody *m_headRigBody;
 	std::vector<CRigBody *> m_barnacleDragRigBody;
 	std::vector<CRigBody *> m_barnacleChewRigBody;
+	std::vector<CRigBody *> m_gargantuaDragRigBody;
 	std::vector<int> m_keyBones;
 	std::vector<int> m_nonKeyBones;
 	btTransform m_boneRelativeTransform[128];
 	std::unordered_map <std::string, CRigBody *> m_rigbodyMap;
 	std::vector <btTypedConstraint *> m_constraintArray;
 	std::vector <btTypedConstraint *> m_barnacleConstraintArray;
+	std::vector <btTypedConstraint *> m_gargantuaConstraintArray;
 	std::vector<float> m_animcontrol;
 	std::vector<ragdoll_bar_control_t> m_barcontrol;
+	std::vector<ragdoll_gar_control_t> m_garcontrol;
 };
 
 typedef struct brushvertex_s
@@ -243,19 +290,17 @@ typedef struct indexarray_s
 }indexarray_t;
 
 ATTRIBUTE_ALIGNED16(class)
-CStaticBody
+CStaticBody : public CPhysicBody
 {
 public:
 	BT_DECLARE_ALIGNED_ALLOCATOR();
-	CStaticBody()
+	CStaticBody() : CPhysicBody()
 	{
-		m_entindex = -1;
 		m_rigbody = NULL;
 		m_vertexarray = NULL;
 		m_indexarray = NULL;
 		m_kinematic = false;
 	}
-	int m_entindex;
 	btRigidBody *m_rigbody;
 	vertexarray_t *m_vertexarray;
 	indexarray_t *m_indexarray;
@@ -264,6 +309,7 @@ public:
 
 #define RAGDOLL_SHAPE_SPHERE 1
 #define RAGDOLL_SHAPE_CAPSULE 2
+#define RAGDOLL_SHAPE_GARGMOUTH 3
 
 #define RAGDOLL_CONSTRAINT_CONETWIST 1
 #define RAGDOLL_CONSTRAINT_HINGE 2
@@ -271,8 +317,11 @@ public:
 
 #define RAGDOLL_BARNACLE_SLIDER			1
 #define RAGDOLL_BARNACLE_DOF6			2
-#define RAGDOLL_BARNACLE_CHEWFORCE    3
-#define RAGDOLL_BARNACLE_CHEWLIMIT    4
+#define RAGDOLL_BARNACLE_CHEWFORCE		3
+#define RAGDOLL_BARNACLE_CHEWLIMIT		4
+
+#define RAGDOLL_GARGANTUA_SLIDER		1
+#define RAGDOLL_GARGANTUA_DOF6			2
 
 ATTRIBUTE_ALIGNED16(class)
 BoneMotionState : public btMotionState
@@ -348,7 +397,7 @@ public:
 	}
 };
 
-typedef std::unordered_map<int, CRagdoll *>::iterator ragdoll_itor;
+typedef std::unordered_map<int, CRagdollBody *>::iterator ragdoll_itor;
 
 class CPhysicsManager
 {
@@ -358,6 +407,7 @@ public:
 	void NewMap(void);
 	void DebugDraw(void);
 	void GenerateBarnacleIndiceVerticeArray(void);
+	void GenerateGargantuaIndiceVerticeArray(void);
 	void GenerateBrushIndiceArray(void);
 	void GenerateWorldVerticeArray(void);
 	void GenerateIndexedArrayRecursiveWorldNode(mnode_t *node, vertexarray_t *vertexarray, indexarray_t *indexarray);
@@ -377,21 +427,25 @@ public:
 	void RemoveAllRagdolls();
 	void RemoveAllStatics(); 
 	bool IsValidRagdoll(ragdoll_itor &itor);
-	CRagdoll *FindRagdoll(int tentindex);
+	CRagdollBody *FindRagdoll(int tentindex);
 	ragdoll_itor FindRagdollEx(int tentindex);
-	bool UpdateKinematic(CRagdoll *ragdoll, int iActivityType, entity_state_t *curstate);
-	void ResetPose(CRagdoll *ragdoll, entity_state_t *curstate);
-	void ApplyBarnacle(CRagdoll *ragdoll, cl_entity_t *barnacleEntity);
-	CRagdoll *CreateRagdoll(ragdoll_config_t *cfg, int tentindex, studiohdr_t *studiohdr, int iActivityType, bool isplayer);
+	bool UpdateKinematic(CRagdollBody *ragdoll, int iActivityType, entity_state_t *curstate);
+	void ResetPose(CRagdollBody *ragdoll, entity_state_t *curstate);
+	void ApplyBarnacle(CRagdollBody *ragdoll, cl_entity_t *barnacleEntity);
+	void ApplyGargantua(CRagdollBody *ragdoll, cl_entity_t *gargEntity);
+	CRagdollBody *CreateRagdoll(ragdoll_config_t *cfg, int tentindex, studiohdr_t *studiohdr, int iActivityType, bool isplayer);
 	CRigBody *CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol);
-	btTypedConstraint *CreateConstraint(CRagdoll *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
-	void CreateStatic(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray);
+	btTypedConstraint *CreateConstraint(CRagdollBody *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
+	void CreateStatic(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray, bool kinematic);
 	void CreateBrushModel(cl_entity_t *ent);
 	void CreateBarnacle(cl_entity_t *ent);
+	void CreateGargantua(cl_entity_t *ent);
+	void UpdateBrushTransform(cl_entity_t *ent, CStaticBody *staticBody);
 	void RotateForEntity(cl_entity_t *ent, float matrix[4][4]);
-	void ReleaseRagdollFromBarnacle(CRagdoll *ragdoll);
-	bool GetRagdollOrigin(CRagdoll *ragdoll, float *origin);
-	bool UpdateRagdoll(cl_entity_t *ent, CRagdoll *ragdoll, double frame_time, double client_time);
+	void ReleaseRagdollFromBarnacle(CRagdollBody *ragdoll);
+	void ReleaseRagdollFromGargantua(CRagdollBody *ragdoll);
+	bool GetRagdollOrigin(CRagdollBody *ragdoll, float *origin);
+	bool UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time);
 	void UpdateTempEntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time);
 	void SyncPlayerView(cl_entity_t *local, struct ref_params_s *pparams);
 private:
@@ -403,13 +457,15 @@ private:
 	btSequentialImpulseConstraintSolver* m_solver;
 	btDiscreteDynamicsWorld* m_dynamicsWorld;
 	CPhysicsDebugDraw *m_debugDraw;
-	std::unordered_map<int, CRagdoll *> m_ragdollMap;
+	std::unordered_map<int, CRagdollBody *> m_ragdollMap;
 	std::unordered_map<int, CStaticBody *> m_staticMap;
 	std::vector<ragdoll_config_t *> m_ragdoll_config;
 	std::vector<indexarray_t *> m_brushIndexArray;
 	vertexarray_t *m_worldVertexArray;
 	indexarray_t *m_barnacleIndexArray;
 	vertexarray_t *m_barnacleVertexArray;
+	indexarray_t *m_gargantuaIndexArray;
+	vertexarray_t *m_gargantuaVertexArray;
 };
 
 extern CPhysicsManager gPhysicsManager;

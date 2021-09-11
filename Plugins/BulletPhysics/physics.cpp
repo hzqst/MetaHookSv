@@ -9,7 +9,7 @@
 #include "qgl.h"
 #include "mathlib.h"
 
-btScalar G2BScale = 0.2;
+btScalar G2BScale = 1;
 btScalar B2GScale = 1 / G2BScale;
 
 extern studiohdr_t **pstudiohdr;
@@ -26,6 +26,7 @@ int EngineGetMaxKnownModel(void);
 int EngineGetModelIndex(model_t *mod);
 model_t *EngineGetModelByIndex(int index);
 bool IsEntityPresent(cl_entity_t* ent);
+bool IsEntityGargantua(cl_entity_t* ent);
 bool IsEntityBarnacle(cl_entity_t* ent);
 int GetSequenceActivityType(model_t *mod, entity_state_t* entstate);
 void RagdollDestroyCallback(int entindex);
@@ -155,6 +156,8 @@ CPhysicsManager::CPhysicsManager()
 	 m_worldVertexArray = NULL;
 	 m_barnacleIndexArray = NULL;
 	 m_barnacleVertexArray = NULL;
+	 m_gargantuaIndexArray = NULL;
+	 m_gargantuaVertexArray = NULL;
 }
 
 void CPhysicsManager::GenerateBrushIndiceArray(void)
@@ -342,7 +345,7 @@ void CPhysicsManager::GenerateIndexedArrayForBrush(model_t *mod, vertexarray_t *
 	}
 }
 
-void CPhysicsManager::CreateStatic(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray)
+void CPhysicsManager::CreateStatic(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray, bool kinematic)
 {
 	if (!indexarray->vIndiceBuffer.size())
 	{
@@ -365,14 +368,7 @@ void CPhysicsManager::CreateStatic(cl_entity_t *ent, vertexarray_t *vertexarray,
 
 	btDefaultMotionState* motionState = new btDefaultMotionState();
 
-	float mass = 0;
-
-	/*if (ent->curstate.movetype == MOVETYPE_PUSH || ent->curstate.movetype == MOVETYPE_PUSHSTEP)
-	{
-		mass = 1000;
-	}*/
-
-	btRigidBody::btRigidBodyConstructionInfo cInfo(mass, motionState, meshShape);
+	btRigidBody::btRigidBodyConstructionInfo cInfo(0, motionState, meshShape);
 
 	btRigidBody* body = new btRigidBody(cInfo);
 
@@ -385,33 +381,21 @@ void CPhysicsManager::CreateStatic(cl_entity_t *ent, vertexarray_t *vertexarray,
 	staticbody->m_vertexarray = vertexarray;
 	staticbody->m_indexarray = indexarray;
 
-	if (ent->curstate.movetype == MOVETYPE_PUSH || ent->curstate.movetype == MOVETYPE_PUSHSTEP)
+	if (kinematic)
 	{
-		//body->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
-		//body->setActivationState(DISABLE_DEACTIVATION);
+		body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+		body->setActivationState(DISABLE_DEACTIVATION);
 
 		staticbody->m_kinematic = true;
 	}
+	
+	//if(ent->index == 0)
+	//{
+		body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
+	//}
 
 	body->setFriction(1.0f);
-
 	body->setRollingFriction(1.0f);
-
-	float matrix[4][4];
-	RotateForEntity(ent, matrix);
-
-	if (0 != memcmp(matrix, r_identity_matrix, sizeof(matrix)))
-	{
-		float matrix_transposed[4][4];
-		Matrix4x4_Transpose(matrix_transposed, matrix);
-
-		btTransform worldtrans;
-		worldtrans.setFromOpenGLMatrix((float *)matrix);
-
-		TransformGoldSrcToBullet(worldtrans);
-
-		body->setWorldTransform(worldtrans);
-	}
 
 	m_staticMap[ent->index] = staticbody;
 }
@@ -475,7 +459,38 @@ void CPhysicsManager::CreateBarnacle(cl_entity_t *ent)
 		return;
 	}
 
-	CreateStatic(ent, m_barnacleVertexArray, m_barnacleIndexArray);
+	CreateStatic(ent, m_barnacleVertexArray, m_barnacleIndexArray, false);
+}
+
+void CPhysicsManager::CreateGargantua(cl_entity_t *ent)
+{
+	/*auto itor = m_staticMap.find(ent->index);
+
+	if (itor != m_staticMap.end())
+	{
+		return;
+	}
+	*/
+	//CreateStatic(ent, m_gargantuaVertexArray, m_gargantuaIndexArray, true);
+}
+
+void CPhysicsManager::UpdateBrushTransform(cl_entity_t *ent, CStaticBody *staticBody)
+{
+	float matrix[4][4];
+	RotateForEntity(ent, matrix);
+
+	if (0 != memcmp(matrix, r_identity_matrix, sizeof(matrix)))
+	{
+		float matrix_transposed[4][4];
+		Matrix4x4_Transpose(matrix_transposed, matrix);
+
+		btTransform worldtrans;
+		worldtrans.setFromOpenGLMatrix((float *)matrix_transposed);
+
+		TransformGoldSrcToBullet(worldtrans);
+
+		staticBody->m_rigbody->getMotionState()->setWorldTransform(worldtrans);
+	}
 }
 
 void CPhysicsManager::CreateBrushModel(cl_entity_t *ent)
@@ -501,29 +516,17 @@ void CPhysicsManager::CreateBrushModel(cl_entity_t *ent)
 	{
 		auto staticBody = itor->second;
 
-		if (ent->index > 0 && staticBody->m_rigbody)
+		if (ent->index > 0 && staticBody->m_kinematic)
 		{
-			float matrix[4][4];
-			RotateForEntity(ent, matrix);
-			
-			if (0 != memcmp(matrix, r_identity_matrix, sizeof(matrix)))
-			{
-				float matrix_transposed[4][4];
-				Matrix4x4_Transpose(matrix_transposed, matrix);
-
-				btTransform worldtrans;
-				worldtrans.setFromOpenGLMatrix((float *)matrix_transposed);
-
-				TransformGoldSrcToBullet(worldtrans);
-
-				staticBody->m_rigbody->setWorldTransform(worldtrans);
-			}
+			UpdateBrushTransform(ent, staticBody);
 		}
 
 		return;
 	}
 
-	CreateStatic(ent, m_worldVertexArray, m_brushIndexArray[modelindex]);
+	bool bKinematic = ent->curstate.movetype == MOVETYPE_PUSH || ent->curstate.movetype == MOVETYPE_PUSHSTEP ? true : false;
+
+	CreateStatic(ent, m_worldVertexArray, m_brushIndexArray[modelindex], bKinematic);
 }
 
 void CPhysicsManager::NewMap(void)
@@ -542,6 +545,7 @@ void CPhysicsManager::NewMap(void)
 	GenerateWorldVerticeArray();
 	GenerateBrushIndiceArray();
 	GenerateBarnacleIndiceVerticeArray();
+	GenerateGargantuaIndiceVerticeArray();
 
 	CreateBrushModel(r_worldentity);
 }
@@ -662,6 +666,144 @@ void CPhysicsManager::GenerateBarnacleIndiceVerticeArray(void)
 	}
 }
 
+void CPhysicsManager::GenerateGargantuaIndiceVerticeArray(void)
+{
+	int GARGANTUA_SEGMENTS = 12;
+
+	float GARGANTUA_RADIUS1 = 16;
+	float GARGANTUA_RADIUS2 = 14;
+	float GARGANTUA_RADIUS3 = 12;
+
+	float GARGANTUA_HEIGHT1 = 8;
+	float GARGANTUA_HEIGHT2 = -8;
+	float GARGANTUA_HEIGHT3 = -24;
+
+	FloatGoldSrcToBullet(&GARGANTUA_RADIUS1);
+	FloatGoldSrcToBullet(&GARGANTUA_RADIUS2);
+	FloatGoldSrcToBullet(&GARGANTUA_RADIUS3);
+	FloatGoldSrcToBullet(&GARGANTUA_HEIGHT1);
+	FloatGoldSrcToBullet(&GARGANTUA_HEIGHT2);
+	FloatGoldSrcToBullet(&GARGANTUA_HEIGHT3);
+
+	if (m_gargantuaVertexArray)
+	{
+		delete m_gargantuaVertexArray;
+		m_gargantuaVertexArray = NULL;
+	}
+
+	if (m_gargantuaIndexArray)
+	{
+		delete m_gargantuaIndexArray;
+		m_gargantuaIndexArray = NULL;
+	}
+
+	m_gargantuaVertexArray = new vertexarray_t;
+	m_gargantuaVertexArray->vVertexBuffer.resize(GARGANTUA_SEGMENTS * (4 + 4));// + 3
+	m_gargantuaVertexArray->vFaceBuffer.resize(GARGANTUA_SEGMENTS * 2);
+
+	int iStartVertex = 0;
+	int iNumVerts = 0;
+	int iNumFace = 0;
+
+	for (int x = 0; x < GARGANTUA_SEGMENTS; x++)
+	{
+		float xSegment = (float)x / (float)GARGANTUA_SEGMENTS;
+		float xSegment2 = (float)(x + 1) / (float)GARGANTUA_SEGMENTS;
+
+		//layer 0, circle
+
+		/*m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[0] = 0;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[1] = 0;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[2] = GARGANTUA_HEIGHT1;
+		iNumVerts++;
+
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment * 2 * M_PI) * GARGANTUA_RADIUS1;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment * 2 * M_PI) * GARGANTUA_RADIUS1;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[2] = GARGANTUA_HEIGHT1;
+		iNumVerts++;
+
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment2 * 2 * M_PI) * GARGANTUA_RADIUS1;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment2 * 2 * M_PI) * GARGANTUA_RADIUS1;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[2] = GARGANTUA_HEIGHT1;
+		iNumVerts++;
+
+		m_gargantuaVertexArray->vFaceBuffer[iNumFace].start_vertex = iStartVertex;
+		m_gargantuaVertexArray->vFaceBuffer[iNumFace].num_vertexes = 3;
+		iNumFace++;
+
+		iStartVertex = iNumVerts;*/
+
+		//layer 1
+
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment * 2 * M_PI) * GARGANTUA_RADIUS1;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment * 2 * M_PI) * GARGANTUA_RADIUS1;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[2] = GARGANTUA_HEIGHT1;
+		iNumVerts++;
+
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment * 2 * M_PI) * GARGANTUA_RADIUS2;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment * 2 * M_PI) * GARGANTUA_RADIUS2;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[2] = GARGANTUA_HEIGHT2;
+		iNumVerts++;
+
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment2 * 2 * M_PI) * GARGANTUA_RADIUS2;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment2 * 2 * M_PI) * GARGANTUA_RADIUS2;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[2] = GARGANTUA_HEIGHT2;
+		iNumVerts++;
+
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment2 * 2 * M_PI) * GARGANTUA_RADIUS1;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment2 * 2 * M_PI) * GARGANTUA_RADIUS1;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[2] = GARGANTUA_HEIGHT1;
+		iNumVerts++;
+
+		m_gargantuaVertexArray->vFaceBuffer[iNumFace].start_vertex = iStartVertex;
+		m_gargantuaVertexArray->vFaceBuffer[iNumFace].num_vertexes = 4;
+		iNumFace++;
+
+		iStartVertex = iNumVerts;
+
+		// layer 2
+
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment * 2 * M_PI) * GARGANTUA_RADIUS2;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment * 2 * M_PI) * GARGANTUA_RADIUS2;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[2] = GARGANTUA_HEIGHT2;
+
+		iNumVerts++;
+
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment * 2 * M_PI) * GARGANTUA_RADIUS3;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment * 2 * M_PI) * GARGANTUA_RADIUS3;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[2] = GARGANTUA_HEIGHT3;
+
+		iNumVerts++;
+
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment2 * 2 * M_PI) * GARGANTUA_RADIUS3;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment2 * 2 * M_PI) * GARGANTUA_RADIUS3;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[2] = GARGANTUA_HEIGHT3;
+
+		iNumVerts++;
+
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[0] = std::sin(xSegment2 * 2 * M_PI) * GARGANTUA_RADIUS2;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[1] = std::cos(xSegment2 * 2 * M_PI) * GARGANTUA_RADIUS2;
+		m_gargantuaVertexArray->vVertexBuffer[iNumVerts].pos[2] = GARGANTUA_HEIGHT2;
+
+		iNumVerts++;
+
+		m_gargantuaVertexArray->vFaceBuffer[iNumFace].start_vertex = iStartVertex;
+		m_gargantuaVertexArray->vFaceBuffer[iNumFace].num_vertexes = 4;
+		iNumFace++;
+
+		iStartVertex = iNumVerts;
+	}
+
+	m_gargantuaIndexArray = new indexarray_t;
+	for (int i = 0; i < m_gargantuaVertexArray->vFaceBuffer.size(); i++)
+	{
+		if (i >= 3 * 2 && i < 8 * 2)
+			continue;
+
+		GenerateIndexedArrayForBrushface(&m_gargantuaVertexArray->vFaceBuffer[i], m_gargantuaIndexArray);
+	}
+}
+
 void CPhysicsManager::Init(void)
 {
 	m_collisionConfiguration = new btDefaultCollisionConfiguration();
@@ -680,71 +822,53 @@ void CPhysicsManager::DebugDraw(void)
 {
 	if (bv_debug->value)
 	{
-		for (auto &p : m_staticMap)
-		{
-			auto &staticbody = p.second;
+		m_dynamicsWorld->debugDrawWorld();
+	}
+}
 
-			if (staticbody->m_rigbody)
-			{
-				if (bv_debug->value == 2 && staticbody->m_entindex)
-				{
-					btVector3 color(0, 0.75, 0.75f);
-					m_dynamicsWorld->debugDrawObject(staticbody->m_rigbody->getWorldTransform(), staticbody->m_rigbody->getCollisionShape(), color);
-				}
-				else if (bv_debug->value == 3)
-				{
-					btVector3 color(0.25, 0.25, 0.25f);
-					m_dynamicsWorld->debugDrawObject(staticbody->m_rigbody->getWorldTransform(), staticbody->m_rigbody->getCollisionShape(), color);
-				}
-			}
+void CPhysicsManager::ReleaseRagdollFromGargantua(CRagdollBody *ragdoll)
+{
+	if (ragdoll->m_gargantuaindex != -1)
+	{
+		ragdoll->m_gargantuaindex = -1;
+		ragdoll->m_gargantuaDragRigBody.clear();
+
+		for (auto cst : ragdoll->m_gargantuaConstraintArray)
+		{
+			m_dynamicsWorld->removeConstraint(cst);
+			delete cst;
 		}
+		ragdoll->m_gargantuaConstraintArray.clear();
 
-		for (auto &p : m_ragdollMap)
+		for (auto rig : ragdoll->m_gargantuaDragRigBody)
 		{
-			auto ragdoll = p.second;
-
-			auto &rigmap = ragdoll->m_rigbodyMap;
-			for (auto &rig : rigmap)
-			{
-				auto rigbody = rig.second->rigbody;
-
-				btVector3 color(1, 1, 1);
-				m_dynamicsWorld->debugDrawObject(rigbody->getWorldTransform(), rigbody->getCollisionShape(), color);
-			}
-
-			auto &cstarray = ragdoll->m_constraintArray;
-
-			for (auto p : cstarray)
-			{
-				m_dynamicsWorld->debugDrawConstraint(p);
-			}
-
-			auto &cstarray2 = ragdoll->m_barnacleConstraintArray;
-
-			for (auto p : cstarray2)
-			{
-				m_dynamicsWorld->debugDrawConstraint(p);
-			}
+			rig->gargantua_target = NULL;
 		}
 	}
 }
 
-void CPhysicsManager::ReleaseRagdollFromBarnacle(CRagdoll *ragdoll)
+void CPhysicsManager::ReleaseRagdollFromBarnacle(CRagdollBody *ragdoll)
 {
-	ragdoll->m_barnacleindex = -1;
-	ragdoll->m_barnacleDragRigBody.clear();
-	ragdoll->m_barnacleChewRigBody.clear();
-	for (auto cst : ragdoll->m_barnacleConstraintArray)
+	if (ragdoll->m_barnacleindex != -1)
 	{
-		m_dynamicsWorld->removeConstraint(cst);
-		delete cst;
+		ragdoll->m_barnacleindex = -1;
+
+		ragdoll->m_barnacleChewRigBody.clear();
+
+		for (auto cst : ragdoll->m_barnacleConstraintArray)
+		{
+			m_dynamicsWorld->removeConstraint(cst);
+			delete cst;
+		}
+		ragdoll->m_barnacleConstraintArray.clear();
+
+		for (auto rig : ragdoll->m_barnacleDragRigBody)
+		{
+			rig->barnacle_constraint_slider = NULL;
+			rig->barnacle_constraint_dof6 = NULL;
+		}
+		ragdoll->m_barnacleDragRigBody.clear();
 	}
-	for (auto rig : ragdoll->m_barnacleDragRigBody)
-	{
-		rig->barnacle_constraint_slider = NULL;
-		rig->barnacle_constraint_dof6 = NULL;
-	}
-	ragdoll->m_barnacleConstraintArray.clear();
 }
 
 void CPhysicsManager::SyncPlayerView(cl_entity_t *local, struct ref_params_s *pparams)
@@ -767,7 +891,7 @@ bool CPhysicsManager::HasRagdolls(void)
 	return m_ragdollMap.size() ? true : false;
 }
 
-bool CPhysicsManager::GetRagdollOrigin(CRagdoll *ragdoll, float *origin)
+bool CPhysicsManager::GetRagdollOrigin(CRagdollBody *ragdoll, float *origin)
 {
 	auto pelvis = ragdoll->m_pelvisRigBody;
 	if (pelvis)
@@ -786,9 +910,44 @@ bool CPhysicsManager::GetRagdollOrigin(CRagdoll *ragdoll, float *origin)
 	return false;
 }
 
-bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdoll *ragdoll, double frame_time, double client_time)
+bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time)
 {
-	if (ragdoll->m_barnacleindex != -1)
+	if (ragdoll->m_gargantuaindex != -1)
+	{
+		if (GetSequenceActivityType(ent->model, &ent->curstate) != 2)
+		{
+			ReleaseRagdollFromGargantua(ragdoll);
+			return true;
+		}
+
+		auto gargantua = gEngfuncs.GetEntityByIndex(ragdoll->m_gargantuaindex);
+
+		if (!IsEntityGargantua(gargantua))
+		{
+			ReleaseRagdollFromGargantua(ragdoll);
+			return true;
+		}
+
+		if (gargantua->curstate.sequence == 15)
+		{
+			vec3_t origin;
+			if (GetRagdollOrigin(ragdoll, origin))
+			{
+				for (size_t i = 0; i < ragdoll->m_gargantuaDragRigBody.size(); ++i)
+				{
+					auto rig = ragdoll->m_gargantuaDragRigBody[i];
+
+					btVector3 force = rig->gargantua_target->getWorldTransform().getOrigin() - rig->rigbody->getWorldTransform().getOrigin();
+					force.normalize();
+					force *= rig->gargantua_force;
+
+					rig->rigbody->applyCentralForce(force);
+				}
+			}
+		}
+	}
+
+	else if (ragdoll->m_barnacleindex != -1)
 	{
 		bool bDraging = true;
 
@@ -995,6 +1154,7 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 #define RAGDOLL_PARSING_JIGGLEBONE 2
 #define RAGDOLL_PARSING_CONSTRAINT 3
 #define RAGDOLL_PARSING_BARNACLE 4
+#define RAGDOLL_PARSING_GARGANTUA 5
 
 	int iParsingState = -1;
 
@@ -1031,6 +1191,11 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 		else if (!strcmp(text, "[Barnacle]"))
 		{
 			iParsingState = RAGDOLL_PARSING_BARNACLE;
+			continue;
+		}
+		else if (!strcmp(text, "[Gargantua]"))
+		{
+			iParsingState = RAGDOLL_PARSING_GARGANTUA;
 			continue;
 		}
 
@@ -1091,6 +1256,10 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 			else if (!strcmp(text, "capsule"))
 			{
 				i_shape = RAGDOLL_SHAPE_CAPSULE;
+			}
+			else if (!strcmp(text, "gargmouth"))
+			{
+				i_shape = RAGDOLL_SHAPE_GARGMOUTH;
 			}
 			else
 			{
@@ -1358,6 +1527,96 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 
 			cfg->barcontrol.emplace_back(subname, f_offsetX, f_offsetY, f_offsetZ, i_type, f_factor1, f_factor2, f_factor3);
 		}
+		else if (iParsingState == RAGDOLL_PARSING_GARGANTUA)
+		{
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse gargantua link target for %s\n", name.c_str());
+				break;
+			}
+
+			std::string s_link = text;
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse gargantua type for %s\n", name.c_str());
+				break;
+			}
+
+			int i_type = -1;
+
+			if (!strcmp(text, "slider"))
+			{
+				i_type = RAGDOLL_GARGANTUA_SLIDER;
+			}
+			else if (!strcmp(text, "dof6"))
+			{
+				i_type = RAGDOLL_GARGANTUA_DOF6;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse gargantua type %s for %s\n", text, name.c_str());
+				break;
+			}
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse gargantua offsetX for %s\n", name.c_str());
+				break;
+			}
+
+			float f_offsetX = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse barnacle offsetY for %s\n", name.c_str());
+				break;
+			}
+
+			float f_offsetY = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse barnacle offsetZ for %s\n", name.c_str());
+				break;
+			}
+
+			float f_offsetZ = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse barnacle factor1 for %s\n", name.c_str());
+				break;
+			}
+
+			float f_factor1 = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse barnacle factor2 for %s\n", name.c_str());
+				break;
+			}
+
+			float f_factor2 = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse barnacle factor3 for %s\n", name.c_str());
+				break;
+			}
+
+			float f_factor3 = atof(text);
+
+			cfg->garcontrol.emplace_back(subname, s_link, f_offsetX, f_offsetY, f_offsetZ, i_type, f_factor1, f_factor2, f_factor3);
+		}
 	}
 
 	gEngfuncs.COM_FreeFile(pfile);
@@ -1526,12 +1785,49 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 
 		return rig;
 	}
+	else if (rigcontrol->shape == RAGDOLL_SHAPE_GARGMOUTH)
+	{
+		float rigsize = rigcontrol->size;
+		FloatGoldSrcToBullet(&rigsize);
+
+		float rigsize2 = rigcontrol->size2;
+		FloatGoldSrcToBullet(&rigsize2);
+
+		auto bonematrix2 = bonematrix;
+		bonematrix2.setOrigin(origin);
+
+		btVector3 fwd(0, 0, 1);
+		auto rigidtransform = MatrixLookAt(bonematrix2, pboneorigin, fwd);
+		offsetmatrix.mult(bonematrix.inverse(), rigidtransform);
+
+		auto vertexArray = new btTriangleIndexVertexArray(
+			m_gargantuaIndexArray->vIndiceBuffer.size() / 3, m_gargantuaIndexArray->vIndiceBuffer.data(), 3 * sizeof(int),
+			m_gargantuaVertexArray->vVertexBuffer.size(), (float *)m_gargantuaVertexArray->vVertexBuffer.data(), sizeof(brushvertex_t));
+
+		auto meshShape = new btBvhTriangleMeshShape(vertexArray, true, true);
+
+		BoneMotionState* motionState = new BoneMotionState(bonematrix, offsetmatrix);
+
+		float mass = rigcontrol->mass;
+
+		btRigidBody::btRigidBodyConstructionInfo cInfo(mass, motionState, meshShape);
+
+		auto rig = new CRigBody;
+
+		rig->name = rigcontrol->name;
+		rig->rigbody = new btRigidBody(cInfo);
+		rig->origin = origin;
+		rig->dir = dir;
+		rig->boneindex = rigcontrol->boneindex;
+		rig->flags = rigcontrol->flags | RIG_FL_KINEMATIC;
+		return rig;
+	}
 
 	gEngfuncs.Con_Printf("CreateRigBody: Failed to create rigbody %s, invalid shape type %d\n", rigcontrol->name.c_str(), rigcontrol->shape);
 	return NULL;
 }
 
-btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdoll *ragdoll, studiohdr_t *studiohdr, ragdoll_cst_control_t *cstcontrol)
+btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, studiohdr_t *studiohdr, ragdoll_cst_control_t *cstcontrol)
 {
 	auto itor = ragdoll->m_rigbodyMap.find(cstcontrol->name);
 	if (itor == ragdoll->m_rigbodyMap.end())
@@ -1769,6 +2065,12 @@ void CPhysicsManager::RemoveAllRagdolls()
 			delete p;
 		}
 
+		for (auto p : ragdoll->m_gargantuaConstraintArray)
+		{
+			m_dynamicsWorld->removeConstraint(p);
+			delete p;
+		}
+
 		for (auto p : ragdoll->m_rigbodyMap)
 		{
 			m_dynamicsWorld->removeRigidBody(p.second->rigbody);
@@ -1832,7 +2134,6 @@ void CPhysicsManager::MergeBarnacleBones(studiohdr_t *hdr, int entindex)
 
 	if (itor == m_ragdollMap.end())
 	{
-		//gEngfuncs.Con_Printf("MergeBarnacleBones: not found\n");
 		return;
 	}
 
@@ -1866,11 +2167,6 @@ void CPhysicsManager::MergeBarnacleBones(studiohdr_t *hdr, int entindex)
 		(*pbonetransform)[i][1][3] = rigorgin.y();
 		(*pbonetransform)[i][2][3] = rigorgin.z() + 8;
 	}
-
-	/*for (int i = 0; i < hdr->numbones; ++i)
-	{
-		gEngfuncs.Con_Printf("SetupBarnacleBones: pbones[%d] = %s, parent = %d\n", i, pbones[i].name, pbones[i].parent);
-	}*/
 }
 
 bool CPhysicsManager::SetupJiggleBones(studiohdr_t *hdr, int entindex)
@@ -1891,16 +2187,9 @@ bool CPhysicsManager::SetupJiggleBones(studiohdr_t *hdr, int entindex)
 		auto rig = p.second;
 
 		auto motionState = (BoneMotionState *)rig->rigbody->getMotionState();
-
-		if (!(rig->flags & RIG_FL_JIGGLE))
-		{
-			auto &bonematrix = motionState->bonematrix;
-
-			Matrix3x4ToTransform((*pbonetransform)[rig->boneindex], bonematrix);
-			TransformGoldSrcToBullet(bonematrix);
-		}
-		else
-		{
+	
+		if ((rig->flags & RIG_FL_JIGGLE) && !(rig->flags & RIG_FL_KINEMATIC) && !ragdoll->m_bUpdateKinematic )
+		{//Dynamic rigs
 			auto bonematrix = motionState->bonematrix;
 
 			TransformBulletToGoldSrc(bonematrix);
@@ -1910,6 +2199,13 @@ bool CPhysicsManager::SetupJiggleBones(studiohdr_t *hdr, int entindex)
 
 			memcpy((*pbonetransform)[rig->boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
 			memcpy((*plighttransform)[rig->boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
+		}
+		else
+		{//Kinematic rigs
+			auto &bonematrix = motionState->bonematrix;
+
+			Matrix3x4ToTransform((*pbonetransform)[rig->boneindex], bonematrix);
+			TransformGoldSrcToBullet(bonematrix);
 		}
 	}
 
@@ -1976,7 +2272,7 @@ ragdoll_itor CPhysicsManager::FindRagdollEx(int tentindex)
 	return m_ragdollMap.find(tentindex);
 }
 
-CRagdoll *CPhysicsManager::FindRagdoll(int tentindex)
+CRagdollBody *CPhysicsManager::FindRagdoll(int tentindex)
 {
 	auto itor = FindRagdollEx(tentindex);
 
@@ -1988,7 +2284,7 @@ CRagdoll *CPhysicsManager::FindRagdoll(int tentindex)
 	return NULL;
 }
 
-void CPhysicsManager::ResetPose(CRagdoll *ragdoll, entity_state_t *curstate)
+void CPhysicsManager::ResetPose(CRagdollBody *ragdoll, entity_state_t *curstate)
 {
 	bool bNeedResetKinematic = false;
 
@@ -2020,12 +2316,104 @@ void CPhysicsManager::ResetPose(CRagdoll *ragdoll, entity_state_t *curstate)
 
 	if (bNeedResetKinematic)
 	{
-		ragdoll->m_nUpdateKinematicMessageNumber = curstate->messagenum;
+		ragdoll->m_flUpdateKinematicTime = curstate->msg_time + 0.05f;
 		ragdoll->m_bUpdateKinematic = true;
 	}
 }
 
-void CPhysicsManager::ApplyBarnacle(CRagdoll *ragdoll, cl_entity_t *barnacleEntity)
+void CPhysicsManager::ApplyGargantua(CRagdollBody *ragdoll, cl_entity_t *gargantuaEntity)
+{
+	auto gargRagdollItor = FindRagdollEx(gargantuaEntity->index);
+
+	if (gargRagdollItor == m_ragdollMap.end())
+	{
+		return;
+	}
+
+	auto gargRagdollBody = gargRagdollItor->second;
+
+	ragdoll->m_gargantuaindex = gargantuaEntity->index;
+
+	for (auto &p : ragdoll->m_rigbodyMap)
+	{
+		auto rig = p.second;
+
+		rig->rigbody->setLinearVelocity(btVector3(0, 0, 0));
+		rig->rigbody->setAngularVelocity(btVector3(0, 0, 0));
+
+		for (size_t j = 0; j < ragdoll->m_garcontrol.size(); ++j)
+		{
+			auto garcontrol = &ragdoll->m_garcontrol[j];
+
+			if (garcontrol->name == rig->name)
+			{
+				if (garcontrol->type == RAGDOLL_GARGANTUA_SLIDER)
+				{
+					auto linkTarget = gargRagdollBody->m_rigbodyMap.find(garcontrol->name2);
+
+					if (linkTarget != gargRagdollBody->m_rigbodyMap.end())
+					{
+						
+					}
+				}
+				else if (garcontrol->type == RAGDOLL_GARGANTUA_DOF6)
+				{
+					auto linkTarget = gargRagdollBody->m_rigbodyMap.find(garcontrol->name2);
+
+					if (linkTarget != gargRagdollBody->m_rigbodyMap.end())
+					{
+						if (std::find(ragdoll->m_gargantuaDragRigBody.begin(), ragdoll->m_gargantuaDragRigBody.end(), rig) == ragdoll->m_gargantuaDragRigBody.end())
+							ragdoll->m_gargantuaDragRigBody.emplace_back(rig);
+
+						auto linkTargetRigbody = linkTarget->second;
+
+						btTransform rigtrans = rig->rigbody->getWorldTransform();
+
+						btTransform gargtrans = linkTargetRigbody->rigbody->getWorldTransform();
+
+						btTransform localrig1;
+						localrig1.setIdentity();
+						float factor2 = garcontrol->factor2;
+						btVector3 offset1(0, 0, factor2);
+						Vector3GoldSrcToBullet(offset1);
+						localrig1.setOrigin(offset1);
+
+						btTransform localrig2;
+						localrig2.setIdentity();
+						btVector3 offset2(garcontrol->offsetX, garcontrol->offsetY, garcontrol->offsetZ);
+						Vector3GoldSrcToBullet(offset2);
+						localrig2.setOrigin(offset2);
+
+						auto constraint = new btGeneric6DofConstraint(*linkTargetRigbody->rigbody, *rig->rigbody, localrig1, localrig2, true);
+
+						auto distance = gargtrans.getOrigin().distance(rigtrans.getOrigin());
+
+						float factor3 = garcontrol->factor3;
+						FloatGoldSrcToBullet(&factor3);
+
+						constraint->setAngularLowerLimit(btVector3(M_PI * -1, M_PI * -1, M_PI * -1));
+						constraint->setAngularUpperLimit(btVector3(M_PI * 1, M_PI * 1, M_PI * 1));
+						constraint->setLinearLowerLimit(btVector3(0, 0, 0));
+						constraint->setLinearUpperLimit(btVector3(0, 0, factor3));
+						constraint->setDbgDrawSize(5);
+
+						ragdoll->m_gargantuaConstraintArray.emplace_back(constraint);
+
+						m_dynamicsWorld->addConstraint(constraint);
+
+						float factor1 = garcontrol->factor1;
+						FloatGoldSrcToBullet(&factor1);
+
+						rig->gargantua_force = factor1;
+						rig->gargantua_target = linkTargetRigbody->rigbody;
+					}
+				}
+			}
+		}
+	}
+}
+
+void CPhysicsManager::ApplyBarnacle(CRagdollBody *ragdoll, cl_entity_t *barnacleEntity)
 {
 	ragdoll->m_barnacleindex = barnacleEntity->index;
 
@@ -2083,16 +2471,15 @@ void CPhysicsManager::ApplyBarnacle(CRagdoll *ragdoll, cl_entity_t *barnacleEnti
 					constraint->setUpperLinLimit(rig->barnacle_z_init);
 					constraint->setDbgDrawSize(1);
 
-					rig->barnacle_force = barcontrol->factor1;
-
-					FloatGoldSrcToBullet(&rig->barnacle_force);
-
 					rig->barnacle_constraint_slider = constraint;
 
 					ragdoll->m_barnacleConstraintArray.emplace_back(constraint);
 
 					m_dynamicsWorld->addConstraint(constraint);
-					break;
+
+					float factor1 = barcontrol->factor1;
+					FloatGoldSrcToBullet(&factor1);
+					rig->barnacle_force = factor1;
 				}
 				else if (barcontrol->type == RAGDOLL_BARNACLE_DOF6)
 				{
@@ -2135,22 +2522,24 @@ void CPhysicsManager::ApplyBarnacle(CRagdoll *ragdoll, cl_entity_t *barnacleEnti
 					constraint->setLinearUpperLimit(btVector3(rig->barnacle_z_init, 0, 0));
 					constraint->setDbgDrawSize(1);
 
-					rig->barnacle_force = barcontrol->factor1;
-					FloatGoldSrcToBullet(&rig->barnacle_force);
-
 					rig->barnacle_constraint_dof6 = constraint;
 
 					ragdoll->m_barnacleConstraintArray.emplace_back(constraint);
 
 					m_dynamicsWorld->addConstraint(constraint);
+
+					float factor1 = barcontrol->factor1;
+					FloatGoldSrcToBullet(&factor1);
+					rig->barnacle_force = factor1;
 				}
 				else if (barcontrol->type == RAGDOLL_BARNACLE_CHEWFORCE)
 				{
 					if (std::find(ragdoll->m_barnacleChewRigBody.begin(), ragdoll->m_barnacleChewRigBody.end(), rig) == ragdoll->m_barnacleChewRigBody.end())
 						ragdoll->m_barnacleChewRigBody.emplace_back(rig);
 
-					rig->barnacle_chew_force = barcontrol->factor1;
-					FloatGoldSrcToBullet(&rig->barnacle_chew_force);
+					float factor1 = barcontrol->factor1;
+					FloatGoldSrcToBullet(&factor1);
+					rig->barnacle_chew_force = factor1;
 
 					rig->barnacle_chew_duration = barcontrol->factor2;
 				}
@@ -2161,17 +2550,18 @@ void CPhysicsManager::ApplyBarnacle(CRagdoll *ragdoll, cl_entity_t *barnacleEnti
 
 					rig->barnacle_chew_duration = barcontrol->factor2;
 
-					rig->barnacle_chew_up_z = barcontrol->factor3;
-					FloatGoldSrcToBullet(&rig->barnacle_chew_up_z);
+					float factor3 = barcontrol->factor3;
+					FloatGoldSrcToBullet(&factor3);
+					rig->barnacle_chew_up_z = factor3;
 				}
 			}
 		}
 	}
 }
 
-bool CPhysicsManager::UpdateKinematic(CRagdoll *ragdoll, int iActivityType, entity_state_t *curstate)
+bool CPhysicsManager::UpdateKinematic(CRagdollBody *ragdoll, int iActivityType, entity_state_t *curstate)
 {
-	if (ragdoll->m_bUpdateKinematic && curstate->messagenum > ragdoll->m_nUpdateKinematicMessageNumber + 4)
+	if (ragdoll->m_bUpdateKinematic && curstate->msg_time > ragdoll->m_flUpdateKinematicTime)
 	{
 		ragdoll->m_bUpdateKinematic = false;
 		goto update_kinematic;
@@ -2213,14 +2603,14 @@ update_kinematic:
 	return true;
 }
 
-CRagdoll *CPhysicsManager::CreateRagdoll(
+CRagdollBody *CPhysicsManager::CreateRagdoll(
 	ragdoll_config_t *cfg,
 	int entindex, 
 	studiohdr_t *studiohdr,
 	int iActivityType,
 	bool isplayer)
 {
-	auto ragdoll = new CRagdoll();
+	auto ragdoll = new CRagdollBody();
 
 	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->boneindex);
 
@@ -2228,11 +2618,6 @@ CRagdoll *CPhysicsManager::CreateRagdoll(
 
 	for (int i = 0; i < studiohdr->numbones; ++i)
 	{
-		/*if (bv_debug->value)
-		{
-			gEngfuncs.Con_Printf("CreateRagdoll: pbones[%d] = %s, parent = %d\n", i, pbones[i].name, pbones[i].parent);
-		}*/
-
 		int parent = pbones[i].parent;
 		if (parent == -1)
 		{
@@ -2265,11 +2650,11 @@ CRagdoll *CPhysicsManager::CreateRagdoll(
 
 			if (rig->name == "Pelvis")
 				ragdoll->m_pelvisRigBody = rig;
-			else if (rig->name == "Head")
-				ragdoll->m_headRigBody = rig;
 
 			rig->rigbody->setFriction(1);
 			rig->rigbody->setRollingFriction(1);
+			rig->rigbody->setCcdMotionThreshold(1e-7);
+			rig->rigbody->setCcdSweptSphereRadius(0.5);
 
 			rig->oldActivitionState = rig->rigbody->getActivationState();
 			rig->oldCollisionFlags = rig->rigbody->getCollisionFlags();
@@ -2302,6 +2687,7 @@ CRagdoll *CPhysicsManager::CreateRagdoll(
 	ragdoll->m_studiohdr = studiohdr;
 	ragdoll->m_animcontrol = cfg->animcontrol;
 	ragdoll->m_barcontrol = cfg->barcontrol;
+	ragdoll->m_garcontrol = cfg->garcontrol;
 	m_ragdollMap[entindex] = ragdoll;
 
 	return ragdoll;

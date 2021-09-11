@@ -89,7 +89,9 @@ typedef enum
 	ACT_HOLDBOMB
 }activity_e;
 
+//TODO: hook Mod_LoadStudioModel
 model_t *g_barnacle_model = NULL;
+model_t *g_gargantua_model = NULL;
 
 int GetSequenceActivityType(model_t *mod, entity_state_t* entstate)
 {
@@ -157,6 +159,28 @@ bool IsEntityBarnacle(cl_entity_t* ent)
 	return false;
 }
 
+bool IsEntityGargantua(cl_entity_t* ent)
+{
+	if (ent && ent->model && ent->model->type == mod_studio)
+	{
+		if (g_gargantua_model)
+		{
+			if (g_gargantua_model == ent->model)
+			{
+				return true;
+			}
+		}
+		else if (!strcmp(ent->model->name, "models/garg.mdl"))
+		{
+			g_gargantua_model = ent->model;
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
 bool IsEntityPresent(cl_entity_t* ent)
 {
 	if (!ent->model)
@@ -212,10 +236,43 @@ void CorpseManager::AddBarnacle(int entindex, int playerindex)
 	}
 }
 
+void CorpseManager::AddGargantua(int entindex, int playerindex)
+{
+	auto itor = m_gargantuaMap.find(entindex);
+	if (itor == m_gargantuaMap.end())
+	{
+		m_gargantuaMap[entindex] = playerindex;
+	}
+	else if (itor->second == 0 && playerindex != 0)
+	{
+		itor->second = playerindex;
+	}
+}
+
 cl_entity_t *CorpseManager::FindPlayerForBarnacle(int entindex)
 {
 	auto itor = m_barnacleMap.find(entindex);
 	if (itor != m_barnacleMap.end())
+	{
+		if (itor->second != 0)
+		{
+			auto playerEntity = gEngfuncs.GetEntityByIndex(itor->second);
+			if (playerEntity &&
+				playerEntity->player &&
+				GetSequenceActivityType(playerEntity->model, &playerEntity->curstate) == 2)
+			{
+				return playerEntity;
+			}
+		}
+	}
+
+	return NULL;
+}
+
+cl_entity_t *CorpseManager::FindPlayerForGargantua(int entindex)
+{
+	auto itor = m_gargantuaMap.find(entindex);
+	if (itor != m_gargantuaMap.end())
 	{
 		if (itor->second != 0)
 		{
@@ -242,6 +299,24 @@ cl_entity_t *CorpseManager::FindBarnacleForPlayer(entity_state_t *player)
 			if (fabs(player->origin[0] - ent->origin[0]) < 1 &&
 				fabs(player->origin[1] - ent->origin[1]) < 1 && 
 				player->origin[2] < ent->origin[2] + 16)
+			{
+				itor->second = player->number;
+				return ent;
+			}
+		}
+	}
+
+	return NULL;
+}
+
+cl_entity_t *CorpseManager::FindGargantuaForPlayer(entity_state_t *player)
+{
+	for (auto itor = m_gargantuaMap.begin(); itor != m_gargantuaMap.end(); itor++)
+	{
+		auto ent = gEngfuncs.GetEntityByIndex(itor->first);
+		if (IsEntityGargantua(ent) && ent->curstate.sequence == 15)
+		{
+			if (VectorDistance(player->origin, ent->origin) < 128)
 			{
 				itor->second = player->number;
 				return ent;

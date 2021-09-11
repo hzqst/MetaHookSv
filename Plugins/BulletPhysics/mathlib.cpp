@@ -320,6 +320,13 @@ double VectorLength(vec3_t v)
 	return length;
 }
 
+double VectorDistance(vec3_t v1, vec3_t v2)
+{
+	vec3_t v;
+	VectorSubtract(v1, v2, v);
+	return VectorLength(v);
+}
+
 #ifndef FLT_EPSILON
 #define FLT_EPSILON (1.192093e-007)
 #endif

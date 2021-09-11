@@ -1,0 +1,14 @@
+{
+    "classname" "studio_texture"
+    "basetexture" "*"
+    "flags" "STUDIO_NF_CELSHADE"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "face.bmp"
+    "flags" "STUDIO_NF_CELSHADE_FACE"
+}
+{
+    "classname" "studio_efx"
+    "flags" "EF_OUTLINE"
+}

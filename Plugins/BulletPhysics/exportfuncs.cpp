@@ -39,6 +39,7 @@ int *mod_numknown = NULL;
 float(*pbonetransform)[MAXSTUDIOBONES][3][4] = NULL;
 float(*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;
 
+bool IsEntityGargantua(cl_entity_t* ent);
 bool IsEntityBarnacle(cl_entity_t* ent);
 
 int GetSequenceActivityType(model_t *mod, entity_state_t* entstate);
@@ -152,7 +153,7 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 		{
 			auto cfg = gPhysicsManager.LoadRagdollConfig(model);
 
-			if (cfg && cfg->state == 1)
+			if (cfg && cfg->state == 1 && bv_enable->value)
 			{
 				gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, 0);
 
@@ -234,7 +235,7 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 		{
 			auto cfg = gPhysicsManager.LoadRagdollConfig(model);
 
-			if (cfg && cfg->state == 1)
+			if (cfg && cfg->state == 1 && bv_enable->value)
 			{
 				gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, 0, pplayer);
 
@@ -263,16 +264,37 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 				{
 					cl_entity_t *barnacleEntity = gCorpseManager.FindBarnacleForPlayer(&currententity->curstate);
 					
-					gPhysicsManager.ApplyBarnacle(ragdoll, barnacleEntity);
+					if (barnacleEntity)
+					{
+						gPhysicsManager.ApplyBarnacle(ragdoll, barnacleEntity);
+					}
+					else
+					{
+						cl_entity_t *gargantuaEntity = gCorpseManager.FindGargantuaForPlayer(&currententity->curstate);
+						if (gargantuaEntity)
+						{
+							gPhysicsManager.ApplyGargantua(ragdoll, gargantuaEntity);
+						}
+					}
 				}
 
 				//Transform from Death or barnacle to idle
-				if (oldActivityType > 0 && ragdoll->m_iActivityType == 0)
+				else if (oldActivityType > 0 && ragdoll->m_iActivityType == 0)
 				{
 					gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, 0, pplayer);
 
 					gPhysicsManager.ResetPose(ragdoll, pplayer);
 				}
+
+			}
+
+			//Teleport ?
+			else if (oldActivityType == 0 && ragdoll->m_iActivityType == 0 &&
+				VectorDistance(currententity->curstate.origin, currententity->latched.prevorigin) > 500)
+			{
+				gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, 0, pplayer);
+
+				gPhysicsManager.ResetPose(ragdoll, pplayer);
 			}
 
 			if (ragdoll->m_iActivityType > 0)
@@ -510,6 +532,11 @@ int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 			gPhysicsManager.CreateBarnacle(ent);
 			gCorpseManager.AddBarnacle(ent->index, 0);
 		}
+		else if (IsEntityGargantua(ent))
+		{
+			gPhysicsManager.CreateGargantua(ent);
+			gCorpseManager.AddGargantua(ent->index, 0);
+		}
 	}
 
 	return gExportfuncs.HUD_AddEntity(type, ent, model);
@@ -550,9 +577,9 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 	gExportfuncs.V_CalcRefdef(pparams);
 }
 
-void HUD_DrawTransparentTriangles(void)
+void HUD_DrawNormalTriangles(void)
 {
-	gExportfuncs.HUD_DrawTransparentTriangles();
+	gExportfuncs.HUD_DrawNormalTriangles();
 
 	gPhysicsManager.DebugDraw();
 }
