@@ -294,7 +294,7 @@ void R_FillAddress(void)
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_SetupFrame = NULL;//inlined
+		gRefFuncs.R_SetupFrame = NULL;//might be inlined
 	}
 	else
 	{
@@ -2925,12 +2925,12 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-#define R_SETUPFRAME_CALL_SIG "\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupFrame ? gRefFuncs.R_SetupFrame : gRefFuncs.R_RenderScene, 0x50, R_SETUPFRAME_CALL_SIG, sizeof(R_SETUPFRAME_CALL_SIG) - 1);
+#define R_SETUPFRAME_CALL_SIG "\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xD9\x05"
+		addr = (DWORD)Search_Pattern(R_SETUPFRAME_CALL_SIG);
 		Sig_AddrNotFound(R_SetupFrame_Call);
-		gRefFuncs.R_ForceCVars = (decltype(gRefFuncs.R_ForceCVars))GetCallAddress(addr + 4);
-		gRefFuncs.R_CheckVariables = (decltype(gRefFuncs.R_CheckVariables))GetCallAddress(addr + 4 + 5);
-		gRefFuncs.R_AnimateLight = (decltype(gRefFuncs.R_AnimateLight))GetCallAddress(addr + 4 + 5 + 5);
+		gRefFuncs.R_ForceCVars = (decltype(gRefFuncs.R_ForceCVars))GetCallAddress(addr + 1);
+		gRefFuncs.R_CheckVariables = (decltype(gRefFuncs.R_CheckVariables))GetCallAddress(addr + 1 + 5);
+		gRefFuncs.R_AnimateLight = (decltype(gRefFuncs.R_AnimateLight))GetCallAddress(addr + 1 + 5 + 5);
 	}
 
 	if (1)
