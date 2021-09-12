@@ -668,12 +668,6 @@ void R_EnableStudioVBO(studio_vbo_t *VBOData)
 			r_colormix[1] = (float)(*currententity)->curstate.rendercolor.g / 255.0f;
 			r_colormix[2] = (float)(*currententity)->curstate.rendercolor.b / 255.0f;
 		}
-		else
-		{
-			r_colormix[0] = 1;
-			r_colormix[1] = 1;
-			r_colormix[2] = 1;
-		}
 
 		studio_ubo_t StudioUBO;
 

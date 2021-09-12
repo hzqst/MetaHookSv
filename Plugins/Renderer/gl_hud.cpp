@@ -253,8 +253,8 @@ void R_InitPostProcess(void)
 	r_hdr = gEngfuncs.pfnRegisterVariable("r_hdr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_debug = gEngfuncs.pfnRegisterVariable("r_hdr_debug", "0", FCVAR_CLIENTDLL);
 	r_hdr_blurwidth = R_RegisterMapCvar("r_hdr_blurwidth", "0.075", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_hdr_exposure = R_RegisterMapCvar("r_hdr_exposure", "0.8", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_hdr_darkness = R_RegisterMapCvar("r_hdr_darkness", "1.4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_hdr_exposure = R_RegisterMapCvar("r_hdr_exposure", "1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_hdr_darkness = R_RegisterMapCvar("r_hdr_darkness", "1.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_hdr_adaptation = R_RegisterMapCvar("r_hdr_adaptation", "50", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_fxaa = gEngfuncs.pfnRegisterVariable("r_fxaa", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
