@@ -2925,7 +2925,7 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-#define R_SETUPFRAME_CALL_SIG "\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xD9\x05"
+#define R_SETUPFRAME_CALL_SIG "\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A"
 		addr = (DWORD)Search_Pattern(R_SETUPFRAME_CALL_SIG);
 		Sig_AddrNotFound(R_SetupFrame_Call);
 		gRefFuncs.R_ForceCVars = (decltype(gRefFuncs.R_ForceCVars))GetCallAddress(addr + 1);
