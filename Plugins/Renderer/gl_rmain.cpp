@@ -2706,7 +2706,7 @@ void R_LoadProgramStates_f(void)
 
 void GammaToLinear(float *color)
 {
-	color[0] = pow(color[0], 1 / v_gamma->value);
-	color[1] = pow(color[1], 1 / v_gamma->value);
-	color[2] = pow(color[2], 1 / v_gamma->value);
+	color[0] = pow(color[0], v_gamma->value);
+	color[1] = pow(color[1], v_gamma->value);
+	color[2] = pow(color[2], v_gamma->value);
 }
