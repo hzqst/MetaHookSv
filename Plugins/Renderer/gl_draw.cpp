@@ -840,14 +840,15 @@ void BuildGammaTable(float g)
 {
 	gRefFuncs.BuildGammaTable(g);
 
-	//Gamma Space -> Texture Gamma Space, pow(color, texgamma / gamma)
+	//Don't do texgamma space to gamma space convertion
 	for (int i = 0; i < 256; i++)
 	{
 		texgammatable[i] = i;
 	}
 
+	//Don't do lightgamma space to gamma space convertion
 	for (int i = 0; i < 1024; i++)
 	{
-		lightgammatable[i] = i;//Remove Gamma Correction, SRGB to linear space
+		lightgammatable[i] = i;
 	}
 }
