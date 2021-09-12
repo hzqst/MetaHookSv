@@ -68,11 +68,8 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 		{
 			programState |= WATER_REFRACT_ENABLED;
 
-			if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
-			{
-				if (color[3] > WaterVBOCache->maxtrans)
-					color[3] = WaterVBOCache->maxtrans;
-			}
+			if (color[3] > WaterVBOCache->maxtrans)
+				color[3] = WaterVBOCache->maxtrans;
 		}
 		else
 		{
