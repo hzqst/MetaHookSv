@@ -382,7 +382,9 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 			VectorCopy(brushface->normal, VBOCache->normal);
 			
 			if (direction)
+			{
 				VectorInverse(VBOCache->normal);
+			}
 
 			VBOCache->plane = DotProduct(VBOCache->normal, VBOCache->vert);
 
@@ -399,6 +401,7 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 			VBOCache->fresnelfactor[2] = 0;
 			VBOCache->depthfactor[0] = 0;
 			VBOCache->depthfactor[1] = 0;
+			VBOCache->depthfactor[2] = 0;
 			VBOCache->normfactor = 0;
 			VBOCache->minheight = 0;
 			VBOCache->maxtrans = 1;
@@ -432,6 +435,7 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 				VBOCache->fresnelfactor[2] = waterControl->fresnelfactor[2];
 				VBOCache->depthfactor[0] = waterControl->depthfactor[0];
 				VBOCache->depthfactor[1] = waterControl->depthfactor[1];
+				VBOCache->depthfactor[2] = waterControl->depthfactor[2];
 				VBOCache->normfactor = waterControl->normfactor;
 				VBOCache->minheight = waterControl->minheight;
 				VBOCache->maxtrans = waterControl->maxtrans;
@@ -554,7 +558,9 @@ void R_RenderWaterView(void)
 		glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 		for (size_t i = 0; i < g_WaterVBOCache.size(); ++i)
 		{
-			if (R_IsAboveWater(g_WaterVBOCache[i]) && g_WaterVBOCache[i]->framecount >= (*r_framecount) - 10)
+			if (g_WaterVBOCache[i]->normal[2] > 0 &&
+				R_IsAboveWater(g_WaterVBOCache[i]) && 
+				g_WaterVBOCache[i]->framecount >= (*r_framecount) - 10)
 			{
 				R_RenderReflectView(g_WaterVBOCache[i]);
 			}

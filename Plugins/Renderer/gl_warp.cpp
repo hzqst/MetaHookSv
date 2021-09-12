@@ -21,7 +21,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
-	bool bIsAboveWater = R_IsAboveWater(WaterVBOCache);
+	bool bIsAboveWater = (WaterVBOCache->normal[2] > 0) && R_IsAboveWater(WaterVBOCache) ? true : false;
 
 	float color[4];
 	color[0] = WaterVBOCache->color.r / 255.0f;
@@ -39,33 +39,37 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 		if (bUseBindless)
 			programState |= WATER_BINDLESS_ENABLED;
 
+		if (bIsAboveWater)
+			programState |= WATER_DEPTH_ENABLED;
+
+		if (!refractmap_ready)
+		{
+			if (drawgbuffer)
+			{
+				R_BlitGBufferToFrameBuffer(&s_WaterFBO);
+			
+				//Must restore VBO and EBO
+				glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hSceneVBO);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, WaterVBOCache->hEBO);
+				
+				glBindFramebuffer(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
+			}
+			else
+			{
+				GL_BlitFrameBufferToFrameBufferColorDepth(&s_BackBufferFBO, &s_WaterFBO);
+
+				glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+			}
+
+			refractmap_ready = true;
+		}
+
 		if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
 		{
-			if (gWaterColor->a > WaterVBOCache->maxtrans * 255)
-				gWaterColor->a = WaterVBOCache->maxtrans * 255;
+			if (color[3] > WaterVBOCache->maxtrans)
+				color[3] = WaterVBOCache->maxtrans;
 
 			programState |= WATER_REFRACT_ENABLED;
-
-			if (bIsAboveWater)
-				programState |= WATER_DEPTH_ENABLED;
-
-			if (!refractmap_ready)
-			{
-				if (drawgbuffer)
-				{
-					R_BlitGBufferToFrameBuffer(&s_WaterFBO);
-
-					glBindFramebuffer(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
-				}
-				else
-				{
-					GL_BlitFrameBufferToFrameBufferColorDepth(&s_BackBufferFBO, &s_WaterFBO);
-
-					glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-				}
-
-				refractmap_ready = true;
-			}
 		}
 
 		if (!bIsAboveWater)
@@ -101,7 +105,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 			glUniform4f(prog.u_watercolor, color[0], color[1], color[2], color[3]);
 
 		if (prog.u_depthfactor != -1)
-			glUniform2f(prog.u_depthfactor, WaterVBOCache->depthfactor[0], WaterVBOCache->depthfactor[1]);
+			glUniform3f(prog.u_depthfactor, WaterVBOCache->depthfactor[0], WaterVBOCache->depthfactor[1], WaterVBOCache->depthfactor[2]);
 
 		if (prog.u_fresnelfactor != -1)
 			glUniform3f(prog.u_fresnelfactor, WaterVBOCache->fresnelfactor[0], WaterVBOCache->fresnelfactor[1], WaterVBOCache->fresnelfactor[2]);

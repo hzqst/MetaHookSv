@@ -3,7 +3,7 @@
 #include "common.h"
 
 uniform vec4 u_watercolor;
-uniform vec2 u_depthfactor;
+uniform vec3 u_depthfactor;
 uniform vec3 u_fresnelfactor;
 uniform float u_normfactor;
 uniform float u_scale;
@@ -124,15 +124,25 @@ void main()
 
 	#else
 
+		vec3 worldScene = vec3(0.0);
+
 		#ifdef DEPTH_ENABLED
 
-			vec3 worldScene = GenerateWorldPositionFromDepth(vBaseTexCoord);
+			worldScene = GenerateWorldPositionFromDepth(vBaseTexCoord);
+
+			float flDiffDistance = distance(worldScene.xyz, SceneUBO.viewpos.xyz) - distance(v_worldpos.xyz, SceneUBO.viewpos.xyz);
+			float flEdgeFeathering = clamp(flDiffDistance / u_depthfactor.z, 0.0, 1.0);
+			vOffsetTexCoord *= (flEdgeFeathering * flEdgeFeathering);
+
+		#endif
+
+		float flWaterBlendAlpha = 1.0;
+
+		#if defined(DEPTH_ENABLED) && defined(WATER_REFRACT_ENABLED)
+
 			float flDiffZ = v_worldpos.z - worldScene.z;
-			float flWaterBlendAlpha = clamp( clamp( u_depthfactor.x * flDiffZ, 0.0, 1.0 ) + u_depthfactor.y, 0.0, 1.0 );
 
-		#else
-
-			float flWaterBlendAlpha = 1.0;
+			flWaterBlendAlpha = clamp( clamp( u_depthfactor.x * flDiffZ, 0.0, 1.0 ) + u_depthfactor.y, 0.0, 1.0 );
 
 		#endif
 
@@ -146,11 +156,6 @@ void main()
 		vec2 vReflectTexCoord = vBaseTexCoord2 + vOffsetTexCoord;
 		vec4 vReflectColor = texture2D(reflectTex, vReflectTexCoord);
 		vReflectColor.a = 1.0;
-
-		/*if(vReflectColor.x == u_watercolor.x && vReflectColor.y == u_watercolor.y && vReflectColor.z == u_watercolor.z)
-		{
-			vReflectColor = u_watercolor;
-		}*/
 
 		float flReflectFactor = clamp(flFresnel * u_fresnelfactor.x, 0.0, 1.0);
 

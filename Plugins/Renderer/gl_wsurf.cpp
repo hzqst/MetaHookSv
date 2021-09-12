@@ -2621,6 +2621,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 	control.fresnelfactor[2] = 0;
 	control.depthfactor[0] = 0;
 	control.depthfactor[1] = 0;
+	control.depthfactor[2] = 0;
 	control.normfactor = 0;
 	control.minheight = 0;
 	control.maxtrans = 0;
@@ -2676,14 +2677,15 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 	if (depthfactor_string)
 	{
 		float temp[4];
-		if (sscanf(depthfactor_string, "%f %f", &temp[0], &temp[1]) == 2)
+		if (sscanf(depthfactor_string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
 		{
 			control.depthfactor[0] = clamp(temp[0], 0, 10);
 			control.depthfactor[1] = clamp(temp[1], 0, 10);
+			control.depthfactor[2] = clamp(temp[2], 0, 999999);
 		}
 		else
 		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"depthfactor\" in entity \"env_water_control\", 2 floats are required.\n");
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"depthfactor\" in entity \"env_water_control\", 3 floats are required.\n");
 		}
 	}
 
