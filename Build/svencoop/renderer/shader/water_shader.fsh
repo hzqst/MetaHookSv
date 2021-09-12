@@ -4,7 +4,7 @@
 
 uniform vec4 u_watercolor;
 uniform vec2 u_depthfactor;
-uniform float u_fresnelfactor;
+uniform vec3 u_fresnelfactor;
 uniform float u_normfactor;
 uniform float u_scale;
 
@@ -45,6 +45,7 @@ vec3 GenerateWorldPositionFromDepth(vec2 texCoord)
 void main()
 {
 	vec4 vFinalColor = vec4(0.0);
+	
 	float flWaterColorAlpha = clamp(u_watercolor.a, 0.0, 1.0);
 	vec4 vWaterColor = vec4(u_watercolor.xyz, 1.0);
 
@@ -86,13 +87,16 @@ void main()
 	vec2 vBaseTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
 
 	vec3 vEyeVect = SceneUBO.viewpos.xyz - v_worldpos.xyz;
+	float flHeight = abs(vEyeVect.z);
 	float dist = length(vEyeVect);
-	float sinX = abs(vEyeVect.z) / (dist + 0.001);
+	float sinX = flHeight / (dist + 0.001);
 	float flFresnel = asin(sinX) / (0.5 * 3.14159);
 	
 	float flOffsetFactor = clamp(flFresnel, 0.0, 1.0) * u_normfactor;
 
 	flFresnel = 1.0 - flFresnel;
+
+	flFresnel = clamp(flFresnel + smoothstep(u_fresnelfactor.y, u_fresnelfactor.z, flHeight), 0.0, 1.0);
 
 	vec2 vOffsetTexCoord = normalize(vNormal).xy * flOffsetFactor;
 
@@ -148,9 +152,9 @@ void main()
 			vReflectColor = u_watercolor;
 		}*/
 
-		float flRefractFactor = clamp(flFresnel * u_fresnelfactor, 0.0, 1.0);
+		float flReflectFactor = clamp(flFresnel * u_fresnelfactor.x, 0.0, 1.0);
 
-		vFinalColor = vRefractColor + vReflectColor * flRefractFactor;
+		vFinalColor = vRefractColor + vReflectColor * flReflectFactor;
 
 		vFinalColor.a = flWaterBlendAlpha;
 

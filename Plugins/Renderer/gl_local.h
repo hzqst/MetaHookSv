@@ -237,6 +237,7 @@ extern cvar_t *chase_active;
 void R_FillAddress(void);
 void R_InstallHook(void);
 
+void GammaToLinear(float *color);
 void R_LoadSkyName_SvEngine(const char *name);
 void R_LoadSkys(void);
 void Mod_LoadStudioModel(model_t *mod, void *buffer);

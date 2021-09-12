@@ -2616,7 +2616,9 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 {
 	water_control_t control;
-	control.fresnelfactor = 0;
+	control.fresnelfactor[0] = 0;
+	control.fresnelfactor[1] = 0;
+	control.fresnelfactor[2] = 0;
 	control.depthfactor[0] = 0;
 	control.depthfactor[1] = 0;
 	control.normfactor = 0;
@@ -2644,13 +2646,15 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 	if (fresnelfactor_string)
 	{
 		float temp[4];
-		if (sscanf(fresnelfactor_string, "%f", &temp[0]) == 1)
+		if (sscanf(fresnelfactor_string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
 		{
-			control.fresnelfactor = clamp(temp[0], 0, 10);
+			control.fresnelfactor[0] = clamp(temp[0], 0, 10);
+			control.fresnelfactor[1] = clamp(temp[1], 0, 999999);
+			control.fresnelfactor[2] = clamp(temp[2], 0, 999999);
 		}
 		else
 		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"fresnelfactor\" in entity \"env_water_control\"\n");
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"fresnelfactor\" in entity \"env_water_control\", 3 floats are required.\n");
 		}
 	}
 
@@ -2664,7 +2668,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		}
 		else
 		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"normfactor\" in entity \"env_water_control\"\n");
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"normfactor\" in entity \"env_water_control\", 2 floats are required.\n");
 		}
 	}
 
@@ -2679,7 +2683,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		}
 		else
 		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"depthfactor\" in entity \"env_water_control\"\n");
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"depthfactor\" in entity \"env_water_control\", 2 floats are required.\n");
 		}
 	}
 
@@ -2693,7 +2697,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		}
 		else
 		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"minheight\" in entity \"env_water_control\"\n");
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"minheight\" in entity \"env_water_control\", 1 float is required.\n");
 		}
 	}
 
@@ -2707,7 +2711,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		}
 		else
 		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"maxtrans\" in entity \"env_water_control\"\n");
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"maxtrans\" in entity \"env_water_control\", 1 float is required.\n");
 		}
 	}
 
@@ -2734,16 +2738,20 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		{
 			control.level = WATER_LEVEL_REFLECT_SSR;
 		}
+		else if (!strcmp(level_string, "WATER_LEVEL_LEGACY_RIPPLE"))
+		{
+			control.level = WATER_LEVEL_LEGACY_RIPPLE;
+		}
 		else
 		{
 			int lv;
 			if (sscanf(level_string, "%d", &lv) == 1)
 			{
-				control.level = clamp(lv, WATER_LEVEL_LEGACY, WATER_LEVEL_REFLECT_SSR);
+				control.level = clamp(lv, WATER_LEVEL_LEGACY, WATER_LEVEL_MAX - 1);
 			}
 			else
 			{
-				gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"level\" in entity \"env_water_control\"\n");
+				gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"level\" in entity \"env_water_control\", 1 integer is required\n");
 			}
 		}
 	}
@@ -3165,8 +3173,11 @@ void R_SetupSceneUBO(void)
 		float equation[4] = { curwater->normal[0], curwater->normal[1], curwater->normal[2], -curwater->plane };
 		memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
 	}
-
+	
+	//Fog colors are converted to linear space before use.
 	memcpy(SceneUBO.fogColor, r_fog_color, sizeof(vec4_t));
+	GammaToLinear(SceneUBO.fogColor);
+
 	SceneUBO.fogStart = r_fog_control[0];
 	SceneUBO.fogEnd = r_fog_control[1];
 	SceneUBO.fogDensity = r_fog_control[2];

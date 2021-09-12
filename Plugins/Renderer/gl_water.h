@@ -21,7 +21,7 @@ typedef struct water_control_s
 	std::string basetexture;
 	std::string wildcard;
 	std::string normalmap;
-	float fresnelfactor;
+	float fresnelfactor[3];
 	float depthfactor[2];
 	float normfactor;
 	float minheight;
@@ -70,7 +70,9 @@ typedef struct water_vbo_s
 		reflectmap_handle = 0;
 		normalmap_handle = 0;
 
-		fresnelfactor = 0;
+		fresnelfactor[0] = 0;
+		fresnelfactor[1] = 0;
+		fresnelfactor[2] = 0;
 		depthfactor[0] = 0;
 		depthfactor[1] = 0;
 		normfactor = 0;
@@ -96,7 +98,7 @@ typedef struct water_vbo_s
 	GLuint64 reflectmap_handle;
 	GLuint64 normalmap_handle;
 
-	float fresnelfactor;
+	float fresnelfactor[3];
 	float depthfactor[2];
 	float normfactor;
 	float minheight;
@@ -165,3 +167,5 @@ void R_DrawWaters(void);
 #define WATER_LEVEL_REFLECT_WORLD		2
 #define WATER_LEVEL_REFLECT_ENTITY		3
 #define WATER_LEVEL_REFLECT_SSR			4
+#define WATER_LEVEL_LEGACY_RIPPLE		5
+#define WATER_LEVEL_MAX					6

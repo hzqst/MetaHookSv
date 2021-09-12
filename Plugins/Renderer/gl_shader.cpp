@@ -297,7 +297,7 @@ void GL_Uniform1f(GLuint loc, float v0)
 
 void GL_Uniform2f(GLuint loc, float v0, float v1)
 {
-	glUniform2fARB(loc, v0, v1);
+	glUniform2f(loc, v0, v1);
 }
 
 void GL_Uniform3f(GLuint loc, float v0, float v1, float v2)

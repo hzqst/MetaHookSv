@@ -99,7 +99,7 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 			glUniform1f(prog.u_ssrDistanceBias, r_ssr_distance_bias->GetValue());
 
 		if (prog.u_ssrFade != -1)
-			glUniform2fARB(prog.u_ssrFade, r_ssr_fade->GetValues()[0], r_ssr_fade->GetValues()[1]);
+			glUniform2f(prog.u_ssrFade, r_ssr_fade->GetValues()[0], r_ssr_fade->GetValues()[1]);
 
 		if (progOutput)
 			*progOutput = prog;

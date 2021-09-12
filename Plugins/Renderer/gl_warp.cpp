@@ -101,10 +101,10 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 			glUniform4f(prog.u_watercolor, color[0], color[1], color[2], color[3]);
 
 		if (prog.u_depthfactor != -1)
-			glUniform2fARB(prog.u_depthfactor, WaterVBOCache->depthfactor[0], WaterVBOCache->depthfactor[1]);
+			glUniform2f(prog.u_depthfactor, WaterVBOCache->depthfactor[0], WaterVBOCache->depthfactor[1]);
 
 		if (prog.u_fresnelfactor != -1)
-			glUniform1f(prog.u_fresnelfactor, WaterVBOCache->fresnelfactor);
+			glUniform3f(prog.u_fresnelfactor, WaterVBOCache->fresnelfactor[0], WaterVBOCache->fresnelfactor[1], WaterVBOCache->fresnelfactor[2]);
 
 		if (prog.u_normfactor != -1)
 			glUniform1f(prog.u_normfactor, WaterVBOCache->normfactor);
