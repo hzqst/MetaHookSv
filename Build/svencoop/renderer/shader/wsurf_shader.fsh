@@ -285,6 +285,10 @@ void main()
 
 	lightmapColor = LightGammaToLinear(lightmapColor);
 
+	lightmapColor.x = max(lightmapColor.x, 0.03);
+	lightmapColor.y = max(lightmapColor.y, 0.03);
+	lightmapColor.z = max(lightmapColor.z, 0.03);
+
 #else
 
 	vec4 lightmapColor = vec4(1.0, 1.0, 1.0, 1.0);

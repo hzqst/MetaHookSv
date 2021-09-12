@@ -304,11 +304,6 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		gWaterColor->b = pSourcePalette[2];
 	}
 
-	gWaterColor->a = 255;
-
-	//if ((*currententity)->curstate.rendermode == kRenderTransTexture)
-	//	gWaterColor->a = (*r_blend) * 255;
-
 	auto VBOCache = R_PrepareWaterVBO((*currententity), fa, direction);
 
 	if (g_iNumRenderWaterVBOCache == 512)
