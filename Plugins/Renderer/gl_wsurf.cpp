@@ -2919,9 +2919,6 @@ void R_RecursiveWorldNodeVBO(mnode_t *node)
 			} while (--c);
 		}
 
-		//if (pleaf->efrags)
-		//	R_StoreEfrags(&pleaf->efrags);
-
 		return;
 	}
 

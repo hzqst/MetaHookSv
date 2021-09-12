@@ -15,6 +15,7 @@
 #include <pm_shared.h>
 #include <particledef.h>
 #include <triangleapi.h>
+#include <entity_types.h>
 
 #include "plugins.h"
 #include "exportfuncs.h"

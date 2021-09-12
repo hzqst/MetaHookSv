@@ -94,6 +94,8 @@ void R_Version_f(void)
 
 void HUD_PlayerMoveInit(struct playermove_s *ppmove)
 {
+	gExportfuncs.HUD_PlayerMoveInit(ppmove);
+
 	playermove = ppmove;
 }
 
