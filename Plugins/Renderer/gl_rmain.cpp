@@ -762,6 +762,8 @@ void R_DrawCurrentEntity(bool bTransparent)
 		{
 			if ((*currententity)->curstate.movetype == MOVETYPE_FOLLOW)
 			{
+				bool bFound = false;
+
 				for (int j = 0; j < (*cl_numvisedicts); j++)
 				{
 					if (cl_visedicts[j]->index == (*currententity)->curstate.aiment)
@@ -779,9 +781,15 @@ void R_DrawCurrentEntity(bool bTransparent)
 						}
 
 						(*currententity) = save_currententity;
+
+						bFound = true;
+
 						break;
 					}
 				}
+
+				if (!bFound)
+					break;
 			}
 
 			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
