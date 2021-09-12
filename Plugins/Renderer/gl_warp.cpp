@@ -34,24 +34,16 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 
 	if (WaterVBOCache->level >= WATER_LEVEL_REFLECT_SKYBOX && WaterVBOCache->level <= WATER_LEVEL_REFLECT_ENTITY && r_water->value)
 	{
-		int programState = 0;
-
-		if (bUseBindless)
-			programState |= WATER_BINDLESS_ENABLED;
-
-		if (bIsAboveWater)
-			programState |= WATER_DEPTH_ENABLED;
-
 		if (!refractmap_ready)
 		{
 			if (drawgbuffer)
 			{
 				R_BlitGBufferToFrameBuffer(&s_WaterFBO);
-			
+
 				//Must restore VBO and EBO
 				glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hSceneVBO);
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, WaterVBOCache->hEBO);
-				
+
 				glBindFramebuffer(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
 			}
 			else
@@ -64,12 +56,33 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 			refractmap_ready = true;
 		}
 
-		if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
-		{
-			if (color[3] > WaterVBOCache->maxtrans)
-				color[3] = WaterVBOCache->maxtrans;
+		int programState = 0;
 
+		if (bUseBindless)
+			programState |= WATER_BINDLESS_ENABLED;
+
+		if (bIsAboveWater)
+			programState |= WATER_DEPTH_ENABLED;
+
+		if (r_water_forcetrans->value)
+		{
 			programState |= WATER_REFRACT_ENABLED;
+
+			if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
+			{
+				if (color[3] > WaterVBOCache->maxtrans)
+					color[3] = WaterVBOCache->maxtrans;
+			}
+		}
+		else
+		{
+			if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
+			{
+				programState |= WATER_REFRACT_ENABLED;
+
+				if (color[3] > WaterVBOCache->maxtrans)
+					color[3] = WaterVBOCache->maxtrans;
+			}
 		}
 
 		if (!bIsAboveWater)

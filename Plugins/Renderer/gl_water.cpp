@@ -11,6 +11,7 @@ water_vbo_t *curwater;
 
 //cvar
 cvar_t *r_water = NULL;
+cvar_t *r_water_forcetrans = NULL;
 cvar_t *r_water_debug = NULL;
 
 std::vector<water_vbo_t *> g_WaterVBOCache;
@@ -205,6 +206,7 @@ void R_ShutdownWater(void)
 void R_InitWater(void)
 {
 	r_water = gEngfuncs.pfnRegisterVariable("r_water", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_water_forcetrans = gEngfuncs.pfnRegisterVariable("r_water_forcetrans", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_water_debug = gEngfuncs.pfnRegisterVariable("r_water_debug", "0", FCVAR_CLIENTDLL);
 }
 

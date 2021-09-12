@@ -125,10 +125,9 @@ extern water_vbo_t *g_RenderWaterVBOCache[512];
 extern int g_iNumRenderWaterVBOCache;
 //shader
 
-extern SHADER_DEFINE(drawdepth);
-
 //cvar
 extern cvar_t *r_water;
+extern cvar_t *r_water_forcetrans;
 extern cvar_t *r_water_debug;
 
 typedef struct
