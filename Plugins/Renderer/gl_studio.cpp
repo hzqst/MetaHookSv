@@ -339,8 +339,8 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		if (state & STUDIO_CLIP_ENABLED)
 			defs << "#define CLIP_ENABLED\n";
 
-		if (state & STUDIO_BINDLESS_ENABLED)
-			defs << "#define BINDLESS_ENABLED\n";
+		//if (state & STUDIO_BINDLESS_ENABLED)
+		//	defs << "#define BINDLESS_ENABLED\n";
 
 		if (state & STUDIO_OIT_ALPHA_BLEND_ENABLED)
 			defs << "#define OIT_ALPHA_BLEND_ENABLED\n";
@@ -802,7 +802,11 @@ void R_GLStudioDrawPoints(void)
 
 		if (r_fullbright->value >= 2)
 		{
-			flags = flags & 0xFC;
+			flags &= STUDIO_NF_FULLBRIGHT_ALLOWBITS;
+		}
+		else
+		{
+			flags &= STUDIO_NF_ALLOWBITS;
 		}
 
 		int GBufferMask = GBUFFER_MASK_ALL;
