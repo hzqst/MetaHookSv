@@ -917,6 +917,13 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 		if (GetSequenceActivityType(ent->model, &ent->curstate) != 2)
 		{
 			ReleaseRagdollFromGargantua(ragdoll);
+			
+			//Is gibbed ?
+			if (ent->curstate.effects & 0x80)
+			{
+				return false;
+			}
+
 			return true;
 		}
 
@@ -954,6 +961,12 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 		if (GetSequenceActivityType(ent->model, &ent->curstate) != 2)
 		{
 			ReleaseRagdollFromBarnacle(ragdoll);
+			//Is gibbed ?
+			if (ent->curstate.effects & 0x80)
+			{
+				return false;
+			}
+
 			return true;
 		}
 
@@ -1550,6 +1563,10 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 			if (!strcmp(text, "slider"))
 			{
 				i_type = RAGDOLL_GARGANTUA_SLIDER;
+			}
+			else if (!strcmp(text, "dof6z"))
+			{
+				i_type = RAGDOLL_GARGANTUA_DOF6Z;
 			}
 			else if (!strcmp(text, "dof6"))
 			{
@@ -2356,7 +2373,7 @@ void CPhysicsManager::ApplyGargantua(CRagdollBody *ragdoll, cl_entity_t *gargant
 						
 					}
 				}
-				else if (garcontrol->type == RAGDOLL_GARGANTUA_DOF6)
+				else if (garcontrol->type == RAGDOLL_GARGANTUA_DOF6Z)
 				{
 					auto linkTarget = gargRagdollBody->m_rigbodyMap.find(garcontrol->name2);
 
@@ -2395,6 +2412,58 @@ void CPhysicsManager::ApplyGargantua(CRagdollBody *ragdoll, cl_entity_t *gargant
 						constraint->setAngularUpperLimit(btVector3(M_PI * 1, M_PI * 1, M_PI * 1));
 						constraint->setLinearLowerLimit(btVector3(0, 0, 0));
 						constraint->setLinearUpperLimit(btVector3(0, 0, factor3));
+						constraint->setDbgDrawSize(5);
+
+						ragdoll->m_gargantuaConstraintArray.emplace_back(constraint);
+
+						m_dynamicsWorld->addConstraint(constraint);
+
+						float factor1 = garcontrol->factor1;
+						FloatGoldSrcToBullet(&factor1);
+
+						rig->gargantua_force = factor1;
+						rig->gargantua_target = linkTargetRigbody->rigbody;
+					}
+				}
+				else if (garcontrol->type == RAGDOLL_GARGANTUA_DOF6)
+				{
+					auto linkTarget = gargRagdollBody->m_rigbodyMap.find(garcontrol->name2);
+
+					if (linkTarget != gargRagdollBody->m_rigbodyMap.end())
+					{
+						if (std::find(ragdoll->m_gargantuaDragRigBody.begin(), ragdoll->m_gargantuaDragRigBody.end(), rig) == ragdoll->m_gargantuaDragRigBody.end())
+							ragdoll->m_gargantuaDragRigBody.emplace_back(rig);
+
+						auto linkTargetRigbody = linkTarget->second;
+
+						btTransform rigtrans = rig->rigbody->getWorldTransform();
+
+						btTransform gargtrans = linkTargetRigbody->rigbody->getWorldTransform();
+
+						btTransform localrig1;
+						localrig1.setIdentity();
+						float factor2 = garcontrol->factor2;
+						btVector3 offset1(0, 0, factor2);
+						Vector3GoldSrcToBullet(offset1);
+						localrig1.setOrigin(offset1);
+
+						btTransform localrig2;
+						localrig2.setIdentity();
+						btVector3 offset2(garcontrol->offsetX, garcontrol->offsetY, garcontrol->offsetZ);
+						Vector3GoldSrcToBullet(offset2);
+						localrig2.setOrigin(offset2);
+
+						auto constraint = new btGeneric6DofConstraint(*linkTargetRigbody->rigbody, *rig->rigbody, localrig1, localrig2, true);
+
+						auto distance = gargtrans.getOrigin().distance(rigtrans.getOrigin());
+
+						float factor3 = garcontrol->factor3;
+						FloatGoldSrcToBullet(&factor3);
+
+						constraint->setAngularLowerLimit(btVector3(M_PI * -1, M_PI * -1, M_PI * -1));
+						constraint->setAngularUpperLimit(btVector3(M_PI * 1, M_PI * 1, M_PI * 1));
+						constraint->setLinearLowerLimit(btVector3(0, 0, 0));
+						constraint->setLinearUpperLimit(btVector3(factor3, 0, 0));
 						constraint->setDbgDrawSize(5);
 
 						ragdoll->m_gargantuaConstraintArray.emplace_back(constraint);
