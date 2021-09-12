@@ -2424,21 +2424,18 @@ void Mod_LoadStudioModel(model_t *mod, void *buffer)
 
 void R_LoadSkyName_SvEngine(const char *name)
 {
-	if ((*r_loading_skybox))
+	for (int i = 0; i < 6; ++i)
 	{
-		for (int i = 0; i < 6; ++i)
+		if (r_wsurf.vSkyboxTextureHandles[i])
 		{
-			if (r_wsurf.vSkyboxTextureHandles[i])
-			{
-				glMakeTextureHandleNonResidentARB(r_wsurf.vSkyboxTextureHandles[i]);
-				r_wsurf.vSkyboxTextureHandles[i] = 0;
-			}
+			glMakeTextureHandleNonResidentARB(r_wsurf.vSkyboxTextureHandles[i]);
+			r_wsurf.vSkyboxTextureHandles[i] = 0;
+		}
 
-			if (gSkyTexNumber[i])
-			{
-				GL_DeleteTexture(gSkyTexNumber[i]);
-				gSkyTexNumber[i] = 0;
-			}
+		if (gSkyTexNumber[i])
+		{
+			GL_DeleteTexture(gSkyTexNumber[i]);
+			gSkyTexNumber[i] = 0;
 		}
 	}
 
@@ -2450,7 +2447,7 @@ void R_LoadSkyName_SvEngine(const char *name)
 		{
 			for (int i = 0; i < 6; ++i)
 			{
-				if (!r_wsurf.vSkyboxTextureHandles[i])
+				if (!r_wsurf.vSkyboxTextureHandles[i] && gSkyTexNumber[i])
 				{
 					auto handle = glGetTextureHandleARB(gSkyTexNumber[i]);
 					glMakeTextureHandleResidentARB(handle);
@@ -2463,7 +2460,7 @@ void R_LoadSkyName_SvEngine(const char *name)
 			const int skytexorder[6] = { 0, 2, 1, 3, 4, 5 };
 			for (int i = 0; i < 6; ++i)
 			{
-				if (!r_wsurf.vSkyboxTextureHandles[i])
+				if (!r_wsurf.vSkyboxTextureHandles[i] && gSkyTexNumber[skytexorder[i]])
 				{
 					auto handle = glGetTextureHandleARB(gSkyTexNumber[skytexorder[i]]);
 					glMakeTextureHandleResidentARB(handle);
@@ -2477,23 +2474,20 @@ void R_LoadSkyName_SvEngine(const char *name)
 
 void R_LoadSkys(void)
 {
-	if ((*r_loading_skybox))
+	for (int i = 0; i < 6; ++i)
 	{
-		for (int i = 0; i < 6; ++i)
+		if (r_wsurf.vSkyboxTextureHandles[i])
 		{
-			if (r_wsurf.vSkyboxTextureHandles[i])
-			{
-				glMakeTextureHandleNonResidentARB(r_wsurf.vSkyboxTextureHandles[i]);
-				r_wsurf.vSkyboxTextureHandles[i] = 0;
-			}
-			if (gSkyTexNumber[i])
-			{
-				GL_DeleteTexture(gSkyTexNumber[i]);
-				gSkyTexNumber[i] = 0;
-			}
+			glMakeTextureHandleNonResidentARB(r_wsurf.vSkyboxTextureHandles[i]);
+			r_wsurf.vSkyboxTextureHandles[i] = 0;
+		}
+		if (gSkyTexNumber[i])
+		{
+			GL_DeleteTexture(gSkyTexNumber[i]);
+			gSkyTexNumber[i] = 0;
 		}
 	}
-
+	
 	gRefFuncs.R_LoadSkys();
 
 	if (bUseBindless)
@@ -2502,7 +2496,7 @@ void R_LoadSkys(void)
 		{
 			for (int i = 0; i < 6; ++i)
 			{
-				if (!r_wsurf.vSkyboxTextureHandles[i])
+				if (!r_wsurf.vSkyboxTextureHandles[i] && gSkyTexNumber[i])
 				{
 					auto handle = glGetTextureHandleARB(gSkyTexNumber[i]);
 					glMakeTextureHandleResidentARB(handle);
@@ -2515,7 +2509,7 @@ void R_LoadSkys(void)
 			const int skytexorder[6] = { 0, 2, 1, 3, 4, 5 };
 			for (int i = 0; i < 6; ++i)
 			{
-				if (!r_wsurf.vSkyboxTextureHandles[i])
+				if (!r_wsurf.vSkyboxTextureHandles[i] && gSkyTexNumber[skytexorder[i]])
 				{
 					auto handle = glGetTextureHandleARB(gSkyTexNumber[skytexorder[i]]);
 					glMakeTextureHandleResidentARB(handle);

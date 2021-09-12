@@ -315,6 +315,9 @@ void R_DrawSkyBox(void)
 	if (CL_IsDevOverviewMode())
 		return;
 
+	if (!gSkyTexNumber[0])
+		return;
+
 	static glprofile_t profile_DrawSkyBox;
 	GL_BeginProfile(&profile_DrawSkyBox, "R_DrawSkyBox");
 
