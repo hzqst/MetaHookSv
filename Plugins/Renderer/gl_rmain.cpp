@@ -1399,7 +1399,28 @@ void R_PreRenderView(int a1)
 {
 	g_SvEngine_DrawPortalView = a1 ? true : false;
 
+	//Capture previous fog settings
+
 	r_fog_mode = 0;
+
+	if (glIsEnabled(GL_FOG))
+	{
+		glGetIntegerv(GL_FOG_MODE, &r_fog_mode);
+
+		if (r_fog_mode == GL_LINEAR)
+		{
+			glGetFloatv(GL_FOG_START, &r_fog_control[0]);
+			glGetFloatv(GL_FOG_END, &r_fog_control[1]);
+			glGetFloatv(GL_FOG_COLOR, r_fog_color);
+		}
+		else if (r_fog_mode == GL_EXP2)
+		{
+			glGetFloatv(GL_FOG_START, &r_fog_control[0]);
+			glGetFloatv(GL_FOG_END, &r_fog_control[1]);
+			glGetFloatv(GL_FOG_DENSITY, &r_fog_control[2]);
+			glGetFloatv(GL_FOG_COLOR, r_fog_color);
+		}
+	}
 
 	if (!(*r_refdef.onlyClientDraws))
 	{

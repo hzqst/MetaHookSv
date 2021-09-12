@@ -3237,28 +3237,6 @@ void R_DrawWorld(void)
 	GL_DisableMultitexture();
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-	//Capture previous fog settings from R_RenderScene
-	r_fog_mode = 0;
-
-	if (glIsEnabled(GL_FOG))
-	{
-		glGetIntegerv(GL_FOG_MODE, &r_fog_mode);
-
-		if (r_fog_mode == GL_LINEAR)
-		{
-			glGetFloatv(GL_FOG_START, &r_fog_control[0]);
-			glGetFloatv(GL_FOG_END, &r_fog_control[1]);
-			glGetFloatv(GL_FOG_COLOR, r_fog_color);
-		}
-		else if (r_fog_mode == GL_EXP2)
-		{
-			glGetFloatv(GL_FOG_START, &r_fog_control[0]);
-			glGetFloatv(GL_FOG_END, &r_fog_control[1]);
-			glGetFloatv(GL_FOG_DENSITY, &r_fog_control[2]);
-			glGetFloatv(GL_FOG_COLOR, r_fog_color);
-		}
-	}
-
 	r_wsurf.bDiffuseTexture = true;
 	r_wsurf.bLightmapTexture = false;
 	r_wsurf.bShadowmapTexture = false;
