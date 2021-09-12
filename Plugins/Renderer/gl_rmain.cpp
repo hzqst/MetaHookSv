@@ -771,7 +771,7 @@ void R_DrawCurrentEntity(bool bTransparent)
 
 						if ((*currententity)->player)
 						{
-							(*gpStudioInterface)->StudioDrawPlayer(0, R_GetPlayerState(save_currententity->index));
+							(*gpStudioInterface)->StudioDrawPlayer(0, R_GetPlayerState((*currententity)->index));
 						}
 						else
 						{
@@ -782,7 +782,6 @@ void R_DrawCurrentEntity(bool bTransparent)
 						break;
 					}
 				}
-				break;
 			}
 
 			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
