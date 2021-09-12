@@ -261,19 +261,19 @@ water_vbo_t *R_FindFlatWaterVBO(cl_entity_t *ent, msurface_t *surf, int directio
 			surf->texinfo->texture == cache->texture &&
 			cache->normal[2] == normal[2])
 		{
-			auto plane = DotProduct(poly->verts[0], normal);
-
 			bool bSkip = false;
 			for (int j = 0; j < poly->numverts; ++j)
 			{
-				if (fabs(cache->plane - plane) < 0.1f)
+				auto plane = DotProduct(poly->verts[i], normal);
+				if (fabs(cache->plane - plane) > 0.1f)
 				{
 					bSkip = true;
 					break;
 				}
 			}
 
-			return cache;
+			if(!bSkip)
+				return cache;
 		}
 	}
 
