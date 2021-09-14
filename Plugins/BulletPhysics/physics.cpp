@@ -937,13 +937,12 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 
 		if (gargantua->curstate.sequence == 15)
 		{
-			vec3_t origin;
-			if (GetRagdollOrigin(ragdoll, origin))
+			for (size_t i = 0; i < ragdoll->m_gargantuaDragRigBody.size(); ++i)
 			{
-				for (size_t i = 0; i < ragdoll->m_gargantuaDragRigBody.size(); ++i)
-				{
-					auto rig = ragdoll->m_gargantuaDragRigBody[i];
+				auto rig = ragdoll->m_gargantuaDragRigBody[i];
 
+				if (client_time > rig->gargantua_drag_time)
+				{
 					btVector3 force = rig->gargantua_target->getWorldTransform().getOrigin() - rig->rigbody->getWorldTransform().getOrigin();
 					force.normalize();
 					force *= rig->gargantua_force;
@@ -1040,6 +1039,20 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 
 				rig->rigbody->applyCentralForce(force);
 			}
+		}
+	}
+
+	if (ragdoll->m_pelvisRigBody)
+	{
+		vec3_t origin;
+		if (GetRagdollOrigin(ragdoll, origin))
+		{
+			if (origin[2] < -99999)
+				return false;
+		}
+		if (ent->curstate.effects & 0x80)
+		{
+			return false;
 		}
 	}
 
@@ -1571,6 +1584,10 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 			else if (!strcmp(text, "dof6"))
 			{
 				i_type = RAGDOLL_GARGANTUA_DOF6;
+			}
+			else if (!strcmp(text, "dragforce"))
+			{
+				i_type = RAGDOLL_GARGANTUA_DRAGFORCE;
 			}
 			else
 			{
@@ -2373,6 +2390,29 @@ void CPhysicsManager::ApplyGargantua(CRagdollBody *ragdoll, cl_entity_t *gargant
 						
 					}
 				}
+				else if (garcontrol->type == RAGDOLL_GARGANTUA_DRAGFORCE)
+				{
+					auto linkTarget = gargRagdollBody->m_rigbodyMap.find(garcontrol->name2);
+
+					if (linkTarget != gargRagdollBody->m_rigbodyMap.end())
+					{
+						if (std::find(ragdoll->m_gargantuaDragRigBody.begin(), ragdoll->m_gargantuaDragRigBody.end(), rig) == ragdoll->m_gargantuaDragRigBody.end())
+							ragdoll->m_gargantuaDragRigBody.emplace_back(rig);
+
+						auto linkTargetRigbody = linkTarget->second;
+
+						float factor1 = garcontrol->factor1;
+						FloatGoldSrcToBullet(&factor1);
+
+						btVector3 offset(garcontrol->offsetX, garcontrol->offsetY, garcontrol->offsetZ);
+						Vector3GoldSrcToBullet(offset);
+
+						rig->gargantua_drag_offset = offset;
+						rig->gargantua_force = factor1;
+						rig->gargantua_target = linkTargetRigbody->rigbody;
+						rig->gargantua_drag_time = gEngfuncs.GetClientTime() + garcontrol->factor2;
+					}
+				}
 				else if (garcontrol->type == RAGDOLL_GARGANTUA_DOF6Z)
 				{
 					auto linkTarget = gargRagdollBody->m_rigbodyMap.find(garcontrol->name2);
@@ -2401,6 +2441,8 @@ void CPhysicsManager::ApplyGargantua(CRagdollBody *ragdoll, cl_entity_t *gargant
 						Vector3GoldSrcToBullet(offset2);
 						localrig2.setOrigin(offset2);
 
+						rig->gargantua_drag_offset = offset2;
+
 						auto constraint = new btGeneric6DofConstraint(*linkTargetRigbody->rigbody, *rig->rigbody, localrig1, localrig2, true);
 
 						auto distance = gargtrans.getOrigin().distance(rigtrans.getOrigin());
@@ -2423,6 +2465,7 @@ void CPhysicsManager::ApplyGargantua(CRagdollBody *ragdoll, cl_entity_t *gargant
 
 						rig->gargantua_force = factor1;
 						rig->gargantua_target = linkTargetRigbody->rigbody;
+						rig->gargantua_drag_time = gEngfuncs.GetClientTime();
 					}
 				}
 				else if (garcontrol->type == RAGDOLL_GARGANTUA_DOF6)
@@ -2453,6 +2496,8 @@ void CPhysicsManager::ApplyGargantua(CRagdollBody *ragdoll, cl_entity_t *gargant
 						Vector3GoldSrcToBullet(offset2);
 						localrig2.setOrigin(offset2);
 
+						rig->gargantua_drag_offset = offset2;
+
 						auto constraint = new btGeneric6DofConstraint(*linkTargetRigbody->rigbody, *rig->rigbody, localrig1, localrig2, true);
 
 						auto distance = gargtrans.getOrigin().distance(rigtrans.getOrigin());
@@ -2475,6 +2520,7 @@ void CPhysicsManager::ApplyGargantua(CRagdollBody *ragdoll, cl_entity_t *gargant
 
 						rig->gargantua_force = factor1;
 						rig->gargantua_target = linkTargetRigbody->rigbody;
+						rig->gargantua_drag_time = gEngfuncs.GetClientTime();
 					}
 				}
 			}

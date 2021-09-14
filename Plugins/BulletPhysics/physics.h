@@ -157,6 +157,7 @@ public:
 		barnacle_z_init = 0;
 		barnacle_z_final = 0;
 		gargantua_force = 0;
+		gargantua_drag_time = 0;
 		flags = 0;
 		oldActivitionState = 0;
 		oldCollisionFlags = 0;
@@ -175,6 +176,7 @@ public:
 		barnacle_z_init = 0;
 		barnacle_z_final = 0;
 		gargantua_force = 0;
+		gargantua_drag_time = 0;
 		flags = 0;
 		oldActivitionState = 0;
 		oldCollisionFlags = 0;
@@ -198,6 +200,8 @@ public:
 	float barnacle_z_final;
 	btVector3 barnacle_drag_offset;
 	float gargantua_force;
+	btVector3 gargantua_drag_offset;
+	float gargantua_drag_time;
 
 	int oldActivitionState;
 	int oldCollisionFlags;
@@ -323,6 +327,7 @@ public:
 #define RAGDOLL_GARGANTUA_SLIDER		1
 #define RAGDOLL_GARGANTUA_DOF6Z			2
 #define RAGDOLL_GARGANTUA_DOF6			3
+#define RAGDOLL_GARGANTUA_DRAGFORCE		4
 
 ATTRIBUTE_ALIGNED16(class)
 BoneMotionState : public btMotionState

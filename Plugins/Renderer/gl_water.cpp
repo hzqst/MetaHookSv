@@ -259,7 +259,7 @@ water_vbo_t *R_FindFlatWaterVBO(cl_entity_t *ent, msurface_t *surf, int directio
 	for (size_t i = 0; i < g_WaterVBOCache.size(); ++i)
 	{
 		auto cache = g_WaterVBOCache[i];
-		if (cache->ent == ent &&
+		if ((cache->ent == ent || cache->ent->curstate.rendermode == ent->curstate.rendermode) &&
 			surf->texinfo->texture == cache->texture &&
 			cache->normal[2] == normal[2])
 		{
