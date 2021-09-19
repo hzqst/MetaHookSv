@@ -830,10 +830,9 @@ void R_AmbientOcclusion(void)
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	}
 
-	//Merged with rgb channel
+	//0 for occluded color, 1 for non-occluded color
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ZERO, GL_SRC_COLOR);
-	glColor4f(1, 1, 1, 1);
 
 	//Only draw on brush surfaces
 	glEnable(GL_STENCIL_TEST);

@@ -162,7 +162,7 @@ vec4 ScreenSpaceReflection()
 float CalcShadowIntensityLumFadeout(vec4 lightmapColor, float intensity)
 {
 	float lightmapLum = 0.299 * lightmapColor.x + 0.587 * lightmapColor.y + 0.114 * lightmapColor.z;
-	float shadowLerp = (lightmapLum - SceneUBO.shadowFade.w) / (SceneUBO.shadowFade.z - SceneUBO.shadowFade.w);
+	float shadowLerp = (lightmapLum - SceneUBO.shadowFade.w) / (SceneUBO.shadowFade.z - SceneUBO.shadowFade.w + 0.001);
 	float shadowIntensity = intensity * clamp(shadowLerp, 0.0, 1.0);
 	shadowIntensity *= SceneUBO.shadowColor.a;
 
@@ -177,8 +177,7 @@ void main()
     vec4 specularColor = texture2DArray(gbufferTex, vec3(texCoord, GBUFFER_INDEX_SPECULAR));
 
 	float shadowIntensity = CalcShadowIntensityLumFadeout(lightmapColor, specularColor.z);
-	
-	lightmapColor.xyz = mix(lightmapColor.xyz, SceneUBO.shadowColor.xyz, shadowIntensity);
+	lightmapColor.xyz *= (1.0 - shadowIntensity);
 
 #ifdef SSR_ENABLED
     if(specularColor.g > 0.0)

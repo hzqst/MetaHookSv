@@ -371,7 +371,7 @@ void main()
 #ifdef SHADOWMAP_ENABLED
 
 		shadowIntensity = CalcShadowIntensityLumFadeout(lightmapColor, shadowIntensity);
-		lightmapColor.xyz = mix(lightmapColor.xyz, SceneUBO.shadowColor.xyz, shadowIntensity);
+		lightmapColor.xyz *= (1.0 - shadowIntensity);
 
 #endif
 
