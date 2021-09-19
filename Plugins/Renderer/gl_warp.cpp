@@ -303,7 +303,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 		gWaterColor->g = pSourcePalette[1];
 		gWaterColor->b = pSourcePalette[2];
 	}
-
+	
 	auto VBOCache = R_PrepareWaterVBO((*currententity), fa, direction);
 
 	if (g_iNumRenderWaterVBOCache == 512)

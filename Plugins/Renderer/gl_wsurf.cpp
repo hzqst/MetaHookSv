@@ -1745,7 +1745,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 				if (pplane->type != PLANE_Z)
 					continue;
 
-				if (r_entity_mins[2] + 1.0 >= pplane->dist)
+				if (r_entity_mins[2] >= pplane->dist)
 					continue;
 			}
 
