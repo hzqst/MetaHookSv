@@ -1264,8 +1264,39 @@ void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr)
 				if (texId)
 				{
 					ptexture->index = texId;
-					ptexture->width = width;
-					ptexture->height = height;
+
+					bool bSizeChanged = false;
+
+					char *replacescale_string = ValueForKey(ent, "replacescale");
+					if (replacescale_string)
+					{
+						float scales[2] = { 0 };
+						if (2 == sscanf(replacescale_string, "%f %f", &scales[0], &scales[1]))
+						{
+							if (scales[0] > 0)
+								ptexture->width = width * scales[0];
+
+							if (scales[1] > 0)
+								ptexture->height = height * scales[1];
+
+							bSizeChanged = true;
+						}
+						else if (1 == sscanf(replacescale_string, "%f", &scales[0]))
+						{
+							if (scales[0] > 0)
+							{
+								ptexture->width = width * scales[0];
+								ptexture->height = height * scales[0];
+							}
+							bSizeChanged = true;
+						}
+					}
+
+					if (!bSizeChanged)
+					{
+						ptexture->width = width;
+						ptexture->height = height;
+					}
 				}
 			}
 		}
