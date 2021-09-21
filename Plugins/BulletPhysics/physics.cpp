@@ -164,7 +164,7 @@ void CPhysicsManager::GenerateBrushIndiceArray(void)
 {
 	int maxNum = EngineGetMaxKnownModel();
 
-	if (m_brushIndexArray.size() < maxNum)
+	if ((int)m_brushIndexArray.size() < maxNum)
 		m_brushIndexArray.resize(maxNum);
 
 	for (int i = 0; i < maxNum; ++i)
@@ -660,7 +660,7 @@ void CPhysicsManager::GenerateBarnacleIndiceVerticeArray(void)
 	}
 
 	m_barnacleIndexArray = new indexarray_t;
-	for (int i = 0; i < m_barnacleVertexArray->vFaceBuffer.size(); i++)
+	for (int i = 0; i < (int)m_barnacleVertexArray->vFaceBuffer.size(); i++)
 	{
 		GenerateIndexedArrayForBrushface(&m_barnacleVertexArray->vFaceBuffer[i], m_barnacleIndexArray);
 	}
@@ -795,7 +795,7 @@ void CPhysicsManager::GenerateGargantuaIndiceVerticeArray(void)
 	}
 
 	m_gargantuaIndexArray = new indexarray_t;
-	for (int i = 0; i < m_gargantuaVertexArray->vFaceBuffer.size(); i++)
+	for (int i = 0; i < (int)m_gargantuaVertexArray->vFaceBuffer.size(); i++)
 	{
 		if (i >= 3 * 2 && i < 8 * 2)
 			continue;
@@ -919,7 +919,7 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 			ReleaseRagdollFromGargantua(ragdoll);
 			
 			//Is gibbed ?
-			if (ent->curstate.effects & 0x80)
+			if (ent->curstate.effects & EF_NODRAW)
 			{
 				return false;
 			}
@@ -961,7 +961,7 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 		{
 			ReleaseRagdollFromBarnacle(ragdoll);
 			//Is gibbed ?
-			if (ent->curstate.effects & 0x80)
+			if (ent->curstate.effects & EF_NODRAW)
 			{
 				return false;
 			}
@@ -1050,9 +1050,10 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 			if (origin[2] < -99999)
 				return false;
 		}
-		if (ent->curstate.effects & 0x80)
+		//FxDeadPlayer
+		if (ent->curstate.effects & EF_NODRAW)
 		{
-			return false;
+			return true;
 		}
 	}
 
@@ -1105,7 +1106,7 @@ void CPhysicsManager::ReloadConfig(void)
 {
 	int maxNum = EngineGetMaxKnownModel();
 
-	if (m_ragdoll_config.size() < maxNum)
+	if ((int)m_ragdoll_config.size() < maxNum)
 		m_ragdoll_config.resize(maxNum);
 
 	for (int i = 0; i < maxNum; ++i)
@@ -1240,7 +1241,7 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 
 			float f_frame = atof(text);
 
-			if (cfg->animcontrol.size() < i_sequence + 1)
+			if ((int)cfg->animcontrol.size() < i_sequence + 1)
 			{
 				cfg->animcontrol.resize(i_sequence + 1);
 			}
@@ -2687,7 +2688,7 @@ bool CPhysicsManager::UpdateKinematic(CRagdollBody *ragdoll, int iActivityType, 
 
 	if (ragdoll->m_iActivityType == 0 && iActivityType > 0)
 	{
-		if (curstate->sequence < ragdoll->m_animcontrol.size())
+		if (curstate->sequence < (int)ragdoll->m_animcontrol.size())
 		{
 			if (curstate->frame < ragdoll->m_animcontrol[curstate->sequence])
 			{
@@ -2703,10 +2704,33 @@ update_kinematic:
 	for (auto &itor : ragdoll->m_rigbodyMap)
 	{
 		auto rig = itor.second;
+
+		if (rig->flags & RIG_FL_JIGGLE)
+		{
+			if (!ragdoll->m_iActivityType)
+			{
+				for (auto &s : m_staticMap)
+				{
+					auto &staticBody = s.second;
+
+					rig->rigbody->setIgnoreCollisionCheck(staticBody->m_rigbody, true);
+				}
+			}
+			else
+			{
+				for (auto &s : m_staticMap)
+				{
+					auto &staticBody = s.second;
+
+					rig->rigbody->setIgnoreCollisionCheck(staticBody->m_rigbody, false);
+				}
+			}
+		}
+
 		if (!ragdoll->m_iActivityType && !(rig->flags & RIG_FL_JIGGLE))
 		{
 			rig->rigbody->setCollisionFlags(rig->oldCollisionFlags | btCollisionObject::CF_KINEMATIC_OBJECT);
-			rig->rigbody->setActivationState(DISABLE_DEACTIVATION); 
+			rig->rigbody->setActivationState(DISABLE_DEACTIVATION);
 		}
 		else
 		{

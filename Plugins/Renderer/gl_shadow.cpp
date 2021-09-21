@@ -90,6 +90,9 @@ bool R_ShouldCastShadow(cl_entity_t *ent)
 
 	if (ent->model->type == mod_studio)
 	{
+		if (ent->curstate.effects & EF_NODRAW)
+			return false;
+
 		//player model always render shadow
 		if (ent->model == r_playermodel)
 			return true;
