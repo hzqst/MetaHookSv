@@ -1417,38 +1417,64 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_t *modcache)
 
 		auto base = texchain.pTexture;
 
-		if ((*currententity)->curstate.effects & EF_SNIPERLASER)
+		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			int frame_count = 0;
-			int total_frame = (*currententity)->curstate.frame;
-			do
+			if ((*currententity)->curstate.effects & EF_FRAMEANIMTEXTURES)
 			{
-				if (base->anim_next)
-					base = base->anim_next;
-				++frame_count;
-			} while (frame_count < (*currententity)->curstate.frame);
+				if ((*currententity)->curstate.frame > 0)
+				{
+					int frame_count = 0;
+					int total_frame = (*currententity)->curstate.frame;
+					do
+					{
+						if (base->anim_next)
+							base = base->anim_next;
+						++frame_count;
+					} while (frame_count < total_frame);
+				}
+			}
+			else
+			{
+				if ((*currententity)->curstate.frame && base->alternate_anims)
+					base = base->alternate_anims;
+
+				if (!((*currententity)->curstate.effects & EF_NOANIMTEXTURES))
+				{
+					int reletive = (int)((*cl_time) * 10.0f) % base->anim_total;
+
+					int loop_count = 0;
+
+					while (base->anim_min > reletive || base->anim_max <= reletive)
+					{
+						base = base->anim_next;
+
+						if (!base)
+							Sys_ErrorEx("R_TextureAnimation: broken cycle");
+
+						if (++loop_count > 100)
+							Sys_ErrorEx("R_TextureAnimation: infinite cycle");
+					}
+				}
+			}
 		}
 		else
 		{
 			if ((*currententity)->curstate.frame && base->alternate_anims)
 				base = base->alternate_anims;
 
-			if (!((*currententity)->curstate.effects & EF_NIGHTVISION))
+			int reletive = (int)((*cl_time) * 10.0f) % base->anim_total;
+
+			int loop_count = 0;
+
+			while (base->anim_min > reletive || base->anim_max <= reletive)
 			{
-				int reletive = (int)((*cl_time) * 10.0f) % base->anim_total;
+				base = base->anim_next;
 
-				int loop_count = 0;
+				if (!base)
+					Sys_ErrorEx("R_TextureAnimation: broken cycle");
 
-				while (base->anim_min > reletive || base->anim_max <= reletive)
-				{
-					base = base->anim_next;
-
-					if (!base)
-						Sys_ErrorEx("R_TextureAnimation: broken cycle");
-
-					if (++loop_count > 100)
-						Sys_ErrorEx("R_TextureAnimation: infinite cycle");
-				}
+				if (++loop_count > 100)
+					Sys_ErrorEx("R_TextureAnimation: infinite cycle");
 			}
 		}
 
