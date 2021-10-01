@@ -9,7 +9,7 @@ int *r_loading_skybox = NULL;
 void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, WaterVBOCache->hEBO);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_TEXTURE_SSBO, WaterVBOCache->hTextureSSBO);
+	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_TEXTURE_SSBO, WaterVBOCache->hTextureSSBO);
 
 	if (r_draw_opaque)
 	{
@@ -58,8 +58,9 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 
 		int programState = 0;
 
-		if (bUseBindless)
-			programState |= WATER_BINDLESS_ENABLED;
+		//This will cause problems in older AMD cards.
+		//if (bUseBindless)
+		//	programState |= WATER_BINDLESS_ENABLED;
 
 		if (bIsAboveWater)
 			programState |= WATER_DEPTH_ENABLED;

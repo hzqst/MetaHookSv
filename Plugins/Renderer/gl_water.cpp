@@ -1,8 +1,8 @@
 #include "gl_local.h"
 #include <sstream>
 
-GLuint64 refractmap_handle = 0;
-GLuint64 depthrefrmap_handle = 0;
+//GLuint64 refractmap_handle = 0;
+//GLuint64 depthrefrmap_handle = 0;
 bool refractmap_ready = false;
 
 vec3_t water_view;
@@ -227,10 +227,10 @@ void R_NewMapWater(void)
 		{
 			GL_DeleteBuffer(VBOCache->hEBO);
 		}
-		if (VBOCache->hTextureSSBO)
+		/*if (VBOCache->hTextureSSBO)
 		{
 			GL_DeleteBuffer(VBOCache->hTextureSSBO);
-		}
+		}*/
 		delete VBOCache;
 	}
 
@@ -345,7 +345,7 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 			VBOCache->depthreflmap = GL_GenDepthStencilTexture(glwidth, glheight);
 			VBOCache->reflectmap = GL_GenTextureRGBA8(glwidth, glheight);
 
-			if (bUseBindless)
+			/*if (bUseBindless)
 			{
 				auto handle = glGetTextureHandleARB(VBOCache->texture->gl_texturenum);
 				glMakeTextureHandleResidentARB(handle);
@@ -375,10 +375,10 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 				glMakeTextureHandleResidentARB(handle);
 
 				depthrefrmap_handle = handle;
-			}
+			}*/
 
 			VBOCache->hEBO = GL_GenBuffer();
-			VBOCache->hTextureSSBO = GL_GenBuffer();
+			//VBOCache->hTextureSSBO = GL_GenBuffer();
 
 			VectorCopy(poly->verts[0], VBOCache->vert);
 			VectorCopy(brushface->normal, VBOCache->normal);
@@ -423,13 +423,13 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 
 				if (VBOCache->normalmap)
 				{
-					if (bUseBindless)
+					/*if (bUseBindless)
 					{
 						auto handle = glGetTextureHandleARB(VBOCache->normalmap);
 						glMakeTextureHandleResidentARB(handle);
 
 						VBOCache->normalmap_handle = handle;
-					}
+					}*/
 				}
 
 				VBOCache->fresnelfactor[0] = waterControl->fresnelfactor[0];
@@ -443,7 +443,7 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 				VBOCache->maxtrans = waterControl->maxtrans;
 				VBOCache->level = waterControl->level;
 			}
-
+			/*
 			GLuint64 ssbo[5] = {
 				VBOCache->basetexture_handle,
 				VBOCache->normalmap_handle,
@@ -455,6 +455,7 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 			glBindBuffer(GL_SHADER_STORAGE_BUFFER, VBOCache->hTextureSSBO);
 			glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ssbo), &ssbo, GL_STATIC_DRAW);
 			glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+			*/
 
 			g_WaterVBOCache.emplace_back(VBOCache);
 		}

@@ -48,8 +48,6 @@ typedef struct
 	int depthmap;
 }drawdepth_program_t;
 
-//extern GLuint refractmap;
-//extern GLuint depthrefrmap;
 extern bool refractmap_ready;
 
 typedef struct water_vbo_s
@@ -57,7 +55,7 @@ typedef struct water_vbo_s
 	water_vbo_s()
 	{
 		hEBO = 0;
-		hTextureSSBO = 0;
+		//hTextureSSBO = 0;
 
 		index = -1;
 		ent = NULL;
@@ -67,8 +65,8 @@ typedef struct water_vbo_s
 		depthreflmap = 0;
 		normalmap = 0;
 
-		reflectmap_handle = 0;
-		normalmap_handle = 0;
+		//reflectmap_handle = 0;
+		//normalmap_handle = 0;
 
 		fresnelfactor[0] = 0;
 		fresnelfactor[1] = 0;
@@ -85,7 +83,7 @@ typedef struct water_vbo_s
 		framecount = 0;
 	}
 	GLuint hEBO;
-	GLuint hTextureSSBO;
+	//GLuint hTextureSSBO;
 
 	int index;
 	cl_entity_t *ent;
@@ -95,9 +93,11 @@ typedef struct water_vbo_s
 	GLuint depthreflmap;
 	GLuint normalmap;
 
+	/*
 	GLuint64 basetexture_handle;
 	GLuint64 reflectmap_handle;
 	GLuint64 normalmap_handle;
+	*/
 
 	float fresnelfactor[3];
 	float depthfactor[3];
