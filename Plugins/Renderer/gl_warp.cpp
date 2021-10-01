@@ -183,8 +183,8 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 
 		int programState = WATER_LEGACY_ENABLED;
 
-		if (bUseBindless)
-			programState |= WATER_BINDLESS_ENABLED;
+		//if (bUseBindless)
+		//	programState |= WATER_BINDLESS_ENABLED;
 
 		if (!bIsAboveWater)
 		{
