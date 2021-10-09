@@ -285,9 +285,9 @@ void main()
 
 	lightmapColor = LightGammaToLinear(lightmapColor);
 
-	lightmapColor.x = max(lightmapColor.x, 0.03);
-	lightmapColor.y = max(lightmapColor.y, 0.03);
-	lightmapColor.z = max(lightmapColor.z, 0.03);
+	//lightmapColor.x = max(lightmapColor.x, 0.03);
+	//lightmapColor.y = max(lightmapColor.y, 0.03);
+	//lightmapColor.z = max(lightmapColor.z, 0.03);
 
 #else
 

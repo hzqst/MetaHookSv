@@ -225,7 +225,6 @@ typedef struct alight_s
 #define EF_OUTLINE			0x1000
 
 #define kRenderFxOutline 100
-#define kRenderFxShadowCaster 101
 
 //gl_model
 

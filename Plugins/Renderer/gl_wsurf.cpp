@@ -1253,7 +1253,7 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 			WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
 		}
 
-		if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
+		if (r_draw_shadowcaster)
 		{
 			WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 		}
@@ -1391,7 +1391,7 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 				WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
 			}
 
-			if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
+			if (r_draw_shadowcaster)
 			{
 				WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 			}
@@ -1553,7 +1553,7 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_t *modcache)
 			WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
 		}
 
-		if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
+		if (r_draw_shadowcaster)
 		{
 			WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 		}

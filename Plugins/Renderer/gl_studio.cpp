@@ -722,7 +722,7 @@ void R_GLStudioDrawPoints(void)
 {
 	int stencilState = 1;
 
-	if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
+	if (r_draw_shadowcaster)
 	{
 		//the fxxking StudioRenderFinal which will enable GL_BLEND and mess everything up.
 		glDisable(GL_BLEND);
@@ -811,7 +811,7 @@ void R_GLStudioDrawPoints(void)
 		//	StudioProgramState |= STUDIO_BINDLESS_ENABLED;
 		//}
 
-		if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
+		if (r_draw_shadowcaster)
 		{
 			StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
 		}
@@ -835,7 +835,7 @@ void R_GLStudioDrawPoints(void)
 			}
 		}
 
-		if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
+		if (r_draw_shadowcaster)
 		{
 
 		}
@@ -965,7 +965,7 @@ void R_GLStudioDrawPoints(void)
 			r_studio_polys += VBOMesh.iPolyCount;
 		}
 
-		if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
+		if (r_draw_shadowcaster)
 		{
 				
 		}
@@ -1101,7 +1101,7 @@ void R_StudioDrawBatch(void)
 	//	StudioProgramState |= STUDIO_BINDLESS_ENABLED;
 	//}
 
-	if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
+	if (r_draw_shadowcaster)
 	{
 		glDisable(GL_BLEND);
 		StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
@@ -1129,11 +1129,10 @@ void R_StudioDrawBatch(void)
 
 void __fastcall GameStudioRenderer_StudioRenderFinal(void *pthis, int)
 {
-	if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
+	if (r_draw_shadowcaster)
 	{
-		int rendermode = IEngineStudio.GetForceFaceFlags() ? kRenderTransAdd : (*currententity)->curstate.rendermode;
-		IEngineStudio.SetupRenderer(rendermode);
-		IEngineStudio.GL_SetRenderMode(rendermode);
+		IEngineStudio.SetupRenderer((*currententity)->curstate.rendermode);
+		IEngineStudio.GL_SetRenderMode((*currententity)->curstate.rendermode);
 
 		R_StudioDrawBatch();
 
@@ -1147,7 +1146,7 @@ void __fastcall GameStudioRenderer_StudioRenderFinal(void *pthis, int)
 
 void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 {
-	if ((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
+	if (r_draw_shadowcaster)
 	{
 		return gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
 	}

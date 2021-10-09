@@ -95,6 +95,7 @@ float r_identity_matrix[4][4] = {
 float r_entity_matrix[4][4];
 float r_entity_color[4];
 
+bool r_draw_shadowcaster = false;
 bool r_draw_opaque = false;
 bool r_draw_oitblend = false;
 bool r_draw_legacysprite = false;
@@ -205,7 +206,7 @@ int R_GetDrawPass(void)
 
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
-	if((*currententity)->curstate.renderfx == kRenderFxShadowCaster)
+	if(r_draw_shadowcaster)
 		return false;
 
 	if ((*currententity)->model && (*currententity)->model->type == mod_studio && (*currententity)->curstate.scale != 1.0f)

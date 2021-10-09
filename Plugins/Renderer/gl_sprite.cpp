@@ -589,7 +589,7 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		if (ent->curstate.effects & EF_FIBERCAMERA)
+		if (ent->curstate.effects & EF_SPRITE_CUSTOM_VP)
 		{
 			type = clamp(ent->curstate.sequence, SPR_VP_PARALLEL_UPRIGHT, SPR_VP_PARALLEL_ORIENTED);
 		}

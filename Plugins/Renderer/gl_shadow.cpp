@@ -212,13 +212,11 @@ void R_RenderShadowMap(void)
 			{
 				(*currententity) = shadow_visedicts[i][j];
 
-				int saved_renderfx = (*currententity)->curstate.renderfx;
-
-				(*currententity)->curstate.renderfx = kRenderFxShadowCaster;
+				r_draw_shadowcaster = true;
 
 				R_DrawCurrentEntity(false);
 
-				(*currententity)->curstate.renderfx = saved_renderfx;
+				r_draw_shadowcaster = false;
 			}
 
 			(*currententity) = backup_curentity;
