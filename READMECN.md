@@ -90,7 +90,7 @@
 
 3. `LoadEngine` 和 `LoadClient` 阶段会对所有`InlineHook`请求开启“事务”，直到所有插件的`LoadEngine` 和 `LoadClient`结束才会让`InlineHook`生效, 这样就可以允许不同插件`SearchPattern` 和 `InlineHook` 同一个函数，也不会引发冲突了
 
-## 插件
+## 插件列表
 
 ### CaptionMod
 
@@ -102,7 +102,7 @@
 
 ### BulletPhysics
 
-对游戏提供布娃娃支持，玩家死亡时以及玩家被藤壶抓住时将玩家模型转化为布娃娃
+对游戏提供布娃娃支持，玩家死亡时以及玩家被藤壶、喷火怪抓住时将玩家模型转化为布娃娃
 
 [中文文档](BulletPhysicsCN.md) [DOCUMENTATION](BulletPhysics.md)
 
@@ -124,7 +124,21 @@
 
 ![](/img/8.png)
 
-### HUDColor (第三方) (只支持SvEngine)
+### ABCEnchance (第三方) (只支持Sven Co-op)
+
+该插件提供以下功能：
+
+1. CSGO 风格的血量和弹药 HUD
+2. 2077风格的转盘武器选择菜单
+3. 伤害来源指示器
+4. 动态准星
+5. 实时更新的小地图（略微消耗渲染性能）
+6. 漂浮文字显示队友的血量、护甲、名字.
+7. 其他一些没什么用的特效
+
+https://github.com/DrAbcrealone/ABCEnchance
+
+### HUDColor (第三方) (只支持Sven Co-op)
 
 该插件可以修改HUD颜色
 
