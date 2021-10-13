@@ -995,12 +995,23 @@ void CChatDialog::ChatPrintf(int iPlayerIndex, const wchar_t *fmt, ...)
 
 	line->SetExpireTime();
 
-	if (sPlayerInfo.name)
+	if (sPlayerInfo.name && sPlayerInfo.name[0])
 	{
-		wchar_t wideName[MAX_PLAYER_NAME_LENGTH];
-		g_pVGuiLocalize->ConvertANSIToUnicode(sPlayerInfo.name, wideName, sizeof(wideName));
+		wchar_t wideName[MAX_PLAYER_NAME_LENGTH] = { 0 };
+		int wideNameLen = g_pVGuiLocalize->ConvertANSIToUnicode(sPlayerInfo.name, wideName, sizeof(wideName));
 
-		const wchar_t *nameInString = wcsstr(msg, wideName);
+		wideName[wideNameLen - 1] = L':';
+		wideName[wideNameLen] = 0;
+
+		wchar_t *psearch = (msg[0] > 0 && msg[0] < TEXTCOLOR_MAX) ? msg + 1 : msg;
+
+		if (!wcscmp(psearch, L"(TEAM) "))
+			psearch += _ARRAYSIZE(L"(TEAM) ") - 1;
+
+		if (!wcscmp(psearch, L"*DEAD* "))
+			psearch += _ARRAYSIZE(L"*DEAD* ") - 1;
+
+		const wchar_t *nameInString = wcsstr(psearch, wideName);
 
 		if (nameInString)
 		{
