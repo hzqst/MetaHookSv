@@ -41,5 +41,5 @@ void main()
 	//gamma correction
 	vColor = LinearToGamma3(vColor);
 
-	gl_FragColor = vec4(vColor, 1.0);
+	out_Color = vec4(vColor, 1.0);
 }
