@@ -14,7 +14,7 @@ echo Copying files...
 copy "%~dp0Build\svencoop.exe" "%GameDir%\%LauncherExe%" /y
 copy "%~dp0Build\SDL2.dll" "%GameDir%\" /y
 copy "%~dp0Build\FreeImage.dll" "%GameDir%\" /y
-xcopy "%~dp0Build\svencoop\" "%GameDir%\%LauncherMod%\" /y /e
+xcopy "%~dp0Build\svencoop" "%GameDir%\%LauncherMod%" /y /e
 
 powershell $shell = New-Object -ComObject WScript.Shell;$shortcut = $shell.CreateShortcut(\"MetaHook for CounterStrike.lnk\");$shortcut.TargetPath = \"%GameDir%\%LauncherExe%\";$shortcut.WorkingDirectory = \"%GameDir%\";$shortcut.Arguments = \"-game %LauncherMod%\";$shortcut.Save();
 
