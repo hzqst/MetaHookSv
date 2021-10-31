@@ -171,10 +171,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	const char *pszGameName = NULL;
 	const char *szGameStr = CommandLine()->CheckParm("-game", &pszGameName);
 
-	if (szGameStr)
-		strcpy(szGameName, pszGameName);
-	else
-		strcpy(szGameName, "valve");
+	strncpy(szGameName, (szGameStr) ? pszGameName : "valve", sizeof(szGameName) - 1);
+	szGameName[sizeof(szGameName) - 1] = 0;
 
 	if (szGameStr && !strnicmp(&szGameStr[6], "czero", 5))
 		CommandLine()->AppendParm("-forcevalve", NULL);

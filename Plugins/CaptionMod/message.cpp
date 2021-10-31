@@ -1378,7 +1378,10 @@ void CHudMessage::EnsureTextFitsInOneLineAndWrapIfHaveTo(int line)
 int CHudMessage::SayTextPrint(const char *pszBuf, int iBufSize, int clientIndex, char *sstr1, char *sstr2, char *sstr3, char *sstr4)
 {
 	if (!g_pViewPort->AllowedToPrintText())
+	{
+		gEngfuncs.pfnConsolePrint(pszBuf);
 		return 0;
+	}
 
 	int lineNum;
 	wchar_t finalBuffer[MAX_CHARS_PER_LINE];
@@ -1563,6 +1566,12 @@ int CHudMessage::SayTextPrint(const char *pszBuf, int iBufSize, int clientIndex,
 	//Y_START = GetTextPrintY();
 
 	g_pViewPort->ChatPrintf(clientIndex, finalBuffer);
+
+	char ufinalBuffer[256] = {0};
+	Q_UnicodeToUTF8(finalBuffer, ufinalBuffer, sizeof(ufinalBuffer));
+	V_strncat(ufinalBuffer, "\n", sizeof(ufinalBuffer), 1);
+
+	gEngfuncs.pfnConsolePrint(ufinalBuffer);
 
 	return 1;
 }
