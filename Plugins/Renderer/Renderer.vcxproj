@@ -109,7 +109,6 @@ if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\ren
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\HLSDK\common\interface.cpp" />
-    <ClCompile Include="command.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="gl_backend.cpp" />
     <ClCompile Include="gl_cvar.cpp" />
@@ -134,7 +133,6 @@ if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\ren
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bspfile.h" />
-    <ClInclude Include="command.h" />
     <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />
     <ClInclude Include="gl_cvar.h" />

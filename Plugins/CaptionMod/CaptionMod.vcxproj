@@ -113,7 +113,6 @@
     </ClCompile>
     <ClCompile Include="chatdialog.cpp" />
     <ClCompile Include="ClientVGUI.cpp" />
-    <ClCompile Include="command.cpp" />
     <ClCompile Include="cstrikechatdialog.cpp" />
     <ClCompile Include="CvarSlider.cpp" />
     <ClCompile Include="CvarToggleCheckButton.cpp" />
@@ -263,7 +262,6 @@
     <ClInclude Include="Bitmap.h" />
     <ClInclude Include="Border.h" />
     <ClInclude Include="chatdialog.h" />
-    <ClInclude Include="command.h" />
     <ClInclude Include="cstrikechatdialog.h" />
     <ClInclude Include="CvarSlider.h" />
     <ClInclude Include="CvarToggleCheckButton.h" />

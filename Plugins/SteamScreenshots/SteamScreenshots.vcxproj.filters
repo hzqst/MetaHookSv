@@ -30,9 +30,6 @@
     <ClCompile Include="privatehook.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="command.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="parsemsg.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -63,9 +60,6 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="privatehook.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="command.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="msghook.h">

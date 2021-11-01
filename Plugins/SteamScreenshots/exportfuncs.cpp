@@ -9,7 +9,6 @@
 #include "exportfuncs.h"
 #include "entity_types.h"
 #include "privatehook.h"
-#include "command.h"
 #include "msghook.h"
 #include "parsemsg.h"
 #include <steam_api.h>
@@ -127,7 +126,7 @@ void IN_ActivateMouse(void)
 
 	if (!init)
 	{
-		Cmd_HookCmd("snapshot", VID_Snapshot_f);
+		g_pMetaHookAPI->HookCmd("snapshot", VID_Snapshot_f);
 
 		m_pfnServerName = HOOK_MESSAGE(ServerName);
 		init = true;

@@ -1,7 +1,6 @@
 #include <metahook.h>
 #include "exportfuncs.h"
 #include "engfuncs.h"
-#include "command.h"
 
 //Steam API
 #include "steam_api.h"
@@ -9,8 +8,6 @@
 //Viewport
 #include <VGUI/VGUI.h>
 #include "Viewport.h"
-
-#include "command.h"
 
 cl_enginefunc_t gEngfuncs;
 
@@ -227,8 +224,8 @@ void HUD_Init(void)
 	gEngfuncs.pfnAddCommand("cap_version", Cap_Version_f);
 	gEngfuncs.pfnAddCommand("cap_reload", Cap_Reload_f);
 
-	gCapFuncs.MessageMode_f = Cmd_HookCmd("messagemode", MessageMode_f);
-	gCapFuncs.MessageMode2_f = Cmd_HookCmd("messagemode2", MessageMode2_f);
+	gCapFuncs.MessageMode_f = g_pMetaHookAPI->HookCmd("messagemode", MessageMode_f);
+	gCapFuncs.MessageMode2_f = g_pMetaHookAPI->HookCmd("messagemode2", MessageMode2_f);
 
 	auto pfnClientCreateInterface = Sys_GetFactory((HINTERFACEMODULE)g_hClientDll);
 

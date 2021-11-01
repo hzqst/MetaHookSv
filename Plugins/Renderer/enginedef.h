@@ -553,15 +553,6 @@ typedef struct model_s
 	cache_user_t cache;
 }model_t;
 
-typedef void(*cvar_callback_t)(cvar_t *pcvar);
-
-typedef struct cvar_callback_entry_s
-{
-	cvar_callback_t callback;
-	cvar_t *pcvar;
-	struct cvar_callback_entry_s *next;
-}cvar_callback_entry_t;
-
 typedef struct overviewInfo_s
 {
 	vec3_t origin;

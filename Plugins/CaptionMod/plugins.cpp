@@ -1,7 +1,6 @@
 #include <metahook.h>
 #include "exportfuncs.h"
 #include "engfuncs.h"
-#include "command.h"
 #include <capstone.h>
 
 cl_exportfuncs_t gExportfuncs;
@@ -71,8 +70,6 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	Sig_AddrNotFound("cl_time");
 	gCapFuncs.pcl_time = (double *)*(DWORD *)(addr + 2);
 	gCapFuncs.pcl_oldtime = gCapFuncs.pcl_time + 1;
-
-	Cmd_GetCmdBase = *(cmd_function_t *(**)(void))((DWORD)pEngfuncs + 0x198);
 
 	Steam_Init();
 	Engine_FillAddress();

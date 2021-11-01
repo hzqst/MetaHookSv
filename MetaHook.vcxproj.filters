@@ -80,9 +80,6 @@
     <ClInclude Include="Interface\IPlugins.h">
       <Filter>Interface</Filter>
     </ClInclude>
-    <ClInclude Include="Interface\IPluginsV1.h">
-      <Filter>Interface</Filter>
-    </ClInclude>
     <ClInclude Include="Interface\IRegistry.h">
       <Filter>Interface</Filter>
     </ClInclude>

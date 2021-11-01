@@ -13,7 +13,13 @@ typedef float vec3_t[3];
 #include <wrect.h>
 #include <interface.h>
 
+typedef struct cvar_s cvar_t;
+
 typedef int (*pfnUserMsgHook)(const char *pszName, int iSize, void *pbuf);
+
+typedef void(*cvar_callback_t)(cvar_t *pcvar);
+
+typedef void(*xcommand_t)(void);
 
 typedef struct mh_plugininfo_s
 {
@@ -113,6 +119,15 @@ typedef struct metahook_api_s
 		Disassemble instructions at given range of address, return result inside callback
 	*/
 
+	void *(*ReverseSearchPattern)(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
+	/*
+		Reverse search pattern (signature) in given region
+	*/
+
+	HMODULE	(*GetClientModule)(void);
+	PVOID (*GetClientBase)(void);
+	DWORD (*GetClientSize)(void);
+
 	BOOL (*QueryPluginInfo)(int fromindex, mh_plugininfo_t *info);
 	/*
 		Query information of all loaded plugins.
@@ -137,8 +152,17 @@ typedef struct metahook_api_s
 
 		}
 	*/
-	pfnUserMsgHook(*HookUserMsg)(const char *szMsgName, pfnUserMsgHook pfn);
+	pfnUserMsgHook (*HookUserMsg)(const char *szMsgName, pfnUserMsgHook pfn);
+	/*
+		Find registered UserMsg, and set it's pfnHook to specified function pointer, return original function pointer if exists.
+	*/
 
+	cvar_callback_t (*HookCvarCallback)(const char *cvar_name, cvar_callback_t callback);
+	/*
+		Find existing cvar, and set it's Cvar-Set callback to specified function pointer, return original function pointer if exists.
+	*/
+
+	xcommand_t(*HookCmd)(const char *cmd_name, xcommand_t newfuncs);
 }
 metahook_api_t;
 

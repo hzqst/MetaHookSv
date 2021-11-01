@@ -17,9 +17,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="command.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="exportfuncs.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -89,9 +86,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bspfile.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="command.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="enginedef.h">

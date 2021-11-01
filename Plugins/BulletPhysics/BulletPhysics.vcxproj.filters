@@ -33,9 +33,6 @@
     <ClCompile Include="qgl.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="command.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="privatehook.cpp">
       <Filter>Source</Filter>
     </ClCompile>

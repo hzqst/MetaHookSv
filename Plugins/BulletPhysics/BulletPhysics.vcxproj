@@ -109,7 +109,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\HLSDK\common\interface.cpp" />
-    <ClCompile Include="command.cpp" />
     <ClCompile Include="mathlib.cpp" />
     <ClCompile Include="corpse.cpp" />
     <ClCompile Include="privatehook.cpp" />

@@ -1,7 +1,6 @@
 #include <metahook.h>
 #include "gl_local.h"
 #include "exportfuncs.h"
-#include "command.h"
 #include <IRenderer.h>
 
 cl_exportfuncs_t gExportfuncs;
@@ -68,8 +67,6 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 
-	Cmd_GetCmdBase = *(cmd_function_t *(**)(void))((DWORD)pEngfuncs + 0x198);
-
 	if(g_iEngineType != ENGINE_SVENGINE && g_iEngineType != ENGINE_GOLDSRC)
 	{
 		Sys_ErrorEx("Unsupported engine: %s, buildnum %d", g_pMetaHookAPI->GetEngineTypeName(), g_dwEngineBuildnum);
@@ -104,7 +101,6 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	GL_Init();
 	R_InstallHook();
 
-	pExportFunc->HUD_PlayerMoveInit = HUD_PlayerMoveInit;
 	pExportFunc->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
 	pExportFunc->HUD_Redraw = HUD_Redraw;
 	pExportFunc->HUD_Init = HUD_Init;

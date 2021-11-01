@@ -124,8 +124,6 @@ extern float *g_UserFogEnd;
 extern model_t *mod_known;
 extern int *mod_numknown;
 
-extern struct playermove_s *playermove;
-
 //gl extension
 
 extern int gl_max_texture_size;
@@ -371,10 +369,6 @@ void GL_Texturemode_cb(cvar_t *);
 int EngineGetMaxKnownModel(void);
 int EngineGetModelIndex(model_t *mod);
 model_t *EngineGetModelByIndex(int index);
-
-extern cvar_callback_entry_t **cvar_callbacks;
-
-cvar_callback_t Cvar_HookCallback(const char *cvar_name, cvar_callback_t callback);
 
 void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue);
 

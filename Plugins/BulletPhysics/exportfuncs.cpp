@@ -514,8 +514,8 @@ void HUD_Init(void)
 
 	gEngfuncs.pfnAddCommand("bv_reload", BV_Reload_f);
 
-	gPrivateFuncs.ThreadPerson_f = Cmd_HookCmd("thirdperson", BV_ThreadPerson_f);
-	gPrivateFuncs.FirstPerson_f = Cmd_HookCmd("firstperson", BV_FirstPerson_f);
+	gPrivateFuncs.ThreadPerson_f = g_pMetaHookAPI->HookCmd("thirdperson", BV_ThreadPerson_f);
+	gPrivateFuncs.FirstPerson_f = g_pMetaHookAPI->HookCmd("firstperson", BV_FirstPerson_f);
 }
 
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)

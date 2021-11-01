@@ -3,7 +3,6 @@
 #include <detours.h>
 #include "interface.h"
 #include <capstone.h>
-#include <IPluginsV1.h>
 #include <fstream>
 #include <sstream>
 #include <set>
@@ -12,10 +11,7 @@
 extern "C"
 {
 	NTSYSAPI PIMAGE_NT_HEADERS NTAPI RtlImageNtHeader(PVOID Base);
-	NTSYSAPI NTSTATUS NTAPI NtTerminateProcess(
-		HANDLE   ProcessHandle,
-		NTSTATUS ExitStatus
-	);
+	NTSYSAPI NTSTATUS NTAPI NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus);
 }
 
 #define MH_HOOK_INLINE 1
@@ -39,6 +35,15 @@ struct hook_s
 	void *pInfo;
 };
 
+typedef struct cvar_callback_entry_s
+{
+	cvar_callback_t callback;
+	cvar_t *pcvar;
+	struct cvar_callback_entry_s *next;
+}cvar_callback_entry_t;
+
+cvar_callback_entry_t **cvar_callbacks = NULL;
+
 typedef struct usermsg_s
 {
 	int index;
@@ -49,15 +54,31 @@ typedef struct usermsg_s
 }usermsg_t;
 
 usermsg_t **gClientUserMsgs = NULL;
+
+typedef struct cmd_function_s
+{
+	struct cmd_function_s *next;
+	char *name;
+	xcommand_t function;
+	int flags;
+}cmd_function_t;
+
+cmd_function_t *(*Cmd_GetCmdBase)(void) = NULL;
+
 void **g_pVideoMode = NULL;
 int (*g_pfnbuild_number)(void) = NULL;
 
 int(*g_original_ClientDLL_Init)(void) = NULL;
 int(*g_pfnClientDLL_Init)(void) = NULL;
 
+HMODULE *g_phClientModule = NULL;
+PVOID g_dwClientBase = NULL;
+DWORD g_dwClientSize = NULL;
+
 HMODULE g_hEngineModule = NULL;
 PVOID g_dwEngineBase = NULL;
 DWORD g_dwEngineSize = NULL;
+
 hook_t *g_pHookBase = NULL;
 cl_exportfuncs_t *g_pExportFuncs = NULL;
 void *g_ppExportFuncs = NULL;
@@ -75,6 +96,7 @@ hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOriginalCa
 hook_t *MH_VFTHook(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFuncAddr, void **pOriginalCall);
 hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, void *pNewFuncAddr, void **pOriginalCall);
 void *MH_GetClassFuncAddr(...);
+HMODULE MH_GetClientModule(void);
 PVOID MH_GetModuleBase(PVOID VirtualAddress);
 DWORD MH_GetModuleSize(PVOID ModuleBase);
 void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
@@ -91,6 +113,7 @@ int MH_DisasmSingleInstruction(PVOID address, DisasmSingleCallback callback, voi
 BOOL MH_DisasmRanges(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callback, int depth, PVOID context);
 PVOID MH_GetSectionByName(PVOID ImageBase, const char *SectionName, ULONG *SectionSize);
 PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize);
+void *MH_ReverseSearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
 
 typedef struct plugin_s
 {
@@ -112,9 +135,38 @@ mh_enginesave_t gMetaSave = {0};
 
 extern metahook_api_t gMetaHookAPI;
 
+cvar_callback_t MH_HookCvarCallback(const char *cvar_name, cvar_callback_t callback)
+{
+	if (!gMetaSave.pEngineFuncs)
+		return NULL;
+
+	if (!cvar_callbacks)
+		return NULL;
+
+	auto cvar = gMetaSave.pEngineFuncs->pfnGetCvarPointer(cvar_name);
+	auto v = (*cvar_callbacks);
+	if (v)
+	{
+		while (v->pcvar != cvar)
+		{
+			v = v->next;
+			if (!v)
+				return NULL;
+		}
+		auto orig = v->callback;
+		v->callback = callback;
+		return orig;
+	}
+
+	return NULL;
+}
+
 usermsg_t *MH_FindUserMsgHook(const char *szMsgName)
 {
-	for (usermsg_t *msg = *gClientUserMsgs; msg; msg = msg->next)
+	if (!gClientUserMsgs)
+		return NULL;
+
+	for (usermsg_t *msg = (*gClientUserMsgs); msg; msg = msg->next)
 	{
 		if (!strcmp(msg->name, szMsgName))
 			return msg;
@@ -135,6 +187,51 @@ pfnUserMsgHook MH_HookUserMsg(const char *szMsgName, pfnUserMsgHook pfn)
 	}
 
 	return NULL;
+}
+
+cmd_function_t *MH_FindCmd(const char *cmd_name)
+{
+	if (!Cmd_GetCmdBase)
+		return NULL;
+
+	for (cmd_function_t *cmd = Cmd_GetCmdBase(); cmd; cmd = cmd->next)
+	{
+		if (!strcmp(cmd->name, cmd_name))
+			return cmd;
+	}
+
+	return NULL;
+}
+
+cmd_function_t *MH_FindCmdPrev(const char *cmd_name)
+{
+	if (!Cmd_GetCmdBase)
+		return NULL;
+
+	cmd_function_t *cmd;
+
+	for (cmd = Cmd_GetCmdBase()->next; cmd->next; cmd = cmd->next)
+	{
+		if (!strcmp(cmd_name, cmd->next->name))
+			return cmd;
+	}
+
+	return NULL;
+}
+
+xcommand_t MH_HookCmd(const char *cmd_name, xcommand_t newfuncs)
+{
+	if (!Cmd_GetCmdBase)
+		return NULL;
+
+	cmd_function_t *cmd = MH_FindCmd(cmd_name);
+
+	if (!cmd)
+		return NULL;
+
+	xcommand_t result = cmd->function;
+	cmd->function = newfuncs;
+	return result;
 }
 
 void MH_PrintPluginList(void)
@@ -371,6 +468,12 @@ int ClientDLL_Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 
 void MH_ClientDLL_Init(void)
 {
+	if (MH_GetClientModule())
+	{
+		g_dwClientBase = (PVOID)MH_GetModuleBase(MH_GetClientModule());
+		g_dwClientSize = MH_GetModuleSize(MH_GetClientModule());
+	}
+
 	g_pExportFuncs = *(cl_exportfuncs_t **)g_ppExportFuncs;
 
 	static DWORD dwClientDLL_Initialize[1];
@@ -385,9 +488,14 @@ void MH_ClientDLL_Init(void)
 
 void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 {
-	g_pfnbuild_number = NULL;
-	g_original_ClientDLL_Init = NULL;
+	Cmd_GetCmdBase = NULL;
+	cvar_callbacks = NULL;
+	gClientUserMsgs = NULL;
 	g_pVideoMode = NULL;
+	g_pfnbuild_number = NULL;
+	g_pfnClientDLL_Init = NULL;
+	g_original_ClientDLL_Init = NULL;
+	g_phClientModule = NULL;
 	g_ppExportFuncs = NULL;
 	g_ppEngfuncs = NULL;
 
@@ -418,13 +526,19 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 		g_dwEngineSize = MH_GetModuleSize(hModule);
 		g_hEngineModule = hModule;
 
+		g_dwClientBase = (PVOID)NULL;
+		g_dwClientSize = 0;
+
 		g_iEngineType = ENGINE_UNKNOWN;
 	}
 	else
 	{
-		g_dwEngineBase = (PVOID)0x1D01000;
+		g_dwEngineBase = (PVOID)0x1D00000;
 		g_dwEngineSize = 0x1000000;
-		g_hEngineModule = GetModuleHandle(NULL);
+		g_hEngineModule = NULL;
+
+		g_dwClientBase = (PVOID)0x1900000;
+		g_dwClientSize = 0x13D000;
 
 		g_iEngineType = ENGINE_GOLDSRC_BLOB;
 	}
@@ -529,6 +643,54 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 
 	if (1)
 	{
+#define RIGHTHAND_STRING_SIG "cl_righthand"
+		auto RightHand_String = MH_SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, RIGHTHAND_STRING_SIG, sizeof(RIGHTHAND_STRING_SIG) - 1);
+		if (RightHand_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
+			*(DWORD *)(pattern + 1) = (DWORD)RightHand_String;
+			auto RightHand_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
+			if (RightHand_PushString)
+			{
+#define HUDINIT_SIG "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x75\x2A"
+				auto ClientDLL_HudInit = MH_ReverseSearchPattern(RightHand_PushString, 0x80, HUDINIT_SIG, sizeof(HUDINIT_SIG)-1);
+				if (ClientDLL_HudInit)
+				{
+					ClientDLL_HudInit = (PUCHAR)ClientDLL_HudInit + sizeof(HUDINIT_SIG) - 1;
+					MH_DisasmRanges(ClientDLL_HudInit, 0x80, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+					{
+						auto pinst = (cs_insn *)inst;
+
+						if (pinst->id == X86_INS_MOV &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_REG &&
+							pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+							pinst->detail->x86.operands[1].mem.base == 0 &&
+							(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineBase &&
+							(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize)
+						{
+							g_phClientModule = (decltype(g_phClientModule))pinst->detail->x86.operands[1].mem.disp;
+						}
+
+						if (g_phClientModule)
+							return TRUE;
+
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						return FALSE;
+					}, 0, NULL);
+				}
+			}
+		}
+	}
+
+	memcpy(gMetaSave.pEngineFuncs, *(void **)g_ppEngfuncs, sizeof(cl_enginefunc_t));
+
+	Cmd_GetCmdBase = *(decltype(Cmd_GetCmdBase) *)(&gMetaSave.pEngineFuncs->GetFirstCmdFunctionHandle);
+
+	if (1)
+	{
 #define FULLSCREEN_STRING_SIG "-fullscreen"
 		auto FullScreen_String = MH_SearchPattern(g_dwEngineBase, g_dwEngineSize, FULLSCREEN_STRING_SIG, sizeof(FULLSCREEN_STRING_SIG) - 1);
 		if (FullScreen_String)
@@ -618,7 +780,42 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 		NtTerminateProcess((HANDLE)-1, 0);
 	}
 
-	memcpy(gMetaSave.pEngineFuncs, *(void **)g_ppEngfuncs, sizeof(cl_enginefunc_t));
+	if (g_iEngineType == ENGINE_GOLDSRC)
+	{
+		MH_DisasmRanges(gMetaSave.pEngineFuncs->Cvar_Set, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == X86_REG_EAX &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0)
+			{
+				DWORD imm = pinst->detail->x86.operands[1].mem.disp;
+
+				if (!cvar_callbacks)
+				{
+					cvar_callbacks = (decltype(cvar_callbacks))imm;
+				}
+			}
+
+			if (cvar_callbacks)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		if (!cvar_callbacks)
+		{
+			MessageBox(NULL, "MH_LoadEngine: Failed to locate cvar_callbacks.", "Fatal Error", MB_ICONERROR);
+			NtTerminateProcess((HANDLE)-1, 0);
+		}
+	}
 
 	MH_InlineHook(g_pfnClientDLL_Init, MH_ClientDLL_Init, (void **)&g_original_ClientDLL_Init);
 
@@ -735,11 +932,14 @@ void MH_Shutdown(void)
 		gMetaSave.pEngineFuncs = NULL;
 	}
 
+	Cmd_GetCmdBase = NULL;
+	cvar_callbacks = NULL;
 	gClientUserMsgs = NULL;
 	g_pVideoMode = NULL;
 	g_pfnbuild_number = NULL;
 	g_pfnClientDLL_Init = NULL;
 	g_original_ClientDLL_Init = NULL;
+	g_phClientModule = NULL;
 
 	g_hEngineModule = NULL;
 	g_dwEngineBase = NULL;
@@ -1010,6 +1210,24 @@ DWORD MH_GetEngineSize(void)
 	return g_dwEngineSize;
 }
 
+HMODULE MH_GetClientModule(void)
+{
+	if(g_phClientModule)
+		return (*g_phClientModule);
+
+	return NULL;
+}
+
+PVOID MH_GetClientBase(void)
+{
+	return g_dwClientBase;
+}
+
+DWORD MH_GetClientSize(void)
+{
+	return g_dwClientSize;
+}
+
 void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen)
 {
 	PUCHAR dwStartAddr = (PUCHAR)pStartSearch;
@@ -1037,6 +1255,35 @@ void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPatte
 	}
 
 	return NULL;
+}
+
+void *MH_ReverseSearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen)
+{
+	char * dwStartAddr = (char *)pStartSearch;
+	char * dwEndAddr = dwStartAddr - dwSearchLen - dwPatternLen;
+
+	while (dwStartAddr > dwEndAddr)
+	{
+		bool found = true;
+
+		for (DWORD i = 0; i < dwPatternLen; i++)
+		{
+			char code = *(char *)(dwStartAddr + i);
+
+			if (pPattern[i] != 0x2A && pPattern[i] != code)
+			{
+				found = false;
+				break;
+			}
+		}
+
+		if (found)
+			return (LPVOID)dwStartAddr;
+
+		dwStartAddr--;
+	}
+
+	return 0;
 }
 
 void MH_WriteDWORD(void *pAddress, DWORD dwValue)
@@ -1708,7 +1955,13 @@ metahook_api_t gMetaHookAPI =
 	MH_GetSectionByName,
 	MH_DisasmSingleInstruction,
 	MH_DisasmRanges,
+	MH_ReverseSearchPattern,
+	MH_GetClientModule,
+	MH_GetClientBase,
+	MH_GetClientSize,
 	MH_QueryPluginInfo,
 	MH_GetPluginInfo,
 	MH_HookUserMsg,
+	MH_HookCvarCallback,
+	MH_HookCmd,
 };

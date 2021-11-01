@@ -2,7 +2,6 @@
 #include <glew.h>
 #include "exportfuncs.h"
 #include "privatehook.h"
-#include "command.h"
 #include "msghook.h"
 
 cl_exportfuncs_t gExportfuncs;
@@ -50,8 +49,6 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	g_dwEngineRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".rdata\x0\x0", &g_dwEngineRdataSize);
 
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
-
-	Cmd_GetCmdBase = *(cmd_function_t *(**)(void))((DWORD)pEngfuncs + 0x198);
 
 }
 

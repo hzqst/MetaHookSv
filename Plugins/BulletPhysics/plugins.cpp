@@ -59,8 +59,6 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 
-	Cmd_GetCmdBase = *(cmd_function_t *(**)(void))((PUCHAR)pEngfuncs + 0x198);
-
 	if (g_iEngineType != ENGINE_SVENGINE && g_iEngineType != ENGINE_GOLDSRC)
 	{
 		Sys_ErrorEx("Unsupported engine: %s, buildnum %d", g_pMetaHookAPI->GetEngineTypeName(), g_dwEngineBuildnum);

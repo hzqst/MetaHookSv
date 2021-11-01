@@ -2,11 +2,8 @@
 #include <capstone.h>
 #include "exportfuncs.h"
 #include "gl_local.h"
-#include "command.h"
 #include "parsemsg.h"
 #include "qgl.h"
-
-struct playermove_s *playermove = NULL;
 
 //Error when can't find sig
 void Sys_ErrorEx(const char *fmt, ...)
@@ -46,13 +43,6 @@ engine_studio_api_t IEngineStudio;
 r_studio_interface_t **gpStudioInterface;
 void *g_pGameStudioRenderer = NULL;
 
-void HUD_PlayerMoveInit(struct playermove_s *ppmove)
-{
-	gExportfuncs.HUD_PlayerMoveInit(ppmove);
-
-	playermove = ppmove;
-}
-
 void HUD_Init(void)
 {
 	gExportfuncs.HUD_Init();
@@ -61,12 +51,16 @@ void HUD_Init(void)
 
 	gEngfuncs.pfnAddCommand("r_version", R_Version_f);
 	gEngfuncs.pfnAddCommand("r_reload", R_Reload_f);
-//	gEngfuncs.pfnAddCommand("r_buildcubemaps", R_BuildCubemaps_f);
-//	gEngfuncs.pfnAddCommand("buildcubemaps", R_BuildCubemaps_f);
 
-	if (!Cmd_HookCmd("gl_texturemode", GL_Texturemode_f))
+#if 0
+	gEngfuncs.pfnAddCommand("r_buildcubemaps", R_BuildCubemaps_f);
+	gEngfuncs.pfnAddCommand("buildcubemaps", R_BuildCubemaps_f);
+#endif
+
+	//gl_texturemode is command in SvEngine, but cvar in GoldSrc
+	if (!g_pMetaHookAPI->HookCmd("gl_texturemode", GL_Texturemode_f))
 	{
-		Cvar_HookCallback("gl_texturemode", GL_Texturemode_cb);
+		g_pMetaHookAPI->HookCvarCallback("gl_texturemode", GL_Texturemode_cb);
 	}
 }
 
