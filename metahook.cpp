@@ -39,6 +39,16 @@ struct hook_s
 	void *pInfo;
 };
 
+typedef struct usermsg_s
+{
+	int index;
+	int size;
+	char name[16];
+	struct usermsg_s *next;
+	pfnUserMsgHook function;
+}usermsg_t;
+
+usermsg_t **gClientUserMsgs = NULL;
 void **g_pVideoMode = NULL;
 int (*g_pfnbuild_number)(void) = NULL;
 
@@ -56,6 +66,7 @@ bool g_bSaveVideo = false;
 bool g_bTransactionInlineHook = false;
 int g_iEngineType = ENGINE_UNKNOWN;
 
+PVOID MH_GetNextCallAddr(void *pAddress, DWORD dwCount);
 hook_t *MH_FindInlineHooked(void *pOldFuncAddr);
 hook_t *MH_FindVFTHooked(void *pClass, int iTableIndex, int iFuncIndex);
 hook_t *MH_FindIATHooked(HMODULE hModule, const char *pszModuleName, const char *pszFuncName);
@@ -64,8 +75,8 @@ hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOriginalCa
 hook_t *MH_VFTHook(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFuncAddr, void **pOriginalCall);
 hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, void *pNewFuncAddr, void **pOriginalCall);
 void *MH_GetClassFuncAddr(...);
-PVOID MH_GetModuleBase(HMODULE hModule);
-DWORD MH_GetModuleSize(HMODULE hModule);
+PVOID MH_GetModuleBase(PVOID VirtualAddress);
+DWORD MH_GetModuleSize(PVOID ModuleBase);
 void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
 void MH_WriteDWORD(void *pAddress, DWORD dwValue);
 DWORD MH_ReadDWORD(void *pAddress);
@@ -81,18 +92,16 @@ BOOL MH_DisasmRanges(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callbac
 PVOID MH_GetSectionByName(PVOID ImageBase, const char *SectionName, ULONG *SectionSize);
 PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize);
 
-#define BUILD_NUMBER_SIG "\xE8\x2A\x2A\x2A\x2A\x50\x68\x2A\x2A\x2A\x2A\x6A\x30\x68"
-
 typedef struct plugin_s
 {
 	std::string filename;
 	std::string filepath;
 	HINTERFACEMODULE module;
+	size_t modulesize;
 	IBaseInterface *pPluginAPI;
 	int iInterfaceVersion;
 	struct plugin_s *next;
-}
-plugin_t;
+}plugin_t;
 
 plugin_t *g_pPluginBase;
 
@@ -102,6 +111,54 @@ mh_interface_t gInterface = {0};
 mh_enginesave_t gMetaSave = {0};
 
 extern metahook_api_t gMetaHookAPI;
+
+usermsg_t *MH_FindUserMsgHook(const char *szMsgName)
+{
+	for (usermsg_t *msg = *gClientUserMsgs; msg; msg = msg->next)
+	{
+		if (!strcmp(msg->name, szMsgName))
+			return msg;
+	}
+
+	return NULL;
+}
+
+pfnUserMsgHook MH_HookUserMsg(const char *szMsgName, pfnUserMsgHook pfn)
+{
+	usermsg_t *msg = MH_FindUserMsgHook(szMsgName);
+
+	if (msg)
+	{
+		pfnUserMsgHook result = msg->function;
+		msg->function = pfn;
+		return result;
+	}
+
+	return NULL;
+}
+
+void MH_PrintPluginList(void)
+{
+	if (!gMetaSave.pEngineFuncs)
+		return;
+
+	gMetaSave.pEngineFuncs->Con_Printf("|%5s|%2s|%24s|%24s|\n", "index", "api", "plugin name", "plugin version");
+
+	int index = 0;
+	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next, index++)
+	{
+		const char *version = "";
+		switch (plug->iInterfaceVersion)
+		{
+		case 4:
+			version = ((IPluginsV4 *)plug->pPluginAPI)->GetVersion();
+			break;
+		default:
+			break;
+		}
+		gMetaSave.pEngineFuncs->Con_Printf("|%5d| v%d|%24s|%24s|\n", index, plug->iInterfaceVersion, plug->filename.c_str(), version);
+	}
+}
 
 bool MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 {
@@ -131,8 +188,9 @@ bool MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 
 	if (!hModule)
 	{
+		int err = GetLastError();
 		std::stringstream ss;
-		ss << "MH_LoadPlugin: Could not load " << filename;
+		ss << "MH_LoadPlugin: Could not load " << filename << ", lasterror = " << err;
 		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
 		return false;
 	}
@@ -151,7 +209,7 @@ bool MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 		Sys_FreeModule(hModule);
 
 		std::stringstream ss;
-		ss << "MH_LoadPlugin: Duplicate plugin " << filename << ", ignored.";
+		ss << "MH_LoadPlugin: Duplicate plugin " << filename << ", skipped.";
 		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
 		return false;
 	}
@@ -163,20 +221,19 @@ bool MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 		Sys_FreeModule(hModule);
 
 		std::stringstream ss;
-		ss << "MH_LoadPlugin: Invalid plugin " << filename << ", ignored.";
+		ss << "MH_LoadPlugin: Invalid plugin " << filename << ", skipped.";
 		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
 		return false;
 	}
 
 	plugin_t *plug = new plugin_t;
 	plug->module = hModule;
-
-	plug->pPluginAPI = fnCreateInterface(METAHOOK_PLUGIN_API_VERSION, NULL);
-
+	plug->modulesize = MH_GetModuleSize(hModule);
+	plug->pPluginAPI = fnCreateInterface(METAHOOK_PLUGIN_API_VERSION_V4, NULL);
 	if (plug->pPluginAPI)
 	{
-		plug->iInterfaceVersion = 2;
-		((IPlugins *)plug->pPluginAPI)->Init(&gMetaHookAPI, &gInterface, &gMetaSave);
+		plug->iInterfaceVersion = 4;
+		((IPluginsV4 *)plug->pPluginAPI)->Init(&gMetaHookAPI, &gInterface, &gMetaSave);
 	}
 	else
 	{
@@ -188,12 +245,32 @@ bool MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 		}
 		else
 		{
-			plug->pPluginAPI = fnCreateInterface(METAHOOK_PLUGIN_API_VERSION_V1, NULL);
+			plug->pPluginAPI = fnCreateInterface(METAHOOK_PLUGIN_API_VERSION_V2, NULL);
 
 			if (plug->pPluginAPI)
-				plug->iInterfaceVersion = 1;
+			{
+				plug->iInterfaceVersion = 2;
+				((IPluginsV2 *)plug->pPluginAPI)->Init(&gMetaHookAPI, &gInterface, &gMetaSave);
+			}
 			else
-				plug->iInterfaceVersion = 0;
+			{
+				plug->pPluginAPI = fnCreateInterface(METAHOOK_PLUGIN_API_VERSION_V1, NULL);
+
+				if (plug->pPluginAPI)
+				{
+					plug->iInterfaceVersion = 1;
+				}
+				else
+				{
+					free(plug);
+					Sys_FreeModule(hModule);
+
+					std::stringstream ss;
+					ss << "MH_LoadPlugin: Could not locate interface for " << filename << ", skipped.";
+					MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
+					return false;
+				}
+			}
 		}
 	}
 
@@ -239,6 +316,7 @@ void MH_LoadPlugins(const char *gamedir)
 	}
 	else
 	{
+		int err = GetLastError();
 		std::stringstream ss;
 		ss << "MH_LoadPlugin: Could not open " << aConfigFile;
 		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
@@ -254,10 +332,21 @@ int ClientDLL_Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 
 	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next)
 	{
-		if (plug->iInterfaceVersion > 1)
+		switch (plug->iInterfaceVersion)
+		{
+		case 4:
+			((IPluginsV4 *)plug->pPluginAPI)->LoadClient(g_pExportFuncs);
+			break;
+		case 3:
+			((IPluginsV3 *)plug->pPluginAPI)->LoadClient(g_pExportFuncs);
+			break;
+		case 2:
 			((IPlugins *)plug->pPluginAPI)->LoadClient(g_pExportFuncs);
-		else
+			break;
+		default:
 			((IPluginsV1 *)plug->pPluginAPI)->Init(g_pExportFuncs);
+			break;
+		}
 	}
 
 	g_bTransactionInlineHook = false;
@@ -274,6 +363,8 @@ int ClientDLL_Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 			pHook->bOriginalCallWritten = true;
 		}
 	}
+
+	gMetaSave.pEngineFuncs->pfnAddCommand("mh_pluginlist", MH_PrintPluginList);
 
 	return g_pExportFuncs->Initialize(pEnginefuncs, iVersion);
 }
@@ -347,6 +438,7 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 		textSize = g_dwEngineSize;
 	}
 
+#define BUILD_NUMBER_SIG "\xE8\x2A\x2A\x2A\x2A\x50\x68\x2A\x2A\x2A\x2A\x6A\x30\x68"
 	auto buildnumber_call = MH_SearchPattern(textBase, textSize, BUILD_NUMBER_SIG, sizeof(BUILD_NUMBER_SIG) - 1);
 
 	if (!buildnumber_call)
@@ -481,6 +573,51 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 		NtTerminateProcess((HANDLE)-1, 0);
 	}
 
+	if (1)
+	{
+#define HUDTEXT_STRING_SIG "HudText\0"
+		auto HudText_String = MH_SearchPattern(g_dwEngineBase, g_dwEngineSize, HUDTEXT_STRING_SIG, sizeof(HUDTEXT_STRING_SIG) - 1);
+		if (HudText_String)
+		{
+			char pattern[] = "\x50\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C";
+			*(DWORD *)(pattern + 2) = (DWORD)HudText_String;
+			auto HudText_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
+			if (HudText_PushString)
+			{
+				PVOID DispatchDirectUserMsg = (PVOID)MH_GetNextCallAddr((PUCHAR)HudText_PushString + 6, 1);
+				MH_DisasmRanges(DispatchDirectUserMsg, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+				{
+					auto pinst = (cs_insn *)inst;
+
+					if (pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[1].mem.base == 0 &&
+						(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineBase &&
+						(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize)
+					{
+						gClientUserMsgs = (decltype(gClientUserMsgs))pinst->detail->x86.operands[1].mem.disp;
+					}
+
+					if (gClientUserMsgs)
+						return TRUE;
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					return FALSE;
+				}, 0, NULL);
+			}
+		}
+	}
+
+	if (!gClientUserMsgs)
+	{
+		MessageBox(NULL, "MH_LoadEngine: Failed to locate gClientUserMsgs.", "Fatal Error", MB_ICONERROR);
+		NtTerminateProcess((HANDLE)-1, 0);
+	}
+
 	memcpy(gMetaSave.pEngineFuncs, *(void **)g_ppEngfuncs, sizeof(cl_enginefunc_t));
 
 	MH_InlineHook(g_pfnClientDLL_Init, MH_ClientDLL_Init, (void **)&g_original_ClientDLL_Init);
@@ -491,13 +628,19 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 
 	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next)
 	{
-		if (plug->iInterfaceVersion == 3)
+		switch (plug->iInterfaceVersion)
 		{
+		case 4:
+			((IPluginsV4 *)plug->pPluginAPI)->LoadEngine((cl_enginefunc_t *)*(void **)g_ppEngfuncs);
+			break;
+		case 3:
 			((IPluginsV3 *)plug->pPluginAPI)->LoadEngine((cl_enginefunc_t *)*(void **)g_ppEngfuncs);
-		}
-		else if (plug->iInterfaceVersion > 1)
-		{
+			break;
+		case 2:
 			((IPlugins *)plug->pPluginAPI)->LoadEngine();
+			break;
+		default:
+			break;
 		}
 	}
 
@@ -521,31 +664,21 @@ void MH_ExitGame(int iResult)
 {
 	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next)
 	{
-		if (plug->iInterfaceVersion > 1)
-			((IPlugins *)plug->pPluginAPI)->ExitGame(iResult);
-	}
-}
-
-void MH_FreeAllPlugin(void)
-{
-	plugin_t *plug = g_pPluginBase;
-
-	while (plug)
-	{
-		plugin_t *pfree = plug;
-		plug = plug->next;
-
-		if (pfree->pPluginAPI)
+		switch (plug->iInterfaceVersion)
 		{
-			if (pfree->iInterfaceVersion > 1)
-				((IPlugins *)pfree->pPluginAPI)->Shutdown();
+		case 4:
+			((IPluginsV4 *)plug->pPluginAPI)->ExitGame(iResult);
+			break;
+		case 3:
+			((IPluginsV3 *)plug->pPluginAPI)->ExitGame(iResult);
+			break;
+		case 2:
+			((IPluginsV2 *)plug->pPluginAPI)->ExitGame(iResult);
+			break;
+		default:
+			break;
 		}
-
-		Sys_FreeModule(pfree->module);
-		delete pfree;
 	}
-
-	g_pPluginBase = NULL;
 }
 
 void MH_ShutdownPlugins(void)
@@ -559,8 +692,20 @@ void MH_ShutdownPlugins(void)
 
 		if (pfree->pPluginAPI)
 		{
-			if (pfree->iInterfaceVersion > 1)
-				((IPlugins *)pfree->pPluginAPI)->Shutdown();
+			switch (pfree->iInterfaceVersion)
+			{
+			case 4:
+				((IPluginsV4 *)pfree->pPluginAPI)->Shutdown();
+				break;
+			case 3:
+				((IPluginsV3 *)pfree->pPluginAPI)->Shutdown();
+				break;
+			case 2:
+				((IPluginsV2 *)pfree->pPluginAPI)->Shutdown();
+				break;
+			default:
+				break;
+			}
 		}
 
 		FreeLibrary((HMODULE)pfree->module);
@@ -590,6 +735,7 @@ void MH_Shutdown(void)
 		gMetaSave.pEngineFuncs = NULL;
 	}
 
+	gClientUserMsgs = NULL;
 	g_pVideoMode = NULL;
 	g_pfnbuild_number = NULL;
 	g_pfnClientDLL_Init = NULL;
@@ -834,19 +980,19 @@ void *MH_GetClassFuncAddr(...)
 	return (void *)address;
 }
 
-PVOID MH_GetModuleBase(HMODULE hModule)
+PVOID MH_GetModuleBase(PVOID VirtualAddress)
 {
 	MEMORY_BASIC_INFORMATION mem;
 
-	if (!VirtualQuery(hModule, &mem, sizeof(MEMORY_BASIC_INFORMATION)))
+	if (!VirtualQuery(VirtualAddress, &mem, sizeof(MEMORY_BASIC_INFORMATION)))
 		return 0;
 
 	return mem.AllocationBase;
 }
 
-DWORD MH_GetModuleSize(HMODULE hModule)
+DWORD MH_GetModuleSize(PVOID ModuleBase)
 {
-	return ((IMAGE_NT_HEADERS *)((DWORD)hModule + ((IMAGE_DOS_HEADER *)hModule)->e_lfanew))->OptionalHeader.SizeOfImage;
+	return ((IMAGE_NT_HEADERS *)((PUCHAR)ModuleBase + ((IMAGE_DOS_HEADER *)ModuleBase)->e_lfanew))->OptionalHeader.SizeOfImage;
 }
 
 HMODULE MH_GetEngineModule(void)
@@ -1133,7 +1279,7 @@ CreateInterfaceFn MH_GetEngineFactory(void)
 	return (CreateInterfaceFn)factoryAddr;
 }
 
-DWORD MH_GetNextCallAddr(void *pAddress, DWORD dwCount)
+PVOID MH_GetNextCallAddr(void *pAddress, DWORD dwCount)
 {
 	static BYTE *pbAddress = NULL;
 
@@ -1148,12 +1294,12 @@ DWORD MH_GetNextCallAddr(void *pAddress, DWORD dwCount)
 
 		if (code == 0xFF && *(BYTE *)(pbAddress + 1) == 0x15)
 		{
-			return *(DWORD *)(pbAddress + 2);
+			return *(PVOID *)(pbAddress + 2);
 		}
 
 		if (code == 0xE8)
 		{
-			return (DWORD)(*(DWORD *)(pbAddress + 1) + pbAddress + 5);
+			return (PVOID)(*(DWORD *)(pbAddress + 1) + pbAddress + 5);
 		}
 
 		pbAddress++;
@@ -1466,6 +1612,72 @@ BOOL MH_DisasmRanges(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callbac
 	return success;
 }
 
+BOOL MH_QueryPluginInfo(int fromindex, mh_plugininfo_t *info)
+{
+	int index = 0;
+	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next, index++)
+	{
+		if (index > fromindex)
+		{
+			const char *version = "";
+			switch (plug->iInterfaceVersion)
+			{
+			case 4:
+				version = ((IPluginsV4 *)plug->pPluginAPI)->GetVersion();
+				break;
+			default:
+				break;
+			}
+
+			if (info)
+			{
+				info->Index = index;
+				info->InterfaceVersion = plug->iInterfaceVersion;
+				info->PluginModuleBase = plug->module;
+				info->PluginModuleSize = plug->modulesize;
+				info->PluginName = plug->filename.c_str();
+				info->PluginPath = plug->filepath.c_str();
+				info->PluginVersion = version;
+			}
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+BOOL MH_GetPluginInfo(const char *name, mh_plugininfo_t *info)
+{
+	int index = 0;
+	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next, index++)
+	{
+		if (!stricmp(name, plug->filename.c_str()))
+		{
+			const char *version = "";
+			switch (plug->iInterfaceVersion)
+			{
+			case 4:
+				version = ((IPluginsV4 *)plug->pPluginAPI)->GetVersion();
+				break;
+			default:
+				break;
+			}
+
+			if (info)
+			{
+				info->Index = index;
+				info->InterfaceVersion = plug->iInterfaceVersion;
+				info->PluginModuleBase = plug->module;
+				info->PluginModuleSize = plug->modulesize;
+				info->PluginName = plug->filename.c_str();
+				info->PluginPath = plug->filepath.c_str();
+				info->PluginVersion = version;
+			}
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 metahook_api_t gMetaHookAPI =
 {
 	MH_UnHook,
@@ -1495,5 +1707,8 @@ metahook_api_t gMetaHookAPI =
 	MH_ReverseSearchFunctionBegin,
 	MH_GetSectionByName,
 	MH_DisasmSingleInstruction,
-	MH_DisasmRanges
+	MH_DisasmRanges,
+	MH_QueryPluginInfo,
+	MH_GetPluginInfo,
+	MH_HookUserMsg,
 };

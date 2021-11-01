@@ -24,7 +24,7 @@ int g_iEngineType;
 PVOID g_dwClientBase;
 DWORD g_dwClientSize;
 
-void IPluginsV3::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
+void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
 	g_pInterface = pInterface;
 	g_pMetaHookAPI = pAPI;
@@ -32,13 +32,13 @@ void IPluginsV3::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_engin
 	g_hInstance = GetModuleHandle(NULL);
 }
 
-void IPluginsV3::Shutdown(void)
+void IPluginsV4::Shutdown(void)
 {
 	R_Shutdown();
 	GL_Shutdown();
 }
 
-void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
+void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
 	int bbp = 0;
 	int iVideoMode = g_pMetaHookAPI->GetVideoMode(NULL, NULL, &bbp, NULL);
@@ -78,7 +78,7 @@ void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	R_FillAddress();
 }
 
-void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
+void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 {
 	int bbp = 0;
 	int iVideoMode = g_pMetaHookAPI->GetVideoMode(&glwidth, &glheight, &bbp, NULL);
@@ -114,25 +114,35 @@ void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_Shutdown = HUD_Shutdown;
 }
 
-void IPluginsV3::ExitGame(int iResult)
+void IPluginsV4::ExitGame(int iResult)
 {
 	
 }
 
-EXPOSE_SINGLE_INTERFACE(IPluginsV3, IPluginsV3, METAHOOK_PLUGIN_API_VERSION_V3);
-
-//renderer exports
-
-void IRenderer::GetInterface(ref_export_t *pRefExports, const char *version)
+const char completeVersion[] =
 {
-	if(!strcmp(version, META_RENDERER_VERSION))
-	{
-		memcpy(pRefExports, &gRefExports, sizeof(ref_export_t));
-	}
-	else
-	{
-		Sys_ErrorEx("Meta Renderer interface version mismatch, expect [%s], got [%s] \n", META_RENDERER_VERSION, version);
-	}
+	BUILD_YEAR_CH0, BUILD_YEAR_CH1, BUILD_YEAR_CH2, BUILD_YEAR_CH3,
+	'-',
+	BUILD_MONTH_CH0, BUILD_MONTH_CH1,
+	'-',
+	BUILD_DAY_CH0, BUILD_DAY_CH1,
+	'T',
+	BUILD_HOUR_CH0, BUILD_HOUR_CH1,
+	':',
+	BUILD_MIN_CH0, BUILD_MIN_CH1,
+	':',
+	BUILD_SEC_CH0, BUILD_SEC_CH1,
+	'\0'
+};
+
+const char *IPluginsV4::GetVersion(void)
+{
+	return completeVersion;
 }
 
-EXPOSE_SINGLE_INTERFACE(IRenderer, IRenderer, RENDERER_API_VERSION);
+void R_Version_f(void)
+{
+	gEngfuncs.Con_Printf("Renderer Version:\n%s\n", completeVersion);
+}
+
+EXPOSE_SINGLE_INTERFACE(IPluginsV4, IPluginsV4, METAHOOK_PLUGIN_API_VERSION_V4);

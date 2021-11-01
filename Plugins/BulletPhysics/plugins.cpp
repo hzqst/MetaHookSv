@@ -27,7 +27,7 @@ int g_iEngineType;
 PVOID g_dwClientBase;
 DWORD g_dwClientSize;
 
-void IPluginsV3::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
+void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
 	g_pInterface = pInterface;
 	g_pMetaHookAPI = pAPI;
@@ -35,7 +35,7 @@ void IPluginsV3::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_engin
 	g_hInstance = GetModuleHandle(NULL);
 }
 
-void IPluginsV3::Shutdown(void)
+void IPluginsV4::Shutdown(void)
 {
 }
 
@@ -45,7 +45,7 @@ void IPluginsV3::Shutdown(void)
 #define R_RECURSIVEWORLDNODE_SIG_SVENGINE "\x83\xEC\x08\x53\x8B\x5C\x24\x10\x83\x3B\xFE"
 #define R_RECURSIVEWORLDNODE_SIG_NEW "\x55\x8B\xEC\x83\xEC\x08\x53\x56\x57\x8B\x7D\x08\x83\x3F\xFE\x0F\x2A\x2A\x2A\x2A\x2A\x8B\x47\x04"
 
-void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
+void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
 	g_pFileSystem = g_pInterface->FileSystem;
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();
@@ -173,7 +173,7 @@ void IPluginsV3::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	}
 }
 
-void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
+void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 {
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
 
@@ -192,8 +192,29 @@ void IPluginsV3::LoadClient(cl_exportfuncs_t *pExportFunc)
 	Install_InlineHook(R_NewMap);
 }
 
-void IPluginsV3::ExitGame(int iResult)
+void IPluginsV4::ExitGame(int iResult)
 {
 }
 
-EXPOSE_SINGLE_INTERFACE(IPluginsV3, IPluginsV3, METAHOOK_PLUGIN_API_VERSION_V3);
+const char completeVersion[] =
+{
+	BUILD_YEAR_CH0, BUILD_YEAR_CH1, BUILD_YEAR_CH2, BUILD_YEAR_CH3,
+	'-',
+	BUILD_MONTH_CH0, BUILD_MONTH_CH1,
+	'-',
+	BUILD_DAY_CH0, BUILD_DAY_CH1,
+	'T',
+	BUILD_HOUR_CH0, BUILD_HOUR_CH1,
+	':',
+	BUILD_MIN_CH0, BUILD_MIN_CH1,
+	':',
+	BUILD_SEC_CH0, BUILD_SEC_CH1,
+	'\0'
+};
+
+const char *IPluginsV4::GetVersion(void)
+{
+	return completeVersion;
+}
+
+EXPOSE_SINGLE_INTERFACE(IPluginsV4, IPluginsV4, METAHOOK_PLUGIN_API_VERSION_V4);

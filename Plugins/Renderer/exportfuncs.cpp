@@ -46,52 +46,6 @@ engine_studio_api_t IEngineStudio;
 r_studio_interface_t **gpStudioInterface;
 void *g_pGameStudioRenderer = NULL;
 
-shaderapi_t ShaderAPI = 
-{
-	R_CompileShader,
-	R_CompileShaderFile,
-	R_CompileShaderFileEx,
-	GL_UseProgram,
-	GL_GetUniformLoc,
-	GL_GetAttribLoc,
-	GL_Uniform1i,
-	GL_Uniform2i,
-	GL_Uniform3i,
-	GL_Uniform4i,
-	GL_Uniform1f,
-	GL_Uniform2f,
-	GL_Uniform3f,
-	GL_Uniform4f,
-	GL_VertexAttrib3f,
-	GL_VertexAttrib3fv,
-	GL_MultiTexCoord2f,
-	GL_MultiTexCoord3f
-};
-ref_export_t gRefExports =
-{
-	//common
-	R_GetDrawPass,
-	//refdef
-	R_PushRefDef,
-	R_PopRefDef,
-	R_GetRefDef,
-	//framebuffer
-	GL_PushFrameBuffer,
-	GL_PopFrameBuffer,
-	//texture
-	GL_GenTextureRGBA8,
-	R_LoadTextureEx,
-	GL_LoadTextureEx,
-	LoadImageGeneric,
-	SaveImageGeneric,
-	ShaderAPI,
-};
-
-void R_Version_f(void)
-{
-	gEngfuncs.Con_Printf("Renderer Version:\n%s\n", META_RENDERER_VERSION);
-}
-
 void HUD_PlayerMoveInit(struct playermove_s *ppmove)
 {
 	gExportfuncs.HUD_PlayerMoveInit(ppmove);
