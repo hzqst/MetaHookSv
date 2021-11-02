@@ -21,6 +21,7 @@
 "normfactor" "1.0"
 "minheight" "7.5"
 "maxtrans" "200"
+"speedrate" "1.0"
 "origin" "0 0 0"
 "angles" "0 0 0"
 "level" "WATER_LEVEL_REFLECT_WORLD"
