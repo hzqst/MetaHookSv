@@ -204,9 +204,9 @@ public:
 
 	virtual void OnKeyCodeTyped(vgui::KeyCode code)
 	{
-		if (code == vgui::KEY_ENTER || code == vgui::KEY_ESCAPE)
+		if (code == vgui::KEY_ENTER || code == vgui::KEY_PAD_ENTER || code == vgui::KEY_ESCAPE)
 		{
-			if (code != vgui::KEY_ESCAPE)
+			if (code == vgui::KEY_ENTER || code == vgui::KEY_PAD_ENTER)
 			{
 				if (m_pChatDialog)
 					m_pChatDialog->Send();
