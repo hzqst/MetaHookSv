@@ -213,6 +213,9 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 			if (prog.u_scale != -1)
 				glUniform1f(prog.u_scale, 0);
 
+			if (prog.u_speed != -1)
+				glUniform1f(prog.u_speed, WaterVBOCache->speedrate);
+
 			GL_Bind(WaterVBOCache->ripplemap);
 		}
 		else
@@ -220,10 +223,12 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 			if (prog.u_scale != -1)
 				glUniform1f(prog.u_scale, scale);
 
+			if (prog.u_speed != -1)
+				glUniform1f(prog.u_speed, WaterVBOCache->speedrate);
+
 			GL_Bind(WaterVBOCache->texture->gl_texturenum);
 		}
 		
-
 		glDrawElements(GL_POLYGON, WaterVBOCache->vIndicesBuffer.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(0));
 
 		r_wsurf_drawcall++;

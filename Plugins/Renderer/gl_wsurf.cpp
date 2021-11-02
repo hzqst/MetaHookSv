@@ -2651,6 +2651,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 	control.normfactor = 0;
 	control.minheight = 0;
 	control.maxtrans = 0;
+	control.speedrate = 1;
 	control.level = WATER_LEVEL_REFLECT_SKYBOX;
 
 	char *basetexture_string = ValueForKey(ent, "basetexture");
@@ -2740,6 +2741,20 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		else
 		{
 			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"maxtrans\" in entity \"env_water_control\", 1 float is required.\n");
+		}
+	}
+
+	char *speedrate_string = ValueForKey(ent, "speedrate");
+	if (speedrate_string)
+	{
+		float temp[4];
+		if (sscanf(speedrate_string, "%f", &temp[0]) == 1)
+		{
+			control.speedrate = temp[0];
+		}
+		else
+		{
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"speedrate\" in entity \"env_water_control\", 1 float is required.\n");
 		}
 	}
 

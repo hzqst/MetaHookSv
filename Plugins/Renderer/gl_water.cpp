@@ -73,6 +73,7 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 			SHADER_UNIFORM(prog, u_fresnelfactor, "u_fresnelfactor");
 			SHADER_UNIFORM(prog, u_normfactor, "u_normfactor");
 			SHADER_UNIFORM(prog, u_scale, "u_scale");
+			SHADER_UNIFORM(prog, u_speed, "u_speed");
 		}
 
 		g_WaterProgramTable[state] = prog;
@@ -328,7 +329,7 @@ void R_UpdateRippleTexture(water_vbo_t *VBOCache, int framecount)
 		return;
 
 #define RANDOM_BYTES_SIZE 256
-#define PROCEDURAL_SPEED_BITS	5
+	const int PROCEDURAL_SPEED_BITS = ((int)VBOCache->speedrate);
 	static byte m_pPermutation[RANDOM_BYTES_SIZE];
 
 	static bool init = false;
@@ -487,6 +488,7 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 			VBOCache->normfactor = 0;
 			VBOCache->minheight = 0;
 			VBOCache->maxtrans = 1;
+			VBOCache->speedrate = 1;
 			VBOCache->level = WATER_LEVEL_LEGACY;
 
 			auto waterControl = R_FindWaterControl(ent, surf);
@@ -555,6 +557,7 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 				VBOCache->normfactor = waterControl->normfactor;
 				VBOCache->minheight = waterControl->minheight;
 				VBOCache->maxtrans = waterControl->maxtrans;
+				VBOCache->speedrate = waterControl->speedrate;
 				VBOCache->level = waterControl->level;
 			}
 

@@ -26,6 +26,7 @@ typedef struct water_control_s
 	float normfactor;
 	float minheight;
 	float maxtrans;
+	float speedrate;
 }water_control_t;
 
 extern std::vector<water_control_t> r_water_controls;
@@ -40,6 +41,7 @@ typedef struct
 	int u_fresnelfactor;
 	int u_normfactor;
 	int u_scale;
+	int u_speed;
 }water_program_t;
 
 typedef struct
@@ -82,6 +84,7 @@ typedef struct water_vbo_s
 		normfactor = 0;
 		minheight = 0;
 		maxtrans = 0;
+		speedrate = 0;
 		level = 0;
 		plane = 0;
 		iPolyCount = 0;
@@ -111,6 +114,7 @@ typedef struct water_vbo_s
 	float normfactor;
 	float minheight;
 	float maxtrans;
+	float speedrate;
 	int level;
 	float plane;
 	vec3_t vert;

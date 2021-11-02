@@ -3,6 +3,7 @@
 #include "common.h"
 
 uniform float u_scale;
+uniform float u_speed;
 
 layout(location = 0) in vec3 in_vertex;
 layout(location = 1) in vec3 in_normal;
@@ -64,11 +65,11 @@ void main()
 	int s2 = int(SceneUBO.time * 171.0 + in_vertex.x * 5.0 - in_vertex.y);
 	vertpos.z += ((turbsin[s1 & 255] + 8.0) + (turbsin[s2 & 255] + 8.0) * 0.8) * u_scale;
 
-	int s3 = int((in_diffusetexcoord.y * 0.125 + SceneUBO.time) * TURBSCALE);
+	int s3 = int((in_diffusetexcoord.y * 0.125 + SceneUBO.time) * TURBSCALE * u_speed);
 	float s = in_diffusetexcoord.x + turbsin[s3 & 255];
 	s *= (1.0 / 64);
 
-	int s4 = int((in_diffusetexcoord.x * 0.125 + SceneUBO.time) * TURBSCALE);
+	int s4 = int((in_diffusetexcoord.x * 0.125 + SceneUBO.time) * TURBSCALE * u_speed);
 	float t = in_diffusetexcoord.y + turbsin[s4 & 255];
 	t *= (1.0 / 64);
 

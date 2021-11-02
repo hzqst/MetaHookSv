@@ -7,6 +7,7 @@ uniform vec3 u_depthfactor;
 uniform vec3 u_fresnelfactor;
 uniform float u_normfactor;
 uniform float u_scale;
+uniform float u_speed;
 
 //Don't conflict with WSurfShader
 #ifndef BINDLESS_ENABLED
