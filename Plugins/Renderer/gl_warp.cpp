@@ -214,7 +214,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 				glUniform1f(prog.u_scale, 0);
 
 			if (prog.u_speed != -1)
-				glUniform1f(prog.u_speed, WaterVBOCache->speedrate);
+				glUniform1f(prog.u_speed, 0);
 
 			GL_Bind(WaterVBOCache->ripplemap);
 		}
