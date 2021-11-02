@@ -138,7 +138,7 @@ void main()
 
 		float flWaterBlendAlpha = 1.0;
 
-		#if defined(DEPTH_ENABLED) && defined(WATER_REFRACT_ENABLED)
+		#if defined(DEPTH_ENABLED) && defined(REFRACT_ENABLED)
 
 			float flDiffZ = v_worldpos.z - worldScene.z;
 
@@ -157,7 +157,7 @@ void main()
 		vec4 vReflectColor = texture2D(reflectTex, vReflectTexCoord);
 		vReflectColor.a = 1.0;
 
-		float flReflectFactor = clamp(flFresnel * u_fresnelfactor.x, 0.0, 1.0);
+		float flReflectFactor = clamp(pow(flFresnel, 2.0) * u_fresnelfactor.x, 0.0, 1.0);
 
 		vFinalColor = vRefractColor + vReflectColor * flReflectFactor;
 
