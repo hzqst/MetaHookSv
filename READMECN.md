@@ -14,13 +14,15 @@
 
 并且Sven Co-op并不属于[受VAC保护的游戏](https://store.steampowered.com/search/?term=Sven&category2=8)
 
+你甚至可以以添加命令行参数`-insecure`的方式加所谓“受VAC保护的服务器”，因为SC上的VAC根本就没有工作。
+
 如果你实在不放心，那么请使用小号进行游戏，毕竟Sven Co-op是免费游戏。
 
 ## 手动安装方式
 
 1. git pull https://github.com/hzqst/MetaHookSv （如果你有安装git的话） 或者 直接从 https://github.com/hzqst/MetaHookSv/archive/main.zip 下载压缩包。如果因为国内网络问题导致速度太慢或无法访问，也可以直接从国内镜像 https://gitee.com/hzqst/MetaHookSv 和 https://gitee.com/hzqst/MetaHookSv/repository/archive/main.zip 下载（gitee上可能不是最新版本，且从gitee下载压缩包可能需要注册账号，不过也可以使用QQ直接登录）
 
-2. 复制Build目录下的所有文件到 `\SteamLibrary\steamapps\common\Sven Co-op\`.
+2. 复制Build目录下的所有文件到 `\SteamLibrary\steamapps\common\Sven Co-op\`。
 
 3. 从`\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe` 启动游戏。
 
@@ -38,7 +40,7 @@
 
 * 其他游戏也可以按照此种方式安装，只需要运行其他install-to-批处理即可。
 
-* 请确保已经登录Steam否则 [SteamAppsLocation](SteamAppsLocation/README.md) 可能会无法寻找游戏安装目录.
+* 请确保已经登录Steam否则 [SteamAppsLocation](SteamAppsLocation/README.md) 可能会无法寻找游戏安装目录，导致自动安装失败。
 
 ## 构建需求
 
@@ -84,7 +86,7 @@
 
 ## MetaHookSv (V3) 相比 MetaHook (V2) 的新功能
 
-1. 提供反汇编 API 用于分析引擎代码，提供反向（往前）搜索函数头部的API
+1. 提供反汇编 API 用于分析引擎代码，提供反向（往前）搜索函数头部的API。提供更多好用的API。
 
 2. 防止插件重复加载（重复加载会导致插件自调用，引发无限递归）
 
@@ -102,7 +104,7 @@
 
 ### BulletPhysics
 
-对游戏提供布娃娃支持，玩家死亡时以及玩家被藤壶、喷火怪抓住时将玩家模型转化为布娃娃
+对游戏提供布娃娃支持，玩家死亡时以及玩家被藤壶、喷火怪抓住时将玩家模型转化为布娃娃。
 
 [中文文档](BulletPhysicsCN.md) [DOCUMENTATION](BulletPhysics.md)
 
@@ -124,6 +126,14 @@
 
 ![](/img/8.png)
 
+### SteamScreenshots
+
+该插件捕获了snapshots命令，将其重定向到Steam客户端自带的截图功能上。
+
+### CommunicationDemo
+
+该插件是一个演示demo，用于演示如何使用metahook插件进行客户端-服务端双向通信。
+
 ### ABCEnchance (第三方) (只支持Sven Co-op)
 
 该插件提供以下功能：
@@ -140,7 +150,7 @@ https://github.com/DrAbcrealone/ABCEnchance
 
 ### HUDColor (第三方) (只支持Sven Co-op)
 
-该插件可以修改HUD颜色
+该插件可以修改游戏中HUD的颜色。
 
 https://github.com/DrAbcrealone/HUDColor
 
@@ -148,6 +158,6 @@ https://github.com/DrAbcrealone/HUDColor
 
 该插件使用alure2+OpenAL替换了GoldSrc原本的声音系统
 
-由于SvEngine已经使用FMOD作为声音引擎了，你不应该在Sven Co-op上使用该插件.
+由于SvEngine已经使用FMOD作为声音引擎了，你不应该在Sven Co-op上使用该插件
 
 https://github.com/LAGonauta/MetaAudio
