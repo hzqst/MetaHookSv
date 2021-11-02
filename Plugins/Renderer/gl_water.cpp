@@ -94,7 +94,7 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 	}
 	else
 	{
-		Sys_ErrorEx("R_UseWaterProgram: Failed to load program!");
+		g_pMetaHookAPI->SysError("R_UseWaterProgram: Failed to load program!");
 	}
 }
 

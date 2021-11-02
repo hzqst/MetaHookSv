@@ -9,13 +9,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Resource">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
-    </Filter>
-    <Filter Include="VGUI">
-      <UniqueIdentifier>{4099ed65-2d64-4746-a694-53e531fe5797}</UniqueIdentifier>
-    </Filter>
     <Filter Include="SourceSDK">
       <UniqueIdentifier>{07b70233-8449-4f32-87a8-2dee7c35ed48}</UniqueIdentifier>
     </Filter>
@@ -52,6 +45,9 @@
     <Filter Include="VGUI2">
       <UniqueIdentifier>{7ca0e99c-9048-4b3a-85eb-af09ac2cf41b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="vgui_interface">
+      <UniqueIdentifier>{4099ed65-2d64-4746-a694-53e531fe5797}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engfuncs.cpp">
@@ -67,9 +63,6 @@
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="message.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="msghook.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="parsemsg.cpp">
@@ -420,9 +413,6 @@
     <ClCompile Include="SourceSDK\tier0\assert_dialog.cpp">
       <Filter>SourceSDK\tier0</Filter>
     </ClCompile>
-    <ClCompile Include="encode.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="chatdialog.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
@@ -470,9 +460,6 @@
     <ClInclude Include="..\..\metahook.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="msghook.h">
-      <Filter>Header</Filter>
-    </ClInclude>
     <ClInclude Include="parsemsg.h">
       <Filter>Header</Filter>
     </ClInclude>
@@ -486,61 +473,61 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\Cursor.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\Dar.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\IBorder.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\IClientPanel.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\IEngineVGui.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\IHTML.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\IImage.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\IInput.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\IInputInternal.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\ILocalize.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\IPanel.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\IScheme.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\ISurface.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\ISurface2.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\ISystem.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\IVGUI.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\KeyCode.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\MouseCode.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\VGUI.h">
-      <Filter>VGUI</Filter>
+      <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="SourceSDK\Color.h">
       <Filter>SourceSDK</Filter>
@@ -1003,9 +990,6 @@
     </ClInclude>
     <ClInclude Include="libcsv\csv_document.h">
       <Filter>libcsv</Filter>
-    </ClInclude>
-    <ClInclude Include="encode.h">
-      <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="chatdialog.h">
       <Filter>VGUI2</Filter>

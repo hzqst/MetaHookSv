@@ -7,8 +7,6 @@
 #include "cvardef.h"
 #include "exportfuncs.h"
 #include "entity_types.h"
-#include "privatehook.h"
-
 #include <vector>
 
 cl_enginefunc_t gEngfuncs;

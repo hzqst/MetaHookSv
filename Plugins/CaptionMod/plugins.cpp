@@ -92,13 +92,13 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->IN_Accumulate = IN_Accumulate;
 	pExportFunc->CL_CreateMove = CL_CreateMove;
 
-	g_hClientDll = GetModuleHandle("client.dll");
-	g_dwClientBase = (PVOID)g_hClientDll;
-	g_dwClientSize = g_pMetaHookAPI->GetModuleSize(g_hClientDll);
+	g_hClientDll = g_pMetaHookAPI->GetClientModule();
+	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
+	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
 
-	auto pfnClientCreateInterface = Sys_GetFactory((HINTERFACEMODULE)g_hClientDll);
+	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
 
-	if (pfnClientCreateInterface && pfnClientCreateInterface("SCClientDLL001", 0))
+	if (pfnClientFactory && pfnClientFactory("SCClientDLL001", 0))
 	{
 		g_IsSCClient = true;
 
@@ -213,9 +213,6 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	VGUI1_InstallHook();
 
-	//hook textmsg
-	MSG_Init();
-
 	EnumWindows([](HWND hwnd, LPARAM lParam
 		)
 	{
@@ -260,6 +257,11 @@ const char completeVersion[] =
 	BUILD_SEC_CH0, BUILD_SEC_CH1,
 	'\0'
 };
+
+void Cap_Version_f(void)
+{
+	gEngfuncs.Con_Printf("CaptionMod version : %s\n", completeVersion);
+}
 
 const char *IPluginsV4::GetVersion(void)
 {

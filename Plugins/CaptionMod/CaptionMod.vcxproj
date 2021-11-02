@@ -116,7 +116,6 @@
     <ClCompile Include="cstrikechatdialog.cpp" />
     <ClCompile Include="CvarSlider.cpp" />
     <ClCompile Include="CvarToggleCheckButton.cpp" />
-    <ClCompile Include="encode.cpp" />
     <ClCompile Include="engfuncs.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="FontAmalgam.cpp" />
@@ -126,7 +125,6 @@
     <ClCompile Include="KeyValuesSystemHook.cpp" />
     <ClCompile Include="libcsv\csv_document.cpp" />
     <ClCompile Include="message.cpp" />
-    <ClCompile Include="msghook.cpp" />
     <ClCompile Include="parsemsg.cpp" />
     <ClCompile Include="plugins.cpp" />
     <ClCompile Include="Scheme.cpp">
@@ -265,7 +263,6 @@
     <ClInclude Include="cstrikechatdialog.h" />
     <ClInclude Include="CvarSlider.h" />
     <ClInclude Include="CvarToggleCheckButton.h" />
-    <ClInclude Include="encode.h" />
     <ClInclude Include="engfuncs.h" />
     <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />
@@ -274,7 +271,6 @@
     <ClInclude Include="FontTextureCache.h" />
     <ClInclude Include="libcsv\csv_document.h" />
     <ClInclude Include="message.h" />
-    <ClInclude Include="msghook.h" />
     <ClInclude Include="parsemsg.h" />
     <ClInclude Include="plugins.h" />
     <ClInclude Include="SourceSDK\appframework\IAppSystem.h" />

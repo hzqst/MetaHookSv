@@ -61,7 +61,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	if (g_iEngineType != ENGINE_SVENGINE && g_iEngineType != ENGINE_GOLDSRC)
 	{
-		Sys_ErrorEx("Unsupported engine: %s, buildnum %d", g_pMetaHookAPI->GetEngineTypeName(), g_dwEngineBuildnum);
+		g_pMetaHookAPI->SysError("Unsupported engine: %s, buildnum %d", g_pMetaHookAPI->GetEngineTypeName(), g_dwEngineBuildnum);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -175,8 +175,8 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 {
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
 
-	g_dwClientBase = (PVOID)GetModuleHandleA("client.dll");
-	g_dwClientSize = g_pMetaHookAPI->GetModuleSize((HMODULE)g_dwClientBase);
+	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
+	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
 
 	pExportFunc->HUD_Init = HUD_Init;
 	pExportFunc->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
@@ -185,7 +185,12 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_DrawNormalTriangles = HUD_DrawNormalTriangles;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 
-	QGL_Init();
+	auto err = glewInit();
+	if (GLEW_OK != err)
+	{
+		g_pMetaHookAPI->SysError("glewInit failed, %s", glewGetErrorString(err));
+		return;
+	}
 
 	Install_InlineHook(R_NewMap);
 }

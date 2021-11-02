@@ -89,7 +89,7 @@ void R_UseSpriteProgram(int state, sprite_program_t *progOutput)
 	}
 	else
 	{
-		Sys_ErrorEx("R_UseSpriteProgram: Failed to load program!");
+		g_pMetaHookAPI->SysError("R_UseSpriteProgram: Failed to load program!");
 	}
 }
 
@@ -251,7 +251,7 @@ void R_UseLegacySpriteProgram(int state, legacysprite_program_t *progOutput)
 	}
 	else
 	{
-		Sys_ErrorEx("R_UseLegacySpriteProgram: Failed to load program!");
+		g_pMetaHookAPI->SysError("R_UseLegacySpriteProgram: Failed to load program!");
 	}
 }
 

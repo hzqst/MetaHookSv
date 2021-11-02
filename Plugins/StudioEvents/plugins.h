@@ -1,5 +1,7 @@
 #pragma once
 
+#include <metahook.h>
+
 class IFileSystem;
 
 extern HINSTANCE g_hInstance, g_hThisModule, g_hEngineModule;

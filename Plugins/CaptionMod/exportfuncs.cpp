@@ -113,11 +113,6 @@ void CL_CreateMove(float frametime, struct usercmd_s *cmd, int active)
 	}
 }
 
-void Cap_Version_f(void)
-{
-	gEngfuncs.Con_Printf("%s\n", CAPTION_MOD_VERSION);
-}
-
 void Cap_Reload_f(void)
 {
 	if (g_pViewPort)

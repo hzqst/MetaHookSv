@@ -44,15 +44,15 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	if (iVideoMode == 2)
 	{
-		Sys_ErrorEx("D3D mode is not supported.");
+		g_pMetaHookAPI->SysError("D3D mode is not supported.");
 	}
 	if (iVideoMode == 0)
 	{
-		Sys_ErrorEx("Software mode is not supported.");
+		g_pMetaHookAPI->SysError("Software mode is not supported.");
 	}
 	if (bbp == 16)
 	{
-		Sys_ErrorEx("16bit mode is not supported.");
+		g_pMetaHookAPI->SysError("16bit mode is not supported.");
 	}
 
 	g_pFileSystem = g_pInterface->FileSystem;	
@@ -69,7 +69,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	if(g_iEngineType != ENGINE_SVENGINE && g_iEngineType != ENGINE_GOLDSRC)
 	{
-		Sys_ErrorEx("Unsupported engine: %s, buildnum %d", g_pMetaHookAPI->GetEngineTypeName(), g_dwEngineBuildnum);
+		g_pMetaHookAPI->SysError("Unsupported engine: %s, buildnum %d", g_pMetaHookAPI->GetEngineTypeName(), g_dwEngineBuildnum);
 	}
 
 	R_FillAddress();
@@ -82,19 +82,19 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	if (iVideoMode == 2)
 	{
-		Sys_ErrorEx("D3D mode is not supported.");
+		g_pMetaHookAPI->SysError("D3D mode is not supported");
 	}
 	if (iVideoMode == 0)
 	{
-		Sys_ErrorEx("Software mode is not supported.");
+		g_pMetaHookAPI->SysError("Software mode is not supported");
 	}
 	if (bbp == 16)
 	{
-		Sys_ErrorEx("16bit mode is not supported.");
+		g_pMetaHookAPI->SysError("16bbp mode is not supported");
 	}
 
-	g_dwClientBase = (PVOID)GetModuleHandleA("client.dll");
-	g_dwClientSize = g_pMetaHookAPI->GetModuleSize((HMODULE)g_dwClientBase);
+	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
+	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
 
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
 
@@ -104,10 +104,10 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
 	pExportFunc->HUD_Redraw = HUD_Redraw;
 	pExportFunc->HUD_Init = HUD_Init;
-	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 	pExportFunc->HUD_DrawNormalTriangles = HUD_DrawNormalTriangles;
 	pExportFunc->HUD_DrawTransparentTriangles = HUD_DrawTransparentTriangles;
 	pExportFunc->HUD_Shutdown = HUD_Shutdown;
+	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 }
 
 void IPluginsV4::ExitGame(int iResult)
@@ -138,7 +138,7 @@ const char *IPluginsV4::GetVersion(void)
 
 void R_Version_f(void)
 {
-	gEngfuncs.Con_Printf("Renderer Version:\n%s\n", completeVersion);
+	gEngfuncs.Con_Printf("Renderer version : %s\n", completeVersion);
 }
 
 EXPOSE_SINGLE_INTERFACE(IPluginsV4, IPluginsV4, METAHOOK_PLUGIN_API_VERSION_V4);

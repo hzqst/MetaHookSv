@@ -4,7 +4,6 @@
 
 #define	MAX_QPATH 64
 
-
 #define NL_PRESENT 0
 #define NL_NEEDS_LOADED 1
 #define NL_UNREFERENCED 2

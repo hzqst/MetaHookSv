@@ -15,8 +15,6 @@
 #include <usercmd.h>
 #include "enginedef.h"
 
-#define CAPTION_MOD_VERSION "Caption Mod 2021-08-04"
-
 extern cl_enginefunc_t gEngfuncs;
 
 void Steam_Init(void);
@@ -51,6 +49,7 @@ sfx_t *S_FindName(char *name, int *pfInCache);
 
 void MessageMode_f(void);
 void MessageMode2_f(void);
+void Cap_Version_f(void);
 
 LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 

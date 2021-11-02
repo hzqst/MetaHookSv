@@ -281,7 +281,7 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 	}
 	else
 	{
-		Sys_ErrorEx("R_UseWSurfProgram: Failed to load program!");
+		g_pMetaHookAPI->SysError("R_UseWSurfProgram: Failed to load program!");
 	}
 }
 
@@ -1449,10 +1449,10 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_t *modcache)
 						base = base->anim_next;
 
 						if (!base)
-							Sys_ErrorEx("R_TextureAnimation: broken cycle");
+							g_pMetaHookAPI->SysError("R_TextureAnimation: broken cycle");
 
 						if (++loop_count > 100)
-							Sys_ErrorEx("R_TextureAnimation: infinite cycle");
+							g_pMetaHookAPI->SysError("R_TextureAnimation: infinite cycle");
 					}
 				}
 			}
@@ -1471,10 +1471,10 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_t *modcache)
 				base = base->anim_next;
 
 				if (!base)
-					Sys_ErrorEx("R_TextureAnimation: broken cycle");
+					g_pMetaHookAPI->SysError("R_TextureAnimation: broken cycle");
 
 				if (++loop_count > 100)
-					Sys_ErrorEx("R_TextureAnimation: infinite cycle");
+					g_pMetaHookAPI->SysError("R_TextureAnimation: infinite cycle");
 			}
 		}
 
@@ -2339,7 +2339,7 @@ static char *R_ParseBSPEntity(char *data)
 			}
 			if (!data)
 			{
-				Sys_ErrorEx("R_ParseBSPEntity: EOF without closing brace");
+				g_pMetaHookAPI->SysError("R_ParseBSPEntity: EOF without closing brace");
 			}
 
 			strncpy(keyname, com_token, sizeof(keyname) - 1);
@@ -2353,11 +2353,11 @@ static char *R_ParseBSPEntity(char *data)
 			data = gEngfuncs.COM_ParseFile(data, com_token);
 			if (!data)
 			{
-				Sys_ErrorEx("R_ParseBSPEntity: EOF without closing brace");
+				g_pMetaHookAPI->SysError("R_ParseBSPEntity: EOF without closing brace");
 			}
 			if (com_token[0] == '}')
 			{
-				Sys_ErrorEx("R_ParseBSPEntity: closing brace without data");
+				g_pMetaHookAPI->SysError("R_ParseBSPEntity: closing brace without data");
 			}
 
 			if (!strcmp(classname, com_token))
@@ -2407,7 +2407,7 @@ void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator allocator)
 		}
 		if (com_token[0] != '{')
 		{
-			Sys_ErrorEx("R_ParseBSPEntities: found %s when expecting {", com_token);
+			g_pMetaHookAPI->SysError("R_ParseBSPEntities: found %s when expecting {", com_token);
 			return;
 		}
 		data = R_ParseBSPEntity(data);
@@ -2919,7 +2919,7 @@ void R_DrawSequentialPolyVBO(msurface_t *s)
 		(*gDecalSurfCount)++;
 
 		if ((*gDecalSurfCount) > MAX_DECALSURFS)
-			Sys_ErrorEx("Too many decal surfaces!\n");
+			g_pMetaHookAPI->SysError("Too many decal surfaces!\n");
 	}
 }
 

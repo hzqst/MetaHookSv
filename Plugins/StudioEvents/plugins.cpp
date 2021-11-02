@@ -1,6 +1,5 @@
 #include <metahook.h>
 #include "exportfuncs.h"
-#include "privatehook.h"
 
 cl_exportfuncs_t gExportfuncs;
 mh_interface_t *g_pInterface;
@@ -53,8 +52,8 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 {
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
 
-	g_dwClientBase = (PVOID)GetModuleHandleA("client.dll");
-	g_dwClientSize = g_pMetaHookAPI->GetModuleSize((HMODULE)g_dwClientBase);
+	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
+	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
 
 	pExportFunc->HUD_Init = HUD_Init;
 	pExportFunc->HUD_Frame = HUD_Frame;

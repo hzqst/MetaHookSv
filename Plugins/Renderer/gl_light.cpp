@@ -106,7 +106,7 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 	}
 	else
 	{
-		Sys_ErrorEx("R_UseDFinalProgram: Failed to load program!");
+		g_pMetaHookAPI->SysError("R_UseDFinalProgram: Failed to load program!");
 	}
 }
 
@@ -259,7 +259,7 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 	}
 	else
 	{
-		Sys_ErrorEx("R_UseDLightProgram: Failed to load program!");
+		g_pMetaHookAPI->SysError("R_UseDLightProgram: Failed to load program!");
 	}
 }
 

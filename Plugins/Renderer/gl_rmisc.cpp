@@ -17,7 +17,7 @@ void GL_PushFrameBuffer(void)
 {
 	if (save_framebuffer_stack == MAX_SAVESTACK)
 	{
-		Sys_ErrorEx("GL_PushFrameBuffer: MAX_SAVESTACK exceed");
+		g_pMetaHookAPI->SysError("GL_PushFrameBuffer: MAX_SAVESTACK exceed");
 		return;
 	}
 	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &save_readframebuffer[save_framebuffer_stack]);
@@ -29,7 +29,7 @@ void GL_PopFrameBuffer(void)
 {
 	if (save_framebuffer_stack == 0)
 	{
-		Sys_ErrorEx("GL_PopFrameBuffer: no framebuffer saved");
+		g_pMetaHookAPI->SysError("GL_PopFrameBuffer: no framebuffer saved");
 		return;
 	}
 
@@ -61,7 +61,7 @@ void GL_PushDrawState(void)
 {
 	if (save_drawcontext_stack == MAX_SAVESTACK)
 	{
-		Sys_ErrorEx("GL_PushDrawState: MAX_SAVESTACK exceed");
+		g_pMetaHookAPI->SysError("GL_PushDrawState: MAX_SAVESTACK exceed");
 		return;
 	}
 	//glGetBooleanv(GL_POLYGON_OFFSET_FILL, &save_drawcontext[save_drawcontext_stack].polygon_offset_fill);
@@ -84,7 +84,7 @@ void GL_PopDrawState(void)
 {
 	if (save_drawcontext_stack == 0)
 	{
-		Sys_ErrorEx("GL_PopDrawState: no drawcontext saved");
+		g_pMetaHookAPI->SysError("GL_PopDrawState: no drawcontext saved");
 		return;
 	}
 
@@ -140,7 +140,7 @@ void R_PushRefDef(void)
 {
 	if (save_refdef_stack == MAX_SAVESTACK)
 	{
-		Sys_ErrorEx("R_PushRefDef: MAX_SAVESTACK exceed");
+		g_pMetaHookAPI->SysError("R_PushRefDef: MAX_SAVESTACK exceed");
 		return;
 	}
 	VectorCopy((*r_refdef.vieworg), save_vieworg[save_refdef_stack]);
@@ -158,7 +158,7 @@ void R_PopRefDef(void)
 {
 	if (save_refdef_stack == 0)
 	{
-		Sys_ErrorEx("R_PopRefDef: no refdef saved");
+		g_pMetaHookAPI->SysError("R_PopRefDef: no refdef saved");
 		return;
 	}
 	--save_refdef_stack;

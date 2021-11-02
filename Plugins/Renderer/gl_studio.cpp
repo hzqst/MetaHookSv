@@ -434,7 +434,7 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 	}
 	else
 	{
-		Sys_ErrorEx("R_UseStudioProgram: Failed to load program!");
+		g_pMetaHookAPI->SysError("R_UseStudioProgram: Failed to load program!");
 	}
 }
 
@@ -762,7 +762,7 @@ void R_GLStudioDrawPoints(void)
 	R_EnableStudioVBO(VBOData);
 
 	if (engine_psubmodel->groupindex < 1 || engine_psubmodel->groupindex >(int)VBOData->vSubmodel.size()) {
-		Sys_ErrorEx("R_StudioFindVBOCache: invalid index");
+		g_pMetaHookAPI->SysError("R_StudioFindVBOCache: invalid index");
 	}
 
 	VBOSubmodel = VBOData->vSubmodel[engine_psubmodel->groupindex - 1];
@@ -772,7 +772,7 @@ void R_GLStudioDrawPoints(void)
 
 	if (engine_pstudiohdr->numbones > MAXSTUDIOBONES)
 	{
-		Sys_ErrorEx("R_GLStudioDrawPoints: %s numbones (%d) > MAXSTUDIOBONES (%d)", engine_pstudiohdr->name, engine_pstudiohdr->numbones, MAXSTUDIOBONES);
+		g_pMetaHookAPI->SysError("R_GLStudioDrawPoints: %s numbones (%d) > MAXSTUDIOBONES (%d)", engine_pstudiohdr->name, engine_pstudiohdr->numbones, MAXSTUDIOBONES);
 	}
 
 	glCullFace(GL_FRONT);
@@ -1074,7 +1074,7 @@ void R_StudioDrawBatch(void)
 		IEngineStudio.StudioSetupModel(i, &temp_bodypart, &temp_submodel);
 
 		if ((*psubmodel)->groupindex < 1 || (*psubmodel)->groupindex >(int)VBOData->vSubmodel.size()) {
-			Sys_ErrorEx("R_StudioFindVBOCache: invalid index");
+			g_pMetaHookAPI->SysError("R_StudioFindVBOCache: invalid index");
 		}
 
 		auto VBOSubmodel = VBOData->vSubmodel[(*psubmodel)->groupindex - 1];
@@ -1083,7 +1083,7 @@ void R_StudioDrawBatch(void)
 		{
 			if (arrayCount == MAXSTUDIOMESHES)
 			{
-				Sys_ErrorEx("R_StudioFindVBOCache: too many meshes.");
+				g_pMetaHookAPI->SysError("R_StudioFindVBOCache: too many meshes.");
 			}
 
 			vStartIndex[arrayCount] = BUFFER_OFFSET(VBOSubmodel->vMesh[j].iStartIndex);

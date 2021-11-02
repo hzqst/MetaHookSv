@@ -9,18 +9,12 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Resource">
-      <UniqueIdentifier>{ead77a79-0976-4319-9f61-ff87eec5b0e5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Interface">
       <UniqueIdentifier>{90e9fe25-d00d-4376-a34f-b9fc3610e348}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="exportfuncs.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="gl_backend.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="gl_draw.cpp">

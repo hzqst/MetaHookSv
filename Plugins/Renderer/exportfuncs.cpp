@@ -6,37 +6,6 @@
 #include "qgl.h"
 
 //Error when can't find sig
-void Sys_ErrorEx(const char *fmt, ...)
-{
-	char msg[4096] = { 0 };
-
-	va_list argptr;
-
-	va_start(argptr, fmt);
-	_vsnprintf(msg, sizeof(msg), fmt, argptr);
-	va_end(argptr);
-
-	if(gEngfuncs.pfnClientCmd)
-		gEngfuncs.pfnClientCmd("escape\n");
-
-	MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
-	TerminateProcess((HANDLE)(-1), 0);
-}
-
-char *UTIL_VarArgs(char *format, ...)
-{
-	va_list argptr;
-	static int index = 0;
-	static char string[16][1024];
-
-	va_start(argptr, format);
-	vsprintf(string[index], format, argptr);
-	va_end(argptr);
-
-	char *result = string[index];
-	index = (index + 1) % 16;
-	return result;
-}
 
 cl_enginefunc_t gEngfuncs;
 engine_studio_api_t IEngineStudio;
@@ -856,10 +825,10 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 	int result = gExportfuncs.HUD_GetStudioModelInterface(version, ppinterface, pstudio);
 
-	auto pfnClientCreateInterface = Sys_GetFactory((HINTERFACEMODULE)g_dwClientBase);
+	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
 
 	//Fix SvClient Portal Rendering Confliction
-	if (pfnClientCreateInterface && pfnClientCreateInterface("SCClientDLL001", 0))
+	if (pfnClientFactory && pfnClientFactory("SCClientDLL001", 0))
 	{
 #define SVCLIENT_PORTALMANAGER_RESETALL_SIG "\xC7\x45\x2A\xFF\xFF\xFF\xFF\xA3\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x0D"
 		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SVCLIENT_PORTALMANAGER_RESETALL_SIG, sizeof(SVCLIENT_PORTALMANAGER_RESETALL_SIG) - 1);

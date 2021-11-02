@@ -107,7 +107,7 @@ void R_UseHudDebugProgram(int state, hud_debug_program_t *progOutput)
 	}
 	else
 	{
-		Sys_ErrorEx("R_UseHudDebugProgram: Failed to load program!");
+		g_pMetaHookAPI->SysError("R_UseHudDebugProgram: Failed to load program!");
 	}
 }
 

@@ -120,10 +120,10 @@ void Vector3BulletToGoldSrc(btVector3& vec)
 
 void CPhysicsDebugDraw::drawLine(const btVector3& from1, const btVector3& to1, const btVector3& color1)
 {
-	qglDisable(GL_TEXTURE_2D);
-	qglDisable(GL_BLEND);
-	qglDisable(GL_DEPTH_TEST);
-	qglLineWidth(1);
+	glDisable(GL_TEXTURE_2D);
+	glDisable(GL_BLEND);
+	glDisable(GL_DEPTH_TEST);
+	glLineWidth(1);
 
 	gEngfuncs.pTriAPI->Color4f(color1.getX(), color1.getY(), color1.getZ(), 1.0f);
 	gEngfuncs.pTriAPI->Begin(TRI_LINES);
@@ -138,9 +138,9 @@ void CPhysicsDebugDraw::drawLine(const btVector3& from1, const btVector3& to1, c
 	gEngfuncs.pTriAPI->Vertex3fv(to);
 	gEngfuncs.pTriAPI->End();
 
-	qglEnable(GL_DEPTH_TEST);
-	qglEnable(GL_BLEND);
-	qglEnable(GL_TEXTURE_2D);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glEnable(GL_TEXTURE_2D);
 }
 
 CPhysicsManager gPhysicsManager;
@@ -499,14 +499,14 @@ void CPhysicsManager::CreateBrushModel(cl_entity_t *ent)
 	if (modelindex == -1)
 	{
 		//invalid model index?
-		Sys_ErrorEx("CreateBrushModel: Invalid model index\n");
+		g_pMetaHookAPI->SysError("CreateBrushModel: Invalid model index\n");
 		return;
 	}
 
 	if (!m_brushIndexArray[modelindex])
 	{
 		//invalid model index?
-		Sys_ErrorEx("CreateBrushModel: Invalid model index\n");
+		g_pMetaHookAPI->SysError("CreateBrushModel: Invalid model index\n");
 		return;
 	}
 
@@ -1141,7 +1141,7 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 	if (modelindex == -1)
 	{
 		//invalid model index?
-		Sys_ErrorEx("LoadRagdollConfig: Invalid model index\n");
+		g_pMetaHookAPI->SysError("LoadRagdollConfig: Invalid model index\n");
 		return NULL;
 	}
 
@@ -1157,7 +1157,7 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 
 	if(fullname.length() < 4)
 	{
-		Sys_ErrorEx("LoadRagdollConfig: Invalid name %s\n", fullname.c_str());
+		g_pMetaHookAPI->SysError("LoadRagdollConfig: Invalid name %s\n", fullname.c_str());
 		return NULL;
 	}
 

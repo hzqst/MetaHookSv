@@ -17,6 +17,8 @@ typedef struct cvar_s cvar_t;
 
 typedef int (*pfnUserMsgHook)(const char *pszName, int iSize, void *pbuf);
 
+#define HOOK_MESSAGE(x) g_pMetaHookAPI->HookUserMsg(#x, __MsgFunc_##x);
+
 typedef void(*cvar_callback_t)(cvar_t *pcvar);
 
 typedef void(*xcommand_t)(void);
@@ -60,34 +62,107 @@ typedef struct metahook_api_s
 	*/
 
 	hook_t *(*VFTHook)(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFuncAddr, void **pOrginalCall);
+	/*
+		Install VFT hook
+		This will modify the Virtual Function Table
+	*/
+
 	hook_t *(*IATHook)(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, void *pNewFuncAddr, void **pOrginalCall);
+	/*
+		Install IAT hook
+		This will modify the Import Address Table
+	*/
+
 	void *(*GetClassFuncAddr)(...);
+	/*
+		Unused
+	*/
+
 	PVOID (*GetModuleBase)(PVOID VirtualAddress);
+	/*
+		Query module base of given virtual address
+	*/
+
 	DWORD (*GetModuleSize)(PVOID ModuleBase);
+	/*
+		Query module size of given module base
+	*/
+
 	HMODULE (*GetEngineModule)(void);
+	/*
+		Query module handle of engine dll
+		Could be null if BlobEngine is loaded
+	*/
+
 	PVOID (*GetEngineBase)(void);
+	/*
+		Query module base of engine dll
+	*/
+
 	DWORD (*GetEngineSize)(void);
+	/*
+		Query module size of engine dll
+	*/
+
 	void *(*SearchPattern)(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
 	/*
 		Search pattern (signature) in given region
 	*/
 
 	void (*WriteDWORD)(void *pAddress, DWORD dwValue);
-	DWORD (*ReadDWORD)(void *pAddress);
-	DWORD (*WriteMemory)(void *pAddress, BYTE *pData, DWORD dwDataSize);
-	DWORD (*ReadMemory)(void *pAddress, BYTE *pData, DWORD dwDataSize);
-	DWORD (*GetVideoMode)(int *width, int *height, int *bpp, bool *windowed);
+	/*
+		Write 4bytes value at given address, ignoring page protection
+	*/
 	
+	DWORD (*ReadDWORD)(void *pAddress);
+	/*
+		Read 4bytes from given address
+	*/
+
+	DWORD (*WriteMemory)(void *pAddress, BYTE *pData, DWORD dwDataSize);
+	/*
+		Write memory at given address, ignoring page protection
+	*/
+
+	DWORD (*ReadMemory)(void *pAddress, BYTE *pData, DWORD dwDataSize);
+	/*
+		Read memory from given address
+	*/
+
+	DWORD (*GetVideoMode)(int *width, int *height, int *bpp, bool *windowed);
+	/*
+		Get VideoMode, VideoWidth, VideoHeight, BitPerPixel (16 or 24), WindowedMode
+	*/
+
 	DWORD (*GetEngineBuildnum)(void);
 	/*
 		Get buildnum of loaded engine.
 	*/
 
 	CreateInterfaceFn (*GetEngineFactory)(void);
+	/*
+		Get factory interface (CreateInterface) of engine dll
+	*/
+
 	void *(*GetNextCallAddr)(void *pAddress, DWORD dwCount);
+	/*
+		Get the branch target of 0xE8 jmp instruction at given address
+	*/
+
 	void (*WriteBYTE)(void *pAddress, BYTE ucValue);
+	/*
+		Write 1 byte value at given address, ignoring page protection
+	*/
+
 	BYTE (*ReadBYTE)(void *pAddress);
+	/*
+		Read 1 byte from given address
+	*/
+
 	void (*WriteNOP)(void *pAddress, DWORD dwCount);
+	/*
+		Write 0x90 (x86 nop) at given address, ignoring page protection
+	*/
 
 	int (*GetEngineType)(void);
 	/*
@@ -121,12 +196,29 @@ typedef struct metahook_api_s
 
 	void *(*ReverseSearchPattern)(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
 	/*
-		Reverse search pattern (signature) in given region
+		Search pattern (signature) from pStartSearch in reverse direction
 	*/
 
 	HMODULE	(*GetClientModule)(void);
+	/*
+		Get module handle of client dll
+		Could be null if SecureClient is loaded
+	*/
+
 	PVOID (*GetClientBase)(void);
+	/*
+		Get module base of client dll
+	*/
+
 	DWORD (*GetClientSize)(void);
+	/*
+		Get module size of client dll
+	*/
+
+	CreateInterfaceFn(*GetClientFactory)(void);
+	/*
+		Get factory interface (CreateInterface) of client dll
+	*/
 
 	BOOL (*QueryPluginInfo)(int fromindex, mh_plugininfo_t *info);
 	/*
@@ -159,10 +251,18 @@ typedef struct metahook_api_s
 
 	cvar_callback_t (*HookCvarCallback)(const char *cvar_name, cvar_callback_t callback);
 	/*
-		Find existing cvar, and set it's Cvar-Set callback to specified function pointer, return original function pointer if exists.
+		Find existing cvar, and set it's Cvar-Set callback to specified function pointer, return original callback function pointer if exists.
 	*/
 
 	xcommand_t(*HookCmd)(const char *cmd_name, xcommand_t newfuncs);
+	/*
+		Find existing console command, and set it's command callback to specified function pointer, return original callback function pointer.
+	*/
+
+	void (*SysError)(const char *fmt, ...);
+	/*
+		Show error msgbox and terminate game process.
+	*/
 }
 metahook_api_t;
 

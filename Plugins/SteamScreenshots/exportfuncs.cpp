@@ -8,8 +8,6 @@
 #include "cvardef.h"
 #include "exportfuncs.h"
 #include "entity_types.h"
-#include "privatehook.h"
-#include "msghook.h"
 #include "parsemsg.h"
 #include <steam_api.h>
 
@@ -17,7 +15,7 @@ cl_enginefunc_t gEngfuncs;
 engine_studio_api_t IEngineStudio;
 r_studio_interface_t **gpStudioInterface;
 
-char g_ServerName[256] = {0};
+char g_szServerName[256] = {0};
 
 class CSnapshotManager
 {
@@ -26,23 +24,6 @@ public:
 };
 
 CSnapshotManager g_SnapshotManager;
-
-void Sys_ErrorEx(const char *fmt, ...)
-{
-	char msg[4096] = { 0 };
-
-	va_list argptr;
-
-	va_start(argptr, fmt);
-	_vsnprintf(msg, sizeof(msg), fmt, argptr);
-	va_end(argptr);
-
-	if (gEngfuncs.pfnClientCmd)
-		gEngfuncs.pfnClientCmd("escape\n");
-
-	MessageBox(NULL, msg, "Fatal Error", MB_ICONERROR);
-	TerminateProcess((HANDLE)(-1), 0);
-}
 
 void VID_Snapshot_f(void)
 {
@@ -75,7 +56,7 @@ void CSnapshotManager::OnSnapshotCallback(ScreenshotReady_t* pCallback)
 {
 	if (pCallback->m_eResult == k_EResultOK)
 	{
-		SteamScreenshots()->SetLocation(pCallback->m_hLocal, g_ServerName);
+		SteamScreenshots()->SetLocation(pCallback->m_hLocal, g_szServerName);
 
 		SteamScreenshots()->TagUser(pCallback->m_hLocal, SteamUser()->GetSteamID());
 
@@ -98,7 +79,7 @@ void HUD_Frame(double time)
 	auto levelname = gEngfuncs.pfnGetLevelName();
 	if (!levelname || !levelname[0])
 	{
-		g_ServerName[0] = 0;
+		g_szServerName[0] = 0;
 	}
 
 	SteamAPI_RunCallbacks();
@@ -110,10 +91,10 @@ int __MsgFunc_ServerName(const char *pszName, int iSize, void *pbuf)
 {
 	BEGIN_READ(pbuf, iSize);
 
-	char *servername = READ_STRING();
+	char *szServerName = READ_STRING();
 
-	strncpy(g_ServerName, servername, 255);
-	g_ServerName[255] = 0;
+	strncpy(g_szServerName, szServerName, 255);
+	g_szServerName[255] = 0;
 
 	return m_pfnServerName(pszName, iSize, pbuf);
 }
@@ -126,6 +107,8 @@ void IN_ActivateMouse(void)
 
 	if (!init)
 	{
+		//cmd "snapshot" is registered after HUD_Init
+
 		g_pMetaHookAPI->HookCmd("snapshot", VID_Snapshot_f);
 
 		m_pfnServerName = HOOK_MESSAGE(ServerName);

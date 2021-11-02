@@ -21,5 +21,3 @@ void HUD_TempEntUpdate(
 void HUD_DrawNormalTriangles(void);
 void HUD_Init(void);
 void V_CalcRefdef(struct ref_params_s *pparams);
-
-void Sys_ErrorEx(const char *fmt, ...);

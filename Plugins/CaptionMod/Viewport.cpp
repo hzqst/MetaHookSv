@@ -13,7 +13,6 @@
 #include "message.h"
 #include "engfuncs.h"
 #include "exportfuncs.h"
-#include "encode.h"
 #include <stdexcept>
 
 using namespace vgui;
@@ -731,15 +730,14 @@ void CDictionary::FinalizeString(std::wstring &output, int iPrefix)
 
 		auto wkeybind = result[2].str();
 
-		std::string akeybind;
-		UnicodeToANSI(wkeybind, akeybind);
-		const char *pszBinding = PrimaryKey_ForBinding(akeybind.c_str());
+		char akeybind[256] = {0};
+		g_pVGuiLocalize->ConvertUnicodeToANSI(wkeybind.c_str(), akeybind, sizeof(akeybind) - 1);
+		const char *pszBinding = PrimaryKey_ForBinding(akeybind);
 
 		if (pszBinding)
 		{
-			std::string abinding = pszBinding;
-			std::wstring wbinding;
-			UTF8ToUnicode(abinding, wbinding);
+			wchar_t wbinding[256] = {0};
+			Q_UTF8ToUnicode(pszBinding, wbinding, sizeof(wbinding) - sizeof(wchar_t));
 
 			if (searchStart != finalize.cbegin())
 			{

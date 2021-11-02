@@ -202,17 +202,18 @@ typedef struct walk_context_s
 #define GLOW_BLEND_SVENGINE "\x55\x8B\xEC\x83\x2A\x2A\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\xA0\x00"
 #define GLOW_BLEND_SIG_NEW ""
 
-void Sys_ErrorEx(const char *fmt, ...);
-
 void R_FillAddress(void)
 {
 	DWORD addr;
 
-	auto engineFactory = Sys_GetFactory((HINTERFACEMODULE)g_dwEngineBase); 
+	auto engineFactory = g_pMetaHookAPI->GetEngineFactory(); 
+	if (engineFactory)
+	{
 #define ENGINE_SURFACE_VERSION "EngineSurface007"
-	void *engineSurface = (void *)engineFactory(ENGINE_SURFACE_VERSION, NULL);
+		void *engineSurface = (void *)engineFactory(ENGINE_SURFACE_VERSION, NULL);
 
-	gRefFuncs.enginesurface_drawFlushText = *(decltype(gRefFuncs.enginesurface_drawFlushText) *)(*(DWORD *)engineSurface + 0x58);
+		gRefFuncs.enginesurface_drawFlushText = *(decltype(gRefFuncs.enginesurface_drawFlushText) *)(*(DWORD *)engineSurface + 0x58);
+	}
 
 	gRefFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
 

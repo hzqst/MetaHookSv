@@ -637,7 +637,7 @@ void R_AddTEntity(cl_entity_t *ent)
 	{
 		if ((*numTransObjs) >= (*maxTransObjs))
 		{
-			Sys_ErrorEx("R_AddTEntity: Too many objects");
+			g_pMetaHookAPI->SysError("R_AddTEntity: Too many objects");
 			return;
 		}
 
@@ -1107,7 +1107,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BackBufferFBO);
-		Sys_ErrorEx("Failed to initialize backbuffer framebuffer!\n");
+		g_pMetaHookAPI->SysError("Failed to initialize backbuffer framebuffer!\n");
 	}
 
 	s_BackBufferFBO2.iWidth = glwidth;
@@ -1119,7 +1119,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BackBufferFBO2);
-		Sys_ErrorEx("Failed to initialize backbuffer2 framebuffer!\n");
+		g_pMetaHookAPI->SysError("Failed to initialize backbuffer2 framebuffer!\n");
 	}
 
 	s_GBufferFBO.iWidth = glwidth;
@@ -1131,7 +1131,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_GBufferFBO);
-		Sys_ErrorEx("Failed to initialize GBuffer framebuffer.\n");
+		g_pMetaHookAPI->SysError("Failed to initialize GBuffer framebuffer.\n");
 	}
 
 	s_DepthLinearFBO.iWidth = glwidth;
@@ -1142,7 +1142,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_DepthLinearFBO);
-		Sys_ErrorEx("Failed to initialize DepthLinear framebuffer!\n");
+		g_pMetaHookAPI->SysError("Failed to initialize DepthLinear framebuffer!\n");
 	}
 
 	s_HBAOCalcFBO.iWidth = glwidth;
@@ -1153,7 +1153,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_HBAOCalcFBO);
-		Sys_ErrorEx("Failed to initialize HBAOCalc framebuffer.\n");
+		g_pMetaHookAPI->SysError("Failed to initialize HBAOCalc framebuffer.\n");
 	}
 
 	s_ShadowFBO.iWidth = glwidth;
@@ -1185,7 +1185,7 @@ void GL_GenerateFrameBuffers(void)
 		if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			GL_FreeFBO(&s_DownSampleFBO[i]);
-			Sys_ErrorEx("Failed to initialize DownSample #%d framebuffer.\n", i);
+			g_pMetaHookAPI->SysError("Failed to initialize DownSample #%d framebuffer.\n", i);
 		}
 	}
 
@@ -1208,7 +1208,7 @@ void GL_GenerateFrameBuffers(void)
 		if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			GL_FreeFBO(&s_LuminFBO[i]);
-			Sys_ErrorEx("Failed to initialize Luminance #%d framebuffer.\n", i);
+			g_pMetaHookAPI->SysError("Failed to initialize Luminance #%d framebuffer.\n", i);
 		}
 
 		downW >>= 2;
@@ -1226,7 +1226,7 @@ void GL_GenerateFrameBuffers(void)
 		if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			GL_FreeFBO(&s_Lumin1x1FBO[i]);
-			Sys_ErrorEx("Failed to initialize Luminance1x1 #%d framebuffer.\n", i);
+			g_pMetaHookAPI->SysError("Failed to initialize Luminance1x1 #%d framebuffer.\n", i);
 		}
 	}
 
@@ -1239,7 +1239,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BrightPassFBO);
-		Sys_ErrorEx("Failed to initialize BrightPass framebuffer.\n");
+		g_pMetaHookAPI->SysError("Failed to initialize BrightPass framebuffer.\n");
 	}
 
 	//Blur FBO
@@ -1259,7 +1259,7 @@ void GL_GenerateFrameBuffers(void)
 			if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 			{
 				GL_FreeFBO(&s_BlurPassFBO[i][j]);
-				Sys_ErrorEx("Failed to initialize Blur #%d framebuffer.\n", i);
+				g_pMetaHookAPI->SysError("Failed to initialize Blur #%d framebuffer.\n", i);
 			}
 		}
 		downW >>= 1;
@@ -1273,7 +1273,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BrightAccumFBO);
-		Sys_ErrorEx("Failed to initialize BrightAccumulate #%d framebuffer.\n");
+		g_pMetaHookAPI->SysError("Failed to initialize BrightAccumulate #%d framebuffer.\n");
 	}
 
 	s_ToneMapFBO.iWidth = glwidth;
@@ -1294,43 +1294,43 @@ void GL_Init(void)
 	auto err = glewInit();
 	if (GLEW_OK != err)
 	{
-		Sys_ErrorEx("glewInit failed, %s", glewGetErrorString(err));
+		g_pMetaHookAPI->SysError("glewInit failed, %s", glewGetErrorString(err));
 		return;
 	}
 
 	if (!(*gl_mtexable))
 	{
-		Sys_ErrorEx("Multitexture extension must be enabled!\nPlease remove \"-nomtex\" from launch parameters and try again.");
+		g_pMetaHookAPI->SysError("Multitexture extension must be enabled!\nPlease remove \"-nomtex\" from launch parameters and try again.");
 		return;
 	}
 
 	if (!glewIsSupported("GL_ARB_shader_objects"))
 	{
-		Sys_ErrorEx("Missing OpenGL extension GL_ARB_shader_objects!\n");
+		g_pMetaHookAPI->SysError("Missing OpenGL extension GL_ARB_shader_objects!\n");
 		return;
 	}
 
 	if (!glewIsSupported("GL_EXT_framebuffer_object"))
 	{
-		Sys_ErrorEx("Missing OpenGL extension GL_EXT_framebuffer_object!\n");
+		g_pMetaHookAPI->SysError("Missing OpenGL extension GL_EXT_framebuffer_object!\n");
 		return;
 	}
 
 	if (!glewIsSupported("GL_EXT_framebuffer_blit"))
 	{
-		Sys_ErrorEx("Missing OpenGL extension GL_EXT_framebuffer_blit!\n");
+		g_pMetaHookAPI->SysError("Missing OpenGL extension GL_EXT_framebuffer_blit!\n");
 		return;
 	}
 
 	if (!glewIsSupported("GL_ARB_texture_float"))
 	{
-		Sys_ErrorEx("Missing OpenGL extension GL_ARB_texture_float!\n");
+		g_pMetaHookAPI->SysError("Missing OpenGL extension GL_ARB_texture_float!\n");
 		return;
 	}
 
 	if (!glewIsSupported("GL_EXT_multi_draw_arrays"))
 	{
-		Sys_ErrorEx("Missing OpenGL extension GL_EXT_multi_draw_arrays!\n");
+		g_pMetaHookAPI->SysError("Missing OpenGL extension GL_EXT_multi_draw_arrays!\n");
 		return;
 	}
 
@@ -1538,7 +1538,7 @@ void R_RenderView_SvEngine(int a1)
 
 	if (!r_worldmodel)
 	{
-		Sys_ErrorEx("R_RenderView: NULL worldmodel");
+		g_pMetaHookAPI->SysError("R_RenderView: NULL worldmodel");
 	}
 
 	double time1;

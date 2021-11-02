@@ -11,5 +11,3 @@ void HUD_Shutdown(void);
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model);
 int HUD_Redraw(float time, int intermission);
 void HUD_Frame(double time);
-void Sys_ErrorEx(const char *fmt, ...);
-char *UTIL_VarArgs(char *format, ...);

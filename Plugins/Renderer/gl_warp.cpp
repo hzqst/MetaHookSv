@@ -309,7 +309,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 
 	if (g_iNumRenderWaterVBOCache == 512)
 	{
-		Sys_ErrorEx("EmitWaterPolys: Too many waters!");
+		g_pMetaHookAPI->SysError("EmitWaterPolys: Too many waters!");
 	}
 
 	if (VBOCache->framecount != (*r_framecount))

@@ -349,7 +349,7 @@ tryagain:
 		{
 			if ((*numgltextures) + 1 >= MAX_GLTEXTURES)
 			{
-				Sys_ErrorEx("Texture Overflow: MAX_GLTEXTURES\n");
+				g_pMetaHookAPI->SysError("Texture Overflow: MAX_GLTEXTURES\n");
 				return 0;
 			}
 		}

@@ -1,8 +1,6 @@
 #include <metahook.h>
 #include <glew.h>
 #include "exportfuncs.h"
-#include "privatehook.h"
-#include "msghook.h"
 
 cl_exportfuncs_t gExportfuncs;
 mh_interface_t *g_pInterface;
@@ -49,19 +47,16 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	g_dwEngineRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".rdata\x0\x0", &g_dwEngineRdataSize);
 
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
-
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 {
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
 
-	g_dwClientBase = (PVOID)GetModuleHandleA("client.dll");
-	g_dwClientSize = g_pMetaHookAPI->GetModuleSize((HMODULE)g_dwClientBase);
+	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
+	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
 
 	glewInit();
-
-	MSG_Init();
 
 	pExportFunc->HUD_Frame = HUD_Frame;
 	pExportFunc->IN_ActivateMouse = IN_ActivateMouse;

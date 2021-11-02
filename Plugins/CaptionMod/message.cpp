@@ -8,7 +8,6 @@
 #include <vgui/ILocalize.h>
 #include "Viewport.h"
 #include "message.h"
-#include "msghook.h"
 #include <algorithm>
 
 using namespace vgui;

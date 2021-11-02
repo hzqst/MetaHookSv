@@ -71,9 +71,9 @@ int (*g_pfnbuild_number)(void) = NULL;
 int(*g_original_ClientDLL_Init)(void) = NULL;
 int(*g_pfnClientDLL_Init)(void) = NULL;
 
+CreateInterfaceFn *g_pClientFactory = NULL;
+
 HMODULE *g_phClientModule = NULL;
-PVOID g_dwClientBase = NULL;
-DWORD g_dwClientSize = NULL;
 
 HMODULE g_hEngineModule = NULL;
 PVOID g_dwEngineBase = NULL;
@@ -114,6 +114,7 @@ BOOL MH_DisasmRanges(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callbac
 PVOID MH_GetSectionByName(PVOID ImageBase, const char *SectionName, ULONG *SectionSize);
 PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize);
 void *MH_ReverseSearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
+void MH_SysError(const char *fmt, ...);
 
 typedef struct plugin_s
 {
@@ -134,6 +135,23 @@ mh_interface_t gInterface = {0};
 mh_enginesave_t gMetaSave = {0};
 
 extern metahook_api_t gMetaHookAPI;
+
+void MH_SysError(const char *fmt, ...)
+{
+	char msg[4096] = { 0 };
+
+	va_list argptr;
+
+	va_start(argptr, fmt);
+	_vsnprintf(msg, sizeof(msg), fmt, argptr);
+	va_end(argptr);
+
+	if (gMetaSave.pEngineFuncs)
+		gMetaSave.pEngineFuncs->pfnClientCmd("escape\n");
+
+	MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
+	NtTerminateProcess((HANDLE)(-1), 0);
+}
 
 cvar_callback_t MH_HookCvarCallback(const char *cvar_name, cvar_callback_t callback)
 {
@@ -468,12 +486,6 @@ int ClientDLL_Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 
 void MH_ClientDLL_Init(void)
 {
-	if (MH_GetClientModule())
-	{
-		g_dwClientBase = (PVOID)MH_GetModuleBase(MH_GetClientModule());
-		g_dwClientSize = MH_GetModuleSize(MH_GetClientModule());
-	}
-
 	g_pExportFuncs = *(cl_exportfuncs_t **)g_ppExportFuncs;
 
 	static DWORD dwClientDLL_Initialize[1];
@@ -493,6 +505,7 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 	gClientUserMsgs = NULL;
 	g_pVideoMode = NULL;
 	g_pfnbuild_number = NULL;
+	g_pClientFactory = NULL;
 	g_pfnClientDLL_Init = NULL;
 	g_original_ClientDLL_Init = NULL;
 	g_phClientModule = NULL;
@@ -526,8 +539,6 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 		g_dwEngineSize = MH_GetModuleSize(hModule);
 		g_hEngineModule = hModule;
 
-		g_dwClientBase = (PVOID)NULL;
-		g_dwClientSize = 0;
 
 		g_iEngineType = ENGINE_UNKNOWN;
 	}
@@ -536,9 +547,6 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 		g_dwEngineBase = (PVOID)0x1D00000;
 		g_dwEngineSize = 0x1000000;
 		g_hEngineModule = NULL;
-
-		g_dwClientBase = (PVOID)0x1900000;
-		g_dwClientSize = 0x13D000;
 
 		g_iEngineType = ENGINE_GOLDSRC_BLOB;
 	}
@@ -557,8 +565,8 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 
 	if (!buildnumber_call)
 	{
-		MessageBox(NULL, "MH_LoadEngine: Failed to locate buildnumber.", "Fatal Error", MB_ICONERROR);
-		NtTerminateProcess((HANDLE)-1, 0);
+		MH_SysError("MH_LoadEngine: Failed to locate buildnumber");
+		return;
 	}
 
 	g_pfnbuild_number = (decltype(g_pfnbuild_number))((PUCHAR)buildnumber_call + *(int *)((PUCHAR)buildnumber_call + 1) + 5);
@@ -625,25 +633,25 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 
 	if (!g_pfnClientDLL_Init)
 	{
-		MessageBox(NULL, "MH_LoadEngine: Failed to locate ClientDLL_Init.", "Fatal Error", MB_ICONERROR);
-		NtTerminateProcess((HANDLE)-1, 0);
+		MH_SysError( "MH_LoadEngine: Failed to locate ClientDLL_Init");
+		return;
 	}
 
 	if (!g_ppEngfuncs)
 	{
-		MessageBox(NULL, "MH_LoadEngine: Failed to locate ppEngfuncs.", "Fatal Error", MB_ICONERROR);
-		NtTerminateProcess((HANDLE)-1, 0);
+		MH_SysError("MH_LoadEngine: Failed to locate ppEngfuncs");
+		return;
 	}
 
 	if (!g_ppExportFuncs)
 	{
-		MessageBox(NULL, "MH_LoadEngine: Failed to locate ppExportFuncs.", "Fatal Error", MB_ICONERROR);
-		NtTerminateProcess((HANDLE)-1, 0);
+		MH_SysError("MH_LoadEngine: Failed to locate ppExportFuncs");
+		return;
 	}
 
 	if (1)
 	{
-#define RIGHTHAND_STRING_SIG "cl_righthand"
+#define RIGHTHAND_STRING_SIG "cl_righthand\0"
 		auto RightHand_String = MH_SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, RIGHTHAND_STRING_SIG, sizeof(RIGHTHAND_STRING_SIG) - 1);
 		if (RightHand_String)
 		{
@@ -656,6 +664,8 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 				auto ClientDLL_HudInit = MH_ReverseSearchPattern(RightHand_PushString, 0x80, HUDINIT_SIG, sizeof(HUDINIT_SIG)-1);
 				if (ClientDLL_HudInit)
 				{
+					PVOID pfnHUDInit = *(PVOID *)((PUCHAR)ClientDLL_HudInit + 1);
+
 					ClientDLL_HudInit = (PUCHAR)ClientDLL_HudInit + sizeof(HUDINIT_SIG) - 1;
 					MH_DisasmRanges(ClientDLL_HudInit, 0x80, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 					{
@@ -669,7 +679,11 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 							(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineBase &&
 							(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize)
 						{
-							g_phClientModule = (decltype(g_phClientModule))pinst->detail->x86.operands[1].mem.disp;
+							PVOID imm = (PVOID)pinst->detail->x86.operands[1].mem.disp;
+							if (imm != context)
+							{
+								g_phClientModule = (decltype(g_phClientModule))imm;
+							}
 						}
 
 						if (g_phClientModule)
@@ -679,10 +693,52 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 							return TRUE;
 
 						return FALSE;
-					}, 0, NULL);
+					}, 0, pfnHUDInit);
 				}
 			}
 		}
+	}
+
+	if (!g_phClientModule)
+	{
+		MH_SysError("MH_LoadEngine: Failed to locate g_hClientModule");
+		return;
+	}
+
+	if (1)
+	{
+#define VGUICLIENT001_STRING_SIG "VClientVGUI001\0"
+		auto VGUIClient001_String = MH_SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, VGUICLIENT001_STRING_SIG, sizeof(VGUICLIENT001_STRING_SIG) - 1);
+		if (VGUIClient001_String)
+		{
+			char pattern[] = "\x6A\x00\x68\x2A\x2A\x2A\x2A";
+			*(DWORD *)(pattern + 3) = (DWORD)VGUIClient001_String;
+			auto VGUIClient001_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
+			if (VGUIClient001_PushString)
+			{
+#define INITVGUI_SIG "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x74\x2A"
+				auto InitVGUI = MH_ReverseSearchPattern(VGUIClient001_PushString, 0x100, INITVGUI_SIG, sizeof(INITVGUI_SIG) - 1);
+				if (InitVGUI)
+				{
+					g_pClientFactory = *(decltype(g_pClientFactory) *)((PUCHAR)InitVGUI + 1);
+				}
+				else
+				{
+#define INITVGUI_SIG2 "\x83\x3D\x2A\x2A\x2A\x2A\x00\x74\x2A"
+					auto InitVGUI = MH_ReverseSearchPattern(VGUIClient001_PushString, 0x100, INITVGUI_SIG2, sizeof(INITVGUI_SIG2) - 1);
+					if (InitVGUI)
+					{
+						g_pClientFactory = *(decltype(g_pClientFactory) *)((PUCHAR)InitVGUI + 2);
+					}
+				}
+			}
+		}
+	}
+
+	if (!g_pClientFactory)
+	{
+		MH_SysError("MH_LoadEngine: Failed to locate ClientFactory");
+		return;
 	}
 
 	memcpy(gMetaSave.pEngineFuncs, *(void **)g_ppEngfuncs, sizeof(cl_enginefunc_t));
@@ -731,8 +787,8 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 
 	if (!g_pVideoMode)
 	{
-		MessageBox(NULL, "MH_LoadEngine: Failed to locate g_pVideoMode.", "Fatal Error", MB_ICONERROR);
-		NtTerminateProcess((HANDLE)-1, 0);
+		MH_SysError("MH_LoadEngine: Failed to locate g_pVideoMode");
+		return;
 	}
 
 	if (1)
@@ -776,11 +832,11 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 
 	if (!gClientUserMsgs)
 	{
-		MessageBox(NULL, "MH_LoadEngine: Failed to locate gClientUserMsgs.", "Fatal Error", MB_ICONERROR);
-		NtTerminateProcess((HANDLE)-1, 0);
+		MH_SysError("MH_LoadEngine: Failed to locate gClientUserMsgs");
+		return;
 	}
 
-	if (g_iEngineType == ENGINE_GOLDSRC)
+	if (g_iEngineType == ENGINE_GOLDSRC || g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
 		MH_DisasmRanges(gMetaSave.pEngineFuncs->Cvar_Set, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
@@ -793,7 +849,7 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[1].mem.base == 0)
 			{
-				DWORD imm = pinst->detail->x86.operands[1].mem.disp;
+				DWORD imm = (DWORD)pinst->detail->x86.operands[1].mem.disp;
 
 				if (!cvar_callbacks)
 				{
@@ -812,8 +868,8 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 
 		if (!cvar_callbacks)
 		{
-			MessageBox(NULL, "MH_LoadEngine: Failed to locate cvar_callbacks.", "Fatal Error", MB_ICONERROR);
-			NtTerminateProcess((HANDLE)-1, 0);
+			MH_SysError("MH_LoadEngine: Failed to locate cvar_callbacks");
+			return;
 		}
 	}
 
@@ -937,6 +993,7 @@ void MH_Shutdown(void)
 	gClientUserMsgs = NULL;
 	g_pVideoMode = NULL;
 	g_pfnbuild_number = NULL;
+	g_pClientFactory = NULL;
 	g_pfnClientDLL_Init = NULL;
 	g_original_ClientDLL_Init = NULL;
 	g_phClientModule = NULL;
@@ -1220,12 +1277,12 @@ HMODULE MH_GetClientModule(void)
 
 PVOID MH_GetClientBase(void)
 {
-	return g_dwClientBase;
+	return MH_GetClientModule();
 }
 
 DWORD MH_GetClientSize(void)
 {
-	return g_dwClientSize;
+	return MH_GetModuleSize(MH_GetClientModule());
 }
 
 void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen)
@@ -1524,6 +1581,17 @@ CreateInterfaceFn MH_GetEngineFactory(void)
 	}
 
 	return (CreateInterfaceFn)factoryAddr;
+}
+
+CreateInterfaceFn MH_GetClientFactory(void)
+{
+	if (MH_GetClientModule())
+		return (CreateInterfaceFn)GetProcAddress(MH_GetClientModule(), "CreateInterface");
+
+	if (g_pClientFactory && (*g_pClientFactory))
+		return (*g_pClientFactory);
+
+	return NULL;
 }
 
 PVOID MH_GetNextCallAddr(void *pAddress, DWORD dwCount)
@@ -1959,9 +2027,11 @@ metahook_api_t gMetaHookAPI =
 	MH_GetClientModule,
 	MH_GetClientBase,
 	MH_GetClientSize,
+	MH_GetClientFactory,
 	MH_QueryPluginInfo,
 	MH_GetPluginInfo,
 	MH_HookUserMsg,
 	MH_HookCvarCallback,
 	MH_HookCmd,
+	MH_SysError,
 };
