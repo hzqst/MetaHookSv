@@ -130,6 +130,10 @@ This plugin intercepts original snapshot command and replace it with ISteamScree
 
 [DOCUMENTATION](StudioEvents.md) [中文文档](StudioEventsCN.md)
 
+### CommunicationDemo
+
+This plugin demostrates how to communicate with server.
+
 ### ABCEnchance (third-party) (Sven Co-op only)
 
 ABCEnchance is a metahook plugin that provides experience improvement for Sven co-op.
