@@ -37,23 +37,6 @@ std::vector<studio_event_sound_t> g_StudioEventSoundPlayed;
 
 std::vector<studio_event_sound_t> g_StudioEventSoundDelayed;
 
-void Sys_ErrorEx(const char *fmt, ...)
-{
-	char msg[4096] = { 0 };
-
-	va_list argptr;
-
-	va_start(argptr, fmt);
-	_vsnprintf(msg, sizeof(msg), fmt, argptr);
-	va_end(argptr);
-
-	if (gEngfuncs.pfnClientCmd)
-		gEngfuncs.pfnClientCmd("escape\n");
-
-	MessageBox(NULL, msg, "Fatal Error", MB_ICONERROR);
-	TerminateProcess((HANDLE)(-1), 0);
-}
-
 void HUD_Init(void)
 {
 	gExportfuncs.HUD_Init();
