@@ -329,7 +329,8 @@ void R_UpdateRippleTexture(water_vbo_t *VBOCache, int framecount)
 		return;
 
 #define RANDOM_BYTES_SIZE 256
-	const int PROCEDURAL_SPEED_BITS = ((int)VBOCache->speedrate);
+#define PROCEDURAL_SPEED_BITS 5ull
+
 	static byte m_pPermutation[RANDOM_BYTES_SIZE];
 
 	static bool init = false;
@@ -350,10 +351,14 @@ void R_UpdateRippleTexture(water_vbo_t *VBOCache, int framecount)
 	if (framecount == VBOCache->ripple_framecount)
 		return;
 
-	if (VBOCache->ripple_framecount + (1 << PROCEDURAL_SPEED_BITS) > framecount)
+	auto curtime = (uint64_t)(gEngfuncs.GetClientTime() * VBOCache->speedrate);
+	auto prevtime = VBOCache->ripple_time;
+
+	if (prevtime + (1ull << PROCEDURAL_SPEED_BITS) > curtime)
 		return;
 
 	VBOCache->ripple_framecount = framecount;
+	VBOCache->ripple_time = curtime;
 	VBOCache->ripple_shift ++;
 
 	const int parity = VBOCache->ripple_shift & 1;
@@ -394,7 +399,7 @@ void R_UpdateRippleTexture(water_vbo_t *VBOCache, int framecount)
 		}
 	}
 
-	int procFrame = (framecount >> PROCEDURAL_SPEED_BITS);
+	auto procFrame = (curtime >> PROCEDURAL_SPEED_BITS);
 	if (VBOCache->ripple_width > 64) procFrame *= (VBOCache->ripple_width >> 6);
 	int skipDrips = procFrame & 7;
 	if (VBOCache->ripple_shift < 16)

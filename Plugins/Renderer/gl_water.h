@@ -74,6 +74,7 @@ typedef struct water_vbo_s
 		ripple_width = 0;
 		ripple_height = 0;
 		ripple_framecount = 0;
+		ripple_time = 0;
 
 		fresnelfactor[0] = 0;
 		fresnelfactor[1] = 0;
@@ -108,6 +109,7 @@ typedef struct water_vbo_s
 	int ripple_width;
 	int ripple_height;
 	int ripple_framecount;
+	uint64_t ripple_time;
 
 	float fresnelfactor[3];
 	float depthfactor[3];
