@@ -1,5 +1,4 @@
 #include "gl_local.h"
-#include "zone.h"
 
 msurface_t **skychain = NULL;
 msurface_t **waterchain = NULL;

@@ -54,9 +54,6 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 		if (state & WATER_EXP2_FOG_ENABLED)
 			defs << "#define EXP2_FOG_ENABLED\n";
 
-		if (state & WATER_BINDLESS_ENABLED)
-			defs << "#define BINDLESS_ENABLED\n";
-
 		if (state & WATER_OIT_ALPHA_BLEND_ENABLED)
 			defs << "#define OIT_ALPHA_BLEND_ENABLED\n";
 
@@ -105,8 +102,7 @@ const program_state_name_t s_WaterProgramStateName[] = {
 { WATER_DEPTH_ENABLED					, "WATER_DEPTH_ENABLED"				 },
 { WATER_REFRACT_ENABLED					, "WATER_REFRACT_ENABLED"			 },
 { WATER_LINEAR_FOG_ENABLED				, "WATER_LINEAR_FOG_ENABLED"		 },
-{ WATER_EXP2_FOG_ENABLED				, "WATER_EXP2_FOG_ENABLED"		 },
-{ WATER_BINDLESS_ENABLED				, "WATER_BINDLESS_ENABLED"			 },
+{ WATER_EXP2_FOG_ENABLED				, "WATER_EXP2_FOG_ENABLED"			 },
 { WATER_OIT_ALPHA_BLEND_ENABLED			, "WATER_OIT_ALPHA_BLEND_ENABLED"	 },
 { WATER_OIT_ADDITIVE_BLEND_ENABLED		, "WATER_OIT_ADDITIVE_BLEND_ENABLED" },
 };
@@ -216,21 +212,26 @@ void R_NewMapWater(void)
 	{
 		auto VBOCache = g_WaterVBOCache[i];
 		if (VBOCache->depthreflmap)
-		{
 			GL_DeleteTexture(VBOCache->depthreflmap);
-		}
+
 		if (VBOCache->reflectmap)
-		{
 			GL_DeleteTexture(VBOCache->reflectmap);
-		}
+
+		if (VBOCache->ripplemap)
+			GL_DeleteTexture(VBOCache->ripplemap);
+
 		if (VBOCache->hEBO)
-		{
 			GL_DeleteBuffer(VBOCache->hEBO);
-		}
-		/*if (VBOCache->hTextureSSBO)
-		{
-			GL_DeleteBuffer(VBOCache->hTextureSSBO);
-		}*/
+
+		if (VBOCache->ripple_data)
+			free(VBOCache->ripple_data);
+		if (VBOCache->ripple_image)
+			free(VBOCache->ripple_image);
+		if (VBOCache->ripple_spots[0])
+			free(VBOCache->ripple_spots[0]);
+		if (VBOCache->ripple_spots[1])
+			free(VBOCache->ripple_spots[1]);
+
 		delete VBOCache;
 	}
 
@@ -321,6 +322,118 @@ water_control_t *R_FindWaterControl(cl_entity_t *ent, msurface_t *surf)
 	return pControl;
 }
 
+void R_UpdateRippleTexture(water_vbo_t *VBOCache, int framecount)
+{
+	if (r_draw_pass != r_draw_normal)
+		return;
+
+#define RANDOM_BYTES_SIZE 256
+#define PROCEDURAL_SPEED_BITS	5
+	static byte m_pPermutation[RANDOM_BYTES_SIZE];
+
+	static bool init = false;
+	if (!init)
+	{
+		for (int i = 0; i < RANDOM_BYTES_SIZE; i++)
+			m_pPermutation[i] = i & 0xff;
+
+		for (int i = 0; i < RANDOM_BYTES_SIZE; ++i) {
+			int	swap;
+			do { swap = gEngfuncs.pfnRandomLong(0, RANDOM_BYTES_SIZE - 1); } while (swap == i);
+			m_pPermutation[i] ^= m_pPermutation[swap] ^= m_pPermutation[i] ^= m_pPermutation[swap];
+		}
+
+		init = true;
+	}
+
+	if (framecount == VBOCache->ripple_framecount)
+		return;
+
+	if (VBOCache->ripple_framecount + (1 << PROCEDURAL_SPEED_BITS) > framecount)
+		return;
+
+	VBOCache->ripple_framecount = framecount;
+	VBOCache->ripple_shift ++;
+
+	const int parity = VBOCache->ripple_shift & 1;
+	short *pBuffer0 = VBOCache->ripple_spots[parity];
+	short *pBuffer1 = VBOCache->ripple_spots[parity ^ 1];
+
+	unsigned int *pSrcBuf = (unsigned int *)VBOCache->ripple_image;
+	unsigned int *pDstBuf = (unsigned int *)VBOCache->ripple_data;
+
+	int bufWide = VBOCache->ripple_width;
+	int bufTall = VBOCache->ripple_height;
+
+	for (int j = 0; j < bufTall; ++j) {
+		int p2 = (!j) ? (bufTall - 1) : (j - 1);
+		int p3 = (j + 1) & (bufTall - 1);
+
+		for (int i = 0; i < bufWide; ++i) {
+			int p0 = (!i) ? (bufWide - 1) : (i - 1);
+			int p1 = (i + 1) & (bufWide - 1);
+
+			/* update buffers */
+			*pBuffer0 = ((pBuffer1[p0 + j * bufWide] + pBuffer1[i + p3 * bufWide] +
+				pBuffer1[p1 + j * bufWide] + pBuffer1[i + p2 * bufWide]) >> 1) - (*pBuffer0);
+			*pBuffer0 -= (*pBuffer0) >> 6;
+			pBuffer0++;
+
+			/* update texture */
+			int gradX = (pBuffer1[p0 + j * bufWide] - pBuffer1[p1 + j * bufWide]) >> 4;
+			int gradY = (pBuffer1[i + p2 * bufWide] - pBuffer1[i + p3 * bufWide]) >> 4;
+
+			int ts = (i + gradX) & (bufWide - 1);
+			if (ts < 0) ts += bufWide;
+			int tt = (j + gradY) & (bufTall - 1);
+			if (tt < 0) tt += bufTall;
+
+			*pDstBuf = pSrcBuf[tt * bufWide + ts];
+			pDstBuf++;
+		}
+	}
+
+	int procFrame = (framecount >> PROCEDURAL_SPEED_BITS);
+	if (VBOCache->ripple_width > 64) procFrame *= (VBOCache->ripple_width >> 6);
+	int skipDrips = procFrame & 7;
+	if (VBOCache->ripple_shift < 16)
+		skipDrips = 0;
+
+	if (!skipDrips)
+	{
+		int randBase = procFrame & 0xff;
+		int randTexBase = pDstBuf[0] & 0xffff;
+		int rand1 = m_pPermutation[(randTexBase + (randBase++))&(RANDOM_BYTES_SIZE - 1)] << 1;
+		int rand2 = m_pPermutation[(randTexBase + (randBase++))&(RANDOM_BYTES_SIZE - 1)] << 1;
+		short dripsize = 96 + (m_pPermutation[randBase] >> 2);
+
+		int x = rand1 & (bufWide - 1);
+		int y = rand2 & (bufTall - 1);
+		int xl = (x - 1);
+		if (xl < 0) xl += bufWide;
+		int xr = (x + 1) & (bufWide - 1);
+		int yl = (y - 1);
+		if (yl < 0) yl += bufTall;
+		int yr = (y + 1) & (bufTall - 1);
+
+		pBuffer1[yl*bufWide + xl] += dripsize;
+		pBuffer1[yl*bufWide + xr] += dripsize;
+		pBuffer1[yl*bufWide + x] += dripsize;
+		pBuffer1[y*bufWide + xl] += dripsize;
+		pBuffer1[y*bufWide + x] += dripsize;
+		pBuffer1[y*bufWide + xr] += dripsize;
+		pBuffer1[yr*bufWide + x] += dripsize;
+		pBuffer1[yr*bufWide + xr] += dripsize;
+		pBuffer1[yr*bufWide + xl] += dripsize;
+	}
+
+	glBindTexture(GL_TEXTURE_2D, VBOCache->ripplemap);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, VBOCache->ripple_width, VBOCache->ripple_height, GL_RGBA, GL_UNSIGNED_BYTE, VBOCache->ripple_data);
+	glBindTexture(GL_TEXTURE_2D, *currenttexture);
+}
+
+void GL_UploadRGBA8(byte *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap);
+
 water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction)
 {
 	water_vbo_t *VBOCache = NULL;
@@ -345,40 +458,7 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 			VBOCache->depthreflmap = GL_GenDepthStencilTexture(glwidth, glheight);
 			VBOCache->reflectmap = GL_GenTextureRGBA8(glwidth, glheight);
 
-			/*if (bUseBindless)
-			{
-				auto handle = glGetTextureHandleARB(VBOCache->texture->gl_texturenum);
-				glMakeTextureHandleResidentARB(handle);
-
-				VBOCache->basetexture_handle = handle;
-			}
-
-			if (bUseBindless)
-			{
-				auto handle = glGetTextureHandleARB(VBOCache->reflectmap);
-				glMakeTextureHandleResidentARB(handle);
-
-				VBOCache->reflectmap_handle = handle;
-			}
-
-			if (bUseBindless && !refractmap_handle)
-			{
-				auto handle = glGetTextureHandleARB(s_WaterFBO.s_hBackBufferTex);
-				glMakeTextureHandleResidentARB(handle);
-
-				refractmap_handle = handle;
-			}
-
-			if (bUseBindless && !depthrefrmap_handle)
-			{
-				auto handle = glGetTextureHandleARB(s_WaterFBO.s_hBackBufferDepthTex);
-				glMakeTextureHandleResidentARB(handle);
-
-				depthrefrmap_handle = handle;
-			}*/
-
 			VBOCache->hEBO = GL_GenBuffer();
-			//VBOCache->hTextureSSBO = GL_GenBuffer();
 
 			VectorCopy(poly->verts[0], VBOCache->vert);
 			VectorCopy(brushface->normal, VBOCache->normal);
@@ -421,15 +501,49 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 						R_LoadTextureEx(waterControl->normalmap.c_str(), waterControl->normalmap.c_str(), NULL, NULL, GLT_WORLD, false, true);
 				}
 
-				if (VBOCache->normalmap)
+				if (waterControl->level == WATER_LEVEL_LEGACY_RIPPLE)
 				{
-					/*if (bUseBindless)
-					{
-						auto handle = glGetTextureHandleARB(VBOCache->normalmap);
-						glMakeTextureHandleResidentARB(handle);
+					glBindTexture(GL_TEXTURE_2D, surf->texinfo->texture->gl_texturenum);
+					glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &VBOCache->ripple_width);
+					glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &VBOCache->ripple_height);
 
-						VBOCache->normalmap_handle = handle;
-					}*/
+					auto imageSize = VBOCache->ripple_width * VBOCache->ripple_height;
+
+					VBOCache->ripple_data = (unsigned int*)malloc(imageSize * sizeof(unsigned int));
+					memset(VBOCache->ripple_data, 0, imageSize * sizeof(unsigned int));
+
+					VBOCache->ripple_image = (unsigned int*)malloc(imageSize * sizeof(unsigned int));
+					memset(VBOCache->ripple_image, 0, imageSize * sizeof(unsigned long));
+
+					glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, VBOCache->ripple_image);
+					
+					VBOCache->ripplemap = GL_GenTextureRGBA8(VBOCache->ripple_width, VBOCache->ripple_height);
+					
+					//Upload original image data using GL_UploadRGBA8, otherwise this texture will not work.
+
+					glBindTexture(GL_TEXTURE_2D, VBOCache->ripplemap);
+
+					int filter_min = *gl_filter_min;
+					int filter_max = *gl_filter_max; 
+					
+					*gl_filter_min = GL_NEAREST;
+					*gl_filter_max = GL_NEAREST;
+
+					GL_UploadRGBA8((byte *)VBOCache->ripple_image, VBOCache->ripple_width, VBOCache->ripple_height, true, true, GL_REPEAT);
+
+					*gl_filter_min = filter_min;
+					*gl_filter_max = filter_max;
+
+					VBOCache->ripple_spots[0] = (short *)malloc(imageSize * sizeof(short));
+					memset(VBOCache->ripple_spots[0], 0, imageSize * sizeof(short));
+
+					VBOCache->ripple_spots[1] = (short *)malloc(imageSize * sizeof(short));
+					memset(VBOCache->ripple_spots[1], 0, imageSize * sizeof(short));
+
+					VBOCache->ripple_shift = 0;
+					VBOCache->ripple_framecount = 0;
+
+					glBindTexture(GL_TEXTURE_2D, *currenttexture);
 				}
 
 				VBOCache->fresnelfactor[0] = waterControl->fresnelfactor[0];
@@ -443,19 +557,6 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 				VBOCache->maxtrans = waterControl->maxtrans;
 				VBOCache->level = waterControl->level;
 			}
-			/*
-			GLuint64 ssbo[5] = {
-				VBOCache->basetexture_handle,
-				VBOCache->normalmap_handle,
-				VBOCache->reflectmap_handle,
-				refractmap_handle,
-				depthrefrmap_handle
-			};
-
-			glBindBuffer(GL_SHADER_STORAGE_BUFFER, VBOCache->hTextureSSBO);
-			glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(ssbo), &ssbo, GL_STATIC_DRAW);
-			glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-			*/
 
 			g_WaterVBOCache.emplace_back(VBOCache);
 		}
@@ -481,6 +582,9 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 	{
 		VBOCache = g_WaterVBOCache[surf->lightmaptexturenum - 1];
 	}
+
+	if(VBOCache->level == WATER_LEVEL_LEGACY_RIPPLE)
+		R_UpdateRippleTexture(VBOCache, (*r_framecount));
 
 	return VBOCache;
 }

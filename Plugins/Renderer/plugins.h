@@ -18,8 +18,8 @@ extern DWORD g_dwClientSize;
 
 extern IFileSystem *g_pFileSystem;
 
-#define GetCallAddress(addr) ((PUCHAR)addr + *(int *)((PUCHAR)addr + 1) + 5)
-#define Sig_NotFound(name) g_pMetaHookAPI->SysError("Could not found: %s\nEngine buildnum£º%d", #name, g_dwEngineBuildnum);
+#define GetCallAddress(addr) g_pMetaHookAPI->GetNextCallAddr((PUCHAR)(addr), 1)
+#define Sig_NotFound(name) g_pMetaHookAPI->SysError("Could not found: %s\nEngine buildnum: %d", #name, g_dwEngineBuildnum)
 #define Sig_VarNotFound(name) if(!name) Sig_NotFound(name)
 #define Sig_AddrNotFound(name) if(!addr) Sig_NotFound(name)
 #define Sig_FuncNotFound(name) if(!gRefFuncs.name) Sig_NotFound(name)

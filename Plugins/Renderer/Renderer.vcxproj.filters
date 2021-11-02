@@ -127,9 +127,6 @@
     <ClInclude Include="spritegn.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="zone.h">
-      <Filter>Header</Filter>
-    </ClInclude>
     <ClInclude Include="ref_int_internal.h">
       <Filter>Interface</Filter>
     </ClInclude>

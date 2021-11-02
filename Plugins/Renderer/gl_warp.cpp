@@ -58,10 +58,6 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 
 		int programState = 0;
 
-		//This will cause problems in older AMD cards.
-		//if (bUseBindless)
-		//	programState |= WATER_BINDLESS_ENABLED;
-
 		if (bIsAboveWater)
 			programState |= WATER_DEPTH_ENABLED;
 
@@ -129,50 +125,44 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 
 		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-		if (!(programState & WATER_BINDLESS_ENABLED))
-		{
-			glActiveTexture(GL_TEXTURE2);
-			glEnable(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, WaterVBOCache->normalmap);
+		glActiveTexture(GL_TEXTURE2);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, WaterVBOCache->normalmap);
 
-			glActiveTexture(GL_TEXTURE3);
-			glEnable(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, WaterVBOCache->reflectmap);
+		glActiveTexture(GL_TEXTURE3);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, WaterVBOCache->reflectmap);
 
-			glActiveTexture(GL_TEXTURE4);
-			glEnable(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferTex);
+		glActiveTexture(GL_TEXTURE4);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferTex);
 
-			glActiveTexture(GL_TEXTURE5);
-			glEnable(GL_TEXTURE_2D);
-			glBindTexture(GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferDepthTex);
-		}
+		glActiveTexture(GL_TEXTURE5);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, s_WaterFBO.s_hBackBufferDepthTex);
 
 		glDrawElements(GL_POLYGON,  WaterVBOCache->vIndicesBuffer.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(0));
 
 		r_wsurf_drawcall++;
 		r_wsurf_polys += WaterVBOCache->iPolyCount;
 
-		if (!(programState & WATER_BINDLESS_ENABLED))
-		{
-			glActiveTexture(GL_TEXTURE5);
-			glDisable(GL_TEXTURE_2D);
+		glActiveTexture(GL_TEXTURE5);
+		glDisable(GL_TEXTURE_2D);
 
-			glActiveTexture(GL_TEXTURE4);
-			glDisable(GL_TEXTURE_2D);
+		glActiveTexture(GL_TEXTURE4);
+		glDisable(GL_TEXTURE_2D);
 
-			glActiveTexture(GL_TEXTURE3);
-			glDisable(GL_TEXTURE_2D);
+		glActiveTexture(GL_TEXTURE3);
+		glDisable(GL_TEXTURE_2D);
 
-			glActiveTexture(GL_TEXTURE2);
-			glDisable(GL_TEXTURE_2D);
+		glActiveTexture(GL_TEXTURE2);
+		glDisable(GL_TEXTURE_2D);
 
-			glActiveTexture(*oldtarget);
-		}
+		glActiveTexture(*oldtarget);
 
 		glDisable(GL_BLEND);
 	}
-	else
+	else if(WaterVBOCache->level == WATER_LEVEL_LEGACY || WaterVBOCache->level == WATER_LEVEL_LEGACY_RIPPLE)
 	{
 		float scale;
 
@@ -182,9 +172,6 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 			scale = -(*currententity)->curstate.scale;
 
 		int programState = WATER_LEGACY_ENABLED;
-
-		//if (bUseBindless)
-		//	programState |= WATER_BINDLESS_ENABLED;
 
 		if (!bIsAboveWater)
 		{
@@ -221,13 +208,21 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 		if (prog.u_watercolor != -1)
 			glUniform4f(prog.u_watercolor, color[0], color[1], color[2], color[3]);
 
-		if (prog.u_scale != -1)
-			glUniform1f(prog.u_scale, scale);
-
-		if (!(programState & WATER_BINDLESS_ENABLED))
+		if (WaterVBOCache->level == WATER_LEVEL_LEGACY_RIPPLE)
 		{
+			if (prog.u_scale != -1)
+				glUniform1f(prog.u_scale, 0);
+
+			GL_Bind(WaterVBOCache->ripplemap);
+		}
+		else
+		{
+			if (prog.u_scale != -1)
+				glUniform1f(prog.u_scale, scale);
+
 			GL_Bind(WaterVBOCache->texture->gl_texturenum);
 		}
+		
 
 		glDrawElements(GL_POLYGON, WaterVBOCache->vIndicesBuffer.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(0));
 

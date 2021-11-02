@@ -55,8 +55,6 @@ typedef struct water_vbo_s
 	water_vbo_s()
 	{
 		hEBO = 0;
-		//hTextureSSBO = 0;
-
 		index = -1;
 		ent = NULL;
 		texture = NULL;
@@ -64,9 +62,16 @@ typedef struct water_vbo_s
 		reflectmap = 0;
 		depthreflmap = 0;
 		normalmap = 0;
+		ripplemap = 0;
 
-		//reflectmap_handle = 0;
-		//normalmap_handle = 0;
+		ripple_data = NULL;
+		ripple_image = NULL;
+		ripple_spots[0] = NULL;
+		ripple_spots[1] = NULL;
+		ripple_shift = 0;
+		ripple_width = 0;
+		ripple_height = 0;
+		ripple_framecount = 0;
 
 		fresnelfactor[0] = 0;
 		fresnelfactor[1] = 0;
@@ -83,7 +88,6 @@ typedef struct water_vbo_s
 		framecount = 0;
 	}
 	GLuint hEBO;
-	//GLuint hTextureSSBO;
 
 	int index;
 	cl_entity_t *ent;
@@ -92,12 +96,15 @@ typedef struct water_vbo_s
 	GLuint reflectmap;
 	GLuint depthreflmap;
 	GLuint normalmap;
+	GLuint ripplemap;
 
-	/*
-	GLuint64 basetexture_handle;
-	GLuint64 reflectmap_handle;
-	GLuint64 normalmap_handle;
-	*/
+	void *ripple_data;
+	void *ripple_image;
+	short *ripple_spots[2];
+	int ripple_shift;
+	int ripple_width;
+	int ripple_height;
+	int ripple_framecount;
 
 	float fresnelfactor[3];
 	float depthfactor[3];
@@ -158,14 +165,13 @@ void R_DrawWaters(void);
 #define WATER_REFRACT_ENABLED				0x10
 #define WATER_LINEAR_FOG_ENABLED			0x20
 #define WATER_EXP2_FOG_ENABLED				0x40
-#define WATER_BINDLESS_ENABLED				0x80
-#define WATER_OIT_ALPHA_BLEND_ENABLED		0x100
-#define WATER_OIT_ADDITIVE_BLEND_ENABLED	0x200
+#define WATER_OIT_ALPHA_BLEND_ENABLED		0x80
+#define WATER_OIT_ADDITIVE_BLEND_ENABLED	0x100
 
-#define WATER_LEVEL_LEGACY				0
-#define WATER_LEVEL_REFLECT_SKYBOX		1
-#define WATER_LEVEL_REFLECT_WORLD		2
-#define WATER_LEVEL_REFLECT_ENTITY		3
-#define WATER_LEVEL_REFLECT_SSR			4
-#define WATER_LEVEL_LEGACY_RIPPLE		5
-#define WATER_LEVEL_MAX					6
+#define WATER_LEVEL_LEGACY						0
+#define WATER_LEVEL_REFLECT_SKYBOX				1
+#define WATER_LEVEL_REFLECT_WORLD				2
+#define WATER_LEVEL_REFLECT_ENTITY				3
+#define WATER_LEVEL_REFLECT_SSR					4
+#define WATER_LEVEL_LEGACY_RIPPLE				5
+#define WATER_LEVEL_MAX							6
