@@ -1287,8 +1287,8 @@ DWORD MH_GetClientSize(void)
 
 void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen)
 {
-	PUCHAR dwStartAddr = (PUCHAR)pStartSearch;
-	PUCHAR dwEndAddr = dwStartAddr + dwSearchLen - dwPatternLen;
+	char *dwStartAddr = (char *)pStartSearch;
+	char *dwEndAddr = dwStartAddr + dwSearchLen - dwPatternLen;
 
 	while (dwStartAddr < dwEndAddr)
 	{
