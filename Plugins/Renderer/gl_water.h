@@ -21,7 +21,7 @@ typedef struct water_control_s
 	std::string basetexture;
 	std::string wildcard;
 	std::string normalmap;
-	float fresnelfactor[3];
+	float fresnelfactor[4];
 	float depthfactor[3];
 	float normfactor;
 	float minheight;
@@ -79,6 +79,7 @@ typedef struct water_vbo_s
 		fresnelfactor[0] = 0;
 		fresnelfactor[1] = 0;
 		fresnelfactor[2] = 0;
+		fresnelfactor[3] = 0;
 		depthfactor[0] = 0;
 		depthfactor[1] = 0;
 		depthfactor[2] = 0;
@@ -111,7 +112,7 @@ typedef struct water_vbo_s
 	int ripple_framecount;
 	uint64_t ripple_time;
 
-	float fresnelfactor[3];
+	float fresnelfactor[4];
 	float depthfactor[3];
 	float normfactor;
 	float minheight;

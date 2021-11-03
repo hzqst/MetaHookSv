@@ -115,7 +115,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 			glUniform3f(prog.u_depthfactor, WaterVBOCache->depthfactor[0], WaterVBOCache->depthfactor[1], WaterVBOCache->depthfactor[2]);
 
 		if (prog.u_fresnelfactor != -1)
-			glUniform3f(prog.u_fresnelfactor, WaterVBOCache->fresnelfactor[0], WaterVBOCache->fresnelfactor[1], WaterVBOCache->fresnelfactor[2]);
+			glUniform4f(prog.u_fresnelfactor, WaterVBOCache->fresnelfactor[0], WaterVBOCache->fresnelfactor[1], WaterVBOCache->fresnelfactor[2], WaterVBOCache->fresnelfactor[3]);
 
 		if (prog.u_normfactor != -1)
 			glUniform1f(prog.u_normfactor, WaterVBOCache->normfactor);
@@ -162,15 +162,8 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 
 		glDisable(GL_BLEND);
 	}
-	else if(WaterVBOCache->level == WATER_LEVEL_LEGACY || WaterVBOCache->level == WATER_LEVEL_LEGACY_RIPPLE)
+	else if(WaterVBOCache->level == WATER_LEVEL_LEGACY_RIPPLE && r_water->value)
 	{
-		float scale;
-
-		if (bIsAboveWater)
-			scale = (*currententity)->curstate.scale;
-		else
-			scale = -(*currententity)->curstate.scale;
-
 		int programState = WATER_LEGACY_ENABLED;
 
 		if (!bIsAboveWater)
@@ -208,27 +201,73 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 		if (prog.u_watercolor != -1)
 			glUniform4f(prog.u_watercolor, color[0], color[1], color[2], color[3]);
 
-		if (WaterVBOCache->level == WATER_LEVEL_LEGACY_RIPPLE)
+		if (prog.u_scale != -1)
+			glUniform1f(prog.u_scale, 0);
+
+		if (prog.u_speed != -1)
+			glUniform1f(prog.u_speed, 0);
+
+		GL_Bind(WaterVBOCache->ripplemap);
+		
+		glDrawElements(GL_POLYGON, WaterVBOCache->vIndicesBuffer.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+
+		r_wsurf_drawcall++;
+		r_wsurf_polys += WaterVBOCache->iPolyCount;
+	}
+	else
+	{
+		float scale;
+
+		if (bIsAboveWater)
+			scale = (*currententity)->curstate.scale;
+		else
+			scale = -(*currententity)->curstate.scale;
+
+		int programState = WATER_LEGACY_ENABLED;
+
+		if (!bIsAboveWater)
 		{
-			if (prog.u_scale != -1)
-				glUniform1f(prog.u_scale, 0);
 
-			if (prog.u_speed != -1)
-				glUniform1f(prog.u_speed, 0);
-
-			GL_Bind(WaterVBOCache->ripplemap);
 		}
 		else
 		{
-			if (prog.u_scale != -1)
-				glUniform1f(prog.u_scale, scale);
-
-			if (prog.u_speed != -1)
-				glUniform1f(prog.u_speed, WaterVBOCache->speedrate);
-
-			GL_Bind(WaterVBOCache->texture->gl_texturenum);
+			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			{
+				programState |= WATER_LINEAR_FOG_ENABLED;
+			}
+			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
+			{
+				programState |= WATER_EXP2_FOG_ENABLED;
+			}
 		}
-		
+
+		if (drawgbuffer)
+		{
+			programState |= WATER_GBUFFER_ENABLED;
+		}
+
+		if (r_draw_oitblend)
+		{
+			if ((*currententity)->curstate.rendermode == kRenderTransAdd)
+				programState |= WATER_OIT_ADDITIVE_BLEND_ENABLED;
+			else
+				programState |= WATER_OIT_ALPHA_BLEND_ENABLED;
+		}
+
+		water_program_t prog = { 0 };
+		R_UseWaterProgram(programState, &prog);
+
+		if (prog.u_watercolor != -1)
+			glUniform4f(prog.u_watercolor, color[0], color[1], color[2], color[3]);
+
+		if (prog.u_scale != -1)
+			glUniform1f(prog.u_scale, scale);
+
+		if (prog.u_speed != -1)
+			glUniform1f(prog.u_speed, WaterVBOCache->speedrate);
+
+		GL_Bind(WaterVBOCache->texture->gl_texturenum);
+
 		glDrawElements(GL_POLYGON, WaterVBOCache->vIndicesBuffer.size(), GL_UNSIGNED_INT, BUFFER_OFFSET(0));
 
 		r_wsurf_drawcall++;
@@ -263,12 +302,14 @@ void R_DrawWaters(void)
 		glVertexAttribPointer(3, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, t_tangent));
 		glVertexAttribPointer(4, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
 		glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+		glDisable(GL_CULL_FACE);
 
 		for (int i = 0; i < g_iNumRenderWaterVBOCache; ++i)
 		{
 			R_DrawWaterVBO(g_RenderWaterVBOCache[i]);
 		}
 
+		glEnable(GL_CULL_FACE);
 		glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);

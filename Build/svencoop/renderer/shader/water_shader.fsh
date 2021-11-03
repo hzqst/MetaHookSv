@@ -4,7 +4,7 @@
 
 uniform vec4 u_watercolor;
 uniform vec3 u_depthfactor;
-uniform vec3 u_fresnelfactor;
+uniform vec4 u_fresnelfactor;
 uniform float u_normfactor;
 uniform float u_scale;
 uniform float u_speed;
@@ -97,7 +97,7 @@ void main()
 
 	flFresnel = 1.0 - flFresnel;
 
-	flFresnel = clamp(flFresnel + smoothstep(u_fresnelfactor.y, u_fresnelfactor.z, flHeight), 0.0, 1.0);
+	flFresnel = clamp(flFresnel + smoothstep(u_fresnelfactor.x, u_fresnelfactor.y, flHeight), 0.0, 1.0);
 
 	vec2 vOffsetTexCoord = normalize(vNormal).xy * flOffsetFactor;
 
@@ -158,7 +158,7 @@ void main()
 		vec4 vReflectColor = texture2D(reflectTex, vReflectTexCoord);
 		vReflectColor.a = 1.0;
 
-		float flReflectFactor = clamp(pow(flFresnel, 2.0) * u_fresnelfactor.x, 0.0, 1.0);
+		float flReflectFactor = clamp(pow(flFresnel, u_fresnelfactor.z), 0.0, u_fresnelfactor.w);
 
 		vFinalColor = vRefractColor + vReflectColor * flReflectFactor;
 

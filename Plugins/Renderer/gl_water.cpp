@@ -487,6 +487,7 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 			VBOCache->fresnelfactor[0] = 0;
 			VBOCache->fresnelfactor[1] = 0;
 			VBOCache->fresnelfactor[2] = 0;
+			VBOCache->fresnelfactor[3] = 0;
 			VBOCache->depthfactor[0] = 0;
 			VBOCache->depthfactor[1] = 0;
 			VBOCache->depthfactor[2] = 0;
@@ -556,6 +557,7 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 				VBOCache->fresnelfactor[0] = waterControl->fresnelfactor[0];
 				VBOCache->fresnelfactor[1] = waterControl->fresnelfactor[1];
 				VBOCache->fresnelfactor[2] = waterControl->fresnelfactor[2];
+				VBOCache->fresnelfactor[3] = waterControl->fresnelfactor[3];
 				VBOCache->depthfactor[0] = waterControl->depthfactor[0];
 				VBOCache->depthfactor[1] = waterControl->depthfactor[1];
 				VBOCache->depthfactor[2] = waterControl->depthfactor[2];

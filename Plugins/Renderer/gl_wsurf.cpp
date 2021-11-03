@@ -2645,6 +2645,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 	control.fresnelfactor[0] = 0;
 	control.fresnelfactor[1] = 0;
 	control.fresnelfactor[2] = 0;
+	control.fresnelfactor[3] = 0;
 	control.depthfactor[0] = 0;
 	control.depthfactor[1] = 0;
 	control.depthfactor[2] = 0;
@@ -2674,15 +2675,16 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 	if (fresnelfactor_string)
 	{
 		float temp[4];
-		if (sscanf(fresnelfactor_string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
+		if (sscanf(fresnelfactor_string, "%f %f %f %f", &temp[0], &temp[1], &temp[2], &temp[3]) == 4)
 		{
-			control.fresnelfactor[0] = clamp(temp[0], 0, 10);
+			control.fresnelfactor[0] = clamp(temp[0], 0, 999999);
 			control.fresnelfactor[1] = clamp(temp[1], 0, 999999);
 			control.fresnelfactor[2] = clamp(temp[2], 0, 999999);
+			control.fresnelfactor[3] = clamp(temp[3], 0, 1);
 		}
 		else
 		{
-			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"fresnelfactor\" in entity \"env_water_control\", 3 floats are required.\n");
+			gEngfuncs.Con_Printf("R_LoadBSPEntities: Failed to parse \"fresnelfactor\" in entity \"env_water_control\", 4 floats are required.\n");
 		}
 	}
 
