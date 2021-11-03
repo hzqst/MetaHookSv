@@ -11,7 +11,7 @@
 #include "cstrikechatdialog.h"
 #include "MemPool.h"
 #include "message.h"
-#include "engfuncs.h"
+#include "privatefuncs.h"
 #include "exportfuncs.h"
 #include <stdexcept>
 
@@ -38,7 +38,7 @@ CViewport::CViewport(void) : Panel(NULL, "CaptionViewport")
 	SetMouseInputEnabled(false);
 	SetKeyBoardInputEnabled(false);
 	SetProportional(true);
-	m_pSubtitle = NULL;
+	m_pSubtitlePanel = NULL;
 	m_szLevelName[0] = 0;
 }
 
@@ -51,7 +51,7 @@ CViewport::~CViewport(void)
 
 	m_Dictionary.RemoveAll();
 
-	delete m_pSubtitle;
+	delete m_pSubtitlePanel;
 }
 
 CDictionary *CViewport::FindDictionary(const char *szValue)
@@ -626,7 +626,7 @@ void CViewport::LoadBaseDictionary(void)
 	}
 	catch(std::exception &err)
 	{
-		Sys_ErrorEx("LoadBaseDictionary: %s\n", err.what());
+		g_pMetaHookAPI->SysError("LoadBaseDictionary: %s\n", err.what());
 	}
 
 	if (row_count < 2)
@@ -782,7 +782,7 @@ void CDictionary::FinalizeString(std::wstring &output, int iPrefix)
 
 void CViewport::Start(void)
 {
-	m_pSubtitle = new SubtitlePanel(NULL);
+	m_pSubtitlePanel = new SubtitlePanel(NULL);
 	m_pChatDialog = new CCSChatDialog(this);
 
 	SetVisible(false);
@@ -792,7 +792,7 @@ void CViewport::SetParent(VPANEL vPanel)
 {
 	BaseClass::SetParent(vPanel);
 
-	m_pSubtitle->SetParent(this);
+	m_pSubtitlePanel->SetParent(this);
 }
 
 void CViewport::Think(void)
@@ -831,14 +831,14 @@ void CViewport::Init(void)
 void CViewport::StartSubtitle(CDictionary *dict)
 {
 	if (cap_enabled && cap_enabled->value) {
-		m_pSubtitle->StartSubtitle(dict, cl_time);
+		m_pSubtitlePanel->StartSubtitle(dict, (*cl_time));
 	}
 }
 
 void CViewport::StartNextSubtitle(CDictionary* dict)
 {
 	if (cap_enabled && cap_enabled->value) {
-		m_pSubtitle->StartNextSubtitle(dict);
+		m_pSubtitlePanel->StartNextSubtitle(dict);
 	}
 }
 
@@ -861,8 +861,8 @@ void CViewport::Paint(void)
 
 bool CViewport::AllowedToPrintText(void)
 {
-	if (gCapFuncs.GameViewport_AllowedToPrintText)
-		return gCapFuncs.GameViewport_AllowedToPrintText(GameViewport, 0);
+	if (gPrivateFuncs.GameViewport_AllowedToPrintText)
+		return gPrivateFuncs.GameViewport_AllowedToPrintText(GameViewport, 0);
 
 	return true;
 }
@@ -880,4 +880,14 @@ void CViewport::StartMessageMode2(void)
 void CViewport::ChatPrintf(int iPlayerIndex, const wchar_t *buffer)
 {
 	m_pChatDialog->ChatPrintf(iPlayerIndex, buffer);
+}
+
+void CViewport::QuerySubtitlePanelVars(SubtitlePanelVars_t *vars)
+{
+	m_pSubtitlePanel->QuerySubtitlePanelVars(vars);
+}
+
+void CViewport::UpdateSubtitlePanelVars(SubtitlePanelVars_t *vars)
+{
+	m_pSubtitlePanel->UpdateSubtitlePanelVars(vars);
 }

@@ -42,6 +42,21 @@ enum textalign_t
 	ALIGN_RIGHT,
 };
 
+typedef struct QuerySubtitlePanelVars_s
+{
+	int m_iYPos;
+	int m_iWidth;
+	int m_iHeight;
+	int m_iPrefix;
+	int m_iWaitPlay;
+	int m_iAntiSpam;
+	float m_flFadeIn;
+	float m_flFadeOut;
+	float m_flHoldTime;
+	float m_flStartTimeScale;
+	float m_flHoldTimeScale;
+}SubtitlePanelVars_t;
+
 class CDictionary
 {
 public:
@@ -115,8 +130,10 @@ public:
 	void StartMessageMode(void);
 	void StartMessageMode2(void);
 	void ChatPrintf(int iPlayerIndex, const wchar_t *buffer);
+	void QuerySubtitlePanelVars(SubtitlePanelVars_t *vars);
+	void UpdateSubtitlePanelVars(SubtitlePanelVars_t *vars);
 private:
-	SubtitlePanel *m_pSubtitle;
+	SubtitlePanel *m_pSubtitlePanel;
 	CCSChatDialog *m_pChatDialog;
 	CUtlVector<CDictionary *> m_Dictionary;	
 	CUtlVector<hash_item_t> m_StringsHashTable;

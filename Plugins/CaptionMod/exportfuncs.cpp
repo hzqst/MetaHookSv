@@ -1,6 +1,6 @@
 #include <metahook.h>
 #include "exportfuncs.h"
-#include "engfuncs.h"
+#include "privatefuncs.h"
 
 //Steam API
 #include "steam_api.h"
@@ -179,12 +179,12 @@ void SvClient_StartWave(const char *name, float duration)
 
 int __fastcall ScClient_FindSoundEx(void *pthis, int, const char *sound)
 {
-	auto result = gCapFuncs.ScClient_FindSoundEx(pthis, 0, sound);
+	auto result = gPrivateFuncs.ScClient_FindSoundEx(pthis, 0, sound);
 
 	if (result)
 	{
 		int duration = 0;
-		gCapFuncs.FMOD_Sound_getLength(result, &duration, 1);
+		gPrivateFuncs.FMOD_Sound_getLength(result, &duration, 1);
 		SvClient_StartWave(sound, (float)duration / 1000.0f);
 	}
 
@@ -219,18 +219,18 @@ void HUD_Init(void)
 	gEngfuncs.pfnAddCommand("cap_version", Cap_Version_f);
 	gEngfuncs.pfnAddCommand("cap_reload", Cap_Reload_f);
 
-	gCapFuncs.MessageMode_f = g_pMetaHookAPI->HookCmd("messagemode", MessageMode_f);
-	gCapFuncs.MessageMode2_f = g_pMetaHookAPI->HookCmd("messagemode2", MessageMode2_f);
+	gPrivateFuncs.MessageMode_f = g_pMetaHookAPI->HookCmd("messagemode", MessageMode_f);
+	gPrivateFuncs.MessageMode2_f = g_pMetaHookAPI->HookCmd("messagemode2", MessageMode2_f);
 
 	auto pfnClientCreateInterface = Sys_GetFactory((HINTERFACEMODULE)g_hClientDll);
 
 	//Fix SvClient Portal Rendering Confliction
 	if (pfnClientCreateInterface && pfnClientCreateInterface("SCClientDLL001", 0))
 	{
-		gCapFuncs.fmodex = GetModuleHandleA("fmodex.dll");
+		gPrivateFuncs.fmodex = GetModuleHandleA("fmodex.dll");
 		Sig_FuncNotFound(fmodex);
 
-		gCapFuncs.FMOD_Sound_getLength = (decltype(gCapFuncs.FMOD_Sound_getLength))GetProcAddress(gCapFuncs.fmodex, "?getLength@Sound@FMOD@@QAG?AW4FMOD_RESULT@@PAII@Z");
+		gPrivateFuncs.FMOD_Sound_getLength = (decltype(gPrivateFuncs.FMOD_Sound_getLength))GetProcAddress(gPrivateFuncs.fmodex, "?getLength@Sound@FMOD@@QAG?AW4FMOD_RESULT@@PAII@Z");
 		Sig_FuncNotFound(FMOD_Sound_getLength);
 	}
 }
@@ -244,7 +244,7 @@ float S_GetDuration(sfx_t *sfx)
 		//MetaAudio is active? use MetaAudio's structs
 		if(al_enable && al_enable->value)
 		{
-			aud_sfxcache_t *asc = (aud_sfxcache_t *)gCapFuncs.S_LoadSound(sfx, NULL);
+			aud_sfxcache_t *asc = (aud_sfxcache_t *)gPrivateFuncs.S_LoadSound(sfx, NULL);
 			//not a voice sound
 			if(asc && asc->length != 0x40000000)
 			{
@@ -253,7 +253,7 @@ float S_GetDuration(sfx_t *sfx)
 		}
 		else
 		{
-			sfxcache_t *sc = gCapFuncs.S_LoadSound(sfx, NULL);
+			sfxcache_t *sc = gPrivateFuncs.S_LoadSound(sfx, NULL);
 			//not a voice sound
 			if(sc && sc->length != 0x40000000)
 			{
@@ -393,7 +393,7 @@ void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, 
 		}
 	}
 
-	gCapFuncs.S_StartDynamicSound(entnum, entchannel, sfx, origin, fvol, attenuation, flags, pitch);
+	gPrivateFuncs.S_StartDynamicSound(entnum, entchannel, sfx, origin, fvol, attenuation, flags, pitch);
 
 	if(m_bSentenceSound)
 	{
@@ -440,7 +440,7 @@ void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, f
 		}
 	}
 
-	gCapFuncs.S_StartStaticSound(entnum, entchannel, sfx, origin, fvol, attenuation, flags, pitch);
+	gPrivateFuncs.S_StartStaticSound(entnum, entchannel, sfx, origin, fvol, attenuation, flags, pitch);
 
 	if(m_bSentenceSound)
 	{
@@ -452,7 +452,7 @@ void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, f
 
 sfx_t *S_FindName(char *name, int *pfInCache)
 {
-	sfx_t *sfx = gCapFuncs.S_FindName(name, pfInCache);;
+	sfx_t *sfx = gPrivateFuncs.S_FindName(name, pfInCache);;
 
 	//we should add
 	if(m_bSentenceSound && sfx)
@@ -469,7 +469,7 @@ IBaseInterface *NewCreateInterface(const char *pName, int *pReturnCode)
 	if (fn)
 		return fn;
 
-	fnCreateInterface = (decltype(NewCreateInterface) *)gCapFuncs.GetProcAddress(g_hClientDll, CREATEINTERFACE_PROCNAME);
+	fnCreateInterface = (decltype(NewCreateInterface) *)gPrivateFuncs.GetProcAddress(g_hClientDll, CREATEINTERFACE_PROCNAME);
 	fn = fnCreateInterface(pName, pReturnCode);
 	if (fn)
 		return fn;
@@ -483,7 +483,7 @@ FARPROC WINAPI NewGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 	{
 		return (FARPROC)NewCreateInterface;
 	}
-	return gCapFuncs.GetProcAddress(hModule, lpProcName);
+	return gPrivateFuncs.GetProcAddress(hModule, lpProcName);
 }
 
 void Steam_Init(void)
@@ -515,13 +515,16 @@ void Steam_Init(void)
 			const char *pszLanguage = pfnSteamApps()->GetCurrentGameLanguage();
 
 			if (pszLanguage)
-				Q_strncpy(gCapFuncs.szLanguage, pszLanguage, sizeof(gCapFuncs.szLanguage));
+			{
+				Q_strncpy(m_szCurrentLanguage, pszLanguage, sizeof(m_szCurrentLanguage) - 1);
+				m_szCurrentLanguage[sizeof(m_szCurrentLanguage) - 1] = 0;
+			}
 		}
 	}
 
-	if(!gCapFuncs.szLanguage[0])
+	if(!m_szCurrentLanguage[0])
 	{
-		Sys_GetRegKeyValueUnderRoot("Software\\Valve\\Steam", "Language", gCapFuncs.szLanguage, sizeof(gCapFuncs.szLanguage), "english");
+		Sys_GetRegKeyValueUnderRoot("Software\\Valve\\Steam", "Language", m_szCurrentLanguage, sizeof(m_szCurrentLanguage), "english");
 	}
 }
 
@@ -530,7 +533,7 @@ void MessageMode_f(void)
 	if (!m_iIntermission && gEngfuncs.Cmd_Argc() == 1 && cap_newchat->value)
 		return g_pViewPort->StartMessageMode();
 
-	return gCapFuncs.MessageMode_f();
+	return gPrivateFuncs.MessageMode_f();
 }
 
 void MessageMode2_f(void)
@@ -538,7 +541,7 @@ void MessageMode2_f(void)
 	if (!m_iIntermission && gEngfuncs.Cmd_Argc() == 1 && cap_newchat->value)
 		return g_pViewPort->StartMessageMode2();
 
-	return gCapFuncs.MessageMode2_f();
+	return gPrivateFuncs.MessageMode2_f();
 }
 
 bool g_bIMEComposing = false;

@@ -55,8 +55,6 @@ LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 
 int __fastcall ScClient_FindSoundEx(void* pthis, int, const char *sound);
 
-void Sys_ErrorEx(const char *fmt, ...);
-
 extern cvar_t* cap_debug;
 extern cvar_t* cap_enabled;
 extern cvar_t* cap_max_distance;

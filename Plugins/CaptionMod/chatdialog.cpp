@@ -1,8 +1,8 @@
 #include <metahook.h>
 #include <vgui/ISystem.h>
 #include "chatdialog.h"
-#include "engfuncs.h"
 #include "ViewPort.h"
+#include "privatefuncs.h"
 
 #define MAX_PLAYER_NAME_LENGTH 128
 #define TEXTCOLOR_NORMAL 1
@@ -614,17 +614,17 @@ float *GetTextColor(int colorNum, int clientIndex)
 	{
 	case TEXTCOLOR_USEOLDCOLORS:
 	{
-		if (gCapFuncs.GetClientColor)
+		if (gPrivateFuncs.GetClientColor)
 		{
-			return gCapFuncs.GetClientColor(-1);
+			return gPrivateFuncs.GetClientColor(-1);
 		}
 		break;
 	}
 	case TEXTCOLOR_PLAYERNAME:
 	{
-		if (gCapFuncs.GetClientColor)
+		if (gPrivateFuncs.GetClientColor)
 		{
-			return gCapFuncs.GetClientColor(clientIndex);
+			return gPrivateFuncs.GetClientColor(clientIndex);
 		}
 		break;
 	}
@@ -648,9 +648,9 @@ Color CChatDialog::GetClientColor(int clientIndex)
 {
 	float *col = g_ColorDefault;
 
-	if (gCapFuncs.GetClientColor)
+	if (gPrivateFuncs.GetClientColor)
 	{
-		col = gCapFuncs.GetClientColor(clientIndex);
+		col = gPrivateFuncs.GetClientColor(clientIndex);
 	}
 
 	return Color(col[0] * 255, col[1] * 255, col[2] * 255, 255);

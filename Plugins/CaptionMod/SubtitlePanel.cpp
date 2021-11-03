@@ -6,7 +6,7 @@
 #include <FileSystem.h>
 
 #include "SubtitlePanel.h"
-#include "engfuncs.h"
+#include "privatefuncs.h"
 
 using namespace vgui;
 
@@ -115,7 +115,7 @@ bool CAnimMovement::Update(void)
 			m_Started = true;
 			m_StartValue = m_Line->m_YPos;
 		}
-		float frac = min((cl_time - m_StartTime) / m_AnimTime, 1);
+		float frac = min(((*cl_time) - m_StartTime) / m_AnimTime, 1);
 		m_Line->m_YPos = (int)(frac * m_EndValue + (1 - frac) * m_StartValue);
 	}
 	return true;
@@ -135,7 +135,7 @@ bool CAnimAlphaFade::Update(void)
 			m_Started = true;
 			m_StartValue = m_Line->m_Alpha;
 		}
-		float frac = min((cl_time - m_StartTime) / m_AnimTime, 1);
+		float frac = min(((*cl_time) - m_StartTime) / m_AnimTime, 1);
 		m_Line->m_Alpha = (int)(frac * m_EndValue + (1 - frac) * m_StartValue);
 	}
 	return true;
@@ -153,12 +153,12 @@ float CSubLine::GetYPosOutRate(void)
 
 bool CSubLine::ShouldStart(void)
 {
-	return (cl_time > m_StartTime);
+	return ((*cl_time) > m_StartTime);
 }
 
 bool CSubLine::ShouldRetire(void)
 {
-	return (cl_time > m_EndTime || m_LineIndex > m_Panel->m_iMaxLines);
+	return ((*cl_time) > m_EndTime || m_LineIndex > m_Panel->m_iMaxLines);
 }
 
 bool CSubLine::Update(void)
@@ -197,13 +197,13 @@ void CSubLine::MoveTo(int ToPos, float Time)
 			i --;
 		}
 	}
-	CSubLineAnim *Anim = (CSubLineAnim *)new CAnimMovement(cl_time, Time, ToPos, this);
+	CSubLineAnim *Anim = (CSubLineAnim *)new CAnimMovement((*cl_time), Time, ToPos, this);
 	m_AnimList[m_AnimList.AddToTail()] = Anim;
 }
 
 void CSubLine::AlphaFade(int Alpha, float Time)
 {
-	CSubLineAnim *Anim = (CSubLineAnim *)new CAnimAlphaFade(cl_time, Time, Alpha, this);
+	CSubLineAnim *Anim = (CSubLineAnim *)new CAnimAlphaFade((*cl_time), Time, Alpha, this);
 	m_AnimList[m_AnimList.AddToTail()] = Anim;
 }
 
@@ -251,7 +251,7 @@ void SubtitlePanel::StartNextSubtitle(CDictionary *Dict)
 	CDictionary *pNextDict = Dict->m_pNext;
 	if(pNextDict)
 	{
-		StartSubtitle(pNextDict, cl_time + Dict->m_flNextDelay);
+		StartSubtitle(pNextDict, (*cl_time) + Dict->m_flNextDelay);
 	}
 }
 
@@ -310,7 +310,7 @@ void SubtitlePanel::StartLine(CSubLine *Line)
 
 	if (Line->m_StartTime == 0)
 	{
-		Line->m_StartTime = cl_time;
+		Line->m_StartTime = (*cl_time);
 	}
 
 	//Give it the lastest endtime
@@ -518,6 +518,42 @@ void SubtitlePanel::ClearSubtitle(void)
 	m_BackLines.RemoveAll();
 }
 
+void SubtitlePanel::QuerySubtitlePanelVars(SubtitlePanelVars_t *vars)
+{
+	GetSize(vars->m_iWidth, vars->m_iHeight);
+
+	int x, y;
+	GetPos(x, y);
+	vars->m_iYPos = y;
+
+	vars->m_flFadeIn = m_flFadeIn;
+	vars->m_flFadeOut = m_flFadeOut;
+	vars->m_flHoldTime = m_flHoldTime;
+	vars->m_flHoldTimeScale = m_flHoldTimeScale;
+	vars->m_flStartTimeScale = m_flStartTimeScale;
+	vars->m_iAntiSpam = m_iAntiSpam;
+	vars->m_iPrefix = m_iPrefix;
+	vars->m_iWaitPlay = m_iWaitPlay;
+}
+
+void SubtitlePanel::UpdateSubtitlePanelVars(SubtitlePanelVars_t *vars)
+{
+	SetSize(vars->m_iWidth, vars->m_iHeight);
+
+	int x, y;
+	GetPos(x, y);
+	SetPos(x, vars->m_iYPos);
+
+	m_flFadeIn = vars->m_flFadeIn;
+	m_flFadeOut = vars->m_flFadeOut;
+	m_flHoldTime = vars->m_flHoldTime;
+	m_flHoldTimeScale = vars->m_flHoldTimeScale;
+	m_flStartTimeScale = vars->m_flStartTimeScale;
+	m_iAntiSpam = vars->m_iAntiSpam;
+	m_iPrefix = vars->m_iPrefix;
+	m_iWaitPlay = vars->m_iWaitPlay;
+}
+
 void SubtitlePanel::VidInit(void)
 {
 
@@ -579,7 +615,7 @@ void SubtitlePanel::Paint(void)
 	if(m_iCurPanelY != m_iPanelY)
 	{
 		int sign = (m_iPanelY - m_iCurPanelY) ? 1 : -1;
-		m_iCurPanelY += sign * 200.0f * (cl_time - cl_oldtime);
+		m_iCurPanelY += sign * 200.0f * ((*cl_time) - (*cl_oldtime));
 		if(sign == 1 && m_iCurPanelY > m_iPanelY)
 			m_iCurPanelY = m_iPanelY;
 		else if(sign == -1 && m_iCurPanelY < m_iPanelY)
@@ -588,7 +624,7 @@ void SubtitlePanel::Paint(void)
 	if(m_iCurPanelYEnd != m_iPanelYEnd)
 	{
 		int sign = (m_iPanelYEnd - m_iCurPanelYEnd) ? 1 : -1;
-		m_iCurPanelYEnd += sign * 200.0f * (cl_time - cl_oldtime);
+		m_iCurPanelYEnd += sign * 200.0f * ((*cl_time) - (*cl_oldtime));
 		if(sign == 1 && m_iCurPanelYEnd > m_iPanelYEnd)
 			m_iCurPanelYEnd = m_iPanelYEnd;
 		else if(sign == -1 && m_iCurPanelYEnd < m_iPanelYEnd)

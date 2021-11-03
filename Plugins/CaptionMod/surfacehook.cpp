@@ -7,14 +7,12 @@
 #include "plugins.h"
 #include "tier1/utlrbtree.h"
 #include "tier1/UtlDict.h"
-#include "engfuncs.h"
+#include "privatefuncs.h"
 #include "Cursor.h"
 
 extern IEngineSurface *staticSurface;
 
 extern vgui::ISurface *g_pSurface;
-
-void Sys_ErrorEx(const char *fmt, ...);
 
 using namespace vgui;
 

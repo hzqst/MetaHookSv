@@ -9,7 +9,7 @@
 #include <VGUI_controls/Panel.h>
 #include <VGUI_controls/Frame.h>
 #include <IClientVGUI.h>
-#include "engfuncs.h"
+#include "privatefuncs.h"
 #include "plugins.h"
 #include "Viewport.h"
 
@@ -48,8 +48,6 @@ static CClientVGUI s_ClientVGUI;
 
 IClientVGUI *g_pClientVGUI = NULL;
 
-void Sys_ErrorEx(const char *fmt, ...);
-
 void CClientVGUI::Initialize(CreateInterfaceFn *factories, int count)
 {
 	//MessageBoxA(NULL, "CClientVGUI::Initialize", "", 0);
@@ -61,7 +59,7 @@ void CClientVGUI::Initialize(CreateInterfaceFn *factories, int count)
 	vgui::scheme()->LoadSchemeFromFile( "captionmod/CaptionScheme.res", "CaptionScheme" );
 
 	if(!vgui::localize()->AddFile(g_pFullFileSystem, "captionmod/dictionary_%language%.txt"))
-		Sys_ErrorEx("Failed to load captionmod/dictionary_%%language%%.txt");
+		g_pMetaHookAPI->SysError("Failed to load captionmod/dictionary_%%language%%.txt");
 }
 
 void CClientVGUI::Start(void)
@@ -125,7 +123,7 @@ void ClientVGUI_InstallHook(void)
 {
 	CreateInterfaceFn ClientVGUICreateInterface = NULL;
 	if(g_hClientDll)
-		ClientVGUICreateInterface = (CreateInterfaceFn)gCapFuncs.GetProcAddress(g_hClientDll, CREATEINTERFACE_PROCNAME);
+		ClientVGUICreateInterface = (CreateInterfaceFn)gPrivateFuncs.GetProcAddress(g_hClientDll, CREATEINTERFACE_PROCNAME);
 	if(!ClientVGUICreateInterface && gExportfuncs.ClientFactory)
 		ClientVGUICreateInterface = (CreateInterfaceFn)gExportfuncs.ClientFactory();
 
@@ -145,7 +143,7 @@ void ClientVGUI_InstallHook(void)
 	}
 	else
 	{
-		gCapFuncs.hk_GetProcAddress = g_pMetaHookAPI->InlineHook(gCapFuncs.GetProcAddress, NewGetProcAddress, (void **)&gCapFuncs.GetProcAddress);
+		gPrivateFuncs.hk_GetProcAddress = g_pMetaHookAPI->InlineHook(gPrivateFuncs.GetProcAddress, NewGetProcAddress, (void **)&gPrivateFuncs.GetProcAddress);
 	}
 }
 
@@ -175,7 +173,7 @@ void NewClientVGUI::Initialize(CreateInterfaceFn *factories, int count)
 	vgui::scheme()->LoadSchemeFromFile( "captionmod/CaptionScheme.res", "CaptionScheme" );
 
 	if(!vgui::localize()->AddFile(g_pFullFileSystem, "captionmod/dictionary_%language%.txt"))
-		Sys_ErrorEx("Failed to load captionmod/dictionary_%%language%%.txt");
+		g_pMetaHookAPI->SysError("Failed to load captionmod/dictionary_%%language%%.txt");
 }
 
 extern vgui::ISurface *g_pSurface;

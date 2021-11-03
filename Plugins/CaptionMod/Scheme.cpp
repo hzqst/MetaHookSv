@@ -15,7 +15,7 @@
 #include "KeyValues.h"
 
 //language
-#include "engfuncs.h"
+#include "privatefuncs.h"
 
 using namespace vgui;
 
@@ -932,7 +932,7 @@ const char *CScheme::LookupSchemeSetting(const char *pchSetting)
 
 int CScheme::GetMinimumFontHeightForCurrentLanguage(void)
 {
-	char *language = gCapFuncs.szLanguage;
+	char *language = m_szCurrentLanguage;
 
 	if (IsPC())
 	{

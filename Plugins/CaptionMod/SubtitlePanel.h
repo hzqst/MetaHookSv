@@ -11,7 +11,7 @@
 #include <vgui_controls/ImagePanel.h>
 #include <UtlVector.h>
 #include "Viewport.h"
-#include "engfuncs.h"
+#include "privatefuncs.h"
 
 enum LineAnim_t
 {
@@ -33,11 +33,11 @@ public:
 	}
 	virtual bool IsPlaying(void)
 	{
-		return (cl_time >= m_StartTime && cl_time < m_StartTime + m_AnimTime);
+		return ((*cl_time) >= m_StartTime && (*cl_time) < m_StartTime + m_AnimTime);
 	}
 	virtual bool IsDonePlay(void)
 	{
-		return (cl_time >= m_StartTime + m_AnimTime);
+		return ((*cl_time) >= m_StartTime + m_AnimTime);
 	}
 	virtual LineAnim_t GetType(void) = 0;
 	virtual bool Update(void) = 0;
@@ -138,7 +138,8 @@ public://Subtitle interface
 	void AddLine(CDictionary *Dict, wchar_t *wszSentence, int nLength, float flStartTime, float flDuration, int nTextLength);
 	void StartLine(CSubLine *Line);
 	void ClearSubtitle(void);
-
+	void QuerySubtitlePanelVars(SubtitlePanelVars_t *vars);
+	void UpdateSubtitlePanelVars(SubtitlePanelVars_t *vars);
 protected:
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
 	virtual void PaintBackground(void);

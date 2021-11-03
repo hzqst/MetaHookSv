@@ -116,7 +116,7 @@
     <ClCompile Include="cstrikechatdialog.cpp" />
     <ClCompile Include="CvarSlider.cpp" />
     <ClCompile Include="CvarToggleCheckButton.cpp" />
-    <ClCompile Include="engfuncs.cpp" />
+    <ClCompile Include="privatefuncs.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="FontAmalgam.cpp" />
     <ClCompile Include="FontManager.cpp" />
@@ -263,7 +263,7 @@
     <ClInclude Include="cstrikechatdialog.h" />
     <ClInclude Include="CvarSlider.h" />
     <ClInclude Include="CvarToggleCheckButton.h" />
-    <ClInclude Include="engfuncs.h" />
+    <ClInclude Include="privatefuncs.h" />
     <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />
     <ClInclude Include="FontAmalgam.h" />

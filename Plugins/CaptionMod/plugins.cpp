@@ -1,7 +1,7 @@
 #include <metahook.h>
-#include "exportfuncs.h"
-#include "engfuncs.h"
 #include <capstone.h>
+#include "exportfuncs.h"
+#include "privatefuncs.h"
 
 cl_exportfuncs_t gExportfuncs;
 mh_interface_t *g_pInterface;
@@ -62,14 +62,14 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 
-	gCapFuncs.GetProcAddress = (decltype(gCapFuncs.GetProcAddress))GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetProcAddress");
+	gPrivateFuncs.GetProcAddress = (decltype(gPrivateFuncs.GetProcAddress))GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetProcAddress");
 
-	gCapFuncs.pfnTextMessageGet = pEngfuncs->pfnTextMessageGet;
+	gPrivateFuncs.pfnTextMessageGet = pEngfuncs->pfnTextMessageGet;
 
-	DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gEngfuncs.GetClientTime, 0x20, "\xDD\x05", Sig_Length("\xDD\x05"));
+	DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gEngfuncs.GetClientTime, 0x20, "\xDD\x05", sizeof("\xDD\x05") - 1);
 	Sig_AddrNotFound("cl_time");
-	gCapFuncs.pcl_time = (double *)*(DWORD *)(addr + 2);
-	gCapFuncs.pcl_oldtime = gCapFuncs.pcl_time + 1;
+	cl_time = (double *)*(DWORD *)(addr + 2);
+	cl_oldtime = cl_time + 1;
 
 	Steam_Init();
 	Engine_FillAddress();
@@ -104,7 +104,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 #define SC_FINDSOUND_SIG "\x51\x55\x8B\x6C\x24\x0C\x89\x4C\x24\x04\x85\xED\x0F\x84\x2A\x2A\x2A\x2A\x80\x7D\x00\x00"
 		{
-			gCapFuncs.ScClient_FindSoundEx = (decltype(gCapFuncs.ScClient_FindSoundEx))
+			gPrivateFuncs.ScClient_FindSoundEx = (decltype(gPrivateFuncs.ScClient_FindSoundEx))
 				g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_FINDSOUND_SIG, Sig_Length(SC_FINDSOUND_SIG));
 
 			Sig_FuncNotFound(ScClient_FindSoundEx);
@@ -113,7 +113,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 #define SC_GETCLIENTCOLOR_SIG "\x8B\x4C\x24\x04\x85\xC9\x2A\x2A\x6B\xC1\x58"
 		{
-			gCapFuncs.GetClientColor = (decltype(gCapFuncs.GetClientColor))
+			gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))
 				g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_GETCLIENTCOLOR_SIG, Sig_Length(SC_GETCLIENTCOLOR_SIG));
 
 			Sig_FuncNotFound(GetClientColor);
@@ -126,7 +126,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 			Sig_AddrNotFound(GameViewport);
 
 			GameViewport = *(decltype(GameViewport) *)(addr + 2);
-			gCapFuncs.GameViewport_AllowedToPrintText = (decltype(gCapFuncs.GameViewport_AllowedToPrintText))GetCallAddress(addr + 10);
+			gPrivateFuncs.GameViewport_AllowedToPrintText = (decltype(gPrivateFuncs.GameViewport_AllowedToPrintText))GetCallAddress(addr + 10);
 		}
 
 #define SC_UPDATECURSORSTATE_SIG "\x8B\x40\x28\xFF\xD0\x84\xC0\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00"
@@ -236,8 +236,8 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 void IPluginsV4::ExitGame(int iResult)
 {
-	if (gCapFuncs.hk_GetProcAddress)
-		g_pMetaHookAPI->UnHook(gCapFuncs.hk_GetProcAddress);
+	if (gPrivateFuncs.hk_GetProcAddress)
+		g_pMetaHookAPI->UnHook(gPrivateFuncs.hk_GetProcAddress);
 
 	ClientVGUI_Shutdown();
 }

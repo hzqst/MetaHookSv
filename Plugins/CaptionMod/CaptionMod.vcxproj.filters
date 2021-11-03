@@ -50,16 +50,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="engfuncs.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="exportfuncs.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\HLSDK\common\interface.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="KeyValuesSystemHook.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="message.cpp">
@@ -440,11 +434,14 @@
     <ClCompile Include="CvarToggleCheckButton.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
+    <ClCompile Include="KeyValuesSystemHook.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="privatefuncs.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="engfuncs.h">
-      <Filter>Header</Filter>
-    </ClInclude>
     <ClInclude Include="enginedef.h">
       <Filter>Header</Filter>
     </ClInclude>
@@ -464,12 +461,6 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="plugins.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="SubtitlePanel.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="Viewport.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="VGUI\Cursor.h">
@@ -1005,6 +996,15 @@
     </ClInclude>
     <ClInclude Include="CvarToggleCheckButton.h">
       <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="Viewport.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="SubtitlePanel.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="privatefuncs.h">
+      <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

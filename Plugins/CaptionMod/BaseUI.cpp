@@ -9,7 +9,7 @@
 #include "vgui_internal.h"
 #include "IKeyValuesSystem.h"
 #include "exportfuncs.h"
-#include "engfuncs.h"
+#include "privatefuncs.h"
 
 namespace vgui
 {
@@ -59,9 +59,9 @@ static BOOL s_LoadingClientFactory = false;
 void CBaseUI::Initialize(CreateInterfaceFn *factories, int count)
 {
 	//Patch ClientFactory
-	if(!g_IsClientVGUI2 && *gCapFuncs.pfnClientFactory == NULL)
+	if(!g_IsClientVGUI2 && *gPrivateFuncs.pfnClientFactory == NULL)
 	{
-		*gCapFuncs.pfnClientFactory = NewClientFactory;
+		*gPrivateFuncs.pfnClientFactory = NewClientFactory;
 		s_LoadingClientFactory = true;
 	}
 
@@ -150,7 +150,7 @@ void BaseUI_InstallHook(void)
 
 		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)vft[1], 0x200, CLIENTFACTORY_SIG_SVENGINE, Sig_Length(CLIENTFACTORY_SIG_SVENGINE));
 		Sig_AddrNotFound(ClientFactory);
-		gCapFuncs.pfnClientFactory = (void *(**)(void))*(DWORD *)(addr + 5);
+		gPrivateFuncs.pfnClientFactory = (void *(**)(void))*(DWORD *)(addr + 5);
 
 		DWORD *pVFTable = *(DWORD **)&s_BaseUI;
 
@@ -162,7 +162,7 @@ void BaseUI_InstallHook(void)
 		DWORD *vft = *(DWORD **)baseuifuncs;
 		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)vft[1], 0x200, CLIENTFACTORY_SIG, Sig_Length(CLIENTFACTORY_SIG));
 		Sig_AddrNotFound(ClientFactory);
-		gCapFuncs.pfnClientFactory = (void *(**)(void))*(DWORD *)(addr + 2);
+		gPrivateFuncs.pfnClientFactory = (void *(**)(void))*(DWORD *)(addr + 2);
 
 		DWORD *pVFTable = *(DWORD **)&s_BaseUI;
 

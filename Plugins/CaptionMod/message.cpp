@@ -1,7 +1,7 @@
 #include <metahook.h>
 #include "exportfuncs.h"
-#include "engfuncs.h"
 #include "parsemsg.h"
+#include "privatefuncs.h"
 //viewport
 #include <VGUI/VGUI.h>
 #include <vgui/IScheme.h>
@@ -610,12 +610,11 @@ void CHudMessage::RetireDynamicMessage(client_textmessage_t *pMsg)
 
 int CHudMessage::Draw(void)
 {
-
 	int i;
 	client_textmessage_t *pMessage;
 	float endTime;
 
-	float fTime = cl_time;
+	float fTime = (*cl_time);
 
 	for (i = 0; i < maxHUDMessages; i++)
 	{
@@ -623,8 +622,8 @@ int CHudMessage::Draw(void)
 		{
 			pMessage = m_pMessages[i].pMessage;
 
-			if (m_startTime[i] > cl_time || m_startTime[i] == 1.0)
-				m_startTime[i] = cl_time + m_parms.time - m_startTime[i] + 0.2;
+			if (m_startTime[i] > (*cl_time) || m_startTime[i] == 1.0)
+				m_startTime[i] = (*cl_time) + m_parms.time - m_startTime[i] + 0.2;
 		}
 	}
 
@@ -666,7 +665,7 @@ int CHudMessage::Draw(void)
 		}
 	}
 
-	m_parms.time = cl_time;
+	m_parms.time = (*cl_time);
 
 	return 1;
 }
@@ -692,9 +691,9 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 			client_textmessage_t *pTextMessage = NULL;
 
 			if (pString[0] == '#')
-				pTextMessage = gCapFuncs.pfnTextMessageGet(pString + 1);
+				pTextMessage = gPrivateFuncs.pfnTextMessageGet(pString + 1);
 			else
-				pTextMessage = gCapFuncs.pfnTextMessageGet(pString);
+				pTextMessage = gPrivateFuncs.pfnTextMessageGet(pString);
 
 			if (pTextMessage)
 			{
@@ -769,7 +768,7 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 					V_strncpy((char *)pMsg->pMessage, sentence.data(), HUDMESSAGE_MAXLENGTH - 1);
 					((char *)pMsg->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
 
-					int slotNum = MessageAdd(pMsg, cl_time, hintMessage, useSlot, m_hFont, true);
+					int slotNum = MessageAdd(pMsg, (*cl_time), hintMessage, useSlot, m_hFont, true);
 
 					if (slotNum == -1)
 					{
@@ -778,7 +777,7 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 					}
 
 					g_pViewPort->StartNextSubtitle(dict);
-					m_parms.time = cl_time;
+					m_parms.time = (*cl_time);
 					return 1;
 				}
 				else if (dict && !dict->m_bRegex)
@@ -814,7 +813,7 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 					V_strncpy((char *)pMsg->pMessage, sentence, HUDMESSAGE_MAXLENGTH - 1);
 					((char *)pMsg->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
 
-					int slotNum = MessageAdd(pMsg, cl_time, hintMessage, useSlot, m_hFont, true);
+					int slotNum = MessageAdd(pMsg, (*cl_time), hintMessage, useSlot, m_hFont, true);
 
 					if (slotNum == -1)
 					{
@@ -823,14 +822,14 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 					}
 
 					g_pViewPort->StartNextSubtitle(dict);
-					m_parms.time = cl_time;
+					m_parms.time = (*cl_time);
 					return 1;
 				}
 				else if (pTextMessage)
 				{
-					int slotNum = MessageAdd(pTextMessage, cl_time, hintMessage, useSlot, m_hFont, false);
+					int slotNum = MessageAdd(pTextMessage, (*cl_time), hintMessage, useSlot, m_hFont, false);
 
-					m_parms.time = cl_time;
+					m_parms.time = (*cl_time);
 					return 1;
 				}
 			}
@@ -854,9 +853,9 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 				client_textmessage_t *pTextMessage = NULL;
 
 				if (pString[0] == '#')
-					pTextMessage = gCapFuncs.pfnTextMessageGet(pString + 1);
+					pTextMessage = gPrivateFuncs.pfnTextMessageGet(pString + 1);
 				else
-					pTextMessage = gCapFuncs.pfnTextMessageGet(pString);
+					pTextMessage = gPrivateFuncs.pfnTextMessageGet(pString);
 
 				if (pTextMessage)
 				{
@@ -892,7 +891,7 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 					V_strncpy((char *)pMsg->pMessage, sentence, HUDMESSAGE_MAXLENGTH - 1);
 					((char *)pMsg->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
 
-					int slotNum = MessageAdd(pMsg, cl_time, hintMessage, -1, m_hFont, true);
+					int slotNum = MessageAdd(pMsg, (*cl_time), hintMessage, -1, m_hFont, true);
 
 					if (slotNum == -1)
 					{
@@ -900,7 +899,7 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 						delete pMsg;
 					}
 
-					m_parms.time = cl_time;
+					m_parms.time = (*cl_time);
 					return 1;
 				}
 			}
@@ -931,9 +930,9 @@ int CHudMessage::MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
 			client_textmessage_t *pTextMessage = NULL;
 
 			if (pString[0] == '#')
-				pTextMessage = gCapFuncs.pfnTextMessageGet(pString + 1);
+				pTextMessage = gPrivateFuncs.pfnTextMessageGet(pString + 1);
 			else
-				pTextMessage = gCapFuncs.pfnTextMessageGet(pString);
+				pTextMessage = gPrivateFuncs.pfnTextMessageGet(pString);
 
 			if (pTextMessage)
 			{
@@ -969,7 +968,7 @@ int CHudMessage::MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
 				V_strncpy((char *)pMsg->pMessage, sentence, HUDMESSAGE_MAXLENGTH - 1);
 				((char *)pMsg->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
 
-				int slotNum = MessageAdd(pMsg, cl_time, hintMessage, -1, m_hFont, true);
+				int slotNum = MessageAdd(pMsg, (*cl_time), hintMessage, -1, m_hFont, true);
 
 				if (slotNum != -1)
 				{
@@ -991,7 +990,7 @@ int CHudMessage::MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
 					delete pMsg;
 				}
 
-				m_parms.time = cl_time;
+				m_parms.time = (*cl_time);
 				return 1;
 			}
 		}
@@ -1241,9 +1240,9 @@ void SayTextLine::SetText(wchar_t *buf, int clientIndex)
 
 		if (clientIndex > 0)
 		{
-			if (gCapFuncs.GetClientColor)
+			if (gPrivateFuncs.GetClientColor)
 			{
-				m_teamColor = gCapFuncs.GetClientColor(clientIndex);
+				m_teamColor = gPrivateFuncs.GetClientColor(clientIndex);
 			}
 
 			Colorize();
@@ -1558,7 +1557,7 @@ int CHudMessage::SayTextPrint(const char *pszBuf, int iBufSize, int clientIndex,
 	EnsureTextFitsInOneLineAndWrapIfHaveTo(lineNum);
 
 	if (lineNum == 0)
-		flScrollTime = cl_time + hud_saytext_time->value;
+		flScrollTime = (*cl_time) + hud_saytext_time->value;
 
 	//m_iFlags |= HUD_ACTIVE;
 
@@ -1628,7 +1627,7 @@ char *CHudMessage::LookupString(const char *msg, int *msg_dest)
 
 	if (msg[0] == '#')
 	{
-		client_textmessage_t *clmsg = gCapFuncs.pfnTextMessageGet(msg + 1);
+		client_textmessage_t *clmsg = gPrivateFuncs.pfnTextMessageGet(msg + 1);
 
 		if (!clmsg || !(clmsg->pMessage))
 		{
@@ -1834,7 +1833,7 @@ int CHudMessage::MessageAdd(client_textmessage_t *newMessage, float time, int hi
 
 void CHudMessage::MessageAdd(client_textmessage_t *newMessage, bool bIsDynamicMessage)
 {
-	m_parms.time = cl_time;
+	m_parms.time = (*cl_time);
 
 	for (int i = 0; i < maxHUDMessages; i++)
 	{
@@ -1842,7 +1841,7 @@ void CHudMessage::MessageAdd(client_textmessage_t *newMessage, bool bIsDynamicMe
 		{
 			m_pMessages[i].pMessage = newMessage;
 			m_pMessages[i].font = m_hFont;
-			m_startTime[i] = cl_time;
+			m_startTime[i] = (*cl_time);
 			return;
 		}
 	}
@@ -1863,5 +1862,5 @@ client_textmessage_t *pfnTextMessageGet(const char *pName)
 		}
 	}
 
-	return gCapFuncs.pfnTextMessageGet(pName);
+	return gPrivateFuncs.pfnTextMessageGet(pName);
 }

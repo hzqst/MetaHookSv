@@ -10,12 +10,13 @@
 #include "vgui_controls/Frame.h"
 #include "vgui_controls/QueryBox.h"
 #include "vgui_controls/MessageMap.h"
+#include "vgui_controls/PropertyPage.h"
 #include "CvarSlider.h"
 #include "CvarToggleCheckButton.h"
 
-#include "plugins.h"
+#include "Viewport.h"
 
-void Sys_ErrorEx(const char *fmt, ...);
+#include "plugins.h"
 
 namespace vgui
 {
@@ -44,10 +45,11 @@ int (__fastcall *g_pfnCGameUI_SetProgressBarStatusText)(void *pthis, int edx, co
 void (__fastcall *g_pfnCGameUI_SetSecondaryProgressBar)(void *pthis, int edx, float progress) = 0;
 void (__fastcall *g_pfnCGameUI_SetSecondaryProgressBarText)(void *pthis, int edx, const char *statusText) = 0;
 
-
 void *(__fastcall*g_pfnCOptionsDialog_ctor)(void *pthis, int a2, void *parent) = NULL;
 void *(__fastcall*g_pfnCOptionsSubVideo_ctor)(void *pthis, int a2, void *parent) = NULL;
 void (__fastcall *g_pfnCOptionsSubVideo_ApplyVidSettings)(void *pthis, int, bool bForceRestart) = NULL;
+void *(__fastcall*g_pfnCOptionsSubAudio_ctor)(void *pthis, int a2, void *parent) = NULL;
+void *(__fastcall *g_pfnCOptionsDialog_AddPage)(void *pthis, int, void *panel, const char *name) = NULL;
 
 class CGameUI : public IGameUI
 {
@@ -87,7 +89,7 @@ void CGameUI::Start(struct cl_enginefuncs_s *engineFuncs, int interfaceVersion, 
 	{
 		if (!vgui::localize()->AddFile(g_pFullFileSystem, "captionmod/gameui_english.txt"))
 		{
-			Sys_ErrorEx("Failed to load captionmod/gameui_english.txt");
+			g_pMetaHookAPI->SysError("Failed to load captionmod/gameui_english.txt");
 		}
 	}
 
@@ -245,8 +247,8 @@ public:
 
 	void ApplyChangesToConVar(const char *pConVarName, int value)
 	{
-		char szCmd[1024];
-		Q_snprintf(szCmd, sizeof(szCmd), "%s %d\n", pConVarName, value);
+		char szCmd[256] = {0};
+		Q_snprintf(szCmd, sizeof(szCmd) - 1, "%s %d\n", pConVarName, value);
 		gEngfuncs.pfnClientCmd(szCmd);
 	}
 
@@ -332,6 +334,10 @@ public:
 			ApplyChanges();
 			Close();
 		}
+		else if (!stricmp(command, "Apply"))
+		{
+			ApplyChanges();
+		}
 		else
 		{
 			BaseClass::OnCommand(command);
@@ -366,16 +372,16 @@ private:
 	CCvarSlider *m_pLightGamma;
 };
 
-class CAdvancedButton : public vgui::Button
+class CVideoAdvancedButton : public vgui::Button
 {
-	DECLARE_CLASS_SIMPLE(CAdvancedButton, vgui::Button);
+	DECLARE_CLASS_SIMPLE(CVideoAdvancedButton, vgui::Button);
 
 public:
-	CAdvancedButton(vgui::Panel *parent, const char *panelName, const char *text) : BaseClass(parent, panelName, text)
+	CVideoAdvancedButton(vgui::Panel *parent, const char *panelName, const char *text) : BaseClass(parent, panelName, text)
 	{
 	
 	}
-	~CAdvancedButton(void)
+	~CVideoAdvancedButton(void)
 	{
 
 	}
@@ -388,8 +394,7 @@ private:
 	vgui::DHANDLE<class COptionsSubVideoAdvancedDlg> m_hOptionsSubVideoAdvancedDlg;
 };
 
-
-void CAdvancedButton::OnOpenAdvanced(void)
+void CVideoAdvancedButton::OnOpenAdvanced(void)
 {
 	if (!m_hOptionsSubVideoAdvancedDlg.Get())
 		m_hOptionsSubVideoAdvancedDlg = new COptionsSubVideoAdvancedDlg(this);
@@ -397,12 +402,241 @@ void CAdvancedButton::OnOpenAdvanced(void)
 	m_hOptionsSubVideoAdvancedDlg->Activate();
 }
 
-void * __fastcall COptionsSubVideo_ctor(vgui::Panel *pthis, int a2, vgui::Panel *parent)
+class COptionsSubAudioAdvancedDlg : public vgui::Frame
 {
-	auto result = g_pfnCOptionsSubVideo_ctor(pthis, a2, parent);
+	DECLARE_CLASS_SIMPLE(COptionsSubAudioAdvancedDlg, vgui::Frame);
 
-	auto m_pVideoAdvanced = new CAdvancedButton(pthis, "Advanced", "#GameUI_AdvancedEllipsis");
-	m_pVideoAdvanced->SetPos(248, 160);
+public:
+	COptionsSubAudioAdvancedDlg(vgui::Panel *parent) : BaseClass(parent, "OptionsSubAudioAdvancedDlg")
+	{
+		SetTitle("#GameUI_CaptionMod_Title", true);
+		SetSize(600, 400);
+		SetSizeable(false);
+		SetDeleteSelfOnClose(true);
+
+		m_pPrefixButton = new vgui::CheckButton(this, "PrefixButton", "#GameUI_CaptionMod_Prefix");
+		m_pWaitPlayButton = new vgui::CheckButton(this, "WaitPlayButton", "#GameUI_CaptionMod_WaitPlay");
+		m_pAntiSpamButton = new vgui::CheckButton(this, "AntiSpamButton", "#GameUI_CaptionMod_AntiSpam");
+		m_pFadeInEntry = new vgui::TextEntry(this, "FadeInEntry");
+		m_pFadeOutEntry = new vgui::TextEntry(this, "FadeOutEntry");
+		m_pHoldTimeEntry = new vgui::TextEntry(this, "HoldTimeEntry");
+		m_pHoldTimeScaleEntry = new vgui::TextEntry(this, "HoldTimeScaleEntry");
+		m_pStartTimeScaleEntry = new vgui::TextEntry(this, "StartTimeScaleEntry");
+		m_pWidthEntry = new vgui::TextEntry(this, "WidthEntry");
+		m_pHeightEntry = new vgui::TextEntry(this, "HeightEntry");
+		m_pYPosEntry = new vgui::TextEntry(this, "YPosEntry");
+
+		LoadControlSettings("captionmod/OptionsSubAudioAdvancedDlg.res");
+	}
+
+	virtual void Activate(void)
+	{
+		OnResetData();
+		BaseClass::Activate();
+
+		vgui::input()->SetAppModalSurface(GetVPanel());
+	}
+
+	MESSAGE_FUNC_PTR(OnTextChanged, "TextChanged", panel)
+	{
+	}
+
+	MESSAGE_FUNC(OnGameUIHidden, "GameUIHidden")
+	{
+		Close();
+	}
+
+	MESSAGE_FUNC(OK_Confirmed, "OK_Confirmed")
+	{
+		Close();
+	}
+
+	void ApplyChangesToConVar(const char *pConVarName, int value)
+	{
+		char szCmd[256] = {0};
+		Q_snprintf(szCmd, sizeof(256) - 1, "%s %d\n", pConVarName, value);
+		gEngfuncs.pfnClientCmd(szCmd);
+	}
+
+	virtual void ApplyChanges(void)
+	{
+		SubtitlePanelVars_t vars = { 0 };
+
+		vars.m_iPrefix = m_pPrefixButton->IsSelected() ? 1 : 0;
+		vars.m_iWaitPlay = m_pWaitPlayButton->IsSelected() ? 1 : 0;
+		vars.m_iAntiSpam = m_pAntiSpamButton->IsSelected() ? 1 : 0;
+
+		{
+			char szTextEntry[16] = { 0 };
+			m_pFadeInEntry->GetText(szTextEntry, sizeof(szTextEntry));
+			vars.m_flFadeIn = atof(szTextEntry);
+		}
+
+		{
+			char szTextEntry[16] = { 0 };
+			m_pFadeOutEntry->GetText(szTextEntry, sizeof(szTextEntry));
+			vars.m_flFadeOut = atof(szTextEntry);
+		}
+
+		{
+			char szTextEntry[16] = { 0 };
+			m_pHoldTimeEntry->GetText(szTextEntry, sizeof(szTextEntry));
+			vars.m_flHoldTime = atof(szTextEntry);
+		}
+
+		{
+			char szTextEntry[16] = { 0 };
+			m_pHoldTimeScaleEntry->GetText(szTextEntry, sizeof(szTextEntry));
+			vars.m_flHoldTimeScale = atof(szTextEntry);
+		}
+
+		{
+			char szTextEntry[16] = { 0 };
+			m_pStartTimeScaleEntry->GetText(szTextEntry, sizeof(szTextEntry));
+			vars.m_flStartTimeScale = atof(szTextEntry);
+		}
+
+		{
+			char szTextEntry[16] = { 0 };
+			m_pWidthEntry->GetText(szTextEntry, sizeof(szTextEntry));
+			vars.m_iWidth = atoi(szTextEntry);
+		}
+
+		{
+			char szTextEntry[16] = { 0 };
+			m_pHeightEntry->GetText(szTextEntry, sizeof(szTextEntry));
+			vars.m_iHeight = atoi(szTextEntry);
+		}
+
+		{
+			char szTextEntry[16] = { 0 };
+			m_pYPosEntry->GetText(szTextEntry, sizeof(szTextEntry));
+			vars.m_iYPos = atoi(szTextEntry);
+		}
+
+		g_pViewPort->UpdateSubtitlePanelVars(&vars);
+	}
+
+	virtual void OnResetData(void)
+	{
+		SubtitlePanelVars_t vars = { 0 };
+		g_pViewPort->QuerySubtitlePanelVars(&vars);
+		
+		m_pPrefixButton->SetSelected(vars.m_iPrefix ? true : false);
+		m_pWaitPlayButton->SetSelected(vars.m_iWaitPlay ? true : false);
+		m_pAntiSpamButton->SetSelected(vars.m_iAntiSpam ? true : false);
+
+		{
+			char szTextEntry[16] = { 0 };
+			V_snprintf(szTextEntry, sizeof(szTextEntry) - 1, "%.1f", vars.m_flFadeIn);
+			m_pFadeInEntry->SetText(szTextEntry);
+		}
+		{
+			char szTextEntry[16] = { 0 };
+			V_snprintf(szTextEntry, sizeof(szTextEntry) - 1, "%.1f", vars.m_flFadeOut);
+			m_pFadeOutEntry->SetText(szTextEntry);
+		}
+		{
+			char szTextEntry[16] = { 0 };
+			V_snprintf(szTextEntry, sizeof(szTextEntry) - 1, "%.1f", vars.m_flHoldTime);
+			m_pHoldTimeEntry->SetText(szTextEntry);
+		}
+		{
+			char szTextEntry[16] = { 0 };
+			V_snprintf(szTextEntry, sizeof(szTextEntry) - 1, "%.1f", vars.m_flHoldTimeScale);
+			m_pHoldTimeScaleEntry->SetText(szTextEntry);
+		}
+		{
+			char szTextEntry[16] = { 0 };
+			V_snprintf(szTextEntry, sizeof(szTextEntry) - 1, "%.1f", vars.m_flStartTimeScale);
+			m_pStartTimeScaleEntry->SetText(szTextEntry);
+		}
+		{
+			char szTextEntry[16] = { 0 };
+			V_snprintf(szTextEntry, sizeof(szTextEntry) - 1, "%d", vars.m_iWidth);
+			m_pWidthEntry->SetText(szTextEntry);
+		}
+		{
+			char szTextEntry[16] = { 0 };
+			V_snprintf(szTextEntry, sizeof(szTextEntry) - 1, "%d", vars.m_iHeight);
+			m_pHeightEntry->SetText(szTextEntry);
+		}
+		{
+			char szTextEntry[16] = { 0 };
+			V_snprintf(szTextEntry, sizeof(szTextEntry) - 1, "%d", vars.m_iYPos);
+			m_pYPosEntry->SetText(szTextEntry);
+		}
+	}
+
+	virtual void OnCommand(const char *command)
+	{
+		if (!stricmp(command, "OK"))
+		{
+			ApplyChanges();
+			Close();
+		}
+		else if (!stricmp(command, "Apply"))
+		{
+			ApplyChanges();
+		}
+		else
+		{
+			BaseClass::OnCommand(command);
+		}
+	}
+
+private:
+	bool m_bUseChanges;
+
+	vgui::CheckButton *m_pPrefixButton;
+	vgui::CheckButton *m_pWaitPlayButton;
+	vgui::CheckButton *m_pAntiSpamButton;
+	vgui::TextEntry *m_pFadeInEntry;
+	vgui::TextEntry *m_pFadeOutEntry;
+	vgui::TextEntry *m_pHoldTimeEntry;
+	vgui::TextEntry *m_pHoldTimeScaleEntry;
+	vgui::TextEntry *m_pStartTimeScaleEntry;
+	vgui::TextEntry *m_pWidthEntry;
+	vgui::TextEntry *m_pHeightEntry;
+	vgui::TextEntry *m_pYPosEntry;
+};
+
+class CAudioAdvancedButton : public vgui::Button
+{
+	DECLARE_CLASS_SIMPLE(CAudioAdvancedButton, vgui::Button);
+
+public:
+	CAudioAdvancedButton(vgui::Panel *parent, const char *panelName, const char *text) : BaseClass(parent, panelName, text)
+	{
+
+	}
+	~CAudioAdvancedButton(void)
+	{
+
+	}
+
+private:
+	MESSAGE_FUNC(OnOpenAdvanced, "OpenAdvanced");
+
+private:
+
+	vgui::DHANDLE<class COptionsSubAudioAdvancedDlg> m_hOptionsSubAudioAdvancedDlg;
+};
+
+void CAudioAdvancedButton::OnOpenAdvanced(void)
+{
+	if (!m_hOptionsSubAudioAdvancedDlg.Get())
+		m_hOptionsSubAudioAdvancedDlg = new COptionsSubAudioAdvancedDlg(this);
+
+	m_hOptionsSubAudioAdvancedDlg->Activate();
+}
+
+void * __fastcall COptionsSubVideo_ctor(vgui::Panel *pthis, int dummy, vgui::Panel *parent)
+{
+	auto result = g_pfnCOptionsSubVideo_ctor(pthis, dummy, parent);
+
+	auto m_pVideoAdvanced = new CVideoAdvancedButton(pthis, "Advanced", "#GameUI_AdvancedEllipsis");
+	m_pVideoAdvanced->SetPos(258, 160);
 	m_pVideoAdvanced->SetSize(120, 24);
 
 	m_pVideoAdvanced->AddActionSignalTarget(m_pVideoAdvanced->GetVPanel());
@@ -411,9 +645,26 @@ void * __fastcall COptionsSubVideo_ctor(vgui::Panel *pthis, int a2, vgui::Panel 
 	return result;
 }
 
-void __fastcall COptionsSubVideo_ApplyVidSettings(vgui::Panel *pthis, int a2, bool bForceRestart)
+void __fastcall COptionsSubVideo_ApplyVidSettings(vgui::Panel *pthis, int dummy, bool bForceRestart)
 {
-	g_pfnCOptionsSubVideo_ApplyVidSettings(pthis, a2, false);
+	if(gEngfuncs.pfnGetCvarPointer("r_hdr"))
+		g_pfnCOptionsSubVideo_ApplyVidSettings(pthis, dummy, false);
+	else
+		g_pfnCOptionsSubVideo_ApplyVidSettings(pthis, dummy, bForceRestart);
+}
+
+void * __fastcall COptionsSubAudio_ctor(vgui::Panel *pthis, int dummy, vgui::Panel *parent)
+{
+	auto result = g_pfnCOptionsSubAudio_ctor(pthis, dummy, parent);
+
+	auto m_pAudioAdvanced = new CAudioAdvancedButton(pthis, "Advanced", "#GameUI_SubtitlesEllipsis");
+	m_pAudioAdvanced->SetPos(258, 160);
+	m_pAudioAdvanced->SetSize(120, 24);
+
+	m_pAudioAdvanced->AddActionSignalTarget(m_pAudioAdvanced->GetVPanel());
+	m_pAudioAdvanced->SetCommand("OpenAdvanced");
+
+	return result;
 }
 
 void GameUI_InstallHook(void)
@@ -457,6 +708,20 @@ void GameUI_InstallHook(void)
 
 	if (1)
 	{
+		const char sigs1[] = "#GameUI_Audio";
+		auto GameUI_Audio_String = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), sigs1, sizeof(sigs1) - 1);
+		Sig_VarNotFound(GameUI_Audio_String);
+		char pattern[] = "\xE8\x2A\x2A\x2A\x2A\x2A\x2A\x33\xC0\x68\x2A\x2A\x2A\x2A";
+		*(DWORD *)(pattern + 10) = (DWORD)GameUI_Audio_String;
+		auto GameUI_Audio_Call = g_pMetaHookAPI->SearchPattern(g_pfnCOptionsDialog_ctor, 0x300, pattern, sizeof(pattern) - 1);
+		Sig_VarNotFound(GameUI_Audio_Call);
+
+		g_pfnCOptionsSubAudio_ctor = (decltype(g_pfnCOptionsSubAudio_ctor))GetCallAddress(GameUI_Audio_Call);
+		Sig_VarNotFound(g_pfnCOptionsSubAudio_ctor);
+	}
+
+	if (1)
+	{
 		const char sigs1[] = "_setvideomode";
 		auto SetVideoMode_String = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), sigs1, sizeof(sigs1) - 1);
 		Sig_VarNotFound(SetVideoMode_String);
@@ -471,4 +736,5 @@ void GameUI_InstallHook(void)
 
 	g_pMetaHookAPI->InlineHook(g_pfnCOptionsSubVideo_ctor, COptionsSubVideo_ctor, (void **)&g_pfnCOptionsSubVideo_ctor);
 	g_pMetaHookAPI->InlineHook(g_pfnCOptionsSubVideo_ApplyVidSettings, COptionsSubVideo_ApplyVidSettings, (void **)&g_pfnCOptionsSubVideo_ApplyVidSettings);
+	g_pMetaHookAPI->InlineHook(g_pfnCOptionsSubAudio_ctor, COptionsSubAudio_ctor, (void **)&g_pfnCOptionsSubAudio_ctor);
 }

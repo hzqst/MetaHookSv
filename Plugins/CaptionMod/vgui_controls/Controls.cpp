@@ -52,7 +52,7 @@ bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryL
 
 	if (!g_pFullFileSystem || !g_pKeyValuesSystem || !g_pVGuiInput || !g_pVGuiSystem || !g_pVGui || !g_pVGuiPanel || !g_pVGuiLocalize)
 	{
-		Sys_ErrorEx("vgui_controls is missing a required interface!\n");
+		g_pMetaHookAPI->SysError("vgui_controls is missing a required interface!\n");
 		return false;
 	}
 
