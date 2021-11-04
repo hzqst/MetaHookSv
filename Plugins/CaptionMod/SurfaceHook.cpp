@@ -799,7 +799,10 @@ void CSurfaceProxy::SetAllowHTMLJavaScript(bool state)
 
 void CSurfaceProxy::SetLanguage(const char *pchLang)
 {
-	m_pfnSetLanguage(this, 0, pchLang);
+	if(m_szCurrentLanguage[0] && 0 != strcmp(m_szCurrentLanguage, "english"))
+		m_pfnSetLanguage(this, 0, m_szCurrentLanguage);
+	else
+		m_pfnSetLanguage(this, 0, pchLang);
 }
 
 const char *CSurfaceProxy::GetLanguage(void)
@@ -928,4 +931,5 @@ void Surface_InstallHook(void)
 	g_pMetaHookAPI->VFTHook(g_pSurface, 0, 64, (void *)pVFTable[64], (void **)&m_pfnGetCharacterWidth);
 	g_pMetaHookAPI->VFTHook(g_pSurface, 0, 65, (void *)pVFTable[65], (void **)&m_pfnGetTextSize);
 	g_pMetaHookAPI->VFTHook(g_pSurface, 0, 89, (void *)pVFTable[89], (void **)&m_pfnGetFontAscent);
+	g_pMetaHookAPI->VFTHook(g_pSurface, 0, 91, (void *)pVFTable[91], (void **)&m_pfnSetLanguage);
 }

@@ -155,6 +155,7 @@ public:
 	virtual void DrawTexturedPolygon(int *p, int n) = 0;
 	virtual int GetFontAscent(HFont font, wchar_t wch) = 0;
 	virtual void SetAllowHTMLJavaScript(bool state) = 0;
+	virtual void SetLanguage(const char *lang) = 0;
 };
 }
 
