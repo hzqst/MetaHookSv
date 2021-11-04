@@ -119,12 +119,12 @@ typedef struct metahook_api_s
 		Read 4bytes from given address
 	*/
 
-	DWORD (*WriteMemory)(void *pAddress, BYTE *pData, DWORD dwDataSize);
+	DWORD (*WriteMemory)(void *pAddress, void *pData, DWORD dwDataSize);
 	/*
 		Write memory at given address, ignoring page protection
 	*/
 
-	DWORD (*ReadMemory)(void *pAddress, BYTE *pData, DWORD dwDataSize);
+	DWORD (*ReadMemory)(void *pAddress, void *pData, DWORD dwDataSize);
 	/*
 		Read memory from given address
 	*/

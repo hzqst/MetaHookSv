@@ -11,6 +11,8 @@
 
 typedef struct
 {	
+	char *(*V_strncpy)(char *a1, const char *a2, size_t a3);
+
 	void (*S_Init)(void);
 	sfx_t *(*S_FindName)(char *name, int *pfInCache);//hooked
 	void (*S_StartDynamicSound)(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);//hooked
@@ -41,6 +43,6 @@ extern double *cl_oldtime;
 extern HWND g_MainWnd;
 extern WNDPROC g_MainWndProc;
 
-extern char m_szCurrentLanguage[64];
+extern char m_szCurrentLanguage[128];
 
 extern private_funcs_t gPrivateFuncs;

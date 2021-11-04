@@ -173,7 +173,6 @@
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.obj</ObjectFileName>
       <XMLDocumentationFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)%(Filename)1.xdc</XMLDocumentationFileName>
     </ClCompile>
-    <ClCompile Include="sys_dll.cpp" />
     <ClCompile Include="vgui_controls\AnalogBar.cpp" />
     <ClCompile Include="vgui_controls\AnimatingImagePanel.cpp" />
     <ClCompile Include="vgui_controls\AnimationController.cpp" />

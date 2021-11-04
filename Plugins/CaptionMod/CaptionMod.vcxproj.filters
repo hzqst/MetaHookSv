@@ -65,9 +65,6 @@
     <ClCompile Include="plugins.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="sys_dll.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="SourceSDK\filesystem.cpp">
       <Filter>SourceSDK</Filter>
     </ClCompile>

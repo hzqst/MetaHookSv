@@ -17,8 +17,7 @@
 
 extern cl_enginefunc_t gEngfuncs;
 
-void Steam_Init(void);
-void MSG_Init(void);
+char * NewV_strncpy(char *a1, const char *a2, size_t a3);
 
 void HUD_Init(void);
 int HUD_VidInit(void);
@@ -29,6 +28,7 @@ void IN_Accumulate(void);
 void CL_CreateMove(float frametime, struct usercmd_s *cmd, int active);
 
 client_textmessage_t *pfnTextMessageGet(const char *pName);
+void Client_FillAddress(void);
 void Engine_FillAddress(void);
 void Engine_InstallHook(void);
 void BaseUI_InstallHook(void);
@@ -39,7 +39,6 @@ void VGUI1_InstallHook(void);
 void Surface_InstallHook(void);
 void Scheme_InstallHook(void);
 void KeyValuesSystem_InstallHook(void);
-void Sys_GetRegKeyValueUnderRoot(const char *pszSubKey, const char *pszElement, char *pszReturnString, int nReturnLength, const char *pszDefaultValue);
 FARPROC WINAPI NewGetProcAddress(HMODULE hModule, LPCSTR lpProcName);
 void *NewClientFactory(void);
 

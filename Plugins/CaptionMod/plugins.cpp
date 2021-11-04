@@ -71,7 +71,6 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	cl_time = (double *)*(DWORD *)(addr + 2);
 	cl_oldtime = cl_time + 1;
 
-	Steam_Init();
 	Engine_FillAddress();
 	Engine_InstallHook();
 	BaseUI_InstallHook();
@@ -96,115 +95,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
 	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
 
-	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
-
-	if (pfnClientFactory && pfnClientFactory("SCClientDLL001", 0))
-	{
-		g_IsSCClient = true;
-
-#define SC_FINDSOUND_SIG "\x51\x55\x8B\x6C\x24\x0C\x89\x4C\x24\x04\x85\xED\x0F\x84\x2A\x2A\x2A\x2A\x80\x7D\x00\x00"
-		{
-			gPrivateFuncs.ScClient_FindSoundEx = (decltype(gPrivateFuncs.ScClient_FindSoundEx))
-				g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_FINDSOUND_SIG, Sig_Length(SC_FINDSOUND_SIG));
-
-			Sig_FuncNotFound(ScClient_FindSoundEx);
-			Install_InlineHook(ScClient_FindSoundEx);
-		}
-
-#define SC_GETCLIENTCOLOR_SIG "\x8B\x4C\x24\x04\x85\xC9\x2A\x2A\x6B\xC1\x58"
-		{
-			gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))
-				g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_GETCLIENTCOLOR_SIG, Sig_Length(SC_GETCLIENTCOLOR_SIG));
-
-			Sig_FuncNotFound(GetClientColor);
-		}
-
-#define SC_VIEWPORT_SIG "\x8B\x0D\x2A\x2A\x2A\x2A\x85\xC9\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x84\xC0\x0F"
-		{
-			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_VIEWPORT_SIG, Sig_Length(SC_VIEWPORT_SIG));
-
-			Sig_AddrNotFound(GameViewport);
-
-			GameViewport = *(decltype(GameViewport) *)(addr + 2);
-			gPrivateFuncs.GameViewport_AllowedToPrintText = (decltype(gPrivateFuncs.GameViewport_AllowedToPrintText))GetCallAddress(addr + 10);
-		}
-
-#define SC_UPDATECURSORSTATE_SIG "\x8B\x40\x28\xFF\xD0\x84\xC0\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00"
-		{
-			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_UPDATECURSORSTATE_SIG, Sig_Length(SC_UPDATECURSORSTATE_SIG));
-			Sig_AddrNotFound(g_iVisibleMouse);
-			g_iVisibleMouse = *(decltype(g_iVisibleMouse) *)(addr + 11);
-		}
-	}
-
-	if (!g_iVisibleMouse && 
-		(PUCHAR)gExportfuncs.IN_Accumulate > (PUCHAR)g_dwClientBase &&
-		(PUCHAR)gExportfuncs.IN_Accumulate < (PUCHAR)g_dwClientBase + g_dwClientSize)
-	{
-		typedef struct
-		{
-			DWORD candidate;
-			int candidate_register;
-		}IN_Accumulate_ctx;
-
-		IN_Accumulate_ctx ctx = { 0 };
-
-		g_pMetaHookAPI->DisasmRanges(gExportfuncs.IN_Accumulate, 0x30, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-		{
-			auto ctx = (IN_Accumulate_ctx *)context;
-			auto pinst = (cs_insn *)inst;
-
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0 &&
-				pinst->detail->x86.operands[1].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwClientBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwClientBase + g_dwClientSize)
-			{
-				ctx->candidate = pinst->detail->x86.operands[1].mem.disp;
-				ctx->candidate_register = pinst->detail->x86.operands[0].reg;
-			}
-
-			if (ctx->candidate_register &&
-				pinst->id == X86_INS_TEST &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[0].reg == ctx->candidate_register &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].reg == ctx->candidate_register )
-			{
-				g_iVisibleMouse = (decltype(g_iVisibleMouse))ctx->candidate;
-			}
-
-			if (pinst->id == X86_INS_CMP &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[0].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwClientBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwClientBase + g_dwClientSize &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM && 
-				pinst->detail->x86.operands[1].imm == 0)
-			{
-				g_iVisibleMouse = (decltype(g_iVisibleMouse))pinst->detail->x86.operands[0].mem.disp;
-			}
-
-			if (g_iVisibleMouse)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-		}, 0, &ctx);
-
-		Sig_VarNotFound(g_iVisibleMouse);
-	}
+	Client_FillAddress();
 
 	Install_InlineHook(pfnTextMessageGet);
 

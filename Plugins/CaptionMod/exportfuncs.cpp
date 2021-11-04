@@ -486,46 +486,98 @@ FARPROC WINAPI NewGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
 	return gPrivateFuncs.GetProcAddress(hModule, lpProcName);
 }
 
-void Steam_Init(void)
+#if defined(_WIN32)
+void Sys_GetRegKeyValueUnderRoot(HKEY rootKey, const char *pszSubKey, const char *pszElement, char *pszReturnString, int nReturnLength, const char *pszDefaultValue)
 {
-	auto steam_api = GetModuleHandleA("steam_api.dll");
+	LONG lResult;           // Registry function result code
+	HKEY hKey;              // Handle of opened/created key
+	char szBuff[128];       // Temp. buffer
+	DWORD dwDisposition;    // Type of key opening event
+	DWORD dwType;           // Type of key
+	DWORD dwSize;           // Size of element data
 
-	if (!steam_api)
+	// Assume the worst
+	Q_snprintf(pszReturnString, nReturnLength, pszDefaultValue);
+
+	// Create it if it doesn't exist.  (Create opens the key otherwise)
+	lResult = RegCreateKeyEx(
+		rootKey,	// handle of open key 
+		pszSubKey,			// address of name of subkey to open 
+		0,					// DWORD ulOptions,	  // reserved 
+		"String",			// Type of value
+		REG_OPTION_NON_VOLATILE, // Store permanently in reg.
+		KEY_ALL_ACCESS,		// REGSAM samDesired, // security access mask 
+		NULL,
+		&hKey,				// Key we are creating
+		&dwDisposition);    // Type of creation
+
+	if (lResult != ERROR_SUCCESS)  // Failure
 		return;
 
-	auto pfnSteamAPI_Init = (decltype(SteamAPI_Init) *)GetProcAddress(steam_api, "SteamAPI_Init");
-
-	if (!pfnSteamAPI_Init)
-		return;
-
-	auto pfnSteamAPI_IsSteamRunning = (decltype(SteamAPI_IsSteamRunning) *)GetProcAddress(steam_api, "SteamAPI_IsSteamRunning");
-
-	if (!pfnSteamAPI_IsSteamRunning)
-		return;
-
-	auto pfnSteamApps = (decltype(SteamApps) *)GetProcAddress(steam_api, "SteamApps");
-
-	if (!pfnSteamApps)
-		return;
-
-	if (pfnSteamAPI_Init())
+	// First time, just set to Valve default
+	if (dwDisposition == REG_CREATED_NEW_KEY)
 	{
-		if (pfnSteamAPI_IsSteamRunning())
-		{
-			const char *pszLanguage = pfnSteamApps()->GetCurrentGameLanguage();
+		// Just Set the Values according to the defaults
+		lResult = RegSetValueEx(hKey, pszElement, 0, REG_SZ, (CONST BYTE *)pszDefaultValue, Q_strlen(pszDefaultValue) + 1);
+	}
+	else
+	{
+		// We opened the existing key. Now go ahead and find out how big the key is.
+		dwSize = nReturnLength;
+		lResult = RegQueryValueEx(hKey, pszElement, 0, &dwType, (unsigned char *)szBuff, &dwSize);
 
-			if (pszLanguage)
+		// Success?
+		if (lResult == ERROR_SUCCESS)
+		{
+			// Only copy strings, and only copy as much data as requested.
+			if (dwType == REG_SZ)
 			{
-				Q_strncpy(m_szCurrentLanguage, pszLanguage, sizeof(m_szCurrentLanguage) - 1);
-				m_szCurrentLanguage[sizeof(m_szCurrentLanguage) - 1] = 0;
+				Q_strncpy(pszReturnString, szBuff, nReturnLength);
+				pszReturnString[nReturnLength - 1] = '\0';
 			}
+		}
+		else
+			// Didn't find it, so write out new value
+		{
+			// Just Set the Values according to the defaults
+			lResult = RegSetValueEx(hKey, pszElement, 0, REG_SZ, (CONST BYTE *)pszDefaultValue, Q_strlen(pszDefaultValue) + 1);
+		}
+	};
+
+	// Always close this key before exiting.
+	RegCloseKey(hKey);
+}
+
+void Sys_GetRegKeyValue(char *pszSubKey, char *pszElement, char *pszReturnString, int nReturnLength, char *pszDefaultValue)
+{
+	Sys_GetRegKeyValueUnderRoot(HKEY_CURRENT_USER, pszSubKey, pszElement, pszReturnString, nReturnLength, pszDefaultValue);
+}
+
+#endif
+
+char * NewV_strncpy(char *a1, const char *a2, size_t a3)
+{
+	const char *lang = NULL;
+	auto gamedir = gEngfuncs.pfnGetGameDirectory();
+	if (CommandLine()->CheckParm("-forcelang", &lang) && lang && lang[0])
+	{
+		a2 = lang;
+	}
+	else if ((gamedir && !strcmp(gamedir, "svencoop")) || CommandLine()->CheckParm("-steamlang"))
+	{
+		char language[128] = { 0 };
+		Sys_GetRegKeyValue("Software\\Valve\\Steam", "Language", language, sizeof(language), "");
+		if ((Q_strlen(language) > 0) && (Q_stricmp(language, "english")))
+		{
+			
+			a2 = m_szCurrentLanguage;
 		}
 	}
 
-	if(!m_szCurrentLanguage[0])
-	{
-		Sys_GetRegKeyValueUnderRoot("Software\\Valve\\Steam", "Language", m_szCurrentLanguage, sizeof(m_szCurrentLanguage), "english");
-	}
+	gPrivateFuncs.V_strncpy(m_szCurrentLanguage, a2, sizeof(m_szCurrentLanguage) - 1);
+	m_szCurrentLanguage[sizeof(m_szCurrentLanguage) - 1] = 0;
+
+	return gPrivateFuncs.V_strncpy(a1, a2, a3);
 }
 
 void MessageMode_f(void)

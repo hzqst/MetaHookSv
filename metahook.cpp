@@ -105,8 +105,8 @@ DWORD MH_ReadDWORD(void *pAddress);
 void MH_WriteBYTE(void *pAddress, BYTE ucValue);
 BYTE MH_ReadBYTE(void *pAddress);
 void MH_WriteNOP(void *pAddress, DWORD dwCount);
-DWORD MH_WriteMemory(void *pAddress, BYTE *pData, DWORD dwDataSize);
-DWORD MH_ReadMemory(void *pAddress, BYTE *pData, DWORD dwDataSize);
+DWORD MH_WriteMemory(void *pAddress, void *pData, DWORD dwDataSize);
+DWORD MH_ReadMemory(void *pAddress, void *pData, DWORD dwDataSize);
 DWORD MH_GetVideoMode(int *wide, int *height, int *bpp, bool *windowed);
 DWORD MH_GetEngineVersion(void);
 int MH_DisasmSingleInstruction(PVOID address, DisasmSingleCallback callback, void *context);
@@ -1406,7 +1406,7 @@ void MH_WriteNOP(void *pAddress, DWORD dwCount)
 	}
 }
 
-DWORD MH_WriteMemory(void *pAddress, BYTE *pData, DWORD dwDataSize)
+DWORD MH_WriteMemory(void *pAddress, void *pData, DWORD dwDataSize)
 {
 	static DWORD dwProtect;
 
@@ -1419,7 +1419,7 @@ DWORD MH_WriteMemory(void *pAddress, BYTE *pData, DWORD dwDataSize)
 	return dwDataSize;
 }
 
-DWORD MH_ReadMemory(void *pAddress, BYTE *pData, DWORD dwDataSize)
+DWORD MH_ReadMemory(void *pAddress, void *pData, DWORD dwDataSize)
 {
 	static DWORD dwProtect;
 
