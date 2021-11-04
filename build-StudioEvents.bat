@@ -8,5 +8,5 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
 
     "%InstallDir%\Common7\Tools\vsdevcmd.bat" -arch=x86
 
-    MSBuild.exe MetaHook.sln /t:StudioEvents /p:Configuration=Release /p:Platform="Win32"
+    MSBuild.exe "Plugins/StudioEvents/StudioEvents.vcxproj" /p:Configuration=Release /p:Platform="Win32"
 )

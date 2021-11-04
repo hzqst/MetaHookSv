@@ -8,5 +8,5 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
 
     "%InstallDir%\Common7\Tools\vsdevcmd.bat" -arch=x86
 
-    MSBuild.exe MetaHook.sln /t:SteamScreenshots /p:Configuration=Release /p:Platform="Win32"
+    MSBuild.exe "Plugins/SteamScreenshots/SteamScreenshots.vcxproj" /p:Configuration=Release /p:Platform="Win32"
 )

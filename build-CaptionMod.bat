@@ -8,5 +8,5 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
 
     "%InstallDir%\Common7\Tools\vsdevcmd.bat" -arch=x86
 
-    MSBuild MetaHook.sln /t:CaptionMod /p:Configuration=Release /p:Platform="Win32"
+    MSBuild "Plugins/CaptionMod/CaptionMod.vcxproj" /p:Configuration=Release /p:Platform="Win32"
 )

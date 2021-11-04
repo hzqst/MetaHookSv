@@ -8,5 +8,5 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
 
     "%InstallDir%\Common7\Tools\vsdevcmd.bat" -arch=x86
     
-    MSBuild.exe MetaHook.sln /t:BulletPhysics /p:Configuration=Release /p:Platform="Win32"
+    MSBuild.exe "Plugins/BulletPhysics/BulletPhysics.vcxproj" /p:Configuration=Release /p:Platform="Win32"
 )
