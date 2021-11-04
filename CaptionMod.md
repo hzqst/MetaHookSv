@@ -20,7 +20,7 @@ check **Command Arguments**
 
 There is a example file demostrates how to translate constant HUD TextMessage to `schinese` , the file is at  `\Sven Co-op\svencoop_schinese\maps\restriction02_dictionary.csv`.
 
-There is a example file demostrates how to translate dynamic HUD TextMessage to `schinese` using regex, the file is at `\Sven Co-op\svencoop\captionmod\dictionary_schinese.txt` called "#SVENCOOP_PLAYERINFO".
+There is a example file demostrates how to translate dynamic HUD TextMessage to `schinese` using regex, the file is at `\Sven Co-op\svencoop\captionmod\dictionary_schinese.txt` called `#SVENCOOP_PLAYERINFO`.
 
 ### Hook original client's old-style HudText and draw it with multi-byte character support.
 
@@ -53,7 +53,7 @@ The default chat text color can be customized in `\Sven Co-op\svencoop\captionmo
 
 `cap_hudmessage` : To enable or disable CaptionMod's HUD TextMessage translation.
 
-`cap_netmessage` : To enable or disable CaptionMod's Network HUD TextMessage translation. (`__NETMESSAGE__`)
+`cap_netmessage` : To enable or disable CaptionMod's `__NETMESSAGE__` HUD TextMessage translation.
 
 `cap_max_distance` : Ignore sound or sentences (which are supposed to play subtitles) whose speaker is too far away from this distance.
 
