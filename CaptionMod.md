@@ -4,35 +4,37 @@
 
 ## Features
 
-## Display subtitles when sound is played
+### Use Steam language or any other customized language as game language
 
-## Display subtitles when sentence is played
+check **Command Arguments**
 
-## Display subtitles when client receives HudText message
+### Display subtitles when sound is played
 
-## Display subtitles when client receives SendAudio message
+### Display subtitles when sentence is played
 
-## Translate HUDText message into other language dynamically (regex supported)
+### Display subtitles when client receives HudText message
 
-There is a example demo shows you how to translate constant HUD TextMessage into other language in "Build\svencoop\maps\restriction02_dictionary.csv".
+### Display subtitles when client receives SendAudio message
 
-There is a example demo shows you how to translate dynamic HUD TextMessage into other language with regex in "Build\svencoop\captionmod\dictionary_schinese.txt" called "#SVENCOOP_PLAYERINFO", however it won't take effect in game since Sven-Coop only uses "dictionary_english.txt" as localization file.
+### Translate HUDText message into other language dynamically (regex supported)
 
-Modify and overwrite "dictionary_english.txt" is the best option if you are expected to use non-English language in game.
+There is a example file demostrates how to translate constant HUD TextMessage to `schinese` , the file is at  `\Sven Co-op\svencoop_schinese\maps\restriction02_dictionary.csv`.
 
-## Hook original client's old-style HudText and draw it with multi-byte character support.
+There is a example file demostrates how to translate dynamic HUD TextMessage to `schinese` using regex, the file is at `\Sven Co-op\svencoop\captionmod\dictionary_schinese.txt` called `#SVENCOOP_PLAYERINFO`.
 
-## Hook VGUI1 TextImage's paint procedure and draw it with multi-byte character support.
+### Hook original client's old-style HudText and draw it with multi-byte character support.
+
+### Hook VGUI1 TextImage's paint procedure and draw it with multi-byte character support.
 
 * You can see multi-byte characters rendered correctly on scoreboard.
 
-## Custom dictionary support for specified map, put dictionary file at "/maps/[mapname]_dictionary.csv"
+### Custom dictionary support for specified map, put dictionary file at "/maps/[mapname]_dictionary.csv"
 
-## New Source-Engine style ChatDialog
+### New Source2007 style VGUI2 ChatDialog
 
 Set cvar `cap_newchat` to 1 to enable new chat dialog.
 
-The default chat text color could be customized in `\svencoop\captionmod\ChatScheme.res` -> `Colors` -> `TanLight`
+The default chat text color can be customized in `\Sven Co-op\svencoop\captionmod\ChatScheme.res` -> `Colors` -> `TanLight`
 
 ![](/img/1.png)
 
@@ -47,10 +49,20 @@ The default chat text color could be customized in `\svencoop\captionmod\ChatSch
 
 #### Console Vars
 
-cap_enabled 0 / 1 : To enable or disable CaptionMod's subtitle display.
+`cap_enabled` : To enable or disable CaptionMod's subtitle display.
 
-cap_netmessage 0 / 1 : To enable or disable CaptionMod's HUD TextMessage translation.
+`cap_hudmessage` : To enable or disable CaptionMod's HUD TextMessage translation.
 
-cap_debug 0 / 1 : To output debug message when there is a HUD TextMessage or sound playing.
+`cap_netmessage` : To enable or disable CaptionMod's `__NETMESSAGE__` HUD TextMessage translation.
 
-####
+`cap_max_distance` : Ignore sound or sentences (which are supposed to play subtitles) whose speaker is too far away from this distance.
+
+`cap_debug` : To output debug message when there is a HUD TextMessage or sound playing.
+
+`cap_newchat` : To enable or disable Source2007 style VGUI2 chat dialog.
+
+#### Command Arguments
+
+`-steamlang` : use Steam language as engine and vgui2 language, ignore game language setting in Steam's game config panel. for Sven Co-op, it always uses Steam language as engine and vgui2 language no matter if -steamlang is added or not.
+
+`-forcelang [language]` : force engine and vgui2 to use [language] as engine and vgui2 language, ignore game language setting in Steam's game config panel.
