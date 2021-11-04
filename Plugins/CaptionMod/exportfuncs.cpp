@@ -557,6 +557,7 @@ void Sys_GetRegKeyValue(char *pszSubKey, char *pszElement, char *pszReturnString
 
 char * NewV_strncpy(char *a1, const char *a2, size_t a3)
 {
+	char language[128] = { 0 };
 	const char *lang = NULL;
 	auto gamedir = gEngfuncs.pfnGetGameDirectory();
 	if (CommandLine()->CheckParm("-forcelang", &lang) && lang && lang[0])
@@ -565,12 +566,10 @@ char * NewV_strncpy(char *a1, const char *a2, size_t a3)
 	}
 	else if ((gamedir && !strcmp(gamedir, "svencoop")) || CommandLine()->CheckParm("-steamlang"))
 	{
-		char language[128] = { 0 };
 		Sys_GetRegKeyValue("Software\\Valve\\Steam", "Language", language, sizeof(language), "");
 		if ((Q_strlen(language) > 0) && (Q_stricmp(language, "english")))
 		{
-			
-			a2 = m_szCurrentLanguage;
+			a2 = language;
 		}
 	}
 

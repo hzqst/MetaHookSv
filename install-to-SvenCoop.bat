@@ -16,6 +16,7 @@ copy "%~dp0Build\SDL2.dll" "%GameDir%\" /y
 copy "%~dp0Build\FreeImage.dll" "%GameDir%\" /y
 xcopy "%~dp0Build\svencoop" "%GameDir%\%LauncherMod%" /y /e
 xcopy "%~dp0Build\svencoop_addon" "%GameDir%\%LauncherMod%_addon" /y /e
+xcopy "%~dp0Build\svencoop_schinese" "%GameDir%\%LauncherMod%_schinese" /y /e
 
 powershell $shell = New-Object -ComObject WScript.Shell;$shortcut = $shell.CreateShortcut(\"MetaHook for SvenCoop.lnk\");$shortcut.TargetPath = \"%GameDir%\%LauncherExe%\";$shortcut.WorkingDirectory = \"%GameDir%\";$shortcut.Arguments = \"-game %LauncherMod%\";$shortcut.Save();
 
