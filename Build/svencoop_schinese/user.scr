@@ -1,0 +1,337 @@
+// NOTE:  THIS FILE IS AUTOMATICALLY REGENERATED, 
+//DO NOT EDIT THIS HEADER, YOUR COMMENTS WILL BE LOST IF YOU DO
+// User options script
+//
+// Format:
+//  Version [float]
+//  Options description followed by 
+//  Options defaults
+//
+// Option description syntax:
+//
+//  "cvar" { "Prompt" { type [ type info ] } { default } }
+//
+//  type = 
+//   BOOL   (a yes/no toggle)
+//   STRING
+//   NUMBER
+//   LIST
+//
+// type info:
+// BOOL                 no type info
+// NUMBER       min max range, use -1 -1 for no limits
+// STRING       no type info
+// LIST          delimited list of options value pairs
+//
+//
+// default depends on type
+// BOOL is "0" or "1"
+// NUMBER is "value"
+// STRING is "value"
+// LIST is "index", where index "0" is the first element of the list
+
+
+// Sven Co-op User Info Configuration Layout Script (stores last settings chosen, too)
+// File generated:  Sun Dec 17 11:43:30 AM
+//
+//
+// Cvar	-	Setting
+
+VERSION 1.0
+
+DESCRIPTION INFO_OPTIONS
+{
+	"crosshair"
+	{
+		"HUD: 是否显示准星"
+		{ BOOL }
+		{ "1" }
+	}
+
+	"hud_weaponautoswitch"
+	{
+		"HUD: 是否自动切换捡起的武器"
+		{
+			LIST
+			"永不" "0"
+			"如果比现有的更好" "1"
+			"总是" "2"
+		}
+		{ "1.000000" }
+	}
+
+	"cl_showfps"
+	{
+		"HUD:显示帧率"
+		{
+			LIST
+			"不显示" "0"
+			"显示fps" "1"
+			"显示fps和响应时间" "2"
+			"显示fps和相应时间" "3"
+		}
+		{ "0" }
+	}
+
+		"cl_fpspos"
+	{
+		"HUD:帧率显示位置"
+		{
+			LIST
+			"左上角" "1"
+			"右上角" "2"
+			"左下角" "3"
+			"右下角" "4"
+		}
+		{ "0" }
+		
+	}
+	    "cl_fpscolor"
+		{
+		"HUD:帧率多少决定显示颜色"
+		{
+			LIST
+			"启用" "1"
+			"禁用" "0"
+		}
+		{ "0" }
+	}
+	
+	"cl_hidextra"
+	{
+		"HUD: 隐藏您的捐赠者图标"
+		{ BOOL }
+		{ "0" }
+	}
+
+	"cl_hideadmin"
+	{
+		"HUD: 隐藏您的管理员/服务器拥有者图标"
+		{ BOOL }
+		{ "1" }
+	}
+	
+	"hud_draw"
+	{
+	    "HUD:是否渲染HUD"
+		{ BOOL }
+		{ "1"  }
+    }
+	
+	"hpk_maxsize"
+	{
+		"图形:喷漆缓存最大量"
+		{
+			LIST
+			"无限制的" "0"
+			"启用:标准 (2MB)" "2.0"
+			"启用:更大的 (16MB)" "16.0"
+		}
+		{ "16.000000" }
+	}
+
+	"mp_decals"
+	{
+		"图形:贴图限制"
+		{ NUMBER 1.000000 4096.000000 }
+		{ "400.000000" }
+	}
+
+	"cl_particles_max"
+	{
+		"图形:粒子效果限制"
+		{ NUMBER 0.000000 4096.000000 }
+		{ "800.000000" }
+	}
+
+	"cl_bob"
+	{
+		"图形: 视角前后移动摇晃幅度"
+		{
+			LIST
+			"关闭" "0"
+			"标准" "0.01"
+			"更剧烈的" "0.025"
+		}
+		{ "0.000000" }
+	}
+
+	"cl_rollangle"
+	{
+		"图形:视角左右移动摇晃幅度"
+		{
+			LIST
+			"关闭" "0"
+			"标准" "2.0"
+			"更强烈的" "5.0"
+			"反向" "-2.0"
+			"更剧烈的(反向)" "-5.0"
+		}
+		{ "0.000000" }
+	}
+	
+	"s_mute_unfocused"
+	{
+		"音频: 当窗口无焦点时静音"
+		{ BOOL }
+		{ "1" }
+	}
+
+	"s_force_dsound"
+	{
+		"音频: 使用DirectSound代替WASAPI(重启游戏生效)"
+		{ BOOL }
+		{ "1" }
+	}
+
+	"con_mono"
+	{
+		"开发者: 等宽控制台字体"
+		{ BOOL }
+		{ "1" }
+	}
+
+	"developer"
+	{
+		"开发者: 详细程度(将降低帧率!)"
+		{
+			LIST
+			"关闭" "0"
+			"开启" "1"
+			"详细的" "2"
+			"非常详细的" "3"
+			"最详细的" "4"
+		}
+		{ "0.000000" }
+	}
+	
+	"fps_max"
+	{
+		"最大帧率"
+		{ NUMBER 20 1000.000000 }
+		{ "200.000000" }
+	}
+		
+	"fps_override"
+	{
+			"解除最大帧率限制"
+		{
+			LIST
+			"禁用" "0"
+			"启用" "1"
+
+		}
+		{ "1.000000" }
+	}
+	
+	"cl_updaterate"
+		{
+		"网络:客户端最大下载率"
+		{ NUMBER 10.000000 102.000000 }
+		{ "20.000000" }
+	}
+	
+		"cl_cmdrate"
+		{
+		"网络:客户端最大上传率"
+		{ NUMBER 10.000000 9999.000000 }
+		{ "30.000000" }
+	}
+	
+	"ex_interp"
+	{
+	"网络:Interp(网络插值)"
+	{ NUMBER 0.010000 0.100000 }
+	{ "0.033" }
+	}
+	
+	"rate"
+	{
+	"网络:rate(每个数据包中的数据总量)"
+	{ NUMBER 0.000000 9999999.000000 }
+	{"25000"}
+	}
+	
+	"net_graph"
+	{
+		"网络:显示网络信息"
+		{
+			LIST
+			"关闭" "0"
+			"模式1" "1"
+			"模式2" "2"
+			"模式3" "3"
+			"模式4" "4"
+		}
+		{ "0" }
+	}
+	
+	"net_graphpos"	
+	{
+	"网络信息显示位置(1右2中3左)"
+	{ NUMBER 1.000000 3.000000 }
+	{ 1.000000 }
+	}
+	
+	"net_graphwidth"	
+	{
+	"网络:网络信息显示位宽"
+	{ NUMBER 0.000000 999999.000000 }
+	{ 150.000000 }
+	}
+	
+	"zoom_sensitivity_ratio"
+	{
+	"游戏内:放大瞄准灵敏度"
+	{ number 0.000000 9999999.000000 }
+	{" 1.200000 "}
+	}
+	
+     "default_fov"
+	{
+		"游戏内:视野 默认70,范围10-110"
+		{ NUMBER 10.000000 110.000000 }
+		{ "70.000000" }
+	}
+	
+	"hud_saytext_time"
+	{
+	"游戏内:一条聊天信息的显示时间"
+    { number 0.00000 9999999.000000}
+	{ 6.000000 }
+	}
+	
+	"hud_saytext_lines"
+	{
+	"游戏内:聊天信息最大行数"
+	{ NUMBER 0.000000 999999.000000}
+	{ "6.000000" }
+	}
+	
+	"hud_drawhistory_time"
+	{
+	"游戏内:历史信息显示时间"
+	{ number 0.000000 999999.0000000 }
+	{ "6.000000" }
+    }
+	
+	"cl_timeout"
+	{
+	"游戏内:断线超时时间"
+	{ number 0.000000 999999.000000 }
+	{ "30.000000" }
+	}
+    
+	"cl_showstats"
+	{
+		"游戏内:显示客户端和服务器信息"
+		{
+			LIST
+			"关闭" "0"
+			"开启" "1"
+			"详细的" "2"
+		}
+		{ "0.000000" }
+	}
+	
+}
