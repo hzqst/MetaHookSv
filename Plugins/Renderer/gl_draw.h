@@ -51,6 +51,7 @@ typedef struct
 	byte bPFFourCC[4];
 }dds_header_t;
 
+int GL_AllocTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int height, qboolean mipmap);
 int GL_FindTexture(const char *identifier, GL_TEXTURETYPE textureType, int *width, int *height);
 const char * V_GetFileExtension(const char * path);
 const char * V_UnqualifiedFileName(const char * in);

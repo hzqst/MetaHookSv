@@ -525,23 +525,10 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 
 					glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, VBOCache->ripple_image);
 					
-					VBOCache->ripplemap = GL_GenTextureRGBA8(VBOCache->ripple_width, VBOCache->ripple_height);
+					char identifier[64] = { 0 };
+					snprintf(identifier, sizeof(identifier) - 1, "%s_ripple", surf->texinfo->texture->name);
+					VBOCache->ripplemap = GL_LoadTextureEx(identifier, GLT_WORLD, VBOCache->ripple_width, VBOCache->ripple_height, VBOCache->ripple_image, true, true);
 					
-					//Upload original image data using GL_UploadRGBA8, otherwise this texture will not work.
-
-					glBindTexture(GL_TEXTURE_2D, VBOCache->ripplemap);
-
-					int filter_min = *gl_filter_min;
-					int filter_max = *gl_filter_max; 
-					
-					*gl_filter_min = GL_NEAREST;
-					*gl_filter_max = GL_NEAREST;
-
-					GL_UploadRGBA8((byte *)VBOCache->ripple_image, VBOCache->ripple_width, VBOCache->ripple_height, true, true, GL_REPEAT);
-
-					*gl_filter_min = filter_min;
-					*gl_filter_max = filter_max;
-
 					VBOCache->ripple_spots[0] = (short *)malloc(imageSize * sizeof(short));
 					memset(VBOCache->ripple_spots[0], 0, imageSize * sizeof(short));
 

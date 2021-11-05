@@ -156,7 +156,7 @@ void GL_EnableMultitexture(void)
 	gRefFuncs.GL_EnableMultitexture();
 }
 
-void GL_UploadDXT(byte *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap)
+void GL_UploadDXT(void *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap)
 {
 	int iTextureTarget = GL_TEXTURE_2D;
 
@@ -198,7 +198,7 @@ void GL_UploadDXT(byte *data, int width, int height, qboolean mipmap, qboolean a
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
 }
 
-void GL_UploadRGBA8(byte *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap)
+void GL_UploadRGBA8(void *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap)
 {
 	int iComponent, iFormat, iTextureTarget;
 
@@ -395,7 +395,7 @@ int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int
 	return gRefFuncs.GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iType, pPal, filter);
 }
 
-int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, qboolean ansio)
+int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, void *data, qboolean mipmap, qboolean ansio)
 {
 	int texnum = GL_AllocTexture((char *)identifier, textureType, width, height, mipmap);
 

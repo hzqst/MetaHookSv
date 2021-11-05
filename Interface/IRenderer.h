@@ -14,7 +14,7 @@
 class IRenderer : public IBaseInterface
 {
 public:
-	virtual void GetInterface(ref_export_t *pRefExports, const char *version);
+	
 };
 
 #define RENDERER_API_VERSION "RENDER_API_VERSION001"
