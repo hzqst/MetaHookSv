@@ -16,8 +16,9 @@ r_studio_interface_t **gpStudioInterface;
 #define MHSV_CMD_QUERY_PLUGIN 1
 #define MHSV_CMD_QUERY_CVAR 2
 
-void MsgFunc_MetaHookSv(void)
+int __MsgFunc_MetaHook(const char *pszName, int iSize, void *pbuf)
 {
+	BEGIN_READ(pbuf, iSize);
 	auto cmd2 = READ_BYTE();
 	if (cmd2 == MHSV_CMD_QUERY_PLUGIN)
 	{
@@ -47,33 +48,12 @@ void MsgFunc_MetaHookSv(void)
 			gEngfuncs.pfnServerCmd(cmd);
 		}
 	}
-}
-
-int __MsgFunc_MetaHookSv(const char *pszName, int iSize, void *pbuf)
-{
-	BEGIN_READ(pbuf, iSize);
-	MsgFunc_MetaHookSv();
 	return 0;
-}
-
-void HUD_DirectorMessage(int iSize, void *pbuf)
-{
-	BEGIN_READ(pbuf, iSize);
-
-	auto cmd = READ_BYTE();
-
-	if (cmd == 100)
-	{
-		MsgFunc_MetaHookSv();
-		return;
-	}	
-
-	gExportfuncs.HUD_DirectorMessage(iSize, pbuf);
 }
 
 void HUD_Init(void)
 {
 	gExportfuncs.HUD_Init();
 
-	gEngfuncs.pfnHookUserMsg("MetaHookSv", __MsgFunc_MetaHookSv);
+	gEngfuncs.pfnHookUserMsg("MetaHook", __MsgFunc_MetaHook);
 }

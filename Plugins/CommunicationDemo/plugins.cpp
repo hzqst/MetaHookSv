@@ -56,7 +56,6 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
 
 	pExportFunc->HUD_Init = HUD_Init;
-	pExportFunc->HUD_DirectorMessage = HUD_DirectorMessage;
 }
 
 void IPluginsV4::ExitGame(int iResult)
