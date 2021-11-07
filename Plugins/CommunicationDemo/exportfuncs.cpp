@@ -26,7 +26,7 @@ int __MsgFunc_MetaHook(const char *pszName, int iSize, void *pbuf)
 		for (int index = -1; g_pMetaHookAPI->QueryPluginInfo(index, &info); ++index)
 		{
 			char cmd[128] = { 0 };
-			snprintf(cmd, sizeof(cmd) - 1, "mh_reportplugin %d %d \"%s\" \"%s\" ", info.Index, info.InterfaceVersion, info.PluginName, info.PluginVersion);
+			snprintf(cmd, sizeof(cmd) - 1, ".mh_reportplugin %d %d \"%s\" \"%s\" ", info.Index, info.InterfaceVersion, info.PluginName, info.PluginVersion);
 			gEngfuncs.pfnServerCmd(cmd);
 		}
 	}
@@ -38,13 +38,13 @@ int __MsgFunc_MetaHook(const char *pszName, int iSize, void *pbuf)
 		if (cvar)
 		{
 			char cmd[128] = { 0 };
-			snprintf(cmd, sizeof(cmd) - 1, "mh_reportcvar %d \"%s\" \"%s\" ", request_id, cvar->name, cvar->string);
+			snprintf(cmd, sizeof(cmd) - 1, ".mh_reportcvar %d \"%s\" \"%s\" ", request_id, cvar->name, cvar->string);
 			gEngfuncs.pfnServerCmd(cmd);
 		}
 		else
 		{
 			char cmd[128] = { 0 };
-			snprintf(cmd, sizeof(cmd) - 1, "mh_reportcvar %d \"%s\"", request_id, cvar_name);
+			snprintf(cmd, sizeof(cmd) - 1, ".mh_reportcvar %d \"%s\" \"%s\"", request_id, cvar_name, "NOTPRESENT");
 			gEngfuncs.pfnServerCmd(cmd);
 		}
 	}
