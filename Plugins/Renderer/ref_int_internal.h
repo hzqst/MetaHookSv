@@ -102,6 +102,11 @@ typedef struct
 	//Client Studio
 	void (__fastcall *GameStudioRenderer_StudioRenderModel)(void *pthis, int);
 	void (__fastcall *GameStudioRenderer_StudioRenderFinal)(void *pthis, int);
+
+	//Engine Studio
+	void(__fastcall *R_StudioRenderModel)(void);
+	void(__fastcall *R_StudioRenderFinal)(void);
+
 }ref_funcs_t;
 
 extern ref_funcs_t gRefFuncs;

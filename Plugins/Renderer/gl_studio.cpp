@@ -1127,6 +1127,54 @@ void R_StudioDrawBatch(void)
 	R_EnableStudioVBO(NULL);
 }
 
+//Engine StudioRenderer
+
+void R_StudioRenderFinal(void)
+{
+	if (r_draw_shadowcaster)
+	{
+		IEngineStudio.SetupRenderer((*currententity)->curstate.rendermode);
+		IEngineStudio.GL_SetRenderMode((*currententity)->curstate.rendermode);
+
+		R_StudioDrawBatch();
+
+		IEngineStudio.RestoreRenderer();
+	}
+	else
+	{
+		gRefFuncs.R_StudioRenderFinal();
+	}
+}
+
+void R_StudioRenderModel(void)
+{
+	if (r_draw_shadowcaster)
+	{
+		return gRefFuncs.R_StudioRenderModel();
+	}
+
+	if ((*pstudiohdr)->flags & EF_OUTLINE)
+	{
+		gRefFuncs.R_StudioRenderModel();
+
+		int saved_renderfx = (*currententity)->curstate.renderfx;
+		int savbed_renderamt = (*currententity)->curstate.renderamt;
+
+		(*currententity)->curstate.renderfx = kRenderFxOutline;
+		(*currententity)->curstate.renderamt = clamp(r_studio_outline_size->value, 0, 255);
+
+		gRefFuncs.R_StudioRenderModel();
+
+		(*currententity)->curstate.renderfx = saved_renderfx;
+		(*currententity)->curstate.renderamt = savbed_renderamt;
+		return;
+	}
+
+	return gRefFuncs.R_StudioRenderModel();
+}
+
+//Client StudioRenderer
+
 void __fastcall GameStudioRenderer_StudioRenderFinal(void *pthis, int)
 {
 	if (r_draw_shadowcaster)

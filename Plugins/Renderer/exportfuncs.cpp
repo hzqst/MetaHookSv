@@ -823,7 +823,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 	cl_shellchrome = IEngineStudio.Mod_ForName("sprites/shellchrome.spr", 1);
 
-	int result = gExportfuncs.HUD_GetStudioModelInterface(version, ppinterface, pstudio);
+	int result = gExportfuncs.HUD_GetStudioModelInterface ? gExportfuncs.HUD_GetStudioModelInterface(version, ppinterface, pstudio) : 1;
 
 	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
 
@@ -878,9 +878,42 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		Install_InlineHook(GameStudioRenderer_StudioRenderModel);
 		Install_InlineHook(GameStudioRenderer_StudioRenderFinal);
 	}
+	else if ((void *)(*ppinterface)->StudioDrawPlayer > g_dwEngineBase && (void *)(*ppinterface)->StudioDrawPlayer < (PUCHAR)g_dwEngineBase + g_dwEngineSize)
+	{
+#define R_STUDIORENDERMODEL_SIG "\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x10\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B"
+		auto addr = Search_Pattern(R_STUDIORENDERMODEL_SIG);
+		Sig_AddrNotFound(R_StudioRenderModel);
+		gRefFuncs.R_StudioRenderModel = (decltype(gRefFuncs.R_StudioRenderModel))GetCallAddress((PUCHAR)addr + 9);
+		
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_StudioRenderModel, 0x80, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+
+			if (address[0] == 0xE8)
+			{
+				gRefFuncs.R_StudioRenderFinal = (decltype(gRefFuncs.R_StudioRenderFinal))pinst->detail->x86.operands[0].imm;
+			}
+
+			if (gRefFuncs.R_StudioRenderFinal)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_FuncNotFound(R_StudioRenderFinal);
+
+		Install_InlineHook(R_StudioRenderModel);
+		Install_InlineHook(R_StudioRenderFinal);
+	}
 	else
 	{
-		Sig_NotFound(g_pGameStudioRenderer);
+		gEngfuncs.Con_Printf("Warning : failed to locate g_pGameStudioRenderer or EngineStudioRenderer!\n");
 	}
 
 	//Hack for R_DrawSpriteModel

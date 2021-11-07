@@ -10,6 +10,11 @@ typedef struct
 	int (__fastcall *GameStudioRenderer_StudioDrawPlayer)(void *pthis, int, int flags, struct entity_state_s *pplayer);
 	void(__fastcall *GameStudioRenderer_StudioSetupBones)(void *pthis, int);
 
+	//Engine StudioRenderer
+	int (*R_StudioDrawModel)(int flags);
+	int (*R_StudioDrawPlayer)(int flags, struct entity_state_s *pplayer);
+	void (*R_StudioSetupBones)(void);
+
 	void (*FirstPerson_f)(void);
 	void (*ThreadPerson_f)(void);
 }privte_funcs_t;
