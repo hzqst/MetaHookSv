@@ -2268,6 +2268,7 @@ void R_DrawEntitiesOnList(void)
 		}
 
 		if ((*currententity)->curstate.rendermode == kRenderNormal &&
+			(*currententity)->model &&
 			(*currententity)->model->type == mod_sprite &&
 			gl_spriteblend->value)
 		{
@@ -2275,7 +2276,8 @@ void R_DrawEntitiesOnList(void)
 			continue;
 		}
 
-		if ((*currententity)->model->type != mod_sprite)
+		if ((*currententity)->model && 
+			(*currententity)->model->type != mod_sprite)
 		{
 			R_DrawCurrentEntity(false);
 		}
