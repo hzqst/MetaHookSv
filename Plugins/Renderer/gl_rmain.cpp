@@ -278,10 +278,10 @@ float GlowBlend(cl_entity_t *entity)
 int CL_FxBlend(cl_entity_t *entity)
 {
 	//Hack for R_DrawSpriteModel
-	if (entity->model && entity->model->type == mod_sprite && entity->curstate.rendermode == kRenderNormal)
-	{
-		return 255;
-	}
+	//if (entity->model && entity->model->type == mod_sprite && entity->curstate.rendermode == kRenderNormal)
+	//{
+	//	return 255;
+	//}
 
 	return gRefFuncs.CL_FxBlend(entity);
 }
@@ -491,6 +491,12 @@ void R_DrawParticlesNew(void)
 void R_DrawParticles(void)
 {
 	return;
+}
+
+void triapi_Color4f(float x, float y, float z, float w)
+{
+	//glColor4f(x, y, z, w);
+	gRefFuncs.triapi_Color4f(x, y, z, w);
 }
 
 void triapi_RenderMode(int mode)

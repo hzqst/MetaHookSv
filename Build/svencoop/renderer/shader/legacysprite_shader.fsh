@@ -19,6 +19,7 @@ void main()
 	diffuseColor = TexGammaToLinear(diffuseColor);
 
 	vec4 lightmapColor = v_color;
+
 	lightmapColor.r = clamp(lightmapColor.r, 0.0, 1.0);
 	lightmapColor.g = clamp(lightmapColor.g, 0.0, 1.0);
 	lightmapColor.b = clamp(lightmapColor.b, 0.0, 1.0);

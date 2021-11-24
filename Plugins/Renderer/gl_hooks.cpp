@@ -216,6 +216,7 @@ void R_FillAddress(void)
 	}
 
 	gRefFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
+	gRefFuncs.triapi_Color4f = gEngfuncs.pTriAPI->Color4f;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -3019,6 +3020,7 @@ void R_InstallHook(void)
 	Install_InlineHook(enginesurface_drawFlushText);
 	Install_InlineHook(Mod_LoadStudioModel);
 	Install_InlineHook(triapi_RenderMode);
+	//Install_InlineHook(triapi_Color4f);
 	Install_InlineHook(BuildGammaTable);
 	Install_InlineHook(Cvar_DirectSet);
 }

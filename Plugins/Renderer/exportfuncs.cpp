@@ -917,7 +917,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	}
 
 	//Hack for R_DrawSpriteModel
-	Install_InlineHook(CL_FxBlend);
+	//Install_InlineHook(CL_FxBlend);
 
 	return result;
 }

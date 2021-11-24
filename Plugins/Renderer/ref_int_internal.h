@@ -80,6 +80,7 @@ typedef struct
 	void(*CL_SetDevOverView)(void *a1);
 	void (*Mod_LoadStudioModel)(model_t *mod, void *buffer);
 	void(*triapi_RenderMode)(int mode);
+	void(*triapi_Color4f) (float r, float g, float b, float a);
 	void(__fastcall *enginesurface_drawFlushText)(void *pthis, int);
 	void(*DLL_SetModKey)(void *pinfo, char *pkey, char *pvalue);
 	//SvClient
