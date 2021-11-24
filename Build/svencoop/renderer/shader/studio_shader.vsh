@@ -89,7 +89,7 @@ void main(void)
 
 			lv = LightGammaToLinearInternal(lv);
 
-			lv = max(lv, 0.03);
+			//lv = max(lv, 0.03);
 
 			v_color = vec4(lv * StudioUBO.r_colormix.x, lv * StudioUBO.r_colormix.y, lv * StudioUBO.r_colormix.z, StudioUBO.r_blend);
 

@@ -387,6 +387,18 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 	{
 		m_Type = DICT_SOUND;
 	}
+	else if (m_szTitle.length() > 4 && !Q_stricmp(&m_szTitle[m_szTitle.length() - 4], ".ogg"))
+	{
+		m_Type = DICT_SOUND;
+	}
+	else if (m_szTitle.length() > 4 && !Q_stricmp(&m_szTitle[m_szTitle.length() - 4], ".ogg"))
+	{
+		m_Type = DICT_SOUND;
+	}
+	else if (m_szTitle.length() > 4 && !Q_stricmp(&m_szTitle[m_szTitle.length() - 4], ".wma"))
+	{
+		m_Type = DICT_SOUND;
+	}
 
 	//If it's a textmessage found in engine (gamedir/titles.txt)
 	client_textmessage_t *textmsg = gEngfuncs.pfnTextMessageGet(m_szTitle[0] == '#' ? &m_szTitle[1] : &m_szTitle[0]);
