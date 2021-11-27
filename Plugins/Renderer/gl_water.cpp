@@ -438,13 +438,27 @@ void R_UpdateRippleTexture(water_vbo_t *VBOCache, int framecount)
 	glBindTexture(GL_TEXTURE_2D, *currenttexture);
 }
 
-void GL_UploadRGBA8(byte *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap);
+int R_DecodeWaterVBOIndex(msurface_t *surf, int direction)
+{
+	if (direction)
+	{
+		return ((surf->lightmaptexturenum >> 16) & 0xFFFF);
+	}
+
+	return (surf->lightmaptexturenum & 0xFFFF);
+}
+
+int R_EncodeWaterVBOIndex(int abovewaterindex, int underwaterindex)
+{
+	return ((underwaterindex & 0xFFFF) << 16) | (abovewaterindex & 0xFFFF);
+}
 
 water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction)
 {
 	water_vbo_t *VBOCache = NULL;
 
-	if (!surf->lightmaptexturenum)
+	int decodedVBOIndex = R_DecodeWaterVBOIndex(surf, direction);
+	if (!decodedVBOIndex)
 	{
 		//Find flat WaterVBOCache with same texture and same height
 
@@ -558,13 +572,30 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 			g_WaterVBOCache.emplace_back(VBOCache);
 		}
 
-		surf->lightmaptexturenum = VBOCache->index + 1;
+		if (direction)
+		{
+			surf->lightmaptexturenum = R_EncodeWaterVBOIndex(R_DecodeWaterVBOIndex(surf, 1 - direction), VBOCache->index + 1);
+		}
+		else
+		{
+			surf->lightmaptexturenum = R_EncodeWaterVBOIndex(VBOCache->index + 1, R_DecodeWaterVBOIndex(surf, 1 - direction));
+		}
 
 		for (int j = 0; j < brushface->num_polys; ++j)
 		{
-			for (int k = 0; k < brushface->num_vertexes[j]; ++k)
+			if (direction)
 			{
-				VBOCache->vIndicesBuffer.emplace_back(brushface->start_vertex[j] + k);
+				for (int k = brushface->num_vertexes[j] - 1; k >= 0; --k)
+				{
+					VBOCache->vIndicesBuffer.emplace_back(brushface->start_vertex[j] + k);
+				}
+			}
+			else
+			{
+				for (int k = 0; k < brushface->num_vertexes[j]; ++k)
+				{
+					VBOCache->vIndicesBuffer.emplace_back(brushface->start_vertex[j] + k);
+				}
 			}
 			VBOCache->vIndicesBuffer.emplace_back((GLuint)0xFFFFFFFF);
 		}
@@ -577,7 +608,7 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 	}
 	else
 	{
-		VBOCache = g_WaterVBOCache[surf->lightmaptexturenum - 1];
+		VBOCache = g_WaterVBOCache[decodedVBOIndex - 1];
 	}
 
 	if(VBOCache->level == WATER_LEVEL_LEGACY_RIPPLE)

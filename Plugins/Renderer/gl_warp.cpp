@@ -302,14 +302,14 @@ void R_DrawWaters(void)
 		glVertexAttribPointer(3, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, t_tangent));
 		glVertexAttribPointer(4, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
 		glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-		glDisable(GL_CULL_FACE);
+		//glDisable(GL_CULL_FACE);
 
 		for (int i = 0; i < g_iNumRenderWaterVBOCache; ++i)
 		{
 			R_DrawWaterVBO(g_RenderWaterVBOCache[i]);
 		}
 
-		glEnable(GL_CULL_FACE);
+		//glEnable(GL_CULL_FACE);
 		glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);
