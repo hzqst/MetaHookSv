@@ -1771,8 +1771,16 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 				if (pplane->type != PLANE_Z)
 					continue;
 
-				if (r_entity_mins[2] >= pplane->dist)
-					continue;
+				if (g_iEngineType == ENGINE_SVENGINE)
+				{
+					if (r_entity_mins[2] >= pplane->dist)
+						continue;
+				}
+				else
+				{
+					if (r_entity_mins[2] + 1.0f >= pplane->dist)
+						continue;
+				}
 			}
 
 			auto dot = DotProduct(modelorg, pplane->normal) - pplane->dist;
