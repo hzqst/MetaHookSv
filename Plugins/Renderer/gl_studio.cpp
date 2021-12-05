@@ -887,6 +887,9 @@ void R_GLStudioDrawPoints(void)
 			StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE | STUDIO_TRANSADDITIVE_ENABLED;
 		}
 
+		if (!r_studio_celshade->value && (StudioProgramState & (STUDIO_NF_CELSHADE | STUDIO_NF_CELSHADE_FACE)))
+			StudioProgramState &= ~(STUDIO_NF_CELSHADE | STUDIO_NF_CELSHADE_FACE);
+
 		if (r_draw_pass == r_draw_reflect && curwater)
 		{
 			StudioProgramState |= STUDIO_CLIP_ENABLED;
