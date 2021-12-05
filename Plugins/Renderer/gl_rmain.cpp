@@ -1107,7 +1107,7 @@ void GL_GenerateFrameBuffers(void)
 	s_BackBufferFBO.iWidth = glwidth;
 	s_BackBufferFBO.iHeight = glheight;
 	GL_GenFrameBuffer(&s_BackBufferFBO);
-	GL_FrameBufferColorTexture(&s_BackBufferFBO, GL_RGB16F);
+	GL_FrameBufferColorTexture(&s_BackBufferFBO, GL_RGBA16F);
 	GL_FrameBufferDepthTexture(&s_BackBufferFBO, GL_DEPTH24_STENCIL8);
 
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -1119,7 +1119,7 @@ void GL_GenerateFrameBuffers(void)
 	s_BackBufferFBO2.iWidth = glwidth;
 	s_BackBufferFBO2.iHeight = glheight;
 	GL_GenFrameBuffer(&s_BackBufferFBO2);
-	GL_FrameBufferColorTexture(&s_BackBufferFBO2, GL_RGB16F);
+	GL_FrameBufferColorTexture(&s_BackBufferFBO2, GL_RGBA16F);
 	GL_FrameBufferDepthTexture(&s_BackBufferFBO2, GL_DEPTH24_STENCIL8);
 
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -1569,7 +1569,7 @@ void R_RenderView_SvEngine(int a1)
 		R_ParseVectorCvar(gl_clearcolor, clearColor);
 	}
 
-	glClearColor(clearColor[0], clearColor[1], clearColor[2], 1);
+	glClearColor(clearColor[0], clearColor[1], clearColor[2], 0);
 
 	glStencilMask(0xFF);
 	glClearStencil(0);
@@ -1670,7 +1670,7 @@ void GL_EndRendering(void)
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 
-	glClearColor(0, 0, 0, 1);
+	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glBlitFramebuffer(0, 0, glwidth, glheight, dstX, dstY, dstX2, dstY2, GL_COLOR_BUFFER_BIT, GL_LINEAR);
@@ -2373,13 +2373,6 @@ void R_RenderScene(void)
 		glDisable(GL_FOG);
 
 	S_ExtraUpdate();
-
-	//This already moved to DrawTEntities
-	/*if (!(*r_refdef.onlyClientDraws))
-	{
-		GL_DisableMultitexture();
-		R_DrawParticlesNew();
-	}*/
 
 	GL_EndProfile(&profile_RenderScene);
 }

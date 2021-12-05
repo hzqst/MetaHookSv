@@ -591,7 +591,7 @@ bool R_BeginRenderGBuffer(void)
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 	R_SetGBufferBlend(GL_ONE, GL_ZERO);
 
-	glClearColor(0, 0, 0, 1);
+	glClearColor(0, 0, 0, 0);
 	glStencilMask(0xFF);
 	glClearStencil(0);
 	glDepthMask(GL_TRUE);

@@ -625,7 +625,7 @@ void R_RenderReflectView(water_vbo_t *w)
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, w->reflectmap, 0);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, w->depthreflmap, 0);
 
-	glClearColor(w->color.r / 255.0f, w->color.g / 255.0f, w->color.b / 255.0f, 1);
+	glClearColor(w->color.r / 255.0f, w->color.g / 255.0f, w->color.b / 255.0f, 0);
 	glStencilMask(0xFF);
 	glClearStencil(0);
 	glDepthMask(GL_TRUE);

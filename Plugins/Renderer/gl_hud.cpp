@@ -331,7 +331,7 @@ void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
 
-	glClearColor(0, 0, 0, 1);
+	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	if(filter2x2)
