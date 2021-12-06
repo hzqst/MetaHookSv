@@ -3,7 +3,9 @@
 #include <r_studioint.h>
 #include "cl_entity.h"
 
-void IN_ActivateMouse(void);
-void HUD_Init(void);
-void HUD_StudioEvent(const struct mstudioevent_s *ev, const struct cl_entity_s *ent);
 void HUD_Frame(double time);
+void HUD_Init(void);
+int HUD_VidInit(void);
+int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio);
+
+void R_StudioChangePlayerModel(void);

@@ -1,6 +1,7 @@
 #include <metahook.h>
-#include <glew.h>
 #include "exportfuncs.h"
+#include "privatehook.h"
+#include "plugins.h"
 
 cl_exportfuncs_t gExportfuncs;
 mh_interface_t *g_pInterface;
@@ -47,6 +48,11 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	g_dwEngineRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".rdata\x0\x0", &g_dwEngineRdataSize);
 
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
+
+#define R_STUDIOCHANGEPLAYERMODEL_SIG_SVENGINE "\x2A\x33\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x8B\x2A\x2A\x2A\x0B"
+
+	gPrivateFuncs.R_StudioChangePlayerModel = (decltype(gPrivateFuncs.R_StudioChangePlayerModel))Search_Pattern(R_STUDIOCHANGEPLAYERMODEL_SIG_SVENGINE);
+	Sig_FuncNotFound(R_StudioChangePlayerModel);
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
@@ -56,10 +62,9 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
 	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
 
-	glewInit();
-
-	pExportFunc->HUD_Frame = HUD_Frame;
-	pExportFunc->IN_ActivateMouse = IN_ActivateMouse;
+	pExportFunc->HUD_Init = HUD_Init;
+	pExportFunc->HUD_VidInit = HUD_VidInit;
+	pExportFunc->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
 }
 
 void IPluginsV4::ExitGame(int iResult)

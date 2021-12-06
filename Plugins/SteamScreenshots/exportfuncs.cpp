@@ -82,7 +82,7 @@ void HUD_Frame(double time)
 		g_szServerName[0] = 0;
 	}
 
-	SteamAPI_RunCallbacks();
+	//SteamAPI_RunCallbacks();
 }
 
 pfnUserMsgHook m_pfnServerName;
