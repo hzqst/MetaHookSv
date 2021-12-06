@@ -124,15 +124,19 @@ This plugin can block studio-event sound spamming with controllable cvars.
 
 ![](/img/8.png)
 
-### SteamScreenshots
+### SteamScreenshots (Sven Co-op only)
 
-This plugin intercepts original snapshot command and replace it with ISteamScreenshots interface which will upload the snapshot to Steam Screenshot Manager.
+This plugin intercepts `snapshot` command and replace it with `ISteamScreenshots` interface which will upload the snapshot to Steam Screenshot Manager.
 
-[DOCUMENTATION](StudioEvents.md) [中文文档](StudioEventsCN.md)
+### SCModelDownloader (Sven Co-op only)
 
-### CommunicationDemo
+This plugin downloads missing player models from https://wootguy.github.io/scmodels/ automatically and reload them once mdl files are ready.
 
-This plugin demostrates how to communicate with server.
+Cvar : `scmodel_autodownload 0 / 1`
+
+### CommunicationDemo (Sven Co-op only)
+
+This plugin exposes an interface to communicate with Sven Co-op server.
 
 ### ABCEnchance (third-party) (Sven Co-op only)
 
