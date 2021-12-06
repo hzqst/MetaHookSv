@@ -10,3 +10,6 @@
 [submodule "glew"]
 	path = glew
 	url = https://github.com/Perlmint/glew-cmake
+[submodule "rapidjson"]
+	path = rapidjson
+	url = https://github.com/Tencent/rapidjson
