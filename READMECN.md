@@ -126,13 +126,19 @@
 
 ![](/img/8.png)
 
-### SteamScreenshots
+### SteamScreenshots (只支持Sven Co-op)
 
-该插件捕获了snapshots命令，将其重定向到Steam客户端自带的截图功能上。
+该插件捕获了`snapshots`命令，将其重定向到Steam客户端自带的截图功能上。
 
-### CommunicationDemo
+### SCModelDownloader (只支持Sven Co-op)
 
-该插件是一个演示demo，用于演示如何使用metahook插件进行客户端-服务端双向通信。
+该插件自动从 https://wootguy.github.io/scmodels/ 下载缺失的玩家模型。
+
+控制台参数 : scmodel_autodownload 0 / 1
+
+### CommunicationDemo (只支持Sven Co-op)
+
+该插件开放了一个接口用于进行客户端-服务端双向通信。
 
 ### ABCEnchance (第三方) (只支持Sven Co-op)
 
