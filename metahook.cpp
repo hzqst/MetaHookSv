@@ -401,9 +401,33 @@ void MH_LoadPlugins(const char *gamedir)
 	std::string aConfigFile = gamedir;
 	aConfigFile += "/metahook/configs/plugins.lst";
 
+	bool bIsOpened = false;
+
 	std::ifstream infile;
 	infile.open(aConfigFile);
-	if (infile.is_open())
+	if (!infile.is_open())
+	{
+		aConfigFile = gamedir;
+		aConfigFile += g_iEngineType == ENGINE_SVENGINE ? "/metahook/configs/plugins_svencoop.lst" : "/metahook/configs/plugins_goldsrc.lst";
+		infile.open(aConfigFile);
+		if (!infile.is_open())
+		{
+			int err = GetLastError();
+			std::stringstream ss;
+			ss << "MH_LoadPlugin: Could not open " << aConfigFile;
+			MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
+		}
+		else
+		{
+			bIsOpened = true;
+		}
+	}
+	else
+	{
+		bIsOpened = true;
+	}
+
+	if (bIsOpened)
 	{
 		while (!infile.eof())
 		{
@@ -428,13 +452,6 @@ void MH_LoadPlugins(const char *gamedir)
 			}
 		}
 		infile.close();
-	}
-	else
-	{
-		int err = GetLastError();
-		std::stringstream ss;
-		ss << "MH_LoadPlugin: Could not open " << aConfigFile;
-		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
 	}
 }
 
