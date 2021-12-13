@@ -24,9 +24,13 @@ Use a separate account to play Sven Co-op if you still worry about VAC ban wave.
 
 2. All required executable and resource files are in `Build` folder, pick [whatever resource you want](Build/README.md) and copy them to `\SteamLibrary\steamapps\common\Sven Co-op\`.
 
-3. Launch game from `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`
+3. Rename `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\plugins_svencoop.lst` to `plugins.lst`
+
+4. Launch game from Steam Game Library or `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`
 
 * The new `svencoop.exe` is renamed from `metahook.exe`, you could run game from "metahook.exe -game svencoop" however it will cause game crash when changing video settings.
+
+* Plugins can be disabled or enabled in `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\plugins.lst`
 
 * The `SDL2.dll` fixes a bug that the IME input handler from original SDL library provided by Valve was causing buffer overflow and game crash when using non-english IME. you don't need to copy it if you don't have a non-english IME.
 
@@ -124,15 +128,19 @@ This plugin can block studio-event sound spamming with controllable cvars.
 
 ![](/img/8.png)
 
-### SteamScreenshots
+### SteamScreenshots (Sven Co-op only)
 
-This plugin intercepts original snapshot command and replace it with ISteamScreenshots interface which will upload the snapshot to Steam Screenshot Manager.
+This plugin intercepts `snapshot` command and replace it with `ISteamScreenshots` interface which will upload the snapshot to Steam Screenshot Manager.
 
-[DOCUMENTATION](StudioEvents.md) [中文文档](StudioEventsCN.md)
+### SCModelDownloader (Sven Co-op only)
 
-### CommunicationDemo
+This plugin downloads missing player models from https://wootguy.github.io/scmodels/ automatically and reload them once mdl files are ready.
 
-This plugin demostrates how to communicate with server.
+Cvar : `scmodel_autodownload 0 / 1`
+
+### CommunicationDemo (Sven Co-op only)
+
+This plugin exposes an interface to communicate with Sven Co-op server.
 
 ### ABCEnchance (third-party) (Sven Co-op only)
 
