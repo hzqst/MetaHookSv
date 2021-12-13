@@ -18,13 +18,19 @@ All resource files in this directory are required by CaptionMod plugin.
 
 The diectionary files are ported from original GoldSrc version of [CaptionMod](https://github.com/hzqst/CaptionMod)
 
-### svencoop/metahook/configs/plugins.lst (required)
+### svencoop/metahook/configs/plugins_svencoop.lst (rename required)
 
-Plugins load list. you can disable specified plugin or change load order by editing this file.
+### svencoop/metahook/configs/plugins_goldsrc.lst (rename required)
+
+Must be renamed to `plugins.lst`. 
+
+This is the plugin load list.
+
+You can disable specified plugin or change load order by editing this file.
 
 ### svencoop/metahook/configs/plugins/*.dll (required)
 
-Compiled binary file of all the plugins.
+Compiled dll of all plugins.
 
 ### svencoop/metahook/renderer/shader/* (required)
 
