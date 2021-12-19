@@ -1513,8 +1513,6 @@ int CHudMessage::SayTextPrint(const char *pszBuf, int iBufSize, int clientIndex,
 	wchar_t *w[4];
 	char *sptrs[4];
 	int j;
-	bool useStdPrintf;
-	const wchar_t *test;
 
 	sptrs[0] = sstr1;
 	sptrs[1] = sstr2;
@@ -1540,8 +1538,14 @@ int CHudMessage::SayTextPrint(const char *pszBuf, int iBufSize, int clientIndex,
 		}
 	}
 
-	test = wcsstr(msg, L"%s");
-	useStdPrintf = (test && !(test[2] > '0' && test[2] < '9'));
+	auto hasStdFormatString = wcsstr(msg, L"%s");
+	auto useStdPrintf = false;
+	
+	if (hasStdFormatString && !(hasStdFormatString[2] > '0' && hasStdFormatString[2] < '9'))
+		useStdPrintf = true;
+
+	if (wcsstr(msg, L"%%"))
+		useStdPrintf = true;
 
 	if (useStdPrintf)
 	{
@@ -1664,6 +1668,9 @@ int CHudMessage::MsgFunc_TextMsg(const char* pszName, int iSize, void* pbuf)
 	if (!cap_newchat->value)
 		return 0;
 
+	char szBuf[6][MSG_BUF_SIZE];
+	char szNewBuf[6][MSG_BUF_SIZE];
+
 	BEGIN_READ(pbuf, iSize);
 
 	int msg_dest = READ_BYTE();
@@ -1679,8 +1686,6 @@ int CHudMessage::MsgFunc_TextMsg(const char* pszName, int iSize, void* pbuf)
 			if (tmp)
 				playerIndex = atoi(tmp);
 		}
-
-		char szBuf[6][MSG_BUF_SIZE];
 
 		char *msg_text = LookupString(READ_STRING(), &msg_dest);
 		msg_text = strncpy(szBuf[0], msg_text, MSG_BUF_SIZE - 1);
@@ -1713,7 +1718,6 @@ int CHudMessage::MsgFunc_TextMsg(const char* pszName, int iSize, void* pbuf)
 		{
 		case HUD_PRINTRADIO:
 		{
-			char szNewBuf[6][MSG_BUF_SIZE];
 
 			if (strlen(sstr1) > 0)
 			{
@@ -1756,6 +1760,11 @@ int CHudMessage::MsgFunc_TextMsg(const char* pszName, int iSize, void* pbuf)
 		}
 		case HUD_PRINTTALK:
 		{
+#if 0//This is what vanilla HL client does and may cause potential invalid memory access if server sends bad format string
+			snprintf(szBuf[5], MSG_BUF_SIZE, msg_text, sstr1, sstr2, sstr3, sstr4);
+			szBuf[5][MSG_BUF_SIZE - 1] = 0;
+			return SayTextPrint(szBuf[5], MSG_BUF_SIZE, -1, "", "", "", "");
+#endif
 			return SayTextPrint(msg_text, MSG_BUF_SIZE, -1, sstr1, sstr2, sstr3, sstr4);
 			break;
 		}
