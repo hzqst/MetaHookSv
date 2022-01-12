@@ -162,7 +162,7 @@ Green channel of `_SPECULAR` texture determines the intensity of reflection. 0 =
 
 A detail texture is a high resolution external image (Supported format: BMP, TGA, DDS, JPG, PNG) that is placed over the top of a map texture. This gives the impression of a small details when you get up close to a texture instead of the usual blurred image you get when the texture fills the screen.
 
-`r_wsurf_detail` set to 1 to enable detail textures, normal textures, parallax textures and specular textures.
+`r_detailtextures` set to 1 to enable detail textures, normal textures, parallax textures and specular textures.
 
 Detail texture list is read from `/maps/[map name]_detail.txt`, with `_DETAIL` as suffix in basetexture name (basetexture with no suffix will be treated as detail texture).
 
@@ -176,9 +176,9 @@ Normal texture list is read from `/maps/[map name]_detail.txt`, with `_NORMAL` a
 
 Normal textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` and `/Sven Co-op/svencoop/renderer/texture`.
 
-* Normal textures only work when `r_wsurf_detail` and `r_light_dynamic` both set to 1.
+* Normal textures change nothing but the direction of surface normal, thus only work with surfaces that illuminated by dynamic lights or flashlights.
 
-* Normal textures change nothing but the direction of surface normal, thus only work when illuminated by dynamic lights or flashlights.
+* Normal textures only work when `r_detailtextures` and `r_light_dynamic` both set to 1.
 
 ### Parallax textures
 
@@ -189,6 +189,8 @@ Parallax texture list is read from `/maps/[map name]_detail.txt`, with `_PARALLA
 Parallax textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` and `/Sven Co-op/svencoop/renderer/texture`.
 
 * `r_wsurf_parallax_scale` controls the intensity (and direction if negative value is given) of parallax textures.
+
+* Parallax textures only work when `r_detailtextures` set to 1.
 
 ### Specular textures
 
@@ -201,6 +203,8 @@ Specular textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/de
 * Red channel of specular texture controls the intensity of specular lighting, while green channel of specular texture controls intensity of Screen-Space-Reflection or SSR.
 
 * Blue channel is not used yet.
+
+* Specular textures only work when `r_detailtextures` set to 1.
 
 ## Outline, Celshade and Rimlight
 
