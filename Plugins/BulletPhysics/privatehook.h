@@ -10,6 +10,9 @@ typedef struct
 	int (__fastcall *GameStudioRenderer_StudioDrawPlayer)(void *pthis, int, int flags, struct entity_state_s *pplayer);
 	void(__fastcall *GameStudioRenderer_StudioSetupBones)(void *pthis, int);
 
+	int GameStudioRenderer_StudioDrawPlayer_vftable_index;
+	int GameStudioRenderer_StudioDrawModel_vftable_index;
+
 	//Engine StudioRenderer
 	int (*R_StudioDrawModel)(int flags);
 	int (*R_StudioDrawPlayer)(int flags, struct entity_state_s *pplayer);
