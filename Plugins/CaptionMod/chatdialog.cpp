@@ -953,7 +953,8 @@ void CChatDialog::ChatPrintf(int iPlayerIndex, const wchar_t *fmt)
 		msg[wcslen(msg) - 1] = 0;
 
 	wchar_t *pmsg = msg;
-	Color color = GetTextColorForClient((int)(*pmsg), iPlayerIndex);
+	auto colorfmt = (int)(*pmsg);
+	Color color = GetTextColorForClient(colorfmt, iPlayerIndex);
 
 	while ( *pmsg && ( *pmsg == '\n' || ( *pmsg > 0 && *pmsg < TEXTCOLOR_MAX ) ) )
 	{
@@ -1003,8 +1004,23 @@ void CChatDialog::ChatPrintf(int iPlayerIndex, const wchar_t *fmt)
 		wchar_t wideName[MAX_PLAYER_NAME_LENGTH] = { 0 };
 		int wideNameLen = g_pVGuiLocalize->ConvertANSIToUnicode(sPlayerInfo.name, wideName, sizeof(wideName));
 
-		wideName[wideNameLen - 1] = L':';
-		wideName[wideNameLen] = 0;
+		if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "cstrike") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
+		{
+			if (colorfmt == 3)
+			{
+
+			}
+			else
+			{
+				wcscat_s(wideName, MAX_PLAYER_NAME_LENGTH, L" : ");
+			}
+		}
+		else
+		{
+			//wideName[wideNameLen - 1] = L':';
+			//wideName[wideNameLen] = 0;
+			wcscat_s(wideName, MAX_PLAYER_NAME_LENGTH, L":");
+		}
 
 		wchar_t *psearch = (msg[0] > 0 && msg[0] < TEXTCOLOR_MAX) ? msg + 1 : msg;
 

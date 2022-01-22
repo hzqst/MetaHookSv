@@ -636,8 +636,17 @@ void * __fastcall COptionsSubVideo_ctor(vgui::Panel *pthis, int dummy, vgui::Pan
 	auto result = g_pfnCOptionsSubVideo_ctor(pthis, dummy, parent);
 
 	auto m_pVideoAdvanced = new CVideoAdvancedButton(pthis, "Advanced", "#GameUI_AdvancedEllipsis");
-	m_pVideoAdvanced->SetPos(258, 160);
-	m_pVideoAdvanced->SetSize(120, 24);
+
+	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "cstrike") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
+	{
+		m_pVideoAdvanced->SetPos(350, 276);
+		m_pVideoAdvanced->SetSize(120, 24);
+	}
+	else
+	{
+		m_pVideoAdvanced->SetPos(258, 160);
+		m_pVideoAdvanced->SetSize(120, 24);
+	}
 
 	m_pVideoAdvanced->AddActionSignalTarget(m_pVideoAdvanced->GetVPanel());
 	m_pVideoAdvanced->SetCommand("OpenAdvanced");

@@ -17,7 +17,7 @@ void CCSChatDialog::ApplySchemeSettings(vgui::IScheme *pScheme)
 
 	LoadControlSettings("captionmod/ChatDialog.res");
 	GetPos(m_iSaveX, m_iSaveY);
-	SetVisible(false);
+	SetVisible(true);
 }
 
 void CCSChatDialog::CreateChatInputLine(void)
