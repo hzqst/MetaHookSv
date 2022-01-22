@@ -36,15 +36,19 @@ void main(void)
 
 	vec4 baseColor = texture2D(baseTex, v_texcoord);
 
+#if !defined(ADDITIVE_BLEND_ENABLED) && !defined(OIT_ADDITIVE_BLEND_ENABLED)
 	baseColor = TexGammaToLinear(baseColor);
+#endif
 
 	vec4 lightmapColor = v_color;
 	lightmapColor.r = clamp(lightmapColor.r, 0.0, 1.0);
 	lightmapColor.g = clamp(lightmapColor.g, 0.0, 1.0);
 	lightmapColor.b = clamp(lightmapColor.b, 0.0, 1.0);
 	lightmapColor.a = clamp(lightmapColor.a, 0.0, 1.0);
-	
+
+#if !defined(ADDITIVE_BLEND_ENABLED) && !defined(OIT_ADDITIVE_BLEND_ENABLED)
 	lightmapColor = GammaToLinear(lightmapColor);
+#endif
 
 	vec3 vNormal = normalize(v_normal.xyz);
 
