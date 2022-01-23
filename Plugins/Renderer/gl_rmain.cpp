@@ -352,7 +352,7 @@ void R_DrawParticlesNew(void)
 	float time3 = frametime * 15;
 	float time2 = frametime * 10; // 15;
 	float time1 = frametime * 5;
-	float grav = frametime * r_params.movevars->gravity * 0.05;
+	float grav = frametime * (r_params.movevars ? r_params.movevars->gravity : 800) * 0.05;
 	float dvel = 4 * frametime;
 
 	gRefFuncs.R_FreeDeadParticles(&(*active_particles));
@@ -2105,7 +2105,7 @@ void R_SetupGL(void)
 		}
 		else
 		{
-			MYgluPerspectiveV(r_xfov, aspect, 4.0, r_params.movevars->zmax);
+			MYgluPerspectiveV(r_xfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 	}
 	else
@@ -2150,11 +2150,11 @@ void R_SetupGL(void)
 			if (r_adjust_fov->value)
 			{
 				V_AdjustFov(&r_xfov, &r_yfov, width, height);
-				MYgluPerspectiveH(r_yfov, aspect, 4.0, r_params.movevars->zmax);
+				MYgluPerspectiveH(r_yfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
 			}
 			else
 			{
-				MYgluPerspectiveH(r_yfov, aspect, 4.0, r_params.movevars->zmax);
+				MYgluPerspectiveH(r_yfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
 			}
 		}
 	}
