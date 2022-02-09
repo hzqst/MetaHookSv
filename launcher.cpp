@@ -56,16 +56,18 @@ HINTERFACEMODULE LoadFilesystemModule(void)
 	return hModule;
 }
 
-void SetEngineDLL(const char *&pszEngineDLL)
+void SetEngineDLL(const char * szExeName, const char **pszEngineDLL)
 {
-	pszEngineDLL = registry->ReadString("EngineDLL", "hw.dll");
+	*pszEngineDLL = registry->ReadString("EngineDLL", "hw.dll");
 
-	if (CommandLine()->CheckParm("-soft") || CommandLine()->CheckParm("-software"))
-		pszEngineDLL = "sw.dll";
+	if (!stricmp(szExeName, "svencoop.exe"))
+		*pszEngineDLL = "hw.dll";
+	else if (CommandLine()->CheckParm("-soft") || CommandLine()->CheckParm("-software"))
+		*pszEngineDLL = "sw.dll";
 	else if (CommandLine()->CheckParm("-gl") || CommandLine()->CheckParm("-d3d"))
-		pszEngineDLL = "hw.dll";
+		*pszEngineDLL = "hw.dll";
 
-	registry->WriteString("EngineDLL", pszEngineDLL);
+	registry->WriteString("EngineDLL", *pszEngineDLL);
 }
 
 BOOL FindProcess(DWORD dwProcessID)
@@ -201,7 +203,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 			registry->WriteInt("ScreenWidth", 640);
 			registry->WriteInt("ScreenHeight", 480);
-			registry->WriteInt("ScreenBPP", 16);
+			registry->WriteInt("ScreenBPP", 32);
 		}
 	}
 
@@ -221,8 +223,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		const char *pszEngineDLL;
 		int iResult = ENGINE_RESULT_NONE;
 
-		//SetActiveProcess();
-		SetEngineDLL(pszEngineDLL);
+		SetEngineDLL(szExeName, &pszEngineDLL);
 
 		szNewCommandParams[0] = 0;
 		g_blobfootprintClient.m_hDll = NULL;

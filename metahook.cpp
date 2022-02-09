@@ -1466,7 +1466,15 @@ public:
 	virtual VideoMode_WindowSize *GetWindowSize();
 	virtual void unk5();
 	virtual void unk6();
-	virtual BOOL IsWindowedMode();
+	virtual bool IsWindowedMode();
+	virtual bool unk7();
+	virtual void unk8();
+	virtual void unk9();
+	virtual void unk10();
+	virtual void unk11();
+	virtual void unk12();
+	virtual void dtor();
+	virtual int GetBitsPerPixel();
 };
 
 DWORD MH_GetVideoMode(int *width, int *height, int *bpp, bool *windowed)
@@ -1488,7 +1496,7 @@ DWORD MH_GetVideoMode(int *width, int *height, int *bpp, bool *windowed)
 			*height = windowSize->height;
 
 		if (bpp)
-			*bpp = windowSize->bpp;
+			*bpp = pVideoMode->GetBitsPerPixel();
 
 		if (windowed)
 			*windowed = pVideoMode->IsWindowedMode();
