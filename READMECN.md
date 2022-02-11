@@ -50,7 +50,7 @@
 
 3. git 客户端
 
-## 构建方法
+## 构建
 
 假设你已经正确安装了所有构建需求。
 
@@ -60,15 +60,9 @@
 
 3. 运行 `build-MetaHook.bat`, 等待 `svencoop.exe` 生成到 `Build` 目录
 
-4. 运行 `build-CaptionMod.bat`, 等待 `CaptionMod.dll` 生成
+4. 运行 `build-(指定插件名).bat`, 等待 `(指定插件名).dll` 生成。目前可用的插件有：CaptionMod.dll、CaptionMod、Renderer、StudioEvents、SteamScreenshots、SCModelDownloader、CommunicationDemo。
 
-5. 运行 `build-Renderer.bat`, 等待 `Renderer.dll` 生成
-
-6. 运行 `build-BulletPhysics.bat`, 等待 `BulletPhysics.dll` 生成
-
-7. 运行 `build-StudioEvents.bat`, 等待 `StudioEvents.dll` 生成
-
-8. 所有插件应该会生成到`Build\svencoop\metahook\plugins\`目录
+5. 如果构建成功，插件应该会生成到`Build\svencoop\metahook\plugins\`目录。
 
 * 如果你的网络经常无法访问github导致clone失败，你可以从国内镜像gitee分别拉取[MetaHookSv](https://gitee.com/hzqst/MetaHookSv)、[Detours](https://gitee.com/mirrors/detours)、[Capstone](https://gitee.com/mirrors/capstone)、[Bullet3 Physics SDK](https://gitee.com/mirrors/bullet3)
 
@@ -76,11 +70,15 @@
 
 ## 调试
 
-1. 运行 `debug-SvenCoop.bat`  (其他游戏就选择该游戏对应的debug-bat)
+1. git clone https://github.com/hzqst/MetaHookSv (如果你之前已经执行过这一步的指令，则可以略过这一步)
 
-2. 打开 `MetaHook.sln`, 在解决方案资源管理器中找到对应的项目，右键设置为启动项目，然后以Debug模式重新编译该项目后，按F5即可开启本地调试。
+2. 运行 build-initdeps.bat, 等待所有子模块和依赖项目下载完成。 (如果你之前已经执行过这一步的指令，则可以略过这一步) (这一步可能需要花费几分钟时间, 具体取决于你的网速，如果速度很慢或者下载出错建议尝试使用proxy)
 
-* 如果Visual Studio处在运行中，请重启一次Visual Studio，否则调试设置可能不会生效。
+3. 运行 `debug-SvenCoop.bat`  (其他游戏就选择该游戏对应的debug-bat)
+
+4. 打开 `MetaHook.sln`, 在解决方案资源管理器中找到对应的项目，右键设置为启动项目，然后以Debug模式重新编译该项目后，按F5即可开启本地调试。
+
+* 如果运行 `debug-SvenCoop.bat`时Visual Studio处正在运行，请重启一次Visual Studio，否则调试设置可能不会生效。
 
 * 请确保已经登录Steam否则 [SteamAppsLocation](SteamAppsLocation/README.md) 可能会无法寻找游戏安装目录。
 
