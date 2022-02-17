@@ -856,7 +856,33 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				g_pGameStudioRenderer = (decltype(g_pGameStudioRenderer))pinst->detail->x86.operands[1].imm;
 			}
 
-			if (g_pGameStudioRenderer)
+			if (pinst->id == X86_INS_CALL &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base != 0 &&
+				pinst->detail->x86.operands[0].mem.disp >= 8 && pinst->detail->x86.operands[0].mem.disp <= 0x200)
+			{
+				gRefFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index = pinst->detail->x86.operands[0].mem.disp / 4;
+			}
+
+			if (pinst->id == X86_INS_CALL &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_IMM)
+			{
+				PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
+
+				PVOID *vftable = *(PVOID **)g_pGameStudioRenderer;
+				for (int i = 1; i < 4; ++i)
+				{
+					if (vftable[i] == imm)
+					{
+						gRefFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index = i;
+						break;
+					}
+				}
+			}
+
+			if (g_pGameStudioRenderer && gRefFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -870,10 +896,97 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 		Sig_VarNotFound(g_pGameStudioRenderer);
 
-		DWORD *vftable = *(DWORD **)g_pGameStudioRenderer;
+		if (gRefFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index == 0)
+			gRefFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index = 3;
 
-		gRefFuncs.GameStudioRenderer_StudioRenderModel = (decltype(gRefFuncs.GameStudioRenderer_StudioRenderModel))vftable[20];
-		gRefFuncs.GameStudioRenderer_StudioRenderFinal = (decltype(gRefFuncs.GameStudioRenderer_StudioRenderFinal))vftable[21];
+		g_pMetaHookAPI->DisasmRanges((void*)(*ppinterface)->StudioDrawModel, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn*)inst;
+
+			if (pinst->id == X86_INS_CALL &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base != 0 &&
+				pinst->detail->x86.operands[0].mem.disp >= 8 && pinst->detail->x86.operands[0].mem.disp <= 0x200)
+			{
+				gRefFuncs.GameStudioRenderer_StudioDrawModel_vftable_index = pinst->detail->x86.operands[0].mem.disp / 4;
+			}
+
+			if (pinst->id == X86_INS_CALL &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_IMM)
+			{
+				PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
+
+				PVOID *vftable = *(PVOID **)g_pGameStudioRenderer;
+				for (int i = 1; i < 4; ++i)
+				{
+					if (vftable[i] == imm)
+					{
+						gRefFuncs.GameStudioRenderer_StudioDrawModel_vftable_index = i;
+						break;
+					}
+				}
+			}
+
+			if (gRefFuncs.GameStudioRenderer_StudioDrawModel_vftable_index)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		if (gRefFuncs.GameStudioRenderer_StudioDrawModel_vftable_index == 0)
+			gRefFuncs.GameStudioRenderer_StudioDrawModel_vftable_index = 2;
+
+		PVOID *vftable = *(PVOID **)g_pGameStudioRenderer;
+
+		gRefFuncs.GameStudioRenderer_StudioDrawModel = (decltype(gRefFuncs.GameStudioRenderer_StudioDrawModel))vftable[gRefFuncs.GameStudioRenderer_StudioDrawModel_vftable_index];
+		gRefFuncs.GameStudioRenderer_StudioDrawPlayer = (decltype(gRefFuncs.GameStudioRenderer_StudioDrawPlayer))vftable[gRefFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index];
+
+#define CALL_VFTABLE_STUDIORENDERMODEL_SIG "\x83\xC4\x18\x8B\xCD\xFF\x50"
+		auto call_vftable_StudioRenderModel = (PUCHAR)g_pMetaHookAPI->SearchPattern(gRefFuncs.GameStudioRenderer_StudioDrawModel, 0x500, CALL_VFTABLE_STUDIORENDERMODEL_SIG, Sig_Length(CALL_VFTABLE_STUDIORENDERMODEL_SIG));
+		Sig_VarNotFound(call_vftable_StudioRenderModel);
+
+		gRefFuncs.GameStudioRenderer_StudioRenderModel_vftable_index = (int)call_vftable_StudioRenderModel[7] / 4;
+
+		gRefFuncs.GameStudioRenderer_StudioRenderModel = (decltype(gRefFuncs.GameStudioRenderer_StudioRenderModel))vftable[gRefFuncs.GameStudioRenderer_StudioRenderModel_vftable_index];
+
+		g_pMetaHookAPI->DisasmRanges((void*)gRefFuncs.GameStudioRenderer_StudioRenderModel, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn*)inst;
+
+			if (pinst->id == X86_INS_CALL &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base != 0 &&
+				pinst->detail->x86.operands[0].mem.disp > gRefFuncs.GameStudioRenderer_StudioRenderModel_vftable_index &&
+				pinst->detail->x86.operands[0].mem.disp <= gRefFuncs.GameStudioRenderer_StudioRenderModel_vftable_index + 0x20)
+			{
+				gRefFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index = pinst->detail->x86.operands[0].mem.disp / 4;
+			}
+
+			if (gRefFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		if (!gRefFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index)
+			gRefFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index = gRefFuncs.GameStudioRenderer_StudioRenderModel_vftable_index + 1;
+
+		gRefFuncs.GameStudioRenderer_StudioRenderFinal = (decltype(gRefFuncs.GameStudioRenderer_StudioRenderFinal))vftable[gRefFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index];
 
 		Install_InlineHook(GameStudioRenderer_StudioRenderModel);
 		Install_InlineHook(GameStudioRenderer_StudioRenderFinal);
@@ -913,11 +1026,8 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	}
 	else
 	{
-		gEngfuncs.Con_Printf("Warning : failed to locate g_pGameStudioRenderer or EngineStudioRenderer!\n");
+		gEngfuncs.Con_Printf("Failed to locate g_pGameStudioRenderer or EngineStudioRenderer!\n");
 	}
-
-	//Hack for R_DrawSpriteModel
-	//Install_InlineHook(CL_FxBlend);
 
 	return result;
 }

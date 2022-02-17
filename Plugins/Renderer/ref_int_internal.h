@@ -101,8 +101,15 @@ typedef struct
 	void (*studioapi_RestoreRenderer)(void);
 
 	//Client Studio
+	int(__fastcall *GameStudioRenderer_StudioDrawModel)(void *pthis, int, int flags);
+	int(__fastcall *GameStudioRenderer_StudioDrawPlayer)(void *pthis, int, int flags, struct entity_state_s *pplayer);
 	void (__fastcall *GameStudioRenderer_StudioRenderModel)(void *pthis, int);
 	void (__fastcall *GameStudioRenderer_StudioRenderFinal)(void *pthis, int);
+
+	int GameStudioRenderer_StudioDrawPlayer_vftable_index;
+	int GameStudioRenderer_StudioDrawModel_vftable_index;
+	int GameStudioRenderer_StudioRenderModel_vftable_index;
+	int GameStudioRenderer_StudioRenderFinal_vftable_index;
 
 	//Engine Studio
 	void(__fastcall *R_StudioRenderModel)(void);
