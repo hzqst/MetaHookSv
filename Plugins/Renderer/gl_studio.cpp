@@ -321,6 +321,9 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		if (state & STUDIO_LINEAR_FOG_ENABLED)
 			defs << "#define LINEAR_FOG_ENABLED\n";
 
+		if (state & STUDIO_EXP_FOG_ENABLED)
+			defs << "#define EXP_FOG_ENABLED\n";
+
 		if (state & STUDIO_EXP2_FOG_ENABLED)
 			defs << "#define EXP2_FOG_ENABLED\n";
 
@@ -443,6 +446,7 @@ const program_state_name_t s_StudioProgramStateName[] = {
 { STUDIO_TRANSPARENT_ENABLED			,"STUDIO_TRANSPARENT_ENABLED"				},
 { STUDIO_TRANSADDITIVE_ENABLED			,"STUDIO_TRANSADDITIVE_ENABLED"				},
 { STUDIO_LINEAR_FOG_ENABLED				,"STUDIO_LINEAR_FOG_ENABLED"				},
+{ STUDIO_EXP_FOG_ENABLED				,"STUDIO_EXP_FOG_ENABLED"					},
 { STUDIO_EXP2_FOG_ENABLED				,"STUDIO_EXP2_FOG_ENABLED"					},
 { STUDIO_SHADOW_CASTER_ENABLED			,"STUDIO_SHADOW_CASTER_ENABLED"				},
 { STUDIO_LEGACY_BONE_ENABLED			,"STUDIO_LEGACY_BONE_ENABLED"				},
@@ -898,6 +902,10 @@ void R_GLStudioDrawPoints(void)
 		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 		{
 			StudioProgramState |= STUDIO_LINEAR_FOG_ENABLED;
+		}
+		else if (!drawgbuffer && r_fog_mode == GL_EXP)
+		{
+			StudioProgramState |= STUDIO_EXP_FOG_ENABLED;
 		}
 		else if (!drawgbuffer && r_fog_mode == GL_EXP2)
 		{

@@ -331,6 +331,10 @@ void R_DrawParticlesNew(void)
 	{
 		LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
 	}
+	else if (!drawgbuffer && r_fog_mode == GL_EXP)
+	{
+		LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+	}
 	else if (!drawgbuffer && r_fog_mode == GL_EXP2)
 	{
 		LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
@@ -521,6 +525,10 @@ void triapi_RenderMode(int mode)
 			{
 				LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
 			}
+			else if (!drawgbuffer && r_fog_mode == GL_EXP)
+			{
+				LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+			}
 			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
 			{
 				LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
@@ -553,6 +561,10 @@ void triapi_RenderMode(int mode)
 			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 			{
 				LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+			}
+			else if (!drawgbuffer && r_fog_mode == GL_EXP)
+			{
+				LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
 			}
 			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
 			{
@@ -1426,6 +1438,13 @@ void R_PreRenderView(int a1)
 			glGetFloatv(GL_FOG_END, &r_fog_control[1]);
 			glGetFloatv(GL_FOG_COLOR, r_fog_color);
 		}
+		else if (r_fog_mode == GL_EXP)
+		{
+			glGetFloatv(GL_FOG_START, &r_fog_control[0]);
+			glGetFloatv(GL_FOG_END, &r_fog_control[1]);
+			glGetFloatv(GL_FOG_DENSITY, &r_fog_control[2]);
+			glGetFloatv(GL_FOG_COLOR, r_fog_color);
+		}
 		else if (r_fog_mode == GL_EXP2)
 		{
 			glGetFloatv(GL_FOG_START, &r_fog_control[0]);
@@ -2244,7 +2263,7 @@ void R_SetupFrame(void)
 
 		r_fog_mode = GL_LINEAR;
 
-		glFogi(GL_FOG_MODE, GL_LINEAR);
+		glFogi(GL_FOG_MODE, r_fog_mode);
 		glFogfv(GL_FOG_COLOR, r_fog_color);
 		glFogf(GL_FOG_START, r_fog_control[0]);
 		glFogf(GL_FOG_END, r_fog_control[1]);
@@ -2308,7 +2327,7 @@ void R_RenderFinalFog(void)
 	glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, fogColor), offsetof(scene_ubo_t, time) - offsetof(scene_ubo_t, fogColor), &SceneUBO.fogColor);
 
 	glEnable(GL_FOG);
-	glFogi(GL_FOG_MODE, GL_EXP2);
+	glFogi(GL_FOG_MODE, r_fog_mode);
 	glFogf(GL_FOG_DENSITY, r_fog_control[2]);
 	glHint(GL_FOG_HINT, GL_NICEST);
 	glFogfv(GL_FOG_COLOR, r_fog_color);

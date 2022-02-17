@@ -12,7 +12,8 @@
 
 layout(binding = 0) uniform sampler2DArray gbufferTex;
 layout(binding = 1) uniform sampler2D depthTex;
-layout(binding = 2) uniform sampler2D linearDepthTex;
+layout(binding = 2) uniform usampler2D stencilTex;
+layout(binding = 3) uniform sampler2D linearDepthTex;
 
 uniform float u_ssrRayStep;
 uniform int u_ssrIterCount;
@@ -190,5 +191,16 @@ void main()
 
     vec4 finalColor = diffuseColor * lightmapColor + GenerateAdditiveColor(texCoord);
 
+#ifdef SKY_FOG_ENABLED
 	out_FragColor = CalcFogWithDistance(finalColor, worldnormColor.z);
+#else
+
+	uint stencilValue = texture(stencilTex, texCoord).r;
+
+	if(stencilValue == 255)
+		out_FragColor = finalColor;
+	else
+		out_FragColor = CalcFogWithDistance(finalColor, worldnormColor.z);
+
+#endif
 }

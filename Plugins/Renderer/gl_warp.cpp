@@ -89,6 +89,10 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 			{
 				programState |= WATER_LINEAR_FOG_ENABLED;
 			}
+			else if (!drawgbuffer && r_fog_mode == GL_EXP)
+			{
+				programState |= WATER_EXP_FOG_ENABLED;
+			}
 			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
 			{
 				programState |= WATER_EXP2_FOG_ENABLED;
@@ -176,6 +180,10 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 			{
 				programState |= WATER_LINEAR_FOG_ENABLED;
 			}
+			else if (!drawgbuffer && r_fog_mode == GL_EXP)
+			{
+				programState |= WATER_EXP_FOG_ENABLED;
+			}
 			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
 			{
 				programState |= WATER_EXP2_FOG_ENABLED;
@@ -234,6 +242,10 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 			{
 				programState |= WATER_LINEAR_FOG_ENABLED;
+			}
+			else if (!drawgbuffer && r_fog_mode == GL_EXP)
+			{
+				programState |= WATER_EXP_FOG_ENABLED;
 			}
 			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
 			{
@@ -387,13 +399,20 @@ void R_DrawSkyBox(void)
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}
 
-	if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+	if (r_wsurf_sky_fog->value)
 	{
-		WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
-	}
-	else if (!drawgbuffer && r_fog_mode == GL_EXP2)
-	{
-		WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+		{
+			WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+		}
+		else if (!drawgbuffer && r_fog_mode == GL_EXP)
+		{
+			WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
+		}
+		else if (!drawgbuffer && r_fog_mode == GL_EXP2)
+		{
+			WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+		}
 	}
 
 	if (drawgbuffer)

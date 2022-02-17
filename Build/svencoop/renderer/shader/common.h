@@ -315,13 +315,34 @@ vec4 CalcFog(vec4 color)
 	return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
 }
 
+#elif defined(EXP_FOG_ENABLED) && defined(IS_FRAGMENT_SHADER)
+
+vec4 CalcFogWithDistance(vec4 color, float z)
+{
+	float f = SceneUBO.fogDensity * z;
+
+	float fogFactor = exp( -f );
+
+	fogFactor = clamp(fogFactor, 0.0, 1.0);
+
+	color.xyz = mix(SceneUBO.fogColor.xyz, color.xyz, fogFactor );
+
+	return color;
+}
+
+vec4 CalcFog(vec4 color)
+{
+	return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
+}
+
 #elif defined(EXP2_FOG_ENABLED) && defined(IS_FRAGMENT_SHADER)
 
 vec4 CalcFogWithDistance(vec4 color, float z)
 {
-	const float LOG2 = 1.442695;
-	float fogFactor = exp2( -SceneUBO.fogDensity * SceneUBO.fogDensity * z * z * LOG2 );
-
+	//const float LOG2 = 1.442695;
+	//float fogFactor = exp2( -SceneUBO.fogDensity * SceneUBO.fogDensity * z * z * LOG2 );
+	float f = SceneUBO.fogDensity * z / 1.8;
+	float fogFactor = exp(-f*f);
 	fogFactor = clamp(fogFactor, 0.0, 1.0);
 
 	color.xyz = mix(SceneUBO.fogColor.xyz, color.xyz, fogFactor );

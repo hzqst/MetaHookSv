@@ -52,8 +52,14 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 		if (state & DFINAL_LINEAR_FOG_ENABLED)
 			defs << "#define LINEAR_FOG_ENABLED\n";
 
+		if (state & DFINAL_EXP_FOG_ENABLED)
+			defs << "#define EXP_FOG_ENABLED\n";
+
 		if (state & DFINAL_EXP2_FOG_ENABLED)
 			defs << "#define EXP2_FOG_ENABLED\n";
+
+		if (state & DFINAL_SKY_FOG_ENABLED)
+			defs << "#define SKY_FOG_ENABLED\n";
 
 		if (state & DFINAL_SSR_ENABLED)
 			defs << "#define SSR_ENABLED\n";
@@ -112,7 +118,9 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 
 const program_state_name_t s_DFinalProgramStateName[] = {
 { DFINAL_LINEAR_FOG_ENABLED				,"DFINAL_LINEAR_FOG_ENABLED"			},
+{ DFINAL_EXP_FOG_ENABLED				,"DFINAL_EXP_FOG_ENABLED"				},
 { DFINAL_EXP2_FOG_ENABLED				,"DFINAL_EXP2_FOG_ENABLED"				},
+{ DFINAL_SKY_FOG_ENABLED				,"DFINAL_SKY_FOG_ENABLED"				},
 { DFINAL_SSR_ENABLED					,"DFINAL_SSR_ENABLED"					},
 { DFINAL_SSR_ADAPTIVE_STEP_ENABLED		,"DFINAL_SSR_ADAPTIVE_STEP_ENABLED"		},
 { DFINAL_SSR_EXPONENTIAL_STEP_ENABLED	,"DFINAL_SSR_EXPONENTIAL_STEP_ENABLED"	},
@@ -654,10 +662,11 @@ void R_EndRenderGBuffer(void)
 	glBindTexture(GL_TEXTURE_2D_ARRAY, s_GBufferFBO.s_hBackBufferTex);
 	*currenttexture = -1;
 
-	//Texture unit 1 = Stencil texture
+	//Texture unit 1 = Depth texture
 	GL_EnableMultitexture();
 	GL_Bind(s_GBufferFBO.s_hBackBufferDepthTex);
 
+	//Texture unit 2 = Stencil texture
 	glActiveTexture(GL_TEXTURE2);
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferStencilView);
@@ -946,8 +955,15 @@ void R_EndRenderGBuffer(void)
 
 	if (r_fog_mode == GL_LINEAR)
 		FinalProgramState |= DFINAL_LINEAR_FOG_ENABLED;
+	else if (r_fog_mode == GL_EXP)
+		FinalProgramState |= DFINAL_EXP_FOG_ENABLED;
 	else if (r_fog_mode == GL_EXP2)
-		FinalProgramState |= DFINAL_LINEAR_FOG_ENABLED;
+		FinalProgramState |= DFINAL_EXP2_FOG_ENABLED;
+
+	if (r_wsurf_sky_fog->value)
+	{
+		FinalProgramState |= DFINAL_SKY_FOG_ENABLED;
+	}
 
 	if (r_ssr->value)
 	{
@@ -966,12 +982,20 @@ void R_EndRenderGBuffer(void)
 	//Setup final program
 	R_UseDFinalProgram(FinalProgramState, NULL);
 
-	//Texture unit 0 = (GBuffer texture array), Texture unit 1 = (depth), Texture unit 2 = (linearized depth)
+	//Texture unit 0 = (GBuffer texture array), Texture unit 1 = (depth), Texture unit 2 = stencil, Texture unit 3 = (linearized depth), 
+	glActiveTexture(GL_TEXTURE3);
+	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, s_DepthLinearFBO.s_hBackBufferTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	//Disable texture unit 2 (linearized depth)
+	//Disable texture unit 3 (linearized depth)
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glDisable(GL_TEXTURE_2D);
+	glActiveTexture(GL_TEXTURE2);
+
+	//Disable texture unit 2 (stencil)
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glDisable(GL_TEXTURE_2D);
 	glActiveTexture(GL_TEXTURE1);

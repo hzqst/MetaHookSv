@@ -42,6 +42,9 @@ void R_UseSpriteProgram(int state, sprite_program_t *progOutput)
 		if (state & SPRITE_LINEAR_FOG_ENABLED)
 			defs << "#define LINEAR_FOG_ENABLED\n";
 
+		if (state & SPRITE_EXP_FOG_ENABLED)
+			defs << "#define EXP_FOG_ENABLED\n";
+
 		if (state & SPRITE_EXP2_FOG_ENABLED)
 			defs << "#define EXP2_FOG_ENABLED\n";
 
@@ -101,6 +104,7 @@ const program_state_name_t s_SpriteProgramStateName[] = {
 { SPRITE_ALPHA_BLEND_ENABLED		  ,"SPRITE_ALPHA_BLEND_ENABLED"			},
 { SPRITE_ADDITIVE_BLEND_ENABLED		  ,"SPRITE_ADDITIVE_BLEND_ENABLED"		},
 { SPRITE_LINEAR_FOG_ENABLED			  ,"SPRITE_LINEAR_FOG_ENABLED"			},
+{ SPRITE_EXP_FOG_ENABLED			  ,"SPRITE_EXP_FOG_ENABLED"				},
 { SPRITE_EXP2_FOG_ENABLED			  ,"SPRITE_EXP2_FOG_ENABLED"			},
 { SPRITE_CLIP_ENABLED				  ,"SPRITE_CLIP_ENABLED"				},
 { SPRITE_PARALLEL_UPRIGHT_ENABLED	  ,"SPRITE_PARALLEL_UPRIGHT_ENABLED"	},
@@ -220,6 +224,9 @@ void R_UseLegacySpriteProgram(int state, legacysprite_program_t *progOutput)
 
 		if (state & SPRITE_LINEAR_FOG_ENABLED)
 			defs << "#define LINEAR_FOG_ENABLED\n";
+
+		if (state & SPRITE_EXP_FOG_ENABLED)
+			defs << "#define EXP_FOG_ENABLED\n";
 
 		if (state & SPRITE_EXP2_FOG_ENABLED)
 			defs << "#define EXP2_FOG_ENABLED\n";
@@ -573,6 +580,10 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 	if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 	{
 		SpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+	}
+	else if (!drawgbuffer && r_fog_mode == GL_EXP)
+	{
+		SpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
 	}
 	else if (!drawgbuffer && r_fog_mode == GL_EXP2)
 	{

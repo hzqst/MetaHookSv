@@ -51,6 +51,9 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 		if (state & WATER_LINEAR_FOG_ENABLED)
 			defs << "#define LINEAR_FOG_ENABLED\n";
 
+		if (state & WATER_EXP_FOG_ENABLED)
+			defs << "#define EXP_FOG_ENABLED\n";
+
 		if (state & WATER_EXP2_FOG_ENABLED)
 			defs << "#define EXP2_FOG_ENABLED\n";
 
@@ -103,6 +106,7 @@ const program_state_name_t s_WaterProgramStateName[] = {
 { WATER_DEPTH_ENABLED					, "WATER_DEPTH_ENABLED"				 },
 { WATER_REFRACT_ENABLED					, "WATER_REFRACT_ENABLED"			 },
 { WATER_LINEAR_FOG_ENABLED				, "WATER_LINEAR_FOG_ENABLED"		 },
+{ WATER_EXP_FOG_ENABLED					, "WATER_EXP_FOG_ENABLED"			 },
 { WATER_EXP2_FOG_ENABLED				, "WATER_EXP2_FOG_ENABLED"			 },
 { WATER_OIT_ALPHA_BLEND_ENABLED			, "WATER_OIT_ALPHA_BLEND_ENABLED"	 },
 { WATER_OIT_ADDITIVE_BLEND_ENABLED		, "WATER_OIT_ADDITIVE_BLEND_ENABLED" },

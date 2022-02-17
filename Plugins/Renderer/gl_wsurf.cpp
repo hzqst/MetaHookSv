@@ -6,6 +6,7 @@ r_worldsurf_t r_wsurf;
 
 cvar_t *r_wsurf_parallax_scale;
 cvar_t *r_wsurf_sky_occlusion;
+cvar_t *r_wsurf_sky_fog;
 cvar_t *r_wsurf_zprepass;
 
 int r_fog_mode = 0;
@@ -75,6 +76,7 @@ const program_state_name_t s_WSurfProgramStateName[] = {
 { WSURF_PARALLAXTEXTURE_ENABLED		,"WSURF_PARALLAXTEXTURE_ENABLED"},
 { WSURF_SPECULARTEXTURE_ENABLED		,"WSURF_SPECULARTEXTURE_ENABLED"},
 { WSURF_LINEAR_FOG_ENABLED			,"WSURF_LINEAR_FOG_ENABLED"},
+{ WSURF_EXP_FOG_ENABLED				,"WSURF_EXP_FOG_ENABLED"},
 { WSURF_EXP2_FOG_ENABLED			,"WSURF_EXP2_FOG_ENABLED"},
 { WSURF_GBUFFER_ENABLED				,"WSURF_GBUFFER_ENABLED"},
 { WSURF_TRANSPARENT_ENABLED			,"WSURF_TRANSPARENT_ENABLED"},
@@ -207,7 +209,10 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 
 		if (state & WSURF_LINEAR_FOG_ENABLED)
 			defs << "#define LINEAR_FOG_ENABLED\n";
-	
+
+		if (state & WSURF_EXP_FOG_ENABLED)
+			defs << "#define EXP_FOG_ENABLED\n";
+
 		if (state & WSURF_EXP2_FOG_ENABLED)
 			defs << "#define EXP2_FOG_ENABLED\n";
 
@@ -1230,6 +1235,10 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 		{
 			WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
 		}
+		else if (!drawgbuffer && r_fog_mode == GL_EXP)
+		{
+			WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
+		}
 		else if (!drawgbuffer && r_fog_mode == GL_EXP2)
 		{
 			WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
@@ -1367,6 +1376,10 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 			{
 				WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+			}
+			else if (!drawgbuffer && r_fog_mode == GL_EXP)
+			{
+				WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
 			}
 			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
 			{
@@ -1538,6 +1551,10 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_t *modcache)
 		{
 			WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
 		}
+		else if (!drawgbuffer && r_fog_mode == GL_EXP)
+		{
+			WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
+		}
 		else if (!drawgbuffer && r_fog_mode == GL_EXP2)
 		{
 			WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
@@ -1631,8 +1648,8 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 	//This only applies to world rendering
 	if (modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value && !CL_IsDevOverviewMode())
 	{
-		//Sky surface uses stencil = 1
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		//Sky surface uses stencil = 0xFF
+		glStencilFunc(GL_ALWAYS, 0xFF, 0xFF);
 
 		glColorMask(0, 0, 0, 0);
 
@@ -1702,7 +1719,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 	//This only applies to world rendering, clear depth for sky surface
 	if (modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value && !CL_IsDevOverviewMode())
 	{
-		//Overwrite sky surface (stencil = 1) with initial depth (depth = 1)
+		//Overwrite sky surface (stencil = 0xFF) with initial depth (depth = 1)
 
 		GL_BeginFullScreenQuad(true);
 		glDisable(GL_BLEND);
@@ -1710,7 +1727,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 
 		glColorMask(0, 0, 0, 0);
 
-		glStencilFunc(GL_EQUAL, 1, 0xFF);
+		glStencilFunc(GL_EQUAL, 0xFF, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 		GL_UseProgram(depth_clear.program);
@@ -1859,6 +1876,7 @@ void R_InitWSurf(void)
 	
 	r_wsurf_parallax_scale = gEngfuncs.pfnRegisterVariable("r_wsurf_parallax_scale", "-0.02", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_sky_occlusion = gEngfuncs.pfnRegisterVariable("r_wsurf_sky_occlusion", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_wsurf_sky_fog = gEngfuncs.pfnRegisterVariable("r_wsurf_sky_fog", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_wsurf_zprepass = gEngfuncs.pfnRegisterVariable("r_wsurf_zprepass", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	R_ClearBSPEntities();
@@ -3335,11 +3353,11 @@ void R_DrawWorld(void)
 
 	R_SetupSceneUBO();
 
-	//Skybox use stencil = 1
+	//Skybox use stencil = 0xFF
 
 	glEnable(GL_STENCIL_TEST);
 	glStencilMask(0xFF);
-	glStencilFunc(GL_ALWAYS, 1, 0xFF);
+	glStencilFunc(GL_ALWAYS, 0xFF, 0xFF);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	R_DrawSkyBox();
