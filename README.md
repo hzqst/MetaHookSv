@@ -64,25 +64,23 @@ Let's assume that you have all requirements installed correctly.
 
 3. Run `build-MetaHook.bat`, wait until `svencoop.exe` generated at `Build` directory.
 
-4. Run `build-CaptionMod.bat`, wait until `CaptionMod.dll` generated.
+4. Run `build-(SpecifiedPluginName).bat`, wait until `(SpecifiedPluginName).dll` generated. Current available plugins : CaptionMod.dll, CaptionMod, Renderer, StudioEvents, SteamScreenshots, SCModelDownloader, CommunicationDemo.
 
-5. Run `build-Renderer.bat`, wait until `Renderer.dll` generated.
-
-6. Run `build-BulletPhysics.bat`, wait until `BulletPhysics.dll` generated.
-
-7. Run `build-StudioEvents.bat`, wait until `StudioEvents.dll` generated.
-
-8. All generated plugins should be at `Build\svencoop\metahook\plugins\` directory.
+8. If generated without problem, plugins should be at `Build\svencoop\metahook\plugins\` directory.
 
 ## Debugging
 
-1. Run `debug-SvenCoop.bat`
+1. git clone https://github.com/hzqst/MetaHookSv (Ignore if you have already done this before)
 
-2. Open `MetaHook.sln` with Visual Studio IDE, set specified project as launch project, compile the project, then press F5 to start debugging.
+2. Run `build-initdeps.bat`, wait until all required submodules / dependencies are pulled.  (Ignore if you have already done this before) (this may takes couple of minutes, depending on your network connection and download speed)
+
+3. Run `debug-SvenCoop.bat` (or `debug-(WhateverGameYouWant).bat`, depends on which you are going to debug with)
+
+4. Open `MetaHook.sln` with Visual Studio IDE, set specified project as launch project, compile the project, then press F5 to start debugging.
 
 * Other games follow the same instruction.
 
-* You should restart Visual Studio IDE to apply changes to debugging profile, if it is running.
+* You should restart Visual Studio IDE to apply changes to debugging profile, if Visual Studio IDE was running.
 
 ## MetaHookSv (V3) new features compare to nagist's old metahook (V2)
 
