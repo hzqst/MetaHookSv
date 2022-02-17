@@ -588,6 +588,12 @@ void R_GenerateTexChain(model_t *mod, wsurf_vbo_t *modcache, std::vector<unsigne
 		if (!t)
 			continue;
 
+		auto hidden = strstr(t->name, "_HIDDEN");
+		if (hidden && hidden[7] == 0)
+		{
+			continue;
+		}
+
 		if (!strcmp(t->name, "sky"))
 		{
 			auto s = t->texturechain;
