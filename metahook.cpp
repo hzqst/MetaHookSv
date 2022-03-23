@@ -396,63 +396,106 @@ bool MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 	return true;
 }
 
-void MH_LoadPlugins(const char *gamedir)
+bool MH_HasSSE()
+{
+	auto SDL2 = GetModuleHandleA("SDL2.dll");
+	if (SDL2)
+	{
+		bool(__cdecl *SDL_HasSSE)() = (decltype(SDL_HasSSE))GetProcAddress(SDL2, "SDL_HasSSE");
+		if (SDL_HasSSE)
+			return SDL_HasSSE();
+	}
+
+	return false;
+}
+
+bool MH_HasSSE2()
+{
+	auto SDL2 = GetModuleHandleA("SDL2.dll");
+	if (SDL2)
+	{
+		bool(__cdecl *SDL_HasSSE2)() = (decltype(SDL_HasSSE2))GetProcAddress(SDL2, "SDL_HasSSE2");
+		if (SDL_HasSSE2)
+			return SDL_HasSSE2();
+	}
+
+	return false;
+}
+
+bool MH_HasAVX()
+{
+	auto SDL2 = GetModuleHandleA("SDL2.dll");
+	if (SDL2)
+	{
+		bool(__cdecl *SDL_HasAVX)() = (decltype(SDL_HasAVX))GetProcAddress(SDL2, "SDL_HasAVX");
+		if (SDL_HasAVX)
+			return SDL_HasAVX();
+	}
+
+	return false;
+}
+
+bool MH_HasAVX2()
+{
+	auto SDL2 = GetModuleHandleA("SDL2.dll");
+	if (SDL2)
+	{
+		bool(__cdecl *SDL_HasAVX2)() = (decltype(SDL_HasAVX2))GetProcAddress(SDL2, "SDL_HasAVX2");
+		if (SDL_HasAVX2)
+			return SDL_HasAVX2();
+	}
+
+	return false;
+}
+
+bool MH_LoadPlugins(const char *gamedir, const char *suffix)
 {
 	std::string aConfigFile = gamedir;
-	aConfigFile += "/metahook/configs/plugins.lst";
-
-	bool bIsOpened = false;
+	aConfigFile += "/metahook/configs/plugins";
+	aConfigFile += suffix;
+	aConfigFile += ".lst";
 
 	std::ifstream infile;
 	infile.open(aConfigFile);
 	if (!infile.is_open())
 	{
 		aConfigFile = gamedir;
-		aConfigFile += g_iEngineType == ENGINE_SVENGINE ? "/metahook/configs/plugins_svencoop.lst" : "/metahook/configs/plugins_goldsrc.lst";
+		aConfigFile += (g_iEngineType == ENGINE_SVENGINE) ? "/metahook/configs/plugins_svencoop" : "/metahook/configs/plugins_goldsrc";
+		aConfigFile += suffix;
+		aConfigFile += ".lst";
+
 		infile.open(aConfigFile);
 		if (!infile.is_open())
 		{
-			int err = GetLastError();
-			std::stringstream ss;
-			ss << "MH_LoadPlugin: Could not open " << aConfigFile;
-			MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
-		}
-		else
-		{
-			bIsOpened = true;
+			return false;
 		}
 	}
-	else
+
+	while (!infile.eof())
 	{
-		bIsOpened = true;
-	}
-
-	if (bIsOpened)
-	{
-		while (!infile.eof())
+		std::string stringLine;
+		std::getline(infile, stringLine);
+		if (stringLine.length() > 1)
 		{
-			std::string stringLine;
-			std::getline(infile, stringLine);
-			if (stringLine.length() > 1)
-			{
-				if (stringLine[0] == '\r' || stringLine[0] == '\n')
-					continue;
-				if (stringLine[0] == '\0')
-					continue;
-				if (stringLine[0] == ';')
-					continue;
-				if (stringLine[0] == '/' && stringLine[1] == '/')
-					continue;
+			if (stringLine[0] == '\r' || stringLine[0] == '\n')
+				continue;
+			if (stringLine[0] == '\0')
+				continue;
+			if (stringLine[0] == ';')
+				continue;
+			if (stringLine[0] == '/' && stringLine[1] == '/')
+				continue;
 
-				std::string aPluginPath = gamedir;
-				aPluginPath += "/metahook/plugins/";
-				aPluginPath += stringLine;
+			std::string aPluginPath = gamedir;
+			aPluginPath += "/metahook/plugins/";
+			aPluginPath += stringLine;
 
-				MH_LoadPlugin(aPluginPath, stringLine);
-			}
+			MH_LoadPlugin(aPluginPath, stringLine);
 		}
-		infile.close();
 	}
+	infile.close();
+
+	return true;
 }
 
 int ClientDLL_Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
@@ -892,7 +935,30 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 
 	MH_InlineHook(g_pfnClientDLL_Init, MH_ClientDLL_Init, (void **)&g_original_ClientDLL_Init);
 
-	MH_LoadPlugins(szGameName);
+	if (MH_HasAVX2() && MH_LoadPlugins(szGameName, "_avx2"))
+	{
+		
+	}
+	else if (MH_HasAVX() && MH_LoadPlugins(szGameName, "_avx"))
+	{
+		
+	}
+	else if (MH_HasSSE2() && MH_LoadPlugins(szGameName, "_sse2"))
+	{
+
+	}
+	else if (MH_HasSSE() && MH_LoadPlugins(szGameName, "_sse"))
+	{
+
+	}
+	else if(MH_LoadPlugins(szGameName, ""))
+	{
+		
+	}
+	else
+	{
+		//No plugin loaded
+	}
 
 	g_bTransactionInlineHook = true;
 

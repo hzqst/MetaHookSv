@@ -14,7 +14,7 @@
 
 并且Sven Co-op并不属于[受VAC保护的游戏](https://store.steampowered.com/search/?term=Sven&category2=8)
 
-你甚至可以以添加命令行参数`-insecure`的方式加所谓“受VAC保护的服务器”，因为SC上的VAC根本就没有工作。
+你甚至可以以添加命令行参数`-insecure`的方式加所谓“受VAC保护的服务器”，因为Sven Co-op上的VAC根本就没有工作。
 
 如果你实在不放心，那么请使用小号进行游戏，毕竟Sven Co-op是免费游戏。
 
@@ -89,6 +89,25 @@
 2. 防止插件重复加载（重复加载会导致插件自调用，引发无限递归）
 
 3. `LoadEngine` 和 `LoadClient` 阶段会对所有`InlineHook`请求开启“事务”，直到所有插件的`LoadEngine` 和 `LoadClient`结束才会让`InlineHook`生效, 这样就可以允许不同插件`SearchPattern` 和 `InlineHook` 同一个函数，也不会引发冲突了
+
+## 加载顺序
+
+1. `\(GameDirectory)\metahook\configs\plugins_avx2.lst` (仅当CPU支持AVX2指令集时)
+2. `\(GameDirectory)\metahook\configs\plugins_svencoop_avx2.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc_avx2.lst` (仅当CPU支持AVX2指令集时)
+
+3. `\(GameDirectory)\metahook\configs\plugins_avx.lst` (仅当CPU支持AVX指令集时)
+4. `\(GameDirectory)\metahook\configs\plugins_svencoop_avx.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc_avx.lst` (仅当CPU支持AVX指令集时)
+
+5. `\(GameDirectory)\metahook\configs\plugins_sse2.lst` (仅当CPU支持SSE2指令集时)
+6. `\(GameDirectory)\metahook\configs\plugins_svencoop_sse2.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc_sse2.lst` (仅当CPU支持SSE2指令集时)
+
+7. `\(GameDirectory)\metahook\configs\plugins_sse.lst` (仅当CPU支持SSE指令集时)
+8. `\(GameDirectory)\metahook\configs\plugins_svencoop_sse.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc_sse.lst` (仅当CPU支持SSE指令集时)
+
+9. `\(GameDirectory)\metahook\configs\plugins.lst`
+10. `\(GameDirectory)\metahook\configs\plugins_svencoop.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc.lst`
+
+* 加载器会以上述顺序寻找第一个可用的插件列表文件(.lst), 并且从该列表中从上往下依次加载dll.
 
 ## 插件列表
 

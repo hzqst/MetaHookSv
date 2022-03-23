@@ -90,6 +90,25 @@ Let's assume that you have all requirements installed correctly.
 
 3. A transaction will be there at stage `LoadEngine` and `LoadClient`, to prevent `InlineHook` issued by multiple plugins from immediately taking effect. Allowing multiple plugins to `SearchPattern` and `InlineHook` same function without conflict.
 
+## Load Order
+
+1. `\(GameDirectory)\metahook\configs\plugins_avx2.lst` (Only when AVX2 instruction set is supported)
+2. `\(GameDirectory)\metahook\configs\plugins_svencoop_avx2.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc_avx2.lst` (Only when AVX2 instruction set is supported)
+
+3. `\(GameDirectory)\metahook\configs\plugins_avx.lst` (Only when AVX instruction set is supported)
+4. `\(GameDirectory)\metahook\configs\plugins_svencoop_avx.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc_avx.lst` (Only when AVX instruction set is supported)
+
+5. `\(GameDirectory)\metahook\configs\plugins_sse2.lst` (Only when SSE2 instruction set is supported)
+6. `\(GameDirectory)\metahook\configs\plugins_svencoop_sse2.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc_sse2.lst` (Only when SSE2 instruction set is supported)
+
+7. `\(GameDirectory)\metahook\configs\plugins_sse.lst` (Only when SSE instruction set is supported)
+8. `\(GameDirectory)\metahook\configs\plugins_svencoop_sse.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc_sse.lst` (Only when SSE instruction set is supported)
+
+9. `\(GameDirectory)\metahook\configs\plugins.lst`
+10. `\(GameDirectory)\metahook\configs\plugins_svencoop.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc.lst`
+
+* MetahookSv loader will load the first available plugin list file, then load the dll(s) listed in the file.
+
 ## Plugins
 
 ### CaptionMod
