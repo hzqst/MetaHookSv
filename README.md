@@ -153,7 +153,11 @@ This plugin intercepts `snapshot` command and replace it with `ISteamScreenshots
 
 This plugin downloads missing player models from https://wootguy.github.io/scmodels/ automatically and reload them once mdl files are ready.
 
-Cvar : `scmodel_autodownload 0 / 1`
+Cvar : `scmodel_autodownload 0 / 1` Automatically download missing model from scmodel database.
+
+Cvar : `scmodel_downloadlatest 0 / 1` Download latest version of this model if there are multiple ones with different version.
+
+Cvar : `scmodel_usemirror 0 / 1` Use mirror (cdn.jsdelivr.net) if github is not available.
 
 ### CommunicationDemo (Sven Co-op only)
 

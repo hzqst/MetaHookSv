@@ -151,7 +151,11 @@
 
 该插件自动从 https://wootguy.github.io/scmodels/ 下载缺失的玩家模型。
 
-控制台参数 : scmodel_autodownload 0 / 1
+控制台参数 : `scmodel_autodownload 0 / 1` 设为1时启用自动下载
+
+控制台参数 : `scmodel_downloadlatest 0 / 1` 设为1时自动下载最新版本的模型（如果有多个版本的模型）
+
+控制台参数 : `scmodel_usemirror 0 / 1` 使用CDN镜像加速 (cdn.jsdelivr.net) ，在国内网络无法正常访问github时建议使用。
 
 ### CommunicationDemo (只支持Sven Co-op)
 
