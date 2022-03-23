@@ -5,7 +5,7 @@
 }
 {
     "classname" "studio_texture"
-    "basetexture" "face.bmp"
+    "basetexture" "face_hk416.bmp"
     "flags" "STUDIO_NF_CELSHADE_FACE"
 }
 {
