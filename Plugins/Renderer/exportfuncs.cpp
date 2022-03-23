@@ -819,6 +819,8 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	Install_InlineHook(studioapi_RestoreRenderer);
 	Install_InlineHook(studioapi_StudioDynamicLight);
 
+	Install_InlineHook(CL_FxBlend);
+
 	cl_sprite_white = IEngineStudio.Mod_ForName("sprites/white.spr", 1);
 
 	cl_shellchrome = IEngineStudio.Mod_ForName("sprites/shellchrome.spr", 1);

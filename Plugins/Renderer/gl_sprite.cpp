@@ -434,7 +434,7 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 	if (ent->curstate.rendermode == kRenderNormal)
 		(*r_blend) = 1.0;
 
-	colorVec color;
+	colorVec color = {0};
 	R_SpriteColor(&color, ent, (*r_blend) * 255);
 
 	float u_color[4];

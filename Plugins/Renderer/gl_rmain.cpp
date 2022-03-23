@@ -278,10 +278,10 @@ float GlowBlend(cl_entity_t *entity)
 int CL_FxBlend(cl_entity_t *entity)
 {
 	//Hack for R_DrawSpriteModel
-	//if (entity->model && entity->model->type == mod_sprite && entity->curstate.rendermode == kRenderNormal)
-	//{
-	//	return 255;
-	//}
+	if (entity->model && entity->model->type == mod_sprite && entity->curstate.rendermode == kRenderNormal && entity->curstate.renderamt == 0)
+	{
+		return 255;
+	}
 
 	return gRefFuncs.CL_FxBlend(entity);
 }
@@ -2382,7 +2382,7 @@ void R_RenderScene(void)
 
 	AllowFog(false);
 	HUD_DrawNormalTriangles();
-	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
+	//gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
 	AllowFog(true);
 
 	R_DrawTEntitiesOnList((*r_refdef.onlyClientDraws));

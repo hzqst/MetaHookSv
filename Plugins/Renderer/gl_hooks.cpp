@@ -3013,7 +3013,7 @@ void R_InstallHook(void)
 	Install_InlineHook(R_AddDynamicLights);
 	Install_InlineHook(R_GLStudioDrawPoints);
 	Install_InlineHook(R_DrawBrushModel);
-	Install_InlineHook(R_DrawTEntitiesOnList);
+	//Install_InlineHook(R_DrawTEntitiesOnList);
 	Install_InlineHook(R_DrawParticles);
 	Install_InlineHook(R_AddTEntity);
 	Install_InlineHook(GL_LoadTexture2);
