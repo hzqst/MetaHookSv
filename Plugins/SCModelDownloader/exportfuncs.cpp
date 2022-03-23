@@ -15,9 +15,14 @@
 #include <functional>
 #include <set>
 #include <unordered_map>
+#include <algorithm>
 #include <rapidjson/document.h>
 
 cvar_t *scmodel_autodownload = NULL;
+cvar_t *scmodel_downloadlatest = NULL;
+cvar_t *scmodel_usemirror = NULL;
+
+#define GET_URL_FROM_MIRROR(urls) urls[min(max((int)(scmodel_usemirror->value), 0), _ARRAYSIZE(urls) - 1)]
 
 typedef struct
 {
@@ -140,15 +145,20 @@ int SCModel_Hash(const std::string &name)
 class CDownloadList
 {
 public:
-	CDownloadList(const std::string &n) : name(n)
+	CDownloadList(const std::string &n, const std::string &fn) : name(n), filename(fn)
 	{
 		repoId = SCModel_Hash(n) % 32;
+		started = false;
+		finished = false;
 	}
 
 public:
 	int repoId;
 	std::string name;
+	std::string filename;
 	std::vector<CHttpRequest *> requests;
+	bool started;
+	bool finished;
 };
 
 std::unordered_map<std::string, scmodel_t> g_scmodels;
@@ -184,12 +194,15 @@ void SCModel_ModelFileAcquired(CDownloadList *list, CHttpRequest *req)
 {
 	if (SCModel_IsAllRequestFinished(list, req))
 	{
-		SCModel_ReloadModel(list->name);
+		SCModel_ReloadModel(list->filename);
+		list->finished = true;
 	}
 }
 
 void SCModel_RequestForModelFile(CDownloadList *list, const char *url, const char *localpath)
 {
+	gEngfuncs.Con_Printf("SCModelDownloader: Requesting for \"%s\" ...\n", url);
+
 	std::string local(localpath);
 
 	auto request = new CHttpRequest(
@@ -204,6 +217,8 @@ void SCModel_RequestForModelFile(CDownloadList *list, const char *url, const cha
 				PUCHAR buffer = (PUCHAR)malloc(bodySize);
 				if (pthis->GetResponseBody(buffer, bodySize))
 				{
+					gEngfuncs.Con_Printf("SCModelDownloader: \"%s\" acquired!\n", local.c_str());
+
 					auto FileHandle = g_pFileSystem->Open(local.c_str(), "wb", "GAMEDOWNLOAD");
 					if (FileHandle)
 					{
@@ -249,33 +264,47 @@ void SCModel_RequestForModelFile(CDownloadList *list, const char *url, const cha
 	list->requests.emplace_back(request);
 }
 
-void SCModel_ModelJsonAcquired(CDownloadList *list, bool bHasTModel)
+void SCModel_ModelJsonAcquired(CDownloadList *list, bool bHasTModel, const std::string &fileName)
 {
+	gEngfuncs.Con_Printf("SCModelDownloader: Json for \"%s\" acquired!\n", list->name.c_str());
+
 	g_pFileSystem->CreateDirHierarchy("models", "GAMEDOWNLOAD");
 	g_pFileSystem->CreateDirHierarchy("models/player", "GAMEDOWNLOAD");
 
 	char localdir[1024];
-	sprintf_s(localdir, sizeof(localdir), "models/player/%s", list->name.c_str());
+	sprintf_s(localdir, sizeof(localdir), "models/player/%s", fileName.c_str());
 	g_pFileSystem->CreateDirHierarchy(localdir, "GAMEDOWNLOAD");
 
 	if (1)
 	{
+		const char *urls[] =
+		{
+			"https://wootdata.github.io/scmodels_data_%d/models/player/%s/%s.mdl",
+			"https://cdn.jsdelivr.net/gh/wootdata/scmodels_data_%d@master/models/player/%s/%s.mdl"
+		};
+
 		char url[1024];
-		sprintf_s(url, sizeof(url), "https://wootdata.github.io/scmodels_data_%d/models/player/%s/%s.mdl", list->repoId, list->name.c_str(), list->name.c_str());
+		sprintf_s(url, sizeof(url), GET_URL_FROM_MIRROR(urls), list->repoId, list->name.c_str(), list->name.c_str());
 
 		char localpath[1024];
-		sprintf_s(localpath, sizeof(localpath), "models/player/%s/%s.mdl", list->name.c_str(), list->name.c_str());
+		sprintf_s(localpath, sizeof(localpath), "models/player/%s/%s.mdl", fileName.c_str(), fileName.c_str());
 
 		SCModel_RequestForModelFile(list, url, localpath);
 	}
 
 	if (bHasTModel)
 	{
+		const char *urls[] =
+		{
+			"https://wootdata.github.io/scmodels_data_%d/models/player/%s/%sT.mdl",
+			"https://cdn.jsdelivr.net/gh/wootdata/scmodels_data_%d@master/models/player/%s/%sT.mdl"
+		};
+
 		char url[1024];
-		sprintf_s(url, sizeof(url), "https://wootdata.github.io/scmodels_data_%d/models/player/%s/%sT.mdl", list->repoId, list->name.c_str(), list->name.c_str());
+		sprintf_s(url, sizeof(url), GET_URL_FROM_MIRROR(urls), list->repoId, list->name.c_str(), list->name.c_str());
 		
 		char localpath[1024];
-		sprintf_s(localpath, sizeof(localpath), "models/player/%s/%sT.mdl", list->name.c_str(), list->name.c_str());
+		sprintf_s(localpath, sizeof(localpath), "models/player/%s/%sT.mdl", fileName.c_str(), fileName.c_str());
 		
 		SCModel_RequestForModelFile(list, url, localpath);
 	}
@@ -283,11 +312,17 @@ void SCModel_ModelJsonAcquired(CDownloadList *list, bool bHasTModel)
 	//Assume ?
 	if (1)
 	{
+		const char *urls[] =
+		{
+			"https://wootdata.github.io/scmodels_data_%d/models/player/%s/%s.bmp",
+			"https://cdn.jsdelivr.net/gh/wootdata/scmodels_data_%d@master/models/player/%s/%s.bmp"
+		};
+
 		char url[1024];
-		sprintf_s(url, sizeof(url), "https://wootdata.github.io/scmodels_data_%d/models/player/%s/%s.bmp", list->repoId, list->name.c_str(), list->name.c_str());
+		sprintf_s(url, sizeof(url), GET_URL_FROM_MIRROR(urls), list->repoId, list->name.c_str(), list->name.c_str());
 
 		char localpath[1024];
-		sprintf_s(localpath, sizeof(localpath), "models/player/%s/%s.bmp", list->name.c_str(), list->name.c_str());
+		sprintf_s(localpath, sizeof(localpath), "models/player/%s/%s.bmp", fileName.c_str(), fileName.c_str());
 
 		SCModel_RequestForModelFile(list, url, localpath);
 	}
@@ -295,8 +330,18 @@ void SCModel_ModelJsonAcquired(CDownloadList *list, bool bHasTModel)
 
 void SCModel_RequestForModelJson(CDownloadList *list)
 {
+	list->started = true;
+
+	gEngfuncs.Con_Printf("SCModelDownloader: Found missing model \"%s\" in scmodel database. requesting json...\n", list->name.c_str());
+
+	const char *urls[] =
+	{
+		"https://wootdata.github.io/scmodels_data_%d/models/player/%s/%s.json",
+		"https://cdn.jsdelivr.net/gh/wootdata/scmodels_data_%d@master/models/player/%s/%s.json"
+	};
+
 	char url[1024];
-	sprintf_s(url, sizeof(url), "https://wootdata.github.io/scmodels_data_%d/models/player/%s/%s.json", list->repoId, list->name.c_str(), list->name.c_str());
+	sprintf_s(url, sizeof(url), GET_URL_FROM_MIRROR(urls), list->repoId, list->name.c_str(), list->name.c_str());
 
 	auto request = new CHttpRequest(
 		EHTTPMethod::k_EHTTPMethodGET,
@@ -319,6 +364,7 @@ void SCModel_RequestForModelJson(CDownloadList *list)
 						auto obj = doc.GetObj();
 
 						bool bHasTModel = false;
+						std::string fileName = list->filename;
 
 						auto m_t_model = doc.FindMember("t_model");
 						if (m_t_model != doc.MemberEnd() && m_t_model->value.IsBool())
@@ -326,7 +372,23 @@ void SCModel_RequestForModelJson(CDownloadList *list)
 							bHasTModel = m_t_model->value.GetBool();
 						}
 
-						SCModel_ModelJsonAcquired(list, bHasTModel);
+						auto m_name = doc.FindMember("name");
+						if (m_name != doc.MemberEnd() && m_name->value.IsString())
+						{
+							std::string name = m_name->value.GetString();
+							if(name.size() > 4 && 
+								name[name.size() - 4] == '.' &&
+								name[name.size() - 3] == 'm' &&
+								name[name.size() - 2] == 'd' &&
+								name[name.size() - 1] == 'l')
+							{
+								name = name.erase(name.size() - 4, 4);
+							}
+							if (0 == stricmp(fileName.c_str(), name.c_str()))
+								fileName = name;
+						}
+
+						SCModel_ModelJsonAcquired(list, bHasTModel, fileName);
 					}
 					else
 					{
@@ -369,18 +431,66 @@ void SCModel_RequestForModelJson(CDownloadList *list)
 	list->requests.emplace_back(request);
 }
 
-void SCModel_DatabaseAcquired(void)
+void SCModel_TryRequestForModelJson(const std::string &name, CDownloadList *list)
 {
-	gEngfuncs.Con_Printf("SCModelDownloader: scmodel database acquired!\n");
-
-	for (auto &m : g_download_models)
+	if (name.length() > 4 &&
+		name[name.length() - 3] == '_'&&
+		name[name.length() - 2] == 'v'&&
+		name[name.length() - 1] >= '0'&&
+		name[name.length() - 1] <= '9')
 	{
-		auto itor = g_scmodels.find(m.first);
+		//has version?
+		auto itor = g_scmodels.find(name);
 		if (itor != g_scmodels.end())
 		{
-			gEngfuncs.Con_Printf("SCModelDownloader: Found missing model \"%s\" in scmodel database.\n", m.first.c_str());
+			SCModel_RequestForModelJson(list);
+		}
+		else
+		{
+			gEngfuncs.Con_Printf("SCModelDownloader: \"%s\" not found in scmodel database.\n", name.c_str());
+		}
+		return;
+	}
 
-			SCModel_RequestForModelJson(m.second);
+	//no version? try latest?
+	if (scmodel_downloadlatest->value)
+	{
+		for (int i = 9; i >= 1; --i)
+		{
+			auto version_name = name;
+			version_name += "_v";
+			version_name += ('0' + i);
+			auto itor = g_scmodels.find(version_name);
+			if (itor != g_scmodels.end())
+			{
+				//rehash
+				list->name = version_name;
+				list->repoId = SCModel_Hash(version_name) % 32;
+
+				SCModel_RequestForModelJson(list);
+				return;
+			}
+		}
+	}
+
+	auto itor = g_scmodels.find(name);
+	if (itor != g_scmodels.end())
+	{
+		SCModel_RequestForModelJson(list);
+	}
+	else
+	{
+		gEngfuncs.Con_Printf("SCModelDownloader: \"%s\" not found in scmodel database.\n", name.c_str());
+	}
+}
+
+void SCModel_DatabaseAcquired(void)
+{
+	for (auto &m : g_download_models)
+	{
+		if (!m.second->finished && !m.second->started)
+		{
+			SCModel_TryRequestForModelJson(m.first, m.second);
 		}
 	}
 }
@@ -393,13 +503,19 @@ void SCModel_RequestForDatabase(void)
 		return;
 	}
 
+	const char *urls[] =
+	{
+		"https://raw.githubusercontent.com/wootguy/scmodels/master/database/models.json",
+		"https://cdn.jsdelivr.net/gh/wootguy/scmodels@master/database/models.json"
+	};
+
 	if (!g_scmodel_json)
 	{
 		gEngfuncs.Con_Printf("SCModelDownloader: Requesting for scmodel database...\n");
 
 		g_scmodel_json = new CHttpRequest(
 			EHTTPMethod::k_EHTTPMethodGET,
-			"https://raw.githubusercontent.com/wootguy/scmodels/master/database/models.json",
+			GET_URL_FROM_MIRROR(urls),
 			[](CHttpRequest *pthis, HTTPRequestCompleted_t *pResult, bool bError) {
 			if (!bError && pResult->m_eStatusCode == 200)
 			{
@@ -443,6 +559,8 @@ void SCModel_RequestForDatabase(void)
 
 								g_scmodels[name] = m;
 							}
+
+							gEngfuncs.Con_Printf("SCModelDownloader: Database acquired!\n");
 
 							SCModel_DatabaseAcquired();
 						}
@@ -503,10 +621,13 @@ void R_StudioChangePlayerModel(void)
 
 				if (scmodel_autodownload->value)
 				{
-					auto itor = g_download_models.find(name);
+					std::string lower_name = name;
+					std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(), ::tolower);
+
+					auto itor = g_download_models.find(lower_name);
 					if (itor == g_download_models.end())
 					{
-						g_download_models[name] = new CDownloadList(name);
+						g_download_models[lower_name] = new CDownloadList(lower_name, name);
 						SCModel_RequestForDatabase();
 					}
 				}
@@ -523,16 +644,22 @@ int HUD_VidInit(void)
 		g_scmodel_json = NULL;
 	}
 
-	for (auto m : g_download_models)
+	for (auto itor = g_download_models.begin(); itor != g_download_models.end();)
 	{
-		for (auto r : m.second->requests)
+		if (itor->second->finished)
 		{
-			delete r;
+			for (auto r : itor->second->requests)
+			{
+				delete r;
+			}
+			delete itor->second;
+			itor = g_download_models.erase(itor);
 		}
-		delete m.second;
+		else
+		{
+			itor++;
+		}
 	}
-
-	g_download_models.clear();
 
 	return gExportfuncs.HUD_VidInit();	
 }
@@ -540,8 +667,15 @@ int HUD_VidInit(void)
 void HUD_Init(void)
 {
 	gExportfuncs.HUD_Init();
-
+	
 	scmodel_autodownload = gEngfuncs.pfnRegisterVariable("scmodel_autodownload", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	scmodel_downloadlatest = gEngfuncs.pfnRegisterVariable("scmodel_downloadlatest", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	scmodel_usemirror = gEngfuncs.pfnRegisterVariable("scmodel_usemirror",
+		(!strcmp(SteamApps()->GetCurrentGameLanguage(), "schinese")) ? "1" : "0",
+		FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
 }
 
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
