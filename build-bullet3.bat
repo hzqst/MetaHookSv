@@ -1,4 +1,4 @@
-call cmake -S "%~dp0bullet3" -B "%~dp0bullet3\build" -A Win32
+call cmake -S "%~dp0bullet3" -B "%~dp0bullet3\build" -A Win32 -DUSE_MSVCSSE2=FALSE -DUSE_MSVCSSE=FALSE -DUSE_MSVCAVX=FALSE
 
 cd /d "%~dp0"
 

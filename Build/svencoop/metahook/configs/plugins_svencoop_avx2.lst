@@ -1,5 +1,5 @@
 CaptionMod.dll
-Renderer.dll
+Renderer_AVX2.dll
 BulletPhysics_AVX2.dll
 StudioEvents.dll
 CommunicationDemo.dll
