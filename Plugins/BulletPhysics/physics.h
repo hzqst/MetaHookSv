@@ -304,11 +304,13 @@ public:
 		m_vertexarray = NULL;
 		m_indexarray = NULL;
 		m_kinematic = false;
+		m_debugdraw = false;
 	}
 	btRigidBody *m_rigbody;
 	vertexarray_t *m_vertexarray;
 	indexarray_t *m_indexarray;
 	bool m_kinematic;
+	bool m_debugdraw;
 };
 
 #define RAGDOLL_SHAPE_SPHERE 1
@@ -357,7 +359,7 @@ CPhysicsDebugDraw : public btIDebugDraw
 public:
 	BT_DECLARE_ALIGNED_ALLOCATOR();
 
-	CPhysicsDebugDraw() :  m_debugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawAabb | btIDebugDraw::DBG_DrawConstraints | btIDebugDraw::DBG_DrawConstraintLimits)
+	CPhysicsDebugDraw() :  m_debugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawConstraints | btIDebugDraw::DBG_DrawConstraintLimits)
 	{
 
 	}
@@ -442,7 +444,7 @@ public:
 	CRagdollBody *CreateRagdoll(ragdoll_config_t *cfg, int tentindex, studiohdr_t *studiohdr, int iActivityType, bool isplayer);
 	CRigBody *CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol);
 	btTypedConstraint *CreateConstraint(CRagdollBody *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
-	void CreateStatic(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray, bool kinematic);
+	CStaticBody *CreateStaticBody(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray, bool kinematic, bool debugdraw);
 	void CreateBrushModel(cl_entity_t *ent);
 	void CreateBarnacle(cl_entity_t *ent);
 	void CreateGargantua(cl_entity_t *ent);

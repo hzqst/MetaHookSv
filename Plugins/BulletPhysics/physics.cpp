@@ -345,7 +345,7 @@ void CPhysicsManager::GenerateIndexedArrayForBrush(model_t *mod, vertexarray_t *
 	}
 }
 
-void CPhysicsManager::CreateStatic(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray, bool kinematic)
+CStaticBody *CPhysicsManager::CreateStaticBody(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray, bool kinematic, bool debugdraw)
 {
 	if (!indexarray->vIndiceBuffer.size())
 	{
@@ -357,7 +357,7 @@ void CPhysicsManager::CreateStatic(cl_entity_t *ent, vertexarray_t *vertexarray,
 		staticbody->m_indexarray = indexarray;
 
 		m_staticMap[ent->index] = staticbody;
-		return;
+		return staticbody;
 	}
 
 	auto vertexArray = new btTriangleIndexVertexArray(
@@ -388,16 +388,22 @@ void CPhysicsManager::CreateStatic(cl_entity_t *ent, vertexarray_t *vertexarray,
 
 		staticbody->m_kinematic = true;
 	}
-	
-	//if(ent->index == 0)
-	//{
+
+	if (debugdraw)
+	{
+		body->setCollisionFlags(body->getCollisionFlags() & (~btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT));
+	}
+	else
+	{
 		body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
-	//}
+	}
 
 	body->setFriction(1.0f);
 	body->setRollingFriction(1.0f);
 
 	m_staticMap[ent->index] = staticbody;
+
+	return staticbody;
 }
 
 void CPhysicsManager::RotateForEntity(cl_entity_t *e, float matrix[4][4])
@@ -456,22 +462,17 @@ void CPhysicsManager::CreateBarnacle(cl_entity_t *ent)
 
 	if (itor != m_staticMap.end())
 	{
+		UpdateBrushTransform(ent, itor->second);
 		return;
 	}
 
-	CreateStatic(ent, m_barnacleVertexArray, m_barnacleIndexArray, false);
+	auto staticBody = CreateStaticBody(ent, m_barnacleVertexArray, m_barnacleIndexArray, true, true);
+	UpdateBrushTransform(ent, staticBody);
 }
 
 void CPhysicsManager::CreateGargantua(cl_entity_t *ent)
 {
-	/*auto itor = m_staticMap.find(ent->index);
 
-	if (itor != m_staticMap.end())
-	{
-		return;
-	}
-	*/
-	//CreateStatic(ent, m_gargantuaVertexArray, m_gargantuaIndexArray, true);
 }
 
 void CPhysicsManager::UpdateBrushTransform(cl_entity_t *ent, CStaticBody *staticBody)
@@ -526,7 +527,7 @@ void CPhysicsManager::CreateBrushModel(cl_entity_t *ent)
 
 	bool bKinematic = ent->curstate.movetype == MOVETYPE_PUSH || ent->curstate.movetype == MOVETYPE_PUSHSTEP ? true : false;
 
-	CreateStatic(ent, m_worldVertexArray, m_brushIndexArray[modelindex], bKinematic);
+	CreateStaticBody(ent, m_worldVertexArray, m_brushIndexArray[modelindex], bKinematic, bKinematic ? true : false);
 }
 
 void CPhysicsManager::NewMap(void)
