@@ -123,8 +123,7 @@
       <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>rmdir /s /q "$(ProjectDir)..\..\bullet3\build" 
-call "$(ProjectDir)..\..\build-bullet3.bat"</Command>
+      <Command>if not exist "$(ProjectDir)..\..\bullet3\build\lib\Release\Bullet3Common.lib" call "$(ProjectDir)..\..\build-bullet3.bat"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'">
@@ -153,8 +152,7 @@ call "$(ProjectDir)..\..\build-bullet3.bat"</Command>
       <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\$(TargetName)_AVX2$(TargetExt)"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>rmdir /s /q "$(ProjectDir)..\..\bullet3\build\"
-call "$(ProjectDir)..\..\build-bullet3-avx2.bat"</Command>
+      <Command>if not exist "$(ProjectDir)..\..\bullet3\build_AVX2\lib\Release\Bullet3Common.lib" call "$(ProjectDir)..\..\build-bullet3-avx2.bat"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

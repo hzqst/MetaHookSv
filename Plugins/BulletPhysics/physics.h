@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <btBulletDynamicsCommon.h>
+#include <BulletCollision/CollisionDispatch/btGhostObject.h>
 #include <studio.h>
 #include <com_model.h>
 
@@ -127,6 +128,27 @@ typedef struct ragdoll_gar_control_s
 	float factor3;
 }ragdoll_gar_control_t;
 
+typedef struct ragdoll_water_control_s
+{
+	ragdoll_water_control_s(const std::string &n, float x, float y, float z, float f1, float f2, float f3)
+	{
+		name = n;
+		offsetX = x;
+		offsetY = y;
+		offsetZ = z;
+		factor1 = f1;
+		factor2 = f2;
+		factor3 = f3;
+	}
+	std::string name;
+	float offsetX;
+	float offsetY;
+	float offsetZ;
+	float factor1;
+	float factor2;
+	float factor3;
+}ragdoll_water_control_t;
+
 typedef struct ragdoll_config_s
 {
 	int state;
@@ -135,7 +157,24 @@ typedef struct ragdoll_config_s
 	std::vector<ragdoll_rig_control_t> rigcontrol;
 	std::vector<ragdoll_bar_control_t> barcontrol;
 	std::vector<ragdoll_gar_control_t> garcontrol;
+	std::vector<ragdoll_water_control_t> watercontrol;
 }ragdoll_config_t;
+
+ATTRIBUTE_ALIGNED16(class)
+CWaterControlPoint
+{
+public:
+	CWaterControlPoint(const btVector3 &a1, float a2, float a3, float a4) : offset(a1), buoyancy(a2)
+	{
+		ldamping = max(min(a3, 1.0f), 0.0f);
+		adamping = max(min(a4, 1.0f), 0.0f);
+	}
+
+	btVector3 offset;
+	float buoyancy;
+	float ldamping;
+	float adamping;
+};
 
 ATTRIBUTE_ALIGNED16(class)
 CRigBody
@@ -164,6 +203,11 @@ public:
 	}
 	CRigBody(const std::string &n, btRigidBody *a1, const btVector3 &a2, const btVector3 &a3, int a4) : name(n), rigbody(a1), origin(a2), dir(a3), boneindex(a4)
 	{
+		flags = 0;
+		mass = 0;
+		oldActivitionState = 0;
+		oldCollisionFlags = 0;
+
 		barnacle_constraint_dof6 = NULL;
 		barnacle_constraint_slider = NULL;
 		gargantua_target = NULL;
@@ -177,9 +221,6 @@ public:
 		barnacle_z_final = 0;
 		gargantua_force = 0;
 		gargantua_drag_time = 0;
-		flags = 0;
-		oldActivitionState = 0;
-		oldCollisionFlags = 0;
 	}
 	std::string name;
 	btRigidBody *rigbody;
@@ -189,7 +230,12 @@ public:
 	btVector3 origin;
 	btVector3 dir;
 	int boneindex;
+
 	int flags;
+	float mass;
+	int oldActivitionState;
+	int oldCollisionFlags;
+
 	float barnacle_force;
 	float barnacle_chew_force;
 	float barnacle_chew_duration;
@@ -203,8 +249,7 @@ public:
 	btVector3 gargantua_drag_offset;
 	float gargantua_drag_time;
 
-	int oldActivitionState;
-	int oldCollisionFlags;
+	std::vector<CWaterControlPoint> water_control_points;
 };
 
 ATTRIBUTE_ALIGNED16(class)
@@ -444,18 +489,22 @@ public:
 	CRagdollBody *CreateRagdoll(ragdoll_config_t *cfg, int tentindex, studiohdr_t *studiohdr, int iActivityType, bool isplayer);
 	CRigBody *CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol);
 	btTypedConstraint *CreateConstraint(CRagdollBody *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
+	void CreateWaterControl(CRagdollBody *ragdoll, studiohdr_t *studiohdr, ragdoll_water_control_t *water_control);
 	CStaticBody *CreateStaticBody(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray, bool kinematic, bool debugdraw);
 	void CreateBrushModel(cl_entity_t *ent);
 	void CreateBarnacle(cl_entity_t *ent);
 	void CreateGargantua(cl_entity_t *ent);
+	void CreateWater(cl_entity_t *ent);
 	void UpdateBrushTransform(cl_entity_t *ent, CStaticBody *staticBody);
 	void RotateForEntity(cl_entity_t *ent, float matrix[4][4]);
 	void ReleaseRagdollFromBarnacle(CRagdollBody *ragdoll);
 	void ReleaseRagdollFromGargantua(CRagdollBody *ragdoll);
 	bool GetRagdollOrigin(CRagdollBody *ragdoll, float *origin);
 	bool UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time);
+	void UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time);
 	void UpdateTempEntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time);
 	void SyncPlayerView(cl_entity_t *local, struct ref_params_s *pparams);
+	void PreTickCallback(btScalar timeStep);
 private:
 	ragdoll_itor FreeRagdollInternal(ragdoll_itor &itor);
 private:
@@ -474,6 +523,7 @@ private:
 	vertexarray_t *m_barnacleVertexArray;
 	indexarray_t *m_gargantuaIndexArray;
 	vertexarray_t *m_gargantuaVertexArray;
+	float m_gravity;
 };
 
 extern CPhysicsManager gPhysicsManager;

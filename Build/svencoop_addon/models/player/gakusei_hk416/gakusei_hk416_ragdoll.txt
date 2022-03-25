@@ -55,3 +55,26 @@ Pelvis  chewforce     0  0  0     8000    1.0  0
 Head    GargMouth   dof6z        0  0  0     20000  -8  16
 Spine   GargMouth   dof6z        0  0  0     20000  -16  32
 Pelvis  GargMouth   dof6z        0  0  0     20000  -24  64
+
+[WaterControl]
+Head    0  0  0    0.95  0.5  0
+Spine   0  0  0    0.95  0.5  0
+Pelvis  0  0  0    0.95  0.5  0
+
+LArm    0  0  0    0.95  0.5  0
+LArm2   0  0  0    0.95  0.5  0
+LHand   0  0  0    0.95  0.5  0
+
+RArm    0  0  0    0.95  0.5  0
+RArm2   0  0  0    0.95  0.5  0
+RHand   0  0  0    0.95  0.5  0
+
+LLeg    0  0  0    0.475 0.5  0
+LLeg    8  0  0    0.475 0.5  0
+LLeg2   0  0  0    0.475 0.5  0
+LLeg2   10 0  0    0.475 0.5  0
+
+RLeg    0  0  0    0.475 0.5  0
+RLeg    8  0  0    0.475 0.5  0
+RLeg2   0  0  0    0.475 0.5  0
+RLeg2   10 0  0    0.475 0.5  0

@@ -181,6 +181,19 @@ bool IsEntityGargantua(cl_entity_t* ent)
 	return false;
 }
 
+bool IsEntityWater(cl_entity_t* ent)
+{
+	if (ent && ent->model && ent->model->type == mod_brush)
+	{
+		if (ent->curstate.skin == -3)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 bool IsEntityPresent(cl_entity_t* ent)
 {
 	if (!ent->model)

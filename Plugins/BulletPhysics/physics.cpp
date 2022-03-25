@@ -18,6 +18,7 @@ extern float(*pbonetransform)[128][3][4];
 extern float(*plighttransform)[128][3][4]; 
 extern cvar_t *bv_debug;
 extern cvar_t *bv_simrate;
+extern cvar_t *bv_pretick;
 extern cvar_t *bv_scale;
 extern model_t *r_worldmodel;
 extern int *r_visframecount;
@@ -28,6 +29,7 @@ model_t *EngineGetModelByIndex(int index);
 bool IsEntityPresent(cl_entity_t* ent);
 bool IsEntityGargantua(cl_entity_t* ent);
 bool IsEntityBarnacle(cl_entity_t* ent);
+bool IsEntityWater(cl_entity_t* ent);
 int GetSequenceActivityType(model_t *mod, entity_state_t* entstate);
 void RagdollDestroyCallback(int entindex);
 
@@ -158,6 +160,7 @@ CPhysicsManager::CPhysicsManager()
 	 m_barnacleVertexArray = NULL;
 	 m_gargantuaIndexArray = NULL;
 	 m_gargantuaVertexArray = NULL;
+	 m_gravity = 0;
 }
 
 void CPhysicsManager::GenerateBrushIndiceArray(void)
@@ -473,6 +476,32 @@ void CPhysicsManager::CreateBarnacle(cl_entity_t *ent)
 void CPhysicsManager::CreateGargantua(cl_entity_t *ent)
 {
 
+}
+
+void CPhysicsManager::CreateWater(cl_entity_t *ent)
+{
+#if 0
+
+	auto hull = &ent->model->hulls[0];
+	for (auto nodenum = hull->firstclipnode; nodenum >= hull->firstclipnode && nodenum <= hull->lastclipnode;)
+	{
+		auto node = hull->clipnodes + nodenum;
+		auto plane = hull->planes + node->planenum;
+
+	}
+	
+
+	btGhostObject* ghostObject = new btGhostObject();
+	btCollisionShape* shape = new btBoxShape(btVector3(1000, 1000, 50));
+	ghostObject->setCollisionShape(shape);
+	btTransform trans;
+	trans.setIdentity();
+	trans.setOrigin(btVector3(0, 0, -500));
+	ghostObject->setWorldTransform(trans);
+	ghostObject->setCollisionFlags(ghostObject->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
+	m_dynamicsWorld->addCollisionObject(ghostObject, btBroadphaseProxy::SensorTrigger, btBroadphaseProxy::AllFilter & ~btBroadphaseProxy::SensorTrigger);
+	m_dynamicsWorld->getBroadphase()->getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
+#endif
 }
 
 void CPhysicsManager::UpdateBrushTransform(cl_entity_t *ent, CStaticBody *staticBody)
@@ -805,6 +834,37 @@ void CPhysicsManager::GenerateGargantuaIndiceVerticeArray(void)
 	}
 }
 
+void CPhysicsManager::PreTickCallback(btScalar timeStep)
+{
+	if (!HasRagdolls())
+		return;
+
+	if (bv_pretick->value)
+	{
+		for (auto itor = m_ragdollMap.begin(); itor != m_ragdollMap.end();)
+		{
+			auto pRagdoll = itor->second;
+
+			auto ent = gEngfuncs.GetEntityByIndex(itor->first);
+
+			if (!IsEntityPresent(ent) ||
+				!UpdateRagdoll(ent, itor->second, timeStep, gEngfuncs.GetClientTime()))
+			{
+				itor = FreeRagdollInternal(itor);
+			}
+			else
+			{
+				itor++;
+			}
+		}
+	}
+}
+
+void _PreTickCallback(btDynamicsWorld *world, btScalar timeStep)
+{
+	gPhysicsManager.PreTickCallback(timeStep);
+}
+
 void CPhysicsManager::Init(void)
 {
 	m_collisionConfiguration = new btDefaultCollisionConfiguration();
@@ -817,13 +877,93 @@ void CPhysicsManager::Init(void)
 
 	m_dynamicsWorld->setDebugDrawer(m_debugDraw);
 	m_dynamicsWorld->setGravity(btVector3(0, 0, 0));
+
+	m_dynamicsWorld->setInternalTickCallback(_PreTickCallback, this, true);
 }
 
 void CPhysicsManager::DebugDraw(void)
 {
-	if (bv_debug->value)
+	if (bv_debug->value == 1)
 	{
 		m_dynamicsWorld->debugDrawWorld();
+	}
+
+	if (bv_debug->value == 2)
+	{
+		for (auto &ragdoll : m_ragdollMap)
+		{
+			for (auto &itor : ragdoll.second->m_rigbodyMap)
+			{
+				auto rig = itor.second;
+				if (!(rig->rigbody->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT))
+				{
+					auto motionState = (BoneMotionState *)rig->rigbody->getMotionState();
+
+					auto vBuoyancy = rig->rigbody->getGravity() * rig->mass;
+
+					vBuoyancy.setZ(vBuoyancy.getZ() * -1);
+
+					auto vResist = rig->rigbody->getLinearVelocity();
+
+					vResist.setX(vResist.getX() * vResist.getX() * -1);
+					vResist.setY(vResist.getY() * vResist.getY() * -1);
+					vResist.setZ(vResist.getZ() * vResist.getZ() * -1);
+
+					auto bonematrix = motionState->bonematrix;
+
+					for (auto &water_control_point : rig->water_control_points)
+					{
+						auto offsetmatrix = motionState->offsetmatrix;
+
+						auto offsetorg = offsetmatrix.getOrigin();
+
+						offsetorg += water_control_point.offset;
+
+						offsetmatrix.setOrigin(offsetorg);
+
+						btTransform worldTrans;
+						worldTrans.mult(bonematrix, offsetmatrix);
+
+						auto control_point_origin = worldTrans.getOrigin();
+
+						Vec3BulletToGoldSrc(control_point_origin);
+
+						vec3_t control_point_origin_goldsrc = { control_point_origin.getX(), control_point_origin.getY(), control_point_origin.getZ() };
+
+						vec3_t control_point_origin_goldsrc2 = { control_point_origin.getX(), control_point_origin.getY(), control_point_origin.getZ() + 3 };
+
+						vec3_t control_point_origin_goldsrc3 = { control_point_origin.getX(), control_point_origin.getY() + 3, control_point_origin.getZ() + 3 };
+
+						vec3_t control_point_origin_goldsrc4 = { control_point_origin.getX() + 3, control_point_origin.getY(), control_point_origin.getZ() };
+
+						glDisable(GL_TEXTURE_2D);
+						glDisable(GL_BLEND);
+						glDisable(GL_DEPTH_TEST);
+						glLineWidth(1);
+
+						gEngfuncs.pTriAPI->Color4f(1, 1, 1, 1);
+						gEngfuncs.pTriAPI->Begin(TRI_LINES);
+						gEngfuncs.pTriAPI->Vertex3fv(control_point_origin_goldsrc);
+						gEngfuncs.pTriAPI->Vertex3fv(control_point_origin_goldsrc2);
+						gEngfuncs.pTriAPI->End();
+
+						gEngfuncs.pTriAPI->Begin(TRI_LINES);
+						gEngfuncs.pTriAPI->Vertex3fv(control_point_origin_goldsrc);
+						gEngfuncs.pTriAPI->Vertex3fv(control_point_origin_goldsrc3);
+						gEngfuncs.pTriAPI->End();
+
+						gEngfuncs.pTriAPI->Begin(TRI_LINES);
+						gEngfuncs.pTriAPI->Vertex3fv(control_point_origin_goldsrc);
+						gEngfuncs.pTriAPI->Vertex3fv(control_point_origin_goldsrc4);
+						gEngfuncs.pTriAPI->End();
+
+						glEnable(GL_DEPTH_TEST);
+						glEnable(GL_BLEND);
+						glEnable(GL_TEXTURE_2D);
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -911,8 +1051,60 @@ bool CPhysicsManager::GetRagdollOrigin(CRagdollBody *ragdoll, float *origin)
 	return false;
 }
 
+void CPhysicsManager::UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time)
+{
+	//Buoyancy and Damping Simulation
+	for (auto &itor : ragdoll->m_rigbodyMap)
+	{
+		auto rig = itor.second;
+
+		auto rigbody = rig->rigbody;
+
+		rigbody->setDamping(0, 0);
+	
+		if (!(rigbody->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT))
+		{
+			auto motionState = (BoneMotionState *)rigbody->getMotionState();
+
+			auto vBuoyancy = rigbody->getGravity() * rig->mass;
+
+			vBuoyancy.setZ(vBuoyancy.getZ() * -1);
+
+			auto bonematrix = motionState->bonematrix;
+
+			for (auto &water_control_point : rig->water_control_points)
+			{
+				auto offsetmatrix = motionState->offsetmatrix;
+
+				auto offsetorg = offsetmatrix.getOrigin();
+
+				offsetorg += water_control_point.offset;
+
+				offsetmatrix.setOrigin(offsetorg);
+
+				btTransform worldTrans;
+				worldTrans.mult(bonematrix, offsetmatrix);
+
+				auto control_point_origin = worldTrans.getOrigin();
+
+				Vec3BulletToGoldSrc(control_point_origin);
+
+				vec3_t control_point_origin_goldsrc = { control_point_origin.getX(), control_point_origin.getY(), control_point_origin.getZ() };
+
+				if (gEngfuncs.PM_PointContents(control_point_origin_goldsrc, NULL) == CONTENT_WATER)
+				{
+					rigbody->applyCentralForce(vBuoyancy * water_control_point.buoyancy);					
+					rigbody->setDamping( water_control_point.ldamping, water_control_point.adamping);
+				}
+			}
+		}
+	}
+}
+
 bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time)
 {
+	UpdateRagdollWaterSimulation(ent, ragdoll, frame_time, client_time);
+
 	if (ragdoll->m_gargantuaindex != -1)
 	{
 		if (GetSequenceActivityType(ent->model, &ent->curstate) != 2)
@@ -1063,20 +1255,23 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 
 void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time)
 {
-	for (auto itor = m_ragdollMap.begin(); itor != m_ragdollMap.end();)
+	if (!bv_pretick->value)
 	{
-		auto pRagdoll = itor->second;
-
-		auto ent = gEngfuncs.GetEntityByIndex(itor->first);
-
-		if (!IsEntityPresent(ent) ||
-			!UpdateRagdoll(ent, itor->second, frame_time, client_time))
+		for (auto itor = m_ragdollMap.begin(); itor != m_ragdollMap.end();)
 		{
-			itor = FreeRagdollInternal(itor);
-		}
-		else
-		{
-			itor++;
+			auto pRagdoll = itor->second;
+
+			auto ent = gEngfuncs.GetEntityByIndex(itor->first);
+
+			if (!IsEntityPresent(ent) ||
+				!UpdateRagdoll(ent, itor->second, frame_time, client_time))
+			{
+				itor = FreeRagdollInternal(itor);
+			}
+			else
+			{
+				itor++;
+			}
 		}
 	}
 }
@@ -1096,11 +1291,11 @@ void CPhysicsManager::StepSimulation(double frametime)
 
 void CPhysicsManager::SetGravity(float velocity)
 {
-	float goldsrc_velocity = -velocity;
+	m_gravity = -velocity;
 
-	FloatGoldSrcToBullet(&goldsrc_velocity);
+	FloatGoldSrcToBullet(&m_gravity);
 
-	m_dynamicsWorld->setGravity(btVector3(0, 0, goldsrc_velocity));
+	m_dynamicsWorld->setGravity(btVector3(0, 0, m_gravity));
 }
 
 void CPhysicsManager::ReloadConfig(void)
@@ -1183,6 +1378,7 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 #define RAGDOLL_PARSING_CONSTRAINT 3
 #define RAGDOLL_PARSING_BARNACLE 4
 #define RAGDOLL_PARSING_GARGANTUA 5
+#define RAGDOLL_PARSING_WATERCONTROL 6
 
 	int iParsingState = -1;
 
@@ -1224,6 +1420,11 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 		else if (!strcmp(text, "[Gargantua]"))
 		{
 			iParsingState = RAGDOLL_PARSING_GARGANTUA;
+			continue;
+		}
+		else if (!strcmp(text, "[WaterControl]"))
+		{
+			iParsingState = RAGDOLL_PARSING_WATERCONTROL;
 			continue;
 		}
 
@@ -1653,6 +1854,64 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 
 			cfg->garcontrol.emplace_back(subname, s_link, f_offsetX, f_offsetY, f_offsetZ, i_type, f_factor1, f_factor2, f_factor3);
 		}
+		else if (iParsingState == RAGDOLL_PARSING_WATERCONTROL)
+		{
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse water offsetX for %s\n", name.c_str());
+				break;
+			}
+
+			float f_offsetX = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse water offsetY for %s\n", name.c_str());
+				break;
+			}
+
+			float f_offsetY = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse water offsetZ for %s\n", name.c_str());
+				break;
+			}
+
+			float f_offsetZ = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse water factor1 for %s\n", name.c_str());
+				break;
+			}
+
+			float f_factor1 = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse water factor2 for %s\n", name.c_str());
+				break;
+			}
+
+			float f_factor2 = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse water factor3 for %s\n", name.c_str());
+				break;
+			}
+
+			float f_factor3 = atof(text);
+
+			cfg->watercontrol.emplace_back(subname, f_offsetX, f_offsetY, f_offsetZ, f_factor1, f_factor2, f_factor3);
+		}
 	}
 
 	gEngfuncs.COM_FreeFile(pfile);
@@ -1770,6 +2029,7 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		BoneMotionState* motionState = new BoneMotionState(bonematrix, offsetmatrix);
 		
 		float mass = rigcontrol->mass;
+
 		btVector3 localInertia;
 		shape->calculateLocalInertia(mass, localInertia);
 
@@ -1783,6 +2043,7 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		rig->dir = dir;
 		rig->boneindex = rigcontrol->boneindex;
 		rig->flags = rigcontrol->flags;
+		rig->mass = mass;
 		return rig;
 	}
 	else if (rigcontrol->shape == RAGDOLL_SHAPE_CAPSULE)
@@ -1805,6 +2066,7 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		BoneMotionState* motionState = new BoneMotionState(bonematrix, offsetmatrix);
 
 		float mass = rigcontrol->mass;
+
 		btVector3 localInertia;
 		shape->calculateLocalInertia(mass, localInertia);
 
@@ -1818,6 +2080,7 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		rig->dir = dir;
 		rig->boneindex = rigcontrol->boneindex;
 		rig->flags = rigcontrol->flags;
+		rig->mass = mass;
 
 		return rig;
 	}
@@ -1856,11 +2119,30 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		rig->dir = dir;
 		rig->boneindex = rigcontrol->boneindex;
 		rig->flags = rigcontrol->flags | RIG_FL_KINEMATIC;
+		rig->mass = mass;
+
 		return rig;
 	}
 
 	gEngfuncs.Con_Printf("CreateRigBody: Failed to create rigbody %s, invalid shape type %d\n", rigcontrol->name.c_str(), rigcontrol->shape);
 	return NULL;
+}
+
+void CPhysicsManager::CreateWaterControl(CRagdollBody *ragdoll, studiohdr_t *studiohdr, ragdoll_water_control_t *water_control)
+{
+	auto itor = ragdoll->m_rigbodyMap.find(water_control->name);
+	if (itor == ragdoll->m_rigbodyMap.end())
+	{
+		gEngfuncs.Con_Printf("CreateConstraint: Failed to create water control, rigidbody %s not found\n", water_control->name.c_str());
+		return;
+	}
+
+	auto RigBody = itor->second;
+
+	btVector3 offset(water_control->offsetX, water_control->offsetY, water_control->offsetZ);
+	Vec3GoldSrcToBullet(offset);
+
+	RigBody->water_control_points.emplace_back(offset, water_control->factor1, water_control->factor2, water_control->factor3);
 }
 
 btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, studiohdr_t *studiohdr, ragdoll_cst_control_t *cstcontrol)
@@ -2820,6 +3102,13 @@ CRagdollBody *CPhysicsManager::CreateRagdoll(
 			ragdoll->m_constraintArray.emplace_back(constraint);
 			m_dynamicsWorld->addConstraint(constraint, true);
 		}
+	}
+
+	for (size_t i = 0; i < cfg->watercontrol.size(); ++i)
+	{
+		auto water_control = &cfg->watercontrol[i];
+
+		CreateWaterControl(ragdoll, studiohdr, water_control);
 	}
 
 	ragdoll->m_entindex = entindex;
