@@ -69,9 +69,9 @@ RLeg    chewlimit     0  0  0     0       1.0  4
 Pelvis  chewforce     0  0  0     8000    1.0  0
 
 [Gargantua]
-Head    GargMouth   dof6    0  0  0     20000  -8  16
-Spine   GargMouth   dof6    0  0  0     20000  -16  32
-Pelvis  GargMouth   dof6    0  0  0     20000  -24  64
+Head    GargMouth   dof6z    0  0  0     20000  -8  16
+Spine   GargMouth   dof6z    0  0  0     20000  -16  32
+Pelvis  GargMouth   dof6z    0  0  0     20000  -24  64
 
 [WaterControl]
 Head    0  0  0    0.95  0.5  0

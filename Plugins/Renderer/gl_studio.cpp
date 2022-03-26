@@ -9,6 +9,8 @@ std::unordered_map<int, studio_program_t> g_StudioProgramTable;
 
 std::vector<studio_vbo_t *> g_StudioVBOCache;
 
+studio_vbo_t *g_CurrentVBOCache = NULL;
+
 //engine
 model_t *cl_sprite_white;
 model_t *cl_shellchrome;
@@ -56,6 +58,9 @@ cvar_t *r_studio_celshade_midpoint = NULL;
 cvar_t *r_studio_celshade_softness = NULL;
 cvar_t *r_studio_celshade_shadow_color = NULL;
 
+cvar_t *r_studio_outline_size = NULL;
+cvar_t *r_studio_outline_dark = NULL;
+
 cvar_t *r_studio_rimlight_power = NULL;
 cvar_t *r_studio_rimlight_power2 = NULL;
 cvar_t *r_studio_rimlight_smooth = NULL;
@@ -65,9 +70,6 @@ cvar_t *r_studio_rimdark_power = NULL;
 cvar_t *r_studio_rimdark_power2 = NULL;
 cvar_t *r_studio_rimdark_smooth = NULL;
 cvar_t *r_studio_rimdark_color = NULL;
-
-cvar_t *r_studio_outline_size = NULL;
-cvar_t *r_studio_outline_dark = NULL;
 
 void R_PrepareStudioVBOSubmodel(
 	studiohdr_t *studiohdr, mstudiomodel_t *submodel, 
@@ -234,6 +236,20 @@ studio_vbo_t *R_PrepareStudioVBO(studiohdr_t *studiohdr)
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(studio_ubo_t), NULL, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
+	VBOData->celshade_control.celshade_midpoint.Init(r_studio_celshade_midpoint, 1, 0);
+	VBOData->celshade_control.celshade_softness.Init(r_studio_celshade_softness, 1, 0);
+	VBOData->celshade_control.celshade_shadow_color.Init(r_studio_celshade_shadow_color, 3, ConVar_Color255);
+	VBOData->celshade_control.outline_size.Init(r_studio_outline_size, 1, 0);
+	VBOData->celshade_control.outline_dark.Init(r_studio_outline_dark, 1, 0);
+	VBOData->celshade_control.rimlight_power.Init(r_studio_rimlight_power, 1, 0);
+	VBOData->celshade_control.rimlight_power2.Init(r_studio_rimlight_power2, 1, 0);
+	VBOData->celshade_control.rimlight_smooth.Init(r_studio_rimlight_smooth, 1, 0);
+	VBOData->celshade_control.rimlight_color.Init(r_studio_rimlight_color, 3, ConVar_Color255);
+	VBOData->celshade_control.rimdark_power.Init(r_studio_rimdark_power, 1, 0);
+	VBOData->celshade_control.rimdark_power2.Init(r_studio_rimdark_power2, 1, 0);
+	VBOData->celshade_control.rimdark_smooth.Init(r_studio_rimdark_smooth, 1, 0);
+	VBOData->celshade_control.rimdark_color.Init(r_studio_rimdark_color, 3, ConVar_Color255);
+
 	return VBOData;
 }
 
@@ -390,53 +406,150 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		GL_UseProgram(prog.program);
 
 		if (prog.entityPos != -1)
+		{
 			glUniform3f(prog.entityPos, (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3]);
+		}
 
 		if (prog.r_celshade_midpoint != -1)
-			glUniform1f(prog.r_celshade_midpoint, r_studio_celshade_midpoint->value);
+		{
+			if (g_CurrentVBOCache)
+			{
+				glUniform1f(prog.r_celshade_midpoint, g_CurrentVBOCache->celshade_control.celshade_midpoint.GetValue());
+			}
+			else
+			{
+				glUniform1f(prog.r_celshade_midpoint, r_studio_celshade_midpoint->value);
+			}
+		}
 
 		if (prog.r_celshade_softness != -1)
-			glUniform1f(prog.r_celshade_softness, r_studio_celshade_softness->value);
+		{
+			if (g_CurrentVBOCache)
+			{
+				glUniform1f(prog.r_celshade_softness, g_CurrentVBOCache->celshade_control.celshade_softness.GetValue());
+			}
+			else
+			{
+				glUniform1f(prog.r_celshade_softness, r_studio_celshade_softness->value);
+			}
+		}
 
 		if (prog.r_celshade_shadow_color != -1)
 		{
-			vec3_t color = { 0 };
-			R_ParseCvarAsVector3(r_studio_celshade_shadow_color, color);
-			glUniform3f(prog.r_celshade_shadow_color, color[0], color[1], color[2]);
+			if (g_CurrentVBOCache)
+			{
+				vec3_t color = { 0 };
+				g_CurrentVBOCache->celshade_control.celshade_shadow_color.GetValues(color);
+				glUniform3f(prog.r_celshade_shadow_color, color[0], color[1], color[2]);
+			}
+			else
+			{
+				vec3_t color = { 0 };
+				R_ParseCvarAsColor3(r_studio_celshade_shadow_color, color);
+				glUniform3f(prog.r_celshade_shadow_color, color[0], color[1], color[2]);
+			}
+		}
+
+		if (prog.r_outline_dark != -1)
+		{
+			if (g_CurrentVBOCache)
+			{
+				glUniform1f(prog.r_outline_dark, g_CurrentVBOCache->celshade_control.outline_dark.GetValue());
+			}
+			else
+			{
+				glUniform1f(prog.r_outline_dark, r_studio_outline_dark->value);
+			}
 		}
 
 		if (prog.r_rimlight_power != -1)
 		{
-			glUniform2f(prog.r_rimlight_power, r_studio_rimlight_power->value, r_studio_rimlight_power2->value);
+			if (g_CurrentVBOCache)
+			{
+				glUniform2f(prog.r_rimlight_power,
+					g_CurrentVBOCache->celshade_control.rimlight_power.GetValue(), 
+					g_CurrentVBOCache->celshade_control.rimlight_power2.GetValue());
+			}
+			else
+			{
+				glUniform2f(prog.r_rimlight_power, 
+					r_studio_rimlight_power->value, 
+					r_studio_rimlight_power2->value);
+			}
 		}
+
 		if (prog.r_rimlight_smooth != -1)
 		{
-			glUniform1f(prog.r_rimlight_smooth, r_studio_rimlight_smooth->value);
+			if (g_CurrentVBOCache)
+			{
+				glUniform1f(prog.r_rimlight_smooth, g_CurrentVBOCache->celshade_control.rimlight_smooth.GetValue());
+			}
+			else
+			{
+				glUniform1f(prog.r_rimlight_smooth, r_studio_rimlight_smooth->value);
+			}
 		}
+
 		if (prog.r_rimlight_color != -1)
 		{
-			vec3_t color = { 0 };
-			R_ParseCvarAsVector3(r_studio_rimlight_color, color);
-			glUniform3f(prog.r_rimlight_color, color[0], color[1], color[2]);
+			if (g_CurrentVBOCache)
+			{
+				vec3_t color = { 0 };
+				g_CurrentVBOCache->celshade_control.rimlight_color.GetValues(color);
+				glUniform3f(prog.r_rimlight_color, color[0], color[1], color[2]);
+			}
+			else
+			{
+				vec3_t color = { 0 };
+				R_ParseCvarAsColor3(r_studio_rimlight_color, color);
+				glUniform3f(prog.r_rimlight_color, color[0], color[1], color[2]);
+			}
 		}
+
 		if (prog.r_rimdark_power != -1)
 		{
-			glUniform2f(prog.r_rimdark_power, r_studio_rimdark_power->value, r_studio_rimdark_power2->value);
+			if (g_CurrentVBOCache)
+			{
+				glUniform2f(prog.r_rimdark_power, 
+					g_CurrentVBOCache->celshade_control.rimdark_power.GetValue(), 
+					g_CurrentVBOCache->celshade_control.rimdark_power2.GetValue());
+			}
+			else
+			{
+				glUniform2f(prog.r_rimdark_power,
+					r_studio_rimdark_power->value, 
+					r_studio_rimdark_power2->value);
+			}
 		}
+
 		if (prog.r_rimdark_smooth != -1)
 		{
-			glUniform1f(prog.r_rimdark_smooth, r_studio_rimdark_smooth->value);
+			if (g_CurrentVBOCache)
+			{
+				glUniform1f(prog.r_rimdark_smooth, g_CurrentVBOCache->celshade_control.rimdark_smooth.GetValue());
+			}
+			else
+			{
+				glUniform1f(prog.r_rimdark_smooth, r_studio_rimdark_smooth->value);
+			}
 		}
+
 		if (prog.r_rimdark_color != -1)
 		{
-			vec3_t color = { 0 };
-			R_ParseCvarAsVector3(r_studio_rimdark_color, color);
-			glUniform3f(prog.r_rimdark_color, color[0], color[1], color[2]);
+			if (g_CurrentVBOCache)
+			{
+				vec3_t color = { 0 };
+				g_CurrentVBOCache->celshade_control.rimdark_color.GetValues(color);
+				glUniform3f(prog.r_rimdark_color, color[0], color[1], color[2]);
+			}
+			else
+			{
+				vec3_t color = { 0 };
+				R_ParseCvarAsColor3(r_studio_rimdark_color, color);
+				glUniform3f(prog.r_rimdark_color, color[0], color[1], color[2]);
+			}
 		}
-		if (prog.r_outline_dark != -1)
-		{
-			glUniform1f(prog.r_outline_dark, r_studio_outline_dark->value);
-		}
+
 		if (progOutput)
 			*progOutput = prog;
 	}
@@ -568,6 +681,7 @@ void R_InitStudio(void)
 	r_studio_celshade_midpoint = gEngfuncs.pfnRegisterVariable("r_studio_celshade_midpoint", "-0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_celshade_softness = gEngfuncs.pfnRegisterVariable("r_studio_celshade_softness", "0.05", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_celshade_shadow_color = gEngfuncs.pfnRegisterVariable("r_studio_celshade_shadow_color", "220 210 210", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+
 	r_studio_outline_size = gEngfuncs.pfnRegisterVariable("r_studio_outline_size", "3.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_outline_dark = gEngfuncs.pfnRegisterVariable("r_studio_outline_dark", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
@@ -668,7 +782,9 @@ void R_EnableStudioVBO(studio_vbo_t *VBOData)
 {
 	if (VBOData)
 	{
-		//setup ubo
+		g_CurrentVBOCache = VBOData;
+
+		//Setup UBO
 		if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
 		{
 			g_ChromeOrigin[0] = cos(r_glowshellfreq->value * (*cl_time)) * 4000.0f;
@@ -726,6 +842,8 @@ void R_EnableStudioVBO(studio_vbo_t *VBOData)
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+		g_CurrentVBOCache = NULL;
 	}
 }
 
@@ -1237,7 +1355,7 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 	return gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
 }
 
-void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr)
+void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr, studio_vbo_t *VBOData)
 {
 	char *basetexture_string = ValueForKey(ent, "basetexture");
 	if (!basetexture_string)
@@ -1299,11 +1417,11 @@ void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr)
 			}
 			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE"))
 			{
-				ptexture->flags |= STUDIO_NF_CELSHADE;
+				ptexture->flags |= STUDIO_NF_CELSHADE | STUDIO_NF_FLATSHADE;
 			}
 			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE_FACE"))
 			{
-				ptexture->flags |= STUDIO_NF_CELSHADE_FACE;
+				ptexture->flags |= STUDIO_NF_CELSHADE_FACE | STUDIO_NF_FLATSHADE;
 			}
 			if (replacetexture_string && replacetexture_string[0])
 			{
@@ -1368,7 +1486,7 @@ void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr)
 	}
 }
 
-void R_StudioLoadExternalFile_Efx(bspentity_t *ent, studiohdr_t *studiohdr)
+void R_StudioLoadExternalFile_Efx(bspentity_t *ent, studiohdr_t *studiohdr, studio_vbo_t *VBOData)
 {
 	char *flags_string = ValueForKey(ent, "flags");
 	if (flags_string && !strcmp(flags_string, "EF_ROCKET"))
@@ -1421,6 +1539,217 @@ void R_StudioLoadExternalFile_Efx(bspentity_t *ent, studiohdr_t *studiohdr)
 	}
 }
 
+void R_StudioLoadExternalFile_Celshade(bspentity_t *ent, studiohdr_t *studiohdr, studio_vbo_t *VBOData)
+{
+	if (1)
+	{
+		char *celshade_midpoint = ValueForKey(ent, "celshade_midpoint");
+		if (celshade_midpoint && celshade_midpoint[0])
+		{
+			if (R_ParseStringAsVector1(celshade_midpoint, VBOData->celshade_control.celshade_midpoint.m_override_value))
+			{
+				VBOData->celshade_control.celshade_midpoint.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"celshade_midpoint\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+	
+	if (1)
+	{
+		char *celshade_softness = ValueForKey(ent, "celshade_softness");
+		if (celshade_softness && celshade_softness[0])
+		{
+			if (R_ParseStringAsVector1(celshade_softness, VBOData->celshade_control.celshade_softness.m_override_value))
+			{
+				VBOData->celshade_control.celshade_softness.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"celshade_softness\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		char *celshade_shadow_color = ValueForKey(ent, "celshade_shadow_color");
+		if (celshade_shadow_color && celshade_shadow_color[0])
+		{
+			if (R_ParseStringAsColor3(celshade_shadow_color, VBOData->celshade_control.celshade_shadow_color.m_override_value))
+			{
+				VBOData->celshade_control.celshade_shadow_color.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"celshade_shadow_color\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		char *outline_size = ValueForKey(ent, "outline_size");
+		if (outline_size && outline_size[0])
+		{
+			if (R_ParseStringAsVector1(outline_size, VBOData->celshade_control.outline_size.m_override_value))
+			{
+				VBOData->celshade_control.outline_size.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"outline_size\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		char *outline_dark = ValueForKey(ent, "outline_dark");
+		if (outline_dark && outline_dark[0])
+		{
+			if (R_ParseStringAsVector1(outline_dark, VBOData->celshade_control.outline_dark.m_override_value))
+			{
+				VBOData->celshade_control.outline_dark.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"outline_dark\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		char *rimlight_power = ValueForKey(ent, "rimlight_power");
+		if (rimlight_power && rimlight_power[0])
+		{
+			if (R_ParseStringAsVector1(rimlight_power, VBOData->celshade_control.rimlight_power.m_override_value))
+			{
+				VBOData->celshade_control.rimlight_power.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"rimlight_power\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		char *rimlight_power2 = ValueForKey(ent, "rimlight_power2");
+		if (rimlight_power2 && rimlight_power2[0])
+		{
+			if (R_ParseStringAsVector1(rimlight_power2, VBOData->celshade_control.rimlight_power2.m_override_value))
+			{
+				VBOData->celshade_control.rimlight_power2.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"rimlight_power2\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		char *rimlight_smooth = ValueForKey(ent, "rimlight_smooth");
+		if (rimlight_smooth && rimlight_smooth[0])
+		{
+			if (R_ParseStringAsVector1(rimlight_smooth, VBOData->celshade_control.rimlight_smooth.m_override_value))
+			{
+				VBOData->celshade_control.rimlight_smooth.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"rimlight_smooth\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		char *rimlight_color = ValueForKey(ent, "rimlight_color");
+		if (rimlight_color && rimlight_color[0])
+		{
+			if (R_ParseStringAsColor3(rimlight_color, VBOData->celshade_control.rimlight_color.m_override_value))
+			{
+				VBOData->celshade_control.rimlight_color.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"rimlight_color\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		char *rimdark_power = ValueForKey(ent, "rimdark_power");
+		if (rimdark_power && rimdark_power[0])
+		{
+			if (R_ParseStringAsVector1(rimdark_power, VBOData->celshade_control.rimdark_power.m_override_value))
+			{
+				VBOData->celshade_control.rimdark_power.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"rimdark_power\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		char *rimdark_power2 = ValueForKey(ent, "rimdark_power2");
+		if (rimdark_power2 && rimdark_power2[0])
+		{
+			if (R_ParseStringAsVector1(rimdark_power2, VBOData->celshade_control.rimdark_power2.m_override_value))
+			{
+				VBOData->celshade_control.rimdark_power2.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"rimdark_power2\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		char *rimdark_smooth = ValueForKey(ent, "rimdark_smooth");
+		if (rimdark_smooth && rimdark_smooth[0])
+		{
+			if (R_ParseStringAsVector1(rimdark_smooth, VBOData->celshade_control.rimdark_smooth.m_override_value))
+			{
+				VBOData->celshade_control.rimdark_smooth.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"rimdark_smooth\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		char *rimdark_color = ValueForKey(ent, "rimdark_color");
+		if (rimdark_color && rimdark_color[0])
+		{
+			if (R_ParseStringAsColor3(rimdark_color, VBOData->celshade_control.rimdark_color.m_override_value))
+			{
+				VBOData->celshade_control.rimdark_color.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"rimdark_color\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+}
+
 static std::vector<bspentity_t> g_StudioBSPEntities;
 
 bspentity_t *R_ParseBSPEntity_StudioAllocator(void)
@@ -1432,7 +1761,7 @@ bspentity_t *R_ParseBSPEntity_StudioAllocator(void)
 	return &g_StudioBSPEntities[len];
 }
 
-void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr)
+void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, studio_vbo_t *VBOData)
 {
 	std::string name = mod->name;
 	name = name.substr(0, name.length() - 4);
@@ -1458,11 +1787,15 @@ void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr)
 
 		if (!strcmp(classname, "studio_texture"))
 		{
-			R_StudioLoadExternalFile_Texture(ent, studiohdr);
+			R_StudioLoadExternalFile_Texture(ent, studiohdr, VBOData);
 		}
 		else if (!strcmp(classname, "studio_efx"))
 		{
-			R_StudioLoadExternalFile_Efx(ent, studiohdr);
+			R_StudioLoadExternalFile_Efx(ent, studiohdr, VBOData);
+		}
+		else if (!strcmp(classname, "studio_celshade_control"))
+		{
+			R_StudioLoadExternalFile_Celshade(ent, studiohdr, VBOData);
 		}
 	}
 

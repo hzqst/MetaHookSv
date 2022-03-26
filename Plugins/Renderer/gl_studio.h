@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gl_cvar.h"
 #include "gl_draw.h"
 #include <vector>
 #include <unordered_map>
@@ -88,6 +89,23 @@ typedef struct studio_vbo_submodel_s
 	std::vector<studio_vbo_mesh_t> vMesh;
 }studio_vbo_submodel_t;
 
+typedef struct studio_celshade_control_s
+{
+	StudioConVar celshade_midpoint;
+	StudioConVar celshade_softness;
+	StudioConVar celshade_shadow_color;
+	StudioConVar outline_size;
+	StudioConVar outline_dark;
+	StudioConVar rimlight_power;
+	StudioConVar rimlight_power2;
+	StudioConVar rimlight_smooth;
+	StudioConVar rimlight_color;
+	StudioConVar rimdark_power;
+	StudioConVar rimdark_power2;
+	StudioConVar rimdark_smooth;
+	StudioConVar rimdark_color;
+}studio_celshade_control_t;
+
 typedef struct studio_vbo_s
 {
 	studio_vbo_s()
@@ -102,6 +120,7 @@ typedef struct studio_vbo_s
 	GLuint				hEBO;
 	GLuint				hStudioUBO;
 	std::vector<studio_vbo_submodel_t *> vSubmodel;
+	studio_celshade_control_t celshade_control;
 }studio_vbo_t;
 
 //engine
@@ -141,7 +160,7 @@ extern int r_studio_drawcall;
 extern int r_studio_polys;
 
 studio_vbo_t *R_PrepareStudioVBO(studiohdr_t *studiohdr);
-void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr);
+void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, studio_vbo_t *VBOData);
 void R_StudioReloadVBOCache(void);
 void R_ShutdownStudio(void);
 void R_InitStudio(void);

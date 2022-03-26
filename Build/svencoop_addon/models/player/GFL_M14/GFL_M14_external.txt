@@ -12,3 +12,19 @@
     "classname" "studio_efx"
     "flags" "EF_OUTLINE"
 }
+{
+    "classname" "studio_celshade_control"
+    "celshade_midpoint" "-0.1"
+    "celshade_softness" "0.05"
+    "celshade_shadow_color" "220 210 210"
+    "outline_size" "3.0"
+    "outline_dark" "0.5"
+    "rimlight_power" "5.0"
+    "rimlight_power2" "0.3"
+    "rimlight_smooth" "0.1"
+    "rimlight_color" "80 80 80"
+    "rimdark_power" "5.0"
+    "rimdark_power2" "0.3"
+    "rimdark_smooth" "0.1"
+    "rimdark_color" "100 100 100"
+}
