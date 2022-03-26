@@ -55,12 +55,17 @@ cvar_t *r_studio_celshade = NULL;
 cvar_t *r_studio_celshade_midpoint = NULL;
 cvar_t *r_studio_celshade_softness = NULL;
 cvar_t *r_studio_celshade_shadow_color = NULL;
+
 cvar_t *r_studio_rimlight_power = NULL;
+cvar_t *r_studio_rimlight_power2 = NULL;
 cvar_t *r_studio_rimlight_smooth = NULL;
 cvar_t *r_studio_rimlight_color = NULL;
+
 cvar_t *r_studio_rimdark_power = NULL;
+cvar_t *r_studio_rimdark_power2 = NULL;
 cvar_t *r_studio_rimdark_smooth = NULL;
 cvar_t *r_studio_rimdark_color = NULL;
+
 cvar_t *r_studio_outline_size = NULL;
 cvar_t *r_studio_outline_dark = NULL;
 
@@ -396,13 +401,13 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		if (prog.r_celshade_shadow_color != -1)
 		{
 			vec3_t color = { 0 };
-			R_ParseVectorCvar(r_studio_celshade_shadow_color, color);
+			R_ParseCvarAsVector3(r_studio_celshade_shadow_color, color);
 			glUniform3f(prog.r_celshade_shadow_color, color[0], color[1], color[2]);
 		}
 
 		if (prog.r_rimlight_power != -1)
 		{
-			glUniform1f(prog.r_rimlight_power, r_studio_rimlight_power->value);
+			glUniform2f(prog.r_rimlight_power, r_studio_rimlight_power->value, r_studio_rimlight_power2->value);
 		}
 		if (prog.r_rimlight_smooth != -1)
 		{
@@ -411,12 +416,12 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		if (prog.r_rimlight_color != -1)
 		{
 			vec3_t color = { 0 };
-			R_ParseVectorCvar(r_studio_rimlight_color, color);
+			R_ParseCvarAsVector3(r_studio_rimlight_color, color);
 			glUniform3f(prog.r_rimlight_color, color[0], color[1], color[2]);
 		}
 		if (prog.r_rimdark_power != -1)
 		{
-			glUniform1f(prog.r_rimdark_power, r_studio_rimdark_power->value);
+			glUniform2f(prog.r_rimdark_power, r_studio_rimdark_power->value, r_studio_rimdark_power2->value);
 		}
 		if (prog.r_rimdark_smooth != -1)
 		{
@@ -425,7 +430,7 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		if (prog.r_rimdark_color != -1)
 		{
 			vec3_t color = { 0 };
-			R_ParseVectorCvar(r_studio_rimdark_color, color);
+			R_ParseCvarAsVector3(r_studio_rimdark_color, color);
 			glUniform3f(prog.r_rimdark_color, color[0], color[1], color[2]);
 		}
 		if (prog.r_outline_dark != -1)
@@ -567,11 +572,13 @@ void R_InitStudio(void)
 	r_studio_outline_dark = gEngfuncs.pfnRegisterVariable("r_studio_outline_dark", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_studio_rimlight_power = gEngfuncs.pfnRegisterVariable("r_studio_rimlight_power", "5.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_rimlight_power2 = gEngfuncs.pfnRegisterVariable("r_studio_rimlight_power2", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_rimlight_smooth = gEngfuncs.pfnRegisterVariable("r_studio_rimlight_smooth", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_studio_rimlight_color = gEngfuncs.pfnRegisterVariable("r_studio_rimlight_color", "40 40 40", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_rimlight_color = gEngfuncs.pfnRegisterVariable("r_studio_rimlight_color", "80 80 80", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_rimdark_power = gEngfuncs.pfnRegisterVariable("r_studio_rimdark_power", "5.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_rimdark_power2 = gEngfuncs.pfnRegisterVariable("r_studio_rimdark_power2", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_rimdark_smooth = gEngfuncs.pfnRegisterVariable("r_studio_rimdark_smooth", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_studio_rimdark_color = gEngfuncs.pfnRegisterVariable("r_studio_rimdark_color", "50 50 50", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_rimdark_color = gEngfuncs.pfnRegisterVariable("r_studio_rimdark_color", "100 100 100", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
 inline void R_StudioTransformAuxVert(auxvert_t *av, int bone, vec3_t vert)

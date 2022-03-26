@@ -11,10 +11,10 @@ layout(binding = 0) uniform sampler2D diffuseTex;
 uniform float r_celshade_midpoint;
 uniform float r_celshade_softness;
 uniform vec3 r_celshade_shadow_color;
-uniform float r_rimlight_power;
+uniform vec2 r_rimlight_power;
 uniform float r_rimlight_smooth;
 uniform vec3 r_rimlight_color;
-uniform float r_rimdark_power;
+uniform vec2 r_rimdark_power;
 uniform float r_rimdark_smooth;
 uniform vec3 r_rimdark_color;
 uniform float r_outline_dark;
@@ -53,7 +53,7 @@ vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
 
     vec3 litOrShadowColor = mix(r_celshade_shadow_color.xyz, vec3(1.0, 1.0, 1.0), litOrShadowArea);
 
-	vec3 rimColor = vec3(0.0);
+	vec3 rimLightColor = vec3(0.0);
 	vec3 rimDarkColor = vec3(0.0);
 
 #ifndef STUDIO_NF_CELSHADE_FACE
@@ -62,18 +62,26 @@ vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
     float lambertF = max(0, NoL);
     float rim = 1.0 - clamp(dot(V, -N), 0.0, 1.0);
 
-	float rimDot = pow(rim, r_rimlight_power);
+	float rimDot = pow(rim, r_rimlight_power.x);
 	rimDot = lambertF * rimDot;
 	float rimIntensity = smoothstep(0, r_rimlight_smooth, rimDot);
-	rimColor = pow(rimIntensity, 5.0) * r_rimlight_color;
+	rimLightColor = pow(rimIntensity, 5.0) * r_rimlight_color.xyz;
 
-	rimDot = pow(rim, r_rimdark_power);
+	rimLightColor.x = rimLightColor.x * pow(v_color.x, r_rimlight_power.y);
+	rimLightColor.y = rimLightColor.y * pow(v_color.y, r_rimlight_power.y);
+	rimLightColor.z = rimLightColor.z * pow(v_color.z, r_rimlight_power.y);
+
+	rimDot = pow(rim, r_rimdark_power.x);
     rimDot = lambertD * rimDot;
 	rimIntensity = smoothstep(0, r_rimdark_smooth, rimDot);
-    rimDarkColor = pow(rimIntensity, 5.0) * r_rimdark_color;
+    rimDarkColor = pow(rimIntensity, 5.0) * r_rimdark_color.xyz;
+
+	rimDarkColor.x = rimDarkColor.x * pow(v_color.x, r_rimdark_power.y);
+	rimDarkColor.y = rimDarkColor.y * pow(v_color.y, r_rimdark_power.y);
+	rimDarkColor.z = rimDarkColor.z * pow(v_color.z, r_rimdark_power.y);
 #endif
 
-	return v_color.xyz * litOrShadowColor + rimColor + rimDarkColor;
+	return v_color.xyz * litOrShadowColor + rimLightColor + rimDarkColor;
 }
 
 #endif

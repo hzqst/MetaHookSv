@@ -1580,11 +1580,11 @@ void R_RenderView_SvEngine(int a1)
 
 	if (CL_IsDevOverviewMode())
 	{
-		R_ParseVectorCvar(dev_overview_color, clearColor);
+		R_ParseCvarAsVector3(dev_overview_color, clearColor);
 	}
 	else
 	{
-		R_ParseVectorCvar(gl_clearcolor, clearColor);
+		R_ParseCvarAsVector3(gl_clearcolor, clearColor);
 	}
 
 	glClearColor(clearColor[0], clearColor[1], clearColor[2], 0);
@@ -1883,77 +1883,31 @@ float *R_GetAttachmentPoint(int entity, int attachment)
 	return pEntity->origin;
 }
 
-qboolean R_ParseVectorCvar(cvar_t *a1, float *vec)
+qboolean R_ParseCvarAsVector3(cvar_t *cvar, float *vec)
 {
-	double v2; // st7@2
-	double v3; // st6@2
-	double v4; // st5@2
-	double v5; // st7@3
-	double v6; // st4@7
-	double v7; // st4@11
-	double v8; // st7@13
-	qboolean result; // eax@14
-	float v10; // [sp+4h] [bp-10h]@1
-	float v11; // [sp+8h] [bp-Ch]@1
-	float v12; // [sp+Ch] [bp-8h]@1
+	vec3_t vinput;
+	if (sscanf(cvar->string, "%f %f %f", &vinput[0], &vinput[1], &vinput[2]) == 3)
+	{
+		vec[0] = clamp(vinput[0], 0, 255) / 255.0f;
+		vec[1] = clamp(vinput[1], 0, 255) / 255.0f;
+		vec[2] = clamp(vinput[2], 0, 255) / 255.0f;
+		return true;
+	}
+	return false;
+}
 
-	if (sscanf(a1->string, "%f %f %f", &v10, &v11, &v12) == 3)
+qboolean R_ParseCvarAsVector4(cvar_t *cvar, float *vec)
+{
+	vec3_t vinput;
+	if (sscanf(cvar->string, "%f %f %f %f", &vinput[0], &vinput[1], &vinput[2], &vinput[3]) == 4)
 	{
-		vec[0] = v10;
-		vec[1] = v11;
-		vec[2] = v12;
-		v2 = vec[0];
-		v3 = 0.0;
-		v4 = 255.0;
-		if (v2 >= 0.0)
-		{
-			if (v2 <= 255.0)
-			{
-				v4 = vec[0];
-				v5 = 255.0;
-			}
-			else
-			{
-				v5 = 255.0;
-			}
-		}
-		else
-		{
-			v5 = 255.0;
-			v4 = 0.0;
-		}
-		vec[0] = v4 * 0.0039215689;
-		v6 = vec[1];
-		if (v6 >= 0.0)
-		{
-			if (v6 > v5)
-				v6 = v5;
-		}
-		else
-		{
-			v6 = 0.0;
-		}
-		vec[1] = v6 * 0.0039215689;
-		v7 = vec[2];
-		if (v7 < 0.0)
-		{
-			v8 = 0.0039215689;
-		}
-		else
-		{
-			if (v7 <= v5)
-				v5 = vec[2];
-			v3 = v5;
-			v8 = 0.0039215689;
-		}
-		result = 1;
-		vec[2] = v8 * v3;
+		vec[0] = clamp(vinput[0], 0, 255) / 255.0f;
+		vec[1] = clamp(vinput[1], 0, 255) / 255.0f;
+		vec[2] = clamp(vinput[2], 0, 255) / 255.0f;
+		vec[3] = clamp(vinput[3], 0, 255) / 255.0f;
+		return true;
 	}
-	else
-	{
-		result = 0;
-	}
-	return result;
+	return false;
 }
 
 double V_CalcFovV(float fov, float width, float height)
