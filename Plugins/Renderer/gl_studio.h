@@ -14,9 +14,11 @@ typedef struct
 	int r_celshade_shadow_color;
 	int r_rimlight_power;
 	int r_rimlight_smooth;
+	int r_rimlight_smooth2;
 	int r_rimlight_color;
 	int r_rimdark_power;
 	int r_rimdark_smooth;
+	int r_rimdark_smooth2;
 	int r_rimdark_color;
 	int r_outline_dark;
 	int r_uvscale;
@@ -97,12 +99,12 @@ typedef struct studio_celshade_control_s
 	StudioConVar outline_size;
 	StudioConVar outline_dark;
 	StudioConVar rimlight_power;
-	StudioConVar rimlight_power2;
 	StudioConVar rimlight_smooth;
+	StudioConVar rimlight_smooth2;
 	StudioConVar rimlight_color;
 	StudioConVar rimdark_power;
-	StudioConVar rimdark_power2;
 	StudioConVar rimdark_smooth;
+	StudioConVar rimdark_smooth2;
 	StudioConVar rimdark_color;
 }studio_celshade_control_t;
 

@@ -11,11 +11,13 @@ layout(binding = 0) uniform sampler2D diffuseTex;
 uniform float r_celshade_midpoint;
 uniform float r_celshade_softness;
 uniform vec3 r_celshade_shadow_color;
-uniform vec2 r_rimlight_power;
+uniform float r_rimlight_power;
 uniform float r_rimlight_smooth;
+uniform vec2 r_rimlight_smooth2;
 uniform vec3 r_rimlight_color;
-uniform vec2 r_rimdark_power;
+uniform float r_rimdark_power;
 uniform float r_rimdark_smooth;
+uniform vec2 r_rimdark_smooth2;
 uniform vec3 r_rimdark_color;
 uniform float r_outline_dark;
 uniform vec2 r_uvscale;
@@ -67,18 +69,18 @@ vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
 	float rimIntensity = smoothstep(0, r_rimlight_smooth, rimDot);
 	rimLightColor = pow(rimIntensity, 5.0) * r_rimlight_color.xyz;
 
-	rimLightColor.x = rimLightColor.x * pow(v_color.x, r_rimlight_power.y);
-	rimLightColor.y = rimLightColor.y * pow(v_color.y, r_rimlight_power.y);
-	rimLightColor.z = rimLightColor.z * pow(v_color.z, r_rimlight_power.y);
+	rimLightColor.x = rimLightColor.x * smoothstep(r_rimlight_smooth2.x, r_rimlight_smooth2.y, v_color.x);
+	rimLightColor.y = rimLightColor.y * smoothstep(r_rimlight_smooth2.x, r_rimlight_smooth2.y, v_color.y);
+	rimLightColor.z = rimLightColor.z * smoothstep(r_rimlight_smooth2.x, r_rimlight_smooth2.y, v_color.z);
 
 	rimDot = pow(rim, r_rimdark_power.x);
     rimDot = lambertD * rimDot;
 	rimIntensity = smoothstep(0, r_rimdark_smooth, rimDot);
     rimDarkColor = pow(rimIntensity, 5.0) * r_rimdark_color.xyz;
 
-	rimDarkColor.x = rimDarkColor.x * pow(v_color.x, r_rimdark_power.y);
-	rimDarkColor.y = rimDarkColor.y * pow(v_color.y, r_rimdark_power.y);
-	rimDarkColor.z = rimDarkColor.z * pow(v_color.z, r_rimdark_power.y);
+	rimDarkColor.x = rimDarkColor.x * smoothstep(r_rimdark_smooth2.x, r_rimdark_smooth2.y, v_color.x);
+	rimDarkColor.y = rimDarkColor.y * smoothstep(r_rimdark_smooth2.x, r_rimdark_smooth2.y, v_color.y);
+	rimDarkColor.z = rimDarkColor.z * smoothstep(r_rimdark_smooth2.x, r_rimdark_smooth2.y, v_color.z);
 #endif
 
 	return v_color.xyz * litOrShadowColor + rimLightColor + rimDarkColor;

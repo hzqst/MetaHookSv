@@ -62,13 +62,13 @@ cvar_t *r_studio_outline_size = NULL;
 cvar_t *r_studio_outline_dark = NULL;
 
 cvar_t *r_studio_rimlight_power = NULL;
-cvar_t *r_studio_rimlight_power2 = NULL;
 cvar_t *r_studio_rimlight_smooth = NULL;
+cvar_t *r_studio_rimlight_smooth2 = NULL;
 cvar_t *r_studio_rimlight_color = NULL;
 
 cvar_t *r_studio_rimdark_power = NULL;
-cvar_t *r_studio_rimdark_power2 = NULL;
 cvar_t *r_studio_rimdark_smooth = NULL;
+cvar_t *r_studio_rimdark_smooth2 = NULL;
 cvar_t *r_studio_rimdark_color = NULL;
 
 void R_PrepareStudioVBOSubmodel(
@@ -242,12 +242,12 @@ studio_vbo_t *R_PrepareStudioVBO(studiohdr_t *studiohdr)
 	VBOData->celshade_control.outline_size.Init(r_studio_outline_size, 1, 0);
 	VBOData->celshade_control.outline_dark.Init(r_studio_outline_dark, 1, 0);
 	VBOData->celshade_control.rimlight_power.Init(r_studio_rimlight_power, 1, 0);
-	VBOData->celshade_control.rimlight_power2.Init(r_studio_rimlight_power2, 1, 0);
 	VBOData->celshade_control.rimlight_smooth.Init(r_studio_rimlight_smooth, 1, 0);
+	VBOData->celshade_control.rimlight_smooth2.Init(r_studio_rimlight_smooth2, 2, 0);
 	VBOData->celshade_control.rimlight_color.Init(r_studio_rimlight_color, 3, ConVar_Color255);
 	VBOData->celshade_control.rimdark_power.Init(r_studio_rimdark_power, 1, 0);
-	VBOData->celshade_control.rimdark_power2.Init(r_studio_rimdark_power2, 1, 0);
 	VBOData->celshade_control.rimdark_smooth.Init(r_studio_rimdark_smooth, 1, 0);
+	VBOData->celshade_control.rimdark_smooth2.Init(r_studio_rimdark_smooth2, 2, 0);
 	VBOData->celshade_control.rimdark_color.Init(r_studio_rimdark_color, 3, ConVar_Color255);
 
 	return VBOData;
@@ -385,9 +385,11 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 			SHADER_UNIFORM(prog, r_celshade_shadow_color, "r_celshade_shadow_color");
 			SHADER_UNIFORM(prog, r_rimlight_power, "r_rimlight_power");
 			SHADER_UNIFORM(prog, r_rimlight_smooth, "r_rimlight_smooth");
+			SHADER_UNIFORM(prog, r_rimlight_smooth2, "r_rimlight_smooth2");
 			SHADER_UNIFORM(prog, r_rimlight_color, "r_rimlight_color");
 			SHADER_UNIFORM(prog, r_rimdark_power, "r_rimdark_power");
 			SHADER_UNIFORM(prog, r_rimdark_smooth, "r_rimdark_smooth");
+			SHADER_UNIFORM(prog, r_rimdark_smooth2, "r_rimdark_smooth2");
 			SHADER_UNIFORM(prog, r_rimdark_color, "r_rimdark_color");
 			SHADER_UNIFORM(prog, r_outline_dark, "r_outline_dark");
 			SHADER_UNIFORM(prog, r_uvscale, "r_uvscale");
@@ -466,15 +468,11 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		{
 			if (g_CurrentVBOCache)
 			{
-				glUniform2f(prog.r_rimlight_power,
-					g_CurrentVBOCache->celshade_control.rimlight_power.GetValue(), 
-					g_CurrentVBOCache->celshade_control.rimlight_power2.GetValue());
+				glUniform1f(prog.r_rimlight_power, g_CurrentVBOCache->celshade_control.rimlight_power.GetValue());
 			}
 			else
 			{
-				glUniform2f(prog.r_rimlight_power, 
-					r_studio_rimlight_power->value, 
-					r_studio_rimlight_power2->value);
+				glUniform1f(prog.r_rimlight_power, r_studio_rimlight_power->value);
 			}
 		}
 
@@ -487,6 +485,22 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 			else
 			{
 				glUniform1f(prog.r_rimlight_smooth, r_studio_rimlight_smooth->value);
+			}
+		}
+
+		if (prog.r_rimlight_smooth2 != -1)
+		{
+			if (g_CurrentVBOCache)
+			{
+				vec2_t values = { 0 };
+				g_CurrentVBOCache->celshade_control.rimlight_smooth2.GetValues(values);
+				glUniform2f(prog.r_rimlight_smooth2, values[0], values[1]);
+			}
+			else
+			{
+				vec2_t values = { 0 };
+				R_ParseCvarAsVector2(r_studio_rimlight_color, values);
+				glUniform2f(prog.r_rimlight_smooth2, values[0], values[1]);
 			}
 		}
 
@@ -510,15 +524,11 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		{
 			if (g_CurrentVBOCache)
 			{
-				glUniform2f(prog.r_rimdark_power, 
-					g_CurrentVBOCache->celshade_control.rimdark_power.GetValue(), 
-					g_CurrentVBOCache->celshade_control.rimdark_power2.GetValue());
+				glUniform1f(prog.r_rimdark_power, g_CurrentVBOCache->celshade_control.rimdark_power.GetValue());
 			}
 			else
 			{
-				glUniform2f(prog.r_rimdark_power,
-					r_studio_rimdark_power->value, 
-					r_studio_rimdark_power2->value);
+				glUniform1f(prog.r_rimdark_power, r_studio_rimdark_power->value);
 			}
 		}
 
@@ -531,6 +541,22 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 			else
 			{
 				glUniform1f(prog.r_rimdark_smooth, r_studio_rimdark_smooth->value);
+			}
+		}
+
+		if (prog.r_rimdark_smooth2 != -1)
+		{
+			if (g_CurrentVBOCache)
+			{
+				vec2_t values = { 0 };
+				g_CurrentVBOCache->celshade_control.rimdark_smooth2.GetValues(values);
+				glUniform2f(prog.r_rimdark_smooth2, values[0], values[1]);
+			}
+			else
+			{
+				vec2_t values = { 0 };
+				R_ParseCvarAsVector2(r_studio_rimdark_color, values);
+				glUniform2f(prog.r_rimdark_smooth2, values[0], values[1]);
 			}
 		}
 
@@ -686,13 +712,13 @@ void R_InitStudio(void)
 	r_studio_outline_dark = gEngfuncs.pfnRegisterVariable("r_studio_outline_dark", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_studio_rimlight_power = gEngfuncs.pfnRegisterVariable("r_studio_rimlight_power", "5.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_studio_rimlight_power2 = gEngfuncs.pfnRegisterVariable("r_studio_rimlight_power2", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_rimlight_smooth = gEngfuncs.pfnRegisterVariable("r_studio_rimlight_smooth", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_studio_rimlight_color = gEngfuncs.pfnRegisterVariable("r_studio_rimlight_color", "80 80 80", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_rimlight_smooth2 = gEngfuncs.pfnRegisterVariable("r_studio_rimlight_smooth2", "0.0 0.3", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_rimlight_color = gEngfuncs.pfnRegisterVariable("r_studio_rimlight_color", "40 40 40", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_rimdark_power = gEngfuncs.pfnRegisterVariable("r_studio_rimdark_power", "5.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_studio_rimdark_power2 = gEngfuncs.pfnRegisterVariable("r_studio_rimdark_power2", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_rimdark_smooth = gEngfuncs.pfnRegisterVariable("r_studio_rimdark_smooth", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_studio_rimdark_color = gEngfuncs.pfnRegisterVariable("r_studio_rimdark_color", "100 100 100", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_rimdark_smooth2 = gEngfuncs.pfnRegisterVariable("r_studio_rimdark_smooth2", "0.0 0.3", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_rimdark_color = gEngfuncs.pfnRegisterVariable("r_studio_rimdark_color", "50 50 50", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
 inline void R_StudioTransformAuxVert(auxvert_t *av, int bone, vec3_t vert)
@@ -1639,16 +1665,16 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t *ent, studiohdr_t *studiohdr,
 
 	if (1)
 	{
-		char *rimlight_power2 = ValueForKey(ent, "rimlight_power2");
-		if (rimlight_power2 && rimlight_power2[0])
+		char *rimlight_smooth2 = ValueForKey(ent, "rimlight_smooth2");
+		if (rimlight_smooth2 && rimlight_smooth2[0])
 		{
-			if (R_ParseStringAsVector1(rimlight_power2, VBOData->celshade_control.rimlight_power2.m_override_value))
+			if (R_ParseStringAsVector2(rimlight_smooth2, VBOData->celshade_control.rimlight_smooth2.m_override_value))
 			{
-				VBOData->celshade_control.rimlight_power2.m_is_override = true;
+				VBOData->celshade_control.rimlight_smooth2.m_is_override = true;
 			}
 			else
 			{
-				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"rimlight_power2\" in entity \"studio_celshade_control\"\n");
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"rimlight_smooth2\" in entity \"studio_celshade_control\"\n");
 			}
 		}
 	}
@@ -1703,16 +1729,16 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t *ent, studiohdr_t *studiohdr,
 
 	if (1)
 	{
-		char *rimdark_power2 = ValueForKey(ent, "rimdark_power2");
-		if (rimdark_power2 && rimdark_power2[0])
+		char *rimdark_smooth2 = ValueForKey(ent, "rimdark_smooth2");
+		if (rimdark_smooth2 && rimdark_smooth2[0])
 		{
-			if (R_ParseStringAsVector1(rimdark_power2, VBOData->celshade_control.rimdark_power2.m_override_value))
+			if (R_ParseStringAsVector2(rimdark_smooth2, VBOData->celshade_control.rimdark_smooth2.m_override_value))
 			{
-				VBOData->celshade_control.rimdark_power2.m_is_override = true;
+				VBOData->celshade_control.rimdark_smooth2.m_is_override = true;
 			}
 			else
 			{
-				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"rimdark_power2\" in entity \"studio_celshade_control\"\n");
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"rimdark_smooth2\" in entity \"studio_celshade_control\"\n");
 			}
 		}
 	}
