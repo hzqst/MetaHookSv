@@ -19,6 +19,13 @@ uniform float r_rimdark_power;
 uniform float r_rimdark_smooth;
 uniform vec2 r_rimdark_smooth2;
 uniform vec3 r_rimdark_color;
+uniform float r_hair_specular_exp;
+uniform float r_hair_specular_exp2;
+uniform vec3 r_hair_specular_intensity;
+uniform vec3 r_hair_specular_intensity2;
+uniform vec4 r_hair_specular_noise;
+uniform vec4 r_hair_specular_noise2;
+uniform vec2 r_hair_specular_smooth;
 uniform float r_outline_dark;
 uniform vec2 r_uvscale;
 
@@ -35,11 +42,27 @@ layout(location = 4) out vec4 out_Additive;
 
 #ifdef STUDIO_NF_CELSHADE
 
+vec3 ShiftTangent(vec3 T, vec3 N, float uvX, vec4 noise)
+{
+    return normalize(T + N * (sin(uvX * noise.x) * noise.z + sin(uvX * noise.y + 1.2) * noise.w));
+}
+
+float StrandSpecular(vec3 T, vec3 H, float exponent)
+{
+	float dotTH = dot(T, H);
+    float sinTH = max(0.01, sqrt(1.0 - dotTH * dotTH));
+    float dirAtten = smoothstep(-1.0, 0.0, dotTH);
+    return dirAtten * pow(sinTH, exponent);
+}
+
 vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
 {
 	vec3 N = normalWS;
-	vec3 V = normalize(v_worldpos.xyz - SceneUBO.viewpos.xyz);
     vec3 L = lightdirWS;
+	vec3 V = normalize(v_worldpos.xyz - SceneUBO.viewpos.xyz);
+	vec3 UP = vec3(0.0, 0.0, -1.0);
+	vec3 BiT = cross(N, UP);
+	vec3 T = cross(N, BiT);
 
 	L.z *= 0.01;
 	L = normalize(L);
@@ -57,6 +80,7 @@ vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
 
 	vec3 rimLightColor = vec3(0.0);
 	vec3 rimDarkColor = vec3(0.0);
+	vec3 specularColor = vec3(0.0);
 
 #ifndef STUDIO_NF_CELSHADE_FACE
 	//Rim light
@@ -83,7 +107,49 @@ vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
 	rimDarkColor.z = rimDarkColor.z * smoothstep(r_rimdark_smooth2.x, r_rimdark_smooth2.y, v_color.z);
 #endif
 
-	return v_color.xyz * litOrShadowColor + rimLightColor + rimDarkColor;
+#if defined(STUDIO_NF_CELSHADE_HAIR)
+	
+	vec2 texcoord = v_texcoord * r_uvscale;
+
+	vec3 kajiyaSpecular = vec3(0.0);
+    vec3 shiftedTangent1 = ShiftTangent(T, N, texcoord.x, r_hair_specular_noise);
+    vec3 shiftedTangent2 = ShiftTangent(T, N, texcoord.x, r_hair_specular_noise2);
+	
+	vec3 V2 = SceneUBO.vpn.xyz;
+
+    vec3 HforStrandSpecular = normalize(L + vec3(0.01, 0.0, 0.0) + V2);
+    kajiyaSpecular += r_hair_specular_intensity * StrandSpecular(shiftedTangent1, HforStrandSpecular, r_hair_specular_exp);
+    kajiyaSpecular += r_hair_specular_intensity2 * StrandSpecular(shiftedTangent2, HforStrandSpecular, r_hair_specular_exp2);
+
+	kajiyaSpecular.x = kajiyaSpecular.x * smoothstep(r_hair_specular_smooth.x, r_hair_specular_smooth.y, v_color.x);
+	kajiyaSpecular.y = kajiyaSpecular.y * smoothstep(r_hair_specular_smooth.x, r_hair_specular_smooth.y, v_color.y);
+	kajiyaSpecular.z = kajiyaSpecular.z * smoothstep(r_hair_specular_smooth.x, r_hair_specular_smooth.y, v_color.z);
+
+	specularColor += kajiyaSpecular;
+
+#elif defined(STUDIO_NF_CELSHADE_HAIR_H)
+	
+	vec2 texcoord = v_texcoord * r_uvscale;
+
+	vec3 kajiyaSpecular = vec3(0.0);
+    vec3 shiftedTangent1 = ShiftTangent(BiT, N, texcoord.y, r_hair_specular_noise);
+    vec3 shiftedTangent2 = ShiftTangent(BiT, N, texcoord.y, r_hair_specular_noise2);
+	
+	vec3 V2 = SceneUBO.vpn.xyz;
+
+    vec3 HforStrandSpecular = normalize(L + vec3(0.01, 0.0, 0.0) + V2);
+    kajiyaSpecular += r_hair_specular_intensity * StrandSpecular(shiftedTangent1, HforStrandSpecular, r_hair_specular_exp);
+    kajiyaSpecular += r_hair_specular_intensity2 * StrandSpecular(shiftedTangent2, HforStrandSpecular, r_hair_specular_exp2);
+
+	kajiyaSpecular.x = kajiyaSpecular.x * smoothstep(r_hair_specular_smooth.x, r_hair_specular_smooth.y, v_color.x);
+	kajiyaSpecular.y = kajiyaSpecular.y * smoothstep(r_hair_specular_smooth.x, r_hair_specular_smooth.y, v_color.y);
+	kajiyaSpecular.z = kajiyaSpecular.z * smoothstep(r_hair_specular_smooth.x, r_hair_specular_smooth.y, v_color.z);
+
+	specularColor += kajiyaSpecular;
+
+#endif
+
+	return v_color.xyz * litOrShadowColor + rimLightColor + rimDarkColor + specularColor;
 }
 
 #endif

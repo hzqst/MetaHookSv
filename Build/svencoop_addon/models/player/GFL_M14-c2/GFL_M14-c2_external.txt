@@ -9,6 +9,26 @@
     "flags" "STUDIO_NF_CELSHADE_FACE"
 }
 {
+    "classname" "studio_texture"
+    "basetexture" "fhair1.bmp"
+    "flags" "STUDIO_NF_CELSHADE_HAIR"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "fhair2.bmp"
+    "flags" "STUDIO_NF_CELSHADE_HAIR"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "fhair3.bmp"
+    "flags" "STUDIO_NF_CELSHADE_HAIR"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "hairb.bmp"
+    "flags" "STUDIO_NF_CELSHADE_HAIR"
+}
+{
     "classname" "studio_efx"
     "flags" "EF_OUTLINE"
 }
@@ -27,4 +47,11 @@
     "rimdark_smooth" "0.1"
     "rimdark_smooth2" "0.0 0.3"
     "rimdark_color" "50 50 50"
+    "hair_specular_exp" "1024"
+    "hair_specular_exp2" "128"
+    "hair_specular_intensity" "2.0 2.0 2.0"
+    "hair_specular_intensity2" "1.0 1.0 1.0"
+    "hair_specular_noise" "100 108 0.05 0.05"
+    "hair_specular_noise2" "100 120 0.006 0.0.005"
+    "hair_specular_smooth" "0.0 0.3"
 }

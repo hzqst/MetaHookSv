@@ -21,6 +21,13 @@ typedef struct
 	int r_rimdark_smooth2;
 	int r_rimdark_color;
 	int r_outline_dark;
+	int r_hair_specular_exp;
+	int r_hair_specular_noise;
+	int r_hair_specular_intensity;
+	int r_hair_specular_exp2;
+	int r_hair_specular_noise2;
+	int r_hair_specular_intensity2;
+	int r_hair_specular_smooth;
 	int r_uvscale;
 	//shadow caster
 	int entityPos;
@@ -106,6 +113,13 @@ typedef struct studio_celshade_control_s
 	StudioConVar rimdark_smooth;
 	StudioConVar rimdark_smooth2;
 	StudioConVar rimdark_color;
+	StudioConVar hair_specular_exp;
+	StudioConVar hair_specular_intensity;
+	StudioConVar hair_specular_noise;
+	StudioConVar hair_specular_exp2;
+	StudioConVar hair_specular_intensity2;
+	StudioConVar hair_specular_noise2;
+	StudioConVar hair_specular_smooth;
 }studio_celshade_control_t;
 
 typedef struct studio_vbo_s

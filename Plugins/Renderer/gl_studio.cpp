@@ -71,6 +71,14 @@ cvar_t *r_studio_rimdark_smooth = NULL;
 cvar_t *r_studio_rimdark_smooth2 = NULL;
 cvar_t *r_studio_rimdark_color = NULL;
 
+cvar_t *r_studio_hair_specular_exp = NULL;
+cvar_t *r_studio_hair_specular_intensity = NULL;
+cvar_t *r_studio_hair_specular_noise = NULL;
+cvar_t *r_studio_hair_specular_exp2 = NULL;
+cvar_t *r_studio_hair_specular_intensity2 = NULL;
+cvar_t *r_studio_hair_specular_noise2 = NULL;
+cvar_t *r_studio_hair_specular_smooth = NULL;
+
 void R_PrepareStudioVBOSubmodel(
 	studiohdr_t *studiohdr, mstudiomodel_t *submodel, 
 	std::vector<studio_vbo_vertex_t> &vVertex,
@@ -239,16 +247,27 @@ studio_vbo_t *R_PrepareStudioVBO(studiohdr_t *studiohdr)
 	VBOData->celshade_control.celshade_midpoint.Init(r_studio_celshade_midpoint, 1, 0);
 	VBOData->celshade_control.celshade_softness.Init(r_studio_celshade_softness, 1, 0);
 	VBOData->celshade_control.celshade_shadow_color.Init(r_studio_celshade_shadow_color, 3, ConVar_Color255);
+
 	VBOData->celshade_control.outline_size.Init(r_studio_outline_size, 1, 0);
 	VBOData->celshade_control.outline_dark.Init(r_studio_outline_dark, 1, 0);
+
 	VBOData->celshade_control.rimlight_power.Init(r_studio_rimlight_power, 1, 0);
 	VBOData->celshade_control.rimlight_smooth.Init(r_studio_rimlight_smooth, 1, 0);
 	VBOData->celshade_control.rimlight_smooth2.Init(r_studio_rimlight_smooth2, 2, 0);
 	VBOData->celshade_control.rimlight_color.Init(r_studio_rimlight_color, 3, ConVar_Color255);
+
 	VBOData->celshade_control.rimdark_power.Init(r_studio_rimdark_power, 1, 0);
 	VBOData->celshade_control.rimdark_smooth.Init(r_studio_rimdark_smooth, 1, 0);
 	VBOData->celshade_control.rimdark_smooth2.Init(r_studio_rimdark_smooth2, 2, 0);
 	VBOData->celshade_control.rimdark_color.Init(r_studio_rimdark_color, 3, ConVar_Color255);
+
+	VBOData->celshade_control.hair_specular_exp.Init(r_studio_hair_specular_exp, 1, 0);
+	VBOData->celshade_control.hair_specular_noise.Init(r_studio_hair_specular_noise, 4, 0);
+	VBOData->celshade_control.hair_specular_intensity.Init(r_studio_hair_specular_intensity, 3, 0);
+	VBOData->celshade_control.hair_specular_exp2.Init(r_studio_hair_specular_exp2, 1, 0);
+	VBOData->celshade_control.hair_specular_noise2.Init(r_studio_hair_specular_noise2, 4, 0);
+	VBOData->celshade_control.hair_specular_intensity2.Init(r_studio_hair_specular_intensity2, 3, 0);
+	VBOData->celshade_control.hair_specular_smooth.Init(r_studio_hair_specular_smooth, 2, 0);
 
 	return VBOData;
 }
@@ -330,6 +349,12 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		if (state & STUDIO_NF_CELSHADE_FACE)
 			defs << "#define STUDIO_NF_CELSHADE_FACE\n";
 
+		if (state & STUDIO_NF_CELSHADE_HAIR)
+			defs << "#define STUDIO_NF_CELSHADE_HAIR\n";
+
+		if (state & STUDIO_NF_CELSHADE_HAIR_H)
+			defs << "#define STUDIO_NF_CELSHADE_HAIR_H\n";
+
 		if (state & STUDIO_GBUFFER_ENABLED)
 			defs << "#define GBUFFER_ENABLED\n";
 
@@ -391,6 +416,13 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 			SHADER_UNIFORM(prog, r_rimdark_smooth, "r_rimdark_smooth");
 			SHADER_UNIFORM(prog, r_rimdark_smooth2, "r_rimdark_smooth2");
 			SHADER_UNIFORM(prog, r_rimdark_color, "r_rimdark_color");
+			SHADER_UNIFORM(prog, r_hair_specular_exp, "r_hair_specular_exp");
+			SHADER_UNIFORM(prog, r_hair_specular_noise, "r_hair_specular_noise");
+			SHADER_UNIFORM(prog, r_hair_specular_intensity, "r_hair_specular_intensity");
+			SHADER_UNIFORM(prog, r_hair_specular_exp2, "r_hair_specular_exp2");
+			SHADER_UNIFORM(prog, r_hair_specular_noise2, "r_hair_specular_noise2");
+			SHADER_UNIFORM(prog, r_hair_specular_intensity2, "r_hair_specular_intensity2");
+			SHADER_UNIFORM(prog, r_hair_specular_smooth, "r_hair_specular_smooth");
 			SHADER_UNIFORM(prog, r_outline_dark, "r_outline_dark");
 			SHADER_UNIFORM(prog, r_uvscale, "r_uvscale");
 			SHADER_UNIFORM(prog, entityPos, "entityPos");
@@ -576,6 +608,110 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 			}
 		}
 
+		if (prog.r_hair_specular_exp != -1)
+		{
+			if (g_CurrentVBOCache)
+			{
+				glUniform1f(prog.r_hair_specular_exp, g_CurrentVBOCache->celshade_control.hair_specular_exp.GetValue());
+			}
+			else
+			{
+				glUniform1f(prog.r_hair_specular_exp, r_studio_hair_specular_exp->value);
+			}
+		}
+
+		if (prog.r_hair_specular_noise != -1)
+		{
+			if (g_CurrentVBOCache)
+			{
+				vec4_t values = { 0 };
+				g_CurrentVBOCache->celshade_control.hair_specular_noise.GetValues(values);
+				glUniform4f(prog.r_hair_specular_noise, values[0], values[1], values[2], values[3]);
+			}
+			else
+			{
+				vec4_t values = { 0 };
+				R_ParseCvarAsVector4(r_studio_hair_specular_noise, values);
+				glUniform4f(prog.r_hair_specular_noise, values[0], values[1], values[2], values[3]);
+			}
+		}
+
+		if (prog.r_hair_specular_intensity != -1)
+		{
+			if (g_CurrentVBOCache)
+			{
+				vec3_t values = { 0 };
+				g_CurrentVBOCache->celshade_control.hair_specular_intensity.GetValues(values);
+				glUniform3f(prog.r_hair_specular_intensity, values[0], values[1], values[2]);
+			}
+			else
+			{
+				vec3_t values = { 0 };
+				R_ParseCvarAsVector3(r_studio_hair_specular_intensity, values);
+				glUniform3f(prog.r_hair_specular_intensity, values[0], values[1], values[2]);
+			}
+		}
+
+		if (prog.r_hair_specular_exp2 != -1)
+		{
+			if (g_CurrentVBOCache)
+			{
+				glUniform1f(prog.r_hair_specular_exp2, g_CurrentVBOCache->celshade_control.hair_specular_exp2.GetValue());
+			}
+			else
+			{
+				glUniform1f(prog.r_hair_specular_exp2, r_studio_hair_specular_exp2->value);
+			}
+		}
+
+		if (prog.r_hair_specular_noise2 != -1)
+		{
+			if (g_CurrentVBOCache)
+			{
+				vec4_t values = { 0 };
+				g_CurrentVBOCache->celshade_control.hair_specular_noise2.GetValues(values);
+				glUniform4f(prog.r_hair_specular_noise2, values[0], values[1], values[2], values[3]);
+			}
+			else
+			{
+				vec4_t values = { 0 };
+				R_ParseCvarAsVector4(r_studio_hair_specular_noise2, values);
+				glUniform4f(prog.r_hair_specular_noise2, values[0], values[1], values[2], values[3]);
+			}
+		}
+
+		if (prog.r_hair_specular_intensity2 != -1)
+		{
+			if (g_CurrentVBOCache)
+			{
+				vec3_t values = { 0 };
+				g_CurrentVBOCache->celshade_control.hair_specular_intensity2.GetValues(values);
+				glUniform3f(prog.r_hair_specular_intensity2, values[0], values[1], values[2]);
+			}
+			else
+			{
+				vec3_t values = { 0 };
+				R_ParseCvarAsVector3(r_studio_hair_specular_intensity2, values);
+				glUniform3f(prog.r_hair_specular_intensity2, values[0], values[1], values[2]);
+			}
+		}
+
+		if (prog.r_hair_specular_smooth != -1)
+		{
+			if (g_CurrentVBOCache)
+			{
+				vec2_t values = { 0 };
+				g_CurrentVBOCache->celshade_control.hair_specular_smooth.GetValues(values);
+				glUniform2f(prog.r_hair_specular_smooth, values[0], values[1]);
+			}
+			else
+			{
+				vec2_t values = { 0 };
+				R_ParseCvarAsVector2(r_studio_hair_specular_smooth, values);
+				glUniform2f(prog.r_hair_specular_smooth, values[0], values[1]);
+			}
+		}
+
 		if (progOutput)
 			*progOutput = prog;
 	}
@@ -607,6 +743,8 @@ const program_state_name_t s_StudioProgramStateName[] = {
 { STUDIO_NF_ADDITIVE					,"STUDIO_NF_ADDITIVE"		},
 { STUDIO_NF_CELSHADE					,"STUDIO_NF_CELSHADE"		},
 { STUDIO_NF_CELSHADE_FACE				,"STUDIO_NF_CELSHADE_FACE"	},
+{ STUDIO_NF_CELSHADE_HAIR				,"STUDIO_NF_CELSHADE_HAIR"	},
+{ STUDIO_NF_CELSHADE_HAIR_H				,"STUDIO_NF_CELSHADE_HAIR_H"	},
 };
 
 void R_SaveStudioProgramStates(void)
@@ -719,6 +857,14 @@ void R_InitStudio(void)
 	r_studio_rimdark_smooth = gEngfuncs.pfnRegisterVariable("r_studio_rimdark_smooth", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_rimdark_smooth2 = gEngfuncs.pfnRegisterVariable("r_studio_rimdark_smooth2", "0.0 0.3", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_rimdark_color = gEngfuncs.pfnRegisterVariable("r_studio_rimdark_color", "50 50 50", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+
+	r_studio_hair_specular_exp = gEngfuncs.pfnRegisterVariable("r_studio_hair_specular_exp", "256", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_hair_specular_intensity = gEngfuncs.pfnRegisterVariable("r_studio_hair_specular_intensity", "1 1 1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_hair_specular_noise = gEngfuncs.pfnRegisterVariable("r_studio_hair_specular_noise", "512 1024 0.1 0.15", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_hair_specular_exp2 = gEngfuncs.pfnRegisterVariable("r_studio_hair_specular_exp2", "8", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_hair_specular_intensity2 = gEngfuncs.pfnRegisterVariable("r_studio_hair_specular_intensity2", "0.8 0.8 0.8", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_hair_specular_noise2 = gEngfuncs.pfnRegisterVariable("r_studio_hair_specular_noise2", "240 320 0.05 0.06", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_hair_specular_smooth = gEngfuncs.pfnRegisterVariable("r_studio_hair_specular_smooth", "0.0 0.3", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
 inline void R_StudioTransformAuxVert(auxvert_t *av, int bone, vec3_t vert)
@@ -1000,11 +1146,7 @@ void R_GLStudioDrawPoints(void)
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 			StudioProgramState |= STUDIO_OUTLINE_ENABLED;
-			StudioProgramState &= ~STUDIO_NF_CHROME;
-			StudioProgramState &= ~STUDIO_NF_ADDITIVE;
-			StudioProgramState &= ~STUDIO_NF_MASKED;
-			StudioProgramState &= ~STUDIO_NF_CELSHADE;
-			StudioProgramState &= ~STUDIO_NF_CELSHADE_FACE;
+			StudioProgramState &= ~(STUDIO_NF_CHROME | STUDIO_NF_ADDITIVE | STUDIO_NF_MASKED | STUDIO_NF_CELSHADE | STUDIO_NF_CELSHADE_FACE | STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H);
 		}
 		else if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
 		{
@@ -1042,8 +1184,8 @@ void R_GLStudioDrawPoints(void)
 			StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE | STUDIO_TRANSADDITIVE_ENABLED;
 		}
 
-		if (!r_studio_celshade->value && (StudioProgramState & (STUDIO_NF_CELSHADE | STUDIO_NF_CELSHADE_FACE)))
-			StudioProgramState &= ~(STUDIO_NF_CELSHADE | STUDIO_NF_CELSHADE_FACE);
+		if (!r_studio_celshade->value && (StudioProgramState & (STUDIO_NF_CELSHADE | STUDIO_NF_CELSHADE_FACE | STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H)))
+			StudioProgramState &= ~(STUDIO_NF_CELSHADE | STUDIO_NF_CELSHADE_FACE | STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H);
 
 		if (r_draw_pass == r_draw_reflect && curwater)
 		{
@@ -1447,8 +1589,17 @@ void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr, 
 			}
 			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE_FACE"))
 			{
-				ptexture->flags |= STUDIO_NF_CELSHADE_FACE | STUDIO_NF_FLATSHADE;
+				ptexture->flags |= STUDIO_NF_CELSHADE_FACE;
 			}
+			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE_HAIR"))
+			{
+				ptexture->flags |= STUDIO_NF_CELSHADE_HAIR;
+			}
+			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE_HAIR_H"))
+			{
+				ptexture->flags |= STUDIO_NF_CELSHADE_HAIR_H;
+			}
+
 			if (replacetexture_string && replacetexture_string[0])
 			{
 				int width = 0;
@@ -1771,6 +1922,118 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t *ent, studiohdr_t *studiohdr,
 			else
 			{
 				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"rimdark_color\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		char *hair_specular_exp = ValueForKey(ent, "hair_specular_exp");
+		if (hair_specular_exp && hair_specular_exp[0])
+		{
+			if (R_ParseStringAsVector1(hair_specular_exp, VBOData->celshade_control.hair_specular_exp.m_override_value))
+			{
+				VBOData->celshade_control.hair_specular_exp.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"hair_specular_exp\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		char *hair_specular_intensity = ValueForKey(ent, "hair_specular_intensity");
+		if (hair_specular_intensity && hair_specular_intensity[0])
+		{
+			if (R_ParseStringAsVector3(hair_specular_intensity, VBOData->celshade_control.hair_specular_intensity.m_override_value))
+			{
+				VBOData->celshade_control.hair_specular_intensity.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"hair_specular_intensity\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		char *hair_specular_noise = ValueForKey(ent, "hair_specular_noise");
+		if (hair_specular_noise && hair_specular_noise[0])
+		{
+			if (R_ParseStringAsVector3(hair_specular_noise, VBOData->celshade_control.hair_specular_noise.m_override_value))
+			{
+				VBOData->celshade_control.hair_specular_noise.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"hair_specular_noise\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		char *hair_specular_exp2 = ValueForKey(ent, "hair_specular_exp2");
+		if (hair_specular_exp2 && hair_specular_exp2[0])
+		{
+			if (R_ParseStringAsVector1(hair_specular_exp2, VBOData->celshade_control.hair_specular_exp2.m_override_value))
+			{
+				VBOData->celshade_control.hair_specular_exp2.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"hair_specular_exp2\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		char *hair_specular_intensity2 = ValueForKey(ent, "hair_specular_intensity");
+		if (hair_specular_intensity2 && hair_specular_intensity2[0])
+		{
+			if (R_ParseStringAsVector3(hair_specular_intensity2, VBOData->celshade_control.hair_specular_intensity2.m_override_value))
+			{
+				VBOData->celshade_control.hair_specular_intensity2.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"hair_specular_intensity2\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		char *hair_specular_noise2 = ValueForKey(ent, "hair_specular_noise2");
+		if (hair_specular_noise2 && hair_specular_noise2[0])
+		{
+			if (R_ParseStringAsVector3(hair_specular_noise2, VBOData->celshade_control.hair_specular_noise2.m_override_value))
+			{
+				VBOData->celshade_control.hair_specular_noise2.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"hair_specular_noise2\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		char *hair_specular_smooth = ValueForKey(ent, "hair_specular_smooth");
+		if (hair_specular_smooth && hair_specular_smooth[0])
+		{
+			if (R_ParseStringAsVector2(hair_specular_smooth, VBOData->celshade_control.hair_specular_smooth.m_override_value))
+			{
+				VBOData->celshade_control.hair_specular_smooth.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"hair_specular_smooth\" in entity \"studio_celshade_control\"\n");
 			}
 		}
 	}
