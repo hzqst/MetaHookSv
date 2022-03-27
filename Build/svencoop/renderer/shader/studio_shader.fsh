@@ -117,7 +117,7 @@ vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
 	
 	vec3 V2 = SceneUBO.vpn.xyz;
 
-    vec3 HforStrandSpecular = normalize(L + vec3(0.01, 0.0, 0.0) + V2);
+    vec3 HforStrandSpecular = normalize(-L + vec3(0.01, 0.0, 0.0) + V2);
     kajiyaSpecular += r_hair_specular_intensity * StrandSpecular(shiftedTangent1, HforStrandSpecular, r_hair_specular_exp);
     kajiyaSpecular += r_hair_specular_intensity2 * StrandSpecular(shiftedTangent2, HforStrandSpecular, r_hair_specular_exp2);
 
@@ -137,7 +137,7 @@ vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
 	
 	vec3 V2 = SceneUBO.vpn.xyz;
 
-    vec3 HforStrandSpecular = normalize(L + vec3(0.01, 0.0, 0.0) + V2);
+    vec3 HforStrandSpecular = normalize(-L + vec3(0.01, 0.0, 0.0) + V2);
     kajiyaSpecular += r_hair_specular_intensity * StrandSpecular(shiftedTangent1, HforStrandSpecular, r_hair_specular_exp);
     kajiyaSpecular += r_hair_specular_intensity2 * StrandSpecular(shiftedTangent2, HforStrandSpecular, r_hair_specular_exp2);
 

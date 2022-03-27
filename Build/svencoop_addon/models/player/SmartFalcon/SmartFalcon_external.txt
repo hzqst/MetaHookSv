@@ -1,0 +1,57 @@
+{
+    "classname" "studio_texture"
+    "basetexture" "*"
+    "flags" "STUDIO_NF_CELSHADE"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "F00_000_00_Face_00_SKIN.bmp"
+    "flags" "STUDIO_NF_CELSHADE_FACE"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "hairF.bmp"
+    "flags" "STUDIO_NF_CELSHADE_HAIR"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "hairSIDE.bmp"
+    "flags" "STUDIO_NF_CELSHADE_HAIR"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "hairB.bmp"
+    "flags" "STUDIO_NF_CELSHADE_HAIR"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "F00_000_HairBack_00_HAIR.bmp"
+    "flags" "STUDIO_NF_CELSHADE_HAIR"
+}
+{
+    "classname" "studio_efx"
+    "flags" "EF_OUTLINE"
+}
+{
+    "classname" "studio_celshade_control"
+    "celshade_midpoint" "-0.1"
+    "celshade_softness" "0.05"
+    "celshade_shadow_color" "220 210 210"
+    "outline_size" "3.0"
+    "outline_dark" "0.5"
+    "rimlight_power" "5.0"
+    "rimlight_smooth" "0.1"
+    "rimlight_smooth2" "0.0 0.3"
+    "rimlight_color" "40 40 40"
+    "rimdark_power" "5.0"
+    "rimdark_smooth" "0.1"
+    "rimdark_smooth2" "0.0 0.3"
+    "rimdark_color" "50 50 50"
+    "hair_specular_exp" "256"
+    "hair_specular_exp2" "64"
+    "hair_specular_intensity" "0.3 0.3 0.3"
+    "hair_specular_intensity2" "0.2 0.2 0.2"
+    "hair_specular_noise" "105 120 0.05 0.06"
+    "hair_specular_noise2" "100 120 0.006 0.0.005"
+    "hair_specular_smooth" "0.0 0.3"
+}
