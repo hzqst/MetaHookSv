@@ -79,6 +79,8 @@ cvar_t *r_studio_hair_specular_intensity2 = NULL;
 cvar_t *r_studio_hair_specular_noise2 = NULL;
 cvar_t *r_studio_hair_specular_smooth = NULL;
 
+cvar_t *r_studio_hair_shadow_offset = NULL;
+
 void R_PrepareStudioVBOSubmodel(
 	studiohdr_t *studiohdr, mstudiomodel_t *submodel, 
 	std::vector<studio_vbo_vertex_t> &vVertex,
@@ -268,6 +270,7 @@ studio_vbo_t *R_PrepareStudioVBO(studiohdr_t *studiohdr)
 	VBOData->celshade_control.hair_specular_noise2.Init(r_studio_hair_specular_noise2, 4, 0);
 	VBOData->celshade_control.hair_specular_intensity2.Init(r_studio_hair_specular_intensity2, 3, 0);
 	VBOData->celshade_control.hair_specular_smooth.Init(r_studio_hair_specular_smooth, 2, 0);
+	VBOData->celshade_control.hair_shadow_offset.Init(r_studio_hair_shadow_offset, 2, 0);
 
 	return VBOData;
 }
@@ -385,11 +388,11 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		if (state & STUDIO_OUTLINE_ENABLED)
 			defs << "#define OUTLINE_ENABLED\n";
 
+		if (state & STUDIO_HAIR_SHADOW_ENABLED)
+			defs << "#define HAIR_SHADOW_ENABLED\n";
+
 		if (state & STUDIO_CLIP_ENABLED)
 			defs << "#define CLIP_ENABLED\n";
-
-		//if (state & STUDIO_BINDLESS_ENABLED)
-		//	defs << "#define BINDLESS_ENABLED\n";
 
 		if (state & STUDIO_OIT_ALPHA_BLEND_ENABLED)
 			defs << "#define OIT_ALPHA_BLEND_ENABLED\n";
@@ -423,6 +426,7 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 			SHADER_UNIFORM(prog, r_hair_specular_noise2, "r_hair_specular_noise2");
 			SHADER_UNIFORM(prog, r_hair_specular_intensity2, "r_hair_specular_intensity2");
 			SHADER_UNIFORM(prog, r_hair_specular_smooth, "r_hair_specular_smooth");
+			SHADER_UNIFORM(prog, r_hair_shadow_offset, "r_hair_shadow_offset");
 			SHADER_UNIFORM(prog, r_outline_dark, "r_outline_dark");
 			SHADER_UNIFORM(prog, r_uvscale, "r_uvscale");
 			SHADER_UNIFORM(prog, entityPos, "entityPos");
@@ -712,6 +716,22 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 			}
 		}
 
+		if (prog.r_hair_shadow_offset != -1)
+		{
+			if (g_CurrentVBOCache)
+			{
+				vec2_t values = { 0 };
+				g_CurrentVBOCache->celshade_control.hair_shadow_offset.GetValues(values);
+				glUniform2f(prog.r_hair_shadow_offset, values[0], values[1]);
+			}
+			else
+			{
+				vec2_t values = { 0 };
+				R_ParseCvarAsVector2(r_studio_hair_shadow_offset, values);
+				glUniform2f(prog.r_hair_shadow_offset, values[0], values[1]);
+			}
+		}
+
 		if (progOutput)
 			*progOutput = prog;
 	}
@@ -732,6 +752,7 @@ const program_state_name_t s_StudioProgramStateName[] = {
 { STUDIO_LEGACY_BONE_ENABLED			,"STUDIO_LEGACY_BONE_ENABLED"				},
 { STUDIO_GLOW_SHELL_ENABLED				,"STUDIO_GLOW_SHELL_ENABLED"				},
 { STUDIO_OUTLINE_ENABLED				,"STUDIO_OUTLINE_ENABLED"					},
+{ STUDIO_HAIR_SHADOW_ENABLED			,"STUDIO_HAIR_SHADOW_ENABLED"				},
 { STUDIO_CLIP_ENABLED					,"STUDIO_CLIP_ENABLED"						},
 { STUDIO_BINDLESS_ENABLED				,"STUDIO_BINDLESS_ENABLED"					},
 { STUDIO_OIT_ALPHA_BLEND_ENABLED		,"STUDIO_OIT_ALPHA_BLEND_ENABLED"			},
@@ -865,6 +886,7 @@ void R_InitStudio(void)
 	r_studio_hair_specular_intensity2 = gEngfuncs.pfnRegisterVariable("r_studio_hair_specular_intensity2", "0.8 0.8 0.8", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_hair_specular_noise2 = gEngfuncs.pfnRegisterVariable("r_studio_hair_specular_noise2", "240 320 0.05 0.06", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_hair_specular_smooth = gEngfuncs.pfnRegisterVariable("r_studio_hair_specular_smooth", "0.0 0.3", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_hair_shadow_offset = gEngfuncs.pfnRegisterVariable("r_studio_hair_shadow_offset", "0.1 0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
 inline void R_StudioTransformAuxVert(auxvert_t *av, int bone, vec3_t vert)
@@ -974,9 +996,16 @@ void R_EnableStudioVBO(studio_vbo_t *VBOData)
 		StudioUBO.r_shadelight = (*r_shadelight);
 		StudioUBO.r_blend = (*r_blend);
 
-		StudioUBO.r_scale = ((*currententity)->curstate.renderfx == kRenderFxGlowShell ||
-			(*currententity)->curstate.renderfx == kRenderFxOutline)
-			? (*currententity)->curstate.renderamt * 0.05f : 0;
+		StudioUBO.r_scale = 0;
+
+		if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
+		{
+			StudioUBO.r_scale = (*currententity)->curstate.renderamt * 0.05f;
+		}
+		else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
+		{
+			StudioUBO.r_scale = g_CurrentVBOCache->celshade_control.outline_size.GetValue() * 0.05f;
+		}
 
 		memcpy(StudioUBO.r_colormix, r_colormix, sizeof(vec3_t));
 		memcpy(StudioUBO.r_origin, g_ChromeOrigin, sizeof(vec3_t));
@@ -1104,13 +1133,26 @@ void R_GLStudioDrawPoints(void)
 			flags &= STUDIO_NF_ALLOWBITS;
 		}
 
+		if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowHair)
+		{
+			if (!(flags & STUDIO_NF_CELSHADE_HAIR) && !(flags & STUDIO_NF_CELSHADE_FACE))
+				continue;
+		}
+		else if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowFace)
+		{
+			if (!(flags & STUDIO_NF_CELSHADE_FACE))
+				continue;
+		}
+		else
+		{
+			if ((flags & STUDIO_NF_CELSHADE_FACE))
+				continue;
+
+			r_draw_hairshadow = true;
+		}
+
 		int GBufferMask = GBUFFER_MASK_ALL;
 		int StudioProgramState = flags;
-
-		//if (bUseBindless)
-		//{
-		//	StudioProgramState |= STUDIO_BINDLESS_ENABLED;
-		//}
 
 		if (r_draw_shadowcaster)
 		{
@@ -1118,7 +1160,15 @@ void R_GLStudioDrawPoints(void)
 		}
 		else if (r_draw_opaque)
 		{
-			if (flags & STUDIO_NF_FLATSHADE)
+			if (flags & STUDIO_NF_CELSHADE_HAIR)
+			{
+				if (stencilState != 6)
+				{
+					stencilState = 6;
+					glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
+				}
+			}
+			else if (flags & STUDIO_NF_FLATSHADE)
 			{
 				if (stencilState != 2)
 				{
@@ -1140,9 +1190,17 @@ void R_GLStudioDrawPoints(void)
 		{
 
 		}
+		else if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowHair)
+		{
+			StudioProgramState |= STUDIO_HAIR_SHADOW_ENABLED;
+		}
+		else if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowFace)
+		{
+
+		}
 		else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
 		{
-			glStencilFunc(GL_NOTEQUAL, 2, 0xFF);
+			glStencilFunc(GL_NOTEQUAL, 2, 2);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 			StudioProgramState |= STUDIO_OUTLINE_ENABLED;
@@ -1184,8 +1242,10 @@ void R_GLStudioDrawPoints(void)
 			StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE | STUDIO_TRANSADDITIVE_ENABLED;
 		}
 
-		if (!r_studio_celshade->value && (StudioProgramState & (STUDIO_NF_CELSHADE | STUDIO_NF_CELSHADE_FACE | STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H)))
+		if (!r_studio_celshade->value)
+		{
 			StudioProgramState &= ~(STUDIO_NF_CELSHADE | STUDIO_NF_CELSHADE_FACE | STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H);
+		}
 
 		if (r_draw_pass == r_draw_reflect && curwater)
 		{
@@ -1235,6 +1295,13 @@ void R_GLStudioDrawPoints(void)
 			gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
 		}
 
+		if (StudioProgramState & STUDIO_NF_CELSHADE_FACE)
+		{
+			//Texture unit 1 = Stencil texture
+			GL_EnableMultitexture();
+			GL_Bind(s_BackBufferFBO2.s_hBackBufferStencilView);
+		}
+
 		if (flags & STUDIO_NF_CHROME)
 		{
 			if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
@@ -1269,9 +1336,23 @@ void R_GLStudioDrawPoints(void)
 			r_studio_polys += VBOMesh.iPolyCount;
 		}
 
+		if (StudioProgramState & STUDIO_NF_CELSHADE_FACE)
+		{
+			//Texture unit 1 = Stencil texture
+			GL_DisableMultitexture();
+		}
+
 		if (r_draw_shadowcaster)
 		{
 				
+		}
+		else if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowHair)
+		{
+
+		}
+		else if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowFace)
+		{
+
 		}
 		else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
 		{
@@ -1457,24 +1538,50 @@ void R_StudioRenderModel(void)
 		return gRefFuncs.R_StudioRenderModel();
 	}
 
-	if ((*pstudiohdr)->flags & EF_OUTLINE)
+	gRefFuncs.R_StudioRenderModel();
+
+	if (r_draw_hairshadow)
 	{
-		gRefFuncs.R_StudioRenderModel();
-
 		int saved_renderfx = (*currententity)->curstate.renderfx;
-		int savbed_renderamt = (*currententity)->curstate.renderamt;
+		int saved_renderamt = (*currententity)->curstate.renderamt;
 
-		(*currententity)->curstate.renderfx = kRenderFxOutline;
-		(*currententity)->curstate.renderamt = clamp(r_studio_outline_size->value, 0, 255);
+		(*currententity)->curstate.renderfx = kRenderFxDrawShadowHair;
+		(*currententity)->curstate.renderamt = 0;
+
+		GL_PushFrameBuffer();
+		glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO2.s_hBackBufferFBO);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glColorMask(0, 0, 0, 0);
+
+		gRefFuncs.R_StudioRenderModel();
+		
+		glColorMask(1, 1, 1, 1);
+		GL_PopFrameBuffer();
+
+		(*currententity)->curstate.renderfx = kRenderFxDrawShadowFace;
+		(*currententity)->curstate.renderamt = 0;
 
 		gRefFuncs.R_StudioRenderModel();
 
 		(*currententity)->curstate.renderfx = saved_renderfx;
-		(*currententity)->curstate.renderamt = savbed_renderamt;
-		return;
+		(*currententity)->curstate.renderamt = saved_renderamt;
+
+		r_draw_hairshadow = false;
 	}
 
-	return gRefFuncs.R_StudioRenderModel();
+	if (((*pstudiohdr)->flags & EF_OUTLINE) && r_studio_celshade->value)
+	{
+		int saved_renderfx = (*currententity)->curstate.renderfx;
+		int saved_renderamt = (*currententity)->curstate.renderamt;
+
+		(*currententity)->curstate.renderfx = kRenderFxOutline;
+		(*currententity)->curstate.renderamt = 0;
+
+		gRefFuncs.R_StudioRenderModel();
+
+		(*currententity)->curstate.renderfx = saved_renderfx;
+		(*currententity)->curstate.renderamt = saved_renderamt;
+	}
 }
 
 //Client StudioRenderer
@@ -1503,24 +1610,52 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 		return gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
 	}
 
-	if ((*pstudiohdr)->flags & EF_OUTLINE)
+	gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
+
+	if (r_draw_hairshadow)
 	{
+		int saved_renderfx = (*currententity)->curstate.renderfx;
+		int saved_renderamt = (*currententity)->curstate.renderamt;
+
+		(*currententity)->curstate.renderfx = kRenderFxDrawShadowHair;
+		(*currententity)->curstate.renderamt = 0;
+
+		GL_PushFrameBuffer();
+		glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO2.s_hBackBufferFBO);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glColorMask(0, 0, 0, 0);
+
 		gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
 
-		int saved_renderfx = (*currententity)->curstate.renderfx;
-		int savbed_renderamt = (*currententity)->curstate.renderamt;
+		glColorMask(1, 1, 1, 1);
+		GL_PopFrameBuffer();
 
-		(*currententity)->curstate.renderfx = kRenderFxOutline;
-		(*currententity)->curstate.renderamt = clamp(r_studio_outline_size->value, 0, 255);
+		(*currententity)->curstate.renderfx = kRenderFxDrawShadowFace;
+		(*currententity)->curstate.renderamt = 0;
 
 		gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
 
 		(*currententity)->curstate.renderfx = saved_renderfx;
-		(*currententity)->curstate.renderamt = savbed_renderamt;
-		return;
+		(*currententity)->curstate.renderamt = saved_renderamt;
+
+		r_draw_hairshadow = false;
 	}
 
-	return gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
+	if (((*pstudiohdr)->flags & EF_OUTLINE) && r_studio_celshade->value)
+	{
+		gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
+
+		int saved_renderfx = (*currententity)->curstate.renderfx;
+		int saved_renderamt = (*currententity)->curstate.renderamt;
+
+		(*currententity)->curstate.renderfx = kRenderFxOutline;
+		(*currententity)->curstate.renderamt = 0;
+
+		gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
+
+		(*currententity)->curstate.renderfx = saved_renderfx;
+		(*currententity)->curstate.renderamt = saved_renderamt;
+	}
 }
 
 void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr, studio_vbo_t *VBOData)
@@ -2037,6 +2172,23 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t *ent, studiohdr_t *studiohdr,
 			}
 		}
 	}
+
+	if (1)
+	{
+		char *hair_shadow_offset = ValueForKey(ent, "hair_shadow_offset");
+		if (hair_shadow_offset && hair_shadow_offset[0])
+		{
+			if (R_ParseStringAsVector2(hair_shadow_offset, VBOData->celshade_control.hair_shadow_offset.m_override_value))
+			{
+				VBOData->celshade_control.hair_shadow_offset.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"hair_shadow_offset\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
 }
 
 static std::vector<bspentity_t> g_StudioBSPEntities;

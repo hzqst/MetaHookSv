@@ -1655,7 +1655,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 	if (modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value && !CL_IsDevOverviewMode())
 	{
 		//Sky surface uses stencil = 0xFF
-		glStencilFunc(GL_ALWAYS, 0xFF, 0xFF);
+		glStencilFunc(GL_ALWAYS, 0xFC, 0xFF);
 
 		glColorMask(0, 0, 0, 0);
 
@@ -1733,7 +1733,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 
 		glColorMask(0, 0, 0, 0);
 
-		glStencilFunc(GL_EQUAL, 0xFF, 0xFF);
+		glStencilFunc(GL_EQUAL, 0xFC, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 		GL_UseProgram(depth_clear.program);
@@ -3359,11 +3359,11 @@ void R_DrawWorld(void)
 
 	R_SetupSceneUBO();
 
-	//Skybox use stencil = 0xFF
+	//Skybox always use stencil = 0xFC
 
 	glEnable(GL_STENCIL_TEST);
 	glStencilMask(0xFF);
-	glStencilFunc(GL_ALWAYS, 0xFF, 0xFF);
+	glStencilFunc(GL_ALWAYS, 0xFC, 0xFF);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	R_DrawSkyBox();

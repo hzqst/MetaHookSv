@@ -54,7 +54,7 @@ vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, vec2 vBaseT
 
     uint stencilValue = texture(stencilTex, vBaseTexCoord).r;
 
-    if(stencilValue < 2)
+    if((stencilValue & 2) == 0)
     {
         float DiffuseFactor = dot(Normal, -LightDirection);
     
@@ -70,11 +70,12 @@ vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, vec2 vBaseT
                 SpecularFactor = pow(SpecularFactor, u_lightspecularpow);
                 SpecularColor = vec4(u_lightcolor * u_lightspecular * SpecularFactor * specularValue, 1.0);
             }
-        }
+        }      
     }
     else
     {
-        DiffuseColor = vec4(u_lightcolor * u_lightdiffuse * 0.8, 1.0);
+        //flatshade
+        DiffuseColor = vec4(u_lightcolor * u_lightdiffuse * 0.8, 1.0);  
     }
  
     return (AmbientColor + DiffuseColor + SpecularColor);

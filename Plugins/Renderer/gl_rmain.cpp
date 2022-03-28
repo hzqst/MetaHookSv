@@ -95,6 +95,7 @@ float r_identity_matrix[4][4] = {
 float r_entity_matrix[4][4];
 float r_entity_color[4];
 
+bool r_draw_hairshadow = false;
 bool r_draw_shadowcaster = false;
 bool r_draw_opaque = false;
 bool r_draw_oitblend = false;

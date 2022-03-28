@@ -28,6 +28,7 @@ typedef struct
 	int r_hair_specular_noise2;
 	int r_hair_specular_intensity2;
 	int r_hair_specular_smooth;
+	int r_hair_shadow_offset;
 	int r_uvscale;
 	//shadow caster
 	int entityPos;
@@ -120,6 +121,8 @@ typedef struct studio_celshade_control_s
 	StudioConVar hair_specular_intensity2;
 	StudioConVar hair_specular_noise2;
 	StudioConVar hair_specular_smooth;
+	StudioConVar hair_shadow_offset;
+	StudioConVar hair_shadow_intensity;
 }studio_celshade_control_t;
 
 typedef struct studio_vbo_s
@@ -204,7 +207,8 @@ extern r_studio_interface_t **gpStudioInterface;
 #define STUDIO_LEGACY_BONE_ENABLED				0x800000
 #define STUDIO_GLOW_SHELL_ENABLED				0x1000000
 #define STUDIO_OUTLINE_ENABLED					0x2000000
-#define STUDIO_CLIP_ENABLED						0x4000000
-#define STUDIO_BINDLESS_ENABLED					0x8000000
-#define STUDIO_OIT_ALPHA_BLEND_ENABLED			0x10000000
-#define STUDIO_OIT_ADDITIVE_BLEND_ENABLED		0x20000000
+#define STUDIO_HAIR_SHADOW_ENABLED				0x4000000
+#define STUDIO_CLIP_ENABLED						0x8000000
+#define STUDIO_BINDLESS_ENABLED					0x10000000
+#define STUDIO_OIT_ALPHA_BLEND_ENABLED			0x20000000
+#define STUDIO_OIT_ADDITIVE_BLEND_ENABLED		0x40000000

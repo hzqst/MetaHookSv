@@ -54,4 +54,5 @@
     "hair_specular_noise" "105 120 0.05 0.06"
     "hair_specular_noise2" "100 120 0.006 0.0.005"
     "hair_specular_smooth" "0.0 0.3"
+    "hair_shadow_intensity" "0.2"
 }

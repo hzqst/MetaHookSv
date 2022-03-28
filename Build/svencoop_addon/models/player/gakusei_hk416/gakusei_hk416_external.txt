@@ -21,7 +21,7 @@
     "classname" "studio_celshade_control"
     "celshade_midpoint" "-0.1"
     "celshade_softness" "0.05"
-    "celshade_shadow_color" "220 210 210"
+    "celshade_shadow_color" "160 150 150"
     "outline_size" "3.0"
     "outline_dark" "0.5"
     "rimlight_power" "5.0"
@@ -39,4 +39,5 @@
     "hair_specular_noise" "500 600 0.004 0.005"
     "hair_specular_noise2" "100 120 0.006 0.0.005"
     "hair_specular_smooth" "0.0 0.3"
+    "hair_shadow_offset" "0.3 -0.3"
 }

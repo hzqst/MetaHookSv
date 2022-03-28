@@ -2,6 +2,8 @@
 
 #include "common.h"
 
+uniform vec2 r_hair_shadow_offset;
+
 layout(location = 0) in vec3 in_vertex;
 layout(location = 1) in vec3 in_normal;
 layout(location = 2) in vec2 in_texcoord;
@@ -11,6 +13,7 @@ out vec3 v_worldpos;
 out vec3 v_normal;
 out vec4 v_color;
 out vec2 v_texcoord;
+out vec4 v_projpos;
 
 void main(void)
 {
@@ -149,5 +152,14 @@ void main(void)
 
 #endif
 
+#if defined(HAIR_SHADOW_ENABLED) && defined(STUDIO_NF_CELSHADE_HAIR)
+	vec3 vecLight = StudioUBO.r_plightvec.xyz;
+	vecLight.z *= 0.0001;
+	vecLight = normalize(vecLight);
+	outvert = outvert + vecLight * r_hair_shadow_offset.x + vec3(0.0, 0.0, r_hair_shadow_offset.y);
+#endif
+
 	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * vec4(outvert, 1.0);
+
+	v_projpos = gl_Position;
 }

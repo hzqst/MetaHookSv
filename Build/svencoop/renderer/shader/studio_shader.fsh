@@ -2,8 +2,10 @@
 
 #include "common.h"
 
-#ifndef BINDLESS_ENABLED
 layout(binding = 0) uniform sampler2D diffuseTex;
+
+#if defined(STUDIO_NF_CELSHADE_FACE) && !defined(HAIR_SHADOW_ENABLED)
+layout(binding = 1) uniform usampler2D stencilTex;
 #endif
 
 /* celshade */
@@ -33,6 +35,7 @@ in vec3 v_worldpos;
 in vec3 v_normal;
 in vec4 v_color;
 in vec2 v_texcoord;
+in vec4 v_projpos;
 
 layout(location = 0) out vec4 out_Diffuse;
 layout(location = 1) out vec4 out_Lightmap;
@@ -58,7 +61,7 @@ float StrandSpecular(vec3 T, vec3 H, float exponent)
 vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
 {
 	vec3 N = normalWS;
-    vec3 L = lightdirWS;
+    vec3 L = -lightdirWS;
 	vec3 V = normalize(v_worldpos.xyz - SceneUBO.viewpos.xyz);
 	vec3 UP = vec3(0.0, 0.0, -1.0);
 	vec3 BiT = cross(N, UP);
@@ -72,8 +75,18 @@ vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
     // N dot L
     float litOrShadowArea = smoothstep(r_celshade_midpoint - r_celshade_softness, r_celshade_midpoint + r_celshade_softness, NoL);
 
-#ifdef STUDIO_NF_CELSHADE_FACE
+#if defined(STUDIO_NF_CELSHADE_FACE) && !defined(HAIR_SHADOW_ENABLED)
+
 	litOrShadowArea = mix(0.5, 1.0, litOrShadowArea);
+
+	vec2 vBaseTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
+	uint stencilValue = texture(stencilTex, vBaseTexCoord).r;
+
+   	if(stencilValue == 6)
+    {
+		litOrShadowArea = 0.0;
+	}
+
 #endif
 
     vec3 litOrShadowColor = mix(r_celshade_shadow_color.xyz, vec3(1.0, 1.0, 1.0), litOrShadowArea);
@@ -117,7 +130,7 @@ vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
 	
 	vec3 V2 = SceneUBO.vpn.xyz;
 
-    vec3 HforStrandSpecular = normalize(-L + vec3(0.01, 0.0, 0.0) + V2);
+    vec3 HforStrandSpecular = normalize(L + vec3(0.01, 0.0, 0.0) + V2);
     kajiyaSpecular += r_hair_specular_intensity * StrandSpecular(shiftedTangent1, HforStrandSpecular, r_hair_specular_exp);
     kajiyaSpecular += r_hair_specular_intensity2 * StrandSpecular(shiftedTangent2, HforStrandSpecular, r_hair_specular_exp2);
 
@@ -156,17 +169,17 @@ vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
 
 void main(void)
 {
-#ifndef SHADOW_CASTER_ENABLED
+#if !defined(SHADOW_CASTER_ENABLED) && !defined(HAIR_SHADOW_ENABLED)
 
-	ClipPlaneTest(v_worldpos.xyz, v_normal.xyz);
+	vec3 vNormal = normalize(v_normal.xyz);
+
+	ClipPlaneTest(v_worldpos.xyz, vNormal);
 
 	vec2 texcoord = v_texcoord * r_uvscale;
 
 	vec4 diffuseColor = texture2D(diffuseTex, texcoord);
 
 	diffuseColor = TexGammaToLinear(diffuseColor);
-
-	vec3 vNormal = normalize(v_normal.xyz);
 
 	//The light colors are already in linear space
 	vec4 lightmapColor = v_color;
@@ -186,9 +199,13 @@ void main(void)
 
 #endif
 
-#ifdef SHADOW_CASTER_ENABLED
+#if defined(SHADOW_CASTER_ENABLED)
 
 	out_Diffuse = vec4(StudioUBO.entity_origin.x, StudioUBO.entity_origin.y, StudioUBO.entity_origin.z, gl_FragCoord.z);
+
+#elif defined(HAIR_SHADOW_ENABLED)
+
+	out_Diffuse = vec4(1.0, 1.0, 1.0, 1.0);
 
 #else
 
