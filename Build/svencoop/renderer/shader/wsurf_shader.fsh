@@ -271,7 +271,10 @@ void main()
 
 	#endif
 
-	diffuseColor = TexGammaToLinear(diffuseColor);
+	//Decal's texgamma correction are already done in GL_Upload16 using it's own palette
+	#if !defined(DECAL_ENABLED)
+		diffuseColor = TexGammaToLinear(diffuseColor);
+	#endif
 
 #else
 
