@@ -2,127 +2,145 @@
 
 [English DOC](Renderer.md)
 
-### 功能
+# 兼容性
 
-1. HDR后处理
-
-2. 简单水面反射折射 (警告：开启该功能可能导致严重的性能损失，请根据掉帧严重程度自行斟酌是否开启！)
-
-3. 简单逐对象阴影 (警告：开启该功能可能导致严重的性能损失，请根据掉帧严重程度自行斟酌是否开启！）
-
-4. 屏幕空间遮蔽 (SSAO) (警告：开启该功能可能导致严重的性能损失，请根据掉帧严重程度自行斟酌是否开启！）（警告：非90的default_fov可能会导致墙上隐约出现黑色裂痕）
-
-5. 多重采样抗锯齿 (MSAA) (警告：开启该功能可能导致轻微的性能损失，但配合SSAO使用则可能严重影响帧数，请根据掉帧严重程度自行斟酌是否开启！）
-
-6. 快速近似抗锯齿 (FXAA) （仅当MSAA不可用时）
-
-7. 延迟光照技术和逐像素光照渲染（仅不透明物体），支持“无限”的动态光源(SvEngine最多256个)并且几乎没有性能损失
-
-9. mdl模型渲染可使用顶点缓冲对象、合并DrawCall、GPU光照来进行优化，使用这些技术可以解放CPU算力，做到同屏渲染20万多边形的mdl仍能维持在可接受的帧数
-
-10. bsp地形渲染可使用顶点缓冲对象、合并DrawCall来进行优化，使用这些技术可以解放CPU算力，做到同屏渲染10万多边形的bsp地形仍能维持在可接受的帧数
-
-11. bsp地形渲染支持法线贴图、视差贴图，具体见svencoop/maps/restriction02_detail.txt里自带的例子
-
-12. 修复一个引擎BUG：模型的remap贴图不支持STUDIO_NF_MASKED标记.
-
-* Meta Renderer for Sven-Coop 不再支持一切破解引擎硬编码限制的功能（因为SvEngine本来就会提升这些最大限制），如：允许加载的最大纹理尺寸、最大动态光源数量、最大可见实体数量、lightmap大小限制，以及任何Sven-Coop本身就支持的功能，如：3d skybox、镜子等。
-
-![](/img/2.png)
-
-![](/img/3.png)
-
-![](/img/4.png)
-
-![](/img/5.png)
-
-### 兼容性
-
-|        Engine            |      |
+|        引擎            |      |
 |        ----              | ---- |
 | GoldSrc_blob   (< 4554)  | -    |
 | GoldSrc_legacy (< 6153)  | -    |
 | GoldSrc_new    (8684 ~)  | √    |
 | SvEngine       (8832 ~)  | √    |
 
-#### 控制台参数
+* 警告: 该插件与ReShade不兼容.
 
-r_hdr 1 / 0 : 开启/关闭HDR后处理. 推荐值 : 1
+# GPU 需求
 
-r_hdr_blurwidth :设置HDR的模糊强度. 推荐值 : 0.1
+|       厂商      |           Intel                  |          英伟达                  |          AMD               |
+|       ----      |           ----                   |           ----                  |           ----             |
+|      最低       | Intel Haswell 系列 HD4600         |      Geforce GTX 650            |  AMD Radeon HD 7000 系列 |
+|     推荐        |           ----                   |      Geforce GTX 1060 或更高     |   AMD Radeon RX 560 或更高        |
 
-r_hdr_exposure : 控制HDR的曝光程度. 推荐值 : 5
+* 运行该插件推荐使用拥有最少4GB独立显存的GPU，否则可能会出现显存带宽瓶颈导致帧数过低，或显存不足导致游戏崩溃等问题。
 
-r_hdr_darkness : 控制HDR的明暗程度. 推荐值 : 4
 
-r_hdr_adaptation : 控制HDR的明暗适应速度. 推荐值 : 50
+### 功能
 
-r_water 2 / 1 / 0 : 控制是否开启水面反射/折射。 2 = 反射所有物体, 1 = 仅反射地形. 推荐值 : 1
+## HDR
 
-r_water_fresnelfactor (0.0 ~ 1.0) : 控制反射贴图的混合程度， 推荐值 : 0.4
+HDR (高动态范围) 模拟了超出显示器所能显示的亮度范围，将大于0-255的色彩范围映射到0-255的范围内，并且在超出100%亮度的地方施加Bloom（辉光）特效。
 
-r_water_depthfactor1 (0.0 ~ 1.0) : 控制水体与墙体边缘的淡出效果，值越小淡出效果越明显，仅对半透明的水体有效 推荐值 : 0.02
+### 控制台参数
 
-r_water_depthfactor2 (0.0 ~ 1.0) : 控制水体与墙体边缘的基础淡出效果，值越小基础透明度越低，仅对半透明的水体有效 推荐值 : 0.01
+`r_hdr` 开启/关闭HDR后处理. 推荐值 : 1
 
-r_water_normfactor (0.0 ~ 1.0) : 控制水面波纹大小. 推荐值 : 1.0
+`r_hdr_blurwidth` 设置HDR的模糊强度. 推荐值 : `0.0 ~ 0.1`
 
-r_water_minheight : 小于这个高度的水体不会被应用折射和反射。 推荐值 : 7.5
+`r_hdr_exposure` 控制HDR的曝光程度. 推荐值 : `0.0 ~ 1.2`
 
-r_shadow 1 / 0 : 开启/关闭 逐对象阴影. 推荐值 : 1
+`r_hdr_darkness` 控制HDR的明暗程度. 推荐值 : `0.0 ~ 1.6`
 
-r_shadow_angle_pitch (0.0 ~ 360.0) : 控制阴影投射源的倾角（或叫攻角）(pitch).
+`r_hdr_adaptation` 控制HDR的明暗适应速度. 推荐值 : `0 ~ 50`
 
-r_shadow_angle_yaw (0.0 ~ 360.0) : 控制阴影投射源的左右偏转角(yaw).
+## 水面渲染
 
-r_shadow_angle_roll (0.0 ~ 360.0) : 控制阴影投射源的滚动旋转角（roll）.
+水面将拥有简单的反射和折射效果
 
-r_shadow_high_distance : 这个距离内的实体使用高质量阴影贴图. 推荐值 : 400
+水面可选择“可反射”和“传统”两种渲染模式
 
-r_shadow_high_scale : 使用高质量阴影贴图的实体的缩放大小，缩放过大可能导致一些体型较大的实体阴影出现渲染错误，缩放过小会严重影响阴影质量。 推荐值 : 4.0
+“可反射的水面”会实时反射水面上的物体，并折射水面下的物理。该功能需要渲染整个世界两次，所以有一定的性能开销，请根据掉帧严重程度自行斟酌是否开启！
 
-r_shadow_medium_distance : 这个距离内的实体使用中等质量阴影贴图. 推荐值 : 1024
+“传统水面”则只会使用基础纹理进行渲染，就像原版GoldSrc中的一样。
 
-r_shadow_medium_scale : 使用中等质量阴影贴图的实体的缩放大小 推荐值 : 2.0
+反射等级和渲染参数可以使用[env_water_control](RendererCN.md#env_water_control)进行配置。
 
-r_shadow_low_distance : 这个距离内的实体使用中等质量阴影贴图. 推荐值 : 4096
+### 控制台参数
 
-r_shadow_low_scale : 使用低质量阴影贴图的实体的缩放大小 推荐值 : 0.5
+`r_water` 设为1启用“可反射的水面”。
 
-r_ssao 1 / 0 : 开启关闭屏幕空间遮蔽（SSAO）. 推荐值 : 1 （和MSAA一起使用可能导致严重的性能下降！）
+## 逐对象阴影
 
-r_ssao_intensity : SSAO阴影的强度. 推荐值 : 0.6 ~ 1.0
+逐对象阴影只会由模型进行投射 (玩家, 怪物, 武器盒, 尸体, 其他一些模型), 并且只会投射在固体表面. 逐对象阴影是实时计算的, 所以有一定的性能开销，请根据掉帧严重程度自行斟酌是否开启！
 
-r_ssao_radius : SSAO阴影的采样半径. 推荐值 : 30.0 ~ 100.0
+* 动态阴影有时候会穿过它本不该穿过的墙和地面，从而暴露玩家或NPC的位置。
 
-r_ssao_blur_sharpness : SSAO阴影的锐化程度， 推荐值 : 1.0
+### 控制台参数
 
-r_ssao_bias : 功能未知. 推荐值 : 0.2
+`r_shadow` 设为1启用逐对象阴影
 
-r_ssao_studio_model : 0 / 1 SSAO是否对mdl模型本身生效. 推荐值 : 0
+`r_shadow_angles` 控制阴影投射的角度, 以PitchYawRoll的格式. 举例： `r_shadow_angles "90 0 0"`
 
-r_light_dynamic 1 / 0 : 开启/关闭延迟光照和动态光源. 推荐值 : 1
+`r_shadow_color` 控制阴影的颜色, 以 RGBA8 的格式. 举例： `r_shadow_color "0 0 0 128"`
 
-r_flashlight_cone : 手电筒光锥的锥体夹角cosine值. 推荐值 : 0.9
+`r_shadow_distfade` 控制阴影开始淡出的距离，以及阴影的最大投射距离，单位为游戏内的距离单位. 举例：`r_shadow_distfade 64 128`
 
-r_flashlight_distance : 手电筒照明距离. 推荐值 : 2000.0
+`r_shadow_lumfade` 控制阴影开始淡出的环境亮度, 以及阴影允许投射的最小环境亮度, 必须在 0 ~ 255 之间. 举例 `r_shadow_lumfade 64 32`
 
-r_light_ambient : 动态光照的环境光强度. 推荐值 : 0.2
+`r_shadow_high_distance` 该距离内的实体使用高质量的阴影贴图. 举例： `r_shadow_high_distance 400`
 
-r_light_diffuse : 动态光照的漫反射光强度. 推荐值 : 0.3
+`r_shadow_high_scale` 控制渲染高质量的阴影贴图时的模型的缩放大小，缩放大小越大阴影精度越高，但是太大会导致阴影出错。举例： `r_shadow_high_scale 4`
 
-r_light_specular : 动态光照的高光反光强度. 推荐值 : 0.1
+`r_shadow_medium_distance` 该距离内的实体使用中等质量的阴影贴图. 举例： `r_shadow_medium_distance 800`
 
-r_light_specularpow : 动态光照的高光反光强度. 推荐值 : 10.0
+`r_shadow_medium_scale` 控制渲染中等质量的阴影贴图时的模型的缩放大小，缩放大小越大阴影精度越高，但是太大会导致阴影出错。举例： `r_shadow_medium_scale 2`
 
-r_studio_vbo 1 / 0 : 开启/关闭mdl模型的VBO优化和DrawCall合批优化. 推荐值 : 1
+`r_shadow_low_distance` 该距离内的实体使用低质量的阴影贴图. 举例： `r_shadow_low_distance 1200`
 
-r_wsurf_vbo 1 / 0 : 开启/关闭bsp地形的VBO优化和DrawCall合批优化. 推荐值 : 1
+`r_shadow_low_scale` 控制渲染低质量的阴影贴图时的模型的缩放大小，缩放大小越大阴影精度越高，但是太大会导致阴影出错。举例： `r_shadow_low_scale 0.5`
 
-r_wsurf_parallax_scale : 控制视差贴图的作用强度. 推荐值 : 0.01 ~ 0.04
+## 屏幕空间环境光遮蔽
 
-r_wsurf_sky_occlusion 1 / 0 : 设为1时被天空贴图遮挡的场景将不可见. 该选项仅在r_wsurf_vbo为1时有效. 推荐值 : 1
+SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加环境光遮蔽阴影的特效。
 
-r_fxaa 1 / 0 : 开启快速近似抗锯齿 (FXAA) ，仅当 MSAA 不可用时有效. 推荐值 : 1
+该功能参考了 [HBAO or Horizon-Based-Ambient-Occlusion](https://github.com/nvpro-samples/gl_ssao).
 
-r_msaa 0 / 2 / 4 / 8 / 16 : 开启或关闭多重采样抗锯齿 (MSAA) . 推荐值 : 0 或 4 （和SSAO一起使用可能导致严重的性能下降！）
+### 控制台参数
+
+`r_ssao` 设为1启用SSAO
+
+`r_ssao_intensity` 控制了SSAO阴影的强度
+
+`r_ssao_radius` 控制了SSAO阴影的采样半径
+
+`r_ssao_blur_sharpness` 控制了SSAO阴影的锐利程度
+
+`r_ssao_bias` 用来在圆滑的曲面上消除不应该产生的SSAO阴影
+
+## 延迟着色渲染管线 和 动态灯光
+
+[延迟着色](https://en.wikipedia.org/wiki/Deferred_shading) 渲染管线被用来渲染不透明物体
+
+并且引入了使用 [Blinn-Phong](https://en.wikipedia.org/wiki/Blinn%E2%80%93Phong_reflection_model) 模型进行计算的实时光照
+
+### 控制台参数
+
+`r_light_dynamic` 设为1启用 延迟着色渲染管线 和 动态灯光
+
+`r_flashlight_cone` 控制手电筒圆锥光束的圆锥夹角cosine值，越接近1则夹角越小，越接近0则夹角越大
+
+`r_flashlight_distance` 控制手电筒的最大照明距离
+
+`r_flashlight_ambient` 控制手电筒的环境光强度
+
+`r_flashlight_diffuse` 控制手电筒的漫反射强度
+
+`r_flashlight_specular` 控制手电筒的高光反射强度
+
+`r_flashlight_specularpow` 控制手电筒的高光反射强度
+
+`r_dynlight_ambient` 控制动态光源的环境光强度
+
+`r_dynlight_diffuse` 控制动态光源的漫反射强度
+
+`r_dynlight_specular` 控制动态光源的高光反射强度
+
+`r_dynlight_specularpow` 控制动态光源的高光反射强度
+
+## 屏幕空间反射
+
+屏幕空间反射（下称SSR） 对屏幕空间中存在的物体进行实时反射。
+
+只有被高光贴图标记了的固体表面 (在`/maps/[map name]_detail.txt`中以`_SPECULAR` 结尾的贴图)才会启用屏幕空间反射
+
+`_SPECULAR`高光贴图的GREEN（绿色）通道代表了反射强度. 0 = 没有反射, 1 = 完全反射.
+
+* 屏幕空间反射只有在 `r_light_dynamic` 为 1 时生效.
