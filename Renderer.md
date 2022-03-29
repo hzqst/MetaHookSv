@@ -206,11 +206,11 @@ Specular textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/de
 
 * Specular textures only work when `r_detailtextures` set to 1.
 
-## Outline, Celshade and Rimlight
+## Outline / Celshade / RimLight / HairShadow / HairSpecular
 
-Some flags are added to render Outline, Celshade and Rimlight effects for studiomodels.
+The following flags are added to render Outline, Celshade, RimLight, HairShadow and HairSpecular effects for studiomodels.
 
-You will have to create a txt file named `[modelname]_external.txt` along with `.mdl` file, with the following content:
+You will have to create a txt file named `[modelname]_external.txt` along with `[modelname].mdl` file, with the following content:
 
 ```
 {
@@ -218,24 +218,100 @@ You will have to create a txt file named `[modelname]_external.txt` along with `
     "basetexture" "*"
     "flags" "STUDIO_NF_CELSHADE"
 }
-```
-
-```
 {
     "classname" "studio_texture"
     "basetexture" "face.bmp"
     "flags" "STUDIO_NF_CELSHADE_FACE"
 }
-```
-
-```
+{
+    "classname" "studio_texture"
+    "basetexture" "hair.bmp"
+    "flags" "STUDIO_NF_CELSHADE_HAIR"
+}
 {
     "classname" "studio_efx"
     "flags" "EF_OUTLINE"
 }
 ```
 
-Just like what I did in `Build\svencoop_addon\models\player\GI_Keqing\GI_Keqing_external.txt`.
+to enable those effects for `[modelname].mdl`.
+
+Remember that `face.bmp` and `hair.bmp` should be the actual name of face and hair textures in `[modelname].mdl`.
+
+Or use `Build\svencoop_addon\models\player\GFL_HK416\GFL_HK416_external.txt` as references.
+
+Cvars for celshade will be overrided if sepcified key-values are filled in `[modelname]_external.txt`:
+
+```
+{
+    "classname" "studio_celshade_control"
+    "celshade_midpoint" "-0.1"
+    "celshade_softness" "0.05"
+    "celshade_shadow_color" "160 150 150"
+    "outline_size" "3.0"
+    "outline_dark" "0.5"
+    "rimlight_power" "5.0"
+    "rimlight_smooth" "0.1"
+    "rimlight_smooth2" "0.0 0.3"
+    "rimlight_color" "40 40 40"
+    "rimdark_power" "5.0"
+    "rimdark_smooth" "0.1"
+    "rimdark_smooth2" "0.0 0.3"
+    "rimdark_color" "50 50 50"
+    "hair_specular_exp" "256"
+    "hair_specular_exp2" "8"
+    "hair_specular_intensity" "0.3 0.3 0.3"
+    "hair_specular_intensity2" "0.12 0.12 0.12"
+    "hair_specular_noise" "500 600 0.004 0.005"
+    "hair_specular_noise2" "100 120 0.006 0.0.005"
+    "hair_specular_smooth" "0.0 0.3"
+    "hair_shadow_offset" "0.3 -0.3"
+}
+``
+
+### Console vars
+
+`r_studio_celshade` set to 1 to enable Outline / Celshade / RimLight / HairShadow / HairSpecular effects, set to 0 to disable them all.
+
+`r_studio_celshade_midpoint` and `r_studio_celshade_softness` control the softness of celshade shadow.
+
+`r_studio_celshade_shadow_color` control the color of celshade shadow.
+
+`r_studio_outline_size` controls the size of outline.
+
+`r_studio_outline_dark` controls the darkness of outline color.
+
+`r_studio_rimlight_power` controls the intensity of Rim-Light at illuminated-side.
+
+`r_studio_rimlight_smooth` controls the softness of Rim-Light at illuminated-side.
+
+`r_studio_rimlight_smooth2` controls how does the Rim-Light at illuminated-side performance in dark area.
+
+`r_studio_rimlight_color` controls the color of Rim-Light at illuminated-side.
+
+`r_studio_rimdark_power` controls the intensity of Rim-Light at dark-side.
+
+`r_studio_rimdark_smooth` controls the softness of Rim-Light at dark-side.
+
+`r_studio_rimdark_smooth2` controls how does the Rim-Light at dark-side performance in dark area.
+
+`r_studio_rimdark_color` controls the color of Rim-Light at dark-side.
+
+`r_studio_hair_specular_exp` controls the size of area illuminated by primary hair specular, larger the hair_specular_exp is, smaller the illuminated area will be.
+
+`r_studio_hair_specular_noise` controls the noise of primary hair specular.
+
+`r_studio_hair_specular_intensity` controls the intensity of primary hair specular.
+
+`r_studio_hair_specular_exp2` controls the size of area illuminated by secondary hair specular, larger the hair_specular_exp2 is, smaller the illuminated area will be.
+
+`r_studio_hair_specular_noise2` controls the noise of secondary hair specular.
+
+`r_studio_hair_specular_intensity2` controls the intensity of secondary hair specular.
+
+`r_studio_hair_specular_smooth` controls how does the hair specular performance in dark area.
+
+`r_studio_hair_shadow_offset` controls how the offset of hair shadow (horizontal and vertical offset in screen space).
 
 ## Vertex Buffer Object (aka VBO) "Batch-Draw" optimization
 
