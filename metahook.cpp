@@ -498,6 +498,34 @@ bool MH_LoadPlugins(const char *gamedir, const char *suffix)
 	return true;
 }
 
+int(*g_pfnHUD_GetStudioModelInterface)(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio) = NULL;
+
+int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
+{
+	int r = 0;
+
+	g_bTransactionInlineHook = true;
+
+	r = g_pfnHUD_GetStudioModelInterface ? g_pfnHUD_GetStudioModelInterface(version, ppinterface, pstudio) : 0;
+
+	g_bTransactionInlineHook = false;
+
+	for (auto pHook = g_pHookBase; pHook; pHook = pHook->pNext)
+	{
+		if (pHook->iType == MH_HOOK_INLINE && !pHook->bOriginalCallWritten)
+		{
+			DetourTransactionBegin();
+			DetourAttach(&(void *&)pHook->pOldFuncAddr, pHook->pNewFuncAddr);
+			DetourTransactionCommit();
+
+			*pHook->pOrginalCall = pHook->pOldFuncAddr;
+			pHook->bOriginalCallWritten = true;
+		}
+	}
+
+	return r;
+}
+
 int ClientDLL_Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 {
 	memcpy(gMetaSave.pExportFuncs, g_pExportFuncs, sizeof(cl_exportfuncs_t));
@@ -538,6 +566,9 @@ int ClientDLL_Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 			pHook->bOriginalCallWritten = true;
 		}
 	}
+
+	g_pfnHUD_GetStudioModelInterface = g_pExportFuncs->HUD_GetStudioModelInterface;
+	g_pExportFuncs->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
 
 	gMetaSave.pEngineFuncs->pfnAddCommand("mh_pluginlist", MH_PrintPluginList);
 

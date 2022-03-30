@@ -4,17 +4,6 @@
 #include <set>
 #include "gl_local.h"
 
-typedef struct walk_context_s
-{
-	walk_context_s(PVOID a, size_t l, int d) : address(a), len(l), depth(d)
-	{
-
-	}
-	PVOID address;
-	size_t len;
-	int depth;
-}walk_context_t;
-
 #define R_LOADSKYNAME_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x84\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x3D"
 
 #define MOD_POINTINLEAF_SIG_SVENGINE "\x2A\x8B\x2A\x24\x2A\x85\x2A\x2A\x2A\x8B\x2A\xA4\x00\x00\x00"

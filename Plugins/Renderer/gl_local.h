@@ -35,6 +35,19 @@
 #include "gl_draw.h"
 #include "gl_cvar.h"
 
+#include <set>
+
+typedef struct walk_context_s
+{
+	walk_context_s(PVOID a, size_t l, int d) : address(a), len(l), depth(d)
+	{
+
+	}
+	PVOID address;
+	size_t len;
+	int depth;
+}walk_context_t;
+
 typedef struct
 {
 	GLboolean cullface;

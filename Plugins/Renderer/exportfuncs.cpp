@@ -951,12 +951,111 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		gRefFuncs.GameStudioRenderer_StudioDrawModel = (decltype(gRefFuncs.GameStudioRenderer_StudioDrawModel))vftable[gRefFuncs.GameStudioRenderer_StudioDrawModel_vftable_index];
 		gRefFuncs.GameStudioRenderer_StudioDrawPlayer = (decltype(gRefFuncs.GameStudioRenderer_StudioDrawPlayer))vftable[gRefFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index];
 
+		typedef struct
+		{
+			PVOID base;
+			size_t max_insts;
+			int max_depth;
+			std::set<PVOID> code;
+			std::set<PVOID> branches;
+			std::vector<walk_context_t> walks;
+			int StudioSetRemapColors_instcount;
+		}GameStudioRenderer_StudioDrawPlayer_ctx;
+
+		GameStudioRenderer_StudioDrawPlayer_ctx ctx = { 0 };
+
+		ctx.base = gRefFuncs.GameStudioRenderer_StudioDrawPlayer;
+		ctx.max_insts = 1000;
+		ctx.max_depth = 16;
+		ctx.walks.emplace_back(ctx.base, 0x1000, 0);
+
+		while (ctx.walks.size())
+		{
+			auto walk = ctx.walks[ctx.walks.size() - 1];
+			ctx.walks.pop_back();
+
+			g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+				auto pinst = (cs_insn *)inst;
+				auto ctx = (GameStudioRenderer_StudioDrawPlayer_ctx *)context;
+
+				if (gRefFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index)
+					return TRUE;
+
+				if (ctx->code.size() > ctx->max_insts)
+					return TRUE;
+
+				if (ctx->code.find(address) != ctx->code.end())
+					return TRUE;
+
+				ctx->code.emplace(address);
+
+				if (pinst->id == X86_INS_CALL &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[0].mem.disp >= (ULONG_PTR)g_dwClientBase &&
+					pinst->detail->x86.operands[0].mem.disp < (ULONG_PTR)g_dwClientBase + g_dwClientSize)
+				{
+					PVOID pfnCall = *(PVOID *)pinst->detail->x86.operands[0].mem.disp;
+
+					if (pfnCall == IEngineStudio.StudioSetRemapColors)
+					{
+						ctx->StudioSetRemapColors_instcount = instCount;
+					}
+				}
+
+				if (ctx->StudioSetRemapColors_instcount != 0 &&
+					instCount > ctx->StudioSetRemapColors_instcount &&
+					instCount < ctx->StudioSetRemapColors_instcount + 6 &&
+					pinst->id == X86_INS_CALL &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					(pinst->detail->x86.operands[0].mem.base == X86_REG_EAX ||
+					pinst->detail->x86.operands[0].mem.base == X86_REG_EBX ||
+					pinst->detail->x86.operands[0].mem.base == X86_REG_ECX ||
+					pinst->detail->x86.operands[0].mem.base == X86_REG_EDX ||
+					pinst->detail->x86.operands[0].mem.base == X86_REG_ESI ||
+					pinst->detail->x86.operands[0].mem.base == X86_REG_EDI) &&
+					pinst->detail->x86.operands[0].mem.disp > 0x30 &&
+					pinst->detail->x86.operands[0].mem.disp < 0x80)
+				{
+					gRefFuncs.GameStudioRenderer_StudioRenderModel_vftable_index = pinst->detail->x86.operands[0].mem.disp / 4;
+				}
+
+				if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_IMM)
+				{
+					PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
+					auto foundbranch = ctx->branches.find(imm);
+					if (foundbranch == ctx->branches.end())
+					{
+						ctx->branches.emplace(imm);
+						if (depth + 1 < ctx->max_depth)
+							ctx->walks.emplace_back(imm, 0x300, depth + 1);
+					}
+
+					if (pinst->id == X86_INS_JMP)
+						return TRUE;
+				}
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+			}, walk.depth, &ctx);
+		}
+#if 0
 #define CALL_VFTABLE_STUDIORENDERMODEL_SIG "\x83\xC4\x18\x8B\xCD\xFF\x50"
 		auto call_vftable_StudioRenderModel = (PUCHAR)g_pMetaHookAPI->SearchPattern(gRefFuncs.GameStudioRenderer_StudioDrawModel, 0x500, CALL_VFTABLE_STUDIORENDERMODEL_SIG, Sig_Length(CALL_VFTABLE_STUDIORENDERMODEL_SIG));
 		Sig_VarNotFound(call_vftable_StudioRenderModel);
 
 		gRefFuncs.GameStudioRenderer_StudioRenderModel_vftable_index = (int)call_vftable_StudioRenderModel[7] / 4;
-
+#endif
 		gRefFuncs.GameStudioRenderer_StudioRenderModel = (decltype(gRefFuncs.GameStudioRenderer_StudioRenderModel))vftable[gRefFuncs.GameStudioRenderer_StudioRenderModel_vftable_index];
 
 		g_pMetaHookAPI->DisasmRanges((void*)gRefFuncs.GameStudioRenderer_StudioRenderModel, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
