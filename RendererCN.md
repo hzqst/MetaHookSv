@@ -144,3 +144,218 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 `_SPECULAR`高光贴图的GREEN（绿色）通道代表了反射强度. 0 = 没有反射, 1 = 完全反射.
 
 * 屏幕空间反射只有在 `r_light_dynamic` 为 1 时生效.
+
+### 控制台参数
+
+`r_ssr` 设为1启用屏幕空间反射
+
+`r_ssr_ray_step` 控制光线步进的迭代步长。 举例： `r_ssr_ray_step 5.0`
+
+`r_ssr_iter_count` 控制光线步进的最大迭代次数。 举例：`r_ssr_iter_count 64`
+
+`r_ssr_distance_bias` 光线步进命中的判定距离。 举例： `r_ssr_distance_bias 0.2`
+
+`r_ssr_adaptive_step` 设为1启用自适应迭代步长，可提升迭代性能。 举例： `r_ssr_adaptive_step 1`
+
+`r_ssr_exponential_step` 设为1启用指数迭代步长，可提升迭代性能。 举例：`r_ssr_exponential_step 1`
+
+`r_ssr_binary_search` 设为1启用二分搜索加速，可提升迭代性能。 举例： `r_ssr_binary_search 1`
+
+`r_ssr_fade` 控制SSR效果贴近屏幕边缘时的淡出效果。举例： `r_ssr_fade "0.8 1.0"`
+
+## 细节贴图
+
+细节贴图是一种将高分辨率外部图片 （支持格式: BMP, TGA, DDS, JPG, PNG）与基础贴图混合来提升纹理细节的效果。
+
+`r_detailtextures` 设为1启用细节贴图、法线贴图、视差贴图和高光贴图。
+
+贴图列表会自动从文件 `/maps/[map name]_detail.txt` 中加载，以 `_DETAIL` 为后缀的贴图会被视为该基础贴图的细节贴图（如果基础贴图没有任何后缀则默认视为细节贴图）。
+
+列表中指定的细节贴图文件会从 `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` 和 `/Sven Co-op/svencoop/renderer/texture` 中加载（支持格式: BMP, TGA, DDS, JPG, PNG）。
+
+### 法线贴图
+
+法线贴图是一种使用外部贴图作用于特定固定表面，以改变其法线朝向的一种效果。
+
+贴图列表会自动从文件 `/maps/[map name]_detail.txt` 中加载, 以 `_NORMAL` 为后缀的贴图会被视为该基础贴图的法线贴图。
+
+列表中指定的法线贴图文件会从 `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` 和 `/Sven Co-op/svencoop/renderer/texture` 中加载（支持格式: BMP, TGA, DDS, JPG, PNG）。
+
+* 法线贴图只会改变固体表面的法线朝向, 因此只在被动态光源和手电筒照亮的表面起作用。
+
+* 法线贴图只有在 `r_detailtextures` 和 `r_light_dynamic` 都设为 1 时有效。
+
+### 视差贴图
+
+视差贴图是一种使用外部贴图作用于特定固定表面，改变其视觉深度以营造一种凹陷突起的视觉效果。
+
+贴图列表会自动从文件 `/maps/[map name]_detail.txt` 中加载, 以 `_PARALLAX` 为后缀的贴图会被视为该基础贴图的视差贴图。
+
+列表中指定的视差贴图文件会从 `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` 和 `/Sven Co-op/svencoop/renderer/texture` 中加载（支持格式: BMP, TGA, DDS, JPG, PNG）。
+
+* `r_wsurf_parallax_scale` 控制视差(凹陷/突起)效果的最大强度（果为负则改变凹陷/突起的方向）。
+
+* 视差贴图只有在 `r_detailtextures` 设为 1 时有效。
+
+### 高光贴图
+
+高光贴图是一种使用外部贴图作用于特定固定表面，以增强其高光反射强度的效果。
+
+贴图列表会自动从文件 `/maps/[map name]_detail.txt` 中加载, 以 `_SPECULAR` 为后缀的贴图会被视为该基础贴图的高光贴图。
+
+列表中指定的视差贴图文件会从 `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` 和 `/Sven Co-op/svencoop/renderer/texture` 中加载（支持格式: BMP, TGA, DDS, JPG, PNG）。
+
+* 高光贴图的红色分量（RGB的R）控制高光反射强度, 绿色分量控制SSR（屏幕空间反射）的强度。
+
+* 蓝色分量未使用。
+
+* 高光贴图只有在 `r_detailtextures` 设为 1 时有效。
+
+## 卡通渲染 / 描边  / 边缘光 / 刘海阴影 / 头发高光
+
+为了给指定的模型增加卡通渲染 / 描边  / 边缘光 / 刘海阴影 / 头发高光的效果，
+
+你需要在`[modelname].mdl`模型的同目录下创建 `[modelname]_external.txt`文件，文件应包含以下内容：
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "*"
+    "flags" "STUDIO_NF_CELSHADE"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "face.bmp"
+    "flags" "STUDIO_NF_CELSHADE_FACE"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "hair.bmp"
+    "flags" "STUDIO_NF_CELSHADE_HAIR"
+}
+{
+    "classname" "studio_efx"
+    "flags" "EF_OUTLINE"
+}
+```
+
+来为 `[modelname].mdl` 模型启用上述特效。
+
+需要注意的是 `face.bmp` 和 `hair.bmp` 应修改为 `[modelname].mdl` 模型中真正的面部和头发贴图名。
+
+或者参考 `Build\svencoop_addon\models\player\GFL_HK416\GFL_HK416_external.txt` 中提供的示例文件。
+
+卡通渲染的参数会优先使用 `[modelname]_external.txt` 中的studio_celshade_control键值对：（举例）
+
+```
+{
+    "classname" "studio_celshade_control"
+    "celshade_midpoint" "-0.1"
+    "celshade_softness" "0.05"
+    "celshade_shadow_color" "160 150 150"
+    "outline_size" "3.0"
+    "outline_dark" "0.5"
+    "rimlight_power" "5.0"
+    "rimlight_smooth" "0.1"
+    "rimlight_smooth2" "0.0 0.3"
+    "rimlight_color" "40 40 40"
+    "rimdark_power" "5.0"
+    "rimdark_smooth" "0.1"
+    "rimdark_smooth2" "0.0 0.3"
+    "rimdark_color" "50 50 50"
+    "hair_specular_exp" "256"
+    "hair_specular_exp2" "8"
+    "hair_specular_intensity" "0.3 0.3 0.3"
+    "hair_specular_intensity2" "0.12 0.12 0.12"
+    "hair_specular_noise" "500 600 0.004 0.005"
+    "hair_specular_noise2" "100 120 0.006 0.0.005"
+    "hair_specular_smooth" "0.0 0.3"
+    "hair_shadow_offset" "0.3 -0.3"
+}
+```
+
+如果键值对不存在，则使用对应的控制台参数。
+
+### 控制台参数
+
+`r_studio_celshade` 设为 1 启用卡通渲染 / 描边  / 边缘光 / 刘海阴影 / 头发高光。
+
+`r_studio_celshade_midpoint` 和 `r_studio_celshade_softness` 控制卡通渲染阴影的柔软程度。
+
+`r_studio_celshade_shadow_color` 控制卡通渲染阴影的颜色。
+
+`r_studio_outline_size` 控制描边的大小。
+
+`r_studio_outline_dark` 控制描边的颜色。
+
+`r_studio_rimlight_power` 控制亮侧边缘光的强度。
+
+`r_studio_rimlight_smooth` 控制亮侧边缘光的柔软程度。
+
+`r_studio_rimlight_smooth2` 控制亮侧边缘光的在黑暗环境下的淡出表现。
+
+`r_studio_rimlight_color` 控制亮侧边缘光的颜色。
+
+`r_studio_rimdark_power` 控制暗侧边缘光的强度。
+
+`r_studio_rimdark_smooth` 控制暗侧边缘光的柔软程度。
+
+`r_studio_rimdark_smooth2` 控制暗侧边缘光的在黑暗环境下的淡出表现。
+
+`r_studio_rimdark_color` 控制暗侧边缘光的颜色。
+
+`r_studio_hair_specular_exp` 控制头发主高光照亮的区域大小，hair_specular_exp的值越大，照亮的区域越小。
+
+`r_studio_hair_specular_noise` 控制头发主高光的噪声值，噪声用于生成类似WWW的波纹形状
+
+`r_studio_hair_specular_intensity` 控制头发主高光的RGB强度
+
+`r_studio_hair_specular_exp2` 控制头发次高光照亮的区域大小，hair_specular_exp2的值越大，照亮的区域越小。
+
+`r_studio_hair_specular_noise2` 控制头发次高光的噪声值，噪声用于生成类似WWW的波纹形状
+
+`r_studio_hair_specular_intensity2` 控制头发次高光的RGB强度
+
+`r_studio_hair_specular_smooth` 控制头发高光在黑暗环境下的淡出表现。
+
+`r_studio_hair_shadow_offset` 控制刘海阴影在屏幕空间下相对水平和垂直方向的偏移。
+
+## 顶点缓冲对线 (又称 VBO) 批量绘制 优化
+
+固体、模型、印花和SPR都使用VBO进行渲染，将渲染所需的顶点数据等信息提前保存在显存中，并且对能够合并绘制的物体进行的合并，极大提升了绘制效率。
+
+## 顺序无关透明混合渲染 (又称OIT混合)
+
+透明像素被保存在GPU链表中并由GPU进行排序。
+
+添加启动参数 `-oitblend` 来启用OIT混合 (默认不启用)
+
+* 警告：该功能在透明物体较多的情况下会严重影响性能。
+
+## 抗锯齿
+
+`r_fxaa` 设为1启用快速近似抗锯齿 (FXAA).
+
+* 由于多重采样抗锯齿（MSAA）与延迟渲染不兼容，因此MSAA被彻底移除。
+
+## Gamma矫正
+
+原版GoldSrc的Gamma矫正在初始化和贴图加载阶段就已完成，而新的Gamma矫正由shader在运行时完成，允许你在游戏中途修改gamma、texgamma等数值。
+
+所有贴图会从gamma空间转换为线性空间后再进行光照计算
+
+### 控制台参数
+
+`gamma` 控制最终输出画面的gamma值, 用于将颜色从线性空间转换至gamma空间。
+
+`texgamma` 用于将贴图的颜色从gamma空间转换至线性空间。
+
+`lightgamma` 用于将光照贴图的颜色从gamma空间转换至线性空间。
+
+`brightness` 用于偏移lightgamma来让光照贴图的结果更亮
+
+## 其他
+
+`r_wsurf_sky_occlusion` 1 / 0 : 设为1时, 被"sky"贴图遮挡的物体将会不可见。
+
+`r_wsurf_zprepass` 1 / 0 : 设为1时启用Z-Prepass优化。
