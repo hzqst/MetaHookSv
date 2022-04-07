@@ -315,7 +315,9 @@ void R_StudioReloadVBOCache(void)
 				auto studiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(mod);
 				if (studiohdr)
 				{
-					R_PrepareStudioVBO(studiohdr);
+					auto VBOData = R_PrepareStudioVBO(studiohdr);
+
+					R_StudioLoadExternalFile(mod, studiohdr, VBOData);
 				}
 			}
 		}
@@ -2172,7 +2174,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t *ent, studiohdr_t *studiohdr,
 
 	if (1)
 	{
-		char *hair_specular_intensity2 = ValueForKey(ent, "hair_specular_intensity");
+		char *hair_specular_intensity2 = ValueForKey(ent, "hair_specular_intensity2");
 		if (hair_specular_intensity2 && hair_specular_intensity2[0])
 		{
 			if (R_ParseStringAsVector3(hair_specular_intensity2, VBOData->celshade_control.hair_specular_intensity2.m_override_value))
@@ -2249,6 +2251,11 @@ bspentity_t *R_ParseBSPEntity_StudioAllocator(void)
 
 void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, studio_vbo_t *VBOData)
 {
+	if (VBOData->bExternalFileLoaded)
+		return;
+
+	VBOData->bExternalFileLoaded = true;
+
 	std::string name = mod->name;
 	name = name.substr(0, name.length() - 4);
 	name += "_external.txt";
