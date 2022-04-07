@@ -158,6 +158,7 @@ void R_AmbientOcclusion(void);
 void R_GammaCorrection(void);
 bool R_IsSSAOEnabled(void);
 void R_HDR(void);
+bool R_IsHDREnabled();
 void R_DoFXAA(void);
 void GL_BlitFrameFufferToScreen(FBO_Container_t *src);
 void GL_BlitFrameBufferToFrameBufferColorOnly(FBO_Container_t *src, FBO_Container_t *dst);

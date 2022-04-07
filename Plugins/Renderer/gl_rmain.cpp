@@ -78,12 +78,15 @@ int gl_max_ubo_size = 0;
 int gl_max_texture_size = 0;
 float gl_max_ansio = 0;
 
-int *gl_msaa_fbo = 0;
-int *gl_backbuffer_fbo = 0;
-int *gl_mtexable = 0;
+int *gl_msaa_fbo = NULL;
+int *gl_backbuffer_fbo = NULL;
+int *gl_mtexable = NULL;
 qboolean *mtexenabled = 0;
 
 bool g_SvEngine_DrawPortalView = 0;
+
+int *g_iUser1 = NULL;
+int *g_iUser2 = NULL;
 
 float r_identity_matrix[4][4] = {
 	{1.0f, 0.0f, 0.0f, 0.0f},
@@ -194,6 +197,7 @@ cvar_t *v_lambert = NULL;
 
 cvar_t *cl_righthand = NULL;
 cvar_t *chase_active = NULL;
+cvar_t *spec_pip = NULL;
 
 cvar_t *r_adjust_fov = NULL;
 cvar_t *r_vertical_fov = NULL;
@@ -511,7 +515,32 @@ void triapi_RenderMode(int mode)
 	{
 	case kRenderNormal:
 	{
-		
+#if 0
+		if (r_draw_legacysprite)
+		{
+			int LegacySpriteProgramState = 0;
+
+			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			{
+				LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+			}
+			else if (!drawgbuffer && r_fog_mode == GL_EXP)
+			{
+				LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+			}
+			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
+			{
+				LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+			}
+
+			if (r_draw_pass == r_draw_reflect && curwater)
+			{
+				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
+			}
+
+			R_UseLegacySpriteProgram(LegacySpriteProgramState, NULL);
+		}
+#endif
 		break;
 	}
 
@@ -550,6 +579,7 @@ void triapi_RenderMode(int mode)
 	case kRenderTransTexture:
 	{
 		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		
 		if (r_draw_legacysprite)
 		{
 			int LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ALPHA_BLEND_ENABLED : SPRITE_ALPHA_BLEND_ENABLED;
@@ -1481,7 +1511,7 @@ void R_PostRenderView()
 {
 	R_DoFXAA();
 
-	if (r_hdr->value && !r_draw_pass && !g_SvEngine_DrawPortalView && !CL_IsDevOverviewMode())
+	if (R_IsHDREnabled())
 	{
 		R_HDR();
 	}
@@ -2277,6 +2307,9 @@ void R_SetupGL(void)
 	}
 
 	InvertMatrix(gWorldToScreen, gScreenToWorld);
+
+	InvertMatrix(r_world_matrix, r_world_matrix_inv);
+	InvertMatrix(r_projection_matrix, r_proj_matrix_inv);
 }
 
 void R_CheckVariables(void)
@@ -2443,6 +2476,10 @@ void R_RenderScene(void)
 		S_ExtraUpdate();
 
 		R_DrawEntitiesOnList();
+	}
+	else
+	{
+		R_SetupSceneUBO();
 	}
 
 	if ((*g_bUserFogOn))

@@ -3286,9 +3286,6 @@ void R_DrawWorld(void)
 {
 	r_draw_opaque = true;
 
-	InvertMatrix(r_world_matrix, r_world_matrix_inv);
-	InvertMatrix(r_projection_matrix, r_proj_matrix_inv);
-
 	memcpy(r_entity_matrix, r_identity_matrix, sizeof(r_entity_matrix));
 	r_entity_color[0] = 1;
 	r_entity_color[1] = 1;

@@ -9,6 +9,11 @@
 #define NL_UNREFERENCED 2
 #define NL_CLIENT 3
 
+#define INSET_OFF				0
+#define	INSET_CHASE_FREE		1
+#define	INSET_IN_EYE			2
+#define	INSET_MAP_FREE			3
+
 //wad
 
 #pragma pack(1)

@@ -1720,7 +1720,7 @@ void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr, 
 			}
 			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE"))
 			{
-				ptexture->flags |= STUDIO_NF_CELSHADE | STUDIO_NF_FLATSHADE;
+				ptexture->flags |= STUDIO_NF_CELSHADE;
 			}
 			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE_FACE"))
 			{
@@ -1733,6 +1733,51 @@ void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr, 
 			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE_HAIR_H"))
 			{
 				ptexture->flags |= STUDIO_NF_CELSHADE_HAIR_H;
+			}
+
+			if (flags_string && !strcmp(flags_string, "-STUDIO_NF_FLATSHADE"))
+			{
+				ptexture->flags &= ~STUDIO_NF_FLATSHADE;
+			}
+			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_CHROME"))
+			{
+				ptexture->flags &= ~STUDIO_NF_CHROME;
+			}
+			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_FULLBRIGHT"))
+			{
+				ptexture->flags &= ~STUDIO_NF_FULLBRIGHT;
+			}
+			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_NOMIPS"))
+			{
+				ptexture->flags &= ~STUDIO_NF_NOMIPS;
+			}
+			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_ALPHA"))
+			{
+				ptexture->flags &= ~STUDIO_NF_ALPHA;
+			}
+			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_ADDITIVE"))
+			{
+				ptexture->flags &= ~STUDIO_NF_ADDITIVE;
+			}
+			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_MASKED"))
+			{
+				ptexture->flags &= ~STUDIO_NF_MASKED;
+			}
+			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_CELSHADE"))
+			{
+				ptexture->flags &= ~STUDIO_NF_CELSHADE;
+			}
+			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_CELSHADE_FACE"))
+			{
+				ptexture->flags &= ~STUDIO_NF_CELSHADE_FACE;
+			}
+			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_CELSHADE_HAIR"))
+			{
+				ptexture->flags &= ~STUDIO_NF_CELSHADE_HAIR;
+			}
+			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_CELSHADE_HAIR_H"))
+			{
+				ptexture->flags &= ~STUDIO_NF_CELSHADE_HAIR_H;
 			}
 
 			if (replacetexture_string && replacetexture_string[0])

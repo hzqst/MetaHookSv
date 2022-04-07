@@ -137,6 +137,9 @@ extern float *g_UserFogEnd;
 extern model_t *mod_known;
 extern int *mod_numknown;
 
+extern int *g_iUser1;
+extern int *g_iUser2;
+
 //gl extension
 
 extern int gl_max_texture_size;
@@ -244,6 +247,7 @@ extern cvar_t *v_lambert;
 
 extern cvar_t *cl_righthand;
 extern cvar_t *chase_active;
+extern cvar_t *spec_pip;
 
 void R_FillAddress(void);
 void R_InstallHook(void);
@@ -268,6 +272,7 @@ void R_SetupGL(void);
 void R_MarkLeaves(void);
 void R_DrawWorld(void);
 void R_DrawSkyBox(void);
+void R_SetupSceneUBO(void);
 mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model);
 void R_RecursiveWorldNode(mnode_t *node);
 void R_RecursiveWorldNodeVBO(mnode_t *node);
@@ -413,5 +418,8 @@ extern bool r_draw_legacysprite;
 
 extern bool g_SvEngine_DrawPortalView;
 extern int r_draw_pass;
+
+extern bool g_bIsSvenCoop;
+extern bool g_bIsCounterStrike;
 
 #define BUFFER_OFFSET(i) ((unsigned int *)NULL + (i))

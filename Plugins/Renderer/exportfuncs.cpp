@@ -12,6 +12,9 @@ engine_studio_api_t IEngineStudio;
 r_studio_interface_t **gpStudioInterface;
 void *g_pGameStudioRenderer = NULL;
 
+bool g_bIsSvenCoop = false;
+bool g_bIsCounterStrike = false;
+
 void HUD_Init(void)
 {
 	gExportfuncs.HUD_Init();
@@ -69,7 +72,13 @@ void HUD_DrawNormalTriangles(void)
 
 	glStencilMask(0xFF);
 	glClear(GL_STENCIL_BUFFER_BIT);
+
+	r_draw_legacysprite = true;
+
 	gExportfuncs.HUD_DrawNormalTriangles();
+
+	r_draw_legacysprite = false;
+
 	glStencilMask(0);
 
 	//Restore current framebuffer just in case that Sven-Coop client changes it
@@ -839,6 +848,71 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		gRefFuncs.PortalManager_ResetAll = (decltype(gRefFuncs.PortalManager_ResetAll))GetCallAddress(addr + 12);
 
 		Install_InlineHook(PortalManager_ResetAll);
+
+		g_bIsSvenCoop = true;
+	}
+
+	if ((void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson > g_dwClientBase && (void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson < (PUCHAR)g_dwClientBase + g_dwClientSize)
+	{
+		typedef struct
+		{
+			ULONG_PTR Candidates[16];
+			int iNumCandidates;
+		}CL_IsThirdPerson_ctx;
+
+		CL_IsThirdPerson_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges((void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto ctx = (CL_IsThirdPerson_ctx *)context;
+			auto pinst = (cs_insn *)inst;
+
+			if (ctx->iNumCandidates < 16)
+			{
+				if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					(
+						pinst->detail->x86.operands[0].reg == X86_REG_EAX ||
+						pinst->detail->x86.operands[0].reg == X86_REG_EBX ||
+						pinst->detail->x86.operands[0].reg == X86_REG_ECX ||
+						pinst->detail->x86.operands[0].reg == X86_REG_EDX ||
+						pinst->detail->x86.operands[0].reg == X86_REG_ESI ||
+						pinst->detail->x86.operands[0].reg == X86_REG_EDI
+						) &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwClientBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwClientBase + g_dwClientSize)
+				{
+					ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
+					ctx->iNumCandidates++;
+				}
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+			}, 0, &ctx);
+
+		if (ctx.iNumCandidates >= 3 && ctx.Candidates[ctx.iNumCandidates - 1] == ctx.Candidates[ctx.iNumCandidates - 2] + sizeof(int))
+		{
+			g_iUser1 = (decltype(g_iUser1))ctx.Candidates[ctx.iNumCandidates - 2];
+			g_iUser2 = (decltype(g_iUser2))ctx.Candidates[ctx.iNumCandidates - 1];
+		}
+	}
+
+	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "cstrike") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
+	{
+		g_bIsCounterStrike = true;
+
+		spec_pip = gEngfuncs.pfnGetCvarPointer("spec_pip_internal");
+		if(!spec_pip)
+			spec_pip = gEngfuncs.pfnGetCvarPointer("spec_pip");
 	}
 
 	if ((void *)(*ppinterface)->StudioDrawPlayer > g_dwClientBase && (void *)(*ppinterface)->StudioDrawPlayer < (PUCHAR)g_dwClientBase + g_dwClientSize)
