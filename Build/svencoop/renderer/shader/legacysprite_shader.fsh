@@ -23,9 +23,16 @@ void main()
 	lightmapColor.r = clamp(lightmapColor.r, 0.0, 1.0);
 	lightmapColor.g = clamp(lightmapColor.g, 0.0, 1.0);
 	lightmapColor.b = clamp(lightmapColor.b, 0.0, 1.0);
-	lightmapColor.a = clamp(lightmapColor.a, 0.0, 1.0);
-
+	
+	#if !defined(ADDITIVE_BLEND_ENABLED) && !defined(OIT_ADDITIVE_BLEND_ENABLED) && !defined(ALPHA_BLEND_ENABLED) && !defined(OIT_ALPHA_BLEND_ENABLED)
+		lightmapColor.a = 1.0;
+	#else
+		lightmapColor.a = clamp(lightmapColor.a, 0.0, 1.0);
+	#endif
+	
+#if !defined(ADDITIVE_BLEND_ENABLED) && !defined(OIT_ADDITIVE_BLEND_ENABLED)
 	lightmapColor = GammaToLinear(lightmapColor);
+#endif
 
 #if defined(OIT_ALPHA_BLEND_ENABLED) || defined(ALPHA_BLEND_ENABLED)
 

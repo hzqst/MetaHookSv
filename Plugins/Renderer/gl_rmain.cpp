@@ -515,10 +515,15 @@ void triapi_RenderMode(int mode)
 	{
 	case kRenderNormal:
 	{
-#if 0
+#if 1
 		if (r_draw_legacysprite)
 		{
 			int LegacySpriteProgramState = 0;
+
+			/*if (!r_draw_opaque)
+			{
+				LegacySpriteProgramState |= r_draw_oitblend ? SPRITE_OIT_ALPHA_BLEND_ENABLED : SPRITE_ALPHA_BLEND_ENABLED;
+			}*/
 
 			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 			{
