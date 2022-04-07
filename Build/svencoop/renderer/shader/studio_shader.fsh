@@ -61,7 +61,7 @@ float StrandSpecular(vec3 T, vec3 H, float exponent)
 vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
 {
 	vec3 N = normalWS;
-    vec3 L = -lightdirWS;
+    vec3 L = lightdirWS;
 	vec3 V = normalize(v_worldpos.xyz - SceneUBO.viewpos.xyz);
 	vec3 UP = vec3(0.0, 0.0, -1.0);
 	vec3 BiT = cross(N, UP);
