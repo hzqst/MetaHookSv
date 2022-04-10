@@ -1728,6 +1728,12 @@ void R_RenderView_SvEngine(int a1)
 		glBindFramebuffer(GL_FRAMEBUFFER, s_FinalBufferFBO.s_hBackBufferFBO);
 	}
 
+	if (!(*r_refdef.onlyClientDraws))
+	{
+		*c_alias_polys = r_studio_polys;
+		*c_brush_polys = r_wsurf_polys;
+	}
+
 	if (time1 != 0)
 	{
 		float framerate = (*cl_time) - (*cl_oldtime);
@@ -1743,9 +1749,6 @@ void R_RenderView_SvEngine(int a1)
 			r_studio_polys, r_studio_drawcall,
 			r_sprite_polys, r_sprite_drawcall
 		);
-
-		*c_alias_polys = r_studio_polys;
-		*c_brush_polys = r_wsurf_polys;
 	}
 }
 
