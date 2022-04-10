@@ -3,6 +3,8 @@
 
 //renderer
 
+bool shadowmap_ready = false;
+
 int shadow_texture_depth = 0;
 int shadow_texture_color = 0;
 int shadow_texture_size = 0;
@@ -65,7 +67,7 @@ void R_InitShadow(void)
 
 bool R_ShouldRenderShadowScene(int level)
 {
-	if(r_draw_pass)
+	if(r_draw_reflectview)
 		return false;
 
 	if (gRefFuncs.CL_IsDevOverviewMode())

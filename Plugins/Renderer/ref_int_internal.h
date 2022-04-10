@@ -28,6 +28,7 @@ typedef struct
 	void (*R_ForceCVars)(qboolean mp);
 	void (*R_CheckVariables)(void);
 	void (*R_AnimateLight)(void);
+	void (*V_RenderView)(void);
 	void (*R_RenderView)(void);
 	void (*R_RenderView_SvEngine)(int a1);
 	void (*R_RenderScene)(void);
@@ -118,6 +119,3 @@ typedef struct
 }ref_funcs_t;
 
 extern ref_funcs_t gRefFuncs;
-
-#define r_draw_normal 0
-#define r_draw_reflect 1

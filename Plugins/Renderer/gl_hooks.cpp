@@ -140,6 +140,9 @@
 #define R_RENDERVIEW_SIG_NEW "\x55\x8B\xEC\x83\xEC\x14\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x44"
 #define R_RENDERVIEW_SIG_SVENGINE "\x55\x8B\xEC\x83\xE4\xC0\x83\xEC\x34\x53\x56\x57\x8B\x7D\x08\x85\xFF"
 
+#define V_RENDERVIEW_SIG_NEW "\x55\x8B\xEC\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x2A\x2A\x33\x2A\x33"
+#define V_RENDERVIEW_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\xD9\xEE\xD9\x15"
+ 
 #define VID_UPDATEWINDOWVARS_SIG "\x56\x8B\x74\x24\x08\x8B\xC6\x8B\x08\x89\x0D\x2A\x2A\x2A\x2A\x8B\x50\x04\x89\x15"
 #define VID_UPDATEWINDOWVARS_SIG_NEW "\x55\x8B\xEC\x51\x56\x8B\x75\x08\x8B\xC6\x8B\x08\x89\x0D\x2A\x2A\x2A\x2A\x8B\x50\x04\x89\x15"
 #define VID_UPDATEWINDOWVARS_SIG_SVENGINE "\x8b\xc7\x99\x2B\xC2\xD1\xF8\x03\x2A\x50"
@@ -324,6 +327,9 @@ void R_FillAddress(void)
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
+		gRefFuncs.V_RenderView = (void(*)(void))Search_Pattern(V_RENDERVIEW_SIG_SVENGINE);
+		Sig_FuncNotFound(V_RenderView);
+
 		gRefFuncs.R_RenderView_SvEngine = (void(*)(int))Search_Pattern(R_RENDERVIEW_SIG_SVENGINE);
 		Sig_FuncNotFound(R_RenderView_SvEngine);
 
@@ -333,6 +339,9 @@ void R_FillAddress(void)
 	}
 	else
 	{
+		gRefFuncs.V_RenderView = (void(*)(void))Search_Pattern(V_RENDERVIEW_SIG_NEW);
+		Sig_FuncNotFound(V_RenderView);
+
 		gRefFuncs.R_RenderView = (void(*)(void))Search_Pattern(R_RENDERVIEW_SIG_NEW);
 		Sig_FuncNotFound(R_RenderView);
 
@@ -2981,6 +2990,7 @@ void R_InstallHook(void)
 {
 	Install_InlineHook(GL_BeginRendering);
 	Install_InlineHook(GL_EndRendering);
+	//Install_InlineHook(V_RenderView);
 
 	if (gRefFuncs.R_RenderView_SvEngine)
 	{
@@ -2992,12 +3002,13 @@ void R_InstallHook(void)
 		Install_InlineHook(R_RenderView);
 		Install_InlineHook(R_LoadSkys);
 	}
-	Install_InlineHook(R_RenderScene);
-	Install_InlineHook(R_DrawWorld);
-	Install_InlineHook(R_DrawSpriteModel);	
+
+	//Install_InlineHook(R_RenderScene);
+	//Install_InlineHook(R_DrawWorld);
+	//Install_InlineHook(R_DrawSpriteModel);	
 	Install_InlineHook(R_NewMap);
-	Install_InlineHook(R_SetupGL);
-	Install_InlineHook(R_ForceCVars);
+	//Install_InlineHook(R_SetupGL);
+	//Install_InlineHook(R_ForceCVars);
 	Install_InlineHook(R_CullBox);
 	Install_InlineHook(Mod_PointInLeaf);
 	Install_InlineHook(R_BuildLightMap);

@@ -514,30 +514,16 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 	GL_DisableMultitexture();
 }
 
-bool R_IsHDREnabled()
+bool R_IsHDREnabled(void)
 {
 	if (!r_hdr->value)
 		return false;
 
-	if ((*r_refdef.onlyClientDraws) || r_draw_pass || g_SvEngine_DrawPortalView)
+	if ((*r_refdef.onlyClientDraws))
 		return false;
 
 	if (CL_IsDevOverviewMode())
 		return false;
-
-#if 0
-	if (g_iUser1)
-	{
-		if (!(*g_iUser1) || (r_params.nextView == 0 && (((*g_iUser1) != OBS_MAP_FREE) && ((*g_iUser1) != OBS_MAP_CHASE))) || (r_params.nextView == 1 && spec_pip && spec_pip->value < INSET_MAP_FREE))
-		{
-			//Spectator View
-		}
-		else
-		{
-			return false;
-		}
-	}
-#endif
 
 	return true;
 }
@@ -608,20 +594,22 @@ void R_BeginFXAA(int w, int h)
 	glUniform1f(pp_fxaa.rt_h, h);
 }
 
-void R_DoFXAA(void)
+bool R_IsFXAAEnabled(void)
 {
 	if (!r_fxaa->value)
-		return;
-
-	if (r_draw_pass)
-		return;
-
-	if (g_SvEngine_DrawPortalView)
-		return;
+		return false;
 
 	if ((*r_refdef.onlyClientDraws))
-		return;
+		return false;
 
+	if (CL_IsDevOverviewMode())
+		return false;
+
+	return true;
+}
+
+void R_DoFXAA(void)
+{
 	static glprofile_t profile_DoFXAA;
 	GL_BeginProfile(&profile_DoFXAA, "R_DoFXAA");
 
@@ -740,14 +728,14 @@ bool R_IsSSAOEnabled(void)
 	if (!r_ssao->value)
 		return false;
 
-	if ((*r_refdef.onlyClientDraws) || r_draw_pass || g_SvEngine_DrawPortalView)
-		return false;
-
-	if (r_xfov < 75 || r_yfov < 75)
+	if ((*r_refdef.onlyClientDraws))
 		return false;
 
 	if (CL_IsDevOverviewMode())
 		return false;
+
+	//if (r_xfov < 75 || r_yfov < 75)
+//	return false;
 
 	return true;
 }

@@ -50,8 +50,6 @@ typedef struct
 	int depthmap;
 }drawdepth_program_t;
 
-extern bool refractmap_ready;
-
 typedef struct water_vbo_s
 {
 	water_vbo_s()
@@ -129,6 +127,8 @@ typedef struct water_vbo_s
 }water_vbo_t;
 
 //renderer
+extern bool refractmap_ready;
+extern bool waterview_ready;
 extern vec3_t water_view;
 
 //water

@@ -1,8 +1,7 @@
 #include "gl_local.h"
 #include <sstream>
 
-//GLuint64 refractmap_handle = 0;
-//GLuint64 depthrefrmap_handle = 0;
+bool waterview_ready = false;
 bool refractmap_ready = false;
 
 vec3_t water_view;
@@ -329,7 +328,7 @@ water_control_t *R_FindWaterControl(cl_entity_t *ent, msurface_t *surf)
 
 void R_UpdateRippleTexture(water_vbo_t *VBOCache, int framecount)
 {
-	if (r_draw_pass != r_draw_normal)
+	if (r_draw_reflectview)
 		return;
 
 #define RANDOM_BYTES_SIZE 256
@@ -623,8 +622,8 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 
 void R_RenderReflectView(water_vbo_t *w)
 {
+	r_draw_reflectview = true;
 	curwater = w;
-	r_draw_pass = r_draw_reflect;
 
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, w->reflectmap, 0);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, w->depthreflmap, 0);
@@ -681,7 +680,7 @@ void R_RenderReflectView(water_vbo_t *w)
 
 	R_PopRefDef();
 
-	r_draw_pass = r_draw_normal;
+	r_draw_reflectview = false;
 	curwater = NULL;
 }
 

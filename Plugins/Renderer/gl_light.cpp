@@ -582,10 +582,10 @@ void R_SetGBufferMask(int mask)
 
 bool R_BeginRenderGBuffer(void)
 {
-	if (r_draw_pass)
+	if (!r_light_dynamic->value)
 		return false;
 
-	if (!r_light_dynamic->value)
+	if (r_draw_reflectview)
 		return false;
 
 	if (CL_IsDevOverviewMode())

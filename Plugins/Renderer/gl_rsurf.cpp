@@ -711,7 +711,7 @@ void R_DrawDecals(void)
 		}
 	}
 
-	if (r_draw_pass == r_draw_reflect && curwater)
+	if (r_draw_reflectview && curwater)
 	{
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}

@@ -1232,7 +1232,7 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 			}
 		}
 
-		if (r_draw_pass == r_draw_reflect && curwater)
+		if (r_draw_reflectview && curwater)
 		{
 			WSurfProgramState |= WSURF_CLIP_ENABLED;
 		}
@@ -1374,7 +1374,7 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 				WSurfProgramState |= WSURF_SPECULARTEXTURE_ENABLED;
 			}
 
-			if (r_draw_pass == r_draw_reflect && curwater)
+			if (r_draw_reflectview && curwater)
 			{
 				WSurfProgramState |= WSURF_CLIP_ENABLED;
 			}
@@ -1548,7 +1548,7 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_t *modcache)
 			WSurfProgramState |= WSURF_SPECULARTEXTURE_ENABLED;
 		}
 
-		if (r_draw_pass == r_draw_reflect && curwater)
+		if (r_draw_reflectview && curwater)
 		{
 			WSurfProgramState |= WSURF_CLIP_ENABLED;
 		}
@@ -3245,7 +3245,7 @@ void R_SetupSceneUBO(void)
 
 	//normal[0] * x+ normal[1] * y+ normal[2] * z = normal[0] * vert[0] +normal[1] * vert[1] +normal[2] * vert[2]
 
-	if (r_draw_pass == r_draw_reflect && curwater)
+	if (r_draw_reflectview)
 	{
 		float equation[4] = { curwater->normal[0], curwater->normal[1], curwater->normal[2], -curwater->plane };
 		memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
@@ -3365,7 +3365,7 @@ void R_DrawWorld(void)
 
 	R_DrawSkyBox();
 
-	if (!(r_draw_pass == r_draw_reflect && curwater->level == WATER_LEVEL_REFLECT_SKYBOX))
+	if (!(r_draw_reflectview && curwater->level == WATER_LEVEL_REFLECT_SKYBOX))
 	{
 		r_wsurf.bDiffuseTexture = true;
 		r_wsurf.bLightmapTexture = true;

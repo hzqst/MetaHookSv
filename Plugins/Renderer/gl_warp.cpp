@@ -294,7 +294,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 
 void R_DrawWaters(void)
 {
-	if (r_draw_pass == r_draw_reflect)
+	if (r_draw_reflectview)
 		return;
 
 	if (g_iNumRenderWaterVBOCache)
@@ -339,7 +339,7 @@ void R_DrawWaters(void)
 
 void EmitWaterPolys(msurface_t *fa, int direction)
 {
-	if (r_draw_pass == r_draw_reflect)
+	if (r_draw_reflectview)
 		return;
 
 	auto pSourcePalette = fa->texinfo->texture->pPal;
@@ -394,7 +394,7 @@ void R_DrawSkyBox(void)
 		WSurfProgramState |= WSURF_BINDLESS_ENABLED;
 	}
 
-	if (r_draw_pass == r_draw_reflect && curwater)
+	if (r_draw_reflectview && curwater)
 	{
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}

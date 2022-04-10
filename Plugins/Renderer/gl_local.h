@@ -258,6 +258,7 @@ void R_LoadSkyName_SvEngine(const char *name);
 void R_LoadSkys(void);
 void Mod_LoadStudioModel(model_t *mod, void *buffer);
 void BuildGammaTable(float g);
+void V_RenderView(void);
 void R_RenderView(void);
 void R_RenderScene(void);
 void R_RenderView_SvEngine(int a1);
@@ -416,9 +417,8 @@ extern bool r_draw_shadowcaster;
 extern bool r_draw_opaque;
 extern bool r_draw_oitblend;
 extern bool r_draw_legacysprite;
-
-extern bool g_SvEngine_DrawPortalView;
-extern int r_draw_pass;
+extern bool r_draw_reflectview;
+extern int r_renderview_pass;
 
 extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;

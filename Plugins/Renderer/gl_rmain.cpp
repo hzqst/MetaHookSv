@@ -83,7 +83,11 @@ int *gl_backbuffer_fbo = NULL;
 int *gl_mtexable = NULL;
 qboolean *mtexenabled = 0;
 
-bool g_SvEngine_DrawPortalView = 0;
+vec_t *r_soundOrigin = NULL;
+vec_t *r_playerViewportAngles = NULL;
+
+int *cls_state = NULL;
+int *cls_signon = NULL;
 
 int *g_iUser1 = NULL;
 int *g_iUser2 = NULL;
@@ -103,8 +107,8 @@ bool r_draw_shadowcaster = false;
 bool r_draw_opaque = false;
 bool r_draw_oitblend = false;
 bool r_draw_legacysprite = false;
-
-int r_draw_pass = 0;
+bool r_draw_reflectview = false;
+int r_renderview_pass = 0;
 
 int glx = 0;
 int gly = 0;
@@ -204,11 +208,6 @@ cvar_t *r_adjust_fov = NULL;
 cvar_t *r_vertical_fov = NULL;
 cvar_t *gl_profile = NULL;
 cvar_t *dev_overview_color = NULL;
-
-int R_GetDrawPass(void)
-{
-	return r_draw_pass;
-}
 
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
@@ -346,7 +345,7 @@ void R_DrawParticles(void)
 		LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
 	}
 
-	if (r_draw_pass == r_draw_reflect && curwater)
+	if (r_draw_reflectview && curwater)
 	{
 		LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 	}
@@ -529,7 +528,7 @@ void triapi_RenderMode(int mode)
 				LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
 			}
 
-			if (r_draw_pass == r_draw_reflect && curwater)
+			if (r_draw_reflectview && curwater)
 			{
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}
@@ -560,7 +559,7 @@ void triapi_RenderMode(int mode)
 				LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
 			}
 
-			if (r_draw_pass == r_draw_reflect && curwater)
+			if (r_draw_reflectview && curwater)
 			{
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}
@@ -580,7 +579,7 @@ void triapi_RenderMode(int mode)
 		{
 			int LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ALPHA_BLEND_ENABLED : SPRITE_ALPHA_BLEND_ENABLED;
 
-			if (r_draw_pass == r_draw_reflect && curwater)
+			if (r_draw_reflectview && curwater)
 			{
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}
@@ -1524,12 +1523,22 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 	glheight = *height;
 
 	glBindFramebuffer(GL_FRAMEBUFFER, s_FinalBufferFBO.s_hBackBufferFBO);
+
+	//Clear final framebuffer
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	r_wsurf_drawcall = 0;
+	r_wsurf_polys = 0;
+	r_studio_drawcall = 0;
+	r_studio_polys = 0;
+	r_sprite_drawcall = 0;
+	r_sprite_polys = 0; 
+	r_renderview_pass = 0;
 }
 
-void R_PreRenderView(int a1)
+void R_PreRenderView()
 {
-	g_SvEngine_DrawPortalView = a1 ? true : false;
-
 	//Capture previous fog settings
 
 	r_fog_mode = 0;
@@ -1560,31 +1569,38 @@ void R_PreRenderView(int a1)
 		}
 	}
 
-	if (!(*r_refdef.onlyClientDraws))
+	shadowmap_ready = false;
+
+	shadow_numvisedicts[0] = 0;
+	shadow_numvisedicts[1] = 0;
+	shadow_numvisedicts[2] = 0;
+
+	if (r_shadow && r_shadow->value)
 	{
-		shadow_numvisedicts[0] = 0;
-		shadow_numvisedicts[1] = 0;
-		shadow_numvisedicts[2] = 0;
+		R_RenderShadowMap();
+		shadowmap_ready = true;
+	}
 
-		if (r_shadow && r_shadow->value && !g_SvEngine_DrawPortalView && r_draw_pass == r_draw_normal)
-		{
-			R_RenderShadowMap();
-		}
+	waterview_ready = false;
 
-		if (r_water && r_water->value)
-		{
-			R_RenderWaterView();
-		}
+	if (r_water && r_water->value)
+	{
+		R_RenderWaterView();
+		waterview_ready = true;
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	//TODO: do we really need this?
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, s_BackBufferFBO.s_hBackBufferTex, 0);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, s_BackBufferFBO.s_hBackBufferDepthTex, 0);
 }
 
 void R_PostRenderView()
 {
-	R_DoFXAA();
+	if (R_IsFXAAEnabled())
+	{
+		R_DoFXAA();
+	}
 
 	if (R_IsHDREnabled())
 	{
@@ -1599,8 +1615,6 @@ void R_PostRenderView()
 	glEnable(GL_TEXTURE_2D);
 	glColor4f(1, 1, 1, 1);
 	glDisable(GL_BLEND);
-
-	g_SvEngine_DrawPortalView = false;
 }
 
 void R_PreDrawViewModel(void)
@@ -1649,18 +1663,15 @@ void R_PreDrawViewModel(void)
 	}
 }
 
-void R_RenderView_SvEngine(int a1)
+void R_RenderView_SvEngine(int viewIdx)
 {
+	r_renderview_pass = viewIdx;
+
 	double time1 = 0;
 
-	if (!a1)
+	if (r_speeds->value)
 	{
-		r_wsurf_drawcall = 0;
-		r_wsurf_polys = 0;
-		r_studio_drawcall = 0;
-		r_studio_polys = 0;
-		r_sprite_drawcall = 0;
-		r_sprite_polys = 0;
+		time1 = gEngfuncs.GetAbsoluteTime();
 	}
 
 	if (!r_norefresh->value)
@@ -1670,14 +1681,10 @@ void R_RenderView_SvEngine(int a1)
 			g_pMetaHookAPI->SysError("R_RenderView: NULL worldmodel");
 		}
 
-		if (!a1 && r_speeds->value)
-		{
-			time1 = gEngfuncs.GetAbsoluteTime();
-		}
-
 		R_ForceCVars(r_params.maxclients > 1);
 
-		R_PreRenderView(a1);
+		//This will switch from final framebuffer (RGBA8) to back framebuffer (RGBAF16)
+		R_PreRenderView();
 
 		float clearColor[3];
 
@@ -1693,12 +1700,10 @@ void R_RenderView_SvEngine(int a1)
 		glClearColor(clearColor[0], clearColor[1], clearColor[2], 0);
 
 		glStencilMask(0xFF);
+
 		glClearStencil(0);
 		glDepthMask(GL_TRUE);
 
-		//if (!gl_clear->value || a1)
-		//	glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		//else
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 		glStencilMask(0);
@@ -1714,14 +1719,16 @@ void R_RenderView_SvEngine(int a1)
 		if (!(*r_refdef.onlyClientDraws))
 			R_DrawViewModel();
 
-		R_PolyBlend();
-
+		//Post processing
 		R_PostRenderView();
 
-		S_ExtraUpdate();
-
-		//This will switch to final framebuffer
+		//This will switch to final framebuffer (RGBA8)
 		R_BlendFinalBuffer();
+
+		if (!(*r_refdef.onlyClientDraws))
+			R_PolyBlend();
+
+		S_ExtraUpdate();
 	}
 	else
 	{
@@ -1734,7 +1741,7 @@ void R_RenderView_SvEngine(int a1)
 		*c_brush_polys = r_wsurf_polys;
 	}
 
-	if (time1 != 0)
+	if (r_speeds->value)
 	{
 		float framerate = (*cl_time) - (*cl_oldtime);
 
@@ -1743,8 +1750,9 @@ void R_RenderView_SvEngine(int a1)
 
 		auto time2 = gEngfuncs.GetAbsoluteTime();
 
-		gEngfuncs.Con_Printf("%3ifps %3i ms, %d brushpolys, %d brushdraw, %d studiopolys, %d studiodraw, %d spritepolys, %d spritedraw\n",
-			(int)(framerate + 0.5), (int)((time2 - time1) * 1000), 
+		gEngfuncs.Con_Printf("%3ifps %3i ms, pass %d, %d brushpolys, %d brushdraw, %d studiopolys, %d studiodraw, %d spritepolys, %d spritedraw\n",
+			(int)(framerate + 0.5), (int)((time2 - time1) * 1000),
+			r_renderview_pass,
 			r_wsurf_polys, r_wsurf_drawcall,
 			r_studio_polys, r_studio_drawcall,
 			r_sprite_polys, r_sprite_drawcall
@@ -1754,7 +1762,14 @@ void R_RenderView_SvEngine(int a1)
 
 void R_RenderView(void)
 {
-	R_RenderView_SvEngine(0);
+	//No arg(s) in GoldSrc
+	r_renderview_pass ++;
+	R_RenderView_SvEngine(r_renderview_pass);
+}
+
+void V_RenderView(void)
+{
+
 }
 
 void GL_EndRendering(void)
@@ -1958,7 +1973,7 @@ void R_Shutdown(void)
 
 void R_ForceCVars(qboolean mp)
 {
-	if (r_draw_pass)
+	if (r_draw_reflectview)
 		return;
 
 	gRefFuncs.R_ForceCVars(mp);
@@ -2421,7 +2436,7 @@ void R_SetupFrame(void)
 
 	(*r_oldviewleaf) = (*r_viewleaf);
 
-	if (r_draw_pass == r_draw_reflect)
+	if (r_draw_reflectview)
 	{
 		(*r_viewleaf) = Mod_PointInLeaf(water_view, r_worldmodel);
 	}
@@ -2577,13 +2592,11 @@ void ClientDLL_DrawNormalTriangles(void)
 
 	//Restore current framebuffer just in case that Allow SC client dll changes it
 
-	//glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 }
 
 void R_RenderScene(void)
 {
-	//return gRefFuncs.R_RenderScene();
-
 	static glprofile_t profile_RenderScene;
 	GL_BeginProfile(&profile_RenderScene, "R_RenderScene");
 
