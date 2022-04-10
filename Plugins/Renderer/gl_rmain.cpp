@@ -2563,6 +2563,7 @@ void ClientDLL_DrawNormalTriangles(void)
 	//Allow SC client dll to write stencil buffer
 
 	glStencilMask(0xFF);
+
 	glClear(GL_STENCIL_BUFFER_BIT);
 
 	r_draw_legacysprite = true;
@@ -2576,7 +2577,7 @@ void ClientDLL_DrawNormalTriangles(void)
 
 	//Restore current framebuffer just in case that Allow SC client dll changes it
 
-	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	//glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 }
 
 void R_RenderScene(void)

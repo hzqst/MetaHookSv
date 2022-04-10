@@ -613,9 +613,6 @@ void R_DoFXAA(void)
 	if (!r_fxaa->value)
 		return;
 
-	if (!pp_fxaa.program)
-		return;
-
 	if (r_draw_pass)
 		return;
 

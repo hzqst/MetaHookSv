@@ -1550,7 +1550,10 @@ void R_StudioRenderModel(void)
 		(*currententity)->curstate.renderfx = kRenderFxDrawShadowHair;
 		(*currententity)->curstate.renderamt = 0;
 
+		//Write hairshadow stencil bits into s_BackBufferFBO2
+
 		GL_PushFrameBuffer();
+
 		glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO2.s_hBackBufferFBO);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		glColorMask(0, 0, 0, 0);
@@ -1558,6 +1561,7 @@ void R_StudioRenderModel(void)
 		gRefFuncs.R_StudioRenderModel();
 		
 		glColorMask(1, 1, 1, 1);
+
 		GL_PopFrameBuffer();
 
 		(*currententity)->curstate.renderfx = kRenderFxDrawShadowFace;
@@ -1622,7 +1626,10 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 		(*currententity)->curstate.renderfx = kRenderFxDrawShadowHair;
 		(*currententity)->curstate.renderamt = 0;
 
+		//Write hairshadow stencil bits into s_BackBufferFBO2
+
 		GL_PushFrameBuffer();
+
 		glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO2.s_hBackBufferFBO);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		glColorMask(0, 0, 0, 0);
@@ -1630,6 +1637,7 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 		gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
 
 		glColorMask(1, 1, 1, 1);
+
 		GL_PopFrameBuffer();
 
 		(*currententity)->curstate.renderfx = kRenderFxDrawShadowFace;
