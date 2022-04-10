@@ -65,7 +65,7 @@ typedef struct
 	void (*R_DrawBrushModel)(cl_entity_t *e);
 	void (*R_DrawSpriteModel)(cl_entity_t *ent);
 	int (*CL_FxBlend)(cl_entity_t *ent);
-	float(*GlowBlend)(cl_entity_t *ent);
+	float(*R_GlowBlend)(cl_entity_t *ent);
 	void (*VID_UpdateWindowVars)(RECT *prc, int x, int y);
 	mleaf_t *(*Mod_PointInLeaf)(vec3_t p, model_t *model);
 	void *(*realloc_SvEngine)(void *, size_t);

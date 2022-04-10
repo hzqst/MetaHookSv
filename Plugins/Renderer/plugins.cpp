@@ -104,8 +104,8 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
 	pExportFunc->HUD_Redraw = HUD_Redraw;
 	pExportFunc->HUD_Init = HUD_Init;
-	pExportFunc->HUD_DrawNormalTriangles = HUD_DrawNormalTriangles;
-	pExportFunc->HUD_DrawTransparentTriangles = HUD_DrawTransparentTriangles;
+	//pExportFunc->HUD_DrawNormalTriangles = HUD_DrawNormalTriangles;
+	//pExportFunc->HUD_DrawTransparentTriangles = HUD_DrawTransparentTriangles;
 	pExportFunc->HUD_Shutdown = HUD_Shutdown;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 }

@@ -342,6 +342,7 @@ void GL_FrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat)
 		glTexImage2D(tex2D, 0, iInternalFormat, s->iWidth, s->iHeight, 0, GL_RGBA,
 			(iInternalFormat != GL_RGBA && iInternalFormat != GL_RGBA8) ? GL_FLOAT : GL_UNSIGNED_BYTE, 0);
 	}
+
 	s->iTextureColorFormat = iInternalFormat;
 
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, s->s_hBackBufferTex, 0);
@@ -358,6 +359,7 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 	glTexParameteri(tex2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(tex2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(tex2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
 	if (iInternalFormat == GL_DEPTH24_STENCIL8 || iInternalFormat == GL_DEPTH24_STENCIL8_EXT)
 	{
 		glTexStorage2D(tex2D, 1, iInternalFormat, s->iWidth, s->iHeight);

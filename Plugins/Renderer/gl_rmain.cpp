@@ -111,9 +111,10 @@ int gly = 0;
 int glwidth = 0;
 int glheight = 0;
 
-FBO_Container_t s_GBufferFBO;
+FBO_Container_t s_FinalBufferFBO;
 FBO_Container_t s_BackBufferFBO;
 FBO_Container_t s_BackBufferFBO2;
+FBO_Container_t s_GBufferFBO;
 FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];
 FBO_Container_t s_LuminFBO[LUMIN_BUFFERS];
 FBO_Container_t s_Lumin1x1FBO[LUMIN1x1_BUFFERS];
@@ -275,9 +276,9 @@ void R_RotateForEntity(float *origin, cl_entity_t *e)
 	Matrix4x4_Transpose(r_entity_matrix, entity_matrix);
 }
 
-float GlowBlend(cl_entity_t *entity)
+float R_GlowBlend(cl_entity_t *entity)
 {
-	return gRefFuncs.GlowBlend(entity);
+	return gRefFuncs.R_GlowBlend(entity);
 }
 
 int CL_FxBlend(cl_entity_t *entity)
@@ -314,7 +315,7 @@ const color24 gTracerColors[] =
 	{ 255, 120, 70 },		// Darker red streaks (garg)
 };
 
-void R_DrawParticlesNew(void)
+void R_DrawParticles(void)
 {
 	vec3_t			up, right;
 	float			scale;
@@ -496,11 +497,6 @@ void R_DrawParticlesNew(void)
 	glDisable(GL_ALPHA_TEST);
 }
 
-void R_DrawParticles(void)
-{
-	return;
-}
-
 void triapi_Color4f(float x, float y, float z, float w)
 {
 	//glColor4f(x, y, z, w);
@@ -519,11 +515,6 @@ void triapi_RenderMode(int mode)
 		if (r_draw_legacysprite)
 		{
 			int LegacySpriteProgramState = 0;
-
-			/*if (!r_draw_opaque)
-			{
-				LegacySpriteProgramState |= r_draw_oitblend ? SPRITE_OIT_ALPHA_BLEND_ENABLED : SPRITE_ALPHA_BLEND_ENABLED;
-			}*/
 
 			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 			{
@@ -616,14 +607,32 @@ void triapi_RenderMode(int mode)
 
 void R_DrawTEntitiesOnList(int onlyClientDraw)
 {
-	if (!r_drawentities->value)
-		return;
-
 	if (onlyClientDraw)
 		return;
 
-	static glprofile_t profile_DrawTEntitiesOnList;
-	GL_BeginProfile(&profile_DrawTEntitiesOnList, "R_DrawTEntitiesOnList");
+	if (!r_drawentities->value)
+		return;
+
+	for (int i = 0; i < (*numTransObjs); i++)
+	{
+		(*currententity) = (*transObjects)[i].pEnt;
+
+		R_DrawCurrentEntity(true);
+	}
+}
+
+void ClientDLL_DrawTransparentTriangles(void)
+{
+	if(gExportfuncs.HUD_DrawTransparentTriangles)
+		gExportfuncs.HUD_DrawTransparentTriangles();
+
+	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
+}
+
+void R_DrawTransEntities(int onlyClientDraw)
+{
+	static glprofile_t profile_DrawTransEntities;
+	GL_BeginProfile(&profile_DrawTransEntities, "R_DrawTransEntities");
 
 	if (bUseOITBlend)
 	{
@@ -637,9 +646,31 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 		r_draw_legacysprite = true;
 
-		gRefFuncs.R_DrawTEntitiesOnList(onlyClientDraw);
+		R_DrawTEntitiesOnList(onlyClientDraw);
 		
-		R_DrawParticlesNew();
+		GL_DisableMultitexture();
+
+		glEnable(GL_ALPHA_TEST);
+
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+		if ((*g_bUserFogOn))
+			glDisable(GL_FOG);
+
+		ClientDLL_DrawTransparentTriangles();
+
+		if ((*g_bUserFogOn))
+			glEnable(GL_FOG);
+
+		//No overflow when r_drawentities = 0
+		(*numTransObjs) = 0;
+		(*r_blend) = 1;
+
+		if (!onlyClientDraw)
+		{
+			GL_DisableMultitexture();
+			R_DrawParticles();
+		}
 
 		r_draw_legacysprite = false;
 
@@ -657,16 +688,38 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 	{
 		r_draw_legacysprite = true;
 
-		gRefFuncs.R_DrawTEntitiesOnList(onlyClientDraw);
+		R_DrawTEntitiesOnList(onlyClientDraw);
 
-		R_DrawParticlesNew();
+		GL_DisableMultitexture();
+
+		glEnable(GL_ALPHA_TEST);
+
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+		if ((*g_bUserFogOn))
+			glDisable(GL_FOG);
+
+		ClientDLL_DrawTransparentTriangles();
+
+		if ((*g_bUserFogOn))
+			glEnable(GL_FOG);
+
+		//No overflow when r_drawentities = 0
+		(*numTransObjs) = 0;
+		(*r_blend) = 1;
+
+		if (!onlyClientDraw)
+		{
+			GL_DisableMultitexture();
+			R_DrawParticles();
+		}
 
 		r_draw_legacysprite = false;
 	}
 
 	GL_UseProgram(0);
 
-	GL_EndProfile(&profile_DrawTEntitiesOnList);
+	GL_EndProfile(&profile_DrawTransEntities);
 }
 
 void R_AddTEntity(cl_entity_t *ent)
@@ -750,12 +803,13 @@ void R_DrawCurrentEntity(bool bTransparent)
 	{
 		glDisable(GL_FOG);
 
-		(*r_blend) = CL_FxBlend((*currententity));
+		auto blend = CL_FxBlend((*currententity));
 
-		if ((*r_blend) <= 0)
+		if (blend <= 0)
 			return;
 
-		(*r_blend) = (*r_blend) / 255.0;
+		//double??? GoldSrc does so but why?
+		blend = blend / 255.0;
 
 		if ((*currententity)->curstate.rendermode == kRenderGlow && (*currententity)->model->type != mod_sprite)
 			gEngfuncs.Con_DPrintf("Non-sprite set to glow!\n");
@@ -780,7 +834,7 @@ void R_DrawCurrentEntity(bool bTransparent)
 		if (bTransparent)
 		{
 			if ((*currententity)->curstate.rendermode == kRenderGlow)
-				(*r_blend) *= GlowBlend((*currententity));
+				(*r_blend) *= R_GlowBlend((*currententity));
 		}
 		else
 		{
@@ -823,6 +877,7 @@ void R_DrawCurrentEntity(bool bTransparent)
 					if (cl_visedicts[j]->index == (*currententity)->curstate.aiment)
 					{
 						auto save_currententity = (*currententity);
+
 						(*currententity) = cl_visedicts[j];
 
 						if ((*currententity)->player)
@@ -1127,9 +1182,10 @@ void GL_FreeFBO(FBO_Container_t *s)
 
 void GL_GenerateFrameBuffers(void)
 {
-	GL_ClearFBO(&s_GBufferFBO);
+	GL_ClearFBO(&s_FinalBufferFBO);
 	GL_ClearFBO(&s_BackBufferFBO);
 	GL_ClearFBO(&s_BackBufferFBO2);
+	GL_ClearFBO(&s_GBufferFBO);
 	for(int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
 		GL_ClearFBO(&s_DownSampleFBO[i]);
 	for(int i = 0; i < LUMIN_BUFFERS; ++i)
@@ -1151,6 +1207,18 @@ void GL_GenerateFrameBuffers(void)
 
 	glEnable(GL_TEXTURE_2D);
 
+	s_FinalBufferFBO.iWidth = glwidth;
+	s_FinalBufferFBO.iHeight = glheight;
+	GL_GenFrameBuffer(&s_FinalBufferFBO);
+	GL_FrameBufferColorTexture(&s_FinalBufferFBO, GL_RGBA8);
+	GL_FrameBufferDepthTexture(&s_FinalBufferFBO, GL_DEPTH24_STENCIL8);
+
+	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		GL_FreeFBO(&s_FinalBufferFBO);
+		g_pMetaHookAPI->SysError("Failed to initialize final framebuffer!\n");
+	}
+
 	s_BackBufferFBO.iWidth = glwidth;
 	s_BackBufferFBO.iHeight = glheight;
 	GL_GenFrameBuffer(&s_BackBufferFBO);
@@ -1160,7 +1228,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BackBufferFBO);
-		g_pMetaHookAPI->SysError("Failed to initialize backbuffer framebuffer!\n");
+		g_pMetaHookAPI->SysError("Failed to initialize back framebuffer!\n");
 	}
 
 	s_BackBufferFBO2.iWidth = glwidth;
@@ -1172,7 +1240,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BackBufferFBO2);
-		g_pMetaHookAPI->SysError("Failed to initialize backbuffer2 framebuffer!\n");
+		g_pMetaHookAPI->SysError("Failed to initialize back2 framebuffer!\n");
 	}
 
 	s_GBufferFBO.iWidth = glwidth;
@@ -1424,8 +1492,10 @@ void GL_Shutdown(void)
 	GL_FreeShaders();
 	GL_FreeProfiles();
 
+	GL_FreeFBO(&s_FinalBufferFBO);
 	GL_FreeFBO(&s_BackBufferFBO);
 	GL_FreeFBO(&s_BackBufferFBO2);
+	GL_FreeFBO(&s_GBufferFBO);
 	for (int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
 		GL_FreeFBO(&s_DownSampleFBO[i]);
 	for (int i = 0; i < LUMIN_BUFFERS; ++i)
@@ -1453,7 +1523,7 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 	glwidth = *width; 
 	glheight = *height;
 
-	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, s_FinalBufferFBO.s_hBackBufferFBO);
 }
 
 void R_PreRenderView(int a1)
@@ -1530,9 +1600,7 @@ void R_PostRenderView()
 	glColor4f(1, 1, 1, 1);
 	glDisable(GL_BLEND);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-
-	g_SvEngine_DrawPortalView = false;	
+	g_SvEngine_DrawPortalView = false;
 }
 
 void R_PreDrawViewModel(void)
@@ -1583,6 +1651,8 @@ void R_PreDrawViewModel(void)
 
 void R_RenderView_SvEngine(int a1)
 {
+	double time1 = 0;
+
 	if (!a1)
 	{
 		r_wsurf_drawcall = 0;
@@ -1593,67 +1663,72 @@ void R_RenderView_SvEngine(int a1)
 		r_sprite_polys = 0;
 	}
 
-	if (r_norefresh->value)
-		return;
-
-	if (!r_worldmodel)
+	if (!r_norefresh->value)
 	{
-		g_pMetaHookAPI->SysError("R_RenderView: NULL worldmodel");
-	}
+		if (!r_worldmodel)
+		{
+			g_pMetaHookAPI->SysError("R_RenderView: NULL worldmodel");
+		}
 
-	double time1;
+		if (!a1 && r_speeds->value)
+		{
+			time1 = gEngfuncs.GetAbsoluteTime();
+		}
 
-	if (!a1 && r_speeds->value)
-	{
-		time1 = gEngfuncs.GetAbsoluteTime();
-	}
+		R_ForceCVars(r_params.maxclients > 1);
 
-	R_ForceCVars(r_params.maxclients > 1);
+		R_PreRenderView(a1);
 
-	R_PreRenderView(a1);
+		float clearColor[3];
 
-	float clearColor[3];
+		if (CL_IsDevOverviewMode())
+		{
+			R_ParseCvarAsColor3(dev_overview_color, clearColor);
+		}
+		else
+		{
+			R_ParseCvarAsColor3(gl_clearcolor, clearColor);
+		}
 
-	if (CL_IsDevOverviewMode())
-	{
-		R_ParseCvarAsColor3(dev_overview_color, clearColor);
-	}
-	else
-	{
-		R_ParseCvarAsColor3(gl_clearcolor, clearColor);
-	}
+		glClearColor(clearColor[0], clearColor[1], clearColor[2], 0);
 
-	glClearColor(clearColor[0], clearColor[1], clearColor[2], 0);
+		glStencilMask(0xFF);
+		glClearStencil(0);
+		glDepthMask(GL_TRUE);
 
-	glStencilMask(0xFF);
-	glClearStencil(0);
-	glDepthMask(GL_TRUE);
-
-	if (!gl_clear->value || a1)
-		glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	else
+		//if (!gl_clear->value || a1)
+		//	glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		//else
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-	glStencilMask(0);
+		glStencilMask(0);
 
-	glDepthFunc(GL_LEQUAL);
-	glDepthRange(0, 1);
+		glDepthFunc(GL_LEQUAL);
+		glDepthRange(0, 1);
 
-	if (!(*r_refdef.onlyClientDraws))
-		R_PreDrawViewModel();
+		if (!(*r_refdef.onlyClientDraws))
+			R_PreDrawViewModel();
 
-	R_RenderScene();
+		R_RenderScene();
 
-	if (!(*r_refdef.onlyClientDraws))
-		R_DrawViewModel();
+		if (!(*r_refdef.onlyClientDraws))
+			R_DrawViewModel();
 
-	R_PolyBlend();
+		R_PolyBlend();
 
-	R_PostRenderView();
+		R_PostRenderView();
 
-	S_ExtraUpdate();
+		S_ExtraUpdate();
 
-	if (!a1 && r_speeds->value)
+		//This will switch to final framebuffer
+		R_BlendFinalBuffer();
+	}
+	else
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, s_FinalBufferFBO.s_hBackBufferFBO);
+	}
+
+	if (time1 != 0)
 	{
 		float framerate = (*cl_time) - (*cl_oldtime);
 
@@ -1722,7 +1797,7 @@ void GL_EndRendering(void)
 
 	//Blit to screen
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, s_FinalBufferFBO.s_hBackBufferFBO);
 
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -2441,22 +2516,64 @@ void R_RenderFinalFog(void)
 	glFogf(GL_FOG_END, r_fog_control[1]);
 }
 
-void AllowFog(int allowed)
+void AllowFog(bool allowed)
 {
 	static GLboolean isFogEnabled;
 
-	if (allowed)
-	{
-		if (isFogEnabled)
-			glEnable(GL_FOG);
-	}
-	else
+	if (!allowed)
 	{
 		isFogEnabled = glIsEnabled(GL_FOG);
 
 		if (isFogEnabled)
 			glDisable(GL_FOG);
 	}
+	else
+	{
+		if (isFogEnabled)
+			glEnable(GL_FOG);
+	}
+}
+
+void HUD_EndRenderOpaque(void)
+{
+	r_draw_opaque = false;
+
+	glDisable(GL_ALPHA_TEST);
+	glDisable(GL_STENCIL_TEST);
+
+	//Transfer everything from gbuffer into backbuffer
+	if (drawgbuffer)
+	{
+		R_EndRenderGBuffer();
+	}
+	else if (R_IsSSAOEnabled())
+	{
+		GL_BeginFullScreenQuad(false);
+		R_LinearizeDepth(&s_BackBufferFBO);
+		R_AmbientOcclusion();
+		GL_EndFullScreenQuad();
+	}
+}
+
+void ClientDLL_DrawNormalTriangles(void)
+{
+	//Allow SC client dll to write stencil buffer
+
+	glStencilMask(0xFF);
+	glClear(GL_STENCIL_BUFFER_BIT);
+
+	r_draw_legacysprite = true;
+
+	gExportfuncs.HUD_DrawNormalTriangles();
+	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
+
+	r_draw_legacysprite = false;
+
+	glStencilMask(0);
+
+	//Restore current framebuffer just in case that Allow SC client dll changes it
+
+	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 }
 
 void R_RenderScene(void)
@@ -2490,15 +2607,23 @@ void R_RenderScene(void)
 	if ((*g_bUserFogOn))
 		R_RenderFinalFog();
 
+	HUD_EndRenderOpaque();
+
 	AllowFog(false);
-	HUD_DrawNormalTriangles();
-	//gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
+	ClientDLL_DrawNormalTriangles();
 	AllowFog(true);
 
-	R_DrawTEntitiesOnList((*r_refdef.onlyClientDraws));
-
-	if (((*cl_waterlevel) > 2 && (*r_refdef.onlyClientDraws)) || !(*g_bUserFogOn))
+	if ((*cl_waterlevel) > 2 && (*r_refdef.onlyClientDraws))
+	{
 		glDisable(GL_FOG);
+	}
+	else
+	{
+		if (!(*g_bUserFogOn))
+			glDisable(GL_FOG);
+	}
+
+	R_DrawTransEntities((*r_refdef.onlyClientDraws));
 
 	S_ExtraUpdate();
 

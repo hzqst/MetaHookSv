@@ -525,6 +525,7 @@ bool R_IsHDREnabled()
 	if (CL_IsDevOverviewMode())
 		return false;
 
+#if 0
 	if (g_iUser1)
 	{
 		if (!(*g_iUser1) || (r_params.nextView == 0 && (((*g_iUser1) != OBS_MAP_FREE) && ((*g_iUser1) != OBS_MAP_CHASE))) || (r_params.nextView == 1 && spec_pip && spec_pip->value < INSET_MAP_FREE))
@@ -536,6 +537,7 @@ bool R_IsHDREnabled()
 			return false;
 		}
 	}
+#endif
 
 	return true;
 }
@@ -620,6 +622,9 @@ void R_DoFXAA(void)
 	if (g_SvEngine_DrawPortalView)
 		return;
 
+	if ((*r_refdef.onlyClientDraws))
+		return;
+
 	static glprofile_t profile_DoFXAA;
 	GL_BeginProfile(&profile_DoFXAA, "R_DoFXAA");
 
@@ -657,13 +662,21 @@ void R_GammaCorrection(void)
 	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 
 	GL_BeginFullScreenQuad(false);
-	glDisable(GL_BLEND);
 
 	GL_UseProgram(gamma_correction.program);
 
 	GL_Bind(s_BackBufferFBO2.s_hBackBufferTex);
 
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	//Could be non-fullscreen quad
+
+	GL_Begin2D();
+	GL_DisableMultitexture();
+	glEnable(GL_TEXTURE_2D);
+	glDisable(GL_BLEND);
+
+	R_DrawHUDQuad_Texture(s_BackBufferFBO2.s_hBackBufferTex, r_refdef.vrect->width, r_refdef.vrect->height);
+
+	//glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	GL_UseProgram(0);
 
@@ -881,4 +894,32 @@ void R_AmbientOcclusion(void)
 	glDisable(GL_BLEND);
 
 	GL_EndProfile(&profile_AmbientOcclusion);
+}
+
+void R_BlendFinalBuffer(void)
+{
+	static glprofile_t profile_BlendFinalBuffer;
+	GL_BeginProfile(&profile_BlendFinalBuffer, "R_BlendFinalBuffer");
+
+	GL_PushDrawState();
+	GL_PushMatrix();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, s_FinalBufferFBO.s_hBackBufferFBO);
+
+	GL_UseProgram(0);
+
+	GL_Begin2D();
+	GL_DisableMultitexture();
+	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	R_DrawHUDQuad_Texture(s_BackBufferFBO.s_hBackBufferTex, glwidth, glheight);
+
+	GL_UseProgram(0);
+
+	GL_PopMatrix();
+	GL_PopDrawState();
+
+	GL_EndProfile(&profile_BlendFinalBuffer);
 }

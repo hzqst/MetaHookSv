@@ -48,47 +48,9 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 	memcpy(&r_params, pparams, sizeof(struct ref_params_s));
 }
 
-void HUD_DrawNormalTriangles(void)
-{
-	glDisable(GL_ALPHA_TEST);
-	glDisable(GL_STENCIL_TEST);
-
-	r_draw_opaque = false;
-
-	//Transfer everything from gbuffer into backbuffer
-	if (drawgbuffer)
-	{
-		R_EndRenderGBuffer();
-	}
-	else if (R_IsSSAOEnabled()) 
-	{		
-		GL_BeginFullScreenQuad(false);
-		R_LinearizeDepth(&s_BackBufferFBO);
-		R_AmbientOcclusion();
-		GL_EndFullScreenQuad();
-	}
-
-	//Allow SCClient to write stencil buffer (but not bit 1)?
-
-	glStencilMask(0xFF);
-	glClear(GL_STENCIL_BUFFER_BIT);
-
-	r_draw_legacysprite = true;
-
-	gExportfuncs.HUD_DrawNormalTriangles();
-
-	r_draw_legacysprite = false;
-
-	glStencilMask(0);
-
-	//Restore current framebuffer just in case that Sven-Coop client changes it
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-}
-
 void HUD_DrawTransparentTriangles(void)
 {
-	gExportfuncs.HUD_DrawTransparentTriangles();
+	//gExportfuncs.HUD_DrawTransparentTriangles();
 }
 
 int HUD_Redraw(float time, int intermission)

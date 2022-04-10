@@ -188,8 +188,8 @@
 #define R_LIGHTSTRENGTH_SIG_SVENGINE "\x8B\x15\x2A\x2A\x2A\x2A\x2A\x8B\x35\x2A\x2A\x2A\x2A\x2A\x8B\x7C\x24\x0C"
 #define R_LIGHTSTRENGTH_SIG_NEW "\x55\x8B\xEC\x83\xEC\x0C\x8B\x4D\x08\x8B\x15\x2A\x2A\x2A\x2A\x2A\x8B\x04\x2A\x2A\x2A\x2A\x2A"
 
-#define GLOW_BLEND_SVENGINE "\x55\x8B\xEC\x83\x2A\x2A\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\xA0\x00"
-#define GLOW_BLEND_SIG_NEW ""
+#define R_GLOW_BLEND_SIG_SVENGINE "\x55\x8B\xEC\x83\x2A\x2A\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\xA0\x00"
+#define R_GLOW_BLEND_SIG_NEW "\x55\x8B\xEC\x81\xEC\x2A\x00\x00\x00\xD9\x05\x2A\x2A\x2A\x2A\xD8\x25\x2A\x2A\x2A\x2A\x2A\x8D\x2A\x2A"
 
 void R_FillAddress(void)
 {
@@ -651,13 +651,15 @@ void R_FillAddress(void)
 	
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.GlowBlend = (float(*)(cl_entity_t *))Search_Pattern(GLOW_BLEND_SVENGINE);
-		Sig_FuncNotFound(GlowBlend);
+		gRefFuncs.R_GlowBlend = (float(*)(cl_entity_t *))Search_Pattern(R_GLOW_BLEND_SIG_SVENGINE);
+		Sig_FuncNotFound(R_GlowBlend);
 	}
 	else
 	{
-		
+		gRefFuncs.R_GlowBlend = (float(*)(cl_entity_t *))Search_Pattern(R_GLOW_BLEND_SIG_NEW);
+		Sig_FuncNotFound(R_GlowBlend);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char sigs1[] = "Can't add transparent entity. Too many";
@@ -3001,10 +3003,10 @@ void R_InstallHook(void)
 	Install_InlineHook(R_BuildLightMap);
 	Install_InlineHook(R_AddDynamicLights);
 	Install_InlineHook(R_GLStudioDrawPoints);
-	Install_InlineHook(R_DrawBrushModel);
+	//Install_InlineHook(R_DrawBrushModel);
 	//Install_InlineHook(R_DrawTEntitiesOnList);
-	Install_InlineHook(R_DrawParticles);
-	Install_InlineHook(R_AddTEntity);
+	//Install_InlineHook(R_DrawParticles);
+	//Install_InlineHook(R_AddTEntity);
 	Install_InlineHook(GL_LoadTexture2);
 	Install_InlineHook(enginesurface_drawFlushText);
 	Install_InlineHook(Mod_LoadStudioModel);

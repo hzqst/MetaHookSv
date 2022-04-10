@@ -159,9 +159,10 @@ extern bool bNoStretchAspect;
 extern bool bUseBindless;
 extern bool bUseOITBlend;
 
-extern FBO_Container_t s_GBufferFBO;
+extern FBO_Container_t s_FinalBufferFBO;
 extern FBO_Container_t s_BackBufferFBO;
 extern FBO_Container_t s_BackBufferFBO2;
+extern FBO_Container_t s_GBufferFBO;
 extern FBO_Container_t s_BlendBufferFBO;
 extern FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];
 extern FBO_Container_t s_LuminFBO[LUMIN_BUFFERS];

@@ -4,9 +4,13 @@
 
 ### Features
 
-1. Transform player model into ragdoll when player is dead or being caught by barnacle.
+1. Transform player model into ragdoll when player is dead or being caught by barnacle (thirdperson only for local player).
 
-2. Transform monster model into ragdoll when monster is dead.
+2. Transform player model into ragdoll when player being bitten by gargantua (thirdperson only for local player).
+
+3. Jiggle Bones
+
+4. Transform monster model into ragdoll when monster is dead.
 
 ![](/img/6.png)
 

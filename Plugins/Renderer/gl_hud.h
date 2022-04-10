@@ -150,6 +150,7 @@ extern SHADER_DEFINE(depth_clear);
 extern SHADER_DEFINE(oitbuffer_clear);
 extern SHADER_DEFINE(blit_oitblend);
 
+void R_BlendFinalBuffer(void);
 void R_BlendOITBuffer(void);
 void R_ClearOITBuffer(void);
 void R_BeginFXAA(int w, int h);
