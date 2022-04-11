@@ -602,6 +602,9 @@ bool R_IsFXAAEnabled(void)
 	if ((*r_refdef.onlyClientDraws))
 		return false;
 
+	if(g_bRenderingPortals_SCClient && *g_bRenderingPortals_SCClient == 1)
+		return false;
+
 	if (CL_IsDevOverviewMode())
 		return false;
 
@@ -729,6 +732,9 @@ bool R_IsSSAOEnabled(void)
 		return false;
 
 	if ((*r_refdef.onlyClientDraws))
+		return false;
+
+	if (g_bRenderingPortals_SCClient && *g_bRenderingPortals_SCClient == 1)
 		return false;
 
 	if (CL_IsDevOverviewMode())

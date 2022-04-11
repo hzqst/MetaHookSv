@@ -1,7 +1,6 @@
 #include "gl_local.h"
 #include <sstream>
 
-bool waterview_ready = false;
 bool refractmap_ready = false;
 
 vec3_t water_view;

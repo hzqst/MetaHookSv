@@ -394,7 +394,7 @@ void R_DrawSkyBox(void)
 		WSurfProgramState |= WSURF_BINDLESS_ENABLED;
 	}
 
-	if (r_draw_reflectview && curwater)
+	if (r_draw_reflectview)
 	{
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}

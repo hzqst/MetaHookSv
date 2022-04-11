@@ -3,8 +3,6 @@
 
 //renderer
 
-bool shadowmap_ready = false;
-
 int shadow_texture_depth = 0;
 int shadow_texture_color = 0;
 int shadow_texture_size = 0;

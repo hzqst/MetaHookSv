@@ -580,7 +580,7 @@ void R_SetGBufferMask(int mask)
 	glDrawBuffers(gbuffer_attachment_count, gbuffer_attachments);
 }
 
-bool R_BeginRenderGBuffer(void)
+bool R_IsDeferredRenderingEnabled()
 {
 	if (!r_light_dynamic->value)
 		return false;
@@ -588,7 +588,18 @@ bool R_BeginRenderGBuffer(void)
 	if (r_draw_reflectview)
 		return false;
 
+	if (g_bRenderingPortals_SCClient && (*g_bRenderingPortals_SCClient) == 1)
+		return false;
+
 	if (CL_IsDevOverviewMode())
+		return false;
+
+	return true;
+}
+
+bool R_BeginRenderGBuffer(void)
+{
+	if (!R_IsDeferredRenderingEnabled())
 		return false;
 
 	drawgbuffer = true;

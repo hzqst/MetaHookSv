@@ -572,7 +572,7 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 	}
 	glEnable(GL_ALPHA_TEST);
 
-	if (r_draw_reflectview && curwater)
+	if (r_draw_reflectview)
 	{
 		SpriteProgramState |= SPRITE_CLIP_ENABLED;
 	}

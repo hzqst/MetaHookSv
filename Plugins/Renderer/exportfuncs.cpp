@@ -803,13 +803,24 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	//Fix SvClient Portal Rendering Confliction
 	if (pfnClientFactory && pfnClientFactory("SCClientDLL001", 0))
 	{
-#define SVCLIENT_PORTALMANAGER_RESETALL_SIG "\xC7\x45\x2A\xFF\xFF\xFF\xFF\xA3\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x0D"
-		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SVCLIENT_PORTALMANAGER_RESETALL_SIG, sizeof(SVCLIENT_PORTALMANAGER_RESETALL_SIG) - 1);
-		Sig_AddrNotFound(PortalManager_ResetAll);
+		if (1)
+		{
+#define SCCLIENT_PORTALMANAGER_RESETALL_SIG "\xC7\x45\x2A\xFF\xFF\xFF\xFF\xA3\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x0D"
+			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SCCLIENT_PORTALMANAGER_RESETALL_SIG, sizeof(SCCLIENT_PORTALMANAGER_RESETALL_SIG) - 1);
+			
+			Sig_AddrNotFound(PortalManager_ResetAll);
 
-		gRefFuncs.PortalManager_ResetAll = (decltype(gRefFuncs.PortalManager_ResetAll))GetCallAddress(addr + 12);
+			gRefFuncs.PortalManager_ResetAll = (decltype(gRefFuncs.PortalManager_ResetAll))GetCallAddress(addr + 12);
+		}
 
 		Install_InlineHook(PortalManager_ResetAll);
+		if (1)
+		{
+#define SCCLIENT_ISRENDERINGPORTALS_SIG "\xFF\x50\x24\xC6\x05\x2A\x2A\x2A\x2A\x01"
+			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SCCLIENT_ISRENDERINGPORTALS_SIG, sizeof(SCCLIENT_ISRENDERINGPORTALS_SIG) - 1);
+			Sig_AddrNotFound(g_bRenderingPortals);
+			g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient))*(ULONG_PTR *)(addr + 5);
+		}		
 
 		g_bIsSvenCoop = true;
 	}

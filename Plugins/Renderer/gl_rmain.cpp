@@ -1,6 +1,7 @@
 #include "gl_local.h"
 #include "pm_defs.h"
 #include <sstream>
+#include <intrin.h>
 
 ref_funcs_t gRefFuncs;
 
@@ -8,6 +9,7 @@ refdef_t r_refdef;
 ref_params_t r_params;
 refdef_GoldSrc_t *r_refdef_GoldSrc = NULL;
 refdef_SvEngine_t *r_refdef_SvEngine = NULL;
+
 float *scrfov = NULL;
 float r_xfov;
 float r_yfov;
@@ -89,8 +91,12 @@ vec_t *r_playerViewportAngles = NULL;
 int *cls_state = NULL;
 int *cls_signon = NULL;
 
+//client dll
+
 int *g_iUser1 = NULL;
 int *g_iUser2 = NULL;
+
+bool *g_bRenderingPortals_SCClient = false;
 
 float r_identity_matrix[4][4] = {
 	{1.0f, 0.0f, 0.0f, 0.0f},
@@ -108,6 +114,8 @@ bool r_draw_opaque = false;
 bool r_draw_oitblend = false;
 bool r_draw_legacysprite = false;
 bool r_draw_reflectview = false;
+bool r_draw_portalview = false;
+
 int r_renderview_pass = 0;
 
 int glx = 0;
@@ -316,6 +324,10 @@ const color24 gTracerColors[] =
 
 void R_DrawParticles(void)
 {
+	//Don't render particles!!!
+	if (CL_IsDevOverviewMode())
+		return;
+
 	vec3_t			up, right;
 	float			scale;
 
@@ -345,7 +357,7 @@ void R_DrawParticles(void)
 		LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
 	}
 
-	if (r_draw_reflectview && curwater)
+	if (r_draw_reflectview)
 	{
 		LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 	}
@@ -528,7 +540,7 @@ void triapi_RenderMode(int mode)
 				LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
 			}
 
-			if (r_draw_reflectview && curwater)
+			if (r_draw_reflectview)
 			{
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}
@@ -559,7 +571,7 @@ void triapi_RenderMode(int mode)
 				LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
 			}
 
-			if (r_draw_reflectview && curwater)
+			if (r_draw_reflectview)
 			{
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}
@@ -579,7 +591,7 @@ void triapi_RenderMode(int mode)
 		{
 			int LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ALPHA_BLEND_ENABLED : SPRITE_ALPHA_BLEND_ENABLED;
 
-			if (r_draw_reflectview && curwater)
+			if (r_draw_reflectview)
 			{
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}
@@ -607,9 +619,6 @@ void triapi_RenderMode(int mode)
 void R_DrawTEntitiesOnList(int onlyClientDraw)
 {
 	if (onlyClientDraw)
-		return;
-
-	if (!r_drawentities->value)
 		return;
 
 	for (int i = 0; i < (*numTransObjs); i++)
@@ -645,25 +654,27 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 		r_draw_legacysprite = true;
 
-		R_DrawTEntitiesOnList(onlyClientDraw);
-		
-		GL_DisableMultitexture();
+		if (r_drawentities->value)
+		{
+			R_DrawTEntitiesOnList(onlyClientDraw);
 
-		glEnable(GL_ALPHA_TEST);
+			GL_DisableMultitexture();
 
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+			glEnable(GL_ALPHA_TEST);
 
-		if ((*g_bUserFogOn))
-			glDisable(GL_FOG);
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-		ClientDLL_DrawTransparentTriangles();
+			if ((*g_bUserFogOn))
+				glDisable(GL_FOG);
 
-		if ((*g_bUserFogOn))
-			glEnable(GL_FOG);
+			ClientDLL_DrawTransparentTriangles();
 
-		//No overflow when r_drawentities = 0
-		(*numTransObjs) = 0;
-		(*r_blend) = 1;
+			if ((*g_bUserFogOn))
+				glEnable(GL_FOG);
+
+			(*numTransObjs) = 0;
+			(*r_blend) = 1;
+		}
 
 		if (!onlyClientDraw)
 		{
@@ -687,25 +698,28 @@ void R_DrawTransEntities(int onlyClientDraw)
 	{
 		r_draw_legacysprite = true;
 
-		R_DrawTEntitiesOnList(onlyClientDraw);
+		if (r_drawentities->value)
+		{
 
-		GL_DisableMultitexture();
+			R_DrawTEntitiesOnList(onlyClientDraw);
 
-		glEnable(GL_ALPHA_TEST);
+			GL_DisableMultitexture();
 
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+			glEnable(GL_ALPHA_TEST);
 
-		if ((*g_bUserFogOn))
-			glDisable(GL_FOG);
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-		ClientDLL_DrawTransparentTriangles();
+			if ((*g_bUserFogOn))
+				glDisable(GL_FOG);
 
-		if ((*g_bUserFogOn))
-			glEnable(GL_FOG);
+			ClientDLL_DrawTransparentTriangles();
 
-		//No overflow when r_drawentities = 0
-		(*numTransObjs) = 0;
-		(*r_blend) = 1;
+			if ((*g_bUserFogOn))
+				glEnable(GL_FOG);
+
+			(*numTransObjs) = 0;
+			(*r_blend) = 1;
+		}
 
 		if (!onlyClientDraw)
 		{
@@ -1528,17 +1542,20 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+	r_renderview_pass = 0;
+	*c_alias_polys = 0;
+	*c_brush_polys = 0;
+}
+
+void R_PreRenderView()
+{
 	r_wsurf_drawcall = 0;
 	r_wsurf_polys = 0;
 	r_studio_drawcall = 0;
 	r_studio_polys = 0;
 	r_sprite_drawcall = 0;
-	r_sprite_polys = 0; 
-	r_renderview_pass = 0;
-}
+	r_sprite_polys = 0;
 
-void R_PreRenderView()
-{
 	//Capture previous fog settings
 
 	r_fog_mode = 0;
@@ -1569,8 +1586,6 @@ void R_PreRenderView()
 		}
 	}
 
-	shadowmap_ready = false;
-
 	shadow_numvisedicts[0] = 0;
 	shadow_numvisedicts[1] = 0;
 	shadow_numvisedicts[2] = 0;
@@ -1578,19 +1593,14 @@ void R_PreRenderView()
 	if (r_shadow && r_shadow->value)
 	{
 		R_RenderShadowMap();
-		shadowmap_ready = true;
 	}
-
-	waterview_ready = false;
 
 	if (r_water && r_water->value)
 	{
 		R_RenderWaterView();
-		waterview_ready = true;
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-	//TODO: do we really need this?
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, s_BackBufferFBO.s_hBackBufferTex, 0);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, s_BackBufferFBO.s_hBackBufferDepthTex, 0);
 }
@@ -1735,11 +1745,8 @@ void R_RenderView_SvEngine(int viewIdx)
 		glBindFramebuffer(GL_FRAMEBUFFER, s_FinalBufferFBO.s_hBackBufferFBO);
 	}
 
-	if (!(*r_refdef.onlyClientDraws))
-	{
-		*c_alias_polys = r_studio_polys;
-		*c_brush_polys = r_wsurf_polys;
-	}
+	*c_alias_polys += r_studio_polys;
+	*c_brush_polys += r_wsurf_polys;
 
 	if (r_speeds->value)
 	{
@@ -1750,7 +1757,7 @@ void R_RenderView_SvEngine(int viewIdx)
 
 		auto time2 = gEngfuncs.GetAbsoluteTime();
 
-		gEngfuncs.Con_Printf("%3ifps %3i ms, pass %d, %d brushpolys, %d brushdraw, %d studiopolys, %d studiodraw, %d spritepolys, %d spritedraw\n",
+		gEngfuncs.Con_Printf("%3ifps in %3i ms at pass %d, with %d brushpolys, %d brushdraw, %d studiopolys, %d studiodraw, %d spritepolys, %d spritedraw\n",
 			(int)(framerate + 0.5), (int)((time2 - time1) * 1000),
 			r_renderview_pass,
 			r_wsurf_polys, r_wsurf_drawcall,
@@ -2581,17 +2588,28 @@ void ClientDLL_DrawNormalTriangles(void)
 
 	glClear(GL_STENCIL_BUFFER_BIT);
 
+	//SC client dll should have enabled this but they don't
+	glEnable(GL_POLYGON_OFFSET_FILL);
+
 	r_draw_legacysprite = true;
 
 	gExportfuncs.HUD_DrawNormalTriangles();
+
 	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
 
 	r_draw_legacysprite = false;
 
 	glStencilMask(0);
 
-	//Restore current framebuffer just in case that Allow SC client dll changes it
+	glDisable(GL_POLYGON_OFFSET_FILL);
 
+	//This should have been restored to 0 by SC client dll while drawing portal overlay but they don't, which breaks HUD/GUIs somehow.
+	glAlphaFunc(GL_NOTEQUAL, 0);
+
+	//Clear texture id cache since SC client dll bind texture id 0 but leave texture id cache non-zero
+	*currenttexture = -1;
+
+	//Restore current framebuffer just in case that Allow SC client dll changes it
 	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 }
 

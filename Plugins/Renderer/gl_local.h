@@ -137,8 +137,12 @@ extern float *g_UserFogEnd;
 extern model_t *mod_known;
 extern int *mod_numknown;
 
+//client dll
+
 extern int *g_iUser1;
 extern int *g_iUser2;
+
+extern bool *g_bRenderingPortals_SCClient;
 
 //gl extension
 
@@ -382,7 +386,6 @@ void GL_PopFrameBuffer(void);
 void R_PushRefDef(void);
 void R_UpdateRefDef(void);
 void R_PopRefDef(void);
-int R_GetDrawPass(void);
 
 void GL_FreeTexture(gltexture_t *glt);
 void GL_PushMatrix(void);
@@ -418,6 +421,8 @@ extern bool r_draw_opaque;
 extern bool r_draw_oitblend;
 extern bool r_draw_legacysprite;
 extern bool r_draw_reflectview;
+extern bool r_draw_portalview;
+
 extern int r_renderview_pass;
 
 extern bool g_bIsSvenCoop;

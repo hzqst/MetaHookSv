@@ -1,7 +1,5 @@
 #pragma once
 
-extern bool shadowmap_ready;
-
 extern int shadow_texture_depth;
 extern int shadow_texture_color;
 extern int shadow_texture_size;

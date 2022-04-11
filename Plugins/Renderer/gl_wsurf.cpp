@@ -1232,7 +1232,7 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 			}
 		}
 
-		if (r_draw_reflectview && curwater)
+		if (r_draw_reflectview)
 		{
 			WSurfProgramState |= WSURF_CLIP_ENABLED;
 		}
@@ -1374,7 +1374,7 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 				WSurfProgramState |= WSURF_SPECULARTEXTURE_ENABLED;
 			}
 
-			if (r_draw_reflectview && curwater)
+			if (r_draw_reflectview)
 			{
 				WSurfProgramState |= WSURF_CLIP_ENABLED;
 			}
@@ -1548,7 +1548,7 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_t *modcache)
 			WSurfProgramState |= WSURF_SPECULARTEXTURE_ENABLED;
 		}
 
-		if (r_draw_reflectview && curwater)
+		if (r_draw_reflectview)
 		{
 			WSurfProgramState |= WSURF_CLIP_ENABLED;
 		}

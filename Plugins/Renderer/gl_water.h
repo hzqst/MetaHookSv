@@ -128,7 +128,6 @@ typedef struct water_vbo_s
 
 //renderer
 extern bool refractmap_ready;
-extern bool waterview_ready;
 extern vec3_t water_view;
 
 //water

@@ -1249,7 +1249,7 @@ void R_GLStudioDrawPoints(void)
 			StudioProgramState &= ~(STUDIO_NF_CELSHADE | STUDIO_NF_CELSHADE_FACE | STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H);
 		}
 
-		if (r_draw_reflectview && curwater)
+		if (r_draw_reflectview)
 		{
 			StudioProgramState |= STUDIO_CLIP_ENABLED;
 		}
