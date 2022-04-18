@@ -63,9 +63,12 @@ void R_InitShadow(void)
 	r_shadow_low_scale = R_RegisterMapCvar("r_shadow_low_scale", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
-bool R_ShouldRenderShadowScene(int level)
+bool R_ShouldRenderShadowScene(void)
 {
-	if(r_draw_reflectview)
+	if (r_draw_reflectview)
+		return false;
+
+	if (R_IsRenderingPortal())
 		return false;
 
 	if (gRefFuncs.CL_IsDevOverviewMode())
@@ -74,7 +77,7 @@ bool R_ShouldRenderShadowScene(int level)
 	if (!shadow_numvisedicts[0] && !shadow_numvisedicts[1] && !shadow_numvisedicts[2])
 		return false;
 
-	return r_shadow->value >= level;
+	return r_shadow->value ? true : false;
 }
 
 bool R_ShouldCastShadow(cl_entity_t *ent)
@@ -152,9 +155,7 @@ void R_RenderShadowMap(void)
 		}
 	}
 
-	int total_numvisedicts = shadow_numvisedicts[0] + shadow_numvisedicts[1] + shadow_numvisedicts[2];
-
-	if (total_numvisedicts)
+	if (R_ShouldRenderShadowScene())
 	{
 		static glprofile_t profile_RenderShadowMap;
 		GL_BeginProfile(&profile_RenderShadowMap, "R_RenderShadowMap");

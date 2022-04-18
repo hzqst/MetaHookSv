@@ -163,6 +163,7 @@ if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\ren
     <ClCompile Include="gl_hooks.cpp" />
     <ClCompile Include="gl_hud.cpp" />
     <ClCompile Include="gl_light.cpp" />
+    <ClCompile Include="gl_portal.cpp" />
     <ClCompile Include="gl_profile.cpp" />
     <ClCompile Include="gl_rmain.cpp" />
     <ClCompile Include="gl_rmisc.cpp" />
@@ -187,6 +188,7 @@ if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\ren
     <ClInclude Include="gl_hud.h" />
     <ClInclude Include="gl_light.h" />
     <ClInclude Include="gl_local.h" />
+    <ClInclude Include="gl_portal.h" />
     <ClInclude Include="gl_profile.h" />
     <ClInclude Include="gl_shader.h" />
     <ClInclude Include="gl_shadow.h" />

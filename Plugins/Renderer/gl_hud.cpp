@@ -522,6 +522,9 @@ bool R_IsHDREnabled(void)
 	if ((*r_refdef.onlyClientDraws))
 		return false;
 
+	if (R_IsRenderingPortal())
+		return false;
+
 	if (CL_IsDevOverviewMode())
 		return false;
 
@@ -602,7 +605,7 @@ bool R_IsFXAAEnabled(void)
 	if ((*r_refdef.onlyClientDraws))
 		return false;
 
-	if(g_bRenderingPortals_SCClient && *g_bRenderingPortals_SCClient == 1)
+	if (R_IsRenderingPortal())
 		return false;
 
 	if (CL_IsDevOverviewMode())
@@ -734,7 +737,7 @@ bool R_IsSSAOEnabled(void)
 	if ((*r_refdef.onlyClientDraws))
 		return false;
 
-	if (g_bRenderingPortals_SCClient && *g_bRenderingPortals_SCClient == 1)
+	if (R_IsRenderingPortal())
 		return false;
 
 	if (CL_IsDevOverviewMode())

@@ -25,7 +25,7 @@ extern MapConVar *r_shadow_low_distance;
 extern MapConVar *r_shadow_low_scale;
 
 bool R_ShouldCastShadow(cl_entity_t *ent);
-bool R_ShouldRenderShadowScene(int level);
+bool R_ShouldRenderShadowScene(void);
 void R_RenderShadowMap(void);
 void R_InitShadow(void);
 void R_ShutdownShadow(void);

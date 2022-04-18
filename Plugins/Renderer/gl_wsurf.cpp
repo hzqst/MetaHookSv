@@ -89,6 +89,7 @@ const program_state_name_t s_WSurfProgramStateName[] = {
 { WSURF_SKYBOX_ENABLED				,"WSURF_SKYBOX_ENABLED"},
 { WSURF_DECAL_ENABLED				,"WSURF_DECAL_ENABLED"},
 { WSURF_CLIP_ENABLED				,"WSURF_CLIP_ENABLED"},
+{ WSURF_CLIP_WATER_ENABLED			,"WSURF_CLIP_WATER_ENABLED"},
 { WSURF_OIT_ALPHA_BLEND_ENABLED		,"WSURF_OIT_ALPHA_BLEND_ENABLED"},
 { WSURF_OIT_ADDITIVE_BLEND_ENABLED	,"WSURF_OIT_ADDITIVE_BLEND_ENABLED"},
 };
@@ -248,6 +249,9 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 
 		if (state & WSURF_CLIP_ENABLED)
 			defs << "#define CLIP_ENABLED\n";
+
+		if (state & WSURF_CLIP_WATER_ENABLED)
+			defs << "#define CLIP_WATER_ENABLED\n";
 
 		if (state & WSURF_OIT_ALPHA_BLEND_ENABLED)
 			defs << "#define OIT_ALPHA_BLEND_ENABLED\n";
@@ -1203,7 +1207,7 @@ void R_DrawWSurfVBOSolid(wsurf_vbo_t *modcache)
 	}
 }
 
-void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
+void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache, bool bUseZPrePasss)
 {
 	if(bUseBindless)
 	{
@@ -1232,9 +1236,17 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 			}
 		}
 
-		if (r_draw_reflectview)
+		//TODO Z-prepass?
+		if (!bUseZPrePasss)
 		{
-			WSurfProgramState |= WSURF_CLIP_ENABLED;
+			if (r_draw_reflectview)
+			{
+				WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
+			}
+			else if (g_bPortalClipPlaneEnabled[0])
+			{
+				WSurfProgramState |= WSURF_CLIP_ENABLED;
+			}
 		}
 
 		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
@@ -1376,6 +1388,10 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 
 			if (r_draw_reflectview)
 			{
+				WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
+			}
+			else if (g_bPortalClipPlaneEnabled[0])
+			{
 				WSurfProgramState |= WSURF_CLIP_ENABLED;
 			}
 
@@ -1428,7 +1444,7 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache)
 	}
 }
 
-void R_DrawWSurfVBOAnim(wsurf_vbo_t *modcache)
+void R_DrawWSurfVBOAnim(wsurf_vbo_t *modcache, bool bUseZPrePasss)
 {
 	for (size_t i = 0; i < modcache->vTextureChain[WSURF_TEXCHAIN_ANIM].size(); ++i)
 	{
@@ -1548,9 +1564,16 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_t *modcache)
 			WSurfProgramState |= WSURF_SPECULARTEXTURE_ENABLED;
 		}
 
-		if (r_draw_reflectview)
+		if (!bUseZPrePasss)
 		{
-			WSurfProgramState |= WSURF_CLIP_ENABLED;
+			if (r_draw_reflectview)
+			{
+				WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
+			}
+			else if (g_bPortalClipPlaneEnabled[0])
+			{
+				WSurfProgramState |= WSURF_CLIP_ENABLED;
+			}
 		}
 
 		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
@@ -1668,6 +1691,15 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 		}
 
+		if(r_draw_reflectview)
+		{
+			WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
+		}
+		else if (g_bPortalClipPlaneEnabled[0])
+		{
+			WSurfProgramState |= WSURF_CLIP_ENABLED;
+		}
+
 		wsurf_program_t prog = { 0 };
 		R_UseWSurfProgram(WSurfProgramState, &prog);
 
@@ -1719,8 +1751,8 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 		glDepthFunc(GL_EQUAL);
 	}
 
-	R_DrawWSurfVBOStatic(modcache);
-	R_DrawWSurfVBOAnim(modcache);
+	R_DrawWSurfVBOStatic(modcache, bUseZPrePasss);
+	R_DrawWSurfVBOAnim(modcache, bUseZPrePasss);
 
 	//This only applies to world rendering, clear depth for sky surface
 	if (modcache->pModel == r_worldmodel && r_wsurf_sky_occlusion->value && !CL_IsDevOverviewMode())
@@ -3195,7 +3227,7 @@ skip_marklight:
 
 	r_wsurf.bShadowmapTexture = false;
 
-	if(R_ShouldRenderShadowScene(1) && r_draw_opaque)
+	if(R_ShouldRenderShadowScene() && r_draw_opaque)
 		r_wsurf.bShadowmapTexture = true;
 
 	auto modcache = R_PrepareWSurfVBO(clmodel);
@@ -3250,7 +3282,11 @@ void R_SetupSceneUBO(void)
 		float equation[4] = { curwater->normal[0], curwater->normal[1], curwater->normal[2], -curwater->plane };
 		memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
 	}
-	
+	else if (g_bPortalClipPlaneEnabled[0])
+	{
+		memcpy(SceneUBO.clipPlane, g_PortalClipPlane[0], sizeof(vec4_t));
+	}
+
 	//Fog colors are converted to linear space before use.
 	memcpy(SceneUBO.fogColor, r_fog_color, sizeof(vec4_t));
 	GammaToLinear(SceneUBO.fogColor);
@@ -3325,7 +3361,7 @@ void R_DrawWorld(void)
 
 	//Setup shadow
 
-	if (R_ShouldRenderShadowScene(1))
+	if (R_ShouldRenderShadowScene())
 	{
 		r_wsurf.bShadowmapTexture = true;
 

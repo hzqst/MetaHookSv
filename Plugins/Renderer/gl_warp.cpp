@@ -9,7 +9,6 @@ int *r_loading_skybox = NULL;
 void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, WaterVBOCache->hEBO);
-	//glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_TEXTURE_SSBO, WaterVBOCache->hTextureSSBO);
 
 	if (r_draw_opaque)
 	{
@@ -395,6 +394,10 @@ void R_DrawSkyBox(void)
 	}
 
 	if (r_draw_reflectview)
+	{
+		WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
+	}
+	else if (g_bPortalClipPlaneEnabled[0])
 	{
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}

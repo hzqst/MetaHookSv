@@ -17,6 +17,8 @@
 #include <triangleapi.h>
 #include <entity_types.h>
 
+#include <set>
+
 #include "plugins.h"
 #include "exportfuncs.h"
 #include "qgl.h"
@@ -34,8 +36,7 @@
 #include "gl_wsurf.h"
 #include "gl_draw.h"
 #include "gl_cvar.h"
-
-#include <set>
+#include "gl_portal.h"
 
 typedef struct walk_context_s
 {
@@ -143,6 +144,10 @@ extern int *g_iUser1;
 extern int *g_iUser2;
 
 extern bool *g_bRenderingPortals_SCClient;
+
+extern bool g_bPortalClipPlaneEnabled[6];
+
+extern vec4_t g_PortalClipPlane[6];
 
 //gl extension
 
@@ -266,6 +271,7 @@ void V_RenderView(void);
 void R_RenderView(void);
 void R_RenderScene(void);
 void R_RenderView_SvEngine(int a1);
+bool R_IsRenderingPortal(void);
 qboolean R_CullBox(vec3_t mins, vec3_t maxs);
 void R_ForceCVars(qboolean mp);
 void R_NewMap(void);
@@ -337,7 +343,6 @@ qboolean R_ParseCvarAsVector4(cvar_t *cvar, float *vec);
 void R_ForceCVars(qboolean mp);
 colorVec R_LightPoint(vec3_t p);
 void *R_GetRefDef(void);
-int R_GetDrawPass(void);
 GLuint GL_GenTextureRGBA8(int w, int h);
 
 void GL_UploadDepthTexture(int texid, int w, int h);

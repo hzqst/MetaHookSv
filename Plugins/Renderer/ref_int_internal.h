@@ -84,9 +84,11 @@ typedef struct
 	void(*triapi_Color4f) (float r, float g, float b, float a);
 	void(__fastcall *enginesurface_drawFlushText)(void *pthis, int);
 	void(*DLL_SetModKey)(void *pinfo, char *pkey, char *pvalue);
-	//SvClient
-	void(__fastcall *PortalManager_ResetAll)(int pthis, int);
-
+	//Sven Client DLL
+	void(__fastcall *ClientPortalManager_ResetAll)(void * pthis, int dummy);
+	mtexinfo_t *(__fastcall *ClientPortalManager_GetOriginalSurfaceTexture)(void * pthis, int dummy, msurface_t *surf);
+	void(__fastcall *ClientPortalManager_DrawPortalSurface)(void * pthis, int dummy, void *ClientPortal, msurface_t *surf, GLuint texture);
+	void(__fastcall *ClientPortalManager_EnableClipPlane)(void * pthis, int dummy, int index, vec3_t a1, vec3_t a2, vec3_t a3);
 	//Engine Studio
 	void (*R_GLStudioDrawPoints)(void);
 	void (*R_LightStrength)(int bone, float *vert, float (*light)[4]);

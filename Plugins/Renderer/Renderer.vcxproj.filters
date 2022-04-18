@@ -77,6 +77,9 @@
     <ClCompile Include="gl_cvar.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="gl_portal.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bspfile.h">
@@ -140,6 +143,9 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="gl_cvar.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="gl_portal.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

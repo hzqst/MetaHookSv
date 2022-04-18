@@ -451,12 +451,12 @@ void R_InitLight(void)
 
 	r_sphere_vbo = GL_GenBuffer();
 	glBindBuffer(GL_ARRAY_BUFFER, r_sphere_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sphereVertices.size() * sizeof(float), sphereVertices.data(), GL_STATIC_DRAW_ARB);
+	glBufferData(GL_ARRAY_BUFFER, sphereVertices.size() * sizeof(float), sphereVertices.data(), GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	r_sphere_ebo = GL_GenBuffer();
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r_sphere_ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphereIndices.size() * sizeof(int), sphereIndices.data(), GL_STATIC_DRAW_ARB);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphereIndices.size() * sizeof(int), sphereIndices.data(), GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	std::vector<float> coneVertices;
@@ -588,7 +588,7 @@ bool R_IsDeferredRenderingEnabled()
 	if (r_draw_reflectview)
 		return false;
 
-	if (g_bRenderingPortals_SCClient && (*g_bRenderingPortals_SCClient) == 1)
+	if (R_IsRenderingPortal())
 		return false;
 
 	if (CL_IsDevOverviewMode())

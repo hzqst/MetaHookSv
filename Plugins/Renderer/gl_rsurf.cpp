@@ -713,6 +713,10 @@ void R_DrawDecals(void)
 
 	if (r_draw_reflectview)
 	{
+		WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
+	}
+	else if (g_bPortalClipPlaneEnabled[0])
+	{
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}
 

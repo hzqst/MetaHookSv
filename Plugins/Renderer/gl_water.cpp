@@ -214,6 +214,7 @@ void R_NewMapWater(void)
 	for (size_t i = 0; i < g_WaterVBOCache.size(); ++i)
 	{
 		auto VBOCache = g_WaterVBOCache[i];
+
 		if (VBOCache->depthreflmap)
 			GL_DeleteTexture(VBOCache->depthreflmap);
 

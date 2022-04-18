@@ -98,6 +98,10 @@ int *g_iUser2 = NULL;
 
 bool *g_bRenderingPortals_SCClient = false;
 
+bool g_bPortalClipPlaneEnabled[6] = { false };
+
+vec4_t g_PortalClipPlane[6] = {0};
+
 float r_identity_matrix[4][4] = {
 	{1.0f, 0.0f, 0.0f, 0.0f},
 	{0.0f, 1.0f, 0.0f, 0.0f},
@@ -816,13 +820,13 @@ void R_DrawCurrentEntity(bool bTransparent)
 	{
 		glDisable(GL_FOG);
 
-		auto blend = CL_FxBlend((*currententity));
+		(*r_blend) = CL_FxBlend((*currententity));
 
-		if (blend <= 0)
+		if ((*r_blend) <= 0)
 			return;
 
-		//double??? GoldSrc does so but why?
-		blend = blend / 255.0;
+		//why GoldSrc uses double not float?
+		(*r_blend) = (*r_blend) / 255.0;
 
 		if ((*currententity)->curstate.rendermode == kRenderGlow && (*currententity)->model->type != mod_sprite)
 			gEngfuncs.Con_DPrintf("Non-sprite set to glow!\n");
@@ -1527,6 +1531,15 @@ void GL_Shutdown(void)
 	GL_FreeFBO(&s_WaterFBO);
 }
 
+void GL_ClearFinalBuffer()
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, s_FinalBufferFBO.s_hBackBufferFBO);
+
+	//Clear final framebuffer
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+}
+
 void GL_BeginRendering(int *x, int *y, int *width, int *height)
 {
 	gRefFuncs.GL_BeginRendering(x, y, width, height);
@@ -1536,11 +1549,7 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 	glwidth = *width; 
 	glheight = *height;
 
-	glBindFramebuffer(GL_FRAMEBUFFER, s_FinalBufferFBO.s_hBackBufferFBO);
-
-	//Clear final framebuffer
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	GL_ClearFinalBuffer();
 
 	r_renderview_pass = 0;
 	*c_alias_polys = 0;
@@ -1673,8 +1682,29 @@ void R_PreDrawViewModel(void)
 	}
 }
 
+bool R_IsRenderingPortal(void)
+{
+	return g_bRenderingPortals_SCClient && (*g_bRenderingPortals_SCClient) == 1;
+}
+
 void R_RenderView_SvEngine(int viewIdx)
 {
+	//Clear texture id cache since SC client dll bind texture id 0 but leave texture id cache non-zero
+	*currenttexture = -1;
+
+	//Clear final buffer again since SC client dll may draw some portal views on it before the first pass.
+	if (R_IsRenderingPortal())
+	{
+		GL_ClearFinalBuffer();
+	}
+	else
+	{
+		if (viewIdx == 0)
+		{
+			GL_ClearFinalBuffer();
+		}
+	}
+
 	r_renderview_pass = viewIdx;
 
 	double time1 = 0;
@@ -1696,6 +1726,7 @@ void R_RenderView_SvEngine(int viewIdx)
 		//This will switch from final framebuffer (RGBA8) to back framebuffer (RGBAF16)
 		R_PreRenderView();
 
+		//back framebuffer should be cleared before uses.
 		float clearColor[3];
 
 		if (CL_IsDevOverviewMode())
@@ -1747,6 +1778,18 @@ void R_RenderView_SvEngine(int viewIdx)
 
 	*c_alias_polys += r_studio_polys;
 	*c_brush_polys += r_wsurf_polys;
+	
+	//Clear texture id cache since SC client dll bind texture id 0 but leave texture id cache non-zero
+	*currenttexture = -1;
+
+	//Clear portal clipplanes
+
+	for (int i = 0; i < 6; ++i)
+	{
+		g_bPortalClipPlaneEnabled[i] = false;
+	}
+
+	memset(g_PortalClipPlane, 0, sizeof(g_PortalClipPlane));
 
 	if (r_speeds->value)
 	{
@@ -1961,6 +2004,7 @@ void R_Init(void)
 	R_InitLight();
 	R_InitSprite();
 	R_InitPostProcess();
+	R_InitPortal();
 
 	R_LoadProgramStates_f();
 }
@@ -1974,6 +2018,7 @@ void R_Shutdown(void)
 	R_ShutdownLight();
 	R_ShutdownSprite();
 	R_ShutdownPostProcess();
+	R_ShutdownPortal();
 
 	R_FreeMapCvars();
 }
@@ -1999,6 +2044,7 @@ void R_NewMap(void)
 	memset(&r_params, 0, sizeof(r_params));
 
 	R_NewMapWater();
+	R_NewMapPortal();
 	R_NewMapWSurf();
 
 	R_StudioReloadVBOCache();
@@ -2977,6 +3023,7 @@ void R_SaveProgramStates_f(void)
 	R_SaveStudioProgramStates();
 	R_SaveSpriteProgramStates();
 	R_SaveLegacySpriteProgramStates();
+	R_SavePortalProgramStates();
 
 	gEngfuncs.Con_Printf("Program states loaded.\n");
 }
@@ -2990,6 +3037,7 @@ void R_LoadProgramStates_f(void)
 	R_LoadStudioProgramStates();
 	R_LoadSpriteProgramStates();
 	R_LoadLegacySpriteProgramStates();
+	R_LoadPortalProgramStates();
 
 	gEngfuncs.Con_Printf("Program states saved.\n");
 }
