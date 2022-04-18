@@ -45,14 +45,16 @@ vec3 GenerateWorldPositionFromDepth(vec2 texCoord)
 
 void main()
 {
+	vec3 vNormal = normalize(v_normal);
+
+	ClipPlaneTest(v_worldpos.xyz, vNormal.xyz);
+
 	vec4 vFinalColor = vec4(0.0);
 	
 	float flWaterColorAlpha = clamp(u_watercolor.a, 0.0, 1.0);
 	vec4 vWaterColor = vec4(u_watercolor.xyz, 1.0);
 
 	vWaterColor = GammaToLinear(vWaterColor);
-
-	vec3 vNormal = normalize(v_normal);
 
 #ifdef LEGACY_ENABLED
 

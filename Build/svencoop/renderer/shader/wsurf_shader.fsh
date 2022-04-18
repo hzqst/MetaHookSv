@@ -245,7 +245,9 @@ float CalcShadowIntensityLumFadeout(vec4 lightmapColor, float intensity)
 
 void main()
 {
+#ifndef SKYBOX_ENABLED
 	ClipPlaneTest(v_worldpos.xyz, v_normal.xyz);
+#endif
 
 #ifdef DIFFUSE_ENABLED
 

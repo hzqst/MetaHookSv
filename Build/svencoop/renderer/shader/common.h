@@ -446,21 +446,38 @@ vec4 LightGammaToLinear(vec4 color)
 	return vec4(LightGammaToLinearInternal(color.r), LightGammaToLinearInternal(color.g), LightGammaToLinearInternal(color.b), color.a);
 }
 
-#if defined(CLIP_ENABLED) && defined(IS_FRAGMENT_SHADER)
+#if defined(IS_FRAGMENT_SHADER)
+
 void ClipPlaneTest(vec3 worldpos, vec3 normal)
 {
-	vec4 clipVec = vec4(worldpos.xyz, 1);
-	vec4 clipPlane = SceneUBO.clipPlane;
-	if(dot(clipVec, clipPlane) < 0)
-		discard;
+	#if defined(CLIP_WATER_ENABLED)
 
-	clipPlane.w += 32.0;
-	if(dot(clipVec, clipPlane) < 0 && dot(normalize(normal.xyz), -clipPlane.xyz) > 0.866)
-		discard;
+		vec4 clipVec = vec4(worldpos.xyz, 1.0);
+		vec4 clipPlane = SceneUBO.clipPlane;
+
+		if(dot(clipVec, clipPlane) < 0)
+			discard;
+
+		clipPlane.w += 32.0;
+		if(dot(clipVec, clipPlane) < 0 && dot(normalize(normal.xyz), -clipPlane.xyz) > 0.866)
+			discard;
+
+	#elif defined(CLIP_ENABLED)
+
+		vec4 clipVec = vec4(worldpos.xyz - SceneUBO.clipPlane.xyz * 4.0, -1.0);
+		vec4 clipPlane = SceneUBO.clipPlane;
+
+		if(dot(clipVec, clipPlane) > 0)
+			discard;
+
+	#endif
 }
+
 #else
+
 void ClipPlaneTest(vec3 worldpos, vec3 normal)
 {
 
 }
+
 #endif

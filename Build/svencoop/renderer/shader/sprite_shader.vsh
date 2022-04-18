@@ -137,7 +137,6 @@ void main()
 	vec3 outvert = vertexArray[idx];
 
 	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * vec4(outvert, 1.0);
-
 	v_worldpos = outvert;
 	v_normal = normalize(vForward);
 	v_color = in_color;

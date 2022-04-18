@@ -160,6 +160,5 @@ void main(void)
 #endif
 
 	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * vec4(outvert, 1.0);
-
 	v_projpos = gl_Position;
 }
