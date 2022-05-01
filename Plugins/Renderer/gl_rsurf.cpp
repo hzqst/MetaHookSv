@@ -462,7 +462,7 @@ float *R_DecalVertsClip(
 	int j, outCount;
 
 	scalex = (psurf->texinfo->texture->width * pdecal->scale) / (float)ptexture->width;
-	scaley = (psurf->texinfo->texture->height * pdecal->scale) / (float)ptexture->width;
+	scaley = (psurf->texinfo->texture->height * pdecal->scale) / (float)ptexture->height;
 
 	if (poutVerts == NULL)
 		poutVerts = (float *)&vert[0];

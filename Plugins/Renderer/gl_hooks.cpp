@@ -194,6 +194,8 @@
 #define R_GLOW_BLEND_SIG_SVENGINE "\x55\x8B\xEC\x83\x2A\x2A\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\xA0\x00"
 #define R_GLOW_BLEND_SIG_NEW "\x55\x8B\xEC\x81\xEC\x2A\x00\x00\x00\xD9\x05\x2A\x2A\x2A\x2A\xD8\x25\x2A\x2A\x2A\x2A\x2A\x8D\x2A\x2A"
 
+#define GL_UPLOAD16_SIG_SVENGINE "\x8B\x44\x24\x2A\x83\xEC\x08\x85\xC0\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xC4\x08"
+
 void R_FillAddress(void)
 {
 	DWORD addr;
@@ -270,6 +272,8 @@ void R_FillAddress(void)
 	{
 		gRefFuncs.GL_LoadTexture2 = (int(*)(char *, int, int, int, byte *, qboolean, int, byte *, int))Search_Pattern(GL_LOADTEXTURE2_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_LoadTexture2);
+		//gRefFuncs.GL_Upload16 = (int(*)(byte *data, int width, int height, int iType, byte *pPal, int a6, int a7, int a8))Search_Pattern(GL_UPLOAD16_SIG_SVENGINE);
+		//Sig_FuncNotFound(GL_Upload16);
 	}
 	else
 	{
@@ -3018,6 +3022,7 @@ void R_InstallHook(void)
 	//Install_InlineHook(R_DrawTEntitiesOnList);
 	//Install_InlineHook(R_DrawParticles);
 	//Install_InlineHook(R_AddTEntity);
+	//Install_InlineHook(GL_Upload16);
 	Install_InlineHook(GL_LoadTexture2);
 	Install_InlineHook(enginesurface_drawFlushText);
 	Install_InlineHook(Mod_LoadStudioModel);

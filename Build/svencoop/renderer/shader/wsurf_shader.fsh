@@ -273,9 +273,14 @@ void main()
 
 	#endif
 
-	//Decal's texgamma correction are already done in GL_Upload16 using it's own palette
+	//dynamic gamma correction will corrupt the alpha-blend routine that decal rendering was using when there was pre-applied texgamma correction.
 	#if !defined(DECAL_ENABLED)
 		diffuseColor = TexGammaToLinear(diffuseColor);
+	#else
+		diffuseColor = TexGammaToLinear(diffuseColor);
+
+		//so we have to shift the alpha a little bit up...
+		diffuseColor.a = pow(diffuseColor.a, 0.4);
 	#endif
 
 #else
