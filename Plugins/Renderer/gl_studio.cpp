@@ -1089,9 +1089,9 @@ void R_GLStudioDrawPoints(void)
 	studio_vbo_t *VBOData = g_CurrentVBOCache;
 	//studio_vbo_submodel_t *VBOSubmodel = NULL;
 
-	//VBOData = R_PrepareStudioVBO(engine_pstudiohdr);
+	VBOData = R_PrepareStudioVBO(engine_pstudiohdr);
 
-	//R_EnableStudioVBO(VBOData);
+	R_EnableStudioVBO(VBOData);
 
 	if (engine_psubmodel->groupindex < 1 || engine_psubmodel->groupindex >(int)VBOData->vSubmodel.size()) {
 		g_pMetaHookAPI->SysError("R_StudioFindVBOCache: invalid index");
@@ -1402,7 +1402,7 @@ void R_GLStudioDrawPoints(void)
 
 	GL_UseProgram(0);
 
-	//R_EnableStudioVBO(NULL);
+	R_EnableStudioVBO(NULL);
 }
 
 //StudioAPI
@@ -1549,15 +1549,15 @@ void R_StudioRenderFinal(void)
 
 void R_StudioRenderModel(void)
 {
-	auto VBOData = R_PrepareStudioVBO(*pstudiohdr);
+	//auto VBOData = R_PrepareStudioVBO(*pstudiohdr);
 
-	R_EnableStudioVBO(VBOData);
+	//R_EnableStudioVBO(VBOData);
 
 	if (r_draw_shadowcaster)
 	{
 		gRefFuncs.R_StudioRenderModel();
 
-		R_EnableStudioVBO(NULL);
+		//R_EnableStudioVBO(NULL);
 
 		return;
 	}
@@ -1625,7 +1625,7 @@ void R_StudioRenderModel(void)
 		(*currententity)->curstate.renderamt = saved_renderamt;
 	}
 
-	R_EnableStudioVBO(NULL);
+	//R_EnableStudioVBO(NULL);
 }
 
 //Client StudioRenderer
@@ -1649,15 +1649,15 @@ void __fastcall GameStudioRenderer_StudioRenderFinal(void *pthis, int)
 
 void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 {
-	auto VBOData = R_PrepareStudioVBO(*pstudiohdr);
+	//auto VBOData = R_PrepareStudioVBO(*pstudiohdr);
 
-	R_EnableStudioVBO(VBOData);
+	//R_EnableStudioVBO(VBOData);
 
 	if (r_draw_shadowcaster)
 	{
 		gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
 
-		R_EnableStudioVBO(NULL);
+		//R_EnableStudioVBO(NULL);
 
 		return;
 	}
@@ -1726,7 +1726,7 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 		(*currententity)->curstate.renderamt = saved_renderamt;
 	}
 
-	R_EnableStudioVBO(NULL);
+	//R_EnableStudioVBO(NULL);
 }
 
 void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr, studio_vbo_t *VBOData)
