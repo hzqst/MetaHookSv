@@ -420,6 +420,7 @@ extern float r_identity_matrix[4][4];
 extern float r_entity_matrix[4][4];
 extern float r_entity_color[4];
 
+extern bool r_draw_hasface;
 extern bool r_draw_hairshadow;
 extern bool r_draw_shadowcaster;
 extern bool r_draw_opaque;

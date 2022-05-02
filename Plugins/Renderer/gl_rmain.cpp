@@ -112,6 +112,7 @@ float r_identity_matrix[4][4] = {
 float r_entity_matrix[4][4];
 float r_entity_color[4];
 
+bool r_draw_hasface = false;
 bool r_draw_hairshadow = false;
 bool r_draw_shadowcaster = false;
 bool r_draw_opaque = false;
@@ -625,12 +626,17 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 	if (onlyClientDraw)
 		return;
 
+	static glprofile_t profile_DrawTEntitiesOnList;
+	GL_BeginProfile(&profile_DrawTEntitiesOnList, "R_DrawTEntitiesOnList");
+
 	for (int i = 0; i < (*numTransObjs); i++)
 	{
 		(*currententity) = (*transObjects)[i].pEnt;
 
 		R_DrawCurrentEntity(true);
 	}
+
+	GL_EndProfile(&profile_DrawTEntitiesOnList);
 }
 
 void ClientDLL_DrawTransparentTriangles(void)
@@ -704,7 +710,6 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 		if (r_drawentities->value)
 		{
-
 			R_DrawTEntitiesOnList(onlyClientDraw);
 
 			GL_DisableMultitexture();
@@ -885,6 +890,7 @@ void R_DrawCurrentEntity(bool bTransparent)
 		}
 		else
 		{
+
 			if ((*currententity)->curstate.movetype == MOVETYPE_FOLLOW)
 			{
 				bool bFound = false;

@@ -1135,7 +1135,15 @@ void R_GLStudioDrawPoints(void)
 			flags &= STUDIO_NF_ALLOWBITS;
 		}
 
-		if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowHair)
+		if (r_draw_shadowcaster)
+		{
+
+		}
+		else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
+		{
+
+		}
+		else if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowHair)
 		{
 			if (!(flags & STUDIO_NF_CELSHADE_HAIR) && !(flags & STUDIO_NF_CELSHADE_FACE))
 				continue;
@@ -1148,9 +1156,15 @@ void R_GLStudioDrawPoints(void)
 		else
 		{
 			if ((flags & STUDIO_NF_CELSHADE_FACE))
+			{
+				r_draw_hasface = true;
 				continue;
+			}
 
-			r_draw_hairshadow = true;
+			if ((flags & STUDIO_NF_CELSHADE_HAIR))
+			{
+				r_draw_hairshadow = true;
+			}
 		}
 
 		int GBufferMask = GBUFFER_MASK_ALL;
@@ -1542,7 +1556,7 @@ void R_StudioRenderModel(void)
 
 	gRefFuncs.R_StudioRenderModel();
 
-	if (r_draw_hairshadow)
+	if (r_draw_hairshadow && r_draw_hasface)
 	{
 		int saved_renderfx = (*currententity)->curstate.renderfx;
 		int saved_renderamt = (*currententity)->curstate.renderamt;
@@ -1571,9 +1585,23 @@ void R_StudioRenderModel(void)
 
 		(*currententity)->curstate.renderfx = saved_renderfx;
 		(*currententity)->curstate.renderamt = saved_renderamt;
-
-		r_draw_hairshadow = false;
 	}
+	else if (!r_draw_hairshadow && r_draw_hasface)
+	{
+		int saved_renderfx = (*currententity)->curstate.renderfx;
+		int saved_renderamt = (*currententity)->curstate.renderamt;
+
+		(*currententity)->curstate.renderfx = kRenderFxDrawShadowFace;
+		(*currententity)->curstate.renderamt = 0;
+
+		gRefFuncs.R_StudioRenderModel();
+
+		(*currententity)->curstate.renderfx = saved_renderfx;
+		(*currententity)->curstate.renderamt = saved_renderamt;
+	}
+
+	r_draw_hairshadow = false;
+	r_draw_hasface = false;
 
 	if (((*pstudiohdr)->flags & EF_OUTLINE) && r_studio_celshade->value)
 	{
@@ -1618,7 +1646,7 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 
 	gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
 
-	if (r_draw_hairshadow)
+	if (r_draw_hairshadow && r_draw_hasface)
 	{
 		int saved_renderfx = (*currententity)->curstate.renderfx;
 		int saved_renderamt = (*currententity)->curstate.renderamt;
@@ -1647,9 +1675,22 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 
 		(*currententity)->curstate.renderfx = saved_renderfx;
 		(*currententity)->curstate.renderamt = saved_renderamt;
-
-		r_draw_hairshadow = false;
 	}
+	else if (!r_draw_hairshadow && r_draw_hasface)
+	{
+		int saved_renderfx = (*currententity)->curstate.renderfx;
+		int saved_renderamt = (*currententity)->curstate.renderamt;
+
+		(*currententity)->curstate.renderfx = kRenderFxDrawShadowFace;
+		(*currententity)->curstate.renderamt = 0;
+
+		gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
+
+		(*currententity)->curstate.renderfx = saved_renderfx;
+		(*currententity)->curstate.renderamt = saved_renderamt;
+	}
+	r_draw_hairshadow = false;
+	r_draw_hasface = false;
 
 	if (((*pstudiohdr)->flags & EF_OUTLINE) && r_studio_celshade->value)
 	{
