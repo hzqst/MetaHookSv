@@ -91,6 +91,8 @@ struct scene_ubo_t{
 	float v_texgamma;
 	float z_near;
 	float z_far;
+	float r_alpha_shift;
+	float r_additive_shift;
 };
 
 struct entity_ubo_t{

@@ -3315,6 +3315,9 @@ void R_SetupSceneUBO(void)
 	SceneUBO.v_texgamma = v_texgamma->value;
 	SceneUBO.z_near = r_znear;
 	SceneUBO.z_far = r_zfar;
+	SceneUBO.r_alpha_shift = r_alpha_shift->value;
+	SceneUBO.r_additive_shift = r_additive_shift->value;
+
 	glNamedBufferSubData(r_wsurf.hSceneUBO, 0, sizeof(SceneUBO), &SceneUBO);
 }
 

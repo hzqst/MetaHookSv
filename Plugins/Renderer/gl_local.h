@@ -193,8 +193,6 @@ extern int *gSkyTexNumber;
 extern float gldepthmin;
 extern float gldepthmax;
 
-extern cvar_t *dev_overview_color;
-
 extern cvar_t *r_bmodelinterp;
 extern cvar_t *r_bmodelhighfrac;
 extern cvar_t *r_norefresh;
@@ -258,6 +256,11 @@ extern cvar_t *v_lambert;
 extern cvar_t *cl_righthand;
 extern cvar_t *chase_active;
 extern cvar_t *spec_pip;
+
+extern cvar_t *dev_overview_color;
+
+extern cvar_t *r_alpha_shift;
+extern cvar_t *r_additive_shift;
 
 void R_FillAddress(void);
 void R_InstallHook(void);

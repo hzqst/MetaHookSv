@@ -230,6 +230,8 @@ typedef struct scene_ubo_s
 	float v_texgamma;
 	float z_near;
 	float z_far;
+	float r_alpha_shift;
+	float r_additive_shift;
 }scene_ubo_t;
 
 typedef struct entity_ubo_s

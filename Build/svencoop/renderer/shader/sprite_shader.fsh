@@ -37,7 +37,15 @@ void main(void)
 	vec4 baseColor = texture2D(baseTex, v_texcoord);
 
 #if !defined(ADDITIVE_BLEND_ENABLED) && !defined(OIT_ADDITIVE_BLEND_ENABLED)
+	//Alpha blend
 	baseColor = TexGammaToLinear(baseColor);
+	baseColor.a = pow(baseColor.a, SceneUBO.r_alpha_shift);
+#else
+	//Additive blend
+	baseColor = TexGammaToLinear(baseColor);
+	baseColor.r = baseColor.r * SceneUBO.r_additive_shift;
+	baseColor.g = baseColor.g * SceneUBO.r_additive_shift;
+	baseColor.b = baseColor.b * SceneUBO.r_additive_shift;
 #endif
 
 	vec4 lightmapColor = v_color;

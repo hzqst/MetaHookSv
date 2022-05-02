@@ -218,9 +218,16 @@ cvar_t *chase_active = NULL;
 cvar_t *spec_pip = NULL;
 
 cvar_t *r_adjust_fov = NULL;
+
 cvar_t *r_vertical_fov = NULL;
+
 cvar_t *gl_profile = NULL;
+
 cvar_t *dev_overview_color = NULL;
+
+cvar_t *r_alpha_shift = NULL;
+
+cvar_t *r_additive_shift = NULL;
 
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
@@ -1994,6 +2001,10 @@ void R_InitCvars(void)
 	r_adjust_fov = gEngfuncs.pfnRegisterVariable("r_adjust_fov", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gl_profile = gEngfuncs.pfnRegisterVariable("gl_profile", "0", FCVAR_CLIENTDLL );
+
+	r_alpha_shift = gEngfuncs.pfnRegisterVariable("r_alpha_shift", "0.4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	
+	r_additive_shift = gEngfuncs.pfnRegisterVariable("r_additive_shift", "0.35", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gEngfuncs.pfnAddCommand("saveprogstate", R_SaveProgramStates_f);
 	gEngfuncs.pfnAddCommand("loadprogstate", R_LoadProgramStates_f);
