@@ -1067,37 +1067,37 @@ void R_GLStudioDrawPoints(void)
 		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	}
 
-	auto engine_pauxverts = (*pauxverts);
-	auto engine_pvlightvalues = (*pvlightvalues);
+	//auto engine_pauxverts = (*pauxverts);
+	//auto engine_pvlightvalues = (*pvlightvalues);
 	auto engine_pstudiohdr = (*pstudiohdr);
 	auto engine_psubmodel = (*psubmodel);
 
-	auto pvertbone = ((byte *)engine_pstudiohdr + engine_psubmodel->vertinfoindex);
-	auto pnormbone = ((byte *)engine_pstudiohdr + engine_psubmodel->norminfoindex);
+	//auto pvertbone = ((byte *)engine_pstudiohdr + engine_psubmodel->vertinfoindex);
+	//auto pnormbone = ((byte *)engine_pstudiohdr + engine_psubmodel->norminfoindex);
 	auto ptexturehdr = R_LoadTextures(*r_model);
 	auto ptexture = (mstudiotexture_t *)((byte *)ptexturehdr + ptexturehdr->textureindex);
 
-	auto pmesh = (mstudiomesh_t *)((byte *)engine_pstudiohdr + engine_psubmodel->meshindex);
+	//auto pmesh = (mstudiomesh_t *)((byte *)engine_pstudiohdr + engine_psubmodel->meshindex);
 
-	auto pstudioverts = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->vertindex);
-	auto pstudionorms = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->normindex);
+	//auto pstudioverts = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->vertindex);
+	//auto pstudionorms = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->normindex);
 
 	auto pskinref = (short *)((byte *)ptexturehdr + ptexturehdr->skinindex);
 
 	int iFlippedVModel = 0;
 
-	studio_vbo_t *VBOData = NULL;
-	studio_vbo_submodel_t *VBOSubmodel = NULL;
+	studio_vbo_t *VBOData = g_CurrentVBOCache;
+	//studio_vbo_submodel_t *VBOSubmodel = NULL;
 
-	VBOData = R_PrepareStudioVBO(engine_pstudiohdr);
+	//VBOData = R_PrepareStudioVBO(engine_pstudiohdr);
 
-	R_EnableStudioVBO(VBOData);
+	//R_EnableStudioVBO(VBOData);
 
 	if (engine_psubmodel->groupindex < 1 || engine_psubmodel->groupindex >(int)VBOData->vSubmodel.size()) {
 		g_pMetaHookAPI->SysError("R_StudioFindVBOCache: invalid index");
 	}
 
-	VBOSubmodel = VBOData->vSubmodel[engine_psubmodel->groupindex - 1];
+	auto VBOSubmodel = VBOData->vSubmodel[engine_psubmodel->groupindex - 1];
 
 	if ((*currententity)->curstate.skin != 0 && (*currententity)->curstate.skin < ptexturehdr->numskinfamilies)
 		pskinref += ((*currententity)->curstate.skin * ptexturehdr->numskinref);
@@ -1115,14 +1115,14 @@ void R_GLStudioDrawPoints(void)
 		iFlippedVModel = 1;
 	}
 
-	pstudionorms = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->normindex);
-	pnormbone = ((byte *)engine_pstudiohdr + engine_psubmodel->norminfoindex);
+	//pstudionorms = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->normindex);
+	//pnormbone = ((byte *)engine_pstudiohdr + engine_psubmodel->norminfoindex);
 
 	for (size_t j = 0; j < VBOSubmodel->vMesh.size(); j++)
 	{
 		auto &VBOMesh = VBOSubmodel->vMesh[j];
 
-		pmesh = VBOMesh.mesh;
+		auto pmesh = VBOMesh.mesh;
 
 		int flags = ptexture[pskinref[pmesh->skinref]].flags | (*g_ForcedFaceFlags);
 
@@ -1383,7 +1383,7 @@ void R_GLStudioDrawPoints(void)
 		else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
 		{
 			glDisable(GL_BLEND);
-			glDepthMask(1);
+			glDepthMask(GL_TRUE);
 			glShadeModel(GL_FLAT);
 		}
 		else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
@@ -1402,7 +1402,7 @@ void R_GLStudioDrawPoints(void)
 
 	GL_UseProgram(0);
 
-	R_EnableStudioVBO(NULL);
+	//R_EnableStudioVBO(NULL);
 }
 
 //StudioAPI
@@ -1549,9 +1549,17 @@ void R_StudioRenderFinal(void)
 
 void R_StudioRenderModel(void)
 {
+	auto VBOData = R_PrepareStudioVBO(*pstudiohdr);
+
+	R_EnableStudioVBO(VBOData);
+
 	if (r_draw_shadowcaster)
 	{
-		return gRefFuncs.R_StudioRenderModel();
+		gRefFuncs.R_StudioRenderModel();
+
+		R_EnableStudioVBO(NULL);
+
+		return;
 	}
 
 	gRefFuncs.R_StudioRenderModel();
@@ -1616,6 +1624,8 @@ void R_StudioRenderModel(void)
 		(*currententity)->curstate.renderfx = saved_renderfx;
 		(*currententity)->curstate.renderamt = saved_renderamt;
 	}
+
+	R_EnableStudioVBO(NULL);
 }
 
 //Client StudioRenderer
@@ -1639,9 +1649,17 @@ void __fastcall GameStudioRenderer_StudioRenderFinal(void *pthis, int)
 
 void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 {
+	auto VBOData = R_PrepareStudioVBO(*pstudiohdr);
+
+	R_EnableStudioVBO(VBOData);
+
 	if (r_draw_shadowcaster)
 	{
-		return gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
+		gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
+
+		R_EnableStudioVBO(NULL);
+
+		return;
 	}
 
 	gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
@@ -1707,6 +1725,8 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 		(*currententity)->curstate.renderfx = saved_renderfx;
 		(*currententity)->curstate.renderamt = saved_renderamt;
 	}
+
+	R_EnableStudioVBO(NULL);
 }
 
 void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr, studio_vbo_t *VBOData)

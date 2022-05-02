@@ -2004,7 +2004,7 @@ void R_InitCvars(void)
 
 	r_alpha_shift = gEngfuncs.pfnRegisterVariable("r_alpha_shift", "0.4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	
-	r_additive_shift = gEngfuncs.pfnRegisterVariable("r_additive_shift", "0.35", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_additive_shift = gEngfuncs.pfnRegisterVariable("r_additive_shift", "0.4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gEngfuncs.pfnAddCommand("saveprogstate", R_SaveProgramStates_f);
 	gEngfuncs.pfnAddCommand("loadprogstate", R_LoadProgramStates_f);

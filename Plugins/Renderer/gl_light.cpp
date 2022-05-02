@@ -784,7 +784,7 @@ void R_EndRenderGBuffer(void)
 			auto ent = gEngfuncs.GetEntityByIndex(dl->key);
 
 			vec3_t org;
-			if (ent == gEngfuncs.GetLocalPlayer() && !gExportfuncs.CL_IsThirdPerson())
+			if (ent == gEngfuncs.GetLocalPlayer() && !gExportfuncs.CL_IsThirdPerson() && !chase_active->value && r_params.viewentity <= r_params.maxclients)
 			{
 				VectorCopy((*r_refdef.viewangles), dlight_angle);
 				gEngfuncs.pfnAngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
