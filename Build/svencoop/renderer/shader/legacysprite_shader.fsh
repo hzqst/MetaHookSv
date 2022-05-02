@@ -16,7 +16,15 @@ void main()
 
 	vec4 diffuseColor = texture2D(diffuseTex, v_diffusetexcoord.xy);
 
+#if !defined(ADDITIVE_BLEND_ENABLED) && !defined(OIT_ADDITIVE_BLEND_ENABLED)
+	//Alpha blend
 	diffuseColor = TexGammaToLinear(diffuseColor);
+	diffuseColor.a = pow(diffuseColor.a, SceneUBO.r_alpha_shift);
+#else
+	//Additive blend
+	diffuseColor = TexGammaToLinear(diffuseColor);
+	diffuseColor.a = pow(diffuseColor.a, SceneUBO.r_additive_shift);
+#endif
 
 	vec4 lightmapColor = v_color;
 
@@ -31,6 +39,10 @@ void main()
 	#endif
 	
 #if !defined(ADDITIVE_BLEND_ENABLED) && !defined(OIT_ADDITIVE_BLEND_ENABLED)
+	//Alpha blend
+	lightmapColor = GammaToLinear(lightmapColor);
+#else
+	//Additive blend
 	lightmapColor = GammaToLinear(lightmapColor);
 #endif
 

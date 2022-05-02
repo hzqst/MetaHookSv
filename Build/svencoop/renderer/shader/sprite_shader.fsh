@@ -43,9 +43,7 @@ void main(void)
 #else
 	//Additive blend
 	baseColor = TexGammaToLinear(baseColor);
-	baseColor.r = baseColor.r * SceneUBO.r_additive_shift;
-	baseColor.g = baseColor.g * SceneUBO.r_additive_shift;
-	baseColor.b = baseColor.b * SceneUBO.r_additive_shift;
+	baseColor.a = pow(baseColor.a, SceneUBO.r_additive_shift);
 #endif
 
 	vec4 lightmapColor = v_color;
@@ -55,6 +53,10 @@ void main(void)
 	lightmapColor.a = clamp(lightmapColor.a, 0.0, 1.0);
 
 #if !defined(ADDITIVE_BLEND_ENABLED) && !defined(OIT_ADDITIVE_BLEND_ENABLED)
+	//Alpha blend
+	lightmapColor = GammaToLinear(lightmapColor);
+#else
+	//Additive blend
 	lightmapColor = GammaToLinear(lightmapColor);
 #endif
 

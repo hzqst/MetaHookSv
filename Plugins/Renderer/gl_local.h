@@ -260,6 +260,7 @@ extern cvar_t *spec_pip;
 extern cvar_t *dev_overview_color;
 
 extern cvar_t *r_alpha_shift;
+
 extern cvar_t *r_additive_shift;
 
 void R_FillAddress(void);
