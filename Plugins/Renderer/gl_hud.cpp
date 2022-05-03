@@ -737,14 +737,17 @@ bool R_IsSSAOEnabled(void)
 	if ((*r_refdef.onlyClientDraws))
 		return false;
 
+	if (r_draw_reflectview)
+		return false;
+
 	if (R_IsRenderingPortal())
 		return false;
 
 	if (CL_IsDevOverviewMode())
 		return false;
 
-	//if (r_xfov < 75 || r_yfov < 75)
-//	return false;
+	if (r_xfov < 75 || r_yfov < 75)
+		return false;
 
 	return true;
 }

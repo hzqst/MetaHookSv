@@ -1086,10 +1086,10 @@ void R_GLStudioDrawPoints(void)
 
 	int iFlippedVModel = 0;
 
-	studio_vbo_t *VBOData = g_CurrentVBOCache;
+	//studio_vbo_t *VBOData = g_CurrentVBOCache;
 	//studio_vbo_submodel_t *VBOSubmodel = NULL;
 
-	VBOData = R_PrepareStudioVBO(engine_pstudiohdr);
+	auto VBOData = R_PrepareStudioVBO(engine_pstudiohdr);
 
 	R_EnableStudioVBO(VBOData);
 
@@ -1707,6 +1707,7 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 		(*currententity)->curstate.renderfx = saved_renderfx;
 		(*currententity)->curstate.renderamt = saved_renderamt;
 	}
+
 	r_draw_hairshadow = false;
 	r_draw_hasface = false;
 

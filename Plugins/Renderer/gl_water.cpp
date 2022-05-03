@@ -656,6 +656,9 @@ void R_RenderReflectView(water_vbo_t *w)
 	(*r_refdef.viewangles)[1] = atan2(vForward[1], vForward[0]) / M_PI * 180;
 	(*r_refdef.viewangles)[2] = -(*r_refdef.viewangles)[2];
 
+	auto saved_fog_mode = r_fog_mode;
+	r_fog_mode = 0;
+
 	auto saved_cl_waterlevel = *cl_waterlevel;
 	*cl_waterlevel = 0;
 
@@ -672,11 +675,12 @@ void R_RenderReflectView(water_vbo_t *w)
 		r_drawentities->value = 0;
 	}
 
-	gRefFuncs.R_RenderScene();
+	R_RenderScene();
 
 	r_wsurf_sky_occlusion->value = saved_r_wsurf_sky_occlusion;
 	r_drawentities->value = saved_r_drawentities;
 	*cl_waterlevel = saved_cl_waterlevel;
+	r_fog_mode = saved_fog_mode;
 
 	R_PopRefDef();
 
