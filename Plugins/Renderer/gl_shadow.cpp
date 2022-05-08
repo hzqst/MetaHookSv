@@ -108,7 +108,7 @@ bool R_ShouldCastShadow(cl_entity_t *ent)
 
 		//if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			if ((*currententity)->curstate.effects & EF_NOSHADOW)
+			if (ent->curstate.effects & EF_NOSHADOW)
 				return false;
 		}
 
