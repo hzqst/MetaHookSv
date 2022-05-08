@@ -196,6 +196,8 @@
 
 #define GL_UPLOAD16_SIG_SVENGINE "\x8B\x44\x24\x2A\x83\xEC\x08\x85\xC0\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xC4\x08"
 
+#define SCR_BEGIN_LOADING_PLAQUE "\x6A\x01\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xF8\x03"
+
 void R_FillAddress(void)
 {
 	DWORD addr;
@@ -672,6 +674,11 @@ void R_FillAddress(void)
 		gRefFuncs.R_GlowBlend = (float(*)(cl_entity_t *))Search_Pattern(R_GLOW_BLEND_SIG_NEW);
 		Sig_FuncNotFound(R_GlowBlend);
 	}
+
+	gRefFuncs.SCR_BeginLoadingPlaque = (decltype(gRefFuncs.SCR_BeginLoadingPlaque))Search_Pattern(SCR_BEGIN_LOADING_PLAQUE);
+	Sig_FuncNotFound(SCR_BeginLoadingPlaque);
+
+
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -2987,6 +2994,92 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(DLL_SetModKey);
 
 		Install_InlineHook(DLL_SetModKey);
+	}
+
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.V_RenderView, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+				auto pinst = (cs_insn *)inst;
+
+				if (!cls_state &&
+					pinst->id == X86_INS_CMP &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[0].mem.index == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[1].imm == 5)
+				{
+					//83 3D 30 9A 09 02 05                                cmp     cls_state, 5
+					cls_state = (decltype(cls_state))pinst->detail->x86.operands[0].mem.disp;
+				}
+				
+				if (!cls_signon &&
+					pinst->id == X86_INS_CMP &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[0].mem.index == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[1].imm == 2)
+				{
+					//83 3D D4 9F 0C 02 02                                cmp     cls_signon, 2
+					cls_signon = (decltype(cls_signon))pinst->detail->x86.operands[0].mem.disp;
+				}
+
+				if (cls_state && cls_signon)
+					return TRUE;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+			}, 0, NULL);
+
+		Sig_VarNotFound(cls_state);
+		Sig_VarNotFound(cls_signon);
+	}
+
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.SCR_BeginLoadingPlaque, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+			auto pinst = (cs_insn *)inst;
+
+			if (!scr_drawloading &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 1)
+			{
+				//C7 05 60 66 00 08 01 00 00 00                       mov     scr_drawloading, 1
+				scr_drawloading = (decltype(scr_drawloading))pinst->detail->x86.operands[0].mem.disp;
+			}
+
+			if (scr_drawloading)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+			}, 0, NULL);
+
+		Sig_VarNotFound(scr_drawloading);
 	}
 }
 

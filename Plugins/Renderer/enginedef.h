@@ -568,3 +568,15 @@ typedef struct overviewInfo_s
 	float zoom;
 	qboolean rotated;
 }overviewInfo_t;
+
+typedef enum
+{
+	ca_dedicated,
+	ca_disconnected,
+	ca_connecting,
+	ca_connected,
+	ca_uninitialized,
+	ca_active
+}cactive_t;
+
+#define SIGNONS 2

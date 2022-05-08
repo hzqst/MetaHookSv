@@ -88,8 +88,9 @@ qboolean *mtexenabled = 0;
 vec_t *r_soundOrigin = NULL;
 vec_t *r_playerViewportAngles = NULL;
 
-int *cls_state = NULL;
+cactive_t *cls_state = NULL;
 int *cls_signon = NULL;
+qboolean *scr_drawloading = NULL;
 
 //client dll
 
@@ -1553,6 +1554,11 @@ void GL_ClearFinalBuffer()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
 
+bool SCR_IsLoadingVisible()
+{
+	return scr_drawloading && (*scr_drawloading) == 1 ? true : false;
+}
+
 void GL_BeginRendering(int *x, int *y, int *width, int *height)
 {
 	gRefFuncs.GL_BeginRendering(x, y, width, height);
@@ -1563,6 +1569,13 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 	glheight = *height;
 
 	GL_ClearFinalBuffer();
+
+	//Should blit last saved final buffer into current final buffer when level changes...
+
+	if (SCR_IsLoadingVisible())
+	{
+		R_BlendFinalBuffer();
+	}
 
 	r_renderview_pass = 0;
 	*c_alias_polys = 0;

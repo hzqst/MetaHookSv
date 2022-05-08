@@ -280,7 +280,9 @@ void main()
 		diffuseColor = TexGammaToLinear(diffuseColor);
 
 		//so we have to shift the alpha a little bit up...
-		diffuseColor.a = pow(diffuseColor.a, SceneUBO.r_alpha_shift);
+		#ifndef TRANSPARENT_ENABLED
+			diffuseColor.a = pow(diffuseColor.a, SceneUBO.r_alpha_shift);
+		#endif
 	#endif
 
 #else
@@ -386,9 +388,9 @@ void main()
 #endif
 
 		#ifdef TRANSPARENT_ENABLED
-		vec4 color = CalcFog(diffuseColor * lightmapColor * detailColor * EntityUBO.color);
+			vec4 color = CalcFog(diffuseColor * lightmapColor * detailColor * EntityUBO.color);
 		#else
-		vec4 color = CalcFog(diffuseColor * lightmapColor * detailColor);
+			vec4 color = CalcFog(diffuseColor * lightmapColor * detailColor);
 		#endif
 
 		#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED) 

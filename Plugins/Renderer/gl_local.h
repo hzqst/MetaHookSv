@@ -159,6 +159,10 @@ extern int *gl_mtexable;
 
 extern qboolean *mtexenabled;
 
+extern cactive_t *cls_state;
+extern int *cls_signon;
+extern qboolean *scr_drawloading;
+
 extern int glx;
 extern int gly;
 extern int glwidth;

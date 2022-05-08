@@ -389,7 +389,7 @@ void R_LoadExternalEntities(void);
 void R_AddDynamicLights(msurface_t *surf);
 void R_RenderDynamicLightmaps(msurface_t *fa);
 void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride);
-void R_DrawDecals(void);
+void R_DrawDecals(wsurf_vbo_t *modcache);
 detail_texture_cache_t *R_FindDetailTextureCache(int texId);
 void R_BeginDetailTexture(int texId);
 void R_EndDetailTexture(void);

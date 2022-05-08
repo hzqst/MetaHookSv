@@ -120,7 +120,7 @@ void R_RenderShadowMap(void)
 
 	float shadow_scales[3] = { r_shadow_high_scale->GetValue(), r_shadow_medium_scale->GetValue(), r_shadow_low_scale->GetValue() };
 
-	for (int j = 0; j < *cl_numvisedicts; ++j)
+	for (int j = 0; j < (*cl_numvisedicts); ++j)
 	{
 		if (R_ShouldCastShadow(cl_visedicts[j]))
 		{

@@ -1861,7 +1861,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 		}
 	}
 
-	R_DrawDecals();
+	R_DrawDecals(modcache);
 
 	if (r_wsurf.bShadowmapTexture)
 	{

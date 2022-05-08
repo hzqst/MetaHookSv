@@ -85,6 +85,7 @@ typedef struct
 	void(*triapi_Color4f) (float r, float g, float b, float a);
 	void(__fastcall *enginesurface_drawFlushText)(void *pthis, int);
 	void(*DLL_SetModKey)(void *pinfo, char *pkey, char *pvalue);
+	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
 	//Sven Client DLL
 	void(__fastcall *ClientPortalManager_ResetAll)(void * pthis, int dummy);
 	mtexinfo_t *(__fastcall *ClientPortalManager_GetOriginalSurfaceTexture)(void * pthis, int dummy, msurface_t *surf);

@@ -552,7 +552,7 @@ static float *R_DecalVertsNoclip(decal_t *pdecal, msurface_t *psurf, texture_t *
 	return vlist;
 }
 
-void R_DrawDecals(void)
+void R_DrawDecals(wsurf_vbo_t *modcache)
 {
 	decal_t *plist;
 	int i, outCount;
@@ -737,6 +737,11 @@ void R_DrawDecals(void)
 	if (drawgbuffer)
 	{
 		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
+	}
+
+	if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
+	{
+		WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
 	}
 
 	if (r_draw_oitblend)
