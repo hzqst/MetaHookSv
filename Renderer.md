@@ -206,6 +206,23 @@ Specular textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/de
 
 * Specular textures only work when `r_detailtextures` set to 1.
 
+## StudioModel Texture Replacer
+
+You will have to create a txt file named `[modelname]_external.txt` along with `[modelname].mdl` file, with the following content:
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "base_texture.bmp"
+    "replacetexture"  "tga/texture_name.dds" 
+    "replacescale" "1.0 1.0"
+}
+```
+
+to replace `base_texture.bmp` with `[mod_directory]/gfx/tga/texture_name.tga` or `[mod_directory]/renderer/texture/tga/texture_name.tga` (Supported format: BMP, TGA, DDS, JPG, PNG)
+
+`"replacescale" "1.0 1.0"` controls the UV scale of replaced texture (optional).
+
 ## Outline / Celshade / RimLight / HairShadow / HairSpecular
 
 The following flags are added to render Outline, Celshade, RimLight, HairShadow and HairSpecular effects for studiomodels.
@@ -339,13 +356,17 @@ All textures are converted from texgamma color space to linear color space, and 
 
 ### Console vars
 
-`gamma` is used to control the final output gamma, convert colors from linear space to screen gamma space.
+`gamma` is to control the final output gamma, convert colors from linear space to screen gamma space.
 
-`texgamma` is used to convert textures from gamma color space to linear color space.
+`texgamma` is to convert textures from gamma color space to linear color space.
 
-`lightgamma` is used to convert lightmaps from gamma color space to linear color space.
+`lightgamma` is to convert lightmaps from gamma color space to linear color space.
 
-`brightness` is used to shift up the lightgamma and make lightmaps brighter.
+`brightness` is to shift up the lightgamma and make lightmaps brighter.
+
+`r_alpha_shift` is to shift up the alpha used in alpha-blend, to correct the brightness of alpha-blend result.
+
+`r_additive_shift` is to shift up the alpha used in additive-blend, to correct the brightness of additive-blend result.
 
 ## Misc
 
