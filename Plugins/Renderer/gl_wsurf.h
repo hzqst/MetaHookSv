@@ -232,14 +232,22 @@ typedef struct scene_ubo_s
 	float z_far;
 	float r_alpha_shift;
 	float r_additive_shift;
+	float padding;
 }scene_ubo_t;
+
+static_assert((sizeof(scene_ubo_t) % 16) == 0, "Size check");
 
 typedef struct entity_ubo_s
 {
 	mat4 entityMatrix;
 	vec4 color;
 	float scrollSpeed;
+	float padding1;
+	float padding2;
+	float padding3;
 }entity_ubo_t;
+
+static_assert((sizeof(entity_ubo_t) % 16) == 0, "Size check");
 
 typedef struct studio_ubo_s
 {
@@ -253,6 +261,8 @@ typedef struct studio_ubo_s
 	vec4 entity_origin;
 	mat3x4 bonematrix[128];
 }studio_ubo_t;
+
+static_assert((sizeof(studio_ubo_t) % 16) == 0, "Size check");
 
 #pragma pack(pop)
 

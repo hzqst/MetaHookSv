@@ -282,6 +282,8 @@ void main()
 		//so we have to shift the alpha a little bit up...
 		#ifndef TRANSPARENT_ENABLED
 			diffuseColor.a = pow(diffuseColor.a, SceneUBO.r_alpha_shift);
+		#else
+			//Don't do alpha adjustment for decals on transparent surfaces.
 		#endif
 	#endif
 

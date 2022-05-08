@@ -93,6 +93,7 @@ struct scene_ubo_t{
 	float z_far;
 	float r_alpha_shift;
 	float r_additive_shift;
+	float padding;
 };
 
 struct entity_ubo_t{

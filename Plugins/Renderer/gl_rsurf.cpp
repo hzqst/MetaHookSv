@@ -691,7 +691,7 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 			glPolygonOffset(-1, -gl_polyoffset->value);
 	}
 	
-	int WSurfProgramState = WSURF_DECAL_ENABLED | WSURF_DIFFUSE_ENABLED | WSURF_TRANSPARENT_ENABLED;
+	int WSurfProgramState = WSURF_DECAL_ENABLED | WSURF_DIFFUSE_ENABLED;
 
 	if (bUseBindless)
 	{
@@ -744,7 +744,8 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 	{
 		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 	}
-
+	
+	//Do we really need this?
 	if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
 	{
 		WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
