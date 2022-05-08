@@ -169,7 +169,8 @@ int R_StudioDrawModel(int flags)
 		!currententity->player &&
 		currententity->index &&
 		currententity->curstate.messagenum == (*cl_parsecount) &&
-		currententity->curstate.renderfx != kRenderFxDeadPlayer
+		currententity->curstate.renderfx != kRenderFxDeadPlayer &&
+		currententity->curstate.scale == 1.0f
 		)
 	{
 		int entindex = currententity->index;
@@ -256,7 +257,8 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 		!currententity->player && 
 		currententity->index &&
 		currententity->curstate.messagenum == (*cl_parsecount) &&
-		currententity->curstate.renderfx != kRenderFxDeadPlayer
+		currententity->curstate.renderfx != kRenderFxDeadPlayer &&
+		currententity->curstate.scale == 1.0f
 		)
 	{
 		int entindex = currententity->index;
@@ -337,10 +339,10 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 
 int __fastcall R_StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 {
-	if (flags & STUDIO_RENDER)
-	{
-		auto currententity = IEngineStudio.GetCurrentEntity();
+	auto currententity = IEngineStudio.GetCurrentEntity();
 
+	if ((flags & STUDIO_RENDER) && currententity->curstate.scale == 1.0f)
+	{
 		int playerindex = pplayer->number;
 
 		auto model = IEngineStudio.SetupPlayerModel(playerindex - 1);
@@ -403,7 +405,6 @@ int __fastcall R_StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 
 					gPhysicsManager.ResetPose(ragdoll, pplayer);
 				}
-
 			}
 
 			//Teleport ?
