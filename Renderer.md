@@ -206,6 +206,16 @@ Specular textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/de
 
 * Specular textures only work when `r_detailtextures` set to 1.
 
+### Brush Texture Replacer
+
+You can replace wad textures with external images.
+
+Replace list is read from `/maps/[map name]_detail.txt`, with `_REPLACE` as suffix in basetexture name.
+
+Replaced textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` and `/Sven Co-op/svencoop/renderer/texture`.
+
+* You can't temporary disable texture replacer as it's permenant replacement. Brush textures are replaced at map initialization.
+
 ## StudioModel Texture Replacer
 
 You will have to create a txt file named `[modelname]_external.txt` along with `[modelname].mdl` file, with the following content:
@@ -222,6 +232,8 @@ You will have to create a txt file named `[modelname]_external.txt` along with `
 to replace `base_texture.bmp` with `[mod_directory]/gfx/tga/texture_name.tga` or `[mod_directory]/renderer/texture/tga/texture_name.tga` (Supported format: BMP, TGA, DDS, JPG, PNG)
 
 `"replacescale" "1.0 1.0"` controls the UV scale of replaced texture (optional).
+
+* You can't temporary disable texture replacer as it's permenant replacement. Studio textures are replaced at studiomodel loading stage.
 
 ## Outline / Celshade / RimLight / HairShadow / HairSpecular
 
