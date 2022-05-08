@@ -110,15 +110,17 @@
 #define EF_LIGHT				64	// rocket flare glow sprite
 #define EF_NODRAW				128	// don't draw entity
 
-//GoldSrc wtf?
+//GoldSrc specified
 #define EF_NIGHTVISION			256 // player nightvision
 #define EF_SNIPERLASER			512 // sniper laser effect
 #define EF_FIBERCAMERA			1024// fiber camera
 
-//SvEngine
+//SvEngine specified
 #define EF_NOANIMTEXTURES    256  // don't use animate textures for the given brush entity -Sniper
 #define EF_FRAMEANIMTEXTURES 512  // enable frame-based animated texture selection for the given brush entity -Sniper
 #define EF_SPRITE_CUSTOM_VP  1024 // AdamR: Allow a map to override a sprite draw type
+
+//SvEngine specified
 #define EF_NODECALS          2048 // Don't draw decals on this entity - Protector, 2017-03-14
 #define EF_FULLBRIGHT        4096 // Render the entity at full brightness -Sniper
 #define EF_NOSHADOW          8192 // Tony; don't render a studio shadow for this 

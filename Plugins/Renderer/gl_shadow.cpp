@@ -106,6 +106,12 @@ bool R_ShouldCastShadow(cl_entity_t *ent)
 		if (ent->curstate.movetype == MOVETYPE_NONE)
 			return false;
 
+		//if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			if ((*currententity)->curstate.effects & EF_NOSHADOW)
+				return false;
+		}
+
 		return true;
 	}
 

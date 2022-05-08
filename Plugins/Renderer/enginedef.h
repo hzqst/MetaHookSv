@@ -216,6 +216,7 @@ typedef struct alight_s
 #define STUDIO_NF_CELSHADE_HAIR_H 0x8000
 #define STUDIO_NF_ALLOWBITS		0xFFFF
 
+//Vanilla GoldSrc flags for studio models
 #define EF_ROCKET			1			//! leave a trail
 #define EF_GRENADE			2			//! leave a trail
 #define EF_GIB				4			//! leave a trail
@@ -228,6 +229,7 @@ typedef struct alight_s
 #define EF_HITBOXCOLLISIONS	0x200			//! Use hitbox collisions
 #define EF_FORCESKYLIGHT	0x400		//! Forces the model to be lit by skybox lighting
 
+//Renderer specified flags for studio models
 #define EF_OUTLINE			0x1000
 
 #define kRenderFxOutline 100

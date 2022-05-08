@@ -1570,8 +1570,7 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 
 	GL_ClearFinalBuffer();
 
-	//Should blit last saved final buffer into current final buffer when level changes...
-
+	//No V_RenderView calls when level changes...
 	if (SCR_IsLoadingVisible())
 	{
 		R_BlendFinalBuffer();

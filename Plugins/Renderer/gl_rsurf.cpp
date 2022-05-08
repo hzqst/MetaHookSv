@@ -566,6 +566,12 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 	if (CL_IsDevOverviewMode())
 		return;
 
+	//if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		if ((*currententity)->curstate.effects & EF_NODECALS)
+			return;
+	}
+
 	g_DrawDecalCount = 0;
 
 	for (i = 0; i < (*gDecalSurfCount); i++)
