@@ -95,6 +95,9 @@ model_t *g_gargantua_model = NULL;
 
 int GetSequenceActivityType(model_t *mod, entity_state_t* entstate)
 {
+	if(entstate->scale != 1.0f)
+		return 0;
+
 	if (mod->type != mod_studio)
 		return 0;
 

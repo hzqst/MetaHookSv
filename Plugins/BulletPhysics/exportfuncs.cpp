@@ -257,8 +257,7 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 		!currententity->player && 
 		currententity->index &&
 		currententity->curstate.messagenum == (*cl_parsecount) &&
-		currententity->curstate.renderfx != kRenderFxDeadPlayer &&
-		currententity->curstate.scale == 1.0f
+		currententity->curstate.renderfx != kRenderFxDeadPlayer
 		)
 	{
 		int entindex = currententity->index;
@@ -341,7 +340,7 @@ int __fastcall R_StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 {
 	auto currententity = IEngineStudio.GetCurrentEntity();
 
-	if ((flags & STUDIO_RENDER) && currententity->curstate.scale == 1.0f)
+	if (flags & STUDIO_RENDER)
 	{
 		int playerindex = pplayer->number;
 
