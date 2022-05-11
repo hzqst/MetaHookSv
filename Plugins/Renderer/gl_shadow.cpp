@@ -103,7 +103,7 @@ bool R_ShouldCastShadow(cl_entity_t *ent)
 		if (ent->index == 0)
 			return false;
 
-		if (ent->curstate.movetype == MOVETYPE_NONE)
+		if (ent->curstate.movetype == MOVETYPE_NONE && ent->curstate.solid == SOLID_NOT)
 			return false;
 
 		//if (g_iEngineType == ENGINE_SVENGINE)

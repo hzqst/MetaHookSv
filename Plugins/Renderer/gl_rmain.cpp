@@ -1568,12 +1568,14 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 	glwidth = *width; 
 	glheight = *height;
 
-	GL_ClearFinalBuffer();
-
 	//No V_RenderView calls when level changes...
 	if (SCR_IsLoadingVisible())
 	{
-		R_BlendFinalBuffer();
+		
+	}
+	else
+	{
+		GL_ClearFinalBuffer();
 	}
 
 	r_renderview_pass = 0;

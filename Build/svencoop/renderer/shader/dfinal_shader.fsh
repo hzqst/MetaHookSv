@@ -38,6 +38,35 @@ vec4 GenerateBasicColor(vec2 texcoord)
     return resultColor;
 }
 
+const float gauss[] = {
+    0.00000067, 0.00002292, 0.00019117, 0.00038771, 0.00019117, 0.00002292, 0.00000067,
+    0.00002292, 0.00078633, 0.00655965, 0.01330373, 0.00655965, 0.00078633, 0.00002292,
+    0.00019117, 0.00655965, 0.05472157, 0.11098164, 0.05472157, 0.00655965, 0.00019117,
+    0.00038771, 0.01330373, 0.11098164, 0.22508352, 0.11098164, 0.01330373, 0.00038771,
+    0.00019117, 0.00655965, 0.05472157, 0.11098164, 0.05472157, 0.00655965, 0.00019117,
+    0.00002292, 0.00078633, 0.00655965, 0.01330373, 0.00655965, 0.00078633, 0.00002292,
+    0.00000067, 0.00002292, 0.00019117, 0.00038771, 0.00019117, 0.00002292, 0.00000067
+};
+
+vec4 GenerateBasicColorBlur(vec2 texcoord, float offset)
+{
+	vec4 finalColor = vec4(0);
+ 
+    int idx = 0;
+    for(int i = -3;i <= 3;i++)
+    {
+        for(int j = -3; j <= 3;j++)
+        {
+            vec2 new_texcoord = texcoord + vec2((offset * i) / SceneUBO.viewport.x, (offset * j) / SceneUBO.viewport.y);
+            vec4 color = GenerateBasicColor(new_texcoord);
+            float weight = gauss[idx++];
+            finalColor = finalColor + weight * color;
+        }
+    }
+ 
+    return finalColor;
+}
+
 vec4 GenerateAdditiveColor(vec2 texcoord)
 {
     vec4 additiveColor = texture2DArray(gbufferTex, vec3(texcoord, GBUFFER_INDEX_ADDITIVE));
@@ -107,7 +136,7 @@ vec4 ScreenSpaceReflectionInternal(vec3 position, vec3 reflection)
                 return vec4(0.0);
             }
 
-			return VignetteColor(GenerateBasicColor(screenPosition), screenPosition);
+			return VignetteColor(GenerateBasicColorBlur(screenPosition, 5.0), screenPosition);
 		}
         #ifdef SSR_BINARY_SEARCH_ENABLED
 		if (delta > 0.0) {
@@ -142,7 +171,7 @@ vec4 ScreenSpaceReflectionInternal(vec3 position, vec3 reflection)
                     return vec4(0.0);
                 }
 
-				return VignetteColor(GenerateBasicColor(screenPosition), screenPosition);
+				return VignetteColor(GenerateBasicColorBlur(screenPosition, 5.0), screenPosition);
 			}
 		}
 	#endif
