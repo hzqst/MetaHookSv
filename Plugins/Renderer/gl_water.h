@@ -162,7 +162,7 @@ void R_NewMapWater(void);
 void R_UseWaterProgram(int state, water_program_t *progOutput);
 void R_SaveWaterProgramStates(void);
 void R_LoadWaterProgramStates(void);
-void R_DrawWaters(void);
+void R_DrawWaters(cl_entity_t *ent);
 
 #define WATER_LEGACY_ENABLED				1
 #define WATER_UNDERWATER_ENABLED			2

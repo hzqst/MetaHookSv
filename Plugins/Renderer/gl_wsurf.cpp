@@ -1884,7 +1884,8 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent)
 	}
 
 	//Waters don't have lightmap textures
-	R_DrawWaters();
+
+	R_DrawWaters(ent);
 
 	GL_UseProgram(0);
 

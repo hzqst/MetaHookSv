@@ -6,7 +6,7 @@ cshift_t *cshift_water = NULL;
 int *gSkyTexNumber = NULL;
 int *r_loading_skybox = NULL;
 
-void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
+void R_DrawWaterVBO(water_vbo_t *WaterVBOCache, cl_entity_t *ent)
 {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, WaterVBOCache->hEBO);
 
@@ -18,6 +18,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	}
 
+	R_SetRenderMode(ent);
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
 	bool bIsAboveWater = (WaterVBOCache->normal[2] > 0) && R_IsAboveWater(WaterVBOCache) ? true : false;
@@ -285,13 +286,16 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache)
 		r_wsurf_polys += WaterVBOCache->iPolyCount;
 	}
 
-	GL_UseProgram(0);
+	//GL_UseProgram(0);
 
-	glDisable(GL_STENCIL_TEST);
-	glDisable(GL_BLEND);
+	if (r_draw_opaque)
+	{
+		glDisable(GL_STENCIL_TEST);
+	}
+	//glDisable(GL_BLEND);
 }
 
-void R_DrawWaters(void)
+void R_DrawWaters(cl_entity_t *ent)
 {
 	if (r_draw_reflectview)
 		return;
@@ -317,7 +321,7 @@ void R_DrawWaters(void)
 
 		for (int i = 0; i < g_iNumRenderWaterVBOCache; ++i)
 		{
-			R_DrawWaterVBO(g_RenderWaterVBOCache[i]);
+			R_DrawWaterVBO(g_RenderWaterVBOCache[i], ent);
 		}
 
 		//glEnable(GL_CULL_FACE);
