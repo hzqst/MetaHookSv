@@ -32,10 +32,15 @@ out vec2 v_normaltexcoord;
 out vec2 v_parallaxtexcoord;
 out vec2 v_speculartexcoord;
 out vec4 v_shadowcoord[3];
-flat out int v_drawid;
 
-#ifdef DECAL_ENABLED
-flat out int v_decalindex;
+#ifdef BINDLESS_ENABLED
+
+	flat out int v_drawid;
+
+	#ifdef DECAL_ENABLED
+	flat out int v_decalindex;
+	#endif
+
 #endif
 
 #ifdef SKYBOX_ENABLED
@@ -166,14 +171,17 @@ void main(void)
 
 #endif
 
+#ifdef BINDLESS_ENABLED
+
 #ifdef DECAL_ENABLED
 	v_decalindex = in_decalindex;
 #endif
 
-#ifdef SKYBOX_ENABLED
-	v_drawid = quadidx;
-#else
-	v_drawid = gl_DrawIDARB;
+	#ifdef SKYBOX_ENABLED
+		v_drawid = quadidx;
+	#else
+		v_drawid = gl_DrawIDARB;
+	#endif
 #endif
 
 	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * worldpos4;

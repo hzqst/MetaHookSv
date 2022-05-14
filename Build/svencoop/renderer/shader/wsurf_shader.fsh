@@ -1,11 +1,15 @@
 #version 430
 
 #extension GL_EXT_texture_array : require
+
+#ifdef BINDLESS_ENABLED
 #extension GL_ARB_shader_draw_parameters : require
+#endif
 
 #include "common.h"
 
 uniform float u_parallaxScale;
+
 uniform int u_baseDrawId;
 
 #ifndef BINDLESS_ENABLED
@@ -36,10 +40,15 @@ in vec2 v_normaltexcoord;
 in vec2 v_parallaxtexcoord;
 in vec2 v_speculartexcoord;
 in vec4 v_shadowcoord[3];
-flat in int v_drawid;
 
-#ifdef DECAL_ENABLED
-flat in int v_decalindex;
+#ifdef BINDLESS_ENABLED
+
+	flat in int v_drawid;
+
+	#ifdef DECAL_ENABLED
+	flat in int v_decalindex;
+	#endif
+
 #endif
 
 layout(location = 0) out vec4 out_Diffuse;
