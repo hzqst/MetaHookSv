@@ -1504,7 +1504,10 @@ void GL_Init(void)
 
 	if (bUseBindless && !glewIsSupported("GL_NV_bindless_texture") && !glewIsSupported("GL_ARB_bindless_texture"))
 		bUseBindless = false;
-	
+
+	if (bUseBindless && !glewIsSupported("GL_ARB_shader_draw_parameters"))
+		bUseBindless = false;
+
 	if (gEngfuncs.CheckParm("-oitblend", NULL))
 		bUseOITBlend = true;
 
