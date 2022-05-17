@@ -1793,17 +1793,21 @@ void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr, 
 			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE"))
 			{
 				ptexture->flags |= STUDIO_NF_CELSHADE;
+				ptexture->flags |= STUDIO_NF_FLATSHADE;
 			}
 			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE_FACE"))
 			{
+				ptexture->flags |= STUDIO_NF_CELSHADE;
 				ptexture->flags |= STUDIO_NF_CELSHADE_FACE;
 			}
 			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE_HAIR"))
 			{
+				ptexture->flags |= STUDIO_NF_CELSHADE;
 				ptexture->flags |= STUDIO_NF_CELSHADE_HAIR;
 			}
 			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE_HAIR_H"))
 			{
+				ptexture->flags |= STUDIO_NF_CELSHADE;
 				ptexture->flags |= STUDIO_NF_CELSHADE_HAIR_H;
 			}
 

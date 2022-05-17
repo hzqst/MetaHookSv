@@ -27,7 +27,9 @@ vec3_t r_entity_mins, r_entity_maxs;
 
 std::unordered_map <int, wsurf_program_t> g_WSurfProgramTable;
 
-std::unordered_map<int, detail_texture_cache_t *> g_DetailTextureTable;
+std::unordered_map <int, detail_texture_cache_t *> g_DetailTextureTable;
+
+std::unordered_map <int, detail_texture_cache_t *> g_DecalTextureTable;
 
 std::vector<wsurf_vbo_t *> g_WSurfVBOCache;
 
@@ -1123,6 +1125,13 @@ void R_GenerateSceneUBO(void)
 	}
 }
 
+void R_ClearDetailTextureCache(void)
+{
+	for (auto p : g_DetailTextureTable)
+		delete p.second;
+	g_DetailTextureTable.clear();
+}
+
 void R_ClearDecalCache(void)
 {
 	if(r_wsurf.vDecalGLTextures.size() < MAX_DECALS)
@@ -1921,9 +1930,32 @@ void R_InitWSurf(void)
 	R_ClearBSPEntities();
 }
 
+void R_NewMapWSurf(void)
+{
+	R_ClearDecalCache();
+	R_ClearDetailTextureCache();
+	
+	R_LoadDetailTextures();
+
+	R_FreeLightmapArray();
+	R_FreeVertexBuffer();
+
+	R_GenerateVertexBuffer();
+	R_GenerateLightmapArray();
+
+	R_ClearWSurfVBOCache();
+	R_ClearBSPEntities();
+	R_ParseBSPEntities(r_worldmodel->entities, NULL);
+	R_LoadExternalEntities();
+	R_LoadBSPEntities();
+}
+
 void R_ShutdownWSurf(void)
 {
 	g_WSurfProgramTable.clear();
+
+	R_ClearDecalCache();
+	R_ClearDetailTextureCache();
 
 	R_FreeLightmapArray();
 	R_FreeVertexBuffer();
@@ -2105,32 +2137,197 @@ void R_LoadDetailTextures(void)
 	gEngfuncs.COM_FreeFile(pfile);
 }
 
-void R_NewMapWSurf(void)
+#if 0
+void R_LoadDecalTextures(bool bMapSpecified)
 {
-	R_ClearDecalCache();
+	std::string name;
 
-	for (auto p : g_DetailTextureTable)
-		delete p.second;
+	if (bMapSpecified)
+	{
+		name = gEngfuncs.pfnGetLevelName();
+		name = name.substr(0, name.length() - 4);
+		name += "_decal.txt";
+	}
+	else
+	{
+		name = "renderer\\decal.txt";
+	}
 
-	g_DetailTextureTable.clear();
-	R_LoadDetailTextures();
+	char *pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
+	if (!pfile)
+	{
+		gEngfuncs.Con_DPrintf("R_LoadDecalTextures: No decal texture file %s\n", name.c_str());
+		return;
+	}
 
-	R_FreeLightmapArray();
-	R_FreeVertexBuffer();
+	char *ptext = pfile;
+	while (1)
+	{
+		char temp[256];
+		char basetexture[256];
+		char detailtexture[256];
+		char sz_xscale[64];
+		char sz_yscale[64];
 
-	R_GenerateVertexBuffer();
-	R_GenerateLightmapArray();
+		ptext = gEngfuncs.COM_ParseFile(ptext, basetexture);
 
-	R_ClearWSurfVBOCache();
-	R_ClearBSPEntities();
-	R_ParseBSPEntities(r_worldmodel->entities, NULL);
-	R_LoadExternalEntities();
-	R_LoadBSPEntities();
+		if (!ptext)
+			break;
+
+		if (basetexture[0] == '{')
+		{
+			ptext = gEngfuncs.COM_ParseFile(ptext, temp);
+			strcat(basetexture, temp);
+
+			if (!ptext)
+				break;
+		}
+
+		ptext = gEngfuncs.COM_ParseFile(ptext, detailtexture);
+		if (!ptext)
+			break;
+
+		ptext = gEngfuncs.COM_ParseFile(ptext, sz_xscale);
+
+		if (!ptext)
+			break;
+
+		if (sz_xscale[0] == '{')
+		{
+			strcat(detailtexture, sz_xscale);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, temp);
+			if (!ptext)
+				break;
+
+			strcat(detailtexture, temp);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, sz_xscale);
+			if (!ptext)
+				break;
+		}
+
+		ptext = gEngfuncs.COM_ParseFile(ptext, sz_yscale);
+		if (!ptext)
+			break;
+
+		//Default: load as replace texture
+		int texType = WSURF_REPLACE_TEXTURE;
+
+		std::string base = basetexture;
+
+		if (base.length() > (sizeof("_REPLACE") - 1) && !strcmp(&base[base.length() - (sizeof("_REPLACE") - 1)], "_REPLACE"))
+		{
+			base = base.substr(0, base.length() - (sizeof("_REPLACE") - 1));
+			texType = WSURF_REPLACE_TEXTURE;
+		}
+		else if (base.length() > (sizeof("_SPECULAR") - 1) && !strcmp(&base[base.length() - (sizeof("_SPECULAR") - 1)], "_SPECULAR"))
+		{
+			base = base.substr(0, base.length() - (sizeof("_SPECULAR") - 1));
+			texType = WSURF_SPECULAR_TEXTURE;
+		}
+
+		auto glt = GL_FindTexture(base.c_str(), GLT_DECAL, NULL, NULL);
+
+		if (!glt)
+		{
+			gEngfuncs.Con_DPrintf("R_LoadDecalTextures: Missing basetexture %s\n", base.c_str());
+			continue;
+		}
+
+		float i_xscale = atof(sz_xscale);
+		float i_yscale = atof(sz_yscale);
+
+		detail_texture_cache_t *cache = NULL;
+
+		auto itor = std::find_if(g_DecalTextureTable.begin(), g_DecalTextureTable.end(),
+			[&base](const std::pair<int, detail_texture_cache_t *>& pair) {return (pair.second->basetexture == base); });
+
+		if (itor != g_DecalTextureTable.end())
+		{
+			cache = itor->second;
+		}
+		else
+		{
+			cache = new detail_texture_cache_t;
+			cache->basetexture = base;
+			g_DecalTextureTable[glt] = cache;
+		}
+
+		const char *textypeNames[] = {
+			"WSURF_REPLACE_TEXTURE",
+			"WSURF_DETAIL_TEXTURE",
+			"WSURF_NORMAL_TEXTURE",
+			"WSURF_PARALLAX_TEXTURE",
+			"WSURF_SPECULAR_TEXTURE",
+		};
+
+		if (cache)
+		{
+			if (cache->tex[texType].gltexturenum)
+			{
+				gEngfuncs.Con_DPrintf("R_LoadDecalTextures: %s already exists for basetexture %s\n", textypeNames[texType], base.c_str());
+				continue;
+			}
+
+			int width = 0, height = 0;
+
+			std::string texturePath = "gfx/";
+			texturePath += detailtexture;
+			if (!V_GetFileExtension(detailtexture))
+				texturePath += ".tga";
+
+			int texId = R_LoadTextureEx(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, true, true);
+			if (!texId)
+			{
+				texturePath = "renderer/texture/";
+				texturePath += detailtexture;
+				if (!V_GetFileExtension(detailtexture))
+					texturePath += ".tga";
+
+				texId = R_LoadTextureEx(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, true, true);
+			}
+
+			if (!texId)
+			{
+				gEngfuncs.Con_DPrintf("R_LoadDecalTextures: Failed to load %s as %s for basetexture %s\n", detailtexture, textypeNames[texType], base.c_str());
+				continue;
+			}
+
+			cache->tex[texType].gltexturenum = texId;
+			cache->tex[texType].width = width;
+			cache->tex[texType].height = height;
+			cache->tex[texType].scaleX = i_xscale;
+			cache->tex[texType].scaleY = i_yscale;
+		}
+	}
+	gEngfuncs.COM_FreeFile(pfile);
 }
-
+#endif
 void R_DrawWireFrame(brushface_t *brushface, void(*draw)(brushface_t *face))
 {
 
+}
+
+detail_texture_cache_t *R_FindDecalTextureCache(int texId)
+{
+	auto itor = g_DecalTextureTable.find(texId);
+
+	if (itor != g_DecalTextureTable.end())
+	{
+		auto cache = itor->second;
+
+		if (cache->tex[WSURF_DETAIL_TEXTURE].gltexturenum ||
+			cache->tex[WSURF_NORMAL_TEXTURE].gltexturenum ||
+			cache->tex[WSURF_PARALLAX_TEXTURE].gltexturenum ||
+			cache->tex[WSURF_SPECULAR_TEXTURE].gltexturenum
+			)
+		{
+			return cache;
+		}
+	}
+
+	return NULL;
 }
 
 detail_texture_cache_t *R_FindDetailTextureCache(int texId)

@@ -131,10 +131,13 @@
 #define R_DRAWDECALS_SIG_NEW "\x55\x8B\xEC\xB8\x10\x00\x00\x00\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x85\xC0\x0F\x84"
 #define R_DRAWDECALS_SIG_SVENGINE "\xB8\x2A\x2A\x00\x00\xE8\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x84\x2A\x2A\x2A\x2A\x53\x8B\x1D"
 
-#define R_DRAW_DECALTEXTURE_SIG "\x8B\x44\x24\x04\x56\x85\xC0\x57\x7D\x7B\x83\xC9\xFF\x2B\xC8\x8D\x04\x49"
-#define R_DRAW_DECALTEXTURE_SIG2 "\x8B\x4C\x24\x04\x56\x85\xC9\x57\x2A\x2A\x83\xC8\xFF\x2B\xC1"
-#define R_DRAW_DECALTEXTURE_SIG_NEW "\x55\x8B\xEC\x8B\x4D\x08\x56\x85\xC9\x57\x7D\x2A\x83\xC8\xFF\x2B\xC1\x8D\x0C\xC0"
-#define R_DRAW_DECALTEXTURE_SIG_SVENGINE "\x8B\x4C\x24\x2A\x0F\xAE\xE8\x85\xC9\x2A\x2A\xF7\xD1"
+#define DRAW_DECALTEXTURE_SIG "\x8B\x44\x24\x04\x56\x85\xC0\x57\x7D\x7B\x83\xC9\xFF\x2B\xC8\x8D\x04\x49"
+#define DRAW_DECALTEXTURE_SIG2 "\x8B\x4C\x24\x04\x56\x85\xC9\x57\x2A\x2A\x83\xC8\xFF\x2B\xC1"
+#define DRAW_DECALTEXTURE_SIG_NEW "\x55\x8B\xEC\x8B\x4D\x08\x56\x85\xC9\x57\x7D\x2A\x83\xC8\xFF\x2B\xC1\x8D\x0C\xC0"
+#define DRAW_DECALTEXTURE_SIG_SVENGINE "\x8B\x4C\x24\x2A\x0F\xAE\xE8\x85\xC9\x2A\x2A\xF7\xD1"
+
+#define DRAW_MIPTEXTEXTURE_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x2A\x2A\x2A\x24\x40\x2A\x2A\x2A\x24\x40"
+#define DRAW_MIPTEXTEXTURE_SIG_NEW "\x55\x8B\xEC\x83\xEC\x2A\x2A\x2A\x2A\x2A\x08\x2A\x83\x2A\x2A\x20"
 
 #define R_RENDERVIEW_SIG "\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\x83\xEC\x14\xDF\xE0\xF6\xC4"
 #define R_RENDERVIEW_SIG_NEW "\x55\x8B\xEC\x83\xEC\x14\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x44"
@@ -615,12 +618,22 @@ void R_FillAddress(void)
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.Draw_DecalTexture = (texture_t *(*)(int))Search_Pattern(R_DRAW_DECALTEXTURE_SIG_SVENGINE);
+		gRefFuncs.Draw_MiptexTexture = (void(*)(cachewad_t *wad, byte *data))Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_SVENGINE);
+		Sig_FuncNotFound(Draw_MiptexTexture);
+	}
+	else
+	{
+		gRefFuncs.Draw_MiptexTexture = (void(*)(cachewad_t *wad, byte *data))Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_NEW);
+		Sig_FuncNotFound(Draw_MiptexTexture);
+	}
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		gRefFuncs.Draw_DecalTexture = (texture_t *(*)(int))Search_Pattern(DRAW_DECALTEXTURE_SIG_SVENGINE);
 		Sig_FuncNotFound(Draw_DecalTexture);
 	}
 	else
 	{
-		gRefFuncs.Draw_DecalTexture = (texture_t *(*)(int))Search_Pattern(R_DRAW_DECALTEXTURE_SIG_NEW);
+		gRefFuncs.Draw_DecalTexture = (texture_t *(*)(int))Search_Pattern(DRAW_DECALTEXTURE_SIG_NEW);
 		Sig_FuncNotFound(Draw_DecalTexture);
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -3121,6 +3134,7 @@ void R_InstallHook(void)
 	Install_InlineHook(Mod_LoadStudioModel);
 	Install_InlineHook(triapi_RenderMode);
 	//Install_InlineHook(triapi_Color4f);
+	Install_InlineHook(Draw_MiptexTexture);
 	Install_InlineHook(BuildGammaTable);
 	Install_InlineHook(Cvar_DirectSet);
 }

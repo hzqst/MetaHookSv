@@ -56,6 +56,7 @@ typedef struct
 	void (*R_RenderDynamicLightmaps)(msurface_t *fa);
 	void(*R_RotateForEntity)(float *origin, cl_entity_t *ent);
 	void (*R_DrawDecals)(qboolean bMultitexture);
+	void (*Draw_MiptexTexture)(cachewad_t *wad, byte *data);
 	texture_t *(*Draw_DecalTexture)(int index);
 	void (*R_BuildLightMap)(msurface_t *psurf, byte *dest, int stride);
 	void(*R_AddDynamicLights)(msurface_t *psurf);

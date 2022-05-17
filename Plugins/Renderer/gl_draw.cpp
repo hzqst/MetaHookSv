@@ -31,8 +31,6 @@ gltexture_t *gltextures_get()
 	return (gltextures_SvEngine) ? (*gltextures_SvEngine) : gltextures;
 }
 
-
-
 typedef struct
 {
 	char *name;
@@ -431,9 +429,17 @@ int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int wid
 
 texture_t *Draw_DecalTexture(int index)
 {
-	texture_t *t = gRefFuncs.Draw_DecalTexture(index);
+	texture_t *texture = gRefFuncs.Draw_DecalTexture(index);
 
-	return t;
+	return texture;
+}
+
+void Draw_MiptexTexture(cachewad_t *wad, byte *data)
+{
+	gRefFuncs.Draw_MiptexTexture(wad, data);
+
+	auto texture = (texture_t *)data;
+
 }
 
 DWORD ByteToUInt( byte *byte )

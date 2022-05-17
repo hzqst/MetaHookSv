@@ -784,14 +784,25 @@ void R_EndRenderGBuffer(void)
 			auto ent = gEngfuncs.GetEntityByIndex(dl->key);
 
 			vec3_t org;
+			//first person mode
 			if (ent == gEngfuncs.GetLocalPlayer() && !gExportfuncs.CL_IsThirdPerson() && !chase_active->value && r_params.viewentity <= r_params.maxclients)
 			{
 				VectorCopy((*r_refdef.viewangles), dlight_angle);
 				gEngfuncs.pfnAngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
 
-				VectorCopy((*r_refdef.vieworg), org);
-				VectorMA(org, 2, dlight_vup, org);
-				VectorMA(org, 10, dlight_vright, org);
+				if (cl_viewent && cl_viewent->model)
+				{
+					VectorCopy(cl_viewent->attachment[0], org);
+					VectorMA(org, -2, dlight_vup, org);
+					VectorMA(org, -10, dlight_vforward, org);
+
+				}
+				else
+				{
+					VectorCopy((*r_refdef.vieworg), org);
+					VectorMA(org, 2, dlight_vup, org);
+					VectorMA(org, 10, dlight_vright, org);
+				}
 
 				VectorCopy(org, dlight_origin);
 			}
