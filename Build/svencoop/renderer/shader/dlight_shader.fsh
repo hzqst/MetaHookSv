@@ -12,7 +12,10 @@
 
 layout(binding = 0) uniform sampler2DArray gbufferTex;
 layout(binding = 1) uniform sampler2D depthTex;
+
+#if defined(TEXTURE_VIEW_AVAILABLE)
 layout(binding = 2) uniform usampler2D stencilTex;
+#endif
 
 uniform vec3 u_lightpos;
 uniform vec3 u_lightdir;
@@ -51,7 +54,7 @@ vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, vec2 vBaseT
     vec4 AmbientColor = vec4(u_lightcolor, 1.0) * u_lightambient;
     vec4 DiffuseColor = vec4(0.0, 0.0, 0.0, 0.0);
     vec4 SpecularColor = vec4(0.0, 0.0, 0.0, 0.0);
-
+#if defined(TEXTURE_VIEW_AVAILABLE)
     uint stencilValue = texture(stencilTex, vBaseTexCoord).r;
 
     if((stencilValue & 2) == 0)
@@ -70,14 +73,32 @@ vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, vec2 vBaseT
                 SpecularFactor = pow(SpecularFactor, u_lightspecularpow);
                 SpecularColor = vec4(u_lightcolor * u_lightspecular * SpecularFactor * specularValue, 1.0);
             }
-        }      
+        }
     }
     else
     {
         //flatshade
         DiffuseColor = vec4(u_lightcolor * u_lightdiffuse * 0.8, 1.0);  
     }
- 
+#else
+    float DiffuseFactor = dot(Normal, -LightDirection);
+
+    if (DiffuseFactor > 0.0) {
+        DiffuseColor = vec4(u_lightcolor * u_lightdiffuse * DiffuseFactor, 1.0);
+        vec3 VertexToEye = normalize(SceneUBO.viewpos.xyz - World);
+        vec3 LightReflect = normalize(reflect(LightDirection, Normal));
+        float SpecularFactor = dot(VertexToEye, LightReflect);
+        if (SpecularFactor > 0.0) {
+
+            float specularValue = texture2DArray(gbufferTex, vec3(vBaseTexCoord, GBUFFER_INDEX_SPECULAR)).r;
+
+            SpecularFactor = pow(SpecularFactor, u_lightspecularpow);
+            SpecularColor = vec4(u_lightcolor * u_lightspecular * SpecularFactor * specularValue, 1.0);
+        }
+    }
+#endif
+
+
     return (AmbientColor + DiffuseColor + SpecularColor);
 }
 

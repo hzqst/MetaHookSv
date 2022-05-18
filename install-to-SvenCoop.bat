@@ -15,8 +15,9 @@ copy "%~dp0Build\svencoop.exe" "%GameDir%\" /y
 copy "%~dp0Build\SDL2.dll" "%GameDir%\" /y
 copy "%~dp0Build\FreeImage.dll" "%GameDir%\" /y
 xcopy "%~dp0Build\svencoop" "%GameDir%\%LauncherMod%" /y /e
-xcopy "%~dp0Build\svencoop_addon" "%GameDir%\%LauncherMod%_addon" /y /e
-xcopy "%~dp0Build\svencoop_schinese" "%GameDir%\%LauncherMod%_schinese" /y /e
+xcopy "%~dp0Build\svencoop_addon" "%GameDir%\%LauncherMod%_addon\" /y /e
+mkdir "%GameDir%\%LauncherMod%_schinese\"
+xcopy "%~dp0Build\svencoop_schinese" "%GameDir%\%LauncherMod%_schinese\" /y /e
 xcopy "%~dp0Build\platform" "%GameDir%\platform" /y /e
 
 copy "%GameDir%\%LauncherMod%\metahook\configs\plugins_svencoop.lst" "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst" /y

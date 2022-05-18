@@ -4,7 +4,7 @@
 
 layout(binding = 0) uniform sampler2D diffuseTex;
 
-#if defined(STUDIO_NF_CELSHADE_FACE) && !defined(HAIR_SHADOW_ENABLED)
+#if defined(STUDIO_NF_CELSHADE_FACE) && !defined(HAIR_SHADOW_ENABLED) && defined(TEXTURE_VIEW_AVAILABLE)
 layout(binding = 1) uniform usampler2D stencilTex;
 #endif
 
@@ -75,7 +75,7 @@ vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
     // N dot L
     float litOrShadowArea = smoothstep(r_celshade_midpoint - r_celshade_softness, r_celshade_midpoint + r_celshade_softness, NoL);
 
-#if defined(STUDIO_NF_CELSHADE_FACE) && !defined(HAIR_SHADOW_ENABLED)
+#if defined(STUDIO_NF_CELSHADE_FACE) && !defined(HAIR_SHADOW_ENABLED) && defined(TEXTURE_VIEW_AVAILABLE)
 
 	litOrShadowArea = mix(0.5, 1.0, litOrShadowArea);
 

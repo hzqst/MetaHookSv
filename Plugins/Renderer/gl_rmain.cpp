@@ -1244,7 +1244,7 @@ void GL_GenerateFrameBuffers(void)
 	GL_FrameBufferColorTexture(&s_FinalBufferFBO, GL_RGBA8);
 	GL_FrameBufferDepthTexture(&s_FinalBufferFBO, GL_DEPTH24_STENCIL8);
 
-	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_FinalBufferFBO);
 		g_pMetaHookAPI->SysError("Failed to initialize final framebuffer!\n");
@@ -1256,7 +1256,7 @@ void GL_GenerateFrameBuffers(void)
 	GL_FrameBufferColorTexture(&s_BackBufferFBO, GL_RGBA16F);
 	GL_FrameBufferDepthTexture(&s_BackBufferFBO, GL_DEPTH24_STENCIL8);
 
-	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BackBufferFBO);
 		g_pMetaHookAPI->SysError("Failed to initialize back framebuffer!\n");
@@ -1268,7 +1268,7 @@ void GL_GenerateFrameBuffers(void)
 	GL_FrameBufferColorTexture(&s_BackBufferFBO2, GL_RGBA16F);
 	GL_FrameBufferDepthTexture(&s_BackBufferFBO2, GL_DEPTH24_STENCIL8);
 
-	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BackBufferFBO2);
 		g_pMetaHookAPI->SysError("Failed to initialize back2 framebuffer!\n");
@@ -1280,7 +1280,7 @@ void GL_GenerateFrameBuffers(void)
 	GL_FrameBufferColorTextureDeferred(&s_GBufferFBO, GL_RGB16F);
 	GL_FrameBufferDepthTexture(&s_GBufferFBO, GL_DEPTH24_STENCIL8);
 
-	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_GBufferFBO);
 		g_pMetaHookAPI->SysError("Failed to initialize GBuffer framebuffer.\n");
@@ -1291,7 +1291,7 @@ void GL_GenerateFrameBuffers(void)
 	GL_GenFrameBuffer(&s_DepthLinearFBO);
 	GL_FrameBufferColorTexture(&s_DepthLinearFBO, GL_R32F);
 
-	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_DepthLinearFBO);
 		g_pMetaHookAPI->SysError("Failed to initialize DepthLinear framebuffer!\n");
@@ -1302,7 +1302,7 @@ void GL_GenerateFrameBuffers(void)
 	GL_GenFrameBuffer(&s_HBAOCalcFBO);
 	GL_FrameBufferColorTextureHBAO(&s_HBAOCalcFBO);
 
-	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_HBAOCalcFBO);
 		g_pMetaHookAPI->SysError("Failed to initialize HBAOCalc framebuffer.\n");
@@ -1334,7 +1334,7 @@ void GL_GenerateFrameBuffers(void)
 		//color
 		GL_FrameBufferColorTexture(&s_DownSampleFBO[i], GL_RGB16F);
 
-		if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			GL_FreeFBO(&s_DownSampleFBO[i]);
 			g_pMetaHookAPI->SysError("Failed to initialize DownSample #%d framebuffer.\n", i);
@@ -1357,7 +1357,7 @@ void GL_GenerateFrameBuffers(void)
 		GL_GenFrameBuffer(&s_LuminFBO[i]);
 		GL_FrameBufferColorTexture(&s_LuminFBO[i], GL_R32F);
 
-		if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			GL_FreeFBO(&s_LuminFBO[i]);
 			g_pMetaHookAPI->SysError("Failed to initialize Luminance #%d framebuffer.\n", i);
@@ -1375,7 +1375,7 @@ void GL_GenerateFrameBuffers(void)
 		GL_GenFrameBuffer(&s_Lumin1x1FBO[i]);
 		GL_FrameBufferColorTexture(&s_Lumin1x1FBO[i], GL_R32F);
 
-		if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			GL_FreeFBO(&s_Lumin1x1FBO[i]);
 			g_pMetaHookAPI->SysError("Failed to initialize Luminance1x1 #%d framebuffer.\n", i);
@@ -1388,7 +1388,7 @@ void GL_GenerateFrameBuffers(void)
 	GL_GenFrameBuffer(&s_BrightPassFBO);
 	GL_FrameBufferColorTexture(&s_BrightPassFBO, GL_RGB16F);
 
-	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BrightPassFBO);
 		g_pMetaHookAPI->SysError("Failed to initialize BrightPass framebuffer.\n");
@@ -1408,7 +1408,7 @@ void GL_GenerateFrameBuffers(void)
 			GL_GenFrameBuffer(&s_BlurPassFBO[i][j]);
 			GL_FrameBufferColorTexture(&s_BlurPassFBO[i][j], GL_RGB16F);
 
-			if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+			if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 			{
 				GL_FreeFBO(&s_BlurPassFBO[i][j]);
 				g_pMetaHookAPI->SysError("Failed to initialize Blur #%d framebuffer.\n", i);
@@ -1422,7 +1422,7 @@ void GL_GenerateFrameBuffers(void)
 	s_BrightAccumFBO.iHeight = glheight >> DOWNSAMPLE_BUFFERS;
 	GL_GenFrameBuffer(&s_BrightAccumFBO);
 	GL_FrameBufferColorTexture(&s_BrightAccumFBO, GL_RGB16F);
-	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BrightAccumFBO);
 		g_pMetaHookAPI->SysError("Failed to initialize BrightAccumulate #%d framebuffer.\n");
@@ -1432,7 +1432,7 @@ void GL_GenerateFrameBuffers(void)
 	s_ToneMapFBO.iHeight = glheight;
 	GL_GenFrameBuffer(&s_ToneMapFBO);
 	GL_FrameBufferColorTexture(&s_ToneMapFBO, GL_RGB8);
-	if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_ToneMapFBO);
 		gEngfuncs.Con_Printf("Failed to initialize ToneMapping #%d framebuffer.\n");

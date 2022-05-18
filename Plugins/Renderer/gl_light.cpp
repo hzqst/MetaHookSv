@@ -73,6 +73,9 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 		if (state & DFINAL_SSR_BINARY_SEARCH_ENABLED)
 			defs << "#define SSR_BINARY_SEARCH_ENABLED\n";
 
+		if (glTextureView)
+			defs << "#define TEXTURE_VIEW_AVAILABLE\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\dfinal_shader.fsh", def.c_str(), def.c_str(), NULL);
@@ -233,6 +236,9 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 
 		if (state & DLIGHT_VOLUME_ENABLED)
 			defs << "#define VOLUME_ENABLED\n";
+
+		if (glTextureView)
+			defs << "#define TEXTURE_VIEW_AVAILABLE\n";
 
 		auto def = defs.str();
 
@@ -678,10 +684,13 @@ void R_EndRenderGBuffer(void)
 	GL_Bind(s_GBufferFBO.s_hBackBufferDepthTex);
 
 	//Texture unit 2 = Stencil texture
-	glActiveTexture(GL_TEXTURE2);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferStencilView);
-	
+	if (s_GBufferFBO.s_hBackBufferStencilView)
+	{
+		glActiveTexture(GL_TEXTURE2);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferStencilView);
+	}
+
 	if (g_DynamicLights.size())
 	{
 		for (size_t i = 0; i < g_DynamicLights.size(); i++)
@@ -1004,7 +1013,7 @@ void R_EndRenderGBuffer(void)
 	//Setup final program
 	R_UseDFinalProgram(FinalProgramState, NULL);
 
-	//Texture unit 0 = (GBuffer texture array), Texture unit 1 = (depth), Texture unit 2 = stencil, Texture unit 3 = (linearized depth), 
+	//Texture unit 0 = GBuffer texture array, Texture unit 1 = depth, Texture unit 2 = stencil (optional), Texture unit 3 = linearized depth 
 	glActiveTexture(GL_TEXTURE3);
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, s_DepthLinearFBO.s_hBackBufferTex);

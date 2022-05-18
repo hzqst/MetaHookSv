@@ -387,7 +387,7 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 
 	s->iTextureDepthFormat = iInternalFormat;
 
-	if (iInternalFormat == GL_DEPTH24_STENCIL8)
+	if (iInternalFormat == GL_DEPTH24_STENCIL8 && glTextureView)
 	{
 		s->s_hBackBufferStencilView = GL_GenTexture();
 		glTextureView(s->s_hBackBufferStencilView, tex2D, s->s_hBackBufferDepthTex, GL_DEPTH24_STENCIL8, 0, 1, 0, 1);
@@ -397,6 +397,11 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+	else
+	{
+		//Texture view not supported!
+		s->s_hBackBufferStencilView = 0;
 	}
 }
 
