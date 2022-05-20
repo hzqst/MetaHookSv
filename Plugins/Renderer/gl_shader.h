@@ -45,5 +45,6 @@ void GL_MultiTexCoord3f(GLenum target, float s, float t, float r);
 
 #define SHADER_DEFINE(name) name##_program_t name;
 
-#define SHADER_UNIFORM(name, loc, locstring) name##.loc = glGetUniformLocationARB(name.program, locstring);
-#define SHADER_ATTRIB(name, loc, locstring) name##.loc = glGetAttribLocationARB(name.program, locstring);
+#define SHADER_UNIFORM(name, loc, locstring) name##.loc = glGetUniformLocation(name.program, locstring);
+#define SHADER_ATTRIB(name, loc, locstring) name##.loc = glGetAttribLocation(name.program, locstring);
+#define SHADER_UBO(name, loc, locstring) name##.loc = glGetUniformBlockIndex(name.program, locstring);

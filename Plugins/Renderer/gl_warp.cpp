@@ -392,11 +392,6 @@ void R_DrawSkyBox(void)
 
 	int WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_SKYBOX_ENABLED;
 
-	if (bUseBindless)
-	{
-		WSurfProgramState |= WSURF_BINDLESS_ENABLED;
-	}
-
 	if (r_draw_reflectview)
 	{
 		WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
@@ -432,10 +427,10 @@ void R_DrawSkyBox(void)
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_SKYBOX_SSBO, r_wsurf.hSkyboxSSBO);
 
-	if (WSurfProgramState & WSURF_BINDLESS_ENABLED)
+	if (bUseBindless)
 	{
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_SKYBOX_SSBO, r_wsurf.hSkyboxSSBO);
 		glDrawArrays(GL_QUADS, 0, 4 * 6);
 	}
 	else

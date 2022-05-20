@@ -341,8 +341,23 @@ typedef struct r_worldsurf_s
 typedef struct
 {
 	int program;
+	//uniform
 	int u_parallaxScale;
 	int u_baseDrawId;
+	//textures
+	int diffuseTex;
+	int lightmapTexArray;
+	int detailTex;
+	int normalTex;
+	int parallaxTex;
+	int specularTex;
+	int shadowmapTexArray;
+	//UBO
+	int sceneUBO;
+	int textureSSBO;
+	int skyboxSSBO;
+	int decalSSBO;
+	int entityUBO;
 }wsurf_program_t;
 
 #define OFFSET(type, variable) ((const void*)&(((type*)NULL)->variable))
@@ -432,7 +447,6 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
 #define WSURF_SHADOWMAP_HIGH_ENABLED		0x2000
 #define WSURF_SHADOWMAP_MEDIUM_ENABLED		0x4000
 #define WSURF_SHADOWMAP_LOW_ENABLED			0x8000
-#define WSURF_BINDLESS_ENABLED				0x10000
 #define WSURF_SKYBOX_ENABLED				0x20000
 #define WSURF_DECAL_ENABLED					0x40000
 #define WSURF_CLIP_ENABLED					0x80000

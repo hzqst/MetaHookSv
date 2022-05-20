@@ -1,9 +1,9 @@
-#version 430
+#version 410
 
 #extension GL_EXT_texture_array : require
 
 #ifdef BINDLESS_ENABLED
-#extension GL_ARB_shader_draw_parameters : require
+	#extension GL_ARB_shader_draw_parameters : require
 #endif
 
 #include "common.h"
@@ -14,18 +14,18 @@ uniform int u_baseDrawId;
 
 #ifndef BINDLESS_ENABLED
 
-layout(binding = 0) uniform sampler2D diffuseTex;
-layout(binding = 1) uniform sampler2DArray lightmapTexArray;
-layout(binding = 2) uniform sampler2D detailTex;
-layout(binding = 3) uniform sampler2D normalTex;
-layout(binding = 4) uniform sampler2D parallaxTex;
-layout(binding = 5) uniform sampler2D specularTex;
-layout(binding = 6) uniform sampler2DArray shadowmapTexArray;
+uniform sampler2D diffuseTex;
+uniform sampler2DArray lightmapTexArray;
+uniform sampler2D detailTex;
+uniform sampler2D normalTex;
+uniform sampler2D parallaxTex;
+uniform sampler2D specularTex;
+uniform sampler2DArray shadowmapTexArray;
 
 #else
 
-layout(binding = 1) uniform sampler2DArray lightmapTexArray;
-layout(binding = 6) uniform sampler2DArray shadowmapTexArray;
+uniform sampler2DArray lightmapTexArray;
+uniform sampler2DArray shadowmapTexArray;
 
 #endif
 

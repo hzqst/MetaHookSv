@@ -1,7 +1,10 @@
-#version 430
+#version 410
 
 #extension GL_EXT_texture_array : require
-#extension GL_ARB_shader_draw_parameters : require
+
+#ifdef BINDLESS_ENABLED
+	#extension GL_ARB_shader_draw_parameters : require
+#endif
 
 #include "common.h"
 
@@ -48,17 +51,15 @@ out vec4 v_shadowcoord[3];
 void MakeSkyVec(float s, float t, int axis, float zFar, out vec3 position, out vec2 texCoord)
 {
 	const float flScale = 0.57735;
-	const ivec3 st_to_vec[6] =
-	{
-		ivec3( 3, -1, 2 ),
-		ivec3( -3, 1, 2 ),
 
-		ivec3( 1, 3, 2 ),
-		ivec3( -1, -3, 2 ),
-
-		ivec3( -2, -1, 3 ),
-		ivec3( 2, -1, -3 )
-	};
+	const int st_to_vec[18] = int[18](
+		3, -1, 2  ,
+		-3, 1, 2  ,
+		1, 3, 2   ,
+		-1, -3, 2 ,
+		-2, -1, 3 ,
+		2, -1, -3 
+	);
 
 	float width = zFar * flScale;
 
@@ -67,7 +68,7 @@ void MakeSkyVec(float s, float t, int axis, float zFar, out vec3 position, out v
 	vec3 v = SceneUBO.viewpos.xyz;
 	for (int j = 0; j < 3; j++)
 	{
-		int k = st_to_vec[axis][j];
+		int k = st_to_vec[axis * 3 + j];
 		float v_negetive = -b[-k - 1];
 		float v_positive = b[k - 1];
 		v[j] += mix(v_negetive, v_positive, float(step(0, k)) );

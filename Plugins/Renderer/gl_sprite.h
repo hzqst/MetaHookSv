@@ -3,11 +3,24 @@
 typedef struct sprite_program_s
 {
 	int program;
+	//uniform
+	int width_height;
+	int up_down_left_right;
+	int in_color;
+	int in_origin;
+	int in_angles;
+	int in_scale;
+	//texture
+	int baseTex;
+	//UBO
+	int sceneUBO;
 }sprite_program_t;
 
 typedef struct legacysprite_program_s
 {
 	int program;
+	//UBO
+	int sceneUBO;
 }legacysprite_program_t;
 
 extern int r_sprite_drawcall;

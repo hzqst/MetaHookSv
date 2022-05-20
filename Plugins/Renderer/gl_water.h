@@ -42,6 +42,14 @@ typedef struct
 	int u_normfactor;
 	int u_scale;
 	int u_speed;
+	//texture
+	int baseTex;
+	int normalTex;
+	int reflectTex;
+	int refractTex;
+	int depthTex;
+	//UBO
+	int sceneUBO;
 }water_program_t;
 
 typedef struct

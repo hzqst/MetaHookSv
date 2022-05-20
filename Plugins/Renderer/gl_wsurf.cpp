@@ -87,7 +87,6 @@ const program_state_name_t s_WSurfProgramStateName[] = {
 { WSURF_SHADOWMAP_HIGH_ENABLED		,"WSURF_SHADOWMAP_HIGH_ENABLED"},
 { WSURF_SHADOWMAP_MEDIUM_ENABLED	,"WSURF_SHADOWMAP_MEDIUM_ENABLED"},
 { WSURF_SHADOWMAP_LOW_ENABLED		,"WSURF_SHADOWMAP_LOW_ENABLED"},
-{ WSURF_BINDLESS_ENABLED			,"WSURF_BINDLESS_ENABLED"},
 { WSURF_SKYBOX_ENABLED				,"WSURF_SKYBOX_ENABLED"},
 { WSURF_DECAL_ENABLED				,"WSURF_DECAL_ENABLED"},
 { WSURF_CLIP_ENABLED				,"WSURF_CLIP_ENABLED"},
@@ -240,9 +239,6 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		if (state & WSURF_SHADOWMAP_LOW_ENABLED)
 			defs << "#define SHADOWMAP_LOW_ENABLED\n";
 
-		if (state & WSURF_BINDLESS_ENABLED)
-			defs << "#define BINDLESS_ENABLED\n";
-
 		if (state & WSURF_SKYBOX_ENABLED)
 			defs << "#define SKYBOX_ENABLED\n";
 
@@ -261,8 +257,13 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		if (state & WSURF_OIT_ADDITIVE_BLEND_ENABLED)
 			defs << "#define OIT_ADDITIVE_BLEND_ENABLED\n";
 
-		if(glewIsSupported("GL_NV_bindless_texture"))
-			defs << "#define UINT64_ENABLED\n";
+		if (bUseBindless)
+		{
+			defs << "#define BINDLESS_ENABLED\n";
+
+			if (glewIsSupported("GL_NV_bindless_texture"))
+				defs << "#define UINT64_ENABLED\n";
+		}
 	
 		defs << "#define SHADOW_TEXTURE_OFFSET (1.0 / " << std::dec << shadow_texture_size << ".0)\n";
 
@@ -272,6 +273,20 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 
 		SHADER_UNIFORM(prog, u_parallaxScale, "u_parallaxScale");
 		SHADER_UNIFORM(prog, u_baseDrawId, "u_baseDrawId");
+
+		SHADER_UNIFORM(prog, diffuseTex, "diffuseTex");
+		SHADER_UNIFORM(prog, lightmapTexArray, "lightmapTexArray");
+		SHADER_UNIFORM(prog, detailTex, "detailTex");
+		SHADER_UNIFORM(prog, normalTex, "normalTex");
+		SHADER_UNIFORM(prog, parallaxTex, "parallaxTex");
+		SHADER_UNIFORM(prog, specularTex, "specularTex");
+		SHADER_UNIFORM(prog, shadowmapTexArray, "shadowmapTexArray");
+
+		SHADER_UBO(prog, sceneUBO, "SceneBlock");
+		SHADER_UBO(prog, textureSSBO, "TextureBlock");
+		SHADER_UBO(prog, skyboxSSBO, "SkyboxBlock");
+		SHADER_UBO(prog, entityUBO, "EntityBlock");
+		SHADER_UBO(prog, decalSSBO, "DecalBlock");
 
 		g_WSurfProgramTable[state] = prog;
 	}
@@ -284,8 +299,70 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 	{
 		GL_UseProgram(prog.program);
 
+		if (prog.diffuseTex != -1)
+		{
+			glUniform1i(prog.diffuseTex, 0);
+		}
+
+		if (prog.lightmapTexArray != -1)
+		{
+			glUniform1i(prog.lightmapTexArray, 1);
+		}
+
+		if (prog.detailTex != -1)
+		{
+			glUniform1i(prog.detailTex, 2);
+		}
+
+		if (prog.normalTex != -1)
+		{
+			glUniform1i(prog.normalTex, 3);
+		}
+
+		if (prog.parallaxTex != -1)
+		{
+			glUniform1i(prog.parallaxTex, 4);
+		}
+
+		if (prog.specularTex != -1)
+		{
+			glUniform1i(prog.specularTex, 5);
+		}
+
+		if (prog.shadowmapTexArray != -1)
+		{
+			glUniform1i(prog.shadowmapTexArray, 6);
+		}
+
+		if (prog.sceneUBO != -1)
+		{
+			glUniformBlockBinding(prog.program, prog.sceneUBO, BINDING_POINT_SCENE_UBO);
+		}
+
+		if (prog.textureSSBO != -1)
+		{
+			glUniformBlockBinding(prog.program, prog.textureSSBO, BINDING_POINT_TEXTURE_SSBO);
+		}
+
+		if (prog.skyboxSSBO != -1)
+		{
+			glUniformBlockBinding(prog.program, prog.skyboxSSBO, BINDING_POINT_SKYBOX_SSBO);
+		}
+
+		if (prog.decalSSBO != -1)
+		{
+			glUniformBlockBinding(prog.program, prog.decalSSBO, BINDING_POINT_DECAL_SSBO);
+		}
+
+		if (prog.entityUBO != -1)
+		{
+			glUniformBlockBinding(prog.program, prog.entityUBO, BINDING_POINT_ENTITY_UBO);
+		}
+		
 		if (prog.u_parallaxScale != -1)
+		{
 			glUniform1f(prog.u_parallaxScale, r_wsurf_parallax_scale->value);
+		}
 
 		if (progOutput)
 			*progOutput = prog;
@@ -1220,7 +1297,7 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache, bool bUseZPrePasss)
 {
 	if(bUseBindless)
 	{
-		int WSurfProgramState = WSURF_BINDLESS_ENABLED;
+		int WSurfProgramState = 0;
 
 		if (r_wsurf.bDiffuseTexture)
 		{
@@ -1328,7 +1405,9 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_t *modcache, bool bUseZPrePasss)
 			R_UseWSurfProgram(WSurfProgramStateBatch, &prog);
 
 			if (prog.u_baseDrawId != -1)
+			{
 				glUniform1i(prog.u_baseDrawId, batch->iBaseDrawId);
+			}
 
 			glMultiDrawElements(GL_POLYGON, batch->vIndiceCount.data(), GL_UNSIGNED_INT, (const void **)batch->vStartIndex.data(), batch->iDrawCount);
 

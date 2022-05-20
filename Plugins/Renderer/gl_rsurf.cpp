@@ -694,11 +694,6 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 	
 	int WSurfProgramState = WSURF_DECAL_ENABLED | WSURF_DIFFUSE_ENABLED;
 
-	if (bUseBindless)
-	{
-		WSurfProgramState |= WSURF_BINDLESS_ENABLED;
-	}
-
 	//Mix lightmap if not deferred
 	if (r_wsurf.bLightmapTexture && !drawgbuffer)
 	{
@@ -777,7 +772,7 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 	glVertexAttribPointer(5, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, lightmaptexcoord));
 	glVertexAttribIPointer(10, 1, GL_INT, sizeof(decalvertex_t), OFFSET(decalvertex_t, decalindex));
 
-	if (WSurfProgramState & WSURF_BINDLESS_ENABLED)
+	if (bUseBindless)
 	{
 		glMultiDrawArrays(GL_POLYGON, g_DrawDecalStartIndex, g_DrawDecalVertexCount, g_DrawDecalCount);
 		r_wsurf_polys += g_DrawDecalCount;

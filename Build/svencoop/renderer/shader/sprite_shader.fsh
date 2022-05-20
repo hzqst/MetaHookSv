@@ -1,15 +1,15 @@
-#version 430
+#version 410
 
 #include "common.h"
 
-layout (location = 0) uniform ivec2 width_height;
-layout (location = 1) uniform vec4 up_down_left_right;
-layout (location = 2) uniform vec4 in_color;
-layout (location = 3) uniform vec3 in_origin;
-layout (location = 4) uniform vec3 in_angles;
-layout (location = 5) uniform float in_scale;
+uniform ivec2 width_height;
+uniform vec4 up_down_left_right;
+uniform vec4 in_color;
+uniform vec3 in_origin;
+uniform vec3 in_angles;
+uniform float in_scale;
 
-layout(binding = 0) uniform sampler2D baseTex;
+uniform sampler2D baseTex;
 
 in vec3 v_worldpos;
 in vec3 v_normal;

@@ -75,6 +75,11 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 			SHADER_UNIFORM(prog, u_normfactor, "u_normfactor");
 			SHADER_UNIFORM(prog, u_scale, "u_scale");
 			SHADER_UNIFORM(prog, u_speed, "u_speed");
+			SHADER_UNIFORM(prog, baseTex, "baseTex");
+			SHADER_UNIFORM(prog, normalTex, "normalTex");
+			SHADER_UNIFORM(prog, reflectTex, "reflectTex");
+			SHADER_UNIFORM(prog, refractTex, "refractTex");
+			SHADER_UNIFORM(prog, depthTex, "depthTex");
 		}
 
 		g_WaterProgramTable[state] = prog;
@@ -87,6 +92,31 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 	if (prog.program)
 	{
 		GL_UseProgram(prog.program);
+
+		if (prog.baseTex != -1)
+		{
+			glUniform1i(prog.baseTex, 0);
+		}
+
+		if (prog.normalTex != -1)
+		{
+			glUniform1i(prog.normalTex, 2);
+		}
+
+		if (prog.reflectTex != -1)
+		{
+			glUniform1i(prog.reflectTex, 3);
+		}
+
+		if (prog.refractTex != -1)
+		{
+			glUniform1i(prog.refractTex, 4);
+		}
+
+		if (prog.depthTex != -1)
+		{
+			glUniform1i(prog.depthTex, 5);
+		}
 
 		if (progOutput)
 			*progOutput = prog;

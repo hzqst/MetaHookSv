@@ -1,4 +1,4 @@
-#version 430
+#version 410
 
 #include "common.h"
 
@@ -11,11 +11,11 @@ uniform float u_speed;
 
 //Don't conflict with WSurfShader
 #ifndef BINDLESS_ENABLED
-layout(binding = 0) uniform sampler2D baseTex;
-layout(binding = 2) uniform sampler2D normalTex;
-layout(binding = 3) uniform sampler2D reflectTex;
-layout(binding = 4) uniform sampler2D refractTex;
-layout(binding = 5) uniform sampler2D depthTex;
+uniform sampler2D baseTex;
+uniform sampler2D normalTex;
+uniform sampler2D reflectTex;
+uniform sampler2D refractTex;
+uniform sampler2D depthTex;
 #endif
 
 in vec4 v_projpos;

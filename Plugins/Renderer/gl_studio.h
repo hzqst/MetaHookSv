@@ -32,6 +32,12 @@ typedef struct
 	int r_uvscale;
 	//shadow caster
 	int entityPos;
+	//textures
+	int diffuseTex;
+	int stencilTex;
+	//ubo
+	int sceneUBO;
+	int studioUBO;
 }studio_program_t;
 
 typedef struct studio_vbo_vertex_s

@@ -435,6 +435,10 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 			SHADER_UNIFORM(prog, r_outline_dark, "r_outline_dark");
 			SHADER_UNIFORM(prog, r_uvscale, "r_uvscale");
 			SHADER_UNIFORM(prog, entityPos, "entityPos");
+			SHADER_UNIFORM(prog, diffuseTex, "diffuseTex");
+			SHADER_UNIFORM(prog, stencilTex, "stencilTex");
+			SHADER_UBO(prog, sceneUBO, "SceneBlock");
+			SHADER_UBO(prog, studioUBO, "StudioBlock");
 		}
 
 		g_StudioProgramTable[state] = prog;
@@ -447,6 +451,26 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 	if (prog.program)
 	{
 		GL_UseProgram(prog.program);
+
+		if (prog.sceneUBO != -1)
+		{
+			glUniformBlockBinding(prog.program, prog.sceneUBO, BINDING_POINT_SCENE_UBO);
+		}
+
+		if (prog.studioUBO != -1)
+		{
+			glUniformBlockBinding(prog.program, prog.studioUBO, BINDING_POINT_STUDIO_UBO);
+		}
+
+		if (prog.diffuseTex != -1)
+		{
+			glUniform1i(prog.diffuseTex, 0);
+		}
+
+		if (prog.stencilTex != -1)
+		{
+			glUniform1i(prog.stencilTex, 1);
+		}
 
 		if (prog.entityPos != -1)
 		{

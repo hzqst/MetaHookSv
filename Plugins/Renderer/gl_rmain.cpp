@@ -146,7 +146,7 @@ FBO_Container_t s_ShadowFBO;
 FBO_Container_t s_WaterFBO;
 
 bool bNoStretchAspect = false;
-bool bUseBindless = true;
+bool bUseBindless = false;
 bool bUseOITBlend = false;
 bool bVerticalFov = false;
 
@@ -1499,7 +1499,7 @@ void GL_Init(void)
 
 	bNoStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
 
-	if(gEngfuncs.CheckParm("-nobindless", NULL))
+	//if(gEngfuncs.CheckParm("-nobindless", NULL))
 		bUseBindless = false;
 
 	if (bUseBindless && !glewIsSupported("GL_NV_bindless_texture") && !glewIsSupported("GL_ARB_bindless_texture"))
@@ -1507,6 +1507,11 @@ void GL_Init(void)
 
 	if (bUseBindless && !glewIsSupported("GL_ARB_shader_draw_parameters"))
 		bUseBindless = false;
+
+	if (bUseBindless && !glewIsSupported("GL_ARB_shader_storage_buffer_object"))
+		bUseBindless = false;
+
+	//OIT-blend is disabled by default...
 
 	if (gEngfuncs.CheckParm("-oitblend", NULL))
 		bUseOITBlend = true;

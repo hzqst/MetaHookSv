@@ -1,11 +1,11 @@
-#version 430
+#version 410
 
 #include "common.h"
 
-layout(binding = 0) uniform sampler2D diffuseTex;
+uniform sampler2D diffuseTex;
 
 #if defined(STUDIO_NF_CELSHADE_FACE) && !defined(HAIR_SHADOW_ENABLED) && defined(TEXTURE_VIEW_AVAILABLE)
-layout(binding = 1) uniform usampler2D stencilTex;
+uniform usampler2D stencilTex;
 #endif
 
 /* celshade */
@@ -101,7 +101,7 @@ vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
     float lambertF = max(0, NoL);
     float rim = 1.0 - clamp(dot(V, -N), 0.0, 1.0);
 
-	float rimDot = pow(rim, r_rimlight_power.x);
+	float rimDot = pow(rim, r_rimlight_power);
 	rimDot = lambertF * rimDot;
 	float rimIntensity = smoothstep(0, r_rimlight_smooth, rimDot);
 	rimLightColor = pow(rimIntensity, 5.0) * r_rimlight_color.xyz;
@@ -110,7 +110,7 @@ vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
 	rimLightColor.y = rimLightColor.y * smoothstep(r_rimlight_smooth2.x, r_rimlight_smooth2.y, v_color.y);
 	rimLightColor.z = rimLightColor.z * smoothstep(r_rimlight_smooth2.x, r_rimlight_smooth2.y, v_color.z);
 
-	rimDot = pow(rim, r_rimdark_power.x);
+	rimDot = pow(rim, r_rimdark_power);
     rimDot = lambertD * rimDot;
 	rimIntensity = smoothstep(0, r_rimdark_smooth, rimDot);
     rimDarkColor = pow(rimIntensity, 5.0) * r_rimdark_color.xyz;

@@ -21,9 +21,6 @@ void R_UseSpriteProgram(int state, sprite_program_t *progOutput)
 	{
 		std::stringstream defs;
 
-		if(state & SPRITE_BINDLESS_ENABLED)
-			defs << "#define BINDLESS_ENABLED\n";
-
 		if(state & SPRITE_GBUFFER_ENABLED)
 			defs << "#define GBUFFER_ENABLED\n";
 
@@ -51,8 +48,6 @@ void R_UseSpriteProgram(int state, sprite_program_t *progOutput)
 		if (state & SPRITE_CLIP_ENABLED)
 			defs << "#define CLIP_ENABLED\n";
 
-		//...
-
 		if (state & SPRITE_PARALLEL_UPRIGHT_ENABLED)
 			defs << "#define PARALLEL_UPRIGHT_ENABLED\n";
 
@@ -73,7 +68,15 @@ void R_UseSpriteProgram(int state, sprite_program_t *progOutput)
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\sprite_shader.vsh", "renderer\\shader\\sprite_shader.fsh", def.c_str(), def.c_str(), NULL);
 		if (prog.program)
 		{
-			
+			SHADER_UNIFORM(prog, baseTex, "baseTex");
+			SHADER_UNIFORM(prog, width_height, "width_height");
+			SHADER_UNIFORM(prog, up_down_left_right, "up_down_left_right");
+			SHADER_UNIFORM(prog, in_color, "in_color");
+			SHADER_UNIFORM(prog, in_origin, "in_origin");
+			SHADER_UNIFORM(prog, in_angles, "in_angles");
+			SHADER_UNIFORM(prog, in_scale, "in_scale");
+
+			SHADER_UBO(prog, sceneUBO, "SceneBlock");
 		}
 
 		g_SpriteProgramTable[state] = prog;
@@ -86,6 +89,16 @@ void R_UseSpriteProgram(int state, sprite_program_t *progOutput)
 	if (prog.program)
 	{
 		GL_UseProgram(prog.program);
+
+		if (prog.baseTex != -1)
+		{
+			glUniform1i(prog.baseTex, 0);
+		}
+
+		if (prog.sceneUBO != -1)
+		{
+			glUniformBlockBinding(prog.program, prog.sceneUBO, BINDING_POINT_SCENE_UBO);
+		}
 
 		if (progOutput)
 			*progOutput = prog;
@@ -240,6 +253,7 @@ void R_UseLegacySpriteProgram(int state, legacysprite_program_t *progOutput)
 		if (prog.program)
 		{
 
+			SHADER_UBO(prog, sceneUBO, "SceneBlock");
 		}
 
 		g_LegacySpriteProgramTable[state] = prog;
@@ -252,6 +266,11 @@ void R_UseLegacySpriteProgram(int state, legacysprite_program_t *progOutput)
 	if (prog.program)
 	{
 		GL_UseProgram(prog.program);
+
+		if (prog.sceneUBO != -1)
+		{
+			glUniformBlockBinding(prog.program, prog.sceneUBO, BINDING_POINT_SCENE_UBO);
+		}
 
 		if (progOutput)
 			*progOutput = prog;
@@ -647,12 +666,12 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 	sprite_program_t prog = { 0 };
 	R_UseSpriteProgram(SpriteProgramState, &prog);
 
-	glUniform2i(0, frame->width, frame->height);
-	glUniform4f(1, frame->up, frame->down, frame->left, frame->right);
-	glUniform4f(2, u_color[0], u_color[1], u_color[2], u_color[3]);
-	glUniform3f(3, r_entorigin[0], r_entorigin[1], r_entorigin[2]);
-	glUniform3f(4, ent->angles[0], ent->angles[1], ent->angles[2]);
-	glUniform1f(5, scale);
+	glUniform2i(prog.width_height, frame->width, frame->height);
+	glUniform4f(prog.up_down_left_right, frame->up, frame->down, frame->left, frame->right);
+	glUniform4f(prog.in_color, u_color[0], u_color[1], u_color[2], u_color[3]);
+	glUniform3f(prog.in_origin, r_entorigin[0], r_entorigin[1], r_entorigin[2]);
+	glUniform3f(prog.in_angles, ent->angles[0], ent->angles[1], ent->angles[2]);
+	glUniform1f(prog.in_scale, scale);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);

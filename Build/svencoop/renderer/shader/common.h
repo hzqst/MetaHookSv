@@ -1,35 +1,39 @@
 #ifdef BINDLESS_ENABLED
 
-#ifdef UINT64_ENABLED
-#extension GL_NV_bindless_texture : require
-#extension GL_NV_gpu_shader5 : require
-#else
-#extension GL_ARB_bindless_texture : require
-#endif
+	#ifdef UINT64_ENABLED
+	
+		#extension GL_NV_bindless_texture : require
+		#extension GL_NV_gpu_shader5 : require
+
+	#else
+
+		#extension GL_ARB_bindless_texture : require
+
+	#endif
 
 #endif
 
 #if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED)
 
-#ifdef IS_FRAGMENT_SHADER
+	#if defined(IS_FRAGMENT_SHADER)
 
-// See https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_shader_image_load_store.txt
-#extension GL_ARB_shader_image_load_store : require
+	// See https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_shader_image_load_store.txt
+	#extension GL_ARB_shader_image_load_store : require
 
-// See https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_fragment_shader_interlock.txt
-#extension GL_ARB_fragment_shader_interlock : require
+	// See https://www.khronos.org/registry/OpenGL/extensions/ARB/ARB_fragment_shader_interlock.txt
+	#extension GL_ARB_fragment_shader_interlock : require
 
-// Use early z-test to cull transparent fragments occluded by opaque fragments.
-// Additionaly, use fragment interlock.
-layout(early_fragment_tests) in;
+	// Use early z-test to cull transparent fragments occluded by opaque fragments.
+	// Additionaly, use fragment interlock.
+	layout(early_fragment_tests) in;
 
-// gl_FragCoord will be used for pixel centers at integer coordinates.
-// See https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/gl_FragCoord.xhtml
-layout(pixel_center_integer) in vec4 gl_FragCoord;
+	// gl_FragCoord will be used for pixel centers at integer coordinates.
+	// See https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/gl_FragCoord.xhtml
+	layout(pixel_center_integer) in vec4 gl_FragCoord;
 
-#define MAX_NUM_NODES 16
+	#define MAX_NUM_NODES 16
 
-#endif
+	#endif
 
 #endif
 
@@ -114,65 +118,55 @@ struct studio_ubo_t{
 	mat3x4 bonematrix[128];
 };
 
-struct spriteframe_ssbo_t{
-	ivec4 type_width_height_texturenum;
-
-	vec4 up_down_left_right;
-
-#if defined(BINDLESS_ENABLED) && defined(UINT64_ENABLED)
-
-	uint64_t texturehandle[1];
-
-#else
-
-	uvec2 texturehandle[1];
-
-#endif
-};
-
 //Scene level
 
-layout (std140, binding = BINDING_POINT_SCENE_UBO) uniform SceneBlock
+layout (std140) uniform SceneBlock
 {
    scene_ubo_t SceneUBO;
 };
 
-layout (std430, binding = BINDING_POINT_DECAL_SSBO) coherent buffer DecalBlock
-{
-#if defined(BINDLESS_ENABLED) && defined(UINT64_ENABLED)
+#if defined(BINDLESS_ENABLED)
 
-	uint64_t DecalSSBO[];
+	layout (std430) coherent buffer DecalBlock
+	{
+	#if defined(UINT64_ENABLED)
 
-#else
+		uint64_t DecalSSBO[];
 
-	uvec2 DecalSSBO[];
+	#else
+
+		uvec2 DecalSSBO[];
+
+	#endif
+	};
+
+	layout (std430) coherent buffer SkyboxBlock
+	{
+	#if defined(UINT64_ENABLED)
+
+		uint64_t SkyboxSSBO[];
+
+	#else
+
+		uvec2 SkyboxSSBO[];
+
+	#endif
+	};
 
 #endif
-};
-
-layout (std430, binding = BINDING_POINT_SKYBOX_SSBO) coherent buffer SkyboxBlock
-{
-#if defined(BINDLESS_ENABLED) && defined(UINT64_ENABLED)
-
-	uint64_t SkyboxSSBO[];
-
-#else
-
-	uvec2 SkyboxSSBO[];
-
-#endif
-};
 
 //Entity level
 
-layout (std140, binding = BINDING_POINT_ENTITY_UBO) uniform EntityBlock
+layout (std140) uniform EntityBlock
 {
 	entity_ubo_t EntityUBO;
 };
 
-layout (std430, binding = BINDING_POINT_TEXTURE_SSBO) coherent buffer TextureBlock
+#if defined(BINDLESS_ENABLED)
+
+layout (std430) coherent buffer TextureBlock
 {
-#if defined(BINDLESS_ENABLED) && defined(UINT64_ENABLED)
+#if defined(UINT64_ENABLED)
 
 	uint64_t TextureSSBO[];
 
@@ -183,7 +177,9 @@ layout (std430, binding = BINDING_POINT_TEXTURE_SSBO) coherent buffer TextureBlo
 #endif
 };
 
-layout (std140, binding = BINDING_POINT_STUDIO_UBO) uniform StudioBlock
+#endif
+
+layout (std140) uniform StudioBlock
 {
 	studio_ubo_t StudioUBO;
 };
