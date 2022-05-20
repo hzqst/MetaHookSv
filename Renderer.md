@@ -17,7 +17,7 @@
 
 |       Vendor      |           Intel                  |          Nvidia            |          AMD               |
 |       ----        |           ----                   |           ----             |           ----             |
-|      Minimum      | Intel Haswell series with HD4600 |      Geforce GTX 650       |  AMD Radeon HD 7000 Series |
+|      Minimum      | Intel Haswell series with HD4600 |      Geforce GTX 400 series       |  AMD Radeon HD 5000 series |
 |     Recommend     |           ----                   |      Geforce GTX 1060 or better     |   AMD Radeon RX 560 or better        |
 
 * It's recommended to run this plugin with at least 4GB of dedicated video memory. otherwise you might have bottleneck with VRAM bandwidth or get game crash due to out-of-VRAM.

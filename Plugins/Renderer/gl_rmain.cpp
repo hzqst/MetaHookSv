@@ -1456,33 +1456,9 @@ void GL_Init(void)
 		return;
 	}
 
-	if (!glewIsSupported("GL_ARB_shader_objects"))
+	if (!GLEW_VERSION_4_3)
 	{
-		g_pMetaHookAPI->SysError("Missing OpenGL extension GL_ARB_shader_objects!\n");
-		return;
-	}
-
-	if (!glewIsSupported("GL_EXT_framebuffer_object"))
-	{
-		g_pMetaHookAPI->SysError("Missing OpenGL extension GL_EXT_framebuffer_object!\n");
-		return;
-	}
-
-	if (!glewIsSupported("GL_EXT_framebuffer_blit"))
-	{
-		g_pMetaHookAPI->SysError("Missing OpenGL extension GL_EXT_framebuffer_blit!\n");
-		return;
-	}
-
-	if (!glewIsSupported("GL_ARB_texture_float"))
-	{
-		g_pMetaHookAPI->SysError("Missing OpenGL extension GL_ARB_texture_float!\n");
-		return;
-	}
-
-	if (!glewIsSupported("GL_EXT_multi_draw_arrays"))
-	{
-		g_pMetaHookAPI->SysError("Missing OpenGL extension GL_EXT_multi_draw_arrays!\n");
+		g_pMetaHookAPI->SysError("OpenGL 4.3 is not supported!\nRequirement: Nvidia GeForce 400 series and newer / AMD Radeon HD 5000 Series and newer / Intel HD Graphics in Intel Haswell and newer.\n");
 		return;
 	}
 
