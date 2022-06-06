@@ -1450,7 +1450,7 @@ qboolean studioapi_StudioCheckBBox(void)
 		}
 
 		VectorAdd((*currententity)->origin, tempmins, mins);
-		VectorAdd((*currententity)->origin, (*pstudiohdr)->bbmax, maxs);
+		VectorAdd((*currententity)->origin, tempmaxs, maxs);
 	}
 	else if (!VectorCompare(vec3_origin, (*pstudiohdr)->min))
 	{
