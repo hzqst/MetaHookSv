@@ -1407,6 +1407,130 @@ void R_GLStudioDrawPoints(void)
 
 //StudioAPI
 
+void R_StudioTransformVector(vec3_t in, vec3_t out)
+{
+	out[0] = in[0] * (*rotationmatrix)[0][0] + in[1] * (*rotationmatrix)[0][1] + in[2] * (*rotationmatrix)[0][2] + (*rotationmatrix)[0][3];
+	out[1] = in[0] * (*rotationmatrix)[1][0] + in[1] * (*rotationmatrix)[1][1] + in[2] * (*rotationmatrix)[1][2] + (*rotationmatrix)[1][3];
+	out[2] = in[0] * (*rotationmatrix)[2][0] + in[1] * (*rotationmatrix)[2][1] + in[2] * (*rotationmatrix)[2][2] + (*rotationmatrix)[2][3];
+}
+
+qboolean studioapi_StudioCheckBBox(void)
+{
+	if (!g_bIsSvenCoop)
+	{
+		return gRefFuncs.studioapi_StudioCheckBBox();
+	}
+
+	mplane_t			plane;
+	vec3_t				mins, maxs;
+
+	int					i;
+	mstudioseqdesc_t	*pseqdesc;
+
+	vec3_t				p1, p2;
+
+#undef min
+#undef max
+
+	vec3_t tempmins, tempmaxs;
+
+	const vec3_t gFakeHullMins = { -16, -16, -16 };
+	const vec3_t gFakeHullMaxs = { 16, 16, 16 };
+	
+	if (!VectorCompare(vec3_origin, (*pstudiohdr)->bbmin))
+	{
+		// clipping bounding box
+		VectorCopy((*pstudiohdr)->bbmin, tempmins);
+		VectorCopy((*pstudiohdr)->bbmax, tempmaxs);
+
+		if ((*currententity)->curstate.scale > 0 && (*currententity)->curstate.scale != 1)
+		{
+			VectorScale(tempmins, (*currententity)->curstate.scale, tempmins);
+			VectorScale(tempmaxs, (*currententity)->curstate.scale, tempmaxs);
+		}
+
+		VectorAdd((*currententity)->origin, tempmins, mins);
+		VectorAdd((*currententity)->origin, (*pstudiohdr)->bbmax, maxs);
+	}
+	else if (!VectorCompare(vec3_origin, (*pstudiohdr)->min))
+	{
+		// movement bounding box
+		VectorCopy((*pstudiohdr)->min, tempmins);
+		VectorCopy((*pstudiohdr)->max, tempmaxs);
+
+		if ((*currententity)->curstate.scale > 0 && (*currententity)->curstate.scale != 1)
+		{
+			VectorScale(tempmins, (*currententity)->curstate.scale, tempmins);
+			VectorScale(tempmaxs, (*currententity)->curstate.scale, tempmaxs);
+		}
+
+		VectorAdd((*currententity)->origin, tempmins, mins);
+		VectorAdd((*currententity)->origin, tempmins, maxs);
+	}
+	else
+	{
+		// fake bounding box
+		VectorCopy(gFakeHullMins, tempmins);
+		VectorCopy(gFakeHullMaxs, tempmaxs);
+
+		if ((*currententity)->curstate.scale > 0 && (*currententity)->curstate.scale != 1)
+		{
+			VectorScale(tempmins, (*currententity)->curstate.scale, tempmins);
+			VectorScale(tempmaxs, (*currententity)->curstate.scale, tempmaxs);
+		}
+
+		VectorAdd((*currententity)->origin, gFakeHullMins, mins);
+		VectorAdd((*currententity)->origin, gFakeHullMaxs, maxs);
+	}
+
+	// construct the base bounding box for this frame
+	if ((*currententity)->curstate.sequence >= (*pstudiohdr)->numseq)
+	{
+		(*currententity)->curstate.sequence = 0;
+	}
+
+	pseqdesc = (mstudioseqdesc_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->seqindex) + (*currententity)->curstate.sequence;
+
+	for (i = 0; i < 8; i++)
+	{
+		p1[0] = (i & 1) ? pseqdesc->bbmin[0] : pseqdesc->bbmax[0];
+		p1[1] = (i & 2) ? pseqdesc->bbmin[1] : pseqdesc->bbmax[1];
+		p1[2] = (i & 4) ? pseqdesc->bbmin[2] : pseqdesc->bbmax[2];
+
+		if ((*currententity)->curstate.scale > 0 && (*currententity)->curstate.scale != 1)
+		{
+			VectorScale(p1, (*currententity)->curstate.scale, p1);
+		}
+
+		R_StudioTransformVector(p1, p2);
+
+		if (p2[0] < mins[0]) mins[0] = p2[0];
+		if (p2[0] > maxs[0]) maxs[0] = p2[0];
+		if (p2[1] < mins[1]) mins[1] = p2[1];
+		if (p2[1] > maxs[1]) maxs[1] = p2[1];
+		if (p2[2] < mins[2]) mins[2] = p2[2];
+		if (p2[2] > maxs[2]) maxs[2] = p2[2];
+	}
+	
+	if (Host_IsSinglePlayerGame() || !r_cullsequencebox->value)
+	{
+		plane.type = 5;
+		VectorCopy(vpn, plane.normal);
+		plane.dist = DotProduct(plane.normal, r_origin);
+		plane.signbits = SignbitsForPlane(&plane);
+
+		if (BoxOnPlaneSide(mins, maxs, &plane) != 2)
+			return true;
+	}
+	else
+	{
+		if (!R_CullBox(mins, maxs))
+			return true;
+	}
+
+	return false;
+}
+
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight)
 {
 	if (!r_light_dynamic->value)

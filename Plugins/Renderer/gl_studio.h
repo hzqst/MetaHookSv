@@ -191,6 +191,7 @@ void R_GLStudioDrawPoints(void);
 studiohdr_t *R_LoadTextures(model_t *psubm);
 void studioapi_RestoreRenderer(void);
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
+qboolean studioapi_StudioCheckBBox(void);
 void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int);
 void __fastcall GameStudioRenderer_StudioRenderFinal(void *pthis, int);
 void  R_StudioRenderModel(void);

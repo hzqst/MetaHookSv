@@ -769,6 +769,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	//InlineHook StudioAPI
 	Install_InlineHook(studioapi_RestoreRenderer);
 	Install_InlineHook(studioapi_StudioDynamicLight);
+	Install_InlineHook(studioapi_StudioCheckBBox);
 
 	Install_InlineHook(CL_FxBlend);
 

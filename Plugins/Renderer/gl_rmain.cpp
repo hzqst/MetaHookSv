@@ -172,6 +172,7 @@ cvar_t *r_traceglow = NULL;
 cvar_t *r_wadtextures = NULL;
 cvar_t *r_glowshellfreq = NULL;
 cvar_t *r_detailtextures = NULL;
+cvar_t *r_cullsequencebox = NULL;
 
 cvar_t *gl_vsync = NULL;
 cvar_t *gl_ztrick = NULL;
@@ -233,16 +234,15 @@ cvar_t *r_alpha_shift = NULL;
 
 cvar_t *r_additive_shift = NULL;
 
+qboolean Host_IsSinglePlayerGame()
+{
+	return gRefFuncs.Host_IsSinglePlayerGame();
+}
+
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
 	if(r_draw_shadowcaster)
 		return false;
-
-	if ((*currententity)->model && (*currententity)->model->type == mod_studio && (*currententity)->curstate.scale != 1.0f)
-	{
-		if ((*currententity)->curstate.scale > 8.0f)
-			return false;
-	}
 
 	return gRefFuncs.R_CullBox(mins, maxs);
 }
@@ -1927,6 +1927,8 @@ void R_InitCvars(void)
 	//r_novis->flags &= ~FCVAR_SPONLY;
 
 	r_detailtextures = gEngfuncs.pfnGetCvarPointer("r_detailtextures");
+
+	r_cullsequencebox = gEngfuncs.pfnGetCvarPointer("r_cullsequencebox");
 
 	gl_vsync = gEngfuncs.pfnGetCvarPointer("gl_vsync");
 

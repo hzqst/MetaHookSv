@@ -215,6 +215,7 @@ extern cvar_t *r_traceglow;
 extern cvar_t *r_wadtextures;
 extern cvar_t *r_glowshellfreq;
 extern cvar_t *r_detailtextures;
+extern cvar_t *r_cullsequencebox;
 
 extern cvar_t *gl_vsync;
 extern cvar_t *gl_ztrick;
@@ -281,6 +282,7 @@ void R_RenderScene(void);
 void R_RenderView_SvEngine(int a1);
 bool R_IsRenderingPortal(void);
 qboolean R_CullBox(vec3_t mins, vec3_t maxs);
+qboolean Host_IsSinglePlayerGame();
 void R_ForceCVars(qboolean mp);
 void R_NewMap(void);
 void R_Init(void);

@@ -201,6 +201,10 @@
 
 #define SCR_BEGIN_LOADING_PLAQUE "\x6A\x01\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xF8\x03"
 
+#define HOST_IS_SINGLE_PLAYER_GAME_SVENGINE "\x33\xC0\x39\x05\x2A\x2A\x2A\x2A\x75\x2A\x83\x3D\x2A\x2A\x2A\x2A\x01\x0F\x94\xC0"
+
+#define HOST_IS_SINGLE_PLAYER_GAME_NEW "\xA1\x2A\x2A\x2A\x2A\x85\xC0\xA1\x2A\x2A\x2A\x2A\x74\x05\xA1\x2A\x2A\x2A\x2A\xC3"
+
 void R_FillAddress(void)
 {
 	DWORD addr;
@@ -691,7 +695,16 @@ void R_FillAddress(void)
 	gRefFuncs.SCR_BeginLoadingPlaque = (decltype(gRefFuncs.SCR_BeginLoadingPlaque))Search_Pattern(SCR_BEGIN_LOADING_PLAQUE);
 	Sig_FuncNotFound(SCR_BeginLoadingPlaque);
 
-
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		gRefFuncs.Host_IsSinglePlayerGame = (decltype(gRefFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_SVENGINE);
+		Sig_FuncNotFound(Host_IsSinglePlayerGame);
+	}
+	else
+	{
+		gRefFuncs.Host_IsSinglePlayerGame = (decltype(gRefFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW);
+		Sig_FuncNotFound(Host_IsSinglePlayerGame);
+	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{

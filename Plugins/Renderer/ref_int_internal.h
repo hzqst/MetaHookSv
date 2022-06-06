@@ -87,6 +87,7 @@ typedef struct
 	void(__fastcall *enginesurface_drawFlushText)(void *pthis, int);
 	void(*DLL_SetModKey)(void *pinfo, char *pkey, char *pvalue);
 	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
+	qboolean(*Host_IsSinglePlayerGame)(void);
 	//Sven Client DLL
 	void(__fastcall *ClientPortalManager_ResetAll)(void * pthis, int dummy);
 	mtexinfo_t *(__fastcall *ClientPortalManager_GetOriginalSurfaceTexture)(void * pthis, int dummy, msurface_t *surf);
@@ -105,6 +106,7 @@ typedef struct
 	//Engine Studio Exported API
 	void (*studioapi_StudioDynamicLight)(struct cl_entity_s *ent, struct alight_s *plight);
 	void (*studioapi_RestoreRenderer)(void);
+	qboolean (*studioapi_StudioCheckBBox)(void);
 
 	//Client Studio
 	int(__fastcall *GameStudioRenderer_StudioDrawModel)(void *pthis, int, int flags);
