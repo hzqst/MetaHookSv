@@ -73,9 +73,6 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 		if (state & DFINAL_SSR_BINARY_SEARCH_ENABLED)
 			defs << "#define SSR_BINARY_SEARCH_ENABLED\n";
 
-		if (glTextureView)
-			defs << "#define TEXTURE_VIEW_AVAILABLE\n";
-
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\dfinal_shader.fsh", def.c_str(), def.c_str(), NULL);
@@ -236,9 +233,6 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 
 		if (state & DLIGHT_VOLUME_ENABLED)
 			defs << "#define VOLUME_ENABLED\n";
-
-		if (glTextureView)
-			defs << "#define TEXTURE_VIEW_AVAILABLE\n";
 
 		auto def = defs.str();
 

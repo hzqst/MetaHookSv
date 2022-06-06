@@ -218,6 +218,9 @@ cvar_t *cl_righthand = NULL;
 cvar_t *chase_active = NULL;
 cvar_t *spec_pip = NULL;
 
+cvar_t *default_fov = NULL;
+cvar_t *viewmodel_fov = NULL;
+
 cvar_t *r_adjust_fov = NULL;
 
 cvar_t *r_vertical_fov = NULL;
@@ -1764,7 +1767,10 @@ void R_RenderView_SvEngine(int viewIdx)
 		R_RenderScene();
 
 		if (!(*r_refdef.onlyClientDraws))
+		{
+			R_SetupGLForViewModel();
 			R_DrawViewModel();
+		}
 
 		//Post processing
 		R_PostRenderView();
@@ -1989,6 +1995,12 @@ void R_InitCvars(void)
 
 	cl_righthand = gEngfuncs.pfnGetCvarPointer("cl_righthand");
 	chase_active = gEngfuncs.pfnGetCvarPointer("chase_active");
+
+	viewmodel_fov = gEngfuncs.pfnGetCvarPointer("viewmodel_fov");
+	if(!viewmodel_fov)
+		viewmodel_fov = gEngfuncs.pfnRegisterVariable("viewmodel_fov", "90", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	default_fov = gEngfuncs.pfnGetCvarPointer("default_fov");
 
 	r_vertical_fov = gEngfuncs.pfnRegisterVariable("r_vertical_fov", bVerticalFov ? "1" : "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	r_adjust_fov = gEngfuncs.pfnRegisterVariable("r_adjust_fov", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
@@ -2314,6 +2326,89 @@ void MYgluPerspective2(double xfov, double yfov, double zNear, double zFar)
 	auto xMin = -xMax;
 
 	glFrustum(xMin, xMax, yMin, yMax, zNear, zFar);
+}
+
+void R_SetupGLForViewModel(void)
+{
+	if (!CL_IsDevOverviewMode() && viewmodel_fov->value > 0)
+	{
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+	
+		if (r_vertical_fov->value)
+		{
+			auto height = (double)(*r_refdef.vrect).height;
+			auto width = (double)(*r_refdef.vrect).width;
+			auto aspect = height / width;
+
+			auto fov = viewmodel_fov->value;
+			if (fov < 1.0 || fov > 179.0)
+				fov = 90.0;
+
+			//Scoping?
+			if (default_fov && (*scrfov) < default_fov->value)
+			{
+				fov *= (*scrfov) / default_fov->value;
+				if (fov < 15)
+					fov = 15;
+			}
+
+			r_yfov = fov;
+			r_xfov = atan2(width / (height / tan(fov * (1.0 / 360.0) * M_PI)), 1.0) * 360.0 * (1.0 / M_PI);
+
+			MYgluPerspectiveV(r_xfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
+		}
+		else
+		{
+			auto width = (double)(*r_refdef.vrect).width;
+			auto height = (double)(*r_refdef.vrect).height;
+			auto aspect = width / height;
+
+			auto fov = viewmodel_fov->value;
+			if (fov < 1.0 || fov > 179.0)
+				fov = 90.0;
+
+			//Scoping?
+			if (default_fov && (*scrfov) < default_fov->value)
+			{
+				fov *= (*scrfov) / default_fov->value;
+				if (fov < 15)
+					fov = 15;
+			}
+
+			r_xfov = fov;
+			r_yfov = atan2(height / (width / tan(fov * (1.0 / 360.0) * M_PI)), 1.0) * 360.0 * (1.0 / M_PI);
+
+			MYgluPerspectiveH(r_yfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
+		}
+
+		glGetFloatv(GL_PROJECTION_MATRIX, r_projection_matrix);
+		glMatrixMode(GL_MODELVIEW);
+
+		for (int i = 0; i < 16; i += 4)
+		{
+			for (int j = 0; j < 4; j++)
+			{
+				gWorldToScreen[i + j] = 0;
+
+				for (int k = 0; k < 4; k++)
+					gWorldToScreen[i + j] += r_world_matrix[i + k] * r_projection_matrix[k * 4 + j];
+			}
+		}
+
+		InvertMatrix(gWorldToScreen, gScreenToWorld);
+
+		InvertMatrix(r_world_matrix, r_world_matrix_inv);
+		InvertMatrix(r_projection_matrix, r_proj_matrix_inv);
+
+		scene_ubo_t SceneUBO;
+		memcpy(SceneUBO.viewMatrix, r_world_matrix, sizeof(mat4));
+		memcpy(SceneUBO.projMatrix, r_projection_matrix, sizeof(mat4));
+		memcpy(SceneUBO.invViewMatrix, r_world_matrix_inv, sizeof(mat4));
+		memcpy(SceneUBO.invProjMatrix, r_proj_matrix_inv, sizeof(mat4));
+
+		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, viewMatrix), offsetof(scene_ubo_t, shadowMatrix) - offsetof(scene_ubo_t, viewMatrix), &SceneUBO.viewMatrix);
+	}
 }
 
 void R_SetupGL(void)

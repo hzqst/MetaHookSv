@@ -405,9 +405,6 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		if (glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define UINT64_ENABLED\n";
 
-		if (glTextureView)
-			defs << "#define TEXTURE_VIEW_AVAILABLE\n";
-
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\studio_shader.vsh", "renderer\\shader\\studio_shader.fsh", def.c_str(), def.c_str(), NULL);
@@ -1314,7 +1311,7 @@ void R_GLStudioDrawPoints(void)
 			gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
 		}
 
-		if ((StudioProgramState & STUDIO_NF_CELSHADE_FACE) && glTextureView)
+		if ((StudioProgramState & STUDIO_NF_CELSHADE_FACE))
 		{
 			//Texture unit 1 = Stencil texture
 			GL_EnableMultitexture();
@@ -1355,7 +1352,7 @@ void R_GLStudioDrawPoints(void)
 			r_studio_polys += VBOMesh.iPolyCount;
 		}
 
-		if ((StudioProgramState & STUDIO_NF_CELSHADE_FACE) && glTextureView)
+		if ((StudioProgramState & STUDIO_NF_CELSHADE_FACE))
 		{
 			//Texture unit 1 = Stencil texture
 			GL_DisableMultitexture();

@@ -3,6 +3,7 @@
 #include "common.h"
 
 #extension GL_EXT_texture_array : require
+#extension GL_EXT_gpu_shader4 : require
 
 #define GBUFFER_INDEX_DIFFUSE		0.0
 #define GBUFFER_INDEX_LIGHTMAP		1.0
@@ -12,10 +13,7 @@
 
 layout(binding = 0) uniform sampler2DArray gbufferTex;
 layout(binding = 1) uniform sampler2D depthTex;
-
-#if defined(TEXTURE_VIEW_AVAILABLE)
 layout(binding = 2) uniform usampler2D stencilTex;
-#endif
 
 layout(binding = 3) uniform sampler2D linearDepthTex;
 

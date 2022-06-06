@@ -1,6 +1,7 @@
 #version 430
 
 #extension GL_EXT_texture_array : require
+#extension GL_EXT_gpu_shader4 : require
 
 #ifdef BINDLESS_ENABLED
 #extension GL_ARB_shader_draw_parameters : require
@@ -155,7 +156,7 @@ float CalcShadowIntensityInternal(vec3 worldpos, int ilayer, float layer, float 
 	
 	vec3 caster = ShadowGetWorldPosition(v_shadowcoord[ilayer], layer);
 
-	float dist = distance(caster, scene);
+	float dist = abs(caster.z - scene.z);
 	float distlerp = (dist - SceneUBO.shadowFade.x) / SceneUBO.shadowFade.y;
 	shadow_intensity *= 1.0 - clamp(distlerp, 0.0, 1.0);
 
@@ -166,7 +167,7 @@ float CalcShadowIntensityInternal(vec3 worldpos, int ilayer, float layer, float 
 	float shadow_final = shadow_high + shadow_medium + shadow_low;
 	shadow_final = clamp(shadow_final, 0.0, 1.0) * shadow_intensity;
 
-	return shadow_final;
+	return shadow_final;//0 = shadow, 1 = no shadow
 }
 
 float CalcShadowIntensity(vec3 worldpos, vec3 norm, vec3 lightdir)
