@@ -776,7 +776,29 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		auto Bip01_PushString = Search_Pattern(pattern);
 		Sig_VarNotFound(Bip01_PushString);
 
-		gPrivateFuncs.R_StudioSetupBones = (decltype(gPrivateFuncs.R_StudioSetupBones))g_pMetaHookAPI->ReverseSearchFunctionBegin(Bip01_PushString, 0x600);
+		gPrivateFuncs.R_StudioSetupBones = (decltype(gPrivateFuncs.R_StudioSetupBones))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Bip01_PushString, 0x600, [](PUCHAR Candidate) {
+			//.text : 01D8DD90 83 EC 48                                            sub     esp, 48h
+			//.text : 01D8DD93 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
+			//.text : 01D8DD98 33 C4 xor eax, esp
+			if (Candidate[0] == 0x83 &&
+				Candidate[1] == 0xEC &&
+				Candidate[3] == 0xA1 &&
+				Candidate[8] == 0x33 &&
+				Candidate[9] == 0xC4)
+				return TRUE;
+
+			//.text : 01D82A50 55                                                  push    ebp
+			//.text : 01D82A51 8B EC                                               mov     ebp, esp
+			//.text : 01D82A53 83 EC 48                                            sub     esp, 48h
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC &&
+				Candidate[3] == 0x83 &&
+				Candidate[4] == 0xEC)
+				return TRUE;
+
+			return FALSE;
+		});
 		Sig_FuncNotFound(R_StudioSetupBones);
 
 		gPrivateFuncs.R_StudioDrawModel = (decltype(gPrivateFuncs.R_StudioDrawModel))(*ppinterface)->StudioDrawModel;

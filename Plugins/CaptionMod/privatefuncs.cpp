@@ -217,7 +217,18 @@ void Client_FillAddress(void)
 			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, CS_CZ_GETCLIENTCOLOR_SIG, Sig_Length(CS_CZ_GETCLIENTCOLOR_SIG));
 			if (addr)
 			{
-				gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))g_pMetaHookAPI->ReverseSearchFunctionBegin((PVOID)addr, 0x50);
+				gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx((PVOID)addr, 0x50, [](PUCHAR Candidate) {
+
+					//8B 44 24 04                                         mov     eax, [esp+arg_0]
+					if (Candidate[0] == 0x8B &&
+						Candidate[1] == 0x44 &&
+						Candidate[2] == 0x24)
+					{
+						return TRUE;
+					}
+
+					return FALSE;
+				});
 
 				Sig_FuncNotFound(GetClientColor);
 			}

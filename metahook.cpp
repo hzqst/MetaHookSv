@@ -113,6 +113,7 @@ int MH_DisasmSingleInstruction(PVOID address, DisasmSingleCallback callback, voi
 BOOL MH_DisasmRanges(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callback, int depth, PVOID context);
 PVOID MH_GetSectionByName(PVOID ImageBase, const char *SectionName, ULONG *SectionSize);
 PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize);
+PVOID MH_ReverseSearchFunctionBeginEx(PVOID SearchBegin, DWORD SearchSize, FindAddressCallback callback);
 void *MH_ReverseSearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
 void MH_SysError(const char *fmt, ...);
 
@@ -691,7 +692,34 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 			auto ClientDll_Init_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
 			if (ClientDll_Init_PushString)
 			{
-				auto ClientDll_Init_FunctionBase = MH_ReverseSearchFunctionBegin(ClientDll_Init_PushString, 0x200);
+				auto ClientDll_Init_FunctionBase = MH_ReverseSearchFunctionBeginEx(ClientDll_Init_PushString, 0x200, [](PUCHAR Candidate) {
+					//  .text : 01D19E10 81 EC 04 02 00 00                                   sub     esp, 204h
+					//	.text : 01D19E16 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
+					//	.text : 01D19E1B 33 C4 xor eax, esp
+					if (Candidate[0] == 0x81 &&
+						Candidate[1] == 0xEC &&
+						Candidate[4] == 0x00 &&
+						Candidate[5] == 0x00 &&
+						Candidate[6] == 0xA1 &&
+						Candidate[11] == 0x33 &&
+						Candidate[12] == 0xC4)
+						return TRUE;
+
+					//  .text : 01D0B180 55                                                  push    ebp
+					//	.text : 01D0B181 8B EC                                               mov     ebp, esp
+					//	.text : 01D0B183 81 EC 00 02 00 00                                   sub     esp, 200h
+					if (Candidate[0] == 0x55 &&
+						Candidate[1] == 0x8B &&
+						Candidate[2] == 0xEC &&
+						Candidate[3] == 0x81 &&
+						Candidate[4] == 0xEC &&
+						Candidate[7] == 0x00 &&
+						Candidate[8] == 0x00)
+						return TRUE;
+
+					return FALSE;
+				});
+
 				if (ClientDll_Init_FunctionBase)
 				{
 					g_pfnClientDLL_Init = (decltype(g_pfnClientDLL_Init))ClientDll_Init_FunctionBase;
@@ -1951,6 +1979,136 @@ PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize)
 	return NULL;
 }
 
+PVOID MH_ReverseSearchFunctionBeginEx(PVOID SearchBegin, DWORD SearchSize, FindAddressCallback callback)
+{
+	PUCHAR SearchPtr = (PUCHAR)SearchBegin;
+	PUCHAR SearchEnd = (PUCHAR)SearchBegin - SearchSize;
+
+	while (SearchPtr > SearchEnd)
+	{
+		PVOID Candidate = NULL;
+		bool bShouldCheck = false;
+
+		if (SearchPtr[0] == 0xCC || SearchPtr[0] == 0x90 || SearchPtr[0] == 0xC3)
+		{
+			if (SearchPtr[1] == 0xCC || SearchPtr[1] == 0x90)
+			{
+				if (SearchPtr[2] != 0x90 &&
+					SearchPtr[2] != 0xCC)
+				{
+					bShouldCheck = true;
+					Candidate = SearchPtr + 2;
+				}
+			}
+			else if (
+				SearchPtr[1] != 0x90 &&
+				SearchPtr[1] != 0xCC)
+			{
+				MH_ReverseSearchFunctionBegin_ctx2 ctx2 = { 0 };
+
+				MH_DisasmSingleInstruction(SearchPtr + 1, [](void* inst, PUCHAR address, size_t instLen, PVOID context) {
+					auto pinst = (cs_insn*)inst;
+					auto ctx = (MH_ReverseSearchFunctionBegin_ctx2*)context;
+
+					if (pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG)
+					{
+						ctx->bPushRegister = true;
+					}
+					else if (pinst->id == X86_INS_SUB &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[0].reg == X86_REG_ESP &&
+						pinst->detail->x86.operands[1].type == X86_OP_IMM)
+					{
+						ctx->bSubEspImm = true;
+					}
+
+					}, &ctx2);
+
+				if (ctx2.bPushRegister || ctx2.bSubEspImm)
+				{
+					bShouldCheck = true;
+					Candidate = SearchPtr + 1;
+				}
+			}
+		}
+
+		if (bShouldCheck && callback((PUCHAR)Candidate))
+		{
+			MH_ReverseSearchFunctionBegin_ctx ctx = { 0 };
+
+			ctx.bFoundDesiredAddress = false;
+			ctx.DesiredAddress = SearchBegin;
+			ctx.base = Candidate;
+			ctx.max_insts = 1000;
+			ctx.max_depth = 16;
+			ctx.walks.emplace_back(ctx.base, 0x1000, 0);
+
+			while (ctx.walks.size())
+			{
+				auto walk = ctx.walks[ctx.walks.size() - 1];
+				ctx.walks.pop_back();
+
+				MH_DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+					{
+						auto pinst = (cs_insn*)inst;
+						auto ctx = (MH_ReverseSearchFunctionBegin_ctx*)context;
+
+						if (address == ctx->DesiredAddress)
+						{
+							ctx->bFoundDesiredAddress = true;
+							return TRUE;
+						}
+
+						if (ctx->code.size() > ctx->max_insts)
+							return TRUE;
+
+						if (ctx->code.find(address) != ctx->code.end())
+							return TRUE;
+
+						ctx->code.emplace(address);
+
+						if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
+							pinst->detail->x86.op_count == 1 &&
+							pinst->detail->x86.operands[0].type == X86_OP_IMM)
+						{
+							PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
+							auto foundbranch = ctx->branches.find(imm);
+							if (foundbranch == ctx->branches.end())
+							{
+								ctx->branches.emplace(imm);
+								if (depth + 1 < ctx->max_depth)
+									ctx->walks.emplace_back(imm, 0x300, depth + 1);
+							}
+
+							if (pinst->id == X86_INS_JMP)
+								return TRUE;
+						}
+
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						if (pinst->id == X86_INS_RET)
+							return TRUE;
+
+						return FALSE;
+					}, walk.depth, &ctx);
+			}
+
+			if (ctx.bFoundDesiredAddress)
+			{
+				return Candidate;
+			}
+		}
+
+		SearchPtr--;
+	}
+
+	return NULL;
+}
+
 int MH_DisasmSingleInstruction(PVOID address, DisasmSingleCallback callback, void *context)
 {
 	int instLen = 0;
@@ -2156,4 +2314,5 @@ metahook_api_t gMetaHookAPI =
 	MH_HookCvarCallback,
 	MH_HookCmd,
 	MH_SysError,
+	MH_ReverseSearchFunctionBeginEx,
 };

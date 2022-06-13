@@ -706,6 +706,7 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(Host_IsSinglePlayerGame);
 	}
 
+	//engine's R_AddTEntity is not used anymore
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char sigs1[] = "Can't add transparent entity. Too many";
@@ -749,7 +750,33 @@ void R_FillAddress(void)
 		auto Cvar_DirectSet_Call = Search_Pattern(pattern);
 		Sig_VarNotFound(Cvar_DirectSet_Call);
 
-		gRefFuncs.Cvar_DirectSet = (decltype(gRefFuncs.Cvar_DirectSet))g_pMetaHookAPI->ReverseSearchFunctionBegin(Cvar_DirectSet_Call, 0x500);
+		gRefFuncs.Cvar_DirectSet = (decltype(gRefFuncs.Cvar_DirectSet))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Cvar_DirectSet_Call, 0x500, [](PUCHAR Candidate) {
+			//.text : 01D42120 81 EC 0C 04 00 00                                   sub     esp, 40Ch
+			//.text : 01D42126 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
+			//.text : 01D4212B 33 C4
+			if (Candidate[0] == 0x81 &&
+				Candidate[1] == 0xEC &&
+				Candidate[4] == 0x00 &&
+				Candidate[5] == 0x00 &&
+				Candidate[6] == 0xA1 &&
+				Candidate[11] == 0x33 &&
+				Candidate[12] == 0xC4)
+				return TRUE;
+
+			//.text : 01D2E530 55                                                  push    ebp
+			//.text : 01D2E531 8B EC                                               mov     ebp, esp
+			//.text : 01D2E533 81 EC 00 04 00 00                                   sub     esp, 400h
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC &&
+				Candidate[3] == 0x81 &&
+				Candidate[4] == 0xEC &&
+				Candidate[7] == 0x00 &&
+				Candidate[8] == 0x00)
+				return TRUE;
+
+			return FALSE;
+			});
 		Sig_FuncNotFound(Cvar_DirectSet);
 	}
 
@@ -923,7 +950,23 @@ void R_FillAddress(void)
 		auto R_AllocTransObjects_PushString = Search_Pattern(pattern);
 		Sig_VarNotFound(R_AllocTransObjects_PushString);
 
-		PVOID R_AllocTransObjects = (decltype(R_AllocTransObjects))g_pMetaHookAPI->ReverseSearchFunctionBegin(R_AllocTransObjects_PushString, 0x50);
+		PVOID R_AllocTransObjects = (decltype(R_AllocTransObjects))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_AllocTransObjects_PushString, 0x50, [](PUCHAR Candidate) {
+			//.text:01D920B0 83 3D 94 61 DF 08 00                                cmp     dword_8DF6194, 0
+			if (Candidate[0] == 0x83 &&
+				Candidate[1] == 0x3D &&
+				Candidate[6] == 0x00)
+				return TRUE;
+
+			//  .text : 01D0B180 55                                                  push    ebp
+			//	.text : 01D0B181 8B EC                                               mov     ebp, esp
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC)
+				return TRUE;
+
+			return FALSE;
+		});
+
 		Sig_VarNotFound(R_AllocTransObjects);
 
 		g_pMetaHookAPI->DisasmRanges(R_AllocTransObjects, 0x80, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
@@ -1279,7 +1322,30 @@ void R_FillAddress(void)
 		auto R_LoadSkys_PushString = Search_Pattern(pattern);
 		Sig_VarNotFound(R_LoadSkys_PushString);
 
-		gRefFuncs.R_LoadSkys = (decltype(gRefFuncs.R_LoadSkys))g_pMetaHookAPI->ReverseSearchFunctionBegin(R_LoadSkys_PushString, 0x600);
+		gRefFuncs.R_LoadSkys = (decltype(gRefFuncs.R_LoadSkys))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_LoadSkys_PushString, 0x600, [](PUCHAR Candidate) {
+			//.text : 01D5FC10 81 EC 28 01 00 00                                   sub     esp, 128h
+			//.text : 01D5FC16 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
+			//.text : 01D5FC1B 33 C4 xor eax, esp
+			if (Candidate[0] == 0x81 &&
+				Candidate[1] == 0xEC &&
+				Candidate[6] == 0xA1 &&
+				Candidate[11] == 0x33 &&
+				Candidate[12] == 0xC4)
+				return TRUE;
+
+			//  .text : 01D4F9C2 55                                                  push    ebp
+			//	.text : 01D4F9C3 8B EC                                               mov     ebp, esp
+			//	.text : 01D4F9C5 83 EC 6C                                            sub     esp, 6Ch
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC &&
+				Candidate[3] == 0x83 &&
+				Candidate[4] == 0xEC)
+				return TRUE;
+
+			return FALSE;
+		});
+
 		Sig_FuncNotFound(R_LoadSkys);
 
 		typedef struct
@@ -2775,7 +2841,38 @@ void R_FillAddress(void)
 		auto Bogus_Call = Search_Pattern(pattern);
 		Sig_VarNotFound(Bogus_Call);
 
-		gRefFuncs.Mod_LoadStudioModel = (decltype(gRefFuncs.Mod_LoadStudioModel))g_pMetaHookAPI->ReverseSearchFunctionBegin(Bogus_Call, 0x50);
+		gRefFuncs.Mod_LoadStudioModel = (decltype(gRefFuncs.Mod_LoadStudioModel))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Bogus_Call, 0x50, [](PUCHAR Candidate) {
+
+			//  .text : 01D71630 81 EC 10 01 00 00                                   sub     esp, 110h
+			//	.text : 01D71636 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
+			//	.text : 01D7163B 33 C4 xor eax, esp
+			if (Candidate[0] == 0x81 &&
+				Candidate[1] == 0xEC &&
+				Candidate[2] == 0x24 &&
+				Candidate[4] == 0x00 &&
+				Candidate[5] == 0x00 &&
+				Candidate[6] == 0xA1 &&
+				Candidate[11] == 0x33 &&
+				Candidate[12] == 0xC4)
+			{
+				return TRUE;
+			}
+			//  .text : 01D61AD0 55                                                  push    ebp
+			//  .text : 01D61AD1 8B EC                                               mov     ebp, esp
+			//	.text : 01D61AD3 81 EC 0C 01 00 00                                   sub     esp, 10Ch
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC &&
+				Candidate[3] == 0x81 &&
+				Candidate[4] == 0xEC &&
+				Candidate[7] == 0x00 &&
+				Candidate[8] == 0x00 )
+			{
+				return TRUE;
+			}
+
+			return FALSE;
+		});
 		Sig_FuncNotFound(Mod_LoadStudioModel);
 	}
 
@@ -3016,7 +3113,30 @@ void R_FillAddress(void)
 		*(DWORD *)(pattern + 1) = (DWORD)UrlInfo_String;
 		auto UrlInfo_PushString = Search_Pattern(pattern);
 		Sig_VarNotFound(UrlInfo_PushString);
-		gRefFuncs.DLL_SetModKey = (decltype(gRefFuncs.DLL_SetModKey))g_pMetaHookAPI->ReverseSearchFunctionBegin(UrlInfo_PushString, 0x300);
+		gRefFuncs.DLL_SetModKey = (decltype(gRefFuncs.DLL_SetModKey))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(UrlInfo_PushString, 0x300, [](PUCHAR Candidate) {
+
+			//.text : 01D0A6D0 56                                                  push    esi
+			//.text : 01D0A6D1 8B 74 24 0C                                         mov     esi, [esp + 4 + arg_4]
+			//.text : 01D0A6D5 68 F0 B5 E5 01                                      push    offset aGamedll; "gamedll"
+			if (Candidate[1] == 0x8B &&
+				Candidate[3] == 0x24 &&
+				Candidate[4] == 0x0C &&
+				Candidate[5] == 0x68)
+			{
+				return TRUE;
+			}
+
+			//.text : 01DAB080 55                                                  push    ebp
+			//.text : 01DAB081 8B EC                                               mov     ebp, esp
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC)
+			{
+				return TRUE;
+			}
+
+			return FALSE;
+		});
 		Sig_FuncNotFound(DLL_SetModKey);
 
 		Install_InlineHook(DLL_SetModKey);

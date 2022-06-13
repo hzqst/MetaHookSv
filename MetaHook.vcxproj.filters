@@ -21,9 +21,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="commandline.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="HLSDK\common\interface.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -50,6 +47,9 @@
     </ClCompile>
     <ClCompile Include="Detours\src\modules.cpp">
       <Filter>Detours</Filter>
+    </ClCompile>
+    <ClCompile Include="commandline.cpp">
+      <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

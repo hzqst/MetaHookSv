@@ -697,7 +697,31 @@ void GameUI_InstallHook(void)
 		auto GameUI_Options_Call = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), pattern, sizeof(pattern) - 1);
 		Sig_VarNotFound(GameUI_Options_Call);
 
-		g_pfnCOptionsDialog_ctor = (decltype(g_pfnCOptionsDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBegin(GameUI_Options_Call, 0x300);
+		g_pfnCOptionsDialog_ctor = (decltype(g_pfnCOptionsDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(GameUI_Options_Call, 0x300, [](PUCHAR Candidate) {
+			//.text : 10016CB0 55                                                  push    ebp
+			//.text : 10016CB1 8B EC                                               mov     ebp, esp
+			//.text : 10016CB3 6A FF
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC &&
+				Candidate[3] == 0x6A &&
+				Candidate[4] == 0xFF)
+				return TRUE;
+
+			//8B 44 24 04                                         mov     eax, [esp+arg_0]
+			if (Candidate[0] == 0x8B &&
+				Candidate[1] == 0x44 &&
+				Candidate[2] == 0x24)
+			{
+				//.text : 100377D2 68 96 01 00 00                                      push    196h
+				//.text : 100377D7 68 00 02 00 00                                      push    200h
+				if (g_pMetaHookAPI->SearchPattern(Candidate, 0x30, "\x68\x96\x01\x00\x00\x68\x00\x02\x00\x00", sizeof("\x68\x96\x01\x00\x00\x68\x00\x02\x00\x00") - 1))
+				{
+					return TRUE;
+				}
+			}
+			return FALSE;
+		});
 		Sig_VarNotFound(g_pfnCOptionsDialog_ctor);
 	}
 
@@ -739,7 +763,28 @@ void GameUI_InstallHook(void)
 		auto SetVideoMode_StringPush = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), pattern, sizeof(pattern) - 1);
 		Sig_VarNotFound(SetVideoMode_StringPush);
 
-		g_pfnCOptionsSubVideo_ApplyVidSettings = (decltype(g_pfnCOptionsSubVideo_ApplyVidSettings))g_pMetaHookAPI->ReverseSearchFunctionBegin(SetVideoMode_StringPush, 0x300);
+		g_pfnCOptionsSubVideo_ApplyVidSettings = (decltype(g_pfnCOptionsSubVideo_ApplyVidSettings))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(SetVideoMode_StringPush, 0x300, [](PUCHAR Candidate) {
+			//  .text : 1001D2C0 55                                                  push    ebp
+			//	.text : 1001D2C1 8B EC                                               mov     ebp, esp
+			//	.text : 1001D2C3 81 EC 0C 02 00 00                                   sub     esp, 20Ch
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC &&
+				Candidate[3] == 0x81 &&
+				Candidate[4] == 0xEC)
+				return TRUE;
+
+			//.text:1003DDB0 81 EC 08 02 00 00                                   sub     esp, 208h
+			if (Candidate[0] == 0x81 &&
+				Candidate[1] == 0xEC &&
+				Candidate[4] == 0x00 &&
+				Candidate[5] == 0x00)
+			{
+				return TRUE;
+			}
+
+			return FALSE;
+		});
 		Sig_VarNotFound(g_pfnCOptionsSubVideo_ApplyVidSettings);
 	}
 

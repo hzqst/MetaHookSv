@@ -50,6 +50,7 @@ typedef struct hook_s hook_t;
 
 typedef void (*DisasmSingleCallback)(void *inst, PUCHAR address, size_t instLen, PVOID context);
 typedef BOOL (*DisasmCallback)(void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context);
+typedef BOOL (*FindAddressCallback)(PUCHAR address);
 
 typedef struct metahook_api_s
 {
@@ -262,6 +263,11 @@ typedef struct metahook_api_s
 	void (*SysError)(const char *fmt, ...);
 	/*
 		Show error msgbox and terminate game process.
+	*/
+
+	PVOID(*ReverseSearchFunctionBeginEx)(PVOID SearchBegin, DWORD SearchSize, FindAddressCallback callback);
+	/*
+		Reverse search from given base to lower address, find 90 90 90 99 + ??, or CC CC CC CC + ??
 	*/
 }
 metahook_api_t;
