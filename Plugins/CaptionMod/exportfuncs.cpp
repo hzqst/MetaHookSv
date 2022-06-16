@@ -127,6 +127,18 @@ void Cap_Reload_f(void)
 			name += "_dictionary.csv";
 
 			g_pViewPort->LoadCustomDictionary(name.c_str());
+
+			if (0 != strcmp(m_szCurrentLanguage, "english"))
+			{
+				name = levelname;
+				name = name.substr(0, name.length() - 4);
+				name += "_dictionary_";
+				name += m_szCurrentLanguage;
+				name += ".csv";
+
+				g_pViewPort->LoadCustomDictionary(name.c_str());
+			}
+
 			g_pViewPort->LinkDictionary();
 		}
 	}

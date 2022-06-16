@@ -574,7 +574,7 @@ void CViewport::LoadCustomDictionary(const char *dict_name)
 	}
 	catch (std::exception &err)
 	{
-		gEngfuncs.Con_Printf("LoadCustomDictionary: %s\n", err.what());
+		gEngfuncs.Con_DPrintf("LoadCustomDictionary: %s\n", err.what());
 	}
 
 	if (row_count < 2)
@@ -824,6 +824,18 @@ void CViewport::Think(void)
 		name += "_dictionary.csv";
 
 		LoadCustomDictionary(name.c_str());
+
+		if (0 != strcmp(m_szCurrentLanguage, "english"))
+		{
+			name = levelname;
+			name = name.substr(0, name.length() - 4);
+			name += "_dictionary_";
+			name += m_szCurrentLanguage;
+			name += ".csv";
+
+			LoadCustomDictionary(name.c_str());
+		}
+
 		LinkDictionary();
 
 		strcpy(m_szLevelName, levelname);
