@@ -2848,7 +2848,6 @@ void R_FillAddress(void)
 			//	.text : 01D7163B 33 C4 xor eax, esp
 			if (Candidate[0] == 0x81 &&
 				Candidate[1] == 0xEC &&
-				Candidate[2] == 0x24 &&
 				Candidate[4] == 0x00 &&
 				Candidate[5] == 0x00 &&
 				Candidate[6] == 0xA1 &&
