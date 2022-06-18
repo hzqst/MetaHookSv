@@ -29,19 +29,15 @@
 
 bv_simrate 32 ~ 128 : How many times to perform simulation per persond ? higher simulation frequency get more accurate result, while eating more CPU resource. default : 64
 
-bv_scale : Scaling the size of world for bullet-engine. default : 0.25, Either too-large or too-small scale size will cause the physical simulation to be unstable.
+bv_scale : Scaling the size of world for bullet-engine. default : 0.25, Either too-large or too-small scale size makes the physical simulation unstable.
 
-bv_debug 1 : Enable debug-drawing. only ragdoll rigidbodies are drawn.
+bv_debug 1 : Enable debug-drawing. only ragdoll rigidbodies are drawn.  (*Use this for rigidbody debugging!*)
 
-bv_debug 2 : Enable debug-drawing. both ragdoll, brush-entity rigidbodies are drawn.
+bv_debug 4 : Enable debug-drawing. both ragdoll rigidbodies and conetwist constraints are drawn. (*Use this for constraints debugging!*)
 
-bv_debug 3 : Enable debug-drawing. both ragdoll, world rigidbodies are drawn.
+bv_debug 5 : Enable debug-drawing. both ragdoll rigidbodies and hinge constraints are drawn. (*Use this for constraints debugging!*)
 
-bv_debug 4 : Enable debug-drawing. both ragdoll rigidbodies and conetwist constraints are drawn.
-
-bv_debug 5 : Enable debug-drawing. both ragdoll rigidbodies and hinge constraints are drawn.
-
-bv_debug 6 : Enable debug-drawing. both ragdoll rigidbodies and point constraints are drawn.
+bv_debug 6 : Enable debug-drawing. both ragdoll rigidbodies and point constraints are drawn. (*Use this for constraints debugging!*)
 
 ### How to make ragdolls
 
@@ -77,13 +73,13 @@ You can check each sequence of animation from HLMV or https://github.com/danakt/
 
 "sphere" for shape of rigidbone, either sphere or capsule.
 
-"-4.0" for rigidbody Z offset from bone origin
+"-4.0" for rigidbody offset from current bone origin (it's the bone with index 15 here)
 
-"5.0" for size of rigidbody
+"5.0" for size of rigidbody, it's "width" for capsule, and "radius" for sphere
 
-"0.0" for size2 of rigidbody, "height" for capsule
+"0.0" for size2 of rigidbody, it's "height" for capsule
 
-"6" for rigidbody mass
+"6" for rigidbody mass. rigidbody with smaller mass is easier to be dragged by rigidbody with bigger mass.
 
 ** The example line creates a rigidbody named "Head" at position of bone[15], with an offset of "-4.0" to the bone[6]. and the size of sphere rigidbody is 5.0 **
 
