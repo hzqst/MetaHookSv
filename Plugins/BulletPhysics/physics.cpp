@@ -883,7 +883,7 @@ void CPhysicsManager::Init(void)
 
 void CPhysicsManager::DebugDraw(void)
 {
-	if (bv_debug->value == 1)
+	if (bv_debug->value == 1 || bv_debug->value == 4 || bv_debug->value == 5 || bv_debug->value == 6)
 	{
 		m_dynamicsWorld->debugDrawWorld();
 	}
@@ -1375,10 +1375,12 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 #define RAGDOLL_PARSING_DEATHANIM 0
 #define RAGDOLL_PARSING_RIGIDBODY 1
 #define RAGDOLL_PARSING_JIGGLEBONE 2
-#define RAGDOLL_PARSING_CONSTRAINT 3
-#define RAGDOLL_PARSING_BARNACLE 4
-#define RAGDOLL_PARSING_GARGANTUA 5
-#define RAGDOLL_PARSING_WATERCONTROL 6
+#define RAGDOLL_PARSING_RIGIDBODY_XYZ 3
+#define RAGDOLL_PARSING_JIGGLEBONE_XYZ 4
+#define RAGDOLL_PARSING_CONSTRAINT 5
+#define RAGDOLL_PARSING_BARNACLE 6
+#define RAGDOLL_PARSING_GARGANTUA 7
+#define RAGDOLL_PARSING_WATERCONTROL 8
 
 	int iParsingState = -1;
 
@@ -1405,6 +1407,16 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 		else if (!strcmp(text, "[JiggleBone]"))
 		{
 			iParsingState = RAGDOLL_PARSING_JIGGLEBONE;
+			continue;
+		}
+		else if (!strcmp(text, "[RigidBodyXYZ]"))
+		{
+			iParsingState = RAGDOLL_PARSING_RIGIDBODY_XYZ;
+			continue;
+		}
+		else if (!strcmp(text, "[JiggleBoneXYZ]"))
+		{
+			iParsingState = RAGDOLL_PARSING_JIGGLEBONE_XYZ;
 			continue;
 		}
 		else if (!strcmp(text, "[Constraint]"))
@@ -1508,7 +1520,7 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 			ptext = gEngfuncs.COM_ParseFile(ptext, text);
 			if (!ptext)
 			{
-				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody siz for %s\n", name.c_str());
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody size for %s\n", name.c_str());
 				break;
 			}
 
@@ -1532,7 +1544,110 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 
 			float f_mass = atof(text);
 
-			cfg->rigcontrol.emplace_back(subname, i_boneindex, i_pboneindex, i_shape, f_offset, f_size, f_size2, f_mass, iParsingState == 2 ? RIG_FL_JIGGLE : 0);
+			cfg->rigcontrol.emplace_back(subname, i_boneindex, i_pboneindex, i_shape, f_offset, f_offset, f_offset, f_size, f_size2, f_mass, iParsingState == RAGDOLL_PARSING_JIGGLEBONE ? RIG_FL_JIGGLE : 0);
+		}
+		else if (iParsingState == RAGDOLL_PARSING_RIGIDBODY_XYZ || iParsingState == RAGDOLL_PARSING_JIGGLEBONE_XYZ)
+		{
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody boneindex for %s\n", name.c_str());
+				break;
+			}
+
+			int i_boneindex = atoi(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody pboneindex for %s\n", name.c_str());
+				break;
+			}
+
+			int i_pboneindex = atoi(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody shape for %s\n", name.c_str());
+				break;
+			}
+
+			int i_shape = -1;
+
+			if (!strcmp(text, "sphere"))
+			{
+				i_shape = RAGDOLL_SHAPE_SPHERE;
+			}
+			else if (!strcmp(text, "capsule"))
+			{
+				i_shape = RAGDOLL_SHAPE_CAPSULE;
+			}
+			else if (!strcmp(text, "gargmouth"))
+			{
+				i_shape = RAGDOLL_SHAPE_GARGMOUTH;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse shape name %s for %s\n", text, name.c_str());
+				break;
+			}
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody offsetX for %s\n", name.c_str());
+				break;
+			}
+
+			float f_offsetX = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody offsetY for %s\n", name.c_str());
+				break;
+			}
+
+			float f_offsetY = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody offsetZ for %s\n", name.c_str());
+				break;
+			}
+
+			float f_offsetZ = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody size for %s\n", name.c_str());
+				break;
+			}
+
+			float f_size = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody size2 for %s\n", name.c_str());
+				break;
+			}
+
+			float f_size2 = atof(text);
+
+			ptext = gEngfuncs.COM_ParseFile(ptext, text);
+			if (!ptext)
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody mass for %s\n", name.c_str());
+				break;
+			}
+
+			float f_mass = atof(text);
+
+			cfg->rigcontrol.emplace_back(subname, i_boneindex, i_pboneindex, i_shape, f_offsetX, f_offsetY, f_offsetZ, f_size, f_size2, f_mass, iParsingState == RAGDOLL_PARSING_JIGGLEBONE_XYZ ? RIG_FL_JIGGLE : 0);
 		}
 		else if (iParsingState == RAGDOLL_PARSING_CONSTRAINT)
 		{
@@ -1981,38 +2096,36 @@ btTransform MatrixLookAt(const btTransform &transform, const btVector3 &at, cons
 
 CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol)
 {
-	if (rigcontrol->boneindex >= studiohdr->numbones)
+	if (rigcontrol->boneindex >= studiohdr->numbones || rigcontrol->boneindex < 0)
 	{
-		gEngfuncs.Con_Printf("CreateRigBody: Failed to create rigbody for bone %s, boneindex too large (%d >= %d)\n", rigcontrol->name.c_str(), rigcontrol->boneindex, studiohdr->numbones);
+		gEngfuncs.Con_Printf("CreateRigBody: Failed to create rigbody for bone %s, invalid boneindex (%d)\n", rigcontrol->name.c_str(), rigcontrol->boneindex);
 		return NULL;
 	}
-
-	if (rigcontrol->pboneindex >= studiohdr->numbones)
-	{
-		gEngfuncs.Con_Printf("CreateRigBody: Failed to create rigbody for bone %s, pboneindex too large (%d >= %d)\n", rigcontrol->name.c_str(), rigcontrol->pboneindex, studiohdr->numbones);
-		return NULL;
-	}
-
-	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)studiohdr + studiohdr->boneindex);
 
 	btTransform bonematrix, offsetmatrix;
 	Matrix3x4ToTransform((*pbonetransform)[rigcontrol->boneindex], bonematrix);
 	TransformGoldSrcToBullet(bonematrix);
 
 	auto boneorigin = bonematrix.getOrigin();
-	
+
+	btVector3 origin = boneorigin;
+
+	if (rigcontrol->pboneindex >= studiohdr->numbones || rigcontrol->pboneindex < 0)
+	{
+		gEngfuncs.Con_Printf("CreateRigBody: Failed to create rigbody for bone %s, invalid pboneindex (%d)\n", rigcontrol->name.c_str(), rigcontrol->pboneindex);
+		return NULL;
+	}
+
 	btVector3 pboneorigin((*pbonetransform)[rigcontrol->pboneindex][0][3], (*pbonetransform)[rigcontrol->pboneindex][1][3], (*pbonetransform)[rigcontrol->pboneindex][2][3]);
 	Vector3GoldSrcToBullet(pboneorigin);
 
 	btVector3 dir = pboneorigin - boneorigin;
 	dir = dir.normalize();
 
-	float offset = rigcontrol->offset;
-	FloatGoldSrcToBullet(&offset);
+	btVector3 offset = btVector3(rigcontrol->offset[0], rigcontrol->offset[1], rigcontrol->offset[2]);
+	Vector3GoldSrcToBullet(offset);
 
-	auto origin = bonematrix.getOrigin();
-
-	origin = origin + dir * offset;
+	origin += dir * offset;
 
 	if (rigcontrol->shape == RAGDOLL_SHAPE_SPHERE)
 	{
@@ -2039,8 +2152,6 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 
 		rig->name = rigcontrol->name;
 		rig->rigbody = new btRigidBody(cInfo);
-		rig->origin = origin;
-		rig->dir = dir;
 		rig->boneindex = rigcontrol->boneindex;
 		rig->flags = rigcontrol->flags;
 		rig->mass = mass;
@@ -2076,8 +2187,6 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 
 		rig->name = rigcontrol->name;
 		rig->rigbody = new btRigidBody(cInfo);
-		rig->origin = origin;
-		rig->dir = dir;
 		rig->boneindex = rigcontrol->boneindex;
 		rig->flags = rigcontrol->flags;
 		rig->mass = mass;
@@ -2115,8 +2224,6 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 
 		rig->name = rigcontrol->name;
 		rig->rigbody = new btRigidBody(cInfo);
-		rig->origin = origin;
-		rig->dir = dir;
 		rig->boneindex = rigcontrol->boneindex;
 		rig->flags = rigcontrol->flags | RIG_FL_KINEMATIC;
 		rig->mass = mass;
@@ -2238,11 +2345,11 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 
 		if (bv_debug->value == 4 && (rig1->rigbody->getMass() != 0 || rig2->rigbody->getMass() != 0))
 		{
-			cst->setDbgDrawSize(1);
+			cst->setDbgDrawSize(4);
 		}
 		else
 		{
-			cst->setDbgDrawSize(0.25f);
+			cst->setDbgDrawSize(1);
 		}
 		
 		cst->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, cstcontrol->factor3 * M_PI, 1, 1, 1);
@@ -2291,11 +2398,11 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 	
 		if (bv_debug->value == 5 && (rig1->rigbody->getMass() != 0 || rig2->rigbody->getMass() != 0))
 		{
-			cst->setDbgDrawSize(1);
+			cst->setDbgDrawSize(4);
 		}
 		else
 		{
-			cst->setDbgDrawSize(0.25f);
+			cst->setDbgDrawSize(1);
 		}
 
 		cst->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, 0.1f);

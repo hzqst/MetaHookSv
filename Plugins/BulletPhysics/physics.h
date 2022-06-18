@@ -10,23 +10,25 @@
 
 typedef struct ragdoll_rig_control_s
 {
-	ragdoll_rig_control_s(const std::string &n, int i, int p, int sh, float off, float s, float s2, float m, int fl)
+	ragdoll_rig_control_s(const std::string &n, int bone, int pbone, int shap, float offsetX, float offsetY, float offsetZ, float sz, float sz2, float ms, int fl)
 	{
 		name = n;
-		boneindex = i;
-		pboneindex = p;
-		shape = sh;
-		offset = off;
-		size = s;
-		size2 = s2;
-		mass = m;
+		boneindex = bone;
+		pboneindex = pbone;
+		shape = shap;
+		offset[0] = offsetX;
+		offset[1] = offsetY;
+		offset[2] = offsetZ;
+		size = sz;
+		size2 = sz2;
+		mass = ms;
 		flags = fl;
 	}
 	std::string name;
 	int boneindex;
 	int pboneindex;
 	int shape;
-	float offset;
+	float offset[3];
 	float size;
 	float size2;
 	float mass;
@@ -187,6 +189,9 @@ public:
 		barnacle_constraint_dof6 = NULL;
 		barnacle_constraint_slider = NULL;
 		gargantua_target = NULL;
+
+		boneindex = -1;
+
 		barnacle_force = 0;
 		barnacle_chew_force = 0;
 		barnacle_chew_duration = 0;
@@ -197,11 +202,13 @@ public:
 		barnacle_z_final = 0;
 		gargantua_force = 0;
 		gargantua_drag_time = 0;
+
 		flags = 0;
+		mass = 0;
 		oldActivitionState = 0;
 		oldCollisionFlags = 0;
 	}
-	CRigBody(const std::string &n, btRigidBody *a1, const btVector3 &a2, const btVector3 &a3, int a4) : name(n), rigbody(a1), origin(a2), dir(a3), boneindex(a4)
+	/*CRigBody(const std::string &n, btRigidBody *a1, const btVector3 &a2, const btVector3 &a3, int a4) : name(n), rigbody(a1), dir(a3), boneindex(a4)
 	{
 		flags = 0;
 		mass = 0;
@@ -221,14 +228,12 @@ public:
 		barnacle_z_final = 0;
 		gargantua_force = 0;
 		gargantua_drag_time = 0;
-	}
+	}*/
 	std::string name;
 	btRigidBody *rigbody;
 	btGeneric6DofConstraint *barnacle_constraint_dof6;
 	btSliderConstraint *barnacle_constraint_slider;
 	btRigidBody *gargantua_target;
-	btVector3 origin;
-	btVector3 dir;
 	int boneindex;
 
 	int flags;

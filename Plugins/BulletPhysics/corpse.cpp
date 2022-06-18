@@ -89,14 +89,17 @@ typedef enum
 	ACT_HOLDBOMB
 }activity_e;
 
-//TODO: hook Mod_LoadStudioModel
+//TODO: hook Mod_LoadStudioModel?
 model_t *g_barnacle_model = NULL;
 model_t *g_gargantua_model = NULL;
 
 int GetSequenceActivityType(model_t *mod, entity_state_t* entstate)
 {
-	if(entstate->scale != 1.0f)
-		return 0;
+	if (g_bIsSvenCoop)
+	{
+		if (entstate->scale != 0 && entstate->scale != 1.0f)
+			return 0;
+	}
 
 	if (mod->type != mod_studio)
 		return 0;

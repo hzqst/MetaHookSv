@@ -12,6 +12,8 @@ typedef struct
 
 	int GameStudioRenderer_StudioDrawPlayer_vftable_index;
 	int GameStudioRenderer_StudioDrawModel_vftable_index;
+	int GameStudioRenderer_StudioSetupBones_vftable_index;
+	int GameStudioRenderer_StudioCalcAttachments_vftable_index;
 
 	//Engine StudioRenderer
 	int (*R_StudioDrawModel)(int flags);
@@ -27,3 +29,4 @@ extern int *cl_parsecount;
 extern void *mod_known;
 extern int *mod_numknown;
 extern privte_funcs_t gPrivateFuncs;
+extern bool g_bIsSvenCoop;
