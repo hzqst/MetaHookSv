@@ -101,6 +101,9 @@ typedef struct water_vbo_s
 	GLuint normalmap;
 	GLuint ripplemap;
 
+	int reflectmap_width;
+	int reflectmap_height;
+
 	void *ripple_data;
 	void *ripple_image;
 	short *ripple_spots[2];

@@ -129,21 +129,21 @@ int gly = 0;
 int glwidth = 0;
 int glheight = 0;
 
-FBO_Container_t s_FinalBufferFBO;
-FBO_Container_t s_BackBufferFBO;
-FBO_Container_t s_BackBufferFBO2;
-FBO_Container_t s_GBufferFBO;
-FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];
-FBO_Container_t s_LuminFBO[LUMIN_BUFFERS];
-FBO_Container_t s_Lumin1x1FBO[LUMIN1x1_BUFFERS];
-FBO_Container_t s_BrightPassFBO;
-FBO_Container_t s_BlurPassFBO[BLUR_BUFFERS][2];
-FBO_Container_t s_BrightAccumFBO;
-FBO_Container_t s_ToneMapFBO;
-FBO_Container_t s_DepthLinearFBO;
-FBO_Container_t s_HBAOCalcFBO;
-FBO_Container_t s_ShadowFBO;
-FBO_Container_t s_WaterFBO;
+FBO_Container_t s_FinalBufferFBO = { 0 };
+FBO_Container_t s_BackBufferFBO = { 0 };
+FBO_Container_t s_BackBufferFBO2 = { 0 };
+FBO_Container_t s_GBufferFBO = { 0 };
+FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS] = { 0 };
+FBO_Container_t s_LuminFBO[LUMIN_BUFFERS] = { 0 };
+FBO_Container_t s_Lumin1x1FBO[LUMIN1x1_BUFFERS] = { 0 };
+FBO_Container_t s_BrightPassFBO = { 0 };
+FBO_Container_t s_BlurPassFBO[BLUR_BUFFERS][2] = { 0 };
+FBO_Container_t s_BrightAccumFBO = { 0 };
+FBO_Container_t s_ToneMapFBO = { 0 };
+FBO_Container_t s_DepthLinearFBO = { 0 };
+FBO_Container_t s_HBAOCalcFBO = { 0 };
+FBO_Container_t s_ShadowFBO = { 0 };
+FBO_Container_t s_WaterFBO = { 0 };
 
 bool bNoStretchAspect = false;
 bool bUseBindless = true;
@@ -1216,28 +1216,28 @@ void GL_FreeFBO(FBO_Container_t *s)
 
 void GL_GenerateFrameBuffers(void)
 {
-	GL_ClearFBO(&s_FinalBufferFBO);
-	GL_ClearFBO(&s_BackBufferFBO);
-	GL_ClearFBO(&s_BackBufferFBO2);
-	GL_ClearFBO(&s_GBufferFBO);
+	GL_FreeFBO(&s_FinalBufferFBO);
+	GL_FreeFBO(&s_BackBufferFBO);
+	GL_FreeFBO(&s_BackBufferFBO2);
+	GL_FreeFBO(&s_GBufferFBO);
 	for(int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
-		GL_ClearFBO(&s_DownSampleFBO[i]);
+		GL_FreeFBO(&s_DownSampleFBO[i]);
 	for(int i = 0; i < LUMIN_BUFFERS; ++i)
-		GL_ClearFBO(&s_LuminFBO[i]);
+		GL_FreeFBO(&s_LuminFBO[i]);
 	for(int i = 0; i < LUMIN1x1_BUFFERS; ++i)
-		GL_ClearFBO(&s_Lumin1x1FBO[i]);
-	GL_ClearFBO(&s_BrightPassFBO);
+		GL_FreeFBO(&s_Lumin1x1FBO[i]);
+	GL_FreeFBO(&s_BrightPassFBO);
 	for(int i = 0; i < BLUR_BUFFERS; ++i)
 	{
-		GL_ClearFBO(&s_BlurPassFBO[i][0]);
-		GL_ClearFBO(&s_BlurPassFBO[i][1]);
+		GL_FreeFBO(&s_BlurPassFBO[i][0]);
+		GL_FreeFBO(&s_BlurPassFBO[i][1]);
 	}
-	GL_ClearFBO(&s_BrightAccumFBO);
-	GL_ClearFBO(&s_ToneMapFBO);
-	GL_ClearFBO(&s_DepthLinearFBO);
-	GL_ClearFBO(&s_HBAOCalcFBO);
-	GL_ClearFBO(&s_WaterFBO);
-	GL_ClearFBO(&s_ShadowFBO);
+	GL_FreeFBO(&s_BrightAccumFBO);
+	GL_FreeFBO(&s_ToneMapFBO);
+	GL_FreeFBO(&s_DepthLinearFBO);
+	GL_FreeFBO(&s_HBAOCalcFBO);
+	GL_FreeFBO(&s_WaterFBO);
+	GL_FreeFBO(&s_ShadowFBO);
 
 	glEnable(GL_TEXTURE_2D);
 
@@ -1545,10 +1545,22 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 {
 	gRefFuncs.GL_BeginRendering(x, y, width, height);
 
-	glx = *x;
-	gly = *y;
-	glwidth = *width; 
-	glheight = *height;
+	//Window resized?
+	if ((*x) != glx  || (*y) != gly || (*width) != glwidth || (*height) != glheight)
+	{
+		glx = *x;
+		gly = *y;
+		glwidth = *width;
+		glheight = *height;
+		GL_GenerateFrameBuffers();
+	}
+	else
+	{
+		glx = *x;
+		gly = *y;
+		glwidth = *width;
+		glheight = *height;
+	}
 
 	//No V_RenderView calls when level changes...
 	if (SCR_IsLoadingVisible())

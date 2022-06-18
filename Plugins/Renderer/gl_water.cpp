@@ -478,8 +478,11 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 			VBOCache->ent = ent;
 			VBOCache->texture = surf->texinfo->texture;
 
-			VBOCache->depthreflmap = GL_GenDepthStencilTexture(glwidth, glheight);
-			VBOCache->reflectmap = GL_GenTextureRGBA8(glwidth, glheight);
+			VBOCache->reflectmap_width = glwidth;
+			VBOCache->reflectmap_height = glheight;
+
+			VBOCache->reflectmap = GL_GenTextureColorFormat(VBOCache->reflectmap_width, VBOCache->reflectmap_height, GL_RGB16F);//wtf Is there necessary to use RGBA16f?
+			VBOCache->depthreflmap = GL_GenDepthStencilTexture(VBOCache->reflectmap_width, VBOCache->reflectmap_height);
 
 			VBOCache->hEBO = GL_GenBuffer();
 
@@ -616,6 +619,22 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 
 	if(VBOCache->level == WATER_LEVEL_LEGACY_RIPPLE)
 		R_UpdateRippleTexture(VBOCache, (*r_framecount));
+
+	//Window resized? recreate texture using new size
+	if (VBOCache->reflectmap && (VBOCache->reflectmap_width != glwidth || VBOCache->reflectmap_height != glheight))
+	{
+		if (VBOCache->depthreflmap)
+			GL_DeleteTexture(VBOCache->depthreflmap);
+
+		if (VBOCache->reflectmap)
+			GL_DeleteTexture(VBOCache->reflectmap);
+
+		VBOCache->reflectmap_width = glwidth;
+		VBOCache->reflectmap_height = glheight;
+
+		VBOCache->reflectmap = GL_GenTextureColorFormat(VBOCache->reflectmap_width, VBOCache->reflectmap_height, GL_RGB16F);//wtf Is there necessary to use RGBA16f?
+		VBOCache->depthreflmap = GL_GenDepthStencilTexture(VBOCache->reflectmap_width, VBOCache->reflectmap_height);
+	}
 
 	return VBOCache;
 }
