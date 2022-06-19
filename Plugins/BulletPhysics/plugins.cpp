@@ -184,6 +184,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_TempEntUpdate = HUD_TempEntUpdate;
 	pExportFunc->HUD_AddEntity = HUD_AddEntity;
 	pExportFunc->HUD_DrawNormalTriangles = HUD_DrawNormalTriangles;
+	pExportFunc->HUD_Frame = HUD_Frame;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 
 	auto err = glewInit();
@@ -195,9 +196,6 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 
 	Install_InlineHook(R_NewMap);
-
-	gPrivateFuncs.efxapi_R_TempModel = gEngfuncs.pEfxAPI->R_TempModel;
-	Install_InlineHook(efxapi_R_TempModel);
 }
 
 void IPluginsV4::ExitGame(int iResult)

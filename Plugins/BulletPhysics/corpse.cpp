@@ -5,6 +5,8 @@
 #include "physics.h"
 #include "mathlib.h"
 
+int EngineGetModelIndex(model_t *mod);
+
 typedef enum
 {
 	ACT_RESET,
@@ -92,6 +94,14 @@ typedef enum
 //TODO: hook Mod_LoadStudioModel?
 model_t *g_barnacle_model = NULL;
 model_t *g_gargantua_model = NULL;
+
+bool IsEntityEmitted(cl_entity_t *ent)
+{
+	if(ent->player)
+		return gCorpseManager.IsPlayerEmitted(ent->index);
+
+	return true;
+}
 
 int GetSequenceActivityType(model_t *mod, entity_state_t* entstate)
 {
@@ -255,6 +265,7 @@ void CorpseManager::ClearPlayerDying(int entindex)
 	PlayerDying[entindex].bIsDying = false;
 	PlayerDying[entindex].flAnimTime = 0;
 	PlayerDying[entindex].iSequence = 0;
+	PlayerDying[entindex].iModelIndex = 0;
 	memset(PlayerDying[entindex].szModelName, 0, sizeof(PlayerDying[entindex].szModelName));
 	VectorClear(PlayerDying[entindex].vecAngles);
 	VectorClear(PlayerDying[entindex].vecOrigin);
@@ -267,9 +278,13 @@ void CorpseManager::SetPlayerDying(int entindex, entity_state_t *pplayer, model_
 	PlayerDying[entindex].flAnimTime = pplayer->animtime;
 	PlayerDying[entindex].iSequence = pplayer->sequence;
 	PlayerDying[entindex].iBody = pplayer->body;
-
-	strncpy(PlayerDying[entindex].szModelName, model->name, 64);
-	PlayerDying[entindex].szModelName[63] = 0;
+	
+	if (PlayerDying[entindex].iModelIndex != EngineGetModelIndex(model))
+	{
+		PlayerDying[entindex].iModelIndex = EngineGetModelIndex(model);
+		strncpy(PlayerDying[entindex].szModelName, model->name, 64);
+		PlayerDying[entindex].szModelName[63] = 0;
+	}
 
 	VectorCopy(pplayer->angles, PlayerDying[entindex].vecAngles);
 	VectorCopy(pplayer->origin, PlayerDying[entindex].vecOrigin);
@@ -280,6 +295,30 @@ void CorpseManager::SetPlayerDying(int entindex, entity_state_t *pplayer, model_
 
 	if (PlayerDying[entindex].vecAngles[0] < -180)
 		PlayerDying[entindex].vecAngles[0] += 360;
+
+	if (PlayerDying[entindex].vecAngles[1] > 180)
+		PlayerDying[entindex].vecAngles[1] -= 360;
+
+	if (PlayerDying[entindex].vecAngles[1] < -180)
+		PlayerDying[entindex].vecAngles[1] += 360;
+}
+
+void CorpseManager::SetPlayerEmitted(int entindex)
+{
+	PlayerEmitted[entindex] = true;
+}
+
+bool CorpseManager::IsPlayerEmitted(int entindex)
+{
+	return PlayerEmitted[entindex];
+}
+
+void CorpseManager::ClearAllPlayerEmitState()
+{
+	for (int i = 0; i < _ARRAYSIZE(PlayerEmitted); ++i)
+	{
+		PlayerEmitted[i] = false;
+	}
 }
 
 void CorpseManager::FreePlayerForBarnacle(int entindex)

@@ -30,6 +30,7 @@ bool IsEntityPresent(cl_entity_t* ent);
 bool IsEntityGargantua(cl_entity_t* ent);
 bool IsEntityBarnacle(cl_entity_t* ent);
 bool IsEntityWater(cl_entity_t* ent);
+bool IsEntityEmitted(cl_entity_t* ent);
 int GetSequenceActivityType(model_t *mod, entity_state_t* entstate);
 void RagdollDestroyCallback(int entindex);
 
@@ -1103,6 +1104,9 @@ void CPhysicsManager::UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBod
 
 bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time)
 {
+	if (ent == gEngfuncs.GetLocalPlayer() && !IsEntityEmitted(ent))
+		return false;
+	
 	UpdateRagdollWaterSimulation(ent, ragdoll, frame_time, client_time);
 
 	if (ragdoll->m_gargantuaindex != -1)

@@ -1009,6 +1009,11 @@ void HUD_Init(void)
 
 	//For clcorpse hook
 	m_pfnClCorpse = HOOK_MESSAGE(ClCorpse);
+	if (m_pfnClCorpse)
+	{
+		gPrivateFuncs.efxapi_R_TempModel = gEngfuncs.pEfxAPI->R_TempModel;
+		Install_InlineHook(efxapi_R_TempModel);
+	}
 }
 
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
@@ -1039,6 +1044,11 @@ int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 		}
 	}
 
+	if (type == ET_PLAYER && ent->model)
+	{
+		gCorpseManager.SetPlayerEmitted(ent->index);
+	}
+
 	return gExportfuncs.HUD_AddEntity(type, ent, model);
 }
 
@@ -1060,6 +1070,13 @@ void HUD_TempEntUpdate(
 	}
 
 	return gExportfuncs.HUD_TempEntUpdate(frametime, client_time, cl_gravity, ppTempEntFree, ppTempEntActive, Callback_AddVisibleEntity, Callback_TempEntPlaySound);
+}
+
+void HUD_Frame(double frametime)
+{
+	gExportfuncs.HUD_Frame(frametime);
+
+	gCorpseManager.ClearAllPlayerEmitState();
 }
 
 void V_CalcRefdef(struct ref_params_s *pparams)
