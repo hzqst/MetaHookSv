@@ -51,21 +51,27 @@ bv_debug 6 : Enable debug-drawing. both ragdoll rigidbodies and point constraint
 
 #### [DeathAnim]
 
-##### example: 12 120
+The section 'DeathAnim" defines when to transform player or monster into ragdoll. 
 
-"12" for the sequence number of death animation 
+##### Example line : 12 120
+
+"12" for the sequence number of death animation
 
 "120" for which frame to transform corpse of dead player into ragdoll if this sequence of animation is playing. range : 0 ~ 255
 
 ** While the specified sequence number of death animation is playing, and after the certain frame, the corpse of dead player is transformed into ragdoll. **
 
-You can check each sequence of animation from HLMV or https://github.com/danakt/web-hlmv
+** Only sequence with "DIE_" prefixed activity will be treated as death anim.
+
+You can check each sequence of animation using HLMV or https://github.com/danakt/web-hlmv
 
 #### [RigidBody]
 
-##### example: Head   15  6  sphere  -4.0   5.0  0.0   6
+The section "RigidBody" creates basic rigidbodies for ragdoll.
 
-"Head" for internal name of rigidbody
+##### Example line : Head   15  6  sphere  -4.0   5.0  0.0   6
+
+"Head" for internal name of rigidbody. ** Warning : space or special characters are not allowed !
 
 "15" for the index of bone which is bound to rigidbody
 
@@ -89,7 +95,9 @@ You can check each sequence of animation from HLMV or https://github.com/danakt/
 
 #### [Constraint]
 
-##### example: Spine  Head   conetwist 6 15   0 6 0     0  0 -5.5      0.05 0.05 0.2
+The section "Constraint" controls how to bind rigidbodies together.
+
+##### Example line : Spine  Head   conetwist 6 15   0 6 0     0  0 -5.5      0.05 0.05 0.2
 
 "Head" for the name of rigidbody to controll
 
@@ -111,7 +119,9 @@ You can check each sequence of animation from HLMV or https://github.com/danakt/
 
 #### [Barnacle]
 
-##### example: LLeg2   dof6     0  8  0     40000    4  16
+The section "Barnacle" controls how barnacle interact with ragdollized players.
+
+##### Example line : LLeg2   dof6     0  8  0     40000    4  16
 
 "LLeg2" for the name of rigidbody to controll
 
@@ -127,7 +137,7 @@ You can check each sequence of animation from HLMV or https://github.com/danakt/
 
 ** This example line creates a "dof6" constraint for "LLeg2", pulling "LLeg2" up with a power/force of 40000 N. "LLeg2" can go up to (barnacle.z - 12) at initial. **
 
-##### example2: Pelvis  chewforce     0  0  0     8000     1.0  0
+##### Example line : Pelvis  chewforce     0  0  0     8000     1.0  0
 
 "Pelvis" for the name of rigidbody to apply impulse on
 
@@ -143,7 +153,7 @@ You can check each sequence of animation from HLMV or https://github.com/danakt/
 
 ** Warning : there must be a rigidbody named "Pelvis" to get barnacle-ragdoll work correctly. **
 
-##### example2: LLeg2  chewlimit     0  0  0     0     1.0  3
+##### Example line : LLeg2  chewlimit     0  0  0     0     1.0  3
 
 "LLeg2" for the name of rigidbody to raise up the Z limit.
 
@@ -156,3 +166,64 @@ You can check each sequence of animation from HLMV or https://github.com/danakt/
 ** This example line raise the Z axis limit up 3 units for "Pelvis" every 1 second in GoldSrc world. **
 
 ** Warning : there must be a rigidbody named "Pelvis" to get barnacle-ragdoll work correctly. **
+
+##### Full example :
+
+```
+[Barnacle]
+LLeg2   dof6          0  8  0     40000   4   16
+LLeg2   chewlimit     0  0  0     0       1.0  4
+RLeg    dof6          0  0  0     30000  -16  16
+RLeg    chewlimit     0  0  0     0       1.0  4
+Pelvis  chewforce     0  0  0     8000    1.0  0
+```
+
+#### [WaterControl]
+
+The section "WaterControl" controls how water interact with ragdollized players and monsters, basically resistance and buoyancy force.
+
+##### Example line : Head    0  0  0    0.95  0.5  0
+
+`0 0 0` means the water detector of rigidbody is at 0 0 0 of it's local coordinate system, buoyancy force is applied when this point touches water (or inside water)
+
+`0.95` means the rigidbody get 95% of it's gravity as buoyancy force that push it upward when touch water.
+
+`0.5` is damping that stops the rigidbody from rotating or moving inside water
+
+`0` does nothing and is reserved for future use
+
+*** Multiple detecting point can be added for one rigidbody
+
+##### Full example :
+
+```
+[WaterControl]
+Head    0  0  0    0.95  0.5  0
+Spine   0  0  0    0.95  0.5  0
+Pelvis  0  0  0    0.95  0.5  0
+
+LArm    0  0  0    0.95  0.5  0
+LArm2   0  0  0    0.95  0.5  0
+LHand   0  0  0    0.95  0.5  0
+
+RArm    0  0  0    0.95  0.5  0
+RArm2   0  0  0    0.95  0.5  0
+RHand   0  0  0    0.95  0.5  0
+
+LLeg    0  0  0    0.475 0.5  0
+LLeg    8  0  0    0.475 0.5  0
+LLeg2   0  0  0    0.475 0.5  0
+LLeg2   10 0  0    0.475 0.5  0
+
+RLeg    0  0  0    0.475 0.5  0
+RLeg    8  0  0    0.475 0.5  0
+RLeg2   0  0  0    0.475 0.5  0
+RLeg2   10 0  0    0.475 0.5  0
+
+FakehairL1    0 0 0    0.95  0.5  0
+FakehairL2    0 0 0    0.95  0.5  0
+FakehairL3    0 0 0    0.95  0.5  0
+FakehairR1    0 0 0    0.95  0.5  0
+FakehairR2    0 0 0    0.95  0.5  0
+FakehairR3    0 0 0    0.95  0.5  0
+```
