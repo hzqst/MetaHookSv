@@ -32,6 +32,12 @@
     <ClCompile Include="corpse.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="message.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="parsemsg.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
@@ -62,6 +68,12 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="corpse.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="message.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="parsemsg.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

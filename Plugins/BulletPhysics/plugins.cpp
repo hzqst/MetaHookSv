@@ -5,6 +5,7 @@
 #include "privatehook.h"
 #include "plugins.h"
 #include "command.h"
+#include "message.h"
 #include "qgl.h"
 
 cl_exportfuncs_t gExportfuncs;
@@ -192,7 +193,11 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 		return;
 	}
 
+
 	Install_InlineHook(R_NewMap);
+
+	gPrivateFuncs.efxapi_R_TempModel = gEngfuncs.pEfxAPI->R_TempModel;
+	Install_InlineHook(efxapi_R_TempModel);
 }
 
 void IPluginsV4::ExitGame(int iResult)

@@ -6,9 +6,19 @@
 #include <unordered_map>
 #include <set>
 
-#define PhyCorpseFlag1 (753951)
-#define PhyCorpseFlag2 (152359)
-#define PhyCorpseFlag3 (152360)
+#define PhyCorpseFlag (1145141919)
+
+typedef struct
+{
+	bool bIsDying;
+	float flClientTime;
+	float flAnimTime;
+	int iSequence;
+	int iBody;
+	char szModelName[64];
+	vec3_t vecOrigin;
+	vec3_t vecAngles;
+}PlayerDying_t;
 
 class CorpseManager
 {
@@ -23,9 +33,15 @@ public:
 	cl_entity_t *FindPlayerForBarnacle(int entindex);
 	cl_entity_t *FindPlayerForGargantua(int entindex);
 	void FreePlayerForBarnacle(int entindex);
+	void ClearPlayerDying(int entindex);
+	void ClearAllPlayerDying();
+	void SetPlayerDying(int entindex, entity_state_t *pplayer, model_t *model);
+	int FindDyingPlayer(const char *modelname, vec3_t origin, vec3_t angles, int sequence, int body);
 private:
 	std::unordered_map<int, int> m_barnacleMap;
 	std::unordered_map<int, int> m_gargantuaMap;
+
+	PlayerDying_t PlayerDying[33];
 };
 
 extern CorpseManager gCorpseManager;

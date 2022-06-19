@@ -1,14 +1,14 @@
 [DeathAnim]
-101 0
-102 0
-103 0
-104 0
-105 0
-106 0
-107 0
-108 0
-109 0
-110 0
+101 100
+102 100
+103 100
+104 100
+105 100
+106 100
+107 100
+108 100
+109 100
+110 100
 
 [RigidBody]
 Head 7  6   capsule  -5   5.0   0.1   3
@@ -31,14 +31,14 @@ RLeg2 30 31  capsule  8   3.0   8.0    2
 Spine  Head   conetwist 6 7   0 0 0     0  5  0        0.01  0.01  0.2
 Pelvis Spine  conetwist 1 5    0 0 4     0 7  0        0.0  0.0  0.1
 
-Spine  LArm   conetwist 8 9    0 0 0     0 -6  0        0.2 0.2 0.2
-LArm   LArm2  conetwist 9 10    0 0 0     0 -8  0       0.1 0.1 0.1
+Spine  LArm   conetwist 8 9    0 0 0     0 -6.5  0        0.2 0.2 0.2
+LArm   LArm2  conetwist 9 10    0 0 0     0 -6  0       0.1 0.1 0.1
 
-Spine  RArm   conetwist 16 17    0 0 0     0 -8  0        0.2 0.2 0.2
-RArm   RArm2  conetwist 17 18    0 0 0     0 -8  0        0.1 0.1 0.1
+Spine  RArm   conetwist 16 17    0 0 0     0 -6.5  0        0.2 0.2 0.2
+RArm   RArm2  conetwist 17 18    0 0 0     0 -6  0        0.1 0.1 0.1
 
 Pelvis LLeg   conetwist 24 24  0 0 0     0 -7  0        0.1  0.1  0.25
-LLeg2  LLeg   hinge     24 24  0 0 0     0 8 0         -0.6  0.0  0
+LLeg2  LLeg   hinge     25 25  0 0 0     0 8 0         -0.2  0.0  0
 
 Pelvis RLeg   conetwist 29 29  0 0 0     0 -7  0        0.1  0.1  0.25
-RLeg2  RLeg   hinge     29 29  0 0 0     0 8 0         -0.6  0.0  0
+RLeg2  RLeg   hinge     30 30  0 0 0     0 8 0         -0.2  0.0  0

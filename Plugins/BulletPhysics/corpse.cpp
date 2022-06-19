@@ -218,7 +218,68 @@ CorpseManager gCorpseManager;
 
 CorpseManager::CorpseManager(void)
 {
+	ClearAllPlayerDying();
+}
 
+//return entindex of dying player
+int CorpseManager::FindDyingPlayer(const char *modelname, vec3_t origin, vec3_t angles, int sequence, int body)
+{
+	for (int i = 1; i < _ARRAYSIZE(PlayerDying); ++i)
+	{
+		if (PlayerDying[i].bIsDying &&
+			PlayerDying[i].iSequence == sequence &&
+			PlayerDying[i].iBody == body &&
+			0 == strcmp(PlayerDying[i].szModelName, modelname))
+		{
+			if (VectorDistance(origin, PlayerDying[i].vecOrigin) < 128 && 
+				fabs(angles[0] -  PlayerDying[i].vecAngles[0]) < 10 &&
+				fabs(angles[1] - PlayerDying[i].vecAngles[1]) < 10)
+			{
+				return i;
+			}
+		}
+	}
+	return 0;
+}
+
+void CorpseManager::ClearAllPlayerDying()
+{
+	for (int i = 0; i < _ARRAYSIZE(PlayerDying); ++i)
+	{
+		ClearPlayerDying(i);
+	}
+}
+
+void CorpseManager::ClearPlayerDying(int entindex)
+{
+	PlayerDying[entindex].bIsDying = false;
+	PlayerDying[entindex].flAnimTime = 0;
+	PlayerDying[entindex].iSequence = 0;
+	memset(PlayerDying[entindex].szModelName, 0, sizeof(PlayerDying[entindex].szModelName));
+	VectorClear(PlayerDying[entindex].vecAngles);
+	VectorClear(PlayerDying[entindex].vecOrigin);
+}
+
+void CorpseManager::SetPlayerDying(int entindex, entity_state_t *pplayer, model_t *model)
+{
+	PlayerDying[entindex].bIsDying = true;
+	PlayerDying[entindex].flClientTime = gEngfuncs.GetClientTime();
+	PlayerDying[entindex].flAnimTime = pplayer->animtime;
+	PlayerDying[entindex].iSequence = pplayer->sequence;
+	PlayerDying[entindex].iBody = pplayer->body;
+
+	strncpy(PlayerDying[entindex].szModelName, model->name, 64);
+	PlayerDying[entindex].szModelName[63] = 0;
+
+	VectorCopy(pplayer->angles, PlayerDying[entindex].vecAngles);
+	VectorCopy(pplayer->origin, PlayerDying[entindex].vecOrigin);
+
+	//fix angle?
+	if (PlayerDying[entindex].vecAngles[0] > 180)
+		PlayerDying[entindex].vecAngles[0] -= 360;
+
+	if (PlayerDying[entindex].vecAngles[0] < -180)
+		PlayerDying[entindex].vecAngles[0] += 360;
 }
 
 void CorpseManager::FreePlayerForBarnacle(int entindex)
@@ -240,6 +301,8 @@ void CorpseManager::NewMap(void)
 	g_barnacle_model = NULL;
 
 	m_barnacleMap.clear();
+
+	ClearAllPlayerDying();
 }
 
 void CorpseManager::AddBarnacle(int entindex, int playerindex)

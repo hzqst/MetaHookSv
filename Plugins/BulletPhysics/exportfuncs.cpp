@@ -14,6 +14,7 @@
 #include "plugins.h"
 #include "exportfuncs.h"
 #include "privatehook.h"
+#include "message.h"
 #include "corpse.h"
 #include "physics.h"
 
@@ -28,7 +29,14 @@ cvar_t *bv_scale = NULL;
 cvar_t *bv_enable = NULL;
 cvar_t *bv_force_ragdoll_sequence = NULL;
 
+const int RagdollRenderState_None = 0;
+const int RagdollRenderState_Monster = 1;
+const int RagdollRenderState_Player = 2;
+const int RagdollRenderState_PlayerWithJiggle = 3;
+
 bool g_bIsSvenCoop = false;
+int g_iRagdollRenderState = 0;
+int g_iRagdollRenderEntIndex = 0;
 
 studiohdr_t **pstudiohdr = NULL;
 model_t **r_model = NULL;
@@ -87,14 +95,9 @@ void R_StudioSetupBones(void)
 {
 	auto currententity = IEngineStudio.GetCurrentEntity();
 
-	if (currententity->curstate.iuser4 == 114514)
+	if (g_iRagdollRenderState == RagdollRenderState_Monster || g_iRagdollRenderState == RagdollRenderState_Player)
 	{
-		if (gPhysicsManager.SetupBones((*pstudiohdr), currententity->index))
-			return;
-	}
-	else if (currententity->curstate.iuser4 == 1919810)
-	{
-		if (gPhysicsManager.SetupBones((*pstudiohdr), currententity->curstate.number))
+		if (gPhysicsManager.SetupBones((*pstudiohdr), g_iRagdollRenderEntIndex))
 			return;
 	}
 
@@ -109,14 +112,9 @@ void R_StudioSetupBones(void)
 		}
 	}
 
-	if (currententity->curstate.iuser4 == 114515)
+	if (g_iRagdollRenderState == RagdollRenderState_Monster || g_iRagdollRenderState == RagdollRenderState_PlayerWithJiggle)
 	{
-		if (gPhysicsManager.SetupJiggleBones((*pstudiohdr), currententity->index))
-			return;
-	}
-	else if (currententity->curstate.iuser4 == 1919811)
-	{
-		if (gPhysicsManager.SetupJiggleBones((*pstudiohdr), currententity->curstate.number))
+		if (gPhysicsManager.SetupJiggleBones((*pstudiohdr), g_iRagdollRenderEntIndex))
 			return;
 	}
 }
@@ -127,14 +125,9 @@ void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
 {
 	auto currententity = IEngineStudio.GetCurrentEntity();
 
-	if (currententity->curstate.iuser4 == 114514)
+	if (g_iRagdollRenderState == RagdollRenderState_Monster || g_iRagdollRenderState == RagdollRenderState_Player)
 	{
-		if (gPhysicsManager.SetupBones((*pstudiohdr), currententity->index))
-			return;
-	}
-	else if (currententity->curstate.iuser4 == 1919810)
-	{
-		if(gPhysicsManager.SetupBones((*pstudiohdr), currententity->curstate.number))
+		if (gPhysicsManager.SetupBones((*pstudiohdr), g_iRagdollRenderEntIndex))
 			return;
 	}
 
@@ -149,14 +142,9 @@ void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
 		}
 	}
 
-	if (currententity->curstate.iuser4 == 114515)
+	if (g_iRagdollRenderState == RagdollRenderState_Monster || g_iRagdollRenderState == RagdollRenderState_PlayerWithJiggle)
 	{
-		if (gPhysicsManager.SetupJiggleBones((*pstudiohdr), currententity->index))
-			return;
-	}
-	else if (currententity->curstate.iuser4 == 1919811)
-	{
-		if (gPhysicsManager.SetupJiggleBones((*pstudiohdr), currententity->curstate.number))
+		if (gPhysicsManager.SetupJiggleBones((*pstudiohdr), g_iRagdollRenderEntIndex))
 			return;
 	}
 }
@@ -217,8 +205,8 @@ int R_StudioDrawModel(int flags)
 
 			if (ragdoll->m_iActivityType > 0)
 			{
-				int iuser4 = currententity->curstate.iuser4;
-				currententity->curstate.iuser4 = 114514;
+				g_iRagdollRenderState = RagdollRenderState_Monster;
+				g_iRagdollRenderEntIndex = entindex;
 
 				vec3_t saved_origin;
 				VectorCopy(currententity->origin, saved_origin);
@@ -228,18 +216,20 @@ int R_StudioDrawModel(int flags)
 
 				VectorCopy(saved_origin, currententity->origin);
 
-				currententity->curstate.iuser4 = iuser4;
+				g_iRagdollRenderEntIndex = 0;
+				g_iRagdollRenderState = RagdollRenderState_None;
 
 				return result;
 			}
 			else
 			{
-				int iuser4 = currententity->curstate.iuser4;
-				currententity->curstate.iuser4 = 114515;
+				g_iRagdollRenderState = RagdollRenderState_Monster;
+				g_iRagdollRenderEntIndex = entindex;
 
 				int result = gPrivateFuncs.R_StudioDrawModel(flags);
 
-				currententity->curstate.iuser4 = iuser4;
+				g_iRagdollRenderEntIndex = 0;
+				g_iRagdollRenderState = RagdollRenderState_None;
 
 				return result;
 			}
@@ -304,8 +294,8 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 
 			if (ragdoll->m_iActivityType > 0)
 			{
-				int iuser4 = currententity->curstate.iuser4;
-				currententity->curstate.iuser4 = 114514;
+				g_iRagdollRenderState = RagdollRenderState_Monster;
+				g_iRagdollRenderEntIndex = entindex;
 
 				vec3_t saved_origin;
 				VectorCopy(currententity->origin, saved_origin);
@@ -315,18 +305,91 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 
 				VectorCopy(saved_origin, currententity->origin);
 
-				currententity->curstate.iuser4 = iuser4;
+				g_iRagdollRenderEntIndex = 0;
+				g_iRagdollRenderState = RagdollRenderState_None;
 
 				return result;
 			}
 			else
 			{
-				int iuser4 = currententity->curstate.iuser4;
-				currententity->curstate.iuser4 = 114515;
+				g_iRagdollRenderState = RagdollRenderState_Monster;
+				g_iRagdollRenderEntIndex = entindex;
 
 				int result = gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, flags);
 
-				currententity->curstate.iuser4 = iuser4;
+				g_iRagdollRenderEntIndex = 0;
+				g_iRagdollRenderState = RagdollRenderState_None;
+
+				return result;
+			}
+		}
+	}
+
+	//ClCorpse?
+
+	if ((flags & STUDIO_RENDER) &&
+		!currententity->player &&
+		!currententity->index &&
+		!currententity->curstate.messagenum &&
+		currententity->curstate.iuser4 == PhyCorpseFlag &&
+		currententity->curstate.owner >= 1 && currententity->curstate.owner <= gEngfuncs.GetMaxClients()
+		)
+	{
+		auto model = currententity->model;
+
+		int iActivityType = GetSequenceActivityType(model, &currententity->curstate);
+
+		int entindex = currententity->curstate.owner;
+
+		auto ragdoll = gPhysicsManager.FindRagdoll(entindex);
+		if (!ragdoll)
+		{
+			auto cfg = gPhysicsManager.LoadRagdollConfig(model);
+
+			if (cfg && cfg->state == 1 && bv_enable->value)
+			{
+				gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, 0);
+
+				ragdoll = gPhysicsManager.CreateRagdoll(cfg, currententity->curstate.owner, (*pstudiohdr), iActivityType, false);
+
+				goto has_ragdoll2;
+			}
+		}
+		else
+		{
+		has_ragdoll2:
+			if (gPhysicsManager.UpdateKinematic(ragdoll, iActivityType, &currententity->curstate))
+			{
+
+			}
+
+			if (ragdoll->m_iActivityType > 0)
+			{
+				g_iRagdollRenderState = RagdollRenderState_Monster;
+				g_iRagdollRenderEntIndex = entindex;
+
+				vec3_t saved_origin;
+				VectorCopy(currententity->origin, saved_origin);
+				gPhysicsManager.GetRagdollOrigin(ragdoll, currententity->origin);
+
+				int result = gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, flags);
+
+				VectorCopy(saved_origin, currententity->origin);
+
+				g_iRagdollRenderEntIndex = 0;
+				g_iRagdollRenderState = RagdollRenderState_None;
+
+				return result;
+			}
+			else
+			{
+				g_iRagdollRenderState = RagdollRenderState_Monster;
+				g_iRagdollRenderEntIndex = entindex;
+
+				int result = gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, flags);
+
+				g_iRagdollRenderEntIndex = 0;
+				g_iRagdollRenderState = RagdollRenderState_None;
 
 				return result;
 			}
@@ -420,9 +483,9 @@ int __fastcall R_StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 			if (ragdoll->m_iActivityType > 0)
 			{
 				int number = currententity->curstate.number;
-				int iuser4 = currententity->curstate.iuser4;
 				currententity->curstate.number = pplayer->number;
-				currententity->curstate.iuser4 = 1919810;
+				g_iRagdollRenderState = RagdollRenderState_Player;
+				g_iRagdollRenderEntIndex = currententity->curstate.number;
 
 				vec3_t saved_origin;
 				VectorCopy(currententity->origin, saved_origin);
@@ -433,20 +496,22 @@ int __fastcall R_StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 				VectorCopy(saved_origin, currententity->origin);
 
 				currententity->curstate.number = number;
-				currententity->curstate.iuser4 = iuser4;
+				g_iRagdollRenderEntIndex = 0;
+				g_iRagdollRenderState = RagdollRenderState_None;
 				return result;
 			}
 			else
 			{
 				int number = currententity->curstate.number;
-				int iuser4 = currententity->curstate.iuser4;
 				currententity->curstate.number = pplayer->number;
-				currententity->curstate.iuser4 = 1919811;
+				g_iRagdollRenderState = RagdollRenderState_PlayerWithJiggle;
+				g_iRagdollRenderEntIndex = currententity->curstate.number;
 
 				int result = gPrivateFuncs.R_StudioDrawPlayer(flags, pplayer);
 
 				currententity->curstate.number = number;
-				currententity->curstate.iuser4 = iuser4;
+				g_iRagdollRenderEntIndex = 0;
+				g_iRagdollRenderState = RagdollRenderState_None;
 				return result;
 			}
 		}
@@ -469,6 +534,15 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 
 		int iActivityType = GetSequenceActivityType(model, pplayer);
 
+		if (iActivityType == 1)
+		{
+			gCorpseManager.SetPlayerDying(playerindex, pplayer, model);
+		}
+		else
+		{
+			gCorpseManager.ClearPlayerDying(playerindex);
+		}
+
 		auto ragdoll = gPhysicsManager.FindRagdoll(playerindex);
 
 		if (!ragdoll)
@@ -477,13 +551,14 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 
 			if (cfg && cfg->state == 1 && bv_enable->value)
 			{
-				//int saved_weaponmodel = pplayer->weaponmodel;
+				//Remove weapon model for me ?
+				int saved_weaponmodel = pplayer->weaponmodel;
 
-				//pplayer->weaponmodel = 0;
+				pplayer->weaponmodel = 0;
 
 				gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, 0, pplayer);
 
-				//pplayer->weaponmodel = saved_weaponmodel;
+				pplayer->weaponmodel = saved_weaponmodel;
 				
 				ragdoll = gPhysicsManager.CreateRagdoll(cfg, playerindex, (*pstudiohdr), iActivityType, true);
 
@@ -546,9 +621,9 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 			if (ragdoll->m_iActivityType > 0)
 			{
 				int number = currententity->curstate.number;
-				int iuser4 = currententity->curstate.iuser4;
 				currententity->curstate.number = pplayer->number;
-				currententity->curstate.iuser4 = 1919810;
+				g_iRagdollRenderState = RagdollRenderState_Player;
+				g_iRagdollRenderEntIndex = currententity->curstate.number;
 
 				vec3_t saved_origin;
 				VectorCopy(currententity->origin, saved_origin);
@@ -559,20 +634,22 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 				VectorCopy(saved_origin, currententity->origin);
 
 				currententity->curstate.number = number;
-				currententity->curstate.iuser4 = iuser4;
+				g_iRagdollRenderEntIndex = 0;
+				g_iRagdollRenderState = RagdollRenderState_None;
 				return result;
 			}
 			else
 			{
 				int number = currententity->curstate.number;
-				int iuser4 = currententity->curstate.iuser4;
 				currententity->curstate.number = pplayer->number;
-				currententity->curstate.iuser4 = 1919811;
+				g_iRagdollRenderState = RagdollRenderState_PlayerWithJiggle;
+				g_iRagdollRenderEntIndex = currententity->curstate.number;
 
 				int result = gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, flags, pplayer);
 
 				currententity->curstate.number = number;
-				currententity->curstate.iuser4 = iuser4;
+				g_iRagdollRenderEntIndex = 0;
+				g_iRagdollRenderState = RagdollRenderState_None;
 				return result;
 			}
 		}
@@ -929,6 +1006,9 @@ void HUD_Init(void)
 
 	gPrivateFuncs.ThreadPerson_f = g_pMetaHookAPI->HookCmd("thirdperson", BV_ThreadPerson_f);
 	gPrivateFuncs.FirstPerson_f = g_pMetaHookAPI->HookCmd("firstperson", BV_FirstPerson_f);
+
+	//For clcorpse hook
+	m_pfnClCorpse = HOOK_MESSAGE(ClCorpse);
 }
 
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
