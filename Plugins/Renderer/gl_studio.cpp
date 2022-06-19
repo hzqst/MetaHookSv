@@ -393,6 +393,9 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 		if (state & STUDIO_HAIR_SHADOW_ENABLED)
 			defs << "#define HAIR_SHADOW_ENABLED\n";
 
+		if (state & STUDIO_CLIP_WATER_ENABLED)
+			defs << "#define CLIP_WATER_ENABLED\n";
+
 		if (state & STUDIO_CLIP_ENABLED)
 			defs << "#define CLIP_ENABLED\n";
 
@@ -755,6 +758,7 @@ const program_state_name_t s_StudioProgramStateName[] = {
 { STUDIO_GLOW_SHELL_ENABLED				,"STUDIO_GLOW_SHELL_ENABLED"				},
 { STUDIO_OUTLINE_ENABLED				,"STUDIO_OUTLINE_ENABLED"					},
 { STUDIO_HAIR_SHADOW_ENABLED			,"STUDIO_HAIR_SHADOW_ENABLED"				},
+{ STUDIO_CLIP_WATER_ENABLED				,"STUDIO_CLIP_WATER_ENABLED"				},
 { STUDIO_CLIP_ENABLED					,"STUDIO_CLIP_ENABLED"						},
 { STUDIO_BINDLESS_ENABLED				,"STUDIO_BINDLESS_ENABLED"					},
 { STUDIO_OIT_ALPHA_BLEND_ENABLED		,"STUDIO_OIT_ALPHA_BLEND_ENABLED"			},
@@ -1264,6 +1268,10 @@ void R_GLStudioDrawPoints(void)
 		}
 
 		if (r_draw_reflectview)
+		{
+			StudioProgramState |= STUDIO_CLIP_WATER_ENABLED;
+		}
+		else if (g_bPortalClipPlaneEnabled[0])
 		{
 			StudioProgramState |= STUDIO_CLIP_ENABLED;
 		}

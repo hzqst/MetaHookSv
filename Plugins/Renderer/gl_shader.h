@@ -16,7 +16,7 @@ typedef struct glshader_s
 
 typedef struct program_state_name_s
 {
-	int state;
+	unsigned int state;
 	const char *name;
 }program_state_name_t;
 
