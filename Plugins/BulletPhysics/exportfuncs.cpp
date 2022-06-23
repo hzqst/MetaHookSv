@@ -708,7 +708,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		*/
 #define CSTRIKE_PLAYEREXTRAINFO_SIG "\x66\x85\xC0\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89"
 
-		auto addr = (ULONG_PTR)Search_Pattern(CSTRIKE_PLAYEREXTRAINFO_SIG);
+		auto addr = (ULONG_PTR)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, CSTRIKE_PLAYEREXTRAINFO_SIG, sizeof(CSTRIKE_PLAYEREXTRAINFO_SIG) - 1);
 		
 		Sig_AddrNotFound(g_PlayerExtraInfo);
 
