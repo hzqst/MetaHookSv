@@ -103,7 +103,7 @@ bool IsEntityEmitted(cl_entity_t *ent)
 	return true;
 }
 
-int GetSequenceActivityType(model_t *mod, entity_state_t* entstate)
+int StudioGetSequenceActivityType(model_t *mod, entity_state_t* entstate)
 {
 	if (g_bIsSvenCoop)
 	{
@@ -380,7 +380,7 @@ cl_entity_t *CorpseManager::FindPlayerForBarnacle(int entindex)
 			auto playerEntity = gEngfuncs.GetEntityByIndex(itor->second);
 			if (playerEntity &&
 				playerEntity->player &&
-				GetSequenceActivityType(playerEntity->model, &playerEntity->curstate) == 2)
+				StudioGetSequenceActivityType(playerEntity->model, &playerEntity->curstate) == 2)
 			{
 				return playerEntity;
 			}
@@ -400,7 +400,7 @@ cl_entity_t *CorpseManager::FindPlayerForGargantua(int entindex)
 			auto playerEntity = gEngfuncs.GetEntityByIndex(itor->second);
 			if (playerEntity &&
 				playerEntity->player &&
-				GetSequenceActivityType(playerEntity->model, &playerEntity->curstate) == 2)
+				StudioGetSequenceActivityType(playerEntity->model, &playerEntity->curstate) == 2)
 			{
 				return playerEntity;
 			}

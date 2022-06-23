@@ -27,7 +27,6 @@ cvar_t *bv_simrate = NULL;
 cvar_t *bv_pretick = NULL;
 cvar_t *bv_scale = NULL;
 cvar_t *bv_enable = NULL;
-cvar_t *bv_force_ragdoll_sequence = NULL;
 
 const int RagdollRenderState_None = 0;
 const int RagdollRenderState_Monster = 1;
@@ -41,6 +40,7 @@ int g_iRagdollRenderEntIndex = 0;
 studiohdr_t **pstudiohdr = NULL;
 model_t **r_model = NULL;
 model_t *r_worldmodel = NULL;
+cl_entity_t *r_worldentity = NULL;
 void *g_pGameStudioRenderer = NULL;
 int *r_visframecount = NULL;
 int *cl_parsecount = NULL;
@@ -54,7 +54,12 @@ bool IsEntityGargantua(cl_entity_t* ent);
 bool IsEntityBarnacle(cl_entity_t* ent);
 bool IsEntityWater(cl_entity_t* ent);
 
-int GetSequenceActivityType(model_t *mod, entity_state_t* entstate);
+int StudioGetSequenceActivityType(model_t *mod, entity_state_t* entstate);
+
+int EngineGetNumKnownModel(void)
+{
+	return (*mod_numknown);
+}
 
 int EngineGetMaxKnownModel(void)
 {
@@ -166,8 +171,6 @@ int R_StudioDrawModel(int flags)
 		int entindex = currententity->index;
 		auto model = currententity->model;
 
-		int iActivityType = GetSequenceActivityType(model, &currententity->curstate);
-
 		auto ragdoll = gPhysicsManager.FindRagdoll(entindex);
 		if (!ragdoll)
 		{
@@ -177,30 +180,25 @@ int R_StudioDrawModel(int flags)
 			{
 				gPrivateFuncs.R_StudioDrawModel(0);
 
-				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex, (*pstudiohdr), iActivityType, false);
+				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex, false);
 
 				goto has_ragdoll;
 			}
 		}
 		else
 		{
-			/*if (!iActivityType)
-			{
-				gPhysicsManager.RemoveRagdoll(entindex);
-				return gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, flags);
-			}*/
-
 		has_ragdoll:
+
+			int iActivityType = StudioGetSequenceActivityType(model, &currententity->curstate);
+
+			if (iActivityType == 0)
+			{
+				iActivityType = gPhysicsManager.GetSequenceActivityType(ragdoll, &currententity->curstate);
+			}
 
 			if (gPhysicsManager.UpdateKinematic(ragdoll, iActivityType, &currententity->curstate))
 			{
 				//Monster don't have barnacle animation
-				/*if (ragdoll->m_iActivityType == 2)
-				{
-					cl_entity_t *barnacleEntity = gCorpseManager.FindBarnacleForPlayer(&currententity->curstate);
-
-					gPhysicsManager.ApplyBarnacle(ragdoll, barnacleEntity);
-				}*/
 			}
 
 			if (ragdoll->m_iActivityType > 0)
@@ -255,8 +253,6 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 		int entindex = currententity->index;
 		auto model = currententity->model;
 
-		int iActivityType = GetSequenceActivityType(model, &currententity->curstate);
-
 		auto ragdoll = gPhysicsManager.FindRagdoll(entindex);
 		if (!ragdoll)
 		{
@@ -266,30 +262,25 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 			{
 				gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, 0);
 
-				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex, (*pstudiohdr), iActivityType, false);
+				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex, false);
 
 				goto has_ragdoll;
 			}
 		}
 		else
 		{
-			/*if (!iActivityType)
-			{
-				gPhysicsManager.RemoveRagdoll(entindex);
-				return gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, flags);
-			}*/
-
 		has_ragdoll:
+
+			int iActivityType = StudioGetSequenceActivityType(model, &currententity->curstate);
+
+			if (iActivityType == 0)
+			{
+				iActivityType = gPhysicsManager.GetSequenceActivityType(ragdoll, &currententity->curstate);
+			}
 
 			if (gPhysicsManager.UpdateKinematic(ragdoll, iActivityType, &currententity->curstate))
 			{
 				//Monster don't have barnacle animation
-				/*if (ragdoll->m_iActivityType == 2)
-				{
-					cl_entity_t *barnacleEntity = gCorpseManager.FindBarnacleForPlayer(&currententity->curstate);
-
-					gPhysicsManager.ApplyBarnacle(ragdoll, barnacleEntity);
-				}*/
 			}
 
 			if (ragdoll->m_iActivityType > 0)
@@ -337,8 +328,6 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 	{
 		auto model = currententity->model;
 
-		int iActivityType = GetSequenceActivityType(model, &currententity->curstate);
-
 		int entindex = currententity->curstate.owner;
 
 		auto ragdoll = gPhysicsManager.FindRagdoll(entindex);
@@ -350,14 +339,22 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 			{
 				gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, 0);
 
-				ragdoll = gPhysicsManager.CreateRagdoll(cfg, currententity->curstate.owner, (*pstudiohdr), iActivityType, false);
+				ragdoll = gPhysicsManager.CreateRagdoll(cfg, currententity->curstate.owner, true);
 
-				goto has_ragdoll2;
+				goto has_ragdoll_clcorpse;
 			}
 		}
 		else
 		{
-		has_ragdoll2:
+		has_ragdoll_clcorpse:
+
+			int iActivityType = StudioGetSequenceActivityType(model, &currententity->curstate);
+
+			if (iActivityType == 0)
+			{
+				iActivityType = gPhysicsManager.GetSequenceActivityType(ragdoll, &currententity->curstate);
+			}
+
 			if (gPhysicsManager.UpdateKinematic(ragdoll, iActivityType, &currententity->curstate))
 			{
 
@@ -411,8 +408,6 @@ int __fastcall R_StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 
 		auto model = IEngineStudio.SetupPlayerModel(playerindex - 1);
 
-		int iActivityType = GetSequenceActivityType(model, pplayer);
-
 		auto ragdoll = gPhysicsManager.FindRagdoll(playerindex);
 
 		if (!ragdoll)
@@ -423,7 +418,7 @@ int __fastcall R_StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 			{
 				gPrivateFuncs.R_StudioDrawPlayer(0, pplayer);
 
-				ragdoll = gPhysicsManager.CreateRagdoll(cfg, playerindex, (*pstudiohdr), iActivityType, true);
+				ragdoll = gPhysicsManager.CreateRagdoll(cfg, playerindex, true);
 
 				goto has_ragdoll;
 			}
@@ -438,12 +433,19 @@ int __fastcall R_StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 			}
 
 		has_ragdoll:
-
+			
 			int oldActivityType = ragdoll->m_iActivityType;
+
+			int iActivityType = StudioGetSequenceActivityType(model, pplayer);
+
+			if (iActivityType == 0)
+			{
+				iActivityType = gPhysicsManager.GetSequenceActivityType(ragdoll, &currententity->curstate);
+			}
 
 			if (gPhysicsManager.UpdateKinematic(ragdoll, iActivityType, pplayer))
 			{
-				//Transform from whatever to barnacle
+				//Transform from whatever to barnacle anim
 				if (ragdoll->m_iActivityType == 2)
 				{
 					cl_entity_t *barnacleEntity = gCorpseManager.FindBarnacleForPlayer(&currententity->curstate);
@@ -532,17 +534,6 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 
 		auto model = IEngineStudio.SetupPlayerModel(playerindex - 1);
 
-		int iActivityType = GetSequenceActivityType(model, pplayer);
-
-		if (iActivityType == 1)
-		{
-			gCorpseManager.SetPlayerDying(playerindex, pplayer, model);
-		}
-		else
-		{
-			gCorpseManager.ClearPlayerDying(playerindex);
-		}
-
 		auto ragdoll = gPhysicsManager.FindRagdoll(playerindex);
 
 		if (!ragdoll)
@@ -560,7 +551,7 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 
 				pplayer->weaponmodel = saved_weaponmodel;
 				
-				ragdoll = gPhysicsManager.CreateRagdoll(cfg, playerindex, (*pstudiohdr), iActivityType, true);
+				ragdoll = gPhysicsManager.CreateRagdoll(cfg, playerindex, true);
 
 				goto has_ragdoll;
 			}
@@ -577,6 +568,22 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 		has_ragdoll:
 
 			int oldActivityType = ragdoll->m_iActivityType;
+
+			int iActivityType = StudioGetSequenceActivityType(model, pplayer);
+
+			if (iActivityType == 0)
+			{
+				iActivityType = gPhysicsManager.GetSequenceActivityType(ragdoll, &currententity->curstate);
+			}
+
+			if (iActivityType == 1)
+			{
+				gCorpseManager.SetPlayerDying(playerindex, pplayer, model);
+			}
+			else
+			{
+				gCorpseManager.ClearPlayerDying(playerindex);
+			}
 
 			if (gPhysicsManager.UpdateKinematic(ragdoll, iActivityType, pplayer))
 			{
@@ -629,7 +636,14 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 				VectorCopy(currententity->origin, saved_origin);
 				gPhysicsManager.GetRagdollOrigin(ragdoll, currententity->origin);
 
+				//Remove weapon model for me ?
+				int saved_weaponmodel = pplayer->weaponmodel;
+
+				pplayer->weaponmodel = 0;
+
 				int result = gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, flags, pplayer);
+
+				pplayer->weaponmodel = saved_weaponmodel;
 
 				VectorCopy(saved_origin, currententity->origin);
 
@@ -963,7 +977,7 @@ void BV_ThreadPerson_f(void)
 
 	if (localplayer && localplayer->player)
 	{
-		if (GetSequenceActivityType(localplayer->model, &localplayer->curstate) == 2)
+		if (StudioGetSequenceActivityType(localplayer->model, &localplayer->curstate) == 2)
 		{
 			gEngfuncs.Con_Printf("Cannot change to thirdperson when playing barnacle animation.\n");
 			return;
@@ -979,7 +993,7 @@ void BV_FirstPerson_f(void)
 
 	if (localplayer && localplayer->player)
 	{
-		if (GetSequenceActivityType(localplayer->model, &localplayer->curstate) == 2)
+		if (StudioGetSequenceActivityType(localplayer->model, &localplayer->curstate) == 2)
 		{
 			gEngfuncs.Con_Printf("Cannot change to firstperson when playing barnacle animation.\n");
 			return;
@@ -1000,7 +1014,6 @@ void HUD_Init(void)
 	bv_pretick = gEngfuncs.pfnRegisterVariable("bv_pretick", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_scale = gEngfuncs.pfnRegisterVariable("bv_scale", "0.5", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_enable = gEngfuncs.pfnRegisterVariable("bv_enable", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	bv_force_ragdoll_sequence = gEngfuncs.pfnRegisterVariable("bv_force_ragdoll_sequence", "0", FCVAR_CLIENTDLL);
 
 	gEngfuncs.pfnAddCommand("bv_reload", BV_Reload_f);
 
@@ -1085,9 +1098,13 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 	{
 		auto local = gEngfuncs.GetLocalPlayer();
 
-		if (local && local->player && GetSequenceActivityType(local->model, &local->curstate))
+		if (local && local->player)
 		{
-			gPhysicsManager.SyncPlayerView(local, pparams);
+			auto ragdoll = gPhysicsManager.FindRagdoll(local->index);
+			if (ragdoll && ragdoll->m_iActivityType != 0)
+			{
+				gPhysicsManager.SyncPlayerView(local, pparams);
+			}
 		}
 	}
 

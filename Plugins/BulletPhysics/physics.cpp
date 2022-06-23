@@ -21,8 +21,10 @@ extern cvar_t *bv_simrate;
 extern cvar_t *bv_pretick;
 extern cvar_t *bv_scale;
 extern model_t *r_worldmodel;
+extern cl_entity_t *r_worldentity;
 extern int *r_visframecount;
 
+int EngineGetNumKnownModel(void);
 int EngineGetMaxKnownModel(void);
 int EngineGetModelIndex(model_t *mod);
 model_t *EngineGetModelByIndex(int index);
@@ -31,7 +33,7 @@ bool IsEntityGargantua(cl_entity_t* ent);
 bool IsEntityBarnacle(cl_entity_t* ent);
 bool IsEntityWater(cl_entity_t* ent);
 bool IsEntityEmitted(cl_entity_t* ent);
-int GetSequenceActivityType(model_t *mod, entity_state_t* entstate);
+int StudioGetSequenceActivityType(model_t *mod, entity_state_t* entstate);
 void RagdollDestroyCallback(int entindex);
 
 const float r_identity_matrix[4][4] = {
@@ -180,7 +182,7 @@ void CPhysicsManager::GenerateBrushIndiceArray(void)
 		}
 	}
 
-	for (int i = 0; i < (*mod_numknown); ++i)
+	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
 		auto mod = EngineGetModelByIndex(i);
 		if (mod->type == mod_brush && mod->name[0])
@@ -481,28 +483,7 @@ void CPhysicsManager::CreateGargantua(cl_entity_t *ent)
 
 void CPhysicsManager::CreateWater(cl_entity_t *ent)
 {
-#if 0
 
-	auto hull = &ent->model->hulls[0];
-	for (auto nodenum = hull->firstclipnode; nodenum >= hull->firstclipnode && nodenum <= hull->lastclipnode;)
-	{
-		auto node = hull->clipnodes + nodenum;
-		auto plane = hull->planes + node->planenum;
-
-	}
-	
-
-	btGhostObject* ghostObject = new btGhostObject();
-	btCollisionShape* shape = new btBoxShape(btVector3(1000, 1000, 50));
-	ghostObject->setCollisionShape(shape);
-	btTransform trans;
-	trans.setIdentity();
-	trans.setOrigin(btVector3(0, 0, -500));
-	ghostObject->setWorldTransform(trans);
-	ghostObject->setCollisionFlags(ghostObject->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
-	m_dynamicsWorld->addCollisionObject(ghostObject, btBroadphaseProxy::SensorTrigger, btBroadphaseProxy::AllFilter & ~btBroadphaseProxy::SensorTrigger);
-	m_dynamicsWorld->getBroadphase()->getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
-#endif
 }
 
 void CPhysicsManager::UpdateBrushTransform(cl_entity_t *ent, CStaticBody *staticBody)
@@ -547,7 +528,7 @@ void CPhysicsManager::CreateBrushModel(cl_entity_t *ent)
 	{
 		auto staticBody = itor->second;
 
-		if (ent->index > 0 && staticBody->m_kinematic)
+		if (staticBody->m_kinematic)
 		{
 			UpdateBrushTransform(ent, staticBody);
 		}
@@ -555,7 +536,7 @@ void CPhysicsManager::CreateBrushModel(cl_entity_t *ent)
 		return;
 	}
 
-	bool bKinematic = ent->curstate.movetype == MOVETYPE_PUSH || ent->curstate.movetype == MOVETYPE_PUSHSTEP ? true : false;
+	bool bKinematic = ((ent != r_worldentity) && (ent->curstate.movetype == MOVETYPE_PUSH || ent->curstate.movetype == MOVETYPE_PUSHSTEP)) ? true : false;
 
 	CreateStaticBody(ent, m_worldVertexArray, m_brushIndexArray[modelindex], bKinematic, bKinematic ? true : false);
 }
@@ -569,7 +550,7 @@ void CPhysicsManager::NewMap(void)
 	RemoveAllRagdolls();
 	RemoveAllStatics();
 
-	auto r_worldentity = gEngfuncs.GetEntityByIndex(0);
+	r_worldentity = gEngfuncs.GetEntityByIndex(0);
 
 	r_worldmodel = r_worldentity->model;
 
@@ -1111,7 +1092,7 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 
 	if (ragdoll->m_gargantuaindex != -1)
 	{
-		if (GetSequenceActivityType(ent->model, &ent->curstate) != 2)
+		if (StudioGetSequenceActivityType(ent->model, &ent->curstate) != 2)
 		{
 			ReleaseRagdollFromGargantua(ragdoll);
 			
@@ -1154,7 +1135,7 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 	{
 		bool bDraging = true;
 
-		if (GetSequenceActivityType(ent->model, &ent->curstate) != 2)
+		if (StudioGetSequenceActivityType(ent->model, &ent->curstate) != 2)
 		{
 			ReleaseRagdollFromBarnacle(ragdoll);
 			//Is gibbed ?
@@ -1318,7 +1299,7 @@ void CPhysicsManager::ReloadConfig(void)
 		}
 	}
 
-	for (int i = 0; i < *mod_numknown; ++i)
+	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
 		auto mod = EngineGetModelByIndex(i);
 		if (mod->type == mod_studio && mod->name[0])
@@ -1463,7 +1444,9 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 			{
 				cfg->animcontrol.resize(i_sequence + 1);
 			}
-			cfg->animcontrol[i_sequence] = f_frame;
+			cfg->animcontrol[i_sequence].sequence = i_sequence;
+			cfg->animcontrol[i_sequence].frame = f_frame;
+			cfg->animcontrol[i_sequence].activity = 1;
 		}
 		else if (iParsingState == RAGDOLL_PARSING_RIGIDBODY || iParsingState == RAGDOLL_PARSING_JIGGLEBONE)
 		{
@@ -2046,7 +2029,7 @@ void BoneMotionState::getWorldTransform(btTransform& worldTrans) const
 void BoneMotionState::setWorldTransform(const btTransform& worldTrans)
 {
 	bonematrix.mult(worldTrans, offsetmatrix.inverse());
-}
+} 
 
 btQuaternion FromToRotaion(btVector3 fromDirection, btVector3 toDirection)
 {
@@ -3080,11 +3063,12 @@ bool CPhysicsManager::UpdateKinematic(CRagdollBody *ragdoll, int iActivityType, 
 	if (ragdoll->m_iActivityType == iActivityType)
 		return false;
 
+	//Playing death anim or barnacle anim?
 	if (ragdoll->m_iActivityType == 0 && iActivityType > 0)
 	{
-		if (curstate->sequence < (int)ragdoll->m_animcontrol.size())
+		if (curstate->sequence >= 0 && curstate->sequence < (int)ragdoll->m_animcontrol.size())
 		{
-			if (curstate->frame < ragdoll->m_animcontrol[curstate->sequence])
+			if (curstate->frame < ragdoll->m_animcontrol[curstate->sequence].frame)
 			{
 				return false;
 			}
@@ -3139,9 +3123,7 @@ update_kinematic:
 CRagdollBody *CPhysicsManager::CreateRagdoll(
 	ragdoll_config_t *cfg,
 	int entindex, 
-	studiohdr_t *studiohdr,
-	int iActivityType,
-	bool isplayer)
+	bool bIsPlayer)
 {
 	auto ragdoll = new CRagdollBody();
 
@@ -3149,7 +3131,7 @@ CRagdollBody *CPhysicsManager::CreateRagdoll(
 
 	//Save bone relative transform
 
-	for (int i = 0; i < studiohdr->numbones; ++i)
+	for (int i = 0; i < (*pstudiohdr)->numbones; ++i)
 	{
 		int parent = pbones[i].parent;
 		if (parent == -1)
@@ -3175,7 +3157,7 @@ CRagdollBody *CPhysicsManager::CreateRagdoll(
 	{
 		auto rigcontrol = &cfg->rigcontrol[i];
 
-		CRigBody *rig = CreateRigBody(studiohdr, rigcontrol);
+		CRigBody *rig = CreateRigBody((*pstudiohdr), rigcontrol);
 		if (rig)
 		{
 			ragdoll->m_keyBones.emplace_back(rigcontrol->boneindex);
@@ -3196,7 +3178,7 @@ CRagdollBody *CPhysicsManager::CreateRagdoll(
 		}
 	}
 
-	for (int i = 0; i < studiohdr->numbones; ++i)
+	for (int i = 0; i < (*pstudiohdr)->numbones; ++i)
 	{
 		if (std::find(ragdoll->m_keyBones.begin(), ragdoll->m_keyBones.end(), i) == ragdoll->m_keyBones.end())
 			ragdoll->m_nonKeyBones.emplace_back(i);
@@ -3206,7 +3188,7 @@ CRagdollBody *CPhysicsManager::CreateRagdoll(
 	{
 		auto cstcontrol = &cfg->cstcontrol[i];
 
-		auto constraint = CreateConstraint(ragdoll, studiohdr, cstcontrol);
+		auto constraint = CreateConstraint(ragdoll, (*pstudiohdr), cstcontrol);
 
 		if (constraint)
 		{
@@ -3219,16 +3201,27 @@ CRagdollBody *CPhysicsManager::CreateRagdoll(
 	{
 		auto water_control = &cfg->watercontrol[i];
 
-		CreateWaterControl(ragdoll, studiohdr, water_control);
+		CreateWaterControl(ragdoll, (*pstudiohdr), water_control);
 	}
 
 	ragdoll->m_entindex = entindex;
-	ragdoll->m_isPlayer = isplayer;
-	ragdoll->m_studiohdr = studiohdr;
+	ragdoll->m_isPlayer = bIsPlayer;
+	ragdoll->m_studiohdr = (*pstudiohdr);
 	ragdoll->m_animcontrol = cfg->animcontrol;
 	ragdoll->m_barcontrol = cfg->barcontrol;
 	ragdoll->m_garcontrol = cfg->garcontrol;
+
 	m_ragdollMap[entindex] = ragdoll;
 
 	return ragdoll;
+}
+
+int CPhysicsManager::GetSequenceActivityType(CRagdollBody *ragdoll, entity_state_t* entstate)
+{
+	if (entstate->sequence >= 0 && entstate->sequence < (int)ragdoll->m_animcontrol.size())
+	{
+		return ragdoll->m_animcontrol[entstate->sequence].activity;
+	}
+
+	return 0;
 }

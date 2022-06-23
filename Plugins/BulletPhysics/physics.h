@@ -8,6 +8,25 @@
 #include <studio.h>
 #include <com_model.h>
 
+typedef struct ragdoll_anim_control_s
+{
+	ragdoll_anim_control_s()
+	{
+		sequence = 0;
+		frame = 0;
+		activity = 0;
+	}
+	ragdoll_anim_control_s(int _sequence, float _frame, int _activity)
+	{
+		sequence = _sequence;
+		frame = _frame;
+		activity = _activity;
+	}
+	int sequence;
+	float frame;
+	int activity;
+}ragdoll_anim_control_t;
+
 typedef struct ragdoll_rig_control_s
 {
 	ragdoll_rig_control_s(const std::string &n, int bone, int pbone, int shap, float offsetX, float offsetY, float offsetZ, float sz, float sz2, float ms, int fl)
@@ -154,7 +173,7 @@ typedef struct ragdoll_water_control_s
 typedef struct ragdoll_config_s
 {
 	int state;
-	std::vector<float> animcontrol;
+	std::vector<ragdoll_anim_control_t> animcontrol;
 	std::vector<ragdoll_cst_control_t> cstcontrol;
 	std::vector<ragdoll_rig_control_t> rigcontrol;
 	std::vector<ragdoll_bar_control_t> barcontrol;
@@ -305,7 +324,7 @@ public:
 	std::vector <btTypedConstraint *> m_constraintArray;
 	std::vector <btTypedConstraint *> m_barnacleConstraintArray;
 	std::vector <btTypedConstraint *> m_gargantuaConstraintArray;
-	std::vector<float> m_animcontrol;
+	std::vector<ragdoll_anim_control_t> m_animcontrol;
 	std::vector<ragdoll_bar_control_t> m_barcontrol;
 	std::vector<ragdoll_gar_control_t> m_garcontrol;
 };
@@ -491,7 +510,7 @@ public:
 	void ResetPose(CRagdollBody *ragdoll, entity_state_t *curstate);
 	void ApplyBarnacle(CRagdollBody *ragdoll, cl_entity_t *barnacleEntity);
 	void ApplyGargantua(CRagdollBody *ragdoll, cl_entity_t *gargEntity);
-	CRagdollBody *CreateRagdoll(ragdoll_config_t *cfg, int tentindex, studiohdr_t *studiohdr, int iActivityType, bool isplayer);
+	CRagdollBody *CreateRagdoll(ragdoll_config_t *cfg, int tentindex, bool bIsPlayer);
 	CRigBody *CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol);
 	btTypedConstraint *CreateConstraint(CRagdollBody *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
 	void CreateWaterControl(CRagdollBody *ragdoll, studiohdr_t *studiohdr, ragdoll_water_control_t *water_control);
@@ -505,6 +524,7 @@ public:
 	void ReleaseRagdollFromBarnacle(CRagdollBody *ragdoll);
 	void ReleaseRagdollFromGargantua(CRagdollBody *ragdoll);
 	bool GetRagdollOrigin(CRagdollBody *ragdoll, float *origin);
+	int GetSequenceActivityType(CRagdollBody *ragdoll, entity_state_t* entstate);
 	bool UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time);
 	void UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time);
 	void UpdateTempEntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time);
@@ -519,6 +539,7 @@ private:
 	btSequentialImpulseConstraintSolver* m_solver;
 	btDiscreteDynamicsWorld* m_dynamicsWorld;
 	CPhysicsDebugDraw *m_debugDraw;
+private:
 	std::unordered_map<int, CRagdollBody *> m_ragdollMap;
 	std::unordered_map<int, CStaticBody *> m_staticMap;
 	std::vector<ragdoll_config_t *> m_ragdoll_config;
