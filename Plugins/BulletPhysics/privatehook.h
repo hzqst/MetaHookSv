@@ -36,3 +36,30 @@ extern void *mod_known;
 extern int *mod_numknown;
 extern privte_funcs_t gPrivateFuncs;
 extern bool g_bIsSvenCoop;
+extern bool g_bIsCounterStrike;
+
+//For Counter-Strike
+typedef struct
+{
+	short frags;//00000000 frags           dw ? ; XREF: CounterStrikeViewport::MsgFunc_TeamInfo(char const*, int, void *) + F8 / w
+	short deaths;//00000002 deaths          dw ?
+	short team_id; //00000004 team_id         dw ?
+	short padding;//00000006                 db ? ; undefined
+	int has_c4;//00000008 has_c4          dd ?
+	int vip;//0000000C vip             dd ?
+	vec3_t origin;//00000010 origin          Vector ?
+	int radarflash;//0000001C radarflash      dd ?
+	int radarflashon;//00000020 radarflashon    dd ?
+	int radarflashes;//00000024 radarflashes    dd ?
+	short playerclass;//00000028 playerclass     dw ?
+	short teamnumber;//0000002A teamnumber      dw ?
+	char teamname[16];//0000002C teamname        db 16 dup(? )
+	int dead;//0000003C dead
+}extra_player_info_t;
+
+static_assert(sizeof(extra_player_info_t) == 0x40, "Size check");
+
+extern cvar_t *cl_minmodels;
+extern cvar_t *cl_min_t;
+extern cvar_t *cl_min_ct;
+extern extra_player_info_t(*g_PlayerExtraInfo)[65];

@@ -34,6 +34,7 @@ const int RagdollRenderState_Player = 2;
 const int RagdollRenderState_PlayerWithJiggle = 3;
 
 bool g_bIsSvenCoop = false;
+bool g_bIsCounterStrike = false;
 int g_iRagdollRenderState = 0;
 int g_iRagdollRenderEntIndex = 0;
 
@@ -316,7 +317,7 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 		}
 	}
 
-	//ClCorpse?
+	//ClCorpse temp entity?
 
 	if ((flags & STUDIO_RENDER) &&
 		!currententity->player &&
@@ -522,7 +523,9 @@ int __fastcall R_StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 	return gPrivateFuncs.R_StudioDrawPlayer(flags, pplayer);
 }
 
-//ClientDrawPlayer
+//client.dll GameStudioRenderer::StudioDrawPlayer
+
+model_t *CounterStrike_RedirectPlayerModel(model_t *original_model, int PlayerNumber, int *modelindex);
 
 int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int flags, struct entity_state_s *pplayer)
 {
@@ -530,11 +533,18 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 	{
 		auto currententity = IEngineStudio.GetCurrentEntity();
 
-		int playerindex = pplayer->number;
+		int playernumber = pplayer->number;
 
-		auto model = IEngineStudio.SetupPlayerModel(playerindex - 1);
+		auto model = IEngineStudio.SetupPlayerModel(playernumber - 1);
 
-		auto ragdoll = gPhysicsManager.FindRagdoll(playerindex);
+		if (g_bIsCounterStrike)
+		{
+			//Counter-Strike redirect player models in pretty tricky way
+			int modelindex = 0;
+			model = CounterStrike_RedirectPlayerModel(model, playernumber, &modelindex);
+		}
+
+		auto ragdoll = gPhysicsManager.FindRagdoll(playernumber);
 
 		if (!ragdoll)
 		{
@@ -551,7 +561,7 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 
 				pplayer->weaponmodel = saved_weaponmodel;
 				
-				ragdoll = gPhysicsManager.CreateRagdoll(cfg, playerindex, true);
+				ragdoll = gPhysicsManager.CreateRagdoll(cfg, playernumber, true);
 
 				goto has_ragdoll;
 			}
@@ -561,7 +571,7 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 			//model changed ?
 			if (ragdoll->m_studiohdr != IEngineStudio.Mod_Extradata(model))
 			{
-				gPhysicsManager.RemoveRagdoll(playerindex);
+				gPhysicsManager.RemoveRagdoll(playernumber);
 				return gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, flags, pplayer);
 			}
 
@@ -578,11 +588,11 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 
 			if (iActivityType == 1)
 			{
-				gCorpseManager.SetPlayerDying(playerindex, pplayer, model);
+				gCorpseManager.SetPlayerDying(playernumber, pplayer, model);
 			}
 			else
 			{
-				gCorpseManager.ClearPlayerDying(playerindex);
+				gCorpseManager.ClearPlayerDying(playernumber);
 			}
 
 			if (gPhysicsManager.UpdateKinematic(ragdoll, iActivityType, pplayer))
@@ -683,7 +693,27 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	{
 		g_bIsSvenCoop = true;
 	}
+	else if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "cstrike") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
+	{
+		g_bIsCounterStrike = true;
 
+		//g_PlayerExtraInfo
+		//66 85 C0 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ??
+		/*
+		.text:019A4575 66 85 C0                                            test    ax, ax
+		.text:019A4578 66 89 99 20 F4 A2 01                                mov     word_1A2F420[ecx], bx
+		.text:019A457F 66 89 A9 22 F4 A2 01                                mov     word_1A2F422[ecx], bp
+		.text:019A4586 66 89 91 48 F4 A2 01                                mov     word_1A2F448[ecx], dx
+		.text:019A458D 66 89 81 4A F4 A2 01                                mov     word_1A2F44A[ecx], ax
+		*/
+#define CSTRIKE_PLAYEREXTRAINFO_SIG "\x66\x85\xC0\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89"
+
+		auto addr = (ULONG_PTR)Search_Pattern(CSTRIKE_PLAYEREXTRAINFO_SIG);
+		
+		Sig_AddrNotFound(g_PlayerExtraInfo);
+
+		g_PlayerExtraInfo = *(decltype(g_PlayerExtraInfo) *)(addr + 6);
+	}
 	pbonetransform = (float(*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetBoneTransform();
 	plighttransform = (float(*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetLightTransform();
 
@@ -1014,6 +1044,10 @@ void HUD_Init(void)
 	bv_pretick = gEngfuncs.pfnRegisterVariable("bv_pretick", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_scale = gEngfuncs.pfnRegisterVariable("bv_scale", "0.5", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_enable = gEngfuncs.pfnRegisterVariable("bv_enable", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	cl_minmodels = gEngfuncs.pfnGetCvarPointer("cl_minmodels");
+	cl_min_ct = gEngfuncs.pfnGetCvarPointer("cl_min_ct");
+	cl_min_t = gEngfuncs.pfnGetCvarPointer("cl_min_t");
 
 	gEngfuncs.pfnAddCommand("bv_reload", BV_Reload_f);
 

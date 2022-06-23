@@ -194,7 +194,6 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 		return;
 	}
 
-
 	Install_InlineHook(R_NewMap);
 }
 
