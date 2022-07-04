@@ -1195,11 +1195,27 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 {
-	return gExportfuncs.HUD_AddEntity(type, ent, model);
+	int r = gExportfuncs.HUD_AddEntity(type, ent, model);
+	
+	if (r &&
+		ent->curstate.movetype == MOVETYPE_FOLLOW &&
+		ent->curstate.aiment > 0 &&
+		ent->curstate.aiment < MAX_EDICTS &&
+		ent->model && 
+		ent->model->type ==mod_studio)
+	{
+		r_aiments[ent->curstate.aiment][r_numaiments[ent->curstate.aiment]] = ent;
+		r_numaiments[ent->curstate.aiment]++;
+		//return 0;
+	}
+
+	return 1;
 }
 
 void HUD_Frame(double time)
 {
+	memset(r_numaiments, 0, sizeof(r_numaiments));
+
 	return gExportfuncs.HUD_Frame(time);
 }
 

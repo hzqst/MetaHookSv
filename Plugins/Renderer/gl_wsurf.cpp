@@ -3524,6 +3524,13 @@ void R_DrawWorld(void)
 {
 	r_draw_opaque = true;
 
+	const float r_identity_matrix[4][4] = {
+		{1.0f, 0.0f, 0.0f, 0.0f},
+		{0.0f, 1.0f, 0.0f, 0.0f},
+		{0.0f, 0.0f, 1.0f, 0.0f},
+		{0.0f, 0.0f, 0.0f, 1.0f}
+	};
+
 	memcpy(r_entity_matrix, r_identity_matrix, sizeof(r_entity_matrix));
 	r_entity_color[0] = 1;
 	r_entity_color[1] = 1;

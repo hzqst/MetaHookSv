@@ -149,6 +149,14 @@ extern bool g_bPortalClipPlaneEnabled[6];
 
 extern vec4_t g_PortalClipPlane[6];
 
+//For aiment rendering
+
+#define MAX_AIMENTS 32
+#define MAX_EDICTS 8192
+
+extern cl_entity_t *r_aiments[MAX_EDICTS][MAX_AIMENTS];
+extern int r_numaiments[MAX_EDICTS] ;
+
 //gl extension
 
 extern int gl_max_texture_size;
@@ -427,7 +435,6 @@ model_t *EngineGetModelByIndex(int index);
 void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue);
 
 extern GLint r_viewport[4];
-extern float r_identity_matrix[4][4];
 extern float r_entity_matrix[4][4];
 extern float r_entity_color[4];
 

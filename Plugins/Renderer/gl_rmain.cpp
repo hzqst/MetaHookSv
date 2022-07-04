@@ -103,12 +103,8 @@ bool g_bPortalClipPlaneEnabled[6] = { false };
 
 vec4_t g_PortalClipPlane[6] = {0};
 
-float r_identity_matrix[4][4] = {
-	{1.0f, 0.0f, 0.0f, 0.0f},
-	{0.0f, 1.0f, 0.0f, 0.0f},
-	{0.0f, 0.0f, 1.0f, 0.0f},
-	{0.0f, 0.0f, 0.0f, 1.0f}
-};
+cl_entity_t *r_aiments[MAX_EDICTS][MAX_AIMENTS] = { 0 };
+int r_numaiments[MAX_EDICTS] = { 0 };
 
 float r_entity_matrix[4][4];
 float r_entity_color[4];
@@ -294,6 +290,14 @@ void R_RotateForEntity(float *origin, cl_entity_t *e)
 	}
 
 	float entity_matrix[4][4];
+
+	const float r_identity_matrix[4][4] = {
+		{1.0f, 0.0f, 0.0f, 0.0f},
+		{0.0f, 1.0f, 0.0f, 0.0f},
+		{0.0f, 0.0f, 1.0f, 0.0f},
+		{0.0f, 0.0f, 0.0f, 1.0f}
+	};
+
 	memcpy(entity_matrix, r_identity_matrix, sizeof(r_identity_matrix));
 	Matrix4x4_CreateFromEntity(entity_matrix, angles, modelpos, 1);
 	Matrix4x4_Transpose(r_entity_matrix, entity_matrix);
@@ -901,9 +905,10 @@ void R_DrawCurrentEntity(bool bTransparent)
 		}
 		else
 		{
-
 			if ((*currententity)->curstate.movetype == MOVETYPE_FOLLOW)
 			{
+				return;
+#if 0//wtf this is not supposed to happen
 				bool bFound = false;
 
 				for (int j = 0; j < (*cl_numvisedicts); j++)
@@ -933,9 +938,52 @@ void R_DrawCurrentEntity(bool bTransparent)
 
 				if (!bFound)
 					break;
+#endif
+			}
+			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
+		}
+
+		if ((*currententity)->curstate.movetype == MOVETYPE_FOLLOW)
+		{
+			return;
+		}
+
+		int currententity_index = (*currententity)->index;
+
+		if (currententity_index > 0 && currententity_index < MAX_EDICTS && r_numaiments[currententity_index] > 0)
+		{
+			auto save_currententity = (*currententity);
+
+			static float save_bonetransform[MAXSTUDIOBONES][3][4];
+			static float save_lighttransform[MAXSTUDIOBONES][3][4];
+
+			memcpy(save_bonetransform, (*pbonetransform), sizeof(save_bonetransform));
+			memcpy(save_lighttransform, (*plighttransform), sizeof(save_lighttransform));
+
+			//do what CL_MoveAiments does...?
+
+			//vec3_t currententity_origin;
+			//VectorCopy((*currententity)->curstate.origin, currententity_origin);
+
+			//auto save_currententity = (*currententity);
+			for (int i = 0; i < r_numaiments[currententity_index]; ++i)
+			{
+				//restore matrix at each run
+				if (i != 0)
+				{
+					memcpy((*pbonetransform), save_bonetransform, sizeof(save_bonetransform));
+					memcpy((*plighttransform), save_lighttransform, sizeof(save_lighttransform));
+				}
+
+				(*currententity) = r_aiments[currententity_index][i];
+				
+				//do what CL_MoveAiments does...
+				//VectorCopy(currententity_origin, (*currententity)->curstate.origin);
+
+				(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
 			}
 
-			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
+			(*currententity) = save_currententity;
 		}
 
 		break;

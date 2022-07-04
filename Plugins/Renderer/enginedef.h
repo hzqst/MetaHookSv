@@ -582,3 +582,5 @@ typedef enum
 }cactive_t;
 
 #define SIGNONS 2
+
+#define MAX_VISEDICTS 512
