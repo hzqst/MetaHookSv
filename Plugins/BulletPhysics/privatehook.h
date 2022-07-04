@@ -39,7 +39,7 @@ extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;
 
 //For Counter-Strike
-typedef struct
+typedef struct extra_player_info_s
 {
 	short frags;//00000000 frags           dw ? ; XREF: CounterStrikeViewport::MsgFunc_TeamInfo(char const*, int, void *) + F8 / w
 	short deaths;//00000002 deaths          dw ?
@@ -54,10 +54,16 @@ typedef struct
 	short playerclass;//00000028 playerclass     dw ?
 	short teamnumber;//0000002A teamnumber      dw ?
 	char teamname[16];//0000002C teamname        db 16 dup(? )
-	int dead;//0000003C dead
+	char dead;//0000003C dead
+	float showhealth;//0x40
+	int health;//0x44
+	char location[32];//0x48
+	int sb_health;//0x68
+	int sb_account;//0x6C
+	int has_defuse_kit;//0x70
 }extra_player_info_t;
 
-static_assert(sizeof(extra_player_info_t) == 0x40, "Size check");
+static_assert(sizeof(extra_player_info_t) == 0x74, "Size check");
 
 extern cvar_t *cl_minmodels;
 extern cvar_t *cl_min_t;
