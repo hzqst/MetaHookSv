@@ -20,6 +20,8 @@ extern MapConVar *r_flashlight_ambient;
 extern MapConVar *r_flashlight_diffuse;
 extern MapConVar *r_flashlight_specular;
 extern MapConVar *r_flashlight_specularpow;
+extern MapConVar *r_flashlight_attachment;
+
 extern MapConVar *r_dynlight_ambient;
 extern MapConVar *r_dynlight_diffuse;
 extern MapConVar *r_dynlight_specular;

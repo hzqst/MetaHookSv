@@ -21,7 +21,7 @@ extern "C"
 struct hook_s
 {
 	int iType;
-	int bOriginalCallWritten;
+	qboolean bCommitted;
 	void *pOldFuncAddr;
 	void *pNewFuncAddr;
 	void **pOrginalCall;
@@ -513,14 +513,14 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 	for (auto pHook = g_pHookBase; pHook; pHook = pHook->pNext)
 	{
-		if (pHook->iType == MH_HOOK_INLINE && !pHook->bOriginalCallWritten)
+		if (pHook->iType == MH_HOOK_INLINE && !pHook->bCommitted)
 		{
 			DetourTransactionBegin();
 			DetourAttach(&(void *&)pHook->pOldFuncAddr, pHook->pNewFuncAddr);
 			DetourTransactionCommit();
 
 			*pHook->pOrginalCall = pHook->pOldFuncAddr;
-			pHook->bOriginalCallWritten = true;
+			pHook->bCommitted = true;
 		}
 	}
 
@@ -557,14 +557,14 @@ int ClientDLL_Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 
 	for (auto pHook = g_pHookBase; pHook; pHook = pHook->pNext)
 	{
-		if (pHook->iType == MH_HOOK_INLINE && !pHook->bOriginalCallWritten)
+		if (pHook->iType == MH_HOOK_INLINE && !pHook->bCommitted)
 		{
 			DetourTransactionBegin();
 			DetourAttach(&(void *&)pHook->pOldFuncAddr, pHook->pNewFuncAddr);
 			DetourTransactionCommit();
 
 			*pHook->pOrginalCall = pHook->pOldFuncAddr;
-			pHook->bOriginalCallWritten = true;
+			pHook->bCommitted = true;
 		}
 	}
 
@@ -1043,14 +1043,14 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 
 	for (auto pHook = g_pHookBase; pHook; pHook = pHook->pNext)
 	{
-		if (pHook->iType == MH_HOOK_INLINE && !pHook->bOriginalCallWritten)
+		if (pHook->iType == MH_HOOK_INLINE && !pHook->bCommitted)
 		{
 			DetourTransactionBegin();
 			DetourAttach(&(void *&)pHook->pOldFuncAddr, pHook->pNewFuncAddr);
 			DetourTransactionCommit();
 
 			*pHook->pOrginalCall = pHook->pOldFuncAddr;
-			pHook->bOriginalCallWritten = true;
+			pHook->bCommitted = true;
 		}
 	}
 }
@@ -1216,17 +1216,17 @@ struct tagVTABLEDATA
 
 void MH_FreeHook(hook_t *pHook)
 {
-	if (pHook->pClass)
+	if (pHook->iType == MH_HOOK_VFTABLE)
 	{
 		tagVTABLEDATA *info = (tagVTABLEDATA *)pHook->pInfo;
 		MH_WriteMemory(info->pVFTInfoAddr, (BYTE *)&pHook->pOldFuncAddr, sizeof(DWORD));
 	}
-	else if (pHook->hModule)
+	else if (pHook->iType == MH_HOOK_IAT)
 	{
 		tagIATDATA *info = (tagIATDATA *)pHook->pInfo;
 		MH_WriteMemory(info->pAPIInfoAddr, (BYTE *)&pHook->pOldFuncAddr, sizeof(DWORD));
 	}
-	else
+	else if (pHook->iType == MH_HOOK_INLINE)
 	{
 		DetourTransactionBegin();
 		DetourDetach(&(void *&)pHook->pOldFuncAddr, pHook->pNewFuncAddr);
@@ -1234,7 +1234,10 @@ void MH_FreeHook(hook_t *pHook)
 	}
 
 	if (pHook->pInfo)
+	{
 		delete pHook->pInfo;
+		pHook->pInfo = NULL;
+	}
 
 	delete pHook;
 }
@@ -1295,7 +1298,7 @@ hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCal
 	if (g_bTransactionInlineHook)
 	{
 		h->pOrginalCall = pOrginalCall;
-		h->bOriginalCallWritten = false;
+		h->bCommitted = false;
 	}
 	else
 	{
@@ -1304,7 +1307,7 @@ hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCal
 		DetourTransactionCommit();
 		h->pOrginalCall = pOrginalCall;
 		*h->pOrginalCall = h->pOldFuncAddr;
-		h->bOriginalCallWritten = true;
+		h->bCommitted = true;
 	}
 
 	return h;
@@ -1327,7 +1330,7 @@ hook_t *MH_VFTHook(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFunc
 	h->iFuncIndex = iFuncIndex;
 
 	*pOrginalCall = h->pOldFuncAddr;
-	h->bOriginalCallWritten = true;
+	h->bCommitted = true;
 
 	MH_WriteMemory(info->pVFTInfoAddr, (BYTE *)&pNewFuncAddr, sizeof(DWORD));
 	return h;
@@ -1359,7 +1362,7 @@ hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFu
 	h->pszFuncName = pszFuncName;
 
 	*pOrginalCall = h->pOldFuncAddr;
-	h->bOriginalCallWritten = true;
+	h->bCommitted = true;
 
 	MH_WriteMemory(info->pAPIInfoAddr, (BYTE *)&pNewFuncAddr, sizeof(DWORD));
 	return h;
@@ -1764,13 +1767,13 @@ PVOID MH_GetNextCallAddr(void *pAddress, DWORD dwCount)
 
 		if (code == 0xE8)
 		{
-			return (PVOID)(*(DWORD *)(pbAddress + 1) + pbAddress + 5);
+			return (PVOID)(pbAddress + 5 + *(int *)(pbAddress + 1));
 		}
 
 		pbAddress++;
 	}
 
-	return 0;
+	return NULL;
 }
 
 DWORD MH_GetEngineVersion(void)

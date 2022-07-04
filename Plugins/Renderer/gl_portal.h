@@ -18,7 +18,7 @@ typedef struct portal_vbo_hash_s
 	}
 }portal_vbo_hash_t;
 
-typedef struct
+typedef struct portal_vbo_hasher_t
 {
 	size_t operator()(const struct portal_vbo_hash_s& p) const {
 		return ((ULONG_PTR)p.ClientPortal ^ (ULONG_PTR)p.overlayTextureId) + p.textureId;

@@ -8,6 +8,7 @@ MapConVar *r_flashlight_ambient = NULL;
 MapConVar *r_flashlight_diffuse = NULL;
 MapConVar *r_flashlight_specular = NULL;
 MapConVar *r_flashlight_specularpow = NULL;
+MapConVar *r_flashlight_attachment = NULL;
 
 MapConVar *r_dynlight_ambient = NULL;
 MapConVar *r_dynlight_diffuse = NULL;
@@ -402,6 +403,7 @@ void R_InitLight(void)
 	r_flashlight_diffuse = R_RegisterMapCvar("r_flashlight_diffuse", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_specular = R_RegisterMapCvar("r_flashlight_specular", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_specularpow = R_RegisterMapCvar("r_flashlight_specularpow", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_flashlight_attachment = R_RegisterMapCvar("r_flashlight_attachment", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_ssr = gEngfuncs.pfnRegisterVariable("r_ssr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssr_ray_step = R_RegisterMapCvar("r_ssr_ray_step", "5.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -793,12 +795,12 @@ void R_EndRenderGBuffer(void)
 				VectorCopy((*r_refdef.viewangles), dlight_angle);
 				gEngfuncs.pfnAngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
 
-				if (cl_viewent && cl_viewent->model)
+				if (cl_viewent && cl_viewent->model && r_flashlight_attachment->GetValue() > 0)
 				{
-					VectorCopy(cl_viewent->attachment[0], org);
+					int attachmentIndex = (int)(r_flashlight_attachment->GetValue());
+					VectorCopy(cl_viewent->attachment[clamp(attachmentIndex, 1, 4) - 1], org);
 					VectorMA(org, -2, dlight_vup, org);
 					VectorMA(org, -10, dlight_vforward, org);
-
 				}
 				else
 				{

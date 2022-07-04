@@ -3083,6 +3083,7 @@ void R_ParseBSPEntity_Env_FlashLight_Control(bspentity_t *ent)
 	R_ParseMapCvarSetMapValue(r_flashlight_diffuse, ValueForKey(ent, "diffuse"));
 	R_ParseMapCvarSetMapValue(r_flashlight_specular, ValueForKey(ent, "specular"));
 	R_ParseMapCvarSetMapValue(r_flashlight_specularpow, ValueForKey(ent, "specularpow"));
+	R_ParseMapCvarSetMapValue(r_flashlight_attachment, ValueForKey(ent, "attachment"));
 }
 
 void R_ParseBSPEntity_Env_HDR_Control(bspentity_t *ent)

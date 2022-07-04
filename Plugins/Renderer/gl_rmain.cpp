@@ -1691,6 +1691,7 @@ void R_PreDrawViewModel(void)
 		if (!gExportfuncs.CL_IsThirdPerson() && !chase_active->value && !(*envmap) && cl_stats[0] > 0)
 		{
 			auto ent = gEngfuncs.GetEntityByIndex((*currententity)->index);
+
 			for (int i = 0; i < 4; i++)
 			{
 				VectorCopy(ent->origin, (*currententity)->attachment[i]);
