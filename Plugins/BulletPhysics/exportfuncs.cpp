@@ -1072,13 +1072,6 @@ int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 			gPhysicsManager.CreateBrushModel(ent);
 		}
 
-#if 0
-		if (IsEntityWater(ent))
-		{
-			gPhysicsManager.CreateWater(ent);
-		}
-		else 
-#endif
 		if (IsEntityBarnacle(ent))
 		{
 			gPhysicsManager.CreateBarnacle(ent);
@@ -1109,7 +1102,7 @@ void HUD_TempEntUpdate(
 	void(*Callback_TempEntPlaySound)(TEMPENTITY *pTemp, float damp))
 {
 	auto levelname = gEngfuncs.pfnGetLevelName();
-	if (levelname && levelname[0] && gPhysicsManager.HasRagdolls())
+	if (levelname && levelname[0])
 	{
 		gPhysicsManager.SetGravity(cl_gravity);
 		gPhysicsManager.UpdateTempEntity(ppTempEntActive, frametime, client_time);
@@ -1123,7 +1116,7 @@ void HUD_Frame(double frametime)
 {
 	gExportfuncs.HUD_Frame(frametime);
 
-	gCorpseManager.ClearAllPlayerEmitState();
+	//gCorpseManager.ClearAllPlayerEmitState();
 }
 
 void V_CalcRefdef(struct ref_params_s *pparams)

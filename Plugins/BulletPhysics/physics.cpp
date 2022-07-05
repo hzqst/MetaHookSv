@@ -351,7 +351,7 @@ void CPhysicsManager::GenerateIndexedArrayForBrush(model_t *mod, vertexarray_t *
 	}
 }
 
-CStaticBody *CPhysicsManager::CreateStaticBody(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray, bool kinematic, bool debugdraw)
+CStaticBody *CPhysicsManager::CreateStaticBody(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray, bool kinematic)
 {
 	if (!indexarray->vIndiceBuffer.size())
 	{
@@ -366,26 +366,24 @@ CStaticBody *CPhysicsManager::CreateStaticBody(cl_entity_t *ent, vertexarray_t *
 		return staticbody;
 	}
 
+	auto staticbody = new CStaticBody;
+	staticbody->m_entindex = ent->index;
+	staticbody->m_vertexarray = vertexarray;
+	staticbody->m_indexarray = indexarray;
+
 	auto vertexArray = new btTriangleIndexVertexArray(
 		indexarray->vIndiceBuffer.size() / 3, indexarray->vIndiceBuffer.data(), 3 * sizeof(int),
 		vertexarray->vVertexBuffer.size(), (float *)vertexarray->vVertexBuffer.data(), sizeof(brushvertex_t));
 
-	auto meshShape = new btBvhTriangleMeshShape(vertexArray, true, true);
-
-	btDefaultMotionState* motionState = new btDefaultMotionState();
-
-	btRigidBody::btRigidBodyConstructionInfo cInfo(0, motionState, meshShape);
+	btRigidBody::btRigidBodyConstructionInfo cInfo(0, new EntityMotionState(ent), new btBvhTriangleMeshShape(vertexArray, true, true));
+	cInfo.m_friction = 1;
+	cInfo.m_rollingFriction = 1;
 
 	btRigidBody* body = new btRigidBody(cInfo);
 
-	m_dynamicsWorld->addRigidBody(body);
-
-	auto staticbody = new CStaticBody;
-
 	staticbody->m_rigbody = body;
-	staticbody->m_entindex = ent->index;
-	staticbody->m_vertexarray = vertexarray;
-	staticbody->m_indexarray = indexarray;
+
+	m_dynamicsWorld->addRigidBody(body, staticbody->m_group, staticbody->m_mask);
 
 	if (kinematic)
 	{
@@ -394,18 +392,10 @@ CStaticBody *CPhysicsManager::CreateStaticBody(cl_entity_t *ent, vertexarray_t *
 
 		staticbody->m_kinematic = true;
 	}
-
-	if (debugdraw)
-	{
-		body->setCollisionFlags(body->getCollisionFlags() & (~btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT));
-	}
 	else
 	{
 		body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
 	}
-
-	body->setFriction(1.0f);
-	body->setRollingFriction(1.0f);
 
 	m_staticMap[ent->index] = staticbody;
 
@@ -468,12 +458,12 @@ void CPhysicsManager::CreateBarnacle(cl_entity_t *ent)
 
 	if (itor != m_staticMap.end())
 	{
-		UpdateBrushTransform(ent, itor->second);
+		//UpdateBrushTransform(ent, itor->second);
 		return;
 	}
 
-	auto staticBody = CreateStaticBody(ent, m_barnacleVertexArray, m_barnacleIndexArray, true, true);
-	UpdateBrushTransform(ent, staticBody);
+	auto staticBody = CreateStaticBody(ent, m_barnacleVertexArray, m_barnacleIndexArray, true);
+	//UpdateBrushTransform(ent, staticBody);
 }
 
 void CPhysicsManager::CreateGargantua(cl_entity_t *ent)
@@ -508,6 +498,7 @@ void CPhysicsManager::UpdateBrushTransform(cl_entity_t *ent, CStaticBody *static
 void CPhysicsManager::CreateBrushModel(cl_entity_t *ent)
 {
 	int modelindex = EngineGetModelIndex(ent->model);
+
 	if (modelindex == -1)
 	{
 		//invalid model index?
@@ -526,19 +517,19 @@ void CPhysicsManager::CreateBrushModel(cl_entity_t *ent)
 
 	if (itor != m_staticMap.end())
 	{
-		auto staticBody = itor->second;
+		/*auto staticBody = itor->second;
 
 		if (staticBody->m_kinematic)
 		{
 			UpdateBrushTransform(ent, staticBody);
 		}
-
+		*/
 		return;
 	}
 
 	bool bKinematic = ((ent != r_worldentity) && (ent->curstate.movetype == MOVETYPE_PUSH || ent->curstate.movetype == MOVETYPE_PUSHSTEP)) ? true : false;
 
-	CreateStaticBody(ent, m_worldVertexArray, m_brushIndexArray[modelindex], bKinematic, bKinematic ? true : false);
+	CreateStaticBody(ent, m_worldVertexArray, m_brushIndexArray[modelindex], bKinematic);
 }
 
 void CPhysicsManager::NewMap(void)
@@ -818,7 +809,7 @@ void CPhysicsManager::GenerateGargantuaIndiceVerticeArray(void)
 
 void CPhysicsManager::PreTickCallback(btScalar timeStep)
 {
-	if (!HasRagdolls())
+	/*if (!HasRagdolls())
 		return;
 
 	if (bv_pretick->value)
@@ -839,13 +830,45 @@ void CPhysicsManager::PreTickCallback(btScalar timeStep)
 				itor++;
 			}
 		}
-	}
+	}*/
 }
 
 void _PreTickCallback(btDynamicsWorld *world, btScalar timeStep)
 {
 	gPhysicsManager.PreTickCallback(timeStep);
 }
+
+struct GameFilterCallback : public btOverlapFilterCallback
+{
+	// return true when pairs need collision
+	virtual bool needBroadphaseCollision(btBroadphaseProxy* proxy0, btBroadphaseProxy* proxy1) const
+	{
+		bool collides = (proxy0->m_collisionFilterGroup & proxy1->m_collisionFilterMask) != 0;
+		collides = collides && (proxy1->m_collisionFilterGroup & proxy0->m_collisionFilterMask);
+
+		if (collides)
+		{
+			auto body0 = (btRigidBody *)proxy0->m_clientObject;
+			auto body1 = (btRigidBody *)proxy1->m_clientObject;
+			
+			if ((proxy0->m_collisionFilterMask & CustomCollisionFilterGroups::RagdollFilter) &&
+				(proxy1->m_collisionFilterMask & CustomCollisionFilterGroups::WorldFilter))
+			{
+				auto physobj0 = (CRigBody *)body0->getUserPointer();
+				if (physobj0->flags & RIG_FL_JIGGLE)
+				{
+					if (body0->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT)
+					{
+						return false;
+					}
+				}
+
+			}
+			
+		}
+		return collides;
+	}
+};
 
 void CPhysicsManager::Init(void)
 {
@@ -860,7 +883,9 @@ void CPhysicsManager::Init(void)
 	m_dynamicsWorld->setDebugDrawer(m_debugDraw);
 	m_dynamicsWorld->setGravity(btVector3(0, 0, 0));
 
-	m_dynamicsWorld->setInternalTickCallback(_PreTickCallback, this, true);
+	//m_dynamicsWorld->setInternalTickCallback(_PreTickCallback, this, true);
+	m_overlapFilterCallback = new GameFilterCallback();
+	m_dynamicsWorld->getPairCache()->setOverlapFilterCallback(m_overlapFilterCallback);
 }
 
 void CPhysicsManager::DebugDraw(void)
@@ -893,8 +918,10 @@ void CPhysicsManager::DebugDraw(void)
 
 					auto bonematrix = motionState->bonematrix;
 
-					for (auto &water_control_point : rig->water_control_points)
+					for(int i = 0;i < rig->water_control_points.size(); ++i)
 					{
+						auto &water_control_point = rig->water_control_points[i];
+
 						auto offsetmatrix = motionState->offsetmatrix;
 
 						auto offsetorg = offsetmatrix.getOrigin();
@@ -1054,8 +1081,10 @@ void CPhysicsManager::UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBod
 
 			auto bonematrix = motionState->bonematrix;
 
-			for (auto &water_control_point : rig->water_control_points)
+			for (int i = 0; i < rig->water_control_points.size(); ++i)
 			{
+				auto &water_control_point = rig->water_control_points[i];
+
 				auto offsetmatrix = motionState->offsetmatrix;
 
 				auto offsetorg = offsetmatrix.getOrigin();
@@ -1085,6 +1114,7 @@ void CPhysicsManager::UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBod
 
 bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time)
 {
+	//Don't update if player is not emitted this frame (in firstperson mode)
 	if (ent == gEngfuncs.GetLocalPlayer() && !IsEntityEmitted(ent))
 		return false;
 	
@@ -1240,12 +1270,10 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 
 void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time)
 {
-	if (!bv_pretick->value)
-	{
+	//if (!bv_pretick->value)
+	//{
 		for (auto itor = m_ragdollMap.begin(); itor != m_ragdollMap.end();)
 		{
-			auto pRagdoll = itor->second;
-
 			auto ent = gEngfuncs.GetEntityByIndex(itor->first);
 
 			if (!IsEntityPresent(ent) ||
@@ -1258,7 +1286,27 @@ void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double fram
 				itor++;
 			}
 		}
-	}
+
+		for (auto itor = m_staticMap.begin(); itor != m_staticMap.end();)
+		{
+			if (itor->first == 0)
+			{
+				itor++;
+				continue;
+			}
+
+			auto ent = gEngfuncs.GetEntityByIndex(itor->first);
+
+			if (!IsEntityPresent(ent))
+			{
+				itor = FreeStaticInternal(itor);
+			}
+			else
+			{
+				itor++;
+			}
+		}
+	//}
 }
 
 void CPhysicsManager::StepSimulation(double frametime)
@@ -1360,12 +1408,10 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 #define RAGDOLL_PARSING_DEATHANIM 0
 #define RAGDOLL_PARSING_RIGIDBODY 1
 #define RAGDOLL_PARSING_JIGGLEBONE 2
-#define RAGDOLL_PARSING_RIGIDBODY_XYZ 3
-#define RAGDOLL_PARSING_JIGGLEBONE_XYZ 4
-#define RAGDOLL_PARSING_CONSTRAINT 5
-#define RAGDOLL_PARSING_BARNACLE 6
-#define RAGDOLL_PARSING_GARGANTUA 7
-#define RAGDOLL_PARSING_WATERCONTROL 8
+#define RAGDOLL_PARSING_CONSTRAINT 3
+#define RAGDOLL_PARSING_BARNACLE 4
+#define RAGDOLL_PARSING_GARGANTUA 5
+#define RAGDOLL_PARSING_WATERCONTROL 6
 
 	int iParsingState = -1;
 
@@ -1392,16 +1438,6 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 		else if (!strcmp(text, "[JiggleBone]"))
 		{
 			iParsingState = RAGDOLL_PARSING_JIGGLEBONE;
-			continue;
-		}
-		else if (!strcmp(text, "[RigidBodyXYZ]"))
-		{
-			iParsingState = RAGDOLL_PARSING_RIGIDBODY_XYZ;
-			continue;
-		}
-		else if (!strcmp(text, "[JiggleBoneXYZ]"))
-		{
-			iParsingState = RAGDOLL_PARSING_JIGGLEBONE_XYZ;
 			continue;
 		}
 		else if (!strcmp(text, "[Constraint]"))
@@ -1532,109 +1568,6 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 			float f_mass = atof(text);
 
 			cfg->rigcontrol.emplace_back(subname, i_boneindex, i_pboneindex, i_shape, f_offset, f_offset, f_offset, f_size, f_size2, f_mass, iParsingState == RAGDOLL_PARSING_JIGGLEBONE ? RIG_FL_JIGGLE : 0);
-		}
-		else if (iParsingState == RAGDOLL_PARSING_RIGIDBODY_XYZ || iParsingState == RAGDOLL_PARSING_JIGGLEBONE_XYZ)
-		{
-			ptext = gEngfuncs.COM_ParseFile(ptext, text);
-			if (!ptext)
-			{
-				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody boneindex for %s\n", name.c_str());
-				break;
-			}
-
-			int i_boneindex = atoi(text);
-
-			ptext = gEngfuncs.COM_ParseFile(ptext, text);
-			if (!ptext)
-			{
-				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody pboneindex for %s\n", name.c_str());
-				break;
-			}
-
-			int i_pboneindex = atoi(text);
-
-			ptext = gEngfuncs.COM_ParseFile(ptext, text);
-			if (!ptext)
-			{
-				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody shape for %s\n", name.c_str());
-				break;
-			}
-
-			int i_shape = -1;
-
-			if (!strcmp(text, "sphere"))
-			{
-				i_shape = RAGDOLL_SHAPE_SPHERE;
-			}
-			else if (!strcmp(text, "capsule"))
-			{
-				i_shape = RAGDOLL_SHAPE_CAPSULE;
-			}
-			else if (!strcmp(text, "gargmouth"))
-			{
-				i_shape = RAGDOLL_SHAPE_GARGMOUTH;
-			}
-			else
-			{
-				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse shape name %s for %s\n", text, name.c_str());
-				break;
-			}
-
-			ptext = gEngfuncs.COM_ParseFile(ptext, text);
-			if (!ptext)
-			{
-				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody offsetX for %s\n", name.c_str());
-				break;
-			}
-
-			float f_offsetX = atof(text);
-
-			ptext = gEngfuncs.COM_ParseFile(ptext, text);
-			if (!ptext)
-			{
-				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody offsetY for %s\n", name.c_str());
-				break;
-			}
-
-			float f_offsetY = atof(text);
-
-			ptext = gEngfuncs.COM_ParseFile(ptext, text);
-			if (!ptext)
-			{
-				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody offsetZ for %s\n", name.c_str());
-				break;
-			}
-
-			float f_offsetZ = atof(text);
-
-			ptext = gEngfuncs.COM_ParseFile(ptext, text);
-			if (!ptext)
-			{
-				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody size for %s\n", name.c_str());
-				break;
-			}
-
-			float f_size = atof(text);
-
-			ptext = gEngfuncs.COM_ParseFile(ptext, text);
-			if (!ptext)
-			{
-				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody size2 for %s\n", name.c_str());
-				break;
-			}
-
-			float f_size2 = atof(text);
-
-			ptext = gEngfuncs.COM_ParseFile(ptext, text);
-			if (!ptext)
-			{
-				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse rigidbody mass for %s\n", name.c_str());
-				break;
-			}
-
-			float f_mass = atof(text);
-
-			cfg->rigcontrol.emplace_back(subname, i_boneindex, i_pboneindex, i_shape, f_offsetX, f_offsetY, f_offsetZ, f_size, f_size2, f_mass, iParsingState == RAGDOLL_PARSING_JIGGLEBONE_XYZ ? RIG_FL_JIGGLE : 0);
 		}
 		else if (iParsingState == RAGDOLL_PARSING_CONSTRAINT)
 		{
@@ -2029,7 +1962,55 @@ void BoneMotionState::getWorldTransform(btTransform& worldTrans) const
 void BoneMotionState::setWorldTransform(const btTransform& worldTrans)
 {
 	bonematrix.mult(worldTrans, offsetmatrix.inverse());
-} 
+}
+
+void EulerMatrix(const btVector3& in_euler, btMatrix3x3& out_matrix) {
+	btVector3 angles = in_euler;
+	angles *= SIMD_RADS_PER_DEG;
+
+	btScalar c1(btCos(angles[0]));
+	btScalar c2(btCos(angles[1]));
+	btScalar c3(btCos(angles[2]));
+	btScalar s1(btSin(angles[0]));
+	btScalar s2(btSin(angles[1]));
+	btScalar s3(btSin(angles[2]));
+
+	out_matrix.setValue(c1 * c2, -c3 * s2 - s1 * s3 * c2, s3 * s2 - s1 * c3 * c2,
+		c1 * s2, c3 * c2 - s1 * s3 * s2, -s3 * c2 - s1 * c3 * s2,
+		s1, c1 * s3, c1 * c3);
+}
+
+void MatrixEuler(const btMatrix3x3& in_matrix, btVector3& out_euler) {
+	out_euler[0] = btAsin(in_matrix[2][0]);
+
+	if (btFabs(in_matrix[2][0]) < (1 - 0.001f)) {
+		out_euler[1] = btAtan2(in_matrix[1][0], in_matrix[0][0]);
+		out_euler[2] = btAtan2(in_matrix[2][1], in_matrix[2][2]);
+	}
+	else {
+		out_euler[1] = btAtan2(in_matrix[1][2], in_matrix[1][1]);
+		out_euler[2] = 0;
+	}
+
+	out_euler *= SIMD_DEGS_PER_RAD;
+}
+
+void EntityMotionState::getWorldTransform(btTransform& worldTrans) const
+{
+	btVector3 GoldSrcOrigin(m_ent->curstate.origin[0], m_ent->curstate.origin[1], m_ent->curstate.origin[2]);
+
+	Vector3GoldSrcToBullet(GoldSrcOrigin);
+
+	worldTrans = btTransform(btQuaternion(0, 0, 0, 1), GoldSrcOrigin);
+
+	btVector3 angles(m_ent->curstate.angles[0], m_ent->curstate.angles[1], m_ent->curstate.angles[2]);
+	EulerMatrix(angles, worldTrans.getBasis());
+}
+
+void EntityMotionState::setWorldTransform(const btTransform& worldTrans)
+{
+	//wtf?
+}
 
 btQuaternion FromToRotaion(btVector3 fromDirection, btVector3 toDirection)
 {
@@ -2142,6 +2123,9 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		rig->boneindex = rigcontrol->boneindex;
 		rig->flags = rigcontrol->flags;
 		rig->mass = mass;
+
+		m_dynamicsWorld->addRigidBody(rig->rigbody, rig->group, rig->mask);
+
 		return rig;
 	}
 	else if (rigcontrol->shape == RAGDOLL_SHAPE_CAPSULE)
@@ -2178,6 +2162,8 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		rig->flags = rigcontrol->flags;
 		rig->mass = mass;
 
+		m_dynamicsWorld->addRigidBody(rig->rigbody, rig->group, rig->mask);
+
 		return rig;
 	}
 	else if (rigcontrol->shape == RAGDOLL_SHAPE_GARGMOUTH)
@@ -2199,13 +2185,9 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 			m_gargantuaIndexArray->vIndiceBuffer.size() / 3, m_gargantuaIndexArray->vIndiceBuffer.data(), 3 * sizeof(int),
 			m_gargantuaVertexArray->vVertexBuffer.size(), (float *)m_gargantuaVertexArray->vVertexBuffer.data(), sizeof(brushvertex_t));
 
-		auto meshShape = new btBvhTriangleMeshShape(vertexArray, true, true);
-
-		BoneMotionState* motionState = new BoneMotionState(bonematrix, offsetmatrix);
-
 		float mass = rigcontrol->mass;
 
-		btRigidBody::btRigidBodyConstructionInfo cInfo(mass, motionState, meshShape);
+		btRigidBody::btRigidBodyConstructionInfo cInfo(mass, new BoneMotionState(bonematrix, offsetmatrix), new btBvhTriangleMeshShape(vertexArray, true, true));
 
 		auto rig = new CRigBody;
 
@@ -2214,6 +2196,8 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		rig->boneindex = rigcontrol->boneindex;
 		rig->flags = rigcontrol->flags | RIG_FL_KINEMATIC;
 		rig->mass = mass;
+
+		m_dynamicsWorld->addRigidBody(rig->rigbody, rig->group, rig->mask);
 
 		return rig;
 	}
@@ -2227,7 +2211,7 @@ void CPhysicsManager::CreateWaterControl(CRagdollBody *ragdoll, studiohdr_t *stu
 	auto itor = ragdoll->m_rigbodyMap.find(water_control->name);
 	if (itor == ragdoll->m_rigbodyMap.end())
 	{
-		gEngfuncs.Con_Printf("CreateConstraint: Failed to create water control, rigidbody %s not found\n", water_control->name.c_str());
+		gEngfuncs.Con_Printf("CreateWaterControl: Failed to create water control point, rigidbody %s not found\n", water_control->name.c_str());
 		return;
 	}
 
@@ -2236,7 +2220,7 @@ void CPhysicsManager::CreateWaterControl(CRagdollBody *ragdoll, studiohdr_t *stu
 	btVector3 offset(water_control->offsetX, water_control->offsetY, water_control->offsetZ);
 	Vec3GoldSrcToBullet(offset);
 
-	RigBody->water_control_points.emplace_back(offset, water_control->factor1, water_control->factor2, water_control->factor3);
+	RigBody->water_control_points.push_back( CWaterControlPoint(offset, water_control->factor1, water_control->factor2, water_control->factor3) );
 }
 
 btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, studiohdr_t *studiohdr, ragdoll_cst_control_t *cstcontrol)
@@ -2256,13 +2240,13 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 
 	if (cstcontrol->boneindex1 >= studiohdr->numbones)
 	{
-		gEngfuncs.Con_Printf("CreateRigBody: Failed to create rigbody for bone %s, boneindex1 too large (%d >= %d)\n", cstcontrol->name.c_str(), cstcontrol->boneindex1, studiohdr->numbones);
+		gEngfuncs.Con_Printf("CreateConstraint: Failed to create constraint for rigidbody %s, boneindex1 too large (%d >= %d)\n", cstcontrol->name.c_str(), cstcontrol->boneindex1, studiohdr->numbones);
 		return NULL;
 	}
 
 	if (cstcontrol->boneindex2 >= studiohdr->numbones)
 	{
-		gEngfuncs.Con_Printf("CreateRigBody: Failed to create rigbody for bone %s, boneindex2 too large (%d >= %d)\n", cstcontrol->name.c_str(), cstcontrol->boneindex2, studiohdr->numbones);
+		gEngfuncs.Con_Printf("CreateConstraint: Failed to create constraint for rigidbody %s, boneindex2 too large (%d >= %d)\n", cstcontrol->name.c_str(), cstcontrol->boneindex2, studiohdr->numbones);
 		return NULL;
 	}
 
@@ -2524,6 +2508,33 @@ ragdoll_itor CPhysicsManager::FreeRagdollInternal(ragdoll_itor &itor)
 	return m_ragdollMap.erase(itor);
 }
 
+static_itor CPhysicsManager::FreeStaticInternal(static_itor &itor)
+{
+	auto staticBody = itor->second;
+	
+	if (staticBody)
+	{
+		if (staticBody->m_rigbody)
+		{
+			m_dynamicsWorld->removeRigidBody(staticBody->m_rigbody);
+			delete staticBody->m_rigbody;
+		}
+		if (staticBody->m_vertexarray && staticBody->m_vertexarray->bIsDynamic)
+		{
+			delete staticBody->m_vertexarray;
+		}
+		if (staticBody->m_indexarray && staticBody->m_indexarray->bIsDynamic)
+		{
+			delete staticBody->m_indexarray;
+		}
+
+		delete staticBody;
+	}
+	itor->second = NULL;
+
+	return m_staticMap.erase(itor);
+}
+
 void CPhysicsManager::RemoveRagdollEx(ragdoll_itor &itor)
 {
 	if (itor == m_ragdollMap.end())
@@ -2601,7 +2612,9 @@ bool CPhysicsManager::SetupJiggleBones(studiohdr_t *hdr, int entindex)
 		auto motionState = (BoneMotionState *)rig->rigbody->getMotionState();
 	
 		if ((rig->flags & RIG_FL_JIGGLE) && !(rig->flags & RIG_FL_KINEMATIC) && !ragdoll->m_bUpdateKinematic )
-		{//Dynamic rigs
+		{
+			//Dynamic rigs
+
 			auto bonematrix = motionState->bonematrix;
 
 			TransformBulletToGoldSrc(bonematrix);
@@ -2613,7 +2626,9 @@ bool CPhysicsManager::SetupJiggleBones(studiohdr_t *hdr, int entindex)
 			memcpy((*plighttransform)[rig->boneindex], bonematrix_3x4, sizeof(bonematrix_3x4));
 		}
 		else
-		{//Kinematic rigs
+		{
+			//Kinematic rigs
+
 			auto &bonematrix = motionState->bonematrix;
 
 			Matrix3x4ToTransform((*pbonetransform)[rig->boneindex], bonematrix);
@@ -3083,7 +3098,7 @@ update_kinematic:
 	{
 		auto rig = itor.second;
 
-		if (rig->flags & RIG_FL_JIGGLE)
+		/*if (rig->flags & RIG_FL_JIGGLE)
 		{
 			if (!ragdoll->m_iActivityType)
 			{
@@ -3103,7 +3118,7 @@ update_kinematic:
 					rig->rigbody->setIgnoreCollisionCheck(staticBody->m_rigbody, false);
 				}
 			}
-		}
+		}*/
 
 		if (!ragdoll->m_iActivityType && !(rig->flags & RIG_FL_JIGGLE))
 		{
@@ -3173,8 +3188,6 @@ CRagdollBody *CPhysicsManager::CreateRagdoll(
 
 			rig->oldActivitionState = rig->rigbody->getActivationState();
 			rig->oldCollisionFlags = rig->rigbody->getCollisionFlags();
-
-			m_dynamicsWorld->addRigidBody(rig->rigbody);
 		}
 	}
 

@@ -8,6 +8,12 @@
 #include <studio.h>
 #include <com_model.h>
 
+enum CustomCollisionFilterGroups
+{
+	RagdollFilter = 0x40,
+	WorldFilter = 0x80,
+};
+
 typedef struct ragdoll_anim_control_s
 {
 	ragdoll_anim_control_s()
@@ -224,6 +230,8 @@ public:
 
 		flags = 0;
 		mass = 0;
+		group = btBroadphaseProxy::AllFilter;
+		mask = btBroadphaseProxy::DefaultFilter | CustomCollisionFilterGroups::RagdollFilter;
 		oldActivitionState = 0;
 		oldCollisionFlags = 0;
 	}
@@ -259,6 +267,8 @@ public:
 	float mass;
 	int oldActivitionState;
 	int oldCollisionFlags;
+	int group;
+	int mask;
 
 	float barnacle_force;
 	float barnacle_chew_force;
@@ -273,7 +283,7 @@ public:
 	btVector3 gargantua_drag_offset;
 	float gargantua_drag_time;
 
-	std::vector<CWaterControlPoint> water_control_points;
+	btAlignedObjectArray<CWaterControlPoint> water_control_points;
 };
 
 ATTRIBUTE_ALIGNED16(class)
@@ -374,12 +384,17 @@ public:
 		m_indexarray = NULL;
 		m_kinematic = false;
 		m_debugdraw = false;
+		m_group = btBroadphaseProxy::AllFilter;
+		m_mask = btBroadphaseProxy::DefaultFilter | CustomCollisionFilterGroups::RagdollFilter;
 	}
+
 	btRigidBody *m_rigbody;
 	vertexarray_t *m_vertexarray;
 	indexarray_t *m_indexarray;
 	bool m_kinematic;
 	bool m_debugdraw;
+	int m_group;
+	int m_mask;
 };
 
 #define RAGDOLL_SHAPE_SPHERE 1
@@ -414,6 +429,23 @@ public:
 
 	btTransform bonematrix;
 	btTransform offsetmatrix;
+};
+
+ATTRIBUTE_ALIGNED16(class)
+EntityMotionState : public btMotionState
+{
+public:
+	BT_DECLARE_ALIGNED_ALLOCATOR();
+
+	virtual void getWorldTransform(btTransform& worldTrans) const;
+	virtual void setWorldTransform(const btTransform& worldTrans);
+
+	EntityMotionState(cl_entity_t* ent) : btMotionState()
+	{
+		m_ent = ent;
+	}
+
+	cl_entity_t *m_ent;
 };
 
 #define BT_LINE_BATCH_SIZE 512
@@ -474,6 +506,8 @@ public:
 	}
 };
 
+typedef std::unordered_map<int, CStaticBody *>::iterator static_itor;
+
 typedef std::unordered_map<int, CRagdollBody *>::iterator ragdoll_itor;
 
 class CPhysicsManager
@@ -514,7 +548,7 @@ public:
 	CRigBody *CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol);
 	btTypedConstraint *CreateConstraint(CRagdollBody *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
 	void CreateWaterControl(CRagdollBody *ragdoll, studiohdr_t *studiohdr, ragdoll_water_control_t *water_control);
-	CStaticBody *CreateStaticBody(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray, bool kinematic, bool debugdraw);
+	CStaticBody *CreateStaticBody(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray, bool kinematic);
 	void CreateBrushModel(cl_entity_t *ent);
 	void CreateBarnacle(cl_entity_t *ent);
 	void CreateGargantua(cl_entity_t *ent);
@@ -532,6 +566,7 @@ public:
 	void PreTickCallback(btScalar timeStep);
 private:
 	ragdoll_itor FreeRagdollInternal(ragdoll_itor &itor);
+	static_itor FreeStaticInternal(static_itor &itor);
 private:
 	btDefaultCollisionConfiguration* m_collisionConfiguration;
 	btCollisionDispatcher* m_dispatcher;
@@ -539,6 +574,7 @@ private:
 	btSequentialImpulseConstraintSolver* m_solver;
 	btDiscreteDynamicsWorld* m_dynamicsWorld;
 	CPhysicsDebugDraw *m_debugDraw;
+	btOverlapFilterCallback *m_overlapFilterCallback;
 private:
 	std::unordered_map<int, CRagdollBody *> m_ragdollMap;
 	std::unordered_map<int, CStaticBody *> m_staticMap;
