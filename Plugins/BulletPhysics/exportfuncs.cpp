@@ -1114,7 +1114,14 @@ void HUD_Frame(double frametime)
 {
 	gExportfuncs.HUD_Frame(frametime);
 
-	//gCorpseManager.ClearAllPlayerEmitState();
+	gCorpseManager.ClearAllPlayerEmitState();
+}
+
+void HUD_Shutdown(void)
+{
+	gExportfuncs.HUD_Shutdown();
+
+	gPhysicsManager.Shutdown();
 }
 
 void V_CalcRefdef(struct ref_params_s *pparams)

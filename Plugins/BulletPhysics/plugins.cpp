@@ -185,6 +185,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_AddEntity = HUD_AddEntity;
 	pExportFunc->HUD_DrawNormalTriangles = HUD_DrawNormalTriangles;
 	pExportFunc->HUD_Frame = HUD_Frame;
+	pExportFunc->HUD_Shutdown = HUD_Shutdown;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 
 	auto err = glewInit();

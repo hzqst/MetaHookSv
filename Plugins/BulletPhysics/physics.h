@@ -517,6 +517,7 @@ class CPhysicsManager
 public:
 	CPhysicsManager();
 	void Init(void);
+	void Shutdown();
 	void NewMap(void);
 	void DebugDraw(void);
 	void GenerateBarnacleIndiceVerticeArray(void);
@@ -537,6 +538,8 @@ public:
 	bool HasRagdolls(void);
 	void RemoveRagdoll(int tentindex);
 	void RemoveRagdollEx(ragdoll_itor &itor);
+	void RemoveAllBrushIndices();
+	void RemoveAllConfigs();
 	void RemoveAllRagdolls();
 	void RemoveAllStatics(); 
 	bool IsValidRagdoll(ragdoll_itor &itor);

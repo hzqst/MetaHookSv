@@ -167,19 +167,12 @@ CPhysicsManager::CPhysicsManager()
 
 void CPhysicsManager::GenerateBrushIndiceArray(void)
 {
+	RemoveAllBrushIndices();
+
 	int maxNum = EngineGetMaxKnownModel();
 
 	if ((int)m_brushIndexArray.size() < maxNum)
 		m_brushIndexArray.resize(maxNum);
-
-	for (int i = 0; i < maxNum; ++i)
-	{
-		if (m_brushIndexArray[i])
-		{
-			delete m_brushIndexArray[i];
-			m_brushIndexArray[i] = NULL;
-		}
-	}
 
 	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
@@ -374,7 +367,13 @@ CStaticBody *CPhysicsManager::CreateStaticBody(cl_entity_t *ent, vertexarray_t *
 		indexarray->vIndiceBuffer.size() / 3, indexarray->vIndiceBuffer.data(), 3 * sizeof(int),
 		vertexarray->vVertexBuffer.size(), (float *)vertexarray->vVertexBuffer.data(), sizeof(brushvertex_t));
 
-	btRigidBody::btRigidBodyConstructionInfo cInfo(0, new EntityMotionState(ent), new btBvhTriangleMeshShape(vertexArray, true, true));
+	auto shape = new btBvhTriangleMeshShape(vertexArray, true, true);
+
+	auto motionState = new EntityMotionState(ent);
+
+	shape->setUserPointer(vertexArray);
+
+	btRigidBody::btRigidBodyConstructionInfo cInfo(0, motionState, shape);
 	cInfo.m_friction = 1;
 	cInfo.m_rollingFriction = 1;
 
@@ -824,12 +823,87 @@ void CPhysicsManager::Init(void)
 	m_dynamicsWorld = new btDiscreteDynamicsWorld(m_dispatcher, m_overlappingPairCache, m_solver, m_collisionConfiguration);
 
 	m_debugDraw = new CPhysicsDebugDraw;
-
 	m_dynamicsWorld->setDebugDrawer(m_debugDraw);
-	m_dynamicsWorld->setGravity(btVector3(0, 0, 0));
 
 	m_overlapFilterCallback = new GameFilterCallback();
 	m_dynamicsWorld->getPairCache()->setOverlapFilterCallback(m_overlapFilterCallback);
+	
+	m_dynamicsWorld->setGravity(btVector3(0, 0, 0));
+}
+
+void CPhysicsManager::Shutdown()
+{
+	RemoveAllConfigs();
+	RemoveAllRagdolls();
+	RemoveAllStatics();
+
+	if (m_overlapFilterCallback)
+	{
+		delete m_overlapFilterCallback;
+		m_overlapFilterCallback = NULL;
+	}
+	if (m_debugDraw)
+	{
+		delete m_debugDraw;
+		m_debugDraw = NULL;
+	}
+	if (m_dynamicsWorld)
+	{
+		delete m_dynamicsWorld;
+		m_dynamicsWorld = NULL;
+	}
+	if (m_solver)
+	{
+		delete m_solver;
+		m_solver = NULL;
+	}
+	if (m_overlappingPairCache)
+	{
+		delete m_overlappingPairCache;
+		m_overlappingPairCache = NULL;
+	}
+	if (m_dispatcher)
+	{
+		delete m_dispatcher;
+		m_dispatcher = NULL;
+	}
+	if (m_collisionConfiguration)
+	{
+		delete m_collisionConfiguration;
+		m_collisionConfiguration = NULL;
+	}
+
+	if (m_barnacleVertexArray)
+	{
+		delete m_barnacleVertexArray;
+		m_barnacleVertexArray = NULL;
+	}
+
+	if (m_barnacleIndexArray)
+	{
+		delete m_barnacleIndexArray;
+		m_barnacleIndexArray = NULL;
+	}
+
+	if (m_gargantuaIndexArray)
+	{
+		delete m_gargantuaIndexArray;
+		m_gargantuaIndexArray = NULL;
+	}
+
+	if (m_gargantuaVertexArray)
+	{
+		delete m_gargantuaVertexArray;
+		m_gargantuaVertexArray = NULL;
+	}
+
+	RemoveAllBrushIndices();
+
+	if (m_worldVertexArray)
+	{
+		delete m_worldVertexArray;
+		m_worldVertexArray = NULL;
+	}
 }
 
 void CPhysicsManager::DebugDraw(void)
@@ -838,7 +912,7 @@ void CPhysicsManager::DebugDraw(void)
 	{
 		m_dynamicsWorld->debugDrawWorld();
 	}
-#if 0
+#if 1
 	if (bv_debug->value == 2)
 	{
 		for (auto &ragdoll : m_ragdollMap)
@@ -1224,43 +1298,40 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 
 void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time)
 {
-	//if (!bv_pretick->value)
-	//{
-		for (auto itor = m_ragdollMap.begin(); itor != m_ragdollMap.end();)
-		{
-			auto ent = gEngfuncs.GetEntityByIndex(itor->first);
+	for (auto itor = m_ragdollMap.begin(); itor != m_ragdollMap.end();)
+	{
+		auto ent = gEngfuncs.GetEntityByIndex(itor->first);
 
-			if (!IsEntityPresent(ent) ||
-				!UpdateRagdoll(ent, itor->second, frame_time, client_time))
-			{
-				itor = FreeRagdollInternal(itor);
-			}
-			else
-			{
-				itor++;
-			}
+		if (!IsEntityPresent(ent) ||
+			!UpdateRagdoll(ent, itor->second, frame_time, client_time))
+		{
+			itor = FreeRagdollInternal(itor);
+		}
+		else
+		{
+			itor++;
+		}
+	}
+
+	for (auto itor = m_staticMap.begin(); itor != m_staticMap.end();)
+	{
+		if (itor->first == 0)
+		{
+			itor++;
+			continue;
 		}
 
-		for (auto itor = m_staticMap.begin(); itor != m_staticMap.end();)
+		auto ent = gEngfuncs.GetEntityByIndex(itor->first);
+
+		if (!IsEntityPresent(ent))
 		{
-			if (itor->first == 0)
-			{
-				itor++;
-				continue;
-			}
-
-			auto ent = gEngfuncs.GetEntityByIndex(itor->first);
-
-			if (!IsEntityPresent(ent))
-			{
-				itor = FreeStaticInternal(itor);
-			}
-			else
-			{
-				itor++;
-			}
+			itor = FreeStaticInternal(itor);
 		}
-	//}
+		else
+		{
+			itor++;
+		}
+	}
 }
 
 void CPhysicsManager::StepSimulation(double frametime)
@@ -1287,19 +1358,12 @@ void CPhysicsManager::SetGravity(float velocity)
 
 void CPhysicsManager::ReloadConfig(void)
 {
+	RemoveAllConfigs();
+
 	int maxNum = EngineGetMaxKnownModel();
 
 	if ((int)m_ragdoll_config.size() < maxNum)
 		m_ragdoll_config.resize(maxNum);
-
-	for (int i = 0; i < maxNum; ++i)
-	{
-		if (m_ragdoll_config[i])
-		{
-			delete m_ragdoll_config[i];
-			m_ragdoll_config[i] = NULL;
-		}
-	}
 
 	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
@@ -2126,6 +2190,8 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 	}
 	else if (rigcontrol->shape == RAGDOLL_SHAPE_GARGMOUTH)
 	{
+		auto rig = new CRigBody;
+
 		float rigsize = rigcontrol->size;
 		FloatGoldSrcToBullet(&rigsize);
 
@@ -2143,11 +2209,15 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 			m_gargantuaIndexArray->vIndiceBuffer.size() / 3, m_gargantuaIndexArray->vIndiceBuffer.data(), 3 * sizeof(int),
 			m_gargantuaVertexArray->vVertexBuffer.size(), (float *)m_gargantuaVertexArray->vVertexBuffer.data(), sizeof(brushvertex_t));
 
+		auto shape = new btBvhTriangleMeshShape(vertexArray, true, true);
+
+		shape->setUserPointer(vertexArray);
+
+		auto motionState = new BoneMotionState(bonematrix, offsetmatrix);
+
 		float mass = rigcontrol->mass;
 
-		btRigidBody::btRigidBodyConstructionInfo cInfo(mass, new BoneMotionState(bonematrix, offsetmatrix), new btBvhTriangleMeshShape(vertexArray, true, true));
-
-		auto rig = new CRigBody;
+		btRigidBody::btRigidBodyConstructionInfo cInfo(mass, motionState, shape);
 
 		rig->name = rigcontrol->name;
 		rig->rigbody = new btRigidBody(cInfo);
@@ -2442,32 +2512,38 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 	return NULL;
 }
 
-void CPhysicsManager::RemoveAllStatics()
+void CPhysicsManager::RemoveAllBrushIndices()
 {
-	for (auto p : m_staticMap)
+	for (size_t i = 0; i < m_brushIndexArray.size(); ++i)
 	{
-		auto staticBody = p.second;
-		if (staticBody)
+		if (m_brushIndexArray[i])
 		{
-			if (staticBody->m_rigbody)
-			{
-				m_dynamicsWorld->removeRigidBody(staticBody->m_rigbody);
-				delete staticBody->m_rigbody;
-			}
-			if (staticBody->m_vertexarray && staticBody->m_vertexarray->bIsDynamic)
-			{
-				delete staticBody->m_vertexarray;
-			}
-			if (staticBody->m_indexarray && staticBody->m_indexarray->bIsDynamic)
-			{
-				delete staticBody->m_indexarray;
-			}
-
-			delete staticBody; 
+			delete m_brushIndexArray[i];
+			m_brushIndexArray[i] = NULL;
 		}
 	}
+	m_brushIndexArray.clear();
+}
 
-	m_staticMap.clear();
+void CPhysicsManager::RemoveAllConfigs()
+{
+	for (size_t i = 0; i < m_ragdoll_config.size(); ++i)
+	{
+		if (m_ragdoll_config[i])
+		{
+			delete m_ragdoll_config[i];
+			m_ragdoll_config[i] = NULL;
+		}
+	}
+	m_ragdoll_config.clear();
+}
+
+void CPhysicsManager::RemoveAllStatics()
+{
+	for (auto itor = m_staticMap.begin(); itor != m_staticMap.end(); )
+	{
+		itor = FreeStaticInternal(itor);
+	}
 }
 
 void CPhysicsManager::RemoveAllRagdolls()
@@ -2497,15 +2573,32 @@ ragdoll_itor CPhysicsManager::FreeRagdollInternal(ragdoll_itor &itor)
 
 	for (auto p : ragdoll->m_rigbodyMap)
 	{
-		if (p.second->buoyancy)
+		auto rig = p.second;
+		if (rig->buoyancy)
 		{
-			m_dynamicsWorld->removeAction(p.second->buoyancy);
-			delete p.second->buoyancy;
+			m_dynamicsWorld->removeAction(rig->buoyancy);
+			delete rig->buoyancy;
 		}
-		if (p.second->rigbody)
+		if (rig->rigbody)
 		{
-			m_dynamicsWorld->removeRigidBody(p.second->rigbody);
-			delete p.second;
+			m_dynamicsWorld->removeRigidBody(rig->rigbody);
+
+			if (rig->rigbody->getMotionState())
+			{
+				delete rig->rigbody->getMotionState();
+			}
+
+			if (rig->rigbody->getCollisionShape())
+			{
+				if (rig->rigbody->getCollisionShape()->getUserPointer())
+				{
+					delete rig->rigbody->getCollisionShape()->getUserPointer();
+				}
+
+				delete rig->rigbody->getCollisionShape();
+			}
+
+			delete rig;
 		}
 	}
 
@@ -2525,6 +2618,8 @@ static_itor CPhysicsManager::FreeStaticInternal(static_itor &itor)
 		if (staticBody->m_rigbody)
 		{
 			m_dynamicsWorld->removeRigidBody(staticBody->m_rigbody);
+			delete staticBody->m_rigbody->getMotionState();
+			delete staticBody->m_rigbody->getCollisionShape();
 			delete staticBody->m_rigbody;
 		}
 		if (staticBody->m_vertexarray && staticBody->m_vertexarray->bIsDynamic)

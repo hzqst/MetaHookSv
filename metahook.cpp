@@ -1228,9 +1228,7 @@ void MH_FreeHook(hook_t *pHook)
 	}
 	else if (pHook->iType == MH_HOOK_INLINE)
 	{
-		DetourTransactionBegin();
 		DetourDetach(&(void *&)pHook->pOldFuncAddr, pHook->pNewFuncAddr);
-		DetourTransactionCommit();
 	}
 
 	if (pHook->pInfo)
@@ -1244,6 +1242,8 @@ void MH_FreeHook(hook_t *pHook)
 
 void MH_FreeAllHook(void)
 {
+	DetourTransactionBegin();
+
 	hook_t *next = NULL;
 
 	for (hook_t *h = g_pHookBase; h; h = next)
@@ -1253,6 +1253,8 @@ void MH_FreeAllHook(void)
 	}
 
 	g_pHookBase = NULL;
+
+	DetourTransactionCommit();
 }
 
 BOOL MH_UnHook(hook_t *pHook)
