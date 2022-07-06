@@ -173,7 +173,7 @@ void Client_FillAddress(void)
 
 	if (pfnClientFactory && pfnClientFactory("SCClientDLL001", 0))
 	{
-		g_IsSCClient = true;
+		g_bIsSvenCoop = true;
 
 #define SC_FINDSOUND_SIG "\x51\x55\x8B\x6C\x24\x0C\x89\x4C\x24\x04\x85\xED\x0F\x84\x2A\x2A\x2A\x2A\x80\x7D\x00\x00"
 		{
@@ -212,7 +212,18 @@ void Client_FillAddress(void)
 
 	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "cstrike") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
 	{
+		g_bIsCounterStrike = true;
+
+#define CS_CZ_GETTEXTCOLOR_SIG "\x8B\x44\x24\x04\x83\xE8\x03\x2A\x2A\x48"
+		if (1)
+		{
+			gPrivateFuncs.GetTextColor = (decltype(gPrivateFuncs.GetTextColor))
+				g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, CS_CZ_GETTEXTCOLOR_SIG, Sig_Length(CS_CZ_GETTEXTCOLOR_SIG));
+			Sig_FuncNotFound(GetTextColor);
+		}
+
 #define CS_CZ_GETCLIENTCOLOR_SIG "\x0F\xBF\x2A\x2A\x2A\x2A\x2A\x2A\x48\x83\xF8\x03\x77\x2A\xFF\x24"
+		if(1)
 		{
 			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, CS_CZ_GETCLIENTCOLOR_SIG, Sig_Length(CS_CZ_GETCLIENTCOLOR_SIG));
 			if (addr)

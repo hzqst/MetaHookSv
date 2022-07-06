@@ -24,7 +24,6 @@ r_studio_interface_t **gpStudioInterface;
 
 cvar_t *bv_debug = NULL;
 cvar_t *bv_simrate = NULL;
-cvar_t *bv_pretick = NULL;
 cvar_t *bv_scale = NULL;
 cvar_t *bv_enable = NULL;
 
@@ -1041,7 +1040,6 @@ void HUD_Init(void)
 
 	bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
 	bv_simrate = gEngfuncs.pfnRegisterVariable("bv_simrate", "64", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	bv_pretick = gEngfuncs.pfnRegisterVariable("bv_pretick", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_scale = gEngfuncs.pfnRegisterVariable("bv_scale", "0.5", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_enable = gEngfuncs.pfnRegisterVariable("bv_enable", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 

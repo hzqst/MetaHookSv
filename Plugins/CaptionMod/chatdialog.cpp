@@ -608,18 +608,15 @@ void CChatDialog::FadeChatHistory(void)
 	}
 }
 
-float *GetTextColor(int colorNum, int clientIndex)
+float *ClientDLL_GetTextColor(int colorNum, int clientIndex)
 {
+	if (gPrivateFuncs.GetTextColor)
+	{
+		return gPrivateFuncs.GetTextColor(colorNum, clientIndex);
+	}
+
 	switch (colorNum)
 	{
-	case TEXTCOLOR_USEOLDCOLORS:
-	{
-		if (gPrivateFuncs.GetClientColor)
-		{
-			return gPrivateFuncs.GetClientColor(-1);
-		}
-		break;
-	}
 	case TEXTCOLOR_PLAYERNAME:
 	{
 		if (gPrivateFuncs.GetClientColor)
@@ -628,7 +625,17 @@ float *GetTextColor(int colorNum, int clientIndex)
 		}
 		break;
 	}
-
+	default:
+	{
+		if (g_bIsSvenCoop)
+		{
+			if (gPrivateFuncs.GetClientColor)
+			{
+				return gPrivateFuncs.GetClientColor(-1);
+			}
+		}
+		break;
+	}
 	}
 
 	return NULL;
@@ -636,10 +643,25 @@ float *GetTextColor(int colorNum, int clientIndex)
 
 Color CChatDialog::GetTextColorForClient(int colorNum, int clientIndex)
 {
-	float *col = ::GetTextColor(colorNum, clientIndex);
+	float cols[3];
+	float *col = ::ClientDLL_GetTextColor(colorNum, clientIndex);
 
 	if (!col)
-		col = g_ColorDefault;
+	{
+		if (!g_bIsSvenCoop)
+		{
+			auto con_color_string = gEngfuncs.pfnGetCvarString("con_color");
+			sscanf(con_color_string, "%f %f %f", &cols[0], &cols[1], &cols[2]);
+			cols[0] /= 255.0f;
+			cols[1] /= 255.0f;
+			cols[2] /= 255.0f;
+			col = cols;
+		}
+		else
+		{
+			col = g_ColorDefault;
+		}
+	}
 
 	return Color(col[0] * 255, col[1] * 255, col[2] * 255, 255);
 }
@@ -954,7 +976,7 @@ void CChatDialog::ChatPrintf(int iPlayerIndex, const wchar_t *fmt)
 
 	wchar_t *pmsg = msg;
 	auto colorfmt = (int)(*pmsg);
-	Color color = GetTextColorForClient(colorfmt, iPlayerIndex);
+	//Color color = GetTextColorForClient(colorfmt, iPlayerIndex);
 
 	while ( *pmsg && ( *pmsg == '\n' || ( *pmsg > 0 && *pmsg < TEXTCOLOR_MAX ) ) )
 	{
@@ -1029,6 +1051,8 @@ void CChatDialog::ChatPrintf(int iPlayerIndex, const wchar_t *fmt)
 
 		if (!wcscmp(psearch, L"*DEAD* "))
 			psearch += _ARRAYSIZE(L"*DEAD* ") - 1;
+
+		//TODO strstr"Server Console"
 
 		const wchar_t *nameInString = wcsstr(psearch, wideName);
 

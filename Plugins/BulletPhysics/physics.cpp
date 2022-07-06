@@ -18,7 +18,6 @@ extern float(*pbonetransform)[128][3][4];
 extern float(*plighttransform)[128][3][4]; 
 extern cvar_t *bv_debug;
 extern cvar_t *bv_simrate;
-extern cvar_t *bv_pretick;
 extern cvar_t *bv_scale;
 extern model_t *r_worldmodel;
 extern cl_entity_t *r_worldentity;
@@ -458,41 +457,15 @@ void CPhysicsManager::CreateBarnacle(cl_entity_t *ent)
 
 	if (itor != m_staticMap.end())
 	{
-		//UpdateBrushTransform(ent, itor->second);
 		return;
 	}
 
 	auto staticBody = CreateStaticBody(ent, m_barnacleVertexArray, m_barnacleIndexArray, true);
-	//UpdateBrushTransform(ent, staticBody);
 }
 
 void CPhysicsManager::CreateGargantua(cl_entity_t *ent)
 {
 
-}
-
-void CPhysicsManager::CreateWater(cl_entity_t *ent)
-{
-
-}
-
-void CPhysicsManager::UpdateBrushTransform(cl_entity_t *ent, CStaticBody *staticBody)
-{
-	float matrix[4][4];
-	RotateForEntity(ent, matrix);
-
-	if (0 != memcmp(matrix, r_identity_matrix, sizeof(matrix)))
-	{
-		float matrix_transposed[4][4];
-		Matrix4x4_Transpose(matrix_transposed, matrix);
-
-		btTransform worldtrans;
-		worldtrans.setFromOpenGLMatrix((float *)matrix_transposed);
-
-		TransformGoldSrcToBullet(worldtrans);
-
-		staticBody->m_rigbody->getMotionState()->setWorldTransform(worldtrans);
-	}
 }
 
 void CPhysicsManager::CreateBrushModel(cl_entity_t *ent)
@@ -517,13 +490,6 @@ void CPhysicsManager::CreateBrushModel(cl_entity_t *ent)
 
 	if (itor != m_staticMap.end())
 	{
-		/*auto staticBody = itor->second;
-
-		if (staticBody->m_kinematic)
-		{
-			UpdateBrushTransform(ent, staticBody);
-		}
-		*/
 		return;
 	}
 
@@ -807,37 +773,6 @@ void CPhysicsManager::GenerateGargantuaIndiceVerticeArray(void)
 	}
 }
 
-void CPhysicsManager::PreTickCallback(btScalar timeStep)
-{
-	/*if (!HasRagdolls())
-		return;
-
-	if (bv_pretick->value)
-	{
-		for (auto itor = m_ragdollMap.begin(); itor != m_ragdollMap.end();)
-		{
-			auto pRagdoll = itor->second;
-
-			auto ent = gEngfuncs.GetEntityByIndex(itor->first);
-
-			if (!IsEntityPresent(ent) ||
-				!UpdateRagdoll(ent, itor->second, timeStep, gEngfuncs.GetClientTime()))
-			{
-				itor = FreeRagdollInternal(itor);
-			}
-			else
-			{
-				itor++;
-			}
-		}
-	}*/
-}
-
-void _PreTickCallback(btDynamicsWorld *world, btScalar timeStep)
-{
-	gPhysicsManager.PreTickCallback(timeStep);
-}
-
 struct GameFilterCallback : public btOverlapFilterCallback
 {
 	// return true when pairs need collision
@@ -857,14 +792,24 @@ struct GameFilterCallback : public btOverlapFilterCallback
 				auto physobj0 = (CRigBody *)body0->getUserPointer();
 				if (physobj0->flags & RIG_FL_JIGGLE)
 				{
-					if (body0->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT)
+					if (!(body0->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT))
 					{
 						return false;
 					}
 				}
-
 			}
-			
+			else if ((proxy1->m_collisionFilterMask & CustomCollisionFilterGroups::RagdollFilter) &&
+				(proxy0->m_collisionFilterMask & CustomCollisionFilterGroups::WorldFilter))
+			{
+				auto physobj1 = (CRigBody *)body1->getUserPointer();
+				if (physobj1->flags & RIG_FL_JIGGLE)
+				{
+					if (!(body1->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT))
+					{
+						return false;
+					}
+				}
+			}
 		}
 		return collides;
 	}
@@ -883,7 +828,6 @@ void CPhysicsManager::Init(void)
 	m_dynamicsWorld->setDebugDrawer(m_debugDraw);
 	m_dynamicsWorld->setGravity(btVector3(0, 0, 0));
 
-	//m_dynamicsWorld->setInternalTickCallback(_PreTickCallback, this, true);
 	m_overlapFilterCallback = new GameFilterCallback();
 	m_dynamicsWorld->getPairCache()->setOverlapFilterCallback(m_overlapFilterCallback);
 }
@@ -894,7 +838,7 @@ void CPhysicsManager::DebugDraw(void)
 	{
 		m_dynamicsWorld->debugDrawWorld();
 	}
-
+#if 0
 	if (bv_debug->value == 2)
 	{
 		for (auto &ragdoll : m_ragdollMap)
@@ -974,6 +918,7 @@ void CPhysicsManager::DebugDraw(void)
 			}
 		}
 	}
+#endif
 }
 
 void CPhysicsManager::ReleaseRagdollFromGargantua(CRagdollBody *ragdoll)
@@ -1063,6 +1008,7 @@ bool CPhysicsManager::GetRagdollOrigin(CRagdollBody *ragdoll, float *origin)
 void CPhysicsManager::UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time)
 {
 	//Buoyancy and Damping Simulation
+#if 1
 	for (auto &itor : ragdoll->m_rigbodyMap)
 	{
 		auto rig = itor.second;
@@ -1078,6 +1024,10 @@ void CPhysicsManager::UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBod
 			auto vBuoyancy = rigbody->getGravity() * rig->mass;
 
 			vBuoyancy.setZ(vBuoyancy.getZ() * -1);
+
+			//btTransform coretrans;
+			//motionState->getWorldTransform(coretrans);
+			auto coreorigin = rigbody->getCenterOfMassPosition();
 
 			auto bonematrix = motionState->bonematrix;
 
@@ -1098,18 +1048,22 @@ void CPhysicsManager::UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBod
 
 				auto control_point_origin = worldTrans.getOrigin();
 
-				Vec3BulletToGoldSrc(control_point_origin);
+				auto rel_pos = control_point_origin - coreorigin;
 
 				vec3_t control_point_origin_goldsrc = { control_point_origin.getX(), control_point_origin.getY(), control_point_origin.getZ() };
 
+				Vec3BulletToGoldSrc(control_point_origin_goldsrc);
+
 				if (gEngfuncs.PM_PointContents(control_point_origin_goldsrc, NULL) == CONTENT_WATER)
 				{
-					rigbody->applyCentralForce(vBuoyancy * water_control_point.buoyancy);					
+					rigbody->applyForce(vBuoyancy * water_control_point.buoyancy, rel_pos);
+					//rigbody->applyCentralForce(vBuoyancy * water_control_point.buoyancy);
 					rigbody->setDamping( water_control_point.ldamping, water_control_point.adamping);
 				}
 			}
 		}
 	}
+#endif
 }
 
 bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time)
@@ -1319,7 +1273,7 @@ void CPhysicsManager::StepSimulation(double frametime)
 	{
 		gEngfuncs.Cvar_SetValue("bv_simrate", 128);
 	}
-	m_dynamicsWorld->stepSimulation(frametime, 16, 1.0f / bv_simrate->value);
+	m_dynamicsWorld->stepSimulation(frametime, 3, 1.0f / bv_simrate->value);
 }
 
 void CPhysicsManager::SetGravity(float velocity)
@@ -2124,6 +2078,8 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		rig->flags = rigcontrol->flags;
 		rig->mass = mass;
 
+		rig->rigbody->setUserPointer(rig);
+
 		m_dynamicsWorld->addRigidBody(rig->rigbody, rig->group, rig->mask);
 
 		return rig;
@@ -2162,6 +2118,8 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		rig->flags = rigcontrol->flags;
 		rig->mass = mass;
 
+		rig->rigbody->setUserPointer(rig);
+
 		m_dynamicsWorld->addRigidBody(rig->rigbody, rig->group, rig->mask);
 
 		return rig;
@@ -2197,6 +2155,8 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		rig->flags = rigcontrol->flags | RIG_FL_KINEMATIC;
 		rig->mass = mass;
 
+		rig->rigbody->setUserPointer(rig);
+
 		m_dynamicsWorld->addRigidBody(rig->rigbody, rig->group, rig->mask);
 
 		return rig;
@@ -2205,6 +2165,74 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 	gEngfuncs.Con_Printf("CreateRigBody: Failed to create rigbody %s, invalid shape type %d\n", rigcontrol->name.c_str(), rigcontrol->shape);
 	return NULL;
 }
+#if 0
+class BuoyancyAction : public btActionInterface
+{
+public:
+	BuoyancyAction(CRigBody *body)
+	{
+		m_body = body;
+	}
+
+	BuoyancyAction::~BuoyancyAction()
+	{
+		
+	}
+
+	void updateAction(btCollisionWorld* collisionWorld, btScalar deltaTimeStep) final
+	{
+		m_body->rigbody->setDamping(0, 0);
+
+		if (!(m_body->rigbody->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT))
+		{
+			auto motionState = (BoneMotionState *)m_body->rigbody->getMotionState();
+
+			auto vBuoyancy = m_body->rigbody->getGravity() * m_body->mass;
+
+			vBuoyancy.setZ(vBuoyancy.getZ() * -1);
+
+			auto bonematrix = motionState->bonematrix;
+
+			for (int i = 0; i < m_body->water_control_points.size(); ++i)
+			{
+				auto &water_control_point = m_body->water_control_points[i];
+
+				auto offsetmatrix = motionState->offsetmatrix;
+
+				auto offsetorg = offsetmatrix.getOrigin();
+
+				offsetorg += water_control_point.offset;
+
+				offsetmatrix.setOrigin(offsetorg);
+
+				btTransform worldTrans;
+				worldTrans.mult(bonematrix, offsetmatrix);
+
+				auto control_point_origin = worldTrans.getOrigin();
+
+				vec3_t control_point_origin_goldsrc = { control_point_origin.getX(), control_point_origin.getY(), control_point_origin.getZ() };
+
+				Vec3BulletToGoldSrc(control_point_origin_goldsrc);
+
+				int content = gEngfuncs.PM_PointContents(control_point_origin_goldsrc, NULL);
+				if (content == CONTENT_WATER)
+				{
+					m_body->rigbody->applyForce(vBuoyancy * water_control_point.buoyancy, );
+					m_body->rigbody->setDamping(water_control_point.ldamping, water_control_point.adamping);
+				}
+			}
+		}
+	}
+
+	void debugDraw(btIDebugDraw* debugDrawer) final
+	{
+		//btTransform tr(btQuaternion::getIdentity(), targetPoint);
+		//debugDrawer->drawTransform(tr, 1.f);
+	}
+
+	CRigBody *m_body;
+};
+#endif
 
 void CPhysicsManager::CreateWaterControl(CRagdollBody *ragdoll, studiohdr_t *studiohdr, ragdoll_water_control_t *water_control)
 {
@@ -2215,12 +2243,13 @@ void CPhysicsManager::CreateWaterControl(CRagdollBody *ragdoll, studiohdr_t *stu
 		return;
 	}
 
-	auto RigBody = itor->second;
+	auto Body = itor->second;
 
 	btVector3 offset(water_control->offsetX, water_control->offsetY, water_control->offsetZ);
+
 	Vec3GoldSrcToBullet(offset);
 
-	RigBody->water_control_points.push_back( CWaterControlPoint(offset, water_control->factor1, water_control->factor2, water_control->factor3) );
+	Body->water_control_points.push_back( CWaterControlPoint(offset, water_control->factor1, water_control->factor2, water_control->factor3) );
 }
 
 btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, studiohdr_t *studiohdr, ragdoll_cst_control_t *cstcontrol)
@@ -2443,47 +2472,18 @@ void CPhysicsManager::RemoveAllStatics()
 
 void CPhysicsManager::RemoveAllRagdolls()
 {
-	for (auto rag : m_ragdollMap)
+	for (auto itor = m_ragdollMap.begin(); itor != m_ragdollMap.end(); )
 	{
-		auto ragdoll = rag.second;
-
-		for (auto p : ragdoll->m_constraintArray)
-		{
-			m_dynamicsWorld->removeConstraint(p);
-			delete p;
-		}
-
-		ragdoll->m_constraintArray.clear();
-
-		for (auto p : ragdoll->m_barnacleConstraintArray)
-		{
-			m_dynamicsWorld->removeConstraint(p);
-			delete p;
-		}
-
-		for (auto p : ragdoll->m_gargantuaConstraintArray)
-		{
-			m_dynamicsWorld->removeConstraint(p);
-			delete p;
-		}
-
-		for (auto p : ragdoll->m_rigbodyMap)
-		{
-			m_dynamicsWorld->removeRigidBody(p.second->rigbody);
-			delete p.second->rigbody;
-			delete p.second;
-		}
-
-		ragdoll->m_rigbodyMap.clear();
-
-		delete ragdoll;
+		itor = FreeRagdollInternal(itor);
 	}
-	m_ragdollMap.clear();
 }
 
 ragdoll_itor CPhysicsManager::FreeRagdollInternal(ragdoll_itor &itor)
 {
 	auto ragdoll = itor->second;
+
+	ReleaseRagdollFromBarnacle(ragdoll);
+	ReleaseRagdollFromGargantua(ragdoll);
 
 	RagdollDestroyCallback(ragdoll->m_entindex);
 
@@ -2497,8 +2497,16 @@ ragdoll_itor CPhysicsManager::FreeRagdollInternal(ragdoll_itor &itor)
 
 	for (auto p : ragdoll->m_rigbodyMap)
 	{
-		m_dynamicsWorld->removeRigidBody(p.second->rigbody);
-		delete p.second;
+		if (p.second->buoyancy)
+		{
+			m_dynamicsWorld->removeAction(p.second->buoyancy);
+			delete p.second->buoyancy;
+		}
+		if (p.second->rigbody)
+		{
+			m_dynamicsWorld->removeRigidBody(p.second->rigbody);
+			delete p.second;
+		}
 	}
 
 	ragdoll->m_rigbodyMap.clear();
@@ -3189,6 +3197,9 @@ CRagdollBody *CPhysicsManager::CreateRagdoll(
 			rig->oldActivitionState = rig->rigbody->getActivationState();
 			rig->oldCollisionFlags = rig->rigbody->getCollisionFlags();
 		}
+
+		//rig->buoyancy = new BuoyancyAction(rig);
+		//m_dynamicsWorld->addAction(rig->buoyancy);
 	}
 
 	for (int i = 0; i < (*pstudiohdr)->numbones; ++i)

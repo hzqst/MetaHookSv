@@ -211,6 +211,7 @@ public:
 	CRigBody()
 	{
 		rigbody = NULL;
+		buoyancy = NULL;
 		barnacle_constraint_dof6 = NULL;
 		barnacle_constraint_slider = NULL;
 		gargantua_target = NULL;
@@ -258,6 +259,7 @@ public:
 	}*/
 	std::string name;
 	btRigidBody *rigbody;
+	btActionInterface *buoyancy;
 	btGeneric6DofConstraint *barnacle_constraint_dof6;
 	btSliderConstraint *barnacle_constraint_slider;
 	btRigidBody *gargantua_target;
@@ -385,7 +387,7 @@ public:
 		m_kinematic = false;
 		m_debugdraw = false;
 		m_group = btBroadphaseProxy::AllFilter;
-		m_mask = btBroadphaseProxy::DefaultFilter | CustomCollisionFilterGroups::RagdollFilter;
+		m_mask = btBroadphaseProxy::DefaultFilter | CustomCollisionFilterGroups::WorldFilter;
 	}
 
 	btRigidBody *m_rigbody;
@@ -552,8 +554,6 @@ public:
 	void CreateBrushModel(cl_entity_t *ent);
 	void CreateBarnacle(cl_entity_t *ent);
 	void CreateGargantua(cl_entity_t *ent);
-	void CreateWater(cl_entity_t *ent);
-	void UpdateBrushTransform(cl_entity_t *ent, CStaticBody *staticBody);
 	void RotateForEntity(cl_entity_t *ent, float matrix[4][4]);
 	void ReleaseRagdollFromBarnacle(CRagdollBody *ragdoll);
 	void ReleaseRagdollFromGargantua(CRagdollBody *ragdoll);
@@ -563,7 +563,7 @@ public:
 	void UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time);
 	void UpdateTempEntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time);
 	void SyncPlayerView(cl_entity_t *local, struct ref_params_s *pparams);
-	void PreTickCallback(btScalar timeStep);
+
 private:
 	ragdoll_itor FreeRagdollInternal(ragdoll_itor &itor);
 	static_itor FreeStaticInternal(static_itor &itor);

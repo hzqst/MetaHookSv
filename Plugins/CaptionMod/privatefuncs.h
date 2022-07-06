@@ -23,6 +23,10 @@ typedef struct
 	int(__stdcall *FMOD_Sound_getLength)(int a1, void* a2, int a3);//?getLength@Sound@FMOD@@QAG?AW4FMOD_RESULT@@PAII@Z
 
 	float *(*GetClientColor)(int clientIndex);
+
+	//Only available in vgui2 based Counter Strike
+	float *(*GetTextColor)(int colorNum, int clientIndex);
+
 	bool (__fastcall *GameViewport_AllowedToPrintText)(void *pthis, int);
 
 	client_textmessage_t *(*pfnTextMessageGet)(const char *pName);

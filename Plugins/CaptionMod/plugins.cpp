@@ -10,7 +10,6 @@ mh_enginesave_t *g_pMetaSave;
 IFileSystem *g_pFileSystem;
 
 bool g_IsClientVGUI2 = false;
-bool g_IsSCClient = false;
 HMODULE g_hClientDll = NULL;
 PVOID g_dwClientBase = 0;
 DWORD g_dwClientSize = 0;
@@ -27,6 +26,9 @@ PVOID g_dwEngineRdataBase;
 DWORD g_dwEngineRdataSize;
 DWORD g_dwEngineBuildnum;
 int g_iEngineType;
+
+bool g_bIsSvenCoop = false;
+bool g_bIsCounterStrike = false;
 
 extern IFileSystem *g_pFullFileSystem;
 

@@ -6,7 +6,6 @@ extern metahook_api_t *g_pMetaHookAPI;
 extern mh_enginesave_t *g_pMetaSave;
 extern IFileSystem *g_pFileSystem;
 extern bool g_IsClientVGUI2;
-extern bool g_IsSCClient;
 extern HMODULE g_hClientDll;
 extern PVOID g_dwClientBase;
 extern DWORD g_dwClientSize;
@@ -22,6 +21,8 @@ extern PVOID g_dwEngineRdataBase;
 extern DWORD g_dwEngineRdataSize;
 extern DWORD g_dwEngineBuildnum;
 extern int g_iEngineType;
+extern bool g_bIsSvenCoop;
+extern bool g_bIsCounterStrike;
 
 #define GetCallAddress(addr) g_pMetaHookAPI->GetNextCallAddr((PUCHAR)addr, 1)
 #define Sig_NotFound(name) g_pMetaHookAPI->SysError("Could not found: %s\nEngine buildnum: %d", #name, g_dwEngineBuildnum);
