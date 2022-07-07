@@ -126,6 +126,7 @@ BlobFootprint_t g_blobfootprintClient;
 
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+	static char szNewCommandParams[2048];
 	HANDLE hObject = NULL;
 
 	CommandLine()->CreateCmdLine(GetCommandLine());
@@ -219,7 +220,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		g_pFileSystem->Mount();
 		g_pFileSystem->AddSearchPath(Sys_GetLongPathName(), "ROOT");
 
-		static char szNewCommandParams[2048];
 		const char *pszEngineDLL;
 		int iResult = ENGINE_RESULT_NONE;
 
@@ -343,7 +343,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	}
 
 	WSACleanup();
-	MH_Shutdown();
-	NtTerminateProcess((HANDLE)-1, 1);
+
+	//MH_Shutdown();
+	//NtTerminateProcess((HANDLE)-1, 1);
 	return 1;
 }
