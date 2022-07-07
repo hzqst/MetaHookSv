@@ -179,6 +179,15 @@ void SCModel_ReloadModel(const std::string &name)
 	}
 }
 
+void SCModel_ReloadAllModels()
+{
+	//Reload models for those players
+	for (int i = 0; i < MAX_CLIENTS; ++i)
+	{
+		(*DM_PlayerState)[i].name[0] = 0;
+	}
+}
+
 bool SCModel_IsAllRequestFinished(CDownloadList *list, CHttpRequest *req)
 {
 	for (auto r : list->requests)
@@ -280,7 +289,8 @@ void SCModel_ModelJsonAcquired(CDownloadList *list, bool bHasTModel, const std::
 		const char *urls[] =
 		{
 			"https://wootdata.github.io/scmodels_data_%d/models/player/%s/%s.mdl",
-			"https://cdn.jsdelivr.net/gh/wootdata/scmodels_data_%d@master/models/player/%s/%s.mdl"
+			"https://cdn.jsdelivr.net/gh/wootdata/scmodels_data_%d@master/models/player/%s/%s.mdl",
+			"https://gh.api.99988866.xyz/https://wootdata.github.io/scmodels_data_%d/models/player/%s/%s.mdl",
 		};
 
 		char url[1024];
@@ -297,7 +307,8 @@ void SCModel_ModelJsonAcquired(CDownloadList *list, bool bHasTModel, const std::
 		const char *urls[] =
 		{
 			"https://wootdata.github.io/scmodels_data_%d/models/player/%s/%sT.mdl",
-			"https://cdn.jsdelivr.net/gh/wootdata/scmodels_data_%d@master/models/player/%s/%sT.mdl"
+			"https://cdn.jsdelivr.net/gh/wootdata/scmodels_data_%d@master/models/player/%s/%sT.mdl",
+			"https://gh.api.99988866.xyz/https://wootdata.github.io/scmodels_data_%d/models/player/%s/%sT.mdl",
 		};
 
 		char url[1024];
@@ -315,7 +326,8 @@ void SCModel_ModelJsonAcquired(CDownloadList *list, bool bHasTModel, const std::
 		const char *urls[] =
 		{
 			"https://wootdata.github.io/scmodels_data_%d/models/player/%s/%s.bmp",
-			"https://cdn.jsdelivr.net/gh/wootdata/scmodels_data_%d@master/models/player/%s/%s.bmp"
+			"https://cdn.jsdelivr.net/gh/wootdata/scmodels_data_%d@master/models/player/%s/%s.bmp",
+			"https://gh.api.99988866.xyz/https://wootdata.github.io/scmodels_data_%d/models/player/%s/%s.bmp",
 		};
 
 		char url[1024];
@@ -337,7 +349,8 @@ void SCModel_RequestForModelJson(CDownloadList *list)
 	const char *urls[] =
 	{
 		"https://wootdata.github.io/scmodels_data_%d/models/player/%s/%s.json",
-		"https://cdn.jsdelivr.net/gh/wootdata/scmodels_data_%d@master/models/player/%s/%s.json"
+		"https://cdn.jsdelivr.net/gh/wootdata/scmodels_data_%d@master/models/player/%s/%s.json",
+		"https://gh.api.99988866.xyz/https://wootdata.github.io/scmodels_data_%d/models/player/%s/%s.json",
 	};
 
 	char url[1024];
@@ -506,7 +519,8 @@ void SCModel_RequestForDatabase(void)
 	const char *urls[] =
 	{
 		"https://raw.githubusercontent.com/wootguy/scmodels/master/database/models.json",
-		"https://cdn.jsdelivr.net/gh/wootguy/scmodels@master/database/models.json"
+		"https://cdn.jsdelivr.net/gh/wootguy/scmodels@master/database/models.json",
+		"https://gh.api.99988866.xyz/https://raw.githubusercontent.com/wootguy/scmodels/master/database/models.json",
 	};
 
 	if (!g_scmodel_json)
@@ -636,7 +650,7 @@ void R_StudioChangePlayerModel(void)
 	}
 }
 
-int HUD_VidInit(void)
+void SCModel_Reload_f(void)
 {
 	if (g_scmodel_json)
 	{
@@ -646,22 +660,36 @@ int HUD_VidInit(void)
 
 	for (auto itor = g_download_models.begin(); itor != g_download_models.end();)
 	{
-		if (itor->second->finished)
+		for (auto r : itor->second->requests)
 		{
-			for (auto r : itor->second->requests)
-			{
-				delete r;
-			}
-			delete itor->second;
-			itor = g_download_models.erase(itor);
+			delete r;
 		}
-		else
-		{
-			itor++;
-		}
+		delete itor->second;
+		itor = g_download_models.erase(itor);
 	}
 
-	return gExportfuncs.HUD_VidInit();	
+	SCModel_ReloadAllModels();
+}
+
+void HUD_Shutdown(void)
+{
+	if (g_scmodel_json)
+	{
+		delete g_scmodel_json;
+		g_scmodel_json = NULL;
+	}
+
+	for (auto itor = g_download_models.begin(); itor != g_download_models.end();)
+	{
+		for (auto r : itor->second->requests)
+		{
+			delete r;
+		}
+		delete itor->second;
+		itor = g_download_models.erase(itor);
+	}
+
+	gExportfuncs.HUD_Shutdown();
 }
 
 void HUD_Init(void)
@@ -673,9 +701,8 @@ void HUD_Init(void)
 	scmodel_downloadlatest = gEngfuncs.pfnRegisterVariable("scmodel_downloadlatest", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	scmodel_usemirror = gEngfuncs.pfnRegisterVariable("scmodel_usemirror",
-		(!strcmp(SteamApps()->GetCurrentGameLanguage(), "schinese")) ? "1" : "0",
+		(!strcmp(SteamApps()->GetCurrentGameLanguage(), "schinese")) ? "2" : "0",
 		FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-
 }
 
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)

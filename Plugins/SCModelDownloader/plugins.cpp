@@ -63,7 +63,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
 
 	pExportFunc->HUD_Init = HUD_Init;
-	pExportFunc->HUD_VidInit = HUD_VidInit;
+	pExportFunc->HUD_Shutdown = HUD_Shutdown;
 	pExportFunc->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
 }
 
