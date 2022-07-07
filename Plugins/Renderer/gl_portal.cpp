@@ -1,7 +1,7 @@
 #include "gl_local.h"
 #include <sstream>
 
-int g_LastPortalTextureId = 0;
+//int g_LastPortalTextureId = 0;
 
 std::unordered_map<int, portal_program_t> g_PortalProgramTable;
 
@@ -360,8 +360,8 @@ void __fastcall ClientPortalManager_EnableClipPlane(void * pthis, int dummy, int
 void __fastcall ClientPortalManager_DrawPortalSurface(void *ClientPortalManager, int dummy, void *ClientPortal, msurface_t *surf, GLuint textureId)
 {
 	//gEngfuncs.Con_Printf("ClientPortalManager_DrawPortalSurface %d\n", textureId);
-		
-	g_LastPortalTextureId = textureId;
+
+	//g_LastPortalTextureId = textureId;
 
 	auto VBOCache = R_PreparePortalVBO(ClientPortalManager, ClientPortal, surf, textureId);
 

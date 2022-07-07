@@ -3138,7 +3138,6 @@ void R_FillAddress(void)
 		});
 		Sig_FuncNotFound(DLL_SetModKey);
 
-		Install_InlineHook(DLL_SetModKey);
 	}
 
 	if (1)
@@ -3228,11 +3227,68 @@ void R_FillAddress(void)
 	}
 }
 
-void R_InstallHook(void)
+hook_t *g_phook_GL_BeginRendering = NULL;
+hook_t *g_phook_GL_EndRendering = NULL;
+hook_t *g_phook_R_RenderView_SvEngine = NULL;
+hook_t *g_phook_R_LoadSkyName_SvEngine = NULL;
+hook_t *g_phook_R_RenderView = NULL;
+hook_t *g_phook_R_LoadSkys = NULL;
+hook_t *g_phook_R_NewMap = NULL;
+hook_t *g_phook_R_CullBox = NULL;
+hook_t *g_phook_Mod_PointInLeaf = NULL;
+hook_t *g_phook_R_BuildLightMap = NULL;
+hook_t *g_phook_R_AddDynamicLights = NULL;
+hook_t *g_phook_R_GLStudioDrawPoints = NULL;
+hook_t *g_phook_GL_LoadTexture2 = NULL;
+hook_t *g_phook_enginesurface_drawFlushText = NULL;
+hook_t *g_phook_Mod_LoadStudioModel = NULL;
+hook_t *g_phook_triapi_RenderMode = NULL;
+hook_t *g_phook_Draw_MiptexTexture = NULL;
+hook_t *g_phook_BuildGammaTable = NULL;
+hook_t *g_phook_Cvar_DirectSet = NULL;
+hook_t *g_phook_DLL_SetModKey = NULL;
+
+void R_UninstallHooksForEngineDLL(void)
+{
+	//Engine
+	Uninstall_Hook(GL_BeginRendering);
+	Uninstall_Hook(GL_EndRendering);
+
+	if (gRefFuncs.R_RenderView_SvEngine)
+	{
+		Uninstall_Hook(R_RenderView_SvEngine);
+		Uninstall_Hook(R_LoadSkyName_SvEngine);
+	}
+	else
+	{
+		Uninstall_Hook(R_RenderView);
+		Uninstall_Hook(R_LoadSkys);
+	}
+
+	Uninstall_Hook(R_NewMap);
+	Uninstall_Hook(R_CullBox);
+	Uninstall_Hook(Mod_PointInLeaf);
+	Uninstall_Hook(R_BuildLightMap);
+	Uninstall_Hook(R_AddDynamicLights);
+	Uninstall_Hook(R_GLStudioDrawPoints);
+	Uninstall_Hook(GL_LoadTexture2);
+	Uninstall_Hook(enginesurface_drawFlushText);
+	Uninstall_Hook(Mod_LoadStudioModel);
+	Uninstall_Hook(triapi_RenderMode);
+	Uninstall_Hook(Draw_MiptexTexture);
+	Uninstall_Hook(BuildGammaTable);
+	Uninstall_Hook(Cvar_DirectSet);
+
+	Uninstall_Hook(studioapi_RestoreRenderer);
+	Uninstall_Hook(studioapi_StudioDynamicLight);
+	Uninstall_Hook(studioapi_StudioCheckBBox);
+	Uninstall_Hook(CL_FxBlend);
+}
+
+void R_InstallHooks(void)
 {
 	Install_InlineHook(GL_BeginRendering);
 	Install_InlineHook(GL_EndRendering);
-	//Install_InlineHook(V_RenderView);
 
 	if (gRefFuncs.R_RenderView_SvEngine)
 	{
@@ -3245,28 +3301,18 @@ void R_InstallHook(void)
 		Install_InlineHook(R_LoadSkys);
 	}
 
-	//Install_InlineHook(R_RenderScene);
-	//Install_InlineHook(R_DrawWorld);
-	//Install_InlineHook(R_DrawSpriteModel);	
 	Install_InlineHook(R_NewMap);
-	//Install_InlineHook(R_SetupGL);
-	//Install_InlineHook(R_ForceCVars);
 	Install_InlineHook(R_CullBox);
 	Install_InlineHook(Mod_PointInLeaf);
 	Install_InlineHook(R_BuildLightMap);
 	Install_InlineHook(R_AddDynamicLights);
 	Install_InlineHook(R_GLStudioDrawPoints);
-	//Install_InlineHook(R_DrawBrushModel);
-	//Install_InlineHook(R_DrawTEntitiesOnList);
-	//Install_InlineHook(R_DrawParticles);
-	//Install_InlineHook(R_AddTEntity);
-	//Install_InlineHook(GL_Upload16);
 	Install_InlineHook(GL_LoadTexture2);
 	Install_InlineHook(enginesurface_drawFlushText);
 	Install_InlineHook(Mod_LoadStudioModel);
 	Install_InlineHook(triapi_RenderMode);
-	//Install_InlineHook(triapi_Color4f);
 	Install_InlineHook(Draw_MiptexTexture);
 	Install_InlineHook(BuildGammaTable);
 	Install_InlineHook(Cvar_DirectSet);
+	Install_InlineHook(DLL_SetModKey);
 }

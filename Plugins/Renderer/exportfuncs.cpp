@@ -15,7 +15,40 @@ void *g_pGameStudioRenderer = NULL;
 bool g_bIsSvenCoop = false;
 bool g_bIsCounterStrike = false;
 
-extern int g_LastPortalTextureId;
+//extern int g_LastPortalTextureId;
+
+hook_t *g_phook_studioapi_RestoreRenderer = NULL;
+hook_t *g_phook_studioapi_StudioDynamicLight = NULL;
+hook_t *g_phook_studioapi_StudioCheckBBox = NULL;
+hook_t *g_phook_CL_FxBlend = NULL;
+
+hook_t *g_phook_ClientPortalManager_ResetAll = NULL;
+hook_t *g_phook_ClientPortalManager_DrawPortalSurface = NULL;
+hook_t *g_phook_ClientPortalManager_EnableClipPlane = NULL;
+
+hook_t *g_phook_GameStudioRenderer_StudioRenderModel = NULL;
+hook_t *g_phook_GameStudioRenderer_StudioRenderFinal = NULL;
+hook_t *g_phook_R_StudioRenderModel = NULL;
+hook_t *g_phook_R_StudioRenderFinal = NULL;
+
+void R_UninstallHooksForClientDLL(void)
+{
+	Uninstall_Hook(studioapi_RestoreRenderer);
+	Uninstall_Hook(studioapi_StudioDynamicLight);
+	Uninstall_Hook(studioapi_StudioCheckBBox);
+	Uninstall_Hook(CL_FxBlend);
+
+	//SCClient
+
+	Uninstall_Hook(ClientPortalManager_ResetAll);
+	Uninstall_Hook(ClientPortalManager_DrawPortalSurface);
+	Uninstall_Hook(ClientPortalManager_EnableClipPlane);
+
+	Uninstall_Hook(GameStudioRenderer_StudioRenderModel);
+	Uninstall_Hook(GameStudioRenderer_StudioRenderFinal);
+	Uninstall_Hook(R_StudioRenderModel);
+	Uninstall_Hook(R_StudioRenderFinal);
+}
 
 void HUD_Init(void)
 {
@@ -73,9 +106,9 @@ int HUD_Redraw(float time, int intermission)
 		case 2:
 			R_DrawHUDQuad_Texture(s_WaterFBO.s_hBackBufferTex, glwidth / 2, glheight / 2);
 			break;
-		case 3:
-			R_DrawHUDQuad_Texture(g_LastPortalTextureId, glwidth / 2, glheight / 2);
-			break;
+		//case 3:
+		//	R_DrawHUDQuad_Texture(g_LastPortalTextureId, glwidth / 2, glheight / 2);
+		//	break;
 		default:
 			break;
 		}
@@ -770,7 +803,6 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	Install_InlineHook(studioapi_RestoreRenderer);
 	Install_InlineHook(studioapi_StudioDynamicLight);
 	Install_InlineHook(studioapi_StudioCheckBBox);
-
 	Install_InlineHook(CL_FxBlend);
 
 	cl_sprite_white = IEngineStudio.Mod_ForName("sprites/white.spr", 1);
@@ -792,7 +824,6 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			Sig_AddrNotFound(ClientPortalManager_ResetAll);
 
 			gRefFuncs.ClientPortalManager_ResetAll = (decltype(gRefFuncs.ClientPortalManager_ResetAll))GetCallAddress(addr + 12);
-			Install_InlineHook(ClientPortalManager_ResetAll);
 		}
 		if (1)
 		{
@@ -813,7 +844,6 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			Sig_AddrNotFound(ClientPortalManager_DrawPortalSurface);
 
 			gRefFuncs.ClientPortalManager_DrawPortalSurface = (decltype(gRefFuncs.ClientPortalManager_DrawPortalSurface))addr;
-			Install_InlineHook(ClientPortalManager_DrawPortalSurface);
 		}
 
 		if (1)
@@ -824,7 +854,6 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			Sig_AddrNotFound(ClientPortalManager_EnableClipPlane);
 
 			gRefFuncs.ClientPortalManager_EnableClipPlane = (decltype(gRefFuncs.ClientPortalManager_EnableClipPlane))addr;
-			Install_InlineHook(ClientPortalManager_EnableClipPlane);
 		}
 
 		if (1)
@@ -834,6 +863,10 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			Sig_AddrNotFound(g_bRenderingPortals);
 			g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient))*(ULONG_PTR *)(addr + 5);
 		}		
+
+		Install_InlineHook(ClientPortalManager_ResetAll);
+		Install_InlineHook(ClientPortalManager_DrawPortalSurface);
+		Install_InlineHook(ClientPortalManager_EnableClipPlane);
 
 		g_bIsSvenCoop = true;
 	}
@@ -1187,7 +1220,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	}
 	else
 	{
-		gEngfuncs.Con_Printf("Failed to locate g_pGameStudioRenderer or EngineStudioRenderer!\n");
+		g_pMetaHookAPI->SysError("Failed to locate g_pGameStudioRenderer or EngineStudioRenderer!\n");
 	}
 
 	return result;
@@ -1216,22 +1249,20 @@ void HUD_Frame(double time)
 {
 	memset(r_numaiments, 0, sizeof(r_numaiments));
 
-	return gExportfuncs.HUD_Frame(time);
+	gExportfuncs.HUD_Frame(time);
 }
+
+//Client DLL Shutting down...
 
 void HUD_Shutdown(void)
 {
 	gExportfuncs.HUD_Shutdown();
 
 	R_SaveProgramStates_f();
-}
 
-//fuck Valve called glEnableClientState(GL_VERTEX_ARRAY) and forgot to disable it.
+	R_Shutdown();
 
-void __fastcall enginesurface_drawFlushText(void *pthis, int dummy)
-{
-	gRefFuncs.enginesurface_drawFlushText(pthis, dummy);
+	GL_Shutdown();
 
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	R_UninstallHooksForClientDLL();
 }

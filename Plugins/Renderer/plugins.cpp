@@ -33,8 +33,7 @@ void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_engin
 
 void IPluginsV4::Shutdown(void)
 {
-	R_Shutdown();
-	GL_Shutdown();
+	
 }
 
 void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
@@ -73,6 +72,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	}
 
 	R_FillAddress();
+	R_InstallHooks();
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
@@ -99,7 +99,6 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
 
 	GL_Init();
-	R_InstallHook();
 
 	pExportFunc->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
 	pExportFunc->HUD_Redraw = HUD_Redraw;
@@ -108,11 +107,13 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_AddEntity = HUD_AddEntity;
 	pExportFunc->HUD_Frame = HUD_Frame;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
+
+	Uninstall_Hook(DLL_SetModKey);
 }
 
 void IPluginsV4::ExitGame(int iResult)
 {
-	
+	R_UninstallHooksForEngineDLL();
 }
 
 const char completeVersion[] =

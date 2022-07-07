@@ -149,6 +149,8 @@ extern bool g_bPortalClipPlaneEnabled[6];
 
 extern vec4_t g_PortalClipPlane[6];
 
+extern bool g_bIsGLInit;
+
 //For aiment rendering
 
 #define MAX_AIMENTS 32
@@ -277,7 +279,9 @@ extern cvar_t *r_alpha_shift;
 extern cvar_t *r_additive_shift;
 
 void R_FillAddress(void);
-void R_InstallHook(void);
+void R_InstallHooks(void);
+void R_UninstallHooksForEngineDLL(void);
+void R_UninstallHooksForClientDLL(void);
 
 void GammaToLinear(float *color);
 void R_LoadSkyName_SvEngine(const char *name);

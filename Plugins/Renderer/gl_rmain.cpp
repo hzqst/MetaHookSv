@@ -106,6 +106,8 @@ vec4_t g_PortalClipPlane[6] = {0};
 cl_entity_t *r_aiments[MAX_EDICTS][MAX_AIMENTS] = { 0 };
 int r_numaiments[MAX_EDICTS] = { 0 };
 
+bool g_bIsGLInit = false;
+
 float r_entity_matrix[4][4];
 float r_entity_color[4];
 
@@ -1546,6 +1548,8 @@ void GL_Init(void)
 
 	GL_GenerateFrameBuffers();
 	GL_InitShaders();
+
+	g_bIsGLInit = true;
 }
 
 void GL_Shutdown(void)
@@ -1593,31 +1597,34 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 {
 	gRefFuncs.GL_BeginRendering(x, y, width, height);
 
-	//Window resized?
-	if ((*x) != glx  || (*y) != gly || (*width) != glwidth || (*height) != glheight)
+	if (g_bIsGLInit)
 	{
-		glx = *x;
-		gly = *y;
-		glwidth = *width;
-		glheight = *height;
-		GL_GenerateFrameBuffers();
-	}
-	else
-	{
-		glx = *x;
-		gly = *y;
-		glwidth = *width;
-		glheight = *height;
-	}
+		//Window resized?
+		if ((*x) != glx || (*y) != gly || (*width) != glwidth || (*height) != glheight)
+		{
+			glx = *x;
+			gly = *y;
+			glwidth = *width;
+			glheight = *height;
+			GL_GenerateFrameBuffers();
+		}
+		else
+		{
+			glx = *x;
+			gly = *y;
+			glwidth = *width;
+			glheight = *height;
+		}
 
-	//No V_RenderView calls when level changes...
-	if (SCR_IsLoadingVisible())
-	{
-		
-	}
-	else
-	{
-		GL_ClearFinalBuffer();
+		//No V_RenderView calls when level changes...
+		if (SCR_IsLoadingVisible())
+		{
+
+		}
+		else
+		{
+			GL_ClearFinalBuffer();
+		}
 	}
 
 	r_renderview_pass = 0;
@@ -3193,7 +3200,7 @@ void R_SaveProgramStates_f(void)
 	R_SaveLegacySpriteProgramStates();
 	R_SavePortalProgramStates();
 
-	gEngfuncs.Con_Printf("Program states loaded.\n");
+	gEngfuncs.Con_Printf("Program states saved.\n");
 }
 
 void R_LoadProgramStates_f(void)
@@ -3207,7 +3214,7 @@ void R_LoadProgramStates_f(void)
 	R_LoadLegacySpriteProgramStates();
 	R_LoadPortalProgramStates();
 
-	gEngfuncs.Con_Printf("Program states saved.\n");
+	gEngfuncs.Con_Printf("Program states loaded.\n");
 }
 
 void GammaToLinear(float *color)

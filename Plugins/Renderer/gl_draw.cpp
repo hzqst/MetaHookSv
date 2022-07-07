@@ -837,3 +837,13 @@ void BuildGammaTable(float g)
 		lightgammatable[i] = i;
 	}
 }
+
+//Valve called glEnableClientState(GL_VERTEX_ARRAY) and forgot to disable it.
+
+void __fastcall enginesurface_drawFlushText(void *pthis, int dummy)
+{
+	gRefFuncs.enginesurface_drawFlushText(pthis, dummy);
+
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+}
