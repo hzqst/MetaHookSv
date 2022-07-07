@@ -638,8 +638,6 @@ int CWin32Font::GetAscent(void)
 	return m_iAscent;
 }
 
-extern void (__fastcall *g_pfnCWin32Font_GetCharRGBA)(void *pthis, int, int ch, int rgbaX, int rgbaY, int rgbaWide, int rgbaTall, unsigned char *rgba);
-
 void __fastcall CWin32Font_GetCharRGBA(void *pthis, int, int ch, int rgbaX, int rgbaY, int rgbaWide, int rgbaTall, unsigned char *rgba)
 {
 	CWin32Font *pFont = (CWin32Font *)pthis;

@@ -54,7 +54,7 @@ extern vgui::ISchemeManager *g_pScheme;
 extern IKeyValuesSystem *g_pKeyValuesSystem;
 extern IEngineSurface *staticSurface;
 
-static BOOL s_LoadingClientFactory = false;
+static bool s_LoadingClientFactory = false;
 
 void CBaseUI::Initialize(CreateInterfaceFn *factories, int count)
 {
@@ -81,9 +81,9 @@ void CBaseUI::Initialize(CreateInterfaceFn *factories, int count)
 	staticSurface = (IEngineSurface *)factories[0](ENGINE_SURFACE_VERSION, NULL);
 
 	KeyValuesSystem_InstallHook();
-	Surface_InstallHook();
+	Surface_InstallHooks();
 	Scheme_InstallHook();
-	GameUI_InstallHook();
+	GameUI_InstallHooks();
 }
 
 void CBaseUI::Start(struct cl_enginefuncs_s *engineFuncs, int interfaceVersion)
@@ -93,6 +93,10 @@ void CBaseUI::Start(struct cl_enginefuncs_s *engineFuncs, int interfaceVersion)
 
 void CBaseUI::Shutdown(void)
 {
+	ClientVGUI_Shutdown();
+	GameUI_UninstallHooks();
+
+	//GameUI.dll and vgui2.dll will be unloaded by engine!CBaseUI::Shutdown
 	m_pfnCBaseUI_Shutdown(this, 0);
 }
 
@@ -155,6 +159,7 @@ void BaseUI_InstallHook(void)
 		DWORD *pVFTable = *(DWORD **)&s_BaseUI;
 
 		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, (void *)pVFTable[1], (void **)&m_pfnCBaseUI_Initialize);
+		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, (void *)pVFTable[3], (void **)&m_pfnCBaseUI_Shutdown);
 	}
 	else
 	{
@@ -167,5 +172,6 @@ void BaseUI_InstallHook(void)
 		DWORD *pVFTable = *(DWORD **)&s_BaseUI;
 
 		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, (void *)pVFTable[1], (void **)&m_pfnCBaseUI_Initialize);
+		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, (void *)pVFTable[3], (void **)&m_pfnCBaseUI_Shutdown);
 	}
 }

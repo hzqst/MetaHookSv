@@ -900,21 +900,9 @@ void CSurfaceProxy::SetVGUI2MouseControl(bool state)
 	m_pfnSetVGUI2MouseControl(this, 0, state);
 }
 
-#define CWIN32FONT_GETCHARABCWIDTHS_SIG "\x55\x8B\xEC\x83\xEC\x70\x53\x56\x8B\xF1\x8D\x45\xD0\x57\x8D\x4D\xE4\x50\x8B\x45\x08\x8D\x55\xD4\x51\x52\x50\x8B\xCE"
-
-void (__fastcall *m_pfnCWin32Font_GetCharRGBA)(void *pthis, int, int ch, int rgbaX, int rgbaY, int rgbaWide, int rgbaTall, unsigned char *rgba);
-hook_t *g_hCWin32Font_GetCharRGBA;
-
-void Surface_InstallHook(void)
+void Surface_InstallHooks(void)
 {
 	DWORD *pVFTable = *(DWORD **)&g_SurfaceProxy;
-
-	m_pfnCWin32Font_GetCharRGBA = (void (__fastcall *)(void *, int, int, int, int, int, int, unsigned char *))
-		g_pMetaHookAPI->SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, CWIN32FONT_GETCHARABCWIDTHS_SIG, sizeof(CWIN32FONT_GETCHARABCWIDTHS_SIG) - 1);
-	if (m_pfnCWin32Font_GetCharRGBA)
-	{
-		g_hCWin32Font_GetCharRGBA = g_pMetaHookAPI->InlineHook(m_pfnCWin32Font_GetCharRGBA, CWin32Font_GetCharRGBA, (void **)&m_pfnCWin32Font_GetCharRGBA);
-	}
 
 	g_pMetaHookAPI->VFTHook(g_pSurface, 0, 1, (void *)pVFTable[1],   (void **)&m_pfnSurface_Shutdown);
 	g_pMetaHookAPI->VFTHook(g_pSurface, 0, 13, (void *)pVFTable[13], (void **)&m_pfnDrawSetTextFont);
@@ -932,4 +920,9 @@ void Surface_InstallHook(void)
 	g_pMetaHookAPI->VFTHook(g_pSurface, 0, 65, (void *)pVFTable[65], (void **)&m_pfnGetTextSize);
 	g_pMetaHookAPI->VFTHook(g_pSurface, 0, 89, (void *)pVFTable[89], (void **)&m_pfnGetFontAscent);
 	g_pMetaHookAPI->VFTHook(g_pSurface, 0, 91, (void *)pVFTable[91], (void **)&m_pfnSetLanguage);
+}
+
+void Surface_UninstallHooks(void)
+{
+
 }

@@ -9,33 +9,65 @@
 #include <cvardef.h>
 #include "enginedef.h"
 
+struct vgui1_TextImage;
+
 typedef struct
 {	
+	//vgui2
 	char *(*V_strncpy)(char *a1, const char *a2, size_t a3);
+
+	//Engine Sound
 
 	void (*S_Init)(void);
 	sfx_t *(*S_FindName)(char *name, int *pfInCache);//hooked
 	void (*S_StartDynamicSound)(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);//hooked
 	void (*S_StartStaticSound)(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);//hooked
+	sfxcache_t *(*S_LoadSound)(sfx_t *s, channel_t *ch);
+
+	//Engine Surface
+	void(__fastcall *CWin32Font_GetCharRGBA)(void *pthis, int, int ch, int rgbaX, int rgbaY, int rgbaWide, int rgbaTall, unsigned char *rgba);
+
+	//SC ClientDLL
 
 	int(__fastcall *ScClient_FindSoundEx)(void *pthis, int, const char *soundName);
+
+	//FMOD
+
 	HMODULE fmodex;
 	int(__stdcall *FMOD_Sound_getLength)(int a1, void* a2, int a3);//?getLength@Sound@FMOD@@QAG?AW4FMOD_RESULT@@PAII@Z
+
+	//ClientDLL
 
 	float *(*GetClientColor)(int clientIndex);
 
 	//Only available in vgui2 based Counter Strike
 	float *(*GetTextColor)(int colorNum, int clientIndex);
 
+	//ClientDLL
 	bool (__fastcall *GameViewport_AllowedToPrintText)(void *pthis, int);
 
+	//VGUI1
+	void (__fastcall *vgui_TextImage_paint)(vgui1_TextImage *pthis, int, void *panel);
+
+	//Engine
 	client_textmessage_t *(*pfnTextMessageGet)(const char *pName);
+
 	void(*MessageMode_f)(void);
+
 	void(*MessageMode2_f)(void);
-	sfxcache_t *(*S_LoadSound)(sfx_t *s, channel_t *ch);
+
+	//ClientDLL
 	void *(**pfnClientFactory)(void);
-	FARPROC (WINAPI *GetProcAddress)(HMODULE hModule, LPCSTR lpProcName);
-	hook_t *hk_GetProcAddress;
+
+	//Engine init
+	PVOID (*VGUIClient001_CreateInterface)(HINTERFACEMODULE hModule);
+
+	//GameUI
+	void *(__fastcall*COptionsDialog_ctor)(void *pthis, int a2, void *parent);
+	void *(__fastcall*COptionsSubVideo_ctor)(void *pthis, int a2, void *parent);
+	void(__fastcall *COptionsSubVideo_ApplyVidSettings)(void *pthis, int, bool bForceRestart);
+	void *(__fastcall*COptionsSubAudio_ctor)(void *pthis, int a2, void *parent);
+	void *(__fastcall *COptionsDialog_AddPage)(void *pthis, int, void *panel, const char *name);
 }private_funcs_t;
 
 extern void *GameViewport;

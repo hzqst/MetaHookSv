@@ -17,6 +17,11 @@
 #include "Viewport.h"
 
 #include "plugins.h"
+#include "privatefuncs.h"
+
+hook_t *g_phook_COptionsSubVideo_ctor = NULL;
+hook_t *g_phook_COptionsSubVideo_ApplyVidSettings = NULL;
+hook_t *g_phook_COptionsSubAudio_ctor = NULL;
 
 namespace vgui
 {
@@ -44,12 +49,6 @@ void (__fastcall *g_pfnCGameUI_StopProgressBar)(void *pthis, int edx, bool bErro
 int (__fastcall *g_pfnCGameUI_SetProgressBarStatusText)(void *pthis, int edx, const char *statusText) = 0;
 void (__fastcall *g_pfnCGameUI_SetSecondaryProgressBar)(void *pthis, int edx, float progress) = 0;
 void (__fastcall *g_pfnCGameUI_SetSecondaryProgressBarText)(void *pthis, int edx, const char *statusText) = 0;
-
-void *(__fastcall*g_pfnCOptionsDialog_ctor)(void *pthis, int a2, void *parent) = NULL;
-void *(__fastcall*g_pfnCOptionsSubVideo_ctor)(void *pthis, int a2, void *parent) = NULL;
-void (__fastcall *g_pfnCOptionsSubVideo_ApplyVidSettings)(void *pthis, int, bool bForceRestart) = NULL;
-void *(__fastcall*g_pfnCOptionsSubAudio_ctor)(void *pthis, int a2, void *parent) = NULL;
-void *(__fastcall *g_pfnCOptionsDialog_AddPage)(void *pthis, int, void *panel, const char *name) = NULL;
 
 class CGameUI : public IGameUI
 {
@@ -633,7 +632,7 @@ void CAudioAdvancedButton::OnOpenAdvanced(void)
 
 void * __fastcall COptionsSubVideo_ctor(vgui::Panel *pthis, int dummy, vgui::Panel *parent)
 {
-	auto result = g_pfnCOptionsSubVideo_ctor(pthis, dummy, parent);
+	auto result = gPrivateFuncs.COptionsSubVideo_ctor(pthis, dummy, parent);
 
 	auto m_pVideoAdvanced = new CVideoAdvancedButton(pthis, "Advanced", "#GameUI_AdvancedEllipsis");
 
@@ -657,14 +656,14 @@ void * __fastcall COptionsSubVideo_ctor(vgui::Panel *pthis, int dummy, vgui::Pan
 void __fastcall COptionsSubVideo_ApplyVidSettings(vgui::Panel *pthis, int dummy, bool bForceRestart)
 {
 	if(gEngfuncs.pfnGetCvarPointer("r_hdr"))
-		g_pfnCOptionsSubVideo_ApplyVidSettings(pthis, dummy, false);
+		gPrivateFuncs.COptionsSubVideo_ApplyVidSettings(pthis, dummy, false);
 	else
-		g_pfnCOptionsSubVideo_ApplyVidSettings(pthis, dummy, bForceRestart);
+		gPrivateFuncs.COptionsSubVideo_ApplyVidSettings(pthis, dummy, bForceRestart);
 }
 
 void * __fastcall COptionsSubAudio_ctor(vgui::Panel *pthis, int dummy, vgui::Panel *parent)
 {
-	auto result = g_pfnCOptionsSubAudio_ctor(pthis, dummy, parent);
+	auto result = gPrivateFuncs.COptionsSubAudio_ctor(pthis, dummy, parent);
 
 	auto m_pAudioAdvanced = new CAudioAdvancedButton(pthis, "Advanced", "#GameUI_SubtitlesEllipsis");
 	m_pAudioAdvanced->SetPos(258, 160);
@@ -676,7 +675,7 @@ void * __fastcall COptionsSubAudio_ctor(vgui::Panel *pthis, int dummy, vgui::Pan
 	return result;
 }
 
-void GameUI_InstallHook(void)
+void GameUI_InstallHooks(void)
 {
 	auto hGameUI = GetModuleHandleA("GameUI.dll");
 	CreateInterfaceFn GameUICreateInterface = Sys_GetFactory((HINTERFACEMODULE)hGameUI);
@@ -697,7 +696,7 @@ void GameUI_InstallHook(void)
 		auto GameUI_Options_Call = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), pattern, sizeof(pattern) - 1);
 		Sig_VarNotFound(GameUI_Options_Call);
 
-		g_pfnCOptionsDialog_ctor = (decltype(g_pfnCOptionsDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(GameUI_Options_Call, 0x300, [](PUCHAR Candidate) {
+		gPrivateFuncs.COptionsDialog_ctor = (decltype(gPrivateFuncs.COptionsDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(GameUI_Options_Call, 0x300, [](PUCHAR Candidate) {
 			//.text : 10016CB0 55                                                  push    ebp
 			//.text : 10016CB1 8B EC                                               mov     ebp, esp
 			//.text : 10016CB3 6A FF
@@ -722,7 +721,7 @@ void GameUI_InstallHook(void)
 			}
 			return FALSE;
 		});
-		Sig_VarNotFound(g_pfnCOptionsDialog_ctor);
+		Sig_FuncNotFound(COptionsDialog_ctor);
 	}
 
 	if (1)
@@ -732,11 +731,11 @@ void GameUI_InstallHook(void)
 		Sig_VarNotFound(GameUI_Video_String);
 		char pattern[] = "\xE8\x2A\x2A\x2A\x2A\x2A\x2A\x33\xC0\x68\x2A\x2A\x2A\x2A";
 		*(DWORD *)(pattern + 10) = (DWORD)GameUI_Video_String;
-		auto GameUI_Video_Call = g_pMetaHookAPI->SearchPattern(g_pfnCOptionsDialog_ctor, 0x300, pattern, sizeof(pattern) - 1);
+		auto GameUI_Video_Call = g_pMetaHookAPI->SearchPattern(gPrivateFuncs.COptionsDialog_ctor, 0x300, pattern, sizeof(pattern) - 1);
 		Sig_VarNotFound(GameUI_Video_Call);
 
-		g_pfnCOptionsSubVideo_ctor = (decltype(g_pfnCOptionsSubVideo_ctor))GetCallAddress(GameUI_Video_Call);
-		Sig_VarNotFound(g_pfnCOptionsSubVideo_ctor);
+		gPrivateFuncs.COptionsSubVideo_ctor = (decltype(gPrivateFuncs.COptionsSubVideo_ctor))GetCallAddress(GameUI_Video_Call);
+		Sig_FuncNotFound(COptionsSubVideo_ctor);
 	}
 
 	if (1)
@@ -746,11 +745,11 @@ void GameUI_InstallHook(void)
 		Sig_VarNotFound(GameUI_Audio_String);
 		char pattern[] = "\xE8\x2A\x2A\x2A\x2A\x2A\x2A\x33\xC0\x68\x2A\x2A\x2A\x2A";
 		*(DWORD *)(pattern + 10) = (DWORD)GameUI_Audio_String;
-		auto GameUI_Audio_Call = g_pMetaHookAPI->SearchPattern(g_pfnCOptionsDialog_ctor, 0x300, pattern, sizeof(pattern) - 1);
+		auto GameUI_Audio_Call = g_pMetaHookAPI->SearchPattern(gPrivateFuncs.COptionsDialog_ctor, 0x300, pattern, sizeof(pattern) - 1);
 		Sig_VarNotFound(GameUI_Audio_Call);
 
-		g_pfnCOptionsSubAudio_ctor = (decltype(g_pfnCOptionsSubAudio_ctor))GetCallAddress(GameUI_Audio_Call);
-		Sig_VarNotFound(g_pfnCOptionsSubAudio_ctor);
+		gPrivateFuncs.COptionsSubAudio_ctor = (decltype(gPrivateFuncs.COptionsSubAudio_ctor))GetCallAddress(GameUI_Audio_Call);
+		Sig_FuncNotFound(COptionsSubAudio_ctor);
 	}
 
 	if (1)
@@ -763,7 +762,7 @@ void GameUI_InstallHook(void)
 		auto SetVideoMode_StringPush = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), pattern, sizeof(pattern) - 1);
 		Sig_VarNotFound(SetVideoMode_StringPush);
 
-		g_pfnCOptionsSubVideo_ApplyVidSettings = (decltype(g_pfnCOptionsSubVideo_ApplyVidSettings))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(SetVideoMode_StringPush, 0x300, [](PUCHAR Candidate) {
+		gPrivateFuncs.COptionsSubVideo_ApplyVidSettings = (decltype(gPrivateFuncs.COptionsSubVideo_ApplyVidSettings))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(SetVideoMode_StringPush, 0x300, [](PUCHAR Candidate) {
 			//  .text : 1001D2C0 55                                                  push    ebp
 			//	.text : 1001D2C1 8B EC                                               mov     ebp, esp
 			//	.text : 1001D2C3 81 EC 0C 02 00 00                                   sub     esp, 20Ch
@@ -785,10 +784,17 @@ void GameUI_InstallHook(void)
 
 			return FALSE;
 		});
-		Sig_VarNotFound(g_pfnCOptionsSubVideo_ApplyVidSettings);
+		Sig_FuncNotFound(COptionsSubVideo_ApplyVidSettings);
 	}
 
-	g_pMetaHookAPI->InlineHook(g_pfnCOptionsSubVideo_ctor, COptionsSubVideo_ctor, (void **)&g_pfnCOptionsSubVideo_ctor);
-	g_pMetaHookAPI->InlineHook(g_pfnCOptionsSubVideo_ApplyVidSettings, COptionsSubVideo_ApplyVidSettings, (void **)&g_pfnCOptionsSubVideo_ApplyVidSettings);
-	g_pMetaHookAPI->InlineHook(g_pfnCOptionsSubAudio_ctor, COptionsSubAudio_ctor, (void **)&g_pfnCOptionsSubAudio_ctor);
+	Install_InlineHook(COptionsSubVideo_ctor);
+	Install_InlineHook(COptionsSubVideo_ApplyVidSettings);
+	Install_InlineHook(COptionsSubAudio_ctor);
+}
+
+void GameUI_UninstallHooks(void)
+{
+	Uninstall_Hook(COptionsSubVideo_ctor);
+	Uninstall_Hook(COptionsSubVideo_ApplyVidSettings);
+	Uninstall_Hook(COptionsSubAudio_ctor);
 }

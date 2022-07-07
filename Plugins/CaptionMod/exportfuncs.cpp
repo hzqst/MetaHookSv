@@ -54,6 +54,13 @@ int HUD_Redraw(float time, int intermission)
 	return gExportfuncs.HUD_Redraw(time, intermission);
 }
 
+void HUD_Shutdown(void)
+{
+	Client_UninstallHooks();
+
+	gExportfuncs.HUD_Shutdown();
+}
+
 void HUD_Frame(double time)
 {
 	if(g_pViewPort)
@@ -219,7 +226,6 @@ void HUD_Init(void)
 	hud_saytext = gEngfuncs.pfnGetCvarPointer("hud_saytext");
 	if (!hud_saytext)
 		hud_saytext = gEngfuncs.pfnRegisterVariable("hud_saytext", "1", FCVAR_CLIENTDLL);
-
 
 	cap_debug = gEngfuncs.pfnRegisterVariable("cap_debug", "0", FCVAR_CLIENTDLL);
 	cap_enabled = gEngfuncs.pfnRegisterVariable("cap_enabled", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
@@ -481,21 +487,12 @@ IBaseInterface *NewCreateInterface(const char *pName, int *pReturnCode)
 	if (fn)
 		return fn;
 
-	fnCreateInterface = (decltype(NewCreateInterface) *)gPrivateFuncs.GetProcAddress(g_hClientDll, CREATEINTERFACE_PROCNAME);
+	fnCreateInterface = (decltype(NewCreateInterface) *)GetProcAddress(g_hClientDll, CREATEINTERFACE_PROCNAME);
 	fn = fnCreateInterface(pName, pReturnCode);
 	if (fn)
 		return fn;
 
 	return NULL;
-}
-
-FARPROC WINAPI NewGetProcAddress(HMODULE hModule, LPCSTR lpProcName)
-{
-	if(hModule == g_hClientDll && (DWORD)lpProcName > 0xFFFF && !strcmp(lpProcName, CREATEINTERFACE_PROCNAME))
-	{
-		return (FARPROC)NewCreateInterface;
-	}
-	return gPrivateFuncs.GetProcAddress(hModule, lpProcName);
 }
 
 #if defined(_WIN32)

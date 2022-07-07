@@ -64,8 +64,6 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 
-	gPrivateFuncs.GetProcAddress = (decltype(gPrivateFuncs.GetProcAddress))GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetProcAddress");
-
 	gPrivateFuncs.pfnTextMessageGet = pEngfuncs->pfnTextMessageGet;
 
 	DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gEngfuncs.GetClientTime, 0x20, "\xDD\x05", sizeof("\xDD\x05") - 1);
@@ -74,7 +72,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	cl_oldtime = cl_time + 1;
 
 	Engine_FillAddress();
-	Engine_InstallHook();
+	Engine_InstallHooks();
 	BaseUI_InstallHook();
 }
 
@@ -89,6 +87,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_VidInit = HUD_VidInit;
 	pExportFunc->HUD_Frame = HUD_Frame;
 	pExportFunc->HUD_Redraw = HUD_Redraw;
+	pExportFunc->HUD_Shutdown = HUD_Shutdown;
 	pExportFunc->IN_MouseEvent = IN_MouseEvent;
 	pExportFunc->IN_Accumulate = IN_Accumulate;
 	pExportFunc->CL_CreateMove = CL_CreateMove;
@@ -98,8 +97,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
 
 	Client_FillAddress();
-
-	Install_InlineHook(pfnTextMessageGet);
+	Client_InstallHooks();
 
 	//Try installing hook to interface VClientVGUI001
 	ClientVGUI_InstallHook();
@@ -129,10 +127,9 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 void IPluginsV4::ExitGame(int iResult)
 {
-	if (gPrivateFuncs.hk_GetProcAddress)
-		g_pMetaHookAPI->UnHook(gPrivateFuncs.hk_GetProcAddress);
+	VGUI1_Shutdown();
 
-	ClientVGUI_Shutdown();
+	Engine_UninstallHooks();
 }
 
 const char completeVersion[] =

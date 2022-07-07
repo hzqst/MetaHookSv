@@ -22,12 +22,28 @@
 #define S_STARTSTATICSOUND_SIG "\x83\xEC\x44\x53\x55\x8B\x6C\x24\x58\x56\x85\xED\x57"
 #define S_LOADSOUND_SIG "\x81\xEC\x2A\x2A\x00\x00\x53\x8B\x9C\x24\x2A\x2A\x00\x00\x55\x56\x8A\x03\x57"
 
-double *cl_time;
-double *cl_oldtime;
+double *cl_time = NULL;
+double *cl_oldtime = NULL;
 
 char m_szCurrentLanguage[128] = { 0 };
 
 private_funcs_t gPrivateFuncs = {0};
+
+hook_t *g_phook_S_FindName = NULL;
+hook_t *g_phook_S_StartDynamicSound = NULL;
+hook_t *g_phook_S_StartStaticSound = NULL;
+hook_t *g_phook_ScClient_FindSoundEx = NULL;
+hook_t *g_phook_pfnTextMessageGet = NULL;
+hook_t *g_phook_CWin32Font_GetCharRGBA = NULL;
+
+PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule)
+{
+	if (hModule == (HINTERFACEMODULE)g_hClientDll && !g_IsClientVGUI2)
+	{
+		return NewCreateInterface;
+	}
+	return Sys_GetFactory(hModule);
+}
 
 void Engine_FillAddress(void)
 {
@@ -85,86 +101,142 @@ void Engine_FillAddress(void)
 		Sig_FuncNotFound(S_LoadSound);
 	}
 
-	PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
-	PUCHAR SearchEnd = SearchBegin + g_dwEngineTextSize;
-	while (1)
+	if (1)
 	{
+		const char sigs1[] = "VClientVGUI001";
+		auto VClientVGUI001_String = Search_Pattern_Data(sigs1);
+		if (!VClientVGUI001_String)
+			VClientVGUI001_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(VClientVGUI001_String);
+		char pattern[] = "\x8B\x2A\x2A\x6A\x00\x68\x2A\x2A\x2A\x2A\x89";
+		*(DWORD *)(pattern + 6) = (DWORD)VClientVGUI001_String;
+		auto VClientVGUI001_PushString = Search_Pattern(pattern);
+		Sig_VarNotFound(VClientVGUI001_PushString);
+
+		const char sigs2[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x85\xC0";
+		auto Call_VClientVGUI001_CreateInterface = g_pMetaHookAPI->ReverseSearchPattern(VClientVGUI001_PushString, 0x50, sigs2, sizeof(sigs2) - 1);
+		Sig_VarNotFound(Call_VClientVGUI001_CreateInterface);
+
+		PUCHAR address = (PUCHAR)Call_VClientVGUI001_CreateInterface + 15;
+
+		gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
+
+		PUCHAR pfnVGUIClient001_CreateInterface = (PUCHAR)VGUIClient001_CreateInterface;
+
+		int rva = pfnVGUIClient001_CreateInterface - (address + 5);
+
+		g_pMetaHookAPI->WriteMemory(address + 1, (BYTE *)&rva, 4);
+	}
+
+	if (1)
+	{
+		PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
+		PUCHAR SearchEnd = SearchBegin + g_dwEngineTextSize;
+		while (1)
+		{
 #define LANGUAGESTRNCPY_SIG "\x68\x80\x00\x00\x00\x50\x8D"
-		PUCHAR LanguageStrncpy = (PUCHAR)g_pMetaHookAPI->SearchPattern(SearchBegin, SearchEnd - SearchBegin, LANGUAGESTRNCPY_SIG, sizeof(LANGUAGESTRNCPY_SIG) - 1);
-		if (LanguageStrncpy)
-		{
-			typedef struct
+			PUCHAR LanguageStrncpy = (PUCHAR)g_pMetaHookAPI->SearchPattern(SearchBegin, SearchEnd - SearchBegin, LANGUAGESTRNCPY_SIG, sizeof(LANGUAGESTRNCPY_SIG) - 1);
+			if (LanguageStrncpy)
 			{
-				bool bHasPushEax;
-			}LanguageStrncpy_ctx;
-
-			LanguageStrncpy_ctx ctx = { 0 };
-
-			g_pMetaHookAPI->DisasmRanges(LanguageStrncpy, 0x30, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-			{
-				auto ctx = (LanguageStrncpy_ctx *)context;
-				auto pinst = (cs_insn *)inst;
-
-				if (pinst->id == X86_INS_PUSH &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					pinst->detail->x86.operands[0].reg == X86_REG_EAX)
+				typedef struct
 				{
-					ctx->bHasPushEax = true;
-				}
+					bool bHasPushEax;
+				}LanguageStrncpy_ctx;
 
-				if (ctx->bHasPushEax)
-				{
-					if (address[0] == 0xE8)
-					{
-						gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(address);
-						PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
-						int rva = pfnNewV_strncpy - (address + 5);
-						g_pMetaHookAPI->WriteMemory(address + 1, (BYTE *)&rva, 4);
-						return TRUE;
-					}
-					else if (address[0] == 0xEB)
-					{
-						char jmprva = *(char *)(address + 1);
-						PUCHAR jmptarget = address + 2 + jmprva;
+				LanguageStrncpy_ctx ctx = { 0 };
 
-						if (jmptarget[0] == 0xE8)
+				g_pMetaHookAPI->DisasmRanges(LanguageStrncpy, 0x30, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+					{
+						auto ctx = (LanguageStrncpy_ctx *)context;
+						auto pinst = (cs_insn *)inst;
+
+						if (pinst->id == X86_INS_PUSH &&
+							pinst->detail->x86.op_count == 1 &&
+							pinst->detail->x86.operands[0].type == X86_OP_REG &&
+							pinst->detail->x86.operands[0].reg == X86_REG_EAX)
 						{
-							gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(jmptarget);
-							PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
-							int rva = pfnNewV_strncpy - (jmptarget + 5);
-							g_pMetaHookAPI->WriteMemory(jmptarget + 1, (BYTE *)&rva, 4);
-							return TRUE;
+							ctx->bHasPushEax = true;
 						}
-					}
-				}
 
-				if (instCount > 5)
-					return TRUE;
+						if (ctx->bHasPushEax)
+						{
+							if (address[0] == 0xE8)
+							{
+								gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(address);
+								PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
+								int rva = pfnNewV_strncpy - (address + 5);
+								g_pMetaHookAPI->WriteMemory(address + 1, (BYTE *)&rva, 4);
+								return TRUE;
+							}
+							else if (address[0] == 0xEB)
+							{
+								char jmprva = *(char *)(address + 1);
+								PUCHAR jmptarget = address + 2 + jmprva;
 
-				if (address[0] == 0xCC)
-					return TRUE;
+								if (jmptarget[0] == 0xE8)
+								{
+									gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(jmptarget);
+									PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
+									int rva = pfnNewV_strncpy - (jmptarget + 5);
+									g_pMetaHookAPI->WriteMemory(jmptarget + 1, (BYTE *)&rva, 4);
+									return TRUE;
+								}
+							}
+						}
 
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
+						if (instCount > 5)
+							return TRUE;
 
-				return FALSE;
-			}, 0, &ctx);
+						if (address[0] == 0xCC)
+							return TRUE;
 
-			SearchBegin = LanguageStrncpy + sizeof(LANGUAGESTRNCPY_SIG) - 1;
+						if (pinst->id == X86_INS_RET)
+							return TRUE;
+
+						return FALSE;
+					}, 0, &ctx);
+
+				SearchBegin = LanguageStrncpy + sizeof(LANGUAGESTRNCPY_SIG) - 1;
+			}
+			else
+			{
+				break;
+			}
 		}
-		else
-		{
-			break;
-		}
+	}
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+#define CWIN32FONT_GETCHARABCWIDTHS_SIG_SVENGINE "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\x45\x0C\x2A\x2A\x5D\x14"
+
+		gPrivateFuncs.CWin32Font_GetCharRGBA = (decltype(gPrivateFuncs.CWin32Font_GetCharRGBA))Search_Pattern(CWIN32FONT_GETCHARABCWIDTHS_SIG_SVENGINE);
+		Sig_FuncNotFound(CWin32Font_GetCharRGBA);
+	}
+	else
+	{
+#define CWIN32FONT_GETCHARABCWIDTHS_SIG "\x55\x8B\xEC\x83\xEC\x70\x53\x56\x8B\xF1\x8D\x45\xD0\x57\x8D\x4D\xE4\x50\x8B\x45\x08\x8D\x55\xD4\x51\x52\x50\x8B\xCE"
+
+		gPrivateFuncs.CWin32Font_GetCharRGBA = (decltype(gPrivateFuncs.CWin32Font_GetCharRGBA))Search_Pattern(CWIN32FONT_GETCHARABCWIDTHS_SIG);
+		Sig_FuncNotFound(CWin32Font_GetCharRGBA);
 	}
 }
 
-void Engine_InstallHook(void)
+void Engine_InstallHooks(void)
 {
 	Install_InlineHook(S_FindName);
 	Install_InlineHook(S_StartDynamicSound);
 	Install_InlineHook(S_StartStaticSound);
+	Install_InlineHook(pfnTextMessageGet);
+	Install_InlineHook(CWin32Font_GetCharRGBA);
+}
+
+void Engine_UninstallHooks(void)
+{
+	Uninstall_Hook(S_FindName);
+	Uninstall_Hook(S_StartDynamicSound);
+	Uninstall_Hook(S_StartStaticSound);
+	Uninstall_Hook(pfnTextMessageGet);
+	Uninstall_Hook(CWin32Font_GetCharRGBA);
 }
 
 void Client_FillAddress(void)
@@ -181,7 +253,6 @@ void Client_FillAddress(void)
 				g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_FINDSOUND_SIG, Sig_Length(SC_FINDSOUND_SIG));
 
 			Sig_FuncNotFound(ScClient_FindSoundEx);
-			Install_InlineHook(ScClient_FindSoundEx);
 		}
 
 #define SC_GETCLIENTCOLOR_SIG "\x8B\x4C\x24\x04\x85\xC9\x2A\x2A\x6B\xC1\x58"
@@ -199,6 +270,7 @@ void Client_FillAddress(void)
 			Sig_AddrNotFound(GameViewport);
 
 			GameViewport = *(decltype(GameViewport) *)(addr + 2);
+
 			gPrivateFuncs.GameViewport_AllowedToPrintText = (decltype(gPrivateFuncs.GameViewport_AllowedToPrintText))GetCallAddress(addr + 10);
 		}
 
@@ -206,6 +278,7 @@ void Client_FillAddress(void)
 		{
 			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_UPDATECURSORSTATE_SIG, Sig_Length(SC_UPDATECURSORSTATE_SIG));
 			Sig_AddrNotFound(g_iVisibleMouse);
+
 			g_iVisibleMouse = *(decltype(g_iVisibleMouse) *)(addr + 11);
 		}
 	}
@@ -314,4 +387,17 @@ void Client_FillAddress(void)
 
 		Sig_VarNotFound(g_iVisibleMouse);
 	}
+}
+
+void Client_InstallHooks(void)
+{
+	if (gPrivateFuncs.ScClient_FindSoundEx)
+	{
+		Install_InlineHook(ScClient_FindSoundEx);
+	}
+}
+
+void Client_UninstallHooks(void)
+{
+	Uninstall_Hook(ScClient_FindSoundEx);
 }

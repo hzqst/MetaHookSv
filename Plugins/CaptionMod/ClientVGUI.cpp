@@ -50,8 +50,6 @@ IClientVGUI *g_pClientVGUI = NULL;
 
 void CClientVGUI::Initialize(CreateInterfaceFn *factories, int count)
 {
-	//MessageBoxA(NULL, "CClientVGUI::Initialize", "", 0);
-
 	m_pfnCClientVGUI_Initialize(this, 0, factories, count);
 
 	vgui::VGui_InitInterfacesList("CaptionMod", factories, count);
@@ -116,14 +114,11 @@ void CClientVGUI::Shutdown(void)
 
 }
 
-
-FARPROC WINAPI NewGetProcAddress(HMODULE hModule, LPCSTR lpProcName);
-
 void ClientVGUI_InstallHook(void)
 {
 	CreateInterfaceFn ClientVGUICreateInterface = NULL;
 	if(g_hClientDll)
-		ClientVGUICreateInterface = (CreateInterfaceFn)gPrivateFuncs.GetProcAddress(g_hClientDll, CREATEINTERFACE_PROCNAME);
+		ClientVGUICreateInterface = (CreateInterfaceFn)Sys_GetFactory((HINTERFACEMODULE)g_hClientDll);
 	if(!ClientVGUICreateInterface && gExportfuncs.ClientFactory)
 		ClientVGUICreateInterface = (CreateInterfaceFn)gExportfuncs.ClientFactory();
 
@@ -140,10 +135,6 @@ void ClientVGUI_InstallHook(void)
 		g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0,  8, (void *)pVFTable[8], (void **)&m_pfnCClientVGUI_HideClientUI);
 
 		g_IsClientVGUI2 = true;
-	}
-	else
-	{
-		gPrivateFuncs.hk_GetProcAddress = g_pMetaHookAPI->InlineHook(gPrivateFuncs.GetProcAddress, NewGetProcAddress, (void **)&gPrivateFuncs.GetProcAddress);
 	}
 }
 
@@ -166,8 +157,6 @@ public:
 
 void NewClientVGUI::Initialize(CreateInterfaceFn *factories, int count)
 {
-	//MessageBoxA(NULL, "NewClientVGUI::Initialize", "", 0);
-
 	vgui::VGui_InitInterfacesList("CaptionMod", factories, count);
 
 	vgui::scheme()->LoadSchemeFromFile( "captionmod/CaptionScheme.res", "CaptionScheme" );
@@ -317,6 +306,8 @@ public:
 	char* text;
 };
 
+hook_t *g_phook_vgui_TextImage_paint = NULL;
+
 void __fastcall vgui_TextImage_paint(vgui1_TextImage *pthis, int, void *panel)
 {
 	vgui1_ITextImage *pthis2 = (vgui1_ITextImage *)pthis;
@@ -392,8 +383,7 @@ void __fastcall vgui_TextImage_paint(vgui1_TextImage *pthis, int, void *panel)
 			}
 		}
 	}
-	auto orig = (decltype(vgui_TextImage_paint) *)vgui_TextImage_paint_orig;
-	return orig(pthis, 0, panel);
+	return gPrivateFuncs.vgui_TextImage_paint(pthis, 0, panel);
 }
 
 void VGUI1_InstallHook(void)
@@ -405,12 +395,22 @@ void VGUI1_InstallHook(void)
 		vftable_TextImage = (void **)GetProcAddress(g_hVGui1, "??_7TextImage@vgui@@6B@");
 		vftable_Color = (void **)GetProcAddress(g_hVGui1, "??_7Color@vgui@@6B@");
 
-		g_pMetaHookAPI->InlineHook(vftable_TextImage[22], vgui_TextImage_paint, (void **)&vgui_TextImage_paint_orig);
+		gPrivateFuncs.vgui_TextImage_paint = (decltype(gPrivateFuncs.vgui_TextImage_paint))vftable_TextImage[22];
+
+		Install_InlineHook(vgui_TextImage_paint);
 	}
+}
+
+void VGUI1_Shutdown(void)
+{
+	Uninstall_Hook(vgui_TextImage_paint);
 }
 
 void ClientVGUI_Shutdown(void)
 {
-	//if(g_pViewPort)
-	//	delete g_pViewPort;
+	if (g_pViewPort)
+	{
+		delete g_pViewPort;
+		g_pViewPort = NULL;
+	}
 }
