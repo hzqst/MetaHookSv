@@ -45,17 +45,30 @@ void HUD_Init(void)
 	cl_studiosnd_anti_spam_same = gEngfuncs.pfnRegisterVariable("cl_studiosnd_anti_spam_same", "1.0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cl_studiosnd_anti_spam_delay = gEngfuncs.pfnRegisterVariable("cl_studiosnd_anti_spam_delay", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cl_studiosnd_debug = gEngfuncs.pfnRegisterVariable("cl_studiosnd_debug", "0", FCVAR_CLIENTDLL);
+
+	g_StudioEventSoundPlayed.clear();
+}
+
+int HUD_VidInit(void)
+{
+	g_StudioEventSoundPlayed.clear();
+	g_StudioEventSoundDelayed.clear();
+
+	return gExportfuncs.HUD_VidInit();
 }
 
 void HUD_Frame(double a1)
 {
 	gExportfuncs.HUD_Frame(a1);
 
-	auto clientTime = gEngfuncs.GetClientTime();
 	auto local = gEngfuncs.GetLocalPlayer();
 
 	if (!local)
+	{
 		return;
+	}
+
+	auto clientTime = gEngfuncs.GetClientTime();
 
 	auto itor = g_StudioEventSoundDelayed.begin();
 	while (itor != g_StudioEventSoundDelayed.end())
@@ -88,7 +101,7 @@ void HUD_StudioEvent(const struct mstudioevent_s *ev, const struct cl_entity_s *
 {
 	if (ev->event == 5004 && ev->options[0])
 	{
-		float clientTime = (float)gEngfuncs.GetAbsoluteTime();
+		float clientTime = (float)gEngfuncs.GetClientTime();
 
 		bool bFound = false;
 		float max_time = 0;

@@ -4,5 +4,6 @@
 #include "cl_entity.h"
 
 void HUD_Init(void);
+int HUD_VidInit(void);
 void HUD_StudioEvent(const struct mstudioevent_s *ev, const struct cl_entity_s *ent);
 void HUD_Frame(double clientTime);
