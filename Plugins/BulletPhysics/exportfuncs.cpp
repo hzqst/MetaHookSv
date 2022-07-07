@@ -18,6 +18,14 @@
 #include "corpse.h"
 #include "physics.h"
 
+hook_t *g_phook_GameStudioRenderer_StudioSetupBones = NULL;
+hook_t *g_phook_GameStudioRenderer_StudioDrawPlayer = NULL;
+hook_t *g_phook_GameStudioRenderer_StudioDrawModel = NULL;
+hook_t *g_phook_R_StudioSetupBones = NULL;
+hook_t *g_phook_R_StudioDrawPlayer = NULL;
+hook_t *g_phook_R_StudioDrawModel = NULL;
+hook_t *g_phook_efxapi_R_TempModel = NULL;
+
 cl_enginefunc_t gEngfuncs;
 engine_studio_api_t IEngineStudio;
 r_studio_interface_t **gpStudioInterface;
@@ -1122,6 +1130,14 @@ void HUD_Shutdown(void)
 	gExportfuncs.HUD_Shutdown();
 
 	gPhysicsManager.Shutdown();
+
+	Uninstall_Hook(GameStudioRenderer_StudioSetupBones);
+	Uninstall_Hook(GameStudioRenderer_StudioDrawPlayer);
+	Uninstall_Hook(GameStudioRenderer_StudioDrawModel);
+	Uninstall_Hook(R_StudioSetupBones);
+	Uninstall_Hook(R_StudioDrawPlayer);
+	Uninstall_Hook(R_StudioDrawModel);
+	Uninstall_Hook(efxapi_R_TempModel);
 }
 
 void V_CalcRefdef(struct ref_params_s *pparams)

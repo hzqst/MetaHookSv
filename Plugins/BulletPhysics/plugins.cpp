@@ -28,6 +28,8 @@ int g_iEngineType;
 PVOID g_dwClientBase;
 DWORD g_dwClientSize;
 
+hook_t *g_phook_R_NewMap = NULL;
+
 void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
 	g_pInterface = pInterface;
@@ -170,6 +172,8 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 			return FALSE;
 		}, 0, NULL);
 	}
+
+	Install_InlineHook(R_NewMap);
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
@@ -194,12 +198,11 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 		g_pMetaHookAPI->SysError("glewInit failed, %s", glewGetErrorString(err));
 		return;
 	}
-
-	Install_InlineHook(R_NewMap);
 }
 
 void IPluginsV4::ExitGame(int iResult)
 {
+	Uninstall_Hook(R_NewMap);
 }
 
 const char completeVersion[] =
