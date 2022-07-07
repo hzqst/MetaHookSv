@@ -2590,9 +2590,10 @@ ragdoll_itor CPhysicsManager::FreeRagdollInternal(ragdoll_itor &itor)
 
 			if (rig->rigbody->getCollisionShape())
 			{
-				if (rig->rigbody->getCollisionShape()->getUserPointer())
+				if (rig->rigbody->getCollisionShape()->getShapeType() == TRIANGLE_MESH_SHAPE_PROXYTYPE &&
+					rig->rigbody->getCollisionShape()->getUserPointer())
 				{
-					delete rig->rigbody->getCollisionShape()->getUserPointer();
+					delete (btTriangleIndexVertexArray *)rig->rigbody->getCollisionShape()->getUserPointer();
 				}
 
 				delete rig->rigbody->getCollisionShape();
