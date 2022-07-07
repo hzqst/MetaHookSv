@@ -703,6 +703,8 @@ void HUD_Init(void)
 	scmodel_usemirror = gEngfuncs.pfnRegisterVariable("scmodel_usemirror",
 		(!strcmp(SteamApps()->GetCurrentGameLanguage(), "schinese")) ? "2" : "0",
 		FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	gEngfuncs.pfnAddCommand("scmodel_reload", SCModel_Reload_f);
 }
 
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
