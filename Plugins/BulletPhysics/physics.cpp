@@ -1298,9 +1298,51 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 
 void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time)
 {
+	if (frame_time <= 0)
+		return;
+
+	auto pTEnt = *ppTempEntActive;
+
+	while (pTEnt)
+	{
+		if (pTEnt->entity.curstate.iuser4 == PhyCorpseFlag &&
+			pTEnt->entity.curstate.iuser3 >= ENTINDEX_TEMPENTITY &&
+			pTEnt->entity.curstate.owner >= 1 && pTEnt->entity.curstate.owner <= gEngfuncs.GetMaxClients())
+		{
+			auto ent = &pTEnt->entity;
+			auto itor = m_ragdollMap.find(pTEnt->entity.curstate.iuser3);
+			if (itor != m_ragdollMap.end())
+			{
+				UpdateRagdoll(ent, itor->second, frame_time, client_time);
+
+				//Fake messagenum, just mark as active
+				ent->curstate.messagenum = (*cl_parsecount);
+			}
+		}
+
+		pTEnt = pTEnt->next;
+	}
+
 	for (auto itor = m_ragdollMap.begin(); itor != m_ragdollMap.end();)
 	{
-		auto ent = gEngfuncs.GetEntityByIndex(itor->first);
+		int entindex = itor->first;
+
+		if (entindex >= ENTINDEX_TEMPENTITY)
+		{
+			//Remove inactive tents
+			auto tent = &gTempEnts[entindex - ENTINDEX_TEMPENTITY];
+			if (tent->entity.curstate.messagenum != (*cl_parsecount))
+			{
+				itor = FreeRagdollInternal(itor);
+			}
+			else
+			{
+				itor++;
+			}
+			continue;
+		}
+		
+		auto ent = gEngfuncs.GetEntityByIndex(entindex);
 
 		if (!IsEntityPresent(ent) ||
 			!UpdateRagdoll(ent, itor->second, frame_time, client_time))
@@ -1344,6 +1386,10 @@ void CPhysicsManager::StepSimulation(double frametime)
 	{
 		gEngfuncs.Cvar_SetValue("bv_simrate", 128);
 	}
+
+	if (frametime <= 0)
+		return;
+
 	m_dynamicsWorld->stepSimulation(frametime, 3, 1.0f / bv_simrate->value);
 }
 
@@ -2798,14 +2844,14 @@ bool CPhysicsManager::IsValidRagdoll(ragdoll_itor &itor)
 	return (itor != m_ragdollMap.end()) ? true : false;
 }
 
-ragdoll_itor CPhysicsManager::FindRagdollEx(int tentindex)
+ragdoll_itor CPhysicsManager::FindRagdollEx(int entindex)
 {
-	return m_ragdollMap.find(tentindex);
+	return m_ragdollMap.find(entindex);
 }
 
-CRagdollBody *CPhysicsManager::FindRagdoll(int tentindex)
+CRagdollBody *CPhysicsManager::FindRagdoll(int entindex)
 {
-	auto itor = FindRagdollEx(tentindex);
+	auto itor = FindRagdollEx(entindex);
 
 	if (itor != m_ragdollMap.end())
 	{
@@ -2813,6 +2859,36 @@ CRagdollBody *CPhysicsManager::FindRagdoll(int tentindex)
 	}
 
 	return NULL;
+}
+
+bool CPhysicsManager::ChangeRagdollEntIndex(int old_entindex, int new_entindex)
+{
+	auto itor = FindRagdollEx(old_entindex);
+	if (itor != m_ragdollMap.end())
+	{
+		return ChangeRagdollEntIndex(itor, new_entindex);
+	}
+
+	return false;
+}
+
+bool CPhysicsManager::ChangeRagdollEntIndex(ragdoll_itor &itor, int new_entindex)
+{
+	auto new_itor = m_ragdollMap.find(new_entindex);
+	if (new_itor == m_ragdollMap.end())
+	{
+		auto ragdoll = itor->second;
+
+		m_ragdollMap.erase(itor);
+
+		m_ragdollMap[new_entindex] = ragdoll;
+
+		ragdoll->m_entindex = new_entindex;
+
+		return true;
+	}
+
+	return false;
 }
 
 void CPhysicsManager::ResetPose(CRagdollBody *ragdoll, entity_state_t *curstate)

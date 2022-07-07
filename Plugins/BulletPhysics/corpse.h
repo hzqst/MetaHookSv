@@ -6,8 +6,6 @@
 #include <unordered_map>
 #include <set>
 
-#define PhyCorpseFlag (1145141919)
-
 typedef struct
 {
 	bool bIsDying;

@@ -12,6 +12,7 @@
 #include <mathlib.h>
 
 #include "plugins.h"
+#include "enginedef.h"
 #include "exportfuncs.h"
 #include "privatehook.h"
 #include "message.h"
@@ -329,14 +330,14 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 	if ((flags & STUDIO_RENDER) &&
 		!currententity->player &&
 		!currententity->index &&
-		!currententity->curstate.messagenum &&
 		currententity->curstate.iuser4 == PhyCorpseFlag &&
+		currententity->curstate.iuser3 >= ENTINDEX_TEMPENTITY &&
 		currententity->curstate.owner >= 1 && currententity->curstate.owner <= gEngfuncs.GetMaxClients()
 		)
 	{
 		auto model = currententity->model;
 
-		int entindex = currententity->curstate.owner;
+		int entindex = currententity->curstate.iuser3;
 
 		auto ragdoll = gPhysicsManager.FindRagdoll(entindex);
 		if (!ragdoll)
@@ -347,7 +348,7 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 			{
 				gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, 0);
 
-				ragdoll = gPhysicsManager.CreateRagdoll(cfg, currententity->curstate.owner, true);
+				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex, true);
 
 				goto has_ragdoll_clcorpse;
 			}
@@ -1107,6 +1108,8 @@ void HUD_TempEntUpdate(
 	int(*Callback_AddVisibleEntity)(cl_entity_t *pEntity),
 	void(*Callback_TempEntPlaySound)(TEMPENTITY *pTemp, float damp))
 {
+	gExportfuncs.HUD_TempEntUpdate(frametime, client_time, cl_gravity, ppTempEntFree, ppTempEntActive, Callback_AddVisibleEntity, Callback_TempEntPlaySound);
+
 	auto levelname = gEngfuncs.pfnGetLevelName();
 	if (levelname && levelname[0])
 	{
@@ -1114,8 +1117,6 @@ void HUD_TempEntUpdate(
 		gPhysicsManager.UpdateTempEntity(ppTempEntActive, frametime, client_time);
 		gPhysicsManager.StepSimulation(frametime);
 	}
-
-	return gExportfuncs.HUD_TempEntUpdate(frametime, client_time, cl_gravity, ppTempEntFree, ppTempEntActive, Callback_AddVisibleEntity, Callback_TempEntPlaySound);
 }
 
 void HUD_Frame(double frametime)

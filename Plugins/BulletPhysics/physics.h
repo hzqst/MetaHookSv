@@ -543,8 +543,10 @@ public:
 	void RemoveAllRagdolls();
 	void RemoveAllStatics(); 
 	bool IsValidRagdoll(ragdoll_itor &itor);
-	CRagdollBody *FindRagdoll(int tentindex);
-	ragdoll_itor FindRagdollEx(int tentindex);
+	CRagdollBody *FindRagdoll(int entindex);
+	ragdoll_itor FindRagdollEx(int entindex);
+	bool ChangeRagdollEntIndex(int old_entindex, int new_entindex);
+	bool ChangeRagdollEntIndex(ragdoll_itor &itor, int new_entindex);
 	bool UpdateKinematic(CRagdollBody *ragdoll, int iActivityType, entity_state_t *curstate);
 	void ResetPose(CRagdollBody *ragdoll, entity_state_t *curstate);
 	void ApplyBarnacle(CRagdollBody *ragdoll, cl_entity_t *barnacleEntity);

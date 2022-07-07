@@ -88,9 +88,16 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 			cl_parsecount = *(int **)(addr + 2);
 		}
 
+#define GTEMPENTS_SIG_SVENGINE "\x68\x00\xE0\x5F\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xA3"
+		{
+			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_dwEngineTextBase, g_dwEngineTextSize, GTEMPENTS_SIG_SVENGINE, sizeof(GTEMPENTS_SIG_SVENGINE) - 1);
+			Sig_AddrNotFound(gTempEnts);
+			gTempEnts = *(decltype(gTempEnts)*)(addr + 8);
+		}
+
 		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_SVENGINE);
 		Sig_FuncNotFound(R_NewMap);
-		
+
 	}
 	else
 	{
@@ -110,6 +117,13 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_dwEngineTextBase, g_dwEngineTextSize, CL_PARSECOUNT_SIG_NEW, sizeof(CL_PARSECOUNT_SIG_NEW) - 1);
 			Sig_AddrNotFound(cl_parsecount);
 			cl_parsecount = *(int **)(addr + 2);
+		}
+
+#define GTEMPENTS_SIG_NEW "\x68\x30\x68\x17\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xE8"
+		{
+			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_dwEngineTextBase, g_dwEngineTextSize, GTEMPENTS_SIG_NEW, sizeof(GTEMPENTS_SIG_NEW) - 1);
+			Sig_AddrNotFound(gTempEnts);
+			gTempEnts = *(decltype(gTempEnts)*)(addr + 8);
 		}
 
 		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_NEW);

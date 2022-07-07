@@ -30,6 +30,7 @@ typedef struct
 void R_NewMap(void);
 TEMPENTITY *efxapi_R_TempModel(float *pos, float *dir, float *angles, float life, int modelIndex, int soundtype);
 
+extern TEMPENTITY *gTempEnts;
 extern int *r_visframecount;
 extern int *cl_parsecount;
 extern void *mod_known;
