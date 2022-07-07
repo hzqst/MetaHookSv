@@ -101,7 +101,7 @@ void Engine_FillAddress(void)
 		Sig_FuncNotFound(S_LoadSound);
 	}
 
-	if (1)
+	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char sigs1[] = "VClientVGUI001";
 		auto VClientVGUI001_String = Search_Pattern_Data(sigs1);
@@ -118,6 +118,32 @@ void Engine_FillAddress(void)
 		Sig_VarNotFound(Call_VClientVGUI001_CreateInterface);
 
 		PUCHAR address = (PUCHAR)Call_VClientVGUI001_CreateInterface + 15;
+
+		gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
+
+		PUCHAR pfnVGUIClient001_CreateInterface = (PUCHAR)VGUIClient001_CreateInterface;
+
+		int rva = pfnVGUIClient001_CreateInterface - (address + 5);
+
+		g_pMetaHookAPI->WriteMemory(address + 1, (BYTE *)&rva, 4);
+	}
+	else 
+	{
+		const char sigs1[] = "VClientVGUI001";
+		auto VClientVGUI001_String = Search_Pattern_Data(sigs1);
+		if (!VClientVGUI001_String)
+			VClientVGUI001_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(VClientVGUI001_String);
+		char pattern[] = "\x8B\x2A\x2A\x6A\x00\x68\x2A\x2A\x2A\x2A\x89";
+		*(DWORD *)(pattern + 6) = (DWORD)VClientVGUI001_String;
+		auto VClientVGUI001_PushString = Search_Pattern(pattern);
+		Sig_VarNotFound(VClientVGUI001_PushString);
+
+		const char sigs2[] = "\xA1\x2A\x2A\x2A\x2A\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x85\xC0";
+		auto Call_VClientVGUI001_CreateInterface = g_pMetaHookAPI->ReverseSearchPattern(VClientVGUI001_PushString, 0x50, sigs2, sizeof(sigs2) - 1);
+		Sig_VarNotFound(Call_VClientVGUI001_CreateInterface);
+
+		PUCHAR address = (PUCHAR)Call_VClientVGUI001_CreateInterface + 6;
 
 		gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
 
@@ -205,6 +231,8 @@ void Engine_FillAddress(void)
 		}
 	}
 
+	//TODO: Remove this? Looks like not used anymore?
+#if 0
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 #define CWIN32FONT_GETCHARABCWIDTHS_SIG_SVENGINE "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\x45\x0C\x2A\x2A\x5D\x14"
@@ -219,6 +247,7 @@ void Engine_FillAddress(void)
 		gPrivateFuncs.CWin32Font_GetCharRGBA = (decltype(gPrivateFuncs.CWin32Font_GetCharRGBA))Search_Pattern(CWIN32FONT_GETCHARABCWIDTHS_SIG);
 		Sig_FuncNotFound(CWin32Font_GetCharRGBA);
 	}
+#endif
 }
 
 void Engine_InstallHooks(void)
@@ -227,7 +256,9 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(S_StartDynamicSound);
 	Install_InlineHook(S_StartStaticSound);
 	Install_InlineHook(pfnTextMessageGet);
+#if 0
 	Install_InlineHook(CWin32Font_GetCharRGBA);
+#endif
 }
 
 void Engine_UninstallHooks(void)
@@ -236,7 +267,9 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(S_StartDynamicSound);
 	Uninstall_Hook(S_StartStaticSound);
 	Uninstall_Hook(pfnTextMessageGet);
+#if 0
 	Uninstall_Hook(CWin32Font_GetCharRGBA);
+#endif
 }
 
 void Client_FillAddress(void)
