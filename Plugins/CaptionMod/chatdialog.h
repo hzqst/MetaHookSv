@@ -220,7 +220,9 @@ public:
 			return;
 		}
 		else
+		{
 			BaseClass::OnKeyCodeTyped(code);
+		}
 	}
 
 private:

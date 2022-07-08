@@ -1,5 +1,6 @@
 #include <metahook.h>
 #include "BaseUI.h"
+#include <IGameUI.h>
 #include <VGUI\IScheme.h>
 #include <VGUI\ILocalize.h>
 #include <VGUI\ISurface.h>
@@ -8,8 +9,12 @@
 #include <IEngineSurface.h>
 #include "vgui_internal.h"
 #include "IKeyValuesSystem.h"
+#include "ViewPort.h"
+
 #include "exportfuncs.h"
 #include "privatefuncs.h"
+
+extern IGameUI *g_pGameUI;
 
 namespace vgui
 {
@@ -102,6 +107,12 @@ void CBaseUI::Shutdown(void)
 
 int CBaseUI::Key_Event(int down, int keynum, const char *pszCurrentBinding)
 {
+	if (g_pGameUI && !g_pGameUI->IsGameUIActive() &&
+		g_pViewPort && g_pViewPort->IsChatDialogOpened())
+	{
+		return vgui::surface()->NeedKBInput();
+	}
+
 	return m_pfnCBaseUI_Key_Event(this, 0, down, keynum, pszCurrentBinding);
 }
 
@@ -160,6 +171,7 @@ void BaseUI_InstallHook(void)
 
 		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, (void *)pVFTable[1], (void **)&m_pfnCBaseUI_Initialize);
 		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, (void *)pVFTable[3], (void **)&m_pfnCBaseUI_Shutdown);
+		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 4, (void *)pVFTable[4], (void **)&m_pfnCBaseUI_Key_Event);
 	}
 	else
 	{
@@ -173,5 +185,6 @@ void BaseUI_InstallHook(void)
 
 		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, (void *)pVFTable[1], (void **)&m_pfnCBaseUI_Initialize);
 		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, (void *)pVFTable[3], (void **)&m_pfnCBaseUI_Shutdown);
+		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 4, (void *)pVFTable[4], (void **)&m_pfnCBaseUI_Key_Event);
 	}
 }

@@ -684,7 +684,7 @@ void GameUI_InstallHooks(void)
 	DWORD *pVFTable = *(DWORD **)&s_GameUI;
 
 	//g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  1, (void *)pVFTable[1], (void **)&g_pfnCGameUI_Initialize);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  2, (void *)pVFTable[2], (void **)&g_pfnCGameUI_Start);
+	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 2, (void *)pVFTable[2], (void **)&g_pfnCGameUI_Start);
 
 	if (1)
 	{

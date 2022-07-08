@@ -127,6 +127,7 @@ public:
 	void RemoveDictionaryHash(CDictionary *dict, const char *value);
 
 	bool AllowedToPrintText(void);
+	bool IsChatDialogOpened(void);
 	void StartMessageMode(void);
 	void StartMessageMode2(void);
 	void ChatPrintf(int iPlayerIndex, const wchar_t *buffer);

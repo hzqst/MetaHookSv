@@ -895,6 +895,11 @@ bool CViewport::AllowedToPrintText(void)
 	return true;
 }
 
+bool CViewport::IsChatDialogOpened(void)
+{
+	return m_pChatDialog->IsVisible();
+}
+
 void CViewport::StartMessageMode(void)
 {
 	m_pChatDialog->StartMessageMode(MM_SAY);
