@@ -77,7 +77,7 @@ void HUD_Frame(double a1)
 		{
 			auto ent = gEngfuncs.GetEntityByIndex(itor->entindex);
 			
-			if (ent && ent->curstate.messagenum == local->curstate.messagenum)
+			if (ent && ent->curstate.messagenum == local->curstate.messagenum)//TODO: change to cl_parsecount? player not emitted will get incorrect messagenum
 			{
 				mstudioevent_s ev;
 				ev.event = 5004;

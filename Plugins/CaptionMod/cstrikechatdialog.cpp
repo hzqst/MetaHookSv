@@ -69,6 +69,17 @@ int CCSChatDialog::GetChatInputOffset(void)
 
 void CCSChatDialog::SetVisible(bool state)
 {
+	if (state && !IsVisible())
+	{
+		m_PreviousAppModal = input()->GetAppModalSurface();
+		input()->SetAppModalSurface(GetVPanel());
+	}
+	else if (!state && IsVisible())
+	{
+		input()->SetAppModalSurface(m_PreviousAppModal);
+		m_PreviousAppModal = NULL;
+	}
+
 	BaseClass::SetVisible(state);
 
 	if (state && !IsMouseInputEnabled())
