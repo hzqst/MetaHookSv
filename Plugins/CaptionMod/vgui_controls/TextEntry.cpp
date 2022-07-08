@@ -3243,13 +3243,13 @@ void TextEntry::OpenEditMenu()
 	int x0, x1;
 	if (GetSelectedRange(x0, x1)) // there is something selected
 	{
-		m_pEditMenu->SetItemEnabled("&Cut", true);
-		m_pEditMenu->SetItemEnabled("C&opy", true);
+		m_pEditMenu->SetItemEnabled("#TextEntry_Cut", true);
+		m_pEditMenu->SetItemEnabled("#TextEntry_Copy", true);
 	}
 	else	// there is nothing selected, disable cut/copy options
 	{
-		m_pEditMenu->SetItemEnabled("&Cut", false);
-		m_pEditMenu->SetItemEnabled("C&opy", false);
+		m_pEditMenu->SetItemEnabled("#TextEntry_Cut", false);
+		m_pEditMenu->SetItemEnabled("#TextEntry_Copy", false);
 	}
 	m_pEditMenu->SetVisible(true);
 	m_pEditMenu->RequestFocus();

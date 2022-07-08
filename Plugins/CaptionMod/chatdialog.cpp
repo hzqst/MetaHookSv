@@ -902,8 +902,8 @@ void CChatDialog::ChatPrintf(int iPlayerIndex, const char *fmt)
 
 	CChatDialogLine *line = (CChatDialogLine *)FindUnusedChatLine();
 
-	if (!line)
-		line = (CChatDialogLine *)FindUnusedChatLine();
+	//if (!line)
+	//	line = (CChatDialogLine *)FindUnusedChatLine();
 
 	if (!line)
 		return;
@@ -996,8 +996,8 @@ void CChatDialog::ChatPrintf(int iPlayerIndex, const wchar_t *fmt)
 
 	CChatDialogLine *line = (CChatDialogLine *)FindUnusedChatLine();
 
-	if (!line)
-		line = (CChatDialogLine *)FindUnusedChatLine();
+	//if (!line)
+	//	line = (CChatDialogLine *)FindUnusedChatLine();
 
 	if (!line)
 		return;

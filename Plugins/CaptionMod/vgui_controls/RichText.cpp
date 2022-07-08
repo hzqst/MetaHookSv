@@ -1439,11 +1439,13 @@ void RichText::CreateEditMenu()
 	// create a drop down cut/copy/paste menu appropriate for this object's states
 	if (m_pEditMenu)
 		delete m_pEditMenu;
+
 	m_pEditMenu = new Menu(this, "EditMenu");
-	
+
+	m_pEditMenu->SetFont( _font );
 	
 	// add cut/copy/paste drop down options if its editable, just copy if it is not
-	m_pEditMenu->AddMenuItem("C&opy", new KeyValues("DoCopySelected"), this);
+	m_pEditMenu->AddMenuItem("#TextEntry_Copy", new KeyValues("DoCopySelected"), this);
 	
 	m_pEditMenu->SetVisible(false);
 	m_pEditMenu->SetParent(this);
@@ -2037,13 +2039,13 @@ void RichText::OpenEditMenu()
 	int x0, x1;
 	if (GetSelectedRange(x0, x1)) // there is something selected
 	{
-		m_pEditMenu->SetItemEnabled("&Cut", true);
-		m_pEditMenu->SetItemEnabled("C&opy", true);
+		m_pEditMenu->SetItemEnabled("#TextEntry_Cut", true);
+		m_pEditMenu->SetItemEnabled("#TextEntry_Copy", true);
 	}
 	else	// there is nothing selected, disable cut/copy options
 	{
-		m_pEditMenu->SetItemEnabled("&Cut", false);
-		m_pEditMenu->SetItemEnabled("C&opy", false);
+		m_pEditMenu->SetItemEnabled("#TextEntry_Cut", false);
+		m_pEditMenu->SetItemEnabled("#TextEntry_Copy", false);
 	}
 	m_pEditMenu->SetVisible(true);
 	m_pEditMenu->RequestFocus();
