@@ -1143,11 +1143,14 @@ void HUD_Shutdown(void)
 
 void V_CalcRefdef(struct ref_params_s *pparams)
 {
-	if (gExportfuncs.CL_IsThirdPerson())
+	auto local = gEngfuncs.GetLocalPlayer();
+	if (local && local->player)
 	{
-		auto local = gEngfuncs.GetLocalPlayer();
+		vec3_t save_origin;
 
-		if (local && local->player)
+		VectorCopy(local->origin, save_origin);
+
+		if (gExportfuncs.CL_IsThirdPerson())
 		{
 			auto ragdoll = gPhysicsManager.FindRagdoll(local->index);
 			if (ragdoll && ragdoll->m_iActivityType != 0)
@@ -1155,6 +1158,12 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 				gPhysicsManager.SyncPlayerView(local, pparams);
 			}
 		}
+
+		gExportfuncs.V_CalcRefdef(pparams);
+
+		VectorCopy(save_origin, local->origin);
+
+		return;
 	}
 
 	gExportfuncs.V_CalcRefdef(pparams);

@@ -1049,9 +1049,8 @@ void CPhysicsManager::SyncPlayerView(cl_entity_t *local, struct ref_params_s *pp
 
 		Vector3BulletToGoldSrc(worldorg);
 
-		pparams->simorg[0] = worldorg[0];
-		pparams->simorg[1] = worldorg[1];
-		pparams->simorg[2] = worldorg[2];
+		VectorCopy(worldorg, pparams->simorg);
+		VectorCopy(worldorg, local->origin);
 	}
 }
 
