@@ -1235,14 +1235,14 @@ int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 		ent->curstate.aiment > 0 &&
 		ent->curstate.aiment < MAX_EDICTS &&
 		ent->model && 
-		ent->model->type ==mod_studio)
+		ent->model->type == mod_studio)
 	{
 		r_aiments[ent->curstate.aiment][r_numaiments[ent->curstate.aiment]] = ent;
 		r_numaiments[ent->curstate.aiment]++;
 		//return 0;
 	}
 
-	return 1;
+	return r;
 }
 
 void HUD_Frame(double time)
