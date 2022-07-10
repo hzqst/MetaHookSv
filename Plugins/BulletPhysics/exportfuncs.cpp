@@ -56,6 +56,9 @@ int *cl_parsecount = NULL;
 void *mod_known = NULL;
 int *mod_numknown = NULL;
 
+int *g_iUser1 = NULL;
+int *g_iUser2 = NULL;
+
 float(*pbonetransform)[MAXSTUDIOBONES][3][4] = NULL;
 float(*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;
 
@@ -1146,22 +1149,29 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 	auto local = gEngfuncs.GetLocalPlayer();
 	if (local && local->player)
 	{
+		auto spectating_player = local;
+
+		if (g_iUser1 && g_iUser2 && (*g_iUser1))
+		{
+			spectating_player = gEngfuncs.GetEntityByIndex(*g_iUser2);
+		}
+
 		vec3_t save_origin;
 
-		VectorCopy(local->origin, save_origin);
+		VectorCopy(spectating_player->origin, save_origin);
 
 		if (gExportfuncs.CL_IsThirdPerson())
 		{
-			auto ragdoll = gPhysicsManager.FindRagdoll(local->index);
+			auto ragdoll = gPhysicsManager.FindRagdoll(spectating_player->index);
 			if (ragdoll && ragdoll->m_iActivityType != 0)
 			{
-				gPhysicsManager.SyncPlayerView(local, pparams);
+				gPhysicsManager.SyncPlayerView(spectating_player, pparams);
 			}
 		}
 
 		gExportfuncs.V_CalcRefdef(pparams);
 
-		VectorCopy(save_origin, local->origin);
+		VectorCopy(save_origin, spectating_player->origin);
 
 		return;
 	}

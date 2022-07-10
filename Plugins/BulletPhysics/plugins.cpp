@@ -206,6 +206,62 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_Shutdown = HUD_Shutdown;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 
+
+	if ((void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson > g_dwClientBase && (void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson < (PUCHAR)g_dwClientBase + g_dwClientSize)
+	{
+		typedef struct
+		{
+			ULONG_PTR Candidates[16];
+			int iNumCandidates;
+		}CL_IsThirdPerson_ctx;
+
+		CL_IsThirdPerson_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges((void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto ctx = (CL_IsThirdPerson_ctx *)context;
+			auto pinst = (cs_insn *)inst;
+
+			if (ctx->iNumCandidates < 16)
+			{
+				if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					(
+						pinst->detail->x86.operands[0].reg == X86_REG_EAX ||
+						pinst->detail->x86.operands[0].reg == X86_REG_EBX ||
+						pinst->detail->x86.operands[0].reg == X86_REG_ECX ||
+						pinst->detail->x86.operands[0].reg == X86_REG_EDX ||
+						pinst->detail->x86.operands[0].reg == X86_REG_ESI ||
+						pinst->detail->x86.operands[0].reg == X86_REG_EDI
+						) &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwClientBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwClientBase + g_dwClientSize)
+				{
+					ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
+					ctx->iNumCandidates++;
+				}
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+			}, 0, &ctx);
+
+		if (ctx.iNumCandidates >= 3 && ctx.Candidates[ctx.iNumCandidates - 1] == ctx.Candidates[ctx.iNumCandidates - 2] + sizeof(int))
+		{
+			g_iUser1 = (decltype(g_iUser1))ctx.Candidates[ctx.iNumCandidates - 2];
+			g_iUser2 = (decltype(g_iUser2))ctx.Candidates[ctx.iNumCandidates - 1];
+		}
+	}
+
+
 	auto err = glewInit();
 	if (GLEW_OK != err)
 	{

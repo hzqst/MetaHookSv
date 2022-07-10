@@ -1040,9 +1040,9 @@ void CPhysicsManager::ReleaseRagdollFromBarnacle(CRagdollBody *ragdoll)
 	}
 }
 
-void CPhysicsManager::SyncPlayerView(cl_entity_t *local, struct ref_params_s *pparams)
+void CPhysicsManager::SyncPlayerView(cl_entity_t *ent, struct ref_params_s *pparams)
 {
-	auto ragdoll = gPhysicsManager.FindRagdoll(local->index);
+	auto ragdoll = gPhysicsManager.FindRagdoll(ent->index);
 	if (ragdoll && ragdoll->m_pelvisRigBody)
 	{
 		auto worldorg = ragdoll->m_pelvisRigBody->rigbody->getWorldTransform().getOrigin();
@@ -1050,7 +1050,7 @@ void CPhysicsManager::SyncPlayerView(cl_entity_t *local, struct ref_params_s *pp
 		Vector3BulletToGoldSrc(worldorg);
 
 		VectorCopy(worldorg, pparams->simorg);
-		VectorCopy(worldorg, local->origin);
+		VectorCopy(worldorg, ent->origin);
 	}
 }
 
