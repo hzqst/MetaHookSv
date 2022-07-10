@@ -1,12 +1,17 @@
 #include <metahook.h>
 #include "cstrikechatdialog.h"
 
+#include <IGameUI.h>
+
 extern int m_iIntermission;
+extern IGameUI *g_pGameUI;
 
 using namespace vgui;
 
 CCSChatDialog::CCSChatDialog(Panel *parent) : BaseClass(parent)
 {
+	m_PreviousAppModal = NULL;
+
 	SetProportional(true);
 	SetSizeable(false);
 }
@@ -53,8 +58,25 @@ void CCSChatDialog::OnThink(void)
 {
 	SetPos(m_iSaveX, m_iSaveY);
 
+	if (!m_PreviousAppModal && IsMouseInputEnabled())
+	{
+		m_PreviousAppModal = input()->GetAppModalSurface();
+		input()->SetAppModalSurface(GetVPanel());
+	}
+	else if (m_PreviousAppModal && !IsMouseInputEnabled())
+	{
+		input()->SetAppModalSurface(m_PreviousAppModal);
+		m_PreviousAppModal = NULL;
+	}
+
 	if (m_iIntermission && IsMouseInputEnabled())
+	{
 		StopMessageMode();
+	}
+	else if (g_pGameUI && g_pGameUI->IsGameUIActive())
+	{
+		StopMessageMode();
+	}
 
 	BaseClass::OnThink();
 }
@@ -69,17 +91,6 @@ int CCSChatDialog::GetChatInputOffset(void)
 
 void CCSChatDialog::SetVisible(bool state)
 {
-	if (state && !IsVisible())
-	{
-		m_PreviousAppModal = input()->GetAppModalSurface();
-		input()->SetAppModalSurface(GetVPanel());
-	}
-	else if (!state && IsVisible())
-	{
-		input()->SetAppModalSurface(m_PreviousAppModal);
-		m_PreviousAppModal = NULL;
-	}
-
 	BaseClass::SetVisible(state);
 
 	if (state && !IsMouseInputEnabled())
