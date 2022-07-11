@@ -102,6 +102,11 @@ void CGameUI::Shutdown(void)
 
 int CGameUI::ActivateGameUI(void)
 {
+	if (g_pViewPort)
+	{
+		g_pViewPort->StopMessageMode();
+	}
+
 	return g_pfnCGameUI_ActivateGameUI(this, 0);
 }
 
@@ -513,13 +518,15 @@ public:
 			vars.m_iYPos = atoi(szTextEntry);
 		}
 
-		g_pViewPort->UpdateSubtitlePanelVars(&vars);
+		if (g_pViewPort)
+			g_pViewPort->UpdateSubtitlePanelVars(&vars);
 	}
 
 	virtual void OnResetData(void)
 	{
 		SubtitlePanelVars_t vars = { 0 };
-		g_pViewPort->QuerySubtitlePanelVars(&vars);
+		if(g_pViewPort)
+			g_pViewPort->QuerySubtitlePanelVars(&vars);
 		
 		m_pPrefixButton->SetSelected(vars.m_iPrefix ? true : false);
 		m_pWaitPlayButton->SetSelected(vars.m_iWaitPlay ? true : false);
@@ -685,6 +692,7 @@ void GameUI_InstallHooks(void)
 
 	//g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  1, (void *)pVFTable[1], (void **)&g_pfnCGameUI_Initialize);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 2, (void *)pVFTable[2], (void **)&g_pfnCGameUI_Start);
+	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 4, (void *)pVFTable[4], (void **)&g_pfnCGameUI_ActivateGameUI);
 
 	if (1)
 	{

@@ -900,6 +900,11 @@ bool CViewport::IsChatDialogOpened(void)
 	return m_pChatDialog->IsVisible();
 }
 
+void CViewport::StopMessageMode(void)
+{
+	m_pChatDialog->StopMessageMode();
+}
+
 void CViewport::StartMessageMode(void)
 {
 	m_pChatDialog->StartMessageMode(MM_SAY);

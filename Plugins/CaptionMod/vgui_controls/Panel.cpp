@@ -2974,9 +2974,9 @@ void Panel::ParentLocalToScreen(int &x, int &y)
 	y = y + py;
 }
 
-void Panel::MakePopup(bool showTaskbarIcon,bool disabled)
+void Panel::MakePopup(bool showTaskbarIcon, bool disabled)
 {
-	surface()->CreatePopup(GetVPanel(), false, showTaskbarIcon,disabled);
+	surface()->CreatePopup(GetVPanel(), false, showTaskbarIcon, disabled);
 }
 
 void Panel::SetCursor(HCursor cursor)

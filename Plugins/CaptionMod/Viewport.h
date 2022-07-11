@@ -128,6 +128,7 @@ public:
 
 	bool AllowedToPrintText(void);
 	bool IsChatDialogOpened(void);
+	void StopMessageMode(void);
 	void StartMessageMode(void);
 	void StartMessageMode2(void);
 	void ChatPrintf(int iPlayerIndex, const wchar_t *buffer);

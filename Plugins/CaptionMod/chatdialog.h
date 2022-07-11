@@ -187,6 +187,7 @@ private:
 private:
 	int m_nMessageMode;
 	vgui::HFont m_hChatFont;
+	vgui::VPANEL m_PreviousAppModal;
 };
 
 class CChatDialogEntry : public vgui::TextEntry

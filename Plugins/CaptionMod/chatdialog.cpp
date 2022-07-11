@@ -255,7 +255,8 @@ int CChatDialog::m_nLineCounter = 1;
 
 CChatDialog::CChatDialog(Panel *parent) : BaseClass(parent, PANEL_CHAT)
 {
-	//MakePopup();
+	m_PreviousAppModal = NULL;
+	MakePopup(false, false);
 	SetZPos(-30);
 
 	vgui::HScheme scheme = vgui::scheme()->LoadSchemeFromFileEx( NULL, "captionmod/ChatScheme.res", "ChatScheme" );
@@ -482,8 +483,18 @@ void CChatDialog::Printf(const wchar_t *fmt, ...)
 
 void CChatDialog::StartMessageMode(int iMessageModeType)
 {
-	if (!IsVisible())
+	/*if (!IsVisible())
+	{
 		SetVisible(true);
+	}*/
+
+	Activate();
+
+	/*if (!m_PreviousAppModal)
+	{
+		m_PreviousAppModal = input()->GetAppModalSurface();
+		input()->SetAppModalSurface(GetVPanel());
+	}*/
 
 	m_nMessageMode = iMessageModeType;
 	m_pChatInput->ClearEntry();
@@ -498,6 +509,8 @@ void CChatDialog::StartMessageMode(int iMessageModeType)
 
 	if (GetChatHistory())
 	{
+		// TERROR: hack to get ChatFont back
+		GetChatHistory()->SetFont(vgui::scheme()->GetIScheme(GetScheme())->GetFont("ChatFont", false));
 		GetChatHistory()->SetMouseInputEnabled(true);
 		GetChatHistory()->SetKeyBoardInputEnabled(false);
 		GetChatHistory()->SetVerticalScrollbar(true);
@@ -511,6 +524,8 @@ void CChatDialog::StartMessageMode(int iMessageModeType)
 
 	SetKeyBoardInputEnabled(true);
 	SetMouseInputEnabled(true);
+
+	m_pChatInput->SetVisible(true);
 
 	vgui::surface()->CalculateMouseVisible();
 
@@ -538,6 +553,12 @@ void CChatDialog::StartMessageMode(int iMessageModeType)
 
 void CChatDialog::StopMessageMode(void)
 {
+	/*if (m_PreviousAppModal)
+	{
+		input()->SetAppModalSurface(m_PreviousAppModal);
+		m_PreviousAppModal = NULL;
+	}*/
+
 	m_nMessageMode = MM_NONE;
 
 	SetKeyBoardInputEnabled(false);

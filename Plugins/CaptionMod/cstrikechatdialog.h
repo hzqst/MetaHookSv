@@ -30,8 +30,6 @@ public:
 	void SetVisible(bool state);
 
 public:
-	vgui::VPANEL m_PreviousAppModal;
-	int m_iSpectator;
 	int m_iSaveX, m_iSaveY;
 };
 
