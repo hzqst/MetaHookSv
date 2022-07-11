@@ -4,6 +4,8 @@ typedef struct
 {
 	void(*R_NewMap)(void);
 	void(*R_RecursiveWorldNode)(void *node);
+	void(*R_DrawTEntitiesOnList)(int onlyClientDraw);
+	//int(*ClientDLL_AddEntity)(int type, struct cl_entity_s *ent);
 
 	//Client GameStudioRenderer
 	int(__fastcall *GameStudioRenderer_StudioDrawModel)(void *pthis, int, int flags);
@@ -30,17 +32,27 @@ typedef struct
 void R_NewMap(void);
 TEMPENTITY *efxapi_R_TempModel(float *pos, float *dir, float *angles, float life, int modelIndex, int soundtype);
 
+void Engine_FillAddreess(void);
+void Client_FillAddress(void);
+
+extern int *r_visframecount;
+extern int *cl_parsecount;
+extern void *cl_frames;
+extern int size_of_frame;
+extern int *cl_viewentity;
+extern void *mod_known;
+extern int *mod_numknown;
+extern TEMPENTITY *gTempEnts;
+
 extern int *g_iUser1;
 extern int *g_iUser2;
 
-extern TEMPENTITY *gTempEnts;
-extern int *r_visframecount;
-extern int *cl_parsecount;
-extern void *mod_known;
-extern int *mod_numknown;
 extern privte_funcs_t gPrivateFuncs;
+
 extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;
+
+extern ref_params_t r_params;
 
 //For Counter-Strike
 typedef struct extra_player_info_s

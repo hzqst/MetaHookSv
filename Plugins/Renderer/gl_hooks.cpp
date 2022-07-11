@@ -2602,6 +2602,23 @@ void R_FillAddress(void)
 		chrome = *(decltype(chrome) *)(addr + 3);
 	}
 
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+#define CL_VIEWENTITY_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x50\x6A\x06\xFF\x35\x2A\x2A\x2A\x2A\xE8"
+		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_SVENGINE);
+		Sig_AddrNotFound(cl_viewentity);
+		cl_viewentity = *(decltype(cl_viewentity)*)(addr + 10);
+	}
+	else
+	{
+#define CL_VIEWENTITY_SIG_NEW "\x8B\x0D\x2A\x2A\x2A\x2A\x6A\x64\x6A\x00\x68\x00\x00\x80\x3F\x68\x00\x00\x80\x3F\x68\x2A\x2A\x2A\x2A\x50"
+		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_NEW);
+		Sig_AddrNotFound(cl_viewentity);
+		cl_viewentity = *(decltype(cl_viewentity)*)(addr + 2);
+	}
+
+
 #define GWATERCOLOR_SIG_SVENGINE "\xDB\x05\x2A\x2A\x2A\x2A\x68\x01\x26\x00\x00\x68\x65\x0B\x00\x00"
 	auto gWaterColor_Pattern = Search_Pattern(GWATERCOLOR_SIG_SVENGINE);
 	Sig_VarNotFound(gWaterColor_Pattern);

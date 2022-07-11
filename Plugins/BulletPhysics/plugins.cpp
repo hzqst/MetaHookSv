@@ -1,6 +1,5 @@
 #include <metahook.h>
 #include <com_model.h>
-#include <capstone.h>
 #include "exportfuncs.h"
 #include "privatehook.h"
 #include "plugins.h"
@@ -42,12 +41,6 @@ void IPluginsV4::Shutdown(void)
 {
 }
 
-#define R_NEWMAP_SIG_SVENGINE "\x55\x8B\xEC\x51\xC7\x45\xFC\x00\x00\x00\x00\xEB\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC\x81\x7D\xFC\x00\x01\x00\x00"
-#define R_NEWMAP_SIG_NEW "\x55\x8B\xEC\x83\xEC\x08\xC7\x45\xFC\x00\x00\x00\x00\x2A\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC\x81\x7D\xFC\x00\x01\x00\x00\x2A\x2A\x8B\x4D\xFC"
-
-#define R_RECURSIVEWORLDNODE_SIG_SVENGINE "\x83\xEC\x08\x53\x8B\x5C\x24\x10\x83\x3B\xFE"
-#define R_RECURSIVEWORLDNODE_SIG_NEW "\x55\x8B\xEC\x83\xEC\x08\x53\x56\x57\x8B\x7D\x08\x83\x3F\xFE\x0F\x2A\x2A\x2A\x2A\x2A\x8B\x47\x04"
-
 void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
 	g_pFileSystem = g_pInterface->FileSystem;
@@ -67,125 +60,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 		g_pMetaHookAPI->SysError("Unsupported engine: %s, buildnum %d", g_pMetaHookAPI->GetEngineTypeName(), g_dwEngineBuildnum);
 	}
 
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))Search_Pattern(R_RECURSIVEWORLDNODE_SIG_SVENGINE);
-		Sig_FuncNotFound(R_RecursiveWorldNode);
-
-		//mov     eax, [edi+4]
-		//mov     ecx, r_visframecount
-#define R_VISFRAMECOUNT_SIG_SVENGINE "\x8B\x43\x04\x3B\x05"
-		{
-			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_RecursiveWorldNode, 0x100, R_VISFRAMECOUNT_SIG_SVENGINE, sizeof(R_VISFRAMECOUNT_SIG_SVENGINE) - 1);
-			Sig_AddrNotFound(r_visframecount);
-			r_visframecount = *(int **)(addr + 5);
-		}
-#define CL_PARSECOUNT_SIG_SVENGINE "\x23\x05\x2A\x2A\x2A\x2A\x69\xC8\xD8\x84\x00\x00"
-		
-		{
-			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_dwEngineTextBase, g_dwEngineTextSize, CL_PARSECOUNT_SIG_SVENGINE, sizeof(CL_PARSECOUNT_SIG_SVENGINE) - 1);
-			Sig_AddrNotFound(cl_parsecount);
-			cl_parsecount = *(int **)(addr + 2);
-		}
-
-#define GTEMPENTS_SIG_SVENGINE "\x68\x00\xE0\x5F\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xA3"
-		{
-			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_dwEngineTextBase, g_dwEngineTextSize, GTEMPENTS_SIG_SVENGINE, sizeof(GTEMPENTS_SIG_SVENGINE) - 1);
-			Sig_AddrNotFound(gTempEnts);
-			gTempEnts = *(decltype(gTempEnts)*)(addr + 8);
-		}
-
-		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_SVENGINE);
-		Sig_FuncNotFound(R_NewMap);
-
-	}
-	else
-	{
-		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))Search_Pattern(R_RECURSIVEWORLDNODE_SIG_NEW);
-		Sig_FuncNotFound(R_RecursiveWorldNode);
-
-		//mov     eax, [edi+4]
-		//mov     ecx, r_visframecount
-#define R_VISFRAMECOUNT_SIG_NEW "\x8B\x47\x04\x8B\x0D"
-		{
-			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_RecursiveWorldNode, 0x100, R_VISFRAMECOUNT_SIG_NEW, sizeof(R_VISFRAMECOUNT_SIG_NEW) - 1);
-			Sig_AddrNotFound(r_visframecount);
-			r_visframecount = *(int **)(addr + 5);
-		}
-#define CL_PARSECOUNT_SIG_NEW "\x8B\x0D\x2A\x2A\x2A\x2A\x23\xC1\x8B\x12"
-		{
-			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_dwEngineTextBase, g_dwEngineTextSize, CL_PARSECOUNT_SIG_NEW, sizeof(CL_PARSECOUNT_SIG_NEW) - 1);
-			Sig_AddrNotFound(cl_parsecount);
-			cl_parsecount = *(int **)(addr + 2);
-		}
-
-#define GTEMPENTS_SIG_NEW "\x68\x30\x68\x17\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xE8"
-		{
-			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_dwEngineTextBase, g_dwEngineTextSize, GTEMPENTS_SIG_NEW, sizeof(GTEMPENTS_SIG_NEW) - 1);
-			Sig_AddrNotFound(gTempEnts);
-			gTempEnts = *(decltype(gTempEnts)*)(addr + 8);
-		}
-
-		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_NEW);
-		Sig_FuncNotFound(R_NewMap);
-	}
-
-#define MOD_KNOWN_SIG "\xB8\x9D\x82\x97\x53\x81\xE9"
-
-	{
-		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_dwEngineTextBase, g_dwEngineTextSize, MOD_KNOWN_SIG, sizeof(MOD_KNOWN_SIG) - 1);
-		Sig_AddrNotFound(mod_known);
-		mod_known = *(void **)(addr + 7);
-	}
-
-	{
-		const char sigs1[] = "Cached models:\n";
-		auto Mod_Print_String = Search_Pattern_Data(sigs1);
-		if (!Mod_Print_String)
-			Mod_Print_String = Search_Pattern_Rdata(sigs1);
-		Sig_VarNotFound(Mod_Print_String);
-		char pattern[] = "\x57\x68\x2A\x2A\x2A\x2A\xE8";
-		*(DWORD *)(pattern + 2) = (DWORD)Mod_Print_String;
-		auto Mod_Print_Call = Search_Pattern(pattern);
-		Sig_VarNotFound(Mod_Print_Call);
-
-		g_pMetaHookAPI->DisasmRanges(Mod_Print_Call, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-		{
-			auto pinst = (cs_insn *)inst;
-
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0)
-			{//A1 84 5C 32 02 mov     eax, mod_numknown
-				DWORD imm = pinst->detail->x86.operands[1].mem.disp;
-
-				mod_numknown = (decltype(mod_numknown))imm;
-			}
-			else if (pinst->id == X86_INS_CMP &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG)
-			{//39 3D 44 32 90 03 cmp     mod_numknown, edi
-				DWORD imm = pinst->detail->x86.operands[0].mem.disp;
-
-				mod_numknown = (decltype(mod_numknown))imm;
-			}
-
-			if (mod_numknown)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-		}, 0, NULL);
-	}
+	Engine_FillAddreess();
 
 	Install_InlineHook(R_NewMap);
 }
@@ -199,6 +74,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	pExportFunc->HUD_Init = HUD_Init;
 	pExportFunc->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
+	pExportFunc->HUD_CreateEntities = HUD_CreateEntities;
 	pExportFunc->HUD_TempEntUpdate = HUD_TempEntUpdate;
 	pExportFunc->HUD_AddEntity = HUD_AddEntity;
 	pExportFunc->HUD_DrawNormalTriangles = HUD_DrawNormalTriangles;
@@ -206,61 +82,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_Shutdown = HUD_Shutdown;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 
-
-	if ((void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson > g_dwClientBase && (void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson < (PUCHAR)g_dwClientBase + g_dwClientSize)
-	{
-		typedef struct
-		{
-			ULONG_PTR Candidates[16];
-			int iNumCandidates;
-		}CL_IsThirdPerson_ctx;
-
-		CL_IsThirdPerson_ctx ctx = { 0 };
-
-		g_pMetaHookAPI->DisasmRanges((void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto ctx = (CL_IsThirdPerson_ctx *)context;
-			auto pinst = (cs_insn *)inst;
-
-			if (ctx->iNumCandidates < 16)
-			{
-				if (pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG &&
-					(
-						pinst->detail->x86.operands[0].reg == X86_REG_EAX ||
-						pinst->detail->x86.operands[0].reg == X86_REG_EBX ||
-						pinst->detail->x86.operands[0].reg == X86_REG_ECX ||
-						pinst->detail->x86.operands[0].reg == X86_REG_EDX ||
-						pinst->detail->x86.operands[0].reg == X86_REG_ESI ||
-						pinst->detail->x86.operands[0].reg == X86_REG_EDI
-						) &&
-					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[1].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwClientBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwClientBase + g_dwClientSize)
-				{
-					ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
-					ctx->iNumCandidates++;
-				}
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-			}, 0, &ctx);
-
-		if (ctx.iNumCandidates >= 3 && ctx.Candidates[ctx.iNumCandidates - 1] == ctx.Candidates[ctx.iNumCandidates - 2] + sizeof(int))
-		{
-			g_iUser1 = (decltype(g_iUser1))ctx.Candidates[ctx.iNumCandidates - 2];
-			g_iUser2 = (decltype(g_iUser2))ctx.Candidates[ctx.iNumCandidates - 1];
-		}
-	}
-
+	Client_FillAddress();
 
 	auto err = glewInit();
 	if (GLEW_OK != err)

@@ -58,6 +58,7 @@ float *g_UserFogEnd;
 int *r_framecount;
 int *r_visframecount;
 
+int *cl_viewentity;
 void *cl_frames;
 int size_of_frame = sizeof(frame_t);
 int *cl_parsecount;
@@ -1080,7 +1081,7 @@ void R_DrawViewModel(void)
 		!r_drawentities->value ||
 		cl_stats[0] <= 0 ||
 		!(*currententity)->model ||
-		r_params.viewentity > r_params.maxclients)
+		(*cl_viewentity) > r_params.maxclients)
 	{
 		auto c = R_LightPoint((*currententity)->origin);
 		(*cl_light_level) = (c.r + c.g + c.b) / 3;
@@ -1728,7 +1729,7 @@ void R_PreDrawViewModel(void)
 	if (!(*currententity)->model)
 		return;
 
-	if (r_params.viewentity > r_params.maxclients)
+	if ((*cl_viewentity) > r_params.maxclients)
 		return;
 
 	switch ((*currententity)->model->type)

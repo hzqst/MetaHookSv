@@ -1,39 +1,39 @@
 [DeathAnim]
-12 120
-13 120
-14 120
-15 80
-16 120
-17 150
-18 30
+12 0
+13 0
+14 0
+15 0
+16 0
+17 0
+18 0
 
 [RigidBody]
-Head   15  6  capsule  -4.0  5.0  0.1   6
-Spine  5   6  capsule  3.0   6.0  1.0   10
-Pelvis 1   2  sphere   3.0   6.0  0.0   10
+Head   15  6  capsule  -4.0  5.0  0.1   30
+Spine  5   6  capsule  3.0   6.0  1.0   60
+Pelvis 1   2  sphere   3.0   6.0  0.0   80
 
-LArm   7   9  capsule  5.0   1.8  5.0   3
-LArm2  9   10 capsule  3.5   1.8  5.0   3
-LHand  10  9  capsule -2.0   1.8  1.5   1
+LArm   7   9  capsule  5.0   1.8  5.0   30
+LArm2  9   10 capsule  3.5   1.8  5.0   30
+LHand  10  9  capsule -2.0   1.8  1.5   10
 
-RArm   11  13 capsule  5.0   1.8  5.0   3
-RArm2  13  14 capsule  3.5   1.8  5.0   3
-RHand  14  13 capsule -2.0   1.8  1.5   1
+RArm   11  13 capsule  5.0   1.8  5.0   30
+RArm2  13  14 capsule  3.5   1.8  5.0   30
+RHand  14  13 capsule -2.0   1.8  1.5   10
 
-LLeg   41  42 capsule  5.0   2.0  16.0  4
-LLeg2  42  43 capsule  9.0   2.0  14.0  4
+LLeg   41  42 capsule  5.0   2.0  16.0  30
+LLeg2  42  43 capsule  9.0   2.0  14.0  30
 
-RLeg   46  47 capsule  5.0   2.0  16.0  4
-RLeg2  47  48 capsule  9.0   2.0  14.0  4
+RLeg   46  47 capsule  5.0   2.0  16.0  30
+RLeg2  47  48 capsule  9.0   2.0  14.0  30
 
 [JiggleBone]
-FakehairL1 56 57 capsule  2.0  1.5  5.0   1
-FakehairL2 57 58 capsule  3.0  1.7  6.0   1
-FakehairL3 58 57 capsule  -4.0 1.9  7.0   1
+FakehairL1 56 57 capsule  2.0  1.5  5.0   10
+FakehairL2 57 58 capsule  3.0  1.7  6.0   10
+FakehairL3 58 57 capsule  -4.0 1.9  7.0   10
 
-FakehairR1 59 60 capsule  2.0  1.5  5.0   1
-FakehairR2 60 61 capsule  3.0  1.7  6.0   1
-FakehairR3 61 60 capsule  -4.0 1.9  7.0   1
+FakehairR1 59 60 capsule  2.0  1.5  5.0   10
+FakehairR2 60 61 capsule  3.0  1.7  6.0   10
+FakehairR3 61 60 capsule  -4.0 1.9  7.0   10
 
 [Constraint]
 Spine  Head   conetwist 6 15   0 0 0     0  6  0        0.01  0.01  0.2
@@ -54,19 +54,19 @@ Pelvis RLeg   conetwist 46 46  0 0 0     0 -7  0        0.1  0.1  0.25
 RLeg2  RLeg   hinge     46 46  0 0 0     0 8 0         -0.6  0.0  0
 
 Head          FakehairL1   conetwist  56 56  0 0 0   0 -4 0       0.5  0.5   0.05
-FakehairL1    FakehairL2   conetwist  57 57  0 0 0   0 -4 0       0.1  0.1   0.5
-FakehairL2    FakehairL3   conetwist  58 58  0 0 0   0  4 0       0.1   0.1    0.5
+FakehairL1    FakehairL2   conetwist  57 57  0 0 0   0 -4 0       0.1  0.1   0.1
+FakehairL2    FakehairL3   conetwist  58 58  0 0 0   0  4 0       0.1  0.1   0.1
 
 Head          FakehairR1   conetwist  59 59  0 0 0   0 -4 0       0.5  0.5   0.05
-FakehairR1    FakehairR2   conetwist  60 60  0 0 0   0 -4 0       0.1  0.1   0.5
-FakehairR2    FakehairR3   conetwist  61 61  0 0 0   0  4 0       0.1   0.1    0.5
+FakehairR1    FakehairR2   conetwist  60 60  0 0 0   0 -4 0       0.1  0.1   0.1
+FakehairR2    FakehairR3   conetwist  61 61  0 0 0   0  4 0       0.1  0.1   0.1
 
 [Barnacle]
-LLeg2   dof6          0  8  0     40000   4   16
+LLeg2   dof6          0  8  0     400000   4   16
 LLeg2   chewlimit     0  0  0     0       1.0  4
-RLeg    dof6          0  0  0     30000  -16  16
+RLeg    dof6          0  0  0     300000  -16  16
 RLeg    chewlimit     0  0  0     0       1.0  4
-Pelvis  chewforce     0  0  0     8000    1.0  0
+Pelvis  chewforce     0  0  0     80000    1.0  0
 
 [Gargantua]
 Head    GargMouth   dof6z    0  0  0     20000  -8  16

@@ -42,6 +42,37 @@ const float r_identity_matrix[4][4] = {
 	{0.0f, 0.0f, 0.0f, 1.0f}
 };
 
+void EulerMatrix(const btVector3& in_euler, btMatrix3x3& out_matrix) {
+	btVector3 angles = in_euler;
+	angles *= SIMD_RADS_PER_DEG;
+
+	btScalar c1(btCos(angles[0]));
+	btScalar c2(btCos(angles[1]));
+	btScalar c3(btCos(angles[2]));
+	btScalar s1(btSin(angles[0]));
+	btScalar s2(btSin(angles[1]));
+	btScalar s3(btSin(angles[2]));
+
+	out_matrix.setValue(c1 * c2, -c3 * s2 - s1 * s3 * c2, s3 * s2 - s1 * c3 * c2,
+		c1 * s2, c3 * c2 - s1 * s3 * s2, -s3 * c2 - s1 * c3 * s2,
+		s1, c1 * s3, c1 * c3);
+}
+
+void MatrixEuler(const btMatrix3x3& in_matrix, btVector3& out_euler) {
+	out_euler[0] = btAsin(in_matrix[2][0]);
+
+	if (btFabs(in_matrix[2][0]) < (1 - 0.001f)) {
+		out_euler[1] = btAtan2(in_matrix[1][0], in_matrix[0][0]);
+		out_euler[2] = btAtan2(in_matrix[2][1], in_matrix[2][2]);
+	}
+	else {
+		out_euler[1] = btAtan2(in_matrix[1][2], in_matrix[1][1]);
+		out_euler[2] = 0;
+	}
+
+	out_euler *= SIMD_DEGS_PER_RAD;
+}
+
 void Matrix3x4ToTransform(const float matrix3x4[3][4], btTransform &trans)
 {
 	float matrix4x4[4][4] = {
@@ -1040,18 +1071,67 @@ void CPhysicsManager::ReleaseRagdollFromBarnacle(CRagdollBody *ragdoll)
 	}
 }
 
-void CPhysicsManager::SyncPlayerView(cl_entity_t *ent, struct ref_params_s *pparams)
+bool CPhysicsManager::SyncThirdPersonView(CRagdollBody *ragdoll, cl_entity_t *ent, struct ref_params_s *pparams)
 {
-	auto ragdoll = gPhysicsManager.FindRagdoll(ent->index);
-	if (ragdoll && ragdoll->m_pelvisRigBody)
+	if (ragdoll->m_pelvisRigBody)
 	{
-		auto worldorg = ragdoll->m_pelvisRigBody->rigbody->getWorldTransform().getOrigin();
+		auto worldTrans = ragdoll->m_pelvisRigBody->rigbody->getWorldTransform();
+		auto worldOrg = worldTrans.getOrigin();
 
-		Vector3BulletToGoldSrc(worldorg);
+		vec3_t origin;
+		origin[0] = worldOrg.getX();
+		origin[1] = worldOrg.getY();
+		origin[2] = worldOrg.getZ();
 
-		VectorCopy(worldorg, pparams->simorg);
-		VectorCopy(worldorg, ent->origin);
+		Vec3BulletToGoldSrc(origin);
+
+		VectorCopy(origin, pparams->simorg);
+		VectorCopy(origin, ent->origin);
+
+		return true;
 	}
+
+	return false;
+}
+
+bool CPhysicsManager::SyncFirstPersonView(CRagdollBody *ragdoll, cl_entity_t *ent, struct ref_params_s *pparams)
+{
+	if (ragdoll->m_headRigBody)
+	{
+		auto worldTrans = ragdoll->m_headRigBody->rigbody->getWorldTransform();
+		auto worldOrg = worldTrans.getOrigin();
+
+		auto worldRot = worldTrans.getBasis();
+
+		btMatrix3x3 rot;
+		EulerMatrix(btVector3(0, 0, 90), rot);
+
+		btVector3 btAngles;
+		MatrixEuler(worldTrans.getBasis() * rot, btAngles);
+
+		vec3_t angles;
+		angles[0] = -btAngles.getX();
+		angles[1] = btAngles.getY();
+		angles[2] = btAngles.getZ();
+		
+		vec3_t origin;
+		origin[0] = worldOrg.getX();
+		origin[1] = worldOrg.getY();
+		origin[2] = worldOrg.getZ();
+
+		Vec3BulletToGoldSrc(origin);
+
+		pparams->viewheight[2] = 0;
+		VectorCopy(origin, pparams->simorg);
+		//VectorCopy(origin, ent->origin);
+		VectorCopy(angles, pparams->cl_viewangles);
+
+		pparams->health = 0;
+
+		return true;
+	}
+
+	return false;
 }
 
 bool CPhysicsManager::HasRagdolls(void)
@@ -1142,8 +1222,8 @@ void CPhysicsManager::UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBod
 bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time)
 {
 	//Don't update if player is not emitted this frame (in firstperson mode)
-	if (ent == gEngfuncs.GetLocalPlayer() && !IsEntityEmitted(ent))
-		return false;
+	//if (ent == gEngfuncs.GetLocalPlayer() && !IsEntityEmitted(ent))
+	//	return false;
 	
 	UpdateRagdollWaterSimulation(ent, ragdoll, frame_time, client_time);
 
@@ -1152,12 +1232,6 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 		if (StudioGetSequenceActivityType(ent->model, &ent->curstate) != 2)
 		{
 			ReleaseRagdollFromGargantua(ragdoll);
-			
-			//Is gibbed ?
-			if (ent->curstate.effects & EF_NODRAW)
-			{
-				return false;
-			}
 
 			return true;
 		}
@@ -1195,11 +1269,6 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 		if (StudioGetSequenceActivityType(ent->model, &ent->curstate) != 2)
 		{
 			ReleaseRagdollFromBarnacle(ragdoll);
-			//Is gibbed ?
-			if (ent->curstate.effects & EF_NODRAW)
-			{
-				return false;
-			}
 
 			return true;
 		}
@@ -1284,11 +1353,6 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 		{
 			if (origin[2] < -99999)
 				return false;
-		}
-		//FxDeadPlayer
-		if (ent->curstate.effects & EF_NODRAW)
-		{
-			return true;
 		}
 	}
 
@@ -2025,37 +2089,6 @@ void BoneMotionState::getWorldTransform(btTransform& worldTrans) const
 void BoneMotionState::setWorldTransform(const btTransform& worldTrans)
 {
 	bonematrix.mult(worldTrans, offsetmatrix.inverse());
-}
-
-void EulerMatrix(const btVector3& in_euler, btMatrix3x3& out_matrix) {
-	btVector3 angles = in_euler;
-	angles *= SIMD_RADS_PER_DEG;
-
-	btScalar c1(btCos(angles[0]));
-	btScalar c2(btCos(angles[1]));
-	btScalar c3(btCos(angles[2]));
-	btScalar s1(btSin(angles[0]));
-	btScalar s2(btSin(angles[1]));
-	btScalar s3(btSin(angles[2]));
-
-	out_matrix.setValue(c1 * c2, -c3 * s2 - s1 * s3 * c2, s3 * s2 - s1 * c3 * c2,
-		c1 * s2, c3 * c2 - s1 * s3 * s2, -s3 * c2 - s1 * c3 * s2,
-		s1, c1 * s3, c1 * c3);
-}
-
-void MatrixEuler(const btMatrix3x3& in_matrix, btVector3& out_euler) {
-	out_euler[0] = btAsin(in_matrix[2][0]);
-
-	if (btFabs(in_matrix[2][0]) < (1 - 0.001f)) {
-		out_euler[1] = btAtan2(in_matrix[1][0], in_matrix[0][0]);
-		out_euler[2] = btAtan2(in_matrix[2][1], in_matrix[2][2]);
-	}
-	else {
-		out_euler[1] = btAtan2(in_matrix[1][2], in_matrix[1][1]);
-		out_euler[2] = 0;
-	}
-
-	out_euler *= SIMD_DEGS_PER_RAD;
 }
 
 void EntityMotionState::getWorldTransform(btTransform& worldTrans) const
@@ -3359,6 +3392,9 @@ CRagdollBody *CPhysicsManager::CreateRagdoll(
 
 			if (rig->name == "Pelvis")
 				ragdoll->m_pelvisRigBody = rig;
+
+			if (rig->name == "Head")
+				ragdoll->m_headRigBody = rig;
 
 			rig->rigbody->setFriction(1);
 			rig->rigbody->setRollingFriction(1);

@@ -112,6 +112,7 @@ extern mplane_t *frustum;
 extern int *r_framecount;
 extern int *r_visframecount;
 
+extern int *cl_viewentity;
 extern void *cl_frames;
 extern int size_of_frame;
 extern int *cl_parsecount;

@@ -313,6 +313,7 @@ public:
 		m_isPlayer = false;
 		m_studiohdr = NULL;
 		m_pelvisRigBody = NULL;
+		m_headRigBody = NULL;
 		m_iActivityType = -1;
 		m_flUpdateKinematicTime = 0;
 		m_bUpdateKinematic = false;
@@ -326,6 +327,7 @@ public:
 	bool m_isPlayer;
 	studiohdr_t *m_studiohdr;
 	CRigBody *m_pelvisRigBody;
+	CRigBody *m_headRigBody;
 	std::vector<CRigBody *> m_barnacleDragRigBody;
 	std::vector<CRigBody *> m_barnacleChewRigBody;
 	std::vector<CRigBody *> m_gargantuaDragRigBody;
@@ -567,8 +569,8 @@ public:
 	bool UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time);
 	void UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time);
 	void UpdateTempEntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time);
-	void SyncPlayerView(cl_entity_t *ent, struct ref_params_s *pparams);
-
+	bool SyncThirdPersonView(CRagdollBody *ragdoll, cl_entity_t *ent, struct ref_params_s *pparams);
+	bool SyncFirstPersonView(CRagdollBody *ragdoll, cl_entity_t *ent, struct ref_params_s *pparams);
 private:
 	ragdoll_itor FreeRagdollInternal(ragdoll_itor &itor);
 	static_itor FreeStaticInternal(static_itor &itor);

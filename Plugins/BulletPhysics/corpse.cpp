@@ -210,6 +210,21 @@ bool IsEntityWater(cl_entity_t* ent)
 	return false;
 }
 
+bool IsEntityDeadPlayer(cl_entity_t* ent)
+{
+	if (ent && ent->model && ent->model->type == mod_studio)
+	{
+		if (!ent->player && ent->curstate.renderfx == kRenderFxDeadPlayer && 
+			ent->curstate.renderamt >= 1 &&
+			ent->curstate.renderamt <= gEngfuncs.GetMaxClients())
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 bool IsEntityPresent(cl_entity_t* ent)
 {
 	if (!ent->model)
@@ -219,6 +234,9 @@ bool IsEntityPresent(cl_entity_t* ent)
 		return false;
 
 	if (ent->curstate.messagenum != (*cl_parsecount))
+		return false;
+
+	if (ent->curstate.effects & EF_NODRAW)
 		return false;
 
 	return true;
