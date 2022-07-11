@@ -584,3 +584,5 @@ typedef enum
 #define SIGNONS 2
 
 #define MAX_VISEDICTS 512
+
+#define PhyCorpseFlag (1145141919)
