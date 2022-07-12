@@ -178,6 +178,13 @@ typedef struct ragdoll_water_control_s
 
 typedef struct ragdoll_config_s
 {
+	ragdoll_config_s()
+	{
+		state = 0;
+		firstperson_angleoffset[0] = 0;
+		firstperson_angleoffset[1] = 0;
+		firstperson_angleoffset[2] = 0;
+	}
 	int state;
 	std::vector<ragdoll_anim_control_t> animcontrol;
 	std::vector<ragdoll_cst_control_t> cstcontrol;
@@ -185,6 +192,7 @@ typedef struct ragdoll_config_s
 	std::vector<ragdoll_bar_control_t> barcontrol;
 	std::vector<ragdoll_gar_control_t> garcontrol;
 	std::vector<ragdoll_water_control_t> watercontrol;
+	vec3_t firstperson_angleoffset;
 }ragdoll_config_t;
 
 ATTRIBUTE_ALIGNED16(class)
@@ -310,13 +318,15 @@ public:
 	{
 		m_barnacleindex = -1;
 		m_gargantuaindex = -1;
-		m_isPlayer = false;
 		m_studiohdr = NULL;
 		m_pelvisRigBody = NULL;
 		m_headRigBody = NULL;
 		m_iActivityType = -1;
 		m_flUpdateKinematicTime = 0;
 		m_bUpdateKinematic = false;
+		m_firstperson_angleoffset[0] = 0;
+		m_firstperson_angleoffset[1] = 0;
+		m_firstperson_angleoffset[2] = 0;
 	}
 
 	int m_barnacleindex;
@@ -324,7 +334,6 @@ public:
 	int m_iActivityType;
 	float m_flUpdateKinematicTime;
 	float m_bUpdateKinematic;
-	bool m_isPlayer;
 	studiohdr_t *m_studiohdr;
 	CRigBody *m_pelvisRigBody;
 	CRigBody *m_headRigBody;
@@ -341,6 +350,7 @@ public:
 	std::vector<ragdoll_anim_control_t> m_animcontrol;
 	std::vector<ragdoll_bar_control_t> m_barcontrol;
 	std::vector<ragdoll_gar_control_t> m_garcontrol;
+	vec3_t m_firstperson_angleoffset;
 };
 
 typedef struct brushvertex_s
@@ -408,6 +418,9 @@ public:
 #define RAGDOLL_CONSTRAINT_CONETWIST 1
 #define RAGDOLL_CONSTRAINT_HINGE 2
 #define RAGDOLL_CONSTRAINT_POINT 3
+#define RAGDOLL_CONSTRAINT_CONETWIST_COLLISION 4
+#define RAGDOLL_CONSTRAINT_HINGE_COLLISION 5
+#define RAGDOLL_CONSTRAINT_POINT_COLLISION 6
 
 #define RAGDOLL_BARNACLE_SLIDER			1
 #define RAGDOLL_BARNACLE_DOF6			2
@@ -538,7 +551,7 @@ public:
 	bool SetupJiggleBones(studiohdr_t *hdr, int entindex);
 	void MergeBarnacleBones(studiohdr_t *hdr, int entindex);
 	bool HasRagdolls(void);
-	void RemoveRagdoll(int tentindex);
+	void RemoveRagdoll(int entindex);
 	void RemoveRagdollEx(ragdoll_itor &itor);
 	void RemoveAllBrushIndices();
 	void RemoveAllConfigs();
@@ -553,7 +566,7 @@ public:
 	void ResetPose(CRagdollBody *ragdoll, entity_state_t *curstate);
 	void ApplyBarnacle(CRagdollBody *ragdoll, cl_entity_t *barnacleEntity);
 	void ApplyGargantua(CRagdollBody *ragdoll, cl_entity_t *gargEntity);
-	CRagdollBody *CreateRagdoll(ragdoll_config_t *cfg, int tentindex, bool bIsPlayer);
+	CRagdollBody *CreateRagdoll(ragdoll_config_t *cfg, int entindex);
 	CRigBody *CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol);
 	btTypedConstraint *CreateConstraint(CRagdollBody *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
 	void CreateWaterControl(CRagdollBody *ragdoll, studiohdr_t *studiohdr, ragdoll_water_control_t *water_control);

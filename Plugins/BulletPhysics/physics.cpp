@@ -1103,11 +1103,13 @@ bool CPhysicsManager::SyncFirstPersonView(CRagdollBody *ragdoll, cl_entity_t *en
 
 		auto worldRot = worldTrans.getBasis();
 
-		btMatrix3x3 rot;
-		EulerMatrix(btVector3(0, 0, 90), rot);
+		btVector3 angleOffset(ragdoll->m_firstperson_angleoffset[0], ragdoll->m_firstperson_angleoffset[1], ragdoll->m_firstperson_angleoffset[2]);
+
+		btMatrix3x3 rotMatrix;
+		EulerMatrix(angleOffset, rotMatrix);
 
 		btVector3 btAngles;
-		MatrixEuler(worldTrans.getBasis() * rot, btAngles);
+		MatrixEuler(worldTrans.getBasis() * rotMatrix, btAngles);
 
 		vec3_t angles;
 		angles[0] = -btAngles.getX();
@@ -1539,6 +1541,7 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 #define RAGDOLL_PARSING_BARNACLE 4
 #define RAGDOLL_PARSING_GARGANTUA 5
 #define RAGDOLL_PARSING_WATERCONTROL 6
+#define RAGDOLL_PARSING_CAMERACONTROL 7
 
 	int iParsingState = -1;
 
@@ -1585,6 +1588,11 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 		else if (!strcmp(text, "[WaterControl]"))
 		{
 			iParsingState = RAGDOLL_PARSING_WATERCONTROL;
+			continue;
+		}
+		else if (!strcmp(text, "[CameraControl]"))
+		{
+			iParsingState = RAGDOLL_PARSING_CAMERACONTROL;
 			continue;
 		}
 
@@ -1714,9 +1722,17 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 			{
 				i_type = RAGDOLL_CONSTRAINT_CONETWIST;
 			}
+			else if (!strcmp(text, "conetwist_collision"))
+			{
+				i_type = RAGDOLL_CONSTRAINT_CONETWIST_COLLISION;
+			}
 			else if (!strcmp(text, "hinge"))
 			{
 				i_type = RAGDOLL_CONSTRAINT_HINGE;
+			}
+			else if (!strcmp(text, "hinge_collision"))
+			{
+				i_type = RAGDOLL_CONSTRAINT_HINGE_COLLISION;
 			}
 			else if (!strcmp(text, "point"))
 			{
@@ -2074,6 +2090,47 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 
 			cfg->watercontrol.emplace_back(subname, f_offsetX, f_offsetY, f_offsetZ, f_factor1, f_factor2, f_factor3);
 		}
+		else if (iParsingState == RAGDOLL_PARSING_CAMERACONTROL)
+		{
+			if (subname == "FirstPerson_AngleOffset")
+			{
+				ptext = gEngfuncs.COM_ParseFile(ptext, text);
+				if (!ptext)
+				{
+					gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse water offsetX for %s\n", name.c_str());
+					break;
+				}
+
+				float f_offsetX = atof(text);
+
+				ptext = gEngfuncs.COM_ParseFile(ptext, text);
+				if (!ptext)
+				{
+					gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse water offsetY for %s\n", name.c_str());
+					break;
+				}
+
+				float f_offsetY = atof(text);
+
+				ptext = gEngfuncs.COM_ParseFile(ptext, text);
+				if (!ptext)
+				{
+					gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse water offsetZ for %s\n", name.c_str());
+					break;
+				}
+
+				float f_offsetZ = atof(text);
+
+				cfg->firstperson_angleoffset[0] = f_offsetX;
+				cfg->firstperson_angleoffset[1] = f_offsetY;
+				cfg->firstperson_angleoffset[2] = f_offsetZ;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("LoadRagdollConfig: Failed to parse camera control type %s for %s\n", text, subname.c_str());
+				break;
+			}
+		}
 	}
 
 	gEngfuncs.COM_FreeFile(pfile);
@@ -2211,6 +2268,15 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		shape->calculateLocalInertia(mass, localInertia);
 
 		btRigidBody::btRigidBodyConstructionInfo cInfo(mass, motionState, shape, localInertia);
+		cInfo.m_friction = 0.5;
+		cInfo.m_rollingFriction = 1.0;
+		cInfo.m_restitution = 0;
+		cInfo.m_linearSleepingThreshold = 2.5f;
+		cInfo.m_angularSleepingThreshold = 0.05f;
+		cInfo.m_linearDamping = 0.25f;
+		cInfo.m_angularDamping = 0.125f;
+		FloatGoldSrcToBullet(&cInfo.m_linearSleepingThreshold);
+		FloatGoldSrcToBullet(&cInfo.m_angularSleepingThreshold);
 
 		auto rig = new CRigBody;
 
@@ -2221,6 +2287,15 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		rig->mass = mass;
 
 		rig->rigbody->setUserPointer(rig);
+
+		float ccdThreshould = 5.0;
+		float ccdRadius = 3.0;
+
+		FloatGoldSrcToBullet(&ccdThreshould);
+		FloatGoldSrcToBullet(&ccdRadius);
+
+		rig->rigbody->setCcdMotionThreshold(ccdThreshould);
+		rig->rigbody->setCcdSweptSphereRadius(ccdRadius);
 
 		m_dynamicsWorld->addRigidBody(rig->rigbody, rig->group, rig->mask);
 
@@ -2251,6 +2326,16 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		shape->calculateLocalInertia(mass, localInertia);
 
 		btRigidBody::btRigidBodyConstructionInfo cInfo(mass, motionState, shape, localInertia);
+		cInfo.m_friction = 0.5f;
+		cInfo.m_rollingFriction = 1.0f;
+		cInfo.m_restitution = 0;
+		cInfo.m_linearSleepingThreshold = 2.5f;
+		cInfo.m_angularSleepingThreshold = 0.05f;
+		cInfo.m_linearDamping = 0.25f;
+		cInfo.m_angularDamping = 0.125f;
+
+		FloatGoldSrcToBullet(&cInfo.m_linearSleepingThreshold);
+		FloatGoldSrcToBullet(&cInfo.m_angularSleepingThreshold);
 
 		auto rig = new CRigBody;
 
@@ -2261,6 +2346,15 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		rig->mass = mass;
 
 		rig->rigbody->setUserPointer(rig);
+
+		float ccdThreshould = 5.0;
+		float ccdRadius = 3.0;
+
+		FloatGoldSrcToBullet(&ccdThreshould);
+		FloatGoldSrcToBullet(&ccdRadius);
+
+		rig->rigbody->setCcdMotionThreshold(ccdThreshould);
+		rig->rigbody->setCcdSweptSphereRadius(ccdRadius);
 
 		m_dynamicsWorld->addRigidBody(rig->rigbody, rig->group, rig->mask);
 
@@ -2296,6 +2390,12 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		float mass = rigcontrol->mass;
 
 		btRigidBody::btRigidBodyConstructionInfo cInfo(mass, motionState, shape);
+		cInfo.m_friction = 0.5f;
+		cInfo.m_rollingFriction = 1.0f;
+		cInfo.m_restitution = 0;
+
+		FloatGoldSrcToBullet(&cInfo.m_linearSleepingThreshold);
+		FloatGoldSrcToBullet(&cInfo.m_angularSleepingThreshold);
 
 		rig->name = rigcontrol->name;
 		rig->rigbody = new btRigidBody(cInfo);
@@ -2304,6 +2404,15 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		rig->mass = mass;
 
 		rig->rigbody->setUserPointer(rig);
+
+		float ccdThreshould = 2.5;
+		float ccdRadius = 1.25;
+
+		FloatGoldSrcToBullet(&ccdThreshould);
+		FloatGoldSrcToBullet(&ccdRadius);
+
+		rig->rigbody->setCcdMotionThreshold(ccdThreshould);
+		rig->rigbody->setCcdSweptSphereRadius(ccdRadius);
 
 		m_dynamicsWorld->addRigidBody(rig->rigbody, rig->group, rig->mask);
 
@@ -2452,7 +2561,7 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 	auto rig1 = itor->second;
 	auto rig2 = itor2->second;
 
-	if (cstcontrol->type == RAGDOLL_CONSTRAINT_CONETWIST)
+	if (cstcontrol->type == RAGDOLL_CONSTRAINT_CONETWIST || cstcontrol->type == RAGDOLL_CONSTRAINT_CONETWIST_COLLISION)
 	{
 		auto trans1 = rig1->rigbody->getWorldTransform();
 		auto trans2 = rig2->rigbody->getWorldTransform();
@@ -2489,23 +2598,24 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 			localrig2.setOrigin(localrig2_org.getOrigin());
 		}
 
-		auto cst = new btConeTwistConstraint(*rig1->rigbody, *rig2->rigbody, localrig1, localrig2);
+		auto constraint = new btConeTwistConstraint(*rig1->rigbody, *rig2->rigbody, localrig1, localrig2);
 
-		if (bv_debug->value == 4 && (rig1->rigbody->getMass() != 0 || rig2->rigbody->getMass() != 0))
+		if ((rig1->rigbody->getMass() != 0 || rig2->rigbody->getMass() != 0))
 		{
-			cst->setDbgDrawSize(4);
-		}
-		else
-		{
-			cst->setDbgDrawSize(1);
+			float drawSize = 5;
+			FloatGoldSrcToBullet(&drawSize);
+			constraint->setDbgDrawSize(drawSize);
 		}
 		
-		cst->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, cstcontrol->factor3 * M_PI, 1, 1, 1);
+		constraint->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, cstcontrol->factor3 * M_PI, 1, 1, 1);
 
-		return cst;
+		ragdoll->m_constraintArray.emplace_back(constraint);
+		m_dynamicsWorld->addConstraint(constraint, (cstcontrol->type == RAGDOLL_CONSTRAINT_CONETWIST_COLLISION) ? true : false);
+
+		return constraint;
 	}
 
-	else if (cstcontrol->type == RAGDOLL_CONSTRAINT_HINGE)
+	else if (cstcontrol->type == RAGDOLL_CONSTRAINT_HINGE || cstcontrol->type == RAGDOLL_CONSTRAINT_HINGE_COLLISION)
 	{
 		auto trans1 = rig1->rigbody->getWorldTransform();
 		auto trans2 = rig2->rigbody->getWorldTransform();
@@ -2542,21 +2652,23 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 			localrig2.setOrigin(localrig2_org.getOrigin());
 		}
 
-		auto cst = new btHingeConstraint(*rig1->rigbody, *rig2->rigbody, localrig1, localrig2);
+		auto constraint = new btHingeConstraint(*rig1->rigbody, *rig2->rigbody, localrig1, localrig2);
 	
-		if (bv_debug->value == 5 && (rig1->rigbody->getMass() != 0 || rig2->rigbody->getMass() != 0))
+		if ((rig1->rigbody->getMass() != 0 || rig2->rigbody->getMass() != 0))
 		{
-			cst->setDbgDrawSize(4);
-		}
-		else
-		{
-			cst->setDbgDrawSize(1);
+			float drawSize = 5;
+			FloatGoldSrcToBullet(&drawSize);
+			constraint->setDbgDrawSize(drawSize);
 		}
 
-		cst->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, 0.1f);
-		return cst;
+		constraint->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, 0.1f);
+
+		ragdoll->m_constraintArray.emplace_back(constraint);
+		m_dynamicsWorld->addConstraint(constraint, (cstcontrol->type == RAGDOLL_CONSTRAINT_HINGE_COLLISION) ? true : false);
+
+		return constraint;
 	}
-	else if (cstcontrol->type == RAGDOLL_CONSTRAINT_POINT)
+	else if (cstcontrol->type == RAGDOLL_CONSTRAINT_POINT || cstcontrol->type == RAGDOLL_CONSTRAINT_POINT_COLLISION)
 	{
 		auto trans1 = rig1->rigbody->getWorldTransform();
 		auto trans2 = rig2->rigbody->getWorldTransform();
@@ -2572,18 +2684,19 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 		localrig2.mult(inv2, bonematrix2);
 		localrig2.setOrigin(btVector3(offset4, offset5, offset6));
 
-		auto cst = new btPoint2PointConstraint(*rig1->rigbody, *rig2->rigbody, localrig1.getOrigin(), localrig2.getOrigin());
+		auto constraint = new btPoint2PointConstraint(*rig1->rigbody, *rig2->rigbody, localrig1.getOrigin(), localrig2.getOrigin());
 
-		if (bv_debug->value == 6 && (rig1->rigbody->getMass() != 0 || rig2->rigbody->getMass() != 0))
+		if ((rig1->rigbody->getMass() != 0 || rig2->rigbody->getMass() != 0))
 		{
-			cst->setDbgDrawSize(1);
-		}
-		else
-		{
-			cst->setDbgDrawSize(0.25f);
+			float drawSize = 5;
+			FloatGoldSrcToBullet(&drawSize);
+			constraint->setDbgDrawSize(drawSize);
 		}
 
-		return cst;
+		ragdoll->m_constraintArray.emplace_back(constraint);
+		m_dynamicsWorld->addConstraint(constraint, (cstcontrol->type == RAGDOLL_CONSTRAINT_POINT_COLLISION) ? true : false);
+
+		return constraint;
 	}
 
 	gEngfuncs.Con_Printf("CreateConstraint: Failed to create constraint for %s, invalid type %d\n", cstcontrol->name.c_str(), cstcontrol->type);
@@ -3347,10 +3460,7 @@ update_kinematic:
 	return true;
 }
 
-CRagdollBody *CPhysicsManager::CreateRagdoll(
-	ragdoll_config_t *cfg,
-	int entindex, 
-	bool bIsPlayer)
+CRagdollBody *CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int entindex)
 {
 	auto ragdoll = new CRagdollBody();
 
@@ -3396,11 +3506,6 @@ CRagdollBody *CPhysicsManager::CreateRagdoll(
 			if (rig->name == "Head")
 				ragdoll->m_headRigBody = rig;
 
-			rig->rigbody->setFriction(1);
-			rig->rigbody->setRollingFriction(1);
-			rig->rigbody->setCcdMotionThreshold(1e-7);
-			rig->rigbody->setCcdSweptSphereRadius(0.5);
-
 			rig->oldActivitionState = rig->rigbody->getActivationState();
 			rig->oldCollisionFlags = rig->rigbody->getCollisionFlags();
 		}
@@ -3419,13 +3524,7 @@ CRagdollBody *CPhysicsManager::CreateRagdoll(
 	{
 		auto cstcontrol = &cfg->cstcontrol[i];
 
-		auto constraint = CreateConstraint(ragdoll, (*pstudiohdr), cstcontrol);
-
-		if (constraint)
-		{
-			ragdoll->m_constraintArray.emplace_back(constraint);
-			m_dynamicsWorld->addConstraint(constraint, true);
-		}
+		CreateConstraint(ragdoll, (*pstudiohdr), cstcontrol);
 	}
 
 	for (size_t i = 0; i < cfg->watercontrol.size(); ++i)
@@ -3436,11 +3535,11 @@ CRagdollBody *CPhysicsManager::CreateRagdoll(
 	}
 
 	ragdoll->m_entindex = entindex;
-	ragdoll->m_isPlayer = bIsPlayer;
 	ragdoll->m_studiohdr = (*pstudiohdr);
 	ragdoll->m_animcontrol = cfg->animcontrol;
 	ragdoll->m_barcontrol = cfg->barcontrol;
 	ragdoll->m_garcontrol = cfg->garcontrol;
+	VectorCopy(cfg->firstperson_angleoffset, ragdoll->m_firstperson_angleoffset);
 
 	m_ragdollMap[entindex] = ragdoll;
 

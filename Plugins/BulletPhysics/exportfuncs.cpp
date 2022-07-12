@@ -41,7 +41,7 @@ cvar_t *chase_active = NULL;
 const int RagdollRenderState_None = 0;
 const int RagdollRenderState_Monster = 1;
 const int RagdollRenderState_Player = 2;
-const int RagdollRenderState_PlayerWithJiggle = 3;
+const int RagdollRenderState_Jiggle = 4;
 
 bool g_bIsSvenCoop = false;
 bool g_bIsCounterStrike = false;
@@ -132,7 +132,7 @@ void R_StudioSetupBones(void)
 {
 	auto currententity = IEngineStudio.GetCurrentEntity();
 
-	if (g_iRagdollRenderState == RagdollRenderState_Monster || g_iRagdollRenderState == RagdollRenderState_Player)
+	if ((g_iRagdollRenderState & (RagdollRenderState_Monster | RagdollRenderState_Player)) && !(g_iRagdollRenderState & RagdollRenderState_Jiggle))
 	{
 		if (gPhysicsManager.SetupBones((*pstudiohdr), g_iRagdollRenderEntIndex))
 			return;
@@ -149,7 +149,7 @@ void R_StudioSetupBones(void)
 		}
 	}
 
-	if (g_iRagdollRenderState == RagdollRenderState_Monster || g_iRagdollRenderState == RagdollRenderState_PlayerWithJiggle)
+	if ((g_iRagdollRenderState & (RagdollRenderState_Monster | RagdollRenderState_Player)) && (g_iRagdollRenderState & RagdollRenderState_Jiggle))
 	{
 		if (gPhysicsManager.SetupJiggleBones((*pstudiohdr), g_iRagdollRenderEntIndex))
 			return;
@@ -162,7 +162,7 @@ void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
 {
 	auto currententity = IEngineStudio.GetCurrentEntity();
 
-	if (g_iRagdollRenderState == RagdollRenderState_Monster || g_iRagdollRenderState == RagdollRenderState_Player)
+	if ((g_iRagdollRenderState & (RagdollRenderState_Monster | RagdollRenderState_Player)) && !(g_iRagdollRenderState & RagdollRenderState_Jiggle))
 	{
 		if (gPhysicsManager.SetupBones((*pstudiohdr), g_iRagdollRenderEntIndex))
 			return;
@@ -179,7 +179,7 @@ void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
 		}
 	}
 
-	if (g_iRagdollRenderState == RagdollRenderState_Monster || g_iRagdollRenderState == RagdollRenderState_PlayerWithJiggle)
+	if ((g_iRagdollRenderState & (RagdollRenderState_Monster | RagdollRenderState_Player)) && (g_iRagdollRenderState & RagdollRenderState_Jiggle))
 	{
 		if (gPhysicsManager.SetupJiggleBones((*pstudiohdr), g_iRagdollRenderEntIndex))
 			return;
@@ -212,7 +212,7 @@ int R_StudioDrawModel(int flags)
 			{
 				gPrivateFuncs.R_StudioDrawModel(0);
 
-				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex, false);
+				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex);
 
 				goto has_ragdoll;
 			}
@@ -253,7 +253,7 @@ int R_StudioDrawModel(int flags)
 			}
 			else
 			{
-				g_iRagdollRenderState = RagdollRenderState_Monster;
+				g_iRagdollRenderState = RagdollRenderState_Monster | RagdollRenderState_Jiggle;
 				g_iRagdollRenderEntIndex = entindex;
 
 				int result = gPrivateFuncs.R_StudioDrawModel(flags);
@@ -295,7 +295,7 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 			{
 				gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, 0);
 
-				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex, false);
+				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex);
 
 				goto has_ragdoll;
 			}
@@ -316,7 +316,19 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 				//Monster don't have barnacle animation
 			}
 
-			if (ragdoll->m_iActivityType > 0)
+			if (IsEntityGargantua(currententity))
+			{
+				g_iRagdollRenderState = RagdollRenderState_Monster | RagdollRenderState_Jiggle;
+				g_iRagdollRenderEntIndex = entindex;
+
+				int result = gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, flags);
+
+				g_iRagdollRenderEntIndex = 0;
+				g_iRagdollRenderState = RagdollRenderState_None;
+
+				return result;
+			}
+			else if (ragdoll->m_iActivityType > 0)
 			{
 				g_iRagdollRenderState = RagdollRenderState_Monster;
 				g_iRagdollRenderEntIndex = entindex;
@@ -336,7 +348,7 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 			}
 			else
 			{
-				g_iRagdollRenderState = RagdollRenderState_Monster;
+				g_iRagdollRenderState = RagdollRenderState_Monster | RagdollRenderState_Jiggle;
 				g_iRagdollRenderEntIndex = entindex;
 
 				int result = gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, flags);
@@ -372,7 +384,7 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 			{
 				gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, 0);
 
-				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex, true);
+				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex);
 
 				goto has_ragdoll_clcorpse;
 			}
@@ -413,7 +425,7 @@ int __fastcall GameStudioRenderer_StudioDrawModel(void *pthis, int dummy, int fl
 			}
 			else
 			{
-				g_iRagdollRenderState = RagdollRenderState_Monster;
+				g_iRagdollRenderState = RagdollRenderState_Monster | RagdollRenderState_Jiggle;
 				g_iRagdollRenderEntIndex = entindex;
 
 				int result = gPrivateFuncs.GameStudioRenderer_StudioDrawModel(pthis, 0, flags);
@@ -450,7 +462,7 @@ int __fastcall R_StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 				!gCorpseManager.IsPlayerEmitted(viewplayer->index) &&
 				CL_IsFirstPersonMode(viewplayer))
 			{
-				flags &= ~STUDIO_RENDER;
+				flags &= ~(STUDIO_RENDER | STUDIO_EVENTS);
 			}
 		}
 
@@ -466,7 +478,7 @@ int __fastcall R_StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 			{
 				gPrivateFuncs.R_StudioDrawPlayer(0, pplayer);
 
-				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex, true);
+				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex);
 
 				goto has_ragdoll;
 			}
@@ -566,7 +578,7 @@ int __fastcall R_StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 			{
 				//int number = currententity->curstate.number;
 				//currententity->curstate.number = pplayer->number;
-				g_iRagdollRenderState = RagdollRenderState_PlayerWithJiggle;
+				g_iRagdollRenderState = RagdollRenderState_Player | RagdollRenderState_Jiggle;
 				g_iRagdollRenderEntIndex = currententity->curstate.number;
 
 				int result = gPrivateFuncs.R_StudioDrawPlayer(flags, pplayer);
@@ -605,7 +617,7 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 				!gCorpseManager.IsPlayerEmitted(viewplayer->index) &&
 				CL_IsFirstPersonMode(viewplayer))
 			{
-				flags &= ~STUDIO_RENDER;
+				flags &= ~(STUDIO_RENDER | STUDIO_EVENTS);
 			}
 		}
 
@@ -627,15 +639,21 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 			if (cfg && cfg->state == 1 && bv_enable->value)
 			{
 				//Remove weapon model for me ?
-				int saved_weaponmodel = pplayer->weaponmodel;
+				int save_weaponmodel = pplayer->weaponmodel;
+				int save_sequence = pplayer->sequence;
+				int save_gaitsequence = pplayer->gaitsequence;
 
 				pplayer->weaponmodel = 0;
+				pplayer->sequence = 0;
+				pplayer->gaitsequence = 0;
 
 				gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, 0, pplayer);
 
-				pplayer->weaponmodel = saved_weaponmodel;
+				pplayer->weaponmodel = save_weaponmodel;
+				pplayer->sequence = save_sequence;
+				pplayer->gaitsequence = save_gaitsequence;
 				
-				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex, true);
+				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex);
 
 				goto has_ragdoll;
 			}
@@ -743,7 +761,7 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 			{
 				//int number = currententity->curstate.number;
 				//currententity->curstate.number = pplayer->number;
-				g_iRagdollRenderState = RagdollRenderState_PlayerWithJiggle;
+				g_iRagdollRenderState = RagdollRenderState_Player | RagdollRenderState_Jiggle;
 				g_iRagdollRenderEntIndex = entindex;
 
 				int result = gPrivateFuncs.GameStudioRenderer_StudioDrawPlayer(pthis, 0, flags, pplayer);
