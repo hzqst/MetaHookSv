@@ -2088,6 +2088,7 @@ void R_InitCvars(void)
 
 void R_Init(void)
 {
+	Mod_Init();
 	R_InitCvars();
 
 	R_InitWater();
@@ -2145,7 +2146,31 @@ void R_NewMap(void)
 
 mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
 {
-	return gRefFuncs.Mod_PointInLeaf(p, model);
+	mnode_t *node;
+	float d;
+	mplane_t *plane;
+
+	if (!model || !model->nodes)
+		g_pMetaHookAPI->SysError("Mod_PointInLeaf: bad model");
+
+	node = model->nodes;
+
+	while (1)
+	{
+		if (node->contents < 0)
+			return (mleaf_t *)node;
+
+		plane = node->plane;
+		d = DotProduct(p, plane->normal) - plane->dist;
+
+		if (d > 0)
+			node = node->children[0];
+		else
+			node = node->children[1];
+	}
+
+	return NULL;
+	//return gRefFuncs.Mod_PointInLeaf(p, model);
 }
 
 float *R_GetAttachmentPoint(int entity, int attachment)

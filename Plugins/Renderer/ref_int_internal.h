@@ -82,6 +82,7 @@ typedef struct
 	int(*CL_IsDevOverviewMode)(void);
 	void(*CL_SetDevOverView)(void *a1);
 	void (*Mod_LoadStudioModel)(model_t *mod, void *buffer);
+	void(*Mod_LoadBrushModel)(model_t *mod, void *buffer);
 	void(*triapi_RenderMode)(int mode);
 	void(*triapi_Color4f) (float r, float g, float b, float a);
 	void(__fastcall *enginesurface_drawFlushText)(void *pthis, int);
@@ -140,6 +141,7 @@ extern hook_t *g_phook_R_GLStudioDrawPoints ;
 extern hook_t *g_phook_GL_LoadTexture2 ;
 extern hook_t *g_phook_enginesurface_drawFlushText ;
 extern hook_t *g_phook_Mod_LoadStudioModel ;
+extern hook_t *g_phook_Mod_LoadBrushModel;
 extern hook_t *g_phook_triapi_RenderMode ;
 extern hook_t *g_phook_Draw_MiptexTexture ;
 extern hook_t *g_phook_BuildGammaTable ;

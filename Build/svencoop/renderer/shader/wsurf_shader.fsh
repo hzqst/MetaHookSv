@@ -44,10 +44,12 @@ in vec4 v_shadowcoord[3];
 
 #ifdef BINDLESS_ENABLED
 
-	flat in int v_drawid;
-
-	#ifdef DECAL_ENABLED
-	flat in int v_decalindex;
+	#if defined(SKYBOX_ENABLED)
+		flat in int v_drawid;
+	#elif defined(DECAL_ENABLED)
+		flat in int v_decalindex;
+	#else
+		flat in int v_texindex;
 	#endif
 
 #endif
@@ -58,10 +60,25 @@ layout(location = 2) out vec4 out_WorldNorm;
 layout(location = 3) out vec4 out_Specular;
 layout(location = 4) out vec4 out_Additive;
 
+#ifdef BINDLESS_ENABLED
+
+	texture_handle_t GetCurrentTextureHandle(int type)
+	{
+		#if defined(SKYBOX_ENABLED)
+			return SkyboxSSBO[v_drawid];
+		#elif defined(DECAL_ENABLED)
+			return DecalSSBO[v_decalindex];
+		#else
+			return TextureSSBO[v_texindex * 5 + type];
+		#endif
+	}
+
+#endif
+
 vec3 NormalMapping(vec3 T, vec3 B, vec3 N)
 {
 #ifdef BINDLESS_ENABLED
-	sampler2D normalTex = sampler2D(TextureSSBO[u_baseDrawId + v_drawid * 5 + TEXTURE_SSBO_NORMAL]);
+	sampler2D normalTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_NORMAL));
 #endif
 
     // Create TBN matrix. from tangent to world space
@@ -82,7 +99,16 @@ vec3 NormalMapping(vec3 T, vec3 B, vec3 N)
 vec2 ParallaxMapping(vec3 T, vec3 B, vec3 N, vec3 viewDirWorld)
 {
 #ifdef BINDLESS_ENABLED
-	sampler2D parallaxTex = sampler2D(TextureSSBO[u_baseDrawId + v_drawid * 5 + TEXTURE_SSBO_PARALLAX]);
+
+	#if defined(SKYBOX_ENABLED)
+		int texId = 0;
+	#elif defined(DECAL_ENABLED)
+		int texId = 0;
+	#else
+		int texId = v_texindex;
+	#endif
+
+	sampler2D parallaxTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_PARALLAX));
 #endif
 
     // Create TBN matrix.
@@ -262,13 +288,7 @@ void main()
 #ifdef DIFFUSE_ENABLED
 
 	#ifdef BINDLESS_ENABLED
-		#if defined(DECAL_ENABLED)
-			sampler2D diffuseTex = sampler2D(DecalSSBO[v_decalindex]);
-		#elif defined(SKYBOX_ENABLED)
-			sampler2D diffuseTex = sampler2D(SkyboxSSBO[v_drawid]);
-		#else
-			sampler2D diffuseTex = sampler2D(TextureSSBO[u_baseDrawId + v_drawid * 5 + TEXTURE_SSBO_DIFFUSE]);
-		#endif
+		sampler2D diffuseTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_DIFFUSE));
 	#endif
 
 	#ifdef PARALLAXTEXTURE_ENABLED
@@ -331,9 +351,9 @@ void main()
 
 #ifdef DETAILTEXTURE_ENABLED
 
-#ifdef BINDLESS_ENABLED
-	sampler2D detailTex = sampler2D(TextureSSBO[u_baseDrawId + v_drawid * 5 + TEXTURE_SSBO_DETAIL]);
-#endif
+	#ifdef BINDLESS_ENABLED
+		sampler2D detailTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_DETAIL));
+	#endif
 
 	vec2 detailTexCoord = vec2(v_diffusetexcoord.x * v_detailtexcoord.x, v_diffusetexcoord.y * v_detailtexcoord.y);
 	vec4 detailColor = texture2D(detailTex, detailTexCoord);
@@ -372,7 +392,7 @@ void main()
 		#ifdef SPECULARTEXTURE_ENABLED
 		
 			#ifdef BINDLESS_ENABLED
-				sampler2D specularTex = sampler2D(TextureSSBO[u_baseDrawId + v_drawid * 5 + TEXTURE_SSBO_SPECULAR]);
+				sampler2D specularTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_SPECULAR));
 			#endif
 
 			vec2 specularTexCoord = vec2(v_diffusetexcoord.x * v_speculartexcoord.x, v_diffusetexcoord.y * v_speculartexcoord.y);

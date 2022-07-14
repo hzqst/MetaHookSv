@@ -17,8 +17,13 @@ layout(location = 6) in vec2 in_detailtexcoord;
 layout(location = 7) in vec2 in_normaltexcoord;
 layout(location = 8) in vec2 in_parallaxtexcoord;
 layout(location = 9) in vec2 in_speculartexcoord;
-#ifdef DECAL_ENABLED
-layout(location = 10) in int in_decalindex;
+
+#if defined(SKYBOX_ENABLED)
+	
+#elif defined(DECAL_ENABLED)
+	layout(location = 10) in int in_decalindex;
+#else
+	layout(location = 10) in int in_texindex;
 #endif
 
 out vec3 v_worldpos;
@@ -35,10 +40,12 @@ out vec4 v_shadowcoord[3];
 
 #ifdef BINDLESS_ENABLED
 
-	flat out int v_drawid;
-
-	#ifdef DECAL_ENABLED
-	flat out int v_decalindex;
+	#if defined(SKYBOX_ENABLED)
+		flat out int v_drawid;
+	#elif defined(DECAL_ENABLED)
+		flat out int v_decalindex;
+	#else
+		flat out int v_texindex;
 	#endif
 
 #endif
@@ -109,17 +116,17 @@ void main(void)
 	vec4 worldpos4 = vec4(vertex, 1.0);
     v_worldpos = worldpos4.xyz;
 
-	vec4 normal4 = vec4(in_normal, 0.0);
+	vec4 normal4 = vec4(in_normal.xyz, 0.0);
 	v_normal = normalize((normal4).xyz);
 
 	v_diffusetexcoord = texcoord;
 
 #else
 
-	vec4 worldpos4 = EntityUBO.entityMatrix * vec4(in_vertex, 1.0);
+	vec4 worldpos4 = EntityUBO.entityMatrix * vec4(in_vertex.xyz, 1.0);
     v_worldpos = worldpos4.xyz;
 
-	vec4 normal4 = vec4(in_normal, 0.0);
+	vec4 normal4 = vec4(in_normal.xyz, 0.0);
 	v_normal = normalize((EntityUBO.entityMatrix * normal4).xyz);
 
 	#ifdef DIFFUSE_ENABLED
@@ -173,15 +180,14 @@ void main(void)
 
 #ifdef BINDLESS_ENABLED
 
-#ifdef DECAL_ENABLED
-	v_decalindex = in_decalindex;
-#endif
-
-	#ifdef SKYBOX_ENABLED
+	#if defined(SKYBOX_ENABLED)
 		v_drawid = quadidx;
+	#elif defined(DECAL_ENABLED)
+		v_decalindex = in_decalindex;
 	#else
-		v_drawid = gl_DrawIDARB;
+		v_texindex = in_texindex;
 	#endif
+
 #endif
 
 	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * worldpos4;

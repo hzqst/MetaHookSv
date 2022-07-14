@@ -220,6 +220,7 @@ hook_t *g_phook_R_GLStudioDrawPoints = NULL;
 hook_t *g_phook_GL_LoadTexture2 = NULL;
 hook_t *g_phook_enginesurface_drawFlushText = NULL;
 hook_t *g_phook_Mod_LoadStudioModel = NULL;
+hook_t *g_phook_Mod_LoadBrushModel = NULL;
 hook_t *g_phook_triapi_RenderMode = NULL;
 hook_t *g_phook_Draw_MiptexTexture = NULL;
 hook_t *g_phook_BuildGammaTable = NULL;
@@ -2914,6 +2915,48 @@ void R_FillAddress(void)
 	}
 
 	{
+		const char sigs1[] = "Mod_LoadBrushModel: %s has wrong version number";
+		auto Bogus_String = Search_Pattern_Data(sigs1);
+		if (!Bogus_String)
+			Bogus_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(Bogus_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x6A\x01\xE8";
+		*(DWORD *)(pattern + 1) = (DWORD)Bogus_String;
+		auto Bogus_Call = Search_Pattern(pattern);
+		Sig_VarNotFound(Bogus_Call);
+
+		gRefFuncs.Mod_LoadBrushModel = (decltype(gRefFuncs.Mod_LoadStudioModel))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Bogus_Call, 0x150, [](PUCHAR Candidate) {
+
+			//.text:01D078D0 83 EC 34                                            sub     esp, 34h
+			//.text : 01D078D3 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
+			//	.text : 01D078D8 33 C4                                               xor     eax, esp
+			if (Candidate[0] == 0x83 &&
+				Candidate[1] == 0xEC &&
+				Candidate[3] == 0xA1 &&
+				Candidate[8] == 0x33 &&
+				Candidate[9] == 0xC4)
+			{
+				return TRUE;
+			}
+			//  .text : 01D61AD0 55                                                  push    ebp
+			//  .text : 01D61AD1 8B EC                                               mov     ebp, esp
+			//	.text : 01D61AD3 83 EC 0C											sub     esp, 0Ch
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC &&
+				Candidate[3] == 0x83 &&
+				Candidate[4] == 0xEC &&
+				Candidate[5] == 0x0C)
+			{
+				return TRUE;
+			}
+
+			return FALSE;
+		});
+		Sig_FuncNotFound(Mod_LoadBrushModel);
+	}
+
+	{
 		/*const char sigs1[] = "palette.lmp\0";
 		auto palette_String = Search_Pattern_Data(sigs1);
 		if (!palette_String)
@@ -3327,6 +3370,7 @@ void R_InstallHooks(void)
 	Install_InlineHook(GL_LoadTexture2);
 	Install_InlineHook(enginesurface_drawFlushText);
 	Install_InlineHook(Mod_LoadStudioModel);
+	Install_InlineHook(Mod_LoadBrushModel);
 	Install_InlineHook(triapi_RenderMode);
 	Install_InlineHook(Draw_MiptexTexture);
 	Install_InlineHook(BuildGammaTable);

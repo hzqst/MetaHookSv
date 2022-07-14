@@ -67,6 +67,7 @@ typedef struct brushvertex_s
 	float	normaltexcoord[2];
 	float	parallaxtexcoord[2];
 	float	speculartexcoord[2];
+	int		texindex;
 }brushvertex_t;
 
 typedef struct brushface_s
@@ -176,6 +177,19 @@ typedef struct wsurf_vbo_batch_s
 	std::vector<GLsizei> vIndiceCount;
 }wsurf_vbo_batch_t;
 
+
+typedef struct wsurf_vbo_leaf_s
+{
+	wsurf_vbo_leaf_s()
+	{
+
+	}
+
+	std::vector<brushtexchain_t> vTextureChain[WSURF_TEXCHAIN_MAX];
+	std::vector<wsurf_vbo_batch_t *> vDrawBatch[WSURF_DRAWBATCH_MAX];
+	brushtexchain_t TextureChainSky;
+}wsurf_vbo_leaf_t;
+
 typedef struct wsurf_vbo_s
 {
 	wsurf_vbo_s()
@@ -183,18 +197,14 @@ typedef struct wsurf_vbo_s
 		pModel = NULL;
 		hEBO = 0;
 		hEntityUBO = 0;
-		hTextureSSBO = 0;
 		hDecalEBO = 0;
 	}
 
 	model_t	*pModel;
 	GLuint	hEBO;
 	GLuint	hEntityUBO;
-	GLuint	hTextureSSBO;
 	GLuint	hDecalEBO;
-	std::vector<brushtexchain_t> vTextureChain[WSURF_TEXCHAIN_MAX];
-	std::vector<wsurf_vbo_batch_t *> vDrawBatch[WSURF_DRAWBATCH_MAX];
-	brushtexchain_t TextureChainSky;
+	std::vector<wsurf_vbo_leaf_t *> vLeaves;
 }wsurf_vbo_t;
 
 #pragma pack(push, 16)
@@ -288,6 +298,7 @@ typedef struct r_worldsurf_s
 		hDecalVBO = 0;
 		hDecalSSBO = 0;
 		hSkyboxSSBO = 0;
+		hWorldSSBO = 0;
 		hOITFragmentSSBO = 0;
 		hOITNumFragmentSSBO = 0;
 		hOITAtomicSSBO = 0;
@@ -310,11 +321,11 @@ typedef struct r_worldsurf_s
 	GLuint				hDecalVBO;
 	GLuint				hDecalSSBO;
 	GLuint				hSkyboxSSBO;
+	GLuint				hWorldSSBO;
 	GLuint				hOITFragmentSSBO;
 	GLuint				hOITNumFragmentSSBO;
 	GLuint				hOITAtomicSSBO;
 
-	std::vector <brushvertex_t> vVertexBuffer;
 	std::vector <brushface_t> vFaceBuffer;
 
 	bool				bDiffuseTexture;
@@ -328,7 +339,7 @@ typedef struct r_worldsurf_s
 	int					iNumLightmapTextures;
 	int					iLightmapTextureArray;
 
-	GLuint64			vSkyboxTextureHandles[6];
+	GLuint64			vSkyboxTextureHandles[6]; 
 
 	std::vector <bspentity_t> vBSPEntities;
 
@@ -385,7 +396,6 @@ extern decalcache_t *gDecalCache;
 //cvar
 
 extern cvar_t *r_wsurf_parallax_scale;
-extern cvar_t *r_wsurf_sky_occlusion;
 extern cvar_t *r_wsurf_sky_fog;
 extern cvar_t *r_wsurf_zprepass;
 
