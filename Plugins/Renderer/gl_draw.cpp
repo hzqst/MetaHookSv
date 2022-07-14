@@ -96,6 +96,8 @@ void GL_Texturemode_internal(const char *value)
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
 		}
 	}
+
+	//TODO: reinit bindless textures?
 }
 
 void GL_Texturemode_cb(cvar_t *pcvar)
