@@ -424,7 +424,9 @@ void SubtitlePanel::StartSubtitle(CDictionary *Dict, float flStartTime)
 
 	if (!Dict->m_bOverrideDuration && g_pCurrentTextMessage)
 	{
-		flDuration = g_pCurrentTextMessage->holdtime;
+		flDuration = g_pCurrentTextMessage->holdtime + g_pCurrentTextMessage->fadein + g_pCurrentTextMessage->fadeout;
+		if (g_pCurrentTextMessage->effect & 1)
+			flDuration += g_pCurrentTextMessage->fxtime;
 	}
 
 	if(m_flHoldTimeScale > 0)
