@@ -8,6 +8,8 @@
 #include "SubtitlePanel.h"
 #include "privatefuncs.h"
 
+extern client_textmessage_t *g_pCurrentTextMessage;
+
 using namespace vgui;
 
 SubtitlePanel::SubtitlePanel(Panel *parent)  : EditablePanel(parent, "Subtitle")
@@ -334,6 +336,12 @@ void SubtitlePanel::AddLine(CDictionary *Dict, wchar_t *wszSentence, int nLength
 	Line->m_StartTime = flStartTime;
 	Line->m_Duration = flDuration;
 	Line->m_Color = Dict->m_Color;
+
+	if (Dict->m_bDefaultColor && g_pCurrentTextMessage)
+	{
+		Line->m_Color = Color(g_pCurrentTextMessage->r1, g_pCurrentTextMessage->g1, g_pCurrentTextMessage->b1, g_pCurrentTextMessage->a1);
+	}
+
 	Line->m_Alpha = 0;
 	Line->m_LineIndex = 0;
 	Line->m_YPos = Line->CalcYPos();
@@ -413,6 +421,11 @@ void SubtitlePanel::StartSubtitle(CDictionary *Dict, float flStartTime)
 
 	if(flDuration <= 0)
 		flDuration = 4.0f;
+
+	if (!Dict->m_bOverrideDuration && g_pCurrentTextMessage)
+	{
+		flDuration = g_pCurrentTextMessage->holdtime;
+	}
 
 	if(m_flHoldTimeScale > 0)
 		flDuration *= m_flHoldTimeScale;

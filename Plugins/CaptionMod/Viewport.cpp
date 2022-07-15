@@ -342,6 +342,7 @@ CDictionary::CDictionary()
 	m_bRegex = false;
 	m_bOverrideColor = false;
 	m_bOverrideDuration = false;
+	m_bDefaultColor = true;
 }
 
 CDictionary::~CDictionary()
@@ -378,6 +379,7 @@ void StringReplaceA(std::string &strBase, const std::string &strSrc, const std::
 void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, IScheme *ischeme)
 {
 	m_Color = defaultColor;
+	m_bDefaultColor = true;
 
 	m_szTitle = row[0];
 
@@ -486,8 +488,6 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 		CUtlVector<char *> splitColor;
 		V_SplitString(color, " ", splitColor);
 
-		m_Color = ischeme->GetColor(color, defaultColor);
-
 		if(splitColor.Size() >= 2)
 		{
 			if(splitColor[0][0])
@@ -500,6 +500,14 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 			}
 
 			m_bOverrideColor = true;
+
+			m_bDefaultColor = false;
+		}
+		else
+		{
+			m_Color = ischeme->GetColor(color, defaultColor);
+
+			m_bDefaultColor = false;
 		}
 
 		splitColor.PurgeAndDeleteElements();

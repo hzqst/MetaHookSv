@@ -18,6 +18,8 @@ extern cvar_t *cap_newchat;
 
 char *m_pSenderName = NULL;
 
+client_textmessage_t *g_pCurrentTextMessage = NULL;
+
 CHudMessage m_HudMessage;
 
 pfnUserMsgHook m_pfnHudText;
@@ -769,6 +771,12 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 					((char *)pMsg->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
 
 					int slotNum = MessageAdd(pMsg, (*cl_time), hintMessage, useSlot, m_hFont, true);
+					
+					g_pCurrentTextMessage = pMsg;
+
+					g_pViewPort->StartNextSubtitle(dict);
+
+					g_pCurrentTextMessage = NULL;
 
 					if (slotNum == -1)
 					{
@@ -776,7 +784,6 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 						delete pMsg;
 					}
 
-					g_pViewPort->StartNextSubtitle(dict);
 					m_parms.time = (*cl_time);
 					return 1;
 				}
@@ -815,13 +822,18 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 
 					int slotNum = MessageAdd(pMsg, (*cl_time), hintMessage, useSlot, m_hFont, true);
 
+					g_pCurrentTextMessage = pMsg;
+
+					g_pViewPort->StartNextSubtitle(dict);
+
+					g_pCurrentTextMessage = NULL;
+
 					if (slotNum == -1)
 					{
 						delete pMsg->pMessage;
 						delete pMsg;
 					}
 
-					g_pViewPort->StartNextSubtitle(dict);
 					m_parms.time = (*cl_time);
 					return 1;
 				}
@@ -893,13 +905,18 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 
 					int slotNum = MessageAdd(pMsg, (*cl_time), hintMessage, -1, m_hFont, true);
 
+					g_pCurrentTextMessage = pMsg;
+
+					g_pViewPort->StartNextSubtitle(dict);
+
+					g_pCurrentTextMessage = NULL;
+
 					if (slotNum == -1)
 					{
 						delete pMsg->pMessage;
 						delete pMsg;
 					}
 
-					g_pViewPort->StartNextSubtitle(dict);
 					m_parms.time = (*cl_time);
 					return 1;
 				}
@@ -985,13 +1002,19 @@ int CHudMessage::MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
 						vgui::localize()->ConvertANSIToUnicode(tmp, m_pMessages[slotNum].args[i], MESSAGE_ARG_LEN);
 					}
 				}
-				else
+
+				g_pCurrentTextMessage = pMsg;
+
+				g_pViewPort->StartNextSubtitle(dict);
+
+				g_pCurrentTextMessage = NULL;
+
+				if (slotNum == -1)
 				{
 					delete pMsg->pMessage;
 					delete pMsg;
 				}
 
-				g_pViewPort->StartNextSubtitle(dict);
 				m_parms.time = (*cl_time);
 				return 1;
 			}

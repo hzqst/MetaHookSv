@@ -81,6 +81,8 @@ public:
 	bool					m_bOverrideDuration;
 	Color					m_Color1;
 	Color					m_Color2;
+
+	bool					m_bDefaultColor;
 };
 
 typedef struct hash_item_s
