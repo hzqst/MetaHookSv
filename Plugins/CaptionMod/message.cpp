@@ -899,6 +899,7 @@ int CHudMessage::MsgFunc_HudText(const char *pszName, int iSize, void *pbuf)
 						delete pMsg;
 					}
 
+					g_pViewPort->StartNextSubtitle(dict);
 					m_parms.time = (*cl_time);
 					return 1;
 				}
@@ -990,6 +991,7 @@ int CHudMessage::MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
 					delete pMsg;
 				}
 
+				g_pViewPort->StartNextSubtitle(dict);
 				m_parms.time = (*cl_time);
 				return 1;
 			}
