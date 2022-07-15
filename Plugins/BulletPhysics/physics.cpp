@@ -817,24 +817,21 @@ struct GameFilterCallback : public btOverlapFilterCallback
 			auto body1 = (btRigidBody *)proxy1->m_clientObject;
 			
 			if ((proxy0->m_collisionFilterMask & CustomCollisionFilterGroups::RagdollFilter) &&
-				(proxy1->m_collisionFilterMask & CustomCollisionFilterGroups::WorldFilter))
+				(proxy1->m_collisionFilterMask & CustomCollisionFilterGroups::RagdollFilter))
 			{
 				auto physobj0 = (CRigBody *)body0->getUserPointer();
-				if (physobj0->flags & RIG_FL_JIGGLE)
+				auto physobj1 = (CRigBody *)body1->getUserPointer();
+				if( (physobj0->flags & RIG_FL_JIGGLE) && !(physobj1->flags & RIG_FL_JIGGLE) )
 				{
-					if (!(body0->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT))
+					if (!(body1->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT))
 					{
 						return false;
 					}
 				}
-			}
-			else if ((proxy1->m_collisionFilterMask & CustomCollisionFilterGroups::RagdollFilter) &&
-				(proxy0->m_collisionFilterMask & CustomCollisionFilterGroups::WorldFilter))
-			{
-				auto physobj1 = (CRigBody *)body1->getUserPointer();
-				if (physobj1->flags & RIG_FL_JIGGLE)
+
+				else if ((physobj1->flags & RIG_FL_JIGGLE) && !(physobj0->flags & RIG_FL_JIGGLE))
 				{
-					if (!(body1->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT))
+					if (!(body0->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT))
 					{
 						return false;
 					}
@@ -2268,15 +2265,14 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		shape->calculateLocalInertia(mass, localInertia);
 
 		btRigidBody::btRigidBodyConstructionInfo cInfo(mass, motionState, shape, localInertia);
-		cInfo.m_friction = 0.5;
+		cInfo.m_friction = 0.5f;
 		cInfo.m_rollingFriction = 1.0;
 		cInfo.m_restitution = 0;
-		cInfo.m_linearSleepingThreshold = 2.5f;
-		cInfo.m_angularSleepingThreshold = 0.05f;
+		cInfo.m_linearSleepingThreshold = 50.0f;
+		cInfo.m_angularSleepingThreshold = 12.0f;
 		cInfo.m_linearDamping = 0.25f;
-		cInfo.m_angularDamping = 0.125f;
+		cInfo.m_angularDamping = 0.25f;
 		FloatGoldSrcToBullet(&cInfo.m_linearSleepingThreshold);
-		FloatGoldSrcToBullet(&cInfo.m_angularSleepingThreshold);
 
 		auto rig = new CRigBody;
 
@@ -2288,11 +2284,10 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 
 		rig->rigbody->setUserPointer(rig);
 
-		float ccdThreshould = 5.0;
-		float ccdRadius = 3.0;
+		float ccdThreshould = 50.0f;
+		float ccdRadius = rigsize;
 
 		FloatGoldSrcToBullet(&ccdThreshould);
-		FloatGoldSrcToBullet(&ccdRadius);
 
 		rig->rigbody->setCcdMotionThreshold(ccdThreshould);
 		rig->rigbody->setCcdSweptSphereRadius(ccdRadius);
@@ -2329,13 +2324,12 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		cInfo.m_friction = 0.5f;
 		cInfo.m_rollingFriction = 1.0f;
 		cInfo.m_restitution = 0;
-		cInfo.m_linearSleepingThreshold = 2.5f;
-		cInfo.m_angularSleepingThreshold = 0.05f;
+		cInfo.m_linearSleepingThreshold = 50.0f;
+		cInfo.m_angularSleepingThreshold = 12.0f;
 		cInfo.m_linearDamping = 0.25f;
-		cInfo.m_angularDamping = 0.125f;
+		cInfo.m_angularDamping = 0.25f;
 
 		FloatGoldSrcToBullet(&cInfo.m_linearSleepingThreshold);
-		FloatGoldSrcToBullet(&cInfo.m_angularSleepingThreshold);
 
 		auto rig = new CRigBody;
 
@@ -2347,11 +2341,10 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 
 		rig->rigbody->setUserPointer(rig);
 
-		float ccdThreshould = 5.0;
-		float ccdRadius = 3.0;
+		float ccdThreshould = 50.0f;
+		float ccdRadius = max(rigsize, rigsize2);
 
 		FloatGoldSrcToBullet(&ccdThreshould);
-		FloatGoldSrcToBullet(&ccdRadius);
 
 		rig->rigbody->setCcdMotionThreshold(ccdThreshould);
 		rig->rigbody->setCcdSweptSphereRadius(ccdRadius);
@@ -2395,7 +2388,6 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		cInfo.m_restitution = 0;
 
 		FloatGoldSrcToBullet(&cInfo.m_linearSleepingThreshold);
-		FloatGoldSrcToBullet(&cInfo.m_angularSleepingThreshold);
 
 		rig->name = rigcontrol->name;
 		rig->rigbody = new btRigidBody(cInfo);
@@ -2610,7 +2602,7 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 		constraint->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, cstcontrol->factor3 * M_PI, 1, 1, 1);
 
 		ragdoll->m_constraintArray.emplace_back(constraint);
-		m_dynamicsWorld->addConstraint(constraint, (cstcontrol->type == RAGDOLL_CONSTRAINT_CONETWIST_COLLISION) ? true : false);
+		m_dynamicsWorld->addConstraint(constraint, (cstcontrol->type == RAGDOLL_CONSTRAINT_CONETWIST_COLLISION) ? false : true);
 
 		return constraint;
 	}
@@ -2664,7 +2656,7 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 		constraint->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, 0.1f);
 
 		ragdoll->m_constraintArray.emplace_back(constraint);
-		m_dynamicsWorld->addConstraint(constraint, (cstcontrol->type == RAGDOLL_CONSTRAINT_HINGE_COLLISION) ? true : false);
+		m_dynamicsWorld->addConstraint(constraint, (cstcontrol->type == RAGDOLL_CONSTRAINT_HINGE_COLLISION) ? false : true);
 
 		return constraint;
 	}
@@ -2694,7 +2686,7 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 		}
 
 		ragdoll->m_constraintArray.emplace_back(constraint);
-		m_dynamicsWorld->addConstraint(constraint, (cstcontrol->type == RAGDOLL_CONSTRAINT_POINT_COLLISION) ? true : false);
+		m_dynamicsWorld->addConstraint(constraint, (cstcontrol->type == RAGDOLL_CONSTRAINT_POINT_COLLISION) ? false : true);
 
 		return constraint;
 	}
