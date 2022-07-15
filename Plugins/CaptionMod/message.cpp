@@ -493,16 +493,16 @@ void CHudMessage::MessageDrawScan(client_message_t *pClientMessage, float time, 
 
 		pFullText = vgui::localize()->Find(szTempMessage);
 
-		if (pClientMessage->numArgs)
-		{
-			vgui::localize()->ConstructString(textBuf, sizeof(textBuf), pFullText, pClientMessage->numArgs, pClientMessage->args[0], pClientMessage->args[1], pClientMessage->args[2], pClientMessage->args[3]);
-			pFullText = textBuf;
-		}
-
 		if (!pFullText)
 		{
 			gEngfuncs.Con_DPrintf("ERROR: Missing %s from the dictionary_english.txt file!\n", pMessage->pMessage);
 			return;
+		}
+
+		if (pClientMessage->numArgs)
+		{
+			vgui::localize()->ConstructString(textBuf, sizeof(textBuf), pFullText, pClientMessage->numArgs, pClientMessage->args[0], pClientMessage->args[1], pClientMessage->args[2], pClientMessage->args[3]);
+			pFullText = textBuf;
 		}
 	}
 	else

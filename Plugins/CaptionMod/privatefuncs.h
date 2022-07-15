@@ -57,7 +57,7 @@ typedef struct
 	void(*MessageMode2_f)(void);
 
 	//ClientDLL
-	void *(**pfnClientFactory)(void);
+	//void *(**pfnClientFactory)(void);
 
 	//Engine init
 	PVOID (*VGUIClient001_CreateInterface)(HINTERFACEMODULE hModule);

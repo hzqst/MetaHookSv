@@ -240,10 +240,8 @@ void HUD_Init(void)
 	gPrivateFuncs.MessageMode_f = g_pMetaHookAPI->HookCmd("messagemode", MessageMode_f);
 	gPrivateFuncs.MessageMode2_f = g_pMetaHookAPI->HookCmd("messagemode2", MessageMode2_f);
 
-	auto pfnClientCreateInterface = Sys_GetFactory((HINTERFACEMODULE)g_hClientDll);
-
 	//Fix SvClient Portal Rendering Confliction
-	if (pfnClientCreateInterface && pfnClientCreateInterface("SCClientDLL001", 0))
+	if (g_bIsSvenCoop)
 	{
 		gPrivateFuncs.fmodex = GetModuleHandleA("fmodex.dll");
 		Sig_FuncNotFound(fmodex);
