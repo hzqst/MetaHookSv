@@ -40,6 +40,7 @@ extern int *cl_parsecount;
 extern void *cl_frames;
 extern int size_of_frame;
 extern int *cl_viewentity;
+extern cl_entity_t **currententity;
 extern void *mod_known;
 extern int *mod_numknown;
 extern TEMPENTITY *gTempEnts;
