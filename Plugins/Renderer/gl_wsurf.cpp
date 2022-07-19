@@ -855,7 +855,7 @@ void Mod_Init(void)
 
 void R_MarkPVSLeaves(int leafindex)
 {
-	for (int j = 0; j < r_worldmodel->numleafs; j++)
+	for (int j = 0; j < r_worldmodel->numframes; j++)
 	{
 		auto node = &r_worldmodel->leafs[j];
 		node->visframe = 0;
@@ -891,7 +891,7 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 	{
 		(*r_visframecount) = 0;
 
-		for (int i = 0; i < r_worldmodel->numleafs; ++i)
+		for (int i = 0; i < r_worldmodel->numframes; ++i)
 		{
 			auto vboleaf = new wsurf_vbo_leaf_t;
 
@@ -1006,7 +1006,8 @@ void Mod_LoadBrushModel(model_t *mod, void *buffer)
 
 	//Get correct leaf count here!!!
 
-	mod->numleafs = count;
+	mod->numframes = count;
+	//mod->numleafs |= ((count << 16) & 0xFFFF0000ul);
 }
 
 int R_FindTextureIdByTexture(texture_t *ptex)
