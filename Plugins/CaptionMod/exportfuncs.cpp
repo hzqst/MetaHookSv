@@ -63,6 +63,9 @@ void HUD_Shutdown(void)
 
 void HUD_Frame(double time)
 {
+	//Update resolution?
+	g_pMetaHookAPI->GetVideoMode(&g_iVideoWidth, &g_iVideoHeight, NULL, NULL);
+
 	if(g_pViewPort)
 		g_pViewPort->Think();
 

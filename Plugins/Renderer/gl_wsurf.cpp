@@ -39,21 +39,26 @@ void R_ClearWSurfVBOCache(void)
 		if (g_WSurfVBOCache[i])
 		{
 			auto &VBOCache = g_WSurfVBOCache[i];
-			if (VBOCache->hEBO)
-			{
-				GL_DeleteBuffer(VBOCache->hEBO);
-			}
 			if (VBOCache->hEntityUBO)
 			{
 				GL_DeleteBuffer(VBOCache->hEntityUBO);
+				VBOCache->hEntityUBO = NULL;
 			}
 			if (VBOCache->hDecalEBO)
 			{
 				GL_DeleteBuffer(VBOCache->hDecalEBO);
+				VBOCache->hDecalEBO = NULL;
 			}
 			for (size_t j = 0; j < VBOCache->vLeaves.size(); ++j)
 			{
 				auto VBOLeaf = VBOCache->vLeaves[j];
+
+				if (VBOLeaf->hEBO)
+				{
+					GL_DeleteBuffer(VBOLeaf->hEBO);
+					VBOLeaf->hEBO = NULL;
+				}
+
 				for (size_t k = 0; k < WSURF_TEXCHAIN_MAX; ++k)
 				{
 					for (size_t l = 0; l < VBOLeaf->vDrawBatch[k].size(); ++l)
@@ -882,8 +887,6 @@ void R_MarkPVSLeaves(int leafindex)
 
 void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 {
-	std::vector<unsigned int> vIndicesBuffer;
-
 	if (mod == r_worldmodel)
 	{
 		(*r_visframecount) = 0;
@@ -898,6 +901,8 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 
 			R_RecursiveLinkTextureChain(mod->nodes);
 
+			std::vector<unsigned int> vIndicesBuffer;
+
 			R_GenerateTexChain(mod, vboleaf, vIndicesBuffer);
 
 			R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_STATIC);
@@ -906,6 +911,11 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_STATIC);
 			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID);
 			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID);
+
+			vboleaf->hEBO = GL_GenBuffer();
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboleaf->hEBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * vIndicesBuffer.size(), vIndicesBuffer.data(), GL_STATIC_DRAW);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		}
 
 		(*r_visframecount) = 0;
@@ -918,6 +928,8 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 
 		R_BrushLinkTextureChain(mod);
 
+		std::vector<unsigned int> vIndicesBuffer;
+
 		R_GenerateTexChain(mod, vboleaf, vIndicesBuffer);
 
 		R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_STATIC);
@@ -926,12 +938,12 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 		R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_STATIC);
 		R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID);
 		R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID);
-	}
 
-	modvbo->hEBO = GL_GenBuffer();
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modvbo->hEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * vIndicesBuffer.size(), vIndicesBuffer.data(), GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		vboleaf->hEBO = GL_GenBuffer();
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboleaf->hEBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * vIndicesBuffer.size(), vIndicesBuffer.data(), GL_STATIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	}
 
 	modvbo->hEntityUBO = GL_GenBuffer();
 	glBindBuffer(GL_UNIFORM_BUFFER, modvbo->hEntityUBO);
@@ -1828,7 +1840,6 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 	//Begin WorldSurface Rendering
 
 	glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hSceneVBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modvbo->hEBO);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_TEXTURE_SSBO, r_wsurf.hWorldSSBO);
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_ENTITY_UBO, modvbo->hEntityUBO);
 
@@ -1896,6 +1907,8 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 		{
 			auto vboleaf = modvbo->vLeaves[leafindex];
 
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboleaf->hEBO);
+
 			if (r_wsurf_zprepass->value)
 			{
 				glColorMask(0, 0, 0, 0);
@@ -1922,6 +1935,8 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 		if (modvbo->vLeaves.size() >= 1)
 		{
 			auto vboleaf = modvbo->vLeaves[0];
+
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboleaf->hEBO);
 
 			R_DrawWSurfVBOStatic(vboleaf, bUseZPrePass);
 			R_DrawWSurfVBOAnim(vboleaf, bUseZPrePass);

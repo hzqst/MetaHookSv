@@ -145,7 +145,7 @@ FBO_Container_t s_ShadowFBO = { 0 };
 FBO_Container_t s_WaterFBO = { 0 };
 
 bool bNoStretchAspect = false;
-bool bUseBindless = true;
+bool bUseBindless = false;
 bool bUseOITBlend = false;
 bool bVerticalFov = false;
 
