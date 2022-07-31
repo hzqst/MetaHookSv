@@ -23,6 +23,8 @@ hook_t *g_phook_COptionsSubVideo_ctor = NULL;
 hook_t *g_phook_COptionsSubVideo_ApplyVidSettings = NULL;
 hook_t *g_phook_COptionsSubAudio_ctor = NULL;
 
+vgui::Panel** staticPanel = NULL;
+
 namespace vgui
 {
 bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryList, int numFactories);
@@ -135,10 +137,7 @@ void CGameUI::DisconnectFromServer(void)
 	return g_pfnCGameUI_DisconnectFromServer(this, 0);
 }
 
-void CGameUI::HideGameUI(void)
-{
-	return g_pfnCGameUI_HideGameUI(this, 0);
-}
+//HideGameUI
 
 bool CGameUI::IsGameUIActive(void)
 {
@@ -376,6 +375,8 @@ private:
 	CCvarSlider *m_pLightGamma;
 };
 
+vgui::DHANDLE<class COptionsSubVideoAdvancedDlg> m_hOptionsSubVideoAdvancedDlg;
+
 class CVideoAdvancedButton : public vgui::Button
 {
 	DECLARE_CLASS_SIMPLE(CVideoAdvancedButton, vgui::Button);
@@ -395,7 +396,7 @@ private:
 
 private:
 
-	vgui::DHANDLE<class COptionsSubVideoAdvancedDlg> m_hOptionsSubVideoAdvancedDlg;
+	//
 };
 
 void CVideoAdvancedButton::OnOpenAdvanced(void)
@@ -607,6 +608,8 @@ private:
 	vgui::TextEntry *m_pYPosEntry;
 };
 
+vgui::DHANDLE<class COptionsSubAudioAdvancedDlg> m_hOptionsSubAudioAdvancedDlg;
+
 class CAudioAdvancedButton : public vgui::Button
 {
 	DECLARE_CLASS_SIMPLE(CAudioAdvancedButton, vgui::Button);
@@ -625,8 +628,7 @@ private:
 	MESSAGE_FUNC(OnOpenAdvanced, "OpenAdvanced");
 
 private:
-
-	vgui::DHANDLE<class COptionsSubAudioAdvancedDlg> m_hOptionsSubAudioAdvancedDlg;
+	
 };
 
 void CAudioAdvancedButton::OnOpenAdvanced(void)
@@ -682,17 +684,27 @@ void * __fastcall COptionsSubAudio_ctor(vgui::Panel *pthis, int dummy, vgui::Pan
 	return result;
 }
 
+
+void CGameUI::HideGameUI(void)
+{
+	if (m_hOptionsSubVideoAdvancedDlg.Get())
+	{
+		m_hOptionsSubVideoAdvancedDlg.Get()->PostMessage(m_hOptionsSubVideoAdvancedDlg.Get(), new KeyValues("GameUIHidden"));
+	}
+	if (m_hOptionsSubAudioAdvancedDlg.Get())
+	{
+		m_hOptionsSubAudioAdvancedDlg.Get()->PostMessage(m_hOptionsSubAudioAdvancedDlg.Get(), new KeyValues("GameUIHidden"));
+	}
+
+	return g_pfnCGameUI_HideGameUI(this, 0);
+}
+
+
 void GameUI_InstallHooks(void)
 {
 	auto hGameUI = GetModuleHandleA("GameUI.dll");
 	CreateInterfaceFn GameUICreateInterface = Sys_GetFactory((HINTERFACEMODULE)hGameUI);
 	g_pGameUI = (IGameUI *)GameUICreateInterface(GAMEUI_INTERFACE_VERSION, 0);
-
-	DWORD *pVFTable = *(DWORD **)&s_GameUI;
-
-	//g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  1, (void *)pVFTable[1], (void **)&g_pfnCGameUI_Initialize);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 2, (void *)pVFTable[2], (void **)&g_pfnCGameUI_Start);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 4, (void *)pVFTable[4], (void **)&g_pfnCGameUI_ActivateGameUI);
 
 	if (1)
 	{
@@ -794,6 +806,23 @@ void GameUI_InstallHooks(void)
 		});
 		Sig_FuncNotFound(COptionsSubVideo_ApplyVidSettings);
 	}
+
+	//TODO the vpanel of staticPanel?
+	/*if (1)
+	{
+		const char sigs1[] = "\x68\x2C\x01\x00\x00\x68\x90\x01\x00\x00\x2A\x2A\x8B\xC8\xA3";
+		auto addr = (PUCHAR)g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), sigs1, sizeof(sigs1) - 1);
+		Sig_AddrNotFound(staticPanel);
+		staticPanel = *(decltype(staticPanel) *)(addr + sizeof(sigs1) - 1);
+	}*/
+
+	DWORD *pVFTable = *(DWORD **)&s_GameUI;
+
+	//g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  1, (void *)pVFTable[1], (void **)&g_pfnCGameUI_Initialize);
+	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 2, (void *)pVFTable[2], (void **)&g_pfnCGameUI_Start);
+	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 4, (void *)pVFTable[4], (void **)&g_pfnCGameUI_ActivateGameUI);
+	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 10, (void *)pVFTable[10], (void **)&g_pfnCGameUI_HideGameUI);
+
 
 	Install_InlineHook(COptionsSubVideo_ctor);
 	Install_InlineHook(COptionsSubVideo_ApplyVidSettings);
