@@ -986,7 +986,7 @@ int CHudMessage::MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
 				V_strncpy((char *)pMsg->pMessage, sentence, HUDMESSAGE_MAXLENGTH - 1);
 				((char *)pMsg->pMessage)[HUDMESSAGE_MAXLENGTH - 1] = 0;
 
-				int slotNum = MessageAdd(pMsg, (*cl_time), hintMessage, -1, m_hFont, true);
+ 				int slotNum = MessageAdd(pMsg, (*cl_time), hintMessage, -1, m_hFont, true);
 
 				if (slotNum != -1)
 				{
@@ -1845,7 +1845,12 @@ int CHudMessage::MessageAdd(client_textmessage_t *newMessage, float time, int hi
 		tempMessage->fxtime = 0.07;
 		tempMessage->holdtime = 5;
 
-		if (tempMessage->pMessage)
+		if (!strcmp(tempMessage->pName, "#Spec_Duck"))
+		{
+			tempMessage->holdtime = 6;
+		}
+
+		if (tempMessage->pMessage && tempMessage->pMessage[0])
 		{
 			tempMessage->holdtime = strlen(tempMessage->pMessage) / 25;
 
