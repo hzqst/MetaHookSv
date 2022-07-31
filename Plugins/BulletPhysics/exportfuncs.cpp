@@ -1279,6 +1279,12 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 
 			if (ragdoll && ragdoll->m_iActivityType != 0)
 			{
+				if (g_bIsCounterStrike && spectating_player->index == gEngfuncs.GetLocalPlayer()->index)
+				{
+					if (g_iUser1 && !(*g_iUser1))
+						goto skip;
+				}
+
 				vec3_t save_simorg;
 				vec3_t save_cl_viewangles;
 				int save_health = pparams->health;
@@ -1301,7 +1307,7 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 			}
 		}
 	}
-
+skip:
 	gExportfuncs.V_CalcRefdef(pparams);
 }
 
