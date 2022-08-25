@@ -49,24 +49,46 @@ void R_ClearWSurfVBOCache(void)
 				GL_DeleteBuffer(VBOCache->hDecalEBO);
 				VBOCache->hDecalEBO = NULL;
 			}
+
 			for (size_t j = 0; j < VBOCache->vLeaves.size(); ++j)
 			{
 				auto VBOLeaf = VBOCache->vLeaves[j];
 
-				if (VBOLeaf->hEBO)
+				if (VBOLeaf != VBOCache->pNoVisLeaf)
 				{
-					GL_DeleteBuffer(VBOLeaf->hEBO);
-					VBOLeaf->hEBO = NULL;
+					if (VBOLeaf->hEBO)
+					{
+						GL_DeleteBuffer(VBOLeaf->hEBO);
+						VBOLeaf->hEBO = NULL;
+					}
+
+					for (size_t k = 0; k < WSURF_TEXCHAIN_MAX; ++k)
+					{
+						for (size_t l = 0; l < VBOLeaf->vDrawBatch[k].size(); ++l)
+						{
+							delete VBOLeaf->vDrawBatch[k][l];
+						}
+					}
+					delete VBOLeaf;
+				}
+			}
+			
+			if (VBOCache->pNoVisLeaf)
+			{
+				if (VBOCache->pNoVisLeaf->hEBO)
+				{
+					GL_DeleteBuffer(VBOCache->pNoVisLeaf->hEBO);
+					VBOCache->pNoVisLeaf->hEBO = NULL;
 				}
 
 				for (size_t k = 0; k < WSURF_TEXCHAIN_MAX; ++k)
 				{
-					for (size_t l = 0; l < VBOLeaf->vDrawBatch[k].size(); ++l)
+					for (size_t l = 0; l < VBOCache->pNoVisLeaf->vDrawBatch[k].size(); ++l)
 					{
-						delete VBOLeaf->vDrawBatch[k][l];
+						delete VBOCache->pNoVisLeaf->vDrawBatch[k][l];
 					}
 				}
-				delete VBOLeaf;
+				delete VBOCache->pNoVisLeaf;
 			}
 			
 			delete g_WSurfVBOCache[i];
@@ -831,7 +853,6 @@ byte mod_novis[MAX_MAP_LEAFS / 8];
 byte *Mod_DecompressVis(byte *in, model_t *model)
 {
 	static byte	decompressed[MAX_MAP_LEAFS / 8];
-	int		c;
 	int		row;
 
 	row = (model->numleafs + 7) >> 3;
@@ -853,7 +874,7 @@ void Mod_Init(void)
 	memset(mod_novis, 0xff, sizeof(mod_novis));
 }
 
-void R_MarkPVSLeaves(int leafindex)
+bool R_MarkPVSLeaves(int leafindex)
 {
 	for (int j = 0; j < r_worldmodel->numframes; j++)
 	{
@@ -883,6 +904,8 @@ void R_MarkPVSLeaves(int leafindex)
 			} while (node);
 		}
 	}
+
+	return vis == mod_novis ? true : false;
 }
 
 void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
@@ -891,31 +914,38 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 	{
 		(*r_visframecount) = 0;
 
+		modvbo->pNoVisLeaf = new wsurf_vbo_leaf_t;
+
 		for (int i = 0; i < r_worldmodel->numframes; ++i)
 		{
-			auto vboleaf = new wsurf_vbo_leaf_t;
+			bool bNoVis = R_MarkPVSLeaves(i);
+
+			auto vboleaf = (bNoVis) ? modvbo->pNoVisLeaf : new wsurf_vbo_leaf_t;
 
 			modvbo->vLeaves.emplace_back(vboleaf);
 
-			R_MarkPVSLeaves(i);
+			if (!vboleaf->bInit)
+			{
+				R_RecursiveLinkTextureChain(mod->nodes);
 
-			R_RecursiveLinkTextureChain(mod->nodes);
+				std::vector<unsigned int> vIndicesBuffer;
 
-			std::vector<unsigned int> vIndicesBuffer;
+				R_GenerateTexChain(mod, vboleaf, vIndicesBuffer);
 
-			R_GenerateTexChain(mod, vboleaf, vIndicesBuffer);
+				R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_STATIC);
+				R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_ANIM);
 
-			R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_STATIC);
-			R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_ANIM);
+				R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_STATIC);
+				R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID);
+				R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID);
 
-			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_STATIC);
-			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID);
-			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID);
+				vboleaf->hEBO = GL_GenBuffer();
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboleaf->hEBO);
+				glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * vIndicesBuffer.size(), vIndicesBuffer.data(), GL_STATIC_DRAW);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-			vboleaf->hEBO = GL_GenBuffer();
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboleaf->hEBO);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * vIndicesBuffer.size(), vIndicesBuffer.data(), GL_STATIC_DRAW);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+				vboleaf->bInit = true;
+			}
 		}
 
 		(*r_visframecount) = 0;
@@ -1904,7 +1934,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 	if (modvbo->pModel == r_worldmodel)
 	{
 		auto leafindex = ((*r_viewleaf) - r_worldmodel->leafs);
-		if (leafindex >= 0 && leafindex < modvbo->vLeaves.size())
+		if (leafindex >= 0 && leafindex < (int)modvbo->vLeaves.size())
 		{
 			auto vboleaf = modvbo->vLeaves[leafindex];
 
@@ -2651,6 +2681,7 @@ void R_ClearBSPEntities(void)
 	}
 	r_wsurf.vBSPEntities.clear();
 	r_water_controls.clear();
+	r_flashlight_cone_texture_name.clear();
 	g_DynamicLights.clear();
 }
 
@@ -3245,6 +3276,14 @@ void R_ParseBSPEntity_Env_FlashLight_Control(bspentity_t *ent)
 	R_ParseMapCvarSetMapValue(r_flashlight_specular, ValueForKey(ent, "specular"));
 	R_ParseMapCvarSetMapValue(r_flashlight_specularpow, ValueForKey(ent, "specularpow"));
 	R_ParseMapCvarSetMapValue(r_flashlight_attachment, ValueForKey(ent, "attachment"));
+	R_ParseMapCvarSetMapValue(r_flashlight_distance, ValueForKey(ent, "distance"));
+	R_ParseMapCvarSetMapValue(r_flashlight_cone_cosine, ValueForKey(ent, "cone_cosine"));
+	
+	char *cone_texture_string = ValueForKey(ent, "cone_texture");
+	if (cone_texture_string)
+	{
+		r_flashlight_cone_texture_name = cone_texture_string;
+	}
 }
 
 void R_ParseBSPEntity_Env_HDR_Control(bspentity_t *ent)

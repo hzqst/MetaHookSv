@@ -9,14 +9,13 @@ MapConVar *r_flashlight_diffuse = NULL;
 MapConVar *r_flashlight_specular = NULL;
 MapConVar *r_flashlight_specularpow = NULL;
 MapConVar *r_flashlight_attachment = NULL;
+MapConVar *r_flashlight_distance = NULL;
+MapConVar *r_flashlight_cone_cosine = NULL;
 
 MapConVar *r_dynlight_ambient = NULL;
 MapConVar *r_dynlight_diffuse = NULL;
 MapConVar *r_dynlight_specular = NULL;
 MapConVar *r_dynlight_specularpow = NULL;
-
-cvar_t *r_flashlight_distance = NULL;
-cvar_t *r_flashlight_cone = NULL;
 
 cvar_t *r_ssr = NULL;
 MapConVar *r_ssr_ray_step = NULL;
@@ -36,6 +35,9 @@ int gbuffer_attachment_count = 0;
 GLuint r_sphere_vbo = 0;
 GLuint r_sphere_ebo = 0;
 GLuint r_cone_vbo = 0;
+
+GLuint r_flashlight_cone_texture = 0;
+std::string r_flashlight_cone_texture_name;
 
 std::vector<light_dynamic_t> g_DynamicLights;
 
@@ -235,12 +237,18 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 		if (state & DLIGHT_VOLUME_ENABLED)
 			defs << "#define VOLUME_ENABLED\n";
 
+		if (state & DLIGHT_CONE_TEXTURE_ENABLED)
+			defs << "#define CONE_TEXTURE_ENABLED\n";
+
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\dlight_shader.vsh", "renderer\\shader\\dlight_shader.fsh", def.c_str(), def.c_str(), NULL);
 		if (prog.program)
 		{
 			SHADER_UNIFORM(prog, u_lightdir, "u_lightdir");
+			SHADER_UNIFORM(prog, u_lightright, "u_lightright");
+			SHADER_UNIFORM(prog, u_lightup, "u_lightup");
 			SHADER_UNIFORM(prog, u_lightpos, "u_lightpos");
 			SHADER_UNIFORM(prog, u_lightcolor, "u_lightcolor");
 			SHADER_UNIFORM(prog, u_lightcone, "u_lightcone");
@@ -276,6 +284,7 @@ const program_state_name_t s_DLightProgramStateName[] = {
 { DLIGHT_SPOT_ENABLED		,"DLIGHT_SPOT_ENABLED"	 },
 { DLIGHT_POINT_ENABLED		,"DLIGHT_POINT_ENABLED"	 },
 { DLIGHT_VOLUME_ENABLED		,"DLIGHT_VOLUME_ENABLED" },
+{ DLIGHT_CONE_TEXTURE_ENABLED		,"DLIGHT_CONE_TEXTURE_ENABLED" },
 };
 
 void R_SaveDLightProgramStates(void)
@@ -405,6 +414,9 @@ void R_InitLight(void)
 	r_flashlight_specularpow = R_RegisterMapCvar("r_flashlight_specularpow", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_attachment = R_RegisterMapCvar("r_flashlight_attachment", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
+	r_flashlight_distance = R_RegisterMapCvar("r_flashlight_distance", "2000", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_flashlight_cone_cosine = R_RegisterMapCvar("r_flashlight_cone_cosine", "0.9", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+
 	r_ssr = gEngfuncs.pfnRegisterVariable("r_ssr", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssr_ray_step = R_RegisterMapCvar("r_ssr_ray_step", "5.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssr_iter_count = R_RegisterMapCvar("r_ssr_iter_count", "64", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -413,9 +425,6 @@ void R_InitLight(void)
 	r_ssr_exponential_step = R_RegisterMapCvar("r_ssr_exponential_step", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssr_binary_search = R_RegisterMapCvar("r_ssr_binary_search", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssr_fade = R_RegisterMapCvar("r_ssr_fade", "0.8 1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL, 2);
-
-	r_flashlight_distance = gEngfuncs.pfnRegisterVariable("r_flashlight_distance", "2000", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_flashlight_cone = gEngfuncs.pfnRegisterVariable("r_flashlight_cone", "0.9", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 #define X_SEGMENTS 64
 #define Y_SEGMENTS 64
@@ -517,6 +526,21 @@ void R_InitLight(void)
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	drawgbuffer = false;
+}
+
+void R_NewMapLight(void)
+{
+	if (!r_flashlight_cone_texture_name.empty())
+	{
+		int found_texture = GL_FindTexture(r_flashlight_cone_texture_name.c_str(), GLT_WORLD, NULL, NULL);
+
+		r_flashlight_cone_texture = found_texture ? found_texture :
+			R_LoadTextureEx(r_flashlight_cone_texture_name.c_str(), r_flashlight_cone_texture_name.c_str(), NULL, NULL, GLT_WORLD, true, true);
+	}
+	else
+	{
+		r_flashlight_cone_texture = 0;
+	}
 }
 
 bool R_IsDLightFlashlight(dlight_t *dl)
@@ -687,6 +711,14 @@ void R_EndRenderGBuffer(void)
 		glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferStencilView);
 	}
 
+	//Texture unit 3 = Flashlight cone texture
+	if (r_flashlight_cone_texture)
+	{
+		glActiveTexture(GL_TEXTURE3);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, r_flashlight_cone_texture);
+	}
+
 	if (g_DynamicLights.size())
 	{
 		for (size_t i = 0; i < g_DynamicLights.size(); i++)
@@ -824,15 +856,17 @@ void R_EndRenderGBuffer(void)
 				VectorCopy(org, dlight_origin);
 			}
 
-			if (!Util_IsOriginInCone((*r_refdef.vieworg), dlight_origin, dlight_vforward, r_flashlight_cone->value, r_flashlight_distance->value))
+			if (!Util_IsOriginInCone((*r_refdef.vieworg), dlight_origin, dlight_vforward, r_flashlight_cone_cosine->GetValue(), r_flashlight_distance->GetValue()))
 			{
 				glBindBuffer(GL_ARRAY_BUFFER, r_cone_vbo);
 				glEnableVertexAttribArray(0);
 				glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
 
-				float ang = acosf(r_flashlight_cone->value);
-				float tan = tanf(ang);
-				float radius = r_flashlight_distance->value * tan;
+				float coneCosAngle = r_flashlight_cone_cosine->GetValue();
+				float coneAngle = acosf(coneCosAngle);
+				float coneSinAngle = 1 - r_flashlight_cone_cosine->GetValue();
+				float coneTanAngle = tanf(coneAngle);
+				float radius = r_flashlight_distance->GetValue() * coneTanAngle;
 
 				glPushMatrix();
 				glLoadIdentity();
@@ -840,21 +874,30 @@ void R_EndRenderGBuffer(void)
 				glRotatef(dlight_angle[1], 0, 0, 1);
 				glRotatef(dlight_angle[0], 0, 1, 0);
 				glRotatef(dlight_angle[2], 1, 0, 0);
-				glScalef(r_flashlight_distance->value, radius, radius);
+				glScalef(r_flashlight_distance->GetValue(), radius, radius);
 
 				float modelmatrix[16];
 				glGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
 				glPopMatrix();
 
+				int DLightProgramState = DLIGHT_SPOT_ENABLED | DLIGHT_VOLUME_ENABLED;
+
+				if (r_flashlight_cone_texture)
+				{
+					DLightProgramState |= DLIGHT_CONE_TEXTURE_ENABLED;
+				}
+
 				dlight_program_t prog = { 0 };
-				R_UseDLightProgram(DLIGHT_SPOT_ENABLED | DLIGHT_VOLUME_ENABLED, &prog);
+				R_UseDLightProgram(DLightProgramState, &prog);
 
 				glUniformMatrix4fv(prog.u_modelmatrix, 1, false, modelmatrix);
 				glUniform3f(prog.u_lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2]);
+				glUniform3f(prog.u_lightright, dlight_vright[0], dlight_vright[1], dlight_vright[2]);
+				glUniform3f(prog.u_lightup, dlight_vup[0], dlight_vup[1], dlight_vup[2]);
 				glUniform3f(prog.u_lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2]);
 				glUniform3f(prog.u_lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
-				glUniform1f(prog.u_lightcone, r_flashlight_cone->value);
-				glUniform1f(prog.u_lightradius, r_flashlight_distance->value);
+				glUniform2f(prog.u_lightcone, coneCosAngle, coneSinAngle);
+				glUniform1f(prog.u_lightradius, r_flashlight_distance->GetValue());
 				glUniform1f(prog.u_lightambient, r_flashlight_ambient->GetValue());
 				glUniform1f(prog.u_lightdiffuse, r_flashlight_diffuse->GetValue());
 				glUniform1f(prog.u_lightspecular, r_flashlight_specular->GetValue());
@@ -867,16 +910,29 @@ void R_EndRenderGBuffer(void)
 			}
 			else
 			{
+				float coneCosAngle = r_flashlight_cone_cosine->GetValue();
+				float coneAngle = acosf(coneCosAngle);
+				float coneSinAngle = 1 - r_flashlight_cone_cosine->GetValue();
+
 				GL_BeginFullScreenQuad(false);
 
+				int DLightProgramState = DLIGHT_SPOT_ENABLED;
+
+				if (r_flashlight_cone_texture)
+				{
+					DLightProgramState |= DLIGHT_CONE_TEXTURE_ENABLED;
+				}
+
 				dlight_program_t prog = { 0 };
-				R_UseDLightProgram(DLIGHT_SPOT_ENABLED, &prog);
+				R_UseDLightProgram(DLightProgramState, &prog);
 
 				glUniform3f(prog.u_lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2]);
+				glUniform3f(prog.u_lightright, dlight_vright[0], dlight_vright[1], dlight_vright[2]);
+				glUniform3f(prog.u_lightup, dlight_vup[0], dlight_vup[1], dlight_vup[2]);
 				glUniform3f(prog.u_lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2]);
 				glUniform3f(prog.u_lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
-				glUniform1f(prog.u_lightcone, r_flashlight_cone->value);
-				glUniform1f(prog.u_lightradius, r_flashlight_distance->value);
+				glUniform2f(prog.u_lightcone, coneCosAngle, coneSinAngle);
+				glUniform1f(prog.u_lightradius, r_flashlight_distance->GetValue());
 				glUniform1f(prog.u_lightambient, r_flashlight_ambient->GetValue());
 				glUniform1f(prog.u_lightdiffuse, r_flashlight_diffuse->GetValue());
 				glUniform1f(prog.u_lightspecular, r_flashlight_specular->GetValue());

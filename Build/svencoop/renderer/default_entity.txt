@@ -26,3 +26,7 @@
 "angles" "0 0 0"
 "level" "WATER_LEVEL_REFLECT_WORLD"
 }
+{
+"classname" "env_flashlight_control"
+"cone_texture" "renderer/texture/flashlight.tga"
+}

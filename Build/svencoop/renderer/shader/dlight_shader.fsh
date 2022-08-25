@@ -15,10 +15,16 @@ layout(binding = 0) uniform sampler2DArray gbufferTex;
 layout(binding = 1) uniform sampler2D depthTex;
 layout(binding = 2) uniform usampler2D stencilTex;
 
+#ifdef CONE_TEXTURE_ENABLED
+layout(binding = 3) uniform sampler2D coneTex;
+#endif
+
 uniform vec3 u_lightpos;
 uniform vec3 u_lightdir;
+uniform vec3 u_lightright;
+uniform vec3 u_lightup;
 uniform vec3 u_lightcolor;
-uniform float u_lightcone;
+uniform vec2 u_lightcone;
 uniform float u_lightradius;
 uniform float u_lightambient;
 uniform float u_lightdiffuse;
@@ -98,10 +104,28 @@ vec4 CalcPointLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 {
     vec3 LightToPixel = normalize(World - u_lightpos.xyz);
-    float SpotFactor = dot(LightToPixel, u_lightdir.xyz);
-    if (SpotFactor > u_lightcone) {
+    float SpotCosine = dot(LightToPixel, u_lightdir.xyz);
+    float LimitCosine = u_lightcone.x;
+    float LimitSine = u_lightcone.y;
+    if (SpotCosine > LimitCosine) {
         vec4 Color = CalcPointLight(World, Normal, vBaseTexCoord);
-        return Color * (1.0 - (1.0 - SpotFactor) * 1.0/(1.0 - u_lightcone));
+
+#ifdef CONE_TEXTURE_ENABLED
+
+        float flConeProjX = dot(u_lightright, LightToPixel);
+        float flConeProjY = dot(u_lightup, LightToPixel);
+
+        //map from (-LimitSine, LimitSine) to (0, 1)
+        float flConeProjU = (flConeProjX * 1.0 / LimitSine + 1.0) * 0.5;
+        float flConeProjV = (flConeProjY * 1.0 / LimitSine + 1.0) * 0.5;
+
+        vec4 vConeColor = texture(coneTex, vec2(flConeProjU, flConeProjV));
+        return Color * vConeColor;
+#else
+        float flConeFactor = (SpotCosine - LimitCosine) * (1.0 / LimitSine);
+
+        return Color * flConeFactor;
+#endif        
     }
     else {
         return vec4(0.0, 0.0, 0.0, 0.0);

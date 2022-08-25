@@ -21,6 +21,10 @@ extern MapConVar *r_flashlight_diffuse;
 extern MapConVar *r_flashlight_specular;
 extern MapConVar *r_flashlight_specularpow;
 extern MapConVar *r_flashlight_attachment;
+extern MapConVar *r_flashlight_distance;
+extern MapConVar *r_flashlight_cone_cosine;
+extern GLuint r_flashlight_cone_texture;
+extern std::string r_flashlight_cone_texture_name;
 
 extern MapConVar *r_dynlight_ambient;
 extern MapConVar *r_dynlight_diffuse;
@@ -42,6 +46,8 @@ typedef struct
 {
 	int program;
 	int u_lightdir;
+	int u_lightright;
+	int u_lightup;
 	int u_lightpos;
 	int u_lightcolor;
 	int u_lightcone;
@@ -62,6 +68,7 @@ typedef struct
 	int u_ssrFade;
 }dfinal_program_t;
 
+void R_NewMapLight(void);
 void R_InitLight(void);
 void R_ShutdownLight(void);
 bool R_BeginRenderGBuffer(void);
@@ -91,6 +98,7 @@ void R_LoadDFinalProgramStates(void);
 #define DLIGHT_SPOT_ENABLED				1
 #define DLIGHT_POINT_ENABLED			2
 #define DLIGHT_VOLUME_ENABLED			4
+#define DLIGHT_CONE_TEXTURE_ENABLED		8
 
 #define DFINAL_LINEAR_FOG_ENABLED				0x1
 #define DFINAL_EXP_FOG_ENABLED					0x2

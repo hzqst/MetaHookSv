@@ -2140,6 +2140,7 @@ void R_NewMap(void)
 	R_NewMapWater();
 	R_NewMapPortal();
 	R_NewMapWSurf();
+	R_NewMapLight();
 
 	R_StudioReloadVBOCache();
 }

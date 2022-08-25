@@ -183,13 +183,14 @@ typedef struct wsurf_vbo_leaf_s
 	wsurf_vbo_leaf_s()
 	{
 		hEBO = NULL;
+		bInit = false;
 	}
-
 
 	GLuint	hEBO;
 	std::vector<brushtexchain_t> vTextureChain[WSURF_TEXCHAIN_MAX];
 	std::vector<wsurf_vbo_batch_t *> vDrawBatch[WSURF_DRAWBATCH_MAX];
 	brushtexchain_t TextureChainSky;
+	bool bInit;
 }wsurf_vbo_leaf_t;
 
 typedef struct wsurf_vbo_s
@@ -199,12 +200,14 @@ typedef struct wsurf_vbo_s
 		pModel = NULL;
 		hEntityUBO = 0;
 		hDecalEBO = 0;
+		pNoVisLeaf = NULL;
 	}
 
 	model_t	*pModel;
 	GLuint	hEntityUBO;
 	GLuint	hDecalEBO;
 	std::vector<wsurf_vbo_leaf_t *> vLeaves;
+	wsurf_vbo_leaf_t *pNoVisLeaf;
 }wsurf_vbo_t;
 
 #pragma pack(push, 16)
