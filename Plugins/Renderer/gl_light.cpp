@@ -864,7 +864,7 @@ void R_EndRenderGBuffer(void)
 
 				float coneCosAngle = r_flashlight_cone_cosine->GetValue();
 				float coneAngle = acosf(coneCosAngle);
-				float coneSinAngle = 1 - r_flashlight_cone_cosine->GetValue();
+				float coneSinAngle = sqrt(1 - coneCosAngle * coneCosAngle);
 				float coneTanAngle = tanf(coneAngle);
 				float radius = r_flashlight_distance->GetValue() * coneTanAngle;
 
@@ -912,7 +912,7 @@ void R_EndRenderGBuffer(void)
 			{
 				float coneCosAngle = r_flashlight_cone_cosine->GetValue();
 				float coneAngle = acosf(coneCosAngle);
-				float coneSinAngle = 1 - r_flashlight_cone_cosine->GetValue();
+				float coneSinAngle = sqrt(1 - coneCosAngle * coneCosAngle);
 
 				GL_BeginFullScreenQuad(false);
 

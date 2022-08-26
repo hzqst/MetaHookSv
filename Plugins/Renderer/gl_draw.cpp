@@ -167,11 +167,11 @@ void GL_UploadDXT(void *data, int width, int height, qboolean mipmap, qboolean a
 
 	if (gl_loadtexture_cubemap)
 	{
-		glCompressedTexImage2DARB(GL_TEXTURE_CUBE_MAP_POSITIVE_X + gl_loadtexture_cubemap - 1, 0, gl_loadtexture_format, width, height, 0, gl_loadtexture_size, data);
+		glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + gl_loadtexture_cubemap - 1, 0, gl_loadtexture_format, width, height, 0, gl_loadtexture_size, data);
 	}
 	else
 	{
-		glCompressedTexImage2DARB(iTextureTarget, 0, gl_loadtexture_format, width, height, 0, gl_loadtexture_size, data);
+		glCompressedTexImage2D(iTextureTarget, 0, gl_loadtexture_format, width, height, 0, gl_loadtexture_size, data);
 	}
 
 	if (mipmap)
@@ -194,8 +194,8 @@ void GL_UploadDXT(void *data, int width, int height, qboolean mipmap, qboolean a
 		glTexParameterf(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
 	}
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
+	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_S, wrap);
+	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_T, wrap);
 }
 
 void GL_UploadRGBA8(void *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap)
@@ -243,8 +243,8 @@ void GL_UploadRGBA8(void *data, int width, int height, qboolean mipmap, qboolean
 		glTexParameterf(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
 	}
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
+	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_S, wrap);
+	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_T, wrap);
 }
 
 int GL_FindTexture(const char *identifier, GL_TEXTURETYPE textureType, int *width, int *height)

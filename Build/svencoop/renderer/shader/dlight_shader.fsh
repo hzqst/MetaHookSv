@@ -125,7 +125,7 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
         float flConeFactor = (SpotCosine - LimitCosine) * (1.0 / LimitSine);
 
         return Color * flConeFactor;
-#endif        
+#endif
     }
     else {
         return vec4(0.0, 0.0, 0.0, 0.0);
