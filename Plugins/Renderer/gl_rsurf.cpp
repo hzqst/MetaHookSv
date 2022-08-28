@@ -765,7 +765,9 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 
 	glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hDecalVBO);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_DECAL_SSBO, r_wsurf.hDecalSSBO);
+
+	if (bUseBindless)
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_DECAL_SSBO, r_wsurf.hDecalSSBO);
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(4);

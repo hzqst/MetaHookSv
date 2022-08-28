@@ -983,45 +983,48 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 
 void R_GenerateWorldTextures(void)
 {
-	std::vector <GLuint64> ssbo;
-
-	ssbo.resize(r_worldmodel->numtextures * WSURF_MAX_TEXTURE);
-
-	for (int i = 0; i < r_worldmodel->numtextures; i++)
+	if (bUseBindless)
 	{
-		auto t = r_worldmodel->textures[i];
+		std::vector <GLuint64> ssbo;
 
-		if (!t)
-			continue;
+		ssbo.resize(r_worldmodel->numtextures * WSURF_MAX_TEXTURE);
 
-		auto pcache = R_FindDetailTextureCache(t->gl_texturenum);
-		if (pcache)
+		for (int i = 0; i < r_worldmodel->numtextures; i++)
 		{
-			for (int j = WSURF_REPLACE_TEXTURE; j < WSURF_MAX_TEXTURE; ++j)
-			{
-				if (pcache->tex[j].gltexturenum)
-				{
-					auto handle = glGetTextureHandleARB(pcache->tex[j].gltexturenum);
-					glMakeTextureHandleResidentARB(handle);
+			auto t = r_worldmodel->textures[i];
 
-					ssbo[i * WSURF_MAX_TEXTURE + j] = handle;
+			if (!t)
+				continue;
+
+			auto pcache = R_FindDetailTextureCache(t->gl_texturenum);
+			if (pcache)
+			{
+				for (int j = WSURF_REPLACE_TEXTURE; j < WSURF_MAX_TEXTURE; ++j)
+				{
+					if (pcache->tex[j].gltexturenum)
+					{
+						auto handle = glGetTextureHandleARB(pcache->tex[j].gltexturenum);
+						glMakeTextureHandleResidentARB(handle);
+
+						ssbo[i * WSURF_MAX_TEXTURE + j] = handle;
+					}
 				}
+			}
+
+			if (ssbo[i * WSURF_MAX_TEXTURE + 0] == 0)
+			{
+				auto handle = glGetTextureHandleARB(t->gl_texturenum);
+				glMakeTextureHandleResidentARB(handle);
+
+				ssbo[i * WSURF_MAX_TEXTURE + 0] = handle;
 			}
 		}
 
-		if (ssbo[i * WSURF_MAX_TEXTURE + 0] == 0)
-		{
-			auto handle = glGetTextureHandleARB(t->gl_texturenum);
-			glMakeTextureHandleResidentARB(handle);
-
-			ssbo[i * WSURF_MAX_TEXTURE + 0] = handle;
-		}
+		r_wsurf.hWorldSSBO = GL_GenBuffer();
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hWorldSSBO);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * ssbo.size(), ssbo.data(), GL_STATIC_DRAW);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 	}
-
-	r_wsurf.hWorldSSBO = GL_GenBuffer();
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hWorldSSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * ssbo.size(), ssbo.data(), GL_STATIC_DRAW);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
 void Mod_LoadBrushModel(model_t *mod, void *buffer)
@@ -1285,15 +1288,18 @@ void R_GenerateSceneUBO(void)
 	glBufferData(GL_ARRAY_BUFFER, sizeof(decalvertex_t) * MAX_DECALVERTS * MAX_DECALS, NULL, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	r_wsurf.hDecalSSBO = GL_GenBuffer();
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hDecalSSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * MAX_DECALS, NULL, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	if (bUseBindless)
+	{
+		r_wsurf.hDecalSSBO = GL_GenBuffer();
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hDecalSSBO);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * MAX_DECALS, NULL, GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-	r_wsurf.hSkyboxSSBO = GL_GenBuffer();
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hSkyboxSSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * 6, NULL, GL_STATIC_DRAW);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+		r_wsurf.hSkyboxSSBO = GL_GenBuffer();
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hSkyboxSSBO);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * 6, NULL, GL_STATIC_DRAW);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	}
 
 	if (bUseOITBlend)
 	{
@@ -1871,7 +1877,10 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 	//Begin WorldSurface Rendering
 
 	glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hSceneVBO);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_TEXTURE_SSBO, r_wsurf.hWorldSSBO);
+
+	if(bUseBindless)
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_TEXTURE_SSBO, r_wsurf.hWorldSSBO);
+	
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_ENTITY_UBO, modvbo->hEntityUBO);
 
 	glEnableVertexAttribArray(0);

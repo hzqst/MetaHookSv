@@ -396,9 +396,9 @@ int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int wid
 int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio);
 
 void GL_UploadDXT(void *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap);
-int LoadDDS(const char *filename, byte *buf, int bufSize, int *width, int *height);
-int LoadImageGeneric(const char *filename, byte *buf, int bufSize, int *width, int *height);
-int SaveImageGeneric(const char *filename, int width, int height, byte *data);
+qboolean LoadDDS(const char *filename, byte *buf, size_t bufSize, size_t *width, size_t *height);
+qboolean LoadImageGeneric(const char *filename, byte *buf, size_t bufSize, size_t *width, size_t *height);
+qboolean SaveImageGeneric(const char *filename, size_t width, size_t height, byte *data);
 
 cubemap_t *R_FindCubemap(float *origin);
 void R_LoadCubemap(cubemap_t *cubemap);

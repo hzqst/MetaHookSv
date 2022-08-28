@@ -24,7 +24,23 @@ int *gl_filter_max = NULL;
 
 int gl_loadtexture_format = GL_RGBA;
 int gl_loadtexture_cubemap = 0;
-int gl_loadtexture_size = 0;
+
+typedef struct mipmap_texture_data_s
+{
+	struct mipmap_texture_data_s(int _level, void *_data, size_t _size, size_t _width, size_t _height) :
+		level(_level), data(_data), size(_size), width(_width), height(_height)
+	{
+
+	}
+
+	int level;
+	void *data;
+	size_t size;
+	size_t width;
+	size_t height;
+}mipmap_texture_data_t;
+
+std::vector<mipmap_texture_data_t> gl_loadtexture_mipmap;
 
 gltexture_t *gltextures_get()
 {
@@ -159,92 +175,103 @@ void GL_EnableMultitexture(void)
 void GL_UploadDXT(void *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap)
 {
 	int iTextureTarget = GL_TEXTURE_2D;
+	int iMipmapTextureTarget = GL_TEXTURE_2D;
 
 	if (gl_loadtexture_cubemap)
+	{
 		iTextureTarget = GL_TEXTURE_CUBE_MAP;
-
-	glTexParameterf(iTextureTarget, GL_GENERATE_MIPMAP, (mipmap) ? GL_TRUE : GL_FALSE);
-
-	if (gl_loadtexture_cubemap)
-	{
-		glCompressedTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + gl_loadtexture_cubemap - 1, 0, gl_loadtexture_format, width, height, 0, gl_loadtexture_size, data);
+		iMipmapTextureTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + gl_loadtexture_cubemap - 1;
 	}
-	else
-	{
-		glCompressedTexImage2D(iTextureTarget, 0, gl_loadtexture_format, width, height, 0, gl_loadtexture_size, data);
-	}
+
+	//Legacy
+	glTexParameteri(iTextureTarget, GL_GENERATE_MIPMAP, GL_FALSE);
 
 	if (mipmap)
 	{
-		glTexParameterf(iTextureTarget, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
-		glTexParameterf(iTextureTarget, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+		glTexParameteri(iTextureTarget, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
+		glTexParameteri(iTextureTarget, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
 	}
 	else
 	{
-		glTexParameterf(iTextureTarget, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
-		glTexParameterf(iTextureTarget, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+		glTexParameteri(iTextureTarget, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
+		glTexParameteri(iTextureTarget, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
 	}
 
 	if (ansio && gl_ansio)
 	{
-		glTexParameterf(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+		glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
 	}
 	else
 	{
-		glTexParameterf(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
+		glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
 	}
 
 	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_S, wrap);
 	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_T, wrap);
+
+	for (size_t i = 0; i < gl_loadtexture_mipmap.size(); ++i)
+	{
+		glCompressedTexImage2D(iMipmapTextureTarget, gl_loadtexture_mipmap[i].level, gl_loadtexture_format, gl_loadtexture_mipmap[i].width, gl_loadtexture_mipmap[i].height, 0, gl_loadtexture_mipmap[i].size, gl_loadtexture_mipmap[i].data);
+	}
+
+	if (gl_loadtexture_mipmap.size() == 1 && mipmap)
+	{
+		//available since OpenGL 3.0
+		glGenerateMipmap(iTextureTarget);
+	}
+
+	gl_loadtexture_mipmap.clear();
 }
 
 void GL_UploadRGBA8(void *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap)
 {
-	int iComponent, iFormat, iTextureTarget;
-
-	int bbp = 0;
-	g_pMetaHookAPI->GetVideoMode(NULL, NULL, &bbp, NULL);
-
-	iFormat = GL_RGBA;
-	iComponent = (bbp == 16) ? GL_RGB5_A1 : GL_RGBA8;
-	iTextureTarget = GL_TEXTURE_2D;
+	int iTextureTarget = GL_TEXTURE_2D;
+	int iMipmapTextureTarget = GL_TEXTURE_2D;
 
 	if (gl_loadtexture_cubemap)
+	{
 		iTextureTarget = GL_TEXTURE_CUBE_MAP;
-
-	glTexParameterf(iTextureTarget, GL_GENERATE_MIPMAP, (mipmap) ? GL_TRUE : GL_FALSE);
-
-	if (gl_loadtexture_cubemap)
-	{
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + gl_loadtexture_cubemap - 1, 0, iComponent, width, height, 0, iFormat, GL_UNSIGNED_BYTE, data);
+		iMipmapTextureTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + gl_loadtexture_cubemap - 1;
 	}
-	else
-	{
-		glTexImage2D(iTextureTarget, 0, iComponent, width, height, 0, iFormat, GL_UNSIGNED_BYTE, data);
-	}
+
+	//Legacy
+	glTexParameteri(iTextureTarget, GL_GENERATE_MIPMAP, GL_FALSE);
 
 	if (mipmap)
 	{
-		glTexParameterf(iTextureTarget, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
-		glTexParameterf(iTextureTarget, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+		glTexParameteri(iTextureTarget, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
+		glTexParameteri(iTextureTarget, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
 	}
 	else
 	{
-		glTexParameterf(iTextureTarget, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
-		glTexParameterf(iTextureTarget, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+		glTexParameteri(iTextureTarget, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
+		glTexParameteri(iTextureTarget, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
 	}
 
 	if(ansio && gl_ansio)
 	{
-		glTexParameterf(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+		glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
 	}
 	else
 	{
-		glTexParameterf(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
+		glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
 	}
 
 	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_S, wrap);
 	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_T, wrap);
+
+	for (size_t i = 0; i < gl_loadtexture_mipmap.size(); ++i)
+	{
+		glTexImage2D(iMipmapTextureTarget, gl_loadtexture_mipmap[i].level, gl_loadtexture_format, gl_loadtexture_mipmap[i].width, gl_loadtexture_mipmap[i].height, 0, GL_RGBA, GL_UNSIGNED_BYTE, gl_loadtexture_mipmap[i].data);
+	}
+
+	if (gl_loadtexture_mipmap.size() == 1 && mipmap)
+	{
+		//available since OpenGL 3.0
+		glGenerateMipmap(iTextureTarget);
+	}
+
+	gl_loadtexture_mipmap.clear();
 }
 
 int GL_FindTexture(const char *identifier, GL_TEXTURETYPE textureType, int *width, int *height)
@@ -415,7 +442,9 @@ int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int wid
 	glBindTexture(iTextureTarget, texnum);
 	(*currenttexture) = -1;
 
-	if (gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT || gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT || gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT)
+	if (gl_loadtexture_format == GL_COMPRESSED_RGB_S3TC_DXT1_EXT ||
+		gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT || 
+		gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT)
 	{
 		GL_UploadDXT(data, width, height, mipmap, ansio, iWrap);
 	}
@@ -472,10 +501,9 @@ qboolean PowerOfTwo(int iWidth,int iHeight)
 	return true;
 }
 
-int LoadDDS(const char *filename, byte *buf, int bufsize, int *width, int *height)
+qboolean LoadDDS(const char *filename, byte *buf, size_t bufsize, size_t *width, size_t *height)
 {
-	dds_header_t header;
-	int fileSize;
+	DDS_FILEHEADER fileHeader;
 
 	if (width)
 		*width = 0;
@@ -485,101 +513,177 @@ int LoadDDS(const char *filename, byte *buf, int bufsize, int *width, int *heigh
 
 	FileHandle_t fileHandle = g_pFileSystem->Open(filename, "rb");
 
-	if(!fileHandle)
-		return FALSE;
+	if (!fileHandle)
+	{
+		gEngfuncs.Con_Printf("LoadDDS: Could not open %s.\n", filename);
+		return false;
+	}
 
-	fileSize = g_pFileSystem->Size(fileHandle);
-
-	if(!g_pFileSystem->Read((void *)&header, sizeof(dds_header_t), fileHandle))
+	if (sizeof(DDS_FILEHEADER) != g_pFileSystem->Read(&fileHeader, sizeof(DDS_FILEHEADER), fileHandle))
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DXT image.\n", filename);
 		g_pFileSystem->Close(fileHandle);
-		return FALSE;
+		return false;
 	}
 
-	DWORD iFlags = ByteToUInt(header.bFlags);
-	DWORD iMagic = ByteToUInt(header.bMagic);
-	DWORD iFourCC = ByteToUInt(header.bPFFourCC);
-	DWORD iPFFlags = ByteToUInt(header.bPFFlags);
-	DWORD iLinSize = ByteToUInt(header.bPitchOrLinearSize);
-	DWORD iSize = ByteToUInt(header.bSize);
-
-	int w = ByteToUInt(header.bWidth);
-	int h = ByteToUInt(header.bHeight);
-
-	if(iMagic != DDS_MAGIC)
+	if (fileHeader.dwMagic != DDS_MAGIC)
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DXT image.\n", filename);
 		g_pFileSystem->Close(fileHandle);
-		return FALSE;
+		return false;
 	}
 
-	if(iSize != 124)
+	if (fileHeader.Header.dwSize != 124)
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DXT image.\n", filename);
 		g_pFileSystem->Close(fileHandle);
-		return FALSE;
+		return false;
 	}
 
-	if(!(iFlags & DDSD_PIXELFORMAT))
+	if (!(fileHeader.Header.dwFlags & DDSD_PIXELFORMAT))
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DXT image.\n", filename);
 		g_pFileSystem->Close(fileHandle);
-		return FALSE;
+		return false;
 	}
 
-	if(!(iFlags & DDSD_CAPS))
+	if (!(fileHeader.Header.dwFlags & DDSD_CAPS))
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DXT image.\n", filename);
 		g_pFileSystem->Close(fileHandle);
-		return FALSE;
+		return false;
 	}
 
-	if(!(iPFFlags & DDPF_FOURCC))
+	if (!(fileHeader.Header.ddspf.dwFlags & DDPF_FOURCC))
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DXT image.\n", filename);
 		g_pFileSystem->Close(fileHandle);
-		return FALSE;
+		return false;
 	}
 
-	if(iFourCC != D3DFMT_DXT1 && iFourCC != D3DFMT_DXT3 && iFourCC != D3DFMT_DXT5)
+	if (fileHeader.Header.ddspf.dwFourCC != D3DFMT_DXT1 &&
+		fileHeader.Header.ddspf.dwFourCC != D3DFMT_DXT3 &&
+		fileHeader.Header.ddspf.dwFourCC != D3DFMT_DXT5)
 	{
 		gEngfuncs.Con_Printf("LoadDDS: Texture %s is not DXT1/3/5 format!\n", filename);
 		g_pFileSystem->Close(fileHandle);
-		return FALSE;
+		return false;
 	}
 
-	if((int)iLinSize > bufsize)
+	gl_loadtexture_mipmap.clear();
+
+	g_pFileSystem->Seek(fileHandle, sizeof(DDS_FILEHEADER), FILESYSTEM_SEEK_HEAD);
+
+	size_t offset = 0;
+	for (size_t i = 0; i < fileHeader.Header.dwMipMapCount; ++i)
 	{
-		gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-		g_pFileSystem->Close(fileHandle);
-		return FALSE;
+		switch (fileHeader.Header.ddspf.dwFourCC)
+		{
+		case D3DFMT_DXT1:
+		{
+			size_t w = fileHeader.Header.dwWidth >> i;
+			size_t h = fileHeader.Header.dwHeight >> i;
+
+			if (w == 0 || h == 0)
+				break;
+
+			size_t size = SIZE_OF_DXT1(w, h);
+
+			if (offset + size > bufsize)
+			{
+				gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
+				g_pFileSystem->Close(fileHandle);
+				return false;
+			}
+
+			if (size != g_pFileSystem->Read((void *)(buf + offset), size, fileHandle))
+			{
+				gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
+				g_pFileSystem->Close(fileHandle);
+				return false;
+			}
+
+			gl_loadtexture_format = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+			gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
+
+			offset += size;
+			break;
+		}
+		case D3DFMT_DXT3:
+		{
+			size_t w = fileHeader.Header.dwWidth >> i;
+			size_t h = fileHeader.Header.dwHeight >> i;
+
+			if (w == 0 || h == 0)
+				break;
+
+			size_t size = SIZE_OF_DXT2(w, h);
+
+			if (offset + size > bufsize)
+			{
+				gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
+				g_pFileSystem->Close(fileHandle);
+				return false;
+			}
+
+			if (size != g_pFileSystem->Read((void *)(buf + offset), size, fileHandle))
+			{
+				gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
+				g_pFileSystem->Close(fileHandle);
+				return false;
+			}
+
+			gl_loadtexture_format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+			gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
+
+			offset += size;
+			break;
+		}
+		case D3DFMT_DXT5:
+		{
+			size_t w = fileHeader.Header.dwWidth >> i;
+			size_t h = fileHeader.Header.dwHeight >> i;
+
+			if (w == 0 || h == 0)
+				break;
+
+			size_t size = SIZE_OF_DXT2(w, h);
+			if (offset + size > bufsize)
+			{
+				gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
+				g_pFileSystem->Close(fileHandle);
+				return false;
+			}
+			
+			if (size != g_pFileSystem->Read((void *)(buf + offset), size, fileHandle))
+			{
+				gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
+				g_pFileSystem->Close(fileHandle);
+				return false;
+			}
+
+			gl_loadtexture_format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+			gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
+
+			offset += size;
+
+			break;
+		}
+		}
+
+		if (g_pFileSystem->EndOfFile(fileHandle))
+		{
+			break;
+		}
 	}
-
-	g_pFileSystem->Seek(fileHandle, 128, FILESYSTEM_SEEK_HEAD);
-
-	if(!g_pFileSystem->Read((void *)buf, iLinSize, fileHandle))
-	{
-		gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-		g_pFileSystem->Close(fileHandle);
-		return FALSE;
-	}
-
-	if(iFourCC == D3DFMT_DXT1)
-		gl_loadtexture_format = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-	else if(iFourCC == D3DFMT_DXT3)
-		gl_loadtexture_format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-	else if(iFourCC == D3DFMT_DXT5)
-		gl_loadtexture_format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-
-	gl_loadtexture_size = iLinSize;
 
 	if(width)
-		*width = w;
+		*width = fileHeader.Header.dwWidth;
 	if(height)
-		*height = h;
+		*height = fileHeader.Header.dwHeight;
 
 	g_pFileSystem->Close(fileHandle);
+
 	return TRUE;
 }
 
@@ -646,7 +750,7 @@ long WINAPI FI_Tell(fi_handle handle)
 	return g_pFileSystem->Tell(handle);
 }
 
-int LoadImageGeneric(const char *filename, byte *buf, int bufSize, int *width, int *height)
+qboolean LoadImageGeneric(const char *filename, byte *buf, size_t bufSize, size_t *width, size_t *height)
 {
 	FileHandle_t fileHandle = g_pFileSystem->Open(filename, "rb");
 
@@ -666,40 +770,43 @@ int LoadImageGeneric(const char *filename, byte *buf, int bufSize, int *width, i
 
 	if(fiFormat == FIF_UNKNOWN)
     {
-		gEngfuncs.Con_Printf("LoadImageGeneric: %s Unsupported format.\n", filename);
-		return FALSE;
+		gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s Unsupported format.\n", filename);
+		return false;
     }
 
 	if(!FreeImage_FIFSupportsReading(fiFormat))
     {
-		gEngfuncs.Con_Printf("LoadImageGeneric: %s Unsupported format.\n", filename);
-		return FALSE;
+		gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, Unsupported format.\n", filename);
+		return false;
     }
 
 	FIBITMAP *fiB = FreeImage_LoadFromHandle(fiFormat, &fiIO, (fi_handle)fileHandle);
 
 	g_pFileSystem->Close(fileHandle);
 
-	if(!fiB)
-		return FALSE;
+	if (!fiB)
+	{
+		gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, FreeImage_LoadFromHandle failed.\n", filename);
+		return false;
+	}
 
-	int pos, w, h, blockSize;
+	gl_loadtexture_mipmap.clear();
 
-	pos = 0;
-	w = FreeImage_GetWidth(fiB);
-	h = FreeImage_GetHeight(fiB);
-	blockSize = FreeImage_GetLine(fiB) / w;
+	size_t pos = 0;
+	size_t w = FreeImage_GetWidth(fiB);
+	size_t h = FreeImage_GetHeight(fiB);
+	size_t blockSize = FreeImage_GetLine(fiB) / w;
 
 	if(w * h * 4 > bufSize)
 	{
 		FreeImage_Unload(fiB);
-		return FALSE;
+		return false;
 	}
 
-	for( int y = 0; y < h; ++y )
+	for(size_t y = 0; y < h; ++y )
 	{
 		BYTE *bits = FreeImage_GetScanLine(fiB, h-y-1);
-		for( int x = 0; x < w; ++x )
+		for( size_t x = 0; x < w; ++x )
 		{
 			buf[pos++] = bits[FI_RGBA_RED];//B
 			buf[pos++] = bits[FI_RGBA_GREEN];//G
@@ -711,19 +818,23 @@ int LoadImageGeneric(const char *filename, byte *buf, int bufSize, int *width, i
 			bits += blockSize;
 		}
 	}
+
 	if(width)
 		*width = w;
+
 	if(height)
 		*height = h;
 
-	gl_loadtexture_format = GL_RGBA;
-	gl_loadtexture_size = pos;
+	gl_loadtexture_format = GL_RGBA8;
+
+	gl_loadtexture_mipmap.emplace_back(0, buf, pos, w, h);
 
 	FreeImage_Unload(fiB);
-	return TRUE;
+
+	return true;
 }
 
-int SaveImageGeneric(const char *filename, int width, int height, byte *data)
+qboolean SaveImageGeneric(const char *filename, int width, int height, byte *data)
 {
 	const char *extension = V_GetFileExtension(filename);
 
@@ -731,22 +842,22 @@ int SaveImageGeneric(const char *filename, int width, int height, byte *data)
 
 	if(fiFormat == FIF_UNKNOWN)
 	{
-		gEngfuncs.Con_Printf("SaveImageGeneric: %s Unsupported format.\n", filename);
-		return FALSE;  
+		gEngfuncs.Con_Printf("SaveImageGeneric: Could not save %s, Unsupported format.\n", filename);
+		return false;  
 	}
 
 	if(!FreeImage_FIFSupportsWriting(fiFormat))
     {
-		gEngfuncs.Con_Printf("SaveImageGeneric: %s Unsupported format.\n", filename);
-		return FALSE;
+		gEngfuncs.Con_Printf("SaveImageGeneric: Could not save %s, Unsupported format.\n", filename);
+		return false;
     }
 
 	FileHandle_t fileHandle = g_pFileSystem->Open(filename, "wb");
 
 	if(!fileHandle)
     {
-		gEngfuncs.Con_Printf("SaveImageGeneric: Cannot open %s for writing.\n", filename);
-		return FALSE;  
+		gEngfuncs.Con_Printf("SaveImageGeneric: Could not open %s for writing.\n", filename);
+		return false;  
     }
 
 	FreeImageIO fiIO;
@@ -774,20 +885,20 @@ int SaveImageGeneric(const char *filename, int width, int height, byte *data)
 
 	if(FALSE == FreeImage_SaveToHandle(fiFormat, fiB, &fiIO, (fi_handle)fileHandle))
     {
-		gEngfuncs.Con_Printf("SaveImageGeneric: Cannot save %s.\n", filename);
+		gEngfuncs.Con_Printf("SaveImageGeneric: Could not save %s, FreeImage_SaveToHandle failed.\n", filename);
 		g_pFileSystem->Close(fileHandle);
 		FreeImage_Unload(fiB);
-        return FALSE;
+        return false;
     }
 
 	g_pFileSystem->Close(fileHandle);
 	FreeImage_Unload(fiB);
-	return TRUE;
+	return true;
 }
 
 int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio)
 {
-	int w, h;
+	size_t w = 0, h = 0;
 
 	const char *extension = V_GetFileExtension(filepath);
 

@@ -15,10 +15,6 @@ extern cachewad_t **decal_wad;
 
 extern float gl_max_ansio;
 
-extern int gl_loadtexture_format;
-extern int gl_loadtexture_cubemap;
-extern int gl_loadtexture_size;
-
 gltexture_t *gltextures_get();
 
 //DXT
@@ -28,6 +24,7 @@ gltexture_t *gltextures_get();
 #define DDSD_CAPS                   0x00000001
 #define DDSD_PIXELFORMAT            0x00001000
 #define DDPF_FOURCC                 0x00000004
+#define DDSCAPS_MIPMAP 0x400000
 
 #define D3DFMT_DXT1     '1TXD'    //  DXT1 compression texture format 
 #define D3DFMT_DXT3     '3TXD'    //  DXT5 compression texture format 
@@ -35,21 +32,43 @@ gltexture_t *gltextures_get();
 
 #define DIB_HEADER_MARKER ((WORD)('M' << 8) | 'B')
 
+#define SIZE_OF_DXT1(width, height)    ( max(1, ( (width + 3) >> 2 ) ) * max(1, ( (height + 3) >> 2 ) ) * 8 )
+#define SIZE_OF_DXT2(width, height)    ( max(1, ( (width + 3) >> 2 ) ) * max(1, ( (height + 3) >> 2 ) ) * 16 )
+
+typedef struct {
+	DWORD dwSize;
+	DWORD dwFlags;
+	DWORD dwFourCC;
+	DWORD dwRGBBitCount;
+	DWORD dwRBitMask;
+	DWORD dwGBitMask;
+	DWORD dwBBitMask;
+	DWORD dwABitMask;
+}DDS_PIXELFORMAT;
+
 typedef struct
 {
-	byte bMagic[4];
-	byte bSize[4];
-	byte bFlags[4];
-	byte bHeight[4];
-	byte bWidth[4];
-	byte bPitchOrLinearSize[4];
+	DWORD           dwSize;
+	DWORD           dwFlags;
+	DWORD           dwHeight;
+	DWORD           dwWidth;
+	DWORD           dwPitchOrLinearSize;
+	DWORD           dwDepth;
+	DWORD           dwMipMapCount;
+	DWORD           dwReserved1[11];
+	DDS_PIXELFORMAT ddspf;
+	DWORD           dwCaps;
+	DWORD           dwCaps2;
+	DWORD           dwCaps3;
+	DWORD           dwCaps4;
+	DWORD           dwReserved2;
+}DDS_HEADER;
 
-	byte bPad1[52];
-
-	byte bPFSize[4];
-	byte bPFFlags[4];
-	byte bPFFourCC[4];
-}dds_header_t;
+typedef struct
+{
+	DWORD        dwMagic;
+	DDS_HEADER    Header;
+} DDS_FILEHEADER;
 
 int GL_AllocTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int height, qboolean mipmap);
 int GL_FindTexture(const char *identifier, GL_TEXTURETYPE textureType, int *width, int *height);
