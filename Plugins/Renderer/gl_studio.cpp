@@ -1368,7 +1368,7 @@ void R_GLStudioDrawPoints(void)
 
 		if (r_draw_shadowcaster)
 		{
-				
+			
 		}
 		else if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowHair)
 		{
@@ -1664,7 +1664,7 @@ void R_StudioDrawBatch(void)
 
 void R_StudioRenderFinal(void)
 {
-	if (r_draw_shadowcaster)
+	/*if (r_draw_shadowcaster)
 	{
 		IEngineStudio.SetupRenderer((*currententity)->curstate.rendermode);
 		IEngineStudio.GL_SetRenderMode((*currententity)->curstate.rendermode);
@@ -1674,22 +1674,16 @@ void R_StudioRenderFinal(void)
 		IEngineStudio.RestoreRenderer();
 	}
 	else
-	{
+	{*/
 		gRefFuncs.R_StudioRenderFinal();
-	}
+	//}
 }
 
 void R_StudioRenderModel(void)
 {
-	//auto VBOData = R_PrepareStudioVBO(*pstudiohdr);
-
-	//R_EnableStudioVBO(VBOData);
-
 	if (r_draw_shadowcaster)
 	{
 		gRefFuncs.R_StudioRenderModel();
-
-		//R_EnableStudioVBO(NULL);
 
 		return;
 	}
@@ -1764,7 +1758,7 @@ void R_StudioRenderModel(void)
 
 void __fastcall GameStudioRenderer_StudioRenderFinal(void *pthis, int)
 {
-	if (r_draw_shadowcaster)
+	/*if (r_draw_shadowcaster)
 	{
 		IEngineStudio.SetupRenderer((*currententity)->curstate.rendermode);
 		IEngineStudio.GL_SetRenderMode((*currententity)->curstate.rendermode);
@@ -1774,22 +1768,16 @@ void __fastcall GameStudioRenderer_StudioRenderFinal(void *pthis, int)
 		IEngineStudio.RestoreRenderer();
 	}
 	else
-	{
+	{*/
 		gRefFuncs.GameStudioRenderer_StudioRenderFinal(pthis, 0);
-	}
+	//}
 }
 
 void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 {
-	//auto VBOData = R_PrepareStudioVBO(*pstudiohdr);
-
-	//R_EnableStudioVBO(VBOData);
-
 	if (r_draw_shadowcaster)
 	{
 		gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
-
-		//R_EnableStudioVBO(NULL);
 
 		return;
 	}
@@ -2469,7 +2457,7 @@ void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, studio_vbo_t
 	char *pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
 	if (!pfile)
 	{
-		gEngfuncs.Con_DPrintf("R_StudioLoadExternalFile: No external file %s\n", name.c_str());
+		//gEngfuncs.Con_DPrintf("R_StudioLoadExternalFile: No external file %s\n", name.c_str());
 		return;
 	}
 	

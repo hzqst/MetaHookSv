@@ -209,9 +209,15 @@ void GL_UploadDXT(void *data, int width, int height, qboolean mipmap, qboolean a
 	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_S, wrap);
 	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_T, wrap);
 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipmap ? (gl_loadtexture_mipmap.size() - 1) : 0);
+
 	for (size_t i = 0; i < gl_loadtexture_mipmap.size(); ++i)
 	{
 		glCompressedTexImage2D(iMipmapTextureTarget, gl_loadtexture_mipmap[i].level, gl_loadtexture_format, gl_loadtexture_mipmap[i].width, gl_loadtexture_mipmap[i].height, 0, gl_loadtexture_mipmap[i].size, gl_loadtexture_mipmap[i].data);
+		
+		if (!mipmap)
+			break;
 	}
 
 	if (gl_loadtexture_mipmap.size() == 1 && mipmap)
@@ -260,9 +266,15 @@ void GL_UploadRGBA8(void *data, int width, int height, qboolean mipmap, qboolean
 	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_S, wrap);
 	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_T, wrap);
 
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mipmap ? (gl_loadtexture_mipmap.size() - 1) : 0);
+
 	for (size_t i = 0; i < gl_loadtexture_mipmap.size(); ++i)
 	{
 		glTexImage2D(iMipmapTextureTarget, gl_loadtexture_mipmap[i].level, gl_loadtexture_format, gl_loadtexture_mipmap[i].width, gl_loadtexture_mipmap[i].height, 0, GL_RGBA, GL_UNSIGNED_BYTE, gl_loadtexture_mipmap[i].data);
+	
+		if (!mipmap)
+			break;
 	}
 
 	if (gl_loadtexture_mipmap.size() == 1 && mipmap)
@@ -454,6 +466,7 @@ int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int wid
 	}
 
 	glBindTexture(iTextureTarget, 0);
+	(*currenttexture) = -1;
 
 	return texnum;
 }
@@ -575,18 +588,15 @@ qboolean LoadDDS(const char *filename, byte *buf, size_t bufsize, size_t *width,
 	g_pFileSystem->Seek(fileHandle, sizeof(DDS_FILEHEADER), FILESYSTEM_SEEK_HEAD);
 
 	size_t offset = 0;
+	size_t w = fileHeader.Header.dwWidth;
+	size_t h = fileHeader.Header.dwHeight;
+
 	for (size_t i = 0; i < fileHeader.Header.dwMipMapCount; ++i)
 	{
 		switch (fileHeader.Header.ddspf.dwFourCC)
 		{
 		case D3DFMT_DXT1:
 		{
-			size_t w = fileHeader.Header.dwWidth >> i;
-			size_t h = fileHeader.Header.dwHeight >> i;
-
-			if (w == 0 || h == 0)
-				break;
-
 			size_t size = SIZE_OF_DXT1(w, h);
 
 			if (offset + size > bufsize)
@@ -607,16 +617,13 @@ qboolean LoadDDS(const char *filename, byte *buf, size_t bufsize, size_t *width,
 			gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
 
 			offset += size;
+			w = w >> 1;
+			h = h >> 1;
+
 			break;
 		}
 		case D3DFMT_DXT3:
 		{
-			size_t w = fileHeader.Header.dwWidth >> i;
-			size_t h = fileHeader.Header.dwHeight >> i;
-
-			if (w == 0 || h == 0)
-				break;
-
 			size_t size = SIZE_OF_DXT2(w, h);
 
 			if (offset + size > bufsize)
@@ -637,16 +644,13 @@ qboolean LoadDDS(const char *filename, byte *buf, size_t bufsize, size_t *width,
 			gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
 
 			offset += size;
+			w = w >> 1;
+			h = h >> 1;
+
 			break;
 		}
 		case D3DFMT_DXT5:
 		{
-			size_t w = fileHeader.Header.dwWidth >> i;
-			size_t h = fileHeader.Header.dwHeight >> i;
-
-			if (w == 0 || h == 0)
-				break;
-
 			size_t size = SIZE_OF_DXT2(w, h);
 			if (offset + size > bufsize)
 			{
@@ -666,15 +670,22 @@ qboolean LoadDDS(const char *filename, byte *buf, size_t bufsize, size_t *width,
 			gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
 
 			offset += size;
+			w = w >> 1;
+			h = h >> 1;
 
 			break;
 		}
 		}
 
+		if (w == 0 || h == 0)
+		{
+			break;
+		}
 		if (g_pFileSystem->EndOfFile(fileHandle))
 		{
 			break;
 		}
+
 	}
 
 	if(width)

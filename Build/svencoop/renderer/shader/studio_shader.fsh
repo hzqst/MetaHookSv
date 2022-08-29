@@ -201,6 +201,15 @@ void main(void)
 
 #if defined(SHADOW_CASTER_ENABLED)
 
+	#ifdef STUDIO_NF_MASKED
+		vec2 texcoord = v_texcoord * r_uvscale;
+
+		vec4 diffuseColorMask = texture2D(diffuseTex, texcoord);
+
+		if(diffuseColorMask.a < 0.5)
+			discard;
+	#endif
+
 	out_Diffuse = vec4(StudioUBO.entity_origin.x, StudioUBO.entity_origin.y, StudioUBO.entity_origin.z, gl_FragCoord.z);
 
 #elif defined(HAIR_SHADOW_ENABLED)

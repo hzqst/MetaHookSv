@@ -663,6 +663,181 @@ bool Util_IsOriginInCone(float *org, float *cone_origin, float *cone_forward, fl
 	return dot > cone_cosine;
 }
 
+typedef void(*fnPointLightCallback)(float radius, vec3_t origin, vec3_t color, float ambient, float diffuse, float specular, float specularpow, bool bVolume);
+typedef void(*fnSpotLightCallback)(float distance, float radius, 
+	float coneAngle, float coneCosAngle, float coneSinAngle, float coneTanAngle,
+	vec3_t origin, vec3_t angle, vec3_t vforward, vec3_t vright, vec3_t vup,
+	vec3_t color, float ambient, float diffuse, float specular, float specularpow, bool bVolume);
+
+void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLightCallback spotlight_callback)
+{
+	for (size_t i = 0; i < g_DynamicLights.size(); i++)
+	{
+		auto &dynlight = g_DynamicLights[i];
+
+		if (dynlight.type == DLIGHT_POINT)
+		{
+			float radius = dynlight.distance;
+
+			vec3_t distToLight;
+			VectorSubtract((*r_refdef.vieworg), dynlight.origin, distToLight);
+
+			if (VectorLength(distToLight) > radius + 32)
+			{
+				vec3_t mins, maxs;
+				for (int j = 0; j < 3; j++)
+				{
+					mins[j] = dynlight.origin[j] - radius;
+					maxs[j] = dynlight.origin[j] + radius;
+				}
+
+				if (R_CullBox(mins, maxs))
+					continue;
+
+				pointlight_callback(radius, dynlight.origin, dynlight.color, dynlight.ambient, dynlight.diffuse, dynlight.specular, dynlight.specularpow, true);
+
+			}
+			else
+			{
+				pointlight_callback(radius, dynlight.origin, dynlight.color, dynlight.ambient, dynlight.diffuse, dynlight.specular, dynlight.specularpow, false);
+			}
+		}
+	}
+
+	int max_dlight;
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		max_dlight = 256;
+	}
+	else
+	{
+		max_dlight = 32;
+	}
+
+	dlight_t *dl = cl_dlights;
+	float curtime = (*cl_time);
+
+	for (int i = 0; i < max_dlight; i++, dl++)
+	{
+		if (dl->die < curtime || !dl->radius)
+			continue;
+
+		if (R_IsDLightFlashlight(dl))
+		{
+			vec3_t dlight_origin;
+			vec3_t dlight_angle;
+			vec3_t dlight_vforward;
+			vec3_t dlight_vright;
+			vec3_t dlight_vup;
+
+			auto ent = gEngfuncs.GetEntityByIndex(dl->key);
+
+			vec3_t org;
+			//first person mode
+			if (ent == gEngfuncs.GetLocalPlayer() && !gExportfuncs.CL_IsThirdPerson() && !chase_active->value && r_params.viewentity <= r_params.maxclients)
+			{
+				VectorCopy((*r_refdef.viewangles), dlight_angle);
+				gEngfuncs.pfnAngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
+
+				if (cl_viewent && cl_viewent->model && r_flashlight_attachment->GetValue() > 0)
+				{
+					int attachmentIndex = (int)(r_flashlight_attachment->GetValue());
+					VectorCopy(cl_viewent->attachment[clamp(attachmentIndex, 1, 4) - 1], org);
+					VectorMA(org, -2, dlight_vup, org);
+					VectorMA(org, -10, dlight_vforward, org);
+				}
+				else
+				{
+					VectorCopy((*r_refdef.vieworg), org);
+					VectorMA(org, 2, dlight_vup, org);
+					VectorMA(org, 10, dlight_vright, org);
+				}
+
+				VectorCopy(org, dlight_origin);
+			}
+			else
+			{
+				VectorCopy(ent->angles, dlight_angle);
+				dlight_angle[0] = -dlight_angle[0];
+				gEngfuncs.pfnAngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
+
+				VectorCopy(ent->origin, org);
+				VectorMA(org, 8, dlight_vup, org);
+				VectorMA(org, 10, dlight_vright, org);
+
+				VectorCopy(org, dlight_origin);
+			}
+
+			float coneCosAngle = r_flashlight_cone_cosine->GetValue();
+			float coneAngle = acosf(coneCosAngle);
+			float coneSinAngle = sqrt(1 - coneCosAngle * coneCosAngle);
+			float coneTanAngle = tanf(coneAngle);
+			float distance = r_flashlight_distance->GetValue();
+			float radius = distance * coneTanAngle;
+			
+			float ambient = r_flashlight_ambient->GetValue();
+			float diffuse = r_flashlight_diffuse->GetValue();
+			float specular = r_flashlight_specular->GetValue();
+			float specularpow = r_flashlight_specularpow->GetValue();
+
+			vec3_t color;
+			color[0] = (float)dl->color.r / 255.0f;
+			color[1] = (float)dl->color.g / 255.0f;
+			color[2] = (float)dl->color.b / 255.0f;
+
+			if (!Util_IsOriginInCone((*r_refdef.vieworg), dlight_origin, dlight_vforward, coneCosAngle, distance))
+			{
+				spotlight_callback(distance, radius,
+					coneAngle, coneCosAngle, coneSinAngle, coneTanAngle,
+					dlight_origin, dlight_angle, dlight_vforward, dlight_vright, dlight_vup,
+					color, ambient, diffuse, specular, specularpow, true);
+			}
+			else
+			{
+				spotlight_callback(distance, radius,
+					coneAngle, coneCosAngle, coneSinAngle, coneTanAngle,
+					dlight_origin, dlight_angle, dlight_vforward, dlight_vright, dlight_vup,
+					color, ambient, diffuse, specular, specularpow, false);
+			}			
+		}
+		else
+		{
+			vec3_t color;
+			color[0] = (float)dl->color.r / 255.0f;
+			color[1] = (float)dl->color.g / 255.0f;
+			color[2] = (float)dl->color.b / 255.0f;
+
+			float ambient = r_dynlight_ambient->GetValue();
+			float diffuse = r_dynlight_diffuse->GetValue();
+			float specular = r_dynlight_specular->GetValue();
+			float specularpow = r_dynlight_specularpow->GetValue();
+
+			vec3_t distToLight;
+			VectorSubtract((*r_refdef.vieworg), dl->origin, distToLight);
+
+			if (VectorLength(distToLight) > dl->radius + 32)
+			{
+				vec3_t mins, maxs;
+				for (int j = 0; j < 3; j++)
+				{
+					mins[j] = dl->origin[j] - dl->radius;
+					maxs[j] = dl->origin[j] + dl->radius;
+				}
+
+				if (R_CullBox(mins, maxs))
+					continue;
+
+				pointlight_callback(dl->radius, dl->origin, color, ambient, diffuse, specular, specularpow, true);
+			}
+			else
+			{
+				pointlight_callback(dl->radius, dl->origin, color, ambient, diffuse, specular, specularpow, false);
+			}
+		}
+	}
+}
+
 void R_EndRenderGBuffer(void)
 {
 	GL_BeginFullScreenQuad(false);
@@ -719,302 +894,147 @@ void R_EndRenderGBuffer(void)
 		glBindTexture(GL_TEXTURE_2D, r_flashlight_cone_texture);
 	}
 
-	if (g_DynamicLights.size())
+	R_IterateDynamicLights([](float radius, vec3_t origin, vec3_t color, float ambient, float diffuse, float specular, float specularpow, bool bVolume)
 	{
-		for (size_t i = 0; i < g_DynamicLights.size(); i++)
+		if (bVolume)
 		{
-			auto &dynlight = g_DynamicLights[i];
+			glBindBuffer(GL_ARRAY_BUFFER, r_sphere_vbo);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r_sphere_ebo);
+			glEnableVertexAttribArray(0);
+			glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
 
-			if (dynlight.type == DLIGHT_POINT)
-			{
-				//Point Light
+			glPushMatrix();
+			glLoadIdentity();
+			glTranslatef(origin[0], origin[1], origin[2]);
+			glScalef(radius, radius, radius);
 
-				float radius = dynlight.distance;
+			float modelmatrix[16];
+			glGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
+			glPopMatrix();
 
-				vec3_t dist;
-				VectorSubtract((*r_refdef.vieworg), dynlight.origin, dist);
+			dlight_program_t prog = { 0 };
+			R_UseDLightProgram(DLIGHT_POINT_ENABLED | DLIGHT_VOLUME_ENABLED, &prog);
 
-				if (VectorLength(dist) > radius + 32)
-				{
-					glBindBuffer(GL_ARRAY_BUFFER, r_sphere_vbo);
-					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r_sphere_ebo);
-					glEnableVertexAttribArray(0);
-					glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+			glUniformMatrix4fv(prog.u_modelmatrix, 1, false, modelmatrix);
+			glUniform3f(prog.u_lightpos, origin[0], origin[1], origin[2]);
+			glUniform3f(prog.u_lightcolor, color[0], color[1], color[2]);
+			glUniform1f(prog.u_lightradius, radius);
+			glUniform1f(prog.u_lightambient, ambient);
+			glUniform1f(prog.u_lightdiffuse, diffuse);
+			glUniform1f(prog.u_lightspecular, specular);
+			glUniform1f(prog.u_lightspecularpow, specularpow);
 
-					glPushMatrix();
-					glLoadIdentity();
-					glTranslatef(dynlight.origin[0], dynlight.origin[1], dynlight.origin[2]);
-					glScalef(radius, radius, radius);
+			glDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
 
-					float modelmatrix[16];
-					glGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
-					glPopMatrix();
-
-					dlight_program_t prog = { 0 };
-					R_UseDLightProgram(DLIGHT_POINT_ENABLED | DLIGHT_VOLUME_ENABLED, &prog);
-
-					glUniformMatrix4fv(prog.u_modelmatrix, 1, false, modelmatrix);
-					glUniform3f(prog.u_lightpos, dynlight.origin[0], dynlight.origin[1], dynlight.origin[2]);
-					glUniform3f(prog.u_lightcolor, dynlight.color[0], dynlight.color[1], dynlight.color[2]);
-					glUniform1f(prog.u_lightradius, radius);
-					glUniform1f(prog.u_lightambient, dynlight.ambient);
-					glUniform1f(prog.u_lightdiffuse, dynlight.diffuse);
-					glUniform1f(prog.u_lightspecular, dynlight.specular);
-					glUniform1f(prog.u_lightspecularpow, dynlight.specularpow);
-
-					glDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
-
-					glDisableVertexAttribArray(0);
-					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-					glBindBuffer(GL_ARRAY_BUFFER, 0);
-				}
-				else
-				{
-					GL_BeginFullScreenQuad(false);
-
-					dlight_program_t prog = { 0 };
-					R_UseDLightProgram(DLIGHT_POINT_ENABLED, &prog);
-					glUniform3f(prog.u_lightpos, dynlight.origin[0], dynlight.origin[1], dynlight.origin[2]);
-					glUniform3f(prog.u_lightcolor, dynlight.color[0], dynlight.color[1], dynlight.color[2]);
-					glUniform1f(prog.u_lightradius, radius);
-					glUniform1f(prog.u_lightambient, dynlight.ambient);
-					glUniform1f(prog.u_lightdiffuse, dynlight.diffuse);
-					glUniform1f(prog.u_lightspecular, dynlight.specular);
-					glUniform1f(prog.u_lightspecularpow, dynlight.specularpow);
-
-					glDrawArrays(GL_QUADS, 0, 4);
-
-					GL_EndFullScreenQuad();
-				}
-			}
-		}
-	}
-
-	int max_dlight;
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		max_dlight = 256;
-	}
-	else
-	{
-		max_dlight = 32;
-	}
-
-	dlight_t *dl = cl_dlights;
-	float curtime = (*cl_time);
-
-	for (int i = 0; i < max_dlight; i++, dl++)
-	{
-		if (dl->die < curtime || !dl->radius)
-			continue;
-
-		if (R_IsDLightFlashlight(dl))
-		{
-			vec3_t dlight_origin;
-			vec3_t dlight_angle;
-			vec3_t dlight_vforward;
-			vec3_t dlight_vright;
-			vec3_t dlight_vup;
-
-			//Spot Light
-			auto ent = gEngfuncs.GetEntityByIndex(dl->key);
-
-			vec3_t org;
-			//first person mode
-			if (ent == gEngfuncs.GetLocalPlayer() && !gExportfuncs.CL_IsThirdPerson() && !chase_active->value && r_params.viewentity <= r_params.maxclients)
-			{
-				VectorCopy((*r_refdef.viewangles), dlight_angle);
-				gEngfuncs.pfnAngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
-
-				if (cl_viewent && cl_viewent->model && r_flashlight_attachment->GetValue() > 0)
-				{
-					int attachmentIndex = (int)(r_flashlight_attachment->GetValue());
-					VectorCopy(cl_viewent->attachment[clamp(attachmentIndex, 1, 4) - 1], org);
-					VectorMA(org, -2, dlight_vup, org);
-					VectorMA(org, -10, dlight_vforward, org);
-				}
-				else
-				{
-					VectorCopy((*r_refdef.vieworg), org);
-					VectorMA(org, 2, dlight_vup, org);
-					VectorMA(org, 10, dlight_vright, org);
-				}
-
-				VectorCopy(org, dlight_origin);
-			}
-			else
-			{
-				VectorCopy(ent->angles, dlight_angle);
-				dlight_angle[0] = -dlight_angle[0];
-				gEngfuncs.pfnAngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
-
-				VectorCopy(ent->origin, org);
-				VectorMA(org, 8, dlight_vup, org);
-				VectorMA(org, 10, dlight_vright, org);
-
-				VectorCopy(org, dlight_origin);
-			}
-
-			if (!Util_IsOriginInCone((*r_refdef.vieworg), dlight_origin, dlight_vforward, r_flashlight_cone_cosine->GetValue(), r_flashlight_distance->GetValue()))
-			{
-				glBindBuffer(GL_ARRAY_BUFFER, r_cone_vbo);
-				glEnableVertexAttribArray(0);
-				glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
-
-				float coneCosAngle = r_flashlight_cone_cosine->GetValue();
-				float coneAngle = acosf(coneCosAngle);
-				float coneSinAngle = sqrt(1 - coneCosAngle * coneCosAngle);
-				float coneTanAngle = tanf(coneAngle);
-				float radius = r_flashlight_distance->GetValue() * coneTanAngle;
-
-				glPushMatrix();
-				glLoadIdentity();
-				glTranslatef(dlight_origin[0], dlight_origin[1], dlight_origin[2]);
-				glRotatef(dlight_angle[1], 0, 0, 1);
-				glRotatef(dlight_angle[0], 0, 1, 0);
-				glRotatef(dlight_angle[2], 1, 0, 0);
-				glScalef(r_flashlight_distance->GetValue(), radius, radius);
-
-				float modelmatrix[16];
-				glGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
-				glPopMatrix();
-
-				int DLightProgramState = DLIGHT_SPOT_ENABLED | DLIGHT_VOLUME_ENABLED;
-
-				if (r_flashlight_cone_texture)
-				{
-					DLightProgramState |= DLIGHT_CONE_TEXTURE_ENABLED;
-				}
-
-				dlight_program_t prog = { 0 };
-				R_UseDLightProgram(DLightProgramState, &prog);
-
-				glUniformMatrix4fv(prog.u_modelmatrix, 1, false, modelmatrix);
-				glUniform3f(prog.u_lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2]);
-				glUniform3f(prog.u_lightright, dlight_vright[0], dlight_vright[1], dlight_vright[2]);
-				glUniform3f(prog.u_lightup, dlight_vup[0], dlight_vup[1], dlight_vup[2]);
-				glUniform3f(prog.u_lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2]);
-				glUniform3f(prog.u_lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
-				glUniform2f(prog.u_lightcone, coneCosAngle, coneSinAngle);
-				glUniform1f(prog.u_lightradius, r_flashlight_distance->GetValue());
-				glUniform1f(prog.u_lightambient, r_flashlight_ambient->GetValue());
-				glUniform1f(prog.u_lightdiffuse, r_flashlight_diffuse->GetValue());
-				glUniform1f(prog.u_lightspecular, r_flashlight_specular->GetValue());
-				glUniform1f(prog.u_lightspecularpow, r_flashlight_specularpow->GetValue());
-
-				glDrawArrays(GL_TRIANGLES, 0, X_SEGMENTS * 6);
-
-				glBindBuffer(GL_ARRAY_BUFFER, 0);
-				glDisableVertexAttribArray(0);				
-			}
-			else
-			{
-				float coneCosAngle = r_flashlight_cone_cosine->GetValue();
-				float coneAngle = acosf(coneCosAngle);
-				float coneSinAngle = sqrt(1 - coneCosAngle * coneCosAngle);
-
-				GL_BeginFullScreenQuad(false);
-
-				int DLightProgramState = DLIGHT_SPOT_ENABLED;
-
-				if (r_flashlight_cone_texture)
-				{
-					DLightProgramState |= DLIGHT_CONE_TEXTURE_ENABLED;
-				}
-
-				dlight_program_t prog = { 0 };
-				R_UseDLightProgram(DLightProgramState, &prog);
-
-				glUniform3f(prog.u_lightdir, dlight_vforward[0], dlight_vforward[1], dlight_vforward[2]);
-				glUniform3f(prog.u_lightright, dlight_vright[0], dlight_vright[1], dlight_vright[2]);
-				glUniform3f(prog.u_lightup, dlight_vup[0], dlight_vup[1], dlight_vup[2]);
-				glUniform3f(prog.u_lightpos, dlight_origin[0], dlight_origin[1], dlight_origin[2]);
-				glUniform3f(prog.u_lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
-				glUniform2f(prog.u_lightcone, coneCosAngle, coneSinAngle);
-				glUniform1f(prog.u_lightradius, r_flashlight_distance->GetValue());
-				glUniform1f(prog.u_lightambient, r_flashlight_ambient->GetValue());
-				glUniform1f(prog.u_lightdiffuse, r_flashlight_diffuse->GetValue());
-				glUniform1f(prog.u_lightspecular, r_flashlight_specular->GetValue());
-				glUniform1f(prog.u_lightspecularpow, r_flashlight_specularpow->GetValue());
-				
-				glDrawArrays(GL_QUADS, 0, 4);
-
-				GL_EndFullScreenQuad();
-			}
+			glDisableVertexAttribArray(0);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
 		}
 		else
 		{
-			vec3_t dist;
-			VectorSubtract((*r_refdef.vieworg), dl->origin, dist);
+			GL_BeginFullScreenQuad(false);
 
-			if (VectorLength(dist) > dl->radius + 32)
-			{
-				vec3_t mins, maxs;
-				for (int j = 0; j < 3; j++)
-				{
-					mins[j] = dl->origin[j] - dl->radius;
-					maxs[j] = dl->origin[j] + dl->radius;
-				}
+			dlight_program_t prog = { 0 };
+			R_UseDLightProgram(DLIGHT_POINT_ENABLED, &prog);
+			glUniform3f(prog.u_lightpos, origin[0], origin[1], origin[2]);
+			glUniform3f(prog.u_lightcolor, color[0], color[1], color[2]);
+			glUniform1f(prog.u_lightradius, radius);
+			glUniform1f(prog.u_lightambient, ambient);
+			glUniform1f(prog.u_lightdiffuse, diffuse);
+			glUniform1f(prog.u_lightspecular, specular);
+			glUniform1f(prog.u_lightspecularpow, specularpow);
 
-				if (R_CullBox(mins, maxs))
-					continue;
+			glDrawArrays(GL_QUADS, 0, 4);
 
-				glPushMatrix();
-				glLoadIdentity();
-				glTranslatef(dl->origin[0], dl->origin[1], dl->origin[2]);
-				glScalef(dl->radius, dl->radius, dl->radius);
-
-				float modelmatrix[16];
-				glGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
-				glPopMatrix();
-
-				dlight_program_t prog = { 0 };
-				R_UseDLightProgram(DLIGHT_POINT_ENABLED | DLIGHT_VOLUME_ENABLED, &prog);
-				
-				glUniformMatrix4fv(prog.u_modelmatrix, 1, false, modelmatrix);
-				glUniform3f(prog.u_lightpos, dl->origin[0], dl->origin[1], dl->origin[2]);
-				glUniform3f(prog.u_lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
-				glUniform1f(prog.u_lightradius, dl->radius);
-				glUniform1f(prog.u_lightambient, r_dynlight_ambient->GetValue());
-				glUniform1f(prog.u_lightdiffuse, r_dynlight_diffuse->GetValue());
-				glUniform1f(prog.u_lightspecular, r_dynlight_specular->GetValue());
-				glUniform1f(prog.u_lightspecularpow, r_dynlight_specularpow->GetValue());
-
-				glBindBuffer(GL_ARRAY_BUFFER, r_sphere_vbo);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r_sphere_ebo);
-				glEnableVertexAttribArray(0);
-				glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
-
-				glDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);				
-
-				glDisableVertexAttribArray(0);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-				glBindBuffer(GL_ARRAY_BUFFER, 0);
-			}
-			else
-			{
-				GL_BeginFullScreenQuad(false);
-
-				dlight_program_t prog = { 0 };
-				R_UseDLightProgram(DLIGHT_POINT_ENABLED, &prog);
-
-				glUniform3f(prog.u_lightpos, dl->origin[0], dl->origin[1], dl->origin[2]);
-				glUniform3f(prog.u_lightcolor, (float)dl->color.r / 255.0f, (float)dl->color.g / 255.0f, (float)dl->color.b / 255.0f);
-				glUniform1f(prog.u_lightradius, dl->radius);
-				glUniform1f(prog.u_lightambient, r_dynlight_ambient->GetValue());
-				glUniform1f(prog.u_lightdiffuse, r_dynlight_diffuse->GetValue());
-				glUniform1f(prog.u_lightspecular, r_dynlight_specular->GetValue());
-				glUniform1f(prog.u_lightspecularpow, r_dynlight_specularpow->GetValue());
-
-				glDrawArrays(GL_QUADS, 0, 4);
-
-				GL_EndFullScreenQuad();
-			}
+			GL_EndFullScreenQuad();
 		}
-	}
+	}, 
+	[](float distance, float radius,
+		float coneAngle, float coneCosAngle, float coneSinAngle, float coneTanAngle,
+		vec3_t origin, vec3_t angle, vec3_t vforward, vec3_t vright, vec3_t vup,
+		vec3_t color, float ambient, float diffuse, float specular, float specularpow, bool bVolume)
+	{
 
-	//re-enable depth write
+		if (bVolume)
+		{
+			glBindBuffer(GL_ARRAY_BUFFER, r_cone_vbo);
+			glEnableVertexAttribArray(0);
+			glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+
+			glPushMatrix();
+			glLoadIdentity();
+			glTranslatef(origin[0], origin[1], origin[2]);
+			glRotatef(angle[1], 0, 0, 1);
+			glRotatef(angle[0], 0, 1, 0);
+			glRotatef(angle[2], 1, 0, 0);
+			glScalef(distance, radius, radius);
+
+			float modelmatrix[16];
+			glGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
+			glPopMatrix();
+
+			int DLightProgramState = DLIGHT_SPOT_ENABLED | DLIGHT_VOLUME_ENABLED;
+
+			if (r_flashlight_cone_texture)
+			{
+				DLightProgramState |= DLIGHT_CONE_TEXTURE_ENABLED;
+			}
+
+			dlight_program_t prog = { 0 };
+			R_UseDLightProgram(DLightProgramState, &prog);
+
+			glUniformMatrix4fv(prog.u_modelmatrix, 1, false, modelmatrix);
+			glUniform3f(prog.u_lightdir, vforward[0], vforward[1], vforward[2]);
+			glUniform3f(prog.u_lightright, vright[0], vright[1], vright[2]);
+			glUniform3f(prog.u_lightup, vup[0], vup[1], vup[2]);
+			glUniform3f(prog.u_lightpos, origin[0], origin[1], origin[2]);
+			glUniform3f(prog.u_lightcolor, color[0], color[1], color[2]);
+			glUniform2f(prog.u_lightcone, coneCosAngle, coneSinAngle);
+			glUniform1f(prog.u_lightradius, distance);
+			glUniform1f(prog.u_lightambient, ambient);
+			glUniform1f(prog.u_lightdiffuse, diffuse);
+			glUniform1f(prog.u_lightspecular, specular);
+			glUniform1f(prog.u_lightspecularpow, specularpow);
+
+			glDrawArrays(GL_TRIANGLES, 0, X_SEGMENTS * 6);
+
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			glDisableVertexAttribArray(0);
+		}
+		else
+		{
+			GL_BeginFullScreenQuad(false);
+
+			int DLightProgramState = DLIGHT_SPOT_ENABLED;
+
+			if (r_flashlight_cone_texture)
+			{
+				DLightProgramState |= DLIGHT_CONE_TEXTURE_ENABLED;
+			}
+
+			dlight_program_t prog = { 0 };
+			R_UseDLightProgram(DLightProgramState, &prog);
+
+			glUniform3f(prog.u_lightdir, vforward[0], vforward[1], vforward[2]);
+			glUniform3f(prog.u_lightright, vright[0], vright[1], vright[2]);
+			glUniform3f(prog.u_lightup, vup[0], vup[1], vup[2]);
+			glUniform3f(prog.u_lightpos, origin[0], origin[1], origin[2]);
+			glUniform3f(prog.u_lightcolor, color[0], color[1], color[2]);
+			glUniform2f(prog.u_lightcone, coneCosAngle, coneSinAngle);
+			glUniform1f(prog.u_lightradius, distance);
+			glUniform1f(prog.u_lightambient, ambient);
+			glUniform1f(prog.u_lightdiffuse, diffuse);
+			glUniform1f(prog.u_lightspecular, specular);
+			glUniform1f(prog.u_lightspecularpow, specularpow);
+
+			glDrawArrays(GL_QUADS, 0, 4);
+
+			GL_EndFullScreenQuad();
+		}
+
+	});
+
+	//Re-enable depth write
 	glDepthMask(1);
 
 	//Write GBuffer depth and stencil buffer into main framebuffer

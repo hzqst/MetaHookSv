@@ -2295,6 +2295,14 @@ void R_LoadDetailTextures(void)
 			"WSURF_SPECULAR_TEXTURE",
 		};
 
+		bool textypeHasMipmap[] = {
+			true,
+			true,
+			true,
+			true,
+			true
+		};
+
 		if (cache)
 		{
 			if (cache->tex[texType].gltexturenum)
@@ -2310,7 +2318,7 @@ void R_LoadDetailTextures(void)
 			if (!V_GetFileExtension(detailtexture))
 				texturePath += ".tga";
 
-			int texId = R_LoadTextureEx(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, true, true);
+			int texId = R_LoadTextureEx(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, textypeHasMipmap[texType], true);
 			if (!texId)
 			{
 				texturePath = "renderer/texture/";
@@ -2318,7 +2326,7 @@ void R_LoadDetailTextures(void)
 				if (!V_GetFileExtension(detailtexture))
 					texturePath += ".tga";
 
-				texId = R_LoadTextureEx(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, true, true);
+				texId = R_LoadTextureEx(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, textypeHasMipmap[texType], true);
 			}
 
 			if (!texId)
@@ -2587,7 +2595,7 @@ void R_BeginDetailTexture(int texId)
 
 		if (cache->tex[WSURF_PARALLAX_TEXTURE].gltexturenum)
 		{
-			glActiveTexture(GL_TEXTURE4_ARB);
+			glActiveTexture(GL_TEXTURE4);
 			glEnable(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, cache->tex[WSURF_PARALLAX_TEXTURE].gltexturenum);
 
@@ -2596,7 +2604,7 @@ void R_BeginDetailTexture(int texId)
 
 		if (cache->tex[WSURF_SPECULAR_TEXTURE].gltexturenum)
 		{
-			glActiveTexture(GL_TEXTURE5_ARB);
+			glActiveTexture(GL_TEXTURE5);
 			glEnable(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, cache->tex[WSURF_SPECULAR_TEXTURE].gltexturenum);
 
@@ -2634,7 +2642,7 @@ void R_EndDetailTexture(void)
 		r_wsurf.bParallaxTexture = false;
 		bRestore = true;
 
-		glActiveTexture(GL_TEXTURE4_ARB);
+		glActiveTexture(GL_TEXTURE4);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glDisable(GL_TEXTURE_2D);
 	}
@@ -2644,7 +2652,7 @@ void R_EndDetailTexture(void)
 		r_wsurf.bSpecularTexture = false;
 		bRestore = true;
 
-		glActiveTexture(GL_TEXTURE5_ARB);
+		glActiveTexture(GL_TEXTURE5);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glDisable(GL_TEXTURE_2D);
 	}
@@ -2889,14 +2897,14 @@ void R_LoadExternalEntities(void)
 	char *pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
 	if (!pfile)
 	{
-		gEngfuncs.Con_Printf("R_LoadExternalEntities: No external entity file %s\n", name.c_str());
+		//gEngfuncs.Con_Printf("R_LoadExternalEntities: No external entity file %s\n", name.c_str());
 
 		name = "renderer/default_entity.txt";
 
 		pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
 		if (!pfile)
 		{
-			gEngfuncs.Con_Printf("R_LoadExternalEntities: No default external entity file %s\n", name.c_str());
+			//gEngfuncs.Con_Printf("R_LoadExternalEntities: No default external entity file %s\n", name.c_str());
 
 			return;
 		}

@@ -28,7 +28,6 @@ MapConVar *r_shadow_medium_scale = NULL;
 MapConVar *r_shadow_low_distance = NULL;
 MapConVar *r_shadow_low_scale = NULL;
 
-
 typedef enum
 {
 	ACT_RESET,
