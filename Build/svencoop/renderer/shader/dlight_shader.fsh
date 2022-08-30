@@ -75,7 +75,7 @@ vec3 GenerateWorldPositionFromDepth(vec2 texcoord, float depth) {
 float ShadowCompareDepth(vec4 basecoord, vec2 floorcoord, vec2 offset, float texelSize)
 {
     vec4 uv = basecoord;
-    uv.xy = floorcoord.xy + offset * texelSize * 4.0 * basecoord.w;
+    uv.xy = floorcoord.xy + offset * texelSize * basecoord.w;
     
     return textureProj(shadowTex, uv);
 }
