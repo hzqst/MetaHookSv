@@ -32,6 +32,22 @@ std::unordered_map <int, detail_texture_cache_t *> g_DecalTextureTable;
 
 std::vector<wsurf_vbo_t *> g_WSurfVBOCache;
 
+int EngineGetMaxDLight(void)
+{
+	int max_dlights;
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		max_dlights = 256;
+	}
+	else
+	{
+		max_dlights = 32;
+	}
+
+	return max_dlights;
+}
+
 void R_ClearWSurfVBOCache(void)
 {
 	for (size_t i =0 ;i < g_WSurfVBOCache.size(); ++i)
@@ -292,14 +308,13 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		if(glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define UINT64_ENABLED\n";
 	
-		defs << "#define SHADOW_TEXTURE_OFFSET (1.0 / " << std::dec << shadow_texture_size << ".0)\n";
+		defs << "#define SHADOW_TEXTURE_OFFSET (1.0 / " << std::dec << r_shadow_texture.size << ".0)\n";
 
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\wsurf_shader.vsh", "renderer\\shader\\wsurf_shader.fsh", def.c_str(), def.c_str(), NULL);
 
 		SHADER_UNIFORM(prog, u_parallaxScale, "u_parallaxScale");
-		SHADER_UNIFORM(prog, u_baseDrawId, "u_baseDrawId");
 
 		g_WSurfProgramTable[state] = prog;
 	}
@@ -823,96 +838,11 @@ void R_GenerateTexChain(model_t *mod, wsurf_vbo_leaf_t *vboleaf, std::vector<uns
 	}
 }
 
-void CM_DecompressPVS(byte *in, byte *decompressed, int byteCount)
-{
-	int		c;
-	byte	*out;
-
-	out = decompressed;
-
-	do
-	{
-		if (*in)
-		{
-			*out++ = *in++;
-			continue;
-		}
-
-		c = in[1];
-		in += 2;
-		while (c)
-		{
-			*out++ = 0;
-			c--;
-		}
-	} while (out < decompressed + byteCount);
-}
-
-byte mod_novis[MAX_MAP_LEAFS / 8];
-
-byte *Mod_DecompressVis(byte *in, model_t *model)
-{
-	static byte	decompressed[MAX_MAP_LEAFS / 8];
-	int		row;
-
-	row = (model->numleafs + 7) >> 3;
-
-	if (!in)
-		return mod_novis;
-
-	CM_DecompressPVS(in, decompressed, row);
-	return decompressed;
-}
-
-byte *Mod_LeafPVS(mleaf_t *leaf, model_t *model)
-{
-	return Mod_DecompressVis(leaf->compressed_vis, model);
-}
-
-void Mod_Init(void)
-{
-	memset(mod_novis, 0xff, sizeof(mod_novis));
-}
-
-bool R_MarkPVSLeaves(int leafindex)
-{
-	for (int j = 0; j < r_worldmodel->numframes; j++)
-	{
-		auto node = &r_worldmodel->leafs[j];
-		node->visframe = 0;
-	}
-
-	(*r_visframecount)++;
-
-	auto leaf = &r_worldmodel->leafs[leafindex];
-	auto vis = Mod_LeafPVS(leaf, r_worldmodel);
-
-	for (int j = 0; j < r_worldmodel->numleafs; j++)
-	{
-		if (vis[j >> 3] & (1 << (j & 7)))
-		{
-			auto node = (mnode_t *)&r_worldmodel->leafs[j + 1];
-
-			do
-			{
-				if (node->visframe == (*r_visframecount))
-					break;
-
-				node->visframe = (*r_visframecount);
-				node = node->parent;
-
-			} while (node);
-		}
-	}
-
-	return vis == mod_novis ? true : false;
-}
-
 void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 {
 	if (mod == r_worldmodel)
 	{
-		(*r_visframecount) = 0;
+		//(*r_visframecount) = 0;
 
 		modvbo->pNoVisLeaf = new wsurf_vbo_leaf_t;
 
@@ -948,7 +878,7 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 			}
 		}
 
-		(*r_visframecount) = 0;
+		//(*r_visframecount) = 0;
 	}
 	else
 	{
@@ -1412,6 +1342,11 @@ void R_DrawWSurfVBOSolid(wsurf_vbo_leaf_t *vboleaf)
 		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 	}
 
+	if (r_draw_shadowcaster)
+	{
+		WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
+	}
+
 	if (r_draw_reflectview)
 	{
 		WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;
@@ -1492,6 +1427,11 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 			WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
 		}
 
+		if (r_draw_shadowcaster)
+		{
+			WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
+		}
+
 		if (drawgbuffer)
 		{
 			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
@@ -1508,11 +1448,6 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 		if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
 		{
 			WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
-		}
-
-		if (r_draw_shadowcaster)
-		{
-			WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 		}
 
 		auto &drawBatches = modvbo->vDrawBatch[WSURF_DRAWBATCH_STATIC];
@@ -1547,9 +1482,6 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 
 			wsurf_program_t prog = { 0 };
 			R_UseWSurfProgram(WSurfProgramStateBatch, &prog);
-
-			if (prog.u_baseDrawId != -1)
-				glUniform1i(prog.u_baseDrawId, batch->iBaseDrawId);
 
 			glMultiDrawElements(GL_POLYGON, batch->vIndiceCount.data(), GL_UNSIGNED_INT, (const void **)batch->vStartIndex.data(), batch->iDrawCount);
 
@@ -1641,6 +1573,11 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 				WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
 			}
 
+			if (r_draw_shadowcaster)
+			{
+				WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
+			}
+
 			if (drawgbuffer)
 			{
 				WSurfProgramState |= WSURF_GBUFFER_ENABLED;
@@ -1657,11 +1594,6 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 			if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
 			{
 				WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
-			}
-
-			if (r_draw_shadowcaster)
-			{
-				WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 			}
 
 			wsurf_program_t prog = { 0 };
@@ -1861,6 +1793,14 @@ float R_ScrollSpeed(void)
 	return scrollSpeed;
 }
 
+bool R_ShouldDrawZPrePass(void)
+{
+	if (r_draw_shadowcaster)
+		return false;
+
+	return (r_wsurf_zprepass->value > 0) ? true : false;
+}
+
 void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 {
 	static glprofile_t profile_DrawWSurfVBO;
@@ -1914,7 +1854,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 		glActiveTexture(GL_TEXTURE6);
 
 		glEnable(GL_TEXTURE_2D_ARRAY);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, shadow_texture_color);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, r_shadow_texture.color_array);
 
 		glActiveTexture(GL_TEXTURE0);
 	}
@@ -1949,7 +1889,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboleaf->hEBO);
 
-			if (r_wsurf_zprepass->value)
+			if (R_ShouldDrawZPrePass())
 			{
 				glColorMask(0, 0, 0, 0);
 
@@ -3585,16 +3525,10 @@ void R_DrawBrushModel(cl_entity_t *e)
 	{
 		if (clmodel->firstmodelsurface != 0)
 		{
-			int max_dlights;
+			int max_dlights = EngineGetMaxDLight();
 
-			if (g_iEngineType == ENGINE_SVENGINE)
+			if (g_iEngineType != ENGINE_SVENGINE)
 			{
-				max_dlights = 256;
-			}
-			else
-			{
-				max_dlights = 32;
-
 				if (gl_flashblend && gl_flashblend->value)
 					goto skip_marklight;
 			}
@@ -3784,6 +3718,7 @@ void R_DrawWorld(void)
 
 	//Setup shadow
 
+	//Shall we put this in shadow pass?
 	if (R_ShouldRenderShadowScene())
 	{
 		r_wsurf.bShadowmapTexture = true;

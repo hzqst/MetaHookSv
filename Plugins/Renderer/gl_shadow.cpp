@@ -3,12 +3,14 @@
 
 //renderer
 
-int shadow_texture_depth = 0;
-int shadow_texture_color = 0;
-int shadow_texture_size = 0;
+shadow_texture_t r_shadow_texture = {0};
 
-float shadow_projmatrix[3][16];
-float shadow_mvmatrix[3][16];
+shadow_texture_t cl_dlight_shadow_textures[256] = { 0 };
+
+shadow_texture_t *current_shadow_texture = NULL;
+
+float shadow_projmatrix[3][16] = { 0 };
+float shadow_mvmatrix[3][16] = { 0 };
 
 cl_entity_t *shadow_visedicts[3][512] = { 0 };
 int shadow_numvisedicts[3] = {0};
@@ -162,25 +164,50 @@ int StudioGetSequenceActivityType(model_t *mod, entity_state_t* entstate)
 	return 0;
 }
 
-void R_ShutdownShadow(void)
+void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size, bool bUseColorArray)
 {
-	if (shadow_texture_depth)
+	shadowtex->size = size;
+	vec4_t depthBorderColor = { 1, 1, 1, 1 };
+	shadowtex->depth = GL_GenShadowTexture(shadowtex->size, shadowtex->size, depthBorderColor);
+
+	if (bUseColorArray)
 	{
-		GL_DeleteTexture(shadow_texture_depth);
-		shadow_texture_depth = 0;
+		vec4_t borderColor = { -99999, -99999, -99999, 1};
+		shadowtex->color_array = GL_GenTextureArrayColorFormat(shadowtex->size, shadowtex->size, 3, GL_RGBA16F, false, borderColor);
 	}
-	if (shadow_texture_color)
+	else
 	{
-		GL_DeleteTexture(shadow_texture_color);
-		shadow_texture_color = 0;
+		//vec4_t borderColor = { -99999, -99999, -99999, 1 };
+		//shadowtex->color = GL_GenTextureColorFormat(shadowtex->size, shadowtex->size, GL_RGBA32F, false, borderColor);
 	}
+}
+
+void R_FreeShadowTexture(shadow_texture_t *shadowtex)
+{
+	/*if (shadowtex->color)
+	{
+		GL_DeleteTexture(shadowtex->color);
+		shadowtex->color = 0;
+	}*/
+
+	if (shadowtex->color_array)
+	{
+		GL_DeleteTexture(shadowtex->color_array);
+		shadowtex->color_array = 0;
+	}
+
+	if (shadowtex->depth)
+	{
+		GL_DeleteTexture(shadowtex->depth);
+		shadowtex->depth = 0;
+	}
+
+	shadowtex->size = 0;
 }
 
 void R_InitShadow(void)
 {
-	shadow_texture_size = min(gl_max_texture_size, 4096);
-	shadow_texture_depth = GL_GenDepthTexture(shadow_texture_size, shadow_texture_size);
-	shadow_texture_color = GL_GenTextureArrayColorFormat(shadow_texture_size, shadow_texture_size, 3, GL_RGBA16F);
+	R_AllocShadowTexture(&r_shadow_texture, 4096, true);
 
 	r_shadow = gEngfuncs.pfnRegisterVariable("r_shadow", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_shadow_debug = gEngfuncs.pfnRegisterVariable("r_shadow_debug", "0",  FCVAR_CLIENTDLL);
@@ -197,8 +224,21 @@ void R_InitShadow(void)
 	r_shadow_low_scale = R_RegisterMapCvar("r_shadow_low_scale", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
-bool R_ShouldRenderShadowScene(void)
+void R_ShutdownShadow(void)
 {
+	R_FreeShadowTexture(&r_shadow_texture);
+
+	for (int i = 0; i < _ARRAYSIZE(cl_dlight_shadow_textures); ++i)
+	{
+		R_FreeShadowTexture(&cl_dlight_shadow_textures[i]);
+	}
+}
+
+bool R_ShouldRenderShadow(void)
+{
+	if (r_draw_shadowcaster)
+		return false;
+
 	if (r_draw_reflectview)
 		return false;
 
@@ -208,10 +248,15 @@ bool R_ShouldRenderShadowScene(void)
 	if (gRefFuncs.CL_IsDevOverviewMode())
 		return false;
 
+	return r_shadow->value ? true : false;
+}
+
+bool R_ShouldRenderShadowScene(void)
+{
 	if (!shadow_numvisedicts[0] && !shadow_numvisedicts[1] && !shadow_numvisedicts[2])
 		return false;
 
-	return r_shadow->value ? true : false;
+	return R_ShouldRenderShadow();
 }
 
 bool R_ShouldCastShadow(cl_entity_t *ent)
@@ -259,7 +304,7 @@ bool R_ShouldCastShadow(cl_entity_t *ent)
 	return false;
 }
 
-void R_RenderShadowMap(void)
+void R_RenderShadowScene(void)
 {
 	vec3_t shadow_angles = { r_shadow_angles->GetValues()[0], r_shadow_angles->GetValues()[1] , r_shadow_angles->GetValues()[2] };
 
@@ -315,21 +360,21 @@ void R_RenderShadowMap(void)
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_GEQUAL);
 
-		glDepthMask(1);
-		glColorMask(1, 1, 1, 1);
+		glDepthMask(GL_TRUE);
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 		for (int i = 0; i < 3; ++i)
 		{
 			if (!shadow_numvisedicts[i])
 				continue;
 
-			glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadow_texture_color, 0, i);
-			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadow_texture_depth, 0);
+			glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, r_shadow_texture.color_array, 0, i);
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, r_shadow_texture.depth, 0);
 
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
 
-			float texsize = (float)shadow_texture_size / shadow_scales[i];
+			float texsize = (float)r_shadow_texture.size / shadow_scales[i];
 			glOrtho(-texsize / 2, texsize / 2, -texsize / 2, texsize / 2, -4096, 4096);
 
 			glMatrixMode(GL_MODELVIEW);
@@ -345,11 +390,15 @@ void R_RenderShadowMap(void)
 			glGetFloatv(GL_PROJECTION_MATRIX, shadow_projmatrix[i]);
 			glGetFloatv(GL_MODELVIEW_MATRIX, shadow_mvmatrix[i]);
 
-			glViewport(0, 0, shadow_texture_size, shadow_texture_size);
+			glViewport(0, 0, r_shadow_texture.size, r_shadow_texture.size);
 
+			glClearStencil(0);
 			glClearDepth(0);
 			glClearColor(-99999, -99999, -99999, 1);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glStencilMask(0xFF);
+			glDepthMask(GL_TRUE);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+			glStencilMask(0);
 
 			glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, viewMatrix), sizeof(mat4), shadow_mvmatrix[i]);
 			glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), shadow_projmatrix[i]);
@@ -375,4 +424,111 @@ void R_RenderShadowMap(void)
 
 		GL_EndProfile(&profile_RenderShadowMap);
 	}
+}
+
+void R_RenderShadowDynamicLights(void)
+{
+	if (R_ShouldRenderShadow())
+	{
+		R_IterateDynamicLights([](
+			float radius, vec3_t origin, vec3_t color,
+			float ambient, float diffuse, float specular, float specularpow,
+			shadow_texture_t *shadowtex, bool bVolume)
+		{
+				shadowtex->ready = false;
+		},
+		[](
+			float distance, float radius,
+			float coneAngle, float coneCosAngle, float coneSinAngle, float coneTanAngle,
+			vec3_t origin, vec3_t angle, vec3_t vforward, vec3_t vright, vec3_t vup,
+			vec3_t color, float ambient, float diffuse, float specular, float specularpow, shadow_texture_t *shadowtex, bool bVolume, bool bIsFromLocalPlayer)
+			{
+				shadowtex->ready = false;
+
+				if (bIsFromLocalPlayer)
+				{
+					r_draw_shadowcaster = true;
+
+					if (!shadowtex->depth)
+					{
+						R_AllocShadowTexture(shadowtex, 1024, false);
+					}
+
+					shadowtex->distance = distance;
+					shadowtex->cone_angle = coneAngle;
+					current_shadow_texture = shadowtex;
+
+					glBindFramebuffer(GL_FRAMEBUFFER, s_ShadowFBO.s_hBackBufferFBO);
+					glDrawBuffer(GL_NONE);
+
+					//glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadowtex->color, 0);
+					glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, shadowtex->depth, 0);
+
+					glDisable(GL_BLEND);
+					glDisable(GL_ALPHA_TEST);
+					glEnable(GL_DEPTH_TEST);
+					glDepthFunc(GL_LEQUAL);
+
+					//glPolygonOffset(10, gl_polyoffset->value);
+					glPolygonOffset(10, 10);
+					glEnable(GL_POLYGON_OFFSET_FILL);
+
+					glDepthMask(GL_TRUE);
+					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+					glClearStencil(0);
+					//glClearColor(-99999, -99999, -99999, 1);
+					glStencilMask(0xFF);
+					glDepthMask(GL_TRUE);
+					glClear(/*GL_COLOR_BUFFER_BIT | */GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+					glStencilMask(0);
+
+					R_PushRefDef();
+
+					(*r_refdef.vieworg)[0] = origin[0];
+					(*r_refdef.vieworg)[1] = origin[1];
+					(*r_refdef.vieworg)[2] = origin[2];
+
+					(*r_refdef.viewangles)[0] = angle[0];
+					(*r_refdef.viewangles)[1] = angle[1];
+					(*r_refdef.viewangles)[2] = angle[2];
+
+					R_RenderScene();
+
+					const float bias[16] = {
+						0.5f, 0.0f, 0.0f, 0.0f,
+						0.0f, 0.5f, 0.0f, 0.0f,
+						0.0f, 0.0f, 0.5f, 0.0f,
+						0.5f, 0.5f, 0.5f, 1.0f
+					};
+
+					glMatrixMode(GL_TEXTURE);
+					glPushMatrix();
+					glLoadIdentity();
+					glLoadMatrixf(bias);
+					glMultMatrixf(r_projection_matrix);
+					glMultMatrixf(r_world_matrix);
+					glGetFloatv(GL_TEXTURE_MATRIX, shadowtex->matrix);
+					glPopMatrix();
+					glMatrixMode(GL_MODELVIEW);
+
+					glDisable(GL_POLYGON_OFFSET_FILL);
+					glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+					glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+					R_PopRefDef();
+
+					shadowtex->ready = true;
+
+					r_draw_shadowcaster = false;
+				}
+			});
+
+	}
+}
+
+void R_RenderShadowMap(void)
+{
+	R_RenderShadowScene();
+	R_RenderShadowDynamicLights();
 }

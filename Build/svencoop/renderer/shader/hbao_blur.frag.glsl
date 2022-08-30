@@ -1,7 +1,7 @@
 #version 430
 
 const float KERNEL_RADIUS = 3;
-  
+
 layout(location=0) uniform float g_Sharpness;
 layout(location=1) uniform vec2 g_InvResolutionDirection; // either set x to 1/width or y to 1/height
 
@@ -18,7 +18,7 @@ float BlurFunction(vec2 uv, float r, float center_c, float center_d, inout float
   float c = aoz.x;
   float d = aoz.y;
   
-  const float BlurSigma = float(KERNEL_RADIUS) * 0.5;
+  const float BlurSigma = KERNEL_RADIUS * 0.5;
   const float BlurFalloff = 1.0 / (2.0*BlurSigma*BlurSigma);
   
   float ddiff = (d - center_d) * g_Sharpness;

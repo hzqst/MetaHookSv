@@ -667,6 +667,9 @@ void ClientDLL_DrawTransparentTriangles(void)
 
 void R_DrawTransEntities(int onlyClientDraw)
 {
+	if (r_draw_shadowcaster)
+		return;
+
 	static glprofile_t profile_DrawTransEntities;
 	GL_BeginProfile(&profile_DrawTransEntities, "R_DrawTransEntities");
 
@@ -764,6 +767,9 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 void R_AddTEntity(cl_entity_t *ent)
 {
+	if (r_draw_shadowcaster)
+		return;
+
 	if (!ent->model)
 		return;
 
@@ -2535,14 +2541,26 @@ void R_SetupGL(void)
 		glwidth = gl_envmapsize->value;
 	}
 
-	glViewport(v0 + glx, v3 + gly, v4, v5);
-
 	r_viewport[0] = v0 + glx;
 	r_viewport[1] = v3 + gly;
 	r_viewport[2] = v4;
 	r_viewport[3] = v5;
 
-	if (r_vertical_fov->value)
+	if (r_draw_shadowcaster)
+	{
+		r_viewport[0] = 0;
+		r_viewport[1] = 0;
+		r_viewport[2] = current_shadow_texture->size;
+		r_viewport[3] = current_shadow_texture->size;
+	}
+
+	glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
+	if (r_draw_shadowcaster)
+	{
+		float cone_fov = current_shadow_texture->cone_angle * 2 * 360 / (M_PI * 2);
+		MYgluPerspectiveV(cone_fov, 1, 4.0, current_shadow_texture->distance);
+	}
+	else if (r_vertical_fov->value)
 	{
 		auto height = (double)(*r_refdef.vrect).height;
 		auto width = (double)(*r_refdef.vrect).width;
@@ -2725,9 +2743,126 @@ void R_SetupFrame(void)
 	}
 }
 
+void CM_DecompressPVS(byte *in, byte *decompressed, int byteCount)
+{
+	int		c;
+	byte	*out;
+
+	out = decompressed;
+
+	do
+	{
+		if (*in)
+		{
+			*out++ = *in++;
+			continue;
+		}
+
+		c = in[1];
+		in += 2;
+		while (c)
+		{
+			*out++ = 0;
+			c--;
+		}
+	} while (out < decompressed + byteCount);
+}
+
+byte mod_novis[MAX_MAP_LEAFS / 8];
+
+byte *Mod_DecompressVis(byte *in, model_t *model)
+{
+	static byte	decompressed[MAX_MAP_LEAFS / 8];
+	int		row;
+
+	row = (model->numleafs + 7) >> 3;
+
+	if (!in)
+		return mod_novis;
+
+	CM_DecompressPVS(in, decompressed, row);
+	return decompressed;
+}
+
+byte *Mod_LeafPVS(mleaf_t *leaf, model_t *model)
+{
+	return Mod_DecompressVis(leaf->compressed_vis, model);
+}
+
+void Mod_Init(void)
+{
+	memset(mod_novis, 0xff, sizeof(mod_novis));
+}
+
+bool R_MarkPVSLeaves(int leafindex)
+{
+	for (int j = 0; j < r_worldmodel->numframes; j++)
+	{
+		auto node = &r_worldmodel->leafs[j];
+		node->visframe = 0;
+	}
+
+	(*r_visframecount)++;
+
+	auto leaf = &r_worldmodel->leafs[leafindex];
+	auto vis = Mod_LeafPVS(leaf, r_worldmodel);
+
+	for (int j = 0; j < r_worldmodel->numleafs; j++)
+	{
+		if (vis[j >> 3] & (1 << (j & 7)))
+		{
+			auto node = (mnode_t *)&r_worldmodel->leafs[j + 1];
+
+			do
+			{
+				if (node->visframe == (*r_visframecount))
+					break;
+
+				node->visframe = (*r_visframecount);
+				node = node->parent;
+
+			} while (node);
+		}
+	}
+
+	return vis == mod_novis ? true : false;
+}
+
 void R_MarkLeaves(void)
 {
-	gRefFuncs.R_MarkLeaves();
+	byte *vis;
+
+	if ((*r_oldviewleaf) == (*r_viewleaf) && !r_novis->value)
+		return;
+
+	(*r_visframecount)++;
+	r_oldviewleaf = r_viewleaf;
+
+	if (r_novis->value)
+	{
+		vis = mod_novis;
+	}
+	else
+	{
+		vis = Mod_LeafPVS(*r_viewleaf, r_worldmodel);
+	}
+
+	for (int i = 0; i < r_worldmodel->numleafs; i++)
+	{
+		if (vis[i >> 3] & (1 << (i & 7)))
+		{
+			auto node = (mnode_t *)&r_worldmodel->leafs[i + 1];
+
+			do
+			{
+				if (node->visframe == (*r_visframecount))
+					break;
+
+				node->visframe = (*r_visframecount);
+				node = node->parent;
+			} while (node);
+		}
+	}
 }
 
 void R_DrawEntitiesOnList(void)
@@ -2830,6 +2965,8 @@ void HUD_EndRenderOpaque(void)
 
 void ClientDLL_DrawNormalTriangles(void)
 {
+	GL_PushFrameBuffer();
+
 	//Allow SC client dll to write stencil buffer
 
 	glStencilMask(0xFF);
@@ -2858,7 +2995,8 @@ void ClientDLL_DrawNormalTriangles(void)
 	*currenttexture = -1;
 
 	//Restore current framebuffer just in case that Allow SC client dll changes it
-	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	//glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	GL_PopFrameBuffer();
 }
 
 void R_RenderScene(void)

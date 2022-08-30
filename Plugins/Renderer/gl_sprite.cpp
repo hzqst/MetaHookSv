@@ -418,6 +418,9 @@ mspriteframe_t *R_GetSpriteFrame(msprite_t *pSprite, int frame)
 
 void R_DrawSpriteModel(cl_entity_t *ent)
 {
+	if (r_draw_shadowcaster)
+		return;
+
 	auto psprite = (msprite_t *)ent->model->cache.data;
 	auto frame = R_GetSpriteFrame(psprite, ent->curstate.frame);
 	if (!frame)

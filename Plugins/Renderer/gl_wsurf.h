@@ -356,7 +356,6 @@ typedef struct
 {
 	int program;
 	int u_parallaxScale;
-	int u_baseDrawId;
 }wsurf_program_t;
 
 #define OFFSET(type, variable) ((const void*)&(((type*)NULL)->variable))

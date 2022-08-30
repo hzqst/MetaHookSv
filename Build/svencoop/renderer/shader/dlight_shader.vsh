@@ -6,7 +6,7 @@
 
 layout(location = 0) in vec3 in_vertex;
 
-layout(location = 0) uniform mat4 u_modelmatrix;
+uniform mat4 u_modelmatrix;
 
 #else
 
@@ -30,6 +30,7 @@ void main(void)
 	v_projpos = gl_Position;
 
 	v_texcoord = vec2(0);
+
 #else
 	uint idx = gl_VertexID % 4;
 

@@ -172,5 +172,6 @@ void R_ShutdownPostProcess(void);
 void R_InitPostProcess(void);
 
 #define HUD_DEBUG_TEXARRAY 1
+#define HUD_DEBUG_SHADOW 2
 
 void R_UseHudDebugProgram(int state, hud_debug_program_t *progOutput);

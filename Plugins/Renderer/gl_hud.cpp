@@ -79,6 +79,9 @@ void R_UseHudDebugProgram(int state, hud_debug_program_t *progOutput)
 		if (state & HUD_DEBUG_TEXARRAY)
 			defs << "#define TEXARRAY_ENABLED\n";
 
+		if (state & HUD_DEBUG_SHADOW)
+			defs << "#define SHADOW_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\hud_debug.vsh", "renderer\\shader\\hud_debug.fsh", def.c_str(), def.c_str(), NULL);
@@ -735,6 +738,9 @@ bool R_IsSSAOEnabled(void)
 		return false;
 
 	if ((*r_refdef.onlyClientDraws))
+		return false;
+
+	if (r_draw_shadowcaster)
 		return false;
 
 	if (r_draw_reflectview)

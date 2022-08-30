@@ -240,6 +240,8 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 		if (state & DLIGHT_CONE_TEXTURE_ENABLED)
 			defs << "#define CONE_TEXTURE_ENABLED\n";
 
+		if (state & DLIGHT_SHADOW_TEXTURE_ENABLED)
+			defs << "#define SHADOW_TEXTURE_ENABLED\n";
 
 		auto def = defs.str();
 
@@ -257,6 +259,8 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 			SHADER_UNIFORM(prog, u_lightdiffuse, "u_lightdiffuse");
 			SHADER_UNIFORM(prog, u_lightspecular, "u_lightspecular");
 			SHADER_UNIFORM(prog, u_lightspecularpow, "u_lightspecularpow");
+			SHADER_UNIFORM(prog, u_shadowtexel, "u_shadowtexel");
+			SHADER_UNIFORM(prog, u_shadowmatrix, "u_shadowmatrix");
 			SHADER_UNIFORM(prog, u_modelmatrix, "u_modelmatrix");
 		}
 
@@ -281,10 +285,11 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 }
 
 const program_state_name_t s_DLightProgramStateName[] = {
-{ DLIGHT_SPOT_ENABLED		,"DLIGHT_SPOT_ENABLED"	 },
-{ DLIGHT_POINT_ENABLED		,"DLIGHT_POINT_ENABLED"	 },
-{ DLIGHT_VOLUME_ENABLED		,"DLIGHT_VOLUME_ENABLED" },
+{ DLIGHT_SPOT_ENABLED				,"DLIGHT_SPOT_ENABLED"	 },
+{ DLIGHT_POINT_ENABLED				,"DLIGHT_POINT_ENABLED"	 },
+{ DLIGHT_VOLUME_ENABLED				,"DLIGHT_VOLUME_ENABLED" },
 { DLIGHT_CONE_TEXTURE_ENABLED		,"DLIGHT_CONE_TEXTURE_ENABLED" },
+{ DLIGHT_SHADOW_TEXTURE_ENABLED		,"DLIGHT_SHADOW_TEXTURE_ENABLED" },
 };
 
 void R_SaveDLightProgramStates(void)
@@ -606,9 +611,12 @@ void R_SetGBufferMask(int mask)
 	glDrawBuffers(gbuffer_attachment_count, gbuffer_attachments);
 }
 
-bool R_IsDeferredRenderingEnabled()
+bool R_IsDeferredRenderingEnabled(void)
 {
 	if (!r_light_dynamic->value)
+		return false;
+
+	if (r_draw_shadowcaster)
 		return false;
 
 	if (r_draw_reflectview)
@@ -663,12 +671,6 @@ bool Util_IsOriginInCone(float *org, float *cone_origin, float *cone_forward, fl
 	return dot > cone_cosine;
 }
 
-typedef void(*fnPointLightCallback)(float radius, vec3_t origin, vec3_t color, float ambient, float diffuse, float specular, float specularpow, bool bVolume);
-typedef void(*fnSpotLightCallback)(float distance, float radius, 
-	float coneAngle, float coneCosAngle, float coneSinAngle, float coneTanAngle,
-	vec3_t origin, vec3_t angle, vec3_t vforward, vec3_t vright, vec3_t vup,
-	vec3_t color, float ambient, float diffuse, float specular, float specularpow, bool bVolume);
-
 void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLightCallback spotlight_callback)
 {
 	for (size_t i = 0; i < g_DynamicLights.size(); i++)
@@ -694,27 +696,20 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				if (R_CullBox(mins, maxs))
 					continue;
 
-				pointlight_callback(radius, dynlight.origin, dynlight.color, dynlight.ambient, dynlight.diffuse, dynlight.specular, dynlight.specularpow, true);
+				if(pointlight_callback)
+					pointlight_callback(radius, dynlight.origin, dynlight.color, dynlight.ambient, dynlight.diffuse, dynlight.specular, dynlight.specularpow, &dynlight.shadowtex, true);
 
 			}
 			else
 			{
-				pointlight_callback(radius, dynlight.origin, dynlight.color, dynlight.ambient, dynlight.diffuse, dynlight.specular, dynlight.specularpow, false);
+				if (pointlight_callback)
+					pointlight_callback(radius, dynlight.origin, dynlight.color, dynlight.ambient, dynlight.diffuse, dynlight.specular, dynlight.specularpow, &dynlight.shadowtex, false);
 			}
 		}
 	}
 
-	int max_dlight;
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		max_dlight = 256;
-	}
-	else
-	{
-		max_dlight = 32;
-	}
-
+	int max_dlight = EngineGetMaxDLight();
+	
 	dlight_t *dl = cl_dlights;
 	float curtime = (*cl_time);
 
@@ -733,9 +728,11 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 
 			auto ent = gEngfuncs.GetEntityByIndex(dl->key);
 
+			bool bIsFromLocalPlayer = (ent == gEngfuncs.GetLocalPlayer()) ? true : false;
+
 			vec3_t org;
 			//first person mode
-			if (ent == gEngfuncs.GetLocalPlayer() && !gExportfuncs.CL_IsThirdPerson() && !chase_active->value && r_params.viewentity <= r_params.maxclients)
+			if (bIsFromLocalPlayer && !gExportfuncs.CL_IsThirdPerson() && !chase_active->value && r_params.viewentity <= r_params.maxclients)
 			{
 				VectorCopy((*r_refdef.viewangles), dlight_angle);
 				gEngfuncs.pfnAngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
@@ -788,17 +785,19 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 
 			if (!Util_IsOriginInCone((*r_refdef.vieworg), dlight_origin, dlight_vforward, coneCosAngle, distance))
 			{
-				spotlight_callback(distance, radius,
+				if(spotlight_callback)
+					spotlight_callback(distance, radius,
 					coneAngle, coneCosAngle, coneSinAngle, coneTanAngle,
 					dlight_origin, dlight_angle, dlight_vforward, dlight_vright, dlight_vup,
-					color, ambient, diffuse, specular, specularpow, true);
+					color, ambient, diffuse, specular, specularpow, &cl_dlight_shadow_textures[i], true, bIsFromLocalPlayer);
 			}
 			else
 			{
-				spotlight_callback(distance, radius,
+				if (spotlight_callback)
+					spotlight_callback(distance, radius,
 					coneAngle, coneCosAngle, coneSinAngle, coneTanAngle,
 					dlight_origin, dlight_angle, dlight_vforward, dlight_vright, dlight_vup,
-					color, ambient, diffuse, specular, specularpow, false);
+					color, ambient, diffuse, specular, specularpow, &cl_dlight_shadow_textures[i], false, bIsFromLocalPlayer);
 			}			
 		}
 		else
@@ -828,11 +827,13 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				if (R_CullBox(mins, maxs))
 					continue;
 
-				pointlight_callback(dl->radius, dl->origin, color, ambient, diffuse, specular, specularpow, true);
+				if(pointlight_callback)
+					pointlight_callback(dl->radius, dl->origin, color, ambient, diffuse, specular, specularpow, &cl_dlight_shadow_textures[i], true);
 			}
 			else
 			{
-				pointlight_callback(dl->radius, dl->origin, color, ambient, diffuse, specular, specularpow, false);
+				if (pointlight_callback)
+					pointlight_callback(dl->radius, dl->origin, color, ambient, diffuse, specular, specularpow, &cl_dlight_shadow_textures[i], false);
 			}
 		}
 	}
@@ -894,7 +895,7 @@ void R_EndRenderGBuffer(void)
 		glBindTexture(GL_TEXTURE_2D, r_flashlight_cone_texture);
 	}
 
-	R_IterateDynamicLights([](float radius, vec3_t origin, vec3_t color, float ambient, float diffuse, float specular, float specularpow, bool bVolume)
+	R_IterateDynamicLights([](float radius, vec3_t origin, vec3_t color, float ambient, float diffuse, float specular, float specularpow, shadow_texture_t *shadowtex, bool bVolume)
 	{
 		if (bVolume)
 		{
@@ -912,8 +913,10 @@ void R_EndRenderGBuffer(void)
 			glGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
 			glPopMatrix();
 
+			int DLightProgramState = DLIGHT_POINT_ENABLED | DLIGHT_VOLUME_ENABLED;
+
 			dlight_program_t prog = { 0 };
-			R_UseDLightProgram(DLIGHT_POINT_ENABLED | DLIGHT_VOLUME_ENABLED, &prog);
+			R_UseDLightProgram(DLightProgramState, &prog);
 
 			glUniformMatrix4fv(prog.u_modelmatrix, 1, false, modelmatrix);
 			glUniform3f(prog.u_lightpos, origin[0], origin[1], origin[2]);
@@ -934,8 +937,10 @@ void R_EndRenderGBuffer(void)
 		{
 			GL_BeginFullScreenQuad(false);
 
+			int DLightProgramState = DLIGHT_POINT_ENABLED;
+
 			dlight_program_t prog = { 0 };
-			R_UseDLightProgram(DLIGHT_POINT_ENABLED, &prog);
+			R_UseDLightProgram(DLightProgramState, &prog);
 			glUniform3f(prog.u_lightpos, origin[0], origin[1], origin[2]);
 			glUniform3f(prog.u_lightcolor, color[0], color[1], color[2]);
 			glUniform1f(prog.u_lightradius, radius);
@@ -952,7 +957,7 @@ void R_EndRenderGBuffer(void)
 	[](float distance, float radius,
 		float coneAngle, float coneCosAngle, float coneSinAngle, float coneTanAngle,
 		vec3_t origin, vec3_t angle, vec3_t vforward, vec3_t vright, vec3_t vup,
-		vec3_t color, float ambient, float diffuse, float specular, float specularpow, bool bVolume)
+		vec3_t color, float ambient, float diffuse, float specular, float specularpow, shadow_texture_t *shadowtex, bool bVolume, bool bIsFromLocalPlayer)
 	{
 
 		if (bVolume)
@@ -980,6 +985,15 @@ void R_EndRenderGBuffer(void)
 				DLightProgramState |= DLIGHT_CONE_TEXTURE_ENABLED;
 			}
 
+			if (shadowtex->depth && shadowtex->ready)
+			{
+				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
+
+				glActiveTexture(GL_TEXTURE4);
+				glEnable(GL_TEXTURE_2D);
+				glBindTexture(GL_TEXTURE_2D, shadowtex->depth);
+			}
+
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
 
@@ -996,10 +1010,26 @@ void R_EndRenderGBuffer(void)
 			glUniform1f(prog.u_lightspecular, specular);
 			glUniform1f(prog.u_lightspecularpow, specularpow);
 
+			if (prog.u_shadowtexel != -1 && shadowtex->size > 0)
+			{
+				glUniform2f(prog.u_shadowtexel, shadowtex->size, 1.0f / (float)shadowtex->size);
+			}
+
+			if (prog.u_shadowmatrix != -1)
+			{
+				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, shadowtex->matrix);
+			}
+
 			glDrawArrays(GL_TRIANGLES, 0, X_SEGMENTS * 6);
 
 			glBindBuffer(GL_ARRAY_BUFFER, 0);
 			glDisableVertexAttribArray(0);
+
+			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
+			{
+				glDisable(GL_TEXTURE_2D);
+				glBindTexture(GL_TEXTURE_2D, 0);
+			}
 		}
 		else
 		{
@@ -1010,6 +1040,15 @@ void R_EndRenderGBuffer(void)
 			if (r_flashlight_cone_texture)
 			{
 				DLightProgramState |= DLIGHT_CONE_TEXTURE_ENABLED;
+			}
+
+			if (shadowtex->depth && shadowtex->ready)
+			{
+				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
+
+				glActiveTexture(GL_TEXTURE4);
+				glEnable(GL_TEXTURE_2D);
+				glBindTexture(GL_TEXTURE_2D, shadowtex->depth);
 			}
 
 			dlight_program_t prog = { 0 };
@@ -1027,9 +1066,25 @@ void R_EndRenderGBuffer(void)
 			glUniform1f(prog.u_lightspecular, specular);
 			glUniform1f(prog.u_lightspecularpow, specularpow);
 
+			if (prog.u_shadowtexel != -1 && shadowtex->size > 0)
+			{
+				glUniform2f(prog.u_shadowtexel, shadowtex->size, 1.0f / (float)shadowtex->size);
+			}
+
+			if (prog.u_shadowmatrix != -1)
+			{
+				glUniformMatrix4fv(prog.u_shadowmatrix, 1, false, shadowtex->matrix);
+			}
+
 			glDrawArrays(GL_QUADS, 0, 4);
 
 			GL_EndFullScreenQuad();
+
+			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
+			{
+				glDisable(GL_TEXTURE_2D);
+				glBindTexture(GL_TEXTURE_2D, 0);
+			}
 		}
 
 	});

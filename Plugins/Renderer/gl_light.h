@@ -10,6 +10,7 @@ typedef struct light_dynamic_s
 	float diffuse;
 	float specular;
 	float specularpow;
+	shadow_texture_t shadowtex;
 }light_dynamic_t;
 
 extern std::vector<light_dynamic_t> g_DynamicLights;
@@ -42,6 +43,14 @@ extern MapConVar *r_ssr_fade;
 
 extern bool drawgbuffer;
 
+typedef void(*fnPointLightCallback)(float radius, vec3_t origin, vec3_t color, float ambient, float diffuse, float specular, float specularpow, shadow_texture_t *shadowtex, bool bVolume);
+typedef void(*fnSpotLightCallback)(float distance, float radius,
+	float coneAngle, float coneCosAngle, float coneSinAngle, float coneTanAngle,
+	vec3_t origin, vec3_t angle, vec3_t vforward, vec3_t vright, vec3_t vup,
+	vec3_t color, float ambient, float diffuse, float specular, float specularpow, shadow_texture_t *shadowtex, bool bVolume, bool bIsFromLocalPlayer);
+
+void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLightCallback spotlight_callback);
+
 typedef struct
 {
 	int program;
@@ -56,6 +65,8 @@ typedef struct
 	int u_lightdiffuse;
 	int u_lightspecular;
 	int u_lightspecularpow;
+	int u_shadowtexel;
+	int u_shadowmatrix;
 	int u_modelmatrix;
 }dlight_program_t;
 
@@ -99,6 +110,7 @@ void R_LoadDFinalProgramStates(void);
 #define DLIGHT_POINT_ENABLED			2
 #define DLIGHT_VOLUME_ENABLED			4
 #define DLIGHT_CONE_TEXTURE_ENABLED		8
+#define DLIGHT_SHADOW_TEXTURE_ENABLED	0x10
 
 #define DFINAL_LINEAR_FOG_ENABLED				0x1
 #define DFINAL_EXP_FOG_ENABLED					0x2

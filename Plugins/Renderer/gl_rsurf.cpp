@@ -567,7 +567,10 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 	if (CL_IsDevOverviewMode())
 		return;
 
-	//if (g_iEngineType == ENGINE_SVENGINE)
+	if (r_draw_shadowcaster)
+		return;
+
+	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		if ((*currententity)->curstate.effects & EF_NODECALS)
 			return;

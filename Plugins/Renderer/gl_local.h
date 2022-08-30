@@ -308,6 +308,7 @@ void R_FreeTextures(void);
 void R_SetupGL(void);
 void R_SetupGLForViewModel(void);
 void R_MarkLeaves(void);
+bool R_MarkPVSLeaves(int leafindex);
 void R_DrawWorld(void);
 void R_DrawSkyBox(void);
 void R_SetupSceneUBO(void);
@@ -377,14 +378,14 @@ GLuint GL_GenDepthTexture(int w, int h);
 void GL_UploadDepthStencilTexture(int texid, int w, int h);
 GLuint GL_GenDepthStencilTexture(int w, int h);
 
-GLuint GL_GenTextureColorFormat(int w, int h, int iInternalFormat);
-void GL_UploadTextureColorFormat(int texid, int w, int h, int iInternalFormat);
+GLuint GL_GenTextureColorFormat(int w, int h, int iInternalFormat, bool filter, float *borderColor);
+void GL_UploadTextureColorFormat(int texid, int w, int h, int iInternalFormat, bool filter, float *borderColor);
 
-GLuint GL_GenTextureArrayColorFormat(int w, int h, int levels, int iInternalFormat);
-void GL_UploadTextureArrayColorFormat(int texid, int w, int h, int levels, int iInternalFormat);
+GLuint GL_GenTextureArrayColorFormat(int w, int h, int levels, int iInternalFormat, bool filter, float *borderColor);
+void GL_UploadTextureArrayColorFormat(int texid, int w, int h, int levels, int iInternalFormat, bool filter, float *borderColor);
 
-GLuint GL_GenShadowTexture(int w, int h);
-void GL_UploadShadowTexture(int texid, int w, int h);
+GLuint GL_GenShadowTexture(int w, int h, float *borderColor);
+void GL_UploadShadowTexture(int texid, int w, int h, float *borderColor);
 
 void GL_GenFrameBuffer(FBO_Container_t *s);
 void GL_FrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat);
@@ -438,7 +439,7 @@ void GL_Texturemode_cb(cvar_t *);
 int EngineGetMaxKnownModel(void);
 int EngineGetModelIndex(model_t *mod);
 model_t *EngineGetModelByIndex(int index);
-
+int EngineGetMaxDLight(void);
 void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue);
 
 extern GLint r_viewport[4];

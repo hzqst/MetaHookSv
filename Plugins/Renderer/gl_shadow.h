@@ -1,8 +1,22 @@
 #pragma once
 
-extern int shadow_texture_depth;
-extern int shadow_texture_color;
-extern int shadow_texture_size;
+typedef struct
+{
+	//GLuint color;
+	GLuint color_array;
+	GLuint depth;
+	size_t size;
+	mat4 matrix;
+	float distance;
+	float cone_angle;
+	bool ready;
+}shadow_texture_t;
+
+extern shadow_texture_t r_shadow_texture;
+
+extern shadow_texture_t cl_dlight_shadow_textures[256];
+
+extern shadow_texture_t *current_shadow_texture;
 
 extern float shadow_projmatrix[3][16];
 extern float shadow_mvmatrix[3][16];
@@ -26,6 +40,9 @@ extern MapConVar *r_shadow_low_scale;
 
 bool R_ShouldCastShadow(cl_entity_t *ent);
 bool R_ShouldRenderShadowScene(void);
+bool R_ShouldRenderShadow(void);
 void R_RenderShadowMap(void);
 void R_InitShadow(void);
 void R_ShutdownShadow(void);
+void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size, bool bUseColorArray);
+void R_FreeShadowTexture(shadow_texture_t *shadowtex);

@@ -300,6 +300,9 @@ void R_DrawWaters(cl_entity_t *ent)
 	if (r_draw_reflectview)
 		return;
 
+	if (r_draw_shadowcaster)
+		return;
+
 	if (g_iNumRenderWaterVBOCache)
 	{
 		static glprofile_t profile_DrawWaters;
@@ -379,6 +382,9 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 void R_DrawSkyBox(void)
 {
 	if (CL_IsDevOverviewMode())
+		return;
+
+	if (r_draw_shadowcaster)
 		return;
 
 	if (!gSkyTexNumber[0])

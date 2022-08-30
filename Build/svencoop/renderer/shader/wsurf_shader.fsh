@@ -11,8 +11,6 @@
 
 uniform float u_parallaxScale;
 
-uniform int u_baseDrawId;
-
 #ifndef BINDLESS_ENABLED
 
 layout(binding = 0) uniform sampler2D diffuseTex;

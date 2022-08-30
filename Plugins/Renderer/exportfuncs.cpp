@@ -113,22 +113,18 @@ int HUD_Redraw(float time, int intermission)
 			break;
 		}
 	}
-	else if(r_shadow_debug && r_shadow_debug->value)
+	else if(r_shadow_debug && r_shadow_debug->value && current_shadow_texture && current_shadow_texture->depth)
 	{
 		glDisable(GL_BLEND);
 		glDisable(GL_ALPHA_TEST);
 		glColor4f(1,1,1,1);
 
-		glDisable(GL_TEXTURE_2D);
-		glEnable(GL_TEXTURE_2D_ARRAY);
+		glEnable(GL_TEXTURE_2D);
 
 		hud_debug_program_t prog = { 0 };
-		R_UseHudDebugProgram(HUD_DEBUG_TEXARRAY, &prog);
+		R_UseHudDebugProgram(HUD_DEBUG_SHADOW, &prog);
 
-		glBindTexture(GL_TEXTURE_2D_ARRAY, shadow_texture_color);
-
-		if (prog.layer != -1)
-			glUniform1f(prog.layer, r_shadow_debug->value - 1);
+		GL_Bind(current_shadow_texture->depth);
 
 		glBegin(GL_QUADS);
 		glTexCoord2f(0,1);
@@ -141,11 +137,8 @@ int HUD_Redraw(float time, int intermission)
 		glVertex3f(0,glheight/2,0);
 		glEnd();
 
-		glDisable(GL_TEXTURE_2D_ARRAY);
-		glEnable(GL_TEXTURE_2D);
-
 		glEnable(GL_ALPHA_TEST);
-
+		glEnable(GL_BLEND);
 		GL_UseProgram(0);
 	}
 	else if(r_light_debug && r_light_debug->value)
