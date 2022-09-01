@@ -104,7 +104,7 @@
       <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)Build\svencoop\metahook\plugins\"</Command>
+      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
