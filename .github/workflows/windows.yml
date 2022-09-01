@@ -1,0 +1,122 @@
+name: windows
+
+on:
+  push:
+    tags:
+      - "v*"
+  pull_request:
+    tags:
+      - "v*"
+
+env:
+  # Path to the solution file relative to the root of the project.
+  SOLUTION_FILE_PATH: .
+
+  # Configuration type to build.
+  # You can convert this to a build matrix if you need coverage of multiple configuration types.
+  # https://docs.github.com/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+  BUILD_CONFIGURATION: Release
+
+jobs:
+  build:
+
+    runs-on: windows-2019
+    if: github.repository == 'hzqst/MetaHookSv'
+
+    steps:
+      - uses: hzqst/checkout@v2.3.4
+
+      - name: Init dependencies
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: build-initdeps.bat
+        shell: cmd
+
+      - name: Build capstone
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: build-capstone.bat
+        shell: cmd
+
+      - name: Build bullet3
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: build-bullet3.bat
+        shell: cmd
+        
+      - name: Build bullet3 (AVX2)
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: build-bullet3-avx2.bat
+        shell: cmd
+
+      - name: Build glew
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: build-glew.bat
+        shell: cmd
+
+      - name: Build MetaHook.exe
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: build-MetaHook.bat
+        shell: cmd
+        
+      - name: Build BulletPhysics.dll
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: build-BulletPhysics.bat
+        shell: cmd
+                
+      - name: Build BulletPhysics.dll (AVX2)
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: build-BulletPhysics-AVX2.bat
+        shell: cmd
+        
+      - name: Build CaptionMod.dll
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: build-CaptionMod.bat
+        shell: cmd
+        
+      - name: Build CommunicationDemo.dll
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: build-CommunicationDemo.bat
+        shell: cmd
+
+      - name: Build DontFlushSoundCache.dll
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: build-DontFlushSoundCache.bat
+        shell: cmd
+        
+      - name: Build Renderer.dll
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: build-Renderer.bat
+        shell: cmd
+        
+      - name: Build Renderer.dll (AVX2)
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: build-Renderer-AVX2.bat
+        shell: cmd
+        
+      - name: Build SteamScreenshots.dll
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: build-SteamScreenshots.bat
+        shell: cmd
+
+      - name: Build StudioEvents.dll
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: build-StudioEvents.bat
+        shell: cmd
+
+      - name: Remove placeholder
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: del "Build\svencoop\metahook\plugins\.placeholder"
+        shell: cmd
+        
+      - name: Zipping the build directory 
+        uses: thedoctor0/zip-release@main
+        with:
+          type: 'zip'
+          filename: 'MetaHookSv-windows-x86.zip'
+          path: 'Build'
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: MetaHookSv-${{ github.ref }}
+          files: |
+            MetaHookSv-windows-x86.zip
