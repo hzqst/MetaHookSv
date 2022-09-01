@@ -106,12 +106,16 @@ jobs:
         run: del "Build\svencoop\metahook\plugins\.placeholder"
         shell: cmd
         
-      - name: Zipping the build directory 
-        uses: thedoctor0/zip-release@main
+      - name: Remove SteamAppsLocation
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: rmdir /s /q "SteamAppsLocation\SteamAppsLocation"
+        shell: cmd
+        
+      - name: Zipping All
+        uses: vimtor/action-zip@v1
         with:
-          type: 'zip'
-          filename: 'MetaHookSv-windows-x86.zip'
-          path: 'Build'
+          files: Build/ SteamAppsLocation/ README.md READMECN.md install-to-SvenCoop.bat install-to-OpposingForce.bat install-to-HalfLife.bat install-to-DayOfDefeat.bat install-to-CSCZDeletedScenes.bat install-to-CounterStrike.bat install-to-ConditionZero.bat install-to-BlueShift.bat
+          dest: MetaHookSv-windows-x86.zip
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
