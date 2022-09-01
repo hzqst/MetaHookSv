@@ -118,7 +118,7 @@ if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\ren
       <AdditionalDependencies>OpenGL32.lib;libglew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\"</Command>
+      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)Build\svencoop\metahook\plugins\"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if not exist "$(ProjectDir)..\..\glew\build\lib\Release\libglew32.lib" call "$(ProjectDir)..\..\build-glew.bat"</Command>
@@ -149,7 +149,7 @@ if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\ren
       <AdditionalDependencies>OpenGL32.lib;libglew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\$(TargetName)_AVX2$(TargetExt)"</Command>
+      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)Build\svencoop\metahook\plugins\$(TargetName)_AVX2$(TargetExt)"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if not exist "$(ProjectDir)..\..\glew\build\lib\Release\libglew32.lib" call "$(ProjectDir)..\..\build-glew.bat"</Command>

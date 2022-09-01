@@ -163,7 +163,7 @@
       <AdditionalDependencies>capstone.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(OutDir)..\Build\svencoop.exe"</Command>
+      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)Build\svencoop.exe"</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>

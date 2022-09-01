@@ -120,7 +120,7 @@
       <AdditionalDependencies>Bullet3Collision.lib;Bullet3Common.lib;Bullet3Dynamics.lib;Bullet3Geometry.lib;BulletCollision.lib;BulletDynamics.lib;LinearMath.lib;OpenGL32.lib;libglew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\"</Command>
+      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)Build\svencoop\metahook\plugins\"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if not exist "$(ProjectDir)..\..\bullet3\build\lib\Release\Bullet3Common.lib" call "$(ProjectDir)..\..\build-bullet3.bat"</Command>
@@ -149,7 +149,7 @@
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\$(TargetName)_AVX2$(TargetExt)"</Command>
+      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)Build\svencoop\metahook\plugins\$(TargetName)_AVX2$(TargetExt)"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>if not exist "$(ProjectDir)..\..\bullet3\build_AVX2\lib\Release\Bullet3Common.lib" call "$(ProjectDir)..\..\build-bullet3-avx2.bat"</Command>
