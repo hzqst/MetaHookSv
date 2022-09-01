@@ -8,6 +8,10 @@ Most of plugins are still compatible with vanilla GoldSrc engine. please check p
 
 [中文README](READMECN.md)
 
+## Download
+
+(GitHub Release)[https://github.com/hzqst/MetaHookSv/releases]
+
 ## Risk of VAC ?
 
 Although using hook is likely to be dangerous in games, there is no VAC ban reported yet.
@@ -18,11 +22,23 @@ You can even connect to a "VAC protected" server with `-insecure`, as VAC is not
 
 Use a separate account to play Sven Co-op if you still worry about VAC ban wave. Sven Co-op is a free game.
 
+## One Click Installation
+
+1. Download from (GitHub Release)[https://github.com/hzqst/MetaHookSv/releases], then unzip it.
+
+2. Run `install-to-SvenCoop.bat`
+
+3. Launch game from shortcut `MetaHook for SvenCoop` or `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`
+
+* Other games follow the same instruction.
+
+* You should have your Steam running otherwise the [SteamAppsLocation](SteamAppsLocation/README.md) will probably not going to find GameInstallDir.
+
 ## Manual Installation
 
-1. git pull https://github.com/hzqst/MetaHookSv or download from https://github.com/hzqst/MetaHookSv/archive/main.zip
+1. Download from (GitHub Release)[https://github.com/hzqst/MetaHookSv/releases], then unzip it.
 
-2. All required executable and resource files are in `Build` folder, pick [whatever resource you want](Build/README.md) and copy them to `\SteamLibrary\steamapps\common\Sven Co-op\`.
+2. All required executable and resource files are in `Build` folder, pick [whatever you want](Build/README.md) and copy them to `\SteamLibrary\steamapps\common\Sven Co-op\`.
 
 3. (Optional) Rename `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\plugins_svencoop.lst` to `plugins.lst`
 
@@ -34,37 +50,25 @@ Use a separate account to play Sven Co-op if you still worry about VAC ban wave.
 
 * The `SDL2.dll` fixes a bug that the IME input handler from original SDL library provided by Valve was causing buffer overflow and game crash when using non-english IME. you don't need to copy it if you don't have a non-english IME.
 
-## One Click Installation
-
-1. git pull https://github.com/hzqst/MetaHookSv or download from https://github.com/hzqst/MetaHookSv/archive/main.zip
-
-2. Run `install-to-SvenCoop.bat`
-
-3. Launch game from shortcut `MetaHook for SvenCoop` or `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`
-
-* Other games follow the same instruction.
-
-* You should have your Steam running otherwise the [SteamAppsLocation](SteamAppsLocation/README.md) will probably not going to find GameInstallDir.
-
 ## Build Requirements
 
-1. Visual Studio 2017 or 2019, with vc141 or vc142 toolset.
+1. Visual Studio 2017, 2019 or 2022, with vc141, vc142 or vc143 toolset.
 
 2. CMake
 
-3. git client
+3. Git for Windows
 
 ## Build Instruction
 
 Let's assume that you have all requirements installed correctly.
 
-1. git clone https://github.com/hzqst/MetaHookSv
+1. `git clone https://github.com/hzqst/MetaHookSv`
 
 2. Run `build-initdeps.bat`, wait until all required submodules / dependencies are pulled. (this may takes couple of minutes, depending on your network connection and download speed)
 
 3. Run `build-MetaHook.bat`, wait until `svencoop.exe` generated at `Build` directory.
 
-4. Run `build-(SpecifiedPluginName).bat`, wait until `(SpecifiedPluginName).dll` generated. Current available plugins : CaptionMod.dll, CaptionMod, Renderer, StudioEvents, SteamScreenshots, SCModelDownloader, CommunicationDemo.
+4. Run `build-(SpecifiedPluginName).bat`, wait until `(SpecifiedPluginName).dll` generated. Current available plugins : CaptionMod, Renderer, StudioEvents, SteamScreenshots, SCModelDownloader, CommunicationDemo, DontFlushSoundCache.
 
 8. If generated without problem, plugins should be at `Build\svencoop\metahook\plugins\` directory.
 
@@ -162,6 +166,14 @@ Cvar : `scmodel_usemirror 0 / 1` Use mirror (cdn.jsdelivr.net) if github is not 
 ### CommunicationDemo (Sven Co-op only)
 
 This plugin exposes an interface to communicate with Sven Co-op server.
+
+### DontFlushSoundCache (Sven Co-op only)
+
+This plugin prevents client from flushing soundcache at `retry` (engine issues `retry` command everytime when HTTP download progress is finished), make it possible to  preserve soundcache txt downloaded from fastdl resource server (sv_downloadurl).
+
+The fastdl procedure only works when game server uploads current map's soundcache txt to the fastdl resource server. (I am using AliyunOSS)
+
+The reason why I made this plugin is because transfering soundcache txt via UDP netchannel is really not a good idea as server bandwidth and file IO resource is expensive.
 
 ### ABCEnchance (third-party) (Sven Co-op only)
 
