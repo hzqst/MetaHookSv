@@ -110,9 +110,9 @@ The implementation credits to [HBAO or Horizon-Based-Ambient-Occlusion](https://
 
 `r_light_dynamic` set to 1 to enable Deferred Shading and Dynamic Lights.
 
-`r_flashlight_cone` is the cosine of angle of flashlight cone.
+`r_flashlight_cone_consine` is the cosine of angle of flashlight cone. value between 0.8 and 0.99 is recommended.
 
-`r_flashlight_distance` is the max illumination distance of flashlight.
+`r_flashlight_distance` is the max illumination distance of flashlight. default : 2000
 
 `r_flashlight_ambient` is ambient intensity of flashlights.
 
