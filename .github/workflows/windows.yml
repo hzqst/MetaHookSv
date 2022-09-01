@@ -101,20 +101,44 @@ jobs:
         run: build-StudioEvents.bat
         shell: cmd
 
-      - name: Remove placeholder
+      - name: Create Output directory
         working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: del "Build\svencoop\metahook\plugins\.placeholder"
+        run: mkdir Output
+        shell: cmd
+
+      - name: Copy Build to Output
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: |
+          mkdir "Output\Build"
+          xcopy "Build" "Output\Build" /y /e
         shell: cmd
         
-      - name: Remove SteamAppsLocation
+      - name: Copy SteamAppsLocation to Output
         working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: rmdir /s /q "SteamAppsLocation\SteamAppsLocation"
+        run: |
+          mkdir "Output\SteamAppsLocation"
+          copy "SteamAppsLocation\SteamAppsLocation.exe" "Output\SteamAppsLocation" /y /e
+          copy "SteamAppsLocation\steam_appid.txt" "Output\SteamAppsLocation" /y /e
+          copy "SteamAppsLocation\steam_api.dll" "Output\SteamAppsLocation" /y /e
         shell: cmd
-        
+
+      - name: Copy install bat to Output
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: |
+          copy "install-to-SvenCoop.bat" "Output" /y
+          copy "install-to-OpposingForce.bat" "Output" /y
+          copy "install-to-HalfLife.bat" "Output" /y
+          copy "install-to-DayOfDefeat.bat" "Output" /y
+          copy "install-to-CSCZDeletedScenes.bat" "Output" /y
+          copy "install-to-CounterStrike.bat" "Output" /y
+          copy "install-to-ConditionZero.bat" "Output" /y
+          copy "install-to-BlueShift.bat" "Output" /y
+        shell: cmd
+
       - name: Zipping All
         uses: vimtor/action-zip@v1
         with:
-          files: Build/ SteamAppsLocation/ README.md READMECN.md install-to-SvenCoop.bat install-to-OpposingForce.bat install-to-HalfLife.bat install-to-DayOfDefeat.bat install-to-CSCZDeletedScenes.bat install-to-CounterStrike.bat install-to-ConditionZero.bat install-to-BlueShift.bat
+          files: Output/
           dest: MetaHookSv-windows-x86.zip
 
       - name: Create Release
