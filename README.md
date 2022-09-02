@@ -10,7 +10,7 @@ Most of plugins are still compatible with vanilla GoldSrc engine. please check p
 
 ## Download
 
-(GitHub Release)[https://github.com/hzqst/MetaHookSv/releases]
+[GitHub Release](https://github.com/hzqst/MetaHookSv/releases)
 
 ## Risk of VAC ?
 
@@ -24,7 +24,7 @@ Use a separate account to play Sven Co-op if you still worry about VAC ban wave.
 
 ## One Click Installation
 
-1. Download from (GitHub Release)[https://github.com/hzqst/MetaHookSv/releases], then unzip it.
+1. Download from [GitHub Release](https://github.com/hzqst/MetaHookSv/releases), then unzip it.
 
 2. Run `install-to-SvenCoop.bat`
 
@@ -36,7 +36,7 @@ Use a separate account to play Sven Co-op if you still worry about VAC ban wave.
 
 ## Manual Installation
 
-1. Download from (GitHub Release)[https://github.com/hzqst/MetaHookSv/releases], then unzip it.
+1. Download from [GitHub Release](https://github.com/hzqst/MetaHookSv/releases), then unzip it.
 
 2. All required executable and resource files are in `Build` folder, pick [whatever you want](Build/README.md) and copy them to `\SteamLibrary\steamapps\common\Sven Co-op\`.
 
@@ -74,7 +74,7 @@ Let's assume that you have all requirements installed correctly.
 
 ## Debugging
 
-1. git clone https://github.com/hzqst/MetaHookSv (Ignore if you have already done this before)
+1. `git clone https://github.com/hzqst/MetaHookSv` (Ignore if you have already done this before)
 
 2. Run `build-initdeps.bat`, wait until all required submodules / dependencies are pulled.  (Ignore if you have already done this before) (this may takes couple of minutes, depending on your network connection and download speed)
 
