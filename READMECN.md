@@ -8,6 +8,12 @@
 
 [英文README](README.md)
 
+## 下载
+
+[GitHub Release](https://github.com/hzqst/MetaHookSv/releases)
+
+[因为某些神秘原因导致无法下载的话可以使用加速镜像，往里复制下载地址即可下载](https://ghproxy.com/)
+
 ## VAC风险?
 
 虽然在游戏中使用hook之类的行为可能看上去很危险，但是目前为止还没有人反馈因为使用此插件导致VAC封禁。
@@ -160,6 +166,14 @@
 ### CommunicationDemo (只支持Sven Co-op)
 
 该插件开放了一个接口用于进行客户端-服务端双向通信。
+
+### DontFlushSoundCache (只支持Sven Co-op)
+
+该插件阻止客户端在 `retry` 时清理 soundcache 缓存 (引擎在HTTP完成下载时会触发 `retry` 命令), 让客户端得以保留HTTP下载得到的 soundcache txt
+
+服务端必须上传自己的soundcache到资源服务器来支持soundcache的HTTP下载
+
+该插件的目的是节约服务器的带宽资源和磁盘IO资源（频繁读写文件不是什么好事，用UDP挂服下载更不是什么好事）
 
 ### ABCEnchance (第三方) (只支持Sven Co-op)
 

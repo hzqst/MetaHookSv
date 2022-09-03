@@ -34,10 +34,13 @@ void GL_CheckShaderError(GLuint shader, const char *code, const char *filename)
 
 	if(!iStatus)
 	{
-		int nInfoLength;
-		char szCompilerLog[1024] = { 0 };
-		glGetInfoLogARB(shader, sizeof(szCompilerLog) - 1, &nInfoLength, szCompilerLog);
-		szCompilerLog[nInfoLength] = 0;
+		int nInfoLength = 0;
+		glGetObjectParameterivARB(shader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &nInfoLength);
+		
+		std::string info;
+		info.resize(nInfoLength);
+
+		glGetInfoLogARB(shader, nInfoLength, NULL, (char *)info.c_str());
 
 		g_pFileSystem->CreateDirHierarchy("logs");
 		g_pFileSystem->CreateDirHierarchy("logs/renderer");
@@ -48,10 +51,12 @@ void GL_CheckShaderError(GLuint shader, const char *code, const char *filename)
 			g_pFileSystem->Write("\n\nFilename: ", sizeof("\n\nFilename: ") - 1, FileHandle);
 			g_pFileSystem->Write(filename, strlen(filename), FileHandle);
 			g_pFileSystem->Write("\n\nLogs: ", sizeof("\n\nLogs: ") - 1, FileHandle);
-			g_pFileSystem->Write(szCompilerLog, nInfoLength, FileHandle);
+			g_pFileSystem->Write(info.c_str(), info.length(), FileHandle);
 			g_pFileSystem->Close(FileHandle);
 		}
-		g_pMetaHookAPI->SysError("Shader %s compiled with error:\n%s", filename, szCompilerLog);
+		if (info.length() > 256)
+			info.resize(256);
+		g_pMetaHookAPI->SysError("Shader %s compiled with error:\n%s", filename, info.c_str());
 		return;
 	}
 }
@@ -74,13 +79,13 @@ GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfil
 	GLuint shader_objects[32];
 	int shader_object_used = 0;
 
-	shader_objects[shader_object_used] = R_CompileShaderObject(GL_VERTEX_SHADER_ARB, vscode, vsfile);
+	shader_objects[shader_object_used] = R_CompileShaderObject(GL_VERTEX_SHADER, vscode, vsfile);
 	shader_object_used++;
 
 	if(callback)
 		callback(shader_objects, &shader_object_used);
 
-	shader_objects[shader_object_used] = R_CompileShaderObject(GL_FRAGMENT_SHADER_ARB, fscode, fsfile);
+	shader_objects[shader_object_used] = R_CompileShaderObject(GL_FRAGMENT_SHADER, fscode, fsfile);
 	shader_object_used++;
 
 	GLuint program = glCreateProgramObjectARB();
