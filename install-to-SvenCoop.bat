@@ -1,5 +1,7 @@
 echo off
 
+if not exist "%~dp0Build\svencoop.exe" goto fail_nobuild
+
 set LauncherExe=svencoop.exe
 set LauncherMod=svencoop
 
@@ -33,5 +35,11 @@ exit
 :fail
 
 echo Failed to locate GameInstallDir of Sven Co-op, please make sure Steam is running and you have Sven Co-op installed correctly.
+pause
+exit
+
+:fail_nobuild
+
+echo Compiled binaries not found ! You have to download compiled zip from github release page or compile the sources by yourself before installing !!!
 pause
 exit

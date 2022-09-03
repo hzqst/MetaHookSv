@@ -1,5 +1,7 @@
 echo off
 
+if not exist "%~dp0Build\svencoop.exe" goto fail_nobuild
+
 set LauncherExe=metahook.exe
 set LauncherMod=czeror
 
@@ -29,5 +31,11 @@ exit
 :fail
 
 echo Failed to locate GameInstallDir of Counter-Strike : Condition Zero - Deleted Scenes, please make sure Steam is running and you have Counter-Strike : Condition Zero - Deleted Scenes installed correctly.
+pause
+exit
+
+:fail_nobuild
+
+echo Compiled binaries not found ! You have to download compiled zip from github release page or compile the sources by yourself before installing !!!
 pause
 exit
