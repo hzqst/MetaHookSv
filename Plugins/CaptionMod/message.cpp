@@ -2,7 +2,7 @@
 #include "exportfuncs.h"
 #include "parsemsg.h"
 #include "privatefuncs.h"
-//viewport
+
 #include <VGUI/VGUI.h>
 #include <vgui/IScheme.h>
 #include <vgui/ILocalize.h>
@@ -21,6 +21,7 @@ char *m_pSenderName = NULL;
 client_textmessage_t *g_pCurrentTextMessage = NULL;
 
 CHudMessage m_HudMessage;
+CHudMenu m_HudMenu;
 
 pfnUserMsgHook m_pfnHudText;
 pfnUserMsgHook m_pfnHudTextPro;
@@ -28,6 +29,7 @@ pfnUserMsgHook m_pfnHudTextArgs;
 pfnUserMsgHook m_pfnSendAudio;
 pfnUserMsgHook m_pfnSayText;
 pfnUserMsgHook m_pfnTextMsg;
+pfnUserMsgHook m_pfnShowMenu;
 
 int __MsgFunc_TextMsg(const char *pszName, int iSize, void *pbuf)
 {
@@ -1799,6 +1801,63 @@ int CHudMessage::MsgFunc_TextMsg(const char* pszName, int iSize, void* pbuf)
 	return 0;
 }
 
+int KB_ConvertString(char *in, char **ppout)
+{
+	char sz[4096];
+	char binding[64];
+	char *p;
+	char *pOut;
+	char *pEnd;
+	const char *pBinding;
+
+	if (!ppout)
+		return 0;
+
+	*ppout = NULL;
+	p = in;
+	pOut = sz;
+
+	while (*p)
+	{
+		if (*p == '+')
+		{
+			pEnd = binding;
+
+			while (*p && (isalnum(*p) || (pEnd == binding)) && ((pEnd - binding) < 63))
+				*pEnd++ = *p++;
+
+			*pEnd = '\0';
+			pBinding = NULL;
+
+			if (strlen(binding + 1) > 0)
+				pBinding = gEngfuncs.Key_LookupBinding(binding + 1);
+
+			if (pBinding)
+			{
+				*pOut++ = '[';
+				pEnd = (char *)pBinding;
+			}
+			else
+				pEnd = binding;
+
+			while (*pEnd)
+				*pOut++ = *pEnd++;
+
+			if (pBinding)
+				*pOut++ = ']';
+		}
+		else
+			*pOut++ = *p++;
+	}
+
+	*pOut = '\0';
+	pOut = (char *)malloc(strlen(sz) + 1);
+	strcpy(pOut, sz);
+	*ppout = pOut;
+
+	return 1;
+}
+
 int CHudMessage::MessageAdd(client_textmessage_t *newMessage, float time, int hintMessage, int useSlot, unsigned int m_hFont, bool bIsDynamicMessage)
 {
 	int i;
@@ -1902,4 +1961,361 @@ client_textmessage_t *pfnTextMessageGet(const char *pName)
 	}
 
 	return gPrivateFuncs.pfnTextMessageGet(pName);
+}
+
+int __MsgFunc_ShowMenu(const char* pszName, int iSize, void* pbuf)
+{
+	if (m_HudMenu.MsgFunc_ShowMenu(pszName, iSize, pbuf) != 0)
+		return 1;
+
+	int result = m_pfnShowMenu(pszName, iSize, pbuf);
+
+	return result;
+}
+
+void CHudMenu::Init(void)
+{
+	m_pfnShowMenu = HOOK_MESSAGE(ShowMenu);
+
+	m_bMenuDisplayed = 0;
+	m_bitsValidSlots = 0;
+
+	Reset();
+}
+
+void CHudMenu::Reset(void)
+{
+	m_szMenuString[0] = 0;
+	m_szPrelocalisedMenuString[0] = 0;
+	m_fWaitingForMore = 0;
+	m_flShutoffTime = 0;
+}
+
+int CHudMenu::VidInit(void)
+{
+	IScheme *pScheme = scheme()->GetIScheme(scheme()->GetScheme("CaptionScheme"));
+
+	if (pScheme)
+	{
+		m_hFont = pScheme->GetFont("Legacy_CreditsFont", true);
+		if (!m_hFont)
+			m_hFont = pScheme->GetFont("CreditsFont", true);
+	}
+	else
+	{
+		pScheme = scheme()->GetIScheme(scheme()->GetDefaultScheme());
+		if (pScheme)
+		{
+			m_hFont = pScheme->GetFont("Legacy_CreditsFont", true);
+			if (!m_hFont)
+				m_hFont = pScheme->GetFont("CreditsFont", true);
+		}
+	}
+
+	m_iFontEngineHeight = vgui::surface()->GetFontTall(m_hFont);
+
+	Reset();
+
+	return 1;
+}
+
+int CHudMenu::Draw(void)
+{
+	if (m_flShutoffTime > 0)
+	{
+		if (m_flShutoffTime <= (*cl_time))
+		{
+			m_bMenuDisplayed = 0;
+			return 1;
+		}
+	}
+
+	if (g_pViewPort && g_pViewPort->IsScoreBoardVisible())
+		return 1;
+
+	int nlc = 0;
+
+	for (int i = 0; i < MAX_MENU_STRING && m_szMenuString[i] != '\0'; i++)
+	{
+		if (m_szMenuString[i] == '\n')
+			nlc++;
+	}
+
+	menu_x = 20;
+	menu_r = 255;
+	menu_g = 255;
+	menu_b = 20;
+	menu_ralign = 0;
+
+	int ScreenWidth, ScreenHeight;
+
+	SCREENINFO_s si; 
+	si.iSize = sizeof(si);
+	gEngfuncs.pfnGetScreenInfo(&si);
+
+	ScreenWidth = si.iWidth;
+	ScreenHeight = si.iHeight;
+
+	int y = (ScreenHeight / 2) - ((nlc / 2) * 12) - 40;
+	const char *sptr = m_szMenuString;
+	int i;
+	char menubuf[80];
+	const char *ptr;
+
+	while (*sptr)
+	{
+		if (*sptr == '\\')
+		{
+			switch (*(sptr + 1))
+			{
+			case '\0':
+			{
+				sptr += 1;
+				break;
+			}
+
+			case 'w':
+			{
+				menu_r = 255;
+				menu_g = 255;
+				menu_b = 255;
+
+				sptr += 2;
+				break;
+			}
+
+			case 'd':
+			{
+				menu_r = 100;
+				menu_g = 100;
+				menu_b = 100;
+
+				sptr += 2;
+				break;
+			}
+
+			case 'y':
+			{
+				menu_r = 255;
+				menu_g = 210;
+				menu_b = 64;
+
+				sptr += 2;
+				break;
+			}
+
+			case 'r':
+			{
+				menu_r = 210;
+				menu_g = 24;
+				menu_b = 0;
+
+				sptr += 2;
+				break;
+			}
+
+			case 'R':
+			{
+				menu_ralign = 1;
+				menu_x = ScreenWidth / 2;
+
+				sptr += 2;
+				break;
+			}
+
+			default:
+			{
+				sptr += 2;
+			}
+			}
+
+			continue;
+		}
+
+		if (*sptr == '\n')
+		{
+			menu_ralign = 0;
+			menu_x = 20;
+			y += m_iFontEngineHeight + 2;
+			sptr += 1;
+			continue;
+		}
+
+		for (ptr = sptr; *sptr != '\0'; sptr++)
+		{
+			if (*sptr == '\n')
+				break;
+
+			if (*sptr == '\\')
+				break;
+		}
+
+		i = sptr - ptr;
+		strncpy(menubuf, ptr, min(i, sizeof(menubuf)));
+		menubuf[min(i, sizeof(menubuf) - 1)] = 0;
+
+		if (menu_ralign)
+		{
+			menu_x = DrawHudStringReverse(menu_x, y, 0, menubuf, menu_r, menu_g, menu_b);
+		}
+		else
+		{
+			menu_x = DrawHudString(menu_x, y, 320, menubuf, menu_r, menu_g, menu_b);
+		}
+	}
+
+	return 1;
+}
+
+int CHudMenu::DrawHudString(int xpos, int ypos, int iMaxX, char *szIt, int r, int g, int b)
+{
+	xpos += gEngfuncs.pfnDrawString(xpos, ypos, szIt, r, g, b);
+	return xpos;
+}
+
+int CHudMenu::DrawHudStringReverse(int xpos, int ypos, int iMinX, char *szString, int r, int g, int b)
+{
+	xpos -= gEngfuncs.pfnDrawStringReverse(xpos, ypos, szString, r, g, b);
+	return xpos;
+}
+
+char *CHudMenu::LocaliseTextString(const char *msg, char *dst_buffer, int buffer_size)
+{
+	char *dst = dst_buffer;
+
+	for (char *src = (char *)msg; *src != 0 && buffer_size > 0; buffer_size--)
+	{
+		if (*src == '#')
+		{
+			static char word_buf[255];
+			char *wdst = word_buf, *word_start = src;
+
+			for (++src; (*src >= 'A' && *src <= 'z') || (*src >= '0' && *src <= '9'); wdst++, src++)
+				*wdst = *src;
+
+			*wdst = 0;
+
+			client_textmessage_t *clmsg = gPrivateFuncs.pfnTextMessageGet(word_buf);
+
+			if (!clmsg || !(clmsg->pMessage))
+			{
+				src = word_start;
+				*dst = *src;
+				dst++, src++;
+				continue;
+			}
+
+			for (char *wsrc = (char *)clmsg->pMessage; *wsrc != 0; wsrc++, dst++)
+				*dst = *wsrc;
+
+			*dst = 0;
+		}
+		else
+		{
+			*dst = *src;
+			dst++, src++;
+			*dst = 0;
+		}
+	}
+
+	dst_buffer[buffer_size - 1] = 0;
+	return dst_buffer;
+}
+
+char *CHudMenu::BufferedLocaliseTextString(const char *msg)
+{
+	static char dst_buffer[1024];
+	LocaliseTextString(msg, dst_buffer, 1024);
+	return dst_buffer;
+}
+
+bool CHudMenu::SelectMenuItem(int menu_item)
+{
+	char szbuf[32];
+
+	if ((menu_item > 0) && (m_bitsValidSlots & (1 << (menu_item - 1))))
+	{
+		if (m_bIsASMenu)
+		{
+			sprintf(szbuf, "as_menuselect %d\n", menu_item);
+			gEngfuncs.pfnClientCmd(szbuf);
+		}
+		else
+		{
+			sprintf(szbuf, "menuselect %d\n", menu_item);
+			gEngfuncs.pfnClientCmd(szbuf);
+		}
+
+		m_bMenuDisplayed = 0;
+		return true;
+	}
+
+	return false;
+}
+
+int CHudMenu::MsgFunc_ShowMenu(const char* pszName, int iSize, void* pbuf)
+{
+	if (g_bIsCounterStrike)
+		return 0;
+
+	if (gPrivateFuncs.WeaponsResource_SelectSlot)
+		return 0;
+
+	char *temp = NULL;
+
+	BEGIN_READ(pbuf, iSize);
+
+	m_bitsValidSlots = READ_SHORT();
+
+	int DisplayTime = READ_CHAR();
+	int NeedMoreBits = READ_BYTE();
+	int NeedMore = NeedMoreBits & 0x7F;
+	m_bIsASMenu = ((NeedMoreBits >> 7) & 1) ? true : false;
+
+	if (DisplayTime > 0)
+		m_flShutoffTime = DisplayTime + (*cl_time);
+	else
+		m_flShutoffTime = -1;
+
+	if (m_bitsValidSlots)
+	{
+		if (!m_fWaitingForMore)
+			strncpy(m_szPrelocalisedMenuString, READ_STRING(), MAX_MENU_STRING);
+		else
+			strncat(m_szPrelocalisedMenuString, READ_STRING(), MAX_MENU_STRING - strlen(m_szPrelocalisedMenuString));
+
+		m_szPrelocalisedMenuString[MAX_MENU_STRING - 1] = 0;
+
+		if (!NeedMore)
+		{
+			strncpy(m_szMenuString, BufferedLocaliseTextString(m_szPrelocalisedMenuString), MAX_MENU_STRING - 1);
+			m_szMenuString[MAX_MENU_STRING - 1] = 0;
+
+			if (KB_ConvertString(m_szMenuString, &temp))
+			{
+				strcpy(m_szMenuString, temp);
+				free(temp);
+			}
+		}
+
+		m_bMenuDisplayed = true;
+	}
+	else
+	{
+		m_bMenuDisplayed = false;
+	}
+
+	m_fWaitingForMore = NeedMore;
+	return 1;
+}
+
+void __fastcall WeaponsResource_SelectSlot(void *pthis, int, int iSlot, int fAdvance, int iDirection)
+{
+	if (m_HudMenu.m_bMenuDisplayed && (fAdvance == FALSE) && (iDirection == 1))
+	{
+		m_HudMenu.SelectMenuItem(iSlot + 1);
+		return;
+	}
+
+	return gPrivateFuncs.WeaponsResource_SelectSlot(pthis, 0, iSlot, fAdvance, iDirection);
 }

@@ -23,6 +23,7 @@ CViewport *g_pViewPort = NULL;
 CMemoryPool m_HashItemMemPool(sizeof(hash_item_t), 64);
 
 extern CHudMessage m_HudMessage;
+extern CHudMenu m_HudMenu;
 
 CViewport::CViewport(void) : Panel(NULL, "CaptionViewport")
 {
@@ -857,11 +858,13 @@ void CViewport::VidInit(void)
 	LinkDictionary();
 
 	m_HudMessage.VidInit();
+	m_HudMenu.VidInit();
 }
 
 void CViewport::Init(void)
 {
 	m_HudMessage.Init();
+	m_HudMenu.Init();
 }
 
 void CViewport::StartSubtitle(CDictionary *dict)
@@ -893,12 +896,21 @@ void CViewport::Paint(void)
 	BaseClass::Paint();
 
 	m_HudMessage.Draw();
+	m_HudMenu.Draw();
 }
 
 bool CViewport::AllowedToPrintText(void)
 {
 	if (gPrivateFuncs.GameViewport_AllowedToPrintText)
 		return gPrivateFuncs.GameViewport_AllowedToPrintText(GameViewport, 0);
+
+	return true;
+}
+
+bool CViewport::IsScoreBoardVisible(void)
+{
+	if (gPrivateFuncs.GameViewport_IsScoreBoardVisible)
+		return gPrivateFuncs.GameViewport_IsScoreBoardVisible(GameViewport, 0);
 
 	return true;
 }

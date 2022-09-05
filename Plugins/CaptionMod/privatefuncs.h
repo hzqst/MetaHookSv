@@ -45,6 +45,10 @@ typedef struct
 
 	//ClientDLL
 	bool (__fastcall *GameViewport_AllowedToPrintText)(void *pthis, int);
+	bool (__fastcall *GameViewport_IsScoreBoardVisible)(void *pthis, int);
+	void (__fastcall *WeaponsResource_SelectSlot)(void *pthis, int, int iSlot, int fAdvance, int iDirection);
+	//int(__fastcall *CHud_DrawHudString)(void *pthis, int xpos, int ypos, int iMaxX, char *szIt, int r, int g, int b);
+	//int(__fastcall *DrawHudStringReverse)(void *pthis, int xpos, int ypos, int iMinX, char *szString, int r, int g, int b);
 
 	//VGUI1
 	void (__fastcall *vgui_TextImage_paint)(vgui1_TextImage *pthis, int, void *panel);

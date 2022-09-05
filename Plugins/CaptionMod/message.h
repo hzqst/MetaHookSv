@@ -79,6 +79,45 @@ private:
 	std::vector<client_textmessage_t *> m_DynamicTextMessages;
 };
 
+class CHudMenu
+{
+public:
+	int VidInit(void);
+	int Draw(void);
+	void Init(void);
+	void Reset(void);
+
+	bool SelectMenuItem(int menu_item);
+
+	int DrawHudString(int xpos, int ypos, int iMaxX, char *szIt, int r, int g, int b);
+	int DrawHudStringReverse(int xpos, int ypos, int iMinX, char *szString, int r, int g, int b);
+	char *LocaliseTextString(const char *msg, char *dst_buffer, int buffer_size);
+	char *BufferedLocaliseTextString(const char *msg);
+public:
+	int MsgFunc_ShowMenu(const char* pszName, int iSize, void* pbuf);
+public:
+
+#define MAX_MENU_STRING 512
+
+	int m_bitsValidSlots;
+	bool m_bMenuDisplayed;
+	bool m_bIsASMenu;
+	float m_flShutoffTime;
+	int m_fWaitingForMore;
+	char m_szMenuString[MAX_MENU_STRING];
+	char m_szPrelocalisedMenuString[MAX_MENU_STRING];
+
+
+	int menu_r;
+	int menu_g;
+	int menu_b;
+	int menu_x;
+	int menu_ralign;
+
+	vgui::HFont m_hFont;
+	int m_iFontEngineHeight;
+};
+
 struct message_parms_svclient_t
 {
 	client_textmessage_t *pMessage;

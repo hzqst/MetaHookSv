@@ -35,6 +35,7 @@ hook_t *g_phook_S_StartStaticSound = NULL;
 hook_t *g_phook_ScClient_FindSoundEx = NULL;
 hook_t *g_phook_pfnTextMessageGet = NULL;
 hook_t *g_phook_CWin32Font_GetCharRGBA = NULL;
+hook_t *g_phook_WeaponsResource_SelectSlot = NULL;
 
 PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule)
 {
@@ -298,7 +299,7 @@ void Client_FillAddress(void)
 
 #define SC_VIEWPORT_SIG "\x8B\x0D\x2A\x2A\x2A\x2A\x85\xC9\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x84\xC0\x0F"
 		{
-			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_VIEWPORT_SIG, Sig_Length(SC_VIEWPORT_SIG));
+			auto addr = (PUCHAR)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_VIEWPORT_SIG, Sig_Length(SC_VIEWPORT_SIG));
 
 			Sig_AddrNotFound(GameViewport);
 
@@ -307,9 +308,63 @@ void Client_FillAddress(void)
 			gPrivateFuncs.GameViewport_AllowedToPrintText = (decltype(gPrivateFuncs.GameViewport_AllowedToPrintText))GetCallAddress(addr + 10);
 		}
 
+#define SC_VIEWPORT_ISSCOREBOARDVISIBLE_SIG "\x8B\x01\x8B\x40\x28\xFF\xE0"
+		{
+			auto addr = (PUCHAR)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_VIEWPORT_ISSCOREBOARDVISIBLE_SIG, Sig_Length(SC_VIEWPORT_ISSCOREBOARDVISIBLE_SIG));
+
+			Sig_AddrNotFound(GameViewport_IsScoreBoardVisible);
+
+			gPrivateFuncs.GameViewport_IsScoreBoardVisible = (decltype(gPrivateFuncs.GameViewport_AllowedToPrintText))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(addr, 0x50, [](PUCHAR Candidate) {
+
+				//8B 89 2C 10 00 00                                   mov     ecx, [ecx+102Ch]
+				if (Candidate[0] == 0x8B &&
+					Candidate[1] == 0x89 &&
+					Candidate[4] == 0x00 &&
+					Candidate[5] == 0x00)
+				{
+					return TRUE;
+				}
+
+				return FALSE;
+			});
+
+			Sig_FuncNotFound(GameViewport_IsScoreBoardVisible);
+		}
+
+#define SELECTSLOT_STRING_SIG "common/wpn_hudon.wav"
+		{
+			auto addr = (PUCHAR)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SELECTSLOT_STRING_SIG, Sig_Length(SELECTSLOT_STRING_SIG));
+
+			Sig_AddrNotFound(wpn_hudon_wav_String);
+
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
+			*(DWORD *)(pattern + 1) = (DWORD)addr;
+			auto Push_wpn_hudon_Call = g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, pattern, Sig_Length(pattern));
+			Sig_VarNotFound(Push_wpn_hudon_Call);
+
+			gPrivateFuncs.WeaponsResource_SelectSlot = (decltype(gPrivateFuncs.WeaponsResource_SelectSlot))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Push_wpn_hudon_Call, 0x250, [](PUCHAR Candidate) {
+
+				//.text:10054A80 55                                                  push    ebp
+				//.text:10054A81 8B EC                                               mov     ebp, esp
+				//.text:10054A83 83 EC 18                                            sub     esp, 18h
+				if (Candidate[0] == 0x55 &&
+					Candidate[1] == 0x8B &&
+					Candidate[2] == 0xEC &&
+					Candidate[3] == 0x83 &&
+					Candidate[4] == 0xEC)
+				{
+					return TRUE;
+				}
+
+				return FALSE;
+			});
+
+			Sig_FuncNotFound(WeaponsResource_SelectSlot);
+		}
+
 #define SC_UPDATECURSORSTATE_SIG "\x8B\x40\x28\xFF\xD0\x84\xC0\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00"
 		{
-			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_UPDATECURSORSTATE_SIG, Sig_Length(SC_UPDATECURSORSTATE_SIG));
+			auto addr = (PUCHAR)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_UPDATECURSORSTATE_SIG, Sig_Length(SC_UPDATECURSORSTATE_SIG));
 			Sig_AddrNotFound(g_iVisibleMouse);
 
 			g_iVisibleMouse = *(decltype(g_iVisibleMouse) *)(addr + 11);
@@ -428,9 +483,15 @@ void Client_InstallHooks(void)
 	{
 		Install_InlineHook(ScClient_FindSoundEx);
 	}
+
+	if (gPrivateFuncs.WeaponsResource_SelectSlot)
+	{
+		Install_InlineHook(WeaponsResource_SelectSlot);
+	}
 }
 
 void Client_UninstallHooks(void)
 {
 	Uninstall_Hook(ScClient_FindSoundEx);
+	Uninstall_Hook(WeaponsResource_SelectSlot);
 }

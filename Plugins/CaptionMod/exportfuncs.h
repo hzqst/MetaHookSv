@@ -64,6 +64,7 @@ void Cap_Version_f(void);
 LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 int __fastcall ScClient_FindSoundEx(void* pthis, int, const char *sound);
+void __fastcall WeaponsResource_SelectSlot(void *pthis, int, int iSlot, int fAdvance, int iDirection);
 
 extern cvar_t* cap_debug;
 extern cvar_t* cap_enabled;

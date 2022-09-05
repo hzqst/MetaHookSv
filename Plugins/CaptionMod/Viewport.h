@@ -129,6 +129,7 @@ public:
 	void RemoveDictionaryHash(CDictionary *dict, const char *value);
 
 	bool AllowedToPrintText(void);
+	bool IsScoreBoardVisible(void);
 	bool IsChatDialogOpened(void);
 	void StopMessageMode(void);
 	void StartMessageMode(void);
