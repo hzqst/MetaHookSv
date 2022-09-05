@@ -2,29 +2,41 @@
 
 [English DOC](CaptionMod.md)
 
-### 功能
+## 功能
 
-1. 播放声音时显示字幕
+### 使用 Steam设置中的语言 或者 自定义语言 作为引擎和VGUI2使用的语言。
 
-2. 播放短句(sentence)时显示字幕
+详见 **启动项参数**
 
-3. 收到HUD文字消息时显示字幕
+### 在播放声音时显示字幕
 
-4. 收到SendAudio（无线电）消息时显示字幕
+### 在播放短句(sentence)时显示字幕
 
-5. 翻译HUD文字消息 (支持正则表达式)
+### 在收到HUD文字消息时显示字幕
 
-6. 修改原版客户端的HUD文字消息（如友军敌人血量显示以及game_text实体显示的文本），为其添加多字节字符支持。（用于解决HUD中文乱码问题）
+### 在收到SendAudio（无线电）消息时显示字幕 （仅支持Counter-Strike及它的衍生mod如Counter-Strike : Condition Zero）
 
-7. 修改VGUI1的文字控件，为其添加多字节字符支持。（用于解决计分板中文乱码问题）
+### 翻译HUD文字消息 (支持正则表达式)
 
-8. 每张地图支持单独的自定义翻译字典, 字典文件在"/maps/[地图名]_dictionary.csv"
+我们提供了用于翻译[restriction](http://scmapdb.com/map:restriction)系列地图消息文本的字典文件作为参考（位于"\Build\svencoop_addons\maps\restrictionXX_dictionary.csv"），其他地图的消息文本也可以参照这个格式进行翻译
 
-我们提供了用于翻译潜行者系列地图消息文本的字典文件作为参考（位于"\Build\svencoop_addons\maps\restrictionXX_dictionary.csv"），其他地图的消息文本也可以参照这个格式进行翻译
+### 修改原版客户端的HUD文字消息（如友军敌人血量显示以及game_text实体显示的文本），为其添加多字节字符支持，用于解决中文乱码问题。
 
-"svencoop\captionmod\dictionary_schinese.txt" 里有一段翻译文本叫 "#SVENCOOP_PLAYERINFO" 用于展示如何以正则表达式翻译HUD消息，不过该翻译文本并不会在游戏中生效，因为 Sven-Coop 不支持其他语言的本地化语言文件，它只会读取 "dictionary_english.txt"。
+"svencoop\captionmod\dictionary_schinese.txt" 里有一段翻译文本叫 "#SVENCOOP_PLAYERINFO" 用于展示如何以正则表达式翻译HUD消息至简体中文。
 
-所以如果你需要翻译游戏文本请直接用 "dictionary_[你的语言].txt" 替换 "dictionary_english.txt"。
+每张地图支持单独的自定义翻译字典, 字典文件需要命名为`/maps/[地图名]_dictionary.csv`，如只为中文设定字典则需要命名为`/maps/[地图名]_dictionary_schinese.csv`（如果要支持其他语言就把_schinese换成对应的语言即可）。
+
+### 修改原版客户端的菜单消息，为其添加多字节字符支持，用于解决中文乱码问题。
+
+服务器需要识别CaptionMod并发送多字节的文本作为菜单内容，否则依然只会显示英文菜单。
+
+### 修改VGUI1的文字控件，为其添加多字节字符支持，用于解决计分板中文乱码问题。
+
+### 新的起源风格VGUI2聊天框
+
+设置 `cap_newchat` 为1来启用聊天框
+
+如何修改默认的聊天文本颜色： `\Sven Co-op\svencoop\captionmod\ChatScheme.res` -> `Colors` -> `TanLight`
 
 ![](/img/1.png)
 
@@ -39,8 +51,14 @@
 
 #### 控制台参数
 
-cap_enabled 0 / 1 : 是否显示字幕
+`cap_enabled` : 是否启用字幕
 
-cap_netmessage 0 / 1 :是否显示HUD文字消息的翻译
+`cap_hudmessage` : 是否启用HUD文本消息的翻译功能
 
-cap_debug 0 / 1 : 当有声音播放或者HUD文字消息时在控制台输出调试信息
+`cap_netmessage` : 是否启用`__NETMESSAGE__`文本消息的翻译功能
+
+`cap_max_distance` : 说话的人超过该距离时不显示其对应的字幕
+
+`cap_debug` : 在控制台输出调试信息
+
+`cap_newchat` : 启用新的起源风格VGUI2聊天框

@@ -28,7 +28,9 @@ There is a example file demostrates how to translate dynamic HUD TextMessage to 
 
 * You can see multi-byte characters rendered correctly on scoreboard.
 
-### Custom dictionary support for specified map, put dictionary file at "/maps/[mapname]_dictionary.csv"
+### Draw HUDMenu with multi-byte character support. (Sven Co-op only)
+
+* You can see multi-byte characters rendered correctly on HudMenu.
 
 ### New Source2007 style VGUI2 ChatDialog
 
