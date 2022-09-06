@@ -48,15 +48,15 @@ Use a separate account to play Sven Co-op if you still worry about VAC ban wave.
 
 * Plugins can be disabled or enabled in `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\plugins.lst`
 
-* The `SDL2.dll` fixes a bug that the IME input handler from original SDL library provided by Valve was causing buffer overflow and game crash when using non-english IME. you don't need to copy it if you don't have a non-english IME.
+* The `SDL2.dll` fixes a bug that the IME input handler from original SDL library provided by Valve was causing buffer overflow and game crash when using non-english IME. you don't need to copy it if you don't have a non-english IME. The `SDL2.dll` from Steam install dir is okay too (It should be at `C:\Program Files (x86)\Steam` if you didn't change install location at Steam installation)
 
 ## Build Requirements
 
-1. Visual Studio 2017, 2019 or 2022, with vc141, vc142 or vc143 toolset.
+1. [Visual Studio 2017 / 2019 / 2022, with vc141 / vc142 / vc143 toolset](https://visualstudio.microsoft.com/)
 
-2. CMake
+2. [CMake](https://cmake.org/download/)
 
-3. Git for Windows
+3. [Git for Windows](https://gitforwindows.org/)
 
 ## Build Instruction
 
