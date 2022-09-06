@@ -47,6 +47,7 @@ typedef struct
 	bool (__fastcall *GameViewport_AllowedToPrintText)(void *pthis, int);
 	bool (__fastcall *GameViewport_IsScoreBoardVisible)(void *pthis, int);
 	void (__fastcall *WeaponsResource_SelectSlot)(void *pthis, int, int iSlot, int fAdvance, int iDirection);
+	int (__fastcall *CHud_GetBorderSize)(void *pthis, int);
 	//int(__fastcall *CHud_DrawHudString)(void *pthis, int xpos, int ypos, int iMaxX, char *szIt, int r, int g, int b);
 	//int(__fastcall *DrawHudStringReverse)(void *pthis, int xpos, int ypos, int iMinX, char *szString, int r, int g, int b);
 
@@ -76,6 +77,7 @@ typedef struct
 
 extern void *GameViewport;
 extern int *g_iVisibleMouse;
+extern void *gHud;
 
 extern double *cl_time;
 extern double *cl_oldtime;

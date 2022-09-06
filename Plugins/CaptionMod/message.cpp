@@ -1977,7 +1977,7 @@ void CHudMenu::Init(void)
 {
 	m_pfnShowMenu = HOOK_MESSAGE(ShowMenu);
 
-	m_bMenuDisplayed = 0;
+	m_bMenuDisplayed = false;
 	m_bitsValidSlots = 0;
 
 	Reset();
@@ -2025,12 +2025,15 @@ int CHudMenu::Draw(void)
 	{
 		if (m_flShutoffTime <= (*cl_time))
 		{
-			m_bMenuDisplayed = 0;
+			m_bMenuDisplayed = false;
 			return 1;
 		}
 	}
 
 	if (g_pViewPort && g_pViewPort->IsScoreBoardVisible())
+		return 1;
+
+	if(!m_bMenuDisplayed)
 		return 1;
 
 	int nlc = 0;
@@ -2041,10 +2044,11 @@ int CHudMenu::Draw(void)
 			nlc++;
 	}
 
-	menu_x = 20;
+	int border = (gPrivateFuncs.CHud_GetBorderSize && gHud) ? gPrivateFuncs.CHud_GetBorderSize(gHud, 0) : 15;
+	menu_x = border + 5;
 	menu_r = 255;
 	menu_g = 255;
-	menu_b = 20;
+	menu_b = 255;
 	menu_ralign = 0;
 
 	int ScreenWidth, ScreenHeight;
@@ -2117,7 +2121,7 @@ int CHudMenu::Draw(void)
 			case 'R':
 			{
 				menu_ralign = 1;
-				menu_x = ScreenWidth / 2;
+				menu_x = ScreenWidth / 2 - border;
 
 				sptr += 2;
 				break;
@@ -2246,7 +2250,7 @@ bool CHudMenu::SelectMenuItem(int menu_item)
 			gEngfuncs.pfnClientCmd(szbuf);
 		}
 
-		m_bMenuDisplayed = 0;
+		m_bMenuDisplayed = false;
 		return true;
 	}
 

@@ -369,6 +369,16 @@ void Client_FillAddress(void)
 
 			g_iVisibleMouse = *(decltype(g_iVisibleMouse) *)(addr + 11);
 		}
+
+#define SC_GETBORDERSIZE_SIG "\xF6\x05\x2A\x2A\x2A\x2A\x20\x2A\x2A\xB9\x2A\x2A\x2A\x2A\xE8"
+		{
+			auto addr = (PUCHAR)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_GETBORDERSIZE_SIG, Sig_Length(SC_GETBORDERSIZE_SIG));
+			Sig_AddrNotFound(CHud_GetBorderSize);
+
+			gHud = *(decltype(gHud) *)(addr + 10);
+			gPrivateFuncs.CHud_GetBorderSize = (decltype(gPrivateFuncs.CHud_GetBorderSize))
+				g_pMetaHookAPI->GetNextCallAddr(addr + Sig_Length(SC_GETBORDERSIZE_SIG) - 1, 1);
+		}
 	}
 
 	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "cstrike") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))

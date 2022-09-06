@@ -28,6 +28,7 @@ int m_iIntermission = 0;
 
 void *GameViewport = NULL;
 int *g_iVisibleMouse = NULL;
+void *gHud = NULL;
 
 HWND g_MainWnd = NULL;
 WNDPROC g_MainWndProc = NULL;
