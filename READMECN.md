@@ -24,18 +24,6 @@
 
 如果你实在不放心，那么请使用小号进行游戏，毕竟Sven Co-op是免费游戏。
 
-## 手动安装方式
-
-1. 从 [GitHub Release](https://github.com/hzqst/MetaHookSv/releases) 下载压缩包。(可利用GitHub的国内加速镜像加速下载），然后解压。
-
-2. 复制Build目录下的所有文件到 `\SteamLibrary\steamapps\common\Sven Co-op\`。
-
-3. 从`\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe` 启动游戏。
-
-* `Build`目录中的 `svencoop.exe` 原来叫 `metahook.exe`，它会替换你自带的游戏启动器`svencoop.exe`，请注意备份。当然你也可以选择不替换`svencoop.exe`，以命令行或启动项方式`metahook.exe -game svencoop`启动SvenCoop。不过不推荐这么做，因为这么做会导致更改视频模式的时候游戏闪退（可能是游戏自己对进程名有校验）。
-
-* `Build`目录中的`SDL2.dll`文件是用来修复原版SDL使用中文输入法进行游戏时可能发生的内存越界写入导致游戏崩溃的问题。如果你全程都关闭中文输入法的话也可以选择不替换`SDL2.dll`。当然，你也可以从Steam根目录（默认位置`C:\Program Files (x86)\Steam`）复制`SDL2.dll`，效果是完全一样的。
-
 ## 一键安装方式
 
 1. 从 [GitHub Release](https://github.com/hzqst/MetaHookSv/releases) 下载压缩包。(可利用GitHub的国内加速镜像加速下载），然后解压。
@@ -47,6 +35,18 @@
 * 其他游戏也可以按照此种方式安装，只需要运行其他install-to-批处理即可。
 
 * 请确保已经登录Steam否则 [SteamAppsLocation](SteamAppsLocation/README.md) 可能会无法寻找游戏安装目录，导致自动安装失败。
+
+## 手动安装方式
+
+1. 从 [GitHub Release](https://github.com/hzqst/MetaHookSv/releases) 下载压缩包。(可利用GitHub的国内加速镜像加速下载），然后解压。
+
+2. 复制Build目录下的所有文件到 `\SteamLibrary\steamapps\common\Sven Co-op\`。
+
+3. 从`\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe` 启动游戏。
+
+* `Build`目录中的 `svencoop.exe` 原来叫 `metahook.exe`，它会替换你自带的游戏启动器`svencoop.exe`，请注意备份。当然你也可以选择不替换`svencoop.exe`，以命令行或启动项方式`metahook.exe -game svencoop`启动SvenCoop。不过不推荐这么做，因为这么做会导致更改视频模式的时候游戏闪退（可能是游戏自己对进程名有校验）。
+
+* `Build`目录中的`SDL2.dll`文件是用来修复原版SDL使用中文输入法进行游戏时可能发生的内存越界写入导致游戏崩溃的问题。如果你全程都关闭中文输入法的话也可以选择不替换`SDL2.dll`。当然，你也可以从Steam根目录（默认位置`C:\Program Files (x86)\Steam`）复制`SDL2.dll`，效果是完全一样的。
 
 ## 构建需求
 
