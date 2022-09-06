@@ -2258,7 +2258,7 @@ int CHudMenu::MsgFunc_ShowMenu(const char* pszName, int iSize, void* pbuf)
 	if (g_bIsCounterStrike)
 		return 0;
 
-	if (gPrivateFuncs.WeaponsResource_SelectSlot)
+	if (!gPrivateFuncs.WeaponsResource_SelectSlot)
 		return 0;
 
 	char *temp = NULL;
