@@ -46,11 +46,70 @@
 #define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 4
 #define BINDING_POINT_OIT_COUNTER_SSBO 5
 
+#define VERTEX_ATTRIBUTE_INDEX_POSITION 0
+#define VERTEX_ATTRIBUTE_INDEX_NORMAL 1
+#define VERTEX_ATTRIBUTE_INDEX_S_TANGENT 2
+#define VERTEX_ATTRIBUTE_INDEX_T_TANGENT 3
+#define VERTEX_ATTRIBUTE_INDEX_TEXCOORD 4
+#define VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD 5
+#define VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD 6
+#define VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD 7
+#define VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD 8
+#define VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD 9
+#define VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD 10
+#define VERTEX_ATTRIBUTE_INDEX_EXTRA 11
+
+#define WSURF_DIFFUSE_TEXTURE		0
+#define WSURF_REPLACE_TEXTURE		1
+#define WSURF_DETAIL_TEXTURE		2
+#define WSURF_NORMAL_TEXTURE		3
+#define WSURF_PARALLAX_TEXTURE		4
+#define WSURF_SPECULAR_TEXTURE		5
+#define WSURF_MAX_TEXTURE			6
+
+#define WSURF_TEXCHAIN_STATIC		0
+#define WSURF_TEXCHAIN_ANIM			1
+#define WSURF_TEXCHAIN_MAX			2
+
+#define WSURF_DRAWBATCH_STATIC		0
+#define WSURF_DRAWBATCH_SOLID		1
+#define WSURF_DRAWBATCH_MAX			2
+
+typedef struct detail_texture_s
+{
+	detail_texture_s()
+	{
+		gltexturenum = 0;
+		width = 0;
+		height = 0;
+		scaleX = 0;
+		scaleY = 0;
+	}
+	int gltexturenum;
+	int width, height;
+	float scaleX, scaleY;
+}detail_texture_t;
+
+typedef struct detail_texture_cache_s
+{
+	std::string basetexture;
+	detail_texture_t tex[WSURF_MAX_TEXTURE];
+}detail_texture_cache_t;
+
 typedef struct decalvertex_s
 {
 	vec3_t	pos;
+	//for parallax mapping?
+	vec3_t	normal;
+	vec3_t	s_tangent;
+	vec3_t	t_tangent;
 	float	texcoord[3];//[2]=unused
 	float	lightmaptexcoord[3];//[2]=lightmaptexnum
+	float	replacetexcoord[2];
+	float	detailtexcoord[2];
+	float	normaltexcoord[2];
+	float	parallaxtexcoord[2];
+	float	speculartexcoord[2];
 	int		decalindex;
 }decalvertex_t;
 
@@ -63,6 +122,7 @@ typedef struct brushvertex_s
 
 	float	texcoord[3];//texcoord[2]=1/texwidth
 	float	lightmaptexcoord[3];//lightmaptexcoord[2]=lightmaptexturenum
+	float	replacetexcoord[2];
 	float	detailtexcoord[2];
 	float	normaltexcoord[2];
 	float	parallaxtexcoord[2];
@@ -104,6 +164,7 @@ typedef struct brushtexchain_s
 	int iIndiceCount;
 	int iPolyCount;
 	texture_t *pTexture;
+	detail_texture_cache_t *pDetailTextureCache;
 	int iDetailTextureFlags;
 	int iType;
 }brushtexchain_t;
@@ -123,42 +184,6 @@ typedef struct
 }bspentity_t;
 
 typedef bspentity_t *(*fnParseBSPEntity_Allocator)(void);
-
-#define WSURF_REPLACE_TEXTURE		0
-#define WSURF_DETAIL_TEXTURE		1
-#define WSURF_NORMAL_TEXTURE		2
-#define WSURF_PARALLAX_TEXTURE		3
-#define WSURF_SPECULAR_TEXTURE		4
-#define WSURF_MAX_TEXTURE			5
-
-#define WSURF_TEXCHAIN_STATIC		0
-#define WSURF_TEXCHAIN_ANIM			1
-#define WSURF_TEXCHAIN_MAX			2
-
-#define WSURF_DRAWBATCH_STATIC		0
-#define WSURF_DRAWBATCH_SOLID		1
-#define WSURF_DRAWBATCH_MAX			2
-
-typedef struct detail_texture_s
-{
-	detail_texture_s()
-	{
-		gltexturenum = 0;
-		width = 0;
-		height = 0;
-		scaleX = 0;
-		scaleY = 0;
-	}
-	int gltexturenum;
-	int width, height;
-	float scaleX, scaleY;
-}detail_texture_t;
-
-typedef struct detail_texture_cache_s
-{
-	std::string basetexture;
-	detail_texture_t tex[WSURF_MAX_TEXTURE];
-}detail_texture_cache_t;
 
 typedef struct wsurf_vbo_batch_s
 {
@@ -292,6 +317,16 @@ typedef struct FragmentNode_s
 	uint32_t next;
 }FragmentNode;
 
+//for decal drawing
+typedef struct decal_drawbatch_s
+{
+	GLuint GLTextureId[MAX_DECALS];
+	detail_texture_cache_t *DetailTextureCaches[MAX_DECALS];
+	GLint StartIndex[MAX_DECALS];
+	GLsizei VertexCount[MAX_DECALS];
+	int BatchCount;
+}decal_drawbatch_t;
+
 typedef struct r_worldsurf_s
 {
 	r_worldsurf_s()
@@ -309,10 +344,6 @@ typedef struct r_worldsurf_s
 		bDiffuseTexture = false;
 		bLightmapTexture = false;
 		bShadowmapTexture = false;
-		bDetailTexture = false;
-		bNormalTexture = false;
-		bParallaxTexture = false;
-		bSpecularTexture = false;
 
 		iNumLightmapTextures = 0;
 		iLightmapTextureArray = 0;
@@ -334,22 +365,18 @@ typedef struct r_worldsurf_s
 	bool				bDiffuseTexture;
 	bool				bLightmapTexture;
 	bool				bShadowmapTexture;
-	bool				bDetailTexture;
-	bool				bNormalTexture;
-	bool				bParallaxTexture;
-	bool				bSpecularTexture;
 
 	int					iNumLightmapTextures;
 	int					iLightmapTextureArray;
 
-	GLuint64			vSkyboxTextureHandles[6]; 
-
 	std::vector <bspentity_t> vBSPEntities;
 
-	std::vector <int> vDecalGLTextures;
-	std::vector <GLuint64> vDecalGLTextureHandles;
-	std::vector <GLint> vDecalStartIndex;
-	std::vector <GLsizei> vDecalVertexCount;
+	GLuint64 vSkyboxTextureHandles[6];
+
+	GLuint vDecalGLTextures[MAX_DECALS];
+	detail_texture_cache_t *vDecalDetailTextures[MAX_DECALS];
+	GLint vDecalStartIndex[MAX_DECALS];
+	GLsizei vDecalVertexCount[MAX_DECALS];
 }r_worldsurf_t;
 
 typedef struct
@@ -408,15 +435,18 @@ bspentity_t *R_ParseBSPEntity_DefaultAllocator(void);
 char *ValueForKey(bspentity_t *ent, char *key);
 void R_LoadBSPEntities(void);
 void R_LoadExternalEntities(void);
-void R_LoadDetailTextures(void);
+void R_LoadBaseDecalTextures(void);
+void R_LoadBaseDetailTextures(void);
+void R_LoadMapDetailTextures(void);
 void R_AddDynamicLights(msurface_t *surf);
 void R_RenderDynamicLightmaps(msurface_t *fa);
 void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride);
 void R_DrawDecals(wsurf_vbo_t *modcache);
-detail_texture_cache_t *R_FindDecalTextureCache(int texId);
+detail_texture_cache_t *R_FindDecalTextureCache(const std::string &decalname);
 detail_texture_cache_t *R_FindDetailTextureCache(int texId);
-void R_BeginDetailTexture(int texId);
-void R_EndDetailTexture(void);
+void R_BeginDetailTextureByGLTextureId(int gltexturenum, int *WSurfProgramState);
+void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, int *WSurfProgramState);
+void R_EndDetailTexture(int WSurfProgramState);
 void R_DrawSequentialPolyVBO(msurface_t *s);
 wsurf_vbo_t *R_PrepareWSurfVBO(model_t *mod);
 void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent);
@@ -430,24 +460,25 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
 
 #define WSURF_DIFFUSE_ENABLED				1
 #define WSURF_LIGHTMAP_ENABLED				2
-#define WSURF_DETAILTEXTURE_ENABLED			4
-#define WSURF_NORMALTEXTURE_ENABLED			8
-#define WSURF_PARALLAXTEXTURE_ENABLED		0x10
-#define WSURF_SPECULARTEXTURE_ENABLED		0x20
-#define WSURF_LINEAR_FOG_ENABLED			0x40
-#define WSURF_EXP_FOG_ENABLED				0x80
-#define WSURF_EXP2_FOG_ENABLED				0x100
-#define WSURF_GBUFFER_ENABLED				0x200
-#define WSURF_TRANSPARENT_ENABLED			0x400
-#define WSURF_SHADOW_CASTER_ENABLED			0x800
-#define WSURF_SHADOWMAP_ENABLED				0x1000
-#define WSURF_SHADOWMAP_HIGH_ENABLED		0x2000
-#define WSURF_SHADOWMAP_MEDIUM_ENABLED		0x4000
-#define WSURF_SHADOWMAP_LOW_ENABLED			0x8000
-#define WSURF_BINDLESS_ENABLED				0x10000
-#define WSURF_SKYBOX_ENABLED				0x20000
-#define WSURF_DECAL_ENABLED					0x40000
-#define WSURF_CLIP_ENABLED					0x80000
-#define WSURF_CLIP_WATER_ENABLED			0x100000
-#define WSURF_OIT_ALPHA_BLEND_ENABLED		0x200000
-#define WSURF_OIT_ADDITIVE_BLEND_ENABLED	0x400000
+#define WSURF_REPLACETEXTURE_ENABLED		4
+#define WSURF_DETAILTEXTURE_ENABLED			8
+#define WSURF_NORMALTEXTURE_ENABLED			0x10
+#define WSURF_PARALLAXTEXTURE_ENABLED		0x20
+#define WSURF_SPECULARTEXTURE_ENABLED		0x40
+#define WSURF_LINEAR_FOG_ENABLED			0x80
+#define WSURF_EXP_FOG_ENABLED				0x100
+#define WSURF_EXP2_FOG_ENABLED				0x200
+#define WSURF_GBUFFER_ENABLED				0x400
+#define WSURF_TRANSPARENT_ENABLED			0x800
+#define WSURF_SHADOW_CASTER_ENABLED			0x1000
+#define WSURF_SHADOWMAP_ENABLED				0x2000
+#define WSURF_SHADOWMAP_HIGH_ENABLED		0x4000
+#define WSURF_SHADOWMAP_MEDIUM_ENABLED		0x8000
+#define WSURF_SHADOWMAP_LOW_ENABLED			0x10000
+#define WSURF_BINDLESS_ENABLED				0x20000
+#define WSURF_SKYBOX_ENABLED				0x40000
+#define WSURF_DECAL_ENABLED					0x80000
+#define WSURF_CLIP_ENABLED					0x100000
+#define WSURF_CLIP_WATER_ENABLED			0x200000
+#define WSURF_OIT_ALPHA_BLEND_ENABLED		0x400000
+#define WSURF_OIT_ADDITIVE_BLEND_ENABLED	0x800000

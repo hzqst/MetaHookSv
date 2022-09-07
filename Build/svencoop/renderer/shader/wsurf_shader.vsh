@@ -13,17 +13,18 @@ layout(location = 2) in vec3 in_tangent;
 layout(location = 3) in vec3 in_bitangent;
 layout(location = 4) in vec3 in_diffusetexcoord;
 layout(location = 5) in vec3 in_lightmaptexcoord;
-layout(location = 6) in vec2 in_detailtexcoord;
-layout(location = 7) in vec2 in_normaltexcoord;
-layout(location = 8) in vec2 in_parallaxtexcoord;
-layout(location = 9) in vec2 in_speculartexcoord;
+layout(location = 6) in vec2 in_replacetexcoord;
+layout(location = 7) in vec2 in_detailtexcoord;
+layout(location = 8) in vec2 in_normaltexcoord;
+layout(location = 9) in vec2 in_parallaxtexcoord;
+layout(location = 10) in vec2 in_speculartexcoord;
 
 #if defined(SKYBOX_ENABLED)
 	
 #elif defined(DECAL_ENABLED)
-	layout(location = 10) in int in_decalindex;
+	layout(location = 11) in int in_decalindex;
 #else
-	layout(location = 10) in int in_texindex;
+	layout(location = 11) in int in_texindex;
 #endif
 
 out vec3 v_worldpos;
@@ -32,6 +33,7 @@ out vec3 v_tangent;
 out vec3 v_bitangent;
 out vec2 v_diffusetexcoord;
 out vec3 v_lightmaptexcoord;
+out vec2 v_replacetexcoord;
 out vec2 v_detailtexcoord;
 out vec2 v_normaltexcoord;
 out vec2 v_parallaxtexcoord;
@@ -137,6 +139,10 @@ void main(void)
 
 #ifdef LIGHTMAP_ENABLED
 	v_lightmaptexcoord = in_lightmaptexcoord;
+#endif
+
+#ifdef REPLACETEXTURE_ENABLED
+	v_replacetexcoord = in_replacetexcoord;
 #endif
 
 #ifdef DETAILTEXTURE_ENABLED

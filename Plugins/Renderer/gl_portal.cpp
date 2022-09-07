@@ -368,13 +368,13 @@ void __fastcall ClientPortalManager_DrawPortalSurface(void *ClientPortalManager,
 	glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hSceneVBO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOCache->hEBO);
 
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glEnableVertexAttribArray(4);
+	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
+	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
+	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
-	glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
-	glVertexAttribPointer(4, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
+	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
+	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
+	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
 
 	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
@@ -389,9 +389,9 @@ void __fastcall ClientPortalManager_DrawPortalSurface(void *ClientPortalManager,
 
 	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
-	glDisableVertexAttribArray(4);
+	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
+	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
+	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);

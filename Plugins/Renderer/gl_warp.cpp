@@ -309,31 +309,34 @@ void R_DrawWaters(cl_entity_t *ent)
 		GL_BeginProfile(&profile_DrawWaters, "R_DrawWaters");
 
 		glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hSceneVBO);
-		glEnableVertexAttribArray(0);
-		glEnableVertexAttribArray(1);
-		glEnableVertexAttribArray(2);
-		glEnableVertexAttribArray(3);
-		glEnableVertexAttribArray(4);
-		glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
-		glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
-		glVertexAttribPointer(2, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, s_tangent));
-		glVertexAttribPointer(3, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, t_tangent));
-		glVertexAttribPointer(4, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
+
+		glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
+		glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
+		glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
+		glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
+		glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
+
+		glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
+		glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
+		glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_S_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, s_tangent));
+		glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_T_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, t_tangent));
+		glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
+		
 		glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-		//glDisable(GL_CULL_FACE);
 
 		for (int i = 0; i < g_iNumRenderWaterVBOCache; ++i)
 		{
 			R_DrawWaterVBO(g_RenderWaterVBOCache[i], ent);
 		}
 
-		//glEnable(GL_CULL_FACE);
 		glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-		glDisableVertexAttribArray(0);
-		glDisableVertexAttribArray(1);
-		glDisableVertexAttribArray(2);
-		glDisableVertexAttribArray(3);
-		glDisableVertexAttribArray(4);
+
+		glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
+		glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
+		glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
+		glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
+		glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
+
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 

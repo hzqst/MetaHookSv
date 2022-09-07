@@ -34,6 +34,7 @@ in vec3 v_tangent;
 in vec3 v_bitangent;
 in vec2 v_diffusetexcoord;
 in vec3 v_lightmaptexcoord;
+in vec2 v_replacetexcoord;
 in vec2 v_detailtexcoord;
 in vec2 v_normaltexcoord;
 in vec2 v_parallaxtexcoord;
@@ -52,11 +53,30 @@ in vec4 v_shadowcoord[3];
 
 #endif
 
-layout(location = 0) out vec4 out_Diffuse;
-layout(location = 1) out vec4 out_Lightmap;
-layout(location = 2) out vec4 out_WorldNorm;
-layout(location = 3) out vec4 out_Specular;
-layout(location = 4) out vec4 out_Additive;
+#ifdef GBUFFER_ENABLED
+
+	#if defined(DECAL_ENABLED)
+
+		//Decal only affects diffuse and worldnorm channel
+		
+		layout(location = 0) out vec4 out_Diffuse;
+		layout(location = 1) out vec4 out_WorldNorm;
+
+	#else
+
+		layout(location = 0) out vec4 out_Diffuse;
+		layout(location = 1) out vec4 out_Lightmap;
+		layout(location = 2) out vec4 out_WorldNorm;
+		layout(location = 3) out vec4 out_Specular;
+		layout(location = 4) out vec4 out_Additive;
+
+	#endif
+
+#else
+
+	layout(location = 0) out vec4 out_Diffuse;
+
+#endif
 
 #ifdef BINDLESS_ENABLED
 
@@ -65,15 +85,17 @@ layout(location = 4) out vec4 out_Additive;
 		#if defined(SKYBOX_ENABLED)
 			return SkyboxSSBO[v_drawid];
 		#elif defined(DECAL_ENABLED)
-			return DecalSSBO[v_decalindex];
+			return DecalSSBO[v_decalindex * TEXTURE_SSBO_MAX + type];
 		#else
-			return TextureSSBO[v_texindex * 5 + type];
+			return TextureSSBO[v_texindex * TEXTURE_SSBO_MAX + type];
 		#endif
 	}
 
 #endif
 
-vec3 NormalMapping(vec3 T, vec3 B, vec3 N)
+#ifdef NORMALTEXTURE_ENABLED
+
+vec3 NormalMapping(vec3 T, vec3 B, vec3 N, vec2 baseTexcoord)
 {
 #ifdef BINDLESS_ENABLED
 	sampler2D normalTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_NORMAL));
@@ -82,7 +104,7 @@ vec3 NormalMapping(vec3 T, vec3 B, vec3 N)
     // Create TBN matrix. from tangent to world space
     mat3 TBN = mat3(normalize(T), normalize(B), normalize(N));
 
-	vec2 vNormTexcoord = vec2(v_diffusetexcoord.x * v_normaltexcoord.x, v_diffusetexcoord.y * v_normaltexcoord.y);
+	vec2 vNormTexcoord = vec2(baseTexcoord.x * v_normaltexcoord.x, baseTexcoord.y * v_normaltexcoord.y);
 
     // Sample tangent space normal vector from normal map and remap it from [0, 1] to [-1, 1] range.
     vec3 n = texture2D(normalTex, vNormTexcoord).xyz;
@@ -94,18 +116,13 @@ vec3 NormalMapping(vec3 T, vec3 B, vec3 N)
     return n;
 }
 
-vec2 ParallaxMapping(vec3 T, vec3 B, vec3 N, vec3 viewDirWorld)
+#endif
+
+#ifdef PARALLAXTEXTURE_ENABLED
+
+vec2 ParallaxMapping(vec3 T, vec3 B, vec3 N, vec3 viewDirWorld, vec2 baseTexcoord)
 {
 #ifdef BINDLESS_ENABLED
-
-	#if defined(SKYBOX_ENABLED)
-		int texId = 0;
-	#elif defined(DECAL_ENABLED)
-		int texId = 0;
-	#else
-		int texId = v_texindex;
-	#endif
-
 	sampler2D parallaxTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_PARALLAX));
 #endif
 
@@ -127,7 +144,7 @@ vec2 ParallaxMapping(vec3 T, vec3 B, vec3 N, vec3 viewDirWorld)
 
     vec2 deltaTexCoords = p / numLayers;
 
-	vec2 mainTexCoods = v_diffusetexcoord.xy;
+	vec2 mainTexCoods = baseTexcoord;
 
     vec2 currentTexCoords = mainTexCoods;
 
@@ -155,6 +172,8 @@ vec2 ParallaxMapping(vec3 T, vec3 B, vec3 N, vec3 viewDirWorld)
 
 	return finalTexCoords;
 }
+
+#endif
 
 float ShadowCompareDepth(vec4 coord, vec2 off, float layer)
 {
@@ -285,19 +304,33 @@ void main()
 
 #ifdef DIFFUSE_ENABLED
 
-	#ifdef BINDLESS_ENABLED
-		sampler2D diffuseTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_DIFFUSE));
+	#ifdef REPLACETEXTURE_ENABLED
+
+		#ifdef BINDLESS_ENABLED
+			sampler2D diffuseTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_REPLACE));
+		#endif
+
+		vec2 baseTexcoord = vec2(v_diffusetexcoord.x * v_replacetexcoord.x, v_diffusetexcoord.y * v_replacetexcoord.y);
+
+	#else
+
+		#ifdef BINDLESS_ENABLED	
+			sampler2D diffuseTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_DIFFUSE));
+		#endif
+
+		vec2 baseTexcoord = v_diffusetexcoord.xy;
+
 	#endif
 
 	#ifdef PARALLAXTEXTURE_ENABLED
 
 		vec3 viewDir = normalize(v_worldpos.xyz - SceneUBO.viewpos.xyz);
 
-		vec4 diffuseColor = texture2D(diffuseTex, ParallaxMapping(v_tangent, v_bitangent, v_normal, viewDir));
+		vec4 diffuseColor = texture(diffuseTex, ParallaxMapping(v_tangent, v_bitangent, v_normal, viewDir, baseTexcoord));
 
 	#else
 
-		vec4 diffuseColor = texture2D(diffuseTex, v_diffusetexcoord.xy);
+		vec4 diffuseColor = texture(diffuseTex, baseTexcoord);
 
 	#endif
 
@@ -339,7 +372,7 @@ void main()
 
 #ifdef NORMALTEXTURE_ENABLED
 
-	vec3 vNormal = NormalMapping(v_tangent, v_bitangent, v_normal);
+	vec3 vNormal = NormalMapping(v_tangent, v_bitangent, v_normal, baseTexcoord);
 
 #else
 
@@ -353,8 +386,8 @@ void main()
 		sampler2D detailTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_DETAIL));
 	#endif
 
-	vec2 detailTexCoord = vec2(v_diffusetexcoord.x * v_detailtexcoord.x, v_diffusetexcoord.y * v_detailtexcoord.y);
-	vec4 detailColor = texture2D(detailTex, detailTexCoord);
+	vec2 detailTexCoord = vec2(baseTexcoord.x * v_detailtexcoord.x, baseTexcoord.y * v_detailtexcoord.y);
+	vec4 detailColor = texture(detailTex, detailTexCoord);
     detailColor.xyz *= 2.0;
     detailColor.a = 1.0;
 
@@ -373,11 +406,11 @@ void main()
 
 #else
 
-#ifdef SHADOWMAP_ENABLED
+	#ifdef SHADOWMAP_ENABLED
 
-	float shadowIntensity = CalcShadowIntensity(v_worldpos, vNormal, SceneUBO.shadowDirection.xyz);
+		float shadowIntensity = CalcShadowIntensity(v_worldpos, vNormal, SceneUBO.shadowDirection.xyz);
 
-#endif
+	#endif
 
 	#ifdef GBUFFER_ENABLED
 
@@ -393,29 +426,38 @@ void main()
 				sampler2D specularTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_SPECULAR));
 			#endif
 
-			vec2 specularTexCoord = vec2(v_diffusetexcoord.x * v_speculartexcoord.x, v_diffusetexcoord.y * v_speculartexcoord.y);
+			vec2 specularTexCoord = vec2(baseTexcoord.x * v_speculartexcoord.x, baseTexcoord.y * v_speculartexcoord.y);
 			specularColor.xy = texture2D(specularTex, specularTexCoord).xy;
 
 		#endif
 
-#ifdef SHADOWMAP_ENABLED
-		specularColor.z = shadowIntensity;
-#endif
+		#ifdef SHADOWMAP_ENABLED
+			specularColor.z = shadowIntensity;
+		#endif
 
-		out_Diffuse = diffuseColor * detailColor;
-		out_Lightmap = lightmapColor;
-		out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, 0.0);
-		out_Specular = specularColor;
-		out_Additive = vec4(0.0);
+		#ifdef DECAL_ENABLED
+
+			out_Diffuse = diffuseColor * detailColor;
+			out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, 0.0);
+
+		#else
+
+			out_Diffuse = diffuseColor * detailColor;
+			out_Lightmap = lightmapColor;
+			out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, 0.0);
+			out_Specular = specularColor;
+			out_Additive = vec4(0.0);
+
+		#endif
 
 	#else
 
-#ifdef SHADOWMAP_ENABLED
+	#ifdef SHADOWMAP_ENABLED
 
 		shadowIntensity = CalcShadowIntensityLumFadeout(lightmapColor, shadowIntensity);
 		lightmapColor.xyz *= (1.0 - shadowIntensity);
 
-#endif
+	#endif
 
 		#ifdef TRANSPARENT_ENABLED
 			vec4 color = CalcFog(diffuseColor * lightmapColor * detailColor * EntityUBO.color);
