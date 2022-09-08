@@ -15,7 +15,7 @@
 {
 "classname" "env_water_control"
 "basetexture" "*"
-"normalmap" "renderer/texture/water_normalmap.tga"
+"normalmap" "renderer/texture/water_normalmap.dds"
 "fresnelfactor" "100 1200 8.0 0.95"
 "depthfactor" "0.02 0.01 300"
 "normfactor" "1.0"
@@ -28,5 +28,5 @@
 }
 {
 "classname" "env_flashlight_control"
-"cone_texture" "renderer/texture/flashlight.tga"
+"cone_texture" "renderer/texture/flashlight.dds"
 }
