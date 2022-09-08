@@ -157,6 +157,7 @@ typedef struct brushtexchain_s
 		iIndiceCount = 0;
 		iPolyCount = 0;
 		pTexture = 0;
+		pDetailTextureCache = NULL;
 		iDetailTextureFlags = 0;
 		iType = 0;
 	}

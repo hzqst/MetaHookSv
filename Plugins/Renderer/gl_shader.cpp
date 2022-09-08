@@ -18,10 +18,10 @@ void GL_FreeShaders(void)
 		auto &objs = g_ShaderTable[i].shader_objects;
 		for (size_t j = 0; j < objs.size(); ++j)
 		{
-			glDetachObjectARB(g_ShaderTable[i].program, objs[j]);
-			glDeleteObjectARB(objs[j]);
+			glDetachShader(g_ShaderTable[i].program, objs[j]);
+			glDeleteShader(objs[j]);
 		}
-		glDeleteProgramsARB(1, &g_ShaderTable[i].program);
+		glDeleteProgram(g_ShaderTable[i].program);
 	}
 
 	g_ShaderTable.clear();
@@ -63,7 +63,7 @@ void GL_CheckShaderError(GLuint shader, const char *code, const char *filename)
 
 GLuint R_CompileShaderObject(int type, const char *code, const char *filename)
 {
-	auto obj = glCreateShaderObjectARB(type);
+	auto obj = glCreateShader(type);
 
 	glShaderSource(obj, 1, &code, NULL);
 
@@ -88,10 +88,10 @@ GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfil
 	shader_objects[shader_object_used] = R_CompileShaderObject(GL_FRAGMENT_SHADER, fscode, fsfile);
 	shader_object_used++;
 
-	GLuint program = glCreateProgramObjectARB();
+	GLuint program = glCreateProgram();
 	for(int i = 0;i < shader_object_used; ++i)
-		glAttachObjectARB(program, shader_objects[i]);
-	glLinkProgramARB(program);
+		glAttachShader(program, shader_objects[i]);
+	glLinkProgram(program);
 
 	int iStatus;
 	glGetProgramiv(program, GL_LINK_STATUS, &iStatus);

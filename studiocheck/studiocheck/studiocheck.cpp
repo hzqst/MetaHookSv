@@ -48,7 +48,7 @@ int main(int argc, const char **argv)
 
 	printf("Checking %s\n", studiohdr->name);
 
-	if (0 != memcmp((const byte *)&studiohdr->id, "IDSQ", 4))
+	if (0 == memcmp((const byte *)&studiohdr->id, "IDSQ", 4))
 	{
 		printf("Sequence file %s is ok\n", studiohdr->name);
 		free(buffer);
@@ -173,7 +173,7 @@ int main(int argc, const char **argv)
 			{
 				auto ptricmds = (short *)((byte *)studiohdr + pmesh[k].triindex);
 				
-				while (*ptricmds)
+				/*while (*ptricmds)
 				{
 					if ((byte *)(ptricmds + 1) > (byte *)buffer + total)
 					{
@@ -182,6 +182,45 @@ int main(int argc, const char **argv)
 						return 0;
 					}
 					ptricmds++;
+				}*/
+
+				int iii;
+
+				while (iii = *(ptricmds++))
+				{
+					if (iii < 0)
+					{
+						iii = -iii;
+					}
+					else
+					{
+						
+					}
+
+
+					for (; iii > 0; iii--, ptricmds += 4)
+					{
+						if (ptricmds[0] >= 0 && ptricmds[0] < MAXSTUDIOVERTS)
+						{
+
+						}
+						else
+						{
+							printf("Error: invalid ptricmds[0] %d\n", ptricmds[0]);
+							free(buffer);
+							return 0;
+						}
+						if (ptricmds[1] >= 0 && ptricmds[1] < MAXSTUDIOVERTS)
+						{
+
+						}
+						else
+						{
+							printf("Error: invalid ptricmds[1] %d\n", ptricmds[1]);
+							free(buffer);
+							return 0;
+						}
+					}
 				}
 			}
 		}
