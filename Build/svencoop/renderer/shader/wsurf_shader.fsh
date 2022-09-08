@@ -302,6 +302,8 @@ void main()
 	ClipPlaneTest(v_worldpos.xyz, v_normal.xyz);
 #endif
 
+	vec2 baseTexcoord = vec2(0.0, 0.0);
+
 #ifdef DIFFUSE_ENABLED
 
 	#ifdef REPLACETEXTURE_ENABLED
@@ -310,7 +312,7 @@ void main()
 			sampler2D diffuseTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_REPLACE));
 		#endif
 
-		vec2 baseTexcoord = vec2(v_diffusetexcoord.x * v_replacetexcoord.x, v_diffusetexcoord.y * v_replacetexcoord.y);
+		baseTexcoord = vec2(v_diffusetexcoord.x * v_replacetexcoord.x, v_diffusetexcoord.y * v_replacetexcoord.y);
 
 	#else
 
@@ -318,7 +320,7 @@ void main()
 			sampler2D diffuseTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_DIFFUSE));
 		#endif
 
-		vec2 baseTexcoord = v_diffusetexcoord.xy;
+		baseTexcoord = v_diffusetexcoord.xy;
 
 	#endif
 
