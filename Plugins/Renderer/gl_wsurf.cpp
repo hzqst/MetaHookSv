@@ -541,7 +541,7 @@ void R_SortTextureChain(wsurf_vbo_leaf_t *vboleaf, int iTexchainType)
 	{
 		auto &texchain = vboleaf->vTextureChain[iTexchainType][i];
 
-		auto pcache = R_FindDetailTextureCache(texchain.pTexture->gl_texturenum);
+		auto pcache = texchain.pDetailTextureCache;
 		if (pcache)
 		{
 			for (int j = WSURF_REPLACE_TEXTURE; j < WSURF_MAX_TEXTURE; ++j)
@@ -625,6 +625,7 @@ void R_GenerateTexChain(model_t *mod, wsurf_vbo_leaf_t *vboleaf, std::vector<uns
 				brushtexchain_t texchain;
 
 				texchain.pTexture = t;
+				texchain.pDetailTextureCache = R_FindDetailTextureCache(t->gl_texturenum);
 				texchain.iIndiceCount = 0;
 				texchain.iPolyCount = 0;
 				texchain.iStartIndex = vIndicesBuffer.size();
@@ -700,6 +701,7 @@ void R_GenerateTexChain(model_t *mod, wsurf_vbo_leaf_t *vboleaf, std::vector<uns
 							{
 								brushtexchain_t texchain;
 								texchain.pTexture = t2;
+								texchain.pDetailTextureCache = R_FindDetailTextureCache(t2->gl_texturenum);
 								texchain.iIndiceCount = 0;
 								texchain.iPolyCount = 0;
 								texchain.iStartIndex = vIndicesBuffer.size();
@@ -746,6 +748,7 @@ void R_GenerateTexChain(model_t *mod, wsurf_vbo_leaf_t *vboleaf, std::vector<uns
 						brushtexchain_t texchain;
 
 						texchain.pTexture = t;
+						texchain.pDetailTextureCache = R_FindDetailTextureCache(t->gl_texturenum);
 						texchain.iIndiceCount = 0;
 						texchain.iPolyCount = 0;
 						texchain.iStartIndex = vIndicesBuffer.size();
@@ -786,6 +789,7 @@ void R_GenerateTexChain(model_t *mod, wsurf_vbo_leaf_t *vboleaf, std::vector<uns
 					brushtexchain_t texchain;
 
 					texchain.pTexture = t;
+					texchain.pDetailTextureCache = R_FindDetailTextureCache(t->gl_texturenum);
 					texchain.iIndiceCount = 0;
 					texchain.iPolyCount = 0;
 					texchain.iStartIndex = vIndicesBuffer.size();
@@ -821,6 +825,7 @@ void R_GenerateTexChain(model_t *mod, wsurf_vbo_leaf_t *vboleaf, std::vector<uns
 				brushtexchain_t texchain;
 
 				texchain.pTexture = t;
+				texchain.pDetailTextureCache = R_FindDetailTextureCache(t->gl_texturenum);
 				texchain.iIndiceCount = 0;
 				texchain.iPolyCount = 0;
 				texchain.iStartIndex = vIndicesBuffer.size();
@@ -1598,52 +1603,22 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 	}
 }
 
-void R_DrawWSurfVBOAnim(wsurf_vbo_leaf_t *vboleaf, bool bUseZPrePass)
+texture_t *R_GetAnimatedTexture(texture_t *base)
 {
-	for (size_t i = 0; i < vboleaf->vTextureChain[WSURF_TEXCHAIN_ANIM].size(); ++i)
+	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		auto &texchain = vboleaf->vTextureChain[WSURF_TEXCHAIN_ANIM][i];
-
-		auto base = texchain.pTexture;
-
-		if (g_iEngineType == ENGINE_SVENGINE)
+		if ((*currententity)->curstate.effects & EF_FRAMEANIMTEXTURES)
 		{
-			if ((*currententity)->curstate.effects & EF_FRAMEANIMTEXTURES)
+			if ((*currententity)->curstate.frame > 0)
 			{
-				if ((*currententity)->curstate.frame > 0)
+				int frame_count = 0;
+				int total_frame = (*currententity)->curstate.frame;
+				do
 				{
-					int frame_count = 0;
-					int total_frame = (*currententity)->curstate.frame;
-					do
-					{
-						if (base->anim_next)
-							base = base->anim_next;
-						++frame_count;
-					} while (frame_count < total_frame);
-				}
-			}
-			else
-			{
-				if ((*currententity)->curstate.frame && base->alternate_anims)
-					base = base->alternate_anims;
-
-				if (!((*currententity)->curstate.effects & EF_NOANIMTEXTURES))
-				{
-					int reletive = (int)((*cl_time) * 10.0f) % base->anim_total;
-
-					int loop_count = 0;
-
-					while (base->anim_min > reletive || base->anim_max <= reletive)
-					{
+					if (base->anim_next)
 						base = base->anim_next;
-
-						if (!base)
-							g_pMetaHookAPI->SysError("R_TextureAnimation: broken cycle");
-
-						if (++loop_count > 100)
-							g_pMetaHookAPI->SysError("R_TextureAnimation: infinite cycle");
-					}
-				}
+					++frame_count;
+				} while (frame_count < total_frame);
 			}
 		}
 		else
@@ -1651,22 +1626,55 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_leaf_t *vboleaf, bool bUseZPrePass)
 			if ((*currententity)->curstate.frame && base->alternate_anims)
 				base = base->alternate_anims;
 
-			int reletive = (int)((*cl_time) * 10.0f) % base->anim_total;
-
-			int loop_count = 0;
-
-			while (base->anim_min > reletive || base->anim_max <= reletive)
+			if (!((*currententity)->curstate.effects & EF_NOANIMTEXTURES))
 			{
-				base = base->anim_next;
+				int reletive = (int)((*cl_time) * 10.0f) % base->anim_total;
 
-				if (!base)
-					g_pMetaHookAPI->SysError("R_TextureAnimation: broken cycle");
+				int loop_count = 0;
 
-				if (++loop_count > 100)
-					g_pMetaHookAPI->SysError("R_TextureAnimation: infinite cycle");
+				while (base->anim_min > reletive || base->anim_max <= reletive)
+				{
+					base = base->anim_next;
+
+					if (!base)
+						g_pMetaHookAPI->SysError("R_TextureAnimation: broken cycle");
+
+					if (++loop_count > 100)
+						g_pMetaHookAPI->SysError("R_TextureAnimation: infinite cycle");
+				}
 			}
 		}
+	}
+	else
+	{
+		if ((*currententity)->curstate.frame && base->alternate_anims)
+			base = base->alternate_anims;
 
+		int reletive = (int)((*cl_time) * 10.0f) % base->anim_total;
+
+		int loop_count = 0;
+
+		while (base->anim_min > reletive || base->anim_max <= reletive)
+		{
+			base = base->anim_next;
+
+			if (!base)
+				g_pMetaHookAPI->SysError("R_TextureAnimation: broken cycle");
+
+			if (++loop_count > 100)
+				g_pMetaHookAPI->SysError("R_TextureAnimation: infinite cycle");
+		}
+	}
+	return base;
+}
+
+void R_DrawWSurfVBOAnim(wsurf_vbo_leaf_t *vboleaf, bool bUseZPrePass)
+{
+	for (size_t i = 0; i < vboleaf->vTextureChain[WSURF_TEXCHAIN_ANIM].size(); ++i)
+	{
+		auto &texchain = vboleaf->vTextureChain[WSURF_TEXCHAIN_ANIM][i];
+
+		auto texture = R_GetAnimatedTexture(texchain.pTexture);
 
 		int WSurfProgramState = 0;
 
@@ -1674,9 +1682,9 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_leaf_t *vboleaf, bool bUseZPrePass)
 		{
 			WSurfProgramState |= WSURF_DIFFUSE_ENABLED;
 
-			GL_Bind(base->gl_texturenum);
+			GL_Bind(texture->gl_texturenum);
 
-			R_BeginDetailTextureByGLTextureId(base->gl_texturenum, &WSurfProgramState);
+			R_BeginDetailTextureByGLTextureId(texture->gl_texturenum, &WSurfProgramState);
 		}
 
 		if (r_wsurf.bLightmapTexture)
