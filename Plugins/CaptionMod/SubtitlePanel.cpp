@@ -576,7 +576,8 @@ void SubtitlePanel::UpdateSubtitlePanelVars(SubtitlePanelVars_t *vars)
 
 void SubtitlePanel::VidInit(void)
 {
-
+	if(gEngfuncs.GetMaxClients() > 1)
+		ClearSubtitle();
 }
 
 void SubtitlePanel::Paint(void)
