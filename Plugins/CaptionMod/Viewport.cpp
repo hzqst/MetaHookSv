@@ -857,6 +857,8 @@ void CViewport::VidInit(void)
 	LoadBaseDictionary();
 	LinkDictionary();
 
+	m_pChatDialog->VidInit();
+	m_pSubtitlePanel->VidInit();
 	m_HudMessage.VidInit();
 	m_HudMenu.VidInit();
 }
