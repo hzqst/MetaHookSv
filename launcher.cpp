@@ -163,6 +163,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	if (!stricmp(szExeName, "svencoop.exe") && CommandLine()->CheckParm("-game") == NULL)
 	{
 		CommandLine()->AppendParm("-game", "svencoop");
+		CommandLine()->AppendParm("-32bpp", "");
 	}
 	if (stricmp(szExeName, "hl.exe") && CommandLine()->CheckParm("-game") == NULL)
 	{
