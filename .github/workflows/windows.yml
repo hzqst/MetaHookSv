@@ -71,6 +71,11 @@ jobs:
         run: build-CaptionMod.bat
         shell: cmd
         
+      - name: Build SCModelDownloader.dll
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: build-SCModelDownloader.bat
+        shell: cmd
+        
       - name: Build CommunicationDemo.dll
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: build-CommunicationDemo.bat
