@@ -2060,7 +2060,7 @@ int CHudMenu::Draw(void)
 	ScreenWidth = si.iWidth;
 	ScreenHeight = si.iHeight;
 
-	int y = (ScreenHeight / 2) - ((nlc / 2) * 12) - 40;
+	int y = (ScreenHeight / 2) - ((nlc / 2) * m_iFontEngineHeight + 40);
 	const char *sptr = m_szMenuString;
 	int i;
 	char menubuf[80];
@@ -2140,7 +2140,7 @@ int CHudMenu::Draw(void)
 		{
 			menu_ralign = 0;
 			menu_x = 20;
-			y += m_iFontEngineHeight + 2;
+			y += m_iFontEngineHeight;
 			sptr += 1;
 			continue;
 		}
