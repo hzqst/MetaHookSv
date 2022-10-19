@@ -1986,7 +1986,7 @@ void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr, 
 					texturePath += ".tga";
 
 				int texId = R_LoadTextureEx(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO, 
-					(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true);
+					(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true, false);
 				if (!texId)
 				{
 					texturePath = "renderer/texture/";
@@ -1995,7 +1995,7 @@ void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr, 
 						texturePath += ".tga";
 
 					texId = R_LoadTextureEx(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO, 
-						(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true);
+						(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true, true);
 				}
 				if (texId)
 				{

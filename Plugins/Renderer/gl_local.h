@@ -394,7 +394,7 @@ void GL_FrameBufferColorTextureHBAO(FBO_Container_t *s);
 void GL_FrameBufferColorTextureDeferred(FBO_Container_t *s, int iInternalColorFormat);
 void GL_FrameBufferColorTextureOITBlend(FBO_Container_t *s);
 int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, void *data, qboolean mipmap, qboolean ansio);
-int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio);
+int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio, qboolean throw_warning_on_missing);
 
 void GL_UploadDXT(void *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap);
 qboolean LoadDDS(const char *filename, byte *buf, size_t bufSize, size_t *width, size_t *height);

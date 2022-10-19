@@ -526,7 +526,7 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 
 					//Disable mimap for normal texture
 					VBOCache->normalmap = found_normalmap ? found_normalmap :
-						R_LoadTextureEx(waterControl->normalmap.c_str(), waterControl->normalmap.c_str(), NULL, NULL, GLT_WORLD, false, true);
+						R_LoadTextureEx(waterControl->normalmap.c_str(), waterControl->normalmap.c_str(), NULL, NULL, GLT_WORLD, false, true, true);
 				}
 
 				if (waterControl->level == WATER_LEVEL_LEGACY_RIPPLE)

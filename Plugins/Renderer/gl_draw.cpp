@@ -907,7 +907,7 @@ qboolean SaveImageGeneric(const char *filename, int width, int height, byte *dat
 	return true;
 }
 
-int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio)
+int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio, qboolean throw_warning_on_missing)
 {
 	size_t w = 0, h = 0;
 
@@ -915,7 +915,8 @@ int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *hei
 
 	if(!extension)
 	{
-		gEngfuncs.Con_Printf("R_LoadTextureEx: File %s has no extension.\n", filepath);
+		if(throw_warning_on_missing)
+			gEngfuncs.Con_Printf("R_LoadTextureEx: File %s has no extension.\n", filepath);
 		return 0;
 	}
 
@@ -940,8 +941,10 @@ int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *hei
 
 		return GL_LoadTextureEx(name, type, w, h, texloader_buffer, mipmap, ansio);
 	}
+	
+	if (throw_warning_on_missing)
+		gEngfuncs.Con_Printf("R_LoadTextureEx: Could not load texture %s.\n", filepath);
 
-	gEngfuncs.Con_Printf("R_LoadTextureEx: Cannot load texture %s.\n", filepath);
 	return 0;
 }
 
