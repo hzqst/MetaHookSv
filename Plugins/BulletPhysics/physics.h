@@ -582,7 +582,7 @@ public:
 	bool UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time);
 	void UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time);
 	void UpdateTempEntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time);
-	bool SyncThirdPersonView(CRagdollBody *ragdoll, cl_entity_t *ent, struct ref_params_s *pparams);
+	//bool SyncThirdPersonView(CRagdollBody *ragdoll, float *org);
 	bool SyncFirstPersonView(CRagdollBody *ragdoll, cl_entity_t *ent, struct ref_params_s *pparams);
 private:
 	ragdoll_itor FreeRagdollInternal(ragdoll_itor &itor);

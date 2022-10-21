@@ -1067,8 +1067,8 @@ void CPhysicsManager::ReleaseRagdollFromBarnacle(CRagdollBody *ragdoll)
 		ragdoll->m_barnacleDragRigBody.clear();
 	}
 }
-
-bool CPhysicsManager::SyncThirdPersonView(CRagdollBody *ragdoll, cl_entity_t *ent, struct ref_params_s *pparams)
+#if 0
+bool CPhysicsManager::SyncThirdPersonView(CRagdollBody *ragdoll, float *org)
 {
 	if (ragdoll->m_pelvisRigBody)
 	{
@@ -1082,15 +1082,14 @@ bool CPhysicsManager::SyncThirdPersonView(CRagdollBody *ragdoll, cl_entity_t *en
 
 		Vec3BulletToGoldSrc(origin);
 
-		VectorCopy(origin, pparams->simorg);
-		VectorCopy(origin, ent->origin);
+		VectorCopy(origin, org);
 
 		return true;
 	}
 
 	return false;
 }
-
+#endif
 bool CPhysicsManager::SyncFirstPersonView(CRagdollBody *ragdoll, cl_entity_t *ent, struct ref_params_s *pparams)
 {
 	if (ragdoll->m_headRigBody)
@@ -1122,7 +1121,6 @@ bool CPhysicsManager::SyncFirstPersonView(CRagdollBody *ragdoll, cl_entity_t *en
 
 		pparams->viewheight[2] = 0;
 		VectorCopy(origin, pparams->simorg);
-		//VectorCopy(origin, ent->origin);
 		VectorCopy(angles, pparams->cl_viewangles);
 
 		pparams->health = 0;

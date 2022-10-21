@@ -1245,10 +1245,12 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 	if (local && local->player && bv_syncview->value)
 	{
 		auto spectating_player = local;
+		auto aiming_player = local;
 
 		if (g_iUser1 && g_iUser2 && (*g_iUser1))
 		{
-			spectating_player = gEngfuncs.GetEntityByIndex(*g_iUser2);
+			spectating_player = gEngfuncs.GetEntityByIndex((*g_iUser2));
+			aiming_player = gEngfuncs.GetEntityByIndex((*g_iUser1));
 		}
 
 		if (!CL_IsFirstPersonMode(spectating_player))
@@ -1258,16 +1260,29 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 			if (ragdoll && ragdoll->m_iActivityType != 0)
 			{
 				vec3_t save_simorg;
-				vec3_t save_origin;
+				vec3_t save_origin_spec;
+				vec3_t save_origin_aiming;
 
 				VectorCopy(pparams->simorg, save_simorg);
-				VectorCopy(spectating_player->origin, save_origin);
+				VectorCopy(spectating_player->origin, save_origin_spec);
+				VectorCopy(aiming_player->origin, save_origin_aiming);
 
-				gPhysicsManager.SyncThirdPersonView(ragdoll, spectating_player, pparams);
+				gPhysicsManager.GetRagdollOrigin(ragdoll, spectating_player->origin);
+				VectorCopy(spectating_player->origin, pparams->simorg);
+
+				if (spectating_player != aiming_player)
+				{
+					auto ragdoll_aiming = gPhysicsManager.FindRagdoll(aiming_player->index);
+					if (ragdoll_aiming)
+					{
+						gPhysicsManager.GetRagdollOrigin(ragdoll_aiming, aiming_player->origin);
+					}
+				}
 
 				gExportfuncs.V_CalcRefdef(pparams);
 
-				VectorCopy(save_origin, spectating_player->origin);
+				VectorCopy(save_origin_aiming, aiming_player->origin);
+				VectorCopy(save_origin_spec, spectating_player->origin);
 				VectorCopy(save_simorg, pparams->simorg);
 
 				return;
@@ -1288,17 +1303,14 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 				vec3_t save_simorg;
 				vec3_t save_cl_viewangles;
 				int save_health = pparams->health;
-				//vec3_t save_origin;
 
 				VectorCopy(pparams->simorg, save_simorg);
 				VectorCopy(pparams->cl_viewangles, save_cl_viewangles);
-				//VectorCopy(spectating_player->origin, save_origin);
 				
 				gPhysicsManager.SyncFirstPersonView(ragdoll, spectating_player, pparams);
 
 				gExportfuncs.V_CalcRefdef(pparams);
 
-				//VectorCopy(save_origin, spectating_player->origin);
 				VectorCopy(save_simorg, pparams->simorg);
 				VectorCopy(save_cl_viewangles, pparams->cl_viewangles);
 				pparams->health = save_health;
