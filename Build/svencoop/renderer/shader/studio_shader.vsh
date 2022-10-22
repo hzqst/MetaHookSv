@@ -102,22 +102,26 @@ void main(void)
 				
 				#ifdef STUDIO_NF_FLATSHADE
 				
-				float ElightCosine = dot(outnorm, normalize(ElightDirection));
+				float ElightCosine = 0.8;
 				
 				#else
 
-				float ElightCosine = 0.8;
+				float ElightCosine = clamp(dot(outnorm, normalize(ElightDirection)), 0.0, 1.0);
 
 				#endif
-				
-				float ElightDistance = length(ElightDirection);
-				float r2 = StudioUBO.r_elight_radius[i];
-				r2 = r2 * r2;
-    			float ElightAttenuation = clamp(( r2 - (ElightDistance * ElightDistance)) / r2, 0.0, 1.0);
 
-				v_color.x += StudioUBO.r_elight_color[i].x * clamp(ElightCosine, 0.0, 1.0) * ElightAttenuation;
-				v_color.y += StudioUBO.r_elight_color[i].y * clamp(ElightCosine, 0.0, 1.0) * ElightAttenuation;
-				v_color.z += StudioUBO.r_elight_color[i].z * clamp(ElightCosine, 0.0, 1.0) * ElightAttenuation;
+				float ElightDistance = length(ElightDirection);
+				float ElightDot = dot(ElightDirection, ElightDirection);
+
+				float r2 = StudioUBO.r_elight_radius[i];
+				
+				r2 = r2 * r2;
+
+    			float ElightAttenuation = clamp(r2 / (ElightDot * ElightDistance), 0.0, 1.0);
+
+				v_color.x += StudioUBO.r_elight_color[i].x * ElightCosine;// * ElightAttenuation;
+				v_color.y += StudioUBO.r_elight_color[i].y * ElightCosine;// * ElightAttenuation;
+				v_color.z += StudioUBO.r_elight_color[i].z * ElightCosine;// * ElightAttenuation;
 			}
 
 		#endif

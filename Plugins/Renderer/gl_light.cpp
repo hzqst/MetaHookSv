@@ -408,8 +408,8 @@ void R_InitLight(void)
 	r_light_dynamic = gEngfuncs.pfnRegisterVariable("r_light_dynamic", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_light_debug = gEngfuncs.pfnRegisterVariable("r_light_debug", "0", FCVAR_CLIENTDLL);
 
-	r_dynlight_ambient = R_RegisterMapCvar("r_dynlight_ambient", "0.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_dynlight_diffuse = R_RegisterMapCvar("r_dynlight_diffuse", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_dynlight_ambient = R_RegisterMapCvar("r_dynlight_ambient", "0.2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_dynlight_diffuse = R_RegisterMapCvar("r_dynlight_diffuse", "0.4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_dynlight_specular = R_RegisterMapCvar("r_dynlight_specular", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_dynlight_specularpow = R_RegisterMapCvar("r_dynlight_specularpow", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 

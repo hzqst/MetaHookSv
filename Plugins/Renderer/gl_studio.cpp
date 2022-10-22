@@ -78,7 +78,8 @@ cvar_t *r_studio_hair_specular_smooth = NULL;
 
 cvar_t *r_studio_hair_shadow_offset = NULL;
 
-cvar_t *r_legacy_elight = NULL;
+cvar_t *r_studio_legacy_dlight = NULL;
+cvar_t *r_studio_legacy_elight = NULL;
 
 void R_PrepareStudioVBOSubmodel(
 	studiohdr_t *studiohdr, mstudiomodel_t *submodel, 
@@ -893,7 +894,8 @@ void R_InitStudio(void)
 	r_studio_hair_specular_smooth = gEngfuncs.pfnRegisterVariable("r_studio_hair_specular_smooth", "0.0 0.3", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_hair_shadow_offset = gEngfuncs.pfnRegisterVariable("r_studio_hair_shadow_offset", "0.3 -0.3", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
-	r_legacy_elight = gEngfuncs.pfnRegisterVariable("r_legacy_elight", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_legacy_dlight = gEngfuncs.pfnRegisterVariable("r_studio_legacy_dlight", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_legacy_elight = gEngfuncs.pfnRegisterVariable("r_studio_legacy_elight", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
 inline qboolean R_IsFlippedViewModel(void)
@@ -975,21 +977,26 @@ void R_EnableStudioVBO(studio_vbo_t *VBOData)
 		vec3_t entity_origin = { (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3] };
 		memcpy(StudioUBO.entity_origin, entity_origin, sizeof(vec3_t));
 
-		if (r_legacy_elight->value > 0)
+		if (r_studio_legacy_elight->value > 0)
 		{
 			StudioUBO.r_numelight[0] = *numlight;
+			StudioUBO.r_numelight[1] = 0;
+			StudioUBO.r_numelight[2] = 0;
+			StudioUBO.r_numelight[3] = 0;
 
 			for (int i = 0; i < StudioUBO.r_numelight[0]; ++i)
 			{
 				StudioUBO.r_elight_color[i][0] = (float)((*locallight)[i]->color.r) / 255.0f;
 				StudioUBO.r_elight_color[i][1] = (float)((*locallight)[i]->color.g) / 255.0f;
 				StudioUBO.r_elight_color[i][2] = (float)((*locallight)[i]->color.b) / 255.0f;
+				StudioUBO.r_elight_color[i][3] = 1;
 
 				GammaToLinear(StudioUBO.r_elight_color[i]);
 
 				StudioUBO.r_elight_origin[i][0] = (*locallight)[i]->origin[0];
 				StudioUBO.r_elight_origin[i][1] = (*locallight)[i]->origin[1];
 				StudioUBO.r_elight_origin[i][2] = (*locallight)[i]->origin[2];
+				StudioUBO.r_elight_origin[i][3] = 0;
 
 				StudioUBO.r_elight_radius[i] = (*locallight)[i]->radius;
 			}
@@ -997,6 +1004,9 @@ void R_EnableStudioVBO(studio_vbo_t *VBOData)
 		else
 		{
 			StudioUBO.r_numelight[0] = 0;
+			StudioUBO.r_numelight[1] = 0;
+			StudioUBO.r_numelight[2] = 0;
+			StudioUBO.r_numelight[3] = 0;
 		}
 
 		memcpy(StudioUBO.bonematrix, (*pbonetransform), sizeof(mat3x4) * 128);
@@ -1520,45 +1530,51 @@ qboolean studioapi_StudioCheckBBox(void)
 
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight)
 {
-	if (!r_light_dynamic->value)
-		return gRefFuncs.studioapi_StudioDynamicLight(ent, plight);
-
-	if (g_iEngineType == ENGINE_SVENGINE)
+	//Disable legacy dlight for studio models?
+	if (r_light_dynamic->value && !r_studio_legacy_dlight->value)
 	{
-		float dies[256];
-
-		dlight_t *dl = cl_dlights;
-		for (int i = 0; i < 256; i++, dl++)
+		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			dies[i] = dl->die;
-			dl->die = 0;
+			float dies[256];
+
+			dlight_t *dl = cl_dlights;
+			for (int i = 0; i < 256; i++, dl++)
+			{
+				dies[i] = dl->die;
+				dl->die = 0;
+			}
+
+			gRefFuncs.studioapi_StudioDynamicLight(ent, plight);
+
+			dl = cl_dlights;
+			for (int i = 0; i < 256; i++, dl++)
+			{
+				dl->die = dies[i];
+			}
 		}
-
-		gRefFuncs.studioapi_StudioDynamicLight(ent, plight);
-
-		dl = cl_dlights;
-		for (int i = 0; i < 256; i++, dl++)
+		else
 		{
-			dl->die = dies[i];
+			float dies[32];
+
+			dlight_t *dl = cl_dlights;
+			for (int i = 0; i < 32; i++, dl++)
+			{
+				dies[i] = dl->die;
+				dl->die = 0;
+			}
+
+			gRefFuncs.studioapi_StudioDynamicLight(ent, plight);
+
+			dl = cl_dlights;
+			for (int i = 0; i < 32; i++, dl++)
+			{
+				dl->die = dies[i];
+			}
 		}
 	}
 	else
 	{
-		float dies[32];
-		dlight_t *dl = cl_dlights;
-		for (int i = 0; i < 32; i++, dl++)
-		{
-			dies[i] = dl->die;
-			dl->die = 0;
-		}
-
 		gRefFuncs.studioapi_StudioDynamicLight(ent, plight);
-
-		dl = cl_dlights;
-		for (int i = 0; i < 32; i++, dl++)
-		{
-			dl->die = dies[i];
-		}
 	}
 }
 
