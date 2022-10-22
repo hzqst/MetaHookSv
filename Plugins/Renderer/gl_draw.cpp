@@ -438,8 +438,11 @@ int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int wid
 {
 	int texnum = GL_AllocTexture((char *)identifier, textureType, width, height, mipmap);
 
-	if(!texnum)
+	if (!texnum)
+	{
+		gEngfuncs.Con_Printf("GL_LoadTextureEx: Failed to allocate texture slot.\n");
 		return 0;
+	}
 
 	int iTextureTarget = GL_TEXTURE_2D;
 
@@ -514,7 +517,7 @@ qboolean PowerOfTwo(int iWidth,int iHeight)
 	return true;
 }
 
-qboolean LoadDDS(const char *filename, byte *buf, size_t bufsize, size_t *width, size_t *height)
+qboolean LoadDDS(const char *filename, byte *buf, size_t bufsize, size_t *width, size_t *height, qboolean throw_warning_on_missing)
 {
 	DDS_FILEHEADER fileHeader;
 
@@ -528,7 +531,10 @@ qboolean LoadDDS(const char *filename, byte *buf, size_t bufsize, size_t *width,
 
 	if (!fileHandle)
 	{
-		gEngfuncs.Con_Printf("LoadDDS: Could not open %s.\n", filename);
+		if (throw_warning_on_missing)
+		{
+			gEngfuncs.Con_Printf("LoadDDS: Could not open %s.\n", filename);
+		}
 		return false;
 	}
 
@@ -761,12 +767,18 @@ long WINAPI FI_Tell(fi_handle handle)
 	return g_pFileSystem->Tell(handle);
 }
 
-qboolean LoadImageGeneric(const char *filename, byte *buf, size_t bufSize, size_t *width, size_t *height)
+qboolean LoadImageGeneric(const char *filename, byte *buf, size_t bufSize, size_t *width, size_t *height, qboolean throw_warning_on_missing)
 {
 	FileHandle_t fileHandle = g_pFileSystem->Open(filename, "rb");
 
-	if(!fileHandle)
-		return FALSE;
+	if (!fileHandle)
+	{
+		if (throw_warning_on_missing)
+		{
+			gEngfuncs.Con_Printf("LoadImageGeneric: Could not open %s.\n", filename);
+		}
+		return false;
+	}
 
 	FreeImageIO fiIO;
 	fiIO.read_proc = FI_Read;
@@ -781,7 +793,7 @@ qboolean LoadImageGeneric(const char *filename, byte *buf, size_t bufSize, size_
 
 	if(fiFormat == FIF_UNKNOWN)
     {
-		gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s Unsupported format.\n", filename);
+		gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, Unsupported format.\n", filename);
 		return false;
     }
 
@@ -915,14 +927,16 @@ int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *hei
 
 	if(!extension)
 	{
-		if(throw_warning_on_missing)
+		if (throw_warning_on_missing)
+		{
 			gEngfuncs.Con_Printf("R_LoadTextureEx: File %s has no extension.\n", filepath);
+		}
 		return 0;
 	}
 
 	if(!stricmp(extension, "dds"))
 	{
-		if(LoadDDS(filepath, texloader_buffer, sizeof(texloader_buffer), &w, &h))
+		if(LoadDDS(filepath, texloader_buffer, sizeof(texloader_buffer), &w, &h, throw_warning_on_missing))
 		{
 			if(width)
 				*width = w;
@@ -932,7 +946,7 @@ int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *hei
 			return GL_LoadTextureEx(name, type, w, h, texloader_buffer, mipmap, ansio);
 		}
 	}
-	else if(LoadImageGeneric(filepath, texloader_buffer, sizeof(texloader_buffer), &w, &h))
+	else if(LoadImageGeneric(filepath, texloader_buffer, sizeof(texloader_buffer), &w, &h, throw_warning_on_missing))
 	{
 		if(width)
 			*width = w;
@@ -942,9 +956,6 @@ int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *hei
 		return GL_LoadTextureEx(name, type, w, h, texloader_buffer, mipmap, ansio);
 	}
 	
-	if (throw_warning_on_missing)
-		gEngfuncs.Con_Printf("R_LoadTextureEx: Could not load texture %s.\n", filepath);
-
 	return 0;
 }
 

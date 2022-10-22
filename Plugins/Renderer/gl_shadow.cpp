@@ -493,7 +493,22 @@ void R_RenderShadowDynamicLights(void)
 					(*r_refdef.viewangles)[1] = angle[1];
 					(*r_refdef.viewangles)[2] = angle[2];
 
-					R_RenderScene();
+					//Skip localplayer rendering in shadowmap
+
+					if (gEngfuncs.GetLocalPlayer()->model)
+					{
+						auto save_localplayer_modeltype = gEngfuncs.GetLocalPlayer()->model->type;
+
+						gEngfuncs.GetLocalPlayer()->model->type = (modtype_t)100;
+
+						R_RenderScene();
+
+						gEngfuncs.GetLocalPlayer()->model->type = save_localplayer_modeltype;
+					}
+					else
+					{
+						R_RenderScene();
+					}
 
 					const float bias[16] = {
 						0.5f, 0.0f, 0.0f, 0.0f,
