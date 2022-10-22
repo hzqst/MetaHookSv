@@ -385,12 +385,12 @@ void Client_FillAddress(void)
 	{
 		g_bIsCounterStrike = true;
 
-#define CS_CZ_GETTEXTCOLOR_SIG "\x8B\x44\x24\x04\x83\xE8\x03\x2A\x2A\x48"
 		if (1)
 		{
+#define CS_CZ_GETTEXTCOLOR_SIG "\x8B\x44\x24\x04\x83\xE8\x03\x2A\x2A\x48"
 			gPrivateFuncs.GetTextColor = (decltype(gPrivateFuncs.GetTextColor))
 				g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, CS_CZ_GETTEXTCOLOR_SIG, Sig_Length(CS_CZ_GETTEXTCOLOR_SIG));
-			Sig_FuncNotFound(GetTextColor);
+			//Sig_FuncNotFound(GetTextColor);
 		}
 
 #define CS_CZ_GETCLIENTCOLOR_SIG "\x0F\xBF\x2A\x2A\x2A\x2A\x2A\x2A\x48\x83\xF8\x03\x77\x2A\xFF\x24"

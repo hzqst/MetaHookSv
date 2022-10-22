@@ -3309,12 +3309,54 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-		const char sigs[] = "\x8B\x04\x2A\x2A\x2A\x2A\x2A\x2A\xD9\x00";
+		typedef struct
+		{
+			int ZerodReg;
+		}R_LightStrength_Context;
 
-		addr = (DWORD)Search_Pattern_From(gRefFuncs.R_LightStrength, sigs);
-		Sig_AddrNotFound(locallight);
+		R_LightStrength_Context ctx = { 0 };
 
-		locallight = *(decltype(locallight) *)(addr + 3);
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_LightStrength, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+			auto ctx = (R_LightStrength_Context *)context;
+			auto pinst = (cs_insn *)inst;
+
+			if (!ctx->ZerodReg &&
+				pinst->id == X86_INS_XOR &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == pinst->detail->x86.operands[1].reg)
+			{
+				ctx->ZerodReg = pinst->detail->x86.operands[0].reg;
+			}
+			else if (ctx->ZerodReg &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 && 
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				pinst->detail->x86.operands[1].mem.scale == 4 &&
+				pinst->detail->x86.operands[1].mem.index == ctx->ZerodReg &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				//C7 05 60 66 00 08 01 00 00 00                       mov     scr_drawloading, 1
+				locallight = (decltype(locallight))pinst->detail->x86.operands[1].mem.disp;
+			}
+
+			if (locallight)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+			}, 0, &ctx);
+
+		Sig_VarNotFound(locallight);
 	}
 }
 
