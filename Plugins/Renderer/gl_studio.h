@@ -30,7 +30,7 @@ typedef struct
 	int r_hair_specular_smooth;
 	int r_hair_shadow_offset;
 	int r_uvscale;
-	//shadow caster
+	//ShadowCaster
 	int entityPos;
 }studio_program_t;
 
@@ -172,6 +172,8 @@ extern float *r_plightvec;
 extern float *r_colormix;
 extern int *r_smodels_total;
 extern int *r_amodels_drawn;
+extern dlight_t *(*locallight)[3];
+extern int *numlight;
 
 extern model_t *cl_sprite_white;
 extern model_t *cl_shellchrome;

@@ -29,10 +29,12 @@ void GL_FreeShaders(void)
 
 void GL_CheckShaderError(GLuint shader, const char *code, const char *filename)
 {
+	//gEngfuncs.Con_DPrintf("GL_CheckShaderError...");
+
 	int iStatus;
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &iStatus); 
 
-	if(!iStatus)
+	if(GL_FALSE == iStatus)
 	{
 		int nInfoLength = 0;
 		glGetObjectParameterivARB(shader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &nInfoLength);
@@ -42,20 +44,6 @@ void GL_CheckShaderError(GLuint shader, const char *code, const char *filename)
 
 		glGetInfoLogARB(shader, nInfoLength, NULL, (char *)info.c_str());
 
-		g_pFileSystem->CreateDirHierarchy("logs");
-		g_pFileSystem->CreateDirHierarchy("logs/renderer");
-		auto FileHandle = g_pFileSystem->Open("logs/renderer/error.log", "wb");
-		if (FileHandle)
-		{
-			g_pFileSystem->Write(code, strlen(code), FileHandle);
-			g_pFileSystem->Write("\n\nFilename: ", sizeof("\n\nFilename: ") - 1, FileHandle);
-			g_pFileSystem->Write(filename, strlen(filename), FileHandle);
-			g_pFileSystem->Write("\n\nLogs: ", sizeof("\n\nLogs: ") - 1, FileHandle);
-			g_pFileSystem->Write(info.c_str(), info.length(), FileHandle);
-			g_pFileSystem->Close(FileHandle);
-		}
-		if (info.length() > 256)
-			info.resize(256);
 		g_pMetaHookAPI->SysError("Shader %s compiled with error:\n%s", filename, info.c_str());
 		return;
 	}
@@ -63,9 +51,35 @@ void GL_CheckShaderError(GLuint shader, const char *code, const char *filename)
 
 GLuint R_CompileShaderObject(int type, const char *code, const char *filename)
 {
+	//gEngfuncs.Con_DPrintf("glCreateShader...");
+
+	if (developer->value >= 255)
+	{
+		g_pFileSystem->CreateDirHierarchy("logs");
+		g_pFileSystem->CreateDirHierarchy("logs/renderer");
+		g_pFileSystem->CreateDirHierarchy("logs/renderer/shader");
+		
+		char filepath[256];
+		snprintf(filepath, 255, "logs\\%s", filename);
+		filepath[255] = 0;
+
+		gEngfuncs.Con_DPrintf("writing %s...", filepath);
+
+		auto FileHandle = g_pFileSystem->Open(filepath, "wb");
+		if (FileHandle)
+		{
+			g_pFileSystem->Write(code, strlen(code), FileHandle);
+			g_pFileSystem->Close(FileHandle);
+		}
+	}
+
 	auto obj = glCreateShader(type);
 
+	//gEngfuncs.Con_DPrintf("glShaderSource...");
+
 	glShaderSource(obj, 1, &code, NULL);
+
+	//gEngfuncs.Con_DPrintf("glCompileShader...");
 
 	glCompileShader(obj);
 
@@ -79,14 +93,20 @@ GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfil
 	GLuint shader_objects[32];
 	int shader_object_used = 0;
 
+	//gEngfuncs.Con_DPrintf("R_CompileShaderObject GL_VERTEX_SHADER...");
+
 	shader_objects[shader_object_used] = R_CompileShaderObject(GL_VERTEX_SHADER, vscode, vsfile);
 	shader_object_used++;
 
 	if(callback)
 		callback(shader_objects, &shader_object_used);
 
+	//gEngfuncs.Con_DPrintf("R_CompileShaderObject GL_FRAGMENT_SHADER...");
+
 	shader_objects[shader_object_used] = R_CompileShaderObject(GL_FRAGMENT_SHADER, fscode, fsfile);
 	shader_object_used++;
+
+	//gEngfuncs.Con_DPrintf("Linking program...");
 
 	GLuint program = glCreateProgram();
 	for(int i = 0;i < shader_object_used; ++i)
@@ -95,7 +115,7 @@ GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfil
 
 	int iStatus;
 	glGetProgramiv(program, GL_LINK_STATUS, &iStatus);
-	if (!iStatus)
+	if (GL_FALSE == iStatus)
 	{
 		int nInfoLength;
 		char szCompilerLog[1024] = { 0 };
@@ -207,8 +227,10 @@ GLuint R_CompileShaderFileEx(
 	auto vscode = (char *)gEngfuncs.COM_LoadFile((char *)vsfile, 5, 0);
 	if (!vscode)
 	{
-		g_pMetaHookAPI->SysError("R_CompileShaderFileEx: %s not found!", vsfile);
+		g_pMetaHookAPI->SysError("R_CompileShaderFileEx: %s file not found!", vsfile);
 	}
+
+	gEngfuncs.Con_DPrintf("R_CompileShaderFileEx: compiling %s...", vsfile);
 
 	std::string vs(vscode);
 
@@ -223,8 +245,10 @@ GLuint R_CompileShaderFileEx(
 	auto fscode = (char *)gEngfuncs.COM_LoadFile((char *)fsfile, 5, 0);
 	if (!fscode)
 	{
-		g_pMetaHookAPI->SysError("R_CompileShaderFileEx: %s not found!", fsfile);
+		g_pMetaHookAPI->SysError("R_CompileShaderFileEx: %s file not found!", fsfile);
 	}
+
+	gEngfuncs.Con_DPrintf("R_CompileShaderFileEx: compiling %s...", fsfile);
 
 	std::string fs(fscode);
 

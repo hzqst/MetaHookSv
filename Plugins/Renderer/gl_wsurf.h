@@ -298,6 +298,10 @@ typedef struct studio_ubo_s
 	vec4 r_colormix;
 	vec4 r_origin;
 	vec4 entity_origin;
+	vec4 r_elight_color[4];
+	vec4 r_elight_origin[4];
+	vec4 r_elight_radius;
+	ivec4 r_numelight;
 	mat3x4 bonematrix[128];
 }studio_ubo_t;
 

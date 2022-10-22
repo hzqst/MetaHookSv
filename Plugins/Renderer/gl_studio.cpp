@@ -42,13 +42,10 @@ float *r_colormix;
 void *tmp_palette;
 int *r_smodels_total;
 int *r_amodels_drawn;
+dlight_t *(*locallight)[3];
+int *numlight;
 
 //renderer
-float r_chrome[MAXSTUDIOVERTS][2];
-vec3_t r_chromeup[MAXSTUDIOBONES];
-vec3_t r_chromeright[MAXSTUDIOBONES];
-vec3_t r_studionormal[MAXSTUDIOVERTS];
-float lightpos[MAXSTUDIOVERTS][3][4];
 
 int r_studio_drawcall;
 int r_studio_polys;
@@ -80,6 +77,8 @@ cvar_t *r_studio_hair_specular_noise2 = NULL;
 cvar_t *r_studio_hair_specular_smooth = NULL;
 
 cvar_t *r_studio_hair_shadow_offset = NULL;
+
+cvar_t *r_legacy_elight = NULL;
 
 void R_PrepareStudioVBOSubmodel(
 	studiohdr_t *studiohdr, mstudiomodel_t *submodel, 
@@ -893,15 +892,8 @@ void R_InitStudio(void)
 	r_studio_hair_specular_noise2 = gEngfuncs.pfnRegisterVariable("r_studio_hair_specular_noise2", "240 320 0.05 0.06", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_hair_specular_smooth = gEngfuncs.pfnRegisterVariable("r_studio_hair_specular_smooth", "0.0 0.3", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_hair_shadow_offset = gEngfuncs.pfnRegisterVariable("r_studio_hair_shadow_offset", "0.3 -0.3", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-}
 
-inline void R_StudioTransformAuxVert(auxvert_t *av, int bone, vec3_t vert)
-{
-#ifndef SSE
-	VectorTransform(vert, (*pbonetransform)[bone], av->fv);
-#else
-	VectorTransformSSE(vert, (*pbonetransform)[bone], av->fv);
-#endif
+	r_legacy_elight = gEngfuncs.pfnRegisterVariable("r_legacy_elight", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
 inline qboolean R_IsFlippedViewModel(void)
@@ -913,43 +905,6 @@ inline qboolean R_IsFlippedViewModel(void)
 	}
 
 	return false;
-}
-
-void BuildNormalIndexTable(void)
-{
-	if (gRefFuncs.BuildNormalIndexTable)
-		return gRefFuncs.BuildNormalIndexTable();
-
-	int					j;
-	int					i;
-	mstudiomesh_t		*pmesh;
-
-	for (i = 0; i < (*psubmodel)->numverts; i++)
-	{
-		(*g_NormalIndex)[i] = -1;
-	}
-
-	for (j = 0; j < (*psubmodel)->nummesh; j++)
-	{
-		short		*ptricmds;
-
-		pmesh = (mstudiomesh_t *)((byte *)(*pstudiohdr) + (*psubmodel)->meshindex) + j;
-		ptricmds = (short *)((byte *)(*pstudiohdr) + pmesh->triindex);
-
-		while (i = *(ptricmds++))
-		{
-			if (i < 0)
-			{
-				i = -i;
-			}
-
-			for (; i > 0; i--, ptricmds += 4)
-			{
-				if ((*g_NormalIndex)[ptricmds[0]] < 0)
-					(*g_NormalIndex)[ptricmds[0]] = ptricmds[1];
-			}
-		}
-	}
 }
 
 studiohdr_t *R_LoadTextures(model_t *psubm)
@@ -1019,6 +974,30 @@ void R_EnableStudioVBO(studio_vbo_t *VBOData)
 
 		vec3_t entity_origin = { (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3] };
 		memcpy(StudioUBO.entity_origin, entity_origin, sizeof(vec3_t));
+
+		if (r_legacy_elight->value > 0)
+		{
+			StudioUBO.r_numelight[0] = *numlight;
+
+			for (int i = 0; i < StudioUBO.r_numelight[0]; ++i)
+			{
+				StudioUBO.r_elight_color[i][0] = (float)((*locallight)[i]->color.r) / 255.0f;
+				StudioUBO.r_elight_color[i][1] = (float)((*locallight)[i]->color.g) / 255.0f;
+				StudioUBO.r_elight_color[i][2] = (float)((*locallight)[i]->color.b) / 255.0f;
+
+				GammaToLinear(StudioUBO.r_elight_color[i]);
+
+				StudioUBO.r_elight_origin[i][0] = (*locallight)[i]->origin[0];
+				StudioUBO.r_elight_origin[i][1] = (*locallight)[i]->origin[1];
+				StudioUBO.r_elight_origin[i][2] = (*locallight)[i]->origin[2];
+
+				StudioUBO.r_elight_radius[i] = (*locallight)[i]->radius;
+			}
+		}
+		else
+		{
+			StudioUBO.r_numelight[0] = 0;
+		}
 
 		memcpy(StudioUBO.bonematrix, (*pbonetransform), sizeof(mat3x4) * 128);
 

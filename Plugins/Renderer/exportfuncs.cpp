@@ -1216,6 +1216,44 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		g_pMetaHookAPI->SysError("Failed to locate g_pGameStudioRenderer or EngineStudioRenderer!\n");
 	}
 
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_LightStrength, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+			auto pinst = (cs_insn *)inst;
+
+			if (!numlight &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				pinst->detail->x86.operands[1].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG)
+			{
+				if ((uintptr_t)pinst->detail->x86.operands[1].mem.disp != (uintptr_t)r_smodels_total)
+				{
+					//.text:01D8BD47 8B 35 B4 39 DB 08                                   mov     esi, numlight
+					//.text:01D83D0B A1 98 74 36 02                                      mov     eax, numlight
+					numlight = (decltype(numlight))pinst->detail->x86.operands[1].mem.disp;
+				}
+			}
+
+			if (numlight)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+			}, 0, NULL);
+
+		Sig_VarNotFound(numlight);
+	}
+
 	return result;
 }
 

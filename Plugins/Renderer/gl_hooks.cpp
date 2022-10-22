@@ -3306,6 +3306,16 @@ void R_FillAddress(void)
 
 		Sig_VarNotFound(scr_drawloading);
 	}
+
+	if (1)
+	{
+		const char sigs[] = "\x8B\x04\x2A\x2A\x2A\x2A\x2A\x2A\xD9\x00";
+
+		addr = (DWORD)Search_Pattern_From(gRefFuncs.R_LightStrength, sigs);
+		Sig_AddrNotFound(locallight);
+
+		locallight = *(decltype(locallight) *)(addr + 3);
+	}
 }
 
 void R_UninstallHooksForEngineDLL(void)

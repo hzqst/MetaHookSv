@@ -96,6 +96,30 @@ void main(void)
 
 			v_color = vec4(lv * StudioUBO.r_colormix.x, lv * StudioUBO.r_colormix.y, lv * StudioUBO.r_colormix.z, StudioUBO.r_blend);
 
+			for(int i = 0; i < StudioUBO.r_numelight.x; ++i)
+			{
+				vec3 ElightDirection = StudioUBO.r_elight_origin[i].xyz - outvert.xyz;
+				
+				#ifdef STUDIO_NF_FLATSHADE
+				
+				float ElightCosine = dot(outnorm, normalize(ElightDirection));
+				
+				#else
+
+				float ElightCosine = 0.8;
+
+				#endif
+				
+				float ElightDistance = length(ElightDirection);
+				float r2 = StudioUBO.r_elight_radius[i];
+				r2 = r2 * r2;
+    			float ElightAttenuation = clamp(( r2 - (ElightDistance * ElightDistance)) / r2, 0.0, 1.0);
+
+				v_color.x += StudioUBO.r_elight_color[i].x * clamp(ElightCosine, 0.0, 1.0) * ElightAttenuation;
+				v_color.y += StudioUBO.r_elight_color[i].y * clamp(ElightCosine, 0.0, 1.0) * ElightAttenuation;
+				v_color.z += StudioUBO.r_elight_color[i].z * clamp(ElightCosine, 0.0, 1.0) * ElightAttenuation;
+			}
+
 		#endif
 
 	#endif
