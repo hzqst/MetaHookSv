@@ -59,6 +59,8 @@ The section 'DeathAnim" defines when to transform player or monster into ragdoll
 
 "120" for which frame to transform corpse of dead player into ragdoll if this sequence of animation is playing. range : 0 ~ 255
 
+** This is 255-based, you need to convert the frame number you saw in model viewer into (framenumber * 255 / maxframes)
+
 ** While the specified sequence number of death animation is playing, and after the certain frame, the corpse of dead player is transformed into ragdoll. **
 
 ** Only sequence with "DIE_" prefixed activity will be treated as death anim.
