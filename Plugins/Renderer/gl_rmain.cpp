@@ -1632,6 +1632,8 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 		{
 			GL_ClearFinalBuffer();
 		}
+
+		R_StudioBoneCaches_StartFrame();
 	}
 
 	r_renderview_pass = 0;

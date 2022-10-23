@@ -5,9 +5,90 @@
 
 #include "mathlib.h"
 
+class studio_bone_handle
+{
+public:
+	studio_bone_handle(int vboindex, int sequence, int gaitsequence, float frame, vec3_t origin, vec3_t angles)
+	{
+		m_vboindex = vboindex;
+		m_sequence = sequence;
+		m_gaitsequence = gaitsequence;
+		m_frame = frame;
+		VectorCopy(origin, m_origin);
+		VectorCopy(angles, m_angles);
+	}
+
+	bool operator == (const studio_bone_handle& a) const
+	{
+		return 
+			m_vboindex == a.m_vboindex &&
+			m_sequence == a.m_sequence && 
+			m_gaitsequence == a.m_gaitsequence &&
+			m_frame == a.m_frame && 
+			VectorCompare(m_origin, a.m_origin) &&
+			VectorCompare(m_angles, a.m_angles);
+	}
+
+	int m_vboindex;
+	int m_sequence;
+	int m_gaitsequence;
+	float m_frame;
+	vec3_t m_origin;
+	vec3_t m_angles;
+};
+
+class studio_bone_hasher
+{
+public:
+	std::size_t operator()(const studio_bone_handle &key) const
+	{
+		auto base = (std::size_t)(key.m_vboindex << 24);
+
+		base += ((std::size_t)key.m_sequence << 16);
+		base += ((std::size_t)key.m_gaitsequence << 8);
+		base += (std::size_t)(key.m_frame * 128.0);
+		base += (std::size_t)(key.m_origin[0] * 128.0);
+		base += (std::size_t)(key.m_origin[1] * 128.0);
+		base += (std::size_t)(key.m_origin[2] * 128.0);
+		base += (std::size_t)(key.m_angles[0] * 128.0);
+		base += (std::size_t)(key.m_angles[1] * 128.0);
+		base += (std::size_t)(key.m_angles[2] * 128.0);
+
+		return base;
+	}
+};
+
+class studio_bone_cache
+{
+public:
+	studio_bone_cache()
+	{
+		memset(m_bonetransform, 0, sizeof(m_bonetransform));
+		memset(m_lighttransform, 0, sizeof(m_lighttransform));
+		m_next = NULL;
+	}
+	studio_bone_cache(float *_bonetransform, float *_lighttransform)
+	{
+		memcpy(m_bonetransform, _bonetransform, sizeof(m_bonetransform));
+		memcpy(m_lighttransform, _lighttransform, sizeof(m_lighttransform));
+		m_next = NULL;
+	}
+
+	float m_bonetransform[MAXSTUDIOBONES][3][4];
+	float m_lighttransform[MAXSTUDIOBONES][3][4];
+	studio_bone_cache *m_next;
+};
+
+std::unordered_map<studio_bone_handle, studio_bone_cache *, studio_bone_hasher> g_StudioBoneCacheManager;
+
 std::unordered_map<int, studio_program_t> g_StudioProgramTable;
 
 std::vector<studio_vbo_t *> g_StudioVBOCache;
+
+#define MAX_STUDIO_BONE_CACHES 1024
+
+studio_bone_cache g_StudioBoneCaches[MAX_STUDIO_BONE_CACHES];
+studio_bone_cache *g_pStudioBoneFreeCaches = NULL;
 
 studio_vbo_t *g_CurrentVBOCache = NULL;
 
@@ -80,6 +161,42 @@ cvar_t *r_studio_hair_shadow_offset = NULL;
 
 cvar_t *r_studio_legacy_dlight = NULL;
 cvar_t *r_studio_legacy_elight = NULL;
+
+cvar_t *r_studio_bone_caches = NULL;
+
+void R_StudioBoneCaches_StartFrame()
+{
+	for (int i = 0; i < MAX_STUDIO_BONE_CACHES - 1; i++)
+		g_StudioBoneCaches[i].m_next = &g_StudioBoneCaches[i + 1];
+
+	g_StudioBoneCaches[MAX_STUDIO_BONE_CACHES - 1].m_next = NULL;
+
+	g_pStudioBoneFreeCaches = &g_StudioBoneCaches[0];
+
+	g_StudioBoneCacheManager.clear();
+}
+
+studio_bone_cache *R_StudioBoneCacheAlloc()
+{
+	if (!g_pStudioBoneFreeCaches)
+	{
+		gEngfuncs.Con_DPrintf("Studio bone caches overflow!\n");
+		return NULL;
+	}
+
+	auto pTemp = g_pStudioBoneFreeCaches;
+	g_pStudioBoneFreeCaches = pTemp->m_next;
+
+	pTemp->m_next = NULL;
+
+	return pTemp;
+}
+
+void R_StudioBoneCacheFree(studio_bone_cache *pTemp)
+{
+	pTemp->m_next = g_pStudioBoneFreeCaches;
+	g_pStudioBoneFreeCaches = pTemp;
+}
 
 void R_PrepareStudioVBOSubmodel(
 	studiohdr_t *studiohdr, mstudiomodel_t *submodel, 
@@ -864,6 +981,8 @@ void R_LoadStudioProgramStates(void)
 void R_ShutdownStudio(void)
 {
 	g_StudioProgramTable.clear();
+
+	R_StudioBoneCaches_StartFrame();
 }
 
 void R_InitStudio(void)
@@ -896,6 +1015,7 @@ void R_InitStudio(void)
 
 	r_studio_legacy_dlight = gEngfuncs.pfnRegisterVariable("r_studio_legacy_dlight", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_legacy_elight = gEngfuncs.pfnRegisterVariable("r_studio_legacy_elight", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_bone_caches = gEngfuncs.pfnRegisterVariable("r_studio_bone_caches", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
 inline qboolean R_IsFlippedViewModel(void)
@@ -1843,6 +1963,76 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 	}
 
 	//R_EnableStudioVBO(NULL);
+}
+
+void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
+{
+	if (!r_studio_bone_caches->value)
+	{
+		gRefFuncs.GameStudioRenderer_StudioSetupBones(pthis, 0);
+		return;
+	}
+
+	studio_bone_handle handle(
+		(*pstudiohdr)->soundtable,
+		(*currententity)->curstate.sequence, 
+		(*currententity)->curstate.gaitsequence, 
+		(*currententity)->curstate.frame,
+		(*currententity)->origin, 
+		(*currententity)->angles);
+
+	auto &itor = g_StudioBoneCacheManager.find(handle);
+
+	if (itor != g_StudioBoneCacheManager.end())
+	{
+		memcpy((*pbonetransform), itor->second->m_bonetransform, sizeof(itor->second->m_bonetransform));
+		memcpy((*plighttransform), itor->second->m_lighttransform, sizeof(itor->second->m_lighttransform));
+		return;
+	}
+
+	gRefFuncs.GameStudioRenderer_StudioSetupBones(pthis, 0);
+
+	auto cache = R_StudioBoneCacheAlloc();
+
+	memcpy(cache->m_bonetransform, (*pbonetransform), sizeof(cache->m_bonetransform));
+	memcpy(cache->m_lighttransform, (*plighttransform) , sizeof(cache->m_lighttransform));
+
+	g_StudioBoneCacheManager[handle] = cache;
+}
+
+void __fastcall GameStudioRenderer_StudioMergeBones(void *pthis, int, model_t *pSubModel)
+{
+	if (!r_studio_bone_caches->value)
+	{
+		gRefFuncs.GameStudioRenderer_StudioMergeBones(pthis, 0, pSubModel);
+		return;
+	}
+
+	studio_bone_handle handle(
+		(*pstudiohdr)->soundtable,
+		(*currententity)->curstate.sequence,
+		(*currententity)->curstate.gaitsequence,
+		(*currententity)->curstate.frame,
+		(*currententity)->origin,
+		(*currententity)->angles);
+
+	auto &itor = g_StudioBoneCacheManager.find(handle);
+
+	if (itor != g_StudioBoneCacheManager.end())
+	{
+		memcpy((*pbonetransform), itor->second->m_bonetransform, sizeof(itor->second->m_bonetransform));
+		memcpy((*plighttransform), itor->second->m_lighttransform, sizeof(itor->second->m_lighttransform));
+		return;
+	}
+
+	gRefFuncs.GameStudioRenderer_StudioMergeBones(pthis, 0, pSubModel);
+
+	auto cache = R_StudioBoneCacheAlloc();
+
+	memcpy(cache->m_bonetransform, (*pbonetransform), sizeof(cache->m_bonetransform));
+	memcpy(cache->m_lighttransform, (*plighttransform), sizeof(cache->m_lighttransform));
+
+	g_StudioBoneCacheManager[handle] = cache;
 }
 
 void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr, studio_vbo_t *VBOData)

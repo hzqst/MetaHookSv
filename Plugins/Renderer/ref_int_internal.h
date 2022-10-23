@@ -110,19 +110,27 @@ typedef struct
 	qboolean (*studioapi_StudioCheckBBox)(void);
 
 	//Client Studio
+	void(__fastcall *GameStudioRenderer_StudioSetupBones)(void *pthis, int);
+	void(__fastcall *GameStudioRenderer_StudioMergeBones)(void *pthis, int, model_t *pSubModel);
 	int(__fastcall *GameStudioRenderer_StudioDrawModel)(void *pthis, int, int flags);
 	int(__fastcall *GameStudioRenderer_StudioDrawPlayer)(void *pthis, int, int flags, struct entity_state_s *pplayer);
 	void (__fastcall *GameStudioRenderer_StudioRenderModel)(void *pthis, int);
 	void (__fastcall *GameStudioRenderer_StudioRenderFinal)(void *pthis, int);
 
+	int GameStudioRenderer_StudioCalcAttachments_vftable_index;
+	int GameStudioRenderer_StudioSetupBones_vftable_index;
+	int GameStudioRenderer_StudioSaveBones_vftable_index;
+	int GameStudioRenderer_StudioMergeBones_vftable_index;
 	int GameStudioRenderer_StudioDrawPlayer_vftable_index;
 	int GameStudioRenderer_StudioDrawModel_vftable_index;
 	int GameStudioRenderer_StudioRenderModel_vftable_index;
 	int GameStudioRenderer_StudioRenderFinal_vftable_index;
 
 	//Engine Studio
-	void(__fastcall *R_StudioRenderModel)(void);
-	void(__fastcall *R_StudioRenderFinal)(void);
+	void(*R_StudioRenderModel)(void);
+	void(*R_StudioRenderFinal)(void);
+	void(*R_StudioSetupBones)(void);
+	void(*R_StudioMergeBones)(model_t *pSubModel);
 
 }ref_funcs_t;
 

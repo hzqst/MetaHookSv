@@ -26,8 +26,11 @@ hook_t *g_phook_ClientPortalManager_ResetAll = NULL;
 hook_t *g_phook_ClientPortalManager_DrawPortalSurface = NULL;
 hook_t *g_phook_ClientPortalManager_EnableClipPlane = NULL;
 
+hook_t *g_phook_GameStudioRenderer_StudioSetupBones = NULL;
+hook_t *g_phook_GameStudioRenderer_StudioMergeBones = NULL;
 hook_t *g_phook_GameStudioRenderer_StudioRenderModel = NULL;
 hook_t *g_phook_GameStudioRenderer_StudioRenderFinal = NULL;
+hook_t *g_phook_R_StudioSetupBones = NULL;
 hook_t *g_phook_R_StudioRenderModel = NULL;
 hook_t *g_phook_R_StudioRenderFinal = NULL;
 
@@ -44,6 +47,8 @@ void R_UninstallHooksForClientDLL(void)
 	Uninstall_Hook(ClientPortalManager_DrawPortalSurface);
 	Uninstall_Hook(ClientPortalManager_EnableClipPlane);
 
+	Uninstall_Hook(GameStudioRenderer_StudioSetupBones);
+	Uninstall_Hook(GameStudioRenderer_StudioMergeBones);
 	Uninstall_Hook(GameStudioRenderer_StudioRenderModel);
 	Uninstall_Hook(GameStudioRenderer_StudioRenderFinal);
 	Uninstall_Hook(R_StudioRenderModel);
@@ -1034,8 +1039,57 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 		PVOID *vftable = *(PVOID **)g_pGameStudioRenderer;
 
+		for (int i = 4; i < 9; ++i)
+		{
+			//GameStudioRenderer_StudioCalcAttachments_vftable_index
+			typedef struct
+			{
+				int index;
+			}StudioCalcAttachments_Context;
+
+			StudioCalcAttachments_Context ctx;
+			ctx.index = i;
+
+			g_pMetaHookAPI->DisasmRanges((void*)vftable[i], 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+				{
+					auto pinst = (cs_insn*)inst;
+					auto ctx = (StudioCalcAttachments_Context *)context;
+
+					if (address[0] == 0x68 &&
+						address[5] == 0xFF &&
+						address[6] == 0x15)
+					{
+						auto pPushedString = *(const char **)(address + 1);
+						if (0 == memcmp(pPushedString, "Too many attachments on %s\n", sizeof("Too many attachments on %s\n") - 1))
+						{
+							gRefFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index = ctx->index;
+						}
+					}
+
+					if (gRefFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index)
+						return TRUE;
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+				}, 0, &ctx);
+		}
+
+		if (gRefFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index == 0)
+			gRefFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index = 8;
+
+		gRefFuncs.GameStudioRenderer_StudioSetupBones_vftable_index = gRefFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index - 1;
+		gRefFuncs.GameStudioRenderer_StudioSaveBones_vftable_index = gRefFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index + 1;
+		gRefFuncs.GameStudioRenderer_StudioMergeBones_vftable_index = gRefFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index + 2;
+
 		gRefFuncs.GameStudioRenderer_StudioDrawModel = (decltype(gRefFuncs.GameStudioRenderer_StudioDrawModel))vftable[gRefFuncs.GameStudioRenderer_StudioDrawModel_vftable_index];
 		gRefFuncs.GameStudioRenderer_StudioDrawPlayer = (decltype(gRefFuncs.GameStudioRenderer_StudioDrawPlayer))vftable[gRefFuncs.GameStudioRenderer_StudioDrawPlayer_vftable_index];
+		gRefFuncs.GameStudioRenderer_StudioSetupBones = (decltype(gRefFuncs.GameStudioRenderer_StudioSetupBones))vftable[gRefFuncs.GameStudioRenderer_StudioSetupBones_vftable_index];
+		gRefFuncs.GameStudioRenderer_StudioMergeBones = (decltype(gRefFuncs.GameStudioRenderer_StudioMergeBones))vftable[gRefFuncs.GameStudioRenderer_StudioMergeBones_vftable_index];
 
 		typedef struct
 		{
@@ -1135,13 +1189,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				return FALSE;
 			}, walk.depth, &ctx);
 		}
-#if 0
-#define CALL_VFTABLE_STUDIORENDERMODEL_SIG "\x83\xC4\x18\x8B\xCD\xFF\x50"
-		auto call_vftable_StudioRenderModel = (PUCHAR)g_pMetaHookAPI->SearchPattern(gRefFuncs.GameStudioRenderer_StudioDrawModel, 0x500, CALL_VFTABLE_STUDIORENDERMODEL_SIG, Sig_Length(CALL_VFTABLE_STUDIORENDERMODEL_SIG));
-		Sig_VarNotFound(call_vftable_StudioRenderModel);
 
-		gRefFuncs.GameStudioRenderer_StudioRenderModel_vftable_index = (int)call_vftable_StudioRenderModel[7] / 4;
-#endif
 		gRefFuncs.GameStudioRenderer_StudioRenderModel = (decltype(gRefFuncs.GameStudioRenderer_StudioRenderModel))vftable[gRefFuncs.GameStudioRenderer_StudioRenderModel_vftable_index];
 
 		g_pMetaHookAPI->DisasmRanges((void*)gRefFuncs.GameStudioRenderer_StudioRenderModel, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
@@ -1177,6 +1225,8 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 		Install_InlineHook(GameStudioRenderer_StudioRenderModel);
 		Install_InlineHook(GameStudioRenderer_StudioRenderFinal);
+		Install_InlineHook(GameStudioRenderer_StudioSetupBones);
+		Install_InlineHook(GameStudioRenderer_StudioMergeBones);
 	}
 	else if ((void *)(*ppinterface)->StudioDrawPlayer > g_dwEngineBase && (void *)(*ppinterface)->StudioDrawPlayer < (PUCHAR)g_dwEngineBase + g_dwEngineSize)
 	{

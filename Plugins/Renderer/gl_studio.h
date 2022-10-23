@@ -182,6 +182,7 @@ extern model_t *cl_shellchrome;
 extern int r_studio_drawcall;
 extern int r_studio_polys;
 
+void R_StudioBoneCaches_StartFrame();
 studio_vbo_t *R_PrepareStudioVBO(studiohdr_t *studiohdr);
 void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, studio_vbo_t *VBOData);
 void R_StudioReloadVBOCache(void);
@@ -196,6 +197,8 @@ void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
 qboolean studioapi_StudioCheckBBox(void);
 void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int);
 void __fastcall GameStudioRenderer_StudioRenderFinal(void *pthis, int);
+void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int);
+void __fastcall GameStudioRenderer_StudioMergeBones(void *pthis, int, model_t *pSubModel);
 void  R_StudioRenderModel(void);
 void  R_StudioRenderFinal(void);
 
