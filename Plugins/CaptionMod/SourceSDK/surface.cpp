@@ -644,7 +644,7 @@ void CSurface::GetAbsoluteWindowBounds( int &x, int &y, int &wide, int &tall )
 
 void CSurface::GetProportionalBase( int &width, int &height )
 {
-	return g_pSurface->GetProportionalBase( width, height );
+	g_pSurface->GetProportionalBase( width, height );
 }
 
 //-----------------------------------------------------------------------------

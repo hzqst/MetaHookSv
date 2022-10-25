@@ -44,7 +44,7 @@ void VGUI1_InstallHook(void);
 void VGUI1_Shutdown(void);
 void Surface_InstallHooks(void);
 void Surface_UninstallHooks(void);
-void Scheme_InstallHook(void);
+void Scheme_InstallHooks(void);
 void KeyValuesSystem_InstallHook(void);
 
 void *NewClientFactory(void);

@@ -578,7 +578,7 @@ void CScheme::ReloadFontGlyphs(void)
 			if (fontdata->GetInt("additive"))
 				flags |= ISurface::FONTFLAG_ADDITIVE;
 
-			int tall = fontdata->GetInt("tall");
+			int tall = (int)(fontdata->GetInt("tall") * g_flDPIScaling);
 			int blur = fontdata->GetInt("blur");
 			int scanlines = fontdata->GetInt("scanlines");
 

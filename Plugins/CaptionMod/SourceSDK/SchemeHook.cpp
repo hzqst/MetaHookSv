@@ -84,7 +84,7 @@ int CSchemeManagerProxy::GetProportionalNormalizedValue(int scaledValue)
 static CSchemeManagerProxy g_SchemeProxy;
 extern vgui::ISchemeManager *g_pScheme;
 
-void Scheme_InstallHook(void)
+void Scheme_InstallHooks(void)
 {
 	DWORD *pVFTable = *(DWORD **)&g_SchemeProxy;
 

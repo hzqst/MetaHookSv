@@ -15,6 +15,7 @@ PVOID g_dwClientBase = 0;
 DWORD g_dwClientSize = 0;
 int g_iVideoWidth = 0;
 int g_iVideoHeight = 0;
+float g_flDPIScaling = 1.0f;
 
 PVOID g_dwEngineBase;
 DWORD g_dwEngineSize;
@@ -116,6 +117,9 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 			if (!strcmp(windowClass, "Valve001") || !strcmp(windowClass, "SDL_app"))
 			{
 				g_MainWnd = hwnd;
+
+				g_flDPIScaling = GetDpiForWindow(g_MainWnd) / 96.0f;
+
 				return FALSE;
 			}
 		}

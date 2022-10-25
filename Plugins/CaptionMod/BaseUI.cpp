@@ -87,7 +87,7 @@ void CBaseUI::Initialize(CreateInterfaceFn *factories, int count)
 
 	KeyValuesSystem_InstallHook();
 	Surface_InstallHooks();
-	Scheme_InstallHook();
+	Scheme_InstallHooks();
 	GameUI_InstallHooks();
 }
 
