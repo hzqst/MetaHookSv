@@ -31,6 +31,7 @@ extern MapConVar *r_dynlight_ambient;
 extern MapConVar *r_dynlight_diffuse;
 extern MapConVar *r_dynlight_specular;
 extern MapConVar *r_dynlight_specularpow;
+extern MapConVar *r_dynlight_radius_scale;
 
 extern cvar_t *r_ssr;
 extern MapConVar *r_ssr_ray_step;

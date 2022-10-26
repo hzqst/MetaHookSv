@@ -3249,6 +3249,7 @@ void R_ParseBSPEntity_Env_DynamicLight_Control(bspentity_t *ent)
 	R_ParseMapCvarSetMapValue(r_dynlight_diffuse, ValueForKey(ent, "diffuse"));
 	R_ParseMapCvarSetMapValue(r_dynlight_specular, ValueForKey(ent, "specular"));
 	R_ParseMapCvarSetMapValue(r_dynlight_specularpow, ValueForKey(ent, "specularpow"));
+	R_ParseMapCvarSetMapValue(r_dynlight_radius_scale, ValueForKey(ent, "radius_scale"));
 }
 
 void R_ParseBSPEntity_Env_FlashLight_Control(bspentity_t *ent)

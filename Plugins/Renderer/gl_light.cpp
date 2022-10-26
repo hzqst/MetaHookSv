@@ -16,6 +16,7 @@ MapConVar *r_dynlight_ambient = NULL;
 MapConVar *r_dynlight_diffuse = NULL;
 MapConVar *r_dynlight_specular = NULL;
 MapConVar *r_dynlight_specularpow = NULL;
+MapConVar *r_dynlight_radius_scale = NULL;
 
 cvar_t *r_ssr = NULL;
 MapConVar *r_ssr_ray_step = NULL;
@@ -412,6 +413,7 @@ void R_InitLight(void)
 	r_dynlight_diffuse = R_RegisterMapCvar("r_dynlight_diffuse", "0.4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_dynlight_specular = R_RegisterMapCvar("r_dynlight_specular", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_dynlight_specularpow = R_RegisterMapCvar("r_dynlight_specularpow", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_dynlight_radius_scale = R_RegisterMapCvar("r_dynlight_radius_scale", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_flashlight_ambient = R_RegisterMapCvar("r_flashlight_ambient", "0.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_diffuse = R_RegisterMapCvar("r_flashlight_diffuse", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -679,7 +681,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 
 		if (dynlight.type == DLIGHT_POINT)
 		{
-			float radius = dynlight.distance;
+			float radius = dynlight.distance * clamp(r_dynlight_radius_scale->GetValue(), 0.001f, 1000.0f);
 
 			vec3_t distToLight;
 			VectorSubtract((*r_refdef.vieworg), dynlight.origin, distToLight);
@@ -812,28 +814,30 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 			float specular = r_dynlight_specular->GetValue();
 			float specularpow = r_dynlight_specularpow->GetValue();
 
+			float radius = dl->radius * clamp(r_dynlight_radius_scale->GetValue(), 0.001f, 1000.0f);
+
 			vec3_t distToLight;
 			VectorSubtract((*r_refdef.vieworg), dl->origin, distToLight);
 
-			if (VectorLength(distToLight) > dl->radius + 32)
+			if (VectorLength(distToLight) > radius + 32)
 			{
 				vec3_t mins, maxs;
 				for (int j = 0; j < 3; j++)
 				{
-					mins[j] = dl->origin[j] - dl->radius;
-					maxs[j] = dl->origin[j] + dl->radius;
+					mins[j] = dl->origin[j] - radius;
+					maxs[j] = dl->origin[j] + radius;
 				}
 
 				if (R_CullBox(mins, maxs))
 					continue;
 
 				if(pointlight_callback)
-					pointlight_callback(dl->radius, dl->origin, color, ambient, diffuse, specular, specularpow, &cl_dlight_shadow_textures[i], true);
+					pointlight_callback(radius, dl->origin, color, ambient, diffuse, specular, specularpow, &cl_dlight_shadow_textures[i], true);
 			}
 			else
 			{
 				if (pointlight_callback)
-					pointlight_callback(dl->radius, dl->origin, color, ambient, diffuse, specular, specularpow, &cl_dlight_shadow_textures[i], false);
+					pointlight_callback(radius, dl->origin, color, ambient, diffuse, specular, specularpow, &cl_dlight_shadow_textures[i], false);
 			}
 		}
 	}
