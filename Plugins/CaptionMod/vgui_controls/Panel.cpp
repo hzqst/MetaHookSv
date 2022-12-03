@@ -41,6 +41,8 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
 
+extern float g_flDPIScaling;
+
 using namespace vgui;
 
 #define TRIPLE_PRESS_MSEC	300
@@ -3743,8 +3745,10 @@ void Panel::ApplySettings(KeyValues *inResourceData)
 	// get the position
 	int screenWide, screenTall;
 	surface()->GetScreenSize(screenWide, screenTall);
+
 	int x, y;
 	GetPos(x, y);
+
 	const char *xstr = inResourceData->GetString( "xpos", NULL );
 	const char *ystr = inResourceData->GetString( "ypos", NULL );
 	if (xstr)
@@ -3794,7 +3798,7 @@ void Panel::ApplySettings(KeyValues *inResourceData)
 			_buildModeFlags |= BUILDMODE_SAVE_YPOS_CENTERALIGNED;
 			ystr++;
 		}
-		y = atoi(ystr);
+		y = atoi(ystr);// *g_flDPIScaling;
 		if (IsProportional())
 		{
 			// scale the y up to our screen co-ords
@@ -3830,7 +3834,11 @@ void Panel::ApplySettings(KeyValues *inResourceData)
 			_buildModeFlags |= BUILDMODE_SAVE_WIDE_FULL;
 			wstr++;
 		}
+
 		wide = atoi(wstr);
+
+		//wide *= g_flDPIScaling;
+
 		if ( IsProportional() )
 		{
 			// scale the x and y up to our screen co-ords
@@ -3844,12 +3852,13 @@ void Panel::ApplySettings(KeyValues *inResourceData)
 	}
 
 	tall = inResourceData->GetInt( "tall", tall );
+	//tall *= g_flDPIScaling;
 	if ( IsProportional() )
 	{
 		// scale the x and y up to our screen co-ords
 		tall = scheme()->GetProportionalScaledValueEx(GetScheme(), tall);
 	}
-	
+
 	SetSize( wide, tall );
 
 	// NOTE: This has to happen after pos + size is set

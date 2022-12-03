@@ -56,8 +56,13 @@ void CClientVGUI::Initialize(CreateInterfaceFn *factories, int count)
 
 	vgui::scheme()->LoadSchemeFromFile( "captionmod/CaptionScheme.res", "CaptionScheme" );
 
-	if(!vgui::localize()->AddFile(g_pFullFileSystem, "captionmod/dictionary_%language%.txt"))
-		g_pMetaHookAPI->SysError("Failed to load captionmod/dictionary_%%language%%.txt");
+	if (!vgui::localize()->AddFile(g_pFullFileSystem, "captionmod/dictionary_%language%.txt"))
+	{
+		if (!vgui::localize()->AddFile(g_pFullFileSystem, "captionmod/dictionary_english.txt"))
+		{
+			g_pMetaHookAPI->SysError("Failed to load captionmod/dictionary_english.txt");
+		}
+	}
 }
 
 void CClientVGUI::Start(void)
@@ -161,8 +166,13 @@ void NewClientVGUI::Initialize(CreateInterfaceFn *factories, int count)
 
 	vgui::scheme()->LoadSchemeFromFile( "captionmod/CaptionScheme.res", "CaptionScheme" );
 
-	if(!vgui::localize()->AddFile(g_pFullFileSystem, "captionmod/dictionary_%language%.txt"))
-		g_pMetaHookAPI->SysError("Failed to load captionmod/dictionary_%%language%%.txt");
+	if (!vgui::localize()->AddFile(g_pFullFileSystem, "captionmod/dictionary_%language%.txt"))
+	{
+		if (!vgui::localize()->AddFile(g_pFullFileSystem, "captionmod/dictionary_english.txt"))
+		{
+			g_pMetaHookAPI->SysError("Failed to load captionmod/dictionary_english.txt");
+		}
+	}
 }
 
 extern vgui::ISurface *g_pSurface;
