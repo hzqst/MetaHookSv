@@ -1033,8 +1033,6 @@ inline qboolean R_IsFlippedViewModel(void)
 
 studiohdr_t *R_LoadTextures(model_t *psubm)
 {
-	model_t *texmodel;
-
 	if ((*pstudiohdr)->textureindex == 0)
 	{
 		studiohdr_t *ptexturehdr;
@@ -1044,7 +1042,17 @@ studiohdr_t *R_LoadTextures(model_t *psubm)
 		modelname[sizeof(modelname) - 2] = 0;
 
 		strcpy(&modelname[strlen(modelname) - 4], "T.mdl");
-		texmodel = IEngineStudio.Mod_ForName(modelname, true);
+
+		if (psubm->texinfo)
+		{
+			auto texmodel = (model_t *)psubm->texinfo;
+
+			ptexturehdr = (studiohdr_t *)texmodel->cache.data;
+
+			return ptexturehdr;
+		}
+
+		auto texmodel = IEngineStudio.Mod_ForName(modelname, true);
 		psubm->texinfo = (mtexinfo_t *)texmodel;
 
 		ptexturehdr = (studiohdr_t *)texmodel->cache.data;

@@ -318,6 +318,12 @@ void SCModel_ModelJsonAcquired(CDownloadList *list, bool bHasTModel, const std::
 		sprintf_s(localpath, sizeof(localpath), "models/player/%s/%sT.mdl", fileName.c_str(), fileName.c_str());
 		
 		SCModel_RequestForModelFile(list, url, localpath);
+
+		//WTF ???
+		//https://wootdata.github.io/scmodels_data_14/models/player/ioaf_longcyber/ioaf_longcybert.mdl
+
+		sprintf_s(localpath, sizeof(localpath), "models/player/%s/%st.mdl", fileName.c_str(), fileName.c_str());
+		SCModel_RequestForModelFile(list, url, localpath);
 	}
 
 	//Assume ?
