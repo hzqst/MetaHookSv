@@ -61,7 +61,8 @@ class CDictionary
 {
 public:
 	CDictionary();
-	~CDictionary();
+	virtual ~CDictionary();
+
 	void Load(CSV::CSVDocument::row_type &row, Color &defaultColor, vgui::IScheme *ischeme);
 	void FinalizeString(std::wstring &output, int iPrefix);
 

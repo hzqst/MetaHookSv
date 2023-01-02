@@ -53,6 +53,7 @@ CViewport::~CViewport(void)
 	m_Dictionary.RemoveAll();
 
 	delete m_pSubtitlePanel;
+	delete m_pChatDialog;
 }
 
 CDictionary *CViewport::FindDictionary(const char *szValue)
@@ -584,6 +585,7 @@ void CViewport::LoadCustomDictionary(const char *dict_name)
 	catch (std::exception &err)
 	{
 		gEngfuncs.Con_DPrintf("LoadCustomDictionary: %s\n", err.what());
+		return;
 	}
 
 	if (row_count < 2)

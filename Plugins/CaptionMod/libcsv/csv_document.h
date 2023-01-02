@@ -70,6 +70,7 @@ namespace CSV
 		};
 
 		CSVParser();
+		~CSVParser();
 		CSVDocument::row_index_type parse(CSVDocument* p_doc, const char *file_path);		
 
 	private:

@@ -107,12 +107,6 @@ void CBaseUI::Shutdown(void)
 
 int CBaseUI::Key_Event(int down, int keynum, const char *pszCurrentBinding)
 {
-	/*if (g_pGameUI && !g_pGameUI->IsGameUIActive() &&
-		g_pViewPort && g_pViewPort->IsChatDialogOpened())
-	{
-		return vgui::surface()->NeedKBInput();
-	}*/
-
 	return m_pfnCBaseUI_Key_Event(this, 0, down, keynum, pszCurrentBinding);
 }
 

@@ -220,6 +220,15 @@ namespace CSV
 		state = LineEnd;
 	}
 
+	CSVParser::~CSVParser()
+	{
+		if (csv_file != FILESYSTEM_INVALID_HANDLE)
+		{
+			g_pFullFileSystem->Close(csv_file);
+			csv_file = FILESYSTEM_INVALID_HANDLE;
+		}
+	}
+
 	CSVDocument::row_index_type CSVParser::parse( CSVDocument* p_doc, const char * file_path )
 	{
 		_initialize(p_doc, file_path);
