@@ -257,9 +257,6 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(S_StartDynamicSound);
 	Install_InlineHook(S_StartStaticSound);
 	Install_InlineHook(pfnTextMessageGet);
-#if 0
-	Install_InlineHook(CWin32Font_GetCharRGBA);
-#endif
 }
 
 void Engine_UninstallHooks(void)
@@ -268,9 +265,6 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(S_StartDynamicSound);
 	Uninstall_Hook(S_StartStaticSound);
 	Uninstall_Hook(pfnTextMessageGet);
-#if 0
-	Uninstall_Hook(CWin32Font_GetCharRGBA);
-#endif
 }
 
 void Client_FillAddress(void)

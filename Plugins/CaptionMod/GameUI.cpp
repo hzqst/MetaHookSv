@@ -375,38 +375,6 @@ private:
 	CCvarSlider *m_pLightGamma;
 };
 
-vgui::DHANDLE<class COptionsSubVideoAdvancedDlg> m_hOptionsSubVideoAdvancedDlg;
-
-class CVideoAdvancedButton : public vgui::Button
-{
-	DECLARE_CLASS_SIMPLE(CVideoAdvancedButton, vgui::Button);
-
-public:
-	CVideoAdvancedButton(vgui::Panel *parent, const char *panelName, const char *text) : BaseClass(parent, panelName, text)
-	{
-	
-	}
-	~CVideoAdvancedButton(void)
-	{
-
-	}
-
-private:
-	MESSAGE_FUNC(OnOpenAdvanced, "OpenAdvanced");
-
-private:
-
-	//
-};
-
-void CVideoAdvancedButton::OnOpenAdvanced(void)
-{
-	if (!m_hOptionsSubVideoAdvancedDlg.Get())
-		m_hOptionsSubVideoAdvancedDlg = new COptionsSubVideoAdvancedDlg(this);
-
-	m_hOptionsSubVideoAdvancedDlg->Activate();
-}
-
 class COptionsSubAudioAdvancedDlg : public vgui::Frame
 {
 	DECLARE_CLASS_SIMPLE(COptionsSubAudioAdvancedDlg, vgui::Frame);
@@ -608,57 +576,31 @@ private:
 	vgui::TextEntry *m_pYPosEntry;
 };
 
-vgui::DHANDLE<class COptionsSubAudioAdvancedDlg> m_hOptionsSubAudioAdvancedDlg;
+static vgui::DHANDLE<class COptionsSubVideoAdvancedDlg> m_hOptionsSubVideoAdvancedDlg;
 
-class CAudioAdvancedButton : public vgui::Button
+static vgui::DHANDLE<class COptionsSubAudioAdvancedDlg> m_hOptionsSubAudioAdvancedDlg;
+
+void __fastcall COptionsSubVideo_OnCommand(vgui::Panel *pthis, int dummy, const char *command);
+
+static decltype(COptionsSubVideo_OnCommand) *g_pfnCOptionsSubVideo_OnCommand = NULL;
+
+void __fastcall COptionsSubVideo_OnCommand(vgui::Panel *pthis, int dummy, const char *command)
 {
-	DECLARE_CLASS_SIMPLE(CAudioAdvancedButton, vgui::Button);
-
-public:
-	CAudioAdvancedButton(vgui::Panel *parent, const char *panelName, const char *text) : BaseClass(parent, panelName, text)
+	if (0 == strcmp(command, "Advanced"))
 	{
+		if (!m_hOptionsSubVideoAdvancedDlg.Get())
+			m_hOptionsSubVideoAdvancedDlg = new COptionsSubVideoAdvancedDlg(pthis);
 
+		m_hOptionsSubVideoAdvancedDlg->Activate();
 	}
-	~CAudioAdvancedButton(void)
-	{
-
-	}
-
-private:
-	MESSAGE_FUNC(OnOpenAdvanced, "OpenAdvanced");
-
-private:
-	
-};
-
-void CAudioAdvancedButton::OnOpenAdvanced(void)
-{
-	if (!m_hOptionsSubAudioAdvancedDlg.Get())
-		m_hOptionsSubAudioAdvancedDlg = new COptionsSubAudioAdvancedDlg(this);
-
-	m_hOptionsSubAudioAdvancedDlg->Activate();
 }
 
 void * __fastcall COptionsSubVideo_ctor(vgui::Panel *pthis, int dummy, vgui::Panel *parent)
 {
 	auto result = gPrivateFuncs.COptionsSubVideo_ctor(pthis, dummy, parent);
-
-	auto m_pVideoAdvanced = new CVideoAdvancedButton(pthis, "Advanced", "#GameUI_AdvancedEllipsis");
-
-	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "cstrike") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
-	{
-		m_pVideoAdvanced->SetPos(350, 276);
-		m_pVideoAdvanced->SetSize(120, 24);
-	}
-	else
-	{
-		m_pVideoAdvanced->SetPos(258, 160);
-		m_pVideoAdvanced->SetSize(120, 24);
-	}
-
-	m_pVideoAdvanced->AddActionSignalTarget(m_pVideoAdvanced->GetVPanel());
-	m_pVideoAdvanced->SetCommand("OpenAdvanced");
 	
+	g_pMetaHookAPI->VFTHook(pthis, 0, 0x15C / 4, COptionsSubVideo_OnCommand, (void **)&g_pfnCOptionsSubVideo_OnCommand);
+
 	return result;
 }
 
@@ -670,16 +612,28 @@ void __fastcall COptionsSubVideo_ApplyVidSettings(vgui::Panel *pthis, int dummy,
 		gPrivateFuncs.COptionsSubVideo_ApplyVidSettings(pthis, dummy, bForceRestart);
 }
 
+void __fastcall COptionsSubAudio_OnCommand(vgui::Panel *pthis, int dummy, const char *command);
+
+static decltype(COptionsSubAudio_OnCommand) *g_pfnCOptionsSubAudio_OnCommand = NULL;
+
+void __fastcall COptionsSubAudio_OnCommand(vgui::Panel *pthis, int dummy, const char *command)
+{
+	g_pfnCOptionsSubAudio_OnCommand(pthis, dummy, command);
+
+	if (0 == strcmp(command, "Advanced"))
+	{
+		if (!m_hOptionsSubAudioAdvancedDlg.Get())
+			m_hOptionsSubAudioAdvancedDlg = new COptionsSubAudioAdvancedDlg(pthis);
+
+		m_hOptionsSubAudioAdvancedDlg->Activate();
+	}
+}
+
 void * __fastcall COptionsSubAudio_ctor(vgui::Panel *pthis, int dummy, vgui::Panel *parent)
 {
 	auto result = gPrivateFuncs.COptionsSubAudio_ctor(pthis, dummy, parent);
 
-	auto m_pAudioAdvanced = new CAudioAdvancedButton(pthis, "Advanced", "#GameUI_SubtitlesEllipsis");
-	m_pAudioAdvanced->SetPos(258, 160);
-	m_pAudioAdvanced->SetSize(120, 24);
-
-	m_pAudioAdvanced->AddActionSignalTarget(m_pAudioAdvanced->GetVPanel());
-	m_pAudioAdvanced->SetCommand("OpenAdvanced");
+	g_pMetaHookAPI->VFTHook(pthis, 0, 0x15C / 4, COptionsSubAudio_OnCommand, (void **)&g_pfnCOptionsSubAudio_OnCommand);
 
 	return result;
 }
@@ -698,7 +652,6 @@ void CGameUI::HideGameUI(void)
 
 	return g_pfnCGameUI_HideGameUI(this, 0);
 }
-
 
 void GameUI_InstallHooks(void)
 {
@@ -822,7 +775,6 @@ void GameUI_InstallHooks(void)
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 2, (void *)pVFTable[2], (void **)&g_pfnCGameUI_Start);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 4, (void *)pVFTable[4], (void **)&g_pfnCGameUI_ActivateGameUI);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 10, (void *)pVFTable[10], (void **)&g_pfnCGameUI_HideGameUI);
-
 
 	Install_InlineHook(COptionsSubVideo_ctor);
 	Install_InlineHook(COptionsSubVideo_ApplyVidSettings);

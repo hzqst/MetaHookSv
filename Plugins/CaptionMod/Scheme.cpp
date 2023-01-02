@@ -252,8 +252,7 @@ HScheme CSchemeManager::LoadSchemeFromFileEx(VPANEL sizingPanel, const char *fil
 		return hScheme;
 	}
 
-	KeyValues *data;
-	data = new KeyValues("Scheme");
+	auto data = new KeyValues("Scheme");
 	data->UsesEscapeSequences(true);
 
 	bool result = data->LoadFromFile(g_pFullFileSystem, fileName, "GAME");
