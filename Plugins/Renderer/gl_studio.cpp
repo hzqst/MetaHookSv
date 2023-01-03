@@ -1977,7 +1977,8 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 
 void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
 {
-	if (!r_studio_bone_caches->value)
+	//Never cache bones for viewmodel !
+	if (!r_studio_bone_caches->value || (*currententity) == cl_viewent)
 	{
 		gRefFuncs.GameStudioRenderer_StudioSetupBones(pthis, 0);
 		return;
