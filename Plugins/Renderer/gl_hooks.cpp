@@ -52,6 +52,7 @@
 #define R_SETUPFRAME_SIG "\xA1\x2A\x2A\x2A\x2A\x83\xEC\x18\x83\xF8\x01\x0F\x8E\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x2A\x2A\x2A\x68"
 #define R_SETUPFRAME_SIG2 "\x8B\x0D\x2A\x2A\x2A\x2A\x83\xEC\x18\x33\xC0\x83\xF9\x01\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1"
 #define R_SETUPFRAME_SIG_NEW "\x55\x8B\xEC\x83\xEC\x18\x8B\x0D\x2A\x2A\x2A\x2A\x33\xC0\x83\xF9\x01\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1"
+#define R_SETUPFRAME_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x33\xC0\x83\x3D\x2A\x2A\x2A\x2A\x01\x0F\x9F\xC0\x50\xE8"
 
 #define GL_BIND_SIG "\x8B\x44\x24\x04\x8B\x0D\x2A\x2A\x2A\x2A\x56\x8B\xF0\xC1\xFE\x10\x25\xFF\xFF\x00\x00\x4E\x3B\xC8"
 #define GL_BIND_SIG_NEW "\x55\x8B\xEC\x8B\x45\x08\x8B\x0D\x2A\x2A\x2A\x2A\x56\x8B\xF0\xC1\xFE\x10\x25\xFF\xFF\x00\x00\x4E\x3B\xC8"
@@ -323,7 +324,8 @@ void R_FillAddress(void)
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_SetupFrame = NULL;//might be inlined
+		gRefFuncs.R_SetupFrame = (void(*)(void))Search_Pattern(R_SETUPFRAME_SIG_SVENGINE);
+		//inlined ? Still find
 	}
 	else
 	{
@@ -3098,14 +3100,22 @@ void R_FillAddress(void)
 		gDevOverview = (decltype(gDevOverview))(*(DWORD *)(addr + 9) - 0xC);
 	}
 
-	if (1)
+#define R_SETUPFRAME_CALL_SIG "\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8"
+	if (gRefFuncs.R_SetupFrame)
 	{
-#define R_SETUPFRAME_CALL_SIG "\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A"
+		addr = (DWORD)Search_Pattern_From(gRefFuncs.R_SetupFrame, R_SETUPFRAME_CALL_SIG);
+		Sig_AddrNotFound(R_SetupFrame_Call);
+		gRefFuncs.R_ForceCVars = (decltype(gRefFuncs.R_ForceCVars))GetCallAddress(addr + 3 + 1);
+		gRefFuncs.R_CheckVariables = (decltype(gRefFuncs.R_CheckVariables))GetCallAddress(addr + 3 + 1 + 5);
+		gRefFuncs.R_AnimateLight = (decltype(gRefFuncs.R_AnimateLight))GetCallAddress(addr + 3 + 1 + 5 + 5);
+	}
+	else
+	{
 		addr = (DWORD)Search_Pattern(R_SETUPFRAME_CALL_SIG);
 		Sig_AddrNotFound(R_SetupFrame_Call);
-		gRefFuncs.R_ForceCVars = (decltype(gRefFuncs.R_ForceCVars))GetCallAddress(addr + 1);
-		gRefFuncs.R_CheckVariables = (decltype(gRefFuncs.R_CheckVariables))GetCallAddress(addr + 1 + 5);
-		gRefFuncs.R_AnimateLight = (decltype(gRefFuncs.R_AnimateLight))GetCallAddress(addr + 1 + 5 + 5);
+		gRefFuncs.R_ForceCVars = (decltype(gRefFuncs.R_ForceCVars))GetCallAddress(addr + 3 + 1);
+		gRefFuncs.R_CheckVariables = (decltype(gRefFuncs.R_CheckVariables))GetCallAddress(addr + 3 + 1 + 5);
+		gRefFuncs.R_AnimateLight = (decltype(gRefFuncs.R_AnimateLight))GetCallAddress(addr + 3 + 1 + 5 + 5);
 	}
 
 	if (1)

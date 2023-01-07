@@ -29,8 +29,6 @@ void GL_FreeShaders(void)
 
 void GL_CheckShaderError(GLuint shader, const char *code, const char *filename)
 {
-	//gEngfuncs.Con_DPrintf("GL_CheckShaderError...");
-
 	int iStatus;
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &iStatus); 
 
@@ -63,7 +61,7 @@ GLuint R_CompileShaderObject(int type, const char *code, const char *filename)
 		snprintf(filepath, 255, "logs\\%s", filename);
 		filepath[255] = 0;
 
-		gEngfuncs.Con_DPrintf("writing %s...", filepath);
+		//gEngfuncs.Con_DPrintf("writing %s...", filepath);
 
 		auto FileHandle = g_pFileSystem->Open(filepath, "wb");
 		if (FileHandle)
@@ -230,7 +228,7 @@ GLuint R_CompileShaderFileEx(
 		g_pMetaHookAPI->SysError("R_CompileShaderFileEx: %s file not found!", vsfile);
 	}
 
-	gEngfuncs.Con_DPrintf("R_CompileShaderFileEx: compiling %s...", vsfile);
+	gEngfuncs.Con_DPrintf("R_CompileShaderFileEx: compiling %s...\n", vsfile);
 
 	std::string vs(vscode);
 
@@ -248,7 +246,7 @@ GLuint R_CompileShaderFileEx(
 		g_pMetaHookAPI->SysError("R_CompileShaderFileEx: %s file not found!", fsfile);
 	}
 
-	gEngfuncs.Con_DPrintf("R_CompileShaderFileEx: compiling %s...", fsfile);
+	gEngfuncs.Con_DPrintf("R_CompileShaderFileEx: compiling %s...\n", fsfile);
 
 	std::string fs(fscode);
 
