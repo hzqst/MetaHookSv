@@ -440,7 +440,7 @@ int R_StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 {
 	int playerindex = pplayer->number;
 
-	int entindex = ((*currententity)->curstate.renderfx == kRenderFxDeadPlayer) ? (*currententity)->index : playerindex;
+	int entindex = ((*currententity)->curstate.renderfx == kRenderFxDeadPlayer) ? playerindex : (*currententity)->index;
 
 	if (flags & STUDIO_RAGDOLL)
 	{
@@ -476,9 +476,6 @@ int R_StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 				pplayer->weaponmodel = save_weaponmodel;
 				pplayer->sequence = save_sequence;
 				pplayer->gaitsequence = save_gaitsequence;
-
-				if (!(*pstudiohdr))
-					(*pstudiohdr) = (studiohdr_t *)IEngineStudio.Mod_Extradata(model);
 
 				if (!(*pstudiohdr))
 					return 0;
@@ -601,7 +598,7 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 {
 	int playerindex = pplayer->number;
 
-	int entindex = ((*currententity)->curstate.renderfx == kRenderFxDeadPlayer) ? (*currententity)->index : playerindex;
+	int entindex = ((*currententity)->curstate.renderfx == kRenderFxDeadPlayer) ? playerindex : (*currententity)->index;
 
 	if (flags & STUDIO_RAGDOLL)
 	{
@@ -645,9 +642,6 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 				pplayer->sequence = save_sequence;
 				pplayer->gaitsequence = save_gaitsequence;
 
-				if (!(*pstudiohdr))
-					(*pstudiohdr) = (studiohdr_t *)IEngineStudio.Mod_Extradata(model);
-				
 				if (!(*pstudiohdr))
 					return 0;
 
