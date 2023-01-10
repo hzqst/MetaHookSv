@@ -574,7 +574,6 @@ public:
 	void CreateBrushModel(cl_entity_t *ent);
 	void CreateBarnacle(cl_entity_t *ent);
 	void CreateGargantua(cl_entity_t *ent);
-	void RotateForEntity(cl_entity_t *ent, float matrix[4][4]);
 	void ReleaseRagdollFromBarnacle(CRagdollBody *ragdoll);
 	void ReleaseRagdollFromGargantua(CRagdollBody *ragdoll);
 	bool GetRagdollOrigin(CRagdollBody *ragdoll, float *origin);

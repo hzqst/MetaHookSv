@@ -431,56 +431,6 @@ CStaticBody *CPhysicsManager::CreateStaticBody(cl_entity_t *ent, vertexarray_t *
 	return staticbody;
 }
 
-void CPhysicsManager::RotateForEntity(cl_entity_t *e, float matrix[4][4])
-{
-	int i;
-	vec3_t angles;
-	vec3_t modelpos;
-
-	VectorCopy(e->origin, modelpos);
-	VectorCopy(e->angles, angles);
-
-	if (e->curstate.movetype != MOVETYPE_NONE)
-	{
-		float f;
-		float d;
-
-		if (e->curstate.animtime + 0.2f > gEngfuncs.GetClientTime() && e->curstate.animtime != e->latched.prevanimtime)
-		{
-			f = (gEngfuncs.GetClientTime() - e->curstate.animtime) / (e->curstate.animtime - e->latched.prevanimtime);
-		}
-		else
-		{
-			f = 0;
-		}
-
-		for (i = 0; i < 3; i++)
-		{
-			modelpos[i] -= (e->latched.prevorigin[i] - e->origin[i]) * f;
-		}
-
-		if (f != 0.0f && f < 1.5f)
-		{
-			f = 1.0f - f;
-
-			for (i = 0; i < 3; i++)
-			{
-				d = e->latched.prevangles[i] - e->angles[i];
-
-				if (d > 180.0)
-					d -= 360.0;
-				else if (d < -180.0)
-					d += 360.0;
-
-				angles[i] += d * f;
-			}
-		}
-	}
-
-	memcpy(matrix, r_identity_matrix, sizeof(r_identity_matrix));
-	Matrix4x4_CreateFromEntity(matrix, angles, modelpos, 1);
-}
-
 void CPhysicsManager::CreateBarnacle(cl_entity_t *ent)
 {
 	auto itor = m_staticMap.find(ent->index);
@@ -2263,11 +2213,11 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		shape->calculateLocalInertia(mass, localInertia);
 
 		btRigidBody::btRigidBodyConstructionInfo cInfo(mass, motionState, shape, localInertia);
-		cInfo.m_friction = 0.5f;
+		cInfo.m_friction = 1.0f;
 		cInfo.m_rollingFriction = 1.0;
 		cInfo.m_restitution = 0;
-		cInfo.m_linearSleepingThreshold = 50.0f;
-		cInfo.m_angularSleepingThreshold = 12.0f;
+		cInfo.m_linearSleepingThreshold = 10.0f;
+		cInfo.m_angularSleepingThreshold = 4.5f;
 		cInfo.m_linearDamping = 0.25f;
 		cInfo.m_angularDamping = 0.25f;
 		FloatGoldSrcToBullet(&cInfo.m_linearSleepingThreshold);
@@ -2282,8 +2232,8 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 
 		rig->rigbody->setUserPointer(rig);
 
-		float ccdThreshould = 50.0f;
-		float ccdRadius = rigsize;
+		float ccdThreshould = 1.0f;
+		float ccdRadius = rigsize * 0.5;
 
 		FloatGoldSrcToBullet(&ccdThreshould);
 
@@ -2319,13 +2269,14 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		shape->calculateLocalInertia(mass, localInertia);
 
 		btRigidBody::btRigidBodyConstructionInfo cInfo(mass, motionState, shape, localInertia);
-		cInfo.m_friction = 0.5f;
+		cInfo.m_friction = 1.0f;
 		cInfo.m_rollingFriction = 1.0f;
 		cInfo.m_restitution = 0;
-		cInfo.m_linearSleepingThreshold = 50.0f;
-		cInfo.m_angularSleepingThreshold = 12.0f;
+		cInfo.m_linearSleepingThreshold = 10.0f;
+		cInfo.m_angularSleepingThreshold = 3 * SIMD_RADS_PER_DEG;
 		cInfo.m_linearDamping = 0.25f;
 		cInfo.m_angularDamping = 0.25f;
+		cInfo.m_additionalDamping = true;
 
 		FloatGoldSrcToBullet(&cInfo.m_linearSleepingThreshold);
 
@@ -2339,8 +2290,8 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 
 		rig->rigbody->setUserPointer(rig);
 
-		float ccdThreshould = 50.0f;
-		float ccdRadius = max(rigsize, rigsize2);
+		float ccdThreshould = 1.0f;
+		float ccdRadius = max(rigsize, rigsize2) * 0.5;
 
 		FloatGoldSrcToBullet(&ccdThreshould);
 
@@ -2394,15 +2345,6 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		rig->mass = mass;
 
 		rig->rigbody->setUserPointer(rig);
-
-		float ccdThreshould = 2.5;
-		float ccdRadius = 1.25;
-
-		FloatGoldSrcToBullet(&ccdThreshould);
-		FloatGoldSrcToBullet(&ccdRadius);
-
-		rig->rigbody->setCcdMotionThreshold(ccdThreshould);
-		rig->rigbody->setCcdSweptSphereRadius(ccdRadius);
 
 		m_dynamicsWorld->addRigidBody(rig->rigbody, rig->group, rig->mask);
 

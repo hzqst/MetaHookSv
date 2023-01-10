@@ -323,8 +323,6 @@ void Client_FillAddress(void)
 			g_iUser2 = (decltype(g_iUser2))ctx.Candidates[ctx.iNumCandidates - 1];
 		}
 	}
-
-
 }
 
 void R_NewMap(void)

@@ -890,7 +890,6 @@ void Matrix4x4_Transpose(float out[4][4], float in1[4][4])
 	out[3][3] = in1[3][3];
 }
 
-
 void Matrix4x4_CreateFromEntity(float out[4][4], const vec3_t angles, const vec3_t origin, float scale)
 {
 	float	angle, sr, sp, sy, cr, cp, cy;
