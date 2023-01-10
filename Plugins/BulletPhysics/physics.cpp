@@ -2214,12 +2214,18 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 
 		btRigidBody::btRigidBodyConstructionInfo cInfo(mass, motionState, shape, localInertia);
 		cInfo.m_friction = 1.0f;
-		cInfo.m_rollingFriction = 1.0;
+		cInfo.m_rollingFriction = 1.0f;
 		cInfo.m_restitution = 0;
 		cInfo.m_linearSleepingThreshold = 10.0f;
-		cInfo.m_angularSleepingThreshold = 4.5f;
-		cInfo.m_linearDamping = 0.25f;
-		cInfo.m_angularDamping = 0.25f;
+		cInfo.m_angularSleepingThreshold = 1 * SIMD_RADS_PER_DEG;
+		cInfo.m_linearDamping = 0.1f;
+		cInfo.m_angularDamping = 0.1f;
+		cInfo.m_additionalDamping = true;
+		cInfo.m_additionalDampingFactor = 0.5f;
+		cInfo.m_additionalAngularDampingFactor = 0.5f;
+		cInfo.m_additionalLinearDampingThresholdSqr = (30) * (30);
+		cInfo.m_additionalAngularDampingThresholdSqr = (3 * SIMD_RADS_PER_DEG) * (1 * SIMD_RADS_PER_DEG);
+
 		FloatGoldSrcToBullet(&cInfo.m_linearSleepingThreshold);
 
 		auto rig = new CRigBody;
@@ -2272,11 +2278,15 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		cInfo.m_friction = 1.0f;
 		cInfo.m_rollingFriction = 1.0f;
 		cInfo.m_restitution = 0;
-		cInfo.m_linearSleepingThreshold = 10.0f;
+		cInfo.m_linearSleepingThreshold = 25.0f;
 		cInfo.m_angularSleepingThreshold = 3 * SIMD_RADS_PER_DEG;
-		cInfo.m_linearDamping = 0.25f;
-		cInfo.m_angularDamping = 0.25f;
+		cInfo.m_linearDamping = 0.1f;
+		cInfo.m_angularDamping = 0.1f;
 		cInfo.m_additionalDamping = true;
+		cInfo.m_additionalDampingFactor = 0.8f;
+		cInfo.m_additionalAngularDampingFactor = 0.8f;
+		cInfo.m_additionalLinearDampingThresholdSqr = (50) * (50);
+		cInfo.m_additionalAngularDampingThresholdSqr = (6 * SIMD_RADS_PER_DEG) * (6 * SIMD_RADS_PER_DEG);
 
 		FloatGoldSrcToBullet(&cInfo.m_linearSleepingThreshold);
 
@@ -3354,28 +3364,6 @@ update_kinematic:
 	for (auto &itor : ragdoll->m_rigbodyMap)
 	{
 		auto rig = itor.second;
-
-		/*if (rig->flags & RIG_FL_JIGGLE)
-		{
-			if (!ragdoll->m_iActivityType)
-			{
-				for (auto &s : m_staticMap)
-				{
-					auto &staticBody = s.second;
-
-					rig->rigbody->setIgnoreCollisionCheck(staticBody->m_rigbody, true);
-				}
-			}
-			else
-			{
-				for (auto &s : m_staticMap)
-				{
-					auto &staticBody = s.second;
-
-					rig->rigbody->setIgnoreCollisionCheck(staticBody->m_rigbody, false);
-				}
-			}
-		}*/
 
 		if (!ragdoll->m_iActivityType && !(rig->flags & RIG_FL_JIGGLE))
 		{

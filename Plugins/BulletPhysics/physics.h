@@ -11,7 +11,8 @@
 enum CustomCollisionFilterGroups
 {
 	RagdollFilter = 0x40,
-	WorldFilter = 0x80,
+	JiggleFilter = 0x80,
+	WorldFilter = 0x100,
 };
 
 typedef struct ragdoll_anim_control_s
@@ -244,27 +245,7 @@ public:
 		oldActivitionState = 0;
 		oldCollisionFlags = 0;
 	}
-	/*CRigBody(const std::string &n, btRigidBody *a1, const btVector3 &a2, const btVector3 &a3, int a4) : name(n), rigbody(a1), dir(a3), boneindex(a4)
-	{
-		flags = 0;
-		mass = 0;
-		oldActivitionState = 0;
-		oldCollisionFlags = 0;
 
-		barnacle_constraint_dof6 = NULL;
-		barnacle_constraint_slider = NULL;
-		gargantua_target = NULL;
-		barnacle_force = 0;
-		barnacle_chew_force = 0;
-		barnacle_chew_duration = 0;
-		barnacle_chew_time = 0;
-		barnacle_chew_up_z = 0;
-		barnacle_z_offset = 0;
-		barnacle_z_init = 0;
-		barnacle_z_final = 0;
-		gargantua_force = 0;
-		gargantua_drag_time = 0;
-	}*/
 	std::string name;
 	btRigidBody *rigbody;
 	btActionInterface *buoyancy;
