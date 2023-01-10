@@ -62,7 +62,7 @@ Use a separate account to play Sven Co-op if you still worry about VAC ban wave.
 
 Let's assume that you have all requirements installed correctly.
 
-1. `git clone https://github.com/hzqst/MetaHookSv`
+1. `git clone https://github.com/hzqst/MetaHookSv` to somewhere that doesn't contain space in the directory path.
 
 2. Run `build-initdeps.bat`, wait until all required submodules / dependencies are pulled. (this may takes couple of minutes, depending on your network connection and download speed)
 
@@ -167,9 +167,9 @@ Cvar : `scmodel_usemirror 0 / 1` Use mirror (cdn.jsdelivr.net) if github is not 
 
 This plugin exposes an interface to communicate with Sven Co-op server.
 
-### DontFlushSoundCache (Sven Co-op only)
+### DontFlushSoundCache (Sven Co-op only) (Experimental)
 
-This plugin prevents client from flushing soundcache at `retry` (engine issues `retry` command everytime when HTTP download progress is finished), make it possible to  preserve soundcache txt downloaded from fastdl resource server (sv_downloadurl).
+This plugin prevents client from flushing soundcache at `retry` (engine issues `retry` command everytime when HTTP download progress is finished), make it possible to preserve soundcache txt downloaded from fastdl resource server (sv_downloadurl).
 
 The fastdl procedure only works when game server uploads current map's soundcache txt to the fastdl resource server. (I am using AliyunOSS)
 

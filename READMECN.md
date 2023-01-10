@@ -60,11 +60,11 @@
 
 假设你已经正确安装了所有构建需求。
 
-1. 执行 `git clone https://github.com/hzqst/MetaHookSv` 拉取代码。
+1. 执行 `git clone https://github.com/hzqst/MetaHookSv` 拉取代码到一处**不包含空格**的目录中。
 
 2. 运行 `build-initdeps.bat`, 等待所有子模块和依赖项目下载完成。 (这一步可能需要花费几分钟时间, 具体取决于你的网速，如果速度很慢或者下载出错建议尝试使用魔法上网)
 
-3. 运行 `build-MetaHook.bat`, 等待 `svencoop.exe` 生成到 `Build` 目录
+3. 运行 `build-MetaHook.bat`, 等待 `svencoop.exe` 生成到 `Build` 目录。
 
 4. 运行 `build-(指定插件名).bat`, 等待 `(指定插件名).dll` 生成。目前可用的插件有：CaptionMod, Renderer, StudioEvents, SteamScreenshots, SCModelDownloader, CommunicationDemo, DontFlushSoundCache。
 
@@ -169,7 +169,7 @@
 
 该插件开放了一个接口用于进行客户端-服务端双向通信。
 
-### DontFlushSoundCache (只支持Sven Co-op)
+### DontFlushSoundCache (只支持Sven Co-op) (实验性)
 
 该插件阻止客户端在 `retry` 时清理 soundcache 缓存 (引擎在HTTP完成下载时会触发 `retry` 命令), 让客户端得以保留HTTP下载得到的 soundcache txt
 

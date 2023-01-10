@@ -461,8 +461,27 @@ int R_StudioDrawPlayer(int flags, struct entity_state_s *pplayer)
 			auto cfg = gPhysicsManager.LoadRagdollConfig(model);
 
 			if (cfg && cfg->state == 1 && bv_enable->value)
-			{
+			{	
+				//Remove weapon model for me ?
+				int save_weaponmodel = pplayer->weaponmodel;
+				int save_sequence = pplayer->sequence;
+				int save_gaitsequence = pplayer->gaitsequence;
+
+				pplayer->weaponmodel = 0;
+				pplayer->sequence = 0;
+				pplayer->gaitsequence = 0;
+
 				gPrivateFuncs.R_StudioDrawPlayer(0, pplayer);
+
+				pplayer->weaponmodel = save_weaponmodel;
+				pplayer->sequence = save_sequence;
+				pplayer->gaitsequence = save_gaitsequence;
+
+				if (!(*pstudiohdr))
+					(*pstudiohdr) = (studiohdr_t *)IEngineStudio.Mod_Extradata(model);
+
+				if (!(*pstudiohdr))
+					return 0;
 
 				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex);
 
@@ -594,7 +613,7 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 	{
 	start_render:
 
-		auto model = IEngineStudio.SetupPlayerModel(playerindex - 1);
+		auto model = IEngineStudio.SetupPlayerModel(playerindex - 1); 
 
 		if (g_bIsCounterStrike)
 		{
@@ -625,7 +644,13 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 				pplayer->weaponmodel = save_weaponmodel;
 				pplayer->sequence = save_sequence;
 				pplayer->gaitsequence = save_gaitsequence;
+
+				if (!(*pstudiohdr))
+					(*pstudiohdr) = (studiohdr_t *)IEngineStudio.Mod_Extradata(model);
 				
+				if (!(*pstudiohdr))
+					return 0;
+
 				ragdoll = gPhysicsManager.CreateRagdoll(cfg, entindex);
 
 				goto has_ragdoll;
