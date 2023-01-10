@@ -118,7 +118,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 			{
 				g_MainWnd = hwnd;
 
-				g_flDPIScaling = GetDpiForWindow(g_MainWnd) / 96.0f;
+				//g_flDPIScaling = GetDpiForWindow(g_MainWnd) / 96.0f;
 
 				return FALSE;
 			}

@@ -581,7 +581,7 @@ void CScheme::ReloadFontGlyphs(void)
 			int blur = fontdata->GetInt("blur");
 			int scanlines = fontdata->GetInt("scanlines");
 
-			tall *= g_flDPIScaling;
+			//tall *= g_flDPIScaling;
 
 			if ((!fontYResMin && !fontYResMax) && m_FontAliases[i].m_bProportional)
 			{
