@@ -12,7 +12,8 @@
 cl_enginefunc_t gEngfuncs;
 
 cvar_t *al_enable = NULL;
-cvar_t *cap_debug = NULL;
+cvar_t *cap_debug
+= NULL;
 cvar_t *cap_enabled = NULL;
 cvar_t *cap_max_distance = NULL;
 cvar_t *cap_netmessage = NULL;
@@ -384,18 +385,29 @@ void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, 
 	{
 		bool bIgnore = false;
 
-		auto level = gEngfuncs.pfnGetLevelName();
-		if (cap_max_distance && cap_max_distance->value && origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && level[0])
+		if (flags & (SND_STOP | SND_CHANGE_VOL | SND_CHANGE_PITCH))
 		{
-			auto local = gEngfuncs.GetLocalPlayer();
+			bIgnore = true;
+		}
 
-			float dir[3];
-			VectorSubtract(origin, local->origin, dir);
+		if (!bIgnore)
+		{
+			auto level = gEngfuncs.pfnGetLevelName();
+			if (level[0])
+			{
+				if (cap_max_distance && cap_max_distance->value && origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && attenuation > 0)
+				{
+					auto local = gEngfuncs.GetLocalPlayer();
 
-			auto distance = VectorLength(dir);
+					float dir[3];
+					VectorSubtract(origin, local->origin, dir);
 
-			if (distance > cap_max_distance->value)
-				bIgnore = true;
+					auto distance = VectorLength(dir);
+
+					if (distance > cap_max_distance->value)
+						bIgnore = true;
+				}
+			}
 		}
 
 		if (!bIgnore)
@@ -431,18 +443,29 @@ void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, f
 	{
 		bool bIgnore = false;
 
-		auto level = gEngfuncs.pfnGetLevelName();
-		if (cap_max_distance && cap_max_distance->value && origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && level[0])
+		if (flags & (SND_STOP | SND_CHANGE_VOL | SND_CHANGE_PITCH))
 		{
-			auto local = gEngfuncs.GetLocalPlayer();
+			bIgnore = true;
+		}
 
-			float dir[3];
-			VectorSubtract(origin, local->origin, dir);
+		if (!bIgnore)
+		{
+			auto level = gEngfuncs.pfnGetLevelName();
+			if (level[0])
+			{
+				if (cap_max_distance && cap_max_distance->value && origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && attenuation > 0)
+				{
+					auto local = gEngfuncs.GetLocalPlayer();
 
-			auto distance = VectorLength(dir);
+					float dir[3];
+					VectorSubtract(origin, local->origin, dir);
 
-			if (distance > cap_max_distance->value)
-				bIgnore = true;
+					auto distance = VectorLength(dir);
+
+					if (distance > cap_max_distance->value)
+						bIgnore = true;
+				}
+			}
 		}
 
 		if (!bIgnore)
