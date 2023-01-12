@@ -18,6 +18,7 @@ copy "%~dp0Build\SDL2.dll" "%GameDir%\" /y
 copy "%~dp0Build\FreeImage.dll" "%GameDir%\" /y
 xcopy "%~dp0Build\svencoop" "%GameDir%\%LauncherMod%" /y /e
 xcopy "%~dp0Build\valve" "%GameDir%\%LauncherMod%" /y /e
+xcopy "%~dp0Build\gearbox" "%GameDir%\%LauncherMod%" /y /e
 
 copy "%GameDir%\%LauncherMod%\metahook\configs\plugins_goldsrc.lst" "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst" /y
 
