@@ -65,7 +65,7 @@ The section 'DeathAnim" defines when to transform player or monster into ragdoll
 
 ** Only sequence with "DIE_" prefixed activity will be treated as death anim.
 
-You can check each sequence of animation using HLMV or https://github.com/danakt/web-hlmv
+You can check each sequence of animation using HLMV or [HLAM](https://github.com/SamVanheer/HalfLifeAssetManager)
 
 #### [RigidBody]
 
@@ -185,6 +185,8 @@ Pelvis  chewforce     0  0  0     8000    1.0  0
 The section "WaterControl" controls how water interact with ragdollized players and monsters, basically resistance and buoyancy force.
 
 ##### Example line : Head    0  0  0    0.95  0.5  0
+
+`Head` is the internal name of the rigidbody that interact with water.
 
 `0 0 0` means the water detector of rigidbody is at 0 0 0 of it's local coordinate system, buoyancy force is applied when this point touches water (or inside water)
 
