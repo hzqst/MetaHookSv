@@ -206,28 +206,6 @@
 
 #define HOST_IS_SINGLE_PLAYER_GAME_NEW "\xA1\x2A\x2A\x2A\x2A\x85\xC0\xA1\x2A\x2A\x2A\x2A\x74\x05\xA1\x2A\x2A\x2A\x2A\xC3"
 
-hook_t *g_phook_GL_BeginRendering = NULL;
-hook_t *g_phook_GL_EndRendering = NULL;
-hook_t *g_phook_R_RenderView_SvEngine = NULL;
-hook_t *g_phook_R_LoadSkyName_SvEngine = NULL;
-hook_t *g_phook_R_RenderView = NULL;
-hook_t *g_phook_R_LoadSkys = NULL;
-hook_t *g_phook_R_NewMap = NULL;
-hook_t *g_phook_R_CullBox = NULL;
-hook_t *g_phook_Mod_PointInLeaf = NULL;
-hook_t *g_phook_R_BuildLightMap = NULL;
-hook_t *g_phook_R_AddDynamicLights = NULL;
-hook_t *g_phook_R_GLStudioDrawPoints = NULL;
-hook_t *g_phook_GL_LoadTexture2 = NULL;
-hook_t *g_phook_enginesurface_drawFlushText = NULL;
-hook_t *g_phook_Mod_LoadStudioModel = NULL;
-hook_t *g_phook_Mod_LoadBrushModel = NULL;
-hook_t *g_phook_triapi_RenderMode = NULL;
-hook_t *g_phook_Draw_MiptexTexture = NULL;
-hook_t *g_phook_BuildGammaTable = NULL;
-hook_t *g_phook_Cvar_DirectSet = NULL;
-hook_t *g_phook_DLL_SetModKey = NULL;
-
 void R_FillAddress(void)
 {
 	DWORD addr;
@@ -3370,6 +3348,29 @@ void R_FillAddress(void)
 	}
 }
 
+hook_t *g_phook_GL_BeginRendering = NULL;
+hook_t *g_phook_GL_EndRendering = NULL;
+hook_t *g_phook_R_RenderView_SvEngine = NULL;
+hook_t *g_phook_R_LoadSkyName_SvEngine = NULL;
+hook_t *g_phook_R_RenderView = NULL;
+hook_t *g_phook_R_LoadSkys = NULL;
+hook_t *g_phook_R_NewMap = NULL;
+hook_t *g_phook_R_CullBox = NULL;
+hook_t *g_phook_Mod_PointInLeaf = NULL;
+hook_t *g_phook_R_BuildLightMap = NULL;
+hook_t *g_phook_R_AddDynamicLights = NULL;
+hook_t *g_phook_R_GLStudioDrawPoints = NULL;
+hook_t *g_phook_GL_LoadTexture2 = NULL;
+hook_t *g_phook_enginesurface_drawFlushText = NULL;
+hook_t *g_phook_Mod_LoadStudioModel = NULL;
+hook_t *g_phook_Mod_LoadBrushModel = NULL;
+hook_t *g_phook_triapi_RenderMode = NULL;
+hook_t *g_phook_triapi_Color4f = NULL;
+hook_t *g_phook_Draw_MiptexTexture = NULL;
+hook_t *g_phook_BuildGammaTable = NULL;
+hook_t *g_phook_Cvar_DirectSet = NULL;
+hook_t *g_phook_DLL_SetModKey = NULL;
+
 void R_UninstallHooksForEngineDLL(void)
 {
 	//Engine
@@ -3397,6 +3398,7 @@ void R_UninstallHooksForEngineDLL(void)
 	Uninstall_Hook(enginesurface_drawFlushText);
 	Uninstall_Hook(Mod_LoadStudioModel);
 	Uninstall_Hook(triapi_RenderMode);
+	//Uninstall_Hook(triapi_Color4f);
 	Uninstall_Hook(Draw_MiptexTexture);
 	Uninstall_Hook(BuildGammaTable);
 	Uninstall_Hook(Cvar_DirectSet);
@@ -3434,6 +3436,7 @@ void R_InstallHooks(void)
 	Install_InlineHook(Mod_LoadStudioModel);
 	Install_InlineHook(Mod_LoadBrushModel);
 	Install_InlineHook(triapi_RenderMode);
+	//Install_InlineHook(triapi_Color4f);
 	Install_InlineHook(Draw_MiptexTexture);
 	Install_InlineHook(BuildGammaTable);
 	Install_InlineHook(Cvar_DirectSet);

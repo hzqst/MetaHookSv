@@ -23,7 +23,9 @@ void main()
 #else
 	//Additive blend
 	diffuseColor = TexGammaToLinear(diffuseColor);
-	diffuseColor.a = pow(diffuseColor.a, SceneUBO.r_additive_shift);
+	diffuseColor.r = pow(diffuseColor.r, SceneUBO.r_additive_shift);
+	diffuseColor.g = pow(diffuseColor.g, SceneUBO.r_additive_shift);
+	diffuseColor.b = pow(diffuseColor.b, SceneUBO.r_additive_shift);
 #endif
 
 	vec4 lightmapColor = v_color;
@@ -41,9 +43,13 @@ void main()
 #if !defined(ADDITIVE_BLEND_ENABLED) && !defined(OIT_ADDITIVE_BLEND_ENABLED)
 	//Alpha blend
 	lightmapColor = GammaToLinear(lightmapColor);
+	lightmapColor.a = pow(lightmapColor.a, SceneUBO.r_alpha_shift);
 #else
 	//Additive blend
 	lightmapColor = GammaToLinear(lightmapColor);
+	lightmapColor.r = pow(lightmapColor.r, SceneUBO.r_additive_shift);
+	lightmapColor.g = pow(lightmapColor.g, SceneUBO.r_additive_shift);
+	lightmapColor.b = pow(lightmapColor.b, SceneUBO.r_additive_shift);
 #endif
 
 #if defined(OIT_ALPHA_BLEND_ENABLED) || defined(ALPHA_BLEND_ENABLED)

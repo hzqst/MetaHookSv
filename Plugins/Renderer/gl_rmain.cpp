@@ -533,7 +533,6 @@ void R_DrawParticles(void)
 
 void triapi_Color4f(float x, float y, float z, float w)
 {
-	//glColor4f(x, y, z, w);
 	gRefFuncs.triapi_Color4f(x, y, z, w);
 }
 
@@ -659,6 +658,8 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 void ClientDLL_DrawTransparentTriangles(void)
 {
+	gEngfuncs.pTriAPI->RenderMode(kRenderTransTexture);
+
 	if(gExportfuncs.HUD_DrawTransparentTriangles)
 		gExportfuncs.HUD_DrawTransparentTriangles();
 
