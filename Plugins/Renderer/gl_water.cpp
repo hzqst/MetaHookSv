@@ -264,14 +264,19 @@ water_vbo_t *R_FindFlatWaterVBO(cl_entity_t *ent, msurface_t *surf, int directio
 	for (size_t i = 0; i < g_WaterVBOCache.size(); ++i)
 	{
 		auto cache = g_WaterVBOCache[i];
-		if ((cache->ent == ent || cache->ent->curstate.rendermode == ent->curstate.rendermode) &&
+		if ((cache->ent == ent || (cache->ent->curstate.rendermode == ent->curstate.rendermode && cache->ent->curstate.origin[0] == 0 && cache->ent->curstate.origin[1] == 0 && cache->ent->curstate.origin[2] == 0 && ent->curstate.origin[0] == 0 && ent->curstate.origin[1] == 0 && ent->curstate.origin[2] == 0)) &&
 			surf->texinfo->texture == cache->texture &&
 			cache->normal[2] == normal[2])
 		{
 			bool bSkip = false;
 			for (int j = 0; j < poly->numverts; ++j)
 			{
-				auto plane = DotProduct(poly->verts[i], normal);
+				vec3_t tempvert;
+
+				VectorTransform(poly->verts[i], r_entity_matrix, tempvert);
+
+				auto plane = DotProduct(tempvert, normal);
+
 				if (fabs(cache->plane - plane) > 0.1f)
 				{
 					bSkip = true;
@@ -486,7 +491,8 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 
 			VBOCache->hEBO = GL_GenBuffer();
 
-			VectorCopy(poly->verts[0], VBOCache->vert);
+			VectorTransform(poly->verts[0], r_entity_matrix, VBOCache->vert);
+
 			VectorCopy(brushface->normal, VBOCache->normal);
 			
 			if (direction)
@@ -641,6 +647,9 @@ water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction
 
 void R_RenderReflectView(water_vbo_t *w)
 {
+	if (w->level == WATER_LEVEL_LEGACY || w->level == WATER_LEVEL_LEGACY_RIPPLE)
+		return;
+
 	r_draw_reflectview = true;
 	curwater = w;
 
