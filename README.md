@@ -202,3 +202,5 @@ This is a plugin for GoldSrc that adds OpenAL support to its sound system. This 
 Since SvEngine uses FMOD as it's sound system, you really shouldn't use this plugin in Sven Co-op.
 
 https://github.com/LAGonauta/MetaAudio
+
+* MetaAudio blocks goldsrc engine's sound system and replaces with it's own sound engine. You should always put `MetaAudio.dll` on top of any other plugins that rely on goldsrc engine's sound system (i.e CaptionMod) in the `plugins.lst` or `plugins_[blablabla].lst` to prevent those plugins from being blocked by MetaAudio.

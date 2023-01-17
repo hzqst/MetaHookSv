@@ -204,3 +204,5 @@ https://github.com/DrAbcrealone/HUDColor
 由于SvEngine已经使用FMOD作为声音引擎了，你不应该在Sven Co-op上使用该插件
 
 https://github.com/LAGonauta/MetaAudio
+
+* 由于 MetaAudio 会拦截引擎中所有播放声音的接口。`MetaAudio.dll` 在 `plugins.lst` 或 `plugins_[blablabla].lst` 中必须处于任何依赖于引擎中声音组件的插件之前 (例如：CaptionMod) ，你需要调整加载顺序以防止这些插件被 MetaAudio 拦截。使用错误的加载顺序可能会导致这些插件无法正常工作。
