@@ -2,6 +2,7 @@ echo off
 
 set LauncherExe=metahook.exe
 set LauncherMod=gearbox
+set FullGameName=Half-Life : Opposing Force
 
 for /f "delims=" %%a in ('"%~dp0SteamAppsLocation/SteamAppsLocation" 50 InstallDir') do set GameDir=%%a
 
@@ -9,7 +10,7 @@ if "%GameDir%"=="" goto fail
 
 echo -----------------------------------------------------
 
-echo Writing debug configuration...
+echo Writing debug properties...
 copy global_template.props global.props /y
 call powershell -Command "(gc global.props) -replace '<MetaHookLaunchName>.*</MetaHookLaunchName>', '<MetaHookLaunchName>%LauncherExe%</MetaHookLaunchName>' | Out-File global.props"
 call powershell -Command "(gc global.props) -replace '<MetaHookLaunchCommnand>.*</MetaHookLaunchCommnand>', '<MetaHookLaunchCommnand>-game %LauncherMod%</MetaHookLaunchCommnand>' | Out-File global.props"
@@ -18,12 +19,25 @@ call powershell -Command "(gc global.props) -replace '<MetaHookModName>.*</MetaH
 
 echo -----------------------------------------------------
 
-echo done
+echo Done
+
+@echo off
+
+tasklist | find /i "devenv.exe"
+
+if "%errorlevel%"=="1" (goto ok1) else (goto ok2)
+
+:ok1
+@echo You can open MetaHook.sln with Visual Studio IDE now
+pause
+exit
+
+:ok2
+@echo Please restart Visual Studio IDE to apply changes to the debug properties
 pause
 exit
 
 :fail
-
-echo Failed to locate GameInstallDir of Half-Life : Opposing Force, please make sure Steam is running and you have Half-Life : Opposing Force installed correctly.
+@echo Failed to locate GameInstallDir of %FullGameName%, please make sure Steam is running and you have %FullGameName% installed correctly.
 pause
 exit
