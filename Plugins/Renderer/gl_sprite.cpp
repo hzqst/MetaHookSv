@@ -21,16 +21,16 @@ void R_UseSpriteProgram(int state, sprite_program_t *progOutput)
 	{
 		std::stringstream defs;
 
-		if(state & SPRITE_BINDLESS_ENABLED)
+		if((state & SPRITE_BINDLESS_ENABLED) && bUseBindless)
 			defs << "#define BINDLESS_ENABLED\n";
 
 		if(state & SPRITE_GBUFFER_ENABLED)
 			defs << "#define GBUFFER_ENABLED\n";
 
-		if(state & SPRITE_OIT_ALPHA_BLEND_ENABLED)
+		if ((state & SPRITE_OIT_ALPHA_BLEND_ENABLED) && bUseOITBlend)
 			defs << "#define OIT_ALPHA_BLEND_ENABLED\n";
 
-		if (state & SPRITE_OIT_ADDITIVE_BLEND_ENABLED)
+		if ((state & SPRITE_OIT_ADDITIVE_BLEND_ENABLED) && bUseOITBlend)
 			defs << "#define OIT_ADDITIVE_BLEND_ENABLED\n";
 
 		if (state & SPRITE_ALPHA_BLEND_ENABLED)

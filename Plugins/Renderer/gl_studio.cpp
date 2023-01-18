@@ -878,7 +878,6 @@ const program_state_name_t s_StudioProgramStateName[] = {
 { STUDIO_HAIR_SHADOW_ENABLED			,"STUDIO_HAIR_SHADOW_ENABLED"				},
 { STUDIO_CLIP_WATER_ENABLED				,"STUDIO_CLIP_WATER_ENABLED"				},
 { STUDIO_CLIP_ENABLED					,"STUDIO_CLIP_ENABLED"						},
-{ STUDIO_BINDLESS_ENABLED				,"STUDIO_BINDLESS_ENABLED"					},
 { STUDIO_OIT_ALPHA_BLEND_ENABLED		,"STUDIO_OIT_ALPHA_BLEND_ENABLED"			},
 { STUDIO_OIT_ADDITIVE_BLEND_ENABLED		,"STUDIO_OIT_ADDITIVE_BLEND_ENABLED"		},
 
@@ -1753,11 +1752,6 @@ void R_StudioDrawBatch(void)
 
 	int StudioProgramState = 0;
 	int GBufferMask = GBUFFER_MASK_ALL;
-
-	//if (bUseBindless)
-	//{
-	//	StudioProgramState |= STUDIO_BINDLESS_ENABLED;
-	//}
 
 	if (r_draw_shadowcaster)
 	{

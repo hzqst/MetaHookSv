@@ -288,7 +288,7 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		if (state & WSURF_SHADOWMAP_LOW_ENABLED)
 			defs << "#define SHADOWMAP_LOW_ENABLED\n";
 
-		if (state & WSURF_BINDLESS_ENABLED)
+		if ((state & WSURF_BINDLESS_ENABLED) && bUseBindless)
 			defs << "#define BINDLESS_ENABLED\n";
 
 		if (state & WSURF_SKYBOX_ENABLED)
@@ -303,10 +303,10 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		if (state & WSURF_CLIP_WATER_ENABLED)
 			defs << "#define CLIP_WATER_ENABLED\n";
 
-		if (state & WSURF_OIT_ALPHA_BLEND_ENABLED)
+		if ((state & WSURF_OIT_ALPHA_BLEND_ENABLED) && bUseOITBlend)
 			defs << "#define OIT_ALPHA_BLEND_ENABLED\n";
 
-		if (state & WSURF_OIT_ADDITIVE_BLEND_ENABLED)
+		if ((state & WSURF_OIT_ADDITIVE_BLEND_ENABLED) && bUseOITBlend)
 			defs << "#define OIT_ADDITIVE_BLEND_ENABLED\n";
 
 		if(glewIsSupported("GL_NV_bindless_texture"))
