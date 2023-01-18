@@ -580,7 +580,7 @@ void S_LoadSentence(const char *pszin)
 	char *rgpparseword[CVOXWORDMAX];
 
 	if (!pszin)
-		return NULL;
+		return;
 
 	Q_memset(rgvoxword, 0, sizeof(voxword_t) * CVOXWORDMAX);
 	Q_memset(buffer, 0, sizeof(buffer));
