@@ -1,5 +1,11 @@
 #pragma once
 
+#define CVOXWORDMAX 32
+#define CVOXSENTENCEMAX 16
+#define CVOXZEROSCANMAX 255
+
+#define CVOXFILESENTENCEMAX 1536
+
 #define SND_VOLUME		(1<<0)		// a byte
 #define SND_ATTENUATION	(1<<1)		// a byte
 #define SND_LARGE_INDEX	(1<<2)		// a long
@@ -69,3 +75,28 @@ typedef struct
 	int		datalen;
 	byte	data[1];
 }aud_sfxcache_t;
+
+typedef struct
+{
+	//wave info
+	unsigned long long length;
+	unsigned long long loopstart;
+	unsigned long long loopend;
+	unsigned long samplerate;
+	bool looping;
+	bool force_streaming;
+}aud_sfxcache_LAGonauta_t;
+
+typedef struct voxword
+{
+	int volume;
+	int pitch;
+	int start;
+	int end;
+	int cbtrim;
+	int fKeepCached;
+	int samplefrac;
+	int timecompress;
+	sfx_t *sfx;
+}
+voxword_t;

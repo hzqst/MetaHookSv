@@ -23,6 +23,7 @@ typedef struct
 	void (*S_StartDynamicSound)(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);//hooked
 	void (*S_StartStaticSound)(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);//hooked
 	sfxcache_t *(*S_LoadSound)(sfx_t *s, channel_t *ch);
+	sentenceEntry_s*(*SequenceGetSentenceByIndex)(unsigned int);
 
 	//Engine Surface
 	void(__fastcall *CWin32Font_GetCharRGBA)(void *pthis, int, int ch, int rgbaX, int rgbaY, int rgbaWide, int rgbaTall, unsigned char *rgba);
@@ -81,6 +82,9 @@ extern void *gHud;
 
 extern double *cl_time;
 extern double *cl_oldtime;
+
+extern char *(*rgpszrawsentence)[CVOXFILESENTENCEMAX];
+extern int *cszrawsentences;
 
 extern HWND g_MainWnd;
 extern WNDPROC g_MainWndProc;

@@ -11,7 +11,12 @@
 
 cl_enginefunc_t gEngfuncs;
 
+//Legacy MetaAudio
 cvar_t *al_enable = NULL;
+
+//LAGonauta's MetaAudio only
+cvar_t *al_doppler = NULL;
+
 cvar_t *cap_debug
 = NULL;
 cvar_t *cap_enabled = NULL;
@@ -223,6 +228,7 @@ void HUD_Init(void)
 		g_pViewPort->Init();
 
 	al_enable = gEngfuncs.pfnGetCvarPointer("al_enable");
+	al_doppler = gEngfuncs.pfnGetCvarPointer("al_doppler");
 
 	hud_saytext_time = gEngfuncs.pfnGetCvarPointer("hud_saytext_time");
 	if(!hud_saytext_time)
@@ -262,14 +268,25 @@ float S_GetDuration(sfx_t *sfx)
 
 	if(sfx->name[0] != '*' && sfx->name[0] != '?')
 	{
-		//MetaAudio is active? use MetaAudio's structs
 		if(al_enable && al_enable->value)
 		{
+			//Legacy MetaAudio is active? use MetaAudio's structs
 			aud_sfxcache_t *asc = (aud_sfxcache_t *)gPrivateFuncs.S_LoadSound(sfx, NULL);
 			//not a voice sound
 			if(asc && asc->length != 0x40000000)
 			{
 				flDuration = (float)asc->length / asc->speed;
+			}
+		}
+		else if (al_doppler && al_doppler->value)
+		{
+			//LAGonauta's MetaAudio is active? use MetaAudio's structs
+
+			aud_sfxcache_LAGonauta_t *asc = (aud_sfxcache_LAGonauta_t *)gPrivateFuncs.S_LoadSound(sfx, NULL);
+			//not a voice sound
+			if(asc && asc->length != 0x40000000)
+			{
+				flDuration = (float)asc->length / asc->samplerate;
 			}
 		}
 		else
@@ -338,6 +355,285 @@ void S_StartWave(sfx_t *sfx)
 	g_pViewPort->StartSubtitle(Dict);
 }
 
+static char szsentences[] = "sound/sentences.txt";
+static char voxperiod[] = "_period";
+static char voxcomma[] = "_comma";
+
+void VOX_ParseString(char *psz, char *(*rgpparseword)[CVOXWORDMAX])
+{
+	int i;
+	int fdone = 0;
+	char *pszscan = psz;
+	char c;
+
+	Q_memset(*rgpparseword, 0, sizeof(char *) * CVOXWORDMAX);
+
+	if (!psz)
+		return;
+
+	i = 0;
+	(*rgpparseword)[i++] = psz;
+
+	while (!fdone && i < CVOXWORDMAX)
+	{
+		c = *pszscan;
+
+		while (c && !(c == '.' || c == ' ' || c == ','))
+			c = *(++pszscan);
+
+		if (c == '(')
+		{
+			while (*pszscan != ')')
+				pszscan++;
+
+			c = *(++pszscan);
+
+			if (!c)
+				fdone = 1;
+		}
+
+		if (fdone || !c)
+		{
+			fdone = 1;
+		}
+		else
+		{
+			if ((c == '.' || c == ',') && *(pszscan + 1) != '\n' && *(pszscan + 1) != '\r' && *(pszscan + 1) != 0)
+			{
+				if (c == '.')
+					(*rgpparseword)[i++] = voxperiod;
+				else
+					(*rgpparseword)[i++] = voxcomma;
+
+				if (i >= CVOXWORDMAX)
+					break;
+			}
+
+			*pszscan++ = 0;
+
+			c = *pszscan;
+
+			while (c && (c == '.' || c == ' ' || c == ','))
+				c = *(++pszscan);
+
+			if (!c)
+				fdone = 1;
+			else
+				(*rgpparseword)[i++] = pszscan;
+		}
+	}
+}
+
+char *VOX_GetDirectory(char *szpath, char *psz)
+{
+	char c;
+	int cb = 0;
+	char *pszscan = psz + Q_strlen(psz) - 1;
+
+	c = *pszscan;
+
+	while (pszscan > psz && c != '/')
+	{
+		c = *(--pszscan);
+		cb++;
+	}
+
+	if (c != '/')
+	{
+		Q_strcpy(szpath, "vox/");
+		return psz;
+	}
+
+	cb = Q_strlen(psz) - cb;
+	Q_memcpy(szpath, psz, cb);
+	szpath[cb] = 0;
+	return pszscan + 1;
+}
+
+int VOX_ParseWordParams(char *psz, voxword_t *pvoxword, int fFirst)
+{
+	char *pszsave = psz;
+	char c;
+	char ct;
+	char sznum[8];
+	int i;
+	static voxword_t voxwordDefault;
+
+	if (fFirst)
+	{
+		voxwordDefault.pitch = -1;
+		voxwordDefault.volume = 100;
+		voxwordDefault.start = 0;
+		voxwordDefault.end = 100;
+		voxwordDefault.fKeepCached = 0;
+		voxwordDefault.timecompress = 0;
+	}
+
+	*pvoxword = voxwordDefault;
+
+	c = *(psz + Q_strlen(psz) - 1);
+
+	if (c != ')')
+		return 1;
+
+	c = *psz;
+
+	while (!(c == '(' || c == ')'))
+		c = *(++psz);
+
+	if (c == ')')
+		return 0;
+
+	*psz = 0;
+	ct = *(++psz);
+
+	while (1)
+	{
+		while (ct && !(ct == 'v' || ct == 'p' || ct == 's' || ct == 'e' || ct == 't'))
+			ct = *(++psz);
+
+		if (ct == ')')
+			break;
+
+		Q_memset(sznum, 0, sizeof(sznum));
+		i = 0;
+
+		c = *(++psz);
+
+		if (!isdigit(c))
+			break;
+
+		while (isdigit(c) && i < sizeof(sznum) - 1)
+		{
+			sznum[i++] = c;
+			c = *(++psz);
+		}
+
+		i = atoi(sznum);
+
+		switch (ct)
+		{
+		case 'v': pvoxword->volume = i; break;
+		case 'p': pvoxword->pitch = i; break;
+		case 's': pvoxword->start = i; break;
+		case 'e': pvoxword->end = i; break;
+		case 't': pvoxword->timecompress = i; break;
+		}
+
+		ct = c;
+	}
+
+	if (Q_strlen(pszsave) == 0)
+	{
+		voxwordDefault = *pvoxword;
+		return 0;
+	}
+	else
+		return 1;
+}
+
+char *VOX_LookupString(const char *pszin, int *psentencenum)
+{
+	int i;
+	char *cptr;
+	sentenceEntry_s *sentenceEntry;
+
+	if (pszin[0] == '#')
+	{
+		const char *indexAsString;
+
+		indexAsString = &pszin[1];
+		sentenceEntry = gPrivateFuncs.SequenceGetSentenceByIndex(atoi(indexAsString));
+
+		if (sentenceEntry)
+			return sentenceEntry->data;
+	}
+
+	for (i = 0; i < (*cszrawsentences); i++)
+	{
+		if (!Q_strcasecmp(pszin, (*rgpszrawsentence)[i]))
+		{
+			if (psentencenum)
+				*psentencenum = i;
+
+			cptr = &(*rgpszrawsentence)[i][Q_strlen((*rgpszrawsentence)[i]) + 1];
+
+			while (*cptr == ' ' || *cptr == '\t')
+				cptr++;
+
+			return cptr;
+		}
+	}
+
+	return NULL;
+}
+
+void S_LoadSentence(const char *pszin)
+{
+	char buffer[512];
+	int i, j, k, cword;
+	char pathbuffer[64];
+	char szpath[32];
+	sfxcache_t *sc;
+	char *psz;
+	voxword_t rgvoxword[CVOXWORDMAX];
+	char *rgpparseword[CVOXWORDMAX];
+
+	if (!pszin)
+		return NULL;
+
+	Q_memset(rgvoxword, 0, sizeof(voxword_t) * CVOXWORDMAX);
+	Q_memset(buffer, 0, sizeof(buffer));
+
+	psz = VOX_LookupString(pszin, NULL);
+
+	if (!psz)
+	{
+		gEngfuncs.Con_DPrintf("S_LoadSentence: no sentence named %s\n", pszin);
+		return;
+	}
+
+	psz = VOX_GetDirectory(szpath, psz);
+
+	if (Q_strlen(psz) > sizeof(buffer) - 1)
+	{
+		gEngfuncs.Con_DPrintf("S_LoadSentence: sentence is too long %s\n", psz);
+		return;
+	}
+
+	Q_strncpy(buffer, psz, sizeof(buffer) - 1);
+	buffer[sizeof(buffer) - 1] = 0;
+	psz = buffer;
+
+	VOX_ParseString(psz, &rgpparseword);
+
+	i = 0;
+	cword = 0;
+
+	while (rgpparseword[i])
+	{
+		if (VOX_ParseWordParams(rgpparseword[i], &rgvoxword[cword], i == 0))
+		{
+			Q_snprintf(pathbuffer, sizeof(pathbuffer), "%s%s.wav", szpath, rgpparseword[i]);
+			pathbuffer[sizeof(pathbuffer) - 1] = 0;
+
+			if (Q_strlen(pathbuffer) >= sizeof(pathbuffer))
+				continue;
+
+			rgvoxword[cword].sfx = S_FindName(pathbuffer, &(rgvoxword[cword].fKeepCached));
+
+			if (rgvoxword[cword].sfx)
+			{
+				S_StartWave(rgvoxword[cword].sfx);
+			}
+
+			cword++;
+		}
+
+		i++;
+	}
+}
+
 void S_StartSentence(const char *name)
 {
 	if (!g_pViewPort)
@@ -345,7 +641,7 @@ void S_StartSentence(const char *name)
 
 	CDictionary *Dict = g_pViewPort->FindDictionary(name, DICT_SENTENCE);	
 
-	if(!Dict && (name[0] == '!' || name[0] == '#'))
+	if(!Dict)
 	{
 		//skip ! and # then search again
 		Dict = g_pViewPort->FindDictionary(name + 1);
@@ -357,6 +653,12 @@ void S_StartSentence(const char *name)
 	}
 
 	m_SentenceDictionary = Dict;
+
+	if (!Dict)
+	{
+		//Parse sentences
+		S_LoadSentence(name + 1);
+	}
 }
 
 //2015-11-26 fixed, to support !SENTENCE and #SENTENCE
@@ -495,14 +797,7 @@ void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, f
 
 sfx_t *S_FindName(char *name, int *pfInCache)
 {
-	sfx_t *sfx = gPrivateFuncs.S_FindName(name, pfInCache);;
-
-	//we should add
-	if(m_bSentenceSound && sfx)
-	{
-		S_StartWave(sfx);
-	}
-	return sfx;
+	return gPrivateFuncs.S_FindName(name, pfInCache);;
 }
 
 IBaseInterface *NewCreateInterface(const char *pName, int *pReturnCode)
