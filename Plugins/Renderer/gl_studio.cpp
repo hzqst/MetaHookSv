@@ -2226,8 +2226,8 @@ void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr, 
 
 					if (!bSizeChanged)
 					{
-						ptexture->width = width;
-						ptexture->height = height;
+						//ptexture->width = width;
+						//ptexture->height = height;
 					}
 				}
 			}
