@@ -23,9 +23,9 @@ void main()
 #else
 	//Additive blend
 	diffuseColor = TexGammaToLinear(diffuseColor);
-	diffuseColor.r = pow(diffuseColor.r, SceneUBO.r_additive_shift);
-	diffuseColor.g = pow(diffuseColor.g, SceneUBO.r_additive_shift);
-	diffuseColor.b = pow(diffuseColor.b, SceneUBO.r_additive_shift);
+	//diffuseColor.r = pow(diffuseColor.r, SceneUBO.r_additive_shift);
+	//diffuseColor.g = pow(diffuseColor.g, SceneUBO.r_additive_shift);
+	//diffuseColor.b = pow(diffuseColor.b, SceneUBO.r_additive_shift);
 #endif
 
 	vec4 lightmapColor = v_color;

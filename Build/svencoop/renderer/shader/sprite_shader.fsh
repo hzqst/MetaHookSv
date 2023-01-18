@@ -55,9 +55,13 @@ void main(void)
 #if !defined(ADDITIVE_BLEND_ENABLED) && !defined(OIT_ADDITIVE_BLEND_ENABLED)
 	//Alpha blend
 	lightmapColor = GammaToLinear(lightmapColor);
+	lightmapColor.a = pow(lightmapColor.a, SceneUBO.r_alpha_shift);
 #else
 	//Additive blend
 	lightmapColor = GammaToLinear(lightmapColor);
+	lightmapColor.r = pow(lightmapColor.r, SceneUBO.r_additive_shift);
+	lightmapColor.g = pow(lightmapColor.g, SceneUBO.r_additive_shift);
+	lightmapColor.b = pow(lightmapColor.b, SceneUBO.r_additive_shift);
 #endif
 
 	vec3 vNormal = normalize(v_normal.xyz);
