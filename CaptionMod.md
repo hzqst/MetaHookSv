@@ -63,6 +63,8 @@ The default chat text color can be customized in `\Sven Co-op\svencoop\captionmo
 
 `cap_newchat` : To enable or disable Source2007 style VGUI2 chat dialog.
 
+`cap_lang` : Indicate current game lanuage. Any changes to this cvar acutally do nothing. Provide the capability of getting client's current game language by sending network message "svc_sendcvarvalue" or "svc_sendcvarvalue2" or reading userinfo "cap_lang".
+
 #### Command Arguments
 
 `-steamlang` : use Steam language as engine and vgui2 language, ignore game language setting in Steam's game config panel. for Sven Co-op, it always uses Steam language as engine and vgui2 language no matter if -steamlang is added or not.

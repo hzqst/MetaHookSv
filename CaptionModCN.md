@@ -63,6 +63,8 @@
 
 `cap_newchat` : 启用新的起源风格VGUI2聊天框
 
+`cap_lang` : 用于指示当前游戏使用的语言。修改该cvar的无任何实际效果。服务器可以发送 "svc_sendcvarvalue" 或 "svc_sendcvarvalue2" 消息，或者从userinfo "cap_lang" 中获取服务器中的玩家当前使用的语言。
+
 #### 启动项参数
 
 `-steamlang` : 使用Steam客户端语言作为引擎和VGUI2使用的语言，忽略Steam游戏设置中的语言设置。 对于Sven Co-op这种本身没有多语言支持的游戏，无论是否添加-steamlang都将使用Steam客户端语言。
