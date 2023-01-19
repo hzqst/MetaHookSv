@@ -260,6 +260,8 @@ void HUD_Init(void)
 		gPrivateFuncs.FMOD_Sound_getLength = (decltype(gPrivateFuncs.FMOD_Sound_getLength))GetProcAddress(gPrivateFuncs.fmodex, "?getLength@Sound@FMOD@@QAG?AW4FMOD_RESULT@@PAII@Z");
 		Sig_FuncNotFound(FMOD_Sound_getLength);
 	}
+
+	gEngfuncs.pfnRegisterVariable("cap_lang", m_szCurrentLanguage, FCVAR_CLIENTDLL | FCVAR_USERINFO);
 }
 
 float S_GetDuration(sfx_t *sfx)
