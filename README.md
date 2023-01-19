@@ -74,7 +74,7 @@ Let's assume that you have all requirements installed correctly.
 
 ## Debugging
 
-1. `git clone https://github.com/hzqst/MetaHookSv` (Ignore if you have already done this before)
+1. `git clone https://github.com/hzqst/MetaHookSv` to somewhere that doesn't contain space in the directory path.
 
 2. Run `build-initdeps.bat`, wait until all required submodules / dependencies are pulled.  (Ignore if you have already done this before) (this may takes couple of minutes, depending on your network connection and download speed)
 

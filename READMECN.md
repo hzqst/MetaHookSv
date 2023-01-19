@@ -60,7 +60,7 @@
 
 假设你已经正确安装了所有构建需求。
 
-1. 执行 `git clone https://github.com/hzqst/MetaHookSv` 拉取代码到一处**不包含空格**的目录中。
+1. 执行 `git clone https://github.com/hzqst/MetaHookSv` 拉取代码到一处**路径不包含空格**的目录中。
 
 2. 运行 `build-initdeps.bat`, 等待所有子模块和依赖项目下载完成。 (这一步可能需要花费几分钟时间, 具体取决于你的网速，如果速度很慢或者下载出错建议尝试使用魔法上网)
 
@@ -76,13 +76,13 @@
 
 ## 如何调试
 
-1. `git clone https://github.com/hzqst/MetaHookSv` (如果你之前已经执行过这一步的指令，则可以略过这一步)
+1. 执行 `git clone https://github.com/hzqst/MetaHookSv` 拉取代码到一处**路径不包含空格**的目录中。
 
 2. 运行 `build-initdeps.bat`, 等待所有子模块和依赖项目下载完成。 (如果你之前已经执行过这一步的指令，则可以略过这一步) (这一步可能需要花费几分钟时间, 具体取决于你的网速，如果速度很慢或者下载出错建议尝试使用魔法上网)
 
 3. 运行 `debug-SvenCoop.bat`  (其他游戏就选择该游戏对应的debug批处理)
 
-4. 打开 `MetaHook.sln`, 在解决方案资源管理器中找到对应的项目，右键设置为启动项目，然后以Debug模式重新编译该项目后，按F5即可开启本地调试。
+4. 打开 `MetaHook.sln`, 在解决方案资源管理器中找到对应的项目，右键设置为启动项目，然后以Debug Win32生成配置重新生成该项目后，按F5即可启动本地调试。
 
 * 如果运行 `debug-SvenCoop.bat` 时 Visual Studio 正在运行，请重启一次 Visual Studio，否则可能会导致新的调试设置不生效。
 

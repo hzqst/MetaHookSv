@@ -42,7 +42,7 @@
 
 ### 兼容性
 
-|        Engine            |      |
+|        引擎              |      |
 |        ----              | ---- |
 | GoldSrc_blob   (< 4554)  | -    |
 | GoldSrc_legacy (< 6153)  | -    |
@@ -62,3 +62,9 @@
 `cap_debug` : 在控制台输出调试信息
 
 `cap_newchat` : 启用新的起源风格VGUI2聊天框
+
+#### 启动项参数
+
+`-steamlang` : 使用Steam客户端语言作为引擎和VGUI2使用的语言，忽略Steam游戏设置中的语言设置。 对于Sven Co-op这种本身没有多语言支持的游戏，无论是否添加-steamlang都将使用Steam客户端语言。
+
+`-forcelang [language]` : 强制引擎和VGUI2使用[language]语言，忽略Steam游戏设置中的语言设置.
