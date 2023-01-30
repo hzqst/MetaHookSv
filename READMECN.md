@@ -98,22 +98,17 @@
 
 ## 加载顺序
 
-1. `\(GameDirectory)\metahook\configs\plugins_avx2.lst` (仅当CPU支持AVX2指令集时)
-2. `\(GameDirectory)\metahook\configs\plugins_svencoop_avx2.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc_avx2.lst` (仅当CPU支持AVX2指令集时)
+1. MetaHook启动器总是会以从上到下的顺序加载 `\(GameDirectory)\metahook\configs\plugins.lst` 中列出的插件。当插件名前面存在引号";"时该行会被忽略。
 
-3. `\(GameDirectory)\metahook\configs\plugins_avx.lst` (仅当CPU支持AVX指令集时)
-4. `\(GameDirectory)\metahook\configs\plugins_svencoop_avx.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc_avx.lst` (仅当CPU支持AVX指令集时)
+2. 当支持AVX2指令集时自动加载(插件名)_AVX2.dll
 
-5. `\(GameDirectory)\metahook\configs\plugins_sse2.lst` (仅当CPU支持SSE2指令集时)
-6. `\(GameDirectory)\metahook\configs\plugins_svencoop_sse2.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc_sse2.lst` (仅当CPU支持SSE2指令集时)
+3. 当支持AVX指令集时且(2)失败时自动加载(PluginName)_AVX.dll
 
-7. `\(GameDirectory)\metahook\configs\plugins_sse.lst` (仅当CPU支持SSE指令集时)
-8. `\(GameDirectory)\metahook\configs\plugins_svencoop_sse.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc_sse.lst` (仅当CPU支持SSE指令集时)
+4. 当支持SSE2指令集时且(3)失败时自动加载(PluginName)_SSE2.dll
 
-9. `\(GameDirectory)\metahook\configs\plugins.lst`
-10. `\(GameDirectory)\metahook\configs\plugins_svencoop.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc.lst`
+5. 当支持SSE指令集时且(4)失败时自动加载(PluginName)_SSE.dll
 
-* 加载器会以上述顺序寻找第一个可用的插件列表文件(.lst), 并且从该列表中从上往下依次加载dll.
+6. 当(2) (3) (4) (5)均失败时自动加载(PluginName).dll
 
 ## 插件列表
 
