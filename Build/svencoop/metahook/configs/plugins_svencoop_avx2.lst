@@ -1,8 +1,0 @@
-CaptionMod.dll
-Renderer_AVX2.dll
-BulletPhysics_AVX2.dll
-StudioEvents.dll
-CommunicationDemo.dll
-SCModelDownloader.dll
-SteamScreenshots.dll
-;DontFlushSoundCache.dll

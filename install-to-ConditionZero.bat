@@ -24,6 +24,10 @@ xcopy "%~dp0Build\valve" "%GameDir%\%LauncherMod%" /y /e
 
 if not exist "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst" copy "%GameDir%\%LauncherMod%\metahook\configs\plugins_goldsrc.lst" "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst" /y
 
+del "%GameDir%\%LauncherMod%\metahook\configs\plugins_goldsrc.lst"
+del "%GameDir%\%LauncherMod%\metahook\configs\plugins_svencoop.lst"
+del "%GameDir%\%LauncherMod%\metahook\configs\plugins_svencoop_avx2.lst"
+
 powershell $shell = New-Object -ComObject WScript.Shell;$shortcut = $shell.CreateShortcut(\"MetaHook for %ShortGameName%.lnk\");$shortcut.TargetPath = \"%GameDir%\%LauncherExe%\";$shortcut.WorkingDirectory = \"%GameDir%\";$shortcut.Arguments = \"-insecure -game %LauncherMod%\";$shortcut.Save();
 
 echo -----------------------------------------------------
