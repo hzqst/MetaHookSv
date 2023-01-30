@@ -96,22 +96,17 @@ Let's assume that you have all requirements installed correctly.
 
 ## Load Order
 
-1. `\(GameDirectory)\metahook\configs\plugins_avx2.lst` (Only when AVX2 instruction set is supported)
-2. `\(GameDirectory)\metahook\configs\plugins_svencoop_avx2.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc_avx2.lst` (Only when AVX2 instruction set is supported)
+1. MetaHook launcher always loads plugins listed in `\(GameDirectory)\metahook\configs\plugins.lst` in ascending order.
 
-3. `\(GameDirectory)\metahook\configs\plugins_avx.lst` (Only when AVX instruction set is supported)
-4. `\(GameDirectory)\metahook\configs\plugins_svencoop_avx.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc_avx.lst` (Only when AVX instruction set is supported)
+2. (PluginName)_AVX2.dll will be loaded if exists only when AVX2 instruction set supported.
 
-5. `\(GameDirectory)\metahook\configs\plugins_sse2.lst` (Only when SSE2 instruction set is supported)
-6. `\(GameDirectory)\metahook\configs\plugins_svencoop_sse2.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc_sse2.lst` (Only when SSE2 instruction set is supported)
+3. (PluginName)_AVX.dll will be loaded if exists only when AVX instruction set supported and (2) fails.
 
-7. `\(GameDirectory)\metahook\configs\plugins_sse.lst` (Only when SSE instruction set is supported)
-8. `\(GameDirectory)\metahook\configs\plugins_svencoop_sse.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc_sse.lst` (Only when SSE instruction set is supported)
+4. (PluginName)_SSE2.dll will be loaded if exists only when SSE2 instruction set supported and (3) fails
 
-9. `\(GameDirectory)\metahook\configs\plugins.lst`
-10. `\(GameDirectory)\metahook\configs\plugins_svencoop.lst` or `\(GameDirectory)\metahook\configs\plugins_goldsrc.lst`
+5. (PluginName)_SSE.dll will be loaded if exists only when SSE instruction set supported and (4) fails.
 
-* MetahookSv loader will load the first available plugin list file, then load the dll(s) listed in the file.
+6. (PluginName).dll will be loaded if (2) (3) (4) (5) fails.
 
 ## Plugins
 
