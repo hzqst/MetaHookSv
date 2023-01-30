@@ -157,6 +157,7 @@ if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\ren
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\HLSDK\common\interface.cpp" />
+    <ClCompile Include="crc.c" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="gl_cvar.cpp" />
     <ClCompile Include="gl_draw.cpp" />

@@ -872,6 +872,21 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 	if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
 	{
 		WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
+
+		if (bUseOITBlend)
+		{
+			if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
+				WSurfProgramState |= WSURF_OIT_ADDITIVE_BLEND_ENABLED;
+			else
+				WSurfProgramState |= WSURF_OIT_ALPHA_BLEND_ENABLED;
+		}
+		else
+		{
+			if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
+				WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
+			else
+				WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
+		}
 	}
 
 	if (r_draw_oitblend)

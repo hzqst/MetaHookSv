@@ -66,46 +66,28 @@ void R_ClearWSurfVBOCache(void)
 				VBOCache->hDecalEBO = NULL;
 			}
 
-			for (size_t j = 0; j < VBOCache->vLeaves.size(); ++j)
+			for (size_t j = 0; j < VBOCache->vLeafStorage.size(); ++j)
 			{
-				auto VBOLeaf = VBOCache->vLeaves[j];
+				auto VBOLeaf = VBOCache->vLeafStorage[j];
 
-				if (VBOLeaf != VBOCache->pNoVisLeaf)
+				if (VBOLeaf->hEBO)
 				{
-					if (VBOLeaf->hEBO)
-					{
-						GL_DeleteBuffer(VBOLeaf->hEBO);
-						VBOLeaf->hEBO = NULL;
-					}
-
-					for (size_t k = 0; k < WSURF_TEXCHAIN_MAX; ++k)
-					{
-						for (size_t l = 0; l < VBOLeaf->vDrawBatch[k].size(); ++l)
-						{
-							delete VBOLeaf->vDrawBatch[k][l];
-						}
-					}
-					delete VBOLeaf;
-				}
-			}
-			
-			if (VBOCache->pNoVisLeaf)
-			{
-				if (VBOCache->pNoVisLeaf->hEBO)
-				{
-					GL_DeleteBuffer(VBOCache->pNoVisLeaf->hEBO);
-					VBOCache->pNoVisLeaf->hEBO = NULL;
+					GL_DeleteBuffer(VBOLeaf->hEBO);
+					VBOLeaf->hEBO = NULL;
 				}
 
 				for (size_t k = 0; k < WSURF_TEXCHAIN_MAX; ++k)
 				{
-					for (size_t l = 0; l < VBOCache->pNoVisLeaf->vDrawBatch[k].size(); ++l)
+					for (size_t l = 0; l < VBOLeaf->vDrawBatch[k].size(); ++l)
 					{
-						delete VBOCache->pNoVisLeaf->vDrawBatch[k][l];
+						delete VBOLeaf->vDrawBatch[k][l];
 					}
 				}
-				delete VBOCache->pNoVisLeaf;
+				delete VBOLeaf;
 			}
+
+			VBOCache->vLeafStorage.clear();
+			VBOCache->vLeaves.clear();
 			
 			delete g_WSurfVBOCache[i];
 		}
@@ -137,6 +119,8 @@ const program_state_name_t s_WSurfProgramStateName[] = {
 { WSURF_DECAL_ENABLED				,"WSURF_DECAL_ENABLED"},
 { WSURF_CLIP_ENABLED				,"WSURF_CLIP_ENABLED"},
 { WSURF_CLIP_WATER_ENABLED			,"WSURF_CLIP_WATER_ENABLED"},
+{ WSURF_ALPHA_BLEND_ENABLED			,"WSURF_ALPHA_BLEND_ENABLED"},
+{ WSURF_ADDITIVE_BLEND_ENABLED		,"WSURF_ADDITIVE_BLEND_ENABLED"},
 { WSURF_OIT_ALPHA_BLEND_ENABLED		,"WSURF_OIT_ALPHA_BLEND_ENABLED"},
 { WSURF_OIT_ADDITIVE_BLEND_ENABLED	,"WSURF_OIT_ADDITIVE_BLEND_ENABLED"},
 };
@@ -303,8 +287,14 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		if (state & WSURF_CLIP_WATER_ENABLED)
 			defs << "#define CLIP_WATER_ENABLED\n";
 
-		if ((state & WSURF_OIT_ALPHA_BLEND_ENABLED) && bUseOITBlend)
-			defs << "#define OIT_ALPHA_BLEND_ENABLED\n";
+		if ((state & WSURF_ALPHA_BLEND_ENABLED))
+			defs << "#define ALPHA_BLEND_ENABLED\n";
+
+		if ((state & WSURF_ADDITIVE_BLEND_ENABLED))
+			defs << "#define ADDITIVE_BLEND_ENABLED\n";
+
+		if ((state & WSURF_ALPHA_BLEND_ENABLED) && bUseOITBlend)
+			defs << "#define ALPHA_BLEND_ENABLED\n";
 
 		if ((state & WSURF_OIT_ADDITIVE_BLEND_ENABLED) && bUseOITBlend)
 			defs << "#define OIT_ADDITIVE_BLEND_ENABLED\n";
@@ -847,30 +837,69 @@ void R_GenerateTexChain(model_t *mod, wsurf_vbo_leaf_t *vboleaf, std::vector<uns
 	}
 }
 
+wsurf_vbo_leaf_t *R_FindLeafInStorage(wsurf_vbo_t *modvbo, int maxleafindex)
+{
+	for (int i = 0; i < maxleafindex; ++i)
+	{
+		for (int j = 0; j < r_worldmodel->numnodes; j++)
+		{
+			if (r_worldmodel->nodes[j].visframe == (*r_visframecount))
+			{
+
+			}
+		}
+	}
+}
+
+wsurf_vbo_leaf_t *R_FindLeafStorage(wsurf_vbo_t *modvbo, CRC32_t crc)
+{
+	for (size_t i = 0; i < modvbo->vLeafStorage.size(); ++i)
+	{
+		if (modvbo->vLeafStorage[i]->crc == crc)
+		{
+			return modvbo->vLeafStorage[i];
+		}
+	}
+	return NULL;
+}
+
 void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 {
 	if (mod == r_worldmodel)
 	{
-		//(*r_visframecount) = 0;
+		(*r_visframecount) = 0;
 
-		modvbo->pNoVisLeaf = new wsurf_vbo_leaf_t;
+		std::vector<unsigned int> vIndicesBuffer;
+
+		modvbo->vLeaves.resize(r_worldmodel->numframes);
+		modvbo->vLeafStorage.reserve(r_worldmodel->numframes);
 
 		for (int i = 0; i < r_worldmodel->numframes; ++i)
 		{
-			bool bNoVis = R_MarkPVSLeaves(i);
+			R_MarkPVSLeaves(i);
 
-			auto vboleaf = (bNoVis) ? modvbo->pNoVisLeaf : new wsurf_vbo_leaf_t;
+			auto vboleaf = new wsurf_vbo_leaf_t;
 
-			modvbo->vLeaves.emplace_back(vboleaf);
+			R_RecursiveLinkTextureChain(mod->nodes);
 
-			if (!vboleaf->bInit)
+			vIndicesBuffer.clear();
+
+			R_GenerateTexChain(mod, vboleaf, vIndicesBuffer);
+
+			CRC32_t indiceCRC;
+			CRC32_Init(&indiceCRC);
+			CRC32_ProcessBuffer(&indiceCRC, vIndicesBuffer.data(), sizeof(unsigned int) * vIndicesBuffer.size());
+			indiceCRC = CRC32_Final(indiceCRC);
+
+			auto oldleaf = R_FindLeafStorage(modvbo, indiceCRC);
+
+			if (oldleaf)
 			{
-				R_RecursiveLinkTextureChain(mod->nodes);
-
-				std::vector<unsigned int> vIndicesBuffer;
-
-				R_GenerateTexChain(mod, vboleaf, vIndicesBuffer);
-
+				delete vboleaf;
+				modvbo->vLeaves[i] = oldleaf;
+			}
+			else
+			{
 				R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_STATIC);
 				R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_ANIM);
 
@@ -883,17 +912,22 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 				glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * vIndicesBuffer.size(), vIndicesBuffer.data(), GL_STATIC_DRAW);
 				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-				vboleaf->bInit = true;
+				vboleaf->crc = indiceCRC;
+
+				modvbo->vLeafStorage.emplace_back(vboleaf);
+				modvbo->vLeaves[i] = vboleaf;
+
 			}
 		}
 
-		//(*r_visframecount) = 0;
+		modvbo->vLeafStorage.shrink_to_fit();
+		modvbo->vLeaves.shrink_to_fit();
+
+		(*r_visframecount) = 0;
 	}
 	else
 	{
 		auto vboleaf = new wsurf_vbo_leaf_t;
-
-		modvbo->vLeaves.emplace_back(vboleaf);
 
 		R_BrushLinkTextureChain(mod);
 
@@ -912,6 +946,12 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboleaf->hEBO);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * vIndicesBuffer.size(), vIndicesBuffer.data(), GL_STATIC_DRAW);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+		modvbo->vLeaves.resize(1);
+		modvbo->vLeaves[0] = vboleaf;
+
+		modvbo->vLeafStorage.resize(1);
+		modvbo->vLeafStorage[0] = vboleaf;
 	}
 
 	modvbo->hEntityUBO = GL_GenBuffer();
@@ -1459,6 +1499,21 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 		if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
 		{
 			WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
+
+			if (bUseOITBlend)
+			{
+				if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
+					WSurfProgramState |= WSURF_OIT_ADDITIVE_BLEND_ENABLED;
+				else
+					WSurfProgramState |= WSURF_OIT_ALPHA_BLEND_ENABLED;
+			}
+			else
+			{
+				if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
+					WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
+				else
+					WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
+			}
 		}
 
 		auto &drawBatches = modvbo->vDrawBatch[WSURF_DRAWBATCH_STATIC];
@@ -1588,6 +1643,21 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 			if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
 			{
 				WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
+
+				if (bUseOITBlend)
+				{
+					if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
+						WSurfProgramState |= WSURF_OIT_ADDITIVE_BLEND_ENABLED;
+					else
+						WSurfProgramState |= WSURF_OIT_ALPHA_BLEND_ENABLED;
+				}
+				else
+				{
+					if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
+						WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
+					else
+						WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
+				}
 			}
 
 			wsurf_program_t prog = { 0 };
@@ -1738,6 +1808,21 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_leaf_t *vboleaf, bool bUseZPrePass)
 		if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
 		{
 			WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
+
+			if (bUseOITBlend)
+			{
+				if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
+					WSurfProgramState |= WSURF_OIT_ADDITIVE_BLEND_ENABLED;
+				else
+					WSurfProgramState |= WSURF_OIT_ALPHA_BLEND_ENABLED;
+			}
+			else
+			{
+				if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
+					WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
+				else
+					WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
+			}
 		}
 
 		if (r_draw_shadowcaster)

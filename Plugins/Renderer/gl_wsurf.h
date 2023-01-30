@@ -209,14 +209,14 @@ typedef struct wsurf_vbo_leaf_s
 	wsurf_vbo_leaf_s()
 	{
 		hEBO = NULL;
-		bInit = false;
+		crc = 0;
 	}
 
 	GLuint	hEBO;
 	std::vector<brushtexchain_t> vTextureChain[WSURF_TEXCHAIN_MAX];
 	std::vector<wsurf_vbo_batch_t *> vDrawBatch[WSURF_DRAWBATCH_MAX];
 	brushtexchain_t TextureChainSky;
-	bool bInit;
+	CRC32_t crc;
 }wsurf_vbo_leaf_t;
 
 typedef struct wsurf_vbo_s
@@ -226,14 +226,13 @@ typedef struct wsurf_vbo_s
 		pModel = NULL;
 		hEntityUBO = 0;
 		hDecalEBO = 0;
-		pNoVisLeaf = NULL;
 	}
 
 	model_t	*pModel;
 	GLuint	hEntityUBO;
 	GLuint	hDecalEBO;
+	std::vector<wsurf_vbo_leaf_t *> vLeafStorage;
 	std::vector<wsurf_vbo_leaf_t *> vLeaves;
-	wsurf_vbo_leaf_t *pNoVisLeaf;
 }wsurf_vbo_t;
 
 #pragma pack(push, 16)
@@ -485,5 +484,7 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
 #define WSURF_DECAL_ENABLED					0x80000
 #define WSURF_CLIP_ENABLED					0x100000
 #define WSURF_CLIP_WATER_ENABLED			0x200000
-#define WSURF_OIT_ALPHA_BLEND_ENABLED		0x400000
-#define WSURF_OIT_ADDITIVE_BLEND_ENABLED	0x800000
+#define WSURF_ALPHA_BLEND_ENABLED			0x400000
+#define WSURF_ADDITIVE_BLEND_ENABLED		0x800000
+#define WSURF_OIT_ALPHA_BLEND_ENABLED		0x1000000
+#define WSURF_OIT_ADDITIVE_BLEND_ENABLED	0x2000000

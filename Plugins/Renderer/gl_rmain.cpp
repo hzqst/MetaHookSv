@@ -2797,7 +2797,7 @@ void Mod_Init(void)
 	memset(mod_novis, 0xff, sizeof(mod_novis));
 }
 
-bool R_MarkPVSLeaves(int leafindex)
+void R_MarkPVSLeaves(int leafindex)
 {
 	for (int j = 0; j < r_worldmodel->numframes; j++)
 	{
@@ -2827,8 +2827,6 @@ bool R_MarkPVSLeaves(int leafindex)
 			} while (node);
 		}
 	}
-
-	return vis == mod_novis ? true : false;
 }
 
 void R_MarkLeaves(void)
