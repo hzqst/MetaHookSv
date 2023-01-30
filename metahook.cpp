@@ -294,17 +294,13 @@ int MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 
 	if (bDuplicate)
 	{
-			return PLUGIN_LOAD_DUPLICATE;
+		return PLUGIN_LOAD_DUPLICATE;
 	}
 
 	HINTERFACEMODULE hModule = Sys_LoadModule(filepath.c_str());
 
 	if (!hModule)
 	{
-		int err = GetLastError();
-		std::stringstream ss;
-		ss << "MH_LoadPlugin: Could not load " << filename << ", lasterror = " << err;
-		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
 		return PLUGIN_LOAD_ERROR;
 	}
 
@@ -320,10 +316,6 @@ int MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 	if (bDuplicate)
 	{
 		Sys_FreeModule(hModule);
-
-		std::stringstream ss;
-		ss << "MH_LoadPlugin: Duplicate plugin " << filename << ", skipped.";
-		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
 		return PLUGIN_LOAD_DUPLICATE;
 	}
 
@@ -332,10 +324,6 @@ int MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 	if (!fnCreateInterface)
 	{
 		Sys_FreeModule(hModule);
-
-		std::stringstream ss;
-		ss << "MH_LoadPlugin: Invalid plugin " << filename << ", skipped.";
-		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
 		return PLUGIN_LOAD_INVALID;
 	}
 
@@ -378,9 +366,6 @@ int MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 					free(plug);
 					Sys_FreeModule(hModule);
 
-					std::stringstream ss;
-					ss << "MH_LoadPlugin: Could not locate interface for " << filename << ", skipped.";
-					MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
 					return PLUGIN_LOAD_INVALID;
 				}
 			}
@@ -466,6 +451,7 @@ void MH_ReportError(const std::string &fileName, int result, int win32err)
 		ss << "MH_LoadPlugin: Could not load \"" << fileName << "\", Win32Error = " << win32err << ".\n\n";
 
 		LPVOID lpMsgBuf = NULL;
+
 		FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL, win32err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
 
 		ss << (const char *)lpMsgBuf;
@@ -537,7 +523,7 @@ void MH_LoadPlugins(const char *gamedir)
 					{
 						break;
 					}
-					else if (PLUGIN_LOAD_ERROR == result && win32err == ERROR_FILE_NOT_FOUND)
+					else if (PLUGIN_LOAD_ERROR == result && (win32err == ERROR_FILE_NOT_FOUND || win32err == ERROR_MOD_NOT_FOUND))
 					{
 
 					}
@@ -559,7 +545,7 @@ void MH_LoadPlugins(const char *gamedir)
 					{
 						break;
 					}
-					else if (PLUGIN_LOAD_ERROR == result && win32err == ERROR_FILE_NOT_FOUND)
+					else if (PLUGIN_LOAD_ERROR == result && (win32err == ERROR_FILE_NOT_FOUND || win32err == ERROR_MOD_NOT_FOUND))
 					{
 
 					}
@@ -581,7 +567,7 @@ void MH_LoadPlugins(const char *gamedir)
 					{
 						break;
 					}
-					else if (PLUGIN_LOAD_ERROR == result && win32err == ERROR_FILE_NOT_FOUND)
+					else if (PLUGIN_LOAD_ERROR == result && (win32err == ERROR_FILE_NOT_FOUND || win32err == ERROR_MOD_NOT_FOUND))
 					{
 
 					}
@@ -603,7 +589,7 @@ void MH_LoadPlugins(const char *gamedir)
 					{
 						break;
 					}
-					else if (PLUGIN_LOAD_ERROR == result && win32err == ERROR_FILE_NOT_FOUND)
+					else if (PLUGIN_LOAD_ERROR == result && (win32err == ERROR_FILE_NOT_FOUND || win32err == ERROR_MOD_NOT_FOUND))
 					{
 
 					}
