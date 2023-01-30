@@ -48,6 +48,11 @@ typedef struct hook_s hook_t;
 #define ENGINE_GOLDSRC 2
 #define ENGINE_SVENGINE 3
 
+#define PLUGIN_LOAD_SUCCEEDED 0
+#define PLUGIN_LOAD_DUPLICATE 1
+#define PLUGIN_LOAD_ERROR 2
+#define PLUGIN_LOAD_INVALID 3
+
 typedef void (*DisasmSingleCallback)(void *inst, PUCHAR address, size_t instLen, PVOID context);
 typedef BOOL (*DisasmCallback)(void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context);
 typedef BOOL (*FindAddressCallback)(PUCHAR address);

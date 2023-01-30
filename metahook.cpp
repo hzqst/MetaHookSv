@@ -276,7 +276,7 @@ void MH_PrintPluginList(void)
 	}
 }
 
-bool MH_LoadPlugin(const std::string &filepath, const std::string &filename)
+int MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 {
 	bool bDuplicate = false;
 
@@ -294,10 +294,7 @@ bool MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 
 	if (bDuplicate)
 	{
-		std::stringstream ss;
-		ss << "MH_LoadPlugin: Duplicate plugin " << filename << ", ignored.";
-		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
-		return false;
+			return PLUGIN_LOAD_DUPLICATE;
 	}
 
 	HINTERFACEMODULE hModule = Sys_LoadModule(filepath.c_str());
@@ -308,7 +305,7 @@ bool MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 		std::stringstream ss;
 		ss << "MH_LoadPlugin: Could not load " << filename << ", lasterror = " << err;
 		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
-		return false;
+		return PLUGIN_LOAD_ERROR;
 	}
 
 	for (plugin_t *p = g_pPluginBase; p; p = p->next)
@@ -327,7 +324,7 @@ bool MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 		std::stringstream ss;
 		ss << "MH_LoadPlugin: Duplicate plugin " << filename << ", skipped.";
 		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
-		return false;
+		return PLUGIN_LOAD_DUPLICATE;
 	}
 
 	CreateInterfaceFn fnCreateInterface = Sys_GetFactory(hModule);
@@ -339,7 +336,7 @@ bool MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 		std::stringstream ss;
 		ss << "MH_LoadPlugin: Invalid plugin " << filename << ", skipped.";
 		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
-		return false;
+		return PLUGIN_LOAD_INVALID;
 	}
 
 	plugin_t *plug = new plugin_t;
@@ -384,7 +381,7 @@ bool MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 					std::stringstream ss;
 					ss << "MH_LoadPlugin: Could not locate interface for " << filename << ", skipped.";
 					MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
-					return false;
+					return PLUGIN_LOAD_INVALID;
 				}
 			}
 		}
@@ -394,7 +391,7 @@ bool MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 	plug->filepath = filepath;
 	plug->next = g_pPluginBase;
 	g_pPluginBase = plug;
-	return true;
+	return PLUGIN_LOAD_SUCCEEDED;
 }
 
 bool MH_HasSSE()
@@ -449,27 +446,46 @@ bool MH_HasAVX2()
 	return false;
 }
 
-bool MH_LoadPlugins(const char *gamedir, const char *suffix)
+void MH_ReportError(const std::string &fileName, int result, int win32err)
+{
+	if (result == PLUGIN_LOAD_DUPLICATE)
+	{
+		std::stringstream ss;
+		ss << "MH_LoadPlugin: Duplicate plugin \"" << fileName << "\" found, ignored.";
+		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
+	}
+	else if (result == PLUGIN_LOAD_INVALID)
+	{
+		std::stringstream ss;
+		ss << "MH_LoadPlugin: Invalid plugin \"" << fileName << "\" found, ignored.";
+		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
+	}
+	else if (result == PLUGIN_LOAD_ERROR)
+	{
+		std::stringstream ss;
+		ss << "MH_LoadPlugin: Could not load \"" << fileName << "\", Win32Error = " << win32err << ".\n\n";
+
+		LPVOID lpMsgBuf = NULL;
+		FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL, win32err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&lpMsgBuf, 0, NULL);
+
+		ss << (const char *)lpMsgBuf;
+
+		LocalFree(lpMsgBuf);
+
+		MessageBoxA(NULL, ss.str().c_str(), "Warning", MB_ICONWARNING);
+	}
+}
+
+void MH_LoadPlugins(const char *gamedir)
 {
 	std::string aConfigFile = gamedir;
-	aConfigFile += "/metahook/configs/plugins";
-	aConfigFile += suffix;
-	aConfigFile += ".lst";
+	aConfigFile += "/metahook/configs/plugins.lst";
 
 	std::ifstream infile;
 	infile.open(aConfigFile);
 	if (!infile.is_open())
 	{
-		aConfigFile = gamedir;
-		aConfigFile += (g_iEngineType == ENGINE_SVENGINE) ? "/metahook/configs/plugins_svencoop" : "/metahook/configs/plugins_goldsrc";
-		aConfigFile += suffix;
-		aConfigFile += ".lst";
-
-		infile.open(aConfigFile);
-		if (!infile.is_open())
-		{
-			return false;
-		}
+		return;
 	}
 
 	while (!infile.eof())
@@ -489,14 +505,135 @@ bool MH_LoadPlugins(const char *gamedir, const char *suffix)
 
 			std::string aPluginPath = gamedir;
 			aPluginPath += "/metahook/plugins/";
-			aPluginPath += stringLine;
 
-			MH_LoadPlugin(aPluginPath, stringLine);
+			std::string aFileName;
+
+			if (stringLine.size() > 4 &&
+				tolower(stringLine[stringLine.length() - 1]) == 'l' &&
+				tolower(stringLine[stringLine.length() - 2]) == 'l' &&
+				tolower(stringLine[stringLine.length() - 3]) == 'd' &&
+				tolower(stringLine[stringLine.length() - 4]) == '.')
+			{
+				aFileName = stringLine.substr(0, stringLine.length() - 4);
+				aPluginPath += aFileName;
+			}
+			else
+			{
+				aFileName = stringLine;
+				aPluginPath += aFileName;
+			}
+
+			do
+			{
+				if (MH_HasAVX2())
+				{
+					std::string fileName = stringLine + "_AVX2.dll";
+
+					int result = MH_LoadPlugin(aPluginPath + "_AVX2.dll", fileName);
+
+					int win32err = GetLastError();
+
+					if (PLUGIN_LOAD_SUCCEEDED == result)
+					{
+						break;
+					}
+					else if (PLUGIN_LOAD_ERROR == result && win32err == ERROR_FILE_NOT_FOUND)
+					{
+
+					}
+					else
+					{
+						MH_ReportError(fileName, result, win32err);
+					}
+				}
+
+				if (MH_HasAVX())
+				{
+					std::string fileName = stringLine + "_AVX.dll";
+
+					int result = MH_LoadPlugin(aPluginPath + "_AVX.dll", fileName);
+
+					int win32err = GetLastError();
+
+					if (PLUGIN_LOAD_SUCCEEDED == result)
+					{
+						break;
+					}
+					else if (PLUGIN_LOAD_ERROR == result && win32err == ERROR_FILE_NOT_FOUND)
+					{
+
+					}
+					else
+					{
+						MH_ReportError(fileName, result, win32err);
+					}
+				}
+
+				if (MH_HasSSE2())
+				{
+					std::string fileName = stringLine + "_SSE2.dll";
+
+					int result = MH_LoadPlugin(aPluginPath + "_SSE2.dll", fileName);
+
+					int win32err = GetLastError();
+
+					if (PLUGIN_LOAD_SUCCEEDED == result)
+					{
+						break;
+					}
+					else if (PLUGIN_LOAD_ERROR == result && win32err == ERROR_FILE_NOT_FOUND)
+					{
+
+					}
+					else
+					{
+						MH_ReportError(fileName, result, win32err);
+					}
+				}
+
+				if (MH_HasSSE())
+				{
+					std::string fileName = stringLine + "_SSE.dll";
+
+					int result = MH_LoadPlugin(aPluginPath + "_SSE.dll", fileName);
+
+					int win32err = GetLastError();
+
+					if (PLUGIN_LOAD_SUCCEEDED == result)
+					{
+						break;
+					}
+					else if (PLUGIN_LOAD_ERROR == result && win32err == ERROR_FILE_NOT_FOUND)
+					{
+
+					}
+					else
+					{
+						MH_ReportError(fileName, result, win32err);
+					}
+				}
+
+				if (1)
+				{
+					std::string fileName = stringLine + ".dll";
+
+					int result = MH_LoadPlugin(aPluginPath + ".dll", fileName);
+
+					int win32err = GetLastError();
+
+					if (PLUGIN_LOAD_SUCCEEDED == result)
+					{
+						break;
+					}
+					else
+					{
+						MH_ReportError(fileName, result, win32err);
+					}
+				}
+			} while (0);
 		}
 	}
 	infile.close();
-
-	return true;
 }
 
 int(*g_pfnHUD_GetStudioModelInterface)(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio) = NULL;
@@ -994,30 +1131,7 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 
 	MH_InlineHook(g_pfnClientDLL_Init, MH_ClientDLL_Init, (void **)&g_original_ClientDLL_Init);
 
-	if (MH_HasAVX2() && MH_LoadPlugins(szGameName, "_avx2"))
-	{
-		
-	}
-	else if (MH_HasAVX() && MH_LoadPlugins(szGameName, "_avx"))
-	{
-		
-	}
-	else if (MH_HasSSE2() && MH_LoadPlugins(szGameName, "_sse2"))
-	{
-
-	}
-	else if (MH_HasSSE() && MH_LoadPlugins(szGameName, "_sse"))
-	{
-
-	}
-	else if(MH_LoadPlugins(szGameName, ""))
-	{
-		
-	}
-	else
-	{
-		//No plugin loaded
-	}
+	MH_LoadPlugins(szGameName);
 
 	g_bTransactionInlineHook = true;
 
