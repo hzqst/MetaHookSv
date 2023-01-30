@@ -96,7 +96,7 @@ Let's assume that you have all requirements installed correctly.
 
 ## Load Order
 
-1. MetaHook launcher always loads plugins listed in `\(GameDirectory)\metahook\configs\plugins.lst` in ascending order.
+1. MetaHook launcher always loads plugins listed in `\(GameDirectory)\metahook\configs\plugins.lst` in ascending order. Plugin name started with ";" will be ignored.
 
 2. (PluginName)_AVX2.dll will be loaded if exists only when AVX2 instruction set supported.
 
