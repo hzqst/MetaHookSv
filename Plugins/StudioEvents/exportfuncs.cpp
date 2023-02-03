@@ -11,16 +11,17 @@
 
 cl_enginefunc_t gEngfuncs;
 engine_studio_api_t IEngineStudio;
-r_studio_interface_t **gpStudioInterface;
+r_studio_interface_t** gpStudioInterface;
 
-cvar_t *cl_studiosnd_anti_spam_diff = NULL;
-cvar_t *cl_studiosnd_anti_spam_same = NULL;
-cvar_t *cl_studiosnd_anti_spam_delay = NULL;
-cvar_t *cl_studiosnd_debug = NULL;
+cvar_t* cl_studiosnd_anti_spam_diff = NULL;
+cvar_t* cl_studiosnd_anti_spam_same = NULL;
+cvar_t* cl_studiosnd_anti_spam_delay = NULL;
+cvar_t* cl_studiosnd_anti_spam_player = NULL;
+cvar_t* cl_studiosnd_debug = NULL;
 
 typedef struct studio_event_sound_s
 {
-	studio_event_sound_s(const char *n, int e, int f, float t)
+	studio_event_sound_s(const char* n, int e, int f, float t)
 	{
 		strcpy(name, n);
 		entindex = e;
@@ -44,6 +45,7 @@ void HUD_Init(void)
 	cl_studiosnd_anti_spam_diff = gEngfuncs.pfnRegisterVariable("cl_studiosnd_anti_spam_diff", "0.5", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cl_studiosnd_anti_spam_same = gEngfuncs.pfnRegisterVariable("cl_studiosnd_anti_spam_same", "1.0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cl_studiosnd_anti_spam_delay = gEngfuncs.pfnRegisterVariable("cl_studiosnd_anti_spam_delay", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	cl_studiosnd_anti_spam_player = gEngfuncs.pfnRegisterVariable("cl_studiosnd_anti_spam_player", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cl_studiosnd_debug = gEngfuncs.pfnRegisterVariable("cl_studiosnd_debug", "0", FCVAR_CLIENTDLL);
 
 	g_StudioEventSoundPlayed.clear();
@@ -76,7 +78,7 @@ void HUD_Frame(double a1)
 		if (clientTime > itor->time)
 		{
 			auto ent = gEngfuncs.GetEntityByIndex(itor->entindex);
-			
+
 			if (ent && ent->curstate.messagenum == local->curstate.messagenum)//TODO: change to cl_parsecount? player not emitted will get incorrect messagenum
 			{
 				mstudioevent_s ev;
@@ -97,10 +99,13 @@ void HUD_Frame(double a1)
 	}
 }
 
-void HUD_StudioEvent(const struct mstudioevent_s *ev, const struct cl_entity_s *ent)
+void HUD_StudioEvent(const struct mstudioevent_s* ev, const struct cl_entity_s* ent)
 {
 	if (ev->event == 5004 && ev->options[0])
 	{
+		if (cl_studiosnd_anti_spam_player->value > 0 && ent->player)
+			return;
+
 		float clientTime = (float)gEngfuncs.GetClientTime();
 
 		bool bFound = false;
