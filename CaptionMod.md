@@ -18,7 +18,7 @@ check **Command Arguments**
 
 ### Translate HUDText message into other language dynamically (regex supported)
 
-There is a example file demostrates how to translate constant HUD TextMessage to `schinese` , the file is at  `\Sven Co-op\svencoop_schinese\maps\restriction02_dictionary.csv`.
+There is a example file demostrates how to translate static HUD TextMessage to `schinese` , the file is at  `\Sven Co-op\svencoop_schinese\maps\restriction02_dictionary.csv`.
 
 There is a example file demostrates how to translate dynamic HUD TextMessage to `schinese` using regex, the file is at `\Sven Co-op\svencoop\captionmod\dictionary_schinese.txt` called `#SVENCOOP_PLAYERINFO`.
 
