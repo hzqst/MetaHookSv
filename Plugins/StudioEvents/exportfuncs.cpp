@@ -16,7 +16,7 @@ r_studio_interface_t** gpStudioInterface;
 cvar_t* cl_studiosnd_anti_spam_diff = NULL;
 cvar_t* cl_studiosnd_anti_spam_same = NULL;
 cvar_t* cl_studiosnd_anti_spam_delay = NULL;
-cvar_t* cl_studiosnd_anti_spam_player = NULL;
+cvar_t* cl_studiosnd_block_player = NULL;
 cvar_t* cl_studiosnd_debug = NULL;
 
 typedef struct studio_event_sound_s
@@ -45,7 +45,7 @@ void HUD_Init(void)
 	cl_studiosnd_anti_spam_diff = gEngfuncs.pfnRegisterVariable("cl_studiosnd_anti_spam_diff", "0.5", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cl_studiosnd_anti_spam_same = gEngfuncs.pfnRegisterVariable("cl_studiosnd_anti_spam_same", "1.0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cl_studiosnd_anti_spam_delay = gEngfuncs.pfnRegisterVariable("cl_studiosnd_anti_spam_delay", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	cl_studiosnd_anti_spam_player = gEngfuncs.pfnRegisterVariable("cl_studiosnd_anti_spam_player", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	cl_studiosnd_block_player = gEngfuncs.pfnRegisterVariable("cl_studiosnd_block_player", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cl_studiosnd_debug = gEngfuncs.pfnRegisterVariable("cl_studiosnd_debug", "0", FCVAR_CLIENTDLL);
 
 	g_StudioEventSoundPlayed.clear();
@@ -103,8 +103,13 @@ void HUD_StudioEvent(const struct mstudioevent_s* ev, const struct cl_entity_s* 
 {
 	if (ev->event == 5004 && ev->options[0])
 	{
-		if (cl_studiosnd_anti_spam_player->value > 0 && ent->player)
+		if (cl_studiosnd_block_player->value > 0 && ent->player)
+		{
+			if (cl_studiosnd_debug->value)
+				gEngfuncs.Con_Printf("[StudioEvents] Blocked %s\n", ev->options);
+
 			return;
+		}
 
 		float clientTime = (float)gEngfuncs.GetClientTime();
 
