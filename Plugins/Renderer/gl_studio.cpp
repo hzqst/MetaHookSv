@@ -1030,31 +1030,68 @@ inline qboolean R_IsFlippedViewModel(void)
 	return false;
 }
 
+/*
+
+studiohdr_t *__cdecl R_LoadTextures(model_t *a1)
+{
+  studiohdr_t *result; // eax
+  model_t *v2; // eax
+  int len; // eax
+  int mod; // eax
+  model_t *mod2; // edi
+  studiohdr_t *texhdr; // esi
+  int v7; // [esp+0h] [ebp-10Ch]
+  char modelname[260]; // [esp+4h] [ebp-108h]
+
+  result = pstudiohdr;
+  if ( !pstudiohdr->textureindex )
+  {
+	v2 = (model_t *)a1->texinfo;
+	if ( !v2 || (result = (studiohdr_t *)v2->cache.data) == 0 )
+	{
+	  Q_strncpy(modelname, a1->name, 258u);
+	  modelname[258] = 0;
+	  len = strlen(modelname);
+	  strcpy((char *)&v7 + len, "T.mdl");
+	  mod = Mod_ForName((int)modelname, 1, 0);
+	  mod2 = (model_t *)mod;
+	  a1->texinfo = (void *)mod;
+	  texhdr = *(studiohdr_t **)(mod + 388);
+	  Q_strncpy(texhdr->name, modelname, 63u);
+	  texhdr->name[63] = 0;
+	  result = (studiohdr_t *)mod2->cache.data;
+	}
+  }
+  return result;
+}
+
+*/
+
 studiohdr_t *R_LoadTextures(model_t *psubm)
 {
 	if ((*pstudiohdr)->textureindex == 0)
 	{
-		studiohdr_t *ptexturehdr;
-		char modelname[256];
+		if (psubm->texinfo)
+		{
+			auto texmodel = (model_t *)psubm->texinfo;
 
+			auto ptexturehdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(texmodel);
+
+			//Fix: could be nullptr ?
+			if(ptexturehdr)
+				return ptexturehdr;
+		}
+
+		//This is actually 260 instead of 256
+		char modelname[260];
 		strncpy(modelname, psubm->name, sizeof(modelname) - 2);
 		modelname[sizeof(modelname) - 2] = 0;
 
 		strcpy(&modelname[strlen(modelname) - 4], "T.mdl");
 
-		if (psubm->texinfo)
-		{
-			auto texmodel = (model_t *)psubm->texinfo;
-
-			ptexturehdr = (studiohdr_t *)texmodel->cache.data;
-
-			return ptexturehdr;
-		}
-
 		auto texmodel = IEngineStudio.Mod_ForName(modelname, true);
 		psubm->texinfo = (mtexinfo_t *)texmodel;
-
-		ptexturehdr = (studiohdr_t *)texmodel->cache.data;
+		auto ptexturehdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(texmodel);
 		strncpy(ptexturehdr->name, modelname, sizeof(ptexturehdr->name) - 1);
 		ptexturehdr->name[sizeof(ptexturehdr->name) - 1] = 0;
 
