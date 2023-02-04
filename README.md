@@ -40,11 +40,9 @@ Use a separate account to play Sven Co-op if you still worry about VAC ban wave.
 
 2. All required executable and resource files are in `Build` folder, pick [whatever you want](Build/README.md) and copy them to `\SteamLibrary\steamapps\common\Sven Co-op\`.
 
-3. (Optional) Rename `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\plugins_svencoop.lst` to `plugins.lst`
+3. Launch game from Steam Game Library or `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`
 
-4. Launch game from Steam Game Library or `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`
-
-* The new `svencoop.exe` is renamed from `metahook.exe`, you could run game from "metahook.exe -game svencoop" however it will cause game crash when changing video settings.
+* The new `svencoop.exe` is renamed from `metahook.exe`. You could run game from "metahook.exe -game svencoop" however it will cause game crash when changing video settings.
 
 * Plugins can be disabled or enabled in `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\plugins.lst`
 

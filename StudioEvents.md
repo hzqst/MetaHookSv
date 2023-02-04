@@ -26,3 +26,5 @@ cl_studiosnd_anti_spam_diff (duration) : Any studio-event sound will be blocked 
 cl_studiosnd_anti_spam_same (duration) : Any studio-event sound will be blocked or delayed if another studio-event sound with same name was played within this duration before.
 
 cl_studiosnd_anti_spam_delay 0 / 1 : When set to 1, studio-event sound will be delayed instead of blocked for anti-spam.
+
+cl_studiosnd_block_player 0 / 1 : When set to 1, studio-event sound from players will be completely blocked.

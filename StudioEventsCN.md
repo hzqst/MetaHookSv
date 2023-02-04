@@ -26,3 +26,5 @@ cl_studiosnd_anti_spam_diff (时间长度) : 如果之前一段时间内有不�
 cl_studiosnd_anti_spam_same (时间长度) : 如果之前一段时间内有相同的模型自带音效已经播放过了，那么接下来一段时间里将不会再播放任何相同的模型自带音效。
 
 cl_studiosnd_anti_spam_delay 0 / 1 : 设为1之后音效会被延时播放而不是直接阻止播放。
+
+cl_studiosnd_block_player 0 / 1 : 设为1之后所有来自玩家的模型自带音效会被阻止播放（不包括viewmodel）。
