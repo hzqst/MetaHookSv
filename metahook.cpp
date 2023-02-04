@@ -513,7 +513,7 @@ void MH_LoadPlugins(const char *gamedir)
 			{
 				if (MH_HasAVX2())
 				{
-					std::string fileName = stringLine + "_AVX2.dll";
+					std::string fileName = aFileName + "_AVX2.dll";
 
 					int result = MH_LoadPlugin(aPluginPath + "_AVX2.dll", fileName);
 
@@ -535,7 +535,7 @@ void MH_LoadPlugins(const char *gamedir)
 
 				if (MH_HasAVX())
 				{
-					std::string fileName = stringLine + "_AVX.dll";
+					std::string fileName = aFileName + "_AVX.dll";
 
 					int result = MH_LoadPlugin(aPluginPath + "_AVX.dll", fileName);
 
@@ -557,7 +557,7 @@ void MH_LoadPlugins(const char *gamedir)
 
 				if (MH_HasSSE2())
 				{
-					std::string fileName = stringLine + "_SSE2.dll";
+					std::string fileName = aFileName + "_SSE2.dll";
 
 					int result = MH_LoadPlugin(aPluginPath + "_SSE2.dll", fileName);
 
@@ -579,7 +579,7 @@ void MH_LoadPlugins(const char *gamedir)
 
 				if (MH_HasSSE())
 				{
-					std::string fileName = stringLine + "_SSE.dll";
+					std::string fileName = aFileName + "_SSE.dll";
 
 					int result = MH_LoadPlugin(aPluginPath + "_SSE.dll", fileName);
 
@@ -601,7 +601,7 @@ void MH_LoadPlugins(const char *gamedir)
 
 				if (1)
 				{
-					std::string fileName = stringLine + ".dll";
+					std::string fileName = aFileName + ".dll";
 
 					int result = MH_LoadPlugin(aPluginPath + ".dll", fileName);
 
