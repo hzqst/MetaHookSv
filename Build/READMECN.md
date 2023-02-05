@@ -10,7 +10,7 @@ Renderer.dll的依赖项，如果要使用Renderer.dll则必须安装
 
 ### SDL.dll (可选)
 
-`SDL2.dll`文件是用来修复原版SDL使用中文输入法进行游戏时可能发生的内存越界写入导致游戏崩溃的问题。如果你全程都关闭中文输入法的话也可以选择不替换`SDL2.dll`。当然，你也可以从Steam根目录（默认位置`C:\Program Files (x86)\Steam`）复制`SDL2.dll`，效果是完全一样的。
+`SDL2.dll`文件是用来修复原版SDL使用中文输入法进行游戏时可能发生的内存越界写入导致游戏崩溃的问题。如果你全程都关闭中文输入法的话也可以选择不替换`SDL2.dll`。
 
 ### svencoop/captionmod/* (可选)
 
