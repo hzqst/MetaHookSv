@@ -867,7 +867,7 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 {
 	if (mod == r_worldmodel)
 	{
-		(*r_visframecount) = 0;
+		//(*r_visframecount) = 0;
 
 		std::vector<unsigned int> vIndicesBuffer;
 
@@ -923,7 +923,7 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 		modvbo->vLeafStorage.shrink_to_fit();
 		modvbo->vLeaves.shrink_to_fit();
 
-		(*r_visframecount) = 0;
+		//(*r_visframecount) = 0;
 	}
 	else
 	{

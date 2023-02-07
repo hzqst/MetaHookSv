@@ -658,7 +658,7 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 void ClientDLL_DrawTransparentTriangles(void)
 {
-	gEngfuncs.pTriAPI->RenderMode(kRenderTransTexture);
+	//gEngfuncs.pTriAPI->RenderMode(kRenderTransTexture);
 
 	if(gExportfuncs.HUD_DrawTransparentTriangles)
 		gExportfuncs.HUD_DrawTransparentTriangles();
