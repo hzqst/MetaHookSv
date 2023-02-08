@@ -97,6 +97,12 @@ void R_RenderDynamicLightmaps(msurface_t *fa)
 			base += fa->light_t * BLOCK_WIDTH * LIGHTMAP_BYTES + fa->light_s * LIGHTMAP_BYTES;
 			R_BuildLightMap(fa, base, BLOCK_WIDTH * LIGHTMAP_BYTES);
 		}
+
+		//Fix: force to cache even if lightmap is not present (hlrad was not processed for the .bsp)
+		for (maps = 0; maps < MAXLIGHTMAPS && fa->styles[maps] != 255; maps++)
+		{
+			fa->cached_light[maps] = d_lightstylevalue[fa->styles[maps]];
+		}
 	}
 }
 

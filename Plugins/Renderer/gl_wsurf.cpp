@@ -837,20 +837,6 @@ void R_GenerateTexChain(model_t *mod, wsurf_vbo_leaf_t *vboleaf, std::vector<uns
 	}
 }
 
-wsurf_vbo_leaf_t *R_FindLeafInStorage(wsurf_vbo_t *modvbo, int maxleafindex)
-{
-	for (int i = 0; i < maxleafindex; ++i)
-	{
-		for (int j = 0; j < r_worldmodel->numnodes; j++)
-		{
-			if (r_worldmodel->nodes[j].visframe == (*r_visframecount))
-			{
-
-			}
-		}
-	}
-}
-
 wsurf_vbo_leaf_t *R_FindLeafStorage(wsurf_vbo_t *modvbo, CRC32_t crc)
 {
 	for (size_t i = 0; i < modvbo->vLeafStorage.size(); ++i)
