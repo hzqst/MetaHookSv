@@ -18,7 +18,7 @@ void main()
   #ifdef TONEMAP_ENABLED
   lum = exposure / max(0.001, texture(lumTex, vec2(0.5, 0.5)).x);
   #else
-  lum = min(texture2D(lumTex, vec2(0.5, 0.5)).x, 0.8);
+  lum = min(texture(lumTex, vec2(0.5, 0.5)).x, 0.8);
   #endif
 #endif
 

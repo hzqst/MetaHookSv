@@ -34,7 +34,7 @@ void main(void)
 {
 	ClipPlaneTest(v_worldpos.xyz, v_normal.xyz);
 
-	vec4 baseColor = texture2D(baseTex, v_texcoord);
+	vec4 baseColor = texture(baseTex, v_texcoord);
 
 #if !defined(ADDITIVE_BLEND_ENABLED) && !defined(OIT_ADDITIVE_BLEND_ENABLED)
 	//Alpha blend

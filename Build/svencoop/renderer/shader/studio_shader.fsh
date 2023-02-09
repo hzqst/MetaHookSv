@@ -177,7 +177,7 @@ void main(void)
 
 	vec2 texcoord = v_texcoord * r_uvscale;
 
-	vec4 diffuseColor = texture2D(diffuseTex, texcoord);
+	vec4 diffuseColor = texture(diffuseTex, texcoord);
 
 	diffuseColor = TexGammaToLinear(diffuseColor);
 
@@ -204,7 +204,7 @@ void main(void)
 	#ifdef STUDIO_NF_MASKED
 		vec2 texcoord = v_texcoord * r_uvscale;
 
-		vec4 diffuseColorMask = texture2D(diffuseTex, texcoord);
+		vec4 diffuseColorMask = texture(diffuseTex, texcoord);
 
 		if(diffuseColorMask.a < 0.5)
 			discard;
