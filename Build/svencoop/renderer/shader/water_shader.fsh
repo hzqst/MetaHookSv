@@ -37,7 +37,7 @@ vec3 GenerateWorldPositionFromDepth(vec2 texCoord)
 
 	vec4 clipSpaceLocation;	
 	clipSpaceLocation.xy = texCoord * 2.0-1.0;
-	clipSpaceLocation.z  = texture2D(depthTex, texCoord).x * 2.0-1.0;
+	clipSpaceLocation.z  = texture(depthTex, texCoord).x * 2.0-1.0;
 	clipSpaceLocation.w  = 1.0;
 	vec4 homogenousLocation = SceneUBO.invViewMatrix * SceneUBO.invProjMatrix * clipSpaceLocation;
 	return homogenousLocation.xyz / homogenousLocation.w;
@@ -62,7 +62,7 @@ void main()
 		sampler2D baseTex = sampler2D(TextureSSBO[TEXTURE_SSBO_WATER_BASE]);
 	#endif
 
-	vFinalColor.xyz = texture2D(baseTex, v_diffusetexcoord.xy).xyz;
+	vFinalColor.xyz = texture(baseTex, v_diffusetexcoord.xy).xyz;
 	vFinalColor.a = flWaterColorAlpha;
 
 	//The basetexture of water is in TexGamme Space and will need to convert to Linear Space
@@ -79,10 +79,10 @@ void main()
 	vec2 vNormTexCoord2 = vec2(-0.13, 0.11) * SceneUBO.time + v_diffusetexcoord.xy;
 	vec2 vNormTexCoord3 = vec2(-0.14, -0.16) * SceneUBO.time + v_diffusetexcoord.xy;
 	vec2 vNormTexCoord4 = vec2(0.17, 0.15) * SceneUBO.time + v_diffusetexcoord.xy;
-	vec4 vNorm1 = texture2D(normalTex, vNormTexCoord1);
-	vec4 vNorm2 = texture2D(normalTex, vNormTexCoord2);
-	vec4 vNorm3 = texture2D(normalTex, vNormTexCoord3);
-	vec4 vNorm4 = texture2D(normalTex, vNormTexCoord4);
+	vec4 vNorm1 = texture(normalTex, vNormTexCoord1);
+	vec4 vNorm2 = texture(normalTex, vNormTexCoord2);
+	vec4 vNorm3 = texture(normalTex, vNormTexCoord3);
+	vec4 vNorm4 = texture(normalTex, vNormTexCoord4);
 	vNormal = vNorm1.xyz + vNorm2.xyz + vNorm3.xyz + vNorm4.xyz;
 	vNormal = (vNormal * 0.25) * 2.0 - 1.0;
 
@@ -110,7 +110,7 @@ void main()
 		#endif
 
 		vec2 vRefractTexCoord = vBaseTexCoord + vOffsetTexCoord;
-		vec4 vRefractColor = texture2D(refractTex, vRefractTexCoord);
+		vec4 vRefractColor = texture(refractTex, vRefractTexCoord);
 		vRefractColor.a = 1.0;
 
 		vRefractColor = mix(vRefractColor, vWaterColor, flWaterColorAlpha);
@@ -157,7 +157,7 @@ void main()
 		#endif
 
 		vec2 vReflectTexCoord = vBaseTexCoord2 + vOffsetTexCoord;
-		vec4 vReflectColor = texture2D(reflectTex, vReflectTexCoord);
+		vec4 vReflectColor = texture(reflectTex, vReflectTexCoord);
 		vReflectColor.a = 1.0;
 
 		float flReflectFactor = clamp(pow(flFresnel, u_fresnelfactor.z), 0.0, u_fresnelfactor.w);

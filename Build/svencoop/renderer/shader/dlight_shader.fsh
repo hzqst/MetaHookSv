@@ -1,9 +1,9 @@
 #version 430
 
-#include "common.h"
-
 #extension GL_EXT_texture_array : require
 #extension GL_EXT_gpu_shader4 : require
+
+#include "common.h"
 
 #define GBUFFER_INDEX_DIFFUSE		0.0
 #define GBUFFER_INDEX_LIGHTMAP		1.0
@@ -201,7 +201,7 @@ vec4 CalcLightInternal(vec3 World, vec3 LightDirection, vec3 Normal, vec2 vBaseT
             float SpecularFactor = dot(VertexToEye, LightReflect);
             if (SpecularFactor > 0.0) {
 
-                float specularValue = texture2DArray(gbufferTex, vec3(vBaseTexCoord, GBUFFER_INDEX_SPECULAR)).r;
+                float specularValue = texture(gbufferTex, vec3(vBaseTexCoord, GBUFFER_INDEX_SPECULAR)).r;
 
                 SpecularFactor = pow(SpecularFactor, u_lightspecularpow);
                 SpecularColor = vec4(u_lightcolor * u_lightspecular * SpecularFactor * specularValue, 1.0);
@@ -280,9 +280,9 @@ void main()
     vec2 vBaseTexCoord = v_texcoord.xy;
 #endif
 
-    vec4 worldnormColor = texture2DArray(gbufferTex, vec3(vBaseTexCoord, GBUFFER_INDEX_WORLDNORM));
+    vec4 worldnormColor = texture(gbufferTex, vec3(vBaseTexCoord, GBUFFER_INDEX_WORLDNORM));
 
-    float depth = texture2D(depthTex, vBaseTexCoord).r;
+    float depth = texture(depthTex, vBaseTexCoord).r;
 
     //vec3 worldpos = GenerateWorldPositionFromDepth(vBaseTexCoord, depth);
 

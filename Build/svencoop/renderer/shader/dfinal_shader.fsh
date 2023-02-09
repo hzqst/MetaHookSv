@@ -1,11 +1,11 @@
 #version 430
 
-#include "common.h"
-
 #extension GL_EXT_texture_array : require
 #extension GL_EXT_gpu_shader4 : require
 
-#define GBUFFER_INDEX_DIFFUSE		0.0
+#include "common.h"
+
+#define GBUFFER_INDEX_DIFFUSE		0.0 
 #define GBUFFER_INDEX_LIGHTMAP		1.0
 #define GBUFFER_INDEX_WORLDNORM		2.0
 #define GBUFFER_INDEX_SPECULAR		3.0
@@ -32,7 +32,7 @@ float random (vec2 uv) {
 
 vec4 GenerateBasicColor(vec2 texcoord)
 {
-    vec4 diffuseColor = texture2DArray(gbufferTex, vec3(texcoord, GBUFFER_INDEX_DIFFUSE));
+    vec4 diffuseColor = texture(gbufferTex, vec3(texcoord, GBUFFER_INDEX_DIFFUSE));
 
     vec4 resultColor = diffuseColor;
     resultColor.a = 1.0;
@@ -71,7 +71,7 @@ vec4 GenerateBasicColorBlur(vec2 texcoord, float offset)
 
 vec4 GenerateAdditiveColor(vec2 texcoord)
 {
-    vec4 additiveColor = texture2DArray(gbufferTex, vec3(texcoord, GBUFFER_INDEX_ADDITIVE));
+    vec4 additiveColor = texture(gbufferTex, vec3(texcoord, GBUFFER_INDEX_ADDITIVE));
 
     vec4 resultColor = additiveColor;
     resultColor.a = 1.0;
@@ -95,7 +95,7 @@ vec2 GenerateProjectedPosition(vec3 pos){
 
 vec3 GenerateWorldNormal(vec2 texcoord)
 {
-    vec4 worldnormColor = texture2DArray(gbufferTex, vec3(texcoord, GBUFFER_INDEX_WORLDNORM));
+    vec4 worldnormColor = texture(gbufferTex, vec3(texcoord, GBUFFER_INDEX_WORLDNORM));
     vec3 normalworld = OctahedronToUnitVector(worldnormColor.xy);
 
     return normalworld;
@@ -131,7 +131,7 @@ vec4 ScreenSpaceReflectionInternal(vec3 position, vec3 reflection)
     int i = 0;
 	for (; i < u_ssrIterCount; i++) {
 		screenPosition = GenerateProjectedPosition(marchingPosition);
-		depthFromScreen = abs(GenerateViewPositionFromDepth(screenPosition, texture2D(depthTex, screenPosition).x).z);
+		depthFromScreen = abs(GenerateViewPositionFromDepth(screenPosition, texture(depthTex, screenPosition).x).z);
 		delta = abs(marchingPosition.z) - depthFromScreen;
 		if (abs(delta) < u_ssrDistanceBias) {
             if(screenPosition.x < 0.0 || screenPosition.x > 1.0 || screenPosition.y < 0.0 || screenPosition.y > 1.0){
@@ -165,7 +165,7 @@ vec4 ScreenSpaceReflectionInternal(vec3 position, vec3 reflection)
 			marchingPosition = marchingPosition - step * sign(delta);
 			
 			screenPosition = GenerateProjectedPosition(marchingPosition);
-			depthFromScreen = abs(GenerateViewPositionFromDepth(screenPosition, texture2D(depthTex, screenPosition).x).z);
+			depthFromScreen = abs(GenerateViewPositionFromDepth(screenPosition, texture(depthTex, screenPosition).x).z);
 			delta = abs(marchingPosition.z) - depthFromScreen;
 			
 			if (abs(delta) < u_ssrDistanceBias) {
@@ -183,7 +183,7 @@ vec4 ScreenSpaceReflectionInternal(vec3 position, vec3 reflection)
 
 vec4 ScreenSpaceReflection()
 {
-    vec3 position = GenerateViewPositionFromDepth(texCoord.xy, texture2D(depthTex, texCoord.xy).x);
+    vec3 position = GenerateViewPositionFromDepth(texCoord.xy, texture(depthTex, texCoord.xy).x);
     vec3 viewnormal = GenerateViewNormal(texCoord.xy);
 
     vec3 reflectionDirection = normalize(reflect(position, viewnormal));
@@ -203,10 +203,10 @@ float CalcShadowIntensityLumFadeout(vec4 lightmapColor, float intensity)
 
 void main()
 {
-    vec4 diffuseColor = texture2DArray(gbufferTex, vec3(texCoord, GBUFFER_INDEX_DIFFUSE));
-    vec4 lightmapColor = texture2DArray(gbufferTex, vec3(texCoord, GBUFFER_INDEX_LIGHTMAP));
-	vec4 worldnormColor = texture2DArray(gbufferTex, vec3(texCoord, GBUFFER_INDEX_WORLDNORM));
-    vec4 specularColor = texture2DArray(gbufferTex, vec3(texCoord, GBUFFER_INDEX_SPECULAR));
+    vec4 diffuseColor = texture(gbufferTex, vec3(texCoord, GBUFFER_INDEX_DIFFUSE));
+    vec4 lightmapColor = texture(gbufferTex, vec3(texCoord, GBUFFER_INDEX_LIGHTMAP));
+	vec4 worldnormColor = texture(gbufferTex, vec3(texCoord, GBUFFER_INDEX_WORLDNORM));
+    vec4 specularColor = texture(gbufferTex, vec3(texCoord, GBUFFER_INDEX_SPECULAR));
 
 	float shadowIntensity = CalcShadowIntensityLumFadeout(lightmapColor, specularColor.z);
 	lightmapColor.xyz *= (1.0 - shadowIntensity);

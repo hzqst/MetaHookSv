@@ -107,7 +107,7 @@ vec3 NormalMapping(vec3 T, vec3 B, vec3 N, vec2 baseTexcoord)
 	vec2 vNormTexcoord = vec2(baseTexcoord.x * v_normaltexcoord.x, baseTexcoord.y * v_normaltexcoord.y);
 
     // Sample tangent space normal vector from normal map and remap it from [0, 1] to [-1, 1] range.
-    vec3 n = texture2D(normalTex, vNormTexcoord).xyz;
+    vec3 n = texture(normalTex, vNormTexcoord).xyz;
     n = normalize(n * 2.0 - 1.0);
 
     // Multiple normal by the TBN matrix to transform the normal from tangent space to world space.
@@ -179,7 +179,7 @@ float ShadowCompareDepth(vec4 coord, vec2 off, float layer)
 {
 	vec4 newcoord = coord + vec4(off.x * SHADOW_TEXTURE_OFFSET, off.y * SHADOW_TEXTURE_OFFSET, 0.0, 0.0);
 
-	float depth0 = texture2DArray(shadowmapTexArray, vec3(newcoord.xy / newcoord.w, layer) ).a;
+	float depth0 = texture(shadowmapTexArray, vec3(newcoord.xy / newcoord.w, layer) ).a;
 
 	float depth1 = newcoord.z / newcoord.w;
 
@@ -188,7 +188,7 @@ float ShadowCompareDepth(vec4 coord, vec2 off, float layer)
 
 vec3 ShadowGetWorldPosition(vec4 coord, float layer)
 {
-	return texture2DArray(shadowmapTexArray, vec3(coord.xy / coord.w, layer) ).xyz;
+	return texture(shadowmapTexArray, vec3(coord.xy / coord.w, layer) ).xyz;
 }
 
 float CalcShadowIntensityInternal(vec3 worldpos, int ilayer, float layer, float shadow_high, float shadow_medium, float shadow_low)
@@ -358,7 +358,7 @@ void main()
 
 #ifdef LIGHTMAP_ENABLED
 
-	vec4 lightmapColor = texture2DArray(lightmapTexArray, v_lightmaptexcoord.xyz);
+	vec4 lightmapColor = texture(lightmapTexArray, v_lightmaptexcoord.xyz);
 
 	lightmapColor = LightGammaToLinear(lightmapColor);
 
@@ -429,7 +429,7 @@ void main()
 			#endif
 
 			vec2 specularTexCoord = vec2(baseTexcoord.x * v_speculartexcoord.x, baseTexcoord.y * v_speculartexcoord.y);
-			specularColor.xy = texture2D(specularTex, specularTexCoord).xy;
+			specularColor.xy = texture(specularTex, specularTexCoord).xy;
 
 		#endif
 

@@ -33,7 +33,7 @@ void main()
 
 #endif
 
-	vec4 vPortalColor = texture2D(portalTex, vPortalTexCoord);
+	vec4 vPortalColor = texture(portalTex, vPortalTexCoord);
 	
 	vPortalColor = GammaToLinear(vPortalColor);
 
@@ -42,7 +42,7 @@ void main()
 #ifdef OVERLAY_TEXTURE_ENABLED
 
 	vec2 vOverlayTexCoord = vec2(v_diffusetexcoord.x, v_diffusetexcoord.y);
-	vec4 vOverlayColor = texture2D(overlayTex, vOverlayTexCoord);
+	vec4 vOverlayColor = texture(overlayTex, vOverlayTexCoord);
 
 	if(vOverlayColor.a > 0.5)
 		vFinalColor = vOverlayColor;
