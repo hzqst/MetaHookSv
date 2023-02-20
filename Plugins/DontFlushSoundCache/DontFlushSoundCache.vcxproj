@@ -116,6 +116,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\HLSDK\common\interface.h" />
     <ClInclude Include="..\..\metahook.h" />
+    <ClInclude Include="..\PrecacheManager\privatehook.h" />
     <ClInclude Include="parsemsg.h" />
     <ClInclude Include="exportfuncs.h" />
     <ClInclude Include="plugins.h" />

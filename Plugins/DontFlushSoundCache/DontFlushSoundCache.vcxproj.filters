@@ -40,5 +40,8 @@
     <ClInclude Include="parsemsg.h">
       <Filter>Header</Filter>
     </ClInclude>
+    <ClInclude Include="..\PrecacheManager\privatehook.h">
+      <Filter>Source</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

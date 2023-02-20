@@ -266,26 +266,20 @@ water_vbo_t *R_FindFlatWaterVBO(cl_entity_t *ent, msurface_t *surf, int directio
 		auto cache = g_WaterVBOCache[i];
 		if ((cache->ent == ent || (cache->ent->curstate.rendermode == ent->curstate.rendermode && cache->ent->curstate.origin[0] == 0 && cache->ent->curstate.origin[1] == 0 && cache->ent->curstate.origin[2] == 0 && ent->curstate.origin[0] == 0 && ent->curstate.origin[1] == 0 && ent->curstate.origin[2] == 0)) &&
 			surf->texinfo->texture == cache->texture &&
-			cache->normal[2] == normal[2])
+			VectorDistance(cache->normal, normal) < 0.1f)
 		{
 			bool bSkip = false;
-			for (int j = 0; j < poly->numverts; ++j)
+
+			vec3_t tempvert;
+
+			VectorTransform(poly->verts[0], r_entity_matrix, tempvert);
+
+			auto plane = DotProduct(tempvert, normal);
+
+			if (fabs(cache->plane - plane) < 0.1f)
 			{
-				vec3_t tempvert;
-
-				VectorTransform(poly->verts[i], r_entity_matrix, tempvert);
-
-				auto plane = DotProduct(tempvert, normal);
-
-				if (fabs(cache->plane - plane) > 0.1f)
-				{
-					bSkip = true;
-					break;
-				}
-			}
-
-			if(!bSkip)
 				return cache;
+			}
 		}
 	}
 

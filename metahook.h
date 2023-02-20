@@ -274,6 +274,11 @@ typedef struct metahook_api_s
 	/*
 		Reverse search from given base to lower address, find 90 90 90 99 + ??, or CC CC CC CC + ??
 	*/
+
+	bool(*IsDebuggerPresent)();
+	/*
+	Basically the name
+	*/
 }
 metahook_api_t;
 
