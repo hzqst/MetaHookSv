@@ -83,6 +83,9 @@
     <ClCompile Include="crc.c">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="gl_model.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bspfile.h">

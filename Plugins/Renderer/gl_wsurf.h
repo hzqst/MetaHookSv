@@ -145,8 +145,6 @@ typedef struct brushface_s
 
 #define TEXCHAIN_STATIC 1
 #define TEXCHAIN_SCROLL 2
-#define TEXCHAIN_RANDOM 2
-#define TEXCHAIN_ANIMATION 3
 #define TEXCHAIN_SKY 4
 
 typedef struct brushtexchain_s

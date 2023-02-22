@@ -740,6 +740,60 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(R_AddTEntity);
 	}
 
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		const char sigs1[] = "Hunk_Alloc: bad size: %i";
+		auto Hunk_Alloc_String = Search_Pattern_Data(sigs1);
+		if (!Hunk_Alloc_String)
+			Hunk_Alloc_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(Hunk_Alloc_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x0F\xAE\xE8\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
+		*(DWORD *)(pattern + 1) = (DWORD)Hunk_Alloc_String;
+		auto Hunk_Alloc_Call = Search_Pattern(pattern);
+		Sig_VarNotFound(Hunk_Alloc_Call);
+
+		gRefFuncs.Hunk_AllocName = (decltype(gRefFuncs.Hunk_AllocName))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Hunk_Alloc_Call, 0x50, [](PUCHAR Candidate) {
+			//.text : 01DD29B0 83 EC 08                                                     sub     esp, 8
+			//.text : 01DD29B3 53                                                           push    ebx
+			//.text : 01DD29B4 55                                                           push    ebp
+			//.text : 01DD29B5 8B 6C 24 14                                                  mov     ebp, [esp + 10h + arg_0]
+			if (Candidate[0] == 0x83 &&
+				Candidate[1] == 0xEC &&
+				Candidate[2] == 0x08 &&
+				Candidate[4] == 0x55 &&
+				Candidate[5] == 0x8B)
+				return TRUE;
+
+			return FALSE;
+		});
+		Sig_FuncNotFound(Hunk_AllocName);
+	}
+	else
+	{
+		const char sigs1[] = "Hunk_Alloc: bad size: %i";
+		auto Hunk_Alloc_String = Search_Pattern_Data(sigs1);
+		if (!Hunk_Alloc_String)
+			Hunk_Alloc_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(Hunk_Alloc_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
+		*(DWORD *)(pattern + 1) = (DWORD)Hunk_Alloc_String;
+		auto Hunk_Alloc_Call = Search_Pattern(pattern);
+		Sig_VarNotFound(Hunk_Alloc_Call);
+
+		gRefFuncs.Hunk_AllocName = (decltype(gRefFuncs.Hunk_AllocName))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Hunk_Alloc_Call, 0x50, [](PUCHAR Candidate) {
+			//.text : 01DC7FE0 55                                                  push    ebp
+			//.text : 01DC7FE1 8B EC                                               mov     ebp, esp
+			if (Candidate[-1] == 0x90 &&
+				Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC)
+				return TRUE;
+
+			return FALSE;
+		});
+		Sig_FuncNotFound(Hunk_AllocName);
+	}
+
 	if (1)
 	{
 		const char sigs1[] = "***PROTECTED***";
@@ -778,7 +832,7 @@ void R_FillAddress(void)
 				return TRUE;
 
 			return FALSE;
-			});
+		});
 		Sig_FuncNotFound(Cvar_DirectSet);
 	}
 
@@ -2935,6 +2989,89 @@ void R_FillAddress(void)
 		});
 		Sig_FuncNotFound(Mod_LoadBrushModel);
 	}
+
+	{
+		const char sigs1[] = "\xFF\x15\x2A\x2A\x2A\x2A\x83\xC4\x0C\x3D\x49\x44\x50\x4F";
+		auto Mod_LoadModel_Pattern = Search_Pattern(sigs1);
+		Sig_VarNotFound(Mod_LoadModel_Pattern);
+
+		gRefFuncs.Mod_LoadModel = (decltype(gRefFuncs.Mod_LoadModel))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Mod_LoadModel_Pattern, 0x400, [](PUCHAR Candidate) {
+
+			//81 EC ?? 01 00 00 A1 ?? ?? ?? ?? 33 C4
+			/*
+.text:01D51990 81 EC 50 01 00 00                                            sub     esp, 150h
+.text:01D51996 A1 E8 F0 ED 01                                               mov     eax, ___security_cookie
+.text:01D5199B 33 C4                                                        xor     eax, esp
+			*/
+			if (Candidate[0] == 0x81 &&
+				Candidate[1] == 0xEC &&
+				Candidate[3] == 0x01 &&
+				Candidate[4] == 0x00 &&
+				Candidate[5] == 0x00 &&
+				Candidate[6] == 0xA1 &&
+				Candidate[11] == 0x33 &&
+				Candidate[12] == 0xC4)
+			{
+				return TRUE;
+			}
+
+			//.text : 01D40030 55                                                  push    ebp
+			//.text : 01D40031 8B EC                                               mov     ebp, esp
+			//.text : 01D40033 81 EC 0C 01 00 00                                   sub     esp, 10Ch
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC &&
+				Candidate[3] == 0x81 &&
+				Candidate[4] == 0xEC &&
+				Candidate[6] == 0x10 &&
+				Candidate[7] == 0x00 &&
+				Candidate[8] == 0x00)
+			{
+				return TRUE;
+			}
+
+			return FALSE;
+		});
+		Sig_FuncNotFound(Mod_LoadModel);
+
+		const char sigs2[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x68";
+		auto Mod_LoadModel_Pattern2 = g_pMetaHookAPI->SearchPattern((PUCHAR)Mod_LoadModel_Pattern - 0x50, 0x50, sigs2, Sig_Length(sigs2));
+		Sig_VarNotFound(Mod_LoadModel_Pattern2);
+
+		loadname = *(decltype(loadname)*)((PUCHAR)Mod_LoadModel_Pattern2 + sizeof(sigs2) - 1);
+
+		g_pMetaHookAPI->DisasmRanges((PUCHAR)Mod_LoadModel_Pattern2 + sizeof(sigs2) - 1 + 4, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			{
+				auto pinst = (cs_insn *)inst;
+
+				if (!loadmodel &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[0].mem.index == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					loadmodel = (decltype(loadmodel))pinst->detail->x86.operands[0].mem.disp;
+				}
+
+				if (loadmodel)
+					return TRUE;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+			}, 0, NULL);
+
+		Sig_VarNotFound(loadmodel);
+	}
+
 
 	{
 		/*const char sigs1[] = "palette.lmp\0";

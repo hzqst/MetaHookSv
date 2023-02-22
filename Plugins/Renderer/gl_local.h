@@ -139,6 +139,9 @@ extern float *g_UserFogEnd;
 extern model_t *mod_known;
 extern int *mod_numknown;
 
+extern char(*loadname)[64];
+extern model_t **loadmodel;
+
 //client dll
 
 extern int *g_iUser1;
@@ -284,6 +287,7 @@ void R_InstallHooks(void);
 void R_UninstallHooksForEngineDLL(void);
 void R_UninstallHooksForClientDLL(void);
 
+void *Hunk_AllocName(int size, const char *name);
 void GammaToLinear(float *color);
 void R_LoadSkyName_SvEngine(const char *name);
 void R_LoadSkys(void);

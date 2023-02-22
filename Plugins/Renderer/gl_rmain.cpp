@@ -77,6 +77,9 @@ int(*rtable)[20][20];
 model_t *mod_known = NULL;
 int *mod_numknown = NULL;
 
+char (*loadname)[64] = NULL;
+model_t **loadmodel = NULL;
+
 int gl_max_ubo_size = 0;
 int gl_max_texture_size = 0;
 float gl_max_ansio = 0;
@@ -2799,7 +2802,7 @@ void Mod_Init(void)
 
 void R_MarkPVSLeaves(int leafindex)
 {
-	for (int j = 0; j < r_worldmodel->numframes; j++)
+	for (int j = 0; j < r_worldmodel->numleafs; j++)
 	{
 		auto node = &r_worldmodel->leafs[j];
 		node->visframe = 0;

@@ -62,7 +62,6 @@ const program_state_name_t s_PortalProgramStateName[] = {
 { OVERLAY_TEXTURE_ENABLED					, "OVERLAY_TEXTURE_ENABLED"			 },
 { PORTAL_TEXCOORD_ENABLED					, "PORTAL_TEXCOORD_ENABLED"			 },
 { REVERSE_PORTAL_TEXCOORD_ENABLED			, "REVERSE_PORTAL_TEXCOORD_ENABLED"	 },
-
 };
 
 void R_SavePortalProgramStates(void)

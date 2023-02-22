@@ -2,13 +2,11 @@
 
 typedef struct glprofile_s
 {
-	GLuint query_begin;
-	GLuint query_end;
 	char name[64];
+	GLuint query_object;
 	double cpu_begin;
 	double cpu_end;
-	bool query_begin_started;
-	bool query_end_started;
+	bool query_started;
 }glprofile_t;
 
 extern cvar_t *gl_profile;

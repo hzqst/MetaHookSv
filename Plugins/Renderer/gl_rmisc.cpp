@@ -616,3 +616,8 @@ void COM_FileBase(const char *in, char *out)
 	strncpy(out, &in[start], len);
 	out[len] = 0;
 }
+
+void *Hunk_AllocName(int size, const char *name)
+{
+	return gRefFuncs.Hunk_AllocName(size, name);
+}

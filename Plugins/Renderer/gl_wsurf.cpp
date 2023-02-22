@@ -50,20 +50,22 @@ int EngineGetMaxDLight(void)
 
 void R_ClearWSurfVBOCache(void)
 {
-	for (size_t i =0 ;i < g_WSurfVBOCache.size(); ++i)
+	for (size_t i = 0;i < g_WSurfVBOCache.size(); ++i)
 	{
 		if (g_WSurfVBOCache[i])
 		{
 			auto &VBOCache = g_WSurfVBOCache[i];
+
 			if (VBOCache->hEntityUBO)
 			{
 				GL_DeleteBuffer(VBOCache->hEntityUBO);
-				VBOCache->hEntityUBO = NULL;
+				VBOCache->hEntityUBO = 0;
 			}
+
 			if (VBOCache->hDecalEBO)
 			{
 				GL_DeleteBuffer(VBOCache->hDecalEBO);
-				VBOCache->hDecalEBO = NULL;
+				VBOCache->hDecalEBO = 0;
 			}
 
 			for (size_t j = 0; j < VBOCache->vLeafStorage.size(); ++j)
@@ -73,7 +75,7 @@ void R_ClearWSurfVBOCache(void)
 				if (VBOLeaf->hEBO)
 				{
 					GL_DeleteBuffer(VBOLeaf->hEBO);
-					VBOLeaf->hEBO = NULL;
+					VBOLeaf->hEBO = 0;
 				}
 
 				for (size_t k = 0; k < WSURF_TEXCHAIN_MAX; ++k)
@@ -91,7 +93,6 @@ void R_ClearWSurfVBOCache(void)
 			
 			delete g_WSurfVBOCache[i];
 		}
-		g_WSurfVBOCache[i] = NULL;
 	}
 	g_WSurfVBOCache.clear();
 }
@@ -428,11 +429,46 @@ void R_BrushLinkTextureChain(model_t *mod)
 	}
 }
 
+void R_RecursiveMarkSurfaces(mnode_t *node)
+{
+	if (node->contents == CONTENTS_SOLID)
+		return;
+
+	//r_visframecount is updated only when you encounter a new leaf
+	//while r_framecount is updated every new frame
+	if (node->visframe != (*r_visframecount))
+		return;
+
+	if (node->contents < 0)
+	{
+		auto pleaf = (mleaf_t *)node;
+
+		auto mark = pleaf->firstmarksurface;
+		auto c = pleaf->nummarksurfaces;
+
+		if (c)
+		{
+			do
+			{
+				(*mark)->visframe = (*r_framecount);
+				mark++;
+			} while (--c);
+		}
+		return;
+	}
+
+	R_RecursiveMarkSurfaces(node->children[0]);
+
+	R_RecursiveMarkSurfaces(node->children[1]);
+}
+
 void R_RecursiveLinkTextureChain(mnode_t *node)
 {
 	if (node->contents == CONTENTS_SOLID)
 		return;
 
+	//r_visframecount is updated only when you encounter a new leaf
+	//while r_framecount is updated every new frame
 	if (node->visframe != (*r_visframecount))
 		return;
 
@@ -449,6 +485,10 @@ void R_RecursiveLinkTextureChain(mnode_t *node)
 
 		for (; c; c--, surf++)
 		{
+			// Filter out invisible surfaces
+			if (surf->visframe != (*r_framecount))
+				continue;
+
 			surf->texturechain = surf->texinfo->texture->texturechain;
 			surf->texinfo->texture->texturechain = surf;
 		}
@@ -523,13 +563,13 @@ void R_GenerateIndicesForTexChain(msurface_t *s, brushtexchain_t *texchain, std:
 	}
 }
 
-void R_SortTextureChain(wsurf_vbo_leaf_t *vboleaf, int iTexchainType)
+void R_SortTextureChain(wsurf_vbo_leaf_t *vboleaf, int iTexchainId)
 {
-	vboleaf->vTextureChain[iTexchainType].shrink_to_fit();
+	vboleaf->vTextureChain[iTexchainId].shrink_to_fit();
 
-	for (size_t i = 0; i < vboleaf->vTextureChain[iTexchainType].size(); ++i)
+	for (size_t i = 0; i < vboleaf->vTextureChain[iTexchainId].size(); ++i)
 	{
-		auto &texchain = vboleaf->vTextureChain[iTexchainType][i];
+		auto &texchain = vboleaf->vTextureChain[iTexchainId][i];
 
 		auto pcache = texchain.pDetailTextureCache;
 		if (pcache)
@@ -548,31 +588,31 @@ void R_SortTextureChain(wsurf_vbo_leaf_t *vboleaf, int iTexchainType)
 		}
 	}
 
-	std::sort(vboleaf->vTextureChain[iTexchainType].begin(), vboleaf->vTextureChain[iTexchainType].end(), [](const brushtexchain_t &a, const brushtexchain_t &b) {
+	std::sort(vboleaf->vTextureChain[iTexchainId].begin(), vboleaf->vTextureChain[iTexchainId].end(), [](const brushtexchain_t &a, const brushtexchain_t &b) {
 		return b.iDetailTextureFlags > a.iDetailTextureFlags;
 	});
 }
 
-void R_GenerateDrawBatch(wsurf_vbo_leaf_t *vboleaf, int iTexchainType, int iDrawBatchType)
+void R_GenerateDrawBatch(wsurf_vbo_leaf_t *vboleaf, int iTexchainId, int iDrawBatchId)
 {
-	int detailTextureFlags = -1;
+	int iDetailTextureFlags = -1;
 	wsurf_vbo_batch_t *batch = NULL;
 
-	for (size_t i = 0; i < vboleaf->vTextureChain[iTexchainType].size(); ++i)
+	for (size_t i = 0; i < vboleaf->vTextureChain[iTexchainId].size(); ++i)
 	{
-		auto &texchain = vboleaf->vTextureChain[iTexchainType][i];
+		auto &texchain = vboleaf->vTextureChain[iTexchainId][i];
 
-		if (texchain.iDetailTextureFlags != detailTextureFlags)
+		if (texchain.iDetailTextureFlags != iDetailTextureFlags)
 		{
 			if (batch)
 			{
 				batch->vStartIndex.shrink_to_fit();
 				batch->vIndiceCount.shrink_to_fit();
-				vboleaf->vDrawBatch[iDrawBatchType].emplace_back(batch);
+				vboleaf->vDrawBatch[iDrawBatchId].emplace_back(batch);
 				batch = NULL;
 			}
 
-			detailTextureFlags = texchain.iDetailTextureFlags;			
+			iDetailTextureFlags = texchain.iDetailTextureFlags;
 		}
 
 		if (!batch)
@@ -592,7 +632,7 @@ void R_GenerateDrawBatch(wsurf_vbo_leaf_t *vboleaf, int iTexchainType, int iDraw
 	{
 		batch->vStartIndex.shrink_to_fit();
 		batch->vIndiceCount.shrink_to_fit();
-		vboleaf->vDrawBatch[iDrawBatchType].emplace_back(batch);
+		vboleaf->vDrawBatch[iDrawBatchId].emplace_back(batch);
 		batch = NULL;
 	}
 }
@@ -664,7 +704,14 @@ void R_GenerateTexChain(model_t *mod, wsurf_vbo_leaf_t *vboleaf, std::vector<uns
 						//rtable not initialized?
 						if ((*rtable)[0][0] == 0)
 						{
-							gRefFuncs.R_TextureAnimation(s);
+							//gRefFuncs.R_TextureAnimation(s);
+							for (auto tu = 0; tu < 20; tu++)
+							{
+								for (auto tv = 0; tv < 20; tv++)
+								{
+									(*rtable)[tu][tv] = gEngfuncs.pfnRandomLong(0, 0x7FFF);
+								}
+							}
 						}
 
 						int *texchainMapper = new int[numtexturechain];
@@ -849,23 +896,28 @@ wsurf_vbo_leaf_t *R_FindLeafStorage(wsurf_vbo_t *modvbo, CRC32_t crc)
 	return NULL;
 }
 
+/*
+Generate leaf array for brush model
+*/
+
 void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 {
 	if (mod == r_worldmodel)
 	{
-		//(*r_visframecount) = 0;
-
 		std::vector<unsigned int> vIndicesBuffer;
 
-		modvbo->vLeaves.resize(r_worldmodel->numframes);
-		modvbo->vLeafStorage.reserve(r_worldmodel->numframes);
+		modvbo->vLeaves.resize(r_worldmodel->numleafs);
+		modvbo->vLeafStorage.reserve(r_worldmodel->numleafs);
 
-		for (int i = 0; i < r_worldmodel->numframes; ++i)
+		for (int i = 0; i < r_worldmodel->numleafs; ++i)
 		{
+			(*r_framecount)++;
+
 			R_MarkPVSLeaves(i);
 
 			auto vboleaf = new wsurf_vbo_leaf_t;
 
+			R_RecursiveMarkSurfaces(mod->nodes);
 			R_RecursiveLinkTextureChain(mod->nodes);
 
 			vIndicesBuffer.clear();
@@ -902,14 +954,11 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 
 				modvbo->vLeafStorage.emplace_back(vboleaf);
 				modvbo->vLeaves[i] = vboleaf;
-
 			}
 		}
 
 		modvbo->vLeafStorage.shrink_to_fit();
 		modvbo->vLeaves.shrink_to_fit();
-
-		//(*r_visframecount) = 0;
 	}
 	else
 	{
@@ -993,8 +1042,26 @@ void R_GenerateWorldTextures(void)
 	}
 }
 
+model_t *Mod_FindNameRaw(const char *name)
+{
+	int i;
+	model_t *mod;
+
+	for (i = 0, mod = mod_known; i < (*mod_numknown); i++, mod++)
+	{
+		if (!strcmp(mod->name, name))
+		{
+			return mod;
+		}
+	}
+
+	return NULL;
+}
+
 void Mod_LoadBrushModel(model_t *mod, void *buffer)
 {
+	auto current_loadmodel = (*loadmodel);
+
 	gRefFuncs.Mod_LoadBrushModel(mod, buffer);
 
 	auto header = (dheader_t * )buffer;
@@ -1003,10 +1070,9 @@ void Mod_LoadBrushModel(model_t *mod, void *buffer)
 
 	auto count = lump->filelen / sizeof(dleaf_t);
 
-	//Get correct leaf count here!!!
+	//Write correct leaf count here because it was overwritten by "Mod_LoadBrushModel -> mod->numleafs = bm->visleafs;"
 
-	mod->numframes = count;
-	//mod->numleafs |= ((count << 16) & 0xFFFF0000ul);
+	current_loadmodel->numleafs = count;
 }
 
 int R_FindTextureIdByTexture(texture_t *ptex)
@@ -2090,10 +2156,31 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 	GL_EndProfile(&profile_DrawWSurfVBO);
 }
 
+void R_PrebuildWSurfVBO(void)
+{
+	R_PrepareWSurfVBO(r_worldmodel);
+
+	for (int i = 0; i < r_worldmodel->numsubmodels; ++i)
+	{
+		if (i < r_worldmodel->numsubmodels - 1)
+		{
+			char name[10];
+			snprintf(name, sizeof(name), "*%i", i + 1);
+			name[9] = 0;
+
+			auto submodel = Mod_FindNameRaw(name);
+			if (submodel)
+			{
+				R_PrepareWSurfVBO(submodel);
+			}
+		}
+	}
+}
+
 void R_Reload_f(void)
 {
 	R_ClearBSPEntities();
-	R_ParseBSPEntities(r_worldmodel->entities, NULL);
+	R_ParseBSPEntities(r_worldmodel->entities, R_ParseBSPEntity_DefaultAllocator);
 	R_LoadExternalEntities();
 	R_LoadBSPEntities();
 
@@ -2135,8 +2222,9 @@ void R_NewMapWSurf(void)
 	R_GenerateLightmapArray();
 
 	R_ClearWSurfVBOCache();
+
 	R_ClearBSPEntities();
-	R_ParseBSPEntities(r_worldmodel->entities, NULL);
+	R_ParseBSPEntities(r_worldmodel->entities, R_ParseBSPEntity_DefaultAllocator);
 	R_LoadExternalEntities();
 	R_LoadBSPEntities();
 }
@@ -2738,7 +2826,6 @@ void R_ClearBSPEntities(void)
 	g_DynamicLights.clear();
 }
 
-static fnParseBSPEntity_Allocator current_parse_allocator = NULL;
 static bspentity_t *current_parse_entity = NULL;
 static char com_token[4096];
 
@@ -2751,11 +2838,11 @@ bspentity_t *R_ParseBSPEntity_DefaultAllocator(void)
 	return &r_wsurf.vBSPEntities[len];
 }
 
-static bool R_ParseBSPEntityKeyValue(const char *classname, const char *keyname, const char *value)
+static bool R_ParseBSPEntityKeyValue(const char *classname, const char *keyname, const char *value, fnParseBSPEntity_Allocator parse_allocator)
 {
 	if (classname == NULL)
 	{
-		current_parse_entity = current_parse_allocator();
+		current_parse_entity = parse_allocator();
 		if(!current_parse_entity)
 			return false;
 
@@ -2796,7 +2883,7 @@ static bool R_ParseBSPEntityKeyValue(const char *classname, const char *keyname,
 	return false;
 }
 
-static bool R_ParseBSPEntityClassname(char *szInputStream, char *classname)
+static bool R_ParseBSPEntityClassname(char *szInputStream, char *classname, fnParseBSPEntity_Allocator parse_allocator)
 {
 	char szKeyName[256];
 
@@ -2811,7 +2898,7 @@ static bool R_ParseBSPEntityClassname(char *szInputStream, char *classname)
 
 		if (!strcmp(szKeyName, "classname"))
 		{
-			R_ParseBSPEntityKeyValue(NULL, szKeyName, com_token);
+			R_ParseBSPEntityKeyValue(NULL, szKeyName, com_token, parse_allocator);
 
 			strncpy(classname, com_token, 255);
 			classname[255] = 0;
@@ -2830,12 +2917,12 @@ static bool R_ParseBSPEntityClassname(char *szInputStream, char *classname)
 	return false;
 }
 
-static char *R_ParseBSPEntity(char *data)
+static char *R_ParseBSPEntity(char *data, fnParseBSPEntity_Allocator parse_allocator)
 {
 	char keyname[256] = { 0 };
 	char classname[256] = { 0 };
 
-	if (R_ParseBSPEntityClassname(data, classname))
+	if (R_ParseBSPEntityClassname(data, classname, parse_allocator))
 	{
 		while (1)
 		{
@@ -2844,6 +2931,7 @@ static char *R_ParseBSPEntity(char *data)
 			{
 				break;
 			}
+
 			if (!data)
 			{
 				g_pMetaHookAPI->SysError("R_ParseBSPEntity: EOF without closing brace");
@@ -2872,7 +2960,7 @@ static char *R_ParseBSPEntity(char *data)
 				continue;
 			}
 
-			R_ParseBSPEntityKeyValue(classname, keyname, com_token);
+			R_ParseBSPEntityKeyValue(classname, keyname, com_token, parse_allocator);
 		}
 	}
 	else
@@ -2897,14 +2985,8 @@ static char *R_ParseBSPEntity(char *data)
 	return data;
 }
 
-void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator allocator)
+void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator parse_allocator)
 {
-
-	if (allocator)
-		current_parse_allocator = allocator; 
-	else
-		current_parse_allocator = R_ParseBSPEntity_DefaultAllocator;
-
 	while (1)
 	{
 		data = gEngfuncs.COM_ParseFile(data, com_token);
@@ -2917,9 +2999,8 @@ void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator allocator)
 			g_pMetaHookAPI->SysError("R_ParseBSPEntities: found %s when expecting {", com_token);
 			return;
 		}
-		data = R_ParseBSPEntity(data);
+		data = R_ParseBSPEntity(data, parse_allocator);
 	}
-	current_parse_allocator = NULL;
 }
 
 void R_LoadExternalEntities(void)
@@ -2933,19 +3014,16 @@ void R_LoadExternalEntities(void)
 	char *pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
 	if (!pfile)
 	{
-		//gEngfuncs.Con_Printf("R_LoadExternalEntities: No external entity file %s\n", name.c_str());
-
 		name = "renderer/default_entity.txt";
 
 		pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
 		if (!pfile)
 		{
-			//gEngfuncs.Con_Printf("R_LoadExternalEntities: No default external entity file %s\n", name.c_str());
-
 			return;
 		}
 	}
-	R_ParseBSPEntities(pfile, NULL);
+
+	R_ParseBSPEntities(pfile, R_ParseBSPEntity_DefaultAllocator);
 
 	gEngfuncs.COM_FreeFile(pfile);
 }
