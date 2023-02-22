@@ -39,6 +39,45 @@ void *gHud = NULL;
 HWND g_MainWnd = NULL;
 WNDPROC g_MainWndProc = NULL;
 
+void COM_FixSlashes(char *pname)
+{
+#ifdef _WIN32
+	while (*pname) {
+		if (*pname == '/')
+			*pname = '\\';
+		pname++;
+	}
+#else
+	while (*pname) {
+		if (*pname == '\\')
+			*pname = '/';
+		pname++;
+	}
+#endif
+}
+
+int FileSystem_SetGameDirectory(const char *pDefaultDir, const char *pGameDir)
+{
+	int result = gPrivateFuncs.FileSystem_SetGameDirectory(pDefaultDir, pGameDir);
+
+	if (g_flDPIScaling > 1)
+	{
+		char temp[1024];
+		snprintf(temp, sizeof(temp) - 1, "%s/%s_dpi%.0f", GetBaseDirectory(), gEngfuncs.pfnGetGameDirectory(), g_flDPIScaling * 100.0f);
+		temp[sizeof(temp) - 1] = 0;
+		COM_FixSlashes(temp);
+
+		g_pFileSystem->AddSearchPathNoWrite(temp, "GAME");
+	}
+
+	return result;
+}
+
+const char *GetBaseDirectory()
+{
+	return *s_pBaseDir;
+}
+
 void *NewClientFactory(void)
 {
 	return Sys_GetFactoryThis();

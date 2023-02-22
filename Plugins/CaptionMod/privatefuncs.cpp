@@ -30,6 +30,8 @@ double *cl_oldtime = NULL;
 char *(*rgpszrawsentence)[CVOXFILESENTENCEMAX] = NULL;
 int *cszrawsentences = NULL;
 
+char (*s_pBaseDir)[512] = NULL;
+
 char m_szCurrentLanguage[128] = { 0 };
 
 private_funcs_t gPrivateFuncs = {0};
@@ -41,6 +43,7 @@ hook_t *g_phook_ScClient_FindSoundEx = NULL;
 hook_t *g_phook_pfnTextMessageGet = NULL;
 hook_t *g_phook_CWin32Font_GetCharRGBA = NULL;
 hook_t *g_phook_WeaponsResource_SelectSlot = NULL;
+hook_t *g_phook_FileSystem_SetGameDirectory = NULL;
 
 PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule)
 {
@@ -116,6 +119,71 @@ void Engine_FillAddress(void)
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
+		const char sigs1[] = "User Token 2";
+		auto UserToken2_String = Search_Pattern_Data(sigs1);
+		if (!UserToken2_String)
+			UserToken2_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(UserToken2_String);
+		char pattern[] = "\x50\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8D\x84\x24";
+		*(DWORD *)(pattern + 2) = (DWORD)UserToken2_String;
+		auto UserToken2_PushString = Search_Pattern(pattern);
+		Sig_VarNotFound(UserToken2_PushString);
+
+		gPrivateFuncs.FileSystem_SetGameDirectory = (decltype(gPrivateFuncs.FileSystem_SetGameDirectory))
+			g_pMetaHookAPI->ReverseSearchFunctionBeginEx(UserToken2_PushString, 0x100, [](PUCHAR Candidate) {
+
+			//.text : 01D4DA50 81 EC 90 04 00 00                                            sub     esp, 490h
+			//.text : 01D4DA56 A1 E8 F0 ED 01                                               mov     eax, ___security_cookie
+			//.text : 01D4DA5B 33 C4                                                        xor     eax, esp
+			if (Candidate[0] == 0x81 &&
+				Candidate[1] == 0xEC &&
+				Candidate[4] == 0x00 &&
+				Candidate[5] == 0x00 &&
+				Candidate[6] == 0xA1 &&
+				Candidate[11] == 0x33 &&
+				Candidate[12] == 0xC4)
+				return TRUE;
+
+			return FALSE;
+		});
+		Sig_FuncNotFound(FileSystem_SetGameDirectory);
+	}
+	else
+	{
+		const char sigs1[] = "User Token 2";
+		auto UserToken2_String = Search_Pattern_Data(sigs1);
+		if (!UserToken2_String)
+			UserToken2_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(UserToken2_String);
+		char pattern[] = "\x51\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x88\x9D";
+		*(DWORD *)(pattern + 2) = (DWORD)UserToken2_String;
+		auto UserToken2_PushString = Search_Pattern(pattern);
+		Sig_VarNotFound(UserToken2_PushString);
+
+		gPrivateFuncs.FileSystem_SetGameDirectory = (decltype(gPrivateFuncs.FileSystem_SetGameDirectory))
+			g_pMetaHookAPI->ReverseSearchFunctionBeginEx(UserToken2_PushString, 0x100, [](PUCHAR Candidate) {
+
+			//.text : 01D3B150 55                                                  push    ebp
+			//.text : 01D3B151 8B EC                                               mov     ebp, esp
+			//.text : 01D3B153 81 EC 08 04 00 00                                   sub     esp, 408h
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC &&
+				Candidate[3] == 0x81 &&
+				Candidate[4] == 0xEC &&
+				Candidate[7] == 0x00 &&
+				Candidate[8] == 0x00)
+				return TRUE;
+
+			return FALSE;
+				});
+		Sig_FuncNotFound(FileSystem_SetGameDirectory);
+	}
+
+
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
 		const char sigs1[] = "VClientVGUI001";
 		auto VClientVGUI001_String = Search_Pattern_Data(sigs1);
 		if (!VClientVGUI001_String)
@@ -165,6 +233,25 @@ void Engine_FillAddress(void)
 		int rva = pfnVGUIClient001_CreateInterface - (address + 5);
 
 		g_pMetaHookAPI->WriteMemory(address + 1, (BYTE *)&rva, 4);
+
+
+	}
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		const char sigs1[] = "\x84\xC0\x75\x2A\x8B\x44\x24\x08\xC7\x05\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x85\xC0";
+		auto basedir_pattern = Search_Pattern(sigs1);
+		Sig_VarNotFound(basedir_pattern);
+
+		s_pBaseDir = *(decltype(s_pBaseDir) *)((PUCHAR)basedir_pattern + 14);
+	}
+	else
+	{
+		const char sigs1[] = "\x84\xC9\x75\x2A\x8B\x45\x0C\xC7\x05\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x50\xE8";
+		auto basedir_pattern = Search_Pattern(sigs1);
+		Sig_VarNotFound(basedir_pattern);
+
+		s_pBaseDir = *(decltype(s_pBaseDir) *)((PUCHAR)basedir_pattern + 13);
 	}
 
 #define VOX_LOOKUPSTRING_SIG "\x80\x2A\x23\x2A\x2A\x8D\x2A\x01\x50\xE8"
@@ -350,6 +437,8 @@ void Engine_FillAddress(void)
 		Sig_FuncNotFound(CWin32Font_GetCharRGBA);
 	}
 #endif
+
+
 }
 
 void Engine_InstallHooks(void)
@@ -358,6 +447,7 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(S_StartDynamicSound);
 	Install_InlineHook(S_StartStaticSound);
 	Install_InlineHook(pfnTextMessageGet);
+	Install_InlineHook(FileSystem_SetGameDirectory);
 }
 
 void Engine_UninstallHooks(void)
@@ -366,6 +456,7 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(S_StartDynamicSound);
 	Uninstall_Hook(S_StartStaticSound);
 	Uninstall_Hook(pfnTextMessageGet);
+	Uninstall_Hook(FileSystem_SetGameDirectory);
 }
 
 void Client_FillAddress(void)
