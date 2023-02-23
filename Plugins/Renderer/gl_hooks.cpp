@@ -3534,6 +3534,7 @@ void R_UninstallHooksForEngineDLL(void)
 	Uninstall_Hook(GL_LoadTexture2);
 	Uninstall_Hook(enginesurface_drawFlushText);
 	Uninstall_Hook(Mod_LoadStudioModel);
+	//Uninstall_Hook(Mod_LoadBrushModel);
 	Uninstall_Hook(triapi_RenderMode);
 	//Uninstall_Hook(triapi_Color4f);
 	Uninstall_Hook(Draw_MiptexTexture);
@@ -3571,7 +3572,7 @@ void R_InstallHooks(void)
 	Install_InlineHook(GL_LoadTexture2);
 	Install_InlineHook(enginesurface_drawFlushText);
 	Install_InlineHook(Mod_LoadStudioModel);
-	Install_InlineHook(Mod_LoadBrushModel);
+	//Install_InlineHook(Mod_LoadBrushModel);
 	Install_InlineHook(triapi_RenderMode);
 	//Install_InlineHook(triapi_Color4f);
 	Install_InlineHook(Draw_MiptexTexture);

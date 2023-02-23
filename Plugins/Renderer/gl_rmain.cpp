@@ -2800,38 +2800,6 @@ void Mod_Init(void)
 	memset(mod_novis, 0xff, sizeof(mod_novis));
 }
 
-void R_MarkPVSLeaves(int leafindex)
-{
-	for (int j = 0; j < r_worldmodel->numleafs; j++)
-	{
-		auto node = &r_worldmodel->leafs[j];
-		node->visframe = 0;
-	}
-
-	(*r_visframecount)++;
-
-	auto leaf = &r_worldmodel->leafs[leafindex];
-	auto vis = Mod_LeafPVS(leaf, r_worldmodel);
-
-	for (int j = 0; j < r_worldmodel->numleafs; j++)
-	{
-		if (vis[j >> 3] & (1 << (j & 7)))
-		{
-			auto node = (mnode_t *)&r_worldmodel->leafs[j + 1];
-
-			do
-			{
-				if (node->visframe == (*r_visframecount))
-					break;
-
-				node->visframe = (*r_visframecount);
-				node = node->parent;
-
-			} while (node);
-		}
-	}
-}
-
 void R_MarkLeaves(void)
 {
 	byte *vis;

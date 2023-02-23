@@ -68,9 +68,9 @@ void R_ClearWSurfVBOCache(void)
 				VBOCache->hDecalEBO = 0;
 			}
 
-			for (size_t j = 0; j < VBOCache->vLeafStorage.size(); ++j)
+			for (size_t j = 0; j < VBOCache->vLeaves.size(); ++j)
 			{
-				auto VBOLeaf = VBOCache->vLeafStorage[j];
+				auto VBOLeaf = VBOCache->vLeaves[j];
 
 				if (VBOLeaf->hEBO)
 				{
@@ -88,7 +88,6 @@ void R_ClearWSurfVBOCache(void)
 				delete VBOLeaf;
 			}
 
-			VBOCache->vLeafStorage.clear();
 			VBOCache->vLeaves.clear();
 			
 			delete g_WSurfVBOCache[i];
@@ -426,6 +425,46 @@ void R_BrushLinkTextureChain(model_t *mod)
 
 		psurf->texturechain = psurf->texinfo->texture->texturechain;
 		psurf->texinfo->texture->texturechain = psurf;
+	}
+}
+
+void R_RecursiveFindLeaves(mnode_t *node, std::set<mleaf_t *> &vLeafs)
+{
+	if (node->contents < 0)
+	{
+		auto pleaf = (mleaf_t *)node;
+
+		vLeafs.emplace(pleaf);
+		return;
+	}
+
+	R_RecursiveFindLeaves(node->children[0], vLeafs);
+
+	R_RecursiveFindLeaves(node->children[1], vLeafs);
+}
+
+void R_MarkPVSForLeaf(mleaf_t *leaf)
+{
+	(*r_visframecount)++;
+
+	auto vis = Mod_LeafPVS(leaf, r_worldmodel);
+
+	for (int j = 0; j < r_worldmodel->numleafs; j++)
+	{
+		if (vis[j >> 3] & (1 << (j & 7)))
+		{
+			auto node = (mnode_t *)&r_worldmodel->leafs[j + 1];
+
+			do
+			{
+				if (node->visframe == (*r_visframecount))
+					break;
+
+				node->visframe = (*r_visframecount);
+				node = node->parent;
+
+			} while (node);
+		}
 	}
 }
 
@@ -884,18 +923,6 @@ void R_GenerateTexChain(model_t *mod, wsurf_vbo_leaf_t *vboleaf, std::vector<uns
 	}
 }
 
-wsurf_vbo_leaf_t *R_FindLeafStorage(wsurf_vbo_t *modvbo, CRC32_t crc)
-{
-	for (size_t i = 0; i < modvbo->vLeafStorage.size(); ++i)
-	{
-		if (modvbo->vLeafStorage[i]->crc == crc)
-		{
-			return modvbo->vLeafStorage[i];
-		}
-	}
-	return NULL;
-}
-
 /*
 Generate leaf array for brush model
 */
@@ -906,14 +933,18 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 	{
 		std::vector<unsigned int> vIndicesBuffer;
 
-		modvbo->vLeaves.resize(r_worldmodel->numleafs);
-		modvbo->vLeafStorage.reserve(r_worldmodel->numleafs);
+		std::set<mleaf_t *> vPossibleLeafs;
+		R_RecursiveFindLeaves(mod->nodes, vPossibleLeafs);
 
-		for (int i = 0; i < r_worldmodel->numleafs; ++i)
+		modvbo->vLeaves.resize(vPossibleLeafs.size());
+
+		for (auto &leaf : vPossibleLeafs)
 		{
+			int leafindex = leaf - mod->leafs;
+			
 			(*r_framecount)++;
 
-			R_MarkPVSLeaves(i);
+			R_MarkPVSForLeaf(leaf);
 
 			auto vboleaf = new wsurf_vbo_leaf_t;
 
@@ -924,46 +955,26 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 
 			R_GenerateTexChain(mod, vboleaf, vIndicesBuffer);
 
-			CRC32_t indiceCRC;
-			CRC32_Init(&indiceCRC);
-			CRC32_ProcessBuffer(&indiceCRC, vIndicesBuffer.data(), sizeof(unsigned int) * vIndicesBuffer.size());
-			indiceCRC = CRC32_Final(indiceCRC);
+			R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_STATIC);
+			R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_ANIM);
 
-			auto oldleaf = R_FindLeafStorage(modvbo, indiceCRC);
+			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_STATIC);
+			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID);
+			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID);
 
-			if (oldleaf)
-			{
-				delete vboleaf;
-				modvbo->vLeaves[i] = oldleaf;
-			}
-			else
-			{
-				R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_STATIC);
-				R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_ANIM);
+			vboleaf->hEBO = GL_GenBuffer();
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboleaf->hEBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * vIndicesBuffer.size(), vIndicesBuffer.data(), GL_STATIC_DRAW);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-				R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_STATIC);
-				R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID);
-				R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID);
-
-				vboleaf->hEBO = GL_GenBuffer();
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboleaf->hEBO);
-				glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * vIndicesBuffer.size(), vIndicesBuffer.data(), GL_STATIC_DRAW);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-				vboleaf->crc = indiceCRC;
-
-				modvbo->vLeafStorage.emplace_back(vboleaf);
-				modvbo->vLeaves[i] = vboleaf;
-			}
+			modvbo->vLeaves[leafindex] = vboleaf;
 		}
-
-		modvbo->vLeafStorage.shrink_to_fit();
-		modvbo->vLeaves.shrink_to_fit();
 	}
 	else
 	{
 		auto vboleaf = new wsurf_vbo_leaf_t;
 
+		//TODO mark surfaces
 		R_BrushLinkTextureChain(mod);
 
 		std::vector<unsigned int> vIndicesBuffer;
@@ -984,9 +995,6 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 
 		modvbo->vLeaves.resize(1);
 		modvbo->vLeaves[0] = vboleaf;
-
-		modvbo->vLeafStorage.resize(1);
-		modvbo->vLeafStorage[0] = vboleaf;
 	}
 
 	modvbo->hEntityUBO = GL_GenBuffer();
@@ -1064,15 +1072,17 @@ void Mod_LoadBrushModel(model_t *mod, void *buffer)
 
 	gRefFuncs.Mod_LoadBrushModel(mod, buffer);
 
-	auto header = (dheader_t * )buffer;
+	//auto header = (dheader_t * )buffer;
 
-	auto lump = &header->lumps[LUMP_LEAFS];
+	//auto lump = &header->lumps[LUMP_LEAFS];
 
-	auto count = lump->filelen / sizeof(dleaf_t);
+	//auto count = lump->filelen / sizeof(dleaf_t);
 
 	//Write correct leaf count here because it was overwritten by "Mod_LoadBrushModel -> mod->numleafs = bm->visleafs;"
+	
+	//????????
 
-	current_loadmodel->numleafs = count;
+	//current_loadmodel->numleafs = count;
 }
 
 int R_FindTextureIdByTexture(texture_t *ptex)
@@ -2156,11 +2166,43 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 	GL_EndProfile(&profile_DrawWSurfVBO);
 }
 
+#define HUNK_NAME_LEN 64
+
+typedef struct
+{
+	int		sentinal;
+	int		size;		// including sizeof(hunk_t), -1 = not allocated
+	char	name[HUNK_NAME_LEN];
+} hunk_t;
+
+#define HUNK_SENTINAL 0x1DF001ED
+
+void Hunk_Check()
+{
+	byte **hunk_base = (byte **)((char *)g_dwEngineBase + 0x969E87C - 0x1D00000);
+	int *hunk_low_used = (int *)((char *)g_dwEngineBase + 0x969E884 - 0x1D00000);
+	int *hunk_size = (int *)((char *)g_dwEngineBase + 0x969E880 - 0x1D00000);
+
+	for (auto h = (hunk_t *)(*hunk_base); (byte *)h != (*hunk_base) + (*hunk_low_used); )
+	{
+		gEngfuncs.Con_Printf("hunk %p %X %s\n", (byte *)h - (*hunk_base), h->size, h->name);
+
+		if (h->sentinal != HUNK_SENTINAL)
+			g_pMetaHookAPI->SysError("Hunk_Check: trashed sentinal");
+		if (h->size < 16 || h->size + (byte *)h - (*hunk_base) > *hunk_size)
+			g_pMetaHookAPI->SysError("Hunk_Check: bad size");
+
+		h = (hunk_t *)((byte *)h + h->size);
+	}
+}
+
 void R_PrebuildWSurfVBO(void)
 {
+	Hunk_Check();
+
 	R_PrepareWSurfVBO(r_worldmodel);
 
-	for (int i = 0; i < r_worldmodel->numsubmodels; ++i)
+	/*for (int i = 0; i < r_worldmodel->numsubmodels; ++i)
 	{
 		if (i < r_worldmodel->numsubmodels - 1)
 		{
@@ -2174,7 +2216,9 @@ void R_PrebuildWSurfVBO(void)
 				R_PrepareWSurfVBO(submodel);
 			}
 		}
-	}
+	}*/
+
+	Hunk_Check();
 }
 
 void R_Reload_f(void)
@@ -2227,6 +2271,8 @@ void R_NewMapWSurf(void)
 	R_ParseBSPEntities(r_worldmodel->entities, R_ParseBSPEntity_DefaultAllocator);
 	R_LoadExternalEntities();
 	R_LoadBSPEntities();
+
+	R_PrebuildWSurfVBO();
 }
 
 void R_ShutdownWSurf(void)

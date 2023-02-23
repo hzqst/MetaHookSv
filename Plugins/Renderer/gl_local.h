@@ -312,7 +312,6 @@ void R_FreeTextures(void);
 void R_SetupGL(void);
 void R_SetupGLForViewModel(void);
 void R_MarkLeaves(void);
-void R_MarkPVSLeaves(int leafindex);
 void R_DrawWorld(void);
 void R_DrawSkyBox(void);
 void R_SetupSceneUBO(void);
