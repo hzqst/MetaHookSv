@@ -586,3 +586,41 @@ typedef enum
 #define MAX_VISEDICTS 512
 
 #define PhyCorpseFlag (1145141919)
+
+
+#define MAX_MODELS_SVENGINE 8192
+
+#define LIGHTMAP_NUMCOLUMNS		32
+#define LIGHTMAP_NUMROWS		32
+
+#define LIGHTMAP_BYTES		4
+#define	BLOCK_WIDTH			128
+#define	BLOCK_HEIGHT		128
+#define BLOCKLIGHTS_SIZE	(18*18)
+
+#define MAX_LIGHTMAPS_SVENGINE 1024
+#define	MAX_LIGHTMAPS			64
+
+#define	MAX_LIGHTSTYLES			64
+
+#define	MAX_STYLESTRING			64
+
+#define MAX_DETAIL_TEXTURES		MAX_MAP_TEXTURES
+#define BACKFACE_EPSILON	0.01
+
+#define MAX_DECALSURFS 500
+#define MAX_MODELS 512
+#define COLINEAR_EPSILON 0.001
+
+#define MAX_DECALVERTS 32
+#define MAX_DECALS 4096
+
+
+#define FDECAL_PERMANENT			0x01		// This decal should not be removed in favor of any new decals
+#define FDECAL_REFERENCE			0x02		// This is a decal that's been moved from another level
+#define FDECAL_CUSTOM               0x04        // This is a custom clan logo and should not be saved/restored
+#define FDECAL_HFLIP				0x08		// Flip horizontal (U/S) axis
+#define FDECAL_VFLIP				0x10		// Flip vertical (V/T) axis
+#define FDECAL_CLIPTEST				0x20		// Decal needs to be clip-tested
+#define FDECAL_NOCLIP				0x40		// Decal is not clipped by containing polygon
+#define FDECAL_VBO					0x1000		// Decalvertex is bufferred in VBO

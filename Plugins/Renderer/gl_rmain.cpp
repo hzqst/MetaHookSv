@@ -96,6 +96,12 @@ cactive_t *cls_state = NULL;
 int *cls_signon = NULL;
 qboolean *scr_drawloading = NULL;
 
+int *filterMode = NULL;
+float *filterColorRed = NULL;
+float *filterColorGreen = NULL;
+float *filterColorBlue = NULL;
+float *filterBrightness = NULL;
+
 //client dll
 
 int *g_iUser1 = NULL;
@@ -2155,6 +2161,9 @@ void R_NewMap(void)
 	R_NewMapLight();
 
 	R_StudioReloadVBOCache();
+
+	(*r_framecount) = 1;
+	(*r_visframecount) = 1;
 }
 
 mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)

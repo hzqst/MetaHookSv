@@ -2,38 +2,6 @@
 
 #include <vector>
 
-#define LIGHTMAP_NUMCOLUMNS		32
-#define LIGHTMAP_NUMROWS		32
-
-#define LIGHTMAP_BYTES		4
-#define	BLOCK_WIDTH			128
-#define	BLOCK_HEIGHT		128
-#define BLOCKLIGHTS_SIZE	(18*18)
-
-#define	MAX_LIGHTMAPS			64
-#define	MAX_LIGHTSTYLES			64
-#define	MAX_STYLESTRING			64
-
-#define MAX_DETAIL_TEXTURES		MAX_MAP_TEXTURES
-#define BACKFACE_EPSILON	0.01
-
-#define MAX_DECALSURFS 500
-#define MAX_MODELS 512
-#define COLINEAR_EPSILON 0.001
-
-#define MAX_DECALVERTS 32
-#define MAX_DECALS 4096
-
-
-#define FDECAL_PERMANENT			0x01		// This decal should not be removed in favor of any new decals
-#define FDECAL_REFERENCE			0x02		// This is a decal that's been moved from another level
-#define FDECAL_CUSTOM               0x04        // This is a custom clan logo and should not be saved/restored
-#define FDECAL_HFLIP				0x08		// Flip horizontal (U/S) axis
-#define FDECAL_VFLIP				0x10		// Flip vertical (V/T) axis
-#define FDECAL_CLIPTEST				0x20		// Decal needs to be clip-tested
-#define FDECAL_NOCLIP				0x40		// Decal is not clipped by containing polygon
-#define FDECAL_VBO					0x1000		// Decalvertex is bufferred in VBO
-
 #define MAX_NUM_NODES 16
 
 #define BINDING_POINT_SCENE_UBO 0
@@ -57,7 +25,11 @@
 #define VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD 8
 #define VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD 9
 #define VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD 10
-#define VERTEX_ATTRIBUTE_INDEX_EXTRA 11
+
+#define VERTEX_ATTRIBUTE_INDEX_DECALINDEX 11
+#define VERTEX_ATTRIBUTE_INDEX_TEXINDEX 11
+
+#define VERTEX_ATTRIBUTE_INDEX_STYLES 12
 
 #define WSURF_DIFFUSE_TEXTURE		0
 #define WSURF_REPLACE_TEXTURE		1
@@ -111,6 +83,7 @@ typedef struct decalvertex_s
 	float	parallaxtexcoord[2];
 	float	speculartexcoord[2];
 	int		decalindex;
+	unsigned char styles[4];
 }decalvertex_t;
 
 typedef struct brushvertex_s
@@ -128,6 +101,7 @@ typedef struct brushvertex_s
 	float	parallaxtexcoord[2];
 	float	speculartexcoord[2];
 	int		texindex;
+	unsigned char styles[4];
 }brushvertex_t;
 
 typedef struct brushface_s
@@ -267,7 +241,9 @@ typedef struct scene_ubo_s
 	float z_far;
 	float r_alpha_shift;
 	float r_additive_shift;
-	float padding;
+	float r_lightscale;
+	float r_lightstylevalue[256];
+	vec4 r_filtercolor;
 }scene_ubo_t;
 
 static_assert((sizeof(scene_ubo_t) % 16) == 0, "Size check");
@@ -485,3 +461,5 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
 #define WSURF_ADDITIVE_BLEND_ENABLED		0x800000
 #define WSURF_OIT_ALPHA_BLEND_ENABLED		0x1000000
 #define WSURF_OIT_ADDITIVE_BLEND_ENABLED	0x2000000
+#define WSURF_FULLBRIGHT_ENABLED			0x4000000
+#define WSURF_COLOR_FILTER_ENABLED			0x8000000

@@ -177,6 +177,12 @@ extern cactive_t *cls_state;
 extern int *cls_signon;
 extern qboolean *scr_drawloading;
 
+extern int *filterMode;
+extern float *filterColorRed;
+extern float *filterColorGreen;
+extern float *filterColorBlue;
+extern float *filterBrightness;
+
 extern int glx;
 extern int gly;
 extern int glwidth;
@@ -304,6 +310,7 @@ qboolean R_CullBox(vec3_t mins, vec3_t maxs);
 qboolean Host_IsSinglePlayerGame();
 void R_ForceCVars(qboolean mp);
 void R_NewMap(void);
+void GL_BuildLightmaps(void);
 void R_Init(void);
 void R_VidInit(void);
 void R_Shutdown(void);

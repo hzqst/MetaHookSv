@@ -49,6 +49,7 @@ typedef struct
 	void (*GL_EnableMultitexture)(void);
 	void (*GL_BeginRendering)(int *x, int *y, int *width, int *height);
 	void (*GL_EndRendering)(void);
+	void (*GL_BuildLightmaps)(void);
 	void (*EmitWaterPolys)(msurface_t *fa, int direction);
 	void (*R_DrawSequentialPoly)(msurface_t *s, int face);
 	void (*R_RecursiveWorldNode)(mnode_t *node);

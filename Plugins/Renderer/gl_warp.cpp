@@ -406,6 +406,11 @@ void R_DrawSkyBox(void)
 		WSurfProgramState |= WSURF_BINDLESS_ENABLED;
 	}
 
+	if (*filterMode != 0)
+	{
+		WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
+	}
+
 	if (r_draw_reflectview)
 	{
 		WSurfProgramState |= WSURF_CLIP_WATER_ENABLED;

@@ -20,11 +20,13 @@ layout(location = 9) in vec2 in_parallaxtexcoord;
 layout(location = 10) in vec2 in_speculartexcoord;
 
 #if defined(SKYBOX_ENABLED)
-	
+
 #elif defined(DECAL_ENABLED)
 	layout(location = 11) in int in_decalindex;
+	layout(location = 12) in uvec4 in_styles;
 #else
 	layout(location = 11) in int in_texindex;
+	layout(location = 12) in uvec4 in_styles;
 #endif
 
 out vec3 v_worldpos;
@@ -50,6 +52,14 @@ out vec4 v_shadowcoord[3];
 		flat out int v_texindex;
 	#endif
 
+#endif
+
+#if defined(SKYBOX_ENABLED)
+	
+#elif defined(DECAL_ENABLED)
+	flat out uvec4 v_styles;
+#else
+	flat out uvec4 v_styles;
 #endif
 
 #ifdef SKYBOX_ENABLED
@@ -195,6 +205,14 @@ void main(void)
 	#endif
 
 #endif
+
+	#if defined(SKYBOX_ENABLED)
+		
+	#elif defined(DECAL_ENABLED)
+		v_styles = in_styles;
+	#else
+		v_styles = in_styles;
+	#endif	
 
 	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * worldpos4;
 }
