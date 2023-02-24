@@ -61,6 +61,11 @@ in vec4 v_shadowcoord[3];
 	flat in uvec4 v_styles;
 #endif
 
+float ConvertStyleToLightStyle(uint style)
+{
+	return SceneUBO.r_lightstylevalue[style / 4][style % 4];
+}
+
 #ifdef GBUFFER_ENABLED
 
 	#if defined(DECAL_ENABLED)
@@ -368,13 +373,16 @@ void main()
 
 	vec4 lightmapColor = vec4(0.0, 0.0, 0.0, 0.0);
 
-	lightmapColor += texture(lightmapTexArray, vec3(v_lightmaptexcoord.x,v_lightmaptexcoord.y, v_lightmaptexcoord.z * 4.0 + 0.0) ) * SceneUBO.r_lightstylevalue[v_styles.x];
-	lightmapColor += texture(lightmapTexArray, vec3(v_lightmaptexcoord.x,v_lightmaptexcoord.y, v_lightmaptexcoord.z * 4.0 + 1.0) ) * SceneUBO.r_lightstylevalue[v_styles.y];
-	lightmapColor += texture(lightmapTexArray, vec3(v_lightmaptexcoord.x,v_lightmaptexcoord.y, v_lightmaptexcoord.z * 4.0 + 2.0) ) * SceneUBO.r_lightstylevalue[v_styles.z];
-	lightmapColor += texture(lightmapTexArray, vec3(v_lightmaptexcoord.x,v_lightmaptexcoord.y, v_lightmaptexcoord.z * 4.0 + 3.0) ) * SceneUBO.r_lightstylevalue[v_styles.w];
+	lightmapColor += texture(lightmapTexArray, vec3(v_lightmaptexcoord.x, v_lightmaptexcoord.y, v_lightmaptexcoord.z * 4.0 + 0.0) ) * ConvertStyleToLightStyle(v_styles.x);
+	lightmapColor += texture(lightmapTexArray, vec3(v_lightmaptexcoord.x, v_lightmaptexcoord.y, v_lightmaptexcoord.z * 4.0 + 1.0) ) * ConvertStyleToLightStyle(v_styles.y);
+	lightmapColor += texture(lightmapTexArray, vec3(v_lightmaptexcoord.x, v_lightmaptexcoord.y, v_lightmaptexcoord.z * 4.0 + 2.0) ) * ConvertStyleToLightStyle(v_styles.z);
+	lightmapColor += texture(lightmapTexArray, vec3(v_lightmaptexcoord.x, v_lightmaptexcoord.y, v_lightmaptexcoord.z * 4.0 + 3.0) ) * ConvertStyleToLightStyle(v_styles.w);
 
-	lightmapColor.rgb *= SceneUBO.r_lightscale;
+	lightmapColor *= SceneUBO.r_lightscale;
 
+	lightmapColor.r = clamp(lightmapColor.r, 0.0, 1.0);
+	lightmapColor.g = clamp(lightmapColor.g, 0.0, 1.0);
+	lightmapColor.b = clamp(lightmapColor.b, 0.0, 1.0);
 	lightmapColor.a = 1.0;
 
 	lightmapColor = LightGammaToLinear(lightmapColor);

@@ -321,6 +321,8 @@ void R_SetupGLForViewModel(void);
 void R_MarkLeaves(void);
 void R_DrawWorld(void);
 void R_DrawSkyBox(void);
+void R_CheckVariables(void);
+void R_AnimateLight(void);
 void R_SetupSceneUBO(void);
 mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model);
 void R_RecursiveWorldNode(mnode_t *node);

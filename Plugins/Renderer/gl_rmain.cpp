@@ -1610,6 +1610,27 @@ bool SCR_IsLoadingVisible()
 	return scr_drawloading && (*scr_drawloading) == 1 ? true : false;
 }
 
+/*
+	Called only once per frame
+*/
+
+void R_RenderStartFrame()
+{
+	R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
+	R_StudioBoneCaches_StartFrame();
+	R_CheckVariables();
+	R_AnimateLight();
+}
+
+/*
+	Called only once per frame, but before GL_EndRendering
+*/
+
+void R_RenderEndFrame()
+{
+	
+}
+
 void GL_BeginRendering(int *x, int *y, int *width, int *height)
 {
 	gRefFuncs.GL_BeginRendering(x, y, width, height);
@@ -1633,7 +1654,7 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 			glheight = *height;
 		}
 
-		//No V_RenderView calls when level changes...
+		//No V_RenderView calls when level changes so don't clear final buffer
 		if (SCR_IsLoadingVisible())
 		{
 
@@ -1643,7 +1664,7 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 			GL_ClearFinalBuffer();
 		}
 
-		R_StudioBoneCaches_StartFrame();
+		R_RenderStartFrame();
 	}
 
 	r_renderview_pass = 0;
@@ -1817,8 +1838,6 @@ void R_RenderView_SvEngine(int viewIdx)
 			g_pMetaHookAPI->SysError("R_RenderView: NULL worldmodel");
 		}
 
-		R_ForceCVars(r_params.maxclients > 1);
-
 		//This will switch from final framebuffer (RGBA8) to back framebuffer (RGBAF16)
 		R_PreRenderView();
 
@@ -1923,6 +1942,8 @@ void V_RenderView(void)
 
 void GL_EndRendering(void)
 {
+	R_RenderEndFrame();
+
 	//Disable engine's framebuffer
 	GLuint save_backbuffer_fbo = 0;
 	if (gl_backbuffer_fbo)
@@ -2703,6 +2724,12 @@ void R_CheckVariables(void)
 	gRefFuncs.R_CheckVariables();
 }
 
+/*
+
+R_AnimateLight basically fills d_lightstylevalue[0~255] from cl_lightstyle[0~255]
+
+*/
+
 void R_AnimateLight(void)
 {
 	gRefFuncs.R_AnimateLight();
@@ -2710,11 +2737,10 @@ void R_AnimateLight(void)
 
 void R_SetupFrame(void)
 {
-	//No need to force cvars since we've already done this in R_RenderView
+	//R_RenderScene could be called for multiple times in one frame. so move those to upper level.
 	//R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
-
-	R_CheckVariables();
-	R_AnimateLight();
+	//R_CheckVariables();
+	//R_AnimateLight();
 
 	++(*r_framecount);
 

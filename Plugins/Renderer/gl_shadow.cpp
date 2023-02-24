@@ -493,12 +493,11 @@ void R_RenderShadowDynamicLights(void)
 					(*r_refdef.viewangles)[1] = angle[1];
 					(*r_refdef.viewangles)[2] = angle[2];
 
-					//Skip localplayer rendering in shadowmap
-
 					if (gEngfuncs.GetLocalPlayer()->model)
 					{
 						auto save_localplayer_modeltype = gEngfuncs.GetLocalPlayer()->model->type;
 
+						//This stops local player from being rendered
 						gEngfuncs.GetLocalPlayer()->model->type = (modtype_t)100;
 
 						R_RenderScene();

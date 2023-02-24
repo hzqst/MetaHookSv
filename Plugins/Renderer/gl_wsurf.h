@@ -101,7 +101,7 @@ typedef struct brushvertex_s
 	float	parallaxtexcoord[2];
 	float	speculartexcoord[2];
 	int		texindex;
-	unsigned char styles[4];
+	byte	styles[4];
 }brushvertex_t;
 
 typedef struct brushface_s
@@ -208,6 +208,7 @@ typedef struct wsurf_vbo_s
 
 #pragma pack(push, 16)
 
+//viewport.z=linkListSize
 typedef struct scene_ubo_s
 {
 	mat4 viewMatrix;
@@ -215,7 +216,7 @@ typedef struct scene_ubo_s
 	mat4 invViewMatrix;
 	mat4 invProjMatrix;
 	mat4 shadowMatrix[3];
-	uvec4 viewport;//viewport.z=linkListSize
+	uvec4 viewport;
 	vec4 frustumpos[4];
 	vec4 viewpos;
 	vec4 vpn;
@@ -242,8 +243,8 @@ typedef struct scene_ubo_s
 	float r_alpha_shift;
 	float r_additive_shift;
 	float r_lightscale;
-	float r_lightstylevalue[256];
 	vec4 r_filtercolor;
+	vec4 r_lightstylevalue[256 / 4];
 }scene_ubo_t;
 
 static_assert((sizeof(scene_ubo_t) % 16) == 0, "Size check");

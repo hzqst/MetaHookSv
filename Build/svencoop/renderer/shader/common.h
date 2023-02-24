@@ -116,8 +116,8 @@ struct scene_ubo_t{
 	float r_alpha_shift;
 	float r_additive_shift;
 	float r_lightscale;
-	float r_lightstylevalue[256];
 	vec4 r_filtercolor;
+	vec4 r_lightstylevalue[64];
 };
 
 struct entity_ubo_t{

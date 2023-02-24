@@ -61,9 +61,7 @@ static int allocated[MAX_LIGHTMAPS_SVENGINE][BLOCK_WIDTH];
 
 void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride, int lightmap_idx)
 {
-	int			t;
-	int			i, j, k;
-	int			maxSize = sizeof(blocklights) / sizeof(colorVec);
+	int maxSize = sizeof(blocklights) / sizeof(colorVec);
 
 	int smax = (psurf->extents[0] >> 4) + 1;
 	int tmax = (psurf->extents[1] >> 4) + 1;
@@ -79,7 +77,7 @@ void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride, int lightmap_idx
 
 		if (psurf->styles[lightmap_idx] != 255)
 		{
-			for (i = 0; i < size; i++)
+			for (int i = 0; i < size; i++)
 			{
 				blocklights[i].r = lightmap[i].r;
 				blocklights[i].g = lightmap[i].g;
@@ -88,7 +86,7 @@ void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride, int lightmap_idx
 		}
 		else
 		{
-			for (i = 0; i < size; i++)
+			for (int i = 0; i < size; i++)
 			{
 				blocklights[i].r = 0;
 				blocklights[i].g = 0;
@@ -98,7 +96,7 @@ void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride, int lightmap_idx
 	}
 	else
 	{
-		for (i = 0; i < size; i++)
+		for (int i = 0; i < size; i++)
 		{
 			blocklights[i].r = 255;
 			blocklights[i].g = 255;
@@ -107,24 +105,19 @@ void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride, int lightmap_idx
 	}
 
 	//Dynamic lights should be calculated in shader
-	//if (psurf->dlightframe == r_framecount)
-	//	R_AddDynamicLights(psurf);
 
-	// bound, invert, and shift
-store:
-	stride -= (smax << 2);
-	auto block = (unsigned int *)blocklights;
+	stride -= smax * 4;
 
+	int k = 0;
 	for (int i = 0; i < tmax; i++, dest += stride)
 	{
 		for (int j = 0; j < smax; j++)
 		{
-			for (int k = 0; k < 3; k++)
-			{
-				dest[k] = block[k];
-			}
+			dest[0] = blocklights[k].r;
+			dest[1] = blocklights[k].g;
+			dest[2] = blocklights[k].b;
 
-			block += 4;
+			k ++;
 			dest += LIGHTMAP_BYTES;
 		}
 	}

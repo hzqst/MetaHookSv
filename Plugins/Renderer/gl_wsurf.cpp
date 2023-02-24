@@ -1973,6 +1973,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
 	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
 	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXINDEX);
+	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
 
 	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 4, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
 	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 4, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
@@ -3899,15 +3900,16 @@ void R_SetupSceneUBO(void)
 	else
 		SceneUBO.r_lightscale = ((pow(2.0f, 1.0f / v_lightgamma->value) * 256) + 0.5) / 256;
 
-	for (int i = 0; i < 256; ++i)
-	{
-		SceneUBO.r_lightstylevalue[i] = d_lightstylevalue[i] / 256.0f;
-	}
-
 	SceneUBO.r_filtercolor[0] = *filterColorRed;
 	SceneUBO.r_filtercolor[1] = *filterColorGreen;
 	SceneUBO.r_filtercolor[2] = *filterColorBlue;
 	SceneUBO.r_filtercolor[3] = *filterBrightness;
+
+	//Use vec4[256/4] instead of float[256] to save vram, float[256] in std140 costs 16 * 256 instead of 4 * 256 bytes due to alignment
+	for (int i = 0; i < 256; ++i)
+	{
+		SceneUBO.r_lightstylevalue[i / 4][i % 4] = d_lightstylevalue[i] * (1.0f / 264.0f);
+	}
 
 	glNamedBufferSubData(r_wsurf.hSceneUBO, 0, sizeof(SceneUBO), &SceneUBO);
 }
