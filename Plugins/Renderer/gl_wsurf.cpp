@@ -125,6 +125,10 @@ const program_state_name_t s_WSurfProgramStateName[] = {
 { WSURF_OIT_ADDITIVE_BLEND_ENABLED	,"WSURF_OIT_ADDITIVE_BLEND_ENABLED"},
 { WSURF_FULLBRIGHT_ENABLED			,"WSURF_FULLBRIGHT_ENABLED"},
 { WSURF_COLOR_FILTER_ENABLED		,"WSURF_COLOR_FILTER_ENABLED"},
+{ WSURF_LIGHTMAP_INDEX_0_ENABLED	,"WSURF_LIGHTMAP_INDEX_0_ENABLED"},
+{ WSURF_LIGHTMAP_INDEX_1_ENABLED	,"WSURF_LIGHTMAP_INDEX_1_ENABLED"},
+{ WSURF_LIGHTMAP_INDEX_2_ENABLED	,"WSURF_LIGHTMAP_INDEX_2_ENABLED"},
+{ WSURF_LIGHTMAP_INDEX_3_ENABLED	,"WSURF_LIGHTMAP_INDEX_3_ENABLED"},
 };
 
 void R_SaveWSurfProgramStates(void)
@@ -169,7 +173,8 @@ void R_LoadWSurfProgramStates(void)
 			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
 			szReadLine[sizeof(szReadLine) - 1] = 0;
 
-			int ProgramState = -1;
+			uint64_t ProgramState = 0;
+			bool filled = false;
 			bool quoted = false;
 			char token[256];
 			char *p = szReadLine;
@@ -181,6 +186,7 @@ void R_LoadWSurfProgramStates(void)
 					if (!strcmp(token, "NONE"))
 					{
 						ProgramState = 0;
+						filled = true;
 						break;
 					}
 					else
@@ -189,9 +195,8 @@ void R_LoadWSurfProgramStates(void)
 						{
 							if (!strcmp(token, s_WSurfProgramStateName[i].name))
 							{
-								if(ProgramState == -1)
-									ProgramState = 0;
 								ProgramState |= s_WSurfProgramStateName[i].state;
+								filled = true;
 							}
 						}
 					}
@@ -205,8 +210,10 @@ void R_LoadWSurfProgramStates(void)
 					break;
 			}
 
-			if(ProgramState != -1)
+			if (filled)
+			{
 				R_UseWSurfProgram(ProgramState, NULL);
+			}
 		}
 		g_pFileSystem->Close(FileHandle);
 	}
@@ -214,7 +221,7 @@ void R_LoadWSurfProgramStates(void)
 	GL_UseProgram(0);
 }
 
-void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
+void R_UseWSurfProgram(uint64_t state, wsurf_program_t *progOutput)
 {
 	wsurf_program_t prog = { 0 };
 
@@ -307,7 +314,19 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		if ((state & WSURF_COLOR_FILTER_ENABLED))
 			defs << "#define COLOR_FILTER_ENABLED\n";
 
-		if(glewIsSupported("GL_NV_bindless_texture"))
+		if ((state & WSURF_LIGHTMAP_INDEX_0_ENABLED))
+			defs << "#define LIGHTMAP_INDEX_0_ENABLED\n";
+
+		if ((state & WSURF_LIGHTMAP_INDEX_1_ENABLED))
+			defs << "#define LIGHTMAP_INDEX_1_ENABLED\n";
+
+		if ((state & WSURF_LIGHTMAP_INDEX_2_ENABLED))
+			defs << "#define LIGHTMAP_INDEX_2_ENABLED\n";
+
+		if ((state & WSURF_LIGHTMAP_INDEX_3_ENABLED))
+			defs << "#define LIGHTMAP_INDEX_3_ENABLED\n";
+
+		if (glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define UINT64_ENABLED\n";
 	
 		defs << "#define SHADOW_TEXTURE_OFFSET (1.0 / " << std::dec << r_shadow_texture.size << ".0)\n";
@@ -1433,7 +1452,7 @@ wsurf_vbo_t *R_PrepareWSurfVBO(model_t *mod)
 
 void R_DrawWSurfVBOSolid(wsurf_vbo_leaf_t *vboleaf)
 {
-	int WSurfProgramState = 0;
+	uint64_t WSurfProgramState = 0;
 
 	if (drawgbuffer)
 	{
@@ -1484,16 +1503,33 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 		if (r_wsurf.bLightmapTexture)
 		{
 			WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
-		}
 
-		if (r_fullbright->value || !r_worldmodel->lightdata)
-		{
-			WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
-		}
+			if (r_fullbright->value || !r_worldmodel->lightdata)
+			{
+				WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
+			}
 
-		if (*filterMode != 0)
-		{
-			WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
+			if (*filterMode != 0)
+			{
+				WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
+			}
+
+			if (r_wsurf.iLightmapUsedBits & (1 << 0))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_0_ENABLED;
+			}
+			if (r_wsurf.iLightmapUsedBits & (1 << 1))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_1_ENABLED;
+			}
+			if (r_wsurf.iLightmapUsedBits & (1 << 2))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_2_ENABLED;
+			}
+			if (r_wsurf.iLightmapUsedBits & (1 << 3))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_3_ENABLED;
+			}
 		}
 
 		if (r_wsurf.bShadowmapTexture)
@@ -1578,7 +1614,7 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 		{
 			auto &batch = drawBatches[i];
 
-			int WSurfProgramStateBatch = WSurfProgramState;
+			uint64_t WSurfProgramStateBatch = WSurfProgramState;
 
 			if (r_detailtextures->value)
 			{
@@ -1625,7 +1661,7 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 
 			auto base = texchain.pTexture;
 
-			int WSurfProgramState = 0;
+			uint64_t WSurfProgramState = 0;
 
 			if (r_wsurf.bDiffuseTexture)
 			{
@@ -1639,16 +1675,33 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 			if (r_wsurf.bLightmapTexture)
 			{
 				WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
-			}
 
-			if (r_fullbright->value || !r_worldmodel->lightdata)
-			{
-				WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
-			}
+				if (r_fullbright->value || !r_worldmodel->lightdata)
+				{
+					WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
+				}
 
-			if (*filterMode != 0)
-			{
-				WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
+				if (*filterMode != 0)
+				{
+					WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
+				}
+
+				if (r_wsurf.iLightmapUsedBits & (1 << 0))
+				{
+					WSurfProgramState |= WSURF_LIGHTMAP_INDEX_0_ENABLED;
+				}
+				if (r_wsurf.iLightmapUsedBits & (1 << 1))
+				{
+					WSurfProgramState |= WSURF_LIGHTMAP_INDEX_1_ENABLED;
+				}
+				if (r_wsurf.iLightmapUsedBits & (1 << 2))
+				{
+					WSurfProgramState |= WSURF_LIGHTMAP_INDEX_2_ENABLED;
+				}
+				if (r_wsurf.iLightmapUsedBits & (1 << 3))
+				{
+					WSurfProgramState |= WSURF_LIGHTMAP_INDEX_3_ENABLED;
+				}
 			}
 
 			if (r_wsurf.bShadowmapTexture)
@@ -1813,7 +1866,7 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_leaf_t *vboleaf, bool bUseZPrePass)
 
 		auto texture = R_GetAnimatedTexture(texchain.pTexture);
 
-		int WSurfProgramState = 0;
+		uint64_t WSurfProgramState = 0;
 
 		if (r_wsurf.bDiffuseTexture)
 		{
@@ -1827,16 +1880,33 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_leaf_t *vboleaf, bool bUseZPrePass)
 		if (r_wsurf.bLightmapTexture)
 		{
 			WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
-		}
 
-		if (r_fullbright->value || r_worldmodel->lightdata)
-		{
-			WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
-		}
+			if (r_fullbright->value || r_worldmodel->lightdata)
+			{
+				WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
+			}
 
-		if (*filterMode != 0)
-		{
-			WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
+			if (*filterMode != 0)
+			{
+				WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
+			}
+
+			if (r_wsurf.iLightmapUsedBits & (1 << 0))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_0_ENABLED;
+			}
+			if (r_wsurf.iLightmapUsedBits & (1 << 1))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_1_ENABLED;
+			}
+			if (r_wsurf.iLightmapUsedBits & (1 << 2))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_2_ENABLED;
+			}
+			if (r_wsurf.iLightmapUsedBits & (1 << 3))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_3_ENABLED;
+			}
 		}
 
 		if (r_wsurf.bShadowmapTexture)
@@ -2721,7 +2791,7 @@ detail_texture_cache_t *R_FindDetailTextureCache(int texId)
 	return NULL;
 }
 
-void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, int *WSurfProgramState)
+void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, uint64_t *WSurfProgramState)
 {
 	if (!r_detailtextures->value)
 		return;
@@ -2778,7 +2848,7 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, int
 	}
 }
 
-void R_BeginDetailTextureByGLTextureId(int gltexturenum, int *WSurfProgramState)
+void R_BeginDetailTextureByGLTextureId(int gltexturenum, uint64_t *WSurfProgramState)
 {
 	if (!r_detailtextures->value)
 		return;

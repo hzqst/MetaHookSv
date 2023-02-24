@@ -83,6 +83,7 @@ void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride, int lightmap_idx
 				blocklights[i].g = lightmap[i].g;
 				blocklights[i].b = lightmap[i].b;
 			}
+			r_wsurf.iLightmapUsedBits |= (1 << lightmap_idx);
 		}
 		else
 		{
@@ -416,13 +417,14 @@ void GL_BuildLightmaps(void)
 		}
 	}
 
+	r_wsurf.iLightmapUsedBits = 0;
 	r_wsurf.iLightmapTextureArray = GL_GenTexture();
 
 	glBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	//Can this be GL_RGB8? idk
+	//Can this be GL_RGB8 to save VRAM? idk
 
 	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, BLOCK_WIDTH, BLOCK_HEIGHT, r_wsurf.iNumLightmapTextures * MAXLIGHTMAPS, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
@@ -1166,7 +1168,7 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 			glPolygonOffset(-1, -gl_polyoffset->value);
 	}
 	
-	int WSurfProgramState = WSURF_DECAL_ENABLED | WSURF_DIFFUSE_ENABLED;
+	uint64_t WSurfProgramState = WSURF_DECAL_ENABLED | WSURF_DIFFUSE_ENABLED;
 
 	//Mix lightmap if not deferred
 	if (r_wsurf.bLightmapTexture && !drawgbuffer)
@@ -1280,7 +1282,7 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 
 	if (g_DecalBaseDrawBatch.BatchCount > 0)
 	{
-		int WSurfProgramStateBase = WSurfProgramState;
+		uint64_t WSurfProgramStateBase = WSurfProgramState;
 
 		if (bUseBindless)
 		{
@@ -1312,7 +1314,7 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 	{
 		for (int i = 0; i < g_DecalDetailDrawBatch.BatchCount; ++i)
 		{
-			int WSurfProgramStateDetail = WSurfProgramState;
+			uint64_t WSurfProgramStateDetail = WSurfProgramState;
 
 			GL_Bind(g_DecalDetailDrawBatch.GLTextureId[i]);
 

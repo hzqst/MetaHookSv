@@ -325,6 +325,8 @@ typedef struct r_worldsurf_s
 
 		iNumLightmapTextures = 0;
 		iLightmapTextureArray = 0;
+		iLightmapUsedBits = 0;
+
 		memset(vSkyboxTextureHandles, 0, sizeof(vSkyboxTextureHandles));
 	}
 
@@ -346,6 +348,7 @@ typedef struct r_worldsurf_s
 
 	int					iNumLightmapTextures;
 	int					iLightmapTextureArray;
+	int					iLightmapUsedBits;
 
 	std::vector <bspentity_t> vBSPEntities;
 
@@ -422,8 +425,8 @@ void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride);
 void R_DrawDecals(wsurf_vbo_t *modcache);
 detail_texture_cache_t *R_FindDecalTextureCache(const std::string &decalname);
 detail_texture_cache_t *R_FindDetailTextureCache(int texId);
-void R_BeginDetailTextureByGLTextureId(int gltexturenum, int *WSurfProgramState);
-void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, int *WSurfProgramState);
+void R_BeginDetailTextureByGLTextureId(int gltexturenum, uint64_t *WSurfProgramState);
+void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, uint64_t *WSurfProgramState);
 void R_EndDetailTexture(int WSurfProgramState);
 void R_DrawSequentialPolyVBO(msurface_t *s);
 wsurf_vbo_t *R_PrepareWSurfVBO(model_t *mod);
@@ -434,33 +437,37 @@ void R_Reload_f(void);
 void R_GenerateSceneUBO(void);
 void R_SaveWSurfProgramStates(void);
 void R_LoadWSurfProgramStates(void);
-void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
+void R_UseWSurfProgram(uint64_t state, wsurf_program_t *progOut);
 
-#define WSURF_DIFFUSE_ENABLED				1
-#define WSURF_LIGHTMAP_ENABLED				2
-#define WSURF_REPLACETEXTURE_ENABLED		4
-#define WSURF_DETAILTEXTURE_ENABLED			8
-#define WSURF_NORMALTEXTURE_ENABLED			0x10
-#define WSURF_PARALLAXTEXTURE_ENABLED		0x20
-#define WSURF_SPECULARTEXTURE_ENABLED		0x40
-#define WSURF_LINEAR_FOG_ENABLED			0x80
-#define WSURF_EXP_FOG_ENABLED				0x100
-#define WSURF_EXP2_FOG_ENABLED				0x200
-#define WSURF_GBUFFER_ENABLED				0x400
-#define WSURF_TRANSPARENT_ENABLED			0x800
-#define WSURF_SHADOW_CASTER_ENABLED			0x1000
-#define WSURF_SHADOWMAP_ENABLED				0x2000
-#define WSURF_SHADOWMAP_HIGH_ENABLED		0x4000
-#define WSURF_SHADOWMAP_MEDIUM_ENABLED		0x8000
-#define WSURF_SHADOWMAP_LOW_ENABLED			0x10000
-#define WSURF_BINDLESS_ENABLED				0x20000
-#define WSURF_SKYBOX_ENABLED				0x40000
-#define WSURF_DECAL_ENABLED					0x80000
-#define WSURF_CLIP_ENABLED					0x100000
-#define WSURF_CLIP_WATER_ENABLED			0x200000
-#define WSURF_ALPHA_BLEND_ENABLED			0x400000
-#define WSURF_ADDITIVE_BLEND_ENABLED		0x800000
-#define WSURF_OIT_ALPHA_BLEND_ENABLED		0x1000000
-#define WSURF_OIT_ADDITIVE_BLEND_ENABLED	0x2000000
-#define WSURF_FULLBRIGHT_ENABLED			0x4000000
-#define WSURF_COLOR_FILTER_ENABLED			0x8000000
+#define WSURF_DIFFUSE_ENABLED				1ull
+#define WSURF_LIGHTMAP_ENABLED				2ull
+#define WSURF_REPLACETEXTURE_ENABLED		4ull
+#define WSURF_DETAILTEXTURE_ENABLED			8ull
+#define WSURF_NORMALTEXTURE_ENABLED			0x10ull
+#define WSURF_PARALLAXTEXTURE_ENABLED		0x20ull
+#define WSURF_SPECULARTEXTURE_ENABLED		0x40ull
+#define WSURF_LINEAR_FOG_ENABLED			0x80ull
+#define WSURF_EXP_FOG_ENABLED				0x100ull
+#define WSURF_EXP2_FOG_ENABLED				0x200ull
+#define WSURF_GBUFFER_ENABLED				0x400ull
+#define WSURF_TRANSPARENT_ENABLED			0x800ull
+#define WSURF_SHADOW_CASTER_ENABLED			0x1000ull
+#define WSURF_SHADOWMAP_ENABLED				0x2000ull
+#define WSURF_SHADOWMAP_HIGH_ENABLED		0x4000ull
+#define WSURF_SHADOWMAP_MEDIUM_ENABLED		0x8000ull
+#define WSURF_SHADOWMAP_LOW_ENABLED			0x10000ull
+#define WSURF_BINDLESS_ENABLED				0x20000ull
+#define WSURF_SKYBOX_ENABLED				0x40000ull
+#define WSURF_DECAL_ENABLED					0x80000ull
+#define WSURF_CLIP_ENABLED					0x100000ull
+#define WSURF_CLIP_WATER_ENABLED			0x200000ull
+#define WSURF_ALPHA_BLEND_ENABLED			0x400000ull
+#define WSURF_ADDITIVE_BLEND_ENABLED		0x800000ull
+#define WSURF_OIT_ALPHA_BLEND_ENABLED		0x1000000ull
+#define WSURF_OIT_ADDITIVE_BLEND_ENABLED	0x2000000ull
+#define WSURF_FULLBRIGHT_ENABLED			0x4000000ull
+#define WSURF_COLOR_FILTER_ENABLED			0x8000000ull
+#define WSURF_LIGHTMAP_INDEX_0_ENABLED		0x10000000ull
+#define WSURF_LIGHTMAP_INDEX_1_ENABLED		0x20000000ull
+#define WSURF_LIGHTMAP_INDEX_2_ENABLED		0x40000000ull
+#define WSURF_LIGHTMAP_INDEX_3_ENABLED		0x80000000ull
