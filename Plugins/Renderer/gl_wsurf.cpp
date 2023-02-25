@@ -24,7 +24,7 @@ int r_wsurf_polys = 0;
 
 vec3_t r_entity_mins, r_entity_maxs;
 
-std::unordered_map <int, wsurf_program_t> g_WSurfProgramTable;
+std::unordered_map <program_state_t, wsurf_program_t> g_WSurfProgramTable;
 
 std::unordered_map <int, detail_texture_cache_t *> g_DetailTextureTable;
 
@@ -113,7 +113,7 @@ const program_state_mapping_t s_WSurfProgramStateName[] = {
 { WSURF_LIGHTMAP_INDEX_1_ENABLED	,"WSURF_LIGHTMAP_INDEX_1_ENABLED"},
 { WSURF_LIGHTMAP_INDEX_2_ENABLED	,"WSURF_LIGHTMAP_INDEX_2_ENABLED"},
 { WSURF_LIGHTMAP_INDEX_3_ENABLED	,"WSURF_LIGHTMAP_INDEX_3_ENABLED"},
-{ WSURF_LEGACY_DLIGHT_ENABLED		,"WSURF_LEGACY_DLIGHT_ENABLED"},
+{ WSURF_LEGACY_DLIGHT_ENABLED		,"WSURF_LEGACY_DLIGHT_ENABLED"}
 };
 
 void R_SaveWSurfProgramStates(void)
@@ -1470,12 +1470,17 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 		{
 			WSurfProgramState |= WSURF_SHADOWMAP_ENABLED;
 
-			for (int i = 0; i < 3; ++i)
+			if (shadow_numvisedicts[0] > 0)
 			{
-				if (shadow_numvisedicts[i] > 0)
-				{
-					WSurfProgramState |= (WSURF_SHADOWMAP_HIGH_ENABLED << i);
-				}
+				WSurfProgramState |= WSURF_SHADOWMAP_HIGH_ENABLED;
+			}
+			if (shadow_numvisedicts[1] > 0)
+			{
+				WSurfProgramState |= WSURF_SHADOWMAP_MEDIUM_ENABLED;
+			}
+			if (shadow_numvisedicts[2] > 0)
+			{
+				WSurfProgramState |= WSURF_SHADOWMAP_LOW_ENABLED;
 			}
 		}
 
@@ -1548,7 +1553,7 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 		{
 			auto &batch = drawBatches[i];
 
-			uint64_t WSurfProgramStateBatch = WSurfProgramState;
+			program_state_t WSurfProgramStateBatch = WSurfProgramState;
 
 			if (r_detailtextures->value)
 			{
@@ -1647,12 +1652,17 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 			{
 				WSurfProgramState |= WSURF_SHADOWMAP_ENABLED;
 
-				for (int j = 0; j < 3; ++j)
+				if (shadow_numvisedicts[0] > 0)
 				{
-					if (shadow_numvisedicts[j] > 0)
-					{
-						WSurfProgramState |= (WSURF_SHADOWMAP_HIGH_ENABLED << j);
-					}
+					WSurfProgramState |= WSURF_SHADOWMAP_HIGH_ENABLED;
+				}
+				if (shadow_numvisedicts[1] > 0)
+				{
+					WSurfProgramState |= WSURF_SHADOWMAP_MEDIUM_ENABLED;
+				}
+				if (shadow_numvisedicts[2] > 0)
+				{
+					WSurfProgramState |= WSURF_SHADOWMAP_LOW_ENABLED;
 				}
 			}
 
@@ -1857,12 +1867,17 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_leaf_t *vboleaf, bool bUseZPrePass)
 		{
 			WSurfProgramState |= WSURF_SHADOWMAP_ENABLED;
 
-			for (int j = 0; j < 3; ++j)
+			if (shadow_numvisedicts[0] > 0)
 			{
-				if (shadow_numvisedicts[j] > 0)
-				{
-					WSurfProgramState |= (WSURF_SHADOWMAP_HIGH_ENABLED << j);
-				}
+				WSurfProgramState |= WSURF_SHADOWMAP_HIGH_ENABLED;
+			}
+			if (shadow_numvisedicts[1] > 0)
+			{
+				WSurfProgramState |= WSURF_SHADOWMAP_MEDIUM_ENABLED;
+			}
+			if (shadow_numvisedicts[2] > 0)
+			{
+				WSurfProgramState |= WSURF_SHADOWMAP_LOW_ENABLED;
 			}
 		}
 
@@ -2808,7 +2823,7 @@ void R_BeginDetailTextureByGLTextureId(int gltexturenum, program_state_t *WSurfP
 	}
 }
 
-void R_EndDetailTexture(int WSurfProgramState)
+void R_EndDetailTexture(program_state_t WSurfProgramState)
 {
 	bool bRestore = false;
 
@@ -3960,7 +3975,7 @@ void R_SetupDLightUBO(void)
 		}
 	}
 
-	DLightUBO.active_dlights = r_wsurf.iLightmapLegacyDLights;
+	DLightUBO.active_dlights[0] = r_wsurf.iLightmapLegacyDLights;
 
 	glNamedBufferSubData(r_wsurf.hDLightUBO, 0, sizeof(DLightUBO), &DLightUBO);
 }

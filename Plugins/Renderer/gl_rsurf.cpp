@@ -1164,12 +1164,17 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 	{
 		WSurfProgramState |= WSURF_SHADOWMAP_ENABLED;
 
-		for (int i = 0; i < 3; ++i)
+		if (shadow_numvisedicts[0] > 0)
 		{
-			if (shadow_numvisedicts[i] > 0)
-			{
-				WSurfProgramState |= (WSURF_SHADOWMAP_HIGH_ENABLED << i);
-			}
+			WSurfProgramState |= WSURF_SHADOWMAP_HIGH_ENABLED;
+		}
+		if (shadow_numvisedicts[1] > 0)
+		{
+			WSurfProgramState |= WSURF_SHADOWMAP_MEDIUM_ENABLED;
+		}
+		if (shadow_numvisedicts[2] > 0)
+		{
+			WSurfProgramState |= WSURF_SHADOWMAP_LOW_ENABLED;
 		}
 	}
 
@@ -1233,7 +1238,9 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 	glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hDecalVBO);
 
 	if (bUseBindless)
+	{
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_DECAL_SSBO, r_wsurf.hDecalSSBO);
+	}
 
 	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
 	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);

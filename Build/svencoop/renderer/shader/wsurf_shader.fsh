@@ -72,15 +72,15 @@ vec4 R_AddLegacyDynamicLight(vec4 color)
 {
 	for(uint i = 0;i < DLightUBO.active_dlights; ++i)
 	{
-		vec3 delta = DLightUBO.origin_radius[i].xyz - v_worldpos.xyz;
+		vec3 origin = DLightUBO.origin_radius[i].xyz;
 		float radius = DLightUBO.origin_radius[i].w;
+		vec3 delta = origin - v_worldpos;
 		float dist = length(delta);
 
 		vec3 lightcolor = DLightUBO.color_minlight[i].xyz;
+		float minlight = DLightUBO.color_minlight[i].w;
 
-		//float minlight = DLightUBO.color_minlight[i].w;
-
-		color.xyz += clamp((radius - dist) / radius, 0.0, 1.0) * vec3(1.0, 0.0, 0.0);//lightcolor.xyz;
+		color.xyz += clamp((radius - dist) / radius, 0.0, 1.0) * lightcolor.xyz;
 	}
 
 	return color;

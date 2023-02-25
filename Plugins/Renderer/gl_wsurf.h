@@ -257,10 +257,7 @@ typedef struct dlight_ubo_s
 {
 	vec4 origin_radius[256];
 	vec4 color_minlight[256];
-	uint32_t active_dlights;
-	uint32_t padding2;
-	uint32_t padding3;
-	uint32_t padding4;
+	uint32_t active_dlights[4];
 }dlight_ubo_t;
 
 static_assert((sizeof(dlight_ubo_t) % 16) == 0, "Size check");
@@ -447,7 +444,7 @@ detail_texture_cache_t *R_FindDecalTextureCache(const std::string &decalname);
 detail_texture_cache_t *R_FindDetailTextureCache(int texId);
 void R_BeginDetailTextureByGLTextureId(int gltexturenum, program_state_t *WSurfProgramState);
 void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, program_state_t *WSurfProgramState);
-void R_EndDetailTexture(int WSurfProgramState);
+void R_EndDetailTexture(program_state_t WSurfProgramState);
 void R_DrawSequentialPolyVBO(msurface_t *s);
 wsurf_vbo_t *R_PrepareWSurfVBO(model_t *mod);
 void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent);
