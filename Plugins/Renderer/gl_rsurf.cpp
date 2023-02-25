@@ -1282,7 +1282,7 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 
 	if (g_DecalBaseDrawBatch.BatchCount > 0)
 	{
-		uint64_t WSurfProgramStateBase = WSurfProgramState;
+		program_state_t WSurfProgramStateBase = WSurfProgramState;
 
 		if (bUseBindless)
 		{
@@ -1314,7 +1314,7 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 	{
 		for (int i = 0; i < g_DecalDetailDrawBatch.BatchCount; ++i)
 		{
-			uint64_t WSurfProgramStateDetail = WSurfProgramState;
+			program_state_t WSurfProgramStateDetail = WSurfProgramState;
 
 			GL_Bind(g_DecalDetailDrawBatch.GLTextureId[i]);
 

@@ -16,13 +16,13 @@ std::vector<water_vbo_t *> g_WaterVBOCache;
 water_vbo_t *g_RenderWaterVBOCache[512];
 int g_iNumRenderWaterVBOCache = 0;
 
-std::unordered_map<int, water_program_t> g_WaterProgramTable;
+std::unordered_map<program_state_t, water_program_t> g_WaterProgramTable;
 
 std::vector<water_control_t> r_water_controls;
 
 //std::vector<cubemap_t> r_cubemaps;
 
-void R_UseWaterProgram(int state, water_program_t *progOutput)
+void R_UseWaterProgram(program_state_t state, water_program_t *progOutput)
 {
 	water_program_t prog = { 0 };
 
@@ -97,7 +97,7 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 	}
 }
 
-const program_state_name_t s_WaterProgramStateName[] = {
+const program_state_mapping_t s_WaterProgramStateName[] = {
 { WATER_LEGACY_ENABLED					, "WATER_LEGACY_ENABLED"			 },
 { WATER_UNDERWATER_ENABLED				, "WATER_UNDERWATER_ENABLED"		 },
 { WATER_GBUFFER_ENABLED					, "WATER_GBUFFER_ENABLED"			 },
@@ -112,89 +112,21 @@ const program_state_name_t s_WaterProgramStateName[] = {
 
 void R_SaveWaterProgramStates(void)
 {
-	std::stringstream ss;
+	std::vector<program_state_t> states;
 	for (auto &p : g_WaterProgramTable)
 	{
-		if (p.first == 0)
-		{
-			ss << "NONE";
-		}
-		else
-		{
-			for (int i = 0; i < _ARRAYSIZE(s_WaterProgramStateName); ++i)
-			{
-				if (p.first & s_WaterProgramStateName[i].state)
-				{
-					ss << s_WaterProgramStateName[i].name << " ";
-				}
-			}
-		}
-		ss << "\n";
+		states.emplace_back(p.first);
 	}
-
-	auto FileHandle = g_pFileSystem->Open("renderer/shader/water_cache.txt", "wt");
-	if (FileHandle)
-	{
-		auto str = ss.str();
-		g_pFileSystem->Write(str.data(), str.length(), FileHandle);
-		g_pFileSystem->Close(FileHandle);
-	}
+	R_SaveProgramStatesCaches("renderer/shader/water_cache.txt", states, s_WaterProgramStateName, _ARRAYSIZE(s_WaterProgramStateName));
 }
 
 void R_LoadWaterProgramStates(void)
 {
-	auto FileHandle = g_pFileSystem->Open("renderer/shader/water_cache.txt", "rt");
-	if (FileHandle)
-	{
-		char szReadLine[4096];
-		while (!g_pFileSystem->EndOfFile(FileHandle))
-		{
-			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
-			szReadLine[sizeof(szReadLine) - 1] = 0;
+	R_LoadProgramStateCaches("renderer/shader/water_cache.txt", s_WaterProgramStateName, _ARRAYSIZE(s_WaterProgramStateName), [](program_state_t state) {
 
-			int ProgramState = -1;
-			bool quoted = false;
-			char token[256];
-			char *p = szReadLine;
-			while (1)
-			{
-				p = g_pFileSystem->ParseFile(p, token, &quoted);
-				if (token[0])
-				{
-					if (!strcmp(token, "NONE"))
-					{
-						ProgramState = 0;
-						break;
-					}
-					else
-					{
-						for (int i = 0; i < _ARRAYSIZE(s_WaterProgramStateName); ++i)
-						{
-							if (!strcmp(token, s_WaterProgramStateName[i].name))
-							{
-								if (ProgramState == -1)
-									ProgramState = 0;
-								ProgramState |= s_WaterProgramStateName[i].state;
-							}
-						}
-					}
-				}
-				else
-				{
-					break;
-				}
+		R_UseWaterProgram(state, NULL);
 
-				if (!p)
-					break;
-			}
-
-			if (ProgramState != -1)
-				R_UseWaterProgram(ProgramState, NULL);
-		}
-		g_pFileSystem->Close(FileHandle);
-	}
-
-	GL_UseProgram(0);
+	});
 }
 
 void R_ShutdownWater(void)

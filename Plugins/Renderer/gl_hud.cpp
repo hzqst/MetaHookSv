@@ -65,9 +65,9 @@ MapConVar *r_ssao_intensity = NULL;
 MapConVar *r_ssao_bias = NULL;
 MapConVar *r_ssao_blur_sharpness = NULL;
 
-std::unordered_map<int, hud_debug_program_t> g_HudDebugProgramTable;
+std::unordered_map<program_state_t, hud_debug_program_t> g_HudDebugProgramTable;
 
-void R_UseHudDebugProgram(int state, hud_debug_program_t *progOutput)
+void R_UseHudDebugProgram(program_state_t state, hud_debug_program_t *progOutput)
 {
 	hud_debug_program_t prog = { 0 };
 

@@ -81,7 +81,7 @@ public:
 
 std::unordered_map<studio_bone_handle, studio_bone_cache *, studio_bone_hasher> g_StudioBoneCacheManager;
 
-std::unordered_map<int, studio_program_t> g_StudioProgramTable;
+std::unordered_map<program_state_t, studio_program_t> g_StudioProgramTable;
 
 std::vector<studio_vbo_t *> g_StudioVBOCache;
 
@@ -442,7 +442,7 @@ void R_StudioReloadVBOCache(void)
 	}
 }
 
-void R_UseStudioProgram(int state, studio_program_t *progOutput)
+void R_UseStudioProgram(program_state_t state, studio_program_t *progOutput)
 {
 	studio_program_t prog = { 0 };
 
@@ -864,7 +864,7 @@ void R_UseStudioProgram(int state, studio_program_t *progOutput)
 	}
 }
 
-const program_state_name_t s_StudioProgramStateName[] = {
+const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_GBUFFER_ENABLED				,"STUDIO_GBUFFER_ENABLED"					},
 { STUDIO_TRANSPARENT_ENABLED			,"STUDIO_TRANSPARENT_ENABLED"				},
 { STUDIO_TRANSADDITIVE_ENABLED			,"STUDIO_TRANSADDITIVE_ENABLED"				},
@@ -893,89 +893,21 @@ const program_state_name_t s_StudioProgramStateName[] = {
 
 void R_SaveStudioProgramStates(void)
 {
-	std::stringstream ss;
+	std::vector<program_state_t> states;
 	for (auto &p : g_StudioProgramTable)
 	{
-		if (p.first == 0)
-		{
-			ss << "NONE";
-		}
-		else
-		{
-			for (int i = 0; i < _ARRAYSIZE(s_StudioProgramStateName); ++i)
-			{
-				if (p.first & s_StudioProgramStateName[i].state)
-				{
-					ss << s_StudioProgramStateName[i].name << " ";
-				}
-			}
-		}
-		ss << "\n";
+		states.emplace_back(p.first);
 	}
-
-	auto FileHandle = g_pFileSystem->Open("renderer/shader/studio_cache.txt", "wt");
-	if (FileHandle)
-	{
-		auto str = ss.str();
-		g_pFileSystem->Write(str.data(), str.length(), FileHandle);
-		g_pFileSystem->Close(FileHandle);
-	}
+	R_SaveProgramStatesCaches("renderer/shader/studio_cache.txt", states, s_StudioProgramStateName, _ARRAYSIZE(s_StudioProgramStateName));
 }
 
 void R_LoadStudioProgramStates(void)
 {
-	auto FileHandle = g_pFileSystem->Open("renderer/shader/studio_cache.txt", "rt");
-	if (FileHandle)
-	{
-		char szReadLine[4096];
-		while (!g_pFileSystem->EndOfFile(FileHandle))
-		{
-			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
-			szReadLine[sizeof(szReadLine) - 1] = 0;
+	R_LoadProgramStateCaches("renderer/shader/studio_cache.txt", s_StudioProgramStateName, _ARRAYSIZE(s_StudioProgramStateName), [](program_state_t state) {
 
-			int ProgramState = -1;
-			bool quoted = false;
-			char token[256];
-			char *p = szReadLine;
-			while (1)
-			{
-				p = g_pFileSystem->ParseFile(p, token, &quoted);
-				if (token[0])
-				{
-					if (!strcmp(token, "NONE"))
-					{
-						ProgramState = 0;
-						break;
-					}
-					else
-					{
-						for (int i = 0; i < _ARRAYSIZE(s_StudioProgramStateName); ++i)
-						{
-							if (!strcmp(token, s_StudioProgramStateName[i].name))
-							{
-								if (ProgramState == -1)
-									ProgramState = 0;
-								ProgramState |= s_StudioProgramStateName[i].state;
-							}
-						}
-					}
-				}
-				else
-				{
-					break;
-				}
+		R_UseStudioProgram(state, NULL);
 
-				if (!p)
-					break;
-			}
-
-			if (ProgramState != -1)
-				R_UseStudioProgram(ProgramState, NULL);
-		}
-		g_pFileSystem->Close(FileHandle);
-	}
-
-	GL_UseProgram(0);
+	});
 }
 
 void R_ShutdownStudio(void)

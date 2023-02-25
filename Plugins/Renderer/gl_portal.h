@@ -66,6 +66,6 @@ void R_NewMapPortal(void);
 void R_ShutdownPortal(void);
 void R_InitPortal(void);
 
-#define OVERLAY_TEXTURE_ENABLED				1
-#define PORTAL_TEXCOORD_ENABLED				2
-#define REVERSE_PORTAL_TEXCOORD_ENABLED		4
+#define OVERLAY_TEXTURE_ENABLED				0x1ull
+#define PORTAL_TEXCOORD_ENABLED				0x2ull
+#define REVERSE_PORTAL_TEXCOORD_ENABLED		0x4ull

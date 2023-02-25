@@ -369,7 +369,7 @@ void R_DrawParticles(void)
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	int LegacySpriteProgramState = 0;
+	program_state_t LegacySpriteProgramState = 0;
 
 	if (r_draw_oitblend)
 	{
@@ -556,7 +556,7 @@ void triapi_RenderMode(int mode)
 #if 1
 		if (r_draw_legacysprite)
 		{
-			int LegacySpriteProgramState = 0;
+			program_state_t LegacySpriteProgramState = 0;
 
 			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 			{
@@ -587,7 +587,7 @@ void triapi_RenderMode(int mode)
 		R_SetGBufferBlend(GL_ONE, GL_ONE);
 		if (r_draw_legacysprite)
 		{
-			int LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ADDITIVE_BLEND_ENABLED : SPRITE_ADDITIVE_BLEND_ENABLED;
+			program_state_t LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ADDITIVE_BLEND_ENABLED : SPRITE_ADDITIVE_BLEND_ENABLED;
 
 			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 			{
@@ -620,7 +620,7 @@ void triapi_RenderMode(int mode)
 		
 		if (r_draw_legacysprite)
 		{
-			int LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ALPHA_BLEND_ENABLED : SPRITE_ALPHA_BLEND_ENABLED;
+			program_state_t LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ALPHA_BLEND_ENABLED : SPRITE_ALPHA_BLEND_ENABLED;
 
 			if (r_draw_reflectview)
 			{
@@ -3372,7 +3372,7 @@ void R_SaveProgramStates_f(void)
 	R_SaveLegacySpriteProgramStates();
 	R_SavePortalProgramStates();
 
-	gEngfuncs.Con_Printf("Program states saved.\n");
+	gEngfuncs.Con_Printf("R_SaveProgramStates_f: Program state caches saved.\n");
 }
 
 void R_LoadProgramStates_f(void)
@@ -3385,8 +3385,9 @@ void R_LoadProgramStates_f(void)
 	R_LoadSpriteProgramStates();
 	R_LoadLegacySpriteProgramStates();
 	R_LoadPortalProgramStates();
+	GL_UseProgram(0);
 
-	gEngfuncs.Con_Printf("Program states loaded.\n");
+	gEngfuncs.Con_Printf("R_LoadProgramStates_f: Program state caches loaded.\n");
 }
 
 void GammaToLinear(float *color)

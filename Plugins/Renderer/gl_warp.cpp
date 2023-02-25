@@ -56,7 +56,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache, cl_entity_t *ent)
 			refractmap_ready = true;
 		}
 
-		int programState = 0;
+		program_state_t programState = 0;
 
 		if (bIsAboveWater)
 			programState |= WATER_DEPTH_ENABLED;
@@ -168,7 +168,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache, cl_entity_t *ent)
 	}
 	else if(WaterVBOCache->level == WATER_LEVEL_LEGACY_RIPPLE && r_water->value)
 	{
-		int programState = WATER_LEGACY_ENABLED;
+		program_state_t programState = WATER_LEGACY_ENABLED;
 
 		if (!bIsAboveWater)
 		{
@@ -231,7 +231,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBOCache, cl_entity_t *ent)
 		else
 			scale = -(*currententity)->curstate.scale;
 
-		int programState = WATER_LEGACY_ENABLED;
+		program_state_t programState = WATER_LEGACY_ENABLED;
 
 		if (!bIsAboveWater)
 		{

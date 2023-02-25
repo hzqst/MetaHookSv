@@ -162,21 +162,21 @@ void R_InitWater(void);
 void R_ShutdownWater(void);
 void R_RenderWaterView(void);
 void R_NewMapWater(void);
-void R_UseWaterProgram(int state, water_program_t *progOutput);
+void R_UseWaterProgram(program_state_t state, water_program_t *progOutput);
 void R_SaveWaterProgramStates(void);
 void R_LoadWaterProgramStates(void);
 void R_DrawWaters(cl_entity_t *ent);
 
-#define WATER_LEGACY_ENABLED				1
-#define WATER_UNDERWATER_ENABLED			2
-#define WATER_GBUFFER_ENABLED				4
-#define WATER_DEPTH_ENABLED					8
-#define WATER_REFRACT_ENABLED				0x10
-#define WATER_LINEAR_FOG_ENABLED			0x20
-#define WATER_EXP_FOG_ENABLED				0x40
-#define WATER_EXP2_FOG_ENABLED				0x80
-#define WATER_OIT_ALPHA_BLEND_ENABLED		0x100
-#define WATER_OIT_ADDITIVE_BLEND_ENABLED	0x200
+#define WATER_LEGACY_ENABLED				0x1ull
+#define WATER_UNDERWATER_ENABLED			0x2ull
+#define WATER_GBUFFER_ENABLED				0x4ull
+#define WATER_DEPTH_ENABLED					0x8ull
+#define WATER_REFRACT_ENABLED				0x10ull
+#define WATER_LINEAR_FOG_ENABLED			0x20ull
+#define WATER_EXP_FOG_ENABLED				0x40ull
+#define WATER_EXP2_FOG_ENABLED				0x80ull
+#define WATER_OIT_ALPHA_BLEND_ENABLED		0x100ull
+#define WATER_OIT_ADDITIVE_BLEND_ENABLED	0x200ull
 
 #define WATER_LEVEL_LEGACY						0
 #define WATER_LEVEL_REFLECT_SKYBOX				1

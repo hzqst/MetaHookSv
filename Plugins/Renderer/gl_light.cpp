@@ -42,9 +42,11 @@ std::string r_flashlight_cone_texture_name;
 
 std::vector<light_dynamic_t> g_DynamicLights;
 
-std::unordered_map<int, dfinal_program_t> g_DFinalProgramTable;
+std::unordered_map<program_state_t, dfinal_program_t> g_DFinalProgramTable;
 
-void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
+std::unordered_map<program_state_t, dlight_program_t> g_DLightProgramTable;
+
+void R_UseDFinalProgram(program_state_t state, dfinal_program_t *progOutput)
 {
 	dfinal_program_t prog = { 0 };
 
@@ -120,7 +122,7 @@ void R_UseDFinalProgram(int state, dfinal_program_t *progOutput)
 	}
 }
 
-const program_state_name_t s_DFinalProgramStateName[] = {
+const program_state_mapping_t s_DFinalProgramStateName[] = {
 { DFINAL_LINEAR_FOG_ENABLED				,"DFINAL_LINEAR_FOG_ENABLED"			},
 { DFINAL_EXP_FOG_ENABLED				,"DFINAL_EXP_FOG_ENABLED"				},
 { DFINAL_EXP2_FOG_ENABLED				,"DFINAL_EXP2_FOG_ENABLED"				},
@@ -133,94 +135,24 @@ const program_state_name_t s_DFinalProgramStateName[] = {
 
 void R_SaveDFinalProgramStates(void)
 {
-	std::stringstream ss;
+	std::vector<program_state_t> states;
 	for (auto &p : g_DFinalProgramTable)
 	{
-		if (p.first == 0)
-		{
-			ss << "NONE";
-		}
-		else
-		{
-			for (int i = 0; i < _ARRAYSIZE(s_DFinalProgramStateName); ++i)
-			{
-				if (p.first & s_DFinalProgramStateName[i].state)
-				{
-					ss << s_DFinalProgramStateName[i].name << " ";
-				}
-			}
-		}
-		ss << "\n";
+		states.emplace_back(p.first);
 	}
-
-	auto FileHandle = g_pFileSystem->Open("renderer/shader/dfinal_cache.txt", "wt");
-	if (FileHandle)
-	{
-		auto str = ss.str();
-		g_pFileSystem->Write(str.data(), str.length(), FileHandle);
-		g_pFileSystem->Close(FileHandle);
-	}
+	R_SaveProgramStatesCaches("renderer/shader/dfinal_cache.txt", states, s_DFinalProgramStateName, _ARRAYSIZE(s_DFinalProgramStateName));
 }
 
 void R_LoadDFinalProgramStates(void)
 {
-	auto FileHandle = g_pFileSystem->Open("renderer/shader/dfinal_cache.txt", "rt");
-	if (FileHandle)
-	{
-		char szReadLine[4096];
-		while (!g_pFileSystem->EndOfFile(FileHandle))
-		{
-			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
-			szReadLine[sizeof(szReadLine) - 1] = 0;
+	R_LoadProgramStateCaches("renderer/shader/dfinal_cache.txt", s_DFinalProgramStateName, _ARRAYSIZE(s_DFinalProgramStateName), [](program_state_t state) {
 
-			int ProgramState = -1;
-			bool quoted = false;
-			char token[256];
-			char *p = szReadLine;
-			while (1)
-			{
-				p = g_pFileSystem->ParseFile(p, token, &quoted);
-				if (token[0])
-				{
-					if (!strcmp(token, "NONE"))
-					{
-						ProgramState = 0;
-						break;
-					}
-					else
-					{
-						for (int i = 0; i < _ARRAYSIZE(s_DFinalProgramStateName); ++i)
-						{
-							if (!strcmp(token, s_DFinalProgramStateName[i].name))
-							{
-								if (ProgramState == -1)
-									ProgramState = 0;
-								ProgramState |= s_DFinalProgramStateName[i].state;
-							}
-						}
-					}
-				}
-				else
-				{
-					break;
-				}
+		R_UseDFinalProgram(state, NULL);
 
-				if (!p)
-					break;
-			}
-
-			if (ProgramState != -1)
-				R_UseDFinalProgram(ProgramState, NULL);
-		}
-		g_pFileSystem->Close(FileHandle);
-	}
-
-	GL_UseProgram(0);
+	});
 }
 
-std::unordered_map<int, dlight_program_t> g_DLightProgramTable;
-
-void R_UseDLightProgram(int state, dlight_program_t *progOutput)
+void R_UseDLightProgram(program_state_t state, dlight_program_t *progOutput)
 {
 	dlight_program_t prog = { 0 };
 
@@ -285,7 +217,7 @@ void R_UseDLightProgram(int state, dlight_program_t *progOutput)
 	}
 }
 
-const program_state_name_t s_DLightProgramStateName[] = {
+const program_state_mapping_t s_DLightProgramStateName[] = {
 { DLIGHT_SPOT_ENABLED				,"DLIGHT_SPOT_ENABLED"	 },
 { DLIGHT_POINT_ENABLED				,"DLIGHT_POINT_ENABLED"	 },
 { DLIGHT_VOLUME_ENABLED				,"DLIGHT_VOLUME_ENABLED" },
@@ -295,94 +227,27 @@ const program_state_name_t s_DLightProgramStateName[] = {
 
 void R_SaveDLightProgramStates(void)
 {
-	std::stringstream ss;
+	std::vector<program_state_t> states;
 	for (auto &p : g_DLightProgramTable)
 	{
-		if (p.first == 0)
-		{
-			ss << "NONE";
-		}
-		else
-		{
-			for (int i = 0; i < _ARRAYSIZE(s_DLightProgramStateName); ++i)
-			{
-				if (p.first & s_DLightProgramStateName[i].state)
-				{
-					ss << s_DLightProgramStateName[i].name << " ";
-				}
-			}
-		}
-		ss << "\n";
+		states.emplace_back(p.first);
 	}
-
-	auto FileHandle = g_pFileSystem->Open("renderer/shader/dlight_cache.txt", "wt");
-	if (FileHandle)
-	{
-		auto str = ss.str();
-		g_pFileSystem->Write(str.data(), str.length(), FileHandle);
-		g_pFileSystem->Close(FileHandle);
-	}
+	R_SaveProgramStatesCaches("renderer/shader/dlight_cache.txt", states, s_DLightProgramStateName, _ARRAYSIZE(s_DLightProgramStateName));
 }
 
 void R_LoadDLightProgramStates(void)
 {
-	auto FileHandle = g_pFileSystem->Open("renderer/shader/dlight_cache.txt", "rt");
-	if (FileHandle)
-	{
-		char szReadLine[4096];
-		while (!g_pFileSystem->EndOfFile(FileHandle))
-		{
-			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
-			szReadLine[sizeof(szReadLine) - 1] = 0;
+	R_LoadProgramStateCaches("renderer/shader/dlight_cache.txt", s_DLightProgramStateName, _ARRAYSIZE(s_DLightProgramStateName), [](program_state_t state) {
 
-			int ProgramState = -1;
-			bool quoted = false;
-			char token[256];
-			char *p = szReadLine;
-			while (1)
-			{
-				p = g_pFileSystem->ParseFile(p, token, &quoted);
-				if (token[0])
-				{
-					if (!strcmp(token, "NONE"))
-					{
-						ProgramState = 0;
-						break;
-					}
-					else
-					{
-						for (int i = 0; i < _ARRAYSIZE(s_DLightProgramStateName); ++i)
-						{
-							if (!strcmp(token, s_DLightProgramStateName[i].name))
-							{
-								if (ProgramState == -1)
-									ProgramState = 0;
-								ProgramState |= s_DLightProgramStateName[i].state;
-							}
-						}
-					}
-				}
-				else
-				{
-					break;
-				}
+		R_UseDLightProgram(state, NULL);
 
-				if (!p)
-					break;
-			}
-
-			if (ProgramState != -1)
-				R_UseDLightProgram(ProgramState, NULL);
-		}
-		g_pFileSystem->Close(FileHandle);
-	}
-
-	GL_UseProgram(0);
+	});
 }
 
 void R_ShutdownLight(void)
 {
 	g_DFinalProgramTable.clear();
+
 	g_DLightProgramTable.clear();
 
 	if (r_sphere_vbo)
@@ -917,7 +782,7 @@ void R_EndRenderGBuffer(void)
 			glGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
 			glPopMatrix();
 
-			int DLightProgramState = DLIGHT_POINT_ENABLED | DLIGHT_VOLUME_ENABLED;
+			program_state_t DLightProgramState = DLIGHT_POINT_ENABLED | DLIGHT_VOLUME_ENABLED;
 
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
@@ -941,7 +806,7 @@ void R_EndRenderGBuffer(void)
 		{
 			GL_BeginFullScreenQuad(false);
 
-			int DLightProgramState = DLIGHT_POINT_ENABLED;
+			program_state_t DLightProgramState = DLIGHT_POINT_ENABLED;
 
 			dlight_program_t prog = { 0 };
 			R_UseDLightProgram(DLightProgramState, &prog);
@@ -982,7 +847,7 @@ void R_EndRenderGBuffer(void)
 			glGetFloatv(GL_MODELVIEW_MATRIX, modelmatrix);
 			glPopMatrix();
 
-			int DLightProgramState = DLIGHT_SPOT_ENABLED | DLIGHT_VOLUME_ENABLED;
+			program_state_t DLightProgramState = DLIGHT_SPOT_ENABLED | DLIGHT_VOLUME_ENABLED;
 
 			if (r_flashlight_cone_texture)
 			{
@@ -1039,7 +904,7 @@ void R_EndRenderGBuffer(void)
 		{
 			GL_BeginFullScreenQuad(false);
 
-			int DLightProgramState = DLIGHT_SPOT_ENABLED;
+			program_state_t DLightProgramState = DLIGHT_SPOT_ENABLED;
 
 			if (r_flashlight_cone_texture)
 			{
@@ -1113,7 +978,7 @@ void R_EndRenderGBuffer(void)
 	//No blend for final shading pass
 	glDisable(GL_BLEND);
 
-	int FinalProgramState = 0;
+	program_state_t FinalProgramState = 0;
 
 	if (r_fog_mode == GL_LINEAR)
 		FinalProgramState |= DFINAL_LINEAR_FOG_ENABLED;
@@ -1199,7 +1064,7 @@ void R_BlitGBufferToFrameBuffer(FBO_Container_t *fbo)
 	//No blend for final shading pass
 	glDisable(GL_BLEND);
 
-	int FinalProgramState = 0;
+	program_state_t FinalProgramState = 0;
 
 	//Setup final program
 	R_UseDFinalProgram(FinalProgramState, NULL);

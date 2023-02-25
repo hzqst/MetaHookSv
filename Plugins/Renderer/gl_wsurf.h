@@ -437,12 +437,12 @@ void R_Reload_f(void);
 void R_GenerateSceneUBO(void);
 void R_SaveWSurfProgramStates(void);
 void R_LoadWSurfProgramStates(void);
-void R_UseWSurfProgram(uint64_t state, wsurf_program_t *progOut);
+void R_UseWSurfProgram(program_state_t state, wsurf_program_t *progOut);
 
-#define WSURF_DIFFUSE_ENABLED				1ull
-#define WSURF_LIGHTMAP_ENABLED				2ull
-#define WSURF_REPLACETEXTURE_ENABLED		4ull
-#define WSURF_DETAILTEXTURE_ENABLED			8ull
+#define WSURF_DIFFUSE_ENABLED				0x1ull
+#define WSURF_LIGHTMAP_ENABLED				0x2ull
+#define WSURF_REPLACETEXTURE_ENABLED		0x4ull
+#define WSURF_DETAILTEXTURE_ENABLED			0x8ull
 #define WSURF_NORMALTEXTURE_ENABLED			0x10ull
 #define WSURF_PARALLAXTEXTURE_ENABLED		0x20ull
 #define WSURF_SPECULARTEXTURE_ENABLED		0x40ull

@@ -96,7 +96,7 @@ void R_ClearWSurfVBOCache(void)
 	g_WSurfVBOCache.clear();
 }
 
-const program_state_name_t s_WSurfProgramStateName[] = {
+const program_state_mapping_t s_WSurfProgramStateName[] = {
 { WSURF_DIFFUSE_ENABLED				,"WSURF_DIFFUSE_ENABLED"},
 { WSURF_LIGHTMAP_ENABLED			,"WSURF_LIGHTMAP_ENABLED"},
 { WSURF_REPLACETEXTURE_ENABLED		,"WSURF_REPLACETEXTURE_ENABLED"},
@@ -133,92 +133,21 @@ const program_state_name_t s_WSurfProgramStateName[] = {
 
 void R_SaveWSurfProgramStates(void)
 {
-	std::stringstream ss;
+	std::vector<program_state_t> states;
 	for (auto &p : g_WSurfProgramTable)
 	{
-		if (p.first == 0)
-		{
-			ss << "NONE";
-		}
-		else
-		{
-			for (int i = 0; i < _ARRAYSIZE(s_WSurfProgramStateName); ++i)
-			{
-				if (p.first & s_WSurfProgramStateName[i].state)
-				{
-					ss << s_WSurfProgramStateName[i].name << " ";
-				}
-			}
-		}
-		ss << "\n";
+		states.emplace_back(p.first);
 	}
-
-	auto FileHandle = g_pFileSystem->Open("renderer/shader/wsurf_cache.txt", "wt");
-	if (FileHandle)
-	{
-		auto str = ss.str();
-		g_pFileSystem->Write(str.data(), str.length(), FileHandle);
-		g_pFileSystem->Close(FileHandle);
-	}
+	R_SaveProgramStatesCaches("renderer/shader/wsurf_cache.txt", states, s_WSurfProgramStateName, _ARRAYSIZE(s_WSurfProgramStateName));
 }
 
 void R_LoadWSurfProgramStates(void)
 {
-	auto FileHandle = g_pFileSystem->Open("renderer/shader/wsurf_cache.txt", "rt");
-	if (FileHandle)
-	{
-		char szReadLine[4096];
-		while (!g_pFileSystem->EndOfFile(FileHandle))
-		{
-			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
-			szReadLine[sizeof(szReadLine) - 1] = 0;
+	R_LoadProgramStateCaches("renderer/shader/wsurf_cache.txt", s_WSurfProgramStateName, _ARRAYSIZE(s_WSurfProgramStateName), [](program_state_t state) {
 
-			uint64_t ProgramState = 0;
-			bool filled = false;
-			bool quoted = false;
-			char token[256];
-			char *p = szReadLine;
-			while (1)
-			{
-				p = g_pFileSystem->ParseFile(p, token, &quoted);
-				if (token[0])
-				{
-					if (!strcmp(token, "NONE"))
-					{
-						ProgramState = 0;
-						filled = true;
-						break;
-					}
-					else
-					{
-						for (int i = 0; i < _ARRAYSIZE(s_WSurfProgramStateName); ++i)
-						{
-							if (!strcmp(token, s_WSurfProgramStateName[i].name))
-							{
-								ProgramState |= s_WSurfProgramStateName[i].state;
-								filled = true;
-							}
-						}
-					}
-				}
-				else
-				{
-					break;
-				}
+		R_UseWSurfProgram(state, NULL);
 
-				if (!p)
-					break;
-			}
-
-			if (filled)
-			{
-				R_UseWSurfProgram(ProgramState, NULL);
-			}
-		}
-		g_pFileSystem->Close(FileHandle);
-	}
-
-	GL_UseProgram(0);
+	});
 }
 
 void R_UseWSurfProgram(uint64_t state, wsurf_program_t *progOutput)
