@@ -28,7 +28,7 @@ void R_RecursiveWorldNode(mnode_t *node)
 
 void R_AddDynamicLights(msurface_t *surf)
 {
-	//All this should be done in shader
+	//All this are done in shader
 #if 0
 	if (r_light_dynamic->value)
 		return;
