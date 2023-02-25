@@ -1244,7 +1244,7 @@ void R_GLStudioDrawPoints(void)
 		}
 
 		int GBufferMask = GBUFFER_MASK_ALL;
-		int StudioProgramState = flags;
+		program_state_t StudioProgramState = flags;
 
 		if (r_draw_shadowcaster)
 		{
@@ -1704,7 +1704,7 @@ void R_StudioDrawBatch(void)
 		}
 	}
 
-	int StudioProgramState = 0;
+	program_state_t StudioProgramState = 0;
 	int GBufferMask = GBUFFER_MASK_ALL;
 
 	if (r_draw_shadowcaster)

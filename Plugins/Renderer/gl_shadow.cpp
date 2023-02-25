@@ -428,6 +428,9 @@ void R_RenderShadowScene(void)
 
 void R_RenderShadowDynamicLights(void)
 {
+	if (!r_light_dynamic->value)
+		return;
+
 	if (R_ShouldRenderShadow())
 	{
 		R_IterateDynamicLights([](

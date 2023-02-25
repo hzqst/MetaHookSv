@@ -399,7 +399,7 @@ void R_DrawSkyBox(void)
 	glDisable(GL_BLEND);
 	glDepthMask(0);
 
-	uint64_t WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_SKYBOX_ENABLED;
+	program_state_t WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_SKYBOX_ENABLED;
 
 	if (bUseBindless)
 	{

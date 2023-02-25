@@ -624,3 +624,6 @@ typedef enum
 #define FDECAL_CLIPTEST				0x20		// Decal needs to be clip-tested
 #define FDECAL_NOCLIP				0x40		// Decal is not clipped by containing polygon
 #define FDECAL_VBO					0x1000		// Decalvertex is bufferred in VBO
+
+#define MAX_DLIGHTS 32
+#define MAX_DLIGHTS_SVENGINE 256

@@ -5,14 +5,18 @@
 #define MAX_NUM_NODES 16
 
 #define BINDING_POINT_SCENE_UBO 0
-#define BINDING_POINT_SKYBOX_SSBO 1
-#define BINDING_POINT_DECAL_SSBO 1
-#define BINDING_POINT_TEXTURE_SSBO 1
-#define BINDING_POINT_ENTITY_UBO 2
-#define BINDING_POINT_STUDIO_UBO 2
-#define BINDING_POINT_OIT_FRAGMENT_SSBO 3
-#define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 4
-#define BINDING_POINT_OIT_COUNTER_SSBO 5
+#define BINDING_POINT_DLIGHT_UBO 1
+
+#define BINDING_POINT_SKYBOX_SSBO 2
+#define BINDING_POINT_DECAL_SSBO 2
+#define BINDING_POINT_TEXTURE_SSBO 2
+
+#define BINDING_POINT_ENTITY_UBO 3
+#define BINDING_POINT_STUDIO_UBO 3
+
+#define BINDING_POINT_OIT_FRAGMENT_SSBO 4
+#define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 5
+#define BINDING_POINT_OIT_COUNTER_SSBO 6
 
 #define VERTEX_ATTRIBUTE_INDEX_POSITION 0
 #define VERTEX_ATTRIBUTE_INDEX_NORMAL 1
@@ -249,6 +253,18 @@ typedef struct scene_ubo_s
 
 static_assert((sizeof(scene_ubo_t) % 16) == 0, "Size check");
 
+typedef struct dlight_ubo_s
+{
+	vec4 origin_radius[256];
+	vec4 color_minlight[256];
+	uint32_t active_dlights;
+	uint32_t padding2;
+	uint32_t padding3;
+	uint32_t padding4;
+}dlight_ubo_t;
+
+static_assert((sizeof(dlight_ubo_t) % 16) == 0, "Size check");
+
 typedef struct entity_ubo_s
 {
 	mat4 entityMatrix;
@@ -311,6 +327,7 @@ typedef struct r_worldsurf_s
 	{
 		hSceneVBO = 0;
 		hSceneUBO = 0;
+		hDLightUBO = 0;
 		hDecalVBO = 0;
 		hDecalSSBO = 0;
 		hSkyboxSSBO = 0;
@@ -326,12 +343,14 @@ typedef struct r_worldsurf_s
 		iNumLightmapTextures = 0;
 		iLightmapTextureArray = 0;
 		iLightmapUsedBits = 0;
+		iLightmapLegacyDLights = 0;
 
 		memset(vSkyboxTextureHandles, 0, sizeof(vSkyboxTextureHandles));
 	}
 
 	GLuint				hSceneVBO;
 	GLuint				hSceneUBO;
+	GLuint				hDLightUBO;
 	GLuint				hDecalVBO;
 	GLuint				hDecalSSBO;
 	GLuint				hSkyboxSSBO;
@@ -349,6 +368,7 @@ typedef struct r_worldsurf_s
 	int					iNumLightmapTextures;
 	int					iLightmapTextureArray;
 	int					iLightmapUsedBits;
+	int					iLightmapLegacyDLights;
 
 	std::vector <bspentity_t> vBSPEntities;
 
@@ -425,8 +445,8 @@ void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride);
 void R_DrawDecals(wsurf_vbo_t *modcache);
 detail_texture_cache_t *R_FindDecalTextureCache(const std::string &decalname);
 detail_texture_cache_t *R_FindDetailTextureCache(int texId);
-void R_BeginDetailTextureByGLTextureId(int gltexturenum, uint64_t *WSurfProgramState);
-void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, uint64_t *WSurfProgramState);
+void R_BeginDetailTextureByGLTextureId(int gltexturenum, program_state_t *WSurfProgramState);
+void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, program_state_t *WSurfProgramState);
 void R_EndDetailTexture(int WSurfProgramState);
 void R_DrawSequentialPolyVBO(msurface_t *s);
 wsurf_vbo_t *R_PrepareWSurfVBO(model_t *mod);
@@ -471,3 +491,4 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t *progOut);
 #define WSURF_LIGHTMAP_INDEX_1_ENABLED		0x20000000ull
 #define WSURF_LIGHTMAP_INDEX_2_ENABLED		0x40000000ull
 #define WSURF_LIGHTMAP_INDEX_3_ENABLED		0x80000000ull
+#define WSURF_LEGACY_DLIGHT_ENABLED			0x100000000ull

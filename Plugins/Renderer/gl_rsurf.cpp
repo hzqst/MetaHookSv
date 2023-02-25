@@ -21,23 +21,6 @@ decalcache_t *gDecalCache;
 decal_drawbatch_t g_DecalBaseDrawBatch = { 0 };
 decal_drawbatch_t g_DecalDetailDrawBatch = { 0 };
 
-int EngineGetMaxLightmapTextures(void)
-{
-	if (g_iEngineType == ENGINE_SVENGINE)
-		return MAX_LIGHTMAPS_SVENGINE;
-
-	return MAX_LIGHTMAPS;
-}
-
-int EngineGetMaxClientModels(void)
-{
-	if (g_iEngineType == ENGINE_SVENGINE)
-		return MAX_MODELS_SVENGINE;
-
-	return MAX_MODELS;
-}
-
-
 void R_RecursiveWorldNode(mnode_t *node)
 {
 	gRefFuncs.R_RecursiveWorldNode(node);
@@ -1168,7 +1151,7 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 			glPolygonOffset(-1, -gl_polyoffset->value);
 	}
 	
-	uint64_t WSurfProgramState = WSURF_DECAL_ENABLED | WSURF_DIFFUSE_ENABLED;
+	program_state_t WSurfProgramState = WSURF_DECAL_ENABLED | WSURF_DIFFUSE_ENABLED;
 
 	//Mix lightmap if not deferred
 	if (r_wsurf.bLightmapTexture && !drawgbuffer)

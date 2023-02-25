@@ -400,7 +400,7 @@ void R_LoadProgramStateCaches(const char *filename, const program_state_mapping_
 			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
 			szReadLine[sizeof(szReadLine) - 1] = 0;
 
-			int ProgramState = 0;
+			program_state_t ProgramState = 0;
 			bool filled = false;
 			bool quoted = false;
 			char token[256];
@@ -413,6 +413,7 @@ void R_LoadProgramStateCaches(const char *filename, const program_state_mapping_
 					if (!strcmp(token, "NONE"))
 					{
 						ProgramState = 0;
+						filled = true;
 						break;
 					}
 					else
@@ -421,9 +422,8 @@ void R_LoadProgramStateCaches(const char *filename, const program_state_mapping_
 						{
 							if (!strcmp(token, mapping[i].name))
 							{
-								if (ProgramState == -1)
-									ProgramState = 0;
 								ProgramState |= mapping[i].state;
+								filled = true;
 							}
 						}
 					}

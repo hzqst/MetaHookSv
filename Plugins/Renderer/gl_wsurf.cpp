@@ -32,22 +32,6 @@ std::unordered_map <std::string, detail_texture_cache_t *> g_DecalTextureTable;
 
 std::vector<wsurf_vbo_t *> g_WSurfVBOCache;
 
-int EngineGetMaxDLight(void)
-{
-	int max_dlights;
-
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		max_dlights = 256;
-	}
-	else
-	{
-		max_dlights = 32;
-	}
-
-	return max_dlights;
-}
-
 void R_ClearWSurfVBOCache(void)
 {
 	for (size_t i = 0;i < g_WSurfVBOCache.size(); ++i)
@@ -129,6 +113,7 @@ const program_state_mapping_t s_WSurfProgramStateName[] = {
 { WSURF_LIGHTMAP_INDEX_1_ENABLED	,"WSURF_LIGHTMAP_INDEX_1_ENABLED"},
 { WSURF_LIGHTMAP_INDEX_2_ENABLED	,"WSURF_LIGHTMAP_INDEX_2_ENABLED"},
 { WSURF_LIGHTMAP_INDEX_3_ENABLED	,"WSURF_LIGHTMAP_INDEX_3_ENABLED"},
+{ WSURF_LEGACY_DLIGHT_ENABLED		,"WSURF_LEGACY_DLIGHT_ENABLED"},
 };
 
 void R_SaveWSurfProgramStates(void)
@@ -150,7 +135,7 @@ void R_LoadWSurfProgramStates(void)
 	});
 }
 
-void R_UseWSurfProgram(uint64_t state, wsurf_program_t *progOutput)
+void R_UseWSurfProgram(program_state_t state, wsurf_program_t *progOutput)
 {
 	wsurf_program_t prog = { 0 };
 
@@ -255,6 +240,9 @@ void R_UseWSurfProgram(uint64_t state, wsurf_program_t *progOutput)
 		if ((state & WSURF_LIGHTMAP_INDEX_3_ENABLED))
 			defs << "#define LIGHTMAP_INDEX_3_ENABLED\n";
 
+		if ((state & WSURF_LEGACY_DLIGHT_ENABLED))
+			defs << "#define LEGACY_DLIGHT_ENABLED\n";
+
 		if (glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define UINT64_ENABLED\n";
 	
@@ -301,6 +289,12 @@ void R_FreeSceneUBO(void)
 	{
 		GL_DeleteBuffer(r_wsurf.hSceneUBO);
 		r_wsurf.hSceneUBO = 0;
+	}
+
+	if (r_wsurf.hDLightUBO)
+	{
+		GL_DeleteBuffer(r_wsurf.hDLightUBO);
+		r_wsurf.hDLightUBO = 0;
 	}
 
 	if (r_wsurf.hDecalSSBO)
@@ -1267,6 +1261,12 @@ void R_GenerateSceneUBO(void)
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_SCENE_UBO, r_wsurf.hSceneUBO);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
+	r_wsurf.hDLightUBO = GL_GenBuffer();
+	glBindBuffer(GL_UNIFORM_BUFFER, r_wsurf.hDLightUBO);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(dlight_ubo_t), NULL, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_DLIGHT_UBO, r_wsurf.hDLightUBO);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
 	//3.5 MBytes of VRAM
 	r_wsurf.hDecalVBO = GL_GenBuffer();
 	glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hDecalVBO);
@@ -1381,7 +1381,7 @@ wsurf_vbo_t *R_PrepareWSurfVBO(model_t *mod)
 
 void R_DrawWSurfVBOSolid(wsurf_vbo_leaf_t *vboleaf)
 {
-	uint64_t WSurfProgramState = 0;
+	program_state_t WSurfProgramState = 0;
 
 	if (drawgbuffer)
 	{
@@ -1422,7 +1422,7 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 {
 	if(bUseBindless)
 	{
-		int WSurfProgramState = WSURF_BINDLESS_ENABLED;
+		program_state_t WSurfProgramState = WSURF_BINDLESS_ENABLED;
 
 		if (r_wsurf.bDiffuseTexture)
 		{
@@ -1441,6 +1441,11 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 			if (*filterMode != 0)
 			{
 				WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
+			}
+
+			if (!r_light_dynamic->value && r_wsurf.iLightmapLegacyDLights)
+			{
+				WSurfProgramState |= WSURF_LEGACY_DLIGHT_ENABLED;
 			}
 
 			if (r_wsurf.iLightmapUsedBits & (1 << 0))
@@ -1590,7 +1595,7 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 
 			auto base = texchain.pTexture;
 
-			uint64_t WSurfProgramState = 0;
+			program_state_t WSurfProgramState = 0;
 
 			if (r_wsurf.bDiffuseTexture)
 			{
@@ -1613,6 +1618,11 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 				if (*filterMode != 0)
 				{
 					WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
+				}
+
+				if (!r_light_dynamic->value && r_wsurf.iLightmapLegacyDLights)
+				{
+					WSurfProgramState |= WSURF_LEGACY_DLIGHT_ENABLED;
 				}
 
 				if (r_wsurf.iLightmapUsedBits & (1 << 0))
@@ -1795,7 +1805,7 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_leaf_t *vboleaf, bool bUseZPrePass)
 
 		auto texture = R_GetAnimatedTexture(texchain.pTexture);
 
-		uint64_t WSurfProgramState = 0;
+		program_state_t WSurfProgramState = 0;
 
 		if (r_wsurf.bDiffuseTexture)
 		{
@@ -1818,6 +1828,11 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_leaf_t *vboleaf, bool bUseZPrePass)
 			if (*filterMode != 0)
 			{
 				WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
+			}
+
+			if (!r_light_dynamic->value && r_wsurf.iLightmapLegacyDLights)
+			{
+				WSurfProgramState |= WSURF_LEGACY_DLIGHT_ENABLED;
 			}
 
 			if (r_wsurf.iLightmapUsedBits & (1 << 0))
@@ -1940,8 +1955,8 @@ bool R_ShouldDrawZPrePass(void)
 
 void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 {
-	static glprofile_t profile_DrawWSurfVBO;
-	GL_BeginProfile(&profile_DrawWSurfVBO, "R_DrawWSurfVBO");
+	//static glprofile_t profile_DrawWSurfVBO;
+	//GL_BeginProfile(&profile_DrawWSurfVBO, "R_DrawWSurfVBO");
 
 	entity_ubo_t EntityUBO;
 
@@ -2177,7 +2192,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 
 	GL_UseProgram(0);
 
-	GL_EndProfile(&profile_DrawWSurfVBO);
+	//GL_EndProfile(&profile_DrawWSurfVBO);
 }
 
 //Just for debugging
@@ -2241,6 +2256,7 @@ void R_InitWSurf(void)
 {
 	r_wsurf.hSceneVBO = 0;
 	r_wsurf.hSceneUBO = 0;
+	r_wsurf.hDLightUBO = 0;
 	r_wsurf.bDiffuseTexture = false;
 	r_wsurf.bLightmapTexture = false;
 	r_wsurf.bShadowmapTexture = false;
@@ -2720,7 +2736,7 @@ detail_texture_cache_t *R_FindDetailTextureCache(int texId)
 	return NULL;
 }
 
-void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, uint64_t *WSurfProgramState)
+void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, program_state_t *WSurfProgramState)
 {
 	if (!r_detailtextures->value)
 		return;
@@ -2777,7 +2793,7 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, uin
 	}
 }
 
-void R_BeginDetailTextureByGLTextureId(int gltexturenum, uint64_t *WSurfProgramState)
+void R_BeginDetailTextureByGLTextureId(int gltexturenum, program_state_t *WSurfProgramState)
 {
 	if (!r_detailtextures->value)
 		return;
@@ -3754,7 +3770,7 @@ void R_DrawBrushModel(cl_entity_t *e)
 	{
 		if (clmodel->firstmodelsurface != 0)
 		{
-			int max_dlights = EngineGetMaxDLight();
+			int max_dlights = EngineGetMaxDLights();
 
 			if (g_iEngineType != ENGINE_SVENGINE)
 			{
@@ -3913,6 +3929,42 @@ void R_SetupSceneUBO(void)
 	glNamedBufferSubData(r_wsurf.hSceneUBO, 0, sizeof(SceneUBO), &SceneUBO);
 }
 
+void R_SetupDLightUBO(void)
+{
+	dlight_ubo_t DLightUBO = { 0 };
+
+	r_wsurf.iLightmapLegacyDLights = 0;
+
+	if (!r_light_dynamic->value)
+	{
+		int max_dlight = EngineGetMaxDLights();
+		dlight_t *dl = cl_dlights;
+		float curtime = (*cl_time);
+
+		for (int i = 0; i < max_dlight; i++, dl++)
+		{
+			if (dl->die < curtime || !dl->radius)
+				continue;
+
+			DLightUBO.origin_radius[r_wsurf.iLightmapLegacyDLights][0] = dl->origin[0];
+			DLightUBO.origin_radius[r_wsurf.iLightmapLegacyDLights][1] = dl->origin[1];
+			DLightUBO.origin_radius[r_wsurf.iLightmapLegacyDLights][2] = dl->origin[2];
+			DLightUBO.origin_radius[r_wsurf.iLightmapLegacyDLights][3] = dl->radius;
+
+			DLightUBO.color_minlight[r_wsurf.iLightmapLegacyDLights][0] = (float)dl->color.r / 255.0f;
+			DLightUBO.color_minlight[r_wsurf.iLightmapLegacyDLights][1] = (float)dl->color.g / 255.0f;
+			DLightUBO.color_minlight[r_wsurf.iLightmapLegacyDLights][2] = (float)dl->color.b / 255.0f;
+
+			DLightUBO.color_minlight[r_wsurf.iLightmapLegacyDLights][3] = dl->minlight;
+			r_wsurf.iLightmapLegacyDLights++;
+		}
+	}
+
+	DLightUBO.active_dlights = r_wsurf.iLightmapLegacyDLights;
+
+	glNamedBufferSubData(r_wsurf.hDLightUBO, 0, sizeof(DLightUBO), &DLightUBO);
+}
+
 void R_DrawWorld(void)
 {
 	r_draw_opaque = true;
@@ -3994,6 +4046,7 @@ void R_DrawWorld(void)
 	//Setup Scene UBO
 
 	R_SetupSceneUBO();
+	R_SetupDLightUBO();
 
 	//Skybox always use stencil = 0xFC
 

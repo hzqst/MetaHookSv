@@ -652,17 +652,12 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 	if (onlyClientDraw)
 		return;
 
-	static glprofile_t profile_DrawTEntitiesOnList;
-	GL_BeginProfile(&profile_DrawTEntitiesOnList, "R_DrawTEntitiesOnList");
-
 	for (int i = 0; i < (*numTransObjs); i++)
 	{
 		(*currententity) = (*transObjects)[i].pEnt;
 
 		R_DrawCurrentEntity(true);
 	}
-
-	GL_EndProfile(&profile_DrawTEntitiesOnList);
 }
 
 void ClientDLL_DrawTransparentTriangles(void)
@@ -2877,6 +2872,9 @@ void R_DrawEntitiesOnList(void)
 	if (!r_drawentities->value)
 		return;
 
+	static glprofile_t profile_DrawEntitiesOnList;
+	GL_BeginProfile(&profile_DrawEntitiesOnList, "R_DrawEntitiesOnList");
+
 	for (int i = 0; i < (*cl_numvisedicts); ++i)
 	{
 		(*currententity) = cl_visedicts[i];
@@ -2902,6 +2900,8 @@ void R_DrawEntitiesOnList(void)
 			R_DrawCurrentEntity(false);
 		}
 	}
+
+	GL_EndProfile(&profile_DrawEntitiesOnList);
 }
 
 void R_RenderFinalFog(void)
@@ -3084,6 +3084,32 @@ model_t *EngineGetModelByIndex(int index)
 		return &pmod_known[index];
 
 	return NULL;
+}
+
+int EngineGetMaxDLights(void)
+{
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		return MAX_DLIGHTS_SVENGINE;
+	}
+
+	return MAX_DLIGHTS;
+}
+
+int EngineGetMaxLightmapTextures(void)
+{
+	if (g_iEngineType == ENGINE_SVENGINE)
+		return MAX_LIGHTMAPS_SVENGINE;
+
+	return MAX_LIGHTMAPS;
+}
+
+int EngineGetMaxClientModels(void)
+{
+	if (g_iEngineType == ENGINE_SVENGINE)
+		return MAX_MODELS_SVENGINE;
+
+	return MAX_MODELS;
 }
 
 void Mod_LoadStudioModel(model_t *mod, void *buffer)

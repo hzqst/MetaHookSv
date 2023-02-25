@@ -14,7 +14,7 @@ typedef struct
 
 extern shadow_texture_t r_shadow_texture;
 
-extern shadow_texture_t cl_dlight_shadow_textures[256];
+extern shadow_texture_t cl_dlight_shadow_textures[MAX_DLIGHTS_SVENGINE];
 
 extern shadow_texture_t *current_shadow_texture;
 

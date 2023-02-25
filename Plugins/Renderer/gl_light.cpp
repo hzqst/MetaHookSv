@@ -575,7 +575,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 		}
 	}
 
-	int max_dlight = EngineGetMaxDLight();
+	int max_dlight = EngineGetMaxDLights();
 	
 	dlight_t *dl = cl_dlights;
 	float curtime = (*cl_time);

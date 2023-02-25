@@ -451,7 +451,10 @@ void GL_Texturemode_cb(cvar_t *);
 int EngineGetMaxKnownModel(void);
 int EngineGetModelIndex(model_t *mod);
 model_t *EngineGetModelByIndex(int index);
-int EngineGetMaxDLight(void);
+int EngineGetMaxDLights(void);
+int EngineGetMaxClientModels(void); 
+int EngineGetMaxLightmapTextures(void);
+
 void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue);
 
 extern GLint r_viewport[4];
