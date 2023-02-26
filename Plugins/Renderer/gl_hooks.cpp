@@ -3008,7 +3008,7 @@ void R_FillAddress(void)
 		auto Mod_LoadModel_Pattern = Search_Pattern(sigs1);
 		Sig_VarNotFound(Mod_LoadModel_Pattern);
 
-		gRefFuncs.Mod_LoadModel = (decltype(gRefFuncs.Mod_LoadModel))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Mod_LoadModel_Pattern, 0x400, [](PUCHAR Candidate) {
+		gRefFuncs.Mod_LoadModel = (decltype(gRefFuncs.Mod_LoadModel))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Mod_LoadModel_Pattern, 0x600, [](PUCHAR Candidate) {
 
 			//81 EC ?? 01 00 00 A1 ?? ?? ?? ?? 33 C4
 			/*
@@ -3036,7 +3036,7 @@ void R_FillAddress(void)
 				Candidate[2] == 0xEC &&
 				Candidate[3] == 0x81 &&
 				Candidate[4] == 0xEC &&
-				Candidate[6] == 0x10 &&
+				Candidate[6] == 0x01 &&
 				Candidate[7] == 0x00 &&
 				Candidate[8] == 0x00)
 			{
