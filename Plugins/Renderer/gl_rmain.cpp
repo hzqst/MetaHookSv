@@ -2838,7 +2838,7 @@ void R_MarkLeaves(void)
 		return;
 
 	(*r_visframecount)++;
-	r_oldviewleaf = r_viewleaf;
+	(*r_oldviewleaf) = (*r_viewleaf);
 
 	if (r_novis->value)
 	{

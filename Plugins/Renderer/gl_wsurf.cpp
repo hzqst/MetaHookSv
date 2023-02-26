@@ -329,7 +329,6 @@ void R_FreeLightmapArray(void)
 		GL_DeleteTexture(r_wsurf.iLightmapTextureArray);
 		r_wsurf.iLightmapTextureArray = 0;
 	}
-	r_wsurf.iNumLightmapTextures = 0;
 }
 
 void R_FreeWorldTextures(void)
@@ -2288,13 +2287,11 @@ void R_NewMapWSurf(void)
 	R_LoadBaseDetailTextures();
 	R_LoadBaseDecalTextures();
 
-	//R_FreeLightmapArray();
 	R_FreeVertexBuffer();
 	R_FreeWorldTextures();
 
 	R_GenerateWorldTextures();
 	R_GenerateVertexBuffer();
-	//R_GenerateLightmapArray();
 
 	R_ClearWSurfVBOCache();
 	R_PrebuildWSurfVBO();
@@ -3583,7 +3580,7 @@ void R_LoadBSPEntities(void)
 
 void R_DrawSequentialPolyVBO(msurface_t *s)
 {
-	//This should be done in shader
+	//This has been moved to shader
 #if 0
 	R_RenderDynamicLightmaps(s);
 

@@ -430,6 +430,7 @@ void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator fn);
 bspentity_t *R_ParseBSPEntity_DefaultAllocator(void);
 char *ValueForKey(bspentity_t *ent, char *key);
 void R_LoadBSPEntities(void);
+void R_FreeLightmapArray(void);
 void R_LoadExternalEntities(void);
 void R_LoadBaseDecalTextures(void);
 void R_LoadBaseDetailTextures(void);

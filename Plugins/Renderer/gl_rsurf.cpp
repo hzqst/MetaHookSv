@@ -372,11 +372,15 @@ void R_BuildSurfaceDisplayList(model_t *mod, mvertex_t *vertbase, msurface_t *fa
 
 void GL_BuildLightmaps(void)
 {
+	//Should always be zero when loading a new map
+	r_wsurf.iNumLightmapTextures = 0;
+
 	memset(allocated, 0, sizeof(allocated));
 
-	(*r_framecount) = 1;
+	//This moved to end of R_NewMap
+	//(*r_framecount) = 1;
 
-	//Collect lightmaps
+	//Collect lightmaps from all non-submodel brush models
 	for (int j = 1; j < EngineGetMaxClientModels(); j++)
 	{
 		auto mod = gEngfuncs.hudGetModelByIndex(j);
@@ -399,6 +403,9 @@ void GL_BuildLightmaps(void)
 			}
 		}
 	}
+
+	//Free previous allocated texture array
+	R_FreeLightmapArray();
 
 	r_wsurf.iLightmapUsedBits = 0;
 	r_wsurf.iLightmapTextureArray = GL_GenTexture();
