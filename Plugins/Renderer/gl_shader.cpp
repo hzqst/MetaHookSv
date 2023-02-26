@@ -369,7 +369,7 @@ void R_SaveProgramStatesCaches(const char *filename, const std::vector<program_s
 		}
 		else
 		{
-			for (int i = 0; i < mapping_size; ++i)
+			for (size_t i = 0; i < mapping_size; ++i)
 			{
 				if (p & mapping[i].state)
 				{
