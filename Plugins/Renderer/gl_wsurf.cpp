@@ -46,12 +46,6 @@ void R_ClearWSurfVBOCache(void)
 				VBOCache->hEntityUBO = 0;
 			}
 
-			if (VBOCache->hDecalEBO)
-			{
-				GL_DeleteBuffer(VBOCache->hDecalEBO);
-				VBOCache->hDecalEBO = 0;
-			}
-
 			for (size_t j = 0; j < VBOCache->vLeaves.size(); ++j)
 			{
 				auto VBOLeaf = VBOCache->vLeaves[j];

@@ -201,12 +201,10 @@ typedef struct wsurf_vbo_s
 	{
 		pModel = NULL;
 		hEntityUBO = 0;
-		hDecalEBO = 0;
 	}
 
 	model_t	*pModel;
 	GLuint	hEntityUBO;
-	GLuint	hDecalEBO;
 	std::vector<wsurf_vbo_leaf_t *> vLeaves;
 }wsurf_vbo_t;
 

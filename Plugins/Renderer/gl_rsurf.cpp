@@ -1157,6 +1157,38 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 	if (r_wsurf.bLightmapTexture && !drawgbuffer)
 	{
 		WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
+
+		if (r_fullbright->value || !r_worldmodel->lightdata)
+		{
+			WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
+		}
+
+		if (*filterMode != 0)
+		{
+			WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
+		}
+
+		if (!r_light_dynamic->value && r_wsurf.iLightmapLegacyDLights)
+		{
+			WSurfProgramState |= WSURF_LEGACY_DLIGHT_ENABLED;
+		}
+
+		if (r_wsurf.iLightmapUsedBits & (1 << 0))
+		{
+			WSurfProgramState |= WSURF_LIGHTMAP_INDEX_0_ENABLED;
+		}
+		if (r_wsurf.iLightmapUsedBits & (1 << 1))
+		{
+			WSurfProgramState |= WSURF_LIGHTMAP_INDEX_1_ENABLED;
+		}
+		if (r_wsurf.iLightmapUsedBits & (1 << 2))
+		{
+			WSurfProgramState |= WSURF_LIGHTMAP_INDEX_2_ENABLED;
+		}
+		if (r_wsurf.iLightmapUsedBits & (1 << 3))
+		{
+			WSurfProgramState |= WSURF_LIGHTMAP_INDEX_3_ENABLED;
+		}
 	}
 
 	//Mix shadow if not deferred
