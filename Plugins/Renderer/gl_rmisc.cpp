@@ -13,6 +13,46 @@ GLint save_readframebuffer[MAX_SAVESTACK] = { 0 };
 GLint save_drawframebuffer[MAX_SAVESTACK] = { 0 };
 int save_framebuffer_stack = 0;
 
+void GL_BindFrameBuffer(FBO_Container_t *fbo)
+{
+	g_CurrentFBO = fbo;
+
+	if (fbo)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo->s_hBackBufferFBO);
+	}
+	else
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
+}
+
+void GL_BindFrameBufferWithTextures(FBO_Container_t *fbo, GLuint color, GLuint depth, GLuint depth_stencil, GLsizei width, GLsizei height)
+{
+	GL_BindFrameBuffer(fbo);
+
+	if (color)
+	{
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, color, 0);
+	}
+
+	if (depth)
+	{
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth, 0);
+	}
+
+	if (depth_stencil)
+	{
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, depth_stencil, 0);
+	}
+
+	if (width && height)
+	{
+		fbo->iWidth = width;
+		fbo->iHeight = height;
+	}
+}
+
 void GL_PushFrameBuffer(void)
 {
 	if (save_framebuffer_stack == MAX_SAVESTACK)
@@ -325,7 +365,7 @@ void R_FreeTextures(void)
 
 void GL_GenFrameBuffer(FBO_Container_t *s)
 {
-	glGenFramebuffersEXT(1, &s->s_hBackBufferFBO);
+	glGenFramebuffers(1, &s->s_hBackBufferFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, s->s_hBackBufferFBO);
 }
 
@@ -333,19 +373,19 @@ void GL_GenRenderBuffer(FBO_Container_t *s, int type)
 {
 	if (type == 1)
 	{
-		glGenRenderbuffersEXT(1, &s->s_hBackBufferDB);
-		glBindRenderbufferEXT(GL_RENDERBUFFER, s->s_hBackBufferDB);
+		glGenRenderbuffers(1, &s->s_hBackBufferDB);
+		glBindRenderbuffer(GL_RENDERBUFFER, s->s_hBackBufferDB);
 	}
 	else
 	{
-		glGenRenderbuffersEXT(1, &s->s_hBackBufferCB);
-		glBindRenderbufferEXT(GL_RENDERBUFFER, s->s_hBackBufferCB);
+		glGenRenderbuffers(1, &s->s_hBackBufferCB);
+		glBindRenderbuffer(GL_RENDERBUFFER, s->s_hBackBufferCB);
 	}
 }
 
 void GL_RenderBufferStorage(FBO_Container_t *s, int type, GLuint iInternalFormat)
 {
-	glRenderbufferStorageEXT(GL_RENDERBUFFER, iInternalFormat, s->iWidth, s->iHeight);
+	glRenderbufferStorage(GL_RENDERBUFFER, iInternalFormat, s->iWidth, s->iHeight);
 
 	if (type == 2)
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, s->s_hBackBufferDB);
@@ -491,7 +531,7 @@ void GL_FrameBufferColorTextureDeferred(FBO_Container_t *s, int iInternalColorFo
 	s->iTextureColorFormat = iInternalColorFormat;
 
 	for(int i = 0;i < GBUFFER_INDEX_MAX; ++i)
-		glFramebufferTextureLayerEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, s->s_hBackBufferTex, 0, i);
+		glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, s->s_hBackBufferTex, 0, i);
 }
 
 void GL_FrameBufferColorTextureOITBlend(FBO_Container_t *s)

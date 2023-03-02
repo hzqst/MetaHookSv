@@ -228,7 +228,7 @@ void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *su
 		programState |= OVERLAY_TEXTURE_ENABLED;
 	}
 
-	R_RotateForEntity(ent->origin, ent);
+	R_RotateForEntity(ent);
 
 	portal_program_t prog = { 0 };
 	R_UsePortalProgram(programState, &prog);
@@ -259,7 +259,7 @@ void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *s
 		programState |= OVERLAY_TEXTURE_ENABLED;
 	}
 
-	R_RotateForEntity(ent->origin, ent);
+	R_RotateForEntity(ent);
 
 	portal_program_t prog = { 0 };
 	R_UsePortalProgram(programState, &prog);

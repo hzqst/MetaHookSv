@@ -185,14 +185,13 @@ typedef struct wsurf_vbo_leaf_s
 	wsurf_vbo_leaf_s()
 	{
 		hEBO = NULL;
-		crc = 0;
 	}
 
-	GLuint	hEBO;
+	GLuint hEBO;
 	std::vector<brushtexchain_t> vTextureChain[WSURF_TEXCHAIN_MAX];
 	std::vector<wsurf_vbo_batch_t *> vDrawBatch[WSURF_DRAWBATCH_MAX];
+	std::vector<water_vbo_t *> vWaterVBO;
 	brushtexchain_t TextureChainSky;
-	CRC32_t crc;
 }wsurf_vbo_leaf_t;
 
 typedef struct wsurf_vbo_s
@@ -430,15 +429,19 @@ void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator fn);
 bspentity_t *R_ParseBSPEntity_DefaultAllocator(void);
 char *ValueForKey(bspentity_t *ent, char *key);
 void R_LoadBSPEntities(void);
-void R_FreeLightmapArray(void);
+void R_FreeLightmapTextures(void);
 void R_LoadExternalEntities(void);
 void R_LoadBaseDecalTextures(void);
 void R_LoadBaseDetailTextures(void);
 void R_LoadMapDetailTextures(void);
+
 void R_AddDynamicLights(msurface_t *surf);
 void R_RenderDynamicLightmaps(msurface_t *fa);
 void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride);
-void R_DrawDecals(wsurf_vbo_t *modcache);
+
+void R_DrawDecals(cl_entity_t *ent);
+void R_PrepareDecals(void);
+
 detail_texture_cache_t *R_FindDecalTextureCache(const std::string &decalname);
 detail_texture_cache_t *R_FindDetailTextureCache(int texId);
 void R_BeginDetailTextureByGLTextureId(int gltexturenum, program_state_t *WSurfProgramState);
@@ -454,6 +457,9 @@ void R_GenerateSceneUBO(void);
 void R_SaveWSurfProgramStates(void);
 void R_LoadWSurfProgramStates(void);
 void R_UseWSurfProgram(program_state_t state, wsurf_program_t *progOut);
+
+water_vbo_t *R_CreateWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t *leaf);
+void R_DrawWaters(wsurf_vbo_leaf_t *vboleaf, cl_entity_t *ent);
 
 #define WSURF_DIFFUSE_ENABLED				0x1ull
 #define WSURF_LIGHTMAP_ENABLED				0x2ull

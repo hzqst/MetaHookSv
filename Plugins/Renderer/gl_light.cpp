@@ -506,7 +506,7 @@ bool R_BeginRenderGBuffer(void)
 	drawgbuffer = true;
 	gbuffer_mask = -1;
 
-	glBindFramebuffer(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
+	GL_BindFrameBuffer(&s_GBufferFBO);
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 	R_SetGBufferBlend(GL_ONE, GL_ZERO);
@@ -721,7 +721,7 @@ void R_EndRenderGBuffer(void)
 	else
 	{
 		//Write to GBuffer->lightmap only
-		glBindFramebuffer(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
+		GL_BindFrameBuffer(&s_GBufferFBO);
 		glDrawBuffer(GL_COLOR_ATTACHMENT1);
 	}
 
@@ -970,7 +970,7 @@ void R_EndRenderGBuffer(void)
 		GL_NEAREST);
 
 	//Shading pass
-	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	GL_BindFrameBuffer(&s_BackBufferFBO);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	GL_BeginFullScreenQuad(false);
@@ -1056,7 +1056,7 @@ void R_BlitGBufferToFrameBuffer(FBO_Container_t *fbo)
 		GL_NEAREST);
 
 	//Shading pass
-	glBindFramebuffer(GL_FRAMEBUFFER, fbo->s_hBackBufferFBO);
+	GL_BindFrameBuffer(fbo);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	GL_BeginFullScreenQuad(false);

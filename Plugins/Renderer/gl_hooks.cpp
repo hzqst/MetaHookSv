@@ -2666,6 +2666,40 @@ void R_FillAddress(void)
 		cl_viewentity = *(decltype(cl_viewentity)*)(addr + 2);
 	}
 
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+#define CL_MAXEDICTS_SIG_SVENGINE "\x69\xC0\xB8\x0B\x00\x00\x50\xE8\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xA3\x2A\x2A\x2A\x2A\xE8"
+		DWORD addr = (DWORD)Search_Pattern(CL_MAXEDICTS_SIG_SVENGINE);
+		Sig_AddrNotFound(cl_max_edicts);
+		cl_max_edicts = *(decltype(cl_max_edicts)*)(addr + 14);
+		cl_entities = *(decltype(cl_entities)*)(addr + 19);
+
+#define GTEMPENTS_SIG_SVENGINE "\x68\x00\xE0\x5F\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xA3"
+		if (1)
+		{
+			DWORD addr = (DWORD)Search_Pattern(GTEMPENTS_SIG_SVENGINE);
+			Sig_AddrNotFound(gTempEnts);
+			gTempEnts = *(decltype(gTempEnts)*)(addr + 8);
+		}
+
+	}
+	else
+	{
+#define CL_MAXEDICTS_SIG_NEW "\xC1\xE1\x03\x51\xE8\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\xA3"
+		DWORD addr = (DWORD)Search_Pattern(CL_MAXEDICTS_SIG_NEW);
+		Sig_AddrNotFound(cl_max_edicts);
+		cl_max_edicts = *(decltype(cl_max_edicts)*)(addr + 11);
+		cl_entities = *(decltype(cl_entities)*)(addr + 16);
+
+#define GTEMPENTS_SIG_NEW "\x68\x30\x68\x17\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xE8"
+		if (1)
+		{
+			DWORD addr = (DWORD)Search_Pattern(GTEMPENTS_SIG_NEW);
+			Sig_AddrNotFound(gTempEnts);
+			gTempEnts = *(decltype(gTempEnts)*)(addr + 8);
+		}
+	}
+
 
 #define GWATERCOLOR_SIG_SVENGINE "\xDB\x05\x2A\x2A\x2A\x2A\x68\x01\x26\x00\x00\x68\x65\x0B\x00\x00"
 	auto gWaterColor_Pattern = Search_Pattern(GWATERCOLOR_SIG_SVENGINE);
@@ -3691,7 +3725,7 @@ void R_UninstallHooksForEngineDLL(void)
 	}
 
 	Uninstall_Hook(R_NewMap);
-	Uninstall_Hook(R_CullBox);
+	//Uninstall_Hook(R_CullBox);
 	Uninstall_Hook(Mod_PointInLeaf);
 	//Uninstall_Hook(R_BuildLightMap);
 	Uninstall_Hook(R_AddDynamicLights);
@@ -3730,7 +3764,7 @@ void R_InstallHooks(void)
 	}
 
 	Install_InlineHook(R_NewMap);
-	Install_InlineHook(R_CullBox);
+	//Install_InlineHook(R_CullBox);
 	Install_InlineHook(Mod_PointInLeaf);
 	//Install_InlineHook(R_BuildLightMap);
 	Install_InlineHook(R_AddDynamicLights);

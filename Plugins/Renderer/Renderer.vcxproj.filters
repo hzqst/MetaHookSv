@@ -80,10 +80,10 @@
     <ClCompile Include="gl_portal.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="crc.c">
+    <ClCompile Include="gl_model.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="gl_model.cpp">
+    <ClCompile Include="gl_entity.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -152,6 +152,9 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="gl_portal.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="gl_entity.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

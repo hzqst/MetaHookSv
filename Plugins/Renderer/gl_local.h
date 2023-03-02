@@ -37,6 +37,7 @@
 #include "gl_draw.h"
 #include "gl_cvar.h"
 #include "gl_portal.h"
+#include "gl_entity.h"
 
 typedef struct walk_context_s
 {
@@ -112,6 +113,11 @@ extern mplane_t *frustum;
 extern int *r_framecount;
 extern int *r_visframecount;
 
+extern int *cl_max_edicts;
+extern cl_entity_t **cl_entities;
+
+extern TEMPENTITY *gTempEnts;
+
 extern int *cl_viewentity;
 extern void *cl_frames;
 extern int size_of_frame;
@@ -154,14 +160,6 @@ extern bool g_bPortalClipPlaneEnabled[6];
 extern vec4_t g_PortalClipPlane[6];
 
 extern bool g_bIsGLInit;
-
-//For aiment rendering
-
-#define MAX_AIMENTS 32
-#define MAX_EDICTS 8192
-
-extern cl_entity_t *r_aiments[MAX_EDICTS][MAX_AIMENTS];
-extern int r_numaiments[MAX_EDICTS] ;
 
 //gl extension
 
@@ -208,6 +206,8 @@ extern FBO_Container_t s_DepthLinearFBO;
 extern FBO_Container_t s_HBAOCalcFBO;
 extern FBO_Container_t s_ShadowFBO;
 extern FBO_Container_t s_WaterFBO;
+
+extern FBO_Container_t *g_CurrentFBO;
 
 extern msurface_t **skychain;
 extern msurface_t **waterchain;
@@ -328,7 +328,7 @@ mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model);
 void R_RecursiveWorldNode(mnode_t *node);
 void R_RecursiveWorldNodeVBO(mnode_t *node);
 void R_DrawParticles(void);
-void R_RotateForEntity(float *origin, cl_entity_t *ent);
+void R_RotateForEntity(cl_entity_t *ent);
 void R_SetRenderMode(cl_entity_t *pEntity);
 float *R_GetAttachmentPoint(int entity, int attachment);
 void R_DrawBrushModel(cl_entity_t *entity);
@@ -399,6 +399,9 @@ void GL_UploadTextureArrayColorFormat(int texid, int w, int h, int levels, int i
 GLuint GL_GenShadowTexture(int w, int h, float *borderColor);
 void GL_UploadShadowTexture(int texid, int w, int h, float *borderColor);
 
+void GL_BindFrameBuffer(FBO_Container_t *fbo);
+void GL_BindFrameBufferWithTextures(FBO_Container_t *fbo, GLuint color, GLuint depth, GLuint depth_stencil, GLsizei width, GLsizei height);
+
 void GL_GenFrameBuffer(FBO_Container_t *s);
 void GL_FrameBufferColorTexture(FBO_Container_t *s, GLuint iInternalFormat);
 void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat);
@@ -454,6 +457,11 @@ model_t *EngineGetModelByIndex(int index);
 int EngineGetMaxDLights(void);
 int EngineGetMaxClientModels(void); 
 int EngineGetMaxLightmapTextures(void);
+int EngineGetMaxClientEdicts(void);
+cl_entity_t *EngineGetClientEntitiesBase(void);
+int EngineGetMaxTempEnts(void);
+TEMPENTITY *EngineGetTempTentsBase(void);
+TEMPENTITY *EngineGetTempTentByIndex(int index);
 
 void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue);
 

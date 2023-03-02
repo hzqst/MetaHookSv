@@ -80,9 +80,9 @@ void HUD_Init(void)
 {
 	gExportfuncs.HUD_Init();
 
-	gEngfuncs.pfnSetFilterMode(1);
-	gEngfuncs.pfnSetFilterColor(0, 0.5f, 1);
-	gEngfuncs.pfnSetFilterBrightness(1);
+	//gEngfuncs.pfnSetFilterMode(1);
+	//gEngfuncs.pfnSetFilterColor(0, 0.5f, 1);
+	//gEngfuncs.pfnSetFilterBrightness(1);
 
 	gEngfuncs.pfnAddCommand("fs_dump_precaches", FS_Dump_Precaches);
 }

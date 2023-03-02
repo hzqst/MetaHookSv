@@ -344,8 +344,7 @@ typedef struct decal_s
 	short texture;
 	short flags;
 	short entityIndex;
-}
-decal_t;
+}decal_t;
 
 typedef struct decalcache_s
 {
@@ -627,3 +626,12 @@ typedef enum
 
 #define MAX_DLIGHTS 32
 #define MAX_DLIGHTS_SVENGINE 256
+
+//Don't use this, use cl.max_edicts instead
+#define MAX_EDICTS 1800
+#define MAX_EDICTS_SVENGINE 8192
+
+#define MAX_TEMP_ENTITIES 500
+#define MAX_TEMP_ENTITIES_SVENGINE 2077
+
+#define MAX_DECALCLIPVERT		32

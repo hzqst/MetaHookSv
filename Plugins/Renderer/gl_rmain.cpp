@@ -58,6 +58,11 @@ float *g_UserFogEnd;
 int *r_framecount;
 int *r_visframecount;
 
+int *cl_max_edicts;
+cl_entity_t **cl_entities;
+
+TEMPENTITY *gTempEnts;
+
 int *cl_viewentity;
 void *cl_frames;
 int size_of_frame = sizeof(frame_t);
@@ -113,9 +118,6 @@ bool g_bPortalClipPlaneEnabled[6] = { false };
 
 vec4_t g_PortalClipPlane[6] = {0};
 
-cl_entity_t *r_aiments[MAX_EDICTS][MAX_AIMENTS] = { 0 };
-int r_numaiments[MAX_EDICTS] = { 0 };
-
 bool g_bIsGLInit = false;
 
 float r_entity_matrix[4][4];
@@ -152,6 +154,8 @@ FBO_Container_t s_DepthLinearFBO = { 0 };
 FBO_Container_t s_HBAOCalcFBO = { 0 };
 FBO_Container_t s_ShadowFBO = { 0 };
 FBO_Container_t s_WaterFBO = { 0 };
+
+FBO_Container_t *g_CurrentFBO = NULL;
 
 bool bNoStretchAspect = false;
 bool bUseBindless = true;
@@ -204,7 +208,6 @@ cvar_t *gl_lightholes = NULL;
 cvar_t *gl_zmax = NULL;
 cvar_t *gl_alphamin = NULL;
 cvar_t *gl_overdraw = NULL;
-cvar_t *gl_watersides = NULL;
 cvar_t *gl_overbright = NULL;
 cvar_t *gl_envmapsize = NULL;
 cvar_t *gl_flipmatrix = NULL;
@@ -249,19 +252,16 @@ qboolean Host_IsSinglePlayerGame()
 
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
-	if(r_draw_shadowcaster)
-		return false;
-
 	return gRefFuncs.R_CullBox(mins, maxs);
 }
 
-void R_RotateForEntity(float *origin, cl_entity_t *e)
+void R_RotateForEntity(cl_entity_t *e)
 {
 	int i;
 	vec3_t angles;
 	vec3_t modelpos;
 
-	VectorCopy(origin, modelpos);
+	VectorCopy(e->origin, modelpos);
 	VectorCopy(e->angles, angles);
 
 	if (e->curstate.movetype != MOVETYPE_NONE)
@@ -922,38 +922,8 @@ void R_DrawCurrentEntity(bool bTransparent)
 			if ((*currententity)->curstate.movetype == MOVETYPE_FOLLOW)
 			{
 				return;
-#if 0//wtf this is not supposed to happen
-				bool bFound = false;
-
-				for (int j = 0; j < (*cl_numvisedicts); j++)
-				{
-					if (cl_visedicts[j]->index == (*currententity)->curstate.aiment)
-					{
-						auto save_currententity = (*currententity);
-
-						(*currententity) = cl_visedicts[j];
-
-						if ((*currententity)->player)
-						{
-							(*gpStudioInterface)->StudioDrawPlayer(0, R_GetPlayerState((*currententity)->index));
-						}
-						else
-						{
-							(*gpStudioInterface)->StudioDrawModel(0);
-						}
-
-						(*currententity) = save_currententity;
-
-						bFound = true;
-
-						break;
-					}
-				}
-
-				if (!bFound)
-					break;
-#endif
 			}
+
 			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
 		}
 
@@ -962,9 +932,9 @@ void R_DrawCurrentEntity(bool bTransparent)
 			return;
 		}
 
-		int currententity_index = (*currententity)->index;
+		auto comp = R_GetEntityComponent((*currententity), false);
 
-		if (currententity_index > 0 && currententity_index < MAX_EDICTS && r_numaiments[currententity_index] > 0)
+		if (comp)
 		{
 			auto save_currententity = (*currententity);
 
@@ -980,7 +950,7 @@ void R_DrawCurrentEntity(bool bTransparent)
 			//VectorCopy((*currententity)->curstate.origin, currententity_origin);
 
 			//auto save_currententity = (*currententity);
-			for (int i = 0; i < r_numaiments[currententity_index]; ++i)
+			for (size_t i = 0; i < comp->FollowEnts.size(); ++i)
 			{
 				//restore matrix at each run
 				if (i != 0)
@@ -989,9 +959,9 @@ void R_DrawCurrentEntity(bool bTransparent)
 					memcpy((*plighttransform), save_lighttransform, sizeof(save_lighttransform));
 				}
 
-				(*currententity) = r_aiments[currententity_index][i];
+				(*currententity) = comp->FollowEnts[i];
 				
-				//do what CL_MoveAiments does...
+				//TODO: shall we do CL_MoveAiments???...
 				//VectorCopy(currententity_origin, (*currententity)->curstate.origin);
 
 				(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
@@ -1373,15 +1343,9 @@ void GL_GenerateFrameBuffers(void)
 		g_pMetaHookAPI->SysError("Failed to initialize HBAOCalc framebuffer.\n");
 	}
 
-	s_ShadowFBO.iWidth = glwidth;
-	s_ShadowFBO.iHeight = glheight;
+	//Framebuffers that bind no texture
 	GL_GenFrameBuffer(&s_ShadowFBO);
-
-	s_WaterFBO.iWidth = glwidth;
-	s_WaterFBO.iHeight = glheight;
 	GL_GenFrameBuffer(&s_WaterFBO);
-	GL_FrameBufferColorTexture(&s_WaterFBO, GL_RGB16F);
-	GL_FrameBufferDepthTexture(&s_WaterFBO, GL_DEPTH24_STENCIL8);
 
 	//DownSample FBO 1->1/4->1/16
 	int downW, downH;
@@ -1503,7 +1467,7 @@ void GL_GenerateFrameBuffers(void)
 		gEngfuncs.Con_Printf("Failed to initialize ToneMapping #%d framebuffer.\n");
 	}
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	GL_BindFrameBuffer(NULL);
 }
 
 void GL_Init(void)
@@ -1593,7 +1557,7 @@ void GL_Shutdown(void)
 
 void GL_ClearFinalBuffer()
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, s_FinalBufferFBO.s_hBackBufferFBO);
+	GL_BindFrameBuffer(&s_FinalBufferFBO);
 
 	//Clear final framebuffer
 	glClearColor(0, 0, 0, 0);
@@ -1611,6 +1575,8 @@ bool SCR_IsLoadingVisible()
 
 void R_RenderStartFrame()
 {
+	R_InitEntityComponents();
+	R_PrepareDecals();
 	R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
 	R_StudioBoneCaches_StartFrame();
 	R_CheckVariables();
@@ -1710,19 +1676,11 @@ void R_PreRenderView()
 	shadow_numvisedicts[1] = 0;
 	shadow_numvisedicts[2] = 0;
 
-	if (r_shadow && r_shadow->value)
-	{
-		R_RenderShadowMap();
-	}
+	R_RenderShadowMap();
 
-	if (r_water && r_water->value)
-	{
-		R_RenderWaterView();
-	}
+	R_RenderWaterPass();
 
-	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, s_BackBufferFBO.s_hBackBufferTex, 0);
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, s_BackBufferFBO.s_hBackBufferDepthTex, 0);
+	GL_BindFrameBufferWithTextures(&s_BackBufferFBO, s_BackBufferFBO.s_hBackBufferTex, 0, s_BackBufferFBO.s_hBackBufferDepthTex, 0, 0);
 }
 
 void R_PostRenderView()
@@ -1886,7 +1844,7 @@ void R_RenderView_SvEngine(int viewIdx)
 	}
 	else
 	{
-		glBindFramebuffer(GL_FRAMEBUFFER, s_FinalBufferFBO.s_hBackBufferFBO);
+		GL_BindFrameBuffer(&s_FinalBufferFBO);
 	}
 
 	*c_alias_polys += r_studio_polys;
@@ -2069,7 +2027,6 @@ void R_InitCvars(void)
 	gl_zmax = gEngfuncs.pfnGetCvarPointer("gl_zmax");
 	gl_alphamin = gEngfuncs.pfnGetCvarPointer("gl_alphamin");
 	gl_overdraw = gEngfuncs.pfnGetCvarPointer("gl_overdraw");
-	gl_watersides = gEngfuncs.pfnGetCvarPointer("gl_watersides");
 	gl_overbright = gEngfuncs.pfnGetCvarPointer("gl_overbright");
 	gl_envmapsize = gEngfuncs.pfnGetCvarPointer("gl_envmapsize");
 	gl_flipmatrix = gEngfuncs.pfnGetCvarPointer("gl_flipmatrix");
@@ -2572,17 +2529,26 @@ void R_SetupGL(void)
 		glwidth = gl_envmapsize->value;
 	}
 
-	r_viewport[0] = v0 + glx;
-	r_viewport[1] = v3 + gly;
-	r_viewport[2] = v4;
-	r_viewport[3] = v5;
-
 	if (r_draw_shadowcaster)
 	{
 		r_viewport[0] = 0;
 		r_viewport[1] = 0;
 		r_viewport[2] = current_shadow_texture->size;
 		r_viewport[3] = current_shadow_texture->size;
+	}
+	else if (r_draw_reflectview)
+	{
+		r_viewport[0] = 0;
+		r_viewport[1] = 0;
+		r_viewport[2] = glwidth;
+		r_viewport[3] = glheight;
+	}
+	else
+	{
+		r_viewport[0] = v0 + glx;
+		r_viewport[1] = v3 + gly;
+		r_viewport[2] = v4;
+		r_viewport[3] = v5;
 	}
 
 	glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);

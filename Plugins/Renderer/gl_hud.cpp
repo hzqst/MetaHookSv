@@ -627,7 +627,7 @@ void R_DoFXAA(void)
 
 	GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	GL_BindFrameBuffer(&s_BackBufferFBO);
 
 	R_BeginFXAA(glwidth, glheight);
 
@@ -653,7 +653,7 @@ void R_GammaCorrection(void)
 
 	GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	GL_BindFrameBuffer(&s_BackBufferFBO);
 
 	GL_BeginFullScreenQuad(false);
 
@@ -699,7 +699,7 @@ void R_BlendOITBuffer(void)
 {
 	GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+	GL_BindFrameBuffer(&s_BackBufferFBO);
 	
 	GL_BeginFullScreenQuad(false);
 
@@ -718,7 +718,7 @@ void R_BlendOITBuffer(void)
 
 void R_LinearizeDepth(FBO_Container_t *fbo)
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, s_DepthLinearFBO.s_hBackBufferFBO);
+	GL_BindFrameBuffer(&s_DepthLinearFBO);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	glDisable(GL_BLEND);
@@ -802,7 +802,7 @@ void R_AmbientOcclusion(void)
 	InvFullResolution[0] = 1.0f / float(glwidth);
 	InvFullResolution[1] = 1.0f / float(glheight);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, s_HBAOCalcFBO.s_hBackBufferFBO);
+	GL_BindFrameBuffer(&s_HBAOCalcFBO);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	glDisable(GL_BLEND);
@@ -865,12 +865,14 @@ void R_AmbientOcclusion(void)
 	//Write to main framebuffer or GBuffer lightmap channel
 	if (drawgbuffer)
 	{
-		glBindFramebuffer(GL_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
+		GL_BindFrameBuffer(&s_GBufferFBO);
+
 		glDrawBuffer(GL_COLOR_ATTACHMENT1);
 	}
 	else
 	{
-		glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
+		GL_BindFrameBuffer(&s_BackBufferFBO);
+
 		//Should we reset drawbuffer?
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	}
@@ -910,7 +912,7 @@ void R_BlendFinalBuffer(void)
 	GL_PushDrawState();
 	GL_PushMatrix();
 
-	glBindFramebuffer(GL_FRAMEBUFFER, s_FinalBufferFBO.s_hBackBufferFBO);
+	GL_BindFrameBuffer(&s_FinalBufferFBO);
 
 	GL_UseProgram(0);
 

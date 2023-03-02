@@ -1775,7 +1775,8 @@ void R_StudioRenderModel(void)
 
 		GL_PushFrameBuffer();
 
-		glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO2.s_hBackBufferFBO);
+		GL_BindFrameBuffer(&s_BackBufferFBO2);
+
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		glColorMask(0, 0, 0, 0);
 
@@ -1869,7 +1870,8 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 
 		GL_PushFrameBuffer();
 
-		glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO2.s_hBackBufferFBO);
+		GL_BindFrameBuffer(&s_BackBufferFBO2);
+
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		glColorMask(0, 0, 0, 0);
 

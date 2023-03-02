@@ -418,7 +418,7 @@ void R_LoadProgramStateCaches(const char *filename, const program_state_mapping_
 					}
 					else
 					{
-						for (int i = 0; i < mapping_size; ++i)
+						for (size_t i = 0; i < mapping_size; ++i)
 						{
 							if (!strcmp(token, mapping[i].name))
 							{

@@ -22,8 +22,6 @@ bool r_ortho = false;
 int r_wsurf_drawcall = 0;
 int r_wsurf_polys = 0;
 
-vec3_t r_entity_mins, r_entity_maxs;
-
 std::unordered_map <program_state_t, wsurf_program_t> g_WSurfProgramTable;
 
 std::unordered_map <int, detail_texture_cache_t *> g_DetailTextureTable;
@@ -322,7 +320,7 @@ void R_FreeSceneUBO(void)
 	}
 }
 
-void R_FreeLightmapArray(void)
+void R_FreeLightmapTextures(void)
 {
 	if (r_wsurf.iLightmapTextureArray)
 	{
@@ -331,7 +329,7 @@ void R_FreeLightmapArray(void)
 	}
 }
 
-void R_FreeWorldTextures(void)
+void R_FreeBindlessTextures(void)
 {
 	if (r_wsurf.hWorldSSBO)
 	{
@@ -348,28 +346,6 @@ void R_FreeVertexBuffer(void)
 		r_wsurf.hSceneVBO = 0;
 	}
 	r_wsurf.vFaceBuffer.clear();
-}
-
-void R_BrushModelLinkTextureChain(model_t *mod)
-{
-	auto psurf = &mod->surfaces[mod->firstmodelsurface];
-	for (int i = 0; i < mod->nummodelsurfaces; i++, psurf++)
-	{
-		auto pplane = psurf->plane;
-
-		if (psurf->flags & SURF_DRAWTURB)
-		{
-			//TODO water?
-			continue;
-		}
-		else if (psurf->flags & SURF_DRAWSKY)
-		{
-			continue;
-		}
-
-		psurf->texturechain = psurf->texinfo->texture->texturechain;
-		psurf->texinfo->texture->texturechain = psurf;
-	}
 }
 
 void R_RecursiveFindLeaves(mnode_t *node, std::set<mleaf_t *> &vLeafs)
@@ -445,7 +421,17 @@ void R_RecursiveMarkSurfaces(mnode_t *node)
 	R_RecursiveMarkSurfaces(node->children[1]);
 }
 
-void R_RecursiveLinkTextureChain(mnode_t *node)
+void R_CollectWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t *leaf)
+{
+	auto WaterVBO = R_CreateWaterVBO(surf, direction, leaf);
+
+	if (std::find(leaf->vWaterVBO.begin(), leaf->vWaterVBO.end(), WaterVBO) == leaf->vWaterVBO.end())
+	{
+		leaf->vWaterVBO.emplace_back(WaterVBO);
+	}
+}
+
+void R_RecursiveLinkTextureChain(mnode_t *node, wsurf_vbo_leaf_t *leaf)
 {
 	if (node->contents == CONTENTS_SOLID)
 		return;
@@ -458,7 +444,7 @@ void R_RecursiveLinkTextureChain(mnode_t *node)
 	if (node->contents < 0)
 		return;
 
-	R_RecursiveLinkTextureChain(node->children[0]);
+	R_RecursiveLinkTextureChain(node->children[0], leaf);
 
 	auto c = node->numsurfaces;
 
@@ -472,15 +458,54 @@ void R_RecursiveLinkTextureChain(mnode_t *node)
 			if (surf->visframe != (*r_framecount))
 				continue;
 
+			if (surf->flags & SURF_DRAWSKY)
+			{
+				continue;
+			}
+			if (surf->flags & SURF_DRAWTURB)
+			{
+				R_CollectWaterVBO(surf, 0, leaf);
+				continue;
+			}
+
 			surf->texturechain = surf->texinfo->texture->texturechain;
 			surf->texinfo->texture->texturechain = surf;
 		}
 	}
 
-	R_RecursiveLinkTextureChain(node->children[1]);
+	R_RecursiveLinkTextureChain(node->children[1], leaf);
 }
 
-void R_GenerateIndicesForTexChain(msurface_t *s, brushtexchain_t *texchain, std::vector<unsigned int> &vIndicesBuffer)
+void R_BrushModelLinkTextureChain(model_t *mod, wsurf_vbo_leaf_t *leaf)
+{
+	auto surf = &mod->surfaces[mod->firstmodelsurface];
+	for (int i = 0; i < mod->nummodelsurfaces; i++, surf++)
+	{
+		auto pplane = surf->plane;
+
+		if (surf->flags & SURF_DRAWSKY)
+		{
+			continue;
+		}
+		if (surf->flags & SURF_DRAWTURB)
+		{
+			//Skip non-Z planes
+			if (pplane->type != PLANE_Z)
+				continue;
+
+			//Skip bottom ?
+			
+			R_CollectWaterVBO(surf, 0, leaf);
+			R_CollectWaterVBO(surf, 1, leaf);
+			continue;
+		}
+
+		surf->texturechain = surf->texinfo->texture->texturechain;
+		surf->texinfo->texture->texturechain = surf;
+	}
+}
+
+void R_GenerateIndicesForTexChain(msurface_t *s, brushtexchain_t *texchain, std::vector<GLuint> &vIndicesBuffer)
 {
 	auto p = s->polys;
 	auto &brushface = r_wsurf.vFaceBuffer[p->flags];
@@ -620,7 +645,26 @@ void R_GenerateDrawBatch(wsurf_vbo_leaf_t *vboleaf, int iTexchainId, int iDrawBa
 	}
 }
 
-void R_GenerateTexChain(model_t *mod, wsurf_vbo_leaf_t *vboleaf, std::vector<unsigned int> &vIndicesBuffer)
+void R_GenerateWaterStorages(model_t *mod, wsurf_vbo_leaf_t *vboleaf)
+{
+	for (size_t i = 0; i < vboleaf->vWaterVBO.size(); ++i)
+	{
+		auto &WaterVBO = vboleaf->vWaterVBO[i];
+
+		WaterVBO->hEBO = GL_GenBuffer();
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, WaterVBO->hEBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * WaterVBO->vIndicesBuffer->size(), WaterVBO->vIndicesBuffer->data(), GL_STATIC_DRAW);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+		WaterVBO->iIndicesCount = WaterVBO->vIndicesBuffer->size();
+
+		delete WaterVBO->vIndicesBuffer;
+		WaterVBO->vIndicesBuffer = NULL;
+	}
+}
+
+void R_GenerateTexChain(model_t *mod, wsurf_vbo_leaf_t *vboleaf, std::vector<GLuint> &vIndicesBuffer)
 {
 	for (int i = 0; i < mod->numtextures; i++)
 	{
@@ -873,10 +917,10 @@ Generate leaf array for brush model
 
 void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 {
+	std::vector<GLuint> vIndicesBuffer;
+
 	if (mod == r_worldmodel)
 	{
-		std::vector<unsigned int> vIndicesBuffer;
-
 		std::set<mleaf_t *> vPossibleLeafs;
 		R_RecursiveFindLeaves(mod->nodes, vPossibleLeafs);
 
@@ -893,7 +937,9 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 			auto vboleaf = new wsurf_vbo_leaf_t;
 
 			R_RecursiveMarkSurfaces(mod->nodes);
-			R_RecursiveLinkTextureChain(mod->nodes);
+			R_RecursiveLinkTextureChain(mod->nodes, vboleaf);
+
+			R_GenerateWaterStorages(mod, vboleaf);
 
 			R_GenerateTexChain(mod, vboleaf, vIndicesBuffer);
 
@@ -918,9 +964,9 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 	{
 		auto vboleaf = new wsurf_vbo_leaf_t;
 
-		R_BrushModelLinkTextureChain(mod);
+		R_BrushModelLinkTextureChain(mod, vboleaf);
 
-		std::vector<unsigned int> vIndicesBuffer;
+		R_GenerateWaterStorages(mod, vboleaf);
 
 		R_GenerateTexChain(mod, vboleaf, vIndicesBuffer);
 
@@ -946,7 +992,7 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
 
-void R_GenerateWorldTextures(void)
+void R_CreateBindlessTexturesForWorld(void)
 {
 	if (bUseBindless)
 	{
@@ -2017,7 +2063,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 		glActiveTexture(GL_TEXTURE6);
 
 		glEnable(GL_TEXTURE_2D_ARRAY);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, r_shadow_texture.color_array);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, r_shadow_texture.depth_array);
 
 		glActiveTexture(GL_TEXTURE0);
 	}
@@ -2043,12 +2089,14 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	}
 
+	wsurf_vbo_leaf_t *vboleaf = NULL;
+
 	if (modvbo->pModel == r_worldmodel)
 	{
 		int leafindex = ((*r_viewleaf) - r_worldmodel->leafs);
 		if (leafindex >= 0 && leafindex < (int)modvbo->vLeaves.size())
 		{
-			auto vboleaf = modvbo->vLeaves[leafindex];
+			vboleaf = modvbo->vLeaves[leafindex];
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboleaf->hEBO);
 
@@ -2077,7 +2125,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 	{
 		if (modvbo->vLeaves.size() >= 1)
 		{
-			auto vboleaf = modvbo->vLeaves[0];
+			vboleaf = modvbo->vLeaves[0];
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboleaf->hEBO);
 
@@ -2086,7 +2134,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 		}
 		else
 		{
-			g_pMetaHookAPI->SysError("Invalid leaf index");
+			g_pMetaHookAPI->SysError("R_DrawWSurfVBO: Invalid leaf index");
 		}
 	}
 	
@@ -2114,65 +2162,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 		glDepthFunc(GL_LEQUAL);
 	}
 
-	//Collect decals and waters
-
-	(*gDecalSurfCount) = 0;
-
-	if (modvbo->pModel == r_worldmodel)
-	{
-		(*currententity) = r_worldentity;
-
-		R_RecursiveWorldNodeVBO(r_worldmodel->nodes);
-	}
-	else
-	{
-		auto clmodel = modvbo->pModel;
-		auto psurf = &clmodel->surfaces[clmodel->firstmodelsurface];
-		for (int i = 0; i < clmodel->nummodelsurfaces; i++, psurf++)
-		{
-			auto pplane = psurf->plane;
-
-			if (psurf->flags & SURF_DRAWTURB)
-			{
-				if (pplane->type != PLANE_Z)
-					continue;
-
-				if (g_iEngineType == ENGINE_SVENGINE)
-				{
-					if (r_entity_mins[2] >= pplane->dist)
-						continue;
-				}
-				else
-				{
-					if (r_entity_mins[2] + 1.0f >= pplane->dist)
-						continue;
-				}
-			}
-
-			auto dot = DotProduct(modelorg, pplane->normal) - pplane->dist;
-
-			if (((psurf->flags & SURF_PLANEBACK) && (dot < -BACKFACE_EPSILON)) || (!(psurf->flags & SURF_PLANEBACK) && (dot > BACKFACE_EPSILON)))
-			{
-				if (psurf->flags & SURF_DRAWTURB)
-				{
-					EmitWaterPolys(psurf, 0);
-				}
-				else
-				{
-					R_DrawSequentialPolyVBO(psurf);
-				}
-			}
-			else
-			{
-				if (psurf->flags & SURF_DRAWTURB)
-				{
-					EmitWaterPolys(psurf, 1);
-				}
-			}
-		}
-	}
-
-	R_DrawDecals(modvbo);
+	R_DrawDecals(ent);
 
 	if (r_wsurf.bShadowmapTexture)
 	{
@@ -2194,9 +2184,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 		glActiveTexture(GL_TEXTURE0);
 	}
 
-	//Waters don't have lightmap textures
-
-	R_DrawWaters(ent);
+	R_DrawWaters(vboleaf, ent);
 
 	GL_UseProgram(0);
 
@@ -2238,12 +2226,11 @@ void Hunk_Check()
 
 void R_PrebuildWSurfVBO(void)
 {
-	R_PrepareWSurfVBO(r_worldmodel);
-
+	//TODO: use CL_GetModelByIndex instead ? idk
 	for (int i = 0; i < (*mod_numknown); ++i)
 	{
 		auto mod = EngineGetModelByIndex(i);
-		if (mod->type == mod_brush && mod->name[0] == '*' && mod->needload == NL_PRESENT)
+		if (mod->type == mod_brush && mod->needload == NL_PRESENT)
 		{
 			R_PrepareWSurfVBO(mod);
 		}
@@ -2288,18 +2275,19 @@ void R_NewMapWSurf(void)
 	R_LoadBaseDecalTextures();
 
 	R_FreeVertexBuffer();
-	R_FreeWorldTextures();
+	R_FreeBindlessTextures();
 
-	R_GenerateWorldTextures();
+	R_CreateBindlessTexturesForWorld();
 	R_GenerateVertexBuffer();
 
 	R_ClearWSurfVBOCache();
-	R_PrebuildWSurfVBO();
 
 	R_ClearBSPEntities();
 	R_ParseBSPEntities(r_worldmodel->entities, R_ParseBSPEntity_DefaultAllocator);
 	R_LoadExternalEntities();
 	R_LoadBSPEntities();
+
+	R_PrebuildWSurfVBO();
 }
 
 void R_ShutdownWSurf(void)
@@ -2309,7 +2297,7 @@ void R_ShutdownWSurf(void)
 	R_ClearDecalCache();
 	R_ClearDetailTextureCache();
 
-	R_FreeLightmapArray();
+	R_FreeLightmapTextures();
 	R_FreeVertexBuffer();
 	R_ClearWSurfVBOCache();
 	R_ClearBSPEntities();
@@ -3610,7 +3598,7 @@ void R_DrawSequentialPolyVBO(msurface_t *s)
 			g_pMetaHookAPI->SysError("Too many decal surfaces!\n");
 	}
 }
-
+#if 0
 void R_RecursiveWorldNodeVBO(mnode_t *node)
 {
 	int c, side;
@@ -3718,7 +3706,7 @@ void R_RecursiveWorldNodeVBO(mnode_t *node)
 
 	R_RecursiveWorldNodeVBO(node->children[!side]);
 }
-
+#endif
 void R_DrawBrushModel(cl_entity_t *e)
 {
 	qboolean rotated;
@@ -3728,35 +3716,37 @@ void R_DrawBrushModel(cl_entity_t *e)
 
 	auto clmodel = e->model;
 
+	vec3_t entity_mins, entity_maxs;
+
 	if (e->angles[0] || e->angles[1] || e->angles[2])
 	{
 		rotated = true;
 
 		for (int i = 0; i < 3; i++)
 		{
-			r_entity_mins[i] = e->origin[i] - clmodel->radius;
-			r_entity_maxs[i] = e->origin[i] + clmodel->radius;
+			entity_mins[i] = e->origin[i] - clmodel->radius;
+			entity_maxs[i] = e->origin[i] + clmodel->radius;
 		}
 	}
 	else
 	{
 		rotated = false;
 
-		VectorAdd(e->origin, clmodel->mins, r_entity_mins);
-		VectorAdd(e->origin, clmodel->maxs, r_entity_maxs);
+		VectorAdd(e->origin, clmodel->mins, entity_mins);
+		VectorAdd(e->origin, clmodel->maxs, entity_maxs);
 	}
 
-	if (R_CullBox(r_entity_mins, r_entity_maxs))
+	if (R_CullBox(entity_mins, entity_maxs))
 		return;
 
-	if (g_iEngineType == ENGINE_SVENGINE)
+	/*if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		memset(lightmap_polys, 0, sizeof(glpoly_t *) * 1024);
 	}
 	else
 	{
 		memset(lightmap_polys, 0, sizeof(glpoly_t *) * 64);
-	}
+	}*/
 
 	VectorSubtract((*r_refdef.vieworg), e->origin, modelorg);
 
@@ -3801,7 +3791,7 @@ void R_DrawBrushModel(cl_entity_t *e)
 	}
 skip_marklight:
 
-	R_RotateForEntity(e->origin, e);
+	R_RotateForEntity(e);
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
@@ -3877,7 +3867,7 @@ void R_SetupSceneUBO(void)
 
 	if (r_draw_reflectview)
 	{
-		float equation[4] = { curwater->normal[0], curwater->normal[1], curwater->normal[2], -curwater->plane };
+		float equation[4] = { g_CurrentReflectCache->normal[0], g_CurrentReflectCache->normal[1], g_CurrentReflectCache->normal[2], -g_CurrentReflectCache->planedist };
 		memcpy(SceneUBO.clipPlane, equation, sizeof(vec4_t));
 	}
 	else if (g_bPortalClipPlaneEnabled[0])
@@ -3991,26 +3981,32 @@ void R_DrawWorld(void)
 	R_BeginRenderGBuffer();
 
 	VectorCopy((*r_refdef.vieworg), modelorg);
-
+#if 0
 	cl_entity_t tempent = { 0 };
 	tempent.model = r_worldmodel;
 	tempent.curstate.rendercolor.r = cshift_water->destcolor[0];
 	tempent.curstate.rendercolor.g = cshift_water->destcolor[1];
 	tempent.curstate.rendercolor.b = cshift_water->destcolor[2];
+#endif
 
-	(*currententity) = &tempent;
+	//TODO: what the heck is this ???
+	r_worldentity->curstate.rendercolor.r = cshift_water->destcolor[0];
+	r_worldentity->curstate.rendercolor.g = cshift_water->destcolor[1];
+	r_worldentity->curstate.rendercolor.b = cshift_water->destcolor[2];
+
+	(*currententity) = r_worldentity;
 	*currenttexture = -1;
 
 	glColor3f(1.0f, 1.0f, 1.0f);
 
-	if (g_iEngineType == ENGINE_SVENGINE)
+	/*if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		memset(lightmap_polys, 0, sizeof(glpoly_t *) * 1024);
 	}
 	else
 	{
 		memset(lightmap_polys, 0, sizeof(glpoly_t *) * 64);
-	}
+	}*/
 
 	GL_DisableMultitexture();
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -4063,7 +4059,11 @@ void R_DrawWorld(void)
 
 	R_DrawSkyBox();
 
-	if (!(r_draw_reflectview && curwater->level == WATER_LEVEL_REFLECT_SKYBOX))
+	if (r_draw_reflectview && g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_SKYBOX)
+	{
+		
+	}
+	else
 	{
 		r_wsurf.bDiffuseTexture = true;
 		r_wsurf.bLightmapTexture = true;

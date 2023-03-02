@@ -28,13 +28,27 @@ void R_RecursiveWorldNode(mnode_t *node)
 
 void R_AddDynamicLights(msurface_t *surf)
 {
-	//All this are done in shader
-#if 0
-	if (r_light_dynamic->value)
-		return;
+	//All moved to shader
+}
 
-	return gRefFuncs.R_AddDynamicLights(surf);
-#endif
+void R_PrepareDecals(void)
+{
+	for (int i = 0; i < MAX_DECALS; ++i)
+	{
+		auto decal = &gDecalPool[i];
+
+		if (decal->psurface)
+		{
+			auto ent = gEngfuncs.GetEntityByIndex(gDecalPool[i].entityIndex);
+
+			auto comp = R_GetEntityComponent(ent, true);
+
+			if (comp)
+			{
+				comp->Decals.emplace_back(decal);
+			}
+		}
+	}
 }
 
 //It's 40 x 40 for SvEngine and 18 x 18 for GoldSrc
@@ -109,93 +123,8 @@ void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride, int lightmap_idx
 
 void R_RenderDynamicLightmaps(msurface_t *fa)
 {
-	//All this should be done in shader
-#if 0
-	if(!r_light_dynamic->value)
-		return gRefFuncs.R_RenderDynamicLightmaps(fa);
-
-	byte *base;
-	int maps;
-	int smax, tmax;
-
-	if (fa->flags & (SURF_DRAWSKY | SURF_DRAWTURB))
-		return;
-
-	fa->polys->chain = lightmap_polys[fa->lightmaptexturenum];
-	lightmap_polys[fa->lightmaptexturenum] = fa->polys;
-
-	bool dynamic = false;
-
-	for (maps = 0; maps < MAXLIGHTMAPS && fa->styles[maps] != 255; maps++)
-	{
-		if (d_lightstylevalue[fa->styles[maps]] != fa->cached_light[maps])
-		{
-			dynamic = true;
-			break;
-		}
-	}
-
-	if (dynamic)
-	{
-		if (r_dynamic->value)
-		{
-			lightmap_modified[fa->lightmaptexturenum] = true;
-
-			glRect_t *theRect = (glRect_t *)((char *)lightmap_rectchange + sizeof(glRect_t) * fa->lightmaptexturenum);
-
-			if (fa->light_t < theRect->t)
-			{
-				if (theRect->h)
-					theRect->h += theRect->t - fa->light_t;
-
-				theRect->t = fa->light_t;
-			}
-
-			if (fa->light_s < theRect->l)
-			{
-				if (theRect->w)
-					theRect->w += theRect->l - fa->light_s;
-
-				theRect->l = fa->light_s;
-			}
-
-			smax = (fa->extents[0] >> 4) + 1;
-			tmax = (fa->extents[1] >> 4) + 1;
-
-			if ((theRect->w + theRect->l) < (fa->light_s + smax))
-				theRect->w = (fa->light_s - theRect->l) + smax;
-
-			if ((theRect->h + theRect->t) < (fa->light_t + tmax))
-				theRect->h = (fa->light_t - theRect->t) + tmax;
-
-			base = lightmaps + fa->lightmaptexturenum * LIGHTMAP_BYTES * BLOCK_WIDTH * BLOCK_HEIGHT;
-			base += fa->light_t * BLOCK_WIDTH * LIGHTMAP_BYTES + fa->light_s * LIGHTMAP_BYTES;
-			R_BuildLightMap(fa, base, BLOCK_WIDTH * LIGHTMAP_BYTES);
-		}
-
-		//Fix: force to cache even if lightmap is not present (hlrad was not processed for the .bsp)
-		for (maps = 0; maps < MAXLIGHTMAPS && fa->styles[maps] != 255; maps++)
-		{
-			fa->cached_light[maps] = d_lightstylevalue[fa->styles[maps]];
-		}
-	}
-#endif
+	//All moved to shader
 }
-
-#if 0
-void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride)
-{
-	if (!r_light_dynamic->value)
-		return gRefFuncs.R_BuildLightMap(psurf, dest, stride);
-
-	auto save_dlightactive = (*r_dlightactive);
-	(*r_dlightactive) = 0;
-
-	gRefFuncs.R_BuildLightMap(psurf, dest, stride);
-
-	(*r_dlightactive) = save_dlightactive;
-}
-#endif
 
 int AllocBlock(int w, int h, int *x, int *y)
 {
@@ -372,6 +301,8 @@ void R_BuildSurfaceDisplayList(model_t *mod, mvertex_t *vertbase, msurface_t *fa
 
 void GL_BuildLightmaps(void)
 {
+	R_FreeLightmapTextures();
+
 	//Should always be zero when loading a new map
 	r_wsurf.iNumLightmapTextures = 0;
 
@@ -403,9 +334,6 @@ void GL_BuildLightmaps(void)
 			}
 		}
 	}
-
-	//Free previous allocated texture array
-	R_FreeLightmapArray();
 
 	r_wsurf.iLightmapUsedBits = 0;
 	r_wsurf.iLightmapTextureArray = GL_GenTexture();
@@ -648,7 +576,6 @@ static void R_DecalCacheClear(decal_t *pdecal)
 		pCache->decalIndex = -1;
 }
 
-#define MAX_DECALCLIPVERT		32
 static float vert[MAX_DECALCLIPVERT][VERTEXSIZE];
 static float outvert[MAX_DECALCLIPVERT][VERTEXSIZE];
 
@@ -741,7 +668,6 @@ void Intersect(float *one, float *two, int edge, float *out)
 	out[1] = one[1] + (two[1] - one[1]) * t;
 	out[2] = one[2] + (two[2] - one[2]) * t;
 }
-
 
 int SHClip(float *vert, int vertCount, float *out, int edge)
 {
@@ -1039,17 +965,8 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 	r_wsurf.vDecalVertexCount[decalIndex] = vertCount;
 }
 
-void R_DrawDecals(wsurf_vbo_t *modcache)
+void R_DrawDecals(cl_entity_t *ent)
 {
-	decal_t *plist;
-	int i, vertCount;
-	texture_t *ptexture;
-	msurface_t *psurf;
-	float *v;
-
-	if (!(*gDecalSurfCount))
-		return;
-
 	if (CL_IsDevOverviewMode())
 		return;
 
@@ -1058,26 +975,38 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		if ((*currententity)->curstate.effects & EF_NODECALS)
+		if (ent->curstate.effects & EF_NODECALS)
 			return;
 	}
+
+	auto comp = R_GetEntityComponent(ent, false);
+
+	if (!comp)
+		return;
+
+	if (comp->Decals.empty())
+		return;
 
 	g_DecalBaseDrawBatch.BatchCount = 0;
 	g_DecalDetailDrawBatch.BatchCount = 0;
 
-	for (i = 0; i < (*gDecalSurfCount); i++)
+	for (size_t i = 0; i < comp->Decals.size(); i++)
 	{
-		psurf = gDecalSurfs[i];
-		plist = psurf->pdecals;
+		auto plist = comp->Decals[i];
 
-		while (plist)
+		if (plist)
 		{
 			int decalIndex = R_DecalIndex(plist);
 
 			//Build VBO data for this decal if not built yet
 			if (!(plist->flags & FDECAL_VBO))
 			{
-				ptexture = Draw_DecalTexture(plist->texture);
+				int vertCount;
+				float *v;
+
+				auto ptexture = Draw_DecalTexture(plist->texture);
+
+				auto psurf = plist->psurface;
 
 				auto pcache = R_FindDecalTextureCache(ptexture->name);
 
@@ -1131,11 +1060,10 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 					++g_DecalDetailDrawBatch.BatchCount;
 				}
 			}
-
-			plist = plist->pnext;
 		}
 	}
 
+	//TODO really?
 	//glEnable(GL_ALPHA_TEST);
 	//glAlphaFunc(GL_NOTEQUAL, 0);
 	glEnable(GL_BLEND);
