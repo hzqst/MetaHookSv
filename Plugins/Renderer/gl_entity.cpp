@@ -57,7 +57,7 @@ TEMPENTITY *EngineGetTempTentByIndex(int index)
 
 int R_GetClientEntityComponentIndex(cl_entity_t *ent)
 {
-	if (ent >= EngineGetClientEntitiesBase() && ent < EngineGetClientEntitiesBase() + sizeof(cl_entity_t) * EngineGetMaxClientEdicts())
+	if (ent >= EngineGetClientEntitiesBase() && ent < EngineGetClientEntitiesBase() + EngineGetMaxClientEdicts())
 	{
 		return ent - EngineGetClientEntitiesBase();
 	}
@@ -97,19 +97,20 @@ entity_component_t *R_AllocateEntityComponent()
 entity_component_t *R_GetEntityComponent(cl_entity_t *ent, bool create_if_not_exists)
 {
 	entity_component_t * comp = NULL;
+
 	int index = R_GetClientEntityComponentIndex(ent);
 
 	if (index >= 0)
 	{
-		if (g_ClientEntityRenderComponents.size() < index + 1)
+		if ((int)g_ClientEntityRenderComponents.size() < index + 1)
 		{
-			g_ClientEntityRenderComponents.resize(index + 1);
+			g_ClientEntityRenderComponents.resize((size_t)index + 1);
 		}
-		comp = g_ClientEntityRenderComponents[index];
+		comp = g_ClientEntityRenderComponents[(size_t)index];
 		if (!comp && create_if_not_exists)
 		{
 			comp = R_AllocateEntityComponent();
-			g_ClientEntityRenderComponents[index] = comp;
+			g_ClientEntityRenderComponents[(size_t)index] = comp;
 		}
 	}
 	else
@@ -118,16 +119,16 @@ entity_component_t *R_GetEntityComponent(cl_entity_t *ent, bool create_if_not_ex
 
 		if (index >= 0)
 		{
-			if (g_TempEntityRenderComponents.size() < index + 1)
+			if ((int)g_TempEntityRenderComponents.size() < index + 1)
 			{
-				g_TempEntityRenderComponents.resize(index + 1);
+				g_TempEntityRenderComponents.resize((size_t)index + 1);
 			}
 
-			comp = g_TempEntityRenderComponents[index];
+			comp = g_TempEntityRenderComponents[(size_t)index];
 			if (!comp && create_if_not_exists)
 			{
 				comp = R_AllocateEntityComponent();
-				g_TempEntityRenderComponents[index] = comp;
+				g_TempEntityRenderComponents[(size_t)index] = comp;
 			}
 		}
 		else
