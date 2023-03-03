@@ -536,8 +536,7 @@ bool R_IsHDREnabled(void)
 
 void R_HDR(void)
 {
-	static glprofile_t profile_DoHDR;
-	GL_BeginProfile(&profile_DoHDR, "R_HDR");
+	GL_BeginProfile(&Profile_DoHDR);
 
 	GL_BeginFullScreenQuad(false);
 
@@ -589,7 +588,7 @@ void R_HDR(void)
 
 	GL_BlitFrameBufferToFrameBufferColorOnly(&s_ToneMapFBO, &s_BackBufferFBO);
 
-	GL_EndProfile(&profile_DoHDR);
+	GL_EndProfile(&Profile_DoHDR);
 }
 
 void R_BeginFXAA(int w, int h)
@@ -619,8 +618,7 @@ bool R_IsFXAAEnabled(void)
 
 void R_DoFXAA(void)
 {
-	static glprofile_t profile_DoFXAA;
-	GL_BeginProfile(&profile_DoFXAA, "R_DoFXAA");
+	GL_BeginProfile(&Profile_DoFXAA);
 
 	GL_PushDrawState();
 	GL_PushMatrix();
@@ -643,13 +641,12 @@ void R_DoFXAA(void)
 	GL_PopMatrix();
 	GL_PopDrawState();
 
-	GL_EndProfile(&profile_DoFXAA);
+	GL_EndProfile(&Profile_DoFXAA);
 }
 
 void R_GammaCorrection(void)
 {
-	static glprofile_t profile_GammaCorrection;
-	GL_BeginProfile(&profile_GammaCorrection, "R_GammaCorrection");
+	GL_BeginProfile(&Profile_GammaCorrection);
 
 	GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
 
@@ -670,13 +667,11 @@ void R_GammaCorrection(void)
 
 	R_DrawHUDQuad_Texture(s_BackBufferFBO2.s_hBackBufferTex, r_refdef.vrect->width, r_refdef.vrect->height);
 
-	//glDrawArrays(GL_TRIANGLES, 0, 3);
-
 	GL_UseProgram(0);
 
 	GL_EndFullScreenQuad();
 
-	GL_EndProfile(&profile_GammaCorrection);
+	GL_EndProfile(&Profile_GammaCorrection);
 }
 
 void R_ClearOITBuffer(void)
@@ -764,8 +759,7 @@ void R_AmbientOcclusion(void)
 		return;
 
 	//Prepare parameters
-	static glprofile_t profile_AmbientOcclusion;
-	GL_BeginProfile(&profile_AmbientOcclusion, "R_AmbientOcclusion");
+	GL_BeginProfile(&Profile_AmbientOcclusion);
 
 	const float *ProjMatrix = r_projection_matrix;
 
@@ -901,13 +895,12 @@ void R_AmbientOcclusion(void)
 	glDisable(GL_STENCIL_TEST);
 	glDisable(GL_BLEND);
 
-	GL_EndProfile(&profile_AmbientOcclusion);
+	GL_EndProfile(&Profile_AmbientOcclusion);
 }
 
 void R_BlendFinalBuffer(void)
 {
-	static glprofile_t profile_BlendFinalBuffer;
-	GL_BeginProfile(&profile_BlendFinalBuffer, "R_BlendFinalBuffer");
+	GL_BeginProfile(&Profile_BlendFinalBuffer);
 
 	GL_PushDrawState();
 	GL_PushMatrix();
@@ -929,5 +922,5 @@ void R_BlendFinalBuffer(void)
 	GL_PopMatrix();
 	GL_PopDrawState();
 
-	GL_EndProfile(&profile_BlendFinalBuffer);
+	GL_EndProfile(&Profile_BlendFinalBuffer);
 }

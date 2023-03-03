@@ -675,8 +675,7 @@ void R_DrawTransEntities(int onlyClientDraw)
 	if (r_draw_shadowcaster)
 		return;
 
-	static glprofile_t profile_DrawTransEntities;
-	GL_BeginProfile(&profile_DrawTransEntities, "R_DrawTransEntities");
+	GL_BeginProfile(&Profile_DrawTransEntities);
 
 	if (bUseOITBlend)
 	{
@@ -767,7 +766,7 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 	GL_UseProgram(0);
 
-	GL_EndProfile(&profile_DrawTransEntities);
+	GL_EndProfile(&Profile_DrawTransEntities);
 }
 
 void R_AddTEntity(cl_entity_t *ent)
@@ -1575,6 +1574,7 @@ bool SCR_IsLoadingVisible()
 
 void R_RenderStartFrame()
 {
+	GL_Profiles_StartFrame();
 	R_EntityComponents_StartFrame();
 	R_PrepareDecals();
 	R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
@@ -1589,7 +1589,7 @@ void R_RenderStartFrame()
 
 void R_RenderEndFrame()
 {
-	
+	GL_Profiles_EndFrame();
 }
 
 void GL_BeginRendering(int *x, int *y, int *width, int *height)
@@ -2079,7 +2079,10 @@ void R_InitCvars(void)
 
 void R_Init(void)
 {
+	GL_InitProfiles();
+
 	Mod_Init();
+
 	R_InitCvars();
 
 	R_InitWater();
@@ -2840,8 +2843,7 @@ void R_DrawEntitiesOnList(void)
 	if (!r_drawentities->value)
 		return;
 
-	static glprofile_t profile_DrawEntitiesOnList;
-	GL_BeginProfile(&profile_DrawEntitiesOnList, "R_DrawEntitiesOnList");
+	GL_BeginProfile(&Profile_DrawEntitiesOnList);
 
 	for (int i = 0; i < (*cl_numvisedicts); ++i)
 	{
@@ -2869,7 +2871,7 @@ void R_DrawEntitiesOnList(void)
 		}
 	}
 
-	GL_EndProfile(&profile_DrawEntitiesOnList);
+	GL_EndProfile(&Profile_DrawEntitiesOnList);
 }
 
 void R_RenderFinalFog(void)
@@ -2976,8 +2978,14 @@ void ClientDLL_DrawNormalTriangles(void)
 
 void R_RenderScene(void)
 {
-	static glprofile_t profile_RenderScene;
-	GL_BeginProfile(&profile_RenderScene, "R_RenderScene");
+	if (r_draw_reflectview)
+	{
+		GL_BeginProfile(&Profile_RenderScene_WaterPass);
+	}
+	else
+	{
+		GL_BeginProfile(&Profile_RenderScene);
+	}
 
 	if (CL_IsDevOverviewMode())
 		CL_SetDevOverView(R_GetRefDef());
@@ -2987,6 +2995,8 @@ void R_RenderScene(void)
 	R_SetupGL();
 	R_MarkLeaves();
 
+	R_PrepareDrawWorld();
+
 	if (!(*r_refdef.onlyClientDraws))
 	{
 		R_DrawWorld();
@@ -2994,10 +3004,6 @@ void R_RenderScene(void)
 		S_ExtraUpdate();
 
 		R_DrawEntitiesOnList();
-	}
-	else
-	{
-		R_SetupSceneUBO();
 	}
 
 	if ((*g_bUserFogOn))
@@ -3023,7 +3029,14 @@ void R_RenderScene(void)
 
 	S_ExtraUpdate();
 
-	GL_EndProfile(&profile_RenderScene);
+	if (r_draw_reflectview)
+	{
+		GL_EndProfile(&Profile_RenderScene_WaterPass);
+	}
+	else
+	{
+		GL_EndProfile(&Profile_RenderScene);
+	}
 }
 
 int EngineGetMaxKnownModel(void)

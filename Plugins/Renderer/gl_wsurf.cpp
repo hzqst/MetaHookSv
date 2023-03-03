@@ -2009,9 +2009,6 @@ bool R_ShouldDrawZPrePass(void)
 
 void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 {
-	//static glprofile_t profile_DrawWSurfVBO;
-	//GL_BeginProfile(&profile_DrawWSurfVBO, "R_DrawWSurfVBO");
-
 	entity_ubo_t EntityUBO;
 
 	memcpy(EntityUBO.entityMatrix, r_entity_matrix, sizeof(mat4));
@@ -2187,8 +2184,6 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 	R_DrawWaters(vboleaf, ent);
 
 	GL_UseProgram(0);
-
-	//GL_EndProfile(&profile_DrawWSurfVBO);
 }
 
 //Just for debugging
@@ -3961,56 +3956,8 @@ void R_SetupDLightUBO(void)
 	glNamedBufferSubData(r_wsurf.hDLightUBO, 0, sizeof(DLightUBO), &DLightUBO);
 }
 
-void R_DrawWorld(void)
+void R_PrepareDrawWorld(void)
 {
-	r_draw_opaque = true;
-
-	const float r_identity_matrix[4][4] = {
-		{1.0f, 0.0f, 0.0f, 0.0f},
-		{0.0f, 1.0f, 0.0f, 0.0f},
-		{0.0f, 0.0f, 1.0f, 0.0f},
-		{0.0f, 0.0f, 0.0f, 1.0f}
-	};
-
-	memcpy(r_entity_matrix, r_identity_matrix, sizeof(r_entity_matrix));
-	r_entity_color[0] = 1;
-	r_entity_color[1] = 1;
-	r_entity_color[2] = 1;
-	r_entity_color[3] = 1;
-
-	R_BeginRenderGBuffer();
-
-	VectorCopy((*r_refdef.vieworg), modelorg);
-#if 0
-	cl_entity_t tempent = { 0 };
-	tempent.model = r_worldmodel;
-	tempent.curstate.rendercolor.r = cshift_water->destcolor[0];
-	tempent.curstate.rendercolor.g = cshift_water->destcolor[1];
-	tempent.curstate.rendercolor.b = cshift_water->destcolor[2];
-#endif
-
-	//TODO: what the heck is this ???
-	r_worldentity->curstate.rendercolor.r = cshift_water->destcolor[0];
-	r_worldentity->curstate.rendercolor.g = cshift_water->destcolor[1];
-	r_worldentity->curstate.rendercolor.b = cshift_water->destcolor[2];
-
-	(*currententity) = r_worldentity;
-	*currenttexture = -1;
-
-	glColor3f(1.0f, 1.0f, 1.0f);
-
-	/*if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		memset(lightmap_polys, 0, sizeof(glpoly_t *) * 1024);
-	}
-	else
-	{
-		memset(lightmap_polys, 0, sizeof(glpoly_t *) * 64);
-	}*/
-
-	GL_DisableMultitexture();
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
 	r_wsurf.bDiffuseTexture = true;
 	r_wsurf.bLightmapTexture = false;
 	r_wsurf.bShadowmapTexture = false;
@@ -4049,6 +3996,41 @@ void R_DrawWorld(void)
 
 	R_SetupSceneUBO();
 	R_SetupDLightUBO();
+}
+
+void R_DrawWorld(void)
+{
+	r_draw_opaque = true;
+
+	const float r_identity_matrix[4][4] = {
+		{1.0f, 0.0f, 0.0f, 0.0f},
+		{0.0f, 1.0f, 0.0f, 0.0f},
+		{0.0f, 0.0f, 1.0f, 0.0f},
+		{0.0f, 0.0f, 0.0f, 1.0f}
+	};
+
+	memcpy(r_entity_matrix, r_identity_matrix, sizeof(r_entity_matrix));
+	r_entity_color[0] = 1;
+	r_entity_color[1] = 1;
+	r_entity_color[2] = 1;
+	r_entity_color[3] = 1;
+
+	R_BeginRenderGBuffer();
+
+	VectorCopy((*r_refdef.vieworg), modelorg);
+
+	//TODO: what the heck is this ???
+	r_worldentity->curstate.rendercolor.r = gWaterColor->r;
+	r_worldentity->curstate.rendercolor.g = gWaterColor->g;
+	r_worldentity->curstate.rendercolor.b = gWaterColor->b;
+
+	(*currententity) = r_worldentity;
+	*currenttexture = -1;
+
+	glColor3f(1.0f, 1.0f, 1.0f);
+
+	GL_DisableMultitexture();
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 	//Skybox always use stencil = 0xFC
 

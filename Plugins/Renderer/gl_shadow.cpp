@@ -302,6 +302,8 @@ bool R_ShouldCastShadow(cl_entity_t *ent)
 
 void R_RenderShadowScene(void)
 {
+	GL_BeginProfile(&Profile_RenderShadowScene);
+
 	vec3_t shadow_angles = { r_shadow_angles->GetValues()[0], r_shadow_angles->GetValues()[1] , r_shadow_angles->GetValues()[2] };
 
 	float max_distance[3] = { r_shadow_high_distance->GetValue(), r_shadow_medium_distance->GetValue(), r_shadow_low_distance->GetValue() };
@@ -345,9 +347,6 @@ void R_RenderShadowScene(void)
 
 	if (R_ShouldRenderShadowScene())
 	{
-		static glprofile_t profile_RenderShadowMap;
-		GL_BeginProfile(&profile_RenderShadowMap, "R_RenderShadowMap");
-
 		GL_BindFrameBuffer(&s_ShadowFBO);
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
@@ -418,8 +417,8 @@ void R_RenderShadowScene(void)
 		glClearDepth(1);
 		glDepthFunc(GL_LEQUAL);
 
-		GL_EndProfile(&profile_RenderShadowMap);
 	}
+	GL_EndProfile(&Profile_RenderShadowScene);
 }
 
 void R_RenderShadowDynamicLights(void)

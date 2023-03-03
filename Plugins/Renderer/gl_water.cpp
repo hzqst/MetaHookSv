@@ -733,8 +733,7 @@ void R_RenderWaterPass(void)
 	if (r_draw_reflectview)
 		return;
 
-	static glprofile_t profile_RenderWaterPass;
-	GL_BeginProfile(&profile_RenderWaterPass, "R_RenderWaterPass");
+	GL_BeginProfile(&Profile_RenderWaterPass);
 
 	refractmap_ready = false;
 	g_VisibleWaterVBO.clear();
@@ -843,6 +842,26 @@ void R_RenderWaterPass(void)
 			{
 				g_VisibleWaterEntity.emplace_back(e);
 				g_VisibleWaterVBO.emplace_back(WaterVBO);
+
+				if ((*cl_waterlevel) >= 2)
+				{
+					auto pSourcePalette = WaterVBO->texture->pPal;
+
+					gWaterColor->r = pSourcePalette[9];
+					gWaterColor->g = pSourcePalette[10];
+					gWaterColor->b = pSourcePalette[11];
+					cshift_water->destcolor[0] = pSourcePalette[9];
+					cshift_water->destcolor[1] = pSourcePalette[10];
+					cshift_water->destcolor[2] = pSourcePalette[11];
+					cshift_water->percent = pSourcePalette[12];
+
+					if (gWaterColor->r == 0 && gWaterColor->g == 0 && gWaterColor->b == 0)
+					{
+						gWaterColor->r = pSourcePalette[0];
+						gWaterColor->g = pSourcePalette[1];
+						gWaterColor->b = pSourcePalette[2];
+					}
+				}
 			}
 		}
 	}
@@ -883,7 +902,7 @@ void R_RenderWaterPass(void)
 		}
 	}
 
-	GL_EndProfile(&profile_RenderWaterPass);
+	GL_EndProfile(&Profile_RenderWaterPass);
 }
 
 void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, cl_entity_t *ent)

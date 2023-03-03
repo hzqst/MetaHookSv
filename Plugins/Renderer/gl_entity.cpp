@@ -61,9 +61,13 @@ void R_EntityComponents_StartFrame(void)
 		p->Decals.clear();
 		p->WaterVBOs.clear();
 		p->ReflectCaches.clear();
+		
+		auto temp = p->next;
 
 		p->next = gpEntityComponentFree;
 		gpEntityComponentFree = p;
+
+		p = temp;
 	}
 	gpEntityComponentActive = NULL;
 	

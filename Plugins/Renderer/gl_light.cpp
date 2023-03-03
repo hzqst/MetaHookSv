@@ -727,8 +727,7 @@ void R_EndRenderGBuffer(void)
 
 	GL_EndFullScreenQuad();
 
-	static glprofile_t profile_EndRenderGBuffer;
-	GL_BeginProfile(&profile_EndRenderGBuffer, "R_EndRenderGBuffer");
+	GL_BeginProfile(&Profile_EndRenderGBuffer);
 
 	//Disable depth write and re-enable later after light pass.
 	glDepthMask(0);
@@ -1042,7 +1041,7 @@ void R_EndRenderGBuffer(void)
 	drawgbuffer = false;
 	gbuffer_mask = -1;
 
-	GL_EndProfile(&profile_EndRenderGBuffer);
+	GL_EndProfile(&Profile_EndRenderGBuffer);
 }
 
 void R_BlitGBufferToFrameBuffer(FBO_Container_t *fbo)

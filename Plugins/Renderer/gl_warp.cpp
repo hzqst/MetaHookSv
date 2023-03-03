@@ -12,21 +12,7 @@ void EmitWaterPolys(msurface_t *fa, int direction)
 	if (r_draw_reflectview)
 		return;
 
-	auto pSourcePalette = fa->texinfo->texture->pPal;
-	gWaterColor->r = pSourcePalette[9];
-	gWaterColor->g = pSourcePalette[10];
-	gWaterColor->b = pSourcePalette[11];
-	cshift_water->destcolor[0] = pSourcePalette[9];
-	cshift_water->destcolor[1] = pSourcePalette[10];
-	cshift_water->destcolor[2] = pSourcePalette[11];
-	cshift_water->percent = pSourcePalette[12];
 
-	if (gWaterColor->r == 0 && gWaterColor->g == 0 && gWaterColor->b == 0)
-	{
-		gWaterColor->r = pSourcePalette[0];
-		gWaterColor->g = pSourcePalette[1];
-		gWaterColor->b = pSourcePalette[2];
-	}
 }
 #endif
 
@@ -41,9 +27,6 @@ void R_DrawSkyBox(void)
 
 	if (!gSkyTexNumber[0])
 		return;
-
-	static glprofile_t profile_DrawSkyBox;
-	GL_BeginProfile(&profile_DrawSkyBox, "R_DrawSkyBox");
 
 	glDisable(GL_BLEND);
 	glDepthMask(0);
@@ -129,6 +112,4 @@ void R_DrawSkyBox(void)
 	GL_UseProgram(0);
 
 	glDepthMask(1);
-
-	GL_EndProfile(&profile_DrawSkyBox);
 }
