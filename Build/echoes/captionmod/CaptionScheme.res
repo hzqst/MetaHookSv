@@ -4,7 +4,7 @@ Scheme
 	{
 		"BaseText"		"255 255 255 255"
 		"Red"		"255 0 0 255"
-		"Orange"		"255 128 0 255"	//
+		"Orange"		"255 128 0 255"	//HEV Suit
 		"Yellow"		"255 255 0 255"	//Seer
 		"Green"		"34 139 34 255"	//H.E.C.U
 		"Blue"		"30 144 255 255"	//Barney
@@ -15,7 +15,8 @@ Scheme
 		"ControlBG"		"0 0 0 100"		//Arkaya siyah plan koyma 
 		"SubtitleBG"		"100 100 100 80"
 		"SweetGreen"	"167 255 34 255"	//Janitor/Agamemnon
-		"DarkerOrange"	"255 204 153 255"	//Alyx
+		"AquaBlue"	"0 204 204 255"	//Eli Vance
+		"DarkerOrange"	"255 204 153 255"	//Alyx Vance
 	}
 
 	BaseSettings
