@@ -1575,7 +1575,7 @@ bool SCR_IsLoadingVisible()
 
 void R_RenderStartFrame()
 {
-	R_InitEntityComponents();
+	R_EntityComponents_StartFrame();
 	R_PrepareDecals();
 	R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
 	R_StudioBoneCaches_StartFrame();
@@ -2090,6 +2090,7 @@ void R_Init(void)
 	R_InitSprite();
 	R_InitPostProcess();
 	R_InitPortal();
+	R_InitEntityComponents();
 
 	R_LoadProgramStates_f();
 }
@@ -2104,6 +2105,7 @@ void R_Shutdown(void)
 	R_ShutdownSprite();
 	R_ShutdownPostProcess();
 	R_ShutdownPortal();
+	R_ShutdownEntityComponents();
 
 	R_FreeMapCvars();
 }

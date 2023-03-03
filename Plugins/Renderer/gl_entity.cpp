@@ -1,7 +1,7 @@
 #include "gl_local.h"
 #include <algorithm>
 
-#define MAX_ENTITY_COMPONENTS 4096
+#define MAX_ENTITY_COMPONENTS 1024
 
 entity_component_t gEntityComponentPool[MAX_ENTITY_COMPONENTS];
 
@@ -25,6 +25,50 @@ void R_InitEntityComponents(void)
 	gEntityComponentPool[MAX_TEMP_ENTITIES - 1].next = NULL;
 	gpEntityComponentFree = &gEntityComponentPool[0];
 	gpEntityComponentActive = NULL;
+
+	g_ClientEntityRenderComponents.clear();
+	g_TempEntityRenderComponents.clear();
+}
+
+void R_ShutdownEntityComponents(void)
+{
+	R_InitEntityComponents();
+}
+
+entity_component_t *R_AllocateEntityComponent(void)
+{
+	if (!gpEntityComponentFree)
+	{
+		gEngfuncs.Con_DPrintf("Overflow entity component!\n");
+		return NULL;
+	}
+
+	auto pTemp = gpEntityComponentFree;
+	gpEntityComponentFree = pTemp->next;
+
+	pTemp->next = gpEntityComponentActive;
+	gpEntityComponentActive = pTemp;
+
+	return pTemp;
+}
+
+void R_EntityComponents_StartFrame(void)
+{
+	auto p = gpEntityComponentActive;
+	while (p)
+	{
+		p->FollowEnts.clear();
+		p->Decals.clear();
+		p->WaterVBOs.clear();
+		p->ReflectCaches.clear();
+
+		p->next = gpEntityComponentFree;
+		gpEntityComponentFree = p;
+	}
+	gpEntityComponentActive = NULL;
+	
+	g_ClientEntityRenderComponents.clear();
+	g_TempEntityRenderComponents.clear();
 }
 
 int EngineGetMaxClientEdicts(void)
@@ -75,23 +119,6 @@ int R_GetTempEntityComponentIndex(cl_entity_t *ent)
 	}
 
 	return -1;
-}
-
-entity_component_t *R_AllocateEntityComponent()
-{
-	if (!gpEntityComponentFree)
-	{
-		gEngfuncs.Con_DPrintf("Overflow entity component!\n");
-		return NULL;
-	}
-
-	auto pTemp = gpEntityComponentFree;
-	gpEntityComponentFree = pTemp->next;
-
-	pTemp->next = gpEntityComponentActive;
-	gpEntityComponentActive = pTemp;
-
-	return pTemp;
 }
 
 entity_component_t *R_GetEntityComponent(cl_entity_t *ent, bool create_if_not_exists)
