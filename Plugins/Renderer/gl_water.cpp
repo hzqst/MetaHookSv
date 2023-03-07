@@ -1,9 +1,8 @@
 #include "gl_local.h"
 #include <sstream>
 
-bool refractmap_ready = false;
-
-vec3_t water_view;
+//renderer
+vec3_t g_CurrentCameraView;
 
 //cvar
 cvar_t *r_water = NULL;
@@ -191,6 +190,7 @@ void R_FreeWaterReflectCache(water_reflect_cache_t *ReflectCache)
 	ReflectCache->color.a = 0;
 	ReflectCache->level = 0;
 	ReflectCache->used = false;
+	ReflectCache->refractmap_ready = false;
 }
 
 void R_ClearWaterReflectCaches(void)
@@ -198,6 +198,7 @@ void R_ClearWaterReflectCaches(void)
 	for (int i = 0; i < _ARRAYSIZE(g_WaterReflectCaches); ++i)
 	{
 		g_WaterReflectCaches[i].used = false;
+		g_WaterReflectCaches[i].refractmap_ready = false;
 	}
 
 	g_iNumWaterReflectCaches = 0;
@@ -307,6 +308,7 @@ water_reflect_cache_t *R_PrepareReflectCache(cl_entity_t *ent, water_vbo_t *Wate
 			ReflectCache->level = WaterVBO->level;
 
 			ReflectCache->used = true;
+			ReflectCache->refractmap_ready = false;
 
 			int index = ReflectCache - g_WaterReflectCaches;
 
@@ -678,7 +680,7 @@ void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
 
 	R_PushRefDef();
 
-	VectorCopy((*r_refdef.vieworg), water_view);
+	VectorCopy((*r_refdef.vieworg), g_CurrentCameraView);
 
 	float vForward[3], vRight[3], vUp[3];
 	gEngfuncs.pfnAngleVectors((*r_refdef.viewangles), vForward, vRight, vUp);
@@ -735,7 +737,6 @@ void R_RenderWaterPass(void)
 
 	GL_BeginProfile(&Profile_RenderWaterPass);
 
-	refractmap_ready = false;
 	g_VisibleWaterVBO.clear();
 	g_VisibleWaterEntity.clear();
 	R_ClearWaterReflectCaches();
@@ -933,7 +934,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 
 	if (WaterVBO->level >= WATER_LEVEL_REFLECT_SKYBOX && WaterVBO->level <= WATER_LEVEL_REFLECT_ENTITY && ReflectCache)
 	{
-		if (!refractmap_ready)
+		if (!ReflectCache->refractmap_ready)
 		{
 			if (drawgbuffer)
 			{
@@ -954,8 +955,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 				//restore states
 				GL_BindFrameBuffer(&s_BackBufferFBO);
 			}
-
-			refractmap_ready = true;
+			ReflectCache->refractmap_ready = true;
 		}
 
 		program_state_t programState = 0;

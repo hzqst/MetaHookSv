@@ -2718,7 +2718,7 @@ void R_SetupFrame(void)
 
 	if (r_draw_reflectview)
 	{
-		(*r_viewleaf) = Mod_PointInLeaf(water_view, r_worldmodel);
+		(*r_viewleaf) = Mod_PointInLeaf(g_CurrentCameraView, r_worldmodel);
 	}
 	else if (r_refdef_SvEngine && r_refdef_SvEngine->useCamera)
 	{

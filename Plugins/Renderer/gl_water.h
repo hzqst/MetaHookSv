@@ -84,6 +84,7 @@ typedef struct water_reflect_cache_s
 	colorVec color;
 	int level;
 	bool used;
+	bool refractmap_ready;
 }water_reflect_cache_t;
 
 typedef struct water_vbo_s
@@ -158,8 +159,7 @@ typedef struct water_vbo_s
 }water_vbo_t;
 
 //renderer
-extern bool refractmap_ready;
-extern vec3_t water_view;
+extern vec3_t g_CurrentCameraView;
 
 //water
 extern water_reflect_cache_t *g_CurrentReflectCache;

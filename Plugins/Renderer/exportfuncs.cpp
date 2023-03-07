@@ -113,6 +113,14 @@ int HUD_Redraw(float time, int intermission)
 			if (g_WaterReflectCaches[0].refractmap)
 				R_DrawHUDQuad_Texture(g_WaterReflectCaches[0].refractmap, glwidth / 2, glheight / 2);
 			break;
+		case 3:
+			if (g_WaterReflectCaches[1].reflectmap)
+				R_DrawHUDQuad_Texture(g_WaterReflectCaches[1].reflectmap, glwidth / 2, glheight / 2);
+			break;
+		case 4:
+			if (g_WaterReflectCaches[1].refractmap)
+				R_DrawHUDQuad_Texture(g_WaterReflectCaches[1].refractmap, glwidth / 2, glheight / 2);
+			break;
 		//case 3:
 		//	R_DrawHUDQuad_Texture(g_LastPortalTextureId, glwidth / 2, glheight / 2);
 		//	break;
