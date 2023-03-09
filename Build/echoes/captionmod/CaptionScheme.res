@@ -3,7 +3,7 @@ Scheme
 	Colors
 	{
 		"BaseText"		"255 255 255 255"
-		"Red"		"255 0 0 255"
+		"Red"		"255 0 0 255"		//Alien Sounds
 		"Orange"		"255 128 0 255"	//HEV Suit
 		"Yellow"		"255 255 0 255"	//Seer
 		"Green"		"34 139 34 255"	//H.E.C.U
