@@ -103,7 +103,7 @@ CDictionary *CViewport::FindDictionary(const char *szValue, dict_t Type)
 
 	while (item->dict)
 	{
-		if (!Q_strcmp(item->dict->m_szTitle.c_str(), szValue) && item->dict->m_Type == Type)
+		if (!Q_stricmp(item->dict->m_szTitle.c_str(), szValue) && item->dict->m_Type == Type)
 			break;
 
 		hash = (hash + 1) % count;
