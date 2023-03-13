@@ -41,6 +41,10 @@ CViewport::CViewport(void) : Panel(NULL, "CaptionViewport")
 	SetProportional(true);
 	m_pSubtitlePanel = NULL;
 	m_szLevelName[0] = 0;
+
+	m_SystemTime = 0;
+	m_OldSystemTime = 0;
+	m_FrameTime = 0;
 }
 
 CViewport::~CViewport(void)
@@ -874,7 +878,7 @@ void CViewport::Init(void)
 void CViewport::StartSubtitle(CDictionary *dict)
 {
 	if (cap_enabled && cap_enabled->value) {
-		m_pSubtitlePanel->StartSubtitle(dict, (*cl_time));
+		m_pSubtitlePanel->StartSubtitle(dict, g_pViewPort->GetSystemTime());
 	}
 }
 
@@ -895,9 +899,23 @@ void CViewport::HideClientUI(void)
 	SetVisible(false);
 }
 
+double CViewport::GetSystemTime(void) const
+{
+	return m_SystemTime;
+}
+
+double CViewport::GetFrameTime(void) const
+{
+	return m_FrameTime;
+}
+
 void CViewport::Paint(void)
 {
 	BaseClass::Paint();
+
+	m_SystemTime = system()->GetCurrentTime();
+	m_FrameTime = m_SystemTime - m_OldSystemTime;
+	m_OldSystemTime = m_SystemTime;
 
 	m_HudMessage.Draw();
 	m_HudMenu.Draw();

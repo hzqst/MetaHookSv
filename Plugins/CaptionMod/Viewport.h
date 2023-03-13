@@ -138,12 +138,17 @@ public:
 	void ChatPrintf(int iPlayerIndex, const wchar_t *buffer);
 	void QuerySubtitlePanelVars(SubtitlePanelVars_t *vars);
 	void UpdateSubtitlePanelVars(SubtitlePanelVars_t *vars);
+	double GetSystemTime(void) const;
+	double GetFrameTime(void) const;
 private:
 	SubtitlePanel *m_pSubtitlePanel;
 	CCSChatDialog *m_pChatDialog;
 	CUtlVector<CDictionary *> m_Dictionary;	
 	CUtlVector<hash_item_t> m_StringsHashTable;
 	char m_szLevelName[256];
+	double m_SystemTime;
+	double m_OldSystemTime;
+	double m_FrameTime;
 };
 
 extern CViewport *g_pViewPort;

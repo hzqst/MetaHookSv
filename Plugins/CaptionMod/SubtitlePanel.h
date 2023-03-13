@@ -33,11 +33,11 @@ public:
 	}
 	virtual bool IsPlaying(void)
 	{
-		return ((*cl_time) >= m_StartTime && (*cl_time) < m_StartTime + m_AnimTime);
+		return (g_pViewPort->GetSystemTime() >= m_StartTime && g_pViewPort->GetSystemTime() < m_StartTime + m_AnimTime);
 	}
 	virtual bool IsDonePlay(void)
 	{
-		return ((*cl_time) >= m_StartTime + m_AnimTime);
+		return (g_pViewPort->GetSystemTime() >= m_StartTime + m_AnimTime);
 	}
 	virtual LineAnim_t GetType(void) = 0;
 	virtual bool Update(void) = 0;
