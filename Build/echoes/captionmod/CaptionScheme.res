@@ -3,12 +3,12 @@ Scheme
 	Colors
 	{
 		"BaseText"		"255 255 255 255"
-		"Red"		"255 0 0 255"		//Alien Sounds
+		"Red"		"255 0 0 255"		//Alien/ Creature enemy sounds
 		"Orange"		"255 128 0 255"	//HEV Suit
 		"Yellow"		"255 255 0 255"	//Seer
 		"Green"		"34 139 34 255"	//H.E.C.U
-		"Blue"		"30 144 255 255"	//Barney
-		"Purple"		"148 0 211 255"	//Train Ride
+		"Blue"		"102 178 255 255"	//Barney
+		"Purple"		"204 103 255 255"	//Train Ride
 		"Gray"		"192 192 192 255"	//Scientists
 		"SweetRed"	"208 104 128 255"	//V.O.X
 		"SweetBlue"	"136 144 176 255"	//G-Man
