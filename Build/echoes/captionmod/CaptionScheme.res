@@ -16,7 +16,7 @@ Scheme
 		"SubtitleBG"		"100 100 100 80"
 		"SweetGreen"	"167 255 34 255"	//Janitor/Agamemnon
 		"AquaBlue"	"0 204 204 255"	//Eli Vance
-		"DarkerOrange"	"255 204 153 255"	//Alyx Vance
+		"SweetOrange"	"255 204 153 255"	//Alyx Vance
 		"Maroon"	"255 87 51 255"	//Collette Green
 		"Tan"	"210 180 140 255"	//Gina Cross
 	}
