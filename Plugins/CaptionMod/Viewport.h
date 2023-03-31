@@ -76,6 +76,7 @@ public:
 	std::string				m_szNext;
 	CDictionary				*m_pNext;
 	textalign_t				m_iTextAlign;
+	bool					m_bIgnoreDistanceLimit;
 	bool					m_bRegex;
 
 	bool					m_bOverrideColor;

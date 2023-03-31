@@ -345,6 +345,7 @@ CDictionary::CDictionary()
 	m_flNextDelay = 0;
 	m_pNext = NULL;
 	m_iTextAlign = ALIGN_DEFAULT;
+	m_bIgnoreDistanceLimit = false;
 	m_bRegex = false;
 	m_bOverrideColor = false;
 	m_bOverrideDuration = false;
@@ -562,16 +563,44 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 		}
 	}
 
-	//Text alignment
+	//Style
 	if(row.size() >= 8)
 	{
-		const char *textalign = row[7].c_str();
-		if(textalign[0] == 'R' || textalign[0] == 'r')
-			m_iTextAlign = ALIGN_RIGHT;
-		else if(textalign[0] == 'C' || textalign[0] == 'c')
-			m_iTextAlign = ALIGN_CENTER;
-		if(textalign[0] == 'L' || textalign[0] == 'l')
-			m_iTextAlign = ALIGN_LEFT;
+		auto &style = row[7];
+		std::regex reg(" ");
+		std::vector<std::string> elems(std::sregex_token_iterator(style.begin(), style.end(), reg, -1), std::sregex_token_iterator());
+
+		for (auto &e : elems)
+		{
+			if (e.size() == 1 && (e[0] == 'R' || e[0] == 'r'))
+			{
+				m_iTextAlign = ALIGN_RIGHT;
+			}
+			else if (e.size() == 1 && (e[0] == 'C' || e[0] == 'c'))
+			{
+				m_iTextAlign = ALIGN_CENTER;
+			}
+			else if (e.size() == 1 && (e[0] == 'L' || e[0] == 'L'))
+			{
+				m_iTextAlign = ALIGN_LEFT;
+			}
+			else if (e == "ALIGN_RIGHT")
+			{
+				m_iTextAlign = ALIGN_RIGHT;
+			}
+			else if (e == "ALIGN_CENTER")
+			{
+				m_iTextAlign = ALIGN_CENTER;
+			}
+			else if (e == "ALIGN_LEFT")
+			{
+				m_iTextAlign = ALIGN_LEFT;
+			}
+			else if (e == "IGNORE_DISTANCE_LIMIT")
+			{
+				m_bIgnoreDistanceLimit = true;
+			}
+		}
 	}
 }
 
