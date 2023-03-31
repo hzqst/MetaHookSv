@@ -572,33 +572,39 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 
 		for (auto &e : elems)
 		{
-			if (e.size() == 1 && (e[0] == 'R' || e[0] == 'r'))
+			if (e.size() > 0)
 			{
-				m_iTextAlign = ALIGN_RIGHT;
-			}
-			else if (e.size() == 1 && (e[0] == 'C' || e[0] == 'c'))
-			{
-				m_iTextAlign = ALIGN_CENTER;
-			}
-			else if (e.size() == 1 && (e[0] == 'L' || e[0] == 'L'))
-			{
-				m_iTextAlign = ALIGN_LEFT;
-			}
-			else if (e == "ALIGN_RIGHT")
-			{
-				m_iTextAlign = ALIGN_RIGHT;
-			}
-			else if (e == "ALIGN_CENTER")
-			{
-				m_iTextAlign = ALIGN_CENTER;
-			}
-			else if (e == "ALIGN_LEFT")
-			{
-				m_iTextAlign = ALIGN_LEFT;
-			}
-			else if (e == "IGNORE_DISTANCE_LIMIT")
-			{
-				m_bIgnoreDistanceLimit = true;
+				e.erase(0, e.find_first_not_of(_T(" \n\r\t")));
+				e.erase(e.find_last_not_of(_T(" \n\r\t")) + 1);
+
+				if (e.size() == 1 && (e[0] == 'R' || e[0] == 'r'))
+				{
+					m_iTextAlign = ALIGN_RIGHT;
+				}
+				else if (e.size() == 1 && (e[0] == 'C' || e[0] == 'c'))
+				{
+					m_iTextAlign = ALIGN_CENTER;
+				}
+				else if (e.size() == 1 && (e[0] == 'L' || e[0] == 'L'))
+				{
+					m_iTextAlign = ALIGN_LEFT;
+				}
+				else if (e == "ALIGN_RIGHT")
+				{
+					m_iTextAlign = ALIGN_RIGHT;
+				}
+				else if (e == "ALIGN_CENTER")
+				{
+					m_iTextAlign = ALIGN_CENTER;
+				}
+				else if (e == "ALIGN_LEFT")
+				{
+					m_iTextAlign = ALIGN_LEFT;
+				}
+				else if (e == "IGNORE_DISTANCE_LIMIT")
+				{
+					m_bIgnoreDistanceLimit = true;
+				}
 			}
 		}
 	}
