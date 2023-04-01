@@ -32,6 +32,7 @@ static qboolean m_bSentenceSound = false;
 static float m_flSentenceDuration = 0;
 int m_iIntermission = 0;
 
+//client.dll
 void *GameViewport = NULL;
 int *g_iVisibleMouse = NULL;
 void *gHud = NULL;
@@ -344,7 +345,7 @@ float S_GetDuration(sfx_t *sfx)
 }
 
 //2015-11-26 added, support added up the duration of sound for zero-duration sentences
-void S_StartWave(sfx_t *sfx)
+void S_StartWave(sfx_t *sfx, float distance)
 {
 	if (!g_pViewPort)
 		return;
@@ -375,8 +376,15 @@ void S_StartWave(sfx_t *sfx)
 		gEngfuncs.Con_Printf((Dict) ? "CaptionMod: Sound [%s] found.\n" : "CaptionMod: Sound [%s] not found.\n", name);
 	}
 
-	if(!Dict)
+	if (!Dict)
+	{
 		return;
+	}
+
+	if (cap_max_distance && cap_max_distance->value > 0 && distance > cap_max_distance->value && !Dict->m_bIgnoreDistanceLimit)
+	{
+		return;
+	}
 
 	//Get duration for zero-duration
 	if(Dict->m_flDuration <= 0)
@@ -609,7 +617,7 @@ char *VOX_LookupString(const char *pszin, int *psentencenum)
 	return NULL;
 }
 
-void S_LoadSentence(const char *pszin)
+void S_LoadSentence(const char *pszin, float distance)
 {
 	char buffer[512];
 	int i, j, k, cword;
@@ -665,7 +673,7 @@ void S_LoadSentence(const char *pszin)
 
 			if (rgvoxword[cword].sfx)
 			{
-				S_StartWave(rgvoxword[cword].sfx);
+				S_StartWave(rgvoxword[cword].sfx, distance);
 			}
 
 			cword++;
@@ -675,7 +683,7 @@ void S_LoadSentence(const char *pszin)
 	}
 }
 
-void S_StartSentence(const char *name)
+void S_StartSentence(const char *name, float distance)
 {
 	if (!g_pViewPort)
 		return;
@@ -698,7 +706,7 @@ void S_StartSentence(const char *name)
 	if (!Dict)
 	{
 		//Parse sentences
-		S_LoadSentence(name + 1);
+		S_LoadSentence(name + 1, distance);
 	}
 }
 
@@ -727,6 +735,7 @@ void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, 
 	if(sfx)
 	{
 		bool bIgnore = false;
+		float distance = 0;
 
 		if (flags & (SND_STOP | SND_CHANGE_VOL | SND_CHANGE_PITCH))
 		{
@@ -738,17 +747,15 @@ void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, 
 			auto level = gEngfuncs.pfnGetLevelName();
 			if (level[0])
 			{
-				if (cap_max_distance && cap_max_distance->value && origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && attenuation > 0)
+				if (origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && attenuation > 0 && EngineGetViewEntity())
 				{
-					auto local = gEngfuncs.GetLocalPlayer();
+					float localorg[3];
+					VectorCopy(EngineGetViewEntity()->origin, localorg);
 
 					float dir[3];
-					VectorSubtract(origin, local->origin, dir);
+					VectorSubtract(origin, localorg, dir);
 
-					auto distance = VectorLength(dir);
-
-					if (distance > cap_max_distance->value)
-						bIgnore = true;
+					distance = VectorLength(dir);
 				}
 			}
 		}
@@ -759,11 +766,11 @@ void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, 
 			{
 				m_bSentenceSound = true;
 				m_flSentenceDuration = 0;
-				S_StartSentence(sfx->name);
+				S_StartSentence(sfx->name, distance);
 			}
 			else
 			{
-				S_StartWave(sfx);
+				S_StartWave(sfx, distance);
 			}
 		}
 	}
@@ -785,6 +792,7 @@ void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, f
 	if(sfx)
 	{
 		bool bIgnore = false;
+		float distance = 0;
 
 		if (flags & (SND_STOP | SND_CHANGE_VOL | SND_CHANGE_PITCH))
 		{
@@ -796,17 +804,15 @@ void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, f
 			auto level = gEngfuncs.pfnGetLevelName();
 			if (level[0])
 			{
-				if (cap_max_distance && cap_max_distance->value && origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && attenuation > 0)
+				if (origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && attenuation > 0 && EngineGetViewEntity())
 				{
-					auto local = gEngfuncs.GetLocalPlayer();
+					float localorg[3];
+					VectorCopy(EngineGetViewEntity()->origin, localorg);
 
 					float dir[3];
-					VectorSubtract(origin, local->origin, dir);
+					VectorSubtract(origin, localorg, dir);
 
-					auto distance = VectorLength(dir);
-
-					if (distance > cap_max_distance->value)
-						bIgnore = true;
+					distance = VectorLength(dir);
 				}
 			}
 		}
@@ -817,11 +823,11 @@ void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, f
 			{
 				m_bSentenceSound = true;
 				m_flSentenceDuration = 0;
-				S_StartSentence(sfx->name);
+				S_StartSentence(sfx->name, distance);
 			}
 			else
 			{
-				S_StartWave(sfx);
+				S_StartWave(sfx, distance);
 			}
 		}
 	}

@@ -2650,7 +2650,6 @@ void R_FillAddress(void)
 		chrome = *(decltype(chrome) *)(addr + 3);
 	}
 
-
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 #define CL_VIEWENTITY_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x50\x6A\x06\xFF\x35\x2A\x2A\x2A\x2A\xE8"
