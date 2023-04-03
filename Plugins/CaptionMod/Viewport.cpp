@@ -346,6 +346,7 @@ CDictionary::CDictionary()
 	m_pNext = NULL;
 	m_iTextAlign = ALIGN_DEFAULT;
 	m_bIgnoreDistanceLimit = false;
+	m_bIgnoreVolumeLimit = false;
 	m_bRegex = false;
 	m_bOverrideColor = false;
 	m_bOverrideDuration = false;
@@ -604,6 +605,10 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 				else if (e == "IGNORE_DISTANCE_LIMIT")
 				{
 					m_bIgnoreDistanceLimit = true;
+				}
+				else if (e == "IGNORE_VOLUME_LIMIT")
+				{
+					m_bIgnoreVolumeLimit = true;
 				}
 			}
 		}

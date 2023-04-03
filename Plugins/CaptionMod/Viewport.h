@@ -77,6 +77,7 @@ public:
 	CDictionary				*m_pNext;
 	textalign_t				m_iTextAlign;
 	bool					m_bIgnoreDistanceLimit;
+	bool					m_bIgnoreVolumeLimit;
 	bool					m_bRegex;
 
 	bool					m_bOverrideColor;
