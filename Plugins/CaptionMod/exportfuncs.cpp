@@ -712,7 +712,14 @@ void S_StartSentence(const char *name, float distance, float avol)
 
 	if(cap_debug && cap_debug->value)
 	{
-		gEngfuncs.Con_Printf((Dict) ? "CaptionMod: SENTENCE [%s] found.\n" : "CaptionMod: SENTENCE [%s] not found.\n", name);
+		if (Dict)
+		{
+			gEngfuncs.Con_Printf("CaptionMod: SENTENCE [%s] found. dist: %.2f, avol: %.2f\n", name, distance, avol);
+		}
+		else
+		{
+			gEngfuncs.Con_Printf("CaptionMod: SENTENCE [%s] not found.\n", name);
+		}
 	}
 
 	m_SentenceDictionary = Dict;
@@ -748,16 +755,16 @@ void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, 
 {
 	if(sfx)
 	{
-		bool bIgnore = false;
+		bool ignore = false;
 		float distance = 0;
 		float avol = 1;
 
 		if (flags & (SND_STOP | SND_CHANGE_VOL | SND_CHANGE_PITCH))
 		{
-			bIgnore = true;
+			ignore = true;
 		}
 
-		if (!bIgnore)
+		if (!ignore)
 		{
 			auto level = gEngfuncs.pfnGetLevelName();
 			if (level[0])
@@ -778,7 +785,7 @@ void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, 
 			}
 		}
 
-		if (!bIgnore)
+		if (!ignore)
 		{
 			if (sfx->name[0] == '!' || sfx->name[0] == '#')
 			{
