@@ -732,15 +732,25 @@ void S_StartSentence(const char *name, float distance, float avol)
 }
 
 //2015-11-26 fixed, to support !SENTENCE and #SENTENCE
-void S_EndSentence(void)
+void S_EndSentence(float distance, float avol)
 {
 	if (!g_pViewPort)
 		return;
 
-	if(!m_SentenceDictionary)
+	if (!m_SentenceDictionary)
 		return;
 
-	//use the total duration we added up before
+	if (!m_SentenceDictionary->m_bIgnoreDistanceLimit && cap_max_distance && cap_max_distance->value > 0 && distance > cap_max_distance->value)
+	{
+		return;
+	}
+
+	if (!m_SentenceDictionary->m_bIgnoreVolumeLimit && cap_min_avol && cap_min_avol->value > 0 && avol < cap_min_avol->value)
+	{
+		return;
+	}
+
+	//Use the total duration added up before
 	if(m_SentenceDictionary->m_flDuration <= 0 && m_flSentenceDuration > 0)
 	{
 		m_SentenceDictionary->m_flDuration = m_flSentenceDuration;
@@ -753,12 +763,12 @@ void S_EndSentence(void)
 //2015-11-26 added, support added up the duration of sound for zero-duration sentences
 void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch)
 {
+	bool ignore = false;
+	float distance = 0;
+	float avol = 1;
+
 	if(sfx)
 	{
-		bool ignore = false;
-		float distance = 0;
-		float avol = 1;
-
 		if (flags & (SND_STOP | SND_CHANGE_VOL | SND_CHANGE_PITCH))
 		{
 			ignore = true;
@@ -804,7 +814,7 @@ void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, 
 
 	if(m_bSentenceSound)
 	{
-		S_EndSentence();
+		S_EndSentence(distance, avol);
 		m_flSentenceDuration = 0;
 		m_bSentenceSound = false;
 	}
@@ -814,12 +824,12 @@ void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, 
 //2015-11-26 added, support added up the duration of sound for zero-duration sentences
 void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch)
 {
+	bool ignore = false;
+	float distance = 0;
+	float avol = 1;
+
 	if(sfx)
 	{
-		bool ignore = false;
-		float distance = 0;
-		float avol = 1;
-
 		if (flags & (SND_STOP | SND_CHANGE_VOL | SND_CHANGE_PITCH))
 		{
 			ignore = true;
@@ -866,7 +876,7 @@ void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, f
 
 	if(m_bSentenceSound)
 	{
-		S_EndSentence();
+		S_EndSentence(distance, avol);
 		m_flSentenceDuration = 0;
 		m_bSentenceSound = false;
 	}
