@@ -1081,129 +1081,129 @@ tride/c0a0_tr_haz.wav,#c0a0_tr_haz,Purple,,#HalfLife_Train,,,C
 tride/c0a0_tr_arrive.wav,#c0a0_tr_arrive,Purple,,#HalfLife_Train,,,C
 tride/c0a0_tr_exit.wav,#c0a0_tr_exit,Purple,,#HalfLife_Train,,,C
 GMANSTUTTER,#GMANSTUTTER,SweetBlue,,,,,C
-gman/Fadein.wav,#Fadein,,,,,,L IGNORE_DISTANCE_LIMIT
-gman/flash.wav,#flash,,,,,,L IGNORE_DISTANCE_LIMIT
-gman/gman_again.wav,#gman_again,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_belong.wav,#gman_belong,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_comebacknow.wav,#gman_comebacknow,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_cutoff.wav,#gman_cutoff,SweetBlue,8,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_dream.wav,#gman_dream,,,,,,L IGNORE_DISTANCE_LIMIT
-gman/gman_fulltalk.wav,#gman_fulltalk,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_getbackhere.wav,#gman_getbackhere,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_huff,#gman_huff,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_inhale.wav,#gman_inhale,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_intro.wav,#gman_intro,,,,,,L IGNORE_DISTANCE_LIMIT
-gman/gman_laugh01.wav,#gman_laugh01,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_meetagain.wav,#gman_meetagain,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_nicetohaveyou.wav,#gman_nicetohaveyou,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_notforlong.wav,#gman_notforlong,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_notsupposed.wav,#gman_notsupposed,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_notthistime.wav,#gman_notthistime,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_ohno.wav,#gman_ohno,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_oldtimes.wav,#gman_oldtimes,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_payattention.wav,#gman_payattention,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_prepare.wav,#gman_prepare,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_ratherbusy.wav,#gman_ratherbusy,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_scare.wav,#gman_scare,,,,,,L IGNORE_DISTANCE_LIMIT
-gman/gman_see.wav,#gman_see,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_snarl01.wav,#gman_snarl01,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_snarl02.wav,#gman_snarl02,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_snarl03.wav,#gman_snarl03,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_thatsallfornow.wav,#gman_thatsallfornow,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_thatwillbeall.wav,#gman_thatwillbeall,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_wellsh.wav,#gman_wellsh,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_wellsh2.wav,#gman_wellsh2,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/gman_wemeet.wav,#gman_wemeet,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
-gman/letgo.wav,#letgo,,,,,,L IGNORE_DISTANCE_LIMIT
-gman/seerremove.wav,#seerremove,,,,,,L IGNORE_DISTANCE_LIMIT
-gman/Whoosh0.wav,#Whoosh0,,,,,,L IGNORE_DISTANCE_LIMIT
-gman/Whoosh1.wav,#Whoosh1,,,,,,L IGNORE_DISTANCE_LIMIT
-gman/Whoosh2.wav,#Whoosh2,,,,,,L IGNORE_DISTANCE_LIMIT
-hgrunt/gr_reload1.wav,#gr_reload1,,,,,,L IGNORE_DISTANCE_LIMIT
-hgrunt/sniper_fire.wav,#sniper_fire,,,,,,L IGNORE_DISTANCE_LIMIT
-HG_GREN0,#HG_GREN0,Green,,#HalfLife_HECU,,,C
-HG_GREN1,#HG_GREN1,Green,,#HalfLife_HECU,,,C
-HG_GREN2,#HG_GREN2,Green,,#HalfLife_HECU,,,C
-HG_GREN3,#HG_GREN3,Green,,#HalfLife_HECU,,,C
-HG_GREN4,#HG_GREN4,Green,,#HalfLife_HECU,,,C
-HG_GREN5,#HG_GREN5,Green,,#HalfLife_HECU,,,C
-HG_GREN6,#HG_GREN6,Green,,#HalfLife_HECU,,,C
-HG_ALERT0,#HG_ALERT0,Green,,#HalfLife_HECU,,,C
-HG_ALERT1,#HG_ALERT1,Green,,#HalfLife_HECU,,,C
-HG_ALERT2,#HG_ALERT2,Green,,#HalfLife_HECU,,,C
-HG_ALERT3,#HG_ALERT3,Green,,#HalfLife_HECU,,,C
-HG_ALERT4,#HG_ALERT4,Green,,#HalfLife_HECU,,,C
-HG_ALERT5,#HG_ALERT5,Green,,#HalfLife_HECU,,,C
-HG_ALERT6,#HG_ALERT6,Green,,#HalfLife_HECU,,,C
-HG_MONST0,#HG_MONST0,Green,,#HalfLife_HECU,,,C
-HG_MONST1,#HG_MONST1,Green,,#HalfLife_HECU,,,C
-HG_MONST2,#HG_MONST2,Green,,#HalfLife_HECU,,,C
-HG_MONST3,#HG_MONST3,Green,,#HalfLife_HECU,,,C
-HG_COVER0,#HG_COVER0,Green,,#HalfLife_HECU,,,C
-HG_COVER1,#HG_COVER1,Green,,#HalfLife_HECU,,,C
-HG_COVER2,#HG_COVER2,Green,,#HalfLife_HECU,,,C
-HG_COVER3,#HG_COVER3,Green,,#HalfLife_HECU,,,C
-HG_COVER4,#HG_COVER4,Green,,#HalfLife_HECU,,,C
-HG_COVER5,#HG_COVER5,Green,,#HalfLife_HECU,,,C
-HG_COVER6,#HG_COVER6,Green,,#HalfLife_HECU,,,C
-HG_COVER7,#HG_COVER7,Green,,#HalfLife_HECU,,,C
-HG_THROW0,#HG_THROW0,Green,,#HalfLife_HECU,,,C
-HG_THROW1,#HG_THROW1,Green,,#HalfLife_HECU,,,C
-HG_THROW2,#HG_THROW2,Green,,#HalfLife_HECU,,,C
-HG_THROW3,#HG_THROW3,Green,,#HalfLife_HECU,,,C
-HG_TAUNT0,#HG_TAUNT0,Green,,#HalfLife_HECU,,,C
-HG_TAUNT1,#HG_TAUNT1,Green,,#HalfLife_HECU,,,C
-HG_TAUNT2,#HG_TAUNT2,Green,,#HalfLife_HECU,,,C
-HG_TAUNT3,#HG_TAUNT3,Green,,#HalfLife_HECU,,,C
-HG_TAUNT4,#HG_TAUNT4,Green,,#HalfLife_HECU,,,C
-HG_TAUNT5,#HG_TAUNT5,Green,,#HalfLife_HECU,,,C
-HG_CHARGE0,#HG_CHARGE0,Green,,#HalfLife_HECU,,,C
-HG_CHARGE1,#HG_CHARGE1,Green,,#HalfLife_HECU,,,C
-HG_CHARGE2,#HG_CHARGE2,Green,,#HalfLife_HECU,,,C
-HG_CHARGE3,#HG_CHARGE3,Green,,#HalfLife_HECU,,,C
-HG_IDLE0,#HG_IDLE0,Green,,#HalfLife_HECU,,,L
-HG_IDLE1,#HG_IDLE1,Green,,#HalfLife_HECU,,,L
-HG_IDLE2,#HG_IDLE2,Green,,#HalfLife_HECU,,,L
-HG_QUEST0,#HG_QUEST0,Green,,#HalfLife_HECU,,,C
-HG_QUEST1,#HG_QUEST1,Green,,#HalfLife_HECU,,,C
-HG_QUEST2,#HG_QUEST2,Green,,#HalfLife_HECU,,,C
-HG_QUEST3,#HG_QUEST3,Green,,#HalfLife_HECU,,,C
-HG_QUEST4,#HG_QUEST4,Green,,#HalfLife_HECU,,,C
-HG_QUEST5,#HG_QUEST5,Green,,#HalfLife_HECU,,,C
-HG_QUEST6,#HG_QUEST6,Green,,#HalfLife_HECU,,,C
-HG_QUEST7,#HG_QUEST7,Green,,#HalfLife_HECU,,,C
-HG_QUEST8,#HG_QUEST8,Green,,#HalfLife_HECU,,,C
-HG_QUEST9,#HG_QUEST9,Green,,#HalfLife_HECU,,,C
-HG_QUEST10,#HG_QUEST10,Green,,#HalfLife_HECU,,,C
-HG_QUEST11,#HG_QUEST11,Green,,#HalfLife_HECU,,,C
-HG_ANSWER0,#HG_ANSWER0,Green,,#HalfLife_HECU,,,C
-HG_ANSWER1,#HG_ANSWER1,Green,,#HalfLife_HECU,,,C
-HG_ANSWER2,#HG_ANSWER2,Green,,#HalfLife_HECU,,,C
-HG_ANSWER3,#HG_ANSWER3,Green,,#HalfLife_HECU,,,C
-HG_ANSWER4,#HG_ANSWER4,Green,,#HalfLife_HECU,,,C
-HG_ANSWER5,#HG_ANSWER5,Green,,#HalfLife_HECU,,,C
-HG_ANSWER6,#HG_ANSWER6,Green,,#HalfLife_HECU,,,C
-HG_CLEAR0,#HG_CLEAR0,Green,,#HalfLife_HECU,,,C
-HG_CLEAR1,#HG_CLEAR1,Green,,#HalfLife_HECU,,,C
-HG_CLEAR2,#HG_CLEAR2,Green,,#HalfLife_HECU,,,C
-HG_CLEAR3,#HG_CLEAR3,Green,,#HalfLife_HECU,,,C
-HG_CLEAR4,#HG_CLEAR4,Green,,#HalfLife_HECU,,,C
-HG_CLEAR5,#HG_CLEAR5,Green,,#HalfLife_HECU,,,C
-HG_CLEAR6,#HG_CLEAR6,Green,,#HalfLife_HECU,,,C
-HG_CLEAR7,#HG_CLEAR7,Green,,#HalfLife_HECU,,,C
-HG_CLEAR8,#HG_CLEAR8,Green,,#HalfLife_HECU,,,C
-HG_CLEAR9,#HG_CLEAR9,Green,,#HalfLife_HECU,,,C
-HG_CLEAR10,#HG_CLEAR10,Green,,#HalfLife_HECU,,,C
-HG_CLEAR11,#HG_CLEAR11,Green,,#HalfLife_HECU,,,C
-HG_CLEAR12,#HG_CLEAR12,Green,,#HalfLife_HECU,,,C
-HG_CHECK0,#HG_CHECK0,Green,,#HalfLife_HECU,,,C
-HG_CHECK1,#HG_CHECK1,Green,,#HalfLife_HECU,,,C
-HG_CHECK2,#HG_CHECK2,Green,,#HalfLife_HECU,,,C
-HG_CHECK3,#HG_CHECK3,Green,,#HalfLife_HECU,,,C
-HG_CHECK4,#HG_CHECK4,Green,,#HalfLife_HECU,,,C
-HG_CHECK5,#HG_CHECK5,Green,,#HalfLife_HECU,,,C
-HG_CHECK6,#HG_CHECK6,Green,,#HalfLife_HECU,,,C
-HG_CHECK7,#HG_CHECK7,Green,,#HalfLife_HECU,,,C
+gman/Fadein.wav,#Fadein,,,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/flash.wav,#flash,,,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_again.wav,#gman_again,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_belong.wav,#gman_belong,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_comebacknow.wav,#gman_comebacknow,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_cutoff.wav,#gman_cutoff,SweetBlue,8,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_dream.wav,#gman_dream,,,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_fulltalk.wav,#gman_fulltalk,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_getbackhere.wav,#gman_getbackhere,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_huff,#gman_huff,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_inhale.wav,#gman_inhale,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_intro.wav,#gman_intro,,,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_laugh01.wav,#gman_laugh01,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_meetagain.wav,#gman_meetagain,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_nicetohaveyou.wav,#gman_nicetohaveyou,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_notforlong.wav,#gman_notforlong,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_notsupposed.wav,#gman_notsupposed,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_notthistime.wav,#gman_notthistime,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_ohno.wav,#gman_ohno,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_oldtimes.wav,#gman_oldtimes,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_payattention.wav,#gman_payattention,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_prepare.wav,#gman_prepare,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_ratherbusy.wav,#gman_ratherbusy,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_scare.wav,#gman_scare,,,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_see.wav,#gman_see,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_snarl01.wav,#gman_snarl01,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_snarl02.wav,#gman_snarl02,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_snarl03.wav,#gman_snarl03,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_thatsallfornow.wav,#gman_thatsallfornow,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_thatwillbeall.wav,#gman_thatwillbeall,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_wellsh.wav,#gman_wellsh,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_wellsh2.wav,#gman_wellsh2,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_wemeet.wav,#gman_wemeet,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/letgo.wav,#letgo,,,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/seerremove.wav,#seerremove,,,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/Whoosh0.wav,#Whoosh0,,,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/Whoosh1.wav,#Whoosh1,,,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/Whoosh2.wav,#Whoosh2,,,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+hgrunt/gr_reload1.wav,#gr_reload1,,,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+hgrunt/sniper_fire.wav,#sniper_fire,,,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+HG_GREN0,#HG_GREN0,Green,2,#HalfLife_HECU,,,C
+HG_GREN1,#HG_GREN1,Green,2,#HalfLife_HECU,,,C
+HG_GREN2,#HG_GREN2,Green,2,#HalfLife_HECU,,,C
+HG_GREN3,#HG_GREN3,Green,2,#HalfLife_HECU,,,C
+HG_GREN4,#HG_GREN4,Green,2,#HalfLife_HECU,,,C
+HG_GREN5,#HG_GREN5,Green,2,#HalfLife_HECU,,,C
+HG_GREN6,#HG_GREN6,Green,2,#HalfLife_HECU,,,C
+HG_ALERT0,#HG_ALERT0,Green,2,#HalfLife_HECU,,,C
+HG_ALERT1,#HG_ALERT1,Green,2,#HalfLife_HECU,,,C
+HG_ALERT2,#HG_ALERT2,Green,2,#HalfLife_HECU,,,C
+HG_ALERT3,#HG_ALERT3,Green,2,#HalfLife_HECU,,,C
+HG_ALERT4,#HG_ALERT4,Green,2,#HalfLife_HECU,,,C
+HG_ALERT5,#HG_ALERT5,Green,2,#HalfLife_HECU,,,C
+HG_ALERT6,#HG_ALERT6,Green,2,#HalfLife_HECU,,,C
+HG_MONST0,#HG_MONST0,Green,2,#HalfLife_HECU,,,C
+HG_MONST1,#HG_MONST1,Green,2,#HalfLife_HECU,,,C
+HG_MONST2,#HG_MONST2,Green,2,#HalfLife_HECU,,,C
+HG_MONST3,#HG_MONST3,Green,2,#HalfLife_HECU,,,C
+HG_COVER0,#HG_COVER0,Green,2,#HalfLife_HECU,,,C
+HG_COVER1,#HG_COVER1,Green,2,#HalfLife_HECU,,,C
+HG_COVER2,#HG_COVER2,Green,2,#HalfLife_HECU,,,C
+HG_COVER3,#HG_COVER3,Green,2,#HalfLife_HECU,,,C
+HG_COVER4,#HG_COVER4,Green,2,#HalfLife_HECU,,,C
+HG_COVER5,#HG_COVER5,Green,2,#HalfLife_HECU,,,C
+HG_COVER6,#HG_COVER6,Green,2,#HalfLife_HECU,,,C
+HG_COVER7,#HG_COVER7,Green,2,#HalfLife_HECU,,,C
+HG_THROW0,#HG_THROW0,Green,2,#HalfLife_HECU,,,C
+HG_THROW1,#HG_THROW1,Green,2,#HalfLife_HECU,,,C
+HG_THROW2,#HG_THROW2,Green,2,#HalfLife_HECU,,,C
+HG_THROW3,#HG_THROW3,Green,2,#HalfLife_HECU,,,C
+HG_TAUNT0,#HG_TAUNT0,Green,2,#HalfLife_HECU,,,C
+HG_TAUNT1,#HG_TAUNT1,Green,2,#HalfLife_HECU,,,C
+HG_TAUNT2,#HG_TAUNT2,Green,2,#HalfLife_HECU,,,C
+HG_TAUNT3,#HG_TAUNT3,Green,2,#HalfLife_HECU,,,C
+HG_TAUNT4,#HG_TAUNT4,Green,2,#HalfLife_HECU,,,C
+HG_TAUNT5,#HG_TAUNT5,Green,2,#HalfLife_HECU,,,C
+HG_CHARGE0,#HG_CHARGE0,Green,2,#HalfLife_HECU,,,C
+HG_CHARGE1,#HG_CHARGE1,Green,2,#HalfLife_HECU,,,C
+HG_CHARGE2,#HG_CHARGE2,Green,2,#HalfLife_HECU,,,C
+HG_CHARGE3,#HG_CHARGE3,Green,2,#HalfLife_HECU,,,C
+hgrunt/gr_idle1.wav,#HG_IDLE0,Green,,#HalfLife_HECU,,,L
+hgrunt/gr_idle2.wav,#HG_IDLE1,Green,,#HalfLife_HECU,,,L
+hgrunt/gr_idle3.wav,#HG_IDLE2,Green,,#HalfLife_HECU,,,L
+HG_QUEST0,#HG_QUEST0,Green,2,#HalfLife_HECU,,,C
+HG_QUEST1,#HG_QUEST1,Green,2,#HalfLife_HECU,,,C
+HG_QUEST2,#HG_QUEST2,Green,2,#HalfLife_HECU,,,C
+HG_QUEST3,#HG_QUEST3,Green,2,#HalfLife_HECU,,,C
+HG_QUEST4,#HG_QUEST4,Green,2,#HalfLife_HECU,,,C
+HG_QUEST5,#HG_QUEST5,Green,2,#HalfLife_HECU,,,C
+HG_QUEST6,#HG_QUEST6,Green,2,#HalfLife_HECU,,,C
+HG_QUEST7,#HG_QUEST7,Green,2,#HalfLife_HECU,,,C
+HG_QUEST8,#HG_QUEST8,Green,2,#HalfLife_HECU,,,C
+HG_QUEST9,#HG_QUEST9,Green,2,#HalfLife_HECU,,,C
+HG_QUEST10,#HG_QUEST10,Green,2,#HalfLife_HECU,,,C
+HG_QUEST11,#HG_QUEST11,Green,2,#HalfLife_HECU,,,C
+HG_ANSWER0,#HG_ANSWER0,Green,2,#HalfLife_HECU,,,C
+HG_ANSWER1,#HG_ANSWER1,Green,2,#HalfLife_HECU,,,C
+HG_ANSWER2,#HG_ANSWER2,Green,2,#HalfLife_HECU,,,C
+HG_ANSWER3,#HG_ANSWER3,Green,2,#HalfLife_HECU,,,C
+HG_ANSWER4,#HG_ANSWER4,Green,2,#HalfLife_HECU,,,C
+HG_ANSWER5,#HG_ANSWER5,Green,2,#HalfLife_HECU,,,C
+HG_ANSWER6,#HG_ANSWER6,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR0,#HG_CLEAR0,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR1,#HG_CLEAR1,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR2,#HG_CLEAR2,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR3,#HG_CLEAR3,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR4,#HG_CLEAR4,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR5,#HG_CLEAR5,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR6,#HG_CLEAR6,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR7,#HG_CLEAR7,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR8,#HG_CLEAR8,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR9,#HG_CLEAR9,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR10,#HG_CLEAR10,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR11,#HG_CLEAR11,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR12,#HG_CLEAR12,Green,2,#HalfLife_HECU,,,C
+HG_CHECK0,#HG_CHECK0,Green,2,#HalfLife_HECU,,,C
+HG_CHECK1,#HG_CHECK1,Green,2,#HalfLife_HECU,,,C
+HG_CHECK2,#HG_CHECK2,Green,2,#HalfLife_HECU,,,C
+HG_CHECK3,#HG_CHECK3,Green,2,#HalfLife_HECU,,,C
+HG_CHECK4,#HG_CHECK4,Green,2,#HalfLife_HECU,,,C
+HG_CHECK5,#HG_CHECK5,Green,2,#HalfLife_HECU,,,C
+HG_CHECK6,#HG_CHECK6,Green,2,#HalfLife_HECU,,,C
+HG_CHECK7,#HG_CHECK7,Green,2,#HalfLife_HECU,,,C
 military/g3_copy.wav,#g3_copy,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
 military/g7_copy_hq.wav,#g7_copy_hq,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
 military/g7_goose3_down.wav,#g7_goose3_down,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
@@ -1310,20 +1310,20 @@ holo/tr_holo_injury.wav,#tr_holo_injury,Orange,,#HalfLife_Hologram,,,C
 holo/tr_holo_leadguard.wav,#tr_holo_leadguard,Orange,,#HalfLife_Hologram,,,C
 holo/tr_holo_usetrain.wav,#tr_holo_usetrain,Orange,,#HalfLife_Hologram,,,C
 holo/tr_holo_done.wav,#tr_holo_done,Orange,,#HalfLife_Hologram,,,C
-seer/nil_alone.wav,#nil_alone,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT
-seer/nil_comes.wav,#nil_comes,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT
-seer/nil_done.wav,#nil_done,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT
-seer/nil_deceive.wav,#nil_deceive,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT
-seer/nil_die.wav,#nil_die,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT
-seer/nil_freeman.wav,#nil_freeman,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT
-seer/nil_last.wav,#nil_last,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT
-seer/nil_man_notman.wav,#nil_man_notman,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT
-seer/nil_now_die.wav,#nil_now_die,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT
-seer/nil_thelast.wav,#nil_thelast,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT
-seer/nil_thetruth.wav,#nil_thetruth,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT
-seer/nil_thieves.wav,#nil_thieves,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT
-seer/nil_slaves.wav,#nil_slaves,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT
-seer/nil_win.wav,#nil_win,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT
+seer/nil_alone.wav,#nil_alone,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_comes.wav,#nil_comes,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_done.wav,#nil_done,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_deceive.wav,#nil_deceive,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_die.wav,#nil_die,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_freeman.wav,#nil_freeman,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_last.wav,#nil_last,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_man_notman.wav,#nil_man_notman,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_now_die.wav,#nil_now_die,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_thelast.wav,#nil_thelast,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_thetruth.wav,#nil_thetruth,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_thieves.wav,#nil_thieves,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_slaves.wav,#nil_slaves,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_win.wav,#nil_win,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 ,,,,,,,
 ,,,,,,,
 MAP2_SCARE,#MAP2_SCARE,Gray,6.5,#HalfLife_Scientist,,,C
@@ -1500,9 +1500,15 @@ turret/tu_fire1.wav,#tu_fire1,Red,1.2,,,,L
 turret/tu_ping.wav,#tu_ping,Red,1.2,,,,L
 turret/tu_retract.wav,#tu_retract,Red,,,,,L
 ,,,,,,,
-player/pl_fallpain1.wav,#pl_fallpain1,,1.2,,,,L
-player/pl_fallpain2.wav,#pl_fallpain2,,1.2,,,,L
-player/pl_fallpain3.wav,#pl_fallpain3,,1.2,,,,L
+player/breathe1.wav,#breathe1,,,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+player/breathe2.wav,#breathe2,,1.2,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+player/geiger5.wav,#geiger,,1.2,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+player/geiger6.wav,#geiger,,1.2,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+player/pl_fallpain1.wav,#pl_fallpain1,,1.2,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+player/pl_fallpain2.wav,#pl_fallpain2,,1.2,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+player/pl_fallpain3.wav,#pl_fallpain3,,1.2,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+player/heartbeat1.wav,#heartbeat1,,1.2,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+player/sprayer.wav,#sprayer,,1.2,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 ,,,,,,,
 buttons/bell1.wav,#bell1,,,,,,L
 buttons/blip1.wav,#blip1,,,,,,L
@@ -1560,144 +1566,144 @@ items/suitchargeno1.wav,#suitchargeno1,,1.2,,,,L
 items/suitcharge1.wav,#suitcharge1,,,,,,L
 items/suitchargeok1.wav,#suitchargeok1,,1.4,,,,L
 ,,,,,,,
-ambience/alien_beacon.wav,#alien_beacon,,,,,,L
-ambience/alien_blipper.wav,#alien_blipper,,,,,,L
-ambience/alien_builder.wav,#alien_builder,,,,,,L
-ambience/alien_chatter.wav,#alien_chatter,,,,,,L
-ambience/alien_creeper.wav,#alien_creeper,,,,,,L
-ambience/alien_cycletone.wav,#alien_cycletone,,,,,,L
-ambience/alien_frantic.wav,#alien_frantic,,,,,,L
-ambience/alien_hollow.wav,#alien_hollow,,,,,,L
-ambience/alien_humongo.wav,#alien_humongo,,,,,,L
-ambience/alien_minddrill.wav,#alien_minddrill,,,,,,L
-ambience/alien_powernode.wav,#alien_powernode,,,,,,L
-ambience/alien_purrmachine.wav,#alien_purrmachine,,,,,,L
-ambience/alien_squit.wav,#alien_squit,,,,,,L
-ambience/alien_twow.wav,#alien_twow,,4,,,,L
-ambience/alien_zonerator.wav,#alien_zonerator,,4,,,,L
-ambience/aliencave1.wav,#aliencave1,,,,,,L
-ambience/alienclicker1.wav,#alienclicker1,,4,,,,L
-ambience/alienfazzle1.wav,#alienfazzle1,,1.5,,,,L
-ambience/alienflyby1.wav,#alienflyby1,,4,,,,L
-ambience/alienlaser1.wav,#alienlaser1,,1.5,,,,L
-ambience/alienvalve1.wav,#alienvalve1,,1.5,,,,L
-ambience/alienvalve2.wav,#alienvalve2,,1.5,,,,L
-ambience/alienvoices1.wav,#alienvoices1,,,,,,L
-ambience/alienwind1.wav,#alienwind1,,,,,,L
-ambience/alienwind2.wav,#alienwind2,,,,,,L
-ambience/bee1.wav,#bee1,,1.5,,,,L
-ambience/bee2.wav,#bee2,,1.5,,,,L
-ambience/biggun1.wav,#biggun1,,1.5,,,,L
-ambience/biggun2.wav,#biggun2,,1.5,,,,L
-ambience/biggun3.wav,#biggun3,,1.5,,,,L
-ambience/bigwarning.wav,#bigwarning,,1.5,,,,L
-ambience/biotone.wav,#biotone,,1.5,,,,L
-ambience/boomer.wav,#boomer,,1.5,,,,L
-ambience/breather.wav,#breather,,,,,,L
-ambience/burning1.wav,#burning1,,,,,,L
-ambience/burning2.wav,#burning2,,,,,,L
-ambience/burning3.wav,#burning3,,,,,,L
-ambience/computalk1.wav,#computalk1,,,,,,L
-ambience/computalk2.wav,#computalk2,,,,,,L
-ambience/cricket.wav,#cricket,,1.2,,,,L
-ambience/crickets.wav,#crickets,,,,,,L
-ambience/crtnoise.wav,#crtnoise,,1.2,,,,L
-ambience/deadsignal1.wav,#deadsignal1,,1.5,,,,L
-ambience/deadsignal2.wav,#deadsignal2,,1.5,,,,L
-ambience/des_wind1.wav,#des_wind1,,,,,,L
-ambience/des_wind2.wav,#des_wind2,,,,,,L
-ambience/des_wind3.wav,#des_wind3,,,,,,L
-ambience/disgusting.wav,#disgusting,,,,,,L
-ambience/distantmortar1.wav,#distantmortar1,,1.5,,,,L
-ambience/distantmortar2.wav,#distantmortar2,,1.5,,,,L
-ambience/distantmortar3.wav,#distantmortar3,,1.5,,,,L
-ambience/drips.wav,#drips,,,,,,L
-ambience/dronemachine1.wav,#dronemachine1,,1.5,,,,L
-ambience/dronemachine2.wav,#dronemachine2,,1.5,,,,L
-ambience/dronemachine3.wav,#dronemachine3,,1.5,,,,L
-ambience/flameburst1.wav,#flameburst1,,,,,,L
-ambience/flies.wav,#flies,,,,,,L
-ambience/goal_1.wav,#goal_1,,,,,,L
-ambience/hammer.wav,#hammer,,,,,,L
-ambience/hawk1.wav,#hawk1,,1.5,,,,L
-ambience/industrial1.wav,#industrial1,,1.5,,,,L
-ambience/industrial2.wav,#industrial2,,1.5,,,,L
-ambience/industrial3.wav,#industrial3,,1.5,,,,L
-ambience/industrial4.wav,#industrial4,,,,,,L
-ambience/jetflyby1.wav,#jetflyby1,,,,,,L
-ambience/labdrone1.wav,#labdrone1,,,,,,L
-ambience/labdrone2.wav,#labdrone2,,,,,,L
-ambience/labgear.wav,#labgear,,4,,,,L
-ambience/labmoan.wav,#labmoan,,1.5,,,,L
-ambience/littlemachine.wav,#littlemachine,,1.5,,,,L
-ambience/loader_hydra1.wav,#loader_hydra1,,1.5,,,,L
-ambience/loader_step1.wav,#loader_step1,,1.5,,,,L
-ambience/mechwhine.wav,#mechwhine,,1.5,,,,L
-ambience/mgun_burst1.wav,#mgun_burst1,,,,,,L
-ambience/mgun_burst2.wav,#mgun_burst2,,1.5,,,,L
-ambience/mgun_burst3.wav,#mgun_burst3,,1.5,,,,L
-ambience/mgun_burst4.wav,#mgun_burst4,,,,,,L
-ambience/particle_suck1.wav,#particle_suck1,,,,,,L
-ambience/particle_suck2.wav,#particle_suck2,,,,,,L
-ambience/port_suckin1.wav,#port_suckin1,,,,,,L
-ambience/port_suckout1.wav,#port_suckout1,,,,,,L
-ambience/pounder.wav,#pounder,,1.5,,,,L
-ambience/pulsemachine.wav,#pulsemachine,,1.5,,,,L
-ambience/pumper.wav,#pumper,,1.5,,,,L
-ambience/quail1.wav,#quail1,,1.2,,,,L
-ambience/rifle1.wav,#rifle1,,1.5,,,,L
-ambience/rifle2.wav,#rifle2,,1.5,,,,L
-ambience/rocket_groan1.wav,#rocket_groan1,,1.5,,,,L
-ambience/rocket_groan2.wav,#rocket_groan2,,1.5,,,,L
-ambience/rocket_groan3.wav,#rocket_groan3,,1.5,,,,L
-ambience/rocket_groan4.wav,#rocket_groan4,,1.5,,,,L
-ambience/rocket_steam1.wav,#rocket_steam1,,,,,,L
-ambience/rocketflame1.wav,#rocketflame1,,,,,,L
-ambience/rocketrumble1.wav,#rocketrumble1,,,,,,L
-ambience/rotormachine.wav,#rotormachine,,1.5,,,,L
-ambience/sandfall1.wav,#sandfall1,,,,,,L
-ambience/sandfall2.wav,#sandfall2,,,,,,L
-ambience/screammachine.wav,#screammachine,,1.5,,,,L
-ambience/signalgear1.wav,#signalgear1,,1.5,,,,L
-ambience/signalgear2.wav,#signalgear2,,1.5,,,,L
-ambience/siren.wav,#siren,,,,,,L
-ambience/sparks.wav,#sparks,,,,,,L
-ambience/squeeks1.wav,#squeeks1,,1.5,,,,L
-ambience/squeeks2.wav,#squeeks2,,1.5,,,,L
-ambience/squirm2.wav,#squirm2,,,,,,L
-ambience/squitch.wav,#squitch,,,,,,L
-ambience/squitch2.wav,#squitch2,,,,,,L
-ambience/steamburst1.wav,#steamburst1,,1.5,,,,L
-ambience/steamjet1.wav,#steamjet1,,1.5,,,,L
-ambience/tankdrivein1.wav,#tankdrivein1,,,,,,L
-ambience/tankdrivein2.wav,#tankdrivein2,,,,,,L
-ambience/tankidle1.wav,#tankidle1,,1.5,,,,L
-ambience/tankidle2.wav,#tankidle2,,,,,,L
-ambience/techamb1.wav,#techamb1,,,,,,L
-ambience/techamb2.wav,#techamb2,,,,,,L
-ambience/the_horror1.wav,#the_horror1,,,,,,L
-ambience/the_horror2.wav,#the_horror2,,,,,,L
-ambience/the_horror3.wav,#the_horror3,,,,,,L
-ambience/the_horror4.wav,#the_horror4,,,,,,L
-ambience/truck1.wav,#truck1,,1.5,,,,L
-ambience/truck2.wav,#truck2,,1.5,,,,L
-ambience/turretrot1.wav,#turretrot1,,1.5,,,,L
-ambience/turretrot2.wav,#turretrot2,,1.5,,,,L
-ambience/warn1.wav,#warn1,,1.5,,,,L
-ambience/warn2.wav,#warn2,,1.5,,,,L
-ambience/warn3.wav,#warn3,,1.5,,,,L
-ambience/waterfall1.wav,#waterfall1,,,,,,L
-ambience/waterfall2.wav,#waterfall2,,,,,,L
-ambience/waterfall3.wav,#waterfall3,,,,,,L
-ambience/wind1.wav,#wind1,,,,,,L
-ambience/wind2.wav,#wind2,,,,,,L
-ambience/wren.wav,#wren,,,,,,L
-ambience/xtal_down1.wav,#xtal_down1,,,,,,L
-ambience/zapmachine.wav,#zapmachine,,4,,,,L
-ambience/zipmachine.wav,#zipmachine,,,,,,L
+ambience/alien_beacon.wav,#alien_beacon,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alien_blipper.wav,#alien_blipper,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alien_builder.wav,#alien_builder,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alien_chatter.wav,#alien_chatter,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alien_creeper.wav,#alien_creeper,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alien_cycletone.wav,#alien_cycletone,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alien_frantic.wav,#alien_frantic,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alien_hollow.wav,#alien_hollow,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alien_humongo.wav,#alien_humongo,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alien_minddrill.wav,#alien_minddrill,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alien_powernode.wav,#alien_powernode,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alien_purrmachine.wav,#alien_purrmachine,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alien_squit.wav,#alien_squit,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alien_twow.wav,#alien_twow,,4,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alien_zonerator.wav,#alien_zonerator,,4,,,,L IGNORE_DISTANCE_LIMIT
+ambience/aliencave1.wav,#aliencave1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alienclicker1.wav,#alienclicker1,,4,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alienfazzle1.wav,#alienfazzle1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alienflyby1.wav,#alienflyby1,,4,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alienlaser1.wav,#alienlaser1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alienvalve1.wav,#alienvalve1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alienvalve2.wav,#alienvalve2,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alienvoices1.wav,#alienvoices1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alienwind1.wav,#alienwind1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/alienwind2.wav,#alienwind2,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/bee1.wav,#bee1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/bee2.wav,#bee2,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/biggun1.wav,#biggun1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/biggun2.wav,#biggun2,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/biggun3.wav,#biggun3,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/bigwarning.wav,#bigwarning,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/biotone.wav,#biotone,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/boomer.wav,#boomer,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/breather.wav,#breather,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/burning1.wav,#burning1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/burning2.wav,#burning2,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/burning3.wav,#burning3,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/computalk1.wav,#computalk1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/computalk2.wav,#computalk2,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/cricket.wav,#cricket,,1.2,,,,L IGNORE_DISTANCE_LIMIT
+ambience/crickets.wav,#crickets,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/crtnoise.wav,#crtnoise,,1.2,,,,L IGNORE_DISTANCE_LIMIT
+ambience/deadsignal1.wav,#deadsignal1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/deadsignal2.wav,#deadsignal2,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/des_wind1.wav,#des_wind1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/des_wind2.wav,#des_wind2,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/des_wind3.wav,#des_wind3,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/disgusting.wav,#disgusting,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/distantmortar1.wav,#distantmortar1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/distantmortar2.wav,#distantmortar2,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/distantmortar3.wav,#distantmortar3,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/drips.wav,#drips,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/dronemachine1.wav,#dronemachine1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/dronemachine2.wav,#dronemachine2,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/dronemachine3.wav,#dronemachine3,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/flameburst1.wav,#flameburst1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/flies.wav,#flies,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/goal_1.wav,#goal_1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/hammer.wav,#hammer,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/hawk1.wav,#hawk1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/industrial1.wav,#industrial1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/industrial2.wav,#industrial2,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/industrial3.wav,#industrial3,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/industrial4.wav,#industrial4,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/jetflyby1.wav,#jetflyby1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/labdrone1.wav,#labdrone1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/labdrone2.wav,#labdrone2,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/labgear.wav,#labgear,,4,,,,L IGNORE_DISTANCE_LIMIT
+ambience/labmoan.wav,#labmoan,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/littlemachine.wav,#littlemachine,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/loader_hydra1.wav,#loader_hydra1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/loader_step1.wav,#loader_step1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/mechwhine.wav,#mechwhine,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/mgun_burst1.wav,#mgun_burst1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/mgun_burst2.wav,#mgun_burst2,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/mgun_burst3.wav,#mgun_burst3,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/mgun_burst4.wav,#mgun_burst4,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/particle_suck1.wav,#particle_suck1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/particle_suck2.wav,#particle_suck2,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/port_suckin1.wav,#port_suckin1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/port_suckout1.wav,#port_suckout1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/pounder.wav,#pounder,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/pulsemachine.wav,#pulsemachine,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/pumper.wav,#pumper,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/quail1.wav,#quail1,,1.2,,,,L IGNORE_DISTANCE_LIMIT
+ambience/rifle1.wav,#rifle1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/rifle2.wav,#rifle2,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/rocket_groan1.wav,#rocket_groan1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/rocket_groan2.wav,#rocket_groan2,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/rocket_groan3.wav,#rocket_groan3,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/rocket_groan4.wav,#rocket_groan4,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/rocket_steam1.wav,#rocket_steam1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/rocketflame1.wav,#rocketflame1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/rocketrumble1.wav,#rocketrumble1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/rotormachine.wav,#rotormachine,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/sandfall1.wav,#sandfall1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/sandfall2.wav,#sandfall2,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/screammachine.wav,#screammachine,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/signalgear1.wav,#signalgear1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/signalgear2.wav,#signalgear2,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/siren.wav,#siren,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/sparks.wav,#sparks,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/squeeks1.wav,#squeeks1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/squeeks2.wav,#squeeks2,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/squirm2.wav,#squirm2,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/squitch.wav,#squitch,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/squitch2.wav,#squitch2,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/steamburst1.wav,#steamburst1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/steamjet1.wav,#steamjet1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/tankdrivein1.wav,#tankdrivein1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/tankdrivein2.wav,#tankdrivein2,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/tankidle1.wav,#tankidle1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/tankidle2.wav,#tankidle2,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/techamb1.wav,#techamb1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/techamb2.wav,#techamb2,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/the_horror1.wav,#the_horror1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/the_horror2.wav,#the_horror2,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/the_horror3.wav,#the_horror3,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/the_horror4.wav,#the_horror4,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/truck1.wav,#truck1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/truck2.wav,#truck2,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/turretrot1.wav,#turretrot1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/turretrot2.wav,#turretrot2,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/warn1.wav,#warn1,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/warn2.wav,#warn2,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/warn3.wav,#warn3,,1.5,,,,L IGNORE_DISTANCE_LIMIT
+ambience/waterfall1.wav,#waterfall1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/waterfall2.wav,#waterfall2,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/waterfall3.wav,#waterfall3,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/wind1.wav,#wind1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/wind2.wav,#wind2,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/wren.wav,#wren,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/xtal_down1.wav,#xtal_down1,,,,,,L IGNORE_DISTANCE_LIMIT
+ambience/zapmachine.wav,#zapmachine,,4,,,,L IGNORE_DISTANCE_LIMIT
+ambience/zipmachine.wav,#zipmachine,,,,,,L IGNORE_DISTANCE_LIMIT
 ,,,,,,,
-weapons/mortar.wav,#mortar,,,,,,L
-weapons/mortarhit.wav,#mortarhit,,,,,,L
+weapons/mortar.wav,#mortar,,,,,,L IGNORE_DISTANCE_LIMIT
+weapons/mortarhit.wav,#mortarhit,,,,,,L IGNORE_DISTANCE_LIMIT
 ,,,,,,,
 car/caralarm.wav,#caralarm,,8,,#caralarmoff,,L
 car/caralarmoff.wav,#caralarmoff,,1,,,,L
@@ -1718,13 +1724,26 @@ dweller/stalker_scream2.wav,#stalker_scream2,Red,,,,,L
 dweller/stalker_scream3.wav,#stalker_scream3,Red,,,,,L
 dweller/stalker_scream4.wav,#stalker_scream4,Red,,,,,L
 ,,,,,,,
+flyer/alienflyby1.wav,#alienflyby1,,,,,,L IGNORE_DISTANCE_LIMIT
+flyer/alienflyby2.wav,#alienflyby2,,,,,,L IGNORE_DISTANCE_LIMIT
+flyer/flyer_appear.wav,#flyer_appear,,,,,,L IGNORE_DISTANCE_LIMIT
+flyer/flyer_idle.wav,#flyer_idle,,,,,,L IGNORE_DISTANCE_LIMIT
+flyer/flyerbeam.wav,#flyerbeam,,,,,,L IGNORE_DISTANCE_LIMIT
+flyer/ospreycrash.wav,#ospreycrash,,,,,,L IGNORE_DISTANCE_LIMIT
+flyer/whoosh_huge1.wav,#whoosh_huge1,,,,,,L IGNORE_DISTANCE_LIMIT
+flyer/whoosh_huge2.wav,#whoosh_huge2,,1.2,,,,L IGNORE_DISTANCE_LIMIT
+flyer/whoosh_large1.wav,#whoosh_large1,,1.2,,,,L IGNORE_DISTANCE_LIMIT
+flyer/whoosh_large4.wav,#whoosh_large4,,1.2,,,,L IGNORE_DISTANCE_LIMIT
+flyer/zapper_warmup1.wav,#zapper_warmup1,,1.2,,,,L IGNORE_DISTANCE_LIMIT
+flyer/zapper_warmup2.wav,#zapper_warmup2,,1.2,,,,L IGNORE_DISTANCE_LIMIT
+,,,,,,,
 common/bodydrop3.wav,#bodydrop3,,1.2,,,,L
 common/bodydrop4.wav,#bodydrop4,,1.2,,,,L
 common/bodysplat.wav,#bodysplat,,1.2,,,,L
-common/breathe1.wav,#breathe1,,,,,,L
-common/breathe2.wav,#breathe2,,1.2,,,,L
-common/heartbeat1.wav,#heartbeat1,,1.2,,,,L
-common/scarebeat.wav,#scarebeat,,1.2,,,,L
+common/breathe1.wav,#breathe1,,,,,,L IGNORE_DISTANCE_LIMIT
+common/breathe2.wav,#breathe2,,1.2,,,,L IGNORE_DISTANCE_LIMIT
+common/heartbeat1.wav,#heartbeat1,,1.2,,,,L IGNORE_DISTANCE_LIMIT
+common/scarebeat.wav,#scarebeat,,1.2,,,,L IGNORE_DISTANCE_LIMIT
 ,,,,,,,
 debris/bustflesh1.wav,#bustflesh1,,,,,,L
 debris/bustflesh2.wav,#bustflesh2,,,,,,L
@@ -1738,66 +1757,66 @@ debris/pushbox1.wav,#pushbox1,,,,,,L
 debris/pushbox2.wav,#pushbox2,,,,,,L
 debris/pushbox3.wav,#pushbox3,,,,,,L
 ,,,,,,,
-intro/intro_siren1.wav,#intro_siren1,,,,,,L
-outtro/airraidsiren.wav,#airraidsiren,,,,,,L
-outtro/citadel_ambient_scream_loop1.wav,#citadel_ambient_scream_loop1,,,,,,L
-outtro/explosion01.wav,#explosion01,,,,,,L
-outtro/explosion02.wav,#explosion02,,,,,,L
-outtro/nuke_final.wav,#nuke_final,,,,,,L
-outtro/portal1.wav,#portal1,,,,,,L
-outtro/portal2.wav,#portal2,,,,,,L
-outtro/portal3.wav,#portal3,,,,,,L
-outtro/portal4.wav,#portal4,,,,,,L
-outtro/seer_scream.wav,#seer_scream,,,,,,L
-outtro/teleport_weird_voices1.wav,#teleport_weird_voices1,,,,,,L
-outtro/teleport_weird_voices2.wav,#teleport_weird_voices2,,,,,,L
+intro/intro_siren1.wav,#intro_siren1,,,,,,L IGNORE_DISTANCE_LIMIT
+outtro/airraidsiren.wav,#airraidsiren,,,,,,L IGNORE_DISTANCE_LIMIT
+outtro/citadel_ambient_scream_loop1.wav,#citadel_ambient_scream_loop1,,,,,,L IGNORE_DISTANCE_LIMIT
+outtro/explosion01.wav,#explosion01,,,,,,L IGNORE_DISTANCE_LIMIT
+outtro/explosion02.wav,#explosion02,,,,,,L IGNORE_DISTANCE_LIMIT
+outtro/nuke_final.wav,#nuke_final,,,,,,L IGNORE_DISTANCE_LIMIT
+outtro/portal1.wav,#portal1,,,,,,L IGNORE_DISTANCE_LIMIT
+outtro/portal2.wav,#portal2,,,,,,L IGNORE_DISTANCE_LIMIT
+outtro/portal3.wav,#portal3,,,,,,L IGNORE_DISTANCE_LIMIT
+outtro/portal4.wav,#portal4,,,,,,L IGNORE_DISTANCE_LIMIT
+outtro/seer_scream.wav,#seer_scream,,,,,,L IGNORE_DISTANCE_LIMIT
+outtro/teleport_weird_voices1.wav,#teleport_weird_voices1,,,,,,L IGNORE_DISTANCE_LIMIT
+outtro/teleport_weird_voices2.wav,#teleport_weird_voices2,,,,,,L IGNORE_DISTANCE_LIMIT
 ,,,,,,,
-env/amb_concrete1.wav,#amb_concrete1,,,,,,L
-env/amb_concrete2.wav,#amb_concrete2,,,,,,L
-env/amb_mechanical.wav,#amb_mechanical,,,,,,L
-env/amb_radio_01.wav,#amb_radio_01,,,,,,L
-env/amb_wind.wav,#amb_wind,,,,,,L
-env/amb_zombies.wav,#amb_zombies,,,,,,L
-env/battle_loop1.wav,#battle_loop1,,,,,,L
-env/battle_loop2.wav,#battle_loop2,,,,,,L
-env/cart_shutdown.wav,#cart_shutdown,,,,,,L
-env/door_smack.wav,#door_smack,,3,,,,L
-env/ear_ringing.wav,#ear_ringing,,,,,,L
-env/electrical_hum1.wav,#electrical_hum1,,2,,,,L
-env/electrical_hum2.wav,#electrical_hum2,,2,,,,L
-env/facility_outdoor.wav,#facility_outdoor,,,,,,L
-env/fire.wav,#fire,,2,,,,L
-env/firebell.wav,#firebell,,2,,,,L
-env/fluorescent.wav,#fluorescent,,,,,,L
-env/generator_alarm.wav,#generator_alarm,,,,,,L
-env/handdryer.wav,#handdryer,,,,,,L
-env/jet_flyby_quick.wav,#jet_flyby_quick,,,,,,L
-env/lightoff.wav,#lightoff,,2,,,,L
-env/metal5.wav,#metal5,,3,,,,L
-env/mgun1.wav,#mgun1,,2,,,,L
-env/mortar_background_01.wav,#mortar_background_01,,,,,,L
-env/osprey_rotors.wav,#osprey_rotors,,,,,,L
-env/osprey_takeoff.wav,#osprey_takeoff,,,,,,L
-env/portalblast.wav,#portalblast,,,,,,L
-env/rumble.wav,#rumble,,,,,,L
-env/scanner.wav,#scanner,,2,,,,L
-env/screamscare.wav,#screamscare,Red,3,,,,L
-env/splash_large.wav,#splash_large,,3,,,,L
-env/steamscare.wav,#steamscare,,2,,,,L
-env/te_strike1.wav,#te_strike1,,2,,,,L
-env/te_strike2.wav,#te_strike2,,2,,,,L
-env/terrain_rumble1.wav,#terrain_rumble1,,,,,,L
-env/toilet.wav,#toilet,,,,,,L
-env/trainhorn.wav,#trainhorn,,,,,,L
+env/amb_concrete1.wav,#amb_concrete1,,,,,,L IGNORE_DISTANCE_LIMIT
+env/amb_concrete2.wav,#amb_concrete2,,,,,,L IGNORE_DISTANCE_LIMIT
+env/amb_mechanical.wav,#amb_mechanical,,,,,,L IGNORE_DISTANCE_LIMIT
+env/amb_radio_01.wav,#amb_radio_01,,,,,,L IGNORE_DISTANCE_LIMIT
+env/amb_wind.wav,#amb_wind,,,,,,L IGNORE_DISTANCE_LIMIT
+env/amb_zombies.wav,#amb_zombies,,,,,,L IGNORE_DISTANCE_LIMIT
+env/battle_loop1.wav,#battle_loop1,,,,,,L IGNORE_DISTANCE_LIMIT
+env/battle_loop2.wav,#battle_loop2,,,,,,L IGNORE_DISTANCE_LIMIT
+env/cart_shutdown.wav,#cart_shutdown,,,,,,L IGNORE_DISTANCE_LIMIT
+env/door_smack.wav,#door_smack,,3,,,,L IGNORE_DISTANCE_LIMIT
+env/ear_ringing.wav,#ear_ringing,,,,,,L IGNORE_DISTANCE_LIMIT
+env/electrical_hum1.wav,#electrical_hum1,,2,,,,L IGNORE_DISTANCE_LIMIT
+env/electrical_hum2.wav,#electrical_hum2,,2,,,,L IGNORE_DISTANCE_LIMIT
+env/facility_outdoor.wav,#facility_outdoor,,,,,,L IGNORE_DISTANCE_LIMIT
+env/fire.wav,#fire,,2,,,,L IGNORE_DISTANCE_LIMIT
+env/firebell.wav,#firebell,,2,,,,L IGNORE_DISTANCE_LIMIT
+env/fluorescent.wav,#fluorescent,,,,,,L IGNORE_DISTANCE_LIMIT
+env/generator_alarm.wav,#generator_alarm,,,,,,L IGNORE_DISTANCE_LIMIT
+env/handdryer.wav,#handdryer,,,,,,L IGNORE_DISTANCE_LIMIT
+env/jet_flyby_quick.wav,#jet_flyby_quick,,,,,,L IGNORE_DISTANCE_LIMIT
+env/lightoff.wav,#lightoff,,2,,,,L IGNORE_DISTANCE_LIMIT
+env/metal5.wav,#metal5,,3,,,,L IGNORE_DISTANCE_LIMIT
+env/mgun1.wav,#mgun1,,2,,,,L IGNORE_DISTANCE_LIMIT
+env/mortar_background_01.wav,#mortar_background_01,,,,,,L IGNORE_DISTANCE_LIMIT
+env/osprey_rotors.wav,#osprey_rotors,,,,,,L IGNORE_DISTANCE_LIMIT
+env/osprey_takeoff.wav,#osprey_takeoff,,,,,,L IGNORE_DISTANCE_LIMIT
+env/portalblast.wav,#portalblast,,,,,,L IGNORE_DISTANCE_LIMIT
+env/rumble.wav,#rumble,,,,,,L IGNORE_DISTANCE_LIMIT
+env/scanner.wav,#scanner,,2,,,,L IGNORE_DISTANCE_LIMIT
+env/screamscare.wav,#screamscare,Red,3,,,,L IGNORE_DISTANCE_LIMIT
+env/splash_large.wav,#splash_large,,3,,,,L IGNORE_DISTANCE_LIMIT
+env/steamscare.wav,#steamscare,,2,,,,L IGNORE_DISTANCE_LIMIT
+env/te_strike1.wav,#te_strike1,,2,,,,L IGNORE_DISTANCE_LIMIT
+env/te_strike2.wav,#te_strike2,,2,,,,L IGNORE_DISTANCE_LIMIT
+env/terrain_rumble1.wav,#terrain_rumble1,,,,,,L IGNORE_DISTANCE_LIMIT
+env/toilet.wav,#toilet,,,,,,L IGNORE_DISTANCE_LIMIT
+env/trainhorn.wav,#trainhorn,,,,,,L IGNORE_DISTANCE_LIMIT
 env/tram1.wav,#tram1,Purple,,HalfLife_Train,,,C
 env/tram2.wav,#tram2,Purple,,HalfLife_Train,,,C
-env/tunnel.wav,#tunnel,,,,,,L
-env/tunnel2.wav,#tunnel2,,,,,,L
-env/vent.wav,#vent,,3,,,,L
-env/water_crash1.wav,#water_crash1,,,,,,L
-env/water_crash2.wav,#water_crash2,,,,,,L
-env/water_flowing1.wav,#water_flowing1,,,,,,L
-env/water_flowing2.wav,#water_flowing2,,,,,,L
-env/water_flowing3.wav,#water_flowing3,,,,,,L
-env/waterrun.wav,#waterrun,,3,,,,L
-env/xen_heart.wav,#xen_heart,,3,,,,L
+env/tunnel.wav,#tunnel,,,,,,L IGNORE_DISTANCE_LIMIT
+env/tunnel2.wav,#tunnel2,,,,,,L IGNORE_DISTANCE_LIMIT
+env/vent.wav,#vent,,3,,,,L IGNORE_DISTANCE_LIMIT
+env/water_crash1.wav,#water_crash1,,,,,,L IGNORE_DISTANCE_LIMIT
+env/water_crash2.wav,#water_crash2,,,,,,L IGNORE_DISTANCE_LIMIT
+env/water_flowing1.wav,#water_flowing1,,,,,,L IGNORE_DISTANCE_LIMIT
+env/water_flowing2.wav,#water_flowing2,,,,,,L IGNORE_DISTANCE_LIMIT
+env/water_flowing3.wav,#water_flowing3,,,,,,L IGNORE_DISTANCE_LIMIT
+env/waterrun.wav,#waterrun,,3,,,,L IGNORE_DISTANCE_LIMIT
+env/xen_heart.wav,#xen_heart,,3,,,,L IGNORE_DISTANCE_LIMIT
