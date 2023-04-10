@@ -782,7 +782,7 @@ void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, 
 				if (origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && attenuation > 0 && EngineGetViewEntity())
 				{
 					float localorg[3];
-					VectorCopy(EngineGetViewEntity()->origin, localorg);
+					VectorCopy((*listener_origin), localorg);
 
 					float dir[3];
 					VectorSubtract(origin, localorg, dir);
@@ -843,7 +843,7 @@ void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, f
 				if (origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && attenuation > 0 && EngineGetViewEntity())
 				{
 					float localorg[3];
-					VectorCopy(EngineGetViewEntity()->origin, localorg);
+					VectorCopy((*listener_origin), localorg);
 
 					float dir[3];
 					VectorSubtract(origin, localorg, dir);

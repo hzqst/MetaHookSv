@@ -88,6 +88,8 @@ extern double *cl_time;
 extern double *cl_oldtime;
 extern int *cl_viewentity;
 
+extern vec3_t *listener_origin;
+
 extern char *(*rgpszrawsentence)[CVOXFILESENTENCEMAX];
 extern int *cszrawsentences;
 

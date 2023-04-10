@@ -32,6 +32,8 @@ int *cszrawsentences = NULL;
 
 int *cl_viewentity = NULL;
 
+vec3_t *listener_origin = NULL;
+
 char (*s_pBaseDir)[512] = NULL;
 
 char m_szCurrentLanguage[128] = { 0 };
@@ -132,6 +134,21 @@ void Engine_FillAddress(void)
 		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_NEW);
 		Sig_AddrNotFound(cl_viewentity);
 		cl_viewentity = *(decltype(cl_viewentity)*)(addr + 2);
+	}
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+#define LISTENER_ORIGIN_SIG_SVENGINE "\xD9\x54\x24\x2A\xD9\x1C\x24\x68\x2A\x2A\x2A\x2A\x50\x6A\x00\x2A\xE8"
+		DWORD addr = (DWORD)Search_Pattern(LISTENER_ORIGIN_SIG_SVENGINE);
+		Sig_AddrNotFound(listener_origin);
+		listener_origin = *(decltype(listener_origin)*)(addr + 8);
+	}
+	else
+	{
+#define LISTENER_ORIGIN_SIG_NEW "\x50\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\xC8"
+		DWORD addr = (DWORD)Search_Pattern(LISTENER_ORIGIN_SIG_NEW);
+		Sig_AddrNotFound(listener_origin);
+		listener_origin = *(decltype(listener_origin)*)(addr + 2);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
