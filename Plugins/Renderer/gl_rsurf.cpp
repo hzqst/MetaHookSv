@@ -114,6 +114,7 @@ void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride, int lightmap_idx
 			dest[0] = blocklights[k].r;
 			dest[1] = blocklights[k].g;
 			dest[2] = blocklights[k].b;
+			dest[3] = 255;
 
 			k ++;
 			dest += LIGHTMAP_BYTES;

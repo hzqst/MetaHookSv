@@ -1869,7 +1869,7 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_leaf_t *vboleaf, bool bUseZPrePass)
 		{
 			WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
 
-			if (r_fullbright->value || r_worldmodel->lightdata)
+			if (r_fullbright->value || !r_worldmodel->lightdata)
 			{
 				WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
 			}
