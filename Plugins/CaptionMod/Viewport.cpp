@@ -131,11 +131,9 @@ CDictionary *CViewport::FindDictionaryRegex(const std::string &str, dict_t Type,
 
 	for(int i = 0; i < m_Dictionary.Count(); ++i)
 	{
-		if (m_Dictionary[i]->m_Type == Type && m_Dictionary[i]->m_bRegex)
+		if (m_Dictionary[i]->m_Type == Type && m_Dictionary[i]->m_pRegex)
 		{
-			std::regex pattern(m_Dictionary[i]->m_szTitle);
-
-			if (std::regex_search(str, result, pattern))
+			if (std::regex_search(str, result, *m_Dictionary[i]->m_pRegex))
 			{
 				return m_Dictionary[i];
 			}
@@ -351,11 +349,16 @@ CDictionary::CDictionary()
 	m_bOverrideColor = false;
 	m_bOverrideDuration = false;
 	m_bDefaultColor = true;
+	m_pRegex = NULL;
 }
 
 CDictionary::~CDictionary()
 {
-
+	if (m_pRegex)
+	{
+		delete m_pRegex;
+		m_pRegex = NULL;
+	}
 }
 
 void StringReplaceW(std::wstring &strBase, const std::wstring &strSrc, const std::wstring &strDst)
@@ -486,8 +489,14 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 		StringReplaceA(m_szTitle, "\\n", "\n");
 		StringReplaceA(m_szTitle, "\\r", "\r");
 	}
+
 	StringReplaceW(m_szSentence, L"\\n", L"\n");
 	StringReplaceW(m_szSentence, L"\\r", L"\r");
+
+	if (m_Type == DICT_NETMESSAGE && m_bRegex)
+	{
+		m_pRegex = new std::regex(m_szTitle);
+	}
 
 	const char *color = row[2].c_str();
 
@@ -786,7 +795,7 @@ void CDictionary::FinalizeString(std::wstring &output, int iPrefix)
 {
 	auto finalize = m_szSentence;
 
-	std::wregex pattern(L"(<([A-Za-z_]+)>)");
+	static std::wregex pattern(L"(<([A-Za-z_]+)>)");
 	std::wsmatch result;
 	std::regex_search(output, result, pattern);
 

@@ -86,6 +86,7 @@ public:
 	Color					m_Color2;
 
 	bool					m_bDefaultColor;
+	std::regex				*m_pRegex;
 };
 
 typedef struct hash_item_s
