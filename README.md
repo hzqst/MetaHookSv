@@ -14,13 +14,9 @@ Most of plugins are still compatible with vanilla GoldSrc engine. please check p
 
 ## Risk of VAC ?
 
-Although using hook is likely to be dangerous in games, there is no VAC ban reported yet.
+There is no VAC ban reported yet.
 
-Btw Sven Co-op is not a [game protected by VAC](https://store.steampowered.com/search/?term=Sven&category2=8)
-
-You can even connect to a "VAC protected" server with `-insecure`, as VAC is not working at all in Sven Co-op.
-
-Use a separate account to play Sven Co-op if you still worry about VAC ban wave. Sven Co-op is a free game.
+The binaries or executables of Sven Co-op are not signed with digital signatures thus no integrity check from VAC would be applied for them.
 
 ## One Click Installation
 
@@ -86,7 +82,7 @@ Let's assume that you have all requirements installed correctly.
 
 * Other games follow the same instruction.
 
-* You should restart Visual Studio IDE to apply changes to debugging profile, if Visual Studio IDE was running.
+* You should restart Visual Studio IDE to apply changes to debugging profile if Visual Studio IDE was running.
 
 ## MetaHookSv (V3) new features compare to nagist's old metahook (V2)
 
@@ -166,6 +162,8 @@ This plugin exposes an interface to communicate with Sven Co-op server.
 
 ### DontFlushSoundCache (Sven Co-op only) (Experimental)
 
+* NOT READY FOR NON-DEVs
+
 This plugin prevents client from flushing soundcache at `retry` (engine issues `retry` command everytime when HTTP download progress is finished), make it possible to preserve soundcache txt downloaded from fastdl resource server (sv_downloadurl).
 
 The fastdl procedure only works when game server uploads current map's soundcache txt to the fastdl resource server. (I am using AliyunOSS)
@@ -201,3 +199,9 @@ Since SvEngine uses FMOD as it's sound system, you really shouldn't use this plu
 https://github.com/LAGonauta/MetaAudio
 
 * MetaAudio blocks goldsrc engine's sound system and replaces with it's own sound engine. You should always put `MetaAudio.dll` on top of any other plugins that rely on goldsrc engine's sound system (i.e CaptionMod) in the `plugins.lst` to prevent those plugins from being blocked by MetaAudio.
+
+### Trinity Renderer (third-party) (GoldSrc only)
+
+This is a port of the original Trinity Renderer for metahook so it can work in Counter Strike 1.6
+
+https://github.com/ollerjoaco/MH_TrinityRender
