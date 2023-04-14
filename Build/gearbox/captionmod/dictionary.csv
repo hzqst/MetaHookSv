@@ -572,10 +572,10 @@ ops/of2a5_bo03.wav,#of2a5_bo03,Red,,,,,C
 ops/of6a2_bo01.wav,#of6a2_bo01,Red,,,,,C
 ops/of6a2_bo02.wav,#of6a2_bo02,Red,,,,,C
 ops/of6a2_bo03.wav,#of6a2_bo03,Red,,,,,C
-gman/of7a0_gm01.wav,#of7a0_gm01,SweetBlue,,,,,C
-gman/of7a0_gm02.wav,#of7a0_gm02,SweetBlue,,,,,C
-gman/of7a0_gm03.wav,#of7a0_gm03,SweetBlue,,,,,C
-gman/of7a0_gm04.wav,#of7a0_gm04,SweetBlue,,,,,C
+gman/of7a0_gm01.wav,#of7a0_gm01,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
+gman/of7a0_gm02.wav,#of7a0_gm02,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
+gman/of7a0_gm03.wav,#of7a0_gm03,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
+gman/of7a0_gm04.wav,#of7a0_gm04,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
 fgrunt/incoming.wav,#incoming,Green,,#HalfLife_HECU,,,C
 fgrunt/grenade.wav,#grenade,Green,,#HalfLife_HECU,,,C
 fgrunt/alert.wav,#alert,Green,,#HalfLife_HECU,,,C
