@@ -482,16 +482,100 @@ C1A0_7,#C1A0_7,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
 C1A0_8,#C1A0_8,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
 NA0,#NA0,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
 NA1,#NA1,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
-ops/of2a5_bo01.wav,#of2a5_bo01,,,,,,C
-ops/of2a5_bo02.wav,#of2a5_bo02,,,,,,C
-ops/of2a5_bo03.wav,#of2a5_bo03,,,,,,C
-ops/of6a2_bo01.wav,#of6a2_bo01,,,,,,C
-ops/of6a2_bo02.wav,#of6a2_bo02,,,,,,C
-ops/of6a2_bo03.wav,#of6a2_bo03,,,,,,C
-gman/of7a0_gm01.wav,#of7a0_gm01,Blue,,,,,C
-gman/of7a0_gm02.wav,#of7a0_gm02,Blue,,,,,C
-gman/of7a0_gm03.wav,#of7a0_gm03,Blue,,,,,C
-gman/of7a0_gm04.wav,#of7a0_gm04,Blue,,,,,C
+NA2,#NA2,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NA3,#NA3,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NA4,#NA4,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NA5,#NA5,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NA6,#NA6,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NA7,#NA7,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NA8,#NA8,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NA9,#NA9,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NA10,#NA10,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NA11,#NA11,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NA12,#NA12,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NA13,#NA13,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NA14,#NA14,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NA15,#NA15,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NA16,#NA16,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NA17,#NA17,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NA18,#NA18,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+EA0,#EA0,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+EA1,#EA1,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+EA2,#EA2,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+EA3,#EA3,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+EA4,#EA4,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+EA5,#EA5,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+EA6,#EA6,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+EA7,#EA7,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+EA8,#EA8,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+ND0,#ND0,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+ND1,#ND1,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+ND2,#ND2,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+ND3,#ND3,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+ND4,#ND4,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+ND5,#ND5,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+ND6,#ND6,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+ND7,#ND7,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+ED0,#ED0,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+ED1,#ED1,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+ED2,#ED2,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+ED3,#ED3,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+ED4,#ED4,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+ED5,#ED5,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+ED6,#ED6,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NF0,#NF0,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NF1,#NF1,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NF3,#NF3,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+EF0,#EF0,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+EF1,#EF1,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+EF3,#EF3,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NFIRE0,#NFIRE0,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+EFIRE0,#EFIRE0,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NCHEM0,#NCHEM0,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+ECHEM0,#ECHEM0,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NG0,#NG0,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NG1,#NG1,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NG2,#NG2,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NH0,#NH0,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+NH1,#NH1,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+EH0,#EH0,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+EH1,#EH1,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+T0,#T0,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+T1,#T1,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+T2,#T2,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+T3,#T3,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+T4,#T4,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+T5,#T5,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+WE0,#WE0,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+WE1,#WE1,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+WE2,#WE2,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+WE3,#WE3,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+DR0,#DR0,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+DR1,#DR1,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+DR2,#DR2,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+DR3,#DR3,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+DR4,#DR4,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+DC0,#DC0,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+DC1,#DC1,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+DC2,#DC2,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+DC3,#DC3,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+DC4,#DC4,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+DB0,#DB0,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+DB1,#DB1,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+DB2,#DB2,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+DB3,#DB3,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+TR_A,#TR_A,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+TR_B,#TR_B,SweetRed,,#HalfLife_VOX,,,C IGNORE_DISTANCE_LIMIT
+ops/of2a5_bo01.wav,#of2a5_bo01,Red,,,,,C
+ops/of2a5_bo02.wav,#of2a5_bo02,Red,,,,,C
+ops/of2a5_bo03.wav,#of2a5_bo03,Red,,,,,C
+ops/of6a2_bo01.wav,#of6a2_bo01,Red,,,,,C
+ops/of6a2_bo02.wav,#of6a2_bo02,Red,,,,,C
+ops/of6a2_bo03.wav,#of6a2_bo03,Red,,,,,C
+gman/of7a0_gm01.wav,#of7a0_gm01,SweetBlue,,,,,C
+gman/of7a0_gm02.wav,#of7a0_gm02,SweetBlue,,,,,C
+gman/of7a0_gm03.wav,#of7a0_gm03,SweetBlue,,,,,C
+gman/of7a0_gm04.wav,#of7a0_gm04,SweetBlue,,,,,C
 fgrunt/incoming.wav,#incoming,Green,,#HalfLife_HECU,,,C
 fgrunt/grenade.wav,#grenade,Green,,#HalfLife_HECU,,,C
 fgrunt/alert.wav,#alert,Green,,#HalfLife_HECU,,,C
