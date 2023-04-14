@@ -13,6 +13,10 @@ struct vgui1_TextImage;
 
 typedef struct
 {	
+	//Engine FileSystem
+
+	int(*FileSystem_SetGameDirectory)(const char *pDefaultDir, const char *pGameDir);
+
 	//vgui2
 	char *(*V_strncpy)(char *a1, const char *a2, size_t a3);
 
@@ -85,6 +89,8 @@ extern double *cl_oldtime;
 
 extern char *(*rgpszrawsentence)[CVOXFILESENTENCEMAX];
 extern int *cszrawsentences;
+
+extern char(*s_pBaseDir)[512];
 
 extern HWND g_MainWnd;
 extern WNDPROC g_MainWndProc;

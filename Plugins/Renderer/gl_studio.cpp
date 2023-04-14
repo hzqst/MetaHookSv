@@ -1226,27 +1226,15 @@ void R_GLStudioDrawPoints(void)
 		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	}
 
-	//auto engine_pauxverts = (*pauxverts);
-	//auto engine_pvlightvalues = (*pvlightvalues);
 	auto engine_pstudiohdr = (*pstudiohdr);
 	auto engine_psubmodel = (*psubmodel);
 
-	//auto pvertbone = ((byte *)engine_pstudiohdr + engine_psubmodel->vertinfoindex);
-	//auto pnormbone = ((byte *)engine_pstudiohdr + engine_psubmodel->norminfoindex);
 	auto ptexturehdr = R_LoadTextures(*r_model);
 	auto ptexture = (mstudiotexture_t *)((byte *)ptexturehdr + ptexturehdr->textureindex);
-
-	//auto pmesh = (mstudiomesh_t *)((byte *)engine_pstudiohdr + engine_psubmodel->meshindex);
-
-	//auto pstudioverts = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->vertindex);
-	//auto pstudionorms = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->normindex);
 
 	auto pskinref = (short *)((byte *)ptexturehdr + ptexturehdr->skinindex);
 
 	int iFlippedVModel = 0;
-
-	//studio_vbo_t *VBOData = g_CurrentVBOCache;
-	//studio_vbo_submodel_t *VBOSubmodel = NULL;
 
 	auto VBOData = R_PrepareStudioVBO(engine_pstudiohdr);
 
@@ -1273,9 +1261,6 @@ void R_GLStudioDrawPoints(void)
 		glDisable(GL_CULL_FACE);
 		iFlippedVModel = 1;
 	}
-
-	//pstudionorms = (vec3_t *)((byte *)engine_pstudiohdr + engine_psubmodel->normindex);
-	//pnormbone = ((byte *)engine_pstudiohdr + engine_psubmodel->norminfoindex);
 
 	for (size_t j = 0; j < VBOSubmodel->vMesh.size(); j++)
 	{

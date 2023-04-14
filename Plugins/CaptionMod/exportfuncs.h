@@ -49,6 +49,10 @@ void KeyValuesSystem_InstallHook(void);
 
 void *NewClientFactory(void);
 
+const char *GetBaseDirectory();
+
+int FileSystem_SetGameDirectory(const char *pDefaultDir, const char *pGameDir);
+
 IBaseInterface *NewCreateInterface(const char *pName, int *pReturnCode);
 
 void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);

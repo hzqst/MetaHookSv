@@ -50,30 +50,32 @@ int EngineGetMaxDLight(void)
 
 void R_ClearWSurfVBOCache(void)
 {
-	for (size_t i =0 ;i < g_WSurfVBOCache.size(); ++i)
+	for (size_t i = 0;i < g_WSurfVBOCache.size(); ++i)
 	{
 		if (g_WSurfVBOCache[i])
 		{
 			auto &VBOCache = g_WSurfVBOCache[i];
+
 			if (VBOCache->hEntityUBO)
 			{
 				GL_DeleteBuffer(VBOCache->hEntityUBO);
-				VBOCache->hEntityUBO = NULL;
+				VBOCache->hEntityUBO = 0;
 			}
+
 			if (VBOCache->hDecalEBO)
 			{
 				GL_DeleteBuffer(VBOCache->hDecalEBO);
-				VBOCache->hDecalEBO = NULL;
+				VBOCache->hDecalEBO = 0;
 			}
 
-			for (size_t j = 0; j < VBOCache->vLeafStorage.size(); ++j)
+			for (size_t j = 0; j < VBOCache->vLeaves.size(); ++j)
 			{
-				auto VBOLeaf = VBOCache->vLeafStorage[j];
+				auto VBOLeaf = VBOCache->vLeaves[j];
 
 				if (VBOLeaf->hEBO)
 				{
 					GL_DeleteBuffer(VBOLeaf->hEBO);
-					VBOLeaf->hEBO = NULL;
+					VBOLeaf->hEBO = 0;
 				}
 
 				for (size_t k = 0; k < WSURF_TEXCHAIN_MAX; ++k)
@@ -86,12 +88,10 @@ void R_ClearWSurfVBOCache(void)
 				delete VBOLeaf;
 			}
 
-			VBOCache->vLeafStorage.clear();
 			VBOCache->vLeaves.clear();
 			
 			delete g_WSurfVBOCache[i];
 		}
-		g_WSurfVBOCache[i] = NULL;
 	}
 	g_WSurfVBOCache.clear();
 }
@@ -123,6 +123,12 @@ const program_state_name_t s_WSurfProgramStateName[] = {
 { WSURF_ADDITIVE_BLEND_ENABLED		,"WSURF_ADDITIVE_BLEND_ENABLED"},
 { WSURF_OIT_ALPHA_BLEND_ENABLED		,"WSURF_OIT_ALPHA_BLEND_ENABLED"},
 { WSURF_OIT_ADDITIVE_BLEND_ENABLED	,"WSURF_OIT_ADDITIVE_BLEND_ENABLED"},
+{ WSURF_FULLBRIGHT_ENABLED			,"WSURF_FULLBRIGHT_ENABLED"},
+{ WSURF_COLOR_FILTER_ENABLED		,"WSURF_COLOR_FILTER_ENABLED"},
+{ WSURF_LIGHTMAP_INDEX_0_ENABLED	,"WSURF_LIGHTMAP_INDEX_0_ENABLED"},
+{ WSURF_LIGHTMAP_INDEX_1_ENABLED	,"WSURF_LIGHTMAP_INDEX_1_ENABLED"},
+{ WSURF_LIGHTMAP_INDEX_2_ENABLED	,"WSURF_LIGHTMAP_INDEX_2_ENABLED"},
+{ WSURF_LIGHTMAP_INDEX_3_ENABLED	,"WSURF_LIGHTMAP_INDEX_3_ENABLED"},
 };
 
 void R_SaveWSurfProgramStates(void)
@@ -167,7 +173,8 @@ void R_LoadWSurfProgramStates(void)
 			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
 			szReadLine[sizeof(szReadLine) - 1] = 0;
 
-			int ProgramState = -1;
+			uint64_t ProgramState = 0;
+			bool filled = false;
 			bool quoted = false;
 			char token[256];
 			char *p = szReadLine;
@@ -179,6 +186,7 @@ void R_LoadWSurfProgramStates(void)
 					if (!strcmp(token, "NONE"))
 					{
 						ProgramState = 0;
+						filled = true;
 						break;
 					}
 					else
@@ -187,9 +195,8 @@ void R_LoadWSurfProgramStates(void)
 						{
 							if (!strcmp(token, s_WSurfProgramStateName[i].name))
 							{
-								if(ProgramState == -1)
-									ProgramState = 0;
 								ProgramState |= s_WSurfProgramStateName[i].state;
+								filled = true;
 							}
 						}
 					}
@@ -203,8 +210,10 @@ void R_LoadWSurfProgramStates(void)
 					break;
 			}
 
-			if(ProgramState != -1)
+			if (filled)
+			{
 				R_UseWSurfProgram(ProgramState, NULL);
+			}
 		}
 		g_pFileSystem->Close(FileHandle);
 	}
@@ -212,7 +221,7 @@ void R_LoadWSurfProgramStates(void)
 	GL_UseProgram(0);
 }
 
-void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
+void R_UseWSurfProgram(uint64_t state, wsurf_program_t *progOutput)
 {
 	wsurf_program_t prog = { 0 };
 
@@ -299,7 +308,25 @@ void R_UseWSurfProgram(int state, wsurf_program_t *progOutput)
 		if ((state & WSURF_OIT_ADDITIVE_BLEND_ENABLED) && bUseOITBlend)
 			defs << "#define OIT_ADDITIVE_BLEND_ENABLED\n";
 
-		if(glewIsSupported("GL_NV_bindless_texture"))
+		if ((state & WSURF_FULLBRIGHT_ENABLED))
+			defs << "#define FULLBRIGHT_ENABLED\n";
+
+		if ((state & WSURF_COLOR_FILTER_ENABLED))
+			defs << "#define COLOR_FILTER_ENABLED\n";
+
+		if ((state & WSURF_LIGHTMAP_INDEX_0_ENABLED))
+			defs << "#define LIGHTMAP_INDEX_0_ENABLED\n";
+
+		if ((state & WSURF_LIGHTMAP_INDEX_1_ENABLED))
+			defs << "#define LIGHTMAP_INDEX_1_ENABLED\n";
+
+		if ((state & WSURF_LIGHTMAP_INDEX_2_ENABLED))
+			defs << "#define LIGHTMAP_INDEX_2_ENABLED\n";
+
+		if ((state & WSURF_LIGHTMAP_INDEX_3_ENABLED))
+			defs << "#define LIGHTMAP_INDEX_3_ENABLED\n";
+
+		if (glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define UINT64_ENABLED\n";
 	
 		defs << "#define SHADOW_TEXTURE_OFFSET (1.0 / " << std::dec << r_shadow_texture.size << ".0)\n";
@@ -407,7 +434,7 @@ void R_FreeVertexBuffer(void)
 	r_wsurf.vFaceBuffer.clear();
 }
 
-void R_BrushLinkTextureChain(model_t *mod)
+void R_BrushModelLinkTextureChain(model_t *mod)
 {
 	auto psurf = &mod->surfaces[mod->firstmodelsurface];
 	for (int i = 0; i < mod->nummodelsurfaces; i++, psurf++)
@@ -416,6 +443,7 @@ void R_BrushLinkTextureChain(model_t *mod)
 
 		if (psurf->flags & SURF_DRAWTURB)
 		{
+			//TODO water?
 			continue;
 		}
 		else if (psurf->flags & SURF_DRAWSKY)
@@ -428,11 +456,86 @@ void R_BrushLinkTextureChain(model_t *mod)
 	}
 }
 
+void R_RecursiveFindLeaves(mnode_t *node, std::set<mleaf_t *> &vLeafs)
+{
+	if (node->contents < 0)
+	{
+		auto pleaf = (mleaf_t *)node;
+
+		vLeafs.emplace(pleaf);
+		return;
+	}
+
+	R_RecursiveFindLeaves(node->children[0], vLeafs);
+
+	R_RecursiveFindLeaves(node->children[1], vLeafs);
+}
+
+void R_MarkPVSForLeaf(mleaf_t *leaf)
+{
+	(*r_visframecount)++;
+
+	auto vis = Mod_LeafPVS(leaf, r_worldmodel);
+
+	for (int j = 0; j < r_worldmodel->numleafs; j++)
+	{
+		if (vis[j >> 3] & (1 << (j & 7)))
+		{
+			auto node = (mnode_t *)&r_worldmodel->leafs[j + 1];
+
+			do
+			{
+				if (node->visframe == (*r_visframecount))
+					break;
+
+				node->visframe = (*r_visframecount);
+				node = node->parent;
+
+			} while (node);
+		}
+	}
+}
+
+void R_RecursiveMarkSurfaces(mnode_t *node)
+{
+	if (node->contents == CONTENTS_SOLID)
+		return;
+
+	//r_visframecount is updated only when you encounter a new leaf
+	//while r_framecount is updated every new frame
+	if (node->visframe != (*r_visframecount))
+		return;
+
+	if (node->contents < 0)
+	{
+		auto pleaf = (mleaf_t *)node;
+
+		auto mark = pleaf->firstmarksurface;
+		auto c = pleaf->nummarksurfaces;
+
+		if (c)
+		{
+			do
+			{
+				(*mark)->visframe = (*r_framecount);
+				mark++;
+			} while (--c);
+		}
+		return;
+	}
+
+	R_RecursiveMarkSurfaces(node->children[0]);
+
+	R_RecursiveMarkSurfaces(node->children[1]);
+}
+
 void R_RecursiveLinkTextureChain(mnode_t *node)
 {
 	if (node->contents == CONTENTS_SOLID)
 		return;
 
+	//r_visframecount is updated only when you encounter a new leaf
+	//while r_framecount is updated every new frame
 	if (node->visframe != (*r_visframecount))
 		return;
 
@@ -449,6 +552,10 @@ void R_RecursiveLinkTextureChain(mnode_t *node)
 
 		for (; c; c--, surf++)
 		{
+			// Filter out invisible surfaces
+			if (surf->visframe != (*r_framecount))
+				continue;
+
 			surf->texturechain = surf->texinfo->texture->texturechain;
 			surf->texinfo->texture->texturechain = surf;
 		}
@@ -523,13 +630,13 @@ void R_GenerateIndicesForTexChain(msurface_t *s, brushtexchain_t *texchain, std:
 	}
 }
 
-void R_SortTextureChain(wsurf_vbo_leaf_t *vboleaf, int iTexchainType)
+void R_SortTextureChain(wsurf_vbo_leaf_t *vboleaf, int iTexchainId)
 {
-	vboleaf->vTextureChain[iTexchainType].shrink_to_fit();
+	vboleaf->vTextureChain[iTexchainId].shrink_to_fit();
 
-	for (size_t i = 0; i < vboleaf->vTextureChain[iTexchainType].size(); ++i)
+	for (size_t i = 0; i < vboleaf->vTextureChain[iTexchainId].size(); ++i)
 	{
-		auto &texchain = vboleaf->vTextureChain[iTexchainType][i];
+		auto &texchain = vboleaf->vTextureChain[iTexchainId][i];
 
 		auto pcache = texchain.pDetailTextureCache;
 		if (pcache)
@@ -548,31 +655,31 @@ void R_SortTextureChain(wsurf_vbo_leaf_t *vboleaf, int iTexchainType)
 		}
 	}
 
-	std::sort(vboleaf->vTextureChain[iTexchainType].begin(), vboleaf->vTextureChain[iTexchainType].end(), [](const brushtexchain_t &a, const brushtexchain_t &b) {
+	std::sort(vboleaf->vTextureChain[iTexchainId].begin(), vboleaf->vTextureChain[iTexchainId].end(), [](const brushtexchain_t &a, const brushtexchain_t &b) {
 		return b.iDetailTextureFlags > a.iDetailTextureFlags;
 	});
 }
 
-void R_GenerateDrawBatch(wsurf_vbo_leaf_t *vboleaf, int iTexchainType, int iDrawBatchType)
+void R_GenerateDrawBatch(wsurf_vbo_leaf_t *vboleaf, int iTexchainId, int iDrawBatchId)
 {
-	int detailTextureFlags = -1;
+	int iDetailTextureFlags = -1;
 	wsurf_vbo_batch_t *batch = NULL;
 
-	for (size_t i = 0; i < vboleaf->vTextureChain[iTexchainType].size(); ++i)
+	for (size_t i = 0; i < vboleaf->vTextureChain[iTexchainId].size(); ++i)
 	{
-		auto &texchain = vboleaf->vTextureChain[iTexchainType][i];
+		auto &texchain = vboleaf->vTextureChain[iTexchainId][i];
 
-		if (texchain.iDetailTextureFlags != detailTextureFlags)
+		if (texchain.iDetailTextureFlags != iDetailTextureFlags)
 		{
 			if (batch)
 			{
 				batch->vStartIndex.shrink_to_fit();
 				batch->vIndiceCount.shrink_to_fit();
-				vboleaf->vDrawBatch[iDrawBatchType].emplace_back(batch);
+				vboleaf->vDrawBatch[iDrawBatchId].emplace_back(batch);
 				batch = NULL;
 			}
 
-			detailTextureFlags = texchain.iDetailTextureFlags;			
+			iDetailTextureFlags = texchain.iDetailTextureFlags;
 		}
 
 		if (!batch)
@@ -592,7 +699,7 @@ void R_GenerateDrawBatch(wsurf_vbo_leaf_t *vboleaf, int iTexchainType, int iDraw
 	{
 		batch->vStartIndex.shrink_to_fit();
 		batch->vIndiceCount.shrink_to_fit();
-		vboleaf->vDrawBatch[iDrawBatchType].emplace_back(batch);
+		vboleaf->vDrawBatch[iDrawBatchId].emplace_back(batch);
 		batch = NULL;
 	}
 }
@@ -664,7 +771,14 @@ void R_GenerateTexChain(model_t *mod, wsurf_vbo_leaf_t *vboleaf, std::vector<uns
 						//rtable not initialized?
 						if ((*rtable)[0][0] == 0)
 						{
-							gRefFuncs.R_TextureAnimation(s);
+							//gRefFuncs.R_TextureAnimation(s);
+							for (auto tu = 0; tu < 20; tu++)
+							{
+								for (auto tv = 0; tv < 20; tv++)
+								{
+									(*rtable)[tu][tv] = gEngfuncs.pfnRandomLong(0, 0x7FFF);
+								}
+							}
 						}
 
 						int *texchainMapper = new int[numtexturechain];
@@ -837,85 +951,58 @@ void R_GenerateTexChain(model_t *mod, wsurf_vbo_leaf_t *vboleaf, std::vector<uns
 	}
 }
 
-wsurf_vbo_leaf_t *R_FindLeafStorage(wsurf_vbo_t *modvbo, CRC32_t crc)
-{
-	for (size_t i = 0; i < modvbo->vLeafStorage.size(); ++i)
-	{
-		if (modvbo->vLeafStorage[i]->crc == crc)
-		{
-			return modvbo->vLeafStorage[i];
-		}
-	}
-	return NULL;
-}
+/*
+Generate leaf array for brush model
+*/
 
 void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 {
 	if (mod == r_worldmodel)
 	{
-		//(*r_visframecount) = 0;
-
 		std::vector<unsigned int> vIndicesBuffer;
 
-		modvbo->vLeaves.resize(r_worldmodel->numframes);
-		modvbo->vLeafStorage.reserve(r_worldmodel->numframes);
+		std::set<mleaf_t *> vPossibleLeafs;
+		R_RecursiveFindLeaves(mod->nodes, vPossibleLeafs);
 
-		for (int i = 0; i < r_worldmodel->numframes; ++i)
+		modvbo->vLeaves.resize(vPossibleLeafs.size());
+
+		for (auto &leaf : vPossibleLeafs)
 		{
-			R_MarkPVSLeaves(i);
+			int leafindex = leaf - mod->leafs;
+			
+			(*r_framecount)++;
+
+			R_MarkPVSForLeaf(leaf);
 
 			auto vboleaf = new wsurf_vbo_leaf_t;
 
+			R_RecursiveMarkSurfaces(mod->nodes);
 			R_RecursiveLinkTextureChain(mod->nodes);
-
-			vIndicesBuffer.clear();
 
 			R_GenerateTexChain(mod, vboleaf, vIndicesBuffer);
 
-			CRC32_t indiceCRC;
-			CRC32_Init(&indiceCRC);
-			CRC32_ProcessBuffer(&indiceCRC, vIndicesBuffer.data(), sizeof(unsigned int) * vIndicesBuffer.size());
-			indiceCRC = CRC32_Final(indiceCRC);
+			R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_STATIC);
+			R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_ANIM);
 
-			auto oldleaf = R_FindLeafStorage(modvbo, indiceCRC);
+			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_STATIC);
+			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID);
+			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID);
 
-			if (oldleaf)
-			{
-				delete vboleaf;
-				modvbo->vLeaves[i] = oldleaf;
-			}
-			else
-			{
-				R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_STATIC);
-				R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_ANIM);
+			vboleaf->hEBO = GL_GenBuffer();
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboleaf->hEBO);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * vIndicesBuffer.size(), vIndicesBuffer.data(), GL_STATIC_DRAW);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-				R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_STATIC);
-				R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID);
-				R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID);
+			vIndicesBuffer.clear();
 
-				vboleaf->hEBO = GL_GenBuffer();
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboleaf->hEBO);
-				glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * vIndicesBuffer.size(), vIndicesBuffer.data(), GL_STATIC_DRAW);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-				vboleaf->crc = indiceCRC;
-
-				modvbo->vLeafStorage.emplace_back(vboleaf);
-				modvbo->vLeaves[i] = vboleaf;
-
-			}
+			modvbo->vLeaves[leafindex] = vboleaf;
 		}
-
-		modvbo->vLeafStorage.shrink_to_fit();
-		modvbo->vLeaves.shrink_to_fit();
-
-		//(*r_visframecount) = 0;
-	}
+ 	}
 	else
 	{
 		auto vboleaf = new wsurf_vbo_leaf_t;
 
-		R_BrushLinkTextureChain(mod);
+		R_BrushModelLinkTextureChain(mod);
 
 		std::vector<unsigned int> vIndicesBuffer;
 
@@ -935,9 +1022,6 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 
 		modvbo->vLeaves.resize(1);
 		modvbo->vLeaves[0] = vboleaf;
-
-		modvbo->vLeafStorage.resize(1);
-		modvbo->vLeafStorage[0] = vboleaf;
 	}
 
 	modvbo->hEntityUBO = GL_GenBuffer();
@@ -993,21 +1077,14 @@ void R_GenerateWorldTextures(void)
 	}
 }
 
+#if 0
 void Mod_LoadBrushModel(model_t *mod, void *buffer)
 {
+	auto current_loadmodel = (*loadmodel);
+
 	gRefFuncs.Mod_LoadBrushModel(mod, buffer);
-
-	auto header = (dheader_t * )buffer;
-
-	auto lump = &header->lumps[LUMP_LEAFS];
-
-	auto count = lump->filelen / sizeof(dleaf_t);
-
-	//Get correct leaf count here!!!
-
-	mod->numframes = count;
-	//mod->numleafs |= ((count << 16) & 0xFFFF0000ul);
 }
+#endif
 
 int R_FindTextureIdByTexture(texture_t *ptex)
 {
@@ -1137,6 +1214,7 @@ void R_GenerateVertexBuffer(void)
 					Vertexes[0].speculartexcoord[0] = specularScale[0];
 					Vertexes[0].speculartexcoord[1] = specularScale[1];
 					Vertexes[0].texindex = R_FindTextureIdByTexture(ptexture);
+					memcpy(&Vertexes[0].styles, surf[i].styles, sizeof(surf[i].styles));
 
 					vVertexBuffer.emplace_back(Vertexes[0]);
 					iNumVerts++;
@@ -1188,6 +1266,7 @@ void R_GenerateVertexBuffer(void)
 					Vertexes[j].speculartexcoord[0] = specularScale[0];
 					Vertexes[j].speculartexcoord[1] = specularScale[1];
 					Vertexes[j].texindex = R_FindTextureIdByTexture(ptexture);
+					memcpy(&Vertexes[j].styles, surf[i].styles, sizeof(surf[i].styles));
 				}
 				vVertexBuffer.emplace_back(Vertexes[0]);
 				vVertexBuffer.emplace_back(Vertexes[1]);
@@ -1226,6 +1305,7 @@ void R_GenerateVertexBuffer(void)
 					Vertexes[2].speculartexcoord[0] = specularScale[0];
 					Vertexes[2].speculartexcoord[1] = specularScale[1];
 					Vertexes[2].texindex = R_FindTextureIdByTexture(ptexture);
+					memcpy(&Vertexes[2].styles, surf[i].styles, sizeof(surf[i].styles));
 
 					vVertexBuffer.emplace_back(Vertexes[0]);
 					vVertexBuffer.emplace_back(Vertexes[1]);
@@ -1372,7 +1452,7 @@ wsurf_vbo_t *R_PrepareWSurfVBO(model_t *mod)
 
 void R_DrawWSurfVBOSolid(wsurf_vbo_leaf_t *vboleaf)
 {
-	int WSurfProgramState = 0;
+	uint64_t WSurfProgramState = 0;
 
 	if (drawgbuffer)
 	{
@@ -1423,6 +1503,33 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 		if (r_wsurf.bLightmapTexture)
 		{
 			WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
+
+			if (r_fullbright->value || !r_worldmodel->lightdata)
+			{
+				WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
+			}
+
+			if (*filterMode != 0)
+			{
+				WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
+			}
+
+			if (r_wsurf.iLightmapUsedBits & (1 << 0))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_0_ENABLED;
+			}
+			if (r_wsurf.iLightmapUsedBits & (1 << 1))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_1_ENABLED;
+			}
+			if (r_wsurf.iLightmapUsedBits & (1 << 2))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_2_ENABLED;
+			}
+			if (r_wsurf.iLightmapUsedBits & (1 << 3))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_3_ENABLED;
+			}
 		}
 
 		if (r_wsurf.bShadowmapTexture)
@@ -1507,7 +1614,7 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 		{
 			auto &batch = drawBatches[i];
 
-			int WSurfProgramStateBatch = WSurfProgramState;
+			uint64_t WSurfProgramStateBatch = WSurfProgramState;
 
 			if (r_detailtextures->value)
 			{
@@ -1554,7 +1661,7 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 
 			auto base = texchain.pTexture;
 
-			int WSurfProgramState = 0;
+			uint64_t WSurfProgramState = 0;
 
 			if (r_wsurf.bDiffuseTexture)
 			{
@@ -1568,6 +1675,33 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t *modvbo, bool bUseZPrePass)
 			if (r_wsurf.bLightmapTexture)
 			{
 				WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
+
+				if (r_fullbright->value || !r_worldmodel->lightdata)
+				{
+					WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
+				}
+
+				if (*filterMode != 0)
+				{
+					WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
+				}
+
+				if (r_wsurf.iLightmapUsedBits & (1 << 0))
+				{
+					WSurfProgramState |= WSURF_LIGHTMAP_INDEX_0_ENABLED;
+				}
+				if (r_wsurf.iLightmapUsedBits & (1 << 1))
+				{
+					WSurfProgramState |= WSURF_LIGHTMAP_INDEX_1_ENABLED;
+				}
+				if (r_wsurf.iLightmapUsedBits & (1 << 2))
+				{
+					WSurfProgramState |= WSURF_LIGHTMAP_INDEX_2_ENABLED;
+				}
+				if (r_wsurf.iLightmapUsedBits & (1 << 3))
+				{
+					WSurfProgramState |= WSURF_LIGHTMAP_INDEX_3_ENABLED;
+				}
 			}
 
 			if (r_wsurf.bShadowmapTexture)
@@ -1732,7 +1866,7 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_leaf_t *vboleaf, bool bUseZPrePass)
 
 		auto texture = R_GetAnimatedTexture(texchain.pTexture);
 
-		int WSurfProgramState = 0;
+		uint64_t WSurfProgramState = 0;
 
 		if (r_wsurf.bDiffuseTexture)
 		{
@@ -1746,6 +1880,33 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_leaf_t *vboleaf, bool bUseZPrePass)
 		if (r_wsurf.bLightmapTexture)
 		{
 			WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
+
+			if (r_fullbright->value || r_worldmodel->lightdata)
+			{
+				WSurfProgramState |= WSURF_FULLBRIGHT_ENABLED;
+			}
+
+			if (*filterMode != 0)
+			{
+				WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
+			}
+
+			if (r_wsurf.iLightmapUsedBits & (1 << 0))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_0_ENABLED;
+			}
+			if (r_wsurf.iLightmapUsedBits & (1 << 1))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_1_ENABLED;
+			}
+			if (r_wsurf.iLightmapUsedBits & (1 << 2))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_2_ENABLED;
+			}
+			if (r_wsurf.iLightmapUsedBits & (1 << 3))
+			{
+				WSurfProgramState |= WSURF_LIGHTMAP_INDEX_3_ENABLED;
+			}
 		}
 
 		if (r_wsurf.bShadowmapTexture)
@@ -1861,13 +2022,13 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 
 	glNamedBufferSubData(modvbo->hEntityUBO, 0, sizeof(EntityUBO), &EntityUBO);
 
-	//Begin WorldSurface Rendering
-
 	glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hSceneVBO);
 
-	if(bUseBindless)
+	if (bUseBindless)
+	{
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_TEXTURE_SSBO, r_wsurf.hWorldSSBO);
-	
+	}
+
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_ENTITY_UBO, modvbo->hEntityUBO);
 
 	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
@@ -1881,7 +2042,8 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
 	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
 	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_EXTRA);
+	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXINDEX);
+	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
 
 	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 4, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
 	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 4, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
@@ -1894,8 +2056,8 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normaltexcoord));
 	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, parallaxtexcoord));
 	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, speculartexcoord));
-	glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_EXTRA, 1, GL_INT, sizeof(brushvertex_t), OFFSET(brushvertex_t, texindex));
-
+	glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_TEXINDEX, 1, GL_INT, sizeof(brushvertex_t), OFFSET(brushvertex_t, texindex));
+	glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(brushvertex_t), OFFSET(brushvertex_t, styles));
 	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
 	if (r_wsurf.bShadowmapTexture)
@@ -1931,7 +2093,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 
 	if (modvbo->pModel == r_worldmodel)
 	{
-		auto leafindex = ((*r_viewleaf) - r_worldmodel->leafs);
+		int leafindex = ((*r_viewleaf) - r_worldmodel->leafs);
 		if (leafindex >= 0 && leafindex < (int)modvbo->vLeaves.size())
 		{
 			auto vboleaf = modvbo->vLeaves[leafindex];
@@ -1956,7 +2118,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 		}
 		else
 		{
-			g_pMetaHookAPI->SysError("R_DrawWSurfVBO: Invalid leaf index");
+			g_pMetaHookAPI->SysError("R_DrawWSurfVBO: Invalid leaf index %d", leafindex);
 		}
 	}
 	else
@@ -1992,14 +2154,13 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
 	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
 	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_EXTRA);
+	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXINDEX);
+	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
 
 	if (bUseZPrePass)
 	{
 		glDepthFunc(GL_LEQUAL);
 	}
-
-	//End WorldSurface Rendering
 
 	//Collect decals and waters
 
@@ -2090,10 +2251,57 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 	GL_EndProfile(&profile_DrawWSurfVBO);
 }
 
+//Just for debugging
+#if 0
+#define HUNK_NAME_LEN 64
+
+typedef struct
+{
+	int		sentinal;
+	int		size;		// including sizeof(hunk_t), -1 = not allocated
+	char	name[HUNK_NAME_LEN];
+} hunk_t;
+
+#define HUNK_SENTINAL 0x1DF001ED
+
+void Hunk_Check()
+{
+	byte **hunk_base = (byte **)((char *)g_dwEngineBase + 0x969E87C - 0x1D00000);
+	int *hunk_low_used = (int *)((char *)g_dwEngineBase + 0x969E884 - 0x1D00000);
+	int *hunk_size = (int *)((char *)g_dwEngineBase + 0x969E880 - 0x1D00000);
+
+	for (auto h = (hunk_t *)(*hunk_base); (byte *)h != (*hunk_base) + (*hunk_low_used); )
+	{
+		gEngfuncs.Con_Printf("hunk %p %X %s\n", (byte *)h - (*hunk_base), h->size, h->name);
+
+		if (h->sentinal != HUNK_SENTINAL)
+			g_pMetaHookAPI->SysError("Hunk_Check: trashed sentinal");
+		if (h->size < 16 || h->size + (byte *)h - (*hunk_base) > *hunk_size)
+			g_pMetaHookAPI->SysError("Hunk_Check: bad size");
+
+		h = (hunk_t *)((byte *)h + h->size);
+	}
+}
+#endif
+
+void R_PrebuildWSurfVBO(void)
+{
+	R_PrepareWSurfVBO(r_worldmodel);
+
+	for (int i = 0; i < (*mod_numknown); ++i)
+	{
+		auto mod = EngineGetModelByIndex(i);
+		if (mod->type == mod_brush && mod->name[0] == '*' && mod->needload == NL_PRESENT)
+		{
+			R_PrepareWSurfVBO(mod);
+		}
+	}
+}
+
 void R_Reload_f(void)
 {
 	R_ClearBSPEntities();
-	R_ParseBSPEntities(r_worldmodel->entities, NULL);
+	R_ParseBSPEntities(r_worldmodel->entities, R_ParseBSPEntity_DefaultAllocator);
 	R_LoadExternalEntities();
 	R_LoadBSPEntities();
 
@@ -2126,17 +2334,19 @@ void R_NewMapWSurf(void)
 	R_LoadBaseDetailTextures();
 	R_LoadBaseDecalTextures();
 
-	R_FreeLightmapArray();
+	//R_FreeLightmapArray();
 	R_FreeVertexBuffer();
 	R_FreeWorldTextures();
 
 	R_GenerateWorldTextures();
 	R_GenerateVertexBuffer();
-	R_GenerateLightmapArray();
+	//R_GenerateLightmapArray();
 
 	R_ClearWSurfVBOCache();
+	R_PrebuildWSurfVBO();
+
 	R_ClearBSPEntities();
-	R_ParseBSPEntities(r_worldmodel->entities, NULL);
+	R_ParseBSPEntities(r_worldmodel->entities, R_ParseBSPEntity_DefaultAllocator);
 	R_LoadExternalEntities();
 	R_LoadBSPEntities();
 }
@@ -2581,7 +2791,7 @@ detail_texture_cache_t *R_FindDetailTextureCache(int texId)
 	return NULL;
 }
 
-void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, int *WSurfProgramState)
+void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, uint64_t *WSurfProgramState)
 {
 	if (!r_detailtextures->value)
 		return;
@@ -2638,7 +2848,7 @@ void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, int
 	}
 }
 
-void R_BeginDetailTextureByGLTextureId(int gltexturenum, int *WSurfProgramState)
+void R_BeginDetailTextureByGLTextureId(int gltexturenum, uint64_t *WSurfProgramState)
 {
 	if (!r_detailtextures->value)
 		return;
@@ -2738,7 +2948,6 @@ void R_ClearBSPEntities(void)
 	g_DynamicLights.clear();
 }
 
-static fnParseBSPEntity_Allocator current_parse_allocator = NULL;
 static bspentity_t *current_parse_entity = NULL;
 static char com_token[4096];
 
@@ -2751,11 +2960,11 @@ bspentity_t *R_ParseBSPEntity_DefaultAllocator(void)
 	return &r_wsurf.vBSPEntities[len];
 }
 
-static bool R_ParseBSPEntityKeyValue(const char *classname, const char *keyname, const char *value)
+static bool R_ParseBSPEntityKeyValue(const char *classname, const char *keyname, const char *value, fnParseBSPEntity_Allocator parse_allocator)
 {
 	if (classname == NULL)
 	{
-		current_parse_entity = current_parse_allocator();
+		current_parse_entity = parse_allocator();
 		if(!current_parse_entity)
 			return false;
 
@@ -2796,7 +3005,7 @@ static bool R_ParseBSPEntityKeyValue(const char *classname, const char *keyname,
 	return false;
 }
 
-static bool R_ParseBSPEntityClassname(char *szInputStream, char *classname)
+static bool R_ParseBSPEntityClassname(char *szInputStream, char *classname, fnParseBSPEntity_Allocator parse_allocator)
 {
 	char szKeyName[256];
 
@@ -2811,7 +3020,7 @@ static bool R_ParseBSPEntityClassname(char *szInputStream, char *classname)
 
 		if (!strcmp(szKeyName, "classname"))
 		{
-			R_ParseBSPEntityKeyValue(NULL, szKeyName, com_token);
+			R_ParseBSPEntityKeyValue(NULL, szKeyName, com_token, parse_allocator);
 
 			strncpy(classname, com_token, 255);
 			classname[255] = 0;
@@ -2830,12 +3039,12 @@ static bool R_ParseBSPEntityClassname(char *szInputStream, char *classname)
 	return false;
 }
 
-static char *R_ParseBSPEntity(char *data)
+static char *R_ParseBSPEntity(char *data, fnParseBSPEntity_Allocator parse_allocator)
 {
 	char keyname[256] = { 0 };
 	char classname[256] = { 0 };
 
-	if (R_ParseBSPEntityClassname(data, classname))
+	if (R_ParseBSPEntityClassname(data, classname, parse_allocator))
 	{
 		while (1)
 		{
@@ -2844,6 +3053,7 @@ static char *R_ParseBSPEntity(char *data)
 			{
 				break;
 			}
+
 			if (!data)
 			{
 				g_pMetaHookAPI->SysError("R_ParseBSPEntity: EOF without closing brace");
@@ -2872,7 +3082,7 @@ static char *R_ParseBSPEntity(char *data)
 				continue;
 			}
 
-			R_ParseBSPEntityKeyValue(classname, keyname, com_token);
+			R_ParseBSPEntityKeyValue(classname, keyname, com_token, parse_allocator);
 		}
 	}
 	else
@@ -2897,14 +3107,8 @@ static char *R_ParseBSPEntity(char *data)
 	return data;
 }
 
-void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator allocator)
+void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator parse_allocator)
 {
-
-	if (allocator)
-		current_parse_allocator = allocator; 
-	else
-		current_parse_allocator = R_ParseBSPEntity_DefaultAllocator;
-
 	while (1)
 	{
 		data = gEngfuncs.COM_ParseFile(data, com_token);
@@ -2917,9 +3121,8 @@ void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator allocator)
 			g_pMetaHookAPI->SysError("R_ParseBSPEntities: found %s when expecting {", com_token);
 			return;
 		}
-		data = R_ParseBSPEntity(data);
+		data = R_ParseBSPEntity(data, parse_allocator);
 	}
-	current_parse_allocator = NULL;
 }
 
 void R_LoadExternalEntities(void)
@@ -2933,19 +3136,16 @@ void R_LoadExternalEntities(void)
 	char *pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
 	if (!pfile)
 	{
-		//gEngfuncs.Con_Printf("R_LoadExternalEntities: No external entity file %s\n", name.c_str());
-
 		name = "renderer/default_entity.txt";
 
 		pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
 		if (!pfile)
 		{
-			//gEngfuncs.Con_Printf("R_LoadExternalEntities: No default external entity file %s\n", name.c_str());
-
 			return;
 		}
 	}
-	R_ParseBSPEntities(pfile, NULL);
+
+	R_ParseBSPEntities(pfile, R_ParseBSPEntity_DefaultAllocator);
 
 	gEngfuncs.COM_FreeFile(pfile);
 }
@@ -3429,6 +3629,8 @@ void R_LoadBSPEntities(void)
 
 void R_DrawSequentialPolyVBO(msurface_t *s)
 {
+	//This should be done in shader
+#if 0
 	R_RenderDynamicLightmaps(s);
 
 	auto lightmapnum = s->lightmaptexturenum;
@@ -3446,6 +3648,7 @@ void R_DrawSequentialPolyVBO(msurface_t *s)
 		theRect->h = 0;
 		theRect->w = 0;
 	}
+#endif
 
 	if (s->pdecals)
 	{
@@ -3761,6 +3964,22 @@ void R_SetupSceneUBO(void)
 	SceneUBO.z_far = r_zfar;
 	SceneUBO.r_alpha_shift = r_alpha_shift->value;
 	SceneUBO.r_additive_shift = r_additive_shift->value;
+
+	if (gl_overbright->value)
+		SceneUBO.r_lightscale = 1;
+	else
+		SceneUBO.r_lightscale = ((pow(2.0f, 1.0f / v_lightgamma->value) * 256) + 0.5) / 256;
+
+	SceneUBO.r_filtercolor[0] = *filterColorRed;
+	SceneUBO.r_filtercolor[1] = *filterColorGreen;
+	SceneUBO.r_filtercolor[2] = *filterColorBlue;
+	SceneUBO.r_filtercolor[3] = *filterBrightness;
+
+	//Use vec4[256/4] instead of float[256] to save vram, float[256] in std140 costs 16 * 256 instead of 4 * 256 bytes due to alignment
+	for (int i = 0; i < 256; ++i)
+	{
+		SceneUBO.r_lightstylevalue[i / 4][i % 4] = d_lightstylevalue[i] * (1.0f / 264.0f);
+	}
 
 	glNamedBufferSubData(r_wsurf.hSceneUBO, 0, sizeof(SceneUBO), &SceneUBO);
 }

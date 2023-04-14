@@ -53,6 +53,19 @@ in vec4 v_shadowcoord[3];
 
 #endif
 
+#if defined(SKYBOX_ENABLED)
+
+#elif defined(DECAL_ENABLED)
+	flat in uvec4 v_styles;
+#else
+	flat in uvec4 v_styles;
+#endif
+
+float ConvertStyleToLightStyle(uint style)
+{
+	return SceneUBO.r_lightstylevalue[style / 4][style % 4];
+}
+
 #ifdef GBUFFER_ENABLED
 
 	#if defined(DECAL_ENABLED)
@@ -356,20 +369,51 @@ void main()
 
 #endif
 
-#ifdef LIGHTMAP_ENABLED
+#if defined(LIGHTMAP_ENABLED) && !defined(FULLBRIGHT_ENABLED)
 
-	vec4 lightmapColor = texture(lightmapTexArray, v_lightmaptexcoord.xyz);
+	vec4 lightmapColor = vec4(0.0, 0.0, 0.0, 0.0);
+
+#if defined(LIGHTMAP_INDEX_0_ENABLED)
+	lightmapColor += texture(lightmapTexArray, vec3(v_lightmaptexcoord.x, v_lightmaptexcoord.y, v_lightmaptexcoord.z * 4.0 + 0.0) ) * ConvertStyleToLightStyle(v_styles.x);
+#endif
+
+#if defined(LIGHTMAP_INDEX_1_ENABLED)
+	lightmapColor += texture(lightmapTexArray, vec3(v_lightmaptexcoord.x, v_lightmaptexcoord.y, v_lightmaptexcoord.z * 4.0 + 1.0) ) * ConvertStyleToLightStyle(v_styles.y);
+#endif
+
+#if defined(LIGHTMAP_INDEX_2_ENABLED)
+	lightmapColor += texture(lightmapTexArray, vec3(v_lightmaptexcoord.x, v_lightmaptexcoord.y, v_lightmaptexcoord.z * 4.0 + 2.0) ) * ConvertStyleToLightStyle(v_styles.z);
+#endif
+
+#if defined(LIGHTMAP_INDEX_3_ENABLED)
+	lightmapColor += texture(lightmapTexArray, vec3(v_lightmaptexcoord.x, v_lightmaptexcoord.y, v_lightmaptexcoord.z * 4.0 + 3.0) ) * ConvertStyleToLightStyle(v_styles.w);
+#endif
+
+	lightmapColor *= SceneUBO.r_lightscale;
+
+	//Really need?
+	lightmapColor.r = clamp(lightmapColor.r, 0.0, 1.0);
+	lightmapColor.g = clamp(lightmapColor.g, 0.0, 1.0);
+	lightmapColor.b = clamp(lightmapColor.b, 0.0, 1.0);
+
+	lightmapColor.a = 1.0;
 
 	lightmapColor = LightGammaToLinear(lightmapColor);
-
-	//lightmapColor.x = max(lightmapColor.x, 0.03);
-	//lightmapColor.y = max(lightmapColor.y, 0.03);
-	//lightmapColor.z = max(lightmapColor.z, 0.03);
 
 #else
 
 	vec4 lightmapColor = vec4(1.0, 1.0, 1.0, 1.0);
 
+#endif
+
+#ifdef COLOR_FILTER_ENABLED
+	lightmapColor.x *= (SceneUBO.r_filtercolor.x * SceneUBO.r_filtercolor.a);
+	lightmapColor.y *= (SceneUBO.r_filtercolor.y * SceneUBO.r_filtercolor.a);
+	lightmapColor.z *= (SceneUBO.r_filtercolor.z * SceneUBO.r_filtercolor.a);
+
+	lightmapColor.x = clamp(lightmapColor.x, 0.0, 1.0);
+	lightmapColor.y = clamp(lightmapColor.y, 0.0, 1.0);
+	lightmapColor.z = clamp(lightmapColor.z, 0.0, 1.0);
 #endif
 
 #ifdef NORMALTEXTURE_ENABLED

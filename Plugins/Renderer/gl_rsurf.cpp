@@ -21,6 +21,23 @@ decalcache_t *gDecalCache;
 decal_drawbatch_t g_DecalBaseDrawBatch = { 0 };
 decal_drawbatch_t g_DecalDetailDrawBatch = { 0 };
 
+int EngineGetMaxLightmapTextures(void)
+{
+	if (g_iEngineType == ENGINE_SVENGINE)
+		return MAX_LIGHTMAPS_SVENGINE;
+
+	return MAX_LIGHTMAPS;
+}
+
+int EngineGetMaxClientModels(void)
+{
+	if (g_iEngineType == ENGINE_SVENGINE)
+		return MAX_MODELS_SVENGINE;
+
+	return MAX_MODELS;
+}
+
+
 void R_RecursiveWorldNode(mnode_t *node)
 {
 	gRefFuncs.R_RecursiveWorldNode(node);
@@ -28,14 +45,89 @@ void R_RecursiveWorldNode(mnode_t *node)
 
 void R_AddDynamicLights(msurface_t *surf)
 {
+	//All this should be done in shader
+#if 0
 	if (r_light_dynamic->value)
 		return;
 
 	return gRefFuncs.R_AddDynamicLights(surf);
+#endif
+}
+
+//It's 40 x 40 for SvEngine and 18 x 18 for GoldSrc
+static colorVec blocklights[40 * 40];
+
+static int allocated[MAX_LIGHTMAPS_SVENGINE][BLOCK_WIDTH];
+
+void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride, int lightmap_idx)
+{
+	int maxSize = sizeof(blocklights) / sizeof(colorVec);
+
+	int smax = (psurf->extents[0] >> 4) + 1;
+	int tmax = (psurf->extents[1] >> 4) + 1;
+	int size = smax * tmax;
+	auto lightmap = ((color24 *)psurf->samples);
+
+	if (size > maxSize)
+		g_pMetaHookAPI->SysError("Error: lightmap for texture %s too large (%d x %d = %d luxels); cannot exceed %d\n", psurf->texinfo->texture, smax, tmax, size, maxSize);
+
+	if (lightmap)
+	{
+		lightmap += size * lightmap_idx;
+
+		if (psurf->styles[lightmap_idx] != 255)
+		{
+			for (int i = 0; i < size; i++)
+			{
+				blocklights[i].r = lightmap[i].r;
+				blocklights[i].g = lightmap[i].g;
+				blocklights[i].b = lightmap[i].b;
+			}
+			r_wsurf.iLightmapUsedBits |= (1 << lightmap_idx);
+		}
+		else
+		{
+			for (int i = 0; i < size; i++)
+			{
+				blocklights[i].r = 0;
+				blocklights[i].g = 0;
+				blocklights[i].b = 0;
+			}
+		}
+	}
+	else
+	{
+		for (int i = 0; i < size; i++)
+		{
+			blocklights[i].r = 255;
+			blocklights[i].g = 255;
+			blocklights[i].b = 255;
+		}
+	}
+
+	//Dynamic lights should be calculated in shader
+
+	stride -= smax * 4;
+
+	int k = 0;
+	for (int i = 0; i < tmax; i++, dest += stride)
+	{
+		for (int j = 0; j < smax; j++)
+		{
+			dest[0] = blocklights[k].r;
+			dest[1] = blocklights[k].g;
+			dest[2] = blocklights[k].b;
+
+			k ++;
+			dest += LIGHTMAP_BYTES;
+		}
+	}
 }
 
 void R_RenderDynamicLightmaps(msurface_t *fa)
 {
+	//All this should be done in shader
+#if 0
 	if(!r_light_dynamic->value)
 		return gRefFuncs.R_RenderDynamicLightmaps(fa);
 
@@ -104,8 +196,10 @@ void R_RenderDynamicLightmaps(msurface_t *fa)
 			fa->cached_light[maps] = d_lightstylevalue[fa->styles[maps]];
 		}
 	}
+#endif
 }
 
+#if 0
 void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride)
 {
 	if (!r_light_dynamic->value)
@@ -117,6 +211,253 @@ void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride)
 	gRefFuncs.R_BuildLightMap(psurf, dest, stride);
 
 	(*r_dlightactive) = save_dlightactive;
+}
+#endif
+
+int AllocBlock(int w, int h, int *x, int *y)
+{
+	int i, j;
+	int best, best2;
+	int texnum;
+
+	for (texnum = 0; texnum < EngineGetMaxLightmapTextures(); texnum++)
+	{
+		best = BLOCK_HEIGHT;
+
+		for (i = 0; i < BLOCK_WIDTH - w; i++)
+		{
+			best2 = 0;
+
+			for (j = 0; j < w; j++)
+			{
+				if (allocated[texnum][i + j] >= best)
+					break;
+
+				if (allocated[texnum][i + j] > best2)
+					best2 = allocated[texnum][i + j];
+			}
+
+			if (j == w)
+			{
+				*x = i;
+				*y = best = best2;
+			}
+		}
+
+		if (best + h > BLOCK_HEIGHT)
+			continue;
+
+		for (i = 0; i < w; i++)
+			allocated[texnum][*x + i] = best + h;
+
+		return texnum;
+	}
+
+	g_pMetaHookAPI->SysError("AllocBlock: full");
+	return 0;
+}
+
+void R_AllocateSurfaceLightmap(model_t *mod, msurface_t *surf)
+{
+	if (surf->flags & (SURF_DRAWSKY | SURF_DRAWTURB))
+		return;
+
+	if ((surf->flags & SURF_DRAWTILED) && surf->texinfo->flags & TEX_SPECIAL)
+		return;
+
+	int smax = (surf->extents[0] >> 4) + 1;
+	int tmax = (surf->extents[1] >> 4) + 1;
+
+	surf->lightmaptexturenum = AllocBlock(smax, tmax, &surf->light_s, &surf->light_t);
+
+	if (surf->lightmaptexturenum + 1 > r_wsurf.iNumLightmapTextures)
+		r_wsurf.iNumLightmapTextures = surf->lightmaptexturenum + 1;
+}
+
+void R_BuildSurfaceLightmap(model_t *mod, msurface_t *surf, int lightmap_idx)
+{
+	if (surf->flags & (SURF_DRAWSKY | SURF_DRAWTURB))
+		return;
+
+	if ((surf->flags & SURF_DRAWTILED) && surf->texinfo->flags & TEX_SPECIAL)
+		return;
+
+	auto base = lightmaps + surf->lightmaptexturenum * LIGHTMAP_BYTES * BLOCK_WIDTH * BLOCK_HEIGHT;
+	base += (surf->light_t * BLOCK_WIDTH + surf->light_s) * LIGHTMAP_BYTES;
+
+	R_BuildLightMap(surf, base, BLOCK_WIDTH * LIGHTMAP_BYTES, lightmap_idx);
+}
+
+void R_BuildSurfaceDisplayList(model_t *mod, mvertex_t *vertbase, msurface_t *fa)
+{
+	int i, lindex, lnumverts;
+	medge_t *pedges, *r_pedge;
+	int vertpage;
+	float *vec;
+	float s, t;
+
+	pedges = mod->edges;
+	lnumverts = fa->numedges;
+	vertpage = 0;
+
+	auto poly = (glpoly_t *)Hunk_AllocName(sizeof(glpoly_t) + (lnumverts - 4) * VERTEXSIZE * sizeof(float), "unknown");
+	poly->next = fa->polys;
+	poly->flags = fa->flags;
+	fa->polys = poly;
+	poly->numverts = lnumverts;
+
+	for (i = 0; i < lnumverts; i++)
+	{
+		lindex = mod->surfedges[fa->firstedge + i];
+
+		if (lindex > 0)
+		{
+			r_pedge = &pedges[lindex];
+			vec = vertbase[r_pedge->v[0]].position;
+		}
+		else
+		{
+			r_pedge = &pedges[-lindex];
+			vec = vertbase[r_pedge->v[1]].position;
+		}
+
+		s = DotProduct(vec, fa->texinfo->vecs[0]) + fa->texinfo->vecs[0][3];
+		s /= fa->texinfo->texture->width;
+
+		t = DotProduct(vec, fa->texinfo->vecs[1]) + fa->texinfo->vecs[1][3];
+		t /= fa->texinfo->texture->height;
+
+		VectorCopy(vec, poly->verts[i]);
+		poly->verts[i][3] = s;
+		poly->verts[i][4] = t;
+
+		s = DotProduct(vec, fa->texinfo->vecs[0]) + fa->texinfo->vecs[0][3];
+		s -= fa->texturemins[0];
+		s += fa->light_s * 16;
+		s += 8;
+		s /= BLOCK_WIDTH * 16;
+
+		t = DotProduct(vec, fa->texinfo->vecs[1]) + fa->texinfo->vecs[1][3];
+		t -= fa->texturemins[1];
+		t += fa->light_t * 16;
+		t += 8;
+		t /= BLOCK_HEIGHT * 16;
+
+		poly->verts[i][5] = s;
+		poly->verts[i][6] = t;
+	}
+
+	if (!gl_keeptjunctions->value && !(fa->flags & SURF_UNDERWATER))
+	{
+		for (i = 0; i < lnumverts; ++i)
+		{
+			vec3_t v1, v2;
+			float *prev, *thisPoint, *next;
+
+			prev = poly->verts[(i + lnumverts - 1) % lnumverts];
+			thisPoint = poly->verts[i];
+			next = poly->verts[(i + 1) % lnumverts];
+
+			VectorSubtract(thisPoint, prev, v1);
+			VectorNormalize(v1);
+			VectorSubtract(next, prev, v2);
+			VectorNormalize(v2);
+
+#define COLINEAR_EPSILON 0.001
+
+			if ((fabs(v1[0] - v2[0]) <= COLINEAR_EPSILON) && (fabs(v1[1] - v2[1]) <= COLINEAR_EPSILON) && (fabs(v1[2] - v2[2]) <= COLINEAR_EPSILON))
+			{
+				int j;
+
+				for (j = i + 1; j < lnumverts; ++j)
+				{
+					int k;
+
+					for (k = 0; k < VERTEXSIZE; ++k)
+						poly->verts[j - 1][k] = poly->verts[j][k];
+				}
+
+				--lnumverts;
+
+				--i;
+			}
+		}
+	}
+
+	poly->numverts = lnumverts;
+}
+
+void GL_BuildLightmaps(void)
+{
+	memset(allocated, 0, sizeof(allocated));
+
+	(*r_framecount) = 1;
+
+	//Collect lightmaps
+	for (int j = 1; j < EngineGetMaxClientModels(); j++)
+	{
+		auto mod = gEngfuncs.hudGetModelByIndex(j);
+
+		if (!mod)
+			break;
+
+		if (mod->type == mod_brush && mod->name[0] != '*')
+		{
+			for (int i = 0; i < mod->numsurfaces; i++)
+			{
+				//Allocate lightmap texture from empty slot
+				R_AllocateSurfaceLightmap(mod, mod->surfaces + i);
+
+				//Build glpolys
+				if (!(mod->surfaces[i].flags & SURF_DRAWTURB))
+				{
+					R_BuildSurfaceDisplayList(mod, mod->vertexes, mod->surfaces + i);
+				}
+			}
+		}
+	}
+
+	r_wsurf.iLightmapUsedBits = 0;
+	r_wsurf.iLightmapTextureArray = GL_GenTexture();
+
+	glBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	//Can this be GL_RGB8 to save VRAM? idk
+
+	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, BLOCK_WIDTH, BLOCK_HEIGHT, r_wsurf.iNumLightmapTextures * MAXLIGHTMAPS, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+	for (int lightmap_idx = 0; lightmap_idx < MAXLIGHTMAPS; ++lightmap_idx)
+	{
+		memset(lightmaps, 0, sizeof(BLOCK_WIDTH * BLOCK_HEIGHT * LIGHTMAP_BYTES) * r_wsurf.iNumLightmapTextures);
+
+		for (int j = 1; j < EngineGetMaxClientModels(); j++)
+		{
+			auto mod = gEngfuncs.hudGetModelByIndex(j);
+
+			if (!mod)
+				break;
+
+			if (mod->type == mod_brush && mod->name[0] != '*')
+			{
+				for (int i = 0; i < mod->numsurfaces; i++)
+				{
+					//Fill lightmap color bytes into lightmaps[]
+					R_BuildSurfaceLightmap(mod, mod->surfaces + i, lightmap_idx);
+				}
+			}
+		}
+
+		//Upload bytes to GPU
+		for (int i = 0; i < r_wsurf.iNumLightmapTextures; ++i)
+		{
+			int real_idx = (i * MAXLIGHTMAPS + lightmap_idx);
+			glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, real_idx, BLOCK_WIDTH, BLOCK_HEIGHT, 1, GL_RGBA, GL_UNSIGNED_BYTE, lightmaps + BLOCK_WIDTH * BLOCK_HEIGHT * LIGHTMAP_BYTES * i);
+		}
+	}
+	
+	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
 
 colorVec RecursiveLightPoint(mnode_t *node, vec3_t start, vec3_t end)
@@ -697,6 +1038,8 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 
 		vertexArray[j].decalindex = decalIndex;
 
+		memcpy(&vertexArray[j].styles, psurf->styles, sizeof(psurf->styles));
+
 		v += VERTEXSIZE;
 	}
 
@@ -825,7 +1168,7 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 			glPolygonOffset(-1, -gl_polyoffset->value);
 	}
 	
-	int WSurfProgramState = WSURF_DECAL_ENABLED | WSURF_DIFFUSE_ENABLED;
+	uint64_t WSurfProgramState = WSURF_DECAL_ENABLED | WSURF_DIFFUSE_ENABLED;
 
 	//Mix lightmap if not deferred
 	if (r_wsurf.bLightmapTexture && !drawgbuffer)
@@ -920,7 +1263,8 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
 	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
 	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_EXTRA);
+	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DECALINDEX);
+	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
 
 	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, pos));
 	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, normal));
@@ -933,11 +1277,12 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, normaltexcoord));
 	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, parallaxtexcoord));
 	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, speculartexcoord));
-	glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_EXTRA, 1, GL_INT, sizeof(decalvertex_t), OFFSET(decalvertex_t, decalindex));
+	glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_DECALINDEX, 1, GL_INT, sizeof(decalvertex_t), OFFSET(decalvertex_t, decalindex));
+	glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(decalvertex_t), OFFSET(decalvertex_t, styles));
 
 	if (g_DecalBaseDrawBatch.BatchCount > 0)
 	{
-		int WSurfProgramStateBase = WSurfProgramState;
+		uint64_t WSurfProgramStateBase = WSurfProgramState;
 
 		if (bUseBindless)
 		{
@@ -969,7 +1314,7 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 	{
 		for (int i = 0; i < g_DecalDetailDrawBatch.BatchCount; ++i)
 		{
-			int WSurfProgramStateDetail = WSurfProgramState;
+			uint64_t WSurfProgramStateDetail = WSurfProgramState;
 
 			GL_Bind(g_DecalDetailDrawBatch.GLTextureId[i]);
 
@@ -1000,7 +1345,8 @@ void R_DrawDecals(wsurf_vbo_t *modcache)
 	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
 	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
 	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_EXTRA);
+	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DECALINDEX);
+	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 

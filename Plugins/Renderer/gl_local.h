@@ -139,6 +139,9 @@ extern float *g_UserFogEnd;
 extern model_t *mod_known;
 extern int *mod_numknown;
 
+extern char(*loadname)[64];
+extern model_t **loadmodel;
+
 //client dll
 
 extern int *g_iUser1;
@@ -173,6 +176,12 @@ extern qboolean *mtexenabled;
 extern cactive_t *cls_state;
 extern int *cls_signon;
 extern qboolean *scr_drawloading;
+
+extern int *filterMode;
+extern float *filterColorRed;
+extern float *filterColorGreen;
+extern float *filterColorBlue;
+extern float *filterBrightness;
 
 extern int glx;
 extern int gly;
@@ -284,6 +293,7 @@ void R_InstallHooks(void);
 void R_UninstallHooksForEngineDLL(void);
 void R_UninstallHooksForClientDLL(void);
 
+void *Hunk_AllocName(int size, const char *name);
 void GammaToLinear(float *color);
 void R_LoadSkyName_SvEngine(const char *name);
 void R_LoadSkys(void);
@@ -300,6 +310,7 @@ qboolean R_CullBox(vec3_t mins, vec3_t maxs);
 qboolean Host_IsSinglePlayerGame();
 void R_ForceCVars(qboolean mp);
 void R_NewMap(void);
+void GL_BuildLightmaps(void);
 void R_Init(void);
 void R_VidInit(void);
 void R_Shutdown(void);
@@ -308,9 +319,10 @@ void R_FreeTextures(void);
 void R_SetupGL(void);
 void R_SetupGLForViewModel(void);
 void R_MarkLeaves(void);
-void R_MarkPVSLeaves(int leafindex);
 void R_DrawWorld(void);
 void R_DrawSkyBox(void);
+void R_CheckVariables(void);
+void R_AnimateLight(void);
 void R_SetupSceneUBO(void);
 mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model);
 void R_RecursiveWorldNode(mnode_t *node);

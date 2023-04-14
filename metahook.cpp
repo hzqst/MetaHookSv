@@ -137,6 +137,11 @@ mh_enginesave_t gMetaSave = {0};
 
 extern metahook_api_t gMetaHookAPI;
 
+bool MH_IsDebuggerPresent()
+{
+	return IsDebuggerPresent() ? true : false;
+}
+
 void MH_SysError(const char *fmt, ...)
 {
 	char msg[4096] = { 0 };
@@ -511,6 +516,24 @@ void MH_LoadPlugins(const char *gamedir)
 
 			do
 			{
+				if (MH_IsDebuggerPresent())
+				{
+					std::string fileName = aFileName + ".dll";
+
+					int result = MH_LoadPlugin(aPluginPath + ".dll", fileName);
+
+					int win32err = GetLastError();
+
+					if (PLUGIN_LOAD_SUCCEEDED == result)
+					{
+						break;
+					}
+					else
+					{
+						MH_ReportError(fileName, result, win32err);
+					}
+				}
+
 				if (MH_HasAVX2())
 				{
 					std::string fileName = aFileName + "_AVX2.dll";
@@ -2420,4 +2443,5 @@ metahook_api_t gMetaHookAPI =
 	MH_HookCmd,
 	MH_SysError,
 	MH_ReverseSearchFunctionBeginEx,
+	MH_IsDebuggerPresent,
 };

@@ -399,11 +399,16 @@ void R_DrawSkyBox(void)
 	glDisable(GL_BLEND);
 	glDepthMask(0);
 
-	int WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_SKYBOX_ENABLED;
+	uint64_t WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_SKYBOX_ENABLED;
 
 	if (bUseBindless)
 	{
 		WSurfProgramState |= WSURF_BINDLESS_ENABLED;
+	}
+
+	if (*filterMode != 0)
+	{
+		WSurfProgramState |= WSURF_COLOR_FILTER_ENABLED;
 	}
 
 	if (r_draw_reflectview)

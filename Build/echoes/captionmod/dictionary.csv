@@ -1,0 +1,1325 @@
+Title,Translation,Color,Duration,Speaker,Nextsubtitle,Delaytonextsubtitle,Style
+GAMESAVED,#GAMESAVED,,,,,,
+GAMETITLE,#GAMETITLE,,,,,,
+INTRO_1,#INTRO_1,,,,,,
+INTRO_2,#INTRO_2,,,,,,
+INTRO_LOCATION,#INTRO_LOCATION,,,,,,
+INTRO_DATE,#INTRO_DATE,,,,,,
+INTRO_TIME,#INTRO_TIME,,,,,,
+CR32,#CR32,,,,,,
+CR33,#CR33,,,,,,
+CR34,#CR34,,,,,,
+GAMEOVER_1,#GAMEOVER_1,,,,,,
+GAMEOVER_2,#GAMEOVER_2,,,,,,
+GAMEOVER_3,#GAMEOVER_3,,,,,,
+CHAPTER1,#CHAPTER1,,,,,,
+CHAPTER2,#CHAPTER2,,,,,,
+CHAPTER3,#CHAPTER3,,,,,,
+CHAPTER4,#CHAPTER4,,,,,,
+CHAPTER5,#CHAPTER5,,,,,,
+CHAPTER6,#CHAPTER6,,,,,,
+CHAPTER7,#CHAPTER7,,,,,,
+CHAPTER8,#CHAPTER8,,,,,,
+CHAPTER9,#CHAPTER9,,,,,,
+ENDING1,#ENDING1,,,,,,
+ENDING2,#ENDING2,,,,,,
+ENDING3,#ENDING3,,,,,,
+,,,,,,,
+C1A0_0,#C1A0_0,SweetRed,,#HalfLife_VOX,,,C
+C1A0_1,#C1A0_1,SweetRed,,#HalfLife_VOX,,,C
+C1A0_2,#C1A0_2,SweetRed,,#HalfLife_VOX,,,C
+C1A0_3,#C1A0_3,SweetRed,,#HalfLife_VOX,,,C
+C1A0_4,#C1A0_4,SweetRed,,#HalfLife_VOX,,,C
+C1A0_5,#C1A0_5,SweetRed,,#HalfLife_VOX,,,C
+C1A0_6,#C1A0_6,SweetRed,,#HalfLife_VOX,,,C
+C1A0_7,#C1A0_7,SweetRed,,#HalfLife_VOX,,,C
+C1A0_8,#C1A0_8,SweetRed,,#HalfLife_VOX,,,C
+C1A0_9,#C1A0_9,SweetRed,,#HalfLife_VOX,,,C
+C1A0_10,#C1A0_10,SweetRed,,#HalfLife_VOX,,,C
+C1A0_11,#C1A0_11,SweetRed,,#HalfLife_VOX,,,C
+C1A0_12,#C1A0_12,SweetRed,,#HalfLife_VOX,,,C
+C1A0_13,#C1A0_13,SweetRed,,#HalfLife_VOX,,,C
+C1A0_14,#C1A0_14,SweetRed,,#HalfLife_VOX,,,C
+C1A0_15,#C1A0_15,SweetRed,,#HalfLife_VOX,,,C
+C1A0_16,#C1A0_16,SweetRed,,#HalfLife_VOX,,,C
+C1A0_17,#C1A0_17,SweetRed,,#HalfLife_VOX,,,C
+C1A0_18,#C1A0_18,SweetRed,,#HalfLife_VOX,,,C
+C1A0_19,#C1A0_19,SweetRed,,#HalfLife_VOX,,,C
+C1A0_20,#C1A0_20,SweetRed,,#HalfLife_VOX,,,C
+C1A0_21,#C1A0_21,SweetRed,,#HalfLife_VOX,,,C
+C1A0_22,#C1A0_22,SweetRed,,#HalfLife_VOX,,,C
+C1A1_0,#C1A1_0,SweetRed,,#HalfLife_VOX,,,C
+C1A1_1,#C1A1_1,SweetRed,,#HalfLife_VOX,,,C
+C1A1_2,#C1A1_2,SweetRed,,#HalfLife_VOX,,,C
+C1A1_3,#C1A1_3,SweetRed,,#HalfLife_VOX,,,C
+C1A1_4,#C1A1_4,SweetRed,,#HalfLife_VOX,,,C
+C1A1_5,#C1A1_5,SweetRed,,#HalfLife_VOX,,,C
+C1A1_6,#C1A1_6,SweetRed,,#HalfLife_VOX,,,C
+C1A1_7,#C1A1_7,SweetRed,,#HalfLife_VOX,,,C
+C1A1_8,#C1A1_8,SweetRed,,#HalfLife_VOX,,,C
+C1A1_9,#C1A1_9,SweetRed,,#HalfLife_VOX,,,C
+C1A1_10,#C1A1_10,SweetRed,,#HalfLife_VOX,,,C
+C1A1_11,#C1A1_11,SweetRed,,#HalfLife_VOX,,,C
+C1A3_0,#C1A3_0,SweetRed,,#HalfLife_VOX,,,C
+C1A3_1,#C1A3_1,SweetRed,,#HalfLife_VOX,,,C
+C1A3_2,#C1A3_2,SweetRed,,#HalfLife_VOX,,,C
+C1A3_3,#C1A3_3,SweetRed,,#HalfLife_VOX,,,C
+C1A3_4,#C1A3_4,SweetRed,,#HalfLife_VOX,,,C
+C1A3_5,#C1A3_5,SweetRed,,#HalfLife_VOX,,,C
+C1A3_6,#C1A3_6,SweetRed,,#HalfLife_VOX,,,C
+C1A3_7,#C1A3_7,SweetRed,,#HalfLife_VOX,,,C
+C1A3_8,#C1A3_8,SweetRed,,#HalfLife_VOX,,,C
+C1A3_9,#C1A3_9,SweetRed,,#HalfLife_VOX,,,C
+C1A3_10,#C1A3_10,SweetRed,,#HalfLife_VOX,,,C
+C1A3_warn,#C1A3_warn,SweetRed,,#HalfLife_VOX,,,C
+C1A3_lock,#C1A3_lock,SweetRed,,#HalfLife_VOX,,,C
+POWER_OFF,#POWER_OFF,SweetRed,,#HalfLife_VOX,,,C
+C3A1_8,#C3A1_8,SweetRed,,#HalfLife_VOX,,,C
+C3A2_0,#C3A2_0,SweetRed,,#HalfLife_VOX,,,C
+C3A2_1,#C3A2_1,SweetRed,,#HalfLife_VOX,,,C
+C3A2_2,#C3A2_2,SweetRed,,#HalfLife_VOX,,,C
+C3A2_3,#C3A2_3,SweetRed,,#HalfLife_VOX,,,C
+C3A2_4,#C3A2_4,SweetRed,,#HalfLife_VOX,,,C
+C3A2_5,#C3A2_5,SweetRed,,#HalfLife_VOX,,,C
+C3A2_6,#C3A2_6,SweetRed,,#HalfLife_VOX,,,C
+C3A2_7,#C3A2_7,SweetRed,,#HalfLife_VOX,,,C
+DC0,#DC0,SweetRed,,#HalfLife_VOX,,,C
+DC1,#DC1,SweetRed,,#HalfLife_VOX,,,C
+DC2,#DC2,SweetRed,,#HalfLife_VOX,,,C
+DC3,#DC3,SweetRed,,#HalfLife_VOX,,,C
+DC4,#DC4,SweetRed,,#HalfLife_VOX,,,C
+DR0,#DR0,SweetRed,,#HalfLife_VOX,,,C
+DR1,#DR1,SweetRed,,#HalfLife_VOX,,,C
+DR2,#DR2,SweetRed,,#HalfLife_VOX,,,C
+DR3,#DR3,SweetRed,,#HalfLife_VOX,,,C
+DR4,#DR4,SweetRed,,#HalfLife_VOX,,,C
+NA0,#NA0,SweetRed,,#HalfLife_VOX,,,C
+NA1,#NA1,SweetRed,,#HalfLife_VOX,,,C
+NA2,#NA2,SweetRed,,#HalfLife_VOX,,,C
+NA3,#NA3,SweetRed,,#HalfLife_VOX,,,C
+NA4,#NA4,SweetRed,,#HalfLife_VOX,,,C
+NA5,#NA5,SweetRed,,#HalfLife_VOX,,,C
+NA6,#NA6,SweetRed,,#HalfLife_VOX,,,C
+NA7,#NA7,SweetRed,,#HalfLife_VOX,,,C
+NA8,#NA8,SweetRed,,#HalfLife_VOX,,,C
+NA9,#NA9,SweetRed,,#HalfLife_VOX,,,C
+NA10,#NA10,SweetRed,,#HalfLife_VOX,,,C
+NA11,#NA11,SweetRed,,#HalfLife_VOX,,,C
+NA12,#NA12,SweetRed,,#HalfLife_VOX,,,C
+NA13,#NA13,SweetRed,,#HalfLife_VOX,,,C
+NA14,#NA14,SweetRed,,#HalfLife_VOX,,,C
+NA15,#NA15,SweetRed,,#HalfLife_VOX,,,C
+NA16,#NA16,SweetRed,,#HalfLife_VOX,,,C
+NA17,#NA17,SweetRed,,#HalfLife_VOX,,,C
+NA18,#NA18,SweetRed,,#HalfLife_VOX,,,C
+NF0,#NF0,SweetRed,,#HalfLife_VOX,,,C
+NF1,#NF1,SweetRed,,#HalfLife_VOX,,,C
+NG0,#NG0,SweetRed,,#HalfLife_VOX,,,C
+NG1,#NG1,SweetRed,,#HalfLife_VOX,,,C
+NG2,#NG2,SweetRed,,#HalfLife_VOX,,,C
+NFIRE0,#NFIRE0,SweetRed,,#HalfLife_VOX,,,C
+NCON0,#NCON0,SweetRed,,#HalfLife_VOX,,,C
+intro/intro_eli_1.wav,#intro_eli_1,AquaBlue,,#HalfLife_Eli,,,C
+intro/intro_eli_2.wav,#intro_eli_2,AquaBlue,,#HalfLife_Eli,,,C
+intro/intro_eli_3.wav,#intro_eli_3,AquaBlue,,#HalfLife_Eli,,,C
+intro/intro_eli_4.wav,#intro_eli_4,AquaBlue,,#HalfLife_Eli,,,C
+intro/intro_eli_5.wav,#intro_eli_5,AquaBlue,,#HalfLife_Eli,,,C
+intro/intro_eli_6.wav,#intro_eli_6,AquaBlue,,#HalfLife_Eli,,,C
+intro/intro_eli_7.wav,#intro_eli_7,AquaBlue,,#HalfLife_Eli,,,C
+outtro/eli_basehouse.wav,#eli_basehouse,AquaBlue,,#HalfLife_Eli,,,C
+outtro/eli_ohalyx.wav,#eli_ohalyx,AquaBlue,,#HalfLife_Eli,,,C
+outtro/eli_rememberwife.wav,#eli_rememberwife,AquaBlue,,#HalfLife_Eli,,,C
+outtro/eli_rescuedher.wav,#eli_rescuedher,AquaBlue,,#HalfLife_Eli,,,C
+outtro/eli_whathappened.wav,#eli_whathappened,AquaBlue,,#HalfLife_Eli,,,C
+outtro/alyx-gordon.wav,#alyx-gordon,SweetOrange,,#HalfLife_Alyx,,,C
+outtro/baby1.wav,#baby1,SweetOrange,,#HalfLife_Alyx,,,C
+env/colette_stop2.wav,#colette_stop2,Maroon,,#HalfLife_Collette,,,C
+env/excuseme.wav,#excuseme,Maroon,,#HalfLife_Collette,,,C
+env/gina_mad1.wav,#gina_mad1,Tan,,#HalfLife_Gina,,,C
+,,,,,,,
+agamemnon/ag_abandon.wav,#ag_abandon,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_comeon0.wav,#ag_comeon0,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_comeon1.wav,#ag_comeon1,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_comeon2.wav,#ag_comeon2,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_comeon3.wav,#ag_comeon3,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_comeon4.wav,#ag_comeon4,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_comeon5.wav,#ag_comeon5,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_comeon6.wav,#ag_comeon6,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_comeon7.wav,#ag_comeon7,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_comeon8.wav,#ag_comeon8,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_comeon9.wav,#ag_comeon9,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_comeon10.wav,#ag_comeon10,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_meet0.wav,#ag_meet0,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_damn.wav,#ag_damn,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_headroll.wav,#ag_headroll,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_leavemealone.wav,#ag_leavemealone,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_meet1.wav,#ag_meet1,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_meet2.wav,#ag_meet2,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_meet3.wav,#ag_meet3,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_meet4.wav,#ag_meet4,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_meet5.wav,#ag_meet5,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_meet6.wav,#ag_meet6,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_meet7.wav,#ag_meet7,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_mic.wav,#ag_mic,,,,,,L
+agamemnon/ag_music.wav,#ag_music,,,,,,L
+agamemnon/ag_paymess.wav,#ag_paymess,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_tv1_0testing.wav,#ag_tv1_0testing,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_tv1_1yesgood.wav,#ag_tv1_1yesgood,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_tv1_2anywhere.wav,#ag_tv1_2anywhere,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_tv1_3lift.wav,#ag_tv1_3lift,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_tv1_military.wav,#ag_tv1_military,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_tv1_otherside.wav,#ag_tv1_otherside,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_tv2_0gladalive.wav,#ag_tv2_0gladalive,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_tv3_0destroy.wav,#ag_tv3_0destroy,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_tv4_0foundguard.wav,#ag_tv4_0foundguard,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_tv4_1codes.wav,#ag_tv4_1codes,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_tv4_2await.wav,#ag_tv4_2await,SweetGreen,,#Echoes_Agamemnon,,,C
+agamemnon/ag_tv5wrong.wav,#ag_tv5wrong,SweetGreen,,#Echoes_Agamemnon,,,C
+,,,,,,,
+VOX_TRAM0,#VOX_TRAM0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM1,#VOX_TRAM1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM2,#VOX_TRAM2,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM3,#VOX_TRAM3,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM4,#VOX_TRAM4,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM5,#VOX_TRAM5,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM6,#VOX_TRAM6,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM7,#VOX_TRAM7,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM8,#VOX_TRAM8,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM9,#VOX_TRAM9,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM10,#VOX_TRAM10,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM11,#VOX_TRAM11,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM12,#VOX_TRAM12,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM13,#VOX_TRAM13,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM14,#VOX_TRAM14,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM15,#VOX_TRAM15,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM16,#VOX_TRAM16,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM17,#VOX_TRAM17,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM18,#VOX_TRAM18,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM19,#VOX_TRAM19,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM20,#VOX_TRAM20,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_TRAM21,#VOX_TRAM21,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC0,#VOX_RC0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC1,#VOX_RC1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC2,#VOX_RC2,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC3,#VOX_RC3,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC4,#VOX_RC4,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC5,#VOX_RC5,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC6,#VOX_RC6,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC7,#VOX_RC7,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC8,#VOX_RC8,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC9,#VOX_RC9,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC10,#VOX_RC10,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC11,#VOX_RC11,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC12,#VOX_RC12,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC13,#VOX_RC13,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC14,#VOX_RC14,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC15,#VOX_RC15,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC16,#VOX_RC16,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC17,#VOX_RC17,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC18,#VOX_RC18,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC19,#VOX_RC19,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_RC20,#VOX_RC20,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL0,#VOX_MIL0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL1,#VOX_MIL1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL2,#VOX_MIL2,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL3,#VOX_MIL3,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL4,#VOX_MIL4,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL5,#VOX_MIL5,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL6,#VOX_MIL6,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL7,#VOX_MIL7,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL8,#VOX_MIL8,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL9,#VOX_MIL9,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL10,#VOX_MIL10,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL11,#VOX_MIL11,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL12,#VOX_MIL12,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL13,#VOX_MIL13,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL14,#VOX_MIL14,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL15,#VOX_MIL15,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL16,#VOX_MIL16,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL17,#VOX_MIL17,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL18,#VOX_MIL18,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL19,#VOX_MIL19,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+VOX_MIL20,#VOX_MIL20,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NA0,#NA0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NA1,#NA1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NA2,#NA2,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NA3,#NA3,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NA4,#NA4,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NA5,#NA5,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NA6,#NA6,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NA7,#NA7,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NA8,#NA8,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NA9,#NA9,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+EA0,#EA0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+EA1,#EA1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+EA2,#EA2,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+EA3,#EA3,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+EA4,#EA4,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+EA5,#EA5,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+EA6,#EA6,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+EA7,#EA7,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+EA8,#EA8,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+ND0,#ND0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+ND1,#ND1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+ND2,#ND2,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+ND3,#ND3,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+ND4,#ND4,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+ND5,#ND5,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+ND6,#ND6,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+ND7,#ND7,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+ED0,#ED0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+ED1,#ED1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+ED2,#ED2,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+ED3,#ED3,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+ED4,#ED4,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+ED5,#ED5,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+ED6,#ED6,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NF0,#NF0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NF1,#NF1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NF3,#NF3,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+EF0,#EF0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+EF1,#EF1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+EF3,#EF3,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NFIRE0,#NFIRE0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+EFIRE0,#EFIRE0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NRAD0,#NRAD0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+ERAD0,#ERAD0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NCON0,#NCON0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+ECON0,#ECON0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NG0,#NG0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NG1,#NG1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NG2,#NG2,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NH0,#NH0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+NH1,#NH1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+EH0,#EH0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+EH1,#EH1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+T0,#T0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+T1,#T1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+T2,#T2,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+T3,#T3,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+T4,#T4,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+T5,#T5,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+DR0,#DR0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+DR1,#DR1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+DR2,#DR2,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+DR3,#DR3,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+DR4,#DR4,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+DC0,#DC0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+DC1,#DC1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+DC2,#DC2,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+DC3,#DC3,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+DC4,#DC4,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+DB0,#DB0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+DB1,#DB1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+DB2,#DB2,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+DB3,#DB3,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+,,,,,,,
+,,,,,,,
+voxlines/MAP3_INDOOR0.wav,#MAP3_INDOOR0,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+voxlines/MAP4_VOX1.wav,#MAP4_VOX1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+voxlines/MAP4_VOX2.wav,#MAP4_VOX2,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+voxlines/MAP4_VOX3.wav,#MAP4_VOX3,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+voxlines/MAP9_BRIDGE1.wav,#MAP9_BRIDGE1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+voxlines/MAP9_BRIDGE2.wav,#MAP9_BRIDGE2,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+voxlines/MAP9_BRIDGE3.wav,#MAP9_BRIDGE3,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+voxlines/MAP9_BRIDGE4.wav,#MAP9_BRIDGE4,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+voxlines/MAP12_VOX1.wav,#MAP12_VOX1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+voxlines/MAP12_VOX2.wav,#MAP12_VOX2,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+voxlines/MAP12_VOX3.wav,#MAP12_VOX3,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+voxlines/MAP12_VOX4.wav,#MAP12_VOX4,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+voxlines/MAP12_VOX5.wav,#MAP12_VOX5,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+voxlines/MAP12_VOX6.wav,#MAP12_VOX6,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+voxlines/MAP14_ALERT1.wav,#MAP14_ALERT1,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+voxlines/MAP15_VOXLIFT.wav,#MAP15_VOXLIFT,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+voxlines/MILCOM.wav,#MILCOM,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+voxlines/VOX_SHUTDOWN.wav,#VOX_SHUTDOWN,SweetRed,,#HalfLife_VOX,,,IGNORE_DISTANCE_LIMIT C
+holo/tr_sci_goodwork.wav,#tr_sci_goodwork,Gray,,#HalfLife_Scientist,,,C
+holo/tr_sci_hardlynoticed.wav,#tr_sci_hardlynoticed,Gray,,#HalfLife_Scientist,,,C
+holo/tr_sci_nextstation.wav,#tr_sci_nextstation,Gray,,#HalfLife_Scientist,,,C
+holo/tr_sci_use.wav,#tr_sci_use,Gray,,#HalfLife_Scientist,,,C
+holo/tr_sci_unuse.wav,#tr_sci_unuse,Gray,,#HalfLife_Scientist,,,C
+holo/tr_ba_use.wav,#tr_ba_use,Blue,,#HalfLife_Security,,,C
+holo/tr_ba_unuse.wav,#tr_ba_unuse,Blue,,#HalfLife_Security,,,C
+,,,,,,,
+scientist/absolutely.wav,#absolutely,Gray,,#HalfLife_Scientist,,,C
+scientist/absolutelynot.wav,#absolutelynot,Gray,,#HalfLife_Scientist,,,C
+scientist/administrator.wav,#administrator,Gray,,#HalfLife_Scientist,,,C
+scientist/advance.wav,#advance,Gray,,#HalfLife_Scientist,,,C
+scientist/afellowsci.wav,#afellowsci,Gray,,#HalfLife_Scientist,,,C
+scientist/ahfreeman.wav,#ahfreeman,Gray,,#HalfLife_Scientist,,,C
+scientist/alienappeal.wav,#alienappeal,Gray,,#HalfLife_Scientist,,,C
+scientist/alientrick.wav,#alientrick,Gray,,#HalfLife_Scientist,,,C
+scientist/allnominal.wav,#allnominal,Gray,,#HalfLife_Scientist,,,C
+scientist/alright.wav,#alright,Gray,,#HalfLife_Scientist,,,C
+scientist/analysis.wav,#analysis,Gray,,#HalfLife_Scientist,,,C
+scientist/announcer.wav,#announcer,Gray,,#HalfLife_Scientist,,,C
+scientist/areyouthink.wav,#areyouthink,Gray,,#HalfLife_Scientist,,,C
+scientist/asexpected.wav,#asexpected,Gray,,#HalfLife_Scientist,,,C
+scientist/b01_sci01_whereami.wav,#b01_sci01_whereami,Gray,,#HalfLife_Scientist,,,C
+scientist/b01_sci02_briefcase.wav,#b01_sci02_briefcase,Gray,,#HalfLife_Scientist,,,C
+scientist/b01_sci03_sirplease.wav,#b01_sci03_sirplease,Gray,,#HalfLife_Scientist,,,C
+scientist/beenaburden.wav,#beenaburden,Gray,,#HalfLife_Scientist,,,C
+scientist/beverage.wav,#beverage,Gray,,#HalfLife_Scientist,,,C
+scientist/bloodsample.wav,#bloodsample,Gray,,#HalfLife_Scientist,,,C
+scientist/breakthings.wav,#breakthings,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_bigday.wav,#c1a0_sci_bigday,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_crit1a.wav,#c1a0_sci_crit1a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_crit2a.wav,#c1a0_sci_crit2a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_crit3a.wav,#c1a0_sci_crit3a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_ctrl1a.wav,#c1a0_sci_ctrl1a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_ctrl2a.wav,#c1a0_sci_ctrl2a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_ctrl3a.wav,#c1a0_sci_ctrl3a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_ctrl4a.wav,#c1a0_sci_ctrl4a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis1a.wav,#c1a0_sci_dis1a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis1b.wav,#c1a0_sci_dis1b,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis1c.wav,#c1a0_sci_dis1c,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis1d.wav,#c1a0_sci_dis1d,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis2a.wav,#c1a0_sci_dis2a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis3a.wav,#c1a0_sci_dis3a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis4a.wav,#c1a0_sci_dis4a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis5a.wav,#c1a0_sci_dis5a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis6a.wav,#c1a0_sci_dis6a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis7a.wav,#c1a0_sci_dis7a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis9a.wav,#c1a0_sci_dis9a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis10a.wav,#c1a0_sci_dis10a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis11a.wav,#c1a0_sci_dis11a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis12a.wav,#c1a0_sci_dis12a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis13a.wav,#c1a0_sci_dis13a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis14a.wav,#c1a0_sci_dis14a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis15a.wav,#c1a0_sci_dis15a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis16a.wav,#c1a0_sci_dis16a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_dis17a.wav,#c1a0_sci_dis17a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_disa.wav,#c1a0_sci_disa,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_getaway.wav,#c1a0_sci_getaway,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_gm.wav,#c1a0_sci_gm,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_gm1.wav,#c1a0_sci_gm1,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_itsyou.wav,#c1a0_sci_itsyou,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_lock1a.wav,#c1a0_sci_lock1a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_lock2a.wav,#c1a0_sci_lock2a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_lock3a.wav,#c1a0_sci_lock3a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_lock4a.wav,#c1a0_sci_lock4a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_lock5a.wav,#c1a0_sci_lock5a,Gray,7,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_lock6a.wav,#c1a0_sci_lock6a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_lock7a.wav,#c1a0_sci_lock7a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_lock8a.wav,#c1a0_sci_lock8a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_samp.wav,#c1a0_sci_samp,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_scanrpt.wav,#c1a0_sci_scanrpt,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a0_sci_stall.wav,#c1a0_sci_stall,Gray,,#HalfLife_Scientist,,,C
+*scientist/c1a0_sci_stayback.wav,#c1a0_sci_stayback,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a1_sci_1scan.wav,#c1a1_sci_1scan,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a1_sci_2scan.wav,#c1a1_sci_2scan,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a1_sci_3scan.wav,#c1a1_sci_3scan,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a1_sci_4scan.wav,#c1a1_sci_4scan,Gray,20,#HalfLife_Scientist,,,C
+scientist/c1a1_sci_5scan.wav,#c1a1_sci_5scan,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a2_sci_1zomb.wav,#c1a2_sci_1zomb,Gray,,#HalfLife_Scientist,,,C IGNORE_DISTANCE_LIMIT
+scientist/c1a2_sci_3zomb.wav,#c1a2_sci_3zomb,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a2_sci_5zomb.wav,#c1a2_sci_5zomb,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a2_sci_6zomb.wav,#c1a2_sci_6zomb,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a2_sci_dangling.wav,#c1a2_sci_dangling,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a2_sci_darkroom.wav,#c1a2_sci_darkroom,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a2_sci_elevator.wav,#c1a2_sci_elevator,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a2_sci_lounge.wav,#c1a2_sci_lounge,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a2_sci_transm.wav,#c1a2_sci_transm,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a3_sci_1man.wav,#c1a3_sci_1man,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a3_sci_atlast.wav,#c1a3_sci_atlast,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a3_sci_rescued.wav,#c1a3_sci_rescued,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a3_sci_silo1a.wav,#c1a3_sci_silo1a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a3_sci_silo2a.wav,#c1a3_sci_silo2a,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a3_sci_team.wav,#c1a3_sci_team,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a3_sci_thankgod.wav,#c1a3_sci_thankgod,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a4_sci_blind.wav,#c1a4_sci_blind,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a4_sci_gener.wav,#c1a4_sci_gener,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a4_sci_pwr.wav,#c1a4_sci_pwr,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a4_sci_pwroff.wav,#c1a4_sci_pwroff,Gray,,#HalfLife_Scientist,,,C
+*scientist/c1a4_sci_rocket.wav,#c1a4_sci_rocket,Gray,,#HalfLife_Scientist,,,C
+*scientist/c1a4_sci_tent.WAV,#c1a4_sci_tent,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a4_sci_trainend.wav,#c1a4_sci_trainend,Gray,,#HalfLife_Scientist,,,C
+scientist/c1a4_sci_trust.wav,#c1a4_sci_trust,Gray,,#HalfLife_Scientist,,,C
+scientist/c2a3_sci_icky.wav,#c2a3_sci_icky,Gray,,#HalfLife_Scientist,,,C
+scientist/c2a3_sci_track.wav,#c2a3_sci_track,Gray,,#HalfLife_Scientist,,,C
+scientist/c2a4_sci_2tau.wav,#c2a4_sci_2tau,Gray,,#HalfLife_Scientist,,,C
+scientist/c2a4_sci_4tau.wav,#c2a4_sci_4tau,Gray,,#HalfLife_Scientist,,,C
+scientist/c2a4_sci_alldie.wav,#c2a4_sci_alldie,Gray,,#HalfLife_Scientist,,,C
+scientist/c2a4_sci_arg2a.wav,#c2a4_sci_arg2a,Gray,,#HalfLife_Scientist,,,C
+scientist/c2a4_sci_arg4a.wav,#c2a4_sci_arg4a,Gray,,#HalfLife_Scientist,,,C
+scientist/c2a4_sci_letout.wav,#c2a4_sci_letout,Gray,,#HalfLife_Scientist,,,C
+scientist/c2a4_sci_scanner.wav,#c2a4_sci_scanner,Gray,,#HalfLife_Scientist,,,C
+scientist/c2a4_sci_sugicaloff.wav,#c2a4_sci_sugicaloff,Gray,,#HalfLife_Scientist,,,C
+scientist/c2a4_sci_surgury.wav,#c2a4_sci_surgury,Gray,,#HalfLife_Scientist,,,C
+scientist/c2a5_sci_boobie.wav,#c2a5_sci_boobie,Gray,,#HalfLife_Scientist,,,C
+scientist/c2a5_sci_lebuz.wav,#c2a5_sci_lebuz,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a1_sci_2sat.wav,#c3a1_sci_2sat,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a1_sci_4sat.wav,#c3a1_sci_4sat,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a1_sci_6sat.wav,#c3a1_sci_6sat,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a1_sci_dome.wav,#c3a1_sci_dome,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a1_sci_done.wav,#c3a1_sci_done,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_1glu.wav,#c3a2_sci_1glu,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_1surv.wav,#c3a2_sci_1surv,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_2glu.wav,#c3a2_sci_2glu,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_3glu.wav,#c3a2_sci_3glu,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_3surv.wav,#c3a2_sci_3surv,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_5surv.wav,#c3a2_sci_5surv,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_7surv.wav,#c3a2_sci_7surv,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_flood.wav,#c3a2_sci_flood,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_fool.wav,#c3a2_sci_fool,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_forever.wav,#c3a2_sci_forever,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_linger.wav,#c3a2_sci_linger,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_ljump.wav,#c3a2_sci_ljump,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_notyet.wav,#c3a2_sci_notyet,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_portal.wav,#c3a2_sci_portal,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_portopen.wav,#c3a2_sci_portopen,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_position.wav,#c3a2_sci_position,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_shower.wav,#c3a2_sci_shower,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_straws.wav,#c3a2_sci_straws,Gray,,#HalfLife_Scientist,,,C
+scientist/c3a2_sci_uphere.wav,#c3a2_sci_uphere,Gray,,#HalfLife_Scientist,,,C
+scientist/cantbeserious.wav,#cantbeserious,Gray,,#HalfLife_Scientist,,,C
+scientist/cantbeworse.wav,#cantbeworse,Gray,,#HalfLife_Scientist,,,C
+scientist/canttakemore.wav,#canttakemore,Gray,,#HalfLife_Scientist,,,C
+scientist/cascade.wav,#cascade,Gray,,#HalfLife_Scientist,,,C
+scientist/catchone.wav,#catchone,Gray,,#HalfLife_Scientist,,,C
+scientist/chaostheory.wav,#chaostheory,Gray,,#HalfLife_Scientist,,,C
+scientist/checkatten.wav,#checkatten,Gray,,#HalfLife_Scientist,,,C
+scientist/completelywrong.wav,#completelywrong,Gray,,#HalfLife_Scientist,,,C
+scientist/containfail.wav,#containfail,Gray,,#HalfLife_Scientist,,,C
+scientist/correcttheory.wav,#correcttheory,Gray,,#HalfLife_Scientist,,,C
+scientist/cough.wav,#cough,Gray,3,#HalfLife_Scientist,,,C
+scientist/crowbar.wav,#crowbar,Gray,,#HalfLife_Scientist,,,C
+scientist/d01_sci10_interesting.wav,#d01_sci10_interesting,Gray,,#HalfLife_Scientist,,,C
+scientist/d01_sci14_right.wav,#d01_sci14_right,Gray,,#HalfLife_Scientist,,,C
+scientist/d06_sci01_lambdalabs.wav,#d06_sci01_lambdalabs,Gray,,#HalfLife_Scientist,,,C
+scientist/d08_sci01_idnumber.wav,#d08_sci01_idnumber,Gray,,#HalfLife_Scientist,,,C
+scientist/d08_sci02_scientists.wav,#d08_sci02_scientists,Gray,,#HalfLife_Scientist,,,C
+scientist/dangerous.wav,#dangerous,Gray,,#HalfLife_Scientist,,,C
+scientist/darkkill.wav,#darkkill,Gray,,#HalfLife_Scientist,,,C
+scientist/delayagain.wav,#delayagain,Gray,,#HalfLife_Scientist,,,C
+scientist/didyouhear.wav,#didyouhear,Gray,,#HalfLife_Scientist,,,C
+scientist/dinner.wav,#dinner,Gray,,#HalfLife_Scientist,,,C
+scientist/dontconcur.wav,#dontconcur,Gray,,#HalfLife_Scientist,,,C
+scientist/dontgothere.wav,#dontgothere,Gray,,#HalfLife_Scientist,,,C
+scientist/dontkillme.wav,#dontkillme,Gray,,#HalfLife_Scientist,,,C
+scientist/dontknow.wav,#dontknow,Gray,,#HalfLife_Scientist,,,C
+scientist/dontwantdie.wav,#dontwantdie,Gray,,#HalfLife_Scientist,,,C
+scientist/donuteater.wav,#donuteater,Gray,,#HalfLife_Scientist,,,C
+scientist/doyousmell.wav,#doyousmell,Gray,,#HalfLife_Scientist,,,C
+scientist/drunk.wav,#drunk,Gray,,#HalfLife_Scientist,,,C
+scientist/dweller_help.wav,#dweller_help,Gray,,#HalfLife_Scientist,,,C
+scientist/dweller_notagain.wav,#dweller_notagain,Gray,,#HalfLife_Scientist,,,C
+scientist/escapecanal.wav,#escapecanal,Gray,,#HalfLife_Scientist,,,C
+scientist/evergetout.wav,#evergetout,Gray,,#HalfLife_Scientist,,,C
+scientist/everseen.wav,#everseen,Gray,,#HalfLife_Scientist,,,C
+scientist/excellentteam.wav,#excellentteam,Gray,,#HalfLife_Scientist,,,C
+scientist/excuse.wav,#excuse,Gray,,#HalfLife_Scientist,,,C
+scientist/faller_stayback.wav,#faller_stayback,Gray,,#HalfLife_Scientist,,,C
+scientist/fallinsane.wav,#fallinsane,Gray,,#HalfLife_Scientist,,,C
+scientist/fascinating.wav,#fascinating,Gray,,#HalfLife_Scientist,,,C
+scientist/fellowscientist.wav,#fellowscientist,Gray,,#HalfLife_Scientist,,,C
+scientist/fine.wav,#fine,Gray,,#HalfLife_Scientist,,,C
+scientist/fork_impossible.wav,#fork_impossible,Gray,,#HalfLife_Scientist,,,C
+scientist/fork_phd.wav,#fork_phd,Gray,,#HalfLife_Scientist,,,C
+scientist/fork_theoretically.wav,#fork_theoretically,Gray,,#HalfLife_Scientist,,,C
+scientist/freeman.wav,#freeman,Gray,,#HalfLife_Scientist,,,C
+scientist/freemanalive.wav,#freemanalive,Gray,,#HalfLife_Scientist,,,C
+scientist/funny_toilet1.wav,#funny_toilet1,Gray,,#HalfLife_Scientist,,,C
+scientist/funny_toilet2.wav,#funny_toilet2,Gray,,#HalfLife_Scientist,,,C
+scientist/funny_toilet3.wav,#funny_toilet3,Gray,,#HalfLife_Scientist,,,C
+scientist/fusionshunt.wav,#fusionshunt,Gray,,#HalfLife_Scientist,,,C
+scientist/getoutalive.wav,#getoutalive,Gray,,#HalfLife_Scientist,,,C
+scientist/getoutofhere.wav,#getoutofhere,Gray,,#HalfLife_Scientist,,,C
+scientist/goodpaper.wav,#goodpaper,Gray,,#HalfLife_Scientist,,,C
+scientist/goodtoseeyou.wav,#goodtoseeyou,Gray,,#HalfLife_Scientist,,,C
+scientist/gottogetout.wav,#gottogetout,Gray,,#HalfLife_Scientist,,,C
+scientist/greetings.wav,#greetings,Gray,,#HalfLife_Scientist,,,C
+scientist/greetings2.wav,#greetings2,Gray,,#HalfLife_Scientist,,,C
+scientist/guardknows.wav,#guardknows,Gray,,#HalfLife_Scientist,,,C
+scientist/headcrab.wav,#headcrab,Gray,,#HalfLife_Scientist,,,C
+scientist/heal1.wav,#heal1,Gray,,#HalfLife_Scientist,,,C
+scientist/heal2.wav,#heal2,Gray,,#HalfLife_Scientist,,,C
+scientist/heal3.wav,#heal3,Gray,,#HalfLife_Scientist,,,C
+scientist/heal4.wav,#heal4,Gray,,#HalfLife_Scientist,,,C
+scientist/heal5.wav,#heal5,Gray,,#HalfLife_Scientist,,,C
+scientist/hearsomething.wav,#scientisthearsomething,Gray,,#HalfLife_Scientist,,,C
+scientist/hello.wav,#hello,Gray,,#HalfLife_Scientist,,,C
+scientist/hello2.wav,#hello2,Gray,,#HalfLife_Scientist,,,C
+scientist/hellofreeman.wav,#hellofreeman,Gray,,#HalfLife_Scientist,,,C
+scientist/hellofromlab.wav,#hellofromlab,Gray,,#HalfLife_Scientist,,,C
+scientist/hellothere.wav,#hellothere,Gray,,#HalfLife_Scientist,,,C
+scientist/hideglasses.wav,#hideglasses,Gray,,#HalfLife_Scientist,,,C
+scientist/holdstill.wav,#holdstill,Gray,,#HalfLife_Scientist,,,C
+scientist/hopenominal.wav,#hopenominal,Gray,,#HalfLife_Scientist,,,C
+scientist/hopeyouknow.wav,#hopeyouknow,Gray,,#HalfLife_Scientist,,,C
+scientist/howinteresting.wav,#howinteresting,Gray,,#HalfLife_Scientist,,,C
+scientist/hungryyet.wav,#hungryyet,Gray,,#HalfLife_Scientist,,,C
+scientist/ibelieveso.wav,#ibelieveso,Gray,,#HalfLife_Scientist,,,C
+scientist/icanhelp.wav,#icanhelp,Gray,,#HalfLife_Scientist,,,C
+scientist/idontthinkso.wav,#idontthinkso,Gray,,#HalfLife_Scientist,,,C
+scientist/ihearsomething.wav,#ihearsomething,Gray,,#HalfLife_Scientist,,,C
+scientist/illwait.wav,#scientistillwait,Gray,,#HalfLife_Scientist,,,C
+scientist/illwaithere.wav,#illwaithere,Gray,,#HalfLife_Scientist,,,C
+scientist/importantspecies.wav,#importantspecies,Gray,,#HalfLife_Scientist,,,C
+scientist/improbable.wav,#improbable,Gray,,#HalfLife_Scientist,,,C
+scientist/imsure.wav,#imsure,Gray,1.7,#HalfLife_Scientist,,,C
+scientist/inconclusive.wav,#inconclusive,Gray,,#HalfLife_Scientist,,,C
+scientist/inmesstoo.wav,#inmesstoo,Gray,,#HalfLife_Scientist,,,C
+scientist/ipredictedthis.wav,#ipredictedthis,Gray,,#HalfLife_Scientist,,,C
+scientist/istay.wav,#istay,Gray,,#HalfLife_Scientist,,,C
+scientist/iwounded.wav,#iwounded,Gray,,#HalfLife_Scientist,,,C
+scientist/iwounded2.wav,#iwounded2,Gray,,#HalfLife_Scientist,,,C
+scientist/iwoundedbad.wav,#iwoundedbad,Gray,,#HalfLife_Scientist,,,C
+scientist/justasked.wav,#justasked,Gray,,#HalfLife_Scientist,,,C
+scientist/lambdalab.wav,#lambdalab,Gray,,#HalfLife_Scientist,,,C
+scientist/leadtheway.wav,#leadtheway,Gray,,#HalfLife_Scientist,,,C
+scientist/leavingme.wav,#leavingme,Gray,,#HalfLife_Scientist,,,C
+scientist/letmehelp.wav,#letmehelp,Gray,,#HalfLife_Scientist,,,C
+scientist/letsgo.wav,#scientistletsgo,Gray,,#HalfLife_Scientist,,,C
+scientist/letstrythis.wav,#letstrythis,Gray,,#HalfLife_Scientist,,,C
+scientist/letyouin.wav,#letyouin,Gray,,#HalfLife_Scientist,,,C
+scientist/limitsok.wav,#limitsok,Gray,,#HalfLife_Scientist,,,C
+scientist/lowervoice.wav,#lowervoice,Gray,,#HalfLife_Scientist,,,C
+scientist/luckwillchange.wav,#luckwillchange,Gray,,#HalfLife_Scientist,,,C
+scientist/madness.wav,#madness,Gray,,#HalfLife_Scientist,,,C
+scientist/needsleep.wav,#needsleep,Gray,,#HalfLife_Scientist,,,C
+scientist/neverseen.wav,#neverseen,Gray,,#HalfLife_Scientist,,,C
+scientist/newhevsuit.wav,#newhevsuit,Gray,,#HalfLife_Scientist,,,C
+scientist/newsample.wav,#newsample,Gray,,#HalfLife_Scientist,,,C
+scientist/nodoubt.wav,#nodoubt,Gray,,#HalfLife_Scientist,,,C
+scientist/nogrant.wav,#nogrant,Gray,4.5,#HalfLife_Scientist,,,C
+scientist/noguess.wav,#noguess,Gray,,#HalfLife_Scientist,,,C
+scientist/noidea.wav,#noidea,Gray,,#HalfLife_Scientist,,,C
+scientist/noo.wav,#noo,Gray,,#HalfLife_Scientist,,,C
+scientist/nooo.wav,#nooo,Gray,,#HalfLife_Scientist,,,C
+scientist/noplease.wav,#noplease,Gray,,#HalfLife_Scientist,,,C
+scientist/notcertain.wav,#notcertain,Gray,,#HalfLife_Scientist,,,C
+scientist/nothostile.wav,#nothostile,Gray,,#HalfLife_Scientist,,,C
+scientist/notsure.wav,#notsure,Gray,,#HalfLife_Scientist,,,C
+scientist/odorfromyou.wav,#odorfromyou,Gray,,#HalfLife_Scientist,,,C
+scientist/of1a1_sc01.wav,#of1a1_sc01,Gray,,#HalfLife_Scientist,,,C
+scientist/of1a1_sc02.wav,#of1a1_sc02,Gray,,#HalfLife_Scientist,,,C
+scientist/of2a3_sc01.wav,#of2a3_sc01,Gray,,#HalfLife_Scientist,,,C
+scientist/ofcourse.wav,#ofcourse,Gray,,#HalfLife_Scientist,,,C
+scientist/ofcoursenot.wav,#ofcoursenot,Gray,,#HalfLife_Scientist,,,C
+scientist/okgetout.wav,#okgetout,Gray,,#HalfLife_Scientist,,,C
+scientist/okihope.wav,#okihope,Gray,,#HalfLife_Scientist,,,C
+scientist/organicmatter.wav,#organicmatter,Gray,,#HalfLife_Scientist,,,C
+scientist/overhere.wav,#overhere,Gray,,#HalfLife_Scientist,,,C
+scientist/peculiarmarks.wav,#peculiarmarks,Gray,,#HalfLife_Scientist,,,C
+scientist/peculiarodor.wav,#peculiarodor,Gray,,#HalfLife_Scientist,,,C
+scientist/perfectday.wav,#perfectday,Gray,4.5,#HalfLife_Scientist,,,C
+scientist/perhaps.wav,#perhaps,Gray,,#HalfLife_Scientist,,,C
+scientist/positively.wav,#positively,Gray,,#HalfLife_Scientist,,,C
+scientist/protectme.wav,#protectme,Gray,,#HalfLife_Scientist,,,C
+scientist/purereadings.wav,#purereadings,Gray,,#HalfLife_Scientist,,,C
+scientist/ramble_1.wav,#ramble_1,Gray,,#HalfLife_Scientist,,,C
+scientist/ramble_2.wav,#ramble_2,Gray,,#HalfLife_Scientist,,,C
+scientist/ramble_3.wav,#ramble_3,Gray,,#HalfLife_Scientist,,,C
+scientist/ramble_4.wav,#ramble_4,Gray,,#HalfLife_Scientist,,,C
+scientist/recalculate.wav,#recalculate,Gray,,#HalfLife_Scientist,,,C
+scientist/reconsider.wav,#reconsider,Gray,,#HalfLife_Scientist,,,C
+scientist/repeat.wav,#repeat,Gray,,#HalfLife_Scientist,,,C
+scientist/reportflux.wav,#reportflux,Gray,,#HalfLife_Scientist,,,C
+scientist/rescueus.wav,#rescueus,Gray,,#HalfLife_Scientist,,,C
+scientist/ridiculous.wav,#ridiculous,Gray,,#HalfLife_Scientist,,,C
+scientist/right.wav,#right,Gray,,#HalfLife_Scientist,,,C
+scientist/rightwayout.wav,#rightwayout,Gray,,#HalfLife_Scientist,,,C
+scientist/rumorclean.wav,#rumorclean,Gray,,#HalfLife_Scientist,,,C
+scientist/rumourclean.wav,#rumorclean,Gray,,#HalfLife_Scientist,,,C
+scientist/runtest.wav,#runtest,Gray,,#HalfLife_Scientist,,,C
+scientist/safetyinnumbers.wav,#safetyinnumbers,Gray,,#HalfLife_Scientist,,,C
+scientist/saved.wav,#saved,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_accident2.wav,#sc_accident2,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_accident3.wav,#sc_accident3,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_canals3.wav,#sc_canals3,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_coming.wav,#sc_coming,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_guardknows.wav,#sc_guardknows,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_hello1.wav,#sc_hello1,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_hello2.wav,#sc_hello2,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_hello3.wav,#sc_hello3,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_hello4.wav,#sc_hello4,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_hello5.wav,#sc_hello5,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_holdyourself.wav,#sc_holdyourself,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_leavemealone.wav,#sc_leavemealone,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_maint.wav,#sc_maint,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_ok0.wav,#sc_ok0,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_ok2.wav,#sc_ok2,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_ok3.wav,#sc_ok3,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_outofhere.wav,#sc_outofhere,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_please.wav,#sc_please,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_pok1.wav,#sc_pok1,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_pok2.wav,#sc_pok2,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_pok3.wav,#sc_pok3,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_power1.wav,#sc_power1,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_power2.wav,#sc_power2,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_sec2_admin1.wav,#sc_sec2_admin1,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_stop3.wav,#sc_stop3,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_yard_box3.wav,#sc_yard_box3,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_yard_box4.wav,#sc_yard_box4,Gray,,#HalfLife_Scientist,,,C
+scientist/sc_yard_wound1.wav,#sc_yard_wound1,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_1thou.wav,#sci_1thou,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_2thou.wav,#sci_2thou,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_3thou.wav,#sci_3thou,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_4thou.wav,#sci_4thou,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_5thou.wav,#sci_5thou,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_aftertest.wav,#sci_aftertest,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_alone.wav,#sci_alone,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_bother.wav,#sci_bother,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_busy.wav,#sci_busy,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_die1.wav,#sci_die1,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_die2.wav,#sci_die2,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_die3.wav,#sci_die3,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_die4.wav,#sci_die4,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_dragoff.wav,#sci_dragoff,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_fear1.wav,#sci_fear1,,,,,,C
+SC_SCREAM0,#sci_fear1,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_fear2.wav,#sci_fear2,,,,,,C
+SC_SCREAM1,#sci_fear2,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_fear3.wav,#sci_fear3,,,,,,C
+SC_SCREAM2,#sci_fear3,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_fear4.wav,#sci_fear4,,,,,,C
+SC_SCREAM3,#sci_fear4,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_fear5.wav,#sci_fear5,,,,,,C
+SC_SCREAM4,#sci_fear5,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_fear6.wav,#sci_fear6,,,,,,C
+SC_SCREAM5,#sci_fear6,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_fear7.wav,#sci_fear7,,,,,,C
+SC_SCREAM6,#sci_fear7,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_fear8.wav,#sci_fear8,,,,,,C
+SC_SCREAM7,#sci_fear8,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_fear9.wav,#sci_fear9,,,,,,C
+SC_SCREAM8,#sci_fear9,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_fear10.wav,#sci_fear10,,,,,,C
+SC_SCREAM9,#sci_fear10,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_fear11.wav,#sci_fear11,,,,,,C
+SC_SCREAM10,#sci_fear11,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_fear12.wav,#sci_fear12,,,,,,C
+SC_SCREAM11,#sci_fear12,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_fear13.wav,#sci_fear13,,,,,,C
+SC_SCREAM12,#sci_fear13,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_fear14.wav,#sci_fear14,,,,,,C
+SC_SCREAM13,#sci_fear14,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_fear15.wav,#sci_fear15,,,,,,C
+SC_SCREAM14,#sci_fear15,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_pain1.wav,#sci_pain1,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_pain2.wav,#sci_pain2,Gray,,#HalfLife_Scientist,,,C
+*scientist/sci_pain3.wav,#sci_pain3,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_pain4.wav,#sci_pain4,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_pain5.wav,#sci_pain5,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_pain6.wav,#sci_pain6,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_pain7.wav,#sci_pain7,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_pain8.wav,#sci_pain8,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_pain9.wav,#sci_pain9,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_pain10.wav,#sci_pain10,Gray,,#HalfLife_Scientist,,,C
+scientist/sci_somewhere.wav,#sci_somewhere,Gray,,#HalfLife_Scientist,,,C
+scientist/scream01.wav,#scream01,Gray,,#HalfLife_Scientist,,,C
+scientist/scream1.wav,#scream1,Gray,,#HalfLife_Scientist,,,C
+scientist/scream02.wav,#scream02,Gray,,#HalfLife_Scientist,,,C
+scientist/scream2.wav,#scream2,Gray,,#HalfLife_Scientist,,,C
+scientist/scream03.wav,#scream03,Gray,,#HalfLife_Scientist,,,C
+scientist/scream3.wav,#scream3,Gray,,#HalfLife_Scientist,,,C
+scientist/scream04.wav,#scream04,Gray,,#HalfLife_Scientist,,,C
+scientist/scream4.wav,#scream4,Gray,,#HalfLife_Scientist,,,C
+scientist/scream05.wav,#scream05,Gray,,#HalfLife_Scientist,,,C
+scientist/scream5.wav,#scream5,Gray,,#HalfLife_Scientist,,,C
+scientist/scream06.wav,#scream06,Gray,,#HalfLife_Scientist,,,C
+scientist/scream6.wav,#scream6,Gray,,#HalfLife_Scientist,,,C
+scientist/scream07.wav,#scream07,Gray,,#HalfLife_Scientist,,,C
+scientist/scream7.wav,#scream7,Gray,,#HalfLife_Scientist,,,C
+scientist/scream08.wav,#scream08,Gray,,#HalfLife_Scientist,,,C
+scientist/scream09.wav,#scream09,Gray,,#HalfLife_Scientist,,,C
+scientist/scream10.wav,#scream10,Gray,,#HalfLife_Scientist,,,C
+scientist/scream11.wav,#scream11,Gray,,#HalfLife_Scientist,,,C
+scientist/scream12.wav,#scream12,Gray,,#HalfLife_Scientist,,,C
+scientist/scream13.wav,#scream13,Gray,,#HalfLife_Scientist,,,C
+scientist/scream14.wav,#scream14,Gray,,#HalfLife_Scientist,,,C
+scientist/scream15.wav,#scream15,Gray,1,#HalfLife_Scientist,,,C
+scientist/scream16.wav,#scream16,Gray,,#HalfLife_Scientist,,,C
+scientist/scream17.wav,#scream17,Gray,,#HalfLife_Scientist,,,C
+scientist/scream18.wav,#scream18,Gray,,#HalfLife_Scientist,,,C
+scientist/scream19.wav,#scream19,Gray,,#HalfLife_Scientist,,,C
+scientist/scream20.wav,#scream20,Gray,,#HalfLife_Scientist,,,C
+scientist/scream21.wav,#scream21,Gray,,#HalfLife_Scientist,,,C
+scientist/scream22.wav,#scream22,Gray,,#HalfLife_Scientist,,,C
+scientist/scream23.wav,#scream23,Gray,,#HalfLife_Scientist,,,C
+scientist/scream24.wav,#scream24,Gray,,#HalfLife_Scientist,,,C
+scientist/scream25.wav,#scream25,Gray,,#HalfLife_Scientist,,,C
+scientist/seeheadcrab.wav,#seeheadcrab,Gray,,#HalfLife_Scientist,,,C
+scientist/seencup.wav,#seencup,Gray,,#HalfLife_Scientist,,,C
+scientist/shakeunification.wav,#shakeunification,Gray,,#HalfLife_Scientist,,,C
+scientist/shutdownchart.wav,#shutdownchart,Gray,,#HalfLife_Scientist,,,C
+scientist/shutup.wav,#shutup,Gray,,#HalfLife_Scientist,,,C
+scientist/shutup2.wav,#shutup2,Gray,,#HalfLife_Scientist,,,C
+scientist/simulation.wav,#simulation,Gray,,#HalfLife_Scientist,,,C
+scientist/slowingyou.wav,#slowingyou,Gray,,#HalfLife_Scientist,,,C
+scientist/smellburn.wav,#smellburn,Gray,,#HalfLife_Scientist,,,C
+scientist/snarkbody.wav,#snarkbody,Gray,,#HalfLife_Scientist,,,C
+scientist/sneeze.wav,#sneeze,Gray,,#HalfLife_Scientist,,,C
+scientist/softethics.wav,#softethics,Gray,,#HalfLife_Scientist,,,C
+scientist/somethingfoul.wav,#somethingfoul,Gray,,#HalfLife_Scientist,,,C
+scientist/sorryimleaving.wav,#sorryimleaving,Gray,,#HalfLife_Scientist,,,C
+scientist/startle1.wav,#startle1,Gray,,#HalfLife_Scientist,,,C
+scientist/startle2.wav,#startle2,Gray,,#HalfLife_Scientist,,,C
+scientist/startle3.wav,#startle3,Gray,,#HalfLife_Scientist,,,C
+scientist/startle4.wav,#startle4,Gray,,#HalfLife_Scientist,,,C
+scientist/startle5.wav,#startle5,Gray,,#HalfLife_Scientist,,,C
+scientist/startle6.wav,#startle6,Gray,,#HalfLife_Scientist,,,C
+scientist/startle7.wav,#startle7,Gray,,#HalfLife_Scientist,,,C
+scientist/startle8.wav,#startle8,Gray,,#HalfLife_Scientist,,,C
+scientist/startle9.wav,#startle9,Gray,,#HalfLife_Scientist,,,C
+scientist/statusreport.wav,#statusreport,Gray,,#HalfLife_Scientist,,,C
+scientist/stench.wav,#scientiststench,Gray,,#HalfLife_Scientist,,,C
+scientist/stimulating.wav,#stimulating,Gray,,#HalfLife_Scientist,,,C
+scientist/stop1.wav,#scientiststop1,Gray,,#HalfLife_Scientist,,,C
+scientist/stop2.wav,#scientiststop2,Gray,,#HalfLife_Scientist,,,C
+scientist/stop3.wav,#stop3,Gray,,#HalfLife_Scientist,,,C
+scientist/stop4.wav,#stop4,Gray,,#HalfLife_Scientist,,,C
+scientist/stopasking.wav,#stopasking,Gray,,#HalfLife_Scientist,,,C
+scientist/stopattacking.wav,#stopattacking,Gray,,#HalfLife_Scientist,,,C
+scientist/sunsets.wav,#sunsets,Gray,,#HalfLife_Scientist,,,C
+scientist/survival.wav,#survival,Gray,,#HalfLife_Scientist,,,C
+scientist/thankgod.wav,#thankgod,Gray,,#HalfLife_Scientist,,,C
+scientist/thatsmell.wav,#thatsmell,Gray,,#HalfLife_Scientist,,,C
+scientist/thatsodd.wav,#thatsodd,Gray,,#HalfLife_Scientist,,,C
+scientist/theoretically.wav,#theoretically,Gray,,#HalfLife_Scientist,,,C
+scientist/thiswillhelp.wav,#thiswillhelp,Gray,,#HalfLife_Scientist,,,C
+scientist/ties.wav,#ties,Gray,,#HalfLife_Scientist,,,C
+scientist/toiletscare.wav,#toiletscare,Gray,,#HalfLife_Scientist,,,C
+scientist/tramangry.wav,#tramangry,Gray,,#HalfLife_Scientist,,,C
+scientist/tramcough.wav,#tramcough,Gray,,#HalfLife_Scientist,,,C
+scientist/tramstuck.wav,#tramstuck,Gray,,#HalfLife_Scientist,,,C
+scientist/tunedtoday.wav,#tunedtoday,Gray,,#HalfLife_Scientist,,,C
+scientist/tunnelcalc.wav,#tunnelcalc,Gray,,#HalfLife_Scientist,,,C
+scientist/uselessphd.wav,#uselessphd,Gray,,#HalfLife_Scientist,,,C
+scientist/ushouldsee.wav,#ushouldsee,Gray,,#HalfLife_Scientist,,,C
+scientist/waithere.wav,#waithere,Gray,,#HalfLife_Scientist,,,C
+scientist/weartie.wav,#weartie,Gray,,#HalfLife_Scientist,,,C
+scientist/whatissound.wav,#whatissound,Gray,,#HalfLife_Scientist,,,C
+scientist/whatnext.wav,#whatnext,Gray,,#HalfLife_Scientist,,,C
+scientist/whatyoudoing.wav,#whatyoudoing,Gray,,#HalfLife_Scientist,,,C
+scientist/whoareyou.wav,#whoareyou,Gray,,#HalfLife_Scientist,,,C
+scientist/whocansay.wav,#whocansay,Gray,,#HalfLife_Scientist,,,C
+scientist/whoresponsible.wav,#whoresponsible,Gray,,#HalfLife_Scientist,,,C
+scientist/whyaskme.wav,#whyaskme,Gray,,#HalfLife_Scientist,,,C
+scientist/whyleavehere.wav,#whyleavehere,Gray,,#HalfLife_Scientist,,,C
+scientist/yawn.wav,#yawn,Gray,,#HalfLife_Scientist,,,C
+scientist/yees.wav,#yees,Gray,,#HalfLife_Scientist,,,C
+scientist/yes.wav,#yes,Gray,,#HalfLife_Scientist,,,C
+scientist/yes2.wav,#yes2,Gray,,#HalfLife_Scientist,,,C
+scientist/yes3.wav,#yes3,Gray,,#HalfLife_Scientist,,,C
+scientist/yesok.wav,#yesok,Gray,,#HalfLife_Scientist,,,C
+scientist/yesletsgo.wav,#yesletsgo,Gray,,#HalfLife_Scientist,,,C
+scientist/youinsane.wav,#youinsane,Gray,,#HalfLife_Scientist,,,C
+scientist/youlookbad.wav,#youlookbad,Gray,1,#HalfLife_Scientist,,,C
+scientist/youlookbad2.wav,#youlookbad2,Gray,1,#HalfLife_Scientist,,,C
+scientist/youneedmedic.wav,#scientistyouneedmedic,Gray,,#HalfLife_Scientist,,,C
+scientist/youwounded.wav,#youwounded,Gray,,#HalfLife_Scientist,,,C
+,,,,,,,
+MAP1_TUNNEL4,#MAP1_TUNNEL4,Blue,5.5,#HalfLife_Security,,,C
+MAP16_BASTOP,#MAP16_BASTOP,Blue,5.8,#HalfLife_Security,,,C
+MAP17_DOOR0,#ba_door0,Blue,,#HalfLife_Security,,,C
+barney/aimforhead.wav,#aimforhead,Blue,,#HalfLife_Security,,,C
+barney/aintgoin.wav,#aintgoin,Blue,,#HalfLife_Security,,,C
+barney/aintscared.wav,#aintscared,Blue,,#HalfLife_Security,,,C
+barney/alreadyasked.wav,#alreadyasked,Blue,,#HalfLife_Security,,,C
+barney/ambush.wav,#ambush,Blue,,#HalfLife_Security,,,C
+barney/ba_another.wav,#ba_another,Blue,,#HalfLife_Security,,,C
+barney/ba_attack1.wav,#ba_attack1,Blue,,#HalfLife_Security,,,C
+barney/ba_becareful1.wav,#ba_becareful1,Blue,,#HalfLife_Security,,,C
+barney/ba_blocked.wav,#ba_blocked,Blue,,#HalfLife_Security,,,C
+barney/ba_blockedoff.wav,#ba_blockedoff,Blue,,#HalfLife_Security,,,C
+barney/ba_bridgechat1.wav,#ba_bridgechat1,Blue,,#HalfLife_Security,,,C
+barney/ba_bring.wav,#ba_bring,Blue,,#HalfLife_Security,,,C
+barney/ba_button0.wav,#ba_button0,Blue,,#HalfLife_Security,,,C
+barney/ba_button1.wav,#ba_button1,Blue,,#HalfLife_Security,,,C
+barney/ba_buttugly.wav,#ba_buttugly,Blue,,#HalfLife_Security,,,C
+barney/ba_canal_wound1.wav,#ba_canal_wound1,Blue,,#HalfLife_Security,,,C
+barney/ba_close.wav,#ba_close,Blue,,#HalfLife_Security,,,C
+barney/ba_crazy.wav,#ba_crazy,Blue,,#HalfLife_Security,,,C
+barney/ba_cure0.wav,#ba_cure0,Blue,,#HalfLife_Security,,,C
+barney/ba_cure1.wav,#ba_cure1,Blue,,#HalfLife_Security,,,C
+barney/ba_docprotect1.wav,#ba_docprotect1,Blue,,#HalfLife_Security,,,C
+barney/ba_docprotect2.wav,#ba_docprotect2,Blue,,#HalfLife_Security,,,C
+barney/ba_docprotect3.wav,#ba_docprotect3,Blue,,#HalfLife_Security,,,C
+barney/ba_dontmake.wav,#ba_dontmake,Blue,,#HalfLife_Security,,,C
+barney/ba_door0.wav,#ba_door0,Blue,,#HalfLife_Security,,,C
+barney/ba_door1.wav,#ba_door1,Blue,,#HalfLife_Security,,,C
+barney/ba_door2.wav,#ba_door2,Blue,,#HalfLife_Security,,,C
+barney/ba_door3.wav,#ba_door3,Blue,,#HalfLife_Security,,,C
+barney/ba_doorstuck.wav,#ba_doorstuck,Blue,,#HalfLife_Security,,,C
+barney/ba_dotoyou.wav,#ba_dotoyou,Blue,,#HalfLife_Security,,,C
+barney/ba_endline.wav,#ba_endline,Blue,,#HalfLife_Security,,,C
+barney/ba_firepl.wav,#ba_firepl,Blue,,#HalfLife_Security,,,C
+barney/ba_friends.wav,#ba_friends,Blue,,#HalfLife_Security,,,C
+barney/ba_generic0.wav,#ba_generic0,Blue,,#HalfLife_Security,,,C
+barney/ba_generic1.wav,#ba_generic1,Blue,,#HalfLife_Security,,,C
+barney/ba_generic2.wav,#ba_generic2,Blue,,#HalfLife_Security,,,C
+barney/ba_gethev.wav,#ba_gethev,Blue,,#HalfLife_Security,,,C
+barney/ba_getthroughthis.wav,#ba_getthroughthis,Blue,,#HalfLife_Security,,,C
+barney/ba_goodshoot.wav,#ba_goodshoot,Blue,,#HalfLife_Security,,,C
+barney/ba_gotone.wav,#ba_gotone,Blue,,#HalfLife_Security,,,C
+barney/ba_gundying.wav,#ba_gundying,Blue,,#HalfLife_Security,,,C
+barney/ba_gungiver.wav,#ba_gungiver,Blue,,#HalfLife_Security,,,C
+barney/ba_hello1.wav,#ba_hello1,Blue,,#HalfLife_Security,,,C
+barney/ba_hello3.wav,#ba_hello3,Blue,,#HalfLife_Security,,,C
+barney/ba_hello4.wav,#ba_hello4,Blue,,#HalfLife_Security,,,C
+barney/ba_ht06_01.wav,#ba_ht06_01,Blue,,#HalfLife_Security,,,C
+barney/ba_ht06_03.wav,#ba_ht06_03,Blue,,#HalfLife_Security,,,C
+barney/ba_ht06_03_alt.wav,#ba_ht06_03_alt,Blue,,#HalfLife_Security,,,C
+barney/ba_ht06_05.wav,#ba_ht06_05,Blue,,#HalfLife_Security,,,C
+barney/ba_ht06_09.wav,#ba_ht06_09,Blue,,#HalfLife_Security,,,C
+barney/ba_ht06_10.wav,#ba_ht06_10,Blue,,#HalfLife_Security,,,C
+barney/ba_ht07_01.wav,#ba_ht07_01,Blue,,#HalfLife_Security,,,C
+barney/ba_ht07_02.wav,#ba_ht07_02,Blue,,#HalfLife_Security,,,C
+barney/ba_ht07_03.wav,#ba_ht07_03,Blue,,#HalfLife_Security,,,C
+barney/ba_ht07_04.wav,#ba_ht07_04,Blue,,#HalfLife_Security,,,C
+barney/ba_ht07_06.wav,#ba_ht07_06,Blue,,#HalfLife_Security,,,C
+barney/ba_ht07_07.wav,#ba_ht07_07,Blue,,#HalfLife_Security,,,C
+barney/ba_ht07_11.wav,#ba_ht07_11,Blue,,#HalfLife_Security,,,C
+barney/ba_ht07_13.wav,#ba_ht07_13,Blue,,#HalfLife_Security,,,C
+barney/ba_ht07_14.wav,#ba_ht07_14,Blue,,#HalfLife_Security,,,C
+barney/ba_ht08_01_alt.wav,#ba_ht08_01_alt,Blue,,#HalfLife_Security,,,C
+barney/ba_ht08_02.wav,#ba_ht08_02,Blue,,#HalfLife_Security,,,C
+barney/ba_internet.wav,#ba_internet,Blue,,#HalfLife_Security,,,C
+barney/ba_iwish.wav,#ba_iwish,Blue,,#HalfLife_Security,,,C
+barney/ba_later.wav,#ba_later,Blue,,#HalfLife_Security,,,C
+barney/ba_laugh01.wav,#ba_laugh01,Blue,,#HalfLife_Security,,,C
+barney/ba_laugh02.wav,#ba_laugh02,Blue,,#HalfLife_Security,,,C
+barney/ba_laugh03.wav,#ba_laugh03,Blue,,#HalfLife_Security,,,C
+barney/ba_longnite.wav,#ba_longnite,Blue,,#HalfLife_Security,,,C
+barney/ba_milkill.wav,#ba_milkill,Blue,,#HalfLife_Security,,,C
+barney/ba_movie.wav,#ba_movie,Blue,,#HalfLife_Security,,,C
+barney/ba_needhelp0.wav,#ba_needhelp0,Blue,,#HalfLife_Security,,,C
+barney/ba_needhelp1.wav,#ba_needhelp1,Blue,,#HalfLife_Security,,,C
+barney/ba_opgate.wav,#ba_opgate,Blue,,#HalfLife_Security,,,C
+barney/ba_pissme.wav,#ba_pissme,Blue,,#HalfLife_Security,,,C
+barney/ba_pok1.wav,#ba_pok1,Blue,,#HalfLife_Security,,,C
+barney/ba_post.wav,#ba_post,Blue,,#HalfLife_Security,,,C
+barney/ba_power2.wav,#ba_power2,Blue,,#HalfLife_Security,,,C
+barney/ba_power4.wav,#ba_power4,Blue,,#HalfLife_Security,,,C
+barney/ba_protect.wav,#ba_protect,Blue,,#HalfLife_Security,,,C
+barney/ba_raincheck.wav,#ba_raincheck,Blue,,#HalfLife_Security,,,C
+barney/ba_safe1.wav,#ba_safe1,Blue,,#HalfLife_Security,,,C
+barney/ba_safe2.wav,#ba_safe2,Blue,,#HalfLife_Security,,,C
+barney/ba_security2_admin.wav,#ba_security2_admin,Blue,,#HalfLife_Security,,,C
+barney/ba_seethat.wav,#ba_seethat,Blue,,#HalfLife_Security,,,C
+barney/ba_shit.wav,#ba_shit,Blue,,#HalfLife_Security,,,C
+barney/ba_shot4.wav,#ba_shot4,Blue,,#HalfLife_Security,,,C
+barney/ba_soldier.wav,#ba_soldier,Blue,,#HalfLife_Security,,,C
+barney/ba_somuch.wav,#ba_somuch,Blue,,#HalfLife_Security,,,C
+barney/ba_spawn.wav,#ba_spawn,Blue,,#HalfLife_Security,,,C
+MAP4_RC12,#ba_spawn,Blue,,#HalfLife_Security,,,C
+barney/ba_staybehind.wav,#ba_staybehind,Blue,,#HalfLife_Security,,,C
+barney/ba_stepoff.wav,#ba_stepoff,Blue,,#HalfLife_Security,,,C
+barney/ba_tomb.wav,#ba_tomb,Blue,,#HalfLife_Security,,,C
+barney/ba_uwish.wav,#ba_uwish,Blue,,#HalfLife_Security,,,C
+barney/ba_watchit.wav,#ba_watchit,Blue,,#HalfLife_Security,,,C
+barney/ba_whatyou.wav,#ba_whatyou,Blue,,#HalfLife_Security,,,C
+barney/ba_whoathere.wav,#ba_whoathere,Blue,,#HalfLife_Security,,,C
+barney/badarea.wav,#badarea,Blue,,#HalfLife_Security,,,C
+barney/badfeeling.wav,#badfeeling,Blue,,#HalfLife_Security,,,C
+barney/beertopside.wav,#beertopside,Blue,,#HalfLife_Security,,,C
+barney/bequiet.wav,#bequiet,Blue,,#HalfLife_Security,,,C
+barney/bigmess.wav,#bigmess,Blue,,#HalfLife_Security,,,C
+barney/bigplace.wav,#bigplace,Blue,,#HalfLife_Security,,,C
+barney/c1a0_ba_button.wav,#c1a0_ba_button,Blue,,#HalfLife_Security,,,C
+barney/c1a0_ba_desk.wav,#c1a0_ba_desk,Blue,,#HalfLife_Security,,,C
+barney/c1a0_ba_headdown.wav,#c1a0_ba_headdown,Blue,,#HalfLife_Security,,,C
+barney/c1a0_ba_hevno.wav,#c1a0_ba_hevno,Blue,,#HalfLife_Security,,,C
+barney/c1a0_ba_hevyes.wav,#c1a0_ba_hevyes,Blue,,#HalfLife_Security,,,C
+barney/c1a0_ba_late.wav,#c1a0_ba_late,Blue,,#HalfLife_Security,,,C
+barney/c1a1_ba_glad.wav,#c1a1_ba_glad,Blue,,#HalfLife_Security,,,C
+barney/c1a2_ba_2zomb.wav,#c1a2_ba_2zomb,Blue,,#HalfLife_Security,,,C
+barney/c1a2_ba_4zomb.wav,#c1a2_ba_4zomb,Blue,,#HalfLife_Security,,,C
+barney/c1a2_ba_bullsquid.wav,#c1a2_ba_bullsquid,Blue,,#HalfLife_Security,,,C
+barney/c1a2_ba_climb.wav,#c1a2_ba_climb,Blue,,#HalfLife_Security,,,C
+barney/c1a2_ba_goforit.wav,#c1a2_ba_goforit,Blue,,#HalfLife_Security,,,C
+barney/c1a2_ba_slew.wav,#c1a2_ba_slew,Blue,,#HalfLife_Security,,,C
+barney/c1a2_ba_surface.wav,#c1a2_ba_surface,Blue,,#HalfLife_Security,,,C
+barney/c1a2_ba_top.wav,#c1a2_ba_top,Blue,,#HalfLife_Security,,,C
+barney/c1a4_ba_octo1.wav,#c1a4_ba_octo1,Blue,,#HalfLife_Security,,,C
+barney/c1a4_ba_octo2.wav,#c1a4_ba_octo2,Blue,5,#HalfLife_Security,,,C
+barney/c1a4_ba_octo3.wav,#c1a4_ba_octo3,Blue,,#HalfLife_Security,,,C
+barney/c1a4_ba_octo4.wav,#c1a4_ba_octo4,Blue,,#HalfLife_Security,,,C
+barney/c1a4_ba_wisp.wav,#c1a4_ba_wisp,Blue,,#HalfLife_Security,,,C
+barney/c2a1_ba_hub1a.wav,#c2a1_ba_hub1a,Blue,,#HalfLife_Security,,,C
+barney/c2a1_ba_hub2a.wav,#c2a1_ba_hub2a,Blue,,#HalfLife_Security,,,C
+barney/c2a2_ba_launch.wav,#c2a2_ba_launch,Blue,,#HalfLife_Security,,,C
+barney/c2a3_ba_assn.wav,#c2a3_ba_assn,Blue,,#HalfLife_Security,,,C
+barney/c2a4_ba_1tau.wav,#c2a4_ba_1tau,Blue,,#HalfLife_Security,,,C
+barney/c2a4_ba_3tau.wav,#c2a4_ba_3tau,Blue,,#HalfLife_Security,,,C
+barney/c2a4_ba_5tau.wav,#c2a4_ba_5tau,Blue,,#HalfLife_Security,,,C
+barney/c2a4_ba_alive.wav,#c2a4_ba_alive,Blue,,#HalfLife_Security,,,C
+barney/c2a4_ba_arg1a.wav,#c2a4_ba_arg1a,Blue,,#HalfLife_Security,,,C
+barney/c2a4_ba_arg3a.wav,#c2a4_ba_arg3a,Blue,,#HalfLife_Security,,,C
+barney/c2a4_ba_arg5a.wav,#c2a4_ba_arg5a,Blue,,#HalfLife_Security,,,C
+barney/c2a4_ba_longnite.wav,#c2a4_ba_longnite,Blue,,#HalfLife_Security,,,C
+barney/c2a4_ba_steril.wav,#c2a4_ba_steril,Blue,,#HalfLife_Security,,,C
+barney/c2a4_ba_teach.wav,#c2a4_ba_teach,Blue,,#HalfLife_Security,,,C
+barney/c2a5_ba_helpme.wav,#c2a5_ba_helpme,Blue,,#HalfLife_Security,,,C
+barney/c2a5_ba_letout.wav,#c2a5_ba_letout,Blue,,#HalfLife_Security,,,C
+barney/c3a2_ba_2surv.wav,#c3a2_ba_2surv,Blue,,#HalfLife_Security,,,C
+barney/c3a2_ba_4surv.wav,#c3a2_ba_4surv,Blue,,#HalfLife_Security,,,C
+barney/c3a2_ba_6surv.wav,#c3a2_ba_6surv,Blue,,#HalfLife_Security,,,C
+barney/c3a2_ba_8surv.wav,#c3a2_ba_8surv,Blue,,#HalfLife_Security,,,C
+barney/c3a2_ba_stay.wav,#c3a2_ba_stay,Blue,,#HalfLife_Security,,,C
+barney/cantfigure.wav,#cantfigure,Blue,,#HalfLife_Security,,,C
+barney/checkwounds.wav,#checkwounds,Blue,,#HalfLife_Security,,,C
+barney/coldone.wav,#coldone,Blue,,#HalfLife_Security,,,C
+barney/crewdied.wav,#crewdied,Blue,,#HalfLife_Security,,,C
+barney/diebloodsucker.wav,#diebloodsucker,Blue,,#HalfLife_Security,,,C
+barney/dobettertogether.wav,#dobettertogether,Blue,,#HalfLife_Security,,,C
+barney/dontaskme.wav,#dontaskme,Blue,,#HalfLife_Security,,,C
+barney/dontbet.wav,#dontbet,Blue,,#HalfLife_Security,,,C
+barney/dontbuyit.wav,#dontbuyit,Blue,,#HalfLife_Security,,,C
+barney/dontfigure.wav,#dontfigure,Blue,,#HalfLife_Security,,,C
+barney/dontguess.wav,#dontguess,Blue,,#HalfLife_Security,,,C
+barney/donthurtem.wav,#donthurtem,Blue,,#HalfLife_Security,,,C
+barney/dontreckon.wav,#dontreckon,Blue,,#HalfLife_Security,,,C
+barney/getanyworse.wav,#getanyworse,Blue,,#HalfLife_Security,,,C
+barney/gettingcloser.wav,#gettingcloser,Blue,,#HalfLife_Security,,,C
+barney/gladof38.wav,#gladof38,Blue,,#HalfLife_Security,,,C
+barney/gladtolendhand.wav,#gladtolendhand,Blue,,#HalfLife_Security,,,C
+barney/goodteam.wav,#goodteam,Blue,3,#HalfLife_Security,,,C
+barney/guyresponsible.wav,#guyresponsible,Blue,,#HalfLife_Security,,,C
+barney/hardtosay.wav,#hardtosay,Blue,,#HalfLife_Security,,,C
+barney/hearsomething.wav,#barneyhearsomething,Blue,,#HalfLife_Security,,,C
+barney/hearsomething2.wav,#hearsomething2,Blue,,#HalfLife_Security,,,C
+barney/hellonicesuit.wav,#hellonicesuit,Blue,,#HalfLife_Security,,,C
+barney/helpothers.wav,#helpothers,Blue,,#HalfLife_Security,,,C
+barney/heybuddy.wav,#heybuddy,Blue,,#HalfLife_Security,,,C
+barney/heyfella.wav,#heyfella,Blue,,#HalfLife_Security,,,C
+barney/hitbad.wav,#hitbad,Blue,,#HalfLife_Security,,,C
+barney/howdy.wav,#howdy,Blue,,#HalfLife_Security,,,C
+barney/howyoudoing.wav,#howyoudoing,Blue,,#HalfLife_Security,,,C
+barney/icanhear.wav,#icanhear,Blue,,#HalfLife_Security,,,C
+barney/iguess.wav,#iguess,Blue,,#HalfLife_Security,,,C
+barney/illwait.wav,#illwait,Blue,,#HalfLife_Security,,,C
+barney/imdead.wav,#imdead,Blue,,#HalfLife_Security,,,C
+barney/imhit.wav,#imhit,Blue,,#HalfLife_Security,,,C
+barney/imwithyou.wav,#imwithyou,Blue,,#HalfLife_Security,,,C
+barney/ireckon.wav,#ireckon,Blue,,#HalfLife_Security,,,C
+barney/iwaithere.wav,#iwaithere,Blue,,#HalfLife_Security,,,C
+barney/justdontknow.wav,#justdontknow,Blue,,#HalfLife_Security,,,C
+barney/leavealone.wav,#leavealone,Blue,,#HalfLife_Security,,,C
+barney/letsgo.wav,#letsgo,Blue,,#HalfLife_Security,,,C
+barney/letsmoveit.wav,#letsmoveit,Blue,,#HalfLife_Security,,,C
+barney/luckwillturn.wav,#luckwillturn,Blue,,#HalfLife_Security,,,C
+barney/map10_battle.wav,#map10_battle,Blue,,#HalfLife_Security,,,C
+barney/maybe.wav,#maybe,Blue,,#HalfLife_Security,,,C
+barney/mil_nevermakeit.wav,#mil_nevermakeit,Blue,,#HalfLife_Security,,,C
+barney/missingleg.wav,#missingleg,Blue,,#HalfLife_Security,,,C
+barney/mrfreeman.wav,#mrfreeman,Blue,,#HalfLife_Security,,,C
+barney/nocandoo.wav,#nocandoo,Blue,,#HalfLife_Security,,,C
+barney/nodrill.wav,#nodrill,Blue,4,#HalfLife_Security,,,C
+barney/nope.wav,#nope,Blue,,#HalfLife_Security,,,C
+barney/nosir.wav,#nosir,Blue,,#HalfLife_Security,,,C
+barney/notelling.wav,#notelling,Blue,,#HalfLife_Security,,,C
+barney/noway.wav,#noway,Blue,,#HalfLife_Security,,,C
+barney/openfire.wav,#openfire,Blue,,#HalfLife_Security,,,C
+barney/realbadwound.wav,#realbadwound,Blue,,#HalfLife_Security,,,C
+barney/rightway.wav,#rightway,Blue,,#HalfLife_Security,,,C
+barney/sealedoff.wav,#sealedoff,Blue,,#HalfLife_Security,,,C
+barney/seeya.wav,#seeya,Blue,,#HalfLife_Security,,,C
+barney/slowingyoudown.wav,#slowingyoudown,Blue,,#HalfLife_Security,,,C
+barney/somethingdied.wav,#somethingdied,Blue,,#HalfLife_Security,,,C
+barney/somethingmoves.wav,#somethingmoves,Blue,,#HalfLife_Security,,,C
+barney/somethingstinky.wav,#somethingstinky,Blue,,#HalfLife_Security,,,C
+barney/soundsbad.wav,#soundsbad,Blue,,#HalfLife_Security,,,C
+barney/soundsright.wav,#soundsright,Blue,,#HalfLife_Security,,,C
+barney/standback.wav,#standback,Blue,,#HalfLife_Security,,,C
+barney/standguard.wav,#standguard,Blue,,#HalfLife_Security,,,C
+barney/stench.wav,#barneystench,Blue,,#HalfLife_Security,,,C
+barney/stop1.wav,#barneystop1,Blue,,#HalfLife_Security,,,C
+barney/stop2.wav,#barneystop2,Blue,,#HalfLife_Security,,,C
+barney/stophere.wav,#stophere,Blue,,#HalfLife_Security,,,C
+barney/suredo.wav,#suredo,Blue,,#HalfLife_Security,,,C
+barney/survive.wav,#survive,Blue,,#HalfLife_Security,,,C
+barney/targetpractice.wav,#targetpractice,Blue,,#HalfLife_Security,,,C
+barney/teamup1.wav,#teamup1,Blue,,#HalfLife_Security,,,C
+barney/teamup2.wav,#teamup2,Blue,,#HalfLife_Security,,,C
+barney/thinking.wav,#thinking,Blue,,#HalfLife_Security,,,C
+barney/waitin.wav,#waitin,Blue,,#HalfLife_Security,,,C
+barney/wayout.wav,#wayout,Blue,,#HalfLife_Security,,,C
+barney/whatgood.wav,#whatgood,Blue,,#HalfLife_Security,,,C
+barney/whatisthat.wav,#whatisthat,Blue,,#HalfLife_Security,,,C
+barney/whatsgoingon.wav,#whatsgoingon,Blue,,#HalfLife_Security,,,C
+barney/withoutme.wav,#withoutme,Blue,2.5,#HalfLife_Security,,,C
+barney/workingonstuff.wav,#workingonstuff,Blue,,#HalfLife_Security,,,C
+barney/yessir.wav,#yessir,Blue,,#HalfLife_Security,,,C
+barney/youbet.wav,#youbet,Blue,,#HalfLife_Security,,,C
+barney/youeverseen.wav,#youeverseen,Blue,,#HalfLife_Security,,,C
+barney/yougotit.wav,#yougotit,Blue,,#HalfLife_Security,,,C
+barney/youhearthat.wav,#youhearthat,Blue,,#HalfLife_Security,,,C
+barney/youneedmedic.wav,#youneedmedic,Blue,,#HalfLife_Security,,,C
+barney/youtalkmuch.wav,#youtalkmuch,Blue,,#HalfLife_Security,,,C
+barney/yup.wav,#yup,Blue,,#HalfLife_Security,,,C
+items/hevdead.wav,#hevdead,Orange,,#HalfLife_HEV,,,L
+fvox/hev_damage.wav,#hev_damage,Orange,,#HalfLife_HEV,,,C
+fvox/armor_gone.wav,#armor_gone,Orange,,#HalfLife_HEV,,,C
+fvox/powermove_overload.wav,#powermove_overload,Orange,,#HalfLife_HEV,,,C
+items/bafake_freeze.wav,#bafake_freeze,Blue,,,,,C
+items/bafake_die.wav,#bafake_die,Blue,,,,,C
+MAP1_OTIS2,#MAP1_OTIS2,Blue,,#HalfLife_Security,,,C
+barney/otis_behind.wav,#otis_behind,Blue,,#HalfLife_Security,,,C
+barney/otis_cantfigure.wav,#otis_cantfigure,Blue,,#HalfLife_Security,,,C
+barney/otis_friends.wav,#otis_friends,Blue,,#HalfLife_Security,,,C
+barney/otis_hiya.wav,#otis_hiya,Blue,,#HalfLife_Security,,,C
+barney/otis_Illwait.wav,#otis_illwait,Blue,,#HalfLife_Security,,,C
+barney/otis_janitor.wav,#otis_janitor,Blue,,#HalfLife_Security,,,C
+barney/otis_joinyou.wav,#otis_joinyou,Blue,,#HalfLife_Security,,,C
+barney/otis_mmmm.wav,#otis_mmmm,Blue,,#HalfLife_Security,,,C
+barney/otis_reputation.wav,#otis_reputation,Blue,,#HalfLife_Security,,,C
+barney/otis_stupidmachines.wav,#otis_stupidmachines,Blue,,#HalfLife_Security,,,C
+barney/otis_watchit.wav,#otis_watchit,Blue,,#HalfLife_Security,,,C IGNORE_DISTANCE_LIMIT
+barney/otis_yourside.wav,#otis_yourside,Blue,,#HalfLife_Security,,,C
+,,,,,,,
+tride/c0a0_tr_gmorn.wav,#c0a0_tr_gmorn,Purple,,#HalfLife_Train,,,C
+tride/c0a0_tr_time.wav,#c0a0_tr_time,Purple,,#HalfLife_Train,,,C
+tride/c0a0_tr_dest.wav,#c0a0_tr_dest,Purple,,#HalfLife_Train,,,C
+tride/c0a0_tr_noeat.wav,#c0a0_tr_noeat,Purple,,#HalfLife_Train,,,C
+tride/c0a0_tr_emerg.wav,#c0a0_tr_emerg,Purple,,#HalfLife_Train,,,C
+tride/c0a0_tr_tourn.wav,#c0a0_tr_tourn,Purple,,#HalfLife_Train,,,C
+tride/c0a0_tr_jobs.wav,#c0a0_tr_jobs,Purple,,#HalfLife_Train,,,C
+tride/c0a0_tr_haz.wav,#c0a0_tr_haz,Purple,,#HalfLife_Train,,,C
+tride/c0a0_tr_arrive.wav,#c0a0_tr_arrive,Purple,,#HalfLife_Train,,,C
+tride/c0a0_tr_exit.wav,#c0a0_tr_exit,Purple,,#HalfLife_Train,,,C
+GMANSTUTTER,#GMANSTUTTER,SweetBlue,,,,,C
+gman/gman_again.wav,#gman_again,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_belong.wav,#gman_belong,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_comebacknow.wav,#gman_comebacknow,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_cutoff.wav,#gman_cutoff,SweetBlue,8,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_fulltalk.wav,#gman_fulltalk,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_getbackhere.wav,#gman_getbackhere,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_huff,#gman_huff,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_inhale.wav,#gman_inhale,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_laugh01.wav,#gman_laugh01,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_meetagain.wav,#gman_meetagain,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_nicetohaveyou.wav,#gman_nicetohaveyou,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_notforlong.wav,#gman_notforlong,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_notsupposed.wav,#gman_notsupposed,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_notthistime.wav,#gman_notthistime,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_ohno.wav,#gman_ohno,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_oldtimes.wav,#gman_oldtimes,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_payattention.wav,#gman_payattention,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_prepare.wav,#gman_prepare,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_ratherbusy.wav,#gman_ratherbusy,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_see.wav,#gman_see,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_snarl01.wav,#gman_snarl01,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_snarl02.wav,#gman_snarl02,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_snarl03.wav,#gman_snarl03,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_thatsallfornow.wav,#gman_thatsallfornow,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_thatwillbeall.wav,#gman_thatwillbeall,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_wellsh.wav,#gman_wellsh,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_wellsh2.wav,#gman_wellsh2,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_wemeet.wav,#gman_wemeet,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+HG_GREN0,#HG_GREN0,Green,2,#HalfLife_HECU,,,C
+HG_GREN1,#HG_GREN1,Green,2,#HalfLife_HECU,,,C
+HG_GREN2,#HG_GREN2,Green,2,#HalfLife_HECU,,,C
+HG_GREN3,#HG_GREN3,Green,2,#HalfLife_HECU,,,C
+HG_GREN4,#HG_GREN4,Green,2,#HalfLife_HECU,,,C
+HG_GREN5,#HG_GREN5,Green,2,#HalfLife_HECU,,,C
+HG_GREN6,#HG_GREN6,Green,2,#HalfLife_HECU,,,C
+HG_ALERT0,#HG_ALERT0,Green,2,#HalfLife_HECU,,,C
+HG_ALERT1,#HG_ALERT1,Green,2,#HalfLife_HECU,,,C
+HG_ALERT2,#HG_ALERT2,Green,2,#HalfLife_HECU,,,C
+HG_ALERT3,#HG_ALERT3,Green,2,#HalfLife_HECU,,,C
+HG_ALERT4,#HG_ALERT4,Green,2,#HalfLife_HECU,,,C
+HG_ALERT5,#HG_ALERT5,Green,2,#HalfLife_HECU,,,C
+HG_ALERT6,#HG_ALERT6,Green,2,#HalfLife_HECU,,,C
+HG_MONST0,#HG_MONST0,Green,2,#HalfLife_HECU,,,C
+HG_MONST1,#HG_MONST1,Green,2,#HalfLife_HECU,,,C
+HG_MONST2,#HG_MONST2,Green,2,#HalfLife_HECU,,,C
+HG_MONST3,#HG_MONST3,Green,2,#HalfLife_HECU,,,C
+HG_COVER0,#HG_COVER0,Green,2,#HalfLife_HECU,,,C
+HG_COVER1,#HG_COVER1,Green,2,#HalfLife_HECU,,,C
+HG_COVER2,#HG_COVER2,Green,2,#HalfLife_HECU,,,C
+HG_COVER3,#HG_COVER3,Green,2,#HalfLife_HECU,,,C
+HG_COVER4,#HG_COVER4,Green,2,#HalfLife_HECU,,,C
+HG_COVER5,#HG_COVER5,Green,2,#HalfLife_HECU,,,C
+HG_COVER6,#HG_COVER6,Green,2,#HalfLife_HECU,,,C
+HG_COVER7,#HG_COVER7,Green,2,#HalfLife_HECU,,,C
+HG_THROW0,#HG_THROW0,Green,2,#HalfLife_HECU,,,C
+HG_THROW1,#HG_THROW1,Green,2,#HalfLife_HECU,,,C
+HG_THROW2,#HG_THROW2,Green,2,#HalfLife_HECU,,,C
+HG_THROW3,#HG_THROW3,Green,2,#HalfLife_HECU,,,C
+HG_TAUNT0,#HG_TAUNT0,Green,2,#HalfLife_HECU,,,C
+HG_TAUNT1,#HG_TAUNT1,Green,2,#HalfLife_HECU,,,C
+HG_TAUNT2,#HG_TAUNT2,Green,2,#HalfLife_HECU,,,C
+HG_TAUNT3,#HG_TAUNT3,Green,2,#HalfLife_HECU,,,C
+HG_TAUNT4,#HG_TAUNT4,Green,2,#HalfLife_HECU,,,C
+HG_TAUNT5,#HG_TAUNT5,Green,2,#HalfLife_HECU,,,C
+HG_CHARGE0,#HG_CHARGE0,Green,2,#HalfLife_HECU,,,C
+HG_CHARGE1,#HG_CHARGE1,Green,2,#HalfLife_HECU,,,C
+HG_CHARGE2,#HG_CHARGE2,Green,2,#HalfLife_HECU,,,C
+HG_CHARGE3,#HG_CHARGE3,Green,2,#HalfLife_HECU,,,C
+hgrunt/gr_idle1.wav,#HG_IDLE0,Green,,#HalfLife_HECU,,,L
+hgrunt/gr_idle2.wav,#HG_IDLE1,Green,,#HalfLife_HECU,,,L
+hgrunt/gr_idle3.wav,#HG_IDLE2,Green,,#HalfLife_HECU,,,L
+HG_QUEST0,#HG_QUEST0,Green,2,#HalfLife_HECU,,,C
+HG_QUEST1,#HG_QUEST1,Green,2,#HalfLife_HECU,,,C
+HG_QUEST2,#HG_QUEST2,Green,2,#HalfLife_HECU,,,C
+HG_QUEST3,#HG_QUEST3,Green,2,#HalfLife_HECU,,,C
+HG_QUEST4,#HG_QUEST4,Green,2,#HalfLife_HECU,,,C
+HG_QUEST5,#HG_QUEST5,Green,2,#HalfLife_HECU,,,C
+HG_QUEST6,#HG_QUEST6,Green,2,#HalfLife_HECU,,,C
+HG_QUEST7,#HG_QUEST7,Green,2,#HalfLife_HECU,,,C
+HG_QUEST8,#HG_QUEST8,Green,2,#HalfLife_HECU,,,C
+HG_QUEST9,#HG_QUEST9,Green,2,#HalfLife_HECU,,,C
+HG_QUEST10,#HG_QUEST10,Green,2,#HalfLife_HECU,,,C
+HG_QUEST11,#HG_QUEST11,Green,2,#HalfLife_HECU,,,C
+HG_ANSWER0,#HG_ANSWER0,Green,2,#HalfLife_HECU,,,C
+HG_ANSWER1,#HG_ANSWER1,Green,2,#HalfLife_HECU,,,C
+HG_ANSWER2,#HG_ANSWER2,Green,2,#HalfLife_HECU,,,C
+HG_ANSWER3,#HG_ANSWER3,Green,2,#HalfLife_HECU,,,C
+HG_ANSWER4,#HG_ANSWER4,Green,2,#HalfLife_HECU,,,C
+HG_ANSWER5,#HG_ANSWER5,Green,2,#HalfLife_HECU,,,C
+HG_ANSWER6,#HG_ANSWER6,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR0,#HG_CLEAR0,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR1,#HG_CLEAR1,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR2,#HG_CLEAR2,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR3,#HG_CLEAR3,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR4,#HG_CLEAR4,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR5,#HG_CLEAR5,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR6,#HG_CLEAR6,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR7,#HG_CLEAR7,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR8,#HG_CLEAR8,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR9,#HG_CLEAR9,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR10,#HG_CLEAR10,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR11,#HG_CLEAR11,Green,2,#HalfLife_HECU,,,C
+HG_CLEAR12,#HG_CLEAR12,Green,2,#HalfLife_HECU,,,C
+HG_CHECK0,#HG_CHECK0,Green,2,#HalfLife_HECU,,,C
+HG_CHECK1,#HG_CHECK1,Green,2,#HalfLife_HECU,,,C
+HG_CHECK2,#HG_CHECK2,Green,2,#HalfLife_HECU,,,C
+HG_CHECK3,#HG_CHECK3,Green,2,#HalfLife_HECU,,,C
+HG_CHECK4,#HG_CHECK4,Green,2,#HalfLife_HECU,,,C
+HG_CHECK5,#HG_CHECK5,Green,2,#HalfLife_HECU,,,C
+HG_CHECK6,#HG_CHECK6,Green,2,#HalfLife_HECU,,,C
+HG_CHECK7,#HG_CHECK7,Green,2,#HalfLife_HECU,,,C
+military/g3_copy.wav,#g3_copy,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/g7_copy_hq.wav,#g7_copy_hq,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/g7_goose3_down.wav,#g7_goose3_down,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/g7_view_lz.wav,#g7_view_lz,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/g7_watch_vector.wav,#g7_watch_vector,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/gr_pain1.wav,#gr_pain1,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/gr_pain2.wav,#gr_pain2,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/gr_pain3.wav,#gr_pain3,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/gr_pain4.wav,#gr_pain4,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/gr_pain5.wav,#gr_pain5,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/hq_proceed.wav,#hq_proceed,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/hq_the_hell.wav,#hq_the_hell,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_alienambush.wav,#mil_alienambush,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_attack.wav,#mil_attack,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_backuphere.wav,#mil_backuphere,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/backupnorth.wav,#backupnorth,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_bastards.wav,#mil_bastards,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_casualties.wav,#mil_casualties,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_displacer.wav,#mil_displacer,Green,,,,,C IGNORE_DISTANCE_LIMIT
+military/mil_eliminate.wav,#mil_eliminate,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_freemandown.wav,#mil_freemandown,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_gargcoming.wav,#mil_gargcoming,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_gotyou.wav,#mil_gotyou,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_heavy.wav,#mil_heavy,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_hold.wav,#mil_hold,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_laugh.wav,#mil_laugh,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_letsfight.wav,#mil_letsfight,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_mother.wav,#mil_mother,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_movement.wav,#mil_movement,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_notfreeman.wav,#mil_notfreeman,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_onturret.wav,#mil_onturret,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_retreat.wav,#mil_retreat,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_rocket1.wav,#mil_rocket1,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_scidie.wav,#mil_scidie,Gray,,#HalfLife_Scientist,,,C IGNORE_DISTANCE_LIMIT
+military/mil_surpress.wav,#mil_surpress,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_sweep.wav,#mil_sweep,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_tank1.wav,#mil_tank1,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_tank2.wav,#mil_tank2,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_tank3.wav,#mil_tank3,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_tankflee.wav,#mil_tankflee,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_tankflee2.wav,#mil_tankflee2,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_targetmortar.wav,#mil_targetmortar,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_toohot.wav,#mil_toohot,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/osprey_shit.wav,#osprey_shit,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/w6_cant_see.wav,#w6_cant_see,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/w6_watchit.wav,#w6_watchit,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+hgrunt/gr_pain1.wav,#gr_pain1,Green,,#HalfLife_HECU,,,C
+hgrunt/gr_pain2.wav,#gr_pain2,Green,,#HalfLife_HECU,,,C
+hgrunt/gr_pain3.wav,#gr_pain3,Green,,#HalfLife_HECU,,,C
+hgrunt/gr_pain4.wav,#gr_pain4,Green,,#HalfLife_HECU,,,C
+hgrunt/gr_pain5.wav,#gr_pain5,Green,,#HalfLife_HECU,,,C
+hgrunt/c2a2_hg_chat1a.wav,#c2a2_hg_chat1a,Green,,#HalfLife_HECU,,,C
+hgrunt/c2a2_hg_chat2a.wav,#c2a2_hg_chat2a,Green,,#HalfLife_HECU,,,C
+hgrunt/c2a2_hg_chat3a.wav,#c2a2_hg_chat3a,Green,,#HalfLife_HECU,,,C
+hgrunt/c2a2_hg_chat4a.wav,#c2a2_hg_chat4a,Green,,#HalfLife_HECU,,,C
+hgrunt/c2a2_hg_chat5a.wav,#c2a2_hg_chat5a,Green,,#HalfLife_HECU,,,C
+hgrunt/c2a3_ambush_vox.wav,#c2a3_ambush_vox,Green,,#HalfLife_HECU,,,C
+hgrunt/c2a3_hg_1drag.wav,#c2a3_hg_1drag,Green,,#HalfLife_HECU,,,C
+hgrunt/c2a3_hg_2drag.wav,#c2a3_hg_2drag,Green,,#HalfLife_HECU,,,C
+hgrunt/c2a3_hg_3drag.wav,#c2a3_hg_3drag,Green,,#HalfLife_HECU,,,C
+hgrunt/c2a3_hg_4drag.wav,#c2a3_hg_4drag,Green,,#HalfLife_HECU,,,C
+hgrunt/c2a3_hg_5drag.wav,#c2a3_hg_5drag,Green,,#HalfLife_HECU,,,C
+hgrunt/c2a5_hg_lebuz.wav,#c2a5_hg_lebuz,Green,,#HalfLife_HECU,,,C
+hgrunt/c2a5_hg_abandon.wav,#c2a5_hg_abandon,Green,,#HalfLife_HECU,,,C
+hgrunt/hg_sucks.wav,#hg_sucks,Green,,#HalfLife_HECU,,,C
+hgrunt/hg_civvies.wav,#hg_civvies,Green,,#HalfLife_HECU,,,C
+holo/tr_holo_intro.wav,#tr_holo_intro,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_button.wav,#tr_holo_button,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_move.wav,#tr_holo_move,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_jump.wav,#tr_holo_jump,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_duck.wav,#tr_holo_duck,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_jduck.wav,#tr_holo_jduck,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_pipeduck.wav,#tr_holo_pipeduck,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_retry.wav,#tr_holo_retry,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_ladder.wav,#tr_holo_ladder,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_3jumps.wav,#tr_holo_3jumps,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_keeptrying.wav,#tr_holo_keeptrying,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_fallshort.wav,#tr_holo_fallshort,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_greatwork.wav,#tr_holo_greatwork,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_longjump.wav,#tr_holo_longjump,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_nicejob.wav,#tr_holo_nicejob,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_startlift.wav,#tr_holo_startlift,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_jumpdown.wav,#tr_holo_jumpdown,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_medkit.wav,#tr_holo_medkit,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_spinbridge.wav,#tr_holo_spinbridge,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_fantastic.wav,#tr_holo_fantastic,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_jumpgap.wav,#tr_holo_jumpgap,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_pushbox.wav,#tr_holo_pushbox,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_pullbox.wav,#tr_holo_pullbox,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_breakbox.wav,#tr_holo_breakbox,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_flashlight.wav,#tr_holo_flashlight,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_lightoff.wav,#tr_holo_lightoff,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_target.wav,#tr_holo_target,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_hitall.wav,#tr_holo_hitall,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_grenade.wav,#tr_holo_grenade,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_commencing.wav,#tr_holo_commencing,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_congrats.wav,#tr_holo_congrats,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_drown.wav,#tr_holo_drown,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_breath.wav,#tr_holo_breath,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_charger.wav,#tr_holo_charger,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_steam.wav,#tr_holo_steam,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_radiation.wav,#tr_holo_radiation,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_injury.wav,#tr_holo_injury,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_leadguard.wav,#tr_holo_leadguard,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_usetrain.wav,#tr_holo_usetrain,Orange,,#HalfLife_Hologram,,,C
+holo/tr_holo_done.wav,#tr_holo_done,Orange,,#HalfLife_Hologram,,,C
+seer/nil_alone.wav,#nil_alone,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_comes.wav,#nil_comes,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_done.wav,#nil_done,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_deceive.wav,#nil_deceive,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_die.wav,#nil_die,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_freeman.wav,#nil_freeman,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_last.wav,#nil_last,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_man_notman.wav,#nil_man_notman,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_now_die.wav,#nil_now_die,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_thelast.wav,#nil_thelast,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_thetruth.wav,#nil_thetruth,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_thieves.wav,#nil_thieves,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_slaves.wav,#nil_slaves,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+seer/nil_win.wav,#nil_win,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+,,,,,,,
+,,,,,,,
+MAP2_SCARE,#MAP2_SCARE,Gray,6.5,#HalfLife_Scientist,,,C
+MAP2_FREEMAN9,#MAP2_FREEMAN9,Gray,,#HalfLife_Scientist,,,C
+scientist/nil.wav,#nil_freeman,Yellow,,#Echoes_Seer,,,C
+,,,,,,,
+player/breathe1.wav,#breathe1,,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+player/breathe2.wav,#breathe2,,1.2,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+env/cart_shutdown.wav,#cart_shutdown,,,,,,C IGNORE_DISTANCE_LIMIT
+env/tram1.wav,#tram1,Purple,,HalfLife_Train,,,C
+env/tram2.wav,#tram2,Purple,,HalfLife_Train,,,C

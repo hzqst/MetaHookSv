@@ -11,14 +11,12 @@ GLuint GL_GenQuery(void)
 
 void GL_InitProfile(glprofile_t *profile, const char *name)
 {
-	if (!profile->query_begin)
+	if (!profile->query_object)
 	{
-		profile->query_begin = GL_GenQuery();
-		profile->query_end = GL_GenQuery();
+		profile->query_object = GL_GenQuery();
 		strncpy(profile->name, name, 63);
 		profile->name[63] = 0;
-		profile->query_begin_started = false;
-		profile->query_end_started = false;
+		profile->query_started = false;
 
 		g_ProfileTable.emplace_back(profile);
 	}
@@ -28,8 +26,7 @@ void GL_FreeProfiles(void)
 {
 	for (size_t i = 0; i < g_ProfileTable.size(); ++i)
 	{
-		glDeleteQueries(1, &g_ProfileTable[i]->query_begin);
-		glDeleteQueries(1, &g_ProfileTable[i]->query_end);
+		glDeleteQueries(1, &g_ProfileTable[i]->query_object);
 	}
 
 	g_ProfileTable.clear();
@@ -42,30 +39,27 @@ void GL_BeginProfile(glprofile_t *profile, const char *name)
 
 	GL_InitProfile(profile, name);
 
-	GLint available = 0;
-	glGetQueryObjectiv(profile->query_end, GL_QUERY_RESULT_AVAILABLE, &available);
-
-	if (available)
+	if (profile->query_started)
 	{
-		GLuint64 beginTime;
-		GLuint64 endTime;
-		glGetQueryObjectui64v(profile->query_begin, GL_QUERY_RESULT, &beginTime);
-		glGetQueryObjectui64v(profile->query_end, GL_QUERY_RESULT, &endTime);
+		GLint available = 0;
+		glGetQueryObjectiv(profile->query_object, GL_QUERY_RESULT_AVAILABLE, &available);
 
-		auto gpuTime = double(endTime - beginTime) / 1000.0;//nano seconds -> micro seconds
-		auto cpuTime = (profile->cpu_end * 1000.0 * 1000.0 - profile->cpu_begin * 1000.0 * 1000.0);//seconds -> micro seconds
+		if (available)
+		{
+			auto cputime = (profile->cpu_end * 1000.0 * 1000.0 - profile->cpu_begin * 1000.0 * 1000.0);//seconds -> micro seconds
 
-		gEngfuncs.Con_Printf("%s CPU time: %.02f (microsecs), GPU time: %.02f (microsecs)\n", profile->name, cpuTime, gpuTime);
+			GLuint64 gputime64;
+			glGetQueryObjectui64v(profile->query_object, GL_QUERY_RESULT, &gputime64);
 
-		profile->query_begin_started = false;
-		profile->query_end_started = false;
+			double gputime = double(gputime64) / 1000.0;//nano seconds -> micro seconds
+
+			gEngfuncs.Con_Printf("%s CPU time: %.02f (microsecs), GPU time: %.02f (microsecs)\n", profile->name, cputime, gputime);
+		}
 	}
 
-	if (!profile->query_begin_started)
-	{
-		glQueryCounter(profile->query_begin, GL_TIMESTAMP);
-		profile->query_begin_started = true;
-	}
+	glBeginQuery(GL_TIME_ELAPSED, profile->query_object);
+
+	profile->query_started = true;
 
 	profile->cpu_begin = gEngfuncs.GetAbsoluteTime();
 }
@@ -77,9 +71,5 @@ void GL_EndProfile(glprofile_t *profile)
 
 	profile->cpu_end = gEngfuncs.GetAbsoluteTime();
 
-	if (!profile->query_end_started)
-	{
-		glQueryCounter(profile->query_end, GL_TIMESTAMP);
-		profile->query_end_started = true;
-	}
+	glEndQuery(GL_TIME_ELAPSED);
 }

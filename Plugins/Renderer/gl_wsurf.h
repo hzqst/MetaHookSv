@@ -2,38 +2,6 @@
 
 #include <vector>
 
-#define LIGHTMAP_NUMCOLUMNS		32
-#define LIGHTMAP_NUMROWS		32
-
-#define LIGHTMAP_BYTES		4
-#define	BLOCK_WIDTH			128
-#define	BLOCK_HEIGHT		128
-#define BLOCKLIGHTS_SIZE	(18*18)
-
-#define	MAX_LIGHTMAPS			64
-#define	MAX_LIGHTSTYLES			64
-#define	MAX_STYLESTRING			64
-
-#define MAX_DETAIL_TEXTURES		MAX_MAP_TEXTURES
-#define BACKFACE_EPSILON	0.01
-
-#define MAX_DECALSURFS 500
-#define MAX_MODELS 512
-#define COLINEAR_EPSILON 0.001
-
-#define MAX_DECALVERTS 32
-#define MAX_DECALS 4096
-
-
-#define FDECAL_PERMANENT			0x01		// This decal should not be removed in favor of any new decals
-#define FDECAL_REFERENCE			0x02		// This is a decal that's been moved from another level
-#define FDECAL_CUSTOM               0x04        // This is a custom clan logo and should not be saved/restored
-#define FDECAL_HFLIP				0x08		// Flip horizontal (U/S) axis
-#define FDECAL_VFLIP				0x10		// Flip vertical (V/T) axis
-#define FDECAL_CLIPTEST				0x20		// Decal needs to be clip-tested
-#define FDECAL_NOCLIP				0x40		// Decal is not clipped by containing polygon
-#define FDECAL_VBO					0x1000		// Decalvertex is bufferred in VBO
-
 #define MAX_NUM_NODES 16
 
 #define BINDING_POINT_SCENE_UBO 0
@@ -57,7 +25,11 @@
 #define VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD 8
 #define VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD 9
 #define VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD 10
-#define VERTEX_ATTRIBUTE_INDEX_EXTRA 11
+
+#define VERTEX_ATTRIBUTE_INDEX_DECALINDEX 11
+#define VERTEX_ATTRIBUTE_INDEX_TEXINDEX 11
+
+#define VERTEX_ATTRIBUTE_INDEX_STYLES 12
 
 #define WSURF_DIFFUSE_TEXTURE		0
 #define WSURF_REPLACE_TEXTURE		1
@@ -111,6 +83,7 @@ typedef struct decalvertex_s
 	float	parallaxtexcoord[2];
 	float	speculartexcoord[2];
 	int		decalindex;
+	unsigned char styles[4];
 }decalvertex_t;
 
 typedef struct brushvertex_s
@@ -128,6 +101,7 @@ typedef struct brushvertex_s
 	float	parallaxtexcoord[2];
 	float	speculartexcoord[2];
 	int		texindex;
+	byte	styles[4];
 }brushvertex_t;
 
 typedef struct brushface_s
@@ -145,8 +119,6 @@ typedef struct brushface_s
 
 #define TEXCHAIN_STATIC 1
 #define TEXCHAIN_SCROLL 2
-#define TEXCHAIN_RANDOM 2
-#define TEXCHAIN_ANIMATION 3
 #define TEXCHAIN_SKY 4
 
 typedef struct brushtexchain_s
@@ -231,12 +203,12 @@ typedef struct wsurf_vbo_s
 	model_t	*pModel;
 	GLuint	hEntityUBO;
 	GLuint	hDecalEBO;
-	std::vector<wsurf_vbo_leaf_t *> vLeafStorage;
 	std::vector<wsurf_vbo_leaf_t *> vLeaves;
 }wsurf_vbo_t;
 
 #pragma pack(push, 16)
 
+//viewport.z=linkListSize
 typedef struct scene_ubo_s
 {
 	mat4 viewMatrix;
@@ -244,7 +216,7 @@ typedef struct scene_ubo_s
 	mat4 invViewMatrix;
 	mat4 invProjMatrix;
 	mat4 shadowMatrix[3];
-	uvec4 viewport;//viewport.z=linkListSize
+	uvec4 viewport;
 	vec4 frustumpos[4];
 	vec4 viewpos;
 	vec4 vpn;
@@ -270,7 +242,9 @@ typedef struct scene_ubo_s
 	float z_far;
 	float r_alpha_shift;
 	float r_additive_shift;
-	float padding;
+	float r_lightscale;
+	vec4 r_filtercolor;
+	vec4 r_lightstylevalue[256 / 4];
 }scene_ubo_t;
 
 static_assert((sizeof(scene_ubo_t) % 16) == 0, "Size check");
@@ -351,6 +325,8 @@ typedef struct r_worldsurf_s
 
 		iNumLightmapTextures = 0;
 		iLightmapTextureArray = 0;
+		iLightmapUsedBits = 0;
+
 		memset(vSkyboxTextureHandles, 0, sizeof(vSkyboxTextureHandles));
 	}
 
@@ -372,6 +348,7 @@ typedef struct r_worldsurf_s
 
 	int					iNumLightmapTextures;
 	int					iLightmapTextureArray;
+	int					iLightmapUsedBits;
 
 	std::vector <bspentity_t> vBSPEntities;
 
@@ -448,8 +425,8 @@ void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride);
 void R_DrawDecals(wsurf_vbo_t *modcache);
 detail_texture_cache_t *R_FindDecalTextureCache(const std::string &decalname);
 detail_texture_cache_t *R_FindDetailTextureCache(int texId);
-void R_BeginDetailTextureByGLTextureId(int gltexturenum, int *WSurfProgramState);
-void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, int *WSurfProgramState);
+void R_BeginDetailTextureByGLTextureId(int gltexturenum, uint64_t *WSurfProgramState);
+void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, uint64_t *WSurfProgramState);
 void R_EndDetailTexture(int WSurfProgramState);
 void R_DrawSequentialPolyVBO(msurface_t *s);
 wsurf_vbo_t *R_PrepareWSurfVBO(model_t *mod);
@@ -460,31 +437,37 @@ void R_Reload_f(void);
 void R_GenerateSceneUBO(void);
 void R_SaveWSurfProgramStates(void);
 void R_LoadWSurfProgramStates(void);
-void R_UseWSurfProgram(int state, wsurf_program_t *progOut);
+void R_UseWSurfProgram(uint64_t state, wsurf_program_t *progOut);
 
-#define WSURF_DIFFUSE_ENABLED				1
-#define WSURF_LIGHTMAP_ENABLED				2
-#define WSURF_REPLACETEXTURE_ENABLED		4
-#define WSURF_DETAILTEXTURE_ENABLED			8
-#define WSURF_NORMALTEXTURE_ENABLED			0x10
-#define WSURF_PARALLAXTEXTURE_ENABLED		0x20
-#define WSURF_SPECULARTEXTURE_ENABLED		0x40
-#define WSURF_LINEAR_FOG_ENABLED			0x80
-#define WSURF_EXP_FOG_ENABLED				0x100
-#define WSURF_EXP2_FOG_ENABLED				0x200
-#define WSURF_GBUFFER_ENABLED				0x400
-#define WSURF_TRANSPARENT_ENABLED			0x800
-#define WSURF_SHADOW_CASTER_ENABLED			0x1000
-#define WSURF_SHADOWMAP_ENABLED				0x2000
-#define WSURF_SHADOWMAP_HIGH_ENABLED		0x4000
-#define WSURF_SHADOWMAP_MEDIUM_ENABLED		0x8000
-#define WSURF_SHADOWMAP_LOW_ENABLED			0x10000
-#define WSURF_BINDLESS_ENABLED				0x20000
-#define WSURF_SKYBOX_ENABLED				0x40000
-#define WSURF_DECAL_ENABLED					0x80000
-#define WSURF_CLIP_ENABLED					0x100000
-#define WSURF_CLIP_WATER_ENABLED			0x200000
-#define WSURF_ALPHA_BLEND_ENABLED			0x400000
-#define WSURF_ADDITIVE_BLEND_ENABLED		0x800000
-#define WSURF_OIT_ALPHA_BLEND_ENABLED		0x1000000
-#define WSURF_OIT_ADDITIVE_BLEND_ENABLED	0x2000000
+#define WSURF_DIFFUSE_ENABLED				1ull
+#define WSURF_LIGHTMAP_ENABLED				2ull
+#define WSURF_REPLACETEXTURE_ENABLED		4ull
+#define WSURF_DETAILTEXTURE_ENABLED			8ull
+#define WSURF_NORMALTEXTURE_ENABLED			0x10ull
+#define WSURF_PARALLAXTEXTURE_ENABLED		0x20ull
+#define WSURF_SPECULARTEXTURE_ENABLED		0x40ull
+#define WSURF_LINEAR_FOG_ENABLED			0x80ull
+#define WSURF_EXP_FOG_ENABLED				0x100ull
+#define WSURF_EXP2_FOG_ENABLED				0x200ull
+#define WSURF_GBUFFER_ENABLED				0x400ull
+#define WSURF_TRANSPARENT_ENABLED			0x800ull
+#define WSURF_SHADOW_CASTER_ENABLED			0x1000ull
+#define WSURF_SHADOWMAP_ENABLED				0x2000ull
+#define WSURF_SHADOWMAP_HIGH_ENABLED		0x4000ull
+#define WSURF_SHADOWMAP_MEDIUM_ENABLED		0x8000ull
+#define WSURF_SHADOWMAP_LOW_ENABLED			0x10000ull
+#define WSURF_BINDLESS_ENABLED				0x20000ull
+#define WSURF_SKYBOX_ENABLED				0x40000ull
+#define WSURF_DECAL_ENABLED					0x80000ull
+#define WSURF_CLIP_ENABLED					0x100000ull
+#define WSURF_CLIP_WATER_ENABLED			0x200000ull
+#define WSURF_ALPHA_BLEND_ENABLED			0x400000ull
+#define WSURF_ADDITIVE_BLEND_ENABLED		0x800000ull
+#define WSURF_OIT_ALPHA_BLEND_ENABLED		0x1000000ull
+#define WSURF_OIT_ADDITIVE_BLEND_ENABLED	0x2000000ull
+#define WSURF_FULLBRIGHT_ENABLED			0x4000000ull
+#define WSURF_COLOR_FILTER_ENABLED			0x8000000ull
+#define WSURF_LIGHTMAP_INDEX_0_ENABLED		0x10000000ull
+#define WSURF_LIGHTMAP_INDEX_1_ENABLED		0x20000000ull
+#define WSURF_LIGHTMAP_INDEX_2_ENABLED		0x40000000ull
+#define WSURF_LIGHTMAP_INDEX_3_ENABLED		0x80000000ull

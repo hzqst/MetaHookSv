@@ -49,6 +49,7 @@ typedef struct
 	void (*GL_EnableMultitexture)(void);
 	void (*GL_BeginRendering)(int *x, int *y, int *width, int *height);
 	void (*GL_EndRendering)(void);
+	void (*GL_BuildLightmaps)(void);
 	void (*EmitWaterPolys)(msurface_t *fa, int direction);
 	void (*R_DrawSequentialPoly)(msurface_t *s, int face);
 	void (*R_RecursiveWorldNode)(mnode_t *node);
@@ -81,19 +82,23 @@ typedef struct
 	void(*R_MarkLights)(dlight_t *light, int bit, mnode_t *node);
 	int(*CL_IsDevOverviewMode)(void);
 	void(*CL_SetDevOverView)(void *a1);
-	void (*Mod_LoadStudioModel)(model_t *mod, void *buffer);
+	void(*Mod_LoadStudioModel)(model_t *mod, void *buffer);
 	void(*Mod_LoadBrushModel)(model_t *mod, void *buffer);
+	model_t *(*Mod_LoadModel)(model_t *mod, qboolean crash, qboolean trackCRC);
 	void(*triapi_RenderMode)(int mode);
 	void(*triapi_Color4f) (float r, float g, float b, float a);
 	void(__fastcall *enginesurface_drawFlushText)(void *pthis, int);
 	void(*DLL_SetModKey)(void *pinfo, char *pkey, char *pvalue);
 	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
 	qboolean(*Host_IsSinglePlayerGame)(void);
+	void *(*Hunk_AllocName)(int size, const char *name);
+
 	//Sven Client DLL
 	void(__fastcall *ClientPortalManager_ResetAll)(void * pthis, int dummy);
 	mtexinfo_t *(__fastcall *ClientPortalManager_GetOriginalSurfaceTexture)(void * pthis, int dummy, msurface_t *surf);
 	void(__fastcall *ClientPortalManager_DrawPortalSurface)(void * pthis, int dummy, void *ClientPortal, msurface_t *surf, GLuint texture);
 	void(__fastcall *ClientPortalManager_EnableClipPlane)(void * pthis, int dummy, int index, vec3_t a1, vec3_t a2, vec3_t a3);
+
 	//Engine Studio
 	void (*R_GLStudioDrawPoints)(void);
 	void (*R_LightStrength)(int bone, float *vert, float (*light)[4]);

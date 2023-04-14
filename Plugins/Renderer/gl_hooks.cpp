@@ -37,6 +37,9 @@
 #define R_NEWMAP_SIG_NEW "\x55\x8B\xEC\x83\xEC\x08\xC7\x45\xFC\x00\x00\x00\x00\x2A\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC\x81\x7D\xFC\x00\x01\x00\x00\x2A\x2A\x8B\x4D\xFC"
 #define R_NEWMAP_SIG_SVENGINE "\x55\x8B\xEC\x51\xC7\x45\xFC\x00\x00\x00\x00\xEB\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC\x81\x7D\xFC\x00\x01\x00\x00"
 
+#define GL_BUILDLIGHTMAPS_SIG_NEW "\x55\x8B\xEC\x2A\x2A\x2A\x2A\x68\x00\x80\x00\x00\x6A\x00\x68"
+#define GL_BUILDLIGHTMAPS_SIG_SVENGINE "\x83\xEC\x24\x2A\x2A\x2A\x2A\x68\x00\x00\x08\x00\x6A\x00\x68"
+
 #define R_DRAWWORLD_SIG "\x81\xEC\xB8\x0B\x00\x00\x68\xB8\x0B\x00\x00\x8D\x44\x24\x04\x6A\x00\x50\xE8"
 #define R_DRAWWORLD_SIG_NEW "\x55\x8B\xEC\x81\xEC\xB8\x0B\x00\x00\x68\xB8\x0B\x00\x00\x8D\x85\x48\xF4\xFF\xFF\x6A\x00\x50\xE8\x2A\x2A\x2A\x2A\x8B\x0D"
 #define R_DRAWWORLD_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\xB8\x0B\x00\x00\xD9\x05"
@@ -372,6 +375,16 @@ void R_FillAddress(void)
 	{
 		gRefFuncs.R_NewMap = (void(*)(void))Search_Pattern(R_NEWMAP_SIG_NEW);
 		Sig_FuncNotFound(R_NewMap);
+	}
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		gRefFuncs.GL_BuildLightmaps = (void(*)(void))Search_Pattern(GL_BUILDLIGHTMAPS_SIG_SVENGINE);
+		Sig_FuncNotFound(GL_BuildLightmaps);
+	}
+	else
+	{
+		gRefFuncs.GL_BuildLightmaps = (void(*)(void))Search_Pattern(GL_BUILDLIGHTMAPS_SIG_NEW);
+		Sig_FuncNotFound(GL_BuildLightmaps);
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -740,6 +753,60 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(R_AddTEntity);
 	}
 
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		const char sigs1[] = "Hunk_Alloc: bad size: %i";
+		auto Hunk_Alloc_String = Search_Pattern_Data(sigs1);
+		if (!Hunk_Alloc_String)
+			Hunk_Alloc_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(Hunk_Alloc_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x0F\xAE\xE8\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
+		*(DWORD *)(pattern + 1) = (DWORD)Hunk_Alloc_String;
+		auto Hunk_Alloc_Call = Search_Pattern(pattern);
+		Sig_VarNotFound(Hunk_Alloc_Call);
+
+		gRefFuncs.Hunk_AllocName = (decltype(gRefFuncs.Hunk_AllocName))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Hunk_Alloc_Call, 0x50, [](PUCHAR Candidate) {
+			//.text : 01DD29B0 83 EC 08                                                     sub     esp, 8
+			//.text : 01DD29B3 53                                                           push    ebx
+			//.text : 01DD29B4 55                                                           push    ebp
+			//.text : 01DD29B5 8B 6C 24 14                                                  mov     ebp, [esp + 10h + arg_0]
+			if (Candidate[0] == 0x83 &&
+				Candidate[1] == 0xEC &&
+				Candidate[2] == 0x08 &&
+				Candidate[4] == 0x55 &&
+				Candidate[5] == 0x8B)
+				return TRUE;
+
+			return FALSE;
+		});
+		Sig_FuncNotFound(Hunk_AllocName);
+	}
+	else
+	{
+		const char sigs1[] = "Hunk_Alloc: bad size: %i";
+		auto Hunk_Alloc_String = Search_Pattern_Data(sigs1);
+		if (!Hunk_Alloc_String)
+			Hunk_Alloc_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(Hunk_Alloc_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
+		*(DWORD *)(pattern + 1) = (DWORD)Hunk_Alloc_String;
+		auto Hunk_Alloc_Call = Search_Pattern(pattern);
+		Sig_VarNotFound(Hunk_Alloc_Call);
+
+		gRefFuncs.Hunk_AllocName = (decltype(gRefFuncs.Hunk_AllocName))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Hunk_Alloc_Call, 0x50, [](PUCHAR Candidate) {
+			//.text : 01DC7FE0 55                                                  push    ebp
+			//.text : 01DC7FE1 8B EC                                               mov     ebp, esp
+			if (Candidate[-1] == 0x90 &&
+				Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC)
+				return TRUE;
+
+			return FALSE;
+		});
+		Sig_FuncNotFound(Hunk_AllocName);
+	}
+
 	if (1)
 	{
 		const char sigs1[] = "***PROTECTED***";
@@ -778,7 +845,7 @@ void R_FillAddress(void)
 				return TRUE;
 
 			return FALSE;
-			});
+		});
 		Sig_FuncNotFound(Cvar_DirectSet);
 	}
 
@@ -2937,6 +3004,89 @@ void R_FillAddress(void)
 	}
 
 	{
+		const char sigs1[] = "\xFF\x15\x2A\x2A\x2A\x2A\x83\xC4\x0C\x3D\x49\x44\x50\x4F";
+		auto Mod_LoadModel_Pattern = Search_Pattern(sigs1);
+		Sig_VarNotFound(Mod_LoadModel_Pattern);
+
+		gRefFuncs.Mod_LoadModel = (decltype(gRefFuncs.Mod_LoadModel))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Mod_LoadModel_Pattern, 0x400, [](PUCHAR Candidate) {
+
+			//81 EC ?? 01 00 00 A1 ?? ?? ?? ?? 33 C4
+			/*
+.text:01D51990 81 EC 50 01 00 00                                            sub     esp, 150h
+.text:01D51996 A1 E8 F0 ED 01                                               mov     eax, ___security_cookie
+.text:01D5199B 33 C4                                                        xor     eax, esp
+			*/
+			if (Candidate[0] == 0x81 &&
+				Candidate[1] == 0xEC &&
+				Candidate[3] == 0x01 &&
+				Candidate[4] == 0x00 &&
+				Candidate[5] == 0x00 &&
+				Candidate[6] == 0xA1 &&
+				Candidate[11] == 0x33 &&
+				Candidate[12] == 0xC4)
+			{
+				return TRUE;
+			}
+
+			//.text : 01D40030 55                                                  push    ebp
+			//.text : 01D40031 8B EC                                               mov     ebp, esp
+			//.text : 01D40033 81 EC 0C 01 00 00                                   sub     esp, 10Ch
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC &&
+				Candidate[3] == 0x81 &&
+				Candidate[4] == 0xEC &&
+				Candidate[6] == 0x10 &&
+				Candidate[7] == 0x00 &&
+				Candidate[8] == 0x00)
+			{
+				return TRUE;
+			}
+
+			return FALSE;
+		});
+		Sig_FuncNotFound(Mod_LoadModel);
+
+		const char sigs2[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x68";
+		auto Mod_LoadModel_Pattern2 = g_pMetaHookAPI->SearchPattern((PUCHAR)Mod_LoadModel_Pattern - 0x50, 0x50, sigs2, Sig_Length(sigs2));
+		Sig_VarNotFound(Mod_LoadModel_Pattern2);
+
+		loadname = *(decltype(loadname)*)((PUCHAR)Mod_LoadModel_Pattern2 + sizeof(sigs2) - 1);
+
+		g_pMetaHookAPI->DisasmRanges((PUCHAR)Mod_LoadModel_Pattern2 + sizeof(sigs2) - 1 + 4, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			{
+				auto pinst = (cs_insn *)inst;
+
+				if (!loadmodel &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[0].mem.index == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					loadmodel = (decltype(loadmodel))pinst->detail->x86.operands[0].mem.disp;
+				}
+
+				if (loadmodel)
+					return TRUE;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+			}, 0, NULL);
+
+		Sig_VarNotFound(loadmodel);
+	}
+
+
+	{
 		/*const char sigs1[] = "palette.lmp\0";
 		auto palette_String = Search_Pattern_Data(sigs1);
 		if (!palette_String)
@@ -3342,10 +3492,100 @@ void R_FillAddress(void)
 				return TRUE;
 
 			return FALSE;
-			}, 0, &ctx);
+		}, 0, &ctx);
 
 		Sig_VarNotFound(locallight);
 	}
+
+	g_pMetaHookAPI->DisasmRanges(gEngfuncs.pfnSetFilterMode, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+		auto pinst = (cs_insn *)inst;
+
+		if (pinst->id == X86_INS_MOV &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[1].type == X86_OP_REG &&
+			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[0].mem.base == 0 &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+		{
+			//.text:01D1B114 A3 AC 44 F5 03                                      mov     filterMode, eax
+			filterMode = (decltype(filterMode))pinst->detail->x86.operands[0].mem.disp;
+		}
+
+		if (filterMode)
+			return TRUE;
+
+		if (address[0] == 0xCC)
+			return TRUE;
+
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
+
+		return FALSE;
+	}, 0, NULL);
+
+	Sig_VarNotFound(filterMode);
+
+	g_pMetaHookAPI->DisasmRanges(gEngfuncs.pfnSetFilterColor, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+		auto pinst = (cs_insn *)inst;
+
+		if (pinst->id == X86_INS_FSTP &&
+			pinst->detail->x86.op_count == 1 &&
+			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[0].mem.base == 0 &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+		{
+			//.text:01D1B114 A3 AC 44 F5 03                                      mov     filterMode, eax
+			filterColorRed = (decltype(filterColorRed))pinst->detail->x86.operands[0].mem.disp;
+		}
+
+		if (filterColorRed)
+			return TRUE;
+
+		if (address[0] == 0xCC)
+			return TRUE;
+
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
+
+		return FALSE;
+	}, 0, NULL);
+
+	Sig_VarNotFound(filterColorRed);
+	filterColorGreen = filterColorRed + 1;
+	filterColorBlue = filterColorRed + 2;
+
+	g_pMetaHookAPI->DisasmRanges(gEngfuncs.pfnSetFilterBrightness, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+		auto pinst = (cs_insn *)inst;
+
+		if (pinst->id == X86_INS_FSTP &&
+			pinst->detail->x86.op_count == 1 &&
+			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[0].mem.base == 0 &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+		{
+			//.text:01D1B114 A3 AC 44 F5 03                                      mov     filterMode, eax
+			filterBrightness = (decltype(filterBrightness))pinst->detail->x86.operands[0].mem.disp;
+		}
+
+		if (filterBrightness)
+			return TRUE;
+
+		if (address[0] == 0xCC)
+			return TRUE;
+
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
+
+		return FALSE;
+	}, 0, NULL);
+
+	Sig_VarNotFound(filterBrightness);
 }
 
 hook_t *g_phook_GL_BeginRendering = NULL;
@@ -3361,6 +3601,7 @@ hook_t *g_phook_R_BuildLightMap = NULL;
 hook_t *g_phook_R_AddDynamicLights = NULL;
 hook_t *g_phook_R_GLStudioDrawPoints = NULL;
 hook_t *g_phook_GL_LoadTexture2 = NULL;
+hook_t *g_phook_GL_BuildLightmaps = NULL;
 hook_t *g_phook_enginesurface_drawFlushText = NULL;
 hook_t *g_phook_Mod_LoadStudioModel = NULL;
 hook_t *g_phook_Mod_LoadBrushModel = NULL;
@@ -3391,12 +3632,14 @@ void R_UninstallHooksForEngineDLL(void)
 	Uninstall_Hook(R_NewMap);
 	Uninstall_Hook(R_CullBox);
 	Uninstall_Hook(Mod_PointInLeaf);
-	Uninstall_Hook(R_BuildLightMap);
+	//Uninstall_Hook(R_BuildLightMap);
 	Uninstall_Hook(R_AddDynamicLights);
 	Uninstall_Hook(R_GLStudioDrawPoints);
 	Uninstall_Hook(GL_LoadTexture2);
+	Uninstall_Hook(GL_BuildLightmaps);
 	Uninstall_Hook(enginesurface_drawFlushText);
 	Uninstall_Hook(Mod_LoadStudioModel);
+	//Uninstall_Hook(Mod_LoadBrushModel);
 	Uninstall_Hook(triapi_RenderMode);
 	//Uninstall_Hook(triapi_Color4f);
 	Uninstall_Hook(Draw_MiptexTexture);
@@ -3428,13 +3671,14 @@ void R_InstallHooks(void)
 	Install_InlineHook(R_NewMap);
 	Install_InlineHook(R_CullBox);
 	Install_InlineHook(Mod_PointInLeaf);
-	Install_InlineHook(R_BuildLightMap);
+	//Install_InlineHook(R_BuildLightMap);
 	Install_InlineHook(R_AddDynamicLights);
 	Install_InlineHook(R_GLStudioDrawPoints);
 	Install_InlineHook(GL_LoadTexture2);
+	Install_InlineHook(GL_BuildLightmaps);
 	Install_InlineHook(enginesurface_drawFlushText);
 	Install_InlineHook(Mod_LoadStudioModel);
-	Install_InlineHook(Mod_LoadBrushModel);
+	//Install_InlineHook(Mod_LoadBrushModel);
 	Install_InlineHook(triapi_RenderMode);
 	//Install_InlineHook(triapi_Color4f);
 	Install_InlineHook(Draw_MiptexTexture);

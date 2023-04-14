@@ -90,6 +90,7 @@ public:
 	virtual bool IsAppReadyForOfflinePlay(void) = 0;
 	virtual void AddPackFile(const char *pPath, const char *pathID = 0) = 0;
 	virtual void *OpenFromCacheForRead(const char *pFileName, const char *pOptions, const char *pathID = 0) = 0;
+	virtual void AddSearchPathNoWrite(const char *pPath, const char *pathID) = 0;
 };
 
 #define FILESYSTEM_INTERFACE_VERSION "VFileSystem009"
