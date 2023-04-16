@@ -494,14 +494,14 @@ void R_RenderShadowDynamicLights(void)
 
 					if (gEngfuncs.GetLocalPlayer()->model)
 					{
-						auto save_localplayer_modeltype = gEngfuncs.GetLocalPlayer()->model->type;
+						auto save_localplayer_model = gEngfuncs.GetLocalPlayer()->model;
 
 						//This stops local player from being rendered
-						gEngfuncs.GetLocalPlayer()->model->type = (modtype_t)100;
+						gEngfuncs.GetLocalPlayer()->model = NULL;
 
 						R_RenderScene();
 
-						gEngfuncs.GetLocalPlayer()->model->type = save_localplayer_modeltype;
+						gEngfuncs.GetLocalPlayer()->model = save_localplayer_model;
 					}
 					else
 					{
