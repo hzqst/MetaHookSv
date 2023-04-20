@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <unordered_map>
 
 typedef struct glshader_s
 {
@@ -14,11 +15,13 @@ typedef struct glshader_s
 	std::vector<GLuint> shader_objects;
 }glshader_t;
 
-typedef struct program_state_name_s
+typedef uint64_t program_state_t;
+
+typedef struct program_state_mapping_s
 {
-	uint64_t state;
+	program_state_t state;
 	const char *name;
-}program_state_name_t;
+}program_state_mapping_t;
 
 typedef void(*ExtraShaderStageCallback)(GLuint *objs, int *used);
 GLuint R_CompileShaderObject(int type, const char *code, const char *filename);
@@ -40,6 +43,10 @@ void GL_VertexAttrib3f(GLuint index, float x, float y, float z);
 void GL_VertexAttrib3fv(GLuint index, float *v);
 void GL_MultiTexCoord2f(GLenum target, float s, float t);
 void GL_MultiTexCoord3f(GLenum target, float s, float t, float r);
+
+void R_LoadProgramStateCaches(const char *filename, const program_state_mapping_t *mapping, size_t mapping_size, void(*callback)(program_state_t state));
+
+void R_SaveProgramStatesCaches(const char *filename, const std::vector<program_state_t> &ProgramStates, const program_state_mapping_t *mapping, size_t mapping_size);
 
 #define clamp(value, mi, ma) min(max(value, mi), ma)
 

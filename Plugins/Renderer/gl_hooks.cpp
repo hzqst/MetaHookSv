@@ -2650,7 +2650,6 @@ void R_FillAddress(void)
 		chrome = *(decltype(chrome) *)(addr + 3);
 	}
 
-
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 #define CL_VIEWENTITY_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x50\x6A\x06\xFF\x35\x2A\x2A\x2A\x2A\xE8"
@@ -2664,6 +2663,40 @@ void R_FillAddress(void)
 		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_NEW);
 		Sig_AddrNotFound(cl_viewentity);
 		cl_viewentity = *(decltype(cl_viewentity)*)(addr + 2);
+	}
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+#define CL_MAXEDICTS_SIG_SVENGINE "\x69\xC0\xB8\x0B\x00\x00\x50\xE8\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xA3\x2A\x2A\x2A\x2A\xE8"
+		DWORD addr = (DWORD)Search_Pattern(CL_MAXEDICTS_SIG_SVENGINE);
+		Sig_AddrNotFound(cl_max_edicts);
+		cl_max_edicts = *(decltype(cl_max_edicts)*)(addr + 14);
+		cl_entities = *(decltype(cl_entities)*)(addr + 19);
+
+#define GTEMPENTS_SIG_SVENGINE "\x68\x00\xE0\x5F\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xA3"
+		if (1)
+		{
+			DWORD addr = (DWORD)Search_Pattern(GTEMPENTS_SIG_SVENGINE);
+			Sig_AddrNotFound(gTempEnts);
+			gTempEnts = *(decltype(gTempEnts)*)(addr + 8);
+		}
+
+	}
+	else
+	{
+#define CL_MAXEDICTS_SIG_NEW "\xC1\xE1\x03\x51\xE8\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\xA3"
+		DWORD addr = (DWORD)Search_Pattern(CL_MAXEDICTS_SIG_NEW);
+		Sig_AddrNotFound(cl_max_edicts);
+		cl_max_edicts = *(decltype(cl_max_edicts)*)(addr + 11);
+		cl_entities = *(decltype(cl_entities)*)(addr + 16);
+
+#define GTEMPENTS_SIG_NEW "\x68\x30\x68\x17\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xE8"
+		if (1)
+		{
+			DWORD addr = (DWORD)Search_Pattern(GTEMPENTS_SIG_NEW);
+			Sig_AddrNotFound(gTempEnts);
+			gTempEnts = *(decltype(gTempEnts)*)(addr + 8);
+		}
 	}
 
 
@@ -3008,7 +3041,7 @@ void R_FillAddress(void)
 		auto Mod_LoadModel_Pattern = Search_Pattern(sigs1);
 		Sig_VarNotFound(Mod_LoadModel_Pattern);
 
-		gRefFuncs.Mod_LoadModel = (decltype(gRefFuncs.Mod_LoadModel))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Mod_LoadModel_Pattern, 0x400, [](PUCHAR Candidate) {
+		gRefFuncs.Mod_LoadModel = (decltype(gRefFuncs.Mod_LoadModel))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Mod_LoadModel_Pattern, 0x600, [](PUCHAR Candidate) {
 
 			//81 EC ?? 01 00 00 A1 ?? ?? ?? ?? 33 C4
 			/*
@@ -3036,7 +3069,7 @@ void R_FillAddress(void)
 				Candidate[2] == 0xEC &&
 				Candidate[3] == 0x81 &&
 				Candidate[4] == 0xEC &&
-				Candidate[6] == 0x10 &&
+				Candidate[6] == 0x01 &&
 				Candidate[7] == 0x00 &&
 				Candidate[8] == 0x00)
 			{
@@ -3527,22 +3560,59 @@ void R_FillAddress(void)
 
 	Sig_VarNotFound(filterMode);
 
+	typedef struct
+	{
+		PVOID Candidates[3];
+		int CandidateCount;
+	}FilterColorCotext_t;
+
+	FilterColorCotext_t ctx = { 0 };
+
 	g_pMetaHookAPI->DisasmRanges(gEngfuncs.pfnSetFilterColor, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
+		auto ctx = (FilterColorCotext_t *)context;
 		auto pinst = (cs_insn *)inst;
 
-		if (pinst->id == X86_INS_FSTP &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+		if (ctx->CandidateCount < 3)
 		{
-			//.text:01D1B114 A3 AC 44 F5 03                                      mov     filterMode, eax
-			filterColorRed = (decltype(filterColorRed))pinst->detail->x86.operands[0].mem.disp;
+			if (g_iEngineType == ENGINE_SVENGINE)
+			{
+				if (pinst->id == X86_INS_FSTP &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					//  .text : 01D1B120 D9 44 24 04                                         fld[esp + arg_0]
+					//	.text : 01D1B124 D9 1D 90 83 ED 01                                   fstp    r_filter_color
+					//	.text : 01D1B12A D9 44 24 08                                         fld[esp + arg_4]
+					//	.text : 01D1B12E D9 1D 94 83 ED 01                                   fstp    r_filter_color + 4
+					//	.text : 01D1B134 D9 44 24 0C                                         fld[esp + arg_8]
+					//	.text : 01D1B138 D9 1D 98 83 ED 01                                   fstp    r_filter_color + 8
+					//	.text : 01D1B13E C3                                                  retn
+					ctx->Candidates[ctx->CandidateCount] = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+					ctx->CandidateCount++;
+				}
+			}
+			else
+			{
+				if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					//.text:01D115C1 A3 C4 71 E4 01                                      mov     filterColorRed, eax
+					ctx->Candidates[ctx->CandidateCount] = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+					ctx->CandidateCount++;
+				}
+			}
 		}
 
-		if (filterColorRed)
+		if (ctx->CandidateCount >= 3)
 			return TRUE;
 
 		if (address[0] == 0xCC)
@@ -3552,25 +3622,49 @@ void R_FillAddress(void)
 			return TRUE;
 
 		return FALSE;
-	}, 0, NULL);
+	}, 0, &ctx);
+
+	std::qsort(ctx.Candidates, ctx.CandidateCount, sizeof(int), [](const void*a, const void*b) {
+		return (int)(*(LONG_PTR *)a - *(LONG_PTR *)b);
+	});
+
+	filterColorRed = (decltype(filterColorRed))ctx.Candidates[0];
+	filterColorGreen = (decltype(filterColorGreen))ctx.Candidates[1];
+	filterColorBlue = (decltype(filterColorBlue))ctx.Candidates[2];
 
 	Sig_VarNotFound(filterColorRed);
-	filterColorGreen = filterColorRed + 1;
-	filterColorBlue = filterColorRed + 2;
+	Sig_VarNotFound(filterColorGreen);
+	Sig_VarNotFound(filterColorBlue);
 
 	g_pMetaHookAPI->DisasmRanges(gEngfuncs.pfnSetFilterBrightness, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 		auto pinst = (cs_insn *)inst;
 
-		if (pinst->id == X86_INS_FSTP &&
-			pinst->detail->x86.op_count == 1 &&
-			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-			pinst->detail->x86.operands[0].mem.base == 0 &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-			(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			//.text:01D1B114 A3 AC 44 F5 03                                      mov     filterMode, eax
-			filterBrightness = (decltype(filterBrightness))pinst->detail->x86.operands[0].mem.disp;
+			if (pinst->id == X86_INS_FSTP &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				//.text:01D1B114 A3 AC 44 F5 03                                      mov     filterMode, eax
+				filterBrightness = (decltype(filterBrightness))pinst->detail->x86.operands[0].mem.disp;
+			}
+		}
+		else
+		{
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				filterBrightness = (decltype(filterBrightness))pinst->detail->x86.operands[0].mem.disp;
+			}
 		}
 
 		if (filterBrightness)
@@ -3630,7 +3724,7 @@ void R_UninstallHooksForEngineDLL(void)
 	}
 
 	Uninstall_Hook(R_NewMap);
-	Uninstall_Hook(R_CullBox);
+	//Uninstall_Hook(R_CullBox);
 	Uninstall_Hook(Mod_PointInLeaf);
 	//Uninstall_Hook(R_BuildLightMap);
 	Uninstall_Hook(R_AddDynamicLights);
@@ -3669,7 +3763,7 @@ void R_InstallHooks(void)
 	}
 
 	Install_InlineHook(R_NewMap);
-	Install_InlineHook(R_CullBox);
+	//Install_InlineHook(R_CullBox);
 	Install_InlineHook(Mod_PointInLeaf);
 	//Install_InlineHook(R_BuildLightMap);
 	Install_InlineHook(R_AddDynamicLights);

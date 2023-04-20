@@ -73,5 +73,6 @@ void __fastcall WeaponsResource_SelectSlot(void *pthis, int, int iSlot, int fAdv
 extern cvar_t* cap_debug;
 extern cvar_t* cap_enabled;
 extern cvar_t* cap_max_distance;
+extern cvar_t* cap_min_avol;
 extern cvar_t *cap_netmessage;
 extern cvar_t *cap_hudmessage;

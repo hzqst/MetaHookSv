@@ -3,7 +3,9 @@
 #include <vector>
 #include <string>
 
-#define MAX_WATERS 256
+#define MAX_WATERS 16
+
+#define MAX_REFLECT_WATERS 16
 
 typedef struct cubemap_s
 {
@@ -50,17 +52,48 @@ typedef struct
 	int depthmap;
 }drawdepth_program_t;
 
+typedef struct water_reflect_cache_s
+{
+	water_reflect_cache_s()
+	{
+		refractmap = 0;
+		depthrefrmap = 0;
+		reflectmap = 0;
+		depthreflmap = 0;
+		texwidth = 0;
+		texheight = 0;
+		normal[0] = 0;
+		normal[1] = 0;
+		normal[2] = 0;
+		planedist = 0;
+		color.r = 0;
+		color.g = 0;
+		color.b = 0;
+		color.a = 0;
+		level = 0;
+		used = false;
+	}
+	GLuint refractmap;
+	GLuint depthrefrmap;
+	GLuint reflectmap;
+	GLuint depthreflmap;
+	GLsizei texwidth;
+	GLsizei texheight;
+	vec3_t normal;
+	float planedist;
+	colorVec color;
+	int level;
+	bool used;
+	bool refractmap_ready;
+}water_reflect_cache_t;
+
 typedef struct water_vbo_s
 {
 	water_vbo_s()
 	{
 		hEBO = 0;
-		index = -1;
-		ent = NULL;
 		texture = NULL;
 
-		reflectmap = 0;
-		depthreflmap = 0;
 		normalmap = 0;
 		ripplemap = 0;
 
@@ -86,23 +119,18 @@ typedef struct water_vbo_s
 		maxtrans = 0;
 		speedrate = 0;
 		level = 0;
+		planedist = 0;
 		plane = 0;
 		iPolyCount = 0;
-		framecount = 0;
+		iIndicesCount = 0;
+		vIndicesBuffer = NULL;
 	}
 	GLuint hEBO;
 
-	int index;
-	cl_entity_t *ent;
 	texture_t *texture;
 
-	GLuint reflectmap;
-	GLuint depthreflmap;
 	GLuint normalmap;
 	GLuint ripplemap;
-
-	int reflectmap_width;
-	int reflectmap_height;
 
 	void *ripple_data;
 	void *ripple_image;
@@ -120,25 +148,23 @@ typedef struct water_vbo_s
 	float maxtrans;
 	float speedrate;
 	int level;
-	float plane;
+	float planedist;
 	vec3_t vert;
 	vec3_t normal;
+	mplane_t *plane;
 	colorVec color;
-	std::vector<GLuint> vIndicesBuffer;
 	int iPolyCount;
-	int framecount;
+	int iIndicesCount;
+	std::vector<GLuint> *vIndicesBuffer;
 }water_vbo_t;
 
 //renderer
-extern bool refractmap_ready;
-extern vec3_t water_view;
+extern vec3_t g_CurrentCameraView;
 
 //water
-extern water_vbo_t *curwater;
-
-extern std::vector<water_vbo_t *> g_WaterVBOCache;
-extern water_vbo_t *g_RenderWaterVBOCache[512];
-extern int g_iNumRenderWaterVBOCache;
+extern water_reflect_cache_t *g_CurrentReflectCache;
+extern water_reflect_cache_t g_WaterReflectCaches[MAX_REFLECT_WATERS];
+extern int g_iNumWaterReflectCaches;
 //shader
 
 //cvar
@@ -156,27 +182,24 @@ extern colorVec *gWaterColor;
 extern cshift_t *cshift_water;
 
 bool R_IsAboveWater(water_vbo_t *water);
-
-water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction);
 void R_InitWater(void);
 void R_ShutdownWater(void);
-void R_RenderWaterView(void);
+void R_RenderWaterPass(void);
 void R_NewMapWater(void);
-void R_UseWaterProgram(int state, water_program_t *progOutput);
+void R_UseWaterProgram(program_state_t state, water_program_t *progOutput);
 void R_SaveWaterProgramStates(void);
 void R_LoadWaterProgramStates(void);
-void R_DrawWaters(cl_entity_t *ent);
 
-#define WATER_LEGACY_ENABLED				1
-#define WATER_UNDERWATER_ENABLED			2
-#define WATER_GBUFFER_ENABLED				4
-#define WATER_DEPTH_ENABLED					8
-#define WATER_REFRACT_ENABLED				0x10
-#define WATER_LINEAR_FOG_ENABLED			0x20
-#define WATER_EXP_FOG_ENABLED				0x40
-#define WATER_EXP2_FOG_ENABLED				0x80
-#define WATER_OIT_ALPHA_BLEND_ENABLED		0x100
-#define WATER_OIT_ADDITIVE_BLEND_ENABLED	0x200
+#define WATER_LEGACY_ENABLED				0x1ull
+#define WATER_UNDERWATER_ENABLED			0x2ull
+#define WATER_GBUFFER_ENABLED				0x4ull
+#define WATER_DEPTH_ENABLED					0x8ull
+#define WATER_REFRACT_ENABLED				0x10ull
+#define WATER_LINEAR_FOG_ENABLED			0x20ull
+#define WATER_EXP_FOG_ENABLED				0x40ull
+#define WATER_EXP2_FOG_ENABLED				0x80ull
+#define WATER_OIT_ALPHA_BLEND_ENABLED		0x100ull
+#define WATER_OIT_ADDITIVE_BLEND_ENABLED	0x200ull
 
 #define WATER_LEVEL_LEGACY						0
 #define WATER_LEVEL_REFLECT_SKYBOX				1

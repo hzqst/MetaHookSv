@@ -164,36 +164,32 @@ int StudioGetSequenceActivityType(model_t *mod, entity_state_t* entstate)
 	return 0;
 }
 
-void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size, bool bUseColorArray)
+void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size, bool bUseDepthArray)
 {
 	shadowtex->size = size;
 	vec4_t depthBorderColor = { 1, 1, 1, 1 };
+	
 	shadowtex->depth = GL_GenShadowTexture(shadowtex->size, shadowtex->size, depthBorderColor);
 
-	if (bUseColorArray)
+	if (bUseDepthArray)
 	{
 		vec4_t borderColor = { -99999, -99999, -99999, 1};
-		shadowtex->color_array = GL_GenTextureArrayColorFormat(shadowtex->size, shadowtex->size, 3, GL_RGBA16F, false, borderColor);
-	}
-	else
-	{
-		//vec4_t borderColor = { -99999, -99999, -99999, 1 };
-		//shadowtex->color = GL_GenTextureColorFormat(shadowtex->size, shadowtex->size, GL_RGBA32F, false, borderColor);
+		shadowtex->depth_array = GL_GenTextureArrayColorFormat(shadowtex->size, shadowtex->size, 3, GL_RGBA16F, false, borderColor);
 	}
 }
 
 void R_FreeShadowTexture(shadow_texture_t *shadowtex)
 {
-	/*if (shadowtex->color)
+	if (shadowtex->color)
 	{
 		GL_DeleteTexture(shadowtex->color);
 		shadowtex->color = 0;
-	}*/
+	}
 
-	if (shadowtex->color_array)
+	if (shadowtex->depth_array)
 	{
-		GL_DeleteTexture(shadowtex->color_array);
-		shadowtex->color_array = 0;
+		GL_DeleteTexture(shadowtex->depth_array);
+		shadowtex->depth_array = 0;
 	}
 
 	if (shadowtex->depth)
@@ -306,6 +302,8 @@ bool R_ShouldCastShadow(cl_entity_t *ent)
 
 void R_RenderShadowScene(void)
 {
+	GL_BeginProfile(&Profile_RenderShadowScene);
+
 	vec3_t shadow_angles = { r_shadow_angles->GetValues()[0], r_shadow_angles->GetValues()[1] , r_shadow_angles->GetValues()[2] };
 
 	float max_distance[3] = { r_shadow_high_distance->GetValue(), r_shadow_medium_distance->GetValue(), r_shadow_low_distance->GetValue() };
@@ -349,10 +347,7 @@ void R_RenderShadowScene(void)
 
 	if (R_ShouldRenderShadowScene())
 	{
-		static glprofile_t profile_RenderShadowMap;
-		GL_BeginProfile(&profile_RenderShadowMap, "R_RenderShadowMap");
-
-		glBindFramebuffer(GL_FRAMEBUFFER, s_ShadowFBO.s_hBackBufferFBO);
+		GL_BindFrameBuffer(&s_ShadowFBO);
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 		glDisable(GL_BLEND);
@@ -368,7 +363,7 @@ void R_RenderShadowScene(void)
 			if (!shadow_numvisedicts[i])
 				continue;
 
-			glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, r_shadow_texture.color_array, 0, i);
+			glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, r_shadow_texture.depth_array, 0, i);
 			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, r_shadow_texture.depth, 0);
 
 			glMatrixMode(GL_PROJECTION);
@@ -422,12 +417,15 @@ void R_RenderShadowScene(void)
 		glClearDepth(1);
 		glDepthFunc(GL_LEQUAL);
 
-		GL_EndProfile(&profile_RenderShadowMap);
 	}
+	GL_EndProfile(&Profile_RenderShadowScene);
 }
 
 void R_RenderShadowDynamicLights(void)
 {
+	if (!r_light_dynamic->value)
+		return;
+
 	if (R_ShouldRenderShadow())
 	{
 		R_IterateDynamicLights([](
@@ -454,24 +452,25 @@ void R_RenderShadowDynamicLights(void)
 						R_AllocShadowTexture(shadowtex, 1024, false);
 					}
 
+					if (!shadowtex->color && shadowtex->size)
+					{
+						shadowtex->color = GL_GenTextureRGBA8(shadowtex->size, shadowtex->size);
+					}
+
 					shadowtex->distance = distance;
 					shadowtex->cone_angle = coneAngle;
 					current_shadow_texture = shadowtex;
 
-					glBindFramebuffer(GL_FRAMEBUFFER, s_ShadowFBO.s_hBackBufferFBO);
+					GL_BindFrameBufferWithTextures(&s_ShadowFBO, shadowtex->color, 0, shadowtex->depth, shadowtex->size, shadowtex->size);
 					glDrawBuffer(GL_NONE);
-
-					//glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadowtex->color, 0);
-					glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, shadowtex->depth, 0);
 
 					glDisable(GL_BLEND);
 					glDisable(GL_ALPHA_TEST);
 					glEnable(GL_DEPTH_TEST);
 					glDepthFunc(GL_LEQUAL);
 
-					//glPolygonOffset(10, gl_polyoffset->value);
-					glPolygonOffset(10, 10);
 					glEnable(GL_POLYGON_OFFSET_FILL);
+					glPolygonOffset(10, 10);
 
 					glDepthMask(GL_TRUE);
 					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
@@ -495,14 +494,14 @@ void R_RenderShadowDynamicLights(void)
 
 					if (gEngfuncs.GetLocalPlayer()->model)
 					{
-						auto save_localplayer_modeltype = gEngfuncs.GetLocalPlayer()->model->type;
+						auto save_localplayer_model = gEngfuncs.GetLocalPlayer()->model;
 
 						//This stops local player from being rendered
-						gEngfuncs.GetLocalPlayer()->model->type = (modtype_t)100;
+						gEngfuncs.GetLocalPlayer()->model = NULL;
 
 						R_RenderScene();
 
-						gEngfuncs.GetLocalPlayer()->model->type = save_localplayer_modeltype;
+						gEngfuncs.GetLocalPlayer()->model = save_localplayer_model;
 					}
 					else
 					{
@@ -543,6 +542,9 @@ void R_RenderShadowDynamicLights(void)
 
 void R_RenderShadowMap(void)
 {
+	if (!r_shadow->value)
+		return;
+
 	R_RenderShadowScene();
 	R_RenderShadowDynamicLights();
 }

@@ -30,6 +30,10 @@ double *cl_oldtime = NULL;
 char *(*rgpszrawsentence)[CVOXFILESENTENCEMAX] = NULL;
 int *cszrawsentences = NULL;
 
+int *cl_viewentity = NULL;
+
+vec3_t *listener_origin = NULL;
+
 char (*s_pBaseDir)[512] = NULL;
 
 char m_szCurrentLanguage[128] = { 0 };
@@ -115,6 +119,36 @@ void Engine_FillAddress(void)
 
 		gPrivateFuncs.S_LoadSound = (sfxcache_t *(*)(sfx_t *, channel_t *))Search_Pattern_From(S_StartStaticSound, S_LOADSOUND_SIG);
 		Sig_FuncNotFound(S_LoadSound);
+	}
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+#define CL_VIEWENTITY_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x50\x6A\x06\xFF\x35\x2A\x2A\x2A\x2A\xE8"
+		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_SVENGINE);
+		Sig_AddrNotFound(cl_viewentity);
+		cl_viewentity = *(decltype(cl_viewentity)*)(addr + 10);
+	}
+	else
+	{
+#define CL_VIEWENTITY_SIG_NEW "\x8B\x0D\x2A\x2A\x2A\x2A\x6A\x64\x6A\x00\x68\x00\x00\x80\x3F\x68\x00\x00\x80\x3F\x68\x2A\x2A\x2A\x2A\x50"
+		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_NEW);
+		Sig_AddrNotFound(cl_viewentity);
+		cl_viewentity = *(decltype(cl_viewentity)*)(addr + 2);
+	}
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+#define LISTENER_ORIGIN_SIG_SVENGINE "\xD9\x54\x24\x2A\xD9\x1C\x24\x68\x2A\x2A\x2A\x2A\x50\x6A\x00\x2A\xE8"
+		DWORD addr = (DWORD)Search_Pattern(LISTENER_ORIGIN_SIG_SVENGINE);
+		Sig_AddrNotFound(listener_origin);
+		listener_origin = *(decltype(listener_origin)*)(addr + 8);
+	}
+	else
+	{
+#define LISTENER_ORIGIN_SIG_NEW "\x50\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\xC8"
+		DWORD addr = (DWORD)Search_Pattern(LISTENER_ORIGIN_SIG_NEW);
+		Sig_AddrNotFound(listener_origin);
+		listener_origin = *(decltype(listener_origin)*)(addr + 2);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -690,4 +724,9 @@ void Client_UninstallHooks(void)
 {
 	Uninstall_Hook(ScClient_FindSoundEx);
 	Uninstall_Hook(WeaponsResource_SelectSlot);
+}
+
+cl_entity_t *EngineGetViewEntity(void)
+{
+	return gEngfuncs.GetEntityByIndex((*cl_viewentity));
 }

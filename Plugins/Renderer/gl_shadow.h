@@ -2,8 +2,8 @@
 
 typedef struct
 {
-	//GLuint color;
-	GLuint color_array;
+	GLuint color;
+	GLuint depth_array;
 	GLuint depth;
 	size_t size;
 	mat4 matrix;
@@ -14,7 +14,7 @@ typedef struct
 
 extern shadow_texture_t r_shadow_texture;
 
-extern shadow_texture_t cl_dlight_shadow_textures[256];
+extern shadow_texture_t cl_dlight_shadow_textures[MAX_DLIGHTS_SVENGINE];
 
 extern shadow_texture_t *current_shadow_texture;
 
@@ -44,5 +44,5 @@ bool R_ShouldRenderShadow(void);
 void R_RenderShadowMap(void);
 void R_InitShadow(void);
 void R_ShutdownShadow(void);
-void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size, bool bUseColorArray);
+void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size, bool bUseDepthArray);
 void R_FreeShadowTexture(shadow_texture_t *shadowtex);

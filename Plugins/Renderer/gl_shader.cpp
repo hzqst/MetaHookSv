@@ -356,3 +356,92 @@ void GL_MultiTexCoord3f(GLenum target, float s, float t, float r)
 {
 	glMultiTexCoord3fARB(target, s, t, r);
 }
+
+void R_SaveProgramStatesCaches(const char *filename, const std::vector<program_state_t> &ProgramStates, const program_state_mapping_t *mapping, size_t mapping_size)
+{
+	std::stringstream ss;
+
+	for (auto &p : ProgramStates)
+	{
+		if (p == 0)
+		{
+			ss << "NONE";
+		}
+		else
+		{
+			for (size_t i = 0; i < mapping_size; ++i)
+			{
+				if (p & mapping[i].state)
+				{
+					ss << mapping[i].name << " ";
+				}
+			}
+		}
+		ss << "\n";
+	}
+
+	auto FileHandle = g_pFileSystem->Open(filename, "wt");
+	if (FileHandle)
+	{
+		auto str = ss.str();
+		g_pFileSystem->Write(str.data(), str.length(), FileHandle);
+		g_pFileSystem->Close(FileHandle);
+	}
+}
+
+void R_LoadProgramStateCaches(const char *filename, const program_state_mapping_t *mapping, size_t mapping_size, void(*callback)(program_state_t state))
+{
+	auto FileHandle = g_pFileSystem->Open("renderer/shader/studio_cache.txt", "rt");
+	if (FileHandle)
+	{
+		char szReadLine[4096];
+		while (!g_pFileSystem->EndOfFile(FileHandle))
+		{
+			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
+			szReadLine[sizeof(szReadLine) - 1] = 0;
+
+			program_state_t ProgramState = 0;
+			bool filled = false;
+			bool quoted = false;
+			char token[256];
+			char *p = szReadLine;
+			while (1)
+			{
+				p = g_pFileSystem->ParseFile(p, token, &quoted);
+				if (token[0])
+				{
+					if (!strcmp(token, "NONE"))
+					{
+						ProgramState = 0;
+						filled = true;
+						break;
+					}
+					else
+					{
+						for (size_t i = 0; i < mapping_size; ++i)
+						{
+							if (!strcmp(token, mapping[i].name))
+							{
+								ProgramState |= mapping[i].state;
+								filled = true;
+							}
+						}
+					}
+				}
+				else
+				{
+					break;
+				}
+
+				if (!p)
+					break;
+			}
+
+			if (filled)
+			{
+				callback(ProgramState);
+			}
+		}
+		g_pFileSystem->Close(FileHandle);
+	}
+}

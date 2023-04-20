@@ -1,28 +1,30 @@
 #include "gl_local.h"
 #include <sstream>
 
-bool refractmap_ready = false;
-
-vec3_t water_view;
-
-water_vbo_t *curwater;
+//renderer
+vec3_t g_CurrentCameraView;
 
 //cvar
 cvar_t *r_water = NULL;
 cvar_t *r_water_forcetrans = NULL;
 cvar_t *r_water_debug = NULL;
 
-std::vector<water_vbo_t *> g_WaterVBOCache;
-water_vbo_t *g_RenderWaterVBOCache[512];
-int g_iNumRenderWaterVBOCache = 0;
+water_reflect_cache_t *g_CurrentReflectCache = NULL;
+water_reflect_cache_t g_WaterReflectCaches[MAX_REFLECT_WATERS];
+int g_iNumWaterReflectCaches = 0;
 
-std::unordered_map<int, water_program_t> g_WaterProgramTable;
+std::vector<cl_entity_t *> g_VisibleWaterEntity;
+std::vector<water_vbo_t *> g_VisibleWaterVBO;
+
+int g_VisWaterIndices[MAX_VISEDICTS] = { 0 };
+
+std::unordered_map<program_state_t, water_program_t> g_WaterProgramTable;
 
 std::vector<water_control_t> r_water_controls;
 
 //std::vector<cubemap_t> r_cubemaps;
 
-void R_UseWaterProgram(int state, water_program_t *progOutput)
+void R_UseWaterProgram(program_state_t state, water_program_t *progOutput)
 {
 	water_program_t prog = { 0 };
 
@@ -97,7 +99,7 @@ void R_UseWaterProgram(int state, water_program_t *progOutput)
 	}
 }
 
-const program_state_name_t s_WaterProgramStateName[] = {
+const program_state_mapping_t s_WaterProgramStateName[] = {
 { WATER_LEGACY_ENABLED					, "WATER_LEGACY_ENABLED"			 },
 { WATER_UNDERWATER_ENABLED				, "WATER_UNDERWATER_ENABLED"		 },
 { WATER_GBUFFER_ENABLED					, "WATER_GBUFFER_ENABLED"			 },
@@ -112,93 +114,222 @@ const program_state_name_t s_WaterProgramStateName[] = {
 
 void R_SaveWaterProgramStates(void)
 {
-	std::stringstream ss;
+	std::vector<program_state_t> states;
 	for (auto &p : g_WaterProgramTable)
 	{
-		if (p.first == 0)
-		{
-			ss << "NONE";
-		}
-		else
-		{
-			for (int i = 0; i < _ARRAYSIZE(s_WaterProgramStateName); ++i)
-			{
-				if (p.first & s_WaterProgramStateName[i].state)
-				{
-					ss << s_WaterProgramStateName[i].name << " ";
-				}
-			}
-		}
-		ss << "\n";
+		states.emplace_back(p.first);
 	}
-
-	auto FileHandle = g_pFileSystem->Open("renderer/shader/water_cache.txt", "wt");
-	if (FileHandle)
-	{
-		auto str = ss.str();
-		g_pFileSystem->Write(str.data(), str.length(), FileHandle);
-		g_pFileSystem->Close(FileHandle);
-	}
+	R_SaveProgramStatesCaches("renderer/shader/water_cache.txt", states, s_WaterProgramStateName, _ARRAYSIZE(s_WaterProgramStateName));
 }
 
 void R_LoadWaterProgramStates(void)
 {
-	auto FileHandle = g_pFileSystem->Open("renderer/shader/water_cache.txt", "rt");
-	if (FileHandle)
+	R_LoadProgramStateCaches("renderer/shader/water_cache.txt", s_WaterProgramStateName, _ARRAYSIZE(s_WaterProgramStateName), [](program_state_t state) {
+
+		R_UseWaterProgram(state, NULL);
+
+	});
+}
+
+void R_FreeWaterVBO(water_vbo_t *WaterVBO)
+{
+	if (WaterVBO->ripplemap)
 	{
-		char szReadLine[4096];
-		while (!g_pFileSystem->EndOfFile(FileHandle))
-		{
-			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
-			szReadLine[sizeof(szReadLine) - 1] = 0;
-
-			int ProgramState = -1;
-			bool quoted = false;
-			char token[256];
-			char *p = szReadLine;
-			while (1)
-			{
-				p = g_pFileSystem->ParseFile(p, token, &quoted);
-				if (token[0])
-				{
-					if (!strcmp(token, "NONE"))
-					{
-						ProgramState = 0;
-						break;
-					}
-					else
-					{
-						for (int i = 0; i < _ARRAYSIZE(s_WaterProgramStateName); ++i)
-						{
-							if (!strcmp(token, s_WaterProgramStateName[i].name))
-							{
-								if (ProgramState == -1)
-									ProgramState = 0;
-								ProgramState |= s_WaterProgramStateName[i].state;
-							}
-						}
-					}
-				}
-				else
-				{
-					break;
-				}
-
-				if (!p)
-					break;
-			}
-
-			if (ProgramState != -1)
-				R_UseWaterProgram(ProgramState, NULL);
-		}
-		g_pFileSystem->Close(FileHandle);
+		GL_DeleteTexture(WaterVBO->ripplemap);
+		WaterVBO->ripplemap = 0;
 	}
 
-	GL_UseProgram(0);
+	if (WaterVBO->hEBO)
+	{
+		GL_DeleteBuffer(WaterVBO->hEBO);
+		WaterVBO->hEBO = 0;
+	}
+
+	if (WaterVBO->ripple_data)
+	{
+		free(WaterVBO->ripple_data);
+		WaterVBO->ripple_data = NULL;
+	}
+	if (WaterVBO->ripple_image)
+	{
+		free(WaterVBO->ripple_image);
+		WaterVBO->ripple_image = NULL;
+	}
+	if (WaterVBO->ripple_spots[0])
+	{
+		free(WaterVBO->ripple_spots[0]);
+		WaterVBO->ripple_spots[0] = NULL;
+	}
+	if (WaterVBO->ripple_spots[1])
+	{
+		free(WaterVBO->ripple_spots[1]);
+		WaterVBO->ripple_spots[1] = NULL;
+	}
+}
+
+void R_FreeWaterReflectCache(water_reflect_cache_t *ReflectCache)
+{
+	if (ReflectCache->reflectmap)
+	{
+		GL_DeleteTexture(ReflectCache->reflectmap);
+		ReflectCache->reflectmap = 0;
+	}
+	if (ReflectCache->depthreflmap)
+	{
+		GL_DeleteTexture(ReflectCache->depthreflmap);
+		ReflectCache->depthreflmap = 0;
+	}
+
+	ReflectCache->normal[0] = 0;
+	ReflectCache->normal[1] = 0;
+	ReflectCache->normal[2] = 0;
+	ReflectCache->planedist = 0;
+	ReflectCache->color.r = 0;
+	ReflectCache->color.g = 0;
+	ReflectCache->color.b = 0;
+	ReflectCache->color.a = 0;
+	ReflectCache->level = 0;
+	ReflectCache->used = false;
+	ReflectCache->refractmap_ready = false;
+}
+
+void R_ClearWaterReflectCaches(void)
+{
+	for (int i = 0; i < _ARRAYSIZE(g_WaterReflectCaches); ++i)
+	{
+		g_WaterReflectCaches[i].used = false;
+		g_WaterReflectCaches[i].refractmap_ready = false;
+	}
+
+	g_iNumWaterReflectCaches = 0;
+}
+
+void R_FreeWaterReflectCaches(void)
+{
+	for (int i = 0; i < _ARRAYSIZE(g_WaterReflectCaches); ++i)
+	{
+		R_FreeWaterReflectCache(&g_WaterReflectCaches[i]);
+	}
+
+	g_iNumWaterReflectCaches = 0;
+}
+
+water_reflect_cache_t *R_FindReflectCache(int level, vec3_t normal, float planedist)
+{
+	for (int i = 0; i < g_iNumWaterReflectCaches; ++i)
+	{
+		if (g_WaterReflectCaches[i].reflectmap &&
+			g_WaterReflectCaches[i].used &&
+
+			g_WaterReflectCaches[i].level == level &&
+			VectorDistance(g_WaterReflectCaches[i].normal, normal) < 0.1f &&
+			fabs(g_WaterReflectCaches[i].planedist - planedist) < 0.1)
+		{
+			return &g_WaterReflectCaches[i];
+		}
+	}
+
+	return NULL;
+}
+
+water_reflect_cache_t *R_FindEmptyReflectCache()
+{
+	for (int i = 0; i < _ARRAYSIZE(g_WaterReflectCaches); ++i)
+	{
+		if (!g_WaterReflectCaches[i].used || !g_WaterReflectCaches[i].reflectmap)
+		{
+			return &g_WaterReflectCaches[i];
+		}
+	}
+
+	return NULL;
+}
+
+water_reflect_cache_t *R_PrepareReflectCache(cl_entity_t *ent, water_vbo_t *WaterVBO)
+{
+	vec3_t vert;
+
+	R_RotateForEntity(ent);
+
+	VectorTransform(WaterVBO->vert, r_entity_matrix, vert);
+
+	float planedist = DotProduct(WaterVBO->normal, vert);
+
+	auto ReflectCache = R_FindReflectCache(WaterVBO->level, WaterVBO->normal, planedist);
+	if (!ReflectCache)
+	{
+		ReflectCache = R_FindEmptyReflectCache();
+		if (ReflectCache)
+		{
+			int texwidth = glwidth;
+			int texheight = glheight;
+
+			if (ReflectCache->refractmap && ReflectCache->texwidth != texwidth)
+			{
+				GL_DeleteTexture(ReflectCache->refractmap);
+				GL_DeleteTexture(ReflectCache->depthrefrmap);
+
+				ReflectCache->refractmap = 0;
+				ReflectCache->depthrefrmap = 0;
+			}
+
+			if (ReflectCache->reflectmap && ReflectCache->texwidth != texwidth)
+			{
+				GL_DeleteTexture(ReflectCache->reflectmap);
+				GL_DeleteTexture(ReflectCache->depthreflmap);
+
+				ReflectCache->reflectmap = 0;
+				ReflectCache->depthreflmap = 0;
+			}
+
+			if (!ReflectCache->refractmap)
+			{
+				ReflectCache->refractmap = GL_GenTextureColorFormat(texwidth, texheight, GL_RGB16F, true, NULL);
+				ReflectCache->depthrefrmap = GL_GenDepthStencilTexture(texwidth, texheight);
+			}
+
+			if (!ReflectCache->reflectmap)
+			{
+				ReflectCache->reflectmap = GL_GenTextureColorFormat(texwidth, texheight, GL_RGB16F, true, NULL);
+				ReflectCache->depthreflmap = GL_GenDepthStencilTexture(texwidth, texheight);
+			}
+
+			ReflectCache->texwidth = texwidth;
+			ReflectCache->texheight = texheight;
+
+			VectorCopy(WaterVBO->normal, ReflectCache->normal);
+			ReflectCache->planedist = planedist;
+
+			ReflectCache->color.r = WaterVBO->color.r;
+			ReflectCache->color.g = WaterVBO->color.g;
+			ReflectCache->color.b = WaterVBO->color.b;
+			ReflectCache->color.a = WaterVBO->color.a;
+
+			ReflectCache->level = WaterVBO->level;
+
+			ReflectCache->used = true;
+			ReflectCache->refractmap_ready = false;
+
+			int index = ReflectCache - g_WaterReflectCaches;
+
+			if (index + 1 > g_iNumWaterReflectCaches)
+				g_iNumWaterReflectCaches = index + 1;
+		}
+		else
+		{
+			//Really?
+			//g_pMetaHookAPI->SysError("R_PrepareReflectCache: no empty reflect cache!");
+			return NULL;			
+		}
+	}
+
+	return ReflectCache;
 }
 
 void R_ShutdownWater(void)
 {
+	R_FreeWaterReflectCaches();
+
 	g_WaterProgramTable.clear();
 }
 
@@ -211,45 +342,17 @@ void R_InitWater(void)
 
 void R_NewMapWater(void)
 {
-	for (size_t i = 0; i < g_WaterVBOCache.size(); ++i)
-	{
-		auto VBOCache = g_WaterVBOCache[i];
 
-		if (VBOCache->depthreflmap)
-			GL_DeleteTexture(VBOCache->depthreflmap);
-
-		if (VBOCache->reflectmap)
-			GL_DeleteTexture(VBOCache->reflectmap);
-
-		if (VBOCache->ripplemap)
-			GL_DeleteTexture(VBOCache->ripplemap);
-
-		if (VBOCache->hEBO)
-			GL_DeleteBuffer(VBOCache->hEBO);
-
-		if (VBOCache->ripple_data)
-			free(VBOCache->ripple_data);
-		if (VBOCache->ripple_image)
-			free(VBOCache->ripple_image);
-		if (VBOCache->ripple_spots[0])
-			free(VBOCache->ripple_spots[0]);
-		if (VBOCache->ripple_spots[1])
-			free(VBOCache->ripple_spots[1]);
-
-		delete VBOCache;
-	}
-
-	g_WaterVBOCache.clear();
 }
 
 bool R_IsAboveWater(water_vbo_t *water)
 {
 	float org[4] = { (*r_refdef.vieworg)[0], (*r_refdef.vieworg)[1], (*r_refdef.vieworg)[2], 1 };
-	float equation[4] = { water->normal[0], water->normal[1], water->normal[2], -water->plane };
+	float equation[4] = { water->normal[0], water->normal[1], water->normal[2], -water->planedist };
 	return DotProduct4(org, equation) > 0;
 }
 
-water_vbo_t *R_FindFlatWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction)
+water_vbo_t *R_FindFlatWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t *leaf)
 {
 	auto poly = surf->polys;
 
@@ -259,34 +362,26 @@ water_vbo_t *R_FindFlatWaterVBO(cl_entity_t *ent, msurface_t *surf, int directio
 	VectorCopy(brushface->normal, normal);
 
 	if (direction)
-		VectorInverse(normal);
-
-	for (size_t i = 0; i < g_WaterVBOCache.size(); ++i)
 	{
-		auto cache = g_WaterVBOCache[i];
-		if ((cache->ent == ent || (cache->ent->curstate.rendermode == ent->curstate.rendermode && cache->ent->curstate.origin[0] == 0 && cache->ent->curstate.origin[1] == 0 && cache->ent->curstate.origin[2] == 0 && ent->curstate.origin[0] == 0 && ent->curstate.origin[1] == 0 && ent->curstate.origin[2] == 0)) &&
-			surf->texinfo->texture == cache->texture &&
-			VectorDistance(cache->normal, normal) < 0.1f)
+		VectorInverse(normal);
+	}
+
+	for (size_t i = 0; i < leaf->vWaterVBO.size(); ++i)
+	{
+		auto WaterVBO = leaf->vWaterVBO[i];
+
+		if (surf->texinfo->texture == WaterVBO->texture &&
+			surf->plane == WaterVBO->plane && 
+			VectorDistance(normal, WaterVBO->normal) < 0.1f)//make sure it's same direction
 		{
-			bool bSkip = false;
-
-			vec3_t tempvert;
-
-			VectorTransform(poly->verts[0], r_entity_matrix, tempvert);
-
-			auto plane = DotProduct(tempvert, normal);
-
-			if (fabs(cache->plane - plane) < 0.1f)
-			{
-				return cache;
-			}
+			return WaterVBO;
 		}
 	}
 
 	return NULL;
 }
 
-water_control_t *R_FindWaterControl(cl_entity_t *ent, msurface_t *surf)
+water_control_t *R_FindWaterControl(msurface_t *surf)
 {
 	water_control_t *pControl = NULL;
 
@@ -315,11 +410,6 @@ water_control_t *R_FindWaterControl(cl_entity_t *ent, msurface_t *surf)
 				break;
 			}
 		}
-	}
-
-	if (pControl && ent != r_worldentity && ent->model->maxs[2] - ent->model->mins[2] < pControl->minheight)
-	{
-		return NULL;
 	}
 
 	return pControl;
@@ -440,217 +530,148 @@ void R_UpdateRippleTexture(water_vbo_t *VBOCache, int framecount)
 	glBindTexture(GL_TEXTURE_2D, *currenttexture);
 }
 
-int R_DecodeWaterVBOIndex(msurface_t *surf, int direction)
+water_vbo_t *R_CreateWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t *leaf)
 {
-	if (direction)
+	auto poly = surf->polys;
+
+	auto brushface = &r_wsurf.vFaceBuffer[poly->flags];
+
+	auto WaterVBO = R_FindFlatWaterVBO(surf, direction, leaf);
+
+	if (!WaterVBO)
 	{
-		return ((surf->lightmaptexturenum >> 16) & 0xFFFF);
-	}
+		WaterVBO = new water_vbo_t;
+		WaterVBO->texture = surf->texinfo->texture;
 
-	return (surf->lightmaptexturenum & 0xFFFF);
-}
-
-int R_EncodeWaterVBOIndex(int abovewaterindex, int underwaterindex)
-{
-	return ((underwaterindex & 0xFFFF) << 16) | (abovewaterindex & 0xFFFF);
-}
-
-water_vbo_t *R_PrepareWaterVBO(cl_entity_t *ent, msurface_t *surf, int direction)
-{
-	water_vbo_t *VBOCache = NULL;
-
-	int decodedVBOIndex = R_DecodeWaterVBOIndex(surf, direction);
-	if (!decodedVBOIndex)
-	{
-		//Find flat WaterVBOCache with same texture and same height
-
-		auto poly = surf->polys;
-
-		auto brushface = &r_wsurf.vFaceBuffer[poly->flags];
-
-		VBOCache = R_FindFlatWaterVBO(ent, surf, direction);
-
-		if (!VBOCache)
-		{
-			VBOCache = new water_vbo_t;
-			VBOCache->index = g_WaterVBOCache.size();
-			VBOCache->ent = ent;
-			VBOCache->texture = surf->texinfo->texture;
-
-			VBOCache->reflectmap_width = glwidth;
-			VBOCache->reflectmap_height = glheight;
-
-			VBOCache->reflectmap = GL_GenTextureColorFormat(VBOCache->reflectmap_width, VBOCache->reflectmap_height, GL_RGB16F, true, NULL);//RGBA16f necessary?
-			VBOCache->depthreflmap = GL_GenDepthStencilTexture(VBOCache->reflectmap_width, VBOCache->reflectmap_height);
-
-			VBOCache->hEBO = GL_GenBuffer();
-
-			VectorTransform(poly->verts[0], r_entity_matrix, VBOCache->vert);
-
-			VectorCopy(brushface->normal, VBOCache->normal);
-			
-			if (direction)
-			{
-				VectorInverse(VBOCache->normal);
-			}
-
-			VBOCache->plane = DotProduct(VBOCache->normal, VBOCache->vert);
-
-			auto pSourcePalette = surf->texinfo->texture->pPal;
-			VBOCache->color.r = pSourcePalette[9];
-			VBOCache->color.g = pSourcePalette[10];
-			VBOCache->color.b = pSourcePalette[11];
-			VBOCache->color.a = 255;
-
-			//Default
-			VBOCache->normalmap = 0;
-			VBOCache->fresnelfactor[0] = 0;
-			VBOCache->fresnelfactor[1] = 0;
-			VBOCache->fresnelfactor[2] = 0;
-			VBOCache->fresnelfactor[3] = 0;
-			VBOCache->depthfactor[0] = 0;
-			VBOCache->depthfactor[1] = 0;
-			VBOCache->depthfactor[2] = 0;
-			VBOCache->normfactor = 0;
-			VBOCache->minheight = 0;
-			VBOCache->maxtrans = 1;
-			VBOCache->speedrate = 1;
-			VBOCache->level = WATER_LEVEL_LEGACY;
-
-			auto waterControl = R_FindWaterControl(ent, surf);
-			if (waterControl)
-			{
-				if (waterControl->level >= WATER_LEVEL_REFLECT_SKYBOX && waterControl->level <= WATER_LEVEL_REFLECT_ENTITY)
-				{
-					int found_normalmap = GL_FindTexture(waterControl->normalmap.c_str(), GLT_WORLD, NULL, NULL);
-
-					//Disable mimap for normal texture
-					VBOCache->normalmap = found_normalmap ? found_normalmap :
-						R_LoadTextureEx(waterControl->normalmap.c_str(), waterControl->normalmap.c_str(), NULL, NULL, GLT_WORLD, false, true, true);
-				}
-
-				if (waterControl->level == WATER_LEVEL_LEGACY_RIPPLE)
-				{
-					glBindTexture(GL_TEXTURE_2D, surf->texinfo->texture->gl_texturenum);
-					glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &VBOCache->ripple_width);
-					glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &VBOCache->ripple_height);
-
-					auto imageSize = VBOCache->ripple_width * VBOCache->ripple_height;
-
-					VBOCache->ripple_data = (unsigned int*)malloc(imageSize * sizeof(unsigned int));
-					memset(VBOCache->ripple_data, 0, imageSize * sizeof(unsigned int));
-
-					VBOCache->ripple_image = (unsigned int*)malloc(imageSize * sizeof(unsigned int));
-					memset(VBOCache->ripple_image, 0, imageSize * sizeof(unsigned long));
-
-					glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, VBOCache->ripple_image);
-					
-					char identifier[64] = { 0 };
-					snprintf(identifier, sizeof(identifier) - 1, "%s_ripple", surf->texinfo->texture->name);
-					VBOCache->ripplemap = GL_LoadTextureEx(identifier, GLT_WORLD, VBOCache->ripple_width, VBOCache->ripple_height, VBOCache->ripple_image, true, true);
-					
-					VBOCache->ripple_spots[0] = (short *)malloc(imageSize * sizeof(short));
-					memset(VBOCache->ripple_spots[0], 0, imageSize * sizeof(short));
-
-					VBOCache->ripple_spots[1] = (short *)malloc(imageSize * sizeof(short));
-					memset(VBOCache->ripple_spots[1], 0, imageSize * sizeof(short));
-
-					VBOCache->ripple_shift = 0;
-					VBOCache->ripple_framecount = 0;
-
-					glBindTexture(GL_TEXTURE_2D, *currenttexture);
-				}
-
-				VBOCache->fresnelfactor[0] = waterControl->fresnelfactor[0];
-				VBOCache->fresnelfactor[1] = waterControl->fresnelfactor[1];
-				VBOCache->fresnelfactor[2] = waterControl->fresnelfactor[2];
-				VBOCache->fresnelfactor[3] = waterControl->fresnelfactor[3];
-				VBOCache->depthfactor[0] = waterControl->depthfactor[0];
-				VBOCache->depthfactor[1] = waterControl->depthfactor[1];
-				VBOCache->depthfactor[2] = waterControl->depthfactor[2];
-				VBOCache->normfactor = waterControl->normfactor;
-				VBOCache->minheight = waterControl->minheight;
-				VBOCache->maxtrans = waterControl->maxtrans;
-				VBOCache->speedrate = waterControl->speedrate;
-				VBOCache->level = waterControl->level;
-			}
-
-			g_WaterVBOCache.emplace_back(VBOCache);
-		}
+		VectorCopy(brushface->normal, WaterVBO->normal);
+		VectorCopy(surf->polys->verts[0], WaterVBO->vert);
 
 		if (direction)
 		{
-			surf->lightmaptexturenum = R_EncodeWaterVBOIndex(R_DecodeWaterVBOIndex(surf, 1 - direction), VBOCache->index + 1);
+			VectorInverse(WaterVBO->normal);
+		}
+
+		WaterVBO->planedist = DotProduct(WaterVBO->normal, WaterVBO->vert);
+
+		WaterVBO->plane = surf->plane;
+
+		auto pSourcePalette = surf->texinfo->texture->pPal;
+		WaterVBO->color.r = pSourcePalette[9];
+		WaterVBO->color.g = pSourcePalette[10];
+		WaterVBO->color.b = pSourcePalette[11];
+		WaterVBO->color.a = 255;
+
+		//Default
+		WaterVBO->normalmap = 0;
+		WaterVBO->ripplemap = 0;
+		WaterVBO->fresnelfactor[0] = 0;
+		WaterVBO->fresnelfactor[1] = 0;
+		WaterVBO->fresnelfactor[2] = 0;
+		WaterVBO->fresnelfactor[3] = 0;
+		WaterVBO->depthfactor[0] = 0;
+		WaterVBO->depthfactor[1] = 0;
+		WaterVBO->depthfactor[2] = 0;
+		WaterVBO->normfactor = 0;
+		WaterVBO->minheight = 0;
+		WaterVBO->maxtrans = 1;
+		WaterVBO->speedrate = 1;
+		WaterVBO->level = WATER_LEVEL_LEGACY;
+
+		WaterVBO->vIndicesBuffer = new std::vector<GLuint>();
+
+		auto waterControl = R_FindWaterControl(surf);
+		if (waterControl)
+		{
+			WaterVBO->minheight = waterControl->minheight;
+
+			if (waterControl->level >= WATER_LEVEL_REFLECT_SKYBOX && waterControl->level <= WATER_LEVEL_REFLECT_ENTITY)
+			{
+				int found_normalmap = GL_FindTexture(waterControl->normalmap.c_str(), GLT_WORLD, NULL, NULL);
+
+				//Disable mimap for normal texture
+				WaterVBO->normalmap = found_normalmap ? found_normalmap :
+					R_LoadTextureEx(waterControl->normalmap.c_str(), waterControl->normalmap.c_str(), NULL, NULL, GLT_WORLD, false, true, true);
+			}
+
+			if (waterControl->level == WATER_LEVEL_LEGACY_RIPPLE)
+			{
+				glBindTexture(GL_TEXTURE_2D, surf->texinfo->texture->gl_texturenum);
+				glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &WaterVBO->ripple_width);
+				glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &WaterVBO->ripple_height);
+
+				auto imageSize = WaterVBO->ripple_width * WaterVBO->ripple_height;
+
+				WaterVBO->ripple_data = (unsigned int*)malloc(imageSize * sizeof(unsigned int));
+				memset(WaterVBO->ripple_data, 0, imageSize * sizeof(unsigned int));
+
+				WaterVBO->ripple_image = (unsigned int*)malloc(imageSize * sizeof(unsigned int));
+				memset(WaterVBO->ripple_image, 0, imageSize * sizeof(unsigned long));
+
+				glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, WaterVBO->ripple_image);
+
+				char identifier[64] = { 0 };
+				snprintf(identifier, sizeof(identifier) - 1, "%s_ripple", surf->texinfo->texture->name);
+				WaterVBO->ripplemap = GL_LoadTextureEx(identifier, GLT_WORLD, WaterVBO->ripple_width, WaterVBO->ripple_height, WaterVBO->ripple_image, true, true);
+
+				WaterVBO->ripple_spots[0] = (short *)malloc(imageSize * sizeof(short));
+				memset(WaterVBO->ripple_spots[0], 0, imageSize * sizeof(short));
+
+				WaterVBO->ripple_spots[1] = (short *)malloc(imageSize * sizeof(short));
+				memset(WaterVBO->ripple_spots[1], 0, imageSize * sizeof(short));
+
+				WaterVBO->ripple_shift = 0;
+				WaterVBO->ripple_framecount = 0;
+
+				glBindTexture(GL_TEXTURE_2D, *currenttexture);
+			}
+
+			WaterVBO->fresnelfactor[0] = waterControl->fresnelfactor[0];
+			WaterVBO->fresnelfactor[1] = waterControl->fresnelfactor[1];
+			WaterVBO->fresnelfactor[2] = waterControl->fresnelfactor[2];
+			WaterVBO->fresnelfactor[3] = waterControl->fresnelfactor[3];
+			WaterVBO->depthfactor[0] = waterControl->depthfactor[0];
+			WaterVBO->depthfactor[1] = waterControl->depthfactor[1];
+			WaterVBO->depthfactor[2] = waterControl->depthfactor[2];
+			WaterVBO->normfactor = waterControl->normfactor;
+			WaterVBO->minheight = waterControl->minheight;
+			WaterVBO->maxtrans = waterControl->maxtrans;
+			WaterVBO->speedrate = waterControl->speedrate;
+			WaterVBO->level = waterControl->level;
+		}
+	}
+
+	for (int j = 0; j < brushface->num_polys; ++j)
+	{
+		if (direction)
+		{
+			for (int k = brushface->num_vertexes[j] - 1; k >= 0; --k)
+			{
+				WaterVBO->vIndicesBuffer->emplace_back(brushface->start_vertex[j] + k);
+			}
 		}
 		else
 		{
-			surf->lightmaptexturenum = R_EncodeWaterVBOIndex(VBOCache->index + 1, R_DecodeWaterVBOIndex(surf, 1 - direction));
-		}
-
-		for (int j = 0; j < brushface->num_polys; ++j)
-		{
-			if (direction)
+			for (int k = 0; k < brushface->num_vertexes[j]; ++k)
 			{
-				for (int k = brushface->num_vertexes[j] - 1; k >= 0; --k)
-				{
-					VBOCache->vIndicesBuffer.emplace_back(brushface->start_vertex[j] + k);
-				}
+				WaterVBO->vIndicesBuffer->emplace_back(brushface->start_vertex[j] + k);
 			}
-			else
-			{
-				for (int k = 0; k < brushface->num_vertexes[j]; ++k)
-				{
-					VBOCache->vIndicesBuffer.emplace_back(brushface->start_vertex[j] + k);
-				}
-			}
-			VBOCache->vIndicesBuffer.emplace_back((GLuint)0xFFFFFFFF);
 		}
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOCache->hEBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * VBOCache->vIndicesBuffer.size(), VBOCache->vIndicesBuffer.data(), GL_STATIC_DRAW);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		VBOCache->iPolyCount += brushface->num_polys;
-	}
-	else
-	{
-		VBOCache = g_WaterVBOCache[decodedVBOIndex - 1];
+		WaterVBO->vIndicesBuffer->emplace_back((GLuint)0xFFFFFFFF);
 	}
 
-	if(VBOCache->level == WATER_LEVEL_LEGACY_RIPPLE)
-		R_UpdateRippleTexture(VBOCache, (*r_framecount));
+	WaterVBO->iPolyCount += brushface->num_polys;
 
-	//Window resized? recreate texture using new size
-	if (VBOCache->reflectmap && (VBOCache->reflectmap_width != glwidth || VBOCache->reflectmap_height != glheight))
-	{
-		if (VBOCache->depthreflmap)
-			GL_DeleteTexture(VBOCache->depthreflmap);
-
-		if (VBOCache->reflectmap)
-			GL_DeleteTexture(VBOCache->reflectmap);
-
-		VBOCache->reflectmap_width = glwidth;
-		VBOCache->reflectmap_height = glheight;
-
-		VBOCache->reflectmap = GL_GenTextureColorFormat(VBOCache->reflectmap_width, VBOCache->reflectmap_height, GL_RGB16F, true, NULL);//RGBA16f necessary
-		VBOCache->depthreflmap = GL_GenDepthStencilTexture(VBOCache->reflectmap_width, VBOCache->reflectmap_height);
-	}
-
-	return VBOCache;
+	return WaterVBO;
 }
 
-void R_RenderReflectView(water_vbo_t *w)
+void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
 {
-	if (w->level == WATER_LEVEL_LEGACY || w->level == WATER_LEVEL_LEGACY_RIPPLE)
-		return;
-
 	r_draw_reflectview = true;
-	curwater = w;
+	g_CurrentReflectCache = ReflectCache;
 
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, w->reflectmap, 0);
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, w->depthreflmap, 0);
+	GL_BindFrameBufferWithTextures(&s_WaterFBO, ReflectCache->reflectmap, 0, ReflectCache->depthreflmap, ReflectCache->texwidth, ReflectCache->texheight);
 
-	glClearColor(w->color.r / 255.0f, w->color.g / 255.0f, w->color.b / 255.0f, 0);
+	glClearColor(ReflectCache->color.r / 255.0f, ReflectCache->color.g / 255.0f, ReflectCache->color.b / 255.0f, 0);
 	glStencilMask(0xFF);
 	glClearStencil(0);
 	glDepthMask(GL_TRUE);
@@ -659,16 +680,18 @@ void R_RenderReflectView(water_vbo_t *w)
 
 	R_PushRefDef();
 
-	VectorCopy((*r_refdef.vieworg), water_view);
+	VectorCopy((*r_refdef.vieworg), g_CurrentCameraView);
 
 	float vForward[3], vRight[3], vUp[3];
 	gEngfuncs.pfnAngleVectors((*r_refdef.viewangles), vForward, vRight, vUp);
 
-	float flDist = fabs(w->vert[2] - (*r_refdef.vieworg)[2]);
-	VectorMA((*r_refdef.vieworg), -2 * flDist, w->normal, (*r_refdef.vieworg));
+	float viewplane = DotProduct(ReflectCache->normal, (*r_refdef.vieworg));
+
+	float viewdistance = fabs(ReflectCache->planedist - viewplane);
+	VectorMA((*r_refdef.vieworg), -2 * viewdistance, ReflectCache->normal, (*r_refdef.vieworg));
 
 	float neg_norm[3];
-	VectorCopy(w->normal, neg_norm);
+	VectorCopy(ReflectCache->normal, neg_norm);
 	VectorInverse(neg_norm);
 
 	float flDist2 = DotProduct(vForward, neg_norm);
@@ -685,7 +708,8 @@ void R_RenderReflectView(water_vbo_t *w)
 	*cl_waterlevel = 0;
 	
 	auto saved_r_drawentities = r_drawentities->value;
-	if (curwater->level == WATER_LEVEL_REFLECT_ENTITY)
+
+	if (g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_ENTITY)
 	{
 		r_drawentities->value = 1;
 	}
@@ -703,29 +727,523 @@ void R_RenderReflectView(water_vbo_t *w)
 	R_PopRefDef();
 
 	r_draw_reflectview = false;
-	curwater = NULL;
+	g_CurrentReflectCache = NULL;
 }
 
-void R_RenderWaterView(void)
+void R_RenderWaterPass(void)
 {
-	refractmap_ready = false;
+	if (r_draw_reflectview)
+		return;
 
-	if (g_WaterVBOCache.size())
+	GL_BeginProfile(&Profile_RenderWaterPass);
+
+	g_VisibleWaterVBO.clear();
+	g_VisibleWaterEntity.clear();
+	R_ClearWaterReflectCaches();
+
+	mleaf_t *viewleaf = NULL;
+
+	if (r_refdef_SvEngine && r_refdef_SvEngine->useCamera)
 	{
-		static glprofile_t profile_RenderWaterView;
-		GL_BeginProfile(&profile_RenderWaterView, "R_RenderWaterView");
+		viewleaf = Mod_PointInLeaf(r_refdef_SvEngine->r_camera_origin, r_worldmodel);
+	}
+	else
+	{
+		viewleaf = Mod_PointInLeaf(r_origin, r_worldmodel);
+	}
 
-		glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-		for (size_t i = 0; i < g_WaterVBOCache.size(); ++i)
+	int leafindex = (viewleaf - r_worldmodel->leafs);
+
+	auto modvbo = R_PrepareWSurfVBO(r_worldmodel);
+
+	if (leafindex >= 0 && leafindex < (int)modvbo->vLeaves.size())
+	{
+		auto vboleaf = modvbo->vLeaves[leafindex];
+
+		//TODO Frustum Culling for world water?
+		for (size_t i = 0; i < vboleaf->vWaterVBO.size(); ++i)
 		{
-			if (g_WaterVBOCache[i]->normal[2] > 0 &&
-				R_IsAboveWater(g_WaterVBOCache[i]) && 
-				g_WaterVBOCache[i]->framecount >= (*r_framecount) - 10)
+			auto WaterVBO = vboleaf->vWaterVBO[i];
+
+			g_VisibleWaterEntity.emplace_back(r_worldentity);
+			g_VisibleWaterVBO.emplace_back(WaterVBO);
+		}
+	}
+
+	for (int i = 0; i < (*cl_numvisedicts); ++i)
+	{
+		vec3_t entity_mins, entity_maxs;
+
+		auto e = cl_visedicts[i];
+
+		bool rotated = false;
+
+		if (e->angles[0] || e->angles[1] || e->angles[2])
+		{
+			rotated = true;
+
+			for (int i = 0; i < 3; i++)
 			{
-				R_RenderReflectView(g_WaterVBOCache[i]);
+				entity_mins[i] = e->origin[i] - e->model->radius;
+				entity_maxs[i] = e->origin[i] + e->model->radius;
+			}
+		}
+		else
+		{
+			rotated = false;
+
+			VectorAdd(e->origin, e->model->mins, entity_mins);
+			VectorAdd(e->origin, e->model->maxs, entity_maxs);
+		}
+
+		if (R_CullBox(entity_mins, entity_maxs))
+			continue;
+
+		VectorSubtract((*r_refdef.vieworg) , e->origin, modelorg);
+
+		if (rotated)
+		{
+			vec3_t temp;
+			vec3_t forward, right, up;
+
+			VectorCopy(modelorg, temp);
+			AngleVectors(e->angles, forward, right, up);
+			modelorg[0] = DotProduct(temp, forward);
+			modelorg[1] = -DotProduct(temp, right);
+			modelorg[2] = DotProduct(temp, up);
+		}
+
+		modvbo = R_PrepareWSurfVBO(e->model);
+
+		auto vboleaf = modvbo->vLeaves[0];
+
+		if (vboleaf->vWaterVBO.empty())
+			continue;
+
+		for (size_t i = 0; i < vboleaf->vWaterVBO.size(); ++i)
+		{
+			auto WaterVBO = vboleaf->vWaterVBO[i];
+
+			auto pplane = WaterVBO->plane;
+
+			if (g_iEngineType == ENGINE_SVENGINE)
+			{
+				if (entity_mins[2] >= pplane->dist)
+					continue;
+			}
+			else
+			{
+				if (entity_mins[2] + 1.0f >= pplane->dist)
+					continue;
+			}
+
+			auto dot = DotProduct(modelorg, WaterVBO->normal) - WaterVBO->planedist;
+
+			if (dot > 0)
+			{
+				g_VisibleWaterEntity.emplace_back(e);
+				g_VisibleWaterVBO.emplace_back(WaterVBO);
+
+				if ((*cl_waterlevel) >= 2)
+				{
+					auto pSourcePalette = WaterVBO->texture->pPal;
+
+					gWaterColor->r = pSourcePalette[9];
+					gWaterColor->g = pSourcePalette[10];
+					gWaterColor->b = pSourcePalette[11];
+					cshift_water->destcolor[0] = pSourcePalette[9];
+					cshift_water->destcolor[1] = pSourcePalette[10];
+					cshift_water->destcolor[2] = pSourcePalette[11];
+					cshift_water->percent = pSourcePalette[12];
+
+					if (gWaterColor->r == 0 && gWaterColor->g == 0 && gWaterColor->b == 0)
+					{
+						gWaterColor->r = pSourcePalette[0];
+						gWaterColor->g = pSourcePalette[1];
+						gWaterColor->b = pSourcePalette[2];
+					}
+				}
+			}
+		}
+	}
+
+	for (size_t i = 0; i < g_VisibleWaterVBO.size(); ++i)
+	{
+		auto WaterVBO = g_VisibleWaterVBO[i];
+
+		auto e = g_VisibleWaterEntity[i];
+
+		water_reflect_cache_t *ReflectCache = NULL;
+
+		if (WaterVBO->level >= WATER_LEVEL_REFLECT_SKYBOX && WaterVBO->level <= WATER_LEVEL_REFLECT_ENTITY && r_water->value > 0)
+		{
+			ReflectCache = R_PrepareReflectCache(e, WaterVBO);
+		}
+		else if (WaterVBO->level == WATER_LEVEL_LEGACY_RIPPLE)
+		{
+			R_UpdateRippleTexture(WaterVBO, (*r_framecount));
+		}
+
+		auto comp = R_GetEntityComponent(e, true);
+		if (comp)
+		{
+			comp->WaterVBOs.emplace_back(WaterVBO);
+			comp->ReflectCaches.emplace_back(ReflectCache);
+		}
+	}
+
+	if (g_iNumWaterReflectCaches > 0)
+	{
+		for (int i = 0; i < g_iNumWaterReflectCaches; ++i)
+		{
+			if (g_WaterReflectCaches[i].used)
+			{
+				R_RenderReflectView(&g_WaterReflectCaches[i]);
+			}
+		}
+	}
+
+	GL_EndProfile(&Profile_RenderWaterPass);
+}
+
+void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, cl_entity_t *ent)
+{
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, WaterVBO->hEBO);
+
+	if (r_draw_opaque)
+	{
+		glEnable(GL_STENCIL_TEST);
+		glStencilMask(0xFF);
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	}
+
+	R_SetRenderMode(ent);
+	R_SetGBufferMask(GBUFFER_MASK_ALL);
+
+	bool bIsAboveWater = (WaterVBO->normal[2] > 0) && R_IsAboveWater(WaterVBO) ? true : false;
+
+	float color[4];
+	color[0] = WaterVBO->color.r / 255.0f;
+	color[1] = WaterVBO->color.g / 255.0f;
+	color[2] = WaterVBO->color.b / 255.0f;
+	color[3] = 1;
+
+	if ((*currententity)->curstate.rendermode == kRenderTransTexture)
+		color[3] = (*r_blend);
+
+	if (WaterVBO->level >= WATER_LEVEL_REFLECT_SKYBOX && WaterVBO->level <= WATER_LEVEL_REFLECT_ENTITY && ReflectCache)
+	{
+		if (!ReflectCache->refractmap_ready)
+		{
+			if (drawgbuffer)
+			{
+				GL_BindFrameBufferWithTextures(&s_WaterFBO, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
+				R_BlitGBufferToFrameBuffer(&s_WaterFBO);
+
+				//restore states
+				glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hSceneVBO);
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, WaterVBO->hEBO);
+
+				GL_BindFrameBuffer(&s_GBufferFBO);
+			}
+			else
+			{
+				GL_BindFrameBufferWithTextures(&s_WaterFBO, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
+				GL_BlitFrameBufferToFrameBufferColorDepth(&s_BackBufferFBO, &s_WaterFBO);
+
+				//restore states
+				GL_BindFrameBuffer(&s_BackBufferFBO);
+			}
+			ReflectCache->refractmap_ready = true;
+		}
+
+		program_state_t programState = 0;
+
+		if (bIsAboveWater)
+			programState |= WATER_DEPTH_ENABLED;
+
+		if (r_water_forcetrans->value)
+		{
+			programState |= WATER_REFRACT_ENABLED;
+
+			if (color[3] > WaterVBO->maxtrans)
+				color[3] = WaterVBO->maxtrans;
+		}
+		else
+		{
+			if ((*currententity)->curstate.rendermode == kRenderTransTexture || (*currententity)->curstate.rendermode == kRenderTransAdd)
+			{
+				programState |= WATER_REFRACT_ENABLED;
+
+				if (color[3] > WaterVBO->maxtrans)
+					color[3] = WaterVBO->maxtrans;
 			}
 		}
 
-		GL_EndProfile(&profile_RenderWaterView);
+		if (!bIsAboveWater)
+		{
+			programState |= WATER_UNDERWATER_ENABLED;
+		}
+		else
+		{
+			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			{
+				programState |= WATER_LINEAR_FOG_ENABLED;
+			}
+			else if (!drawgbuffer && r_fog_mode == GL_EXP)
+			{
+				programState |= WATER_EXP_FOG_ENABLED;
+			}
+			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
+			{
+				programState |= WATER_EXP2_FOG_ENABLED;
+			}
+		}
+
+		if (drawgbuffer)
+		{
+			programState |= WATER_GBUFFER_ENABLED;
+		}
+
+		if (r_draw_oitblend)
+		{
+			programState |= WATER_OIT_ALPHA_BLEND_ENABLED;
+		}
+
+		water_program_t prog = { 0 };
+		R_UseWaterProgram(programState, &prog);
+
+		if (prog.u_watercolor != -1)
+		{
+			glUniform4f(prog.u_watercolor, color[0], color[1], color[2], color[3]);
+		}
+		if (prog.u_depthfactor != -1)
+		{
+			glUniform3f(prog.u_depthfactor, WaterVBO->depthfactor[0], WaterVBO->depthfactor[1], WaterVBO->depthfactor[2]);
+		}
+		if (prog.u_fresnelfactor != -1)
+		{
+			glUniform4f(prog.u_fresnelfactor, WaterVBO->fresnelfactor[0], WaterVBO->fresnelfactor[1], WaterVBO->fresnelfactor[2], WaterVBO->fresnelfactor[3]);
+		}
+		if (prog.u_normfactor != -1)
+		{
+			glUniform1f(prog.u_normfactor, WaterVBO->normfactor);
+		}
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		glActiveTexture(GL_TEXTURE2);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, WaterVBO->normalmap);
+
+		glActiveTexture(GL_TEXTURE3);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, ReflectCache->reflectmap);
+
+		glActiveTexture(GL_TEXTURE4);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, ReflectCache->refractmap);
+
+		glActiveTexture(GL_TEXTURE5);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, ReflectCache->depthrefrmap);
+
+		glDrawElements(GL_POLYGON, WaterVBO->iIndicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+
+		r_wsurf_drawcall++;
+		r_wsurf_polys += WaterVBO->iPolyCount;
+
+		glActiveTexture(GL_TEXTURE5);
+		glDisable(GL_TEXTURE_2D);
+
+		glActiveTexture(GL_TEXTURE4);
+		glDisable(GL_TEXTURE_2D);
+
+		glActiveTexture(GL_TEXTURE3);
+		glDisable(GL_TEXTURE_2D);
+
+		glActiveTexture(GL_TEXTURE2);
+		glDisable(GL_TEXTURE_2D);
+
+		glActiveTexture(*oldtarget);
+
+		glDisable(GL_BLEND);
 	}
+	else if (WaterVBO->level == WATER_LEVEL_LEGACY_RIPPLE && r_water->value > 0)
+	{
+		program_state_t programState = WATER_LEGACY_ENABLED;
+
+		if (!bIsAboveWater)
+		{
+
+		}
+		else
+		{
+			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			{
+				programState |= WATER_LINEAR_FOG_ENABLED;
+			}
+			else if (!drawgbuffer && r_fog_mode == GL_EXP)
+			{
+				programState |= WATER_EXP_FOG_ENABLED;
+			}
+			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
+			{
+				programState |= WATER_EXP2_FOG_ENABLED;
+			}
+		}
+
+		if (drawgbuffer)
+		{
+			programState |= WATER_GBUFFER_ENABLED;
+		}
+
+		if (r_draw_oitblend)
+		{
+			if ((*currententity)->curstate.rendermode == kRenderTransAdd)
+				programState |= WATER_OIT_ADDITIVE_BLEND_ENABLED;
+			else
+				programState |= WATER_OIT_ALPHA_BLEND_ENABLED;
+		}
+
+		water_program_t prog = { 0 };
+		R_UseWaterProgram(programState, &prog);
+
+		if (prog.u_watercolor != -1)
+			glUniform4f(prog.u_watercolor, color[0], color[1], color[2], color[3]);
+
+		if (prog.u_scale != -1)
+			glUniform1f(prog.u_scale, 0);
+
+		if (prog.u_speed != -1)
+			glUniform1f(prog.u_speed, 0);
+
+		GL_Bind(WaterVBO->ripplemap);
+
+		glDrawElements(GL_POLYGON, WaterVBO->iIndicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+
+		r_wsurf_drawcall++;
+		r_wsurf_polys += WaterVBO->iPolyCount;
+	}
+	else
+	{
+		float scale;
+
+		if (bIsAboveWater)
+			scale = (*currententity)->curstate.scale;
+		else
+			scale = -(*currententity)->curstate.scale;
+
+		program_state_t programState = WATER_LEGACY_ENABLED;
+
+		if (!bIsAboveWater)
+		{
+
+		}
+		else
+		{
+			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			{
+				programState |= WATER_LINEAR_FOG_ENABLED;
+			}
+			else if (!drawgbuffer && r_fog_mode == GL_EXP)
+			{
+				programState |= WATER_EXP_FOG_ENABLED;
+			}
+			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
+			{
+				programState |= WATER_EXP2_FOG_ENABLED;
+			}
+		}
+
+		if (drawgbuffer)
+		{
+			programState |= WATER_GBUFFER_ENABLED;
+		}
+
+		if (r_draw_oitblend)
+		{
+			if ((*currententity)->curstate.rendermode == kRenderTransAdd)
+				programState |= WATER_OIT_ADDITIVE_BLEND_ENABLED;
+			else
+				programState |= WATER_OIT_ALPHA_BLEND_ENABLED;
+		}
+
+		water_program_t prog = { 0 };
+		R_UseWaterProgram(programState, &prog);
+
+		if (prog.u_watercolor != -1)
+			glUniform4f(prog.u_watercolor, color[0], color[1], color[2], color[3]);
+
+		if (prog.u_scale != -1)
+			glUniform1f(prog.u_scale, scale);
+
+		if (prog.u_speed != -1)
+			glUniform1f(prog.u_speed, WaterVBO->speedrate);
+
+		GL_Bind(WaterVBO->texture->gl_texturenum);
+
+		glDrawElements(GL_POLYGON, WaterVBO->iIndicesCount, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+
+		r_wsurf_drawcall++;
+		r_wsurf_polys += WaterVBO->iPolyCount;
+	}
+
+	if (r_draw_opaque)
+	{
+		glDisable(GL_STENCIL_TEST);
+	}
+}
+
+void R_DrawWaters(wsurf_vbo_leaf_t *vboleaf, cl_entity_t *ent)
+{
+	if (r_draw_reflectview)
+		return;
+
+	if (r_draw_shadowcaster)
+		return;
+
+	if (!vboleaf->vWaterVBO.size())
+		return;
+
+	auto comp = R_GetEntityComponent(ent, false);
+
+	if (!comp)
+		return;
+
+	glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hSceneVBO);
+
+	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
+	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
+	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
+	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
+	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
+
+	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
+	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
+	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_S_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, s_tangent));
+	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_T_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, t_tangent));
+	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
+
+	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+
+	for (size_t i = 0; i < comp->WaterVBOs.size(); ++i)
+	{
+		R_DrawWaterVBO(comp->WaterVBOs[i], comp->ReflectCaches[i], ent);
+	}
+
+	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+
+	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
+	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
+	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
+	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
+	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }

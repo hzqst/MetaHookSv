@@ -58,6 +58,11 @@ float *g_UserFogEnd;
 int *r_framecount;
 int *r_visframecount;
 
+int *cl_max_edicts;
+cl_entity_t **cl_entities;
+
+TEMPENTITY *gTempEnts;
+
 int *cl_viewentity;
 void *cl_frames;
 int size_of_frame = sizeof(frame_t);
@@ -113,9 +118,6 @@ bool g_bPortalClipPlaneEnabled[6] = { false };
 
 vec4_t g_PortalClipPlane[6] = {0};
 
-cl_entity_t *r_aiments[MAX_EDICTS][MAX_AIMENTS] = { 0 };
-int r_numaiments[MAX_EDICTS] = { 0 };
-
 bool g_bIsGLInit = false;
 
 float r_entity_matrix[4][4];
@@ -152,6 +154,8 @@ FBO_Container_t s_DepthLinearFBO = { 0 };
 FBO_Container_t s_HBAOCalcFBO = { 0 };
 FBO_Container_t s_ShadowFBO = { 0 };
 FBO_Container_t s_WaterFBO = { 0 };
+
+FBO_Container_t *g_CurrentFBO = NULL;
 
 bool bNoStretchAspect = false;
 bool bUseBindless = true;
@@ -204,7 +208,6 @@ cvar_t *gl_lightholes = NULL;
 cvar_t *gl_zmax = NULL;
 cvar_t *gl_alphamin = NULL;
 cvar_t *gl_overdraw = NULL;
-cvar_t *gl_watersides = NULL;
 cvar_t *gl_overbright = NULL;
 cvar_t *gl_envmapsize = NULL;
 cvar_t *gl_flipmatrix = NULL;
@@ -249,19 +252,16 @@ qboolean Host_IsSinglePlayerGame()
 
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
-	if(r_draw_shadowcaster)
-		return false;
-
 	return gRefFuncs.R_CullBox(mins, maxs);
 }
 
-void R_RotateForEntity(float *origin, cl_entity_t *e)
+void R_RotateForEntity(cl_entity_t *e)
 {
 	int i;
 	vec3_t angles;
 	vec3_t modelpos;
 
-	VectorCopy(origin, modelpos);
+	VectorCopy(e->origin, modelpos);
 	VectorCopy(e->angles, angles);
 
 	if (e->curstate.movetype != MOVETYPE_NONE)
@@ -369,7 +369,7 @@ void R_DrawParticles(void)
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	int LegacySpriteProgramState = 0;
+	program_state_t LegacySpriteProgramState = 0;
 
 	if (r_draw_oitblend)
 	{
@@ -556,7 +556,7 @@ void triapi_RenderMode(int mode)
 #if 1
 		if (r_draw_legacysprite)
 		{
-			int LegacySpriteProgramState = 0;
+			program_state_t LegacySpriteProgramState = 0;
 
 			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 			{
@@ -587,7 +587,7 @@ void triapi_RenderMode(int mode)
 		R_SetGBufferBlend(GL_ONE, GL_ONE);
 		if (r_draw_legacysprite)
 		{
-			int LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ADDITIVE_BLEND_ENABLED : SPRITE_ADDITIVE_BLEND_ENABLED;
+			program_state_t LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ADDITIVE_BLEND_ENABLED : SPRITE_ADDITIVE_BLEND_ENABLED;
 
 			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
 			{
@@ -620,7 +620,7 @@ void triapi_RenderMode(int mode)
 		
 		if (r_draw_legacysprite)
 		{
-			int LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ALPHA_BLEND_ENABLED : SPRITE_ALPHA_BLEND_ENABLED;
+			program_state_t LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ALPHA_BLEND_ENABLED : SPRITE_ALPHA_BLEND_ENABLED;
 
 			if (r_draw_reflectview)
 			{
@@ -652,17 +652,12 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 	if (onlyClientDraw)
 		return;
 
-	static glprofile_t profile_DrawTEntitiesOnList;
-	GL_BeginProfile(&profile_DrawTEntitiesOnList, "R_DrawTEntitiesOnList");
-
 	for (int i = 0; i < (*numTransObjs); i++)
 	{
 		(*currententity) = (*transObjects)[i].pEnt;
 
 		R_DrawCurrentEntity(true);
 	}
-
-	GL_EndProfile(&profile_DrawTEntitiesOnList);
 }
 
 void ClientDLL_DrawTransparentTriangles(void)
@@ -680,8 +675,7 @@ void R_DrawTransEntities(int onlyClientDraw)
 	if (r_draw_shadowcaster)
 		return;
 
-	static glprofile_t profile_DrawTransEntities;
-	GL_BeginProfile(&profile_DrawTransEntities, "R_DrawTransEntities");
+	GL_BeginProfile(&Profile_DrawTransEntities);
 
 	if (bUseOITBlend)
 	{
@@ -772,7 +766,7 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 	GL_UseProgram(0);
 
-	GL_EndProfile(&profile_DrawTransEntities);
+	GL_EndProfile(&Profile_DrawTransEntities);
 }
 
 void R_AddTEntity(cl_entity_t *ent)
@@ -927,38 +921,8 @@ void R_DrawCurrentEntity(bool bTransparent)
 			if ((*currententity)->curstate.movetype == MOVETYPE_FOLLOW)
 			{
 				return;
-#if 0//wtf this is not supposed to happen
-				bool bFound = false;
-
-				for (int j = 0; j < (*cl_numvisedicts); j++)
-				{
-					if (cl_visedicts[j]->index == (*currententity)->curstate.aiment)
-					{
-						auto save_currententity = (*currententity);
-
-						(*currententity) = cl_visedicts[j];
-
-						if ((*currententity)->player)
-						{
-							(*gpStudioInterface)->StudioDrawPlayer(0, R_GetPlayerState((*currententity)->index));
-						}
-						else
-						{
-							(*gpStudioInterface)->StudioDrawModel(0);
-						}
-
-						(*currententity) = save_currententity;
-
-						bFound = true;
-
-						break;
-					}
-				}
-
-				if (!bFound)
-					break;
-#endif
 			}
+
 			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
 		}
 
@@ -967,9 +931,9 @@ void R_DrawCurrentEntity(bool bTransparent)
 			return;
 		}
 
-		int currententity_index = (*currententity)->index;
+		auto comp = R_GetEntityComponent((*currententity), false);
 
-		if (currententity_index > 0 && currententity_index < MAX_EDICTS && r_numaiments[currententity_index] > 0)
+		if (comp)
 		{
 			auto save_currententity = (*currententity);
 
@@ -985,7 +949,7 @@ void R_DrawCurrentEntity(bool bTransparent)
 			//VectorCopy((*currententity)->curstate.origin, currententity_origin);
 
 			//auto save_currententity = (*currententity);
-			for (int i = 0; i < r_numaiments[currententity_index]; ++i)
+			for (size_t i = 0; i < comp->FollowEnts.size(); ++i)
 			{
 				//restore matrix at each run
 				if (i != 0)
@@ -994,9 +958,9 @@ void R_DrawCurrentEntity(bool bTransparent)
 					memcpy((*plighttransform), save_lighttransform, sizeof(save_lighttransform));
 				}
 
-				(*currententity) = r_aiments[currententity_index][i];
+				(*currententity) = comp->FollowEnts[i];
 				
-				//do what CL_MoveAiments does...
+				//TODO: shall we do CL_MoveAiments???...
 				//VectorCopy(currententity_origin, (*currententity)->curstate.origin);
 
 				(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
@@ -1378,15 +1342,9 @@ void GL_GenerateFrameBuffers(void)
 		g_pMetaHookAPI->SysError("Failed to initialize HBAOCalc framebuffer.\n");
 	}
 
-	s_ShadowFBO.iWidth = glwidth;
-	s_ShadowFBO.iHeight = glheight;
+	//Framebuffers that bind no texture
 	GL_GenFrameBuffer(&s_ShadowFBO);
-
-	s_WaterFBO.iWidth = glwidth;
-	s_WaterFBO.iHeight = glheight;
 	GL_GenFrameBuffer(&s_WaterFBO);
-	GL_FrameBufferColorTexture(&s_WaterFBO, GL_RGB16F);
-	GL_FrameBufferDepthTexture(&s_WaterFBO, GL_DEPTH24_STENCIL8);
 
 	//DownSample FBO 1->1/4->1/16
 	int downW, downH;
@@ -1508,7 +1466,7 @@ void GL_GenerateFrameBuffers(void)
 		gEngfuncs.Con_Printf("Failed to initialize ToneMapping #%d framebuffer.\n");
 	}
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	GL_BindFrameBuffer(NULL);
 }
 
 void GL_Init(void)
@@ -1598,7 +1556,7 @@ void GL_Shutdown(void)
 
 void GL_ClearFinalBuffer()
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, s_FinalBufferFBO.s_hBackBufferFBO);
+	GL_BindFrameBuffer(&s_FinalBufferFBO);
 
 	//Clear final framebuffer
 	glClearColor(0, 0, 0, 0);
@@ -1616,6 +1574,9 @@ bool SCR_IsLoadingVisible()
 
 void R_RenderStartFrame()
 {
+	GL_Profiles_StartFrame();
+	R_EntityComponents_StartFrame();
+	R_PrepareDecals();
 	R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
 	R_StudioBoneCaches_StartFrame();
 	R_CheckVariables();
@@ -1628,7 +1589,7 @@ void R_RenderStartFrame()
 
 void R_RenderEndFrame()
 {
-	
+	GL_Profiles_EndFrame();
 }
 
 void GL_BeginRendering(int *x, int *y, int *width, int *height)
@@ -1715,19 +1676,11 @@ void R_PreRenderView()
 	shadow_numvisedicts[1] = 0;
 	shadow_numvisedicts[2] = 0;
 
-	if (r_shadow && r_shadow->value)
-	{
-		R_RenderShadowMap();
-	}
+	R_RenderShadowMap();
 
-	if (r_water && r_water->value)
-	{
-		R_RenderWaterView();
-	}
+	R_RenderWaterPass();
 
-	glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, s_BackBufferFBO.s_hBackBufferTex, 0);
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, s_BackBufferFBO.s_hBackBufferDepthTex, 0);
+	GL_BindFrameBufferWithTextures(&s_BackBufferFBO, s_BackBufferFBO.s_hBackBufferTex, 0, s_BackBufferFBO.s_hBackBufferDepthTex, 0, 0);
 }
 
 void R_PostRenderView()
@@ -1891,7 +1844,7 @@ void R_RenderView_SvEngine(int viewIdx)
 	}
 	else
 	{
-		glBindFramebuffer(GL_FRAMEBUFFER, s_FinalBufferFBO.s_hBackBufferFBO);
+		GL_BindFrameBuffer(&s_FinalBufferFBO);
 	}
 
 	*c_alias_polys += r_studio_polys;
@@ -2074,7 +2027,6 @@ void R_InitCvars(void)
 	gl_zmax = gEngfuncs.pfnGetCvarPointer("gl_zmax");
 	gl_alphamin = gEngfuncs.pfnGetCvarPointer("gl_alphamin");
 	gl_overdraw = gEngfuncs.pfnGetCvarPointer("gl_overdraw");
-	gl_watersides = gEngfuncs.pfnGetCvarPointer("gl_watersides");
 	gl_overbright = gEngfuncs.pfnGetCvarPointer("gl_overbright");
 	gl_envmapsize = gEngfuncs.pfnGetCvarPointer("gl_envmapsize");
 	gl_flipmatrix = gEngfuncs.pfnGetCvarPointer("gl_flipmatrix");
@@ -2127,7 +2079,10 @@ void R_InitCvars(void)
 
 void R_Init(void)
 {
+	GL_InitProfiles();
+
 	Mod_Init();
+
 	R_InitCvars();
 
 	R_InitWater();
@@ -2138,6 +2093,7 @@ void R_Init(void)
 	R_InitSprite();
 	R_InitPostProcess();
 	R_InitPortal();
+	R_InitEntityComponents();
 
 	R_LoadProgramStates_f();
 }
@@ -2152,6 +2108,7 @@ void R_Shutdown(void)
 	R_ShutdownSprite();
 	R_ShutdownPostProcess();
 	R_ShutdownPortal();
+	R_ShutdownEntityComponents();
 
 	R_FreeMapCvars();
 }
@@ -2577,17 +2534,26 @@ void R_SetupGL(void)
 		glwidth = gl_envmapsize->value;
 	}
 
-	r_viewport[0] = v0 + glx;
-	r_viewport[1] = v3 + gly;
-	r_viewport[2] = v4;
-	r_viewport[3] = v5;
-
 	if (r_draw_shadowcaster)
 	{
 		r_viewport[0] = 0;
 		r_viewport[1] = 0;
 		r_viewport[2] = current_shadow_texture->size;
 		r_viewport[3] = current_shadow_texture->size;
+	}
+	else if (r_draw_reflectview)
+	{
+		r_viewport[0] = 0;
+		r_viewport[1] = 0;
+		r_viewport[2] = glwidth;
+		r_viewport[3] = glheight;
+	}
+	else
+	{
+		r_viewport[0] = v0 + glx;
+		r_viewport[1] = v3 + gly;
+		r_viewport[2] = v4;
+		r_viewport[3] = v5;
 	}
 
 	glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
@@ -2752,7 +2718,7 @@ void R_SetupFrame(void)
 
 	if (r_draw_reflectview)
 	{
-		(*r_viewleaf) = Mod_PointInLeaf(water_view, r_worldmodel);
+		(*r_viewleaf) = Mod_PointInLeaf(g_CurrentCameraView, r_worldmodel);
 	}
 	else if (r_refdef_SvEngine && r_refdef_SvEngine->useCamera)
 	{
@@ -2843,7 +2809,7 @@ void R_MarkLeaves(void)
 		return;
 
 	(*r_visframecount)++;
-	r_oldviewleaf = r_viewleaf;
+	(*r_oldviewleaf) = (*r_viewleaf);
 
 	if (r_novis->value)
 	{
@@ -2877,6 +2843,8 @@ void R_DrawEntitiesOnList(void)
 	if (!r_drawentities->value)
 		return;
 
+	GL_BeginProfile(&Profile_DrawEntitiesOnList);
+
 	for (int i = 0; i < (*cl_numvisedicts); ++i)
 	{
 		(*currententity) = cl_visedicts[i];
@@ -2902,6 +2870,8 @@ void R_DrawEntitiesOnList(void)
 			R_DrawCurrentEntity(false);
 		}
 	}
+
+	GL_EndProfile(&Profile_DrawEntitiesOnList);
 }
 
 void R_RenderFinalFog(void)
@@ -3008,8 +2978,14 @@ void ClientDLL_DrawNormalTriangles(void)
 
 void R_RenderScene(void)
 {
-	static glprofile_t profile_RenderScene;
-	GL_BeginProfile(&profile_RenderScene, "R_RenderScene");
+	if (r_draw_reflectview)
+	{
+		GL_BeginProfile(&Profile_RenderScene_WaterPass);
+	}
+	else
+	{
+		GL_BeginProfile(&Profile_RenderScene);
+	}
 
 	if (CL_IsDevOverviewMode())
 		CL_SetDevOverView(R_GetRefDef());
@@ -3019,6 +2995,8 @@ void R_RenderScene(void)
 	R_SetupGL();
 	R_MarkLeaves();
 
+	R_PrepareDrawWorld();
+
 	if (!(*r_refdef.onlyClientDraws))
 	{
 		R_DrawWorld();
@@ -3026,10 +3004,6 @@ void R_RenderScene(void)
 		S_ExtraUpdate();
 
 		R_DrawEntitiesOnList();
-	}
-	else
-	{
-		R_SetupSceneUBO();
 	}
 
 	if ((*g_bUserFogOn))
@@ -3055,7 +3029,14 @@ void R_RenderScene(void)
 
 	S_ExtraUpdate();
 
-	GL_EndProfile(&profile_RenderScene);
+	if (r_draw_reflectview)
+	{
+		GL_EndProfile(&Profile_RenderScene_WaterPass);
+	}
+	else
+	{
+		GL_EndProfile(&Profile_RenderScene);
+	}
 }
 
 int EngineGetMaxKnownModel(void)
@@ -3084,6 +3065,32 @@ model_t *EngineGetModelByIndex(int index)
 		return &pmod_known[index];
 
 	return NULL;
+}
+
+int EngineGetMaxDLights(void)
+{
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		return MAX_DLIGHTS_SVENGINE;
+	}
+
+	return MAX_DLIGHTS;
+}
+
+int EngineGetMaxLightmapTextures(void)
+{
+	if (g_iEngineType == ENGINE_SVENGINE)
+		return MAX_LIGHTMAPS_SVENGINE;
+
+	return MAX_LIGHTMAPS;
+}
+
+int EngineGetMaxClientModels(void)
+{
+	if (g_iEngineType == ENGINE_SVENGINE)
+		return MAX_MODELS_SVENGINE;
+
+	return MAX_MODELS;
 }
 
 void Mod_LoadStudioModel(model_t *mod, void *buffer)
@@ -3372,7 +3379,7 @@ void R_SaveProgramStates_f(void)
 	R_SaveLegacySpriteProgramStates();
 	R_SavePortalProgramStates();
 
-	gEngfuncs.Con_Printf("Program states saved.\n");
+	gEngfuncs.Con_Printf("R_SaveProgramStates_f: Program state caches saved.\n");
 }
 
 void R_LoadProgramStates_f(void)
@@ -3385,8 +3392,9 @@ void R_LoadProgramStates_f(void)
 	R_LoadSpriteProgramStates();
 	R_LoadLegacySpriteProgramStates();
 	R_LoadPortalProgramStates();
+	GL_UseProgram(0);
 
-	gEngfuncs.Con_Printf("Program states loaded.\n");
+	gEngfuncs.Con_Printf("R_LoadProgramStates_f: Program state caches loaded.\n");
 }
 
 void GammaToLinear(float *color)

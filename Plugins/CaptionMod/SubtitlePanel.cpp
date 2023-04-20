@@ -117,7 +117,7 @@ bool CAnimMovement::Update(void)
 			m_Started = true;
 			m_StartValue = m_Line->m_YPos;
 		}
-		float frac = min(((*cl_time) - m_StartTime) / m_AnimTime, 1);
+		float frac = min((g_pViewPort->GetSystemTime() - m_StartTime) / m_AnimTime, 1);
 		m_Line->m_YPos = (int)(frac * m_EndValue + (1 - frac) * m_StartValue);
 	}
 	return true;
@@ -137,7 +137,7 @@ bool CAnimAlphaFade::Update(void)
 			m_Started = true;
 			m_StartValue = m_Line->m_Alpha;
 		}
-		float frac = min(((*cl_time) - m_StartTime) / m_AnimTime, 1);
+		float frac = min((g_pViewPort->GetSystemTime() - m_StartTime) / m_AnimTime, 1);
 		m_Line->m_Alpha = (int)(frac * m_EndValue + (1 - frac) * m_StartValue);
 	}
 	return true;
@@ -155,12 +155,12 @@ float CSubLine::GetYPosOutRate(void)
 
 bool CSubLine::ShouldStart(void)
 {
-	return ((*cl_time) > m_StartTime);
+	return (g_pViewPort->GetSystemTime() > m_StartTime);
 }
 
 bool CSubLine::ShouldRetire(void)
 {
-	return ((*cl_time) > m_EndTime || m_LineIndex > m_Panel->m_iMaxLines);
+	return (g_pViewPort->GetSystemTime() > m_EndTime || m_LineIndex > m_Panel->m_iMaxLines);
 }
 
 bool CSubLine::Update(void)
@@ -199,13 +199,13 @@ void CSubLine::MoveTo(int ToPos, float Time)
 			i --;
 		}
 	}
-	CSubLineAnim *Anim = (CSubLineAnim *)new CAnimMovement((*cl_time), Time, ToPos, this);
+	CSubLineAnim *Anim = (CSubLineAnim *)new CAnimMovement(g_pViewPort->GetSystemTime(), Time, ToPos, this);
 	m_AnimList[m_AnimList.AddToTail()] = Anim;
 }
 
 void CSubLine::AlphaFade(int Alpha, float Time)
 {
-	CSubLineAnim *Anim = (CSubLineAnim *)new CAnimAlphaFade((*cl_time), Time, Alpha, this);
+	CSubLineAnim *Anim = (CSubLineAnim *)new CAnimAlphaFade(g_pViewPort->GetSystemTime(), Time, Alpha, this);
 	m_AnimList[m_AnimList.AddToTail()] = Anim;
 }
 
@@ -253,7 +253,7 @@ void SubtitlePanel::StartNextSubtitle(CDictionary *Dict)
 	CDictionary *pNextDict = Dict->m_pNext;
 	if(pNextDict)
 	{
-		StartSubtitle(pNextDict, (*cl_time) + Dict->m_flNextDelay);
+		StartSubtitle(pNextDict, g_pViewPort->GetSystemTime() + Dict->m_flNextDelay);
 	}
 }
 
@@ -278,15 +278,18 @@ void SubtitlePanel::OnTick( void )
 		}
 	}
 
-	const char *pLevel = gEngfuncs.pfnGetLevelName();
-	if(m_bInLevel && !pLevel[0])
+	if (gEngfuncs.GetMaxClients() > 1)
 	{
-		m_bInLevel = false;
-		ClearSubtitle();
-	}
-	else if(!m_bInLevel && pLevel[0])
-	{
-		m_bInLevel = true;
+		const char *pLevel = gEngfuncs.pfnGetLevelName();
+		if (m_bInLevel && !pLevel[0])
+		{
+			m_bInLevel = false;
+			ClearSubtitle();
+		}
+		else if (!m_bInLevel && pLevel[0])
+		{
+			m_bInLevel = true;
+		}
 	}
 }
 
@@ -312,7 +315,7 @@ void SubtitlePanel::StartLine(CSubLine *Line)
 
 	if (Line->m_StartTime == 0)
 	{
-		Line->m_StartTime = (*cl_time);
+		Line->m_StartTime = g_pViewPort->GetSystemTime();
 	}
 
 	//Give it the lastest endtime
@@ -636,7 +639,7 @@ void SubtitlePanel::Paint(void)
 	if(m_iCurPanelY != m_iPanelY)
 	{
 		int sign = (m_iPanelY - m_iCurPanelY) ? 1 : -1;
-		m_iCurPanelY += sign * 200.0f * ((*cl_time) - (*cl_oldtime));
+		m_iCurPanelY += sign * 200.0f * (g_pViewPort->GetFrameTime());
 		if(sign == 1 && m_iCurPanelY > m_iPanelY)
 			m_iCurPanelY = m_iPanelY;
 		else if(sign == -1 && m_iCurPanelY < m_iPanelY)
@@ -645,7 +648,7 @@ void SubtitlePanel::Paint(void)
 	if(m_iCurPanelYEnd != m_iPanelYEnd)
 	{
 		int sign = (m_iPanelYEnd - m_iCurPanelYEnd) ? 1 : -1;
-		m_iCurPanelYEnd += sign * 200.0f * ((*cl_time) - (*cl_oldtime));
+		m_iCurPanelYEnd += sign * 200.0f * (g_pViewPort->GetFrameTime());
 		if(sign == 1 && m_iCurPanelYEnd > m_iPanelYEnd)
 			m_iCurPanelYEnd = m_iPanelYEnd;
 		else if(sign == -1 && m_iCurPanelYEnd < m_iPanelYEnd)

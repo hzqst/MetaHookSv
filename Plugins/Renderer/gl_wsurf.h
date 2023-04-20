@@ -5,14 +5,18 @@
 #define MAX_NUM_NODES 16
 
 #define BINDING_POINT_SCENE_UBO 0
-#define BINDING_POINT_SKYBOX_SSBO 1
-#define BINDING_POINT_DECAL_SSBO 1
-#define BINDING_POINT_TEXTURE_SSBO 1
-#define BINDING_POINT_ENTITY_UBO 2
-#define BINDING_POINT_STUDIO_UBO 2
-#define BINDING_POINT_OIT_FRAGMENT_SSBO 3
-#define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 4
-#define BINDING_POINT_OIT_COUNTER_SSBO 5
+#define BINDING_POINT_DLIGHT_UBO 1
+
+#define BINDING_POINT_SKYBOX_SSBO 2
+#define BINDING_POINT_DECAL_SSBO 2
+#define BINDING_POINT_TEXTURE_SSBO 2
+
+#define BINDING_POINT_ENTITY_UBO 3
+#define BINDING_POINT_STUDIO_UBO 3
+
+#define BINDING_POINT_OIT_FRAGMENT_SSBO 4
+#define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 5
+#define BINDING_POINT_OIT_COUNTER_SSBO 6
 
 #define VERTEX_ATTRIBUTE_INDEX_POSITION 0
 #define VERTEX_ATTRIBUTE_INDEX_NORMAL 1
@@ -181,14 +185,13 @@ typedef struct wsurf_vbo_leaf_s
 	wsurf_vbo_leaf_s()
 	{
 		hEBO = NULL;
-		crc = 0;
 	}
 
-	GLuint	hEBO;
+	GLuint hEBO;
 	std::vector<brushtexchain_t> vTextureChain[WSURF_TEXCHAIN_MAX];
 	std::vector<wsurf_vbo_batch_t *> vDrawBatch[WSURF_DRAWBATCH_MAX];
+	std::vector<water_vbo_t *> vWaterVBO;
 	brushtexchain_t TextureChainSky;
-	CRC32_t crc;
 }wsurf_vbo_leaf_t;
 
 typedef struct wsurf_vbo_s
@@ -197,12 +200,10 @@ typedef struct wsurf_vbo_s
 	{
 		pModel = NULL;
 		hEntityUBO = 0;
-		hDecalEBO = 0;
 	}
 
 	model_t	*pModel;
 	GLuint	hEntityUBO;
-	GLuint	hDecalEBO;
 	std::vector<wsurf_vbo_leaf_t *> vLeaves;
 }wsurf_vbo_t;
 
@@ -248,6 +249,15 @@ typedef struct scene_ubo_s
 }scene_ubo_t;
 
 static_assert((sizeof(scene_ubo_t) % 16) == 0, "Size check");
+
+typedef struct dlight_ubo_s
+{
+	vec4 origin_radius[256];
+	vec4 color_minlight[256];
+	uint32_t active_dlights[4];
+}dlight_ubo_t;
+
+static_assert((sizeof(dlight_ubo_t) % 16) == 0, "Size check");
 
 typedef struct entity_ubo_s
 {
@@ -311,6 +321,7 @@ typedef struct r_worldsurf_s
 	{
 		hSceneVBO = 0;
 		hSceneUBO = 0;
+		hDLightUBO = 0;
 		hDecalVBO = 0;
 		hDecalSSBO = 0;
 		hSkyboxSSBO = 0;
@@ -326,12 +337,14 @@ typedef struct r_worldsurf_s
 		iNumLightmapTextures = 0;
 		iLightmapTextureArray = 0;
 		iLightmapUsedBits = 0;
+		iLightmapLegacyDLights = 0;
 
 		memset(vSkyboxTextureHandles, 0, sizeof(vSkyboxTextureHandles));
 	}
 
 	GLuint				hSceneVBO;
 	GLuint				hSceneUBO;
+	GLuint				hDLightUBO;
 	GLuint				hDecalVBO;
 	GLuint				hDecalSSBO;
 	GLuint				hSkyboxSSBO;
@@ -349,6 +362,7 @@ typedef struct r_worldsurf_s
 	int					iNumLightmapTextures;
 	int					iLightmapTextureArray;
 	int					iLightmapUsedBits;
+	int					iLightmapLegacyDLights;
 
 	std::vector <bspentity_t> vBSPEntities;
 
@@ -415,19 +429,24 @@ void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator fn);
 bspentity_t *R_ParseBSPEntity_DefaultAllocator(void);
 char *ValueForKey(bspentity_t *ent, char *key);
 void R_LoadBSPEntities(void);
+void R_FreeLightmapTextures(void);
 void R_LoadExternalEntities(void);
 void R_LoadBaseDecalTextures(void);
 void R_LoadBaseDetailTextures(void);
 void R_LoadMapDetailTextures(void);
+
 void R_AddDynamicLights(msurface_t *surf);
 void R_RenderDynamicLightmaps(msurface_t *fa);
 void R_BuildLightMap(msurface_t *psurf, byte *dest, int stride);
-void R_DrawDecals(wsurf_vbo_t *modcache);
+
+void R_DrawDecals(cl_entity_t *ent);
+void R_PrepareDecals(void);
+
 detail_texture_cache_t *R_FindDecalTextureCache(const std::string &decalname);
 detail_texture_cache_t *R_FindDetailTextureCache(int texId);
-void R_BeginDetailTextureByGLTextureId(int gltexturenum, uint64_t *WSurfProgramState);
-void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, uint64_t *WSurfProgramState);
-void R_EndDetailTexture(int WSurfProgramState);
+void R_BeginDetailTextureByGLTextureId(int gltexturenum, program_state_t *WSurfProgramState);
+void R_BeginDetailTextureByDetailTextureCache(detail_texture_cache_t *cache, program_state_t *WSurfProgramState);
+void R_EndDetailTexture(program_state_t WSurfProgramState);
 void R_DrawSequentialPolyVBO(msurface_t *s);
 wsurf_vbo_t *R_PrepareWSurfVBO(model_t *mod);
 void R_DrawWSurfVBO(wsurf_vbo_t *modcache, cl_entity_t *ent);
@@ -437,12 +456,15 @@ void R_Reload_f(void);
 void R_GenerateSceneUBO(void);
 void R_SaveWSurfProgramStates(void);
 void R_LoadWSurfProgramStates(void);
-void R_UseWSurfProgram(uint64_t state, wsurf_program_t *progOut);
+void R_UseWSurfProgram(program_state_t state, wsurf_program_t *progOut);
 
-#define WSURF_DIFFUSE_ENABLED				1ull
-#define WSURF_LIGHTMAP_ENABLED				2ull
-#define WSURF_REPLACETEXTURE_ENABLED		4ull
-#define WSURF_DETAILTEXTURE_ENABLED			8ull
+water_vbo_t *R_CreateWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t *leaf);
+void R_DrawWaters(wsurf_vbo_leaf_t *vboleaf, cl_entity_t *ent);
+
+#define WSURF_DIFFUSE_ENABLED				0x1ull
+#define WSURF_LIGHTMAP_ENABLED				0x2ull
+#define WSURF_REPLACETEXTURE_ENABLED		0x4ull
+#define WSURF_DETAILTEXTURE_ENABLED			0x8ull
 #define WSURF_NORMALTEXTURE_ENABLED			0x10ull
 #define WSURF_PARALLAXTEXTURE_ENABLED		0x20ull
 #define WSURF_SPECULARTEXTURE_ENABLED		0x40ull
@@ -471,3 +493,4 @@ void R_UseWSurfProgram(uint64_t state, wsurf_program_t *progOut);
 #define WSURF_LIGHTMAP_INDEX_1_ENABLED		0x20000000ull
 #define WSURF_LIGHTMAP_INDEX_2_ENABLED		0x40000000ull
 #define WSURF_LIGHTMAP_INDEX_3_ENABLED		0x80000000ull
+#define WSURF_LEGACY_DLIGHT_ENABLED			0x100000000ull

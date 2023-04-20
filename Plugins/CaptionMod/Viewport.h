@@ -76,6 +76,8 @@ public:
 	std::string				m_szNext;
 	CDictionary				*m_pNext;
 	textalign_t				m_iTextAlign;
+	bool					m_bIgnoreDistanceLimit;
+	bool					m_bIgnoreVolumeLimit;
 	bool					m_bRegex;
 
 	bool					m_bOverrideColor;
@@ -84,6 +86,7 @@ public:
 	Color					m_Color2;
 
 	bool					m_bDefaultColor;
+	std::regex				*m_pRegex;
 };
 
 typedef struct hash_item_s
@@ -138,12 +141,17 @@ public:
 	void ChatPrintf(int iPlayerIndex, const wchar_t *buffer);
 	void QuerySubtitlePanelVars(SubtitlePanelVars_t *vars);
 	void UpdateSubtitlePanelVars(SubtitlePanelVars_t *vars);
+	double GetSystemTime(void) const;
+	double GetFrameTime(void) const;
 private:
 	SubtitlePanel *m_pSubtitlePanel;
 	CCSChatDialog *m_pChatDialog;
 	CUtlVector<CDictionary *> m_Dictionary;	
 	CUtlVector<hash_item_t> m_StringsHashTable;
 	char m_szLevelName[256];
+	double m_SystemTime;
+	double m_OldSystemTime;
+	double m_FrameTime;
 };
 
 extern CViewport *g_pViewPort;

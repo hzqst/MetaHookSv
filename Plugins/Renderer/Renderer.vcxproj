@@ -157,10 +157,10 @@ if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\ren
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\HLSDK\common\interface.cpp" />
-    <ClCompile Include="crc.c" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="gl_cvar.cpp" />
     <ClCompile Include="gl_draw.cpp" />
+    <ClCompile Include="gl_entity.cpp" />
     <ClCompile Include="gl_hooks.cpp" />
     <ClCompile Include="gl_hud.cpp" />
     <ClCompile Include="gl_light.cpp" />
@@ -187,6 +187,7 @@ if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\ren
     <ClInclude Include="exportfuncs.h" />
     <ClInclude Include="gl_cvar.h" />
     <ClInclude Include="gl_draw.h" />
+    <ClInclude Include="gl_entity.h" />
     <ClInclude Include="gl_hud.h" />
     <ClInclude Include="gl_light.h" />
     <ClInclude Include="gl_local.h" />

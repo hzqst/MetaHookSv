@@ -3,11 +3,11 @@
 
 //int g_LastPortalTextureId = 0;
 
-std::unordered_map<int, portal_program_t> g_PortalProgramTable;
+std::unordered_map<program_state_t, portal_program_t> g_PortalProgramTable;
 
 std::unordered_map<portal_vbo_hash_t, portal_vbo_t *, portal_vbo_hasher> g_PortalVBOCache;
 
-void R_UsePortalProgram(int state, portal_program_t *progOutput)
+void R_UsePortalProgram(program_state_t state, portal_program_t *progOutput)
 {
 	portal_program_t prog = { 0 };
 
@@ -58,7 +58,7 @@ void R_UsePortalProgram(int state, portal_program_t *progOutput)
 	}
 }
 
-const program_state_name_t s_PortalProgramStateName[] = {
+const program_state_mapping_t s_PortalProgramStateName[] = {
 { OVERLAY_TEXTURE_ENABLED					, "OVERLAY_TEXTURE_ENABLED"			 },
 { PORTAL_TEXCOORD_ENABLED					, "PORTAL_TEXCOORD_ENABLED"			 },
 { REVERSE_PORTAL_TEXCOORD_ENABLED			, "REVERSE_PORTAL_TEXCOORD_ENABLED"	 },
@@ -66,89 +66,21 @@ const program_state_name_t s_PortalProgramStateName[] = {
 
 void R_SavePortalProgramStates(void)
 {
-	std::stringstream ss;
+	std::vector<program_state_t> states;
 	for (auto &p : g_PortalProgramTable)
 	{
-		if (p.first == 0)
-		{
-			ss << "NONE";
-		}
-		else
-		{
-			for (int i = 0; i < _ARRAYSIZE(s_PortalProgramStateName); ++i)
-			{
-				if (p.first & s_PortalProgramStateName[i].state)
-				{
-					ss << s_PortalProgramStateName[i].name << " ";
-				}
-			}
-		}
-		ss << "\n";
+		states.emplace_back(p.first);
 	}
-
-	auto FileHandle = g_pFileSystem->Open("renderer/shader/portal_cache.txt", "wt");
-	if (FileHandle)
-	{
-		auto str = ss.str();
-		g_pFileSystem->Write(str.data(), str.length(), FileHandle);
-		g_pFileSystem->Close(FileHandle);
-	}
+	R_SaveProgramStatesCaches("renderer/shader/portal_cache.txt", states, s_PortalProgramStateName, _ARRAYSIZE(s_PortalProgramStateName));
 }
 
 void R_LoadPortalProgramStates(void)
 {
-	auto FileHandle = g_pFileSystem->Open("renderer/shader/portal_cache.txt", "rt");
-	if (FileHandle)
-	{
-		char szReadLine[4096];
-		while (!g_pFileSystem->EndOfFile(FileHandle))
-		{
-			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
-			szReadLine[sizeof(szReadLine) - 1] = 0;
+	R_LoadProgramStateCaches("renderer/shader/portal_cache.txt", s_PortalProgramStateName, _ARRAYSIZE(s_PortalProgramStateName), [](program_state_t state) {
 
-			int ProgramState = -1;
-			bool quoted = false;
-			char token[256];
-			char *p = szReadLine;
-			while (1)
-			{
-				p = g_pFileSystem->ParseFile(p, token, &quoted);
-				if (token[0])
-				{
-					if (!strcmp(token, "NONE"))
-					{
-						ProgramState = 0;
-						break;
-					}
-					else
-					{
-						for (int i = 0; i < _ARRAYSIZE(s_PortalProgramStateName); ++i)
-						{
-							if (!strcmp(token, s_PortalProgramStateName[i].name))
-							{
-								if (ProgramState == -1)
-									ProgramState = 0;
-								ProgramState |= s_PortalProgramStateName[i].state;
-							}
-						}
-					}
-				}
-				else
-				{
-					break;
-				}
+		R_UsePortalProgram(state, NULL);
 
-				if (!p)
-					break;
-			}
-
-			if (ProgramState != -1)
-				R_UsePortalProgram(ProgramState, NULL);
-		}
-		g_pFileSystem->Close(FileHandle);
-	}
-
-	GL_UseProgram(0);
+	});
 }
 
 void R_NewMapPortal(void)
@@ -289,14 +221,14 @@ void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *su
 {
 	auto ent = (cl_entity_t *)*(DWORD *)((ULONG_PTR)ClientPortal + 0x70);
 
-	int programState = (ClientPortal_GetPortalMode(ClientPortal) == 0) ? REVERSE_PORTAL_TEXCOORD_ENABLED  : PORTAL_TEXCOORD_ENABLED;
+	program_state_t programState = (ClientPortal_GetPortalMode(ClientPortal) == 0) ? REVERSE_PORTAL_TEXCOORD_ENABLED  : PORTAL_TEXCOORD_ENABLED;
 
 	if (VBOCache->texinfo->texture->name[0] == '{')
 	{
 		programState |= OVERLAY_TEXTURE_ENABLED;
 	}
 
-	R_RotateForEntity(ent->origin, ent);
+	R_RotateForEntity(ent);
 
 	portal_program_t prog = { 0 };
 	R_UsePortalProgram(programState, &prog);
@@ -320,14 +252,14 @@ void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *s
 {
 	auto ent = (cl_entity_t *)*(DWORD *)((ULONG_PTR)ClientPortal + 0x70);
 
-	int programState = 0;
+	program_state_t programState = 0;
 
 	if (VBOCache->texinfo->texture->name[0] == '{')
 	{
 		programState |= OVERLAY_TEXTURE_ENABLED;
 	}
 
-	R_RotateForEntity(ent->origin, ent);
+	R_RotateForEntity(ent);
 
 	portal_program_t prog = { 0 };
 	R_UsePortalProgram(programState, &prog);

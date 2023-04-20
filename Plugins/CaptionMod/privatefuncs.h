@@ -86,6 +86,9 @@ extern void *gHud;
 
 extern double *cl_time;
 extern double *cl_oldtime;
+extern int *cl_viewentity;
+
+extern vec3_t *listener_origin;
 
 extern char *(*rgpszrawsentence)[CVOXFILESENTENCEMAX];
 extern int *cszrawsentences;
@@ -98,3 +101,5 @@ extern WNDPROC g_MainWndProc;
 extern char m_szCurrentLanguage[128];
 
 extern private_funcs_t gPrivateFuncs;
+
+cl_entity_t *EngineGetViewEntity(void);

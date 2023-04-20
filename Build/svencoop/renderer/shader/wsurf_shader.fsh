@@ -66,6 +66,28 @@ float ConvertStyleToLightStyle(uint style)
 	return SceneUBO.r_lightstylevalue[style / 4][style % 4];
 }
 
+#ifdef LEGACY_DLIGHT_ENABLED
+
+vec4 R_AddLegacyDynamicLight(vec4 color)
+{
+	for(uint i = 0;i < DLightUBO.active_dlights; ++i)
+	{
+		vec3 origin = DLightUBO.origin_radius[i].xyz;
+		float radius = DLightUBO.origin_radius[i].w;
+		vec3 delta = origin - v_worldpos;
+		float dist = length(delta);
+
+		vec3 lightcolor = DLightUBO.color_minlight[i].xyz;
+		float minlight = DLightUBO.color_minlight[i].w;
+
+		color.xyz += clamp((radius - dist) / radius, 0.0, 1.0) * lightcolor.xyz;
+	}
+
+	return color;
+}
+
+#endif
+
 #ifdef GBUFFER_ENABLED
 
 	#if defined(DECAL_ENABLED)
@@ -390,6 +412,12 @@ void main()
 #endif
 
 	lightmapColor *= SceneUBO.r_lightscale;
+
+#ifdef LEGACY_DLIGHT_ENABLED
+
+	lightmapColor = R_AddLegacyDynamicLight(lightmapColor);
+
+#endif
 
 	//Really need?
 	lightmapColor.r = clamp(lightmapColor.r, 0.0, 1.0);

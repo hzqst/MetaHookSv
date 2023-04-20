@@ -57,7 +57,9 @@ The default chat text color can be customized in `\Sven Co-op\svencoop\captionmo
 
 `cap_netmessage` : To enable or disable CaptionMod's `__NETMESSAGE__` HUD TextMessage translation.
 
-`cap_max_distance` : Ignore sound or sentences (which are supposed to play subtitles) whose speaker is too far away from this distance.
+`cap_max_distance` : Ignore sound or sentences (which are supposed to play subtitles) whose speaker is too far away from this distance. This cvar is not going to work with SvEngine because of missing sound source information in `ScClient_FindSoundEx`.
+
+`cap_min_avol` : Ignore sound or sentences (which are supposed to play subtitles) which plays with volume smaller than this value. This cvar is not going to work with SvEngine because of missing sound source information in `ScClient_FindSoundEx`.
 
 `cap_debug` : To output debug message when there is a HUD TextMessage or sound playing.
 

@@ -60,14 +60,18 @@
 #define TEXTURE_SSBO_WATER_DEPTH 4
 
 #define BINDING_POINT_SCENE_UBO 0
-#define BINDING_POINT_SKYBOX_SSBO 1
-#define BINDING_POINT_DECAL_SSBO 1
-#define BINDING_POINT_TEXTURE_SSBO 1
-#define BINDING_POINT_ENTITY_UBO 2
-#define BINDING_POINT_STUDIO_UBO 2
-#define BINDING_POINT_OIT_FRAGMENT_SSBO 3
-#define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 4
-#define BINDING_POINT_OIT_COUNTER_SSBO 5
+#define BINDING_POINT_DLIGHT_UBO 1
+
+#define BINDING_POINT_SKYBOX_SSBO 2
+#define BINDING_POINT_DECAL_SSBO 2
+#define BINDING_POINT_TEXTURE_SSBO 2
+
+#define BINDING_POINT_ENTITY_UBO 3
+#define BINDING_POINT_STUDIO_UBO 3
+
+#define BINDING_POINT_OIT_FRAGMENT_SSBO 4
+#define BINDING_POINT_OIT_NUMFRAGMENT_SSBO 5
+#define BINDING_POINT_OIT_COUNTER_SSBO 6
 
 #define WSURF_DIFFUSE_TEXTURE		0
 #define WSURF_REPLACE_TEXTURE		1
@@ -120,6 +124,12 @@ struct scene_ubo_t{
 	vec4 r_lightstylevalue[64];
 };
 
+struct dlight_ubo_t{
+	vec4 origin_radius[256];
+	vec4 color_minlight[256];
+	uint active_dlights;
+};
+
 struct entity_ubo_t{
 	mat4 entityMatrix;
 	vec4 color;
@@ -147,6 +157,11 @@ struct studio_ubo_t{
 layout (std140, binding = BINDING_POINT_SCENE_UBO) uniform SceneBlock
 {
    scene_ubo_t SceneUBO;
+};
+
+layout (std140, binding = BINDING_POINT_DLIGHT_UBO) uniform DLightBlock
+{
+   dlight_ubo_t DLightUBO;
 };
 
 #if defined(BINDLESS_ENABLED)

@@ -106,10 +106,20 @@ int HUD_Redraw(float time, int intermission)
 		switch ((int)r_water_debug->value)
 		{
 		case 1:
-			R_DrawHUDQuad_Texture(g_WaterVBOCache[0]->reflectmap, glwidth / 2, glheight / 2);
+			if (g_WaterReflectCaches[0].reflectmap)
+				R_DrawHUDQuad_Texture(g_WaterReflectCaches[0].reflectmap, glwidth / 2, glheight / 2);
 			break;
 		case 2:
-			R_DrawHUDQuad_Texture(s_WaterFBO.s_hBackBufferTex, glwidth / 2, glheight / 2);
+			if (g_WaterReflectCaches[0].refractmap)
+				R_DrawHUDQuad_Texture(g_WaterReflectCaches[0].refractmap, glwidth / 2, glheight / 2);
+			break;
+		case 3:
+			if (g_WaterReflectCaches[1].reflectmap)
+				R_DrawHUDQuad_Texture(g_WaterReflectCaches[1].reflectmap, glwidth / 2, glheight / 2);
+			break;
+		case 4:
+			if (g_WaterReflectCaches[1].refractmap)
+				R_DrawHUDQuad_Texture(g_WaterReflectCaches[1].refractmap, glwidth / 2, glheight / 2);
 			break;
 		//case 3:
 		//	R_DrawHUDQuad_Texture(g_LastPortalTextureId, glwidth / 2, glheight / 2);
@@ -1314,12 +1324,16 @@ int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 	if (r &&
 		ent->curstate.movetype == MOVETYPE_FOLLOW &&
 		ent->curstate.aiment > 0 &&
-		ent->curstate.aiment < MAX_EDICTS &&
+		ent->curstate.aiment < EngineGetMaxClientEdicts() &&
 		ent->model && 
 		ent->model->type == mod_studio)
 	{
-		r_aiments[ent->curstate.aiment][r_numaiments[ent->curstate.aiment]] = ent;
-		r_numaiments[ent->curstate.aiment]++;
+		auto aiment = gEngfuncs.GetEntityByIndex(ent->curstate.aiment);
+		auto comp = R_GetEntityComponent(aiment, true);
+		if (comp)
+		{
+			comp->FollowEnts.emplace_back(ent);
+		}
 		//return 0;
 	}
 
@@ -1328,8 +1342,6 @@ int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 
 void HUD_Frame(double time)
 {
-	memset(r_numaiments, 0, sizeof(r_numaiments));
-
 	gExportfuncs.HUD_Frame(time);
 }
 
