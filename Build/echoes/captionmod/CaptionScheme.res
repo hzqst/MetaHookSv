@@ -15,8 +15,8 @@ Scheme
 		"ControlBG"		"0 0 0 100"		//Arkaya siyah plan koyma 
 		"SubtitleBG"		"100 100 100 80"
 		"SweetGreen"	"167 255 34 255"	//Janitor/Agamemnon
-		"AquaBlue"	"0 204 204 255"	//Eli Vance
-		"SweetOrange"	"255 204 153 255"	//Alyx Vance
+		"SweetOrange"	"223 186 160 255"	//Eli Vance
+		"LightMagenta"	"253 219 247 255"	//Alyx Vance
 		"Maroon"	"255 87 51 255"	//Collette Green
 		"Tan"	"210 180 140 255"	//Gina Cross
 	}
