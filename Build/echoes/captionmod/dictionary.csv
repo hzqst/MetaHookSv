@@ -1226,7 +1226,7 @@ military/mil_onturret.wav,#mil_onturret,Green,,#HalfLife_HECU,,,C IGNORE_DISTANC
 military/mil_retreat.wav,#mil_retreat,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
 military/mil_rocket1.wav,#mil_rocket1,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
 military/mil_scidie.wav,#mil_scidie,Gray,,#HalfLife_Scientist,,,C IGNORE_DISTANCE_LIMIT
-military/mil_surpress.wav,#mil_surpress,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
+military/mil_suppress.wav,#mil_suppress,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
 military/mil_sweep.wav,#mil_sweep,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
 military/mil_tank1.wav,#mil_tank1,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
 military/mil_tank2.wav,#mil_tank2,Green,,#HalfLife_HECU,,,C IGNORE_DISTANCE_LIMIT
