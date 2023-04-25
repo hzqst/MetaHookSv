@@ -1087,7 +1087,7 @@ gman/gman_again.wav,#gman_again,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOL
 gman/gman_belong.wav,#gman_belong,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 gman/gman_comebacknow.wav,#gman_comebacknow,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 gman/gman_cutoff.wav,#gman_cutoff,SweetBlue,5,,GMANSTUTTER,4.09,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
-GMANSTUTTER,#GMANSTUTTER,SweetBlue,8.5,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+GMANSTUTTER,#GMANSTUTTER,SweetBlue,8.5,,,,C
 gman/gman_dream.wav,#gman_dream,,,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 gman/gman_fulltalk.wav,#gman_fulltalk,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 gman/gman_getbackhere.wav,#gman_getbackhere,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
