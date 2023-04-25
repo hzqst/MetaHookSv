@@ -750,7 +750,7 @@ scientist/simulation.wav,#simulation,Gray,,#HalfLife_Scientist,,,C
 scientist/slowingyou.wav,#slowingyou,Gray,,#HalfLife_Scientist,,,C
 scientist/smellburn.wav,#smellburn,Gray,,#HalfLife_Scientist,,,C
 scientist/snarkbody.wav,#snarkbody,Gray,,#HalfLife_Scientist,,,C
-scientist/sneeze.wav,#sneeze,Gray,,#HalfLife_Scientist,,,C
+scientist/sneeze.wav,#sneeze,Gray,1.2,#HalfLife_Scientist,,,C
 scientist/softethics.wav,#softethics,Gray,,#HalfLife_Scientist,,,C
 scientist/somethingfoul.wav,#somethingfoul,Gray,,#HalfLife_Scientist,,,C
 scientist/sorryimleaving.wav,#sorryimleaving,Gray,,#HalfLife_Scientist,,,C
@@ -1080,11 +1080,11 @@ tride/c0a0_tr_jobs.wav,#c0a0_tr_jobs,Purple,,#HalfLife_Train,,,C
 tride/c0a0_tr_haz.wav,#c0a0_tr_haz,Purple,,#HalfLife_Train,,,C
 tride/c0a0_tr_arrive.wav,#c0a0_tr_arrive,Purple,,#HalfLife_Train,,,C
 tride/c0a0_tr_exit.wav,#c0a0_tr_exit,Purple,,#HalfLife_Train,,,C
-GMANSTUTTER,#GMANSTUTTER,SweetBlue,,,,,C
 gman/gman_again.wav,#gman_again,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 gman/gman_belong.wav,#gman_belong,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 gman/gman_comebacknow.wav,#gman_comebacknow,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
-gman/gman_cutoff.wav,#gman_cutoff,SweetBlue,8,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_cutoff.wav,#gman_cutoff,SweetBlue,5,,GMANSTUTTER,4.09,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+GMANSTUTTER,#GMANSTUTTER,SweetBlue,8.5,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 gman/gman_fulltalk.wav,#gman_fulltalk,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 gman/gman_getbackhere.wav,#gman_getbackhere,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 gman/gman_huff,#gman_huff,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
@@ -1314,7 +1314,7 @@ seer/nil_slaves.wav,#nil_slaves,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT I
 seer/nil_win.wav,#nil_win,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 ,,,,,,,
 ,,,,,,,
-MAP2_SCARE,#MAP2_SCARE,Gray,6.5,#HalfLife_Scientist,,,C
+MAP2_SCARE,#MAP2_SCARE,White,6.5,#HalfLife_Scientist,,,C
 MAP2_FREEMAN9,#MAP2_FREEMAN9,Gray,,#HalfLife_Scientist,,,C
 scientist/nil.wav,#nil_freeman,Yellow,,#Echoes_Seer,,,C
 ,,,,,,,

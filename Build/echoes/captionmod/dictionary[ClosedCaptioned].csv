@@ -750,7 +750,7 @@ scientist/simulation.wav,#simulation,Gray,,#HalfLife_Scientist,,,C
 scientist/slowingyou.wav,#slowingyou,Gray,,#HalfLife_Scientist,,,C
 scientist/smellburn.wav,#smellburn,Gray,,#HalfLife_Scientist,,,C
 scientist/snarkbody.wav,#snarkbody,Gray,,#HalfLife_Scientist,,,C
-scientist/sneeze.wav,#sneeze,Gray,,#HalfLife_Scientist,,,C
+scientist/sneeze.wav,#sneeze,Gray,1.2,#HalfLife_Scientist,,,C
 scientist/softethics.wav,#softethics,Gray,,#HalfLife_Scientist,,,C
 scientist/somethingfoul.wav,#somethingfoul,Gray,,#HalfLife_Scientist,,,C
 scientist/sorryimleaving.wav,#sorryimleaving,Gray,,#HalfLife_Scientist,,,C
@@ -1086,7 +1086,8 @@ gman/flash.wav,#flash,,,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 gman/gman_again.wav,#gman_again,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 gman/gman_belong.wav,#gman_belong,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 gman/gman_comebacknow.wav,#gman_comebacknow,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
-gman/gman_cutoff.wav,#gman_cutoff,SweetBlue,8,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+gman/gman_cutoff.wav,#gman_cutoff,SweetBlue,5,,GMANSTUTTER,4.09,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
+GMANSTUTTER,#GMANSTUTTER,SweetBlue,8.5,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 gman/gman_dream.wav,#gman_dream,,,,,,L IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 gman/gman_fulltalk.wav,#gman_fulltalk,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 gman/gman_getbackhere.wav,#gman_getbackhere,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
