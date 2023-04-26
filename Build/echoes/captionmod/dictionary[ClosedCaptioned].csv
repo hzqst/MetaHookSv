@@ -1327,9 +1327,9 @@ seer/nil_slaves.wav,#nil_slaves,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT I
 seer/nil_win.wav,#nil_win,Yellow,,#Echoes_Seer,,,C IGNORE_DISTANCE_LIMIT IGNORE_VOLUME_LIMIT
 ,,,,,,,
 ,,,,,,,
-MAP2_SCARE,#MAP2_SCARE,Gray,6.5,#HalfLife_Scientist,,,C
+MAP2_SCARE,#nil_freeman,Yellow,6,#Echoes_Seer,scaresneeze,6,C
 MAP2_FREEMAN9,#MAP2_FREEMAN9,Gray,,#HalfLife_Scientist,,,C
-scientist/nil.wav,#nil_freeman,Yellow,,#Echoes_Seer,,,C
+scaresneeze,#sneeze,Gray,1,#HalfLife_Scientist,,,C
 ,,,,,,,
 aslave/slv_alert1.wav,#slv_alert1,Red,1.2,,,,L
 aslave/slv_die1.wav,#slv_die1,Red,,,,,L
