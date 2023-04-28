@@ -122,24 +122,33 @@ void CClientVGUI::Shutdown(void)
 void ClientVGUI_InstallHook(void)
 {
 	CreateInterfaceFn ClientVGUICreateInterface = NULL;
-	if(g_hClientDll)
-		ClientVGUICreateInterface = (CreateInterfaceFn)Sys_GetFactory((HINTERFACEMODULE)g_hClientDll);
-	if(!ClientVGUICreateInterface && gExportfuncs.ClientFactory)
-		ClientVGUICreateInterface = (CreateInterfaceFn)gExportfuncs.ClientFactory();
 
-	g_pClientVGUI = (IClientVGUI *)ClientVGUICreateInterface(CLIENTVGUI_INTERFACE_VERSION, NULL);
-
-	if(g_pClientVGUI)
+	if (g_hClientDll)
 	{
-		DWORD *pVFTable = *(DWORD **)&s_ClientVGUI;
+		ClientVGUICreateInterface = (CreateInterfaceFn)Sys_GetFactory((HINTERFACEMODULE)g_hClientDll);
+	}
 
-		g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0,  1, (void *)pVFTable[1], (void **)&m_pfnCClientVGUI_Initialize);
-		g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0,  2, (void *)pVFTable[2], (void **)&m_pfnCClientVGUI_Start);
-		g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0,  3, (void *)pVFTable[3], (void **)&m_pfnCClientVGUI_SetParent);
-		g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0,  7, (void *)pVFTable[7], (void **)&m_pfnCClientVGUI_ActivateClientUI);
-		g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0,  8, (void *)pVFTable[8], (void **)&m_pfnCClientVGUI_HideClientUI);
+	if (!ClientVGUICreateInterface && gExportfuncs.ClientFactory)
+	{
+		ClientVGUICreateInterface = (CreateInterfaceFn)gExportfuncs.ClientFactory();
+	}
 
-		g_IsClientVGUI2 = true;
+	if (ClientVGUICreateInterface)
+	{
+		g_pClientVGUI = (IClientVGUI *)ClientVGUICreateInterface(CLIENTVGUI_INTERFACE_VERSION, NULL);
+
+		if (g_pClientVGUI)
+		{
+			DWORD *pVFTable = *(DWORD **)&s_ClientVGUI;
+
+			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 1, (void *)pVFTable[1], (void **)&m_pfnCClientVGUI_Initialize);
+			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 2, (void *)pVFTable[2], (void **)&m_pfnCClientVGUI_Start);
+			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 3, (void *)pVFTable[3], (void **)&m_pfnCClientVGUI_SetParent);
+			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 7, (void *)pVFTable[7], (void **)&m_pfnCClientVGUI_ActivateClientUI);
+			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 8, (void *)pVFTable[8], (void **)&m_pfnCClientVGUI_HideClientUI);
+
+			g_IsClientVGUI2 = true;
+		}
 	}
 }
 
