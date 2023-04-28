@@ -585,6 +585,7 @@ void Client_FillAddress(void)
 #define SC_UPDATECURSORSTATE_SIG "\x8B\x40\x28\xFF\xD0\x84\xC0\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00"
 		{
 			auto addr = (PUCHAR)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_UPDATECURSORSTATE_SIG, Sig_Length(SC_UPDATECURSORSTATE_SIG));
+			
 			Sig_AddrNotFound(g_iVisibleMouse);
 
 			g_iVisibleMouse = *(decltype(g_iVisibleMouse) *)(addr + 11);
@@ -703,7 +704,7 @@ void Client_FillAddress(void)
 			return FALSE;
 		}, 0, &ctx);
 
-		Sig_VarNotFound(g_iVisibleMouse);
+		//Sig_VarNotFound(g_iVisibleMouse);
 	}
 }
 
