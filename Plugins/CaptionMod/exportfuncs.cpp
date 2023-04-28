@@ -889,15 +889,18 @@ sfx_t *S_FindName(char *name, int *pfInCache)
 
 IBaseInterface *NewCreateInterface(const char *pName, int *pReturnCode)
 {
-	auto fnCreateInterface = (decltype(NewCreateInterface) *)Sys_GetFactoryThis();
-	auto fn = fnCreateInterface(pName, pReturnCode);
-	if (fn)
-		return fn;
+	auto pfnCreateInterface = (decltype(NewCreateInterface) *)Sys_GetFactoryThis();
+	auto pInterface = pfnCreateInterface(pName, pReturnCode);
+	if (pInterface)
+		return pInterface;
 
-	fnCreateInterface = (decltype(NewCreateInterface) *)GetProcAddress(g_hClientDll, CREATEINTERFACE_PROCNAME);
-	fn = fnCreateInterface(pName, pReturnCode);
-	if (fn)
-		return fn;
+	pfnCreateInterface = (decltype(NewCreateInterface) *)GetProcAddress(g_hClientDll, CREATEINTERFACE_PROCNAME);
+	if (pfnCreateInterface)
+	{
+		pInterface = pfnCreateInterface(pName, pReturnCode);
+		if (pInterface)
+			return pInterface;
+	}
 
 	return NULL;
 }
