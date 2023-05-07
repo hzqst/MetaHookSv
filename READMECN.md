@@ -42,13 +42,13 @@
 
 2. 复制Build目录下的所有[你认为你需要安装的文件](Build/READMECN.md)到 `\SteamLibrary\steamapps\common\Sven Co-op\` 下。
 
-3. 打开 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\` 目录, 将 `plugin_svencoop.lst` (或 `plugin_goldsrc.lst`) 重命名为 `plugin.lst` (取决于你当前使用的游戏引擎)
+3. 打开 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\` 目录, 将 `plugin_svencoop.lst` (或 `plugin_goldsrc.lst`，取决于你当前使用的游戏引擎是SvEngine还是GoldSrc) 重命名为 `plugins.lst`
 
 4. 从 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe` 启动游戏。
 
-* 如果要运行Sven Co-op以外的游戏，请自行使用`-game`启动项参数的方式启动，如：`svencoop.exe -game valve`或`svencoop.exe -game cstrike`。当然，也可以将`svencoop.exe`重命名为对应游戏的启动exe名，如`cstrike.exe`
+* 如果要运行Sven Co-op以外的游戏，请自行使用`-game`启动项参数的方式启动，如：`svencoop.exe -game valve`或`svencoop.exe -game cstrike`。或者将 `svencoop.exe` 重命名为对应游戏的mod目录名，如`cstrike.exe`
 
-* `Build`目录中的 `svencoop.exe` 原来叫 `metahook.exe`，它会替换你自带的游戏启动器`svencoop.exe`，请注意备份。当然你也可以选择不替换`svencoop.exe`，以命令行或启动项方式`metahook.exe -game svencoop`启动SvenCoop。不过不推荐这么做，因为这么做会导致更改视频模式的时候游戏闪退（可能是游戏自己对进程名有校验）。
+* `Build`目录中的 `svencoop.exe` 原来叫 `metahook.exe`，它会替换你自带的游戏启动器`svencoop.exe`，请注意备份。当然你也可以选择不替换`svencoop.exe`，而是手动安装并以命令行或启动项`metahook.exe -game svencoop`的方式启动游戏。不过不推荐这么做，因为这么做会导致更改视频模式的时候游戏闪退（可能是游戏自己对进程名有校验）。
 
 * `Build`目录中的`SDL2.dll`文件是用来修复原版SDL使用中文输入法进行游戏时可能发生的内存越界写入导致游戏崩溃的问题。如果你全程都关闭中文输入法的话也可以选择不替换`SDL2.dll`。
 
