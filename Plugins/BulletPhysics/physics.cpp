@@ -1201,6 +1201,11 @@ void CPhysicsManager::UpdateRagdollSleepState(cl_entity_t *ent, CRagdollBody *ra
 
 		ForceRagdollToSleep(ragdoll);
 	}
+	else
+	{
+		ragdoll->m_flLastOriginChangeTime = client_time;
+		return;
+	}
 }
 
 void CPhysicsManager::UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time)
