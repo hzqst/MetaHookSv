@@ -42,13 +42,13 @@
 
 2. 复制Build目录下的所有[你认为你需要安装的文件](Build/READMECN.md)到 `\SteamLibrary\steamapps\common\Sven Co-op\` 下。
 
-3. 打开 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\` 目录, 将 `plugin_svencoop.lst` (或 `plugin_goldsrc.lst`) 重命名为 `plugin.lst` (取决于你当前使用的游戏引擎)
+3. 打开 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\` 目录, 将 `plugin_svencoop.lst` (或 `plugin_goldsrc.lst`，取决于你当前使用的游戏引擎是SvEngine还是GoldSrc) 重命名为 `plugins.lst`
 
 4. 从 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe` 启动游戏。
 
-* 如果要运行Sven Co-op以外的游戏，请自行使用`-game`启动项参数的方式启动，如：`svencoop.exe -game valve`或`svencoop.exe -game cstrike`。当然，也可以将`svencoop.exe`重命名为对应游戏的启动exe名，如`cstrike.exe`
+* 如果要运行Sven Co-op以外的游戏，请自行使用`-game`启动项参数的方式启动，如：`svencoop.exe -game valve`或`svencoop.exe -game cstrike`。或者将 `svencoop.exe` 重命名为对应游戏的mod目录名，如`cstrike.exe`
 
-* `Build`目录中的 `svencoop.exe` 原来叫 `metahook.exe`，它会替换你自带的游戏启动器`svencoop.exe`，请注意备份。当然你也可以选择不替换`svencoop.exe`，以命令行或启动项方式`metahook.exe -game svencoop`启动SvenCoop。不过不推荐这么做，因为这么做会导致更改视频模式的时候游戏闪退（可能是游戏自己对进程名有校验）。
+* `Build`目录中的 `svencoop.exe` 原来叫 `metahook.exe`，它会替换你自带的游戏启动器`svencoop.exe`，请注意备份。当然你也可以选择不替换`svencoop.exe`，而是手动安装并以命令行或启动项`metahook.exe -game svencoop`的方式启动游戏。不过不推荐这么做，因为这么做会导致更改视频模式的时候游戏闪退（可能是游戏自己对进程名有校验）。
 
 * `Build`目录中的`SDL2.dll`文件是用来修复原版SDL使用中文输入法进行游戏时可能发生的内存越界写入导致游戏崩溃的问题。如果你全程都关闭中文输入法的话也可以选择不替换`SDL2.dll`。
 
@@ -204,4 +204,6 @@ https://github.com/DrAbcrealone/HUDColor
 
 https://github.com/LAGonauta/MetaAudio
 
-* 由于 MetaAudio 会拦截引擎中所有播放声音的接口。`MetaAudio.dll` 在 `plugins.lst` 中必须处于任何依赖于引擎中声音组件的插件之前 (例如：CaptionMod) ，你需要调整加载顺序以防止这些插件被 MetaAudio 拦截。使用错误的加载顺序可能会导致这些插件无法正常工作。
+* 由于 MetaAudio 会拦截引擎中所有播放声音的接口。`MetaAudio.dll` 在 `plugins.lst` 中必须处于任何依赖于引擎中声音组件的插件之前 (例如：CaptionMod) ，你需要调整加载顺序以防止这些插件的功能被 MetaAudio 干扰。使用错误的加载顺序可能会导致这些插件无法正常工作。
+
+* 具体解释：如果两个插件都对同一个函数（比如引擎中播放声音的api）挂了hook，那么后安装的hook会先于先安装的hook执行，而我们必须确保hook的调用链为`hw.dll`->`CaptionMod.dll`->`MetaAudio.dll`才能让CaptionMod根据声音播放字幕的功能不被MetaAudio拦截，也就是说`CaptionMod.dll`必须在`MetaAudio.dll`之后安装hook。
