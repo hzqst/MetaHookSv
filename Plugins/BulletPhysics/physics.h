@@ -308,6 +308,7 @@ public:
 		m_firstperson_angleoffset[0] = 0;
 		m_firstperson_angleoffset[1] = 0;
 		m_firstperson_angleoffset[2] = 0;
+		m_flLastOriginChangeTime = 0;
 	}
 
 	int m_barnacleindex;
@@ -332,6 +333,7 @@ public:
 	std::vector<ragdoll_bar_control_t> m_barcontrol;
 	std::vector<ragdoll_gar_control_t> m_garcontrol;
 	vec3_t m_firstperson_angleoffset;
+	float m_flLastOriginChangeTime;
 };
 
 typedef struct brushvertex_s
@@ -561,9 +563,11 @@ public:
 	int GetSequenceActivityType(CRagdollBody *ragdoll, entity_state_t* entstate);
 	bool UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time);
 	void UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time);
+	void UpdateRagdollSleepState(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time);
 	void UpdateTempEntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time);
 	//bool SyncThirdPersonView(CRagdollBody *ragdoll, float *org);
 	bool SyncFirstPersonView(CRagdollBody *ragdoll, cl_entity_t *ent, struct ref_params_s *pparams);
+	void ForceRagdollToSleep(CRagdollBody *ragdoll);
 private:
 	ragdoll_itor FreeRagdollInternal(ragdoll_itor &itor);
 	static_itor FreeStaticInternal(static_itor &itor);

@@ -33,9 +33,12 @@ r_studio_interface_t **gpStudioInterface;
 
 cvar_t *bv_debug = NULL;
 cvar_t *bv_simrate = NULL;
-cvar_t *bv_scale = NULL;
+//cvar_t *bv_scale = NULL;
 cvar_t *bv_enable = NULL;
 cvar_t *bv_syncview = NULL;
+cvar_t *bv_ragdoll_sleepaftertime = NULL;
+cvar_t *bv_ragdoll_sleeplinearvel = NULL;
+cvar_t *bv_ragdoll_sleepangularvel = NULL;
 cvar_t *chase_active = NULL;
 
 const int RagdollRenderState_None = 0;
@@ -1156,9 +1159,12 @@ void HUD_Init(void)
 
 	bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
 	bv_simrate = gEngfuncs.pfnRegisterVariable("bv_simrate", "64", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	bv_scale = gEngfuncs.pfnRegisterVariable("bv_scale", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	//bv_scale = gEngfuncs.pfnRegisterVariable("bv_scale", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_enable = gEngfuncs.pfnRegisterVariable("bv_enable", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_syncview = gEngfuncs.pfnRegisterVariable("bv_syncview", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_ragdoll_sleepaftertime = gEngfuncs.pfnRegisterVariable("bv_ragdoll_sleepaftertime", "3", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_ragdoll_sleeplinearvel = gEngfuncs.pfnRegisterVariable("bv_ragdoll_sleeplinearvel", "5", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	bv_ragdoll_sleepangularvel = gEngfuncs.pfnRegisterVariable("bv_ragdoll_sleepangularvel", "3", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	chase_active = gEngfuncs.pfnGetCvarPointer("chase_active");
 	cl_minmodels = gEngfuncs.pfnGetCvarPointer("cl_minmodels");

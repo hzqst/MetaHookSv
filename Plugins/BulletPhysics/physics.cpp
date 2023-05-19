@@ -9,16 +9,21 @@
 #include "qgl.h"
 #include "mathlib.h"
 
-btScalar G2BScale = 1;
-btScalar B2GScale = 1 / G2BScale;
+//btScalar G2BScale = 1;
+//btScalar B2GScale = 1 / G2BScale;
 
 extern studiohdr_t **pstudiohdr;
 extern model_t **r_model;
 extern float(*pbonetransform)[128][3][4];
 extern float(*plighttransform)[128][3][4]; 
+
 extern cvar_t *bv_debug;
 extern cvar_t *bv_simrate;
-extern cvar_t *bv_scale;
+//extern cvar_t *bv_scale;
+extern cvar_t *bv_ragdoll_sleepaftertime;
+extern cvar_t *bv_ragdoll_sleeplinearvel;
+extern cvar_t *bv_ragdoll_sleepangularvel;
+
 extern model_t *r_worldmodel;
 extern cl_entity_t *r_worldentity;
 extern int *r_visframecount;
@@ -104,53 +109,53 @@ void TransformToMatrix3x4(const btTransform &trans, float matrix3x4[3][4])
 
 void FloatGoldSrcToBullet(float *trans)
 {
-	(*trans) *= G2BScale;
+	//(*trans) *= G2BScale;
 }
 
 void TransformGoldSrcToBullet(btTransform &trans)
 {
 	auto &org = trans.getOrigin();
 
-	org.m_floats[0] *= G2BScale;
+	/*org.m_floats[0] *= G2BScale;
 	org.m_floats[1] *= G2BScale;
-	org.m_floats[2] *= G2BScale;
+	org.m_floats[2] *= G2BScale;*/
 }
 
 void Vec3GoldSrcToBullet(vec3_t vec)
 {
-	vec[0] *= G2BScale;
+	/*vec[0] *= G2BScale;
 	vec[1] *= G2BScale;
-	vec[2] *= G2BScale;
+	vec[2] *= G2BScale;*/
 }
 
 void Vector3GoldSrcToBullet(btVector3& vec)
 {
-	vec.m_floats[0] *= G2BScale;
+	/*vec.m_floats[0] *= G2BScale;
 	vec.m_floats[1] *= G2BScale;
-	vec.m_floats[2] *= G2BScale;
+	vec.m_floats[2] *= G2BScale;*/
 }
 
 //BulletToGoldSrc Scaling
 
 void TransformBulletToGoldSrc(btTransform &trans)
 {
-	trans.getOrigin().m_floats[0] *= B2GScale;
+	/*trans.getOrigin().m_floats[0] *= B2GScale;
 	trans.getOrigin().m_floats[1] *= B2GScale;
-	trans.getOrigin().m_floats[2] *= B2GScale;
+	trans.getOrigin().m_floats[2] *= B2GScale;*/
 }
 
 void Vec3BulletToGoldSrc(vec3_t vec)
 {
-	vec[0] *= B2GScale;
+	/*vec[0] *= B2GScale;
 	vec[1] *= B2GScale;
-	vec[2] *= B2GScale;
+	vec[2] *= B2GScale;*/
 }
 
 void Vector3BulletToGoldSrc(btVector3& vec)
 {
-	vec.m_floats[0] *= B2GScale;
+	/*vec.m_floats[0] *= B2GScale;
 	vec.m_floats[1] *= B2GScale;
-	vec.m_floats[2] *= B2GScale;
+	vec.m_floats[2] *= B2GScale;*/
 }
 
 void CPhysicsDebugDraw::drawLine(const btVector3& from1, const btVector3& to1, const btVector3& color1)
@@ -407,6 +412,7 @@ CStaticBody *CPhysicsManager::CreateStaticBody(cl_entity_t *ent, vertexarray_t *
 	btRigidBody::btRigidBodyConstructionInfo cInfo(0, motionState, shape);
 	cInfo.m_friction = 1;
 	cInfo.m_rollingFriction = 1;
+	cInfo.m_restitution = 1;
 
 	btRigidBody* body = new btRigidBody(cInfo);
 
@@ -480,8 +486,8 @@ void CPhysicsManager::CreateBrushModel(cl_entity_t *ent)
 
 void CPhysicsManager::NewMap(void)
 {
-	G2BScale = bv_scale->value;
-	B2GScale = 1 / bv_scale->value;
+	//G2BScale = bv_scale->value;
+	//B2GScale = 1 / bv_scale->value;
 
 	ReloadConfig();
 	RemoveAllRagdolls();
@@ -970,6 +976,20 @@ void CPhysicsManager::DebugDraw(void)
 			}
 		}
 	}
+	else if (bv_debug->value == 10)
+	{
+		for (auto &ragdoll : m_ragdollMap)
+		{
+			for (auto &itor : ragdoll.second->m_rigbodyMap)
+			{
+				auto rig = itor.second;
+				if (!(rig->rigbody->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT))
+				{
+					gEngfuncs.Con_Printf("[%s] lv=%.2f (%.2f), av=%.2f (%.2f)\n", rig->name.c_str(), rig->rigbody->getLinearVelocity().length(), rig->rigbody->getLinearVelocity().length2(), rig->rigbody->getAngularVelocity().length(), rig->rigbody->getAngularVelocity().length2());
+				}
+			}
+		}
+	}
 #endif
 }
 
@@ -1103,6 +1123,84 @@ bool CPhysicsManager::GetRagdollOrigin(CRagdollBody *ragdoll, float *origin)
 		return true;
 	}
 	return false;
+}
+
+void CPhysicsManager::ForceRagdollToSleep(CRagdollBody *ragdoll)
+{
+	for (auto &itor : ragdoll->m_rigbodyMap)
+	{
+		auto rig = itor.second;
+
+		auto rigbody = rig->rigbody;
+
+		if (!(rigbody->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT))
+		{
+			rigbody->setAngularVelocity(btVector3(0, 0, 0));
+			rigbody->setLinearVelocity(btVector3(0, 0, 0));
+			rigbody->forceActivationState(WANTS_DEACTIVATION);
+		}
+	}
+}
+
+void CPhysicsManager::UpdateRagdollSleepState(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time)
+{
+	float flAverageLinearVelocity = 0;
+	float flAverageAngularVelocity = 0;
+	float flTotalMass = 0;
+	bool bIsAllAsleep = true;
+
+	for (auto &itor : ragdoll->m_rigbodyMap)
+	{
+		auto rig = itor.second;
+
+		auto rigbody = rig->rigbody;
+
+		if (!(rigbody->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT))
+		{
+			flAverageLinearVelocity += rigbody->getLinearVelocity().length() * rig->mass;
+
+			flAverageAngularVelocity += rigbody->getAngularVelocity().length() * rig->mass;
+
+			flTotalMass += rig->mass;
+
+			if (rigbody->getActivationState() == ACTIVE_TAG)
+			{
+				bIsAllAsleep = false;
+			}
+		}
+	}
+
+	if (!bIsAllAsleep && flTotalMass > 0)
+	{
+		flAverageLinearVelocity /= flTotalMass;
+		flAverageAngularVelocity /= flTotalMass;
+
+		if (bv_debug->value == 10)
+		{
+			gEngfuncs.Con_Printf("total: lv=%.2f, av=%.2f\n", flAverageLinearVelocity, flAverageAngularVelocity);
+		}
+
+		if (flAverageLinearVelocity > bv_ragdoll_sleeplinearvel->value || flAverageAngularVelocity > bv_ragdoll_sleepangularvel->value)
+		{
+			if (bv_debug->value == 10)
+			{
+				gEngfuncs.Con_DPrintf("UpdateRagdollSleepState: last origin changed\n");
+			}
+
+			ragdoll->m_flLastOriginChangeTime = client_time;
+			return;
+		}
+
+		// It has stopped moving, see if it
+		if (client_time - ragdoll->m_flLastOriginChangeTime < bv_ragdoll_sleepaftertime->value)
+		{
+			return;
+		}
+
+		// Force it to go to sleep
+
+		ForceRagdollToSleep(ragdoll);
+	}
 }
 
 void CPhysicsManager::UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time)
@@ -1302,6 +1400,8 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 				return false;
 		}
 	}
+
+	UpdateRagdollSleepState(ent, ragdoll, frame_time, client_time);
 
 	return true;
 }
@@ -2216,16 +2316,16 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		cInfo.m_friction = 1.0f;
 		cInfo.m_rollingFriction = 1.0f;
 		cInfo.m_restitution = 0;
-		cInfo.m_linearSleepingThreshold = 10.0f;
-		cInfo.m_angularSleepingThreshold = 1 * SIMD_RADS_PER_DEG;
-		cInfo.m_linearDamping = 0.1f;
-		cInfo.m_angularDamping = 0.1f;
+		//cInfo.m_linearDamping = 0.1f;
+		//cInfo.m_angularDamping = 0.1f;
+
+		cInfo.m_linearSleepingThreshold = 5.0f;
+		cInfo.m_angularSleepingThreshold = 3.0f;
 		cInfo.m_additionalDamping = true;
 		cInfo.m_additionalDampingFactor = 0.5f;
-		cInfo.m_additionalAngularDampingFactor = 0.5f;
-		cInfo.m_additionalLinearDampingThresholdSqr = (30) * (30);
-		cInfo.m_additionalAngularDampingThresholdSqr = (3 * SIMD_RADS_PER_DEG) * (1 * SIMD_RADS_PER_DEG);
-
+		cInfo.m_additionalLinearDampingThresholdSqr = 1.0f * 1.0f;
+		cInfo.m_additionalAngularDampingThresholdSqr = 0.3f * 0.3f;
+		
 		FloatGoldSrcToBullet(&cInfo.m_linearSleepingThreshold);
 
 		auto rig = new CRigBody;
@@ -2260,7 +2360,7 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 
 		auto bonematrix2 = bonematrix;
 		bonematrix2.setOrigin(origin);
-		
+
 		btVector3 fwd(0, 1, 0);
 		auto rigidtransform = MatrixLookAt(bonematrix2, pboneorigin, fwd);
 		offsetmatrix.mult(bonematrix.inverse(), rigidtransform);
@@ -2278,16 +2378,16 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		cInfo.m_friction = 1.0f;
 		cInfo.m_rollingFriction = 1.0f;
 		cInfo.m_restitution = 0;
-		cInfo.m_linearSleepingThreshold = 25.0f;
-		cInfo.m_angularSleepingThreshold = 3 * SIMD_RADS_PER_DEG;
-		cInfo.m_linearDamping = 0.1f;
-		cInfo.m_angularDamping = 0.1f;
-		cInfo.m_additionalDamping = true;
-		cInfo.m_additionalDampingFactor = 0.8f;
-		cInfo.m_additionalAngularDampingFactor = 0.8f;
-		cInfo.m_additionalLinearDampingThresholdSqr = (50) * (50);
-		cInfo.m_additionalAngularDampingThresholdSqr = (6 * SIMD_RADS_PER_DEG) * (6 * SIMD_RADS_PER_DEG);
+		//cInfo.m_linearDamping = 0.1f;
+		//cInfo.m_angularDamping = 0.1f;
 
+		cInfo.m_linearSleepingThreshold = 5.0f;
+		cInfo.m_angularSleepingThreshold = 3.0f;
+		cInfo.m_additionalDamping = true;
+		cInfo.m_additionalDampingFactor = 0.5f;
+		cInfo.m_additionalLinearDampingThresholdSqr = 1.0f * 1.0f;
+		cInfo.m_additionalAngularDampingThresholdSqr = 0.3f * 0.3f;
+		
 		FloatGoldSrcToBullet(&cInfo.m_linearSleepingThreshold);
 
 		auto rig = new CRigBody;
@@ -2551,6 +2651,13 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 		
 		constraint->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, cstcontrol->factor3 * M_PI, 1, 1, 1);
 
+		constraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.0001f, 0);
+		constraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.0001f, 1);
+		constraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.0001f, 2);
+		//constraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.5f, 0);
+		//constraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.5f, 1);
+		//constraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.5f, 2);
+
 		ragdoll->m_constraintArray.emplace_back(constraint);
 		m_dynamicsWorld->addConstraint(constraint, (cstcontrol->type == RAGDOLL_CONSTRAINT_CONETWIST_COLLISION) ? false : true);
 
@@ -2605,7 +2712,11 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 
 		constraint->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, 0.1f);
 
+		constraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.0001f);
+		//constraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.5f);
+
 		ragdoll->m_constraintArray.emplace_back(constraint);
+
 		m_dynamicsWorld->addConstraint(constraint, (cstcontrol->type == RAGDOLL_CONSTRAINT_HINGE_COLLISION) ? false : true);
 
 		return constraint;
@@ -2635,7 +2746,11 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 			constraint->setDbgDrawSize(drawSize);
 		}
 
+		constraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.0001f);
+		//constraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.5f);
+
 		ragdoll->m_constraintArray.emplace_back(constraint);
+
 		m_dynamicsWorld->addConstraint(constraint, (cstcontrol->type == RAGDOLL_CONSTRAINT_POINT_COLLISION) ? false : true);
 
 		return constraint;
