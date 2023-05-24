@@ -138,6 +138,7 @@ jobs:
           copy "install-to-CounterStrike.bat" "Output" /y
           copy "install-to-ConditionZero.bat" "Output" /y
           copy "install-to-BlueShift.bat" "Output" /y
+          copy "install-to-Echoes.bat" "Output" /y
         shell: cmd
 
       - name: Zipping All
