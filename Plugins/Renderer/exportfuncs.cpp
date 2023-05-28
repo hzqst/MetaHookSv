@@ -136,10 +136,10 @@ int HUD_Redraw(float time, int intermission)
 
 		glEnable(GL_TEXTURE_2D);
 
+		GL_Bind(current_shadow_texture->depth);
+
 		hud_debug_program_t prog = { 0 };
 		R_UseHudDebugProgram(HUD_DEBUG_SHADOW, &prog);
-
-		GL_Bind(current_shadow_texture->depth);
 
 		glBegin(GL_QUADS);
 		glTexCoord2f(0,1);

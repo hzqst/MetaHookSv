@@ -604,18 +604,40 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				VectorCopy((*r_refdef.viewangles), dlight_angle);
 				gEngfuncs.pfnAngleVectors(dlight_angle, dlight_vforward, dlight_vright, dlight_vup);
 
+				bool bUsingAttachment = false;
+
 				if (cl_viewent && cl_viewent->model && r_flashlight_attachment->GetValue() > 0)
 				{
 					int attachmentIndex = (int)(r_flashlight_attachment->GetValue());
-					VectorCopy(cl_viewent->attachment[clamp(attachmentIndex, 1, 4) - 1], org);
-					VectorMA(org, -2, dlight_vup, org);
-					VectorMA(org, -10, dlight_vforward, org);
+					attachmentIndex = clamp(attachmentIndex, 1, 4) - 1;
+					if (cl_viewent->model)
+					{
+						auto pstudiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(cl_viewent->model);
+						if (pstudiohdr)
+						{
+							auto numattachments = pstudiohdr->numattachments;
+							if (attachmentIndex < numattachments)
+							{
+								bUsingAttachment = true;
+
+								VectorCopy(cl_viewent->attachment[attachmentIndex], org);
+							}
+						}
+					}
 				}
-				else
+
+				if(!bUsingAttachment)
 				{
 					VectorCopy((*r_refdef.vieworg), org);
 					VectorMA(org, 2, dlight_vup, org);
-					VectorMA(org, 10, dlight_vright, org);
+					if (cl_righthand && cl_righthand->value > 0)
+					{
+						VectorMA(org, 10, dlight_vright, org);
+					}
+					else
+					{
+						VectorMA(org, -10, dlight_vright, org);
+					}
 				}
 
 				VectorCopy(org, dlight_origin);

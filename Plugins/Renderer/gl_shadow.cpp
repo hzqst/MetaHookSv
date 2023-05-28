@@ -548,3 +548,15 @@ void R_RenderShadowMap(void)
 	R_RenderShadowScene();
 	R_RenderShadowDynamicLights();
 }
+
+void R_RenderShadowMap_PreView(void)
+{
+	shadow_numvisedicts[0] = 0;
+	shadow_numvisedicts[1] = 0;
+	shadow_numvisedicts[2] = 0;
+
+	for (int i = 0; i < _ARRAYSIZE(cl_dlight_shadow_textures); ++i)
+	{
+		cl_dlight_shadow_textures[i].ready = false;
+	}
+}

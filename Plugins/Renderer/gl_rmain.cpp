@@ -1672,9 +1672,7 @@ void R_PreRenderView()
 		}
 	}
 
-	shadow_numvisedicts[0] = 0;
-	shadow_numvisedicts[1] = 0;
-	shadow_numvisedicts[2] = 0;
+	R_RenderShadowMap_PreView();
 
 	R_RenderShadowMap();
 
