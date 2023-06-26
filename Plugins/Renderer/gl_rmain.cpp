@@ -2476,32 +2476,20 @@ void R_SetupGLForViewModel(void)
 			MYgluPerspectiveH(r_yfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 
-		glGetFloatv(GL_PROJECTION_MATRIX, r_projection_matrix);
+		float  viewmodel_projection_matrix[16];
+		float  viewmodel_projection_matrix_inv[16];
+
+		glGetFloatv(GL_PROJECTION_MATRIX, viewmodel_projection_matrix);
 		glMatrixMode(GL_MODELVIEW);
 
-		for (int i = 0; i < 16; i += 4)
-		{
-			for (int j = 0; j < 4; j++)
-			{
-				gWorldToScreen[i + j] = 0;
-
-				for (int k = 0; k < 4; k++)
-					gWorldToScreen[i + j] += r_world_matrix[i + k] * r_projection_matrix[k * 4 + j];
-			}
-		}
-
-		InvertMatrix(gWorldToScreen, gScreenToWorld);
-
-		InvertMatrix(r_world_matrix, r_world_matrix_inv);
-		InvertMatrix(r_projection_matrix, r_proj_matrix_inv);
+		InvertMatrix(viewmodel_projection_matrix, viewmodel_projection_matrix_inv);
 
 		scene_ubo_t SceneUBO;
-		memcpy(SceneUBO.viewMatrix, r_world_matrix, sizeof(mat4));
-		memcpy(SceneUBO.projMatrix, r_projection_matrix, sizeof(mat4));
-		memcpy(SceneUBO.invViewMatrix, r_world_matrix_inv, sizeof(mat4));
-		memcpy(SceneUBO.invProjMatrix, r_proj_matrix_inv, sizeof(mat4));
+		memcpy(SceneUBO.projMatrix, viewmodel_projection_matrix, sizeof(mat4));
+		memcpy(SceneUBO.invProjMatrix, viewmodel_projection_matrix_inv, sizeof(mat4));
 
-		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, viewMatrix), offsetof(scene_ubo_t, shadowMatrix) - offsetof(scene_ubo_t, viewMatrix), &SceneUBO.viewMatrix);
+		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
+		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
 	}
 }
 
