@@ -49,6 +49,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 
 	Engine_FillAddreess();
+
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
