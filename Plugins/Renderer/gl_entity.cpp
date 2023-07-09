@@ -52,7 +52,7 @@ entity_component_t *R_AllocateEntityComponent(void)
 	return pTemp;
 }
 
-void R_EntityComponents_StartFrame(void)
+void R_EntityComponents_PostRenderEntities(void)
 {
 	auto p = gpEntityComponentActive;
 	while (p)
@@ -61,7 +61,7 @@ void R_EntityComponents_StartFrame(void)
 		p->Decals.clear();
 		p->WaterVBOs.clear();
 		p->ReflectCaches.clear();
-		
+
 		auto temp = p->next;
 
 		p->next = gpEntityComponentFree;
@@ -70,7 +70,6 @@ void R_EntityComponents_StartFrame(void)
 		p = temp;
 	}
 	gpEntityComponentActive = NULL;
-	
 	g_ClientEntityRenderComponents.clear();
 	g_TempEntityRenderComponents.clear();
 }

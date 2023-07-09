@@ -1575,7 +1575,6 @@ bool SCR_IsLoadingVisible()
 void R_RenderStartFrame()
 {
 	GL_Profiles_StartFrame();
-	R_EntityComponents_StartFrame();
 	R_PrepareDecals();
 	R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
 	R_StudioBoneCaches_StartFrame();
@@ -2856,6 +2855,7 @@ void R_DrawEntitiesOnList(void)
 			R_DrawCurrentEntity(false);
 		}
 	}
+	R_EntityComponents_PostRenderEntities();
 
 	GL_EndProfile(&Profile_DrawEntitiesOnList);
 }
