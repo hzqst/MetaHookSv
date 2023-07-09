@@ -1568,6 +1568,10 @@ bool SCR_IsLoadingVisible()
 	return scr_drawloading && (*scr_drawloading) == 1 ? true : false;
 }
 
+void R_RenderPreFrame()
+{
+	R_EntityComponents_PreFrame();
+}
 /*
 	Called only once per frame, before running any render pass
 */
@@ -1588,7 +1592,6 @@ void R_RenderStartFrame()
 
 void R_RenderEndFrame()
 {
-	R_EntityComponents_EndFrame();
 	GL_Profiles_EndFrame();
 }
 

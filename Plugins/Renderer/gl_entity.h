@@ -14,4 +14,4 @@ typedef struct entity_component_s
 entity_component_t *R_GetEntityComponent(cl_entity_t *ent, bool create_if_not_exists);
 void R_InitEntityComponents(void);
 void R_ShutdownEntityComponents(void);
-void R_EntityComponents_EndFrame(void);
+void R_EntityComponents_PreFrame(void);

@@ -52,7 +52,7 @@ entity_component_t *R_AllocateEntityComponent(void)
 	return pTemp;
 }
 
-void R_EntityComponents_EndFrame(void)
+void R_EntityComponents_PreFrame(void)
 {
 	auto p = gpEntityComponentActive;
 	while (p)
