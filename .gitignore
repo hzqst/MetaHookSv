@@ -31,3 +31,4 @@
 *.app
 
 *.vcxproj.user
+*.db

@@ -1569,13 +1569,12 @@ bool SCR_IsLoadingVisible()
 }
 
 /*
-	Called only once per frame
+	Called only once per frame, before running any render pass
 */
 
 void R_RenderStartFrame()
 {
 	GL_Profiles_StartFrame();
-	R_EntityComponents_StartFrame();
 	R_PrepareDecals();
 	R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
 	R_StudioBoneCaches_StartFrame();
@@ -1589,6 +1588,7 @@ void R_RenderStartFrame()
 
 void R_RenderEndFrame()
 {
+	R_EntityComponents_EndFrame();
 	GL_Profiles_EndFrame();
 }
 
