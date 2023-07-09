@@ -1342,6 +1342,8 @@ int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 
 void HUD_Frame(double time)
 {
+	R_RenderPreFrame();
+
 	gExportfuncs.HUD_Frame(time);
 }
 
