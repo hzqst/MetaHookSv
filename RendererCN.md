@@ -173,6 +173,26 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 列表中指定的细节贴图文件会从 `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` 和 `/Sven Co-op/svencoop/renderer/texture` 中加载（支持格式: BMP, TGA, DDS, JPG, PNG）。
 
+## 高清天空贴图
+
+`r_detailskytextures` 设为1启用
+
+当存在 `gfx/env/[skyname][direction].dds` 或 `renderer/texture/[skyname][direction].dds` 时自动使用该版本的天空贴图。（目前只会使用dds格式）
+
+例子：
+
+`gfx/env/desertbk.bmp` -> `gfx/env/desertbk.dds`
+
+`gfx/env/desertdn.bmp` -> `gfx/env/desertdn.dds`
+
+`gfx/env/desertft.bmp` -> `gfx/env/desertft.dds`
+
+`gfx/env/desertlf.bmp` -> `gfx/env/desertlf.dds`
+
+`gfx/env/desertrt.bmp` -> `gfx/env/desertrt.dds`
+
+`gfx/env/desertup.bmp` -> `gfx/env/desertup.dds`
+
 ### 法线贴图
 
 法线贴图是一种使用外部贴图作用于特定固定表面，以改变其法线朝向的一种效果。

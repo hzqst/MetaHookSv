@@ -162,11 +162,29 @@ Green channel of `_SPECULAR` texture determines the intensity of reflection. 0 =
 
 A detail texture is a high resolution external image (Supported format: BMP, TGA, DDS, JPG, PNG) that is placed over the top of a map texture. This gives the impression of a small details when you get up close to a texture instead of the usual blurred image you get when the texture fills the screen.
 
-`r_detailtextures` set to 1 to enable detail textures, normal textures, parallax textures and specular textures.
+`r_detailtextures` set to 1 to enable detail brush textures, normal textures, parallax textures and specular textures.
 
 Detail texture list is read from `/maps/[map name]_detail.txt`, with `_DETAIL` as suffix in basetexture name (basetexture with no suffix will be treated as detail texture).
 
 Detail textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` and `/Sven Co-op/svencoop/renderer/texture`.
+
+## Detail sky textures
+
+`r_detailskytextures` set to 1 to enable detail sky textures, which loads `gfx/env/[skyname][direction].dds` or `renderer/texture/[skyname][direction].dds` as replacement.
+
+For example :
+
+`gfx/env/desertbk.bmp` -> `gfx/env/desertbk.dds`
+
+`gfx/env/desertdn.bmp` -> `gfx/env/desertdn.dds`
+
+`gfx/env/desertft.bmp` -> `gfx/env/desertft.dds`
+
+`gfx/env/desertlf.bmp` -> `gfx/env/desertlf.dds`
+
+`gfx/env/desertrt.bmp` -> `gfx/env/desertrt.dds`
+
+`gfx/env/desertup.bmp` -> `gfx/env/desertup.dds`
 
 ### Normal textures
 
