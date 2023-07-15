@@ -3136,6 +3136,9 @@ void R_CreateBindlessTexturesForSkybox()
 				r_wsurf.vSkyboxTextureHandles[i] = handle;
 			}
 		}
+
+		glNamedBufferSubData(r_wsurf.hSkyboxSSBO, 0, sizeof(GLuint64) * 6, r_wsurf.vSkyboxTextureHandles);
+		glNamedBufferSubData(r_wsurf.hDetailSkyboxSSBO, 0, sizeof(GLuint64) * 6, &r_wsurf.vSkyboxTextureHandles[6]);
 	}
 }
 
@@ -3205,9 +3208,6 @@ void R_LoadSky_PostCall(const char *name)
 	R_LoadDetailSkyTexture(name);
 
 	R_CreateBindlessTexturesForSkybox();
-
-	glNamedBufferSubData(r_wsurf.hSkyboxSSBO, 0, sizeof(GLuint64) * 6, r_wsurf.vSkyboxTextureHandles);
-	glNamedBufferSubData(r_wsurf.hDetailSkyboxSSBO, 0, sizeof(GLuint64) * 6, &r_wsurf.vSkyboxTextureHandles[6]);
 }
 
 void R_LoadSkyName_SvEngine(const char *name)

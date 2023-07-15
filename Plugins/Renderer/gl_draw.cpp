@@ -82,41 +82,47 @@ void GL_Texturemode_internal(const char *value)
 	*gl_filter_min = gl_texture_modes[i].minimize;
 	*gl_filter_max = gl_texture_modes[i].maximize;
 
+	R_FreeBindlessTexturesForWorld();
+
 	auto pgltextures = gltextures_get();
 
 	for (int j = 0; j < (*numgltextures); ++j)
 	{
-		if (pgltextures[j].mipmap)
+		if (pgltextures[j].texnum)
 		{
-			GL_Bind(pgltextures[j].texnum);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
-		}
-		else
-		{
-			GL_Bind(pgltextures[j].texnum);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+			if (pgltextures[j].mipmap)
+			{
+				GL_Bind(pgltextures[j].texnum);
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+			}
+			else
+			{
+				GL_Bind(pgltextures[j].texnum);
+
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+			}
 		}
 	}
 
-	R_FreeBindlessTexturesForWorld();
 	R_CreateBindlessTexturesForWorld();
+
+	R_FreeBindlessTexturesForSkybox();
 
 	for (int j = 0; j < 12; ++j)
 	{
 		if (r_wsurf.vSkyboxTextureId[j])
 		{
 			GL_Bind(r_wsurf.vSkyboxTextureId[j]);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
 		}
 	}
 
-	R_FreeBindlessTexturesForSkybox();
 	R_CreateBindlessTexturesForSkybox();
 }
 

@@ -343,6 +343,7 @@ void R_FreeBindlessTexturesForWorld(void)
 		{
 			glMakeTextureHandleNonResidentARB(handle);
 		}
+		r_wsurf.vBindlessTextureHandles.clear();
 	}
 
 	if (r_wsurf.hWorldSSBO)
@@ -1008,6 +1009,9 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 
 void R_CreateBindlessTexturesForWorld(void)
 {
+	if (!r_worldmodel)
+		return;
+
 	if (bUseBindless)
 	{
 		std::vector <GLuint64> ssbo;
@@ -1021,18 +1025,24 @@ void R_CreateBindlessTexturesForWorld(void)
 			if (!t)
 				continue;
 
+			if (!t->gl_texturenum)
+				continue;
+
 			auto handle = glGetTextureHandleARB(t->gl_texturenum);
+
 			glMakeTextureHandleResidentARB(handle);
 
 			r_wsurf.vBindlessTextureHandles.emplace_back(handle);
 
 			ssbo[i * WSURF_MAX_TEXTURE + WSURF_DIFFUSE_TEXTURE] = handle;
 			
-			//zero it?
 			for (int j = WSURF_REPLACE_TEXTURE; j < WSURF_MAX_TEXTURE; ++j)
+			{
 				ssbo[i * WSURF_MAX_TEXTURE + j] = 0;
+			}
 
 			auto pcache = R_FindDetailTextureCache(t->gl_texturenum);
+
 			if (pcache)
 			{
 				for (int j = WSURF_REPLACE_TEXTURE; j < WSURF_MAX_TEXTURE; ++j)
@@ -1040,6 +1050,7 @@ void R_CreateBindlessTexturesForWorld(void)
 					if (pcache->tex[j].gltexturenum)
 					{
 						auto handle = glGetTextureHandleARB(pcache->tex[j].gltexturenum);
+
 						glMakeTextureHandleResidentARB(handle);
 
 						r_wsurf.vBindlessTextureHandles.emplace_back(handle);
