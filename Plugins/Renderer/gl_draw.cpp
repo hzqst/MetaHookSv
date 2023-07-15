@@ -82,7 +82,7 @@ void GL_Texturemode_internal(const char *value)
 	*gl_filter_min = gl_texture_modes[i].minimize;
 	*gl_filter_max = gl_texture_modes[i].maximize;
 
-	gltexture_t *pgltextures = gltextures_get();
+	auto pgltextures = gltextures_get();
 
 	for (int j = 0; j < (*numgltextures); ++j)
 	{
@@ -102,18 +102,22 @@ void GL_Texturemode_internal(const char *value)
 		}
 	}
 
-	for (int j = 0; j < 6; ++j)
+	R_FreeBindlessTexturesForWorld();
+	R_CreateBindlessTexturesForWorld();
+
+	for (int j = 0; j < 12; ++j)
 	{
-		if (gSkyTexNumber[j])
+		if (r_wsurf.vSkyboxTextureId[j])
 		{
-			GL_Bind(gSkyTexNumber[j]);
+			GL_Bind(r_wsurf.vSkyboxTextureId[j]);
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
 		}
 	}
 
-	//TODO: reinit bindless textures?
+	R_FreeBindlessTexturesForSkybox();
+	R_CreateBindlessTexturesForSkybox();
 }
 
 void GL_Texturemode_cb(cvar_t *pcvar)

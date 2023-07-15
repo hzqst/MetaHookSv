@@ -335,8 +335,16 @@ void R_FreeLightmapTextures(void)
 	}
 }
 
-void R_FreeBindlessTextures(void)
+void R_FreeBindlessTexturesForWorld(void)
 {
+	if (bUseBindless)
+	{
+		for (auto handle : r_wsurf.vBindlessTextureHandles)
+		{
+			glMakeTextureHandleNonResidentARB(handle);
+		}
+	}
+
 	if (r_wsurf.hWorldSSBO)
 	{
 		GL_DeleteBuffer(r_wsurf.hWorldSSBO);
@@ -1016,6 +1024,8 @@ void R_CreateBindlessTexturesForWorld(void)
 			auto handle = glGetTextureHandleARB(t->gl_texturenum);
 			glMakeTextureHandleResidentARB(handle);
 
+			r_wsurf.vBindlessTextureHandles.emplace_back(handle);
+
 			ssbo[i * WSURF_MAX_TEXTURE + WSURF_DIFFUSE_TEXTURE] = handle;
 			
 			//zero it?
@@ -1031,6 +1041,8 @@ void R_CreateBindlessTexturesForWorld(void)
 					{
 						auto handle = glGetTextureHandleARB(pcache->tex[j].gltexturenum);
 						glMakeTextureHandleResidentARB(handle);
+
+						r_wsurf.vBindlessTextureHandles.emplace_back(handle);
 
 						ssbo[i * WSURF_MAX_TEXTURE + j] = handle;
 					}
@@ -2281,7 +2293,7 @@ void R_NewMapWSurf(void)
 	R_LoadBaseDecalTextures();
 
 	R_FreeVertexBuffer();
-	R_FreeBindlessTextures();
+	R_FreeBindlessTexturesForWorld();
 
 	R_CreateBindlessTexturesForWorld();
 	R_GenerateVertexBuffer();

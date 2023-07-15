@@ -428,6 +428,9 @@ cubemap_t *R_FindCubemap(float *origin);
 void R_LoadCubemap(cubemap_t *cubemap);
 void R_BuildCubemaps_f(void);
 
+void R_CreateBindlessTexturesForSkybox();
+void R_FreeBindlessTexturesForSkybox();
+
 void R_SaveProgramStates_f(void);
 void R_LoadProgramStates_f(void);
 

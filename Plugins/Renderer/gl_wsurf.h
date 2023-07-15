@@ -372,16 +372,17 @@ typedef struct r_worldsurf_s
 	int					iLightmapUsedBits;
 	int					iLightmapLegacyDLights;
 
-	std::vector <bspentity_t> vBSPEntities;
-
 	int vSkyboxTextureId[12];
 	GLuint64 vSkyboxTextureHandles[12];
-
 
 	GLuint vDecalGLTextures[MAX_DECALS];
 	detail_texture_cache_t *vDecalDetailTextures[MAX_DECALS];
 	GLint vDecalStartIndex[MAX_DECALS];
 	GLsizei vDecalVertexCount[MAX_DECALS];
+
+	std::vector<GLuint64> vBindlessTextureHandles;
+
+	std::vector <bspentity_t> vBSPEntities;
 }r_worldsurf_t;
 
 typedef struct
@@ -467,6 +468,8 @@ void R_GenerateSceneUBO(void);
 void R_SaveWSurfProgramStates(void);
 void R_LoadWSurfProgramStates(void);
 void R_UseWSurfProgram(program_state_t state, wsurf_program_t *progOut);
+void R_CreateBindlessTexturesForWorld(void);
+void R_FreeBindlessTexturesForWorld(void);
 
 water_vbo_t *R_CreateWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t *leaf);
 void R_DrawWaters(wsurf_vbo_leaf_t *vboleaf, cl_entity_t *ent);

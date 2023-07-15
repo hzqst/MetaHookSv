@@ -3108,16 +3108,43 @@ void Mod_LoadStudioModel(model_t *mod, void *buffer)
 const int skytexorder_svengine[6] = { 0, 1, 2, 3, 4, 5 };
 const int skytexorder_goldsrc[6] = { 0, 2, 1, 3, 4, 5 };
 
+void R_FreeBindlessTexturesForSkybox()
+{
+	if (bUseBindless)
+	{
+		for (int i = 0; i < 12; ++i)
+		{
+			if (r_wsurf.vSkyboxTextureHandles[i])
+			{
+				glMakeTextureHandleNonResidentARB(r_wsurf.vSkyboxTextureHandles[i]);
+				r_wsurf.vSkyboxTextureHandles[i] = 0;
+			}
+		}
+	}
+}
+
+void R_CreateBindlessTexturesForSkybox()
+{
+	if (bUseBindless)
+	{
+		for (int i = 0; i < 12; ++i)
+		{
+			if (r_wsurf.vSkyboxTextureId[i])
+			{
+				auto handle = glGetTextureHandleARB(r_wsurf.vSkyboxTextureId[i]);
+				glMakeTextureHandleResidentARB(handle);
+				r_wsurf.vSkyboxTextureHandles[i] = handle;
+			}
+		}
+	}
+}
+
 void R_LoadSky_PreCall(const char* name)
 {
+	R_FreeBindlessTexturesForSkybox();
+
 	for (int i = 0; i < 12; ++i)
 	{
-		if (r_wsurf.vSkyboxTextureHandles[i])
-		{
-			glMakeTextureHandleNonResidentARB(r_wsurf.vSkyboxTextureHandles[i]);
-			r_wsurf.vSkyboxTextureHandles[i] = 0;
-		}
-
 		if (r_wsurf.vSkyboxTextureId[i])
 		{
 			r_wsurf.vSkyboxTextureId[i] = 0;
@@ -3172,17 +3199,12 @@ void R_LoadSky_PostCall(const char *name)
 		if (gSkyTexNumber[skytexorder[i]])
 		{
 			r_wsurf.vSkyboxTextureId[0 + i] = gSkyTexNumber[skytexorder[i]];
-
-			if (bUseBindless)
-			{
-				auto handle = glGetTextureHandleARB(gSkyTexNumber[skytexorder[i]]);
-				glMakeTextureHandleResidentARB(handle);
-				r_wsurf.vSkyboxTextureHandles[i] = handle;
-			}
 		}
 	}
 
 	R_LoadDetailSkyTexture(name);
+
+	R_CreateBindlessTexturesForSkybox();
 
 	glNamedBufferSubData(r_wsurf.hSkyboxSSBO, 0, sizeof(GLuint64) * 6, r_wsurf.vSkyboxTextureHandles);
 	glNamedBufferSubData(r_wsurf.hDetailSkyboxSSBO, 0, sizeof(GLuint64) * 6, &r_wsurf.vSkyboxTextureHandles[6]);
