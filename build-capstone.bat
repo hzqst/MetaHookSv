@@ -1,12 +1,6 @@
+call cmake -S "%~dp0capstone" -B "%~dp0capstone\build" -A Win32 -DCAPSTONE_ARCHITECHTURE_DEFAULT=FALSE -DCAPSTONE_ARM64_SUPPORT=FALSE -DCAPSTONE_ARM_SUPPORT=FALSE -DCAPSTONE_BPF_SUPPORT=FALSE -DCAPSTONE_BUILD_CSTEST=FALSE -DCAPSTONE_BUILD_CSTOOL=FALSE -DCAPSTONE_BUILD_DIET=FALSE -DCAPSTONE_BUILD_STATIC_RUNTIME=TRUE -DCAPSTONE_BUILD_TESTS=FALSE -DCAPSTONE_DEBUG=FALSE -DCAPSTONE_EVM_SUPPORT=FALSE -DCAPSTONE_INSTALL=FALSE -DCAPSTONE_M680X_SUPPORT=FALSE -DCAPSTONE_M68K_SUPPORT=FALSE -DCAPSTONE_MIPS_SUPPORT=FALSE -DCAPSTONE_MOS65XX_SUPPORT=FALSE -DCAPSTONE_OSXKERNEL_SUPPORT=FALSE -DCAPSTONE_PPC_SUPPORT=FALSE -DCAPSTONE_RISCV_SUPPORT=FALSE -DCAPSTONE_SH_SUPPORT=FALSE -DCAPSTONE_SPARC_SUPPORT=FALSE -DCAPSTONE_SYSZ_SUPPORT=FALSE -DCAPSTONE_IMS320C64X_SUPPORT=FALSE -DCAPSTONE_TRICORE_SUPPORT=FALSE -DCAPSTONE_USE_DEFAULT_ALLOC=TRUE -DCAPSTONE_WASM_SUPPORT=FALSE -DCAPSTONE_X86_ATT_DISABLE=FALSE -DCAPSTONE_X86_REDUCE=FALSE -DCAPSTONE_X86_SUPPORT=TRUE -DCAPSTONE_XCORE_SUPPORT=FALSE
+
 cd /d "%~dp0"
-
-copy "capstone\msvc\capstone_static\capstone_static.vcxproj" "capstone\msvc\capstone_static\capstone_static.vcxproj.bak"
-
-call powershell -Command "(gc capstone\msvc\capstone_static\capstone_static.vcxproj) -replace 'CAPSTONE_X86_ATT_DISABLE_NO;CAPSTONE_DIET_NO;CAPSTONE_X86_REDUCE_NO;CAPSTONE_HAS_TRICORE;CAPSTONE_HAS_ARM;CAPSTONE_HAS_ARM64;CAPSTONE_HAS_BPF;CAPSTONE_HAS_EVM;CAPSTONE_HAS_M680X;CAPSTONE_HAS_M68K;CAPSTONE_HAS_MIPS;CAPSTONE_HAS_MOS65XX;CAPSTONE_HAS_POWERPC;CAPSTONE_HAS_RISCV;CAPSTONE_HAS_SPARC;CAPSTONE_HAS_SYSZ;CAPSTONE_HAS_TMS320C64X;CAPSTONE_HAS_WASM;CAPSTONE_HAS_X86;CAPSTONE_HAS_XCORE', 'CAPSTONE_X86_ATT_DISABLE;CAPSTONE_DIET_NO;CAPSTONE_X86_REDUCE_NO;CAPSTONE_HAS_X86' | Out-File capstone\msvc\capstone_static\capstone_static.vcxproj"
-
-call powershell -Command "(gc capstone\msvc\capstone_static\capstone_static.vcxproj) -replace '<ConfigurationType>StaticLibrary</ConfigurationType>', '<ConfigurationType>StaticLibrary</ConfigurationType><PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>' | Out-File capstone\msvc\capstone_static\capstone_static.vcxproj"
-
-call powershell -Command "(gc capstone\msvc\capstone_static\capstone_static.vcxproj) -replace '<Keyword>Win32Proj</Keyword>', '<Keyword>Win32Proj</Keyword><WindowsTargetPlatformVersion>$([Microsoft.Build.Utilities.ToolLocationHelper]::GetLatestSDKTargetPlatformVersion(\"Windows\", \"10.0\"))</WindowsTargetPlatformVersion>' | Out-File capstone\msvc\capstone_static\capstone_static.vcxproj"
 
 for /f "usebackq tokens=*" %%i in (`vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
   set InstallDir=%%i
@@ -16,8 +10,5 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
 
     "%InstallDir%\Common7\Tools\vsdevcmd.bat" -arch=x86
 
-    MSBuild.exe "capstone\msvc\capstone.sln" /t:capstone_static /p:Configuration=Release /p:Platform="Win32"
-
-    copy /y "capstone\msvc\capstone_static\capstone_static.vcxproj.bak" "capstone\msvc\capstone_static\capstone_static.vcxproj"
-    del "capstone\msvc\capstone_static\capstone_static.vcxproj.bak"
+    MSBuild.exe "capstone\build\ALL_BUILD.vcxproj" /p:Configuration=Release /p:Platform="Win32"
 )
