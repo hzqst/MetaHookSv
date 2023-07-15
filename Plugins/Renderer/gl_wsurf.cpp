@@ -301,6 +301,12 @@ void R_FreeSceneUBO(void)
 		r_wsurf.hSkyboxSSBO = 0;
 	}
 
+	if (r_wsurf.hDetailSkyboxSSBO)
+	{
+		GL_DeleteBuffer(r_wsurf.hDetailSkyboxSSBO);
+		r_wsurf.hDetailSkyboxSSBO = 0;
+	}
+
 	if (r_wsurf.hOITFragmentSSBO)
 	{
 		GL_DeleteBuffer(r_wsurf.hOITFragmentSSBO);
@@ -1321,7 +1327,12 @@ void R_GenerateSceneUBO(void)
 
 		r_wsurf.hSkyboxSSBO = GL_GenBuffer();
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hSkyboxSSBO);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * 12, NULL, GL_STATIC_DRAW);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * 6, NULL, GL_STATIC_DRAW);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+		r_wsurf.hDetailSkyboxSSBO = GL_GenBuffer();
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hDetailSkyboxSSBO);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * 6, NULL, GL_STATIC_DRAW);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 	}
 

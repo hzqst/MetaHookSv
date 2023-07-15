@@ -325,6 +325,7 @@ typedef struct r_worldsurf_s
 		hDecalVBO = 0;
 		hDecalSSBO = 0;
 		hSkyboxSSBO = 0;
+		hDetailSkyboxSSBO = 0;
 		hWorldSSBO = 0;
 		hOITFragmentSSBO = 0;
 		hOITNumFragmentSSBO = 0;
@@ -342,6 +343,10 @@ typedef struct r_worldsurf_s
 		memset(vSkyboxTextureId, 0, sizeof(vSkyboxTextureId));
 		memset(vSkyboxTextureHandles, 0, sizeof(vSkyboxTextureHandles));
 
+		memset(vDecalGLTextures, 0, sizeof(vDecalGLTextures));
+		memset(vDecalDetailTextures, 0, sizeof(vDecalDetailTextures));
+		memset(vDecalStartIndex, 0, sizeof(vDecalStartIndex));
+		memset(vDecalVertexCount, 0, sizeof(vDecalVertexCount));
 	}
 
 	GLuint				hSceneVBO;
