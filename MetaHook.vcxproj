@@ -92,7 +92,7 @@
       <BaseAddress>0x1400000</BaseAddress>
       <TargetMachine>MachineX86</TargetMachine>
       <AdditionalDependencies>capstone.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>capstone\msvc\Debug\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>capstone\build\$(Configuration)\</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
@@ -125,7 +125,7 @@
       <BaseAddress>0x1400000</BaseAddress>
       <TargetMachine>MachineX86</TargetMachine>
       <LargeAddressAware>true</LargeAddressAware>
-      <AdditionalLibraryDirectories>capstone\msvc\Release\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>capstone\build\$(Configuration)\</AdditionalLibraryDirectories>
       <AdditionalDependencies>capstone.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
@@ -159,7 +159,7 @@
       <BaseAddress>0x1400000</BaseAddress>
       <TargetMachine>MachineX86</TargetMachine>
       <LargeAddressAware>true</LargeAddressAware>
-      <AdditionalLibraryDirectories>capstone\msvc\Release\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>capstone\build\$(Configuration)\</AdditionalLibraryDirectories>
       <AdditionalDependencies>capstone.lib;ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
