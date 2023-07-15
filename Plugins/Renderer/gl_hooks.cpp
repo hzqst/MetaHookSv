@@ -3680,6 +3680,25 @@ void R_FillAddress(void)
 	}, 0, NULL);
 
 	Sig_VarNotFound(filterBrightness);
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+#define pmovevars_Signature_SvEngine "\x56\x8B\x74\x24\x08\x6A\x2C\x56\xE8\x2A\x2A\x2A\x2A\xD9\x05"
+
+		addr = (DWORD)Search_Pattern(pmovevars_Signature_SvEngine);
+		Sig_AddrNotFound(pmovevars);
+
+		pmovevars = *(decltype(pmovevars)*)(addr + sizeof(pmovevars_Signature_SvEngine) - 1);
+	}
+	else
+	{
+#define pmovevars_Signature_GoldSrc "\xE8\x2A\x2A\x2A\x2A\xD9\x1D\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xD9\x1D\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xD9\x1D\x2A\x2A\x2A\x2A"
+
+		addr = (DWORD)Search_Pattern(pmovevars_Signature_GoldSrc);
+		Sig_AddrNotFound(pmovevars);
+
+		pmovevars = *(decltype(pmovevars)*)(addr + 7);
+	}
 }
 
 hook_t *g_phook_GL_BeginRendering = NULL;

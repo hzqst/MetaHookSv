@@ -101,6 +101,8 @@ cactive_t *cls_state = NULL;
 int *cls_signon = NULL;
 qboolean *scr_drawloading = NULL;
 
+movevars_t* pmovevars = NULL;
+
 int *filterMode = NULL;
 float *filterColorRed = NULL;
 float *filterColorGreen = NULL;
@@ -2074,6 +2076,8 @@ void R_InitCvars(void)
 	
 	r_additive_shift = gEngfuncs.pfnRegisterVariable("r_additive_shift", "0.4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
+	r_detailskytextures = gEngfuncs.pfnRegisterVariable("r_detailskytextures", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
 	gEngfuncs.pfnAddCommand("saveprogstate", R_SaveProgramStates_f);
 	gEngfuncs.pfnAddCommand("loadprogstate", R_LoadProgramStates_f);
 }
@@ -3101,9 +3105,12 @@ void Mod_LoadStudioModel(model_t *mod, void *buffer)
 	}
 }
 
-void R_LoadSkyName_SvEngine(const char *name)
+const int skytexorder_svengine[6] = { 0, 1, 2, 3, 4, 5 };
+const int skytexorder_goldsrc[6] = { 0, 2, 1, 3, 4, 5 };
+
+void R_LoadSky_PreCall(const char* name)
 {
-	for (int i = 0; i < 6; ++i)
+	for (int i = 0; i < 12; ++i)
 	{
 		if (r_wsurf.vSkyboxTextureHandles[i])
 		{
@@ -3111,93 +3118,92 @@ void R_LoadSkyName_SvEngine(const char *name)
 			r_wsurf.vSkyboxTextureHandles[i] = 0;
 		}
 
+		if (r_wsurf.vSkyboxTextureId[i])
+		{
+			r_wsurf.vSkyboxTextureId[i] = 0;
+		}
+	}
+
+	for (int i = 0; i < 6; ++i)
+	{
 		if (gSkyTexNumber[i])
 		{
 			GL_DeleteTexture(gSkyTexNumber[i]);
 			gSkyTexNumber[i] = 0;
 		}
 	}
+}
+
+void R_LoadDetailSkyTexture(const char* name)
+{
+	auto skytexorder = (g_iEngineType == ENGINE_SVENGINE) ? skytexorder_svengine : skytexorder_goldsrc;
+
+	const char* suf[6] = { "rt", "bk", "lf", "ft", "up", "dn" };
+	for (int i = 0; i < 6; i++)
+	{
+		char fullpath[256];
+		snprintf(fullpath, sizeof(fullpath), "gfx/env/%s%s.dds", name, suf[i]);
+
+		int width, height;
+		int texId = R_LoadTextureEx(fullpath, fullpath, &width, &height, GLT_WORLD, true, true, false);
+		if (!texId)
+		{
+			snprintf(fullpath, sizeof(fullpath), "renderer/texture/%s%s.dds", name, suf[i]);
+
+			texId = R_LoadTextureEx(fullpath, fullpath, &width, &height, GLT_WORLD, true, true, true);
+		}
+
+		if (!texId)
+		{
+			gEngfuncs.Con_DPrintf("R_LoadDetailSkyTexture: Failed to load %s\n", fullpath);
+			continue;
+		}
+
+		r_wsurf.vSkyboxTextureId[6 + skytexorder[i]] = texId;
+	}
+}
+
+void R_LoadSky_PostCall(const char *name)
+{
+	auto skytexorder = (g_iEngineType == ENGINE_SVENGINE) ? skytexorder_svengine : skytexorder_goldsrc;
+
+	for (int i = 0; i < 6; ++i)
+	{
+		if (gSkyTexNumber[skytexorder[i]])
+		{
+			r_wsurf.vSkyboxTextureId[0 + i] = gSkyTexNumber[skytexorder[i]];
+
+			if (bUseBindless)
+			{
+				auto handle = glGetTextureHandleARB(gSkyTexNumber[skytexorder[i]]);
+				glMakeTextureHandleResidentARB(handle);
+				r_wsurf.vSkyboxTextureHandles[i] = handle;
+			}
+		}
+	}
+
+	R_LoadDetailSkyTexture(name);
+
+	glNamedBufferSubData(r_wsurf.hSkyboxSSBO, 0, sizeof(GLuint64) * 6, r_wsurf.vSkyboxTextureHandles);
+	glNamedBufferSubData(r_wsurf.hDetailSkyboxSSBO, 0, sizeof(GLuint64) * 6, &r_wsurf.vSkyboxTextureHandles[6]);
+}
+
+void R_LoadSkyName_SvEngine(const char *name)
+{
+	R_LoadSky_PreCall(name);
 
 	gRefFuncs.R_LoadSkyName_SvEngine(name);
 
-	if (bUseBindless)
-	{
-		if (g_iEngineType == ENGINE_SVENGINE)
-		{
-			for (int i = 0; i < 6; ++i)
-			{
-				if (!r_wsurf.vSkyboxTextureHandles[i] && gSkyTexNumber[i])
-				{
-					auto handle = glGetTextureHandleARB(gSkyTexNumber[i]);
-					glMakeTextureHandleResidentARB(handle);
-					r_wsurf.vSkyboxTextureHandles[i] = handle;
-				}
-			}
-		}
-		else
-		{
-			const int skytexorder[6] = { 0, 2, 1, 3, 4, 5 };
-			for (int i = 0; i < 6; ++i)
-			{
-				if (!r_wsurf.vSkyboxTextureHandles[i] && gSkyTexNumber[skytexorder[i]])
-				{
-					auto handle = glGetTextureHandleARB(gSkyTexNumber[skytexorder[i]]);
-					glMakeTextureHandleResidentARB(handle);
-					r_wsurf.vSkyboxTextureHandles[i] = handle;
-				}
-			}
-		}
-		glNamedBufferSubData(r_wsurf.hSkyboxSSBO, 0, sizeof(r_wsurf.vSkyboxTextureHandles), r_wsurf.vSkyboxTextureHandles);
-	}
+	R_LoadSky_PostCall(name);
 }
 
 void R_LoadSkys(void)
 {
-	for (int i = 0; i < 6; ++i)
-	{
-		if (r_wsurf.vSkyboxTextureHandles[i])
-		{
-			glMakeTextureHandleNonResidentARB(r_wsurf.vSkyboxTextureHandles[i]);
-			r_wsurf.vSkyboxTextureHandles[i] = 0;
-		}
-		if (gSkyTexNumber[i])
-		{
-			GL_DeleteTexture(gSkyTexNumber[i]);
-			gSkyTexNumber[i] = 0;
-		}
-	}
-	
+	R_LoadSky_PreCall(pmovevars->skyName);
+
 	gRefFuncs.R_LoadSkys();
 
-	if (bUseBindless)
-	{
-		if (g_iEngineType == ENGINE_SVENGINE)
-		{
-			for (int i = 0; i < 6; ++i)
-			{
-				if (!r_wsurf.vSkyboxTextureHandles[i] && gSkyTexNumber[i])
-				{
-					auto handle = glGetTextureHandleARB(gSkyTexNumber[i]);
-					glMakeTextureHandleResidentARB(handle);
-					r_wsurf.vSkyboxTextureHandles[i] = handle;
-				}
-			}
-		}
-		else
-		{
-			const int skytexorder[6] = { 0, 2, 1, 3, 4, 5 };
-			for (int i = 0; i < 6; ++i)
-			{
-				if (!r_wsurf.vSkyboxTextureHandles[i] && gSkyTexNumber[skytexorder[i]])
-				{
-					auto handle = glGetTextureHandleARB(gSkyTexNumber[skytexorder[i]]);
-					glMakeTextureHandleResidentARB(handle);
-					r_wsurf.vSkyboxTextureHandles[i] = handle;
-				}
-			}
-		}
-		glNamedBufferSubData(r_wsurf.hSkyboxSSBO, 0, sizeof(r_wsurf.vSkyboxTextureHandles), r_wsurf.vSkyboxTextureHandles);
-	}
+	R_LoadSky_PostCall(pmovevars->skyName);
 }
 
 #if 0

@@ -5,6 +5,8 @@ cshift_t *cshift_water = NULL;
 int *gSkyTexNumber = NULL;
 int *r_loading_skybox = NULL;
 
+cvar_t* r_detailskytextures = NULL;
+
 //TODO water fog?
 #if 0
 void EmitWaterPolys(msurface_t *fa, int direction)
@@ -25,7 +27,7 @@ void R_DrawSkyBox(void)
 	if (r_draw_shadowcaster)
 		return;
 
-	if (!gSkyTexNumber[0])
+	if (!r_wsurf.vSkyboxTextureId[0])
 		return;
 
 	glDisable(GL_BLEND);
@@ -81,7 +83,20 @@ void R_DrawSkyBox(void)
 
 	if (bUseBindless)
 	{
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_SKYBOX_SSBO, r_wsurf.hSkyboxSSBO);
+		if (r_detailskytextures->value &&
+			r_wsurf.vSkyboxTextureId[6] &&
+			r_wsurf.vSkyboxTextureId[7] &&
+			r_wsurf.vSkyboxTextureId[8] &&
+			r_wsurf.vSkyboxTextureId[9] &&
+			r_wsurf.vSkyboxTextureId[10] &&
+			r_wsurf.vSkyboxTextureId[11])
+		{
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_SKYBOX_SSBO, r_wsurf.hDetailSkyboxSSBO);
+		}
+		else
+		{
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_SKYBOX_SSBO, r_wsurf.hSkyboxSSBO);
+		}
 	}
 
 	if (WSurfProgramState & WSURF_BINDLESS_ENABLED)
@@ -90,20 +105,25 @@ void R_DrawSkyBox(void)
 	}
 	else
 	{
-		if (g_iEngineType == ENGINE_SVENGINE)
+		if (r_detailskytextures->value && 
+			r_wsurf.vSkyboxTextureId[6] &&
+			r_wsurf.vSkyboxTextureId[7] &&
+			r_wsurf.vSkyboxTextureId[8] &&
+			r_wsurf.vSkyboxTextureId[9] &&
+			r_wsurf.vSkyboxTextureId[10] &&
+			r_wsurf.vSkyboxTextureId[11])
 		{
 			for (int i = 0; i < 6; ++i)
 			{
-				GL_Bind(gSkyTexNumber[i]);
+				GL_Bind(r_wsurf.vSkyboxTextureId[6 + i]);
 				glDrawArrays(GL_QUADS, 4 * i, 4);
 			}
 		}
 		else
 		{
-			const int skytexorder[6] = { 0, 2, 1, 3, 4, 5 };
 			for (int i = 0; i < 6; ++i)
 			{
-				GL_Bind(gSkyTexNumber[skytexorder[i]]);
+				GL_Bind(r_wsurf.vSkyboxTextureId[i]);
 				glDrawArrays(GL_QUADS, 4 * i, 4);
 			}
 		}

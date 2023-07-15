@@ -175,6 +175,8 @@ extern cactive_t *cls_state;
 extern int *cls_signon;
 extern qboolean *scr_drawloading;
 
+extern movevars_t* pmovevars;
+
 extern int *filterMode;
 extern float *filterColorRed;
 extern float *filterColorGreen;
@@ -287,6 +289,8 @@ extern cvar_t *dev_overview_color;
 extern cvar_t *r_alpha_shift;
 
 extern cvar_t *r_additive_shift;
+
+extern cvar_t* r_detailskytextures;
 
 void R_FillAddress(void);
 void R_InstallHooks(void);

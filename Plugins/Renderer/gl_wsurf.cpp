@@ -1321,7 +1321,7 @@ void R_GenerateSceneUBO(void)
 
 		r_wsurf.hSkyboxSSBO = GL_GenBuffer();
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hSkyboxSSBO);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * 6, NULL, GL_STATIC_DRAW);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint64) * 12, NULL, GL_STATIC_DRAW);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 	}
 

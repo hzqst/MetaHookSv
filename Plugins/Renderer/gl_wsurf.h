@@ -339,7 +339,9 @@ typedef struct r_worldsurf_s
 		iLightmapUsedBits = 0;
 		iLightmapLegacyDLights = 0;
 
+		memset(vSkyboxTextureId, 0, sizeof(vSkyboxTextureId));
 		memset(vSkyboxTextureHandles, 0, sizeof(vSkyboxTextureHandles));
+
 	}
 
 	GLuint				hSceneVBO;
@@ -348,6 +350,7 @@ typedef struct r_worldsurf_s
 	GLuint				hDecalVBO;
 	GLuint				hDecalSSBO;
 	GLuint				hSkyboxSSBO;
+	GLuint				hDetailSkyboxSSBO;
 	GLuint				hWorldSSBO;
 	GLuint				hOITFragmentSSBO;
 	GLuint				hOITNumFragmentSSBO;
@@ -366,7 +369,9 @@ typedef struct r_worldsurf_s
 
 	std::vector <bspentity_t> vBSPEntities;
 
-	GLuint64 vSkyboxTextureHandles[6];
+	int vSkyboxTextureId[12];
+	GLuint64 vSkyboxTextureHandles[12];
+
 
 	GLuint vDecalGLTextures[MAX_DECALS];
 	detail_texture_cache_t *vDecalDetailTextures[MAX_DECALS];
