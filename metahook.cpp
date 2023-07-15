@@ -2306,7 +2306,9 @@ BOOL MH_DisasmRanges(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callbac
 
 				if(!accessable)
 					break;
+
 				count = cs_disasm(handle, addr, size, vaddr, 1, &insts);
+
 				if (!count)
 					break;
 

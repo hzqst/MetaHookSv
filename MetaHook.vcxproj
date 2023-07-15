@@ -102,7 +102,7 @@
       <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
     </Manifest>
     <PreBuildEvent>
-      <Command>if not exist "$(ProjectDir)capstone\msvc\Debug\capstone.lib" call "$(ProjectDir)build-capstone-debug.bat"</Command>
+      <Command>if not exist "$(ProjectDir)capstone\build\$(Configuration)\capstone.lib" call "$(ProjectDir)build-capstone-debug.bat"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -135,7 +135,7 @@
       <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
     </Manifest>
     <PreBuildEvent>
-      <Command>if not exist "$(ProjectDir)capstone\msvc\Release\capstone.lib" call "$(ProjectDir)build-capstone.bat"</Command>
+      <Command>if not exist "$(ProjectDir)capstone\build\$(Configuration)\capstone.lib" call "$(ProjectDir)build-capstone.bat"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'">
@@ -169,7 +169,7 @@
       <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
     </Manifest>
     <PreBuildEvent>
-      <Command>if not exist "$(ProjectDir)capstone\msvc\Release\capstone.lib" call "$(ProjectDir)build-capstone.bat"</Command>
+      <Command>if not exist "$(ProjectDir)capstone\build\$(Configuration)\capstone.lib" call "$(ProjectDir)build-capstone.bat"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
