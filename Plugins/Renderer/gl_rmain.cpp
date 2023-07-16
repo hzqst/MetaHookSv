@@ -3164,9 +3164,22 @@ void R_LoadSky_PreCall(const char* name)
 	}
 }
 
-void R_LoadDetailSkyTexture(const char* name)
+void R_LoadLegacySkyTextures(const char* name)
 {
 	auto skytexorder = (g_iEngineType == ENGINE_SVENGINE) ? skytexorder_svengine : skytexorder_goldsrc;
+
+	for (int i = 0; i < 6; ++i)
+	{
+		if (gSkyTexNumber[skytexorder[i]])
+		{
+			r_wsurf.vSkyboxTextureId[0 + i] = gSkyTexNumber[skytexorder[i]];
+		}
+	}
+}
+
+void R_LoadDetailSkyTextures(const char* name)
+{
+	//auto skytexorder = (g_iEngineType == ENGINE_SVENGINE) ? skytexorder_svengine : skytexorder_goldsrc;
 
 	const char* suf[6] = { "rt", "bk", "lf", "ft", "up", "dn" };
 	for (int i = 0; i < 6; i++)
@@ -3189,23 +3202,15 @@ void R_LoadDetailSkyTexture(const char* name)
 			continue;
 		}
 
-		r_wsurf.vSkyboxTextureId[6 + skytexorder[i]] = texId;
+		r_wsurf.vSkyboxTextureId[6 + i] = texId;
 	}
 }
 
 void R_LoadSky_PostCall(const char *name)
 {
-	auto skytexorder = (g_iEngineType == ENGINE_SVENGINE) ? skytexorder_svengine : skytexorder_goldsrc;
+	R_LoadLegacySkyTextures(name);
 
-	for (int i = 0; i < 6; ++i)
-	{
-		if (gSkyTexNumber[skytexorder[i]])
-		{
-			r_wsurf.vSkyboxTextureId[0 + i] = gSkyTexNumber[skytexorder[i]];
-		}
-	}
-
-	R_LoadDetailSkyTexture(name);
+	R_LoadDetailSkyTextures(name);
 
 	R_CreateBindlessTexturesForSkybox();
 }

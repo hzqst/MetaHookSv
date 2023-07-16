@@ -3773,11 +3773,19 @@ void R_InstallHooks(void)
 	if (gRefFuncs.R_RenderView_SvEngine)
 	{
 		Install_InlineHook(R_RenderView_SvEngine);
-		Install_InlineHook(R_LoadSkyName_SvEngine);
 	}
 	else
 	{
 		Install_InlineHook(R_RenderView);
+	}
+
+	if (gRefFuncs.R_LoadSkyName_SvEngine)
+	{
+		Install_InlineHook(R_LoadSkyName_SvEngine);
+	}
+
+	if (gRefFuncs.R_LoadSkys)
+	{
 		Install_InlineHook(R_LoadSkys);
 	}
 
