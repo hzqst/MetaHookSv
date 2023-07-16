@@ -200,8 +200,12 @@ https://github.com/LAGonauta/MetaAudio
 
 * MetaAudio blocks goldsrc engine's sound system and replaces with it's own sound engine. You should always put `MetaAudio.dll` on top of any other plugins that rely on goldsrc engine's sound system (i.e CaptionMod) in the `plugins.lst` to prevent those plugins from being blocked by MetaAudio.
 
-### Trinity Renderer (third-party) (GoldSrc only)
+### Trinity-EngineSv (third-party) (GoldSrc only)
 
-This is a port of the original Trinity Renderer for metahook so it can work in Counter Strike 1.6
+This is a Trinity Engine porting for Counter Strike 1.6
 
-https://github.com/ollerjoaco/MH_TrinityRender
+Client-Side part of the mod it´s introduced as a metahook plugin.
+
+Server-Side part of the mod it´s done with a modifidied reGame dll.
+
+https://github.com/ollerjoaco/Trinity-EngineSv
