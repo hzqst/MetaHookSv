@@ -299,7 +299,7 @@ void R_UninstallHooksForClientDLL(void);
 
 void *Hunk_AllocName(int size, const char *name);
 void GammaToLinear(float *color);
-void R_LoadSkyName_SvEngine(const char *name);
+void R_LoadSkyBox_SvEngine(const char *name);
 void R_LoadSkys(void);
 void Mod_LoadStudioModel(model_t *mod, void *buffer);
 void Mod_LoadBrushModel(model_t *mod, void *buffer);

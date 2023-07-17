@@ -3154,14 +3154,14 @@ void R_LoadSky_PreCall(const char* name)
 		}
 	}
 
-	for (int i = 0; i < 6; ++i)
+	/*for (int i = 0; i < 6; ++i)
 	{
 		if (gSkyTexNumber[i])
 		{
 			GL_DeleteTexture(gSkyTexNumber[i]);
 			gSkyTexNumber[i] = 0;
 		}
-	}
+	}*/
 }
 
 void R_LoadLegacySkyTextures(const char* name)
@@ -3193,7 +3193,7 @@ void R_LoadDetailSkyTextures(const char* name)
 		{
 			snprintf(fullpath, sizeof(fullpath), "renderer/texture/%s%s.dds", name, suf[i]);
 
-			texId = R_LoadTextureEx(fullpath, fullpath, &width, &height, GLT_WORLD, true, true, true);
+			texId = R_LoadTextureEx(fullpath, fullpath, &width, &height, GLT_WORLD, true, true, false);
 		}
 
 		if (!texId)
@@ -3215,11 +3215,11 @@ void R_LoadSky_PostCall(const char *name)
 	R_CreateBindlessTexturesForSkybox();
 }
 
-void R_LoadSkyName_SvEngine(const char *name)
+void R_LoadSkyBox_SvEngine(const char *name)
 {
 	R_LoadSky_PreCall(name);
 
-	gRefFuncs.R_LoadSkyName_SvEngine(name);
+	gRefFuncs.R_LoadSkyBox_SvEngine(name);
 
 	R_LoadSky_PostCall(name);
 }

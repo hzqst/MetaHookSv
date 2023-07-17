@@ -78,7 +78,8 @@ typedef struct
 	void(*R_PolyBlend)(void);
 	void(*R_DecalShootInternal)(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
 	void(*R_LoadSkys)(void);
-	void(*R_LoadSkyName_SvEngine)(const char *name);
+	void(*R_LoadSkyboxInt_SvEngine)(const char *name);
+	void(*R_LoadSkyBox_SvEngine)(const char *name);
 	void(*R_MarkLights)(dlight_t *light, int bit, mnode_t *node);
 	int(*CL_IsDevOverviewMode)(void);
 	void(*CL_SetDevOverView)(void *a1);
@@ -139,40 +140,40 @@ typedef struct
 
 }ref_funcs_t;
 
-extern hook_t *g_phook_GL_BeginRendering ;
-extern hook_t *g_phook_GL_EndRendering ;
-extern hook_t *g_phook_R_RenderView_SvEngine ;
-extern hook_t *g_phook_R_LoadSkyName_SvEngine ;
-extern hook_t *g_phook_R_RenderView ;
-extern hook_t *g_phook_R_LoadSkys ;
-extern hook_t *g_phook_R_NewMap ;
-extern hook_t *g_phook_R_CullBox ;
-extern hook_t *g_phook_Mod_PointInLeaf ;
-extern hook_t *g_phook_R_BuildLightMap ;
-extern hook_t *g_phook_R_AddDynamicLights ;
-extern hook_t *g_phook_R_GLStudioDrawPoints ;
-extern hook_t *g_phook_GL_LoadTexture2 ;
-extern hook_t *g_phook_enginesurface_drawFlushText ;
-extern hook_t *g_phook_Mod_LoadStudioModel ;
+extern hook_t *g_phook_GL_BeginRendering;
+extern hook_t *g_phook_GL_EndRendering;
+extern hook_t *g_phook_R_RenderView_SvEngine;
+extern hook_t *g_phook_R_RenderView;
+extern hook_t *g_phook_R_LoadSkyBox_SvEngine;
+extern hook_t *g_phook_R_LoadSkys;
+extern hook_t *g_phook_R_NewMap;
+extern hook_t *g_phook_R_CullBox;
+extern hook_t *g_phook_Mod_PointInLeaf;
+extern hook_t *g_phook_R_BuildLightMap;
+extern hook_t *g_phook_R_AddDynamicLights;
+extern hook_t *g_phook_R_GLStudioDrawPoints;
+extern hook_t *g_phook_GL_LoadTexture2;
+extern hook_t *g_phook_enginesurface_drawFlushText;
+extern hook_t *g_phook_Mod_LoadStudioModel;
 extern hook_t *g_phook_Mod_LoadBrushModel;
-extern hook_t *g_phook_triapi_RenderMode ;
-extern hook_t *g_phook_Draw_MiptexTexture ;
-extern hook_t *g_phook_BuildGammaTable ;
-//extern hook_t *g_phook_Cvar_DirectSet ;
-extern hook_t *g_phook_DLL_SetModKey ;
+extern hook_t *g_phook_triapi_RenderMode;
+extern hook_t *g_phook_Draw_MiptexTexture;
+extern hook_t *g_phook_BuildGammaTable;
+//extern hook_t *g_phook_Cvar_DirectSet;
+extern hook_t *g_phook_DLL_SetModKey;
 
-extern hook_t *g_phook_studioapi_RestoreRenderer ;
-extern hook_t *g_phook_studioapi_StudioDynamicLight ;
-extern hook_t *g_phook_studioapi_StudioCheckBBox ;
-extern hook_t *g_phook_CL_FxBlend ;
+extern hook_t *g_phook_studioapi_RestoreRenderer;
+extern hook_t *g_phook_studioapi_StudioDynamicLight;
+extern hook_t *g_phook_studioapi_StudioCheckBBox;
+extern hook_t *g_phook_CL_FxBlend;
 
-extern hook_t *g_phook_ClientPortalManager_ResetAll ;
-extern hook_t *g_phook_ClientPortalManager_DrawPortalSurface ;
-extern hook_t *g_phook_ClientPortalManager_EnableClipPlane ;
+extern hook_t *g_phook_ClientPortalManager_ResetAll;
+extern hook_t *g_phook_ClientPortalManager_DrawPortalSurface;
+extern hook_t *g_phook_ClientPortalManager_EnableClipPlane;
 
-extern hook_t *g_phook_GameStudioRenderer_StudioRenderModel ;
-extern hook_t *g_phook_GameStudioRenderer_StudioRenderFinal ;
-extern hook_t *g_phook_R_StudioRenderModel ;
-extern hook_t *g_phook_R_StudioRenderFinal ;
+extern hook_t *g_phook_GameStudioRenderer_StudioRenderModel;
+extern hook_t *g_phook_GameStudioRenderer_StudioRenderFinal;
+extern hook_t *g_phook_R_StudioRenderModel;
+extern hook_t *g_phook_R_StudioRenderFinal;
 
 extern ref_funcs_t gRefFuncs;

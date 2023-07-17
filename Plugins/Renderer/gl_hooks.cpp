@@ -225,11 +225,11 @@ void R_FillAddress(void)
 	gRefFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
 	gRefFuncs.triapi_Color4f = gEngfuncs.pTriAPI->Color4f;
 
-	if (g_iEngineType == ENGINE_SVENGINE)
+	/*if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_LoadSkyName_SvEngine = (decltype(gRefFuncs.R_LoadSkyName_SvEngine))Search_Pattern(R_LOADSKYNAME_SIG_SVENGINE);
-		Sig_FuncNotFound(R_LoadSkyName_SvEngine);
-	}
+		gRefFuncs.R_LoadSkyBox_SvEngine = (decltype(gRefFuncs.R_LoadSkyBox_SvEngine))Search_Pattern(R_LOADSKYNAME_SIG_SVENGINE);
+		Sig_FuncNotFound(R_LoadSkyBox_SvEngine);
+	}*/
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -1378,7 +1378,131 @@ void R_FillAddress(void)
 		Sig_VarNotFound(waterchain);
 	}
 
-	if (1)
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		const char sigs[] = "SKY: ";
+		auto R_LoadSkys_String = Search_Pattern_Data(sigs);
+		if (!R_LoadSkys_String)
+			R_LoadSkys_String = Search_Pattern_Rdata(sigs);
+		Sig_VarNotFound(R_LoadSkys_String);
+
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xC7\x2A\x2A\x2A\x2A\x00\x00";
+		*(DWORD *)(pattern + 1) = (DWORD)R_LoadSkys_String;
+		auto R_LoadSkys_PushString = Search_Pattern(pattern);
+		Sig_VarNotFound(R_LoadSkys_PushString);
+
+		gRefFuncs.R_LoadSkyboxInt_SvEngine = (decltype(gRefFuncs.R_LoadSkyboxInt_SvEngine))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_LoadSkys_PushString, 0x600, [](PUCHAR Candidate) {
+			//.text : 01D5FC10 81 EC 28 01 00 00                                   sub     esp, 128h
+			//.text : 01D5FC16 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
+			//.text : 01D5FC1B 33 C4 xor eax, esp
+			if (Candidate[0] == 0x81 &&
+				Candidate[1] == 0xEC &&
+				Candidate[6] == 0xA1 &&
+				Candidate[11] == 0x33 &&
+				Candidate[12] == 0xC4)
+				return TRUE;
+			
+			return FALSE;
+		});
+
+		Sig_FuncNotFound(R_LoadSkyboxInt_SvEngine);
+
+		typedef struct
+		{
+			int candidate_register;
+			int candidate_instcount;
+			DWORD candidate_gSkyTexNumber;
+		}R_LoadSkys_ctx;
+
+		R_LoadSkys_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_LoadSkyboxInt_SvEngine, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+			auto ctx = (R_LoadSkys_ctx *)context;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{//.text:01D4F9D8 BE 60 34 34 02 mov     esi, offset gSkyTexNumber
+				DWORD imm = pinst->detail->x86.operands[1].imm;
+
+				ctx->candidate_gSkyTexNumber = imm;
+				ctx->candidate_register = pinst->detail->x86.operands[0].reg;
+				ctx->candidate_instcount = instCount;
+			}
+			else if (ctx->candidate_gSkyTexNumber &&
+				pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == ctx->candidate_register &&
+				pinst->detail->x86.operands[0].mem.disp == 0 &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG &&
+				instCount < ctx->candidate_instcount + 5)
+			{//text:01D4F9DD 39 3E cmp     [esi], edi
+				gSkyTexNumber = (decltype(gSkyTexNumber))ctx->candidate_gSkyTexNumber;
+			}
+			else if (pinst->id == X86_INS_PUSH &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base != 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{//.text:01D5FC00 FF B6 80 69 00 08                                   push    gSkyTexNumber[esi]
+				gSkyTexNumber = (decltype(gSkyTexNumber))pinst->detail->x86.operands[0].mem.disp;
+			}
+
+			if (gSkyTexNumber)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, &ctx);
+
+		Sig_VarNotFound(gSkyTexNumber);
+
+		const char sigs2[] = "desert\0";
+		auto R_LoadSkyBox_String = Search_Pattern_Rdata(sigs2);
+		Sig_VarNotFound(R_LoadSkyBox_String);
+
+		char pattern2[] = "\xE8\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C";
+		*(DWORD *)(pattern2 + 6) = (DWORD)R_LoadSkyBox_String;
+		auto R_LoadSkyBox_PushString = Search_Pattern(pattern2);
+		Sig_VarNotFound(R_LoadSkyBox_PushString);
+
+
+		gRefFuncs.R_LoadSkyBox_SvEngine = (decltype(gRefFuncs.R_LoadSkyBox_SvEngine))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_LoadSkyBox_PushString, 0x200, [](PUCHAR Candidate) {
+			/*
+.text:01D5FEF0                                     ; void __cdecl R_LoadSkyName(const char *name)
+.text:01D5FEF0                                     R_LoadSkyName   proc near               ; CODE XREF: sub_1D042D0+E¡üp
+.text:01D5FEF0                                                                             ; R_LoadSkys_0+5¡ýp ...
+.text:01D5FEF0
+.text:01D5FEF0                                     name            = dword ptr  4
+.text:01D5FEF0
+.text:01D5FEF0 83 3D 98 69 00 08 00                                cmp     r_loading_skybox, 0
+			*/
+			if (Candidate[0] == 0x83 &&
+				Candidate[1] == 0x3D &&
+				Candidate[6] == 0x00)
+			{
+				return TRUE;
+			}
+
+			return FALSE;
+		});
+
+		Sig_FuncNotFound(R_LoadSkyBox_SvEngine);
+
+	}
+	else
 	{
 		const char sigs[] = "SKY: ";
 		auto R_LoadSkys_String = Search_Pattern_Data(sigs);
@@ -1478,6 +1602,50 @@ void R_FillAddress(void)
 		}, 0, &ctx);
 
 		Sig_VarNotFound(gSkyTexNumber);
+	}
+
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(g_iEngineType == ENGINE_SVENGINE ? (void *)gRefFuncs.R_LoadSkyBox_SvEngine : (void *)gRefFuncs.R_LoadSkys, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn *)inst;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == X86_REG_EAX &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0)
+			{
+				DWORD imm = pinst->detail->x86.operands[1].mem.disp;
+
+				r_loading_skybox = (decltype(r_loading_skybox))imm;
+			}
+			else if (pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 0)
+			{
+				DWORD imm = pinst->detail->x86.operands[0].mem.disp;
+
+				r_loading_skybox = (decltype(r_loading_skybox))imm;
+			}
+
+			if (r_loading_skybox)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(r_loading_skybox);
 	}
 
 	if (1)
@@ -2905,50 +3073,6 @@ void R_FillAddress(void)
 		}, 0, NULL);
 	}
 
-	if (1)
-	{
-		g_pMetaHookAPI->DisasmRanges(g_iEngineType == ENGINE_SVENGINE ? (void *)gRefFuncs.R_LoadSkyName_SvEngine : (void *)gRefFuncs.R_LoadSkys, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-		{
-			auto pinst = (cs_insn *)inst;
-
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[0].reg == X86_REG_EAX &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0)
-			{
-				DWORD imm = pinst->detail->x86.operands[1].mem.disp;
-
-				r_loading_skybox = (decltype(r_loading_skybox))imm;
-			}
-			else if (pinst->id == X86_INS_CMP &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[1].imm == 0)
-			{
-				DWORD imm = pinst->detail->x86.operands[0].mem.disp;
-
-				r_loading_skybox = (decltype(r_loading_skybox))imm;
-			}
-
-			if (r_loading_skybox)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-		}, 0, NULL);
-
-		Sig_VarNotFound(r_loading_skybox);
-	}
-
 	{
 		const char sigs1[] = "bogus\0";
 		auto Bogus_String = Search_Pattern_Data(sigs1);
@@ -3704,8 +3828,8 @@ void R_FillAddress(void)
 hook_t *g_phook_GL_BeginRendering = NULL;
 hook_t *g_phook_GL_EndRendering = NULL;
 hook_t *g_phook_R_RenderView_SvEngine = NULL;
-hook_t *g_phook_R_LoadSkyName_SvEngine = NULL;
 hook_t *g_phook_R_RenderView = NULL;
+hook_t *g_phook_R_LoadSkyBox_SvEngine = NULL;
 hook_t *g_phook_R_LoadSkys = NULL;
 hook_t *g_phook_R_NewMap = NULL;
 hook_t *g_phook_R_CullBox = NULL;
@@ -3734,7 +3858,7 @@ void R_UninstallHooksForEngineDLL(void)
 	if (gRefFuncs.R_RenderView_SvEngine)
 	{
 		Uninstall_Hook(R_RenderView_SvEngine);
-		Uninstall_Hook(R_LoadSkyName_SvEngine);
+		Uninstall_Hook(R_LoadSkyBox_SvEngine);
 	}
 	else
 	{
@@ -3770,22 +3894,14 @@ void R_InstallHooks(void)
 	Install_InlineHook(GL_BeginRendering);
 	Install_InlineHook(GL_EndRendering);
 
-	if (gRefFuncs.R_RenderView_SvEngine)
+	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		Install_InlineHook(R_RenderView_SvEngine);
+		Install_InlineHook(R_LoadSkyBox_SvEngine);
 	}
 	else
 	{
 		Install_InlineHook(R_RenderView);
-	}
-
-	if (gRefFuncs.R_LoadSkyName_SvEngine)
-	{
-		Install_InlineHook(R_LoadSkyName_SvEngine);
-	}
-
-	if (gRefFuncs.R_LoadSkys)
-	{
 		Install_InlineHook(R_LoadSkys);
 	}
 
