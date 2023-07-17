@@ -105,6 +105,46 @@ float StudioConVar::GetValue()
 	return m_cvar->value;
 }
 
+
+#if 0
+
+void R_CvarSetMapCvar(cvar_t *cvar, char *value)
+{
+	for (size_t i = 0; i < g_MapConVars.size(); ++i)
+	{
+		auto mapcvar = g_MapConVars[i];
+		if (mapcvar->m_cvar == cvar)
+		{
+			R_ParseMapCvarSetCvarValue(mapcvar, value);
+			break;
+		}
+	}
+}
+
+void Cvar_DirectSet(cvar_t *var, char *value)
+{
+	gRefFuncs.Cvar_DirectSet(var, value);
+
+	R_CvarSetMapCvar(var, value);
+}
+
+#else
+
+void R_CvarSetMapCvar(cvar_t *cvar)
+{
+	for (size_t i = 0; i < g_MapConVars.size(); ++i)
+	{
+		auto mapcvar = g_MapConVars[i];
+		if (mapcvar->m_cvar == cvar)
+		{
+			R_ParseMapCvarSetCvarValue(mapcvar, cvar->string);
+			break;
+		}
+	}
+}
+
+#endif
+
 MapConVar *R_RegisterMapCvar(char *cvar_name, char *default_value, int cvar_flags, int numargs, int flags)
 {
 	auto mapcvar = new MapConVar(cvar_name, default_value, cvar_flags, numargs, flags);
@@ -112,6 +152,8 @@ MapConVar *R_RegisterMapCvar(char *cvar_name, char *default_value, int cvar_flag
 	R_ParseMapCvarSetCvarValue(mapcvar, default_value);
 
 	g_MapConVars.emplace_back(mapcvar);
+
+	g_pMetaHookAPI->RegisterCvarCallback(cvar_name, R_CvarSetMapCvar, NULL);
 
 	return mapcvar;
 }
@@ -335,24 +377,4 @@ void R_ParseMapCvarSetCvarValue(MapConVar *mapcvar, char *value)
 			}
 		}
 	}
-}
-
-void R_CvarSetMapCvar(cvar_t *cvar, char *value)
-{
-	for (size_t i = 0; i < g_MapConVars.size(); ++i)
-	{
-		auto mapcvar = g_MapConVars[i];
-		if (mapcvar->m_cvar == cvar)
-		{
-			R_ParseMapCvarSetCvarValue(mapcvar, value);
-			break;
-		}
-	}
-}
-
-void Cvar_DirectSet(cvar_t *var, char *value)
-{
-	gRefFuncs.Cvar_DirectSet(var, value);
-
-	R_CvarSetMapCvar(var, value);
 }

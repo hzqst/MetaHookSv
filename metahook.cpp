@@ -44,6 +44,10 @@ typedef struct cvar_callback_entry_s
 
 cvar_callback_entry_t **cvar_callbacks = NULL;
 
+cvar_callback_entry_t* g_ManagedCvarCallbackList = NULL;
+
+std::vector<cvar_callback_entry_t*> g_ManagedCvarCallbacks;
+
 typedef struct usermsg_s
 {
 	int index;
@@ -70,6 +74,8 @@ int (*g_pfnbuild_number)(void) = NULL;
 
 int(*g_original_ClientDLL_Init)(void) = NULL;
 int(*g_pfnClientDLL_Init)(void) = NULL;
+
+void(*g_pfnCvar_DirectSet)(cvar_t* var, char* value) = NULL;
 
 CreateInterfaceFn *g_pClientFactory = NULL;
 
@@ -137,6 +143,24 @@ mh_enginesave_t gMetaSave = {0};
 
 extern metahook_api_t gMetaHookAPI;
 
+void MH_Cvar_DirectSet(cvar_t* var, char* value)
+{
+	g_pfnCvar_DirectSet(var, value);
+
+	auto v = (*cvar_callbacks);
+
+	if (v)
+	{
+		while (v->pcvar != var)
+		{
+			v = v->next;
+			if (!v)
+				return;
+		}
+		v->callback(var);
+	}
+}
+
 bool MH_IsDebuggerPresent()
 {
 	return IsDebuggerPresent() ? true : false;
@@ -149,8 +173,10 @@ void MH_SysError(const char *fmt, ...)
 	va_list argptr;
 
 	va_start(argptr, fmt);
-	_vsnprintf(msg, sizeof(msg), fmt, argptr);
+	_vsnprintf(msg, sizeof(msg) - 1, fmt, argptr);
 	va_end(argptr);
+
+	msg[sizeof(msg) - 1] = 0;
 
 	if (gMetaSave.pEngineFuncs)
 		gMetaSave.pEngineFuncs->pfnClientCmd("escape\n");
@@ -164,10 +190,14 @@ cvar_callback_t MH_HookCvarCallback(const char *cvar_name, cvar_callback_t callb
 	if (!gMetaSave.pEngineFuncs)
 		return NULL;
 
+	auto cvar = gMetaSave.pEngineFuncs->pfnGetCvarPointer(cvar_name);
+
+	if (!cvar)
+		return NULL;
+
 	if (!cvar_callbacks)
 		return NULL;
 
-	auto cvar = gMetaSave.pEngineFuncs->pfnGetCvarPointer(cvar_name);
 	auto v = (*cvar_callbacks);
 	if (v)
 	{
@@ -175,7 +205,9 @@ cvar_callback_t MH_HookCvarCallback(const char *cvar_name, cvar_callback_t callb
 		{
 			v = v->next;
 			if (!v)
+			{
 				return NULL;
+			}
 		}
 		auto orig = v->callback;
 		v->callback = callback;
@@ -183,6 +215,74 @@ cvar_callback_t MH_HookCvarCallback(const char *cvar_name, cvar_callback_t callb
 	}
 
 	return NULL;
+}
+
+bool MH_RegisterCvarCallback(const char* cvar_name, cvar_callback_t callback, cvar_callback_t *poldcallback)
+{
+	if (!gMetaSave.pEngineFuncs)
+		return NULL;
+
+	auto cvar = gMetaSave.pEngineFuncs->pfnGetCvarPointer(cvar_name);
+
+	if (!cvar)
+		return NULL;
+
+	if (!cvar_callbacks)
+		return NULL;
+
+	auto v = (*cvar_callbacks);
+	if (v)
+	{
+		while (v->pcvar != cvar)
+		{
+			v = v->next;
+			if (!v)
+			{
+				auto newEntry = new cvar_callback_entry_t;
+				newEntry->callback = callback;
+				newEntry->pcvar = cvar;
+				newEntry->next = (*cvar_callbacks);
+
+				(*cvar_callbacks) = newEntry;
+
+				g_ManagedCvarCallbacks.push_back(newEntry);
+
+				if (poldcallback)
+				{
+					*poldcallback = NULL;
+				}
+				return true;
+			}
+		}
+
+		auto orig = v->callback;
+		v->callback = callback;
+		if (poldcallback)
+		{
+			*poldcallback = orig;
+		}
+		return true;
+	}
+	else
+	{
+		auto newEntry = new cvar_callback_entry_t;
+		newEntry->callback = callback;
+		newEntry->pcvar = cvar;
+		newEntry->next = NULL;
+
+		(*cvar_callbacks) = newEntry;
+
+		g_ManagedCvarCallbacks.push_back(newEntry);
+
+		if (poldcallback)
+		{
+			*poldcallback = NULL;
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 usermsg_t *MH_FindUserMsgHook(const char *szMsgName)
@@ -798,7 +898,26 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 		textSize = g_dwEngineSize;
 	}
 
+	ULONG dataSize = 0;
+	PVOID dataBase = MH_GetSectionByName(g_dwEngineBase, ".data\0\0\0", &dataSize);
+
+	if (!dataBase)
+	{
+		dataBase = g_dwEngineBase;
+		dataSize = g_dwEngineSize;
+	}
+
+	ULONG rdataSize = 0;
+	PVOID rdataBase = MH_GetSectionByName(g_dwEngineBase, ".rdata\0\0", &rdataSize);
+
+	if (!rdataBase)
+	{
+		rdataBase = g_dwEngineBase;
+		rdataSize = g_dwEngineSize;
+	}
+
 #define BUILD_NUMBER_SIG "\xE8\x2A\x2A\x2A\x2A\x50\x68\x2A\x2A\x2A\x2A\x6A\x30\x68"
+
 	auto buildnumber_call = MH_SearchPattern(textBase, textSize, BUILD_NUMBER_SIG, sizeof(BUILD_NUMBER_SIG) - 1);
 
 	if (!buildnumber_call)
@@ -1101,6 +1220,105 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 		return;
 	}
 
+	if (1)
+	{
+		const char sigs1[] = "***PROTECTED***";
+		auto Cvar_DirectSet_String = MH_SearchPattern(dataBase, dataSize, sigs1, sizeof(sigs1) - 1);
+		if (!Cvar_DirectSet_String)
+			Cvar_DirectSet_String = MH_SearchPattern(rdataBase, rdataSize, sigs1, sizeof(sigs1) - 1);
+		if (Cvar_DirectSet_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8";
+			*(DWORD*)(pattern + 1) = (DWORD)Cvar_DirectSet_String;
+			auto Cvar_DirectSet_Call = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
+			if (Cvar_DirectSet_Call)
+			{
+				g_pfnCvar_DirectSet = (decltype(g_pfnCvar_DirectSet))MH_ReverseSearchFunctionBeginEx(Cvar_DirectSet_Call, 0x500, [](PUCHAR Candidate) {
+					//.text : 01D42120 81 EC 0C 04 00 00                                   sub     esp, 40Ch
+					//.text : 01D42126 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
+					//.text : 01D4212B 33 C4
+					if (Candidate[0] == 0x81 &&
+						Candidate[1] == 0xEC &&
+						Candidate[4] == 0x00 &&
+						Candidate[5] == 0x00 &&
+						Candidate[6] == 0xA1 &&
+						Candidate[11] == 0x33 &&
+						Candidate[12] == 0xC4)
+						return TRUE;
+
+					//.text : 01D2E530 55                                                  push    ebp
+					//.text : 01D2E531 8B EC                                               mov     ebp, esp
+					//.text : 01D2E533 81 EC 00 04 00 00                                   sub     esp, 400h
+					if (Candidate[0] == 0x55 &&
+						Candidate[1] == 0x8B &&
+						Candidate[2] == 0xEC &&
+						Candidate[3] == 0x81 &&
+						Candidate[4] == 0xEC &&
+						Candidate[7] == 0x00 &&
+						Candidate[8] == 0x00)
+						return TRUE;
+
+					return FALSE;
+				});
+			}
+		}
+	}
+
+	if (!g_pfnCvar_DirectSet)
+	{
+		MH_SysError("MH_LoadEngine: Failed to locate Cvar_DirectSet");
+		return;
+	}
+
+	//SvEngine removed cvar callbacks
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		const char sigs1[] = "Cvar_Set: variable %s not found\n";
+		auto Cvar_DirectSet_String = MH_SearchPattern(dataBase, dataSize, sigs1, sizeof(sigs1) - 1);
+		if (!Cvar_DirectSet_String)
+			Cvar_DirectSet_String = MH_SearchPattern(rdataBase, rdataSize, sigs1, sizeof(sigs1) - 1);
+		if (Cvar_DirectSet_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
+			*(DWORD*)(pattern + 1) = (DWORD)Cvar_DirectSet_String;
+
+			*(DWORD*)(pattern + 1) = (DWORD)Cvar_DirectSet_String;
+
+			auto searchBegin = textBase;
+			auto searchEnd = (PUCHAR)textBase + textSize;
+			while (1)
+			{
+				auto Cvar_Set_Call = MH_SearchPattern(searchBegin, searchEnd - searchBegin, pattern, sizeof(pattern) - 1);
+				if (Cvar_Set_Call)
+				{
+					searchBegin = (PUCHAR)Cvar_Set_Call + sizeof(pattern) - 1;
+
+					MH_DisasmRanges(searchBegin, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+					{
+							auto pinst = (cs_insn*)inst;
+
+							if (address[0] == 0xE8)
+							{
+								auto CallTarget = address + *(int *)(address + 1) + instLen;
+
+								if ((ULONG_PTR)CallTarget == (ULONG_PTR)g_pfnCvar_DirectSet)
+								{
+									auto dwNewRVA = (ULONG_PTR)MH_Cvar_DirectSet - (ULONG_PTR)(address + 5);
+
+									MH_WriteDWORD(address + 1, dwNewRVA);
+								}
+							}
+
+							return FALSE;
+						}, 0, NULL);
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+	}
 	if (g_iEngineType == ENGINE_GOLDSRC || g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
 		MH_DisasmRanges(gMetaSave.pEngineFuncs->Cvar_Set, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
@@ -1136,6 +1354,10 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 			MH_SysError("MH_LoadEngine: Failed to locate cvar_callbacks");
 			return;
 		}
+	}
+	else
+	{
+		cvar_callbacks = &g_ManagedCvarCallbackList;
 	}
 
 	MH_InlineHook(g_pfnClientDLL_Init, MH_ClientDLL_Init, (void **)&g_original_ClientDLL_Init);
@@ -1251,6 +1473,20 @@ void MH_Shutdown(void)
 	{
 		delete gMetaSave.pEngineFuncs;
 		gMetaSave.pEngineFuncs = NULL;
+	}
+
+	g_ManagedCvarCallbackList = NULL;
+
+	for (auto p : g_ManagedCvarCallbacks)
+	{
+		delete p;
+	}
+
+	g_ManagedCvarCallbacks.clear();
+
+	if (cvar_callbacks)
+	{
+		(*cvar_callbacks) = NULL;
 	}
 
 	Cmd_GetCmdBase = NULL;
@@ -2446,4 +2682,5 @@ metahook_api_t gMetaHookAPI =
 	MH_SysError,
 	MH_ReverseSearchFunctionBeginEx,
 	MH_IsDebuggerPresent,
+	MH_RegisterCvarCallback,
 };

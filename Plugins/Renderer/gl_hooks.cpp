@@ -806,7 +806,7 @@ void R_FillAddress(void)
 		});
 		Sig_FuncNotFound(Hunk_AllocName);
 	}
-
+#if 0
 	if (1)
 	{
 		const char sigs1[] = "***PROTECTED***";
@@ -848,7 +848,7 @@ void R_FillAddress(void)
 		});
 		Sig_FuncNotFound(Cvar_DirectSet);
 	}
-
+#endif
 	if (1)
 	{
 		typedef struct
@@ -3722,7 +3722,7 @@ hook_t *g_phook_triapi_RenderMode = NULL;
 hook_t *g_phook_triapi_Color4f = NULL;
 hook_t *g_phook_Draw_MiptexTexture = NULL;
 hook_t *g_phook_BuildGammaTable = NULL;
-hook_t *g_phook_Cvar_DirectSet = NULL;
+//hook_t *g_phook_Cvar_DirectSet = NULL;
 hook_t *g_phook_DLL_SetModKey = NULL;
 
 void R_UninstallHooksForEngineDLL(void)
@@ -3757,7 +3757,7 @@ void R_UninstallHooksForEngineDLL(void)
 	//Uninstall_Hook(triapi_Color4f);
 	Uninstall_Hook(Draw_MiptexTexture);
 	Uninstall_Hook(BuildGammaTable);
-	Uninstall_Hook(Cvar_DirectSet);
+	//Uninstall_Hook(Cvar_DirectSet);
 
 	Uninstall_Hook(studioapi_RestoreRenderer);
 	Uninstall_Hook(studioapi_StudioDynamicLight);
@@ -3804,6 +3804,6 @@ void R_InstallHooks(void)
 	//Install_InlineHook(triapi_Color4f);
 	Install_InlineHook(Draw_MiptexTexture);
 	Install_InlineHook(BuildGammaTable);
-	Install_InlineHook(Cvar_DirectSet);
+	//Install_InlineHook(Cvar_DirectSet);
 	Install_InlineHook(DLL_SetModKey);
 }

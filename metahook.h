@@ -258,6 +258,8 @@ typedef struct metahook_api_s
 	cvar_callback_t (*HookCvarCallback)(const char *cvar_name, cvar_callback_t callback);
 	/*
 		Find existing cvar, and set it's Cvar-Set callback to specified function pointer, return original callback function pointer if exists.
+
+		Important: Cvar-Set callback only get called when changing cvar value from console.
 	*/
 
 	xcommand_t(*HookCmd)(const char *cmd_name, xcommand_t newfuncs);
@@ -278,6 +280,14 @@ typedef struct metahook_api_s
 	bool(*IsDebuggerPresent)();
 	/*
 	Basically the name
+	*/
+
+	bool(*RegisterCvarCallback)(const char* cvar_name, cvar_callback_t callback, cvar_callback_t *poldcallback);
+	/*
+		Find existing cvar, and register a Cvar-Set callback for it, return original callback function pointer in the poldcallback if exists.
+		Register on existing callback will override the old one (the old one will be in poldcallback)
+
+		Important: Cvar-Set callback only get called when changing cvar value from console.
 	*/
 }
 metahook_api_t;
