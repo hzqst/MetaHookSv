@@ -66,6 +66,9 @@ void R_UseWaterProgram(program_state_t state, water_program_t *progOutput)
 		if (glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define NV_BINDLESS_ENABLED\n";
 
+		else if (glewIsSupported("GL_ARB_gpu_shader_int64"))
+			defs << "#define INT64_BINDLESS_ENABLED\n";
+
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\water_shader.vsh", "renderer\\shader\\water_shader.fsh", def.c_str(), def.c_str(), NULL);

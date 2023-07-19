@@ -75,7 +75,7 @@ void GL_Texturemode_internal(const char *value)
 
 	if (i == 6)
 	{
-		gEngfuncs.Con_Printf("bad filter name\n");
+		gEngfuncs.Con_Printf("GL_Texturemode: bad filter name. Only the following values are supported:\nGL_NEAREST\nGL_LINEAR\nGL_NEAREST_MIPMAP_NEAREST\nGL_LINEAR_MIPMAP_NEAREST\nGL_NEAREST_MIPMAP_LINEAR\nGL_LINEAR_MIPMAP_LINEAR\n");
 		return;
 	}
 

@@ -826,7 +826,10 @@ void R_UploadDecalTextures(int decalIndex, texture_t *ptexture, detail_texture_c
 			GLuint64 vDecalGLTextureHandles[WSURF_MAX_TEXTURE] = { 0 };
 
 			auto handle = glGetTextureHandleARB(ptexture->gl_texturenum);
-			glMakeTextureHandleResidentARB(handle);
+			if (!glIsTextureHandleResidentARB(handle))
+			{
+				glMakeTextureHandleResidentARB(handle);
+			}
 
 			vDecalGLTextureHandles[WSURF_DIFFUSE_TEXTURE] = handle;
 
@@ -839,7 +842,11 @@ void R_UploadDecalTextures(int decalIndex, texture_t *ptexture, detail_texture_c
 					if (pcache->tex[k].gltexturenum)
 					{
 						handle = glGetTextureHandleARB(pcache->tex[k].gltexturenum);
-						glMakeTextureHandleResidentARB(handle);
+
+						if (!glIsTextureHandleResidentARB(handle))
+						{
+							glMakeTextureHandleResidentARB(handle);
+						}
 
 						vDecalGLTextureHandles[k] = handle;
 					}

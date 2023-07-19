@@ -761,7 +761,7 @@ void R_EndRenderGBuffer(void)
 
 	GL_SelectTexture(GL_TEXTURE0);
 	glDisable(GL_TEXTURE_2D);
-	glEnable(GL_TEXTURE_2D_ARRAY);
+	//glEnable(GL_TEXTURE_2D_ARRAY);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, s_GBufferFBO.s_hBackBufferTex);
 	*currenttexture = -1;
 
@@ -1052,7 +1052,7 @@ void R_EndRenderGBuffer(void)
 	GL_DisableMultitexture();
 
 	//Disable texture unit 0 (GBuffer texture array)
-	glDisable(GL_TEXTURE_2D_ARRAY);
+	//glDisable(GL_TEXTURE_2D_ARRAY);
 	glEnable(GL_TEXTURE_2D);
 	*currenttexture = -1;
 

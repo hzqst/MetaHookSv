@@ -237,7 +237,10 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t *progOutput)
 
 		if (glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define NV_BINDLESS_ENABLED\n";
-	
+
+		else if (glewIsSupported("GL_ARB_gpu_shader_int64"))
+			defs << "#define INT64_BINDLESS_ENABLED\n";
+
 		defs << "#define SHADOW_TEXTURE_OFFSET (1.0 / " << std::dec << r_shadow_texture.size << ".0)\n";
 
 		auto def = defs.str();
@@ -2101,7 +2104,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 	{
 		glActiveTexture(GL_TEXTURE6);
 
-		glEnable(GL_TEXTURE_2D_ARRAY);
+		//glEnable(GL_TEXTURE_2D_ARRAY);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, r_shadow_texture.depth_array);
 
 		glActiveTexture(GL_TEXTURE0);
@@ -2111,7 +2114,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 	{
 		glActiveTexture(GL_TEXTURE1);
 
-		glEnable(GL_TEXTURE_2D_ARRAY);
+		//glEnable(GL_TEXTURE_2D_ARRAY);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
 
 		glActiveTexture(GL_TEXTURE0);
@@ -2208,7 +2211,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 		glActiveTexture(GL_TEXTURE6);
 
 		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-		glDisable(GL_TEXTURE_2D_ARRAY);
+		//glDisable(GL_TEXTURE_2D_ARRAY);
 
 		glActiveTexture(GL_TEXTURE0);
 	}
@@ -2218,7 +2221,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 		glActiveTexture(GL_TEXTURE1);
 
 		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-		glDisable(GL_TEXTURE_2D_ARRAY);
+		//glDisable(GL_TEXTURE_2D_ARRAY);
 
 		glActiveTexture(GL_TEXTURE0);
 	}
