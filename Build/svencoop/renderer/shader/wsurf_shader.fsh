@@ -118,11 +118,17 @@ vec4 R_AddLegacyDynamicLight(vec4 color)
 	texture_handle_t GetCurrentTextureHandle(int type)
 	{
 		#if defined(SKYBOX_ENABLED)
-			return SkyboxSSBO[v_drawid];
+			uint64_t handle = SkyboxSSBO[v_drawid];
 		#elif defined(DECAL_ENABLED)
-			return DecalSSBO[v_decalindex * TEXTURE_SSBO_MAX + type];
+			uint64_t handle = DecalSSBO[v_decalindex * TEXTURE_SSBO_MAX + type];
 		#else
-			return TextureSSBO[v_texindex * TEXTURE_SSBO_MAX + type];
+			uint64_t handle = TextureSSBO[v_texindex * TEXTURE_SSBO_MAX + type];
+		#endif
+
+		#ifdef NV_BINDLESS_ENABLED
+			return handle;
+		#else
+			return uvec2(uint(handle), uint(handle >> 32));
 		#endif
 	}
 

@@ -236,7 +236,7 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t *progOutput)
 			defs << "#define LEGACY_DLIGHT_ENABLED\n";
 
 		if (glewIsSupported("GL_NV_bindless_texture"))
-			defs << "#define UINT64_ENABLED\n";
+			defs << "#define NV_BINDLESS_ENABLED\n";
 	
 		defs << "#define SHADOW_TEXTURE_OFFSET (1.0 / " << std::dec << r_shadow_texture.size << ".0)\n";
 
@@ -341,7 +341,10 @@ void R_FreeBindlessTexturesForWorld(void)
 	{
 		for (auto handle : r_wsurf.vBindlessTextureHandles)
 		{
-			glMakeTextureHandleNonResidentARB(handle);
+			if (glIsTextureHandleResidentARB(handle))
+			{
+				glMakeTextureHandleNonResidentARB(handle);
+			}
 		}
 		r_wsurf.vBindlessTextureHandles.clear();
 	}
@@ -1030,7 +1033,10 @@ void R_CreateBindlessTexturesForWorld(void)
 
 			auto handle = glGetTextureHandleARB(t->gl_texturenum);
 
-			glMakeTextureHandleResidentARB(handle);
+			if (!glIsTextureHandleResidentARB(handle))
+			{
+				glMakeTextureHandleResidentARB(handle);
+			}
 
 			r_wsurf.vBindlessTextureHandles.emplace_back(handle);
 
@@ -1050,8 +1056,10 @@ void R_CreateBindlessTexturesForWorld(void)
 					if (pcache->tex[j].gltexturenum)
 					{
 						auto handle = glGetTextureHandleARB(pcache->tex[j].gltexturenum);
-
-						glMakeTextureHandleResidentARB(handle);
+						if (!glIsTextureHandleResidentARB(handle))
+						{
+							glMakeTextureHandleResidentARB(handle);
+						}
 
 						r_wsurf.vBindlessTextureHandles.emplace_back(handle);
 

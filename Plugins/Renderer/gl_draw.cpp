@@ -117,7 +117,7 @@ void GL_Texturemode_internal(const char *value)
 		if (r_wsurf.vSkyboxTextureId[j])
 		{
 			GL_Bind(r_wsurf.vSkyboxTextureId[j]);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
 		}

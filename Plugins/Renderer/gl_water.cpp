@@ -64,7 +64,7 @@ void R_UseWaterProgram(program_state_t state, water_program_t *progOutput)
 			defs << "#define OIT_ADDITIVE_BLEND_ENABLED\n";
 
 		if (glewIsSupported("GL_NV_bindless_texture"))
-			defs << "#define UINT64_ENABLED\n";
+			defs << "#define NV_BINDLESS_ENABLED\n";
 
 		auto def = defs.str();
 

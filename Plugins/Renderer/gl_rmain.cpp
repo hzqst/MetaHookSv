@@ -1471,6 +1471,11 @@ void GL_GenerateFrameBuffers(void)
 	GL_BindFrameBuffer(NULL);
 }
 
+void GLAPIENTRY GL_DebugOutputCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+{
+	gEngfuncs.Con_DPrintf("GL_DebugOutputCallback: source:[%X], type:[%X], id:[%X], message:[%s]\n", source, type, id, message);
+}
+
 void GL_Init(void)
 {
 	auto err = glewInit();
@@ -1491,6 +1496,9 @@ void GL_Init(void)
 		g_pMetaHookAPI->SysError("OpenGL 4.3 is not supported!\nRequirement: Nvidia GeForce 400 series and newer / AMD Radeon HD 5000 Series and newer / Intel HD Graphics in Intel Haswell and newer.\n");
 		return;
 	}
+
+	glDebugMessageCallback(GL_DebugOutputCallback, 0);
+	glEnable(GL_DEBUG_OUTPUT);
 
 	gl_max_texture_size = 128;
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &gl_max_texture_size);
@@ -3137,8 +3145,15 @@ void R_CreateBindlessTexturesForSkybox()
 			}
 		}
 
-		glNamedBufferSubData(r_wsurf.hSkyboxSSBO, 0, sizeof(GLuint64) * 6, r_wsurf.vSkyboxTextureHandles);
-		glNamedBufferSubData(r_wsurf.hDetailSkyboxSSBO, 0, sizeof(GLuint64) * 6, &r_wsurf.vSkyboxTextureHandles[6]);
+		if (r_wsurf.hSkyboxSSBO)
+		{
+			glNamedBufferSubData(r_wsurf.hSkyboxSSBO, 0, sizeof(GLuint64) * 6, r_wsurf.vSkyboxTextureHandles);
+		}
+
+		if (r_wsurf.hDetailSkyboxSSBO)
+		{
+			glNamedBufferSubData(r_wsurf.hDetailSkyboxSSBO, 0, sizeof(GLuint64) * 6, &r_wsurf.vSkyboxTextureHandles[6]);
+		}
 	}
 }
 
