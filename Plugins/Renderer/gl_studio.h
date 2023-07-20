@@ -132,12 +132,14 @@ typedef struct studio_vbo_s
 		studiohdr = NULL;
 		hVBO = 0;
 		hEBO = 0;
+		hVAO = 0;
 		hStudioUBO = 0;
 		bExternalFileLoaded = false;
 	}
 	studiohdr_t	*		studiohdr;
 	GLuint				hVBO;
 	GLuint				hEBO;
+	GLuint				hVAO;
 	GLuint				hStudioUBO;
 	std::vector<studio_vbo_submodel_t *> vSubmodel;
 	studio_celshade_control_t celshade_control;

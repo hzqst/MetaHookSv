@@ -142,6 +142,12 @@ void R_FreeWaterVBO(water_vbo_t *WaterVBO)
 		WaterVBO->ripplemap = 0;
 	}
 
+	if (WaterVBO->hVAO)
+	{
+		GL_DeleteVAO(WaterVBO->hVAO);
+		WaterVBO->hVAO = 0;
+	}
+
 	if (WaterVBO->hEBO)
 	{
 		GL_DeleteBuffer(WaterVBO->hEBO);
@@ -909,9 +915,23 @@ void R_RenderWaterPass(void)
 	GL_EndProfile(&Profile_RenderWaterPass);
 }
 
+void R_DrawWaterVBOBegin(water_vbo_t* WaterVBO)
+{
+	GL_BindVAO(WaterVBO->hVAO);
+
+	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+}
+
+void R_DrawWaterVBOEnd()
+{
+	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+
+	GL_BindVAO(0);
+}
+
 void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, cl_entity_t *ent)
 {
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, WaterVBO->hEBO);
+	R_DrawWaterVBOBegin(WaterVBO);
 
 	if (r_draw_opaque)
 	{
@@ -941,23 +961,27 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 		{
 			if (drawgbuffer)
 			{
+				R_DrawWaterVBOEnd();
+
 				GL_BindFrameBufferWithTextures(&s_WaterFBO, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
 				R_BlitGBufferToFrameBuffer(&s_WaterFBO);
 
 				//restore states
-				glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hSceneVBO);
-				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, WaterVBO->hEBO);
-
+				R_DrawWaterVBOBegin(WaterVBO);
 				GL_BindFrameBuffer(&s_GBufferFBO);
 			}
 			else
 			{
+				R_DrawWaterVBOEnd();
+
 				GL_BindFrameBufferWithTextures(&s_WaterFBO, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
 				GL_BlitFrameBufferToFrameBufferColorDepth(&s_BackBufferFBO, &s_WaterFBO);
 
 				//restore states
+				R_DrawWaterVBOBegin(WaterVBO);
 				GL_BindFrameBuffer(&s_BackBufferFBO);
 			}
+
 			ReflectCache->refractmap_ready = true;
 		}
 
@@ -1200,6 +1224,10 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 	{
 		glDisable(GL_STENCIL_TEST);
 	}
+
+	GL_UseProgram(0);
+
+	R_DrawWaterVBOEnd();
 }
 
 void R_DrawWaters(wsurf_vbo_leaf_t *vboleaf, cl_entity_t *ent)
@@ -1218,35 +1246,8 @@ void R_DrawWaters(wsurf_vbo_leaf_t *vboleaf, cl_entity_t *ent)
 	if (!comp)
 		return;
 
-	glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hSceneVBO);
-
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
-
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_S_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, s_tangent));
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_T_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, t_tangent));
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
-
-	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-
 	for (size_t i = 0; i < comp->WaterVBOs.size(); ++i)
 	{
 		R_DrawWaterVBO(comp->WaterVBOs[i], comp->ReflectCaches[i], ent);
 	}
-
-	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }

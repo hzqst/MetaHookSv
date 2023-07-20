@@ -350,14 +350,29 @@ studio_vbo_t *R_PrepareStudioVBO(studiohdr_t *studiohdr)
 	}
 
 	VBOData->hVBO = GL_GenBuffer();
-	glBindBuffer(GL_ARRAY_BUFFER, VBOData->hVBO);
-	glBufferData(GL_ARRAY_BUFFER, vVertex.size() * sizeof(studio_vbo_vertex_t), vVertex.data(), GL_STATIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	GL_UploadDataToVBO(VBOData->hVBO, vVertex.size() * sizeof(studio_vbo_vertex_t), vVertex.data());
 
 	VBOData->hEBO = GL_GenBuffer();
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOData->hEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, vIndices.size() * sizeof(GLuint), vIndices.data(), GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	GL_UploadDataToEBO(VBOData->hEBO, vIndices.size() * sizeof(GLuint), vIndices.data());
+
+	VBOData->hVAO = GL_GenVAO();
+	GL_BindStatesForVAO(VBOData->hVAO, VBOData->hVBO, VBOData->hEBO,
+	[]() {
+		glEnableVertexAttribArray(0);
+		glEnableVertexAttribArray(1);
+		glEnableVertexAttribArray(2);
+		glEnableVertexAttribArray(3);
+		glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, pos));
+		glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, normal));
+		glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, texcoord));
+		glVertexAttribIPointer(3, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
+	},
+	[]() {
+		glDisableVertexAttribArray(0);
+		glDisableVertexAttribArray(1);
+		glDisableVertexAttribArray(2);
+		glDisableVertexAttribArray(3);
+	});
 
 	VBOData->hStudioUBO = GL_GenBuffer();
 	glBindBuffer(GL_UNIFORM_BUFFER, VBOData->hStudioUBO);
@@ -401,6 +416,10 @@ void R_StudioReloadVBOCache(void)
 		{
 			auto VBOData = g_StudioVBOCache[i];
 
+			if (VBOData->hVAO)
+			{
+				GL_DeleteVAO(VBOData->hVAO);
+			}
 			if (VBOData->hVBO)
 			{
 				GL_DeleteBuffer(VBOData->hVBO);
@@ -1036,112 +1055,92 @@ studiohdr_t *R_LoadTextures(model_t *psubm)
 	return (*pstudiohdr);
 }
 
-void R_EnableStudioVBO(studio_vbo_t *VBOData)
+void R_DrawStudioVBOBegin(studio_vbo_t *VBOData)
 {
-	if (VBOData)
+	g_CurrentVBOCache = VBOData;
+
+	//Setup UBO
+	if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
 	{
-		g_CurrentVBOCache = VBOData;
+		g_ChromeOrigin[0] = cos(r_glowshellfreq->value * (*cl_time)) * 4000.0f;
+		g_ChromeOrigin[1] = sin(r_glowshellfreq->value * (*cl_time)) * 4000.0f;
+		g_ChromeOrigin[2] = cos(r_glowshellfreq->value * (*cl_time) * 0.33f) * 4000.0f;
 
-		//Setup UBO
-		if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
+		r_colormix[0] = (float)(*currententity)->curstate.rendercolor.r / 255.0f;
+		r_colormix[1] = (float)(*currententity)->curstate.rendercolor.g / 255.0f;
+		r_colormix[2] = (float)(*currententity)->curstate.rendercolor.b / 255.0f;
+	}
+
+	studio_ubo_t StudioUBO;
+
+	StudioUBO.r_ambientlight = (float)(*r_ambientlight);
+	StudioUBO.r_shadelight = (*r_shadelight);
+	StudioUBO.r_blend = (*r_blend);
+
+	StudioUBO.r_scale = 0;
+
+	if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
+	{
+		StudioUBO.r_scale = (*currententity)->curstate.renderamt * 0.05f;
+	}
+	else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
+	{
+		StudioUBO.r_scale = g_CurrentVBOCache->celshade_control.outline_size.GetValue() * 0.05f;
+	}
+
+	memcpy(StudioUBO.r_colormix, r_colormix, sizeof(vec3_t));
+	memcpy(StudioUBO.r_origin, g_ChromeOrigin, sizeof(vec3_t));
+	memcpy(StudioUBO.r_plightvec, r_plightvec, sizeof(vec3_t));
+
+	vec3_t entity_origin = { (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3] };
+	memcpy(StudioUBO.entity_origin, entity_origin, sizeof(vec3_t));
+
+	if (r_studio_legacy_elight->value > 0)
+	{
+		StudioUBO.r_numelight[0] = *numlight;
+		StudioUBO.r_numelight[1] = 0;
+		StudioUBO.r_numelight[2] = 0;
+		StudioUBO.r_numelight[3] = 0;
+
+		for (int i = 0; i < StudioUBO.r_numelight[0]; ++i)
 		{
-			g_ChromeOrigin[0] = cos(r_glowshellfreq->value * (*cl_time)) * 4000.0f;
-			g_ChromeOrigin[1] = sin(r_glowshellfreq->value * (*cl_time)) * 4000.0f;
-			g_ChromeOrigin[2] = cos(r_glowshellfreq->value * (*cl_time) * 0.33f) * 4000.0f;
+			StudioUBO.r_elight_color[i][0] = (float)((*locallight)[i]->color.r) / 255.0f;
+			StudioUBO.r_elight_color[i][1] = (float)((*locallight)[i]->color.g) / 255.0f;
+			StudioUBO.r_elight_color[i][2] = (float)((*locallight)[i]->color.b) / 255.0f;
+			StudioUBO.r_elight_color[i][3] = 1;
 
-			r_colormix[0] = (float)(*currententity)->curstate.rendercolor.r / 255.0f;
-			r_colormix[1] = (float)(*currententity)->curstate.rendercolor.g / 255.0f;
-			r_colormix[2] = (float)(*currententity)->curstate.rendercolor.b / 255.0f;
+			GammaToLinear(StudioUBO.r_elight_color[i]);
+
+			StudioUBO.r_elight_origin[i][0] = (*locallight)[i]->origin[0];
+			StudioUBO.r_elight_origin[i][1] = (*locallight)[i]->origin[1];
+			StudioUBO.r_elight_origin[i][2] = (*locallight)[i]->origin[2];
+			StudioUBO.r_elight_origin[i][3] = 0;
+
+			StudioUBO.r_elight_radius[i] = (*locallight)[i]->radius * clamp(r_studio_legacy_elight_radius_scale->value, 0.001f, 1000.0f);
 		}
-
-		studio_ubo_t StudioUBO;
-
-		StudioUBO.r_ambientlight = (float)(*r_ambientlight);
-		StudioUBO.r_shadelight = (*r_shadelight);
-		StudioUBO.r_blend = (*r_blend);
-
-		StudioUBO.r_scale = 0;
-
-		if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
-		{
-			StudioUBO.r_scale = (*currententity)->curstate.renderamt * 0.05f;
-		}
-		else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
-		{
-			StudioUBO.r_scale = g_CurrentVBOCache->celshade_control.outline_size.GetValue() * 0.05f;
-		}
-
-		memcpy(StudioUBO.r_colormix, r_colormix, sizeof(vec3_t));
-		memcpy(StudioUBO.r_origin, g_ChromeOrigin, sizeof(vec3_t));
-		memcpy(StudioUBO.r_plightvec, r_plightvec, sizeof(vec3_t));
-
-		vec3_t entity_origin = { (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3] };
-		memcpy(StudioUBO.entity_origin, entity_origin, sizeof(vec3_t));
-
-		if (r_studio_legacy_elight->value > 0)
-		{
-			StudioUBO.r_numelight[0] = *numlight;
-			StudioUBO.r_numelight[1] = 0;
-			StudioUBO.r_numelight[2] = 0;
-			StudioUBO.r_numelight[3] = 0;
-
-			for (int i = 0; i < StudioUBO.r_numelight[0]; ++i)
-			{
-				StudioUBO.r_elight_color[i][0] = (float)((*locallight)[i]->color.r) / 255.0f;
-				StudioUBO.r_elight_color[i][1] = (float)((*locallight)[i]->color.g) / 255.0f;
-				StudioUBO.r_elight_color[i][2] = (float)((*locallight)[i]->color.b) / 255.0f;
-				StudioUBO.r_elight_color[i][3] = 1;
-
-				GammaToLinear(StudioUBO.r_elight_color[i]);
-
-				StudioUBO.r_elight_origin[i][0] = (*locallight)[i]->origin[0];
-				StudioUBO.r_elight_origin[i][1] = (*locallight)[i]->origin[1];
-				StudioUBO.r_elight_origin[i][2] = (*locallight)[i]->origin[2];
-				StudioUBO.r_elight_origin[i][3] = 0;
-
-				StudioUBO.r_elight_radius[i] = (*locallight)[i]->radius * clamp(r_studio_legacy_elight_radius_scale->value, 0.001f, 1000.0f);
-			}
-		}
-		else
-		{
-			StudioUBO.r_numelight[0] = 0;
-			StudioUBO.r_numelight[1] = 0;
-			StudioUBO.r_numelight[2] = 0;
-			StudioUBO.r_numelight[3] = 0;
-		}
-
-		memcpy(StudioUBO.bonematrix, (*pbonetransform), sizeof(mat3x4) * 128);
-
-		glNamedBufferSubData(VBOData->hStudioUBO, 0, sizeof(StudioUBO), &StudioUBO);
-
-		//bind ubo
-
-		glBindBuffer(GL_ARRAY_BUFFER, VBOData->hVBO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOData->hEBO);
-		glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_STUDIO_UBO, VBOData->hStudioUBO);
-
-		glEnableVertexAttribArray(0);
-		glEnableVertexAttribArray(1);
-		glEnableVertexAttribArray(2);
-		glEnableVertexAttribArray(3);
-
-		glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, pos));
-		glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, normal));
-		glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, texcoord));
-		glVertexAttribIPointer(3, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
 	}
 	else
 	{
-		glDisableVertexAttribArray(0);
-		glDisableVertexAttribArray(1);
-		glDisableVertexAttribArray(2);
-		glDisableVertexAttribArray(3);
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-		g_CurrentVBOCache = NULL;
+		StudioUBO.r_numelight[0] = 0;
+		StudioUBO.r_numelight[1] = 0;
+		StudioUBO.r_numelight[2] = 0;
+		StudioUBO.r_numelight[3] = 0;
 	}
+
+	memcpy(StudioUBO.bonematrix, (*pbonetransform), sizeof(mat3x4) * 128);
+
+	glNamedBufferSubData(VBOData->hStudioUBO, 0, sizeof(StudioUBO), &StudioUBO);
+
+	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_STUDIO_UBO, VBOData->hStudioUBO);
+
+	GL_BindVAO(VBOData->hVAO);
+}
+
+void R_DrawStudioVBOEnd()
+{
+	GL_BindVAO(0);
+
+	g_CurrentVBOCache = NULL;
 }
 
 void R_GLStudioDrawPoints(void)
@@ -1173,7 +1172,7 @@ void R_GLStudioDrawPoints(void)
 
 	auto VBOData = R_PrepareStudioVBO(engine_pstudiohdr);
 
-	R_EnableStudioVBO(VBOData);
+	R_DrawStudioVBOBegin(VBOData);
 
 	if (engine_psubmodel->groupindex < 1 || engine_psubmodel->groupindex >(int)VBOData->vSubmodel.size()) {
 		g_pMetaHookAPI->SysError("R_StudioFindVBOCache: invalid index");
@@ -1485,7 +1484,7 @@ void R_GLStudioDrawPoints(void)
 
 	GL_UseProgram(0);
 
-	R_EnableStudioVBO(NULL);
+	R_DrawStudioVBOEnd();
 }
 
 //StudioAPI
@@ -1678,7 +1677,7 @@ void R_StudioDrawBatch(void)
 
 	auto VBOData = R_PrepareStudioVBO(*pstudiohdr);
 
-	R_EnableStudioVBO(VBOData);
+	R_DrawStudioVBOBegin(VBOData);
 
 	for (int i = 0; i < (*pstudiohdr)->numbodyparts; i++)
 	{
@@ -1708,6 +1707,7 @@ void R_StudioDrawBatch(void)
 	}
 
 	program_state_t StudioProgramState = 0;
+
 	int GBufferMask = GBUFFER_MASK_ALL;
 
 	if (r_draw_shadowcaster)
@@ -1733,7 +1733,7 @@ void R_StudioDrawBatch(void)
 
 	GL_UseProgram(0);
 
-	R_EnableStudioVBO(NULL);
+	R_DrawStudioVBOEnd();
 }
 
 //Engine StudioRenderer
@@ -1827,8 +1827,6 @@ void R_StudioRenderModel(void)
 		(*currententity)->curstate.renderfx = saved_renderfx;
 		(*currententity)->curstate.renderamt = saved_renderamt;
 	}
-
-	//R_EnableStudioVBO(NULL);
 }
 
 //Client StudioRenderer
@@ -1924,8 +1922,6 @@ void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
 		(*currententity)->curstate.renderfx = saved_renderfx;
 		(*currententity)->curstate.renderamt = saved_renderamt;
 	}
-
-	//R_EnableStudioVBO(NULL);
 }
 
 void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)

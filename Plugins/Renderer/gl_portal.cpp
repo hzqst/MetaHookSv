@@ -89,8 +89,17 @@ void R_NewMapPortal(void)
 	{
 		auto VBOCache = itor.second;
 
+		if (VBOCache->hVAO)
+		{
+			GL_DeleteVAO(VBOCache->hVAO);
+			VBOCache->hVAO = 0;
+		}
+
 		if (VBOCache->hEBO)
+		{
 			GL_DeleteBuffer(VBOCache->hEBO);
+			VBOCache->hEBO = 0;
+		}
 
 		delete VBOCache;
 	}
@@ -159,8 +168,7 @@ portal_vbo_t *R_PreparePortalVBO(void *ClientPortalManager, void * ClientPortal,
 	{
 		VBOCache = new portal_vbo_t;
 		VBOCache->texinfo = ClientPortalManager_GetOriginalSurfaceTexture(ClientPortalManager, 0, surf);
-		VBOCache->hEBO = GL_GenBuffer();
-
+		
 		auto poly = surf->polys;
 
 		auto brushface = &r_wsurf.vFaceBuffer[poly->flags];
@@ -176,9 +184,26 @@ portal_vbo_t *R_PreparePortalVBO(void *ClientPortalManager, void * ClientPortal,
 			VBOCache->vIndicesBuffer.emplace_back((GLuint)0xFFFFFFFF);
 		}
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOCache->hEBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * VBOCache->vIndicesBuffer.size(), VBOCache->vIndicesBuffer.data(), GL_STATIC_DRAW);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+		VBOCache->hEBO = GL_GenBuffer();
+
+		GL_UploadDataToEBO(VBOCache->hEBO, sizeof(GLuint) * VBOCache->vIndicesBuffer.size(), VBOCache->vIndicesBuffer.data());
+
+		VBOCache->hVAO = GL_GenVAO();
+
+		GL_BindStatesForVAO(VBOCache->hVAO, r_wsurf.hSceneVBO, VBOCache->hEBO,
+		[]() {
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
+			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
+			glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
+		},
+		[]() {
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
+			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
+		});
 
 		VBOCache->iPolyCount += brushface->num_polys;
 
@@ -296,16 +321,7 @@ void __fastcall ClientPortalManager_DrawPortalSurface(void *ClientPortalManager,
 
 	auto VBOCache = R_PreparePortalVBO(ClientPortalManager, ClientPortal, surf, textureId);
 
-	glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hSceneVBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOCache->hEBO);
-
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
-
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
+	GL_BindVAO(VBOCache->hVAO);
 
 	glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
@@ -320,10 +336,5 @@ void __fastcall ClientPortalManager_DrawPortalSurface(void *ClientPortalManager,
 
 	glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	GL_BindVAO(0);
 }

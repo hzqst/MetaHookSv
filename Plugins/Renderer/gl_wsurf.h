@@ -187,6 +187,7 @@ typedef struct wsurf_vbo_leaf_s
 		hEBO = NULL;
 	}
 
+	GLuint hVAO;
 	GLuint hEBO;
 	std::vector<brushtexchain_t> vTextureChain[WSURF_TEXCHAIN_MAX];
 	std::vector<wsurf_vbo_batch_t *> vDrawBatch[WSURF_DRAWBATCH_MAX];
@@ -323,6 +324,7 @@ typedef struct r_worldsurf_s
 		hSceneUBO = 0;
 		hDLightUBO = 0;
 		hDecalVBO = 0;
+		hDecalVAO = 0;
 		hDecalSSBO = 0;
 		hSkyboxSSBO = 0;
 		hDetailSkyboxSSBO = 0;
@@ -353,6 +355,7 @@ typedef struct r_worldsurf_s
 	GLuint				hSceneUBO;
 	GLuint				hDLightUBO;
 	GLuint				hDecalVBO;
+	GLuint				hDecalVAO;
 	GLuint				hDecalSSBO;
 	GLuint				hSkyboxSSBO;
 	GLuint				hDetailSkyboxSSBO;

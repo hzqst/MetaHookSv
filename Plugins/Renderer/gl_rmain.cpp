@@ -1482,6 +1482,7 @@ void GLAPIENTRY GL_DebugOutputCallback(GLenum source, GLenum type, GLuint id, GL
 void GL_Init(void)
 {
 	auto err = glewInit();
+
 	if (GLEW_OK != err)
 	{
 		g_pMetaHookAPI->SysError("glewInit failed, %s", glewGetErrorString(err));
@@ -3197,9 +3198,8 @@ void R_LoadLegacySkyTextures(const char* name)
 
 void R_LoadDetailSkyTextures(const char* name)
 {
-	auto skytexorder = (g_iEngineType == ENGINE_SVENGINE) ? skytexorder_svengine : skytexorder_goldsrc;
+	const char* suf[6] = { "rt", "lf", "bk", "ft", "up", "dn" };
 
-	const char* suf[6] = { "rt", "bk", "lf", "ft", "up", "dn" };
 	for (int i = 0; i < 6; i++)
 	{
 		char fullpath[256];
@@ -3220,7 +3220,7 @@ void R_LoadDetailSkyTextures(const char* name)
 			continue;
 		}
 
-		r_wsurf.vSkyboxTextureId[6 + skytexorder[i]] = texId;
+		r_wsurf.vSkyboxTextureId[6 + i] = texId;
 	}
 }
 

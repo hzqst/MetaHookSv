@@ -1081,7 +1081,7 @@ void R_DrawDecals(cl_entity_t *ent)
 	//Decal only affects diffuse and normal channel
 	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE | GBUFFER_MASK_WORLDNORM);
 
-	//Use alphablend to blend with gbuffer
+	//Use AlphaBlend to blend with GBuffer.diffuse, for GBuffer.worldnorm it's overwrite
 	R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	if (gl_polyoffset && gl_polyoffset->value)
@@ -1203,47 +1203,15 @@ void R_DrawDecals(cl_entity_t *ent)
 
 	if (r_draw_oitblend)
 	{
-		/*if ((*currententity)->curstate.rendermode == kRenderTransAdd)
-			WSurfProgramState |= WSURF_OIT_ADDITIVE_BLEND_ENABLED;
-		else*/
-
 		WSurfProgramState |= WSURF_OIT_ALPHA_BLEND_ENABLED;
 	}
 
-	glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hDecalVBO);
+	GL_BindVAO(r_wsurf.hDecalVAO);
 
 	if (bUseBindless)
 	{
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_DECAL_SSBO, r_wsurf.hDecalSSBO);
 	}
-
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DECALINDEX);
-	glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
-
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, pos));
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, normal));
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_S_TANGENT, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, s_tangent));
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_T_TANGENT, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, t_tangent));
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_TEXCOORD, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, texcoord));
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD, 3, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, lightmaptexcoord));
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, replacetexcoord));
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, detailtexcoord));
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, normaltexcoord));
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, parallaxtexcoord));
-	glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(decalvertex_t), OFFSET(decalvertex_t, speculartexcoord));
-	glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_DECALINDEX, 1, GL_INT, sizeof(decalvertex_t), OFFSET(decalvertex_t, decalindex));
-	glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(decalvertex_t), OFFSET(decalvertex_t, styles));
 
 	if (g_DecalBaseDrawBatch.BatchCount > 0)
 	{
@@ -1297,23 +1265,9 @@ void R_DrawDecals(cl_entity_t *ent)
 		r_wsurf_drawcall += g_DecalDetailDrawBatch.BatchCount;
 	}
 
+	GL_BindVAO(0);
+
 	GL_UseProgram(0);
-
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DECALINDEX);
-	glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	if (gl_polyoffset && gl_polyoffset->value)
 	{

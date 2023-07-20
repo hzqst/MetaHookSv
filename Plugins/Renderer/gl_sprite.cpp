@@ -521,9 +521,6 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 	glUniform3f(4, ent->angles[0], ent->angles[1], ent->angles[2]);
 	glUniform1f(5, scale);
 
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
 	GL_Bind(frame->gl_texturenum);
 	glDrawArrays(GL_QUADS, 0, 4);
 

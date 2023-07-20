@@ -30,11 +30,13 @@ typedef struct portal_vbo_s
 	portal_vbo_s()
 	{
 		hEBO = 0;
+		hVAO = 0;
 		texinfo = NULL;
 		iPolyCount = 0;
 	}
 
 	GLuint hEBO;
+	GLuint hVAO;
 	mtexinfo_t *texinfo;
 	std::vector<GLuint> vIndicesBuffer;
 	std::set<int> PolySet;

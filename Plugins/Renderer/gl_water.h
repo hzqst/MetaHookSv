@@ -92,6 +92,7 @@ typedef struct water_vbo_s
 	water_vbo_s()
 	{
 		hEBO = 0;
+		hVAO = 0;
 		texture = NULL;
 
 		normalmap = 0;
@@ -126,6 +127,7 @@ typedef struct water_vbo_s
 		vIndicesBuffer = NULL;
 	}
 	GLuint hEBO;
+	GLuint hVAO;
 
 	texture_t *texture;
 

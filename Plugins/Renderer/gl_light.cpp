@@ -35,7 +35,9 @@ int gbuffer_attachment_count = 0;
 
 GLuint r_sphere_vbo = 0;
 GLuint r_sphere_ebo = 0;
+GLuint r_sphere_vao = 0;
 GLuint r_cone_vbo = 0;
+GLuint r_cone_vao = 0;
 
 GLuint r_flashlight_cone_texture = 0;
 std::string r_flashlight_cone_texture_name;
@@ -333,14 +335,21 @@ void R_InitLight(void)
 	}
 
 	r_sphere_vbo = GL_GenBuffer();
-	glBindBuffer(GL_ARRAY_BUFFER, r_sphere_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sphereVertices.size() * sizeof(float), sphereVertices.data(), GL_STATIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	GL_UploadDataToVBO(r_sphere_vbo, sphereVertices.size() * sizeof(float), sphereVertices.data());
 
 	r_sphere_ebo = GL_GenBuffer();
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r_sphere_ebo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphereIndices.size() * sizeof(int), sphereIndices.data(), GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	GL_UploadDataToEBO(r_sphere_ebo, sphereIndices.size() * sizeof(int), sphereIndices.data());
+
+	r_sphere_vao = GL_GenVAO();
+
+	GL_BindStatesForVAO(r_sphere_vao, r_sphere_vbo, r_sphere_ebo,
+	[]() {
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+	}, 
+	[]() {
+		glDisableVertexAttribArray(0);
+	});
 
 	std::vector<float> coneVertices;
 
@@ -393,9 +402,18 @@ void R_InitLight(void)
 	}
 
 	r_cone_vbo = GL_GenBuffer();
-	glBindBuffer(GL_ARRAY_BUFFER, r_cone_vbo);
-	glBufferData(GL_ARRAY_BUFFER, coneVertices.size() * sizeof(float), coneVertices.data(), GL_STATIC_DRAW_ARB);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	GL_UploadDataToVBO(r_cone_vbo, coneVertices.size() * sizeof(float), coneVertices.data());
+
+	r_cone_vao = GL_GenVAO();
+
+	GL_BindStatesForVAO(r_cone_vao, r_cone_vbo, 0,
+	[]() {
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+	},
+	[]() {
+		glDisableVertexAttribArray(0);
+	});
 
 	drawgbuffer = false;
 }
@@ -789,10 +807,7 @@ void R_EndRenderGBuffer(void)
 	{
 		if (bVolume)
 		{
-			glBindBuffer(GL_ARRAY_BUFFER, r_sphere_vbo);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, r_sphere_ebo);
-			glEnableVertexAttribArray(0);
-			glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+			GL_BindVAO(r_sphere_vao);
 
 			glPushMatrix();
 			glLoadIdentity();
@@ -819,9 +834,7 @@ void R_EndRenderGBuffer(void)
 
 			glDrawElements(GL_TRIANGLES, X_SEGMENTS * Y_SEGMENTS * 6, GL_UNSIGNED_INT, 0);
 
-			glDisableVertexAttribArray(0);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			GL_BindVAO(0);
 		}
 		else
 		{
@@ -849,12 +862,9 @@ void R_EndRenderGBuffer(void)
 		vec3_t origin, vec3_t angle, vec3_t vforward, vec3_t vright, vec3_t vup,
 		vec3_t color, float ambient, float diffuse, float specular, float specularpow, shadow_texture_t *shadowtex, bool bVolume, bool bIsFromLocalPlayer)
 	{
-
 		if (bVolume)
 		{
-			glBindBuffer(GL_ARRAY_BUFFER, r_cone_vbo);
-			glEnableVertexAttribArray(0);
-			glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+			GL_BindVAO(r_cone_vao);
 
 			glPushMatrix();
 			glLoadIdentity();
@@ -912,8 +922,7 @@ void R_EndRenderGBuffer(void)
 
 			glDrawArrays(GL_TRIANGLES, 0, X_SEGMENTS * 6);
 
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
-			glDisableVertexAttribArray(0);
+			GL_BindVAO(0);
 
 			if (DLightProgramState & DLIGHT_SHADOW_TEXTURE_ENABLED)
 			{

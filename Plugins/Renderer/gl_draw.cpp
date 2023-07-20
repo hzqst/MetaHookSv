@@ -152,14 +152,62 @@ GLuint GL_GenBuffer(void)
 	return buf;
 }
 
+GLuint GL_GenVAO(void)
+{
+	GLuint VAO;
+	glGenVertexArrays(1, &VAO);
+	return VAO;
+}
+
 void GL_DeleteBuffer(GLuint buf)
 {
 	glDeleteBuffers(1, &buf);
 }
 
+void GL_DeleteVAO(GLuint VAO)
+{
+	glDeleteVertexArrays(1, &VAO);
+}
+
 void GL_DeleteTexture(GLuint tex)
 {
 	glDeleteTextures(1, &tex);
+}
+
+void GL_BindVAO(GLuint VAO)
+{
+	glBindVertexArray(VAO);
+}
+
+void GL_UploadDataToVBO(GLuint VBO, size_t size, const void* data)
+{
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void GL_UploadDataToEBO(GLuint EBO, size_t size, const void* data)
+{
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, void(*bind)(), void(*unbind)())
+{
+	GL_BindVAO(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+
+	bind();
+
+	GL_BindVAO(0);
+
+	unbind();
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void GL_Bind(int texnum)

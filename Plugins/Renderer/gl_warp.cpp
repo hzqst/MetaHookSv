@@ -78,18 +78,9 @@ void R_DrawSkyBox(void)
 	wsurf_program_t prog = { 0 };
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
 	if (bUseBindless)
 	{
-		if (r_detailskytextures->value &&
-			r_wsurf.vSkyboxTextureId[6] &&
-			r_wsurf.vSkyboxTextureId[7] &&
-			r_wsurf.vSkyboxTextureId[8] &&
-			r_wsurf.vSkyboxTextureId[9] &&
-			r_wsurf.vSkyboxTextureId[10] &&
-			r_wsurf.vSkyboxTextureId[11])
+		if (r_detailskytextures->value && r_wsurf.vSkyboxTextureId[6])
 		{
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_SKYBOX_SSBO, r_wsurf.hDetailSkyboxSSBO);
 		}
@@ -105,13 +96,7 @@ void R_DrawSkyBox(void)
 	}
 	else
 	{
-		if (r_detailskytextures->value && 
-			r_wsurf.vSkyboxTextureId[6] &&
-			r_wsurf.vSkyboxTextureId[7] &&
-			r_wsurf.vSkyboxTextureId[8] &&
-			r_wsurf.vSkyboxTextureId[9] &&
-			r_wsurf.vSkyboxTextureId[10] &&
-			r_wsurf.vSkyboxTextureId[11])
+		if (r_detailskytextures->value && r_wsurf.vSkyboxTextureId[6])
 		{
 			for (int i = 0; i < 6; ++i)
 			{
