@@ -3197,7 +3197,7 @@ void R_LoadLegacySkyTextures(const char* name)
 
 void R_LoadDetailSkyTextures(const char* name)
 {
-	//auto skytexorder = (g_iEngineType == ENGINE_SVENGINE) ? skytexorder_svengine : skytexorder_goldsrc;
+	auto skytexorder = (g_iEngineType == ENGINE_SVENGINE) ? skytexorder_svengine : skytexorder_goldsrc;
 
 	const char* suf[6] = { "rt", "bk", "lf", "ft", "up", "dn" };
 	for (int i = 0; i < 6; i++)
@@ -3220,7 +3220,7 @@ void R_LoadDetailSkyTextures(const char* name)
 			continue;
 		}
 
-		r_wsurf.vSkyboxTextureId[6 + i] = texId;
+		r_wsurf.vSkyboxTextureId[6 + skytexorder[i]] = texId;
 	}
 }
 
