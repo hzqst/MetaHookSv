@@ -17,6 +17,8 @@ extern int *particletexture;
 extern particle_t **active_particles;
 extern word **host_basepal;
 
+extern cvar_t* r_sprite_lerping;
+
 void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput);
 void R_UseLegacySpriteProgram(program_state_t state, legacysprite_program_t *progOutput);
 void R_InitSprite(void);
@@ -36,6 +38,7 @@ void R_SaveSpriteProgramStates(void);
 #define SPRITE_EXP_FOG_ENABLED				0x80ull
 #define SPRITE_EXP2_FOG_ENABLED				0x100ull
 #define SPRITE_CLIP_ENABLED					0x200ull
+#define SPRITE_LERP_ENABLED					0x400ull
 
 #define SPRITE_PARALLEL_UPRIGHT_ENABLED		0x1000ull
 #define SPRITE_FACING_UPRIGHT_ENABLED		0x2000ull

@@ -2090,6 +2090,8 @@ void R_InitCvars(void)
 
 	r_detailskytextures = gEngfuncs.pfnRegisterVariable("r_detailskytextures", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
+	r_sprite_lerping = gEngfuncs.pfnRegisterVariable("r_sprite_lerping", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
 	gEngfuncs.pfnAddCommand("saveprogstate", R_SaveProgramStates_f);
 	gEngfuncs.pfnAddCommand("loadprogstate", R_LoadProgramStates_f);
 }
