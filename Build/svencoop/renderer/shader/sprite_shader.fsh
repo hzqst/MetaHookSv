@@ -8,8 +8,13 @@ layout (location = 2) uniform vec4 in_color;
 layout (location = 3) uniform vec3 in_origin;
 layout (location = 4) uniform vec3 in_angles;
 layout (location = 5) uniform float in_scale;
+layout (location = 6) uniform float in_lerp;
 
 layout(binding = 0) uniform sampler2D baseTex;
+
+#ifdef LERP_ENABLED
+layout(binding = 1) uniform sampler2D oldTex;
+#endif
 
 in vec3 v_worldpos;
 in vec3 v_normal;
@@ -30,12 +35,8 @@ layout(location = 0) out vec4 out_Diffuse;
 
 #endif
 
-void main(void)
+vec4 ProcessColor(vec4 baseColor)
 {
-	ClipPlaneTest(v_worldpos.xyz, v_normal.xyz);
-
-	vec4 baseColor = texture(baseTex, v_texcoord);
-
 #if !defined(ADDITIVE_BLEND_ENABLED) && !defined(OIT_ADDITIVE_BLEND_ENABLED)
 	//Alpha blend
 	baseColor = TexGammaToLinear(baseColor);
@@ -44,6 +45,27 @@ void main(void)
 	//Additive blend
 	baseColor = TexGammaToLinear(baseColor);
 	baseColor.a = pow(baseColor.a, SceneUBO.r_additive_shift);
+#endif
+	return baseColor;
+}
+
+
+void main(void)
+{
+	ClipPlaneTest(v_worldpos.xyz, v_normal.xyz);
+
+	vec4 baseColor = texture(baseTex, v_texcoord);
+
+	baseColor = ProcessColor(baseColor);
+
+#ifdef LERP_ENABLED
+	
+	vec4 oldColor = texture(oldTex, v_texcoord);
+
+	oldColor = ProcessColor(oldColor);
+
+	baseColor = mix(oldColor, baseColor, in_lerp);
+
 #endif
 
 	vec4 lightmapColor = v_color;
