@@ -1,12 +1,15 @@
 #ifdef BINDLESS_ENABLED
 
-#ifdef NV_BINDLESS_ENABLED
+#if defined(NV_BINDLESS_ENABLED)
 	#extension GL_NV_bindless_texture : require
 	#extension GL_NV_gpu_shader5 : require
-#else
+#elif defined(INT64_BINDLESS_ENABLED)
 	#extension GL_ARB_bindless_texture : require
 	#extension GL_ARB_gpu_shader5 : require
 	#extension GL_ARB_gpu_shader_int64 : require
+#else
+	#extension GL_ARB_bindless_texture : require
+	#extension GL_ARB_gpu_shader5 : require
 #endif
 
 #endif
@@ -40,10 +43,17 @@
 #if defined(NV_BINDLESS_ENABLED)
 
 	#define texture_handle_t uint64_t
+	#define sampler_handle_t uint64_t
+
+#elif defined(INT64_BINDLESS_ENABLED)
+
+	#define texture_handle_t uint64_t
+	#define sampler_handle_t uvec2
 
 #else
 
 	#define texture_handle_t uvec2
+	#define sampler_handle_t uvec2
 
 #endif
 
@@ -172,12 +182,12 @@ layout (std140, binding = BINDING_POINT_DLIGHT_UBO) uniform DLightBlock
 
 	layout (std430, binding = BINDING_POINT_DECAL_SSBO) coherent buffer DecalBlock
 	{
-		uint64_t DecalSSBO[];
+		texture_handle_t DecalSSBO[];
 	};
 
 	layout (std430, binding = BINDING_POINT_SKYBOX_SSBO) coherent buffer SkyboxBlock
 	{
-		uint64_t SkyboxSSBO[];
+		texture_handle_t SkyboxSSBO[];
 	};
 
 #endif
@@ -193,7 +203,7 @@ layout (std140, binding = BINDING_POINT_ENTITY_UBO) uniform EntityBlock
 
 layout (std430, binding = BINDING_POINT_TEXTURE_SSBO) coherent buffer TextureBlock
 {
-	uint64_t TextureSSBO[];
+	texture_handle_t TextureSSBO[];
 };
 
 #endif
