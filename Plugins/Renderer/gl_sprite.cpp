@@ -638,7 +638,7 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 	GL_Bind(frame->gl_texturenum);
 
-	if (frame != oldframe)
+	if (SpriteProgramState & SPRITE_LERP_ENABLED)
 	{
 		GL_EnableMultitexture();
 		GL_Bind(oldframe->gl_texturenum);

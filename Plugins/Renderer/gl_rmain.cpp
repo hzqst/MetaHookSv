@@ -241,6 +241,8 @@ cvar_t *r_vertical_fov = NULL;
 
 cvar_t *gl_profile = NULL;
 
+cvar_t *gl_bindless = NULL;
+
 cvar_t *dev_overview_color = NULL;
 
 cvar_t *r_alpha_shift = NULL;
@@ -1476,7 +1478,7 @@ void GLAPIENTRY GL_DebugOutputCallback(GLenum source, GLenum type, GLuint id, GL
 	if (0 == strncmp(message, "API_ID_RECOMPILE_FRAGMENT_SHADER", sizeof("API_ID_RECOMPILE_FRAGMENT_SHADER") - 1))
 		return;
 
-	gEngfuncs.Con_DPrintf("GL_DebugOutputCallback: source:[%X], type:[%X], id:[%X], message:[%s]\n", source, type, id, message);
+	//gEngfuncs.Con_DPrintf("GL_DebugOutputCallback: source:[%X], type:[%X], id:[%X], message:[%s]\n", source, type, id, message);
 }
 
 void GL_Init(void)
@@ -2083,6 +2085,11 @@ void R_InitCvars(void)
 	r_adjust_fov = gEngfuncs.pfnRegisterVariable("r_adjust_fov", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gl_profile = gEngfuncs.pfnRegisterVariable("gl_profile", "0", FCVAR_CLIENTDLL );
+
+	if (bUseBindless)
+	{
+		gl_bindless = gEngfuncs.pfnRegisterVariable("gl_bindless", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	}
 
 	r_alpha_shift = gEngfuncs.pfnRegisterVariable("r_alpha_shift", "0.4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	

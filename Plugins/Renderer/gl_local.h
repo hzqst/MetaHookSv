@@ -292,6 +292,8 @@ extern cvar_t *r_additive_shift;
 
 extern cvar_t* r_detailskytextures;
 
+extern cvar_t *gl_bindless;
+
 void R_FillAddress(void);
 void R_InstallHooks(void);
 void R_UninstallHooksForEngineDLL(void);

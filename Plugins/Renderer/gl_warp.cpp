@@ -35,7 +35,7 @@ void R_DrawSkyBox(void)
 
 	program_state_t WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_SKYBOX_ENABLED;
 
-	if (bUseBindless)
+	if (bUseBindless && gl_bindless->value)
 	{
 		WSurfProgramState |= WSURF_BINDLESS_ENABLED;
 	}
@@ -78,7 +78,7 @@ void R_DrawSkyBox(void)
 	wsurf_program_t prog = { 0 };
 	R_UseWSurfProgram(WSurfProgramState, &prog);
 
-	if (bUseBindless)
+	if (WSurfProgramState & WSURF_BINDLESS_ENABLED)
 	{
 		if (r_detailskytextures->value && r_wsurf.vSkyboxTextureId[6])
 		{
@@ -88,10 +88,7 @@ void R_DrawSkyBox(void)
 		{
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BINDING_POINT_SKYBOX_SSBO, r_wsurf.hSkyboxSSBO);
 		}
-	}
 
-	if (WSurfProgramState & WSURF_BINDLESS_ENABLED)
-	{
 		glDrawArrays(GL_QUADS, 0, 4 * 6);
 	}
 	else

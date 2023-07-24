@@ -1687,7 +1687,7 @@ void R_DrawWSurfVBOEnd()
 
 void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t * vboleaf, bool bUseZPrePass)
 {
-	if(bUseBindless)
+	if(bUseBindless && gl_bindless->value)
 	{
 		program_state_t WSurfProgramState = WSURF_BINDLESS_ENABLED;
 

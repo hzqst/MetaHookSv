@@ -1217,7 +1217,7 @@ void R_DrawDecals(cl_entity_t *ent)
 	{
 		program_state_t WSurfProgramStateBase = WSurfProgramState;
 
-		if (bUseBindless)
+		if (bUseBindless && gl_bindless->value)
 		{
 			WSurfProgramStateBase |= WSURF_BINDLESS_ENABLED;
 		}
