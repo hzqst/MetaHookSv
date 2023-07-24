@@ -866,7 +866,16 @@ void R_UploadDecalTextures(int decalIndex, texture_t *ptexture, detail_texture_c
 				}
 			}
 
-			glNamedBufferSubData(r_wsurf.hDecalSSBO, sizeof(vDecalGLTextureHandles) * decalIndex, sizeof(vDecalGLTextureHandles), vDecalGLTextureHandles);
+			if (glNamedBufferSubData)
+			{
+				glNamedBufferSubData(r_wsurf.hDecalSSBO, sizeof(vDecalGLTextureHandles) * decalIndex, sizeof(vDecalGLTextureHandles), vDecalGLTextureHandles);
+			}
+			else
+			{
+				glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hDecalSSBO);
+				glBufferSubData(GL_SHADER_STORAGE_BUFFER, sizeof(vDecalGLTextureHandles) * decalIndex, sizeof(vDecalGLTextureHandles), vDecalGLTextureHandles);
+				glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+			}
 		}
 		else
 		{
@@ -967,7 +976,16 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 		v += VERTEXSIZE;
 	}
 
-	glNamedBufferSubData(r_wsurf.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * vertCount, vertexArray);
+	if (glNamedBufferSubData)
+	{
+		glNamedBufferSubData(r_wsurf.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * vertCount, vertexArray);
+	}
+	else
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hDecalVBO);
+		glBufferSubData(GL_ARRAY_BUFFER, sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * vertCount, vertexArray);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
 
 	r_wsurf.vDecalStartIndex[decalIndex] = MAX_DECALVERTS * decalIndex;
 	r_wsurf.vDecalVertexCount[decalIndex] = vertCount;

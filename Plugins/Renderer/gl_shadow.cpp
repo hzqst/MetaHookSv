@@ -395,8 +395,18 @@ void R_RenderShadowScene(void)
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 			glStencilMask(0);
 
-			glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, viewMatrix), sizeof(mat4), shadow_mvmatrix[i]);
-			glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), shadow_projmatrix[i]);
+			if (glNamedBufferSubData)
+			{
+				glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, viewMatrix), sizeof(mat4), shadow_mvmatrix[i]);
+				glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), shadow_projmatrix[i]);
+			}
+			else
+			{
+				glBindBuffer(GL_UNIFORM_BUFFER, r_wsurf.hSceneUBO);
+				glBufferSubData(GL_UNIFORM_BUFFER, offsetof(scene_ubo_t, viewMatrix), sizeof(mat4), shadow_mvmatrix[i]);
+				glBufferSubData(GL_UNIFORM_BUFFER, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), shadow_projmatrix[i]);
+				glBindBuffer(GL_UNIFORM_BUFFER, 0);
+			}
 
 			cl_entity_t *backup_curentity = (*currententity);
 

@@ -2516,8 +2516,18 @@ void R_SetupGLForViewModel(void)
 		memcpy(SceneUBO.projMatrix, viewmodel_projection_matrix, sizeof(mat4));
 		memcpy(SceneUBO.invProjMatrix, viewmodel_projection_matrix_inv, sizeof(mat4));
 
-		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
-		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
+		if (glNamedBufferSubData)
+		{
+			glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
+			glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
+		}
+		else
+		{
+			glBindBuffer(GL_UNIFORM_BUFFER, r_wsurf.hSceneUBO);
+			glBufferSubData(GL_UNIFORM_BUFFER, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
+			glBufferSubData(GL_UNIFORM_BUFFER, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
+			glBindBuffer(GL_UNIFORM_BUFFER, 0);
+		}
 	}
 }
 
@@ -2904,7 +2914,16 @@ void R_RenderFinalFog(void)
 	SceneUBO.fogEnd = r_fog_control[1];
 	SceneUBO.fogDensity = r_fog_control[2];
 
-	glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, fogColor), offsetof(scene_ubo_t, time) - offsetof(scene_ubo_t, fogColor), &SceneUBO.fogColor);
+	if (glNamedBufferSubData)
+	{
+		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, fogColor), offsetof(scene_ubo_t, time) - offsetof(scene_ubo_t, fogColor), &SceneUBO.fogColor);
+	}
+	else
+	{
+		glBindBuffer(GL_UNIFORM_BUFFER, r_wsurf.hSceneUBO);
+		glBufferSubData(GL_UNIFORM_BUFFER, offsetof(scene_ubo_t, fogColor), offsetof(scene_ubo_t, time) - offsetof(scene_ubo_t, fogColor), &SceneUBO.fogColor);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
 
 	glEnable(GL_FOG);
 	glFogi(GL_FOG_MODE, r_fog_mode);
@@ -3160,12 +3179,30 @@ void R_CreateBindlessTexturesForSkybox()
 
 		if (r_wsurf.hSkyboxSSBO)
 		{
-			glNamedBufferSubData(r_wsurf.hSkyboxSSBO, 0, sizeof(GLuint64) * 6, r_wsurf.vSkyboxTextureHandles);
+			if (glNamedBufferSubData)
+			{
+				glNamedBufferSubData(r_wsurf.hSkyboxSSBO, 0, sizeof(GLuint64) * 6, r_wsurf.vSkyboxTextureHandles);
+			}
+			else
+			{
+				glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hSkyboxSSBO);
+				glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLuint64) * 6, r_wsurf.vSkyboxTextureHandles);
+				glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+			}
 		}
 
 		if (r_wsurf.hDetailSkyboxSSBO)
 		{
-			glNamedBufferSubData(r_wsurf.hDetailSkyboxSSBO, 0, sizeof(GLuint64) * 6, &r_wsurf.vSkyboxTextureHandles[6]);
+			if (glNamedBufferSubData)
+			{
+				glNamedBufferSubData(r_wsurf.hDetailSkyboxSSBO, 0, sizeof(GLuint64) * 6, &r_wsurf.vSkyboxTextureHandles[6]);
+			}
+			else
+			{
+				glBindBuffer(GL_SHADER_STORAGE_BUFFER, r_wsurf.hDetailSkyboxSSBO);
+				glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLuint64) * 6, &r_wsurf.vSkyboxTextureHandles[6]);
+				glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+			}
 		}
 	}
 }

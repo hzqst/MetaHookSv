@@ -1128,8 +1128,17 @@ void R_DrawStudioVBOBegin(studio_vbo_t *VBOData)
 	}
 
 	memcpy(StudioUBO.bonematrix, (*pbonetransform), sizeof(mat3x4) * 128);
-
-	glNamedBufferSubData(VBOData->hStudioUBO, 0, sizeof(StudioUBO), &StudioUBO);
+	
+	if (glNamedBufferSubData)
+	{
+		glNamedBufferSubData(VBOData->hStudioUBO, 0, sizeof(StudioUBO), &StudioUBO);
+	}
+	else
+	{
+		glBindBuffer(GL_UNIFORM_BUFFER, VBOData->hStudioUBO);
+		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(StudioUBO), &StudioUBO);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_STUDIO_UBO, VBOData->hStudioUBO);
 
