@@ -916,23 +916,18 @@ void R_DrawCurrentEntity(bool bTransparent)
 	}
 	case mod_studio:
 	{
+		if ((*currententity)->curstate.movetype == MOVETYPE_FOLLOW)
+		{
+			return;
+		}
+
 		if ((*currententity)->player)
 		{
 			(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
 		}
 		else
 		{
-			if ((*currententity)->curstate.movetype == MOVETYPE_FOLLOW)
-			{
-				return;
-			}
-
 			(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
-		}
-
-		if ((*currententity)->curstate.movetype == MOVETYPE_FOLLOW)
-		{
-			return;
 		}
 
 		auto comp = R_GetEntityComponent((*currententity), false);
@@ -949,10 +944,6 @@ void R_DrawCurrentEntity(bool bTransparent)
 
 			//do what CL_MoveAiments does...?
 
-			//vec3_t currententity_origin;
-			//VectorCopy((*currententity)->curstate.origin, currententity_origin);
-
-			//auto save_currententity = (*currententity);
 			for (size_t i = 0; i < comp->FollowEnts.size(); ++i)
 			{
 				//restore matrix at each run
@@ -964,10 +955,14 @@ void R_DrawCurrentEntity(bool bTransparent)
 
 				(*currententity) = comp->FollowEnts[i];
 				
-				//TODO: shall we do CL_MoveAiments???...
-				//VectorCopy(currententity_origin, (*currententity)->curstate.origin);
-
-				(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
+				if ((*currententity)->player)
+				{
+					(*gpStudioInterface)->StudioDrawPlayer(STUDIO_RENDER | STUDIO_EVENTS, R_GetPlayerState((*currententity)->index));
+				}
+				else
+				{
+					(*gpStudioInterface)->StudioDrawModel(STUDIO_RENDER | STUDIO_EVENTS);
+				}
 			}
 
 			(*currententity) = save_currententity;
