@@ -1144,6 +1144,9 @@ void CPhysicsManager::ForceRagdollToSleep(CRagdollBody *ragdoll)
 
 void CPhysicsManager::UpdateRagdollSleepState(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time)
 {
+	if (bv_ragdoll_sleepaftertime->value < 0)
+		return;
+
 	float flAverageLinearVelocity = 0;
 	float flAverageAngularVelocity = 0;
 	float flTotalMass = 0;
@@ -2340,6 +2343,7 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		rig->boneindex = rigcontrol->boneindex;
 		rig->flags = rigcontrol->flags;
 		rig->mass = mass;
+		rig->inertia = localInertia;
 
 		rig->rigbody->setUserPointer(rig);
 
@@ -2402,6 +2406,7 @@ CRigBody *CPhysicsManager::CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_con
 		rig->boneindex = rigcontrol->boneindex;
 		rig->flags = rigcontrol->flags;
 		rig->mass = mass;
+		rig->inertia = localInertia;
 
 		rig->rigbody->setUserPointer(rig);
 
@@ -2655,13 +2660,20 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 		}
 		
 		constraint->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, cstcontrol->factor3 * M_PI, 1, 1, 1);
+		
+		constraint->setParam(BT_CONSTRAINT_ERP, 0.15f, 0);
+		constraint->setParam(BT_CONSTRAINT_ERP, 0.15f, 1);
+		constraint->setParam(BT_CONSTRAINT_ERP, 0.15f, 2);
+		constraint->setParam(BT_CONSTRAINT_CFM, 0.1f, 0);
+		constraint->setParam(BT_CONSTRAINT_CFM, 0.1f, 1);
+		constraint->setParam(BT_CONSTRAINT_CFM, 0.1f, 2);
 
-		constraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.0001f, 0);
-		constraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.0001f, 1);
-		constraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.0001f, 2);
-		//constraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.5f, 0);
-		//constraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.5f, 1);
-		//constraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.5f, 2);
+		constraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.5f, 0);
+		constraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.5f, 1);
+		constraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.5f, 2);
+		constraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.01f, 0);
+		constraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.01f, 1);
+		constraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.01f, 2);
 
 		ragdoll->m_constraintArray.emplace_back(constraint);
 		m_dynamicsWorld->addConstraint(constraint, (cstcontrol->type == RAGDOLL_CONSTRAINT_CONETWIST_COLLISION) ? false : true);
@@ -2717,8 +2729,10 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 
 		constraint->setLimit(cstcontrol->factor1 * M_PI, cstcontrol->factor2 * M_PI, 0.1f);
 
-		constraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.0001f);
-		//constraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.5f);
+		constraint->setParam(BT_CONSTRAINT_ERP, 0.15f);
+		constraint->setParam(BT_CONSTRAINT_CFM, 0.1f);
+		constraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.5f);
+		constraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.01f);
 
 		ragdoll->m_constraintArray.emplace_back(constraint);
 
@@ -2751,8 +2765,10 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 			constraint->setDbgDrawSize(drawSize);
 		}
 
-		constraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.0001f);
-		//constraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.5f);
+		constraint->setParam(BT_CONSTRAINT_ERP, 0.15f);
+		constraint->setParam(BT_CONSTRAINT_CFM, 0.1f);
+		constraint->setParam(BT_CONSTRAINT_STOP_ERP, 0.5f);
+		constraint->setParam(BT_CONSTRAINT_STOP_CFM, 0.01f);
 
 		ragdoll->m_constraintArray.emplace_back(constraint);
 
@@ -3494,6 +3510,11 @@ update_kinematic:
 		{
 			rig->rigbody->setCollisionFlags(rig->oldCollisionFlags);
 			rig->rigbody->forceActivationState(ACTIVE_TAG);
+
+			if (!(rig->rigbody->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT))
+			{
+				rig->rigbody->setMassProps(rig->mass, rig->inertia);
+			}
 		}
 	}
 

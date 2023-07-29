@@ -256,6 +256,7 @@ public:
 
 	int flags;
 	float mass;
+	btVector3 inertia;
 	int oldActivitionState;
 	int oldCollisionFlags;
 	int group;
