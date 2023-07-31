@@ -29,11 +29,13 @@ gltexture_t *gltextures_get();
 #define D3DFMT_DXT1     '1TXD'    //  DXT1 compression texture format 
 #define D3DFMT_DXT3     '3TXD'    //  DXT5 compression texture format 
 #define D3DFMT_DXT5     '5TXD'    //  DXT5 compression texture format 
+#define D3DFMT_BC7      ' 7CB'    //  BC7  compression texture format 
 
 #define DIB_HEADER_MARKER ((WORD)('M' << 8) | 'B')
 
 #define SIZE_OF_DXT1(width, height)    ( max(1, ( (width + 3) >> 2 ) ) * max(1, ( (height + 3) >> 2 ) ) * 8 )
 #define SIZE_OF_DXT2(width, height)    ( max(1, ( (width + 3) >> 2 ) ) * max(1, ( (height + 3) >> 2 ) ) * 16 )
+#define SIZE_OF_BC7(width, height)    ( max(1, ( (width + 3) >> 2 ) ) * max(1, ( (height + 3) >> 2 ) ) * 16 )
 
 typedef struct {
 	DWORD dwSize;

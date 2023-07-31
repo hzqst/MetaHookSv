@@ -12,6 +12,7 @@
 #include "privatehook.h"
 #include "plugins.h"
 #include <steam_api.h>
+#include <string>
 #include <functional>
 #include <set>
 #include <unordered_map>
