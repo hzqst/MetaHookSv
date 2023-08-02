@@ -576,9 +576,9 @@ qboolean PowerOfTwo(int iWidth,int iHeight)
 	return true;
 }
 
-qboolean LoadDDS(const char *filename, byte *buf, size_t bufsize, size_t *width, size_t *height, qboolean throw_warning_on_missing)
+qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width, size_t* height, qboolean throw_warning_on_missing)
 {
-	DDS_FILEHEADER fileHeader;
+	DDS_FILEHEADER10 fileHeader10;
 
 	if (width)
 		*width = 0;
@@ -597,70 +597,295 @@ qboolean LoadDDS(const char *filename, byte *buf, size_t bufsize, size_t *width,
 		return false;
 	}
 
-	if (sizeof(DDS_FILEHEADER) != g_pFileSystem->Read(&fileHeader, sizeof(DDS_FILEHEADER), fileHandle))
+	if (sizeof(DDS_FILEHEADER) != g_pFileSystem->Read(&fileHeader10, sizeof(DDS_FILEHEADER), fileHandle))
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
 		g_pFileSystem->Close(fileHandle);
 		return false;
 	}
 
-	if (fileHeader.dwMagic != DDS_MAGIC)
+	if (fileHeader10.dwMagic != DDS_MAGIC)
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
 		g_pFileSystem->Close(fileHandle);
 		return false;
 	}
 
-	if (fileHeader.Header.dwSize != 124)
+	if (fileHeader10.Header.dwSize != 124)
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
 		g_pFileSystem->Close(fileHandle);
 		return false;
 	}
 
-	if (!(fileHeader.Header.dwFlags & DDSD_PIXELFORMAT))
+	if (!(fileHeader10.Header.dwFlags & DDSD_PIXELFORMAT))
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
 		g_pFileSystem->Close(fileHandle);
 		return false;
 	}
 
-	if (!(fileHeader.Header.dwFlags & DDSD_CAPS))
+	if (!(fileHeader10.Header.dwFlags & DDSD_CAPS))
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
 		g_pFileSystem->Close(fileHandle);
 		return false;
 	}
 
-	if (!(fileHeader.Header.ddspf.dwFlags & DDPF_FOURCC))
+	if (!(fileHeader10.Header.ddspf.dwFlags & DDPF_FOURCC))
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
 		g_pFileSystem->Close(fileHandle);
 		return false;
 	}
 
-	if (fileHeader.Header.ddspf.dwFourCC != D3DFMT_DXT1 &&
-		fileHeader.Header.ddspf.dwFourCC != D3DFMT_DXT3 &&
-		fileHeader.Header.ddspf.dwFourCC != D3DFMT_DXT5 &&
-		fileHeader.Header.ddspf.dwFourCC != D3DFMT_BC7)
+	if (fileHeader10.Header.ddspf.dwFourCC != D3DFMT_DXT1 &&
+		fileHeader10.Header.ddspf.dwFourCC != D3DFMT_DXT3 &&
+		fileHeader10.Header.ddspf.dwFourCC != D3DFMT_DXT5 &&
+		fileHeader10.Header.ddspf.dwFourCC != D3DFMT_BC7 &&
+		fileHeader10.Header.ddspf.dwFourCC != D3DFMT_DX10)
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s has unsupported compressed texture format! Only DXT1/3/5 and BC7 supported!\n", filename);
 		g_pFileSystem->Close(fileHandle);
 		return false;
 	}
 
+	if (fileHeader10.Header.ddspf.dwFourCC == D3DFMT_DX10)
+	{
+		if (sizeof(DDS_HEADER_DXT10) != g_pFileSystem->Read(&fileHeader10.Header10, sizeof(DDS_HEADER_DXT10), fileHandle))
+		{
+			gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
+			g_pFileSystem->Close(fileHandle);
+			return false;
+		}
+
+		g_pFileSystem->Seek(fileHandle, sizeof(DDS_FILEHEADER10), FILESYSTEM_SEEK_HEAD);
+	}
+	else
+	{
+		g_pFileSystem->Seek(fileHandle, sizeof(DDS_FILEHEADER), FILESYSTEM_SEEK_HEAD);
+	}
+
 	gl_loadtexture_mipmap.clear();
 
-	g_pFileSystem->Seek(fileHandle, sizeof(DDS_FILEHEADER), FILESYSTEM_SEEK_HEAD);
-
 	size_t offset = 0;
-	size_t w = fileHeader.Header.dwWidth;
-	size_t h = fileHeader.Header.dwHeight;
+	size_t w = fileHeader10.Header.dwWidth;
+	size_t h = fileHeader10.Header.dwHeight;
 
-	for (size_t i = 0; i < fileHeader.Header.dwMipMapCount; ++i)
+	for (size_t i = 0; i < fileHeader10.Header.dwMipMapCount; ++i)
 	{
-		switch (fileHeader.Header.ddspf.dwFourCC)
+		switch (fileHeader10.Header.ddspf.dwFourCC)
 		{
+		case D3DFMT_DX10:
+		{
+			if (fileHeader10.Header10.dxgiFormat == DXGI_FORMAT_BC7_UNORM && fileHeader10.Header10.resourceDimension == D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE2D)
+			{
+				size_t size = SIZE_OF_BC7(w, h);
+
+				if (offset + size > bufsize)
+				{
+					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
+					g_pFileSystem->Close(fileHandle);
+					return false;
+				}
+
+				if (size != g_pFileSystem->Read((void*)(buf + offset), size, fileHandle))
+				{
+					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
+					g_pFileSystem->Close(fileHandle);
+					return false;
+				}
+
+				gl_loadtexture_format = GL_COMPRESSED_RGBA_BPTC_UNORM;
+				gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
+
+				offset += size;
+				w = w >> 1;
+				h = h >> 1;
+			}
+			else if (fileHeader10.Header10.dxgiFormat == DXGI_FORMAT_BC7_UNORM_SRGB && fileHeader10.Header10.resourceDimension == D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE2D)
+			{
+				size_t size = SIZE_OF_BC7(w, h);
+
+				if (offset + size > bufsize)
+				{
+					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
+					g_pFileSystem->Close(fileHandle);
+					return false;
+				}
+
+				if (size != g_pFileSystem->Read((void*)(buf + offset), size, fileHandle))
+				{
+					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
+					g_pFileSystem->Close(fileHandle);
+					return false;
+				}
+
+				gl_loadtexture_format = GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM;
+				gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
+
+				offset += size;
+				w = w >> 1;
+				h = h >> 1;
+			}
+			else if (fileHeader10.Header10.dxgiFormat == DXGI_FORMAT_BC1_UNORM && fileHeader10.Header10.resourceDimension == D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE2D)
+			{
+				size_t size = SIZE_OF_DXT1(w, h);
+
+				if (offset + size > bufsize)
+				{
+					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
+					g_pFileSystem->Close(fileHandle);
+					return false;
+				}
+
+				if (size != g_pFileSystem->Read((void*)(buf + offset), size, fileHandle))
+				{
+					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
+					g_pFileSystem->Close(fileHandle);
+					return false;
+				}
+
+				gl_loadtexture_format = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+				gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
+
+				offset += size;
+				w = w >> 1;
+				h = h >> 1;
+			}
+			else if (fileHeader10.Header10.dxgiFormat == DXGI_FORMAT_BC1_UNORM_SRGB && fileHeader10.Header10.resourceDimension == D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE2D)
+			{
+				size_t size = SIZE_OF_DXT1(w, h);
+
+				if (offset + size > bufsize)
+				{
+					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
+					g_pFileSystem->Close(fileHandle);
+					return false;
+				}
+
+				if (size != g_pFileSystem->Read((void*)(buf + offset), size, fileHandle))
+				{
+					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
+					g_pFileSystem->Close(fileHandle);
+					return false;
+				}
+
+				gl_loadtexture_format = GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
+				gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
+
+				offset += size;
+				w = w >> 1;
+				h = h >> 1;
+			}
+			else if (fileHeader10.Header10.dxgiFormat == DXGI_FORMAT_BC2_UNORM && fileHeader10.Header10.resourceDimension == D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE2D)
+			{
+				size_t size = SIZE_OF_DXT2(w, h);
+
+				if (offset + size > bufsize)
+				{
+					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
+					g_pFileSystem->Close(fileHandle);
+					return false;
+				}
+
+				if (size != g_pFileSystem->Read((void*)(buf + offset), size, fileHandle))
+				{
+					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
+					g_pFileSystem->Close(fileHandle);
+					return false;
+				}
+
+				gl_loadtexture_format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+				gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
+
+				offset += size;
+				w = w >> 1;
+				h = h >> 1;
+			}
+			else if (fileHeader10.Header10.dxgiFormat == DXGI_FORMAT_BC2_UNORM_SRGB && fileHeader10.Header10.resourceDimension == D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE2D)
+			{
+				size_t size = SIZE_OF_DXT2(w, h);
+
+				if (offset + size > bufsize)
+				{
+					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
+					g_pFileSystem->Close(fileHandle);
+					return false;
+				}
+
+				if (size != g_pFileSystem->Read((void*)(buf + offset), size, fileHandle))
+				{
+					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
+					g_pFileSystem->Close(fileHandle);
+					return false;
+				}
+
+				gl_loadtexture_format = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
+				gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
+
+				offset += size;
+				w = w >> 1;
+				h = h >> 1;
+			}
+			else if (fileHeader10.Header10.dxgiFormat == DXGI_FORMAT_BC3_UNORM && fileHeader10.Header10.resourceDimension == D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE2D)
+			{
+				size_t size = SIZE_OF_DXT2(w, h);
+
+				if (offset + size > bufsize)
+				{
+					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
+					g_pFileSystem->Close(fileHandle);
+					return false;
+				}
+
+				if (size != g_pFileSystem->Read((void*)(buf + offset), size, fileHandle))
+				{
+					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
+					g_pFileSystem->Close(fileHandle);
+					return false;
+				}
+
+				gl_loadtexture_format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+				gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
+
+				offset += size;
+				w = w >> 1;
+				h = h >> 1;
+			}
+			else if (fileHeader10.Header10.dxgiFormat == DXGI_FORMAT_BC3_UNORM_SRGB && fileHeader10.Header10.resourceDimension == D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE2D)
+			{
+				size_t size = SIZE_OF_DXT2(w, h);
+
+				if (offset + size > bufsize)
+				{
+					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
+					g_pFileSystem->Close(fileHandle);
+					return false;
+				}
+
+				if (size != g_pFileSystem->Read((void*)(buf + offset), size, fileHandle))
+				{
+					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
+					g_pFileSystem->Close(fileHandle);
+					return false;
+				}
+
+				gl_loadtexture_format = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+				gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
+
+				offset += size;
+				w = w >> 1;
+				h = h >> 1;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("LoadDDS: File %s has unsupported compressed texture format! Only DXT1/3/5 and BC7 supported!\n", filename);
+				g_pFileSystem->Close(fileHandle);
+				return false;
+			}
+			break;
+		}
 		case D3DFMT_BC7:
 		{
 			size_t size = SIZE_OF_BC7(w, h);
@@ -782,9 +1007,9 @@ qboolean LoadDDS(const char *filename, byte *buf, size_t bufsize, size_t *width,
 	}
 
 	if(width)
-		*width = fileHeader.Header.dwWidth;
+		*width = fileHeader10.Header.dwWidth;
 	if(height)
-		*height = fileHeader.Header.dwHeight;
+		*height = fileHeader10.Header.dwHeight;
 
 	g_pFileSystem->Close(fileHandle);
 
