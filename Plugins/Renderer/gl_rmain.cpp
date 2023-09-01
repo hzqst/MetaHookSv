@@ -3214,14 +3214,14 @@ void R_LoadSky_PreCall(const char* name)
 		}
 	}
 
-	/*for (int i = 0; i < 6; ++i)
+	for (int i = 0; i < 6; ++i)
 	{
 		if (gSkyTexNumber[i])
 		{
 			GL_DeleteTexture(gSkyTexNumber[i]);
 			gSkyTexNumber[i] = 0;
 		}
-	}*/
+	}
 }
 
 void R_LoadLegacySkyTextures(const char* name)
