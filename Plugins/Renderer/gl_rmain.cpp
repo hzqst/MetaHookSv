@@ -236,7 +236,6 @@ cvar_t *default_fov = NULL;
 cvar_t *viewmodel_fov = NULL;
 
 cvar_t *r_adjust_fov = NULL;
-
 cvar_t *r_vertical_fov = NULL;
 
 cvar_t *gl_profile = NULL;
@@ -2348,6 +2347,7 @@ double V_CalcFovV(float fov, float width, float height)
 {
 	if (fov < 1.0 || fov > 179.0)
 		fov = 90.0;
+
 	return atan2(width / (height / tan(fov * (1.0 / 360.0) * M_PI)), 1.0) * 360.0 * (1 / M_PI);
 }
 
@@ -2355,6 +2355,7 @@ double V_CalcFovH(float fov, float width, float height)
 {
 	if (fov < 1.0 || fov > 179.0)
 		fov = 90.0;
+
 	return atan2(height / (width / tan(fov * (1.0 / 360.0) * M_PI)), 1.0) * 360.0 * (1 / M_PI);
 }
 
@@ -2384,12 +2385,20 @@ void V_AdjustFov(float *fov_x, float *fov_y, float width, float height)
 	y = V_CalcFov(fov_x, 640, 480);
 	x = *fov_x;
 
-	*fov_x = V_CalcFov(&y, height, width);
+	if (r_adjust_fov->value == 1)
+	{
+		*fov_x = V_CalcFov(&y, height, width);
 
-	if (*fov_x < x)
+		if (*fov_x < x)
+			*fov_x = x;
+		else
+			*fov_y = y;
+	}
+	else if (r_adjust_fov->value == 2)
+	{
 		*fov_x = x;
-	else
 		*fov_y = y;
+	}
 }
 
 void R_SetFrustum(void)
@@ -2405,10 +2414,7 @@ void R_SetFrustum(void)
 		yfov = V_CalcFovH((*scrfov), glwidth, glheight);
 		xfov = (*scrfov);
 
-		if (r_adjust_fov->value)
-		{
-			V_AdjustFov(&xfov, &yfov, glwidth, glheight);
-		}
+		V_AdjustFov(&xfov, &yfov, glwidth, glheight);
 	}
 
 	RotatePointAroundVector(frustum[0].normal, vup, vpn, -(90.0 - xfov * 0.5));
@@ -2445,6 +2451,36 @@ void MYgluPerspective2(double xfov, double yfov, double zNear, double zFar)
 	glFrustum(xMin, xMax, yMin, yMax, zNear, zFar);
 }
 
+void R_AdjustScopeFOVForViewModel(float *fov)
+{
+	if (!g_bIsCounterStrike)
+	{
+		if (default_fov && fabs(viewmodel_fov->value - default_fov->value) > 1)
+		{
+			*fov = (*scrfov) * viewmodel_fov->value / default_fov->value;
+
+			if (*fov < 15)
+				*fov = 15;
+
+			if (*fov < 1.0 || *fov > 179.0)
+				*fov = 90.0;
+		}
+	}
+	else
+	{
+		if (fabs(viewmodel_fov->value - 90) > 1)
+		{
+			*fov = (*scrfov) * viewmodel_fov->value / 90;
+
+			if (*fov < 15)
+				*fov = 15;
+
+			if (*fov < 1.0 || *fov > 179.0)
+				*fov = 90.0;
+		}
+	}
+}
+
 void R_SetupGLForViewModel(void)
 {
 	if (!CL_IsDevOverviewMode() && viewmodel_fov->value > 0)
@@ -2462,17 +2498,12 @@ void R_SetupGLForViewModel(void)
 			if (fov < 1.0 || fov > 179.0)
 				fov = 90.0;
 
-			//Scoping?
-			if (default_fov && (*scrfov) < default_fov->value)
-			{
-				fov *= (*scrfov) / default_fov->value;
-				if (fov < 15)
-					fov = 15;
-			}
+			R_AdjustScopeFOVForViewModel(&fov);
 
 			r_yfov = fov;
-			r_xfov = atan2(width / (height / tan(fov * (1.0 / 360.0) * M_PI)), 1.0) * 360.0 * (1.0 / M_PI);
+			r_xfov = V_CalcFovV(fov, width, height);
 
+			V_AdjustFov(&r_xfov, &r_yfov, width, height);
 			MYgluPerspectiveV(r_xfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 		else
@@ -2485,17 +2516,12 @@ void R_SetupGLForViewModel(void)
 			if (fov < 1.0 || fov > 179.0)
 				fov = 90.0;
 
-			//Scoping?
-			if (default_fov && (*scrfov) < default_fov->value)
-			{
-				fov *= (*scrfov) / default_fov->value;
-				if (fov < 15)
-					fov = 15;
-			}
+			R_AdjustScopeFOVForViewModel(&fov);
 
 			r_xfov = fov;
-			r_yfov = atan2(height / (width / tan(fov * (1.0 / 360.0) * M_PI)), 1.0) * 360.0 * (1.0 / M_PI);
+			r_yfov = V_CalcFovH(fov, width, height);
 
+			V_AdjustFov(&r_xfov, &r_yfov, width, height);
 			MYgluPerspectiveH(r_yfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 
@@ -2576,6 +2602,7 @@ void R_SetupGL(void)
 	}
 
 	glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
+
 	if (r_draw_shadowcaster)
 	{
 		float cone_fov = current_shadow_texture->cone_angle * 2 * 360 / (M_PI * 2);
@@ -2592,10 +2619,11 @@ void R_SetupGL(void)
 			fov = 90.0;
 
 		r_yfov = fov;
-		r_xfov = atan2(width / (height / tan(fov * (1.0 / 360.0) * M_PI)), 1.0) * 360.0 * (1.0 / M_PI);
+		r_xfov = V_CalcFovV(fov, width, height);
 
 		if ((*r_refdef.onlyClientDraws))
 		{
+			V_AdjustFov(&r_xfov, &r_yfov, width, height);
 			MYgluPerspectiveV(r_xfov, aspect, 4.0, 16000.0);
 		}
 		else if (CL_IsDevOverviewMode())
@@ -2614,6 +2642,7 @@ void R_SetupGL(void)
 		}
 		else
 		{
+			V_AdjustFov(&r_xfov, &r_yfov, width, height);
 			MYgluPerspectiveV(r_xfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 	}
@@ -2623,22 +2652,17 @@ void R_SetupGL(void)
 		auto height = (double)(*r_refdef.vrect).height;
 		auto aspect = width / height;
 		auto fov = (*scrfov);
+
 		if (fov < 1.0 || fov > 179.0)
 			fov = 90.0;
+
 		r_xfov = fov;
-		r_yfov = atan2(height / (width / tan(fov * (1.0 / 360.0) * M_PI)), 1.0) * 360.0 * (1.0 / M_PI);
+		r_yfov = V_CalcFovH(fov, width, height);
 
 		if ((*r_refdef.onlyClientDraws))
 		{
-			if (r_adjust_fov->value)
-			{
-				V_AdjustFov(&r_xfov, &r_yfov, width, height);
-				MYgluPerspectiveH(r_yfov, aspect, 4.0, 16000.0);
-			}
-			else
-			{
-				MYgluPerspectiveH(r_yfov, aspect, 4.0, 16000.0);
-			}
+			V_AdjustFov(&r_xfov, &r_yfov, width, height);
+			MYgluPerspectiveH(r_yfov, aspect, 4.0, 16000.0);
 		}
 		else if (CL_IsDevOverviewMode())
 		{
@@ -2656,17 +2680,11 @@ void R_SetupGL(void)
 		}
 		else
 		{
-			if (r_adjust_fov->value)
-			{
-				V_AdjustFov(&r_xfov, &r_yfov, width, height);
-				MYgluPerspectiveH(r_yfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
-			}
-			else
-			{
-				MYgluPerspectiveH(r_yfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
-			}
+			V_AdjustFov(&r_xfov, &r_yfov, width, height);
+			MYgluPerspectiveH(r_yfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 	}
+
 	glCullFace(GL_FRONT);
 	glGetFloatv(GL_PROJECTION_MATRIX, r_projection_matrix);
 	glMatrixMode(GL_MODELVIEW);
