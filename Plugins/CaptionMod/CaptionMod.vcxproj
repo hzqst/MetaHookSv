@@ -77,7 +77,7 @@
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\HLSDK\cl_dll;..\..\HLSDK\common;..\..\HLSDK\engine;..\..\HLSDK\pm_shared;..\..\HLSDK\public;..\..\Interface;.\SourceSDK;.\VGUI;.\vgui_controls;.\SourceSDK\tier0;.\SourceSDK\tier1;.\SourceSDK\vstdlib;..\..\SteamSDK\;..\..\capstone\include\capstone\;..\..\glew\include\GL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;STEAM_API_NODLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;STEAM_API_NODLL;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Async</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -99,8 +99,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\HLSDK\cl_dll;..\..\HLSDK\common;..\..\HLSDK\engine;..\..\HLSDK\pm_shared;..\..\HLSDK\public;..\..\Interface;.\SourceSDK;.\VGUI;.\vgui_controls;.\SourceSDK\tier0;.\SourceSDK\tier1;.\SourceSDK\vstdlib;..\..\SteamSDK\;..\..\capstone\include\capstone\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;STEAM_API_NODLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\HLSDK\cl_dll;..\..\HLSDK\common;..\..\HLSDK\engine;..\..\HLSDK\pm_shared;..\..\HLSDK\public;..\..\Interface;.\SourceSDK;.\VGUI;.\vgui_controls;.\SourceSDK\tier0;.\SourceSDK\tier1;.\SourceSDK\vstdlib;..\..\SteamSDK\;..\..\capstone\include\capstone\;..\..\glew\include\GL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;STEAM_API_NODLL;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader />
@@ -113,7 +113,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>OpenGL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\"</Command>
@@ -122,8 +122,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'">
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\HLSDK\cl_dll;..\..\HLSDK\common;..\..\HLSDK\engine;..\..\HLSDK\pm_shared;..\..\HLSDK\public;..\..\Interface;.\SourceSDK;.\VGUI;.\vgui_controls;.\SourceSDK\tier0;.\SourceSDK\tier1;.\SourceSDK\vstdlib;..\..\SteamSDK\;..\..\capstone\include\capstone\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;STEAM_API_NODLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\HLSDK\cl_dll;..\..\HLSDK\common;..\..\HLSDK\engine;..\..\HLSDK\pm_shared;..\..\HLSDK\public;..\..\Interface;.\SourceSDK;.\VGUI;.\vgui_controls;.\SourceSDK\tier0;.\SourceSDK\tier1;.\SourceSDK\vstdlib;..\..\SteamSDK\;..\..\capstone\include\capstone\;..\..\glew\include\GL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;STEAM_API_NODLL;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>
@@ -137,7 +137,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>OpenGL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\"</Command>

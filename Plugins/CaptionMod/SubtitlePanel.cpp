@@ -590,6 +590,8 @@ void SubtitlePanel::Paint(void)
 	//if (SCR_IsLoadingVisible())
 	//	return;
 
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
 	int x;
 
 	int iPanelWidth, iPanelHeight;
