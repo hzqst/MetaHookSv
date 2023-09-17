@@ -398,9 +398,19 @@ All textures are converted from texgamma color space to linear color space, and 
 
 `r_additive_shift` is to shift up the alpha used in additive-blend, to correct the brightness of additive-blend result.
 
-## Misc
+`r_blend_gamma` is to blend colors in gamma space instead of linear space. this may increase VRAM bandwidth usage.
 
-`r_wsurf_sky_occlusion` 1 / 0 : When set to 1, scenes occluded by "sky" surfaces (surfaces with sky texture) will be invisible.
+## FOV (Field of View)
+
+viewmodel's FOV can be modified individually by using cvar `viewmodel_fov [FOV value]`. Use `viewmodel_fov 0` to disable custom viewmodel FOV.
+
+Vertical FOV can be enabled by using cvar `r_vertical_fov 1`. This is the default FOV policy used by Sven Co-op.
+
+WideScreen-Adjusted FOV can be enabled by using cvar `r_adjust_fov 1` or `r_adjust_fov 2`. This is the policy how engine calculate the vertical FOV from horizontal FOV:
+
+`r_adjust_fov 1` is the default policy used by Xash3D-fwgs while `r_adjust_fov 2` is the default policy used by Nexon's Counter-Strike : Online.
+
+## Misc
 
 `r_wsurf_zprepass` 1 / 0 : When set to 1, Z-Prepass will be enabled. The world will be rendered twice every frame. The first time with only depth write-in, the second time with actual fragment color write-in, which decreases the fragment shader cost when there is significant overdraw cost (like when shadow and SSR are calculated for unnecessary fragments ) for world rendering.
 

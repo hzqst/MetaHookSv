@@ -374,8 +374,23 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 `brightness` 用于偏移lightgamma来让光照贴图的结果更亮
 
+`r_alpha_shift` 用于提升alpha透明混合的alpha，略微“修正”alpha透明混合在线性空间混合时，混合结果跟gamma空间（也就是原版金源）差距过大的问题。该选项只能略微缓解“透明物体混合表现效果跟原版差距过大”的问题，并不能完全做到跟原版效果一致，如要做到跟原版透明混合结果完全一致请参考`r_blend_gamma`。
+
+`r_additive_shift` 用于提升additive透明混合的“亮度”，略微“修正”additive透明混合在线性空间混合时，混合结果跟gamma空间（也就是原版金源）差距过大的问题。该选项只能略微缓解“透明物体混合表现效果跟原版差距过大”的问题，并不能完全做到跟原版效果一致，如要做到跟原版透明混合结果完全一致请参考`r_blend_gamma`。
+
+`r_blend_gamma` 在gamma空间做透明混合，而非线性空间。（原版金源默认都是在gamma空间做的透明混合）。该功能可能会增加显存带宽的占用。
+
+## FOV (视场角度)
+
+第一人称武器模型的FOV可以用控制台参数 `viewmodel_fov [数值]`来单独调整。 使用 `viewmodel_fov 0` 来关闭自定义第一人称武器FOV。
+
+金源默认使用水平FOV策略，你可以通过控制台参数 `r_vertical_fov 1` 启用垂直FOV策略。注：Sven Co-op默认使用垂直FOV策略，也就是说你输入的default_fov参数在Sven Co-op中会被当成屏幕垂直方向上的FOV而非金源的水平方向FOV。
+
+你可以通过控制台参数 `r_adjust_fov 1` 或 `r_adjust_fov 2` 启用宽屏自适应FOV。该策略控制在金源默认的水平FOV策略下如何从水平FOV计算垂直FOV：
+
+`r_adjust_fov 1` 是 Xash3D-fwgs 中宽屏使用的默认策略， `r_adjust_fov 2` 是 Nexon公司的 Counter-Strike : Online 中宽屏使用的默认策略。
+
 ## 其他
 
-`r_wsurf_sky_occlusion` 1 / 0 : 设为1时, 被"sky"贴图遮挡的物体将会不可见。
-
 `r_wsurf_zprepass` 1 / 0 : 设为1时启用Z-Prepass优化。
+
