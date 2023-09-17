@@ -209,3 +209,9 @@ Client-Side part of the mod it´s introduced as a metahook plugin.
 Server-Side part of the mod it´s done with a modifidied reGame dll.
 
 https://github.com/ollerjoaco/Trinity-EngineSv
+
+### ModelViewer (third-party) (Sven Co-op only)
+
+https://github.com/surf08/ModelViewer
+
+This is a plugin for Sven Co-op that adds a button to the option menu to open the modelviewer for player model preview.
