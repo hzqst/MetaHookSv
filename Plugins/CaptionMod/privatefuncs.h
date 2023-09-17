@@ -17,11 +17,7 @@ typedef struct
 
 	int(*FileSystem_SetGameDirectory)(const char *pDefaultDir, const char *pGameDir);
 
-	//vgui2
-	char *(*V_strncpy)(char *a1, const char *a2, size_t a3);
-
 	//Engine Sound
-
 	void (*S_Init)(void);
 	sfx_t *(*S_FindName)(char *name, int *pfInCache);//hooked
 	void (*S_StartDynamicSound)(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);//hooked
@@ -59,7 +55,12 @@ typedef struct
 	//VGUI1
 	void (__fastcall *vgui_TextImage_paint)(vgui1_TextImage *pthis, int, void *panel);
 
+	//VGUI2
+	char* (*V_strncpy)(char* a1, const char* a2, size_t a3);
+
 	//Engine
+	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
+
 	client_textmessage_t *(*pfnTextMessageGet)(const char *pName);
 
 	void(*MessageMode_f)(void);
@@ -103,3 +104,5 @@ extern char m_szCurrentLanguage[128];
 extern private_funcs_t gPrivateFuncs;
 
 cl_entity_t *EngineGetViewEntity(void);
+
+bool SCR_IsLoadingVisible();

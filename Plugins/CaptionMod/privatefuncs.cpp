@@ -24,6 +24,8 @@
 #define S_STARTSTATICSOUND_SIG "\x83\xEC\x44\x53\x55\x8B\x6C\x24\x58\x56\x85\xED\x57"
 #define S_LOADSOUND_SIG "\x81\xEC\x2A\x2A\x00\x00\x53\x8B\x9C\x24\x2A\x2A\x00\x00\x55\x56\x8A\x03\x57"
 
+#define SCR_BEGIN_LOADING_PLAQUE "\x6A\x01\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xF8\x03"
+
 double *cl_time = NULL;
 double *cl_oldtime = NULL;
 
@@ -35,6 +37,8 @@ int *cl_viewentity = NULL;
 vec3_t *listener_origin = NULL;
 
 char (*s_pBaseDir)[512] = NULL;
+
+qboolean* scr_drawloading = NULL;
 
 char m_szCurrentLanguage[128] = { 0 };
 
@@ -56,6 +60,11 @@ PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule)
 		return NewCreateInterface;
 	}
 	return Sys_GetFactory(hModule);
+}
+
+bool SCR_IsLoadingVisible()
+{
+	return scr_drawloading && (*scr_drawloading) == 1 ? true : false;
 }
 
 void Engine_FillAddress(void)
@@ -120,6 +129,45 @@ void Engine_FillAddress(void)
 		gPrivateFuncs.S_LoadSound = (sfxcache_t *(*)(sfx_t *, channel_t *))Search_Pattern_From(S_StartStaticSound, S_LOADSOUND_SIG);
 		Sig_FuncNotFound(S_LoadSound);
 	}
+
+	gPrivateFuncs.SCR_BeginLoadingPlaque = (decltype(gPrivateFuncs.SCR_BeginLoadingPlaque))Search_Pattern(SCR_BEGIN_LOADING_PLAQUE);
+	Sig_FuncNotFound(SCR_BeginLoadingPlaque);
+
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.SCR_BeginLoadingPlaque, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+			auto pinst = (cs_insn*)inst;
+
+			if (!scr_drawloading &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 1)
+			{
+				//C7 05 60 66 00 08 01 00 00 00                       mov     scr_drawloading, 1
+				scr_drawloading = (decltype(scr_drawloading))pinst->detail->x86.operands[0].mem.disp;
+			}
+
+			if (scr_drawloading)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(scr_drawloading);
+	}
+
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
