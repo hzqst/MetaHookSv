@@ -1101,6 +1101,40 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		gRefFuncs.GameStudioRenderer_StudioSetupBones = (decltype(gRefFuncs.GameStudioRenderer_StudioSetupBones))vftable[gRefFuncs.GameStudioRenderer_StudioSetupBones_vftable_index];
 		gRefFuncs.GameStudioRenderer_StudioMergeBones = (decltype(gRefFuncs.GameStudioRenderer_StudioMergeBones))vftable[gRefFuncs.GameStudioRenderer_StudioMergeBones_vftable_index];
 
+		if (g_bIsCounterStrike)
+		{
+			g_pMetaHookAPI->DisasmRanges(gRefFuncs.GameStudioRenderer_StudioDrawPlayer, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+				auto pinst = (cs_insn *)inst;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				if (pinst->id == X86_INS_CALL &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.disp >= 0x60 &&
+					pinst->detail->x86.operands[0].mem.disp <= 0x70)
+				{
+					gRefFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index = pinst->detail->x86.operands[0].mem.disp / 4;
+				}
+
+				if (gRefFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index)
+					return TRUE;
+
+				return FALSE;
+			}, 0, NULL);
+
+			if (gRefFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index == 0)
+				gRefFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index = 100 / 4;
+
+			gRefFuncs.GameStudioRenderer__StudioDrawPlayer = (decltype(gRefFuncs.GameStudioRenderer__StudioDrawPlayer))vftable[gRefFuncs.GameStudioRenderer__StudioDrawPlayer_vftable_index];
+
+		}
+
 		typedef struct
 		{
 			PVOID base;
@@ -1115,6 +1149,12 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		GameStudioRenderer_StudioDrawPlayer_ctx ctx = { 0 };
 
 		ctx.base = gRefFuncs.GameStudioRenderer_StudioDrawPlayer;
+
+		if (gRefFuncs.GameStudioRenderer__StudioDrawPlayer)
+		{
+			ctx.base = gRefFuncs.GameStudioRenderer__StudioDrawPlayer;
+		}
+
 		ctx.max_insts = 1000;
 		ctx.max_depth = 16;
 		ctx.walks.emplace_back(ctx.base, 0x1000, 0);
