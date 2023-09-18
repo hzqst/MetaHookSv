@@ -22,7 +22,10 @@ void FS_Dump_Precaches(void)
 	const char *mapname = gEngfuncs.pfnGetLevelName();
 
 	if (!mapname || !mapname[0])
+	{
+		gEngfuncs.Con_Printf("FS_Dump_Precaches: Cannot dump precache resource list because you are not in an active map!\n");
 		return;
+	}
 
 	std::string filename = mapname;
 
@@ -73,7 +76,9 @@ void FS_Dump_Precaches(void)
 		pResource = next;
 	}
 
-	g_pFileSystem->Close(FileHandle);;
+	g_pFileSystem->Close(FileHandle);
+
+	gEngfuncs.Con_Printf("FS_Dump_Precaches: Precache resource list dumpped into %s.\n", filename.c_str());
 }
 
 void HUD_Init(void)
