@@ -2359,43 +2359,81 @@ double V_CalcFovH(float fov, float width, float height)
 	return atan2(height / (width / tan(fov * (1.0 / 360.0) * M_PI)), 1.0) * 360.0 * (1 / M_PI);
 }
 
-float V_CalcFov(float *fov_x, float width, float height)
-{
-	float	x, half_fov_y;
-
-	if (*fov_x < 1.0f || *fov_x > 179.0f)
-		*fov_x = 90.0f; // default value
-
-	x = width / tan((*fov_x) * (M_PI / 360) * 0.5f);
-	half_fov_y = atan(height / x);
-
-	return (half_fov_y * 360 / M_PI) * 2;
-}
-
-void V_AdjustFov(float *fov_x, float *fov_y, float width, float height)
+void V_AdjustFovV(float* fov_x, float* fov_y, float width, float height)
 {
 	float x, y;
 
-	if (fabs(width * 3 - 4 * height) < 1 || fabs(width * 4 - height * 5) < 1)
+	if (fabs(width * 3 - 4 * height) < 1)
 	{
-		// 4:3 or 5:4 ratio
+		// 4:3 ratio
 		return;
 	}
 
-	y = V_CalcFov(fov_x, 640, 480);
-	x = *fov_x;
+	if (fabs(width * 4 - 5 * height) < 1)
+	{
+		// 5:4 ratio
+		return;
+	}
 
+	//Xash3D-fwgs FOV policy
 	if (r_adjust_fov->value == 1)
 	{
-		*fov_x = V_CalcFov(&y, height, width);
+		x = V_CalcFovV(*fov_y, 640, 480);
+		y = *fov_y;
+
+		*fov_x = V_CalcFovV(y, height, width);
 
 		if (*fov_x < x)
 			*fov_x = x;
 		else
 			*fov_y = y;
 	}
+	//Counter-Strike:Online FOV policy
 	else if (r_adjust_fov->value == 2)
 	{
+		x = V_CalcFovV(*fov_y, 640, 480);
+		y = *fov_y;
+
+		*fov_x = x;
+		*fov_y = y;
+	}
+}
+
+void V_AdjustFovH(float *fov_x, float *fov_y, float width, float height)
+{
+	float x, y;
+
+	if (fabs(width * 3 - 4 * height) < 1)
+	{
+		// 4:3 ratio
+		return;
+	}
+
+	if (fabs(width * 4 - 5 * height) < 1)
+	{
+		// 5:4 ratio
+		return;
+	}
+
+	//Xash3D-fwgs FOV policy
+	if (r_adjust_fov->value == 1)
+	{
+		y = V_CalcFovH(*fov_x, 640, 480);
+		x = *fov_x;
+
+		*fov_x = V_CalcFovH(y, height, width);
+
+		if (*fov_x < x)
+			*fov_x = x;
+		else
+			*fov_y = y;
+	}
+	//Counter-Strike:Online FOV policy
+	else if (r_adjust_fov->value == 2)
+	{
+		y = V_CalcFovH(*fov_x, 640, 480);
+		x = *fov_x;
+
 		*fov_x = x;
 		*fov_y = y;
 	}
@@ -2404,17 +2442,20 @@ void V_AdjustFov(float *fov_x, float *fov_y, float width, float height)
 void R_SetFrustum(void)
 {
 	float yfov, xfov;
+
 	if (r_vertical_fov->value)
 	{
 		yfov = (*scrfov);
 		xfov = V_CalcFovV((*scrfov), glwidth, glheight);
+
+		V_AdjustFovV(&xfov, &yfov, glwidth, glheight);
 	}
 	else
 	{
 		yfov = V_CalcFovH((*scrfov), glwidth, glheight);
 		xfov = (*scrfov);
 
-		V_AdjustFov(&xfov, &yfov, glwidth, glheight);
+		V_AdjustFovH(&xfov, &yfov, glwidth, glheight);
 	}
 
 	RotatePointAroundVector(frustum[0].normal, vup, vpn, -(90.0 - xfov * 0.5));
@@ -2459,24 +2500,24 @@ void R_AdjustScopeFOVForViewModel(float *fov)
 		{
 			*fov = (*scrfov) * viewmodel_fov->value / default_fov->value;
 
-			if (*fov < 15)
-				*fov = 15;
+			if (*fov < 15.0f)
+				*fov = 15.0f;
 
-			if (*fov < 1.0 || *fov > 179.0)
-				*fov = 90.0;
+			if (*fov < 1.0f || *fov > 179.0f)
+				*fov = 90.0f;
 		}
 	}
 	else
 	{
-		if (fabs(viewmodel_fov->value - 90) > 1)
+		if (fabs(viewmodel_fov->value - 90.0f) > 1)
 		{
-			*fov = (*scrfov) * viewmodel_fov->value / 90;
+			*fov = (*scrfov) * viewmodel_fov->value / 90.0f;
 
-			if (*fov < 15)
-				*fov = 15;
+			if (*fov < 15.0f)
+				*fov = 15.0f;
 
-			if (*fov < 1.0 || *fov > 179.0)
-				*fov = 90.0;
+			if (*fov < 1.0f || *fov > 179.0f)
+				*fov = 90.0f;
 		}
 	}
 }
@@ -2503,7 +2544,7 @@ void R_SetupGLForViewModel(void)
 			r_yfov = fov;
 			r_xfov = V_CalcFovV(fov, width, height);
 
-			V_AdjustFov(&r_xfov, &r_yfov, width, height);
+			V_AdjustFovV(&r_xfov, &r_yfov, width, height);
 			MYgluPerspectiveV(r_xfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 		else
@@ -2521,7 +2562,7 @@ void R_SetupGLForViewModel(void)
 			r_xfov = fov;
 			r_yfov = V_CalcFovH(fov, width, height);
 
-			V_AdjustFov(&r_xfov, &r_yfov, width, height);
+			V_AdjustFovH(&r_xfov, &r_yfov, width, height);
 			MYgluPerspectiveH(r_yfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 
@@ -2623,7 +2664,7 @@ void R_SetupGL(void)
 
 		if ((*r_refdef.onlyClientDraws))
 		{
-			V_AdjustFov(&r_xfov, &r_yfov, width, height);
+			V_AdjustFovV(&r_xfov, &r_yfov, width, height);
 			MYgluPerspectiveV(r_xfov, aspect, 4.0, 16000.0);
 		}
 		else if (CL_IsDevOverviewMode())
@@ -2642,7 +2683,7 @@ void R_SetupGL(void)
 		}
 		else
 		{
-			V_AdjustFov(&r_xfov, &r_yfov, width, height);
+			V_AdjustFovV(&r_xfov, &r_yfov, width, height);
 			MYgluPerspectiveV(r_xfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 	}
@@ -2661,7 +2702,7 @@ void R_SetupGL(void)
 
 		if ((*r_refdef.onlyClientDraws))
 		{
-			V_AdjustFov(&r_xfov, &r_yfov, width, height);
+			V_AdjustFovH(&r_xfov, &r_yfov, width, height);
 			MYgluPerspectiveH(r_yfov, aspect, 4.0, 16000.0);
 		}
 		else if (CL_IsDevOverviewMode())
@@ -2680,7 +2721,7 @@ void R_SetupGL(void)
 		}
 		else
 		{
-			V_AdjustFov(&r_xfov, &r_yfov, width, height);
+			V_AdjustFovH(&r_xfov, &r_yfov, width, height);
 			MYgluPerspectiveH(r_yfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 	}
