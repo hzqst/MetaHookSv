@@ -11,11 +11,15 @@ refdef_GoldSrc_t *r_refdef_GoldSrc = NULL;
 refdef_SvEngine_t *r_refdef_SvEngine = NULL;
 
 float *scrfov = NULL;
-float r_xfov;
-float r_yfov;
-float r_screenaspect;
+float r_xfov = 0;
+float r_yfov = 0;
+float r_xfov_viewmodel = 0;
+float r_yfov_viewmodel = 0;
+float r_xfov_currentpass = 0;
+float r_yfov_currentpass = 0;
+float r_screenaspect = 0;
 
-float gldepthmin, gldepthmax;
+float gldepthmin = 0, gldepthmax = 1;
 
 cl_entity_t *r_worldentity = NULL;
 model_t *r_worldmodel = NULL;
@@ -1138,44 +1142,14 @@ int SignbitsForPlane(mplane_t *out)
 	return bits;
 }
 
-void MYgluPerspectiveV(double fovx, double aspect, double zNear, double zFar)
+void R_SetupPerspective(double fovx, double fovy, double aspect, double zNear, double zFar)
 {
+	r_xfov_currentpass = fovx;
+	r_yfov_currentpass = fovy;
+
 	auto right = tan(fovx * (M_PI / 360.0)) * zNear;
-	auto top = right * aspect;
-	glFrustum(-right, right, -top, top, zNear, zFar);
-
-	r_znear = zNear;
-	r_zfar = zFar;
-	r_ortho = false;
-
-	vec3_t farplane;
-	VectorMA((*r_refdef.vieworg), zNear, vpn, farplane);
-
-	VectorMA(farplane, -right, vright, r_frustum_origin[0]);
-	VectorMA(r_frustum_origin[0], -top, vup, r_frustum_origin[0]);
-	VectorSubtract(r_frustum_origin[0], (*r_refdef.vieworg), r_frustum_vec[0]);
-	VectorNormalize(r_frustum_vec[0]);
-
-	VectorMA(farplane, -right, vright, r_frustum_origin[1]);
-	VectorMA(r_frustum_origin[1], top, vup, r_frustum_origin[1]);
-	VectorSubtract(r_frustum_origin[1], (*r_refdef.vieworg), r_frustum_vec[1]);
-	VectorNormalize(r_frustum_vec[1]);
-
-	VectorMA(farplane, right, vright, r_frustum_origin[2]);
-	VectorMA(r_frustum_origin[2], top, vup, r_frustum_origin[2]);
-	VectorSubtract(r_frustum_origin[2], (*r_refdef.vieworg), r_frustum_vec[2]);
-	VectorNormalize(r_frustum_vec[2]);
-
-	VectorMA(farplane, right, vright, r_frustum_origin[3]);
-	VectorMA(r_frustum_origin[3], -top, vup, r_frustum_origin[3]);
-	VectorSubtract(r_frustum_origin[3], (*r_refdef.vieworg), r_frustum_vec[3]);
-	VectorNormalize(r_frustum_vec[3]);
- }
-
-void MYgluPerspectiveH(double fovy, double aspect, double zNear, double zFar)
-{
 	auto top = tan(fovy * (M_PI / 360.0)) * zNear;
-	auto right = top * aspect;
+
 	glFrustum(-right, right, -top, top, zNear, zFar);
 
 	r_znear = zNear;
@@ -2441,22 +2415,8 @@ void V_AdjustFovH(float *fov_x, float *fov_y, float width, float height)
 
 void R_SetFrustum(void)
 {
-	float yfov, xfov;
-
-	if (r_vertical_fov->value)
-	{
-		yfov = (*scrfov);
-		xfov = V_CalcFovV((*scrfov), glwidth, glheight);
-
-		V_AdjustFovV(&xfov, &yfov, glwidth, glheight);
-	}
-	else
-	{
-		yfov = V_CalcFovH((*scrfov), glwidth, glheight);
-		xfov = (*scrfov);
-
-		V_AdjustFovH(&xfov, &yfov, glwidth, glheight);
-	}
+	float xfov = r_xfov_currentpass;
+	float yfov = r_xfov_currentpass;
 
 	RotatePointAroundVector(frustum[0].normal, vup, vpn, -(90.0 - xfov * 0.5));
 	RotatePointAroundVector(frustum[1].normal, vup, vpn, 90.0 - xfov * 0.5);
@@ -2541,11 +2501,11 @@ void R_SetupGLForViewModel(void)
 
 			R_AdjustScopeFOVForViewModel(&fov);
 
-			r_yfov = fov;
-			r_xfov = V_CalcFovV(fov, width, height);
+			r_yfov_viewmodel = fov;
+			r_xfov_viewmodel = V_CalcFovV(fov, width, height);
 
-			V_AdjustFovV(&r_xfov, &r_yfov, width, height);
-			MYgluPerspectiveV(r_xfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
+			V_AdjustFovV(&r_xfov_viewmodel, &r_yfov_viewmodel, width, height);
+			R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 		else
 		{
@@ -2559,11 +2519,11 @@ void R_SetupGLForViewModel(void)
 
 			R_AdjustScopeFOVForViewModel(&fov);
 
-			r_xfov = fov;
-			r_yfov = V_CalcFovH(fov, width, height);
+			r_xfov_viewmodel = fov;
+			r_yfov_viewmodel = V_CalcFovH(fov, width, height);
 
-			V_AdjustFovH(&r_xfov, &r_yfov, width, height);
-			MYgluPerspectiveH(r_yfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
+			V_AdjustFovH(&r_xfov_viewmodel, &r_yfov, width, height);
+			R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 
 		float  viewmodel_projection_matrix[16];
@@ -2647,7 +2607,7 @@ void R_SetupGL(void)
 	if (r_draw_shadowcaster)
 	{
 		float cone_fov = current_shadow_texture->cone_angle * 2 * 360 / (M_PI * 2);
-		MYgluPerspectiveV(cone_fov, 1, 4.0, current_shadow_texture->distance);
+		R_SetupPerspective(cone_fov, cone_fov, 1, 4.0, current_shadow_texture->distance);
 	}
 	else if (r_vertical_fov->value)
 	{
@@ -2665,7 +2625,7 @@ void R_SetupGL(void)
 		if ((*r_refdef.onlyClientDraws))
 		{
 			V_AdjustFovV(&r_xfov, &r_yfov, width, height);
-			MYgluPerspectiveV(r_xfov, aspect, 4.0, 16000.0);
+			R_SetupPerspective(r_xfov, r_yfov, aspect, 4.0, 16000.0);
 		}
 		else if (CL_IsDevOverviewMode())
 		{
@@ -2680,11 +2640,14 @@ void R_SetupGL(void)
 			r_znear = 16000.0 - gDevOverview->z_min;
 			r_zfar = 16000.0 - gDevOverview->z_max;
 			r_ortho = true;
+
+			r_xfov_currentpass = 0;
+			r_yfov_currentpass = 0;
 		}
 		else
 		{
 			V_AdjustFovV(&r_xfov, &r_yfov, width, height);
-			MYgluPerspectiveV(r_xfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
+			R_SetupPerspective(r_xfov, r_yfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 	}
 	else
@@ -2703,7 +2666,7 @@ void R_SetupGL(void)
 		if ((*r_refdef.onlyClientDraws))
 		{
 			V_AdjustFovH(&r_xfov, &r_yfov, width, height);
-			MYgluPerspectiveH(r_yfov, aspect, 4.0, 16000.0);
+			R_SetupPerspective(r_xfov, r_yfov, aspect, 4.0, 16000.0);
 		}
 		else if (CL_IsDevOverviewMode())
 		{
@@ -2718,11 +2681,14 @@ void R_SetupGL(void)
 			r_znear = 16000.0 - gDevOverview->z_min;
 			r_zfar = 16000.0 - gDevOverview->z_max;
 			r_ortho = true;
+
+			r_xfov_currentpass = 0;
+			r_yfov_currentpass = 0;
 		}
 		else
 		{
 			V_AdjustFovH(&r_xfov, &r_yfov, width, height);
-			MYgluPerspectiveH(r_yfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
+			R_SetupPerspective(r_xfov, r_yfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 	}
 
@@ -3078,8 +3044,8 @@ void R_RenderScene(void)
 		CL_SetDevOverView(R_GetRefDef());
 
 	R_SetupFrame();
-	R_SetFrustum();
 	R_SetupGL();
+	R_SetFrustum();
 	R_MarkLeaves();
 
 	R_PrepareDrawWorld();

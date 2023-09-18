@@ -747,7 +747,7 @@ bool R_IsSSAOEnabled(void)
 	if (CL_IsDevOverviewMode())
 		return false;
 
-	if (r_xfov < 75 || r_yfov < 75)
+	if (r_xfov_currentpass < 75 || r_yfov_currentpass < 75)
 		return false;
 
 	return true;
