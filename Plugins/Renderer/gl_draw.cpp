@@ -24,6 +24,7 @@ int *gl_filter_max = NULL;
 
 int gl_loadtexture_format = GL_RGBA;
 int gl_loadtexture_cubemap = 0;
+bool gl_loadtexture_compressed = false;
 
 typedef struct mipmap_texture_data_s
 {
@@ -285,6 +286,7 @@ void GL_UploadDXT(void *data, int width, int height, qboolean mipmap, qboolean a
 	}
 
 	gl_loadtexture_mipmap.clear();
+	gl_loadtexture_format = 0;
 }
 
 void GL_UploadRGBA8(void *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap)
@@ -342,6 +344,7 @@ void GL_UploadRGBA8(void *data, int width, int height, qboolean mipmap, qboolean
 	}
 
 	gl_loadtexture_mipmap.clear();
+	gl_loadtexture_format = 0;
 }
 
 int GL_FindTexture(const char *identifier, GL_TEXTURETYPE textureType, int *width, int *height)
@@ -492,13 +495,19 @@ int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int
 	return gRefFuncs.GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iType, pPal, filter);
 }
 
-int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, void *data, qboolean mipmap, qboolean ansio)
+int GL_LoadTextureInternal(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, void *data, qboolean mipmap, qboolean ansio)
 {
+	if (!gl_loadtexture_format)
+	{
+		g_pMetaHookAPI->SysError("GL_LoadTextureInternal: Invalid gl_loadtexture_format!");
+		return 0;
+	}
+
 	int texnum = GL_AllocTexture((char *)identifier, textureType, width, height, mipmap);
 
 	if (!texnum)
 	{
-		gEngfuncs.Con_Printf("GL_LoadTextureEx: Failed to allocate texture slot.\n");
+		gEngfuncs.Con_Printf("GL_LoadTextureInternal: Failed to allocate texture slot.\n");
 		return 0;
 	}
 
@@ -515,10 +524,7 @@ int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int wid
 	glBindTexture(iTextureTarget, texnum);
 	(*currenttexture) = -1;
 
-	if (gl_loadtexture_format == GL_COMPRESSED_RGB_S3TC_DXT1_EXT ||
-		gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT || 
-		gl_loadtexture_format == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT || 
-		gl_loadtexture_format == GL_COMPRESSED_RGBA_BPTC_UNORM)
+	if (gl_loadtexture_compressed)
 	{
 		GL_UploadDXT(data, width, height, mipmap, ansio, iWrap);
 	}
@@ -697,6 +703,7 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 				}
 
 				gl_loadtexture_format = GL_COMPRESSED_RGBA_BPTC_UNORM;
+				gl_loadtexture_compressed = true;
 				gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
 
 				offset += size;
@@ -722,6 +729,7 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 				}
 
 				gl_loadtexture_format = GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM;
+				gl_loadtexture_compressed = true;
 				gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
 
 				offset += size;
@@ -747,6 +755,7 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 				}
 
 				gl_loadtexture_format = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+				gl_loadtexture_compressed = true;
 				gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
 
 				offset += size;
@@ -772,6 +781,7 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 				}
 
 				gl_loadtexture_format = GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
+				gl_loadtexture_compressed = true;
 				gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
 
 				offset += size;
@@ -797,6 +807,7 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 				}
 
 				gl_loadtexture_format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+				gl_loadtexture_compressed = true;
 				gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
 
 				offset += size;
@@ -822,6 +833,7 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 				}
 
 				gl_loadtexture_format = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
+				gl_loadtexture_compressed = true;
 				gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
 
 				offset += size;
@@ -847,6 +859,7 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 				}
 
 				gl_loadtexture_format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+				gl_loadtexture_compressed = true;
 				gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
 
 				offset += size;
@@ -872,6 +885,7 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 				}
 
 				gl_loadtexture_format = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+				gl_loadtexture_compressed = true;
 				gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
 
 				offset += size;
@@ -905,6 +919,7 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 			}
 
 			gl_loadtexture_format = GL_COMPRESSED_RGBA_BPTC_UNORM;
+			gl_loadtexture_compressed = true;
 			gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
 
 			offset += size;
@@ -932,6 +947,7 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 			}
 
 			gl_loadtexture_format = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+			gl_loadtexture_compressed = true;
 			gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
 
 			offset += size;
@@ -959,6 +975,7 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 			}
 
 			gl_loadtexture_format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+			gl_loadtexture_compressed = true;
 			gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
 
 			offset += size;
@@ -985,6 +1002,7 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 			}
 
 			gl_loadtexture_format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+			gl_loadtexture_compressed = true;
 			gl_loadtexture_mipmap.emplace_back(i, buf + offset, size, w, h);
 
 			offset += size;
@@ -1161,6 +1179,7 @@ qboolean LoadImageGeneric(const char *filename, byte *buf, size_t bufSize, size_
 		*height = h;
 
 	gl_loadtexture_format = GL_RGBA8;
+	gl_loadtexture_compressed = false;
 
 	gl_loadtexture_mipmap.emplace_back(0, buf, pos, w, h);
 
@@ -1231,7 +1250,16 @@ qboolean SaveImageGeneric(const char *filename, int width, int height, byte *dat
 	return true;
 }
 
-int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio, qboolean throw_warning_on_missing)
+int R_LoadRGBATextureFromMemory(const char* name, int width, int height, void* data, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio)
+{
+	gl_loadtexture_format = GL_RGBA8;
+	gl_loadtexture_compressed = false;
+	gl_loadtexture_mipmap.emplace_back(0, data, 0, width, height);
+
+	return GL_LoadTextureInternal(name, type, width, height, data, mipmap, ansio);
+}
+
+int R_LoadTextureFromFile(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio, qboolean throw_warning_on_missing)
 {
 	size_t w = 0, h = 0;
 
@@ -1241,7 +1269,7 @@ int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *hei
 	{
 		if (throw_warning_on_missing)
 		{
-			gEngfuncs.Con_Printf("R_LoadTextureEx: File %s has no extension.\n", filepath);
+			gEngfuncs.Con_Printf("R_LoadTextureFromFile: File %s has no extension.\n", filepath);
 		}
 		return 0;
 	}
@@ -1255,7 +1283,7 @@ int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *hei
 			if(height)
 				*height = h;
 
-			return GL_LoadTextureEx(name, type, w, h, texloader_buffer, mipmap, ansio);
+			return GL_LoadTextureInternal(name, type, w, h, texloader_buffer, mipmap, ansio);
 		}
 	}
 	else if(LoadImageGeneric(filepath, texloader_buffer, sizeof(texloader_buffer), &w, &h, throw_warning_on_missing))
@@ -1265,7 +1293,7 @@ int R_LoadTextureEx(const char *filepath, const char *name, int *width, int *hei
 		if(height)
 			*height = h;
 
-		return GL_LoadTextureEx(name, type, w, h, texloader_buffer, mipmap, ansio);
+		return GL_LoadTextureInternal(name, type, w, h, texloader_buffer, mipmap, ansio);
 	}
 	
 	return 0;

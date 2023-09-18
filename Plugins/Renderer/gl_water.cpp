@@ -599,7 +599,7 @@ water_vbo_t *R_CreateWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t 
 
 				//Disable mimap for normal texture
 				WaterVBO->normalmap = found_normalmap ? found_normalmap :
-					R_LoadTextureEx(waterControl->normalmap.c_str(), waterControl->normalmap.c_str(), NULL, NULL, GLT_WORLD, false, true, true);
+					R_LoadTextureFromFile(waterControl->normalmap.c_str(), waterControl->normalmap.c_str(), NULL, NULL, GLT_WORLD, false, true, true);
 			}
 
 			if (waterControl->level == WATER_LEVEL_LEGACY_RIPPLE)
@@ -620,7 +620,8 @@ water_vbo_t *R_CreateWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t 
 
 				char identifier[64] = { 0 };
 				snprintf(identifier, sizeof(identifier) - 1, "%s_ripple", surf->texinfo->texture->name);
-				WaterVBO->ripplemap = GL_LoadTextureEx(identifier, GLT_WORLD, WaterVBO->ripple_width, WaterVBO->ripple_height, WaterVBO->ripple_image, true, true);
+
+				WaterVBO->ripplemap = R_LoadRGBATextureFromMemory(identifier, WaterVBO->ripple_width, WaterVBO->ripple_height, WaterVBO->ripple_image, GLT_WORLD, true, true);
 
 				WaterVBO->ripple_spots[0] = (short *)malloc(imageSize * sizeof(short));
 				memset(WaterVBO->ripple_spots[0], 0, imageSize * sizeof(short));

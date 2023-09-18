@@ -1281,10 +1281,17 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	else if ((void *)(*ppinterface)->StudioDrawPlayer > g_dwEngineBase && (void *)(*ppinterface)->StudioDrawPlayer < (PUCHAR)g_dwEngineBase + g_dwEngineSize)
 	{
 #define R_STUDIORENDERMODEL_SIG "\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x10\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B"
+
 		auto addr = Search_Pattern(R_STUDIORENDERMODEL_SIG);
+
 		Sig_AddrNotFound(R_StudioRenderModel);
-		gRefFuncs.R_StudioRenderModel = (decltype(gRefFuncs.R_StudioRenderModel))GetCallAddress((PUCHAR)addr + 9);
-		
+
+		auto call_addr = (PUCHAR)addr + 9;
+
+		gRefFuncs.R_StudioRenderModel = (decltype(gRefFuncs.R_StudioRenderModel))GetCallAddress(call_addr);
+
+		Sig_FuncNotFound(R_StudioRenderModel);
+
 		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_StudioRenderModel, 0x80, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;

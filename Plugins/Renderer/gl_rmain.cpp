@@ -3306,12 +3306,12 @@ void R_LoadDetailSkyTextures(const char* name)
 		snprintf(fullpath, sizeof(fullpath), "gfx/env/%s%s.dds", name, suf[i]);
 
 		int width, height;
-		int texId = R_LoadTextureEx(fullpath, fullpath, &width, &height, GLT_WORLD, true, true, false);
+		int texId = R_LoadTextureFromFile(fullpath, fullpath, &width, &height, GLT_WORLD, true, true, false);
 		if (!texId)
 		{
 			snprintf(fullpath, sizeof(fullpath), "renderer/texture/%s%s.dds", name, suf[i]);
 
-			texId = R_LoadTextureEx(fullpath, fullpath, &width, &height, GLT_WORLD, true, true, false);
+			texId = R_LoadTextureFromFile(fullpath, fullpath, &width, &height, GLT_WORLD, true, true, false);
 		}
 
 		if (!texId)
@@ -3500,7 +3500,7 @@ void R_LoadCubemap(cubemap_t *cubemap)
 
 		gl_loadtexture_cubemap = i + 1;
 
-		cubemap->cubetex = R_LoadTextureEx(filepath, identifier, NULL, NULL, GLT_WORLD, tre, true);
+		cubemap->cubetex = R_LoadTextureFromFile(filepath, identifier, NULL, NULL, GLT_WORLD, tre, true);
 	}
 
 	gl_loadtexture_cubemap = 0;

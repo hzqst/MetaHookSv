@@ -2139,7 +2139,7 @@ void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr, 
 				if (!V_GetFileExtension(replacetexture_string))
 					texturePath += ".tga";
 
-				int texId = R_LoadTextureEx(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO, 
+				int texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO, 
 					(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true, false);
 				if (!texId)
 				{
@@ -2148,7 +2148,7 @@ void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr, 
 					if (!V_GetFileExtension(replacetexture_string))
 						texturePath += ".tga";
 
-					texId = R_LoadTextureEx(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO, 
+					texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO, 
 						(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true, true);
 				}
 				if (texId)

@@ -425,7 +425,7 @@ void R_NewMapLight(void)
 		int found_texture = GL_FindTexture(r_flashlight_cone_texture_name.c_str(), GLT_WORLD, NULL, NULL);
 
 		r_flashlight_cone_texture = found_texture ? found_texture : 
-			R_LoadTextureEx(r_flashlight_cone_texture_name.c_str(), r_flashlight_cone_texture_name.c_str(), NULL, NULL, GLT_WORLD, true, true, true);
+			R_LoadTextureFromFile(r_flashlight_cone_texture_name.c_str(), r_flashlight_cone_texture_name.c_str(), NULL, NULL, GLT_WORLD, true, true, true);
 	}
 	else
 	{

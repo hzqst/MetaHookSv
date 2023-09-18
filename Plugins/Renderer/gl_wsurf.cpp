@@ -2623,7 +2623,7 @@ void R_LoadDecalTextures(const char *pfile)
 			if (!V_GetFileExtension(detailtexture))
 				texturePath += ".tga";
 
-			int texId = R_LoadTextureEx(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, textypeHasMipmap[texType], true, false);
+			int texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, textypeHasMipmap[texType], true, false);
 			if (!texId)
 			{
 				texturePath = "renderer/texture/";
@@ -2631,7 +2631,7 @@ void R_LoadDecalTextures(const char *pfile)
 				if (!V_GetFileExtension(detailtexture))
 					texturePath += ".tga";
 
-				texId = R_LoadTextureEx(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, textypeHasMipmap[texType], true, true);
+				texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, textypeHasMipmap[texType], true, true);
 			}
 
 			if (!texId)
@@ -2806,7 +2806,7 @@ void R_LoadDetailTextures(const char *pfile)
 			if (!V_GetFileExtension(detailtexture))
 				texturePath += ".tga";
 
-			int texId = R_LoadTextureEx(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, textypeHasMipmap[texType], true, false);
+			int texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, textypeHasMipmap[texType], true, false);
 			if (!texId)
 			{
 				texturePath = "renderer/texture/";
@@ -2814,7 +2814,7 @@ void R_LoadDetailTextures(const char *pfile)
 				if (!V_GetFileExtension(detailtexture))
 					texturePath += ".tga";
 
-				texId = R_LoadTextureEx(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, textypeHasMipmap[texType], true, true);
+				texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, textypeHasMipmap[texType], true, true);
 			}
 
 			if (!texId)
