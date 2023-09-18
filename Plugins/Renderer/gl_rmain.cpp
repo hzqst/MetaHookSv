@@ -134,6 +134,7 @@ bool r_draw_hairshadow = false;
 bool r_draw_shadowcaster = false;
 bool r_draw_opaque = false;
 bool r_draw_oitblend = false;
+bool r_draw_gammablend = false;
 bool r_draw_legacysprite = false;
 bool r_draw_reflectview = false;
 bool r_draw_portalview = false;
@@ -247,6 +248,8 @@ cvar_t *gl_profile = NULL;
 cvar_t *gl_bindless = NULL;
 
 cvar_t *dev_overview_color = NULL;
+
+cvar_t* r_gammablend = NULL;
 
 cvar_t *r_alpha_shift = NULL;
 
@@ -822,7 +825,7 @@ void R_AddTEntity(cl_entity_t *ent)
 		if (!ent->model || ent->model->type != mod_brush || ent->curstate.rendermode != kRenderTransAlpha)
 		{
 			VectorAdd(ent->model->mins, ent->model->maxs, v);
-			VectorScale(v, 0.5, v);
+			VectorScale(v, 0.5f, v);
 			VectorAdd(v, ent->origin, v);
 			VectorSubtract(r_origin, v, v);
 			dist = DotProduct(v, v);
@@ -1142,7 +1145,7 @@ int SignbitsForPlane(mplane_t *out)
 	return bits;
 }
 
-void R_SetupPerspective(double fovx, double fovy, double aspect, double zNear, double zFar)
+void R_SetupPerspective(float fovx, float fovy, float zNear, float zFar)
 {
 	r_xfov_currentpass = fovx;
 	r_yfov_currentpass = fovy;
@@ -2050,6 +2053,7 @@ void R_InitCvars(void)
 	default_fov = gEngfuncs.pfnGetCvarPointer("default_fov");
 
 	r_vertical_fov = gEngfuncs.pfnRegisterVariable("r_vertical_fov", bVerticalFov ? "1" : "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
 	r_adjust_fov = gEngfuncs.pfnRegisterVariable("r_adjust_fov", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gl_profile = gEngfuncs.pfnRegisterVariable("gl_profile", "0", FCVAR_CLIENTDLL );
@@ -2058,6 +2062,8 @@ void R_InitCvars(void)
 	{
 		gl_bindless = gEngfuncs.pfnRegisterVariable("gl_bindless", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	}
+
+	r_gammablend = gEngfuncs.pfnRegisterVariable("r_gammablend", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	r_alpha_shift = gEngfuncs.pfnRegisterVariable("r_alpha_shift", "0.4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	
@@ -2505,7 +2511,7 @@ void R_SetupGLForViewModel(void)
 			r_xfov_viewmodel = V_CalcFovV(fov, width, height);
 
 			V_AdjustFovV(&r_xfov_viewmodel, &r_yfov_viewmodel, width, height);
-			R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
+			R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, 4.0f, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 		else
 		{
@@ -2523,7 +2529,7 @@ void R_SetupGLForViewModel(void)
 			r_yfov_viewmodel = V_CalcFovH(fov, width, height);
 
 			V_AdjustFovH(&r_xfov_viewmodel, &r_yfov, width, height);
-			R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
+			R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, 4.0f, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 
 		float  viewmodel_projection_matrix[16];
@@ -2607,7 +2613,7 @@ void R_SetupGL(void)
 	if (r_draw_shadowcaster)
 	{
 		float cone_fov = current_shadow_texture->cone_angle * 2 * 360 / (M_PI * 2);
-		R_SetupPerspective(cone_fov, cone_fov, 1, 4.0, current_shadow_texture->distance);
+		R_SetupPerspective(cone_fov, cone_fov, 4.0f, current_shadow_texture->distance);
 	}
 	else if (r_vertical_fov->value)
 	{
@@ -2616,8 +2622,9 @@ void R_SetupGL(void)
 		auto aspect = height / width;
 
 		auto fov = (*scrfov);
-		if (fov < 1.0 || fov > 179.0)
-			fov = 90.0;
+
+		if (fov < 1.0f || fov > 179.0f)
+			fov = 90.0f;
 
 		r_yfov = fov;
 		r_xfov = V_CalcFovV(fov, width, height);
@@ -2625,7 +2632,7 @@ void R_SetupGL(void)
 		if ((*r_refdef.onlyClientDraws))
 		{
 			V_AdjustFovV(&r_xfov, &r_yfov, width, height);
-			R_SetupPerspective(r_xfov, r_yfov, aspect, 4.0, 16000.0);
+			R_SetupPerspective(r_xfov, r_yfov, 4.0f, 16000.0f);
 		}
 		else if (CL_IsDevOverviewMode())
 		{
@@ -2647,7 +2654,7 @@ void R_SetupGL(void)
 		else
 		{
 			V_AdjustFovV(&r_xfov, &r_yfov, width, height);
-			R_SetupPerspective(r_xfov, r_yfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
+			R_SetupPerspective(r_xfov, r_yfov, 4.0f, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 	}
 	else
@@ -2657,8 +2664,8 @@ void R_SetupGL(void)
 		auto aspect = width / height;
 		auto fov = (*scrfov);
 
-		if (fov < 1.0 || fov > 179.0)
-			fov = 90.0;
+		if (fov < 1.0f || fov > 179.0f)
+			fov = 90.0f;
 
 		r_xfov = fov;
 		r_yfov = V_CalcFovH(fov, width, height);
@@ -2666,7 +2673,7 @@ void R_SetupGL(void)
 		if ((*r_refdef.onlyClientDraws))
 		{
 			V_AdjustFovH(&r_xfov, &r_yfov, width, height);
-			R_SetupPerspective(r_xfov, r_yfov, aspect, 4.0, 16000.0);
+			R_SetupPerspective(r_xfov, r_yfov, 4.0f, 16000.0f);
 		}
 		else if (CL_IsDevOverviewMode())
 		{
@@ -2688,7 +2695,7 @@ void R_SetupGL(void)
 		else
 		{
 			V_AdjustFovH(&r_xfov, &r_yfov, width, height);
-			R_SetupPerspective(r_xfov, r_yfov, aspect, 4.0, (r_params.movevars ? r_params.movevars->zmax : 4096));
+			R_SetupPerspective(r_xfov, r_yfov, 4.0f, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 	}
 

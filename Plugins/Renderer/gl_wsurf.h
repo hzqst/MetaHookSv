@@ -510,3 +510,4 @@ void R_DrawWaters(wsurf_vbo_leaf_t *vboleaf, cl_entity_t *ent);
 #define WSURF_LIGHTMAP_INDEX_2_ENABLED		0x40000000ull
 #define WSURF_LIGHTMAP_INDEX_3_ENABLED		0x80000000ull
 #define WSURF_LEGACY_DLIGHT_ENABLED			0x100000000ull
+#define WSURF_GAMMA_BLEND_ENABLED			0x200000000ull

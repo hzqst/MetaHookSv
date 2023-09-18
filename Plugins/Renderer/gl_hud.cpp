@@ -207,6 +207,7 @@ void R_InitPostProcess(void)
 	
 	depth_clear.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\depthclear.frag.glsl", NULL);
 
+	//OIT Blend
 	if (bUseOITBlend)
 	{
 		oitbuffer_clear.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\oitbuffer_clear.frag.glsl", NULL);
@@ -747,7 +748,7 @@ bool R_IsSSAOEnabled(void)
 	if (CL_IsDevOverviewMode())
 		return false;
 
-	if (r_xfov_currentpass < 75 || r_yfov_currentpass < 75)
+	if (r_xfov < 75 || r_yfov < 75)
 		return false;
 
 	return true;

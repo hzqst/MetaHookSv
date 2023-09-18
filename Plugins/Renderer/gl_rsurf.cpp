@@ -1203,7 +1203,7 @@ void R_DrawDecals(cl_entity_t *ent)
 	{
 		WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
 
-		if (bUseOITBlend)
+		if (r_draw_oitblend)
 		{
 			if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
 				WSurfProgramState |= WSURF_OIT_ADDITIVE_BLEND_ENABLED;

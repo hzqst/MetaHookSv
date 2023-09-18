@@ -111,7 +111,8 @@ const program_state_mapping_t s_WSurfProgramStateName[] = {
 { WSURF_LIGHTMAP_INDEX_1_ENABLED	,"WSURF_LIGHTMAP_INDEX_1_ENABLED"},
 { WSURF_LIGHTMAP_INDEX_2_ENABLED	,"WSURF_LIGHTMAP_INDEX_2_ENABLED"},
 { WSURF_LIGHTMAP_INDEX_3_ENABLED	,"WSURF_LIGHTMAP_INDEX_3_ENABLED"},
-{ WSURF_LEGACY_DLIGHT_ENABLED		,"WSURF_LEGACY_DLIGHT_ENABLED"}
+{ WSURF_LEGACY_DLIGHT_ENABLED		,"WSURF_LEGACY_DLIGHT_ENABLED"},
+{ WSURF_GAMMA_BLEND_ENABLED			,"WSURF_GAMMA_BLEND_ENABLED"}
 };
 
 void R_SaveWSurfProgramStates(void)
@@ -240,6 +241,9 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t *progOutput)
 
 		if ((state & WSURF_LEGACY_DLIGHT_ENABLED))
 			defs << "#define LEGACY_DLIGHT_ENABLED\n";
+
+		if ((state & WSURF_GAMMA_BLEND_ENABLED))
+			defs << "#define GAMMA_BLEND_ENABLED\n";
 
 		if (glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define NV_BINDLESS_ENABLED\n";
@@ -1787,19 +1791,11 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t * vboleaf, bool bUseZPrePass)
 			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 		}
 
-		if (r_draw_oitblend)
-		{
-			if((*currententity)->curstate.rendermode == kRenderTransAdd)
-				WSurfProgramState |= WSURF_OIT_ADDITIVE_BLEND_ENABLED;
-			else
-				WSurfProgramState |= WSURF_OIT_ALPHA_BLEND_ENABLED;
-		}
-
-		if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
+		if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha && (*currententity)->curstate.rendermode != kRenderTransColor)
 		{
 			WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
 
-			if (bUseOITBlend)
+			if (r_draw_oitblend)
 			{
 				if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
 					WSurfProgramState |= WSURF_OIT_ADDITIVE_BLEND_ENABLED;
@@ -1812,6 +1808,11 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t * vboleaf, bool bUseZPrePass)
 					WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
 				else
 					WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
+			}
+
+			if (r_draw_gammablend)
+			{
+				WSurfProgramState |= WSURF_GAMMA_BLEND_ENABLED;
 			}
 		}
 
@@ -1968,19 +1969,11 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t * vboleaf, bool bUseZPrePass)
 				WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 			}
 
-			if (r_draw_oitblend)
-			{
-				if ((*currententity)->curstate.rendermode == kRenderTransAdd)
-					WSurfProgramState |= WSURF_OIT_ADDITIVE_BLEND_ENABLED;
-				else
-					WSurfProgramState |= WSURF_OIT_ALPHA_BLEND_ENABLED;
-			}
-
-			if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
+			if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha && (*currententity)->curstate.rendermode != kRenderTransColor)
 			{
 				WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
 
-				if (bUseOITBlend)
+				if (r_draw_oitblend)
 				{
 					if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
 						WSurfProgramState |= WSURF_OIT_ADDITIVE_BLEND_ENABLED;
@@ -1993,6 +1986,11 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t * vboleaf, bool bUseZPrePass)
 						WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
 					else
 						WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
+				}
+
+				if (r_draw_gammablend)
+				{
+					WSurfProgramState |= WSURF_GAMMA_BLEND_ENABLED;
 				}
 			}
 
@@ -2178,11 +2176,11 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_leaf_t *vboleaf, bool bUseZPrePass)
 			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 		}
 
-		if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
+		if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha && (*currententity)->curstate.rendermode != kRenderTransColor)
 		{
 			WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
 
-			if (bUseOITBlend)
+			if (r_draw_oitblend)
 			{
 				if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
 					WSurfProgramState |= WSURF_OIT_ADDITIVE_BLEND_ENABLED;
@@ -2195,6 +2193,11 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_leaf_t *vboleaf, bool bUseZPrePass)
 					WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
 				else
 					WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
+			}
+
+			if (r_draw_gammablend)
+			{
+				WSurfProgramState |= WSURF_GAMMA_BLEND_ENABLED;
 			}
 		}
 

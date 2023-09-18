@@ -402,17 +402,37 @@ All textures are converted from texgamma color space to linear color space, and 
 
 `r_additive_shift` is to shift up the alpha used in additive-blend, to correct the brightness of additive-blend result.
 
-`r_blend_gamma` is to blend colors in gamma space instead of linear space. this may increase VRAM bandwidth usage.
+`r_blend_gamma` is to blend colors in gamma space instead of linear space. this may increase GPU usage.
 
 ## FOV (Field of View)
 
-viewmodel's FOV can be modified individually by using cvar `viewmodel_fov [FOV value]`. Use `viewmodel_fov 0` to disable custom viewmodel FOV.
+### Dedicated viewmodel FOV
 
-Vertical FOV can be enabled by using cvar `r_vertical_fov 1`. This is the default FOV policy used by Sven Co-op.
+Viewmodel's FOV can be individually adjusted by using cvar `viewmodel_fov [FOV value]`. Use `viewmodel_fov 0` to disable custom viewmodel FOV.
 
-WideScreen-Adapted FOV can be enabled by using cvar `r_adjust_fov 1` or `r_adjust_fov 2`. This controls how engine calculate the vertical FOV from horizontal FOV:
+### Vertical FOV
 
-`r_adjust_fov 1` is the default policy used by Xash3D-fwgs and Nexon's Counter-Strike : Online that expands the horizontal FOV while keep the vertical FOV as what it was when using resolution of 4:3, while `r_adjust_fov 2` is to stretch the original 4:3 image to fit the current wide-screen resolution.
+Vertical FOV can be enabled by using cvar `r_vertical_fov 1`.
+
+This is the default FOV policy used by Sven Co-op.
+
+### WideScreen-Adapted FOV
+
+WideScreen-Adapted FOV can be enabled by using cvar `r_adjust_fov 1` or `r_adjust_fov 2`.
+
+This controls how engine calculate the vertical FOV from horizontal FOV:
+
+`r_adjust_fov 1` is the default policy used by Xash3D-fwgs and Nexon's Counter-Strike : Online that expands the horizontal FOV while keep the vertical FOV as what it was when using resolution of 4:3
+
+`r_adjust_fov 2` is to stretch the original 4:3 FOV image to fit the current rendering resolution.
+
+## Sprite Interpolation
+
+`r_sprite_lerping` 1 / 0: This provides smoother animation for sprites that have their rendermode set to texture and additive. This works as what it is in Xash3d-fwgs. 
+
+* Credits to Xash3d-fwgs
+
+* Note: For correct interpolation, make sure the server framerate is exactly 10 FPS (regardless of the sprite’s own FPS in pev | framerate). This parameter is dictated by the frame changer function’s think time, which is 0.1s and remains unchanged in most mods.
 
 ## Misc
 

@@ -498,6 +498,7 @@ extern bool r_draw_hairshadow;
 extern bool r_draw_shadowcaster;
 extern bool r_draw_opaque;
 extern bool r_draw_oitblend;
+extern bool r_draw_gammablend;
 extern bool r_draw_legacysprite;
 extern bool r_draw_reflectview;
 extern bool r_draw_portalview;
