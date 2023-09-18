@@ -2,3 +2,4 @@ CaptionMod.dll
 Renderer.dll
 BulletPhysics.dll
 StudioEvents.dll
+PrecacheManager.dll
