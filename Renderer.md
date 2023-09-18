@@ -410,9 +410,9 @@ viewmodel's FOV can be modified individually by using cvar `viewmodel_fov [FOV v
 
 Vertical FOV can be enabled by using cvar `r_vertical_fov 1`. This is the default FOV policy used by Sven Co-op.
 
-WideScreen-Adjusted FOV can be enabled by using cvar `r_adjust_fov 1` or `r_adjust_fov 2`. This is the policy how engine calculate the vertical FOV from horizontal FOV:
+WideScreen-Adapted FOV can be enabled by using cvar `r_adjust_fov 1` or `r_adjust_fov 2`. This controls how engine calculate the vertical FOV from horizontal FOV:
 
-`r_adjust_fov 1` is the default policy used by Xash3D-fwgs while `r_adjust_fov 2` is the default policy used by Nexon's Counter-Strike : Online.
+`r_adjust_fov 1` is the default policy used by Xash3D-fwgs and Nexon's Counter-Strike : Online that expands the horizontal FOV while keep the vertical FOV as what it was when using resolution of 4:3, while `r_adjust_fov 2` is to stretch the original 4:3 image to fit the current wide-screen resolution.
 
 ## Misc
 

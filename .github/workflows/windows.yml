@@ -86,6 +86,11 @@ jobs:
         run: build-DontFlushSoundCache.bat
         shell: cmd
         
+      - name: Build PrecacheManager.dll
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: build-PrecacheManager.bat
+        shell: cmd
+        
       - name: Build Renderer.dll
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: build-Renderer.bat

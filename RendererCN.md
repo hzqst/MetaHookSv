@@ -391,7 +391,9 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 你可以通过控制台参数 `r_adjust_fov 1` 或 `r_adjust_fov 2` 启用宽屏自适应FOV。该策略控制在金源默认的水平FOV策略下如何从水平FOV计算垂直FOV：
 
-`r_adjust_fov 1` 是 Xash3D-fwgs 中宽屏使用的默认策略， `r_adjust_fov 2` 是 Nexon公司的 Counter-Strike : Online 中宽屏使用的默认策略。
+`r_adjust_fov 1` 是 Xash3D-fwgs 和 Nexon公司的 Counter-Strike : Online 默认使用的宽屏FOV策略，该策略下会维持垂直FOV为非宽屏即4:3长宽比的分辨率下的FOV值，并扩展水平方向上的FOV。 
+
+`r_adjust_fov 2` 则是拉伸4：3长宽比的分辨率的画面并拉伸至宽屏。
 
 ## 其他
 
