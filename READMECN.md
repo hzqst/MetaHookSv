@@ -176,6 +176,12 @@
 
 该插件的目的是节约服务器的带宽资源和磁盘IO资源（频繁读写文件不是什么好事，用UDP挂服下载更不是什么好事）
 
+### PrecacheManager
+
+该插件提供了一个命令 `fs_dump_precaches` 用于dump预缓存的游戏资源列表到 `[gamedir]\maps\[mapname].dump.res` 文件中。
+
+* Sven Co-op 的声音系统使用 `soundcache.txt` 而非引擎的预缓存系统来维护声音文件的预缓存列表。
+
 ### ABCEnchance (第三方) (只支持Sven Co-op)
 
 该插件提供以下功能：

@@ -170,6 +170,12 @@ The fastdl procedure only works when game server uploads current map's soundcach
 
 The reason why I made this plugin is because transfering soundcache txt via UDP netchannel is really not a good idea as server bandwidth and file IO resource is expensive.
 
+### PrecacheManager
+
+This plugin provides a console command `fs_dump_precaches` to dump precache resource list into `[gamedir]\maps\[mapname].dump.res`.
+
+* The SoundSystem from Sven Co-op uses `soundcache.txt` instead of engine's precache system to precache sound files.
+
 ### ABCEnchance (third-party) (Sven Co-op only)
 
 ABCEnchance is a metahook plugin that provides experience improvement for Sven co-op.
