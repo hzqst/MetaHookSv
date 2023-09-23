@@ -388,6 +388,8 @@ Unlike vanilla GoldSrc, the gamma correction is applied on the fly (no restart r
 
 All textures are converted from texgamma color space to linear color space, and dynamic lights are calculated in linear color space to get correct lighting result.
 
+* Any mathematical operation (such as transparent blending) on gamma corrected color is physically incorrect! See: https://en.wikipedia.org/wiki/Gamma_correction
+
 ### Console vars
 
 `gamma` is to control the final output gamma, convert colors from linear space to screen gamma space.
@@ -398,11 +400,7 @@ All textures are converted from texgamma color space to linear color space, and 
 
 `brightness` is to shift up the lightgamma and make lightmaps brighter.
 
-`r_alpha_shift` is to shift up the alpha used in alpha-blend, to correct the brightness of alpha-blend result.
-
-`r_additive_shift` is to shift up the alpha used in additive-blend, to correct the brightness of additive-blend result.
-
-`r_blend_gamma` is to blend colors in gamma space instead of linear space. this may increase GPU usage.
+`r_blend_gamma 0 / 1` set 1 to blend transparent objects in gamma space instead of linear space. `r_blend_gamma 1` is the default policy used by vanilla GoldSrc and the blending result is limited to 1.0 in case of overbright.
 
 ## FOV (Field of View)
 
