@@ -426,6 +426,12 @@ vec4 GammaToLinear(vec4 color)
 	return color;
 }
 
+vec3 GammaToLinear3(vec3 color)
+{
+	color = pow(color, vec3(SceneUBO.v_gamma));
+	return color;
+}
+
 vec4 TexGammaToLinear(vec4 color)
 {
 	color.rgb = pow(color.rgb, vec3(SceneUBO.v_texgamma));
@@ -554,6 +560,21 @@ vec4 ProcessOtherColor(vec4 color)
 	#else
 
 		color = GammaToLinear(color);
+
+	#endif
+
+	return color;
+}
+
+vec3 ProcessOtherColor3(vec3 color)
+{
+	#if defined(GAMMA_BLEND_ENABLED)
+
+		
+
+	#else
+
+		color = GammaToLinear3(color);
 
 	#endif
 

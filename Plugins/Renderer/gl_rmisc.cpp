@@ -624,6 +624,12 @@ void GL_End2D(void)
 	glEnable(GL_CULL_FACE);
 }
 
+void GL_ClearColor(vec4_t color)
+{
+	glClearColor(color[0], color[1], color[2], color[3]);
+	glClear(GL_COLOR_BUFFER_BIT);
+}
+
 void GL_ClearDepthStencil(float depth, int stencilref, int stencilmask)
 {
 	glStencilMask(stencilmask);

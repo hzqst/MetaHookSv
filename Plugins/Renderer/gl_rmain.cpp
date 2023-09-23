@@ -1407,6 +1407,9 @@ void GL_GenerateFrameBuffers(void)
 		GL_GenFrameBuffer(&s_LuminFBO[i]);
 		GL_FrameBufferColorTexture(&s_LuminFBO[i], GL_R32F);
 
+		vec4_t clearColor = { 0, 0, 0, 0 };
+		GL_ClearColor(clearColor);
+
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
 			GL_FreeFBO(&s_LuminFBO[i]);
@@ -1424,6 +1427,9 @@ void GL_GenerateFrameBuffers(void)
 		s_Lumin1x1FBO[i].iHeight = 1;
 		GL_GenFrameBuffer(&s_Lumin1x1FBO[i]);
 		GL_FrameBufferColorTexture(&s_Lumin1x1FBO[i], GL_R32F);
+
+		vec4_t clearColor = { 0, 0, 0, 0 };
+		GL_ClearColor(clearColor);
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{

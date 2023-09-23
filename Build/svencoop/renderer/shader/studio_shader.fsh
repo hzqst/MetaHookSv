@@ -270,13 +270,13 @@ void main(void)
 
 	#else
 
+		vec4 lightmapColor = ProcessOtherColor(StudioUBO.r_color);
+
 		vec3 lightColorLinear = R_StudioLightingLinear(vWorldPos, vNormal);
 
 		#if defined(STUDIO_NF_CELSHADE)
 			lightColorLinear = R_StudioCelShade(lightColorLinear, vNormal, StudioUBO.r_plightvec.xyz);
 		#endif
-
-		vec4 lightmapColor = ProcessOtherColor(StudioUBO.r_color);
 
 		#if defined(GAMMA_BLEND_ENABLED)
 			lightmapColor.rgb *= LinearToGamma3(lightColorLinear);
@@ -287,7 +287,7 @@ void main(void)
 	#endif
 
 	#if defined(OUTLINE_ENABLED)
-		lightmapColor.rgb *= ProcessOtherColor(vec3(r_outline_dark));
+		lightmapColor.rgb *= ProcessOtherColor3(vec3(r_outline_dark));
 	#endif
 
 #endif
@@ -317,7 +317,7 @@ void main(void)
 
 	//Normal color output
 
-	#ifdef GBUFFER_ENABLED
+	#if defined(GBUFFER_ENABLED)
 
 		vec2 vOctNormal = UnitVectorToOctahedron(vNormal);
 

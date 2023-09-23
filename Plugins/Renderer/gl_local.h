@@ -477,6 +477,7 @@ void GL_Begin2D(void);
 void GL_Begin2DEx(int width, int height);
 void GL_End2D(void);
 
+void GL_ClearColor(vec4_t color);
 void GL_ClearDepthStencil(float depth, int stencilref, int stencilmask);
 void GL_ClearColorDepthStencil(vec4_t color, float depth, int stencilref, int stencilmask);
 void GL_ClearStencil(int stencilmask);
