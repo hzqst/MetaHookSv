@@ -21,6 +21,7 @@ out vec2 v_texcoord;
 void main(void)
 {
 #ifdef VOLUME_ENABLED
+
 	vec4 worldpos4 = u_modelmatrix * vec4(in_vertex, 1.0);
 
 	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * worldpos4;

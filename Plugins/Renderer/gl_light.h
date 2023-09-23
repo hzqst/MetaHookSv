@@ -42,7 +42,7 @@ extern MapConVar *r_ssr_adaptive_step;
 extern MapConVar *r_ssr_binary_search;
 extern MapConVar *r_ssr_fade;
 
-extern bool drawgbuffer;
+extern bool r_draw_gbuffer;
 
 typedef void(*fnPointLightCallback)(float radius, vec3_t origin, vec3_t color, float ambient, float diffuse, float specular, float specularpow, shadow_texture_t *shadowtex, bool bVolume);
 typedef void(*fnSpotLightCallback)(float distance, float radius,
@@ -91,27 +91,26 @@ void R_SaveDLightProgramStates(void);
 void R_SaveDFinalProgramStates(void);
 void R_LoadDLightProgramStates(void);
 void R_LoadDFinalProgramStates(void);
+void R_BlitGBufferToFrameBufferColorDepth(FBO_Container_t* fbo);
 
 #define GBUFFER_INDEX_DIFFUSE		0
 #define GBUFFER_INDEX_LIGHTMAP		1
 #define GBUFFER_INDEX_WORLDNORM		2
 #define GBUFFER_INDEX_SPECULAR		3
-#define GBUFFER_INDEX_ADDITIVE		4
-#define GBUFFER_INDEX_MAX			5
+#define GBUFFER_INDEX_MAX			4
 
 #define GBUFFER_MASK_DIFFUSE		(1<<GBUFFER_INDEX_DIFFUSE)
 #define GBUFFER_MASK_LIGHTMAP		(1<<GBUFFER_INDEX_LIGHTMAP)
 #define GBUFFER_MASK_WORLDNORM		(1<<GBUFFER_INDEX_WORLDNORM)
 #define GBUFFER_MASK_SPECULAR		(1<<GBUFFER_INDEX_SPECULAR)
-#define GBUFFER_MASK_ADDITIVE		(1<<GBUFFER_INDEX_ADDITIVE)
 
-#define GBUFFER_MASK_ALL			(GBUFFER_MASK_DIFFUSE | GBUFFER_MASK_LIGHTMAP | GBUFFER_MASK_WORLDNORM | GBUFFER_MASK_SPECULAR | GBUFFER_MASK_ADDITIVE)
+#define GBUFFER_MASK_ALL			(GBUFFER_MASK_DIFFUSE | GBUFFER_MASK_LIGHTMAP | GBUFFER_MASK_WORLDNORM | GBUFFER_MASK_SPECULAR)
 
-#define DLIGHT_SPOT_ENABLED				0x1ull
-#define DLIGHT_POINT_ENABLED			0x2ull
-#define DLIGHT_VOLUME_ENABLED			0x4ull
-#define DLIGHT_CONE_TEXTURE_ENABLED		0x8ull
-#define DLIGHT_SHADOW_TEXTURE_ENABLED	0x10ull
+#define DLIGHT_SPOT_ENABLED						0x1ull
+#define DLIGHT_POINT_ENABLED					0x2ull
+#define DLIGHT_VOLUME_ENABLED					0x4ull
+#define DLIGHT_CONE_TEXTURE_ENABLED				0x8ull
+#define DLIGHT_SHADOW_TEXTURE_ENABLED			0x10ull
 
 #define DFINAL_LINEAR_FOG_ENABLED				0x1ull
 #define DFINAL_EXP_FOG_ENABLED					0x2ull

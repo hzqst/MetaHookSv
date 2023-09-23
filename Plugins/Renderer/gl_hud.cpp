@@ -48,6 +48,7 @@ SHADER_DEFINE(oitbuffer_clear);
 SHADER_DEFINE(blit_oitblend);
 
 SHADER_DEFINE(gamma_correction);
+SHADER_DEFINE(gamma_uncorrection);
 
 cvar_t *r_hdr = NULL;
 cvar_t *r_hdr_debug = NULL;
@@ -204,7 +205,22 @@ void R_InitPostProcess(void)
 	depth_linearize.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\depthlinearize.frag.glsl", NULL);
 
 	hbao_calc_blur.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao.frag.glsl", NULL);
-	
+
+	if (hbao_calc_blur.program)
+	{
+		SHADER_UNIFORM(hbao_calc_blur, texLinearDepth, "texLinearDepth");
+		SHADER_UNIFORM(hbao_calc_blur, texRandom, "texRandom");
+		SHADER_UNIFORM(hbao_calc_blur, control_RadiusToScreen, "control_RadiusToScreen");
+		SHADER_UNIFORM(hbao_calc_blur, control_projOrtho, "control_projOrtho");
+		SHADER_UNIFORM(hbao_calc_blur, control_projInfo, "control_projInfo");
+		SHADER_UNIFORM(hbao_calc_blur, control_PowExponent, "control_PowExponent");
+		SHADER_UNIFORM(hbao_calc_blur, control_InvQuarterResolution, "control_InvQuarterResolution");
+		SHADER_UNIFORM(hbao_calc_blur, control_AOMultiplier, "control_AOMultiplier");
+		SHADER_UNIFORM(hbao_calc_blur, control_InvFullResolution, "control_InvFullResolution");
+		SHADER_UNIFORM(hbao_calc_blur, control_NDotVBias, "control_NDotVBias");
+		SHADER_UNIFORM(hbao_calc_blur, control_NegInvR2, "control_NegInvR2");
+	}
+
 	depth_clear.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\depthclear.frag.glsl", NULL);
 
 	//OIT Blend
@@ -217,33 +233,26 @@ void R_InitPostProcess(void)
 
 	gamma_correction.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gamma_correction.frag.glsl", NULL);
 
-	SHADER_UNIFORM(hbao_calc_blur, texLinearDepth, "texLinearDepth");
-	SHADER_UNIFORM(hbao_calc_blur, texRandom, "texRandom");
-	SHADER_UNIFORM(hbao_calc_blur, control_RadiusToScreen, "control_RadiusToScreen");
-	SHADER_UNIFORM(hbao_calc_blur, control_projOrtho, "control_projOrtho");
-	SHADER_UNIFORM(hbao_calc_blur, control_projInfo, "control_projInfo");
-	SHADER_UNIFORM(hbao_calc_blur, control_PowExponent, "control_PowExponent");
-	SHADER_UNIFORM(hbao_calc_blur, control_InvQuarterResolution, "control_InvQuarterResolution");
-	SHADER_UNIFORM(hbao_calc_blur, control_AOMultiplier, "control_AOMultiplier");
-	SHADER_UNIFORM(hbao_calc_blur, control_InvFullResolution, "control_InvFullResolution");
-	SHADER_UNIFORM(hbao_calc_blur, control_NDotVBias, "control_NDotVBias");
-	SHADER_UNIFORM(hbao_calc_blur, control_NegInvR2, "control_NegInvR2");
+	gamma_uncorrection.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gamma_uncorrection.frag.glsl", NULL);
 
 	hbao_calc_blur_fog.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao.frag.glsl", 
 		"#define LINEAR_FOG_ENABLED\n", "#define LINEAR_FOG_ENABLED\n", NULL);
 
-	SHADER_UNIFORM(hbao_calc_blur_fog, texLinearDepth, "texLinearDepth");
-	SHADER_UNIFORM(hbao_calc_blur_fog, texRandom, "texRandom");
-	SHADER_UNIFORM(hbao_calc_blur_fog, control_RadiusToScreen, "control_RadiusToScreen");
-	SHADER_UNIFORM(hbao_calc_blur_fog, control_projOrtho, "control_projOrtho");
-	SHADER_UNIFORM(hbao_calc_blur_fog, control_projInfo, "control_projInfo");
-	SHADER_UNIFORM(hbao_calc_blur_fog, control_PowExponent, "control_PowExponent");
-	SHADER_UNIFORM(hbao_calc_blur_fog, control_InvQuarterResolution, "control_InvQuarterResolution");
-	SHADER_UNIFORM(hbao_calc_blur_fog, control_AOMultiplier, "control_AOMultiplier");
-	SHADER_UNIFORM(hbao_calc_blur_fog, control_InvFullResolution, "control_InvFullResolution");
-	SHADER_UNIFORM(hbao_calc_blur_fog, control_NDotVBias, "control_NDotVBias");
-	SHADER_UNIFORM(hbao_calc_blur_fog, control_NegInvR2, "control_NegInvR2");
-	SHADER_UNIFORM(hbao_calc_blur_fog, control_Fog, "control_Fog");
+	if (hbao_calc_blur_fog.program)
+	{
+		SHADER_UNIFORM(hbao_calc_blur_fog, texLinearDepth, "texLinearDepth");
+		SHADER_UNIFORM(hbao_calc_blur_fog, texRandom, "texRandom");
+		SHADER_UNIFORM(hbao_calc_blur_fog, control_RadiusToScreen, "control_RadiusToScreen");
+		SHADER_UNIFORM(hbao_calc_blur_fog, control_projOrtho, "control_projOrtho");
+		SHADER_UNIFORM(hbao_calc_blur_fog, control_projInfo, "control_projInfo");
+		SHADER_UNIFORM(hbao_calc_blur_fog, control_PowExponent, "control_PowExponent");
+		SHADER_UNIFORM(hbao_calc_blur_fog, control_InvQuarterResolution, "control_InvQuarterResolution");
+		SHADER_UNIFORM(hbao_calc_blur_fog, control_AOMultiplier, "control_AOMultiplier");
+		SHADER_UNIFORM(hbao_calc_blur_fog, control_InvFullResolution, "control_InvFullResolution");
+		SHADER_UNIFORM(hbao_calc_blur_fog, control_NDotVBias, "control_NDotVBias");
+		SHADER_UNIFORM(hbao_calc_blur_fog, control_NegInvR2, "control_NegInvR2");
+		SHADER_UNIFORM(hbao_calc_blur_fog, control_Fog, "control_Fog");
+	}
 
 	hbao_blur.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao_blur.frag.glsl", NULL);
 
@@ -329,6 +338,22 @@ void GL_BlitFrameBufferToFrameBufferColorDepth(FBO_Container_t *src, FBO_Contain
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
 
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+}
+
+void GL_BlitFrameBufferToFrameBufferDepthOnly(FBO_Container_t* src, FBO_Container_t* dst)
+{
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
+
+	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+}
+
+void GL_BlitFrameBufferToFrameBufferStencilOnly(FBO_Container_t* src, FBO_Container_t* dst)
+{
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
+
+	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 }
 
 void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2)
@@ -675,6 +700,32 @@ void R_GammaCorrection(void)
 	GL_EndProfile(&Profile_GammaCorrection);
 }
 
+void R_GammaUncorrection(void)
+{
+	GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
+
+	GL_BindFrameBuffer(&s_BackBufferFBO);
+
+	GL_BeginFullScreenQuad(false);
+
+	GL_UseProgram(gamma_uncorrection.program);
+
+	GL_Bind(s_BackBufferFBO2.s_hBackBufferTex);
+
+	//Could be non-fullscreen quad
+
+	GL_Begin2D();
+	GL_DisableMultitexture();
+	glEnable(GL_TEXTURE_2D);
+	glDisable(GL_BLEND);
+
+	R_DrawHUDQuad_Texture(s_BackBufferFBO2.s_hBackBufferTex, r_refdef.vrect->width, r_refdef.vrect->height);
+
+	GL_UseProgram(0);
+
+	GL_EndFullScreenQuad();
+}
+
 void R_ClearOITBuffer(void)
 {
 	GL_BeginFullScreenQuad(false);
@@ -728,7 +779,7 @@ void R_LinearizeDepth(FBO_Container_t *fbo)
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
-bool R_IsSSAOEnabled(void)
+bool R_IsAmbientOcclusionEnabled(void)
 {
 	if (!r_ssao->value)
 		return false;
@@ -858,7 +909,7 @@ void R_AmbientOcclusion(void)
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	//Write to main framebuffer or GBuffer lightmap channel
-	if (drawgbuffer)
+	if (r_draw_gbuffer)
 	{
 		GL_BindFrameBuffer(&s_GBufferFBO);
 
@@ -877,12 +928,10 @@ void R_AmbientOcclusion(void)
 	glBlendFunc(GL_ZERO, GL_SRC_COLOR);
 
 	//Only draw on brush surfaces
-	glEnable(GL_STENCIL_TEST);
-	glStencilMask(0xFF);
-	glStencilFunc(GL_EQUAL, 0, 0xFF);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	GL_BeginStencilCompareEqual(STENCIL_MASK_WORLD, STENCIL_MASK_WORLD | STENCIL_MASK_WATER | STENCIL_MASK_STUDIO_MODEL | STENCIL_MASK_SPRITE_MODEL);
 
 	GL_UseProgram(hbao_blur2.program);
+
 	glUniform1f(0, r_ssao_blur_sharpness->GetValue() / meters2viewspace);
 	glUniform2f(1, 0, 1.0f / float(glheight));
 
@@ -893,7 +942,8 @@ void R_AmbientOcclusion(void)
 
 	GL_UseProgram(0);
 
-	glDisable(GL_STENCIL_TEST);
+	GL_EndStencil();
+
 	glDisable(GL_BLEND);
 
 	GL_EndProfile(&Profile_AmbientOcclusion);

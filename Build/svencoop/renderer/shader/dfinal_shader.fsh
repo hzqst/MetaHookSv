@@ -9,12 +9,10 @@
 #define GBUFFER_INDEX_LIGHTMAP		1.0
 #define GBUFFER_INDEX_WORLDNORM		2.0
 #define GBUFFER_INDEX_SPECULAR		3.0
-#define GBUFFER_INDEX_ADDITIVE		4.0
 
 layout(binding = 0) uniform sampler2DArray gbufferTex;
 layout(binding = 1) uniform sampler2D depthTex;
 layout(binding = 2) uniform usampler2D stencilTex;
-
 layout(binding = 3) uniform sampler2D linearDepthTex;
 
 uniform float u_ssrRayStep;
@@ -67,16 +65,6 @@ vec4 GenerateBasicColorBlur(vec2 texcoord, float offset)
     }
  
     return finalColor;
-}
-
-vec4 GenerateAdditiveColor(vec2 texcoord)
-{
-    vec4 additiveColor = texture(gbufferTex, vec3(texcoord, GBUFFER_INDEX_ADDITIVE));
-
-    vec4 resultColor = additiveColor;
-    resultColor.a = 1.0;
-
-    return resultColor;
 }
 
 vec3 GenerateViewPositionFromDepth(vec2 texcoord, float depth) {
@@ -211,7 +199,7 @@ void main()
 	float shadowIntensity = CalcShadowIntensityLumFadeout(lightmapColor, specularColor.z);
 	lightmapColor.xyz *= (1.0 - shadowIntensity);
 
-#ifdef SSR_ENABLED
+#if defined(SSR_ENABLED)
     if(specularColor.g > 0.0)
     {
         vec4 ssr = ScreenSpaceReflection();
@@ -220,13 +208,13 @@ void main()
     }
 #endif
 
-    vec4 finalColor = diffuseColor * lightmapColor + GenerateAdditiveColor(texCoord);
+    vec4 finalColor = diffuseColor * lightmapColor;
 
 #if !defined(SKY_FOG_ENABLED) && defined(TEXTURE_VIEW_AVAILABLE)
 
 	uint stencilValue = texture(stencilTex, texCoord).r;
 
-	if(stencilValue == 255)
+	if((stencilValue & STENCIL_MASK_HAS_FOG) != 0)
 		out_FragColor = finalColor;
 	else
 		out_FragColor = CalcFogWithDistance(finalColor, worldnormColor.z);

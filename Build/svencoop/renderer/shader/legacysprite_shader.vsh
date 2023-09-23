@@ -5,6 +5,7 @@
 out vec3 v_worldpos;
 out vec2 v_diffusetexcoord;
 out vec4 v_color;
+out vec4 v_projpos;
 
 void main()
 {

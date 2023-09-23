@@ -276,16 +276,15 @@ typedef struct studio_ubo_s
 {
 	float r_ambientlight;
 	float r_shadelight;
-	float r_blend;
 	float r_scale;
+	int r_numelight;
 	vec4 r_plightvec;
-	vec4 r_colormix;
+	vec4 r_color;
 	vec4 r_origin;
 	vec4 entity_origin;
 	vec4 r_elight_color[4];
 	vec4 r_elight_origin[4];
 	vec4 r_elight_radius;
-	ivec4 r_numelight;
 	mat3x4 bonematrix[128];
 }studio_ubo_t;
 
@@ -488,7 +487,6 @@ void R_DrawWaters(wsurf_vbo_leaf_t *vboleaf, cl_entity_t *ent);
 #define WSURF_EXP_FOG_ENABLED				0x100ull
 #define WSURF_EXP2_FOG_ENABLED				0x200ull
 #define WSURF_GBUFFER_ENABLED				0x400ull
-#define WSURF_TRANSPARENT_ENABLED			0x800ull
 #define WSURF_SHADOW_CASTER_ENABLED			0x1000ull
 #define WSURF_SHADOWMAP_ENABLED				0x2000ull
 #define WSURF_SHADOWMAP_HIGH_ENABLED		0x4000ull
@@ -501,8 +499,8 @@ void R_DrawWaters(wsurf_vbo_leaf_t *vboleaf, cl_entity_t *ent);
 #define WSURF_CLIP_WATER_ENABLED			0x200000ull
 #define WSURF_ALPHA_BLEND_ENABLED			0x400000ull
 #define WSURF_ADDITIVE_BLEND_ENABLED		0x800000ull
-#define WSURF_OIT_ALPHA_BLEND_ENABLED		0x1000000ull
-#define WSURF_OIT_ADDITIVE_BLEND_ENABLED	0x2000000ull
+#define WSURF_OIT_BLEND_ENABLED				0x1000000ull
+#define WSURF_GAMMA_BLEND_ENABLED			0x2000000ull
 #define WSURF_FULLBRIGHT_ENABLED			0x4000000ull
 #define WSURF_COLOR_FILTER_ENABLED			0x8000000ull
 #define WSURF_LIGHTMAP_INDEX_0_ENABLED		0x10000000ull
@@ -510,4 +508,3 @@ void R_DrawWaters(wsurf_vbo_leaf_t *vboleaf, cl_entity_t *ent);
 #define WSURF_LIGHTMAP_INDEX_2_ENABLED		0x40000000ull
 #define WSURF_LIGHTMAP_INDEX_3_ENABLED		0x80000000ull
 #define WSURF_LEGACY_DLIGHT_ENABLED			0x100000000ull
-#define WSURF_GAMMA_BLEND_ENABLED			0x200000000ull

@@ -41,6 +41,7 @@ out vec2 v_normaltexcoord;
 out vec2 v_parallaxtexcoord;
 out vec2 v_speculartexcoord;
 out vec4 v_shadowcoord[3];
+out vec4 v_projpos;
 
 #ifdef BINDLESS_ENABLED
 
@@ -215,4 +216,6 @@ void main(void)
 	#endif	
 
 	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * worldpos4;
+
+	v_projpos = gl_Position;
 }

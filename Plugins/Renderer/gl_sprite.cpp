@@ -29,11 +29,11 @@ void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput)
 		if(state & SPRITE_GBUFFER_ENABLED)
 			defs << "#define GBUFFER_ENABLED\n";
 
-		if ((state & SPRITE_OIT_ALPHA_BLEND_ENABLED) && bUseOITBlend)
-			defs << "#define OIT_ALPHA_BLEND_ENABLED\n";
+		if ((state & SPRITE_OIT_BLEND_ENABLED) && bUseOITBlend)
+			defs << "#define OIT_BLEND_ENABLED\n";
 
-		if ((state & SPRITE_OIT_ADDITIVE_BLEND_ENABLED) && bUseOITBlend)
-			defs << "#define OIT_ADDITIVE_BLEND_ENABLED\n";
+		if (state & SPRITE_GAMMA_BLEND_ENABLED)
+			defs << "#define GAMMA_BLEND_ENABLED\n";
 
 		if (state & SPRITE_ALPHA_BLEND_ENABLED)
 			defs << "#define ALPHA_BLEND_ENABLED\n";
@@ -104,8 +104,8 @@ void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput)
 const program_state_mapping_t s_SpriteProgramStateName[] = {
 { SPRITE_BINDLESS_ENABLED			  ,"SPRITE_BINDLESS_ENABLED"			},
 { SPRITE_GBUFFER_ENABLED			  ,"SPRITE_GBUFFER_ENABLED"				},
-{ SPRITE_OIT_ALPHA_BLEND_ENABLED	  ,"SPRITE_OIT_ALPHA_BLEND_ENABLED"		},
-{ SPRITE_OIT_ADDITIVE_BLEND_ENABLED	  ,"SPRITE_OIT_ADDITIVE_BLEND_ENABLED"	},
+{ SPRITE_OIT_BLEND_ENABLED			  ,"SPRITE_OIT_BLEND_ENABLED"			},
+{ SPRITE_GAMMA_BLEND_ENABLED		  ,"SPRITE_GAMMA_BLEND_ENABLED"			},
 { SPRITE_ALPHA_BLEND_ENABLED		  ,"SPRITE_ALPHA_BLEND_ENABLED"			},
 { SPRITE_ADDITIVE_BLEND_ENABLED		  ,"SPRITE_ADDITIVE_BLEND_ENABLED"		},
 { SPRITE_LINEAR_FOG_ENABLED			  ,"SPRITE_LINEAR_FOG_ENABLED"			},
@@ -147,11 +147,11 @@ void R_UseLegacySpriteProgram(program_state_t state, legacysprite_program_t *pro
 	{
 		std::stringstream defs;
 
-		if (state & SPRITE_OIT_ALPHA_BLEND_ENABLED)
-			defs << "#define OIT_ALPHA_BLEND_ENABLED\n";
+		if (state & SPRITE_OIT_BLEND_ENABLED)
+			defs << "#define OIT_BLEND_ENABLED\n";
 
-		if (state & SPRITE_OIT_ADDITIVE_BLEND_ENABLED)
-			defs << "#define OIT_ADDITIVE_BLEND_ENABLED\n";
+		if (state & SPRITE_GAMMA_BLEND_ENABLED)
+			defs << "#define GAMMA_BLEND_ENABLED\n";
 
 		if (state & SPRITE_ALPHA_BLEND_ENABLED)
 			defs << "#define ALPHA_BLEND_ENABLED\n";
@@ -290,6 +290,7 @@ mspriteframe_t* R_GetSpriteFrame(msprite_t* pSprite, int frame)
 //Credits to https://github.com/FWGS/xashxt-fwgs/blob/dee61d6cf0a8f681c322e863f8df1d5e6f22443e/client/render/r_sprite.cpp#L126
 void R_GetSpriteFrameInterpolant(cl_entity_t* ent, msprite_t* pSprite, mspriteframe_t** oldframe, mspriteframe_t** curframe, float *lerp)
 {
+#if 0
 	float	framerate = 10.0f;
 	float	lerpFrac = 0.0f, frame;
 	float	frametime = (1.0f / framerate);
@@ -303,7 +304,6 @@ void R_GetSpriteFrameInterpolant(cl_entity_t* ent, msprite_t* pSprite, mspritefr
 		*lerp = lerpFrac;
 		return;
 	}
-
 	frame = fmax(0.0f, ent->curstate.frame);
 	iframe = (int)ent->curstate.frame;
 
@@ -351,6 +351,78 @@ void R_GetSpriteFrameInterpolant(cl_entity_t* ent, msprite_t* pSprite, mspritefr
 	}
 
 	*lerp = lerpFrac;
+#endif
+	int		i, j, numframes, frame;
+	float		lerpFrac, time, jtime, jinterval;
+	float* pintervals, fullinterval, targettime;
+	int		fDoInterp;
+
+	frame = (int)ent->curstate.frame;
+	lerpFrac = 1.0f;
+
+	// misc info
+	fDoInterp = (ent->curstate.effects & EF_NOINTERP) ? false : true;
+
+	if (frame < 0)
+	{
+		frame = 0;
+	}
+	else if (frame >= pSprite->numframes)
+	{
+		frame = pSprite->numframes - 1;
+	}
+
+	if (pSprite->frames[frame].type == SPR_SINGLE)
+	{
+		if (fDoInterp)
+		{
+			if (ent->latched.prevblending[0] >= pSprite->numframes || pSprite->frames[ent->latched.prevblending[0]].type != SPR_SINGLE)
+			{
+				// this can be happens when rendering switched between single and angled frames
+				// or change model on replace delta-entity
+				ent->latched.prevblending[0] = ent->latched.prevblending[1] = frame;
+				ent->latched.sequencetime = (*cl_time);
+				lerpFrac = 1.0f;
+			}
+
+			if (ent->latched.sequencetime < (*cl_time))
+			{
+				if (frame != ent->latched.prevblending[1])
+				{
+					ent->latched.prevblending[0] = ent->latched.prevblending[1];
+					ent->latched.prevblending[1] = frame;
+					ent->latched.sequencetime = (*cl_time);
+					lerpFrac = 0.0f;
+				}
+				else lerpFrac = ((*cl_time) - ent->latched.sequencetime) * 11.0f;
+			}
+			else
+			{
+				ent->latched.prevblending[0] = ent->latched.prevblending[1] = frame;
+				ent->latched.sequencetime = (*cl_time);
+				lerpFrac = 0.0f;
+			}
+		}
+		else
+		{
+			ent->latched.prevblending[0] = ent->latched.prevblending[1] = frame;
+			lerpFrac = 1.0f;
+		}
+
+		if (ent->latched.prevblending[0] >= pSprite->numframes)
+		{
+			// reset interpolation on change model
+			ent->latched.prevblending[0] = ent->latched.prevblending[1] = frame;
+			ent->latched.sequencetime = (*cl_time);
+			lerpFrac = 0.0f;
+		}
+
+		// get the interpolated frames
+		if (oldframe) *oldframe = R_GetSpriteFrame(pSprite, ent->latched.prevblending[0]);
+		if (curframe) *curframe = R_GetSpriteFrame(pSprite, frame);
+	}
+
+	*lerp = lerpFrac;
 }
 
 bool R_SpriteAllowLerping(cl_entity_t* ent, msprite_t* pSprite)
@@ -370,32 +442,8 @@ bool R_SpriteAllowLerping(cl_entity_t* ent, msprite_t* pSprite)
 	return true;
 }
 
-void R_DrawSpriteModel(cl_entity_t *ent)
+void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, mspriteframe_t* frame, mspriteframe_t* oldframe, float lerp)
 {
-	if (r_draw_shadowcaster)
-		return;
-
-	auto pSprite = (msprite_t *)ent->model->cache.data;
-
-	float lerp = 0;
-	mspriteframe_t* frame = NULL;
-	mspriteframe_t* oldframe = NULL;
-
-	if (R_SpriteAllowLerping(ent, pSprite))
-	{
-		R_GetSpriteFrameInterpolant(ent, pSprite, &oldframe, &frame, &lerp);
-	}
-	else
-	{
-		oldframe = frame = R_GetSpriteFrame(pSprite, ent->curstate.frame);
-	}
-
-	if (!frame)
-	{
-		gEngfuncs.Con_DPrintf("R_DrawSpriteModel: Couldn't get sprite frame for %s\n", ent->model);
-		return;
-	}
-
 	auto scale = ent->curstate.scale;
 
 	if (scale <= 0)
@@ -404,25 +452,15 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 	if (ent->curstate.rendermode == kRenderNormal)
 		(*r_blend) = 1.0;
 
-	colorVec color = {0};
+	colorVec color = { 0 };
 	R_SpriteColor(&color, ent, (*r_blend) * 255);
 
 	float u_color[4] = { 0 };
 
 	program_state_t SpriteProgramState = 0;
 
-	if (r_draw_opaque)
-	{
-		glEnable(GL_STENCIL_TEST);
-		glStencilMask(0xFF);
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	}
-
 	if (!gl_spriteblend->value && ent->curstate.rendermode == kRenderNormal)
 	{
-		// This is for fixed-function pipeline and is deprecated.
-		//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 		glDisable(GL_BLEND);
 
 		u_color[0] = color.r / 255.0f;
@@ -436,18 +474,12 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 		{
 		case kRenderTransColor:
 		{
-			// This is for fixed-function pipeline and is deprecated.
-			//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ALPHA);
-
-			glDepthMask(0);
+			glDepthMask(GL_FALSE);
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-			if (r_draw_oitblend)
-				SpriteProgramState |= SPRITE_OIT_ALPHA_BLEND_ENABLED;
-			else
-				SpriteProgramState |= SPRITE_ALPHA_BLEND_ENABLED;
+			SpriteProgramState |= SPRITE_ALPHA_BLEND_ENABLED;
 
 			u_color[0] = color.r / 255.0f;
 			u_color[1] = color.g / 255.0f;
@@ -458,18 +490,12 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 		case kRenderTransAdd:
 		{
-			// This is for fixed-function pipeline and is deprecated.
-			//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-			glDepthMask(0);
+			glDepthMask(GL_FALSE);
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_ONE, GL_ONE);
 			R_SetGBufferBlend(GL_ONE, GL_ONE);
 
-			if (r_draw_oitblend)
-				SpriteProgramState |= SPRITE_OIT_ADDITIVE_BLEND_ENABLED;
-			else
-				SpriteProgramState |= SPRITE_ADDITIVE_BLEND_ENABLED;
+			SpriteProgramState |= SPRITE_ADDITIVE_BLEND_ENABLED;
 
 			u_color[0] = color.r / 255.0f;
 			u_color[1] = color.g / 255.0f;
@@ -480,19 +506,13 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 		case kRenderGlow:
 		{
-			// This is for fixed-function pipeline and is deprecated.
-			//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
 			glDisable(GL_DEPTH_TEST);
-			glDepthMask(0);
+			glDepthMask(GL_FALSE);
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_ONE, GL_ONE);
 			R_SetGBufferBlend(GL_ONE, GL_ONE);
 
-			if (r_draw_oitblend)
-				SpriteProgramState |= SPRITE_OIT_ADDITIVE_BLEND_ENABLED;
-			else
-				SpriteProgramState |= SPRITE_ADDITIVE_BLEND_ENABLED;
+			SpriteProgramState |= SPRITE_ADDITIVE_BLEND_ENABLED;
 
 			u_color[0] = color.r / 255.0f;
 			u_color[1] = color.g / 255.0f;
@@ -503,18 +523,12 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 		case kRenderTransAlpha:
 		{
-			// This is for fixed-function pipeline and is deprecated.
-			//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-			
-			glDepthMask(0);
+			glDepthMask(GL_FALSE);
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-			if (r_draw_oitblend)
-				SpriteProgramState |= SPRITE_OIT_ALPHA_BLEND_ENABLED;
-			else
-				SpriteProgramState |= SPRITE_ALPHA_BLEND_ENABLED;
+			SpriteProgramState |= SPRITE_ALPHA_BLEND_ENABLED;
 
 			u_color[0] = color.r / 255.0f;
 			u_color[1] = color.g / 255.0f;
@@ -525,18 +539,12 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 		default:
 		{
-			// This is for fixed-function pipeline and is deprecated.
-			//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-			glDepthMask(0);
+			glDepthMask(GL_FALSE);
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-			if (r_draw_oitblend)
-				SpriteProgramState |= SPRITE_OIT_ALPHA_BLEND_ENABLED;
-			else
-				SpriteProgramState |= SPRITE_ALPHA_BLEND_ENABLED;
+			SpriteProgramState |= SPRITE_ALPHA_BLEND_ENABLED;
 
 			u_color[0] = color.r / 255.0f;
 			u_color[1] = color.g / 255.0f;
@@ -546,6 +554,7 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 		}
 		}
 	}
+
 	glEnable(GL_ALPHA_TEST);
 
 	if (r_draw_reflectview)
@@ -553,23 +562,35 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 		SpriteProgramState |= SPRITE_CLIP_ENABLED;
 	}
 
-	if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+	if (!R_IsRenderingGBuffer())
 	{
-		SpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
-	}
-	else if (!drawgbuffer && r_fog_mode == GL_EXP)
-	{
-		SpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
-	}
-	else if (!drawgbuffer && r_fog_mode == GL_EXP2)
-	{
-		SpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+		if (r_fog_mode == GL_LINEAR)
+		{
+			SpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+		}
+		else if (r_fog_mode == GL_EXP)
+		{
+			SpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+		}
+		else if (r_fog_mode == GL_EXP2)
+		{
+			SpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+		}
 	}
 
-	if (drawgbuffer)
+	if (R_IsRenderingGBuffer())
 	{
 		SpriteProgramState |= SPRITE_GBUFFER_ENABLED;
-		R_SetGBufferMask(GBUFFER_MASK_ALL);
+	}
+
+	if (r_draw_gammablend)
+	{
+		SpriteProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
+	}
+
+	if (r_draw_oitblend && (SpriteProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
+	{
+		SpriteProgramState |= SPRITE_OIT_BLEND_ENABLED;
 	}
 
 	int type = pSprite->type;
@@ -609,7 +630,7 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 	case SPR_ORIENTED:
 	{
-		SpriteProgramState |= SPRITE_ORIENTED_ENABLED;		
+		SpriteProgramState |= SPRITE_ORIENTED_ENABLED;
 		break;
 	}
 
@@ -624,6 +645,8 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 	{
 		SpriteProgramState |= SPRITE_LERP_ENABLED;
 	}
+
+	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
 	sprite_program_t prog = { 0 };
 	R_UseSpriteProgram(SpriteProgramState, &prog);
@@ -659,15 +682,36 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 	GL_UseProgram(0);
 
 	glDisable(GL_ALPHA_TEST);
-	glDepthMask(1);
+	glDisable(GL_BLEND);
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
+}
 
-	glDisable(GL_STENCIL_TEST);
+void R_DrawSpriteModel(cl_entity_t *ent)
+{
+	if (r_draw_shadowcaster)
+		return;
 
-	if (ent->curstate.rendermode != kRenderNormal || gl_spriteblend->value)
+	auto pSprite = (msprite_t *)ent->model->cache.data;
+
+	float lerp = 0;
+	mspriteframe_t* frame = NULL;
+	mspriteframe_t* oldframe = NULL;
+
+	if (R_SpriteAllowLerping(ent, pSprite))
 	{
-		// This is for fixed-function pipeline and is deprecated.
-		//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-		glDisable(GL_BLEND);
-		glEnable(GL_DEPTH_TEST);
+		R_GetSpriteFrameInterpolant(ent, pSprite, &oldframe, &frame, &lerp);
 	}
+	else
+	{
+		oldframe = frame = R_GetSpriteFrame(pSprite, ent->curstate.frame);
+	}
+
+	if (!frame)
+	{
+		gEngfuncs.Con_DPrintf("R_DrawSpriteModel: Couldn't get sprite frame for %s\n", ent->model);
+		return;
+	}
+
+	R_DrawSpriteModelInterpFrames(ent, pSprite, frame, oldframe, lerp);
 }

@@ -54,7 +54,7 @@ void main()
 	float flWaterColorAlpha = clamp(u_watercolor.a, 0.0, 1.0);
 	vec4 vWaterColor = vec4(u_watercolor.xyz, 1.0);
 
-	vWaterColor = GammaToLinear(vWaterColor);
+	vWaterColor = ProcessOtherColor(vWaterColor);
 
 #ifdef LEGACY_ENABLED
 
@@ -66,7 +66,7 @@ void main()
 	vFinalColor.a = flWaterColorAlpha;
 
 	//The basetexture of water is in TexGamme Space and will need to convert to Linear Space
-	vFinalColor = TexGammaToLinear(vFinalColor);
+	vFinalColor = ProcessDiffuseColor(vFinalColor);
 
 #else
 

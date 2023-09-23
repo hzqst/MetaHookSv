@@ -129,9 +129,24 @@ bool g_bIsGLInit = false;
 float r_entity_matrix[4][4];
 float r_entity_color[4];
 
+//This is the very first pass for studiomodel mesh analysis
+bool r_draw_analyzingstudio = false;
+
+//This is when drawing a studiomodel has mesh with flag STUDIO_NF_ADDITIVE or with renderfx=kRenderFxGlowShell in opaque pass, and this studiomodel need to be put into the transparent queue and draw again later.
+bool r_draw_deferredtrans = false;
+
+//This is to mark the studiomodel with flag STUDIO_NF_ADDITIVE
+bool r_draw_hasadditive = false;
+
 bool r_draw_hasface = false;
-bool r_draw_hairshadow = false;
+
+bool r_draw_hashair = false;
+
+//This is to mark the studiomodel with outline
+bool r_draw_hasoutline = false;
+
 bool r_draw_shadowcaster = false;
+
 bool r_draw_opaque = false;
 bool r_draw_oitblend = false;
 bool r_draw_gammablend = false;
@@ -249,11 +264,21 @@ cvar_t *gl_bindless = NULL;
 
 cvar_t *dev_overview_color = NULL;
 
-cvar_t* r_gammablend = NULL;
+cvar_t* r_gamma_blend = NULL;
 
 cvar_t *r_alpha_shift = NULL;
 
 cvar_t *r_additive_shift = NULL;
+
+bool R_IsRenderingGBuffer()
+{
+	return GL_GetCurrentFrameBuffer() == &s_GBufferFBO;
+}
+
+bool R_IsRenderingBackBuffer()
+{
+	return GL_GetCurrentFrameBuffer() == &s_BackBufferFBO;
+}
 
 qboolean Host_IsSinglePlayerGame()
 {
@@ -338,6 +363,13 @@ int CL_FxBlend(cl_entity_t *entity)
 		return 255;
 	}
 
+	auto EntityComponent = R_GetEntityComponent((*currententity), false);
+
+	if (EntityComponent && EntityComponent->DeferredStudioPasses.size())
+	{
+		return 255;
+	}
+
 	return gRefFuncs.CL_FxBlend(entity);
 }
 
@@ -370,38 +402,49 @@ void R_DrawParticles(void)
 	if (CL_IsDevOverviewMode())
 		return;
 
+	gRefFuncs.R_FreeDeadParticles(&(*active_particles));
+
 	vec3_t			up, right;
 	float			scale;
 
 	GL_Bind((*particletexture));
 	glEnable(GL_ALPHA_TEST);
 	glEnable(GL_BLEND);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 	program_state_t LegacySpriteProgramState = 0;
 
-	if (r_draw_oitblend)
+	if (!R_IsRenderingGBuffer())
 	{
-		LegacySpriteProgramState |= SPRITE_OIT_ALPHA_BLEND_ENABLED;
-	}
-
-	if (!drawgbuffer && r_fog_mode == GL_LINEAR)
-	{
-		LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
-	}
-	else if (!drawgbuffer && r_fog_mode == GL_EXP)
-	{
-		LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
-	}
-	else if (!drawgbuffer && r_fog_mode == GL_EXP2)
-	{
-		LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+		if (r_fog_mode == GL_LINEAR)
+		{
+			LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+		}
+		else if (r_fog_mode == GL_EXP)
+		{
+			LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+		}
+		else if (r_fog_mode == GL_EXP2)
+		{
+			LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+		}
 	}
 
 	if (r_draw_reflectview)
 	{
 		LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
+	}
+
+	if (r_draw_oitblend)
+	{
+		LegacySpriteProgramState |= SPRITE_OIT_BLEND_ENABLED;
+	}
+
+	if (r_draw_gammablend)
+	{
+		LegacySpriteProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
 	}
 
 	R_UseLegacySpriteProgram(LegacySpriteProgramState, NULL);
@@ -417,8 +460,6 @@ void R_DrawParticles(void)
 	float time1 = frametime * 5;
 	float grav = frametime * (r_params.movevars ? r_params.movevars->gravity : 800) * 0.05;
 	float dvel = 4 * frametime;
-
-	gRefFuncs.R_FreeDeadParticles(&(*active_particles));
 
 	for (auto p = (*active_particles); p; p = p->next)
 	{
@@ -563,22 +604,24 @@ void triapi_RenderMode(int mode)
 	{
 	case kRenderNormal:
 	{
-#if 1
 		if (r_draw_legacysprite)
 		{
 			program_state_t LegacySpriteProgramState = 0;
 
-			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			if (!R_IsRenderingGBuffer())
 			{
-				LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
-			}
-			else if (!drawgbuffer && r_fog_mode == GL_EXP)
-			{
-				LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
-			}
-			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
-			{
-				LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+				if (r_fog_mode == GL_LINEAR)
+				{
+					LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+				}
+				else if (r_fog_mode == GL_EXP)
+				{
+					LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+				}
+				else if (r_fog_mode == GL_EXP2)
+				{
+					LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+				}
 			}
 
 			if (r_draw_reflectview)
@@ -586,35 +629,59 @@ void triapi_RenderMode(int mode)
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}
 
+			if (r_draw_gammablend)
+			{
+				LegacySpriteProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
+			}
+
+			if (r_draw_oitblend && (LegacySpriteProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
+			{
+				LegacySpriteProgramState |= SPRITE_OIT_BLEND_ENABLED;
+			}
+
+
 			R_UseLegacySpriteProgram(LegacySpriteProgramState, NULL);
 		}
-#endif
 		break;
 	}
 
 	case kRenderTransAdd:
 	{
 		R_SetGBufferBlend(GL_ONE, GL_ONE);
+
 		if (r_draw_legacysprite)
 		{
-			program_state_t LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ADDITIVE_BLEND_ENABLED : SPRITE_ADDITIVE_BLEND_ENABLED;
+			program_state_t LegacySpriteProgramState =  SPRITE_ADDITIVE_BLEND_ENABLED;
 
-			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			if (!R_IsRenderingGBuffer())
 			{
-				LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
-			}
-			else if (!drawgbuffer && r_fog_mode == GL_EXP)
-			{
-				LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
-			}
-			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
-			{
-				LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+				if (r_fog_mode == GL_LINEAR)
+				{
+					LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+				}
+				else if (r_fog_mode == GL_EXP)
+				{
+					LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+				}
+				else if (r_fog_mode == GL_EXP2)
+				{
+					LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+				}
 			}
 
 			if (r_draw_reflectview)
 			{
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
+			}
+
+			if (r_draw_gammablend)
+			{
+				LegacySpriteProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
+			}
+
+			if (r_draw_oitblend && (LegacySpriteProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
+			{
+				LegacySpriteProgramState |= SPRITE_OIT_BLEND_ENABLED;
 			}
 
 			R_UseLegacySpriteProgram(LegacySpriteProgramState, NULL);
@@ -630,24 +697,36 @@ void triapi_RenderMode(int mode)
 		
 		if (r_draw_legacysprite)
 		{
-			program_state_t LegacySpriteProgramState = r_draw_oitblend ? SPRITE_OIT_ALPHA_BLEND_ENABLED : SPRITE_ALPHA_BLEND_ENABLED;
+			program_state_t LegacySpriteProgramState = SPRITE_ALPHA_BLEND_ENABLED;
 
 			if (r_draw_reflectview)
 			{
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}
+			if (!R_IsRenderingGBuffer())
+			{
+				if (r_fog_mode == GL_LINEAR)
+				{
+					LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+				}
+				else if (r_fog_mode == GL_EXP)
+				{
+					LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
+				}
+				else if (r_fog_mode == GL_EXP2)
+				{
+					LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+				}
+			}
 
-			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			if (r_draw_gammablend)
 			{
-				LegacySpriteProgramState |= SPRITE_LINEAR_FOG_ENABLED;
+				LegacySpriteProgramState |= SPRITE_GAMMA_BLEND_ENABLED;
 			}
-			else if (!drawgbuffer && r_fog_mode == GL_EXP)
+
+			if (r_draw_oitblend && (LegacySpriteProgramState & (SPRITE_ALPHA_BLEND_ENABLED | SPRITE_ADDITIVE_BLEND_ENABLED)))
 			{
-				LegacySpriteProgramState |= SPRITE_EXP_FOG_ENABLED;
-			}
-			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
-			{
-				LegacySpriteProgramState |= SPRITE_EXP2_FOG_ENABLED;
+				LegacySpriteProgramState |= SPRITE_OIT_BLEND_ENABLED;
 			}
 
 			R_UseLegacySpriteProgram(LegacySpriteProgramState, NULL);
@@ -794,19 +873,20 @@ void R_AddTEntity(cl_entity_t *ent)
 			return;
 
 		(*currententity) = ent;
+
 		R_DrawCurrentEntity(false);
 
 		return;
 	}
-	
+
+	if ((*numTransObjs) >= (*maxTransObjs))
+	{
+		g_pMetaHookAPI->SysError("R_AddTEntity: Too many objects");
+		return;
+	}
+
 	if (bUseOITBlend)
 	{
-		if ((*numTransObjs) >= (*maxTransObjs))
-		{
-			g_pMetaHookAPI->SysError("R_AddTEntity: Too many objects");
-			return;
-		}
-
 		(*transObjects)[(*numTransObjs)].pEnt = ent;
 		(*transObjects)[(*numTransObjs)].distance = 0;
 		(*numTransObjs)++;
@@ -815,12 +895,6 @@ void R_AddTEntity(cl_entity_t *ent)
 	{
 		float dist;
 		vec3_t v;
-
-		if ((*numTransObjs) >= (*maxTransObjs))
-		{
-			gEngfuncs.Con_Printf("R_AddTEntity: Too many objects");
-			return;
-		}
 
 		if (!ent->model || ent->model->type != mod_brush || ent->curstate.rendermode != kRenderTransAlpha)
 		{
@@ -868,7 +942,7 @@ void R_DrawCurrentEntity(bool bTransparent)
 		if ((*r_blend) <= 0)
 			return;
 
-		//why GoldSrc uses double not float?
+		//Why does GoldSrc use double not float?
 		(*r_blend) = (*r_blend) / 255.0;
 
 		if ((*currententity)->curstate.rendermode == kRenderGlow && (*currententity)->model->type != mod_sprite)
@@ -901,8 +975,10 @@ void R_DrawCurrentEntity(bool bTransparent)
 			(*r_blend) = 1;
 		}
 
-		if ((*r_blend) != 0)
+		if ((*r_blend) > 0)
+		{
 			R_DrawSpriteModel((*currententity));
+		}
 
 		break;
 	}
@@ -948,11 +1024,11 @@ void R_DrawCurrentEntity(bool bTransparent)
 			memcpy(save_bonetransform, (*pbonetransform), sizeof(save_bonetransform));
 			memcpy(save_lighttransform, (*plighttransform), sizeof(save_lighttransform));
 
-			//do what CL_MoveAiments does...?
+			//Do what CL_MoveAiments does...?
 
 			for (size_t i = 0; i < comp->FollowEnts.size(); ++i)
 			{
-				//restore matrix at each run
+				//Restore matrix at each run
 				if (i != 0)
 				{
 					memcpy((*pbonetransform), save_bonetransform, sizeof(save_bonetransform));
@@ -990,6 +1066,7 @@ void R_SetRenderMode(cl_entity_t *pEntity)
 		r_entity_color[2] = 1;
 		r_entity_color[3] = 1;
 		glDisable(GL_BLEND);
+
 		break;
 	}
 
@@ -999,9 +1076,11 @@ void R_SetRenderMode(cl_entity_t *pEntity)
 		r_entity_color[1] = (*currententity)->curstate.rendercolor.g / 255.0;
 		r_entity_color[2] = (*currententity)->curstate.rendercolor.b / 255.0;
 		r_entity_color[3] = (*r_blend);
+
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_BLEND);
 		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 		break;
 	}
 
@@ -1013,9 +1092,11 @@ void R_SetRenderMode(cl_entity_t *pEntity)
 		r_entity_color[3] = 1;
 
 		glBlendFunc(GL_ONE, GL_ONE);
-		glDepthMask(0);
+		glDepthMask(GL_FALSE);
 		glEnable(GL_BLEND);
+
 		R_SetGBufferBlend(GL_ONE, GL_ONE);
+
 		break;
 	}
 
@@ -1026,8 +1107,10 @@ void R_SetRenderMode(cl_entity_t *pEntity)
 		r_entity_color[2] = 1;
 		r_entity_color[3] = 1;
 
-		glEnable(GL_ALPHA_TEST);
 		glDisable(GL_BLEND);
+
+		//TODO:Do this in shader please
+		glEnable(GL_ALPHA_TEST);
 		glAlphaFunc(GL_GREATER, gl_alphamin->value);
 		
 		break;
@@ -1041,9 +1124,10 @@ void R_SetRenderMode(cl_entity_t *pEntity)
 		r_entity_color[3] = (*r_blend);
 
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glDepthMask(0);
+		glDepthMask(GL_FALSE);
 		glEnable(GL_BLEND);
 		R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 		break;
 	}
 	}
@@ -1183,43 +1267,6 @@ void R_SetupPerspective(float fovx, float fovy, float zNear, float zFar)
 	VectorNormalize(r_frustum_vec[3]);
 }
 
-void GL_ClearFBO(FBO_Container_t *s)
-{
-	s->s_hBackBufferFBO = 0;
-	s->s_hBackBufferCB = 0;
-	s->s_hBackBufferDB = 0;
-	s->s_hBackBufferTex = 0;
-	s->s_hBackBufferTex2 = 0;
-	s->s_hBackBufferDepthTex = 0;
-	s->iWidth = s->iHeight = s->iTextureColorFormat = 0;
-}
-
-void GL_FreeFBO(FBO_Container_t *s)
-{
-	if (s->s_hBackBufferFBO)
-		glDeleteFramebuffersEXT(1, &s->s_hBackBufferFBO);
-
-	if (s->s_hBackBufferCB)
-		glDeleteRenderbuffersEXT(1, &s->s_hBackBufferCB);
-
-	if (s->s_hBackBufferDB)
-		glDeleteRenderbuffersEXT(1, &s->s_hBackBufferDB);
-
-	if (s->s_hBackBufferTex)
-		glDeleteTextures(1, &s->s_hBackBufferTex);
-
-	if (s->s_hBackBufferTex2)
-		glDeleteTextures(1, &s->s_hBackBufferTex2);
-
-	if (s->s_hBackBufferDepthTex)
-		glDeleteTextures(1, &s->s_hBackBufferDepthTex);
-
-	if (s->s_hBackBufferStencilView)
-		glDeleteTextures(1, &s->s_hBackBufferStencilView);
-
-	GL_ClearFBO(s);
-}
-
 void GL_GenerateFrameBuffers(void)
 {
 	GL_FreeFBO(&s_FinalBufferFBO);
@@ -1256,7 +1303,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_FinalBufferFBO);
-		g_pMetaHookAPI->SysError("Failed to initialize final framebuffer!\n");
+		g_pMetaHookAPI->SysError("Failed to initialize FinalBufferFBO!\n");
 	}
 
 	s_BackBufferFBO.iWidth = glwidth;
@@ -1268,7 +1315,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BackBufferFBO);
-		g_pMetaHookAPI->SysError("Failed to initialize back framebuffer!\n");
+		g_pMetaHookAPI->SysError("Failed to initialize BackBufferFBO!\n");
 	}
 
 	s_BackBufferFBO2.iWidth = glwidth;
@@ -1280,7 +1327,7 @@ void GL_GenerateFrameBuffers(void)
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		GL_FreeFBO(&s_BackBufferFBO2);
-		g_pMetaHookAPI->SysError("Failed to initialize back2 framebuffer!\n");
+		g_pMetaHookAPI->SysError("Failed to initialize BackBufferFBO2!\n");
 	}
 
 	s_GBufferFBO.iWidth = glwidth;
@@ -1635,6 +1682,7 @@ void R_PreRenderView()
 	//Capture previous fog settings
 
 	r_fog_mode = 0;
+	r_draw_gammablend = false;
 
 	if (glIsEnabled(GL_FOG))
 	{
@@ -1662,8 +1710,6 @@ void R_PreRenderView()
 		}
 	}
 
-	R_RenderShadowMap_PreView();
-
 	R_RenderShadowMap();
 
 	R_RenderWaterPass();
@@ -1673,18 +1719,31 @@ void R_PreRenderView()
 
 void R_PostRenderView()
 {
-	if (R_IsFXAAEnabled())
-	{
-		R_DoFXAA();
-	}
-
 	if (R_IsHDREnabled())
 	{
-		R_HDR();
+		if (r_draw_gammablend)
+		{
+			R_GammaUncorrection();
+			R_HDR();
+		}
+		else
+		{
+			R_HDR();
+		}
 	}
 	else
 	{
-		R_GammaCorrection();
+		if (!r_draw_gammablend)
+		{
+			R_GammaCorrection();
+		}
+	}
+
+	r_draw_gammablend = false;
+
+	if (R_IsFXAAEnabled())
+	{
+		R_DoFXAA();
 	}
 
 	GL_DisableMultitexture();
@@ -1794,16 +1853,8 @@ void R_RenderView_SvEngine(int viewIdx)
 			R_ParseCvarAsColor3(gl_clearcolor, clearColor);
 		}
 
-		glClearColor(clearColor[0], clearColor[1], clearColor[2], 0);
-
-		glStencilMask(0xFF);
-
-		glClearStencil(0);
-		glDepthMask(GL_TRUE);
-
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-		glStencilMask(0);
+		vec4_t vecClearColor = { clearColor[0], clearColor[1], clearColor[2], 0 };
+		GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_WORLD, STENCIL_MASK_ALL);
 
 		glDepthFunc(GL_LEQUAL);
 		glDepthRange(0, 1);
@@ -2063,7 +2114,7 @@ void R_InitCvars(void)
 		gl_bindless = gEngfuncs.pfnRegisterVariable("gl_bindless", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	}
 
-	r_gammablend = gEngfuncs.pfnRegisterVariable("r_gammablend", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_gamma_blend = gEngfuncs.pfnRegisterVariable("r_gamma_blend", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	r_alpha_shift = gEngfuncs.pfnRegisterVariable("r_alpha_shift", "0.4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	
@@ -2920,6 +2971,13 @@ void R_DrawEntitiesOnList(void)
 		{
 			R_DrawCurrentEntity(false);
 		}
+
+		if (r_draw_deferredtrans)
+		{
+			R_AddTEntity((*currententity));
+
+			r_draw_deferredtrans = false;
+		}
 	}
 
 	GL_EndProfile(&Profile_DrawEntitiesOnList);
@@ -2979,32 +3037,39 @@ void AllowFog(bool allowed)
 	}
 }
 
-void HUD_EndRenderOpaque(void)
+void R_EndRenderOpaque(void)
 {
 	r_draw_opaque = false;
 
 	glDisable(GL_ALPHA_TEST);
-	glDisable(GL_STENCIL_TEST);
 
-	//Transfer everything from gbuffer into backbuffer
-	if (drawgbuffer)
+	//Transfer everything from GBuffer into BackBuffer
+	if (R_IsRenderingGBuffer())
 	{
 		R_EndRenderGBuffer();
 	}
-	else if (R_IsSSAOEnabled())
+	else if (R_IsAmbientOcclusionEnabled())
 	{
 		GL_BeginFullScreenQuad(false);
 		R_LinearizeDepth(&s_BackBufferFBO);
 		R_AmbientOcclusion();
 		GL_EndFullScreenQuad();
 	}
+
+	if (r_gamma_blend->value)
+	{
+		R_GammaCorrection();
+
+		r_draw_gammablend = true;
+	}
 }
 
 void ClientDLL_DrawNormalTriangles(void)
 {
-	GL_PushFrameBuffer();
-
 	//Allow SC client dll to write stencil buffer
+	//TODO: Remove stencil from portal code
+
+	GL_PushFrameBuffer();
 
 	glStencilMask(0xFF);
 
@@ -3032,7 +3097,6 @@ void ClientDLL_DrawNormalTriangles(void)
 	*currenttexture = -1;
 
 	//Restore current framebuffer just in case that Allow SC client dll changes it
-	//glBindFramebuffer(GL_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	GL_PopFrameBuffer();
 }
 
@@ -3069,7 +3133,7 @@ void R_RenderScene(void)
 	if ((*g_bUserFogOn))
 		R_RenderFinalFog();
 
-	HUD_EndRenderOpaque();
+	R_EndRenderOpaque();
 
 	AllowFog(false);
 	ClientDLL_DrawNormalTriangles();

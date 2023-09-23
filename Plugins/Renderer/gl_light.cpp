@@ -27,7 +27,7 @@ MapConVar *r_ssr_adaptive_step = NULL;
 MapConVar *r_ssr_binary_search = NULL;
 MapConVar *r_ssr_fade = NULL;
 
-bool drawgbuffer = false;
+bool r_draw_gbuffer = false;
 
 int gbuffer_mask = -1;
 GLuint gbuffer_attachments[GBUFFER_INDEX_MAX] = {0};
@@ -415,7 +415,7 @@ void R_InitLight(void)
 		glDisableVertexAttribArray(0);
 	});
 
-	drawgbuffer = false;
+	r_draw_gbuffer = false;
 }
 
 void R_NewMapLight(void)
@@ -450,7 +450,7 @@ bool R_IsDLightFlashlight(dlight_t *dl)
 
 void R_SetGBufferBlend(int blendsrc, int blenddst)
 {
-	if (!drawgbuffer)
+	if (!R_IsRenderingGBuffer())
 		return;
 
 	for (int i = 0; i < gbuffer_attachment_count; ++i)
@@ -466,15 +466,12 @@ void R_SetGBufferBlend(int blendsrc, int blenddst)
 
 		if (gbuffer_attachments[i] == GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_SPECULAR)
 			glBlendFunci(i, GL_ONE, GL_ZERO);
-
-		if (gbuffer_attachments[i] == GL_COLOR_ATTACHMENT0 + GBUFFER_INDEX_ADDITIVE)
-			glBlendFunci(i, GL_ONE, GL_ONE);
 	}
 }
 
 void R_SetGBufferMask(int mask)
 {
-	if (!drawgbuffer)
+	if (!R_IsRenderingGBuffer())
 		return;
 
 	if (gbuffer_mask == mask)
@@ -521,20 +518,18 @@ bool R_BeginRenderGBuffer(void)
 	if (!R_IsDeferredRenderingEnabled())
 		return false;
 
-	drawgbuffer = true;
+	r_draw_gbuffer = true;
 	gbuffer_mask = -1;
 
 	GL_BindFrameBuffer(&s_GBufferFBO);
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
+
 	R_SetGBufferBlend(GL_ONE, GL_ZERO);
 
-	glClearColor(0, 0, 0, 0);
-	glStencilMask(0xFF);
-	glClearStencil(0);
-	glDepthMask(GL_TRUE);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	glStencilMask(0);
+	vec4_t vecClearColor = { 0, 0, 0, 0 };
+
+	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_SKY, STENCIL_MASK_ALL);
 
 	return true;
 }
@@ -748,29 +743,10 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 	}
 }
 
-void R_EndRenderGBuffer(void)
+void R_LightShadingPass(void)
 {
-	GL_BeginFullScreenQuad(false);
-
-	R_LinearizeDepth(&s_GBufferFBO);
-
-	if (R_IsSSAOEnabled())
-	{
-		R_AmbientOcclusion();
-	}
-	else
-	{
-		//Write to GBuffer->lightmap only
-		GL_BindFrameBuffer(&s_GBufferFBO);
-		glDrawBuffer(GL_COLOR_ATTACHMENT1);
-	}
-
-	GL_EndFullScreenQuad();
-
-	GL_BeginProfile(&Profile_EndRenderGBuffer);
-
 	//Disable depth write and re-enable later after light pass.
-	glDepthMask(0);
+	glDepthMask(GL_FALSE);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE, GL_ONE);
@@ -779,7 +755,6 @@ void R_EndRenderGBuffer(void)
 
 	GL_SelectTexture(GL_TEXTURE0);
 	glDisable(GL_TEXTURE_2D);
-	//glEnable(GL_TEXTURE_2D_ARRAY);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, s_GBufferFBO.s_hBackBufferTex);
 	*currenttexture = -1;
 
@@ -803,7 +778,7 @@ void R_EndRenderGBuffer(void)
 		glBindTexture(GL_TEXTURE_2D, r_flashlight_cone_texture);
 	}
 
-	R_IterateDynamicLights([](float radius, vec3_t origin, vec3_t color, float ambient, float diffuse, float specular, float specularpow, shadow_texture_t *shadowtex, bool bVolume)
+	R_IterateDynamicLights([](float radius, vec3_t origin, vec3_t color, float ambient, float diffuse, float specular, float specularpow, shadow_texture_t* shadowtex, bool bVolume)
 	{
 		if (bVolume)
 		{
@@ -856,11 +831,11 @@ void R_EndRenderGBuffer(void)
 
 			GL_EndFullScreenQuad();
 		}
-	}, 
-	[](float distance, float radius,
-		float coneAngle, float coneCosAngle, float coneSinAngle, float coneTanAngle,
-		vec3_t origin, vec3_t angle, vec3_t vforward, vec3_t vright, vec3_t vup,
-		vec3_t color, float ambient, float diffuse, float specular, float specularpow, shadow_texture_t *shadowtex, bool bVolume, bool bIsFromLocalPlayer)
+	},
+		[](float distance, float radius,
+			float coneAngle, float coneCosAngle, float coneSinAngle, float coneTanAngle,
+			vec3_t origin, vec3_t angle, vec3_t vforward, vec3_t vright, vec3_t vup,
+			vec3_t color, float ambient, float diffuse, float specular, float specularpow, shadow_texture_t* shadowtex, bool bVolume, bool bIsFromLocalPlayer)
 	{
 		if (bVolume)
 		{
@@ -988,8 +963,14 @@ void R_EndRenderGBuffer(void)
 
 	});
 
+}
+
+//Final Shading Pass
+
+void R_FinalShadingPass(void)
+{
 	//Re-enable depth write
-	glDepthMask(1);
+	glDepthMask(GL_TRUE);
 
 	//Write GBuffer depth and stencil buffer into main framebuffer
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
@@ -999,14 +980,15 @@ void R_EndRenderGBuffer(void)
 		GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
 		GL_NEAREST);
 
-	//Shading pass
 	GL_BindFrameBuffer(&s_BackBufferFBO);
-	glDrawBuffer(GL_COLOR_ATTACHMENT0);
-
-	GL_BeginFullScreenQuad(false);
 
 	//No blend for final shading pass
 	glDisable(GL_BLEND);
+
+	//Only draw color0 channel
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+	GL_BeginFullScreenQuad(false);
 
 	program_state_t FinalProgramState = 0;
 
@@ -1050,40 +1032,61 @@ void R_EndRenderGBuffer(void)
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glDisable(GL_TEXTURE_2D);
-	glActiveTexture(GL_TEXTURE2);
 
 	//Disable texture unit 2 (stencil)
+	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
 	glActiveTexture(GL_TEXTURE1);
 
 	//Disable texture unit 1 (depth)
 	GL_DisableMultitexture();
 
 	//Disable texture unit 0 (GBuffer texture array)
-	//glDisable(GL_TEXTURE_2D_ARRAY);
 	glEnable(GL_TEXTURE_2D);
 	*currenttexture = -1;
 
 	GL_UseProgram(0);
 
 	GL_EndFullScreenQuad();
-
-	drawgbuffer = false;
-	gbuffer_mask = -1;
-
-	GL_EndProfile(&Profile_EndRenderGBuffer);
 }
 
-void R_BlitGBufferToFrameBuffer(FBO_Container_t *fbo)
+void R_EndRenderGBuffer(void)
 {
-	//Write GBuffer depth and stencil buffer into main framebuffer
+	GL_BeginFullScreenQuad(false);
+
+	R_LinearizeDepth(&s_GBufferFBO);
+
+	if (R_IsAmbientOcclusionEnabled())
+	{
+		R_AmbientOcclusion();
+	}
+	else
+	{
+		//Write to GBuffer->lightmap only
+		GL_BindFrameBuffer(&s_GBufferFBO);
+		glDrawBuffer(GL_COLOR_ATTACHMENT1);
+	}
+
+	GL_EndFullScreenQuad();
+
+	GL_BeginProfile(&Profile_EndRenderGBuffer);
+
+	R_LightShadingPass();
+
+	R_FinalShadingPass();
+
+	GL_EndProfile(&Profile_EndRenderGBuffer);
+
+	r_draw_gbuffer = false;
+	gbuffer_mask = -1;
+}
+
+void R_BlitGBufferToFrameBufferColorDepth(FBO_Container_t *fbo)
+{
+	//Write GBuffer depth buffer into main framebuffer
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->s_hBackBufferFBO);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
-	glBlitFramebuffer(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight,
-		0, 0, fbo->iWidth, fbo->iHeight,
-		GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
-		GL_NEAREST);
+	glBlitFramebuffer(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight, 0, 0, fbo->iWidth, fbo->iHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
 	//Shading pass
 	GL_BindFrameBuffer(fbo);

@@ -9,9 +9,15 @@ int save_refdef_stack = 0;
 gl_draw_context save_drawcontext[MAX_SAVESTACK];
 int save_drawcontext_stack = 0;
 
+//GLint save_framebuffer[MAX_SAVESTACK] = { 0 };
 GLint save_readframebuffer[MAX_SAVESTACK] = { 0 };
 GLint save_drawframebuffer[MAX_SAVESTACK] = { 0 };
 int save_framebuffer_stack = 0;
+
+FBO_Container_t* GL_GetCurrentFrameBuffer()
+{
+	return g_CurrentFBO;
+}
 
 void GL_BindFrameBuffer(FBO_Container_t *fbo)
 {
@@ -36,14 +42,13 @@ void GL_BindFrameBufferWithTextures(FBO_Container_t *fbo, GLuint color, GLuint d
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, color, 0);
 	}
 
-	if (depth)
-	{
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth, 0);
-	}
-
 	if (depth_stencil)
 	{
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, depth_stencil, 0);
+	}
+	else if (depth)
+	{
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth, 0);
 	}
 
 	if (width && height)
@@ -568,9 +573,6 @@ void GL_BeginFullScreenQuad(bool enableDepthTest)
 		glDisable(GL_DEPTH_TEST);
 	}
 	glDisable(GL_CULL_FACE);
-
-	//glBindBuffer(GL_ARRAY_BUFFER, 0);
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void GL_EndFullScreenQuad(void)
@@ -622,6 +624,69 @@ void GL_End2D(void)
 	glEnable(GL_CULL_FACE);
 }
 
+void GL_ClearDepthStencil(float depth, int stencilref, int stencilmask)
+{
+	glStencilMask(stencilmask);
+	glDepthMask(GL_TRUE);
+
+	glClearStencil(stencilref);
+	glClearDepth(depth);
+
+	glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	glStencilMask(0);
+}
+
+void GL_ClearColorDepthStencil(vec4_t color, float depth, int stencilref, int stencilmask)
+{
+	glStencilMask(stencilmask);
+	glDepthMask(GL_TRUE);
+
+	glClearColor(color[0], color[1], color[2], color[3]);
+	glClearStencil(stencilref);
+	glClearDepth(depth);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	glStencilMask(0);
+}
+
+void GL_ClearStencil(int mask)
+{
+	glStencilMask(mask);
+	glClearStencil(0);
+	glClear(GL_STENCIL_BUFFER_BIT);
+	glStencilMask(0);
+}
+
+void GL_BeginStencilCompareEqual(int ref, int mask)
+{
+	glEnable(GL_STENCIL_TEST);
+	glStencilFunc(GL_EQUAL, ref, mask);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+}
+
+void GL_BeginStencilCompareNotEqual(int ref, int mask)
+{
+	glEnable(GL_STENCIL_TEST);
+	glStencilFunc(GL_NOTEQUAL, ref, mask);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+}
+
+void GL_BeginStencilWrite(int ref, int mask)
+{
+	glEnable(GL_STENCIL_TEST);
+	glStencilMask(mask);
+	glStencilFunc(GL_ALWAYS, ref, mask);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+}
+
+void GL_EndStencil()
+{
+	glStencilMask(0);
+	glDisable(GL_STENCIL_TEST);
+}
+
 void COM_FileBase(const char *in, char *out)
 {
 	int len, start, end;
@@ -660,4 +725,41 @@ void COM_FileBase(const char *in, char *out)
 void *Hunk_AllocName(int size, const char *name)
 {
 	return gRefFuncs.Hunk_AllocName(size, name);
+}
+
+void GL_ClearFBO(FBO_Container_t* s)
+{
+	s->s_hBackBufferFBO = 0;
+	s->s_hBackBufferCB = 0;
+	s->s_hBackBufferDB = 0;
+	s->s_hBackBufferTex = 0;
+	s->s_hBackBufferTex2 = 0;
+	s->s_hBackBufferDepthTex = 0;
+	s->iWidth = s->iHeight = s->iTextureColorFormat = 0;
+}
+
+void GL_FreeFBO(FBO_Container_t* s)
+{
+	if (s->s_hBackBufferFBO)
+		glDeleteFramebuffersEXT(1, &s->s_hBackBufferFBO);
+
+	if (s->s_hBackBufferCB)
+		glDeleteRenderbuffersEXT(1, &s->s_hBackBufferCB);
+
+	if (s->s_hBackBufferDB)
+		glDeleteRenderbuffersEXT(1, &s->s_hBackBufferDB);
+
+	if (s->s_hBackBufferTex)
+		glDeleteTextures(1, &s->s_hBackBufferTex);
+
+	if (s->s_hBackBufferTex2)
+		glDeleteTextures(1, &s->s_hBackBufferTex2);
+
+	if (s->s_hBackBufferDepthTex)
+		glDeleteTextures(1, &s->s_hBackBufferDepthTex);
+
+	if (s->s_hBackBufferStencilView)
+		glDeleteTextures(1, &s->s_hBackBufferStencilView);
+
+	GL_ClearFBO(s);
 }

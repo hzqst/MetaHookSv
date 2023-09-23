@@ -4,9 +4,7 @@
 
 layout(binding = 0) uniform sampler2D diffuseTex;
 
-#if defined(STUDIO_NF_CELSHADE_FACE) && !defined(HAIR_SHADOW_ENABLED)
-layout(binding = 1) uniform usampler2D stencilTex;
-#endif
+layout(binding = 6) uniform usampler2D stencilTex;
 
 /* celshade */
 
@@ -33,7 +31,6 @@ uniform vec2 r_uvscale;
 
 in vec3 v_worldpos;
 in vec3 v_normal;
-in vec4 v_color;
 in vec2 v_texcoord;
 in vec4 v_projpos;
 
@@ -41,9 +38,80 @@ layout(location = 0) out vec4 out_Diffuse;
 layout(location = 1) out vec4 out_Lightmap;
 layout(location = 2) out vec4 out_WorldNorm;
 layout(location = 3) out vec4 out_Specular;
-layout(location = 4) out vec4 out_Additive;
 
-#ifdef STUDIO_NF_CELSHADE
+//The output is in Linear Space
+vec3 R_StudioLightingLinear(vec3 vWorldPos, vec3 vNormal)
+{
+	#if defined(INVERT_NORMAL_ENABLED)
+		vNormal = vNormal * -1.0;
+	#endif
+
+	float illum = StudioUBO.r_ambientlight;
+
+	#if defined(STUDIO_NF_FULLBRIGHT)
+
+		return vec3(1.0, 1.0, 1.0);
+
+	#elif defined(STUDIO_NF_FLATSHADE) || defined(STUDIO_NF_CELSHADE)
+
+		illum += StudioUBO.r_shadelight * 0.8;
+
+	#else
+
+		float lightcos = dot(vNormal.xyz, StudioUBO.r_plightvec.xyz);
+
+		if(SceneUBO.v_lambert < 1.0)
+		{
+			lightcos = (SceneUBO.v_lambert - lightcos) / (SceneUBO.v_lambert + 1.0); 
+			illum += StudioUBO.r_shadelight * max(lightcos, 0.0); 			
+		}
+		else
+		{
+			illum += StudioUBO.r_shadelight;
+			lightcos = (lightcos + SceneUBO.v_lambert - 1.0) / SceneUBO.v_lambert;
+			illum -= StudioUBO.r_shadelight * max(lightcos, 0.0);
+		}
+
+	#endif
+
+	float lv = clamp(illum, 0.0, 255.0) / 255.0;
+
+	lv = LightGammaToLinearInternal(lv);
+
+	vec3 color = vec3(lv, lv, lv);		
+
+	for(int i = 0; i < StudioUBO.r_numelight.x; ++i)
+	{
+		vec3 ElightDirection = StudioUBO.r_elight_origin[i].xyz - vWorldPos.xyz;
+		
+		#if defined(STUDIO_NF_FLATSHADE) || defined(STUDIO_NF_CELSHADE)
+		
+			float ElightCosine = 0.8;
+		
+		#else
+
+			float ElightCosine = clamp(dot(vNormal, normalize(ElightDirection)), 0.0, 1.0);
+
+		#endif
+
+		float ElightDistance = length(ElightDirection);
+		float ElightDot = dot(ElightDirection, ElightDirection);
+
+		float r2 = StudioUBO.r_elight_radius[i];
+		
+		r2 = r2 * r2;
+
+		float ElightAttenuation = clamp(r2 / (ElightDot * ElightDistance), 0.0, 1.0);
+
+		color.x += StudioUBO.r_elight_color[i].x * ElightCosine;
+		color.y += StudioUBO.r_elight_color[i].y * ElightCosine;
+		color.z += StudioUBO.r_elight_color[i].z * ElightCosine;
+	}
+
+	return color;
+}
+
+#if defined(STUDIO_NF_CELSHADE)
 
 vec3 ShiftTangent(vec3 T, vec3 N, float uvX, vec4 noise)
 {
@@ -58,7 +126,7 @@ float StrandSpecular(vec3 T, vec3 H, float exponent)
     return dirAtten * pow(sinTH, exponent);
 }
 
-vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
+vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS)
 {
 	vec3 N = normalWS;
     vec3 L = lightdirWS;
@@ -67,7 +135,12 @@ vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
 	vec3 BiT = cross(N, UP);
 	vec3 T = cross(N, BiT);
 
+#if defined(STUDIO_NF_CELSHADE_FACE)
+	L.z = 0;
+#else
 	L.z *= 0.01;
+#endif
+
 	L = normalize(L);
 
     float NoL = dot(-N,L);
@@ -75,14 +148,14 @@ vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
     // N dot L
     float litOrShadowArea = smoothstep(r_celshade_midpoint - r_celshade_softness, r_celshade_midpoint + r_celshade_softness, NoL);
 
-#if defined(STUDIO_NF_CELSHADE_FACE) && !defined(HAIR_SHADOW_ENABLED)
+#if defined(STUDIO_NF_CELSHADE_FACE)
 
 	litOrShadowArea = mix(0.5, 1.0, litOrShadowArea);
 
-	vec2 vBaseTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
-	uint stencilValue = texture(stencilTex, vBaseTexCoord).r;
+	vec2 screenTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
+	uint stencilValue = texture(stencilTex, screenTexCoord).r;
 
-   	if(stencilValue == 6)
+   	if((stencilValue & STENCIL_MASK_HAS_SHADOW) == STENCIL_MASK_HAS_SHADOW)
     {
 		litOrShadowArea = 0.0;
 	}
@@ -95,7 +168,7 @@ vec3 CelShade(vec3 normalWS, vec3 lightdirWS)
 	vec3 rimDarkColor = vec3(0.0);
 	vec3 specularColor = vec3(0.0);
 
-#ifndef STUDIO_NF_CELSHADE_FACE
+#if !defined(STUDIO_NF_CELSHADE_FACE)
 	//Rim light
 	float lambertD = max(0, -NoL);
     float lambertF = max(0, NoL);
@@ -171,6 +244,7 @@ void main(void)
 {
 #if !defined(SHADOW_CASTER_ENABLED) && !defined(HAIR_SHADOW_ENABLED)
 
+	vec3 vWorldPos = v_worldpos.xyz;
 	vec3 vNormal = normalize(v_normal.xyz);
 
 	ClipPlaneTest(v_worldpos.xyz, vNormal);
@@ -179,29 +253,50 @@ void main(void)
 
 	vec4 diffuseColor = texture(diffuseTex, texcoord);
 
-	diffuseColor = TexGammaToLinear(diffuseColor);
-
-	//The light colors are already in linear space
-	vec4 lightmapColor = v_color;
-
-	#ifdef STUDIO_NF_CELSHADE
-		lightmapColor.xyz = CelShade(vNormal, StudioUBO.r_plightvec.xyz);
-	#endif
-
-	#ifdef STUDIO_NF_MASKED
+	#if defined(STUDIO_NF_MASKED)
 		if(diffuseColor.a < 0.5)
 			discard;
 	#endif
 
-	#ifdef OUTLINE_ENABLED
-		diffuseColor *= r_outline_dark;
+	diffuseColor = ProcessDiffuseColor(diffuseColor);
+
+	#if defined(ADDITIVE_RENDER_MODE_ENABLED)
+
+		vec4 lightmapColor = ProcessOtherColor(StudioUBO.r_color);
+		
+	#elif defined(GLOW_SHELL_ENABLED)
+
+		vec4 lightmapColor = ProcessOtherColor(StudioUBO.r_color);
+
+	#else
+
+		vec3 lightColorLinear = R_StudioLightingLinear(vWorldPos, vNormal);
+
+		#if defined(STUDIO_NF_CELSHADE)
+			lightColorLinear = R_StudioCelShade(lightColorLinear, vNormal, StudioUBO.r_plightvec.xyz);
+		#endif
+
+		vec4 lightmapColor = ProcessOtherColor(StudioUBO.r_color);
+
+		#if defined(GAMMA_BLEND_ENABLED)
+			lightmapColor.rgb *= LinearToGamma3(lightColorLinear);
+		#else
+			lightmapColor.rgb *= lightColorLinear;
+		#endif
+
+	#endif
+
+	#if defined(OUTLINE_ENABLED)
+		lightmapColor.rgb *= ProcessOtherColor(vec3(r_outline_dark));
 	#endif
 
 #endif
 
 #if defined(SHADOW_CASTER_ENABLED)
 
-	#ifdef STUDIO_NF_MASKED
+	//Position output
+
+	#if defined(STUDIO_NF_MASKED)
 		vec2 texcoord = v_texcoord * r_uvscale;
 
 		vec4 diffuseColorMask = texture(diffuseTex, texcoord);
@@ -214,50 +309,32 @@ void main(void)
 
 #elif defined(HAIR_SHADOW_ENABLED)
 
+	//No color output
+
 	out_Diffuse = vec4(1.0, 1.0, 1.0, 1.0);
 
 #else
 
+	//Normal color output
+
 	#ifdef GBUFFER_ENABLED
 
-		#ifdef TRANSPARENT_ENABLED
+		vec2 vOctNormal = UnitVectorToOctahedron(vNormal);
 
-			#ifdef STUDIO_NF_ADDITIVE
+		float flDistanceToFragment = distance(v_worldpos.xyz, SceneUBO.viewpos.xyz);
 
-				out_Diffuse = diffuseColor * lightmapColor;
-
-			#else
-
-				out_Diffuse = diffuseColor;
-				out_Lightmap = lightmapColor;
-
-			#endif
-
-		#else
-
-			vec2 vOctNormal = UnitVectorToOctahedron(vNormal);
-
-			float flDistanceToFragment = distance(v_worldpos.xyz, SceneUBO.viewpos.xyz);
-
-			out_Diffuse = diffuseColor;
-			out_Lightmap = lightmapColor;
-			out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, 0.0);
-			out_Specular = vec4(0.0);
-			out_Additive = vec4(0.0);
-
-		#endif
+		out_Diffuse = diffuseColor;
+		out_Lightmap = lightmapColor;
+		out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, 0.0);
+		out_Specular = vec4(0.0);
 
 	#else
 
-		vec4 color = CalcFog(diffuseColor * lightmapColor);
+		vec4 finalColor = CalcFog(diffuseColor * lightmapColor);
 
-		#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED) 
-			
-			GatherFragment(color);
+		GatherFragment(finalColor);
 
-		#endif
-
-		out_Diffuse = color;
+		out_Diffuse = finalColor;
 
 	#endif
 

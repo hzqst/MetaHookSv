@@ -87,55 +87,60 @@ std::vector<studio_vbo_t *> g_StudioVBOCache;
 
 #define MAX_STUDIO_BONE_CACHES 1024
 
-studio_bone_cache g_StudioBoneCaches[MAX_STUDIO_BONE_CACHES];
-studio_bone_cache *g_pStudioBoneFreeCaches = NULL;
+static studio_bone_cache g_StudioBoneCaches[MAX_STUDIO_BONE_CACHES];
 
-studio_vbo_t *g_CurrentVBOCache = NULL;
+static studio_bone_cache *g_pStudioBoneFreeCaches = NULL;
 
-//engine
-model_t *cl_sprite_white;
-model_t *cl_shellchrome;
-mstudiomodel_t **psubmodel;
-mstudiobodyparts_t **pbodypart;
-studiohdr_t **pstudiohdr;
-model_t **r_model;
-float *r_blend;
-auxvert_t **pauxverts;
-float **pvlightvalues;
-auxvert_t (*auxverts)[MAXSTUDIOVERTS];
-vec3_t (*lightvalues)[MAXSTUDIOVERTS];
-float (*pbonetransform)[MAXSTUDIOBONES][3][4];
-float (*plighttransform)[MAXSTUDIOBONES][3][4];
-float (*rotationmatrix)[3][4];
-int (*g_NormalIndex)[MAXSTUDIOVERTS];
-int(*chrome)[MAXSTUDIOVERTS][2];
-int (*chromeage)[MAXSTUDIOBONES];
-cl_entity_t *cl_viewent;
-int *g_ForcedFaceFlags;
-int *lightgammatable;
-byte *texgammatable;
-float *g_ChromeOrigin;
-int *r_ambientlight;
-float *r_shadelight;
-vec3_t *r_blightvec;
-float *r_plightvec;
-float *r_colormix;
-void *tmp_palette;
-int *r_smodels_total;
-int *r_amodels_drawn;
-dlight_t *(*locallight)[3];
-int *numlight;
+static studio_vbo_t *g_CurrentVBOCache = NULL;
 
-//renderer
+//Engine private vars
 
-int r_studio_drawcall;
-int r_studio_polys;
+model_t *cl_sprite_white = NULL;
+model_t *cl_shellchrome = NULL;
+mstudiomodel_t **psubmodel = NULL;
+mstudiobodyparts_t **pbodypart = NULL;
+studiohdr_t **pstudiohdr = NULL;
+model_t **r_model = NULL;
+float *r_blend = NULL;
+auxvert_t **pauxverts = NULL;
+float **pvlightvalues = NULL;
+auxvert_t (*auxverts)[MAXSTUDIOVERTS] = NULL;
+vec3_t (*lightvalues)[MAXSTUDIOVERTS] = NULL;
+float (*pbonetransform)[MAXSTUDIOBONES][3][4] = NULL;
+float (*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;
+float (*rotationmatrix)[3][4] = NULL;
+int (*g_NormalIndex)[MAXSTUDIOVERTS] = NULL;
+int(*chrome)[MAXSTUDIOVERTS][2] = NULL;
+int (*chromeage)[MAXSTUDIOBONES] = NULL;
+cl_entity_t *cl_viewent = NULL;
+int *g_ForcedFaceFlags = NULL;
+int *lightgammatable = NULL;
+byte *texgammatable = NULL;
+float *g_ChromeOrigin = NULL;
+int *r_ambientlight = NULL;
+float *r_shadelight = NULL;
+vec3_t *r_blightvec = NULL;
+float *r_plightvec = NULL;
+float *r_colormix = NULL;
+void *tmp_palette = NULL;
+int *r_smodels_total = NULL;
+int *r_amodels_drawn = NULL;
+dlight_t *(*locallight)[3] = NULL;
+int *numlight = NULL;
+
+//Stats
+
+int r_studio_drawcall = 0;
+int r_studio_polys = 0;
+
+//Cvars
 
 cvar_t *r_studio_celshade = NULL;
 cvar_t *r_studio_celshade_midpoint = NULL;
 cvar_t *r_studio_celshade_softness = NULL;
 cvar_t *r_studio_celshade_shadow_color = NULL;
 
+cvar_t* r_studio_outline = NULL;
 cvar_t *r_studio_outline_size = NULL;
 cvar_t *r_studio_outline_dark = NULL;
 
@@ -157,6 +162,7 @@ cvar_t *r_studio_hair_specular_intensity2 = NULL;
 cvar_t *r_studio_hair_specular_noise2 = NULL;
 cvar_t *r_studio_hair_specular_smooth = NULL;
 
+cvar_t* r_studio_hair_shadow = NULL;
 cvar_t *r_studio_hair_shadow_offset = NULL;
 
 cvar_t *r_studio_legacy_dlight = NULL;
@@ -164,6 +170,16 @@ cvar_t *r_studio_legacy_elight = NULL;
 cvar_t *r_studio_legacy_elight_radius_scale = NULL;
 
 cvar_t *r_studio_bone_caches = NULL;
+
+bool R_StudioHasOutline()
+{
+	return r_studio_outline->value > 0 && ((*pstudiohdr)->flags & EF_OUTLINE);
+}
+
+bool R_StudioHasHairShadow()
+{
+	return r_draw_hashair && r_draw_hasface && r_studio_hair_shadow->value > 0 && !r_draw_shadowcaster;
+}
 
 void R_StudioBoneCaches_StartFrame()
 {
@@ -500,12 +516,6 @@ void R_UseStudioProgram(program_state_t state, studio_program_t *progOutput)
 		if (state & STUDIO_GBUFFER_ENABLED)
 			defs << "#define GBUFFER_ENABLED\n";
 
-		if (state & STUDIO_TRANSPARENT_ENABLED)
-			defs << "#define TRANSPARENT_ENABLED\n";
-
-		if (state & STUDIO_TRANSADDITIVE_ENABLED)
-			defs << "#define TRANSADDITIVE_ENABLED\n";
-
 		if (state & STUDIO_LINEAR_FOG_ENABLED)
 			defs << "#define LINEAR_FOG_ENABLED\n";
 
@@ -517,9 +527,6 @@ void R_UseStudioProgram(program_state_t state, studio_program_t *progOutput)
 
 		if (state & STUDIO_SHADOW_CASTER_ENABLED)
 			defs << "#define SHADOW_CASTER_ENABLED\n";
-
-		if (state & STUDIO_LEGACY_BONE_ENABLED)
-			defs << "#define LEGACY_BONE_ENABLED\n";
 
 		if (state & STUDIO_GLOW_SHELL_ENABLED)
 			defs << "#define GLOW_SHELL_ENABLED\n";
@@ -536,11 +543,23 @@ void R_UseStudioProgram(program_state_t state, studio_program_t *progOutput)
 		if (state & STUDIO_CLIP_ENABLED)
 			defs << "#define CLIP_ENABLED\n";
 
-		if (state & STUDIO_OIT_ALPHA_BLEND_ENABLED)
-			defs << "#define OIT_ALPHA_BLEND_ENABLED\n";
+		if (state & STUDIO_ALPHA_BLEND_ENABLED)
+			defs << "#define ALPHA_BLEND_ENABLED\n";
 
-		if (state & STUDIO_OIT_ADDITIVE_BLEND_ENABLED)
-			defs << "#define OIT_ADDITIVE_BLEND_ENABLED\n";
+		if (state & STUDIO_ADDITIVE_BLEND_ENABLED)
+			defs << "#define ADDITIVE_BLEND_ENABLED\n";
+
+		if ((state & STUDIO_OIT_BLEND_ENABLED) && bUseOITBlend)
+			defs << "#define OIT_BLEND_ENABLED\n";
+
+		if (state & STUDIO_GAMMA_BLEND_ENABLED)
+			defs << "#define GAMMA_BLEND_ENABLED\n";
+
+		if (state & STUDIO_ADDITIVE_RENDER_MODE_ENABLED)
+			defs << "#define ADDITIVE_RENDER_MODE_ENABLED\n";
+
+		if (state & STUDIO_INVERT_NORMAL_ENABLED)
+			defs << "#define INVERT_NORMAL_ENABLED\n";
 
 		if (glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define NV_BINDLESS_ENABLED\n";
@@ -888,22 +907,24 @@ void R_UseStudioProgram(program_state_t state, studio_program_t *progOutput)
 
 const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_GBUFFER_ENABLED				,"STUDIO_GBUFFER_ENABLED"					},
-{ STUDIO_TRANSPARENT_ENABLED			,"STUDIO_TRANSPARENT_ENABLED"				},
-{ STUDIO_TRANSADDITIVE_ENABLED			,"STUDIO_TRANSADDITIVE_ENABLED"				},
 { STUDIO_LINEAR_FOG_ENABLED				,"STUDIO_LINEAR_FOG_ENABLED"				},
 { STUDIO_EXP_FOG_ENABLED				,"STUDIO_EXP_FOG_ENABLED"					},
 { STUDIO_EXP2_FOG_ENABLED				,"STUDIO_EXP2_FOG_ENABLED"					},
 { STUDIO_SHADOW_CASTER_ENABLED			,"STUDIO_SHADOW_CASTER_ENABLED"				},
-{ STUDIO_LEGACY_BONE_ENABLED			,"STUDIO_LEGACY_BONE_ENABLED"				},
 { STUDIO_GLOW_SHELL_ENABLED				,"STUDIO_GLOW_SHELL_ENABLED"				},
 { STUDIO_OUTLINE_ENABLED				,"STUDIO_OUTLINE_ENABLED"					},
 { STUDIO_HAIR_SHADOW_ENABLED			,"STUDIO_HAIR_SHADOW_ENABLED"				},
 { STUDIO_CLIP_WATER_ENABLED				,"STUDIO_CLIP_WATER_ENABLED"				},
 { STUDIO_CLIP_ENABLED					,"STUDIO_CLIP_ENABLED"						},
-{ STUDIO_OIT_ALPHA_BLEND_ENABLED		,"STUDIO_OIT_ALPHA_BLEND_ENABLED"			},
-{ STUDIO_OIT_ADDITIVE_BLEND_ENABLED		,"STUDIO_OIT_ADDITIVE_BLEND_ENABLED"		},
+{ STUDIO_ALPHA_BLEND_ENABLED			,"STUDIO_ALPHA_BLEND_ENABLED"				},
+{ STUDIO_ADDITIVE_BLEND_ENABLED			,"STUDIO_ADDITIVE_BLEND_ENABLED"			},
+{ STUDIO_OIT_BLEND_ENABLED				,"STUDIO_OIT_BLEND_ENABLED"					},
+{ STUDIO_GAMMA_BLEND_ENABLED			,"STUDIO_GAMMA_BLEND_ENABLED"				},
+{ STUDIO_ADDITIVE_RENDER_MODE_ENABLED	,"STUDIO_ADDITIVE_RENDER_MODE_ENABLED"		},
+{ STUDIO_INVERT_NORMAL_ENABLED			,"STUDIO_INVERT_NORMAL_ENABLED"		},
 
 { STUDIO_NF_FLATSHADE					,"STUDIO_NF_FLATSHADE"		},
+{ STUDIO_NF_MASKED						,"STUDIO_NF_MASKED"			},
 { STUDIO_NF_CHROME						,"STUDIO_NF_CHROME"			},
 { STUDIO_NF_FULLBRIGHT					,"STUDIO_NF_FULLBRIGHT"		},
 { STUDIO_NF_ADDITIVE					,"STUDIO_NF_ADDITIVE"		},
@@ -946,6 +967,7 @@ void R_InitStudio(void)
 	r_studio_celshade_softness = gEngfuncs.pfnRegisterVariable("r_studio_celshade_softness", "0.05", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_celshade_shadow_color = gEngfuncs.pfnRegisterVariable("r_studio_celshade_shadow_color", "160 150 150", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
+	r_studio_outline = gEngfuncs.pfnRegisterVariable("r_studio_outline", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_outline_size = gEngfuncs.pfnRegisterVariable("r_studio_outline_size", "3.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_outline_dark = gEngfuncs.pfnRegisterVariable("r_studio_outline_dark", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
@@ -965,6 +987,7 @@ void R_InitStudio(void)
 	r_studio_hair_specular_intensity2 = gEngfuncs.pfnRegisterVariable("r_studio_hair_specular_intensity2", "0.8 0.8 0.8", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_hair_specular_noise2 = gEngfuncs.pfnRegisterVariable("r_studio_hair_specular_noise2", "240 320 0.05 0.06", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_hair_specular_smooth = gEngfuncs.pfnRegisterVariable("r_studio_hair_specular_smooth", "0.0 0.3", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_hair_shadow = gEngfuncs.pfnRegisterVariable("r_studio_hair_shadow", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_hair_shadow_offset = gEngfuncs.pfnRegisterVariable("r_studio_hair_shadow_offset", "0.3 -0.3", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_studio_legacy_dlight = gEngfuncs.pfnRegisterVariable("r_studio_legacy_dlight", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -1055,54 +1078,68 @@ studiohdr_t *R_LoadTextures(model_t *psubm)
 	return (*pstudiohdr);
 }
 
-void R_DrawStudioVBOBegin(studio_vbo_t *VBOData)
+void R_StudioDrawVBOBegin(studio_vbo_t *VBOData)
 {
+	studio_ubo_t StudioUBO;
+
 	g_CurrentVBOCache = VBOData;
 
-	//Setup UBO
-	if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
+	StudioUBO.r_origin[0] = r_origin[0];
+	StudioUBO.r_origin[1] = r_origin[1];
+	StudioUBO.r_origin[2] = r_origin[2];
+
+	if ((*currententity)->curstate.renderfx == kRenderFxDrawGlowShell)
 	{
-		g_ChromeOrigin[0] = cos(r_glowshellfreq->value * (*cl_time)) * 4000.0f;
-		g_ChromeOrigin[1] = sin(r_glowshellfreq->value * (*cl_time)) * 4000.0f;
-		g_ChromeOrigin[2] = cos(r_glowshellfreq->value * (*cl_time) * 0.33f) * 4000.0f;
+		StudioUBO.r_origin[0] = cos(r_glowshellfreq->value * (*cl_time)) * 4000.0f;
+		StudioUBO.r_origin[1] = sin(r_glowshellfreq->value * (*cl_time)) * 4000.0f;
+		StudioUBO.r_origin[2] = cos(r_glowshellfreq->value * (*cl_time) * 0.33f) * 4000.0f;
 
-		r_colormix[0] = (float)(*currententity)->curstate.rendercolor.r / 255.0f;
-		r_colormix[1] = (float)(*currententity)->curstate.rendercolor.g / 255.0f;
-		r_colormix[2] = (float)(*currententity)->curstate.rendercolor.b / 255.0f;
+		StudioUBO.r_color[0] = (float)(*currententity)->curstate.rendercolor.r / 255.0f;
+		StudioUBO.r_color[1] = (float)(*currententity)->curstate.rendercolor.g / 255.0f;
+		StudioUBO.r_color[2] = (float)(*currententity)->curstate.rendercolor.b / 255.0f;
+		StudioUBO.r_color[3] = 1;
 	}
-
-	studio_ubo_t StudioUBO;
+	else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
+	{
+		StudioUBO.r_color[0] = (*r_blend);
+		StudioUBO.r_color[1] = (*r_blend);
+		StudioUBO.r_color[2] = (*r_blend);
+		StudioUBO.r_color[3] = (*r_blend);
+	}
+	else
+	{
+		StudioUBO.r_color[0] = r_colormix[0];
+		StudioUBO.r_color[1] = r_colormix[1];
+		StudioUBO.r_color[2] = r_colormix[2];
+		StudioUBO.r_color[3] = (*r_blend);
+	}
 
 	StudioUBO.r_ambientlight = (float)(*r_ambientlight);
 	StudioUBO.r_shadelight = (*r_shadelight);
-	StudioUBO.r_blend = (*r_blend);
-
+	
 	StudioUBO.r_scale = 0;
 
-	if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
+	if ((*currententity)->curstate.renderfx == kRenderFxDrawGlowShell)
 	{
 		StudioUBO.r_scale = (*currententity)->curstate.renderamt * 0.05f;
 	}
-	else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
+	else if ((*currententity)->curstate.renderfx == kRenderFxDrawOutline)
 	{
 		StudioUBO.r_scale = g_CurrentVBOCache->celshade_control.outline_size.GetValue() * 0.05f;
 	}
 
-	memcpy(StudioUBO.r_colormix, r_colormix, sizeof(vec3_t));
-	memcpy(StudioUBO.r_origin, g_ChromeOrigin, sizeof(vec3_t));
 	memcpy(StudioUBO.r_plightvec, r_plightvec, sizeof(vec3_t));
 
 	vec3_t entity_origin = { (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3] };
 	memcpy(StudioUBO.entity_origin, entity_origin, sizeof(vec3_t));
 
+	StudioUBO.r_numelight = 0;
+
 	if (r_studio_legacy_elight->value > 0)
 	{
-		StudioUBO.r_numelight[0] = *numlight;
-		StudioUBO.r_numelight[1] = 0;
-		StudioUBO.r_numelight[2] = 0;
-		StudioUBO.r_numelight[3] = 0;
+		StudioUBO.r_numelight = *numlight;
 
-		for (int i = 0; i < StudioUBO.r_numelight[0]; ++i)
+		for (int i = 0; i < StudioUBO.r_numelight; ++i)
 		{
 			StudioUBO.r_elight_color[i][0] = (float)((*locallight)[i]->color.r) / 255.0f;
 			StudioUBO.r_elight_color[i][1] = (float)((*locallight)[i]->color.g) / 255.0f;
@@ -1118,13 +1155,6 @@ void R_DrawStudioVBOBegin(studio_vbo_t *VBOData)
 
 			StudioUBO.r_elight_radius[i] = (*locallight)[i]->radius * clamp(r_studio_legacy_elight_radius_scale->value, 0.001f, 1000.0f);
 		}
-	}
-	else
-	{
-		StudioUBO.r_numelight[0] = 0;
-		StudioUBO.r_numelight[1] = 0;
-		StudioUBO.r_numelight[2] = 0;
-		StudioUBO.r_numelight[3] = 0;
 	}
 
 	memcpy(StudioUBO.bonematrix, (*pbonetransform), sizeof(mat3x4) * 128);
@@ -1145,358 +1175,483 @@ void R_DrawStudioVBOBegin(studio_vbo_t *VBOData)
 	GL_BindVAO(VBOData->hVAO);
 }
 
-void R_DrawStudioVBOEnd()
+void R_StudioDrawVBOEnd()
 {
 	GL_BindVAO(0);
 
 	g_CurrentVBOCache = NULL;
 }
 
-void R_GLStudioDrawPoints(void)
+void R_StudioDrawVBOMesh_AnalyzePass(
+	studio_vbo_t* VBOData,
+	studio_vbo_submodel_t* VBOSubmodel,
+	studio_vbo_mesh_t* VBOMesh,
+	studiohdr_t* ptexturehdr,
+	mstudiotexture_t* ptexture,
+	short* pskinref,
+	const int flags)
 {
-	int stencilState = 1;
+	//Analysis pass
+	if (r_draw_shadowcaster)
+	{
+
+	}
+	else if ((*currententity)->curstate.renderfx == kRenderFxDrawGlowShell)
+	{
+
+	}
+	else if ((*currententity)->curstate.renderfx == kRenderFxDrawOutline)
+	{
+
+	}
+	else if ((*currententity)->curstate.renderfx == kRenderFxDrawAdditiveMeshes)
+	{
+
+	}
+	else if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowHair)
+	{
+
+	}
+	else
+	{
+		if (flags & STUDIO_NF_ADDITIVE)
+		{
+			r_draw_hasadditive = true;
+		}
+
+		if (flags & STUDIO_NF_CELSHADE_FACE)
+		{
+			r_draw_hasface = true;
+		}
+
+		if (flags & STUDIO_NF_CELSHADE_HAIR)
+		{
+			r_draw_hashair = true;
+		}
+	}
+}
+
+void R_StudioDrawVBOMesh_DrawPass(
+	studio_vbo_t* VBOData,
+	studio_vbo_submodel_t* VBOSubmodel,
+	studio_vbo_mesh_t* VBOMesh,
+	studiohdr_t* ptexturehdr,
+	mstudiotexture_t* ptexture,
+	short* pskinref,
+	const int flags)
+{
+	auto pmesh = VBOMesh->mesh;
+
+	program_state_t StudioProgramState = flags;
 
 	if (r_draw_shadowcaster)
 	{
-		//the fxxking StudioRenderFinal which will enable GL_BLEND and mess everything up.
-		glDisable(GL_BLEND);
+		StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
 	}
-	else if (r_draw_opaque)
+	else if ((*currententity)->curstate.renderfx == kRenderFxDrawGlowShell)
 	{
-		glEnable(GL_STENCIL_TEST);
-		glStencilMask(0xFF);
-		glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		StudioProgramState |= (STUDIO_ADDITIVE_BLEND_ENABLED | STUDIO_GLOW_SHELL_ENABLED | STUDIO_NF_CHROME);
+
+		if (StudioProgramState & STUDIO_NF_CELSHADE)
+		{
+			StudioProgramState &= ~STUDIO_NF_CELSHADE;
+			StudioProgramState |= STUDIO_NF_FLATSHADE;
+		}
 	}
-
-	auto engine_pstudiohdr = (*pstudiohdr);
-	auto engine_psubmodel = (*psubmodel);
-
-	auto ptexturehdr = R_LoadTextures(*r_model);
-	auto ptexture = (mstudiotexture_t *)((byte *)ptexturehdr + ptexturehdr->textureindex);
-
-	auto pskinref = (short *)((byte *)ptexturehdr + ptexturehdr->skinindex);
-
-	int iFlippedVModel = 0;
-
-	auto VBOData = R_PrepareStudioVBO(engine_pstudiohdr);
-
-	R_DrawStudioVBOBegin(VBOData);
-
-	if (engine_psubmodel->groupindex < 1 || engine_psubmodel->groupindex >(int)VBOData->vSubmodel.size()) {
-		g_pMetaHookAPI->SysError("R_StudioFindVBOCache: invalid index");
-	}
-
-	auto VBOSubmodel = VBOData->vSubmodel[engine_psubmodel->groupindex - 1];
-
-	if ((*currententity)->curstate.skin != 0 && (*currententity)->curstate.skin < ptexturehdr->numskinfamilies)
-		pskinref += ((*currententity)->curstate.skin * ptexturehdr->numskinref);
-
-	if (engine_pstudiohdr->numbones > MAXSTUDIOBONES)
+	else if ((*currententity)->curstate.renderfx == kRenderFxDrawOutline)
 	{
-		g_pMetaHookAPI->SysError("R_GLStudioDrawPoints: %s numbones (%d) > MAXSTUDIOBONES (%d)", engine_pstudiohdr->name, engine_pstudiohdr->numbones, MAXSTUDIOBONES);
+		StudioProgramState |= STUDIO_OUTLINE_ENABLED;
+		StudioProgramState &= ~(STUDIO_NF_CHROME | STUDIO_NF_ADDITIVE | STUDIO_NF_MASKED | STUDIO_NF_CELSHADE_FACE | STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H | STUDIO_NF_FULLBRIGHT);
+	}
+	else if ((*currententity)->curstate.renderfx == kRenderFxDrawAdditiveMeshes)
+	{
+		if (flags & STUDIO_NF_ADDITIVE)
+		{
+			StudioProgramState |= STUDIO_ADDITIVE_BLEND_ENABLED;
+		}
+		else
+		{
+			return;
+		}
+	}
+	else if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowHair)
+	{
+		if ((flags & STUDIO_NF_CELSHADE_HAIR) || (flags & STUDIO_NF_CELSHADE_HAIR_H) || (flags & STUDIO_NF_CELSHADE_FACE))
+		{
+			StudioProgramState |= STUDIO_HAIR_SHADOW_ENABLED;
+		}
+		else
+		{
+			return;
+		}
+	}
+	else
+	{
+		if (flags & STUDIO_NF_ADDITIVE)
+		{
+			if (!r_draw_opaque)
+			{
+				StudioProgramState |= STUDIO_ADDITIVE_BLEND_ENABLED;
+			}
+			else
+			{
+				return;
+			}
+		}
+
+		if (StudioProgramState & STUDIO_NF_CELSHADE_FACE)
+		{
+			//Texture unit 6 = Stencil texture
+			if (s_BackBufferFBO2.s_hBackBufferStencilView)
+			{
+				glActiveTexture(GL_TEXTURE6);
+				glBindTexture(GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferStencilView);
+				glActiveTexture(GL_TEXTURE0);
+			}
+		}
 	}
 
+	if (!(StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)) && (*currententity)->curstate.rendermode == kRenderTransAdd)
+	{
+		StudioProgramState |= STUDIO_ADDITIVE_BLEND_ENABLED;
+	}
+
+	if ((*currententity)->curstate.rendermode == kRenderTransAdd)
+	{
+		StudioProgramState |= STUDIO_ADDITIVE_RENDER_MODE_ENABLED;
+	}
+
+	if (!(StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)) && (*currententity)->curstate.rendermode != kRenderNormal)
+	{
+		StudioProgramState |= STUDIO_ALPHA_BLEND_ENABLED;
+	}
+
+	if (r_draw_reflectview)
+	{
+		StudioProgramState |= STUDIO_CLIP_WATER_ENABLED;
+	}
+	else if (g_bPortalClipPlaneEnabled[0])
+	{
+		StudioProgramState |= STUDIO_CLIP_ENABLED;
+	}
+
+	if (!R_IsRenderingGBuffer())
+	{
+		if (r_fog_mode == GL_LINEAR)
+		{
+			StudioProgramState |= STUDIO_LINEAR_FOG_ENABLED;
+		}
+		else if (r_fog_mode == GL_EXP)
+		{
+			StudioProgramState |= STUDIO_EXP_FOG_ENABLED;
+		}
+		else if (r_fog_mode == GL_EXP2)
+		{
+			StudioProgramState |= STUDIO_EXP2_FOG_ENABLED;
+		}
+	}
+
+	if (R_IsRenderingGBuffer())
+	{
+		StudioProgramState |= STUDIO_GBUFFER_ENABLED;
+	}
+
+	if (r_draw_gammablend)
+	{
+		StudioProgramState |= STUDIO_GAMMA_BLEND_ENABLED;
+	}
+
+	if (r_draw_oitblend && (StudioProgramState & (STUDIO_ALPHA_BLEND_ENABLED | STUDIO_ADDITIVE_BLEND_ENABLED)))
+	{
+		StudioProgramState |= STUDIO_OIT_BLEND_ENABLED;
+	}
+
+	//Setup texture and texcoord
+	float s, t;
+	if (r_fullbright->value >= 2)
+	{
+		gEngfuncs.pTriAPI->SpriteTexture(cl_sprite_white, 0);
+
+		s = 1.0f / 256.0f;
+		t = 1.0f / 256.0f;
+	}
+	else
+	{
+		if (StudioProgramState & STUDIO_GLOW_SHELL_ENABLED)
+		{
+			gEngfuncs.pTriAPI->SpriteTexture(cl_shellchrome, 0);
+		}
+		else
+		{
+			gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
+		}
+
+		s = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].width;
+		t = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].height;
+	}
+
+	if (StudioProgramState & STUDIO_NF_CHROME)
+	{
+		if (StudioProgramState & STUDIO_GLOW_SHELL_ENABLED)
+		{
+			s /= 32.0f;
+			t /= 32.0f;
+		}
+		else
+		{
+			s = 1.0f / 2048.0f;
+			t = 1.0f / 2048.0f;
+		}
+	}
+
+	R_SetGBufferMask(GBUFFER_MASK_ALL);
+	
+	if (StudioProgramState & STUDIO_OUTLINE_ENABLED)
+	{
+		GL_BeginStencilCompareNotEqual(STENCIL_MASK_HAS_OUTLINE, STENCIL_MASK_HAS_OUTLINE);
+	}
+	else if (StudioProgramState & STUDIO_HAIR_SHADOW_ENABLED)
+	{
+		//Remove shadow which inside face
+		if (StudioProgramState & STUDIO_NF_CELSHADE_FACE)
+		{
+			GL_BeginStencilWrite(0, STENCIL_MASK_HAS_SHADOW);
+		}
+		else
+		{
+			GL_BeginStencilWrite(STENCIL_MASK_HAS_SHADOW, STENCIL_MASK_HAS_SHADOW);
+		}
+	}
+	else
+	{
+		int iStencilRef = STENCIL_MASK_STUDIO_MODEL;
+
+		if (r_draw_hasoutline)
+			iStencilRef |= STENCIL_MASK_HAS_OUTLINE;
+
+		if (StudioProgramState & (STUDIO_NF_FLATSHADE | STUDIO_NF_CELSHADE))
+			iStencilRef |= STENCIL_MASK_HAS_FLATSHADE;
+		GL_BeginStencilWrite(iStencilRef, STENCIL_MASK_ALL);
+	}
+
+	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
 
 	if (R_IsFlippedViewModel())
 	{
 		glDisable(GL_CULL_FACE);
-		iFlippedVModel = 1;
+
+		StudioProgramState |= STUDIO_INVERT_NORMAL_ENABLED;
 	}
 
-	for (size_t j = 0; j < VBOSubmodel->vMesh.size(); j++)
+	if (StudioProgramState & STUDIO_SHADOW_CASTER_ENABLED)
 	{
-		auto &VBOMesh = VBOSubmodel->vMesh[j];
+		//client.dll!StudioRenderFinal enables GL_BLEND and this will mess everything up.
+		glDisable(GL_BLEND);
+		glDepthMask(GL_TRUE);
+	}
+	else if (StudioProgramState & STUDIO_HAIR_SHADOW_ENABLED)
+	{
+		//Disable color, allow depth write-in, only stencil is allowed
+		glDisable(GL_BLEND);
+		glDepthMask(GL_TRUE);
+	}
+	else if (r_draw_opaque)
+	{
+		//Opaque pass
+		glDisable(GL_BLEND);
+		glDepthMask(GL_TRUE);
+	}
+	else
+	{
+		//Transparent pass
 
-		auto pmesh = VBOMesh.mesh;
+		if (StudioProgramState & STUDIO_ALPHA_BLEND_ENABLED)
+		{
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			glEnable(GL_BLEND);
+			glDepthMask(GL_FALSE);
 
-		int flags = ptexture[pskinref[pmesh->skinref]].flags | (*g_ForcedFaceFlags);
-
-		if (r_fullbright->value >= 2)
-		{
-			flags &= STUDIO_NF_FULLBRIGHT_ALLOWBITS;
+			R_SetGBufferBlend(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		}
-		else
-		{
-			flags &= STUDIO_NF_ALLOWBITS;
-		}
-
-		if (r_draw_shadowcaster)
-		{
-
-		}
-		else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
-		{
-
-		}
-		else if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowHair)
-		{
-			if (!(flags & STUDIO_NF_CELSHADE_HAIR) && !(flags & STUDIO_NF_CELSHADE_FACE))
-				continue;
-		}
-		else if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowFace)
-		{
-			if (!(flags & STUDIO_NF_CELSHADE_FACE))
-				continue;
-		}
-		else
-		{
-			if ((flags & STUDIO_NF_CELSHADE_FACE))
-			{
-				r_draw_hasface = true;
-				continue;
-			}
-
-			if ((flags & STUDIO_NF_CELSHADE_HAIR))
-			{
-				r_draw_hairshadow = true;
-			}
-		}
-
-		int GBufferMask = GBUFFER_MASK_ALL;
-		program_state_t StudioProgramState = flags;
-
-		if (r_draw_shadowcaster)
-		{
-			StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
-		}
-		else if (r_draw_opaque)
-		{
-			if (flags & STUDIO_NF_CELSHADE_HAIR)
-			{
-				if (stencilState != 6)
-				{
-					stencilState = 6;
-					glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
-				}
-			}
-			else if (flags & STUDIO_NF_FLATSHADE)
-			{
-				if (stencilState != 2)
-				{
-					stencilState = 2;
-					glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
-				}
-			}
-			else
-			{
-				if (stencilState != 1)
-				{
-					stencilState = 1;
-					glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
-				}
-			}
-		}
-
-		if (r_draw_shadowcaster)
-		{
-
-		}
-		else if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowHair)
-		{
-			StudioProgramState |= STUDIO_HAIR_SHADOW_ENABLED;
-		}
-		else if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowFace)
-		{
-
-		}
-		else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
-		{
-			glStencilFunc(GL_NOTEQUAL, 2, 2);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-
-			StudioProgramState |= STUDIO_OUTLINE_ENABLED;
-			StudioProgramState &= ~(STUDIO_NF_CHROME | STUDIO_NF_ADDITIVE | STUDIO_NF_MASKED | STUDIO_NF_CELSHADE | STUDIO_NF_CELSHADE_FACE | STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H);
-		}
-		else if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
+		else if (StudioProgramState & STUDIO_ADDITIVE_BLEND_ENABLED)
 		{
 			glBlendFunc(GL_ONE, GL_ONE);
 			glEnable(GL_BLEND);
 			glDepthMask(GL_FALSE);
-			glShadeModel(GL_SMOOTH);
 
-			GBufferMask = GBUFFER_MASK_ADDITIVE;
-			StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
-		}
-		else if (flags & STUDIO_NF_MASKED)
-		{
-			//glEnable(GL_ALPHA_TEST);
-			//glAlphaFunc(GL_GREATER, 0.5);
-			glDepthMask(GL_TRUE);
-		}
-		else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
-		{
-			glBlendFunc(GL_ONE, GL_ONE);
-			glEnable(GL_BLEND);
-			glDepthMask(GL_FALSE);
-			glShadeModel(GL_SMOOTH);
-
-			GBufferMask = GBUFFER_MASK_ADDITIVE;
-			StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE;
-		}
-		else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
-		{
-			glBlendFunc(GL_ONE, GL_ONE);
-			glEnable(GL_BLEND);
-			glShadeModel(GL_SMOOTH);
-
-			GBufferMask = GBUFFER_MASK_ADDITIVE;
-			StudioProgramState |= STUDIO_TRANSPARENT_ENABLED | STUDIO_NF_ADDITIVE | STUDIO_TRANSADDITIVE_ENABLED;
-		}
-
-		if (!r_studio_celshade->value)
-		{
-			StudioProgramState &= ~(STUDIO_NF_CELSHADE | STUDIO_NF_CELSHADE_FACE | STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H);
-		}
-
-		if (r_draw_reflectview)
-		{
-			StudioProgramState |= STUDIO_CLIP_WATER_ENABLED;
-		}
-		else if (g_bPortalClipPlaneEnabled[0])
-		{
-			StudioProgramState |= STUDIO_CLIP_ENABLED;
-		}
-
-		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
-		{
-			StudioProgramState |= STUDIO_LINEAR_FOG_ENABLED;
-		}
-		else if (!drawgbuffer && r_fog_mode == GL_EXP)
-		{
-			StudioProgramState |= STUDIO_EXP_FOG_ENABLED;
-		}
-		else if (!drawgbuffer && r_fog_mode == GL_EXP2)
-		{
-			StudioProgramState |= STUDIO_EXP2_FOG_ENABLED;
-		}
-
-		if (drawgbuffer)
-		{
-			StudioProgramState |= STUDIO_GBUFFER_ENABLED;
-		}
-
-		if (r_draw_oitblend)
-		{
-			if((*currententity)->curstate.rendermode == kRenderTransAdd)
-				StudioProgramState |= STUDIO_OIT_ADDITIVE_BLEND_ENABLED;
-			else
-				StudioProgramState |= STUDIO_OIT_ALPHA_BLEND_ENABLED;
-		}
-
-		float s, t;
-		//setup texture and texcoord
-		if (r_fullbright->value >= 2)
-		{
-			gEngfuncs.pTriAPI->SpriteTexture(cl_sprite_white, 0);
-
-			s = 1.0f / 256.0f;
-			t = 1.0f / 256.0f;
+			R_SetGBufferBlend(GL_ONE, GL_ONE);
 		}
 		else
 		{
-			s = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].width;
-			t = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].height;
-
-			gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
-		}
-
-		if ((StudioProgramState & STUDIO_NF_CELSHADE_FACE))
-		{
-			//Texture unit 1 = Stencil texture
-			GL_EnableMultitexture();
-			GL_Bind(s_BackBufferFBO2.s_hBackBufferStencilView);
-		}
-
-		if (flags & STUDIO_NF_CHROME)
-		{
-			if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
-			{
-				StudioProgramState |= STUDIO_GLOW_SHELL_ENABLED;
-				s /= 32.0f;
-				t /= 32.0f;
-			}
-			else
-			{
-				s = 1.0f / 2048.0f;
-				t = 1.0f / 2048.0f;
-			}
-		}
-
-		studio_program_t prog = { 0 };
-
-		R_UseStudioProgram(StudioProgramState, &prog);
-
-		if (prog.r_uvscale != -1)
-		{
-			glUniform2f(prog.r_uvscale, s, t);
-		}
-
-		R_SetGBufferMask(GBufferMask);
-
-		if (VBOMesh.iIndiceCount)
-		{
-			glDrawElements(GL_TRIANGLES, VBOMesh.iIndiceCount, GL_UNSIGNED_INT, BUFFER_OFFSET(VBOMesh.iStartIndex));
-				
-			++r_studio_drawcall;
-			r_studio_polys += VBOMesh.iPolyCount;
-		}
-
-		if ((StudioProgramState & STUDIO_NF_CELSHADE_FACE))
-		{
-			//Texture unit 1 = Stencil texture
-			GL_DisableMultitexture();
-		}
-
-		if (r_draw_shadowcaster)
-		{
-			
-		}
-		else if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowHair)
-		{
-
-		}
-		else if ((*currententity)->curstate.renderfx == kRenderFxDrawShadowFace)
-		{
-
-		}
-		else if ((*currententity)->curstate.renderfx == kRenderFxOutline)
-		{
-			glStencilFunc(GL_ALWAYS, stencilState, 0xFF);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-		}
-		else if (flags & STUDIO_NF_MASKED)
-		{
-			//glAlphaFunc(GL_NOTEQUAL, 0);
-			//glDisable(GL_ALPHA_TEST);
-		}
-		else if ((flags & STUDIO_NF_ADDITIVE) && (*currententity)->curstate.rendermode == kRenderNormal)
-		{
 			glDisable(GL_BLEND);
 			glDepthMask(GL_TRUE);
-			glShadeModel(GL_FLAT);
-		}
-		else if ((*currententity)->curstate.rendermode == kRenderTransAdd)
-		{
-			glDisable(GL_BLEND);
-			glShadeModel(GL_FLAT);
 		}
 	}
+
+	studio_program_t prog = { 0 };
+
+	R_UseStudioProgram(StudioProgramState, &prog);
+
+	if (prog.r_uvscale != -1)
+	{
+		glUniform2f(prog.r_uvscale, s, t);
+	}
+
+	if (VBOMesh->iIndiceCount)
+	{
+		glDrawElements(GL_TRIANGLES, VBOMesh->iIndiceCount, GL_UNSIGNED_INT, BUFFER_OFFSET(VBOMesh->iStartIndex));
+
+		++r_studio_drawcall;
+		r_studio_polys += VBOMesh->iPolyCount;
+	}
+
+	GL_UseProgram(0);
+
+	//Restore states
+	glDepthMask(GL_TRUE);
+	glDisable(GL_BLEND);
 
 	glEnable(GL_CULL_FACE);
 
 	if (r_draw_opaque)
 	{
-		glDisable(GL_STENCIL_TEST);
+		GL_EndStencil();
 	}
 
-	GL_UseProgram(0);
-
-	R_DrawStudioVBOEnd();
+	if (StudioProgramState & STUDIO_NF_CELSHADE_FACE)
+	{
+		//Texture unit 6 = Stencil texture
+		if (s_GBufferFBO.s_hBackBufferStencilView)
+		{
+			glActiveTexture(GL_TEXTURE6);
+			glBindTexture(GL_TEXTURE_2D, 0);
+			glActiveTexture(GL_TEXTURE0);
+		}
+	}
 }
 
-//StudioAPI
+void R_StudioDrawVBOMesh(
+	studio_vbo_t *VBOData,
+	studio_vbo_submodel_t *VBOSubmodel,
+	studio_vbo_mesh_t *VBOMesh,
+	studiohdr_t * ptexturehdr,
+	mstudiotexture_t* ptexture,
+	short *pskinref)
+{
+	auto pmesh = VBOMesh->mesh;
+
+	int flags = ptexture[pskinref[pmesh->skinref]].flags;
+
+	//Lighting related flags are ignored when r_fullbright >= 2
+	if (r_fullbright->value >= 2)
+	{
+		flags &= STUDIO_NF_FULLBRIGHT_ALLOWBITS;
+	}
+	else
+	{
+		flags &= STUDIO_NF_ALLOWBITS;
+	}
+
+	if ((*currententity)->curstate.renderfx == kRenderFxDrawGlowShell)
+	{
+		flags |= STUDIO_NF_CHROME;
+	}
+
+	//STUDIO_NF_ADDITIVE is ignored when rendermode not equal to kRenderNormal
+	if ((*currententity)->curstate.rendermode != kRenderNormal)
+	{
+		flags &= ~STUDIO_NF_ADDITIVE;
+	}
+
+	if (!r_studio_celshade->value)
+	{
+		flags &= ~(STUDIO_NF_CELSHADE | STUDIO_NF_CELSHADE_FACE | STUDIO_NF_CELSHADE_HAIR | STUDIO_NF_CELSHADE_HAIR_H);
+	}
+
+	if (r_draw_analyzingstudio)
+	{
+		R_StudioDrawVBOMesh_AnalyzePass(VBOData,
+			VBOSubmodel,
+			VBOMesh,
+			ptexturehdr,
+			ptexture,
+			pskinref,
+			flags);
+	}
+	else
+	{
+		R_StudioDrawVBOMesh_DrawPass(VBOData,
+			VBOSubmodel,
+			VBOMesh,
+			ptexturehdr,
+			ptexture,
+			pskinref,
+			flags);
+	}
+}
+
+void R_StudioDrawVBOSubmodel(
+	studio_vbo_t* VBOData,
+	studio_vbo_submodel_t* VBOSubmodel,
+	studiohdr_t* ptexturehdr,
+	mstudiotexture_t* ptexture,
+	short* pskinref)
+{
+	for (size_t i = 0; i < VBOSubmodel->vMesh.size(); i++)
+	{
+		auto VBOMesh = &VBOSubmodel->vMesh[i];
+
+		R_StudioDrawVBOMesh(VBOData, VBOSubmodel, VBOMesh, ptexturehdr, ptexture, pskinref);
+	}
+}
+
+void R_StudioDrawVBO(studio_vbo_t* VBOData)
+{
+	if ((*psubmodel)->groupindex < 1 || (*psubmodel)->groupindex >(int)VBOData->vSubmodel.size()) {
+		g_pMetaHookAPI->SysError("R_StudioFindVBOCache: invalid index");
+		return;
+	}
+
+	auto VBOSubmodel = VBOData->vSubmodel[(*psubmodel)->groupindex - 1];
+
+	auto ptexturehdr = R_LoadTextures(*r_model);
+
+	mstudiotexture_t* ptexture = NULL;
+
+	short* pskinref = NULL;
+
+	if (ptexturehdr)
+	{
+		ptexture = (mstudiotexture_t*)((byte*)ptexturehdr + ptexturehdr->textureindex);
+
+		pskinref = (short*)((byte*)ptexturehdr + ptexturehdr->skinindex);
+
+		if ((*currententity)->curstate.skin > 0 && (*currententity)->curstate.skin < ptexturehdr->numskinfamilies)
+			pskinref += ((*currententity)->curstate.skin * ptexturehdr->numskinref);
+	}
+
+	if ((*pstudiohdr)->numbones > MAXSTUDIOBONES)
+	{
+		g_pMetaHookAPI->SysError("R_GLStudioDrawPoints: %s numbones (%d) > MAXSTUDIOBONES (%d)", (*pstudiohdr)->name, (*pstudiohdr)->numbones, MAXSTUDIOBONES);
+		return;
+	}
+
+	R_StudioDrawVBOSubmodel(VBOData, VBOSubmodel, ptexturehdr, ptexture, pskinref);
+}
+
+//Engine exported StudioAPI
+
+void R_GLStudioDrawPoints(void)
+{
+	auto VBOData = R_PrepareStudioVBO(*pstudiohdr);
+
+	R_StudioDrawVBOBegin(VBOData);
+
+	R_StudioDrawVBO(VBOData);
+
+	R_StudioDrawVBOEnd();
+}
 
 void R_StudioTransformVector(vec3_t in, vec3_t out)
 {
@@ -1672,308 +1827,227 @@ void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight)
 	}
 }
 
-void studioapi_RestoreRenderer(void)
+template<typename CallType>
+__forceinline void StudioRenderFinal_Template(CallType pfnRenderFinal, void* pthis = nullptr, int dummy = 0)
 {
-	glDepthMask(1);
-	gRefFuncs.studioapi_RestoreRenderer();
+	pfnRenderFinal(pthis, 0);
 }
 
-void R_StudioDrawBatch(void)
+template<typename CallType>
+__forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType pfnRenderFinal, void* pthis = nullptr, int dummy = 0)
 {
-	void *vStartIndex[MAXSTUDIOMESHES];
-	int vIndiceCount[MAXSTUDIOMESHES];
-	int arrayCount = 0;
-
-	auto VBOData = R_PrepareStudioVBO(*pstudiohdr);
-
-	R_DrawStudioVBOBegin(VBOData);
-
-	for (int i = 0; i < (*pstudiohdr)->numbodyparts; i++)
-	{
-		void *temp_bodypart;
-		void *temp_submodel;
-
-		IEngineStudio.StudioSetupModel(i, &temp_bodypart, &temp_submodel);
-
-		if ((*psubmodel)->groupindex < 1 || (*psubmodel)->groupindex >(int)VBOData->vSubmodel.size()) {
-			g_pMetaHookAPI->SysError("R_StudioFindVBOCache: invalid index");
-		}
-
-		auto VBOSubmodel = VBOData->vSubmodel[(*psubmodel)->groupindex - 1];
-
-		for (size_t j = 0; j < VBOSubmodel->vMesh.size(); ++j)
-		{
-			if (arrayCount == MAXSTUDIOMESHES)
-			{
-				g_pMetaHookAPI->SysError("R_StudioFindVBOCache: too many meshes.");
-			}
-
-			vStartIndex[arrayCount] = BUFFER_OFFSET(VBOSubmodel->vMesh[j].iStartIndex);
-			vIndiceCount[arrayCount] = VBOSubmodel->vMesh[j].iIndiceCount;
-			r_studio_polys += VBOSubmodel->vMesh[j].iIndiceCount;
-			arrayCount++;
-		}
-	}
-
-	program_state_t StudioProgramState = 0;
-
-	int GBufferMask = GBUFFER_MASK_ALL;
-
 	if (r_draw_shadowcaster)
 	{
-		glDisable(GL_BLEND);
-		StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
+		pfnRenderModel(pthis, dummy);
+		return;
 	}
 
-	if (drawgbuffer)
+	//Process all pending deferred passes on transparent pass
+	if (!r_draw_opaque)
 	{
-		StudioProgramState |= STUDIO_GBUFFER_ENABLED;
+		auto EntityComponent = R_GetEntityComponent((*currententity), false);
+
+		if (EntityComponent)
+		{
+			if (EntityComponent->DeferredStudioPasses.size() > 0)
+			{
+				for (auto fx : EntityComponent->DeferredStudioPasses)
+				{
+					int saved_renderfx = (*currententity)->curstate.renderfx;
+					int saved_renderamt = (*currententity)->curstate.renderamt;
+
+					(*currententity)->curstate.renderfx = fx;
+
+					pfnRenderModel(pthis, dummy);
+
+					(*currententity)->curstate.renderfx = saved_renderfx;
+					(*currententity)->curstate.renderamt = saved_renderamt;
+				}
+
+				EntityComponent->DeferredStudioPasses.clear();
+				return;
+			}
+		}
 	}
 
-	glCullFace(GL_FRONT);
+	//Begin analysis pass
 
-	studio_program_t prog = { 0 };
+	r_draw_hashair = false;
+	r_draw_hasface = false;
+	r_draw_hasadditive = false;
+	r_draw_hasoutline = false;
 
-	R_UseStudioProgram(StudioProgramState, &prog);
-	R_SetGBufferMask(GBufferMask);
+	r_draw_analyzingstudio = true;
 
-	glMultiDrawElements(GL_TRIANGLES, vIndiceCount, GL_UNSIGNED_INT, (const void **)vStartIndex, arrayCount);
-	r_studio_drawcall++;
+	pfnRenderModel(pthis, dummy);
 
-	GL_UseProgram(0);
+	if (!r_draw_hasoutline && R_StudioHasOutline())
+	{
+		r_draw_hasoutline = true;
+	}
 
-	R_DrawStudioVBOEnd();
+	//End analysis pass
+	r_draw_analyzingstudio = false;
+
+	//Defer additive meshes to transparent pass
+	if (r_draw_opaque && r_draw_hasadditive)
+	{
+		auto comp = R_GetEntityComponent((*currententity), true);
+
+		comp->DeferredStudioPasses.emplace_back(kRenderFxDrawAdditiveMeshes);
+
+		r_draw_deferredtrans = true;
+	}
+
+	//Hair pass
+	if (R_StudioHasHairShadow())
+	{
+		GL_BindFrameBuffer(&s_BackBufferFBO2);
+
+		glDrawBuffer(GL_NONE);
+
+		GL_ClearDepthStencil(1, STENCIL_MASK_SKY, STENCIL_MASK_ALL);
+
+		int saved_renderfx = (*currententity)->curstate.renderfx;
+		int saved_renderamt = (*currententity)->curstate.renderamt;
+
+		(*currententity)->curstate.renderfx = kRenderFxDrawShadowHair;
+		(*currententity)->curstate.renderamt = 0;
+
+		pfnRenderModel(pthis, dummy);
+
+		(*currententity)->curstate.renderfx = saved_renderfx;
+		(*currententity)->curstate.renderamt = saved_renderamt;
+
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+		if (r_draw_gbuffer)
+			GL_BindFrameBuffer(&s_GBufferFBO);
+		else
+			GL_BindFrameBuffer(&s_BackBufferFBO);
+	}
+
+	if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)
+	{
+		int saved_renderfx = (*currententity)->curstate.renderfx;
+		int saved_renderamt = (*currententity)->curstate.renderamt;
+
+		//Draw normal pass
+
+		(*currententity)->curstate.renderfx = 0;
+
+		pfnRenderModel(pthis, dummy);
+
+		(*currententity)->curstate.renderfx = saved_renderfx;
+		(*currententity)->curstate.renderamt = saved_renderamt;
+
+		//Outline pass
+		if (r_draw_hasoutline)
+		{
+			int saved_renderfx = (*currententity)->curstate.renderfx;
+			int saved_renderamt = (*currententity)->curstate.renderamt;
+
+			(*currententity)->curstate.renderfx = kRenderFxDrawOutline;
+			(*currententity)->curstate.renderamt = 0;
+
+			pfnRenderModel(pthis, dummy);
+
+			(*currententity)->curstate.renderfx = saved_renderfx;
+			(*currententity)->curstate.renderamt = saved_renderamt;
+		}
+
+		if (r_draw_opaque)
+		{
+			//Defer GlowShell to transparent pass
+
+			auto comp = R_GetEntityComponent((*currententity), true);
+
+			comp->DeferredStudioPasses.emplace_back(kRenderFxDrawGlowShell);
+
+			r_draw_deferredtrans = true;
+		}
+		else
+		{
+			//Draw GlowShell pass now
+
+			(*currententity)->curstate.renderfx = kRenderFxDrawGlowShell;
+
+			pfnRenderModel(pthis, dummy);
+
+			(*currententity)->curstate.renderfx = saved_renderfx;
+		}
+	}
+	else
+	{
+		//Draw normal pass
+		pfnRenderModel(pthis, dummy);
+
+		//Outline pass
+		if (r_draw_hasoutline)
+		{
+			int saved_renderfx = (*currententity)->curstate.renderfx;
+			int saved_renderamt = (*currententity)->curstate.renderamt;
+
+			(*currententity)->curstate.renderfx = kRenderFxDrawOutline;
+			(*currententity)->curstate.renderamt = 0;
+
+			pfnRenderModel(pthis, dummy);
+
+			(*currententity)->curstate.renderfx = saved_renderfx;
+			(*currententity)->curstate.renderamt = saved_renderamt;
+		}
+
+	}
+
+	GL_ClearStencil(STENCIL_MASK_HAS_OUTLINE);
+
+	r_draw_hashair = false;
+	r_draw_hasface = false;
+	r_draw_hasadditive = false;
+	r_draw_hasoutline = false;
 }
 
 //Engine StudioRenderer
 
+__forceinline void R_StudioRenderFinal_originalcall_wrapper(void* pthis, int dummy)
+{
+	gRefFuncs.R_StudioRenderFinal();
+}
+
+__forceinline void R_StudioRenderModel_originalcall_wrapper(void* pthis, int dummy)
+{
+	gRefFuncs.R_StudioRenderModel();
+}
+
 void R_StudioRenderFinal(void)
 {
-	/*if (r_draw_shadowcaster)
-	{
-		IEngineStudio.SetupRenderer((*currententity)->curstate.rendermode);
-		IEngineStudio.GL_SetRenderMode((*currententity)->curstate.rendermode);
-
-		R_StudioDrawBatch();
-
-		IEngineStudio.RestoreRenderer();
-	}
-	else
-	{*/
-		gRefFuncs.R_StudioRenderFinal();
-	//}
+	StudioRenderFinal_Template(R_StudioRenderFinal_originalcall_wrapper);
 }
 
 void R_StudioRenderModel(void)
 {
-	if (r_draw_shadowcaster)
-	{
-		gRefFuncs.R_StudioRenderModel();
-
-		return;
-	}
-
-	gRefFuncs.R_StudioRenderModel();
-
-	if (r_draw_hairshadow && r_draw_hasface)
-	{
-		int saved_renderfx = (*currententity)->curstate.renderfx;
-		int saved_renderamt = (*currententity)->curstate.renderamt;
-
-		(*currententity)->curstate.renderfx = kRenderFxDrawShadowHair;
-		(*currententity)->curstate.renderamt = 0;
-
-		//Write hairshadow stencil bits into s_BackBufferFBO2
-
-		GL_PushFrameBuffer();
-
-		GL_BindFrameBuffer(&s_BackBufferFBO2);
-
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		glColorMask(0, 0, 0, 0);
-
-		gRefFuncs.R_StudioRenderModel();
-		
-		glColorMask(1, 1, 1, 1);
-
-		GL_PopFrameBuffer();
-
-		(*currententity)->curstate.renderfx = kRenderFxDrawShadowFace;
-		(*currententity)->curstate.renderamt = 0;
-
-		gRefFuncs.R_StudioRenderModel();
-
-		(*currententity)->curstate.renderfx = saved_renderfx;
-		(*currententity)->curstate.renderamt = saved_renderamt;
-	}
-	else if (!r_draw_hairshadow && r_draw_hasface)
-	{
-		int saved_renderfx = (*currententity)->curstate.renderfx;
-		int saved_renderamt = (*currententity)->curstate.renderamt;
-
-		(*currententity)->curstate.renderfx = kRenderFxDrawShadowFace;
-		(*currententity)->curstate.renderamt = 0;
-
-		gRefFuncs.R_StudioRenderModel();
-
-		(*currententity)->curstate.renderfx = saved_renderfx;
-		(*currententity)->curstate.renderamt = saved_renderamt;
-	}
-
-	r_draw_hairshadow = false;
-	r_draw_hasface = false;
-
-	if (((*pstudiohdr)->flags & EF_OUTLINE) && r_studio_celshade->value)
-	{
-		int saved_renderfx = (*currententity)->curstate.renderfx;
-		int saved_renderamt = (*currententity)->curstate.renderamt;
-
-		(*currententity)->curstate.renderfx = kRenderFxOutline;
-		(*currententity)->curstate.renderamt = 0;
-
-		gRefFuncs.R_StudioRenderModel();
-
-		(*currententity)->curstate.renderfx = saved_renderfx;
-		(*currententity)->curstate.renderamt = saved_renderamt;
-	}
+	StudioRenderModel_Template(R_StudioRenderModel_originalcall_wrapper, R_StudioRenderFinal_originalcall_wrapper);
 }
 
 //Client StudioRenderer
 
-void __fastcall GameStudioRenderer_StudioRenderFinal(void *pthis, int)
+void __fastcall GameStudioRenderer_StudioRenderFinal(void* pthis, int dummy)
 {
-	/*if (r_draw_shadowcaster)
-	{
-		IEngineStudio.SetupRenderer((*currententity)->curstate.rendermode);
-		IEngineStudio.GL_SetRenderMode((*currententity)->curstate.rendermode);
-
-		R_StudioDrawBatch();
-
-		IEngineStudio.RestoreRenderer();
-	}
-	else
-	{*/
-		gRefFuncs.GameStudioRenderer_StudioRenderFinal(pthis, 0);
-	//}
+	StudioRenderFinal_Template(gRefFuncs.GameStudioRenderer_StudioRenderFinal, pthis, dummy);
 }
 
-void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int)
+void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int dummy)
 {
-	if (r_draw_shadowcaster)
-	{
-		gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
-
-		return;
-	}
-
-	gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
-
-	if (r_draw_hairshadow && r_draw_hasface)
-	{
-		int saved_renderfx = (*currententity)->curstate.renderfx;
-		int saved_renderamt = (*currententity)->curstate.renderamt;
-
-		(*currententity)->curstate.renderfx = kRenderFxDrawShadowHair;
-		(*currententity)->curstate.renderamt = 0;
-
-		//Write hairshadow stencil bits into s_BackBufferFBO2
-
-		GL_PushFrameBuffer();
-
-		GL_BindFrameBuffer(&s_BackBufferFBO2);
-
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		glColorMask(0, 0, 0, 0);
-
-		gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
-
-		glColorMask(1, 1, 1, 1);
-
-		GL_PopFrameBuffer();
-
-		(*currententity)->curstate.renderfx = kRenderFxDrawShadowFace;
-		(*currententity)->curstate.renderamt = 0;
-
-		gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
-
-		(*currententity)->curstate.renderfx = saved_renderfx;
-		(*currententity)->curstate.renderamt = saved_renderamt;
-	}
-	else if (!r_draw_hairshadow && r_draw_hasface)
-	{
-		int saved_renderfx = (*currententity)->curstate.renderfx;
-		int saved_renderamt = (*currententity)->curstate.renderamt;
-
-		(*currententity)->curstate.renderfx = kRenderFxDrawShadowFace;
-		(*currententity)->curstate.renderamt = 0;
-
-		gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
-
-		(*currententity)->curstate.renderfx = saved_renderfx;
-		(*currententity)->curstate.renderamt = saved_renderamt;
-	}
-
-	r_draw_hairshadow = false;
-	r_draw_hasface = false;
-
-	if (((*pstudiohdr)->flags & EF_OUTLINE) && r_studio_celshade->value)
-	{
-		gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
-
-		int saved_renderfx = (*currententity)->curstate.renderfx;
-		int saved_renderamt = (*currententity)->curstate.renderamt;
-
-		(*currententity)->curstate.renderfx = kRenderFxOutline;
-		(*currententity)->curstate.renderamt = 0;
-
-		gRefFuncs.GameStudioRenderer_StudioRenderModel(pthis, 0);
-
-		(*currententity)->curstate.renderfx = saved_renderfx;
-		(*currententity)->curstate.renderamt = saved_renderamt;
-	}
+	StudioRenderModel_Template(gRefFuncs.GameStudioRenderer_StudioRenderModel, GameStudioRenderer_StudioRenderFinal, pthis, dummy);
 }
 
-void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int)
+template<typename CallType>
+__forceinline void StudioSetupBones_Template(CallType pfnSetupBones, void* pthis = nullptr, int dummy = 0)
 {
 	//Never cache bones for viewmodel !
 	if (!r_studio_bone_caches->value || (*currententity) == cl_viewent)
 	{
-		gRefFuncs.GameStudioRenderer_StudioSetupBones(pthis, 0);
-		return;
-	}
-
-	studio_bone_handle handle(
-		(*pstudiohdr)->soundtable,
-		(*currententity)->curstate.sequence, 
-		(*currententity)->curstate.gaitsequence, 
-		(*currententity)->curstate.frame,
-		(*currententity)->origin, 
-		(*currententity)->angles);
-
-	auto &itor = g_StudioBoneCacheManager.find(handle);
-
-	if (itor != g_StudioBoneCacheManager.end())
-	{
-		memcpy((*pbonetransform), itor->second->m_bonetransform, sizeof(itor->second->m_bonetransform));
-		memcpy((*plighttransform), itor->second->m_lighttransform, sizeof(itor->second->m_lighttransform));
-		return;
-	}
-
-	gRefFuncs.GameStudioRenderer_StudioSetupBones(pthis, 0);
-
-	auto cache = R_StudioBoneCacheAlloc();
-
-	memcpy(cache->m_bonetransform, (*pbonetransform), sizeof(cache->m_bonetransform));
-	memcpy(cache->m_lighttransform, (*plighttransform) , sizeof(cache->m_lighttransform));
-
-	g_StudioBoneCacheManager[handle] = cache;
-}
-
-void __fastcall GameStudioRenderer_StudioMergeBones(void *pthis, int, model_t *pSubModel)
-{
-	if (!r_studio_bone_caches->value)
-	{
-		gRefFuncs.GameStudioRenderer_StudioMergeBones(pthis, 0, pSubModel);
+		pfnSetupBones(pthis, dummy);
 		return;
 	}
 
@@ -1985,7 +2059,7 @@ void __fastcall GameStudioRenderer_StudioMergeBones(void *pthis, int, model_t *p
 		(*currententity)->origin,
 		(*currententity)->angles);
 
-	auto &itor = g_StudioBoneCacheManager.find(handle);
+	auto& itor = g_StudioBoneCacheManager.find(handle);
 
 	if (itor != g_StudioBoneCacheManager.end())
 	{
@@ -1994,14 +2068,67 @@ void __fastcall GameStudioRenderer_StudioMergeBones(void *pthis, int, model_t *p
 		return;
 	}
 
-	gRefFuncs.GameStudioRenderer_StudioMergeBones(pthis, 0, pSubModel);
+	pfnSetupBones(pthis, dummy);
 
 	auto cache = R_StudioBoneCacheAlloc();
 
-	memcpy(cache->m_bonetransform, (*pbonetransform), sizeof(cache->m_bonetransform));
-	memcpy(cache->m_lighttransform, (*plighttransform), sizeof(cache->m_lighttransform));
+	if (cache)
+	{
+		memcpy(cache->m_bonetransform, (*pbonetransform), sizeof(cache->m_bonetransform));
+		memcpy(cache->m_lighttransform, (*plighttransform), sizeof(cache->m_lighttransform));
 
-	g_StudioBoneCacheManager[handle] = cache;
+		g_StudioBoneCacheManager[handle] = cache;
+	}
+}
+
+template<typename CallType>
+void __fastcall StudioMergeBones_Template(CallType pfnMergeBones, void* pthis, int dummy, model_t* pSubModel)
+{
+	//Never cache bones for viewmodel !
+	if (!r_studio_bone_caches->value || (*currententity) == cl_viewent)
+	{
+		pfnMergeBones(pthis, dummy, pSubModel);
+		return;
+	}
+
+	studio_bone_handle handle(
+		(*pstudiohdr)->soundtable,
+		(*currententity)->curstate.sequence,
+		(*currententity)->curstate.gaitsequence,
+		(*currententity)->curstate.frame,
+		(*currententity)->origin,
+		(*currententity)->angles);
+
+	auto& itor = g_StudioBoneCacheManager.find(handle);
+
+	if (itor != g_StudioBoneCacheManager.end())
+	{
+		memcpy((*pbonetransform), itor->second->m_bonetransform, sizeof(itor->second->m_bonetransform));
+		memcpy((*plighttransform), itor->second->m_lighttransform, sizeof(itor->second->m_lighttransform));
+		return;
+	}
+
+	pfnMergeBones(pthis, dummy, pSubModel);
+
+	auto cache = R_StudioBoneCacheAlloc();
+
+	if (cache)
+	{
+		memcpy(cache->m_bonetransform, (*pbonetransform), sizeof(cache->m_bonetransform));
+		memcpy(cache->m_lighttransform, (*plighttransform), sizeof(cache->m_lighttransform));
+
+		g_StudioBoneCacheManager[handle] = cache;
+	}
+}
+
+void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int dummy)
+{
+	StudioSetupBones_Template(gRefFuncs.GameStudioRenderer_StudioSetupBones, pthis, dummy);
+}
+
+void __fastcall GameStudioRenderer_StudioMergeBones(void *pthis, int dummy, model_t *pSubModel)
+{
+	StudioMergeBones_Template(gRefFuncs.GameStudioRenderer_StudioMergeBones, pthis, dummy, pSubModel);
 }
 
 void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr, studio_vbo_t *VBOData)
@@ -2067,7 +2194,6 @@ void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr, 
 			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE"))
 			{
 				ptexture->flags |= STUDIO_NF_CELSHADE;
-				ptexture->flags |= STUDIO_NF_FLATSHADE;
 			}
 			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE_FACE"))
 			{

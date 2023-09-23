@@ -13,6 +13,7 @@ out vec3 v_worldpos;
 out vec3 v_normal;
 out vec4 v_color;
 out vec2 v_texcoord;
+out vec4 v_projpos;
 
 const vec4 texcoord_s = vec4(0.0, 0.0, 1.0, 1.0);
 const vec4 texcoord_t = vec4(1.0, 0.0, 0.0, 1.0);
@@ -141,4 +142,5 @@ void main()
 	v_normal = normalize(vForward);
 	v_color = in_color;
 	v_texcoord = vec2( texcoord_s[idx], texcoord_t[idx] );
+	v_projpos = gl_Position;
 }

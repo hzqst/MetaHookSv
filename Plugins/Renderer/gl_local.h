@@ -290,6 +290,8 @@ extern cvar_t *spec_pip;
 
 extern cvar_t *dev_overview_color;
 
+extern cvar_t *r_gamma_blend;
+
 extern cvar_t *r_alpha_shift;
 
 extern cvar_t *r_additive_shift;
@@ -360,6 +362,8 @@ void GL_EndRendering(void);
 GLuint GL_GenTexture(void);
 GLuint GL_GenBuffer(void);
 GLuint GL_GenVAO(void);
+void GL_ClearFBO(FBO_Container_t* s);
+void GL_FreeFBO(FBO_Container_t* s);
 void GL_DeleteTexture(GLuint tex);
 void GL_DeleteBuffer(GLuint buf);
 void GL_DeleteVAO(GLuint VAO);
@@ -419,6 +423,7 @@ void GL_UploadTextureArrayColorFormat(int texid, int w, int h, int levels, int i
 GLuint GL_GenShadowTexture(int w, int h, float *borderColor);
 void GL_UploadShadowTexture(int texid, int w, int h, float *borderColor);
 
+FBO_Container_t* GL_GetCurrentFrameBuffer();
 void GL_BindFrameBuffer(FBO_Container_t *fbo);
 void GL_BindFrameBufferWithTextures(FBO_Container_t *fbo, GLuint color, GLuint depth, GLuint depth_stencil, GLsizei width, GLsizei height);
 
@@ -453,6 +458,9 @@ void COM_FileBase(const char *in, char *out);
 void GL_PushFrameBuffer(void);
 void GL_PopFrameBuffer(void);
 
+bool R_IsRenderingGBuffer();
+bool R_IsRenderingBackBuffer();
+
 //refdef
 void R_PushRefDef(void);
 void R_UpdateRefDef(void);
@@ -468,6 +476,15 @@ void GL_PopDrawState(void);
 void GL_Begin2D(void);
 void GL_Begin2DEx(int width, int height);
 void GL_End2D(void);
+
+void GL_ClearDepthStencil(float depth, int stencilref, int stencilmask);
+void GL_ClearColorDepthStencil(vec4_t color, float depth, int stencilref, int stencilmask);
+void GL_ClearStencil(int stencilmask);
+
+void GL_BeginStencilCompareEqual(int ref, int mask);
+void GL_BeginStencilCompareNotEqual(int ref, int mask);
+void GL_BeginStencilWrite(int ref, int mask);
+void GL_EndStencil();
 
 void GL_BeginFullScreenQuad(bool enableDepthTest);
 void GL_EndFullScreenQuad(void);
@@ -493,8 +510,12 @@ extern GLint r_viewport[4];
 extern float r_entity_matrix[4][4];
 extern float r_entity_color[4];
 
+extern bool r_draw_analyzingstudio;
+extern bool r_draw_deferredtrans;
+extern bool r_draw_hasadditive;
 extern bool r_draw_hasface;
-extern bool r_draw_hairshadow;
+extern bool r_draw_hashair;
+extern bool r_draw_hasoutline;
 extern bool r_draw_shadowcaster;
 extern bool r_draw_opaque;
 extern bool r_draw_oitblend;
@@ -509,3 +530,17 @@ extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;
 
 #define BUFFER_OFFSET(i) ((unsigned int *)NULL + (i))
+
+
+#define STENCIL_MASK_ALL						0xFF
+#define STENCIL_MASK_SKY						0
+#define STENCIL_MASK_WORLD						1
+#define STENCIL_MASK_WATER						2
+#define STENCIL_MASK_STUDIO_MODEL				4
+#define STENCIL_MASK_SPRITE_MODEL				8
+#define STENCIL_MASK_HAS_OUTLINE				0x10
+#define STENCIL_MASK_HAS_SHADOW					0x20
+#define STENCIL_MASK_HAS_DECAL					0x40
+#define STENCIL_MASK_HAS_FLATSHADE				0x80
+
+#define STENCIL_MASK_HAS_FOG					(STENCIL_MASK_WORLD | STENCIL_MASK_WATER | STENCIL_MASK_STUDIO_MODEL | STENCIL_MASK_SPRITE_MODEL)

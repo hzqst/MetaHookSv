@@ -90,7 +90,6 @@ const program_state_mapping_t s_WSurfProgramStateName[] = {
 { WSURF_EXP_FOG_ENABLED				,"WSURF_EXP_FOG_ENABLED"},
 { WSURF_EXP2_FOG_ENABLED			,"WSURF_EXP2_FOG_ENABLED"},
 { WSURF_GBUFFER_ENABLED				,"WSURF_GBUFFER_ENABLED"},
-{ WSURF_TRANSPARENT_ENABLED			,"WSURF_TRANSPARENT_ENABLED"},
 { WSURF_SHADOW_CASTER_ENABLED		,"WSURF_SHADOW_CASTER_ENABLED"},
 { WSURF_SHADOWMAP_ENABLED			,"WSURF_SHADOWMAP_ENABLED"},
 { WSURF_SHADOWMAP_HIGH_ENABLED		,"WSURF_SHADOWMAP_HIGH_ENABLED"},
@@ -103,8 +102,8 @@ const program_state_mapping_t s_WSurfProgramStateName[] = {
 { WSURF_CLIP_WATER_ENABLED			,"WSURF_CLIP_WATER_ENABLED"},
 { WSURF_ALPHA_BLEND_ENABLED			,"WSURF_ALPHA_BLEND_ENABLED"},
 { WSURF_ADDITIVE_BLEND_ENABLED		,"WSURF_ADDITIVE_BLEND_ENABLED"},
-{ WSURF_OIT_ALPHA_BLEND_ENABLED		,"WSURF_OIT_ALPHA_BLEND_ENABLED"},
-{ WSURF_OIT_ADDITIVE_BLEND_ENABLED	,"WSURF_OIT_ADDITIVE_BLEND_ENABLED"},
+{ WSURF_OIT_BLEND_ENABLED			,"WSURF_OIT_BLEND_ENABLED"},
+{ WSURF_GAMMA_BLEND_ENABLED			,"WSURF_GAMMA_BLEND_ENABLED"},
 { WSURF_FULLBRIGHT_ENABLED			,"WSURF_FULLBRIGHT_ENABLED"},
 { WSURF_COLOR_FILTER_ENABLED		,"WSURF_COLOR_FILTER_ENABLED"},
 { WSURF_LIGHTMAP_INDEX_0_ENABLED	,"WSURF_LIGHTMAP_INDEX_0_ENABLED"},
@@ -112,7 +111,6 @@ const program_state_mapping_t s_WSurfProgramStateName[] = {
 { WSURF_LIGHTMAP_INDEX_2_ENABLED	,"WSURF_LIGHTMAP_INDEX_2_ENABLED"},
 { WSURF_LIGHTMAP_INDEX_3_ENABLED	,"WSURF_LIGHTMAP_INDEX_3_ENABLED"},
 { WSURF_LEGACY_DLIGHT_ENABLED		,"WSURF_LEGACY_DLIGHT_ENABLED"},
-{ WSURF_GAMMA_BLEND_ENABLED			,"WSURF_GAMMA_BLEND_ENABLED"}
 };
 
 void R_SaveWSurfProgramStates(void)
@@ -176,9 +174,6 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t *progOutput)
 		if (state & WSURF_GBUFFER_ENABLED)
 			defs << "#define GBUFFER_ENABLED\n";
 
-		if (state & WSURF_TRANSPARENT_ENABLED)
-			defs << "#define TRANSPARENT_ENABLED\n";
-
 		if (state & WSURF_SHADOW_CASTER_ENABLED)
 			defs << "#define SHADOW_CASTER_ENABLED\n";
 
@@ -215,11 +210,11 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t *progOutput)
 		if ((state & WSURF_ADDITIVE_BLEND_ENABLED))
 			defs << "#define ADDITIVE_BLEND_ENABLED\n";
 
-		if ((state & WSURF_ALPHA_BLEND_ENABLED) && bUseOITBlend)
-			defs << "#define ALPHA_BLEND_ENABLED\n";
+		if ((state & WSURF_OIT_BLEND_ENABLED) && bUseOITBlend)
+			defs << "#define OIT_BLEND_ENABLED\n";
 
-		if ((state & WSURF_OIT_ADDITIVE_BLEND_ENABLED) && bUseOITBlend)
-			defs << "#define OIT_ADDITIVE_BLEND_ENABLED\n";
+		if ((state & WSURF_GAMMA_BLEND_ENABLED))
+			defs << "#define GAMMA_BLEND_ENABLED\n";
 
 		if ((state & WSURF_FULLBRIGHT_ENABLED))
 			defs << "#define FULLBRIGHT_ENABLED\n";
@@ -241,9 +236,6 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t *progOutput)
 
 		if ((state & WSURF_LEGACY_DLIGHT_ENABLED))
 			defs << "#define LEGACY_DLIGHT_ENABLED\n";
-
-		if ((state & WSURF_GAMMA_BLEND_ENABLED))
-			defs << "#define GAMMA_BLEND_ENABLED\n";
 
 		if (glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define NV_BINDLESS_ENABLED\n";
@@ -1640,7 +1632,7 @@ void R_DrawWSurfVBOSolid(wsurf_vbo_leaf_t *vboleaf)
 {
 	program_state_t WSurfProgramState = 0;
 
-	if (drawgbuffer)
+	if (R_IsRenderingGBuffer())
 	{
 		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 	}
@@ -1768,17 +1760,20 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t * vboleaf, bool bUseZPrePass)
 			}
 		}
 
-		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+		if (!R_IsRenderingGBuffer())
 		{
-			WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
-		}
-		else if (!drawgbuffer && r_fog_mode == GL_EXP)
-		{
-			WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
-		}
-		else if (!drawgbuffer && r_fog_mode == GL_EXP2)
-		{
-			WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+			if (r_fog_mode == GL_LINEAR)
+			{
+				WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+			}
+			else if (r_fog_mode == GL_EXP)
+			{
+				WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
+			}
+			else if (r_fog_mode == GL_EXP2)
+			{
+				WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+			}
 		}
 
 		if (r_draw_shadowcaster)
@@ -1786,34 +1781,28 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t * vboleaf, bool bUseZPrePass)
 			WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 		}
 
-		if (drawgbuffer)
+		if (R_IsRenderingGBuffer())
 		{
 			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 		}
 
-		if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha && (*currententity)->curstate.rendermode != kRenderTransColor)
+		if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
 		{
-			WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
-
-			if (r_draw_oitblend)
-			{
-				if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
-					WSurfProgramState |= WSURF_OIT_ADDITIVE_BLEND_ENABLED;
-				else
-					WSurfProgramState |= WSURF_OIT_ALPHA_BLEND_ENABLED;
-			}
+			if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
+				WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
 			else
-			{
-				if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
-					WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
-				else
-					WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
-			}
+				WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
 
-			if (r_draw_gammablend)
-			{
-				WSurfProgramState |= WSURF_GAMMA_BLEND_ENABLED;
-			}
+		}
+
+		if (r_draw_gammablend)
+		{
+			WSurfProgramState |= WSURF_GAMMA_BLEND_ENABLED;
+		}
+
+		if (r_draw_oitblend && (WSurfProgramState & (WSURF_ALPHA_BLEND_ENABLED | WSURF_ADDITIVE_BLEND_ENABLED)))
+		{
+			WSurfProgramState |= WSURF_OIT_BLEND_ENABLED;
 		}
 
 		auto &drawBatches = vboleaf->vDrawBatch[WSURF_DRAWBATCH_STATIC];
@@ -1946,17 +1935,20 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t * vboleaf, bool bUseZPrePass)
 				}
 			}
 
-			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			if (!R_IsRenderingGBuffer())
 			{
-				WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
-			}
-			else if (!drawgbuffer && r_fog_mode == GL_EXP)
-			{
-				WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
-			}
-			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
-			{
-				WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+				if (r_fog_mode == GL_LINEAR)
+				{
+					WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+				}
+				else if (r_fog_mode == GL_EXP)
+				{
+					WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
+				}
+				else if (r_fog_mode == GL_EXP2)
+				{
+					WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+				}
 			}
 
 			if (r_draw_shadowcaster)
@@ -1964,34 +1956,27 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t * vboleaf, bool bUseZPrePass)
 				WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 			}
 
-			if (drawgbuffer)
+			if (R_IsRenderingGBuffer())
 			{
 				WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 			}
 
-			if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha && (*currententity)->curstate.rendermode != kRenderTransColor)
+			if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
 			{
-				WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
-
-				if (r_draw_oitblend)
-				{
-					if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
-						WSurfProgramState |= WSURF_OIT_ADDITIVE_BLEND_ENABLED;
-					else
-						WSurfProgramState |= WSURF_OIT_ALPHA_BLEND_ENABLED;
-				}
+				if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
+					WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
 				else
-				{
-					if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
-						WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
-					else
-						WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
-				}
+					WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
+			}
 
-				if (r_draw_gammablend)
-				{
-					WSurfProgramState |= WSURF_GAMMA_BLEND_ENABLED;
-				}
+			if (r_draw_gammablend)
+			{
+				WSurfProgramState |= WSURF_GAMMA_BLEND_ENABLED;
+			}
+
+			if (r_draw_oitblend && (WSurfProgramState & (WSURF_ALPHA_BLEND_ENABLED | WSURF_ADDITIVE_BLEND_ENABLED)))
+			{
+				WSurfProgramState |= WSURF_OIT_BLEND_ENABLED;
 			}
 
 			wsurf_program_t prog = { 0 };
@@ -2158,47 +2143,43 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_leaf_t *vboleaf, bool bUseZPrePass)
 			}
 		}
 
-		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+		if (!R_IsRenderingGBuffer())
 		{
-			WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
-		}
-		else if (!drawgbuffer && r_fog_mode == GL_EXP)
-		{
-			WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
-		}
-		else if (!drawgbuffer && r_fog_mode == GL_EXP2)
-		{
-			WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+			if (r_fog_mode == GL_LINEAR)
+			{
+				WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+			}
+			else if (r_fog_mode == GL_EXP)
+			{
+				WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
+			}
+			else if (r_fog_mode == GL_EXP2)
+			{
+				WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+			}
 		}
 
-		if (drawgbuffer)
+		if (R_IsRenderingGBuffer())
 		{
 			WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 		}
 
-		if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha && (*currententity)->curstate.rendermode != kRenderTransColor)
+		if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
 		{
-			WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
-
-			if (r_draw_oitblend)
-			{
-				if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
-					WSurfProgramState |= WSURF_OIT_ADDITIVE_BLEND_ENABLED;
-				else
-					WSurfProgramState |= WSURF_OIT_ALPHA_BLEND_ENABLED;
-			}
+			if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
+				WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
 			else
-			{
-				if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
-					WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
-				else
-					WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
-			}
+				WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
+		}
 
-			if (r_draw_gammablend)
-			{
-				WSurfProgramState |= WSURF_GAMMA_BLEND_ENABLED;
-			}
+		if (r_draw_gammablend)
+		{
+			WSurfProgramState |= WSURF_GAMMA_BLEND_ENABLED;
+		}
+
+		if (r_draw_oitblend && (WSurfProgramState & (WSURF_ALPHA_BLEND_ENABLED | WSURF_ADDITIVE_BLEND_ENABLED)))
+		{
+			WSurfProgramState |= WSURF_OIT_BLEND_ENABLED;
 		}
 
 		if (r_draw_shadowcaster)
@@ -2267,32 +2248,26 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 	if (r_wsurf.bShadowmapTexture)
 	{
 		glActiveTexture(GL_TEXTURE6);
-
-		//glEnable(GL_TEXTURE_2D_ARRAY);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, r_shadow_texture.depth_array);
-
 		glActiveTexture(GL_TEXTURE0);
 	}
 
 	if (r_wsurf.bLightmapTexture)
 	{
 		glActiveTexture(GL_TEXTURE1);
-
-		//glEnable(GL_TEXTURE_2D_ARRAY);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, r_wsurf.iLightmapTextureArray);
-
 		glActiveTexture(GL_TEXTURE0);
 	}
 
 	bool bUseZPrePass = false;
 
-	//Brush surfaces always use stencil = 0
 	if (r_draw_opaque)
 	{
-		glEnable(GL_STENCIL_TEST);
-		glStencilMask(0xFF);
-		glStencilFunc(GL_ALWAYS, 0, 0xFF);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_HAS_DECAL, STENCIL_MASK_ALL);
+	}
+	else
+	{
+		GL_BeginStencilWrite(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
 	}
 
 	wsurf_vbo_leaf_t *vboleaf = NULL;
@@ -2353,14 +2328,16 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 		glDepthFunc(GL_LEQUAL);
 	}
 
+	GL_EndStencil();
+
 	R_DrawDecals(ent);
+
+	GL_ClearStencil(STENCIL_MASK_HAS_DECAL);
 
 	if (r_wsurf.bShadowmapTexture)
 	{
 		glActiveTexture(GL_TEXTURE6);
-
 		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-
 		glActiveTexture(GL_TEXTURE0);
 	}
 
@@ -2374,8 +2351,6 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 	}
 
 	R_DrawWaters(vboleaf, ent);
-
-	GL_UseProgram(0);
 }
 
 //Just for debugging
@@ -3894,6 +3869,7 @@ void R_RecursiveWorldNodeVBO(mnode_t *node)
 	R_RecursiveWorldNodeVBO(node->children[!side]);
 }
 #endif
+
 void R_DrawBrushModel(cl_entity_t *e)
 {
 	qboolean rotated;
@@ -3926,15 +3902,6 @@ void R_DrawBrushModel(cl_entity_t *e)
 	if (R_CullBox(entity_mins, entity_maxs))
 		return;
 
-	/*if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		memset(lightmap_polys, 0, sizeof(glpoly_t *) * 1024);
-	}
-	else
-	{
-		memset(lightmap_polys, 0, sizeof(glpoly_t *) * 64);
-	}*/
-
 	VectorSubtract((*r_refdef.vieworg), e->origin, modelorg);
 
 	if (rotated)
@@ -3949,6 +3916,8 @@ void R_DrawBrushModel(cl_entity_t *e)
 		modelorg[2] = DotProduct(temp, up);
 	}
 
+	//We don't need this anymore
+#if 0
 	if (!r_light_dynamic->value)
 	{
 		if (clmodel->firstmodelsurface != 0)
@@ -3977,6 +3946,7 @@ void R_DrawBrushModel(cl_entity_t *e)
 		}
 	}
 skip_marklight:
+#endif
 
 	R_RotateForEntity(e);
 
@@ -4009,13 +3979,11 @@ skip_marklight:
 
 	R_DrawWSurfVBO(modvbo, e);
 
-	glDepthMask(1);
+	glDepthMask(GL_TRUE);
+	//TODO: Fixed-function can be done in shader
 	glDisable(GL_ALPHA_TEST);
 	glAlphaFunc(GL_NOTEQUAL, 0);
 	glDisable(GL_BLEND);
-
-	//No stencil write later
-	glDisable(GL_STENCIL_TEST);
 }
 
 void R_SetupSceneUBO(void)
@@ -4171,8 +4139,6 @@ void R_PrepareDrawWorld(void)
 	r_wsurf.bLightmapTexture = false;
 	r_wsurf.bShadowmapTexture = false;
 
-	//Setup shadow
-
 	//Shall we put this in shadow pass?
 	if (R_ShouldRenderShadowScene())
 	{
@@ -4234,19 +4200,13 @@ void R_DrawWorld(void)
 	r_worldentity->curstate.rendercolor.b = gWaterColor->b;
 
 	(*currententity) = r_worldentity;
-	*currenttexture = -1;
-
-	glColor3f(1.0f, 1.0f, 1.0f);
+	(*currenttexture) = -1;
 
 	GL_DisableMultitexture();
+
+	//Just for backward-compatibility
+	glColor3f(1.0f, 1.0f, 1.0f);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-	//Skybox always use stencil = 0xFC
-
-	glEnable(GL_STENCIL_TEST);
-	glStencilMask(0xFF);
-	glStencilFunc(GL_ALWAYS, 0xFC, 0xFF);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
 	R_DrawSkyBox();
 
@@ -4265,7 +4225,4 @@ void R_DrawWorld(void)
 	}
 
 	GL_DisableMultitexture();
-
-	//No stencil write later
-	glDisable(GL_STENCIL_TEST);
 }

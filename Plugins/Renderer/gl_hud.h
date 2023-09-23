@@ -103,6 +103,11 @@ typedef struct
 typedef struct
 {
 	int program;
+}gamma_uncorrection_program_t;
+
+typedef struct
+{
+	int program;
 	int texLinearDepth;
 	int texRandom;
 	int control_RadiusToScreen;
@@ -157,7 +162,8 @@ void R_BeginFXAA(int w, int h);
 void R_LinearizeDepth(FBO_Container_t *src);
 void R_AmbientOcclusion(void);
 void R_GammaCorrection(void);
-bool R_IsSSAOEnabled(void);
+void R_GammaUncorrection(void);
+bool R_IsAmbientOcclusionEnabled(void);
 void R_HDR(void);
 bool R_IsHDREnabled(void);
 void R_DoFXAA(void);
@@ -165,9 +171,9 @@ bool R_IsFXAAEnabled(void);
 void GL_BlitFrameFufferToScreen(FBO_Container_t *src);
 void GL_BlitFrameBufferToFrameBufferColorOnly(FBO_Container_t *src, FBO_Container_t *dst);
 void GL_BlitFrameBufferToFrameBufferColorDepth(FBO_Container_t *src, FBO_Container_t *dst);
+void GL_BlitFrameBufferToFrameBufferStencilOnly(FBO_Container_t* src, FBO_Container_t* dst);
 void R_DrawHUDQuad(int w, int h);
 void R_DrawHUDQuad_Texture(int tex, int w, int h);
-void R_BlitGBufferToFrameBuffer(FBO_Container_t *fbo);
 void R_ShutdownPostProcess(void);
 void R_InitPostProcess(void);
 

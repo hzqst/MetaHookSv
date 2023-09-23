@@ -167,6 +167,7 @@ int StudioGetSequenceActivityType(model_t *mod, entity_state_t* entstate)
 void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size, bool bUseDepthArray)
 {
 	shadowtex->size = size;
+
 	vec4_t depthBorderColor = { 1, 1, 1, 1 };
 	
 	shadowtex->depth = GL_GenShadowTexture(shadowtex->size, shadowtex->size, depthBorderColor);
@@ -356,7 +357,7 @@ void R_RenderShadowScene(void)
 		glDepthFunc(GL_GEQUAL);
 
 		glDepthMask(GL_TRUE);
-		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		//glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 		for (int i = 0; i < 3; ++i)
 		{
@@ -387,13 +388,8 @@ void R_RenderShadowScene(void)
 
 			glViewport(0, 0, r_shadow_texture.size, r_shadow_texture.size);
 
-			glClearStencil(0);
-			glClearDepth(0);
-			glClearColor(-99999, -99999, -99999, 1);
-			glStencilMask(0xFF);
-			glDepthMask(GL_TRUE);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-			glStencilMask(0);
+			vec4_t vecClearColor = { -99999, -99999, -99999, 1 };
+			GL_ClearColorDepthStencil(vecClearColor, 0, STENCIL_MASK_SKY, STENCIL_MASK_ALL);
 
 			if (glNamedBufferSubData)
 			{
@@ -426,8 +422,8 @@ void R_RenderShadowScene(void)
 
 		glClearDepth(1);
 		glDepthFunc(GL_LEQUAL);
-
 	}
+
 	GL_EndProfile(&Profile_RenderShadowScene);
 }
 
@@ -462,35 +458,30 @@ void R_RenderShadowDynamicLights(void)
 						R_AllocShadowTexture(shadowtex, 1024, false);
 					}
 
-					if (!shadowtex->color && shadowtex->size)
-					{
-						shadowtex->color = GL_GenTextureRGBA8(shadowtex->size, shadowtex->size);
-					}
+					//if (!shadowtex->color && shadowtex->size)
+					//{
+					//	shadowtex->color = GL_GenTextureRGBA8(shadowtex->size, shadowtex->size);
+					//}
 
 					shadowtex->distance = distance;
 					shadowtex->cone_angle = coneAngle;
 					current_shadow_texture = shadowtex;
 
-					GL_BindFrameBufferWithTextures(&s_ShadowFBO, shadowtex->color, 0, shadowtex->depth, shadowtex->size, shadowtex->size);
+					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, shadowtex->depth, shadowtex->size, shadowtex->size);
 					glDrawBuffer(GL_NONE);
-
+#if 1
 					glDisable(GL_BLEND);
 					glDisable(GL_ALPHA_TEST);
 					glEnable(GL_DEPTH_TEST);
 					glDepthFunc(GL_LEQUAL);
+					glDepthMask(GL_TRUE);
 
 					glEnable(GL_POLYGON_OFFSET_FILL);
 					glPolygonOffset(10, 10);
 
-					glDepthMask(GL_TRUE);
-					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+					GL_ClearDepthStencil(1.0f, STENCIL_MASK_SKY, STENCIL_MASK_ALL);
 
-					glClearStencil(0);
-					//glClearColor(-99999, -99999, -99999, 1);
-					glStencilMask(0xFF);
-					glDepthMask(GL_TRUE);
-					glClear(/*GL_COLOR_BUFFER_BIT | */GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-					glStencilMask(0);
+					glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 					R_PushRefDef();
 
@@ -509,13 +500,13 @@ void R_RenderShadowDynamicLights(void)
 						//This stops local player from being rendered
 						gEngfuncs.GetLocalPlayer()->model = NULL;
 
-						R_RenderScene();
+						//R_RenderScene();
 
 						gEngfuncs.GetLocalPlayer()->model = save_localplayer_model;
 					}
 					else
 					{
-						R_RenderScene();
+						//R_RenderScene();
 					}
 
 					const float bias[16] = {
@@ -542,8 +533,9 @@ void R_RenderShadowDynamicLights(void)
 					R_PopRefDef();
 
 					shadowtex->ready = true;
-
+#endif
 					r_draw_shadowcaster = false;
+
 				}
 			});
 
@@ -551,15 +543,6 @@ void R_RenderShadowDynamicLights(void)
 }
 
 void R_RenderShadowMap(void)
-{
-	if (!r_shadow->value)
-		return;
-
-	R_RenderShadowScene();
-	R_RenderShadowDynamicLights();
-}
-
-void R_RenderShadowMap_PreView(void)
 {
 	shadow_numvisedicts[0] = 0;
 	shadow_numvisedicts[1] = 0;
@@ -569,4 +552,10 @@ void R_RenderShadowMap_PreView(void)
 	{
 		cl_dlight_shadow_textures[i].ready = false;
 	}
+
+	if (!r_shadow->value)
+		return;
+
+	R_RenderShadowScene();
+	R_RenderShadowDynamicLights();
 }

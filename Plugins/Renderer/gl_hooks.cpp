@@ -3876,14 +3876,10 @@ void R_UninstallHooksForEngineDLL(void)
 	Uninstall_Hook(GL_BuildLightmaps);
 	Uninstall_Hook(enginesurface_drawFlushText);
 	Uninstall_Hook(Mod_LoadStudioModel);
-	//Uninstall_Hook(Mod_LoadBrushModel);
 	Uninstall_Hook(triapi_RenderMode);
-	//Uninstall_Hook(triapi_Color4f);
 	Uninstall_Hook(Draw_MiptexTexture);
 	Uninstall_Hook(BuildGammaTable);
-	//Uninstall_Hook(Cvar_DirectSet);
 
-	Uninstall_Hook(studioapi_RestoreRenderer);
 	Uninstall_Hook(studioapi_StudioDynamicLight);
 	Uninstall_Hook(studioapi_StudioCheckBBox);
 	Uninstall_Hook(CL_FxBlend);
@@ -3915,11 +3911,8 @@ void R_InstallHooks(void)
 	Install_InlineHook(GL_BuildLightmaps);
 	Install_InlineHook(enginesurface_drawFlushText);
 	Install_InlineHook(Mod_LoadStudioModel);
-	//Install_InlineHook(Mod_LoadBrushModel);
 	Install_InlineHook(triapi_RenderMode);
-	//Install_InlineHook(triapi_Color4f);
 	Install_InlineHook(Draw_MiptexTexture);
 	Install_InlineHook(BuildGammaTable);
-	//Install_InlineHook(Cvar_DirectSet);
 	Install_InlineHook(DLL_SetModKey);
 }

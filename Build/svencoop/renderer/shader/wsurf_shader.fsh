@@ -40,6 +40,7 @@ in vec2 v_normaltexcoord;
 in vec2 v_parallaxtexcoord;
 in vec2 v_speculartexcoord;
 in vec4 v_shadowcoord[3];
+in vec4 v_projpos;
 
 #ifdef BINDLESS_ENABLED
 
@@ -339,17 +340,17 @@ float CalcShadowIntensityLumFadeout(vec4 lightmapColor, float intensity)
 
 void main()
 {
-#ifndef SKYBOX_ENABLED
+#if !defined(SKYBOX_ENABLED)
 	ClipPlaneTest(v_worldpos.xyz, v_normal.xyz);
 #endif
 
 	vec2 baseTexcoord = vec2(0.0, 0.0);
 
-#ifdef DIFFUSE_ENABLED
+#if defined(DIFFUSE_ENABLED)
 
-	#ifdef REPLACETEXTURE_ENABLED
+	#if defined(REPLACETEXTURE_ENABLED)
 
-		#ifdef BINDLESS_ENABLED
+		#if defined(BINDLESS_ENABLED)
 			sampler2D diffuseTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_REPLACE));
 		#endif
 
@@ -357,7 +358,7 @@ void main()
 
 	#else
 
-		#ifdef BINDLESS_ENABLED	
+		#if defined(BINDLESS_ENABLED)
 			sampler2D diffuseTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_DIFFUSE));
 		#endif
 
@@ -365,7 +366,7 @@ void main()
 
 	#endif
 
-	#ifdef PARALLAXTEXTURE_ENABLED
+	#if defined(PARALLAXTEXTURE_ENABLED)
 
 		vec3 viewDir = normalize(v_worldpos.xyz - SceneUBO.viewpos.xyz);
 
@@ -377,19 +378,7 @@ void main()
 
 	#endif
 
-	//dynamic gamma correction will corrupt the alpha-blend routine that decal rendering was using when there was pre-applied texgamma correction.
-	#if !defined(DECAL_ENABLED)
-		diffuseColor = TexGammaToLinear(diffuseColor);
-	#else
-		diffuseColor = TexGammaToLinear(diffuseColor);
-
-		//so we have to shift the alpha a little bit up...
-		#ifndef TRANSPARENT_ENABLED
-			diffuseColor.a = pow(diffuseColor.a, SceneUBO.r_alpha_shift);
-		#else
-			//Don't do alpha adjustment for decals on transparent surfaces.
-		#endif
-	#endif
+	diffuseColor = ProcessDiffuseColor(diffuseColor);
 
 #else
 
@@ -419,20 +408,20 @@ void main()
 
 	lightmapColor *= SceneUBO.r_lightscale;
 
-#ifdef LEGACY_DLIGHT_ENABLED
-
-	lightmapColor = R_AddLegacyDynamicLight(lightmapColor);
-
-#endif
-
 	//Really need?
 	lightmapColor.r = clamp(lightmapColor.r, 0.0, 1.0);
 	lightmapColor.g = clamp(lightmapColor.g, 0.0, 1.0);
 	lightmapColor.b = clamp(lightmapColor.b, 0.0, 1.0);
 
+#if defined(LEGACY_DLIGHT_ENABLED)
+
+	lightmapColor = R_AddLegacyDynamicLight(lightmapColor);
+
+#endif
+
 	lightmapColor.a = 1.0;
 
-	lightmapColor = LightGammaToLinear(lightmapColor);
+	lightmapColor = ProcessLightmapColor(lightmapColor);
 
 #else
 
@@ -440,7 +429,7 @@ void main()
 
 #endif
 
-#ifdef COLOR_FILTER_ENABLED
+#if defined(COLOR_FILTER_ENABLED)
 	lightmapColor.x *= (SceneUBO.r_filtercolor.x * SceneUBO.r_filtercolor.a);
 	lightmapColor.y *= (SceneUBO.r_filtercolor.y * SceneUBO.r_filtercolor.a);
 	lightmapColor.z *= (SceneUBO.r_filtercolor.z * SceneUBO.r_filtercolor.a);
@@ -450,7 +439,7 @@ void main()
 	lightmapColor.z = clamp(lightmapColor.z, 0.0, 1.0);
 #endif
 
-#ifdef NORMALTEXTURE_ENABLED
+#if defined(NORMALTEXTURE_ENABLED)
 
 	vec3 vNormal = NormalMapping(v_tangent, v_bitangent, v_normal, baseTexcoord);
 
@@ -460,9 +449,9 @@ void main()
 
 #endif
 
-#ifdef DETAILTEXTURE_ENABLED
+#if defined(DETAILTEXTURE_ENABLED)
 
-	#ifdef BINDLESS_ENABLED
+	#if defined(BINDLESS_ENABLED)
 		sampler2D detailTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_DETAIL));
 	#endif
 
@@ -471,7 +460,7 @@ void main()
     detailColor.xyz *= 2.0;
     detailColor.a = 1.0;
 
-	detailColor = TexGammaToLinear(detailColor);
+	detailColor = ProcessDiffuseColor(detailColor);
 
 #else
 
@@ -479,20 +468,20 @@ void main()
 
 #endif
 
-#ifdef SHADOW_CASTER_ENABLED
+#if defined(SHADOW_CASTER_ENABLED)
 
 	out_Diffuse.xyz = v_worldpos.xyz;
 	out_Diffuse.w = gl_FragCoord.z;
 
 #else
 
-	#ifdef SHADOWMAP_ENABLED
+	#if defined(SHADOWMAP_ENABLED)
 
 		float shadowIntensity = CalcShadowIntensity(v_worldpos, vNormal, SceneUBO.shadowDirection.xyz);
 
 	#endif
 
-	#ifdef GBUFFER_ENABLED
+	#if defined(GBUFFER_ENABLED)
 
 		vec4 specularColor = vec4(0.0);
 
@@ -500,9 +489,9 @@ void main()
 
 		float flDistanceToFragment = distance(v_worldpos.xyz, SceneUBO.viewpos.xyz);
 
-		#ifdef SPECULARTEXTURE_ENABLED
+		#if defined(SPECULARTEXTURE_ENABLED)
 		
-			#ifdef BINDLESS_ENABLED
+			#if defined(BINDLESS_ENABLED)
 				sampler2D specularTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_SPECULAR));
 			#endif
 
@@ -511,11 +500,11 @@ void main()
 
 		#endif
 
-		#ifdef SHADOWMAP_ENABLED
+		#if defined(SHADOWMAP_ENABLED)
 			specularColor.z = shadowIntensity;
 		#endif
 
-		#ifdef DECAL_ENABLED
+		#if defined(DECAL_ENABLED)
 
 			out_Diffuse = diffuseColor * detailColor;
 			out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, 0.0);
@@ -535,21 +524,22 @@ void main()
 	#ifdef SHADOWMAP_ENABLED
 
 		shadowIntensity = CalcShadowIntensityLumFadeout(lightmapColor, shadowIntensity);
+
 		lightmapColor.xyz *= (1.0 - shadowIntensity);
 
 	#endif
 
-		#ifdef TRANSPARENT_ENABLED
+		#if defined(ADDITIVE_BLEND_ENABLED) || defined(ALPHA_BLEND_ENABLED)
+
 			vec4 color = CalcFog(diffuseColor * lightmapColor * detailColor * EntityUBO.color);
+
 		#else
+
 			vec4 color = CalcFog(diffuseColor * lightmapColor * detailColor);
-		#endif
-
-		#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED) 
-
-			GatherFragment(color);
 
 		#endif
+
+		GatherFragment(color);
 
 		out_Diffuse = color;
 

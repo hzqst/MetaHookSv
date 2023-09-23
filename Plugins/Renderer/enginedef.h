@@ -232,9 +232,19 @@ typedef struct alight_s
 //Renderer specified flags for studio models
 #define EF_OUTLINE			0x1000
 
-#define kRenderFxOutline 100
-#define kRenderFxDrawShadowHair 101
-#define kRenderFxDrawShadowFace 102
+#define kRenderFxDrawDeferedTransparentMeshes 0x80000000
+
+//This is the pass that draw GlowShell
+#define kRenderFxDrawGlowShell 0x80000001
+
+//This is the pass that draw Outline
+#define kRenderFxDrawOutline 0x80000002
+
+//This is the pass that draw meshes with STUDIO_NF_ADDITIVE flags
+#define kRenderFxDrawAdditiveMeshes 0x80000003
+
+//This is the pass that draw meshes mark as hair (only into depth and stencil buffer)
+#define kRenderFxDrawShadowHair 0x80000004
 
 //gl_model
 

@@ -35,7 +35,7 @@ void main()
 
 	vec4 vPortalColor = texture(portalTex, vPortalTexCoord);
 	
-	vPortalColor = GammaToLinear(vPortalColor);
+	vPortalColor = ProcessOtherColor(vPortalColor);
 
 	vFinalColor = vPortalColor;
 

@@ -681,12 +681,8 @@ void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
 
 	GL_BindFrameBufferWithTextures(&s_WaterFBO, ReflectCache->reflectmap, 0, ReflectCache->depthreflmap, ReflectCache->texwidth, ReflectCache->texheight);
 
-	glClearColor(ReflectCache->color.r / 255.0f, ReflectCache->color.g / 255.0f, ReflectCache->color.b / 255.0f, 0);
-	glStencilMask(0xFF);
-	glClearStencil(0);
-	glDepthMask(GL_TRUE);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-	glStencilMask(0);
+	vec4_t vecClearColor = { ReflectCache->color.r / 255.0f, ReflectCache->color.g / 255.0f, ReflectCache->color.b / 255.0f, 0 };
+	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_SKY, STENCIL_MASK_ALL);
 
 	R_PushRefDef();
 
@@ -936,10 +932,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 
 	if (r_draw_opaque)
 	{
-		glEnable(GL_STENCIL_TEST);
-		glStencilMask(0xFF);
-		glStencilFunc(GL_ALWAYS, 1, 0xFF);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		GL_BeginStencilWrite(STENCIL_MASK_WATER, STENCIL_MASK_ALL);
 	}
 
 	R_SetRenderMode(ent);
@@ -960,14 +953,14 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 	{
 		if (!ReflectCache->refractmap_ready)
 		{
-			if (drawgbuffer)
+			if (r_draw_gbuffer)
 			{
 				R_DrawWaterVBOEnd();
 
 				GL_BindFrameBufferWithTextures(&s_WaterFBO, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
-				R_BlitGBufferToFrameBuffer(&s_WaterFBO);
+				R_BlitGBufferToFrameBufferColorDepth(&s_WaterFBO);
 
-				//restore states
+				//Restore FBO
 				R_DrawWaterVBOBegin(WaterVBO);
 				GL_BindFrameBuffer(&s_GBufferFBO);
 			}
@@ -978,7 +971,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 				GL_BindFrameBufferWithTextures(&s_WaterFBO, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
 				GL_BlitFrameBufferToFrameBufferColorDepth(&s_BackBufferFBO, &s_WaterFBO);
 
-				//restore states
+				//Restore FBO
 				R_DrawWaterVBOBegin(WaterVBO);
 				GL_BindFrameBuffer(&s_BackBufferFBO);
 			}
@@ -1015,21 +1008,24 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 		}
 		else
 		{
-			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			if (!R_IsRenderingGBuffer())
 			{
-				programState |= WATER_LINEAR_FOG_ENABLED;
-			}
-			else if (!drawgbuffer && r_fog_mode == GL_EXP)
-			{
-				programState |= WATER_EXP_FOG_ENABLED;
-			}
-			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
-			{
-				programState |= WATER_EXP2_FOG_ENABLED;
+				if (r_fog_mode == GL_LINEAR)
+				{
+					programState |= WATER_LINEAR_FOG_ENABLED;
+				}
+				else if (r_fog_mode == GL_EXP)
+				{
+					programState |= WATER_EXP_FOG_ENABLED;
+				}
+				else if (r_fog_mode == GL_EXP2)
+				{
+					programState |= WATER_EXP2_FOG_ENABLED;
+				}
 			}
 		}
 
-		if (drawgbuffer)
+		if (R_IsRenderingGBuffer())
 		{
 			programState |= WATER_GBUFFER_ENABLED;
 		}
@@ -1111,21 +1107,24 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 		}
 		else
 		{
-			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			if (!R_IsRenderingGBuffer())
 			{
-				programState |= WATER_LINEAR_FOG_ENABLED;
-			}
-			else if (!drawgbuffer && r_fog_mode == GL_EXP)
-			{
-				programState |= WATER_EXP_FOG_ENABLED;
-			}
-			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
-			{
-				programState |= WATER_EXP2_FOG_ENABLED;
+				if (r_fog_mode == GL_LINEAR)
+				{
+					programState |= WATER_LINEAR_FOG_ENABLED;
+				}
+				else if (r_fog_mode == GL_EXP)
+				{
+					programState |= WATER_EXP_FOG_ENABLED;
+				}
+				else if (r_fog_mode == GL_EXP2)
+				{
+					programState |= WATER_EXP2_FOG_ENABLED;
+				}
 			}
 		}
 
-		if (drawgbuffer)
+		if (R_IsRenderingGBuffer())
 		{
 			programState |= WATER_GBUFFER_ENABLED;
 		}
@@ -1174,21 +1173,24 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 		}
 		else
 		{
-			if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+			if (!R_IsRenderingGBuffer())
 			{
-				programState |= WATER_LINEAR_FOG_ENABLED;
-			}
-			else if (!drawgbuffer && r_fog_mode == GL_EXP)
-			{
-				programState |= WATER_EXP_FOG_ENABLED;
-			}
-			else if (!drawgbuffer && r_fog_mode == GL_EXP2)
-			{
-				programState |= WATER_EXP2_FOG_ENABLED;
+				if (r_fog_mode == GL_LINEAR)
+				{
+					programState |= WATER_LINEAR_FOG_ENABLED;
+				}
+				else if (r_fog_mode == GL_EXP)
+				{
+					programState |= WATER_EXP_FOG_ENABLED;
+				}
+				else if (r_fog_mode == GL_EXP2)
+				{
+					programState |= WATER_EXP2_FOG_ENABLED;
+				}
 			}
 		}
 
-		if (drawgbuffer)
+		if (R_IsRenderingGBuffer())
 		{
 			programState |= WATER_GBUFFER_ENABLED;
 		}
@@ -1221,12 +1223,12 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 		r_wsurf_polys += WaterVBO->iPolyCount;
 	}
 
+	GL_UseProgram(0);
+
 	if (r_draw_opaque)
 	{
-		glDisable(GL_STENCIL_TEST);
+		GL_EndStencil();
 	}
-
-	GL_UseProgram(0);
 
 	R_DrawWaterVBOEnd();
 }
@@ -1242,13 +1244,13 @@ void R_DrawWaters(wsurf_vbo_leaf_t *vboleaf, cl_entity_t *ent)
 	if (!vboleaf->vWaterVBO.size())
 		return;
 
-	auto comp = R_GetEntityComponent(ent, false);
+	auto EntityComponent = R_GetEntityComponent(ent, false);
 
-	if (!comp)
+	if (!EntityComponent)
 		return;
 
-	for (size_t i = 0; i < comp->WaterVBOs.size(); ++i)
+	for (size_t i = 0; i < EntityComponent->WaterVBOs.size(); ++i)
 	{
-		R_DrawWaterVBO(comp->WaterVBOs[i], comp->ReflectCaches[i], ent);
+		R_DrawWaterVBO(EntityComponent->WaterVBOs[i], EntityComponent->ReflectCaches[i], ent);
 	}
 }

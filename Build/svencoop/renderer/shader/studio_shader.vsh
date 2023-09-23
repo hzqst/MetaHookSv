@@ -11,7 +11,6 @@ layout(location = 3) in ivec2 in_vertnormbone;
 
 out vec3 v_worldpos;
 out vec3 v_normal;
-out vec4 v_color;
 out vec2 v_texcoord;
 out vec4 v_projpos;
 
@@ -48,85 +47,7 @@ void main(void)
 	v_worldpos = outvert;
 	v_normal = outnorm;
 
-#ifndef SHADOW_CASTER_ENABLED
-
-	#ifdef TRANSADDITIVE_ENABLED
-
-		v_color = vec4(StudioUBO.r_blend, StudioUBO.r_blend, StudioUBO.r_blend, StudioUBO.r_blend);
-		v_color = GammaToLinear(v_color);
-
-	#else
-
-		#ifdef STUDIO_NF_FULLBRIGHT
-
-			v_color = vec4(1.0, 1.0, 1.0, StudioUBO.r_blend);
-			v_color = GammaToLinear(v_color);
-
-		#else
-
-			float illum = StudioUBO.r_ambientlight;
-
-			#ifdef STUDIO_NF_FLATSHADE
-
-				illum += StudioUBO.r_shadelight * 0.8;
-
-			#else
-
-				float lightcos = dot(outnorm, StudioUBO.r_plightvec.xyz);
-
-				if(SceneUBO.v_lambert < 1.0)
-				{
-					lightcos = (SceneUBO.v_lambert - lightcos) / (SceneUBO.v_lambert + 1.0); 
-					illum += StudioUBO.r_shadelight * max(lightcos, 0.0); 			
-				}
-				else
-				{
-					illum += StudioUBO.r_shadelight;
-					lightcos = (lightcos + SceneUBO.v_lambert - 1.0) / SceneUBO.v_lambert;
-					illum -= StudioUBO.r_shadelight * max(lightcos, 0.0);
-				}
-
-			#endif
-
-			float lv = clamp(illum, 0.0, 255.0) / 255.0;
-
-			lv = LightGammaToLinearInternal(lv);
-
-			//lv = max(lv, 0.03);
-
-			v_color = vec4(lv * StudioUBO.r_colormix.x, lv * StudioUBO.r_colormix.y, lv * StudioUBO.r_colormix.z, StudioUBO.r_blend);
-
-			for(int i = 0; i < StudioUBO.r_numelight.x; ++i)
-			{
-				vec3 ElightDirection = StudioUBO.r_elight_origin[i].xyz - outvert.xyz;
-				
-				#ifdef STUDIO_NF_FLATSHADE
-				
-				float ElightCosine = 0.8;
-				
-				#else
-
-				float ElightCosine = clamp(dot(outnorm, normalize(ElightDirection)), 0.0, 1.0);
-
-				#endif
-
-				float ElightDistance = length(ElightDirection);
-				float ElightDot = dot(ElightDirection, ElightDirection);
-
-				float r2 = StudioUBO.r_elight_radius[i];
-				
-				r2 = r2 * r2;
-
-    			float ElightAttenuation = clamp(r2 / (ElightDot * ElightDistance), 0.0, 1.0);
-
-				v_color.x += StudioUBO.r_elight_color[i].x * ElightCosine;// * ElightAttenuation;
-				v_color.y += StudioUBO.r_elight_color[i].y * ElightCosine;// * ElightAttenuation;
-				v_color.z += StudioUBO.r_elight_color[i].z * ElightCosine;// * ElightAttenuation;
-			}
-
-		#endif
-
-	#endif
+#if !defined(SHADOW_CASTER_ENABLED)
 
 	#if defined(OUTLINE_ENABLED)
 
@@ -180,6 +101,7 @@ void main(void)
 
 #endif
 
+	//Offset the shadow a little bit
 #if defined(HAIR_SHADOW_ENABLED) && defined(STUDIO_NF_CELSHADE_HAIR)
 	vec3 vecLight = StudioUBO.r_plightvec.xyz;
 	vecLight.z *= 0.0001;

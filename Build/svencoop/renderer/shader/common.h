@@ -14,7 +14,7 @@
 
 #endif
 
-#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED)
+#if defined(OIT_BLEND_ENABLED)
 
 	#ifdef IS_FRAGMENT_SHADER
 
@@ -95,6 +95,19 @@
 #define WSURF_SPECULAR_TEXTURE		5
 #define WSURF_MAX_TEXTURE			6
 
+#define STENCIL_MASK_ALL						0xFF
+#define STENCIL_MASK_SKY						0
+#define STENCIL_MASK_WORLD						1
+#define STENCIL_MASK_WATER						2
+#define STENCIL_MASK_STUDIO_MODEL				4
+#define STENCIL_MASK_SPRITE_MODEL				8
+#define STENCIL_MASK_HAS_OUTLINE				0x10
+#define STENCIL_MASK_HAS_SHADOW					0x20
+#define STENCIL_MASK_HAS_DECAL					0x40
+#define STENCIL_MASK_HAS_FLATSHADE				0x80
+
+#define STENCIL_MASK_HAS_FOG					(STENCIL_MASK_WORLD | STENCIL_MASK_WATER | STENCIL_MASK_STUDIO_MODEL | STENCIL_MASK_SPRITE_MODEL)
+
 #define SPR_VP_PARALLEL_UPRIGHT 0
 #define SPR_FACING_UPRIGHT 1
 #define SPR_VP_PARALLEL 2
@@ -153,16 +166,15 @@ struct entity_ubo_t{
 struct studio_ubo_t{
 	float r_ambientlight;
 	float r_shadelight;
-	float r_blend;
 	float r_scale;
+	int r_numelight;
 	vec4 r_plightvec;
-	vec4 r_colormix;
+	vec4 r_color;
 	vec4 r_origin;
 	vec4 entity_origin;
 	vec4 r_elight_color[4];
 	vec4 r_elight_origin[4];
 	vec4 r_elight_radius;
-	ivec4 r_numelight;
 	mat3x4 bonematrix[128];
 };
 
@@ -213,7 +225,7 @@ layout (std140, binding = BINDING_POINT_STUDIO_UBO) uniform StudioBlock
 	studio_ubo_t StudioUBO;
 };
 
-#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED)
+#if defined(OIT_BLEND_ENABLED)
 
 // A fragment node stores rendering information about one specific fragment
 struct FragmentNode
@@ -240,40 +252,50 @@ layout (std430, binding = BINDING_POINT_OIT_NUMFRAGMENT_SSBO) coherent buffer Nu
 
 layout(binding = BINDING_POINT_OIT_COUNTER_SSBO, offset = 0) uniform atomic_uint fragCounter;
 
-#ifdef IS_FRAGMENT_SHADER
-
-void GatherFragment(inout vec4 color)
-{
-    uint x = uint(gl_FragCoord.x);
-    uint y = uint(gl_FragCoord.y);
-	uint viewportW = SceneUBO.viewport.x;
-	uint linkedListSize = SceneUBO.viewport.z;
-
-	uint pixelIndex = viewportW*y + x;
-
-	FragmentNode frag;
-	frag.color = packUnorm4x8(color);
-	#ifdef OIT_ADDITIVE_BLEND_ENABLED
-		frag.depth = -gl_FragCoord.z;
-	#else
-		frag.depth = gl_FragCoord.z;
-	#endif
-	
-	frag.next = -1;
-
-	uint insertIndex = atomicCounterIncrement(fragCounter);
-
-	if (insertIndex < linkedListSize) {
-        // Insert the fragment into the linked list
-		frag.next = atomicExchange(numFragments[pixelIndex], insertIndex);
-        nodes[insertIndex] = frag;
-    }
-	
-	discard;
-}
 #endif
 
+#if defined(OIT_BLEND_ENABLED) && defined(IS_FRAGMENT_SHADER)
+
+	void GatherFragment(inout vec4 color)
+	{
+		uint x = uint(gl_FragCoord.x);
+		uint y = uint(gl_FragCoord.y);
+		uint viewportW = SceneUBO.viewport.x;
+		uint linkedListSize = SceneUBO.viewport.z;
+
+		uint pixelIndex = viewportW*y + x;
+
+		FragmentNode frag;
+		frag.color = packUnorm4x8(color);
+		#ifdef ADDITIVE_BLEND_ENABLED
+			frag.depth = -gl_FragCoord.z;
+		#else
+			frag.depth = gl_FragCoord.z;
+		#endif
+		
+		frag.next = -1;
+
+		uint insertIndex = atomicCounterIncrement(fragCounter);
+
+		if (insertIndex < linkedListSize) {
+			// Insert the fragment into the linked list
+			frag.next = atomicExchange(numFragments[pixelIndex], insertIndex);
+			nodes[insertIndex] = frag;
+		}
+		
+		discard;
+	}
+
+#elif defined(IS_FRAGMENT_SHADER)
+
+	void GatherFragment(inout vec4 color)
+	{
+
+	}
+
 #endif
+
+//Pack vec3 into vec2
 
 vec2 UnitVectorToHemiOctahedron(vec3 dir) {
 
@@ -284,6 +306,7 @@ vec2 UnitVectorToHemiOctahedron(vec3 dir) {
 
 }
 
+//Unpack vec2 to vec3
 vec3 HemiOctahedronToUnitVector(vec2 coord) {
 
 	coord = 2.0 * coord - 1.0;
@@ -327,75 +350,75 @@ vec3 OctahedronToUnitVector(vec2 coord) {
 
 #if defined(LINEAR_FOG_ENABLED) && defined(IS_FRAGMENT_SHADER)
 
-vec4 CalcFogWithDistance(vec4 color, float z)
-{
-	float fogFactor = ( SceneUBO.fogEnd - z ) / ( SceneUBO.fogEnd - SceneUBO.fogStart );
+	vec4 CalcFogWithDistance(vec4 color, float z)
+	{
+		float fogFactor = ( SceneUBO.fogEnd - z ) / ( SceneUBO.fogEnd - SceneUBO.fogStart );
 
-	fogFactor = clamp(fogFactor, 0.0, 1.0);
+		fogFactor = clamp(fogFactor, 0.0, 1.0);
 
-	color.xyz = mix(SceneUBO.fogColor.xyz, color.xyz, fogFactor );
+		color.xyz = mix(SceneUBO.fogColor.xyz, color.xyz, fogFactor );
 
-	return color;
-}
+		return color;
+	}
 
-vec4 CalcFog(vec4 color)
-{
-	return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
-}
+	vec4 CalcFog(vec4 color)
+	{
+		return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
+	}
 
 #elif defined(EXP_FOG_ENABLED) && defined(IS_FRAGMENT_SHADER)
 
-vec4 CalcFogWithDistance(vec4 color, float z)
-{
-	float f = SceneUBO.fogDensity * z;
+	vec4 CalcFogWithDistance(vec4 color, float z)
+	{
+		float f = SceneUBO.fogDensity * z;
 
-	float fogFactor = exp( -f );
+		float fogFactor = exp( -f );
 
-	fogFactor = clamp(fogFactor, 0.0, 1.0);
+		fogFactor = clamp(fogFactor, 0.0, 1.0);
 
-	color.xyz = mix(SceneUBO.fogColor.xyz, color.xyz, fogFactor );
+		color.xyz = mix(SceneUBO.fogColor.xyz, color.xyz, fogFactor );
 
-	return color;
-}
+		return color;
+	}
 
-vec4 CalcFog(vec4 color)
-{
-	return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
-}
+	vec4 CalcFog(vec4 color)
+	{
+		return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
+	}
 
 #elif defined(EXP2_FOG_ENABLED) && defined(IS_FRAGMENT_SHADER)
 
-vec4 CalcFogWithDistance(vec4 color, float z)
-{
-	//const float LOG2 = 1.442695;
-	//float fogFactor = exp2( -SceneUBO.fogDensity * SceneUBO.fogDensity * z * z * LOG2 );
-	float f = SceneUBO.fogDensity * z / 1.8;
-	float fogFactor = exp(-f*f);
-	fogFactor = clamp(fogFactor, 0.0, 1.0);
+	vec4 CalcFogWithDistance(vec4 color, float z)
+	{
+		float f = SceneUBO.fogDensity * z / 1.8;
+		float fogFactor = exp(-f*f);
+		fogFactor = clamp(fogFactor, 0.0, 1.0);
 
-	color.xyz = mix(SceneUBO.fogColor.xyz, color.xyz, fogFactor );
+		color.xyz = mix(SceneUBO.fogColor.xyz, color.xyz, fogFactor );
 
-	return color;
-}
+		return color;
+	}
 
-vec4 CalcFog(vec4 color)
-{
-	return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
-}
+	vec4 CalcFog(vec4 color)
+	{
+		return CalcFogWithDistance(color, gl_FragCoord.z / gl_FragCoord.w);
+	}
 
 #else
 
-vec4 CalcFog(vec4 color)
-{
-	return color;
-}
+	vec4 CalcFog(vec4 color)
+	{
+		return color;
+	}
 
-vec4 CalcFogWithDistance(vec4 color, float z)
-{
-	return color;
-}
+	vec4 CalcFogWithDistance(vec4 color, float z)
+	{
+		return color;
+	}
 
 #endif
+
+//Color Space Conversion
 
 vec4 GammaToLinear(vec4 color)
 {
@@ -413,6 +436,18 @@ vec4 TexGammaToLinear(vec4 color)
 vec4 TexGammaToGamma(vec4 color)
 {
 	color.rgb = pow(color.rgb, vec3(SceneUBO.v_texgamma * SceneUBO.r_g));//r_g = 1.0 / v_gamma
+	return color;
+}
+
+vec3 TexGammaToGamma3(vec3 color)
+{
+	color = pow(color, vec3(SceneUBO.v_texgamma * SceneUBO.r_g));//r_g = 1.0 / v_gamma
+	return color;
+}
+
+float TexGammaToGamma1(float color)
+{
+	color = pow(color, SceneUBO.v_texgamma * SceneUBO.r_g);//r_g = 1.0 / v_gamma
 	return color;
 }
 
@@ -474,38 +509,89 @@ vec4 LightGammaToLinear(vec4 color)
 	return vec4(LightGammaToLinearInternal(color.r), LightGammaToLinearInternal(color.g), LightGammaToLinearInternal(color.b), color.a);
 }
 
-#if defined(IS_FRAGMENT_SHADER)
-
-void ClipPlaneTest(vec3 worldpos, vec3 normal)
+//Input: TexGammaSpace
+//Output: LinearSpace or GammaSpace depending on GAMMA_BLEND_ENABLED
+vec4 ProcessDiffuseColor(vec4 baseColor)
 {
-	#if defined(CLIP_WATER_ENABLED)
+	#if defined(GAMMA_BLEND_ENABLED)
 
-		vec4 clipVec = vec4(worldpos.xyz, 1.0);
-		vec4 clipPlane = SceneUBO.clipPlane;
+		baseColor = TexGammaToGamma(baseColor);
 
-		if(dot(clipVec, clipPlane) < 0)
-			discard;
+	#else
 
-		clipPlane.w += 32.0;
-		if(dot(clipVec, clipPlane) < 0 && dot(normalize(normal.xyz), -clipPlane.xyz) > 0.866)
-			discard;
-
-	#elif defined(CLIP_ENABLED)
-
-		vec4 clipVec = vec4(worldpos.xyz - SceneUBO.clipPlane.xyz * 4.0, -1.0);
-		vec4 clipPlane = SceneUBO.clipPlane;
-
-		if(dot(clipVec, clipPlane) > 0)
-			discard;
+		baseColor = TexGammaToLinear(baseColor);
 
 	#endif
+
+	return baseColor;
 }
+
+//Input: LightGammaSpace
+//Output: LinearSpace or GammaSpace depending on GAMMA_BLEND_ENABLED
+vec4 ProcessLightmapColor(vec4 lightmapColor)
+{
+	#if defined(GAMMA_BLEND_ENABLED)
+
+		lightmapColor = LightGammaToGamma(lightmapColor);
+
+	#else
+
+		lightmapColor = LightGammaToLinear(lightmapColor);
+
+	#endif
+
+	return lightmapColor;
+}
+
+//Input: GammaSpace
+//Output: LinearSpace or GammaSpace depending on GAMMA_BLEND_ENABLED
+vec4 ProcessOtherColor(vec4 color)
+{
+	#if defined(GAMMA_BLEND_ENABLED)
+
+		
+
+	#else
+
+		color = GammaToLinear(color);
+
+	#endif
+
+	return color;
+}
+
+#if defined(IS_FRAGMENT_SHADER)
+
+	void ClipPlaneTest(vec3 worldpos, vec3 normal)
+	{
+		#if defined(CLIP_WATER_ENABLED)
+
+			vec4 clipVec = vec4(worldpos.xyz, 1.0);
+			vec4 clipPlane = SceneUBO.clipPlane;
+
+			if(dot(clipVec, clipPlane) < 0)
+				discard;
+
+			clipPlane.w += 32.0;
+			if(dot(clipVec, clipPlane) < 0 && dot(normalize(normal.xyz), -clipPlane.xyz) > 0.866)
+				discard;
+
+		#elif defined(CLIP_ENABLED)
+
+			vec4 clipVec = vec4(worldpos.xyz - SceneUBO.clipPlane.xyz * 4.0, -1.0);
+			vec4 clipPlane = SceneUBO.clipPlane;
+
+			if(dot(clipVec, clipPlane) > 0)
+				discard;
+
+		#endif
+	}
 
 #else
 
-void ClipPlaneTest(vec3 worldpos, vec3 normal)
-{
+	void ClipPlaneTest(vec3 worldpos, vec3 normal)
+	{
 
-}
+	}
 
 #endif

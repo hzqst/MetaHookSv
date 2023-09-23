@@ -7,6 +7,7 @@ layout(binding = 0) uniform sampler2D diffuseTex;
 in vec3 v_worldpos;
 in vec2 v_diffusetexcoord;
 in vec4 v_color;
+in vec4 v_projpos;
 
 layout(location = 0) out vec4 out_Diffuse;
 
@@ -14,55 +15,26 @@ void main()
 {
 	ClipPlaneTest(v_worldpos.xyz, -SceneUBO.vpn.xyz);
 
-	vec4 diffuseColor = texture2D(diffuseTex, v_diffusetexcoord.xy);
+	vec4 baseColor = texture(diffuseTex, v_diffusetexcoord.xy);
 
-#if !defined(ADDITIVE_BLEND_ENABLED) && !defined(OIT_ADDITIVE_BLEND_ENABLED)
-	//Alpha blend
-	diffuseColor = TexGammaToLinear(diffuseColor);
-	diffuseColor.a = pow(diffuseColor.a, SceneUBO.r_alpha_shift);
-#else
-	//Additive blend
-	diffuseColor = TexGammaToLinear(diffuseColor);
-	//diffuseColor.r = pow(diffuseColor.r, SceneUBO.r_additive_shift);
-	//diffuseColor.g = pow(diffuseColor.g, SceneUBO.r_additive_shift);
-	//diffuseColor.b = pow(diffuseColor.b, SceneUBO.r_additive_shift);
-#endif
+	baseColor = ProcessDiffuseColor(baseColor);
 
 	vec4 lightmapColor = v_color;
 
 	lightmapColor.r = clamp(lightmapColor.r, 0.0, 1.0);
 	lightmapColor.g = clamp(lightmapColor.g, 0.0, 1.0);
 	lightmapColor.b = clamp(lightmapColor.b, 0.0, 1.0);
+	lightmapColor.a = clamp(lightmapColor.a, 0.0, 1.0);
 	
-	#if !defined(ADDITIVE_BLEND_ENABLED) && !defined(OIT_ADDITIVE_BLEND_ENABLED) && !defined(ALPHA_BLEND_ENABLED) && !defined(OIT_ALPHA_BLEND_ENABLED)
-		lightmapColor.a = 1.0;
+	lightmapColor = ProcessOtherColor(lightmapColor);
+
+	#if !defined(ADDITIVE_BLEND_ENABLED)
+		vec4 finalColor = CalcFog(baseColor * lightmapColor);
 	#else
-		lightmapColor.a = clamp(lightmapColor.a, 0.0, 1.0);
+		vec4 finalColor = baseColor * lightmapColor;
 	#endif
-	
-#if !defined(ADDITIVE_BLEND_ENABLED) && !defined(OIT_ADDITIVE_BLEND_ENABLED)
-	//Alpha blend
-	lightmapColor = GammaToLinear(lightmapColor);
-	lightmapColor.a = pow(lightmapColor.a, SceneUBO.r_alpha_shift);
-#else
-	//Additive blend
-	lightmapColor = GammaToLinear(lightmapColor);
-	lightmapColor.r = pow(lightmapColor.r, SceneUBO.r_additive_shift);
-	lightmapColor.g = pow(lightmapColor.g, SceneUBO.r_additive_shift);
-	lightmapColor.b = pow(lightmapColor.b, SceneUBO.r_additive_shift);
-#endif
 
-#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(ALPHA_BLEND_ENABLED)
-
-	vec4 finalColor = CalcFog(diffuseColor) * lightmapColor;
-
-#else
-
-	vec4 finalColor = diffuseColor * lightmapColor;
-
-#endif
-
-	#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED) 
+	#if defined(OIT_BLEND_ENABLED)
 		
 		GatherFragment(finalColor);
 

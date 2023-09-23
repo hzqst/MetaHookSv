@@ -42,7 +42,6 @@ bool R_ShouldCastShadow(cl_entity_t *ent);
 bool R_ShouldRenderShadowScene(void);
 bool R_ShouldRenderShadow(void);
 void R_RenderShadowMap(void); 
-void R_RenderShadowMap_PreView(void);
 void R_InitShadow(void);
 void R_ShutdownShadow(void);
 void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size, bool bUseDepthArray);

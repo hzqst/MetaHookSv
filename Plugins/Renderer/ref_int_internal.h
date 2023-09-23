@@ -112,7 +112,7 @@ typedef struct
 
 	//Engine Studio Exported API
 	void (*studioapi_StudioDynamicLight)(struct cl_entity_s *ent, struct alight_s *plight);
-	void (*studioapi_RestoreRenderer)(void);
+	//void (*studioapi_RestoreRenderer)(void);
 	qboolean (*studioapi_StudioCheckBBox)(void);
 
 	//Client Studio
@@ -164,7 +164,7 @@ extern hook_t *g_phook_BuildGammaTable;
 //extern hook_t *g_phook_Cvar_DirectSet;
 extern hook_t *g_phook_DLL_SetModKey;
 
-extern hook_t *g_phook_studioapi_RestoreRenderer;
+//extern hook_t *g_phook_studioapi_RestoreRenderer;
 extern hook_t *g_phook_studioapi_StudioDynamicLight;
 extern hook_t *g_phook_studioapi_StudioCheckBBox;
 extern hook_t *g_phook_CL_FxBlend;

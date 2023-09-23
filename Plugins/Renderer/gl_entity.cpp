@@ -20,6 +20,7 @@ void R_InitEntityComponents(void)
 		gEntityComponentPool[i].Decals.clear();
 		gEntityComponentPool[i].WaterVBOs.clear();
 		gEntityComponentPool[i].ReflectCaches.clear();
+		gEntityComponentPool[i].DeferredStudioPasses.clear();
 	}
 
 	gEntityComponentPool[MAX_TEMP_ENTITIES - 1].next = NULL;
@@ -61,7 +62,8 @@ void R_EntityComponents_PreFrame(void)
 		p->Decals.clear();
 		p->WaterVBOs.clear();
 		p->ReflectCaches.clear();
-		
+		p->DeferredStudioPasses.clear();
+
 		auto temp = p->next;
 
 		p->next = gpEntityComponentFree;

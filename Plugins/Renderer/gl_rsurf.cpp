@@ -1005,20 +1005,20 @@ void R_DrawDecals(cl_entity_t *ent)
 			return;
 	}
 
-	auto comp = R_GetEntityComponent(ent, false);
+	auto EntityComponent = R_GetEntityComponent(ent, false);
 
-	if (!comp)
+	if (!EntityComponent)
 		return;
 
-	if (comp->Decals.empty())
+	if (EntityComponent->Decals.empty())
 		return;
 
 	g_DecalBaseDrawBatch.BatchCount = 0;
 	g_DecalDetailDrawBatch.BatchCount = 0;
 
-	for (size_t i = 0; i < comp->Decals.size(); i++)
+	for (size_t i = 0; i < EntityComponent->Decals.size(); i++)
 	{
-		auto plist = comp->Decals[i];
+		auto plist = EntityComponent->Decals[i];
 
 		if (plist)
 		{
@@ -1096,6 +1096,8 @@ void R_DrawDecals(cl_entity_t *ent)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(0);
 
+	GL_BeginStencilCompareEqual(STENCIL_MASK_HAS_DECAL, STENCIL_MASK_HAS_DECAL);
+
 	//Decal only affects diffuse and normal channel
 	R_SetGBufferMask(GBUFFER_MASK_DIFFUSE | GBUFFER_MASK_WORLDNORM);
 
@@ -1115,7 +1117,7 @@ void R_DrawDecals(cl_entity_t *ent)
 	program_state_t WSurfProgramState = WSURF_DECAL_ENABLED | WSURF_DIFFUSE_ENABLED;
 
 	//Mix lightmap if not deferred
-	if (r_wsurf.bLightmapTexture && !drawgbuffer)
+	if (r_wsurf.bLightmapTexture && !R_IsRenderingGBuffer())
 	{
 		WSurfProgramState |= WSURF_LIGHTMAP_ENABLED;
 
@@ -1153,7 +1155,7 @@ void R_DrawDecals(cl_entity_t *ent)
 	}
 
 	//Mix shadow if not deferred
-	if (r_wsurf.bShadowmapTexture && !drawgbuffer)
+	if (r_wsurf.bShadowmapTexture && !R_IsRenderingGBuffer())
 	{
 		WSurfProgramState |= WSURF_SHADOWMAP_ENABLED;
 
@@ -1180,48 +1182,43 @@ void R_DrawDecals(cl_entity_t *ent)
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}
 
-	if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+	if (!R_IsRenderingGBuffer())
 	{
-		WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
-	}
-	else if (!drawgbuffer && r_fog_mode == GL_EXP)
-	{
-		WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
-	}
-	else if (!drawgbuffer && r_fog_mode == GL_EXP2)
-	{
-		WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+		if (r_fog_mode == GL_LINEAR)
+		{
+			WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+		}
+		else if (r_fog_mode == GL_EXP)
+		{
+			WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
+		}
+		else if (r_fog_mode == GL_EXP2)
+		{
+			WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+		}
 	}
 
-	if (drawgbuffer)
+	if (R_IsRenderingGBuffer())
 	{
 		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 	}
 	
-	//Do we really need this?
-	if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha)
+	if ((*currententity)->curstate.rendermode != kRenderNormal && (*currententity)->curstate.rendermode != kRenderTransAlpha && (*currententity)->curstate.rendermode != kRenderTransColor)
 	{
-		WSurfProgramState |= WSURF_TRANSPARENT_ENABLED;
+		if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
+			WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
+		else
+			WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
+
+		if (r_draw_gammablend)
+		{
+			WSurfProgramState |= WSURF_GAMMA_BLEND_ENABLED;
+		}
 
 		if (r_draw_oitblend)
 		{
-			if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
-				WSurfProgramState |= WSURF_OIT_ADDITIVE_BLEND_ENABLED;
-			else
-				WSurfProgramState |= WSURF_OIT_ALPHA_BLEND_ENABLED;
+			WSurfProgramState |= WSURF_OIT_BLEND_ENABLED;
 		}
-		else
-		{
-			if ((*currententity)->curstate.rendermode == kRenderTransAdd || (*currententity)->curstate.rendermode == kRenderGlow)
-				WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
-			else
-				WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
-		}
-	}
-
-	if (r_draw_oitblend)
-	{
-		WSurfProgramState |= WSURF_OIT_ALPHA_BLEND_ENABLED;
 	}
 
 	GL_BindVAO(r_wsurf.hDecalVAO);
@@ -1294,7 +1291,9 @@ void R_DrawDecals(cl_entity_t *ent)
 
 	//glDisable(GL_ALPHA_TEST);
 	glDisable(GL_BLEND);
-	glDepthMask(1);
+	glDepthMask(GL_TRUE);
+
+	GL_EndStencil();
 
 	(*gDecalSurfCount) = 0;
 }

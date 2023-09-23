@@ -30,8 +30,10 @@ void R_DrawSkyBox(void)
 	if (!r_wsurf.vSkyboxTextureId[0])
 		return;
 
+	GL_BeginStencilWrite(STENCIL_MASK_SKY, STENCIL_MASK_ALL);
+
 	glDisable(GL_BLEND);
-	glDepthMask(0);
+	glDepthMask(GL_FALSE);
 
 	program_state_t WSurfProgramState = WSURF_DIFFUSE_ENABLED | WSURF_SKYBOX_ENABLED;
 
@@ -56,21 +58,24 @@ void R_DrawSkyBox(void)
 
 	if (r_wsurf_sky_fog->value)
 	{
-		if (!drawgbuffer && r_fog_mode == GL_LINEAR)
+		if (!R_IsRenderingGBuffer())
 		{
-			WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
-		}
-		else if (!drawgbuffer && r_fog_mode == GL_EXP)
-		{
-			WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
-		}
-		else if (!drawgbuffer && r_fog_mode == GL_EXP2)
-		{
-			WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+			if (r_fog_mode == GL_LINEAR)
+			{
+				WSurfProgramState |= WSURF_LINEAR_FOG_ENABLED;
+			}
+			else if (r_fog_mode == GL_EXP)
+			{
+				WSurfProgramState |= WSURF_EXP_FOG_ENABLED;
+			}
+			else if (r_fog_mode == GL_EXP2)
+			{
+				WSurfProgramState |= WSURF_EXP2_FOG_ENABLED;
+			}
 		}
 	}
 
-	if (drawgbuffer)
+	if (R_IsRenderingGBuffer())
 	{
 		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 	}
@@ -113,5 +118,7 @@ void R_DrawSkyBox(void)
 
 	GL_UseProgram(0);
 
-	glDepthMask(1);
+	glDepthMask(GL_TRUE);
+
+	GL_EndStencil();
 }

@@ -30,13 +30,15 @@ hook_t *g_phook_GameStudioRenderer_StudioSetupBones = NULL;
 hook_t *g_phook_GameStudioRenderer_StudioMergeBones = NULL;
 hook_t *g_phook_GameStudioRenderer_StudioRenderModel = NULL;
 hook_t *g_phook_GameStudioRenderer_StudioRenderFinal = NULL;
+
 hook_t *g_phook_R_StudioSetupBones = NULL;
+hook_t* g_phook_R_StudioMergeBones = NULL;
 hook_t *g_phook_R_StudioRenderModel = NULL;
 hook_t *g_phook_R_StudioRenderFinal = NULL;
 
 void R_UninstallHooksForClientDLL(void)
 {
-	Uninstall_Hook(studioapi_RestoreRenderer);
+	//Uninstall_Hook(studioapi_RestoreRenderer);
 	Uninstall_Hook(studioapi_StudioDynamicLight);
 	Uninstall_Hook(studioapi_StudioCheckBBox);
 	Uninstall_Hook(CL_FxBlend);
@@ -47,10 +49,12 @@ void R_UninstallHooksForClientDLL(void)
 	Uninstall_Hook(ClientPortalManager_DrawPortalSurface);
 	Uninstall_Hook(ClientPortalManager_EnableClipPlane);
 
+	//Client
 	Uninstall_Hook(GameStudioRenderer_StudioSetupBones);
 	Uninstall_Hook(GameStudioRenderer_StudioMergeBones);
 	Uninstall_Hook(GameStudioRenderer_StudioRenderModel);
 	Uninstall_Hook(GameStudioRenderer_StudioRenderFinal);
+
 	Uninstall_Hook(R_StudioRenderModel);
 	Uninstall_Hook(R_StudioRenderFinal);
 }
@@ -302,7 +306,7 @@ int HUD_Redraw(float time, int intermission)
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
 {
 	//Save StudioAPI Funcs
-	gRefFuncs.studioapi_RestoreRenderer = pstudio->RestoreRenderer;
+	//gRefFuncs.studioapi_RestoreRenderer = pstudio->RestoreRenderer;
 	gRefFuncs.studioapi_StudioDynamicLight = pstudio->StudioDynamicLight;
 
 	//Vars in Engine Studio API
@@ -808,7 +812,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	gpStudioInterface = ppinterface;
 
 	//InlineHook StudioAPI
-	Install_InlineHook(studioapi_RestoreRenderer);
+	//Install_InlineHook(studioapi_RestoreRenderer);
 	Install_InlineHook(studioapi_StudioDynamicLight);
 	Install_InlineHook(studioapi_StudioCheckBBox);
 	Install_InlineHook(CL_FxBlend);
@@ -841,7 +845,6 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			Sig_AddrNotFound(ClientPortalManager_GetOriginalSurfaceTexture);
 
 			gRefFuncs.ClientPortalManager_GetOriginalSurfaceTexture = (decltype(gRefFuncs.ClientPortalManager_GetOriginalSurfaceTexture))addr;
-			//Install_InlineHook(ClientPortalManager_GetOriginalSurfaceTexture);
 		}
 
 		if (1)

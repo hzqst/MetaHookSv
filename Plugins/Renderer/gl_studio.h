@@ -122,7 +122,6 @@ typedef struct studio_celshade_control_s
 	StudioConVar hair_specular_noise2;
 	StudioConVar hair_specular_smooth;
 	StudioConVar hair_shadow_offset;
-	StudioConVar hair_shadow_intensity;
 }studio_celshade_control_t;
 
 typedef struct studio_vbo_s
@@ -208,17 +207,18 @@ extern engine_studio_api_t IEngineStudio;
 extern r_studio_interface_t **gpStudioInterface;
 
 #define STUDIO_GBUFFER_ENABLED					0x10000ull
-#define STUDIO_TRANSPARENT_ENABLED				0x20000ull
-#define STUDIO_TRANSADDITIVE_ENABLED			0x40000ull
-#define STUDIO_LINEAR_FOG_ENABLED				0x80000ull
-#define STUDIO_EXP_FOG_ENABLED					0x100000ull
-#define STUDIO_EXP2_FOG_ENABLED					0x200000ull
-#define STUDIO_SHADOW_CASTER_ENABLED			0x400000ull
-#define STUDIO_LEGACY_BONE_ENABLED				0x800000ull
-#define STUDIO_GLOW_SHELL_ENABLED				0x1000000ull
-#define STUDIO_OUTLINE_ENABLED					0x2000000ull
-#define STUDIO_HAIR_SHADOW_ENABLED				0x4000000ull
-#define STUDIO_CLIP_WATER_ENABLED				0x8000000ull
-#define STUDIO_CLIP_ENABLED						0x10000000ull
-#define STUDIO_OIT_ALPHA_BLEND_ENABLED			0x20000000ull
-#define STUDIO_OIT_ADDITIVE_BLEND_ENABLED		0x40000000ull
+#define STUDIO_LINEAR_FOG_ENABLED				0x20000ull
+#define STUDIO_EXP_FOG_ENABLED					0x40000ull
+#define STUDIO_EXP2_FOG_ENABLED					0x80000ull
+#define STUDIO_SHADOW_CASTER_ENABLED			0x100000ull
+#define STUDIO_GLOW_SHELL_ENABLED				0x200000ull
+#define STUDIO_OUTLINE_ENABLED					0x400000ull
+#define STUDIO_HAIR_SHADOW_ENABLED				0x800000ull
+#define STUDIO_CLIP_WATER_ENABLED				0x1000000ull
+#define STUDIO_CLIP_ENABLED						0x2000000ull
+#define STUDIO_ALPHA_BLEND_ENABLED				0x4000000ull
+#define STUDIO_ADDITIVE_BLEND_ENABLED			0x8000000ull
+#define STUDIO_OIT_BLEND_ENABLED				0x10000000ull
+#define STUDIO_GAMMA_BLEND_ENABLED				0x20000000ull
+#define STUDIO_ADDITIVE_RENDER_MODE_ENABLED		0x40000000ull
+#define STUDIO_INVERT_NORMAL_ENABLED			0x80000000ull
