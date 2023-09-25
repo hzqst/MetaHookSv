@@ -407,6 +407,16 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 * 注意: 为保证插值结果正确，sprite实体在服务器上的帧率 (注意：不是sprite实体的pev.framerate）必须为10FPS。这里的10FPS指的是sprite实体两次think函数之间的执行间隔等于0.1秒，这在原版及大多数mod中都是默认设置。
 
+## Quake风格的水下画面扭曲效果
+
+`r_under_water_effect` 1 / 0
+
+`r_under_water_effect_wave_amount` 默认值: 10.0
+
+`r_under_water_effect_wave_speed` 默认值: 1.0
+
+`r_under_water_effect_wave_size` 默认值: 0.01
+
 ## 其他
 
 `r_wsurf_zprepass` 1 / 0 : 设为1时启用Z-Prepass优化。

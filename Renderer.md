@@ -432,6 +432,16 @@ This controls how engine calculate the vertical FOV from horizontal FOV:
 
 * Note: For correct interpolation, make sure the server framerate is exactly 10 FPS (regardless of the sprite’s own FPS in pev | framerate). This parameter is dictated by the frame changer function’s think time, which is 0.1s and remains unchanged in most mods.
 
+## Quake-Style Under Water Screen Effect
+
+`r_under_water_effect` 1 / 0
+
+`r_under_water_effect_wave_amount` default: 10.0
+
+`r_under_water_effect_wave_speed` default: 1.0
+
+`r_under_water_effect_wave_size` default: 0.01
+
 ## Misc
 
 `r_wsurf_zprepass` 1 / 0 : When set to 1, Z-Prepass will be enabled. The world will be rendered twice every frame. The first time with only depth write-in, the second time with actual fragment color write-in, which decreases the fragment shader cost when there is significant overdraw cost (like when shadow and SSR are calculated for unnecessary fragments ) for world rendering.
