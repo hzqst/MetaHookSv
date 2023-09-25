@@ -11,7 +11,6 @@ typedef struct glprofile_s
 }glprofile_t;
 
 extern glprofile_t Profile_DoHDR;
-extern glprofile_t Profile_DoFXAA;
 extern glprofile_t Profile_GammaCorrection;
 extern glprofile_t Profile_AmbientOcclusion;
 extern glprofile_t Profile_BlendFinalBuffer;

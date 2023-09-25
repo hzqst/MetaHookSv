@@ -3,7 +3,6 @@
 std::vector<glprofile_t *> g_ProfileTable;
 
 glprofile_t Profile_DoHDR;
-glprofile_t Profile_DoFXAA;
 glprofile_t Profile_GammaCorrection;
 glprofile_t Profile_AmbientOcclusion;
 glprofile_t Profile_BlendFinalBuffer;
@@ -46,7 +45,6 @@ void GL_InitProfiles(void)
 	GL_InitProfile(&Profile_AmbientOcclusion, "R_AmbientOcclusion");
 	GL_InitProfile(&Profile_GammaCorrection, "R_GammaCorrection");
 	GL_InitProfile(&Profile_DoHDR, "R_DoHDR");
-	GL_InitProfile(&Profile_DoFXAA, "R_DoFXAA");
 }
 
 void GL_FreeProfiles(void)

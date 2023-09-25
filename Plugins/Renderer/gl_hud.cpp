@@ -50,6 +50,8 @@ SHADER_DEFINE(blit_oitblend);
 SHADER_DEFINE(gamma_correction);
 SHADER_DEFINE(gamma_uncorrection);
 
+SHADER_DEFINE(under_water_effect);
+
 cvar_t *r_hdr = NULL;
 cvar_t *r_hdr_debug = NULL;
 MapConVar *r_hdr_blurwidth = NULL;
@@ -58,6 +60,11 @@ MapConVar *r_hdr_darkness = NULL;
 MapConVar *r_hdr_adaptation = NULL;
 
 cvar_t *r_fxaa = NULL;
+
+cvar_t* r_under_water_effect = NULL;
+cvar_t* r_under_water_effect_wave_amount = NULL;
+cvar_t* r_under_water_effect_wave_speed = NULL;
+cvar_t* r_under_water_effect_wave_size = NULL;
 
 cvar_t *r_ssao = NULL;
 cvar_t *r_ssao_debug = NULL;
@@ -235,6 +242,8 @@ void R_InitPostProcess(void)
 
 	gamma_uncorrection.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\gamma_uncorrection.frag.glsl", NULL);
 
+	under_water_effect.program = R_CompileShaderFile("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\under_water_effect.frag.glsl", NULL);
+
 	hbao_calc_blur_fog.program = R_CompileShaderFileEx("renderer\\shader\\fullscreentriangle.vert.glsl", "renderer\\shader\\hbao.frag.glsl", 
 		"#define LINEAR_FOG_ENABLED\n", "#define LINEAR_FOG_ENABLED\n", NULL);
 
@@ -271,6 +280,11 @@ void R_InitPostProcess(void)
 	r_hdr_adaptation = R_RegisterMapCvar("r_hdr_adaptation", "50", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_fxaa = gEngfuncs.pfnRegisterVariable("r_fxaa", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+
+	r_under_water_effect = gEngfuncs.pfnRegisterVariable("r_under_water_effect", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_under_water_effect_wave_amount = gEngfuncs.pfnRegisterVariable("r_under_water_effect_wave_amount", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_under_water_effect_wave_speed = gEngfuncs.pfnRegisterVariable("r_under_water_effect_wave_speed", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_under_water_effect_wave_size = gEngfuncs.pfnRegisterVariable("r_under_water_effect_wave_size", "0.01", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_ssao = gEngfuncs.pfnRegisterVariable("r_ssao", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_ssao_debug = gEngfuncs.pfnRegisterVariable("r_ssao_debug", "0",  FCVAR_CLIENTDLL);
@@ -617,14 +631,6 @@ void R_HDR(void)
 	GL_EndProfile(&Profile_DoHDR);
 }
 
-void R_BeginFXAA(int w, int h)
-{
-	GL_UseProgram(pp_fxaa.program);
-	glUniform1i(pp_fxaa.tex0, 0);
-	glUniform1f(pp_fxaa.rt_w, w);
-	glUniform1f(pp_fxaa.rt_h, h);
-}
-
 bool R_IsFXAAEnabled(void)
 {
 	if (!r_fxaa->value)
@@ -642,10 +648,8 @@ bool R_IsFXAAEnabled(void)
 	return true;
 }
 
-void R_DoFXAA(void)
+void R_FXAA(void)
 {
-	GL_BeginProfile(&Profile_DoFXAA);
-
 	GL_PushDrawState();
 	GL_PushMatrix();
 
@@ -653,7 +657,10 @@ void R_DoFXAA(void)
 
 	GL_BindFrameBuffer(&s_BackBufferFBO);
 
-	R_BeginFXAA(glwidth, glheight);
+	GL_UseProgram(pp_fxaa.program);
+	glUniform1i(pp_fxaa.tex0, 0);
+	glUniform1f(pp_fxaa.rt_w, glwidth);
+	glUniform1f(pp_fxaa.rt_h, glheight);
 
 	GL_Begin2D();
 	GL_DisableMultitexture();
@@ -666,8 +673,59 @@ void R_DoFXAA(void)
 
 	GL_PopMatrix();
 	GL_PopDrawState();
+}
 
-	GL_EndProfile(&Profile_DoFXAA);
+bool R_IsUnderWaterEffectEnabled(void)
+{
+	if (!r_under_water_effect->value)
+		return false;
+
+	if ((*r_refdef.onlyClientDraws))
+		return false;
+
+	if (R_IsRenderingPortal())
+		return false;
+
+	if (CL_IsDevOverviewMode())
+		return false;
+
+	if ((*cl_waterlevel) > 2 && !(*r_refdef.onlyClientDraws))
+	{
+
+	}
+	else
+	{
+		return false;
+	}
+
+	return true;
+}
+
+void R_UnderWaterEffect(void)
+{
+	GL_PushDrawState();
+	GL_PushMatrix();
+
+	GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
+
+	GL_BindFrameBuffer(&s_BackBufferFBO);
+
+	GL_UseProgram(under_water_effect.program);
+	glUniform1f(0, r_under_water_effect_wave_amount->value);
+	glUniform1f(1, r_under_water_effect_wave_speed->value);
+	glUniform1f(2, r_under_water_effect_wave_size->value);
+
+	GL_Begin2D();
+	GL_DisableMultitexture();
+	glEnable(GL_TEXTURE_2D);
+	glDisable(GL_BLEND);
+
+	R_DrawHUDQuad_Texture(s_BackBufferFBO2.s_hBackBufferTex, glwidth, glheight);
+
+	GL_UseProgram(0);
+
+	GL_PopMatrix();
+	GL_PopDrawState();
 }
 
 void R_GammaCorrection(void)

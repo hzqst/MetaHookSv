@@ -1730,12 +1730,8 @@ void R_PostRenderView()
 		if (r_draw_gammablend)
 		{
 			R_GammaUncorrection();
-			R_HDR();
 		}
-		else
-		{
-			R_HDR();
-		}
+		R_HDR();
 	}
 	else
 	{
@@ -1747,9 +1743,14 @@ void R_PostRenderView()
 
 	r_draw_gammablend = false;
 
+	if (R_IsUnderWaterEffectEnabled())
+	{
+		R_UnderWaterEffect();
+	}
+
 	if (R_IsFXAAEnabled())
 	{
-		R_DoFXAA();
+		R_FXAA();
 	}
 
 	GL_DisableMultitexture();
@@ -3228,7 +3229,7 @@ void Mod_LoadStudioModel(model_t *mod, void *buffer)
 	gRefFuncs.Mod_LoadStudioModel(mod, buffer);
 
 	studiohdr_t *studiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(mod);
-	if (studiohdr)
+	if (studiohdr && studiohdr->numbodyparts > 0)
 	{
 		if (studiohdr->soundtable)
 		{
@@ -3239,6 +3240,8 @@ void Mod_LoadStudioModel(model_t *mod, void *buffer)
 		studio_vbo_t *VBOData = R_PrepareStudioVBO(studiohdr);
 
 		R_StudioLoadExternalFile(mod, studiohdr, VBOData);
+
+		R_StudioLoadTextures(mod, studiohdr);
 	}
 }
 

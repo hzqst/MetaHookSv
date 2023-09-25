@@ -1044,21 +1044,33 @@ studiohdr_t *__cdecl R_LoadTextures(model_t *a1)
 
 */
 
-studiohdr_t *R_LoadTextures(model_t *psubm)
+studiohdr_t* R_StudioGetTextures(model_t* psubm)
 {
 	if ((*pstudiohdr)->textureindex == 0)
 	{
 		if (psubm->texinfo)
 		{
-			auto texmodel = (model_t *)psubm->texinfo;
+			auto texmodel = (model_t*)psubm->texinfo;
 
-			auto ptexturehdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(texmodel);
+			auto ptexturehdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(texmodel);
 
 			//Fix: could be nullptr ?
-			if(ptexturehdr)
+			if (ptexturehdr)
 				return ptexturehdr;
 		}
+		else
+		{
+			return NULL;
+		}
+	}
 
+	return (*pstudiohdr);
+}
+
+void R_StudioLoadTextures(model_t *psubm, studiohdr_t* studiohdr)
+{
+	if (studiohdr->textureindex == 0)
+	{
 		//This is actually 260 instead of 256
 		char modelname[260];
 		strncpy(modelname, psubm->name, sizeof(modelname) - 2);
@@ -1067,15 +1079,11 @@ studiohdr_t *R_LoadTextures(model_t *psubm)
 		strcpy(&modelname[strlen(modelname) - 4], "T.mdl");
 
 		auto texmodel = IEngineStudio.Mod_ForName(modelname, true);
-		psubm->texinfo = (mtexinfo_t *)texmodel;
-		auto ptexturehdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(texmodel);
+		psubm->texinfo = (mtexinfo_t*)texmodel;
+		auto ptexturehdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(texmodel);
 		strncpy(ptexturehdr->name, modelname, sizeof(ptexturehdr->name) - 1);
 		ptexturehdr->name[sizeof(ptexturehdr->name) - 1] = 0;
-
-		return ptexturehdr;
 	}
-
-	return (*pstudiohdr);
 }
 
 void R_StudioDrawVBOBegin(studio_vbo_t *VBOData)
@@ -1383,7 +1391,15 @@ void R_StudioDrawVBOMesh_DrawPass(
 		}
 		else
 		{
-			gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
+			//No texture was found
+			if (ptexturehdr && pskinref)
+			{
+				gRefFuncs.R_StudioSetupSkin(ptexturehdr, pskinref[pmesh->skinref]);
+			}
+			else
+			{
+				gEngfuncs.pTriAPI->SpriteTexture(cl_sprite_white, 0);
+			}
 		}
 
 		s = 1.0f / (float)ptexture[pskinref[pmesh->skinref]].width;
@@ -1615,7 +1631,7 @@ void R_StudioDrawVBO(studio_vbo_t* VBOData)
 
 	auto VBOSubmodel = VBOData->vSubmodel[(*psubmodel)->groupindex - 1];
 
-	auto ptexturehdr = R_LoadTextures(*r_model);
+	auto ptexturehdr = R_StudioGetTextures(*r_model);
 
 	mstudiotexture_t* ptexture = NULL;
 
