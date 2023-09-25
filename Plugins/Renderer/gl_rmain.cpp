@@ -175,7 +175,6 @@ FBO_Container_t s_ToneMapFBO = { 0 };
 FBO_Container_t s_DepthLinearFBO = { 0 };
 FBO_Container_t s_HBAOCalcFBO = { 0 };
 FBO_Container_t s_ShadowFBO = { 0 };
-FBO_Container_t s_WaterFBO = { 0 };
 
 FBO_Container_t *g_CurrentFBO = NULL;
 
@@ -1110,8 +1109,8 @@ void R_SetRenderMode(cl_entity_t *pEntity)
 		glDisable(GL_BLEND);
 
 		//TODO:Do this in shader please
-		glEnable(GL_ALPHA_TEST);
-		glAlphaFunc(GL_GREATER, gl_alphamin->value);
+		//glEnable(GL_ALPHA_TEST);
+		//glAlphaFunc(GL_GREATER, gl_alphamin->value);
 		
 		break;
 	}
@@ -1289,7 +1288,6 @@ void GL_GenerateFrameBuffers(void)
 	GL_FreeFBO(&s_ToneMapFBO);
 	GL_FreeFBO(&s_DepthLinearFBO);
 	GL_FreeFBO(&s_HBAOCalcFBO);
-	GL_FreeFBO(&s_WaterFBO);
 	GL_FreeFBO(&s_ShadowFBO);
 
 	glEnable(GL_TEXTURE_2D);
@@ -1366,7 +1364,6 @@ void GL_GenerateFrameBuffers(void)
 
 	//Framebuffers that bind no texture
 	GL_GenFrameBuffer(&s_ShadowFBO);
-	GL_GenFrameBuffer(&s_WaterFBO);
 
 	//DownSample FBO 1->1/4->1/16
 	int downW, downH;
@@ -1591,7 +1588,6 @@ void GL_Shutdown(void)
 	GL_FreeFBO(&s_DepthLinearFBO);
 	GL_FreeFBO(&s_HBAOCalcFBO);
 	GL_FreeFBO(&s_ShadowFBO);
-	GL_FreeFBO(&s_WaterFBO);
 }
 
 void GL_ClearFinalBuffer()
@@ -1720,7 +1716,8 @@ void R_PreRenderView()
 
 	R_RenderWaterPass();
 
-	GL_BindFrameBufferWithTextures(&s_BackBufferFBO, s_BackBufferFBO.s_hBackBufferTex, 0, s_BackBufferFBO.s_hBackBufferDepthTex, 0, 0);
+	//Restore BackBufferFBO states
+	GL_BindFrameBufferWithTextures(&s_BackBufferFBO, s_BackBufferFBO.s_hBackBufferTex, 0, s_BackBufferFBO.s_hBackBufferDepthTex, glwidth, glheight);
 }
 
 void R_PostRenderView()
@@ -3063,7 +3060,7 @@ void R_EndRenderOpaque(void)
 		GL_EndFullScreenQuad();
 	}
 
-	if (r_gamma_blend->value)
+	if (R_IsGammaBlendEnabled())
 	{
 		R_GammaCorrection();
 

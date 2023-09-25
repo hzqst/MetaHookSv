@@ -24,10 +24,12 @@ in vec3 v_normal;
 in vec2 v_diffusetexcoord;
 
 layout(location = 0) out vec4 out_Diffuse;
+
+#if defined(GBUFFER_ENABLED)
 layout(location = 1) out vec4 out_Lightmap;
 layout(location = 2) out vec4 out_WorldNorm;
 layout(location = 3) out vec4 out_Specular;
-layout(location = 4) out vec4 out_Additive;
+#endif
 
 vec3 GenerateWorldPositionFromDepth(vec2 texCoord)
 {
@@ -56,9 +58,9 @@ void main()
 
 	vWaterColor = ProcessOtherColor(vWaterColor);
 
-#ifdef LEGACY_ENABLED
+#if defined(LEGACY_ENABLED)
 
-	#ifdef BINDLESS_ENABLED
+	#if defined(BINDLESS_ENABLED)
 		sampler2D baseTex = sampler2D(TextureSSBO[TEXTURE_SSBO_WATER_BASE]);
 	#endif
 
@@ -70,7 +72,7 @@ void main()
 
 #else
 
-	#ifdef BINDLESS_ENABLED
+	#if defined(BINDLESS_ENABLED)
 		sampler2D normalTex = sampler2D(TextureSSBO[TEXTURE_SSBO_WATER_NORMAL]);
 	#endif
 
@@ -103,9 +105,9 @@ void main()
 
 	vec2 vOffsetTexCoord = normalize(vNormal).xy * flOffsetFactor;
 
-	#ifdef REFRACT_ENABLED
+	#if defined(REFRACT_ENABLED)
 
-		#ifdef BINDLESS_ENABLED
+		#if defined(BINDLESS_ENABLED)
 			sampler2D refractTex = sampler2D(TextureSSBO[TEXTURE_SSBO_WATER_REFRACT]);
 		#endif
 
@@ -121,7 +123,7 @@ void main()
 
 	#endif
 
-	#ifdef UNDERWATER_ENABLED
+	#if defined(UNDERWATER_ENABLED)
 
 		vFinalColor = vRefractColor;
 
@@ -129,7 +131,7 @@ void main()
 
 		vec3 worldScene = vec3(0.0);
 
-		#ifdef DEPTH_ENABLED
+		#if defined(DEPTH_ENABLED)
 
 			worldScene = GenerateWorldPositionFromDepth(vBaseTexCoord);
 
@@ -170,7 +172,7 @@ void main()
 
 #endif
 
-#ifdef GBUFFER_ENABLED
+#if defined(GBUFFER_ENABLED)
 
 	vec2 vOctNormal = UnitVectorToOctahedron(vNormal);
 
@@ -180,17 +182,12 @@ void main()
 	out_Lightmap = vec4(1.0, 1.0, 1.0, 1.0);
 	out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, 0.0);
 	out_Specular = vec4(0.0);
-	out_Additive = vec4(0.0);
 
 #else
 
 	vec4 color = CalcFog(vFinalColor);
 
-	#if defined(OIT_ALPHA_BLEND_ENABLED) || defined(OIT_ADDITIVE_BLEND_ENABLED) 
-
-		GatherFragment(color);
-
-	#endif
+	GatherFragment(color);
 
 	out_Diffuse = color;
 

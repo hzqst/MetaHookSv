@@ -354,6 +354,14 @@ void GL_BlitFrameBufferToFrameBufferColorDepth(FBO_Container_t *src, FBO_Contain
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 }
 
+void GL_BlitFrameBufferToFrameBufferColorDepthStencil(FBO_Container_t* src, FBO_Container_t* dst)
+{
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
+
+	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+}
+
 void GL_BlitFrameBufferToFrameBufferDepthOnly(FBO_Container_t* src, FBO_Container_t* dst)
 {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
@@ -726,6 +734,30 @@ void R_UnderWaterEffect(void)
 
 	GL_PopMatrix();
 	GL_PopDrawState();
+}
+
+bool R_IsGammaBlendEnabled()
+{
+	if (r_gamma_blend->value > 0)
+	{
+		if (r_draw_shadowcaster)
+			return false;
+
+		if (r_draw_reflectview)
+			return false;
+
+		if ((*r_refdef.onlyClientDraws))
+			return false;
+
+		if (R_IsRenderingPortal())
+			return false;
+
+		if (CL_IsDevOverviewMode())
+			return false;
+
+		return true;
+	}
+	return false;
 }
 
 void R_GammaCorrection(void)

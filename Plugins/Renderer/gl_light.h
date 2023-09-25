@@ -91,7 +91,7 @@ void R_SaveDLightProgramStates(void);
 void R_SaveDFinalProgramStates(void);
 void R_LoadDLightProgramStates(void);
 void R_LoadDFinalProgramStates(void);
-void R_BlitGBufferToFrameBufferColorDepth(FBO_Container_t* fbo);
+void R_BlitGBufferToFrameBuffer(FBO_Container_t* fbo, bool color, bool depth, bool stencil);
 
 #define GBUFFER_INDEX_DIFFUSE		0
 #define GBUFFER_INDEX_LIGHTMAP		1

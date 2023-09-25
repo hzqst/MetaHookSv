@@ -357,7 +357,6 @@ void R_RenderShadowScene(void)
 		glDepthFunc(GL_GEQUAL);
 
 		glDepthMask(GL_TRUE);
-		//glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 		for (int i = 0; i < 3; ++i)
 		{
@@ -500,13 +499,13 @@ void R_RenderShadowDynamicLights(void)
 						//This stops local player from being rendered
 						gEngfuncs.GetLocalPlayer()->model = NULL;
 
-						//R_RenderScene();
+						R_RenderScene();
 
 						gEngfuncs.GetLocalPlayer()->model = save_localplayer_model;
 					}
 					else
 					{
-						//R_RenderScene();
+						R_RenderScene();
 					}
 
 					const float bias[16] = {

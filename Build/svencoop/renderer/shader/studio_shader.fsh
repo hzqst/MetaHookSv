@@ -35,9 +35,12 @@ in vec2 v_texcoord;
 in vec4 v_projpos;
 
 layout(location = 0) out vec4 out_Diffuse;
+
+#if defined(GBUFFER_ENABLED)
 layout(location = 1) out vec4 out_Lightmap;
 layout(location = 2) out vec4 out_WorldNorm;
 layout(location = 3) out vec4 out_Specular;
+#endif
 
 //The output is in Linear Space
 vec3 R_StudioLightingLinear(vec3 vWorldPos, vec3 vNormal)

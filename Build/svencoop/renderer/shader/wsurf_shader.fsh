@@ -89,7 +89,7 @@ vec4 R_AddLegacyDynamicLight(vec4 color)
 
 #endif
 
-#ifdef GBUFFER_ENABLED
+#if defined(GBUFFER_ENABLED)
 
 	#if defined(DECAL_ENABLED)
 

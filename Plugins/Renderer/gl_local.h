@@ -211,7 +211,6 @@ extern FBO_Container_t s_ToneMapFBO;
 extern FBO_Container_t s_DepthLinearFBO;
 extern FBO_Container_t s_HBAOCalcFBO;
 extern FBO_Container_t s_ShadowFBO;
-extern FBO_Container_t s_WaterFBO;
 
 extern FBO_Container_t *g_CurrentFBO;
 

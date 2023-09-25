@@ -22,17 +22,12 @@ in vec4 v_color;
 in vec2 v_texcoord;
 in vec4 v_projpos;
 
-#if defined(GBUFFER_ENABLED)
-
 layout(location = 0) out vec4 out_Diffuse;
+
+#if defined(GBUFFER_ENABLED)
 layout(location = 1) out vec4 out_Lightmap;
 layout(location = 2) out vec4 out_WorldNorm;
 layout(location = 3) out vec4 out_Specular;
-
-#else
-
-layout(location = 0) out vec4 out_Diffuse;
-
 #endif
 
 void main(void)

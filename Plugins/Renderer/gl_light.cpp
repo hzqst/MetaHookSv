@@ -1081,59 +1081,73 @@ void R_EndRenderGBuffer(void)
 	gbuffer_mask = -1;
 }
 
-void R_BlitGBufferToFrameBufferColorDepth(FBO_Container_t *fbo)
+void R_BlitGBufferToFrameBuffer(FBO_Container_t *fbo, bool color, bool depth, bool stencil)
 {
-	//Write GBuffer depth buffer into main framebuffer
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->s_hBackBufferFBO);
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
-	glBlitFramebuffer(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight, 0, 0, fbo->iWidth, fbo->iHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+	if (depth && stencil)
+	{
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->s_hBackBufferFBO);
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
+		glBlitFramebuffer(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight, 0, 0, fbo->iWidth, fbo->iHeight, GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+	}
+	else if (depth && !stencil)
+	{
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->s_hBackBufferFBO);
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
+		glBlitFramebuffer(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight, 0, 0, fbo->iWidth, fbo->iHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+	}
+	else if (!depth && stencil)
+	{
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->s_hBackBufferFBO);
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
+		glBlitFramebuffer(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight, 0, 0, fbo->iWidth, fbo->iHeight, GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+	}
 
 	//Shading pass
 	GL_BindFrameBuffer(fbo);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-	GL_BeginFullScreenQuad(false);
+	if (color)
+	{
+		GL_BeginFullScreenQuad(false);
 
-	//No blend for final shading pass
-	glDisable(GL_BLEND);
+		//No blend for final shading pass
+		glDisable(GL_BLEND);
 
-	program_state_t FinalProgramState = 0;
+		program_state_t FinalProgramState = 0;
 
-	//Setup final program
-	R_UseDFinalProgram(FinalProgramState, NULL);
+		//Setup final program
+		R_UseDFinalProgram(FinalProgramState, NULL);
 
-	//Texture unit 0 = (GBuffer texture array), Texture unit 1 = (depth), Texture unit 2 = (linearized depth)
-	glActiveTexture(GL_TEXTURE0);
-	glDisable(GL_TEXTURE_2D);
-	glEnable(GL_TEXTURE_2D_ARRAY);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, s_GBufferFBO.s_hBackBufferTex);
+		//Texture unit 0 = (GBuffer texture array), Texture unit 1 = (depth), Texture unit 2 = (linearized depth)
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, s_GBufferFBO.s_hBackBufferTex);
 
-	glActiveTexture(GL_TEXTURE1);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, s_GBufferFBO.s_hBackBufferDepthTex);
 
-	glActiveTexture(GL_TEXTURE2);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, s_DepthLinearFBO.s_hBackBufferTex);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, s_DepthLinearFBO.s_hBackBufferTex);
 
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	//Disable texture unit 2 (linearized depth)
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glDisable(GL_TEXTURE_2D);
+		//Disable texture unit 2 (linearized depth)
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glDisable(GL_TEXTURE_2D);
 
-	//Disable texture unit 1 (depth)
-	glActiveTexture(GL_TEXTURE1);
-	GL_DisableMultitexture();
+		//Disable texture unit 1 (depth)
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		GL_DisableMultitexture();
 
-	//Disable texture unit 0 (GBuffer texture array)
-	glActiveTexture(GL_TEXTURE0);
-	glDisable(GL_TEXTURE_2D_ARRAY);
-	glEnable(GL_TEXTURE_2D);
-	*currenttexture = -1;
+		//Disable texture unit 0 (GBuffer texture array)
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+		glEnable(GL_TEXTURE_2D);
+		(*currenttexture) = -1;
 
-	GL_UseProgram(0);
+		GL_UseProgram(0);
 
-	GL_EndFullScreenQuad();
+		GL_EndFullScreenQuad();
+	}
 }
