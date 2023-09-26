@@ -42,7 +42,7 @@ in vec2 v_speculartexcoord;
 in vec4 v_shadowcoord[3];
 in vec4 v_projpos;
 
-#ifdef BINDLESS_ENABLED
+#if defined(BINDLESS_ENABLED)
 
 	#if defined(SKYBOX_ENABLED)
 		flat in int v_drawid;
@@ -114,7 +114,7 @@ vec4 R_AddLegacyDynamicLight(vec4 color)
 
 #endif
 
-#ifdef BINDLESS_ENABLED
+#if defined(BINDLESS_ENABLED)
 
 	sampler_handle_t GetCurrentTextureHandle(int type)
 	{
@@ -135,11 +135,11 @@ vec4 R_AddLegacyDynamicLight(vec4 color)
 
 #endif
 
-#ifdef NORMALTEXTURE_ENABLED
+#if defined(NORMALTEXTURE_ENABLED)
 
 vec3 NormalMapping(vec3 T, vec3 B, vec3 N, vec2 baseTexcoord)
 {
-#ifdef BINDLESS_ENABLED
+#if defined(BINDLESS_ENABLED)
 	sampler2D normalTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_NORMAL));
 #endif
 
@@ -160,11 +160,11 @@ vec3 NormalMapping(vec3 T, vec3 B, vec3 N, vec2 baseTexcoord)
 
 #endif
 
-#ifdef PARALLAXTEXTURE_ENABLED
+#if defined(PARALLAXTEXTURE_ENABLED)
 
 vec2 ParallaxMapping(vec3 T, vec3 B, vec3 N, vec3 viewDirWorld, vec2 baseTexcoord)
 {
-#ifdef BINDLESS_ENABLED
+#if defined(BINDLESS_ENABLED)
 	sampler2D parallaxTex = sampler2D(GetCurrentTextureHandle(TEXTURE_SSBO_PARALLAX));
 #endif
 
@@ -375,6 +375,13 @@ void main()
 	#else
 
 		vec4 diffuseColor = texture(diffuseTex, baseTexcoord);
+
+	#endif
+
+	#if defined(ALPHA_SOLID_ENABLED)
+		
+		if(diffuseColor.a <= SceneUBO.alphamin)
+			discard;
 
 	#endif
 

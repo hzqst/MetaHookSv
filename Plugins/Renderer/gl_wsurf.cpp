@@ -111,6 +111,7 @@ const program_state_mapping_t s_WSurfProgramStateName[] = {
 { WSURF_LIGHTMAP_INDEX_2_ENABLED	,"WSURF_LIGHTMAP_INDEX_2_ENABLED"},
 { WSURF_LIGHTMAP_INDEX_3_ENABLED	,"WSURF_LIGHTMAP_INDEX_3_ENABLED"},
 { WSURF_LEGACY_DLIGHT_ENABLED		,"WSURF_LEGACY_DLIGHT_ENABLED"},
+{ WSURF_ALPHA_SOLID_ENABLED			,"WSURF_ALPHA_SOLID_ENABLED"},
 };
 
 void R_SaveWSurfProgramStates(void)
@@ -204,38 +205,41 @@ void R_UseWSurfProgram(program_state_t state, wsurf_program_t *progOutput)
 		if (state & WSURF_CLIP_WATER_ENABLED)
 			defs << "#define CLIP_WATER_ENABLED\n";
 
-		if ((state & WSURF_ALPHA_BLEND_ENABLED))
+		if (state & WSURF_ALPHA_BLEND_ENABLED)
 			defs << "#define ALPHA_BLEND_ENABLED\n";
 
-		if ((state & WSURF_ADDITIVE_BLEND_ENABLED))
+		if (state & WSURF_ADDITIVE_BLEND_ENABLED)
 			defs << "#define ADDITIVE_BLEND_ENABLED\n";
 
 		if ((state & WSURF_OIT_BLEND_ENABLED) && bUseOITBlend)
 			defs << "#define OIT_BLEND_ENABLED\n";
 
-		if ((state & WSURF_GAMMA_BLEND_ENABLED))
+		if (state & WSURF_GAMMA_BLEND_ENABLED)
 			defs << "#define GAMMA_BLEND_ENABLED\n";
 
-		if ((state & WSURF_FULLBRIGHT_ENABLED))
+		if (state & WSURF_FULLBRIGHT_ENABLED)
 			defs << "#define FULLBRIGHT_ENABLED\n";
 
-		if ((state & WSURF_COLOR_FILTER_ENABLED))
+		if (state & WSURF_COLOR_FILTER_ENABLED)
 			defs << "#define COLOR_FILTER_ENABLED\n";
 
-		if ((state & WSURF_LIGHTMAP_INDEX_0_ENABLED))
+		if (state & WSURF_LIGHTMAP_INDEX_0_ENABLED)
 			defs << "#define LIGHTMAP_INDEX_0_ENABLED\n";
 
-		if ((state & WSURF_LIGHTMAP_INDEX_1_ENABLED))
+		if (state & WSURF_LIGHTMAP_INDEX_1_ENABLED)
 			defs << "#define LIGHTMAP_INDEX_1_ENABLED\n";
 
-		if ((state & WSURF_LIGHTMAP_INDEX_2_ENABLED))
+		if (state & WSURF_LIGHTMAP_INDEX_2_ENABLED)
 			defs << "#define LIGHTMAP_INDEX_2_ENABLED\n";
 
-		if ((state & WSURF_LIGHTMAP_INDEX_3_ENABLED))
+		if (state & WSURF_LIGHTMAP_INDEX_3_ENABLED)
 			defs << "#define LIGHTMAP_INDEX_3_ENABLED\n";
 
-		if ((state & WSURF_LEGACY_DLIGHT_ENABLED))
+		if (state & WSURF_LEGACY_DLIGHT_ENABLED)
 			defs << "#define LEGACY_DLIGHT_ENABLED\n";
+
+		if (state & WSURF_ALPHA_SOLID_ENABLED)
+			defs << "#define ALPHA_SOLID_ENABLED\n";
 
 		if (glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define NV_BINDLESS_ENABLED\n";
@@ -1792,7 +1796,11 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t * vboleaf, bool bUseZPrePass)
 				WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
 			else
 				WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
+		}
 
+		if ((*currententity)->curstate.rendermode == kRenderTransAlpha)
+		{
+			WSurfProgramState |= WSURF_ALPHA_SOLID_ENABLED;
 		}
 
 		if (r_draw_gammablend)
@@ -1967,6 +1975,11 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t * vboleaf, bool bUseZPrePass)
 					WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
 				else
 					WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
+			}
+
+			if ((*currententity)->curstate.rendermode == kRenderTransAlpha)
+			{
+				WSurfProgramState |= WSURF_ALPHA_SOLID_ENABLED;
 			}
 
 			if (r_draw_gammablend)
@@ -2170,6 +2183,11 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_leaf_t *vboleaf, bool bUseZPrePass)
 				WSurfProgramState |= WSURF_ADDITIVE_BLEND_ENABLED;
 			else
 				WSurfProgramState |= WSURF_ALPHA_BLEND_ENABLED;
+		}
+
+		if ((*currententity)->curstate.rendermode == kRenderTransAlpha)
+		{
+			WSurfProgramState |= WSURF_ALPHA_SOLID_ENABLED;
 		}
 
 		if (r_draw_gammablend)
@@ -4058,7 +4076,7 @@ void R_SetupSceneUBO(void)
 	SceneUBO.v_texgamma = v_texgamma->value;
 	SceneUBO.z_near = r_znear;
 	SceneUBO.z_far = r_zfar;
-	SceneUBO.r_alpha_shift = r_alpha_shift->value;
+	SceneUBO.alphamin = gl_alphamin->value;
 	SceneUBO.r_additive_shift = r_additive_shift->value;
 
 	if (gl_overbright->value)

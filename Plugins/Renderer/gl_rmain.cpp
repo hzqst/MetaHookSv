@@ -1108,10 +1108,6 @@ void R_SetRenderMode(cl_entity_t *pEntity)
 
 		glDisable(GL_BLEND);
 
-		//TODO:Do this in shader please
-		//glEnable(GL_ALPHA_TEST);
-		//glAlphaFunc(GL_GREATER, gl_alphamin->value);
-		
 		break;
 	}
 

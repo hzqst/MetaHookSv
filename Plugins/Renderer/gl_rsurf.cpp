@@ -1089,9 +1089,6 @@ void R_DrawDecals(cl_entity_t *ent)
 		}
 	}
 
-	//TODO really?
-	//glEnable(GL_ALPHA_TEST);
-	//glAlphaFunc(GL_NOTEQUAL, 0);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(0);
@@ -1289,7 +1286,6 @@ void R_DrawDecals(cl_entity_t *ent)
 		glDisable(GL_POLYGON_OFFSET_FILL);
 	}
 
-	//glDisable(GL_ALPHA_TEST);
 	glDisable(GL_BLEND);
 	glDepthMask(GL_TRUE);
 

@@ -468,7 +468,7 @@ void R_RenderShadowDynamicLights(void)
 
 					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, shadowtex->depth, shadowtex->size, shadowtex->size);
 					glDrawBuffer(GL_NONE);
-#if 1
+
 					glDisable(GL_BLEND);
 					glDisable(GL_ALPHA_TEST);
 					glEnable(GL_DEPTH_TEST);
@@ -532,7 +532,7 @@ void R_RenderShadowDynamicLights(void)
 					R_PopRefDef();
 
 					shadowtex->ready = true;
-#endif
+
 					r_draw_shadowcaster = false;
 
 				}

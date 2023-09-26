@@ -144,7 +144,7 @@ struct scene_ubo_t{
 	float v_texgamma;
 	float z_near;
 	float z_far;
-	float r_alpha_shift;
+	float alphamin;
 	float r_additive_shift;
 	float r_lightscale;
 	vec4 r_filtercolor;

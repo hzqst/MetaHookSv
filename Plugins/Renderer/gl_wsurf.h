@@ -242,7 +242,7 @@ typedef struct scene_ubo_s
 	float v_texgamma;
 	float z_near;
 	float z_far;
-	float r_alpha_shift;
+	float alphamin;
 	float r_additive_shift;
 	float r_lightscale;
 	vec4 r_filtercolor;
@@ -508,3 +508,4 @@ void R_DrawWaters(wsurf_vbo_leaf_t *vboleaf, cl_entity_t *ent);
 #define WSURF_LIGHTMAP_INDEX_2_ENABLED		0x40000000ull
 #define WSURF_LIGHTMAP_INDEX_3_ENABLED		0x80000000ull
 #define WSURF_LEGACY_DLIGHT_ENABLED			0x100000000ull
+#define WSURF_ALPHA_SOLID_ENABLED			0x200000000ull
