@@ -969,6 +969,8 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 				R_DrawWaterVBOEnd();
 
 				GL_BindFrameBufferWithTextures(&s_BackBufferFBO2, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
+				
+				//The output is in linear space
 				R_BlitGBufferToFrameBuffer(&s_BackBufferFBO2, true, true, true);
 
 				//Restore BackBufferFBO2
@@ -983,8 +985,20 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 				R_DrawWaterVBOEnd();
 
 				GL_BindFrameBufferWithTextures(&s_BackBufferFBO2, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
-				GL_BlitFrameBufferToFrameBufferColorDepthStencil(&s_BackBufferFBO, &s_BackBufferFBO2);
 				
+				if (r_draw_gammablend)
+				{
+					//s_BackBufferFBO is in gamma space
+					GL_BlitFrameBufferToFrameBufferDepthStencil(&s_BackBufferFBO, &s_BackBufferFBO2);
+					//Convert back to linear space
+					R_GammaUncorrectionEx(&s_BackBufferFBO, &s_BackBufferFBO2);
+				}
+				else
+				{
+					//s_BackBufferFBO is in linear space
+					GL_BlitFrameBufferToFrameBufferColorDepthStencil(&s_BackBufferFBO, &s_BackBufferFBO2);
+				}
+
 				//Restore BackBufferFBO2 states
 				GL_BindFrameBufferWithTextures(&s_BackBufferFBO2, s_BackBufferFBO2.s_hBackBufferTex, 0, s_BackBufferFBO2.s_hBackBufferDepthTex, glwidth, glheight);
 				//Restore Previous FrameBuffer

@@ -168,6 +168,7 @@ void R_AmbientOcclusion(void);
 bool R_IsGammaBlendEnabled();
 void R_GammaCorrection(void);
 void R_GammaUncorrection(void);
+void R_GammaUncorrectionEx(FBO_Container_t* src, FBO_Container_t* dst);
 bool R_IsAmbientOcclusionEnabled(void);
 void R_HDR(void);
 bool R_IsHDREnabled(void);
@@ -180,6 +181,7 @@ void GL_BlitFrameBufferToFrameBufferColorOnly(FBO_Container_t *src, FBO_Containe
 void GL_BlitFrameBufferToFrameBufferColorDepth(FBO_Container_t *src, FBO_Container_t *dst);
 void GL_BlitFrameBufferToFrameBufferColorDepthStencil(FBO_Container_t* src, FBO_Container_t* dst);
 void GL_BlitFrameBufferToFrameBufferStencilOnly(FBO_Container_t* src, FBO_Container_t* dst);
+void GL_BlitFrameBufferToFrameBufferDepthStencil(FBO_Container_t* src, FBO_Container_t* dst);
 void R_DrawHUDQuad(int w, int h);
 void R_DrawHUDQuad_Texture(int tex, int w, int h);
 void R_ShutdownPostProcess(void);

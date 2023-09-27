@@ -378,6 +378,14 @@ void GL_BlitFrameBufferToFrameBufferStencilOnly(FBO_Container_t* src, FBO_Contai
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 }
 
+void GL_BlitFrameBufferToFrameBufferDepthStencil(FBO_Container_t* src, FBO_Container_t* dst)
+{
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
+
+	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+}
+
 void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
@@ -772,8 +780,6 @@ void R_GammaCorrection(void)
 
 	GL_UseProgram(gamma_correction.program);
 
-	GL_Bind(s_BackBufferFBO2.s_hBackBufferTex);
-
 	//Could be non-fullscreen quad
 
 	GL_Begin2D();
@@ -800,16 +806,34 @@ void R_GammaUncorrection(void)
 
 	GL_UseProgram(gamma_uncorrection.program);
 
-	GL_Bind(s_BackBufferFBO2.s_hBackBufferTex);
+	//Could be non-fullscreen quad
+
+	GL_Begin2D();
+	GL_DisableMultitexture();
+	glDisable(GL_BLEND);
+
+	R_DrawHUDQuad_Texture(s_BackBufferFBO2.s_hBackBufferTex, r_refdef.vrect->width, r_refdef.vrect->height);
+
+	GL_UseProgram(0);
+
+	GL_EndFullScreenQuad();
+}
+
+void R_GammaUncorrectionEx(FBO_Container_t *src, FBO_Container_t* dst)
+{
+	GL_BindFrameBuffer(dst);
+
+	GL_BeginFullScreenQuad(false);
+
+	GL_UseProgram(gamma_uncorrection.program);
 
 	//Could be non-fullscreen quad
 
 	GL_Begin2D();
 	GL_DisableMultitexture();
-	glEnable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
 
-	R_DrawHUDQuad_Texture(s_BackBufferFBO2.s_hBackBufferTex, r_refdef.vrect->width, r_refdef.vrect->height);
+	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, dst->iWidth, dst->iHeight);
 
 	GL_UseProgram(0);
 

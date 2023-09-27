@@ -55,7 +55,7 @@ void main(void)
 	lightmapColor.b = clamp(lightmapColor.b, 0.0, 1.0);
 	lightmapColor.a = clamp(lightmapColor.a, 0.0, 1.0);
 
-	lightmapColor = ProcessOtherColor(lightmapColor);
+	lightmapColor = ProcessOtherGammaColor(lightmapColor);
 
 	vec3 vNormal = normalize(v_normal.xyz);
 
