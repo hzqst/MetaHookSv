@@ -50,7 +50,7 @@ void main(void)
 
 	vec4 lightmapColor = v_color;
 	
-	lightmapColor = ProcessOtherColor(lightmapColor);
+	lightmapColor = ProcessOtherGammaColor(lightmapColor);
 
 	lightmapColor.r = clamp(lightmapColor.r, 0.0, 1.0);
 	lightmapColor.g = clamp(lightmapColor.g, 0.0, 1.0);
