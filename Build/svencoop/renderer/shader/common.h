@@ -560,7 +560,7 @@ vec4 ProcessLightmapColor(vec4 lightmapColor)
 
 //Input: GammaSpace
 //Output: LinearSpace or GammaSpace depending on GAMMA_BLEND_ENABLED
-vec4 ProcessOtherColor(vec4 color)
+vec4 ProcessOtherGammaColor(vec4 color)
 {
 	#if defined(GAMMA_BLEND_ENABLED)
 
@@ -574,7 +574,7 @@ vec4 ProcessOtherColor(vec4 color)
 	return color;
 }
 
-vec3 ProcessOtherColor3(vec3 color)
+vec3 ProcessOtherGammaColor3(vec3 color)
 {
 	#if defined(GAMMA_BLEND_ENABLED)
 
@@ -583,6 +583,23 @@ vec3 ProcessOtherColor3(vec3 color)
 	#else
 
 		color = GammaToLinear3(color);
+
+	#endif
+
+	return color;
+}
+
+//Input: LinearSpace
+//Output: LinearSpace or GammaSpace depending on GAMMA_BLEND_ENABLED
+vec4 ProcessOtherLinearColor(vec4 color)
+{
+	#if defined(GAMMA_BLEND_ENABLED)
+
+		color = LinearToGamma(color);
+
+	#else
+
+		
 
 	#endif
 

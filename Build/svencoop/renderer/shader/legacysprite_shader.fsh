@@ -26,7 +26,7 @@ void main()
 	lightmapColor.b = clamp(lightmapColor.b, 0.0, 1.0);
 	lightmapColor.a = clamp(lightmapColor.a, 0.0, 1.0);
 	
-	lightmapColor = ProcessOtherColor(lightmapColor);
+	lightmapColor = ProcessOtherGammaColor(lightmapColor);
 
 	#if !defined(ADDITIVE_BLEND_ENABLED)
 		vec4 finalColor = CalcFog(baseColor * lightmapColor);

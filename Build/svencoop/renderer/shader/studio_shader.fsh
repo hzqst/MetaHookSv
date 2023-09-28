@@ -265,15 +265,15 @@ void main(void)
 
 	#if defined(ADDITIVE_RENDER_MODE_ENABLED)
 
-		vec4 lightmapColor = ProcessOtherColor(StudioUBO.r_color);
+		vec4 lightmapColor = ProcessOtherGammaColor(StudioUBO.r_color);
 		
 	#elif defined(GLOW_SHELL_ENABLED)
 
-		vec4 lightmapColor = ProcessOtherColor(StudioUBO.r_color);
+		vec4 lightmapColor = ProcessOtherGammaColor(StudioUBO.r_color);
 
 	#else
 
-		vec4 lightmapColor = ProcessOtherColor(StudioUBO.r_color);
+		vec4 lightmapColor = ProcessOtherGammaColor(StudioUBO.r_color);
 
 		vec3 lightColorLinear = R_StudioLightingLinear(vWorldPos, vNormal);
 
@@ -290,7 +290,7 @@ void main(void)
 	#endif
 
 	#if defined(OUTLINE_ENABLED)
-		lightmapColor.rgb *= ProcessOtherColor3(vec3(r_outline_dark));
+		lightmapColor.rgb *= ProcessOtherGammaColor3(vec3(r_outline_dark));
 	#endif
 
 #endif

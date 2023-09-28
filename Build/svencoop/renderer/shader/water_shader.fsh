@@ -56,7 +56,7 @@ void main()
 	float flWaterColorAlpha = clamp(u_watercolor.a, 0.0, 1.0);
 	vec4 vWaterColor = vec4(u_watercolor.xyz, 1.0);
 
-	vWaterColor = ProcessOtherColor(vWaterColor);
+	vWaterColor = ProcessOtherGammaColor(vWaterColor);
 
 #if defined(LEGACY_ENABLED)
 
@@ -114,6 +114,7 @@ void main()
 		vec2 vRefractTexCoord = vBaseTexCoord + vOffsetTexCoord;
 		vec4 vRefractColor = texture(refractTex, vRefractTexCoord);
 		vRefractColor.a = 1.0;
+		vRefractColor = ProcessOtherLinearColor(vRefractColor);
 
 		vRefractColor = mix(vRefractColor, vWaterColor, flWaterColorAlpha);
 
@@ -161,12 +162,16 @@ void main()
 		vec2 vReflectTexCoord = vBaseTexCoord2 + vOffsetTexCoord;
 		vec4 vReflectColor = texture(reflectTex, vReflectTexCoord);
 		vReflectColor.a = 1.0;
+		vReflectColor = ProcessOtherLinearColor(vReflectColor);
 
 		float flReflectFactor = clamp(pow(flFresnel, u_fresnelfactor.z), 0.0, u_fresnelfactor.w);
 
 		vFinalColor = vRefractColor + vReflectColor * flReflectFactor;
 
 		vFinalColor.a = flWaterBlendAlpha;
+
+		//The incoming vRefractColor and vReflectColor are always in linear space
+
 
 	#endif
 
