@@ -523,6 +523,11 @@ vec4 ProcessDiffuseColor(vec4 baseColor)
 
 		baseColor = TexGammaToGamma(baseColor);
 
+		//Clamp this up to 1.0 just in case overflow
+		baseColor.r = clamp(baseColor.r, 0.0, 1.0);
+		baseColor.g = clamp(baseColor.g, 0.0, 1.0);
+		baseColor.b = clamp(baseColor.b, 0.0, 1.0);
+
 	#else
 
 		baseColor = TexGammaToLinear(baseColor);
@@ -540,6 +545,10 @@ vec4 ProcessLightmapColor(vec4 lightmapColor)
 
 		lightmapColor = LightGammaToGamma(lightmapColor);
 
+		//Clamp this up to 1.0 just in case overflow
+		lightmapColor.r = clamp(lightmapColor.r, 0.0, 1.0);
+		lightmapColor.g = clamp(lightmapColor.g, 0.0, 1.0);
+		lightmapColor.b = clamp(lightmapColor.b, 0.0, 1.0);
 	#else
 
 		lightmapColor = LightGammaToLinear(lightmapColor);
@@ -555,7 +564,6 @@ vec4 ProcessOtherColor(vec4 color)
 {
 	#if defined(GAMMA_BLEND_ENABLED)
 
-		
 
 	#else
 
