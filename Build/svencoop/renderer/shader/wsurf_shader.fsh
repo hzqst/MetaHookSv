@@ -104,7 +104,6 @@ vec4 R_AddLegacyDynamicLight(vec4 color)
 		layout(location = 1) out vec4 out_Lightmap;
 		layout(location = 2) out vec4 out_WorldNorm;
 		layout(location = 3) out vec4 out_Specular;
-		layout(location = 4) out vec4 out_Additive;
 
 	#endif
 
@@ -522,7 +521,6 @@ void main()
 			out_Lightmap = lightmapColor;
 			out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, 0.0);
 			out_Specular = specularColor;
-			out_Additive = vec4(0.0);
 
 		#endif
 
