@@ -129,7 +129,10 @@ void CGameUI::RunFrame(void)
 
 void CGameUI::ConnectToServer(const char *game, int IP, int port)
 {
-	return g_pfnCGameUI_ConnectToServer(this, 0, game, IP, port);
+	if(gEngfuncs.GetMaxClients() > 1)
+		return g_pfnCGameUI_ConnectToServer(this, 0, game, IP, port);
+
+	return g_pfnCGameUI_ConnectToServer(this, 0, "valve", IP, port);
 }
 
 void CGameUI::DisconnectFromServer(void)
@@ -774,6 +777,7 @@ void GameUI_InstallHooks(void)
 	//g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  1, (void *)pVFTable[1], (void **)&g_pfnCGameUI_Initialize);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 2, (void *)pVFTable[2], (void **)&g_pfnCGameUI_Start);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 4, (void *)pVFTable[4], (void **)&g_pfnCGameUI_ActivateGameUI);
+	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 8, (void*)pVFTable[8], (void**)&g_pfnCGameUI_ConnectToServer);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 10, (void *)pVFTable[10], (void **)&g_pfnCGameUI_HideGameUI);
 
 	Install_InlineHook(COptionsSubVideo_ctor);
