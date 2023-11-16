@@ -372,53 +372,58 @@ void R_GetSpriteFrameInterpolant(cl_entity_t* ent, msprite_t* pSprite, mspritefr
 		frame = pSprite->numframes - 1;
 	}
 
+	
+
 	if (pSprite->frames[frame].type == SPR_SINGLE)
 	{
 		if (fDoInterp)
 		{
-			if (ent->latched.prevblending[0] >= pSprite->numframes || pSprite->frames[ent->latched.prevblending[0]].type != SPR_SINGLE)
+			if (ent->latched.prevseqblending[0] >= pSprite->numframes || pSprite->frames[ent->latched.prevseqblending[0]].type != SPR_SINGLE)
 			{
 				// this can be happens when rendering switched between single and angled frames
 				// or change model on replace delta-entity
-				ent->latched.prevblending[0] = ent->latched.prevblending[1] = frame;
+				ent->latched.prevseqblending[0] = ent->latched.prevseqblending[1] = frame;
 				ent->latched.sequencetime = (*cl_time);
 				lerpFrac = 1.0f;
 			}
 
 			if (ent->latched.sequencetime < (*cl_time))
 			{
-				if (frame != ent->latched.prevblending[1])
+				if (frame != ent->latched.prevseqblending[1])
 				{
-					ent->latched.prevblending[0] = ent->latched.prevblending[1];
-					ent->latched.prevblending[1] = frame;
+					ent->latched.prevseqblending[0] = ent->latched.prevseqblending[1];
+					ent->latched.prevseqblending[1] = frame;
 					ent->latched.sequencetime = (*cl_time);
 					lerpFrac = 0.0f;
 				}
-				else lerpFrac = ((*cl_time) - ent->latched.sequencetime) * 11.0f;
+				else
+				{
+					lerpFrac = ((*cl_time) - ent->latched.sequencetime) * 11.0f;
+				}
 			}
 			else
 			{
-				ent->latched.prevblending[0] = ent->latched.prevblending[1] = frame;
+				ent->latched.prevseqblending[0] = ent->latched.prevseqblending[1] = frame;
 				ent->latched.sequencetime = (*cl_time);
 				lerpFrac = 0.0f;
 			}
 		}
 		else
 		{
-			ent->latched.prevblending[0] = ent->latched.prevblending[1] = frame;
+			ent->latched.prevseqblending[0] = ent->latched.prevseqblending[1] = frame;
 			lerpFrac = 1.0f;
 		}
 
-		if (ent->latched.prevblending[0] >= pSprite->numframes)
+		if (ent->latched.prevseqblending[0] >= pSprite->numframes)
 		{
 			// reset interpolation on change model
-			ent->latched.prevblending[0] = ent->latched.prevblending[1] = frame;
+			ent->latched.prevseqblending[0] = ent->latched.prevseqblending[1] = frame;
 			ent->latched.sequencetime = (*cl_time);
 			lerpFrac = 0.0f;
 		}
 
 		// get the interpolated frames
-		if (oldframe) *oldframe = R_GetSpriteFrame(pSprite, ent->latched.prevblending[0]);
+		if (oldframe) *oldframe = R_GetSpriteFrame(pSprite, ent->latched.prevseqblending[0]);
 		if (curframe) *curframe = R_GetSpriteFrame(pSprite, frame);
 	}
 
@@ -534,8 +539,11 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 			u_color[1] = color.g / 255.0f;
 			u_color[2] = color.b / 255.0f;
 			u_color[3] = (*r_blend);
+			
 			break;
 		}
+
+
 
 		default:
 		{
