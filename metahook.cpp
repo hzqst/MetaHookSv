@@ -180,7 +180,10 @@ void MH_SysError(const char *fmt, ...)
 	msg[sizeof(msg) - 1] = 0;
 
 	if (gMetaSave.pEngineFuncs)
-		gMetaSave.pEngineFuncs->pfnClientCmd("escape\n");
+	{
+		if(gMetaSave.pEngineFuncs->pfnClientCmd)
+			gMetaSave.pEngineFuncs->pfnClientCmd("escape\n");
+	}
 
 	MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
 	NtTerminateProcess((HANDLE)(-1), 0);
@@ -919,31 +922,62 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 #define BUILD_NUMBER_SIG "\xE8\x2A\x2A\x2A\x2A\x50\x68\x2A\x2A\x2A\x2A\x6A\x30\x68"
 
 	auto buildnumber_call = MH_SearchPattern(textBase, textSize, BUILD_NUMBER_SIG, sizeof(BUILD_NUMBER_SIG) - 1);
+	
+	if (buildnumber_call)
+	{
+		g_pfnbuild_number = (decltype(g_pfnbuild_number))MH_GetNextCallAddr(buildnumber_call, 1);
+	}
 
-	if (!buildnumber_call)
+	if (!g_pfnbuild_number)
+	{
+#define EXE_BUILD_STRING_SIG "Exe build: "
+		auto ExeBuild_String = MH_SearchPattern((void*)g_dwEngineBase, g_dwEngineSize, EXE_BUILD_STRING_SIG, sizeof(EXE_BUILD_STRING_SIG) - 1);
+		if (ExeBuild_String)
+		{
+			char pattern[] = "\xE8\x2A\x2A\x2A\x2A\x50\x68\x2A\x2A\x2A\x2A\xE8";
+			*(DWORD*)(pattern + 7) = (DWORD)ExeBuild_String;
+			auto ExeBuild_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
+			if (ExeBuild_PushString)
+			{
+				g_pfnbuild_number = (decltype(g_pfnbuild_number))MH_GetNextCallAddr(ExeBuild_PushString, 1);
+			}
+		}
+
+	}
+
+	if (!g_pfnbuild_number)
 	{
 		MH_SysError("MH_LoadEngine: Failed to locate buildnumber");
 		return;
 	}
 
-	g_pfnbuild_number = (decltype(g_pfnbuild_number))((PUCHAR)buildnumber_call + *(int *)((PUCHAR)buildnumber_call + 1) + 5);
-	
-	char *pEngineName = *(char **)((PUCHAR)buildnumber_call + sizeof(BUILD_NUMBER_SIG) - 1);
-
-	if (g_iEngineType != ENGINE_GOLDSRC_BLOB)
+	if (buildnumber_call)
 	{
-		if (!strncmp(pEngineName, "Svengine", sizeof("Svengine") - 1))
+		char* pEngineName = *(char**)((PUCHAR)buildnumber_call + sizeof(BUILD_NUMBER_SIG) - 1);
+
+		if (g_iEngineType != ENGINE_GOLDSRC_BLOB)
 		{
-			g_iEngineType = ENGINE_SVENGINE;
+			if (!strncmp(pEngineName, "Svengine", sizeof("Svengine") - 1))
+			{
+				g_iEngineType = ENGINE_SVENGINE;
+			}
+			else if (!strncmp(pEngineName, "Half-Life", sizeof("Half-Life") - 1))
+			{
+				g_iEngineType = ENGINE_GOLDSRC;
+			}
+			else if (!strncmp(pEngineName, "version :  ", sizeof("version :  ") - 1))
+			{
+				g_iEngineType = ENGINE_GOLDSRC_HL25;
+			}
+			else
+			{
+				g_iEngineType = ENGINE_UNKNOWN;
+			}
 		}
-		else if (!strncmp(pEngineName, "Half-Life", sizeof("Half-Life") - 1))
-		{
-			g_iEngineType = ENGINE_GOLDSRC;
-		}
-		else
-		{
-			g_iEngineType = ENGINE_UNKNOWN;
-		}
+	}
+	else
+	{
+		g_iEngineType = ENGINE_UNKNOWN;
 	}
 
 	if (1)
@@ -1131,11 +1165,11 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 
 	if (1)
 	{
-#define FULLSCREEN_STRING_SIG "-fullscreen"
+#define FULLSCREEN_STRING_SIG "-gl\0"
 		auto FullScreen_String = MH_SearchPattern(g_dwEngineBase, g_dwEngineSize, FULLSCREEN_STRING_SIG, sizeof(FULLSCREEN_STRING_SIG) - 1);
 		if (FullScreen_String)
 		{
-			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x85\xC0";
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
 			*(DWORD *)(pattern + 1) = (DWORD)FullScreen_String;
 			auto FullScreen_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
 			if (FullScreen_PushString)
@@ -1938,30 +1972,52 @@ DWORD MH_ReadMemory(void *pAddress, void *pData, DWORD dwDataSize)
 	return dwDataSize;
 }
 
-typedef struct
+typedef struct videomode_s
 {
 	int width;
 	int height;
 	int bpp;
-}VideoMode_WindowSize;
+}videomode_t;
 
 class IVideoMode
 {
 public:
-	virtual const char *GetVideoMode();
-	virtual void unk1();
-	virtual void unk2();
-	virtual void unk3();
-	virtual VideoMode_WindowSize *GetWindowSize();
-	virtual void unk5();
-	virtual void unk6();
+	virtual const char *GetName();
+	virtual void Init();
+	virtual void Shutdown();
+	virtual bool AddMode(int width, int height, int bpp);
+	virtual videomode_t* GetCurrentMode();
+	virtual videomode_t* GetMode(int num);
+	virtual int GetModeCount();
 	virtual bool IsWindowedMode();
-	virtual bool unk7();
-	virtual void unk8();
-	virtual void unk9();
-	virtual void unk10();
-	virtual void unk11();
-	virtual void unk12();
+	virtual bool GetInitialized();
+	virtual void SetInitialized(bool init);
+	virtual void UpdateWindowPosition();
+	virtual void FlipScreen();
+	virtual void RestoreVideo();
+	virtual void ReleaseVideo();
+	virtual void dtor();
+	virtual int GetBitsPerPixel();
+};
+
+class IVideoMode_HL25
+{
+public:
+	virtual const char* GetName();
+	virtual void Init();
+	virtual void Shutdown();
+	virtual void unk();
+	virtual bool AddMode(int width, int height, int bpp);
+	virtual videomode_t* GetCurrentMode();
+	virtual videomode_t* GetMode(int num);
+	virtual int GetModeCount();
+	virtual bool IsWindowedMode();
+	virtual bool GetInitialized();
+	virtual void SetInitialized(bool init);
+	virtual void UpdateWindowPosition();
+	virtual void FlipScreen();
+	virtual void RestoreVideo();
+	virtual void ReleaseVideo();
 	virtual void dtor();
 	virtual int GetBitsPerPixel();
 };
@@ -1974,29 +2030,58 @@ DWORD MH_GetVideoMode(int *width, int *height, int *bpp, bool *windowed)
 
 	if (g_pVideoMode && *g_pVideoMode)
 	{
-		IVideoMode *pVideoMode = (IVideoMode *)(*g_pVideoMode);
+		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			IVideoMode_HL25* pVideoMode = (IVideoMode_HL25*)(*g_pVideoMode);
 
-		auto windowSize = pVideoMode->GetWindowSize();
+			auto mode = pVideoMode->GetCurrentMode();
 
-		if (width)
-			*width = windowSize->width;
+			if (width)
+				*width = mode->width;
 
-		if (height)
-			*height = windowSize->height;
+			if (height)
+				*height = mode->height;
 
-		if (bpp)
-			*bpp = pVideoMode->GetBitsPerPixel();
+			if (bpp)
+				*bpp = pVideoMode->GetBitsPerPixel();
 
-		if (windowed)
-			*windowed = pVideoMode->IsWindowedMode();
+			if (windowed)
+				*windowed = pVideoMode->IsWindowedMode();
 
-		if(!strcmp(pVideoMode->GetVideoMode(), "gl"))
-			return VIDEOMODE_OPENGL;
+			if (!strcmp(pVideoMode->GetName(), "gl"))
+				return VIDEOMODE_OPENGL;
 
-		if (!strcmp(pVideoMode->GetVideoMode(), "d3d"))
-			return VIDEOMODE_D3D;
+			if (!strcmp(pVideoMode->GetName(), "d3d"))
+				return VIDEOMODE_D3D;
 
-		return VIDEOMODE_SOFTWARE;
+			return VIDEOMODE_SOFTWARE;
+		}
+		else
+		{
+			IVideoMode* pVideoMode = (IVideoMode*)(*g_pVideoMode);
+
+			auto mode = pVideoMode->GetCurrentMode();
+
+			if (width)
+				*width = mode->width;
+
+			if (height)
+				*height = mode->height;
+
+			if (bpp)
+				*bpp = pVideoMode->GetBitsPerPixel();
+
+			if (windowed)
+				*windowed = pVideoMode->IsWindowedMode();
+
+			if (!strcmp(pVideoMode->GetName(), "gl"))
+				return VIDEOMODE_OPENGL;
+
+			if (!strcmp(pVideoMode->GetName(), "d3d"))
+				return VIDEOMODE_D3D;
+
+			return VIDEOMODE_SOFTWARE;
+		}
 	}
 
 	if (g_bSaveVideo)
@@ -2155,6 +2240,7 @@ const char *engineTypeNames[] = {
 	"GoldSrc_Blob",
 	"GoldSrc",
 	"SvEngine",
+	"GoldSrc_HL25",
 };
 
 const char *MH_GetEngineTypeName(void)

@@ -6,6 +6,20 @@
 extern IFileSystem_HL25* g_pFileSystem_HL25;
 extern IFileSystem *g_pFileSystem;
 
+#define FILESYSTEM_ANY_OPEN(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->Open(__VA_ARGS__) : g_pFileSystem->Open(__VA_ARGS__))
+#define FILESYSTEM_ANY_READ(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->Read(__VA_ARGS__) : g_pFileSystem->Read(__VA_ARGS__))
+#define FILESYSTEM_ANY_CLOSE(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->Close(__VA_ARGS__) : g_pFileSystem->Close(__VA_ARGS__))
+#define FILESYSTEM_ANY_SEEK(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->Seek(__VA_ARGS__) : g_pFileSystem->Seek(__VA_ARGS__))
+#define FILESYSTEM_ANY_TELL(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->Tell(__VA_ARGS__) : g_pFileSystem->Tell(__VA_ARGS__))
+#define FILESYSTEM_ANY_WRITE(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->Write(__VA_ARGS__) : g_pFileSystem->Write(__VA_ARGS__))
+#define FILESYSTEM_ANY_CREATEDIR(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->CreateDirHierarchy(__VA_ARGS__) : g_pFileSystem->CreateDirHierarchy(__VA_ARGS__))
+#define FILESYSTEM_ANY_EOF(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->EndOfFile(__VA_ARGS__) : g_pFileSystem->EndOfFile(__VA_ARGS__))
+#define FILESYSTEM_ANY_PARSEFILE(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->ParseFile(__VA_ARGS__) : g_pFileSystem->ParseFile(__VA_ARGS__))
+#define FILESYSTEM_ANY_READLINE(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->ReadLine(__VA_ARGS__) : g_pFileSystem->ReadLine(__VA_ARGS__))
+#define FILESYSTEM_ANY_ADDSEARCHPATH(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->AddSearchPath(__VA_ARGS__) : g_pFileSystem->AddSearchPath(__VA_ARGS__))
+#define FILESYSTEM_ANY_MOUNT(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->Mount(__VA_ARGS__) : g_pFileSystem->Mount(__VA_ARGS__))
+#define FILESYSTEM_ANY_UNMOUNT(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->Unmount(__VA_ARGS__) : g_pFileSystem->Unmount(__VA_ARGS__))
+
 #ifndef _USRDLL
 #pragma data_seg(".data")
 BYTE g_pBlobBuffer[0x2000000];
@@ -20,31 +34,14 @@ BlobHeader_t *GetBlobHeader(void)
 
 BOOL FIsBlob(const char *pstFileName)
 {
-	if (g_pFileSystem_HL25)
-	{
-		FileHandle_t file = g_pFileSystem_HL25->Open(pstFileName, "rb");
-
-		if (file == FILESYSTEM_INVALID_HANDLE)
-			return FALSE;
-
-		BlobInfo_t info;
-		g_pFileSystem_HL25->Read(&info, sizeof(BlobInfo_t), file);
-		g_pFileSystem_HL25->Close(file);
-
-		if (info.m_dwAlgorithm != BLOB_ALGORITHM)
-			return FALSE;
-
-		return TRUE;
-	}
-
-	FileHandle_t file = g_pFileSystem->Open(pstFileName, "rb");
+	FileHandle_t file = FILESYSTEM_ANY_OPEN(pstFileName, "rb");
 
 	if (file == FILESYSTEM_INVALID_HANDLE)
 		return FALSE;
 
 	BlobInfo_t info;
-	g_pFileSystem->Read(&info, sizeof(BlobInfo_t), file);
-	g_pFileSystem->Close(file);
+	FILESYSTEM_ANY_READ(&info, sizeof(BlobInfo_t), file);
+	FILESYSTEM_ANY_CLOSE(file);
 
 	if (info.m_dwAlgorithm != BLOB_ALGORITHM)
 		return FALSE;
@@ -54,44 +51,23 @@ BOOL FIsBlob(const char *pstFileName)
 
 DWORD NLoadBlobFile(const char *pstFileName, BlobFootprint_t *pblobfootprint, void **pv)
 {
-	if (g_pFileSystem_HL25)
-	{
-		FileHandle_t file = g_pFileSystem_HL25->Open(pstFileName, "rb");
-
-		DWORD dwSize;
-		BYTE* pBuffer;
-		DWORD dwAddress;
-
-		g_pFileSystem_HL25->Seek(file, 0, FILESYSTEM_SEEK_TAIL);
-		dwSize = g_pFileSystem_HL25->Tell(file);
-		g_pFileSystem_HL25->Seek(file, 0, FILESYSTEM_SEEK_HEAD);
-
-		pBuffer = (BYTE*)malloc(dwSize);
-		g_pFileSystem_HL25->Read(pBuffer, dwSize, file);
-
-		dwAddress = LoadBlobFile(pBuffer, pblobfootprint, pv, dwSize);
-		free(pBuffer);
-		g_pFileSystem_HL25->Close(file);
-
-		return dwAddress;
-	}
-
-	FileHandle_t file = g_pFileSystem->Open(pstFileName, "rb");
+	FileHandle_t file = FILESYSTEM_ANY_OPEN(pstFileName, "rb");
 
 	DWORD dwSize;
 	BYTE *pBuffer;
 	DWORD dwAddress;
 
-	g_pFileSystem->Seek(file, 0, FILESYSTEM_SEEK_TAIL);
-	dwSize = g_pFileSystem->Tell(file);
-	g_pFileSystem->Seek(file, 0, FILESYSTEM_SEEK_HEAD);
+	FILESYSTEM_ANY_SEEK(file, 0, FILESYSTEM_SEEK_TAIL);
+	dwSize = FILESYSTEM_ANY_TELL(file);
+	FILESYSTEM_ANY_SEEK(file, 0, FILESYSTEM_SEEK_HEAD);
 
 	pBuffer = (BYTE *)malloc(dwSize);
-	g_pFileSystem->Read(pBuffer, dwSize, file);
+	FILESYSTEM_ANY_READ(pBuffer, dwSize, file);
 
 	dwAddress = LoadBlobFile(pBuffer, pblobfootprint, pv, dwSize);
 	free(pBuffer);
-	g_pFileSystem->Close(file);
+
+	FILESYSTEM_ANY_CLOSE(file);
 
 	return dwAddress;
 }
