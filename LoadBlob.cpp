@@ -3,6 +3,7 @@
 #include <interface.h>
 #include "IFileSystem.h"
 
+extern IFileSystem_HL25* g_pFileSystem_HL25;
 extern IFileSystem *g_pFileSystem;
 
 #ifndef _USRDLL
@@ -19,6 +20,23 @@ BlobHeader_t *GetBlobHeader(void)
 
 BOOL FIsBlob(const char *pstFileName)
 {
+	if (g_pFileSystem_HL25)
+	{
+		FileHandle_t file = g_pFileSystem_HL25->Open(pstFileName, "rb");
+
+		if (file == FILESYSTEM_INVALID_HANDLE)
+			return FALSE;
+
+		BlobInfo_t info;
+		g_pFileSystem_HL25->Read(&info, sizeof(BlobInfo_t), file);
+		g_pFileSystem_HL25->Close(file);
+
+		if (info.m_dwAlgorithm != BLOB_ALGORITHM)
+			return FALSE;
+
+		return TRUE;
+	}
+
 	FileHandle_t file = g_pFileSystem->Open(pstFileName, "rb");
 
 	if (file == FILESYSTEM_INVALID_HANDLE)
@@ -36,6 +54,28 @@ BOOL FIsBlob(const char *pstFileName)
 
 DWORD NLoadBlobFile(const char *pstFileName, BlobFootprint_t *pblobfootprint, void **pv)
 {
+	if (g_pFileSystem_HL25)
+	{
+		FileHandle_t file = g_pFileSystem_HL25->Open(pstFileName, "rb");
+
+		DWORD dwSize;
+		BYTE* pBuffer;
+		DWORD dwAddress;
+
+		g_pFileSystem_HL25->Seek(file, 0, FILESYSTEM_SEEK_TAIL);
+		dwSize = g_pFileSystem_HL25->Tell(file);
+		g_pFileSystem_HL25->Seek(file, 0, FILESYSTEM_SEEK_HEAD);
+
+		pBuffer = (BYTE*)malloc(dwSize);
+		g_pFileSystem_HL25->Read(pBuffer, dwSize, file);
+
+		dwAddress = LoadBlobFile(pBuffer, pblobfootprint, pv, dwSize);
+		free(pBuffer);
+		g_pFileSystem_HL25->Close(file);
+
+		return dwAddress;
+	}
+
 	FileHandle_t file = g_pFileSystem->Open(pstFileName, "rb");
 
 	DWORD dwSize;
@@ -52,6 +92,7 @@ DWORD NLoadBlobFile(const char *pstFileName, BlobFootprint_t *pblobfootprint, vo
 	dwAddress = LoadBlobFile(pBuffer, pblobfootprint, pv, dwSize);
 	free(pBuffer);
 	g_pFileSystem->Close(file);
+
 	return dwAddress;
 }
 

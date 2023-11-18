@@ -136,7 +136,8 @@ typedef struct plugin_s
 
 plugin_t *g_pPluginBase;
 
-extern IFileSystem *g_pFileSystem;
+extern IFileSystem_HL25 *g_pFileSystem_HL25;
+extern IFileSystem* g_pFileSystem;
 
 mh_interface_t gInterface = {0};
 mh_enginesave_t gMetaSave = {0};
@@ -869,14 +870,13 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 	gInterface.CommandLine = CommandLine();
 	gInterface.FileSystem = g_pFileSystem;
 	gInterface.Registry = registry;
-	gInterface.FileSystem = g_pFileSystem;
+	gInterface.FileSystem_HL25 = g_pFileSystem_HL25;
 
 	if (hModule)
 	{
 		g_dwEngineBase = MH_GetModuleBase(hModule);
 		g_dwEngineSize = MH_GetModuleSize(hModule);
 		g_hEngineModule = hModule;
-
 
 		g_iEngineType = ENGINE_UNKNOWN;
 	}

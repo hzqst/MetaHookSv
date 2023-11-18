@@ -314,6 +314,7 @@ typedef struct mh_interface_s
 	ICommandLine *CommandLine;
 	IFileSystem *FileSystem;
 	IRegistry *Registry;
+	IFileSystem_HL25* FileSystem_HL25;
 }
 mh_interface_t;
 

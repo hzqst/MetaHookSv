@@ -8,7 +8,8 @@
 #pragma warning(disable : 4733)
 #pragma comment(lib, "ws2_32.lib")
 
-IFileSystem *g_pFileSystem;
+IFileSystem_HL25 *g_pFileSystem_HL25 = nullptr;
+IFileSystem* g_pFileSystem = nullptr;
 
 #include <dbghelp.h>
 #include <shlobj.h>
@@ -43,7 +44,7 @@ LONG WINAPI MinidumpCallback(EXCEPTION_POINTERS* pException)
 	return EXCEPTION_EXECUTE_HANDLER;
 }
 
-HINTERFACEMODULE LoadFilesystemModule(void)
+HINTERFACEMODULE LoadFileSystemModule(void)
 {
 	HINTERFACEMODULE hModule = Sys_LoadModule("filesystem_stdio.dll");
 
@@ -123,6 +124,57 @@ BOOL SetActiveProcess(void)
 }
 
 BlobFootprint_t g_blobfootprintClient;
+
+class CScopedExitFileSystem {
+public:
+	CScopedExitFileSystem(HINTERFACEMODULE h)
+	{
+		hFileSystem = h;
+
+		CreateInterfaceFn fsCreateInterface = (CreateInterfaceFn)Sys_GetFactory(hFileSystem);
+
+		auto pFileSystemInterface = (void*)fsCreateInterface(FILESYSTEM_INTERFACE_VERSION, NULL);
+
+		auto pFileSystemInterface_vftable = *(void***)pFileSystemInterface;
+
+		//compare GetFileTime and GetFileChangeTime
+		if (0 == memcmp(pFileSystemInterface_vftable[16], pFileSystemInterface_vftable[17], 16))
+		{
+			g_pFileSystem_HL25 = (IFileSystem_HL25*)pFileSystemInterface;
+		}
+		else
+		{
+			g_pFileSystem = (IFileSystem*)pFileSystemInterface;
+		}
+
+		if (g_pFileSystem_HL25)
+		{
+			g_pFileSystem_HL25->Mount();
+			g_pFileSystem_HL25->AddSearchPath(Sys_GetLongPathName(), "ROOT");
+		}
+		else
+		{
+			g_pFileSystem->Mount();
+			g_pFileSystem->AddSearchPath(Sys_GetLongPathName(), "ROOT");
+		}
+	}
+
+	~CScopedExitFileSystem() {
+
+		if (g_pFileSystem_HL25)
+		{
+			g_pFileSystem_HL25->Unmount();
+		}
+		else if (g_pFileSystem)
+		{
+			g_pFileSystem->Unmount();
+		}
+
+		Sys_FreeModule(hFileSystem);
+	}
+
+	HINTERFACEMODULE hFileSystem;
+};
 
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
@@ -211,15 +263,12 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	while (1)
 	{
-		HINTERFACEMODULE hFileSystem = LoadFilesystemModule();
+		HINTERFACEMODULE hFileSystem = LoadFileSystemModule();
 
 		if (!hFileSystem)
 			break;
 
-		CreateInterfaceFn fsCreateInterface = (CreateInterfaceFn)Sys_GetFactory(hFileSystem);
-		g_pFileSystem = (IFileSystem *)fsCreateInterface(FILESYSTEM_INTERFACE_VERSION, NULL);
-		g_pFileSystem->Mount();
-		g_pFileSystem->AddSearchPath(Sys_GetLongPathName(), "ROOT");
+		CScopedExitFileSystem ScopedExitFileSystem(hFileSystem);
 
 		const char *pszEngineDLL;
 		int iResult = ENGINE_RESULT_NONE;
@@ -281,7 +330,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		if (iResult == ENGINE_RESULT_NONE || iResult > ENGINE_RESULT_UNSUPPORTEDVIDEO)
 			break;
 
-		bool bContinue;
+		bool bContinue = false;
 
 		switch (iResult)
 		{
@@ -326,10 +375,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			CommandLine()->RemoveParm("+load");
 
 		CommandLine()->AppendParm(szNewCommandParams, NULL);
-
-		g_pFileSystem->Unmount();
-
-		Sys_FreeModule(hFileSystem);
 
 		if (!bContinue)
 			break;
