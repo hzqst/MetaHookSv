@@ -3,10 +3,10 @@
 #include <sstream>
 #include <intrin.h>
 
-ref_funcs_t gRefFuncs;
+ref_funcs_t gRefFuncs = { 0 };
 
-refdef_t r_refdef;
-ref_params_t r_params;
+refdef_t r_refdef = { 0 };
+ref_params_t r_params = { 0 };
 refdef_GoldSrc_t *r_refdef_GoldSrc = NULL;
 refdef_SvEngine_t *r_refdef_SvEngine = NULL;
 
@@ -24,64 +24,64 @@ float gldepthmin = 0, gldepthmax = 1;
 cl_entity_t *r_worldentity = NULL;
 model_t *r_worldmodel = NULL;
 model_t *r_playermodel = NULL;
-RECT *window_rect;
+RECT *window_rect = NULL;
 
-float *videowindowaspect;
-float *windowvideoaspect;
+float * s_fXMouseAspectAdjustment = NULL;
+float * s_fYMouseAspectAdjustment = NULL;
 
-int *cl_numvisedicts;
-cl_entity_t **cl_visedicts;
-cl_entity_t **currententity;
-int *numTransObjs;
-int *maxTransObjs;
-transObjRef **transObjects;
-mleaf_t **r_viewleaf;
-mleaf_t **r_oldviewleaf;
+int *cl_numvisedicts = NULL;
+cl_entity_t **cl_visedicts = NULL;
+cl_entity_t **currententity = NULL;
+int *numTransObjs = NULL;
+int *maxTransObjs = NULL;
+transObjRef **transObjects = NULL;
+mleaf_t **r_viewleaf = NULL;
+mleaf_t **r_oldviewleaf = NULL;
 
-GLint r_viewport[4];
+GLint r_viewport[4] = {0};
 
-vec_t *vup;
-vec_t *vpn;
-vec_t *vright;
-vec_t *r_origin;
-vec_t *modelorg;
-vec_t *r_entorigin;
-float *r_world_matrix;
-float *r_projection_matrix;
-float *gWorldToScreen;
-float *gScreenToWorld;
-overviewInfo_t *gDevOverview;
-mplane_t *frustum;
+vec_t *vup = NULL;
+vec_t *vpn = NULL;
+vec_t *vright = NULL;
+vec_t *r_origin = NULL;
+vec_t *modelorg = NULL;
+vec_t *r_entorigin = NULL;
+float *r_world_matrix = NULL;
+float *r_projection_matrix = NULL;
+float *gWorldToScreen = NULL;
+float *gScreenToWorld = NULL;
+overviewInfo_t *gDevOverview = NULL;
+mplane_t *frustum = NULL;
 
-int *g_bUserFogOn;
-float *g_UserFogColor;
-float *g_UserFogDensity;
-float *g_UserFogStart;
-float *g_UserFogEnd;
+int *g_bUserFogOn = NULL;
+float *g_UserFogColor = NULL;
+float *g_UserFogDensity = NULL;
+float *g_UserFogStart = NULL;
+float *g_UserFogEnd = NULL;
 
-int *r_framecount;
-int *r_visframecount;
+int *r_framecount = NULL;
+int *r_visframecount = NULL;
 
-int *cl_max_edicts;
-cl_entity_t **cl_entities;
+int *cl_max_edicts = NULL;
+cl_entity_t **cl_entities = NULL;
 
-TEMPENTITY *gTempEnts;
+TEMPENTITY *gTempEnts = NULL;
 
-int *cl_viewentity;
-void *cl_frames;
+int *cl_viewentity = NULL;
+void *cl_frames = NULL;
 int size_of_frame = sizeof(frame_t);
-int *cl_parsecount;
-int *cl_waterlevel;
-double *cl_time;
-double *cl_oldtime;
-int *envmap;
-int *cl_stats;
-float *cl_weaponstarttime;
-int *cl_weaponsequence;
-int *cl_light_level;
-int *c_alias_polys;
-int *c_brush_polys;
-int(*rtable)[20][20];
+int *cl_parsecount = NULL;
+int *cl_waterlevel = NULL;
+double *cl_time = NULL;
+double *cl_oldtime = NULL;
+int *envmap = NULL;
+int *cl_stats = NULL;
+float *cl_weaponstarttime = NULL;
+int *cl_weaponsequence = NULL;
+int *cl_light_level = NULL;
+int *c_alias_polys = NULL;
+int *c_brush_polys = NULL;
+int(*rtable)[20][20] = NULL;
 
 model_t *mod_known = NULL;
 int *mod_numknown = NULL;
@@ -106,12 +106,14 @@ int *cls_signon = NULL;
 qboolean *scr_drawloading = NULL;
 
 movevars_t* pmovevars = NULL;
+struct playermove_s* pmove = NULL;
 
 int *filterMode = NULL;
 float *filterColorRed = NULL;
 float *filterColorGreen = NULL;
 float *filterColorBlue = NULL;
 float *filterBrightness = NULL;
+
 
 //client dll
 
@@ -178,7 +180,7 @@ FBO_Container_t s_ShadowFBO = { 0 };
 
 FBO_Container_t *g_CurrentFBO = NULL;
 
-bool bNoStretchAspect = false;
+bool bEnforceStretchAspect = false;
 bool bUseBindless = true;
 bool bUseOITBlend = false;
 bool bVerticalFov = false;
@@ -351,7 +353,46 @@ void R_RotateForEntity(cl_entity_t *e)
 
 float R_GlowBlend(cl_entity_t *entity)
 {
-	return gRefFuncs.R_GlowBlend(entity);
+	if (gRefFuncs.R_GlowBlend)
+	{
+		return gRefFuncs.R_GlowBlend(entity);
+	}
+
+	if (pmove)
+	{
+		vec3_t tmp;
+		float dist, brightness;
+		pmtrace_t trace;
+
+		VectorSubtract(r_entorigin, r_origin, tmp);
+		dist = VectorLength(tmp);
+
+		pmove->usehull = 2;
+		trace = pmove->PM_PlayerTrace(r_origin, r_entorigin, r_traceglow->value ? PM_GLASS_IGNORE : (PM_GLASS_IGNORE | PM_STUDIO_IGNORE), -1);
+		if ((1.0 - trace.fraction) * dist > 8)
+			return 0;
+
+		if (entity->curstate.renderfx == kRenderFxNoDissipation)
+		{
+			return (float)entity->curstate.renderamt * (1.0f / 255.0f);
+		}
+
+		// UNDONE: Tweak these magic numbers (19000 - falloff & 200 - sprite size)
+		brightness = 19000 / (dist * dist);
+		if (brightness < 0.05)
+		{
+			brightness = 0.05;
+		}
+		else if (brightness > 1.0)
+		{
+			brightness = 1.0;
+		}
+
+		entity->curstate.scale = dist * (1.0 / 200.0);
+		return brightness;
+	}
+
+	return 0;
 }
 
 int CL_FxBlend(cl_entity_t *entity)
@@ -1534,7 +1575,7 @@ void GL_Init(void)
 
 	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &gl_max_ubo_size);
 
-	bNoStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
+	bEnforceStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
 
 	if(gEngfuncs.CheckParm("-nobindless", NULL))
 		bUseBindless = false;
@@ -1944,34 +1985,42 @@ void GL_EndRendering(void)
 		*gl_backbuffer_fbo = 0;
 	}
 
-	int windowW = glwidth;
-	int windowH = glheight;
+	int srcW = 0, srcH = 0;
 
-	windowW = window_rect->right - window_rect->left;
-	windowH = window_rect->bottom - window_rect->top;
+	g_pMetaHookAPI->GetVideoMode(&srcW, &srcH, NULL, NULL);
 
-	int dstX = 0;
-	int dstY = 0;
-	int dstX2 = windowW;
-	int dstY2 = windowH;
+	//void(*VideoMode_GetCurrentVideoMode)(int* w, int* h, int* bpp);
 
-	*videowindowaspect = *windowvideoaspect = 1;
+	//VideoMode_GetCurrentVideoMode = (decltype(VideoMode_GetCurrentVideoMode))((PUCHAR)g_dwEngineBase + 0x222540);
+		
+	//VideoMode_GetCurrentVideoMode(&srcW, &srcH, NULL);
 
-	float videoAspect = (float)glwidth / glheight;
-	float windowAspect = (float)windowW / windowH;
-	if (bNoStretchAspect)
+	int dstX1 = 0;
+	int dstY1 = 0;
+	int dstX2 = window_rect->right - window_rect->left;
+	int dstY2 = window_rect->bottom - window_rect->top;
+	*s_fXMouseAspectAdjustment = *s_fYMouseAspectAdjustment = 1;
+
+	float fSrcAspect = (float)srcW / (float)srcH;
+	float fDstAspect = (float)dstX2 / (float)dstY2;
+
+	if (bEnforceStretchAspect)
 	{
-		if (windowAspect < videoAspect)
+		if (fSrcAspect > fDstAspect)
 		{
-			dstY = (windowH - 1.0 / videoAspect * windowW) / 2.0;
-			dstY2 = windowH - dstY;
-			*videowindowaspect = videoAspect / windowAspect;
+			float fDesiredWidth = dstX2 * (1 / fSrcAspect);
+			float fDiff = dstY2 - fDesiredWidth;
+			dstY1 = fDiff / 2;
+			dstY2 = dstY2 - dstY1;
+			*s_fYMouseAspectAdjustment = fSrcAspect / fDstAspect;
 		}
 		else
 		{
-			dstX = (windowW - windowH * videoAspect) / 2.0;
-			dstX2 = windowW - dstX;
-			*windowvideoaspect = windowAspect / videoAspect;
+			float fDesiredHeight = dstY2 / (1 / fSrcAspect);
+			float fDiff = dstX2 - fDesiredHeight;
+			dstX1 = fDiff / 2;
+			dstX2 = dstX2 - dstX1;
+			*s_fXMouseAspectAdjustment = fSrcAspect / fDstAspect;
 		}
 	}
 
@@ -1982,10 +2031,10 @@ void GL_EndRendering(void)
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	glBlitFramebuffer(0, 0, glwidth, glheight, dstX, dstY, dstX2, dstY2, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+	glBlitFramebuffer(0, 0, srcW, srcH, dstX1, dstY1, dstX2, dstY2, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
-	//VID_FlipScreen for us.
+	//Let engine call VID_FlipScreen for us.
 	gRefFuncs.GL_EndRendering();
 
 	if (gl_backbuffer_fbo)

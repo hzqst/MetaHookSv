@@ -80,7 +80,7 @@ typedef struct
 	void(*R_LoadSkys)(void);
 	void(*R_LoadSkyboxInt_SvEngine)(const char *name);
 	void(*R_LoadSkyBox_SvEngine)(const char *name);
-	void(*R_MarkLights)(dlight_t *light, int bit, mnode_t *node);
+	//void(*R_MarkLights)(dlight_t *light, int bit, mnode_t *node);
 	int(*CL_IsDevOverviewMode)(void);
 	void(*CL_SetDevOverView)(void *a1);
 	void(*Mod_LoadStudioModel)(model_t *mod, void *buffer);

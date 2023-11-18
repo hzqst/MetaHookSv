@@ -232,6 +232,15 @@ typedef struct msurface_s
 	struct decal_s *pdecals;
 }msurface_t;
 
+static_assert(sizeof(msurface_t) == 92, "Size Check");
+
+class msurface_hl25_t : public msurface_t
+{
+	int unk[4];
+};
+
+static_assert(sizeof(msurface_hl25_t) == 108, "Size Check");
+
 typedef struct
 {
 	int			planenum;

@@ -592,7 +592,7 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 	if (height)
 		*height = 0;
 
-	FileHandle_t fileHandle = g_pFileSystem->Open(filename, "rb");
+	FileHandle_t fileHandle = FILESYSTEM_ANY_OPEN(filename, "rb");
 
 	if (!fileHandle)
 	{
@@ -603,45 +603,45 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 		return false;
 	}
 
-	if (sizeof(DDS_FILEHEADER) != g_pFileSystem->Read(&fileHeader10, sizeof(DDS_FILEHEADER), fileHandle))
+	if (sizeof(DDS_FILEHEADER) != FILESYSTEM_ANY_READ(&fileHeader10, sizeof(DDS_FILEHEADER), fileHandle))
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
-		g_pFileSystem->Close(fileHandle);
+		FILESYSTEM_ANY_CLOSE(fileHandle);
 		return false;
 	}
 
 	if (fileHeader10.dwMagic != DDS_MAGIC)
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
-		g_pFileSystem->Close(fileHandle);
+		FILESYSTEM_ANY_CLOSE(fileHandle);
 		return false;
 	}
 
 	if (fileHeader10.Header.dwSize != 124)
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
-		g_pFileSystem->Close(fileHandle);
+		FILESYSTEM_ANY_CLOSE(fileHandle);
 		return false;
 	}
 
 	if (!(fileHeader10.Header.dwFlags & DDSD_PIXELFORMAT))
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
-		g_pFileSystem->Close(fileHandle);
+		FILESYSTEM_ANY_CLOSE(fileHandle);
 		return false;
 	}
 
 	if (!(fileHeader10.Header.dwFlags & DDSD_CAPS))
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
-		g_pFileSystem->Close(fileHandle);
+		FILESYSTEM_ANY_CLOSE(fileHandle);
 		return false;
 	}
 
 	if (!(fileHeader10.Header.ddspf.dwFlags & DDPF_FOURCC))
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
-		g_pFileSystem->Close(fileHandle);
+		FILESYSTEM_ANY_CLOSE(fileHandle);
 		return false;
 	}
 
@@ -652,24 +652,24 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 		fileHeader10.Header.ddspf.dwFourCC != D3DFMT_DX10)
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s has unsupported compressed texture format! Only DXT1/3/5 and BC7 supported!\n", filename);
-		g_pFileSystem->Close(fileHandle);
+		FILESYSTEM_ANY_CLOSE(fileHandle);
 		return false;
 	}
 
 	if (fileHeader10.Header.ddspf.dwFourCC == D3DFMT_DX10)
 	{
-		if (sizeof(DDS_HEADER_DXT10) != g_pFileSystem->Read(&fileHeader10.Header10, sizeof(DDS_HEADER_DXT10), fileHandle))
+		if (sizeof(DDS_HEADER_DXT10) != FILESYSTEM_ANY_READ(&fileHeader10.Header10, sizeof(DDS_HEADER_DXT10), fileHandle))
 		{
 			gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
-			g_pFileSystem->Close(fileHandle);
+			FILESYSTEM_ANY_CLOSE(fileHandle);
 			return false;
 		}
 
-		g_pFileSystem->Seek(fileHandle, sizeof(DDS_FILEHEADER10), FILESYSTEM_SEEK_HEAD);
+		FILESYSTEM_ANY_SEEK(fileHandle, sizeof(DDS_FILEHEADER10), FILESYSTEM_SEEK_HEAD);
 	}
 	else
 	{
-		g_pFileSystem->Seek(fileHandle, sizeof(DDS_FILEHEADER), FILESYSTEM_SEEK_HEAD);
+		FILESYSTEM_ANY_SEEK(fileHandle, sizeof(DDS_FILEHEADER), FILESYSTEM_SEEK_HEAD);
 	}
 
 	gl_loadtexture_mipmap.clear();
@@ -691,14 +691,14 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 				if (offset + size > bufsize)
 				{
 					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-					g_pFileSystem->Close(fileHandle);
+					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
-				if (size != g_pFileSystem->Read((void*)(buf + offset), size, fileHandle))
+				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
 				{
 					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-					g_pFileSystem->Close(fileHandle);
+					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
@@ -717,14 +717,14 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 				if (offset + size > bufsize)
 				{
 					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-					g_pFileSystem->Close(fileHandle);
+					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
-				if (size != g_pFileSystem->Read((void*)(buf + offset), size, fileHandle))
+				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
 				{
 					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-					g_pFileSystem->Close(fileHandle);
+					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
@@ -743,14 +743,14 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 				if (offset + size > bufsize)
 				{
 					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-					g_pFileSystem->Close(fileHandle);
+					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
-				if (size != g_pFileSystem->Read((void*)(buf + offset), size, fileHandle))
+				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
 				{
 					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-					g_pFileSystem->Close(fileHandle);
+					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
@@ -769,14 +769,14 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 				if (offset + size > bufsize)
 				{
 					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-					g_pFileSystem->Close(fileHandle);
+					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
-				if (size != g_pFileSystem->Read((void*)(buf + offset), size, fileHandle))
+				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
 				{
 					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-					g_pFileSystem->Close(fileHandle);
+					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
@@ -795,14 +795,14 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 				if (offset + size > bufsize)
 				{
 					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-					g_pFileSystem->Close(fileHandle);
+					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
-				if (size != g_pFileSystem->Read((void*)(buf + offset), size, fileHandle))
+				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
 				{
 					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-					g_pFileSystem->Close(fileHandle);
+					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
@@ -821,14 +821,14 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 				if (offset + size > bufsize)
 				{
 					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-					g_pFileSystem->Close(fileHandle);
+					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
-				if (size != g_pFileSystem->Read((void*)(buf + offset), size, fileHandle))
+				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
 				{
 					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-					g_pFileSystem->Close(fileHandle);
+					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
@@ -847,14 +847,14 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 				if (offset + size > bufsize)
 				{
 					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-					g_pFileSystem->Close(fileHandle);
+					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
-				if (size != g_pFileSystem->Read((void*)(buf + offset), size, fileHandle))
+				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
 				{
 					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-					g_pFileSystem->Close(fileHandle);
+					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
@@ -873,14 +873,14 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 				if (offset + size > bufsize)
 				{
 					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-					g_pFileSystem->Close(fileHandle);
+					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
-				if (size != g_pFileSystem->Read((void*)(buf + offset), size, fileHandle))
+				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
 				{
 					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-					g_pFileSystem->Close(fileHandle);
+					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
@@ -895,7 +895,7 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 			else
 			{
 				gEngfuncs.Con_Printf("LoadDDS: File %s has unsupported compressed texture format! Only DXT1/3/5 and BC7 supported!\n", filename);
-				g_pFileSystem->Close(fileHandle);
+				FILESYSTEM_ANY_CLOSE(fileHandle);
 				return false;
 			}
 			break;
@@ -907,14 +907,14 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 			if (offset + size > bufsize)
 			{
 				gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-				g_pFileSystem->Close(fileHandle);
+				FILESYSTEM_ANY_CLOSE(fileHandle);
 				return false;
 			}
 
-			if (size != g_pFileSystem->Read((void*)(buf + offset), size, fileHandle))
+			if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
 			{
 				gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-				g_pFileSystem->Close(fileHandle);
+				FILESYSTEM_ANY_CLOSE(fileHandle);
 				return false;
 			}
 
@@ -935,14 +935,14 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 			if (offset + size > bufsize)
 			{
 				gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-				g_pFileSystem->Close(fileHandle);
+				FILESYSTEM_ANY_CLOSE(fileHandle);
 				return false;
 			}
 
-			if (size != g_pFileSystem->Read((void *)(buf + offset), size, fileHandle))
+			if (size != FILESYSTEM_ANY_READ((void *)(buf + offset), size, fileHandle))
 			{
 				gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-				g_pFileSystem->Close(fileHandle);
+				FILESYSTEM_ANY_CLOSE(fileHandle);
 				return false;
 			}
 
@@ -963,14 +963,14 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 			if (offset + size > bufsize)
 			{
 				gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-				g_pFileSystem->Close(fileHandle);
+				FILESYSTEM_ANY_CLOSE(fileHandle);
 				return false;
 			}
 
-			if (size != g_pFileSystem->Read((void *)(buf + offset), size, fileHandle))
+			if (size != FILESYSTEM_ANY_READ((void *)(buf + offset), size, fileHandle))
 			{
 				gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-				g_pFileSystem->Close(fileHandle);
+				FILESYSTEM_ANY_CLOSE(fileHandle);
 				return false;
 			}
 
@@ -990,14 +990,14 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 			if (offset + size > bufsize)
 			{
 				gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-				g_pFileSystem->Close(fileHandle);
+				FILESYSTEM_ANY_CLOSE(fileHandle);
 				return false;
 			}
 			
-			if (size != g_pFileSystem->Read((void *)(buf + offset), size, fileHandle))
+			if (size != FILESYSTEM_ANY_READ((void *)(buf + offset), size, fileHandle))
 			{
 				gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-				g_pFileSystem->Close(fileHandle);
+				FILESYSTEM_ANY_CLOSE(fileHandle);
 				return false;
 			}
 
@@ -1017,7 +1017,7 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 		{
 			break;
 		}
-		if (g_pFileSystem->EndOfFile(fileHandle))
+		if (FILESYSTEM_ANY_EOF(fileHandle))
 		{
 			break;
 		}
@@ -1029,7 +1029,7 @@ qboolean LoadDDS(const char* filename, byte* buf, size_t bufsize, size_t* width,
 	if(height)
 		*height = fileHeader10.Header.dwHeight;
 
-	g_pFileSystem->Close(fileHandle);
+	FILESYSTEM_ANY_CLOSE(fileHandle);
 
 	return TRUE;
 }
@@ -1074,32 +1074,32 @@ const char * V_GetFileExtension( const char * path )
 
 unsigned WINAPI FI_Read(void *buffer, unsigned size, unsigned count, fi_handle handle)
 {
-	if(g_pFileSystem->Read(buffer, size*count, handle))
+	if(FILESYSTEM_ANY_READ(buffer, size*count, handle))
 		return count;
 	return 0;
 }
 
 unsigned WINAPI FI_Write(void *buffer, unsigned size, unsigned count, fi_handle handle)
 {
-	if(g_pFileSystem->Write(buffer, size*count, handle))
+	if(FILESYSTEM_ANY_WRITE(buffer, size*count, handle))
 		return count;
 	return 0;
 }
 
 int WINAPI FI_Seek(fi_handle handle, long offset, int origin)
 {
-	g_pFileSystem->Seek(handle, offset, (FileSystemSeek_t)origin);
+	FILESYSTEM_ANY_SEEK(handle, offset, (FileSystemSeek_t)origin);
 	return 0;
 }
 
 long WINAPI FI_Tell(fi_handle handle)
 {
-	return g_pFileSystem->Tell(handle);
+	return FILESYSTEM_ANY_TELL(handle);
 }
 
 qboolean LoadImageGeneric(const char *filename, byte *buf, size_t bufSize, size_t *width, size_t *height, qboolean throw_warning_on_missing)
 {
-	FileHandle_t fileHandle = g_pFileSystem->Open(filename, "rb");
+	FileHandle_t fileHandle = FILESYSTEM_ANY_OPEN(filename, "rb");
 
 	if (!fileHandle)
 	{
@@ -1124,18 +1124,20 @@ qboolean LoadImageGeneric(const char *filename, byte *buf, size_t bufSize, size_
 	if(fiFormat == FIF_UNKNOWN)
     {
 		gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, Unsupported format.\n", filename);
+		FILESYSTEM_ANY_CLOSE(fileHandle);
 		return false;
     }
 
 	if(!FreeImage_FIFSupportsReading(fiFormat))
     {
 		gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, Unsupported format.\n", filename);
+		FILESYSTEM_ANY_CLOSE(fileHandle);
 		return false;
     }
 
 	FIBITMAP *fiB = FreeImage_LoadFromHandle(fiFormat, &fiIO, (fi_handle)fileHandle);
 
-	g_pFileSystem->Close(fileHandle);
+	FILESYSTEM_ANY_CLOSE(fileHandle);
 
 	if (!fiB)
 	{
@@ -1206,7 +1208,7 @@ qboolean SaveImageGeneric(const char *filename, int width, int height, byte *dat
 		return false;
     }
 
-	FileHandle_t fileHandle = g_pFileSystem->Open(filename, "wb");
+	FileHandle_t fileHandle = FILESYSTEM_ANY_OPEN(filename, "wb");
 
 	if(!fileHandle)
     {
@@ -1240,12 +1242,12 @@ qboolean SaveImageGeneric(const char *filename, int width, int height, byte *dat
 	if(FALSE == FreeImage_SaveToHandle(fiFormat, fiB, &fiIO, (fi_handle)fileHandle))
     {
 		gEngfuncs.Con_Printf("SaveImageGeneric: Could not save %s, FreeImage_SaveToHandle failed.\n", filename);
-		g_pFileSystem->Close(fileHandle);
+		FILESYSTEM_ANY_CLOSE(fileHandle);
 		FreeImage_Unload(fiB);
         return false;
     }
 
-	g_pFileSystem->Close(fileHandle);
+	FILESYSTEM_ANY_CLOSE(fileHandle);
 	FreeImage_Unload(fiB);
 	return true;
 }

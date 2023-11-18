@@ -3,11 +3,12 @@
 #include "exportfuncs.h"
 #include <IRenderer.h>
 
-cl_exportfuncs_t gExportfuncs;
-mh_interface_t *g_pInterface;
-metahook_api_t *g_pMetaHookAPI;
-mh_enginesave_t *g_pMetaSave;
-IFileSystem *g_pFileSystem;
+cl_exportfuncs_t gExportfuncs = {0};
+mh_interface_t *g_pInterface = NULL;
+metahook_api_t *g_pMetaHookAPI = NULL;
+mh_enginesave_t *g_pMetaSave = NULL;
+IFileSystem *g_pFileSystem = NULL;
+IFileSystem_HL25* g_pFileSystem_HL25 = NULL;
 
 HINSTANCE g_hInstance, g_hThisModule, g_hEngineModule;
 PVOID g_dwEngineBase;
@@ -54,7 +55,8 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 		g_pMetaHookAPI->SysError("16bit mode is not supported.");
 	}
 
-	g_pFileSystem = g_pInterface->FileSystem;	
+	g_pFileSystem = g_pInterface->FileSystem;
+	g_pFileSystem_HL25 = g_pInterface->FileSystem_HL25;
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();
 	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
 	g_hEngineModule = g_pMetaHookAPI->GetEngineModule();
@@ -66,7 +68,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 
-	if(g_iEngineType != ENGINE_SVENGINE && g_iEngineType != ENGINE_GOLDSRC)
+	if(g_iEngineType != ENGINE_SVENGINE && g_iEngineType != ENGINE_GOLDSRC && g_iEngineType != ENGINE_GOLDSRC_HL25)
 	{
 		g_pMetaHookAPI->SysError("Unsupported engine: %s, buildnum %d", g_pMetaHookAPI->GetEngineTypeName(), g_dwEngineBuildnum);
 	}
@@ -106,6 +108,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_Shutdown = HUD_Shutdown;
 	pExportFunc->HUD_AddEntity = HUD_AddEntity;
 	pExportFunc->HUD_Frame = HUD_Frame;
+	pExportFunc->HUD_PlayerMoveInit = HUD_PlayerMoveInit;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 
 	Uninstall_Hook(DLL_SetModKey);

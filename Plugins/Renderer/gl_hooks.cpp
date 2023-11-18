@@ -10,27 +10,34 @@
 #define MOD_POINTINLEAF_SIG_NEW "\x55\x8B\xEC\x2A\x8B\x2A\x0C\x85\x2A\x74\x2A\x8B\x2A\xA4\x00\x00\x00"
 
 #define BUILDGAMMATABLE_SIG_SVENGINE "\x83\xEC\x2A\x6A\x05\xE8\x2A\x2A\x2A\x2A\xD9\xEE"
+#define BUILDGAMMATABLE_SIG_HL25 "\x55\x8B\xEC\xF3\x0F\x10\x45\x08\x83\xEC\x10\x0F\x57\xDB\x0F\x2E\xC3\x9F"
 #define BUILDGAMMATABLE_SIG_NEW "\x55\x8B\xEC\x83\xEC\x2A\xD9\x45\x08\xDC\x1D\x2A\x2A\x2A\x2A\xDF\xE0"
 
 #define R_DRAWPARTICLES_SIG_SVENGINE "\x81\xEC\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x00\x00\x00\x2A\xFF\x35"
+#define R_DRAWPARTICLES_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\xFF\x35\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x68\xC0\x0B\x00\x00"
 #define R_DRAWPARTICLES_SIG_NEW "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x68\xC0\x0B\x00\x00"
 
-#define R_MARKLIGHTS_SVENGINE "\x83\xEC\x0C\x2A\x8B\x7C\x24\x2A\x83\x3F\x00"
-#define R_MARKLIGHTS_NEW "\x55\x8B\xEC\x83\xEC\x18\x2A\x8B\x2A\x10\x83\x2A\x00"
+//unused
+//#define R_MARKLIGHTS_SVENGINE "\x83\xEC\x0C\x2A\x8B\x7C\x24\x2A\x83\x3F\x00"
+//#define R_MARKLIGHTS_NEW "\x55\x8B\xEC\x83\xEC\x18\x2A\x8B\x2A\x10\x83\x2A\x00"
 
 #define R_POLYBLEND_SVENGINE "\x55\x8B\xEC\x83\xE4\xC0\x83\xEC\x34\x2A\x2A\x2A\xE8"
+#define R_POLYBLEND_HL25 "\x55\x8B\xEC\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\xD8\x85\xDB\x0F\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\xC0\x0B\x00\x00"
 #define R_POLYBLEND_NEW "\x55\x8B\xEC\x83\xEC\x0C\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x2A\x85\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\xC0\x0B\x00\x00"
 
 #define S_EXTRAUPDATE_SVENGINE "\xE8\x2A\x2A\x2A\x2A\x85\xC0\x75\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xD9\x05"
+#define S_EXTRAUPDATE_HL25 "\xE8\x2A\x2A\x2A\x2A\x85\xC0\x75\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xF3\x0F"
 #define S_EXTRAUPDATE_NEW S_EXTRAUPDATE_SVENGINE
 
 #define R_ROTATEFORENTITY_SVENGINE "\x83\xEC\x2A\x8B\x2A\x24\x2A\x8B\x2A\x24\x2A\xD9\x00"
 #define R_ROTATEFORENTITY_NEW "\x55\x8B\xEC\x83\xEC\x20\x8B\x45\x08\x8B\x08\x8B\x50\x04\x8B\x40\x08"
+#define R_ROTATEFORENTITY_GOLDSRC "\xFF\x15\x2A\x2A\x2A\x2A\x8D\x87\x48\x0B\x00\x00\x2A\x2A\xE8"
 
 #define R_DECALSHOTINTERNAL_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x8B\x54\x24\x2A\x8B\x4C\x24\x2A\x53\x8B\x5C\x24\x2A\x56\x69\xF2\xB8\x0B\x00\x00"
 
 #define R_RENDERSCENE_SIG "\x51\xDB\x05\x2A\x2A\x2A\x2A\xD9\x5C\x24\x00\xD9\x05\x2A\x2A\x2A\x2A\xD8\x5C\x24\x00\xDF\xE0\xF6\xC4\x2A\x2A\x2A\xA1"
 #define R_RENDERSCENE_SIG_NEW "\xE8\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\xE8\x2A\x2A\x2A\x2A\xE8"
+#define R_RENDERSCENE_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\xE8\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x33\xC0"
 #define R_RENDERSCENE_SIG_SVENGINE "\xDD\xD8\xDD\xD8\xE8"
 
 #define R_NEWMAP_SIG "\x55\x8B\xEC\x83\xEC\x0C\xC7\x45\xFC\x00\x00\x00\x00\x2A\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC"
@@ -38,31 +45,39 @@
 #define R_NEWMAP_SIG_SVENGINE "\x55\x8B\xEC\x51\xC7\x45\xFC\x00\x00\x00\x00\xEB\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC\x81\x7D\xFC\x00\x01\x00\x00"
 
 #define GL_BUILDLIGHTMAPS_SIG_NEW "\x55\x8B\xEC\x2A\x2A\x2A\x2A\x68\x00\x80\x00\x00\x6A\x00\x68"
+#define GL_BUILDLIGHTMAPS_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xE8\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\xF3\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x0F\x2E"
 #define GL_BUILDLIGHTMAPS_SIG_SVENGINE "\x83\xEC\x24\x2A\x2A\x2A\x2A\x68\x00\x00\x08\x00\x6A\x00\x68"
 
 #define R_DRAWWORLD_SIG "\x81\xEC\xB8\x0B\x00\x00\x68\xB8\x0B\x00\x00\x8D\x44\x24\x04\x6A\x00\x50\xE8"
 #define R_DRAWWORLD_SIG_NEW "\x55\x8B\xEC\x81\xEC\xB8\x0B\x00\x00\x68\xB8\x0B\x00\x00\x8D\x85\x48\xF4\xFF\xFF\x6A\x00\x50\xE8\x2A\x2A\x2A\x2A\x8B\x0D"
+#define R_DRAWWORLD_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\x2A\x2A\x68\xB8\x0B\x00\x00"
 #define R_DRAWWORLD_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\xB8\x0B\x00\x00\xD9\x05"
 
 #define R_MARKLEAVES_SIG "\xB8\x00\x10\x00\x00\xE8\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\xA1"
 #define R_MARKLEAVES_SIG_NEW "\x55\x8B\xEC\xB8\x04\x10\x00\x00\xE8\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\xA1"
+#define R_MARKLEAVES_SIG_HL25 "\x55\x8B\xEC\xB8\x2A\x2A\x00\x00\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x8B\x0D\x2A\x2A\x2A\x2A\x0F\x57\xC9"
 #define R_MARKLEAVES_SIG_SVENGINE "\xB8\x2A\x2A\x00\x00\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\x8B\x0D\x2A\x2A\x2A\x2A\xD9\x05"
 
 #define R_CULLBOX_SIG "\x53\x8B\x5C\x24\x08\x56\x57\x8B\x7C\x24\x14\xBE\x2A\x2A\x2A\x2A\x56\x57\x53\xE8"
 #define R_CULLBOX_SIG_NEW "\x55\x8B\xEC\x53\x8B\x5D\x08\x56\x57\x8B\x7D\x0C\xBE\x2A\x2A\x2A\x2A\x56\x57\x53"
 #define R_CULLBOX_SIG_SVENGINE "\x2A\x8B\x2A\x24\x08\x2A\x2A\x8B\x2A\x24\x14\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C\x83\xF8\x02"
 
+//inlined in HL25 and SvEngine
 #define R_SETUPFRAME_SIG "\xA1\x2A\x2A\x2A\x2A\x83\xEC\x18\x83\xF8\x01\x0F\x8E\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x2A\x2A\x2A\x68"
 #define R_SETUPFRAME_SIG2 "\x8B\x0D\x2A\x2A\x2A\x2A\x83\xEC\x18\x33\xC0\x83\xF9\x01\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1"
 #define R_SETUPFRAME_SIG_NEW "\x55\x8B\xEC\x83\xEC\x18\x8B\x0D\x2A\x2A\x2A\x2A\x33\xC0\x83\xF9\x01\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1"
-#define R_SETUPFRAME_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x33\xC0\x83\x3D\x2A\x2A\x2A\x2A\x01\x0F\x9F\xC0\x50\xE8"
+#define R_SETUPFRAME_SIG_HL25 ""
+#define R_SETUPFRAME_SIG_SVENGINE ""
 
 #define GL_BIND_SIG "\x8B\x44\x24\x04\x8B\x0D\x2A\x2A\x2A\x2A\x56\x8B\xF0\xC1\xFE\x10\x25\xFF\xFF\x00\x00\x4E\x3B\xC8"
 #define GL_BIND_SIG_NEW "\x55\x8B\xEC\x8B\x45\x08\x8B\x0D\x2A\x2A\x2A\x2A\x56\x8B\xF0\xC1\xFE\x10\x25\xFF\xFF\x00\x00\x4E\x3B\xC8"
+#define GL_BIND_SIG_HL25 "\x55\x8B\xEC\x8B\x45\x08\x56\x8B\xF0\x0F\xB7\xC0\xC1\xFE\x10\x4E\x39"
 #define GL_BIND_SIG_SVENGINE "\x8B\x44\x24\x04\x39\x05\x2A\x2A\x2A\x2A\x2A\x2A\x50\x68\xE1\x0D\x00\x00\xA3\x2A\x2A\x2A\x2A\xFF\x15\x2A\x2A\x2A\x2A\xC3"
+
 
 #define GL_SELECTTEXTURE_SIG "\xA1\x2A\x2A\x2A\x2A\x56\x85\xC0\x2A\x2A\x8B\x74\x24\x08\x56\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x3B\xF0"
 #define GL_SELECTTEXTURE_SIG_NEW "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x56\x85\xC0\x2A\x2A\x8B\x75\x08\x56\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x3B\xF0"
+#define GL_SELECTTEXTURE_SIG_HL25 "\x55\x8B\xEC\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x56\x8B\x75\x08\x56\xFF\x15"
 #define GL_SELECTTEXTURE_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x2A\x2A\x2A\x24\x08\x2A\xFF\x15\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xA1"
 
 #define GL_LOADTEXTURE_SIG "\xA1\x2A\x2A\x2A\x2A\x8B\x4C\x24\x20\x8B\x54\x24\x1C\x50\x8B\x44\x24\x1C\x51\x8B\x4C\x24\x1C\x52\x8B\x54\x24\x1C\x50\x8B\x44\x24\x1C"
@@ -71,61 +86,77 @@
 #define GL_LOADTEXTURE2_SIG "\xB8\x0C\x40\x00\x00\xE8\x2A\x2A\x2A\x2A\x53\x8B\x9C\x24\x14\x40\x00\x00\x55\x56\x8A\x03\x33\xF6"
 #define GL_LOADTEXTURE2_SIG2 "\xB8\x0C\x40\x00\x00\xE8\x2A\x2A\x2A\x2A\x8B\x84\x24\x10\x40\x00\x00\x53\x55\x33\xDB\x8A\x08\x56\x84\xC9\x57\x89\x5C\x24\x14"
 #define GL_LOADTEXTURE2_SIG_NEW "\x55\x8B\xEC\xB8\x0C\x40\x00\x00\xE8\x2A\x2A\x2A\x2A\x8B\x45\x08\x53\x33\xDB\x56\x8A\x08\x57\x84\xC9\x89\x5D\xF4\x74\x2A\x33\xF6"
+#define GL_LOADTEXTURE2_SIG_HL25 "\x55\x8B\xEC\xB8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x8B\x45\x08\x2A\x89\x85\x2A\x2A\x2A\x2A\x33\xDB\x8B\x45\x18"
 #define GL_LOADTEXTURE2_SIG_SVENGINE "\x51\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x33\xC0\x59\xC3\x2A\x55\x8B\x6C\x24\x10"
 
 #define GL_BEGINRENDERING_SIG "\x8B\x44\x24\x08\x8B\x4C\x24\x04\x8B\x54\x24\x0C\xC7\x00\x00\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\xC7\x01\x00\x00\x00\x00\x8B\x0D\x2A\x2A\x2A\x2A\x2B\xC1"
 #define GL_BEGINRENDERING_SIG_NEW "\x55\x8B\xEC\x8B\x45\x0C\x8B\x4D\x08\x56\x57\xC7\x00\x00\x00\x00\x00\xC7\x01\x00\x00\x00\x00\xE8"
+#define GL_BEGINRENDERING_SIG_HL25 "\x55\x8B\xEC\x8B\x45\x0C\x2A\x2A\xC7\x00\x00\x00\x00\x00\x8B\x45\x08\xC7\x00\x00\x00\x00\x00"
 #define GL_BEGINRENDERING_SIG_SVENGINE "\x8B\x44\x24\x08\x56\x57\xC7\x00\x00\x00\x00\x00\x8B\x44\x24\x0C\xC7\x00\x00\x00\x00\x00\xE8"
 
 #define GL_ENDRENDERING_SIG "\xFF\x25\x2A\x2A\x2A\x2A\x90"
 #define GL_ENDRENDERING_SIG_NEW "\x55\x8B\xEC\x83\xEC\x34\xA1\x2A\x2A\x2A\x2A\x53\x33\xDB"
+#define GL_ENDRENDERING_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x6A\x00"
 #define GL_ENDRENDERING_SIG_SVENGINE "\x55\x8B\xEC\x83\xE4\xC0\x83\xEC\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00"
+#define GL_ENDRENDERING_SIG_GOLDSRC "\x68\x01\x26\x00\x00\x68\x00\x40\x00\x00"
 
 #define EMITWATERPOLYS_SIG "\x83\xEC\x1C\x33\xD2\x55\x56\x8B\x74\x24\x28\x57\x8B\x46\x2C\x8B\x48\x24\x8B\x41\x44\x33\xC9\x8A\x50\x0C\x8A\x48\x0B\x52"
 #define EMITWATERPOLYS_SIG_NEW "\x55\x8B\xEC\x83\xEC\x20\x56\x8B\x75\x08\x33\xD2\x57\x8B\x46\x2C\x8B\x48\x24\x8B\x41\x44\x33\xC9\x8A\x50\x0C\x8A\x48\x0B\x52\x51"
+#define EMITWATERPOLYS_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\xF3\x0F\x10\x2A\x2A\x2A\x2A\x2A\xF3\x0F\x10"
 #define EMITWATERPOLYS_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x20\x53\x55\xD9\x05\x2A\x2A\x2A\x2A\x56\x57"
 
 #define R_DRAWTENTITIESONLIST_SIG "\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x2A\x0F\x2A\x2A\x2A\x00\x00\x8B\x44\x24\x04"
 #define R_DRAWTENTITIESONLIST_SIG_NEW "\x55\x8B\xEC\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x44\x0F\x8B\x2A\x2A\x2A\x2A\x8B\x45\x08"
+#define R_DRAWTENTITIESONLIST_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\xF3\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x0F\x2E"
 #define R_DRAWTENTITIESONLIST_SIG_SVENGINE "\x55\x8B\xEC\x83\xE4\x2A\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x00\x00\x00\xD9\x05\x2A\x2A\x2A\x2A\xD9\xEE"
 
 #define R_SETUPGL_SIG "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x10\x53\x55\x56\x57\x68\x01\x17\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x15"
 #define R_SETUPGL_SIG_NEW "\x55\x8B\xEC\x83\xEC\x10\x53\x56\x57\x68\x01\x17\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x15\x2A\x2A\x2A\x2A\x8B\x1D"
+#define R_SETUPGL_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x08\x2A\x2A\x68\x01\x17\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x15"
 #define R_SETUPGL_SIG_SVENGINE "\x55\x8B\xEC\x83\xE4\xC0\x83\xEC\x2A\x53\x56\x57\x68\x01\x17\x00\x00"
 
 #define GL_DISABLEMULTITEXTURE_SIG "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x50\xE8"
 #define GL_DISABLEMULTITEXTURE_SIG_NEW "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x50\xE8"
+#define GL_DISABLEMULTITEXTURE_SIG_HL25 "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xE8"
 #define GL_DISABLEMULTITEXTURE_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x68\xC0\x84\x00\x00\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x00\x00\xC3"
 
 #define GL_ENABLEMULTITEXTURE_SIG "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x68\xE1\x0D\x00\x00\xFF\x15"
 #define GL_ENABLEMULTITEXTURE_SIG_NEW "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x68\xE1\x0D\x00\x00\xFF\x15"
+#define GL_ENABLEMULTITEXTURE_SIG_HL25 "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x68\xE1\x0D\x00\x00\xFF\x15"
 #define GL_ENABLEMULTITEXTURE_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\xC1\x84\x00\x00\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00\xC3"
 
 #define R_DRAWSEQUENTIALPOLY_SIG "\xA1\x2A\x2A\x2A\x2A\x53\x55\x56\x8B\x88\xF8\x02\x00\x00\xBE\x01\x00\x00\x00"
 #define R_DRAWSEQUENTIALPOLY_SIG_NEW "\x55\x8B\xEC\x51\xA1\x2A\x2A\x2A\x2A\x53\x56\x57\x83\xB8\xF8\x02\x00\x00\x01\x75\x2A\xE8"
+#define R_DRAWSEQUENTIALPOLY_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x10\x2A\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xB8\xF8\x02\x00\x00\x01"
 #define R_DRAWSEQUENTIALPOLY_SIG_SVENGINE "\xA1\x2A\x2A\x2A\x2A\x83\xEC\x08\x83\xB8\x2A\x2A\x00\x00\x01"
 
 #define R_DRAWBRUSHMODEL_SIG "\x83\xEC\x4C\xC7\x05\x2A\x2A\x2A\x2A\xFF\xFF\xFF\xFF\x53\x55\x56\x57"
 #define R_DRAWBRUSHMODEL_SIG_NEW "\x55\x8B\xEC\x83\xEC\x50\x53\x56\x57\x8B\x7D\x08\x89\x3D\x2A\x2A\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\xFF\xFF\xFF\xFF"
+#define R_DRAWBRUSHMODEL_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\x2A\x8B\x2A\x08\x0F\x57\xC9"
 #define R_DRAWBRUSHMODEL_SIG_SVENGINE "\x83\xEC\x54\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x50\x53\x8B\x5C\x24\x5C\x55\x56\x57\x89\x1D\x2A\x2A\x2A\x2A\x8D\xBB"
 
 #define R_RECURSIVEWORLDNODE_SIG "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x0C\x53\x56\x57\x8B\x7D\x08\x83\x3F\xFE"
 #define R_RECURSIVEWORLDNODE_SIG_NEW "\x55\x8B\xEC\x83\xEC\x08\x53\x56\x57\x8B\x7D\x08\x83\x3F\xFE\x0F\x2A\x2A\x2A\x2A\x2A\x8B\x47\x04"
+#define R_RECURSIVEWORLDNODE_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x08\x2A\x8B\x5D\x08\x83\x3B\xFE\x0F"
 #define R_RECURSIVEWORLDNODE_SIG_SVENGINE "\x83\xEC\x08\x53\x8B\x5C\x24\x10\x83\x3B\xFE"
 
 #define R_TEXTUREANIMATION_SIG "\x53\x55\x8B\x6C\x24\x0C\x56\x57\x8B\x45\x2C\x8B\x78\x24\xA1"
 #define R_TEXTUREANIMATION_SIG_NEW "\x55\x8B\xEC\x8B\x45\x08\x53\x56\x57\x8B\x48\x2C\xA1\x2A\x2A\x2A\x2A\x85\xC0\x8B\x79\x24\x75\x2A\xBE"
+#define R_TEXTUREANIMATION_SIG_HL25 "\x55\x8B\xEC\x83\x3D\x2A\x2A\x2A\x2A\x00\x8B\x55\x08\x2A\x2A\x2A\x8B\x42\x2C\x8B\x58\x24"
 #define R_TEXTUREANIMATION_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x8B\x54\x24\x2A\x53\x56\x57\x8B\x42\x2C"
 
 #define R_RENDERDYNAMICLIGHTMAPS_SIG "\x8B\x0D\x2A\x2A\x2A\x2A\x53\x41\x55\x89\x0D\x2A\x2A\x2A\x2A\x8B\x4C\x24\x0C\x56\x57"
 #define R_RENDERDYNAMICLIGHTMAPS_SIG_NEW "\x55\x8B\xEC\x8B\x0D\x2A\x2A\x2A\x2A\x53\x41\x56\x89\x0D\x2A\x2A\x2A\x2A\x8B\x4D\x08\x57"
+#define R_RENDERDYNAMICLIGHTMAPS_SIG_HL25 "\x55\x8B\xEC\x8B\x55\x08\x83\xEC\x08\xFF\x05\x2A\x2A\x2A\x2A\xF6\x2A\x08\x14"
 #define R_RENDERDYNAMICLIGHTMAPS_SIG_SVENGINE "\x51\x8B\x54\x24\x08\xFF\x05\x2A\x2A\x2A\x2A\x57\x33\xFF\xF6\x42\x08\x14"
 
 #define R_BUILDLIGHTMAP_SIG "\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\x83\xEC\x18\xDF\xE0\xF6\xC4"
 #define R_BUILDLIGHTMAP_SIG_NEW "\x55\x8B\xEC\x83\xEC\x1C\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0"
+#define R_BUILDLIGHTMAP_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\x0F\x57\xC9\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\xF3\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x0F\x2E\xC1"
 #define R_BUILDLIGHTMAP_SIG_SVENGINE "\xD9\x05\x2A\x2A\x2A\x2A\x83\xEC\x1C\xD9\xEE\xDD\xE1\xDF\xE0\x53\x55\x56\x57\xDD\xD9"
 
 #define R_ADDDYNAMICLIGHTS_SIG_SVENGINE "\x83\xEC\x30\x2A\x2A\x8B\x2A\x24\x2A\x2A\x01\x00\x00\x00\x2A\x2A\xB9"
+#define R_ADDDYNAMICLIGHTS_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\x8B\x45\x08\x2A\x2A\x2A\x01\x00\x00\x00\x0F\x2A\x50\x18\x0F\x2A\x48\x1A"
 #define R_ADDDYNAMICLIGHTS_SIG_NEW "\x55\x8B\xEC\x83\xEC\x48\x2A\x8B\x2A\x08\x2A\x2A\x0F\x2A\x2A\x18"
 
 #define R_DECALMPOLY_SIG "\xA1\x2A\x2A\x2A\x2A\x57\x50\xE8\x2A\x2A\x2A\x2A\x8B\x4C\x24\x10\x8B\x51\x18"
@@ -135,23 +166,31 @@
 #define R_DRAWDECALS_SIG_NEW "\x55\x8B\xEC\xB8\x10\x00\x00\x00\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x85\xC0\x0F\x84"
 #define R_DRAWDECALS_SIG_SVENGINE "\xB8\x2A\x2A\x00\x00\xE8\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x84\x2A\x2A\x2A\x2A\x53\x8B\x1D"
 
+//TODO: use string "Failed to load custom decal for player"
 #define DRAW_DECALTEXTURE_SIG "\x8B\x44\x24\x04\x56\x85\xC0\x57\x7D\x7B\x83\xC9\xFF\x2B\xC8\x8D\x04\x49"
 #define DRAW_DECALTEXTURE_SIG2 "\x8B\x4C\x24\x04\x56\x85\xC9\x57\x2A\x2A\x83\xC8\xFF\x2B\xC1"
 #define DRAW_DECALTEXTURE_SIG_NEW "\x55\x8B\xEC\x8B\x4D\x08\x56\x85\xC9\x57\x7D\x2A\x83\xC8\xFF\x2B\xC1\x8D\x0C\xC0"
+#define DRAW_DECALTEXTURE_SIG_HL25 "\x55\x8B\xEC\x8B\x4D\x08\x85\xC9\x2A\x2A\xF7\xD1\x69\xD1\x50\x02\x00\x00"
 #define DRAW_DECALTEXTURE_SIG_SVENGINE "\x8B\x4C\x24\x2A\x0F\xAE\xE8\x85\xC9\x2A\x2A\xF7\xD1"
 
+//TODO: use string "Draw_MiptexTexture: Bad cached wad %s"
 #define DRAW_MIPTEXTEXTURE_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x2A\x2A\x2A\x24\x40\x2A\x2A\x2A\x24\x40"
+#define DRAW_MIPTEXTEXTURE_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\x8B\x5D\x0C\x2A\x8B\x75\x08\x2A\x89\x75\xCC"
 #define DRAW_MIPTEXTEXTURE_SIG_NEW "\x55\x8B\xEC\x83\xEC\x2A\x2A\x2A\x2A\x2A\x08\x2A\x83\x2A\x2A\x20"
 
+//TODO: use string "R_RenderView: NULL worldmodel"
 #define R_RENDERVIEW_SIG "\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\x83\xEC\x14\xDF\xE0\xF6\xC4"
 #define R_RENDERVIEW_SIG_NEW "\x55\x8B\xEC\x83\xEC\x14\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x44"
+#define R_RENDERVIEW_SIG_HL25 "\x55\x8B\xEC\xF3\x0F\x10\x05\x2A\x2A\x2A\x2A\x83\xEC\x2A\x0F\x57\xC9\x0F\x2E\xC1\x9F\xF6"
 #define R_RENDERVIEW_SIG_SVENGINE "\x55\x8B\xEC\x83\xE4\xC0\x83\xEC\x34\x53\x56\x57\x8B\x7D\x08\x85\xFF"
 
 #define V_RENDERVIEW_SIG_NEW "\x55\x8B\xEC\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x2A\x2A\x33\x2A\x33"
+#define V_RENDERVIEW_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\x33\x2A\x89\x35\x2A\x2A\x2A\x2A\x89\x35"
 #define V_RENDERVIEW_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\xD9\xEE\xD9\x15"
  
 #define VID_UPDATEWINDOWVARS_SIG "\x56\x8B\x74\x24\x08\x8B\xC6\x8B\x08\x89\x0D\x2A\x2A\x2A\x2A\x8B\x50\x04\x89\x15"
 #define VID_UPDATEWINDOWVARS_SIG_NEW "\x55\x8B\xEC\x51\x56\x8B\x75\x08\x8B\xC6\x8B\x08\x89\x0D\x2A\x2A\x2A\x2A\x8B\x50\x04\x89\x15"
+#define VID_UPDATEWINDOWVARS_SIG_HL25 "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x83\xEC\x10\x85\xC0"
 #define VID_UPDATEWINDOWVARS_SIG_SVENGINE "\x8b\xc7\x99\x2B\xC2\xD1\xF8\x03\x2A\x50"
 
 #define R_FORCECVARS_SIG_SVENGINE "\x83\x7C\x24\x2A\x00\x2A\x2A\x2A\x2A\x00\x00\x81\x3D\x2A\x2A\x2A\x2A\xFF\x00\x00\x00"
@@ -164,41 +203,52 @@
 #define R_GLSTUDIODRAWPOINTS_SIG "\x83\xEC\x44\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x53\x55\x56\x8B\x70\x54\x8B\x40\x60\x57"
 #define R_GLSTUDIODRAWPOINTS_SIG2 "\x83\xEC\x48\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\x53\x55\x8B\x41\x54\x8B\x59\x60"
 #define R_GLSTUDIODRAWPOINTS_SIG_NEW "\x55\x8B\xEC\x83\xEC\x48\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x53\x56\x8B\x70\x54\x8B\x40\x60\x03\xC1"
+#define R_GLSTUDIODRAWPOINTS_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x8B\x0D\x2A\x2A\x2A\x2A\x2A\x8B\x35\x2A\x2A\x2A\x2A\x2A\x8B\x3D\x2A\x2A\x2A\x2A\xC7\x85"
 #define R_GLSTUDIODRAWPOINTS_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\x53\x8B\x1D\x2A\x2A\x2A\x2A\x55\x56\x57\x8B\x3D\x2A\x2A\x2A\x2A\x8B\x4B\x54"
+#define R_GLSTUDIODRAWPOINTS_SIG_GOLDSRC "\x75\x2A\x68\x44\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xC7"
 
 #define R_STUDIOLIGHTING_SIG "\x51\xDB\x05\x2A\x2A\x2A\x2A\x8A\x4C\x24\x10\xB8\x01\x00\x00\x00\x84\xC8\xD9\x5C\x24\x00"
 #define R_STUDIOLIGHTING_SIG_NEW "\x55\x8B\xEC\x51\xDB\x05\x2A\x2A\x2A\x2A\x8A\x4D\x10\xB8\x01\x00\x00\x00\x84\xC8\xD9\x5D\xFC"
+#define R_STUDIOLIGHTING_SIG_HL25 "\x55\x8B\xEC\xF6\x45\x10\x01\x66\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x0F\x5B\xDB"
 #define R_STUDIOLIGHTING_SIG_SVENGINE "\xF6\x2A\x2A\x2A\x2A\xDB\x05\x2A\x2A\x2A\x2A\x74\x1C\x83\x3D"
 
 #define R_LIGHTLAMBERT_SIG "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x2C\x8B\x0D\x2A\x2A\x2A\x2A\x53"
 #define R_LIGHTLAMBERT_SIG2 "\x8B\x0D\x2A\x2A\x2A\x2A\x83\xEC\x24\x53\x33\xDB\x56"
 #define R_LIGHTLAMBERT_SIG_NEW "\x55\x8B\xEC\x83\xEC\x24\x8B\x0D\x2A\x2A\x2A\x2A\x56\x57\x33\xFF\x3B\xCF\x75"
+#define R_LIGHTLAMBERT_SIG_HL25 "\x55\x8B\xEC\x83\xE4\xF8\x8B\x15\x2A\x2A\x2A\x2A\x83\xEC\x18\x2A\x2A\x85\xD2\x0F\x2A\x2A\x2A\x2A\x2A\x0F\x57\x2A\x0F\x57\x2A\x33\xFF"
 #define R_LIGHTLAMBERT_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\xD9\xE8\x8D\x4C\x24\x2A\x8B\x44\x24\x2A\x53"
 
 #define R_STUDIOCHROME_SIG "\x83\xEC\x24\x8B\x0D\x2A\x2A\x2A\x2A\x53\x56\x8B\x74\x24\x34\x57\x8B\x04\xB5"
 #define R_STUDIOCHROME_SIG_NEW "\x55\x8B\xEC\x83\xEC\x24\x8B\x0D\x2A\x2A\x2A\x2A\x53\x56\x8B\x75\x0C\x57\x8B\x04\xB5"
+#define R_STUDIOCHROME_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\x8B\x2A\x08\x2A\x8B\x2A\x0C\x8B\x04"
 #define R_STUDIOCHROME_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\xD9\xE8\x53"
 
 #define BUILDNORMALINDEXTABLE_SIG "\x8B\x15\x2A\x2A\x2A\x2A\x57\x8B\x4A\x50\x85\xC9\x7E\x2A\x83\xC8\xFF\xBF\x2A\x2A\x2A\x2A"
 #define BUILDNORMALINDEXTABLE_SIG_NEW "\x55\x8B\xEC\x51\x8B\x15\x2A\x2A\x2A\x2A\x57\x8B\x4A\x50\x85\xC9\x7E\x0A\x83\xC8\xFF\xBF"
+#define BUILDNORMALINDEXTABLE_SIG_HL25 ""
 #define BUILDNORMALINDEXTABLE_SIG_SVENGINE ""
 
+//TODO: use string "DM_Base.bmp"
 #define R_STUDIOSETUPSKIN_SIG "\xA0\x2A\x2A\x2A\x2A\x81\xEC\x0C\x01\x00\x00\xA8\x02\x53\x56\x57\x0F\x85"
 #define R_STUDIOSETUPSKIN_SIG_NEW "\x55\x8B\xEC\x81\xEC\x04\x01\x00\x00\xA0\x2A\x2A\x2A\x2A\x53\x56\x57\xA8\x02\x0F\x85\x2A\x2A\x2A\x2A\x8B\x5D\x0C"
+#define R_STUDIOSETUPSKIN_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\xF6\x05\x2A\x2A\x2A\x2A\x02\x8B\x45\x08"
 #define R_STUDIOSETUPSKIN_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\xF6\x05"
 
-//Sprite Funcs
 #define R_GETSPRITEFRAME_SIG "\x56\x8B\x74\x24\x08\x57\x33\xFF\x85\xF6\x75\x2A\x68\x2A\x2A\x2A\x2A\xE8"
 #define R_GETSPRITEFRAME_SIG_NEW "\x55\x8B\xEC\x56\x8B\x75\x08\x57\x33\xFF\x85\xF6\x75\x13\x68"
 
+//TODO: use string "R_DrawSpriteModel:  couldn"
 #define R_DRAWSRPITEMODEL_SIG "\x83\xEC\x40\x53\x56\x57\x8B\x7C\x24\x50\x8B\x87\x94\x0B\x00\x00"
 #define R_DRAWSRPITEMODEL_SIG_NEW "\x55\x8B\xEC\x83\xEC\x44\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x2A\x2A\x2A\x00\x00\xD9\x2A\xE0\x02"
+#define R_DRAWSRPITEMODEL_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\x2A\x2A\x2A\x8B\x75\x08\x2A\x8B\x2A\x94\x0B\x00\x00"
 #define R_DRAWSRPITEMODEL_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x53\x8B\x5C\x24\x2A\x55\x8B\x83\x2A\x0B\x00\x00"
 
 #define R_LIGHTSTRENGTH_SIG_SVENGINE "\x8B\x15\x2A\x2A\x2A\x2A\x2A\x8B\x35\x2A\x2A\x2A\x2A\x2A\x8B\x7C\x24\x0C"
+#define R_LIGHTSTRENGTH_SIG_HL25 ""//inlined
 #define R_LIGHTSTRENGTH_SIG_NEW "\x55\x8B\xEC\x83\xEC\x0C\x8B\x4D\x08\x8B\x15\x2A\x2A\x2A\x2A\x2A\x8B\x04\x2A\x2A\x2A\x2A\x2A"
 
 #define R_GLOW_BLEND_SIG_SVENGINE "\x55\x8B\xEC\x83\x2A\x2A\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\xA0\x00"
+#define R_GLOW_BLEND_SIG_HL25 ""//inlined
 #define R_GLOW_BLEND_SIG_NEW "\x55\x8B\xEC\x81\xEC\x2A\x00\x00\x00\xD9\x05\x2A\x2A\x2A\x2A\xD8\x25\x2A\x2A\x2A\x2A\x2A\x8D\x2A\x2A"
 
 #define GL_UPLOAD16_SIG_SVENGINE "\x8B\x44\x24\x2A\x83\xEC\x08\x85\xC0\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xC4\x08"
@@ -206,7 +256,7 @@
 #define SCR_BEGIN_LOADING_PLAQUE "\x6A\x01\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xF8\x03"
 
 #define HOST_IS_SINGLE_PLAYER_GAME_SVENGINE "\x33\xC0\x39\x05\x2A\x2A\x2A\x2A\x75\x2A\x83\x3D\x2A\x2A\x2A\x2A\x01\x0F\x94\xC0"
-
+#define HOST_IS_SINGLE_PLAYER_GAME_HL25 "\x83\x3D\x2A\x2A\x2A\x2A\x00\xA1\x2A\x2A\x2A\x2A\x0F\x44\x05\x2A\x2A\x2A\x2A\xC3"
 #define HOST_IS_SINGLE_PLAYER_GAME_NEW "\xA1\x2A\x2A\x2A\x2A\x85\xC0\xA1\x2A\x2A\x2A\x2A\x74\x05\xA1\x2A\x2A\x2A\x2A\xC3"
 
 void R_FillAddress(void)
@@ -219,18 +269,18 @@ void R_FillAddress(void)
 #define ENGINE_SURFACE_VERSION "EngineSurface007"
 		void *engineSurface = (void *)engineFactory(ENGINE_SURFACE_VERSION, NULL);
 
-		gRefFuncs.enginesurface_drawFlushText = *(decltype(gRefFuncs.enginesurface_drawFlushText) *)(*(DWORD *)engineSurface + 0x58);
+		int offset = 0x58;
+
+		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+			offset += 4;
+
+		gRefFuncs.enginesurface_drawFlushText = *(decltype(gRefFuncs.enginesurface_drawFlushText) *)(*(DWORD *)engineSurface + offset);
 	}
 
 	gRefFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
 	gRefFuncs.triapi_Color4f = gEngfuncs.pTriAPI->Color4f;
 
-	/*if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		gRefFuncs.R_LoadSkyBox_SvEngine = (decltype(gRefFuncs.R_LoadSkyBox_SvEngine))Search_Pattern(R_LOADSKYNAME_SIG_SVENGINE);
-		Sig_FuncNotFound(R_LoadSkyBox_SvEngine);
-	}*/
-
+#if 0//unused
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_MarkLights = (decltype(gRefFuncs.R_MarkLights))Search_Pattern(R_MARKLIGHTS_SVENGINE);
@@ -241,9 +291,16 @@ void R_FillAddress(void)
 		gRefFuncs.R_MarkLights = (decltype(gRefFuncs.R_MarkLights))Search_Pattern(R_MARKLIGHTS_NEW);
 		Sig_FuncNotFound(R_MarkLights);
 	}
+#endif
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_PolyBlend = (decltype(gRefFuncs.R_PolyBlend))Search_Pattern(R_POLYBLEND_SVENGINE);
+		Sig_FuncNotFound(R_PolyBlend);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.R_PolyBlend = (decltype(gRefFuncs.R_PolyBlend))Search_Pattern(R_POLYBLEND_HL25);
 		Sig_FuncNotFound(R_PolyBlend);
 	}
 	else
@@ -251,9 +308,15 @@ void R_FillAddress(void)
 		gRefFuncs.R_PolyBlend = (decltype(gRefFuncs.R_PolyBlend))Search_Pattern(R_POLYBLEND_NEW);
 		Sig_FuncNotFound(R_PolyBlend);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.S_ExtraUpdate = (decltype(gRefFuncs.S_ExtraUpdate))Search_Pattern(S_EXTRAUPDATE_SVENGINE);
+		Sig_FuncNotFound(S_ExtraUpdate);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.S_ExtraUpdate = (decltype(gRefFuncs.S_ExtraUpdate))Search_Pattern(S_EXTRAUPDATE_HL25);
 		Sig_FuncNotFound(S_ExtraUpdate);
 	}
 	else
@@ -261,9 +324,15 @@ void R_FillAddress(void)
 		gRefFuncs.S_ExtraUpdate = (decltype(gRefFuncs.S_ExtraUpdate))Search_Pattern(S_EXTRAUPDATE_NEW);
 		Sig_FuncNotFound(S_ExtraUpdate);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.GL_Bind = (void(*)(int))Search_Pattern(GL_BIND_SIG_SVENGINE);
+		Sig_FuncNotFound(GL_Bind);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.GL_Bind = (void(*)(int))Search_Pattern(GL_BIND_SIG_HL25);
 		Sig_FuncNotFound(GL_Bind);
 	}
 	else
@@ -271,9 +340,15 @@ void R_FillAddress(void)
 		gRefFuncs.GL_Bind = (void(*)(int))Search_Pattern(GL_BIND_SIG_NEW);
 		Sig_FuncNotFound(GL_Bind);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.GL_SelectTexture = (void(*)(GLenum))Search_Pattern_From(gRefFuncs.GL_Bind, GL_SELECTTEXTURE_SIG_SVENGINE);
+		Sig_FuncNotFound(GL_SelectTexture);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.GL_SelectTexture = (void(*)(GLenum))Search_Pattern_From(gRefFuncs.GL_Bind, GL_SELECTTEXTURE_SIG_HL25);
 		Sig_FuncNotFound(GL_SelectTexture);
 	}
 	else
@@ -281,18 +356,23 @@ void R_FillAddress(void)
 		gRefFuncs.GL_SelectTexture = (void(*)(GLenum))Search_Pattern(GL_SELECTTEXTURE_SIG_NEW);
 		Sig_FuncNotFound(GL_SelectTexture);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.GL_LoadTexture2 = (int(*)(char *, int, int, int, byte *, qboolean, int, byte *, int))Search_Pattern(GL_LOADTEXTURE2_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_LoadTexture2);
-		//gRefFuncs.GL_Upload16 = (int(*)(byte *data, int width, int height, int iType, byte *pPal, int a6, int a7, int a8))Search_Pattern(GL_UPLOAD16_SIG_SVENGINE);
-		//Sig_FuncNotFound(GL_Upload16);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.GL_LoadTexture2 = (int(*)(char*, int, int, int, byte*, qboolean, int, byte*, int))Search_Pattern(GL_LOADTEXTURE2_SIG_HL25);
+		Sig_FuncNotFound(GL_LoadTexture2);
 	}
 	else
 	{
 		gRefFuncs.GL_LoadTexture2 = (int(*)(char *, int, int, int, byte *, qboolean, int, byte *, int))Search_Pattern(GL_LOADTEXTURE2_SIG_NEW);
 		Sig_FuncNotFound(GL_LoadTexture2);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_CullBox = (qboolean(*)(vec3_t, vec3_t))Search_Pattern_From(gRefFuncs.GL_LoadTexture2, R_CULLBOX_SIG_SVENGINE);
@@ -303,29 +383,45 @@ void R_FillAddress(void)
 		gRefFuncs.R_CullBox = (qboolean(*)(vec3_t, vec3_t))Search_Pattern_From(gRefFuncs.GL_LoadTexture2, R_CULLBOX_SIG_NEW);
 		Sig_FuncNotFound(R_CullBox);
 	}
+
+	//Inlined in HL25 and SvEngine
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_SetupFrame = (void(*)(void))Search_Pattern(R_SETUPFRAME_SIG_SVENGINE);
-		//inlined ? Still find
+		
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		
 	}
 	else
 	{
 		gRefFuncs.R_SetupFrame = (void(*)(void))Search_Pattern(R_SETUPFRAME_SIG_NEW);
-		Sig_FuncNotFound(R_SetupFrame);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_SetupGL = (void(*)(void))Search_Pattern(R_SETUPGL_SIG_SVENGINE);
 		Sig_FuncNotFound(R_SetupGL);
 	}
-	else
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_SetupGL = (void(*)(void))Search_Pattern_From(gRefFuncs.R_SetupFrame, R_SETUPGL_SIG_NEW);
+		gRefFuncs.R_SetupGL = (void(*)(void))Search_Pattern(R_SETUPGL_SIG_HL25);
 		Sig_FuncNotFound(R_SetupGL);
 	}
+	else
+	{
+		gRefFuncs.R_SetupGL = (void(*)(void))Search_Pattern(R_SETUPGL_SIG_NEW);
+		Sig_FuncNotFound(R_SetupGL);
+	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_DrawSequentialPoly = (void(*)(msurface_t *, int))Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_SVENGINE);
+		Sig_FuncNotFound(R_DrawSequentialPoly);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.R_DrawSequentialPoly = (void(*)(msurface_t*, int))Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_HL25);
 		Sig_FuncNotFound(R_DrawSequentialPoly);
 	}
 	else
@@ -333,9 +429,15 @@ void R_FillAddress(void)
 		gRefFuncs.R_DrawSequentialPoly = (void(*)(msurface_t *, int))Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_NEW);
 		Sig_FuncNotFound(R_DrawSequentialPoly);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_TextureAnimation = (texture_t *(*)(msurface_t *))Search_Pattern(R_TEXTUREANIMATION_SIG_SVENGINE);
+		Sig_FuncNotFound(R_TextureAnimation);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.R_TextureAnimation = (texture_t * (*)(msurface_t*))Search_Pattern(R_TEXTUREANIMATION_SIG_HL25);
 		Sig_FuncNotFound(R_TextureAnimation);
 	}
 	else
@@ -343,6 +445,7 @@ void R_FillAddress(void)
 		gRefFuncs.R_TextureAnimation = (texture_t *(*)(msurface_t *))Search_Pattern(R_TEXTUREANIMATION_SIG_NEW);
 		Sig_FuncNotFound(R_TextureAnimation);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.V_RenderView = (void(*)(void))Search_Pattern(V_RENDERVIEW_SIG_SVENGINE);
@@ -355,6 +458,17 @@ void R_FillAddress(void)
 		Sig_AddrNotFound(R_RenderScene);
 		gRefFuncs.R_RenderScene = (void(*)(void))(addr + 5 + 4 + *(int *)(addr + 5));
 	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.V_RenderView = (void(*)(void))Search_Pattern(V_RENDERVIEW_SIG_HL25);
+		Sig_FuncNotFound(V_RenderView);
+
+		gRefFuncs.R_RenderView = (void(*)(void))Search_Pattern(R_RENDERVIEW_SIG_HL25);
+		Sig_FuncNotFound(R_RenderView);
+
+		gRefFuncs.R_RenderScene = (void(*)(void))Search_Pattern(R_RENDERSCENE_SIG_HL25);
+		Sig_FuncNotFound(R_RenderScene);
+	}
 	else
 	{
 		gRefFuncs.V_RenderView = (void(*)(void))Search_Pattern(V_RENDERVIEW_SIG_NEW);
@@ -366,6 +480,7 @@ void R_FillAddress(void)
 		gRefFuncs.R_RenderScene = (void(*)(void))Search_Pattern(R_RENDERSCENE_SIG_NEW);
 		Sig_FuncNotFound(R_RenderScene);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_NewMap = (void(*)(void))Search_Pattern(R_NEWMAP_SIG_SVENGINE);
@@ -381,6 +496,11 @@ void R_FillAddress(void)
 		gRefFuncs.GL_BuildLightmaps = (void(*)(void))Search_Pattern(GL_BUILDLIGHTMAPS_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_BuildLightmaps);
 	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.GL_BuildLightmaps = (void(*)(void))Search_Pattern(GL_BUILDLIGHTMAPS_SIG_HL25);
+		Sig_FuncNotFound(GL_BuildLightmaps);
+	}
 	else
 	{
 		gRefFuncs.GL_BuildLightmaps = (void(*)(void))Search_Pattern(GL_BUILDLIGHTMAPS_SIG_NEW);
@@ -389,6 +509,11 @@ void R_FillAddress(void)
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_BuildLightMap = (void(*)(msurface_t *, byte *, int))Search_Pattern(R_BUILDLIGHTMAP_SIG_SVENGINE);
+		Sig_FuncNotFound(R_BuildLightMap);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.R_BuildLightMap = (void(*)(msurface_t*, byte*, int))Search_Pattern(R_BUILDLIGHTMAP_SIG_HL25);
 		Sig_FuncNotFound(R_BuildLightMap);
 	}
 	else
@@ -401,6 +526,11 @@ void R_FillAddress(void)
 		gRefFuncs.R_AddDynamicLights = (void(*)(msurface_t *))Search_Pattern(R_ADDDYNAMICLIGHTS_SIG_SVENGINE);
 		Sig_FuncNotFound(R_AddDynamicLights);
 	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.R_AddDynamicLights = (void(*)(msurface_t*))Search_Pattern(R_ADDDYNAMICLIGHTS_SIG_HL25);
+		Sig_FuncNotFound(R_AddDynamicLights);
+	}
 	else
 	{
 		gRefFuncs.R_AddDynamicLights = (void(*)(msurface_t *))Search_Pattern(R_ADDDYNAMICLIGHTS_SIG_NEW);
@@ -411,15 +541,25 @@ void R_FillAddress(void)
 		gRefFuncs.GL_DisableMultitexture = (void(*)(void))Search_Pattern(GL_DISABLEMULTITEXTURE_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_DisableMultitexture);
 	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.GL_DisableMultitexture = (void(*)(void))Search_Pattern_From(gRefFuncs.R_NewMap, GL_DISABLEMULTITEXTURE_SIG_HL25);
+		Sig_FuncNotFound(GL_DisableMultitexture);
+	}
 	else
 	{
 		gRefFuncs.GL_DisableMultitexture = (void(*)(void))Search_Pattern_From(gRefFuncs.R_NewMap, GL_DISABLEMULTITEXTURE_SIG_NEW);
 		Sig_FuncNotFound(GL_DisableMultitexture);
-
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.GL_EnableMultitexture = (void(*)(void))Search_Pattern(GL_ENABLEMULTITEXTURE_SIG_SVENGINE);
+		Sig_FuncNotFound(GL_EnableMultitexture);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.GL_EnableMultitexture = (void(*)(void))Search_Pattern_From(gRefFuncs.GL_DisableMultitexture, GL_ENABLEMULTITEXTURE_SIG_HL25);
 		Sig_FuncNotFound(GL_EnableMultitexture);
 	}
 	else
@@ -427,9 +567,15 @@ void R_FillAddress(void)
 		gRefFuncs.GL_EnableMultitexture = (void(*)(void))Search_Pattern_From(gRefFuncs.GL_DisableMultitexture, GL_ENABLEMULTITEXTURE_SIG_NEW);
 		Sig_FuncNotFound(GL_EnableMultitexture);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_RenderDynamicLightmaps = (void(*)(msurface_t *))Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_SVENGINE);
+		Sig_FuncNotFound(R_RenderDynamicLightmaps);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.R_RenderDynamicLightmaps = (void(*)(msurface_t*))Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_HL25);
 		Sig_FuncNotFound(R_RenderDynamicLightmaps);
 	}
 	else
@@ -437,9 +583,15 @@ void R_FillAddress(void)
 		gRefFuncs.R_RenderDynamicLightmaps = (void(*)(msurface_t *))Search_Pattern_From(gRefFuncs.GL_EnableMultitexture, R_RENDERDYNAMICLIGHTMAPS_SIG_NEW);
 		Sig_FuncNotFound(R_RenderDynamicLightmaps);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_DrawBrushModel = (void(*)(cl_entity_t *))Search_Pattern(R_DRAWBRUSHMODEL_SIG_SVENGINE);
+		Sig_FuncNotFound(R_DrawBrushModel);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.R_DrawBrushModel = (void(*)(cl_entity_t*))Search_Pattern(R_DRAWBRUSHMODEL_SIG_HL25);
 		Sig_FuncNotFound(R_DrawBrushModel);
 	}
 	else
@@ -447,9 +599,15 @@ void R_FillAddress(void)
 		gRefFuncs.R_DrawBrushModel = (void(*)(cl_entity_t *))Search_Pattern_From(gRefFuncs.R_RenderDynamicLightmaps, R_DRAWBRUSHMODEL_SIG_NEW);
 		Sig_FuncNotFound(R_DrawBrushModel);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_RecursiveWorldNode = (void(*)(mnode_t *))Search_Pattern(R_RECURSIVEWORLDNODE_SIG_SVENGINE);
+		Sig_FuncNotFound(R_RecursiveWorldNode);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.R_RecursiveWorldNode = (void(*)(mnode_t*))Search_Pattern_From(gRefFuncs.R_DrawSequentialPoly, R_RECURSIVEWORLDNODE_SIG_HL25);
 		Sig_FuncNotFound(R_RecursiveWorldNode);
 	}
 	else
@@ -457,9 +615,15 @@ void R_FillAddress(void)
 		gRefFuncs.R_RecursiveWorldNode = (void(*)(mnode_t *))Search_Pattern_From(gRefFuncs.R_DrawBrushModel, R_RECURSIVEWORLDNODE_SIG_NEW);
 		Sig_FuncNotFound(R_RecursiveWorldNode);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_DrawWorld = (void(*)(void))Search_Pattern(R_DRAWWORLD_SIG_SVENGINE);
+		Sig_FuncNotFound(R_DrawWorld);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.R_DrawWorld = (void(*)(void))Search_Pattern_From(gRefFuncs.R_DrawSequentialPoly, R_DRAWWORLD_SIG_HL25);
 		Sig_FuncNotFound(R_DrawWorld);
 	}
 	else
@@ -467,9 +631,15 @@ void R_FillAddress(void)
 		gRefFuncs.R_DrawWorld = (void(*)(void))Search_Pattern_From(gRefFuncs.R_RecursiveWorldNode, R_DRAWWORLD_SIG_NEW);
 		Sig_FuncNotFound(R_DrawWorld);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_MarkLeaves = (void(*)(void))Search_Pattern(R_MARKLEAVES_SIG_SVENGINE);
+		Sig_FuncNotFound(R_MarkLeaves);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.R_MarkLeaves = (void(*)(void))Search_Pattern(R_MARKLEAVES_SIG_HL25);
 		Sig_FuncNotFound(R_MarkLeaves);
 	}
 	else
@@ -477,30 +647,68 @@ void R_FillAddress(void)
 		gRefFuncs.R_MarkLeaves = (void(*)(void))Search_Pattern(R_MARKLEAVES_SIG_NEW);
 		Sig_FuncNotFound(R_MarkLeaves);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.GL_BeginRendering = (void(*)(int *, int *, int *, int *))Search_Pattern(GL_BEGINRENDERING_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_BeginRendering);
 	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.GL_BeginRendering = (void(*)(int*, int*, int*, int*))Search_Pattern(GL_BEGINRENDERING_SIG_HL25);
+		Sig_FuncNotFound(GL_BeginRendering);
+	}
 	else
 	{
-
 		gRefFuncs.GL_BeginRendering = (void(*)(int *, int *, int *, int *))Search_Pattern(GL_BEGINRENDERING_SIG_NEW);
 		Sig_FuncNotFound(GL_BeginRendering);
 	}
-	if (g_iEngineType == ENGINE_SVENGINE)
+
+	if (g_iEngineType == ENGINE_GOLDSRC || g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.GL_EndRendering = (void(*)(void))Search_Pattern(GL_ENDRENDERING_SIG_SVENGINE);
+		auto addr = Search_Pattern(GL_ENDRENDERING_SIG_GOLDSRC);
+		Sig_AddrNotFound(GL_EndRendering);
+
+		gRefFuncs.GL_EndRendering = (decltype(gRefFuncs.GL_EndRendering))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(addr, 0x500, [](PUCHAR Candidate) {
+
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC &&
+				Candidate[3] == 0x83)
+				return TRUE;
+
+			return FALSE;
+		});
 		Sig_FuncNotFound(GL_EndRendering);
 	}
-	else
+
+	if (!gRefFuncs.GL_EndRendering)
 	{
-		gRefFuncs.GL_EndRendering = (void(*)(void))Search_Pattern_From(gRefFuncs.GL_BeginRendering, GL_ENDRENDERING_SIG_NEW);
-		Sig_FuncNotFound(GL_EndRendering);
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gRefFuncs.GL_EndRendering = (void(*)(void))Search_Pattern(GL_ENDRENDERING_SIG_SVENGINE);
+			Sig_FuncNotFound(GL_EndRendering);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			gRefFuncs.GL_EndRendering = (void(*)(void))Search_Pattern(GL_ENDRENDERING_SIG_HL25);
+			Sig_FuncNotFound(GL_EndRendering);
+		}
+		else
+		{
+			gRefFuncs.GL_EndRendering = (void(*)(void))Search_Pattern_From(gRefFuncs.GL_BeginRendering, GL_ENDRENDERING_SIG_NEW);
+			Sig_FuncNotFound(GL_EndRendering);
+		}
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.EmitWaterPolys = (void(*)(msurface_t *, int))Search_Pattern(EMITWATERPOLYS_SIG_SVENGINE);
+		Sig_FuncNotFound(EmitWaterPolys);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.EmitWaterPolys = (void(*)(msurface_t*, int))Search_Pattern(EMITWATERPOLYS_SIG_HL25);
 		Sig_FuncNotFound(EmitWaterPolys);
 	}
 	else
@@ -508,6 +716,7 @@ void R_FillAddress(void)
 		gRefFuncs.EmitWaterPolys = (void(*)(msurface_t *, int))Search_Pattern(EMITWATERPOLYS_SIG_NEW);
 		Sig_FuncNotFound(EmitWaterPolys);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		addr = (DWORD)Search_Pattern(VID_UPDATEWINDOWVARS_SIG_SVENGINE);
@@ -519,11 +728,15 @@ void R_FillAddress(void)
 		gRefFuncs.VID_UpdateWindowVars = (void(*)(RECT *prc, int x, int y))(addr + 2 + 4 + *(int *)(addr + 2));
 		Sig_FuncNotFound(VID_UpdateWindowVars);
 	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.VID_UpdateWindowVars = (void(*)(RECT * prc, int x, int y))Search_Pattern(VID_UPDATEWINDOWVARS_SIG_HL25);
+		Sig_FuncNotFound(VID_UpdateWindowVars);
+	}
 	else
 	{
 		gRefFuncs.VID_UpdateWindowVars = (void(*)(RECT *prc, int x, int y))Search_Pattern(VID_UPDATEWINDOWVARS_SIG_NEW);
 		Sig_FuncNotFound(VID_UpdateWindowVars);
-
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -535,19 +748,15 @@ void R_FillAddress(void)
 		gRefFuncs.Mod_PointInLeaf = (mleaf_t *(*)(vec3_t, model_t *))Search_Pattern(MOD_POINTINLEAF_SIG_NEW);
 		Sig_FuncNotFound(Mod_PointInLeaf);
 	}
-	/*if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		gRefFuncs.R_ForceCVars = (void(*)(qboolean))Search_Pattern(R_FORCECVARS_SIG_SVENGINE);
-		Sig_FuncNotFound(R_ForceCVars);
-	}
-	else
-	{
-		gRefFuncs.R_ForceCVars = (void(*)(qboolean))Search_Pattern(R_FORCECVARS_SIG_NEW);
-		Sig_FuncNotFound(R_ForceCVars);
-	}*/
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_DrawTEntitiesOnList = (void(*)(int))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_SVENGINE);
+		Sig_FuncNotFound(R_DrawTEntitiesOnList);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.R_DrawTEntitiesOnList = (void(*)(int))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_HL25);
 		Sig_FuncNotFound(R_DrawTEntitiesOnList);
 	}
 	else
@@ -555,9 +764,15 @@ void R_FillAddress(void)
 		gRefFuncs.R_DrawTEntitiesOnList = (void(*)(int))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_NEW);
 		Sig_FuncNotFound(R_DrawTEntitiesOnList);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.BuildGammaTable = (void(*)(float))Search_Pattern(BUILDGAMMATABLE_SIG_SVENGINE);
+		Sig_FuncNotFound(BuildGammaTable);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.BuildGammaTable = (void(*)(float))Search_Pattern(BUILDGAMMATABLE_SIG_HL25);
 		Sig_FuncNotFound(BuildGammaTable);
 	}
 	else
@@ -565,9 +780,15 @@ void R_FillAddress(void)
 		gRefFuncs.BuildGammaTable = (void(*)(float))Search_Pattern(BUILDGAMMATABLE_SIG_NEW);
 		Sig_FuncNotFound(BuildGammaTable);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_DrawParticles = (void(*)(void))Search_Pattern(R_DRAWPARTICLES_SIG_SVENGINE);
+		Sig_FuncNotFound(R_DrawParticles);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.R_DrawParticles = (void(*)(void))Search_Pattern(R_DRAWPARTICLES_SIG_HL25);
 		Sig_FuncNotFound(R_DrawParticles);
 	}
 	else
@@ -575,6 +796,7 @@ void R_FillAddress(void)
 		gRefFuncs.R_DrawParticles = (void(*)(void))Search_Pattern(R_DRAWPARTICLES_SIG_NEW);
 		Sig_FuncNotFound(R_DrawParticles);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.CL_AllocDlight = (dlight_t *(*)(int))Search_Pattern(CL_ALLOCDLIGHT_SIG_SVENGINE);
@@ -585,19 +807,57 @@ void R_FillAddress(void)
 		gRefFuncs.CL_AllocDlight = (dlight_t *(*)(int))Search_Pattern(CL_ALLOCDLIGHT_SIG_NEW);
 		Sig_FuncNotFound(CL_AllocDlight);
 	}
-	if (g_iEngineType == ENGINE_SVENGINE)
+
+	if (g_iEngineType == ENGINE_GOLDSRC || g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_GLStudioDrawPoints = (void(*)(void))Search_Pattern(R_GLSTUDIODRAWPOINTS_SIG_SVENGINE);
+		auto addr = Search_Pattern(R_GLSTUDIODRAWPOINTS_SIG_GOLDSRC);
+		Sig_AddrNotFound(R_GLStudioDrawPoints);
+
+		gRefFuncs.R_GLStudioDrawPoints = (decltype(gRefFuncs.R_GLStudioDrawPoints))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(addr, 0x1000, [](PUCHAR Candidate) {
+
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC)
+			{
+				if (Candidate[3] == 0x83 && Candidate[4] == 0xEC)
+					return TRUE;
+				if (Candidate[3] == 0x81 && Candidate[4] == 0xEC)
+					return TRUE;
+			}
+
+			return FALSE;
+		});
 		Sig_FuncNotFound(R_GLStudioDrawPoints);
 	}
-	else
+
+	if (!gRefFuncs.R_GLStudioDrawPoints)
 	{
-		gRefFuncs.R_GLStudioDrawPoints = (void(*)(void))Search_Pattern(R_GLSTUDIODRAWPOINTS_SIG_NEW);
-		Sig_FuncNotFound(R_GLStudioDrawPoints);
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gRefFuncs.R_GLStudioDrawPoints = (void(*)(void))Search_Pattern(R_GLSTUDIODRAWPOINTS_SIG_SVENGINE);
+			Sig_FuncNotFound(R_GLStudioDrawPoints);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			gRefFuncs.R_GLStudioDrawPoints = (void(*)(void))Search_Pattern(R_GLSTUDIODRAWPOINTS_SIG_HL25);
+			Sig_FuncNotFound(R_GLStudioDrawPoints);
+		}
+		else
+		{
+			gRefFuncs.R_GLStudioDrawPoints = (void(*)(void))Search_Pattern(R_GLSTUDIODRAWPOINTS_SIG_NEW);
+			Sig_FuncNotFound(R_GLStudioDrawPoints);
+		}
 	}
+
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_StudioLighting = (void(*)(float *lv, int bone, int flags, vec3_t normal))Search_Pattern(R_STUDIOLIGHTING_SIG_SVENGINE);
+		Sig_FuncNotFound(R_StudioLighting);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.R_StudioLighting = (void(*)(float* lv, int bone, int flags, vec3_t normal))Search_Pattern(R_STUDIOLIGHTING_SIG_HL25);
 		Sig_FuncNotFound(R_StudioLighting);
 	}
 	else
@@ -605,9 +865,15 @@ void R_FillAddress(void)
 		gRefFuncs.R_StudioLighting = (void(*)(float *, int, int, vec3_t))Search_Pattern(R_STUDIOLIGHTING_SIG_NEW);
 		Sig_FuncNotFound(R_StudioLighting);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_StudioChrome = (void(*)(int *pchrome, int bone, vec3_t normal))Search_Pattern(R_STUDIOCHROME_SIG_SVENGINE);
+		Sig_FuncNotFound(R_StudioChrome);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.R_StudioChrome = (void(*)(int* pchrome, int bone, vec3_t normal))Search_Pattern(R_STUDIOCHROME_SIG_HL25);
 		Sig_FuncNotFound(R_StudioChrome);
 	}
 	else
@@ -615,9 +881,15 @@ void R_FillAddress(void)
 		gRefFuncs.R_StudioChrome = (void(*)(int *, int, vec3_t))Search_Pattern(R_STUDIOCHROME_SIG_NEW);
 		Sig_FuncNotFound(R_StudioChrome);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_LightLambert = (void(*)(float(*light)[4], float *normal, float *src, float *lambert))Search_Pattern(R_LIGHTLAMBERT_SIG_SVENGINE);
+		Sig_FuncNotFound(R_LightLambert);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.R_LightLambert = (void(*)(float(*light)[4], float* normal, float* src, float* lambert))Search_Pattern(R_LIGHTLAMBERT_SIG_HL25);
 		Sig_FuncNotFound(R_LightLambert);
 	}
 	else
@@ -625,9 +897,15 @@ void R_FillAddress(void)
 		gRefFuncs.R_LightLambert = (void(*)(float(*)[4], float *, float *, float *))Search_Pattern(R_LIGHTLAMBERT_SIG_NEW);
 		Sig_FuncNotFound(R_LightLambert);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_StudioSetupSkin = (void(*)(studiohdr_t *, int))Search_Pattern(R_STUDIOSETUPSKIN_SIG_SVENGINE);
+		Sig_FuncNotFound(R_StudioSetupSkin);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.R_StudioSetupSkin = (void(*)(studiohdr_t*, int))Search_Pattern(R_STUDIOSETUPSKIN_SIG_HL25);
 		Sig_FuncNotFound(R_StudioSetupSkin);
 	}
 	else
@@ -635,9 +913,15 @@ void R_FillAddress(void)
 		gRefFuncs.R_StudioSetupSkin = (void(*)(studiohdr_t *, int))Search_Pattern(R_STUDIOSETUPSKIN_SIG_NEW);
 		Sig_FuncNotFound(R_StudioSetupSkin);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.Draw_MiptexTexture = (void(*)(cachewad_t *wad, byte *data))Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_SVENGINE);
+		Sig_FuncNotFound(Draw_MiptexTexture);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.Draw_MiptexTexture = (void(*)(cachewad_t * wad, byte * data))Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_HL25);
 		Sig_FuncNotFound(Draw_MiptexTexture);
 	}
 	else
@@ -645,9 +929,15 @@ void R_FillAddress(void)
 		gRefFuncs.Draw_MiptexTexture = (void(*)(cachewad_t *wad, byte *data))Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_NEW);
 		Sig_FuncNotFound(Draw_MiptexTexture);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.Draw_DecalTexture = (texture_t *(*)(int))Search_Pattern(DRAW_DECALTEXTURE_SIG_SVENGINE);
+		Sig_FuncNotFound(Draw_DecalTexture);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.Draw_DecalTexture = (texture_t * (*)(int))Search_Pattern(DRAW_DECALTEXTURE_SIG_HL25);
 		Sig_FuncNotFound(Draw_DecalTexture);
 	}
 	else
@@ -655,9 +945,15 @@ void R_FillAddress(void)
 		gRefFuncs.Draw_DecalTexture = (texture_t *(*)(int))Search_Pattern(DRAW_DECALTEXTURE_SIG_NEW);
 		Sig_FuncNotFound(Draw_DecalTexture);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_DrawSpriteModel = (void(*)(cl_entity_t *))Search_Pattern(R_DRAWSRPITEMODEL_SIG_SVENGINE);
+		Sig_FuncNotFound(R_DrawSpriteModel);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.R_DrawSpriteModel = (void(*)(cl_entity_t*))Search_Pattern(R_DRAWSRPITEMODEL_SIG_HL25);
 		Sig_FuncNotFound(R_DrawSpriteModel);
 	}
 	else
@@ -665,30 +961,52 @@ void R_FillAddress(void)
 		gRefFuncs.R_DrawSpriteModel = (void(*)(cl_entity_t *))Search_Pattern(R_DRAWSRPITEMODEL_SIG_NEW);
 		Sig_FuncNotFound(R_DrawSpriteModel);
 	}
+
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.R_LightStrength = (decltype(gRefFuncs.R_LightStrength))Search_Pattern(R_LIGHTSTRENGTH_SIG_SVENGINE);
 		Sig_FuncNotFound(R_LightStrength);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		//Inlined
 	}
 	else
 	{
 		gRefFuncs.R_LightStrength = (decltype(gRefFuncs.R_LightStrength))Search_Pattern(R_LIGHTSTRENGTH_SIG_NEW);
 		Sig_FuncNotFound(R_LightStrength);
 	}
-	if (g_iEngineType == ENGINE_SVENGINE)
+
+	if (g_iEngineType == ENGINE_GOLDSRC || g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_RotateForEntity = (void(*)(float *, cl_entity_t *))Search_Pattern(R_ROTATEFORENTITY_SVENGINE);
+		auto addr = Search_Pattern(R_ROTATEFORENTITY_GOLDSRC);
+		Sig_AddrNotFound(R_RotateForEntity_Pattern);
+		
+		gRefFuncs.R_RotateForEntity = (void(*)(float*, cl_entity_t*))GetCallAddress((PUCHAR)addr + sizeof(R_ROTATEFORENTITY_GOLDSRC) - 1 - 1);
 		Sig_FuncNotFound(R_RotateForEntity);
 	}
-	else
+
+	if (!gRefFuncs.R_RotateForEntity)
 	{
-		gRefFuncs.R_RotateForEntity = (void(*)(float *, cl_entity_t *))Search_Pattern(R_ROTATEFORENTITY_NEW);
-		Sig_FuncNotFound(R_RotateForEntity);
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gRefFuncs.R_RotateForEntity = (void(*)(float*, cl_entity_t*))Search_Pattern(R_ROTATEFORENTITY_SVENGINE);
+			Sig_FuncNotFound(R_RotateForEntity);
+		}
+		else
+		{
+			gRefFuncs.R_RotateForEntity = (void(*)(float*, cl_entity_t*))Search_Pattern(R_ROTATEFORENTITY_NEW);
+			Sig_FuncNotFound(R_RotateForEntity);
+		}
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-
+		//inlined
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		//inlined
 	}
 	else
 	{
@@ -700,6 +1018,10 @@ void R_FillAddress(void)
 	{
 		gRefFuncs.R_GlowBlend = (float(*)(cl_entity_t *))Search_Pattern(R_GLOW_BLEND_SIG_SVENGINE);
 		Sig_FuncNotFound(R_GlowBlend);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		//inlined
 	}
 	else
 	{
@@ -713,6 +1035,11 @@ void R_FillAddress(void)
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gRefFuncs.Host_IsSinglePlayerGame = (decltype(gRefFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_SVENGINE);
+		Sig_FuncNotFound(Host_IsSinglePlayerGame);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.Host_IsSinglePlayerGame = (decltype(gRefFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_HL25);
 		Sig_FuncNotFound(Host_IsSinglePlayerGame);
 	}
 	else
@@ -794,13 +1121,16 @@ void R_FillAddress(void)
 		Sig_VarNotFound(Hunk_Alloc_Call);
 
 		gRefFuncs.Hunk_AllocName = (decltype(gRefFuncs.Hunk_AllocName))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Hunk_Alloc_Call, 0x50, [](PUCHAR Candidate) {
-			//.text : 01DC7FE0 55                                                  push    ebp
-			//.text : 01DC7FE1 8B EC                                               mov     ebp, esp
-			if (Candidate[-1] == 0x90 &&
-				Candidate[0] == 0x55 &&
+
+			if (Candidate[0] == 0x55 &&
 				Candidate[1] == 0x8B &&
 				Candidate[2] == 0xEC)
-				return TRUE;
+			{
+				if (Candidate[-1] == 0x90 || Candidate[-1] == 0xCC)
+				{
+					return TRUE;
+				}
+			}
 
 			return FALSE;
 		});
@@ -911,10 +1241,23 @@ void R_FillAddress(void)
 				instCount < ctx->load_zero_instcount + 5)
 			{//.text:01D4D4C0 A3 F4 78 E4 01 mov     videowindowaspect_0, eax
 
-				if (!videowindowaspect)
-					videowindowaspect = (decltype(videowindowaspect))pinst->detail->x86.operands[0].mem.disp;
-				else if (!windowvideoaspect)
-					windowvideoaspect = (decltype(windowvideoaspect))pinst->detail->x86.operands[0].mem.disp;
+				if (!s_fYMouseAspectAdjustment)
+					s_fYMouseAspectAdjustment = (decltype(s_fYMouseAspectAdjustment))pinst->detail->x86.operands[0].mem.disp;
+				else if (!s_fXMouseAspectAdjustment)
+					s_fXMouseAspectAdjustment = (decltype(s_fXMouseAspectAdjustment))pinst->detail->x86.operands[0].mem.disp;
+			}
+			else if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 0x3F800000)
+			{//.text:01D4D4C0 A3 F4 78 E4 01 mov     videowindowaspect_0, eax
+
+				if (!s_fYMouseAspectAdjustment)
+					s_fYMouseAspectAdjustment = (decltype(s_fYMouseAspectAdjustment))pinst->detail->x86.operands[0].mem.disp;
+				else if (!s_fXMouseAspectAdjustment)
+					s_fXMouseAspectAdjustment = (decltype(s_fXMouseAspectAdjustment))pinst->detail->x86.operands[0].mem.disp;
 			}
 			else if ((pinst->id == X86_INS_FST || pinst->id == X86_INS_FSTP) &&
 				pinst->detail->x86.op_count == 1 &&
@@ -923,10 +1266,10 @@ void R_FillAddress(void)
 				instCount < ctx->load_zero_instcount + 5)
 			{//.D9 15 E0 85 ED 01 fst     videowindowaspect
 
-				if (!videowindowaspect)
-					videowindowaspect = (decltype(videowindowaspect))pinst->detail->x86.operands[0].mem.disp;
-				else if (!windowvideoaspect)
-					windowvideoaspect = (decltype(windowvideoaspect))pinst->detail->x86.operands[0].mem.disp;
+				if (!s_fYMouseAspectAdjustment)
+					s_fYMouseAspectAdjustment = (decltype(s_fYMouseAspectAdjustment))pinst->detail->x86.operands[0].mem.disp;
+				else if (!s_fXMouseAspectAdjustment)
+					s_fXMouseAspectAdjustment = (decltype(s_fXMouseAspectAdjustment))pinst->detail->x86.operands[0].mem.disp;
 			}
 			else if (pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 &&
@@ -945,7 +1288,7 @@ void R_FillAddress(void)
 				ctx->load_zero_instcount = instCount;
 			}
 
-			if (gl_backbuffer_fbo && gl_msaa_fbo && videowindowaspect && windowvideoaspect)
+			if (gl_backbuffer_fbo && gl_msaa_fbo && s_fXMouseAspectAdjustment && s_fYMouseAspectAdjustment)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -959,8 +1302,8 @@ void R_FillAddress(void)
 
 		Sig_VarNotFound(gl_backbuffer_fbo);
 		Sig_VarNotFound(gl_msaa_fbo);
-		Sig_VarNotFound(videowindowaspect);
-		Sig_VarNotFound(windowvideoaspect);
+		Sig_VarNotFound(s_fXMouseAspectAdjustment);
+		Sig_VarNotFound(s_fYMouseAspectAdjustment);
 	}
 
 	if (1)
@@ -1093,11 +1436,13 @@ void R_FillAddress(void)
 			int disableFog_instcount;
 			int parsemod_instcount;
 			int getskin_instcount;
+			PVOID r_entorigin_candidate[3];
+			int r_entorigin_candidate_count;
 		}R_DrawTEntitiesOnList_ctx;
 
 		R_DrawTEntitiesOnList_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_DrawTEntitiesOnList, 0x250, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_DrawTEntitiesOnList, 0x500, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 			auto ctx = (R_DrawTEntitiesOnList_ctx *)context;
@@ -1116,6 +1461,16 @@ void R_FillAddress(void)
 				pinst->detail->x86.op_count == 1 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0)
+			{//.text:01D92355 D9 15 80 61 DF 08 fst     r_blend
+				r_blend = (decltype(r_blend))pinst->detail->x86.operands[0].mem.disp;
+			}
+			else if (!r_blend && ctx->disableFog_instcount &&
+				instCount < ctx->disableFog_instcount + 15 &&
+				(pinst->id == X86_INS_MOVSS) &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG)
 			{//.text:01D92355 D9 15 80 61 DF 08 fst     r_blend
 				r_blend = (decltype(r_blend))pinst->detail->x86.operands[0].mem.disp;
 			}
@@ -1191,9 +1546,10 @@ void R_FillAddress(void)
 				//.text:01D924D9 0F BF 83 E8 02 00 00                                movsx   eax, word ptr [ebx+2E8h]
 				ctx->getskin_instcount = instCount;
 			}
-			else if (!r_entorigin &&
+
+			if (!r_entorigin &&
 				ctx->getskin_instcount &&
-				instCount < ctx->getskin_instcount + 8 &&
+				instCount < ctx->getskin_instcount + 20 &&
 				pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
@@ -1202,11 +1558,26 @@ void R_FillAddress(void)
 				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
 			{
 				//.text:01D88C23 89 15 E0 98 BC 02                                   mov     r_entorigin, edx
-				r_entorigin = (decltype(r_entorigin))pinst->detail->x86.operands[0].mem.disp;
+				auto candidate = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+				if (!ctx->r_entorigin_candidate[ctx->r_entorigin_candidate_count] && ctx->r_entorigin_candidate_count < 3)
+				{
+					bool bFound = false;
+					for (auto k = 0; k < ctx->r_entorigin_candidate_count; ++k)
+					{
+						if (ctx->r_entorigin_candidate[k] == candidate)
+							bFound = true;
+					}
+					if (!bFound)
+					{
+						ctx->r_entorigin_candidate[ctx->r_entorigin_candidate_count] = candidate;
+						ctx->r_entorigin_candidate_count++;
+					}
+				}
 			}
-			else if (!r_entorigin &&
+
+			if (!r_entorigin &&
 				ctx->getskin_instcount &&
-				instCount < ctx->getskin_instcount + 8 &&
+				instCount < ctx->getskin_instcount + 20 &&
 				pinst->id == X86_INS_FST &&
 				pinst->detail->x86.op_count == 1 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
@@ -1215,10 +1586,56 @@ void R_FillAddress(void)
 				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
 			{
 			//.text:01D88C23 89 15 E0 98 BC 02                                   mov     r_entorigin, edx
-				r_entorigin = (decltype(r_entorigin))pinst->detail->x86.operands[0].mem.disp;
+				auto candidate = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+				if (!ctx->r_entorigin_candidate[ctx->r_entorigin_candidate_count] && ctx->r_entorigin_candidate_count < 3)
+				{
+					bool bFound = false;
+					for (auto k = 0; k < ctx->r_entorigin_candidate_count; ++k)
+					{
+						if (ctx->r_entorigin_candidate[k] == candidate)
+							bFound = true;
+					}
+					if (!bFound)
+					{
+						ctx->r_entorigin_candidate[ctx->r_entorigin_candidate_count] = candidate;
+						ctx->r_entorigin_candidate_count++;
+					}
+				}
 			}
 
-			if (r_blend && cl_parsecount && cl_frames && r_entorigin)
+			if (!r_entorigin &&
+				ctx->getskin_instcount &&
+				instCount < ctx->getskin_instcount + 20 &&
+				pinst->id == X86_INS_MOVSS &&
+				pinst->detail->x86.op_count == 2 && 
+				pinst->detail->x86.operands[1].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp >(PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					//.text:101FA69B F3 0F 10 00                                         movss   xmm0, dword ptr[eax]
+					//.text : 101FA69F F3 0F 11 05 E0 02 DC 10                             movss   r_entorigin, xmm0
+					//r_entorigin = (decltype(r_entorigin))pinst->detail->x86.operands[1].mem.disp;
+
+					auto candidate = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+					if (!ctx->r_entorigin_candidate[ctx->r_entorigin_candidate_count] && ctx->r_entorigin_candidate_count < 3)
+					{
+						bool bFound = false;
+						for (auto k = 0; k < ctx->r_entorigin_candidate_count; ++k)
+						{
+							if (ctx->r_entorigin_candidate[k] == candidate)
+								bFound = true;
+						}
+						if (!bFound)
+						{
+							ctx->r_entorigin_candidate[ctx->r_entorigin_candidate_count] = candidate;
+							ctx->r_entorigin_candidate_count++;
+						}
+					}
+				}
+
+			if (r_blend && cl_parsecount && cl_frames && ctx->r_entorigin_candidate_count >= 3)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -1233,6 +1650,23 @@ void R_FillAddress(void)
 		Sig_VarNotFound(r_blend);
 		Sig_VarNotFound(cl_frames);
 		Sig_VarNotFound(cl_parsecount);
+
+		if (ctx.r_entorigin_candidate_count >= 2)
+		{
+			std::qsort(ctx.r_entorigin_candidate, ctx.r_entorigin_candidate_count, sizeof(ctx.r_entorigin_candidate[0]), [](const void* a, const void* b) {
+				return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
+			});
+
+			if ((PUCHAR)ctx.r_entorigin_candidate[0] == (PUCHAR)ctx.r_entorigin_candidate[1] - sizeof(float))
+			{
+				r_entorigin = (decltype(r_entorigin))ctx.r_entorigin_candidate[0];
+			}
+		}
+		else if (ctx.r_entorigin_candidate_count == 1)
+		{
+			r_entorigin = (decltype(r_entorigin))ctx.r_entorigin_candidate[0];
+		}
+
 		Sig_VarNotFound(r_entorigin);
 	}
 
@@ -1331,7 +1765,7 @@ void R_FillAddress(void)
 				pinst->id == X86_INS_TEST &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[0].reg == X86_REG_CL &&
+				pinst->detail->x86.operands[0].size == 1 &&
 				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
 				pinst->detail->x86.operands[1].imm >= 4 &&
 				pinst->detail->x86.operands[1].imm <= 0x10)
@@ -1579,6 +2013,18 @@ void R_FillAddress(void)
 			{//text:01D4F9DD 39 3E cmp     [esi], edi
 				gSkyTexNumber = (decltype(gSkyTexNumber))ctx->candidate_gSkyTexNumber;
 			}
+			else if (ctx->candidate_gSkyTexNumber &&
+				pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == ctx->candidate_register &&
+				pinst->detail->x86.operands[0].mem.disp == 0 &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 0 &&
+				instCount < ctx->candidate_instcount + 5)
+			{//.text:102506E6 83 3E 00 cmp     dword ptr [esi], 0
+				gSkyTexNumber = (decltype(gSkyTexNumber))ctx->candidate_gSkyTexNumber;
+			}
 			else if (pinst->id == X86_INS_PUSH &&
 				pinst->detail->x86.op_count == 1 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
@@ -1722,6 +2168,14 @@ void R_FillAddress(void)
 		gl_filter_min = *(int **)(addr + 2);
 		gl_filter_max = *(int **)(addr + sizeof(sigs) - 1);
 	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		const char sigs[] = "\x66\x0F\x6E\x05\x2A\x2A\x2A\x2A\x0F\x5B\xC0\x2A\xF3\x2A\x2A\x2A\x2A\x68\x01\x28\x00\x00\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x66\x0F\x6E\x05";
+		addr = (DWORD)Search_Pattern(sigs);
+		Sig_AddrNotFound(gl_filter_min);
+		gl_filter_min = *(int **)(addr + 4);
+		gl_filter_max = *(int**)(addr + sizeof(sigs) - 1);
+	}
 	else
 	{
 		const char sigs[] = "\xDB\x05\x2A\x2A\x2A\x2A\x83\xC4\x04\xD9\x2A\x2A\x2A\x2A\x2A\x2A\x68\x01\x28\x00\x00\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xDB\x05";
@@ -1768,14 +2222,18 @@ void R_FillAddress(void)
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char sigs[] = "\xD9\x54\x24\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD9\xE8";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x100, sigs, sizeof(sigs) - 1);
+		addr = (DWORD)Search_Pattern_From_Size((void *)gRefFuncs.R_SetupGL, 0x100, sigs);
 		Sig_AddrNotFound(scrfov);
 		scrfov = *(decltype(scrfov)*)(addr + 6);
 	}
 	else
 	{
-		const char sigs[] = "\x8B\x15\x2A\x2A\x2A\x2A\xD9\x5D\x2A\xDB\x05";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x100, sigs, sizeof(sigs) - 1);
+		const char sigs[] = "\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x16\x43";
+		addr = (DWORD)Search_Pattern(sigs);
+		Sig_AddrNotFound(scrfov);
+
+		const char sigs2[] = "\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x20\x41";
+		addr = (DWORD)Search_Pattern_From_Size(((PUCHAR)addr - 0x50), 0x50, sigs2);
 		Sig_AddrNotFound(scrfov);
 		scrfov = *(decltype(scrfov)*)(addr + 2);
 	}
@@ -1783,7 +2241,7 @@ void R_FillAddress(void)
 	if (1)
 	{
 		const char sigs[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x600, sigs, sizeof(sigs) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x700, sigs, sizeof(sigs) - 1);
 		Sig_AddrNotFound(gWorldToScreen);
 		gWorldToScreen = *(decltype(gWorldToScreen)*)(addr + 6);
 		gScreenToWorld = *(decltype(gScreenToWorld)*)(addr + 1);
@@ -1796,17 +2254,27 @@ void R_FillAddress(void)
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
 			const char sigs[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\x60\x0B\x00\x00";
-			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x600, sigs, sizeof(sigs) - 1);
+			addr = (DWORD)Search_Pattern_From_Size((void *)gRefFuncs.R_RenderScene, 0x600, sigs);
 			Sig_AddrNotFound(R_RenderFinalFog);
 
 			R_RenderFinalFog = (decltype(R_RenderFinalFog))addr;
 
 			g_bUserFogOn = *(int **)(addr + 2);
 		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			const char sigs[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x60\x0B\x00\x00";
+			addr = (DWORD)Search_Pattern_From_Size((void *)gRefFuncs.R_RenderScene, 0x600, sigs);
+			Sig_AddrNotFound(R_RenderFinalFog);
+
+			R_RenderFinalFog = (decltype(R_RenderFinalFog))GetCallAddress(addr + 9);
+
+			g_bUserFogOn = *(int **)(addr + 2);
+		}
 		else
 		{
 			const char sigs[] = "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x6A\x00";
-			addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderScene, 0x600, sigs, sizeof(sigs) - 1);
+			addr = (DWORD)Search_Pattern_From_Size((void *)gRefFuncs.R_RenderScene, 0x600, sigs);
 			Sig_AddrNotFound(g_bUserFogOn);
 
 			R_RenderFinalFog = (decltype(R_RenderFinalFog))GetCallAddress(addr + 9);
@@ -1885,6 +2353,17 @@ void R_FillAddress(void)
 				ctx->candidate = pinst->detail->x86.operands[0].imm;
 			}
 
+			else if (pinst->id == X86_INS_MOVSS &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{//F3 0F 10 05 B4 ED 1A 11                             movss   xmm0, flFogDensity
+
+				ctx->candidate = pinst->detail->x86.operands[1].mem.disp;
+			}
 			if (g_UserFogDensity && g_UserFogColor && g_UserFogStart && g_UserFogEnd)
 				return TRUE;
 
@@ -1952,6 +2431,77 @@ void R_FillAddress(void)
 
 		Sig_FuncNotFound(CL_IsDevOverviewMode);
 		Sig_FuncNotFound(CL_SetDevOverView);
+
+		typedef struct
+		{
+			int Push30_instCount;
+			PVOID Candidates[6];
+			int CandidateCount;
+		}OverviewZoomCotext_t;
+
+		OverviewZoomCotext_t ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.CL_SetDevOverView, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto ctx = (OverviewZoomCotext_t*)context;
+			auto pinst = (cs_insn*)inst;
+
+			if (!ctx->Push30_instCount &&
+				instCount > 100 &&
+				pinst->id == X86_INS_PUSH &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[0].imm == 0x30)
+			{
+				ctx->Push30_instCount = instCount;
+			}
+
+			if (ctx->CandidateCount < 6 && instCount > ctx->Push30_instCount)
+			{
+				if (pinst->id == X86_INS_FLD &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					ctx->Candidates[ctx->CandidateCount] = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+					ctx->CandidateCount++;
+				}
+				if (pinst->id == X86_INS_MOVSS &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					ctx->Candidates[ctx->CandidateCount] = (PVOID)pinst->detail->x86.operands[1].mem.disp;
+					ctx->CandidateCount++;
+				}
+			}
+
+			if (ctx->CandidateCount >= 6)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, & ctx);
+
+		std::qsort(ctx.Candidates, ctx.CandidateCount, sizeof(ctx.Candidates[0]), [](const void* a, const void* b) {
+			return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
+		});
+
+		gDevOverview = (decltype(gDevOverview))ctx.Candidates[0];
+
+		Sig_VarNotFound(gDevOverview);
+
+
 	}
 
 	if (1)
@@ -1987,6 +2537,22 @@ void R_FillAddress(void)
 		}, 0, NULL);
 
 		Sig_VarNotFound(frustum);
+
+		char sigs_Frustum[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8";
+		*(DWORD*)(sigs_Frustum + 11) = (DWORD)frustum;
+
+		auto addr = Search_Pattern(sigs_Frustum);
+		Sig_AddrNotFound(vpn);
+		vpn = *(decltype(vpn)*)((PUCHAR)addr + 1);
+		vup = *(decltype(vpn)*)((PUCHAR)addr + 6);
+
+		char sigs_Frustum2[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A";
+		*(DWORD*)(sigs_Frustum2 + 1) = (DWORD)vpn;
+		*(DWORD*)(sigs_Frustum2 + 11) = (DWORD)frustum + 0x28;
+
+		addr = Search_Pattern(sigs_Frustum2);
+		Sig_AddrNotFound(vright);
+		vright = *(decltype(vright)*)((PUCHAR)addr + 6);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -2032,7 +2598,118 @@ void R_FillAddress(void)
 	}
 	else
 	{
-		const char sigs1[] = "\x33\xF6\xBF\x2A\x2A\x2A\x2A\x3B\x35\x2A\x2A\x2A\x2A\x7D";
+		typedef struct
+		{
+			int xor_exi_exi_instCount;
+			int xor_exi_exi_reg;
+			int inc_exx_instCount;
+			int inc_exx_reg;
+		}GL_LoadTexture2_Context;
+
+		GL_LoadTexture2_Context ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.GL_LoadTexture2, 0x200, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn*)inst;
+
+			auto ctx = (GL_LoadTexture2_Context *)context;
+
+			if (!ctx->xor_exi_exi_instCount && pinst->id == X86_INS_XOR &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				(pinst->detail->x86.operands[0].reg == X86_REG_ESI || pinst->detail->x86.operands[0].reg == X86_REG_EDI)
+				&&
+				pinst->detail->x86.operands[0].reg == pinst->detail->x86.operands[1].reg
+				)
+			{//  xor     esi, esi
+
+				ctx->xor_exi_exi_instCount = instCount;
+				ctx->xor_exi_exi_reg = pinst->detail->x86.operands[0].reg;
+			}
+
+			if (ctx->xor_exi_exi_instCount && pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				(pinst->detail->x86.operands[0].reg == X86_REG_ESI || pinst->detail->x86.operands[0].reg == X86_REG_EDI)
+				&&
+				pinst->detail->x86.operands[0].reg != ctx->xor_exi_exi_reg &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize
+				)
+			{//  mov     edi, offset gltextures
+				gltextures = (decltype(gltextures))pinst->detail->x86.operands[1].mem.disp;
+			
+			}
+			if (ctx->xor_exi_exi_instCount && pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				(pinst->detail->x86.operands[0].reg == X86_REG_ESI || pinst->detail->x86.operands[0].reg == X86_REG_EDI)
+				&&
+				pinst->detail->x86.operands[0].reg != ctx->xor_exi_exi_reg &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize
+				)
+			{//  mov     edi, offset gltextures
+				gltextures = (decltype(gltextures))pinst->detail->x86.operands[1].imm;
+
+			}
+
+			if (pinst->id == X86_INS_INC &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG )
+			{// inc     ecx
+
+				ctx->inc_exx_instCount = instCount;
+				ctx->inc_exx_reg = pinst->detail->x86.operands[0].reg;
+			}
+
+			if (ctx->xor_exi_exi_instCount && pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].reg == ctx->inc_exx_reg &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize
+				)
+			{//  mov     numgltextures, ecx
+				numgltextures = (decltype(numgltextures))pinst->detail->x86.operands[0].mem.disp;
+
+			}
+
+			if (ctx->xor_exi_exi_instCount && (pinst->id == X86_INS_MOV || pinst->id == X86_INS_MOVZX) &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].size == 2 &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize
+				)
+			{//                           mov     ax, word ptr gHostSpawnCount
+				//                        movzx   eax, word ptr gHostSpawnCount
+				gHostSpawnCount = (decltype(gHostSpawnCount))pinst->detail->x86.operands[1].mem.disp;
+
+			}
+
+			if (gltextures && numgltextures && gHostSpawnCount)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, &ctx);
+
+		Sig_VarNotFound(gltextures);
+		Sig_VarNotFound(numgltextures);
+		Sig_VarNotFound(gHostSpawnCount);
+#if 0
+		const char sigs1[] = "\x33\x2A\xBF\x2A\x2A\x2A\x2A\x3B\x35\x2A\x2A\x2A\x2A\x7D";
 		//Search in GL_LoadTexture2
 		//xor     esi, esi
 		//mov     edi, offset gltextures
@@ -2046,9 +2723,40 @@ void R_FillAddress(void)
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x200, sigs2, sizeof(sigs2) - 1);
 		Sig_AddrNotFound(gHostSpawnCount);
 		gHostSpawnCount = *(int **)(addr + 3);
+#endif
 	}
 
-	if (1)
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.VID_UpdateWindowVars, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn*)inst;
+
+			if (pinst->id == X86_INS_MOVUPS &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG)
+			{//0F 11 05 F0 E9 9A 10                                movups  window_rect, xmm0
+
+				window_rect = (decltype(window_rect))pinst->detail->x86.operands[0].mem.disp;
+			}
+
+			if (window_rect)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(window_rect);
+	}
+	else
 	{
 		g_pMetaHookAPI->DisasmRanges(gRefFuncs.VID_UpdateWindowVars, 0x40, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
@@ -2156,6 +2864,21 @@ void R_FillAddress(void)
 					ctx->candidate_count ++;
 				}
 			}
+			else if (pinst->id == X86_INS_MOVSS &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG)
+			{// movss   dword ptr modelorg, xmm0
+
+				if (!ctx->candidate[ctx->candidate_count] && ctx->candidate_count < 10)
+				{
+					ctx->candidate[ctx->candidate_count] = pinst->detail->x86.operands[0].mem.disp;
+					ctx->candidate_count++;
+				}
+			}
 			else if (pinst->id == X86_INS_FSTP &&
 				pinst->detail->x86.op_count == 1 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
@@ -2170,8 +2893,18 @@ void R_FillAddress(void)
 					ctx->candidate_count++;
 				}
 			}
+
 			if (address[0] == 0xCC)
 				return TRUE;
+
+			if (pinst->id == X86_INS_PUSH &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[0].imm == 0x100 
+				)
+			{
+				return TRUE;
+			}
 
 			if (pinst->id == X86_INS_RET)
 				return TRUE;
@@ -2181,7 +2914,7 @@ void R_FillAddress(void)
 
 		if (ctx.candidate_count >= 3)
 		{
-			std::qsort(ctx.candidate, ctx.candidate_count, sizeof(int), [](const void*a, const void*b) {
+			std::qsort(ctx.candidate, ctx.candidate_count, sizeof(ctx.candidate[0]), [](const void*a, const void*b) {
 				return (int)(*(LONG_PTR *)a - *(LONG_PTR *)b);
 			});
 
@@ -2197,6 +2930,10 @@ void R_FillAddress(void)
 			{
 				modelorg = (decltype(modelorg))ctx.candidate[0];
 			}
+		}
+		else if (ctx.candidate_count == 1)
+		{
+			modelorg = (decltype(modelorg))ctx.candidate[0];
 		}
 
 		Sig_VarNotFound(modelorg);
@@ -2550,6 +3287,7 @@ void R_FillAddress(void)
 					return TRUE;
 
 				return FALSE;
+
 			}, walk.depth, &ctx);
 		}
 
@@ -2574,8 +3312,13 @@ void R_FillAddress(void)
 			int ambient_instcount;
 			int lightvec_start;
 			PVOID plightvec_cached;
-			DWORD lightvec_candidate;
-			int lightvec_instcount;
+			DWORD blightvec_candidate;
+			int blightvec_instcount;
+			int blightvec_xmmreg;
+			DWORD plightvec_candidate;
+			int plightvec_instcount;
+			int plightvec_xmmreg;
+			PUCHAR mov_437F0000h_instaddr;
 		}R_StudioLighting_ctx;
 
 		R_StudioLighting_ctx ctx = { 0 };
@@ -2616,9 +3359,26 @@ void R_FillAddress(void)
 				{//.text:01D83B54 DB 05 E8 95 75 02                                   fild    r_ambientlight
 
 					r_ambientlight = (decltype(r_ambientlight))pinst->detail->x86.operands[0].mem.disp;
+
 					ctx->ambient_instcount = instCount;
 				}
-				else if (!r_shadelight &&
+
+				if (!r_ambientlight &&
+					pinst->id == X86_INS_MOVD &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{//   movd    xmm3, r_ambientlight
+
+					r_ambientlight = (decltype(r_ambientlight))pinst->detail->x86.operands[1].mem.disp;
+
+					ctx->ambient_instcount = instCount;
+				}
+
+				if (!r_shadelight &&
 					ctx->ambient_instcount &&
 					instCount < ctx->ambient_instcount + 10 &&
 					pinst->id == X86_INS_FLD &&
@@ -2631,7 +3391,24 @@ void R_FillAddress(void)
 
 					r_shadelight = (decltype(r_shadelight))pinst->detail->x86.operands[0].mem.disp;
 				}
-				else if (
+
+				if (!r_shadelight &&
+					ctx->ambient_instcount &&
+					instCount < ctx->ambient_instcount + 10 &&
+					pinst->id == X86_INS_MOVSS &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{//   movss   xmm1, r_shadelight
+
+					r_shadelight = (decltype(r_shadelight))pinst->detail->x86.operands[1].mem.disp;
+				}
+
+				
+				if (
 					pinst->id == X86_INS_CMP &&
 					pinst->detail->x86.op_count == 2 &&
 					pinst->detail->x86.operands[0].type == X86_OP_REG &&
@@ -2668,7 +3445,8 @@ void R_FillAddress(void)
 					
 					ctx->lightvec_start = 2;
 				}
-				else if (!r_blightvec &&
+
+				if (!r_blightvec &&
 					ctx->lightvec_start == 2 &&
 					pinst->id == X86_INS_FLD &&
 					pinst->detail->x86.op_count == 1 &&
@@ -2677,21 +3455,54 @@ void R_FillAddress(void)
 					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
 				{//.text:01D83BDC D9 80 48 04 79 02                                   fld     (r_blightvec+8)[eax]
 
-					ctx->lightvec_candidate = pinst->detail->x86.operands[0].mem.disp;
-					ctx->lightvec_instcount = instCount;
+					ctx->blightvec_candidate = pinst->detail->x86.operands[0].mem.disp;
+					ctx->blightvec_instcount = instCount;
+					ctx->blightvec_xmmreg = 0;
 				}
-				else if (!r_blightvec &&
+
+				if (!r_blightvec &&
 					ctx->lightvec_start == 2 &&
-					ctx->lightvec_instcount &&
-					instCount < ctx->lightvec_instcount + 2 &&
+					pinst->id == X86_INS_MOVSS &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{// F3 0F 10 04 85 28 CE 20 11                          movss   xmm0, (r_blightvec+8)[eax*4]
+
+					ctx->blightvec_candidate = pinst->detail->x86.operands[1].mem.disp;
+					ctx->blightvec_instcount = instCount;
+					ctx->blightvec_xmmreg = pinst->detail->x86.operands[0].reg;
+				}
+
+				if (!r_blightvec &&
+					ctx->lightvec_start == 2 &&
+					ctx->blightvec_instcount &&
+					instCount < ctx->blightvec_instcount + 2 &&
 					pinst->id == X86_INS_FMUL &&
 					pinst->detail->x86.op_count == 1 &&
 					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 					pinst->detail->x86.operands[0].mem.base != 0)
 				{//.text:01D83BE2 D8 49 08                                            fmul    dword ptr [ecx+8]
-					r_blightvec = (decltype(r_blightvec))(ctx->lightvec_candidate - pinst->detail->x86.operands[0].mem.disp);
+					r_blightvec = (decltype(r_blightvec))(ctx->blightvec_candidate - pinst->detail->x86.operands[0].mem.disp);
 				}
-				else if (!r_plightvec &&
+
+				if (!r_blightvec &&
+					ctx->lightvec_start == 2 &&
+					ctx->blightvec_instcount &&
+					instCount < ctx->blightvec_instcount + 2 &&
+					pinst->id == X86_INS_MULSS &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[0].reg == ctx->blightvec_xmmreg &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base != 0 &&
+					pinst->detail->x86.operands[1].mem.disp == 0x8)
+				{// F3 0F 59 41 08                                      mulss   xmm0, dword ptr [ecx+8]
+					r_blightvec = (decltype(r_blightvec))(ctx->blightvec_candidate - pinst->detail->x86.operands[1].mem.disp);
+				}
+
+				if (!r_plightvec &&
 					ctx->lightvec_start == 1 &&
 					pinst->id == X86_INS_FLD &&
 					pinst->detail->x86.op_count == 1 &&
@@ -2701,26 +3512,89 @@ void R_FillAddress(void)
 					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
 				{//.text:01D83BDC D9 80 48 04 79 02                                   fld     (r_blightvec+8)[eax]
 
-					ctx->lightvec_candidate = pinst->detail->x86.operands[0].mem.disp;
-					ctx->lightvec_instcount = instCount;
+					ctx->plightvec_candidate = pinst->detail->x86.operands[0].mem.disp;
+					ctx->plightvec_instcount = instCount;
 				}
-				else if (!r_plightvec &&
+
+				if (!r_plightvec &&
 					ctx->lightvec_start == 1 &&
-					ctx->lightvec_instcount &&
-					instCount < ctx->lightvec_instcount + 2 &&
+					ctx->plightvec_instcount &&
+					instCount < ctx->plightvec_instcount + 15 &&
 					pinst->id == X86_INS_FMUL &&
 					pinst->detail->x86.op_count == 1 &&
 					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 					pinst->detail->x86.operands[0].mem.base != 0)
 				{//.text:01D83BE2 D8 49 08                                            fmul    dword ptr [ecx+8]
-					r_plightvec = (decltype(r_plightvec))(ctx->lightvec_candidate - pinst->detail->x86.operands[0].mem.disp);
+					r_plightvec = (decltype(r_plightvec))(ctx->plightvec_candidate - pinst->detail->x86.operands[0].mem.disp);
 				}
-				else if (!memcmp(address, "\xC1\xE0\x02\xB9", 4))
-				{
-				//.text:01D8AA7C C1 E0 02                                            shl     eax, 2
-				//.text : 01D8AA7F B9 B0 F7 67 09                                      mov     ecx, offset lightgammatable
 
-					lightgammatable = *(decltype(lightgammatable) *)(address + 4);
+				if (!r_plightvec &&
+					ctx->lightvec_start >= 1 &&
+					pinst->id == X86_INS_MOVSS &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base != 0 &&
+					pinst->detail->x86.operands[1].mem.disp == 0x8)
+				{//F3 0F 10 41 08                                      movss   xmm0, dword ptr [ecx+8]
+
+					ctx->plightvec_instcount = instCount;
+					ctx->plightvec_xmmreg = pinst->detail->x86.operands[0].reg;
+				}
+
+				if (!r_plightvec &&
+					ctx->lightvec_start >= 1 &&
+					ctx->plightvec_instcount &&
+					instCount < ctx->plightvec_instcount + 2 &&
+					pinst->id == X86_INS_MULSS &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[0].reg == ctx->plightvec_xmmreg &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{// F3 0F 59 05 A8 0F DC 10                             mulss   xmm0, r_plightvec+8
+					r_plightvec = (decltype(r_plightvec))(pinst->detail->x86.operands[1].mem.disp - 8);
+				}
+
+				if (!ctx->mov_437F0000h_instaddr &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[1].imm == 0x437F0000
+					)
+				{
+					ctx->mov_437F0000h_instaddr = address;
+				}
+
+				if (!ctx->mov_437F0000h_instaddr &&
+					pinst->id == X86_INS_MOVSS &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineRdataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineRdataBase + g_dwEngineRdataSize
+					)
+				{
+					if (*(DWORD*)pinst->detail->x86.operands[1].mem.disp == 0x437F0000)
+					{
+						ctx->mov_437F0000h_instaddr = address;
+					}
+				}
+					
+				if (
+					ctx->mov_437F0000h_instaddr &&
+					address < ctx->mov_437F0000h_instaddr + 0x30 &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize )
+				{
+
+					lightgammatable = (decltype(lightgammatable))pinst->detail->x86.operands[1].imm;
 
 				}
 
@@ -2735,7 +3609,7 @@ void R_FillAddress(void)
 						ctx->branches.emplace(imm);
 						if (depth + 1 < ctx->max_depth)
 						{
-							ctx->walks.emplace_back(imm, 0x300, depth + 1);
+							ctx->walks.emplace_back(imm, 0x500, depth + 1);
 
 							if (!ctx->plightvec_cached && ctx->lightvec_start == 1)
 								ctx->plightvec_cached = imm;
@@ -2765,10 +3639,50 @@ void R_FillAddress(void)
 
 	if (1)
 	{
+		typedef struct
+		{
+			int unused;
+		}BuildGammaTable_ctx;
+
+		BuildGammaTable_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.BuildGammaTable, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (BuildGammaTable_ctx*)context;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == X86_REG_ESI &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].size == 1)
+			{
+				texgammatable = (decltype(texgammatable))pinst->detail->x86.operands[0].mem.disp;
+			}
+
+			if(texgammatable)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, & ctx);
+
+		Sig_VarNotFound(texgammatable);
+
+#if 0
 #define TEXGAMMATABLE_SIG "\x88\x86\x2A\x2A\x2A\x2A\x46"
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.BuildGammaTable, 0x300, TEXGAMMATABLE_SIG, sizeof(TEXGAMMATABLE_SIG) - 1);
 		Sig_AddrNotFound(texgammatable);
 		texgammatable = *(decltype(texgammatable) *)(addr + 2);
+#endif
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -2777,6 +3691,15 @@ void R_FillAddress(void)
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_GLStudioDrawPoints, 0x600, NORMALINDEX_SIG_SVENGINE, sizeof(NORMALINDEX_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(g_NormalIndex);
 		g_NormalIndex = *(decltype(g_NormalIndex) *)(addr + 3);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		//.text : 01D821E5 BF B0 64 37 02                                      mov     edi, offset g_NormalIndex
+		//.text : 01D821EA F3 AB                                               rep stosd
+#define NORMALINDEX_SIG_HL25 "\xBF\x2A\x2A\x2A\x2A\x83\xC8\xFF\xF3\xAB"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)gRefFuncs.R_GLStudioDrawPoints, 0x200, NORMALINDEX_SIG_HL25, sizeof(NORMALINDEX_SIG_HL25) - 1);
+		Sig_AddrNotFound(g_NormalIndex);
+		g_NormalIndex = *(decltype(g_NormalIndex)*)(addr + 1);
 	}
 	else
 	{	
@@ -2795,6 +3718,13 @@ void R_FillAddress(void)
 		Sig_AddrNotFound(chromeage);
 		chromeage = *(decltype(chromeage) *)(addr + 1);
 	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+#define CHROMEAGE_SIG_HL25 "\x33\xC0\xBF\x2A\x2A\x2A\x2A\xF3\xAB\x8B"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)gRefFuncs.R_GLStudioDrawPoints, 0x600, CHROMEAGE_SIG_HL25, sizeof(CHROMEAGE_SIG_HL25) - 1);
+		Sig_AddrNotFound(chromeage);
+		chromeage = *(decltype(chromeage)*)(addr + 3);
+	}
 	else
 	{
 #define CHROMEAGE_SIG "\x8B\x04\xB5\x2A\x2A\x2A\x2A\x3B\xC1"
@@ -2809,6 +3739,13 @@ void R_FillAddress(void)
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_GLStudioDrawPoints, 0x1000, CHROME_SIG_SVENGINE, sizeof(CHROME_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(chrome);
 		chrome = *(decltype(chrome) *)(addr + 8);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+#define CHROME_SIG_HL25 "\x8D\x04\xFD\x2A\x2A\x2A\x2A\xFF\xB5\x2A\x2A\x2A\x2A\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C"
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)gRefFuncs.R_GLStudioDrawPoints, 0x1000, CHROME_SIG_HL25, sizeof(CHROME_SIG_HL25) - 1);
+		Sig_AddrNotFound(chrome);
+		chrome = *(decltype(chrome)*)(addr + 3);
 	}
 	else
 	{
@@ -2827,10 +3764,57 @@ void R_FillAddress(void)
 	}
 	else
 	{
+#define CL_VIEWENTITY_SIG_GOLDSRC "\xA1\x2A\x2A\x2A\x2A\x48\x3B\x2A"
+		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_GOLDSRC);
+		Sig_AddrNotFound(cl_viewentity);
+
+		typedef struct
+		{
+			bool found_cmp_200;
+		}CL_ViewEntity_ctx;
+
+		CL_ViewEntity_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges((PVOID)addr, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (CL_ViewEntity_ctx*)context;
+
+			if (pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 0x200)
+			{
+				ctx->found_cmp_200 = true;
+			}
+
+			if (ctx->found_cmp_200)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, & ctx);
+
+		if (ctx.found_cmp_200)
+		{
+			cl_viewentity = *(decltype(cl_viewentity)*)(addr + 1);
+		}
+
+		Sig_VarNotFound(cl_viewentity);
+#if 0
 #define CL_VIEWENTITY_SIG_NEW "\x8B\x0D\x2A\x2A\x2A\x2A\x6A\x64\x6A\x00\x68\x00\x00\x80\x3F\x68\x00\x00\x80\x3F\x68\x2A\x2A\x2A\x2A\x50"
 		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_NEW);
 		Sig_AddrNotFound(cl_viewentity);
 		cl_viewentity = *(decltype(cl_viewentity)*)(addr + 2);
+#endif
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -2852,11 +3836,95 @@ void R_FillAddress(void)
 	}
 	else
 	{
+		//Seach "CL_Reallocate cl_entities"
+		const char sigs1[] = "CL_Reallocate cl_entities\n";
+		auto CL_Reallocate_String = Search_Pattern_Data(sigs1);
+		if (!CL_Reallocate_String)
+			CL_Reallocate_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(CL_Reallocate_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1";
+		*(DWORD*)(pattern + 1) = (DWORD)CL_Reallocate_String;
+		auto CL_Reallocate_Call = Search_Pattern(pattern);
+		Sig_VarNotFound(CL_Reallocate_Call);
+
+		auto CL_ReallocateDynamicData = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(CL_Reallocate_Call, 0x100, [](PUCHAR Candidate) {
+
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC)
+			{
+				return TRUE;
+			}
+
+			return FALSE;
+		});
+
+		Sig_VarNotFound(CL_ReallocateDynamicData);
+
+		typedef struct
+		{
+			PVOID CL_Reallocate_Call;
+		}CL_ReallocateDynamicData_ctx;
+
+		CL_ReallocateDynamicData_ctx ctx = { 0 };
+
+		ctx.CL_Reallocate_Call = CL_Reallocate_Call;
+
+		g_pMetaHookAPI->DisasmRanges(CL_ReallocateDynamicData, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (CL_ReallocateDynamicData_ctx*)context;
+
+			if (!cl_max_edicts && pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				// mov     eax, cl_max_edicts
+				// add     esp, 4
+
+				if (0 == memcmp(address + instLen, "\x83\xC4\x04", 3))
+				{
+					cl_max_edicts = (decltype(cl_max_edicts))pinst->detail->x86.operands[1].mem.disp;
+				}
+			}
+
+			if (!cl_entities && address > ctx->CL_Reallocate_Call && pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].reg == X86_REG_EAX &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				// mov     eax, cl_max_edicts
+				// add     esp, 4
+				cl_entities = (decltype(cl_entities))pinst->detail->x86.operands[0].mem.disp;
+			}
+
+			if (cl_entities && cl_max_edicts)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, &ctx);
+
+		Sig_VarNotFound(cl_max_edicts);
+		Sig_VarNotFound(cl_entities);
+#if 0
 #define CL_MAXEDICTS_SIG_NEW "\xC1\xE1\x03\x51\xE8\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\xA3"
 		DWORD addr = (DWORD)Search_Pattern(CL_MAXEDICTS_SIG_NEW);
 		Sig_AddrNotFound(cl_max_edicts);
 		cl_max_edicts = *(decltype(cl_max_edicts)*)(addr + 11);
 		cl_entities = *(decltype(cl_entities)*)(addr + 16);
+#endif
 
 #define GTEMPENTS_SIG_NEW "\x68\x30\x68\x17\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xE8"
 		if (1)
@@ -2867,12 +3935,22 @@ void R_FillAddress(void)
 		}
 	}
 
-
-#define GWATERCOLOR_SIG_SVENGINE "\xDB\x05\x2A\x2A\x2A\x2A\x68\x01\x26\x00\x00\x68\x65\x0B\x00\x00"
-	auto gWaterColor_Pattern = Search_Pattern(GWATERCOLOR_SIG_SVENGINE);
-	Sig_VarNotFound(gWaterColor_Pattern);
-	gWaterColor = *(decltype(gWaterColor) *)((PUCHAR)gWaterColor_Pattern + 2);
-	cshift_water = (decltype(cshift_water))((PUCHAR)gWaterColor + 12);
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+#define GWATERCOLOR_SIG_HL25 "\x66\x0F\x6E\x05\x2A\x2A\x2A\x2A\xF2\x0F\x10\x0D\x2A\x2A\x2A\x2A\xF3\x0F\xE6\xC0\x68\x01\x26\x00\x00"
+		auto gWaterColor_Pattern = Search_Pattern(GWATERCOLOR_SIG_HL25);
+		Sig_VarNotFound(gWaterColor_Pattern);
+		gWaterColor = *(decltype(gWaterColor)*)((PUCHAR)gWaterColor_Pattern + 4);
+		cshift_water = (decltype(cshift_water))((PUCHAR)gWaterColor + 12);
+	}
+	else
+	{
+#define GWATERCOLOR_SIG "\xDB\x05\x2A\x2A\x2A\x2A\x68\x01\x26\x00\x00\x68\x65\x0B\x00\x00"
+		auto gWaterColor_Pattern = Search_Pattern(GWATERCOLOR_SIG);
+		Sig_VarNotFound(gWaterColor_Pattern);
+		gWaterColor = *(decltype(gWaterColor)*)((PUCHAR)gWaterColor_Pattern + 2);
+		cshift_water = (decltype(cshift_water))((PUCHAR)gWaterColor + 12);
+	}
 
 	if (1)
 	{
@@ -2943,6 +4021,14 @@ void R_FillAddress(void)
 		c_alias_polys = *(int **)(addr + 2);
 		c_brush_polys = *(int **)(addr + 14);
 	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		const char sigs[] = "\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x00\x00\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x00\x00";
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)gRefFuncs.R_RenderView, 0x100, sigs, sizeof(sigs) - 1);
+		Sig_AddrNotFound(c_brush_polys);
+		c_brush_polys = *(int**)(addr + 2);
+		c_alias_polys = *(int**)(addr + 12);
+	}
 	else
 	{
 		const char sigs[] = "\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x50\x51";
@@ -2971,6 +4057,29 @@ void R_FillAddress(void)
 		Sig_AddrNotFound(cl_light_level);
 		cl_light_level = *(int **)(addr + 4);
 	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		const char sigs[] = "\x83\x3D\x04\x2A\x2A\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xF3\x0F\x10\x05";
+		addr = (DWORD)Search_Pattern(sigs);
+		Sig_AddrNotFound(envmap);
+		envmap = *(int**)(addr + 2);
+
+		const char sigs2[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x83\xB9\x94\x0B\x00\x00\x00";
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)addr, 0x50, sigs2, sizeof(sigs2) - 1);
+		Sig_AddrNotFound(cl_stats);
+		cl_stats = *(int**)(addr + 2);
+
+		const char sigs3[] = "\xF3\x0F\x11\x05\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x89\x81\xDC\x02\x00\x00";
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)addr, 0x500, sigs3, sizeof(sigs3) - 1);
+		Sig_AddrNotFound(cl_weaponstarttime);
+		cl_weaponstarttime = *(float**)(addr + 4);
+		cl_weaponsequence = *(int**)(addr + 9);
+
+		const char sigs4[] = "\xD1\xEA\x89\x15\x2A\x2A\x2A\x2A\x8B\x40\x04";
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)addr, 0x600, sigs4, sizeof(sigs4) - 1);
+		Sig_AddrNotFound(cl_light_level);
+		cl_light_level = *(int**)(addr + 4);
+	}
 	else
 	{
 		const char sigs[] = "\x39\x3D\x2A\x2A\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xD9\x05";
@@ -2996,18 +4105,18 @@ void R_FillAddress(void)
 
 	}
 
-#define R_WORLD_MATRIX_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x68\xA6\x0B\x00\x00"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x600, R_WORLD_MATRIX_SIG_SVENGINE, sizeof(R_WORLD_MATRIX_SIG_SVENGINE) - 1);
+#define R_WORLD_MATRIX_SIG "\x68\x2A\x2A\x2A\x2A\x68\xA6\x0B\x00\x00"
+	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x600, R_WORLD_MATRIX_SIG, sizeof(R_WORLD_MATRIX_SIG) - 1);
 	Sig_AddrNotFound(r_world_matrix);
 	r_world_matrix = *(float **)(addr + 1);
 
-#define R_PROJ_MATRIX_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x68\xA7\x0B\x00\x00"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x500, R_PROJ_MATRIX_SIG_SVENGINE, sizeof(R_PROJ_MATRIX_SIG_SVENGINE) - 1);
+#define R_PROJ_MATRIX_SIG "\x68\x2A\x2A\x2A\x2A\x68\xA7\x0B\x00\x00"
+	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x500, R_PROJ_MATRIX_SIG, sizeof(R_PROJ_MATRIX_SIG) - 1);
 	Sig_AddrNotFound(r_projection_matrix);
 	r_projection_matrix = *(float **)(addr + 1);
 
-#define TMP_PALETTE_SVENGINE "\x68\x2A\x2A\x2A\x2A\x6A\x00\x6A\x00"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_StudioSetupSkin, 0x600, TMP_PALETTE_SVENGINE, sizeof(TMP_PALETTE_SVENGINE) - 1);
+#define TMP_PALETTE_SIG "\x68\x2A\x2A\x2A\x2A\x6A\x00\x6A\x00"
+	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_StudioSetupSkin, 0x600, TMP_PALETTE_SIG, sizeof(TMP_PALETTE_SIG) - 1);
 	Sig_AddrNotFound(tmp_palette);
 	tmp_palette = *(void **)(addr + 1);
 
@@ -3024,6 +4133,7 @@ void R_FillAddress(void)
 		mod_known = *(model_t **)(addr + 7);
 	}
 
+	if(1)
 	{
 		const char sigs1[] = "Cached models:\n";
 		auto Mod_Print_String = Search_Pattern_Data(sigs1);
@@ -3071,6 +4181,9 @@ void R_FillAddress(void)
 
 			return FALSE;
 		}, 0, NULL);
+
+		Sig_VarNotFound(mod_numknown);
+
 	}
 
 	{
@@ -3144,13 +4257,12 @@ void R_FillAddress(void)
 			}
 			//  .text : 01D61AD0 55                                                  push    ebp
 			//  .text : 01D61AD1 8B EC                                               mov     ebp, esp
-			//	.text : 01D61AD3 83 EC 0C											sub     esp, 0Ch
+			//	.text : 01D61AD3 83 EC ??											sub     esp, ??
 			if (Candidate[0] == 0x55 &&
 				Candidate[1] == 0x8B &&
 				Candidate[2] == 0xEC &&
 				Candidate[3] == 0x83 &&
-				Candidate[4] == 0xEC &&
-				Candidate[5] == 0x0C)
+				Candidate[4] == 0xEC)
 			{
 				return TRUE;
 			}
@@ -3370,19 +4482,44 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-#define R_TRACERDRAW_SIG "\xFF\x15\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x00\xE8\x2A\x2A\x2A\x00"
+#define R_TRACERDRAW_SIG "\xFF\x15\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x00\xE8\x2A\x2A\x2A\x2A"
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawParticles, 0x800, R_TRACERDRAW_SIG, sizeof(R_TRACERDRAW_SIG) - 1);
 		Sig_AddrNotFound(R_TracerDraw);
 		gRefFuncs.R_TracerDraw = (decltype(gRefFuncs.R_TracerDraw))GetCallAddress(addr + 6);
 		gRefFuncs.R_BeamDrawList = (decltype(gRefFuncs.R_BeamDrawList))GetCallAddress(addr + 11);
 	}
 
-	if (1)
+	if (0)
 	{
+#define OVERVIEW_ZOOM_STRING " Overview: Zoom %.2f"
+		auto OverviewZoom_String = Search_Pattern_Data(OVERVIEW_ZOOM_STRING);
+		if (!OverviewZoom_String)
+			OverviewZoom_String = Search_Pattern_Rdata(OVERVIEW_ZOOM_STRING);
+		Sig_VarNotFound(OverviewZoom_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x38";
+		*(DWORD*)(pattern + 1) = (DWORD)OverviewZoom_String;
+		auto OverviewZoom_PushString = Search_Pattern(pattern);
+		Sig_VarNotFound(OverviewZoom_PushString);
+
+		gRefFuncs.CL_SetDevOverView = (decltype(gRefFuncs.CL_SetDevOverView))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(OverviewZoom_PushString, 0x100, [](PUCHAR Candidate) {
+
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC)
+			{
+				return TRUE;
+			}
+
+			return FALSE;
+		});
+		Sig_FuncNotFound(CL_SetDevOverView);
+
+#if 0
 #define DEVOVERVIEW_SIG "\x83\xEC\x30\xDD\x5C\x24\x2A\xD9\x05"
 		addr = (DWORD)Search_Pattern(DEVOVERVIEW_SIG);
 		Sig_AddrNotFound(gDevOverview);
 		gDevOverview = (decltype(gDevOverview))(*(DWORD *)(addr + 9) - 0xC);
+#endif
 	}
 
 #define R_SETUPFRAME_CALL_SIG "\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8"
@@ -3453,6 +4590,7 @@ void R_FillAddress(void)
 		Sig_VarNotFound(r_oldviewleaf);
 	}
 
+#if 0
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char sigs[] = "\x68\x2A\x2A\x2A\x2A\xD9\x1D\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x68";
@@ -3476,6 +4614,7 @@ void R_FillAddress(void)
 		vpn = (vec_t *)(*(DWORD *)addr);
 		addr += 5;
 	}
+#endif
 
 	if (1)
 	{
@@ -3602,11 +4741,20 @@ void R_FillAddress(void)
 		Sig_VarNotFound(scr_drawloading);
 	}
 
-	if (1)
+	if (gRefFuncs.R_LightStrength)
 	{
 		typedef struct
 		{
+			int MovZeroEbp_InstCount;
+			int MovZeroEbp_Disp;
+			int MovZeroEbp_Reg;
 			int ZerodReg;
+			int ZerodReg_InstCount;
+			int Candidate_InstCount;
+			PVOID Candidate_locallight;
+			int Candidate_numlight_instCount;
+			int Candidate_numlight_reg;
+			PVOID Candidate_numlight;
 		}R_LightStrength_Context;
 
 		R_LightStrength_Context ctx = { 0 };
@@ -3615,7 +4763,33 @@ void R_FillAddress(void)
 			auto ctx = (R_LightStrength_Context *)context;
 			auto pinst = (cs_insn *)inst;
 
+			if (
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.disp != 0 &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 0 )
+			{
+				ctx->MovZeroEbp_InstCount = instCount;
+				ctx->MovZeroEbp_Disp = pinst->detail->x86.operands[0].mem.disp;
+			}
+
+			if (ctx->MovZeroEbp_InstCount &&
+				instCount > ctx->MovZeroEbp_InstCount && 
+				instCount < ctx->MovZeroEbp_InstCount + 20 &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.disp == ctx->MovZeroEbp_Disp)
+			{
+				ctx->ZerodReg_InstCount = instCount;
+				ctx->ZerodReg = pinst->detail->x86.operands[0].reg;
+			}
+
 			if (!ctx->ZerodReg &&
+				!ctx->ZerodReg_InstCount &&
 				pinst->id == X86_INS_XOR &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_REG &&
@@ -3623,8 +4797,13 @@ void R_FillAddress(void)
 				pinst->detail->x86.operands[0].reg == pinst->detail->x86.operands[1].reg)
 			{
 				ctx->ZerodReg = pinst->detail->x86.operands[0].reg;
+				ctx->ZerodReg_InstCount = instCount;
 			}
-			else if (ctx->ZerodReg &&
+
+			if (ctx->ZerodReg &&
+				ctx->ZerodReg_InstCount &&
+				instCount > ctx->ZerodReg_InstCount &&
+				instCount < ctx->ZerodReg_InstCount + 20 &&
 				pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 && 
 				pinst->detail->x86.operands[0].type == X86_OP_REG &&
@@ -3635,11 +4814,57 @@ void R_FillAddress(void)
 				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
 				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
 			{
-				//C7 05 60 66 00 08 01 00 00 00                       mov     scr_drawloading, 1
-				locallight = (decltype(locallight))pinst->detail->x86.operands[1].mem.disp;
+				//.text:01D83D28 8B 04 BD C4 A0 37 02                                mov     eax, locallight[edi*4]
+				ctx->Candidate_locallight = (decltype(ctx->Candidate_locallight))pinst->detail->x86.operands[1].mem.disp;
+				ctx->Candidate_InstCount = instCount;
 			}
 
-			if (locallight)
+			if (ctx->ZerodReg &&
+				ctx->ZerodReg_InstCount &&
+				ctx->Candidate_InstCount &&
+				instCount > ctx->Candidate_InstCount &&
+				instCount < ctx->Candidate_InstCount + 40 &&
+				pinst->id == X86_INS_INC &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == ctx->ZerodReg)
+			{
+				locallight = (decltype(locallight))ctx->Candidate_locallight;
+			}
+
+			if (!numlight &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				pinst->detail->x86.operands[1].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG)
+			{
+				ctx->Candidate_numlight = (decltype(ctx->Candidate_numlight))pinst->detail->x86.operands[1].mem.disp;
+				ctx->Candidate_numlight_instCount = instCount;
+				ctx->Candidate_numlight_reg = pinst->detail->x86.operands[0].reg;
+			}
+
+			if (!numlight &&
+				ctx->Candidate_numlight &&
+				ctx->Candidate_numlight_instCount &&
+				instCount > ctx->Candidate_numlight_instCount &&
+				instCount < ctx->Candidate_numlight_instCount + 30 &&
+				pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				((pinst->detail->x86.operands[0].reg == ctx->Candidate_numlight_reg && 
+				pinst->detail->x86.operands[1].reg == ctx->ZerodReg) ||
+				(pinst->detail->x86.operands[1].reg == ctx->Candidate_numlight_reg &&
+					pinst->detail->x86.operands[0].reg == ctx->ZerodReg)) )
+			{
+				numlight = (decltype(numlight))ctx->Candidate_numlight;
+			}
+
+			if (locallight && numlight)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -3652,6 +4877,188 @@ void R_FillAddress(void)
 		}, 0, &ctx);
 
 		Sig_VarNotFound(locallight);
+	}
+	else
+	{
+		typedef struct
+		{
+			PVOID base;
+			size_t max_insts;
+			int max_depth;
+			std::set<PVOID> code;
+			std::set<PVOID> branches;
+			std::vector<walk_context_t> walks;
+
+			int MovZeroEbp_InstCount;
+			int MovZeroEbp_Disp;
+			int MovZeroEbp_Reg;
+			int ZerodReg;
+			int ZerodReg_InstCount;
+			int Candidate_InstCount;
+			PVOID Candidate_locallight;
+			int Candidate_numlight_instCount;
+			int Candidate_numlight_reg;
+			PVOID Candidate_numlight;
+		}R_LightStrength_Context;
+
+		R_LightStrength_Context ctx = { 0 };
+
+		ctx.base = gRefFuncs.R_GLStudioDrawPoints;
+		ctx.max_insts = 1000;
+		ctx.max_depth = 16;
+		ctx.walks.emplace_back(ctx.base, 0x1000, 0);
+
+		while (ctx.walks.size())
+		{
+			auto walk = ctx.walks[ctx.walks.size() - 1];
+			ctx.walks.pop_back();
+
+			g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (R_LightStrength_Context*)context;
+
+				if (locallight && numlight)
+					return TRUE;
+
+				if (ctx->code.size() > ctx->max_insts)
+					return TRUE;
+
+				if (ctx->code.find(address) != ctx->code.end())
+					return TRUE;
+
+				ctx->code.emplace(address);
+
+				if (
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base != 0 &&
+					pinst->detail->x86.operands[0].mem.disp != 0 &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[1].imm == 0)
+				{
+					ctx->MovZeroEbp_InstCount = instCount;
+					ctx->MovZeroEbp_Disp = pinst->detail->x86.operands[0].mem.disp;
+				}
+
+				if (ctx->MovZeroEbp_InstCount &&
+					instCount > ctx->MovZeroEbp_InstCount &&
+					instCount < ctx->MovZeroEbp_InstCount + 20 &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.disp == ctx->MovZeroEbp_Disp)
+				{
+					ctx->ZerodReg_InstCount = instCount;
+					ctx->ZerodReg = pinst->detail->x86.operands[0].reg;
+				}
+
+				if (!ctx->ZerodReg &&
+					!ctx->ZerodReg_InstCount &&
+					pinst->id == X86_INS_XOR &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG &&
+					pinst->detail->x86.operands[0].reg == pinst->detail->x86.operands[1].reg)
+				{
+					ctx->ZerodReg = pinst->detail->x86.operands[0].reg;
+					ctx->ZerodReg_InstCount = instCount;
+				}
+
+				if (ctx->ZerodReg &&
+					ctx->ZerodReg_InstCount &&
+					instCount > ctx->ZerodReg_InstCount &&
+					instCount < ctx->ZerodReg_InstCount + 20 &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base == 0 &&
+					pinst->detail->x86.operands[1].mem.scale == 4 &&
+					pinst->detail->x86.operands[1].mem.index == ctx->ZerodReg &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					//.text:01D83D28 8B 04 BD C4 A0 37 02                                mov     eax, locallight[edi*4]
+					ctx->Candidate_locallight = (decltype(ctx->Candidate_locallight))pinst->detail->x86.operands[1].mem.disp;
+					ctx->Candidate_InstCount = instCount;
+				}
+
+				if (ctx->ZerodReg &&
+					ctx->ZerodReg_InstCount &&
+					ctx->Candidate_InstCount &&
+					instCount > ctx->Candidate_InstCount &&
+					instCount < ctx->Candidate_InstCount + 40 &&
+					pinst->id == X86_INS_INC &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[0].reg == ctx->ZerodReg)
+				{
+					locallight = (decltype(locallight))ctx->Candidate_locallight;
+				}
+
+				if (!numlight &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base == 0 &&
+					pinst->detail->x86.operands[1].mem.index == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG)
+				{
+					ctx->Candidate_numlight = (decltype(ctx->Candidate_numlight))pinst->detail->x86.operands[1].mem.disp;
+					ctx->Candidate_numlight_instCount = instCount;
+					ctx->Candidate_numlight_reg = pinst->detail->x86.operands[0].reg;
+				}
+
+				if (!numlight &&
+					ctx->Candidate_numlight &&
+					ctx->Candidate_numlight_instCount &&
+					instCount > ctx->Candidate_numlight_instCount &&
+					instCount < ctx->Candidate_numlight_instCount + 30 &&
+					pinst->id == X86_INS_CMP &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					((pinst->detail->x86.operands[0].reg == ctx->Candidate_numlight_reg &&
+						pinst->detail->x86.operands[1].reg == ctx->ZerodReg) ||
+						(pinst->detail->x86.operands[1].reg == ctx->Candidate_numlight_reg &&
+							pinst->detail->x86.operands[0].reg == ctx->ZerodReg)))
+				{
+					numlight = (decltype(numlight))ctx->Candidate_numlight;
+				}
+
+				if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_IMM)
+				{
+					PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
+					auto foundbranch = ctx->branches.find(imm);
+					if (foundbranch == ctx->branches.end())
+					{
+						ctx->branches.emplace(imm);
+						if (depth + 1 < ctx->max_depth)
+							ctx->walks.emplace_back(imm, 0x300, depth + 1);
+					}
+
+					if (pinst->id == X86_INS_JMP)
+						return TRUE;
+				}
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+			}, walk.depth, &ctx);
+		}
+
+		Sig_VarNotFound(locallight);
+		Sig_VarNotFound(numlight);
 	}
 
 	g_pMetaHookAPI->DisasmRanges(gEngfuncs.pfnSetFilterMode, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
@@ -3719,6 +5126,26 @@ void R_FillAddress(void)
 					ctx->CandidateCount++;
 				}
 			}
+			else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+			{
+				if (pinst->id == X86_INS_MOVSS &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					//  .text : 01D1B120 D9 44 24 04                                         fld[esp + arg_0]
+					//	.text : 01D1B124 D9 1D 90 83 ED 01                                   fstp    r_filter_color
+					//	.text : 01D1B12A D9 44 24 08                                         fld[esp + arg_4]
+					//	.text : 01D1B12E D9 1D 94 83 ED 01                                   fstp    r_filter_color + 4
+					//	.text : 01D1B134 D9 44 24 0C                                         fld[esp + arg_8]
+					//	.text : 01D1B138 D9 1D 98 83 ED 01                                   fstp    r_filter_color + 8
+					//	.text : 01D1B13E C3                                                  retn
+					ctx->Candidates[ctx->CandidateCount] = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+					ctx->CandidateCount++;
+				}
+			}
 			else
 			{
 				if (pinst->id == X86_INS_MOV &&
@@ -3748,7 +5175,7 @@ void R_FillAddress(void)
 		return FALSE;
 	}, 0, &ctx);
 
-	std::qsort(ctx.Candidates, ctx.CandidateCount, sizeof(int), [](const void*a, const void*b) {
+	std::qsort(ctx.Candidates, ctx.CandidateCount, sizeof(ctx.Candidates[0]), [](const void*a, const void*b) {
 		return (int)(*(LONG_PTR *)a - *(LONG_PTR *)b);
 	});
 
@@ -3774,6 +5201,18 @@ void R_FillAddress(void)
 				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
 			{
 				//.text:01D1B114 A3 AC 44 F5 03                                      mov     filterMode, eax
+				filterBrightness = (decltype(filterBrightness))pinst->detail->x86.operands[0].mem.disp;
+			}
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			if (pinst->id == X86_INS_MOVSS &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
 				filterBrightness = (decltype(filterBrightness))pinst->detail->x86.operands[0].mem.disp;
 			}
 		}
@@ -3869,8 +5308,8 @@ void R_UninstallHooksForEngineDLL(void)
 	Uninstall_Hook(R_NewMap);
 	//Uninstall_Hook(R_CullBox);
 	Uninstall_Hook(Mod_PointInLeaf);
-	//Uninstall_Hook(R_BuildLightMap);
-	Uninstall_Hook(R_AddDynamicLights);
+	//Uninstall_Hook(R_BuildLightMap);//Overrrided
+	//Uninstall_Hook(R_AddDynamicLights);//Overrrided
 	Uninstall_Hook(R_GLStudioDrawPoints);
 	Uninstall_Hook(GL_LoadTexture2);
 	Uninstall_Hook(GL_BuildLightmaps);
@@ -3904,8 +5343,8 @@ void R_InstallHooks(void)
 	Install_InlineHook(R_NewMap);
 	//Install_InlineHook(R_CullBox);
 	Install_InlineHook(Mod_PointInLeaf);
-	//Install_InlineHook(R_BuildLightMap);
-	Install_InlineHook(R_AddDynamicLights);
+	//Install_InlineHook(R_BuildLightMap);//Overrided
+	//Install_InlineHook(R_AddDynamicLights);//Overrided
 	Install_InlineHook(R_GLStudioDrawPoints);
 	Install_InlineHook(GL_LoadTexture2);
 	Install_InlineHook(GL_BuildLightmaps);

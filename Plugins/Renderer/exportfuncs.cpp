@@ -375,7 +375,8 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 					ctx->candidate_count++;
 				}
 			}
-			else if (pinst->id == X86_INS_MOV &&
+
+			if (pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_REG &&
 				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
@@ -389,19 +390,34 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 					ctx->candidate_count++;
 				}
 			}
-			else if (pinst->id == X86_INS_FLD &&
+
+			if (pinst->id == X86_INS_FLD &&
 				pinst->detail->x86.op_count == 1 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0 &&
 				pinst->detail->x86.operands[0].mem.index == 0 &&
 				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
 				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-			{//.text:01D87E06 8B 0D EC 97 BC 02                                   mov     ecx, r_framecount  
-				
+			{
 				if (!cl_time)
 					cl_time = (decltype(cl_time))pinst->detail->x86.operands[0].mem.disp;
 				else if (!cl_oldtime)
 					cl_oldtime = (decltype(cl_oldtime))pinst->detail->x86.operands[0].mem.disp;
+			}
+			if (pinst->id == X86_INS_MOVSD &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				pinst->detail->x86.operands[1].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{// movsd   xmm0, cl_time	
+
+				if (!cl_time)
+					cl_time = (decltype(cl_time))pinst->detail->x86.operands[1].mem.disp;
+				else if (!cl_oldtime)
+					cl_oldtime = (decltype(cl_oldtime))pinst->detail->x86.operands[1].mem.disp;
 			}
 
 			if (address[0] == 0xCC)
@@ -643,8 +659,10 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	{
 		typedef struct
 		{
-			DWORD r_origin_candidate;
-			DWORD g_ChromeOrigin_candidate;
+			int r_origin_candidate_count;
+			PVOID r_origin_candidate[3];
+			int g_ChromeOrigin_candidate_count;
+			PVOID g_ChromeOrigin_candidate[3];
 		}SetChromeOrigin_ctx;
 
 		SetChromeOrigin_ctx ctx = { 0 };
@@ -654,42 +672,103 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			auto pinst = (cs_insn *)inst;
 			auto ctx = (SetChromeOrigin_ctx *)context;
 
-			if (address[0] == 0xD9 && address[1] == 0x05 && instLen == 6)//D9 05 00 40 F5 03 fld     r_origin
-			{
-				DWORD imm = *(DWORD *)(address + 2);
-
-				if (!ctx->r_origin_candidate || imm < ctx->r_origin_candidate)
-					ctx->r_origin_candidate = imm;
-			}
-			else if (address[0] == 0xD9 && address[1] == 0x1D && instLen == 6)//D9 1D A0 39 DB 08 fstp    g_ChromeOrigin
-			{
-				DWORD imm = *(DWORD *)(address + 2);
-
-				if (!ctx->g_ChromeOrigin_candidate || imm < ctx->g_ChromeOrigin_candidate)
-					ctx->g_ChromeOrigin_candidate = imm;
+			if (pinst->id == X86_INS_FLD &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{//D9 05 00 40 F5 03 fld     r_origin
+				if (ctx->r_origin_candidate_count < 3)
+				{
+					ctx->r_origin_candidate[ctx->r_origin_candidate_count] = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+					ctx->r_origin_candidate_count++;
+				}
 			}
 			else if (pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_REG &&
 				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0)
-			{//A1 F0 98 BC 02 mov     eax, r_origin
-				DWORD imm = pinst->detail->x86.operands[1].mem.disp;
-
-				if (!ctx->r_origin_candidate || imm < ctx->r_origin_candidate)
-					ctx->r_origin_candidate = imm;
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				if (ctx->r_origin_candidate_count < 3)
+				{
+					ctx->r_origin_candidate[ctx->r_origin_candidate_count] = (PVOID)pinst->detail->x86.operands[1].mem.disp;
+					ctx->r_origin_candidate_count++;
+				}
 			}
+			else if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				if (ctx->r_origin_candidate_count < 3)
+				{
+					ctx->r_origin_candidate[ctx->r_origin_candidate_count] = (PVOID)pinst->detail->x86.operands[1].imm;
+					ctx->r_origin_candidate_count++;
+				}
+			}
+			else if (pinst->id == X86_INS_MOVQ &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				if (ctx->r_origin_candidate_count < 3)
+				{
+					ctx->r_origin_candidate[ctx->r_origin_candidate_count] = (PVOID)pinst->detail->x86.operands[1].mem.disp;
+					ctx->r_origin_candidate_count++;
+				}
+			}
+
 			else if (pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
 				pinst->detail->x86.operands[1].type == X86_OP_REG)
 			{//A3 40 88 35 02 mov     g_ChromeOrigin, eax
-				DWORD imm = pinst->detail->x86.operands[0].mem.disp;
-
-				if (!ctx->g_ChromeOrigin_candidate || imm < ctx->g_ChromeOrigin_candidate)
-					ctx->g_ChromeOrigin_candidate = imm;
+				if (ctx->g_ChromeOrigin_candidate_count < 3)
+				{
+					ctx->g_ChromeOrigin_candidate[ctx->g_ChromeOrigin_candidate_count] = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+					ctx->g_ChromeOrigin_candidate_count++;
+				}
 			}
+			else if (pinst->id == X86_INS_MOVQ &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG)
+			{//A3 40 88 35 02 mov     g_ChromeOrigin, eax
+				if (ctx->g_ChromeOrigin_candidate_count < 3)
+				{
+					ctx->g_ChromeOrigin_candidate[ctx->g_ChromeOrigin_candidate_count] = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+					ctx->g_ChromeOrigin_candidate_count++;
+				}
+			}
+			else if (pinst->id == X86_INS_FSTP &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{//D9 1D A0 39 DB 08 fstp    g_ChromeOrigin
+				if (ctx->g_ChromeOrigin_candidate_count < 3)
+				{
+					ctx->g_ChromeOrigin_candidate[ctx->g_ChromeOrigin_candidate_count] = (PVOID)pinst->detail->x86.operands[0].mem.disp;
+					ctx->g_ChromeOrigin_candidate_count++;
+				}
+			}
+
 			if (address[0] == 0xCC)
 				return TRUE;
 
@@ -699,11 +778,21 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			return FALSE;
 		}, 0, &ctx);
 
-		if (ctx.r_origin_candidate)
-			r_origin = (decltype(r_origin))ctx.r_origin_candidate;
+		if (ctx.r_origin_candidate_count >= 2)
+		{
+			std::qsort(ctx.r_origin_candidate, ctx.r_origin_candidate_count, sizeof(ctx.r_origin_candidate[0]), [](const void* a, const void* b) {
+				return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
+			});
+			r_origin = (decltype(r_origin))ctx.r_origin_candidate[0];
+		}
 
-		if (ctx.g_ChromeOrigin_candidate)
-			g_ChromeOrigin = (decltype(g_ChromeOrigin))ctx.g_ChromeOrigin_candidate;
+		if (ctx.g_ChromeOrigin_candidate_count >= 2)
+		{
+			std::qsort(ctx.g_ChromeOrigin_candidate, ctx.g_ChromeOrigin_candidate_count, sizeof(ctx.g_ChromeOrigin_candidate[0]), [](const void* a, const void* b) {
+				return (int)(*(LONG_PTR*)a - *(LONG_PTR*)b);
+			});
+			g_ChromeOrigin = (decltype(g_ChromeOrigin))ctx.g_ChromeOrigin_candidate[0];
+		}
 
 		Sig_VarNotFound(r_origin);
 		Sig_VarNotFound(g_ChromeOrigin);
@@ -720,7 +809,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 		StudioSetupLighting_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(pstudio->StudioSetupLighting, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(pstudio->StudioSetupLighting, 0x200, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 			auto ctx = (StudioSetupLighting_ctx *)context;
@@ -766,6 +855,23 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 					ctx->candidate_count++;
 				}
 			}
+			else if (ctx->and_FF00_start &&
+				pinst->id == X86_INS_MOVSS &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				pinst->detail->x86.operands[0].mem.index == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{//.text:01D8F6AD D9 1D F0 EA 51 08                                   fstp    r_colormix
+
+				if (ctx->candidate_count < 10)
+				{
+					ctx->candidate[ctx->candidate_count] = (DWORD)pinst->detail->x86.operands[0].mem.disp;
+					ctx->candidate_count++;
+				}
+			}
 
 			if (address[0] == 0xCC)
 				return TRUE;
@@ -776,10 +882,9 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			return FALSE;
 		}, 0, &ctx);
 
-
 		if (ctx.candidate_count >= 3)
 		{
-			std::qsort(ctx.candidate, ctx.candidate_count, sizeof(int), [](const void*a, const void*b) {
+			std::qsort(ctx.candidate, ctx.candidate_count, sizeof(ctx.candidate[0]), [](const void* a, const void* b) {
 				return (int)(*(LONG_PTR *)a - *(LONG_PTR *)b);
 			});
 
@@ -1326,44 +1431,6 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		g_pMetaHookAPI->SysError("Failed to locate g_pGameStudioRenderer or EngineStudioRenderer!\n");
 	}
 
-	if (1)
-	{
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_LightStrength, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-			auto pinst = (cs_insn *)inst;
-
-			if (!numlight &&
-				pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0 &&
-				pinst->detail->x86.operands[1].mem.index == 0 &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG)
-			{
-				if ((uintptr_t)pinst->detail->x86.operands[1].mem.disp != (uintptr_t)r_smodels_total)
-				{
-					//.text:01D8BD47 8B 35 B4 39 DB 08                                   mov     esi, numlight
-					//.text:01D83D0B A1 98 74 36 02                                      mov     eax, numlight
-					numlight = (decltype(numlight))pinst->detail->x86.operands[1].mem.disp;
-				}
-			}
-
-			if (numlight)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-			}, 0, NULL);
-
-		Sig_VarNotFound(numlight);
-	}
-
 	return result;
 }
 
@@ -1384,10 +1451,16 @@ int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 		{
 			comp->FollowEnts.emplace_back(ent);
 		}
-		//return 0;
 	}
 
 	return r;
+}
+
+void HUD_PlayerMoveInit(struct playermove_s* ppmove)
+{
+	gExportfuncs.HUD_PlayerMoveInit(ppmove);
+
+	pmove = ppmove;
 }
 
 void HUD_Frame(double time)

@@ -483,10 +483,21 @@ void R_RecursiveLinkTextureChain(mnode_t *node, wsurf_vbo_leaf_t *leaf)
 
 	if (c)
 	{
-		auto surf = r_worldmodel->surfaces + node->firstsurface;
-
-		for (; c; c--, surf++)
+		int surf_index = 0;
+		
+		for (; c; c--, surf_index ++)
 		{
+			msurface_t* surf;
+
+			if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+			{
+				surf = (((msurface_hl25_t*)r_worldmodel->surfaces) + node->firstsurface + surf_index);
+			}
+			else
+			{
+				surf = r_worldmodel->surfaces + node->firstsurface + surf_index;
+			}
+
 			// Filter out invisible surfaces
 			if (surf->visframe != (*r_framecount))
 				continue;
@@ -511,9 +522,20 @@ void R_RecursiveLinkTextureChain(mnode_t *node, wsurf_vbo_leaf_t *leaf)
 
 void R_BrushModelLinkTextureChain(model_t *mod, wsurf_vbo_leaf_t *leaf)
 {
-	auto surf = &mod->surfaces[mod->firstmodelsurface];
-	for (int i = 0; i < mod->nummodelsurfaces; i++, surf++)
+	msurface_t* surf;
+
+	for (int i = 0; i < mod->nummodelsurfaces; i++)
 	{
+		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			surf = (((msurface_hl25_t*)mod->surfaces) + mod->firstmodelsurface + i);
+		}
+		else
+		{
+			surf = mod->surfaces + mod->firstmodelsurface + i;
+		}
+
+
 		auto pplane = surf->plane;
 
 		if (surf->flags & SURF_DRAWSKY)
@@ -1232,33 +1254,42 @@ void R_GenerateVertexBuffer(void)
 	int iNumFaces = 0;
 	int iNumVerts = 0;
 
-	auto surf = r_worldmodel->surfaces;
-
 	r_wsurf.vFaceBuffer.resize(r_worldmodel->numsurfaces);
 
 	for(int i = 0; i < r_worldmodel->numsurfaces; i++)
 	{
-		auto poly = surf[i].polys;
+		msurface_t* surf;
+
+		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			surf = (((msurface_hl25_t *)r_worldmodel->surfaces) + i);
+		}
+		else
+		{
+			surf = r_worldmodel->surfaces + i;
+		}
+
+		auto poly = surf->polys;
 
 		poly->flags = i;
 
 		brushface_t *brushface = &r_wsurf.vFaceBuffer[iNumFaces];
 
-		VectorCopy(surf[i].texinfo->vecs[0], brushface->s_tangent);
-		VectorCopy(surf[i].texinfo->vecs[1], brushface->t_tangent);
+		VectorCopy(surf->texinfo->vecs[0], brushface->s_tangent);
+		VectorCopy(surf->texinfo->vecs[1], brushface->t_tangent);
 		VectorNormalize(brushface->s_tangent);
 		VectorNormalize(brushface->t_tangent);
-		VectorCopy(surf[i].plane->normal, brushface->normal);
+		VectorCopy(surf->plane->normal, brushface->normal);
 		brushface->index = i;
-		brushface->flags = surf[i].flags;
+		brushface->flags = surf->flags;
 
-		if (surf[i].flags & SURF_PLANEBACK)
+		if (surf->flags & SURF_PLANEBACK)
 			VectorInverse(brushface->normal);
 
-		if (surf[i].lightmaptexturenum + 1 > r_wsurf.iNumLightmapTextures)
-			r_wsurf.iNumLightmapTextures = surf[i].lightmaptexturenum + 1;
+		if (surf->lightmaptexturenum + 1 > r_wsurf.iNumLightmapTextures)
+			r_wsurf.iNumLightmapTextures = surf->lightmaptexturenum + 1;
 
-		auto ptexture = surf[i].texinfo ? surf[i].texinfo->texture : NULL;
+		auto ptexture = surf->texinfo ? surf->texinfo->texture : NULL;
 
 		float replaceScale[2] = { 1, 1 };
 		float detailScale[2] = { 1, 1 };
@@ -1301,7 +1332,7 @@ void R_GenerateVertexBuffer(void)
 
 		if (brushface->flags & SURF_DRAWTURB)
 		{
-			for (poly = surf[i].polys; poly; poly = poly->next)
+			for (poly = surf->polys; poly; poly = poly->next)
 			{
 				int iStartVert = iNumVerts;
 
@@ -1329,7 +1360,7 @@ void R_GenerateVertexBuffer(void)
 					Vertexes[0].texcoord[2] = (ptexture && (brushface->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
 					Vertexes[0].lightmaptexcoord[0] = v[5];
 					Vertexes[0].lightmaptexcoord[1] = v[6];
-					Vertexes[0].lightmaptexcoord[2] = surf[i].lightmaptexturenum;
+					Vertexes[0].lightmaptexcoord[2] = surf->lightmaptexturenum;
 					Vertexes[0].replacetexcoord[0] = replaceScale[0];
 					Vertexes[0].replacetexcoord[1] = replaceScale[1];
 					Vertexes[0].detailtexcoord[0] = detailScale[0];
@@ -1341,7 +1372,7 @@ void R_GenerateVertexBuffer(void)
 					Vertexes[0].speculartexcoord[0] = specularScale[0];
 					Vertexes[0].speculartexcoord[1] = specularScale[1];
 					Vertexes[0].texindex = R_FindTextureIdByTexture(ptexture);
-					memcpy(&Vertexes[0].styles, surf[i].styles, sizeof(surf[i].styles));
+					memcpy(&Vertexes[0].styles, surf->styles, sizeof(surf->styles));
 
 					vVertexBuffer.emplace_back(Vertexes[0]);
 					iNumVerts++;
@@ -1357,7 +1388,7 @@ void R_GenerateVertexBuffer(void)
 
 			brushface->start_vertex.emplace_back(iStartVert);
 
-			for (poly = surf[i].polys; poly; poly = poly->next)
+			for (poly = surf->polys; poly; poly = poly->next)
 			{
 				float *v = poly->verts[0];
 
@@ -1381,7 +1412,7 @@ void R_GenerateVertexBuffer(void)
 					Vertexes[j].texcoord[2] = (ptexture && (brushface->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
 					Vertexes[j].lightmaptexcoord[0] = v[5];
 					Vertexes[j].lightmaptexcoord[1] = v[6];
-					Vertexes[j].lightmaptexcoord[2] = surf[i].lightmaptexturenum;
+					Vertexes[j].lightmaptexcoord[2] = surf->lightmaptexturenum;
 					Vertexes[j].replacetexcoord[0] = replaceScale[0];
 					Vertexes[j].replacetexcoord[1] = replaceScale[1];
 					Vertexes[j].detailtexcoord[0] = detailScale[0];
@@ -1393,7 +1424,7 @@ void R_GenerateVertexBuffer(void)
 					Vertexes[j].speculartexcoord[0] = specularScale[0];
 					Vertexes[j].speculartexcoord[1] = specularScale[1];
 					Vertexes[j].texindex = R_FindTextureIdByTexture(ptexture);
-					memcpy(&Vertexes[j].styles, surf[i].styles, sizeof(surf[i].styles));
+					memcpy(&Vertexes[j].styles, surf->styles, sizeof(surf->styles));
 				}
 				vVertexBuffer.emplace_back(Vertexes[0]);
 				vVertexBuffer.emplace_back(Vertexes[1]);
@@ -1419,10 +1450,10 @@ void R_GenerateVertexBuffer(void)
 
 					Vertexes[2].texcoord[0] = v[3];
 					Vertexes[2].texcoord[1] = v[4];
-					Vertexes[2].texcoord[2] = (ptexture && (surf[i].flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
+					Vertexes[2].texcoord[2] = (ptexture && (surf->flags & SURF_DRAWTILED)) ? 1.0f / ptexture->width : 0;
 					Vertexes[2].lightmaptexcoord[0] = v[5];
 					Vertexes[2].lightmaptexcoord[1] = v[6];
-					Vertexes[2].lightmaptexcoord[2] = surf[i].lightmaptexturenum;
+					Vertexes[2].lightmaptexcoord[2] = surf->lightmaptexturenum;
 					Vertexes[2].detailtexcoord[0] = detailScale[0];
 					Vertexes[2].detailtexcoord[1] = detailScale[1];
 					Vertexes[2].normaltexcoord[0] = normalScale[0];
@@ -1432,7 +1463,7 @@ void R_GenerateVertexBuffer(void)
 					Vertexes[2].speculartexcoord[0] = specularScale[0];
 					Vertexes[2].speculartexcoord[1] = specularScale[1];
 					Vertexes[2].texindex = R_FindTextureIdByTexture(ptexture);
-					memcpy(&Vertexes[2].styles, surf[i].styles, sizeof(surf[i].styles));
+					memcpy(&Vertexes[2].styles, surf->styles, sizeof(surf->styles));
 
 					vVertexBuffer.emplace_back(Vertexes[0]);
 					vVertexBuffer.emplace_back(Vertexes[1]);

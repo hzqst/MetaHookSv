@@ -98,8 +98,8 @@ extern int *r_loading_skybox;
 
 extern RECT *window_rect;
 
-extern float *videowindowaspect;
-extern float *windowvideoaspect;
+extern float * s_fXMouseAspectAdjustment;
+extern float * s_fYMouseAspectAdjustment;
 
 extern vec_t *vup;
 extern vec_t *vpn;
@@ -121,6 +121,8 @@ extern int *cl_max_edicts;
 extern cl_entity_t **cl_entities;
 
 extern TEMPENTITY *gTempEnts;
+
+extern struct playermove_s* pmove;
 
 extern int *cl_viewentity;
 extern void *cl_frames;
@@ -192,7 +194,7 @@ extern int gly;
 extern int glwidth;
 extern int glheight;
 
-extern bool bNoStretchAspect;
+extern bool bEnforceStretchAspect;
 extern bool bUseBindless;
 extern bool bUseOITBlend;
 

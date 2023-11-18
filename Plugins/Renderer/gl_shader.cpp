@@ -53,9 +53,9 @@ GLuint R_CompileShaderObject(int type, const char *code, const char *filename)
 
 	if (developer->value >= 255)
 	{
-		g_pFileSystem->CreateDirHierarchy("logs");
-		g_pFileSystem->CreateDirHierarchy("logs/renderer");
-		g_pFileSystem->CreateDirHierarchy("logs/renderer/shader");
+		FILESYSTEM_ANY_CREATEDIR("logs");
+		FILESYSTEM_ANY_CREATEDIR("logs/renderer");
+		FILESYSTEM_ANY_CREATEDIR("logs/renderer/shader");
 		
 		char filepath[256];
 		snprintf(filepath, 255, "logs\\%s", filename);
@@ -63,11 +63,11 @@ GLuint R_CompileShaderObject(int type, const char *code, const char *filename)
 
 		//gEngfuncs.Con_DPrintf("writing %s...", filepath);
 
-		auto FileHandle = g_pFileSystem->Open(filepath, "wb");
+		auto FileHandle = FILESYSTEM_ANY_OPEN(filepath, "wb");
 		if (FileHandle)
 		{
-			g_pFileSystem->Write(code, strlen(code), FileHandle);
-			g_pFileSystem->Close(FileHandle);
+			FILESYSTEM_ANY_WRITE(code, strlen(code), FileHandle);
+			FILESYSTEM_ANY_CLOSE(FileHandle);
 		}
 	}
 
@@ -380,24 +380,24 @@ void R_SaveProgramStatesCaches(const char *filename, const std::vector<program_s
 		ss << "\n";
 	}
 
-	auto FileHandle = g_pFileSystem->Open(filename, "wt");
+	auto FileHandle = FILESYSTEM_ANY_OPEN(filename, "wt");
 	if (FileHandle)
 	{
 		auto str = ss.str();
-		g_pFileSystem->Write(str.data(), str.length(), FileHandle);
-		g_pFileSystem->Close(FileHandle);
+		FILESYSTEM_ANY_WRITE(str.data(), str.length(), FileHandle);
+		FILESYSTEM_ANY_CLOSE(FileHandle);
 	}
 }
 
 void R_LoadProgramStateCaches(const char *filename, const program_state_mapping_t *mapping, size_t mapping_size, void(*callback)(program_state_t state))
 {
-	auto FileHandle = g_pFileSystem->Open("renderer/shader/studio_cache.txt", "rt");
+	auto FileHandle = FILESYSTEM_ANY_OPEN("renderer/shader/studio_cache.txt", "rt");
 	if (FileHandle)
 	{
 		char szReadLine[4096];
-		while (!g_pFileSystem->EndOfFile(FileHandle))
+		while (!FILESYSTEM_ANY_EOF(FileHandle))
 		{
-			g_pFileSystem->ReadLine(szReadLine, sizeof(szReadLine) - 1, FileHandle);
+			FILESYSTEM_ANY_READLINE(szReadLine, sizeof(szReadLine) - 1, FileHandle);
 			szReadLine[sizeof(szReadLine) - 1] = 0;
 
 			program_state_t ProgramState = 0;
@@ -407,7 +407,7 @@ void R_LoadProgramStateCaches(const char *filename, const program_state_mapping_
 			char *p = szReadLine;
 			while (1)
 			{
-				p = g_pFileSystem->ParseFile(p, token, &quoted);
+				p = FILESYSTEM_ANY_PARSEFILE(p, token, &quoted);
 				if (token[0])
 				{
 					if (!strcmp(token, "NONE"))
@@ -442,6 +442,6 @@ void R_LoadProgramStateCaches(const char *filename, const program_state_mapping_
 				callback(ProgramState);
 			}
 		}
-		g_pFileSystem->Close(FileHandle);
+		FILESYSTEM_ANY_CLOSE(FileHandle);
 	}
 }

@@ -7,18 +7,6 @@ int *r_loading_skybox = NULL;
 
 cvar_t* r_detailskytextures = NULL;
 
-//TODO water fog?
-#if 0
-void EmitWaterPolys(msurface_t *fa, int direction)
-{
-	if (r_draw_reflectview)
-		return;
-
-
-}
-#endif
-
-
 void R_DrawSkyBox(void)
 {
 	if (CL_IsDevOverviewMode())

@@ -325,13 +325,31 @@ void GL_BuildLightmaps(void)
 			for (int i = 0; i < mod->numsurfaces; i++)
 			{
 				//Allocate lightmap texture from empty slot
-				R_AllocateSurfaceLightmap(mod, mod->surfaces + i);
-
-				//Build glpolys
-				if (!(mod->surfaces[i].flags & SURF_DRAWTURB))
+				if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 				{
-					R_BuildSurfaceDisplayList(mod, mod->vertexes, mod->surfaces + i);
+					auto surf = ((msurface_hl25_t*)mod->surfaces) + i;
+
+					R_AllocateSurfaceLightmap(mod, surf);
+
+					//Build glpolys
+					if (!(surf->flags & SURF_DRAWTURB))
+					{
+						R_BuildSurfaceDisplayList(mod, mod->vertexes, surf);
+					}
 				}
+				else
+				{
+					auto surf = mod->surfaces + i;
+
+					R_AllocateSurfaceLightmap(mod, surf);
+
+					//Build glpolys
+					if (!(surf->flags & SURF_DRAWTURB))
+					{
+						R_BuildSurfaceDisplayList(mod, mod->vertexes, surf);
+					}
+				}
+
 			}
 		}
 	}
@@ -363,7 +381,19 @@ void GL_BuildLightmaps(void)
 				for (int i = 0; i < mod->numsurfaces; i++)
 				{
 					//Fill lightmap color bytes into lightmaps[]
-					R_BuildSurfaceLightmap(mod, mod->surfaces + i, lightmap_idx);
+
+					msurface_t* surf;
+
+					if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+					{
+						surf = (((msurface_hl25_t*)mod->surfaces) + i);
+					}
+					else
+					{
+						surf = mod->surfaces + i;
+					}
+
+					R_BuildSurfaceLightmap(mod, surf, lightmap_idx);
 				}
 			}
 		}
@@ -433,10 +463,17 @@ colorVec RecursiveLightPoint(mnode_t *node, vec3_t start, vec3_t end)
 	//VectorCopy(mid, lightspot);
 	//lightplane = plane;
 
-	surf = r_worldmodel->surfaces + node->firstsurface;
-
-	for (i = 0; i < node->numsurfaces; i++, surf++)
+	for (i = 0; i < node->numsurfaces; i++)
 	{
+		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			surf = (((msurface_hl25_t*)r_worldmodel->surfaces) + node->firstsurface + i);
+		}
+		else
+		{
+			surf = r_worldmodel->surfaces + node->firstsurface + i;
+		}
+
 		if (surf->flags & SURF_DRAWTILED)
 			continue;
 

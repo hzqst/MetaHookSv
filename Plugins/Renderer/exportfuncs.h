@@ -11,3 +11,4 @@ void HUD_Shutdown(void);
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model);
 int HUD_Redraw(float time, int intermission);
 void HUD_Frame(double time);
+void HUD_PlayerMoveInit(struct playermove_s* ppmove);
