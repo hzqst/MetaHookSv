@@ -1163,7 +1163,49 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 
 	Cmd_GetCmdBase = *(decltype(Cmd_GetCmdBase) *)(&gMetaSave.pEngineFuncs->GetFirstCmdFunctionHandle);
 
-	if (1)
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+#define FULLSCREEN_STRING_SIG "-fullscreen\0"
+		auto FullScreen_String = MH_SearchPattern(g_dwEngineBase, g_dwEngineSize, FULLSCREEN_STRING_SIG, sizeof(FULLSCREEN_STRING_SIG) - 1);
+		if (FullScreen_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
+			*(DWORD*)(pattern + 1) = (DWORD)FullScreen_String;
+			auto FullScreen_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
+			if (FullScreen_PushString)
+			{
+				FullScreen_PushString = (PUCHAR)FullScreen_PushString + sizeof(pattern) - 1;
+				MH_DisasmRanges(FullScreen_PushString, 0x400, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+				{
+					auto pinst = (cs_insn*)inst;
+
+					if (instCount > 30)
+					{
+						if (pinst->id == X86_INS_MOV &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+							pinst->detail->x86.operands[0].mem.base == 0 &&
+							(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineBase &&
+							(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize &&
+							pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+							pinst->detail->x86.operands[1].imm == 0)
+						{
+							g_pVideoMode = (decltype(g_pVideoMode))pinst->detail->x86.operands[0].mem.disp;
+						}
+					}
+
+					if (g_pVideoMode)
+						return TRUE;
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					return FALSE;
+				}, 0, NULL);
+			}
+		}
+	}
+	else
 	{
 #define FULLSCREEN_STRING_SIG "-gl\0"
 		auto FullScreen_String = MH_SearchPattern(g_dwEngineBase, g_dwEngineSize, FULLSCREEN_STRING_SIG, sizeof(FULLSCREEN_STRING_SIG) - 1);
@@ -1179,16 +1221,19 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 				{
 					auto pinst = (cs_insn *)inst;
 
-					if (pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[0].mem.base == 0 &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineBase &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize &&
-						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-						pinst->detail->x86.operands[1].imm == 0)
+					if (instCount > 30)
 					{
-						g_pVideoMode = (decltype(g_pVideoMode))pinst->detail->x86.operands[0].mem.disp;
+						if (pinst->id == X86_INS_MOV &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+							pinst->detail->x86.operands[0].mem.base == 0 &&
+							(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineBase &&
+							(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize &&
+							pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+							pinst->detail->x86.operands[1].imm == 0)
+						{
+							g_pVideoMode = (decltype(g_pVideoMode))pinst->detail->x86.operands[0].mem.disp;
+						}
 					}
 
 					if (g_pVideoMode)
