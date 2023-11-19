@@ -56,7 +56,9 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	}
 
 	g_pFileSystem = g_pInterface->FileSystem;
-	g_pFileSystem_HL25 = g_pInterface->FileSystem_HL25;
+	if (!g_pFileSystem)//backward compatibility
+		g_pFileSystem_HL25 = g_pInterface->FileSystem_HL25;
+
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();
 	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
 	g_hEngineModule = g_pMetaHookAPI->GetEngineModule();

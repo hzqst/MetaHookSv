@@ -1,6 +1,7 @@
 #pragma once
 
 class IFileSystem;
+class IFileSystem_HL25;
 
 extern HINSTANCE g_hInstance, g_hThisModule, g_hEngineModule;
 extern PVOID g_dwEngineBase;
