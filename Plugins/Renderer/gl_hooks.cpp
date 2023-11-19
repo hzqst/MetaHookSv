@@ -3319,6 +3319,7 @@ void R_FillAddress(void)
 			int plightvec_instcount;
 			int plightvec_xmmreg;
 			PUCHAR mov_437F0000h_instaddr;
+			PUCHAR fld_255_instaddr;
 		}R_StudioLighting_ctx;
 
 		R_StudioLighting_ctx ctx = { 0 };
@@ -3582,7 +3583,22 @@ void R_FillAddress(void)
 						ctx->mov_437F0000h_instaddr = address;
 					}
 				}
-					
+
+				if (!ctx->fld_255_instaddr &&
+					pinst->id == X86_INS_FLD &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineRdataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineRdataBase + g_dwEngineRdataSize
+					)
+				{
+
+					if (*(DWORD*)pinst->detail->x86.operands[0].mem.disp == 0x437F0000)
+					{
+						ctx->fld_255_instaddr = address;
+					}
+				}
+
 				if (
 					ctx->mov_437F0000h_instaddr &&
 					address < ctx->mov_437F0000h_instaddr + 0x30 &&
@@ -3592,6 +3608,22 @@ void R_FillAddress(void)
 					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
 					(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwEngineDataBase &&
 					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize )
+				{
+
+					lightgammatable = (decltype(lightgammatable))pinst->detail->x86.operands[1].imm;
+
+				}
+
+
+				if (
+					ctx->fld_255_instaddr &&
+					address < ctx->fld_255_instaddr + 0x80 &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					(PUCHAR)pinst->detail->x86.operands[1].imm >(PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
 				{
 
 					lightgammatable = (decltype(lightgammatable))pinst->detail->x86.operands[1].imm;
@@ -3646,7 +3678,7 @@ void R_FillAddress(void)
 
 		BuildGammaTable_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.BuildGammaTable, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.BuildGammaTable, 0x250, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (BuildGammaTable_ctx*)context;
@@ -4759,7 +4791,7 @@ void R_FillAddress(void)
 
 		R_LightStrength_Context ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_LightStrength, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_LightStrength, 0x200, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 			auto ctx = (R_LightStrength_Context *)context;
 			auto pinst = (cs_insn *)inst;
 
@@ -4864,6 +4896,20 @@ void R_FillAddress(void)
 				numlight = (decltype(numlight))ctx->Candidate_numlight;
 			}
 
+			if (!numlight &&
+				ctx->Candidate_numlight &&
+				ctx->Candidate_numlight_instCount &&
+				instCount > ctx->Candidate_numlight_instCount &&
+				instCount < ctx->Candidate_numlight_instCount + 30 &&
+				pinst->id == X86_INS_TEST &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == ctx->Candidate_numlight_reg)
+			{
+				numlight = (decltype(numlight))ctx->Candidate_numlight;
+			}
+
 			if (locallight && numlight)
 				return TRUE;
 
@@ -4877,6 +4923,7 @@ void R_FillAddress(void)
 		}, 0, &ctx);
 
 		Sig_VarNotFound(locallight);
+		Sig_VarNotFound(numlight);
 	}
 	else
 	{
