@@ -15,8 +15,26 @@ echo -----------------------------------------------------
 
 echo Copying files...
 
-copy "%~dp0Build\svencoop.exe" "%GameDir%\" /y
+set GameSDL2Path=%GameDir%\SDL2.dll
+for /f "delims=" %%i in ('powershell.exe -Command "$filePath = '%GameSDL2Path%'; $fileVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($filePath).FileVersion; Write-Output $fileVersion"') do set "GameSDL2_fileVersion=%%i"
+
+if "%GameSDL2_fileVersion%"=="2, 0, 20, 0" (
+    echo SDL2 version is "%GameSDL2_fileVersion%", no need to replace SDL2
+    goto :no_replace_sdl2
+)
+
+if "%GameSDL2_fileVersion%"=="2, 0, 16, 0" (
+    echo SDL2 version is "%GameSDL2_fileVersion%", no need to replace SDL2
+    goto :no_replace_sdl2
+)
+
+echo SDL2 version is "%GameSDL2_fileVersion%", need to replace SDL2
 copy "%~dp0Build\SDL2.dll" "%GameDir%\" /y
+goto :no_replace_sdl2
+
+:no_replace_sdl2
+
+copy "%~dp0Build\svencoop.exe" "%GameDir%\" /y
 copy "%~dp0Build\FreeImage.dll" "%GameDir%\" /y
 xcopy "%~dp0Build\svencoop" "%GameDir%\%LauncherMod%" /y /e
 xcopy "%~dp0Build\svencoop_addon" "%GameDir%\%LauncherMod%_addon\" /y /e
@@ -26,9 +44,13 @@ xcopy "%~dp0Build\platform" "%GameDir%\platform" /y /e
 
 if not exist "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst" copy "%GameDir%\%LauncherMod%\metahook\configs\plugins_svencoop.lst" "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst" /y
 
-del "%GameDir%\%LauncherMod%\metahook\configs\plugins_goldsrc.lst"
-del "%GameDir%\%LauncherMod%\metahook\configs\plugins_svencoop.lst"
-del "%GameDir%\%LauncherMod%\metahook\configs\plugins_svencoop_avx2.lst"
+echo -------------------------------------------------------
+
+echo Cleaning deprecated config files...
+
+if exist "%GameDir%\%LauncherMod%\metahook\configs\plugins_goldsrc.lst" del "%GameDir%\%LauncherMod%\metahook\configs\plugins_goldsrc.lst"
+if exist "%GameDir%\%LauncherMod%\metahook\configs\plugins_svencoop.lst" del "%GameDir%\%LauncherMod%\metahook\configs\plugins_svencoop.lst"
+if exist "%GameDir%\%LauncherMod%\metahook\configs\plugins_svencoop_avx2.lst" del "%GameDir%\%LauncherMod%\metahook\configs\plugins_svencoop_avx2.lst"
 
 powershell $shell = New-Object -ComObject WScript.Shell;$shortcut = $shell.CreateShortcut(\"MetaHook for %ShortGameName%.lnk\");$shortcut.TargetPath = \"%GameDir%\%LauncherExe%\";$shortcut.WorkingDirectory = \"%GameDir%\";$shortcut.Arguments = \"-insecure -game %LauncherMod%\";$shortcut.Save();
 
