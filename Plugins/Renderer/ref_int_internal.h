@@ -75,6 +75,7 @@ typedef struct
 	void *(*realloc_SvEngine)(void *, size_t);
 	dlight_t *(*CL_AllocDlight)(int key);
 	void(*S_ExtraUpdate)(void);
+	void(*R_DrawViewModel)(void);
 	void(*R_PolyBlend)(void);
 	void(*R_DecalShootInternal)(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
 	void(*R_LoadSkys)(void);

@@ -1073,19 +1073,19 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 		auto RightHand_String = MH_SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, RIGHTHAND_STRING_SIG, sizeof(RIGHTHAND_STRING_SIG) - 1);
 		if (RightHand_String)
 		{
-			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8";
 			*(DWORD *)(pattern + 1) = (DWORD)RightHand_String;
 			auto RightHand_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
 			if (RightHand_PushString)
 			{
 #define HUDINIT_SIG "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x75\x2A"
-				auto ClientDLL_HudInit = MH_ReverseSearchPattern(RightHand_PushString, 0x80, HUDINIT_SIG, sizeof(HUDINIT_SIG)-1);
+				auto ClientDLL_HudInit = MH_ReverseSearchPattern(RightHand_PushString, 0x100, HUDINIT_SIG, sizeof(HUDINIT_SIG)-1);
 				if (ClientDLL_HudInit)
 				{
 					PVOID pfnHUDInit = *(PVOID *)((PUCHAR)ClientDLL_HudInit + 1);
 
 					ClientDLL_HudInit = (PUCHAR)ClientDLL_HudInit + sizeof(HUDINIT_SIG) - 1;
-					MH_DisasmRanges(ClientDLL_HudInit, 0x80, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+					MH_DisasmRanges(ClientDLL_HudInit, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 					{
 						auto pinst = (cs_insn *)inst;
 
@@ -1114,6 +1114,16 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 					}, 0, pfnHUDInit);
 				}
 			}
+			else
+			{
+				MH_SysError("MH_LoadEngine: Failed to locate push cl_righthand string");
+				return;
+			}
+		}
+		else
+		{
+			MH_SysError("MH_LoadEngine: Failed to locate cl_righthand");
+			return;
 		}
 	}
 

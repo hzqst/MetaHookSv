@@ -45,13 +45,14 @@
 #define R_NEWMAP_SIG_SVENGINE "\x55\x8B\xEC\x51\xC7\x45\xFC\x00\x00\x00\x00\xEB\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC\x81\x7D\xFC\x00\x01\x00\x00"
 
 #define GL_BUILDLIGHTMAPS_SIG_NEW "\x55\x8B\xEC\x2A\x2A\x2A\x2A\x68\x00\x80\x00\x00\x6A\x00\x68"
-#define GL_BUILDLIGHTMAPS_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xE8\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\xF3\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x0F\x2E"
+#define GL_BUILDLIGHTMAPS_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xE8\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\xF3\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x0F"
 #define GL_BUILDLIGHTMAPS_SIG_SVENGINE "\x83\xEC\x24\x2A\x2A\x2A\x2A\x68\x00\x00\x08\x00\x6A\x00\x68"
 
 #define R_DRAWWORLD_SIG "\x81\xEC\xB8\x0B\x00\x00\x68\xB8\x0B\x00\x00\x8D\x44\x24\x04\x6A\x00\x50\xE8"
 #define R_DRAWWORLD_SIG_NEW "\x55\x8B\xEC\x81\xEC\xB8\x0B\x00\x00\x68\xB8\x0B\x00\x00\x8D\x85\x48\xF4\xFF\xFF\x6A\x00\x50\xE8\x2A\x2A\x2A\x2A\x8B\x0D"
-#define R_DRAWWORLD_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\x2A\x2A\x68\xB8\x0B\x00\x00"
+#define R_DRAWWORLD_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x2A\x0B\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x68\xB8\x0B\x00\x00"//valve's 9891 update fucked this
 #define R_DRAWWORLD_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\xB8\x0B\x00\x00\xD9\x05"
+#define R_DRAWWORLD_SIG_COMMON "\x68\xB8\x0B\x00\x00\x8D"
 
 #define R_MARKLEAVES_SIG "\xB8\x00\x10\x00\x00\xE8\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\xA1"
 #define R_MARKLEAVES_SIG_NEW "\x55\x8B\xEC\xB8\x04\x10\x00\x00\xE8\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\xA1"
@@ -616,20 +617,148 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(R_RecursiveWorldNode);
 	}
 
-	if (g_iEngineType == ENGINE_SVENGINE)
+	if (1)
 	{
-		gRefFuncs.R_DrawWorld = (void(*)(void))Search_Pattern(R_DRAWWORLD_SIG_SVENGINE);
+		const char pattern[] = R_DRAWWORLD_SIG_COMMON;
+		PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
+		PUCHAR SearchLimit = (PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize;
+		while (SearchBegin < SearchLimit)
+		{
+			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+			if (pFound)
+			{
+				typedef struct
+				{
+					bool bFoundLeaEax;
+					bool bFoundPushZero;
+				}R_DrawWorld_ctx1;
+
+				R_DrawWorld_ctx1 ctx = { 0 };
+
+				g_pMetaHookAPI->DisasmRanges(pFound + 5, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto pinst = (cs_insn*)inst;
+					auto ctx = (R_DrawWorld_ctx1*)context;
+
+					if (instCount == 1 && pinst->id == X86_INS_LEA && 
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[0].reg == X86_REG_EAX &&
+						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+						(pinst->detail->x86.operands[1].mem.base == X86_REG_EBP || pinst->detail->x86.operands[1].mem.base == X86_REG_ESP))
+					{
+						ctx->bFoundLeaEax = true;
+					}
+
+					if (instCount == 2 && 0 == memcmp(address, "\x6A\x00", 2))
+					{
+						ctx->bFoundPushZero = true;
+					}
+
+					if(ctx->bFoundLeaEax && ctx->bFoundPushZero)
+						return TRUE;
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+
+					return TRUE;
+
+				}, 0, &ctx);
+
+				if (ctx.bFoundLeaEax && ctx.bFoundPushZero)
+				{
+					gRefFuncs.R_DrawWorld = (decltype(gRefFuncs.R_DrawWorld))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(pFound, 0x300, [](PUCHAR Candidate) {
+
+						if (Candidate[0] == 0x81 &&
+							Candidate[1] == 0xEC &&
+							Candidate[4] == 0 &&
+							Candidate[5] == 0 &&
+							Candidate[6] == 0xA1)
+							return TRUE;
+
+						if (Candidate[0] == 0x55 &&
+							Candidate[1] == 0x8B &&
+							Candidate[2] == 0xEC &&
+							Candidate[3] == 0x83)
+							return TRUE;
+
+
+						if (Candidate[0] == 0x55 &&
+							Candidate[1] == 0x8B &&
+							Candidate[2] == 0xEC &&
+							Candidate[3] == 0x81)
+							return TRUE;
+
+						return FALSE;
+					});
+
+					break;
+				}
+
+				SearchBegin = pFound + Sig_Length(pattern);
+			}
+			else
+			{
+				break;
+			}
+		}
+
 		Sig_FuncNotFound(R_DrawWorld);
 	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+
+	if (!gRefFuncs.R_DrawWorld)
 	{
-		gRefFuncs.R_DrawWorld = (void(*)(void))Search_Pattern_From(gRefFuncs.R_DrawSequentialPoly, R_DRAWWORLD_SIG_HL25);
-		Sig_FuncNotFound(R_DrawWorld);
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gRefFuncs.R_DrawWorld = (void(*)(void))Search_Pattern(R_DRAWWORLD_SIG_SVENGINE);
+			Sig_FuncNotFound(R_DrawWorld);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			gRefFuncs.R_DrawWorld = (void(*)(void))Search_Pattern_From(gRefFuncs.R_DrawSequentialPoly, R_DRAWWORLD_SIG_HL25);
+			Sig_FuncNotFound(R_DrawWorld);
+		}
+		else
+		{
+			gRefFuncs.R_DrawWorld = (void(*)(void))Search_Pattern_From(gRefFuncs.R_RecursiveWorldNode, R_DRAWWORLD_SIG_NEW);
+			Sig_FuncNotFound(R_DrawWorld);
+		}
 	}
-	else
+
+	if (1)
 	{
-		gRefFuncs.R_DrawWorld = (void(*)(void))Search_Pattern_From(gRefFuncs.R_RecursiveWorldNode, R_DRAWWORLD_SIG_NEW);
-		Sig_FuncNotFound(R_DrawWorld);
+		const char pattern[] = "\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
+		PUCHAR SearchBegin = gRefFuncs.R_RenderView_SvEngine ? (PUCHAR)(gRefFuncs.R_RenderView_SvEngine) : (PUCHAR)(gRefFuncs.R_RenderView);
+		PUCHAR SearchLimit = SearchBegin + 0x500;
+		while (SearchBegin < SearchLimit)
+		{
+			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+			if (pFound)
+			{
+				auto target1 = GetCallAddress(pFound + 0);
+				auto target2 = GetCallAddress(pFound + 5);
+				auto target3 = GetCallAddress(pFound + 10);
+
+				if (target2 == gRefFuncs.R_PolyBlend && target3 == gRefFuncs.S_ExtraUpdate)
+				{
+					gRefFuncs.R_DrawViewModel = (decltype(gRefFuncs.R_DrawViewModel))target1;
+					break;
+				}
+
+				SearchBegin = pFound + Sig_Length(pattern);
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		Sig_FuncNotFound(R_DrawViewModel);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -679,6 +808,7 @@ void R_FillAddress(void)
 
 			return FALSE;
 		});
+
 		Sig_FuncNotFound(GL_EndRendering);
 	}
 
@@ -1455,23 +1585,62 @@ void R_FillAddress(void)
 
 				ctx->disableFog_instcount = instCount;
 			}
-			else if (!r_blend && ctx->disableFog_instcount &&
+
+			if (address[0] == 0x6A && address[1] == 0x00 && address[2] == 0xE8)
+			{
+				//6A 00 push    0
+				//E8 A3 13 05 00                                      call    GL_EnableDisableFog
+
+				auto target = GetCallAddress((address + 2));
+
+				typedef struct
+				{
+					bool bFoundGL_FOG;
+				}GL_EnableDisableFog_ctx2;
+
+				GL_EnableDisableFog_ctx2 ctx2 = { 0 };
+
+				g_pMetaHookAPI->DisasmRanges(target, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+				{
+					auto pinst = (cs_insn*)inst;
+					auto ctx2 = (GL_EnableDisableFog_ctx2 *)context;
+
+					if (pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].imm == GL_FOG)
+					{//.text:01D92330 68 60 0B 00 00 push    0B60h
+						DWORD imm = pinst->detail->x86.operands[0].imm;
+
+						ctx2->bFoundGL_FOG = instCount;
+					}
+
+					return FALSE;
+
+				}, 0, &ctx2);
+
+				if (ctx2.bFoundGL_FOG)
+				{
+					ctx->disableFog_instcount = instCount;
+				}
+			}
+
+			if (!r_blend && ctx->disableFog_instcount &&
 				instCount < ctx->disableFog_instcount + 15 &&
 				(pinst->id == X86_INS_FSTP || pinst->id == X86_INS_FST) &&
 				pinst->detail->x86.op_count == 1 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0)
-			{//.text:01D92355 D9 15 80 61 DF 08 fst     r_blend
+			{//D9 15 80 61 DF 08 fst     r_blend
 				r_blend = (decltype(r_blend))pinst->detail->x86.operands[0].mem.disp;
 			}
-			else if (!r_blend && ctx->disableFog_instcount &&
+			if (!r_blend && ctx->disableFog_instcount &&
 				instCount < ctx->disableFog_instcount + 15 &&
 				(pinst->id == X86_INS_MOVSS) &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 				pinst->detail->x86.operands[0].mem.base == 0 &&
 				pinst->detail->x86.operands[1].type == X86_OP_REG)
-			{//.text:01D92355 D9 15 80 61 DF 08 fst     r_blend
+			{// F3 0F 11 05 54 40 1B 11                             movss   r_blend, xmm0
 				r_blend = (decltype(r_blend))pinst->detail->x86.operands[0].mem.disp;
 			}
 			else if (pinst->id == X86_INS_MOV &&
@@ -4073,65 +4242,65 @@ void R_FillAddress(void)
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char sigs[] = "\xF6\xC4\x44\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView_SvEngine, 0x400, sigs, sizeof(sigs) - 1);
+		addr = (DWORD)Search_Pattern_From_Size(gRefFuncs.R_DrawViewModel, 0x100, sigs);
 		Sig_AddrNotFound(envmap);
 		envmap = *(int **)(addr + 11);
 		cl_stats = *(int **)(addr + 24);
 
 		const char sigs3[] = "\xD9\x1D\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x89\x81\xDC\x02\x00\x00";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView_SvEngine, 0x600, sigs3, sizeof(sigs3) - 1);
+		addr = (DWORD)Search_Pattern_From_Size(gRefFuncs.R_DrawViewModel, 0x200, sigs3);
 		Sig_AddrNotFound(cl_weaponstarttime);
 		cl_weaponstarttime = *(float **)(addr + 2);
 		cl_weaponsequence = *(int **)(addr + 7);
 
 		const char sigs4[] = "\xD1\xEA\x89\x15\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView_SvEngine, 0x600, sigs4, sizeof(sigs4) - 1);
+		addr = (DWORD)Search_Pattern_From_Size(gRefFuncs.R_DrawViewModel, 0x300, sigs4);
 		Sig_AddrNotFound(cl_light_level);
 		cl_light_level = *(int **)(addr + 4);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		const char sigs[] = "\x83\x3D\x04\x2A\x2A\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xF3\x0F\x10\x05";
-		addr = (DWORD)Search_Pattern(sigs);
+		const char sigs[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\xF3\x0F\x10\x05";
+		addr = (DWORD)Search_Pattern_From_Size(gRefFuncs.R_DrawViewModel, 0x100, sigs);
 		Sig_AddrNotFound(envmap);
 		envmap = *(int**)(addr + 2);
 
 		const char sigs2[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x83\xB9\x94\x0B\x00\x00\x00";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)addr, 0x50, sigs2, sizeof(sigs2) - 1);
+		addr = (DWORD)Search_Pattern_From_Size((void*)addr, 0x50, sigs2);
 		Sig_AddrNotFound(cl_stats);
 		cl_stats = *(int**)(addr + 2);
 
 		const char sigs3[] = "\xF3\x0F\x11\x05\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x89\x81\xDC\x02\x00\x00";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)addr, 0x500, sigs3, sizeof(sigs3) - 1);
+		addr = (DWORD)Search_Pattern_From_Size((void*)addr, 0x500, sigs3);
 		Sig_AddrNotFound(cl_weaponstarttime);
 		cl_weaponstarttime = *(float**)(addr + 4);
 		cl_weaponsequence = *(int**)(addr + 9);
 
 		const char sigs4[] = "\xD1\xEA\x89\x15\x2A\x2A\x2A\x2A\x8B\x40\x04";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)addr, 0x600, sigs4, sizeof(sigs4) - 1);
+		addr = (DWORD)Search_Pattern_From_Size((void*)addr, 0x600, sigs4);
 		Sig_AddrNotFound(cl_light_level);
 		cl_light_level = *(int**)(addr + 4);
 	}
 	else
 	{
 		const char sigs[] = "\x39\x3D\x2A\x2A\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xD9\x05";
-		addr = (DWORD)Search_Pattern(sigs);
+		addr = (DWORD)Search_Pattern_From_Size(gRefFuncs.R_DrawViewModel, 0x100, sigs);
 		Sig_AddrNotFound(envmap);
 		envmap = *(int **)(addr + 2);
 
 		const char sigs2[] = "\x39\x3D\x2A\x2A\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xA1";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x50, sigs2, sizeof(sigs2) - 1);
+		addr = (DWORD)Search_Pattern_From_Size((void *)addr, 0x50, sigs2);
 		Sig_AddrNotFound(cl_stats);
 		cl_stats = *(int **)(addr + 2);
 
 		const char sigs3[] = "\xD9\x1D\x2A\x2A\x2A\x2A\xA1";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x500, sigs3, sizeof(sigs3) - 1);
+		addr = (DWORD)Search_Pattern_From_Size((void *)addr, 0x500, sigs3);
 		Sig_AddrNotFound(cl_weaponstarttime);
 		cl_weaponstarttime = *(float **)(addr + 2);
 		cl_weaponsequence = *(int **)(addr + 7);
 
 		const char sigs4[] = "\x6A\x01\x89\x15\x2A\x2A\x2A\x2A\x89";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x600, sigs4, sizeof(sigs4) - 1);
+		addr = (DWORD)Search_Pattern_From_Size((void *)addr, 0x600, sigs4);
 		Sig_AddrNotFound(cl_light_level);
 		cl_light_level = *(int **)(addr + 4);
 
