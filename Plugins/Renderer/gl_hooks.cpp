@@ -730,10 +730,10 @@ void R_FillAddress(void)
 		}
 	}
 
-	if (1)
+	if (g_iEngineType != ENGINE_SVENGINE)
 	{
 		const char pattern[] = "\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
-		PUCHAR SearchBegin = gRefFuncs.R_RenderView_SvEngine ? (PUCHAR)(gRefFuncs.R_RenderView_SvEngine) : (PUCHAR)(gRefFuncs.R_RenderView);
+		PUCHAR SearchBegin = (PUCHAR)gRefFuncs.R_RenderView;
 		PUCHAR SearchLimit = SearchBegin + 0x500;
 		while (SearchBegin < SearchLimit)
 		{
@@ -4242,19 +4242,19 @@ void R_FillAddress(void)
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char sigs[] = "\xF6\xC4\x44\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F";
-		addr = (DWORD)Search_Pattern_From_Size(gRefFuncs.R_DrawViewModel, 0x100, sigs);
+		addr = (DWORD)Search_Pattern_From_Size(gRefFuncs.R_RenderView_SvEngine, 0x500, sigs);
 		Sig_AddrNotFound(envmap);
 		envmap = *(int **)(addr + 11);
 		cl_stats = *(int **)(addr + 24);
 
 		const char sigs3[] = "\xD9\x1D\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x89\x81\xDC\x02\x00\x00";
-		addr = (DWORD)Search_Pattern_From_Size(gRefFuncs.R_DrawViewModel, 0x200, sigs3);
+		addr = (DWORD)Search_Pattern_From_Size(addr, 0x300, sigs3);
 		Sig_AddrNotFound(cl_weaponstarttime);
 		cl_weaponstarttime = *(float **)(addr + 2);
 		cl_weaponsequence = *(int **)(addr + 7);
 
 		const char sigs4[] = "\xD1\xEA\x89\x15\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
-		addr = (DWORD)Search_Pattern_From_Size(gRefFuncs.R_DrawViewModel, 0x300, sigs4);
+		addr = (DWORD)Search_Pattern_From_Size(addr, 0x300, sigs4);
 		Sig_AddrNotFound(cl_light_level);
 		cl_light_level = *(int **)(addr + 4);
 	}
