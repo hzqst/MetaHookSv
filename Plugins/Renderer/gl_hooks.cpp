@@ -2601,6 +2601,35 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(CL_IsDevOverviewMode);
 		Sig_FuncNotFound(CL_SetDevOverView);
 
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_RenderScene, 0x600, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn*)inst;
+
+			if (!cl_waterlevel && pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize&&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM && pinst->detail->x86.operands[1].imm == 2
+				)
+			{
+				cl_waterlevel = (decltype(cl_waterlevel))pinst->detail->x86.operands[0].mem.disp;
+			}
+
+			if (cl_waterlevel)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(cl_waterlevel);
+
 		typedef struct
 		{
 			int Push30_instCount;
@@ -4322,7 +4351,7 @@ void R_FillAddress(void)
 	tmp_palette = *(void **)(addr + 1);
 
 	//get cl. vars by offsets
-	cl_waterlevel = cl_parsecount + 274;
+	//cl_waterlevel = cl_parsecount + 274;
 	//cl_time = (double *)(cl_waterlevel + 11);
 	//cl_oldtime = cl_time + 1;	
 
