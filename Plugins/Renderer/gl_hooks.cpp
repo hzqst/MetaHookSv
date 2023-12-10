@@ -2,6 +2,7 @@
 #include <metahook.h>
 #include <capstone.h>
 #include <set>
+#include <map>
 #include "gl_local.h"
 
 #define R_LOADSKYNAME_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x84\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x3D"
@@ -2609,9 +2610,18 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(CL_IsDevOverviewMode);
 		Sig_FuncNotFound(CL_SetDevOverView);
 
+		typedef struct
+		{
+			std::map<int, ULONG_PTR> candidate_disp;
+			std::map<int, PVOID> candidate_addr;
+		}R_RenderScene_ctx;
+
+		R_RenderScene_ctx ctx2;
+
 		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_RenderScene, 0x600, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn*)inst;
+			auto ctx = (R_RenderScene_ctx *)context;
 
 			if (!cl_waterlevel && pinst->id == X86_INS_CMP &&
 				pinst->detail->x86.op_count == 2 &&
@@ -2624,6 +2634,35 @@ void R_FillAddress(void)
 				cl_waterlevel = (decltype(cl_waterlevel))pinst->detail->x86.operands[0].mem.disp;
 			}
 
+			if (!cl_waterlevel && pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize
+				)
+			{
+				ctx->candidate_addr[pinst->detail->x86.operands[0].reg] = address;
+				ctx->candidate_disp[pinst->detail->x86.operands[0].reg] = pinst->detail->x86.operands[1].mem.disp;
+			}
+
+			if (!cl_waterlevel && pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm  == 2)
+			{
+				if (ctx->candidate_addr.find(pinst->detail->x86.operands[0].reg) != ctx->candidate_addr.end())
+				{
+					auto addr = (PUCHAR)ctx->candidate_addr[pinst->detail->x86.operands[0].reg];
+					auto disp = ctx->candidate_disp[pinst->detail->x86.operands[0].reg];
+					if (address > addr && address < addr + 0x30)
+					{
+						cl_waterlevel = (decltype(cl_waterlevel))disp;
+					}
+				}
+			}
+
 			if (cl_waterlevel)
 				return TRUE;
 
@@ -2634,7 +2673,7 @@ void R_FillAddress(void)
 				return TRUE;
 
 			return FALSE;
-		}, 0, NULL);
+		}, 0, &ctx2);
 
 		Sig_VarNotFound(cl_waterlevel);
 
