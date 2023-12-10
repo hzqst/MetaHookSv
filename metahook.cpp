@@ -1185,23 +1185,37 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 			if (FullScreen_PushString)
 			{
 				FullScreen_PushString = (PUCHAR)FullScreen_PushString + sizeof(pattern) - 1;
+
+				typedef struct
+				{
+					ULONG_PTR candidate_disp;
+					PVOID candidate_addr;
+				}FullScreen_PushString_Ctx;
+
+				FullScreen_PushString_Ctx ctx = { 0 };
+
 				MH_DisasmRanges(FullScreen_PushString, 0x400, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 				{
 					auto pinst = (cs_insn*)inst;
+					auto ctx = (FullScreen_PushString_Ctx *)context;
 
-					if (instCount > 30)
+					if (pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[0].mem.base == 0 &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineBase &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize &&
+						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+						pinst->detail->x86.operands[1].imm == 0)
 					{
-						if (pinst->id == X86_INS_MOV &&
-							pinst->detail->x86.op_count == 2 &&
-							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-							pinst->detail->x86.operands[0].mem.base == 0 &&
-							(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize &&
-							pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-							pinst->detail->x86.operands[1].imm == 0)
-						{
-							g_pVideoMode = (decltype(g_pVideoMode))pinst->detail->x86.operands[0].mem.disp;
-						}
+						ctx->candidate_disp = (decltype(ctx->candidate_disp))pinst->detail->x86.operands[0].mem.disp;
+						ctx->candidate_addr = address;
+					}
+
+					if (ctx->candidate_disp &&pinst->id == X86_INS_RET &&
+						address > ctx->candidate_addr && address < (PUCHAR)ctx->candidate_addr + 0x30)
+					{
+						g_pVideoMode = (decltype(g_pVideoMode))ctx->candidate_disp;
 					}
 
 					if (g_pVideoMode)
@@ -1211,7 +1225,7 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 						return TRUE;
 
 					return FALSE;
-				}, 0, NULL);
+				}, 0, &ctx);
 			}
 		}
 	}
@@ -1227,23 +1241,38 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 			if (FullScreen_PushString)
 			{
 				FullScreen_PushString = (PUCHAR)FullScreen_PushString + sizeof(pattern) - 1;
+
+				typedef struct
+				{
+					ULONG_PTR candidate_disp;
+					PVOID candidate_addr;
+				}FullScreen_PushString_Ctx;
+
+				FullScreen_PushString_Ctx ctx = { 0 };
+
 				MH_DisasmRanges(FullScreen_PushString, 0x400, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 				{
 					auto pinst = (cs_insn *)inst;
 
-					if (instCount > 30)
+					auto ctx = (FullScreen_PushString_Ctx *)context;
+
+					if (pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[0].mem.base == 0 &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineBase &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize &&
+						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+						pinst->detail->x86.operands[1].imm == 0)
 					{
-						if (pinst->id == X86_INS_MOV &&
-							pinst->detail->x86.op_count == 2 &&
-							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-							pinst->detail->x86.operands[0].mem.base == 0 &&
-							(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineBase &&
-							(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize &&
-							pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-							pinst->detail->x86.operands[1].imm == 0)
-						{
-							g_pVideoMode = (decltype(g_pVideoMode))pinst->detail->x86.operands[0].mem.disp;
-						}
+						ctx->candidate_disp = (decltype(ctx->candidate_disp))pinst->detail->x86.operands[0].mem.disp;
+						ctx->candidate_addr = address;
+					}
+
+					if (ctx->candidate_disp && pinst->id == X86_INS_RET &&
+						address > ctx->candidate_addr && address < (PUCHAR)ctx->candidate_addr + 0x30)
+					{
+						g_pVideoMode = (decltype(g_pVideoMode))ctx->candidate_disp;
 					}
 
 					if (g_pVideoMode)
@@ -1253,7 +1282,7 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 						return TRUE;
 
 					return FALSE;
-				}, 0, NULL);
+				}, 0, &ctx);
 			}
 		}
 	}
