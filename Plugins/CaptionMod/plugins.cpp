@@ -8,6 +8,7 @@ mh_interface_t *g_pInterface;
 metahook_api_t *g_pMetaHookAPI;
 mh_enginesave_t *g_pMetaSave;
 IFileSystem *g_pFileSystem;
+IFileSystem_HL25 *g_pFileSystem_HL25;
 
 bool g_IsClientVGUI2 = false;
 HMODULE g_hClientDll = NULL;
@@ -32,6 +33,7 @@ bool g_bIsSvenCoop = false;
 bool g_bIsCounterStrike = false;
 
 extern IFileSystem *g_pFullFileSystem;
+extern IFileSystem_HL25 *g_pFullFileSystem_HL25;
 
 ICommandLine *CommandLine(void)
 {
@@ -53,6 +55,13 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
 	g_pFileSystem = g_pInterface->FileSystem;
 	g_pFullFileSystem = g_pFileSystem;
+
+	if (!g_pFileSystem)
+	{
+		g_pFileSystem_HL25 = g_pInterface->FileSystem_HL25;
+		g_pFullFileSystem_HL25 = g_pFullFileSystem_HL25;
+	}
+
 	g_pMetaHookAPI->GetVideoMode(&g_iVideoWidth, &g_iVideoHeight, NULL, NULL);
 
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();

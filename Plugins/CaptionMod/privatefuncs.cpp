@@ -10,6 +10,12 @@
 #define S_LOADSOUND_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\x8B\x8C\x24\x2A\x2A\x00\x00\x56\x8B\xB4\x24\x2A\x2A\x00\x00\x8A\x06\x3C\x2A"
 #define SEQUENCE_GETSENTENCEBYINDEX_SIG_SVENGINE "\x8B\x0D\x2A\x2A\x2A\x2A\x2A\x33\x2A\x85\xC9\x2A\x2A\x8B\x2A\x24\x08\x8B\x41\x04\x2A\x2A\x3B\x2A\x2A\x2A\x8B\x49\x0C"
 
+#define S_FINDNAME_SIG_HL25 "\x55\x8B\xEC\x53\x8B\x5D\x08\x56\x33\xF6\x57\x85"
+#define S_STARTDYNAMICSOUND_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x5C\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x83\x3D\x2A\x2A\x2A\x2A\x2A\x8B\x45\x08"
+#define S_STARTSTATICSOUND_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x50\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x57"
+#define S_LOADSOUND_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x34\x05"
+#define SEQUENCE_GETSENTENCEBYINDEX_SIG_HL25 "\x55\x8B\xEC\x8B\x0D\x2A\x2A\x2A\x2A\x56\x33"
+
 #define S_INIT_SIG_NEW "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x85\xC0"
 #define S_FINDNAME_SIG_NEW "\x55\x8B\xEC\x53\x56\x8B\x75\x08\x33\xDB\x85\xF6"
 #define S_STARTDYNAMICSOUND_SIG_NEW "\x55\x8B\xEC\x83\xEC\x48\xA1\x2A\x2A\x2A\x2A\x53\x56\x57\x85\xC0\xC7\x45\xFC\x00\x00\x00\x00"
@@ -36,13 +42,13 @@ int *cl_viewentity = NULL;
 
 vec3_t *listener_origin = NULL;
 
-char (*s_pBaseDir)[512] = NULL;
+char(*s_pBaseDir)[512] = NULL;
 
-qboolean* scr_drawloading = NULL;
+qboolean *scr_drawloading = NULL;
 
 char m_szCurrentLanguage[128] = { 0 };
 
-private_funcs_t gPrivateFuncs = {0};
+private_funcs_t gPrivateFuncs = { 0 };
 
 hook_t *g_phook_S_FindName = NULL;
 hook_t *g_phook_S_StartDynamicSound = NULL;
@@ -72,9 +78,9 @@ void Engine_FillAddress(void)
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gPrivateFuncs.S_Init = (void(*)(void))Search_Pattern(S_INIT_SIG_NEW);
-		Sig_FuncNotFound(S_Init); 
-		
-		gPrivateFuncs.S_FindName = (sfx_t *(*)(char *, int *))Search_Pattern(S_FINDNAME_SIG_SVENGINE);
+		Sig_FuncNotFound(S_Init);
+
+		gPrivateFuncs.S_FindName = (sfx_t * (*)(char *, int *))Search_Pattern(S_FINDNAME_SIG_SVENGINE);
 		Sig_FuncNotFound(S_FindName);
 
 		gPrivateFuncs.S_StartDynamicSound = (void(*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern(S_STARTDYNAMICSOUND_SIG_SVENGINE);
@@ -83,18 +89,39 @@ void Engine_FillAddress(void)
 		gPrivateFuncs.S_StartStaticSound = (void(*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern(S_STARTSTATICSOUND_SIG_SVENGINE);
 		Sig_FuncNotFound(S_StartStaticSound);
 
-		gPrivateFuncs.S_LoadSound = (sfxcache_t *(*)(sfx_t *, channel_t *))Search_Pattern(S_LOADSOUND_SIG_SVENGINE);
+		gPrivateFuncs.S_LoadSound = (sfxcache_t * (*)(sfx_t *, channel_t *))Search_Pattern(S_LOADSOUND_SIG_SVENGINE);
 		Sig_FuncNotFound(S_LoadSound);
-		
-		gPrivateFuncs.SequenceGetSentenceByIndex = (sentenceEntry_s*(*)(unsigned int))Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_SVENGINE);
+
+		gPrivateFuncs.SequenceGetSentenceByIndex = (sentenceEntry_s * (*)(unsigned int))Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_SVENGINE);
 		Sig_FuncNotFound(SequenceGetSentenceByIndex);
 	}
-	else if(g_dwEngineBuildnum >= 5953)
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
 		gPrivateFuncs.S_Init = (void (*)(void))Search_Pattern(S_INIT_SIG_NEW);
 		Sig_FuncNotFound(S_Init);
 
-		gPrivateFuncs.S_FindName = (sfx_t *(*)(char *, int *))Search_Pattern_From(gPrivateFuncs.S_Init, S_FINDNAME_SIG_NEW);
+		gPrivateFuncs.S_FindName = (sfx_t * (*)(char *, int *))Search_Pattern(S_FINDNAME_SIG_HL25);
+		Sig_FuncNotFound(S_FindName);
+
+		gPrivateFuncs.S_StartDynamicSound = (void(*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern(S_STARTDYNAMICSOUND_SIG_HL25);
+		Sig_FuncNotFound(S_StartDynamicSound);
+
+		gPrivateFuncs.S_StartStaticSound = (void(*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern(S_STARTSTATICSOUND_SIG_HL25);
+		Sig_FuncNotFound(S_StartStaticSound);
+
+		gPrivateFuncs.S_LoadSound = (sfxcache_t * (*)(sfx_t *, channel_t *))Search_Pattern(S_LOADSOUND_SIG_HL25);
+		Sig_FuncNotFound(S_LoadSound);
+
+		gPrivateFuncs.SequenceGetSentenceByIndex = (sentenceEntry_s * (*)(unsigned int))Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_HL25);
+		Sig_FuncNotFound(SequenceGetSentenceByIndex);
+
+	}
+	else if (g_dwEngineBuildnum >= 5953)
+	{
+		gPrivateFuncs.S_Init = (void (*)(void))Search_Pattern(S_INIT_SIG_NEW);
+		Sig_FuncNotFound(S_Init);
+
+		gPrivateFuncs.S_FindName = (sfx_t * (*)(char *, int *))Search_Pattern_From(gPrivateFuncs.S_Init, S_FINDNAME_SIG_NEW);
 		Sig_FuncNotFound(S_FindName);
 
 		gPrivateFuncs.S_StartDynamicSound = (void (*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern_From(gPrivateFuncs.S_FindName, S_STARTDYNAMICSOUND_SIG_NEW);
@@ -103,12 +130,12 @@ void Engine_FillAddress(void)
 		gPrivateFuncs.S_StartStaticSound = (void (*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern_From(gPrivateFuncs.S_StartDynamicSound, S_STARTSTATICSOUND_SIG_NEW);
 		Sig_FuncNotFound(S_StartStaticSound);
 
-		gPrivateFuncs.S_LoadSound = (sfxcache_t *(*)(sfx_t *, channel_t *))Search_Pattern(S_LOADSOUND_SIG_NEW);
-		if(!gPrivateFuncs.S_LoadSound)
-			gPrivateFuncs.S_LoadSound = (sfxcache_t *(*)(sfx_t *, channel_t *))Search_Pattern( S_LOADSOUND_8308_SIG);
+		gPrivateFuncs.S_LoadSound = (sfxcache_t * (*)(sfx_t *, channel_t *))Search_Pattern(S_LOADSOUND_SIG_NEW);
+		if (!gPrivateFuncs.S_LoadSound)
+			gPrivateFuncs.S_LoadSound = (sfxcache_t * (*)(sfx_t *, channel_t *))Search_Pattern(S_LOADSOUND_8308_SIG);
 		Sig_FuncNotFound(S_LoadSound);
 
-		gPrivateFuncs.SequenceGetSentenceByIndex = (sentenceEntry_s*(*)(unsigned int))Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_NEW);
+		gPrivateFuncs.SequenceGetSentenceByIndex = (sentenceEntry_s * (*)(unsigned int))Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_NEW);
 		Sig_FuncNotFound(SequenceGetSentenceByIndex);
 
 	}
@@ -117,7 +144,7 @@ void Engine_FillAddress(void)
 		gPrivateFuncs.S_Init = (void (*)(void))Search_Pattern(S_INIT_SIG);
 		Sig_FuncNotFound(S_Init);
 
-		gPrivateFuncs.S_FindName = (sfx_t *(*)(char *, int *))Search_Pattern_From(gPrivateFuncs.S_Init, S_FINDNAME_SIG);
+		gPrivateFuncs.S_FindName = (sfx_t * (*)(char *, int *))Search_Pattern_From(gPrivateFuncs.S_Init, S_FINDNAME_SIG);
 		Sig_FuncNotFound(S_FindName);
 
 		gPrivateFuncs.S_StartDynamicSound = (void (*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern_From(S_FindName, S_STARTDYNAMICSOUND_SIG);
@@ -126,7 +153,7 @@ void Engine_FillAddress(void)
 		gPrivateFuncs.S_StartStaticSound = (void (*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern_From(S_StartDynamicSound, S_STARTSTATICSOUND_SIG);
 		Sig_FuncNotFound(S_StartStaticSound);
 
-		gPrivateFuncs.S_LoadSound = (sfxcache_t *(*)(sfx_t *, channel_t *))Search_Pattern_From(S_StartStaticSound, S_LOADSOUND_SIG);
+		gPrivateFuncs.S_LoadSound = (sfxcache_t * (*)(sfx_t *, channel_t *))Search_Pattern_From(S_StartStaticSound, S_LOADSOUND_SIG);
 		Sig_FuncNotFound(S_LoadSound);
 	}
 
@@ -135,8 +162,8 @@ void Engine_FillAddress(void)
 
 	if (1)
 	{
-		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.SCR_BeginLoadingPlaque, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-			auto pinst = (cs_insn*)inst;
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.SCR_BeginLoadingPlaque, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+			auto pinst = (cs_insn *)inst;
 
 			if (!scr_drawloading &&
 				pinst->id == X86_INS_MOV &&
@@ -173,15 +200,22 @@ void Engine_FillAddress(void)
 	{
 #define CL_VIEWENTITY_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x50\x6A\x06\xFF\x35\x2A\x2A\x2A\x2A\xE8"
 		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_SVENGINE);
+		cl_viewentity = *(decltype(cl_viewentity) *)(addr + 10);
 		Sig_AddrNotFound(cl_viewentity);
-		cl_viewentity = *(decltype(cl_viewentity)*)(addr + 10);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+#define CL_VIEWENTITY_SIG_HL25 "\xE8\x2A\x2A\x2A\x2A\xA3\x2A\x2A\x2A\x2A\xC3"
+		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_HL25);
+		cl_viewentity = (decltype(cl_viewentity))(addr + 5);
+		Sig_AddrNotFound(cl_viewentity);
 	}
 	else
 	{
 #define CL_VIEWENTITY_SIG_NEW "\x8B\x0D\x2A\x2A\x2A\x2A\x6A\x64\x6A\x00\x68\x00\x00\x80\x3F\x68\x00\x00\x80\x3F\x68\x2A\x2A\x2A\x2A\x50"
 		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_NEW);
+		cl_viewentity = *(decltype(cl_viewentity) *)(addr + 2);
 		Sig_AddrNotFound(cl_viewentity);
-		cl_viewentity = *(decltype(cl_viewentity)*)(addr + 2);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -189,14 +223,21 @@ void Engine_FillAddress(void)
 #define LISTENER_ORIGIN_SIG_SVENGINE "\xD9\x54\x24\x2A\xD9\x1C\x24\x68\x2A\x2A\x2A\x2A\x50\x6A\x00\x2A\xE8"
 		DWORD addr = (DWORD)Search_Pattern(LISTENER_ORIGIN_SIG_SVENGINE);
 		Sig_AddrNotFound(listener_origin);
-		listener_origin = *(decltype(listener_origin)*)(addr + 8);
+		listener_origin = *(decltype(listener_origin) *)(addr + 8);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+#define LISTENER_ORIGIN_SIG_HL25 "\xF3\x0F\x10\x00\xF3\x0F\x11\x05\x2A\x2A\x2A\x2A\xF3\x0F\x10\x40\x04"
+		DWORD addr = (DWORD)Search_Pattern(LISTENER_ORIGIN_SIG_HL25);
+		Sig_AddrNotFound(listener_origin);
+		listener_origin = (decltype(listener_origin))(addr + 4);
 	}
 	else
 	{
 #define LISTENER_ORIGIN_SIG_NEW "\x50\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\xC8"
 		DWORD addr = (DWORD)Search_Pattern(LISTENER_ORIGIN_SIG_NEW);
 		Sig_AddrNotFound(listener_origin);
-		listener_origin = *(decltype(listener_origin)*)(addr + 2);
+		listener_origin = *(decltype(listener_origin) *)(addr + 2);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -224,6 +265,37 @@ void Engine_FillAddress(void)
 				Candidate[6] == 0xA1 &&
 				Candidate[11] == 0x33 &&
 				Candidate[12] == 0xC4)
+				return TRUE;
+
+			return FALSE;
+		});
+		Sig_FuncNotFound(FileSystem_SetGameDirectory);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		const char sigs1[] = "User Token 2";
+		auto UserToken2_String = Search_Pattern_Data(sigs1);
+		if (!UserToken2_String)
+			UserToken2_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(UserToken2_String);
+		char pattern[] = "\x50\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8";
+		*(DWORD *)(pattern + 2) = (DWORD)UserToken2_String;
+		auto UserToken2_PushString = Search_Pattern(pattern);
+		Sig_VarNotFound(UserToken2_PushString);
+
+		gPrivateFuncs.FileSystem_SetGameDirectory = (decltype(gPrivateFuncs.FileSystem_SetGameDirectory))
+			g_pMetaHookAPI->ReverseSearchFunctionBeginEx(UserToken2_PushString, 0x100, [](PUCHAR Candidate) {
+
+			//.text	: 101C8B30 55												push    ebp
+			//.text : 101C8B31 8B EC											mov     ebp, esp
+			//.text : 101C8B33 81 EC 10 04 00 00								sub     esp, 410h xor     eax, ebp
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC &&
+				Candidate[3] == 0x81 &&
+				Candidate[4] == 0xEC &&
+				Candidate[7] == 0x00 &&
+				Candidate[8] == 0x00)
 				return TRUE;
 
 			return FALSE;
@@ -258,10 +330,9 @@ void Engine_FillAddress(void)
 				return TRUE;
 
 			return FALSE;
-				});
+		});
 		Sig_FuncNotFound(FileSystem_SetGameDirectory);
 	}
-
 
 
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -290,7 +361,33 @@ void Engine_FillAddress(void)
 
 		g_pMetaHookAPI->WriteMemory(address + 1, (BYTE *)&rva, 4);
 	}
-	else 
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		const char sigs1[] = "VClientVGUI001";
+		auto VClientVGUI001_String = Search_Pattern_Data(sigs1);
+		if (!VClientVGUI001_String)
+			VClientVGUI001_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(VClientVGUI001_String);
+		char pattern[] = "\x8B\x4B\x1C\x6A\x00\x68\x2A\x2A\x2A\x2A\x89";
+		*(DWORD *)(pattern + 6) = (DWORD)VClientVGUI001_String;
+		auto VClientVGUI001_PushString = Search_Pattern(pattern);
+		Sig_VarNotFound(VClientVGUI001_PushString);
+
+		const char sigs2[] = "\xFF\x35\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x85\xC0\x74\x28";
+		auto Call_VClientVGUI001_CreateInterface = g_pMetaHookAPI->ReverseSearchPattern(VClientVGUI001_PushString, 0x50, sigs2, sizeof(sigs2) - 1);
+		Sig_VarNotFound(Call_VClientVGUI001_CreateInterface);
+
+		PUCHAR address = (PUCHAR)Call_VClientVGUI001_CreateInterface + 6;
+
+		gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
+
+		PUCHAR pfnVGUIClient001_CreateInterface = (PUCHAR)VGUIClient001_CreateInterface;
+
+		int rva = pfnVGUIClient001_CreateInterface - (address + 5);
+
+		g_pMetaHookAPI->WriteMemory(address + 1, (BYTE *)&rva, 4);
+	}
+	else
 	{
 		const char sigs1[] = "VClientVGUI001";
 		auto VClientVGUI001_String = Search_Pattern_Data(sigs1);
@@ -327,6 +424,14 @@ void Engine_FillAddress(void)
 
 		s_pBaseDir = *(decltype(s_pBaseDir) *)((PUCHAR)basedir_pattern + 14);
 	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		const char sigs1[] = "\x8D\x85\x7C\xFF\xFF\xFF\x50\x68\x2A\x2A\x2A\x2A\x68";
+		auto basedir_pattern = Search_Pattern(sigs1);
+		Sig_VarNotFound(basedir_pattern);
+
+		s_pBaseDir = *(decltype(s_pBaseDir) *)((PUCHAR)basedir_pattern + 7);
+	}
 	else
 	{
 		const char sigs1[] = "\x84\xC9\x75\x2A\x8B\x45\x0C\xC7\x05\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x50\xE8";
@@ -337,10 +442,18 @@ void Engine_FillAddress(void)
 	}
 
 #define VOX_LOOKUPSTRING_SIG "\x80\x2A\x23\x2A\x2A\x8D\x2A\x01\x50\xE8"
+#define VOX_LOOKUPSTRING_SIG_HL25 "\x80\x3B\x23\x0F\x85\x90\x00\x00\x00"
 	if (1)
 	{
 		const char sigs[] = "\x40\x68\x2A\x2A\x2A\x2A\xA3\x2A\x2A\x2A\x2A\xA1";
-		auto addr = Search_Pattern(VOX_LOOKUPSTRING_SIG);
+		void *addr;
+
+		if (g_iEngineType != ENGINE_GOLDSRC_HL25)
+			addr = Search_Pattern(VOX_LOOKUPSTRING_SIG);
+		else
+			addr = Search_Pattern(VOX_LOOKUPSTRING_SIG_HL25);
+
+		//Sig_VarNotFound(addr);
 
 		g_pMetaHookAPI->DisasmRanges(addr, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 			auto pinst = (cs_insn *)inst;
@@ -359,6 +472,39 @@ void Engine_FillAddress(void)
 					pinst->detail->x86.operands[1].size == 4)
 				{
 					//.text:01D99D06 39 35 18 A2 E0 08                                            cmp     cszrawsentences, esi
+					cszrawsentences = (decltype(cszrawsentences))pinst->detail->x86.operands[0].mem.disp;
+				}
+
+
+				if (!rgpszrawsentence &&
+					pinst->id == X86_INS_PUSH &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[0].mem.index != 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+					pinst->detail->x86.operands[0].mem.scale == 4)
+				{
+					//.text:01D99D10 FF 34 B5 18 82 E0 08                                         push    rgpszrawsentence[esi*4]
+					rgpszrawsentence = (decltype(rgpszrawsentence))pinst->detail->x86.operands[0].mem.disp;
+				}
+
+			}
+			else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+			{
+				if (!cszrawsentences &&
+					pinst->id == X86_INS_CMP &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[0].mem.index == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].size == 4)
+				{
+					//.text:1020233E 39 35 9C FC 52 10											cmp     cszrawsentences, esi
 					cszrawsentences = (decltype(cszrawsentences))pinst->detail->x86.operands[0].mem.disp;
 				}
 
@@ -443,55 +589,55 @@ void Engine_FillAddress(void)
 				LanguageStrncpy_ctx ctx = { 0 };
 
 				g_pMetaHookAPI->DisasmRanges(LanguageStrncpy, 0x30, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+				{
+					auto ctx = (LanguageStrncpy_ctx *)context;
+					auto pinst = (cs_insn *)inst;
+
+					if (pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[0].reg == X86_REG_EAX)
 					{
-						auto ctx = (LanguageStrncpy_ctx *)context;
-						auto pinst = (cs_insn *)inst;
+						ctx->bHasPushEax = true;
+					}
 
-						if (pinst->id == X86_INS_PUSH &&
-							pinst->detail->x86.op_count == 1 &&
-							pinst->detail->x86.operands[0].type == X86_OP_REG &&
-							pinst->detail->x86.operands[0].reg == X86_REG_EAX)
+					if (ctx->bHasPushEax)
+					{
+						if (address[0] == 0xE8)
 						{
-							ctx->bHasPushEax = true;
+							gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(address);
+							PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
+							int rva = pfnNewV_strncpy - (address + 5);
+							g_pMetaHookAPI->WriteMemory(address + 1, (BYTE *)&rva, 4);
+							return TRUE;
 						}
-
-						if (ctx->bHasPushEax)
+						else if (address[0] == 0xEB)
 						{
-							if (address[0] == 0xE8)
+							char jmprva = *(char *)(address + 1);
+							PUCHAR jmptarget = address + 2 + jmprva;
+
+							if (jmptarget[0] == 0xE8)
 							{
-								gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(address);
+								gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(jmptarget);
 								PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
-								int rva = pfnNewV_strncpy - (address + 5);
-								g_pMetaHookAPI->WriteMemory(address + 1, (BYTE *)&rva, 4);
+								int rva = pfnNewV_strncpy - (jmptarget + 5);
+								g_pMetaHookAPI->WriteMemory(jmptarget + 1, (BYTE *)&rva, 4);
 								return TRUE;
 							}
-							else if (address[0] == 0xEB)
-							{
-								char jmprva = *(char *)(address + 1);
-								PUCHAR jmptarget = address + 2 + jmprva;
-
-								if (jmptarget[0] == 0xE8)
-								{
-									gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(jmptarget);
-									PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
-									int rva = pfnNewV_strncpy - (jmptarget + 5);
-									g_pMetaHookAPI->WriteMemory(jmptarget + 1, (BYTE *)&rva, 4);
-									return TRUE;
-								}
-							}
 						}
+					}
 
-						if (instCount > 5)
-							return TRUE;
+					if (instCount > 5)
+						return TRUE;
 
-						if (address[0] == 0xCC)
-							return TRUE;
+					if (address[0] == 0xCC)
+						return TRUE;
 
-						if (pinst->id == X86_INS_RET)
-							return TRUE;
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
 
-						return FALSE;
-					}, 0, &ctx);
+					return FALSE;
+				}, 0, &ctx);
 
 				SearchBegin = LanguageStrncpy + sizeof(LANGUAGESTRNCPY_SIG) - 1;
 			}
@@ -525,7 +671,7 @@ void Engine_FillAddress(void)
 
 void Engine_InstallHooks(void)
 {
-	//Install_InlineHook(S_FindName);
+	Install_InlineHook(S_FindName);
 	Install_InlineHook(S_StartDynamicSound);
 	Install_InlineHook(S_StartStaticSound);
 	Install_InlineHook(pfnTextMessageGet);
@@ -534,7 +680,7 @@ void Engine_InstallHooks(void)
 
 void Engine_UninstallHooks(void)
 {
-	//Uninstall_Hook(S_FindName);
+	Uninstall_Hook(S_FindName);
 	Uninstall_Hook(S_StartDynamicSound);
 	Uninstall_Hook(S_StartStaticSound);
 	Uninstall_Hook(pfnTextMessageGet);
@@ -633,7 +779,7 @@ void Client_FillAddress(void)
 #define SC_UPDATECURSORSTATE_SIG "\x8B\x40\x28\xFF\xD0\x84\xC0\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00"
 		{
 			auto addr = (PUCHAR)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_UPDATECURSORSTATE_SIG, Sig_Length(SC_UPDATECURSORSTATE_SIG));
-			
+
 			Sig_AddrNotFound(g_iVisibleMouse);
 
 			g_iVisibleMouse = *(decltype(g_iVisibleMouse) *)(addr + 11);
@@ -663,23 +809,39 @@ void Client_FillAddress(void)
 		}
 
 #define CS_CZ_GETCLIENTCOLOR_SIG "\x0F\xBF\x2A\x2A\x2A\x2A\x2A\x2A\x48\x83\xF8\x03\x77\x2A\xFF\x24"
-		if(1)
+#define CS_CZ_GETCLIENTCOLOR_SIG_HL25 "\x55\x8B\xEC\x6B\x45\x08\x74\x0F\xBF\x80\x2A\x2A\x2A\x2A\x48\x83\xF8\x03\x77\x23\xFF\x24\x85"
+		if (1)
 		{
-			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, CS_CZ_GETCLIENTCOLOR_SIG, Sig_Length(CS_CZ_GETCLIENTCOLOR_SIG));
-			if (addr)
+			if (g_iEngineType != ENGINE_GOLDSRC_HL25)
 			{
-				gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx((PVOID)addr, 0x50, [](PUCHAR Candidate) {
+				DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, CS_CZ_GETCLIENTCOLOR_SIG, Sig_Length(CS_CZ_GETCLIENTCOLOR_SIG));
 
-					//8B 44 24 04                                         mov     eax, [esp+arg_0]
-					if (Candidate[0] == 0x8B &&
-						Candidate[1] == 0x44 &&
-						Candidate[2] == 0x24)
-					{
-						return TRUE;
-					}
+				if (addr)
+				{
+					gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx((PVOID)addr, 0x50, [](PUCHAR Candidate) {
 
-					return FALSE;
-				});
+						//8B 44 24 04                                         mov     eax, [esp+arg_0]
+						if (Candidate[0] == 0x8B &&
+							Candidate[1] == 0x44 &&
+							Candidate[2] == 0x24)
+						{
+							return TRUE;
+						}
+
+						return FALSE;
+					});
+
+					Sig_FuncNotFound(GetClientColor);
+				}
+			}
+			else
+			{
+				gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))g_pMetaHookAPI->SearchPattern(
+					g_dwClientBase,
+					g_dwClientSize,
+					CS_CZ_GETCLIENTCOLOR_SIG_HL25,
+					Sig_Length(CS_CZ_GETCLIENTCOLOR_SIG_HL25)
+				);
 
 				Sig_FuncNotFound(GetClientColor);
 			}

@@ -565,8 +565,8 @@ void CScheme::ReloadFontGlyphs(void)
 			if (fontdata->GetInt("outline") && surface()->SupportsFeature(CSurface::OUTLINE_FONTS))
 				flags |= ISurface::FONTFLAG_OUTLINE;
 
-			if(fontdata->GetInt("outline2"))
-				flags |= ISurface::FONTFLAG_OUTLINE2;				
+			if (fontdata->GetInt("outline2"))
+				flags |= ISurface::FONTFLAG_OUTLINE2;
 
 			if (fontdata->GetInt("custom"))
 				flags |= ISurface::FONTFLAG_CUSTOM;

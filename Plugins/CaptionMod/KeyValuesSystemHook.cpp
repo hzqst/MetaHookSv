@@ -75,6 +75,7 @@ void CKeyValuesSystem::RemoveKeyValuesFromMemoryLeakList(void *pMem)
 void KeyValuesSystem_InstallHook(void)
 {
 	CKeyValuesSystem KeyValuesSystem;
+
 	DWORD *pVFTable = *(DWORD **)&KeyValuesSystem;
 
 	//g_pMetaHookAPI->VFTHook(g_pKeyValuesSystem, 0, 1, (void *)pVFTable[1], (void **)&g_pfnRegisterSizeofKeyValues);

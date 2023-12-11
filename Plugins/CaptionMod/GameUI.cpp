@@ -78,7 +78,6 @@ public:
 
 CGameUI s_GameUI;
 
-
 void CGameUI::Initialize(CreateInterfaceFn *factories, int count)
 {
 	g_pfnCGameUI_Initialize(this, 0, factories, count);
@@ -602,7 +601,8 @@ void * __fastcall COptionsSubVideo_ctor(vgui::Panel *pthis, int dummy, vgui::Pan
 {
 	auto result = gPrivateFuncs.COptionsSubVideo_ctor(pthis, dummy, parent);
 	
-	g_pMetaHookAPI->VFTHook(pthis, 0, 0x15C / 4, COptionsSubVideo_OnCommand, (void **)&g_pfnCOptionsSubVideo_OnCommand);
+	if (!g_pfnCOptionsSubVideo_OnCommand)
+		g_pMetaHookAPI->VFTHook(pthis, 0, 0x15C / 4, COptionsSubVideo_OnCommand, (void **)&g_pfnCOptionsSubVideo_OnCommand);
 
 	return result;
 }
@@ -613,6 +613,11 @@ void __fastcall COptionsSubVideo_ApplyVidSettings(vgui::Panel *pthis, int dummy,
 		gPrivateFuncs.COptionsSubVideo_ApplyVidSettings(pthis, dummy, false);
 	else
 		gPrivateFuncs.COptionsSubVideo_ApplyVidSettings(pthis, dummy, bForceRestart);
+}
+
+void __fastcall COptionsSubVideo_ApplyVidSettings_HL25(vgui::Panel *pthis, int dummy)
+{
+	gPrivateFuncs.COptionsSubVideo_ApplyVidSettings_HL25(pthis, dummy);
 }
 
 void __fastcall COptionsSubAudio_OnCommand(vgui::Panel *pthis, int dummy, const char *command);
@@ -636,7 +641,8 @@ void * __fastcall COptionsSubAudio_ctor(vgui::Panel *pthis, int dummy, vgui::Pan
 {
 	auto result = gPrivateFuncs.COptionsSubAudio_ctor(pthis, dummy, parent);
 
-	g_pMetaHookAPI->VFTHook(pthis, 0, 0x15C / 4, COptionsSubAudio_OnCommand, (void **)&g_pfnCOptionsSubAudio_OnCommand);
+	if (!g_pfnCOptionsSubAudio_OnCommand)
+		g_pMetaHookAPI->VFTHook(pthis, 0, 0x15C / 4, COptionsSubAudio_OnCommand, (void **)&g_pfnCOptionsSubAudio_OnCommand);
 
 	return result;
 }
@@ -668,8 +674,19 @@ void GameUI_InstallHooks(void)
 		auto GameUI_Options_String = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), sigs1, sizeof(sigs1) - 1);
 		Sig_VarNotFound(GameUI_Options_String);
 		char pattern[] = "\x6A\x01\x68\x2A\x2A\x2A\x2A\x8B\xCE";
-		*(DWORD *)(pattern + 3) = (DWORD)GameUI_Options_String;
-		auto GameUI_Options_Call = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), pattern, sizeof(pattern) - 1);
+		char pattern2[] = "\x6A\x01\x68\xCC\xCC\xCC\xCC\x8B\xCB";
+
+		void *GameUI_Options_Call = nullptr;
+		if (g_iEngineType != ENGINE_GOLDSRC_HL25)
+		{
+			*(DWORD *)(pattern + 3) = (DWORD)GameUI_Options_String;
+			GameUI_Options_Call = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), pattern, sizeof(pattern) - 1);
+		}
+		else
+		{
+			*(DWORD *)(pattern2 + 3) = (DWORD)GameUI_Options_String;
+			GameUI_Options_Call = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), pattern2, sizeof(pattern2) - 1);
+		}
 		Sig_VarNotFound(GameUI_Options_Call);
 
 		gPrivateFuncs.COptionsDialog_ctor = (decltype(gPrivateFuncs.COptionsDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(GameUI_Options_Call, 0x300, [](PUCHAR Candidate) {
@@ -738,29 +755,58 @@ void GameUI_InstallHooks(void)
 		auto SetVideoMode_StringPush = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), pattern, sizeof(pattern) - 1);
 		Sig_VarNotFound(SetVideoMode_StringPush);
 
-		gPrivateFuncs.COptionsSubVideo_ApplyVidSettings = (decltype(gPrivateFuncs.COptionsSubVideo_ApplyVidSettings))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(SetVideoMode_StringPush, 0x300, [](PUCHAR Candidate) {
-			//  .text : 1001D2C0 55                                                  push    ebp
-			//	.text : 1001D2C1 8B EC                                               mov     ebp, esp
-			//	.text : 1001D2C3 81 EC 0C 02 00 00                                   sub     esp, 20Ch
-			if (Candidate[0] == 0x55 &&
-				Candidate[1] == 0x8B &&
-				Candidate[2] == 0xEC &&
-				Candidate[3] == 0x81 &&
-				Candidate[4] == 0xEC)
-				return TRUE;
+		if (g_iEngineType != ENGINE_GOLDSRC_HL25)
+		{
+			gPrivateFuncs.COptionsSubVideo_ApplyVidSettings = (decltype(gPrivateFuncs.COptionsSubVideo_ApplyVidSettings))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(SetVideoMode_StringPush, 0x300, [](PUCHAR Candidate) {
+				//  .text : 1001D2C0 55                                                  push    ebp
+				//	.text : 1001D2C1 8B EC                                               mov     ebp, esp
+				//	.text : 1001D2C3 81 EC 0C 02 00 00                                   sub     esp, 20Ch
+				if (Candidate[0] == 0x55 &&
+					Candidate[1] == 0x8B &&
+					Candidate[2] == 0xEC &&
+					Candidate[3] == 0x81 &&
+					Candidate[4] == 0xEC)
+					return TRUE;
 
-			//.text:1003DDB0 81 EC 08 02 00 00                                   sub     esp, 208h
-			if (Candidate[0] == 0x81 &&
-				Candidate[1] == 0xEC &&
-				Candidate[4] == 0x00 &&
-				Candidate[5] == 0x00)
-			{
-				return TRUE;
-			}
+				//.text:1003DDB0 81 EC 08 02 00 00                                   sub     esp, 208h
+				if (Candidate[0] == 0x81 &&
+					Candidate[1] == 0xEC &&
+					Candidate[4] == 0x00 &&
+					Candidate[5] == 0x00)
+				{
+					return TRUE;
+				}
 
-			return FALSE;
-		});
-		Sig_FuncNotFound(COptionsSubVideo_ApplyVidSettings);
+				return FALSE;
+			});
+			Sig_FuncNotFound(COptionsSubVideo_ApplyVidSettings);
+		}
+		else
+		{
+			gPrivateFuncs.COptionsSubVideo_ApplyVidSettings_HL25 = (decltype(gPrivateFuncs.COptionsSubVideo_ApplyVidSettings_HL25))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(SetVideoMode_StringPush, 0x300, [](PUCHAR Candidate) {
+				//  .text : 1001D2C0 55                                                  push    ebp
+				//	.text : 1001D2C1 8B EC                                               mov     ebp, esp
+				//	.text : 1001D2C3 81 EC 0C 02 00 00                                   sub     esp, 20Ch
+				if (Candidate[0] == 0x55 &&
+					Candidate[1] == 0x8B &&
+					Candidate[2] == 0xEC &&
+					Candidate[3] == 0x81 &&
+					Candidate[4] == 0xEC)
+					return TRUE;
+
+				//.text:1003DDB0 81 EC 08 02 00 00                                   sub     esp, 208h
+				if (Candidate[0] == 0x81 &&
+					Candidate[1] == 0xEC &&
+					Candidate[4] == 0x00 &&
+					Candidate[5] == 0x00)
+				{
+					return TRUE;
+				}
+
+				return FALSE;
+			});
+			Sig_FuncNotFound(COptionsSubVideo_ApplyVidSettings_HL25);
+		}
 	}
 
 	//TODO the vpanel of staticPanel?
