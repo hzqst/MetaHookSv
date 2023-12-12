@@ -77,6 +77,7 @@ typedef struct
 	void *(__fastcall*COptionsDialog_ctor)(void *pthis, int a2, void *parent);
 	void *(__fastcall*COptionsSubVideo_ctor)(void *pthis, int a2, void *parent);
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings)(void *pthis, int, bool bForceRestart);
+	void(__fastcall *COptionsSubVideo_ApplyVidSettings_HL25)(void *pthis, int);
 	void *(__fastcall*COptionsSubAudio_ctor)(void *pthis, int a2, void *parent);
 	void *(__fastcall *COptionsDialog_AddPage)(void *pthis, int, void *panel, const char *name);
 }private_funcs_t;

@@ -18,20 +18,20 @@ extern IGameUI *g_pGameUI;
 
 namespace vgui
 {
-bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryList, int numFactories);
+	bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryList, int numFactories);
 }
 
-void (__fastcall *m_pfnCBaseUI_Initialize)(void *pthis, int, CreateInterfaceFn *factories, int count);
-void (__fastcall *m_pfnCBaseUI_Start)(void *pthis, int, struct cl_enginefuncs_s *engineFuncs, int interfaceVersion);
-void (__fastcall *m_pfnCBaseUI_Shutdown)(void *pthis, int);
-int (__fastcall *m_pfnCBaseUI_Key_Event)(void *pthis, int, int down, int keynum, const char *pszCurrentBinding);
-void (__fastcall *m_pfnCBaseUI_CallEngineSurfaceProc)(void *pthis, int, void *hwnd, unsigned int msg, unsigned int wparam, long lparam);
-void (__fastcall *m_pfnCBaseUI_Paint)(void *pthis, int, int x, int y, int right, int bottom);
-void (__fastcall *m_pfnCBaseUI_HideGameUI)(void *pthis, int);
-void (__fastcall *m_pfnCBaseUI_ActivateGameUI)(void *pthis, int);
-bool (__fastcall *m_pfnCBaseUI_IsGameUIVisible)(void *pthis, int);
-void (__fastcall *m_pfnCBaseUI_HideConsole)(void *pthis, int);
-void (__fastcall *m_pfnCBaseUI_ShowConsole)(void *pthis, int);
+void(__fastcall *m_pfnCBaseUI_Initialize)(void *pthis, int, CreateInterfaceFn *factories, int count);
+void(__fastcall *m_pfnCBaseUI_Start)(void *pthis, int, struct cl_enginefuncs_s *engineFuncs, int interfaceVersion);
+void(__fastcall *m_pfnCBaseUI_Shutdown)(void *pthis, int);
+int(__fastcall *m_pfnCBaseUI_Key_Event)(void *pthis, int, int down, int keynum, const char *pszCurrentBinding);
+void(__fastcall *m_pfnCBaseUI_CallEngineSurfaceProc)(void *pthis, int, void *hwnd, unsigned int msg, unsigned int wparam, long lparam);
+void(__fastcall *m_pfnCBaseUI_Paint)(void *pthis, int, int x, int y, int right, int bottom);
+void(__fastcall *m_pfnCBaseUI_HideGameUI)(void *pthis, int);
+void(__fastcall *m_pfnCBaseUI_ActivateGameUI)(void *pthis, int);
+bool(__fastcall *m_pfnCBaseUI_IsGameUIVisible)(void *pthis, int);
+void(__fastcall *m_pfnCBaseUI_HideConsole)(void *pthis, int);
+void(__fastcall *m_pfnCBaseUI_ShowConsole)(void *pthis, int);
 
 class CBaseUI : public IBaseUI
 {
@@ -56,8 +56,10 @@ IGameUIFuncs *gameuifuncs;
 
 extern vgui::ISurface *g_pSurface;
 extern vgui::ISchemeManager *g_pScheme;
+extern vgui::ISchemeManager_HL25 *g_pScheme_HL25;
 extern IKeyValuesSystem *g_pKeyValuesSystem;
 extern IEngineSurface *staticSurface;
+extern IEngineSurface_HL25 *staticSurface_HL25;
 
 static bool s_LoadingClientFactory = false;
 
@@ -75,20 +77,33 @@ void CBaseUI::Initialize(CreateInterfaceFn *factories, int count)
 	s_LoadingClientFactory = false;
 
 	HINTERFACEMODULE hVGUI2 = (HINTERFACEMODULE)GetModuleHandle("vgui2.dll");
-	if(hVGUI2)
+	if (hVGUI2)
 	{
 		CreateInterfaceFn fnVGUI2CreateInterface = Sys_GetFactory(hVGUI2);
-		g_pScheme = (vgui::ISchemeManager *)fnVGUI2CreateInterface(VGUI_SCHEME_INTERFACE_VERSION, NULL);
+
+		if (g_iEngineType != ENGINE_GOLDSRC_HL25)
+			g_pScheme = (vgui::ISchemeManager *)fnVGUI2CreateInterface(VGUI_SCHEME_INTERFACE_VERSION, NULL);
+		else
+			g_pScheme_HL25 = (vgui::ISchemeManager_HL25 *)fnVGUI2CreateInterface(VGUI_SCHEME_INTERFACE_VERSION, NULL);
+
 		g_pKeyValuesSystem = (IKeyValuesSystem *)fnVGUI2CreateInterface(KEYVALUESSYSTEM_INTERFACE_VERSION, NULL);
 	}
 
 	g_pSurface = (vgui::ISurface *)factories[0](VGUI_SURFACE_INTERFACE_VERSION, NULL);
-	staticSurface = (IEngineSurface *)factories[0](ENGINE_SURFACE_VERSION, NULL);
+
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25)
+		staticSurface = (IEngineSurface *)factories[0](ENGINE_SURFACE_VERSION, NULL);
+	else
+		staticSurface_HL25 = (IEngineSurface_HL25 *)factories[0](ENGINE_SURFACE_VERSION, NULL);
 
 	KeyValuesSystem_InstallHook();
-	Surface_InstallHooks();
-	Scheme_InstallHooks();
-	GameUI_InstallHooks();
+
+ if (g_iEngineType != ENGINE_GOLDSRC_HL25)
+	{
+		Surface_InstallHooks();
+		Scheme_InstallHooks();
+		GameUI_InstallHooks();
+	}
 }
 
 void CBaseUI::Start(struct cl_enginefuncs_s *engineFuncs, int interfaceVersion)
@@ -99,6 +114,8 @@ void CBaseUI::Start(struct cl_enginefuncs_s *engineFuncs, int interfaceVersion)
 void CBaseUI::Shutdown(void)
 {
 	ClientVGUI_Shutdown();
+
+if (g_iEngineType != ENGINE_GOLDSRC_HL25)
 	GameUI_UninstallHooks();
 
 	//GameUI.dll and vgui2.dll will be unloaded by engine!CBaseUI::Shutdown
@@ -167,11 +184,26 @@ void BaseUI_InstallHook(void)
 		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, (void *)pVFTable[3], (void **)&m_pfnCBaseUI_Shutdown);
 		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 4, (void *)pVFTable[4], (void **)&m_pfnCBaseUI_Key_Event);
 	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+#define CLIENTFACTORY_SIG_HL25 "\xFF\x35\x2A\x2A\x2A\x2A\xA3"
+		DWORD *vft = *(DWORD **)baseuifuncs;
+
+		//DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)vft[1], 0x200, CLIENTFACTORY_SIG_SVENGINE, Sig_Length(CLIENTFACTORY_SIG_SVENGINE));
+		//Sig_AddrNotFound(ClientFactory);
+		//gPrivateFuncs.pfnClientFactory = (void *(**)(void))*(DWORD *)(addr + 5);
+
+		DWORD *pVFTable = *(DWORD **)&s_BaseUI;
+
+		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, (void *)pVFTable[1], (void **)&m_pfnCBaseUI_Initialize);
+		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, (void *)pVFTable[3], (void **)&m_pfnCBaseUI_Shutdown);
+		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 4, (void *)pVFTable[4], (void **)&m_pfnCBaseUI_Key_Event);
+	}
 	else
 	{
 #define CLIENTFACTORY_SIG "\xCC\xA1\x2A\x2A\x2A\x2A\x85\xC0\x74"
 		DWORD *vft = *(DWORD **)baseuifuncs;
-		
+
 		//DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)vft[1], 0x200, CLIENTFACTORY_SIG, Sig_Length(CLIENTFACTORY_SIG));
 		//Sig_AddrNotFound(ClientFactory);
 		//gPrivateFuncs.pfnClientFactory = (void *(**)(void))*(DWORD *)(addr + 2);

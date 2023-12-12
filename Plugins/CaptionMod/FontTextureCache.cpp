@@ -4,6 +4,7 @@
 #include "vgui_internal.h"
 
 extern IEngineSurface *staticSurface;
+extern IEngineSurface_HL25 *staticSurface_HL25;
 
 CFontTextureCache g_FontTextureCache;
 
@@ -68,8 +69,16 @@ bool CFontTextureCache::GetTextureForChar(HFont font, wchar_t wch, int *textureI
 	memset(rgba, 0, nByteCount);
 	winFont->GetCharRGBA(wch, 0, 0, fontWide, fontTall, rgba);
 
-	staticSurface->drawSetTexture(m_PageList[page].textureID);
-	staticSurface->drawSetSubTextureRGBA(m_PageList[page].textureID, drawX, drawY, rgba, fontWide, fontTall);
+	if (staticSurface)
+	{
+		staticSurface->drawSetTexture(m_PageList[page].textureID);
+		staticSurface->drawSetSubTextureRGBA(m_PageList[page].textureID, drawX, drawY, rgba, fontWide, fontTall);
+	}
+	else
+	{
+		staticSurface_HL25->drawSetTexture(m_PageList[page].textureID);
+		staticSurface_HL25->drawSetSubTextureRGBA(m_PageList[page].textureID, drawX, drawY, rgba, fontWide, fontTall);
+	}
 
 	cacheitem.page = page;
 
@@ -114,7 +123,11 @@ bool CFontTextureCache::AllocatePageForChar(int charWide, int charTall, int &pag
 		Page_t &newPage = m_PageList[pageIndex];
 		m_pCurrPage[nPageType] = pageIndex;
 
-		newPage.textureID = staticSurface->createNewTextureID();
+		if (staticSurface)
+			newPage.textureID = staticSurface->createNewTextureID();
+		else
+			newPage.textureID = staticSurface_HL25->createNewTextureID();
+
 		newPage.fontHeight = s_pFontPageSize[nPageType];
 		newPage.wide = 256;
 		newPage.tall = 256;
@@ -125,7 +138,11 @@ bool CFontTextureCache::AllocatePageForChar(int charWide, int charTall, int &pag
 
 		unsigned char rgba[256 * 256 * 4];
 		memset(rgba, 0, sizeof(rgba));
-		staticSurface->drawSetTextureRGBA(newPage.textureID, rgba, newPage.wide, newPage.tall, false, true);
+
+		if (staticSurface)
+			staticSurface->drawSetTextureRGBA(newPage.textureID, rgba, newPage.wide, newPage.tall, false, true);
+		else
+			staticSurface_HL25->drawSetTextureRGBA(newPage.textureID, rgba, newPage.wide, newPage.tall, false, true);
 	}
 
 	Page_t &page = m_PageList[pageIndex];

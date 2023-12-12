@@ -15,12 +15,15 @@ vgui::ILocalize *g_pVGuiLocalize;
 
 vgui::ISurface *g_pSurface;
 vgui::ISchemeManager *g_pScheme;
+vgui::ISchemeManager_HL25 *g_pScheme_HL25;
 
 IFileSystem *g_pFullFileSystem;
+IFileSystem_HL25 *g_pFullFileSystem_HL25;
 IKeyValuesSystem *g_pKeyValuesSystem;
 vgui::IEngineVGui *g_pEngineVGui;
 
 IEngineSurface *staticSurface;
+IEngineSurface_HL25 *staticSurface_HL25;
 
 void Sys_ErrorEx(const char *fmt, ...);
 
