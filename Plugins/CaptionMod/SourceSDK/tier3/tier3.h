@@ -31,7 +31,6 @@ class ISoundEmitterSystemBase;
 namespace vgui
 {
 	class ISurface;
-	class iSurface_HL25;
 	class IVGui;
 	class IInput;
 	class IPanel;
