@@ -671,7 +671,7 @@ void Engine_FillAddress(void)
 
 void Engine_InstallHooks(void)
 {
-	Install_InlineHook(S_FindName);
+	//Install_InlineHook(S_FindName);
 	Install_InlineHook(S_StartDynamicSound);
 	Install_InlineHook(S_StartStaticSound);
 	Install_InlineHook(pfnTextMessageGet);
@@ -680,7 +680,7 @@ void Engine_InstallHooks(void)
 
 void Engine_UninstallHooks(void)
 {
-	Uninstall_Hook(S_FindName);
+	//Uninstall_Hook(S_FindName);
 	Uninstall_Hook(S_StartDynamicSound);
 	Uninstall_Hook(S_StartStaticSound);
 	Uninstall_Hook(pfnTextMessageGet);
