@@ -97,9 +97,13 @@ void CBaseUI::Initialize(CreateInterfaceFn *factories, int count)
 		staticSurface_HL25 = (IEngineSurface_HL25 *)factories[0](ENGINE_SURFACE_VERSION, NULL);
 
 	KeyValuesSystem_InstallHook();
-	//Surface_InstallHooks(); fixme
-	//Scheme_InstallHooks(); fixme
-	GameUI_InstallHooks();
+
+ if (g_iEngineType != ENGINE_GOLDSRC_HL25)
+	{
+		Surface_InstallHooks();
+		Scheme_InstallHooks();
+		GameUI_InstallHooks();
+	}
 }
 
 void CBaseUI::Start(struct cl_enginefuncs_s *engineFuncs, int interfaceVersion)
@@ -110,6 +114,8 @@ void CBaseUI::Start(struct cl_enginefuncs_s *engineFuncs, int interfaceVersion)
 void CBaseUI::Shutdown(void)
 {
 	ClientVGUI_Shutdown();
+
+if (g_iEngineType != ENGINE_GOLDSRC_HL25)
 	GameUI_UninstallHooks();
 
 	//GameUI.dll and vgui2.dll will be unloaded by engine!CBaseUI::Shutdown
