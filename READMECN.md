@@ -220,7 +220,7 @@ https://github.com/surf082/ModelViewer
 
 该插件在多人游戏选项页面添加了一个预览模型的按钮。
 
-### ServerFilter (只支持GoldSrc) (GoldSrc only)
+### ServerFilter (第三方) (只支持GoldSrc)
 
 https://github.com/surf082/ServerFilter
 
