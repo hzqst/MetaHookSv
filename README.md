@@ -221,3 +221,9 @@ https://github.com/ollerjoaco/Trinity-EngineSv
 https://github.com/surf08/ModelViewer
 
 This is a plugin for Sven Co-op that adds a button to the option menu to open the modelviewer for player model preview.
+
+### ServerFilter (third-party) (GoldSrc only)
+
+https://github.com/surf08/ServerFilter
+
+This is a plugin for GoldSrc Games that provides server filter function.

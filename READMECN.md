@@ -219,3 +219,9 @@ https://github.com/LAGonauta/MetaAudio
 https://github.com/surf08/ModelViewer
 
 该插件在多人游戏选项页面添加了一个预览模型的按钮。
+
+### ServerFilter (只支持GoldSrc) (GoldSrc only)
+
+https://github.com/surf08/ServerFilter
+
+该插件为GoldSrc游戏提供服务器过滤功能。
