@@ -252,7 +252,7 @@ You will have to create a txt file named `[modelname]_external.txt` along with `
 }
 ```
 
-to replace `base_texture.bmp` with `[mod_directory]/gfx/tga/texture_name.tga` or `[mod_directory]/renderer/texture/tga/texture_name.tga` (Supported format: BMP, TGA, DDS, JPG, PNG)
+to replace `base_texture.bmp` with `[mod_directory]/tga/texture_name.dds`, `[mod_directory]/gfx/tga/texture_name.tga` or `[mod_directory]/renderer/texture/tga/texture_name.tga` (Supported format: BMP, TGA, DDS, JPG, PNG)
 
 `"replacescale" "1.0 1.0"` controls the UV scale of replaced texture (optional).
 

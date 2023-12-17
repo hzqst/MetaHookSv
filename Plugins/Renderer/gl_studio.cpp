@@ -2276,22 +2276,29 @@ void R_StudioLoadExternalFile_Texture(bspentity_t *ent, studiohdr_t *studiohdr, 
 			{
 				int width = 0;
 				int height = 0;
-				std::string texturePath = "gfx/";
-				texturePath += replacetexture_string;
+				std::string texturePath = replacetexture_string;
 				if (!V_GetFileExtension(replacetexture_string))
 					texturePath += ".tga";
-
-				int texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO, 
+				int texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO,
 					(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true, false);
 				if (!texId)
 				{
-					texturePath = "renderer/texture/";
+					texturePath = "gfx/";
 					texturePath += replacetexture_string;
 					if (!V_GetFileExtension(replacetexture_string))
 						texturePath += ".tga";
+					texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO,
+						(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true, false);
+					if (!texId)
+					{
+						texturePath = "renderer/texture/";
+						texturePath += replacetexture_string;
+						if (!V_GetFileExtension(replacetexture_string))
+							texturePath += ".tga";
 
-					texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO, 
-						(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true, true);
+						texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO,
+							(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true, true);
+					}
 				}
 				if (texId)
 				{

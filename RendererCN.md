@@ -235,7 +235,7 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 * 高光贴图只有在 `r_detailtextures` 设为 1 时有效。
 
-## 卡通渲染 / 描边  / 边缘光 / 刘海阴影 / 头发高光
+## 卡通渲染 / 描边  / 边缘光 / 刘海阴影 / 头发高光 / 外置贴图
 
 为了给指定的模型增加卡通渲染 / 描边  / 边缘光 / 刘海阴影 / 头发高光的效果，
 
@@ -260,6 +260,12 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 {
     "classname" "studio_efx"
     "flags" "EF_OUTLINE"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "hair.bmp"
+    "replacetexture" "models/player/[modelname]/xxxx.dds"
+    "replacescale" "0.5 0.5"
 }
 ```
 
@@ -299,6 +305,17 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 ```
 
 如果键值对不存在，则使用对应的控制台参数。
+
+模型使用`replacetexture`加载外置贴图时应包含从游戏文件夹开始的完整路径
+
+当外置路径不存在时将在`gfx/`与`renderer/texture/`文件夹中搜寻相应文件
+
+当路径不包含扩展名时，将默认读取`tga`格式的文件
+
+当加载外置贴图时，可以使用`replacescale`调整外置贴图缩放（可选），如`"replacescale" "0.5 0.5"`表示外置贴图宽缩小为50%，高缩小为50%
+
+当`replacescale`仅有一个参数时，代表宽高使用同一个缩放值
+
 
 ### 控制台参数
 
