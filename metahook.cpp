@@ -1437,7 +1437,7 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 			}
 		}
 	}
-	if (g_iEngineType == ENGINE_GOLDSRC || g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	if (g_iEngineType == ENGINE_GOLDSRC || g_iEngineType == ENGINE_GOLDSRC_BLOB || g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
 		MH_DisasmRanges(gMetaSave.pEngineFuncs->Cvar_Set, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
@@ -1823,7 +1823,11 @@ hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFu
 	while (pImport->Name && stricmp((const char *)((DWORD)hModule + pImport->Name), pszModuleName))
 		pImport++;
 
-	DWORD dwFuncAddr = (DWORD)GetProcAddress(GetModuleHandle(pszModuleName), pszFuncName);
+	ULONG_PTR dwFuncAddr = (ULONG_PTR)GetProcAddress(GetModuleHandle(pszModuleName), pszFuncName);
+
+	if (!dwFuncAddr)
+		return NULL;
+
 	IMAGE_THUNK_DATA *pThunk = (IMAGE_THUNK_DATA *)((DWORD)hModule + pImport->FirstThunk);
 
 	while (pThunk->u1.Function != dwFuncAddr)
