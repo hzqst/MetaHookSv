@@ -1327,3 +1327,8 @@ void __fastcall enginesurface_drawFlushText(void *pthis, int dummy)
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }
+
+void GL_UnloadTextureEx(int gltexturenum)
+{
+	//TODO
+}

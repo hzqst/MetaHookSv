@@ -514,6 +514,7 @@ extern float r_entity_color[4];
 
 extern bool r_draw_analyzingstudio;
 extern bool r_draw_deferredtrans;
+extern bool r_draw_hasalpha;
 extern bool r_draw_hasadditive;
 extern bool r_draw_hasface;
 extern bool r_draw_hashair;

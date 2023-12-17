@@ -5,6 +5,11 @@
 #include <vector>
 #include <unordered_map>
 
+#define STUDIO_DIFFUSE_TEXTURE			0
+#define STUDIO_REPLACE_TEXTURE			1
+#define STUDIO_DISPLACEMENT_TEXTURE		2
+#define STUDIO_MAX_TEXTURE				3
+
 typedef struct
 {
 	int program;
@@ -91,13 +96,33 @@ typedef struct studio_vbo_mesh_s
 
 typedef struct studio_vbo_submodel_s
 {
-	studio_vbo_submodel_s()
+	struct studio_vbo_submodel_s()
 	{
 		submodel = NULL;
 	}
 	mstudiomodel_t *submodel;
 	std::vector<studio_vbo_mesh_t> vMesh;
 }studio_vbo_submodel_t;
+
+typedef struct studio_vbo_texture_s
+{
+	studio_vbo_texture_s()
+	{
+		gltexturenum = 0;
+		width = 0;
+		height = 0;
+		scaleX = 0;
+		scaleY = 0;
+	}
+	int gltexturenum;
+	int width, height;
+	float scaleX, scaleY;
+}studio_vbo_texture_t;
+
+typedef struct studio_vbo_material_s
+{
+	studio_vbo_texture_t textures[STUDIO_MAX_TEXTURE];
+}studio_vbo_material_t;
 
 typedef struct studio_celshade_control_s
 {
@@ -140,7 +165,8 @@ typedef struct studio_vbo_s
 	GLuint				hEBO;
 	GLuint				hVAO;
 	GLuint				hStudioUBO;
-	std::vector<studio_vbo_submodel_t *> vSubmodel;
+	std::vector<studio_vbo_submodel_t *> vSubmodels;
+	std::vector<studio_vbo_material_t *> vMaterials;
 	studio_celshade_control_t celshade_control;
 	bool bExternalFileLoaded;
 }studio_vbo_t;
@@ -175,7 +201,9 @@ extern int *r_smodels_total;
 extern int *r_amodels_drawn;
 extern dlight_t *(*locallight)[3];
 extern int *numlight;
-
+extern int* r_topcolor;
+extern int* r_bottomcolor;
+extern player_model_t(*DM_PlayerState)[MAX_CLIENTS];
 extern model_t *cl_sprite_white;
 extern model_t *cl_shellchrome;
 

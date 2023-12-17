@@ -243,8 +243,11 @@ typedef struct alight_s
 //This is the pass that draw meshes with STUDIO_NF_ADDITIVE flags
 #define kRenderFxDrawAdditiveMeshes 0x80000003
 
+//This is the pass that draw meshes with STUDIO_NF_ALPHA flags
+#define kRenderFxDrawAlphaMeshes 0x80000004
+
 //This is the pass that draw meshes mark as hair (only into depth and stencil buffer)
-#define kRenderFxDrawShadowHair 0x80000004
+#define kRenderFxDrawShadowHair 0x80000005
 
 //gl_model
 
@@ -654,3 +657,25 @@ typedef enum
 #define MAX_TEMP_ENTITIES_SVENGINE 2077
 
 #define MAX_DECALCLIPVERT		32
+
+typedef struct
+{
+	int			keynum;
+	int			topcolor;
+	int			bottomcolor;
+	model_t* model;
+	char		name[260];
+	int			index;
+	int			source;
+	int			width;
+	int			height;
+	int			gl_index;
+} skin_t;
+
+
+typedef struct
+{
+	char name[260];
+	char modelname[260];
+	model_t* model;
+} player_model_t;

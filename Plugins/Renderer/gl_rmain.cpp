@@ -134,8 +134,11 @@ float r_entity_color[4];
 //This is the very first pass for studiomodel mesh analysis
 bool r_draw_analyzingstudio = false;
 
-//This is when drawing a studiomodel has mesh with flag STUDIO_NF_ADDITIVE or with renderfx=kRenderFxGlowShell in opaque pass, and this studiomodel need to be put into the transparent queue and draw again later.
+//This is when drawing a studiomodel has mesh with flag STUDIO_NF_ALPHA, STUDIO_NF_ADDITIVE or with renderfx=kRenderFxGlowShell in opaque pass, and this studiomodel need to be put into the transparent queue and draw again later.
 bool r_draw_deferredtrans = false;
+
+//This is to mark the studiomodel with flag STUDIO_NF_ALPHA
+bool r_draw_hasalpha = false;
 
 //This is to mark the studiomodel with flag STUDIO_NF_ADDITIVE
 bool r_draw_hasadditive = false;
