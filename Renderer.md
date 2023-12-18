@@ -163,7 +163,7 @@ Green channel of `_SPECULAR` texture determines the intensity of reflection. 0 =
 
 `r_ssr_fade` controls the fade-out effect if the reflected ray hit a pixel close to the screen border. for example `r_ssr_fade "0.8 1.0"`
 
-## Detail textures
+## BSP detail textures
 
 A detail texture is a high resolution external image (Supported format: BMP, TGA, DDS, JPG, PNG) that is placed over the top of a map texture. This gives the impression of a small details when you get up close to a texture instead of the usual blurred image you get when the texture fills the screen.
 
@@ -191,7 +191,7 @@ For example :
 
 `gfx/env/desertup.bmp` -> `gfx/env/desertup.dds`
 
-### Normal textures
+### BSP normal textures
 
 Normal textures are external images applied to specified brush surfaces and change the direction of surface normal.
 
@@ -203,7 +203,7 @@ Normal textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/deta
 
 * Normal textures only work when `r_detailtextures` and `r_light_dynamic` both set to 1.
 
-### Parallax textures
+### BSP parallax textures
 
 Parallax textures are external images applied to specified brush surfaces which will have more apparent depth.
 
@@ -215,7 +215,7 @@ Parallax textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/de
 
 * Parallax textures only work when `r_detailtextures` set to 1.
 
-### Specular textures
+### BSP specular textures
 
 Specular textures are external images applied to specified brush surfaces which will increase the intensity of specularity of surfaces.
 
@@ -229,7 +229,7 @@ Specular textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/de
 
 * Specular textures only work when `r_detailtextures` set to 1.
 
-### Brush Texture Replacer
+### BSP texture replacer
 
 You can replace wad textures with external images.
 
@@ -239,7 +239,7 @@ Replaced textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/de
 
 * You can't temporary disable texture replacer as it's permenant replacement. Brush textures are replaced at map initialization.
 
-## StudioModel Texture Replacer
+## StudioModel texture replacer
 
 You will have to create a txt file named `[modelname]_external.txt` along with `[modelname].mdl` file, with the following content:
 
@@ -247,16 +247,44 @@ You will have to create a txt file named `[modelname]_external.txt` along with `
 {
     "classname" "studio_texture"
     "basetexture" "base_texture.bmp"
-    "replacetexture"  "tga/texture_name.dds" 
+    "replacetexture"  "base_texture.dds" 
     "replacescale" "1.0 1.0"
 }
 ```
 
-to replace `base_texture.bmp` with `[mod_directory]/tga/texture_name.dds`, `[mod_directory]/gfx/tga/texture_name.tga` or `[mod_directory]/renderer/texture/tga/texture_name.tga` (Supported format: BMP, TGA, DDS, JPG, PNG)
+The following files will be used to replace basetexture if exists:
+
+`(game_directory)\base_texture.dds`
+
+`(game_directory)\gfx\base_texture.dds`
+
+`(game_directory)\renderer\texture\base_texture.dds`
 
 `"replacescale" "1.0 1.0"` controls the UV scale of replaced texture (optional).
 
-* You can't temporary disable texture replacer as it's permenant replacement. Studio textures are replaced at studiomodel loading stage.
+* Use cvar `r_studio_external_textures 0` to disable StudioModel texture replacer temporarily.
+
+## StudioModel normal texture
+
+You will have to create a txt file named `[modelname]_external.txt` along with `[modelname].mdl` file, with the following content:
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "base_texture.bmp"
+    "normaltexture"  "normal_texture.dds" 
+}
+```
+
+The following files will be used to replace basetexture if exists:
+
+`(game_directory)\normal_texture.dds`
+
+`(game_directory)\gfx\normal_texture.dds`
+
+`(game_directory)\renderer\texture\normal_texture.dds`
+
+* Use cvar `r_studio_external_textures 0` to disable StudioModel normal texture temporarily.
 
 ## Outline / Celshade / RimLight / HairShadow / HairSpecular
 
