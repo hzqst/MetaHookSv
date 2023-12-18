@@ -351,10 +351,7 @@ GLuint GL_GenShadowTexture(int w, int h, float *borderColor)
 
 void GL_FreeTexture(gltexture_t *glt)
 {
-	GLuint texnum;
-
-	texnum = glt->texnum;
-	glDeleteTextures(1, &texnum);
+	GL_DeleteTexture(glt->texnum);
 
 	memset(glt, 0, sizeof(*glt));
 	glt->servercount = -1;
@@ -768,4 +765,59 @@ void GL_FreeFBO(FBO_Container_t* s)
 		glDeleteTextures(1, &s->s_hBackBufferStencilView);
 
 	GL_ClearFBO(s);
+}
+
+void GL_UnloadTextureEx(int gltexturenum)
+{
+	int i;
+	gltexture_t* glt;
+
+	for (i = 0, glt = gltextures_get(); i < (*numgltextures); i++, glt++)
+	{
+		if (glt->texnum == gltexturenum)
+		{
+			GL_FreeTexture(glt);
+		}
+	}
+}
+
+void Cache_UnlinkLRU(cache_system_t* cs)
+{
+	if (!cs->lru_next || !cs->lru_prev)
+		g_pMetaHookAPI->SysError("Cache_UnlinkLRU: NULL link");
+
+	cs->lru_next->lru_prev = cs->lru_prev;
+	cs->lru_prev->lru_next = cs->lru_next;
+
+	cs->lru_prev = cs->lru_next = NULL;
+}
+
+void Cache_Free(cache_user_t* c)
+{
+	cache_system_t* cs;
+
+	if (!c->data)
+		g_pMetaHookAPI->SysError("Cache_Free: not allocated");
+
+	cs = ((cache_system_t*)c->data) - 1;
+
+	cs->prev->next = cs->next;
+	cs->next->prev = cs->prev;
+	cs->next = cs->prev = NULL;
+
+	c->data = NULL;
+
+	Cache_UnlinkLRU(cs);
+}
+
+void* Cache_Check(cache_user_t* c)
+{
+	cache_system_t* cs;
+
+	if (!c->data)
+		return NULL;
+
+	cs = ((cache_system_t*)c->data) - 1;
+
+	return c->data;
 }

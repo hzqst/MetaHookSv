@@ -3059,7 +3059,7 @@ void R_EndDetailTexture(program_state_t WSurfProgramState)
 	}
 }
 
-char *ValueForKey(bspentity_t *ent, char *key)
+char *ValueForKey(bspentity_t *ent, const char *key)
 {
    for (epair_t  *pEPair = ent->epairs; pEPair; pEPair = pEPair->next)
    {

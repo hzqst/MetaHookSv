@@ -506,6 +506,9 @@ int EngineGetMaxTempEnts(void);
 TEMPENTITY *EngineGetTempTentsBase(void);
 TEMPENTITY *EngineGetTempTentByIndex(int index);
 
+void Cache_Free(cache_user_t* c);
+void* Cache_Check(cache_user_t* c);
+
 void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue);
 
 extern GLint r_viewport[4];

@@ -2224,6 +2224,30 @@ void R_ForceCVars(qboolean mp)
 	gRefFuncs.R_ForceCVars(mp);
 }
 
+void R_UnloadUnreferencedTextures()
+{
+	for (int i = 0; i < EngineGetMaxKnownModel(); ++i)
+	{
+		auto mod = EngineGetModelByIndex(i);
+
+		if (mod && mod->type == mod_studio && mod->needload == NL_UNREFERENCED)
+		{
+			auto studiohdr = (studiohdr_t*)Cache_Check(&mod->cache);
+
+			if (studiohdr)
+			{
+				//R_StudioUnloadTextures(mod, studiohdr);
+				//Cache_Free(&mod->cache);
+
+				//TODO...need mod_known_info
+				//auto p = &mod_known_info[i];
+				//p->firstCRCDone = false;
+				//p->initialCRC = 0;
+			}
+		}
+	}
+}
+
 void R_NewMap(void)
 {
 	R_GenerateSceneUBO();
@@ -2242,6 +2266,8 @@ void R_NewMap(void)
 	R_NewMapLight();
 
 	R_StudioReloadVBOCache();
+
+	R_UnloadUnreferencedTextures();
 
 	(*r_framecount) = 1;
 	(*r_visframecount) = 1;

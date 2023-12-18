@@ -7,8 +7,10 @@
 
 #define STUDIO_DIFFUSE_TEXTURE			0
 #define STUDIO_REPLACE_TEXTURE			1
-#define STUDIO_DISPLACEMENT_TEXTURE		2
-#define STUDIO_MAX_TEXTURE				3
+#define STUDIO_NORMAL_TEXTURE			2
+#define STUDIO_PARALLAX_TEXTURE			3
+#define STUDIO_SPECULAR_TEXTURE			4
+#define STUDIO_MAX_TEXTURE				5
 
 typedef struct
 {
@@ -52,7 +54,11 @@ typedef struct studio_vbo_vertex_s
 	}
 	studio_vbo_vertex_s()
 	{
-
+		memset(pos, 0, sizeof(vec3_t));
+		memset(normal, 0, sizeof(vec3_t));
+		memset(texcoord, 0, sizeof(vec2_t));
+		vertbone = 0;
+		normbone = 0;
 	}
 	vec3_t	pos;
 	vec3_t	normal;
@@ -121,6 +127,14 @@ typedef struct studio_vbo_texture_s
 
 typedef struct studio_vbo_material_s
 {
+	studio_vbo_material_s()
+	{
+		used = false;
+		index = -1;
+	}
+
+	bool used;
+	int index;
 	studio_vbo_texture_t textures[STUDIO_MAX_TEXTURE];
 }studio_vbo_material_t;
 
@@ -166,10 +180,85 @@ typedef struct studio_vbo_s
 	GLuint				hVAO;
 	GLuint				hStudioUBO;
 	std::vector<studio_vbo_submodel_t *> vSubmodels;
-	std::vector<studio_vbo_material_t *> vMaterials;
 	studio_celshade_control_t celshade_control;
 	bool bExternalFileLoaded;
 }studio_vbo_t;
+
+
+class studio_bone_handle
+{
+public:
+	studio_bone_handle(int vboindex, int sequence, int gaitsequence, float frame, vec3_t origin, vec3_t angles)
+	{
+		m_vboindex = vboindex;
+		m_sequence = sequence;
+		m_gaitsequence = gaitsequence;
+		m_frame = frame;
+		VectorCopy(origin, m_origin);
+		VectorCopy(angles, m_angles);
+	}
+
+	bool operator == (const studio_bone_handle& a) const
+	{
+		return
+			m_vboindex == a.m_vboindex &&
+			m_sequence == a.m_sequence &&
+			m_gaitsequence == a.m_gaitsequence &&
+			m_frame == a.m_frame &&
+			VectorCompare(m_origin, a.m_origin) &&
+			VectorCompare(m_angles, a.m_angles);
+	}
+
+	int m_vboindex;
+	int m_sequence;
+	int m_gaitsequence;
+	float m_frame;
+	vec3_t m_origin;
+	vec3_t m_angles;
+};
+
+class studio_bone_hasher
+{
+public:
+	std::size_t operator()(const studio_bone_handle& key) const
+	{
+		auto base = (std::size_t)(key.m_vboindex << 24);
+
+		base += ((std::size_t)key.m_sequence << 16);
+		base += ((std::size_t)key.m_gaitsequence << 8);
+		base += (std::size_t)(key.m_frame * 128.0);
+		base += (std::size_t)(key.m_origin[0] * 128.0);
+		base += (std::size_t)(key.m_origin[1] * 128.0);
+		base += (std::size_t)(key.m_origin[2] * 128.0);
+		base += (std::size_t)(key.m_angles[0] * 128.0);
+		base += (std::size_t)(key.m_angles[1] * 128.0);
+		base += (std::size_t)(key.m_angles[2] * 128.0);
+
+		return base;
+	}
+};
+
+class studio_bone_cache
+{
+public:
+	studio_bone_cache()
+	{
+		memset(m_bonetransform, 0, sizeof(m_bonetransform));
+		memset(m_lighttransform, 0, sizeof(m_lighttransform));
+		m_next = NULL;
+	}
+	studio_bone_cache(float* _bonetransform, float* _lighttransform)
+	{
+		memcpy(m_bonetransform, _bonetransform, sizeof(m_bonetransform));
+		memcpy(m_lighttransform, _lighttransform, sizeof(m_lighttransform));
+		m_next = NULL;
+	}
+
+	float m_bonetransform[MAXSTUDIOBONES][3][4];
+	float m_lighttransform[MAXSTUDIOBONES][3][4];
+	studio_bone_cache* m_next;
+};
+
 
 //engine
 extern mstudiomodel_t **psubmodel;
@@ -220,8 +309,9 @@ void R_InitStudio(void);
 void R_SaveStudioProgramStates(void);
 void R_LoadStudioProgramStates(void);
 void R_GLStudioDrawPoints(void);
-studiohdr_t* R_StudioGetTextures(model_t* psubm);
+studiohdr_t* R_StudioGetTextures(const model_t* psubm);
 void R_StudioLoadTextures(model_t* psubm, studiohdr_t *studiohdr);
+void R_StudioUnloadTextures(model_t* mod, studiohdr_t* studiohdr);
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
 qboolean studioapi_StudioCheckBBox(void);
 void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int);
@@ -250,3 +340,5 @@ extern r_studio_interface_t **gpStudioInterface;
 #define STUDIO_GAMMA_BLEND_ENABLED				0x20000000ull
 #define STUDIO_ADDITIVE_RENDER_MODE_ENABLED		0x40000000ull
 #define STUDIO_INVERT_NORMAL_ENABLED			0x80000000ull
+#define STUDIO_NORMALTEXTURE_ENABLED			0x100000000ull
+#define STUDIO_SPECULARTEXTURE_ENABLED			0x200000000ull

@@ -672,10 +672,19 @@ typedef struct
 	int			gl_index;
 } skin_t;
 
-
 typedef struct
 {
 	char name[260];
 	char modelname[260];
 	model_t* model;
 } player_model_t;
+
+#define CACHE_NAME_LEN 64
+typedef struct cache_system_s
+{
+	int						size;		// including this header
+	cache_user_t* user;
+	char					name[CACHE_NAME_LEN];
+	struct cache_system_s* prev, * next;
+	struct cache_system_s* lru_prev, * lru_next;	// for LRU flushing	
+} cache_system_t;

@@ -5,85 +5,13 @@
 
 #include "mathlib.h"
 
-class studio_bone_handle
-{
-public:
-	studio_bone_handle(int vboindex, int sequence, int gaitsequence, float frame, vec3_t origin, vec3_t angles)
-	{
-		m_vboindex = vboindex;
-		m_sequence = sequence;
-		m_gaitsequence = gaitsequence;
-		m_frame = frame;
-		VectorCopy(origin, m_origin);
-		VectorCopy(angles, m_angles);
-	}
-
-	bool operator == (const studio_bone_handle& a) const
-	{
-		return
-			m_vboindex == a.m_vboindex &&
-			m_sequence == a.m_sequence &&
-			m_gaitsequence == a.m_gaitsequence &&
-			m_frame == a.m_frame &&
-			VectorCompare(m_origin, a.m_origin) &&
-			VectorCompare(m_angles, a.m_angles);
-	}
-
-	int m_vboindex;
-	int m_sequence;
-	int m_gaitsequence;
-	float m_frame;
-	vec3_t m_origin;
-	vec3_t m_angles;
-};
-
-class studio_bone_hasher
-{
-public:
-	std::size_t operator()(const studio_bone_handle& key) const
-	{
-		auto base = (std::size_t)(key.m_vboindex << 24);
-
-		base += ((std::size_t)key.m_sequence << 16);
-		base += ((std::size_t)key.m_gaitsequence << 8);
-		base += (std::size_t)(key.m_frame * 128.0);
-		base += (std::size_t)(key.m_origin[0] * 128.0);
-		base += (std::size_t)(key.m_origin[1] * 128.0);
-		base += (std::size_t)(key.m_origin[2] * 128.0);
-		base += (std::size_t)(key.m_angles[0] * 128.0);
-		base += (std::size_t)(key.m_angles[1] * 128.0);
-		base += (std::size_t)(key.m_angles[2] * 128.0);
-
-		return base;
-	}
-};
-
-class studio_bone_cache
-{
-public:
-	studio_bone_cache()
-	{
-		memset(m_bonetransform, 0, sizeof(m_bonetransform));
-		memset(m_lighttransform, 0, sizeof(m_lighttransform));
-		m_next = NULL;
-	}
-	studio_bone_cache(float* _bonetransform, float* _lighttransform)
-	{
-		memcpy(m_bonetransform, _bonetransform, sizeof(m_bonetransform));
-		memcpy(m_lighttransform, _lighttransform, sizeof(m_lighttransform));
-		m_next = NULL;
-	}
-
-	float m_bonetransform[MAXSTUDIOBONES][3][4];
-	float m_lighttransform[MAXSTUDIOBONES][3][4];
-	studio_bone_cache* m_next;
-};
-
 std::unordered_map<studio_bone_handle, studio_bone_cache*, studio_bone_hasher> g_StudioBoneCacheManager;
 
 std::unordered_map<program_state_t, studio_program_t> g_StudioProgramTable;
 
 std::vector<studio_vbo_t*> g_StudioVBOCache;
+
+std::vector<studio_vbo_material_t*> g_StudioVBOMaterialCache;
 
 #define MAX_STUDIO_BONE_CACHES 1024
 
@@ -326,17 +254,29 @@ void R_PrepareStudioVBOSubmodel(
 	}
 }
 
-studio_vbo_t* R_PrepareStudioVBO(studiohdr_t* studiohdr)
+studio_vbo_t* R_GetStudioVBOFromStudioHeader(studiohdr_t* studiohdr)
 {
 	studio_vbo_t* VBOData = NULL;
+
 	if (studiohdr->soundtable > 0 && studiohdr->soundtable - 1 < (int)g_StudioVBOCache.size())
 	{
 		VBOData = (studio_vbo_t*)g_StudioVBOCache[studiohdr->soundtable - 1];
+
 		if (VBOData)
 		{
 			return VBOData;
 		}
 	}
+
+	return VBOData;
+}
+
+studio_vbo_t* R_PrepareStudioVBO(studiohdr_t* studiohdr)
+{
+	studio_vbo_t* VBOData = R_GetStudioVBOFromStudioHeader(studiohdr);
+
+	if (VBOData)
+		return VBOData;
 
 	VBOData = new studio_vbo_t;
 	VBOData->studiohdr = studiohdr;
@@ -458,7 +398,7 @@ void R_StudioReloadVBOCache(void)
 			{
 				delete subm;
 			}
-
+#if 0
 			for (auto mat : VBOData->vMaterials)
 			{
 				for (int j = 0; j < STUDIO_MAX_TEXTURE; ++j)
@@ -471,7 +411,7 @@ void R_StudioReloadVBOCache(void)
 				}
 				delete mat;
 			}
-
+#endif
 			delete VBOData;
 
 			g_StudioVBOCache[i] = NULL;
@@ -586,6 +526,12 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 
 		if (state & STUDIO_INVERT_NORMAL_ENABLED)
 			defs << "#define INVERT_NORMAL_ENABLED\n";
+
+		if (state & STUDIO_NORMALTEXTURE_ENABLED)
+			defs << "#define NORMALTEXTURE_ENABLED\n";
+
+		if (state & STUDIO_SPECULARTEXTURE_ENABLED)
+			defs << "#define SPECULARTEXTURE_ENABLED\n";
 
 		if (glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define NV_BINDLESS_ENABLED\n";
@@ -947,7 +893,9 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_OIT_BLEND_ENABLED				,"STUDIO_OIT_BLEND_ENABLED"					},
 { STUDIO_GAMMA_BLEND_ENABLED			,"STUDIO_GAMMA_BLEND_ENABLED"				},
 { STUDIO_ADDITIVE_RENDER_MODE_ENABLED	,"STUDIO_ADDITIVE_RENDER_MODE_ENABLED"		},
-{ STUDIO_INVERT_NORMAL_ENABLED			,"STUDIO_INVERT_NORMAL_ENABLED"		},
+{ STUDIO_INVERT_NORMAL_ENABLED			,"STUDIO_INVERT_NORMAL_ENABLED"				},
+{ STUDIO_NORMALTEXTURE_ENABLED			,"STUDIO_NORMALTEXTURE_ENABLED"				},
+{ STUDIO_SPECULARTEXTURE_ENABLED		,"STUDIO_SPECULARTEXTURE_ENABLED"			},
 
 { STUDIO_NF_FLATSHADE					,"STUDIO_NF_FLATSHADE"		},
 { STUDIO_NF_MASKED						,"STUDIO_NF_MASKED"			},
@@ -1072,7 +1020,7 @@ studiohdr_t *__cdecl R_LoadTextures(model_t *a1)
 
 */
 
-studiohdr_t* R_StudioGetTextures(model_t* psubm)
+studiohdr_t* R_StudioGetTextures(const model_t* psubm)
 {
 	if ((*pstudiohdr)->textureindex == 0)
 	{
@@ -1230,7 +1178,7 @@ unsigned char* R_StudioReloadSkin(model_t* pModel, int index, skin_t* pskin)
 }
 #endif
 
-void R_StudioSetupVBOMaterial(const studio_vbo_t* VBOData, const studio_vbo_material_t* VBOMaterial, float* width, float* height)
+void R_StudioSetupVBOMaterial(const studio_vbo_t* VBOData, const studio_vbo_material_t* VBOMaterial, float* width, float* height, program_state_t* StudioProgramState)
 {
 	if (r_studio_external_textures->value > 0 && VBOMaterial->textures[STUDIO_REPLACE_TEXTURE].gltexturenum)
 	{
@@ -1246,9 +1194,25 @@ void R_StudioSetupVBOMaterial(const studio_vbo_t* VBOData, const studio_vbo_mate
 		*width = VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].width * VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].scaleX;
 		*height = VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].height * VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].scaleY;
 	}
+
+	if (r_studio_external_textures->value > 0 && VBOMaterial->textures[STUDIO_NORMAL_TEXTURE].gltexturenum)
+	{
+		glActiveTexture(GL_TEXTURE0 + STUDIO_NORMAL_TEXTURE);
+		glBindTexture(GL_TEXTURE_2D, VBOMaterial->textures[STUDIO_NORMAL_TEXTURE].gltexturenum);
+
+		(*StudioProgramState) |= STUDIO_NORMALTEXTURE_ENABLED;
+	}
+
+	if (r_studio_external_textures->value > 0 && VBOMaterial->textures[STUDIO_SPECULAR_TEXTURE].gltexturenum)
+	{
+		glActiveTexture(GL_TEXTURE0 + STUDIO_SPECULAR_TEXTURE);
+		glBindTexture(GL_TEXTURE_2D, VBOMaterial->textures[STUDIO_SPECULAR_TEXTURE].gltexturenum);
+
+		(*StudioProgramState) |= STUDIO_SPECULARTEXTURE_ENABLED;
+	}
 }
 
-void R_StudioSetupSkinEx(const studio_vbo_t* VBOData, studiohdr_t* ptexturehdr, int index, float* width, float* height)
+void R_StudioSetupSkinEx(const studio_vbo_t* VBOData, studiohdr_t* ptexturehdr, int index, float* width, float* height, program_state_t *StudioProgramState)
 {
 	if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
 		return;
@@ -1309,10 +1273,11 @@ void R_StudioSetupSkinEx(const studio_vbo_t* VBOData, studiohdr_t* ptexturehdr, 
 
 	if ((*currenttexture) & 0x80000000)
 	{
-		int materialIndex = (*currenttexture) & 0x7FFFFFFF;
-		if (materialIndex >= 0 && materialIndex < (int)VBOData->vMaterials.size())
+		size_t materialIndex = (size_t)((*currenttexture) & 0x7FFFFFFF);
+
+		if (materialIndex < (int)g_StudioVBOMaterialCache.size())
 		{
-			R_StudioSetupVBOMaterial(VBOData, VBOData->vMaterials[materialIndex], width, height);
+			R_StudioSetupVBOMaterial(VBOData, g_StudioVBOMaterialCache[materialIndex], width, height, StudioProgramState);
 		}
 		else
 		{
@@ -1671,7 +1636,7 @@ void R_StudioDrawVBOMesh_DrawPass(
 		{
 			if (ptexturehdr && pskinref)
 			{
-				R_StudioSetupSkinEx(VBOData, ptexturehdr, pskinref[pmesh->skinref], &width, &height);
+				R_StudioSetupSkinEx(VBOData, ptexturehdr, pskinref[pmesh->skinref], &width, &height, &StudioProgramState);
 			}
 			else
 			{
@@ -1800,6 +1765,18 @@ void R_StudioDrawVBOMesh_DrawPass(
 	}
 
 	GL_UseProgram(0);
+
+	//Restore textures
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glActiveTexture(*oldtarget);
 
 	//Restore states
 	glDepthMask(GL_TRUE);
@@ -2436,18 +2413,68 @@ void __fastcall GameStudioRenderer_StudioMergeBones(void* pthis, int dummy, mode
 	StudioMergeBones_Template(gRefFuncs.GameStudioRenderer_StudioMergeBones, pthis, dummy, pSubModel);
 }
 
-studio_vbo_material_t* R_StudioAllocVBOMaterial(studio_vbo_t* VBOData, mstudiotexture_t* texture)
+void R_StudioFreeVBOMaterial(studio_vbo_material_t*VBOMaterial)
+{
+	for (int i = 0; i < STUDIO_MAX_TEXTURE; ++i)
+	{
+		if (VBOMaterial->textures[i].gltexturenum)
+		{
+			GL_UnloadTextureEx(VBOMaterial->textures[i].gltexturenum);
+			VBOMaterial->textures[i].gltexturenum = 0;
+		}
+		VBOMaterial->textures[i].width = 0;
+		VBOMaterial->textures[i].height = 0;
+		VBOMaterial->textures[i].scaleX = 0;
+		VBOMaterial->textures[i].scaleY = 0;
+	}
+
+	VBOMaterial->used = false;
+}
+
+studio_vbo_material_t* R_StudioGetVBOMaterialFromStudioTexture(mstudiotexture_t* texture)
 {
 	if (texture->index & 0x80000000)
 	{
-		auto materialIndex = (texture->index & 0x7FFFFFFF);
-		if (materialIndex >= 0 && materialIndex < VBOData->vMaterials.size())
+		size_t materialIndex = (size_t)(texture->index & 0x7FFFFFFF);
+		if (materialIndex < g_StudioVBOMaterialCache.size())
 		{
-			return VBOData->vMaterials[materialIndex];
+			auto m = g_StudioVBOMaterialCache[materialIndex];
+			if (m && m->used)
+				return m;
 		}
 	}
 
-	auto VBOMaterial = new studio_vbo_material_t();
+	return NULL;
+}
+
+studio_vbo_material_t* R_StudioFindEmptyVBOMaterial()
+{
+	for (auto m : g_StudioVBOMaterialCache)
+	{
+		if (!m->used)
+			return m;
+	}
+
+	return NULL;
+}
+
+studio_vbo_material_t* R_StudioPrepareVBOMaterial(mstudiotexture_t* texture)
+{
+	studio_vbo_material_t* VBOMaterial = R_StudioGetVBOMaterialFromStudioTexture(texture);
+
+	if (VBOMaterial)
+		return VBOMaterial;
+
+	VBOMaterial = R_StudioFindEmptyVBOMaterial();
+
+	if (!VBOMaterial)
+	{
+		VBOMaterial = new studio_vbo_material_t();
+		VBOMaterial->index = (int)g_StudioVBOMaterialCache.size();
+		VBOMaterial->used = true;
+
+		g_StudioVBOMaterialCache.emplace_back(VBOMaterial);
+	}
 
 	VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].gltexturenum = texture->index;
 	VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].width = texture->width;
@@ -2455,11 +2482,179 @@ studio_vbo_material_t* R_StudioAllocVBOMaterial(studio_vbo_t* VBOData, mstudiote
 	VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].scaleX = 1;
 	VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].scaleY = 1;
 
-	texture->index = (0x80000000 | (int)VBOData->vMaterials.size());
-
-	VBOData->vMaterials.emplace_back(VBOMaterial);
+	texture->index = (0x80000000 | VBOMaterial->index);
 
 	return VBOMaterial;
+}
+
+void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studiohdr, studio_vbo_t* VBOData, mstudiotexture_t* ptexture, const char* value, const char* scaleKey, int StudioTextureType)
+{
+	if (value && value[0])
+	{
+		int width = 0;
+		int height = 0;
+
+		std::string texturePath = value;
+
+		if (!V_GetFileExtension(value))
+			texturePath += ".tga";
+
+		int texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO,
+			(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true, false);
+
+		if (!texId)
+		{
+			texturePath = "gfx/";
+			texturePath += value;
+			if (!V_GetFileExtension(value))
+				texturePath += ".tga";
+
+			texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO,
+				(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true, false);
+
+			if (!texId)
+			{
+				texturePath = "renderer/texture/";
+				texturePath += value;
+				if (!V_GetFileExtension(value))
+					texturePath += ".tga";
+
+				texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO,
+					(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true, true);
+			}
+		}
+
+		if (texId)
+		{
+			auto VBOMaterial = R_StudioPrepareVBOMaterial(ptexture);
+
+			VBOMaterial->textures[StudioTextureType].gltexturenum = texId;
+			VBOMaterial->textures[StudioTextureType].width = width;
+			VBOMaterial->textures[StudioTextureType].height = height;
+			VBOMaterial->textures[StudioTextureType].scaleX = 1;
+			VBOMaterial->textures[StudioTextureType].scaleY = 1;
+
+			char* scale_string = ValueForKey(ent, scaleKey);
+			if (scale_string)
+			{
+				float scales[2] = { 0 };
+
+				if (2 == sscanf(scale_string, "%f %f", &scales[0], &scales[1]))
+				{
+					if (scales[0] > 0)
+						VBOMaterial->textures[StudioTextureType].scaleX = scales[0];
+
+					if (scales[1] > 0)
+						VBOMaterial->textures[StudioTextureType].scaleY = scales[1];
+				}
+				else if (1 == sscanf(scale_string, "%f", &scales[0]))
+				{
+					if (scales[0] > 0)
+					{
+						VBOMaterial->textures[StudioTextureType].scaleX = scales[0];
+						VBOMaterial->textures[StudioTextureType].scaleY = scales[0];
+					}
+				}
+			}
+		}
+	}
+}
+
+void R_StudioLoadExternalFile_TextureUpdateFlags(bspentity_t* ent, studiohdr_t* studiohdr, studio_vbo_t* VBOData, mstudiotexture_t* ptexture, const char* value)
+{
+	if (value && !strcmp(value, "STUDIO_NF_FLATSHADE"))
+	{
+		ptexture->flags |= STUDIO_NF_FLATSHADE;
+	}
+	else if (value && !strcmp(value, "STUDIO_NF_CHROME"))
+	{
+		ptexture->flags |= STUDIO_NF_CHROME;
+	}
+	else if (value && !strcmp(value, "STUDIO_NF_FULLBRIGHT"))
+	{
+		ptexture->flags |= STUDIO_NF_FULLBRIGHT;
+	}
+	else if (value && !strcmp(value, "STUDIO_NF_NOMIPS"))
+	{
+		ptexture->flags |= STUDIO_NF_NOMIPS;
+	}
+	else if (value && !strcmp(value, "STUDIO_NF_ALPHA"))
+	{
+		ptexture->flags |= STUDIO_NF_ALPHA;
+	}
+	else if (value && !strcmp(value, "STUDIO_NF_ADDITIVE"))
+	{
+		ptexture->flags |= STUDIO_NF_ADDITIVE;
+	}
+	else if (value && !strcmp(value, "STUDIO_NF_MASKED"))
+	{
+		ptexture->flags |= STUDIO_NF_MASKED;
+	}
+	else if (value && !strcmp(value, "STUDIO_NF_CELSHADE"))
+	{
+		ptexture->flags |= STUDIO_NF_CELSHADE;
+	}
+	else if (value && !strcmp(value, "STUDIO_NF_CELSHADE_FACE"))
+	{
+		ptexture->flags |= STUDIO_NF_CELSHADE;
+		ptexture->flags |= STUDIO_NF_CELSHADE_FACE;
+	}
+	else if (value && !strcmp(value, "STUDIO_NF_CELSHADE_HAIR"))
+	{
+		ptexture->flags |= STUDIO_NF_CELSHADE;
+		ptexture->flags |= STUDIO_NF_CELSHADE_HAIR;
+	}
+	else if (value && !strcmp(value, "STUDIO_NF_CELSHADE_HAIR_H"))
+	{
+		ptexture->flags |= STUDIO_NF_CELSHADE;
+		ptexture->flags |= STUDIO_NF_CELSHADE_HAIR_H;
+	}
+
+	if (value && !strcmp(value, "-STUDIO_NF_FLATSHADE"))
+	{
+		ptexture->flags &= ~STUDIO_NF_FLATSHADE;
+	}
+	else if (value && !strcmp(value, "-STUDIO_NF_CHROME"))
+	{
+		ptexture->flags &= ~STUDIO_NF_CHROME;
+	}
+	else if (value && !strcmp(value, "-STUDIO_NF_FULLBRIGHT"))
+	{
+		ptexture->flags &= ~STUDIO_NF_FULLBRIGHT;
+	}
+	else if (value && !strcmp(value, "-STUDIO_NF_NOMIPS"))
+	{
+		ptexture->flags &= ~STUDIO_NF_NOMIPS;
+	}
+	else if (value && !strcmp(value, "-STUDIO_NF_ALPHA"))
+	{
+		ptexture->flags &= ~STUDIO_NF_ALPHA;
+	}
+	else if (value && !strcmp(value, "-STUDIO_NF_ADDITIVE"))
+	{
+		ptexture->flags &= ~STUDIO_NF_ADDITIVE;
+	}
+	else if (value && !strcmp(value, "-STUDIO_NF_MASKED"))
+	{
+		ptexture->flags &= ~STUDIO_NF_MASKED;
+	}
+	else if (value && !strcmp(value, "-STUDIO_NF_CELSHADE"))
+	{
+		ptexture->flags &= ~STUDIO_NF_CELSHADE;
+	}
+	else if (value && !strcmp(value, "-STUDIO_NF_CELSHADE_FACE"))
+	{
+		ptexture->flags &= ~STUDIO_NF_CELSHADE_FACE;
+	}
+	else if (value && !strcmp(value, "-STUDIO_NF_CELSHADE_HAIR"))
+	{
+		ptexture->flags &= ~STUDIO_NF_CELSHADE_HAIR;
+	}
+	else if (value && !strcmp(value, "-STUDIO_NF_CELSHADE_HAIR_H"))
+	{
+		ptexture->flags &= ~STUDIO_NF_CELSHADE_HAIR_H;
+	}
+
 }
 
 void R_StudioLoadExternalFile_Texture(bspentity_t* ent, studiohdr_t* studiohdr, studio_vbo_t* VBOData)
@@ -2475,191 +2670,33 @@ void R_StudioLoadExternalFile_Texture(bspentity_t* ent, studiohdr_t* studiohdr, 
 		gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Model %s has no texture\n", studiohdr->name);
 		return;
 	}
+
 	char* flags_string = ValueForKey(ent, "flags");
 	char* replacetexture_string = ValueForKey(ent, "replacetexture");
+	char* normaltexture_string = ValueForKey(ent, "normaltexture");
+	char* speculartexture_string = ValueForKey(ent, "speculartexture");
 
 	for (int i = 0; i < studiohdr->numtextures; ++i)
 	{
 		auto ptexture = (mstudiotexture_t*)((byte*)studiohdr + studiohdr->textureindex) + i;
 
-		bool bSelected = false;
+		bool bTextureMatched = false;
 
 		if (!strcmp(basetexture_string, "*"))
 		{
-			bSelected = true;
+			bTextureMatched = true;
 		}
 		else if (!strcmp(ptexture->name, basetexture_string))
 		{
-			bSelected = true;
+			bTextureMatched = true;
 		}
-		if (bSelected)
+
+		if (bTextureMatched)
 		{
-			if (flags_string && !strcmp(flags_string, "STUDIO_NF_FLATSHADE"))
-			{
-				ptexture->flags |= STUDIO_NF_FLATSHADE;
-			}
-			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CHROME"))
-			{
-				ptexture->flags |= STUDIO_NF_CHROME;
-			}
-			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_FULLBRIGHT"))
-			{
-				ptexture->flags |= STUDIO_NF_FULLBRIGHT;
-			}
-			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_NOMIPS"))
-			{
-				ptexture->flags |= STUDIO_NF_NOMIPS;
-			}
-			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_ALPHA"))
-			{
-				ptexture->flags |= STUDIO_NF_ALPHA;
-			}
-			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_ADDITIVE"))
-			{
-				ptexture->flags |= STUDIO_NF_ADDITIVE;
-			}
-			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_MASKED"))
-			{
-				ptexture->flags |= STUDIO_NF_MASKED;
-			}
-			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE"))
-			{
-				ptexture->flags |= STUDIO_NF_CELSHADE;
-			}
-			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE_FACE"))
-			{
-				ptexture->flags |= STUDIO_NF_CELSHADE;
-				ptexture->flags |= STUDIO_NF_CELSHADE_FACE;
-			}
-			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE_HAIR"))
-			{
-				ptexture->flags |= STUDIO_NF_CELSHADE;
-				ptexture->flags |= STUDIO_NF_CELSHADE_HAIR;
-			}
-			else if (flags_string && !strcmp(flags_string, "STUDIO_NF_CELSHADE_HAIR_H"))
-			{
-				ptexture->flags |= STUDIO_NF_CELSHADE;
-				ptexture->flags |= STUDIO_NF_CELSHADE_HAIR_H;
-			}
-
-			if (flags_string && !strcmp(flags_string, "-STUDIO_NF_FLATSHADE"))
-			{
-				ptexture->flags &= ~STUDIO_NF_FLATSHADE;
-			}
-			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_CHROME"))
-			{
-				ptexture->flags &= ~STUDIO_NF_CHROME;
-			}
-			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_FULLBRIGHT"))
-			{
-				ptexture->flags &= ~STUDIO_NF_FULLBRIGHT;
-			}
-			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_NOMIPS"))
-			{
-				ptexture->flags &= ~STUDIO_NF_NOMIPS;
-			}
-			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_ALPHA"))
-			{
-				ptexture->flags &= ~STUDIO_NF_ALPHA;
-			}
-			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_ADDITIVE"))
-			{
-				ptexture->flags &= ~STUDIO_NF_ADDITIVE;
-			}
-			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_MASKED"))
-			{
-				ptexture->flags &= ~STUDIO_NF_MASKED;
-			}
-			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_CELSHADE"))
-			{
-				ptexture->flags &= ~STUDIO_NF_CELSHADE;
-			}
-			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_CELSHADE_FACE"))
-			{
-				ptexture->flags &= ~STUDIO_NF_CELSHADE_FACE;
-			}
-			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_CELSHADE_HAIR"))
-			{
-				ptexture->flags &= ~STUDIO_NF_CELSHADE_HAIR;
-			}
-			else if (flags_string && !strcmp(flags_string, "-STUDIO_NF_CELSHADE_HAIR_H"))
-			{
-				ptexture->flags &= ~STUDIO_NF_CELSHADE_HAIR_H;
-			}
-
-			if (replacetexture_string && replacetexture_string[0])
-			{
-				int width = 0;
-				int height = 0;
-
-				std::string texturePath = replacetexture_string;
-				if (!V_GetFileExtension(replacetexture_string))
-					texturePath += ".tga";
-
-				int texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO,
-					(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true, false);
-
-				if (!texId)
-				{
-					texturePath = "gfx/";
-					texturePath += replacetexture_string;
-					if (!V_GetFileExtension(replacetexture_string))
-						texturePath += ".tga";
-
-					texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO,
-						(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true, false);
-
-					if (!texId)
-					{
-						texturePath = "renderer/texture/";
-						texturePath += replacetexture_string;
-						if (!V_GetFileExtension(replacetexture_string))
-							texturePath += ".tga";
-
-						texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO,
-							(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true, true);
-					}
-				}
-
-				if (texId)
-				{
-					auto VBOMaterial = R_StudioAllocVBOMaterial(VBOData, ptexture);
-
-					VBOMaterial->textures[STUDIO_REPLACE_TEXTURE].gltexturenum = texId;
-					VBOMaterial->textures[STUDIO_REPLACE_TEXTURE].width = width;
-					VBOMaterial->textures[STUDIO_REPLACE_TEXTURE].height = height;
-					VBOMaterial->textures[STUDIO_REPLACE_TEXTURE].scaleX = 1;
-					VBOMaterial->textures[STUDIO_REPLACE_TEXTURE].scaleY = 1;
-
-					bool bSizeChanged = false;
-
-					char* replacescale_string = ValueForKey(ent, "replacescale");
-					if (replacescale_string)
-					{
-						float scales[2] = { 0 };
-
-						if (2 == sscanf(replacescale_string, "%f %f", &scales[0], &scales[1]))
-						{
-							if (scales[0] > 0)
-								VBOMaterial->textures[STUDIO_REPLACE_TEXTURE].scaleX = scales[0];
-
-							if (scales[1] > 0)
-								VBOMaterial->textures[STUDIO_REPLACE_TEXTURE].scaleY = scales[1];
-
-							bSizeChanged = true;
-						}
-						else if (1 == sscanf(replacescale_string, "%f", &scales[0]))
-						{
-							if (scales[0] > 0)
-							{
-								VBOMaterial->textures[STUDIO_REPLACE_TEXTURE].scaleX = scales[0];
-								VBOMaterial->textures[STUDIO_REPLACE_TEXTURE].scaleY = scales[0];
-							}
-							bSizeChanged = true;
-						}
-					}
-				}
-			}
+			R_StudioLoadExternalFile_TextureUpdateFlags(ent, studiohdr, VBOData, ptexture, flags_string);
+			R_StudioLoadExternalFile_TextureLoad(ent, studiohdr, VBOData, ptexture, replacetexture_string, "replacescale", STUDIO_REPLACE_TEXTURE);
+			R_StudioLoadExternalFile_TextureLoad(ent, studiohdr, VBOData, ptexture, normaltexture_string, "normalscale", STUDIO_NORMAL_TEXTURE);
+			R_StudioLoadExternalFile_TextureLoad(ent, studiohdr, VBOData, ptexture, speculartexture_string, "specularscale", STUDIO_SPECULAR_TEXTURE);
 		}
 	}
 }
@@ -2667,6 +2704,7 @@ void R_StudioLoadExternalFile_Texture(bspentity_t* ent, studiohdr_t* studiohdr, 
 void R_StudioLoadExternalFile_Efx(bspentity_t* ent, studiohdr_t* studiohdr, studio_vbo_t* VBOData)
 {
 	char* flags_string = ValueForKey(ent, "flags");
+
 	if (flags_string && !strcmp(flags_string, "EF_ROCKET"))
 	{
 		studiohdr->flags |= EF_ROCKET;
@@ -3079,14 +3117,14 @@ void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, studio_vbo_t
 	name = name.substr(0, name.length() - 4);
 	name += "_external.txt";
 
-	char* pfile = (char*)gEngfuncs.COM_LoadFile((char*)name.c_str(), 5, NULL);
-	if (!pfile)
+	char* pFile = (char*)gEngfuncs.COM_LoadFile((char*)name.c_str(), 5, NULL);
+	if (!pFile)
 	{
 		//gEngfuncs.Con_DPrintf("R_StudioLoadExternalFile: No external file %s\n", name.c_str());
 		return;
 	}
 
-	R_ParseBSPEntities(pfile, R_ParseBSPEntity_StudioAllocator);
+	R_ParseBSPEntities(pFile, R_ParseBSPEntity_StudioAllocator);
 
 	for (size_t i = 0; i < g_StudioBSPEntities.size(); ++i)
 	{
@@ -3118,5 +3156,35 @@ void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, studio_vbo_t
 
 	g_StudioBSPEntities.clear();
 
-	gEngfuncs.COM_FreeFile(pfile);
+	gEngfuncs.COM_FreeFile(pFile);
+}
+
+void R_StudioUnloadTextures(model_t* mod, studiohdr_t* studiohdr)
+{
+	if (studiohdr->textureindex != 0)
+	{
+		for (int i = 0; i < studiohdr->numtextures; ++i)
+		{
+			auto ptexture = (mstudiotexture_t*)((byte*)studiohdr + studiohdr->textureindex);
+			ptexture += i;
+
+			if (ptexture->index != 0)
+			{
+				if ((ptexture->index & 0x80000000))
+				{
+					auto VBOMaterial = R_StudioGetVBOMaterialFromStudioTexture(ptexture);
+
+					if (VBOMaterial)
+					{
+						R_StudioFreeVBOMaterial(VBOMaterial);
+					}
+				}
+				else
+				{
+					GL_UnloadTextureEx(ptexture->index);
+				}
+				ptexture->index = 0;
+			}
+		}
+	}
 }
