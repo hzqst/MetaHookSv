@@ -673,17 +673,17 @@ void GameUI_InstallHooks(void)
 		const char sigs1[] = "#GameUI_Options";
 		auto GameUI_Options_String = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), sigs1, sizeof(sigs1) - 1);
 		Sig_VarNotFound(GameUI_Options_String);
-		char pattern[] = "\x6A\x01\x68\x2A\x2A\x2A\x2A\x8B\xCE";
-		char pattern2[] = "\x6A\x01\x68\xCC\xCC\xCC\xCC\x8B\xCB";
 
 		void *GameUI_Options_Call = nullptr;
 		if (g_iEngineType != ENGINE_GOLDSRC_HL25)
 		{
+			char pattern[] = "\x6A\x01\x68\x2A\x2A\x2A\x2A\x8B\xCE";
 			*(DWORD *)(pattern + 3) = (DWORD)GameUI_Options_String;
 			GameUI_Options_Call = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), pattern, sizeof(pattern) - 1);
 		}
 		else
 		{
+			char pattern2[] = "\x6A\x01\x68\xCC\xCC\xCC\xCC\x8B\xCB";
 			*(DWORD *)(pattern2 + 3) = (DWORD)GameUI_Options_String;
 			GameUI_Options_Call = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), pattern2, sizeof(pattern2) - 1);
 		}

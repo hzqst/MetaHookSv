@@ -334,7 +334,6 @@ void Engine_FillAddress(void)
 		Sig_FuncNotFound(FileSystem_SetGameDirectory);
 	}
 
-
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char sigs1[] = "VClientVGUI001";

@@ -3,12 +3,12 @@
 #include "exportfuncs.h"
 #include "privatefuncs.h"
 
-cl_exportfuncs_t gExportfuncs;
-mh_interface_t *g_pInterface;
-metahook_api_t *g_pMetaHookAPI;
-mh_enginesave_t *g_pMetaSave;
-IFileSystem *g_pFileSystem;
-IFileSystem_HL25 *g_pFileSystem_HL25;
+cl_exportfuncs_t gExportfuncs = {0};
+mh_interface_t *g_pInterface = NULL;
+metahook_api_t *g_pMetaHookAPI = NULL;
+mh_enginesave_t *g_pMetaSave = NULL;
+IFileSystem *g_pFileSystem = NULL;
+IFileSystem_HL25 *g_pFileSystem_HL25 = NULL;
 
 bool g_IsClientVGUI2 = false;
 HMODULE g_hClientDll = NULL;
@@ -18,22 +18,22 @@ int g_iVideoWidth = 0;
 int g_iVideoHeight = 0;
 float g_flDPIScaling = 1.0f;
 
-PVOID g_dwEngineBase;
-DWORD g_dwEngineSize;
-PVOID g_dwEngineTextBase;
-DWORD g_dwEngineTextSize;
-PVOID g_dwEngineDataBase;
-DWORD g_dwEngineDataSize;
-PVOID g_dwEngineRdataBase;
-DWORD g_dwEngineRdataSize;
-DWORD g_dwEngineBuildnum;
-int g_iEngineType;
+PVOID g_dwEngineBase = NULL;
+DWORD g_dwEngineSize = 0;
+PVOID g_dwEngineTextBase = NULL;
+DWORD g_dwEngineTextSize = 0;
+PVOID g_dwEngineDataBase = NULL;
+DWORD g_dwEngineDataSize = 0;
+PVOID g_dwEngineRdataBase = NULL;
+DWORD g_dwEngineRdataSize = 0;
+DWORD g_dwEngineBuildnum = 0;
+int g_iEngineType = 0;
 
 bool g_bIsSvenCoop = false;
 bool g_bIsCounterStrike = false;
 
-extern IFileSystem *g_pFullFileSystem;
-extern IFileSystem_HL25 *g_pFullFileSystem_HL25;
+extern IFileSystem* g_pFullFileSystem;
+extern IFileSystem_HL25* g_pFullFileSystem_HL25;
 
 ICommandLine *CommandLine(void)
 {

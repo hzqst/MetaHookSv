@@ -205,9 +205,9 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 列表中指定的法线贴图文件会从 `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` 和 `/Sven Co-op/svencoop/renderer/texture` 中加载（支持格式: BMP, TGA, DDS, JPG, PNG）。
 
-* 法线贴图只会改变固体表面的法线朝向, 因此只在被动态光源和手电筒照亮的表面起作用。
+* BSP法线贴图只会改变固体表面的法线朝向, 因此只在被动态光源和手电筒照亮的表面起作用。
 
-* 法线贴图只有在 `r_detailtextures` 和 `r_light_dynamic` 都设为 1 时有效。
+* BSP法线贴图只有在 `r_detailtextures` 和 `r_light_dynamic` 都设为 1 时有效。
 
 ### BSP视差贴图
 
@@ -217,9 +217,9 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 列表中指定的视差贴图文件会从 `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` 和 `/Sven Co-op/svencoop/renderer/texture` 中加载（支持格式: BMP, TGA, DDS, JPG, PNG）。
 
-* `r_wsurf_parallax_scale` 控制视差(凹陷/突起)效果的最大强度（果为负则改变凹陷/突起的方向）。
+* 控制台参数 `r_wsurf_parallax_scale` 可以用于控制视差(凹陷/突起)效果的最大强度（果为负则改变凹陷/突起的方向）。
 
-* 视差贴图只有在 `r_detailtextures` 设为 1 时有效。
+* BSP视差贴图只有在 `r_detailtextures` 设为 1 时有效。
 
 ### BSP高光贴图
 
@@ -229,11 +229,11 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 列表中指定的视差贴图文件会从 `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` 和 `/Sven Co-op/svencoop/renderer/texture` 中加载（支持格式: BMP, TGA, DDS, JPG, PNG）。
 
-* 高光贴图的红色分量（RGB的R）控制高光反射强度, 绿色分量控制SSR（屏幕空间反射）的强度。
+* BSP高光贴图的红色分量（RGB的R）控制高光反射强度, 绿色分量（RGB的G）控制SSR（屏幕空间反射）的强度。
 
-* 蓝色分量未使用。
+* 蓝色分量暂时未使用。
 
-* 高光贴图只有在 `r_detailtextures` 设为 1 时有效。
+* BSP高光贴图只有在 `r_detailtextures` 设为 1 时有效。
 
 ## 模型贴图替换
 
@@ -248,7 +248,7 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 }
 ```
 
-以下位置的贴图会被用来替换模型中自带的BMP贴图:
+以下位置的文件会被用来替换模型中自带的BMP贴图:
 
 `(game_directory)\base_texture.dds`
 
@@ -282,13 +282,35 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 }
 ```
 
-The following files will be used to replace basetexture if exists:
+以下位置的文件会被用作法线贴图:
 
 `(game_directory)\normal_texture.dds`
 
 `(game_directory)\gfx\normal_texture.dds`
 
 `(game_directory)\renderer\texture\normal_texture.dds`
+
+* 使用控制台参数 `r_studio_external_textures 0` 可以临时禁用法线贴图。
+
+## 模型高光贴图
+
+你需要在`[modelname].mdl`模型的同目录下创建 `[modelname]_external.txt`文件，文件应包含以下内容：
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "base_texture.bmp"
+    "speculartexture"  "specular_texture.dds" 
+}
+```
+
+以下位置的文件会被用作高光贴图:
+
+`(game_directory)\specular_texture.dds`
+
+`(game_directory)\gfx\specular_texture.dds`
+
+`(game_directory)\renderer\texture\specular_texture.dds`
 
 * 使用控制台参数 `r_studio_external_textures 0` 可以临时禁用法线贴图。
 

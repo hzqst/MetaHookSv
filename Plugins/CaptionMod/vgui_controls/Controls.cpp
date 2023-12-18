@@ -7,23 +7,23 @@
 
 #include <capstone.h>
 
-vgui::IInput *g_pVGuiInput;
-vgui::ISystem *g_pVGuiSystem;
-vgui::IVGui *g_pVGui;
-vgui::IPanel *g_pVGuiPanel;
-vgui::ILocalize *g_pVGuiLocalize;
+vgui::IInput *g_pVGuiInput = NULL;
+vgui::ISystem *g_pVGuiSystem = NULL;
+vgui::IVGui *g_pVGui = NULL;
+vgui::IPanel *g_pVGuiPanel = NULL;
+vgui::ILocalize *g_pVGuiLocalize = NULL;
 
-vgui::ISurface *g_pSurface;
-vgui::ISchemeManager *g_pScheme;
-vgui::ISchemeManager_HL25 *g_pScheme_HL25;
+vgui::ISurface *g_pSurface = NULL;
+vgui::ISchemeManager *g_pScheme = NULL;
+vgui::ISchemeManager_HL25 *g_pScheme_HL25 = NULL;
 
-IFileSystem *g_pFullFileSystem;
-IFileSystem_HL25 *g_pFullFileSystem_HL25;
-IKeyValuesSystem *g_pKeyValuesSystem;
-vgui::IEngineVGui *g_pEngineVGui;
+IFileSystem *g_pFullFileSystem = NULL;
+IFileSystem_HL25 *g_pFullFileSystem_HL25 = NULL;
+IKeyValuesSystem *g_pKeyValuesSystem = NULL;
+vgui::IEngineVGui *g_pEngineVGui = NULL;
 
-IEngineSurface *staticSurface;
-IEngineSurface_HL25 *staticSurface_HL25;
+IEngineSurface *staticSurface = NULL;
+IEngineSurface_HL25 *staticSurface_HL25 = NULL;
 
 void Sys_ErrorEx(const char *fmt, ...);
 

@@ -185,7 +185,7 @@ For example :
 
 A detail texture is a high resolution external image (Supported format: BMP, TGA, DDS, JPG, PNG) that is placed over the top of a map texture. This gives the impression of a small details when you get up close to a texture instead of the usual blurred image you get when the texture fills the screen.
 
-`r_detailtextures` set to 1 to enable detail brush textures, normal textures, parallax textures and specular textures.
+`r_detailtextures` set to 1 to enable BSP detail brush textures, normal textures, parallax textures and specular textures.
 
 Detail texture list is read from `/maps/[map name]_detail.txt`, with `_DETAIL` as suffix in basetexture name (basetexture with no suffix will be treated as detail texture).
 
@@ -201,7 +201,7 @@ Normal textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/deta
 
 * Normal textures change nothing but the direction of surface normal, thus only work with surfaces that illuminated by dynamic lights or flashlights.
 
-* Normal textures only work when `r_detailtextures` and `r_light_dynamic` both set to 1.
+* BSP normal textures only work when `r_detailtextures` and `r_light_dynamic` both set to 1.
 
 ### BSP parallax textures
 
@@ -213,7 +213,7 @@ Parallax textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/de
 
 * `r_wsurf_parallax_scale` controls the intensity (and direction if negative value is given) of parallax textures.
 
-* Parallax textures only work when `r_detailtextures` set to 1.
+* BSP parallax textures only work when `r_detailtextures` set to 1.
 
 ### BSP specular textures
 
@@ -227,7 +227,7 @@ Specular textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/de
 
 * Blue channel is not used yet.
 
-* Specular textures only work when `r_detailtextures` set to 1.
+* BSP specular textures only work when `r_detailtextures` set to 1.
 
 ### BSP texture replacer
 
@@ -237,7 +237,7 @@ Replace list is read from `/maps/[map name]_detail.txt`, with `_REPLACE` as suff
 
 Replaced textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` and `/Sven Co-op/svencoop/renderer/texture`.
 
-* You can't temporary disable texture replacer as it's permenant replacement. Brush textures are replaced at map initialization.
+* BSP texture replacer only works when `r_detailtextures` set to 1.
 
 ## StudioModel texture replacer
 
@@ -276,7 +276,7 @@ You will have to create a txt file named `[modelname]_external.txt` along with `
 }
 ```
 
-The following files will be used to replace basetexture if exists:
+The following files will be used if exists:
 
 `(game_directory)\normal_texture.dds`
 
@@ -285,6 +285,28 @@ The following files will be used to replace basetexture if exists:
 `(game_directory)\renderer\texture\normal_texture.dds`
 
 * Use cvar `r_studio_external_textures 0` to disable StudioModel normal texture temporarily.
+
+## StudioModel specular texture
+
+You will have to create a txt file named `[modelname]_external.txt` along with `[modelname].mdl` file, with the following content:
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "base_texture.bmp"
+    "speculartexture"  "specular_texture.dds" 
+}
+```
+
+The following files will be used if exists:
+
+`(game_directory)\specular_texture.dds`
+
+`(game_directory)\gfx\specular_texture.dds`
+
+`(game_directory)\renderer\texture\specular_texture.dds`
+
+* Use cvar `r_studio_external_textures 0` to disable StudioModel specular texture temporarily.
 
 ## Outline / Celshade / RimLight / HairShadow / HairSpecular
 
