@@ -3,6 +3,7 @@
 #include "common.h"
 
 uniform vec2 r_hair_shadow_offset;
+uniform vec2 r_uvscale;
 
 layout(location = 0) in vec3 in_vertex;
 layout(location = 1) in vec3 in_normal;
@@ -111,4 +112,5 @@ void main(void)
 
 	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * vec4(outvert, 1.0);
 	v_projpos = gl_Position;
+	v_texcoord = v_texcoord * r_uvscale;
 }

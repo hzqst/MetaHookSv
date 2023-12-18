@@ -2,7 +2,9 @@
 
 #include "common.h"
 
-layout(binding = 0) uniform sampler2D diffuseTex;
+layout(binding = STUDIO_DIFFUSE_TEXTURE) uniform sampler2D diffuseTex;
+layout(binding = STUDIO_NORMAL_TEXTURE) uniform sampler2D normalTex;
+layout(binding = STUDIO_SPECULAR_TEXTURE) uniform sampler2D specularTex;
 
 layout(binding = 6) uniform usampler2D stencilTex;
 
@@ -40,6 +42,43 @@ layout(location = 0) out vec4 out_Diffuse;
 layout(location = 1) out vec4 out_Lightmap;
 layout(location = 2) out vec4 out_WorldNorm;
 layout(location = 3) out vec4 out_Specular;
+#endif
+
+
+#if defined(NORMALTEXTURE_ENABLED)
+
+mat3 CalcTBNMatrix()
+{
+  // Calculate the TBN matrix
+    vec3 dp1 = dFdx(v_worldpos);
+    vec3 dp2 = dFdy(v_worldpos);
+    vec2 duv1 = dFdx(v_texcoord);
+    vec2 duv2 = dFdy(v_texcoord);
+
+    // Solve the linear system
+    vec3 dp2perp = cross(dp2, v_normal);
+    vec3 dp1perp = cross(v_normal, dp1);
+    vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+    vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+
+    // Construct a tangent-bitangent-normal matrix
+    return mat3(normalize(T), normalize(B), v_normal);
+}
+
+vec3 NormalMapping(mat3 TBN, vec2 baseTexcoord)
+{
+	vec2 vNormTexcoord = vec2(baseTexcoord.x, baseTexcoord.y);
+
+    // Sample tangent space normal vector from normal map and remap it from [0, 1] to [-1, 1] range.
+    vec3 n = texture(normalTex, vNormTexcoord).xyz;
+    n = normalize(n * 2.0 - 1.0);
+
+    // Multiple normal by the TBN matrix to transform the normal from tangent space to world space.
+    n = normalize(TBN * n);
+
+    return n;
+}
+
 #endif
 
 //The output is in Linear Space
@@ -198,7 +237,8 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS)
 
 #if defined(STUDIO_NF_CELSHADE_HAIR)
 	
-	vec2 texcoord = v_texcoord * r_uvscale;
+	//vec2 texcoord = v_texcoord * r_uvscale;
+	vec2 texcoord = v_texcoord;
 
 	vec3 kajiyaSpecular = vec3(0.0);
     vec3 shiftedTangent1 = ShiftTangent(T, N, texcoord.x, r_hair_specular_noise);
@@ -218,7 +258,8 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS)
 
 #elif defined(STUDIO_NF_CELSHADE_HAIR_H)
 	
-	vec2 texcoord = v_texcoord * r_uvscale;
+	//vec2 texcoord = v_texcoord * r_uvscale;
+	vec2 texcoord = v_texcoord;
 
 	vec3 kajiyaSpecular = vec3(0.0);
     vec3 shiftedTangent1 = ShiftTangent(BiT, N, texcoord.y, r_hair_specular_noise);
@@ -248,11 +289,24 @@ void main(void)
 #if !defined(SHADOW_CASTER_ENABLED) && !defined(HAIR_SHADOW_ENABLED)
 
 	vec3 vWorldPos = v_worldpos.xyz;
+
+	vec4 specularColor = vec4(0.0);
+
+#if defined(NORMALTEXTURE_ENABLED)
+
+	mat3 TBN = CalcTBNMatrix();
+	vec3 vNormal = NormalMapping(TBN, v_texcoord);
+
+#else
+
 	vec3 vNormal = normalize(v_normal.xyz);
+
+#endif
 
 	ClipPlaneTest(v_worldpos.xyz, vNormal);
 
-	vec2 texcoord = v_texcoord * r_uvscale;
+	//vec2 texcoord = v_texcoord * r_uvscale;
+	vec2 texcoord = v_texcoord;
 
 	vec4 diffuseColor = texture(diffuseTex, texcoord);
 
@@ -262,6 +316,13 @@ void main(void)
 	#endif
 
 	diffuseColor = ProcessDiffuseColor(diffuseColor);
+
+	#if defined(SPECULARTEXTURE_ENABLED)
+
+		vec2 specularTexCoord = vec2(v_texcoord.x, v_texcoord.y);
+		specularColor.xy = texture(specularTex, specularTexCoord).xy;
+
+	#endif
 
 	#if defined(ADDITIVE_RENDER_MODE_ENABLED)
 
@@ -300,7 +361,8 @@ void main(void)
 	//Position output
 
 	#if defined(STUDIO_NF_MASKED)
-		vec2 texcoord = v_texcoord * r_uvscale;
+		//vec2 texcoord = v_texcoord * r_uvscale;
+		vec2 texcoord = v_texcoord;
 
 		vec4 diffuseColorMask = texture(diffuseTex, texcoord);
 
@@ -329,7 +391,7 @@ void main(void)
 		out_Diffuse = diffuseColor;
 		out_Lightmap = lightmapColor;
 		out_WorldNorm = vec4(vOctNormal.x, vOctNormal.y, flDistanceToFragment, 0.0);
-		out_Specular = vec4(0.0);
+		out_Specular = specularColor;
 
 	#else
 
