@@ -167,16 +167,6 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 `r_ssr_fade` 控制SSR效果贴近屏幕边缘时的淡出效果。举例： `r_ssr_fade "0.8 1.0"`
 
-## 细节贴图
-
-细节贴图是一种将高分辨率外部图片 （支持格式: BMP, TGA, DDS, JPG, PNG）与基础贴图混合来提升纹理细节的效果。
-
-`r_detailtextures` 设为1启用细节贴图、法线贴图、视差贴图和高光贴图。
-
-贴图列表会自动从文件 `/maps/[map name]_detail.txt` 中加载，以 `_DETAIL` 为后缀的贴图会被视为该基础贴图的细节贴图（如果基础贴图没有任何后缀则默认视为细节贴图）。
-
-列表中指定的细节贴图文件会从 `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` 和 `/Sven Co-op/svencoop/renderer/texture` 中加载（支持格式: BMP, TGA, DDS, JPG, PNG）。
-
 ## 高清天空贴图
 
 `r_detailskytextures` 设为1启用
@@ -197,7 +187,17 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 `gfx/env/desertup.bmp` -> `gfx/env/desertup.dds`
 
-### 法线贴图
+## BSP细节贴图
+
+细节贴图是一种将高分辨率外部图片 （支持格式: BMP, TGA, DDS, JPG, PNG）与基础贴图混合来提升纹理细节的效果。
+
+`r_detailtextures` 设为1启用细节贴图、法线贴图、视差贴图和高光贴图。
+
+贴图列表会自动从文件 `/maps/[map name]_detail.txt` 中加载，以 `_DETAIL` 为后缀的贴图会被视为该基础贴图的细节贴图（如果基础贴图没有任何后缀则默认视为细节贴图）。
+
+列表中指定的细节贴图文件会从 `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` 和 `/Sven Co-op/svencoop/renderer/texture` 中加载（支持格式: BMP, TGA, DDS, JPG, PNG）。
+
+### BSP法线贴图
 
 法线贴图是一种使用外部贴图作用于特定固定表面，以改变其法线朝向的一种效果。
 
@@ -209,7 +209,7 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 * 法线贴图只有在 `r_detailtextures` 和 `r_light_dynamic` 都设为 1 时有效。
 
-### 视差贴图
+### BSP视差贴图
 
 视差贴图是一种使用外部贴图作用于特定固定表面，改变其视觉深度以营造一种凹陷突起的视觉效果。
 
@@ -221,7 +221,7 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 * 视差贴图只有在 `r_detailtextures` 设为 1 时有效。
 
-### 高光贴图
+### BSP高光贴图
 
 高光贴图是一种使用外部贴图作用于特定固定表面，以增强其高光反射强度的效果。
 
@@ -235,7 +235,64 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 * 高光贴图只有在 `r_detailtextures` 设为 1 时有效。
 
-## 卡通渲染 / 描边  / 边缘光 / 刘海阴影 / 头发高光 / 外置贴图
+## 模型贴图替换
+
+你需要在`[modelname].mdl`模型的同目录下创建 `[modelname]_external.txt`文件，文件应包含以下内容：
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "base_texture.bmp"
+    "replacetexture"  "base_texture.dds" 
+    "replacescale" "1.0 1.0"
+}
+```
+
+以下位置的贴图会被用来替换模型中自带的BMP贴图:
+
+`(game_directory)\base_texture.dds`
+
+`(game_directory)\gfx\base_texture.dds`
+
+`(game_directory)\renderer\texture\base_texture.dds`
+
+模型使用`replacetexture`加载外置贴图时应包含从游戏文件夹开始的完整路径
+
+当外置路径不存在时将在`gfx/`与`renderer/texture/`文件夹中搜寻相应文件
+
+当路径不包含扩展名时，将默认读取`tga`格式的文件
+
+当加载外置贴图时，可以使用`replacescale`调整外置贴图缩放（可选），如`"replacescale" "0.5 0.5"`表示外置贴图宽缩小为50%，高缩小为50%
+
+`"replacescale" "1.0 1.0"` 用于控制贴图替换后的UV缩放 (可选)。
+
+当`replacescale`仅有一个参数时，代表宽高使用同一个缩放值
+
+* 使用控制台参数 `r_studio_external_textures 0` 可以临时禁用贴图替换。
+
+## 模型法线贴图
+
+你需要在`[modelname].mdl`模型的同目录下创建 `[modelname]_external.txt`文件，文件应包含以下内容：
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "base_texture.bmp"
+    "normaltexture"  "normal_texture.dds" 
+}
+```
+
+The following files will be used to replace basetexture if exists:
+
+`(game_directory)\normal_texture.dds`
+
+`(game_directory)\gfx\normal_texture.dds`
+
+`(game_directory)\renderer\texture\normal_texture.dds`
+
+* 使用控制台参数 `r_studio_external_textures 0` 可以临时禁用法线贴图。
+
+## 卡通渲染 / 描边  / 边缘光 / 刘海阴影 / 头发高光
 
 为了给指定的模型增加卡通渲染 / 描边  / 边缘光 / 刘海阴影 / 头发高光的效果，
 
@@ -271,7 +328,7 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 来为 `[modelname].mdl` 模型启用上述特效。
 
-需要注意的是 `face.bmp` 和 `hair.bmp` 应修改为 `[modelname].mdl` 模型中真正的面部和头发贴图名。
+需要注意的是 `face.bmp` 和 `hair.bmp` 应保证与  `[modelname].mdl` 模型中真正的面部和头发贴图名一致。
 
 或者参考 `Build\svencoop_addon\models\player\GFL_HK416\GFL_HK416_external.txt` 中提供的示例文件。
 
@@ -305,17 +362,6 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 ```
 
 如果键值对不存在，则使用对应的控制台参数。
-
-模型使用`replacetexture`加载外置贴图时应包含从游戏文件夹开始的完整路径
-
-当外置路径不存在时将在`gfx/`与`renderer/texture/`文件夹中搜寻相应文件
-
-当路径不包含扩展名时，将默认读取`tga`格式的文件
-
-当加载外置贴图时，可以使用`replacescale`调整外置贴图缩放（可选），如`"replacescale" "0.5 0.5"`表示外置贴图宽缩小为50%，高缩小为50%
-
-当`replacescale`仅有一个参数时，代表宽高使用同一个缩放值
-
 
 ### 控制台参数
 
