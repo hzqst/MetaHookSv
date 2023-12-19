@@ -176,6 +176,13 @@ float StrandSpecular(vec3 T, vec3 H, float exponent)
 vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specularMask)
 {
 	vec3 N = normalWS;
+
+	#if defined(STUDIO_NF_DOUBLE_FACE)
+		if (!gl_FrontFacing) {
+			N = N * -1.0;
+		}
+	#endif
+
     vec3 L = lightdirWS;
 	vec3 V = normalize(v_worldpos.xyz - SceneUBO.viewpos.xyz);
 	vec3 UP = vec3(0.0, 0.0, -1.0);
