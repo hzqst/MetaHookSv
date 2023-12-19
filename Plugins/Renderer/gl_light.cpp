@@ -284,7 +284,7 @@ void R_InitLight(void)
 
 	r_flashlight_ambient = R_RegisterMapCvar("r_flashlight_ambient", "0.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_diffuse = R_RegisterMapCvar("r_flashlight_diffuse", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_flashlight_specular = R_RegisterMapCvar("r_flashlight_specular", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_flashlight_specular = R_RegisterMapCvar("r_flashlight_specular", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_specularpow = R_RegisterMapCvar("r_flashlight_specularpow", "2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_attachment = R_RegisterMapCvar("r_flashlight_attachment", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
