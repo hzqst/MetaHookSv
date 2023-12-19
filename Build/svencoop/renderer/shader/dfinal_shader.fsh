@@ -24,8 +24,8 @@ in vec2 texCoord;
 
 layout(location = 0) out vec4 out_FragColor;
 
-float random (vec2 uv) {
-	return fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453123); //simple random function
+float random(vec2 uv) {
+	return fract(sin(dot(uv, vec2(12.9898, 78.233))) * 43758.5453123);
 }
 
 vec4 GenerateBasicColor(vec2 texcoord)

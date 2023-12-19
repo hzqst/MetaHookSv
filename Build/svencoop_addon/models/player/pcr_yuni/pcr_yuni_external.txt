@@ -12,11 +12,14 @@
     "classname" "studio_texture"
     "basetexture" "Yuni_HairFront_al.bmp"
     "flags" "STUDIO_NF_CELSHADE_HAIR"
+    "replacetexture" "models/player/pcr_yuni/Yuni_HairFront_al.png"
+    "speculartexture" "models/player/pcr_yuni/Yuni_HairFront_al_specular.png"
 }
 {
     "classname" "studio_texture"
     "basetexture" "Yuni_HairBack_al.bmp"
     "flags" "STUDIO_NF_CELSHADE_HAIR"
+    "speculartexture" "models/player/pcr_yuni/Yuni_HairBack_al_specular.png"
 }
 {
     "classname" "studio_efx"
@@ -37,11 +40,11 @@
     "rimdark_smooth" "0.1"
     "rimdark_smooth2" "0.0 0.3"
     "rimdark_color" "50 50 50"
-    "hair_specular_exp" "256"
-    "hair_specular_exp2" "64"
-    "hair_specular_intensity" "0 0 0"
+    "hair_specular_exp" "1"
+    "hair_specular_exp2" "1"
+    "hair_specular_intensity" "1.5 1.5 1.5"
     "hair_specular_intensity2" "0 0 0"
-    "hair_specular_noise" "500 600 0.004 0.005"
+    "hair_specular_noise" "100 108 0.05 0.05"
     "hair_specular_noise2" "100 120 0.006 0.0.005"
     "hair_specular_smooth" "0.0 0.5"
     "hair_shadow_offset" "0.3 -0.3"

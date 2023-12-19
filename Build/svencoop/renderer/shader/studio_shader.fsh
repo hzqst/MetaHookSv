@@ -4,8 +4,8 @@
 
 layout(binding = STUDIO_DIFFUSE_TEXTURE) uniform sampler2D diffuseTex;
 layout(binding = STUDIO_NORMAL_TEXTURE) uniform sampler2D normalTex;
+layout(binding = STUDIO_PARALLAX_TEXTURE) uniform sampler2D parallaxTex;
 layout(binding = STUDIO_SPECULAR_TEXTURE) uniform sampler2D specularTex;
-
 layout(binding = 6) uniform usampler2D stencilTex;
 
 /* celshade */
@@ -44,7 +44,6 @@ layout(location = 2) out vec4 out_WorldNorm;
 layout(location = 3) out vec4 out_Specular;
 #endif
 
-
 #if defined(NORMALTEXTURE_ENABLED)
 
 mat3 CalcTBNMatrix()
@@ -82,7 +81,7 @@ vec3 NormalMapping(mat3 TBN, vec2 baseTexcoord)
 #endif
 
 //The output is in Linear Space
-vec3 R_StudioLightingLinear(vec3 vWorldPos, vec3 vNormal)
+vec3 R_StudioLightingLinear(vec3 vWorldPos, vec3 vNormal, float specularMask)
 {
 	#if defined(INVERT_NORMAL_ENABLED)
 		vNormal = vNormal * -1.0;
@@ -168,7 +167,7 @@ float StrandSpecular(vec3 T, vec3 H, float exponent)
     return dirAtten * pow(sinTH, exponent);
 }
 
-vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS)
+vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specularMask)
 {
 	vec3 N = normalWS;
     vec3 L = lightdirWS;
@@ -237,12 +236,9 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS)
 
 #if defined(STUDIO_NF_CELSHADE_HAIR)
 	
-	//vec2 texcoord = v_texcoord * r_uvscale;
-	vec2 texcoord = v_texcoord;
-
 	vec3 kajiyaSpecular = vec3(0.0);
-    vec3 shiftedTangent1 = ShiftTangent(T, N, texcoord.x, r_hair_specular_noise);
-    vec3 shiftedTangent2 = ShiftTangent(T, N, texcoord.x, r_hair_specular_noise2);
+    vec3 shiftedTangent1 = ShiftTangent(T, N, v_texcoord.x, r_hair_specular_noise);
+    vec3 shiftedTangent2 = ShiftTangent(T, N, v_texcoord.x, r_hair_specular_noise2);
 	
 	vec3 V2 = SceneUBO.vpn.xyz;
 
@@ -254,17 +250,22 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS)
 	kajiyaSpecular.y = kajiyaSpecular.y * smoothstep(r_hair_specular_smooth.x, r_hair_specular_smooth.y, v_color.y);
 	kajiyaSpecular.z = kajiyaSpecular.z * smoothstep(r_hair_specular_smooth.x, r_hair_specular_smooth.y, v_color.z);
 
+#if defined(SPECULARTEXTURE_ENABLED)
+
+	specularColor += kajiyaSpecular * litOrShadowColor * specularMask;
+
+#else
+
 	specularColor += kajiyaSpecular;
+
+#endif
 
 #elif defined(STUDIO_NF_CELSHADE_HAIR_H)
 	
-	//vec2 texcoord = v_texcoord * r_uvscale;
-	vec2 texcoord = v_texcoord;
-
 	vec3 kajiyaSpecular = vec3(0.0);
-    vec3 shiftedTangent1 = ShiftTangent(BiT, N, texcoord.y, r_hair_specular_noise);
-    vec3 shiftedTangent2 = ShiftTangent(BiT, N, texcoord.y, r_hair_specular_noise2);
-	
+    vec3 shiftedTangent1 = ShiftTangent(BiT, N, v_texcoord.y, r_hair_specular_noise);
+    vec3 shiftedTangent2 = ShiftTangent(BiT, N, v_texcoord.y, r_hair_specular_noise2);
+
 	vec3 V2 = SceneUBO.vpn.xyz;
 
     vec3 HforStrandSpecular = normalize(-L + vec3(0.01, 0.0, 0.0) + V2);
@@ -275,7 +276,36 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS)
 	kajiyaSpecular.y = kajiyaSpecular.y * smoothstep(r_hair_specular_smooth.x, r_hair_specular_smooth.y, v_color.y);
 	kajiyaSpecular.z = kajiyaSpecular.z * smoothstep(r_hair_specular_smooth.x, r_hair_specular_smooth.y, v_color.z);
 
+#if defined(SPECULARTEXTURE_ENABLED)
+
+	specularColor += kajiyaSpecular * litOrShadowColor * specularMask;
+
+#else
+
 	specularColor += kajiyaSpecular;
+
+#endif
+
+#endif
+
+#if 0
+
+	vec3 halfVec = normalize(L + vec3(0.01, 0.0, 0.0) + SceneUBO.vpn.xyz);
+
+	float specular = dot(N, halfVec);
+
+	vec3 specularColorMasked = vec3(0.0);
+	vec3 specularColorSmooth = vec3(0.0);
+
+	specularColorMasked.x = pow(v_color.x * specular, 0.8);
+	specularColorMasked.y = pow(v_color.y * specular, 0.8);
+	specularColorMasked.z = pow(v_color.z * specular, 0.8);
+
+	specularColorSmooth.x = smoothstep(0, 0.01 * 1, specularColorMasked.x);
+	specularColorSmooth.y = smoothstep(0, 0.01 * 1, specularColorMasked.y);
+	specularColorSmooth.z = smoothstep(0, 0.01 * 1, specularColorMasked.z);
+
+	specularColor += specularColorSmooth;
 
 #endif
 
@@ -305,7 +335,6 @@ void main(void)
 
 	ClipPlaneTest(v_worldpos.xyz, vNormal);
 
-	//vec2 texcoord = v_texcoord * r_uvscale;
 	vec2 texcoord = v_texcoord;
 
 	vec4 diffuseColor = texture(diffuseTex, texcoord);
@@ -336,10 +365,10 @@ void main(void)
 
 		vec4 lightmapColor = ProcessOtherGammaColor(StudioUBO.r_color);
 
-		vec3 lightColorLinear = R_StudioLightingLinear(vWorldPos, vNormal);
+		vec3 lightColorLinear = R_StudioLightingLinear(vWorldPos, vNormal, specularColor.x);
 
 		#if defined(STUDIO_NF_CELSHADE)
-			lightColorLinear = R_StudioCelShade(lightColorLinear, vNormal, StudioUBO.r_plightvec.xyz);
+			lightColorLinear = R_StudioCelShade(lightColorLinear, vNormal, StudioUBO.r_plightvec.xyz, specularColor.x);
 		#endif
 
 		#if defined(GAMMA_BLEND_ENABLED)
@@ -361,10 +390,7 @@ void main(void)
 	//Position output
 
 	#if defined(STUDIO_NF_MASKED)
-		//vec2 texcoord = v_texcoord * r_uvscale;
-		vec2 texcoord = v_texcoord;
-
-		vec4 diffuseColorMask = texture(diffuseTex, texcoord);
+		vec4 diffuseColorMask = texture(diffuseTex, v_texcoord);
 
 		if(diffuseColorMask.a < 0.5)
 			discard;
