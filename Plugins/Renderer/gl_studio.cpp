@@ -2621,6 +2621,10 @@ void R_StudioLoadExternalFile_TextureUpdateFlags(bspentity_t* ent, studiohdr_t* 
 		ptexture->flags |= STUDIO_NF_CELSHADE;
 		ptexture->flags |= STUDIO_NF_CELSHADE_HAIR_H;
 	}
+	else if (value && !strcmp(value, "STUDIO_NF_DOUBLE_FACE"))
+	{
+		ptexture->flags |= STUDIO_NF_DOUBLE_FACE;
+	}
 
 	if (value && !strcmp(value, "-STUDIO_NF_FLATSHADE"))
 	{
@@ -2665,6 +2669,10 @@ void R_StudioLoadExternalFile_TextureUpdateFlags(bspentity_t* ent, studiohdr_t* 
 	else if (value && !strcmp(value, "-STUDIO_NF_CELSHADE_HAIR_H"))
 	{
 		ptexture->flags &= ~STUDIO_NF_CELSHADE_HAIR_H;
+	}
+	else if (value && !strcmp(value, "-STUDIO_NF_DOUBLE_FACE"))
+	{
+		ptexture->flags &= ~STUDIO_NF_DOUBLE_FACE;
 	}
 
 }
