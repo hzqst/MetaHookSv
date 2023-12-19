@@ -3059,7 +3059,7 @@ void R_EndDetailTexture(program_state_t WSurfProgramState)
 	}
 }
 
-char *ValueForKey(bspentity_t *ent, const char *key)
+const char *ValueForKey(bspentity_t *ent, const char *key)
 {
    for (epair_t  *pEPair = ent->epairs; pEPair; pEPair = pEPair->next)
    {
@@ -3314,13 +3314,13 @@ void R_ParseBSPEntity_Env_Cubemap(bspentity_t *ent)
 	cubemap.origin[2] = 0;
 	cubemap.extension = "tga";
 
-	char *name_string = ValueForKey(ent, "name");
+	auto name_string = ValueForKey(ent, "name");
 	if (name_string)
 	{
 		cubemap.name = name_string;
 	}
 
-	char *origin_string = ValueForKey(ent, "origin");
+	auto origin_string = ValueForKey(ent, "origin");
 	if (origin_string)
 	{
 		if (sscanf(origin_string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
@@ -3335,7 +3335,7 @@ void R_ParseBSPEntity_Env_Cubemap(bspentity_t *ent)
 		}
 	}
 
-	char *cubemapsize_string = ValueForKey(ent, "cubemapsize");
+	auto cubemapsize_string = ValueForKey(ent, "cubemapsize");
 	if (cubemapsize_string)
 	{
 		int size = 0;
@@ -3349,7 +3349,7 @@ void R_ParseBSPEntity_Env_Cubemap(bspentity_t *ent)
 		}
 	}
 
-	char *radius_string = ValueForKey(ent, "radius");
+	auto radius_string = ValueForKey(ent, "radius");
 	if (radius_string)
 	{
 		if (sscanf(radius_string, "%f", &temp[0]) == 1 && temp[0] > 0)
@@ -3362,7 +3362,7 @@ void R_ParseBSPEntity_Env_Cubemap(bspentity_t *ent)
 		}
 	}
 
-	char *extension_string = ValueForKey(ent, "extension");
+	auto extension_string = ValueForKey(ent, "extension");
 	if (extension_string)
 	{
 		cubemap.extension = extension_string;
@@ -3390,7 +3390,7 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 	dynlight.specular = 0;
 	dynlight.specularpow = 0;
 
-	char *origin_string = ValueForKey(ent, "origin");
+	auto origin_string = ValueForKey(ent, "origin");
 	if (origin_string)
 	{
 		float temp[4];
@@ -3407,7 +3407,7 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 		}
 	}
 
-	char *color_string = ValueForKey(ent, "_light");
+	auto color_string = ValueForKey(ent, "_light");
 	if (color_string)
 	{
 		float temp[4];
@@ -3423,7 +3423,7 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 		}
 	}
 
-	char *distance_string = ValueForKey(ent, "_distance");
+	auto distance_string = ValueForKey(ent, "_distance");
 	if (distance_string)
 	{
 		float temp[4];
@@ -3437,7 +3437,7 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 		}
 	}
 
-	char *ambient_string = ValueForKey(ent, "_ambient");
+	auto ambient_string = ValueForKey(ent, "_ambient");
 	if (ambient_string)
 	{
 		float temp[4];
@@ -3451,7 +3451,7 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 		}
 	}
 
-	char *diffuse_string = ValueForKey(ent, "_diffuse");
+	auto diffuse_string = ValueForKey(ent, "_diffuse");
 	if (diffuse_string)
 	{
 		float temp[4];
@@ -3465,7 +3465,7 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 		}
 	}
 
-	char *specular_string = ValueForKey(ent, "_specular");
+	auto specular_string = ValueForKey(ent, "_specular");
 	if (specular_string)
 	{
 		float temp[4];
@@ -3479,7 +3479,7 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 		}
 	}
 
-	char *specularpow_string = ValueForKey(ent, "_specularpow");
+	auto specularpow_string = ValueForKey(ent, "_specularpow");
 	if (specularpow_string)
 	{
 		float temp[4];
@@ -3512,7 +3512,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 	control.speedrate = 1;
 	control.level = WATER_LEVEL_REFLECT_SKYBOX;
 
-	char *basetexture_string = ValueForKey(ent, "basetexture");
+	auto basetexture_string = ValueForKey(ent, "basetexture");
 	if (basetexture_string)
 	{
 		control.basetexture = basetexture_string;
@@ -3522,13 +3522,13 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		}
 	}
 
-	char *normalmap_string = ValueForKey(ent, "normalmap");
+	auto normalmap_string = ValueForKey(ent, "normalmap");
 	if (normalmap_string)
 	{
 		control.normalmap = normalmap_string;
 	}
 
-	char *fresnelfactor_string = ValueForKey(ent, "fresnelfactor");
+	auto fresnelfactor_string = ValueForKey(ent, "fresnelfactor");
 	if (fresnelfactor_string)
 	{
 		float temp[4];
@@ -3545,7 +3545,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		}
 	}
 
-	char *normfactor_string = ValueForKey(ent, "normfactor");
+	auto normfactor_string = ValueForKey(ent, "normfactor");
 	if (normfactor_string)
 	{
 		float temp[4];
@@ -3559,7 +3559,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		}
 	}
 
-	char *depthfactor_string = ValueForKey(ent, "depthfactor");
+	auto depthfactor_string = ValueForKey(ent, "depthfactor");
 	if (depthfactor_string)
 	{
 		float temp[4];
@@ -3575,7 +3575,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		}
 	}
 
-	char *minheight_string = ValueForKey(ent, "minheight");
+	auto minheight_string = ValueForKey(ent, "minheight");
 	if (minheight_string)
 	{
 		float temp[4];
@@ -3589,7 +3589,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		}
 	}
 
-	char *maxtrans_string = ValueForKey(ent, "maxtrans");
+	auto maxtrans_string = ValueForKey(ent, "maxtrans");
 	if (maxtrans_string)
 	{
 		float temp[4];
@@ -3603,7 +3603,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		}
 	}
 
-	char *speedrate_string = ValueForKey(ent, "speedrate");
+	auto speedrate_string = ValueForKey(ent, "speedrate");
 	if (speedrate_string)
 	{
 		float temp[4];
@@ -3617,7 +3617,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		}
 	}
 
-	char *level_string = ValueForKey(ent, "level");
+	auto level_string = ValueForKey(ent, "level");
 	if (level_string)
 	{
 		if (!strcmp(level_string, "WATER_LEVEL_LEGACY"))
@@ -3683,10 +3683,10 @@ void R_ParseBSPEntity_Env_FlashLight_Control(bspentity_t *ent)
 	R_ParseMapCvarSetMapValue(r_flashlight_distance, ValueForKey(ent, "distance"));
 	R_ParseMapCvarSetMapValue(r_flashlight_cone_cosine, ValueForKey(ent, "cone_cosine"));
 	
-	char *cone_texture_string = ValueForKey(ent, "cone_texture");
-	if (cone_texture_string)
+	auto cone_texture = ValueForKey(ent, "cone_texture");
+	if (cone_texture)
 	{
-		r_flashlight_cone_texture_name = cone_texture_string;
+		r_flashlight_cone_texture_name = cone_texture;
 	}
 }
 

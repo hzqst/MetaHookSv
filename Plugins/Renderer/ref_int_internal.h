@@ -162,7 +162,6 @@ extern hook_t *g_phook_Mod_LoadBrushModel;
 extern hook_t *g_phook_triapi_RenderMode;
 extern hook_t *g_phook_Draw_MiptexTexture;
 extern hook_t *g_phook_BuildGammaTable;
-//extern hook_t *g_phook_Cvar_DirectSet;
 extern hook_t *g_phook_DLL_SetModKey;
 
 //extern hook_t *g_phook_studioapi_RestoreRenderer;

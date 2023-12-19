@@ -168,7 +168,7 @@ void R_FreeMapCvars(void)
 	g_MapConVars.clear();
 }
 
-void R_ParseMapCvarSetMapValue(MapConVar *mapcvar, char *value)
+void R_ParseMapCvarSetMapValue(MapConVar *mapcvar, const char *value)
 {
 	if (!value)
 		return;
@@ -275,7 +275,7 @@ void R_ParseMapCvarSetMapValue(MapConVar *mapcvar, char *value)
 	}
 }
 
-void R_ParseMapCvarSetCvarValue(MapConVar *mapcvar, char *value)
+void R_ParseMapCvarSetCvarValue(MapConVar *mapcvar, const char *value)
 {
 	if (mapcvar->m_numargs == 4)
 	{

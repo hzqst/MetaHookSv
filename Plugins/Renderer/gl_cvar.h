@@ -41,7 +41,7 @@ public:
 
 MapConVar *R_RegisterMapCvar(char *cvar_name, char *default_value, int cvar_flags, int numargs = 1, int flags = 0);
 //void R_CvarSetMapCvar(cvar_t *cvar, char *value);
-void R_ParseMapCvarSetMapValue(MapConVar *mapcvar, char *value);
-void R_ParseMapCvarSetCvarValue(MapConVar *mapcvar, char *value);
+void R_ParseMapCvarSetMapValue(MapConVar *mapcvar, const char *value);
+void R_ParseMapCvarSetCvarValue(MapConVar *mapcvar, const char *value);
 void R_FreeMapCvars(void);
 //void Cvar_DirectSet(cvar_t *var, char *value);

@@ -440,7 +440,7 @@ void FreeBSPEntity(bspentity_t *ent);
 void R_ClearBSPEntities(void);
 void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator fn);
 bspentity_t *R_ParseBSPEntity_DefaultAllocator(void);
-char *ValueForKey(bspentity_t *ent, const char *key);
+const char *ValueForKey(bspentity_t *ent, const char *key);
 void R_LoadBSPEntities(void);
 void R_FreeLightmapTextures(void);
 void R_LoadExternalEntities(void);

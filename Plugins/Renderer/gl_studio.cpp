@@ -1767,13 +1767,13 @@ void R_StudioDrawVBOMesh_DrawPass(
 	GL_UseProgram(0);
 
 	//Restore textures
-	glActiveTexture(GL_TEXTURE4);
+	glActiveTexture(GL_TEXTURE0 + STUDIO_SPECULAR_TEXTURE);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	glActiveTexture(GL_TEXTURE3);
+	glActiveTexture(GL_TEXTURE0 + STUDIO_PARALLAX_TEXTURE);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	glActiveTexture(GL_TEXTURE2);
+	glActiveTexture(GL_TEXTURE0 + STUDIO_NORMAL_TEXTURE);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glActiveTexture(*oldtarget);
@@ -2487,16 +2487,16 @@ studio_vbo_material_t* R_StudioPrepareVBOMaterial(mstudiotexture_t* texture)
 	return VBOMaterial;
 }
 
-void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studiohdr, studio_vbo_t* VBOData, mstudiotexture_t* ptexture, const char* value, const char* scaleKey, int StudioTextureType)
+void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studiohdr, studio_vbo_t* VBOData, mstudiotexture_t* ptexture, const char* textureValue, const char* scaleValue, int StudioTextureType)
 {
-	if (value && value[0])
+	if (textureValue && textureValue[0])
 	{
 		int width = 0;
 		int height = 0;
 
-		std::string texturePath = value;
+		std::string texturePath = textureValue;
 
-		if (!V_GetFileExtension(value))
+		if (!V_GetFileExtension(texturePath.c_str()))
 			texturePath += ".tga";
 
 		int texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO,
@@ -2505,8 +2505,8 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 		if (!texId)
 		{
 			texturePath = "gfx/";
-			texturePath += value;
-			if (!V_GetFileExtension(value))
+			texturePath += textureValue;
+			if (!V_GetFileExtension(textureValue))
 				texturePath += ".tga";
 
 			texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO,
@@ -2515,8 +2515,8 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 			if (!texId)
 			{
 				texturePath = "renderer/texture/";
-				texturePath += value;
-				if (!V_GetFileExtension(value))
+				texturePath += textureValue;
+				if (!V_GetFileExtension(textureValue))
 					texturePath += ".tga";
 
 				texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO,
@@ -2534,12 +2534,11 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 			VBOMaterial->textures[StudioTextureType].scaleX = 1;
 			VBOMaterial->textures[StudioTextureType].scaleY = 1;
 
-			char* scale_string = ValueForKey(ent, scaleKey);
-			if (scale_string)
+			if (scaleValue && scaleValue[0])
 			{
 				float scales[2] = { 0 };
 
-				if (2 == sscanf(scale_string, "%f %f", &scales[0], &scales[1]))
+				if (2 == sscanf(scaleValue, "%f %f", &scales[0], &scales[1]))
 				{
 					if (scales[0] > 0)
 						VBOMaterial->textures[StudioTextureType].scaleX = scales[0];
@@ -2547,7 +2546,7 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 					if (scales[1] > 0)
 						VBOMaterial->textures[StudioTextureType].scaleY = scales[1];
 				}
-				else if (1 == sscanf(scale_string, "%f", &scales[0]))
+				else if (1 == sscanf(scaleValue, "%f", &scales[0]))
 				{
 					if (scales[0] > 0)
 					{
@@ -2659,22 +2658,38 @@ void R_StudioLoadExternalFile_TextureUpdateFlags(bspentity_t* ent, studiohdr_t* 
 
 void R_StudioLoadExternalFile_Texture(bspentity_t* ent, studiohdr_t* studiohdr, studio_vbo_t* VBOData)
 {
-	char* basetexture_string = ValueForKey(ent, "basetexture");
-	if (!basetexture_string)
+	auto basetexture = ValueForKey(ent, "basetexture");
+	if (!basetexture)
 	{
-		gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"basetexture\" in entity \"studio_texture\"\n");
-		return;
-	}
-	if (!studiohdr->textureindex)
-	{
-		gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Model %s has no texture\n", studiohdr->name);
+		gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"basetexture\" from \"studio_texture\"\n");
 		return;
 	}
 
-	char* flags_string = ValueForKey(ent, "flags");
-	char* replacetexture_string = ValueForKey(ent, "replacetexture");
-	char* normaltexture_string = ValueForKey(ent, "normaltexture");
-	char* speculartexture_string = ValueForKey(ent, "speculartexture");
+	if (!basetexture[0])
+	{
+		gEngfuncs.Con_Printf("R_StudioLoadExternalFile: \"basetexture\" cannot be empty\n");
+		return;
+	}
+
+	if (!studiohdr->textureindex || !studiohdr->numtextures)
+	{
+		gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Model \"%s\" has no texture\n", studiohdr->name);
+		return;
+	}
+
+	auto flags = ValueForKey(ent, "flags");
+
+	auto replacetexture = ValueForKey(ent, "replacetexture");
+	auto replacescale = ValueForKey(ent, "replacescale");
+
+	auto normaltexture = ValueForKey(ent, "normaltexture");
+	auto normalscale = ValueForKey(ent, "normalscale");
+
+	auto parallaxtexture = ValueForKey(ent, "parallaxtexture");
+	auto parallaxscale = ValueForKey(ent, "parallaxscale");
+
+	auto speculartexture = ValueForKey(ent, "speculartexture");
+	auto specularscale = ValueForKey(ent, "specularscale");
 
 	for (int i = 0; i < studiohdr->numtextures; ++i)
 	{
@@ -2682,28 +2697,29 @@ void R_StudioLoadExternalFile_Texture(bspentity_t* ent, studiohdr_t* studiohdr, 
 
 		bool bTextureMatched = false;
 
-		if (!strcmp(basetexture_string, "*"))
+		if (!strcmp(basetexture, "*"))
 		{
 			bTextureMatched = true;
 		}
-		else if (!strcmp(ptexture->name, basetexture_string))
+		else if (!strcmp(ptexture->name, basetexture))
 		{
 			bTextureMatched = true;
 		}
 
 		if (bTextureMatched)
 		{
-			R_StudioLoadExternalFile_TextureUpdateFlags(ent, studiohdr, VBOData, ptexture, flags_string);
-			R_StudioLoadExternalFile_TextureLoad(ent, studiohdr, VBOData, ptexture, replacetexture_string, "replacescale", STUDIO_REPLACE_TEXTURE);
-			R_StudioLoadExternalFile_TextureLoad(ent, studiohdr, VBOData, ptexture, normaltexture_string, "normalscale", STUDIO_NORMAL_TEXTURE);
-			R_StudioLoadExternalFile_TextureLoad(ent, studiohdr, VBOData, ptexture, speculartexture_string, "specularscale", STUDIO_SPECULAR_TEXTURE);
+			R_StudioLoadExternalFile_TextureUpdateFlags(ent, studiohdr, VBOData, ptexture, flags);
+			R_StudioLoadExternalFile_TextureLoad(ent, studiohdr, VBOData, ptexture, replacetexture, replacescale, STUDIO_REPLACE_TEXTURE);
+			R_StudioLoadExternalFile_TextureLoad(ent, studiohdr, VBOData, ptexture, normaltexture, normalscale, STUDIO_NORMAL_TEXTURE);
+			R_StudioLoadExternalFile_TextureLoad(ent, studiohdr, VBOData, ptexture, parallaxtexture, parallaxscale, STUDIO_PARALLAX_TEXTURE);
+			R_StudioLoadExternalFile_TextureLoad(ent, studiohdr, VBOData, ptexture, speculartexture, specularscale, STUDIO_SPECULAR_TEXTURE);
 		}
 	}
 }
 
 void R_StudioLoadExternalFile_Efx(bspentity_t* ent, studiohdr_t* studiohdr, studio_vbo_t* VBOData)
 {
-	char* flags_string = ValueForKey(ent, "flags");
+	auto flags_string = ValueForKey(ent, "flags");
 
 	if (flags_string && !strcmp(flags_string, "EF_ROCKET"))
 	{
@@ -2759,7 +2775,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 {
 	if (1)
 	{
-		char* celshade_midpoint = ValueForKey(ent, "celshade_midpoint");
+		auto celshade_midpoint = ValueForKey(ent, "celshade_midpoint");
 		if (celshade_midpoint && celshade_midpoint[0])
 		{
 			if (R_ParseStringAsVector1(celshade_midpoint, VBOData->celshade_control.celshade_midpoint.m_override_value))
@@ -2775,7 +2791,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* celshade_softness = ValueForKey(ent, "celshade_softness");
+		auto celshade_softness = ValueForKey(ent, "celshade_softness");
 		if (celshade_softness && celshade_softness[0])
 		{
 			if (R_ParseStringAsVector1(celshade_softness, VBOData->celshade_control.celshade_softness.m_override_value))
@@ -2791,7 +2807,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* celshade_shadow_color = ValueForKey(ent, "celshade_shadow_color");
+		auto celshade_shadow_color = ValueForKey(ent, "celshade_shadow_color");
 		if (celshade_shadow_color && celshade_shadow_color[0])
 		{
 			if (R_ParseStringAsColor3(celshade_shadow_color, VBOData->celshade_control.celshade_shadow_color.m_override_value))
@@ -2807,7 +2823,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* outline_size = ValueForKey(ent, "outline_size");
+		auto outline_size = ValueForKey(ent, "outline_size");
 		if (outline_size && outline_size[0])
 		{
 			if (R_ParseStringAsVector1(outline_size, VBOData->celshade_control.outline_size.m_override_value))
@@ -2823,7 +2839,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* outline_dark = ValueForKey(ent, "outline_dark");
+		auto outline_dark = ValueForKey(ent, "outline_dark");
 		if (outline_dark && outline_dark[0])
 		{
 			if (R_ParseStringAsVector1(outline_dark, VBOData->celshade_control.outline_dark.m_override_value))
@@ -2839,7 +2855,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* rimlight_power = ValueForKey(ent, "rimlight_power");
+		auto rimlight_power = ValueForKey(ent, "rimlight_power");
 		if (rimlight_power && rimlight_power[0])
 		{
 			if (R_ParseStringAsVector1(rimlight_power, VBOData->celshade_control.rimlight_power.m_override_value))
@@ -2855,7 +2871,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* rimlight_smooth2 = ValueForKey(ent, "rimlight_smooth2");
+		auto rimlight_smooth2 = ValueForKey(ent, "rimlight_smooth2");
 		if (rimlight_smooth2 && rimlight_smooth2[0])
 		{
 			if (R_ParseStringAsVector2(rimlight_smooth2, VBOData->celshade_control.rimlight_smooth2.m_override_value))
@@ -2871,7 +2887,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* rimlight_smooth = ValueForKey(ent, "rimlight_smooth");
+		auto rimlight_smooth = ValueForKey(ent, "rimlight_smooth");
 		if (rimlight_smooth && rimlight_smooth[0])
 		{
 			if (R_ParseStringAsVector1(rimlight_smooth, VBOData->celshade_control.rimlight_smooth.m_override_value))
@@ -2887,7 +2903,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* rimlight_color = ValueForKey(ent, "rimlight_color");
+		auto rimlight_color = ValueForKey(ent, "rimlight_color");
 		if (rimlight_color && rimlight_color[0])
 		{
 			if (R_ParseStringAsColor3(rimlight_color, VBOData->celshade_control.rimlight_color.m_override_value))
@@ -2903,7 +2919,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* rimdark_power = ValueForKey(ent, "rimdark_power");
+		auto rimdark_power = ValueForKey(ent, "rimdark_power");
 		if (rimdark_power && rimdark_power[0])
 		{
 			if (R_ParseStringAsVector1(rimdark_power, VBOData->celshade_control.rimdark_power.m_override_value))
@@ -2919,7 +2935,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* rimdark_smooth2 = ValueForKey(ent, "rimdark_smooth2");
+		auto rimdark_smooth2 = ValueForKey(ent, "rimdark_smooth2");
 		if (rimdark_smooth2 && rimdark_smooth2[0])
 		{
 			if (R_ParseStringAsVector2(rimdark_smooth2, VBOData->celshade_control.rimdark_smooth2.m_override_value))
@@ -2935,7 +2951,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* rimdark_smooth = ValueForKey(ent, "rimdark_smooth");
+		auto rimdark_smooth = ValueForKey(ent, "rimdark_smooth");
 		if (rimdark_smooth && rimdark_smooth[0])
 		{
 			if (R_ParseStringAsVector1(rimdark_smooth, VBOData->celshade_control.rimdark_smooth.m_override_value))
@@ -2951,7 +2967,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* rimdark_color = ValueForKey(ent, "rimdark_color");
+		auto rimdark_color = ValueForKey(ent, "rimdark_color");
 		if (rimdark_color && rimdark_color[0])
 		{
 			if (R_ParseStringAsColor3(rimdark_color, VBOData->celshade_control.rimdark_color.m_override_value))
@@ -2967,7 +2983,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* hair_specular_exp = ValueForKey(ent, "hair_specular_exp");
+		auto hair_specular_exp = ValueForKey(ent, "hair_specular_exp");
 		if (hair_specular_exp && hair_specular_exp[0])
 		{
 			if (R_ParseStringAsVector1(hair_specular_exp, VBOData->celshade_control.hair_specular_exp.m_override_value))
@@ -2983,7 +2999,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* hair_specular_intensity = ValueForKey(ent, "hair_specular_intensity");
+		auto hair_specular_intensity = ValueForKey(ent, "hair_specular_intensity");
 		if (hair_specular_intensity && hair_specular_intensity[0])
 		{
 			if (R_ParseStringAsVector3(hair_specular_intensity, VBOData->celshade_control.hair_specular_intensity.m_override_value))
@@ -2999,7 +3015,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* hair_specular_noise = ValueForKey(ent, "hair_specular_noise");
+		auto hair_specular_noise = ValueForKey(ent, "hair_specular_noise");
 		if (hair_specular_noise && hair_specular_noise[0])
 		{
 			if (R_ParseStringAsVector3(hair_specular_noise, VBOData->celshade_control.hair_specular_noise.m_override_value))
@@ -3015,7 +3031,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* hair_specular_exp2 = ValueForKey(ent, "hair_specular_exp2");
+		auto hair_specular_exp2 = ValueForKey(ent, "hair_specular_exp2");
 		if (hair_specular_exp2 && hair_specular_exp2[0])
 		{
 			if (R_ParseStringAsVector1(hair_specular_exp2, VBOData->celshade_control.hair_specular_exp2.m_override_value))
@@ -3031,7 +3047,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* hair_specular_intensity2 = ValueForKey(ent, "hair_specular_intensity2");
+		auto hair_specular_intensity2 = ValueForKey(ent, "hair_specular_intensity2");
 		if (hair_specular_intensity2 && hair_specular_intensity2[0])
 		{
 			if (R_ParseStringAsVector3(hair_specular_intensity2, VBOData->celshade_control.hair_specular_intensity2.m_override_value))
@@ -3047,7 +3063,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* hair_specular_noise2 = ValueForKey(ent, "hair_specular_noise2");
+		auto hair_specular_noise2 = ValueForKey(ent, "hair_specular_noise2");
 		if (hair_specular_noise2 && hair_specular_noise2[0])
 		{
 			if (R_ParseStringAsVector3(hair_specular_noise2, VBOData->celshade_control.hair_specular_noise2.m_override_value))
@@ -3063,7 +3079,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* hair_specular_smooth = ValueForKey(ent, "hair_specular_smooth");
+		auto hair_specular_smooth = ValueForKey(ent, "hair_specular_smooth");
 		if (hair_specular_smooth && hair_specular_smooth[0])
 		{
 			if (R_ParseStringAsVector2(hair_specular_smooth, VBOData->celshade_control.hair_specular_smooth.m_override_value))
@@ -3079,7 +3095,7 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 
 	if (1)
 	{
-		char* hair_shadow_offset = ValueForKey(ent, "hair_shadow_offset");
+		auto hair_shadow_offset = ValueForKey(ent, "hair_shadow_offset");
 		if (hair_shadow_offset && hair_shadow_offset[0])
 		{
 			if (R_ParseStringAsVector2(hair_shadow_offset, VBOData->celshade_control.hair_shadow_offset.m_override_value))

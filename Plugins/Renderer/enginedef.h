@@ -214,7 +214,8 @@ typedef struct alight_s
 #define STUDIO_NF_CELSHADE_FACE	0x2000
 #define STUDIO_NF_CELSHADE_HAIR	0x4000
 #define STUDIO_NF_CELSHADE_HAIR_H 0x8000
-#define STUDIO_NF_ALLOWBITS		0xFFFF
+#define STUDIO_NF_DOUBLE_FACE   0x10000
+#define STUDIO_NF_ALLOWBITS		0x1FFFF
 
 //Vanilla GoldSrc flags for studio models
 #define EF_ROCKET			1			//! leave a trail
