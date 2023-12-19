@@ -479,6 +479,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_NF_CELSHADE_HAIR_H)
 			defs << "#define STUDIO_NF_CELSHADE_HAIR_H\n";
 
+		if (state & STUDIO_NF_DOUBLE_FACE)
+			defs << "#define STUDIO_NF_DOUBLE_FACE\n";
+
 		if (state & STUDIO_GBUFFER_ENABLED)
 			defs << "#define GBUFFER_ENABLED\n";
 
@@ -1697,10 +1700,20 @@ void R_StudioDrawVBOMesh_DrawPass(
 
 	if (R_IsFlippedViewModel())
 	{
+		StudioProgramState |= STUDIO_NF_DOUBLE_FACE;
+	}
+
+	if (StudioProgramState & STUDIO_NF_DOUBLE_FACE)
+	{
+		glDisable(GL_CULL_FACE);
+	}
+
+	/*else if (R_IsFlippedViewModel())
+	{
 		glDisable(GL_CULL_FACE);
 
 		StudioProgramState |= STUDIO_INVERT_NORMAL_ENABLED;
-	}
+	}*/
 
 	if (StudioProgramState & STUDIO_SHADOW_CASTER_ENABLED)
 	{

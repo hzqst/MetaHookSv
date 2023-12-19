@@ -82,7 +82,13 @@ vec3 NormalMapping(mat3 TBN, vec2 baseTexcoord)
 
 //The output is in Linear Space
 vec3 R_StudioLightingLinear(vec3 vWorldPos, vec3 vNormal, float specularMask)
-{
+{	
+	#if defined(STUDIO_NF_DOUBLE_FACE)
+		if (!gl_FrontFacing) {
+			vNormal = vNormal * -1.0;
+		}
+	#endif
+
 	#if defined(INVERT_NORMAL_ENABLED)
 		vNormal = vNormal * -1.0;
 	#endif
