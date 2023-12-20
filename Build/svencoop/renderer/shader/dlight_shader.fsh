@@ -70,7 +70,7 @@ vec3 GenerateWorldPositionFromDepth(vec2 texcoord, float depth) {
 	return inversed.xyz;
 }
 
-#ifdef SHADOW_TEXTURE_ENABLED
+#if defined(SHADOW_TEXTURE_ENABLED)
 
 float ShadowCompareDepth(vec4 basecoord, vec2 floorcoord, vec2 offset, float texelSize)
 {
@@ -80,7 +80,7 @@ float ShadowCompareDepth(vec4 basecoord, vec2 floorcoord, vec2 offset, float tex
     return textureProj(shadowTex, uv);
 }
 
-float CalcShadowIntensity(vec3 World, vec3 norm, vec3 LightDirection)
+float CalcShadowIntensity(vec3 World, vec3 Norm, vec3 LightDirection)
 {
     vec4 shadowCoords = u_shadowmatrix * vec4(World, 1.0);
 
@@ -239,7 +239,7 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
     if (SpotCosine > LimitCosine) {
         vec4 Color = CalcPointLight(World, Normal, vBaseTexCoord);
 
-#ifdef SHADOW_TEXTURE_ENABLED
+#if defined(SHADOW_TEXTURE_ENABLED)
 
         float flShadowIntensity = CalcShadowIntensity(World, Normal, u_lightdir.xyz);
         Color.r *= flShadowIntensity;
@@ -248,7 +248,7 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 
 #endif
 
-#ifdef CONE_TEXTURE_ENABLED
+#if defined(CONE_TEXTURE_ENABLED)
 
         float flConeProjX = dot(u_lightright, LightToPixel);
         float flConeProjY = dot(u_lightup, LightToPixel);
@@ -266,6 +266,7 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 
         return Color * flConeFactor;
 #endif
+
     }
     else {
         return vec4(0.0, 0.0, 0.0, 0.0);
@@ -274,7 +275,7 @@ vec4 CalcSpotLight(vec3 World, vec3 Normal, vec2 vBaseTexCoord)
 
 void main()
 {
-#ifdef VOLUME_ENABLED
+#if defined(VOLUME_ENABLED)
     vec2 vBaseTexCoord = v_projpos.xy / v_projpos.w * 0.5 + 0.5;
 #else
     vec2 vBaseTexCoord = v_texcoord.xy;
@@ -299,7 +300,5 @@ void main()
 #elif defined(POINT_ENABLED)
     out_FragColor = CalcPointLight(worldpos, normal, vBaseTexCoord);
 #endif
-
-//#endif
 
 }

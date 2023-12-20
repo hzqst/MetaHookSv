@@ -860,13 +860,13 @@ void R_LightShadingPass(void)
 				DLightProgramState |= DLIGHT_CONE_TEXTURE_ENABLED;
 			}
 
-			if (shadowtex->depth && shadowtex->ready)
+			if (shadowtex->depth_stencil && shadowtex->ready)
 			{
 				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
 
 				glActiveTexture(GL_TEXTURE4);
 				glEnable(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_2D, shadowtex->depth);
+				glBindTexture(GL_TEXTURE_2D, shadowtex->depth_stencil);
 			}
 
 			dlight_program_t prog = { 0 };
@@ -916,13 +916,13 @@ void R_LightShadingPass(void)
 				DLightProgramState |= DLIGHT_CONE_TEXTURE_ENABLED;
 			}
 
-			if (shadowtex->depth && shadowtex->ready)
+			if (shadowtex->depth_stencil && shadowtex->ready)
 			{
 				DLightProgramState |= DLIGHT_SHADOW_TEXTURE_ENABLED;
 
 				glActiveTexture(GL_TEXTURE4);
 				glEnable(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_2D, shadowtex->depth);
+				glBindTexture(GL_TEXTURE_2D, shadowtex->depth_stencil);
 			}
 
 			dlight_program_t prog = { 0 };

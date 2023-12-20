@@ -164,18 +164,18 @@ int StudioGetSequenceActivityType(model_t *mod, entity_state_t* entstate)
 	return 0;
 }
 
-void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size, bool bUseDepthArray)
+void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size, bool bUseColorArrayAsDepth)
 {
 	shadowtex->size = size;
 
 	vec4_t depthBorderColor = { 1, 1, 1, 1 };
 	
-	shadowtex->depth = GL_GenShadowTexture(shadowtex->size, shadowtex->size, depthBorderColor);
+	shadowtex->depth_stencil = GL_GenShadowTexture(shadowtex->size, shadowtex->size, depthBorderColor);
 
-	if (bUseDepthArray)
+	if (bUseColorArrayAsDepth)
 	{
 		vec4_t borderColor = { -99999, -99999, -99999, 1};
-		shadowtex->depth_array = GL_GenTextureArrayColorFormat(shadowtex->size, shadowtex->size, 3, GL_RGBA16F, false, borderColor);
+		shadowtex->color_array_as_depth = GL_GenTextureArrayColorFormat(shadowtex->size, shadowtex->size, 3, GL_RGBA16F, false, borderColor);
 	}
 }
 
@@ -187,16 +187,16 @@ void R_FreeShadowTexture(shadow_texture_t *shadowtex)
 		shadowtex->color = 0;
 	}
 
-	if (shadowtex->depth_array)
+	if (shadowtex->color_array_as_depth)
 	{
-		GL_DeleteTexture(shadowtex->depth_array);
-		shadowtex->depth_array = 0;
+		GL_DeleteTexture(shadowtex->color_array_as_depth);
+		shadowtex->color_array_as_depth = 0;
 	}
 
-	if (shadowtex->depth)
+	if (shadowtex->depth_stencil)
 	{
-		GL_DeleteTexture(shadowtex->depth);
-		shadowtex->depth = 0;
+		GL_DeleteTexture(shadowtex->depth_stencil);
+		shadowtex->depth_stencil = 0;
 	}
 
 	shadowtex->size = 0;
@@ -363,8 +363,8 @@ void R_RenderShadowScene(void)
 			if (!shadow_numvisedicts[i])
 				continue;
 
-			glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, r_shadow_texture.depth_array, 0, i);
-			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, r_shadow_texture.depth, 0);
+			glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, r_shadow_texture.color_array_as_depth, 0, i);
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, r_shadow_texture.depth_stencil, 0);
 
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
@@ -452,11 +452,12 @@ void R_RenderShadowDynamicLights(void)
 				{
 					r_draw_shadowcaster = true;
 
-					if (!shadowtex->depth)
+					if (!shadowtex->depth_stencil)
 					{
 						R_AllocShadowTexture(shadowtex, 1024, false);
 					}
 
+					//Just for test
 					//if (!shadowtex->color && shadowtex->size)
 					//{
 					//	shadowtex->color = GL_GenTextureRGBA8(shadowtex->size, shadowtex->size);
@@ -466,7 +467,7 @@ void R_RenderShadowDynamicLights(void)
 					shadowtex->cone_angle = coneAngle;
 					current_shadow_texture = shadowtex;
 
-					GL_BindFrameBufferWithTextures(&s_ShadowFBO, 0, 0, shadowtex->depth, shadowtex->size, shadowtex->size);
+					GL_BindFrameBufferWithTextures(&s_ShadowFBO, shadowtex->color, 0, shadowtex->depth_stencil, shadowtex->size, shadowtex->size);
 					glDrawBuffer(GL_NONE);
 
 					glDisable(GL_BLEND);

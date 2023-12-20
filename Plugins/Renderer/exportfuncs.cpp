@@ -132,7 +132,7 @@ int HUD_Redraw(float time, int intermission)
 			break;
 		}
 	}
-	else if(r_shadow_debug && r_shadow_debug->value && current_shadow_texture && current_shadow_texture->depth)
+	else if(r_shadow_debug && r_shadow_debug->value && current_shadow_texture && current_shadow_texture->depth_stencil)
 	{
 		glDisable(GL_BLEND);
 		glDisable(GL_ALPHA_TEST);
@@ -140,7 +140,7 @@ int HUD_Redraw(float time, int intermission)
 
 		glEnable(GL_TEXTURE_2D);
 
-		GL_Bind(current_shadow_texture->depth);
+		GL_Bind(current_shadow_texture->depth_stencil);
 
 		hud_debug_program_t prog = { 0 };
 		R_UseHudDebugProgram(HUD_DEBUG_SHADOW, &prog);

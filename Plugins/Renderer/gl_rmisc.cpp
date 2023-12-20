@@ -41,14 +41,29 @@ void GL_BindFrameBufferWithTextures(FBO_Container_t *fbo, GLuint color, GLuint d
 	{
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, color, 0);
 	}
-
-	if (depth_stencil)
+	else
 	{
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 0, 0);
+	}
+
+	if (depth_stencil && !depth)
+	{
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, 0, 0);
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, depth_stencil, 0);
 	}
-	else if (depth)
+	else if (depth && !depth_stencil)
 	{
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, 0, 0);
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth, 0);
+	}
+	else if (!depth && !depth_stencil)
+	{
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, 0, 0);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, 0, 0);
+	}
+	else
+	{
+		g_pMetaHookAPI->SysError("GL_BindFrameBufferWithTextures: GL_DEPTH_STENCIL_ATTACHMENT and GL_DEPTH_ATTACHMENT can not be used together!");
 	}
 
 	if (width && height)

@@ -2297,7 +2297,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 	if (r_wsurf.bShadowmapTexture)
 	{
 		glActiveTexture(GL_TEXTURE6);
-		glBindTexture(GL_TEXTURE_2D_ARRAY, r_shadow_texture.depth_array);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, r_shadow_texture.color_array_as_depth);
 		glActiveTexture(GL_TEXTURE0);
 	}
 

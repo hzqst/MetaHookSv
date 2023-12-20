@@ -3,8 +3,8 @@
 typedef struct
 {
 	GLuint color;
-	GLuint depth_array;
-	GLuint depth;
+	GLuint color_array_as_depth;
+	GLuint depth_stencil;
 	size_t size;
 	mat4 matrix;
 	float distance;
@@ -44,5 +44,5 @@ bool R_ShouldRenderShadow(void);
 void R_RenderShadowMap(void); 
 void R_InitShadow(void);
 void R_ShutdownShadow(void);
-void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size, bool bUseDepthArray);
+void R_AllocShadowTexture(shadow_texture_t *shadowtex, int size, bool bUseColorArrayAsDepth);
 void R_FreeShadowTexture(shadow_texture_t *shadowtex);
