@@ -2549,7 +2549,6 @@ void V_AdjustFovV(float* fov_x, float* fov_y, float width, float height)
 		return;
 	}
 
-	//Xash3D-fwgs FOV policy
 	if (r_adjust_fov->value == 1)
 	{
 		x = V_CalcFovV(*fov_y, 640, 480);
@@ -2562,7 +2561,6 @@ void V_AdjustFovV(float* fov_x, float* fov_y, float width, float height)
 		else
 			*fov_y = y;
 	}
-	//Counter-Strike:Online FOV policy
 	else if (r_adjust_fov->value == 2)
 	{
 		x = V_CalcFovV(*fov_y, 640, 480);
@@ -2652,6 +2650,21 @@ void MYgluPerspective2(double xfov, double yfov, double zNear, double zFar)
 	glFrustum(xMin, xMax, yMin, yMax, zNear, zFar);
 }
 
+float R_GetDefaultFOV()
+{
+	if (g_bIsCounterStrike)
+	{
+		return 90;
+	}
+
+	if (default_fov)
+	{
+		return default_fov->value;
+	}
+
+	return 90;
+}
+
 void R_AdjustScopeFOVForViewModel(float *fov)
 {
 	if (!g_bIsCounterStrike)
@@ -2722,7 +2735,7 @@ void R_SetupGLForViewModel(void)
 			r_xfov_viewmodel = fov;
 			r_yfov_viewmodel = V_CalcFovH(fov, width, height);
 
-			V_AdjustFovH(&r_xfov_viewmodel, &r_yfov, width, height);
+			V_AdjustFovH(&r_xfov_viewmodel, &r_yfov_viewmodel, width, height);
 			R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, 4.0f, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 
