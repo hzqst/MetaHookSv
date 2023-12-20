@@ -119,7 +119,28 @@ vec3 R_StudioLightingLinear(vec3 vWorldPos, vec3 vNormal, float specularMask)
 			illum -= StudioUBO.r_shadelight * max(lightcos, 0.0);
 		}
 
+		#if defined(STUDIO_NF_FLATSHADE) || defined(STUDIO_NF_CELSHADE)
+
+		#else
+
+			#if defined(SPECULARTEXTURE_ENABLED)
+
+				vec3 VertexToEye = normalize(SceneUBO.viewpos.xyz - vWorldPos.xyz);
+				vec3 LightReflect = normalize(reflect(StudioUBO.r_plightvec.xyz, vNormal.xyz));
+				float SpecularFactor = dot(VertexToEye, LightReflect);
+				SpecularFactor = clamp(SpecularFactor, 0.0, 1.0);
+				SpecularFactor = pow(SpecularFactor * SceneUBO.r_studio_shade_specular,
+				SceneUBO.r_studio_shade_specularpow);
+
+				illum += StudioUBO.r_shadelight * SpecularFactor * specularMask;
+
+			#endif
+
+		#endif
+
 	#endif
+
+	//Really need to clamp?
 
 	float lv = clamp(illum, 0.0, 255.0) / 255.0;
 
@@ -153,6 +174,26 @@ vec3 R_StudioLightingLinear(vec3 vWorldPos, vec3 vNormal, float specularMask)
 		color.x += StudioUBO.r_elight_color[i].x * ElightCosine;
 		color.y += StudioUBO.r_elight_color[i].y * ElightCosine;
 		color.z += StudioUBO.r_elight_color[i].z * ElightCosine;
+
+		#if defined(STUDIO_NF_FLATSHADE) || defined(STUDIO_NF_CELSHADE)
+
+		#else
+
+			#if defined(SPECULARTEXTURE_ENABLED)
+
+				vec3 EVertexToEye = normalize(SceneUBO.viewpos.xyz - vWorldPos.xyz);
+				vec3 ELightReflect = normalize(reflect(ElightDirection, vNormal.xyz));
+				float ESpecularFactor = dot(EVertexToEye, ELightReflect);
+				ESpecularFactor = clamp(ESpecularFactor, 0.0, 1.0);
+				ESpecularFactor = pow(ESpecularFactor * SceneUBO.r_studio_shade_specular,
+				SceneUBO.r_studio_shade_specularpow);
+				color.x += StudioUBO.r_elight_color[i].x * ESpecularFactor * specularMask;
+				color.y += StudioUBO.r_elight_color[i].y * ESpecularFactor * specularMask;
+				color.z += StudioUBO.r_elight_color[i].z * ESpecularFactor * specularMask;
+
+			#endif
+
+		#endif
 	}
 
 	return color;
@@ -269,7 +310,7 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 
 #else
 
-	specularColor += kajiyaSpecular;
+	specularColor += kajiyaSpecular * litOrShadowColor;
 
 #endif
 
@@ -295,7 +336,7 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 
 #else
 
-	specularColor += kajiyaSpecular;
+	specularColor += kajiyaSpecular * litOrShadowColor;
 
 #endif
 

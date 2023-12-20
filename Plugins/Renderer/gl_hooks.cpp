@@ -5554,6 +5554,61 @@ void R_FillAddress(void)
 
 		pmovevars = *(decltype(pmovevars)*)(addr + 7);
 	}
+
+	if (1)
+	{
+#define detTexSupported_Signature "\x68\x73\x85\x00\x00\x68\x00\x23\x00\x00\xFF"
+
+		auto detTexSupportedPattern = (PUCHAR)Search_Pattern(detTexSupported_Signature);
+		Sig_AddrNotFound(detTexSupported);
+
+		gRefFuncs.DT_Initialize = (decltype(gRefFuncs.DT_Initialize))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(detTexSupportedPattern, 0x100, [](PUCHAR Candidate) {
+
+			if (Candidate[-1] == 0xC3 && 
+				Candidate[0] == 0x56 &&
+				Candidate[1] == 0x68)
+				return TRUE;
+
+			if (Candidate[0] == 0x68 &&
+				Candidate[5] == 0xE8)
+				return TRUE;
+
+			return FALSE;
+		});
+
+		Sig_FuncNotFound(DT_Initialize);
+
+		g_pMetaHookAPI->DisasmRanges(detTexSupportedPattern, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].size == 1 &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				detTexSupported = (decltype(detTexSupported))pinst->detail->x86.operands[0].mem.disp;
+			}
+
+			if (detTexSupported)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(detTexSupported);
+	}
 }
 
 hook_t *g_phook_GL_BeginRendering = NULL;

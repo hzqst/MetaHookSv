@@ -3724,6 +3724,12 @@ void R_ParseBSPEntity_Env_SSR_Control(bspentity_t *ent)
 	R_ParseMapCvarSetMapValue(r_ssr_fade, ValueForKey(ent, "fade"));
 }
 
+void R_ParseBSPEntity_Env_Studio_Control(bspentity_t* ent)
+{
+	R_ParseMapCvarSetMapValue(r_studio_shade_specular, ValueForKey(ent, "shade_specular"));
+	R_ParseMapCvarSetMapValue(r_studio_shade_specularpow, ValueForKey(ent, "shade_specularpow"));
+}
+
 void R_LoadBSPEntities(void)
 {
 	for(size_t i = 0; i < r_wsurf.vBSPEntities.size(); i++)
@@ -3773,6 +3779,11 @@ void R_LoadBSPEntities(void)
 		else if (!strcmp(classname, "env_ssr_control"))
 		{
 			R_ParseBSPEntity_Env_SSR_Control(ent);
+		}
+
+		else if (!strcmp(classname, "env_studio_control"))
+		{
+			R_ParseBSPEntity_Env_Studio_Control(ent);
 		}
 	}//end for
 }
@@ -4125,6 +4136,10 @@ void R_SetupSceneUBO(void)
 	{
 		SceneUBO.r_lightstylevalue[i / 4][i % 4] = d_lightstylevalue[i] * (1.0f / 264.0f);
 	}
+
+	SceneUBO.r_studio_shade_specular = r_studio_shade_specular->GetValue();
+	SceneUBO.r_studio_shade_specularpow = r_studio_shade_specularpow->GetValue();
+	
 	if (glNamedBufferSubData)
 	{
 		glNamedBufferSubData(r_wsurf.hSceneUBO, 0, sizeof(SceneUBO), &SceneUBO);

@@ -114,6 +114,7 @@ float *filterColorGreen = NULL;
 float *filterColorBlue = NULL;
 float *filterBrightness = NULL;
 
+bool* detTexSupported = NULL;
 
 //client dll
 
@@ -273,6 +274,8 @@ cvar_t* r_gamma_blend = NULL;
 cvar_t *r_alpha_shift = NULL;
 
 cvar_t *r_additive_shift = NULL;
+
+cvar_t* gl_unload_nreftex = NULL;
 
 bool R_IsRenderingGBuffer()
 {
@@ -1564,8 +1567,11 @@ void GL_Init(void)
 		return;
 	}
 
-	glDebugMessageCallback(GL_DebugOutputCallback, 0);
-	glEnable(GL_DEBUG_OUTPUT);
+	//No vanilla detail texture support
+	(*detTexSupported) = false;
+
+	//glDebugMessageCallback(GL_DebugOutputCallback, 0);
+	//glEnable(GL_DEBUG_OUTPUT);
 
 	gl_max_texture_size = 128;
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &gl_max_texture_size);
@@ -2166,6 +2172,8 @@ void R_InitCvars(void)
 		gl_bindless = gEngfuncs.pfnRegisterVariable("gl_bindless", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	}
 
+	gl_unload_nreftex = gEngfuncs.pfnRegisterVariable("gl_unload_nreftex", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
 	r_gamma_blend = gEngfuncs.pfnRegisterVariable("r_gamma_blend", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	r_alpha_shift = gEngfuncs.pfnRegisterVariable("r_alpha_shift", "0.4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
@@ -2224,25 +2232,77 @@ void R_ForceCVars(qboolean mp)
 	gRefFuncs.R_ForceCVars(mp);
 }
 
-void R_UnloadUnreferencedTextures()
+void R_AddReferencedTextures(std::set<int> &used_gltextures)
 {
-	for (int i = 0; i < EngineGetMaxKnownModel(); ++i)
+	int i;
+
+	for (i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
 		auto mod = EngineGetModelByIndex(i);
 
-		if (mod && mod->type == mod_studio && mod->needload == NL_UNREFERENCED)
+		if (mod && (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT))
 		{
-			auto studiohdr = (studiohdr_t*)Cache_Check(&mod->cache);
-
-			if (studiohdr)
+			if (mod->type == mod_studio)
 			{
-				//R_StudioUnloadTextures(mod, studiohdr);
-				//Cache_Free(&mod->cache);
+				auto studiohdr = (studiohdr_t*)Cache_Check(&mod->cache);
 
-				//TODO...need mod_known_info
-				//auto p = &mod_known_info[i];
-				//p->firstCRCDone = false;
-				//p->initialCRC = 0;
+				if (studiohdr)
+				{
+					R_StudioTextureAddReferences(mod, studiohdr, used_gltextures);
+				}
+			}
+			else if (mod->type == mod_sprite)
+			{
+				auto pSprite = (msprite_t*)mod->cache.data;
+
+				if (pSprite)
+				{
+					R_SpriteTextureAddReferences(mod, pSprite, used_gltextures);
+				}
+			}
+		}
+	}
+}
+
+void R_UnloadUnreferencedTextures(const std::set<int>& used_gltextures)
+{
+	int i;
+	gltexture_t* glt;
+
+	for (i = 0; i < EngineGetNumKnownModel(); ++i)
+	{
+		auto mod = EngineGetModelByIndex(i);
+
+		if (mod && (mod->needload == NL_UNREFERENCED))
+		{
+			if (mod->type == mod_studio)
+			{
+				auto studiohdr = (studiohdr_t*)Cache_Check(&mod->cache);
+
+				if (studiohdr)
+				{
+					Cache_Free(&mod->cache);
+				}
+			}
+		}
+	}
+	
+
+	for (i = 0, glt = gltextures_get(); i < (*numgltextures); i++, glt++)
+	{
+		if (glt->texnum > 0 && glt->servercount == 0)
+		{
+			//"lambda" goes LoadTransPic
+			//BSP detail texture goes GLT_SPRITE, need to block vanilla detail texture
+
+			int textureType = GL_GetTextureTypeFromLoadedTextureId(glt->texnum);
+
+			if (textureType == GLT_STUDIO || textureType == GLT_HUDSPRITE || textureType == GLT_SPRITE)
+			{
+				if (used_gltextures.find(glt->texnum) == used_gltextures.end())
+				{
+					GL_FreeTexture(glt);
+				}
 			}
 		}
 	}
@@ -2267,7 +2327,12 @@ void R_NewMap(void)
 
 	R_StudioReloadVBOCache();
 
-	R_UnloadUnreferencedTextures();
+	if (gl_unload_nreftex->value > 0)
+	{
+		std::set<int> used_textures;
+		R_AddReferencedTextures(used_textures);
+		R_UnloadUnreferencedTextures(used_textures);
+	}
 
 	(*r_framecount) = 1;
 	(*r_visframecount) = 1;
@@ -3239,6 +3304,11 @@ void R_RenderScene(void)
 	{
 		GL_EndProfile(&Profile_RenderScene);
 	}
+}
+
+int EngineGetNumKnownModel()
+{
+	return (*mod_numknown);
 }
 
 int EngineGetMaxKnownModel(void)

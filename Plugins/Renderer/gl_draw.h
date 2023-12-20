@@ -221,6 +221,21 @@ typedef struct
 	DDS_HEADER_DXT10 Header10;
 } DDS_FILEHEADER10;
 
+typedef struct mipmap_texture_data_s
+{
+	struct mipmap_texture_data_s(int _level, void* _data, size_t _size, size_t _width, size_t _height) :
+		level(_level), data(_data), size(_size), width(_width), height(_height)
+	{
+
+	}
+
+	int level;
+	void* data;
+	size_t size;
+	size_t width;
+	size_t height;
+}mipmap_texture_data_t;
+
 int GL_AllocTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int height, qboolean mipmap);
 int GL_FindTexture(const char *identifier, GL_TEXTURETYPE textureType, int *width, int *height);
 const char * V_GetFileExtension(const char * path);

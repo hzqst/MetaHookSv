@@ -247,6 +247,10 @@ typedef struct scene_ubo_s
 	float r_lightscale;
 	vec4 r_filtercolor;
 	vec4 r_lightstylevalue[256 / 4];
+	float r_studio_shade_specular;
+	float r_studio_shade_specularpow;
+	float padding2;
+	float padding3;
 }scene_ubo_t;
 
 static_assert((sizeof(scene_ubo_t) % 16) == 0, "Size check");
@@ -286,6 +290,10 @@ typedef struct studio_ubo_s
 	vec4 r_elight_origin[4];
 	vec4 r_elight_radius;
 	mat3x4 bonematrix[128];
+	float r_shade_specular;
+	float padding;
+	float padding2;
+	float padding3;
 }studio_ubo_t;
 
 static_assert((sizeof(studio_ubo_t) % 16) == 0, "Size check");

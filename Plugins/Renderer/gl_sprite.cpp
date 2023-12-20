@@ -723,3 +723,15 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 
 	R_DrawSpriteModelInterpFrames(ent, pSprite, frame, oldframe, lerp);
 }
+
+void R_SpriteTextureAddReferences(model_t* mod, msprite_t* pSprite, std::set<int>& used_gltextures)
+{
+	for (int i = 0; i < pSprite->numframes; i++)
+	{
+		auto pSpriteFrame = R_GetSpriteFrame(pSprite, i);
+		if (pSpriteFrame)
+		{
+			used_gltextures.emplace(pSpriteFrame->gl_texturenum);
+		}
+	}
+}

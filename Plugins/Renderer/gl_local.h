@@ -189,6 +189,8 @@ extern float *filterColorGreen;
 extern float *filterColorBlue;
 extern float *filterBrightness;
 
+extern bool* detTexSupported;
+
 extern int glx;
 extern int gly;
 extern int glwidth;
@@ -300,6 +302,8 @@ extern cvar_t *r_additive_shift;
 extern cvar_t* r_detailskytextures;
 
 extern cvar_t *gl_bindless;
+
+extern cvar_t* gl_unload_nreftex;
 
 void R_FillAddress(void);
 void R_InstallHooks(void);
@@ -494,6 +498,9 @@ void GL_EndFullScreenQuad(void);
 void GL_Texturemode_f(void);
 void GL_Texturemode_cb(cvar_t *);
 
+int GL_GetTextureTypeFromLoadedTextureId(int gltexturenum);
+
+int EngineGetNumKnownModel();
 int EngineGetMaxKnownModel(void);
 int EngineGetModelIndex(model_t *mod);
 model_t *EngineGetModelByIndex(int index);

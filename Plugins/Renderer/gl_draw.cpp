@@ -26,20 +26,7 @@ int gl_loadtexture_format = GL_RGBA;
 int gl_loadtexture_cubemap = 0;
 bool gl_loadtexture_compressed = false;
 
-typedef struct mipmap_texture_data_s
-{
-	struct mipmap_texture_data_s(int _level, void *_data, size_t _size, size_t _width, size_t _height) :
-		level(_level), data(_data), size(_size), width(_width), height(_height)
-	{
-
-	}
-
-	int level;
-	void *data;
-	size_t size;
-	size_t width;
-	size_t height;
-}mipmap_texture_data_t;
+std::unordered_map<int, int> g_LoadTexture2TypeCache;
 
 std::vector<mipmap_texture_data_t> gl_loadtexture_mipmap;
 
@@ -137,6 +124,18 @@ void GL_Texturemode_f(void)
 	if (gEngfuncs.Cmd_Argc() >= 2)
 		GL_Texturemode_internal(gEngfuncs.Cmd_Argv(1));
 }
+
+int GL_GetTextureTypeFromLoadedTextureId(int gltexturenum)
+{
+	auto itor = g_LoadTexture2TypeCache.find(gltexturenum);
+	if (itor != g_LoadTexture2TypeCache.end())
+	{
+		return itor->second;
+	}
+
+	return -1;
+}
+
 //GL Start
 
 GLuint GL_GenTexture(void)
@@ -447,10 +446,21 @@ tryagain:
 		}
 		else
 		{
-			if ((*numgltextures) + 1 >= MAX_GLTEXTURES)
+			if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 			{
-				g_pMetaHookAPI->SysError("Texture Overflow: MAX_GLTEXTURES\n");
-				return 0;
+				if ((*numgltextures) + 1 >= MAX_GLTEXTURES_HL25)
+				{
+					g_pMetaHookAPI->SysError("Texture Overflow: MAX_GLTEXTURES\n");
+					return 0;
+				}
+			}
+			else
+			{
+				if ((*numgltextures) + 1 >= MAX_GLTEXTURES)
+				{
+					g_pMetaHookAPI->SysError("Texture Overflow: MAX_GLTEXTURES\n");
+					return 0;
+				}
 			}
 		}
 
@@ -492,7 +502,17 @@ int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int
 		iType = TEX_TYPE_ALPHA;
 	}
 
-	return gRefFuncs.GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iType, pPal, filter);
+	int textureId = gRefFuncs.GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iType, pPal, filter);
+
+	if (textureId > 0)
+	{
+		if (g_LoadTexture2TypeCache.find(textureId) == g_LoadTexture2TypeCache.end())
+		{
+			g_LoadTexture2TypeCache[textureId] = textureType;
+		}
+	}
+
+	return textureId;
 }
 
 int GL_LoadTextureInternal(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, void *data, qboolean mipmap, qboolean ansio)

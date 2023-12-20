@@ -129,12 +129,9 @@ typedef struct studio_vbo_material_s
 {
 	studio_vbo_material_s()
 	{
-		used = false;
-		index = -1;
+
 	}
 
-	bool used;
-	int index;
 	studio_vbo_texture_t textures[STUDIO_MAX_TEXTURE];
 }studio_vbo_material_t;
 
@@ -259,7 +256,6 @@ public:
 	studio_bone_cache* m_next;
 };
 
-
 //engine
 extern mstudiomodel_t **psubmodel;
 extern mstudiobodyparts_t **pbodypart;
@@ -300,6 +296,9 @@ extern model_t *cl_shellchrome;
 extern int r_studio_drawcall;
 extern int r_studio_polys;
 
+extern MapConVar* r_studio_shade_specular;
+extern  MapConVar* r_studio_shade_specularpow;
+
 void R_StudioBoneCaches_StartFrame();
 studio_vbo_t *R_PrepareStudioVBO(studiohdr_t *studiohdr);
 void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, studio_vbo_t *VBOData);
@@ -312,6 +311,11 @@ void R_GLStudioDrawPoints(void);
 studiohdr_t* R_StudioGetTextures(const model_t* psubm);
 void R_StudioLoadTextures(model_t* psubm, studiohdr_t *studiohdr);
 void R_StudioUnloadTextures(model_t* mod, studiohdr_t* studiohdr);
+void R_StudioTextureAddReferences(model_t* mod, studiohdr_t* studiohdr, std::set<int>& used_textures);
+void R_StudioTextureRemoveReferences(model_t* mod, studiohdr_t* studiohdr, std::set<int>& used_textures);
+void R_StudioFreeVBOMaterialByTextureId(int gltexturenum);
+void R_StudioFreeVBOMaterial(studio_vbo_material_t* VBOMaterial);
+studio_vbo_material_t* R_StudioGetVBOMaterialFromTextureId(int gltexturenum);
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
 qboolean studioapi_StudioCheckBBox(void);
 void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int);

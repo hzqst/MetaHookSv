@@ -78,6 +78,7 @@ typedef struct
 	void(*R_DrawViewModel)(void);
 	void(*R_PolyBlend)(void);
 	void(*R_DecalShootInternal)(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
+	void(*DT_Initialize)(void);
 	void(*R_LoadSkys)(void);
 	void(*R_LoadSkyboxInt_SvEngine)(const char *name);
 	void(*R_LoadSkyBox_SvEngine)(const char *name);

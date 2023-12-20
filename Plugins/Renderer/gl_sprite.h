@@ -27,6 +27,7 @@ void R_SaveLegacySpriteProgramStates(void);
 void R_LoadLegacySpriteProgramStates(void);
 void R_LoadSpriteProgramStates(void);
 void R_SaveSpriteProgramStates(void);
+void R_SpriteTextureAddReferences(model_t* mod, msprite_t* pSprite, std::set<int>& used_gltextures);
 
 #define SPRITE_BINDLESS_ENABLED				0x1ull
 #define SPRITE_GBUFFER_ENABLED				0x2ull

@@ -278,14 +278,14 @@ void R_InitLight(void)
 
 	r_dynlight_ambient = R_RegisterMapCvar("r_dynlight_ambient", "0.2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_dynlight_diffuse = R_RegisterMapCvar("r_dynlight_diffuse", "0.4", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_dynlight_specular = R_RegisterMapCvar("r_dynlight_specular", "0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_dynlight_specularpow = R_RegisterMapCvar("r_dynlight_specularpow", "2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_dynlight_specular = R_RegisterMapCvar("r_dynlight_specular", "1.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_dynlight_specularpow = R_RegisterMapCvar("r_dynlight_specularpow", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_dynlight_radius_scale = R_RegisterMapCvar("r_dynlight_radius_scale", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_flashlight_ambient = R_RegisterMapCvar("r_flashlight_ambient", "0.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_diffuse = R_RegisterMapCvar("r_flashlight_diffuse", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_flashlight_specular = R_RegisterMapCvar("r_flashlight_specular", "0.5", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
-	r_flashlight_specularpow = R_RegisterMapCvar("r_flashlight_specularpow", "2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_flashlight_specular = R_RegisterMapCvar("r_flashlight_specular", "2", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_flashlight_specularpow = R_RegisterMapCvar("r_flashlight_specularpow", "10", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_flashlight_attachment = R_RegisterMapCvar("r_flashlight_attachment", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_flashlight_distance = R_RegisterMapCvar("r_flashlight_distance", "2000", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);

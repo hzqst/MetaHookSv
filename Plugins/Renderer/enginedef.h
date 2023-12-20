@@ -159,6 +159,7 @@ typedef struct
 //gl_draw
 
 #define MAX_GLTEXTURES 4800
+#define MAX_GLTEXTURES_HL25 10000
 
 #pragma pack(1)
 typedef struct gltexture_s
