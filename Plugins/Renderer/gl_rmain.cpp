@@ -260,8 +260,8 @@ cvar_t *spec_pip = NULL;
 cvar_t *default_fov = NULL;
 cvar_t *viewmodel_fov = NULL;
 
-cvar_t *r_adjust_fov = NULL;
 cvar_t *r_vertical_fov = NULL;
+cvar_t* gl_widescreen_yfov = NULL;
 
 cvar_t *gl_profile = NULL;
 
@@ -2163,7 +2163,9 @@ void R_InitCvars(void)
 
 	r_vertical_fov = gEngfuncs.pfnRegisterVariable("r_vertical_fov", bVerticalFov ? "1" : "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
-	r_adjust_fov = gEngfuncs.pfnRegisterVariable("r_adjust_fov", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	gl_widescreen_yfov = gEngfuncs.pfnGetCvarPointer("gl_widescreen_yfov");
+	if(!gl_widescreen_yfov)
+		gl_widescreen_yfov = gEngfuncs.pfnRegisterVariable("gl_widescreen_yfov", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gl_profile = gEngfuncs.pfnRegisterVariable("gl_profile", "0", FCVAR_CLIENTDLL );
 
@@ -2549,7 +2551,8 @@ void V_AdjustFovV(float* fov_x, float* fov_y, float width, float height)
 		return;
 	}
 
-	if (r_adjust_fov->value == 1)
+
+	if (gl_widescreen_yfov->value == 1)
 	{
 		x = V_CalcFovV(*fov_y, 640, 480);
 		y = *fov_y;
@@ -2561,7 +2564,7 @@ void V_AdjustFovV(float* fov_x, float* fov_y, float width, float height)
 		else
 			*fov_y = y;
 	}
-	else if (r_adjust_fov->value == 2)
+	else if (gl_widescreen_yfov->value == 2)
 	{
 		x = V_CalcFovV(*fov_y, 640, 480);
 		y = *fov_y;
@@ -2587,8 +2590,7 @@ void V_AdjustFovH(float *fov_x, float *fov_y, float width, float height)
 		return;
 	}
 
-	//Xash3D-fwgs FOV policy
-	if (r_adjust_fov->value == 1)
+	if (gl_widescreen_yfov->value == 1)
 	{
 		y = V_CalcFovH(*fov_x, 640, 480);
 		x = *fov_x;
@@ -2600,8 +2602,7 @@ void V_AdjustFovH(float *fov_x, float *fov_y, float width, float height)
 		else
 			*fov_y = y;
 	}
-	//Counter-Strike:Online FOV policy
-	else if (r_adjust_fov->value == 2)
+	else if (gl_widescreen_yfov->value == 2)
 	{
 		y = V_CalcFovH(*fov_x, 640, 480);
 		x = *fov_x;
@@ -2739,8 +2740,8 @@ void R_SetupGLForViewModel(void)
 			R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, 4.0f, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 
-		float  viewmodel_projection_matrix[16];
-		float  viewmodel_projection_matrix_inv[16];
+		float viewmodel_projection_matrix[16];
+		float viewmodel_projection_matrix_inv[16];
 
 		glGetFloatv(GL_PROJECTION_MATRIX, viewmodel_projection_matrix);
 		glMatrixMode(GL_MODELVIEW);
@@ -3385,10 +3386,11 @@ void Mod_LoadStudioModel(model_t *mod, void *buffer)
 	studiohdr_t *studiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(mod);
 	if (studiohdr && studiohdr->numbodyparts > 0)
 	{
-		if (studiohdr->soundtable)
-		{
+		//just for test
+		//if (studiohdr->soundtable)
+		//{
 			//gEngfuncs.Con_DPrintf("wtf");
-		}
+		//}
 		studiohdr->soundtable = 0;
 
 		studio_vbo_t *VBOData = R_PrepareStudioVBO(studiohdr);

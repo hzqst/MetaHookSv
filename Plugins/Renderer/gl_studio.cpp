@@ -292,6 +292,9 @@ void R_AllocSlotForStudioVBO(studiohdr_t* studiohdr, studio_vbo_t* VBOData)
 
 studio_vbo_t* R_PrepareStudioVBO(studiohdr_t* studiohdr)
 {
+	if (!studiohdr->numbodyparts)
+		return NULL;
+
 	studio_vbo_t* VBOData = R_GetStudioVBOFromStudioHeader(studiohdr);
 
 	if (VBOData)
@@ -442,7 +445,12 @@ void R_StudioReloadVBOCache(void)
 				{
 					auto VBOData = R_PrepareStudioVBO(studiohdr);
 
-					R_StudioLoadExternalFile(mod, studiohdr, VBOData);
+					if (VBOData)
+					{
+						R_StudioLoadExternalFile(mod, studiohdr, VBOData);
+
+						R_StudioLoadTextures(mod, studiohdr);
+					}
 				}
 			}
 		}
@@ -1098,19 +1106,19 @@ studiohdr_t* R_StudioGetTextures(const model_t* psubm)
 	return (*pstudiohdr);
 }
 
-void R_StudioLoadTextures(model_t* psubm, studiohdr_t* studiohdr)
+void R_StudioLoadTextures(model_t* mod, studiohdr_t* studiohdr)
 {
 	if (studiohdr->textureindex == 0)
 	{
 		//This is actually 260 instead of 256
 		char modelname[260];
-		strncpy(modelname, psubm->name, sizeof(modelname) - 2);
+		strncpy(modelname, mod->name, sizeof(modelname) - 2);
 		modelname[sizeof(modelname) - 2] = 0;
 
 		strcpy(&modelname[strlen(modelname) - 4], "T.mdl");
 
 		auto texmodel = IEngineStudio.Mod_ForName(modelname, true);
-		psubm->texinfo = (mtexinfo_t*)texmodel;
+		mod->texinfo = (mtexinfo_t*)texmodel;
 		auto ptexturehdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(texmodel);
 		strncpy(ptexturehdr->name, modelname, sizeof(ptexturehdr->name) - 1);
 		ptexturehdr->name[sizeof(ptexturehdr->name) - 1] = 0;
@@ -1977,7 +1985,10 @@ void R_StudioDrawVBO(studio_vbo_t* VBOData)
 
 void R_GLStudioDrawPoints(void)
 {
-	auto VBOData = R_PrepareStudioVBO(*pstudiohdr);
+	auto VBOData = R_PrepareStudioVBO((*pstudiohdr));
+
+	if (!VBOData)
+		return;
 
 	R_StudioDrawVBOBegin(VBOData);
 
