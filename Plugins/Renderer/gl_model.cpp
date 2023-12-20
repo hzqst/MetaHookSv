@@ -1,7 +1,5 @@
 #include "gl_local.h"
 
-#if 0
-
 int LittleLong(int l)
 {
 	return l;
@@ -16,6 +14,8 @@ float LittleFloat(float l)
 {
 	return l;
 }
+
+#if 0
 
 void Mod_LoadLighting(model_t *mod, byte *mod_base, lump_t *l)
 {

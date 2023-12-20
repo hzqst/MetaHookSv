@@ -9,7 +9,6 @@ int save_refdef_stack = 0;
 gl_draw_context save_drawcontext[MAX_SAVESTACK];
 int save_drawcontext_stack = 0;
 
-//GLint save_framebuffer[MAX_SAVESTACK] = { 0 };
 GLint save_readframebuffer[MAX_SAVESTACK] = { 0 };
 GLint save_drawframebuffer[MAX_SAVESTACK] = { 0 };
 int save_framebuffer_stack = 0;
@@ -364,20 +363,31 @@ GLuint GL_GenShadowTexture(int w, int h, float *borderColor)
 	return texid;
 }
 
-void GL_FreeTexture(gltexture_t *glt)
+void GL_FreeTextureNotifyCallback(gltexture_t* glt)
 {
-	GL_DeleteTexture(glt->texnum);
+	R_StudioFreeTextureCallback(glt);
+}
 
+void GL_FreeTexture(gltexture_t *glt, bool notify_callback)
+{
+	if(notify_callback)
+		GL_FreeTextureNotifyCallback(glt);
+
+	gEngfuncs.Con_DPrintf("GL_FreeTexture: [%d] [%s].\n", glt->texnum, glt->identifier);
+
+	GL_DeleteTexture(glt->texnum);
 	memset(glt, 0, sizeof(*glt));
 	glt->servercount = -1;
 }
 
 void R_InitTextures(void)
 {
+
 }
 
 void R_FreeTextures(void)
 {
+
 }
 
 void GL_GenFrameBuffer(FBO_Container_t *s)
@@ -740,11 +750,6 @@ void COM_FileBase(const char *in, char *out)
 	out[len] = 0;
 }
 
-void *Hunk_AllocName(int size, const char *name)
-{
-	return gRefFuncs.Hunk_AllocName(size, name);
-}
-
 void GL_ClearFBO(FBO_Container_t* s)
 {
 	s->s_hBackBufferFBO = 0;
@@ -782,57 +787,22 @@ void GL_FreeFBO(FBO_Container_t* s)
 	GL_ClearFBO(s);
 }
 
-void GL_UnloadTextureEx(int gltexturenum)
+void RemoveFileExtension(std::string& filePath)
 {
-	int i;
-	gltexture_t* glt;
+	// Find the last occurrence of '.'
+	size_t lastDotPosition = filePath.find_last_of(".");
 
-	for (i = 0, glt = gltextures_get(); i < (*numgltextures); i++, glt++)
-	{
-		if (glt->texnum == gltexturenum)
-		{
-			GL_FreeTexture(glt);
+	// Check if the dot is part of a directory component rather than an extension
+	size_t lastPathSeparator = filePath.find_last_of("/\\");
+
+	if (lastDotPosition != std::string::npos) {
+		// Ensure the dot is after the last path separator
+		if (lastPathSeparator != std::string::npos && lastDotPosition < lastPathSeparator) {
+			return; // Dot is part of a directory name, not an extension
 		}
+		// Return the substring from the beginning to the dot
+		filePath = filePath.substr(0, lastDotPosition);
 	}
-}
 
-void Cache_UnlinkLRU(cache_system_t* cs)
-{
-	if (!cs->lru_next || !cs->lru_prev)
-		g_pMetaHookAPI->SysError("Cache_UnlinkLRU: NULL link");
-
-	cs->lru_next->lru_prev = cs->lru_prev;
-	cs->lru_prev->lru_next = cs->lru_next;
-
-	cs->lru_prev = cs->lru_next = NULL;
-}
-
-void Cache_Free(cache_user_t* c)
-{
-	cache_system_t* cs;
-
-	if (!c->data)
-		g_pMetaHookAPI->SysError("Cache_Free: not allocated");
-
-	cs = ((cache_system_t*)c->data) - 1;
-
-	cs->prev->next = cs->next;
-	cs->next->prev = cs->prev;
-	cs->next = cs->prev = NULL;
-
-	c->data = NULL;
-
-	Cache_UnlinkLRU(cs);
-}
-
-void* Cache_Check(cache_user_t* c)
-{
-	cache_system_t* cs;
-
-	if (!c->data)
-		return NULL;
-
-	cs = ((cache_system_t*)c->data) - 1;
-
-	return c->data;
+	// No extension found, return the original path
 }

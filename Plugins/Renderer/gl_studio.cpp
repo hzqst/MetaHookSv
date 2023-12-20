@@ -21,6 +21,8 @@ static studio_bone_cache* g_pStudioBoneFreeCaches = NULL;
 
 static studio_vbo_t* g_CurrentVBOCache = NULL;
 
+static cache_user_t model_texture_cache[MAX_KNOWN_MODELS_SVENGINE][MAX_SKINS];
+
 //Engine private vars
 
 model_t* cl_sprite_white = NULL;
@@ -58,6 +60,9 @@ int* numlight = NULL;
 int* r_topcolor = NULL;
 int* r_bottomcolor = NULL;
 player_model_t(*DM_PlayerState)[MAX_CLIENTS] = NULL;
+skin_t (*DM_RemapSkin)[64][MAX_SKINS] = NULL;
+skin_t* (*pDM_RemapSkin)[2528][MAX_SKINS] = NULL;
+int* r_remapindex = NULL;
 
 //Stats
 
@@ -301,7 +306,7 @@ studio_vbo_t* R_PrepareStudioVBO(studiohdr_t* studiohdr)
 		return VBOData;
 
 	VBOData = new studio_vbo_t;
-	VBOData->studiohdr = studiohdr;
+	//VBOData->studiohdr = studiohdr;
 
 	R_AllocSlotForStudioVBO(studiohdr, VBOData);
 
@@ -391,11 +396,6 @@ studio_vbo_t* R_PrepareStudioVBO(studiohdr_t* studiohdr)
 
 void R_StudioReloadVBOCache(void)
 {
-	for (auto itor = g_StudioVBOMaterialCache.begin(); itor != g_StudioVBOMaterialCache.end(); itor ++)
-	{
-
-	}
-
 	for (size_t i = 0; i < g_StudioVBOCache.size(); ++i)
 	{
 		if (g_StudioVBOCache[i])
@@ -429,17 +429,18 @@ void R_StudioReloadVBOCache(void)
 		}
 	}
 
+	//Reload VBOCache for all existing models
 	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
 		auto mod = EngineGetModelByIndex(i);
-		if (mod->type == mod_studio && mod->name[0])
+		if (mod->type == mod_studio)
 		{
 			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
 			{
 				if (!strcmp(mod->name, "models/player.mdl"))
 					r_playermodel = mod;
 
-				auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
+				auto studiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(mod);
 
 				if (studiohdr)
 				{
@@ -448,8 +449,7 @@ void R_StudioReloadVBOCache(void)
 					if (VBOData)
 					{
 						R_StudioLoadExternalFile(mod, studiohdr, VBOData);
-
-						R_StudioLoadTextures(mod, studiohdr);
+						R_StudioLoadTextureModel(mod, studiohdr);
 					}
 				}
 			}
@@ -469,23 +469,23 @@ void R_StudioTextureAddReferences(model_t* mod, studiohdr_t* studiohdr, std::set
 			if (ptexture->index > 0)
 			{
 				textures.emplace(ptexture->index);
-			}
-		}
-	}
-}
 
-void R_StudioTextureRemoveReferences(model_t* mod, studiohdr_t* studiohdr, std::set<int>& textures)
-{
-	if (studiohdr->textureindex != 0)
-	{
-		for (int i = 0; i < studiohdr->numtextures; ++i)
-		{
-			auto ptexture = (mstudiotexture_t*)((byte*)studiohdr + studiohdr->textureindex);
-			ptexture += i;
+				gEngfuncs.Con_DPrintf("R_AddReferencedTextures: [tex] [%d].\n", ptexture->index);
 
-			if (ptexture->index > 0)
-			{
-				textures.erase(ptexture->index);
+				auto VBOMaterial = R_StudioGetVBOMaterialFromTextureId(ptexture->index);
+
+				if (VBOMaterial)
+				{
+					for (int j = 0; j < STUDIO_MAX_TEXTURE - 1; ++j)
+					{
+						if (VBOMaterial->textures[j].gltexturenum)
+						{
+							textures.emplace(VBOMaterial->textures[j].gltexturenum);
+
+							gEngfuncs.Con_DPrintf("R_AddReferencedTextures: [vbotex] [%d].\n", VBOMaterial->textures[j].gltexturenum);
+						}
+					}
+				}
 			}
 		}
 	}
@@ -1035,7 +1035,7 @@ void R_InitStudio(void)
 	r_studio_shade_specularpow = R_RegisterMapCvar("r_studio_shade_specularpow", "2.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 }
 
-inline qboolean R_IsFlippedViewModel(void)
+bool R_IsFlippedViewModel(void)
 {
 	if (cl_righthand && cl_righthand->value > 0)
 	{
@@ -1046,51 +1046,13 @@ inline qboolean R_IsFlippedViewModel(void)
 	return false;
 }
 
-/*
-
-studiohdr_t *__cdecl R_LoadTextures(model_t *a1)
-{
-  studiohdr_t *result; // eax
-  model_t *v2; // eax
-  int len; // eax
-  int mod; // eax
-  model_t *mod2; // edi
-  studiohdr_t *texhdr; // esi
-  int v7; // [esp+0h] [ebp-10Ch]
-  char modelname[260]; // [esp+4h] [ebp-108h]
-
-  result = pstudiohdr;
-  if ( !pstudiohdr->textureindex )
-  {
-	v2 = (model_t *)a1->texinfo;
-	if ( !v2 || (result = (studiohdr_t *)v2->cache.data) == 0 )
-	{
-	  Q_strncpy(modelname, a1->name, 258u);
-	  modelname[258] = 0;
-	  len = strlen(modelname);
-	  strcpy((char *)&v7 + len, "T.mdl");
-	  mod = Mod_ForName((int)modelname, 1, 0);
-	  mod2 = (model_t *)mod;
-	  a1->texinfo = (void *)mod;
-	  texhdr = *(studiohdr_t **)(mod + 388);
-	  Q_strncpy(texhdr->name, modelname, 63u);
-	  texhdr->name[63] = 0;
-	  result = (studiohdr_t *)mod2->cache.data;
-	}
-  }
-  return result;
-}
-
-*/
-
 studiohdr_t* R_StudioGetTextures(const model_t* psubm)
 {
 	if ((*pstudiohdr)->textureindex == 0)
 	{
-		if (psubm->texinfo)
+		auto texmodel = (model_t*)psubm->texinfo;
+		if (texmodel)
 		{
-			auto texmodel = (model_t*)psubm->texinfo;
-
 			auto ptexturehdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(texmodel);
 
 			//Fix: could be nullptr ?
@@ -1106,9 +1068,9 @@ studiohdr_t* R_StudioGetTextures(const model_t* psubm)
 	return (*pstudiohdr);
 }
 
-void R_StudioLoadTextures(model_t* mod, studiohdr_t* studiohdr)
+void R_StudioLoadTextureModel(model_t* mod, studiohdr_t* studiohdr)
 {
-	if (studiohdr->textureindex == 0)
+	if (studiohdr->textureindex == 0 && !mod->texinfo)
 	{
 		//This is actually 260 instead of 256
 		char modelname[260];
@@ -1125,7 +1087,38 @@ void R_StudioLoadTextures(model_t* mod, studiohdr_t* studiohdr)
 	}
 }
 
-#if 0
+void R_StudioSetupVBOMaterial(const studio_vbo_t* VBOData, const studio_vbo_material_t* VBOMaterial, float* width, float* height, program_state_t* StudioProgramState)
+{
+	if (r_studio_external_textures->value > 0)
+	{
+		if (VBOMaterial->textures[STUDIO_REPLACE_TEXTURE - 1].gltexturenum)
+		{
+			GL_Bind(VBOMaterial->textures[STUDIO_REPLACE_TEXTURE - 1].gltexturenum);
+
+			*width = VBOMaterial->textures[STUDIO_REPLACE_TEXTURE - 1].width * VBOMaterial->textures[STUDIO_REPLACE_TEXTURE - 1].scaleX;
+			*height = VBOMaterial->textures[STUDIO_REPLACE_TEXTURE - 1].height * VBOMaterial->textures[STUDIO_REPLACE_TEXTURE - 1].scaleY;
+		}
+
+		if (VBOMaterial->textures[STUDIO_NORMAL_TEXTURE - 1].gltexturenum)
+		{
+			glActiveTexture(GL_TEXTURE0 + STUDIO_NORMAL_TEXTURE);
+			glBindTexture(GL_TEXTURE_2D, VBOMaterial->textures[STUDIO_NORMAL_TEXTURE - 1].gltexturenum);
+
+			(*StudioProgramState) |= STUDIO_NORMALTEXTURE_ENABLED;
+		}
+
+		if (VBOMaterial->textures[STUDIO_SPECULAR_TEXTURE - 1].gltexturenum)
+		{
+			glActiveTexture(GL_TEXTURE0 + STUDIO_SPECULAR_TEXTURE);
+			glBindTexture(GL_TEXTURE_2D, VBOMaterial->textures[STUDIO_SPECULAR_TEXTURE - 1].gltexturenum);
+
+			(*StudioProgramState) |= STUDIO_SPECULARTEXTURE_ENABLED;
+		}
+	}
+}
+
+#if 1
+
 size_t safe_strlen(const char* str, size_t maxChars)
 {
 	int		count;
@@ -1155,13 +1148,19 @@ bool R_IsRemapSkin(const char* texture, int* low, int* mid, int* high)
 			if (len != 18 || ch == 'c' || ch == 'C')
 			{
 				memset(sz, 0, sizeof(sz));
+
 				strncpy(sz, &texture[7], 3);
+
 				*low = atoi(sz);
+
+				memset(sz, 0, sizeof(sz));
 				strncpy(sz, &texture[11], 3);
+
 				*mid = atoi(sz);
 
 				if (len == 22)
 				{
+					memset(sz, 0, sizeof(sz));
 					strncpy(sz, &texture[15], 3);
 					*high = atoi(sz);
 				}
@@ -1180,31 +1179,34 @@ bool R_IsRemapSkin(const char* texture, int* low, int* mid, int* high)
 
 skin_t* R_StudioGetSkin(int keynum, int index)
 {
-	skin_t* pskin;
+#if 1
 
 	if (index >= MAX_SKINS)
 		index = 0;
 
-	pskin = pDM_RemapSkin[keynum][index];
+	auto pskin = (*pDM_RemapSkin)[keynum][index];
 
 	if (!pskin || pskin->keynum != keynum)
 	{
-		pskin = &DM_RemapSkin[r_remapindex][index];
-		r_remapindex = (r_remapindex + 1) % 64;
-		pDM_RemapSkin[keynum][index] = pskin;
+		pskin = &(*DM_RemapSkin)[(*r_remapindex)][index];
+		(*r_remapindex) = ((*r_remapindex) + 1) % 64;
+		(*pDM_RemapSkin)[keynum][index] = pskin;
 		pskin->keynum = keynum;
 		pskin->topcolor = -1;
 		pskin->bottomcolor = -1;
 	}
 
 	return pskin;
+#else
+	return gRefFuncs.R_StudioGetSkin(keynum, index);
+#endif
 }
 
-unsigned char* R_StudioReloadSkin(model_t* pModel, int index, skin_t* pskin)
+byte* R_StudioReloadSkin(model_t* pModel, int index, skin_t* pskin)
 {
 	int					modelindex;
 	cache_user_t* pCache;
-	int* pData;
+	model_texture_cache_t* pData;
 	mstudiotexture_t* ptexture;
 
 	unsigned char* pbase;
@@ -1212,77 +1214,136 @@ unsigned char* R_StudioReloadSkin(model_t* pModel, int index, skin_t* pskin)
 
 	modelindex = pModel - mod_known;
 
-	if (modelindex < 0 || modelindex >= MAX_KNOWN_MODELS)
+	if (modelindex < 0 || modelindex >= EngineGetMaxKnownModel())
 		return NULL;
 
 	pCache = &model_texture_cache[modelindex][index];
 
 	if (Cache_Check(pCache))
 	{
-		pData = pCache->data;
+		pData = (model_texture_cache_t*)pCache->data;
 	}
 	else
 	{
 		pbase = gEngfuncs.COM_LoadFile(pModel->name, 5, NULL);
-		ptexture = (mstudiotexture_t*)((byte*)pbase + ((studiohdr_t*)pbase)->textureindex) + index;
+
+		if (!pbase)
+			return NULL;
+
+		auto studiohdr = (studiohdr_t*)pbase;
+		auto ptexture = (mstudiotexture_t*)(studiohdr + studiohdr->textureindex);
+		ptexture += index;
 		size = ptexture->height * ptexture->width;
 		Cache_Alloc(pCache, size + 768 + 8, pskin->name);
-		pData = pCache->data;
-		pData[0] = ptexture->width;
-		pData[1] = ptexture->height;
-		Q_memcpy(&pData[2], pbase + ptexture->index, size + 768);
+		pData = (model_texture_cache_t*)pCache->data;
+		pData->width = ptexture->width;
+		pData->height = ptexture->height;
+		memcpy(pData->data, pbase + ptexture->index, size + 768);
+
 		gEngfuncs.COM_FreeFile(pbase);
 	}
 
 	pskin->index = index;
-	pskin->width = pData[0];
-	pskin->height = pData[1];
-	return (unsigned char*)&pData[2];
+	pskin->width = pData->width;
+	pskin->height = pData->height;
+	return pData->data;
 }
-#endif
 
-void R_StudioSetupVBOMaterial(const studio_vbo_t* VBOData, const studio_vbo_material_t* VBOMaterial, float* width, float* height, program_state_t* StudioProgramState)
+void R_StudioFlushSkins(int keynum)
 {
-	if (r_studio_external_textures->value > 0 && VBOMaterial->textures[STUDIO_REPLACE_TEXTURE].gltexturenum)
+	for (int index = 0; index < MAX_SKINS; index++)
 	{
-		GL_Bind(VBOMaterial->textures[STUDIO_REPLACE_TEXTURE].gltexturenum);
-
-		*width = VBOMaterial->textures[STUDIO_REPLACE_TEXTURE].width * VBOMaterial->textures[STUDIO_REPLACE_TEXTURE].scaleX;
-		*height = VBOMaterial->textures[STUDIO_REPLACE_TEXTURE].height * VBOMaterial->textures[STUDIO_REPLACE_TEXTURE].scaleY;
-	}
-	else if ((*currenttexture) != VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].gltexturenum)
-	{
-		GL_Bind(VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].gltexturenum);
-
-		*width = VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].width * VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].scaleX;
-		*height = VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].height * VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].scaleY;
-	}
-
-	if (r_studio_external_textures->value > 0 && VBOMaterial->textures[STUDIO_NORMAL_TEXTURE].gltexturenum)
-	{
-		glActiveTexture(GL_TEXTURE0 + STUDIO_NORMAL_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, VBOMaterial->textures[STUDIO_NORMAL_TEXTURE].gltexturenum);
-
-		(*StudioProgramState) |= STUDIO_NORMALTEXTURE_ENABLED;
-	}
-
-	if (r_studio_external_textures->value > 0 && VBOMaterial->textures[STUDIO_SPECULAR_TEXTURE].gltexturenum)
-	{
-		glActiveTexture(GL_TEXTURE0 + STUDIO_SPECULAR_TEXTURE);
-		glBindTexture(GL_TEXTURE_2D, VBOMaterial->textures[STUDIO_SPECULAR_TEXTURE].gltexturenum);
-
-		(*StudioProgramState) |= STUDIO_SPECULARTEXTURE_ENABLED;
+		if ((*pDM_RemapSkin)[keynum][index])
+			(*pDM_RemapSkin)[keynum][index]->model = NULL;
 	}
 }
+
+void PaletteHueReplace(byte* palette, int newHue, int Start, int end)
+{
+	int i;
+	float r, b, g;
+	float maxcol, mincol;
+	float hue, val, sat;
+
+	hue = (float)(newHue * (360.0 / 255));
+
+	for (i = Start; i <= end; i++)
+	{
+		b = palette[i + 0];
+		g = palette[i + 1];
+		r = palette[i + 2];
+
+		maxcol = max(max(r, g), b) / 255.0f;
+		mincol = min(min(r, g), b) / 255.0f;
+
+		val = maxcol;
+		sat = (maxcol - mincol) / maxcol;
+
+		mincol = val * (1.0f - sat);
+
+		if (hue <= 120)
+		{
+			b = mincol;
+			if (hue < 60)
+			{
+				r = val;
+				g = mincol + hue * (val - mincol) / (120 - hue);
+			}
+			else
+			{
+				g = val;
+				r = mincol + (120 - hue) * (val - mincol) / hue;
+			}
+		}
+		else if (hue <= 240)
+		{
+			r = mincol;
+			if (hue < 180)
+			{
+				g = val;
+				b = mincol + (hue - 120) * (val - mincol) / (240 - hue);
+			}
+			else
+			{
+				b = val;
+				g = mincol + (240 - hue) * (val - mincol) / (hue - 120);
+			}
+		}
+		else
+		{
+			g = mincol;
+			if (hue < 300)
+			{
+				b = val;
+				r = mincol + (hue - 240) * (val - mincol) / (360 - hue);
+			}
+			else
+			{
+				r = val;
+				b = mincol + (360 - hue) * (val - mincol) / (hue - 240);
+			}
+		}
+
+		palette[i + 0] = b * 255;
+		palette[i + 1] = g * 255;
+		palette[i + 2] = r * 255;
+		palette += 3;
+	}
+}
+
+#endif
 
 void R_StudioSetupSkinEx(const studio_vbo_t* VBOData, studiohdr_t* ptexturehdr, int index, float* width, float* height, program_state_t *StudioProgramState)
 {
 	if ((*g_ForcedFaceFlags) & STUDIO_NF_CHROME)
 		return;
 
+	if (!ptexturehdr->textureindex)
+		return;
+
 	auto ptexture = (mstudiotexture_t*)((byte*)ptexturehdr + ptexturehdr->textureindex);
 
-#if 0
+#if 1
 	if ((*currententity)->index > 0)
 	{
 		int h = 223;
@@ -1302,13 +1363,13 @@ void R_StudioSetupSkinEx(const studio_vbo_t* VBOData, studiohdr_t* ptexturehdr, 
 
 				if (pData)
 				{
-					char name[MAX_PATH];
-					snprintf(name, sizeof(name), "%s%d", ptexture[index].name, (*currententity)->index);
-					name[MAX_PATH - 1] = 0;
+					char fullname[1024] = {0};
+					snprintf(fullname, sizeof(fullname), "%s_%s_%d", ptexturehdr->name, ptexture[index].name, (*currententity)->index);
+					fullname[MAX_PATH - 1] = 0;
 
-					unsigned char* orig_palette = pData + (ptexture[index].height * ptexture[index].width);
+					byte* orig_palette = pData + (ptexture[index].height * ptexture[index].width);
 
-					unsigned char tmp_palette[768];
+					byte tmp_palette[768];
 					memcpy(tmp_palette, orig_palette, 768);
 
 					pskin->model = (*r_model);
@@ -1320,21 +1381,27 @@ void R_StudioSetupSkinEx(const studio_vbo_t* VBOData, studiohdr_t* ptexturehdr, 
 					if (h != 0)
 						PaletteHueReplace(tmp_palette, pskin->bottomcolor, m, h);
 
-					GL_UnloadTexture(name);
+					GL_UnloadTextureWithType(fullname, GLT_STUDIO, true);
 
-					pskin->gl_index = GL_LoadTexture(name, GLT_STUDIO, ptexture[index].width, ptexture[index].height, pData, false, (ptexture[index].flags & STUDIO_NF_MASKED) ? TEX_TYPE_ALPHA : TEX_TYPE_NONE, tmp_palette);
+					pskin->gl_index = GL_LoadTexture(fullname, GLT_STUDIO, ptexture[index].width, ptexture[index].height, pData, false, (ptexture[index].flags & STUDIO_NF_MASKED) ? TEX_TYPE_ALPHA : TEX_TYPE_NONE, tmp_palette);
 				}
 			}
 
 			if (pskin->gl_index != 0)
+			{
 				GL_Bind(pskin->gl_index);
+				return;
+			}
 		}
 	}
 
 	GL_Bind(ptexture[index].index);
-#endif
+
+#else
 
 	gRefFuncs.R_StudioSetupSkin(ptexturehdr, index);
+
+#endif
 
 	if ((*currenttexture) > 0)
 	{
@@ -2486,7 +2553,44 @@ void __fastcall GameStudioRenderer_StudioMergeBones(void* pthis, int dummy, mode
 	StudioMergeBones_Template(gRefFuncs.GameStudioRenderer_StudioMergeBones, pthis, dummy, pSubModel);
 }
 
-void R_StudioFreeVBOMaterialByTextureId(int gltexturenum)
+void R_StudioFreeAllTexturesInVBOMaterial(studio_vbo_material_t* VBOMaterial)
+{
+	for (int i = 0; i < STUDIO_MAX_TEXTURE - 1; ++i)
+	{
+		if (VBOMaterial->textures[i].gltexturenum)
+		{
+			GL_UnloadTextureByTextureId(VBOMaterial->textures[i].gltexturenum, false);
+			VBOMaterial->textures[i].gltexturenum = 0;
+		}
+
+		VBOMaterial->textures[i].width = 0;
+		VBOMaterial->textures[i].height = 0;
+		VBOMaterial->textures[i].scaleX = 0;
+		VBOMaterial->textures[i].scaleY = 0;
+	}
+}
+
+bool R_StudioFreeTextureInVBOMaterial(studio_vbo_material_t* VBOMaterial, int gltexturenum)
+{
+	for (int i = 0; i < STUDIO_MAX_TEXTURE - 1; ++i)
+	{
+		if (VBOMaterial->textures[i].gltexturenum == gltexturenum)
+		{
+			GL_UnloadTextureByTextureId(VBOMaterial->textures[i].gltexturenum, false);
+			VBOMaterial->textures[i].gltexturenum = 0;
+
+			VBOMaterial->textures[i].width = 0;
+			VBOMaterial->textures[i].height = 0;
+			VBOMaterial->textures[i].scaleX = 0;
+			VBOMaterial->textures[i].scaleY = 0;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool R_StudioFreeVBOMaterialByTextureId(int gltexturenum)
 {
 	auto& itor = g_StudioVBOMaterialCache.find(gltexturenum);
 
@@ -2496,32 +2600,34 @@ void R_StudioFreeVBOMaterialByTextureId(int gltexturenum)
 
 		if (VBOMaterial)
 		{
-			R_StudioFreeVBOMaterial(VBOMaterial);
-
+			R_StudioFreeAllTexturesInVBOMaterial(VBOMaterial);
 			delete VBOMaterial;
 		}
 
 		g_StudioVBOMaterialCache.erase(itor);
+		return true;
 	}
+
+	return false;
 }
 
-void R_StudioFreeVBOMaterial(studio_vbo_material_t*VBOMaterial)
+void R_StudioFreeTextureCallback(gltexture_t *glt)
 {
-	for (int i = 0; i < STUDIO_MAX_TEXTURE; ++i)
-	{
-		if (VBOMaterial->textures[i].gltexturenum)
-		{
-			if (i != STUDIO_DIFFUSE_TEXTURE)
-			{
-				GL_UnloadTextureEx(VBOMaterial->textures[i].gltexturenum);
-			}
-			VBOMaterial->textures[i].gltexturenum = 0;
-		}
+	if (GL_GetTextureTypeFromGLTexture(glt) != GLT_STUDIO)
+		return;
 
-		VBOMaterial->textures[i].width = 0;
-		VBOMaterial->textures[i].height = 0;
-		VBOMaterial->textures[i].scaleX = 0;
-		VBOMaterial->textures[i].scaleY = 0;
+	if (R_StudioFreeVBOMaterialByTextureId(glt->texnum))
+		return;
+
+	for (auto &itor : g_StudioVBOMaterialCache)
+	{
+		auto VBOMaterial = itor.second;
+
+		if (VBOMaterial)
+		{
+			if (R_StudioFreeTextureInVBOMaterial(VBOMaterial, glt->texnum))
+				return;
+		}
 	}
 }
 
@@ -2533,9 +2639,7 @@ studio_vbo_material_t* R_StudioGetVBOMaterialFromTextureId(int gltexturenum)
 
 		if (itor != g_StudioVBOMaterialCache.end())
 		{
-			auto m = itor->second;
-
-			return m;
+			return itor->second;
 		}
 	}
 
@@ -2551,12 +2655,6 @@ studio_vbo_material_t* R_StudioPrepareVBOMaterial(mstudiotexture_t* texture)
 
 	VBOMaterial = new studio_vbo_material_t();
 
-	VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].gltexturenum = texture->index;
-	VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].width = texture->width;
-	VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].height = texture->height;
-	VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].scaleX = 1;
-	VBOMaterial->textures[STUDIO_DIFFUSE_TEXTURE].scaleY = 1;
-
 	g_StudioVBOMaterialCache[texture->index] = VBOMaterial;
 
 	return VBOMaterial;
@@ -2568,7 +2666,7 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 	{
 		auto VBOMaterial = R_StudioPrepareVBOMaterial(ptexture);
 
-		if (VBOMaterial && !VBOMaterial->textures[StudioTextureType].gltexturenum)
+		if (VBOMaterial && !VBOMaterial->textures[StudioTextureType - 1].gltexturenum)
 		{
 			int width = 0, height = 0;
 			std::string texturePath = textureValue;
@@ -2603,11 +2701,11 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 
 			if (texId)
 			{
-				VBOMaterial->textures[StudioTextureType].gltexturenum = texId;
-				VBOMaterial->textures[StudioTextureType].width = width;
-				VBOMaterial->textures[StudioTextureType].height = height;
-				VBOMaterial->textures[StudioTextureType].scaleX = 1;
-				VBOMaterial->textures[StudioTextureType].scaleY = 1;
+				VBOMaterial->textures[StudioTextureType - 1].gltexturenum = texId;
+				VBOMaterial->textures[StudioTextureType - 1].width = width;
+				VBOMaterial->textures[StudioTextureType - 1].height = height;
+				VBOMaterial->textures[StudioTextureType - 1].scaleX = 1;
+				VBOMaterial->textures[StudioTextureType - 1].scaleY = 1;
 
 				if (scaleValue && scaleValue[0])
 				{
@@ -2616,17 +2714,17 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 					if (2 == sscanf(scaleValue, "%f %f", &scales[0], &scales[1]))
 					{
 						if (scales[0] > 0)
-							VBOMaterial->textures[StudioTextureType].scaleX = scales[0];
+							VBOMaterial->textures[StudioTextureType - 1].scaleX = scales[0];
 
 						if (scales[1] > 0)
-							VBOMaterial->textures[StudioTextureType].scaleY = scales[1];
+							VBOMaterial->textures[StudioTextureType - 1].scaleY = scales[1];
 					}
 					else if (1 == sscanf(scaleValue, "%f", &scales[0]))
 					{
 						if (scales[0] > 0)
 						{
-							VBOMaterial->textures[StudioTextureType].scaleX = scales[0];
-							VBOMaterial->textures[StudioTextureType].scaleY = scales[0];
+							VBOMaterial->textures[StudioTextureType - 1].scaleX = scales[0];
+							VBOMaterial->textures[StudioTextureType - 1].scaleY = scales[0];
 						}
 					}
 				}
@@ -2743,6 +2841,7 @@ void R_StudioLoadExternalFile_TextureFlags(bspentity_t* ent, studiohdr_t* studio
 void R_StudioLoadExternalFile_Texture(bspentity_t* ent, studiohdr_t* studiohdr, studio_vbo_t* VBOData)
 {
 	auto basetexture = ValueForKey(ent, "basetexture");
+
 	if (!basetexture)
 	{
 		gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"basetexture\" from \"studio_texture\"\n");
@@ -3214,13 +3313,14 @@ void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, studio_vbo_t
 	VBOData->bExternalFileLoaded = true;
 
 	std::string name = mod->name;
-	name = name.substr(0, name.length() - 4);
+
+	RemoveFileExtension(name);
+
 	name += "_external.txt";
 
 	char* pFile = (char*)gEngfuncs.COM_LoadFile((char*)name.c_str(), 5, NULL);
 	if (!pFile)
 	{
-		//gEngfuncs.Con_DPrintf("R_StudioLoadExternalFile: No external file %s\n", name.c_str());
 		return;
 	}
 
@@ -3257,24 +3357,4 @@ void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, studio_vbo_t
 	g_StudioBSPEntities.clear();
 
 	gEngfuncs.COM_FreeFile(pFile);
-}
-
-void R_StudioUnloadTextures(model_t* mod, studiohdr_t* studiohdr)
-{
-	if (studiohdr->textureindex != 0)
-	{
-		for (int i = 0; i < studiohdr->numtextures; ++i)
-		{
-			auto ptexture = (mstudiotexture_t*)((byte*)studiohdr + studiohdr->textureindex);
-			ptexture += i;
-
-			if (ptexture->index > 0)
-			{
-				R_StudioFreeVBOMaterialByTextureId(ptexture->index);
-
-				GL_UnloadTextureEx(ptexture->index);
-				ptexture->index = 0;
-			}
-		}
-	}
 }

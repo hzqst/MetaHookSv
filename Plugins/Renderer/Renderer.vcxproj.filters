@@ -86,6 +86,12 @@
     <ClCompile Include="gl_entity.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="MurmurHash2.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="zone.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bspfile.h">
@@ -155,6 +161,12 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="gl_entity.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="MurmurHash2.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="zone.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

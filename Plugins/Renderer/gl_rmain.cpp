@@ -116,6 +116,8 @@ float *filterBrightness = NULL;
 
 bool* detTexSupported = NULL;
 
+cache_system_t(*cache_head) = NULL;
+
 //client dll
 
 int *g_iUser1 = NULL;
@@ -2165,7 +2167,7 @@ void R_InitCvars(void)
 
 	gl_widescreen_yfov = gEngfuncs.pfnGetCvarPointer("gl_widescreen_yfov");
 	if(!gl_widescreen_yfov)
-		gl_widescreen_yfov = gEngfuncs.pfnRegisterVariable("gl_widescreen_yfov", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+		gl_widescreen_yfov = gEngfuncs.pfnRegisterVariable("gl_widescreen_yfov", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gl_profile = gEngfuncs.pfnRegisterVariable("gl_profile", "0", FCVAR_CLIENTDLL );
 
@@ -2234,7 +2236,7 @@ void R_ForceCVars(qboolean mp)
 	gRefFuncs.R_ForceCVars(mp);
 }
 
-void R_AddReferencedTextures(std::set<int> &used_gltextures)
+void R_AddReferencedTextures(std::set<int> &textures)
 {
 	int i;
 
@@ -2246,11 +2248,18 @@ void R_AddReferencedTextures(std::set<int> &used_gltextures)
 		{
 			if (mod->type == mod_studio)
 			{
-				auto studiohdr = (studiohdr_t*)Cache_Check(&mod->cache);
+				auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
 
 				if (studiohdr)
 				{
-					R_StudioTextureAddReferences(mod, studiohdr, used_gltextures);
+					gEngfuncs.Con_DPrintf("R_AddReferencedTextures: [mdl] [%s].\n", mod->name);
+
+					if (strstr(mod->name, "yuni.mdl"))
+					{
+						printf("");
+					}
+
+					R_StudioTextureAddReferences(mod, studiohdr, textures);
 				}
 			}
 			else if (mod->type == mod_sprite)
@@ -2259,51 +2268,36 @@ void R_AddReferencedTextures(std::set<int> &used_gltextures)
 
 				if (pSprite)
 				{
-					R_SpriteTextureAddReferences(mod, pSprite, used_gltextures);
+					gEngfuncs.Con_DPrintf("R_AddReferencedTextures: [spr] [%s].\n", mod->name);
+
+					R_SpriteTextureAddReferences(mod, pSprite, textures);
 				}
 			}
 		}
 	}
 }
 
-void R_UnloadUnreferencedTextures(const std::set<int>& used_gltextures)
+void R_UnloadNoreferenceTextures(const std::set<int>& textures)
 {
 	int i;
 	gltexture_t* glt;
-
-	for (i = 0; i < EngineGetNumKnownModel(); ++i)
-	{
-		auto mod = EngineGetModelByIndex(i);
-
-		if (mod && (mod->needload == NL_UNREFERENCED))
-		{
-			if (mod->type == mod_studio)
-			{
-				auto studiohdr = (studiohdr_t*)Cache_Check(&mod->cache);
-
-				if (studiohdr)
-				{
-					Cache_Free(&mod->cache);
-				}
-			}
-		}
-	}
-	
 
 	for (i = 0, glt = gltextures_get(); i < (*numgltextures); i++, glt++)
 	{
 		if (glt->texnum > 0 && glt->servercount == 0)
 		{
 			//"lambda" goes LoadTransPic
-			//BSP detail texture goes GLT_SPRITE, need to block vanilla detail texture
+			//BSP detail texture goes GLT_SPRITE under GoldSrc while GLT_DETAIL under SvEngine, need to block vanilla detail texture
 
-			int textureType = GL_GetTextureTypeFromLoadedTextureId(glt->texnum);
+			auto textureType = GL_GetTextureTypeFromGLTexture(glt);
 
 			if (textureType == GLT_STUDIO || textureType == GLT_HUDSPRITE || textureType == GLT_SPRITE)
 			{
-				if (used_gltextures.find(glt->texnum) == used_gltextures.end())
+				if (textures.find(glt->texnum) == textures.end())
 				{
-					GL_FreeTexture(glt);
+					gEngfuncs.Con_DPrintf("R_UnloadNoreferenceTextures: [%d] [%s].\n", glt->texnum, glt->identifier);
+
+					GL_FreeTexture(glt, true);
 				}
 			}
 		}
@@ -2331,9 +2325,9 @@ void R_NewMap(void)
 
 	if (gl_unload_nreftex->value > 0)
 	{
-		std::set<int> used_textures;
-		R_AddReferencedTextures(used_textures);
-		R_UnloadUnreferencedTextures(used_textures);
+		std::set<int> textures;
+		R_AddReferencedTextures(textures);
+		R_UnloadNoreferenceTextures(textures);
 	}
 
 	(*r_framecount) = 1;
@@ -3320,6 +3314,14 @@ void R_RenderScene(void)
 	}
 }
 
+int EngineGetMaxGLTextures()
+{
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		return MAX_GLTEXTURES_HL25;
+
+	return MAX_GLTEXTURES;
+}
+
 int EngineGetNumKnownModel()
 {
 	return (*mod_numknown);
@@ -3328,9 +3330,9 @@ int EngineGetNumKnownModel()
 int EngineGetMaxKnownModel(void)
 {
 	if (g_iEngineType == ENGINE_SVENGINE)
-		return 16384;
+		return MAX_KNOWN_MODELS_SVENGINE;
 
-	return 1024;
+	return MAX_KNOWN_MODELS;
 }
 
 int EngineGetModelIndex(model_t *mod)
@@ -3383,21 +3385,19 @@ void Mod_LoadStudioModel(model_t *mod, void *buffer)
 {
 	gRefFuncs.Mod_LoadStudioModel(mod, buffer);
 
-	studiohdr_t *studiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(mod);
-	if (studiohdr && studiohdr->numbodyparts > 0)
+	auto studiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(mod);
+
+	if (studiohdr)
 	{
-		//just for test
-		//if (studiohdr->soundtable)
-		//{
-			//gEngfuncs.Con_DPrintf("wtf");
-		//}
 		studiohdr->soundtable = 0;
 
-		studio_vbo_t *VBOData = R_PrepareStudioVBO(studiohdr);
+		auto VBOData = R_PrepareStudioVBO(studiohdr);
 
-		R_StudioLoadExternalFile(mod, studiohdr, VBOData);
-
-		R_StudioLoadTextures(mod, studiohdr);
+		if (VBOData)
+		{
+			R_StudioLoadExternalFile(mod, studiohdr, VBOData);
+			R_StudioLoadTextureModel(mod, studiohdr);
+		}
 	}
 }
 

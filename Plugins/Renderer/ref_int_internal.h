@@ -23,7 +23,6 @@ typedef void(*ExtraShaderStageCallback)(GLuint *objs, int *used);
 
 typedef struct
 {
-	//void (*Cvar_DirectSet)(cvar_t *var, char *value);
 	void (*BuildGammaTable)(float gamma);
 	void (*R_ForceCVars)(qboolean mp);
 	void (*R_CheckVariables)(void);
@@ -58,6 +57,8 @@ typedef struct
 	void(*R_RotateForEntity)(float *origin, cl_entity_t *ent);
 	void (*R_DrawDecals)(qboolean bMultitexture);
 	void (*Draw_MiptexTexture)(cachewad_t *wad, byte *data);
+	void (*GL_UnloadTexture)(const char* identifier);
+	void (*GL_UnloadTextures)(void);
 	texture_t *(*Draw_DecalTexture)(int index);
 	void (*R_BuildLightMap)(msurface_t *psurf, byte *dest, int stride);
 	void(*R_AddDynamicLights)(msurface_t *psurf);
@@ -82,7 +83,6 @@ typedef struct
 	void(*R_LoadSkys)(void);
 	void(*R_LoadSkyboxInt_SvEngine)(const char *name);
 	void(*R_LoadSkyBox_SvEngine)(const char *name);
-	//void(*R_MarkLights)(dlight_t *light, int bit, mnode_t *node);
 	int(*CL_IsDevOverviewMode)(void);
 	void(*CL_SetDevOverView)(void *a1);
 	void(*Mod_LoadStudioModel)(model_t *mod, void *buffer);
@@ -95,6 +95,7 @@ typedef struct
 	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
 	qboolean(*Host_IsSinglePlayerGame)(void);
 	void *(*Hunk_AllocName)(int size, const char *name);
+	void *(*Cache_Alloc)(cache_user_t* c, int size, const char* name);
 
 	//Sven Client DLL
 	void(__fastcall *ClientPortalManager_ResetAll)(void * pthis, int dummy);
@@ -107,6 +108,7 @@ typedef struct
 	void (*R_LightStrength)(int bone, float *vert, float (*light)[4]);
 	void (*R_StudioLighting)(float *lv, int bone, int flags, vec3_t normal);
 	void (*R_StudioSetupSkin)(studiohdr_t *ptexturehdr, int index);
+	skin_t* (*R_StudioGetSkin)(int keynum, int index);
 	void (*R_LightLambert)(float (*light)[4], float *normal, float *src, float *lambert);
 	void (*BuildNormalIndexTable)(void);
 	void (*BuildGlowShellVerts)(vec3_t *pstudioverts, auxvert_t *pauxverts);
@@ -114,7 +116,6 @@ typedef struct
 
 	//Engine Studio Exported API
 	void (*studioapi_StudioDynamicLight)(struct cl_entity_s *ent, struct alight_s *plight);
-	//void (*studioapi_RestoreRenderer)(void);
 	qboolean (*studioapi_StudioCheckBBox)(void);
 
 	//Client Studio
@@ -156,6 +157,8 @@ extern hook_t *g_phook_Mod_PointInLeaf;
 extern hook_t *g_phook_R_BuildLightMap;
 extern hook_t *g_phook_R_AddDynamicLights;
 extern hook_t *g_phook_R_GLStudioDrawPoints;
+extern hook_t* g_phook_GL_UnloadTextures;
+extern hook_t* g_phook_GL_UnloadTexture;
 extern hook_t *g_phook_GL_LoadTexture2;
 extern hook_t *g_phook_enginesurface_drawFlushText;
 extern hook_t *g_phook_Mod_LoadStudioModel;

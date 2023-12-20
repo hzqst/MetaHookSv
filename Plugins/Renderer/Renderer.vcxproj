@@ -178,8 +178,10 @@ if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\ren
     <ClCompile Include="gl_water.cpp" />
     <ClCompile Include="gl_wsurf.cpp" />
     <ClCompile Include="mathlib.cpp" />
+    <ClCompile Include="MurmurHash2.cpp" />
     <ClCompile Include="parsemsg.cpp" />
     <ClCompile Include="plugins.cpp" />
+    <ClCompile Include="zone.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bspfile.h" />
@@ -200,11 +202,13 @@ if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\ren
     <ClInclude Include="gl_water.h" />
     <ClInclude Include="gl_wsurf.h" />
     <ClInclude Include="mathlib.h" />
+    <ClInclude Include="MurmurHash2.h" />
     <ClInclude Include="parsemsg.h" />
     <ClInclude Include="plugins.h" />
     <ClInclude Include="qgl.h" />
     <ClInclude Include="ref_int_internal.h" />
     <ClInclude Include="spritegn.h" />
+    <ClInclude Include="zone.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -132,7 +132,7 @@ typedef struct studio_vbo_material_s
 
 	}
 
-	studio_vbo_texture_t textures[STUDIO_MAX_TEXTURE];
+	studio_vbo_texture_t textures[STUDIO_MAX_TEXTURE - STUDIO_DIFFUSE_TEXTURE];
 }studio_vbo_material_t;
 
 typedef struct studio_celshade_control_s
@@ -164,14 +164,14 @@ typedef struct studio_vbo_s
 {
 	studio_vbo_s()
 	{
-		studiohdr = NULL;
+		//studiohdr = NULL;
 		hVBO = 0;
 		hEBO = 0;
 		hVAO = 0;
 		hStudioUBO = 0;
 		bExternalFileLoaded = false;
 	}
-	studiohdr_t	*		studiohdr;
+	//studiohdr_t	*		studiohdr;
 	GLuint				hVBO;
 	GLuint				hEBO;
 	GLuint				hVAO;
@@ -289,6 +289,10 @@ extern int *numlight;
 extern int* r_topcolor;
 extern int* r_bottomcolor;
 extern player_model_t(*DM_PlayerState)[MAX_CLIENTS];
+extern skin_t(*DM_RemapSkin)[64][MAX_SKINS];
+extern skin_t* (*pDM_RemapSkin)[2528][MAX_SKINS];
+extern int* r_remapindex;
+
 extern model_t *cl_sprite_white;
 extern model_t *cl_shellchrome;
 
@@ -309,12 +313,9 @@ void R_SaveStudioProgramStates(void);
 void R_LoadStudioProgramStates(void);
 void R_GLStudioDrawPoints(void);
 studiohdr_t* R_StudioGetTextures(const model_t* psubm);
-void R_StudioLoadTextures(model_t* psubm, studiohdr_t *studiohdr);
-void R_StudioUnloadTextures(model_t* mod, studiohdr_t* studiohdr);
-void R_StudioTextureAddReferences(model_t* mod, studiohdr_t* studiohdr, std::set<int>& used_textures);
-void R_StudioTextureRemoveReferences(model_t* mod, studiohdr_t* studiohdr, std::set<int>& used_textures);
-void R_StudioFreeVBOMaterialByTextureId(int gltexturenum);
-void R_StudioFreeVBOMaterial(studio_vbo_material_t* VBOMaterial);
+void R_StudioLoadTextureModel(model_t* mod, studiohdr_t *studiohdr);
+void R_StudioTextureAddReferences(model_t* mod, studiohdr_t* studiohdr, std::set<int>& textures);
+void R_StudioFreeTextureCallback(gltexture_t* glt);
 studio_vbo_material_t* R_StudioGetVBOMaterialFromTextureId(int gltexturenum);
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
 qboolean studioapi_StudioCheckBBox(void);

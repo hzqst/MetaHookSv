@@ -2876,7 +2876,9 @@ void R_LoadBaseDetailTextures(void)
 void R_LoadMapDetailTextures(void)
 {
 	std::string name = gEngfuncs.pfnGetLevelName();
-	name = name.substr(0, name.length() - 4);
+
+	RemoveFileExtension(name);
+
 	name += "_detail.txt";
 
 	char *pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
@@ -3280,7 +3282,9 @@ void R_LoadExternalEntities(void)
 	std::string name;
 	
 	name = gEngfuncs.pfnGetLevelName();
-	name = name.substr(0, name.length() - 4);
+
+	RemoveFileExtension(name);
+
 	name += "_entity.txt";
 
 	char *pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);

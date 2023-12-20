@@ -176,12 +176,14 @@ typedef struct gltexture_s
 
 typedef enum
 {
-	GLT_SYSTEM,
+	GLT_UNKNOWN = -1,
+	GLT_SYSTEM = 0,
 	GLT_DECAL,
 	GLT_HUDSPRITE,
 	GLT_STUDIO,
 	GLT_WORLD,
-	GLT_SPRITE
+	GLT_SPRITE,
+	GLT_DETAIL//SvEngine only, blocked
 }GL_TEXTURETYPE;
 
 //gl_studio
@@ -665,7 +667,7 @@ typedef struct
 	int			keynum;
 	int			topcolor;
 	int			bottomcolor;
-	model_t* model;
+	model_t*	model;
 	char		name[260];
 	int			index;
 	int			source;
@@ -690,3 +692,13 @@ typedef struct cache_system_s
 	struct cache_system_s* prev, * next;
 	struct cache_system_s* lru_prev, * lru_next;	// for LRU flushing	
 } cache_system_t;
+
+#define MAX_KNOWN_MODELS 1024
+#define MAX_KNOWN_MODELS_SVENGINE 16384
+
+typedef struct
+{
+	int width;
+	int height;
+	byte data[1];
+}model_texture_cache_t;

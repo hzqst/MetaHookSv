@@ -1,4 +1,5 @@
 #include "gl_local.h"
+#include "MurmurHash2.h"
 
 extern "C"
 {
@@ -18,6 +19,8 @@ int *gHostSpawnCount = NULL;
 int *currenttexture = NULL;
 int *oldtarget = NULL;
 cachewad_t **decal_wad = NULL;
+qboolean* gfCustomBuild = NULL;
+char (*szCustName)[10] = NULL;
 
 int *gl_filter_min = NULL;
 int *gl_filter_max = NULL;
@@ -25,8 +28,6 @@ int *gl_filter_max = NULL;
 int gl_loadtexture_format = GL_RGBA;
 int gl_loadtexture_cubemap = 0;
 bool gl_loadtexture_compressed = false;
-
-std::unordered_map<int, int> g_LoadTexture2TypeCache;
 
 std::vector<mipmap_texture_data_t> gl_loadtexture_mipmap;
 
@@ -125,15 +126,132 @@ void GL_Texturemode_f(void)
 		GL_Texturemode_internal(gEngfuncs.Cmd_Argv(1));
 }
 
-int GL_GetTextureTypeFromLoadedTextureId(int gltexturenum)
+void GL_GenerateHashedTextureIndentifier(const char* identifier, GL_TEXTURETYPE textureType, char* hashedIdentifier, size_t len)
 {
-	auto itor = g_LoadTexture2TypeCache.find(gltexturenum);
-	if (itor != g_LoadTexture2TypeCache.end())
+	if (textureType == GLT_SYSTEM)
 	{
-		return itor->second;
+		snprintf(hashedIdentifier, len, "@SYS_%08X", MurmurHash2(identifier, strlen(identifier), textureType));
+	}
+	else if (textureType == GLT_DECAL)
+	{
+		snprintf(hashedIdentifier, len, "@DCL_%08X", MurmurHash2(identifier, strlen(identifier), textureType));
+	}
+	else if (textureType == GLT_HUDSPRITE)
+	{
+		snprintf(hashedIdentifier, len, "@SPH_%08X", MurmurHash2(identifier, strlen(identifier), textureType));
+	}
+	else if (textureType == GLT_STUDIO)
+	{
+		snprintf(hashedIdentifier, len, "@MDL_%08X", MurmurHash2(identifier, strlen(identifier), textureType));
+	}
+	else if (textureType == GLT_WORLD)
+	{
+		snprintf(hashedIdentifier, len, "@BSP_%08X", MurmurHash2(identifier, strlen(identifier), textureType));
+	}
+	else if (textureType == GLT_SPRITE)
+	{
+		snprintf(hashedIdentifier, len, "@SPR_%08X", MurmurHash2(identifier, strlen(identifier), textureType));
+	}
+	else if (textureType == GLT_DETAIL)
+	{
+		snprintf(hashedIdentifier, len, "@DET_%08X", MurmurHash2(identifier, strlen(identifier), textureType));
+	}
+	else
+	{
+		strncpy(hashedIdentifier, identifier, len);
+	}
+}
+
+void GL_GenerateHashedTextureIndentifier2(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, char * hashedIdentifier, size_t len)
+{
+	if (textureType == GLT_SYSTEM)
+	{
+		snprintf(hashedIdentifier, len, "@SYS_%08X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height);
+	}
+	else if (textureType == GLT_DECAL)
+	{
+		snprintf(hashedIdentifier, len, "@DCL_%08X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height);
+	}
+	else if (textureType == GLT_HUDSPRITE)
+	{
+		snprintf(hashedIdentifier, len, "@SPH_%08X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height);
+	}
+	else if (textureType == GLT_STUDIO)
+	{
+		snprintf(hashedIdentifier, len, "@MDL_%08X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height);
+	}
+	else if (textureType == GLT_WORLD)
+	{
+		snprintf(hashedIdentifier, len, "@BSP_%08X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height);
+	}
+	else if (textureType == GLT_SPRITE)
+	{
+		snprintf(hashedIdentifier, len, "@SPR_%08X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height);
+	}
+	else if (textureType == GLT_DETAIL)
+	{
+		snprintf(hashedIdentifier, len, "@DET_%08X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height);
+	}
+	else
+	{
+		strncpy(hashedIdentifier, identifier, len);
+	}
+}
+
+GL_TEXTURETYPE GL_GetTextureTypeFromGLTexture(gltexture_t* glt)
+{
+	if (glt->identifier[0] == '@')
+	{
+		if (glt->identifier[1] == 'S' &&
+			glt->identifier[2] == 'Y' &&
+			glt->identifier[3] == 'S' &&
+			glt->identifier[4] == '_')
+		{
+			return GLT_SYSTEM;
+		}
+
+		if (glt->identifier[1] == 'D' &&
+			glt->identifier[2] == 'C' &&
+			glt->identifier[3] == 'L' &&
+			glt->identifier[4] == '_')
+		{
+			return GLT_DECAL;
+		}
+
+		if (glt->identifier[1] == 'S' &&
+			glt->identifier[2] == 'P' &&
+			glt->identifier[3] == 'H' &&
+			glt->identifier[4] == '_')
+		{
+			return GLT_HUDSPRITE;
+		}
+
+		if (glt->identifier[1] == 'M' &&
+			glt->identifier[2] == 'D' &&
+			glt->identifier[3] == 'L' &&
+			glt->identifier[4] == '_')
+		{
+			return GLT_STUDIO;
+		}
+
+		if (glt->identifier[1] == 'B' &&
+			glt->identifier[2] == 'S' &&
+			glt->identifier[3] == 'P' &&
+			glt->identifier[4] == '_')
+		{
+			return GLT_WORLD;
+		}
+
+		if (glt->identifier[1] == 'S' &&
+			glt->identifier[2] == 'P' &&
+			glt->identifier[3] == 'R' &&
+			glt->identifier[4] == '_')
+		{
+			return GLT_SPRITE;
+		}
 	}
 
-	return -1;
+	return GLT_UNKNOWN;
 }
 
 //GL Start
@@ -228,6 +346,80 @@ void GL_DisableMultitexture(void)
 void GL_EnableMultitexture(void)
 {
 	gRefFuncs.GL_EnableMultitexture();
+}
+
+void GL_UnloadTextureByIdentifier(const char* identifier, bool notify_callback)
+{
+	int i;
+	gltexture_t* glt;
+
+	if (identifier[0] == '@')
+	{
+		for (i = 0, glt = gltextures_get(); i < (*numgltextures); i++, glt++)
+		{
+			if (!strncmp(identifier, glt->identifier, sizeof("@SPR_DEADBEEF") - 1))
+			{
+				GL_FreeTexture(glt, notify_callback);
+				return;
+			}
+		}
+	}
+	else
+	{
+		for (i = 0, glt = gltextures_get(); i < (*numgltextures); i++, glt++)
+		{
+			if (!strcmp(identifier, glt->identifier))
+			{
+				GL_FreeTexture(glt, notify_callback);
+				return;
+			}
+		}
+	}
+}
+
+void GL_UnloadTextures(void)
+{
+	int i;
+	gltexture_t* glt;
+
+	for (i = 0, glt = gltextures_get(); i < (*numgltextures); i++, glt++)
+	{
+		if (glt->servercount > 0 && glt->servercount != (*gHostSpawnCount))
+		{
+			GL_FreeTexture(glt, true);
+		}
+	}
+}
+
+void GL_UnloadTextureWithType(const char* identifier, GL_TEXTURETYPE textureType, bool notify_callback)
+{
+	char hashedIdentifier[64] = { 0 };
+	GL_GenerateHashedTextureIndentifier(identifier, textureType, hashedIdentifier, sizeof(hashedIdentifier) - 1);
+
+	GL_UnloadTextureByIdentifier(identifier, notify_callback);
+}
+
+void GL_UnloadTextureWithType(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, bool notify_callback)
+{
+	char hashedIdentifier[64] = { 0 };
+	GL_GenerateHashedTextureIndentifier2(identifier, textureType, width, height, hashedIdentifier, sizeof(hashedIdentifier) - 1);
+
+	GL_UnloadTextureByIdentifier(identifier, notify_callback);
+}
+
+void GL_UnloadTextureByTextureId(int gltexturenum, bool notify_callback)
+{
+	int i;
+	gltexture_t* glt;
+
+	for (i = 0, glt = gltextures_get(); i < (*numgltextures); i++, glt++)
+	{
+		if (glt->texnum == gltexturenum)
+		{
+			GL_FreeTexture(glt, notify_callback);
+			break;
+		}
+	}
 }
 
 void GL_UploadDXT(void *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap)
@@ -346,18 +538,18 @@ void GL_UploadRGBA8(void *data, int width, int height, qboolean mipmap, qboolean
 	gl_loadtexture_format = 0;
 }
 
-int GL_FindTexture(const char *identifier, GL_TEXTURETYPE textureType, int *width, int *height)
+int GL_FindTextureByHashedIdentifier(const char *hashedIdentifier, GL_TEXTURETYPE textureType, int *width, int *height)
 {
 	int i;
 	gltexture_t *slot;
 
-	if (identifier[0])
+	if (hashedIdentifier[0])
 	{
 		for (i = 0, slot = gltextures_get(); i < *numgltextures; i++, slot++)
 		{
-			if (!stricmp(identifier, slot->identifier))
+			if (!strncmp(hashedIdentifier, slot->identifier, sizeof("@SPR_DEADBEEF") - 1))
 			{
-				if (textureType != GLT_SYSTEM && textureType != GLT_DECAL && textureType != GLT_HUDSPRITE)
+				if (textureType == GLT_WORLD)
 				{
 					if (slot->servercount != *gHostSpawnCount)
 						continue;
@@ -380,7 +572,16 @@ int GL_FindTexture(const char *identifier, GL_TEXTURETYPE textureType, int *widt
 	return 0;
 }
 
-int GL_AllocTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int height, qboolean mipmap)
+int GL_FindTexture(const char* identifier, GL_TEXTURETYPE textureType, int* width, int* height)
+{
+	char hashedIdentifier[64] = { 0 };
+	GL_GenerateHashedTextureIndentifier(identifier, textureType, hashedIdentifier, sizeof(hashedIdentifier) - 1);
+
+
+	return GL_FindTextureByHashedIdentifier(hashedIdentifier, textureType, width, height);
+}
+
+int GL_AllocTexture(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, qboolean mipmap)
 {
 	int i;
 	gltexture_t *glt;
@@ -388,7 +589,7 @@ int GL_AllocTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int
 
 	glt = NULL;
 
-tryagain:
+//tryagain:
 	if (identifier[0])
 	{
 		for (i = 0, slot = gltextures_get(); i < *numgltextures; i++, slot++)
@@ -401,14 +602,8 @@ tryagain:
 				break;
 			}
 
-			if (!strcmp(identifier, slot->identifier))
+			if (!strcmp(identifier, slot->identifier) && width == slot->width && height == slot->height)
 			{
-				if (width != slot->width || height != slot->height)
-				{
-					identifier[3]++;
-					goto tryagain;
-				}
-
 				if (slot->servercount > 0)
 					slot->servercount = *gHostSpawnCount;
 
@@ -441,26 +636,14 @@ tryagain:
 
 				*maxgltextures_SvEngine += v16;
 				*gltextures_SvEngine = (gltexture_t *)gRefFuncs.realloc_SvEngine((void *)(*gltextures_SvEngine), (*maxgltextures_SvEngine) * sizeof(gltexture_t));
-				//gltextures = *gltextures_SvEngine;
 			}
 		}
 		else
 		{
-			if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+			if ((*numgltextures) + 1 >= EngineGetMaxGLTextures())
 			{
-				if ((*numgltextures) + 1 >= MAX_GLTEXTURES_HL25)
-				{
-					g_pMetaHookAPI->SysError("Texture Overflow: MAX_GLTEXTURES\n");
-					return 0;
-				}
-			}
-			else
-			{
-				if ((*numgltextures) + 1 >= MAX_GLTEXTURES)
-				{
-					g_pMetaHookAPI->SysError("Texture Overflow: MAX_GLTEXTURES\n");
-					return 0;
-				}
+				g_pMetaHookAPI->SysError("Texture Overflow: MAX_GLTEXTURES\n");
+				return 0;
 			}
 		}
 
@@ -489,30 +672,27 @@ tryagain:
 	glt->width = width;
 	glt->height = height;
 	glt->mipmap = mipmap;
-	glt->servercount = (textureType != GLT_SYSTEM && textureType != GLT_DECAL && textureType != GLT_HUDSPRITE) ? *gHostSpawnCount : 0;
+	glt->servercount = (textureType == GLT_WORLD) ? *gHostSpawnCount : 0;
 	glt->paletteIndex = -1;
 
 	return glt->texnum;
 }
 
-int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal, int filter)
+int GL_LoadTexture(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, byte* data, qboolean mipmap, int iType, byte* pPal)
 {
-	if (textureType == GLT_STUDIO && iType == TEX_TYPE_NONE && pPal == tmp_palette)
-	{
-		iType = TEX_TYPE_ALPHA;
-	}
+	return GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iType, pPal, (*gl_filter_max));
+}
 
-	int textureId = gRefFuncs.GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iType, pPal, filter);
+int GL_LoadTexture2(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, byte* data, qboolean mipmap, int iType, byte* pPal, int filter)
+{
+	char hashedIdentifier[64] = { 0 };
+	GL_GenerateHashedTextureIndentifier2(identifier, textureType, width, height, hashedIdentifier, sizeof(hashedIdentifier) - 1);
 
-	if (textureId > 0)
-	{
-		if (g_LoadTexture2TypeCache.find(textureId) == g_LoadTexture2TypeCache.end())
-		{
-			g_LoadTexture2TypeCache[textureId] = textureType;
-		}
-	}
+	int gltexturenum = gRefFuncs.GL_LoadTexture2(hashedIdentifier, textureType, width, height, data, mipmap, iType, pPal, filter);
 
-	return textureId;
+	gEngfuncs.Con_DPrintf("GL_LoadTexture2: [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, gltexturenum);
+
+	return gltexturenum;
 }
 
 int GL_LoadTextureInternal(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, void *data, qboolean mipmap, qboolean ansio)
@@ -523,13 +703,18 @@ int GL_LoadTextureInternal(const char *identifier, GL_TEXTURETYPE textureType, i
 		return 0;
 	}
 
-	int texnum = GL_AllocTexture((char *)identifier, textureType, width, height, mipmap);
+	char hashedIdentifier[64] = { 0 };
+	GL_GenerateHashedTextureIndentifier2(identifier, textureType, width, height, hashedIdentifier, sizeof(hashedIdentifier) - 1);
 
-	if (!texnum)
+	int gltexturenum = GL_AllocTexture(hashedIdentifier, textureType, width, height, mipmap);
+
+	if (!gltexturenum)
 	{
-		gEngfuncs.Con_Printf("GL_LoadTextureInternal: Failed to allocate texture slot.\n");
+		gEngfuncs.Con_Printf("GL_LoadTextureInternal: Failed to allocate texture entry.\n");
 		return 0;
 	}
+
+	gEngfuncs.Con_DPrintf("GL_LoadTextureInternal: [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, gltexturenum);
 
 	int iTextureTarget = GL_TEXTURE_2D;
 
@@ -541,7 +726,7 @@ int GL_LoadTextureInternal(const char *identifier, GL_TEXTURETYPE textureType, i
 	if (textureType == GLT_HUDSPRITE || textureType == GLT_SPRITE)
 		iWrap = GL_CLAMP_TO_EDGE;
 
-	glBindTexture(iTextureTarget, texnum);
+	glBindTexture(iTextureTarget, gltexturenum);
 	(*currenttexture) = -1;
 
 	if (gl_loadtexture_compressed)
@@ -556,7 +741,7 @@ int GL_LoadTextureInternal(const char *identifier, GL_TEXTURETYPE textureType, i
 	glBindTexture(iTextureTarget, 0);
 	(*currenttexture) = -1;
 
-	return texnum;
+	return gltexturenum;
 }
 
 texture_t *Draw_DecalTexture(int index)
@@ -566,12 +751,72 @@ texture_t *Draw_DecalTexture(int index)
 	return texture;
 }
 
+int LittleLong(int l);
+short LittleShort(short l);
+float LittleFloat(float l);
+
 void Draw_MiptexTexture(cachewad_t *wad, byte *data)
 {
-	gRefFuncs.Draw_MiptexTexture(wad, data);
+	texture_t* tex;
+	miptex_t* mip, tmp;
+	int i, pix, paloffset, palettesize;
+	byte* pal, * bitmap;
 
-	auto texture = (texture_t *)data;
+	if (wad->cacheExtra != 32)
+	{
+		gEngfuncs.Con_Printf("Draw_MiptexTexture: Bad cached wad %s\n", wad->name);
+		return;
+	}
 
+	tmp = *(miptex_t*)(data + wad->cacheExtra);
+	tex = (texture_t*)data;
+	mip = &tmp;
+
+	memcpy(tex->name, mip->name, sizeof(tex->name));
+	tex->width = LittleLong(mip->width);
+	tex->height = LittleLong(mip->height);
+	tex->anim_max = 0;
+	tex->anim_min = 0;
+	tex->anim_total = 0;
+	tex->alternate_anims = NULL;
+	tex->anim_next = NULL;
+
+	for (i = 0; i < MIPLEVELS; i++)
+		tex->offsets[i] = LittleLong(mip->offsets[i]) + wad->cacheExtra;
+
+	pix = tex->width * tex->height;
+	paloffset = 0;
+
+	for (i = 0; i < MIPLEVELS; i++, pix >>= 2)
+		paloffset += pix;
+
+	bitmap = (byte*)(data + tex->offsets[0]);
+	pal = (byte*)(data + tex->offsets[0] + paloffset + sizeof(short));
+	palettesize = *(unsigned short*)(data + sizeof(miptex_t) + pix);
+
+	if ((*gfCustomBuild))
+	{
+		strncpy(tex->name, (*szCustName), sizeof(tex->name) - 1);
+		tex->name[sizeof(tex->name) - 1] = 0;
+	}
+
+	if (pal[765] == 0 && pal[766] == 0 && pal[767] == 255)
+	{
+		tex->name[0] = '{';
+		tex->gl_texturenum = GL_LoadTexture(tex->name, GLT_DECAL, tex->width, tex->height, bitmap, true, TEX_TYPE_ALPHA, pal);
+	}
+	else
+	{
+		tex->name[0] = '}';
+
+		if ((*gfCustomBuild))
+			GL_UnloadTextureWithType(tex->name, GLT_DECAL, true);
+
+		//Why'th fuck 2 in SvEngine?
+		int iTexType = (g_iEngineType == ENGINE_SVENGINE) ? 2 : TEX_TYPE_ALPHA_GRADIENT;
+
+		tex->gl_texturenum = GL_LoadTexture(tex->name, GLT_DECAL, tex->width, tex->height, bitmap, true, iTexType, pal);
+	}
 }
 
 DWORD ByteToUInt( byte *byte )

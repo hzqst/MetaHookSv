@@ -18,10 +18,6 @@
 #define R_DRAWPARTICLES_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\xFF\x35\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x68\xC0\x0B\x00\x00"
 #define R_DRAWPARTICLES_SIG_NEW "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x68\xC0\x0B\x00\x00"
 
-//unused
-//#define R_MARKLIGHTS_SVENGINE "\x83\xEC\x0C\x2A\x8B\x7C\x24\x2A\x83\x3F\x00"
-//#define R_MARKLIGHTS_NEW "\x55\x8B\xEC\x83\xEC\x18\x2A\x8B\x2A\x10\x83\x2A\x00"
-
 #define R_POLYBLEND_SVENGINE "\x55\x8B\xEC\x83\xE4\xC0\x83\xEC\x34\x2A\x2A\x2A\xE8"
 #define R_POLYBLEND_HL25 "\x55\x8B\xEC\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\xD8\x85\xDB\x0F\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\xC0\x0B\x00\x00"
 #define R_POLYBLEND_NEW "\x55\x8B\xEC\x83\xEC\x0C\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x2A\x85\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\xC0\x0B\x00\x00"
@@ -49,6 +45,10 @@
 #define GL_BUILDLIGHTMAPS_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xE8\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\xF3\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x0F"
 #define GL_BUILDLIGHTMAPS_SIG_SVENGINE "\x83\xEC\x24\x2A\x2A\x2A\x2A\x68\x00\x00\x08\x00\x6A\x00\x68"
 
+#define GL_UNLOADTEXTURE_SIG_NEW "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x53\x56\x57\x33\xFF\xBE\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x8B\x5D\x08"
+#define GL_UNLOADTEXTURE_SIG_HL25 "\x55\x8B\xEC\x2A\x2A\x33\xFF\xBE\x2A\x2A\x2A\x2A\x39\x2A\x2A\x2A\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x2A\x08"
+#define GL_UNLOADTEXTURE_SIG_SVENGINE "\x56\x33\xF6\x39\x35\x2A\x2A\x2A\x2A\x2A\x2A\x55\x8B\x2A\x2A\x0C\x57"
+
 #define R_DRAWWORLD_SIG "\x81\xEC\xB8\x0B\x00\x00\x68\xB8\x0B\x00\x00\x8D\x44\x24\x04\x6A\x00\x50\xE8"
 #define R_DRAWWORLD_SIG_NEW "\x55\x8B\xEC\x81\xEC\xB8\x0B\x00\x00\x68\xB8\x0B\x00\x00\x8D\x85\x48\xF4\xFF\xFF\x6A\x00\x50\xE8\x2A\x2A\x2A\x2A\x8B\x0D"
 #define R_DRAWWORLD_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x2A\x0B\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x68\xB8\x0B\x00\x00"//valve's 9891 update fucked this
@@ -75,7 +75,6 @@
 #define GL_BIND_SIG_NEW "\x55\x8B\xEC\x8B\x45\x08\x8B\x0D\x2A\x2A\x2A\x2A\x56\x8B\xF0\xC1\xFE\x10\x25\xFF\xFF\x00\x00\x4E\x3B\xC8"
 #define GL_BIND_SIG_HL25 "\x55\x8B\xEC\x8B\x45\x08\x56\x8B\xF0\x0F\xB7\xC0\xC1\xFE\x10\x4E\x39"
 #define GL_BIND_SIG_SVENGINE "\x8B\x44\x24\x04\x39\x05\x2A\x2A\x2A\x2A\x2A\x2A\x50\x68\xE1\x0D\x00\x00\xA3\x2A\x2A\x2A\x2A\xFF\x15\x2A\x2A\x2A\x2A\xC3"
-
 
 #define GL_SELECTTEXTURE_SIG "\xA1\x2A\x2A\x2A\x2A\x56\x85\xC0\x2A\x2A\x8B\x74\x24\x08\x56\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x3B\xF0"
 #define GL_SELECTTEXTURE_SIG_NEW "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x56\x85\xC0\x2A\x2A\x8B\x75\x08\x56\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x3B\xF0"
@@ -176,7 +175,6 @@
 #define DRAW_DECALTEXTURE_SIG_HL25 "\x55\x8B\xEC\x8B\x4D\x08\x85\xC9\x2A\x2A\xF7\xD1\x69\xD1\x50\x02\x00\x00"
 #define DRAW_DECALTEXTURE_SIG_SVENGINE "\x8B\x4C\x24\x2A\x0F\xAE\xE8\x85\xC9\x2A\x2A\xF7\xD1"
 
-//TODO: use string "Draw_MiptexTexture: Bad cached wad %s"
 #define DRAW_MIPTEXTEXTURE_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x2A\x2A\x2A\x24\x40\x2A\x2A\x2A\x24\x40"
 #define DRAW_MIPTEXTEXTURE_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\x8B\x5D\x0C\x2A\x8B\x75\x08\x2A\x89\x75\xCC"
 #define DRAW_MIPTEXTEXTURE_SIG_NEW "\x55\x8B\xEC\x83\xEC\x2A\x2A\x2A\x2A\x2A\x08\x2A\x83\x2A\x2A\x20"
@@ -362,28 +360,28 @@ void R_FillAddress(void)
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.GL_LoadTexture2 = (int(*)(char *, int, int, int, byte *, qboolean, int, byte *, int))Search_Pattern(GL_LOADTEXTURE2_SIG_SVENGINE);
+		gRefFuncs.GL_LoadTexture2 = (decltype(gRefFuncs.GL_LoadTexture2))Search_Pattern(GL_LOADTEXTURE2_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_LoadTexture2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.GL_LoadTexture2 = (int(*)(char*, int, int, int, byte*, qboolean, int, byte*, int))Search_Pattern(GL_LOADTEXTURE2_SIG_HL25);
+		gRefFuncs.GL_LoadTexture2 = (decltype(gRefFuncs.GL_LoadTexture2))Search_Pattern(GL_LOADTEXTURE2_SIG_HL25);
 		Sig_FuncNotFound(GL_LoadTexture2);
 	}
 	else
 	{
-		gRefFuncs.GL_LoadTexture2 = (int(*)(char *, int, int, int, byte *, qboolean, int, byte *, int))Search_Pattern(GL_LOADTEXTURE2_SIG_NEW);
+		gRefFuncs.GL_LoadTexture2 = (decltype(gRefFuncs.GL_LoadTexture2))Search_Pattern(GL_LOADTEXTURE2_SIG_NEW);
 		Sig_FuncNotFound(GL_LoadTexture2);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_CullBox = (qboolean(*)(vec3_t, vec3_t))Search_Pattern_From(gRefFuncs.GL_LoadTexture2, R_CULLBOX_SIG_SVENGINE);
+		gRefFuncs.R_CullBox = (decltype(gRefFuncs.R_CullBox))Search_Pattern_From(gRefFuncs.GL_LoadTexture2, R_CULLBOX_SIG_SVENGINE);
 		Sig_FuncNotFound(R_CullBox);
 	}
 	else
 	{
-		gRefFuncs.R_CullBox = (qboolean(*)(vec3_t, vec3_t))Search_Pattern_From(gRefFuncs.GL_LoadTexture2, R_CULLBOX_SIG_NEW);
+		gRefFuncs.R_CullBox = (decltype(gRefFuncs.R_CullBox))Search_Pattern_From(gRefFuncs.GL_LoadTexture2, R_CULLBOX_SIG_NEW);
 		Sig_FuncNotFound(R_CullBox);
 	}
 
@@ -1053,20 +1051,82 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(R_StudioSetupSkin);
 	}
 
-	if (g_iEngineType == ENGINE_SVENGINE)
+	if (1)
 	{
-		gRefFuncs.Draw_MiptexTexture = (void(*)(cachewad_t *wad, byte *data))Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_SVENGINE);
-		Sig_FuncNotFound(Draw_MiptexTexture);
+		const char sigs1[] = "Cache_Alloc: already allocated";
+		auto Cache_Alloc_String = Search_Pattern_Data(sigs1);
+		if (!Cache_Alloc_String)
+			Cache_Alloc_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(Cache_Alloc_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
+		*(DWORD*)(pattern + 1) = (DWORD)Cache_Alloc_String;
+		auto Cache_Alloc_Call = Search_Pattern(pattern);
+		Sig_VarNotFound(Cache_Alloc_Call);
+
+		gRefFuncs.Cache_Alloc = (decltype(gRefFuncs.Cache_Alloc))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Cache_Alloc_Call, 0x80, [](PUCHAR Candidate) {
+
+			if (Candidate[0] == 0x53 &&
+				Candidate[1] == 0x8B &&
+				Candidate[4] == 0x08)
+				return TRUE;
+
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC)
+				return TRUE;
+
+			return FALSE;
+		});
+		Sig_FuncNotFound(Cache_Alloc);
+
+
 	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+
+	if (1)
 	{
-		gRefFuncs.Draw_MiptexTexture = (void(*)(cachewad_t * wad, byte * data))Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_HL25);
+		const char sigs1[] = "Draw_MiptexTexture: Bad cached wad %s\n";
+		auto Draw_MiptexTexture_String = Search_Pattern_Data(sigs1);
+		if (!Draw_MiptexTexture_String)
+			Draw_MiptexTexture_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(Draw_MiptexTexture_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8";
+		*(DWORD*)(pattern + 1) = (DWORD)Draw_MiptexTexture_String;
+		auto Draw_MiptexTexture_Call = Search_Pattern(pattern);
+		Sig_VarNotFound(Draw_MiptexTexture_Call);
+
+		gRefFuncs.Draw_MiptexTexture = (decltype(gRefFuncs.Draw_MiptexTexture))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Draw_MiptexTexture_Call, 0x80, [](PUCHAR Candidate) {
+
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC)
+				return TRUE;
+
+			if (Candidate[0] == 0x83 &&
+				Candidate[1] == 0xEC &&
+				Candidate[3] == 0xA1)
+				return TRUE;
+
+			return FALSE;
+		});
 		Sig_FuncNotFound(Draw_MiptexTexture);
 	}
 	else
 	{
-		gRefFuncs.Draw_MiptexTexture = (void(*)(cachewad_t *wad, byte *data))Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_NEW);
-		Sig_FuncNotFound(Draw_MiptexTexture);
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gRefFuncs.Draw_MiptexTexture = (void(*)(cachewad_t * wad, byte * data))Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_SVENGINE);
+			Sig_FuncNotFound(Draw_MiptexTexture);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			gRefFuncs.Draw_MiptexTexture = (void(*)(cachewad_t * wad, byte * data))Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_HL25);
+			Sig_FuncNotFound(Draw_MiptexTexture);
+		}
+		else
+		{
+			gRefFuncs.Draw_MiptexTexture = (void(*)(cachewad_t * wad, byte * data))Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_NEW);
+			Sig_FuncNotFound(Draw_MiptexTexture);
+		}
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -4397,14 +4457,197 @@ void R_FillAddress(void)
 	Sig_AddrNotFound(tmp_palette);
 	tmp_palette = *(void **)(addr + 1);
 
-	//get cl. vars by offsets
-	//cl_waterlevel = cl_parsecount + 274;
-	//cl_time = (double *)(cl_waterlevel + 11);
-	//cl_oldtime = cl_time + 1;	
-
-#define MOD_KNOWN_SIG "\xB8\x9D\x82\x97\x53\x81\xE9"
-
+	if (1)
 	{
+		typedef struct
+		{
+			PVOID candidate_E8;
+		}R_StudioSetupSkin_ctx;
+
+		R_StudioSetupSkin_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_StudioSetupSkin, 0x800, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (R_StudioSetupSkin_ctx*)context;
+
+			if (address[0] == 0xE8 && instLen == 5)
+			{
+				ctx->candidate_E8 = (decltype(ctx->candidate_E8))pinst->detail->x86.operands[0].imm;
+
+				if (!gRefFuncs.R_StudioGetSkin)
+				{
+					typedef struct
+					{
+						bool bFoundCmp0B;
+					}R_StudioSetupSkin_SearchCmp0B_ctx;
+
+					R_StudioSetupSkin_SearchCmp0B_ctx ctx2 = { 0 };
+
+					g_pMetaHookAPI->DisasmRanges(ctx->candidate_E8, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+						auto pinst = (cs_insn*)inst;
+						auto ctx2 = (R_StudioSetupSkin_SearchCmp0B_ctx*)context;
+
+						if (pinst->id == X86_INS_CMP &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+							pinst->detail->x86.operands[1].imm == 0xB)
+						{
+							ctx2->bFoundCmp0B = true;
+							return TRUE;
+						}
+
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						if (pinst->id == X86_INS_RET)
+							return TRUE;
+
+						return FALSE;
+
+					}, 0, &ctx2);
+
+					if (ctx2.bFoundCmp0B)
+					{
+						gRefFuncs.R_StudioGetSkin = (decltype(gRefFuncs.R_StudioGetSkin))ctx->candidate_E8;
+					}
+				}
+			}
+
+			if (!gRefFuncs.GL_UnloadTexture && ctx->candidate_E8)
+			{
+				if (address[0] == 0x6A && address[1] == 0x00 && address[2] == 0x6A && address[3] == 0x00)
+				{
+					gRefFuncs.GL_UnloadTexture = (decltype(gRefFuncs.GL_UnloadTexture))ctx->candidate_E8;
+					return TRUE;
+				}
+			}
+
+			if (gRefFuncs.GL_UnloadTexture && gRefFuncs.R_StudioGetSkin)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, &ctx);
+
+		Sig_FuncNotFound(R_StudioGetSkin);
+		Sig_FuncNotFound(GL_UnloadTexture);
+	}
+
+	if (1)
+	{
+		typedef struct
+		{
+			PVOID unused;
+		}R_StudioGetSkin_ctx;
+
+		R_StudioGetSkin_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_StudioGetSkin, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (R_StudioGetSkin_ctx*)context;
+
+			if (!pDM_RemapSkin &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.scale == 4 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				pDM_RemapSkin = (decltype(pDM_RemapSkin))pinst->detail->x86.operands[1].mem.disp;
+			}
+
+			if (!r_remapindex &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG)
+			{
+				r_remapindex = (decltype(r_remapindex))pinst->detail->x86.operands[0].mem.disp;
+			}
+
+			if (!DM_RemapSkin &&
+				pinst->id == X86_INS_ADD &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				DM_RemapSkin = (decltype(DM_RemapSkin))pinst->detail->x86.operands[1].imm;
+			}
+
+			if (pDM_RemapSkin && DM_RemapSkin && r_remapindex)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, &ctx);
+
+		Sig_VarNotFound(pDM_RemapSkin);
+		Sig_VarNotFound(DM_RemapSkin);
+		Sig_VarNotFound(r_remapindex);
+	}
+
+	if (1)
+	{
+		typedef struct
+		{
+			PVOID candidate_E8;
+			bool bFoundRet;
+		}R_NewMap_ctx;
+
+		R_NewMap_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_NewMap, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (R_NewMap_ctx*)context;
+
+			if (address[0] == 0xE8 && instLen == 5)
+			{
+				ctx->candidate_E8 = (decltype(ctx->candidate_E8))pinst->detail->x86.operands[0].imm;
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+			{
+				ctx->bFoundRet = true;
+				return TRUE;
+			}
+
+			return FALSE;
+		}, 0, &ctx);
+
+		if (ctx.bFoundRet && ctx.candidate_E8)
+		{
+			gRefFuncs.GL_UnloadTextures = (decltype(gRefFuncs.GL_UnloadTextures))ctx.candidate_E8;
+		}
+
+		Sig_FuncNotFound(GL_UnloadTextures);
+	}
+
+	if(1)
+	{
+#define MOD_KNOWN_SIG "\xB8\x9D\x82\x97\x53\x81\xE9"
 		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_dwEngineTextBase, g_dwEngineTextSize, MOD_KNOWN_SIG, sizeof(MOD_KNOWN_SIG) - 1);
 		Sig_AddrNotFound(mod_known);
 		mod_known = *(model_t **)(addr + 7);
@@ -5609,6 +5852,106 @@ void R_FillAddress(void)
 
 		Sig_VarNotFound(detTexSupported);
 	}
+
+	if (1)
+	{
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.Cache_Alloc, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+
+			if (!cache_head &&
+				pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm >(PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				cache_head = (decltype(cache_head))pinst->detail->x86.operands[1].imm;
+			}
+
+			if (cache_head)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+
+		Sig_VarNotFound(cache_head);
+	}
+
+	if (1)
+	{
+		typedef struct
+		{
+			int gfCustomBuild_instCount;
+			int push_0F_instCount;
+		}Draw_MiptexTexture_ctx;
+
+		Draw_MiptexTexture_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(gRefFuncs.Draw_MiptexTexture, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (Draw_MiptexTexture_ctx*)context;
+
+			if (!gfCustomBuild &&
+				pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 0 )
+			{
+				gfCustomBuild = (decltype(gfCustomBuild))pinst->detail->x86.operands[0].mem.disp;
+				ctx->gfCustomBuild_instCount = instCount;
+			}
+
+			if (!szCustName && instCount > ctx->gfCustomBuild_instCount && instCount < ctx->gfCustomBuild_instCount + 15)
+			{
+				if (!ctx->push_0F_instCount &&
+					pinst->id == X86_INS_PUSH &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[0].imm == 0xF)
+				{
+					ctx->push_0F_instCount = instCount;
+				}
+
+				if (instCount > ctx->push_0F_instCount &&
+					instCount < ctx->push_0F_instCount + 5 &&
+					pinst->id == X86_INS_PUSH &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+					(PUCHAR)pinst->detail->x86.operands[0].imm >(PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{
+					szCustName = (decltype(szCustName))pinst->detail->x86.operands[0].imm;
+				}
+			}
+
+			if (gfCustomBuild && szCustName)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, &ctx);
+
+		Sig_VarNotFound(gfCustomBuild);
+		Sig_VarNotFound(szCustName);
+	}
 }
 
 hook_t *g_phook_GL_BeginRendering = NULL;
@@ -5623,6 +5966,8 @@ hook_t *g_phook_Mod_PointInLeaf = NULL;
 hook_t *g_phook_R_BuildLightMap = NULL;
 hook_t *g_phook_R_AddDynamicLights = NULL;
 hook_t *g_phook_R_GLStudioDrawPoints = NULL;
+hook_t* g_phook_GL_UnloadTextures = NULL;
+hook_t* g_phook_GL_UnloadTexture = NULL;
 hook_t *g_phook_GL_LoadTexture2 = NULL;
 hook_t *g_phook_GL_BuildLightmaps = NULL;
 hook_t *g_phook_enginesurface_drawFlushText = NULL;
@@ -5632,7 +5977,6 @@ hook_t *g_phook_triapi_RenderMode = NULL;
 hook_t *g_phook_triapi_Color4f = NULL;
 hook_t *g_phook_Draw_MiptexTexture = NULL;
 hook_t *g_phook_BuildGammaTable = NULL;
-//hook_t *g_phook_Cvar_DirectSet = NULL;
 hook_t *g_phook_DLL_SetModKey = NULL;
 
 void R_UninstallHooksForEngineDLL(void)
@@ -5658,6 +6002,7 @@ void R_UninstallHooksForEngineDLL(void)
 	//Uninstall_Hook(R_BuildLightMap);//Overrrided
 	//Uninstall_Hook(R_AddDynamicLights);//Overrrided
 	Uninstall_Hook(R_GLStudioDrawPoints);
+	Uninstall_Hook(GL_UnloadTextures);
 	Uninstall_Hook(GL_LoadTexture2);
 	Uninstall_Hook(GL_BuildLightmaps);
 	Uninstall_Hook(enginesurface_drawFlushText);
@@ -5693,6 +6038,7 @@ void R_InstallHooks(void)
 	//Install_InlineHook(R_BuildLightMap);//Overrided
 	//Install_InlineHook(R_AddDynamicLights);//Overrided
 	Install_InlineHook(R_GLStudioDrawPoints);
+	Install_InlineHook(GL_UnloadTextures);
 	Install_InlineHook(GL_LoadTexture2);
 	Install_InlineHook(GL_BuildLightmaps);
 	Install_InlineHook(enginesurface_drawFlushText);

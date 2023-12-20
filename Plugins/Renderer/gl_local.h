@@ -18,11 +18,14 @@
 #include <entity_types.h>
 
 #include <set>
+#include <map>
 
 #include "plugins.h"
 #include "exportfuncs.h"
 #include "qgl.h"
 #include "ref_int_internal.h"
+
+#include "zone.h"
 
 #include "gl_profile.h"
 #include "gl_shader.h"
@@ -191,6 +194,8 @@ extern float *filterBrightness;
 
 extern bool* detTexSupported;
 
+extern cache_system_t(*cache_head);
+
 extern int glx;
 extern int gly;
 extern int glwidth;
@@ -310,7 +315,6 @@ void R_InstallHooks(void);
 void R_UninstallHooksForEngineDLL(void);
 void R_UninstallHooksForClientDLL(void);
 
-void *Hunk_AllocName(int size, const char *name);
 void GammaToLinear(float *color);
 void R_LoadSkyBox_SvEngine(const char *name);
 void R_LoadSkys(void);
@@ -382,8 +386,10 @@ void GL_DisableMultitexture(void);
 void GL_EnableMultitexture(void);
 void triapi_RenderMode(int mode);
 void triapi_Color4f(float x, float y, float z, float w);
-int GL_LoadTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal);
-int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal, int filter);
+void GL_UnloadTextureByIdentifier(const char* identifier, bool notify_callback);
+void GL_UnloadTextures(void);
+int GL_LoadTexture(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal);
+int GL_LoadTexture2(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal, int filter);
 void GL_InitShaders(void);
 void GL_FreeShaders(void);
 texture_t *Draw_DecalTexture(int index);
@@ -471,7 +477,7 @@ void R_PushRefDef(void);
 void R_UpdateRefDef(void);
 void R_PopRefDef(void);
 
-void GL_FreeTexture(gltexture_t *glt);
+void GL_FreeTexture(gltexture_t *glt, bool notify_callback);
 void GL_PushMatrix(void);
 void GL_PopMatrix(void);
 
@@ -498,8 +504,11 @@ void GL_EndFullScreenQuad(void);
 void GL_Texturemode_f(void);
 void GL_Texturemode_cb(cvar_t *);
 
-int GL_GetTextureTypeFromLoadedTextureId(int gltexturenum);
+void GL_GenerateHashedTextureIndentifier(const char* identifier, GL_TEXTURETYPE textureType, char* hashedIdentifier, size_t len);
+void GL_GenerateHashedTextureIndentifier2(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, char* hashedIdentifier, size_t len);
+GL_TEXTURETYPE GL_GetTextureTypeFromGLTexture(gltexture_t* glt);
 
+int EngineGetMaxGLTextures();
 int EngineGetNumKnownModel();
 int EngineGetMaxKnownModel(void);
 int EngineGetModelIndex(model_t *mod);
@@ -513,8 +522,7 @@ int EngineGetMaxTempEnts(void);
 TEMPENTITY *EngineGetTempTentsBase(void);
 TEMPENTITY *EngineGetTempTentByIndex(int index);
 
-void Cache_Free(cache_user_t* c);
-void* Cache_Check(cache_user_t* c);
+void RemoveFileExtension(std::string& filePath);
 
 void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue);
 
