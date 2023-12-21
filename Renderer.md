@@ -308,6 +308,37 @@ The following files will be used if exists:
 
 * Use cvar `r_studio_external_textures 0` to disable StudioModel specular texture temporarily.
 
+## StudioModel alpha-transparent texture
+
+Just like `STUDIO_NF_ADDITIVE` but with alpha-blending instead of additive-blending. The rendering of meshes with `STUDIO_NF_ALPHA` will be defered to transparent pass if it's from a opaque entity.
+
+You will have to replace the basetexture with an external texture with alpha-channel supported, like DXT5-dds,TGA or PNG.
+
+Add following content to the `[modelname]_external.txt`:
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "basetexture.bmp"
+    "replacetexture" "replacetexture.dds" // alpha-channel required!!!
+    "flags" "STUDIO_NF_ALPHA"
+}
+```
+
+## StudioModel double-side face rendering
+
+Meshes with `STUDIO_NF_DOUBLE_FACE` will be rendering double-sided.
+
+Add following content to the `[modelname]_external.txt`:
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "basetexture.bmp"
+    "flags" "STUDIO_NF_DOUBLE_FACE"
+}
+```
+
 ## Outline / Celshade / RimLight / HairShadow / HairSpecular
 
 The following flags are added to render Outline, Celshade, RimLight, HairShadow and HairSpecular effects for studiomodels.

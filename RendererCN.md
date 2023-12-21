@@ -314,6 +314,37 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 * 使用控制台参数 `r_studio_external_textures 0` 可以临时禁用法线贴图。
 
+## 模型ALPHA半透明贴图支持
+
+跟 `STUDIO_NF_ADDITIVE` 效果类似，只是使用ALPHA通道而非颜色叠加模式进行半透明混合。带 `STUDIO_NF_ALPHA` 属性的贴图会被延迟到半透明阶段再进行绘制（如果是来自不透明的实体的话）。
+
+你需要使用模型贴图替换功能将基础贴图替换为带ALPHA通道的贴图，比如内部编码格式为DXT5的DDS，TGA或PNG。
+
+需要添加以下内容到 `[modelname]_external.txt` 文件中:
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "basetexture.bmp"
+    "replacetexture" "replacetexture.dds" // 该贴图必须带ALHAP通道!!!
+    "flags" "STUDIO_NF_ALPHA"
+}
+```
+
+## 模型双面渲染
+
+拥有 `STUDIO_NF_DOUBLE_FACE` 属性的贴图会被渲染正反两个表面。
+
+需要添加以下内容到 `[modelname]_external.txt` 文件中:
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "basetexture.bmp"
+    "flags" "STUDIO_NF_DOUBLE_FACE"
+}
+```
+
 ## 卡通渲染 / 描边  / 边缘光 / 刘海阴影 / 头发高光
 
 为了给指定的模型增加卡通渲染 / 描边  / 边缘光 / 刘海阴影 / 头发高光的效果，
