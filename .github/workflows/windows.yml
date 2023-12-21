@@ -28,87 +28,12 @@ jobs:
 
       - name: Init dependencies
         working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: build-initdeps.bat
+        run: git submodule update --init --recursive
         shell: cmd
 
-      - name: Build capstone
+      - name: Build MetaHook and Plugins
         working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: build-capstone.bat
-        shell: cmd
-
-      - name: Build bullet3
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: build-bullet3.bat
-        shell: cmd
-        
-      - name: Build bullet3 (AVX2)
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: build-bullet3-avx2.bat
-        shell: cmd
-
-      - name: Build glew
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: build-glew.bat
-        shell: cmd
-
-      - name: Build MetaHook.exe
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: build-MetaHook.bat
-        shell: cmd
-        
-      - name: Build BulletPhysics.dll
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: build-BulletPhysics.bat
-        shell: cmd
-                
-      - name: Build BulletPhysics.dll (AVX2)
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: build-BulletPhysics-AVX2.bat
-        shell: cmd
-        
-      - name: Build CaptionMod.dll
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: build-CaptionMod.bat
-        shell: cmd
-        
-      - name: Build SCModelDownloader.dll
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: build-SCModelDownloader.bat
-        shell: cmd
-        
-      - name: Build CommunicationDemo.dll
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: build-CommunicationDemo.bat
-        shell: cmd
-
-      - name: Build DontFlushSoundCache.dll
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: build-DontFlushSoundCache.bat
-        shell: cmd
-        
-      - name: Build PrecacheManager.dll
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: build-PrecacheManager.bat
-        shell: cmd
-        
-      - name: Build Renderer.dll
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: build-Renderer.bat
-        shell: cmd
-        
-      - name: Build Renderer.dll (AVX2)
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: build-Renderer-AVX2.bat
-        shell: cmd
-        
-      - name: Build SteamScreenshots.dll
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: build-SteamScreenshots.bat
-        shell: cmd
-
-      - name: Build StudioEvents.dll
-        working-directory: ${{env.GITHUB_WORKSPACE}}
-        run: build-StudioEvents.bat
+        run: scripts\build-MetaHook.bat
         shell: cmd
 
       - name: Create Output directory
@@ -127,23 +52,24 @@ jobs:
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
           mkdir "Output\SteamAppsLocation"
-          copy "SteamAppsLocation\SteamAppsLocation.exe" "Output\SteamAppsLocation" /y
-          copy "SteamAppsLocation\steam_appid.txt" "Output\SteamAppsLocation" /y
-          copy "SteamAppsLocation\steam_api.dll" "Output\SteamAppsLocation" /y
+          copy "tools\SteamAppsLocation\SteamAppsLocation.exe" "Output\SteamAppsLocation" /y
+          copy "tools\SteamAppsLocation\steam_appid.txt" "Output\SteamAppsLocation" /y
+          copy "tools\SteamAppsLocation\steam_api.dll" "Output\SteamAppsLocation" /y
         shell: cmd
 
       - name: Copy install bat to Output
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
-          copy "install-to-SvenCoop.bat" "Output" /y
-          copy "install-to-OpposingForce.bat" "Output" /y
-          copy "install-to-HalfLife.bat" "Output" /y
-          copy "install-to-DayOfDefeat.bat" "Output" /y
-          copy "install-to-CSCZDeletedScenes.bat" "Output" /y
-          copy "install-to-CounterStrike.bat" "Output" /y
-          copy "install-to-ConditionZero.bat" "Output" /y
-          copy "install-to-BlueShift.bat" "Output" /y
-          copy "install-to-Echoes.bat" "Output" /y
+          copy "scripts\install-to-BlueShift.bat" "Output" /y
+          copy "scripts\install-to-ConditionZero.bat" "Output" /y
+          copy "scripts\install-to-CounterStrike.bat" "Output" /y
+          copy "scripts\install-to-CSCZDeletedScenes.bat" "Output" /y
+          copy "scripts\install-to-DayOfDefeat.bat" "Output" /y
+          copy "scripts\install-to-Echoes.bat" "Output" /y
+          copy "scripts\install-to-HalfLife.bat" "Output" /y
+          copy "scripts\install-to-HalfLifeUpdated.bat" "Output" /y
+          copy "scripts\install-to-OpposingForce.bat" "Output" /y
+          copy "scripts\install-to-SvenCoop.bat" "Output" /y
         shell: cmd
 
       - name: Zipping All
