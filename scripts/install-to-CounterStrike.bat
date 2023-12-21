@@ -11,7 +11,7 @@ if not "%SolutionDir:~-1%"=="\" SET "SolutionDir=%SolutionDir%\"
 
 cd /d "%SolutionDir%"
 
-if not exist "%~dp0Build\svencoop.exe" goto fail_nobuild
+if not exist "%SolutionDir%Build\svencoop.exe" goto fail_nobuild
 
 set LauncherExe=metahook.exe
 set LauncherMod=cstrike
@@ -26,11 +26,11 @@ echo -----------------------------------------------------
 
 echo Copying files...
 
-copy "%~dp0Build\svencoop.exe" "%GameDir%\%LauncherExe%" /y
-copy "%~dp0Build\FreeImage.dll" "%GameDir%\" /y
-xcopy "%~dp0Build\svencoop" "%GameDir%\%LauncherMod%" /y /e
-xcopy "%~dp0Build\cstrike_hd" "%GameDir%\cstrike_hd" /y /e
-xcopy "%~dp0Build\valve" "%GameDir%\%LauncherMod%" /y /e
+copy "%SolutionDir%Build\svencoop.exe" "%GameDir%\%LauncherExe%" /y
+copy "%SolutionDir%Build\FreeImage.dll" "%GameDir%\" /y
+xcopy "%SolutionDir%Build\svencoop" "%GameDir%\%LauncherMod%" /y /e
+xcopy "%SolutionDir%Build\cstrike_hd" "%GameDir%\cstrike_hd" /y /e
+xcopy "%SolutionDir%Build\valve" "%GameDir%\%LauncherMod%" /y /e
 
 if not exist "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst" copy "%GameDir%\%LauncherMod%\metahook\configs\plugins_goldsrc.lst" "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst" /y
 

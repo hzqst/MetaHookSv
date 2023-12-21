@@ -11,7 +11,7 @@ if not "%SolutionDir:~-1%"=="\" SET "SolutionDir=%SolutionDir%\"
 
 cd /d "%SolutionDir%"
 
-if not exist "%~dp0Build\svencoop.exe" goto fail_nobuild
+if not exist "%SolutionDir%Build\svencoop.exe" goto fail_nobuild
 
 set LauncherExe=metahook.exe
 set LauncherMod=dod
@@ -40,15 +40,15 @@ if "%GameSDL2_fileVersion%"=="2, 0, 16, 0" (
 )
 
 echo SDL2 version is "%GameSDL2_fileVersion%", need to replace SDL2
-copy "%~dp0Build\SDL2.dll" "%GameDir%\" /y
+copy "%SolutionDir%Build\SDL2.dll" "%GameDir%\" /y
 goto :no_replace_sdl2
 
 :no_replace_sdl2
 
-copy "%~dp0Build\svencoop.exe" "%GameDir%\%LauncherExe%" /y
-copy "%~dp0Build\FreeImage.dll" "%GameDir%\" /y
-xcopy "%~dp0Build\svencoop" "%GameDir%\%LauncherMod%" /y /e
-xcopy "%~dp0Build\valve" "%GameDir%\%LauncherMod%" /y /e
+copy "%SolutionDir%Build\svencoop.exe" "%GameDir%\%LauncherExe%" /y
+copy "%SolutionDir%Build\FreeImage.dll" "%GameDir%\" /y
+xcopy "%SolutionDir%Build\svencoop" "%GameDir%\%LauncherMod%" /y /e
+xcopy "%SolutionDir%Build\valve" "%GameDir%\%LauncherMod%" /y /e
 
 if not exist "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst" copy "%GameDir%\%LauncherMod%\metahook\configs\plugins_goldsrc.lst" "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst" /y
 
