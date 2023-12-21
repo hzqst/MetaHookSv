@@ -36,6 +36,11 @@ jobs:
         run: scripts\build-MetaHook.bat
         shell: cmd
 
+      - name: Build Plugins
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: scripts\build-Plugins.bat
+        shell: cmd
+
       - name: Create Output directory
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: mkdir Output

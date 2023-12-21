@@ -62,9 +62,9 @@ Let's assume that you have all requirements installed correctly.
 
 1. `git clone --recursive https://github.com/hzqst/MetaHookSv` to somewhere that doesn't contain space in the directory path.
 
-2. Run `scripts\build-MetaHook.bat`, wait for all projects to generate.
+2. Run `scripts\build-MetaHook.bat`, wait for metahook exe to generate. The generated exe should be under `Build` if no error(s) occurs.
 
-3. All generated dlls should be under `Build\svencoop\metahook\plugins\` if no error(s) occurs.
+3. Run `scripts\build-Plugins.bat`, wait for all plugins to generate. All generated dlls should be under `Build\svencoop\metahook\plugins\` if no error(s) occurs.
 
 ## Debugging
 
@@ -106,7 +106,7 @@ Let's assume that you have all requirements installed correctly.
 
 A subtitle plugin designed for displaying subtitles and translate in-game HUD text.
 
-[DOCUMENTATION](docs/CaptionMod.md) [中文文档](docs/CaptionModCN.md)
+[DOC](docs/CaptionMod.md) [中文文档](docs/CaptionModCN.md)
 
 ![](/img/1.png)
 
@@ -114,7 +114,7 @@ A subtitle plugin designed for displaying subtitles and translate in-game HUD te
 
 A plugin that transform player model into ragdoll when player is dead or being caught by barnacle.
 
-[DOCUMENTATION](docs/BulletPhysics.md) [中文文档](docs/BulletPhysicsCN.md)
+[DOC](docs/BulletPhysics.md) [中文文档](docs/BulletPhysicsCN.md)
 
 ![](/img/6.png)
 
@@ -124,7 +124,7 @@ A graphic enhancement plugin that modifiy the original render engine.
 
 You can even play with 200k epolys models and still keep a high framerate.
 
-[DOCUMENTATION](docs/Renderer.md) [中文文档](docs/RendererCN.md)
+[DOC](docs/Renderer.md) [中文文档](docs/RendererCN.md)
 
 ![](/img/3.png)
 
@@ -132,7 +132,7 @@ You can even play with 200k epolys models and still keep a high framerate.
 
 This plugin can block studio-event sound spamming with controllable cvars.
 
-[DOCUMENTATION](docs/StudioEvents.md) [中文文档](docs/StudioEventsCN.md)
+[DOC](docs/StudioEvents.md) [中文文档](docs/StudioEventsCN.md)
 
 ![](/img/8.png)
 

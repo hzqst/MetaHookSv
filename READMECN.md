@@ -66,9 +66,9 @@
 
 1. 执行 `git clone --recursive https://github.com/hzqst/MetaHookSv` 拉取代码到一处**路径不包含空格**的目录中。
 
-2. 运行 `scripts\build-MetaHook.bat`, 等待所有项目生成完成。
+2. 运行 `scripts\build-MetaHook.bat`, 等待metahook exe生成完成。如果没有错误发生，生成的EXE应该会出现在`Build`目录下。
 
-5. 如果构建成功，插件应该会生成到`Build\svencoop\metahook\plugins\`目录。
+3. 运行 `scripts\build-Plugins.bat`, 等待所有插件生成完成。如果没有错误发生，生成的DLL应该会出现在`Build\svencoop\metahook\plugins\`目录下。
 
 ## 如何调试
 
@@ -76,7 +76,7 @@
 
 3. 运行 `scripts\debug-SvenCoop.bat`  (其他游戏就选择该游戏对应的批处理)
 
-4. 打开 `MetaHook.sln`, 在解决方案资源管理器中找到对应的项目，右键设置为启动项目，然后以Debug Win32生成配置重新生成该项目后，按F5即可启动本地调试。
+4. 打开 `MetaHook.sln`, 在解决方案资源管理器中找到对应的项目，右键设置为启动项目，然后以**Debug|Win32配置**重新生成该项目后，按F5即可启动本地调试。
 
 * 如果运行 `scripts\debug-SvenCoop.bat` 时 Visual Studio 正在运行，请重启一次 Visual Studio，否则可能会导致新的调试设置不生效。
 
@@ -136,7 +136,7 @@
 
 该插件可以防止重复播放模型自带音效，防止音效反复刷屏。
 
-[DOCUMENTATION](docs/StudioEvents.md) [中文文档](docs/StudioEventsCN.md)
+[中文文档](docs/StudioEvents.md) [中文文档](docs/StudioEventsCN.md)
 
 ![](/img/8.png)
 
