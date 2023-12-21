@@ -1,6 +1,6 @@
 # BulletPhysics documentation
 
-[中文DOC](BulletPhysicsCN.md)
+[中文DOC](/docs/BulletPhysicsCN.md)
 
 ### Features
 

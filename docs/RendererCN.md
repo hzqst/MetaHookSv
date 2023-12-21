@@ -1,6 +1,6 @@
 # MetaRenderer 文档
 
-[English DOC](Renderer.md)
+[English DOC](/docs/Renderer.md)
 
 # 兼容性
 

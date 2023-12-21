@@ -1,6 +1,6 @@
 # StudioEvents 文档
 
-[English DOC](StudioEvents.md)
+[English DOC](/docs/StudioEvents.md)
 
 ### 功能
 

@@ -1,6 +1,6 @@
 # BulletPhysics 文档
 
-[English DOC](BulletPhysics.md)
+[English DOC](/docs/BulletPhysics.md)
 
 ### 功能
 

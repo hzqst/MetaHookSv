@@ -1,6 +1,6 @@
 # CaptionMod documentation
 
-[中文DOC](CaptionModCN.md)
+[中文DOC](/docs/CaptionModCN.md)
 
 ## Features
 

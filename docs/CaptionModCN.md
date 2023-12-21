@@ -1,6 +1,6 @@
 # CaptionMod 文档
 
-[English DOC](CaptionMod.md)
+[English DOC](/docs/CaptionMod.md)
 
 ## 功能
 
