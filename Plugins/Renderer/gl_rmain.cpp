@@ -277,8 +277,6 @@ cvar_t *r_alpha_shift = NULL;
 
 cvar_t *r_additive_shift = NULL;
 
-cvar_t* gl_unload_nreftex = NULL;
-
 bool R_IsRenderingGBuffer()
 {
 	return GL_GetCurrentFrameBuffer() == &s_GBufferFBO;
@@ -2176,8 +2174,6 @@ void R_InitCvars(void)
 		gl_bindless = gEngfuncs.pfnRegisterVariable("gl_bindless", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	}
 
-	gl_unload_nreftex = gEngfuncs.pfnRegisterVariable("gl_unload_nreftex", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-
 	r_gamma_blend = gEngfuncs.pfnRegisterVariable("r_gamma_blend", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	r_alpha_shift = gEngfuncs.pfnRegisterVariable("r_alpha_shift", "0.4", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
@@ -2254,11 +2250,6 @@ void R_AddReferencedTextures(std::set<int> &textures)
 				{
 					gEngfuncs.Con_DPrintf("R_AddReferencedTextures: [mdl] [%s].\n", mod->name);
 
-					if (strstr(mod->name, "yuni.mdl"))
-					{
-						printf("");
-					}
-
 					R_StudioTextureAddReferences(mod, studiohdr, textures);
 				}
 			}
@@ -2323,7 +2314,8 @@ void R_NewMap(void)
 
 	R_StudioReloadVBOCache();
 
-	if (gl_unload_nreftex->value > 0)
+	//SvEngine always unload all GLT_STUDIO and GLT_SPRITE textures
+	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		std::set<int> textures;
 		R_AddReferencedTextures(textures);
@@ -3003,57 +2995,6 @@ void R_SetupFrame(void)
 	}
 }
 
-void CM_DecompressPVS(byte *in, byte *decompressed, int byteCount)
-{
-	int		c;
-	byte	*out;
-
-	out = decompressed;
-
-	do
-	{
-		if (*in)
-		{
-			*out++ = *in++;
-			continue;
-		}
-
-		c = in[1];
-		in += 2;
-		while (c)
-		{
-			*out++ = 0;
-			c--;
-		}
-	} while (out < decompressed + byteCount);
-}
-
-byte mod_novis[MAX_MAP_LEAFS / 8];
-
-byte *Mod_DecompressVis(byte *in, model_t *model)
-{
-	static byte	decompressed[MAX_MAP_LEAFS / 8];
-	int		row;
-
-	row = (model->numleafs + 7) >> 3;
-
-	if (!in)
-		return mod_novis;
-
-	CM_DecompressPVS(in, decompressed, row);
-	return decompressed;
-}
-
-byte *Mod_LeafPVS(mleaf_t *leaf, model_t *model)
-{
-	return Mod_DecompressVis(leaf->compressed_vis, model);
-}
-
-void Mod_Init(void)
-{
-	memset(mod_novis, 0xff, sizeof(mod_novis));
-}
-
 void R_MarkLeaves(void)
 {
 	byte *vis;
@@ -3379,26 +3320,6 @@ int EngineGetMaxClientModels(void)
 		return MAX_MODELS_SVENGINE;
 
 	return MAX_MODELS;
-}
-
-void Mod_LoadStudioModel(model_t *mod, void *buffer)
-{
-	gRefFuncs.Mod_LoadStudioModel(mod, buffer);
-
-	auto studiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(mod);
-
-	if (studiohdr)
-	{
-		studiohdr->soundtable = 0;
-
-		auto VBOData = R_PrepareStudioVBO(studiohdr);
-
-		if (VBOData)
-		{
-			R_StudioLoadExternalFile(mod, studiohdr, VBOData);
-			R_StudioLoadTextureModel(mod, studiohdr);
-		}
-	}
 }
 
 const int skytexorder_svengine[6] = { 0, 1, 2, 3, 4, 5 };

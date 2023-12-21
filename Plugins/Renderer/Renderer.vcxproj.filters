@@ -169,5 +169,8 @@
     <ClInclude Include="zone.h">
       <Filter>Header</Filter>
     </ClInclude>
+    <ClInclude Include="gl_model.h">
+      <Filter>Header</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

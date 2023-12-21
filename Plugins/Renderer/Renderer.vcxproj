@@ -193,6 +193,7 @@ if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\ren
     <ClInclude Include="gl_hud.h" />
     <ClInclude Include="gl_light.h" />
     <ClInclude Include="gl_local.h" />
+    <ClInclude Include="gl_model.h" />
     <ClInclude Include="gl_portal.h" />
     <ClInclude Include="gl_profile.h" />
     <ClInclude Include="gl_shader.h" />

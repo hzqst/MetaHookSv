@@ -1,5 +1,7 @@
 #include "gl_local.h"
 
+byte mod_novis[MAX_MAP_LEAFS / 8];
+
 int LittleLong(int l)
 {
 	return l;
@@ -13,6 +15,97 @@ short LittleShort(short l)
 float LittleFloat(float l)
 {
 	return l;
+}
+
+void CM_DecompressPVS(byte* in, byte* decompressed, int byteCount)
+{
+	int		c;
+	byte* out;
+
+	out = decompressed;
+
+	do
+	{
+		if (*in)
+		{
+			*out++ = *in++;
+			continue;
+		}
+
+		c = in[1];
+		in += 2;
+		while (c)
+		{
+			*out++ = 0;
+			c--;
+		}
+	} while (out < decompressed + byteCount);
+}
+
+byte* Mod_DecompressVis(byte* in, model_t* model)
+{
+	static byte	decompressed[MAX_MAP_LEAFS / 8];
+	int		row;
+
+	row = (model->numleafs + 7) >> 3;
+
+	if (!in)
+		return mod_novis;
+
+	CM_DecompressPVS(in, decompressed, row);
+	return decompressed;
+}
+
+byte* Mod_LeafPVS(mleaf_t* leaf, model_t* model)
+{
+	return Mod_DecompressVis(leaf->compressed_vis, model);
+}
+
+void Mod_Init(void)
+{
+	memset(mod_novis, 0xff, sizeof(mod_novis));
+}
+
+void Mod_UnloadSpriteTextures(model_t* mod)
+{
+	if (mod->type != mod_sprite)
+		return;
+
+	auto pSprite = (msprite_t *)mod->cache.data;
+
+	mod->needload = NL_NEEDS_LOADED;
+
+	if (!pSprite)
+		return;
+
+	for (int i = 0; i < pSprite->numframes; i++)
+	{
+		char name[260] = {0};
+		snprintf(name, sizeof(name) - 1, "%s_%i", mod->name, i);
+
+		GL_UnloadTextureWithType(name, GLT_SPRITE, true);
+		GL_UnloadTextureWithType(name, GLT_HUDSPRITE, true);
+	}
+}
+
+void Mod_LoadStudioModel(model_t* mod, void* buffer)
+{
+	gRefFuncs.Mod_LoadStudioModel(mod, buffer);
+
+	auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
+
+	if (studiohdr)
+	{
+		studiohdr->soundtable = 0;
+
+		auto VBOData = R_PrepareStudioVBO(studiohdr);
+
+		if (VBOData)
+		{
+			R_StudioLoadExternalFile(mod, studiohdr, VBOData);
+			R_StudioLoadTextureModel(mod, studiohdr);
+		}
+	}
 }
 
 #if 0

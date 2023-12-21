@@ -260,6 +260,10 @@
 #define HOST_IS_SINGLE_PLAYER_GAME_HL25 "\x83\x3D\x2A\x2A\x2A\x2A\x00\xA1\x2A\x2A\x2A\x2A\x0F\x44\x05\x2A\x2A\x2A\x2A\xC3"
 #define HOST_IS_SINGLE_PLAYER_GAME_NEW "\xA1\x2A\x2A\x2A\x2A\x85\xC0\xA1\x2A\x2A\x2A\x2A\x74\x05\xA1\x2A\x2A\x2A\x2A\xC3"
 
+#define MOD_UNLOADSPRITETEXTURES_SVENGINE "\x81\xEC\x04\x01\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x00\x01\x00\x00\x57\x8B\xBC\x24\x0C\x01\x00\x00"
+#define MOD_UNLOADSPRITETEXTURES_HL25 "\x55\x8B\xEC\x81\xEC\x04\x01\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x57\x8B\x7D\x08\x83\x7F\x44\x01"
+#define MOD_UNLOADSPRITETEXTURES_NEW "\x55\x8B\xEC\x81\xEC\x00\x01\x00\x00\x53\x8B\x5D\x08\xB8\x01\x00\x00\x00\x56\x8B\x4B\x44"
+
 void R_FillAddress(void)
 {
 	DWORD addr;
@@ -1245,6 +1249,22 @@ void R_FillAddress(void)
 	{
 		gRefFuncs.Host_IsSinglePlayerGame = (decltype(gRefFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW);
 		Sig_FuncNotFound(Host_IsSinglePlayerGame);
+	}
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		gRefFuncs.Mod_UnloadSpriteTextures = (decltype(gRefFuncs.Mod_UnloadSpriteTextures))Search_Pattern(MOD_UNLOADSPRITETEXTURES_SVENGINE);
+		Sig_FuncNotFound(Mod_UnloadSpriteTextures);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gRefFuncs.Mod_UnloadSpriteTextures = (decltype(gRefFuncs.Mod_UnloadSpriteTextures))Search_Pattern(MOD_UNLOADSPRITETEXTURES_HL25);
+		Sig_FuncNotFound(Mod_UnloadSpriteTextures);
+	}
+	else
+	{
+		gRefFuncs.Mod_UnloadSpriteTextures = (decltype(gRefFuncs.Mod_UnloadSpriteTextures))Search_Pattern(MOD_UNLOADSPRITETEXTURES_NEW);
+		Sig_FuncNotFound(Mod_UnloadSpriteTextures);
 	}
 
 	//engine's R_AddTEntity is not used anymore
@@ -5973,6 +5993,7 @@ hook_t *g_phook_GL_BuildLightmaps = NULL;
 hook_t *g_phook_enginesurface_drawFlushText = NULL;
 hook_t *g_phook_Mod_LoadStudioModel = NULL;
 hook_t *g_phook_Mod_LoadBrushModel = NULL;
+hook_t* g_phook_Mod_UnloadSpriteTextures = NULL;
 hook_t *g_phook_triapi_RenderMode = NULL;
 hook_t *g_phook_triapi_Color4f = NULL;
 hook_t *g_phook_Draw_MiptexTexture = NULL;
@@ -6007,6 +6028,7 @@ void R_UninstallHooksForEngineDLL(void)
 	Uninstall_Hook(GL_BuildLightmaps);
 	Uninstall_Hook(enginesurface_drawFlushText);
 	Uninstall_Hook(Mod_LoadStudioModel);
+	Uninstall_Hook(Mod_UnloadSpriteTextures);
 	Uninstall_Hook(triapi_RenderMode);
 	Uninstall_Hook(Draw_MiptexTexture);
 	Uninstall_Hook(BuildGammaTable);
@@ -6043,6 +6065,7 @@ void R_InstallHooks(void)
 	Install_InlineHook(GL_BuildLightmaps);
 	Install_InlineHook(enginesurface_drawFlushText);
 	Install_InlineHook(Mod_LoadStudioModel);
+	Install_InlineHook(Mod_UnloadSpriteTextures);
 	Install_InlineHook(triapi_RenderMode);
 	Install_InlineHook(Draw_MiptexTexture);
 	Install_InlineHook(BuildGammaTable);

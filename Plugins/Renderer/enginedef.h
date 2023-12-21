@@ -150,7 +150,8 @@ typedef struct
 
 #define TEX_TYPE_NONE	0
 #define TEX_TYPE_ALPHA	1
-#define TEX_TYPE_LUM	2
+#define TEX_TYPE_LUM	2//removed by SvEngine
+#define TEX_TYPE_ALPHA_GRADIENT_SVENGINE 2
 #define TEX_TYPE_ALPHA_GRADIENT 3
 #define TEX_TYPE_RGBA	4
 

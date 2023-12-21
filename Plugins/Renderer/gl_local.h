@@ -308,8 +308,6 @@ extern cvar_t* r_detailskytextures;
 
 extern cvar_t *gl_bindless;
 
-extern cvar_t* gl_unload_nreftex;
-
 void R_FillAddress(void);
 void R_InstallHooks(void);
 void R_UninstallHooksForEngineDLL(void);
@@ -318,8 +316,6 @@ void R_UninstallHooksForClientDLL(void);
 void GammaToLinear(float *color);
 void R_LoadSkyBox_SvEngine(const char *name);
 void R_LoadSkys(void);
-void Mod_LoadStudioModel(model_t *mod, void *buffer);
-void Mod_LoadBrushModel(model_t *mod, void *buffer);
 void Mod_Init(void);
 void BuildGammaTable(float g);
 void V_RenderView(void);

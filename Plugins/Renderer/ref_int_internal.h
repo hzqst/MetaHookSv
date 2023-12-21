@@ -65,6 +65,7 @@ typedef struct
 	int(*GL_LoadTexture)(char *identifier, int textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal);
 	int(*GL_LoadTexture2)(char *identifier, int textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal, int filter);
 	int(*GL_Upload16)(byte *data, int width, int height, int iType, byte *pPal, int a6, int a7, int a8);
+	void (*Mod_UnloadSpriteTextures)(model_t* mod);
 	void (*R_DecalMPoly)(float *v, texture_t *ptexture, msurface_t *psurf, int vertCount);
 	void (*R_MarkLeaves)(void);
 	void (*R_DrawBrushModel)(cl_entity_t *e);
@@ -163,6 +164,7 @@ extern hook_t *g_phook_GL_LoadTexture2;
 extern hook_t *g_phook_enginesurface_drawFlushText;
 extern hook_t *g_phook_Mod_LoadStudioModel;
 extern hook_t *g_phook_Mod_LoadBrushModel;
+extern hook_t *g_phook_Mod_UnloadSpriteTextures;
 extern hook_t *g_phook_triapi_RenderMode;
 extern hook_t *g_phook_Draw_MiptexTexture;
 extern hook_t *g_phook_BuildGammaTable;

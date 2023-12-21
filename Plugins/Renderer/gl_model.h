@@ -1,13 +1,8 @@
-#ifndef __MODEL__
-#define __MODEL__
+#pragma once
 
-void Mod_Init(void);
-void Mod_ClearAll(void);
-model_t *Mod_ForName(const char *name, qboolean crash, qboolean trackCRC);
-void *Mod_Extradata(model_t *mod);
-void Mod_TouchModel(char *name);
+extern byte mod_novis[MAX_MAP_LEAFS / 8];
 
-mleaf_t *Mod_PointInLeaf(float *p, model_t *model);
-byte *Mod_LeafPVS(mleaf_t *leaf, model_t *model);
-
-#endif
+void Mod_UnloadSpriteTextures(model_t* mod);
+void Mod_LoadStudioModel(model_t* mod, void* buffer);
+void Mod_LoadBrushModel(model_t* mod, void* buffer);
+byte* Mod_LeafPVS(mleaf_t* leaf, model_t* model);

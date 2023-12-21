@@ -813,7 +813,7 @@ void Draw_MiptexTexture(cachewad_t *wad, byte *data)
 			GL_UnloadTextureWithType(tex->name, GLT_DECAL, true);
 
 		//Why'th fuck 2 in SvEngine?
-		int iTexType = (g_iEngineType == ENGINE_SVENGINE) ? 2 : TEX_TYPE_ALPHA_GRADIENT;
+		int iTexType = (g_iEngineType == ENGINE_SVENGINE) ? TEX_TYPE_ALPHA_GRADIENT_SVENGINE : TEX_TYPE_ALPHA_GRADIENT;
 
 		tex->gl_texturenum = GL_LoadTexture(tex->name, GLT_DECAL, tex->width, tex->height, bitmap, true, iTexType, pal);
 	}
