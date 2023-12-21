@@ -106,7 +106,7 @@ Let's assume that you have all requirements installed correctly.
 
 A subtitle plugin designed for displaying subtitles and translate in-game HUD text.
 
-[DOCUMENTATION](CaptionMod.md) [中文文档](CaptionModCN.md)
+[DOCUMENTATION](docs/CaptionMod.md) [中文文档](docs/CaptionModCN.md)
 
 ![](/img/1.png)
 
@@ -114,7 +114,7 @@ A subtitle plugin designed for displaying subtitles and translate in-game HUD te
 
 A plugin that transform player model into ragdoll when player is dead or being caught by barnacle.
 
-[DOCUMENTATION](BulletPhysics.md) [中文文档](BulletPhysicsCN.md)
+[DOCUMENTATION](docs/BulletPhysics.md) [中文文档](docs/BulletPhysicsCN.md)
 
 ![](/img/6.png)
 
@@ -124,7 +124,7 @@ A graphic enhancement plugin that modifiy the original render engine.
 
 You can even play with 200k epolys models and still keep a high framerate.
 
-[DOCUMENTATION](Renderer.md) [中文文档](RendererCN.md)
+[DOCUMENTATION](docs/Renderer.md) [中文文档](docs/RendererCN.md)
 
 ![](/img/3.png)
 
@@ -132,7 +132,7 @@ You can even play with 200k epolys models and still keep a high framerate.
 
 This plugin can block studio-event sound spamming with controllable cvars.
 
-[DOCUMENTATION](StudioEvents.md) [中文文档](StudioEventsCN.md)
+[DOCUMENTATION](docs/StudioEvents.md) [中文文档](docs/StudioEventsCN.md)
 
 ![](/img/8.png)
 

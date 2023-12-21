@@ -34,7 +34,7 @@
 
 * 其他游戏也可以按照此种方式安装，只需要运行其他install-to-批处理即可。
 
-* 请确保已经登录Steam否则 [SteamAppsLocation](SteamAppsLocation/README.md) 可能会无法寻找游戏安装目录，导致自动安装失败。
+* 请确保已经登录Steam否则 [SteamAppsLocation](toolsrc/README.md) 可能会无法寻找游戏安装目录，导致自动安装失败。
 
 ## 手动安装方式
 
@@ -80,7 +80,7 @@
 
 * 如果运行 `scripts\debug-SvenCoop.bat` 时 Visual Studio 正在运行，请重启一次 Visual Studio，否则可能会导致新的调试设置不生效。
 
-* 请确保已经登录Steam否则 [SteamAppsLocation](toolsrc/SteamAppsLocation/README.md) 可能会无法寻找游戏安装目录。
+* 请确保已经登录Steam否则 [SteamAppsLocation](toolsrc/README.md) 可能会无法寻找游戏安装目录。
 
 ## MetaHookSv (V3) 相比 MetaHook (V2) 的新功能
 
@@ -112,7 +112,7 @@
 
 对Sven Co-op而言，该插件修复了游戏中大多数无法显示中文的乱码问题。
 
-[中文文档](CaptionModCN.md) [英文文档](CaptionMod.md)
+[中文文档](docs/CaptionModCN.md) [英文文档](docs/CaptionMod.md)
 
 ![](/img/1.png)
 
@@ -120,7 +120,7 @@
 
 对游戏提供布娃娃支持。玩家死亡时以及玩家被藤壶、喷火怪抓住时将玩家模型转化为布娃娃。
 
-[中文文档](BulletPhysicsCN.md) [DOCUMENTATION](BulletPhysics.md)
+[中文文档](docs/BulletPhysicsCN.md) [DOCUMENTATION](docs/BulletPhysics.md)
 
 ![](/img/6.png)
 
@@ -128,7 +128,7 @@
 
 替换了原版的图形渲染引擎，极大提升了渲染性能，使用了黑科技提升你的画质和帧率。
 
-[中文文档](RendererCN.md) [英文文档](Renderer.md)
+[中文文档](docs/RendererCN.md) [英文文档](docs/Renderer.md)
 
 ![](/img/3.png)
 
@@ -136,7 +136,7 @@
 
 该插件可以防止重复播放模型自带音效，防止音效反复刷屏。
 
-[DOCUMENTATION](StudioEvents.md) [中文文档](StudioEventsCN.md)
+[DOCUMENTATION](docs/StudioEvents.md) [中文文档](docs/StudioEventsCN.md)
 
 ![](/img/8.png)
 
