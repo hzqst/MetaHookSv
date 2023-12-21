@@ -51,25 +51,26 @@ jobs:
       - name: Copy SteamAppsLocation to Output
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
-          mkdir "Output\SteamAppsLocation"
-          copy "tools\SteamAppsLocation.exe" "Output\SteamAppsLocation" /y
-          copy "tools\steam_appid.txt" "Output\SteamAppsLocation" /y
-          copy "tools\steam_api.dll" "Output\SteamAppsLocation" /y
+          mkdir "Output\tools"
+          copy "tools\SteamAppsLocation.exe" "Output\tools" /y
+          copy "tools\steam_appid.txt" "Output\tools" /y
+          copy "tools\steam_api.dll" "Output\tools" /y
         shell: cmd
 
       - name: Copy install bat to Output
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
-          copy "scripts\install-to-BlueShift.bat" "Output" /y
-          copy "scripts\install-to-ConditionZero.bat" "Output" /y
-          copy "scripts\install-to-CounterStrike.bat" "Output" /y
-          copy "scripts\install-to-CSCZDeletedScenes.bat" "Output" /y
-          copy "scripts\install-to-DayOfDefeat.bat" "Output" /y
-          copy "scripts\install-to-Echoes.bat" "Output" /y
-          copy "scripts\install-to-HalfLife.bat" "Output" /y
-          copy "scripts\install-to-HalfLifeUpdated.bat" "Output" /y
-          copy "scripts\install-to-OpposingForce.bat" "Output" /y
-          copy "scripts\install-to-SvenCoop.bat" "Output" /y
+          mkdir "Output\scripts"
+          copy "scripts\install-to-BlueShift.bat" "Output\scripts" /y
+          copy "scripts\install-to-ConditionZero.bat" "Output\scripts" /y
+          copy "scripts\install-to-CounterStrike.bat" "Output\scripts" /y
+          copy "scripts\install-to-CSCZDeletedScenes.bat" "Output\scripts" /y
+          copy "scripts\install-to-DayOfDefeat.bat" "Output\scripts" /y
+          copy "scripts\install-to-Echoes.bat" "Output\scripts" /y
+          copy "scripts\install-to-HalfLife.bat" "Output\scripts" /y
+          copy "scripts\install-to-HalfLifeUpdated.bat" "Output\scripts" /y
+          copy "scripts\install-to-OpposingForce.bat" "Output\scripts" /y
+          copy "scripts\install-to-SvenCoop.bat" "Output\scripts" /y
         shell: cmd
 
       - name: Zipping All
