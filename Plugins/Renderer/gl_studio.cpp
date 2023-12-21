@@ -1,9 +1,9 @@
 #include "gl_local.h"
 #include "triangleapi.h"
+#include "mathlib2.h"
+
 #include <sstream>
 #include <algorithm>
-
-#include "mathlib.h"
 
 std::unordered_map<studio_bone_handle, studio_bone_cache*, studio_bone_hasher> g_StudioBoneCacheManager;
 
@@ -1121,7 +1121,7 @@ void R_StudioSetupVBOMaterial(const studio_vbo_t* VBOData, const studio_vbo_mate
 
 size_t safe_strlen(const char* str, size_t maxChars)
 {
-	int		count;
+	size_t		count;
 
 	count = 0;
 	while (str[count] && count < maxChars)
@@ -1133,7 +1133,6 @@ size_t safe_strlen(const char* str, size_t maxChars)
 bool R_IsRemapSkin(const char* texture, int* low, int* mid, int* high)
 {
 	char	sz[32];
-	char* p;
 	int		len;
 	char	ch;
 
@@ -1198,7 +1197,7 @@ skin_t* R_StudioGetSkin(int keynum, int index)
 
 	return pskin;
 #else
-	return gRefFuncs.R_StudioGetSkin(keynum, index);
+	return gPrivateFuncs.R_StudioGetSkin(keynum, index);
 #endif
 }
 
@@ -1207,7 +1206,6 @@ byte* R_StudioReloadSkin(model_t* pModel, int index, skin_t* pskin)
 	int					modelindex;
 	cache_user_t* pCache;
 	model_texture_cache_t* pData;
-	mstudiotexture_t* ptexture;
 
 	unsigned char* pbase;
 	int					size;
@@ -1399,7 +1397,7 @@ void R_StudioSetupSkinEx(const studio_vbo_t* VBOData, studiohdr_t* ptexturehdr, 
 
 #else
 
-	gRefFuncs.R_StudioSetupSkin(ptexturehdr, index);
+	gPrivateFuncs.R_StudioSetupSkin(ptexturehdr, index);
 
 #endif
 
@@ -2075,7 +2073,7 @@ qboolean studioapi_StudioCheckBBox(void)
 {
 	if (!g_bIsSvenCoop)
 	{
-		return gRefFuncs.studioapi_StudioCheckBBox();
+		return gPrivateFuncs.studioapi_StudioCheckBBox();
 	}
 
 	mplane_t			plane;
@@ -2204,7 +2202,7 @@ void studioapi_StudioDynamicLight(cl_entity_t* ent, alight_t* plight)
 				dl->die = 0;
 			}
 
-			gRefFuncs.studioapi_StudioDynamicLight(ent, plight);
+			gPrivateFuncs.studioapi_StudioDynamicLight(ent, plight);
 
 			dl = cl_dlights;
 			for (int i = 0; i < 256; i++, dl++)
@@ -2223,7 +2221,7 @@ void studioapi_StudioDynamicLight(cl_entity_t* ent, alight_t* plight)
 				dl->die = 0;
 			}
 
-			gRefFuncs.studioapi_StudioDynamicLight(ent, plight);
+			gPrivateFuncs.studioapi_StudioDynamicLight(ent, plight);
 
 			dl = cl_dlights;
 			for (int i = 0; i < 32; i++, dl++)
@@ -2234,7 +2232,7 @@ void studioapi_StudioDynamicLight(cl_entity_t* ent, alight_t* plight)
 	}
 	else
 	{
-		gRefFuncs.studioapi_StudioDynamicLight(ent, plight);
+		gPrivateFuncs.studioapi_StudioDynamicLight(ent, plight);
 	}
 }
 
@@ -2433,12 +2431,12 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 
 __forceinline void R_StudioRenderFinal_originalcall_wrapper(void* pthis, int dummy)
 {
-	gRefFuncs.R_StudioRenderFinal();
+	gPrivateFuncs.R_StudioRenderFinal();
 }
 
 __forceinline void R_StudioRenderModel_originalcall_wrapper(void* pthis, int dummy)
 {
-	gRefFuncs.R_StudioRenderModel();
+	gPrivateFuncs.R_StudioRenderModel();
 }
 
 void R_StudioRenderFinal(void)
@@ -2455,12 +2453,12 @@ void R_StudioRenderModel(void)
 
 void __fastcall GameStudioRenderer_StudioRenderFinal(void* pthis, int dummy)
 {
-	StudioRenderFinal_Template(gRefFuncs.GameStudioRenderer_StudioRenderFinal, pthis, dummy);
+	StudioRenderFinal_Template(gPrivateFuncs.GameStudioRenderer_StudioRenderFinal, pthis, dummy);
 }
 
 void __fastcall GameStudioRenderer_StudioRenderModel(void* pthis, int dummy)
 {
-	StudioRenderModel_Template(gRefFuncs.GameStudioRenderer_StudioRenderModel, GameStudioRenderer_StudioRenderFinal, pthis, dummy);
+	StudioRenderModel_Template(gPrivateFuncs.GameStudioRenderer_StudioRenderModel, GameStudioRenderer_StudioRenderFinal, pthis, dummy);
 }
 
 template<typename CallType>
@@ -2545,12 +2543,12 @@ void __fastcall StudioMergeBones_Template(CallType pfnMergeBones, void* pthis, i
 
 void __fastcall GameStudioRenderer_StudioSetupBones(void* pthis, int dummy)
 {
-	StudioSetupBones_Template(gRefFuncs.GameStudioRenderer_StudioSetupBones, pthis, dummy);
+	StudioSetupBones_Template(gPrivateFuncs.GameStudioRenderer_StudioSetupBones, pthis, dummy);
 }
 
 void __fastcall GameStudioRenderer_StudioMergeBones(void* pthis, int dummy, model_t* pSubModel)
 {
-	StudioMergeBones_Template(gRefFuncs.GameStudioRenderer_StudioMergeBones, pthis, dummy, pSubModel);
+	StudioMergeBones_Template(gPrivateFuncs.GameStudioRenderer_StudioMergeBones, pthis, dummy, pSubModel);
 }
 
 void R_StudioFreeAllTexturesInVBOMaterial(studio_vbo_material_t* VBOMaterial)

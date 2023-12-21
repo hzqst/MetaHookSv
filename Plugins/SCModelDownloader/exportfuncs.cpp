@@ -17,6 +17,7 @@
 #include <set>
 #include <unordered_map>
 #include <algorithm>
+
 #include <rapidjson/document.h>
 
 cvar_t *scmodel_autodownload = NULL;

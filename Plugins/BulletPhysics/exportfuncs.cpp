@@ -7,10 +7,9 @@
 #include <triangleapi.h>
 #include <cvardef.h>
 #include <entity_types.h>
-#include <command.h>
 #include <pm_defs.h>
-#include <mathlib.h>
 
+#include "mathlib2.h"
 #include "plugins.h"
 #include "enginedef.h"
 #include "exportfuncs.h"

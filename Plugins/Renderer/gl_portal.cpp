@@ -136,12 +136,12 @@ void __fastcall ClientPortalManager_ResetAll(void * pthis, int)
 		} while (ptextures != *(portal_texture_t **)((ULONG_PTR)pthis + 0x9C));
 	}
 
-	gRefFuncs.ClientPortalManager_ResetAll(pthis, 0);
+	gPrivateFuncs.ClientPortalManager_ResetAll(pthis, 0);
 }
 
 mtexinfo_t * __fastcall ClientPortalManager_GetOriginalSurfaceTexture(void * pthis, int dummy, msurface_t *surf)
 {
-	return gRefFuncs.ClientPortalManager_GetOriginalSurfaceTexture(pthis, dummy, surf);
+	return gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture(pthis, dummy, surf);
 }
 
 portal_vbo_t *R_FindPortalVBO(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId)

@@ -4,12 +4,12 @@
 
 void* Hunk_AllocName(int size, const char* name)
 {
-	return gRefFuncs.Hunk_AllocName(size, name);
+	return gPrivateFuncs.Hunk_AllocName(size, name);
 }
 
 void* Cache_Alloc(cache_user_t* c, int size, const char* name)
 {
-	return gRefFuncs.Cache_Alloc(c, size, name);
+	return gPrivateFuncs.Cache_Alloc(c, size, name);
 }
 
 void Cache_UnlinkLRU(cache_system_t* cs)

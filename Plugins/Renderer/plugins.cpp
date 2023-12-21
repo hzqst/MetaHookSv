@@ -1,7 +1,6 @@
 #include <metahook.h>
 #include "gl_local.h"
 #include "exportfuncs.h"
-#include <IRenderer.h>
 
 cl_exportfuncs_t gExportfuncs = {0};
 mh_interface_t *g_pInterface = NULL;

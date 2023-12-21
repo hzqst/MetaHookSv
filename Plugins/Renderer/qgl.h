@@ -1,3 +1,5 @@
+#pragma once
+
 #include <glew.h>
 
 typedef float mat3x4[3][4];

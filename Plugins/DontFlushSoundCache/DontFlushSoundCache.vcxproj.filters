@@ -9,35 +9,29 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="HLSDK">
+      <UniqueIdentifier>{132710e7-6e30-4899-8dc2-229864abc1f1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="exportfuncs.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\HLSDK\common\interface.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="plugins.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="parsemsg.cpp">
-      <Filter>Source</Filter>
+    <ClCompile Include="..\..\include\HLSDK\common\parsemsg.cpp">
+      <Filter>HLSDK</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\HLSDK\common\interface.cpp">
+      <Filter>HLSDK</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\HLSDK\common\interface.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\metahook.h">
-      <Filter>Header</Filter>
-    </ClInclude>
     <ClInclude Include="plugins.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="parsemsg.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

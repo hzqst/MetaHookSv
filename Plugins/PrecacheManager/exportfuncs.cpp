@@ -78,7 +78,7 @@ void FS_Dump_Precaches(void)
 
 	g_pFileSystem->Close(FileHandle);
 
-	gEngfuncs.Con_Printf("FS_Dump_Precaches: Precache resource list dumpped into %s.\n", filename.c_str());
+	gEngfuncs.Con_Printf("FS_Dump_Precaches: Precached resources dumpped into %s.\n", filename.c_str());
 }
 
 void HUD_Init(void)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <set>
+
 typedef struct portal_vbo_hash_s
 {
 	struct portal_vbo_hash_s(void *a1, GLuint a2, GLuint a3)

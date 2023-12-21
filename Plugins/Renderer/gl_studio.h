@@ -3,6 +3,7 @@
 #include "gl_cvar.h"
 #include "gl_draw.h"
 #include <vector>
+#include <set>
 #include <unordered_map>
 
 #define STUDIO_DIFFUSE_TEXTURE			0

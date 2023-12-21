@@ -279,113 +279,113 @@ void R_FillAddress(void)
 		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 			offset += 4;
 
-		gRefFuncs.enginesurface_drawFlushText = *(decltype(gRefFuncs.enginesurface_drawFlushText) *)(*(DWORD *)engineSurface + offset);
+		gPrivateFuncs.enginesurface_drawFlushText = *(decltype(gPrivateFuncs.enginesurface_drawFlushText) *)(*(DWORD *)engineSurface + offset);
 	}
 
-	gRefFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
-	gRefFuncs.triapi_Color4f = gEngfuncs.pTriAPI->Color4f;
+	gPrivateFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
+	gPrivateFuncs.triapi_Color4f = gEngfuncs.pTriAPI->Color4f;
 
 #if 0//unused
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_MarkLights = (decltype(gRefFuncs.R_MarkLights))Search_Pattern(R_MARKLIGHTS_SVENGINE);
+		gPrivateFuncs.R_MarkLights = (decltype(gPrivateFuncs.R_MarkLights))Search_Pattern(R_MARKLIGHTS_SVENGINE);
 		Sig_FuncNotFound(R_MarkLights);
 	}
 	else
 	{
-		gRefFuncs.R_MarkLights = (decltype(gRefFuncs.R_MarkLights))Search_Pattern(R_MARKLIGHTS_NEW);
+		gPrivateFuncs.R_MarkLights = (decltype(gPrivateFuncs.R_MarkLights))Search_Pattern(R_MARKLIGHTS_NEW);
 		Sig_FuncNotFound(R_MarkLights);
 	}
 #endif
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_PolyBlend = (decltype(gRefFuncs.R_PolyBlend))Search_Pattern(R_POLYBLEND_SVENGINE);
+		gPrivateFuncs.R_PolyBlend = (decltype(gPrivateFuncs.R_PolyBlend))Search_Pattern(R_POLYBLEND_SVENGINE);
 		Sig_FuncNotFound(R_PolyBlend);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_PolyBlend = (decltype(gRefFuncs.R_PolyBlend))Search_Pattern(R_POLYBLEND_HL25);
+		gPrivateFuncs.R_PolyBlend = (decltype(gPrivateFuncs.R_PolyBlend))Search_Pattern(R_POLYBLEND_HL25);
 		Sig_FuncNotFound(R_PolyBlend);
 	}
 	else
 	{
-		gRefFuncs.R_PolyBlend = (decltype(gRefFuncs.R_PolyBlend))Search_Pattern(R_POLYBLEND_NEW);
+		gPrivateFuncs.R_PolyBlend = (decltype(gPrivateFuncs.R_PolyBlend))Search_Pattern(R_POLYBLEND_NEW);
 		Sig_FuncNotFound(R_PolyBlend);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.S_ExtraUpdate = (decltype(gRefFuncs.S_ExtraUpdate))Search_Pattern(S_EXTRAUPDATE_SVENGINE);
+		gPrivateFuncs.S_ExtraUpdate = (decltype(gPrivateFuncs.S_ExtraUpdate))Search_Pattern(S_EXTRAUPDATE_SVENGINE);
 		Sig_FuncNotFound(S_ExtraUpdate);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.S_ExtraUpdate = (decltype(gRefFuncs.S_ExtraUpdate))Search_Pattern(S_EXTRAUPDATE_HL25);
+		gPrivateFuncs.S_ExtraUpdate = (decltype(gPrivateFuncs.S_ExtraUpdate))Search_Pattern(S_EXTRAUPDATE_HL25);
 		Sig_FuncNotFound(S_ExtraUpdate);
 	}
 	else
 	{
-		gRefFuncs.S_ExtraUpdate = (decltype(gRefFuncs.S_ExtraUpdate))Search_Pattern(S_EXTRAUPDATE_NEW);
+		gPrivateFuncs.S_ExtraUpdate = (decltype(gPrivateFuncs.S_ExtraUpdate))Search_Pattern(S_EXTRAUPDATE_NEW);
 		Sig_FuncNotFound(S_ExtraUpdate);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.GL_Bind = (void(*)(int))Search_Pattern(GL_BIND_SIG_SVENGINE);
+		gPrivateFuncs.GL_Bind = (void(*)(int))Search_Pattern(GL_BIND_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_Bind);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.GL_Bind = (void(*)(int))Search_Pattern(GL_BIND_SIG_HL25);
+		gPrivateFuncs.GL_Bind = (void(*)(int))Search_Pattern(GL_BIND_SIG_HL25);
 		Sig_FuncNotFound(GL_Bind);
 	}
 	else
 	{
-		gRefFuncs.GL_Bind = (void(*)(int))Search_Pattern(GL_BIND_SIG_NEW);
+		gPrivateFuncs.GL_Bind = (void(*)(int))Search_Pattern(GL_BIND_SIG_NEW);
 		Sig_FuncNotFound(GL_Bind);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.GL_SelectTexture = (void(*)(GLenum))Search_Pattern_From(gRefFuncs.GL_Bind, GL_SELECTTEXTURE_SIG_SVENGINE);
+		gPrivateFuncs.GL_SelectTexture = (void(*)(GLenum))Search_Pattern_From(gPrivateFuncs.GL_Bind, GL_SELECTTEXTURE_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_SelectTexture);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.GL_SelectTexture = (void(*)(GLenum))Search_Pattern_From(gRefFuncs.GL_Bind, GL_SELECTTEXTURE_SIG_HL25);
+		gPrivateFuncs.GL_SelectTexture = (void(*)(GLenum))Search_Pattern_From(gPrivateFuncs.GL_Bind, GL_SELECTTEXTURE_SIG_HL25);
 		Sig_FuncNotFound(GL_SelectTexture);
 	}
 	else
 	{
-		gRefFuncs.GL_SelectTexture = (void(*)(GLenum))Search_Pattern(GL_SELECTTEXTURE_SIG_NEW);
+		gPrivateFuncs.GL_SelectTexture = (void(*)(GLenum))Search_Pattern(GL_SELECTTEXTURE_SIG_NEW);
 		Sig_FuncNotFound(GL_SelectTexture);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.GL_LoadTexture2 = (decltype(gRefFuncs.GL_LoadTexture2))Search_Pattern(GL_LOADTEXTURE2_SIG_SVENGINE);
+		gPrivateFuncs.GL_LoadTexture2 = (decltype(gPrivateFuncs.GL_LoadTexture2))Search_Pattern(GL_LOADTEXTURE2_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_LoadTexture2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.GL_LoadTexture2 = (decltype(gRefFuncs.GL_LoadTexture2))Search_Pattern(GL_LOADTEXTURE2_SIG_HL25);
+		gPrivateFuncs.GL_LoadTexture2 = (decltype(gPrivateFuncs.GL_LoadTexture2))Search_Pattern(GL_LOADTEXTURE2_SIG_HL25);
 		Sig_FuncNotFound(GL_LoadTexture2);
 	}
 	else
 	{
-		gRefFuncs.GL_LoadTexture2 = (decltype(gRefFuncs.GL_LoadTexture2))Search_Pattern(GL_LOADTEXTURE2_SIG_NEW);
+		gPrivateFuncs.GL_LoadTexture2 = (decltype(gPrivateFuncs.GL_LoadTexture2))Search_Pattern(GL_LOADTEXTURE2_SIG_NEW);
 		Sig_FuncNotFound(GL_LoadTexture2);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_CullBox = (decltype(gRefFuncs.R_CullBox))Search_Pattern_From(gRefFuncs.GL_LoadTexture2, R_CULLBOX_SIG_SVENGINE);
+		gPrivateFuncs.R_CullBox = (decltype(gPrivateFuncs.R_CullBox))Search_Pattern_From(gPrivateFuncs.GL_LoadTexture2, R_CULLBOX_SIG_SVENGINE);
 		Sig_FuncNotFound(R_CullBox);
 	}
 	else
 	{
-		gRefFuncs.R_CullBox = (decltype(gRefFuncs.R_CullBox))Search_Pattern_From(gRefFuncs.GL_LoadTexture2, R_CULLBOX_SIG_NEW);
+		gPrivateFuncs.R_CullBox = (decltype(gPrivateFuncs.R_CullBox))Search_Pattern_From(gPrivateFuncs.GL_LoadTexture2, R_CULLBOX_SIG_NEW);
 		Sig_FuncNotFound(R_CullBox);
 	}
 
@@ -400,231 +400,231 @@ void R_FillAddress(void)
 	}
 	else
 	{
-		gRefFuncs.R_SetupFrame = (void(*)(void))Search_Pattern(R_SETUPFRAME_SIG_NEW);
+		gPrivateFuncs.R_SetupFrame = (void(*)(void))Search_Pattern(R_SETUPFRAME_SIG_NEW);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_SetupGL = (void(*)(void))Search_Pattern(R_SETUPGL_SIG_SVENGINE);
+		gPrivateFuncs.R_SetupGL = (void(*)(void))Search_Pattern(R_SETUPGL_SIG_SVENGINE);
 		Sig_FuncNotFound(R_SetupGL);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
 		if (g_dwEngineBuildnum >= 9899)
 		{
-			gRefFuncs.R_SetupGL = (void(*)(void))Search_Pattern(R_SETUPGL_SIG_HL25_9899);
+			gPrivateFuncs.R_SetupGL = (void(*)(void))Search_Pattern(R_SETUPGL_SIG_HL25_9899);
 		}
 		else
 		{
-			gRefFuncs.R_SetupGL = (void(*)(void))Search_Pattern(R_SETUPGL_SIG_HL25);
+			gPrivateFuncs.R_SetupGL = (void(*)(void))Search_Pattern(R_SETUPGL_SIG_HL25);
 		}
 		Sig_FuncNotFound(R_SetupGL);
 	}
 	else
 	{
-		gRefFuncs.R_SetupGL = (void(*)(void))Search_Pattern(R_SETUPGL_SIG_NEW);
+		gPrivateFuncs.R_SetupGL = (void(*)(void))Search_Pattern(R_SETUPGL_SIG_NEW);
 		Sig_FuncNotFound(R_SetupGL);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_DrawSequentialPoly = (void(*)(msurface_t *, int))Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_SVENGINE);
+		gPrivateFuncs.R_DrawSequentialPoly = (void(*)(msurface_t *, int))Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_SVENGINE);
 		Sig_FuncNotFound(R_DrawSequentialPoly);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_DrawSequentialPoly = (void(*)(msurface_t*, int))Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_HL25);
+		gPrivateFuncs.R_DrawSequentialPoly = (void(*)(msurface_t*, int))Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_HL25);
 		Sig_FuncNotFound(R_DrawSequentialPoly);
 	}
 	else
 	{
-		gRefFuncs.R_DrawSequentialPoly = (void(*)(msurface_t *, int))Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_NEW);
+		gPrivateFuncs.R_DrawSequentialPoly = (void(*)(msurface_t *, int))Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_NEW);
 		Sig_FuncNotFound(R_DrawSequentialPoly);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_TextureAnimation = (texture_t *(*)(msurface_t *))Search_Pattern(R_TEXTUREANIMATION_SIG_SVENGINE);
+		gPrivateFuncs.R_TextureAnimation = (texture_t *(*)(msurface_t *))Search_Pattern(R_TEXTUREANIMATION_SIG_SVENGINE);
 		Sig_FuncNotFound(R_TextureAnimation);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_TextureAnimation = (texture_t * (*)(msurface_t*))Search_Pattern(R_TEXTUREANIMATION_SIG_HL25);
+		gPrivateFuncs.R_TextureAnimation = (texture_t * (*)(msurface_t*))Search_Pattern(R_TEXTUREANIMATION_SIG_HL25);
 		Sig_FuncNotFound(R_TextureAnimation);
 	}
 	else
 	{
-		gRefFuncs.R_TextureAnimation = (texture_t *(*)(msurface_t *))Search_Pattern(R_TEXTUREANIMATION_SIG_NEW);
+		gPrivateFuncs.R_TextureAnimation = (texture_t *(*)(msurface_t *))Search_Pattern(R_TEXTUREANIMATION_SIG_NEW);
 		Sig_FuncNotFound(R_TextureAnimation);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.V_RenderView = (void(*)(void))Search_Pattern(V_RENDERVIEW_SIG_SVENGINE);
+		gPrivateFuncs.V_RenderView = (void(*)(void))Search_Pattern(V_RENDERVIEW_SIG_SVENGINE);
 		Sig_FuncNotFound(V_RenderView);
 
-		gRefFuncs.R_RenderView_SvEngine = (void(*)(int))Search_Pattern(R_RENDERVIEW_SIG_SVENGINE);
+		gPrivateFuncs.R_RenderView_SvEngine = (void(*)(int))Search_Pattern(R_RENDERVIEW_SIG_SVENGINE);
 		Sig_FuncNotFound(R_RenderView_SvEngine);
 
-		addr = (DWORD)Search_Pattern_From(gRefFuncs.R_RenderView_SvEngine, R_RENDERSCENE_SIG_SVENGINE);
+		addr = (DWORD)Search_Pattern_From(gPrivateFuncs.R_RenderView_SvEngine, R_RENDERSCENE_SIG_SVENGINE);
 		Sig_AddrNotFound(R_RenderScene);
-		gRefFuncs.R_RenderScene = (void(*)(void))(addr + 5 + 4 + *(int *)(addr + 5));
+		gPrivateFuncs.R_RenderScene = (void(*)(void))(addr + 5 + 4 + *(int *)(addr + 5));
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.V_RenderView = (void(*)(void))Search_Pattern(V_RENDERVIEW_SIG_HL25);
+		gPrivateFuncs.V_RenderView = (void(*)(void))Search_Pattern(V_RENDERVIEW_SIG_HL25);
 		Sig_FuncNotFound(V_RenderView);
 
-		gRefFuncs.R_RenderView = (void(*)(void))Search_Pattern(R_RENDERVIEW_SIG_HL25);
+		gPrivateFuncs.R_RenderView = (void(*)(void))Search_Pattern(R_RENDERVIEW_SIG_HL25);
 		Sig_FuncNotFound(R_RenderView);
 
-		gRefFuncs.R_RenderScene = (void(*)(void))Search_Pattern(R_RENDERSCENE_SIG_HL25);
+		gPrivateFuncs.R_RenderScene = (void(*)(void))Search_Pattern(R_RENDERSCENE_SIG_HL25);
 		Sig_FuncNotFound(R_RenderScene);
 	}
 	else
 	{
-		gRefFuncs.V_RenderView = (void(*)(void))Search_Pattern(V_RENDERVIEW_SIG_NEW);
+		gPrivateFuncs.V_RenderView = (void(*)(void))Search_Pattern(V_RENDERVIEW_SIG_NEW);
 		Sig_FuncNotFound(V_RenderView);
 
-		gRefFuncs.R_RenderView = (void(*)(void))Search_Pattern(R_RENDERVIEW_SIG_NEW);
+		gPrivateFuncs.R_RenderView = (void(*)(void))Search_Pattern(R_RENDERVIEW_SIG_NEW);
 		Sig_FuncNotFound(R_RenderView);
 
-		gRefFuncs.R_RenderScene = (void(*)(void))Search_Pattern(R_RENDERSCENE_SIG_NEW);
+		gPrivateFuncs.R_RenderScene = (void(*)(void))Search_Pattern(R_RENDERSCENE_SIG_NEW);
 		Sig_FuncNotFound(R_RenderScene);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_NewMap = (void(*)(void))Search_Pattern(R_NEWMAP_SIG_SVENGINE);
+		gPrivateFuncs.R_NewMap = (void(*)(void))Search_Pattern(R_NEWMAP_SIG_SVENGINE);
 		Sig_FuncNotFound(R_NewMap);
 	}
 	else
 	{
-		gRefFuncs.R_NewMap = (void(*)(void))Search_Pattern(R_NEWMAP_SIG_NEW);
+		gPrivateFuncs.R_NewMap = (void(*)(void))Search_Pattern(R_NEWMAP_SIG_NEW);
 		Sig_FuncNotFound(R_NewMap);
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.GL_BuildLightmaps = (void(*)(void))Search_Pattern(GL_BUILDLIGHTMAPS_SIG_SVENGINE);
+		gPrivateFuncs.GL_BuildLightmaps = (void(*)(void))Search_Pattern(GL_BUILDLIGHTMAPS_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_BuildLightmaps);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.GL_BuildLightmaps = (void(*)(void))Search_Pattern(GL_BUILDLIGHTMAPS_SIG_HL25);
+		gPrivateFuncs.GL_BuildLightmaps = (void(*)(void))Search_Pattern(GL_BUILDLIGHTMAPS_SIG_HL25);
 		Sig_FuncNotFound(GL_BuildLightmaps);
 	}
 	else
 	{
-		gRefFuncs.GL_BuildLightmaps = (void(*)(void))Search_Pattern(GL_BUILDLIGHTMAPS_SIG_NEW);
+		gPrivateFuncs.GL_BuildLightmaps = (void(*)(void))Search_Pattern(GL_BUILDLIGHTMAPS_SIG_NEW);
 		Sig_FuncNotFound(GL_BuildLightmaps);
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_BuildLightMap = (void(*)(msurface_t *, byte *, int))Search_Pattern(R_BUILDLIGHTMAP_SIG_SVENGINE);
+		gPrivateFuncs.R_BuildLightMap = (void(*)(msurface_t *, byte *, int))Search_Pattern(R_BUILDLIGHTMAP_SIG_SVENGINE);
 		Sig_FuncNotFound(R_BuildLightMap);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_BuildLightMap = (void(*)(msurface_t*, byte*, int))Search_Pattern(R_BUILDLIGHTMAP_SIG_HL25);
+		gPrivateFuncs.R_BuildLightMap = (void(*)(msurface_t*, byte*, int))Search_Pattern(R_BUILDLIGHTMAP_SIG_HL25);
 		Sig_FuncNotFound(R_BuildLightMap);
 	}
 	else
 	{
-		gRefFuncs.R_BuildLightMap = (void(*)(msurface_t *, byte *, int))Search_Pattern(R_BUILDLIGHTMAP_SIG_NEW);
+		gPrivateFuncs.R_BuildLightMap = (void(*)(msurface_t *, byte *, int))Search_Pattern(R_BUILDLIGHTMAP_SIG_NEW);
 		Sig_FuncNotFound(R_BuildLightMap);
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_AddDynamicLights = (void(*)(msurface_t *))Search_Pattern(R_ADDDYNAMICLIGHTS_SIG_SVENGINE);
+		gPrivateFuncs.R_AddDynamicLights = (void(*)(msurface_t *))Search_Pattern(R_ADDDYNAMICLIGHTS_SIG_SVENGINE);
 		Sig_FuncNotFound(R_AddDynamicLights);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_AddDynamicLights = (void(*)(msurface_t*))Search_Pattern(R_ADDDYNAMICLIGHTS_SIG_HL25);
+		gPrivateFuncs.R_AddDynamicLights = (void(*)(msurface_t*))Search_Pattern(R_ADDDYNAMICLIGHTS_SIG_HL25);
 		Sig_FuncNotFound(R_AddDynamicLights);
 	}
 	else
 	{
-		gRefFuncs.R_AddDynamicLights = (void(*)(msurface_t *))Search_Pattern(R_ADDDYNAMICLIGHTS_SIG_NEW);
+		gPrivateFuncs.R_AddDynamicLights = (void(*)(msurface_t *))Search_Pattern(R_ADDDYNAMICLIGHTS_SIG_NEW);
 		Sig_FuncNotFound(R_AddDynamicLights);
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.GL_DisableMultitexture = (void(*)(void))Search_Pattern(GL_DISABLEMULTITEXTURE_SIG_SVENGINE);
+		gPrivateFuncs.GL_DisableMultitexture = (void(*)(void))Search_Pattern(GL_DISABLEMULTITEXTURE_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_DisableMultitexture);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.GL_DisableMultitexture = (void(*)(void))Search_Pattern_From(gRefFuncs.R_NewMap, GL_DISABLEMULTITEXTURE_SIG_HL25);
+		gPrivateFuncs.GL_DisableMultitexture = (void(*)(void))Search_Pattern_From(gPrivateFuncs.R_NewMap, GL_DISABLEMULTITEXTURE_SIG_HL25);
 		Sig_FuncNotFound(GL_DisableMultitexture);
 	}
 	else
 	{
-		gRefFuncs.GL_DisableMultitexture = (void(*)(void))Search_Pattern_From(gRefFuncs.R_NewMap, GL_DISABLEMULTITEXTURE_SIG_NEW);
+		gPrivateFuncs.GL_DisableMultitexture = (void(*)(void))Search_Pattern_From(gPrivateFuncs.R_NewMap, GL_DISABLEMULTITEXTURE_SIG_NEW);
 		Sig_FuncNotFound(GL_DisableMultitexture);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.GL_EnableMultitexture = (void(*)(void))Search_Pattern(GL_ENABLEMULTITEXTURE_SIG_SVENGINE);
+		gPrivateFuncs.GL_EnableMultitexture = (void(*)(void))Search_Pattern(GL_ENABLEMULTITEXTURE_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_EnableMultitexture);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.GL_EnableMultitexture = (void(*)(void))Search_Pattern_From(gRefFuncs.GL_DisableMultitexture, GL_ENABLEMULTITEXTURE_SIG_HL25);
+		gPrivateFuncs.GL_EnableMultitexture = (void(*)(void))Search_Pattern_From(gPrivateFuncs.GL_DisableMultitexture, GL_ENABLEMULTITEXTURE_SIG_HL25);
 		Sig_FuncNotFound(GL_EnableMultitexture);
 	}
 	else
 	{
-		gRefFuncs.GL_EnableMultitexture = (void(*)(void))Search_Pattern_From(gRefFuncs.GL_DisableMultitexture, GL_ENABLEMULTITEXTURE_SIG_NEW);
+		gPrivateFuncs.GL_EnableMultitexture = (void(*)(void))Search_Pattern_From(gPrivateFuncs.GL_DisableMultitexture, GL_ENABLEMULTITEXTURE_SIG_NEW);
 		Sig_FuncNotFound(GL_EnableMultitexture);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_RenderDynamicLightmaps = (void(*)(msurface_t *))Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_SVENGINE);
+		gPrivateFuncs.R_RenderDynamicLightmaps = (void(*)(msurface_t *))Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_SVENGINE);
 		Sig_FuncNotFound(R_RenderDynamicLightmaps);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_RenderDynamicLightmaps = (void(*)(msurface_t*))Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_HL25);
+		gPrivateFuncs.R_RenderDynamicLightmaps = (void(*)(msurface_t*))Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_HL25);
 		Sig_FuncNotFound(R_RenderDynamicLightmaps);
 	}
 	else
 	{
-		gRefFuncs.R_RenderDynamicLightmaps = (void(*)(msurface_t *))Search_Pattern_From(gRefFuncs.GL_EnableMultitexture, R_RENDERDYNAMICLIGHTMAPS_SIG_NEW);
+		gPrivateFuncs.R_RenderDynamicLightmaps = (void(*)(msurface_t *))Search_Pattern_From(gPrivateFuncs.GL_EnableMultitexture, R_RENDERDYNAMICLIGHTMAPS_SIG_NEW);
 		Sig_FuncNotFound(R_RenderDynamicLightmaps);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_DrawBrushModel = (void(*)(cl_entity_t *))Search_Pattern(R_DRAWBRUSHMODEL_SIG_SVENGINE);
+		gPrivateFuncs.R_DrawBrushModel = (void(*)(cl_entity_t *))Search_Pattern(R_DRAWBRUSHMODEL_SIG_SVENGINE);
 		Sig_FuncNotFound(R_DrawBrushModel);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_DrawBrushModel = (void(*)(cl_entity_t*))Search_Pattern(R_DRAWBRUSHMODEL_SIG_HL25);
+		gPrivateFuncs.R_DrawBrushModel = (void(*)(cl_entity_t*))Search_Pattern(R_DRAWBRUSHMODEL_SIG_HL25);
 		Sig_FuncNotFound(R_DrawBrushModel);
 	}
 	else
 	{
-		gRefFuncs.R_DrawBrushModel = (void(*)(cl_entity_t *))Search_Pattern_From(gRefFuncs.R_RenderDynamicLightmaps, R_DRAWBRUSHMODEL_SIG_NEW);
+		gPrivateFuncs.R_DrawBrushModel = (void(*)(cl_entity_t *))Search_Pattern_From(gPrivateFuncs.R_RenderDynamicLightmaps, R_DRAWBRUSHMODEL_SIG_NEW);
 		Sig_FuncNotFound(R_DrawBrushModel);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_RecursiveWorldNode = (void(*)(mnode_t *))Search_Pattern(R_RECURSIVEWORLDNODE_SIG_SVENGINE);
+		gPrivateFuncs.R_RecursiveWorldNode = (void(*)(mnode_t *))Search_Pattern(R_RECURSIVEWORLDNODE_SIG_SVENGINE);
 		Sig_FuncNotFound(R_RecursiveWorldNode);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_RecursiveWorldNode = (void(*)(mnode_t*))Search_Pattern_From(gRefFuncs.R_DrawSequentialPoly, R_RECURSIVEWORLDNODE_SIG_HL25);
+		gPrivateFuncs.R_RecursiveWorldNode = (void(*)(mnode_t*))Search_Pattern_From(gPrivateFuncs.R_DrawSequentialPoly, R_RECURSIVEWORLDNODE_SIG_HL25);
 		Sig_FuncNotFound(R_RecursiveWorldNode);
 	}
 	else
 	{
-		gRefFuncs.R_RecursiveWorldNode = (void(*)(mnode_t *))Search_Pattern_From(gRefFuncs.R_DrawBrushModel, R_RECURSIVEWORLDNODE_SIG_NEW);
+		gPrivateFuncs.R_RecursiveWorldNode = (void(*)(mnode_t *))Search_Pattern_From(gPrivateFuncs.R_DrawBrushModel, R_RECURSIVEWORLDNODE_SIG_NEW);
 		Sig_FuncNotFound(R_RecursiveWorldNode);
 	}
 
@@ -683,7 +683,7 @@ void R_FillAddress(void)
 
 				if (ctx.bFoundLeaEax && ctx.bFoundPushZero)
 				{
-					gRefFuncs.R_DrawWorld = (decltype(gRefFuncs.R_DrawWorld))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(pFound, 0x300, [](PUCHAR Candidate) {
+					gPrivateFuncs.R_DrawWorld = (decltype(gPrivateFuncs.R_DrawWorld))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(pFound, 0x300, [](PUCHAR Candidate) {
 
 						if (Candidate[0] == 0x81 &&
 							Candidate[1] == 0xEC &&
@@ -722,21 +722,21 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(R_DrawWorld);
 	}
 
-	if (!gRefFuncs.R_DrawWorld)
+	if (!gPrivateFuncs.R_DrawWorld)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			gRefFuncs.R_DrawWorld = (void(*)(void))Search_Pattern(R_DRAWWORLD_SIG_SVENGINE);
+			gPrivateFuncs.R_DrawWorld = (void(*)(void))Search_Pattern(R_DRAWWORLD_SIG_SVENGINE);
 			Sig_FuncNotFound(R_DrawWorld);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			gRefFuncs.R_DrawWorld = (void(*)(void))Search_Pattern_From(gRefFuncs.R_DrawSequentialPoly, R_DRAWWORLD_SIG_HL25);
+			gPrivateFuncs.R_DrawWorld = (void(*)(void))Search_Pattern_From(gPrivateFuncs.R_DrawSequentialPoly, R_DRAWWORLD_SIG_HL25);
 			Sig_FuncNotFound(R_DrawWorld);
 		}
 		else
 		{
-			gRefFuncs.R_DrawWorld = (void(*)(void))Search_Pattern_From(gRefFuncs.R_RecursiveWorldNode, R_DRAWWORLD_SIG_NEW);
+			gPrivateFuncs.R_DrawWorld = (void(*)(void))Search_Pattern_From(gPrivateFuncs.R_RecursiveWorldNode, R_DRAWWORLD_SIG_NEW);
 			Sig_FuncNotFound(R_DrawWorld);
 		}
 	}
@@ -744,7 +744,7 @@ void R_FillAddress(void)
 	if (g_iEngineType != ENGINE_SVENGINE)
 	{
 		const char pattern[] = "\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
-		PUCHAR SearchBegin = (PUCHAR)gRefFuncs.R_RenderView;
+		PUCHAR SearchBegin = (PUCHAR)gPrivateFuncs.R_RenderView;
 		PUCHAR SearchLimit = SearchBegin + 0x500;
 		while (SearchBegin < SearchLimit)
 		{
@@ -755,9 +755,9 @@ void R_FillAddress(void)
 				auto target2 = GetCallAddress(pFound + 5);
 				auto target3 = GetCallAddress(pFound + 10);
 
-				if (target2 == gRefFuncs.R_PolyBlend && target3 == gRefFuncs.S_ExtraUpdate)
+				if (target2 == gPrivateFuncs.R_PolyBlend && target3 == gPrivateFuncs.S_ExtraUpdate)
 				{
-					gRefFuncs.R_DrawViewModel = (decltype(gRefFuncs.R_DrawViewModel))target1;
+					gPrivateFuncs.R_DrawViewModel = (decltype(gPrivateFuncs.R_DrawViewModel))target1;
 					break;
 				}
 
@@ -774,33 +774,33 @@ void R_FillAddress(void)
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_MarkLeaves = (void(*)(void))Search_Pattern(R_MARKLEAVES_SIG_SVENGINE);
+		gPrivateFuncs.R_MarkLeaves = (void(*)(void))Search_Pattern(R_MARKLEAVES_SIG_SVENGINE);
 		Sig_FuncNotFound(R_MarkLeaves);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_MarkLeaves = (void(*)(void))Search_Pattern(R_MARKLEAVES_SIG_HL25);
+		gPrivateFuncs.R_MarkLeaves = (void(*)(void))Search_Pattern(R_MARKLEAVES_SIG_HL25);
 		Sig_FuncNotFound(R_MarkLeaves);
 	}
 	else
 	{
-		gRefFuncs.R_MarkLeaves = (void(*)(void))Search_Pattern(R_MARKLEAVES_SIG_NEW);
+		gPrivateFuncs.R_MarkLeaves = (void(*)(void))Search_Pattern(R_MARKLEAVES_SIG_NEW);
 		Sig_FuncNotFound(R_MarkLeaves);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.GL_BeginRendering = (void(*)(int *, int *, int *, int *))Search_Pattern(GL_BEGINRENDERING_SIG_SVENGINE);
+		gPrivateFuncs.GL_BeginRendering = (void(*)(int *, int *, int *, int *))Search_Pattern(GL_BEGINRENDERING_SIG_SVENGINE);
 		Sig_FuncNotFound(GL_BeginRendering);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.GL_BeginRendering = (void(*)(int*, int*, int*, int*))Search_Pattern(GL_BEGINRENDERING_SIG_HL25);
+		gPrivateFuncs.GL_BeginRendering = (void(*)(int*, int*, int*, int*))Search_Pattern(GL_BEGINRENDERING_SIG_HL25);
 		Sig_FuncNotFound(GL_BeginRendering);
 	}
 	else
 	{
-		gRefFuncs.GL_BeginRendering = (void(*)(int *, int *, int *, int *))Search_Pattern(GL_BEGINRENDERING_SIG_NEW);
+		gPrivateFuncs.GL_BeginRendering = (void(*)(int *, int *, int *, int *))Search_Pattern(GL_BEGINRENDERING_SIG_NEW);
 		Sig_FuncNotFound(GL_BeginRendering);
 	}
 
@@ -809,7 +809,7 @@ void R_FillAddress(void)
 		auto addr = Search_Pattern(GL_ENDRENDERING_SIG_GOLDSRC);
 		Sig_AddrNotFound(GL_EndRendering);
 
-		gRefFuncs.GL_EndRendering = (decltype(gRefFuncs.GL_EndRendering))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(addr, 0x500, [](PUCHAR Candidate) {
+		gPrivateFuncs.GL_EndRendering = (decltype(gPrivateFuncs.GL_EndRendering))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(addr, 0x500, [](PUCHAR Candidate) {
 
 			if (Candidate[0] == 0x55 &&
 				Candidate[1] == 0x8B &&
@@ -823,38 +823,38 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(GL_EndRendering);
 	}
 
-	if (!gRefFuncs.GL_EndRendering)
+	if (!gPrivateFuncs.GL_EndRendering)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			gRefFuncs.GL_EndRendering = (void(*)(void))Search_Pattern(GL_ENDRENDERING_SIG_SVENGINE);
+			gPrivateFuncs.GL_EndRendering = (void(*)(void))Search_Pattern(GL_ENDRENDERING_SIG_SVENGINE);
 			Sig_FuncNotFound(GL_EndRendering);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			gRefFuncs.GL_EndRendering = (void(*)(void))Search_Pattern(GL_ENDRENDERING_SIG_HL25);
+			gPrivateFuncs.GL_EndRendering = (void(*)(void))Search_Pattern(GL_ENDRENDERING_SIG_HL25);
 			Sig_FuncNotFound(GL_EndRendering);
 		}
 		else
 		{
-			gRefFuncs.GL_EndRendering = (void(*)(void))Search_Pattern_From(gRefFuncs.GL_BeginRendering, GL_ENDRENDERING_SIG_NEW);
+			gPrivateFuncs.GL_EndRendering = (void(*)(void))Search_Pattern_From(gPrivateFuncs.GL_BeginRendering, GL_ENDRENDERING_SIG_NEW);
 			Sig_FuncNotFound(GL_EndRendering);
 		}
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.EmitWaterPolys = (void(*)(msurface_t *, int))Search_Pattern(EMITWATERPOLYS_SIG_SVENGINE);
+		gPrivateFuncs.EmitWaterPolys = (void(*)(msurface_t *, int))Search_Pattern(EMITWATERPOLYS_SIG_SVENGINE);
 		Sig_FuncNotFound(EmitWaterPolys);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.EmitWaterPolys = (void(*)(msurface_t*, int))Search_Pattern(EMITWATERPOLYS_SIG_HL25);
+		gPrivateFuncs.EmitWaterPolys = (void(*)(msurface_t*, int))Search_Pattern(EMITWATERPOLYS_SIG_HL25);
 		Sig_FuncNotFound(EmitWaterPolys);
 	}
 	else
 	{
-		gRefFuncs.EmitWaterPolys = (void(*)(msurface_t *, int))Search_Pattern(EMITWATERPOLYS_SIG_NEW);
+		gPrivateFuncs.EmitWaterPolys = (void(*)(msurface_t *, int))Search_Pattern(EMITWATERPOLYS_SIG_NEW);
 		Sig_FuncNotFound(EmitWaterPolys);
 	}
 
@@ -866,86 +866,86 @@ void R_FillAddress(void)
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x50, "\x50\xE8", 2);
 		Sig_AddrNotFound(VID_UpdateWindowVars);
 
-		gRefFuncs.VID_UpdateWindowVars = (void(*)(RECT *prc, int x, int y))(addr + 2 + 4 + *(int *)(addr + 2));
+		gPrivateFuncs.VID_UpdateWindowVars = (void(*)(RECT *prc, int x, int y))(addr + 2 + 4 + *(int *)(addr + 2));
 		Sig_FuncNotFound(VID_UpdateWindowVars);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.VID_UpdateWindowVars = (void(*)(RECT * prc, int x, int y))Search_Pattern(VID_UPDATEWINDOWVARS_SIG_HL25);
+		gPrivateFuncs.VID_UpdateWindowVars = (void(*)(RECT * prc, int x, int y))Search_Pattern(VID_UPDATEWINDOWVARS_SIG_HL25);
 		Sig_FuncNotFound(VID_UpdateWindowVars);
 	}
 	else
 	{
-		gRefFuncs.VID_UpdateWindowVars = (void(*)(RECT *prc, int x, int y))Search_Pattern(VID_UPDATEWINDOWVARS_SIG_NEW);
+		gPrivateFuncs.VID_UpdateWindowVars = (void(*)(RECT *prc, int x, int y))Search_Pattern(VID_UPDATEWINDOWVARS_SIG_NEW);
 		Sig_FuncNotFound(VID_UpdateWindowVars);
 	}
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.Mod_PointInLeaf = (mleaf_t *(*)(vec3_t, model_t *))Search_Pattern(MOD_POINTINLEAF_SIG_SVENGINE);
+		gPrivateFuncs.Mod_PointInLeaf = (mleaf_t *(*)(vec3_t, model_t *))Search_Pattern(MOD_POINTINLEAF_SIG_SVENGINE);
 		Sig_FuncNotFound(Mod_PointInLeaf);
 	}
 	else
 	{
-		gRefFuncs.Mod_PointInLeaf = (mleaf_t *(*)(vec3_t, model_t *))Search_Pattern(MOD_POINTINLEAF_SIG_NEW);
+		gPrivateFuncs.Mod_PointInLeaf = (mleaf_t *(*)(vec3_t, model_t *))Search_Pattern(MOD_POINTINLEAF_SIG_NEW);
 		Sig_FuncNotFound(Mod_PointInLeaf);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_DrawTEntitiesOnList = (void(*)(int))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_SVENGINE);
+		gPrivateFuncs.R_DrawTEntitiesOnList = (void(*)(int))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_SVENGINE);
 		Sig_FuncNotFound(R_DrawTEntitiesOnList);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_DrawTEntitiesOnList = (void(*)(int))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_HL25);
+		gPrivateFuncs.R_DrawTEntitiesOnList = (void(*)(int))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_HL25);
 		Sig_FuncNotFound(R_DrawTEntitiesOnList);
 	}
 	else
 	{
-		gRefFuncs.R_DrawTEntitiesOnList = (void(*)(int))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_NEW);
+		gPrivateFuncs.R_DrawTEntitiesOnList = (void(*)(int))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_NEW);
 		Sig_FuncNotFound(R_DrawTEntitiesOnList);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.BuildGammaTable = (void(*)(float))Search_Pattern(BUILDGAMMATABLE_SIG_SVENGINE);
+		gPrivateFuncs.BuildGammaTable = (void(*)(float))Search_Pattern(BUILDGAMMATABLE_SIG_SVENGINE);
 		Sig_FuncNotFound(BuildGammaTable);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.BuildGammaTable = (void(*)(float))Search_Pattern(BUILDGAMMATABLE_SIG_HL25);
+		gPrivateFuncs.BuildGammaTable = (void(*)(float))Search_Pattern(BUILDGAMMATABLE_SIG_HL25);
 		Sig_FuncNotFound(BuildGammaTable);
 	}
 	else
 	{
-		gRefFuncs.BuildGammaTable = (void(*)(float))Search_Pattern(BUILDGAMMATABLE_SIG_NEW);
+		gPrivateFuncs.BuildGammaTable = (void(*)(float))Search_Pattern(BUILDGAMMATABLE_SIG_NEW);
 		Sig_FuncNotFound(BuildGammaTable);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_DrawParticles = (void(*)(void))Search_Pattern(R_DRAWPARTICLES_SIG_SVENGINE);
+		gPrivateFuncs.R_DrawParticles = (void(*)(void))Search_Pattern(R_DRAWPARTICLES_SIG_SVENGINE);
 		Sig_FuncNotFound(R_DrawParticles);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_DrawParticles = (void(*)(void))Search_Pattern(R_DRAWPARTICLES_SIG_HL25);
+		gPrivateFuncs.R_DrawParticles = (void(*)(void))Search_Pattern(R_DRAWPARTICLES_SIG_HL25);
 		Sig_FuncNotFound(R_DrawParticles);
 	}
 	else
 	{
-		gRefFuncs.R_DrawParticles = (void(*)(void))Search_Pattern(R_DRAWPARTICLES_SIG_NEW);
+		gPrivateFuncs.R_DrawParticles = (void(*)(void))Search_Pattern(R_DRAWPARTICLES_SIG_NEW);
 		Sig_FuncNotFound(R_DrawParticles);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.CL_AllocDlight = (dlight_t *(*)(int))Search_Pattern(CL_ALLOCDLIGHT_SIG_SVENGINE);
+		gPrivateFuncs.CL_AllocDlight = (dlight_t *(*)(int))Search_Pattern(CL_ALLOCDLIGHT_SIG_SVENGINE);
 		Sig_FuncNotFound(CL_AllocDlight);
 	}
 	else
 	{
-		gRefFuncs.CL_AllocDlight = (dlight_t *(*)(int))Search_Pattern(CL_ALLOCDLIGHT_SIG_NEW);
+		gPrivateFuncs.CL_AllocDlight = (dlight_t *(*)(int))Search_Pattern(CL_ALLOCDLIGHT_SIG_NEW);
 		Sig_FuncNotFound(CL_AllocDlight);
 	}
 
@@ -954,7 +954,7 @@ void R_FillAddress(void)
 		auto addr = Search_Pattern(R_GLSTUDIODRAWPOINTS_SIG_GOLDSRC);
 		Sig_AddrNotFound(R_GLStudioDrawPoints);
 
-		gRefFuncs.R_GLStudioDrawPoints = (decltype(gRefFuncs.R_GLStudioDrawPoints))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(addr, 0x1000, [](PUCHAR Candidate) {
+		gPrivateFuncs.R_GLStudioDrawPoints = (decltype(gPrivateFuncs.R_GLStudioDrawPoints))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(addr, 0x1000, [](PUCHAR Candidate) {
 
 			if (Candidate[0] == 0x55 &&
 				Candidate[1] == 0x8B &&
@@ -971,21 +971,21 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(R_GLStudioDrawPoints);
 	}
 
-	if (!gRefFuncs.R_GLStudioDrawPoints)
+	if (!gPrivateFuncs.R_GLStudioDrawPoints)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			gRefFuncs.R_GLStudioDrawPoints = (void(*)(void))Search_Pattern(R_GLSTUDIODRAWPOINTS_SIG_SVENGINE);
+			gPrivateFuncs.R_GLStudioDrawPoints = (void(*)(void))Search_Pattern(R_GLSTUDIODRAWPOINTS_SIG_SVENGINE);
 			Sig_FuncNotFound(R_GLStudioDrawPoints);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			gRefFuncs.R_GLStudioDrawPoints = (void(*)(void))Search_Pattern(R_GLSTUDIODRAWPOINTS_SIG_HL25);
+			gPrivateFuncs.R_GLStudioDrawPoints = (void(*)(void))Search_Pattern(R_GLSTUDIODRAWPOINTS_SIG_HL25);
 			Sig_FuncNotFound(R_GLStudioDrawPoints);
 		}
 		else
 		{
-			gRefFuncs.R_GLStudioDrawPoints = (void(*)(void))Search_Pattern(R_GLSTUDIODRAWPOINTS_SIG_NEW);
+			gPrivateFuncs.R_GLStudioDrawPoints = (void(*)(void))Search_Pattern(R_GLSTUDIODRAWPOINTS_SIG_NEW);
 			Sig_FuncNotFound(R_GLStudioDrawPoints);
 		}
 	}
@@ -993,65 +993,65 @@ void R_FillAddress(void)
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_StudioLighting = (void(*)(float *lv, int bone, int flags, vec3_t normal))Search_Pattern(R_STUDIOLIGHTING_SIG_SVENGINE);
+		gPrivateFuncs.R_StudioLighting = (void(*)(float *lv, int bone, int flags, vec3_t normal))Search_Pattern(R_STUDIOLIGHTING_SIG_SVENGINE);
 		Sig_FuncNotFound(R_StudioLighting);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_StudioLighting = (void(*)(float* lv, int bone, int flags, vec3_t normal))Search_Pattern(R_STUDIOLIGHTING_SIG_HL25);
+		gPrivateFuncs.R_StudioLighting = (void(*)(float* lv, int bone, int flags, vec3_t normal))Search_Pattern(R_STUDIOLIGHTING_SIG_HL25);
 		Sig_FuncNotFound(R_StudioLighting);
 	}
 	else
 	{
-		gRefFuncs.R_StudioLighting = (void(*)(float *, int, int, vec3_t))Search_Pattern(R_STUDIOLIGHTING_SIG_NEW);
+		gPrivateFuncs.R_StudioLighting = (void(*)(float *, int, int, vec3_t))Search_Pattern(R_STUDIOLIGHTING_SIG_NEW);
 		Sig_FuncNotFound(R_StudioLighting);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_StudioChrome = (void(*)(int *pchrome, int bone, vec3_t normal))Search_Pattern(R_STUDIOCHROME_SIG_SVENGINE);
+		gPrivateFuncs.R_StudioChrome = (void(*)(int *pchrome, int bone, vec3_t normal))Search_Pattern(R_STUDIOCHROME_SIG_SVENGINE);
 		Sig_FuncNotFound(R_StudioChrome);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_StudioChrome = (void(*)(int* pchrome, int bone, vec3_t normal))Search_Pattern(R_STUDIOCHROME_SIG_HL25);
+		gPrivateFuncs.R_StudioChrome = (void(*)(int* pchrome, int bone, vec3_t normal))Search_Pattern(R_STUDIOCHROME_SIG_HL25);
 		Sig_FuncNotFound(R_StudioChrome);
 	}
 	else
 	{
-		gRefFuncs.R_StudioChrome = (void(*)(int *, int, vec3_t))Search_Pattern(R_STUDIOCHROME_SIG_NEW);
+		gPrivateFuncs.R_StudioChrome = (void(*)(int *, int, vec3_t))Search_Pattern(R_STUDIOCHROME_SIG_NEW);
 		Sig_FuncNotFound(R_StudioChrome);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_LightLambert = (void(*)(float(*light)[4], float *normal, float *src, float *lambert))Search_Pattern(R_LIGHTLAMBERT_SIG_SVENGINE);
+		gPrivateFuncs.R_LightLambert = (void(*)(float(*light)[4], float *normal, float *src, float *lambert))Search_Pattern(R_LIGHTLAMBERT_SIG_SVENGINE);
 		Sig_FuncNotFound(R_LightLambert);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_LightLambert = (void(*)(float(*light)[4], float* normal, float* src, float* lambert))Search_Pattern(R_LIGHTLAMBERT_SIG_HL25);
+		gPrivateFuncs.R_LightLambert = (void(*)(float(*light)[4], float* normal, float* src, float* lambert))Search_Pattern(R_LIGHTLAMBERT_SIG_HL25);
 		Sig_FuncNotFound(R_LightLambert);
 	}
 	else
 	{
-		gRefFuncs.R_LightLambert = (void(*)(float(*)[4], float *, float *, float *))Search_Pattern(R_LIGHTLAMBERT_SIG_NEW);
+		gPrivateFuncs.R_LightLambert = (void(*)(float(*)[4], float *, float *, float *))Search_Pattern(R_LIGHTLAMBERT_SIG_NEW);
 		Sig_FuncNotFound(R_LightLambert);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_StudioSetupSkin = (void(*)(studiohdr_t *, int))Search_Pattern(R_STUDIOSETUPSKIN_SIG_SVENGINE);
+		gPrivateFuncs.R_StudioSetupSkin = (void(*)(studiohdr_t *, int))Search_Pattern(R_STUDIOSETUPSKIN_SIG_SVENGINE);
 		Sig_FuncNotFound(R_StudioSetupSkin);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_StudioSetupSkin = (void(*)(studiohdr_t*, int))Search_Pattern(R_STUDIOSETUPSKIN_SIG_HL25);
+		gPrivateFuncs.R_StudioSetupSkin = (void(*)(studiohdr_t*, int))Search_Pattern(R_STUDIOSETUPSKIN_SIG_HL25);
 		Sig_FuncNotFound(R_StudioSetupSkin);
 	}
 	else
 	{
-		gRefFuncs.R_StudioSetupSkin = (void(*)(studiohdr_t *, int))Search_Pattern(R_STUDIOSETUPSKIN_SIG_NEW);
+		gPrivateFuncs.R_StudioSetupSkin = (void(*)(studiohdr_t *, int))Search_Pattern(R_STUDIOSETUPSKIN_SIG_NEW);
 		Sig_FuncNotFound(R_StudioSetupSkin);
 	}
 
@@ -1067,7 +1067,7 @@ void R_FillAddress(void)
 		auto Cache_Alloc_Call = Search_Pattern(pattern);
 		Sig_VarNotFound(Cache_Alloc_Call);
 
-		gRefFuncs.Cache_Alloc = (decltype(gRefFuncs.Cache_Alloc))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Cache_Alloc_Call, 0x80, [](PUCHAR Candidate) {
+		gPrivateFuncs.Cache_Alloc = (decltype(gPrivateFuncs.Cache_Alloc))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Cache_Alloc_Call, 0x80, [](PUCHAR Candidate) {
 
 			if (Candidate[0] == 0x53 &&
 				Candidate[1] == 0x8B &&
@@ -1098,7 +1098,7 @@ void R_FillAddress(void)
 		auto Draw_MiptexTexture_Call = Search_Pattern(pattern);
 		Sig_VarNotFound(Draw_MiptexTexture_Call);
 
-		gRefFuncs.Draw_MiptexTexture = (decltype(gRefFuncs.Draw_MiptexTexture))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Draw_MiptexTexture_Call, 0x80, [](PUCHAR Candidate) {
+		gPrivateFuncs.Draw_MiptexTexture = (decltype(gPrivateFuncs.Draw_MiptexTexture))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Draw_MiptexTexture_Call, 0x80, [](PUCHAR Candidate) {
 
 			if (Candidate[0] == 0x55 &&
 				Candidate[1] == 0x8B &&
@@ -1118,56 +1118,56 @@ void R_FillAddress(void)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			gRefFuncs.Draw_MiptexTexture = (void(*)(cachewad_t * wad, byte * data))Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_SVENGINE);
+			gPrivateFuncs.Draw_MiptexTexture = (void(*)(cachewad_t * wad, byte * data))Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_SVENGINE);
 			Sig_FuncNotFound(Draw_MiptexTexture);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			gRefFuncs.Draw_MiptexTexture = (void(*)(cachewad_t * wad, byte * data))Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_HL25);
+			gPrivateFuncs.Draw_MiptexTexture = (void(*)(cachewad_t * wad, byte * data))Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_HL25);
 			Sig_FuncNotFound(Draw_MiptexTexture);
 		}
 		else
 		{
-			gRefFuncs.Draw_MiptexTexture = (void(*)(cachewad_t * wad, byte * data))Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_NEW);
+			gPrivateFuncs.Draw_MiptexTexture = (void(*)(cachewad_t * wad, byte * data))Search_Pattern(DRAW_MIPTEXTEXTURE_SIG_NEW);
 			Sig_FuncNotFound(Draw_MiptexTexture);
 		}
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.Draw_DecalTexture = (texture_t *(*)(int))Search_Pattern(DRAW_DECALTEXTURE_SIG_SVENGINE);
+		gPrivateFuncs.Draw_DecalTexture = (texture_t *(*)(int))Search_Pattern(DRAW_DECALTEXTURE_SIG_SVENGINE);
 		Sig_FuncNotFound(Draw_DecalTexture);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.Draw_DecalTexture = (texture_t * (*)(int))Search_Pattern(DRAW_DECALTEXTURE_SIG_HL25);
+		gPrivateFuncs.Draw_DecalTexture = (texture_t * (*)(int))Search_Pattern(DRAW_DECALTEXTURE_SIG_HL25);
 		Sig_FuncNotFound(Draw_DecalTexture);
 	}
 	else
 	{
-		gRefFuncs.Draw_DecalTexture = (texture_t *(*)(int))Search_Pattern(DRAW_DECALTEXTURE_SIG_NEW);
+		gPrivateFuncs.Draw_DecalTexture = (texture_t *(*)(int))Search_Pattern(DRAW_DECALTEXTURE_SIG_NEW);
 		Sig_FuncNotFound(Draw_DecalTexture);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_DrawSpriteModel = (void(*)(cl_entity_t *))Search_Pattern(R_DRAWSRPITEMODEL_SIG_SVENGINE);
+		gPrivateFuncs.R_DrawSpriteModel = (void(*)(cl_entity_t *))Search_Pattern(R_DRAWSRPITEMODEL_SIG_SVENGINE);
 		Sig_FuncNotFound(R_DrawSpriteModel);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.R_DrawSpriteModel = (void(*)(cl_entity_t*))Search_Pattern(R_DRAWSRPITEMODEL_SIG_HL25);
+		gPrivateFuncs.R_DrawSpriteModel = (void(*)(cl_entity_t*))Search_Pattern(R_DRAWSRPITEMODEL_SIG_HL25);
 		Sig_FuncNotFound(R_DrawSpriteModel);
 	}
 	else
 	{
-		gRefFuncs.R_DrawSpriteModel = (void(*)(cl_entity_t *))Search_Pattern(R_DRAWSRPITEMODEL_SIG_NEW);
+		gPrivateFuncs.R_DrawSpriteModel = (void(*)(cl_entity_t *))Search_Pattern(R_DRAWSRPITEMODEL_SIG_NEW);
 		Sig_FuncNotFound(R_DrawSpriteModel);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_LightStrength = (decltype(gRefFuncs.R_LightStrength))Search_Pattern(R_LIGHTSTRENGTH_SIG_SVENGINE);
+		gPrivateFuncs.R_LightStrength = (decltype(gPrivateFuncs.R_LightStrength))Search_Pattern(R_LIGHTSTRENGTH_SIG_SVENGINE);
 		Sig_FuncNotFound(R_LightStrength);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
@@ -1176,7 +1176,7 @@ void R_FillAddress(void)
 	}
 	else
 	{
-		gRefFuncs.R_LightStrength = (decltype(gRefFuncs.R_LightStrength))Search_Pattern(R_LIGHTSTRENGTH_SIG_NEW);
+		gPrivateFuncs.R_LightStrength = (decltype(gPrivateFuncs.R_LightStrength))Search_Pattern(R_LIGHTSTRENGTH_SIG_NEW);
 		Sig_FuncNotFound(R_LightStrength);
 	}
 
@@ -1185,20 +1185,20 @@ void R_FillAddress(void)
 		auto addr = Search_Pattern(R_ROTATEFORENTITY_GOLDSRC);
 		Sig_AddrNotFound(R_RotateForEntity_Pattern);
 		
-		gRefFuncs.R_RotateForEntity = (void(*)(float*, cl_entity_t*))GetCallAddress((PUCHAR)addr + sizeof(R_ROTATEFORENTITY_GOLDSRC) - 1 - 1);
+		gPrivateFuncs.R_RotateForEntity = (void(*)(float*, cl_entity_t*))GetCallAddress((PUCHAR)addr + sizeof(R_ROTATEFORENTITY_GOLDSRC) - 1 - 1);
 		Sig_FuncNotFound(R_RotateForEntity);
 	}
 
-	if (!gRefFuncs.R_RotateForEntity)
+	if (!gPrivateFuncs.R_RotateForEntity)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			gRefFuncs.R_RotateForEntity = (void(*)(float*, cl_entity_t*))Search_Pattern(R_ROTATEFORENTITY_SVENGINE);
+			gPrivateFuncs.R_RotateForEntity = (void(*)(float*, cl_entity_t*))Search_Pattern(R_ROTATEFORENTITY_SVENGINE);
 			Sig_FuncNotFound(R_RotateForEntity);
 		}
 		else
 		{
-			gRefFuncs.R_RotateForEntity = (void(*)(float*, cl_entity_t*))Search_Pattern(R_ROTATEFORENTITY_NEW);
+			gPrivateFuncs.R_RotateForEntity = (void(*)(float*, cl_entity_t*))Search_Pattern(R_ROTATEFORENTITY_NEW);
 			Sig_FuncNotFound(R_RotateForEntity);
 		}
 	}
@@ -1213,13 +1213,13 @@ void R_FillAddress(void)
 	}
 	else
 	{
-		gRefFuncs.BuildNormalIndexTable = (void(*)(void))Search_Pattern(BUILDNORMALINDEXTABLE_SIG_NEW);
+		gPrivateFuncs.BuildNormalIndexTable = (void(*)(void))Search_Pattern(BUILDNORMALINDEXTABLE_SIG_NEW);
 		Sig_FuncNotFound(BuildNormalIndexTable);
 	}
 	
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.R_GlowBlend = (float(*)(cl_entity_t *))Search_Pattern(R_GLOW_BLEND_SIG_SVENGINE);
+		gPrivateFuncs.R_GlowBlend = (float(*)(cl_entity_t *))Search_Pattern(R_GLOW_BLEND_SIG_SVENGINE);
 		Sig_FuncNotFound(R_GlowBlend);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
@@ -1228,42 +1228,42 @@ void R_FillAddress(void)
 	}
 	else
 	{
-		gRefFuncs.R_GlowBlend = (float(*)(cl_entity_t *))Search_Pattern(R_GLOW_BLEND_SIG_NEW);
+		gPrivateFuncs.R_GlowBlend = (float(*)(cl_entity_t *))Search_Pattern(R_GLOW_BLEND_SIG_NEW);
 		Sig_FuncNotFound(R_GlowBlend);
 	}
 
-	gRefFuncs.SCR_BeginLoadingPlaque = (decltype(gRefFuncs.SCR_BeginLoadingPlaque))Search_Pattern(SCR_BEGIN_LOADING_PLAQUE);
+	gPrivateFuncs.SCR_BeginLoadingPlaque = (decltype(gPrivateFuncs.SCR_BeginLoadingPlaque))Search_Pattern(SCR_BEGIN_LOADING_PLAQUE);
 	Sig_FuncNotFound(SCR_BeginLoadingPlaque);
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.Host_IsSinglePlayerGame = (decltype(gRefFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_SVENGINE);
+		gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_SVENGINE);
 		Sig_FuncNotFound(Host_IsSinglePlayerGame);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.Host_IsSinglePlayerGame = (decltype(gRefFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_HL25);
+		gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_HL25);
 		Sig_FuncNotFound(Host_IsSinglePlayerGame);
 	}
 	else
 	{
-		gRefFuncs.Host_IsSinglePlayerGame = (decltype(gRefFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW);
+		gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW);
 		Sig_FuncNotFound(Host_IsSinglePlayerGame);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gRefFuncs.Mod_UnloadSpriteTextures = (decltype(gRefFuncs.Mod_UnloadSpriteTextures))Search_Pattern(MOD_UNLOADSPRITETEXTURES_SVENGINE);
+		gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))Search_Pattern(MOD_UNLOADSPRITETEXTURES_SVENGINE);
 		Sig_FuncNotFound(Mod_UnloadSpriteTextures);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gRefFuncs.Mod_UnloadSpriteTextures = (decltype(gRefFuncs.Mod_UnloadSpriteTextures))Search_Pattern(MOD_UNLOADSPRITETEXTURES_HL25);
+		gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))Search_Pattern(MOD_UNLOADSPRITETEXTURES_HL25);
 		Sig_FuncNotFound(Mod_UnloadSpriteTextures);
 	}
 	else
 	{
-		gRefFuncs.Mod_UnloadSpriteTextures = (decltype(gRefFuncs.Mod_UnloadSpriteTextures))Search_Pattern(MOD_UNLOADSPRITETEXTURES_NEW);
+		gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))Search_Pattern(MOD_UNLOADSPRITETEXTURES_NEW);
 		Sig_FuncNotFound(Mod_UnloadSpriteTextures);
 	}
 
@@ -1280,7 +1280,7 @@ void R_FillAddress(void)
 		auto R_AddTEntity_Call = Search_Pattern(pattern);
 		Sig_VarNotFound(R_AddTEntity_Call);
 
-		gRefFuncs.R_AddTEntity = (decltype(gRefFuncs.R_AddTEntity))g_pMetaHookAPI->ReverseSearchFunctionBegin(R_AddTEntity_Call, 0x50);
+		gPrivateFuncs.R_AddTEntity = (decltype(gPrivateFuncs.R_AddTEntity))g_pMetaHookAPI->ReverseSearchFunctionBegin(R_AddTEntity_Call, 0x50);
 		Sig_FuncNotFound(R_AddTEntity);
 	}
 	else
@@ -1295,7 +1295,7 @@ void R_FillAddress(void)
 		auto R_AddTEntity_Call = Search_Pattern(pattern);
 		Sig_VarNotFound(R_AddTEntity_Call);
 
-		gRefFuncs.R_AddTEntity = (decltype(gRefFuncs.R_AddTEntity))g_pMetaHookAPI->ReverseSearchFunctionBegin(R_AddTEntity_Call, 0x50);
+		gPrivateFuncs.R_AddTEntity = (decltype(gPrivateFuncs.R_AddTEntity))g_pMetaHookAPI->ReverseSearchFunctionBegin(R_AddTEntity_Call, 0x50);
 		Sig_FuncNotFound(R_AddTEntity);
 	}
 
@@ -1311,7 +1311,7 @@ void R_FillAddress(void)
 		auto Hunk_Alloc_Call = Search_Pattern(pattern);
 		Sig_VarNotFound(Hunk_Alloc_Call);
 
-		gRefFuncs.Hunk_AllocName = (decltype(gRefFuncs.Hunk_AllocName))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Hunk_Alloc_Call, 0x50, [](PUCHAR Candidate) {
+		gPrivateFuncs.Hunk_AllocName = (decltype(gPrivateFuncs.Hunk_AllocName))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Hunk_Alloc_Call, 0x50, [](PUCHAR Candidate) {
 			//.text : 01DD29B0 83 EC 08                                                     sub     esp, 8
 			//.text : 01DD29B3 53                                                           push    ebx
 			//.text : 01DD29B4 55                                                           push    ebp
@@ -1339,7 +1339,7 @@ void R_FillAddress(void)
 		auto Hunk_Alloc_Call = Search_Pattern(pattern);
 		Sig_VarNotFound(Hunk_Alloc_Call);
 
-		gRefFuncs.Hunk_AllocName = (decltype(gRefFuncs.Hunk_AllocName))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Hunk_Alloc_Call, 0x50, [](PUCHAR Candidate) {
+		gPrivateFuncs.Hunk_AllocName = (decltype(gPrivateFuncs.Hunk_AllocName))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Hunk_Alloc_Call, 0x50, [](PUCHAR Candidate) {
 
 			if (Candidate[0] == 0x55 &&
 				Candidate[1] == 0x8B &&
@@ -1368,7 +1368,7 @@ void R_FillAddress(void)
 		auto Cvar_DirectSet_Call = Search_Pattern(pattern);
 		Sig_VarNotFound(Cvar_DirectSet_Call);
 
-		gRefFuncs.Cvar_DirectSet = (decltype(gRefFuncs.Cvar_DirectSet))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Cvar_DirectSet_Call, 0x500, [](PUCHAR Candidate) {
+		gPrivateFuncs.Cvar_DirectSet = (decltype(gPrivateFuncs.Cvar_DirectSet))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Cvar_DirectSet_Call, 0x500, [](PUCHAR Candidate) {
 			//.text : 01D42120 81 EC 0C 04 00 00                                   sub     esp, 40Ch
 			//.text : 01D42126 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
 			//.text : 01D4212B 33 C4
@@ -1409,7 +1409,7 @@ void R_FillAddress(void)
 
 		GL_EndRendering_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.GL_EndRendering, 0x350, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.GL_EndRendering, 0x350, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 			auto ctx = (GL_EndRendering_ctx *)context;
@@ -1661,7 +1661,7 @@ void R_FillAddress(void)
 
 		R_DrawTEntitiesOnList_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_DrawTEntitiesOnList, 0x500, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_DrawTEntitiesOnList, 0x500, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 			auto ctx = (R_DrawTEntitiesOnList_ctx *)context;
@@ -1943,7 +1943,7 @@ void R_FillAddress(void)
 
 		R_RecursiveWorldNode_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_RecursiveWorldNode, 0x500, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_RecursiveWorldNode, 0x500, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 			auto ctx = (R_RecursiveWorldNode_ctx *)context;
@@ -2083,7 +2083,7 @@ void R_FillAddress(void)
 		auto R_LoadSkys_PushString = Search_Pattern(pattern);
 		Sig_VarNotFound(R_LoadSkys_PushString);
 
-		gRefFuncs.R_LoadSkyboxInt_SvEngine = (decltype(gRefFuncs.R_LoadSkyboxInt_SvEngine))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_LoadSkys_PushString, 0x600, [](PUCHAR Candidate) {
+		gPrivateFuncs.R_LoadSkyboxInt_SvEngine = (decltype(gPrivateFuncs.R_LoadSkyboxInt_SvEngine))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_LoadSkys_PushString, 0x600, [](PUCHAR Candidate) {
 			//.text : 01D5FC10 81 EC 28 01 00 00                                   sub     esp, 128h
 			//.text : 01D5FC16 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
 			//.text : 01D5FC1B 33 C4 xor eax, esp
@@ -2108,7 +2108,7 @@ void R_FillAddress(void)
 
 		R_LoadSkys_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_LoadSkyboxInt_SvEngine, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_LoadSkyboxInt_SvEngine, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 			auto ctx = (R_LoadSkys_ctx *)context;
@@ -2171,7 +2171,7 @@ void R_FillAddress(void)
 		Sig_VarNotFound(R_LoadSkyBox_PushString);
 
 
-		gRefFuncs.R_LoadSkyBox_SvEngine = (decltype(gRefFuncs.R_LoadSkyBox_SvEngine))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_LoadSkyBox_PushString, 0x200, [](PUCHAR Candidate) {
+		gPrivateFuncs.R_LoadSkyBox_SvEngine = (decltype(gPrivateFuncs.R_LoadSkyBox_SvEngine))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_LoadSkyBox_PushString, 0x200, [](PUCHAR Candidate) {
 			/*
 .text:01D5FEF0                                     ; void __cdecl R_LoadSkyName(const char *name)
 .text:01D5FEF0                                     R_LoadSkyName   proc near               ; CODE XREF: sub_1D042D0+E¡üp
@@ -2207,7 +2207,7 @@ void R_FillAddress(void)
 		auto R_LoadSkys_PushString = Search_Pattern(pattern);
 		Sig_VarNotFound(R_LoadSkys_PushString);
 
-		gRefFuncs.R_LoadSkys = (decltype(gRefFuncs.R_LoadSkys))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_LoadSkys_PushString, 0x600, [](PUCHAR Candidate) {
+		gPrivateFuncs.R_LoadSkys = (decltype(gPrivateFuncs.R_LoadSkys))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(R_LoadSkys_PushString, 0x600, [](PUCHAR Candidate) {
 			//.text : 01D5FC10 81 EC 28 01 00 00                                   sub     esp, 128h
 			//.text : 01D5FC16 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
 			//.text : 01D5FC1B 33 C4 xor eax, esp
@@ -2242,7 +2242,7 @@ void R_FillAddress(void)
 
 		R_LoadSkys_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_LoadSkys, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_LoadSkys, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 			auto ctx = (R_LoadSkys_ctx *)context;
@@ -2310,7 +2310,7 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-		g_pMetaHookAPI->DisasmRanges(g_iEngineType == ENGINE_SVENGINE ? (void *)gRefFuncs.R_LoadSkyBox_SvEngine : (void *)gRefFuncs.R_LoadSkys, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(g_iEngineType == ENGINE_SVENGINE ? (void *)gPrivateFuncs.R_LoadSkyBox_SvEngine : (void *)gPrivateFuncs.R_LoadSkys, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 
@@ -2354,7 +2354,7 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.GL_Bind, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.GL_Bind, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 
@@ -2387,7 +2387,7 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.GL_SelectTexture, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.GL_SelectTexture, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 
@@ -2445,7 +2445,7 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_TextureAnimation, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_TextureAnimation, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 
@@ -2480,7 +2480,7 @@ void R_FillAddress(void)
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char sigs[] = "\xD9\x54\x24\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD9\xE8";
-		addr = (DWORD)Search_Pattern_From_Size((void *)gRefFuncs.R_SetupGL, 0x100, sigs);
+		addr = (DWORD)Search_Pattern_From_Size((void *)gPrivateFuncs.R_SetupGL, 0x100, sigs);
 		Sig_AddrNotFound(scrfov);
 		scrfov = *(decltype(scrfov)*)(addr + 6);
 	}
@@ -2499,7 +2499,7 @@ void R_FillAddress(void)
 	if (1)
 	{
 		const char sigs[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x700, sigs, sizeof(sigs) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_SetupGL, 0x700, sigs, sizeof(sigs) - 1);
 		Sig_AddrNotFound(gWorldToScreen);
 		gWorldToScreen = *(decltype(gWorldToScreen)*)(addr + 6);
 		gScreenToWorld = *(decltype(gScreenToWorld)*)(addr + 1);
@@ -2512,7 +2512,7 @@ void R_FillAddress(void)
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
 			const char sigs[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\x60\x0B\x00\x00";
-			addr = (DWORD)Search_Pattern_From_Size((void *)gRefFuncs.R_RenderScene, 0x600, sigs);
+			addr = (DWORD)Search_Pattern_From_Size((void *)gPrivateFuncs.R_RenderScene, 0x600, sigs);
 			Sig_AddrNotFound(R_RenderFinalFog);
 
 			R_RenderFinalFog = (decltype(R_RenderFinalFog))addr;
@@ -2522,7 +2522,7 @@ void R_FillAddress(void)
 		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
 			const char sigs[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x60\x0B\x00\x00";
-			addr = (DWORD)Search_Pattern_From_Size((void *)gRefFuncs.R_RenderScene, 0x600, sigs);
+			addr = (DWORD)Search_Pattern_From_Size((void *)gPrivateFuncs.R_RenderScene, 0x600, sigs);
 			Sig_AddrNotFound(R_RenderFinalFog);
 
 			R_RenderFinalFog = (decltype(R_RenderFinalFog))GetCallAddress(addr + 9);
@@ -2532,7 +2532,7 @@ void R_FillAddress(void)
 		else
 		{
 			const char sigs[] = "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x6A\x00";
-			addr = (DWORD)Search_Pattern_From_Size((void *)gRefFuncs.R_RenderScene, 0x600, sigs);
+			addr = (DWORD)Search_Pattern_From_Size((void *)gPrivateFuncs.R_RenderScene, 0x600, sigs);
 			Sig_AddrNotFound(g_bUserFogOn);
 
 			R_RenderFinalFog = (decltype(R_RenderFinalFog))GetCallAddress(addr + 9);
@@ -2642,16 +2642,16 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_RenderScene, 0x30, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_RenderScene, 0x30, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 
-			if (!gRefFuncs.CL_IsDevOverviewMode && address[0] == 0xE8 && address[5] == 0x85)
+			if (!gPrivateFuncs.CL_IsDevOverviewMode && address[0] == 0xE8 && address[5] == 0x85)
 			{
-				gRefFuncs.CL_IsDevOverviewMode = (decltype(gRefFuncs.CL_IsDevOverviewMode))pinst->detail->x86.operands[0].imm;
+				gPrivateFuncs.CL_IsDevOverviewMode = (decltype(gPrivateFuncs.CL_IsDevOverviewMode))pinst->detail->x86.operands[0].imm;
 			}
 
-			if (gRefFuncs.CL_IsDevOverviewMode && !gRefFuncs.CL_SetDevOverView && address[0] == 0xE8 && address[-5] == 0x68 && address[5] == 0x83)
+			if (gPrivateFuncs.CL_IsDevOverviewMode && !gPrivateFuncs.CL_SetDevOverView && address[0] == 0xE8 && address[-5] == 0x68 && address[5] == 0x83)
 			{
 				if (g_iEngineType == ENGINE_SVENGINE)
 				{
@@ -2672,10 +2672,10 @@ void R_FillAddress(void)
 					r_refdef.onlyClientDraws = &r_refdef_GoldSrc->onlyClientDraws;
 				}
 
-				gRefFuncs.CL_SetDevOverView = (decltype(gRefFuncs.CL_SetDevOverView))pinst->detail->x86.operands[0].imm;
+				gPrivateFuncs.CL_SetDevOverView = (decltype(gPrivateFuncs.CL_SetDevOverView))pinst->detail->x86.operands[0].imm;
 			}
 
-			if (gRefFuncs.CL_IsDevOverviewMode && gRefFuncs.CL_SetDevOverView)
+			if (gPrivateFuncs.CL_IsDevOverviewMode && gPrivateFuncs.CL_SetDevOverView)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -2698,7 +2698,7 @@ void R_FillAddress(void)
 
 		R_RenderScene_ctx ctx2;
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_RenderScene, 0x600, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_RenderScene, 0x600, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (R_RenderScene_ctx *)context;
@@ -2766,7 +2766,7 @@ void R_FillAddress(void)
 
 		OverviewZoomCotext_t ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.CL_SetDevOverView, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.CL_SetDevOverView, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 			auto ctx = (OverviewZoomCotext_t*)context;
 			auto pinst = (cs_insn*)inst;
@@ -2831,7 +2831,7 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_CullBox, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_CullBox, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 
@@ -2888,7 +2888,7 @@ void R_FillAddress(void)
 		//.text : 01D4EBFA 3B F2                                               cmp     esi, edx
 		//.text : 01D4EBFC 7D 4D                                               jge     short loc_1D4EC4B
 		//.text : 01D4EBFE 8B 1D E4 C5 0F 03                                   mov     ebx, gltextures
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x300, sigs1, sizeof(sigs1) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.GL_LoadTexture2, 0x300, sigs1, sizeof(sigs1) - 1);
 		Sig_AddrNotFound(gltextures);
 		numgltextures = *(int **)(addr + 2);
 		gltextures_SvEngine = *(gltexture_t ***)(addr + 12);
@@ -2897,19 +2897,19 @@ void R_FillAddress(void)
 		//Search in GL_LoadTexture2
 		//.text:01D4ED66 6B C1 54                                            imul    eax, ecx, 54h; 'T'
 		//.text:01D4ED69 89 0D F0 C6 0F 03                                   mov     maxgltextures, ecx
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x300, sigs2, sizeof(sigs2) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.GL_LoadTexture2, 0x300, sigs2, sizeof(sigs2) - 1);
 		Sig_AddrNotFound(maxgltextures);
 		maxgltextures_SvEngine = *(int **)(addr + 5);
 
 		const char sigs3[] = "\x51\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
 		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)addr, 0x50, sigs3, sizeof(sigs3) - 1);
 		Sig_AddrNotFound(realloc);
-		gRefFuncs.realloc_SvEngine = (decltype(gRefFuncs.realloc_SvEngine))(addr + 2 + 4 + *(int *)(addr + 2));
+		gPrivateFuncs.realloc_SvEngine = (decltype(gPrivateFuncs.realloc_SvEngine))(addr + 2 + 4 + *(int *)(addr + 2));
 
 		const char sigs4[] = "\x66\x8B\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x04";
 		//66 8B 0D E0 72 40 08                                mov     cx, word ptr gHostSpawnCount
 		//66 89 4B 04                                         mov     [ebx+4], cx
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x200, sigs4, sizeof(sigs4) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.GL_LoadTexture2, 0x200, sigs4, sizeof(sigs4) - 1);
 		Sig_AddrNotFound(gHostSpawnCount);
 		gHostSpawnCount = *(int **)(addr + 3);
 
@@ -2917,7 +2917,7 @@ void R_FillAddress(void)
 		//Search in GL_LoadTexture2
 		//.text:01D4EDE8 03 35 EC C6 0F 03                                   add     esi, gltextures
 		//.text : 01D4EDEE 3B 15 00 C7 0F 03                                   cmp     edx, peakgltextures
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x200, sigs5, sizeof(sigs5) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.GL_LoadTexture2, 0x200, sigs5, sizeof(sigs5) - 1);
 		Sig_AddrNotFound(peakgltextures);
 		peakgltextures_SvEngine = *(int **)(addr + 8);
 	}
@@ -2933,7 +2933,7 @@ void R_FillAddress(void)
 
 		GL_LoadTexture2_Context ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.GL_LoadTexture2, 0x200, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.GL_LoadTexture2, 0x200, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn*)inst;
 
@@ -3038,14 +3038,14 @@ void R_FillAddress(void)
 		//Search in GL_LoadTexture2
 		//xor     esi, esi
 		//mov     edi, offset gltextures
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x100, sigs1, sizeof(sigs1) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.GL_LoadTexture2, 0x100, sigs1, sizeof(sigs1) - 1);
 		Sig_AddrNotFound(gltextures);
 		gltextures = *(gltexture_t **)(addr + 3);
 		numgltextures = *(int **)(addr + 9);
 
 		const char sigs2[] = "\x66\x8B\x15\x2A\x2A\x2A\x2A\x66\x89\x57\x04";
 		//mov     dx, word ptr gHostSpawnCount
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.GL_LoadTexture2, 0x200, sigs2, sizeof(sigs2) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.GL_LoadTexture2, 0x200, sigs2, sizeof(sigs2) - 1);
 		Sig_AddrNotFound(gHostSpawnCount);
 		gHostSpawnCount = *(int **)(addr + 3);
 #endif
@@ -3053,7 +3053,7 @@ void R_FillAddress(void)
 
 	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.VID_UpdateWindowVars, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.VID_UpdateWindowVars, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn*)inst;
 
@@ -3083,7 +3083,7 @@ void R_FillAddress(void)
 	}
 	else
 	{
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.VID_UpdateWindowVars, 0x40, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.VID_UpdateWindowVars, 0x40, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 
@@ -3169,7 +3169,7 @@ void R_FillAddress(void)
 
 		R_DrawWorld_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_DrawWorld, 0x130, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_DrawWorld, 0x130, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 			auto ctx = (R_DrawWorld_ctx *)context;
@@ -3273,7 +3273,7 @@ void R_FillAddress(void)
 
 		R_RenderDynamicLightmaps_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_RenderDynamicLightmaps, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_RenderDynamicLightmaps, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 			auto ctx = (R_RenderDynamicLightmaps_ctx *)context;
@@ -3361,7 +3361,7 @@ void R_FillAddress(void)
 
 		CL_AllocDlight_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.CL_AllocDlight, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.CL_AllocDlight, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 			auto ctx = (CL_AllocDlight_ctx *)context;
@@ -3448,7 +3448,7 @@ void R_FillAddress(void)
 
 		R_DrawSequentialPoly_ctx ctx = { 0 };
 
-		ctx.base = gRefFuncs.R_DrawSequentialPoly;
+		ctx.base = gPrivateFuncs.R_DrawSequentialPoly;
 		ctx.max_insts = 500;
 		ctx.max_depth = 16;
 		ctx.walks.emplace_back(ctx.base, 0x500, 0);
@@ -3649,7 +3649,7 @@ void R_FillAddress(void)
 
 		R_StudioLighting_ctx ctx = { 0 };
 
-		ctx.base = gRefFuncs.R_StudioLighting;
+		ctx.base = gPrivateFuncs.R_StudioLighting;
 		ctx.max_insts = 500;
 		ctx.max_depth = 16;
 		ctx.walks.emplace_back(ctx.base, 0x500, 0);
@@ -4003,7 +4003,7 @@ void R_FillAddress(void)
 
 		BuildGammaTable_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.BuildGammaTable, 0x250, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.BuildGammaTable, 0x250, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (BuildGammaTable_ctx*)context;
@@ -4036,7 +4036,7 @@ void R_FillAddress(void)
 
 #if 0
 #define TEXGAMMATABLE_SIG "\x88\x86\x2A\x2A\x2A\x2A\x46"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.BuildGammaTable, 0x300, TEXGAMMATABLE_SIG, sizeof(TEXGAMMATABLE_SIG) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.BuildGammaTable, 0x300, TEXGAMMATABLE_SIG, sizeof(TEXGAMMATABLE_SIG) - 1);
 		Sig_AddrNotFound(texgammatable);
 		texgammatable = *(decltype(texgammatable) *)(addr + 2);
 #endif
@@ -4045,7 +4045,7 @@ void R_FillAddress(void)
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 #define NORMALINDEX_SIG_SVENGINE "\x83\x3C\xB5\x2A\x2A\x2A\x2A\x00"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_GLStudioDrawPoints, 0x600, NORMALINDEX_SIG_SVENGINE, sizeof(NORMALINDEX_SIG_SVENGINE) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_GLStudioDrawPoints, 0x600, NORMALINDEX_SIG_SVENGINE, sizeof(NORMALINDEX_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(g_NormalIndex);
 		g_NormalIndex = *(decltype(g_NormalIndex) *)(addr + 3);
 	}
@@ -4054,7 +4054,7 @@ void R_FillAddress(void)
 		//.text : 01D821E5 BF B0 64 37 02                                      mov     edi, offset g_NormalIndex
 		//.text : 01D821EA F3 AB                                               rep stosd
 #define NORMALINDEX_SIG_HL25 "\xBF\x2A\x2A\x2A\x2A\x83\xC8\xFF\xF3\xAB"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)gRefFuncs.R_GLStudioDrawPoints, 0x200, NORMALINDEX_SIG_HL25, sizeof(NORMALINDEX_SIG_HL25) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)gPrivateFuncs.R_GLStudioDrawPoints, 0x200, NORMALINDEX_SIG_HL25, sizeof(NORMALINDEX_SIG_HL25) - 1);
 		Sig_AddrNotFound(g_NormalIndex);
 		g_NormalIndex = *(decltype(g_NormalIndex)*)(addr + 1);
 	}
@@ -4063,7 +4063,7 @@ void R_FillAddress(void)
 		//mov     edi, offset g_NormalIndex
 		//rep stosd
 #define G_NORMALINDEX_SIG "\xBF\x2A\x2A\x2A\x2A\xF3\xAB"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.BuildNormalIndexTable, 0x50, G_NORMALINDEX_SIG, sizeof(G_NORMALINDEX_SIG) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.BuildNormalIndexTable, 0x50, G_NORMALINDEX_SIG, sizeof(G_NORMALINDEX_SIG) - 1);
 		Sig_AddrNotFound(g_NormalIndex);
 		g_NormalIndex = *(int(**)[MAXSTUDIOVERTS])(addr + 1);
 	}
@@ -4071,21 +4071,21 @@ void R_FillAddress(void)
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 #define CHROMEAGE_SIG_SVENGINE "\xBF\x2A\x2A\x2A\x2A\xF3\xAB\x33\xFF\x39"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_GLStudioDrawPoints, 0x600, CHROMEAGE_SIG_SVENGINE, sizeof(CHROMEAGE_SIG_SVENGINE) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_GLStudioDrawPoints, 0x600, CHROMEAGE_SIG_SVENGINE, sizeof(CHROMEAGE_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(chromeage);
 		chromeage = *(decltype(chromeage) *)(addr + 1);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
 #define CHROMEAGE_SIG_HL25 "\x33\xC0\xBF\x2A\x2A\x2A\x2A\xF3\xAB\x8B"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)gRefFuncs.R_GLStudioDrawPoints, 0x600, CHROMEAGE_SIG_HL25, sizeof(CHROMEAGE_SIG_HL25) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)gPrivateFuncs.R_GLStudioDrawPoints, 0x600, CHROMEAGE_SIG_HL25, sizeof(CHROMEAGE_SIG_HL25) - 1);
 		Sig_AddrNotFound(chromeage);
 		chromeage = *(decltype(chromeage)*)(addr + 3);
 	}
 	else
 	{
 #define CHROMEAGE_SIG "\x8B\x04\xB5\x2A\x2A\x2A\x2A\x3B\xC1"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_StudioChrome, 0x50, CHROMEAGE_SIG, sizeof(CHROMEAGE_SIG) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_StudioChrome, 0x50, CHROMEAGE_SIG, sizeof(CHROMEAGE_SIG) - 1);
 		Sig_AddrNotFound(chromeage);
 		chromeage = *(int(**)[MAXSTUDIOBONES])((DWORD)addr + 3);
 	}
@@ -4093,21 +4093,21 @@ void R_FillAddress(void)
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 #define CHROME_SIG_SVENGINE "\xC1\xE8\x1F\x03\xC2\x8D\x04\xC5\x2A\x2A\x2A\x2A\x50\xE8"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_GLStudioDrawPoints, 0x1000, CHROME_SIG_SVENGINE, sizeof(CHROME_SIG_SVENGINE) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_GLStudioDrawPoints, 0x1000, CHROME_SIG_SVENGINE, sizeof(CHROME_SIG_SVENGINE) - 1);
 		Sig_AddrNotFound(chrome);
 		chrome = *(decltype(chrome) *)(addr + 8);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
 #define CHROME_SIG_HL25 "\x8D\x04\xFD\x2A\x2A\x2A\x2A\xFF\xB5\x2A\x2A\x2A\x2A\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)gRefFuncs.R_GLStudioDrawPoints, 0x1000, CHROME_SIG_HL25, sizeof(CHROME_SIG_HL25) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)gPrivateFuncs.R_GLStudioDrawPoints, 0x1000, CHROME_SIG_HL25, sizeof(CHROME_SIG_HL25) - 1);
 		Sig_AddrNotFound(chrome);
 		chrome = *(decltype(chrome)*)(addr + 3);
 	}
 	else
 	{
 #define CHROME_SIG_NEW "\x8D\x0C\xD5\x2A\x2A\x2A\x2A\x51\xE8"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_GLStudioDrawPoints, 0x600, CHROME_SIG_NEW, sizeof(CHROME_SIG_NEW) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_GLStudioDrawPoints, 0x600, CHROME_SIG_NEW, sizeof(CHROME_SIG_NEW) - 1);
 		Sig_AddrNotFound(chrome);
 		chrome = *(decltype(chrome) *)(addr + 3);
 	}
@@ -4311,7 +4311,7 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.GL_EnableMultitexture, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.GL_EnableMultitexture, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 
@@ -4373,7 +4373,7 @@ void R_FillAddress(void)
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char sigs[] = "\xFF\x35\x2A\x2A\x2A\x2A\xDC\x0D\x2A\x2A\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A\xE8";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView_SvEngine, 0x800, sigs, sizeof(sigs) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_RenderView_SvEngine, 0x800, sigs, sizeof(sigs) - 1);
 		Sig_AddrNotFound(c_brush_polys);
 		c_alias_polys = *(int **)(addr + 2);
 		c_brush_polys = *(int **)(addr + 14);
@@ -4381,7 +4381,7 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
 		const char sigs[] = "\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x00\x00\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x00\x00";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)gRefFuncs.R_RenderView, 0x100, sigs, sizeof(sigs) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void*)gPrivateFuncs.R_RenderView, 0x100, sigs, sizeof(sigs) - 1);
 		Sig_AddrNotFound(c_brush_polys);
 		c_brush_polys = *(int**)(addr + 2);
 		c_alias_polys = *(int**)(addr + 12);
@@ -4389,7 +4389,7 @@ void R_FillAddress(void)
 	else
 	{
 		const char sigs[] = "\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x50\x51";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_RenderView, 0x150, sigs, sizeof(sigs) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_RenderView, 0x150, sigs, sizeof(sigs) - 1);
 		Sig_AddrNotFound(c_brush_polys);
 		c_alias_polys = *(int **)(addr + 1);
 		c_brush_polys = *(int **)(addr + 7);
@@ -4398,7 +4398,7 @@ void R_FillAddress(void)
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char sigs[] = "\xF6\xC4\x44\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F";
-		addr = (DWORD)Search_Pattern_From_Size(gRefFuncs.R_RenderView_SvEngine, 0x500, sigs);
+		addr = (DWORD)Search_Pattern_From_Size(gPrivateFuncs.R_RenderView_SvEngine, 0x500, sigs);
 		Sig_AddrNotFound(envmap);
 		envmap = *(int **)(addr + 11);
 		cl_stats = *(int **)(addr + 24);
@@ -4417,7 +4417,7 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
 		const char sigs[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\xF3\x0F\x10\x05";
-		addr = (DWORD)Search_Pattern_From_Size(gRefFuncs.R_DrawViewModel, 0x100, sigs);
+		addr = (DWORD)Search_Pattern_From_Size(gPrivateFuncs.R_DrawViewModel, 0x100, sigs);
 		Sig_AddrNotFound(envmap);
 		envmap = *(int**)(addr + 2);
 
@@ -4440,7 +4440,7 @@ void R_FillAddress(void)
 	else
 	{
 		const char sigs[] = "\x39\x3D\x2A\x2A\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xD9\x05";
-		addr = (DWORD)Search_Pattern_From_Size(gRefFuncs.R_DrawViewModel, 0x100, sigs);
+		addr = (DWORD)Search_Pattern_From_Size(gPrivateFuncs.R_DrawViewModel, 0x100, sigs);
 		Sig_AddrNotFound(envmap);
 		envmap = *(int **)(addr + 2);
 
@@ -4463,17 +4463,17 @@ void R_FillAddress(void)
 	}
 
 #define R_WORLD_MATRIX_SIG "\x68\x2A\x2A\x2A\x2A\x68\xA6\x0B\x00\x00"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x600, R_WORLD_MATRIX_SIG, sizeof(R_WORLD_MATRIX_SIG) - 1);
+	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_SetupGL, 0x600, R_WORLD_MATRIX_SIG, sizeof(R_WORLD_MATRIX_SIG) - 1);
 	Sig_AddrNotFound(r_world_matrix);
 	r_world_matrix = *(float **)(addr + 1);
 
 #define R_PROJ_MATRIX_SIG "\x68\x2A\x2A\x2A\x2A\x68\xA7\x0B\x00\x00"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupGL, 0x500, R_PROJ_MATRIX_SIG, sizeof(R_PROJ_MATRIX_SIG) - 1);
+	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_SetupGL, 0x500, R_PROJ_MATRIX_SIG, sizeof(R_PROJ_MATRIX_SIG) - 1);
 	Sig_AddrNotFound(r_projection_matrix);
 	r_projection_matrix = *(float **)(addr + 1);
 
 #define TMP_PALETTE_SIG "\x68\x2A\x2A\x2A\x2A\x6A\x00\x6A\x00"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_StudioSetupSkin, 0x600, TMP_PALETTE_SIG, sizeof(TMP_PALETTE_SIG) - 1);
+	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_StudioSetupSkin, 0x600, TMP_PALETTE_SIG, sizeof(TMP_PALETTE_SIG) - 1);
 	Sig_AddrNotFound(tmp_palette);
 	tmp_palette = *(void **)(addr + 1);
 
@@ -4486,7 +4486,7 @@ void R_FillAddress(void)
 
 		R_StudioSetupSkin_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_StudioSetupSkin, 0x800, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_StudioSetupSkin, 0x800, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (R_StudioSetupSkin_ctx*)context;
@@ -4495,7 +4495,7 @@ void R_FillAddress(void)
 			{
 				ctx->candidate_E8 = (decltype(ctx->candidate_E8))pinst->detail->x86.operands[0].imm;
 
-				if (!gRefFuncs.R_StudioGetSkin)
+				if (!gPrivateFuncs.R_StudioGetSkin)
 				{
 					typedef struct
 					{
@@ -4529,21 +4529,21 @@ void R_FillAddress(void)
 
 					if (ctx2.bFoundCmp0B)
 					{
-						gRefFuncs.R_StudioGetSkin = (decltype(gRefFuncs.R_StudioGetSkin))ctx->candidate_E8;
+						gPrivateFuncs.R_StudioGetSkin = (decltype(gPrivateFuncs.R_StudioGetSkin))ctx->candidate_E8;
 					}
 				}
 			}
 
-			if (!gRefFuncs.GL_UnloadTexture && ctx->candidate_E8)
+			if (!gPrivateFuncs.GL_UnloadTexture && ctx->candidate_E8)
 			{
 				if (address[0] == 0x6A && address[1] == 0x00 && address[2] == 0x6A && address[3] == 0x00)
 				{
-					gRefFuncs.GL_UnloadTexture = (decltype(gRefFuncs.GL_UnloadTexture))ctx->candidate_E8;
+					gPrivateFuncs.GL_UnloadTexture = (decltype(gPrivateFuncs.GL_UnloadTexture))ctx->candidate_E8;
 					return TRUE;
 				}
 			}
 
-			if (gRefFuncs.GL_UnloadTexture && gRefFuncs.R_StudioGetSkin)
+			if (gPrivateFuncs.GL_UnloadTexture && gPrivateFuncs.R_StudioGetSkin)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -4568,7 +4568,7 @@ void R_FillAddress(void)
 
 		R_StudioGetSkin_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_StudioGetSkin, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_StudioGetSkin, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (R_StudioGetSkin_ctx*)context;
@@ -4635,7 +4635,7 @@ void R_FillAddress(void)
 
 		R_NewMap_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_NewMap, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_NewMap, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (R_NewMap_ctx*)context;
@@ -4659,7 +4659,7 @@ void R_FillAddress(void)
 
 		if (ctx.bFoundRet && ctx.candidate_E8)
 		{
-			gRefFuncs.GL_UnloadTextures = (decltype(gRefFuncs.GL_UnloadTextures))ctx.candidate_E8;
+			gPrivateFuncs.GL_UnloadTextures = (decltype(gPrivateFuncs.GL_UnloadTextures))ctx.candidate_E8;
 		}
 
 		Sig_FuncNotFound(GL_UnloadTextures);
@@ -4737,7 +4737,7 @@ void R_FillAddress(void)
 		auto Bogus_Call = Search_Pattern(pattern);
 		Sig_VarNotFound(Bogus_Call);
 
-		gRefFuncs.Mod_LoadStudioModel = (decltype(gRefFuncs.Mod_LoadStudioModel))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Bogus_Call, 0x50, [](PUCHAR Candidate) {
+		gPrivateFuncs.Mod_LoadStudioModel = (decltype(gPrivateFuncs.Mod_LoadStudioModel))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Bogus_Call, 0x50, [](PUCHAR Candidate) {
 
 			//  .text : 01D71630 81 EC 10 01 00 00                                   sub     esp, 110h
 			//	.text : 01D71636 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
@@ -4782,7 +4782,7 @@ void R_FillAddress(void)
 		auto Bogus_Call = Search_Pattern(pattern);
 		Sig_VarNotFound(Bogus_Call);
 
-		gRefFuncs.Mod_LoadBrushModel = (decltype(gRefFuncs.Mod_LoadStudioModel))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Bogus_Call, 0x150, [](PUCHAR Candidate) {
+		gPrivateFuncs.Mod_LoadBrushModel = (decltype(gPrivateFuncs.Mod_LoadStudioModel))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Bogus_Call, 0x150, [](PUCHAR Candidate) {
 
 			//.text:01D078D0 83 EC 34                                            sub     esp, 34h
 			//.text : 01D078D3 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
@@ -4817,7 +4817,7 @@ void R_FillAddress(void)
 		auto Mod_LoadModel_Pattern = Search_Pattern(sigs1);
 		Sig_VarNotFound(Mod_LoadModel_Pattern);
 
-		gRefFuncs.Mod_LoadModel = (decltype(gRefFuncs.Mod_LoadModel))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Mod_LoadModel_Pattern, 0x600, [](PUCHAR Candidate) {
+		gPrivateFuncs.Mod_LoadModel = (decltype(gPrivateFuncs.Mod_LoadModel))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Mod_LoadModel_Pattern, 0x600, [](PUCHAR Candidate) {
 
 			//81 EC ?? 01 00 00 A1 ?? ?? ?? ?? 33 C4
 			/*
@@ -4913,7 +4913,7 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.Draw_DecalTexture, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.Draw_DecalTexture, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 
@@ -4957,7 +4957,7 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_DrawParticles, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_DrawParticles, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 
@@ -5000,7 +5000,7 @@ void R_FillAddress(void)
 			{
 				if (address[-5] == 0xE8)
 				{
-					gRefFuncs.R_FreeDeadParticles = (decltype(gRefFuncs.R_FreeDeadParticles))GetCallAddress(address - 5);
+					gPrivateFuncs.R_FreeDeadParticles = (decltype(gPrivateFuncs.R_FreeDeadParticles))GetCallAddress(address - 5);
 					active_particles = (decltype(active_particles))pinst->detail->x86.operands[1].mem.disp;
 				}
 			}
@@ -5023,10 +5023,10 @@ void R_FillAddress(void)
 	if (1)
 	{
 #define R_TRACERDRAW_SIG "\xFF\x15\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x00\xE8\x2A\x2A\x2A\x2A"
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_DrawParticles, 0x800, R_TRACERDRAW_SIG, sizeof(R_TRACERDRAW_SIG) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_DrawParticles, 0x800, R_TRACERDRAW_SIG, sizeof(R_TRACERDRAW_SIG) - 1);
 		Sig_AddrNotFound(R_TracerDraw);
-		gRefFuncs.R_TracerDraw = (decltype(gRefFuncs.R_TracerDraw))GetCallAddress(addr + 6);
-		gRefFuncs.R_BeamDrawList = (decltype(gRefFuncs.R_BeamDrawList))GetCallAddress(addr + 11);
+		gPrivateFuncs.R_TracerDraw = (decltype(gPrivateFuncs.R_TracerDraw))GetCallAddress(addr + 6);
+		gPrivateFuncs.R_BeamDrawList = (decltype(gPrivateFuncs.R_BeamDrawList))GetCallAddress(addr + 11);
 	}
 
 	if (0)
@@ -5041,7 +5041,7 @@ void R_FillAddress(void)
 		auto OverviewZoom_PushString = Search_Pattern(pattern);
 		Sig_VarNotFound(OverviewZoom_PushString);
 
-		gRefFuncs.CL_SetDevOverView = (decltype(gRefFuncs.CL_SetDevOverView))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(OverviewZoom_PushString, 0x100, [](PUCHAR Candidate) {
+		gPrivateFuncs.CL_SetDevOverView = (decltype(gPrivateFuncs.CL_SetDevOverView))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(OverviewZoom_PushString, 0x100, [](PUCHAR Candidate) {
 
 			if (Candidate[0] == 0x55 &&
 				Candidate[1] == 0x8B &&
@@ -5063,26 +5063,26 @@ void R_FillAddress(void)
 	}
 
 #define R_SETUPFRAME_CALL_SIG "\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8"
-	if (gRefFuncs.R_SetupFrame)
+	if (gPrivateFuncs.R_SetupFrame)
 	{
-		addr = (DWORD)Search_Pattern_From(gRefFuncs.R_SetupFrame, R_SETUPFRAME_CALL_SIG);
+		addr = (DWORD)Search_Pattern_From(gPrivateFuncs.R_SetupFrame, R_SETUPFRAME_CALL_SIG);
 		Sig_AddrNotFound(R_SetupFrame_Call);
-		gRefFuncs.R_ForceCVars = (decltype(gRefFuncs.R_ForceCVars))GetCallAddress(addr + 3 + 1);
-		gRefFuncs.R_CheckVariables = (decltype(gRefFuncs.R_CheckVariables))GetCallAddress(addr + 3 + 1 + 5);
-		gRefFuncs.R_AnimateLight = (decltype(gRefFuncs.R_AnimateLight))GetCallAddress(addr + 3 + 1 + 5 + 5);
+		gPrivateFuncs.R_ForceCVars = (decltype(gPrivateFuncs.R_ForceCVars))GetCallAddress(addr + 3 + 1);
+		gPrivateFuncs.R_CheckVariables = (decltype(gPrivateFuncs.R_CheckVariables))GetCallAddress(addr + 3 + 1 + 5);
+		gPrivateFuncs.R_AnimateLight = (decltype(gPrivateFuncs.R_AnimateLight))GetCallAddress(addr + 3 + 1 + 5 + 5);
 	}
 	else
 	{
 		addr = (DWORD)Search_Pattern(R_SETUPFRAME_CALL_SIG);
 		Sig_AddrNotFound(R_SetupFrame_Call);
-		gRefFuncs.R_ForceCVars = (decltype(gRefFuncs.R_ForceCVars))GetCallAddress(addr + 3 + 1);
-		gRefFuncs.R_CheckVariables = (decltype(gRefFuncs.R_CheckVariables))GetCallAddress(addr + 3 + 1 + 5);
-		gRefFuncs.R_AnimateLight = (decltype(gRefFuncs.R_AnimateLight))GetCallAddress(addr + 3 + 1 + 5 + 5);
+		gPrivateFuncs.R_ForceCVars = (decltype(gPrivateFuncs.R_ForceCVars))GetCallAddress(addr + 3 + 1);
+		gPrivateFuncs.R_CheckVariables = (decltype(gPrivateFuncs.R_CheckVariables))GetCallAddress(addr + 3 + 1 + 5);
+		gPrivateFuncs.R_AnimateLight = (decltype(gPrivateFuncs.R_AnimateLight))GetCallAddress(addr + 3 + 1 + 5 + 5);
 	}
 
 	if (1)
 	{
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_MarkLeaves, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_MarkLeaves, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 
@@ -5143,7 +5143,7 @@ void R_FillAddress(void)
 	else
 	{
 		const char sigs[] = "\x40\x68\x2A\x2A\x2A\x2A\xA3\x2A\x2A\x2A\x2A\xA1";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gRefFuncs.R_SetupFrame, 0x300, sigs, sizeof(sigs) - 1);
+		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_SetupFrame, 0x300, sigs, sizeof(sigs) - 1);
 		Sig_AddrNotFound(vright);
 		addr += 2;
 		vup = (vec_t *)(*(DWORD *)addr);
@@ -5167,7 +5167,7 @@ void R_FillAddress(void)
 		*(DWORD *)(pattern + 1) = (DWORD)UrlInfo_String;
 		auto UrlInfo_PushString = Search_Pattern(pattern);
 		Sig_VarNotFound(UrlInfo_PushString);
-		gRefFuncs.DLL_SetModKey = (decltype(gRefFuncs.DLL_SetModKey))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(UrlInfo_PushString, 0x300, [](PUCHAR Candidate) {
+		gPrivateFuncs.DLL_SetModKey = (decltype(gPrivateFuncs.DLL_SetModKey))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(UrlInfo_PushString, 0x300, [](PUCHAR Candidate) {
 
 			//.text : 01D0A6D0 56                                                  push    esi
 			//.text : 01D0A6D1 8B 74 24 0C                                         mov     esi, [esp + 4 + arg_4]
@@ -5197,7 +5197,7 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.V_RenderView, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.V_RenderView, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 				auto pinst = (cs_insn *)inst;
 
 				if (!cls_state &&
@@ -5248,7 +5248,7 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.SCR_BeginLoadingPlaque, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.SCR_BeginLoadingPlaque, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 			auto pinst = (cs_insn *)inst;
 
 			if (!scr_drawloading &&
@@ -5281,7 +5281,7 @@ void R_FillAddress(void)
 		Sig_VarNotFound(scr_drawloading);
 	}
 
-	if (gRefFuncs.R_LightStrength)
+	if (gPrivateFuncs.R_LightStrength)
 	{
 		typedef struct
 		{
@@ -5299,7 +5299,7 @@ void R_FillAddress(void)
 
 		R_LightStrength_Context ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.R_LightStrength, 0x200, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_LightStrength, 0x200, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 			auto ctx = (R_LightStrength_Context *)context;
 			auto pinst = (cs_insn *)inst;
 
@@ -5458,7 +5458,7 @@ void R_FillAddress(void)
 
 		R_LightStrength_Context ctx = { 0 };
 
-		ctx.base = gRefFuncs.R_GLStudioDrawPoints;
+		ctx.base = gPrivateFuncs.R_GLStudioDrawPoints;
 		ctx.max_insts = 1000;
 		ctx.max_depth = 16;
 		ctx.walks.emplace_back(ctx.base, 0x1000, 0);
@@ -5825,7 +5825,7 @@ void R_FillAddress(void)
 		auto detTexSupportedPattern = (PUCHAR)Search_Pattern(detTexSupported_Signature);
 		Sig_AddrNotFound(detTexSupported);
 
-		gRefFuncs.DT_Initialize = (decltype(gRefFuncs.DT_Initialize))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(detTexSupportedPattern, 0x100, [](PUCHAR Candidate) {
+		gPrivateFuncs.DT_Initialize = (decltype(gPrivateFuncs.DT_Initialize))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(detTexSupportedPattern, 0x100, [](PUCHAR Candidate) {
 
 			if (Candidate[-1] == 0xC3 && 
 				Candidate[0] == 0x56 &&
@@ -5875,7 +5875,7 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.Cache_Alloc, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.Cache_Alloc, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 			auto pinst = (cs_insn*)inst;
 
@@ -5915,7 +5915,7 @@ void R_FillAddress(void)
 
 		Draw_MiptexTexture_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gRefFuncs.Draw_MiptexTexture, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.Draw_MiptexTexture, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (Draw_MiptexTexture_ctx*)context;
@@ -6006,7 +6006,7 @@ void R_UninstallHooksForEngineDLL(void)
 	Uninstall_Hook(GL_BeginRendering);
 	Uninstall_Hook(GL_EndRendering);
 
-	if (gRefFuncs.R_RenderView_SvEngine)
+	if (gPrivateFuncs.R_RenderView_SvEngine)
 	{
 		Uninstall_Hook(R_RenderView_SvEngine);
 		Uninstall_Hook(R_LoadSkyBox_SvEngine);

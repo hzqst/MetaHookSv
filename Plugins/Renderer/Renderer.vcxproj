@@ -43,15 +43,15 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\global.props" />
+    <Import Project="$(SolutionDir)\tools\global.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\global.props" />
+    <Import Project="$(SolutionDir)\tools\global.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\global.props" />
+    <Import Project="$(SolutionDir)\tools\global.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -74,7 +74,7 @@
     <ClCompile>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\HLSDK\cl_dll;..\..\HLSDK\common;..\..\HLSDK\engine;..\..\HLSDK\pm_shared;..\..\HLSDK\public;..\..\Interface;..\..\capstone\include\capstone;..\..\glew\include\GL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;RENDERER_EXPORTS;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -85,16 +85,17 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\..\glew\build\lib\$(Configuration)\</AdditionalLibraryDirectories>
-      <AdditionalDependencies>OpenGL32.lib;libglew32d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(GLEWLibrariesDirectory)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(GLEWLibraryFiles);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>if exist "$(MetaHookGameDirectory)" copy "$(OutDir)$(TargetName)$(TargetExt)" "$(MetaHookGameDirectory)$(MetaHookModName)\metahook\plugins\"
-if exist "$(MetaHookGameDirectory)" mkdir "$(MetaHookGameDirectory)$(MetaHookModName)\renderer\"
-if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\renderer\" "$(MetaHookGameDirectory)$(MetaHookModName)\renderer\" /y /e</Command>
+      <Command>$(PluginPostBuildCommand)
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDirectory)$(MetaHookModName)\renderer\"
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" xcopy "$(ProjectDir)..\..\Build\svencoop\renderer\" "$(MetaHookGameDirectory)$(MetaHookModName)\renderer\" /y /e</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>if not exist "$(ProjectDir)..\..\glew\build\lib\Debug\libglew32d.lib" call "$(ProjectDir)..\..\build-glew-debug.bat"</Command>
+      <Command>$(GLEWCheckRequirements)
+$(CapstoneCheckRequirements)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -102,7 +103,7 @@ if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\ren
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\HLSDK\cl_dll;..\..\HLSDK\common;..\..\HLSDK\engine;..\..\HLSDK\pm_shared;..\..\HLSDK\public;..\..\Interface;..\..\capstone\include\capstone;..\..\glew\include\GL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;RENDERER_EXPORTS;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader />
@@ -114,14 +115,15 @@ if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\ren
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <LargeAddressAware>true</LargeAddressAware>
-      <AdditionalLibraryDirectories>..\..\glew\build\lib\$(Configuration)\</AdditionalLibraryDirectories>
-      <AdditionalDependencies>OpenGL32.lib;libglew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(GLEWLibrariesDirectory)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(GLEWLibraryFiles);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\"</Command>
+      <Command>$(PluginPostBuildCommand)</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>if not exist "$(ProjectDir)..\..\glew\build\lib\Release\libglew32.lib" call "$(ProjectDir)..\..\build-glew.bat"</Command>
+      <Command>$(GLEWCheckRequirements)
+$(CapstoneCheckRequirements)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'">
@@ -129,7 +131,7 @@ if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\ren
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\HLSDK\cl_dll;..\..\HLSDK\common;..\..\HLSDK\engine;..\..\HLSDK\pm_shared;..\..\HLSDK\public;..\..\Interface;..\..\capstone\include\capstone;..\..\glew\include\GL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;RENDERER_EXPORTS;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>
@@ -145,18 +147,19 @@ if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\ren
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <LargeAddressAware>true</LargeAddressAware>
-      <AdditionalLibraryDirectories>..\..\glew\build\lib\Release\</AdditionalLibraryDirectories>
-      <AdditionalDependencies>OpenGL32.lib;libglew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(GLEWLibrariesDirectory)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(GLEWLibraryFiles);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\$(TargetName)_AVX2$(TargetExt)"</Command>
+      <Command>$(PluginPostBuildCommand)</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>if not exist "$(ProjectDir)..\..\glew\build\lib\Release\libglew32.lib" call "$(ProjectDir)..\..\build-glew.bat"</Command>
+      <Command>$(GLEWCheckRequirements)
+$(CapstoneCheckRequirements)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\HLSDK\common\interface.cpp" />
+    <ClCompile Include="..\..\include\HLSDK\common\interface.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="gl_cvar.cpp" />
     <ClCompile Include="gl_draw.cpp" />
@@ -196,18 +199,18 @@ if exist "$(MetaHookGameDirectory)" xcopy "$(ProjectDir)..\..\Build\svencoop\ren
     <ClInclude Include="gl_model.h" />
     <ClInclude Include="gl_portal.h" />
     <ClInclude Include="gl_profile.h" />
+    <ClInclude Include="gl_common.h" />
     <ClInclude Include="gl_shader.h" />
     <ClInclude Include="gl_shadow.h" />
     <ClInclude Include="gl_sprite.h" />
     <ClInclude Include="gl_studio.h" />
     <ClInclude Include="gl_water.h" />
     <ClInclude Include="gl_wsurf.h" />
-    <ClInclude Include="mathlib.h" />
+    <ClInclude Include="mathlib2.h" />
     <ClInclude Include="MurmurHash2.h" />
-    <ClInclude Include="parsemsg.h" />
     <ClInclude Include="plugins.h" />
     <ClInclude Include="qgl.h" />
-    <ClInclude Include="ref_int_internal.h" />
+    <ClInclude Include="privatehook.h" />
     <ClInclude Include="spritegn.h" />
     <ClInclude Include="zone.h" />
   </ItemGroup>

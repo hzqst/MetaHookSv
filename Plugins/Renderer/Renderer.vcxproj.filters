@@ -9,8 +9,8 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Interface">
-      <UniqueIdentifier>{90e9fe25-d00d-4376-a34f-b9fc3610e348}</UniqueIdentifier>
+    <Filter Include="HLSDK">
+      <UniqueIdentifier>{b66fea5f-a62a-4376-b528-9ba68db1f294}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -62,9 +62,6 @@
     <ClCompile Include="plugins.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\HLSDK\common\interface.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="gl_light.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -91,6 +88,9 @@
     </ClCompile>
     <ClCompile Include="zone.cpp">
       <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\HLSDK\common\interface.cpp">
+      <Filter>HLSDK</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -127,10 +127,7 @@
     <ClInclude Include="gl_wsurf.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="mathlib.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="parsemsg.h">
+    <ClInclude Include="mathlib2.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="plugins.h">
@@ -141,9 +138,6 @@
     </ClInclude>
     <ClInclude Include="spritegn.h">
       <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="ref_int_internal.h">
-      <Filter>Interface</Filter>
     </ClInclude>
     <ClInclude Include="gl_light.h">
       <Filter>Header</Filter>
@@ -170,6 +164,12 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="gl_model.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="privatehook.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="gl_common.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

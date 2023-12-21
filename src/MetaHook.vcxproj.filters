@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Resource">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="Detours">
+      <UniqueIdentifier>{54f7cb97-17c8-46c0-820f-e15cb3399048}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="launcher.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="LoadBlob.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="metahook.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="registry.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_launcher.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="commandline.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\Detours\src\detours.cpp">
+      <Filter>Detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\Detours\src\disasm.cpp">
+      <Filter>Detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\Detours\src\modules.cpp">
+      <Filter>Detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\HLSDK\common\interface.cpp">
+      <Filter>include</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Launcher.rc">
+      <Filter>Resource</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\include\builddefs.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\cdll_export.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\metahook.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="ExceptHandle.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="LoadBlob.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="sys.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

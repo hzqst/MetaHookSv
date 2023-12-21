@@ -23,7 +23,7 @@ decal_drawbatch_t g_DecalDetailDrawBatch = { 0 };
 
 void R_RecursiveWorldNode(mnode_t *node)
 {
-	gRefFuncs.R_RecursiveWorldNode(node);
+	gPrivateFuncs.R_RecursiveWorldNode(node);
 }
 
 void R_AddDynamicLights(msurface_t *surf)

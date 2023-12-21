@@ -1,6 +1,8 @@
 #include "gl_local.h"
+
 #include <sstream>
 #include <algorithm>
+#include <set>
 
 r_worldsurf_t r_wsurf;
 
@@ -811,7 +813,7 @@ void R_GenerateTexChain(model_t *mod, wsurf_vbo_leaf_t *vboleaf, std::vector<GLu
 						//rtable not initialized?
 						if ((*rtable)[0][0] == 0)
 						{
-							//gRefFuncs.R_TextureAnimation(s);
+							//gPrivateFuncs.R_TextureAnimation(s);
 							for (auto tu = 0; tu < 20; tu++)
 							{
 								for (auto tv = 0; tv < 20; tv++)
@@ -1231,7 +1233,7 @@ void Mod_LoadBrushModel(model_t *mod, void *buffer)
 {
 	auto current_loadmodel = (*loadmodel);
 
-	gRefFuncs.Mod_LoadBrushModel(mod, buffer);
+	gPrivateFuncs.Mod_LoadBrushModel(mod, buffer);
 }
 #endif
 
@@ -4004,7 +4006,7 @@ void R_DrawBrushModel(cl_entity_t *e)
 				VectorCopy(cl_dlights[k].origin, saveOrigin);
 				VectorSubtract(cl_dlights[k].origin, e->origin, cl_dlights[k].origin);
 
-				gRefFuncs.R_MarkLights(&cl_dlights[k], 1 << k, clmodel->nodes + clmodel->hulls[0].firstclipnode);
+				gPrivateFuncs.R_MarkLights(&cl_dlights[k], 1 << k, clmodel->nodes + clmodel->hulls[0].firstclipnode);
 				VectorCopy(saveOrigin, cl_dlights[k].origin);
 			}
 		}

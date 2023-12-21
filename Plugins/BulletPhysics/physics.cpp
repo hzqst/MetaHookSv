@@ -7,7 +7,7 @@
 #include "privatehook.h"
 #include "physics.h"
 #include "qgl.h"
-#include "mathlib.h"
+#include "mathlib2.h"
 
 //btScalar G2BScale = 1;
 //btScalar B2GScale = 1 / G2BScale;

@@ -1,9 +1,10 @@
 #include "gl_local.h"
 #include "pm_defs.h"
-#include <sstream>
 #include <intrin.h>
+#include <sstream>
+#include <set>
 
-ref_funcs_t gRefFuncs = { 0 };
+private_funcs_t gPrivateFuncs = { 0 };
 
 refdef_t r_refdef = { 0 };
 ref_params_t r_params = { 0 };
@@ -289,12 +290,12 @@ bool R_IsRenderingBackBuffer()
 
 qboolean Host_IsSinglePlayerGame()
 {
-	return gRefFuncs.Host_IsSinglePlayerGame();
+	return gPrivateFuncs.Host_IsSinglePlayerGame();
 }
 
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
-	return gRefFuncs.R_CullBox(mins, maxs);
+	return gPrivateFuncs.R_CullBox(mins, maxs);
 }
 
 void R_RotateForEntity(cl_entity_t *e)
@@ -359,9 +360,9 @@ void R_RotateForEntity(cl_entity_t *e)
 
 float R_GlowBlend(cl_entity_t *entity)
 {
-	if (gRefFuncs.R_GlowBlend)
+	if (gPrivateFuncs.R_GlowBlend)
 	{
-		return gRefFuncs.R_GlowBlend(entity);
+		return gPrivateFuncs.R_GlowBlend(entity);
 	}
 
 	if (pmove)
@@ -416,7 +417,7 @@ int CL_FxBlend(cl_entity_t *entity)
 		return 255;
 	}
 
-	return gRefFuncs.CL_FxBlend(entity);
+	return gPrivateFuncs.CL_FxBlend(entity);
 }
 
 const int		ramp1[8] = { 0x6f, 0x6d, 0x6b, 0x69, 0x67, 0x65, 0x63, 0x61 };
@@ -448,7 +449,7 @@ void R_DrawParticles(void)
 	if (CL_IsDevOverviewMode())
 		return;
 
-	gRefFuncs.R_FreeDeadParticles(&(*active_particles));
+	gPrivateFuncs.R_FreeDeadParticles(&(*active_particles));
 
 	vec3_t			up, right;
 	float			scale;
@@ -630,8 +631,8 @@ void R_DrawParticles(void)
 
 	glEnd();
 
-	gRefFuncs.R_TracerDraw();
-	gRefFuncs.R_BeamDrawList();
+	gPrivateFuncs.R_TracerDraw();
+	gPrivateFuncs.R_BeamDrawList();
 
 	glDisable(GL_BLEND);
 	glDisable(GL_ALPHA_TEST);
@@ -639,12 +640,12 @@ void R_DrawParticles(void)
 
 void triapi_Color4f(float x, float y, float z, float w)
 {
-	gRefFuncs.triapi_Color4f(x, y, z, w);
+	gPrivateFuncs.triapi_Color4f(x, y, z, w);
 }
 
 void triapi_RenderMode(int mode)
 {
-	gRefFuncs.triapi_RenderMode(mode);
+	gPrivateFuncs.triapi_RenderMode(mode);
 
 	switch (mode)
 	{
@@ -1248,12 +1249,12 @@ void R_DrawViewModel(void)
 
 void R_PolyBlend(void)
 {
-	gRefFuncs.R_PolyBlend();
+	gPrivateFuncs.R_PolyBlend();
 }
 
 void S_ExtraUpdate(void)
 {
-	gRefFuncs.S_ExtraUpdate();
+	gPrivateFuncs.S_ExtraUpdate();
 }
 
 int SignbitsForPlane(mplane_t *out)
@@ -1679,7 +1680,7 @@ void R_RenderEndFrame()
 
 void GL_BeginRendering(int *x, int *y, int *width, int *height)
 {
-	gRefFuncs.GL_BeginRendering(x, y, width, height);
+	gPrivateFuncs.GL_BeginRendering(x, y, width, height);
 
 	if (g_bIsGLInit)
 	{
@@ -2044,7 +2045,7 @@ void GL_EndRendering(void)
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
 	//Let engine call VID_FlipScreen for us.
-	gRefFuncs.GL_EndRendering();
+	gPrivateFuncs.GL_EndRendering();
 
 	if (gl_backbuffer_fbo)
 	{
@@ -2054,7 +2055,7 @@ void GL_EndRendering(void)
 
 void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue)
 {
-	gRefFuncs.DLL_SetModKey(pinfo, pkey, pvalue);
+	gPrivateFuncs.DLL_SetModKey(pinfo, pkey, pvalue);
 
 	if (!strcmp(pkey, "vertical_fov"))
 	{
@@ -2229,7 +2230,7 @@ void R_ForceCVars(qboolean mp)
 	if (r_draw_reflectview)
 		return;
 
-	gRefFuncs.R_ForceCVars(mp);
+	gPrivateFuncs.R_ForceCVars(mp);
 }
 
 void R_AddReferencedTextures(std::set<int> &textures)
@@ -2299,7 +2300,7 @@ void R_NewMap(void)
 {
 	R_GenerateSceneUBO();
 
-	gRefFuncs.R_NewMap();
+	gPrivateFuncs.R_NewMap();
 
 	r_worldentity = gEngfuncs.GetEntityByIndex(0);
 	r_worldmodel = r_worldentity->model;
@@ -2353,7 +2354,7 @@ mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
 	}
 
 	return NULL;
-	//return gRefFuncs.Mod_PointInLeaf(p, model);
+	//return gPrivateFuncs.Mod_PointInLeaf(p, model);
 }
 
 float *R_GetAttachmentPoint(int entity, int attachment)
@@ -2619,12 +2620,12 @@ void R_SetFrustum(void)
 
 bool CL_IsDevOverviewMode(void)
 {
-	return gRefFuncs.CL_IsDevOverviewMode();
+	return gPrivateFuncs.CL_IsDevOverviewMode();
 }
 
 void CL_SetDevOverView(void *a1)
 {
-	return gRefFuncs.CL_SetDevOverView(a1);
+	return gPrivateFuncs.CL_SetDevOverView(a1);
 }
 
 void MYgluPerspective2(double xfov, double yfov, double zNear, double zFar)
@@ -2933,7 +2934,7 @@ void R_SetupGL(void)
 
 void R_CheckVariables(void)
 {
-	gRefFuncs.R_CheckVariables();
+	gPrivateFuncs.R_CheckVariables();
 }
 
 /*
@@ -2944,7 +2945,7 @@ R_AnimateLight basically fills d_lightstylevalue[0~255] from cl_lightstyle[0~255
 
 void R_AnimateLight(void)
 {
-	gRefFuncs.R_AnimateLight();
+	gPrivateFuncs.R_AnimateLight();
 }
 
 void R_SetupFrame(void)
@@ -3461,7 +3462,7 @@ void R_LoadSkyBox_SvEngine(const char *name)
 {
 	R_LoadSky_PreCall(name);
 
-	gRefFuncs.R_LoadSkyBox_SvEngine(name);
+	gPrivateFuncs.R_LoadSkyBox_SvEngine(name);
 
 	R_LoadSky_PostCall(name);
 }
@@ -3470,7 +3471,7 @@ void R_LoadSkys(void)
 {
 	R_LoadSky_PreCall(pmovevars->skyName);
 
-	gRefFuncs.R_LoadSkys();
+	gPrivateFuncs.R_LoadSkys();
 
 	R_LoadSky_PostCall(pmovevars->skyName);
 }

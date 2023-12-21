@@ -1,3 +1,5 @@
+#pragma once
+
 #ifdef INCLUDELIBS
 
 #include <stdlib.h>

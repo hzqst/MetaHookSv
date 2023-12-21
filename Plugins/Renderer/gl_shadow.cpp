@@ -242,7 +242,7 @@ bool R_ShouldRenderShadow(void)
 	if (R_IsRenderingPortal())
 		return false;
 
-	if (gRefFuncs.CL_IsDevOverviewMode())
+	if (gPrivateFuncs.CL_IsDevOverviewMode())
 		return false;
 
 	return r_shadow->value ? true : false;

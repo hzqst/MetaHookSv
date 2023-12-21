@@ -3,7 +3,7 @@
 #include "privatehook.h"
 #include "corpse.h"
 #include "physics.h"
-#include "mathlib.h"
+#include "mathlib2.h"
 
 int EngineGetModelIndex(model_t *mod);
 

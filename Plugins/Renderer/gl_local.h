@@ -3,7 +3,6 @@
 #include <metahook.h>
 #include <math.h>
 #include <assert.h>
-#include <mathlib.h>
 #include <archtypes.h>
 #include <const.h>
 #include <custom.h>
@@ -20,13 +19,15 @@
 #include <set>
 #include <map>
 
+#include "qgl.h"
+#include "mathlib2.h"
 #include "plugins.h"
 #include "exportfuncs.h"
-#include "qgl.h"
-#include "ref_int_internal.h"
+#include "privatehook.h"
 
 #include "zone.h"
 
+#include "gl_common.h"
 #include "gl_profile.h"
 #include "gl_shader.h"
 #include "gl_model.h"
@@ -52,18 +53,6 @@ typedef struct walk_context_s
 	size_t len;
 	int depth;
 }walk_context_t;
-
-typedef struct
-{
-	GLboolean cullface;
-	GLboolean alphatest;
-	GLboolean depthtest;
-	GLboolean depthmask;
-	GLboolean blend;
-	int blendsrc;
-	int blenddst;
-	qboolean mtex;
-}gl_draw_context;
 
 typedef struct refdef_s
 {

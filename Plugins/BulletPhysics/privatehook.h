@@ -27,7 +27,7 @@ typedef struct
 
 	//efxapi
 	TEMPENTITY	*(*efxapi_R_TempModel)				(float *pos, float *dir, float *angles, float life, int modelIndex, int soundtype);
-}privte_funcs_t;
+}private_funcs_t;
 
 void R_NewMap(void);
 TEMPENTITY *efxapi_R_TempModel(float *pos, float *dir, float *angles, float life, int modelIndex, int soundtype);
@@ -48,7 +48,7 @@ extern TEMPENTITY *gTempEnts;
 extern int *g_iUser1;
 extern int *g_iUser2;
 
-extern privte_funcs_t gPrivateFuncs;
+extern private_funcs_t gPrivateFuncs;
 
 extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;

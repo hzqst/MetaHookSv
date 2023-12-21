@@ -90,7 +90,7 @@ void Mod_UnloadSpriteTextures(model_t* mod)
 
 void Mod_LoadStudioModel(model_t* mod, void* buffer)
 {
-	gRefFuncs.Mod_LoadStudioModel(mod, buffer);
+	gPrivateFuncs.Mod_LoadStudioModel(mod, buffer);
 
 	auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gl_cvar.h"
+#include "gl_common.h"
 #include "enginedef.h"
 
 #define LUMIN1x1_BUFFERS 3

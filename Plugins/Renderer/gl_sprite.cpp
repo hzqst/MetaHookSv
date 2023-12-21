@@ -352,16 +352,12 @@ void R_GetSpriteFrameInterpolant(cl_entity_t* ent, msprite_t* pSprite, mspritefr
 
 	*lerp = lerpFrac;
 #endif
-	int		i, j, numframes, frame;
-	float		lerpFrac, time, jtime, jinterval;
-	float* pintervals, fullinterval, targettime;
-	int		fDoInterp;
 
-	frame = (int)ent->curstate.frame;
-	lerpFrac = 1.0f;
+	auto frame = (int)ent->curstate.frame;
+	auto lerpFrac = 1.0f;
 
 	// misc info
-	fDoInterp = (ent->curstate.effects & EF_NOINTERP) ? false : true;
+	auto fDoInterp = (ent->curstate.effects & EF_NOINTERP) ? false : true;
 
 	if (frame < 0)
 	{
@@ -371,8 +367,6 @@ void R_GetSpriteFrameInterpolant(cl_entity_t* ent, msprite_t* pSprite, mspritefr
 	{
 		frame = pSprite->numframes - 1;
 	}
-
-	
 
 	if (pSprite->frames[frame].type == SPR_SINGLE)
 	{
@@ -724,14 +718,14 @@ void R_DrawSpriteModel(cl_entity_t *ent)
 	R_DrawSpriteModelInterpFrames(ent, pSprite, frame, oldframe, lerp);
 }
 
-void R_SpriteTextureAddReferences(model_t* mod, msprite_t* pSprite, std::set<int>& used_gltextures)
+void R_SpriteTextureAddReferences(model_t* mod, msprite_t* pSprite, std::set<int>& textures)
 {
 	for (int i = 0; i < pSprite->numframes; i++)
 	{
 		auto pSpriteFrame = R_GetSpriteFrame(pSprite, i);
 		if (pSpriteFrame)
 		{
-			used_gltextures.emplace(pSpriteFrame->gl_texturenum);
+			textures.emplace(pSpriteFrame->gl_texturenum);
 		}
 	}
 }

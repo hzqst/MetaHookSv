@@ -13,3 +13,18 @@
 [submodule "rapidjson"]
 	path = rapidjson
 	url = https://github.com/Tencent/rapidjson
+[submodule "thirdparty/capstone"]
+	path = thirdparty/capstone
+	url = https://github.com/capstone-engine/capstone/
+[submodule "thirdparty/Detours"]
+	path = thirdparty/Detours
+	url = https://github.com/microsoft/Detours
+[submodule "thirdparty/rapidjson"]
+	path = thirdparty/rapidjson
+	url = https://github.com/Tencent/rapidjson
+[submodule "thirdparty/bullet3_fork"]
+	path = thirdparty/bullet3_fork
+	url = https://github.com/hzqst/bullet3
+[submodule "thirdparty/glew_fork"]
+	path = thirdparty/glew_fork
+	url = https://github.com/hzqst/glew-cmake

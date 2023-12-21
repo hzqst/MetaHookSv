@@ -44,15 +44,15 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\global.props" />
+    <Import Project="$(SolutionDir)\tools\global.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\global.props" />
+    <Import Project="$(SolutionDir)\tools\global.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\global.props" />
+    <Import Project="$(SolutionDir)\tools\global.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -76,7 +76,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\HLSDK\cl_dll;..\..\HLSDK\common;..\..\HLSDK\engine;..\..\HLSDK\pm_shared;..\..\HLSDK\public;..\..\Interface;..\..\bullet3\src\;..\..\capstone\include\capstone\;..\..\glew\include\GL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(Bullet3IncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -90,20 +90,21 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalLibraryDirectories>..\..\bullet3\build\lib\$(Configuration)\;..\..\glew\build\lib\$(Configuration)\</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Bullet3Collision_Debug.lib;Bullet3Common_Debug.lib;Bullet3Dynamics_Debug.lib;Bullet3Geometry_Debug.lib;BulletCollision_Debug.lib;BulletDynamics_Debug.lib;LinearMath_Debug.lib;OpenGL32.lib;libglew32d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(Bullet3LibrariesDirectory);$(GLEWLibrariesDirectory)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(Bullet3LibraryFiles);$(GLEWLibraryFiles);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>if exist "$(MetaHookGameDirectory)" copy "$(OutDir)$(TargetName)$(TargetExt)" "$(MetaHookGameDirectory)$(MetaHookModName)\metahook\plugins\"</Command>
+      <Command>$(PluginPostBuildCommand)</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>if not exist "$(ProjectDir)..\..\bullet3\build\lib\Debug\Bullet3Common_Debug.lib" call "$(ProjectDir)..\..\build-bullet3-debug.bat"
-if not exist "$(ProjectDir)..\..\glew\build\lib\Debug\libglew32d.lib" call "$(ProjectDir)..\..\build-glew-debug.bat"</Command>
+      <Command>$(CapstoneCheckRequirements)
+$(GLEWCheckRequirements)
+$(Bullet3CheckRequirements)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\HLSDK\cl_dll;..\..\HLSDK\common;..\..\HLSDK\engine;..\..\HLSDK\pm_shared;..\..\HLSDK\public;..\..\Interface;..\..\bullet3\src\;..\..\capstone\include\capstone\;..\..\glew\include\GL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(Bullet3IncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader />
@@ -117,20 +118,21 @@ if not exist "$(ProjectDir)..\..\glew\build\lib\Debug\libglew32d.lib" call "$(Pr
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalLibraryDirectories>..\..\bullet3\build\lib\$(Configuration)\;..\..\glew\build\lib\$(Configuration)\</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Bullet3Collision.lib;Bullet3Common.lib;Bullet3Dynamics.lib;Bullet3Geometry.lib;BulletCollision.lib;BulletDynamics.lib;LinearMath.lib;OpenGL32.lib;libglew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(Bullet3LibrariesDirectory);$(GLEWLibrariesDirectory)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(Bullet3LibraryFiles);$(GLEWLibraryFiles);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\"</Command>
+      <Command>$(PluginPostBuildCommand)</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>if not exist "$(ProjectDir)..\..\bullet3\build\lib\Release\Bullet3Common.lib" call "$(ProjectDir)..\..\build-bullet3.bat"
-if not exist "$(ProjectDir)..\..\glew\build\lib\Release\libglew32.lib" call "$(ProjectDir)..\..\build-glew.bat"</Command>
+      <Command>$(CapstoneCheckRequirements)
+$(GLEWCheckRequirements)
+$(Bullet3CheckRequirements)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.\;..\;..\..\;..\..\HLSDK\cl_dll;..\..\HLSDK\common;..\..\HLSDK\engine;..\..\HLSDK\pm_shared;..\..\HLSDK\public;..\..\Interface;..\..\bullet3\src\;..\..\capstone\include\capstone\;..\..\glew\include\GL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(Bullet3IncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>
@@ -146,21 +148,22 @@ if not exist "$(ProjectDir)..\..\glew\build\lib\Release\libglew32.lib" call "$(P
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalLibraryDirectories>..\..\bullet3\build\lib\Release\;..\..\glew\build\lib\Release\</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Bullet3Collision.lib;Bullet3Common.lib;Bullet3Dynamics.lib;Bullet3Geometry.lib;BulletCollision.lib;BulletDynamics.lib;LinearMath.lib;OpenGL32.lib;libglew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(Bullet3LibrariesDirectory);$(GLEWLibrariesDirectory)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(Bullet3LibraryFiles);$(GLEWLibraryFiles);%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
     <PostBuildEvent>
-      <Command>copy "$(OutDir)$(TargetName)$(TargetExt)" "$(ProjectDir)..\..\Build\svencoop\metahook\plugins\$(TargetName)_AVX2$(TargetExt)"</Command>
+      <Command>$(PluginPostBuildCommand)</Command>
     </PostBuildEvent>
     <PreBuildEvent>
-      <Command>if not exist "$(ProjectDir)..\..\bullet3\build_AVX2\lib\Release\Bullet3Common.lib" call "$(ProjectDir)..\..\build-bullet3-avx2.bat"
-if not exist "$(ProjectDir)..\..\glew\build\lib\Release\libglew32.lib" call "$(ProjectDir)..\..\build-glew.bat"</Command>
+      <Command>$(CapstoneCheckRequirements)
+$(GLEWCheckRequirements)
+$(Bullet3CheckRequirements)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\HLSDK\common\interface.cpp" />
-    <ClCompile Include="mathlib.cpp" />
+    <ClCompile Include="..\..\include\HLSDK\common\interface.cpp" />
+    <ClCompile Include="mathlib2.cpp" />
     <ClCompile Include="corpse.cpp" />
     <ClCompile Include="message.cpp" />
     <ClCompile Include="parsemsg.cpp" />
@@ -170,15 +173,12 @@ if not exist "$(ProjectDir)..\..\glew\build\lib\Release\libglew32.lib" call "$(P
     <ClCompile Include="plugins.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\HLSDK\common\interface.h" />
-    <ClInclude Include="..\..\metahook.h" />
     <ClInclude Include="message.h" />
-    <ClInclude Include="parsemsg.h" />
     <ClInclude Include="plugins.h" />
     <ClInclude Include="privatehook.h" />
     <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />
-    <ClInclude Include="mathlib.h" />
+    <ClInclude Include="mathlib2.h" />
     <ClInclude Include="physics.h" />
     <ClInclude Include="corpse.h" />
     <ClInclude Include="qgl.h" />

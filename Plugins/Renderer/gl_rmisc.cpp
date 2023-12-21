@@ -6,7 +6,19 @@ vec3_t save_vieworg[MAX_SAVESTACK] = { 0 };
 vec3_t save_viewang[MAX_SAVESTACK] = { 0 };
 int save_refdef_stack = 0;
 
-gl_draw_context save_drawcontext[MAX_SAVESTACK];
+typedef struct
+{
+	GLboolean cullface;
+	GLboolean alphatest;
+	GLboolean depthtest;
+	GLboolean depthmask;
+	GLboolean blend;
+	int blendsrc;
+	int blenddst;
+	qboolean mtex;
+}gl_draw_context;
+
+gl_draw_context save_drawcontext[MAX_SAVESTACK] = {0};
 int save_drawcontext_stack = 0;
 
 GLint save_readframebuffer[MAX_SAVESTACK] = { 0 };

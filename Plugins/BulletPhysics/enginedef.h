@@ -4,7 +4,6 @@
 #include "studio.h"
 #include "com_model.h"
 
-
 #define NL_PRESENT 0
 #define NL_NEEDS_LOADED 1
 #define NL_UNREFERENCED 2

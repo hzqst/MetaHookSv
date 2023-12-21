@@ -330,22 +330,22 @@ void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, void(*bind)(), void
 
 void GL_Bind(int texnum)
 {
-	gRefFuncs.GL_Bind(texnum);
+	gPrivateFuncs.GL_Bind(texnum);
 }
 
 void GL_SelectTexture(GLenum target)
 {
-	gRefFuncs.GL_SelectTexture(target);
+	gPrivateFuncs.GL_SelectTexture(target);
 }
 
 void GL_DisableMultitexture(void)
 {
-	gRefFuncs.GL_DisableMultitexture();
+	gPrivateFuncs.GL_DisableMultitexture();
 }
 
 void GL_EnableMultitexture(void)
 {
-	gRefFuncs.GL_EnableMultitexture();
+	gPrivateFuncs.GL_EnableMultitexture();
 }
 
 void GL_UnloadTextureByIdentifier(const char* identifier, bool notify_callback)
@@ -635,7 +635,7 @@ int GL_AllocTexture(const char *identifier, GL_TEXTURETYPE textureType, int widt
 				}
 
 				*maxgltextures_SvEngine += v16;
-				*gltextures_SvEngine = (gltexture_t *)gRefFuncs.realloc_SvEngine((void *)(*gltextures_SvEngine), (*maxgltextures_SvEngine) * sizeof(gltexture_t));
+				*gltextures_SvEngine = (gltexture_t *)gPrivateFuncs.realloc_SvEngine((void *)(*gltextures_SvEngine), (*maxgltextures_SvEngine) * sizeof(gltexture_t));
 			}
 		}
 		else
@@ -688,7 +688,7 @@ int GL_LoadTexture2(const char* identifier, GL_TEXTURETYPE textureType, int widt
 	char hashedIdentifier[64] = { 0 };
 	GL_GenerateHashedTextureIndentifier2(identifier, textureType, width, height, hashedIdentifier, sizeof(hashedIdentifier) - 1);
 
-	int gltexturenum = gRefFuncs.GL_LoadTexture2(hashedIdentifier, textureType, width, height, data, mipmap, iType, pPal, filter);
+	int gltexturenum = gPrivateFuncs.GL_LoadTexture2(hashedIdentifier, textureType, width, height, data, mipmap, iType, pPal, filter);
 
 	gEngfuncs.Con_DPrintf("GL_LoadTexture2: [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, gltexturenum);
 
@@ -746,7 +746,7 @@ int GL_LoadTextureInternal(const char *identifier, GL_TEXTURETYPE textureType, i
 
 texture_t *Draw_DecalTexture(int index)
 {
-	texture_t *texture = gRefFuncs.Draw_DecalTexture(index);
+	texture_t *texture = gPrivateFuncs.Draw_DecalTexture(index);
 
 	return texture;
 }
@@ -1568,7 +1568,7 @@ int R_LoadTextureFromFile(const char *filepath, const char *name, int *width, in
 
 void BuildGammaTable(float g)
 {
-	gRefFuncs.BuildGammaTable(g);
+	gPrivateFuncs.BuildGammaTable(g);
 
 	//Don't do texgamma space to gamma space convertion
 	for (int i = 0; i < 256; i++)
@@ -1587,7 +1587,7 @@ void BuildGammaTable(float g)
 
 void __fastcall enginesurface_drawFlushText(void *pthis, int dummy)
 {
-	gRefFuncs.enginesurface_drawFlushText(pthis, dummy);
+	gPrivateFuncs.enginesurface_drawFlushText(pthis, dummy);
 
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);

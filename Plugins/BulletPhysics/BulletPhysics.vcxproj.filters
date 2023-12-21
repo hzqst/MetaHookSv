@@ -9,12 +9,12 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="HLSDK">
+      <UniqueIdentifier>{150a014c-fe58-4253-8ec2-ac6e0f07cfea}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="exportfuncs.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\HLSDK\common\interface.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="plugins.cpp">
@@ -23,7 +23,7 @@
     <ClCompile Include="physics.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="mathlib.cpp">
+    <ClCompile Include="mathlib2.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="privatehook.cpp">
@@ -35,24 +35,21 @@
     <ClCompile Include="message.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\include\HLSDK\common\interface.cpp">
+      <Filter>HLSDK</Filter>
+    </ClCompile>
     <ClCompile Include="parsemsg.cpp">
-      <Filter>Source</Filter>
+      <Filter>HLSDK</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\HLSDK\common\interface.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\metahook.h">
-      <Filter>Header</Filter>
-    </ClInclude>
     <ClInclude Include="physics.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="mathlib.h">
+    <ClInclude Include="mathlib2.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="enginedef.h">
@@ -71,9 +68,6 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="message.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="parsemsg.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

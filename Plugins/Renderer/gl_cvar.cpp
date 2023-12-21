@@ -123,7 +123,7 @@ void R_CvarSetMapCvar(cvar_t *cvar, char *value)
 
 void Cvar_DirectSet(cvar_t *var, char *value)
 {
-	gRefFuncs.Cvar_DirectSet(var, value);
+	gPrivateFuncs.Cvar_DirectSet(var, value);
 
 	R_CvarSetMapCvar(var, value);
 }
