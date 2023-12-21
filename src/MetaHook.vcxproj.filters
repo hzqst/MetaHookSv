@@ -16,6 +16,9 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="HLSDK">
+      <UniqueIdentifier>{2c91a772-2d06-46b4-8480-d14ba13ffe88}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="launcher.cpp">
@@ -46,7 +49,7 @@
       <Filter>Detours</Filter>
     </ClCompile>
     <ClCompile Include="..\include\HLSDK\common\interface.cpp">
-      <Filter>include</Filter>
+      <Filter>HLSDK</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
