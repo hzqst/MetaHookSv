@@ -52,9 +52,9 @@ jobs:
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
           mkdir "Output\SteamAppsLocation"
-          copy "tools\SteamAppsLocation\SteamAppsLocation.exe" "Output\SteamAppsLocation" /y
-          copy "tools\SteamAppsLocation\steam_appid.txt" "Output\SteamAppsLocation" /y
-          copy "tools\SteamAppsLocation\steam_api.dll" "Output\SteamAppsLocation" /y
+          copy "tools\SteamAppsLocation.exe" "Output\SteamAppsLocation" /y
+          copy "tools\steam_appid.txt" "Output\SteamAppsLocation" /y
+          copy "tools\steam_api.dll" "Output\SteamAppsLocation" /y
         shell: cmd
 
       - name: Copy install bat to Output
