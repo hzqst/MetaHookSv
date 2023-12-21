@@ -92,7 +92,7 @@
 
 ## 加载顺序
 
-1. MetaHook启动器总是会以从上到下的顺序加载 `\(GameDirectory)\metahook\configs\plugins.lst` 中列出的插件。当插件名前面存在引号";"时该行会被忽略。
+1. MetaHook启动器总是会以从上到下的顺序加载 `\(ModDirectory)\metahook\configs\plugins.lst` 中列出的插件。当插件名前面存在引号";"时该行会被忽略。
 
 2. 当支持AVX2指令集时自动加载(插件名)_AVX2.dll
 
@@ -152,7 +152,7 @@
 
 控制台参数 : `scmodel_downloadlatest 0 / 1` 设为1时自动下载最新版本的模型（如果有多个版本的模型）
 
-控制台参数 : `scmodel_usemirror 0 / 1 / 2` 使用CDN镜像加速下载，1 = `cdn.jsdelivr.net`， 2 = `https://gh.api.99988866.xyz`
+控制台参数 : `scmodel_usemirror 0 / 1 / 2` 使用CDN镜像加速下载，1 = `cdn.jsdelivr.net`， 2 = `gh.api.99988866.xyz`
 
 ### CommunicationDemo (只支持Sven Co-op)
 
@@ -168,7 +168,7 @@
 
 ### PrecacheManager
 
-该插件提供了一个命令 `fs_dump_precaches` 用于dump预缓存的游戏资源列表到 `[gamedir]\maps\[mapname].dump.res` 文件中。
+该插件提供了一个命令 `fs_dump_precaches` 用于dump预缓存的游戏资源列表到 `[ModDirectory]\maps\[mapname].dump.res` 文件中。
 
 * Sven Co-op 的声音系统使用 `soundcache.txt` 而非引擎的预缓存系统来维护声音文件的预缓存列表。
 
