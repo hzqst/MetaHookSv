@@ -2314,8 +2314,9 @@ void R_NewMap(void)
 
 	R_StudioReloadVBOCache();
 
-	//SvEngine always unload all GLT_STUDIO and GLT_SPRITE textures
-	if (g_iEngineType == ENGINE_SVENGINE)
+	//This is for GoldSrc
+	//Cuz SvEngine always unloads all GLT_STUDIO and GLT_SPRITE textures
+	if (g_iEngineType != ENGINE_SVENGINE)
 	{
 		std::set<int> textures;
 		R_AddReferencedTextures(textures);
