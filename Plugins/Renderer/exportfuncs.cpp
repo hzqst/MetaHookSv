@@ -1207,24 +1207,55 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		for (int i = 4; i < 9; ++i)
 		{
 			//GameStudioRenderer_StudioCalcAttachments_vftable_index
+
 			typedef struct
 			{
+				PVOID base;
+				size_t max_insts;
+				int max_depth;
+				std::set<PVOID> code;
+				std::set<PVOID> branches;
+				std::vector<walk_context_t> walks;
 				int index;
-			}StudioCalcAttachments_Context;
+			}StudioCalcAttachments_SearchContext;
 
-			StudioCalcAttachments_Context ctx;
+			StudioCalcAttachments_SearchContext ctx;
+
+			ctx.base = (void*)vftable[i];
 			ctx.index = i;
 
-			g_pMetaHookAPI->DisasmRanges((void*)vftable[i], 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-				{
-					auto pinst = (cs_insn*)inst;
-					auto ctx = (StudioCalcAttachments_Context *)context;
+			ctx.max_insts = 1000;
+			ctx.max_depth = 16;
+			ctx.walks.emplace_back(ctx.base, 0x1000, 0);
 
-					if (address[0] == 0x68 &&
-						address[5] == 0xFF &&
-						address[6] == 0x15)
+			while (ctx.walks.size())
+			{
+				auto walk = ctx.walks[ctx.walks.size() - 1];
+				ctx.walks.pop_back();
+
+				g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto pinst = (cs_insn*)inst;
+					auto ctx = (StudioCalcAttachments_SearchContext*)context;
+
+					if (gRefFuncs.GameStudioRenderer_StudioRenderFinal_vftable_index)
+						return TRUE;
+
+					if (ctx->code.size() > ctx->max_insts)
+						return TRUE;
+
+					if (ctx->code.find(address) != ctx->code.end())
+						return TRUE;
+
+					ctx->code.emplace(address);
+
+					if (pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+						(PUCHAR)pinst->detail->x86.operands[0].imm >(PUCHAR)g_dwClientBase &&
+						(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwClientBase + g_dwClientSize)
 					{
-						auto pPushedString = *(const char **)(address + 1);
+						const char* pPushedString = (const char*)pinst->detail->x86.operands[0].imm;
 						if (0 == memcmp(pPushedString, "Too many attachments on %s\n", sizeof("Too many attachments on %s\n") - 1))
 						{
 							gRefFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index = ctx->index;
@@ -1234,6 +1265,23 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 					if (gRefFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index)
 						return TRUE;
 
+					if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_IMM)
+					{
+						PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
+						auto foundbranch = ctx->branches.find(imm);
+						if (foundbranch == ctx->branches.end())
+						{
+							ctx->branches.emplace(imm);
+							if (depth + 1 < ctx->max_depth)
+								ctx->walks.emplace_back(imm, 0x300, depth + 1);
+						}
+
+						if (pinst->id == X86_INS_JMP)
+							return TRUE;
+					}
+
 					if (address[0] == 0xCC)
 						return TRUE;
 
@@ -1241,11 +1289,16 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 						return TRUE;
 
 					return FALSE;
-				}, 0, &ctx);
+				}, walk.depth, &ctx);
+			}
 		}
 
-		if (gRefFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index == 0)
-			gRefFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index = 8;
+		Sig_FuncNotFound(GameStudioRenderer_StudioCalcAttachments_vftable_index);
+
+		//if (gRefFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index == 0)
+		//{
+			//gRefFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index = 8;			
+		//}
 
 		gRefFuncs.GameStudioRenderer_StudioSetupBones_vftable_index = gRefFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index - 1;
 		gRefFuncs.GameStudioRenderer_StudioSaveBones_vftable_index = gRefFuncs.GameStudioRenderer_StudioCalcAttachments_vftable_index + 1;
