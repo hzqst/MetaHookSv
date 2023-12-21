@@ -22,13 +22,13 @@ The binaries or executables of Sven Co-op are not signed with digital signatures
 
 1. Download from [GitHub Release](https://github.com/hzqst/MetaHookSv/releases), then unzip it.
 
-2. Run `install-to-SvenCoop.bat`
+2. Run `scripts\install-to-SvenCoop.bat` (or `scripts\install-to-(WhateverGameYouWant).bat`, depends on which you are going to play)
 
 3. Launch game from shortcut `MetaHook for SvenCoop` or `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`
 
 * Other games follow the same instruction.
 
-* You should have your Steam running otherwise the [SteamAppsLocation](SteamAppsLocation/README.md) will probably not going to find GameInstallDir.
+* You should have your Steam running otherwise the [SteamAppsLocation](toolsrc/README.md) will probably not going to find GameInstallDir.
 
 ## Manual Installation
 
@@ -60,25 +60,19 @@ The binaries or executables of Sven Co-op are not signed with digital signatures
 
 Let's assume that you have all requirements installed correctly.
 
-1. `git clone https://github.com/hzqst/MetaHookSv` to somewhere that doesn't contain space in the directory path.
+1. `git clone --recursive https://github.com/hzqst/MetaHookSv` to somewhere that doesn't contain space in the directory path.
 
-2. Run `build-initdeps.bat`, wait until all required submodules / dependencies are pulled. (this may takes couple of minutes, depending on your network connection and download speed)
+2. Run `scripts\build-MetaHook.bat`, wait for all projects to generate.
 
-3. Run `build-MetaHook.bat`, wait until `svencoop.exe` generated at `Build` directory.
-
-4. Run `build-(SpecifiedPluginName).bat`, wait until `(SpecifiedPluginName).dll` generated. Current available plugins : CaptionMod, Renderer, StudioEvents, SteamScreenshots, SCModelDownloader, CommunicationDemo, DontFlushSoundCache.
-
-8. If generated without problem, plugins should be at `Build\svencoop\metahook\plugins\` directory.
+3. All generated dlls should be under `Build\svencoop\metahook\plugins\` if no error(s) occurs.
 
 ## Debugging
 
-1. `git clone https://github.com/hzqst/MetaHookSv` to somewhere that doesn't contain space in the directory path.
+1. `git clone --recursive https://github.com/hzqst/MetaHookSv` to somewhere that doesn't contain space in the directory path.
 
-2. Run `build-initdeps.bat`, wait until all required submodules / dependencies are pulled.  (Ignore if you have already done this before) (this may takes couple of minutes, depending on your network connection and download speed)
+2. Run `scripts\debug-SvenCoop.bat` (or `scripts\debug-(WhateverGameYouWant).bat`, depends on which you are going to debug with)
 
-3. Run `debug-SvenCoop.bat` (or `debug-(WhateverGameYouWant).bat`, depends on which you are going to debug with)
-
-4. Open `MetaHook.sln` with Visual Studio IDE, set specified project as launch project, compile the project, then press F5 to start debugging.
+3. Open `MetaHook.sln` with Visual Studio IDE, set specified project as launch project, compile the project, then press F5 to start debugging.
 
 * Other games follow the same instruction.
 
@@ -94,7 +88,7 @@ Let's assume that you have all requirements installed correctly.
 
 ## Load Order
 
-1. MetaHook launcher always loads plugins listed in `\(GameDirectory)\metahook\configs\plugins.lst` in ascending order. Plugin name started with ";" will be ignored.
+1. MetaHook launcher always loads plugins listed in `\(ModDirectory)\metahook\configs\plugins.lst` in ascending order. Plugin name started with ";" will be ignored.
 
 2. (PluginName)_AVX2.dll will be loaded if exists only when AVX2 instruction set supported.
 
@@ -172,7 +166,7 @@ The reason why I made this plugin is because transfering soundcache txt via UDP 
 
 ### PrecacheManager
 
-This plugin provides a console command `fs_dump_precaches` to dump precache resource list into `[gamedir]\maps\[mapname].dump.res`.
+This plugin provides a console command `fs_dump_precaches` to dump precache resource list into `[ModDirectory]\maps\[mapname].dump.res`.
 
 * The SoundSystem from Sven Co-op uses `soundcache.txt` instead of engine's precache system to precache sound files.
 

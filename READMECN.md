@@ -28,7 +28,7 @@
 
 1. 从 [GitHub Release](https://github.com/hzqst/MetaHookSv/releases) 下载压缩包。(可利用GitHub的国内加速镜像加速下载），然后解压。
 
-2. 运行 `install-to-SvenCoop.bat`
+2. 运行 `scripts\install-to-SvenCoop.bat`
 
 3. 从 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe` 启动游戏
 
@@ -54,43 +54,33 @@
 
 ## 构建需求
 
-1. Visual Studio 2017 或 2019，以及VC141 或 VC142工具集。
+1. Visual Studio 2017, 2019 或 2022，以及 VC141，VC142 或 VC143工具集。
 
 2. CMake
 
-3. git 客户端
+3. Git 客户端
 
 ## 如何构建
 
 假设你已经正确安装了所有构建需求。
 
-1. 执行 `git clone https://github.com/hzqst/MetaHookSv` 拉取代码到一处**路径不包含空格**的目录中。
+1. 执行 `git clone --recursive https://github.com/hzqst/MetaHookSv` 拉取代码到一处**路径不包含空格**的目录中。
 
-2. 运行 `build-initdeps.bat`, 等待所有子模块和依赖项目下载完成。 (这一步可能需要花费几分钟时间, 具体取决于你的网速，如果速度很慢或者下载出错建议尝试使用魔法上网)
-
-3. 运行 `build-MetaHook.bat`, 等待 `svencoop.exe` 生成到 `Build` 目录。
-
-4. 运行 `build-(指定插件名).bat`, 等待 `(指定插件名).dll` 生成。目前可用的插件有：CaptionMod, Renderer, StudioEvents, SteamScreenshots, SCModelDownloader, CommunicationDemo, DontFlushSoundCache。
+2. 运行 `scripts\build-MetaHook.bat`, 等待所有项目生成完成。
 
 5. 如果构建成功，插件应该会生成到`Build\svencoop\metahook\plugins\`目录。
 
-* 如果你的网络经常无法访问github导致clone失败，你可以从国内镜像gitee分别拉取[MetaHookSv](https://gitee.com/hzqst/MetaHookSv)、[Detours](https://gitee.com/mirrors/detours)、[Capstone](https://gitee.com/mirrors/capstone)、[Bullet3 Physics SDK](https://gitee.com/mirrors/bullet3)
-
-* 上述国内镜像可能不是最新，如果需要最新版本可以自行创建gitee仓库并设置源镜像为对应的github仓库，然后从github同步到gitee，或使用魔法上网拉取代码。
-
 ## 如何调试
 
-1. 执行 `git clone https://github.com/hzqst/MetaHookSv` 拉取代码到一处**路径不包含空格**的目录中。
+1. 执行 `git clone --recursive https://github.com/hzqst/MetaHookSv` 拉取代码到一处**路径不包含空格**的目录中。
 
-2. 运行 `build-initdeps.bat`, 等待所有子模块和依赖项目下载完成。 (如果你之前已经执行过这一步的指令，则可以略过这一步) (这一步可能需要花费几分钟时间, 具体取决于你的网速，如果速度很慢或者下载出错建议尝试使用魔法上网)
-
-3. 运行 `debug-SvenCoop.bat`  (其他游戏就选择该游戏对应的debug批处理)
+3. 运行 `scripts\debug-SvenCoop.bat`  (其他游戏就选择该游戏对应的批处理)
 
 4. 打开 `MetaHook.sln`, 在解决方案资源管理器中找到对应的项目，右键设置为启动项目，然后以Debug Win32生成配置重新生成该项目后，按F5即可启动本地调试。
 
-* 如果运行 `debug-SvenCoop.bat` 时 Visual Studio 正在运行，请重启一次 Visual Studio，否则可能会导致新的调试设置不生效。
+* 如果运行 `scripts\debug-SvenCoop.bat` 时 Visual Studio 正在运行，请重启一次 Visual Studio，否则可能会导致新的调试设置不生效。
 
-* 请确保已经登录Steam否则 [SteamAppsLocation](SteamAppsLocation/README.md) 可能会无法寻找游戏安装目录。
+* 请确保已经登录Steam否则 [SteamAppsLocation](toolsrc/SteamAppsLocation/README.md) 可能会无法寻找游戏安装目录。
 
 ## MetaHookSv (V3) 相比 MetaHook (V2) 的新功能
 
