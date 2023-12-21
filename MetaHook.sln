@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.168
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MetaHook", "MetaHook.vcxproj", "{0931F284-681C-41F1-AF30-97D1DCE2283C}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MetaHook", "src\MetaHook.vcxproj", "{0931F284-681C-41F1-AF30-97D1DCE2283C}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Renderer", "Plugins\Renderer\Renderer.vcxproj", "{076D2FBC-CAB6-4E26-931A-E5E8E9A4EBA7}"
 EndProject
@@ -13,11 +13,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BulletPhysics", "Plugins\Bu
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "StudioEvents", "Plugins\StudioEvents\StudioEvents.vcxproj", "{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C6}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SteamAppsLocation", "SteamAppsLocation\SteamAppsLocation\SteamAppsLocation.vcxproj", "{27D1C013-2419-4F33-85D0-841DE51D1732}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "studiocheck", "studiocheck\studiocheck\studiocheck.vcxproj", "{1CD60924-CE1C-4F22-BA7D-C3460E4560A0}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SteamScreenshots", "Plugins\SteamScreenshots\SteamScreenshots.vcxproj", "{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C7}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SteamAppsLocation", "toolsrc\SteamAppsLocation\SteamAppsLocation.vcxproj", "{27D1C013-2419-4F33-85D0-841DE51D1732}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "studiocheck", "toolsrc\studiocheck\studiocheck.vcxproj", "{1CD60924-CE1C-4F22-BA7D-C3460E4560A0}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Plugins", "Plugins", "{4BBE5591-2774-44E5-837E-B54D33AFC431}"
 EndProject
