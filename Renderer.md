@@ -419,6 +419,14 @@ Cvars for celshade will be overrided if sepcified key-values are filled in `[mod
 
 Brush surfaces, studio models, decals and sprites are rendered with Vertex Buffer Object, offering substantial performance gains over OpenGL 1.x immediate mode rendering primarily because the data reside in video memory rather than system memory and so it can be rendered directly by the video device.
 
+## Bindless-Texture optimization
+
+Brush surfaces and decals are rendered with Bindless-Texture, which dramatically reduces drawcall count. but not well supported by some graphic drivers from AMD and Intel.
+
+Use cvar `gl_bindless 1` to enable Bindless-Texture rendering.
+
+Use launch parameter `-nobindless` to disable Bindless-Texture rendering permanently.
+
 ## Order-Independent Transparency Blend (aka OIT blend)
 
 Transparent pixels are stored in linked-list and sorted by GPU.
@@ -441,6 +449,8 @@ All textures are converted from texgamma color space to linear color space, and 
 
 * Any mathematical operation (such as transparent blending) on gamma corrected color is physically incorrect! See: https://en.wikipedia.org/wiki/Gamma_correction
 
+* Use cvar `r_gamma_blend 1` to enable the transparent blending path used by vanilla engine. This will keep the transparent blending result as what it was in vanilla engine but there might be artifacts due to the implementation issue of graphic drivers.
+
 ### Console vars
 
 `gamma` is to control the final output gamma, convert colors from linear space to screen gamma space.
@@ -451,7 +461,7 @@ All textures are converted from texgamma color space to linear color space, and 
 
 `brightness` is to shift up the lightgamma and make lightmaps brighter.
 
-`r_blend_gamma 0 / 1` set 1 to blend transparent objects in gamma space instead of linear space. `r_blend_gamma 1` is the default policy used by vanilla GoldSrc and the blending result is limited to 1.0 in case of overbright.
+`r_blend_gamma 0 / 1` set 1 to blend transparent objects in gamma space instead of linear space. `r_blend_gamma 1` is the default policy used by vanilla GoldSrc and the transparent blending result is limited to 1.0 in case of overbright.
 
 ## FOV (Field of View)
 
@@ -467,13 +477,13 @@ This is the default FOV policy used by Sven Co-op.
 
 ### WideScreen-Adapted FOV
 
-WideScreen-Adapted FOV can be enabled by using cvar `r_adjust_fov 1` or `r_adjust_fov 2`.
+WideScreen-Adapted FOV can be enabled by using cvar `gl_widescreen_yfov 1` or `gl_widescreen_yfov 2`.
 
 This controls how engine calculate the vertical FOV from horizontal FOV:
 
-`r_adjust_fov 1` is the default policy used by Xash3D-fwgs and Nexon's Counter-Strike : Online that expands the horizontal FOV while keep the vertical FOV as what it was when using resolution of 4:3
+`gl_widescreen_yfov 1` is the default policy used by Xash3D-fwgs, Nexon's Counter-Strike : Online and Half-Life 25th anniversary update that expands the horizontal FOV while keep the vertical FOV as what it was when using resolution of 4:3
 
-`r_adjust_fov 2` is to stretch the original 4:3 FOV image to fit the current rendering resolution.
+`gl_widescreen_yfov 2` is to stretch the original 4:3 FOV image to fit the current rendering resolution.
 
 ## Sprite Interpolation
 
