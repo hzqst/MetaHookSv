@@ -313,6 +313,14 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			{
 				RunDllMainForBlob(hBlobEngine, DLL_PROCESS_ATTACH);
 				RunExportEntryForBlob(hBlobEngine, (void**)&engineAPI);
+
+				if (!engineAPI)
+				{
+					char msg[512];
+					wsprintf(msg, "Could not get launcher interface from engine : %s.", pszEngineDLL);
+					MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
+					ExitProcess(0);
+				}
 			}
 		}
 		else
@@ -328,10 +336,24 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			}
 
 			CreateInterfaceFn engineCreateInterface = (CreateInterfaceFn)Sys_GetFactory(hEngine);
+
+			if (!engineCreateInterface)
+			{
+				char msg[512];
+				wsprintf(msg, "Could not get factory from engine : %s.", pszEngineDLL);
+				MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
+				ExitProcess(0);
+			}
+
 			engineAPI = (IEngine *)engineCreateInterface(VENGINE_LAUNCHER_API_VERSION, NULL);
 
-			if (!engineCreateInterface || !engineAPI)
-				Sys_FreeModule(hEngine);
+			if (!engineAPI)
+			{
+				char msg[512];
+				wsprintf(msg, "Could not get launcher interface from engine : %s.", pszEngineDLL);
+				MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
+				ExitProcess(0);
+			}
 		}
 
 		if (engineAPI)

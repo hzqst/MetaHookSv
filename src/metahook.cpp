@@ -1282,7 +1282,10 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 								if (address[0] == 0xCC)
 									return TRUE;
 
-								if (instCount > 5)
+								if (address[0] == 0x90)
+									return TRUE;
+
+								if (instCount > 10)
 									return TRUE;
 
 								return FALSE;
