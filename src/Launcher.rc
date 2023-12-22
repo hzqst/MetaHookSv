@@ -21,7 +21,7 @@ BEGIN
 		BLOCK "000004b0"
 
 		BEGIN
-			VALUE "FileDescription", "MetaHook Plus"
+			VALUE "FileDescription", "MetaHookSv"
 			VALUE "FileVersion", "0.4.0.0"
 			VALUE "InternalName", "MetaHook"
 			VALUE "OriginalFilename", "MetaHook.exe"
