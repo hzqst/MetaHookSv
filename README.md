@@ -4,9 +4,19 @@ This is a porting of [MetaHook](https://github.com/nagist/metahook) for SvEngine
 
 Mainly to keep you a good game experience in Sven Co-op.
 
-Most of plugins are still compatible with vanilla GoldSrc engine. please check plugin docs for compatibility.
+Most of plugins are still compatible with vanilla GoldSrc engine. please check each plugin's doc for plugin compatibility.
 
 [中文README](READMECN.md)
+
+### Compatibility (metahook loader only)
+
+|        Engine               |      |
+|        ----                 | ---- |
+| GoldSrc_blob   (3266~4554)  | √    |
+| GoldSrc_legacy (< 6153)     | √    |
+| GoldSrc_new    (8684 ~)     | √    |
+| SvEngine       (8832 ~)     | √    |
+| GoldSrc_HL25   (>= 9884)    | √    |
 
 ## Download
 

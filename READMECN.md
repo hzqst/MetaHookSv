@@ -4,9 +4,19 @@
 
 用黑科技提升你的Sven Co-op游戏体验
 
-大部分插件都兼容原版GoldSrc引擎，具体的兼容性情况请逐个查阅插件文档。
+大部分插件都兼容原版GoldSrc引擎，具体每个插件的兼容性情况请逐个查阅插件文档。
 
 [英文README](README.md)
+
+### 兼容性 (仅metahook加载器本体)
+
+|        引擎                 |      |
+|        ----                 | ---- |
+| GoldSrc_blob   (3266~4554)  | √    |
+| GoldSrc_legacy (< 6153)     | √    |
+| GoldSrc_new    (8684 ~)     | √    |
+| SvEngine       (8832 ~)     | √    |
+| GoldSrc_HL25   (>= 9884)    | √    |
 
 ## 下载
 
