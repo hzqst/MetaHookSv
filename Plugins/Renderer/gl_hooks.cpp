@@ -4608,6 +4608,17 @@ void R_FillAddress(void)
 				DM_RemapSkin = (decltype(DM_RemapSkin))pinst->detail->x86.operands[1].imm;
 			}
 
+			if (!DM_RemapSkin &&
+				pinst->id == X86_INS_LEA &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				DM_RemapSkin = (decltype(DM_RemapSkin))pinst->detail->x86.operands[1].mem.disp;
+			}
+
 			if (pDM_RemapSkin && DM_RemapSkin && r_remapindex)
 				return TRUE;
 

@@ -296,7 +296,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 #ifndef _USRDLL
 			//No longer need
 			//Sys_CloseDEP();
-			SetupExceptHandler3();
+			//SetupExceptHandler3();
 #endif
 
 			hBlobEngine = LoadBlobFile(pszEngineDLL, BlobSectionBase, BlobSectionSize);
@@ -414,7 +414,5 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	WSACleanup();
 
-	//MH_Shutdown();
-	//NtTerminateProcess((HANDLE)-1, 1);
 	return 1;
 }
