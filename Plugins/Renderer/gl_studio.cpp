@@ -1223,16 +1223,48 @@ byte* R_StudioReloadSkin(model_t* pModel, int index, skin_t* pskin)
 	}
 	else
 	{
-		pbase = gEngfuncs.COM_LoadFile(pModel->name, 5, NULL);
+		int fileLength = 0;
+
+		pbase = gEngfuncs.COM_LoadFile(pModel->name, 5, &fileLength);
 
 		if (!pbase)
 			return NULL;
 
 		auto studiohdr = (studiohdr_t*)pbase;
-		auto ptexture = (mstudiotexture_t*)(studiohdr + studiohdr->textureindex);
+
+		if (fileLength < sizeof(studiohdr_t)) {
+			gEngfuncs.COM_FreeFile(pbase);
+			return NULL;
+		}
+
+		auto ptexture = (mstudiotexture_t*)((byte *)studiohdr + studiohdr->textureindex);
+
 		ptexture += index;
+
+		if ((byte*)ptexture < (byte*)studiohdr) {
+			gEngfuncs.COM_FreeFile(pbase);
+			return NULL;
+		}
+
+		if ((byte *)ptexture + sizeof(mstudiotexture_t) > (byte*)studiohdr + fileLength) {
+			gEngfuncs.COM_FreeFile(pbase);
+			return NULL;
+		}
+
 		size = ptexture->height * ptexture->width;
+
+		if ((byte*)pbase + ptexture->index < (byte*)studiohdr) {
+			gEngfuncs.COM_FreeFile(pbase);
+			return NULL;
+		}
+
+		if ((byte*)pbase + ptexture->index + size > (byte*)studiohdr + fileLength) {
+			gEngfuncs.COM_FreeFile(pbase);
+			return NULL;
+		}
+
 		Cache_Alloc(pCache, size + 768 + 8, pskin->name);
+
 		pData = (model_texture_cache_t*)pCache->data;
 		pData->width = ptexture->width;
 		pData->height = ptexture->height;
