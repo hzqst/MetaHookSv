@@ -81,6 +81,7 @@ CreateInterfaceFn *g_pClientFactory = NULL;
 
 HMODULE *g_phClientModule = NULL;
 
+BlobHandle_t g_hBlobEngine = NULL;
 HMODULE g_hEngineModule = NULL;
 PVOID g_dwEngineBase = NULL;
 DWORD g_dwEngineSize = NULL;
@@ -840,7 +841,7 @@ void MH_ClientDLL_Init(void)
 	MH_WriteDWORD(g_ppExportFuncs, (DWORD)g_pExportFuncs);
 }
 
-void MH_LoadEngine(HMODULE hModule, const char *szGameName)
+void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *szGameName)
 {
 	Cmd_GetCmdBase = NULL;
 	cvar_callbacks = NULL;
@@ -875,19 +876,21 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 	gInterface.Registry = registry;
 	gInterface.FileSystem_HL25 = g_pFileSystem_HL25;
 
-	if (hModule)
+	if (hEngineModule)
 	{
-		g_dwEngineBase = MH_GetModuleBase(hModule);
-		g_dwEngineSize = MH_GetModuleSize(hModule);
-		g_hEngineModule = hModule;
+		g_dwEngineBase = MH_GetModuleBase(hEngineModule);
+		g_dwEngineSize = MH_GetModuleSize(hEngineModule);
+		g_hEngineModule = hEngineModule;
+		g_hBlobEngine = NULL;
 
 		g_iEngineType = ENGINE_UNKNOWN;
 	}
 	else
 	{
-		g_dwEngineBase = (PVOID)0x1D00000;
-		g_dwEngineSize = 0x1000000;
+		g_dwEngineBase = GetBlobModuleImageBase(hBlobEngine);
+		g_dwEngineSize = GetBlobModuleImageSize(hBlobEngine);
 		g_hEngineModule = NULL;
+		g_hBlobEngine = hBlobEngine;
 
 		g_iEngineType = ENGINE_GOLDSRC_BLOB;
 	}
@@ -951,33 +954,33 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 		return;
 	}
 
-	if (buildnumber_call)
+	//Judge actual engine type
+	if (g_iEngineType == ENGINE_UNKNOWN)
 	{
-		char* pEngineName = *(char**)((PUCHAR)buildnumber_call + sizeof(BUILD_NUMBER_SIG) - 1);
-
-		if (g_iEngineType != ENGINE_GOLDSRC_BLOB)
+		if (buildnumber_call)
 		{
-			if (!strncmp(pEngineName, "Svengine", sizeof("Svengine") - 1))
+			char* pEngineName = *(char**)((PUCHAR)buildnumber_call + sizeof(BUILD_NUMBER_SIG) - 1);
+
+			if (g_iEngineType != ENGINE_GOLDSRC_BLOB)
 			{
-				g_iEngineType = ENGINE_SVENGINE;
-			}
-			else if (!strncmp(pEngineName, "Half-Life", sizeof("Half-Life") - 1))
-			{
-				g_iEngineType = ENGINE_GOLDSRC;
-			}
-			else if (!strncmp(pEngineName, "version :  ", sizeof("version :  ") - 1))
-			{
-				g_iEngineType = ENGINE_GOLDSRC_HL25;
-			}
-			else
-			{
-				g_iEngineType = ENGINE_UNKNOWN;
+				if (!strncmp(pEngineName, "Svengine", sizeof("Svengine") - 1))
+				{
+					g_iEngineType = ENGINE_SVENGINE;
+				}
+				else if (!strncmp(pEngineName, "Half-Life", sizeof("Half-Life") - 1))
+				{
+					g_iEngineType = ENGINE_GOLDSRC;
+				}
+				else if (!strncmp(pEngineName, "version :  ", sizeof("version :  ") - 1))
+				{
+					g_iEngineType = ENGINE_GOLDSRC_HL25;
+				}
+				else
+				{
+					g_iEngineType = ENGINE_UNKNOWN;
+				}
 			}
 		}
-	}
-	else
-	{
-		g_iEngineType = ENGINE_UNKNOWN;
 	}
 
 	if (1)
@@ -1002,6 +1005,16 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 						Candidate[6] == 0xA1 &&
 						Candidate[11] == 0x33 &&
 						Candidate[12] == 0xC4)
+						return TRUE;
+
+					//.text:01D0AF60 81 EC 00 04 00 00                                   sub     esp, 400h
+					//.text : 01D0AF66 8D 84 24 00 02 00 00                                lea     eax, [esp + 400h + Dest]
+					if (Candidate[0] == 0x81 &&
+						Candidate[1] == 0xEC &&
+						Candidate[4] == 0x00 &&
+						Candidate[5] == 0x00 &&
+						Candidate[6] == 0x8D &&
+						Candidate[8] == 0x24)
 						return TRUE;
 
 					//  .text : 01D0B180 55                                                  push    ebp
@@ -1173,90 +1186,61 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 
 	Cmd_GetCmdBase = *(decltype(Cmd_GetCmdBase) *)(&gMetaSave.pEngineFuncs->GetFirstCmdFunctionHandle);
 
-	if (g_iEngineType == ENGINE_SVENGINE)
+	if (1)
 	{
-#define FULLSCREEN_STRING_SIG_SVENGINE "-fullscreen\0"
-		auto FullScreen_String = MH_SearchPattern(g_dwEngineBase, g_dwEngineSize, FULLSCREEN_STRING_SIG_SVENGINE, sizeof(FULLSCREEN_STRING_SIG_SVENGINE) - 1);
-		if (FullScreen_String)
+		PVOID VideoMode_SearchBase = NULL;
+		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
-			*(DWORD*)(pattern + 1) = (DWORD)FullScreen_String;
-			auto FullScreen_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
-			if (FullScreen_PushString)
+#define FULLSCREEN_STRING_SIG_SVENGINE "-fullscreen\0"
+			auto FullScreen_String = MH_SearchPattern(g_dwEngineBase, g_dwEngineSize, FULLSCREEN_STRING_SIG_SVENGINE, sizeof(FULLSCREEN_STRING_SIG_SVENGINE) - 1);
+			if (FullScreen_String)
 			{
-				FullScreen_PushString = (PUCHAR)FullScreen_PushString + sizeof(pattern) - 1;
-
-				typedef struct
+				char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
+				*(DWORD*)(pattern + 1) = (DWORD)FullScreen_String;
+				auto FullScreen_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
+				if (FullScreen_PushString)
 				{
-					ULONG_PTR candidate_disp;
-					PVOID candidate_addr;
-				}FullScreen_PushString_Ctx;
+					FullScreen_PushString = (PUCHAR)FullScreen_PushString + sizeof(pattern) - 1;
 
-				FullScreen_PushString_Ctx ctx = { 0 };
-
-				MH_DisasmRanges(FullScreen_PushString, 0x400, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-				{
-					auto pinst = (cs_insn*)inst;
-					auto ctx = (FullScreen_PushString_Ctx *)context;
-
-					if (pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[0].mem.base == 0 &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineBase &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize &&
-						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-						pinst->detail->x86.operands[1].imm == 0)
-					{
-						ctx->candidate_disp = (decltype(ctx->candidate_disp))pinst->detail->x86.operands[0].mem.disp;
-						ctx->candidate_addr = address;
-					}
-
-					if (ctx->candidate_disp &&pinst->id == X86_INS_RET &&
-						address > ctx->candidate_addr && address < (PUCHAR)ctx->candidate_addr + 0x30)
-					{
-						g_pVideoMode = (decltype(g_pVideoMode))ctx->candidate_disp;
-					}
-
-					if (g_pVideoMode)
-						return TRUE;
-
-					if (address[0] == 0xCC)
-						return TRUE;
-
-					return FALSE;
-				}, 0, &ctx);
+					VideoMode_SearchBase = FullScreen_PushString;
+				}
 			}
 		}
-	}
-	else
-	{
-#define FULLSCREEN_STRING_SIG "-gl\0"
-		auto FullScreen_String = MH_SearchPattern(g_dwEngineBase, g_dwEngineSize, FULLSCREEN_STRING_SIG, sizeof(FULLSCREEN_STRING_SIG) - 1);
-		if (FullScreen_String)
+		else
 		{
-			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
-			*(DWORD *)(pattern + 1) = (DWORD)FullScreen_String;
-			auto FullScreen_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
-			if (FullScreen_PushString)
+#define FULLSCREEN_STRING_SIG "-gl\0"
+			auto FullScreen_String = MH_SearchPattern(g_dwEngineBase, g_dwEngineSize, FULLSCREEN_STRING_SIG, sizeof(FULLSCREEN_STRING_SIG) - 1);
+			if (FullScreen_String)
 			{
-				FullScreen_PushString = (PUCHAR)FullScreen_PushString + sizeof(pattern) - 1;
-
-				typedef struct
+				char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
+				*(DWORD*)(pattern + 1) = (DWORD)FullScreen_String;
+				auto FullScreen_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
+				if (FullScreen_PushString)
 				{
-					ULONG_PTR candidate_disp;
-					PVOID candidate_addr;
-				}FullScreen_PushString_Ctx;
+					FullScreen_PushString = (PUCHAR)FullScreen_PushString + sizeof(pattern) - 1;
 
-				FullScreen_PushString_Ctx ctx = { 0 };
+					VideoMode_SearchBase = FullScreen_PushString;
+				}
+			}
+		}
 
-				MH_DisasmRanges(FullScreen_PushString, 0x400, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		if (VideoMode_SearchBase)
+		{
+			typedef struct
+			{
+				ULONG_PTR candidate_disp;
+				PVOID candidate_addr;
+			}VideoMode_SearchContext;
+
+			VideoMode_SearchContext ctx = { 0 };
+
+			MH_DisasmRanges(VideoMode_SearchBase, 0x400, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 				{
-					auto pinst = (cs_insn *)inst;
+					auto pinst = (cs_insn*)inst;
 
-					auto ctx = (FullScreen_PushString_Ctx *)context;
+					auto ctx = (VideoMode_SearchContext*)context;
 
-					if (pinst->id == X86_INS_MOV &&
+					if ((pinst->id == X86_INS_MOV &&
 						pinst->detail->x86.op_count == 2 &&
 						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 						pinst->detail->x86.operands[0].mem.base == 0 &&
@@ -1264,15 +1248,51 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize &&
 						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
 						pinst->detail->x86.operands[1].imm == 0)
+						|| 
+						(pinst->id == X86_INS_MOV &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+							pinst->detail->x86.operands[0].mem.base == 0 &&
+							(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineBase &&
+							(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize &&
+							pinst->detail->x86.operands[1].type == X86_OP_REG &&
+							pinst->detail->x86.operands[1].reg == X86_REG_EAX)
+						
+						)
 					{
-						ctx->candidate_disp = (decltype(ctx->candidate_disp))pinst->detail->x86.operands[0].mem.disp;
-						ctx->candidate_addr = address;
-					}
+						typedef struct
+						{
+							bool bFindRet;
+						}FindRet_Ctx;
 
-					if (ctx->candidate_disp && pinst->id == X86_INS_RET &&
-						address > ctx->candidate_addr && address < (PUCHAR)ctx->candidate_addr + 0x30)
-					{
-						g_pVideoMode = (decltype(g_pVideoMode))ctx->candidate_disp;
+						FindRet_Ctx ctx2 = { 0 };
+
+						MH_DisasmRanges(address, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+							{
+								auto pinst = (cs_insn*)inst;
+
+								auto ctx = (FindRet_Ctx*)context;
+
+								if (!ctx->bFindRet && pinst->id == X86_INS_RET)
+								{
+									ctx->bFindRet = true;
+									return TRUE;
+								}
+
+								if (address[0] == 0xCC)
+									return TRUE;
+
+								if (instCount > 5)
+									return TRUE;
+
+								return FALSE;
+
+							}, 0, &ctx2);
+
+						if (ctx2.bFindRet)
+						{
+							g_pVideoMode = (decltype(g_pVideoMode))pinst->detail->x86.operands[0].mem.disp;
+						}
 					}
 
 					if (g_pVideoMode)
@@ -1282,8 +1302,12 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 						return TRUE;
 
 					return FALSE;
-				}, 0, &ctx);
-			}
+				}, 0, & ctx);
+		}
+		else
+		{
+			MH_SysError("MH_LoadEngine: Failed to locate VideoMode_SearchBase");
+			return;
 		}
 	}
 
@@ -1376,6 +1400,24 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 						Candidate[8] == 0x00)
 						return TRUE;
 
+					//01D311B0 - 8B 4C 24 08           - mov ecx,[esp+08]
+					//01D311B4 - 81 EC 00040000        - sub esp,00000400 { 1024 }
+					//3248
+					if (Candidate[0] == 0x8B &&
+						Candidate[1] == 0x4C &&
+						Candidate[2] == 0x24 &&
+						Candidate[3] == 0x08 &&
+						Candidate[4] == 0x81 &&
+						Candidate[5] == 0xEC)
+						return TRUE;
+
+					//.text:01D2E240 81 EC 00 04 00 00                                   sub     esp, 400h
+					if (Candidate[0] == 0x81 &&
+						Candidate[1] == 0xEC &&
+						Candidate[4] == 0x00 &&
+						Candidate[5] == 0x00)
+						return TRUE;
+
 					return FALSE;
 				});
 			}
@@ -1388,92 +1430,105 @@ void MH_LoadEngine(HMODULE hModule, const char *szGameName)
 		return;
 	}
 
-	//SvEngine removed cvar callbacks
-	if (g_iEngineType == ENGINE_SVENGINE)
+	if (1)
 	{
-		const char sigs1[] = "Cvar_Set: variable %s not found\n";
-		auto Cvar_DirectSet_String = MH_SearchPattern(dataBase, dataSize, sigs1, sizeof(sigs1) - 1);
-		if (!Cvar_DirectSet_String)
-			Cvar_DirectSet_String = MH_SearchPattern(rdataBase, rdataSize, sigs1, sizeof(sigs1) - 1);
-		if (Cvar_DirectSet_String)
-		{
-			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
-			*(DWORD*)(pattern + 1) = (DWORD)Cvar_DirectSet_String;
-
-			auto searchBegin = (PUCHAR)textBase;
-			auto searchEnd = (PUCHAR)textBase + textSize;
-			while (1)
+		MH_DisasmRanges(gMetaSave.pEngineFuncs->Cvar_Set, 0x150, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 			{
-				auto Cvar_Set_Call = MH_SearchPattern(searchBegin, searchEnd - searchBegin, pattern, sizeof(pattern) - 1);
-				if (Cvar_Set_Call)
-				{
-					searchBegin = (PUCHAR)Cvar_Set_Call + sizeof(pattern) - 1;
+				auto pinst = (cs_insn*)inst;
 
-					MH_DisasmRanges(searchBegin, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+				if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[0].reg == X86_REG_EAX &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base == 0)
+				{
+					DWORD imm = (DWORD)pinst->detail->x86.operands[1].mem.disp;
+
+					if (!cvar_callbacks)
 					{
-							auto pinst = (cs_insn*)inst;
-
-							if (address[0] == 0xE8)
-							{
-								auto CallTarget = address + *(int *)(address + 1) + instLen;
-
-								if ((ULONG_PTR)CallTarget == (ULONG_PTR)g_pfnCvar_DirectSet)
-								{
-									auto dwNewRVA = (ULONG_PTR)MH_Cvar_DirectSet - (ULONG_PTR)(address + 5);
-
-									MH_WriteDWORD(address + 1, dwNewRVA);
-								}
-							}
-
-							return FALSE;
-						}, 0, NULL);
+						cvar_callbacks = (decltype(cvar_callbacks))imm;
+					}
 				}
-				else
-				{
-					break;
-				}
-			}
-		}
-	}
-	if (g_iEngineType == ENGINE_GOLDSRC || g_iEngineType == ENGINE_GOLDSRC_BLOB || g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		MH_DisasmRanges(gMetaSave.pEngineFuncs->Cvar_Set, 0x150, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-		{
-			auto pinst = (cs_insn *)inst;
 
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[0].reg == X86_REG_EAX &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0)
-			{
-				DWORD imm = (DWORD)pinst->detail->x86.operands[1].mem.disp;
+				if (cvar_callbacks)
+					return TRUE;
 
-				if (!cvar_callbacks)
-				{
-					cvar_callbacks = (decltype(cvar_callbacks))imm;
-				}
-			}
+				if (address[0] == 0xCC)
+					return TRUE;
 
-			if (cvar_callbacks)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			return FALSE;
-		}, 0, NULL);
+				return FALSE;
+			}, 0, NULL);
 
 		if (!cvar_callbacks)
 		{
-			MH_SysError("MH_LoadEngine: Failed to locate cvar_callbacks");
-			return;
+			typedef struct
+			{
+				bool bCallManipulated;
+			}CvarSet_SearchContext;
+
+			CvarSet_SearchContext ctx = { 0 };
+
+			const char sigs1[] = "Cvar_Set: variable %s not found\n";
+			auto Cvar_DirectSet_String = MH_SearchPattern(dataBase, dataSize, sigs1, sizeof(sigs1) - 1);
+			if (!Cvar_DirectSet_String)
+				Cvar_DirectSet_String = MH_SearchPattern(rdataBase, rdataSize, sigs1, sizeof(sigs1) - 1);
+			if (Cvar_DirectSet_String)
+			{
+				char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
+				*(DWORD*)(pattern + 1) = (DWORD)Cvar_DirectSet_String;
+
+				auto searchBegin = (PUCHAR)textBase;
+				auto searchEnd = (PUCHAR)textBase + textSize;
+				while (1)
+				{
+					auto Cvar_Set_Call = MH_SearchPattern(searchBegin, searchEnd - searchBegin, pattern, sizeof(pattern) - 1);
+					if (Cvar_Set_Call)
+					{
+						searchBegin = (PUCHAR)Cvar_Set_Call + sizeof(pattern) - 1;
+
+						MH_DisasmRanges(searchBegin, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+							{
+								auto pinst = (cs_insn*)inst;
+								auto ctx = (CvarSet_SearchContext*)context;
+
+								if (address[0] == 0xE8 || address[0] == 0xE9)
+								{
+									auto CallTarget = address + *(int*)(address + 1) + instLen;
+
+									if ((ULONG_PTR)CallTarget == (ULONG_PTR)g_pfnCvar_DirectSet)
+									{
+										auto dwNewRVA = (ULONG_PTR)MH_Cvar_DirectSet - (ULONG_PTR)(address + 5);
+
+										MH_WriteDWORD(address + 1, dwNewRVA);
+
+										ctx->bCallManipulated = true;
+									}
+								}
+
+								if (address[0] == 0xCC)
+									return TRUE;
+
+								if (address[0] == 0x90)
+									return TRUE;
+
+								return FALSE;
+							}, 0, & ctx);
+					}
+					else
+					{
+						break;
+					}
+				}
+			}
+
+			if (!ctx.bCallManipulated) {
+				MH_SysError("MH_LoadEngine: Failed to locate call inside Cvar_Set");
+				return;
+			}
+
+			cvar_callbacks = &g_ManagedCvarCallbackList;
 		}
-	}
-	else
-	{
-		cvar_callbacks = &g_ManagedCvarCallbackList;
 	}
 
 	MH_InlineHook(g_pfnClientDLL_Init, MH_ClientDLL_Init, (void **)&g_original_ClientDLL_Init);
@@ -1615,6 +1670,7 @@ void MH_Shutdown(void)
 	g_original_ClientDLL_Init = NULL;
 	g_phClientModule = NULL;
 
+	g_hBlobEngine = NULL;
 	g_hEngineModule = NULL;
 	g_dwEngineBase = NULL;
 	g_dwEngineSize = NULL;
@@ -2253,19 +2309,26 @@ DWORD MH_GetVideoMode(int *width, int *height, int *bpp, bool *windowed)
 
 CreateInterfaceFn MH_GetEngineFactory(void)
 {
-	if (g_iEngineType != ENGINE_GOLDSRC_BLOB)
-		return (CreateInterfaceFn)GetProcAddress(g_hEngineModule, "CreateInterface");
-
-	static DWORD factoryAddr = 0;
-
-	if (!factoryAddr)
+	if (g_hEngineModule)
 	{
-		BlobHeader_t *pHeader = GetBlobHeader();
-		DWORD base = pHeader->m_dwExportPoint + 0x8;
-		factoryAddr = ((DWORD (*)(void))(base + *(DWORD *)base + 0x4))();
+		return (CreateInterfaceFn)GetProcAddress(g_hEngineModule, "CreateInterface");
 	}
 
-	return (CreateInterfaceFn)factoryAddr;
+	if (g_hBlobEngine)
+	{
+		DWORD factoryAddr = 0;
+
+		if (!factoryAddr)
+		{
+			BlobHeader_t* pHeader = GetBlobHeader(g_hBlobEngine);
+			DWORD base = pHeader->m_dwExportPoint + 0x8;
+			factoryAddr = ((DWORD(*)(void))(base + *(DWORD*)base + 0x4))();
+		}
+
+		return (CreateInterfaceFn)factoryAddr;
+	}
+
+	return NULL;
 }
 
 CreateInterfaceFn MH_GetClientFactory(void)
@@ -2336,6 +2399,11 @@ const char *MH_GetEngineTypeName(void)
 
 PVOID MH_GetSectionByName(PVOID ImageBase, const char *SectionName, ULONG *SectionSize)
 {
+	if (g_hBlobEngine && GetBlobModuleImageBase(g_hBlobEngine) == ImageBase)
+	{
+		return GetBlobSectionByName(g_hBlobEngine, SectionName, SectionSize);
+	}
+
 	PIMAGE_NT_HEADERS NtHeader = RtlImageNtHeader(ImageBase);
 	if (NtHeader)
 	{

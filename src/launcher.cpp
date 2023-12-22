@@ -128,8 +128,6 @@ BOOL SetActiveProcess(void)
 	return TRUE;
 }
 
-BlobFootprint_t g_blobfootprintClient;
-
 class CScopedExitFileSystem {
 public:
 	CScopedExitFileSystem(HINTERFACEMODULE h)
@@ -169,10 +167,10 @@ public:
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	static char szNewCommandParams[2048];
+
 	HANDLE hObject = NULL;
 
 	CommandLine()->CreateCmdLine(GetCommandLine());
-	//CommandLine()->RemoveParm("-steam");
 
 #ifndef _DEBUG
 	BOOL (*IsDebuggerPresent)(void) = (BOOL (*)(void))GetProcAddress(GetModuleHandle("kernel32.dll"), "IsDebuggerPresent");
@@ -196,8 +194,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	registry->Init();
 
-	//SetUnhandledExceptionFilter(MinidumpCallback);
-
 	char szFileName[256];
 	Sys_GetExecutableName(szFileName, sizeof(szFileName));
 	char *szExeName = strrchr(szFileName, '\\') + 1;
@@ -206,6 +202,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	{
 		CommandLine()->AppendParm("-game", "svencoop");
 		CommandLine()->AppendParm("-32bpp", "");
+		CommandLine()->AppendParm("-gl", "");
 	}
 	if (stricmp(szExeName, "hl.exe") && CommandLine()->CheckParm("-game") == NULL)
 	{
@@ -265,21 +262,58 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 		SetEngineDLL(szExeName, &pszEngineDLL);
 
-		szNewCommandParams[0] = 0;
-		g_blobfootprintClient.m_hDll = NULL;
+		memset(szNewCommandParams, 0, sizeof(szNewCommandParams));
 
 		IEngine *engineAPI = NULL;
-		HINTERFACEMODULE hEngine;
-		bool bUseBlobDLL = false;
+		HINTERFACEMODULE hEngine = NULL;
+		BlobHandle_t hBlobEngine = NULL;
+		PVOID BlobSectionBase = NULL;
+		ULONG BlobSectionSize = 0;
 
 		if (FIsBlob(pszEngineDLL))
 		{
+			BlobSectionBase = GetBlobLoaderSection((PVOID)hInstance, &BlobSectionSize);
+
+			if (!BlobSectionBase)
+			{
+				char msg[512];
+				wsprintf(msg, "No available \".blob\" section to load blob engine : %s.", pszEngineDLL);
+				MessageBox(NULL, msg, "Fatal Error", MB_ICONERROR);
+				return 0;
+			}
+			else
+			{
+				DWORD dwOldProtect = 0;
+				if (!VirtualProtect(BlobSectionBase, BlobSectionSize, PAGE_EXECUTE_READWRITE, &dwOldProtect))
+				{
+					char msg[512];
+					wsprintf(msg, "Failed to make \".blob\" section executable to load blob engine : %s.", pszEngineDLL);
+					MessageBox(NULL, msg, "Fatal Error", MB_ICONERROR);
+					return 0;
+				}
+			}
+
 #ifndef _USRDLL
-			Sys_CloseDEP();
+			//No longer need
+			//Sys_CloseDEP();
 			SetupExceptHandler3();
 #endif
-			NLoadBlobFile(pszEngineDLL, &g_blobfootprintClient, (void **)&engineAPI);
-			bUseBlobDLL = true;
+
+			hBlobEngine = LoadBlobFile(pszEngineDLL, BlobSectionBase, BlobSectionSize);
+
+			if (!hBlobEngine)
+			{
+				char msg[512];
+				wsprintf(msg, "Could not load engine : %s.", pszEngineDLL);
+				MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
+				ExitProcess(0);
+			}
+
+			if (hBlobEngine)
+			{
+				RunDllMainForBlob(hBlobEngine, DLL_PROCESS_ATTACH);
+				RunExportEntryForBlob(hBlobEngine, (void**)&engineAPI);
+			}
 		}
 		else
 		{
@@ -287,9 +321,9 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 			if (!hEngine)
 			{
-				static char msg[512];
+				char msg[512];
 				wsprintf(msg, "Could not load engine : %s.", pszEngineDLL);
-				MessageBox(NULL, msg, "Fatal Error", MB_ICONERROR);
+				MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
 				ExitProcess(0);
 			}
 
@@ -302,14 +336,14 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 		if (engineAPI)
 		{
-			MH_LoadEngine(bUseBlobDLL ? NULL : (HMODULE)hEngine, szGameName);
+			MH_LoadEngine((HMODULE)hEngine, hBlobEngine, szGameName);
 			iResult = engineAPI->Run(hInstance, Sys_GetLongPathName(), CommandLine()->GetCmdLine(), szNewCommandParams, Sys_GetFactoryThis(), Sys_GetFactory(hFileSystem));
 			MH_ExitGame(iResult);
 			MH_Shutdown();
 
-			if (bUseBlobDLL)
+			if (hBlobEngine)
 			{
-				FreeBlob(&g_blobfootprintClient);
+				FreeBlobModule(hBlobEngine);
 			}
 			else
 			{

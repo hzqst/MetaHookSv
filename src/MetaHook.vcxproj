@@ -93,6 +93,7 @@
       <AdditionalDependencies>$(CapstoneLibraryFiles);ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(CapstoneLibrariesDirectory)</AdditionalLibraryDirectories>
       <LargeAddressAware>true</LargeAddressAware>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <PostBuildEvent>
       <Command>$(ExePostBuildCommand)</Command>
@@ -126,6 +127,7 @@
       <LargeAddressAware>true</LargeAddressAware>
       <AdditionalLibraryDirectories>$(CapstoneLibrariesDirectory)</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(CapstoneLibraryFiles);ntdll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
     <PostBuildEvent>
       <Command>$(ExePostBuildCommand)</Command>
@@ -182,6 +184,7 @@
     <ClCompile Include="metahook.cpp" />
     <ClCompile Include="registry.cpp" />
     <ClCompile Include="sys_launcher.cpp" />
+    <ClCompile Include="Z.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Launcher.rc" />

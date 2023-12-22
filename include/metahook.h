@@ -297,12 +297,13 @@ typedef struct mh_enginesave_s
 {
 	cl_exportfuncs_t *pExportFuncs;
 	cl_enginefunc_t *pEngineFuncs;
-}
-mh_enginesave_t;
+}mh_enginesave_t;
+
+typedef void* BlobHandle_t;
 
 void MH_FreeAllHook(void);
 void MH_LoadPlugins(const char *gamedir);
-void MH_LoadEngine(HMODULE hModule, const char *szGameName);
+void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *szGameName);
 void MH_ExitGame(int iResult);
 void MH_Shutdown(void);
 

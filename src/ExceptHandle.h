@@ -1,3 +1,5 @@
+#pragma once
+
 struct EXCEPTION_REGISTRATION
 {
 	EXCEPTION_REGISTRATION *prev;

@@ -51,6 +51,9 @@
     <ClCompile Include="..\include\HLSDK\common\interface.cpp">
       <Filter>HLSDK</Filter>
     </ClCompile>
+    <ClCompile Include="Z.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Launcher.rc">
