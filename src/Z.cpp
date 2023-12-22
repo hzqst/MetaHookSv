@@ -1,3 +1,3 @@
-#pragma section(".blob", read,write)
+#pragma bss_seg(".blob")
 __declspec(allocate(".blob"))
-_declspec(dllexport) unsigned char g_pBlobBuffer[0x3000000];
+unsigned char g_pBlobBuffer[0x3000000];
