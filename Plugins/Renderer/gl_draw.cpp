@@ -394,17 +394,17 @@ void GL_UnloadTextures(void)
 void GL_UnloadTextureWithType(const char* identifier, GL_TEXTURETYPE textureType, bool notify_callback)
 {
 	char hashedIdentifier[64] = { 0 };
-	GL_GenerateHashedTextureIndentifier(identifier, textureType, hashedIdentifier, sizeof(hashedIdentifier) - 1);
+	GL_GenerateHashedTextureIndentifier(identifier, textureType, hashedIdentifier, sizeof(hashedIdentifier));
 
-	GL_UnloadTextureByIdentifier(identifier, notify_callback);
+	GL_UnloadTextureByIdentifier(hashedIdentifier, notify_callback);
 }
 
 void GL_UnloadTextureWithType(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, bool notify_callback)
 {
 	char hashedIdentifier[64] = { 0 };
-	GL_GenerateHashedTextureIndentifier2(identifier, textureType, width, height, hashedIdentifier, sizeof(hashedIdentifier) - 1);
+	GL_GenerateHashedTextureIndentifier2(identifier, textureType, width, height, hashedIdentifier, sizeof(hashedIdentifier));
 
-	GL_UnloadTextureByIdentifier(identifier, notify_callback);
+	GL_UnloadTextureByIdentifier(hashedIdentifier, notify_callback);
 }
 
 void GL_UnloadTextureByTextureId(int gltexturenum, bool notify_callback)
@@ -575,7 +575,7 @@ int GL_FindTextureByHashedIdentifier(const char *hashedIdentifier, GL_TEXTURETYP
 int GL_FindTexture(const char* identifier, GL_TEXTURETYPE textureType, int* width, int* height)
 {
 	char hashedIdentifier[64] = { 0 };
-	GL_GenerateHashedTextureIndentifier(identifier, textureType, hashedIdentifier, sizeof(hashedIdentifier) - 1);
+	GL_GenerateHashedTextureIndentifier(identifier, textureType, hashedIdentifier, sizeof(hashedIdentifier));
 
 
 	return GL_FindTextureByHashedIdentifier(hashedIdentifier, textureType, width, height);
@@ -686,7 +686,7 @@ int GL_LoadTexture(const char* identifier, GL_TEXTURETYPE textureType, int width
 int GL_LoadTexture2(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, byte* data, qboolean mipmap, int iType, byte* pPal, int filter)
 {
 	char hashedIdentifier[64] = { 0 };
-	GL_GenerateHashedTextureIndentifier2(identifier, textureType, width, height, hashedIdentifier, sizeof(hashedIdentifier) - 1);
+	GL_GenerateHashedTextureIndentifier2(identifier, textureType, width, height, hashedIdentifier, sizeof(hashedIdentifier));
 
 	int gltexturenum = gPrivateFuncs.GL_LoadTexture2(hashedIdentifier, textureType, width, height, data, mipmap, iType, pPal, filter);
 
@@ -704,7 +704,7 @@ int GL_LoadTextureInternal(const char *identifier, GL_TEXTURETYPE textureType, i
 	}
 
 	char hashedIdentifier[64] = { 0 };
-	GL_GenerateHashedTextureIndentifier2(identifier, textureType, width, height, hashedIdentifier, sizeof(hashedIdentifier) - 1);
+	GL_GenerateHashedTextureIndentifier2(identifier, textureType, width, height, hashedIdentifier, sizeof(hashedIdentifier));
 
 	int gltexturenum = GL_AllocTexture(hashedIdentifier, textureType, width, height, mipmap);
 

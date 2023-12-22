@@ -3427,7 +3427,7 @@ void R_LoadDetailSkyTextures(const char* name)
 
 	for (int i = 0; i < 6; i++)
 	{
-		char fullpath[256];
+		char fullpath[260] = {0};
 		snprintf(fullpath, sizeof(fullpath), "gfx/env/%s%s.dds", name, suf[i]);
 
 		int width, height;
@@ -3487,14 +3487,14 @@ void R_BuildCubemap_Snapshot(cubemap_t *cubemap, int index)
 		g_pFileSystem->CreateDirHierarchy("gfx/cubemap");
 
 	char path[64];
-	snprintf(path, sizeof(path) - 1, "gfx/cubemap/%s", name);
+	snprintf(path, sizeof(path), "gfx/cubemap/%s", name);
 	path[sizeof(path) - 1] = 0;
 
 	if (!g_pFileSystem->IsDirectory(path))
 		g_pFileSystem->CreateDirHierarchy(path);
 
 	char filepath[1024];
-	snprintf(filepath, sizeof(filepath) - 1, "gfx/cubemap/%s/%s_%d.%s", name, cubemap->name.c_str(), index, cubemap->extension.c_str());
+	snprintf(filepath, sizeof(filepath), "gfx/cubemap/%s/%s_%d.%s", name, cubemap->name.c_str(), index, cubemap->extension.c_str());
 	filepath[sizeof(filepath) - 1] = 0;
 
 	byte *pBuf = (byte *)malloc(cubemap->size * cubemap->size * 3);
@@ -3617,11 +3617,8 @@ void R_LoadCubemap(cubemap_t *cubemap)
 
 	for (int i = 0; i < 6; ++i)
 	{
-		snprintf(filepath, sizeof(filepath) - 1, "gfx/cubemap/%s/%s_%d.%s", name, cubemap->name.c_str(), i, cubemap->extension.c_str());
-		filepath[sizeof(filepath) - 1] = 0;
-
-		snprintf(identifier, sizeof(identifier) - 1, "cubemap_%s", cubemap->name.c_str());
-		identifier[sizeof(identifier) - 1] = 0;
+		snprintf(filepath, sizeof(filepath), "gfx/cubemap/%s/%s_%d.%s", name, cubemap->name.c_str(), i, cubemap->extension.c_str());
+		snprintf(identifier, sizeof(identifier), "cubemap_%s", cubemap->name.c_str());
 
 		gl_loadtexture_cubemap = i + 1;
 
