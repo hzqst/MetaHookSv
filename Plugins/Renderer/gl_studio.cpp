@@ -5,15 +5,15 @@
 #include <sstream>
 #include <algorithm>
 
-std::vector<studio_vbo_t*> g_StudioVBOCache;
+static std::vector<studio_vbo_t*> g_StudioVBOCache;
 
-std::unordered_map<int, studio_vbo_material_t*> g_StudioVBOMaterialCache;
+static std::unordered_map<int, studio_vbo_material_t*> g_StudioVBOMaterialCache;
 
-std::unordered_map<int, studio_skin_cache_t *> g_StudioSkinCache;
+static std::unordered_map<int, studio_skin_cache_t *> g_StudioSkinCache;
 
-std::unordered_map<studio_bone_handle, studio_bone_cache*, studio_bone_hasher> g_StudioBoneCacheManager;
+static std::unordered_map<studio_bone_handle, studio_bone_cache*, studio_bone_hasher> g_StudioBoneCacheManager;
 
-std::unordered_map<program_state_t, studio_program_t> g_StudioProgramTable;
+static std::unordered_map<program_state_t, studio_program_t> g_StudioProgramTable;
 
 static studio_bone_cache g_StudioBoneCaches[MAX_STUDIO_BONE_CACHES];
 
