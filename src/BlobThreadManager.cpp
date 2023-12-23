@@ -181,6 +181,7 @@ BOOL WINAPI BlobCloseHandle(HANDLE hObject)
 	BlobEnterCritSection();
 
 	bool bFoundAlive = BlobFindAndRemoveAliveThread(hObject);
+
 	bool bAdded = false;
 
 	if (bFoundAlive)
@@ -294,6 +295,14 @@ void BlobWaitForAliveThreadsToShutdown(void)
 		WaitForMultipleObjects(numThreads, hThreads, TRUE, INFINITE);
 
 	memset(g_hBlobAliveThread, 0, sizeof(g_hBlobAliveThread));
+
+	for (DWORD i = 0; i < numThreads; ++i)
+	{
+		if (hThreads[i])
+		{
+			CloseHandle(hThreads[i]);
+		}
+	}
 }
 
 void BlobWaitForClosedThreadsToShutdown(void)

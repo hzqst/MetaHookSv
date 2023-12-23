@@ -344,6 +344,7 @@ extern  MapConVar* r_studio_shade_specularpow;
 void R_StudioBoneCaches_StartFrame();
 studio_vbo_t *R_PrepareStudioVBO(studiohdr_t *studiohdr);
 void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, studio_vbo_t *VBOData);
+void R_StudioClearVBOCache(void);
 void R_StudioReloadVBOCache(void);
 void R_StudioFlushAllSkins();
 void R_ShutdownStudio(void);

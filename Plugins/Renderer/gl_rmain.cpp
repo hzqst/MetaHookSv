@@ -2314,6 +2314,7 @@ void R_NewMap(void)
 	R_NewMapLight();
 
 	R_StudioFlushAllSkins();
+	R_StudioClearVBOCache();
 	R_StudioReloadVBOCache();
 
 	//This is for GoldSrc

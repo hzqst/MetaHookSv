@@ -1908,8 +1908,13 @@ hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFu
 
 	auto pThunk = (IMAGE_THUNK_DATA *)((ULONG_PTR)hModule + pImport->FirstThunk);
 
-	while (pThunk->u1.Function != dwFuncAddr)
+	while (pThunk->u1.Function != dwFuncAddr && pThunk->u1.Function)
+	{
 		pThunk++;
+	}
+
+	if(!pThunk->u1.Function)
+		return NULL;
 
 	tagIATDATA *info = new tagIATDATA;
 	info->pAPIInfoAddr = &pThunk->u1.Function;

@@ -125,7 +125,7 @@ bool R_StudioHasHairShadow()
 	return r_draw_hashair && r_draw_hasface && r_studio_hair_shadow->value > 0 && !r_draw_shadowcaster;
 }
 
-void R_StudioBoneCaches_StartFrame()
+void R_StudioClearAllBoneCaches()
 {
 	for (int i = 0; i < MAX_STUDIO_BONE_CACHES - 1; i++)
 		g_StudioBoneCaches[i].m_next = &g_StudioBoneCaches[i + 1];
@@ -135,6 +135,11 @@ void R_StudioBoneCaches_StartFrame()
 	g_pStudioBoneFreeCaches = &g_StudioBoneCaches[0];
 
 	g_StudioBoneCacheManager.clear();
+}
+
+void R_StudioBoneCaches_StartFrame()
+{
+	R_StudioClearAllBoneCaches();
 }
 
 studio_bone_cache* R_StudioBoneCacheAlloc()
@@ -397,7 +402,7 @@ studio_vbo_t* R_PrepareStudioVBO(studiohdr_t* studiohdr)
 	return VBOData;
 }
 
-void R_StudioReloadVBOCache(void)
+void R_StudioClearVBOCache(void)
 {
 	for (size_t i = 0; i < g_StudioVBOCache.size(); ++i)
 	{
@@ -431,7 +436,10 @@ void R_StudioReloadVBOCache(void)
 			g_StudioVBOCache[i] = NULL;
 		}
 	}
+}
 
+void R_StudioReloadVBOCache(void)
+{
 	//Reload VBOCache for all existing models
 	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
@@ -989,7 +997,9 @@ void R_ShutdownStudio(void)
 {
 	g_StudioProgramTable.clear();
 
-	R_StudioBoneCaches_StartFrame();
+	R_StudioClearAllBoneCaches();
+	R_StudioFlushAllSkins();
+	R_StudioClearVBOCache();
 }
 
 void R_InitStudio(void)

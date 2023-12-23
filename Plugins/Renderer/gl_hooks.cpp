@@ -5901,7 +5901,18 @@ void R_FillAddress(void)
 			{
 				cache_head = (decltype(cache_head))pinst->detail->x86.operands[1].imm;
 			}
-
+			else if (!cache_head &&
+				pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				cache_head = (decltype(cache_head))pinst->detail->x86.operands[1].imm;
+			}
 			if (cache_head)
 				return TRUE;
 
@@ -5923,6 +5934,10 @@ void R_FillAddress(void)
 		{
 			int gfCustomBuild_instCount;
 			int push_0F_instCount;
+
+			PVOID gfCustomBuild_candidate;
+			int gfCustomBuild_candidate_reg;
+			int gfCustomBuild_candidate_instCount;
 		}Draw_MiptexTexture_ctx;
 
 		Draw_MiptexTexture_ctx ctx = { 0 };
@@ -5943,6 +5958,33 @@ void R_FillAddress(void)
 				pinst->detail->x86.operands[1].imm == 0 )
 			{
 				gfCustomBuild = (decltype(gfCustomBuild))pinst->detail->x86.operands[0].mem.disp;
+
+				ctx->gfCustomBuild_instCount = instCount;
+			}
+
+			if (!gfCustomBuild &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				ctx->gfCustomBuild_candidate = (decltype(ctx->gfCustomBuild_candidate))pinst->detail->x86.operands[1].mem.disp;
+				ctx->gfCustomBuild_candidate_reg = pinst->detail->x86.operands[0].reg;
+				ctx->gfCustomBuild_candidate_instCount = instCount;
+			}
+
+			if (!gfCustomBuild &&
+				instCount == ctx->gfCustomBuild_candidate_instCount + 1 &&
+				pinst->id == X86_INS_TEST &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == ctx->gfCustomBuild_candidate_reg)
+			{
+				gfCustomBuild = (decltype(gfCustomBuild))ctx->gfCustomBuild_candidate;
 				ctx->gfCustomBuild_instCount = instCount;
 			}
 
