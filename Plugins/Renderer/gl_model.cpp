@@ -81,7 +81,7 @@ void Mod_UnloadSpriteTextures(model_t* mod)
 	for (int i = 0; i < pSprite->numframes; i++)
 	{
 		char name[260] = {0};
-		snprintf(name, sizeof(name) - 1, "%s_%i", mod->name, i);
+		snprintf(name, sizeof(name), "%s_%i", mod->name, i);
 
 		GL_UnloadTextureWithType(name, GLT_SPRITE, true);
 		GL_UnloadTextureWithType(name, GLT_HUDSPRITE, true);

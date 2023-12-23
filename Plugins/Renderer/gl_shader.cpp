@@ -57,9 +57,8 @@ GLuint R_CompileShaderObject(int type, const char *code, const char *filename)
 		FILESYSTEM_ANY_CREATEDIR("logs/renderer");
 		FILESYSTEM_ANY_CREATEDIR("logs/renderer/shader");
 		
-		char filepath[256];
-		snprintf(filepath, 255, "logs\\%s", filename);
-		filepath[255] = 0;
+		char filepath[256] = {0};
+		snprintf(filepath, sizeof(filepath), "logs\\%s", filename);
 
 		//gEngfuncs.Con_DPrintf("writing %s...", filepath);
 

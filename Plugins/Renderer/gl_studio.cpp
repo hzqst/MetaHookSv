@@ -1117,8 +1117,6 @@ void R_StudioSetupVBOMaterial(const studio_vbo_t* VBOData, const studio_vbo_mate
 	}
 }
 
-#if 1
-
 size_t safe_strlen(const char* str, size_t maxChars)
 {
 	size_t		count;
@@ -1253,17 +1251,17 @@ byte* R_StudioReloadSkin(model_t* pModel, int index, skin_t* pskin)
 
 		size = ptexture->height * ptexture->width;
 
-		if ((byte*)pbase + ptexture->index < (byte*)studiohdr) {
+		if (pbase + ptexture->index < pbase) {
 			gEngfuncs.COM_FreeFile(pbase);
 			return NULL;
 		}
 
-		if ((byte*)pbase + ptexture->index + size > (byte*)studiohdr + fileLength) {
+		if (pbase + ptexture->index + size > pbase + fileLength) {
 			gEngfuncs.COM_FreeFile(pbase);
 			return NULL;
 		}
 
-		Cache_Alloc(pCache, size + 768 + 8, pskin->name);
+		Cache_Alloc(pCache, size + 768 + offsetof(model_texture_cache_t, data), pskin->name);
 
 		pData = (model_texture_cache_t*)pCache->data;
 		pData->width = ptexture->width;
@@ -1288,80 +1286,68 @@ void R_StudioFlushSkins(int keynum)
 	}
 }
 
-void PaletteHueReplace(byte* palette, int newHue, int Start, int end)
-{
-	int i;
-	float r, b, g;
-	float maxcol, mincol;
-	float hue, val, sat;
+void PaletteHueReplace(byte* palette, int newHue, int start, int end) {
+	// Convert the new hue value to a range used in the algorithm
+	double targetHue = static_cast<double>(newHue) * 1.411764705882353;
+	double colorScale = 0.0039215689; // This is 1/255 to scale color values
 
-	hue = (float)(newHue * (360.0 / 255));
+	if (start > end) {
+		return; // No range to process
+	}
 
-	for (i = Start; i <= end; i++)
-	{
-		b = palette[i + 0];
-		g = palette[i + 1];
-		r = palette[i + 2];
+	// Iterate over the palette entries from start to end
+	for (int i = start; i <= end; ++i) {
+		byte* color = &palette[i * 3]; // Pointer to the current color (RGB)
 
-		maxcol = max(max(r, g), b) / 255.0f;
-		mincol = min(min(r, g), b) / 255.0f;
+		// Extract the RGB components and convert to the range [0, 1]
+		double red = color[0] * colorScale;
+		double green = color[1] * colorScale;
+		double blue = color[2] * colorScale;
 
-		val = maxcol;
-		sat = (maxcol - mincol) / maxcol;
+		// Find the maximum and minimum RGB components manually
+		double maxColor = red;
+		if (green > maxColor) maxColor = green;
+		if (blue > maxColor) maxColor = blue;
 
-		mincol = val * (1.0f - sat);
+		double minColor = red;
+		if (green < minColor) minColor = green;
+		if (blue < minColor) minColor = blue;
 
-		if (hue <= 120)
-		{
-			b = mincol;
-			if (hue < 60)
-			{
-				r = val;
-				g = mincol + hue * (val - mincol) / (120 - hue);
-			}
-			else
-			{
-				g = val;
-				r = mincol + (120 - hue) * (val - mincol) / hue;
-			}
-		}
-		else if (hue <= 240)
-		{
-			r = mincol;
-			if (hue < 180)
-			{
-				g = val;
-				b = mincol + (hue - 120) * (val - mincol) / (240 - hue);
-			}
-			else
-			{
-				b = val;
-				g = mincol + (240 - hue) * (val - mincol) / (hue - 120);
-			}
-		}
-		else
-		{
-			g = mincol;
-			if (hue < 300)
-			{
-				b = val;
-				r = mincol + (hue - 240) * (val - mincol) / (360 - hue);
-			}
-			else
-			{
-				r = val;
-				b = mincol + (360 - hue) * (val - mincol) / (hue - 240);
-			}
+		// Calculate the chroma (difference between max and min color components)
+		double chroma = maxColor - minColor;
+
+		// If chroma is 0, the color is grayscale, and hue replacement is not needed
+		if (chroma == 0) {
+			continue;
 		}
 
-		palette[i + 0] = b * 255;
-		palette[i + 1] = g * 255;
-		palette[i + 2] = r * 255;
-		palette += 3;
+		// Calculate the intermediate value used for creating the new color
+		double intermediateValue = (1.0 - chroma / maxColor) * maxColor;
+
+		// Calculate the new RGB components based on the target hue
+		double newRed, newGreen, newBlue;
+		if (targetHue < 120.0) {
+			newRed = intermediateValue + chroma * (120.0 - targetHue) / 120.0;
+			newGreen = intermediateValue + chroma * targetHue / 120.0;
+			newBlue = intermediateValue;
+		}
+		else if (targetHue < 240.0) {
+			newRed = intermediateValue;
+			newGreen = intermediateValue + chroma * (240.0 - targetHue) / 120.0;
+			newBlue = intermediateValue + chroma * (targetHue - 120.0) / 120.0;
+		}
+		else {
+			newRed = intermediateValue + chroma * (targetHue - 240.0) / 120.0;
+			newGreen = intermediateValue;
+			newBlue = intermediateValue + chroma * (360.0 - targetHue) / 120.0;
+		}
+
+		// Assign the new RGB components to the palette, converting back to [0, 255] range
+		color[0] = static_cast<byte>(newRed / colorScale + 0.5); // Adding 0.5 for rounding
+		color[1] = static_cast<byte>(newGreen / colorScale + 0.5);
+		color[2] = static_cast<byte>(newBlue / colorScale + 0.5);
 	}
 }
-
-#endif
 
 void R_StudioSetupSkinEx(const studio_vbo_t* VBOData, studiohdr_t* ptexturehdr, int index, float* width, float* height, program_state_t *StudioProgramState)
 {
@@ -1395,7 +1381,6 @@ void R_StudioSetupSkinEx(const studio_vbo_t* VBOData, studiohdr_t* ptexturehdr, 
 				{
 					char fullname[1024] = {0};
 					snprintf(fullname, sizeof(fullname), "%s_%s_%d", ptexturehdr->name, ptexture[index].name, (*currententity)->index);
-					fullname[MAX_PATH - 1] = 0;
 
 					byte* orig_palette = pData + (ptexture[index].height * ptexture[index].width);
 
@@ -1413,7 +1398,7 @@ void R_StudioSetupSkinEx(const studio_vbo_t* VBOData, studiohdr_t* ptexturehdr, 
 
 					GL_UnloadTextureWithType(fullname, GLT_STUDIO, true);
 
-					pskin->gl_index = GL_LoadTexture(fullname, GLT_STUDIO, ptexture[index].width, ptexture[index].height, pData, false, (ptexture[index].flags & STUDIO_NF_MASKED) ? TEX_TYPE_ALPHA : TEX_TYPE_NONE, tmp_palette);
+					pskin->gl_index = GL_LoadTexture(fullname, GLT_STUDIO, pskin->width, pskin->height, pData, false, (ptexture[index].flags & STUDIO_NF_MASKED) ? TEX_TYPE_ALPHA : TEX_TYPE_NONE, tmp_palette);
 				}
 			}
 
