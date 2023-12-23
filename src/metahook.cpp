@@ -18,7 +18,7 @@ extern "C"
 #define MH_HOOK_VFTABLE 2
 #define MH_HOOK_IAT 3
 
-struct hook_s
+typedef struct hook_s
 {
 	int iType;
 	qboolean bCommitted;
@@ -33,7 +33,7 @@ struct hook_s
 	const char *pszFuncName;
 	struct hook_s *pNext;
 	void *pInfo;
-};
+}hook_t;
 
 typedef struct cvar_callback_entry_s
 {
@@ -135,7 +135,7 @@ typedef struct plugin_s
 	struct plugin_s *next;
 }plugin_t;
 
-plugin_t *g_pPluginBase;
+plugin_t *g_pPluginBase = NULL;
 
 extern IFileSystem_HL25 *g_pFileSystem_HL25;
 extern IFileSystem* g_pFileSystem;
@@ -2319,13 +2319,13 @@ CreateInterfaceFn MH_GetEngineFactory(void)
 
 	if (g_hBlobEngine)
 	{
-		DWORD factoryAddr = 0;
+		ULONG_PTR factoryAddr = 0;
 
 		if (!factoryAddr)
 		{
 			BlobHeader_t* pHeader = GetBlobHeader(g_hBlobEngine);
-			DWORD base = pHeader->m_dwExportPoint + 0x8;
-			factoryAddr = ((DWORD(*)(void))(base + *(DWORD*)base + 0x4))();
+			ULONG_PTR base = pHeader->m_dwExportPoint + 0x8;
+			factoryAddr = ((ULONG_PTR(*)(void))(base + *(ULONG_PTR*)base + 0x4))();
 		}
 
 		return (CreateInterfaceFn)factoryAddr;

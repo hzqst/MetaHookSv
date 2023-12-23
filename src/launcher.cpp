@@ -196,6 +196,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	char szFileName[256];
 	Sys_GetExecutableName(szFileName, sizeof(szFileName));
+
 	char *szExeName = strrchr(szFileName, '\\') + 1;
 
 	if (!stricmp(szExeName, "svencoop.exe") && CommandLine()->CheckParm("-game") == NULL)
@@ -210,7 +211,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		CommandLine()->AppendParm("-game", szExeName);
 	}
 
-	static char szGameName[32] = {0};
+	char szGameName[32] = {0};
 	const char *pszGameName = NULL;
 	const char *szGameStr = CommandLine()->CheckParm("-game", &pszGameName);
 
@@ -247,6 +248,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			registry->WriteInt("ScreenBPP", 32);
 		}
 	}
+
+	InitBlobThreadManager();
 
 	while (1)
 	{
@@ -287,7 +290,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				if (!VirtualProtect(BlobSectionBase, BlobSectionSize, PAGE_EXECUTE_READWRITE, &dwOldProtect))
 				{
 					char msg[512];
-					wsprintf(msg, "Failed to make \".blob\" section executable to load blob engine : %s.", pszEngineDLL);
+					wsprintf(msg, "Failed to make \".blob\" section executable for blob engine : %s.", pszEngineDLL);
 					MessageBox(NULL, msg, "Fatal Error", MB_ICONERROR);
 					return 0;
 				}
@@ -365,6 +368,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 			if (hBlobEngine)
 			{
+				BlobWaitForAliveThreadsToShutdown();
+				BlobWaitForClosedThreadsToShutdown();
 				FreeBlobModule(hBlobEngine);
 			}
 			else
@@ -425,6 +430,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		if (!bContinue)
 			break;
 	}
+
+	ShutdownBlobThreadManager();
 
 	registry->Shutdown();
 

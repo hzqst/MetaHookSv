@@ -3,8 +3,8 @@
 #include <vector>
 
 #define BLOB_ALGORITHM 0x12345678
-#define BLOB_ENGINE_BASE 0x1D00000
-#define BLOB_ENGINE_SIZE_ESTIMATE 0x1230000
+#define BLOB_LOAD_BASE 0x1900000
+#define BLOB_LOAD_END 0x2400000
 
 typedef struct BlobInfo_s
 {
@@ -33,9 +33,10 @@ typedef struct BlobSection_s
 	BOOL m_bIsSpecial;
 }BlobSection_t;
 
-class CBlobModule
+#define MAX_BLOB_IMPORT_LOADLIBRARY 64
+
+typedef struct
 {
-public:
 	BlobHeader_t BlobHeader;
 
 	ULONG ImageSize;
@@ -46,9 +47,15 @@ public:
 	PVOID DataBase;
 	ULONG DataSize;
 
-	std::vector<HMODULE> LoadLibraryRefs;
-};
+	int NumLoadLibraryRefs;
+	HMODULE LoadLibraryRefs[MAX_BLOB_IMPORT_LOADLIBRARY];
+}BlobModule_t;
 
+void BlobRunFrame(void);
+void InitBlobThreadManager(void);
+void ShutdownBlobThreadManager(void);
+void BlobWaitForAliveThreadsToShutdown(void);
+void BlobWaitForClosedThreadsToShutdown(void);
 BOOL FIsBlob(const char* szFileName);
 BlobHandle_t LoadBlobFile(const char* szFileName, PVOID BlobSectionBase, ULONG BlobSectionSize);
 BlobHeader_t *GetBlobHeader(BlobHandle_t hBlob);
