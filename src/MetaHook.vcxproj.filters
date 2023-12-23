@@ -54,6 +54,9 @@
     <ClCompile Include="Z.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="BlobThreadManager.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Launcher.rc">
@@ -77,6 +80,9 @@
       <Filter>Source</Filter>
     </ClInclude>
     <ClInclude Include="sys.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="BlobThreadManager.h">
       <Filter>Source</Filter>
     </ClInclude>
   </ItemGroup>

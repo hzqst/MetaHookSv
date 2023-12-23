@@ -1,7 +1,8 @@
 #include "metahook.h"
 #include <IEngine.h>
 #include "LoadBlob.h"
-#include "ExceptHandle.h"
+//#include "ExceptHandle.h"
+#include "BlobThreadManager.h"
 #include "sys.h"
 #include <tlhelp32.h> 
 
@@ -260,7 +261,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 		CScopedExitFileSystem ScopedExitFileSystem(hFileSystem);
 
-		const char *pszEngineDLL;
+		const char *pszEngineDLL = NULL;
 		int iResult = ENGINE_RESULT_NONE;
 
 		SetEngineDLL(szExeName, &pszEngineDLL);
@@ -296,12 +297,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				}
 			}
 
-#ifndef _USRDLL
-			//No longer need
-			//Sys_CloseDEP();
-			//SetupExceptHandler3();
-#endif
-
 			hBlobEngine = LoadBlobFile(pszEngineDLL, BlobSectionBase, BlobSectionSize);
 
 			if (!hBlobEngine)
@@ -320,7 +315,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				if (!engineAPI)
 				{
 					char msg[512];
-					wsprintf(msg, "Could not get launcher interface from engine : %s.", pszEngineDLL);
+					wsprintf(msg, "Could not get engineAPI from engine : %s.", pszEngineDLL);
 					MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
 					ExitProcess(0);
 				}
@@ -353,7 +348,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			if (!engineAPI)
 			{
 				char msg[512];
-				wsprintf(msg, "Could not get launcher interface from engine : %s.", pszEngineDLL);
+				wsprintf(msg, "Could not get engineAPI from engine : %s.", pszEngineDLL);
 				MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
 				ExitProcess(0);
 			}
@@ -366,10 +361,11 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			MH_ExitGame(iResult);
 			MH_Shutdown();
 
+			BlobWaitForAliveThreadsToShutdown();
+			BlobWaitForClosedThreadsToShutdown();
+
 			if (hBlobEngine)
 			{
-				BlobWaitForAliveThreadsToShutdown();
-				BlobWaitForClosedThreadsToShutdown();
 				FreeBlobModule(hBlobEngine);
 			}
 			else

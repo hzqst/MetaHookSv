@@ -184,6 +184,7 @@
     <ClCompile Include="metahook.cpp" />
     <ClCompile Include="registry.cpp" />
     <ClCompile Include="sys_launcher.cpp" />
+    <ClCompile Include="BlobThreadManager.cpp" />
     <ClCompile Include="Z.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -193,6 +194,7 @@
     <ClInclude Include="..\include\builddefs.h" />
     <ClInclude Include="..\include\cdll_export.h" />
     <ClInclude Include="..\include\metahook.h" />
+    <ClInclude Include="BlobThreadManager.h" />
     <ClInclude Include="ExceptHandle.h" />
     <ClInclude Include="LoadBlob.h" />
     <ClInclude Include="sys.h" />

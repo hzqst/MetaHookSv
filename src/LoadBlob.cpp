@@ -3,6 +3,7 @@
 #include "IFileSystem.h"
 #include "metahook.h"
 #include "LoadBlob.h"
+#include "BlobThreadManager.h"
 
 PVOID MH_GetSectionByName(PVOID ImageBase, const char* SectionName, ULONG* SectionSize);
 void* MH_SearchPattern(void* pStartSearch, DWORD dwSearchLen, const char* pPattern, DWORD dwPatternLen);
@@ -25,146 +26,6 @@ extern IFileSystem *g_pFileSystem;
 #define FILESYSTEM_ANY_MOUNT(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->Mount(__VA_ARGS__) : g_pFileSystem->Mount(__VA_ARGS__))
 #define FILESYSTEM_ANY_UNMOUNT(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->Unmount(__VA_ARGS__) : g_pFileSystem->Unmount(__VA_ARGS__))
 
-static CRITICAL_SECTION g_BlobThreadManagerLock;
-static HANDLE g_hBlobAliveThread[MAXIMUM_WAIT_OBJECTS] = { 0 };
-static HANDLE g_hBlobClosedThread[MAXIMUM_WAIT_OBJECTS] = { 0 };
-
-HANDLE(WINAPI* g_pfnCreateThread)(
-	LPSECURITY_ATTRIBUTES   lpThreadAttributes,
-	SIZE_T                  dwStackSize,
-	LPTHREAD_START_ROUTINE  lpStartAddress,
-	LPVOID lpParameter,
-	DWORD                   dwCreationFlags,
-	LPDWORD                 lpThreadId
-	) = NULL;
-
-BOOL(WINAPI* g_pfnCloseHandle)(
-	HANDLE hObject
-	) = NULL;
-
-HANDLE WINAPI BlobCreateThread(
-	LPSECURITY_ATTRIBUTES   lpThreadAttributes,
-	SIZE_T                  dwStackSize,
-	LPTHREAD_START_ROUTINE  lpStartAddress,
-	LPVOID					lpParameter,
-	DWORD                   dwCreationFlags,
-	LPDWORD                 lpThreadId
-)
-{
-	DWORD originalCreationFlags = dwCreationFlags;
-
-	auto hThreadHandle = g_pfnCreateThread(lpThreadAttributes, dwStackSize, lpStartAddress, lpParameter, dwCreationFlags, lpThreadId);
-
-	if (hThreadHandle)
-	{
-		bool bInserted = false;
-
-		EnterCriticalSection(&g_BlobThreadManagerLock);
-
-		for (DWORD i = 0; i < _ARRAYSIZE(g_hBlobAliveThread); ++i)
-		{
-			if (g_hBlobAliveThread[i] == 0)
-			{
-				g_hBlobAliveThread[i] = hThreadHandle;
-				bInserted = true;
-				break;
-			}
-		}
-
-		LeaveCriticalSection(&g_BlobThreadManagerLock);
-
-		if (!bInserted)
-		{
-			MH_SysError("Failed to insert thread to blob thread manager!");
-		}
-	}
-
-	return hThreadHandle;
-}
-
-BOOL WINAPI BlobCloseHandle(
-	HANDLE hObject
-)
-{
-	bool bInserted = false;
-	bool bFoundAlive = false;
-
-	EnterCriticalSection(&g_BlobThreadManagerLock);
-
-	for (DWORD i = 0; i < _ARRAYSIZE(g_hBlobAliveThread); ++i)
-	{
-		if (g_hBlobAliveThread[i] == hObject)
-		{
-			g_hBlobAliveThread[i] = 0;
-			bFoundAlive = true;
-			break;
-		}
-	}
-
-	if (bFoundAlive)
-	{
-		for (DWORD i = 0; i < _ARRAYSIZE(g_hBlobClosedThread); ++i)
-		{
-			if (g_hBlobClosedThread[i] == 0)
-			{
-				g_hBlobClosedThread[i] = hObject;
-				bInserted = true;
-				break;
-			}
-		}
-	}
-
-	LeaveCriticalSection(&g_BlobThreadManagerLock);
-
-	if (bFoundAlive)
-	{
-		if(!bInserted)
-			MH_SysError("Failed to insert thread to blob thread manager!");
-
-		return TRUE;
-	}
-
-	return g_pfnCloseHandle(hObject);
-}
-
-#if 0
-void BlobRunFrame(void)
-{
-	HANDLE hThreads[MAXIMUM_WAIT_OBJECTS] = { 0 };
-	DWORD numThreads = 0;
-
-	EnterCriticalSection(&g_BlobThreadManagerLock);
-
-	for (DWORD i = 0; i < _ARRAYSIZE(g_hBlobAliveThread); ++i)
-	{
-		if (g_hBlobAliveThread[i] != 0)
-		{
-			hThreads[numThreads] = g_hBlobAliveThread[i];
-			numThreads++;
-		}
-	}
-
-	LeaveCriticalSection(&g_BlobThreadManagerLock);
-
-	auto ret = WaitForMultipleObjects(numThreads, hThreads, TRUE, 0);
-
-	if (ret >= WAIT_OBJECT_0 && ret < WAIT_OBJECT_0 + numThreads)
-	{
-		EnterCriticalSection(&g_BlobThreadManagerLock);
-
-		for (DWORD i = 0; i < _ARRAYSIZE(g_hBlobAliveThread); ++i)
-		{
-			if (g_hBlobAliveThread[i] == hThreads[ret - WAIT_OBJECT_0])
-			{
-				g_hBlobAliveThread[i] = 0;
-				break;
-			}
-		}
-
-		LeaveCriticalSection(&g_BlobThreadManagerLock);
-	}
-}
-#endif
 
 BlobHeader_t *GetBlobHeader(BlobHandle_t hBlob)
 {
@@ -400,12 +261,10 @@ BlobHandle_t LoadBlobFromBuffer(BYTE* pBuffer, DWORD dwBufferSize, PVOID BlobSec
 
 			if (!bIsLoadByOrdinal && !strcmp(pszProcName, "CreateThread"))
 			{
-				g_pfnCreateThread = (decltype(g_pfnCreateThread))GetProcAddress(hProcDll, pszProcName);
 				pThunk->u1.AddressOfData = (DWORD)BlobCreateThread;
 			}
 			else if (!bIsLoadByOrdinal && !strcmp(pszProcName, "CloseHandle"))
 			{
-				g_pfnCloseHandle = (decltype(g_pfnCloseHandle))GetProcAddress(hProcDll, pszProcName);
 				pThunk->u1.AddressOfData = (DWORD)BlobCloseHandle;
 			}
 			else
@@ -535,68 +394,4 @@ PVOID GetBlobLoaderSection(PVOID ImageBase, ULONG *BlobSectionSize)
 
 	*BlobSectionSize = SectionSize;
 	return SectionBase;
-}
-
-void InitBlobThreadManager(void)
-{
-	InitializeCriticalSection(&g_BlobThreadManagerLock);
-}
-
-void ShutdownBlobThreadManager(void)
-{
-	DeleteCriticalSection(&g_BlobThreadManagerLock);
-}
-
-void BlobWaitForAliveThreadsToShutdown(void)
-{
-	HANDLE hThreads[MAXIMUM_WAIT_OBJECTS] = { 0 };
-	DWORD numThreads = 0;
-
-	EnterCriticalSection(&g_BlobThreadManagerLock);
-
-	for (DWORD i = 0; i < _ARRAYSIZE(g_hBlobAliveThread); ++i)
-	{
-		if (g_hBlobAliveThread[i] != 0)
-		{
-			hThreads[numThreads] = g_hBlobAliveThread[i];
-			numThreads++;
-		}
-	}
-
-	LeaveCriticalSection(&g_BlobThreadManagerLock);
-
-	WaitForMultipleObjects(numThreads, hThreads, TRUE, INFINITE);
-
-	memset(g_hBlobAliveThread, 0, sizeof(g_hBlobAliveThread));
-}
-
-void BlobWaitForClosedThreadsToShutdown(void)
-{
-	HANDLE hThreads[MAXIMUM_WAIT_OBJECTS] = { 0 };
-	DWORD numThreads = 0;
-
-	EnterCriticalSection(&g_BlobThreadManagerLock);
-
-	for (DWORD i = 0; i < _ARRAYSIZE(g_hBlobClosedThread); ++i)
-	{
-		if (g_hBlobClosedThread[i] != 0)
-		{
-			hThreads[numThreads] = g_hBlobClosedThread[i];
-			numThreads++;
-		}
-	}
-
-	LeaveCriticalSection(&g_BlobThreadManagerLock);
-
-	WaitForMultipleObjects(numThreads, hThreads, TRUE, INFINITE);
-
-	memset(g_hBlobClosedThread, 0, sizeof(g_hBlobClosedThread));
-
-	for (DWORD i = 0; i < numThreads; ++i)
-	{
-		if (hThreads[i])
-		{
-			CloseHandle(hThreads[i]);
-		}
-	}
 }
