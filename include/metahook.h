@@ -58,9 +58,52 @@ typedef void (*DisasmSingleCallback)(void *inst, PUCHAR address, size_t instLen,
 typedef BOOL (*DisasmCallback)(void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context);
 typedef BOOL (*FindAddressCallback)(PUCHAR address);
 
+typedef struct blob_thread_manager_api_s
+{
+	void (*InitBlobThreadManager)(void);
+	void (*ShutdownBlobThreadManager)(void);
+	void (*EnterCritSection)(void);
+	void (*LeaveCritSection)(void);
+	bool (*FindAliveThread)(HANDLE hThread);
+	bool (*FindAndRemoveAliveThread)(HANDLE hThread);
+	bool (*AddAliveThread)(HANDLE hThread);
+	bool (*FindClosedThread)(HANDLE hThread);
+	bool (*AddClosedThread)(HANDLE hThread);
+	bool (*FindAndRemoveSignaledAliveThread)(DWORD* pIndex);
+	bool (*FindAndRemoveSignaledClosedThread)(DWORD* pIndex);
+
+	HANDLE(WINAPI** PointerToOriginalCreateThread)(
+		LPSECURITY_ATTRIBUTES   lpThreadAttributes,
+		SIZE_T                  dwStackSize,
+		LPTHREAD_START_ROUTINE  lpStartAddress,
+		LPVOID					lpParameter,
+		DWORD                   dwCreationFlags,
+		LPDWORD                 lpThreadId
+		);
+
+	BOOL(WINAPI** PointerToOriginalCloseHandle)(HANDLE hObject);
+
+	BOOL(WINAPI** PointerToOriginalTerminateThread)( HANDLE hThread, DWORD  dwExitCode );
+
+	HANDLE(WINAPI* BlobCreateThread)(
+		LPSECURITY_ATTRIBUTES   lpThreadAttributes,
+		SIZE_T                  dwStackSize,
+		LPTHREAD_START_ROUTINE  lpStartAddress,
+		LPVOID					lpParameter,
+		DWORD                   dwCreationFlags,
+		LPDWORD                 lpThreadId
+	);
+
+	BOOL (WINAPI* BlobCloseHandle)(HANDLE hObject);
+
+	BOOL (WINAPI* BlobTerminateThread)( HANDLE hThread, DWORD dwExitCode );
+
+}blob_thread_manager_api_t;
+
 typedef struct metahook_api_s
 {
 	BOOL (*UnHook)(hook_t *pHook);
+
 	hook_t *(*InlineHook)(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCall);
 	/*
 		Install JMP hook at begin of function,
@@ -283,15 +326,17 @@ typedef struct metahook_api_s
 	Basically the name
 	*/
 
-	bool(*RegisterCvarCallback)(const char* cvar_name, cvar_callback_t callback, cvar_callback_t *poldcallback);
+	bool(*RegisterCvarCallback)(const char* cvar_name, cvar_callback_t callback, cvar_callback_t *pOldCallback);
 	/*
-		Find existing cvar, and register a Cvar-Set callback for it, return original callback function pointer in the poldcallback if exists.
+		Find existing cvar, and register a Cvar-Set callback for it, return original callback function pointer in the pOldCallback if exists.
 		Register on existing callback will override the old one (the old one will be in poldcallback)
 
 		Important: Cvar-Set callback only get called when changing cvar value from console.
 	*/
-}
-metahook_api_t;
+
+	blob_thread_manager_api_t* BlobThreadManagerAPI;
+
+}metahook_api_t;
 
 typedef struct mh_enginesave_s
 {
@@ -317,8 +362,7 @@ typedef struct mh_interface_s
 	IFileSystem *FileSystem;
 	IRegistry *Registry;
 	IFileSystem_HL25* FileSystem_HL25;
-}
-mh_interface_t;
+}mh_interface_t;
 
 #include <IPlugins.h>
 

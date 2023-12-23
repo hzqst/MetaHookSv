@@ -263,6 +263,10 @@ BlobHandle_t LoadBlobFromBuffer(BYTE* pBuffer, DWORD dwBufferSize, PVOID BlobSec
 			{
 				pThunk->u1.AddressOfData = (DWORD)BlobCreateThread;
 			}
+			else if (!bIsLoadByOrdinal && !strcmp(pszProcName, "TerminateThread"))
+			{
+				pThunk->u1.AddressOfData = (DWORD)BlobTerminateThread;
+			}
 			else if (!bIsLoadByOrdinal && !strcmp(pszProcName, "CloseHandle"))
 			{
 				pThunk->u1.AddressOfData = (DWORD)BlobCloseHandle;

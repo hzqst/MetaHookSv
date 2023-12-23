@@ -1,5 +1,6 @@
 #include "metahook.h"
 #include "LoadBlob.h"
+#include "BlobThreadManager.h"
 #include <detours.h>
 #include "interface.h"
 #include <capstone.h>
@@ -1535,6 +1536,12 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 	}
 
 	MH_InlineHook(g_pfnClientDLL_Init, MH_ClientDLL_Init, (void **)&g_original_ClientDLL_Init);
+	
+	if (g_hEngineModule)
+	{
+		MH_IATHook(g_hEngineModule, "kernel32.dll", "CreateThread", BlobCreateThread, NULL);
+		MH_IATHook(g_hEngineModule, "kernel32.dll", "TerminateThread", BlobTerminateThread, NULL);
+	}
 
 	MH_LoadPlugins(szGameName);
 
@@ -1687,11 +1694,16 @@ void MH_Shutdown(void)
 
 hook_t *MH_NewHook(int iType)
 {
-	hook_t *h = new hook_t;
+	hook_t *h = new (std::nothrow) hook_t;
+	if (!h)
+		return NULL;
+
 	memset(h, 0, sizeof(hook_t));
 	h->iType = iType;
 	h->pNext = g_pHookBase;
+
 	g_pHookBase = h;
+
 	return h;
 }
 
@@ -1874,18 +1886,27 @@ hook_t *MH_VFTHook(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFunc
 
 hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, void *pNewFuncAddr, void **pOrginalCall)
 {
-	IMAGE_NT_HEADERS *pHeader = (IMAGE_NT_HEADERS *)((DWORD)hModule + ((IMAGE_DOS_HEADER *)hModule)->e_lfanew);
-	IMAGE_IMPORT_DESCRIPTOR *pImport = (IMAGE_IMPORT_DESCRIPTOR *)((DWORD)hModule + pHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+	auto pNtHeader = RtlImageNtHeader(hModule);//(IMAGE_NT_HEADERS *)((ULONG_PTR)hModule + ((IMAGE_DOS_HEADER *)hModule)->e_lfanew);
 
-	while (pImport->Name && stricmp((const char *)((DWORD)hModule + pImport->Name), pszModuleName))
+	if (!pNtHeader)
+		return NULL;
+
+	auto pImport = (IMAGE_IMPORT_DESCRIPTOR *)((ULONG_PTR)hModule + pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+
+	while (pImport->Name && stricmp((const char *)((ULONG_PTR)hModule + pImport->Name), pszModuleName))
 		pImport++;
 
-	ULONG_PTR dwFuncAddr = (ULONG_PTR)GetProcAddress(GetModuleHandle(pszModuleName), pszFuncName);
+	auto hProcModule = GetModuleHandle(pszModuleName);
+
+	if(!hProcModule)
+		return NULL;
+
+	ULONG_PTR dwFuncAddr = (ULONG_PTR)GetProcAddress(hProcModule, pszFuncName);
 
 	if (!dwFuncAddr)
 		return NULL;
 
-	IMAGE_THUNK_DATA *pThunk = (IMAGE_THUNK_DATA *)((DWORD)hModule + pImport->FirstThunk);
+	auto pThunk = (IMAGE_THUNK_DATA *)((ULONG_PTR)hModule + pImport->FirstThunk);
 
 	while (pThunk->u1.Function != dwFuncAddr)
 		pThunk++;
@@ -1901,10 +1922,12 @@ hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFu
 	h->pszModuleName = pszModuleName;
 	h->pszFuncName = pszFuncName;
 
-	*pOrginalCall = h->pOldFuncAddr;
+	if(pOrginalCall)
+		*pOrginalCall = h->pOldFuncAddr;
+
 	h->bCommitted = true;
 
-	MH_WriteMemory(info->pAPIInfoAddr, (BYTE *)&pNewFuncAddr, sizeof(DWORD));
+	MH_WriteMemory(info->pAPIInfoAddr, (BYTE *)&pNewFuncAddr, sizeof(ULONG_PTR));
 	return h;
 }
 
@@ -2030,24 +2053,24 @@ void *MH_ReverseSearchPattern(void *pStartSearch, DWORD dwSearchLen, const char 
 
 void MH_WriteDWORD(void *pAddress, DWORD dwValue)
 {
-	DWORD dwProtect;
+	DWORD dwOldProtect = 0;
 
-	if (VirtualProtect((void *)pAddress, 4, PAGE_EXECUTE_READWRITE, &dwProtect))
+	if (VirtualProtect((void *)pAddress, 4, PAGE_EXECUTE_READWRITE, &dwOldProtect))
 	{
 		*(DWORD *)pAddress = dwValue;
-		VirtualProtect((void *)pAddress, 4, dwProtect, &dwProtect);
+		VirtualProtect((void *)pAddress, 4, dwOldProtect, &dwOldProtect);
 	}
 }
 
 DWORD MH_ReadDWORD(void *pAddress)
 {
-	DWORD dwProtect;
+	DWORD dwOldProtect = 0;
 	DWORD dwValue = 0;
 
-	if (VirtualProtect((void *)pAddress, 4, PAGE_EXECUTE_READWRITE, &dwProtect))
+	if (VirtualProtect((void *)pAddress, 4, PAGE_EXECUTE_READWRITE, &dwOldProtect))
 	{
 		dwValue = *(DWORD *)pAddress;
-		VirtualProtect((void *)pAddress, 4, dwProtect, &dwProtect);
+		VirtualProtect((void *)pAddress, 4, dwOldProtect, &dwOldProtect);
 	}
 
 	return dwValue;
@@ -2055,24 +2078,24 @@ DWORD MH_ReadDWORD(void *pAddress)
 
 void MH_WriteBYTE(void *pAddress, BYTE ucValue)
 {
-	DWORD dwProtect;
+	DWORD dwOldProtect = 0;
 
-	if (VirtualProtect((void *)pAddress, 1, PAGE_EXECUTE_READWRITE, &dwProtect))
+	if (VirtualProtect((void *)pAddress, 1, PAGE_EXECUTE_READWRITE, &dwOldProtect))
 	{
 		*(BYTE *)pAddress = ucValue;
-		VirtualProtect((void *)pAddress, 1, dwProtect, &dwProtect);
+		VirtualProtect((void *)pAddress, 1, dwOldProtect, &dwOldProtect);
 	}
 }
 
 BYTE MH_ReadBYTE(void *pAddress)
 {
-	DWORD dwProtect;
+	DWORD dwOldProtect = 0;
 	BYTE ucValue = 0;
 
-	if (VirtualProtect((void *)pAddress, 1, PAGE_EXECUTE_READWRITE, &dwProtect))
+	if (VirtualProtect((void *)pAddress, 1, PAGE_EXECUTE_READWRITE, &dwOldProtect))
 	{
 		ucValue = *(BYTE *)pAddress;
-		VirtualProtect((void *)pAddress, 1, dwProtect, &dwProtect);
+		VirtualProtect((void *)pAddress, 1, dwOldProtect, &dwOldProtect);
 	}
 
 	return ucValue;
@@ -2080,25 +2103,25 @@ BYTE MH_ReadBYTE(void *pAddress)
 
 void MH_WriteNOP(void *pAddress, DWORD dwCount)
 {
-	static DWORD dwProtect;
+	DWORD dwOldProtect = 0;
 
-	if (VirtualProtect(pAddress, dwCount, PAGE_EXECUTE_READWRITE, &dwProtect))
+	if (VirtualProtect(pAddress, dwCount, PAGE_EXECUTE_READWRITE, &dwOldProtect))
 	{
 		for (DWORD i = 0; i < dwCount; i++)
 			*(BYTE *)((DWORD)pAddress + i) = 0x90;
 
-		VirtualProtect(pAddress, dwCount, dwProtect, &dwProtect);
+		VirtualProtect(pAddress, dwCount, dwOldProtect, &dwOldProtect);
 	}
 }
 
 DWORD MH_WriteMemory(void *pAddress, void *pData, DWORD dwDataSize)
 {
-	static DWORD dwProtect;
+	DWORD dwOldProtect = 0;
 
-	if (VirtualProtect(pAddress, dwDataSize, PAGE_EXECUTE_READWRITE, &dwProtect))
+	if (VirtualProtect(pAddress, dwDataSize, PAGE_EXECUTE_READWRITE, &dwOldProtect))
 	{
 		memcpy(pAddress, pData, dwDataSize);
-		VirtualProtect(pAddress, dwDataSize, dwProtect, &dwProtect);
+		VirtualProtect(pAddress, dwDataSize, dwOldProtect, &dwOldProtect);
 	}
 
 	return dwDataSize;
@@ -2106,12 +2129,12 @@ DWORD MH_WriteMemory(void *pAddress, void *pData, DWORD dwDataSize)
 
 DWORD MH_ReadMemory(void *pAddress, void *pData, DWORD dwDataSize)
 {
-	static DWORD dwProtect;
+	DWORD dwOldProtect = 0;
 
-	if (VirtualProtect(pAddress, dwDataSize, PAGE_EXECUTE_READWRITE, &dwProtect))
+	if (VirtualProtect(pAddress, dwDataSize, PAGE_EXECUTE_READWRITE, &dwOldProtect))
 	{
 		memcpy(pData, pAddress, dwDataSize);
-		VirtualProtect(pAddress, dwDataSize, dwProtect, &dwProtect);
+		VirtualProtect(pAddress, dwDataSize, dwOldProtect, &dwOldProtect);
 	}
 
 	return dwDataSize;
@@ -2882,6 +2905,8 @@ BOOL MH_GetPluginInfo(const char *name, mh_plugininfo_t *info)
 	return FALSE;
 }
 
+extern blob_thread_manager_api_t g_BlobThreadManagerAPI;
+
 metahook_api_t gMetaHookAPI =
 {
 	MH_UnHook,
@@ -2926,4 +2951,5 @@ metahook_api_t gMetaHookAPI =
 	MH_ReverseSearchFunctionBeginEx,
 	MH_IsDebuggerPresent,
 	MH_RegisterCvarCallback,
+	&g_BlobThreadManagerAPI,
 };
