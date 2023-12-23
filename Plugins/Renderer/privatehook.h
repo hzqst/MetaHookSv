@@ -17,6 +17,10 @@ typedef struct
 	void (*R_RenderView_SvEngine)(int a1);
 	void (*R_RenderScene)(void);
 	void (*R_NewMap)(void);
+	void (*R_ClearParticles)(void);
+	void (*R_DecalInit)(void);
+	void (*V_InitLevel)(void);
+	void (*GL_BuildLightmaps)(void);
 	void (*R_DrawParticles)(void);
 	void (*R_TracerDraw)(void);
 	void (*R_BeamDrawList)(void);
@@ -33,7 +37,6 @@ typedef struct
 	void (*GL_EnableMultitexture)(void);
 	void (*GL_BeginRendering)(int *x, int *y, int *width, int *height);
 	void (*GL_EndRendering)(void);
-	void (*GL_BuildLightmaps)(void);
 	void (*EmitWaterPolys)(msurface_t *fa, int direction);
 	void (*R_DrawSequentialPoly)(msurface_t *s, int face);
 	void (*R_RecursiveWorldNode)(mnode_t *node);
@@ -62,7 +65,7 @@ typedef struct
 	void *(*realloc_SvEngine)(void *, size_t);
 	dlight_t *(*CL_AllocDlight)(int key);
 	void(*S_ExtraUpdate)(void);
-	void(*R_DrawViewModel)(void);
+	void(*R_DrawViewModel)(void);//inlined in SvEngine
 	void(*R_PolyBlend)(void);
 	void(*R_DecalShootInternal)(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
 	void(*DT_Initialize)(void);
