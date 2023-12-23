@@ -5,15 +5,15 @@
 #include <sstream>
 #include <algorithm>
 
-std::unordered_map<studio_bone_handle, studio_bone_cache*, studio_bone_hasher> g_StudioBoneCacheManager;
-
-std::unordered_map<program_state_t, studio_program_t> g_StudioProgramTable;
-
 std::vector<studio_vbo_t*> g_StudioVBOCache;
 
 std::unordered_map<int, studio_vbo_material_t*> g_StudioVBOMaterialCache;
 
-#define MAX_STUDIO_BONE_CACHES 1024
+std::unordered_map<int, studio_skin_cache_t *> g_StudioSkinCache;
+
+std::unordered_map<studio_bone_handle, studio_bone_cache*, studio_bone_hasher> g_StudioBoneCacheManager;
+
+std::unordered_map<program_state_t, studio_program_t> g_StudioProgramTable;
 
 static studio_bone_cache g_StudioBoneCaches[MAX_STUDIO_BONE_CACHES];
 
@@ -59,10 +59,13 @@ dlight_t* (*locallight)[3] = NULL;
 int* numlight = NULL;
 int* r_topcolor = NULL;
 int* r_bottomcolor = NULL;
+
+#if 0//unused
 player_model_t(*DM_PlayerState)[MAX_CLIENTS] = NULL;
 skin_t (*DM_RemapSkin)[64][MAX_SKINS] = NULL;
 skin_t* (*pDM_RemapSkin)[2528][MAX_SKINS] = NULL;
 int* r_remapindex = NULL;
+#endif
 
 //Stats
 
@@ -1174,9 +1177,47 @@ bool R_IsRemapSkin(const char* texture, int* low, int* mid, int* high)
 	return false;
 }
 
+void R_StudioFlushAllSkins()
+{
+	for(auto &itor : g_StudioSkinCache)
+	{
+		delete itor.second;
+	}
+
+	g_StudioSkinCache.clear();
+}
+
+void R_StudioFlushSkins(int keynum)
+{
+#if 0
+	for (int index = 0; index < MAX_SKINS; index++)
+	{
+		if ((*pDM_RemapSkin)[keynum][index])
+			(*pDM_RemapSkin)[keynum][index]->model = NULL;
+	}
+#endif
+
+#if 1
+	auto& itor = g_StudioSkinCache.find(keynum);
+
+	if (itor != g_StudioSkinCache.end())
+	{
+		auto pSkinCache = itor->second;
+
+		if (pSkinCache)
+		{
+			for (int index = 0; index < MAX_SKINS; index++)
+			{
+				pSkinCache->skins[index].model = NULL;
+			}
+		}
+	}
+#endif
+}
+
 skin_t* R_StudioGetSkin(int keynum, int index)
 {
-#if 1
+#if 0
 
 	if (index >= MAX_SKINS)
 		index = 0;
@@ -1194,8 +1235,44 @@ skin_t* R_StudioGetSkin(int keynum, int index)
 	}
 
 	return pskin;
-#else
+#endif
+
+#if 0
 	return gPrivateFuncs.R_StudioGetSkin(keynum, index);
+#endif
+
+#if 1
+
+	if (index >= MAX_SKINS)
+		index = 0;
+
+	if (index < 0)
+		index = 0;
+
+	auto& itor = g_StudioSkinCache.find(keynum);
+
+	if (itor != g_StudioSkinCache.end())
+	{
+		return &itor->second->skins[index];
+	}
+	else
+	{
+		auto pSkinCache = new (std::nothrow) studio_skin_cache_t;
+
+		if (pSkinCache)
+		{
+			memset(pSkinCache, 0, sizeof(studio_skin_cache_t));
+
+			pSkinCache->skins[index].keynum = keynum;
+			pSkinCache->skins[index].topcolor = -1;
+			pSkinCache->skins[index].bottomcolor = -1;
+			g_StudioSkinCache[keynum] = pSkinCache;
+
+			return &pSkinCache->skins[index];
+		}
+	}
+
+	return NULL;
 #endif
 }
 
@@ -1275,15 +1352,6 @@ byte* R_StudioReloadSkin(model_t* pModel, int index, skin_t* pskin)
 	pskin->width = pData->width;
 	pskin->height = pData->height;
 	return pData->data;
-}
-
-void R_StudioFlushSkins(int keynum)
-{
-	for (int index = 0; index < MAX_SKINS; index++)
-	{
-		if ((*pDM_RemapSkin)[keynum][index])
-			(*pDM_RemapSkin)[keynum][index]->model = NULL;
-	}
 }
 
 void PaletteHueReplace(byte* palette, int newHue, int start, int end) {
@@ -1370,42 +1438,45 @@ void R_StudioSetupSkinEx(const studio_vbo_t* VBOData, studiohdr_t* ptexturehdr, 
 		{
 			auto pskin = R_StudioGetSkin((*currententity)->index, index);
 
-			if (pskin->model != (*r_model) || pskin->topcolor != (*r_topcolor) && pskin->bottomcolor != (*r_bottomcolor))
+			if (pskin)
 			{
-				if (pskin->model)
-					R_StudioFlushSkins((*currententity)->index);
-
-				auto pData = R_StudioReloadSkin((*r_model), index, pskin);
-
-				if (pData)
+				if (pskin->model != (*r_model) || pskin->topcolor != (*r_topcolor) || pskin->bottomcolor != (*r_bottomcolor))
 				{
-					char fullname[1024] = {0};
-					snprintf(fullname, sizeof(fullname), "%s_%s_%d", ptexturehdr->name, ptexture[index].name, (*currententity)->index);
+					if (pskin->model)
+						R_StudioFlushSkins((*currententity)->index);
 
-					byte* orig_palette = pData + (ptexture[index].height * ptexture[index].width);
+					auto pTextureData = R_StudioReloadSkin((*r_model), index, pskin);
 
-					byte tmp_palette[768];
-					memcpy(tmp_palette, orig_palette, 768);
+					if (pTextureData)
+					{
+						char fullname[1024] = { 0 };
+						snprintf(fullname, sizeof(fullname), "%s_%s_%d", ptexturehdr->name, ptexture[index].name, (*currententity)->index);
 
-					pskin->model = (*r_model);
-					pskin->bottomcolor = (*r_bottomcolor);
-					pskin->topcolor = (*r_topcolor);
+						byte* orig_palette = pTextureData + (ptexture[index].height * ptexture[index].width);
 
-					PaletteHueReplace(tmp_palette, pskin->topcolor, l, m);
+						byte tmp_palette[768];
+						memcpy(tmp_palette, orig_palette, 768);
 
-					if (h != 0)
-						PaletteHueReplace(tmp_palette, pskin->bottomcolor, m, h);
+						pskin->model = (*r_model);
+						pskin->bottomcolor = (*r_bottomcolor);
+						pskin->topcolor = (*r_topcolor);
 
-					GL_UnloadTextureWithType(fullname, GLT_STUDIO, true);
+						PaletteHueReplace(tmp_palette, pskin->topcolor, l, m);
 
-					pskin->gl_index = GL_LoadTexture(fullname, GLT_STUDIO, pskin->width, pskin->height, pData, false, (ptexture[index].flags & STUDIO_NF_MASKED) ? TEX_TYPE_ALPHA : TEX_TYPE_NONE, tmp_palette);
+						if (h != 0)
+							PaletteHueReplace(tmp_palette, pskin->bottomcolor, m, h);
+
+						GL_UnloadTextureWithType(fullname, GLT_STUDIO, true);
+
+						pskin->gl_index = GL_LoadTexture(fullname, GLT_STUDIO, pskin->width, pskin->height, pTextureData, false, (ptexture[index].flags & STUDIO_NF_MASKED) ? TEX_TYPE_ALPHA : TEX_TYPE_NONE, tmp_palette);
+					}
 				}
-			}
 
-			if (pskin->gl_index != 0)
-			{
-				GL_Bind(pskin->gl_index);
-				return;
+				if (pskin->gl_index != 0)
+				{
+					GL_Bind(pskin->gl_index);
+					return;
+				}
 			}
 		}
 	}

@@ -6,6 +6,8 @@
 #include <set>
 #include <unordered_map>
 
+#define MAX_STUDIO_BONE_CACHES 1024
+
 #define STUDIO_DIFFUSE_TEXTURE			0
 #define STUDIO_REPLACE_TEXTURE			1
 #define STUDIO_NORMAL_TEXTURE			2
@@ -182,6 +184,40 @@ typedef struct studio_vbo_s
 	bool bExternalFileLoaded;
 }studio_vbo_t;
 
+class studio_skin_handle
+{
+public:
+	studio_skin_handle(int keynum)
+	{
+		m_keynum = keynum;
+	}
+
+	bool operator == (const studio_skin_handle& a) const
+	{
+		return m_keynum == a.m_keynum;
+	}
+
+	int m_keynum;
+	int m_index;
+};
+
+class studio_skin_hasher
+{
+public:
+	std::size_t operator()(const studio_skin_handle& key) const
+	{
+		auto base = (std::size_t)(key.m_keynum << 8);
+
+		base += ((std::size_t)key.m_index);
+
+		return base;
+	}
+};
+
+typedef struct studio_skin_cache_s
+{
+	skin_t skins[MAX_SKINS];
+}studio_skin_cache_t;
 
 class studio_bone_handle
 {
@@ -289,11 +325,12 @@ extern dlight_t *(*locallight)[3];
 extern int *numlight;
 extern int* r_topcolor;
 extern int* r_bottomcolor;
+#if 0
 extern player_model_t(*DM_PlayerState)[MAX_CLIENTS];
 extern skin_t(*DM_RemapSkin)[64][MAX_SKINS];
 extern skin_t* (*pDM_RemapSkin)[2528][MAX_SKINS];
 extern int* r_remapindex;
-
+#endif
 extern model_t *cl_sprite_white;
 extern model_t *cl_shellchrome;
 
@@ -308,6 +345,7 @@ void R_StudioBoneCaches_StartFrame();
 studio_vbo_t *R_PrepareStudioVBO(studiohdr_t *studiohdr);
 void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, studio_vbo_t *VBOData);
 void R_StudioReloadVBOCache(void);
+void R_StudioFlushAllSkins();
 void R_ShutdownStudio(void);
 void R_InitStudio(void);
 void R_SaveStudioProgramStates(void);

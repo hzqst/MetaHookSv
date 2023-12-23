@@ -2313,6 +2313,7 @@ void R_NewMap(void)
 	R_NewMapWSurf();
 	R_NewMapLight();
 
+	R_StudioFlushAllSkins();
 	R_StudioReloadVBOCache();
 
 	//This is for GoldSrc

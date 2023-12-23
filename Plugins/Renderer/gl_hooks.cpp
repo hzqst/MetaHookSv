@@ -4559,6 +4559,7 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(GL_UnloadTexture);
 	}
 
+#if 0//unused
 	if (1)
 	{
 		typedef struct
@@ -4635,7 +4636,7 @@ void R_FillAddress(void)
 		Sig_VarNotFound(DM_RemapSkin);
 		Sig_VarNotFound(r_remapindex);
 	}
-
+#endif
 	if (1)
 	{
 		typedef struct
