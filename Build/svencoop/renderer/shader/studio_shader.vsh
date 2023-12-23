@@ -15,6 +15,11 @@ out vec3 v_normal;
 out vec2 v_texcoord;
 out vec4 v_projpos;
 
+#if defined(STUDIO_NF_CELSHADE)
+out mat4 v_bonematrix;
+out mat4 v_invbonematrix;
+#endif
+
 void main(void)
 {
 	vec3 vert = in_vertex;
@@ -108,6 +113,19 @@ void main(void)
 	vecLight.z *= 0.0001;
 	vecLight = normalize(vecLight);
 	outvert = outvert + vecLight * r_hair_shadow_offset.x + vec3(0.0, 0.0, r_hair_shadow_offset.y);
+#endif
+
+#if defined(STUDIO_NF_CELSHADE)
+
+	v_bonematrix = mat4(
+    vec4(vertbone_matrix[0][0], vertbone_matrix[0][1], vertbone_matrix[0][2], 0.0),
+    vec4(vertbone_matrix[1][0], vertbone_matrix[1][1], vertbone_matrix[1][2], 0.0),
+    vec4(vertbone_matrix[2][0], vertbone_matrix[2][1], vertbone_matrix[2][2], 0.0),
+    vec4(vertbone_matrix[0][3], vertbone_matrix[1][3], vertbone_matrix[2][3], 1.0));
+	
+	v_invbonematrix = inverse(v_bonematrix);
+);
+
 #endif
 
 	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * vec4(outvert, 1.0);

@@ -36,6 +36,11 @@ in vec3 v_normal;
 in vec2 v_texcoord;
 in vec4 v_projpos;
 
+#if defined(STUDIO_NF_CELSHADE)
+in mat4 v_bonematrix;
+in mat4 v_invbonematrix;
+#endif
+
 layout(location = 0) out vec4 out_Diffuse;
 
 #if defined(GBUFFER_ENABLED)
@@ -230,13 +235,19 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 	vec3 BiT = cross(N, UP);
 	vec3 T = cross(N, BiT);
 
+	vec4 lightdirLS = v_invbonematrix * vec4(L, 0.0);
+	
 #if defined(STUDIO_NF_CELSHADE_FACE)
-	L.z = 0;
+	lightdirLS.z = 0;
 #else
-	L.z *= 0.01;
+	lightdirLS.z *= 0.01;
 #endif
 
-	L = normalize(L);
+	lightdirLS.xyz = normalize(lightdirLS.xyz);
+
+	vec4 lightdirWS_transformed = lightdirLS * v_bonematrix;
+
+	L = lightdirWS_transformed.xyz;
 
     float NoL = dot(-N,L);
 
