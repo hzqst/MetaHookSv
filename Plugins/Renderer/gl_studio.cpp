@@ -39,7 +39,9 @@ vec3_t(*lightvalues)[MAXSTUDIOVERTS] = NULL;
 float(*pbonetransform)[MAXSTUDIOBONES][3][4] = NULL;
 float(*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;
 float(*rotationmatrix)[3][4] = NULL;
+#if 0
 int(*g_NormalIndex)[MAXSTUDIOVERTS] = NULL;
+#endif
 int(*chrome)[MAXSTUDIOVERTS][2] = NULL;
 int(*chromeage)[MAXSTUDIOBONES] = NULL;
 cl_entity_t* cl_viewent = NULL;
@@ -2771,7 +2773,7 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 				texturePath += ".tga";
 
 			int texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO,
-				(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true, false);
+				(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, false);
 
 			if (!texId)
 			{
@@ -2781,7 +2783,7 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 					texturePath += ".tga";
 
 				texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO,
-					(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true, false);
+					(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, false);
 
 				if (!texId)
 				{
@@ -2791,7 +2793,7 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 						texturePath += ".tga";
 
 					texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_STUDIO,
-						(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, true, true);
+						(ptexture->flags & STUDIO_NF_NOMIPS) ? false : true, false);
 				}
 			}
 
@@ -2824,6 +2826,10 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 						}
 					}
 				}
+			}
+			else
+			{
+				gEngfuncs.Con_DPrintf("R_StudioLoadExternalFile_TextureLoad: Failed to load external texture \"%s\" for basetexture \"%s\"\n", textureValue, ptexture->name);
 			}
 		}
 	}

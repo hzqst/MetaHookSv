@@ -52,9 +52,8 @@ typedef struct gl_loadtexture_state_s
 
 		wrap = 0;
 		cubemap = 0;
-		mipmap = false;
-		ansio = false;
 		filter = 0;
+		mipmap = false;
 
 		format = 0;
 		compressed = false;
@@ -66,9 +65,8 @@ typedef struct gl_loadtexture_state_s
 	//OpenGL field
 	GLuint wrap;
 	GLuint cubemap;
-	bool mipmap; 
-	bool ansio;
 	int filter;
+	bool mipmap;
 
 	//Loader field
 	GLuint format;
@@ -288,3 +286,4 @@ void GL_UnloadTextureWithType(const char* identifier, GL_TEXTURETYPE textureType
 void GL_UnloadTextureWithType(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, bool notify_callback);
 const char * V_GetFileExtension(const char * path);
 const char * V_UnqualifiedFileName(const char * in);
+int GL_GetAnsioValue();

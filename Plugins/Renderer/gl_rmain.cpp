@@ -197,6 +197,8 @@ bool bEnforceStretchAspect = false;
 bool bUseBindless = true;
 bool bUseOITBlend = false;
 bool bVerticalFov = false;
+bool bHasOfficialFBOSupport = false;
+bool bHasOfficialGLTexAllocSupport = true;
 
 cvar_t *ati_subdiv = NULL;
 cvar_t *ati_npatch = NULL;
@@ -1588,9 +1590,10 @@ void GL_Init(void)
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &gl_max_texture_size);
 
 	gl_max_ansio = 1;
+
 	if (glewIsSupported("GL_EXT_texture_filter_anisotropic"))
 	{
-		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &gl_max_ansio);
+		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &gl_max_ansio);
 	}
 
 	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &gl_max_ubo_size);
@@ -3461,11 +3464,11 @@ void R_LoadLegacySkyTextures(const char* name)
 		char fullpath[260] = { 0 };
 		snprintf(fullpath, sizeof(fullpath), "gfx/env/%s%s.tga", name, suf[i]);
 
-		int texId = R_LoadTextureFromFile(fullpath, fullpath, NULL, NULL, GLT_WORLD, true, true, false);
+		int texId = R_LoadTextureFromFile(fullpath, fullpath, NULL, NULL, GLT_WORLD, true, false);
 		if (!texId)
 		{
 			snprintf(fullpath, sizeof(fullpath), "gfx/env/%s%s.bmp", name, suf[i]);
-			texId = R_LoadTextureFromFile(fullpath, fullpath, NULL, NULL, GLT_WORLD, true, true, false);
+			texId = R_LoadTextureFromFile(fullpath, fullpath, NULL, NULL, GLT_WORLD, true, false);
 		}
 
 		if (!texId)
@@ -3490,12 +3493,12 @@ void R_LoadDetailSkyTextures(const char* name)
 		snprintf(fullpath, sizeof(fullpath), "gfx/env/%s%s.dds", name, suf[i]);
 
 		int width, height;
-		int texId = R_LoadTextureFromFile(fullpath, fullpath, &width, &height, GLT_WORLD, true, true, false);
+		int texId = R_LoadTextureFromFile(fullpath, fullpath, &width, &height, GLT_WORLD, true, false);
 		if (!texId)
 		{
 			snprintf(fullpath, sizeof(fullpath), "renderer/texture/skybox/%s%s.dds", name, suf[i]);
 
-			texId = R_LoadTextureFromFile(fullpath, fullpath, &width, &height, GLT_WORLD, true, true, false);
+			texId = R_LoadTextureFromFile(fullpath, fullpath, &width, &height, GLT_WORLD, true, false);
 		}
 
 		if (!texId)

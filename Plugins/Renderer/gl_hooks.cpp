@@ -20,18 +20,21 @@
 #define R_DRAWPARTICLES_SIG_SVENGINE "\x81\xEC\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x00\x00\x00\x2A\xFF\x35"
 #define R_DRAWPARTICLES_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\xFF\x35\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x68\xC0\x0B\x00\x00"
 #define R_DRAWPARTICLES_SIG_NEW "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x68\xC0\x0B\x00\x00"
+#define R_DRAWPARTICLES_SIG_NEW2 R_DRAWPARTICLES_SIG_BLOB
 #define R_DRAWPARTICLES_SIG_BLOB "\x83\xEC\x40\xA1\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x68\xC0\x0B\x00\x00"
 #define R_DRAWPARTICLES_SIG_COMMON "\x83\xC4\x04\x68\xC0\x0B\x00\x00"
 
 #define R_POLYBLEND_SVENGINE "\x55\x8B\xEC\x83\xE4\xC0\x83\xEC\x34\x2A\x2A\x2A\xE8"
 #define R_POLYBLEND_HL25 "\x55\x8B\xEC\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\xD8\x85\xDB\x0F\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\xC0\x0B\x00\x00"
 #define R_POLYBLEND_NEW "\x55\x8B\xEC\x83\xEC\x0C\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x2A\x85\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\xC0\x0B\x00\x00"
+#define R_POLYBLEND_NEW2 "\x55\x8B\xEC\x83\x2A\x2A\x83\xEC\x0C\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x2A\x85\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\xC0\x0B\x00\x00"
 #define R_POLYBLEND_BLOB "\x55\x8B\xEC\x83\xE4\x2A\x83\xEC\x0C\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x2A\x85\x2A\x0F"
 
 #define S_EXTRAUPDATE_SVENGINE "\xE8\x2A\x2A\x2A\x2A\x85\xC0\x75\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xD9\x05"
 #define S_EXTRAUPDATE_HL25 "\xE8\x2A\x2A\x2A\x2A\x85\xC0\x75\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xF3\x0F"
 #define S_EXTRAUPDATE_NEW S_EXTRAUPDATE_SVENGINE
-#define S_EXTRAUPDATE_BLOB "\xE8\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x44\x2A\x2A\xE9\x2A\x2A\x2A\x2A\xC3"
+#define S_EXTRAUPDATE_NEW2 S_EXTRAUPDATE_BLOB
+#define S_EXTRAUPDATE_BLOB "\xE8\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x2A\x2A\x2A\xE9\x2A\x2A\x2A\x2A\xC3"
 
 #define R_ROTATEFORENTITY_SVENGINE "\x83\xEC\x2A\x8B\x2A\x24\x2A\x8B\x2A\x24\x2A\xD9\x00"
 #define R_ROTATEFORENTITY_HL25     "\x55\x8B\xEC\x83\xEC\x20\x8B\x45\x08\x8B\x08\x8B\x50\x04\x8B\x40\x08"
@@ -68,14 +71,16 @@
 #define R_DRAWWORLD_SIG_COMMON "\x68\xB8\x0B\x00\x00\x8D"
 
 #define R_MARKLEAVES_SIG_BLOB "\xB8\x00\x10\x00\x00\xE8\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\xA1"
+#define R_MARKLEAVES_SIG_NEW2 R_MARKLEAVES_SIG_BLOB
 #define R_MARKLEAVES_SIG_NEW "\x55\x8B\xEC\xB8\x04\x10\x00\x00\xE8\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\xA1"
 #define R_MARKLEAVES_SIG_HL25 "\x55\x8B\xEC\xB8\x2A\x2A\x00\x00\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x8B\x0D\x2A\x2A\x2A\x2A\x0F\x57\xC9"
 #define R_MARKLEAVES_SIG_SVENGINE "\xB8\x2A\x2A\x00\x00\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\x8B\x0D\x2A\x2A\x2A\x2A\xD9\x05"
 
 #define R_CULLBOX_SIG_BLOB "\x53\x8B\x5C\x24\x08\x56\x57\x8B\x7C\x24\x14\xBE\x2A\x2A\x2A\x2A\x56\x57\x53\xE8"
+#define R_CULLBOX_SIG_NEW2 R_CULLBOX_SIG_BLOB
 #define R_CULLBOX_SIG_NEW "\x55\x8B\xEC\x53\x8B\x5D\x08\x56\x57\x8B\x7D\x0C\xBE\x2A\x2A\x2A\x2A\x56\x57\x53"
-#define R_CULLBOX_SIG_SVENGINE "\x2A\x8B\x2A\x24\x08\x2A\x2A\x8B\x2A\x24\x14\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C\x83\xF8\x02"
 #define R_CULLBOX_SIG_HL25 "\x55\x8B\xEC\x2A\x8B\x2A\x08\x2A\x2A\x8B\x2A\x0C\xBE\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C\x83\xF8\x02"
+#define R_CULLBOX_SIG_SVENGINE "\x2A\x8B\x2A\x24\x08\x2A\x2A\x8B\x2A\x24\x14\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C\x83\xF8\x02"
 
 //inlined in HL25 and SvEngine
 #define R_SETUPFRAME_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x83\xEC\x18\x83\xF8\x01\x0F\x8E\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x2A\x2A\x2A\x68"
@@ -84,12 +89,14 @@
 #define R_SETUPFRAME_SIG_HL25 ""
 #define R_SETUPFRAME_SIG_SVENGINE ""
 
-#define GL_BIND_SIG_BLOB "\x8B\x44\x24\x04\x8B\x0D\x2A\x2A\x2A\x2A\x56\x8B\xF0\xC1\xFE\x10\x25\xFF\xFF\x00\x00\x4E\x3B\xC8"
-#define GL_BIND_SIG_NEW "\x55\x8B\xEC\x8B\x45\x08\x8B\x0D\x2A\x2A\x2A\x2A\x56\x8B\xF0\xC1\xFE\x10\x25\xFF\xFF\x00\x00\x4E\x3B\xC8"
-#define GL_BIND_SIG_HL25 "\x55\x8B\xEC\x8B\x45\x08\x56\x8B\xF0\x0F\xB7\xC0\xC1\xFE\x10\x4E\x39"
-#define GL_BIND_SIG_SVENGINE "\x8B\x44\x24\x04\x39\x05\x2A\x2A\x2A\x2A\x2A\x2A\x50\x68\xE1\x0D\x00\x00\xA3\x2A\x2A\x2A\x2A\xFF\x15\x2A\x2A\x2A\x2A\xC3"
+#define GL_BIND_SIG_BLOB      "\x8B\x44\x24\x04\x8B\x0D\x2A\x2A\x2A\x2A\x2A\x8B\x2A\x2A\x2A\x10\x25\xFF\xFF\x00\x00"
+#define GL_BIND_SIG_NEW2      GL_BIND_SIG_BLOB
+#define GL_BIND_SIG_NEW       "\x55\x8B\xEC\x8B\x45\x08\x8B\x0D\x2A\x2A\x2A\x2A\x56\x8B\xF0\xC1\xFE\x10\x25\xFF\xFF\x00\x00\x4E\x3B\xC8"
+#define GL_BIND_SIG_HL25      "\x55\x8B\xEC\x8B\x45\x08\x56\x8B\xF0\x0F\xB7\xC0\xC1\xFE\x10\x4E\x39"
+#define GL_BIND_SIG_SVENGINE  "\x8B\x44\x24\x04\x39\x05\x2A\x2A\x2A\x2A\x2A\x2A\x50\x68\xE1\x0D\x00\x00\xA3\x2A\x2A\x2A\x2A\xFF\x15\x2A\x2A\x2A\x2A\xC3"
 
 #define GL_SELECTTEXTURE_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x56\x85\xC0\x2A\x2A\x8B\x74\x24\x08\x56\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x3B\xF0"
+#define GL_SELECTTEXTURE_SIG_NEW2 GL_SELECTTEXTURE_SIG_BLOB
 #define GL_SELECTTEXTURE_SIG_NEW "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x56\x85\xC0\x2A\x2A\x8B\x75\x08\x56\xFF\x15\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x3B\xF0"
 #define GL_SELECTTEXTURE_SIG_HL25 "\x55\x8B\xEC\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x56\x8B\x75\x08\x56\xFF\x15"
 #define GL_SELECTTEXTURE_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x2A\x2A\x2A\x24\x08\x2A\xFF\x15\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xA1"
@@ -104,27 +111,32 @@
 #define GL_LOADTEXTURE2_SIG_SVENGINE "\x51\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x33\xC0\x59\xC3\x2A\x55\x8B\x6C\x24\x10"
 
 #define GL_BEGINRENDERING_SIG_BLOB "\x8B\x44\x24\x08\x8B\x4C\x24\x04\x8B\x54\x24\x0C\xC7\x00\x00\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\xC7\x01\x00\x00\x00\x00\x8B\x0D\x2A\x2A\x2A\x2A\x2B\xC1"
+#define GL_BEGINRENDERING_SIG_NEW2 GL_BEGINRENDERING_SIG_BLOB
 #define GL_BEGINRENDERING_SIG_NEW "\x55\x8B\xEC\x8B\x45\x0C\x8B\x4D\x08\x56\x57\xC7\x00\x00\x00\x00\x00\xC7\x01\x00\x00\x00\x00\xE8"
 #define GL_BEGINRENDERING_SIG_HL25 "\x55\x8B\xEC\x8B\x45\x0C\x2A\x2A\xC7\x00\x00\x00\x00\x00\x8B\x45\x08\xC7\x00\x00\x00\x00\x00"
 #define GL_BEGINRENDERING_SIG_SVENGINE "\x8B\x44\x24\x08\x56\x57\xC7\x00\x00\x00\x00\x00\x8B\x44\x24\x0C\xC7\x00\x00\x00\x00\x00\xE8"
 
 #define GL_ENDRENDERING_SIG_BLOB "\xFF\x25\x2A\x2A\x2A\x2A\x90"
+#define GL_ENDRENDERING_SIG_NEW2 GL_ENDRENDERING_SIG_BLOB
 #define GL_ENDRENDERING_SIG_NEW "\x55\x8B\xEC\x83\xEC\x34\xA1\x2A\x2A\x2A\x2A\x53\x33\xDB"
 #define GL_ENDRENDERING_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x6A\x00"
 #define GL_ENDRENDERING_SIG_SVENGINE "\x55\x8B\xEC\x83\xE4\xC0\x83\xEC\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00"
 #define GL_ENDRENDERING_SIG_COMMON_GOLDSRC "\x68\x01\x26\x00\x00\x68\x00\x40\x00\x00"
 
 #define EMITWATERPOLYS_SIG_BLOB "\x83\xEC\x1C\x33\xD2\x55\x56\x8B\x74\x24\x28\x57\x8B\x46\x2C\x8B\x48\x24\x8B\x41\x44\x33\xC9\x8A\x50\x0C\x8A\x48\x0B\x52"
+#define EMITWATERPOLYS_SIG_NEW2 EMITWATERPOLYS_SIG_BLOB
 #define EMITWATERPOLYS_SIG_NEW "\x55\x8B\xEC\x83\xEC\x20\x56\x8B\x75\x08\x33\xD2\x57\x8B\x46\x2C\x8B\x48\x24\x8B\x41\x44\x33\xC9\x8A\x50\x0C\x8A\x48\x0B\x52\x51"
 #define EMITWATERPOLYS_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\xF3\x0F\x10\x2A\x2A\x2A\x2A\x2A\xF3\x0F\x10"
 #define EMITWATERPOLYS_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x20\x53\x55\xD9\x05\x2A\x2A\x2A\x2A\x56\x57"
 
 #define R_DRAWTENTITIESONLIST_SIG_BLOB "\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x2A\x0F\x2A\x2A\x2A\x00\x00\x8B\x44\x24\x04"
+#define R_DRAWTENTITIESONLIST_SIG_NEW2 R_DRAWTENTITIESONLIST_SIG_BLOB
 #define R_DRAWTENTITIESONLIST_SIG_NEW "\x55\x8B\xEC\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x44\x0F\x8B\x2A\x2A\x2A\x2A\x8B\x45\x08"
 #define R_DRAWTENTITIESONLIST_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\xF3\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x0F\x2E"
 #define R_DRAWTENTITIESONLIST_SIG_SVENGINE "\x55\x8B\xEC\x83\xE4\x2A\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x00\x00\x00\xD9\x05\x2A\x2A\x2A\x2A\xD9\xEE"
 
 #define R_SETUPGL_SIG_BLOB "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x10\x53\x55\x56\x57\x68\x01\x17\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x15"
+#define R_SETUPGL_SIG_NEW2 R_SETUPGL_SIG_BLOB
 #define R_SETUPGL_SIG_NEW "\x55\x8B\xEC\x83\xEC\x10\x53\x56\x57\x68\x01\x17\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x15\x2A\x2A\x2A\x2A\x8B\x1D"
 #define R_SETUPGL_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x08\x2A\x2A\x68\x01\x17\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xFF\x15"
 #define R_SETUPGL_SIG_HL25_9899 "\x55\x8B\xEC\x83\xEC\x08\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\x02\x17\x00\x00\xFF\x15"
@@ -141,26 +153,31 @@
 #define GL_ENABLEMULTITEXTURE_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\xC1\x84\x00\x00\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00\xC3"
 
 #define R_DRAWSEQUENTIALPOLY_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x53\x55\x56\x8B\x88\xF8\x02\x00\x00\xBE\x01\x00\x00\x00"
+#define R_DRAWSEQUENTIALPOLY_SIG_NEW2 R_DRAWSEQUENTIALPOLY_SIG_BLOB
 #define R_DRAWSEQUENTIALPOLY_SIG_NEW "\x55\x8B\xEC\x51\xA1\x2A\x2A\x2A\x2A\x53\x56\x57\x83\xB8\xF8\x02\x00\x00\x01\x75\x2A\xE8"
 #define R_DRAWSEQUENTIALPOLY_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x10\x2A\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xB8\xF8\x02\x00\x00\x01"
 #define R_DRAWSEQUENTIALPOLY_SIG_SVENGINE "\xA1\x2A\x2A\x2A\x2A\x83\xEC\x08\x83\xB8\x2A\x2A\x00\x00\x01"
 
 #define R_DRAWBRUSHMODEL_SIG_BLOB "\x83\xEC\x4C\xC7\x05\x2A\x2A\x2A\x2A\xFF\xFF\xFF\xFF\x53\x55\x56\x57"
+#define R_DRAWBRUSHMODEL_SIG_NEW2 R_DRAWBRUSHMODEL_SIG_BLOB
 #define R_DRAWBRUSHMODEL_SIG_NEW "\x55\x8B\xEC\x83\xEC\x50\x53\x56\x57\x8B\x7D\x08\x89\x3D\x2A\x2A\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\xFF\xFF\xFF\xFF"
 #define R_DRAWBRUSHMODEL_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\x2A\x8B\x2A\x08\x0F\x57\xC9"
 #define R_DRAWBRUSHMODEL_SIG_SVENGINE "\x83\xEC\x54\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x50\x53\x8B\x5C\x24\x5C\x55\x56\x57\x89\x1D\x2A\x2A\x2A\x2A\x8D\xBB"
 
 #define R_RECURSIVEWORLDNODE_SIG_BLOB "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x0C\x53\x56\x57\x8B\x7D\x08\x83\x3F\xFE"
+#define R_RECURSIVEWORLDNODE_SIG_NEW2 R_RECURSIVEWORLDNODE_SIG_BLOB
 #define R_RECURSIVEWORLDNODE_SIG_NEW "\x55\x8B\xEC\x83\xEC\x08\x53\x56\x57\x8B\x7D\x08\x83\x3F\xFE\x0F\x2A\x2A\x2A\x2A\x2A\x8B\x47\x04"
 #define R_RECURSIVEWORLDNODE_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x08\x2A\x8B\x5D\x08\x83\x3B\xFE\x0F"
 #define R_RECURSIVEWORLDNODE_SIG_SVENGINE "\x83\xEC\x08\x53\x8B\x5C\x24\x10\x83\x3B\xFE"
 
 #define R_TEXTUREANIMATION_SIG_BLOB "\x53\x55\x8B\x6C\x24\x0C\x56\x57\x8B\x45\x2C\x8B\x78\x24\xA1"
+#define R_TEXTUREANIMATION_SIG_NEW2 R_TEXTUREANIMATION_SIG_BLOB
 #define R_TEXTUREANIMATION_SIG_NEW "\x55\x8B\xEC\x8B\x45\x08\x53\x56\x57\x8B\x48\x2C\xA1\x2A\x2A\x2A\x2A\x85\xC0\x8B\x79\x24\x75\x2A\xBE"
 #define R_TEXTUREANIMATION_SIG_HL25 "\x55\x8B\xEC\x83\x3D\x2A\x2A\x2A\x2A\x00\x8B\x55\x08\x2A\x2A\x2A\x8B\x42\x2C\x8B\x58\x24"
 #define R_TEXTUREANIMATION_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x8B\x54\x24\x2A\x53\x56\x57\x8B\x42\x2C"
 
 #define R_RENDERDYNAMICLIGHTMAPS_SIG_BLOB "\x8B\x0D\x2A\x2A\x2A\x2A\x53\x41\x55\x89\x0D\x2A\x2A\x2A\x2A\x8B\x4C\x24\x0C\x56\x57"
+#define R_RENDERDYNAMICLIGHTMAPS_SIG_NEW2 R_RENDERDYNAMICLIGHTMAPS_SIG_BLOB
 #define R_RENDERDYNAMICLIGHTMAPS_SIG_NEW "\x55\x8B\xEC\x8B\x0D\x2A\x2A\x2A\x2A\x53\x41\x56\x89\x0D\x2A\x2A\x2A\x2A\x8B\x4D\x08\x57"
 #define R_RENDERDYNAMICLIGHTMAPS_SIG_HL25 "\x55\x8B\xEC\x8B\x55\x08\x83\xEC\x08\xFF\x05\x2A\x2A\x2A\x2A\xF6\x2A\x08\x14"
 #define R_RENDERDYNAMICLIGHTMAPS_SIG_SVENGINE "\x51\x8B\x54\x24\x08\xFF\x05\x2A\x2A\x2A\x2A\x57\x33\xFF\xF6\x42\x08\x14"
@@ -195,16 +212,19 @@
 
 //TODO: use string "R_RenderView: NULL worldmodel"
 #define R_RENDERVIEW_SIG_BLOB "\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\x83\xEC\x14\xDF\xE0\xF6\xC4"
+#define R_RENDERVIEW_SIG_NEW2 R_RENDERVIEW_SIG_BLOB
 #define R_RENDERVIEW_SIG_NEW "\x55\x8B\xEC\x83\xEC\x14\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x44"
 #define R_RENDERVIEW_SIG_HL25 "\x55\x8B\xEC\xF3\x0F\x10\x05\x2A\x2A\x2A\x2A\x83\xEC\x2A\x0F\x57\xC9\x0F\x2E\xC1\x9F\xF6"
 #define R_RENDERVIEW_SIG_SVENGINE "\x55\x8B\xEC\x83\xE4\xC0\x83\xEC\x34\x53\x56\x57\x8B\x7D\x08\x85\xFF"
 
 #define V_RENDERVIEW_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x81\xEC\x2A\x00\x00\x00\x2A\x2A\x33\x2A\x33\x2A\x2A\x2A\x89\x35\x2A\x2A\x2A\x2A\x89\x35"
+#define V_RENDERVIEW_SIG_NEW2 V_RENDERVIEW_SIG_BLOB
 #define V_RENDERVIEW_SIG_NEW "\x55\x8B\xEC\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x2A\x2A\x33\x2A\x33"
 #define V_RENDERVIEW_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\x33\x2A\x89\x35\x2A\x2A\x2A\x2A\x89\x35"
 #define V_RENDERVIEW_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\xD9\xEE\xD9\x15"
  
 #define VID_UPDATEWINDOWVARS_SIG_BLOB "\x56\x8B\x74\x24\x08\x8B\xC6\x8B\x08\x89\x0D\x2A\x2A\x2A\x2A\x8B\x50\x04\x89\x15"
+#define VID_UPDATEWINDOWVARS_SIG_NEW2 VID_UPDATEWINDOWVARS_SIG_BLOB
 #define VID_UPDATEWINDOWVARS_SIG_NEW "\x55\x8B\xEC\x51\x56\x8B\x75\x08\x8B\xC6\x8B\x08\x89\x0D\x2A\x2A\x2A\x2A\x8B\x50\x04\x89\x15"
 #define VID_UPDATEWINDOWVARS_SIG_HL25 "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x83\xEC\x10\x85\xC0"
 #define VID_UPDATEWINDOWVARS_SIG_SVENGINE "\x8b\xc7\x99\x2B\xC2\xD1\xF8\x03\x2A\x50"
@@ -212,32 +232,37 @@
 #define R_FORCECVARS_SIG_SVENGINE "\x83\x7C\x24\x2A\x00\x2A\x2A\x2A\x2A\x00\x00\x81\x3D\x2A\x2A\x2A\x2A\xFF\x00\x00\x00"
 #define R_FORCECVARS_SIG_NEW "\x55\x8B\xEC\x8B\x45\x08\x85\xC0\x0F\x84\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D"
 
-#define CL_ALLOCDLIGHT_SIG_COMMON    "\x20\x74\x2A\x47\x83\xC6\x28"
-#define CL_ALLOCDLIGHT_SIG_SVENGINE "\x2A\x8B\x5C\x24\x2A\x2A\x2A\x85\x2A\x2A\x2A\xBE\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x20"
-#define CL_ALLOCDLIGHT_SIG_HL25     "\x55\x8B\xEC\x2A\x8B\x2A\x08\x2A\x2A\x85\x2A\x2A\x2A\xBE\x2A\x2A\x2A\x2A\x33\x2A\x39"
-#define CL_ALLOCDLIGHT_SIG_NEW      "\x55\x8B\xEC\x2A\x8B\x5D\x08\x2A\x2A\x85\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x20"
+#define CL_ALLOCDLIGHT_SIG_COMMON   "\x20\x74\x2A\x47\x83\xC6\x28"
 #define CL_ALLOCDLIGHT_SIG_BLOB     "\x53\x8B\x5C\x24\x08\x56\x57\x85\x2A\x2A\x2A\xBE\x2A\x2A\x2A\x2A\x33\x2A\x39"
+#define CL_ALLOCDLIGHT_SIG_NEW2     CL_ALLOCDLIGHT_SIG_BLOB
+#define CL_ALLOCDLIGHT_SIG_NEW      "\x55\x8B\xEC\x2A\x8B\x5D\x08\x2A\x2A\x85\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x20"
+#define CL_ALLOCDLIGHT_SIG_HL25     "\x55\x8B\xEC\x2A\x8B\x2A\x08\x2A\x2A\x85\x2A\x2A\x2A\xBE\x2A\x2A\x2A\x2A\x33\x2A\x39"
+#define CL_ALLOCDLIGHT_SIG_SVENGINE "\x2A\x8B\x5C\x24\x2A\x2A\x2A\x85\x2A\x2A\x2A\xBE\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x20"
 
 //Studio Funcs
 #define R_GLSTUDIODRAWPOINTS_SIG_BLOB     "\x83\xEC\x44\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x53\x55\x56\x8B\x70\x54\x8B\x40\x60\x57"
 #define R_GLSTUDIODRAWPOINTS_SIG_BLOB2    "\x83\xEC\x48\x8B\x0D\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\x53\x55\x8B\x41\x54\x8B\x59\x60"
 #define R_GLSTUDIODRAWPOINTS_SIG_NEW      "\x55\x8B\xEC\x83\xEC\x48\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x53\x56\x8B\x70\x54\x8B\x40\x60\x03\xC1"
+#define R_GLSTUDIODRAWPOINTS_SIG_NEW2     R_GLSTUDIODRAWPOINTS_SIG_BLOB2
 #define R_GLSTUDIODRAWPOINTS_SIG_HL25     "\x55\x8B\xEC\x81\xEC\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x8B\x0D\x2A\x2A\x2A\x2A\x2A\x8B\x35\x2A\x2A\x2A\x2A\x2A\x8B\x3D\x2A\x2A\x2A\x2A\xC7\x85"
 #define R_GLSTUDIODRAWPOINTS_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\x53\x8B\x1D\x2A\x2A\x2A\x2A\x55\x56\x57\x8B\x3D\x2A\x2A\x2A\x2A\x8B\x4B\x54"
 #define R_GLSTUDIODRAWPOINTS_SIG_COMMON "\x75\x2A\x68\x44\x0B\x00\x00\xFF\x15\x2A\x2A\x2A\x2A"
 
 #define R_STUDIOLIGHTING_SIG_BLOB "\x51\xDB\x05\x2A\x2A\x2A\x2A\x8A\x4C\x24\x10\xB8\x01\x00\x00\x00\x84\xC8\xD9\x5C\x24\x00"
-#define R_STUDIOLIGHTING_SIG_NEW "\x55\x8B\xEC\x51\xDB\x05\x2A\x2A\x2A\x2A\x8A\x4D\x10\xB8\x01\x00\x00\x00\x84\xC8\xD9\x5D\xFC"
+#define R_STUDIOLIGHTING_SIG_NEW2 R_STUDIOLIGHTING_SIG_BLOB
+#define R_STUDIOLIGHTING_SIG_NEW  "\x55\x8B\xEC\x51\xDB\x05\x2A\x2A\x2A\x2A\x8A\x4D\x10\xB8\x01\x00\x00\x00\x84\xC8\xD9\x5D\xFC"
 #define R_STUDIOLIGHTING_SIG_HL25 "\x55\x8B\xEC\xF6\x45\x10\x01\x66\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x0F\x5B\xDB"
 #define R_STUDIOLIGHTING_SIG_SVENGINE "\xF6\x2A\x2A\x2A\x2A\xDB\x05\x2A\x2A\x2A\x2A\x74\x1C\x83\x3D"
 
 #define R_LIGHTLAMBERT_SIG_BLOB      "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x2C\x8B\x0D\x2A\x2A\x2A\x2A\x53"
 #define R_LIGHTLAMBERT_SIG_BLOB2     "\x8B\x0D\x2A\x2A\x2A\x2A\x83\xEC\x24\x53\x33\xDB\x56"
+#define R_LIGHTLAMBERT_SIG_NEW2		 R_LIGHTLAMBERT_SIG_BLOB2
 #define R_LIGHTLAMBERT_SIG_NEW       "\x55\x8B\xEC\x83\xEC\x24\x8B\x0D\x2A\x2A\x2A\x2A\x56\x57\x33\xFF\x3B\xCF\x75"
 #define R_LIGHTLAMBERT_SIG_HL25      "\x55\x8B\xEC\x83\xE4\xF8\x8B\x15\x2A\x2A\x2A\x2A\x83\xEC\x18\x2A\x2A\x85\xD2\x0F\x2A\x2A\x2A\x2A\x2A\x0F\x57\x2A\x0F\x57\x2A\x33\xFF"
 #define R_LIGHTLAMBERT_SIG_SVENGINE  "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\xD9\xE8\x8D\x4C\x24\x2A\x8B\x44\x24\x2A\x53"
 
 #define R_STUDIOCHROME_SIG_BLOB "\x83\xEC\x24\x8B\x0D\x2A\x2A\x2A\x2A\x53\x56\x8B\x74\x24\x34\x57\x8B\x04\xB5"
+#define R_STUDIOCHROME_SIG_NEW2 R_STUDIOCHROME_SIG_BLOB
 #define R_STUDIOCHROME_SIG_NEW "\x55\x8B\xEC\x83\xEC\x24\x8B\x0D\x2A\x2A\x2A\x2A\x53\x56\x8B\x75\x0C\x57\x8B\x04\xB5"
 #define R_STUDIOCHROME_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\x8B\x2A\x08\x2A\x8B\x2A\x0C\x8B\x04"
 #define R_STUDIOCHROME_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\xD9\xE8\x53"
@@ -263,28 +288,32 @@
 #define R_DRAWSRPITEMODEL_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x53\x8B\x5C\x24\x2A\x55\x8B\x83\x2A\x0B\x00\x00"
 
 #define R_LIGHTSTRENGTH_SIG_SVENGINE "\x8B\x15\x2A\x2A\x2A\x2A\x2A\x8B\x35\x2A\x2A\x2A\x2A\x2A\x8B\x7C\x24\x0C"
-#define R_LIGHTSTRENGTH_SIG_HL25 ""//inlined
-#define R_LIGHTSTRENGTH_SIG_NEW "\x55\x8B\xEC\x83\xEC\x0C\x8B\x4D\x08\x8B\x15\x2A\x2A\x2A\x2A\x2A\x8B\x04\x2A\x2A\x2A\x2A\x2A"
-#define R_LIGHTSTRENGTH_SIG_BLOB "\x8B\x0D\x2A\x2A\x2A\x2A\x83\xEC\x0C\x55\x8B\x2A\x24\x2A\x2A\x8B"
+#define R_LIGHTSTRENGTH_SIG_HL25   ""//inlined
+#define R_LIGHTSTRENGTH_SIG_NEW   "\x55\x8B\xEC\x83\xEC\x0C\x8B\x4D\x08\x8B\x15\x2A\x2A\x2A\x2A\x2A\x8B\x04\x2A\x2A\x2A\x2A\x2A"
+#define R_LIGHTSTRENGTH_SIG_NEW2  "\x8B\x4C\x24\x04\x8B\x15\x2A\x2A\x2A\x2A\x83\xEC\x0C\x8B\x04\x2A\x2A\x2A\x2A\x2A\x3B\xC2"
+#define R_LIGHTSTRENGTH_SIG_BLOB  "\x8B\x0D\x2A\x2A\x2A\x2A\x83\xEC\x0C\x55\x8B\x2A\x24\x2A\x2A\x8B"
 
 #define R_GLOW_BLEND_SIG_SVENGINE ""//inlined
 #define R_GLOW_BLEND_SIG_HL25     ""//inlined
 #define R_GLOW_BLEND_SIG_NEW      "\x55\x8B\xEC\x81\xEC\x2A\x00\x00\x00\xD9\x05\x2A\x2A\x2A\x2A\xD8\x25\x2A\x2A\x2A\x2A\x2A\x8D\x2A\x2A"
+#define R_GLOW_BLEND_SIG_NEW2      "\x83\xEC\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x25\x2A\x2A\x2A\x2A\x2A\x8D\x44\x24\x0C\x2A\x2A\xD9"
 #define R_GLOW_BLEND_SIG_BLOB      "\x81\xEC\x2A\x2A\x00\x00\xD9\x05\x2A\x2A\x2A\x2A\xD8\x25\x2A\x2A\x2A\x2A\x2A\x8D"
 
 //#define GL_UPLOAD16_SIG_SVENGINE "\x8B\x44\x24\x2A\x83\xEC\x08\x85\xC0\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xC4\x08"
 
 #define SCR_BEGIN_LOADING_PLAQUE "\x6A\x01\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xF8\x03"
 
-#define HOST_IS_SINGLE_PLAYER_GAME_SVENGINE "\x33\xC0\x39\x05\x2A\x2A\x2A\x2A\x75\x2A\x83\x3D\x2A\x2A\x2A\x2A\x01\x0F\x94\xC0"
-#define HOST_IS_SINGLE_PLAYER_GAME_HL25     "\x83\x3D\x2A\x2A\x2A\x2A\x00\xA1\x2A\x2A\x2A\x2A\x0F\x44\x05\x2A\x2A\x2A\x2A\xC3"
-#define HOST_IS_SINGLE_PLAYER_GAME_NEW      "\xA1\x2A\x2A\x2A\x2A\x85\xC0\xA1\x2A\x2A\x2A\x2A\x74\x05\xA1\x2A\x2A\x2A\x2A\xC3"
-#define HOST_IS_SINGLE_PLAYER_GAME_BLOB     "\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x33\xC0\x83\xF9\x01"
+#define HOST_IS_SINGLE_PLAYER_GAME_SVENGINE  "\x33\xC0\x39\x05\x2A\x2A\x2A\x2A\x75\x2A\x83\x3D\x2A\x2A\x2A\x2A\x01\x0F\x94\xC0"
+#define HOST_IS_SINGLE_PLAYER_GAME_HL25      "\x83\x3D\x2A\x2A\x2A\x2A\x00\xA1\x2A\x2A\x2A\x2A\x0F\x44\x05\x2A\x2A\x2A\x2A\xC3"
+#define HOST_IS_SINGLE_PLAYER_GAME_NEW       "\xA1\x2A\x2A\x2A\x2A\x85\xC0\xA1\x2A\x2A\x2A\x2A\x74\x05\xA1\x2A\x2A\x2A\x2A\xC3"
+#define HOST_IS_SINGLE_PLAYER_GAME_NEW2      "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x75\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x33\xC0"
+#define HOST_IS_SINGLE_PLAYER_GAME_BLOB      "\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x33\xC0\x83\xF9\x01"
 
-#define MOD_UNLOADSPRITETEXTURES_SVENGINE "\x81\xEC\x04\x01\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x00\x01\x00\x00\x57\x8B\xBC\x24\x0C\x01\x00\x00"
-#define MOD_UNLOADSPRITETEXTURES_HL25     "\x55\x8B\xEC\x81\xEC\x04\x01\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x57\x8B\x7D\x08\x83\x7F\x44\x01"
-#define MOD_UNLOADSPRITETEXTURES_NEW      "\x55\x8B\xEC\x81\xEC\x00\x01\x00\x00\x53\x8B\x5D\x08\xB8\x01\x00\x00\x00\x56\x8B\x4B\x44"
 #define MOD_UNLOADSPRITETEXTURES_BLOB     "\x81\xEC\x2A\x2A\x00\x00\xB8\x01\x00\x00\x00\x2A\x8B\x2A\x24\x08\x01\x00\x00\x2A\x2A\x2A\x2A\x44"
+#define MOD_UNLOADSPRITETEXTURES_NEW2     MOD_UNLOADSPRITETEXTURES_BLOB
+#define MOD_UNLOADSPRITETEXTURES_NEW      "\x55\x8B\xEC\x81\xEC\x00\x01\x00\x00\x53\x8B\x5D\x08\xB8\x01\x00\x00\x00\x56\x8B\x4B\x44"
+#define MOD_UNLOADSPRITETEXTURES_HL25     "\x55\x8B\xEC\x81\xEC\x04\x01\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x57\x8B\x7D\x08\x83\x7F\x44\x01"
+#define MOD_UNLOADSPRITETEXTURES_SVENGINE "\x81\xEC\x04\x01\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x00\x01\x00\x00\x57\x8B\xBC\x24\x0C\x01\x00\x00"
 
 #define R_INITPARTICLETEXTURE_BLOB "\xA1\x2A\x2A\x2A\x2A\x81\xEC\x2A\x2A\x00\x00\x8B\xC8\x40"
 #define R_INITPARTICLETEXTURE_COMMON "\x68\x01\x14\x00\x00\x68\x08\x19\x00\x00\x6A\x00\x6A\x08\x6A\x08"
@@ -310,6 +339,85 @@ void R_FillAddress(void)
 	gPrivateFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
 	gPrivateFuncs.triapi_Color4f = gEngfuncs.pTriAPI->Color4f;
 
+	bHasOfficialFBOSupport = false;
+	bHasOfficialGLTexAllocSupport = true;
+
+	if (1)
+	{
+		const char sigs1[] = "FBO backbuffer rendering disabled";
+		auto FBO_String = Search_Pattern_Data(sigs1);
+		if (!FBO_String)
+			FBO_String = Search_Pattern_Rdata(sigs1);
+		if (FBO_String)
+		{
+			bHasOfficialFBOSupport = true;
+		}
+	}
+
+	if (1)
+	{
+		const char pattern[] = "\xA8\x16\x00\x00";
+		PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
+		PUCHAR SearchLimit = (PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize;
+		while (SearchBegin < SearchLimit)
+		{
+			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+			if (pFound)
+			{
+				typedef struct
+				{
+					bool bFoundPush;
+					bool bFoundCall;
+				}LoadSkysSearchContext;
+
+				LoadSkysSearchContext ctx = { 0 };
+
+				g_pMetaHookAPI->DisasmRanges(pFound + 4, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto pinst = (cs_insn*)inst;
+					auto ctx = (LoadSkysSearchContext*)context;
+
+					if (instCount == 1 && pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG )
+					{
+						ctx->bFoundPush = true;
+					}
+
+					if (instCount == 2 && address[0] == 0xE8)
+					{
+						ctx->bFoundCall = true;
+					}
+
+					if (ctx->bFoundPush && ctx->bFoundCall)
+						return TRUE;
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+
+					}, 0, &ctx);
+
+				if (ctx.bFoundPush && ctx.bFoundCall)
+				{
+					bHasOfficialGLTexAllocSupport = false;
+
+					break;
+				}
+
+				SearchBegin = pFound + Sig_Length(pattern);
+}
+			else
+			{
+				break;
+			}
+		}
+	}
+
 #if 0//unused
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -334,6 +442,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.R_PolyBlend = (decltype(gPrivateFuncs.R_PolyBlend))Search_Pattern(R_POLYBLEND_NEW);
+		if(!gPrivateFuncs.R_PolyBlend)
+			gPrivateFuncs.R_PolyBlend = (decltype(gPrivateFuncs.R_PolyBlend))Search_Pattern(R_POLYBLEND_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
@@ -352,46 +462,53 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.S_ExtraUpdate = (decltype(gPrivateFuncs.S_ExtraUpdate))Search_Pattern(S_EXTRAUPDATE_NEW);
+		if(!gPrivateFuncs.S_ExtraUpdate)
+			gPrivateFuncs.S_ExtraUpdate = (decltype(gPrivateFuncs.S_ExtraUpdate))Search_Pattern(S_EXTRAUPDATE_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
 		gPrivateFuncs.S_ExtraUpdate = (decltype(gPrivateFuncs.S_ExtraUpdate))Search_Pattern(S_EXTRAUPDATE_BLOB);
 	}
+
 	Sig_FuncNotFound(S_ExtraUpdate);
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gPrivateFuncs.GL_Bind = (void(*)(int))Search_Pattern(GL_BIND_SIG_SVENGINE);
+		gPrivateFuncs.GL_Bind = (decltype(gPrivateFuncs.GL_Bind))Search_Pattern(GL_BIND_SIG_SVENGINE);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gPrivateFuncs.GL_Bind = (void(*)(int))Search_Pattern(GL_BIND_SIG_HL25);
+		gPrivateFuncs.GL_Bind = (decltype(gPrivateFuncs.GL_Bind))Search_Pattern(GL_BIND_SIG_HL25);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
-		gPrivateFuncs.GL_Bind = (void(*)(int))Search_Pattern(GL_BIND_SIG_NEW);
+		gPrivateFuncs.GL_Bind = (decltype(gPrivateFuncs.GL_Bind))Search_Pattern(GL_BIND_SIG_NEW);
+		if(!gPrivateFuncs.GL_Bind)
+			gPrivateFuncs.GL_Bind = (decltype(gPrivateFuncs.GL_Bind))Search_Pattern(GL_BIND_SIG_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
-		gPrivateFuncs.GL_Bind = (void(*)(int))Search_Pattern(GL_BIND_SIG_BLOB);
+		gPrivateFuncs.GL_Bind = (decltype(gPrivateFuncs.GL_Bind))Search_Pattern(GL_BIND_SIG_BLOB);
 	}
 	Sig_FuncNotFound(GL_Bind);
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		gPrivateFuncs.GL_SelectTexture = (void(*)(GLenum))Search_Pattern_From(gPrivateFuncs.GL_Bind, GL_SELECTTEXTURE_SIG_SVENGINE);
+		gPrivateFuncs.GL_SelectTexture = (decltype(gPrivateFuncs.GL_SelectTexture))Search_Pattern_From(gPrivateFuncs.GL_Bind, GL_SELECTTEXTURE_SIG_SVENGINE);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		gPrivateFuncs.GL_SelectTexture = (void(*)(GLenum))Search_Pattern_From(gPrivateFuncs.GL_Bind, GL_SELECTTEXTURE_SIG_HL25);
+		gPrivateFuncs.GL_SelectTexture = (decltype(gPrivateFuncs.GL_SelectTexture))Search_Pattern_From(gPrivateFuncs.GL_Bind, GL_SELECTTEXTURE_SIG_HL25);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
-		gPrivateFuncs.GL_SelectTexture = (void(*)(GLenum))Search_Pattern(GL_SELECTTEXTURE_SIG_NEW);
+		gPrivateFuncs.GL_SelectTexture = (decltype(gPrivateFuncs.GL_SelectTexture))Search_Pattern(GL_SELECTTEXTURE_SIG_NEW);
+		if(!gPrivateFuncs.GL_SelectTexture)
+			gPrivateFuncs.GL_SelectTexture = (decltype(gPrivateFuncs.GL_SelectTexture))Search_Pattern(GL_SELECTTEXTURE_SIG_NEW2);		
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
-		gPrivateFuncs.GL_SelectTexture = (void(*)(GLenum))Search_Pattern(GL_SELECTTEXTURE_SIG_BLOB);
+		gPrivateFuncs.GL_SelectTexture = (decltype(gPrivateFuncs.GL_SelectTexture))Search_Pattern(GL_SELECTTEXTURE_SIG_BLOB);
 	}
 	Sig_FuncNotFound(GL_SelectTexture);
 
@@ -459,6 +576,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.R_CullBox = (decltype(gPrivateFuncs.R_CullBox))Search_Pattern_From(gPrivateFuncs.GL_LoadTexture2, R_CULLBOX_SIG_NEW);
+		if(!gPrivateFuncs.R_CullBox)
+			gPrivateFuncs.R_CullBox = (decltype(gPrivateFuncs.R_CullBox))Search_Pattern_From(gPrivateFuncs.GL_LoadTexture2, R_CULLBOX_SIG_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
@@ -504,6 +623,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.R_SetupGL = (decltype(gPrivateFuncs.R_SetupGL))Search_Pattern(R_SETUPGL_SIG_NEW);
+		if(!gPrivateFuncs.R_SetupGL)
+			gPrivateFuncs.R_SetupGL = (decltype(gPrivateFuncs.R_SetupGL))Search_Pattern(R_SETUPGL_SIG_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
@@ -522,6 +643,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.R_DrawSequentialPoly = (decltype(gPrivateFuncs.R_DrawSequentialPoly))Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_NEW);
+		if(!gPrivateFuncs.R_DrawSequentialPoly)
+			gPrivateFuncs.R_DrawSequentialPoly = (decltype(gPrivateFuncs.R_DrawSequentialPoly))Search_Pattern(R_DRAWSEQUENTIALPOLY_SIG_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
@@ -540,6 +663,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.R_TextureAnimation = (decltype(gPrivateFuncs.R_TextureAnimation))Search_Pattern(R_TEXTUREANIMATION_SIG_NEW);
+		if(!gPrivateFuncs.R_TextureAnimation)
+			gPrivateFuncs.R_TextureAnimation = (decltype(gPrivateFuncs.R_TextureAnimation))Search_Pattern(R_TEXTUREANIMATION_SIG_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
@@ -575,9 +700,13 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))Search_Pattern(V_RENDERVIEW_SIG_NEW);
+		if(!gPrivateFuncs.V_RenderView)
+			gPrivateFuncs.V_RenderView = (decltype(gPrivateFuncs.V_RenderView))Search_Pattern(V_RENDERVIEW_SIG_NEW2);
 		Sig_FuncNotFound(V_RenderView);
 
 		gPrivateFuncs.R_RenderView = (decltype(gPrivateFuncs.R_RenderView))Search_Pattern(R_RENDERVIEW_SIG_NEW);
+		if (!gPrivateFuncs.R_RenderView)
+			gPrivateFuncs.R_RenderView = (decltype(gPrivateFuncs.R_RenderView))Search_Pattern(R_RENDERVIEW_SIG_NEW2);
 		Sig_FuncNotFound(R_RenderView);
 
 		gPrivateFuncs.R_RenderScene = (decltype(gPrivateFuncs.R_RenderScene))Search_Pattern(R_RENDERSCENE_SIG_NEW);
@@ -851,6 +980,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.R_RenderDynamicLightmaps = (decltype(gPrivateFuncs.R_RenderDynamicLightmaps))Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_NEW);
+		if(!gPrivateFuncs.R_RenderDynamicLightmaps)
+			gPrivateFuncs.R_RenderDynamicLightmaps = (decltype(gPrivateFuncs.R_RenderDynamicLightmaps))Search_Pattern(R_RENDERDYNAMICLIGHTMAPS_SIG_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
@@ -869,6 +1000,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.R_DrawBrushModel = (decltype(gPrivateFuncs.R_DrawBrushModel))Search_Pattern(R_DRAWBRUSHMODEL_SIG_NEW);
+		if(!gPrivateFuncs.R_DrawBrushModel)
+			gPrivateFuncs.R_DrawBrushModel = (decltype(gPrivateFuncs.R_DrawBrushModel))Search_Pattern(R_DRAWBRUSHMODEL_SIG_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
@@ -887,6 +1020,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))Search_Pattern_From(gPrivateFuncs.R_DrawBrushModel, R_RECURSIVEWORLDNODE_SIG_NEW);
+		if(!gPrivateFuncs.R_RecursiveWorldNode)
+			gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))Search_Pattern_From(gPrivateFuncs.R_DrawBrushModel, R_RECURSIVEWORLDNODE_SIG_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
@@ -1052,6 +1187,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.R_MarkLeaves = (decltype(gPrivateFuncs.R_MarkLeaves))Search_Pattern(R_MARKLEAVES_SIG_NEW);
+		if(!gPrivateFuncs.R_MarkLeaves)
+			gPrivateFuncs.R_MarkLeaves = (decltype(gPrivateFuncs.R_MarkLeaves))Search_Pattern(R_MARKLEAVES_SIG_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
@@ -1070,6 +1207,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.GL_BeginRendering = (decltype(gPrivateFuncs.GL_BeginRendering))Search_Pattern(GL_BEGINRENDERING_SIG_NEW);
+		if(!gPrivateFuncs.GL_BeginRendering)
+			gPrivateFuncs.GL_BeginRendering = (decltype(gPrivateFuncs.GL_BeginRendering))Search_Pattern(GL_BEGINRENDERING_SIG_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
@@ -1110,11 +1249,18 @@ void R_FillAddress(void)
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
-			gPrivateFuncs.GL_EndRendering = (decltype(gPrivateFuncs.GL_EndRendering))Search_Pattern_From(gPrivateFuncs.GL_BeginRendering, GL_ENDRENDERING_SIG_NEW);
+			if (bHasOfficialFBOSupport)
+			{
+				gPrivateFuncs.GL_EndRendering = (decltype(gPrivateFuncs.GL_EndRendering))Search_Pattern_From_Size(gPrivateFuncs.GL_BeginRendering, 0x100, GL_ENDRENDERING_SIG_NEW);
+			}
+			else
+			{
+				gPrivateFuncs.GL_EndRendering = (decltype(gPrivateFuncs.GL_EndRendering))Search_Pattern_From_Size(gPrivateFuncs.GL_BeginRendering, 0x100, GL_ENDRENDERING_SIG_BLOB);
+			}
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
-			gPrivateFuncs.GL_EndRendering = (decltype(gPrivateFuncs.GL_EndRendering))Search_Pattern_From(gPrivateFuncs.GL_BeginRendering, GL_ENDRENDERING_SIG_BLOB);
+			gPrivateFuncs.GL_EndRendering = (decltype(gPrivateFuncs.GL_EndRendering))Search_Pattern_From_Size(gPrivateFuncs.GL_BeginRendering, 0x100, GL_ENDRENDERING_SIG_BLOB);
 		}
 	}
 	Sig_FuncNotFound(GL_EndRendering);
@@ -1130,6 +1276,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.EmitWaterPolys = (decltype(gPrivateFuncs.EmitWaterPolys))Search_Pattern(EMITWATERPOLYS_SIG_NEW);
+		if(!gPrivateFuncs.EmitWaterPolys)
+			gPrivateFuncs.EmitWaterPolys = (decltype(gPrivateFuncs.EmitWaterPolys))Search_Pattern(EMITWATERPOLYS_SIG_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
@@ -1154,6 +1302,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.VID_UpdateWindowVars = (decltype(gPrivateFuncs.VID_UpdateWindowVars))Search_Pattern(VID_UPDATEWINDOWVARS_SIG_NEW);
+		if(!gPrivateFuncs.VID_UpdateWindowVars)
+			gPrivateFuncs.VID_UpdateWindowVars = (decltype(gPrivateFuncs.VID_UpdateWindowVars))Search_Pattern(VID_UPDATEWINDOWVARS_SIG_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
@@ -1245,21 +1395,26 @@ void R_FillAddress(void)
 		}
 	}
 
-	if (g_iEngineType == ENGINE_SVENGINE)
+	if (!gPrivateFuncs.R_DrawTEntitiesOnList)
 	{
-		gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_SVENGINE);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_HL25);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_NEW);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_BLOB);
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_SVENGINE);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_HL25);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_NEW);
+			if(!gPrivateFuncs.R_DrawTEntitiesOnList)
+				gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_NEW2);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_BLOB);
+		}
 	}
 	Sig_FuncNotFound(R_DrawTEntitiesOnList);
 
@@ -1434,6 +1589,8 @@ void R_FillAddress(void)
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
 			gPrivateFuncs.R_DrawParticles = (decltype(gPrivateFuncs.R_DrawParticles))Search_Pattern(R_DRAWPARTICLES_SIG_NEW);
+			if(!gPrivateFuncs.R_DrawParticles)
+				gPrivateFuncs.R_DrawParticles = (decltype(gPrivateFuncs.R_DrawParticles))Search_Pattern(R_DRAWPARTICLES_SIG_NEW2);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
@@ -1492,6 +1649,8 @@ void R_FillAddress(void)
 		else if (g_iEngineType == ENGINE_GOLDSRC)
 		{
 			gPrivateFuncs.CL_AllocDlight = (decltype(gPrivateFuncs.CL_AllocDlight))Search_Pattern(CL_ALLOCDLIGHT_SIG_NEW);
+			if(!gPrivateFuncs.CL_AllocDlight)
+				gPrivateFuncs.CL_AllocDlight = (decltype(gPrivateFuncs.CL_AllocDlight))Search_Pattern(CL_ALLOCDLIGHT_SIG_NEW2);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
@@ -1555,6 +1714,13 @@ void R_FillAddress(void)
 							return TRUE;
 						}
 
+						if (Candidate[0] == 0x83 &&
+							Candidate[1] == 0xEC &&
+							Candidate[3] == 0x8B)
+						{
+							return TRUE;
+						}
+
 						if (Candidate[0] == 0x81 &&
 							Candidate[1] == 0xEC &&
 							Candidate[4] == 0x00 &&
@@ -1567,43 +1733,46 @@ void R_FillAddress(void)
 						return FALSE;
 					});
 
-					g_pMetaHookAPI->DisasmRanges(candidate, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+					if (candidate)
+					{
+						g_pMetaHookAPI->DisasmRanges(candidate, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
-						auto pinst = (cs_insn*)inst;
-						auto ctx = (R_GLStudioDrawPointsSearchContext*)context;
+							auto pinst = (cs_insn*)inst;
+							auto ctx = (R_GLStudioDrawPointsSearchContext*)context;
 
-						if (pinst->id == X86_INS_MOV &&
-							pinst->detail->x86.op_count == 2 &&
-							pinst->detail->x86.operands[0].type == X86_OP_REG &&
-							pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-							pinst->detail->x86.operands[1].mem.disp == 0x54)
-						{
-							ctx->bFound54 = true;
-						}
+							if (pinst->id == X86_INS_MOV &&
+								pinst->detail->x86.op_count == 2 &&
+								pinst->detail->x86.operands[0].type == X86_OP_REG &&
+								pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+								pinst->detail->x86.operands[1].mem.disp == 0x54)
+							{
+								ctx->bFound54 = true;
+							}
 
-						if (pinst->id == X86_INS_MOV &&
-							pinst->detail->x86.op_count == 2 &&
-							pinst->detail->x86.operands[0].type == X86_OP_REG &&
-							pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-							pinst->detail->x86.operands[1].mem.disp == 0x60)
-						{
-							ctx->bFound60 = true;
-						}
+							if (pinst->id == X86_INS_MOV &&
+								pinst->detail->x86.op_count == 2 &&
+								pinst->detail->x86.operands[0].type == X86_OP_REG &&
+								pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+								pinst->detail->x86.operands[1].mem.disp == 0x60)
+							{
+								ctx->bFound60 = true;
+							}
 
-						if (ctx->bFound54 && ctx->bFound60)
+							if (ctx->bFound54 && ctx->bFound60)
+								return TRUE;
+
+							if (address[0] == 0xCC)
+								return TRUE;
+
+							if (pinst->id == X86_INS_RET)
+								return TRUE;
+
+							return FALSE;
+
 							return TRUE;
 
-						if (address[0] == 0xCC)
-							return TRUE;
-
-						if (pinst->id == X86_INS_RET)
-							return TRUE;
-
-						return FALSE;
-
-						return TRUE;
-
-						}, 0, & ctx);
+							}, 0, &ctx);
+					}
 
 					if (ctx.bFound54 && ctx.bFound60)
 					{
@@ -1636,6 +1805,8 @@ void R_FillAddress(void)
 		else if(g_iEngineType == ENGINE_GOLDSRC)
 		{
 			gPrivateFuncs.R_GLStudioDrawPoints = (decltype(gPrivateFuncs.R_GLStudioDrawPoints))Search_Pattern(R_GLSTUDIODRAWPOINTS_SIG_NEW);
+			if(!gPrivateFuncs.R_GLStudioDrawPoints)
+				gPrivateFuncs.R_GLStudioDrawPoints = (decltype(gPrivateFuncs.R_GLStudioDrawPoints))Search_Pattern(R_GLSTUDIODRAWPOINTS_SIG_NEW2);
 		}
 		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 		{
@@ -1655,6 +1826,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.R_StudioLighting = (decltype(gPrivateFuncs.R_StudioLighting))Search_Pattern(R_STUDIOLIGHTING_SIG_NEW);
+		if(!gPrivateFuncs.R_StudioLighting)
+			gPrivateFuncs.R_StudioLighting = (decltype(gPrivateFuncs.R_StudioLighting))Search_Pattern(R_STUDIOLIGHTING_SIG_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
@@ -1673,6 +1846,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.R_StudioChrome = (decltype(gPrivateFuncs.R_StudioChrome))Search_Pattern(R_STUDIOCHROME_SIG_NEW);
+		if(!gPrivateFuncs.R_StudioChrome)
+			gPrivateFuncs.R_StudioChrome = (decltype(gPrivateFuncs.R_StudioChrome))Search_Pattern(R_STUDIOCHROME_SIG_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
@@ -1691,6 +1866,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.R_LightLambert = (decltype(gPrivateFuncs.R_LightLambert))Search_Pattern(R_LIGHTLAMBERT_SIG_NEW);
+		if(!gPrivateFuncs.R_LightLambert)
+			gPrivateFuncs.R_LightLambert = (decltype(gPrivateFuncs.R_LightLambert))Search_Pattern(R_LIGHTLAMBERT_SIG_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
@@ -1872,6 +2049,11 @@ void R_FillAddress(void)
 						Candidate[2] == 0x24)
 						return TRUE;
 
+					if (Candidate[0] == 0x8B &&
+						Candidate[1] == 0x4C &&
+						Candidate[2] == 0x24)
+						return TRUE;
+
 					return FALSE;
 				});
 			}
@@ -1969,6 +2151,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.R_LightStrength = (decltype(gPrivateFuncs.R_LightStrength))Search_Pattern(R_LIGHTSTRENGTH_SIG_NEW);
+		if(!gPrivateFuncs.R_LightStrength)
+			gPrivateFuncs.R_LightStrength = (decltype(gPrivateFuncs.R_LightStrength))Search_Pattern(R_LIGHTSTRENGTH_SIG_NEW2);
 		Sig_FuncNotFound(R_LightStrength);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
@@ -2007,6 +2191,7 @@ void R_FillAddress(void)
 	}
 	Sig_FuncNotFound(R_RotateForEntity);
 
+#if 0
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		//Inlined
@@ -2025,7 +2210,7 @@ void R_FillAddress(void)
 		gPrivateFuncs.BuildNormalIndexTable = (decltype(gPrivateFuncs.BuildNormalIndexTable))Search_Pattern(BUILDNORMALINDEXTABLE_SIG_BLOB);
 		Sig_FuncNotFound(BuildNormalIndexTable);
 	}
-
+#endif
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		//Inlined
@@ -2037,6 +2222,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.R_GlowBlend = (decltype(gPrivateFuncs.R_GlowBlend))Search_Pattern(R_GLOW_BLEND_SIG_NEW);
+		if(!gPrivateFuncs.R_GlowBlend)
+			gPrivateFuncs.R_GlowBlend = (decltype(gPrivateFuncs.R_GlowBlend))Search_Pattern(R_GLOW_BLEND_SIG_NEW2);
 		Sig_FuncNotFound(R_GlowBlend);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
@@ -2059,6 +2246,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW);
+		if(!gPrivateFuncs.Host_IsSinglePlayerGame)
+			gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
@@ -2077,6 +2266,8 @@ void R_FillAddress(void)
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))Search_Pattern(MOD_UNLOADSPRITETEXTURES_NEW);
+		if(!gPrivateFuncs.Mod_UnloadSpriteTextures)
+			gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))Search_Pattern(MOD_UNLOADSPRITETEXTURES_NEW2);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
@@ -2229,7 +2420,7 @@ void R_FillAddress(void)
 	}
 #endif
 
-	if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	if (!bHasOfficialFBOSupport)
 	{
 		s_fXMouseAspectAdjustment = &s_fXMouseAspectAdjustment_Storage;
 		s_fYMouseAspectAdjustment = &s_fYMouseAspectAdjustment_Storage;
@@ -3080,7 +3271,7 @@ void R_FillAddress(void)
 
 		Sig_FuncNotFound(R_LoadSkys);
 
-		if (g_iEngineType != ENGINE_GOLDSRC_BLOB)
+		if (bHasOfficialGLTexAllocSupport)
 		{
 			typedef struct
 			{
@@ -3270,36 +3461,58 @@ void R_FillAddress(void)
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		const char sigs[] = "\xDB\x05\x2A\x2A\x2A\x2A\x2A\xD9\x1C\x2A\x68\x01\x28\x00\x00\x68\xE1\x0D\x00\x00\xFF\x2A\xDB\x05";
-		addr = (DWORD)Search_Pattern(sigs);
-		Sig_AddrNotFound(gl_filter_min);
-		gl_filter_min = *(int **)(addr + 2);
-		gl_filter_max = *(int **)(addr + sizeof(sigs) - 1);
+#define GL_FILTER_SIG_SVENGINE "\xDB\x05\x2A\x2A\x2A\x2A\x2A\xD9\x1C\x2A\x68\x01\x28\x00\x00\x68\xE1\x0D\x00\x00\xFF\x2A\xDB\x05"
+
+		addr = (ULONG_PTR)Search_Pattern(GL_FILTER_SIG_SVENGINE);
+		if (addr)
+		{
+			gl_filter_min = *(int**)(addr + 2);
+			gl_filter_max = *(int**)(addr + Sig_Length(GL_FILTER_SIG_SVENGINE));
+		}
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		const char sigs[] = "\x66\x0F\x6E\x05\x2A\x2A\x2A\x2A\x0F\x5B\xC0\x2A\xF3\x2A\x2A\x2A\x2A\x68\x01\x28\x00\x00\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x66\x0F\x6E\x05";
-		addr = (DWORD)Search_Pattern(sigs);
-		Sig_AddrNotFound(gl_filter_min);
-		gl_filter_min = *(int **)(addr + 4);
-		gl_filter_max = *(int**)(addr + Sig_Length(sigs));
+#define GL_FILTER_SIG_GOLDSRC_HL25 "\x66\x0F\x6E\x05\x2A\x2A\x2A\x2A\x0F\x5B\xC0\x2A\xF3\x2A\x2A\x2A\x2A\x68\x01\x28\x00\x00\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x66\x0F\x6E\x05"
+		addr = (ULONG_PTR)Search_Pattern(GL_FILTER_SIG_GOLDSRC_HL25);
+		if (addr)
+		{
+			gl_filter_min = *(int**)(addr + 4);
+			gl_filter_max = *(int**)(addr + Sig_Length(GL_FILTER_SIG_GOLDSRC_HL25));
+		}
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
-		const char sigs[] = "\xDB\x05\x2A\x2A\x2A\x2A\x83\xC4\x04\xD9\x2A\x2A\x2A\x2A\x2A\x2A\x68\x01\x28\x00\x00\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xDB\x05";
-		addr = (DWORD)Search_Pattern(sigs);
-		Sig_AddrNotFound(gl_filter_min);
-		gl_filter_min = *(int **)(addr + 2);
-		gl_filter_max = *(int **)(addr + Sig_Length(sigs));
+#define GL_FILTER_SIG_GOLDSRC_NEW "\xDB\x05\x2A\x2A\x2A\x2A\x83\xC4\x04\xD9\x2A\x2A\x2A\x2A\x2A\x2A\x68\x01\x28\x00\x00\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xDB\x05"
+#define GL_FILTER_SIG_GOLDSRC_NEW2 "\xDB\x05\x2A\x2A\x2A\x2A\x83\xC4\x04\xD9\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x68\x01\x28\x00\x00\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xDB\x05"
+
+		addr = (ULONG_PTR)Search_Pattern(GL_FILTER_SIG_GOLDSRC_NEW);
+		if (addr)
+		{
+			gl_filter_min = *(int**)(addr + 2);
+			gl_filter_max = *(int**)(addr + Sig_Length(GL_FILTER_SIG_GOLDSRC_NEW));
+		}
+		else
+		{
+			addr = (ULONG_PTR)Search_Pattern(GL_FILTER_SIG_GOLDSRC_NEW2);
+			if (addr)
+			{
+				gl_filter_min = *(int**)(addr + 2);
+				gl_filter_max = *(int**)(addr + Sig_Length(GL_FILTER_SIG_GOLDSRC_NEW2));
+			}
+		}
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
-		const char sigs[] = "\xDB\x05\x2A\x2A\x2A\x2A\x83\xC4\x04\xD9\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x68\x01\x28\x00\x00\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xDB\x05";
-		addr = (DWORD)Search_Pattern(sigs);
-		Sig_AddrNotFound(gl_filter_min);
-		gl_filter_min = *(int**)(addr + 2);
-		gl_filter_max = *(int**)(addr + Sig_Length(sigs));
+#define GL_FILTER_SIG_BLOB "\xDB\x05\x2A\x2A\x2A\x2A\x83\xC4\x04\xD9\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x68\x01\x28\x00\x00\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xDB\x05"
+		addr = (ULONG_PTR)Search_Pattern(GL_FILTER_SIG_BLOB);
+		if (addr)
+		{
+			gl_filter_min = *(int**)(addr + 2);
+			gl_filter_max = *(int**)(addr + Sig_Length(GL_FILTER_SIG_BLOB));
+		}
 	}
+	Sig_AddrNotFound(gl_filter_min);
+	Sig_AddrNotFound(gl_filter_max);
 
 	if (1)
 	{
@@ -3860,7 +4073,7 @@ void R_FillAddress(void)
 				)
 			{//  mov     numgltextures, ecx
 
-				if (g_iEngineType == ENGINE_GOLDSRC_BLOB &&
+				if (!bHasOfficialGLTexAllocSupport &&
 					instCount > ctx->mov_mem_exx_instCount && instCount < ctx->mov_mem_exx_instCount + 5 &&
 					pinst->detail->x86.operands[1].reg == ctx->mov_mem_exx_reg)
 				{
@@ -3886,7 +4099,7 @@ void R_FillAddress(void)
 
 			}
 
-			if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+			if (!bHasOfficialGLTexAllocSupport)
 			{
 				if (ctx->xor_exi_exi_instCount && pinst->id == X86_INS_MOV &&
 					pinst->detail->x86.op_count == 2 &&
@@ -3900,7 +4113,7 @@ void R_FillAddress(void)
 				}
 			}
 
-			if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+			if (!bHasOfficialGLTexAllocSupport)
 			{
 				if (gltextures && numgltextures && gHostSpawnCount && allocated_textures)
 					return TRUE;
@@ -3924,7 +4137,7 @@ void R_FillAddress(void)
 		Sig_VarNotFound(numgltextures);
 		Sig_VarNotFound(gHostSpawnCount);
 
-		if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+		if (!bHasOfficialGLTexAllocSupport)
 		{
 			Sig_VarNotFound(allocated_textures);
 		}
@@ -4950,6 +5163,7 @@ void R_FillAddress(void)
 #endif
 	}
 
+#if 0
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 #define NORMALINDEX_SIG_SVENGINE "\x83\x3C\xB5\x2A\x2A\x2A\x2A\x00"
@@ -4975,6 +5189,7 @@ void R_FillAddress(void)
 		Sig_AddrNotFound(g_NormalIndex);
 		g_NormalIndex = *(int(**)[MAXSTUDIOVERTS])(addr + 1);
 	}
+#endif
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -5314,67 +5529,67 @@ void R_FillAddress(void)
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char sigs[] = "\xF6\xC4\x44\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F";
-		addr = (DWORD)Search_Pattern_From_Size(gPrivateFuncs.R_RenderView_SvEngine, 0x500, sigs);
+		addr = (ULONG_PTR)Search_Pattern_From_Size(gPrivateFuncs.R_RenderView_SvEngine, 0x500, sigs);
 		Sig_AddrNotFound(envmap);
 		envmap = *(int **)(addr + 11);
 		cl_stats = *(int **)(addr + 24);
 
 		const char sigs3[] = "\xD9\x1D\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x89\x81\xDC\x02\x00\x00";
-		addr = (DWORD)Search_Pattern_From_Size(addr, 0x300, sigs3);
+		addr = (ULONG_PTR)Search_Pattern_From_Size(addr, 0x300, sigs3);
 		Sig_AddrNotFound(cl_weaponstarttime);
 		cl_weaponstarttime = *(float **)(addr + 2);
 		cl_weaponsequence = *(int **)(addr + 7);
 
 		const char sigs4[] = "\xD1\xEA\x89\x15\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
-		addr = (DWORD)Search_Pattern_From_Size(addr, 0x300, sigs4);
+		addr = (ULONG_PTR)Search_Pattern_From_Size(addr, 0x300, sigs4);
 		Sig_AddrNotFound(cl_light_level);
 		cl_light_level = *(int **)(addr + 4);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
 		const char sigs[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\xF3\x0F\x10\x05";
-		addr = (DWORD)Search_Pattern_From_Size(gPrivateFuncs.R_DrawViewModel, 0x100, sigs);
+		addr = (ULONG_PTR)Search_Pattern_From_Size(gPrivateFuncs.R_DrawViewModel, 0x100, sigs);
 		Sig_AddrNotFound(envmap);
 		envmap = *(int**)(addr + 2);
 
 		const char sigs2[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x83\xB9\x94\x0B\x00\x00\x00";
-		addr = (DWORD)Search_Pattern_From_Size((void*)addr, 0x50, sigs2);
+		addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x50, sigs2);
 		Sig_AddrNotFound(cl_stats);
 		cl_stats = *(int**)(addr + 2);
 
 		const char sigs3[] = "\xF3\x0F\x11\x05\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x89\x81\xDC\x02\x00\x00";
-		addr = (DWORD)Search_Pattern_From_Size((void*)addr, 0x500, sigs3);
+		addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x500, sigs3);
 		Sig_AddrNotFound(cl_weaponstarttime);
 		cl_weaponstarttime = *(float**)(addr + 4);
 		cl_weaponsequence = *(int**)(addr + 9);
 
 		const char sigs4[] = "\xD1\xEA\x89\x15\x2A\x2A\x2A\x2A\x8B\x40\x04";
-		addr = (DWORD)Search_Pattern_From_Size((void*)addr, 0x600, sigs4);
+		addr = (ULONG_PTR)Search_Pattern_From_Size((void*)addr, 0x600, sigs4);
 		Sig_AddrNotFound(cl_light_level);
 		cl_light_level = *(int**)(addr + 4);
 	}
 	else
 	{
 		const char sigs[] = "\x39\x3D\x2A\x2A\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xD9\x05";
-		addr = (DWORD)Search_Pattern_From_Size(gPrivateFuncs.R_DrawViewModel, 0x100, sigs);
+		addr = (ULONG_PTR)Search_Pattern_From_Size(gPrivateFuncs.R_DrawViewModel, 0x100, sigs);
 		Sig_AddrNotFound(envmap);
 		envmap = *(int **)(addr + 2);
 
 		const char sigs2[] = "\x39\x3D\x2A\x2A\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\xA1";
-		addr = (DWORD)Search_Pattern_From_Size((void *)addr, 0x50, sigs2);
+		addr = (ULONG_PTR)Search_Pattern_From_Size((void *)addr, 0x50, sigs2);
 		Sig_AddrNotFound(cl_stats);
 		cl_stats = *(int **)(addr + 2);
 
 		const char sigs3[] = "\xD9\x1D\x2A\x2A\x2A\x2A\xA1";
-		addr = (DWORD)Search_Pattern_From_Size((void *)addr, 0x500, sigs3);
+		addr = (ULONG_PTR)Search_Pattern_From_Size((void *)addr, 0x500, sigs3);
 		Sig_AddrNotFound(cl_weaponstarttime);
 		cl_weaponstarttime = *(float **)(addr + 2);
 		cl_weaponsequence = *(int **)(addr + 7);
 
-		const char sigs4[] = "\x6A\x01\x89\x15\x2A\x2A\x2A\x2A\x89";
-		addr = (DWORD)Search_Pattern_From_Size((void *)addr, 0x600, sigs4);
+		const char sigs4[] = "\x89\x15\x2A\x2A\x2A\x2A\x89\x2A\x2A\x2A\x2A\x2A\xFF";
+		addr = (ULONG_PTR)Search_Pattern_From_Size((void *)addr, 0x600, sigs4);
 		Sig_AddrNotFound(cl_light_level);
-		cl_light_level = *(int **)(addr + 4);
+		cl_light_level = *(int **)(addr + 2);
 
 	}
 
@@ -6230,16 +6445,20 @@ void R_FillAddress(void)
 			int MovZeroEbp_Reg;
 			int ZerodReg;
 			int ZerodReg_InstCount;
-			int Candidate_InstCount;
+			int Candidate_locallight_InstCount;
 			PVOID Candidate_locallight;
 			int Candidate_numlight_instCount;
 			int Candidate_numlight_reg;
 			PVOID Candidate_numlight;
+
+			int Candidate_locallight2_InstCount;
+			int Candidate_locallight2_reg;
+			PVOID Candidate_locallight2;
 		}R_LightStrength_Context;
 
 		R_LightStrength_Context ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_LightStrength, 0x200, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_LightStrength, 0x500, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 			auto ctx = (R_LightStrength_Context *)context;
 			auto pinst = (cs_insn *)inst;
 
@@ -6296,20 +6515,48 @@ void R_FillAddress(void)
 			{
 				//.text:01D83D28 8B 04 BD C4 A0 37 02                                mov     eax, locallight[edi*4]
 				ctx->Candidate_locallight = (decltype(ctx->Candidate_locallight))pinst->detail->x86.operands[1].mem.disp;
-				ctx->Candidate_InstCount = instCount;
+				ctx->Candidate_locallight_InstCount = instCount;
 			}
 
-			if (ctx->ZerodReg &&
+			if (!locallight &&
+				ctx->ZerodReg &&
 				ctx->ZerodReg_InstCount &&
-				ctx->Candidate_InstCount &&
-				instCount > ctx->Candidate_InstCount &&
-				instCount < ctx->Candidate_InstCount + 40 &&
+				ctx->Candidate_locallight_InstCount &&
+				instCount > ctx->Candidate_locallight_InstCount &&
+				instCount < ctx->Candidate_locallight_InstCount + 40 &&
 				pinst->id == X86_INS_INC &&
 				pinst->detail->x86.op_count == 1 &&
 				pinst->detail->x86.operands[0].type == X86_OP_REG &&
 				pinst->detail->x86.operands[0].reg == ctx->ZerodReg)
 			{
 				locallight = (decltype(locallight))ctx->Candidate_locallight;
+			}
+
+			if (
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm >(PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				//.text:01D99694 BB 8C AB 40 02                                      mov     ebx, offset locallight
+				ctx->Candidate_locallight2 = (decltype(ctx->Candidate_locallight2))pinst->detail->x86.operands[1].imm;
+				ctx->Candidate_locallight2_InstCount = instCount;
+				ctx->Candidate_locallight2_reg = pinst->detail->x86.operands[0].reg;
+			}
+
+			if (!locallight && ctx->Candidate_locallight2_InstCount &&
+				instCount > ctx->Candidate_locallight2_InstCount &&
+				instCount < ctx->Candidate_locallight2_InstCount + 40 &&
+				pinst->id == X86_INS_ADD &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[0].reg == ctx->Candidate_locallight2_reg &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 4)
+			{
+				locallight = (decltype(locallight))ctx->Candidate_locallight2;
 			}
 
 			if (!numlight &&
@@ -6968,14 +7215,14 @@ hook_t *g_phook_Mod_PointInLeaf = NULL;
 hook_t *g_phook_R_BuildLightMap = NULL;
 hook_t *g_phook_R_AddDynamicLights = NULL;
 hook_t *g_phook_R_GLStudioDrawPoints = NULL;
-hook_t* g_phook_GL_UnloadTextures = NULL;
-hook_t* g_phook_GL_UnloadTexture = NULL;
+hook_t *g_phook_GL_UnloadTextures = NULL;
+hook_t *g_phook_GL_UnloadTexture = NULL;
 hook_t *g_phook_GL_LoadTexture2 = NULL;
 hook_t *g_phook_GL_BuildLightmaps = NULL;
 hook_t *g_phook_enginesurface_drawFlushText = NULL;
 hook_t *g_phook_Mod_LoadStudioModel = NULL;
 hook_t *g_phook_Mod_LoadBrushModel = NULL;
-hook_t* g_phook_Mod_UnloadSpriteTextures = NULL;
+hook_t *g_phook_Mod_UnloadSpriteTextures = NULL;
 hook_t *g_phook_triapi_RenderMode = NULL;
 hook_t *g_phook_triapi_Color4f = NULL;
 hook_t *g_phook_Draw_MiptexTexture = NULL;
@@ -7061,7 +7308,7 @@ int WINAPI GL_RedirectedGenTexture(void)
 
 void R_RedirectBlobEngineOpenGLTextures(void)
 {
-	if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	if (!bHasOfficialGLTexAllocSupport)
 	{
 		const char pattern[] = "\xA1\x2A\x2A\x2A\x2A";
 		*(ULONG_PTR*)(pattern + 1) = (ULONG_PTR)allocated_textures;

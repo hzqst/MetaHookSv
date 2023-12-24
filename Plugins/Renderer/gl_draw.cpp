@@ -47,6 +47,14 @@ static glmode_t gl_texture_modes[] =
 	{ "GL_LINEAR_MIPMAP_LINEAR", GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR }
 };
 
+int GL_GetAnsioValue()
+{
+	if (!gl_ansio)
+		return 1;
+
+	return max(min(gl_ansio->value, gl_max_ansio), 1);
+}
+
 void GL_Texturemode_internal(const char *value)
 {
 	int i;
@@ -77,9 +85,10 @@ void GL_Texturemode_internal(const char *value)
 			if (pgltextures[j].mipmap)
 			{
 				GL_Bind(pgltextures[j].texnum);
+
 				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
 				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
 			}
 			else
 			{
@@ -87,7 +96,7 @@ void GL_Texturemode_internal(const char *value)
 
 				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
 				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
 			}
 		}
 	}
@@ -103,7 +112,7 @@ void GL_Texturemode_internal(const char *value)
 			GL_Bind(r_wsurf.vSkyboxTextureId[j]);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
 		}
 	}
 
@@ -447,14 +456,7 @@ void GL_UploadDXT(gl_loadtexture_state_t *state)
 		glTexParameteri(iTextureTarget, GL_TEXTURE_MAG_FILTER, (*gl_filter_max));
 	}
 
-	if (state->ansio)
-	{
-		glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, max(min(gl_ansio->value, gl_max_ansio), 1));
-	}
-	else
-	{
-		glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1);
-	}
+	glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
 
 	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_S, state->wrap);
 	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_T, state->wrap);
@@ -507,14 +509,7 @@ void GL_UploadRGBA8(gl_loadtexture_state_t* state)
 		glTexParameteri(iTextureTarget, GL_TEXTURE_MAG_FILTER, (*gl_filter_max));
 	}
 
-	if(state->ansio)
-	{
-		glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY, max(min(gl_ansio->value, gl_max_ansio), 1));
-	}
-	else
-	{
-		glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY, 1);
-	}
+	glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
 
 	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_S, state->wrap);
 	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_T, state->wrap);
@@ -1810,20 +1805,21 @@ qboolean SaveImageGeneric(const char *filename, int width, int height, byte *dat
 	return true;
 }
 
-int R_LoadRGBATextureFromMemory(const char* identifier, int width, int height, void* data, GL_TEXTURETYPE textureType, qboolean mipmap, qboolean ansio)
+int R_LoadRGBATextureFromMemory(const char* identifier, void* data, int width, int height, GL_TEXTURETYPE textureType, bool mipmap)
 {
 	gl_loadtexture_state_t state;
 
+	state.width = width;
+	state.height = height;
 	state.format = GL_RGBA8;
 	state.compressed = false;
-	state.mipmaps.emplace_back(0, data, 0, width, height);
 	state.mipmap = mipmap;
-	state.ansio = ansio;
+	state.mipmaps.emplace_back(0, data, 0, width, height);
 
 	return GL_LoadTextureEx(identifier, textureType, &state);
 }
 
-int R_LoadTextureFromFile(const char *filename, const char * identifier, int *width, int *height, GL_TEXTURETYPE textureType, qboolean mipmap, qboolean ansio, qboolean throw_warning_on_missing)
+int R_LoadTextureFromFile(const char *filename, const char * identifier, int *width, int *height, GL_TEXTURETYPE textureType, bool mipmap, bool throw_warning_on_missing)
 {
 	auto foundTexture = GL_FindTexture(identifier, textureType, width, height);
 
@@ -1842,6 +1838,8 @@ int R_LoadTextureFromFile(const char *filename, const char * identifier, int *wi
 	}
 
 	gl_loadtexture_state_t state;
+
+	state.mipmap = mipmap;
 
 	if(!stricmp(extension, "dds"))
 	{

@@ -198,6 +198,9 @@ extern int glheight;
 extern bool bEnforceStretchAspect;
 extern bool bUseBindless;
 extern bool bUseOITBlend;
+extern bool bVerticalFov;
+extern bool bHasOfficialFBOSupport;
+extern bool bHasOfficialGLTexAllocSupport;
 
 extern FBO_Container_t s_FinalBufferFBO;
 extern FBO_Container_t s_BackBufferFBO;
@@ -436,8 +439,8 @@ void GL_FrameBufferColorTextureDeferred(FBO_Container_t *s, int iInternalColorFo
 void GL_FrameBufferColorTextureOITBlend(FBO_Container_t *s);
 
 int GL_LoadTextureEx(const char* identifier, GL_TEXTURETYPE textureType, gl_loadtexture_state_t* state);
-int R_LoadTextureFromFile(const char *filename, const char * identifier, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio, qboolean throw_warning_on_missing);
-int R_LoadRGBATextureFromMemory(const char* identifier, int width, int height, void* data, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio);
+int R_LoadTextureFromFile(const char *filename, const char * identifier, int *width, int *height, GL_TEXTURETYPE type, bool mipmap, bool throw_warning_on_missing);
+int R_LoadRGBATextureFromMemory(const char* identifier, void* data, int width, int height, GL_TEXTURETYPE type, bool mipmap);
 
 void GL_UploadDXT(void *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap);
 qboolean LoadDDS(const char *filename, byte *buf, size_t bufSize, size_t *width, size_t *height);

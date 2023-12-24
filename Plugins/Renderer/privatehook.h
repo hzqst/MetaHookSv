@@ -99,7 +99,9 @@ typedef struct
 	void (*R_StudioSetupSkin)(studiohdr_t *ptexturehdr, int index);
 	skin_t* (*R_StudioGetSkin)(int keynum, int index);
 	void (*R_LightLambert)(float (*light)[4], float *normal, float *src, float *lambert);
+#if 0
 	void (*BuildNormalIndexTable)(void);
+#endif
 	void (*BuildGlowShellVerts)(vec3_t *pstudioverts, auxvert_t *pauxverts);
 	void (*R_StudioChrome)(int *pchrome, int bone, vec3_t normal);
 
