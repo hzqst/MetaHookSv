@@ -1578,8 +1578,11 @@ void GL_Init(void)
 	//No vanilla detail texture support
 	(*detTexSupported) = false;
 
-	glDebugMessageCallback(GL_DebugOutputCallback, 0);
-	glEnable(GL_DEBUG_OUTPUT);
+	if (gEngfuncs.CheckParm("-gl_debug", NULL))
+	{
+		glDebugMessageCallback(GL_DebugOutputCallback, 0);
+		glEnable(GL_DEBUG_OUTPUT);
+	}
 
 	gl_max_texture_size = 128;
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &gl_max_texture_size);
