@@ -76,6 +76,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	R_FillAddress();
 	R_InstallHooks();
+	R_RedirectBlobEngineOpenGLTextures();
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)

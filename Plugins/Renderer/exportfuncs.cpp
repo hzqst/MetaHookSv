@@ -40,7 +40,6 @@ hook_t *g_phook_R_StudioRenderFinal = NULL;
 
 void R_UninstallHooksForClientDLL(void)
 {
-	//Uninstall_Hook(studioapi_RestoreRenderer);
 	Uninstall_Hook(studioapi_StudioDynamicLight);
 	Uninstall_Hook(studioapi_StudioCheckBBox);
 	Uninstall_Hook(CL_FxBlend);
@@ -980,60 +979,64 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
 
 	//Fix SvClient Portal Rendering Confliction
-	if (pfnClientFactory && pfnClientFactory("SCClientDLL001", 0))
+	if (pfnClientFactory)
 	{
-		if (1)
+		auto SCClient001 = pfnClientFactory("SCClientDLL001", 0);
+		if (SCClient001)
 		{
+			if (1)
+			{
 #define SCCLIENT_CLIENTPORTALMANAGER_RESETALL_SIG "\xC7\x45\x2A\xFF\xFF\xFF\xFF\xA3\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x0D"
-			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SCCLIENT_CLIENTPORTALMANAGER_RESETALL_SIG, sizeof(SCCLIENT_CLIENTPORTALMANAGER_RESETALL_SIG) - 1);
-			
-			Sig_AddrNotFound(ClientPortalManager_ResetAll);
+				DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SCCLIENT_CLIENTPORTALMANAGER_RESETALL_SIG, sizeof(SCCLIENT_CLIENTPORTALMANAGER_RESETALL_SIG) - 1);
 
-			gPrivateFuncs.ClientPortalManager_ResetAll = (decltype(gPrivateFuncs.ClientPortalManager_ResetAll))GetCallAddress(addr + 12);
-		}
-		if (1)
-		{
+				Sig_AddrNotFound(ClientPortalManager_ResetAll);
+
+				gPrivateFuncs.ClientPortalManager_ResetAll = (decltype(gPrivateFuncs.ClientPortalManager_ResetAll))GetCallAddress(addr + 12);
+			}
+			if (1)
+			{
 #define SCCLIENT_CLIENTPORTALMANAGER_GETORIGINALSURFACETEXTURE_SIG "\x8B\x2A\x24\x04\x83\xEC\x08\x2A\x2A\x2A\x2A\xC5\x9D\x1C\x81\x2A\x2A\x2A\x2A\x70\x2A\x2A\x6C"
-			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SCCLIENT_CLIENTPORTALMANAGER_GETORIGINALSURFACETEXTURE_SIG, sizeof(SCCLIENT_CLIENTPORTALMANAGER_GETORIGINALSURFACETEXTURE_SIG) - 1);
+				DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SCCLIENT_CLIENTPORTALMANAGER_GETORIGINALSURFACETEXTURE_SIG, sizeof(SCCLIENT_CLIENTPORTALMANAGER_GETORIGINALSURFACETEXTURE_SIG) - 1);
 
-			Sig_AddrNotFound(ClientPortalManager_GetOriginalSurfaceTexture);
+				Sig_AddrNotFound(ClientPortalManager_GetOriginalSurfaceTexture);
 
-			gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture = (decltype(gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture))addr;
-		}
+				gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture = (decltype(gPrivateFuncs.ClientPortalManager_GetOriginalSurfaceTexture))addr;
+			}
 
-		if (1)
-		{
+			if (1)
+			{
 #define SCCLIENT_CLIENTPORTALMANAGER_DRAWPORTALSURFACE_SIG "\x83\xEC\x2A\x2A\x8B\x74\x24\x2A\x2A\x8B\x7C\x24\x2A\x89\x4C\x24\x2A\x83\x2A\x28\x01"
-			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SCCLIENT_CLIENTPORTALMANAGER_DRAWPORTALSURFACE_SIG, sizeof(SCCLIENT_CLIENTPORTALMANAGER_DRAWPORTALSURFACE_SIG) - 1);
+				DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SCCLIENT_CLIENTPORTALMANAGER_DRAWPORTALSURFACE_SIG, sizeof(SCCLIENT_CLIENTPORTALMANAGER_DRAWPORTALSURFACE_SIG) - 1);
 
-			Sig_AddrNotFound(ClientPortalManager_DrawPortalSurface);
+				Sig_AddrNotFound(ClientPortalManager_DrawPortalSurface);
 
-			gPrivateFuncs.ClientPortalManager_DrawPortalSurface = (decltype(gPrivateFuncs.ClientPortalManager_DrawPortalSurface))addr;
-		}
+				gPrivateFuncs.ClientPortalManager_DrawPortalSurface = (decltype(gPrivateFuncs.ClientPortalManager_DrawPortalSurface))addr;
+			}
 
-		if (1)
-		{
+			if (1)
+			{
 #define SCCLIENT_CLIENTPORTALMANAGER_ENABLECLIPPLANE_SIG "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x2A\x44\x24\x2A\x2A\x2A\x24\x2A\x2A\x2A\x24\x2A\x2A\x44\x24\x2A\xF3\x0F"
-			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SCCLIENT_CLIENTPORTALMANAGER_ENABLECLIPPLANE_SIG, sizeof(SCCLIENT_CLIENTPORTALMANAGER_ENABLECLIPPLANE_SIG) - 1);
+				DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SCCLIENT_CLIENTPORTALMANAGER_ENABLECLIPPLANE_SIG, sizeof(SCCLIENT_CLIENTPORTALMANAGER_ENABLECLIPPLANE_SIG) - 1);
 
-			Sig_AddrNotFound(ClientPortalManager_EnableClipPlane);
+				Sig_AddrNotFound(ClientPortalManager_EnableClipPlane);
 
-			gPrivateFuncs.ClientPortalManager_EnableClipPlane = (decltype(gPrivateFuncs.ClientPortalManager_EnableClipPlane))addr;
-		}
+				gPrivateFuncs.ClientPortalManager_EnableClipPlane = (decltype(gPrivateFuncs.ClientPortalManager_EnableClipPlane))addr;
+			}
 
-		if (1)
-		{
+			if (1)
+			{
 #define SCCLIENT_ISRENDERINGPORTALS_SIG "\xFF\x50\x24\xC6\x05\x2A\x2A\x2A\x2A\x01"
-			DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SCCLIENT_ISRENDERINGPORTALS_SIG, sizeof(SCCLIENT_ISRENDERINGPORTALS_SIG) - 1);
-			Sig_AddrNotFound(g_bRenderingPortals);
-			g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient))*(ULONG_PTR *)(addr + 5);
-		}		
+				DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SCCLIENT_ISRENDERINGPORTALS_SIG, sizeof(SCCLIENT_ISRENDERINGPORTALS_SIG) - 1);
+				Sig_AddrNotFound(g_bRenderingPortals);
+				g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient)) * (ULONG_PTR*)(addr + 5);
+			}
 
-		Install_InlineHook(ClientPortalManager_ResetAll);
-		Install_InlineHook(ClientPortalManager_DrawPortalSurface);
-		Install_InlineHook(ClientPortalManager_EnableClipPlane);
+			Install_InlineHook(ClientPortalManager_ResetAll);
+			Install_InlineHook(ClientPortalManager_DrawPortalSurface);
+			Install_InlineHook(ClientPortalManager_EnableClipPlane);
 
-		g_bIsSvenCoop = true;
+			g_bIsSvenCoop = true;
+		}
 	}
 
 	if ((void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson > g_dwClientBase && (void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson < (PUCHAR)g_dwClientBase + g_dwClientSize)

@@ -382,6 +382,9 @@ void GL_FreeTextureNotifyCallback(gltexture_t* glt)
 
 void GL_FreeTexture(gltexture_t *glt, bool notify_callback)
 {
+	if (glt->texnum <= 0)
+		return;
+
 	if(notify_callback)
 		GL_FreeTextureNotifyCallback(glt);
 

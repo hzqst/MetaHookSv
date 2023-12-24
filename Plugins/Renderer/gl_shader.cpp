@@ -49,8 +49,6 @@ void GL_CheckShaderError(GLuint shader, const char *code, const char *filename)
 
 GLuint R_CompileShaderObject(int type, const char *code, const char *filename)
 {
-	//gEngfuncs.Con_DPrintf("glCreateShader...");
-
 	if (developer->value >= 255)
 	{
 		FILESYSTEM_ANY_CREATEDIR("logs");
@@ -59,8 +57,6 @@ GLuint R_CompileShaderObject(int type, const char *code, const char *filename)
 		
 		char filepath[256] = {0};
 		snprintf(filepath, sizeof(filepath), "logs\\%s", filename);
-
-		//gEngfuncs.Con_DPrintf("writing %s...", filepath);
 
 		auto FileHandle = FILESYSTEM_ANY_OPEN(filepath, "wb");
 		if (FileHandle)
@@ -72,11 +68,7 @@ GLuint R_CompileShaderObject(int type, const char *code, const char *filename)
 
 	auto obj = glCreateShader(type);
 
-	//gEngfuncs.Con_DPrintf("glShaderSource...");
-
 	glShaderSource(obj, 1, &code, NULL);
-
-	//gEngfuncs.Con_DPrintf("glCompileShader...");
 
 	glCompileShader(obj);
 
@@ -90,7 +82,7 @@ GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfil
 	GLuint shader_objects[32];
 	int shader_object_used = 0;
 
-	//gEngfuncs.Con_DPrintf("R_CompileShaderObject GL_VERTEX_SHADER...");
+	//gEngfuncs.Con_DPrintf("R_CompileShaderObject %s...", vsfile);
 
 	shader_objects[shader_object_used] = R_CompileShaderObject(GL_VERTEX_SHADER, vscode, vsfile);
 	shader_object_used++;
@@ -98,7 +90,7 @@ GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfil
 	if(callback)
 		callback(shader_objects, &shader_object_used);
 
-	//gEngfuncs.Con_DPrintf("R_CompileShaderObject GL_FRAGMENT_SHADER...");
+	//gEngfuncs.Con_DPrintf("R_CompileShaderObject %s...", fsfile);
 
 	shader_objects[shader_object_used] = R_CompileShaderObject(GL_FRAGMENT_SHADER, fscode, fsfile);
 	shader_object_used++;
@@ -112,6 +104,7 @@ GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfil
 
 	int iStatus;
 	glGetProgramiv(program, GL_LINK_STATUS, &iStatus);
+
 	if (GL_FALSE == iStatus)
 	{
 		int nInfoLength;
@@ -122,6 +115,8 @@ GLuint R_CompileShader(const char *vscode, const char *fscode, const char *vsfil
 	}
 
 	g_ShaderTable.emplace_back(program, shader_objects, shader_object_used);
+
+	gEngfuncs.Con_DPrintf("R_CompileShaderObject [%d] vs:%s, fs:%s...", program, vsfile, fsfile);
 
 	return program;
 }

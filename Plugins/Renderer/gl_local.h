@@ -93,6 +93,9 @@ extern RECT *window_rect;
 extern float * s_fXMouseAspectAdjustment;
 extern float * s_fYMouseAspectAdjustment;
 
+extern float s_fXMouseAspectAdjustment_Storage;
+extern float s_fYMouseAspectAdjustment_Storage;
+
 extern vec_t *vup;
 extern vec_t *vpn;
 extern vec_t *vright;
@@ -184,6 +187,8 @@ extern float *filterBrightness;
 extern bool* detTexSupported;
 
 extern cache_system_t(*cache_head);
+
+extern int* allocated_textures;
 
 extern int glx;
 extern int gly;
@@ -301,6 +306,7 @@ void R_FillAddress(void);
 void R_InstallHooks(void);
 void R_UninstallHooksForEngineDLL(void);
 void R_UninstallHooksForClientDLL(void);
+void R_RedirectBlobEngineOpenGLTextures(void);
 
 void GammaToLinear(float *color);
 void R_LoadSkyBox_SvEngine(const char *name);
@@ -373,8 +379,8 @@ void triapi_RenderMode(int mode);
 void triapi_Color4f(float x, float y, float z, float w);
 void GL_UnloadTextureByIdentifier(const char* identifier, bool notify_callback);
 void GL_UnloadTextures(void);
-int GL_LoadTexture(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal);
-int GL_LoadTexture2(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal, int filter);
+int GL_LoadTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal);
+int GL_LoadTexture2(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal, int filter);
 void GL_InitShaders(void);
 void GL_FreeShaders(void);
 texture_t *Draw_DecalTexture(int index);
@@ -399,7 +405,6 @@ qboolean R_ParseCvarAsVector1(cvar_t *cvar, float *vec);
 qboolean R_ParseCvarAsVector2(cvar_t *cvar, float *vec);
 qboolean R_ParseCvarAsVector3(cvar_t *cvar, float *vec);
 qboolean R_ParseCvarAsVector4(cvar_t *cvar, float *vec);
-void R_ForceCVars(qboolean mp);
 colorVec R_LightPoint(vec3_t p);
 void *R_GetRefDef(void);
 GLuint GL_GenTextureRGBA8(int w, int h);
@@ -429,9 +434,10 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat);
 void GL_FrameBufferColorTextureHBAO(FBO_Container_t *s);
 void GL_FrameBufferColorTextureDeferred(FBO_Container_t *s, int iInternalColorFormat);
 void GL_FrameBufferColorTextureOITBlend(FBO_Container_t *s);
-int GL_LoadTextureInternal(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, void *data, qboolean mipmap, qboolean ansio);
-int R_LoadTextureFromFile(const char *filepath, const char *name, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio, qboolean throw_warning_on_missing);
-int R_LoadRGBATextureFromMemory(const char* name, int width, int height, void* data, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio);
+
+int GL_LoadTextureEx(const char* identifier, GL_TEXTURETYPE textureType, gl_loadtexture_state_t* state);
+int R_LoadTextureFromFile(const char *filename, const char * identifier, int *width, int *height, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio, qboolean throw_warning_on_missing);
+int R_LoadRGBATextureFromMemory(const char* identifier, int width, int height, void* data, GL_TEXTURETYPE type, qboolean mipmap, qboolean ansio);
 
 void GL_UploadDXT(void *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap);
 qboolean LoadDDS(const char *filename, byte *buf, size_t bufSize, size_t *width, size_t *height);

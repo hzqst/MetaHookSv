@@ -26,7 +26,6 @@ extern IFileSystem *g_pFileSystem;
 #define FILESYSTEM_ANY_MOUNT(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->Mount(__VA_ARGS__) : g_pFileSystem->Mount(__VA_ARGS__))
 #define FILESYSTEM_ANY_UNMOUNT(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->Unmount(__VA_ARGS__) : g_pFileSystem->Unmount(__VA_ARGS__))
 
-
 BlobHeader_t *GetBlobHeader(BlobHandle_t hBlob)
 {
 	auto pBlobModule = (BlobModule_t*)hBlob;
@@ -172,6 +171,11 @@ BlobHandle_t LoadBlobFromBuffer(BYTE* pBuffer, DWORD dwBufferSize, PVOID BlobSec
 		if ((ULONG_PTR)pBlobModule->BlobHeader.m_dwImageBase + pBlobModule->ImageSize < (ULONG_PTR)VirtualBase + VirtualSize)
 		{
 			pBlobModule->ImageSize = (ULONG_PTR)VirtualBase + VirtualSize - (ULONG_PTR)pBlobModule->BlobHeader.m_dwImageBase;
+		}
+
+		if (pSection[j].m_bIsSpecial)
+		{
+			pBlobModule->SpecialAddress = pSection[j].m_dwDataAddress;
 		}
 	}
 
@@ -357,6 +361,13 @@ ULONG GetBlobModuleImageSize(BlobHandle_t hBlob)
 	auto pBlobModule = (BlobModule_t*)hBlob;
 
 	return pBlobModule->ImageSize;
+}
+
+ULONG_PTR GetBlobModuleSpecialAddress(BlobHandle_t hBlob)
+{
+	auto pBlobModule = (BlobModule_t*)hBlob;
+
+	return pBlobModule->SpecialAddress;
 }
 
 PVOID GetBlobSectionByName(BlobHandle_t hBlob, const char* SectionName, ULONG* SectionSize)

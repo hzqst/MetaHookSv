@@ -53,10 +53,13 @@ typedef struct hook_s hook_t;
 #define PLUGIN_LOAD_DUPLICATE 1
 #define PLUGIN_LOAD_ERROR 2
 #define PLUGIN_LOAD_INVALID 3
+#define PLUGIN_LOAD_NOMEM 4
 
 typedef void (*DisasmSingleCallback)(void *inst, PUCHAR address, size_t instLen, PVOID context);
 typedef BOOL (*DisasmCallback)(void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context);
 typedef BOOL (*FindAddressCallback)(PUCHAR address);
+
+typedef void* BlobHandle_t;
 
 typedef struct blob_thread_manager_api_s
 {
@@ -334,7 +337,29 @@ typedef struct metahook_api_s
 		Important: Cvar-Set callback only get called when changing cvar value from console.
 	*/
 
+	/*
+		Manage threads created from blob engine
+	*/
+
 	blob_thread_manager_api_t* BlobThreadManagerAPI;
+
+	/*
+		Get handle to blob engine
+	*/
+
+	BlobHandle_t(*GetBlobEngineModule)(void);
+
+	/*
+		Get handle to blob client
+	*/
+
+	BlobHandle_t(*GetBlobClientModule)(void);
+
+	PVOID (*GetBlobModuleImageBase)(BlobHandle_t hBlob);
+
+	ULONG (*GetBlobModuleImageSize)(BlobHandle_t hBlob);
+
+	PVOID(*GetBlobSectionByName)(BlobHandle_t hBlob, const char* SectionName, ULONG* SectionSize);
 
 }metahook_api_t;
 
@@ -343,8 +368,6 @@ typedef struct mh_enginesave_s
 	cl_exportfuncs_t *pExportFuncs;
 	cl_enginefunc_t *pEngineFuncs;
 }mh_enginesave_t;
-
-typedef void* BlobHandle_t;
 
 void MH_FreeAllHook(void);
 void MH_LoadPlugins(const char *gamedir);

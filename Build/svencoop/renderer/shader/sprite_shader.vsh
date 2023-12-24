@@ -8,6 +8,7 @@ layout (location = 2) uniform vec4 in_color;
 layout (location = 3) uniform vec3 in_origin;
 layout (location = 4) uniform vec3 in_angles;
 layout (location = 5) uniform float in_scale;
+layout (location = 6) uniform float in_lerp;
 
 out vec3 v_worldpos;
 out vec3 v_normal;

@@ -34,8 +34,10 @@
 #define S_EXTRAUPDATE_BLOB "\xE8\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x44\x2A\x2A\xE9\x2A\x2A\x2A\x2A\xC3"
 
 #define R_ROTATEFORENTITY_SVENGINE "\x83\xEC\x2A\x8B\x2A\x24\x2A\x8B\x2A\x24\x2A\xD9\x00"
-#define R_ROTATEFORENTITY_NEW "\x55\x8B\xEC\x83\xEC\x20\x8B\x45\x08\x8B\x08\x8B\x50\x04\x8B\x40\x08"
-#define R_ROTATEFORENTITY_GOLDSRC "\xFF\x15\x2A\x2A\x2A\x2A\x8D\x87\x48\x0B\x00\x00\x2A\x2A\xE8"
+#define R_ROTATEFORENTITY_HL25     "\x55\x8B\xEC\x83\xEC\x20\x8B\x45\x08\x8B\x08\x8B\x50\x04\x8B\x40\x08"
+#define R_ROTATEFORENTITY_NEW      "\x55\x8B\xEC\x83\xEC\x20\x8B\x45\x08\x8B\x08\x8B\x50\x04\x8B\x40\x08"
+#define R_ROTATEFORENTITY_BLOB     "\x83\xEC\x20\x8B\x44\x24\x24\x8B\x08\x8B\x50\x04\x8B\x40\x08"
+#define R_ROTATEFORENTITY_GOLDSRC  "\xFF\x15\x2A\x2A\x2A\x2A\x8D\x2A\x48\x0B\x00\x00\x2A\x2A\xE8"
 
 #define R_DECALSHOTINTERNAL_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\x8B\x54\x24\x2A\x8B\x4C\x24\x2A\x53\x8B\x5C\x24\x2A\x56\x69\xF2\xB8\x0B\x00\x00"
 
@@ -240,7 +242,7 @@
 #define R_STUDIOCHROME_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\x8B\x2A\x08\x2A\x8B\x2A\x0C\x8B\x04"
 #define R_STUDIOCHROME_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x2A\xD9\xE8\x53"
 
-#define BUILDNORMALINDEXTABLE_SIG "\x8B\x15\x2A\x2A\x2A\x2A\x57\x8B\x4A\x50\x85\xC9\x7E\x2A\x83\xC8\xFF\xBF\x2A\x2A\x2A\x2A"
+#define BUILDNORMALINDEXTABLE_SIG_BLOB "\x8B\x15\x2A\x2A\x2A\x2A\x2A\x8B\x4A\x50\x85\xC9\x2A\x2A\x83\xC8\xFF"
 #define BUILDNORMALINDEXTABLE_SIG_NEW "\x55\x8B\xEC\x51\x8B\x15\x2A\x2A\x2A\x2A\x57\x8B\x4A\x50\x85\xC9\x7E\x0A\x83\xC8\xFF\xBF"
 #define BUILDNORMALINDEXTABLE_SIG_HL25 ""
 #define BUILDNORMALINDEXTABLE_SIG_SVENGINE ""
@@ -263,22 +265,29 @@
 #define R_LIGHTSTRENGTH_SIG_SVENGINE "\x8B\x15\x2A\x2A\x2A\x2A\x2A\x8B\x35\x2A\x2A\x2A\x2A\x2A\x8B\x7C\x24\x0C"
 #define R_LIGHTSTRENGTH_SIG_HL25 ""//inlined
 #define R_LIGHTSTRENGTH_SIG_NEW "\x55\x8B\xEC\x83\xEC\x0C\x8B\x4D\x08\x8B\x15\x2A\x2A\x2A\x2A\x2A\x8B\x04\x2A\x2A\x2A\x2A\x2A"
+#define R_LIGHTSTRENGTH_SIG_BLOB "\x8B\x0D\x2A\x2A\x2A\x2A\x83\xEC\x0C\x55\x8B\x2A\x24\x2A\x2A\x8B"
 
-#define R_GLOW_BLEND_SIG_SVENGINE "\x55\x8B\xEC\x83\x2A\x2A\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\xA0\x00"
-#define R_GLOW_BLEND_SIG_HL25 ""//inlined
-#define R_GLOW_BLEND_SIG_NEW "\x55\x8B\xEC\x81\xEC\x2A\x00\x00\x00\xD9\x05\x2A\x2A\x2A\x2A\xD8\x25\x2A\x2A\x2A\x2A\x2A\x8D\x2A\x2A"
+#define R_GLOW_BLEND_SIG_SVENGINE ""//inlined
+#define R_GLOW_BLEND_SIG_HL25     ""//inlined
+#define R_GLOW_BLEND_SIG_NEW      "\x55\x8B\xEC\x81\xEC\x2A\x00\x00\x00\xD9\x05\x2A\x2A\x2A\x2A\xD8\x25\x2A\x2A\x2A\x2A\x2A\x8D\x2A\x2A"
+#define R_GLOW_BLEND_SIG_BLOB      "\x81\xEC\x2A\x2A\x00\x00\xD9\x05\x2A\x2A\x2A\x2A\xD8\x25\x2A\x2A\x2A\x2A\x2A\x8D"
 
-#define GL_UPLOAD16_SIG_SVENGINE "\x8B\x44\x24\x2A\x83\xEC\x08\x85\xC0\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xC4\x08"
+//#define GL_UPLOAD16_SIG_SVENGINE "\x8B\x44\x24\x2A\x83\xEC\x08\x85\xC0\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xC4\x08"
 
 #define SCR_BEGIN_LOADING_PLAQUE "\x6A\x01\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xF8\x03"
 
 #define HOST_IS_SINGLE_PLAYER_GAME_SVENGINE "\x33\xC0\x39\x05\x2A\x2A\x2A\x2A\x75\x2A\x83\x3D\x2A\x2A\x2A\x2A\x01\x0F\x94\xC0"
-#define HOST_IS_SINGLE_PLAYER_GAME_HL25 "\x83\x3D\x2A\x2A\x2A\x2A\x00\xA1\x2A\x2A\x2A\x2A\x0F\x44\x05\x2A\x2A\x2A\x2A\xC3"
-#define HOST_IS_SINGLE_PLAYER_GAME_NEW "\xA1\x2A\x2A\x2A\x2A\x85\xC0\xA1\x2A\x2A\x2A\x2A\x74\x05\xA1\x2A\x2A\x2A\x2A\xC3"
+#define HOST_IS_SINGLE_PLAYER_GAME_HL25     "\x83\x3D\x2A\x2A\x2A\x2A\x00\xA1\x2A\x2A\x2A\x2A\x0F\x44\x05\x2A\x2A\x2A\x2A\xC3"
+#define HOST_IS_SINGLE_PLAYER_GAME_NEW      "\xA1\x2A\x2A\x2A\x2A\x85\xC0\xA1\x2A\x2A\x2A\x2A\x74\x05\xA1\x2A\x2A\x2A\x2A\xC3"
+#define HOST_IS_SINGLE_PLAYER_GAME_BLOB     "\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x33\xC0\x83\xF9\x01"
 
 #define MOD_UNLOADSPRITETEXTURES_SVENGINE "\x81\xEC\x04\x01\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x00\x01\x00\x00\x57\x8B\xBC\x24\x0C\x01\x00\x00"
-#define MOD_UNLOADSPRITETEXTURES_HL25 "\x55\x8B\xEC\x81\xEC\x04\x01\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x57\x8B\x7D\x08\x83\x7F\x44\x01"
-#define MOD_UNLOADSPRITETEXTURES_NEW "\x55\x8B\xEC\x81\xEC\x00\x01\x00\x00\x53\x8B\x5D\x08\xB8\x01\x00\x00\x00\x56\x8B\x4B\x44"
+#define MOD_UNLOADSPRITETEXTURES_HL25     "\x55\x8B\xEC\x81\xEC\x04\x01\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x57\x8B\x7D\x08\x83\x7F\x44\x01"
+#define MOD_UNLOADSPRITETEXTURES_NEW      "\x55\x8B\xEC\x81\xEC\x00\x01\x00\x00\x53\x8B\x5D\x08\xB8\x01\x00\x00\x00\x56\x8B\x4B\x44"
+#define MOD_UNLOADSPRITETEXTURES_BLOB     "\x81\xEC\x2A\x2A\x00\x00\xB8\x01\x00\x00\x00\x2A\x8B\x2A\x24\x08\x01\x00\x00\x2A\x2A\x2A\x2A\x44"
+
+#define R_INITPARTICLETEXTURE_BLOB "\xA1\x2A\x2A\x2A\x2A\x81\xEC\x2A\x2A\x00\x00\x8B\xC8\x40"
+#define R_INITPARTICLETEXTURE_COMMON "\x68\x01\x14\x00\x00\x68\x08\x19\x00\x00\x6A\x00\x6A\x08\x6A\x08"
 
 void R_FillAddress(void)
 {
@@ -386,21 +395,56 @@ void R_FillAddress(void)
 	}
 	Sig_FuncNotFound(GL_SelectTexture);
 
-	if (g_iEngineType == ENGINE_SVENGINE)
+	if (g_iEngineType != ENGINE_SVENGINE)
 	{
-		gPrivateFuncs.GL_LoadTexture2 = (decltype(gPrivateFuncs.GL_LoadTexture2))Search_Pattern(GL_LOADTEXTURE2_SIG_SVENGINE);
+		const char sigs1[] = "Texture Overflow: MAX_GLTEXTURES";
+		auto Error_String = Search_Pattern_Data(sigs1);
+		if (!Error_String)
+			Error_String = Search_Pattern_Rdata(sigs1);
+		if (Error_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
+			*(DWORD*)(pattern + 1) = (DWORD)Error_String;
+			auto Error_Call = Search_Pattern(pattern);
+			if (Error_Call)
+			{
+				gPrivateFuncs.GL_LoadTexture2 = (decltype(gPrivateFuncs.GL_LoadTexture2))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Error_Call, 0x500, [](PUCHAR Candidate) {
+
+					if (Candidate[0] == 0xB8 &&
+						Candidate[3] == 0x00 &&
+						Candidate[4] == 0x00 &&
+						Candidate[5] == 0xE8)
+						return TRUE;
+
+					if (Candidate[0] == 0x55 &&
+						Candidate[1] == 0x8B &&
+						Candidate[2] == 0xEC)
+						return TRUE;
+
+					return FALSE;
+					});
+			}
+		}
 	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+
+	if (!gPrivateFuncs.GL_LoadTexture2)
 	{
-		gPrivateFuncs.GL_LoadTexture2 = (decltype(gPrivateFuncs.GL_LoadTexture2))Search_Pattern(GL_LOADTEXTURE2_SIG_HL25);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		gPrivateFuncs.GL_LoadTexture2 = (decltype(gPrivateFuncs.GL_LoadTexture2))Search_Pattern(GL_LOADTEXTURE2_SIG_NEW);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-	{
-		gPrivateFuncs.GL_LoadTexture2 = (decltype(gPrivateFuncs.GL_LoadTexture2))Search_Pattern(GL_LOADTEXTURE2_SIG_BLOB);
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gPrivateFuncs.GL_LoadTexture2 = (decltype(gPrivateFuncs.GL_LoadTexture2))Search_Pattern(GL_LOADTEXTURE2_SIG_SVENGINE);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			gPrivateFuncs.GL_LoadTexture2 = (decltype(gPrivateFuncs.GL_LoadTexture2))Search_Pattern(GL_LOADTEXTURE2_SIG_HL25);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			gPrivateFuncs.GL_LoadTexture2 = (decltype(gPrivateFuncs.GL_LoadTexture2))Search_Pattern(GL_LOADTEXTURE2_SIG_NEW);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+		{
+			gPrivateFuncs.GL_LoadTexture2 = (decltype(gPrivateFuncs.GL_LoadTexture2))Search_Pattern(GL_LOADTEXTURE2_SIG_BLOB);
+		}
 	}
 	Sig_FuncNotFound(GL_LoadTexture2);
 
@@ -1922,61 +1966,82 @@ void R_FillAddress(void)
 	{
 		//Inlined
 	}
-	else
+	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.R_LightStrength = (decltype(gPrivateFuncs.R_LightStrength))Search_Pattern(R_LIGHTSTRENGTH_SIG_NEW);
 		Sig_FuncNotFound(R_LightStrength);
 	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		gPrivateFuncs.R_LightStrength = (decltype(gPrivateFuncs.R_LightStrength))Search_Pattern(R_LIGHTSTRENGTH_SIG_BLOB);
+		Sig_FuncNotFound(R_LightStrength);
+	}
 
-	if (g_iEngineType == ENGINE_GOLDSRC || g_iEngineType == ENGINE_GOLDSRC_HL25)
+	if (g_iEngineType != ENGINE_SVENGINE)
 	{
 		auto addr = Search_Pattern(R_ROTATEFORENTITY_GOLDSRC);
-		Sig_AddrNotFound(R_RotateForEntity_Pattern);
-		
-		gPrivateFuncs.R_RotateForEntity = (void(*)(float*, cl_entity_t*))GetCallAddress((PUCHAR)addr + sizeof(R_ROTATEFORENTITY_GOLDSRC) - 1 - 1);
-		Sig_FuncNotFound(R_RotateForEntity);
+		if (addr)
+		{
+			gPrivateFuncs.R_RotateForEntity = (decltype(gPrivateFuncs.R_RotateForEntity))GetCallAddress((PUCHAR)addr + sizeof(R_ROTATEFORENTITY_GOLDSRC) - 1 - 1);
+		}
 	}
 
 	if (!gPrivateFuncs.R_RotateForEntity)
 	{
 		if (g_iEngineType == ENGINE_SVENGINE)
 		{
-			gPrivateFuncs.R_RotateForEntity = (void(*)(float*, cl_entity_t*))Search_Pattern(R_ROTATEFORENTITY_SVENGINE);
-			Sig_FuncNotFound(R_RotateForEntity);
+			gPrivateFuncs.R_RotateForEntity = (decltype(gPrivateFuncs.R_RotateForEntity))Search_Pattern(R_ROTATEFORENTITY_SVENGINE);
 		}
-		else
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			gPrivateFuncs.R_RotateForEntity = (void(*)(float*, cl_entity_t*))Search_Pattern(R_ROTATEFORENTITY_NEW);
-			Sig_FuncNotFound(R_RotateForEntity);
+			gPrivateFuncs.R_RotateForEntity = (decltype(gPrivateFuncs.R_RotateForEntity))Search_Pattern(R_ROTATEFORENTITY_HL25);
 		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			gPrivateFuncs.R_RotateForEntity = (decltype(gPrivateFuncs.R_RotateForEntity))Search_Pattern(R_ROTATEFORENTITY_NEW);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+		{
+			gPrivateFuncs.R_RotateForEntity = (decltype(gPrivateFuncs.R_RotateForEntity))Search_Pattern(R_ROTATEFORENTITY_NEW);
+		}
+	}
+	Sig_FuncNotFound(R_RotateForEntity);
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		//Inlined
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		//Inlined
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC)
+	{
+		gPrivateFuncs.BuildNormalIndexTable = (decltype(gPrivateFuncs.BuildNormalIndexTable))Search_Pattern(BUILDNORMALINDEXTABLE_SIG_NEW);
+		Sig_FuncNotFound(BuildNormalIndexTable);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		gPrivateFuncs.BuildNormalIndexTable = (decltype(gPrivateFuncs.BuildNormalIndexTable))Search_Pattern(BUILDNORMALINDEXTABLE_SIG_BLOB);
+		Sig_FuncNotFound(BuildNormalIndexTable);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-		//inlined
+		//Inlined
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		//inlined
+		//Inlined
 	}
-	else
+	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
-		gPrivateFuncs.BuildNormalIndexTable = (void(*)(void))Search_Pattern(BUILDNORMALINDEXTABLE_SIG_NEW);
-		Sig_FuncNotFound(BuildNormalIndexTable);
-	}
-	
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		gPrivateFuncs.R_GlowBlend = (float(*)(cl_entity_t *))Search_Pattern(R_GLOW_BLEND_SIG_SVENGINE);
+		gPrivateFuncs.R_GlowBlend = (decltype(gPrivateFuncs.R_GlowBlend))Search_Pattern(R_GLOW_BLEND_SIG_NEW);
 		Sig_FuncNotFound(R_GlowBlend);
 	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
 	{
-		//inlined
-	}
-	else
-	{
-		gPrivateFuncs.R_GlowBlend = (float(*)(cl_entity_t *))Search_Pattern(R_GLOW_BLEND_SIG_NEW);
+		gPrivateFuncs.R_GlowBlend = (decltype(gPrivateFuncs.R_GlowBlend))Search_Pattern(R_GLOW_BLEND_SIG_BLOB);
 		Sig_FuncNotFound(R_GlowBlend);
 	}
 
@@ -1986,36 +2051,40 @@ void R_FillAddress(void)
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_SVENGINE);
-		Sig_FuncNotFound(Host_IsSinglePlayerGame);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
 		gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_HL25);
-		Sig_FuncNotFound(Host_IsSinglePlayerGame);
 	}
-	else
+	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW);
-		Sig_FuncNotFound(Host_IsSinglePlayerGame);
 	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_BLOB);
+	}
+	Sig_FuncNotFound(Host_IsSinglePlayerGame);
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))Search_Pattern(MOD_UNLOADSPRITETEXTURES_SVENGINE);
-		Sig_FuncNotFound(Mod_UnloadSpriteTextures);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
 		gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))Search_Pattern(MOD_UNLOADSPRITETEXTURES_HL25);
-		Sig_FuncNotFound(Mod_UnloadSpriteTextures);
 	}
-	else
+	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))Search_Pattern(MOD_UNLOADSPRITETEXTURES_NEW);
-		Sig_FuncNotFound(Mod_UnloadSpriteTextures);
 	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))Search_Pattern(MOD_UNLOADSPRITETEXTURES_BLOB);
+	}
+	Sig_FuncNotFound(Mod_UnloadSpriteTextures);
 
-	//engine's R_AddTEntity is not used anymore
+	//Engine's R_AddTEntity is not used anymore
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char sigs1[] = "Can't add transparent entity. Too many";
@@ -2073,6 +2142,7 @@ void R_FillAddress(void)
 
 			return FALSE;
 		});
+
 		Sig_FuncNotFound(Hunk_AllocName);
 	}
 	else
@@ -2098,11 +2168,23 @@ void R_FillAddress(void)
 					return TRUE;
 				}
 			}
+			if (Candidate[0] == 0x83 &&
+				Candidate[1] == 0xEC)
+			{
+				return TRUE;
+			}
 
+			if (Candidate[0] >= 0x53 &&
+				Candidate[0] <= 0x57 &&
+				Candidate[1] == 0x8B)
+			{
+				return TRUE;
+			}
 			return FALSE;
 		});
 		Sig_FuncNotFound(Hunk_AllocName);
 	}
+
 #if 0
 	if (1)
 	{
@@ -2146,7 +2228,13 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(Cvar_DirectSet);
 	}
 #endif
-	if (1)
+
+	if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		s_fXMouseAspectAdjustment = &s_fXMouseAspectAdjustment_Storage;
+		s_fYMouseAspectAdjustment = &s_fYMouseAspectAdjustment_Storage;
+	}
+	else
 	{
 		typedef struct
 		{
@@ -2157,115 +2245,115 @@ void R_FillAddress(void)
 
 		GL_EndRendering_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.GL_EndRendering, 0x350, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-		{
-			auto pinst = (cs_insn *)inst;
-			auto ctx = (GL_EndRendering_ctx *)context;
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.GL_EndRendering, 0x350, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			{
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (GL_EndRendering_ctx*)context;
 
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].mem.base == 0)
-			{//A1 40 77 7B 02 mov     eax, gl_backbuffer_fbo
-				DWORD imm = pinst->detail->x86.operands[1].mem.disp;
+				if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].mem.base == 0)
+				{//A1 40 77 7B 02 mov     eax, gl_backbuffer_fbo
+					DWORD imm = pinst->detail->x86.operands[1].mem.disp;
 
-				if (!gl_backbuffer_fbo && !ctx->type)
-				{
-					gl_backbuffer_fbo = (decltype(gl_backbuffer_fbo))imm;
-					ctx->type = 1;
+					if (!gl_backbuffer_fbo && !ctx->type)
+					{
+						gl_backbuffer_fbo = (decltype(gl_backbuffer_fbo))imm;
+						ctx->type = 1;
+					}
+					else if (ctx->type == 1 && !gl_msaa_fbo)
+					{
+						gl_msaa_fbo = (decltype(gl_msaa_fbo))imm;
+					}
 				}
-				else if (ctx->type == 1 && !gl_msaa_fbo)
-				{
-					gl_msaa_fbo = (decltype(gl_msaa_fbo))imm;
+				else if (pinst->id == X86_INS_CMP &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[1].imm == 0)
+				{//83 3D 94 66 00 08 00 cmp     gl_backbuffer_fbo, 0
+					DWORD imm = pinst->detail->x86.operands[0].mem.disp;
+
+					if (!gl_backbuffer_fbo && !ctx->type)
+					{
+						gl_backbuffer_fbo = (decltype(gl_backbuffer_fbo))imm;
+						ctx->type = 2;
+					}
+					else if (ctx->type == 2 && !gl_msaa_fbo)
+					{
+						gl_msaa_fbo = (decltype(gl_msaa_fbo))imm;
+					}
 				}
-			}
-			else if (pinst->id == X86_INS_CMP &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[1].imm == 0)
-			{//83 3D 94 66 00 08 00 cmp     gl_backbuffer_fbo, 0
-				DWORD imm = pinst->detail->x86.operands[0].mem.disp;
+				else if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].reg == ctx->zero_register &&
+					instCount < ctx->load_zero_instcount + 5)
+				{//.text:01D4D4C0 A3 F4 78 E4 01 mov     videowindowaspect_0, eax
 
-				if (!gl_backbuffer_fbo && !ctx->type)
-				{
-					gl_backbuffer_fbo = (decltype(gl_backbuffer_fbo))imm;
-					ctx->type = 2;
+					if (!s_fYMouseAspectAdjustment)
+						s_fYMouseAspectAdjustment = (decltype(s_fYMouseAspectAdjustment))pinst->detail->x86.operands[0].mem.disp;
+					else if (!s_fXMouseAspectAdjustment)
+						s_fXMouseAspectAdjustment = (decltype(s_fXMouseAspectAdjustment))pinst->detail->x86.operands[0].mem.disp;
 				}
-				else if (ctx->type == 2 && !gl_msaa_fbo)
-				{
-					gl_msaa_fbo = (decltype(gl_msaa_fbo))imm;
+				else if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[1].imm == 0x3F800000)
+				{//.text:01D4D4C0 A3 F4 78 E4 01 mov     videowindowaspect_0, eax
+
+					if (!s_fYMouseAspectAdjustment)
+						s_fYMouseAspectAdjustment = (decltype(s_fYMouseAspectAdjustment))pinst->detail->x86.operands[0].mem.disp;
+					else if (!s_fXMouseAspectAdjustment)
+						s_fXMouseAspectAdjustment = (decltype(s_fXMouseAspectAdjustment))pinst->detail->x86.operands[0].mem.disp;
 				}
-			}
-			else if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].reg == ctx->zero_register &&
-				instCount < ctx->load_zero_instcount + 5)
-			{//.text:01D4D4C0 A3 F4 78 E4 01 mov     videowindowaspect_0, eax
+				else if ((pinst->id == X86_INS_FST || pinst->id == X86_INS_FSTP) &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					instCount < ctx->load_zero_instcount + 5)
+				{//.D9 15 E0 85 ED 01 fst     videowindowaspect
 
-				if (!s_fYMouseAspectAdjustment)
-					s_fYMouseAspectAdjustment = (decltype(s_fYMouseAspectAdjustment))pinst->detail->x86.operands[0].mem.disp;
-				else if (!s_fXMouseAspectAdjustment)
-					s_fXMouseAspectAdjustment = (decltype(s_fXMouseAspectAdjustment))pinst->detail->x86.operands[0].mem.disp;
-			}
-			else if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[1].imm == 0x3F800000)
-			{//.text:01D4D4C0 A3 F4 78 E4 01 mov     videowindowaspect_0, eax
+					if (!s_fYMouseAspectAdjustment)
+						s_fYMouseAspectAdjustment = (decltype(s_fYMouseAspectAdjustment))pinst->detail->x86.operands[0].mem.disp;
+					else if (!s_fXMouseAspectAdjustment)
+						s_fXMouseAspectAdjustment = (decltype(s_fXMouseAspectAdjustment))pinst->detail->x86.operands[0].mem.disp;
+				}
+				else if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[1].imm == 0x3F800000)
+				{//.text:01D4D4B8 B8 00 00 80 3F mov     eax, 3F800000h
 
-				if (!s_fYMouseAspectAdjustment)
-					s_fYMouseAspectAdjustment = (decltype(s_fYMouseAspectAdjustment))pinst->detail->x86.operands[0].mem.disp;
-				else if (!s_fXMouseAspectAdjustment)
-					s_fXMouseAspectAdjustment = (decltype(s_fXMouseAspectAdjustment))pinst->detail->x86.operands[0].mem.disp;
-			}
-			else if ((pinst->id == X86_INS_FST || pinst->id == X86_INS_FSTP) &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == 0 &&
-				instCount < ctx->load_zero_instcount + 5)
-			{//.D9 15 E0 85 ED 01 fst     videowindowaspect
+					ctx->zero_register = pinst->detail->x86.operands[0].reg;
+					ctx->load_zero_instcount = instCount;
+				}
+				else if (pinst->id == X86_INS_FLD1)
+				{//.text:01D4D4B8 B8 00 00 80 3F mov     eax, 3F800000h
 
-				if (!s_fYMouseAspectAdjustment)
-					s_fYMouseAspectAdjustment = (decltype(s_fYMouseAspectAdjustment))pinst->detail->x86.operands[0].mem.disp;
-				else if (!s_fXMouseAspectAdjustment)
-					s_fXMouseAspectAdjustment = (decltype(s_fXMouseAspectAdjustment))pinst->detail->x86.operands[0].mem.disp;
-			}
-			else if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[1].imm == 0x3F800000)
-			{//.text:01D4D4B8 B8 00 00 80 3F mov     eax, 3F800000h
+					ctx->zero_register = 0;
+					ctx->load_zero_instcount = instCount;
+				}
 
-				ctx->zero_register = pinst->detail->x86.operands[0].reg;
-				ctx->load_zero_instcount = instCount;
-			}
-			else if (pinst->id == X86_INS_FLD1)
-			{//.text:01D4D4B8 B8 00 00 80 3F mov     eax, 3F800000h
+				if (gl_backbuffer_fbo && gl_msaa_fbo && s_fXMouseAspectAdjustment && s_fYMouseAspectAdjustment)
+					return TRUE;
 
-				ctx->zero_register = 0;
-				ctx->load_zero_instcount = instCount;
-			}
+				if (address[0] == 0xCC)
+					return TRUE;
 
-			if (gl_backbuffer_fbo && gl_msaa_fbo && s_fXMouseAspectAdjustment && s_fYMouseAspectAdjustment)
-				return TRUE;
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
 
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-		}, 0, &ctx);
+				return FALSE;
+			}, 0, & ctx);
 
 		Sig_VarNotFound(gl_backbuffer_fbo);
 		Sig_VarNotFound(gl_msaa_fbo);
@@ -2343,6 +2431,12 @@ void R_FillAddress(void)
 				Candidate[2] == 0xEC)
 				return TRUE;
 
+			if (Candidate[0] == 0xA1 &&
+				Candidate[5] == 0x85 &&
+				Candidate[6] == 0xC0)
+			{
+				return TRUE;
+			}
 			return FALSE;
 		});
 
@@ -2393,7 +2487,7 @@ void R_FillAddress(void)
 		Sig_VarNotFound(transObjects);
 		Sig_VarNotFound(maxTransObjs);
 
-		numTransObjs = (decltype(numTransObjs))((PUCHAR)maxTransObjs - 4);
+		numTransObjs = (decltype(numTransObjs))(maxTransObjs - 1);
 	}
 
 	if (1)
@@ -2976,84 +3070,92 @@ void R_FillAddress(void)
 				Candidate[4] == 0xEC)
 				return TRUE;
 
+			if (Candidate[0] == 0x83 &&
+				Candidate[1] == 0xEC &&
+				Candidate[3] == 0xA1)
+				return TRUE;
+
 			return FALSE;
 		});
 
 		Sig_FuncNotFound(R_LoadSkys);
 
-		typedef struct
+		if (g_iEngineType != ENGINE_GOLDSRC_BLOB)
 		{
-			int candidate_register;
-			int candidate_instcount;
-			DWORD candidate_gSkyTexNumber;
-		}R_LoadSkys_ctx;
+			typedef struct
+			{
+				int candidate_register;
+				int candidate_instcount;
+				DWORD candidate_gSkyTexNumber;
+			}R_LoadSkys_ctx;
 
-		R_LoadSkys_ctx ctx = { 0 };
+			R_LoadSkys_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_LoadSkys, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-		{
-			auto pinst = (cs_insn *)inst;
-			auto ctx = (R_LoadSkys_ctx *)context;
+			g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_LoadSkys, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			{
+					auto pinst = (cs_insn*)inst;
+					auto ctx = (R_LoadSkys_ctx*)context;
 
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_REG &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-			{//.text:01D4F9D8 BE 60 34 34 02 mov     esi, offset gSkyTexNumber
-				DWORD imm = pinst->detail->x86.operands[1].imm;
+					if (pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+						(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwEngineDataBase &&
+						(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+					{//.text:01D4F9D8 BE 60 34 34 02 mov     esi, offset gSkyTexNumber
+						DWORD imm = pinst->detail->x86.operands[1].imm;
 
-				ctx->candidate_gSkyTexNumber = imm;
-				ctx->candidate_register = pinst->detail->x86.operands[0].reg;
-				ctx->candidate_instcount = instCount;
-			}
-			else if (ctx->candidate_gSkyTexNumber &&
-				pinst->id == X86_INS_CMP &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == ctx->candidate_register &&
-				pinst->detail->x86.operands[0].mem.disp == 0 &&
-				pinst->detail->x86.operands[1].type == X86_OP_REG &&
-				instCount < ctx->candidate_instcount + 5)
-			{//text:01D4F9DD 39 3E cmp     [esi], edi
-				gSkyTexNumber = (decltype(gSkyTexNumber))ctx->candidate_gSkyTexNumber;
-			}
-			else if (ctx->candidate_gSkyTexNumber &&
-				pinst->id == X86_INS_CMP &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base == ctx->candidate_register &&
-				pinst->detail->x86.operands[0].mem.disp == 0 &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				pinst->detail->x86.operands[1].imm == 0 &&
-				instCount < ctx->candidate_instcount + 5)
-			{//.text:102506E6 83 3E 00 cmp     dword ptr [esi], 0
-				gSkyTexNumber = (decltype(gSkyTexNumber))ctx->candidate_gSkyTexNumber;
-			}
-			else if (pinst->id == X86_INS_PUSH &&
-				pinst->detail->x86.op_count == 1 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[0].mem.base != 0 &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
-			{//.text:01D5FC00 FF B6 80 69 00 08                                   push    gSkyTexNumber[esi]
-				gSkyTexNumber = (decltype(gSkyTexNumber))pinst->detail->x86.operands[0].mem.disp;
-			}
+						ctx->candidate_gSkyTexNumber = imm;
+						ctx->candidate_register = pinst->detail->x86.operands[0].reg;
+						ctx->candidate_instcount = instCount;
+					}
+					else if (ctx->candidate_gSkyTexNumber &&
+						pinst->id == X86_INS_CMP &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[0].mem.base == ctx->candidate_register &&
+						pinst->detail->x86.operands[0].mem.disp == 0 &&
+						pinst->detail->x86.operands[1].type == X86_OP_REG &&
+						instCount < ctx->candidate_instcount + 5)
+					{//text:01D4F9DD 39 3E cmp     [esi], edi
+						gSkyTexNumber = (decltype(gSkyTexNumber))ctx->candidate_gSkyTexNumber;
+					}
+					else if (ctx->candidate_gSkyTexNumber &&
+						pinst->id == X86_INS_CMP &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[0].mem.base == ctx->candidate_register &&
+						pinst->detail->x86.operands[0].mem.disp == 0 &&
+						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+						pinst->detail->x86.operands[1].imm == 0 &&
+						instCount < ctx->candidate_instcount + 5)
+					{//.text:102506E6 83 3E 00 cmp     dword ptr [esi], 0
+						gSkyTexNumber = (decltype(gSkyTexNumber))ctx->candidate_gSkyTexNumber;
+					}
+					else if (pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[0].mem.base != 0 &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+					{//.text:01D5FC00 FF B6 80 69 00 08                                   push    gSkyTexNumber[esi]
+						gSkyTexNumber = (decltype(gSkyTexNumber))pinst->detail->x86.operands[0].mem.disp;
+					}
 
-			if (gSkyTexNumber)
-				return TRUE;
+					if (gSkyTexNumber)
+						return TRUE;
 
-			if (address[0] == 0xCC)
-				return TRUE;
+					if (address[0] == 0xCC)
+						return TRUE;
 
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
 
-			return FALSE;
-		}, 0, &ctx);
+					return FALSE;
+				}, 0, &ctx);
 
-		Sig_VarNotFound(gSkyTexNumber);
+			Sig_VarNotFound(gSkyTexNumber);
+		}
 	}
 
 	if (1)
@@ -3180,15 +3282,23 @@ void R_FillAddress(void)
 		addr = (DWORD)Search_Pattern(sigs);
 		Sig_AddrNotFound(gl_filter_min);
 		gl_filter_min = *(int **)(addr + 4);
-		gl_filter_max = *(int**)(addr + sizeof(sigs) - 1);
+		gl_filter_max = *(int**)(addr + Sig_Length(sigs));
 	}
-	else
+	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		const char sigs[] = "\xDB\x05\x2A\x2A\x2A\x2A\x83\xC4\x04\xD9\x2A\x2A\x2A\x2A\x2A\x2A\x68\x01\x28\x00\x00\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xDB\x05";
 		addr = (DWORD)Search_Pattern(sigs);
 		Sig_AddrNotFound(gl_filter_min);
 		gl_filter_min = *(int **)(addr + 2);
-		gl_filter_max = *(int **)(addr + sizeof(sigs) - 1);
+		gl_filter_max = *(int **)(addr + Sig_Length(sigs));
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		const char sigs[] = "\xDB\x05\x2A\x2A\x2A\x2A\x83\xC4\x04\xD9\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x68\x01\x28\x00\x00\x68\xE1\x0D\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\xDB\x05";
+		addr = (DWORD)Search_Pattern(sigs);
+		Sig_AddrNotFound(gl_filter_min);
+		gl_filter_min = *(int**)(addr + 2);
+		gl_filter_max = *(int**)(addr + Sig_Length(sigs));
 	}
 
 	if (1)
@@ -3390,7 +3500,7 @@ void R_FillAddress(void)
 
 	if (1)
 	{
-		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_RenderScene, 0x30, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_RenderScene, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 
@@ -3677,6 +3787,8 @@ void R_FillAddress(void)
 			int xor_exi_exi_reg;
 			int inc_exx_instCount;
 			int inc_exx_reg;
+			int mov_mem_exx_instCount;
+			int mov_mem_exx_reg;
 		}GL_LoadTexture2_Context;
 
 		GL_LoadTexture2_Context ctx = { 0 };
@@ -3727,7 +3839,6 @@ void R_FillAddress(void)
 				)
 			{//  mov     edi, offset gltextures
 				gltextures = (decltype(gltextures))pinst->detail->x86.operands[1].imm;
-
 			}
 
 			if (pinst->id == X86_INS_INC &&
@@ -3748,8 +3859,17 @@ void R_FillAddress(void)
 				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize
 				)
 			{//  mov     numgltextures, ecx
-				numgltextures = (decltype(numgltextures))pinst->detail->x86.operands[0].mem.disp;
 
+				if (g_iEngineType == ENGINE_GOLDSRC_BLOB &&
+					instCount > ctx->mov_mem_exx_instCount && instCount < ctx->mov_mem_exx_instCount + 5 &&
+					pinst->detail->x86.operands[1].reg == ctx->mov_mem_exx_reg)
+				{
+					allocated_textures = (decltype(allocated_textures))pinst->detail->x86.operands[0].mem.disp;
+				}
+				else
+				{
+					numgltextures = (decltype(numgltextures))pinst->detail->x86.operands[0].mem.disp;
+				}
 			}
 
 			if (ctx->xor_exi_exi_instCount && (pinst->id == X86_INS_MOV || pinst->id == X86_INS_MOVZX) &&
@@ -3766,8 +3886,30 @@ void R_FillAddress(void)
 
 			}
 
-			if (gltextures && numgltextures && gHostSpawnCount)
-				return TRUE;
+			if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+			{
+				if (ctx->xor_exi_exi_instCount && pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].mem.base != 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp == 0 &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG
+					)
+				{// 89 06 mov     [esi], eax
+					ctx->mov_mem_exx_instCount = instCount;
+					ctx->mov_mem_exx_reg = pinst->detail->x86.operands[1].reg;
+				}
+			}
+
+			if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+			{
+				if (gltextures && numgltextures && gHostSpawnCount && allocated_textures)
+					return TRUE;
+			}
+			else
+			{
+				if (gltextures && numgltextures && gHostSpawnCount)
+					return TRUE;
+			}
 
 			if (address[0] == 0xCC)
 				return TRUE;
@@ -3781,6 +3923,11 @@ void R_FillAddress(void)
 		Sig_VarNotFound(gltextures);
 		Sig_VarNotFound(numgltextures);
 		Sig_VarNotFound(gHostSpawnCount);
+
+		if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+		{
+			Sig_VarNotFound(allocated_textures);
+		}
 #if 0
 		const char sigs1[] = "\x33\x2A\xBF\x2A\x2A\x2A\x2A\x3B\x35\x2A\x2A\x2A\x2A\x7D";
 		//Search in GL_LoadTexture2
@@ -4264,6 +4411,19 @@ void R_FillAddress(void)
 				{//.text:01D5918C FF 34 85 C0 44 F5 03                                push    lightmap_textures[eax*4] 
 
 					lightmap_textures = (decltype(lightmap_textures))pinst->detail->x86.operands[0].mem.disp;
+				}
+				else if (!lightmap_textures &&
+					ctx->mov_38_instcount &&
+					instCount < ctx->mov_38_instcount + 3 &&
+					pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+				{//8B 3D 40 FB C0 02                                   mov     edi, lightmap_textures
+
+					lightmap_textures = (decltype(lightmap_textures))pinst->detail->x86.operands[1].mem.disp;
 				}
 				else if (!lightmap_rectchange &&
 					ctx->mov_38_instcount &&
@@ -4961,6 +5121,13 @@ void R_FillAddress(void)
 				return TRUE;
 			}
 
+			if (Candidate[0] == 0x8B && 
+				Candidate[1] == 0x44 &&
+				Candidate[2] == 0x24)
+			{
+				return TRUE;
+			}
+
 			return FALSE;
 		});
 
@@ -5023,6 +5190,7 @@ void R_FillAddress(void)
 
 		Sig_VarNotFound(cl_max_edicts);
 		Sig_VarNotFound(cl_entities);
+
 #if 0
 #define CL_MAXEDICTS_SIG_NEW "\xC1\xE1\x03\x51\xE8\x2A\x2A\x2A\x2A\x8B\x15\x2A\x2A\x2A\x2A\xA3"
 		DWORD addr = (DWORD)Search_Pattern(CL_MAXEDICTS_SIG_NEW);
@@ -5486,6 +5654,7 @@ void R_FillAddress(void)
 
 	}
 
+	if(1)
 	{
 		const char sigs1[] = "bogus\0";
 		auto Bogus_String = Search_Pattern_Data(sigs1);
@@ -5500,15 +5669,10 @@ void R_FillAddress(void)
 		gPrivateFuncs.Mod_LoadStudioModel = (decltype(gPrivateFuncs.Mod_LoadStudioModel))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Bogus_Call, 0x50, [](PUCHAR Candidate) {
 
 			//  .text : 01D71630 81 EC 10 01 00 00                                   sub     esp, 110h
-			//	.text : 01D71636 A1 E8 F0 ED 01                                      mov     eax, ___security_cookie
-			//	.text : 01D7163B 33 C4 xor eax, esp
 			if (Candidate[0] == 0x81 &&
 				Candidate[1] == 0xEC &&
 				Candidate[4] == 0x00 &&
-				Candidate[5] == 0x00 &&
-				Candidate[6] == 0xA1 &&
-				Candidate[11] == 0x33 &&
-				Candidate[12] == 0xC4)
+				Candidate[5] == 0x00)
 			{
 				return TRUE;
 			}
@@ -5540,6 +5704,11 @@ void R_FillAddress(void)
 		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x6A\x01\xE8";
 		*(DWORD *)(pattern + 1) = (DWORD)Bogus_String;
 		auto Bogus_Call = Search_Pattern(pattern);
+		if (!Bogus_Call) {
+			char pattern2[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83";
+			*(DWORD*)(pattern2 + 1) = (DWORD)Bogus_String;
+			Bogus_Call = Search_Pattern(pattern2);
+		}
 		Sig_VarNotFound(Bogus_Call);
 
 		gPrivateFuncs.Mod_LoadBrushModel = (decltype(gPrivateFuncs.Mod_LoadStudioModel))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Bogus_Call, 0x150, [](PUCHAR Candidate) {
@@ -5549,9 +5718,7 @@ void R_FillAddress(void)
 			//	.text : 01D078D8 33 C4                                               xor     eax, esp
 			if (Candidate[0] == 0x83 &&
 				Candidate[1] == 0xEC &&
-				Candidate[3] == 0xA1 &&
-				Candidate[8] == 0x33 &&
-				Candidate[9] == 0xC4)
+				Candidate[3] == 0xA1)
 			{
 				return TRUE;
 			}
@@ -5572,6 +5739,7 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(Mod_LoadBrushModel);
 	}
 
+	if(1)
 	{
 		const char sigs1[] = "\xFF\x15\x2A\x2A\x2A\x2A\x83\xC4\x0C\x3D\x49\x44\x50\x4F";
 		auto Mod_LoadModel_Pattern = Search_Pattern(sigs1);
@@ -5582,17 +5750,12 @@ void R_FillAddress(void)
 			//81 EC ?? 01 00 00 A1 ?? ?? ?? ?? 33 C4
 			/*
 .text:01D51990 81 EC 50 01 00 00                                            sub     esp, 150h
-.text:01D51996 A1 E8 F0 ED 01                                               mov     eax, ___security_cookie
-.text:01D5199B 33 C4                                                        xor     eax, esp
 			*/
 			if (Candidate[0] == 0x81 &&
 				Candidate[1] == 0xEC &&
 				Candidate[3] == 0x01 &&
 				Candidate[4] == 0x00 &&
-				Candidate[5] == 0x00 &&
-				Candidate[6] == 0xA1 &&
-				Candidate[11] == 0x33 &&
-				Candidate[12] == 0xC4)
+				Candidate[5] == 0x00)
 			{
 				return TRUE;
 			}
@@ -5825,20 +5988,37 @@ void R_FillAddress(void)
 #define R_SETUPFRAME_CALL_SIG "\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8"
 	if (gPrivateFuncs.R_SetupFrame)
 	{
-		addr = (DWORD)Search_Pattern_From(gPrivateFuncs.R_SetupFrame, R_SETUPFRAME_CALL_SIG);
-		Sig_AddrNotFound(R_SetupFrame_Call);
-		gPrivateFuncs.R_ForceCVars = (decltype(gPrivateFuncs.R_ForceCVars))GetCallAddress(addr + 3 + 1);
-		gPrivateFuncs.R_CheckVariables = (decltype(gPrivateFuncs.R_CheckVariables))GetCallAddress(addr + 3 + 1 + 5);
-		gPrivateFuncs.R_AnimateLight = (decltype(gPrivateFuncs.R_AnimateLight))GetCallAddress(addr + 3 + 1 + 5 + 5);
+		addr = (ULONG_PTR)Search_Pattern_From(gPrivateFuncs.R_SetupFrame, R_SETUPFRAME_CALL_SIG);
+		if (addr)
+		{
+			gPrivateFuncs.R_ForceCVars = (decltype(gPrivateFuncs.R_ForceCVars))GetCallAddress(addr + 3 + 1);
+			gPrivateFuncs.R_CheckVariables = (decltype(gPrivateFuncs.R_CheckVariables))GetCallAddress(addr + 3 + 1 + 5);
+			gPrivateFuncs.R_AnimateLight = (decltype(gPrivateFuncs.R_AnimateLight))GetCallAddress(addr + 3 + 1 + 5 + 5);
+		}
+		else
+		{
+#define R_SETUPFRAME_CALL_SIG2 "\x83\xC4\x08\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1"
+			addr = (ULONG_PTR)Search_Pattern_From(gPrivateFuncs.R_SetupFrame, R_SETUPFRAME_CALL_SIG2);
+			//R_ForceCVars has been inlined into R_SetupFrame
+			if (addr)
+			{
+				gPrivateFuncs.R_CheckVariables = (decltype(gPrivateFuncs.R_CheckVariables))GetCallAddress(addr + 3);
+				gPrivateFuncs.R_AnimateLight = (decltype(gPrivateFuncs.R_AnimateLight))GetCallAddress(addr + 3 + 5);
+			}
+		}
 	}
 	else
 	{
-		addr = (DWORD)Search_Pattern(R_SETUPFRAME_CALL_SIG);
-		Sig_AddrNotFound(R_SetupFrame_Call);
-		gPrivateFuncs.R_ForceCVars = (decltype(gPrivateFuncs.R_ForceCVars))GetCallAddress(addr + 3 + 1);
-		gPrivateFuncs.R_CheckVariables = (decltype(gPrivateFuncs.R_CheckVariables))GetCallAddress(addr + 3 + 1 + 5);
-		gPrivateFuncs.R_AnimateLight = (decltype(gPrivateFuncs.R_AnimateLight))GetCallAddress(addr + 3 + 1 + 5 + 5);
+		addr = (ULONG_PTR)Search_Pattern(R_SETUPFRAME_CALL_SIG);
+		if (addr)
+		{
+			gPrivateFuncs.R_ForceCVars = (decltype(gPrivateFuncs.R_ForceCVars))GetCallAddress(addr + 3 + 1);
+			gPrivateFuncs.R_CheckVariables = (decltype(gPrivateFuncs.R_CheckVariables))GetCallAddress(addr + 3 + 1 + 5);
+			gPrivateFuncs.R_AnimateLight = (decltype(gPrivateFuncs.R_AnimateLight))GetCallAddress(addr + 3 + 1 + 5 + 5);
+		}
 	}
+	Sig_FuncNotFound(R_CheckVariables);
+	Sig_FuncNotFound(R_AnimateLight);
 
 	if (1)
 	{
@@ -6872,4 +7052,84 @@ void R_InstallHooks(void)
 	Install_InlineHook(Draw_MiptexTexture);
 	Install_InlineHook(BuildGammaTable);
 	Install_InlineHook(DLL_SetModKey);
+}
+
+int WINAPI GL_RedirectedGenTexture(void)
+{
+	return GL_GenTexture();
+}
+
+void R_RedirectBlobEngineOpenGLTextures(void)
+{
+	if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		const char pattern[] = "\xA1\x2A\x2A\x2A\x2A";
+		*(ULONG_PTR*)(pattern + 1) = (ULONG_PTR)allocated_textures;
+
+		PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
+		PUCHAR SearchLimit = (PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize;
+		while (SearchBegin < SearchLimit)
+		{
+			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+			if (pFound)
+			{
+				typedef struct
+				{
+					bool bFoundWriteBack;
+					bool bFoundGL_Bind;
+				}RedirectBlobEngineOpenGLTextureContext;
+
+				RedirectBlobEngineOpenGLTextureContext ctx = { 0 };
+
+				g_pMetaHookAPI->DisasmRanges(pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto pinst = (cs_insn*)inst;
+					auto ctx = (RedirectBlobEngineOpenGLTextureContext*)context;
+
+					if (pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp == (PUCHAR)allocated_textures &&
+						pinst->detail->x86.operands[1].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].reg == X86_REG_EAX)
+					{
+						ctx->bFoundWriteBack = true;
+					}
+
+					if (address[0] == 0xE8 && 
+						(PUCHAR)pinst->detail->x86.operands[0].imm == (PUCHAR)gPrivateFuncs.GL_Bind)
+					{
+						ctx->bFoundGL_Bind = true;
+					}
+
+					if (ctx->bFoundWriteBack || ctx->bFoundGL_Bind)
+						return TRUE;
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+
+				}, 0, &ctx);
+
+				if (ctx.bFoundWriteBack || ctx.bFoundGL_Bind)
+				{
+					char redirect[] = "\xE8\x2A\x2A\x2A\x2A";
+					*(int*)(redirect + 1) = (PUCHAR)GL_RedirectedGenTexture - (pFound + 5);
+					g_pMetaHookAPI->WriteMemory(pFound, redirect, sizeof(redirect) - 1);
+
+					//gEngfuncs.Con_Printf("%p redirected\n", pFound);
+				}
+
+				SearchBegin = pFound + Sig_Length(pattern);
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
 }

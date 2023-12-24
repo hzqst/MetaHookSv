@@ -39,6 +39,7 @@ typedef struct
 {
 	BlobHeader_t BlobHeader;
 
+	ULONG_PTR SpecialAddress;
 	ULONG ImageSize;
 
 	PVOID TextBase;
@@ -57,6 +58,7 @@ void ShutdownBlobThreadManager(void);
 void BlobWaitForAliveThreadsToShutdown(void);
 void BlobWaitForClosedThreadsToShutdown(void);
 BOOL FIsBlob(const char* szFileName);
+BlobHandle_t LoadBlobFromBuffer(BYTE* pBuffer, DWORD dwBufferSize, PVOID BlobSectionBase, ULONG BlobSectionSize);
 BlobHandle_t LoadBlobFile(const char* szFileName, PVOID BlobSectionBase, ULONG BlobSectionSize);
 BlobHeader_t *GetBlobHeader(BlobHandle_t hBlob);
 BOOL RunDllMainForBlob(BlobHandle_t hBlob, DWORD dwReason);
@@ -64,5 +66,6 @@ void RunExportEntryForBlob(BlobHandle_t hBlob, void** pv);
 void FreeBlobModule(BlobHandle_t hBlob);
 PVOID GetBlobModuleImageBase(BlobHandle_t hBlob);
 ULONG GetBlobModuleImageSize(BlobHandle_t hBlob);
+ULONG_PTR GetBlobModuleSpecialAddress(BlobHandle_t hBlob);
 PVOID GetBlobLoaderSection(PVOID ImageBase, ULONG* BlobSectionSize);
 PVOID GetBlobSectionByName(BlobHandle_t hBlob, const char* SectionName, ULONG* SectionSize);

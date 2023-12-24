@@ -19,9 +19,18 @@ extern float gl_max_ansio;
 
 gltexture_t *gltextures_get();
 
-typedef struct mipmap_texture_data_s
+typedef struct gl_mipmap_texture_data_s
 {
-	struct mipmap_texture_data_s(int _level, void* _data, size_t _size, size_t _width, size_t _height) :
+	struct gl_mipmap_texture_data_s()
+	{
+		level = 0;
+		data = NULL;
+		size = 0;
+		width = 0;
+		height = 0;
+	}
+
+	struct gl_mipmap_texture_data_s(int _level, void* _data, int _size, int _width, int _height) :
 		level(_level), data(_data), size(_size), width(_width), height(_height)
 	{
 
@@ -29,10 +38,44 @@ typedef struct mipmap_texture_data_s
 
 	int level;
 	void* data;
-	size_t size;
-	size_t width;
-	size_t height;
-}mipmap_texture_data_t;
+	int size;
+	int width;
+	int height;
+}gl_mipmap_texture_data_t;
+
+typedef struct gl_loadtexture_state_s
+{
+	struct gl_loadtexture_state_s()
+	{
+		width = 0;
+		height = 0;
+
+		wrap = 0;
+		cubemap = 0;
+		mipmap = false;
+		ansio = false;
+		filter = 0;
+
+		format = 0;
+		compressed = false;
+	}
+
+	int width;
+	int height;
+
+	//OpenGL field
+	GLuint wrap;
+	GLuint cubemap;
+	bool mipmap; 
+	bool ansio;
+	int filter;
+
+	//Loader field
+	GLuint format;
+	bool compressed;
+	std::vector<gl_mipmap_texture_data_t> mipmaps;
+
+}gl_loadtexture_state_t;
 
 //DXT
 

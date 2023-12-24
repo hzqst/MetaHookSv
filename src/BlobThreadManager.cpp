@@ -213,10 +213,7 @@ BOOL WINAPI BlobCloseHandle(HANDLE hObject)
 	return g_pfnCloseHandle(hObject);
 }
 
-BOOL WINAPI BlobTerminateThread(
-	HANDLE hThread,
-	DWORD  dwExitCode
-)
+BOOL WINAPI BlobTerminateThread(HANDLE hThread,	DWORD  dwExitCode)
 {
 	if (WAIT_OBJECT_0 == WaitForSingleObject(hThread, INFINITE))
 	{
@@ -289,8 +286,6 @@ void BlobWaitForAliveThreadsToShutdown(void)
 		}
 	}
 
-	BlobLeaveCritSection();
-
 	if (numThreads != 0)
 		WaitForMultipleObjects(numThreads, hThreads, TRUE, INFINITE);
 
@@ -303,6 +298,8 @@ void BlobWaitForAliveThreadsToShutdown(void)
 			CloseHandle(hThreads[i]);
 		}
 	}
+
+	BlobLeaveCritSection();
 }
 
 void BlobWaitForClosedThreadsToShutdown(void)
@@ -321,8 +318,6 @@ void BlobWaitForClosedThreadsToShutdown(void)
 		}
 	}
 
-	BlobLeaveCritSection();
-
 	if(numThreads != 0)
 		WaitForMultipleObjects(numThreads, hThreads, TRUE, INFINITE);
 
@@ -335,6 +330,8 @@ void BlobWaitForClosedThreadsToShutdown(void)
 			CloseHandle(hThreads[i]);
 		}
 	}
+
+	BlobLeaveCritSection();
 }
 
 blob_thread_manager_api_t g_BlobThreadManagerAPI = {

@@ -1,7 +1,6 @@
 #include "metahook.h"
 #include <IEngine.h>
 #include "LoadBlob.h"
-//#include "ExceptHandle.h"
 #include "BlobThreadManager.h"
 #include "sys.h"
 #include <tlhelp32.h> 
@@ -11,6 +10,9 @@
 
 IFileSystem_HL25 *g_pFileSystem_HL25 = nullptr;
 IFileSystem* g_pFileSystem = nullptr;
+
+PVOID g_BlobLoaderSectionBase = NULL;
+ULONG g_BlobLoaderSectionSize = 0;
 
 #if 0
 #include <dbghelp.h>
@@ -271,33 +273,34 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		IEngine *engineAPI = NULL;
 		HINTERFACEMODULE hEngine = NULL;
 		BlobHandle_t hBlobEngine = NULL;
-		PVOID BlobSectionBase = NULL;
-		ULONG BlobSectionSize = 0;
 
 		if (FIsBlob(pszEngineDLL))
 		{
-			BlobSectionBase = GetBlobLoaderSection((PVOID)hInstance, &BlobSectionSize);
+			if (!g_BlobLoaderSectionBase)
+			{
+				g_BlobLoaderSectionBase = GetBlobLoaderSection((PVOID)hInstance, &g_BlobLoaderSectionSize);
 
-			if (!BlobSectionBase)
-			{
-				char msg[512];
-				wsprintf(msg, "No available \".blob\" section to load blob engine : %s.", pszEngineDLL);
-				MessageBox(NULL, msg, "Fatal Error", MB_ICONERROR);
-				return 0;
-			}
-			else
-			{
-				DWORD dwOldProtect = 0;
-				if (!VirtualProtect(BlobSectionBase, BlobSectionSize, PAGE_EXECUTE_READWRITE, &dwOldProtect))
+				if (!g_BlobLoaderSectionBase)
 				{
 					char msg[512];
-					wsprintf(msg, "Failed to make \".blob\" section executable for blob engine : %s.", pszEngineDLL);
+					wsprintf(msg, "No available \".blob\" section to load blob engine : %s.", pszEngineDLL);
 					MessageBox(NULL, msg, "Fatal Error", MB_ICONERROR);
 					return 0;
 				}
+				else
+				{
+					DWORD dwOldProtect = 0;
+					if (!VirtualProtect(g_BlobLoaderSectionBase, g_BlobLoaderSectionSize, PAGE_EXECUTE_READWRITE, &dwOldProtect))
+					{
+						char msg[512];
+						wsprintf(msg, "Failed to make \".blob\" section executable for blob engine : %s.", pszEngineDLL);
+						MessageBox(NULL, msg, "Fatal Error", MB_ICONERROR);
+						return 0;
+					}
+				}
 			}
 
-			hBlobEngine = LoadBlobFile(pszEngineDLL, BlobSectionBase, BlobSectionSize);
+			hBlobEngine = LoadBlobFile(pszEngineDLL, g_BlobLoaderSectionBase, g_BlobLoaderSectionSize);
 
 			if (!hBlobEngine)
 			{

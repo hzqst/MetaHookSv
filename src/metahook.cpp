@@ -9,6 +9,9 @@
 #include <set>
 #include <vector>
 
+extern PVOID g_BlobLoaderSectionBase;
+extern ULONG g_BlobLoaderSectionSize;
+
 extern "C"
 {
 	NTSYSAPI PIMAGE_NT_HEADERS NTAPI RtlImageNtHeader(PVOID Base);
@@ -36,6 +39,23 @@ typedef struct hook_s
 	void *pInfo;
 }hook_t;
 
+typedef struct usermsg_s
+{
+	int index;
+	int size;
+	char name[16];
+	struct usermsg_s* next;
+	pfnUserMsgHook function;
+}usermsg_t;
+
+typedef struct cmd_function_s
+{
+	struct cmd_function_s* next;
+	char* name;
+	xcommand_t function;
+	int flags;
+}cmd_function_t;
+
 typedef struct cvar_callback_entry_s
 {
 	cvar_callback_t callback;
@@ -49,45 +69,29 @@ cvar_callback_entry_t* g_ManagedCvarCallbackList = NULL;
 
 std::vector<cvar_callback_entry_t*> g_ManagedCvarCallbacks;
 
-typedef struct usermsg_s
-{
-	int index;
-	int size;
-	char name[16];
-	struct usermsg_s *next;
-	pfnUserMsgHook function;
-}usermsg_t;
-
 usermsg_t **gClientUserMsgs = NULL;
 
-typedef struct cmd_function_s
-{
-	struct cmd_function_s *next;
-	char *name;
-	xcommand_t function;
-	int flags;
-}cmd_function_t;
-
 cmd_function_t *(*Cmd_GetCmdBase)(void) = NULL;
-
 void **g_pVideoMode = NULL;
 int (*g_pfnbuild_number)(void) = NULL;
-
-int(*g_original_ClientDLL_Init)(void) = NULL;
 int(*g_pfnClientDLL_Init)(void) = NULL;
-
 void(*g_pfnCvar_DirectSet)(cvar_t* var, char* value) = NULL;
-
+void(*g_pfnLoadBlobFile)(BYTE* pBuffer, void* pblobfootprint, void** pv, DWORD dwBufferSize) = NULL;
+void *g_StudioInterfaceCall = NULL;
+struct engine_studio_api_s* g_pEngineStudioAPI = NULL;
+struct r_studio_interface_t** g_pStudioAPI = NULL;
 CreateInterfaceFn *g_pClientFactory = NULL;
 
 HMODULE *g_phClientModule = NULL;
 
 BlobHandle_t g_hBlobEngine = NULL;
+BlobHandle_t g_hBlobClient = NULL;
 HMODULE g_hEngineModule = NULL;
 PVOID g_dwEngineBase = NULL;
 DWORD g_dwEngineSize = NULL;
 
-hook_t *g_pHookBase = NULL;
+hook_t *g_pHookBase = NULL;	
+ULONG_PTR g_dwClientDLL_Initialize[1] = {0};
 cl_exportfuncs_t *g_pExportFuncs = NULL;
 void *g_ppExportFuncs = NULL;
 void *g_ppEngfuncs = NULL;
@@ -145,6 +149,25 @@ mh_interface_t gInterface = {0};
 mh_enginesave_t gMetaSave = {0};
 
 extern metahook_api_t gMetaHookAPI;
+
+DWORD MH_LoadBlobFile(BYTE* pBuffer, void* pBlobFootPrint, void** pv, DWORD dwBufferSize)
+{
+	auto hBlob = LoadBlobFromBuffer(pBuffer, dwBufferSize, g_BlobLoaderSectionBase, g_BlobLoaderSectionSize);
+
+	if (hBlob)
+	{
+		if (GetBlobModuleImageBase(hBlob) == (PVOID)0x01900000)
+		{
+			g_hBlobClient = hBlob;
+		}
+
+		RunDllMainForBlob(hBlob, DLL_PROCESS_ATTACH);
+		RunExportEntryForBlob(hBlob, pv);
+		return GetBlobModuleSpecialAddress(hBlob);
+	}
+
+	return 0;
+}
 
 void MH_Cvar_DirectSet(cvar_t* var, char* value)
 {
@@ -389,21 +412,23 @@ void MH_PrintPluginList(void)
 
 int MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 {
-	bool bDuplicate = false;
+	bool bIsDuplicatePlugin = false;
 
 	for (plugin_t *p = g_pPluginBase; p; p = p->next)
 	{
 		if (!stricmp(p->filename.c_str(), filename.c_str()))
 		{
-			bDuplicate = true;
+			bIsDuplicatePlugin = true;
 			break;
 		}
 	}
 
-	if (!bDuplicate && GetModuleHandleA(filename.c_str()))
-		bDuplicate = true;
+	if (!bIsDuplicatePlugin && GetModuleHandleA(filename.c_str()))
+	{
+		bIsDuplicatePlugin = true;
+	}
 
-	if (bDuplicate)
+	if (bIsDuplicatePlugin)
 	{
 		return PLUGIN_LOAD_DUPLICATE;
 	}
@@ -419,12 +444,12 @@ int MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 	{
 		if (p->module == hModule)
 		{
-			bDuplicate = true;
+			bIsDuplicatePlugin = true;
 			break;
 		}
 	}
 
-	if (bDuplicate)
+	if (bIsDuplicatePlugin)
 	{
 		Sys_FreeModule(hModule);
 		return PLUGIN_LOAD_DUPLICATE;
@@ -438,7 +463,14 @@ int MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 		return PLUGIN_LOAD_INVALID;
 	}
 
-	plugin_t *plug = new plugin_t;
+	plugin_t *plug = new (std::nothrow) plugin_t;
+
+	if (!plug)
+	{
+		Sys_FreeModule(hModule);
+		return PLUGIN_LOAD_NOMEM;
+	}
+
 	plug->module = hModule;
 	plug->modulesize = MH_GetModuleSize(hModule);
 	plug->pPluginAPI = fnCreateInterface(METAHOOK_PLUGIN_API_VERSION_V4, NULL);
@@ -474,7 +506,7 @@ int MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 				}
 				else
 				{
-					free(plug);
+					delete plug;
 					Sys_FreeModule(hModule);
 
 					return PLUGIN_LOAD_INVALID;
@@ -751,16 +783,13 @@ void MH_LoadPlugins(const char *gamedir)
 	infile.close();
 }
 
-int(*g_pfnHUD_GetStudioModelInterface)(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio) = NULL;
-
-int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
+void MH_TransactionInlineHookBegin(void)
 {
-	int r = 0;
-
 	g_bTransactionInlineHook = true;
+}
 
-	r = g_pfnHUD_GetStudioModelInterface ? g_pfnHUD_GetStudioModelInterface(version, ppinterface, pstudio) : 0;
-
+void MH_TransactionInlineHookCommit(void)
+{
 	g_bTransactionInlineHook = false;
 
 	for (auto pHook = g_pHookBase; pHook; pHook = pHook->pNext)
@@ -768,13 +797,26 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		if (pHook->iType == MH_HOOK_INLINE && !pHook->bCommitted)
 		{
 			DetourTransactionBegin();
-			DetourAttach(&(void *&)pHook->pOldFuncAddr, pHook->pNewFuncAddr);
+			DetourAttach(&(void*&)pHook->pOldFuncAddr, pHook->pNewFuncAddr);
 			DetourTransactionCommit();
 
-			*pHook->pOrginalCall = pHook->pOldFuncAddr;
+			if (pHook->pOrginalCall)
+				(*pHook->pOrginalCall) = pHook->pOldFuncAddr;
+
 			pHook->bCommitted = true;
 		}
 	}
+}
+
+int __fastcall CheckStudioInterfaceTrampoline(int(*pfn)(int version, struct r_studio_interface_t** ppinterface, struct engine_studio_api_s* pstudio), int dummy)
+{
+	int r = 0;
+
+	MH_TransactionInlineHookBegin();
+
+	r = pfn ? pfn(1, g_pStudioAPI, g_pEngineStudioAPI) : 0;
+
+	MH_TransactionInlineHookCommit();
 
 	return r;
 }
@@ -784,7 +826,7 @@ int ClientDLL_Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 	memcpy(gMetaSave.pExportFuncs, g_pExportFuncs, sizeof(cl_exportfuncs_t));
 	memcpy(gMetaSave.pEngineFuncs, pEnginefuncs, sizeof(cl_enginefunc_t));
 
-	g_bTransactionInlineHook = true;
+	MH_TransactionInlineHookBegin();
 
 	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next)
 	{
@@ -797,7 +839,7 @@ int ClientDLL_Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 			((IPluginsV3 *)plug->pPluginAPI)->LoadClient(g_pExportFuncs);
 			break;
 		case 2:
-			((IPlugins *)plug->pPluginAPI)->LoadClient(g_pExportFuncs);
+			((IPluginsV2 *)plug->pPluginAPI)->LoadClient(g_pExportFuncs);
 			break;
 		default:
 			((IPluginsV1 *)plug->pPluginAPI)->Init(g_pExportFuncs);
@@ -805,44 +847,14 @@ int ClientDLL_Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 		}
 	}
 
-	g_bTransactionInlineHook = false;
-
-	for (auto pHook = g_pHookBase; pHook; pHook = pHook->pNext)
-	{
-		if (pHook->iType == MH_HOOK_INLINE && !pHook->bCommitted)
-		{
-			DetourTransactionBegin();
-			DetourAttach(&(void *&)pHook->pOldFuncAddr, pHook->pNewFuncAddr);
-			DetourTransactionCommit();
-
-			*pHook->pOrginalCall = pHook->pOldFuncAddr;
-			pHook->bCommitted = true;
-		}
-	}
-
-	g_pfnHUD_GetStudioModelInterface = g_pExportFuncs->HUD_GetStudioModelInterface;
-	g_pExportFuncs->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
+	MH_TransactionInlineHookCommit();
 
 	gMetaSave.pEngineFuncs->pfnAddCommand("mh_pluginlist", MH_PrintPluginList);
 
 	return g_pExportFuncs->Initialize(pEnginefuncs, iVersion);
 }
 
-void MH_ClientDLL_Init(void)
-{
-	g_pExportFuncs = *(cl_exportfuncs_t **)g_ppExportFuncs;
-
-	static DWORD dwClientDLL_Initialize[1];
-	dwClientDLL_Initialize[0] = (DWORD)&ClientDLL_Initialize;
-
-	MH_WriteDWORD(g_ppExportFuncs, (DWORD)dwClientDLL_Initialize);
-
-	g_original_ClientDLL_Init();
-
-	MH_WriteDWORD(g_ppExportFuncs, (DWORD)g_pExportFuncs);
-}
-
-void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *szGameName)
+void MH_ResetAllVars(void)
 {
 	Cmd_GetCmdBase = NULL;
 	cvar_callbacks = NULL;
@@ -851,17 +863,35 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 	g_pfnbuild_number = NULL;
 	g_pClientFactory = NULL;
 	g_pfnClientDLL_Init = NULL;
-	g_original_ClientDLL_Init = NULL;
+	g_pfnCvar_DirectSet = NULL;
+	g_pfnLoadBlobFile = NULL;
+	g_StudioInterfaceCall = NULL;
+	g_pEngineStudioAPI = NULL;
+	g_pStudioAPI = NULL;
 	g_phClientModule = NULL;
 	g_ppExportFuncs = NULL;
 	g_ppEngfuncs = NULL;
+	g_hEngineModule = NULL;
+	g_hBlobEngine = NULL;
+	g_hBlobClient = NULL;
+	g_dwEngineBase = NULL;
+	g_dwEngineSize = NULL;
+	g_pHookBase = NULL;
+	g_pExportFuncs = NULL;
+	g_bSaveVideo = false;
+	g_iEngineType = ENGINE_UNKNOWN;
+}
 
-	if(!gMetaSave.pEngineFuncs)
+void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* szGameName)
+{
+	MH_ResetAllVars();
+
+	if (!gMetaSave.pEngineFuncs)
 		gMetaSave.pEngineFuncs = new cl_enginefunc_t;
 
 	memset(gMetaSave.pEngineFuncs, 0, sizeof(cl_enginefunc_t));
 
-	if(!gMetaSave.pExportFuncs)
+	if (!gMetaSave.pExportFuncs)
 		gMetaSave.pExportFuncs = new cl_exportfuncs_t;
 
 	memset(gMetaSave.pExportFuncs, 0, sizeof(cl_exportfuncs_t));
@@ -882,7 +912,6 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 		g_dwEngineBase = MH_GetModuleBase(hEngineModule);
 		g_dwEngineSize = MH_GetModuleSize(hEngineModule);
 		g_hEngineModule = hEngineModule;
-		g_hBlobEngine = NULL;
 
 		g_iEngineType = ENGINE_UNKNOWN;
 	}
@@ -890,7 +919,6 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 	{
 		g_dwEngineBase = GetBlobModuleImageBase(hBlobEngine);
 		g_dwEngineSize = GetBlobModuleImageSize(hBlobEngine);
-		g_hEngineModule = NULL;
 		g_hBlobEngine = hBlobEngine;
 
 		g_iEngineType = ENGINE_GOLDSRC_BLOB;
@@ -926,7 +954,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 #define BUILD_NUMBER_SIG "\xE8\x2A\x2A\x2A\x2A\x50\x68\x2A\x2A\x2A\x2A\x6A\x30\x68"
 
 	auto buildnumber_call = MH_SearchPattern(textBase, textSize, BUILD_NUMBER_SIG, sizeof(BUILD_NUMBER_SIG) - 1);
-	
+
 	if (buildnumber_call)
 	{
 		g_pfnbuild_number = (decltype(g_pfnbuild_number))MH_GetNextCallAddr(buildnumber_call, 1);
@@ -987,11 +1015,11 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 	if (1)
 	{
 #define CLDLL_INIT_STRING_SIG "ScreenShake"
-		auto ClientDll_Init_String = MH_SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, CLDLL_INIT_STRING_SIG, sizeof(CLDLL_INIT_STRING_SIG) - 1);
+		auto ClientDll_Init_String = MH_SearchPattern((void*)g_dwEngineBase, g_dwEngineSize, CLDLL_INIT_STRING_SIG, sizeof(CLDLL_INIT_STRING_SIG) - 1);
 		if (ClientDll_Init_String)
 		{
 			char pattern[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8";
-			*(DWORD *)(pattern + 6) = (DWORD)ClientDll_Init_String;
+			*(DWORD*)(pattern + 6) = (DWORD)ClientDll_Init_String;
 			auto ClientDll_Init_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
 			if (ClientDll_Init_PushString)
 			{
@@ -1031,33 +1059,33 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 						return TRUE;
 
 					return FALSE;
-				});
+					});
 
 				if (ClientDll_Init_FunctionBase)
 				{
 					g_pfnClientDLL_Init = (decltype(g_pfnClientDLL_Init))ClientDll_Init_FunctionBase;
 
-					MH_DisasmRanges(ClientDll_Init_PushString, 0x30, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-					{
-						auto pinst = (cs_insn *)inst;
-
-						if (address[0] == 0x6A && address[1] == 0x07 && address[2] == 0x68)
+					MH_DisasmRanges(ClientDll_Init_PushString, 0x30, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 						{
-							g_ppEngfuncs = (decltype(g_ppEngfuncs))(address + 3);
-						}
-						else if (address[0] == 0xFF && address[1] == 0x15)
-						{
-							g_ppExportFuncs = (decltype(g_ppExportFuncs))(address + 2);
-						}
+							auto pinst = (cs_insn*)inst;
 
-						if (g_ppExportFuncs && g_ppEngfuncs)
-							return TRUE;
+							if (address[0] == 0x6A && address[1] == 0x07 && address[2] == 0x68)
+							{
+								g_ppEngfuncs = (decltype(g_ppEngfuncs))(address + 3);
+							}
+							else if (address[0] == 0xFF && address[1] == 0x15)
+							{
+								g_ppExportFuncs = (decltype(g_ppExportFuncs))(address + 2);
+							}
 
-						if (address[0] == 0xCC)
-							return TRUE;
+							if (g_ppExportFuncs && g_ppEngfuncs)
+								return TRUE;
 
-						return FALSE;
-					}, 0, NULL);
+							if (address[0] == 0xCC)
+								return TRUE;
+
+							return FALSE;
+						}, 0, NULL);
 				}
 			}
 		}
@@ -1065,7 +1093,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 
 	if (!g_pfnClientDLL_Init)
 	{
-		MH_SysError( "MH_LoadEngine: Failed to locate ClientDLL_Init");
+		MH_SysError("MH_LoadEngine: Failed to locate ClientDLL_Init");
 		return;
 	}
 
@@ -1084,48 +1112,48 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 	if (1)
 	{
 #define RIGHTHAND_STRING_SIG "cl_righthand\0"
-		auto RightHand_String = MH_SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, RIGHTHAND_STRING_SIG, sizeof(RIGHTHAND_STRING_SIG) - 1);
+		auto RightHand_String = MH_SearchPattern((void*)g_dwEngineBase, g_dwEngineSize, RIGHTHAND_STRING_SIG, sizeof(RIGHTHAND_STRING_SIG) - 1);
 		if (RightHand_String)
 		{
 			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8";
-			*(DWORD *)(pattern + 1) = (DWORD)RightHand_String;
+			*(DWORD*)(pattern + 1) = (DWORD)RightHand_String;
 			auto RightHand_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
 			if (RightHand_PushString)
 			{
 #define HUDINIT_SIG "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x75\x2A"
-				auto ClientDLL_HudInit = MH_ReverseSearchPattern(RightHand_PushString, 0x100, HUDINIT_SIG, sizeof(HUDINIT_SIG)-1);
+				auto ClientDLL_HudInit = MH_ReverseSearchPattern(RightHand_PushString, 0x100, HUDINIT_SIG, sizeof(HUDINIT_SIG) - 1);
 				if (ClientDLL_HudInit)
 				{
-					PVOID pfnHUDInit = *(PVOID *)((PUCHAR)ClientDLL_HudInit + 1);
+					PVOID pfnHUDInit = *(PVOID*)((PUCHAR)ClientDLL_HudInit + 1);
 
 					ClientDLL_HudInit = (PUCHAR)ClientDLL_HudInit + sizeof(HUDINIT_SIG) - 1;
-					MH_DisasmRanges(ClientDLL_HudInit, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-					{
-						auto pinst = (cs_insn *)inst;
-
-						if (pinst->id == X86_INS_MOV &&
-							pinst->detail->x86.op_count == 2 &&
-							pinst->detail->x86.operands[0].type == X86_OP_REG &&
-							pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-							pinst->detail->x86.operands[1].mem.base == 0 &&
-							(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineBase &&
-							(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize)
+					MH_DisasmRanges(ClientDLL_HudInit, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 						{
-							PVOID imm = (PVOID)pinst->detail->x86.operands[1].mem.disp;
-							if (imm != context)
+							auto pinst = (cs_insn*)inst;
+
+							if (pinst->id == X86_INS_MOV &&
+								pinst->detail->x86.op_count == 2 &&
+								pinst->detail->x86.operands[0].type == X86_OP_REG &&
+								pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+								pinst->detail->x86.operands[1].mem.base == 0 &&
+								(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineBase &&
+								(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize)
 							{
-								g_phClientModule = (decltype(g_phClientModule))imm;
+								PVOID imm = (PVOID)pinst->detail->x86.operands[1].mem.disp;
+								if (imm != context)
+								{
+									g_phClientModule = (decltype(g_phClientModule))imm;
+								}
 							}
-						}
 
-						if (g_phClientModule)
-							return TRUE;
+							if (g_phClientModule)
+								return TRUE;
 
-						if (address[0] == 0xCC)
-							return TRUE;
+							if (address[0] == 0xCC)
+								return TRUE;
 
-						return FALSE;
-					}, 0, pfnHUDInit);
+							return FALSE;
+						}, 0, pfnHUDInit);
 				}
 			}
 			else
@@ -1150,11 +1178,11 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 	if (1)
 	{
 #define VGUICLIENT001_STRING_SIG "VClientVGUI001\0"
-		auto VGUIClient001_String = MH_SearchPattern((void *)g_dwEngineBase, g_dwEngineSize, VGUICLIENT001_STRING_SIG, sizeof(VGUICLIENT001_STRING_SIG) - 1);
+		auto VGUIClient001_String = MH_SearchPattern((void*)g_dwEngineBase, g_dwEngineSize, VGUICLIENT001_STRING_SIG, sizeof(VGUICLIENT001_STRING_SIG) - 1);
 		if (VGUIClient001_String)
 		{
 			char pattern[] = "\x6A\x00\x68\x2A\x2A\x2A\x2A";
-			*(DWORD *)(pattern + 3) = (DWORD)VGUIClient001_String;
+			*(DWORD*)(pattern + 3) = (DWORD)VGUIClient001_String;
 			auto VGUIClient001_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
 			if (VGUIClient001_PushString)
 			{
@@ -1162,7 +1190,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 				auto InitVGUI = MH_ReverseSearchPattern(VGUIClient001_PushString, 0x100, INITVGUI_SIG, sizeof(INITVGUI_SIG) - 1);
 				if (InitVGUI)
 				{
-					g_pClientFactory = *(decltype(g_pClientFactory) *)((PUCHAR)InitVGUI + 1);
+					g_pClientFactory = *(decltype(g_pClientFactory)*)((PUCHAR)InitVGUI + 1);
 				}
 				else
 				{
@@ -1170,7 +1198,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 					auto InitVGUI = MH_ReverseSearchPattern(VGUIClient001_PushString, 0x100, INITVGUI_SIG2, sizeof(INITVGUI_SIG2) - 1);
 					if (InitVGUI)
 					{
-						g_pClientFactory = *(decltype(g_pClientFactory) *)((PUCHAR)InitVGUI + 2);
+						g_pClientFactory = *(decltype(g_pClientFactory)*)((PUCHAR)InitVGUI + 2);
 					}
 				}
 			}
@@ -1183,9 +1211,9 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 		return;
 	}
 
-	memcpy(gMetaSave.pEngineFuncs, *(void **)g_ppEngfuncs, sizeof(cl_enginefunc_t));
+	memcpy(gMetaSave.pEngineFuncs, *(void**)g_ppEngfuncs, sizeof(cl_enginefunc_t));
 
-	Cmd_GetCmdBase = *(decltype(Cmd_GetCmdBase) *)(&gMetaSave.pEngineFuncs->GetFirstCmdFunctionHandle);
+	Cmd_GetCmdBase = *(decltype(Cmd_GetCmdBase)*)(&gMetaSave.pEngineFuncs->GetFirstCmdFunctionHandle);
 
 	if (1)
 	{
@@ -1249,7 +1277,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize &&
 						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
 						pinst->detail->x86.operands[1].imm == 0)
-						|| 
+						||
 						(pinst->id == X86_INS_MOV &&
 							pinst->detail->x86.op_count == 2 &&
 							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
@@ -1258,7 +1286,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 							(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize &&
 							pinst->detail->x86.operands[1].type == X86_OP_REG &&
 							pinst->detail->x86.operands[1].reg == X86_REG_EAX)
-						
+
 						)
 					{
 						typedef struct
@@ -1306,7 +1334,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 						return TRUE;
 
 					return FALSE;
-				}, 0, & ctx);
+				}, 0, &ctx);
 		}
 		else
 		{
@@ -1328,34 +1356,34 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 		if (HudText_String)
 		{
 			char pattern[] = "\x50\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C";
-			*(DWORD *)(pattern + 2) = (DWORD)HudText_String;
+			*(DWORD*)(pattern + 2) = (DWORD)HudText_String;
 			auto HudText_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
 			if (HudText_PushString)
 			{
 				PVOID DispatchDirectUserMsg = (PVOID)MH_GetNextCallAddr((PUCHAR)HudText_PushString + 6, 1);
-				MH_DisasmRanges(DispatchDirectUserMsg, 0x50, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-				{
-					auto pinst = (cs_insn *)inst;
-
-					if (pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-						pinst->detail->x86.operands[1].mem.base == 0 &&
-						(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineBase &&
-						(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize)
+				MH_DisasmRanges(DispatchDirectUserMsg, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 					{
-						gClientUserMsgs = (decltype(gClientUserMsgs))pinst->detail->x86.operands[1].mem.disp;
-					}
+						auto pinst = (cs_insn*)inst;
 
-					if (gClientUserMsgs)
-						return TRUE;
+						if (pinst->id == X86_INS_MOV &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_REG &&
+							pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+							pinst->detail->x86.operands[1].mem.base == 0 &&
+							(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineBase &&
+							(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineBase + g_dwEngineSize)
+						{
+							gClientUserMsgs = (decltype(gClientUserMsgs))pinst->detail->x86.operands[1].mem.disp;
+						}
 
-					if (address[0] == 0xCC)
-						return TRUE;
+						if (gClientUserMsgs)
+							return TRUE;
 
-					return FALSE;
-				}, 0, NULL);
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						return FALSE;
+					}, 0, NULL);
 			}
 		}
 	}
@@ -1423,7 +1451,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 						return TRUE;
 
 					return FALSE;
-				});
+					});
 			}
 		}
 	}
@@ -1517,7 +1545,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 									return TRUE;
 
 								return FALSE;
-							}, 0, & ctx);
+							}, 0, &ctx);
 					}
 					else
 					{
@@ -1535,8 +1563,124 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 		}
 	}
 
-	MH_InlineHook(g_pfnClientDLL_Init, MH_ClientDLL_Init, (void **)&g_original_ClientDLL_Init);
-	
+	if (g_iEngineType == ENGINE_GOLDSRC || g_iEngineType == ENGINE_GOLDSRC_BLOB || g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		const char pattern[] = "\x85\xBC\x32\x7A\xFF";
+		const char pattern2[] = "\x6A\x00\x6A\x01\x6A\x00";
+
+		auto searchBegin = (PUCHAR)textBase;
+		auto searchEnd = (PUCHAR)textBase + textSize;
+		while (1)
+		{
+			auto ExportPoint_Call = MH_SearchPattern(searchBegin, searchEnd - searchBegin, pattern, sizeof(pattern) - 1);
+			if (ExportPoint_Call)
+			{
+				auto ExportPoint_Push = MH_SearchPattern((PUCHAR)ExportPoint_Call - 0x50, 0x50, pattern2, sizeof(pattern2) - 1);
+				if (ExportPoint_Push)
+				{
+					g_pfnLoadBlobFile = (decltype(g_pfnLoadBlobFile))MH_ReverseSearchFunctionBegin((PUCHAR)ExportPoint_Push, 0x300);
+					break;
+				}
+
+				searchBegin = (PUCHAR)ExportPoint_Call + sizeof(pattern) - 1;
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		if (!g_pfnLoadBlobFile) {
+			MH_SysError("MH_LoadEngine: Failed to locate LoadBlobFile");
+			return;
+		}
+	}
+
+
+	if (1)
+	{
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
+		/*
+.text:10196E98 85 C0                                               test    eax, eax
+.text:10196E9A 74 27                                               jz      short loc_10196EC3
+.text:10196E9C 68 C8 B1 31 10                                      push    offset off_1031B1C8
+.text:10196EA1 68 D8 B0 31 10                                      push    offset off_1031B0D8
+.text:10196EA6 6A 01                                               push    1
+.text:10196EA8 FF D0                                               call    eax ; cl_funcs_pStudioInterface
+.text:10196EAA 83 C4 0C                                            add     esp, 0Ch
+		*/
+		char pattern2[] = "\x85\xC0\x2A\x2A\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x6A\x01\xFF\x2A\x83\xC4\x0C";
+		const char sigs_SvEngine[] = "Couldn't get client library studio model rendering";
+		const char sigs_GoldSrc[] = "Couldn't get client .dll studio model rendering";
+		const char* sigs = NULL;
+		size_t siglen = 0;
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			sigs = sigs_SvEngine;
+			siglen = sizeof(sigs_SvEngine) - 1;
+		}
+		else
+		{
+			sigs = sigs_GoldSrc;
+			siglen = sizeof(sigs_GoldSrc) - 1;
+		}
+
+		auto PrintError_String = MH_SearchPattern(dataBase, dataSize, sigs, siglen);
+		if (!PrintError_String)
+			PrintError_String = MH_SearchPattern(rdataBase, rdataSize, sigs, siglen);
+		if (PrintError_String)
+		{
+			*(DWORD*)(pattern + 1) = (DWORD)PrintError_String;
+
+			auto searchBegin = (PUCHAR)textBase;
+			auto searchEnd = (PUCHAR)textBase + textSize;
+			while (1)
+			{
+				auto PrintError_Call = MH_SearchPattern(searchBegin, searchEnd - searchBegin, pattern, sizeof(pattern) - 1);
+				if (PrintError_Call)
+				{
+					auto pStudioInterface_Call = MH_SearchPattern((PUCHAR)PrintError_Call - 0x50, 0x50, pattern2, sizeof(pattern2) - 1);
+					if (pStudioInterface_Call)
+					{
+						g_StudioInterfaceCall = pStudioInterface_Call;
+						g_pEngineStudioAPI = *(decltype(g_pEngineStudioAPI)*)((ULONG_PTR)pStudioInterface_Call + 4 + 1);
+						g_pStudioAPI = *(decltype(g_pStudioAPI)*)((ULONG_PTR)pStudioInterface_Call  + 4 + 5 + 1);
+						
+						break;
+					}
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+
+		if (!g_StudioInterfaceCall) {
+			MH_SysError("MH_LoadEngine: Failed to locate ClientDLL_CheckStudioInterface");
+			return;
+		}
+	}
+
+	//Hook client dll initialization
+	g_pExportFuncs = *(cl_exportfuncs_t**)g_ppExportFuncs;
+
+	g_dwClientDLL_Initialize[0] = (ULONG_PTR)ClientDLL_Initialize;
+
+	MH_WriteDWORD(g_ppExportFuncs, (DWORD)g_dwClientDLL_Initialize);
+
+	//Hook studio interface initialization
+	char CheckStudioInterfaceNewCall[] = "\x8B\xC8\xE8\x2A\x2A\x2A\x2A\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90\x90";
+	*(int*)(CheckStudioInterfaceNewCall + 2 + 1) = ((PUCHAR)CheckStudioInterfaceTrampoline) - ((PUCHAR)g_StudioInterfaceCall + 2 + 5);
+	MH_WriteMemory(g_StudioInterfaceCall, CheckStudioInterfaceNewCall, sizeof(CheckStudioInterfaceNewCall) - 1);
+
+	//8B C8          mov     ecx, eax
+	//E8 ?? ?? ?? ?? call
+	if (g_pfnLoadBlobFile)
+	{
+		MH_InlineHook(g_pfnLoadBlobFile, MH_LoadBlobFile, NULL);
+	}
+
 	if (g_hEngineModule)
 	{
 		MH_IATHook(g_hEngineModule, "kernel32.dll", "CreateThread", BlobCreateThread, NULL);
@@ -1558,7 +1702,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *
 			((IPluginsV3 *)plug->pPluginAPI)->LoadEngine((cl_enginefunc_t *)*(void **)g_ppEngfuncs);
 			break;
 		case 2:
-			((IPlugins *)plug->pPluginAPI)->LoadEngine();
+			((IPluginsV2 *)plug->pPluginAPI)->LoadEngine();
 			break;
 		default:
 			break;
@@ -1670,26 +1814,7 @@ void MH_Shutdown(void)
 		(*cvar_callbacks) = NULL;
 	}
 
-	Cmd_GetCmdBase = NULL;
-	cvar_callbacks = NULL;
-	gClientUserMsgs = NULL;
-	g_pVideoMode = NULL;
-	g_pfnbuild_number = NULL;
-	g_pClientFactory = NULL;
-	g_pfnClientDLL_Init = NULL;
-	g_original_ClientDLL_Init = NULL;
-	g_phClientModule = NULL;
-
-	g_hBlobEngine = NULL;
-	g_hEngineModule = NULL;
-	g_dwEngineBase = NULL;
-	g_dwEngineSize = NULL;
-	g_pHookBase = NULL;
-	g_pExportFuncs = NULL;
-	g_ppExportFuncs = NULL;
-	g_ppEngfuncs = NULL;
-	g_bSaveVideo = false;
-	g_iEngineType = ENGINE_UNKNOWN;
+	MH_ResetAllVars();
 }
 
 hook_t *MH_NewHook(int iType)
@@ -1837,11 +1962,11 @@ hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCal
 	h->pOldFuncAddr = pOldFuncAddr;
 	h->pNewFuncAddr = pNewFuncAddr;
 
-	if (!pOrginalCall)
-	{
-		MessageBox(NULL, "MH_InlineHook: pOrginalCall can not be NULL.", "Fatal Error", MB_ICONERROR);
-		NtTerminateProcess((HANDLE)-1, 0);
-	}
+	//if (!pOrginalCall)
+	//{
+		//MessageBox(NULL, "MH_InlineHook: pOrginalCall can not be NULL.", "Fatal Error", MB_ICONERROR);
+		//NtTerminateProcess((HANDLE)-1, 0);
+	//}
 
 	if (g_bTransactionInlineHook)
 	{
@@ -1854,7 +1979,10 @@ hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCal
 		DetourAttach(&(void *&)h->pOldFuncAddr, pNewFuncAddr);
 		DetourTransactionCommit();
 		h->pOrginalCall = pOrginalCall;
-		*h->pOrginalCall = h->pOldFuncAddr;
+
+		if(h->pOrginalCall)
+			(*h->pOrginalCall) = h->pOldFuncAddr;
+
 		h->bCommitted = true;
 	}
 
@@ -1877,7 +2005,9 @@ hook_t *MH_VFTHook(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFunc
 	h->iTableIndex = iTableIndex;
 	h->iFuncIndex = iFuncIndex;
 
-	*pOrginalCall = h->pOldFuncAddr;
+	if(pOrginalCall)
+		*pOrginalCall = h->pOldFuncAddr;
+
 	h->bCommitted = true;
 
 	MH_WriteMemory(info->pVFTInfoAddr, (BYTE *)&pNewFuncAddr, sizeof(DWORD));
@@ -1988,14 +2118,44 @@ HMODULE MH_GetClientModule(void)
 	return NULL;
 }
 
+BlobHandle_t MH_GetBlobEngineModule(void)
+{
+	return g_hBlobEngine;
+}
+
+BlobHandle_t MH_GetBlobClientModule(void)
+{
+	return g_hBlobClient;
+}
+
 PVOID MH_GetClientBase(void)
 {
-	return MH_GetClientModule();
+	auto hClientModule = MH_GetClientModule();
+
+	if (hClientModule)
+		return (PVOID)hClientModule;
+
+	auto hBlobClient = MH_GetBlobClientModule();
+
+	if (hBlobClient)
+		return GetBlobModuleImageBase(hBlobClient);
+
+	return NULL;
 }
 
 DWORD MH_GetClientSize(void)
 {
-	return MH_GetModuleSize(MH_GetClientModule());
+	auto hClientModule = MH_GetClientModule();
+
+	if (hClientModule)
+		return MH_GetModuleSize(hClientModule);
+
+	auto hBlobClient = MH_GetBlobClientModule();
+
+	if (hBlobClient)
+		return GetBlobModuleImageSize(hBlobClient);
+
+	return 0;
 }
 
 void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen)
@@ -2364,11 +2524,16 @@ CreateInterfaceFn MH_GetEngineFactory(void)
 
 CreateInterfaceFn MH_GetClientFactory(void)
 {
-	if (MH_GetClientModule())
-		return (CreateInterfaceFn)GetProcAddress(MH_GetClientModule(), "CreateInterface");
+	auto hClientModule = MH_GetClientModule();
+	if (hClientModule)
+		return (CreateInterfaceFn)Sys_GetFactory((HINTERFACEMODULE)hClientModule);
 
 	if (g_pClientFactory && (*g_pClientFactory))
-		return (*g_pClientFactory);
+	{
+		CreateInterfaceFn(*pfnClientFactory)() = (decltype(pfnClientFactory))(*g_pClientFactory);
+
+		return pfnClientFactory();
+	}
 
 	return NULL;
 }
@@ -2480,8 +2645,11 @@ typedef struct
 
 typedef struct
 {
+	PUCHAR instAddr;
+	int instLen;
 	bool bPushRegister;
 	bool bSubEspImm;
+	bool bMovReg1000h;
 }MH_ReverseSearchFunctionBegin_ctx2;
 
 PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize)
@@ -2529,10 +2697,53 @@ PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize)
 					{
 						ctx->bSubEspImm = true;
 					}
+					else if (pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+						pinst->detail->x86.operands[1].imm >= 0x1000)
+					{
+						ctx->bMovReg1000h = true;
+					}
+
+					ctx->instAddr = address;
+					ctx->instLen = instLen;
 
 				}, &ctx2);
 
-				if (ctx2.bPushRegister || ctx2.bSubEspImm)
+				if (!ctx2.bPushRegister && !ctx2.bSubEspImm && !ctx2.bMovReg1000h)
+				{
+					MH_DisasmSingleInstruction(ctx2.instAddr + ctx2.instLen, [](void* inst, PUCHAR address, size_t instLen, PVOID context) {
+						auto pinst = (cs_insn*)inst;
+						auto ctx = (MH_ReverseSearchFunctionBegin_ctx2*)context;
+
+						if (pinst->id == X86_INS_PUSH &&
+							pinst->detail->x86.op_count == 1 &&
+							pinst->detail->x86.operands[0].type == X86_OP_REG)
+						{
+							ctx->bPushRegister = true;
+						}
+						else if (pinst->id == X86_INS_SUB &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_REG &&
+							pinst->detail->x86.operands[0].reg == X86_REG_ESP &&
+							pinst->detail->x86.operands[1].type == X86_OP_IMM)
+						{
+							ctx->bSubEspImm = true;
+						}
+						else if (pinst->id == X86_INS_MOV &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_REG &&
+							pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+							pinst->detail->x86.operands[1].imm >= 0x1000)
+						{
+							ctx->bMovReg1000h = true;
+						}
+
+					}, &ctx2);
+				}
+
+				if (ctx2.bPushRegister || ctx2.bSubEspImm || ctx2.bMovReg1000h)
 				{
 					bShouldCheck = true;
 					Candidate = SearchPtr + 1;
@@ -2659,10 +2870,53 @@ PVOID MH_ReverseSearchFunctionBeginEx(PVOID SearchBegin, DWORD SearchSize, FindA
 					{
 						ctx->bSubEspImm = true;
 					}
+					else if (pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+						pinst->detail->x86.operands[1].imm >= 0x1000)
+					{
+						ctx->bMovReg1000h = true;
+					}
+
+					ctx->instAddr = address;
+					ctx->instLen = instLen;
+
+				}, &ctx2);
+
+				if (!ctx2.bPushRegister && !ctx2.bSubEspImm)
+				{
+					MH_DisasmSingleInstruction(ctx2.instAddr + ctx2.instLen, [](void* inst, PUCHAR address, size_t instLen, PVOID context) {
+						auto pinst = (cs_insn*)inst;
+						auto ctx = (MH_ReverseSearchFunctionBegin_ctx2*)context;
+
+						if (pinst->id == X86_INS_PUSH &&
+							pinst->detail->x86.op_count == 1 &&
+							pinst->detail->x86.operands[0].type == X86_OP_REG)
+						{
+							ctx->bPushRegister = true;
+						}
+						else if (pinst->id == X86_INS_SUB &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_REG &&
+							pinst->detail->x86.operands[0].reg == X86_REG_ESP &&
+							pinst->detail->x86.operands[1].type == X86_OP_IMM)
+						{
+							ctx->bSubEspImm = true;
+						}
+						else if (pinst->id == X86_INS_MOV &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_REG &&
+							pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+							pinst->detail->x86.operands[1].imm >= 0x1000)
+						{
+							ctx->bMovReg1000h = true;
+						}
 
 					}, &ctx2);
+				}
 
-				if (ctx2.bPushRegister || ctx2.bSubEspImm)
+				if (ctx2.bPushRegister || ctx2.bSubEspImm || ctx2.bMovReg1000h)
 				{
 					bShouldCheck = true;
 					Candidate = SearchPtr + 1;
@@ -2957,4 +3211,9 @@ metahook_api_t gMetaHookAPI =
 	MH_IsDebuggerPresent,
 	MH_RegisterCvarCallback,
 	&g_BlobThreadManagerAPI,
+	MH_GetBlobEngineModule,
+	MH_GetBlobClientModule,
+	GetBlobModuleImageBase,
+	GetBlobModuleImageSize,
+	GetBlobSectionByName
 };

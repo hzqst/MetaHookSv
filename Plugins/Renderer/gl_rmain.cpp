@@ -30,6 +30,9 @@ RECT *window_rect = NULL;
 float * s_fXMouseAspectAdjustment = NULL;
 float * s_fYMouseAspectAdjustment = NULL;
 
+float s_fXMouseAspectAdjustment_Storage = 0;
+float s_fYMouseAspectAdjustment_Storage = 0;
+
 int *cl_numvisedicts = NULL;
 cl_entity_t **cl_visedicts = NULL;
 cl_entity_t **currententity = NULL;
@@ -118,6 +121,9 @@ float *filterBrightness = NULL;
 bool* detTexSupported = NULL;
 
 cache_system_t(*cache_head) = NULL;
+
+//blob engine only
+int* allocated_textures = NULL;
 
 //client dll
 
@@ -1486,6 +1492,7 @@ void GL_GenerateFrameBuffers(void)
 	GL_FrameBufferColorTexture(&s_BrightPassFBO, GL_RGB16F);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+
 	{
 		GL_FreeFBO(&s_BrightPassFBO);
 		g_pMetaHookAPI->SysError("Failed to initialize BrightPass framebuffer.\n");
@@ -1543,7 +1550,7 @@ void GLAPIENTRY GL_DebugOutputCallback(GLenum source, GLenum type, GLuint id, GL
 	if (0 == strncmp(message, "API_ID_RECOMPILE_FRAGMENT_SHADER", sizeof("API_ID_RECOMPILE_FRAGMENT_SHADER") - 1))
 		return;
 
-	//gEngfuncs.Con_DPrintf("GL_DebugOutputCallback: source:[%X], type:[%X], id:[%X], message:[%s]\n", source, type, id, message);
+	gEngfuncs.Con_Printf("GL_DebugOutputCallback: source:[%X], type:[%X], id:[%X], message:[%s]\n", source, type, id, message);
 }
 
 void GL_Init(void)
@@ -1571,8 +1578,8 @@ void GL_Init(void)
 	//No vanilla detail texture support
 	(*detTexSupported) = false;
 
-	//glDebugMessageCallback(GL_DebugOutputCallback, 0);
-	//glEnable(GL_DEBUG_OUTPUT);
+	glDebugMessageCallback(GL_DebugOutputCallback, 0);
+	glEnable(GL_DEBUG_OUTPUT);
 
 	gl_max_texture_size = 128;
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &gl_max_texture_size);
@@ -1637,11 +1644,10 @@ void GL_Shutdown(void)
 	GL_FreeFBO(&s_ShadowFBO);
 }
 
-void GL_ClearFinalBuffer()
+void GL_FlushFinalBuffer()
 {
 	GL_BindFrameBuffer(&s_FinalBufferFBO);
 
-	//Clear final framebuffer
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
@@ -1708,7 +1714,7 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 		}
 		else
 		{
-			GL_ClearFinalBuffer();
+			GL_FlushFinalBuffer();
 		}
 
 		R_RenderStartFrame();
@@ -1863,13 +1869,13 @@ void R_RenderView_SvEngine(int viewIdx)
 	//Clear final buffer again since SC client dll may draw some portal views on it before the first pass.
 	if (R_IsRenderingPortal())
 	{
-		GL_ClearFinalBuffer();
+		GL_FlushFinalBuffer();
 	}
 	else
 	{
 		if (viewIdx == 0)
 		{
-			GL_ClearFinalBuffer();
+			GL_FlushFinalBuffer();
 		}
 	}
 
@@ -1983,12 +1989,23 @@ void V_RenderView(void)
 
 }
 
+float GetXMouseAspectRatioAdjustment(void)
+{
+	return (*s_fXMouseAspectAdjustment);
+}
+
+float GetYMouseAspectRatioAdjustment(void)
+{
+	return (*s_fYMouseAspectAdjustment);
+}
+
 void GL_EndRendering(void)
 {
 	R_RenderEndFrame();
 
 	//Disable engine's framebuffer
 	GLuint save_backbuffer_fbo = 0;
+
 	if (gl_backbuffer_fbo)
 	{
 		save_backbuffer_fbo = *gl_backbuffer_fbo;
@@ -1999,17 +2016,11 @@ void GL_EndRendering(void)
 
 	g_pMetaHookAPI->GetVideoMode(&srcW, &srcH, NULL, NULL);
 
-	//void(*VideoMode_GetCurrentVideoMode)(int* w, int* h, int* bpp);
-
-	//VideoMode_GetCurrentVideoMode = (decltype(VideoMode_GetCurrentVideoMode))((PUCHAR)g_dwEngineBase + 0x222540);
-		
-	//VideoMode_GetCurrentVideoMode(&srcW, &srcH, NULL);
-
 	int dstX1 = 0;
 	int dstY1 = 0;
 	int dstX2 = window_rect->right - window_rect->left;
 	int dstY2 = window_rect->bottom - window_rect->top;
-	*s_fXMouseAspectAdjustment = *s_fYMouseAspectAdjustment = 1;
+	(*s_fXMouseAspectAdjustment) = (*s_fYMouseAspectAdjustment) = 1;
 
 	float fSrcAspect = (float)srcW / (float)srcH;
 	float fDstAspect = (float)dstX2 / (float)dstY2;
@@ -2022,7 +2033,7 @@ void GL_EndRendering(void)
 			float fDiff = dstY2 - fDesiredWidth;
 			dstY1 = fDiff / 2;
 			dstY2 = dstY2 - dstY1;
-			*s_fYMouseAspectAdjustment = fSrcAspect / fDstAspect;
+			(*s_fYMouseAspectAdjustment) = fSrcAspect / fDstAspect;
 		}
 		else
 		{
@@ -2030,7 +2041,7 @@ void GL_EndRendering(void)
 			float fDiff = dstX2 - fDesiredHeight;
 			dstX1 = fDiff / 2;
 			dstX2 = dstX2 - dstX1;
-			*s_fXMouseAspectAdjustment = fSrcAspect / fDstAspect;
+			(*s_fXMouseAspectAdjustment) = fSrcAspect / fDstAspect;
 		}
 	}
 
@@ -2230,7 +2241,10 @@ void R_ForceCVars(qboolean mp)
 	if (r_draw_reflectview)
 		return;
 
-	gPrivateFuncs.R_ForceCVars(mp);
+	if (gPrivateFuncs.R_ForceCVars)
+		return gPrivateFuncs.R_ForceCVars(mp);
+
+	//TODO implement this for 3266
 }
 
 void R_AddReferencedTextures(std::set<int> &textures)
@@ -2952,7 +2966,7 @@ void R_AnimateLight(void)
 
 void R_SetupFrame(void)
 {
-	//R_RenderScene could be called for multiple times in one frame. so move those to upper level.
+	//R_RenderScene might be called for multiple times in one frame. so move those to upper level.
 	//R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
 	//R_CheckVariables();
 	//R_AnimateLight();
@@ -3392,14 +3406,7 @@ void R_LoadSky_PreCall(const char* name)
 {
 	R_FreeBindlessTexturesForSkybox();
 
-	for (int i = 0; i < 12; ++i)
-	{
-		if (r_wsurf.vSkyboxTextureId[i])
-		{
-			r_wsurf.vSkyboxTextureId[i] = 0;
-		}
-	}
-
+#if 0
 	for (int i = 0; i < 6; ++i)
 	{
 		if (gSkyTexNumber[i])
@@ -3408,10 +3415,31 @@ void R_LoadSky_PreCall(const char* name)
 			gSkyTexNumber[i] = 0;
 		}
 	}
+
+	for (int i = 0; i < 12; ++i)
+	{
+		if (r_wsurf.vSkyboxTextureId[i])
+		{
+			r_wsurf.vSkyboxTextureId[i] = 0;
+		}
+	}
+#else
+
+	for (int i = 0; i < 12; ++i)
+	{
+		if (r_wsurf.vSkyboxTextureId[i])
+		{
+			//GL_UnloadTextureByTextureId(r_wsurf.vSkyboxTextureId[i], true);
+			r_wsurf.vSkyboxTextureId[i] = 0;
+		}
+	}
+
+#endif
 }
 
 void R_LoadLegacySkyTextures(const char* name)
 {
+#if 0
 	auto skytexorder = (g_iEngineType == ENGINE_SVENGINE) ? skytexorder_svengine : skytexorder_goldsrc;
 
 	for (int i = 0; i < 6; ++i)
@@ -3421,6 +3449,32 @@ void R_LoadLegacySkyTextures(const char* name)
 			r_wsurf.vSkyboxTextureId[0 + i] = gSkyTexNumber[skytexorder[i]];
 		}
 	}
+#else
+
+	const char* suf[6] = { "rt", "lf", "bk", "ft", "up", "dn" };
+
+	for (int i = 0; i < 6; i++)
+	{
+		char fullpath[260] = { 0 };
+		snprintf(fullpath, sizeof(fullpath), "gfx/env/%s%s.tga", name, suf[i]);
+
+		int texId = R_LoadTextureFromFile(fullpath, fullpath, NULL, NULL, GLT_WORLD, true, true, false);
+		if (!texId)
+		{
+			snprintf(fullpath, sizeof(fullpath), "gfx/env/%s%s.bmp", name, suf[i]);
+			texId = R_LoadTextureFromFile(fullpath, fullpath, NULL, NULL, GLT_WORLD, true, true, false);
+		}
+
+		if (!texId)
+		{
+			gEngfuncs.Con_DPrintf("R_LoadLegacySkyTextures: Failed to load %s\n", fullpath);
+			continue;
+		}
+
+		r_wsurf.vSkyboxTextureId[0 + i] = texId;
+	}
+
+#endif
 }
 
 void R_LoadDetailSkyTextures(const char* name)
@@ -3436,7 +3490,7 @@ void R_LoadDetailSkyTextures(const char* name)
 		int texId = R_LoadTextureFromFile(fullpath, fullpath, &width, &height, GLT_WORLD, true, true, false);
 		if (!texId)
 		{
-			snprintf(fullpath, sizeof(fullpath), "renderer/texture/%s%s.dds", name, suf[i]);
+			snprintf(fullpath, sizeof(fullpath), "renderer/texture/skybox/%s%s.dds", name, suf[i]);
 
 			texId = R_LoadTextureFromFile(fullpath, fullpath, &width, &height, GLT_WORLD, true, true, false);
 		}
@@ -3463,18 +3517,24 @@ void R_LoadSky_PostCall(const char *name)
 void R_LoadSkyBox_SvEngine(const char *name)
 {
 	R_LoadSky_PreCall(name);
-
+#if 0
 	gPrivateFuncs.R_LoadSkyBox_SvEngine(name);
+#else
 
+#endif
 	R_LoadSky_PostCall(name);
 }
 
 void R_LoadSkys(void)
 {
 	R_LoadSky_PreCall(pmovevars->skyName);
-
+#if 0
 	gPrivateFuncs.R_LoadSkys();
+#else
 
+
+
+#endif
 	R_LoadSky_PostCall(pmovevars->skyName);
 }
 
