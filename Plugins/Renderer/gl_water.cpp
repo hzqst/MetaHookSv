@@ -606,11 +606,8 @@ water_vbo_t *R_CreateWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t 
 
 			if (waterControl->level >= WATER_LEVEL_REFLECT_SKYBOX && waterControl->level <= WATER_LEVEL_REFLECT_ENTITY)
 			{
-				int found_normalmap = GL_FindTexture(waterControl->normalmap.c_str(), GLT_WORLD, NULL, NULL);
-
 				//Disable mimap for normal texture
-				WaterVBO->normalmap = found_normalmap ? found_normalmap :
-					R_LoadTextureFromFile(waterControl->normalmap.c_str(), waterControl->normalmap.c_str(), NULL, NULL, GLT_WORLD, false, true);
+				WaterVBO->normalmap = R_LoadTextureFromFile(waterControl->normalmap.c_str(), waterControl->normalmap.c_str(), NULL, NULL, GLT_WORLD, false, true);					
 			}
 
 			if (waterControl->level == WATER_LEVEL_LEGACY_RIPPLE)

@@ -2731,17 +2731,20 @@ void R_LoadDetailTextures(const char *pfile)
 			strcat(detailtexture, sz_xscale);
 
 			ptext = gEngfuncs.COM_ParseFile(ptext, temp);
+
 			if (!ptext)
 				break;
 
 			strcat(detailtexture, temp);
 
 			ptext = gEngfuncs.COM_ParseFile(ptext, sz_xscale);
+
 			if (!ptext)
 				break;
 		}
 
 		ptext = gEngfuncs.COM_ParseFile(ptext, sz_yscale);
+
 		if (!ptext)
 			break;
 

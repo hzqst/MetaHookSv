@@ -380,19 +380,34 @@ void GL_FreeTextureNotifyCallback(gltexture_t* glt)
 	R_StudioFreeTextureCallback(glt);
 }
 
-void GL_FreeTexture(gltexture_t *glt, bool notify_callback)
+void GL_FreeTextureEntry(gltexture_t *glt, bool notify_callback)
 {
 	if (glt->texnum <= 0)
+	{
+		gEngfuncs.Con_DPrintf("GL_FreeTextureEntry: Bogus texture entry [%d] [%s] ?\n", glt->texnum, glt->identifier);
 		return;
+	}
 
-	if(notify_callback)
+	gEngfuncs.Con_DPrintf("GL_FreeTextureEntry: [%d] [%s].\n", glt->texnum, glt->identifier);
+
+	if (notify_callback)
+	{
 		GL_FreeTextureNotifyCallback(glt);
-
-	gEngfuncs.Con_DPrintf("GL_FreeTexture: [%d] [%s].\n", glt->texnum, glt->identifier);
+	}
 
 	GL_DeleteTexture(glt->texnum);
 	memset(glt, 0, sizeof(*glt));
 	glt->servercount = -1;
+
+	//The texnum can be deleted before and will never be allocated again by engine in this situation.
+	//We have to allocate a new texture manually to fix this issue.
+	//Until we rewrite GL_LoadTexture2
+#if 1
+	if (!bHasOfficialGLTexAllocSupport)
+	{
+		glt->texnum = GL_GenTexture();
+	}
+#endif
 }
 
 void R_InitTextures(void)

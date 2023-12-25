@@ -2160,6 +2160,9 @@ DWORD MH_GetClientSize(void)
 
 void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen)
 {
+	if (!pStartSearch)
+		return NULL;
+
 	char *dwStartAddr = (char *)pStartSearch;
 	char *dwEndAddr = dwStartAddr + dwSearchLen - dwPatternLen;
 

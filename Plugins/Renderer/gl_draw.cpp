@@ -49,8 +49,9 @@ static glmode_t gl_texture_modes[] =
 
 int GL_GetAnsioValue()
 {
+	//Not registered yet?
 	if (!gl_ansio)
-		return 1;
+		return gl_max_ansio;
 
 	return max(min(gl_ansio->value, gl_max_ansio), 1);
 }
@@ -86,16 +87,16 @@ void GL_Texturemode_internal(const char *value)
 			{
 				GL_Bind(pgltextures[j].texnum);
 
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (*gl_filter_min));
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (*gl_filter_max));
 				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
 			}
 			else
 			{
 				GL_Bind(pgltextures[j].texnum);
 
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_max);
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (*gl_filter_max));
+				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (*gl_filter_max));
 				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
 			}
 		}
@@ -361,9 +362,9 @@ void GL_UnloadTextureByIdentifier(const char* identifier, bool notify_callback)
 	{
 		for (i = 0, glt = gltextures_get(); i < (*numgltextures); i++, glt++)
 		{
-			if (glt->texnum > 0 && !strncmp(identifier, glt->identifier, sizeof("@SPR_DEADBEEF") - 1))
+			if (glt->texnum > 0 && !strncmp(glt->identifier, identifier, sizeof("@SPR_DEADBEEF") - 1))
 			{
-				GL_FreeTexture(glt, notify_callback);
+				GL_FreeTextureEntry(glt, notify_callback);
 				return;
 			}
 		}
@@ -372,9 +373,9 @@ void GL_UnloadTextureByIdentifier(const char* identifier, bool notify_callback)
 	{
 		for (i = 0, glt = gltextures_get(); i < (*numgltextures); i++, glt++)
 		{
-			if (glt->texnum > 0 && !strcmp(identifier, glt->identifier))
+			if (glt->texnum > 0 && !strcmp(glt->identifier, identifier))
 			{
-				GL_FreeTexture(glt, notify_callback);
+				GL_FreeTextureEntry(glt, notify_callback);
 				return;
 			}
 		}
@@ -390,7 +391,7 @@ void GL_UnloadTextures(void)
 	{
 		if (glt->servercount > 0 && glt->servercount != (*gHostSpawnCount))
 		{
-			GL_FreeTexture(glt, true);
+			GL_FreeTextureEntry(glt, true);
 		}
 	}
 }
@@ -420,7 +421,7 @@ void GL_UnloadTextureByTextureId(int gltexturenum, bool notify_callback)
 	{
 		if (glt->texnum == gltexturenum)
 		{
-			GL_FreeTexture(glt, notify_callback);
+			GL_FreeTextureEntry(glt, notify_callback);
 			break;
 		}
 	}
@@ -532,30 +533,197 @@ void GL_UploadRGBA8(gl_loadtexture_state_t* state)
 	}
 }
 
-int GL_FindTextureByHashedIdentifier(const char *hashedIdentifier, GL_TEXTURETYPE textureType, int *width, int *height)
+/*
+	Search for glt and returns texnum, The identifier must be matched
+*/
+int GL_FindTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int *width, int *height)
 {
 	int i;
 	gltexture_t *slot;
 
-	if (hashedIdentifier[0] && 
-		hashedIdentifier[0] == '@')
+	if (identifier[0])
 	{
-		for (i = 0, slot = gltextures_get(); i < (*numgltextures); i++, slot++)
+		if (identifier[0] == '@')
 		{
-			if (!strncmp(hashedIdentifier, slot->identifier, sizeof("@SPR_DEADBEEF") - 1))
+			for (i = 0, slot = gltextures_get(); i < (*numgltextures); i++, slot++)
 			{
-				if (textureType == GLT_WORLD)
+				if (!strncmp(slot->identifier, identifier, sizeof("@SPR_DEADBEEF") - 1))
 				{
-					if (slot->servercount != *gHostSpawnCount)
-						continue;
+					if (textureType == GLT_WORLD)
+					{
+						if (slot->servercount != *gHostSpawnCount)
+							continue;
+					}
+
+					if (width)
+						*width = slot->width;
+					if (height)
+						*height = slot->height;
+
+					return slot->texnum;
 				}
+			}
+		}
+		else
+		{
+			for (i = 0, slot = gltextures_get(); i < (*numgltextures); i++, slot++)
+			{
+				if (!strcmp(identifier, slot->identifier))
+				{
+					if (textureType == GLT_WORLD)
+					{
+						if (slot->servercount != *gHostSpawnCount)
+							continue;
+					}
 
-				if (width)
-					*width = slot->width;
-				if (height)
-					*height = slot->height;
+					if (width)
+						*width = slot->width;
+					if (height)
+						*height = slot->height;
 
-				return slot->texnum;
+					return slot->texnum;
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+
+/*
+	Search for glt and returns glt entry, The identifier must be matched
+*/
+gltexture_t* GL_FindTextureEntryEx(const char* identifier, GL_TEXTURETYPE textureType)
+{
+	int i;
+	gltexture_t* slot;
+
+	if (identifier[0])
+	{
+		if (identifier[0] == '@')
+		{
+			for (i = 0, slot = gltextures_get(); i < (*numgltextures); i++, slot++)
+			{
+				if (!strncmp(slot->identifier, identifier, sizeof("@SPR_DEADBEEF") - 1))
+				{
+					if (textureType == GLT_WORLD)
+					{
+						if (slot->servercount != *gHostSpawnCount)
+							continue;
+					}
+
+					return slot;
+				}
+			}
+		}
+		else
+		{
+			for (i = 0, slot = gltextures_get(); i < (*numgltextures); i++, slot++)
+			{
+				if (!strcmp(identifier, slot->identifier))
+				{
+					if (textureType == GLT_WORLD)
+					{
+						if (slot->servercount != *gHostSpawnCount)
+							continue;
+					}
+
+					return slot;
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+
+/*
+	Search for glt and returns glt->texnum, The identifier, textureType, width and height must be matched
+*/
+int GL_FindTextureEx2(const char* identifier, GL_TEXTURETYPE textureType, int width, int height)
+{
+	int i;
+	gltexture_t* slot;
+
+	if (identifier[0])
+	{
+		if (identifier[0] == '@')
+		{
+			for (i = 0, slot = gltextures_get(); i < (*numgltextures); i++, slot++)
+			{
+				if (!strncmp(identifier, slot->identifier, sizeof("@SPR_DEADBEEF") - 1) && width == slot->width && height == slot->height)
+				{
+					if (textureType == GLT_WORLD)
+					{
+						if (slot->servercount != *gHostSpawnCount)
+							continue;
+					}
+
+					return slot->texnum;
+				}
+			}
+		}
+		else
+		{
+			for (i = 0, slot = gltextures_get(); i < (*numgltextures); i++, slot++)
+			{
+				if (!strcmp(identifier, slot->identifier) && width == slot->width && height == slot->height)
+				{
+					if (textureType == GLT_WORLD)
+					{
+						if (slot->servercount != *gHostSpawnCount)
+							continue;
+					}
+
+					return slot->texnum;
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+
+/*
+	Search for glt and returns glt, The identifier, textureType, width and height must be matched
+*/
+gltexture_t * GL_FindTextureEntryEx2(const char* identifier, GL_TEXTURETYPE textureType, int width, int height)
+{
+	int i;
+	gltexture_t* slot;
+
+	if (identifier[0])
+	{
+		if (identifier[0] == '@')
+		{
+			for (i = 0, slot = gltextures_get(); i < (*numgltextures); i++, slot++)
+			{
+				if (!strncmp(slot->identifier, identifier, sizeof("@SPR_DEADBEEF") - 1) && width == slot->width && height == slot->height)
+				{
+					if (textureType == GLT_WORLD)
+					{
+						if (slot->servercount != *gHostSpawnCount)
+							continue;
+					}
+
+					return slot;
+				}
+			}
+		}
+		else
+		{
+			for (i = 0, slot = gltextures_get(); i < (*numgltextures); i++, slot++)
+			{
+				if (!strcmp(identifier, slot->identifier) && width == slot->width && height == slot->height)
+				{
+					if (textureType == GLT_WORLD)
+					{
+						if (slot->servercount != *gHostSpawnCount)
+							continue;
+					}
+
+					return slot;
+				}
 			}
 		}
 	}
@@ -568,7 +736,39 @@ int GL_FindTexture(const char* identifier, GL_TEXTURETYPE textureType, int* widt
 	char hashedIdentifier[64] = { 0 };
 	GL_GenerateHashedTextureIndentifier(identifier, textureType, hashedIdentifier, sizeof(hashedIdentifier));
 
-	return GL_FindTextureByHashedIdentifier(hashedIdentifier, textureType, width, height);
+	auto foundTexture = GL_FindTextureEx(hashedIdentifier, textureType, width, height);
+
+	return foundTexture;
+}
+
+gltexture_t *GL_FindTextureEntry(const char* identifier, GL_TEXTURETYPE textureType)
+{
+	char hashedIdentifier[64] = { 0 };
+	GL_GenerateHashedTextureIndentifier(identifier, textureType, hashedIdentifier, sizeof(hashedIdentifier));
+
+	auto foundGLT = GL_FindTextureEntryEx(hashedIdentifier, textureType);
+
+	return foundGLT;
+}
+
+int GL_FindTexture2(const char* identifier, GL_TEXTURETYPE textureType, int width, int height)
+{
+	char hashedIdentifier[64] = { 0 };
+	GL_GenerateHashedTextureIndentifier(identifier, textureType, hashedIdentifier, sizeof(hashedIdentifier));
+
+	auto foundTexture = GL_FindTextureEx2(hashedIdentifier, textureType, width, height);
+
+	return foundTexture;
+}
+
+gltexture_t*GL_FindTextureEntry2(const char* identifier, GL_TEXTURETYPE textureType, int width, int height)
+{
+	char hashedIdentifier[64] = { 0 };
+	GL_GenerateHashedTextureIndentifier(identifier, textureType, hashedIdentifier, sizeof(hashedIdentifier));
+
+	auto foundGLT = GL_FindTextureEntryEx2(hashedIdentifier, textureType, width, height);
+
+	return foundGLT;
 }
 
 gltexture_t * GL_AllocTextureEx(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, qboolean mipmap)
@@ -946,7 +1146,7 @@ int GL_LoadTexture(char* identifier, GL_TEXTURETYPE textureType, int width, int 
 
 int GL_LoadTexture2(char* identifier, GL_TEXTURETYPE textureType, int width, int height, byte* data, qboolean mipmap, int iPalTextureType, byte* pPal, int filter)
 {
-#if 1
+#if 0
 	gl_loadtexture_state_t state;
 
 	state.format = GL_RGBA8;
@@ -985,7 +1185,7 @@ int GL_LoadTexture2(char* identifier, GL_TEXTURETYPE textureType, int width, int
 	char hashedIdentifier[64] = { 0 };
 	GL_GenerateHashedTextureIndentifier2(identifier, textureType, width, height, hashedIdentifier, sizeof(hashedIdentifier));
 
-	int gltexturenum = gPrivateFuncs.GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iPalTextureType, pPal, filter);
+	int gltexturenum = gPrivateFuncs.GL_LoadTexture2(hashedIdentifier, textureType, width, height, data, mipmap, iPalTextureType, pPal, filter);
 
 	gEngfuncs.Con_DPrintf("GL_LoadTexture2: [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, gltexturenum);
 
