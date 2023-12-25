@@ -4258,6 +4258,7 @@ void R_DrawWorld(void)
 	};
 
 	memcpy(r_entity_matrix, r_identity_matrix, sizeof(r_entity_matrix));
+
 	r_entity_color[0] = 1;
 	r_entity_color[1] = 1;
 	r_entity_color[2] = 1;

@@ -52,7 +52,7 @@ float* g_ChromeOrigin = NULL;
 int* r_ambientlight = NULL;
 float* r_shadelight = NULL;
 vec3_t* r_blightvec = NULL;
-float* r_plightvec = NULL;
+vec3_t* r_plightvec = NULL;
 float* r_colormix = NULL;
 void* tmp_palette = NULL;
 int* r_smodels_total = NULL;
@@ -1571,7 +1571,7 @@ void R_StudioDrawVBOBegin(studio_vbo_t* VBOData)
 
 	if (r_studio_legacy_elight->value > 0)
 	{
-		StudioUBO.r_numelight = *numlight;
+		StudioUBO.r_numelight = (*numlight);
 
 		for (int i = 0; i < StudioUBO.r_numelight; ++i)
 		{

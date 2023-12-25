@@ -37,8 +37,8 @@ in vec2 v_texcoord;
 in vec4 v_projpos;
 
 #if defined(STUDIO_NF_CELSHADE)
-in mat4 v_bonematrix;
-in mat4 v_invbonematrix;
+in mat3 v_rotmatrix;
+//in mat3 v_invrotmatrix;
 #endif
 
 layout(location = 0) out vec4 out_Diffuse;
@@ -219,6 +219,29 @@ float StrandSpecular(vec3 T, vec3 H, float exponent)
     return dirAtten * pow(sinTH, exponent);
 }
 
+vec3 ProjectVectorOntoPlane(vec3 v, vec3 normal) {
+    float dotProduct = dot(v, normal);
+    vec3 projectionOntoNormal = dotProduct * normal;
+    vec3 projectionOntoPlane = v - projectionOntoNormal;
+    return normalize(projectionOntoPlane);
+}
+
+vec3 ExtractUpVector(mat3 rotationMatrix) {
+    return rotationMatrix[0];
+}
+
+vec3 ExtractForwardVector(mat3 rotationMatrix) {
+    return rotationMatrix[1];
+}
+
+vec3 ExtractRightVector(mat3 rotationMatrix) {
+    return -rotationMatrix[2];
+}
+
+mat3 ExtractRotationMatrix(mat4 transform) {
+    return mat3(transform[0].xyz, transform[1].xyz, transform[2].xyz);
+}
+
 vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specularMask)
 {
 	vec3 N = normalWS;
@@ -235,20 +258,42 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 	vec3 BiT = cross(N, UP);
 	vec3 T = cross(N, BiT);
 
-	vec4 lightdirLS = v_invbonematrix * vec4(L, 0.0);
-	
+#if 1
+
 #if defined(STUDIO_NF_CELSHADE_FACE)
-	lightdirLS.z *= 0.001;
+	L.z *= 0.0001;
 #else
-	lightdirLS.z *= 0.01;
+	L.z *= 0.01;
 #endif
 
-	lightdirLS.xyz = normalize(lightdirLS.xyz);
-	lightdirLS.w = 0.0;
+	L = normalize(L);
 
-	vec4 lightdirWS_new = v_bonematrix * lightdirLS;
+	vec3 vecForward = ExtractForwardVector(v_rotmatrix);
+	vec3 vecUp = ExtractUpVector(v_rotmatrix);
+	vec3 vecBack = -vecForward;
 
-	L = lightdirWS_new.xyz;
+	L = ProjectVectorOntoPlane(L, vecUp);
+	
+	vec3 L2 = normalize(L);
+
+	float flFaceUp = abs(vecForward.z);
+	flFaceUp = pow(flFaceUp, 10.0);
+
+	L = mix(L2, vecBack, flFaceUp);
+
+#endif
+
+#if 0
+
+#if defined(STUDIO_NF_CELSHADE_FACE)
+	L.z = 0;
+#else
+	L.z *= 0.01;
+#endif
+
+	L = normalize(L);
+
+#endif
 
     float NoL = dot(-N,L);
 

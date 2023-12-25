@@ -317,7 +317,7 @@ extern float *g_ChromeOrigin;
 extern int *r_ambientlight;
 extern float *r_shadelight;
 extern vec3_t *r_blightvec;
-extern float *r_plightvec;
+extern vec3_t *r_plightvec;
 extern float *r_colormix;
 extern int *r_smodels_total;
 extern int *r_amodels_drawn;

@@ -5615,7 +5615,7 @@ void R_FillAddress(void)
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 #define VERTICAL_FOV_SIG_SVENGINE "\x50\xFF\x15\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00"
-		addr = (DWORD)Search_Pattern_From_Size((void*)gPrivateFuncs.R_SetupGL, 0x120, VERTICAL_FOV_SIG_SVENGINE, sizeof(VERTICAL_FOV_SIG_SVENGINE) - 1);
+		addr = (DWORD)Search_Pattern_From_Size((void*)gPrivateFuncs.R_SetupGL, 0x120, VERTICAL_FOV_SIG_SVENGINE);
 		Sig_AddrNotFound(vertical_fov_SvEngine);
 		vertical_fov_SvEngine = *(decltype(vertical_fov_SvEngine)*)(addr + 9);
 	}

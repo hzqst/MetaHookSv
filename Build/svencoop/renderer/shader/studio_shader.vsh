@@ -16,8 +16,8 @@ out vec2 v_texcoord;
 out vec4 v_projpos;
 
 #if defined(STUDIO_NF_CELSHADE)
-out mat4 v_bonematrix;
-out mat4 v_invbonematrix;
+out mat3 v_rotmatrix;
+//out mat3 v_invrotmatrix;
 #endif
 
 void main(void)
@@ -117,13 +117,12 @@ void main(void)
 
 #if defined(STUDIO_NF_CELSHADE)
 
-	v_bonematrix = mat4(
-    vec4(vertbone_matrix[0][0], vertbone_matrix[0][1], vertbone_matrix[0][2], 0.0),
-    vec4(vertbone_matrix[1][0], vertbone_matrix[1][1], vertbone_matrix[1][2], 0.0),
-    vec4(vertbone_matrix[2][0], vertbone_matrix[2][1], vertbone_matrix[2][2], 0.0),
-    vec4(vertbone_matrix[0][3], vertbone_matrix[1][3], vertbone_matrix[2][3], 1.0));
+	v_rotmatrix = mat3(
+    vec3(vertbone_matrix[0][0], vertbone_matrix[1][0], vertbone_matrix[2][0]),
+    vec3(vertbone_matrix[0][1], vertbone_matrix[1][1], vertbone_matrix[2][1]),
+    vec3(vertbone_matrix[0][2], vertbone_matrix[1][2], vertbone_matrix[2][2]));
 	
-	v_invbonematrix = inverse(v_bonematrix);
+	//v_invrotmatrix = inverse(v_rotmatrix);
 
 #endif
 
