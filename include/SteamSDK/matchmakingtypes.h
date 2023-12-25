@@ -8,16 +8,6 @@
 #ifndef MATCHMAKINGTYPES_H
 #define MATCHMAKINGTYPES_H
 
-#ifdef _WIN32
-#pragma once
-#endif
-
-#ifdef POSIX
-#ifndef _snprintf
-#define _snprintf snprintf
-#endif
-#endif
-
 #include <stdio.h>
 #include <string.h>
 
@@ -59,17 +49,6 @@ enum EMatchMakingServerResponse
 	eNoServersListedOnMasterServer // for the Internet query type, returned in response callback if no servers of this type match
 };
 
-enum EMatchMakingType
-{
-	eInternetServer = 0,
-	eLANServer,
-	eFriendsServer,
-	eFavoritesServer,
-	eHistoryServer,
-	eSpectatorServer,
-	eInvalidServer
-};
-
 // servernetadr_t is all the addressing info the serverbrowser needs to know about a game server,
 // namely: its IP, its connection port, and its query port.
 class servernetadr_t 
@@ -79,9 +58,6 @@ public:
 	servernetadr_t() : m_usConnectionPort( 0 ), m_usQueryPort( 0 ), m_unIP( 0 ) {}
 	
 	void	Init( unsigned int ip, uint16 usQueryPort, uint16 usConnectionPort );
-#ifdef NETADR_H
-	netadr_t	GetIPAndQueryPort();
-#endif
 	
 	// Access the query port.
 	uint16	GetQueryPort() const;
@@ -124,16 +100,6 @@ inline void	servernetadr_t::Init( unsigned int ip, uint16 usQueryPort, uint16 us
 	m_usConnectionPort = usConnectionPort;
 }
 
-#ifdef NETADR_H
-inline netadr_t servernetadr_t::GetIPAndQueryPort()
-{
-	netadr_t adr;
-	memcpy(&adr.ip, &m_unIP, 4);
-	memcpy(&adr.port, &m_usQueryPort, 2);
-	return adr;
-}
-#endif
-
 inline uint16 servernetadr_t::GetQueryPort() const
 {
 	return m_usQueryPort;
@@ -170,9 +136,9 @@ inline const char *servernetadr_t::ToString( uint32 unIP, uint16 usPort ) const
 	static int nBuf = 0;
 	unsigned char *ipByte = (unsigned char *)&unIP;
 #ifdef VALVE_BIG_ENDIAN
-	_snprintf (s[nBuf], sizeof( s[nBuf] ), "%u.%u.%u.%u:%i", (int)(ipByte[0]), (int)(ipByte[1]), (int)(ipByte[2]), (int)(ipByte[3]), usPort );
+	snprintf(s[nBuf], sizeof( s[nBuf] ), "%u.%u.%u.%u:%i", (int)(ipByte[0]), (int)(ipByte[1]), (int)(ipByte[2]), (int)(ipByte[3]), usPort );
 #else
-	_snprintf (s[nBuf], sizeof( s[nBuf] ), "%u.%u.%u.%u:%i", (int)(ipByte[3]), (int)(ipByte[2]), (int)(ipByte[1]), (int)(ipByte[0]), usPort );
+	snprintf(s[nBuf], sizeof( s[nBuf] ), "%u.%u.%u.%u:%i", (int)(ipByte[3]), (int)(ipByte[2]), (int)(ipByte[1]), (int)(ipByte[0]), usPort );
 #endif
 	const char *pchRet = s[nBuf];
 	++nBuf;
@@ -223,7 +189,7 @@ public:
 	uint32 m_ulTimeLastPlayed;									///< time (in unix time) when this server was last played on (for favorite/history servers)
 	int	m_nServerVersion;										///< server version as reported to Steam
 
-public:
+private:
 
 	/// Game server name
 	char m_szServerName[k_cbMaxGameServerName];
