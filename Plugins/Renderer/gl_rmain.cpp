@@ -2309,7 +2309,7 @@ void R_UnloadNoreferenceTextures(const std::set<int>& textures)
 				{
 					gEngfuncs.Con_DPrintf("R_UnloadNoreferenceTextures: [%d] [%s].\n", glt->texnum, glt->identifier);
 
-					GL_FreeTexture(glt, true);
+					GL_FreeTextureEntry(glt, true);
 				}
 			}
 		}

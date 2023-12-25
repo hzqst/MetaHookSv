@@ -471,7 +471,7 @@ void R_PushRefDef(void);
 void R_UpdateRefDef(void);
 void R_PopRefDef(void);
 
-void GL_FreeTexture(gltexture_t *glt, bool notify_callback);
+void GL_FreeTextureEntry(gltexture_t *glt, bool notify_callback);
 void GL_PushMatrix(void);
 void GL_PopMatrix(void);
 
