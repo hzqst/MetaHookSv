@@ -197,6 +197,7 @@ bool bEnforceStretchAspect = false;
 bool bUseBindless = true;
 bool bUseOITBlend = false;
 bool bVerticalFov = false;
+bool bUseLegacyTextureLoader = false;
 bool bHasOfficialFBOSupport = false;
 bool bHasOfficialGLTexAllocSupport = true;
 
@@ -1580,7 +1581,7 @@ void GL_Init(void)
 	//No vanilla detail texture support
 	(*detTexSupported) = false;
 
-	if (gEngfuncs.CheckParm("-gl_debug", NULL))
+	if (gEngfuncs.CheckParm("-gl_debugoutput", NULL))
 	{
 		glDebugMessageCallback(GL_DebugOutputCallback, 0);
 		glEnable(GL_DEBUG_OUTPUT);
@@ -1617,6 +1618,9 @@ void GL_Init(void)
 
 	if (bUseOITBlend && !glewIsSupported("GL_ARB_fragment_shader_interlock"))
 		bUseOITBlend = false;
+
+	if (!bUseLegacyTextureLoader && gEngfuncs.CheckParm("-use_legacy_texloader", NULL))
+		bUseLegacyTextureLoader = true;
 
 	GL_GenerateFrameBuffers();
 	GL_InitShaders();

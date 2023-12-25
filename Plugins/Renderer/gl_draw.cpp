@@ -1146,7 +1146,18 @@ int GL_LoadTexture(char* identifier, GL_TEXTURETYPE textureType, int width, int 
 
 int GL_LoadTexture2(char* identifier, GL_TEXTURETYPE textureType, int width, int height, byte* data, qboolean mipmap, int iPalTextureType, byte* pPal, int filter)
 {
-#if 1
+	if (bUseLegacyTextureLoader)
+	{
+		char hashedIdentifier[64] = { 0 };
+		GL_GenerateHashedTextureIndentifier2(identifier, textureType, width, height, hashedIdentifier, sizeof(hashedIdentifier));
+
+		int gltexturenum = gPrivateFuncs.GL_LoadTexture2(hashedIdentifier, textureType, width, height, data, mipmap, iPalTextureType, pPal, filter);
+
+		gEngfuncs.Con_DPrintf("GL_LoadTexture2: [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, gltexturenum);
+
+		return gltexturenum;
+	}
+
 	gl_loadtexture_state_t state;
 
 	state.format = GL_RGBA8;
@@ -1180,18 +1191,6 @@ int GL_LoadTexture2(char* identifier, GL_TEXTURETYPE textureType, int width, int
 	}
 
 	return GL_LoadTextureEx(identifier, textureType, &state);
-#else
-
-	char hashedIdentifier[64] = { 0 };
-	GL_GenerateHashedTextureIndentifier2(identifier, textureType, width, height, hashedIdentifier, sizeof(hashedIdentifier));
-
-	int gltexturenum = gPrivateFuncs.GL_LoadTexture2(hashedIdentifier, textureType, width, height, data, mipmap, iPalTextureType, pPal, filter);
-
-	gEngfuncs.Con_DPrintf("GL_LoadTexture2: [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, gltexturenum);
-
-	return gltexturenum;
-
-#endif
 }
 
 int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, gl_loadtexture_state_t *state)

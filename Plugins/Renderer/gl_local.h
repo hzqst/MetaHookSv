@@ -199,6 +199,7 @@ extern bool bEnforceStretchAspect;
 extern bool bUseBindless;
 extern bool bUseOITBlend;
 extern bool bVerticalFov;
+extern bool bUseLegacyTextureLoader;
 extern bool bHasOfficialFBOSupport;
 extern bool bHasOfficialGLTexAllocSupport;
 

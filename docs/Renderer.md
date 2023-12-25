@@ -466,6 +466,14 @@ Add `-oitblend` to the launch parameters to enable Order-Independent Transparenc
 
 * Warning : It may dramatically hurt performance.
 
+## New texture loader
+
+The maximum size of texture is extended to 4096 x 4096 if using new texture loader.
+
+This is enabled by default and may lead to some inconsistencies to the visual presentation of the textures that compared with the vanilla engine.
+
+You can add `-use_legacy_texloader` to the launch parameter to disable the new texture loader.
+
 ## Anti-Aliasing
 
 `r_fxaa` set to 1 to enable Fast Approximate Anti-Aliasing (FXAA).
