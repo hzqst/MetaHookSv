@@ -1030,11 +1030,11 @@ void GL_Upload16ToMipmap(byte* pData, int width, int height, byte* pPal, int iPa
 			{
 				byte index = pInputBytes[i];
 
-				if (iPalTextureType == TEX_TYPE_ALPHA_GRADIENT) {
+				if (iPalTextureType == TEX_TYPE_ALPHA_GRADIENT_SVENGINE) {
 					isTransparent = false;
 					pOutputPixels[i] = (index << 24) | ((*(unsigned int*)&pPalette[765]) & 0xFFFFFF);
 				}
-				else if (iPalTextureType == TEX_TYPE_RGBA) {
+				else if (iPalTextureType == TEX_TYPE_RGBA_SVENGINE) {
 					isTransparent = false;
 					pOutputPixels[i] = (index << 24) | ((*(unsigned int*)&pPalette[3 * index]) & 0xFFFFFF);
 				}
@@ -1146,7 +1146,7 @@ int GL_LoadTexture(char* identifier, GL_TEXTURETYPE textureType, int width, int 
 
 int GL_LoadTexture2(char* identifier, GL_TEXTURETYPE textureType, int width, int height, byte* data, qboolean mipmap, int iPalTextureType, byte* pPal, int filter)
 {
-#if 0
+#if 1
 	gl_loadtexture_state_t state;
 
 	state.format = GL_RGBA8;
