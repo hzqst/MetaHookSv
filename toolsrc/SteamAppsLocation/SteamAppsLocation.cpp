@@ -67,33 +67,33 @@ int main(int argc, const char **argv)
 	if (argc < 2)
 	{
 		std::wcerr << L"[Error] AppId must be specified." << std::endl;
-		return -1;
+		return 1;
 	}
 	
 	auto steamapi = GetModuleHandleA("steam_api.dll");
 	if (!steamapi)
 	{
 		std::wcerr << L"[Error] Failed to get steam_api." << std::endl;
-		return -1;
+		return 2;
 	}
 
 	IsSteamRunning = (decltype(IsSteamRunning))GetProcAddress(steamapi, "SteamAPI_IsSteamRunning");
 	if (!IsSteamRunning)
 	{
 		std::wcerr << L"[Error] Failed to locate SteamAPI_IsSteamRunning." << std::endl;
-		return -1;
+		return 3;
 	}
 
 	std::wstring SteamPath;
 	std::wstring SteamClientDll;
 	if (!ReadRegistryValue(L"Software\\Valve\\Steam", L"SteamPath", SteamPath)) {
 		std::wcerr << L"[Error] Failed to get SteamPath." << std::endl;
-		return -1;
+		return 4;
 	}
 
 	if (!ReadRegistryValue(L"Software\\Valve\\Steam\\ActiveProcess", L"SteamClientDll", SteamClientDll)) {
 		std::wcerr << L"[Error] Failed to get SteamPath." << std::endl;
-		return -1;
+		return 5;
 	}
 	std::filesystem::path steamPathFs(SteamPath);
 	std::filesystem::path steamClientDllFs(SteamClientDll);
@@ -112,7 +112,7 @@ int main(int argc, const char **argv)
 		if (!WriteRegistryValue(L"Software\\Valve\\Steam\\ActiveProcess", L"SteamClientDll", newSteamClientDllPath)) {
 			std::wcerr << L"[Error] Failed to set SteamClientDll to the expected one." << std::endl;
 			std::wcout << L"[Error] The SteamClientDll (" << steamClientDllFs << L") does not matches the expected one (" << steamClientDllFs << L"). You might be opening a cracked steam game before ? You can restart your steam client to fix this issue !" << std::endl;
-			return -1;
+			return 6;
 		}
 	}
 
@@ -123,12 +123,12 @@ int main(int argc, const char **argv)
 		char szAppInstallDir[1024] = { 0 };
 		if (SteamApps()->GetAppInstallDir(appId, szAppInstallDir, sizeof(szAppInstallDir)))
 		{
-			std::cout << "[OK] " << szAppInstallDir << std::endl;
+			std::cout << szAppInstallDir << std::endl;
 		}
 		else
 		{
 			std::wcerr << L"[Error] Failed to GetAppInstallDir." << std::endl;
-			return -1;
+			return 7;
 		}
 
 		SteamAPI_Shutdown();
@@ -136,7 +136,7 @@ int main(int argc, const char **argv)
 	else
 	{
 		std::wcerr << L"[Error] Failed to SteamAPI_Init." << std::endl;
-		return 0;
+		return 8;
 	}
 
 	return 0;
