@@ -14,8 +14,13 @@ cd /d "%SolutionDir%tools"
 set LauncherExe=metahook.exe
 set LauncherMod=czero
 set FullGameName=Counter-Strike : Condition Zero
+set GameAppId=80
 
-for /f "delims=" %%a in ('"SteamAppsLocation" 80 InstallDir') do set GameDir=%%a
+for /f "delims=" %%a in ('"SteamAppsLocation" %GameAppId% InstallDir') do set OutputString=%%a
+
+if %ERRORLEVEL% equ 0 (
+    set GameDir=%OutputString%
+)
 
 if "%GameDir%"=="" goto fail
 

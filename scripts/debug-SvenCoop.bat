@@ -14,8 +14,13 @@ cd /d "%SolutionDir%tools"
 set LauncherExe=svencoop.exe
 set LauncherMod=svencoop
 set FullGameName=Sven Co-op
+set GameAppId=225840
 
-for /f "delims=" %%a in ('"SteamAppsLocation" 225840 InstallDir') do set GameDir=%%a
+for /f "delims=" %%a in ('"SteamAppsLocation" %GameAppId% InstallDir') do set OutputString=%%a
+
+if %ERRORLEVEL% equ 0 (
+    set GameDir=%OutputString%
+)
 
 if "%GameDir%"=="" goto fail
 

@@ -14,8 +14,13 @@ cd /d "%SolutionDir%tools"
 set LauncherExe=metahook.exe
 set LauncherMod=dod
 set FullGameName=Day of Defeat
+set GameAppId=30
 
-for /f "delims=" %%a in ('"SteamAppsLocation" 30 InstallDir') do set GameDir=%%a
+for /f "delims=" %%a in ('"SteamAppsLocation" %GameAppId% InstallDir') do set OutputString=%%a
+
+if %ERRORLEVEL% equ 0 (
+    set GameDir=%OutputString%
+)
 
 if "%GameDir%"=="" goto fail
 

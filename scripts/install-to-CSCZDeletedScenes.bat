@@ -17,8 +17,13 @@ set LauncherExe=metahook.exe
 set LauncherMod=czeror
 set FullGameName=Counter-Strike : Condition Zero - Deleted Scenes
 set ShortGameName=CSCZDeletedScenes
+set GameAppId=100
 
-for /f "delims=" %%a in ('"tools\SteamAppsLocation" 100 InstallDir') do set GameDir=%%a
+for /f "delims=" %%a in ('"SteamAppsLocation" %GameAppId% InstallDir') do set OutputString=%%a
+
+if %ERRORLEVEL% equ 0 (
+    set GameDir=%OutputString%
+)
 
 if "%GameDir%"=="" goto fail
 
