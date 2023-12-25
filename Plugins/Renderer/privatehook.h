@@ -80,7 +80,7 @@ typedef struct
 	void(*triapi_RenderMode)(int mode);
 	void(*triapi_Color4f) (float r, float g, float b, float a);
 	void(__fastcall *enginesurface_drawFlushText)(void *pthis, int);
-	void(*DLL_SetModKey)(void *pinfo, char *pkey, char *pvalue);
+	//void(*DLL_SetModKey)(void *pinfo, char *pkey, char *pvalue);
 	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
 	qboolean(*Host_IsSinglePlayerGame)(void);
 	void *(*Hunk_AllocName)(int size, const char *name);
@@ -158,7 +158,7 @@ extern hook_t *g_phook_Mod_UnloadSpriteTextures;
 extern hook_t *g_phook_triapi_RenderMode;
 extern hook_t *g_phook_Draw_MiptexTexture;
 extern hook_t *g_phook_BuildGammaTable;
-extern hook_t *g_phook_DLL_SetModKey;
+//extern hook_t *g_phook_DLL_SetModKey;
 
 //extern hook_t *g_phook_studioapi_RestoreRenderer;
 extern hook_t *g_phook_studioapi_StudioDynamicLight;

@@ -57,6 +57,8 @@ float *gScreenToWorld = NULL;
 overviewInfo_t *gDevOverview = NULL;
 mplane_t *frustum = NULL;
 
+qboolean* vertical_fov_SvEngine = NULL;
+
 int *g_bUserFogOn = NULL;
 float *g_UserFogColor = NULL;
 float *g_UserFogDensity = NULL;
@@ -196,7 +198,7 @@ FBO_Container_t *g_CurrentFBO = NULL;
 bool bEnforceStretchAspect = false;
 bool bUseBindless = true;
 bool bUseOITBlend = false;
-bool bVerticalFov = false;
+//bool bVerticalFov = false;
 bool bUseLegacyTextureLoader = false;
 bool bHasOfficialFBOSupport = false;
 bool bHasOfficialGLTexAllocSupport = true;
@@ -1553,7 +1555,7 @@ void GLAPIENTRY GL_DebugOutputCallback(GLenum source, GLenum type, GLuint id, GL
 	if (0 == strncmp(message, "API_ID_RECOMPILE_FRAGMENT_SHADER", sizeof("API_ID_RECOMPILE_FRAGMENT_SHADER") - 1))
 		return;
 
-	gEngfuncs.Con_Printf("GL_DebugOutputCallback: source:[%X], type:[%X], id:[%X], message:[%s]\n", source, type, id, message);
+	gEngfuncs.Con_DPrintf("GL_DebugOutputCallback: source:[%X], type:[%X], id:[%X], message:[%s]\n", source, type, id, message);
 }
 
 void GL_Init(void)
@@ -1581,7 +1583,11 @@ void GL_Init(void)
 	//No vanilla detail texture support
 	(*detTexSupported) = false;
 
+#ifdef _DEBUG
+	if (1)
+#else
 	if (gEngfuncs.CheckParm("-gl_debugoutput", NULL))
+#endif
 	{
 		glDebugMessageCallback(GL_DebugOutputCallback, 0);
 		glEnable(GL_DEBUG_OUTPUT);
@@ -2074,6 +2080,7 @@ void GL_EndRendering(void)
 	}
 }
 
+#if 0
 void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue)
 {
 	gPrivateFuncs.DLL_SetModKey(pinfo, pkey, pvalue);
@@ -2083,6 +2090,7 @@ void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue)
 		bVerticalFov = atoi(pvalue) ? true : false;
 	}
 }
+#endif
 
 void R_InitCvars(void)
 {
@@ -2183,7 +2191,7 @@ void R_InitCvars(void)
 
 	default_fov = gEngfuncs.pfnGetCvarPointer("default_fov");
 
-	r_vertical_fov = gEngfuncs.pfnRegisterVariable("r_vertical_fov", bVerticalFov ? "1" : "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	r_vertical_fov = gEngfuncs.pfnRegisterVariable("r_vertical_fov", (vertical_fov_SvEngine  && (*vertical_fov_SvEngine)) ? "1" : "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gl_widescreen_yfov = gEngfuncs.pfnGetCvarPointer("gl_widescreen_yfov");
 	if(!gl_widescreen_yfov)

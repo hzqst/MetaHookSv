@@ -630,6 +630,7 @@ void R_FillAddress(void)
 	{
 		gPrivateFuncs.R_SetupGL = (decltype(gPrivateFuncs.R_SetupGL))Search_Pattern(R_SETUPGL_SIG_BLOB);
 	}
+
 	Sig_FuncNotFound(R_SetupGL);
 
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -3570,7 +3571,7 @@ void R_FillAddress(void)
 	if (1)
 	{
 		const char sigs[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
-		addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_SetupGL, 0x700, sigs, sizeof(sigs) - 1);
+		addr = (DWORD)Search_Pattern_From_Size((void *)gPrivateFuncs.R_SetupGL, 0x700, sigs);
 		Sig_AddrNotFound(gWorldToScreen);
 		gWorldToScreen = *(decltype(gWorldToScreen)*)(addr + 6);
 		gScreenToWorld = *(decltype(gScreenToWorld)*)(addr + 1);
@@ -5593,20 +5594,31 @@ void R_FillAddress(void)
 
 	}
 
+	if (1)
+	{
 #define R_WORLD_MATRIX_SIG "\x68\x2A\x2A\x2A\x2A\x68\xA6\x0B\x00\x00"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_SetupGL, 0x600, R_WORLD_MATRIX_SIG, sizeof(R_WORLD_MATRIX_SIG) - 1);
-	Sig_AddrNotFound(r_world_matrix);
-	r_world_matrix = *(float **)(addr + 1);
+		addr = (DWORD)Search_Pattern_From_Size((void*)gPrivateFuncs.R_SetupGL, 0x600, R_WORLD_MATRIX_SIG);
+		Sig_AddrNotFound(r_world_matrix);
+		r_world_matrix = *(float**)(addr + 1);
 
 #define R_PROJ_MATRIX_SIG "\x68\x2A\x2A\x2A\x2A\x68\xA7\x0B\x00\x00"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_SetupGL, 0x500, R_PROJ_MATRIX_SIG, sizeof(R_PROJ_MATRIX_SIG) - 1);
-	Sig_AddrNotFound(r_projection_matrix);
-	r_projection_matrix = *(float **)(addr + 1);
+		addr = (DWORD)Search_Pattern_From_Size((void*)gPrivateFuncs.R_SetupGL, 0x500, R_PROJ_MATRIX_SIG);
+		Sig_AddrNotFound(r_projection_matrix);
+		r_projection_matrix = *(float**)(addr + 1);
 
 #define TMP_PALETTE_SIG "\x68\x2A\x2A\x2A\x2A\x6A\x00\x6A\x00"
-	addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gPrivateFuncs.R_StudioSetupSkin, 0x600, TMP_PALETTE_SIG, sizeof(TMP_PALETTE_SIG) - 1);
-	Sig_AddrNotFound(tmp_palette);
-	tmp_palette = *(void **)(addr + 1);
+		addr = (DWORD)Search_Pattern_From_Size((void*)gPrivateFuncs.R_StudioSetupSkin, 0x600, TMP_PALETTE_SIG);
+		Sig_AddrNotFound(tmp_palette);
+		tmp_palette = *(void**)(addr + 1);
+	}
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+#define VERTICAL_FOV_SIG_SVENGINE "\x50\xFF\x15\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00"
+		addr = (DWORD)Search_Pattern_From_Size((void*)gPrivateFuncs.R_SetupGL, 0x120, VERTICAL_FOV_SIG_SVENGINE, sizeof(VERTICAL_FOV_SIG_SVENGINE) - 1);
+		Sig_AddrNotFound(vertical_fov_SvEngine);
+		vertical_fov_SvEngine = *(decltype(vertical_fov_SvEngine)*)(addr + 9);
+	}
 
 	if (1)
 	{
@@ -6311,6 +6323,7 @@ void R_FillAddress(void)
 	}
 #endif
 
+#if 0
 	if (1)
 	{
 #define URL_INFO_STRING "url_info"
@@ -6349,6 +6362,7 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(DLL_SetModKey);
 
 	}
+#endif
 
 	if (1)
 	{
@@ -7261,6 +7275,7 @@ void R_UninstallHooksForEngineDLL(void)
 	Uninstall_Hook(triapi_RenderMode);
 	Uninstall_Hook(Draw_MiptexTexture);
 	Uninstall_Hook(BuildGammaTable);
+	//Uninstall_Hook(DLL_SetModKey);
 
 	Uninstall_Hook(studioapi_StudioDynamicLight);
 	Uninstall_Hook(studioapi_StudioCheckBBox);
@@ -7298,7 +7313,7 @@ void R_InstallHooks(void)
 	Install_InlineHook(triapi_RenderMode);
 	Install_InlineHook(Draw_MiptexTexture);
 	Install_InlineHook(BuildGammaTable);
-	Install_InlineHook(DLL_SetModKey);
+	//Install_InlineHook(DLL_SetModKey);
 }
 
 int WINAPI GL_RedirectedGenTexture(void)
@@ -7306,7 +7321,7 @@ int WINAPI GL_RedirectedGenTexture(void)
 	return GL_GenTexture();
 }
 
-void R_RedirectBlobEngineOpenGLTextures(void)
+void R_RedirectLegacyOpenGLTextureAllocation(void)
 {
 	if (!bHasOfficialGLTexAllocSupport)
 	{

@@ -76,7 +76,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	R_FillAddress();
 	R_InstallHooks();
-	R_RedirectBlobEngineOpenGLTextures();
+	R_RedirectLegacyOpenGLTextureAllocation();
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
@@ -113,7 +113,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_PlayerMoveInit = HUD_PlayerMoveInit;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
 
-	Uninstall_Hook(DLL_SetModKey);
+	//Uninstall_Hook(DLL_SetModKey);
 }
 
 void IPluginsV4::ExitGame(int iResult)

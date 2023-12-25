@@ -238,7 +238,7 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 	vec4 lightdirLS = v_invbonematrix * vec4(L, 0.0);
 	
 #if defined(STUDIO_NF_CELSHADE_FACE)
-	lightdirLS.z = 0;
+	lightdirLS.z *= 0.001;
 #else
 	lightdirLS.z *= 0.01;
 #endif

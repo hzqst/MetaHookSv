@@ -109,6 +109,8 @@ extern float *gScreenToWorld;
 extern overviewInfo_t *gDevOverview;
 extern mplane_t *frustum;
 
+extern qboolean* vertical_fov_SvEngine;
+
 extern int *r_framecount;
 extern int *r_visframecount;
 
@@ -198,7 +200,7 @@ extern int glheight;
 extern bool bEnforceStretchAspect;
 extern bool bUseBindless;
 extern bool bUseOITBlend;
-extern bool bVerticalFov;
+//extern bool bVerticalFov;//unused
 extern bool bUseLegacyTextureLoader;
 extern bool bHasOfficialFBOSupport;
 extern bool bHasOfficialGLTexAllocSupport;
@@ -310,7 +312,7 @@ void R_FillAddress(void);
 void R_InstallHooks(void);
 void R_UninstallHooksForEngineDLL(void);
 void R_UninstallHooksForClientDLL(void);
-void R_RedirectBlobEngineOpenGLTextures(void);
+void R_RedirectLegacyOpenGLTextureAllocation(void);
 
 void GammaToLinear(float *color);
 void R_LoadSkyBox_SvEngine(const char *name);
@@ -517,7 +519,7 @@ TEMPENTITY *EngineGetTempTentByIndex(int index);
 
 void RemoveFileExtension(std::string& filePath);
 
-void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue);
+//void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue);
 
 extern GLint r_viewport[4];
 extern float r_entity_matrix[4][4];
