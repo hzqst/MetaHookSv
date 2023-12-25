@@ -470,7 +470,7 @@ Add `-oitblend` to the launch parameters to enable Order-Independent Transparenc
 
 The maximum size of texture is extended to 4096 x 4096 if using new texture loader.
 
-This is enabled by default and may lead to some inconsistencies to the visual presentation of the textures that compared with the vanilla engine.
+This is enabled by default and may produce inconsistencies of texture's visual presentation between the new and legacy texture loader.
 
 You can add `-use_legacy_texloader` to the launch parameter to disable the new texture loader.
 
