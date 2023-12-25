@@ -410,16 +410,6 @@ void GL_FreeTextureEntry(gltexture_t *glt, bool notify_callback)
 #endif
 }
 
-void R_InitTextures(void)
-{
-
-}
-
-void R_FreeTextures(void)
-{
-
-}
-
 void GL_GenFrameBuffer(FBO_Container_t *s)
 {
 	glGenFramebuffers(1, &s->s_hBackBufferFBO);

@@ -329,8 +329,6 @@ void GL_BuildLightmaps(void);
 void R_Init(void);
 void R_VidInit(void);
 void R_Shutdown(void);
-void R_InitTextures(void);
-void R_FreeTextures(void);
 void R_SetupGL(void);
 void R_SetupGLForViewModel(void);
 void R_MarkLeaves(void);
