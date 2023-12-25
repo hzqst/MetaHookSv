@@ -244,10 +244,11 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 #endif
 
 	lightdirLS.xyz = normalize(lightdirLS.xyz);
+	lightdirLS.w = 0.0;
 
-	vec4 lightdirWS_transformed = lightdirLS * v_bonematrix;
+	vec4 lightdirWS_new = v_bonematrix * lightdirLS;
 
-	L = lightdirWS_transformed.xyz;
+	L = lightdirWS_new.xyz;
 
     float NoL = dot(-N,L);
 

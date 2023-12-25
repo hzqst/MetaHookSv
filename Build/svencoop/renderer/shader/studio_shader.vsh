@@ -124,7 +124,6 @@ void main(void)
     vec4(vertbone_matrix[0][3], vertbone_matrix[1][3], vertbone_matrix[2][3], 1.0));
 	
 	v_invbonematrix = inverse(v_bonematrix);
-);
 
 #endif
 
