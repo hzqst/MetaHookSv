@@ -35,6 +35,7 @@ typedef struct
 	void (*GL_SelectTexture)(GLenum target);
 	void (*GL_DisableMultitexture)(void);
 	void (*GL_EnableMultitexture)(void);
+	void (*GL_Init)(void);
 	void (*GL_BeginRendering)(int *x, int *y, int *width, int *height);
 	void (*GL_EndRendering)(void);
 	void (*EmitWaterPolys)(msurface_t *fa, int direction);
@@ -136,6 +137,7 @@ typedef struct
 
 }private_funcs_t;
 
+extern hook_t* g_phook_GL_Init;
 extern hook_t *g_phook_GL_BeginRendering;
 extern hook_t *g_phook_GL_EndRendering;
 extern hook_t *g_phook_R_RenderView_SvEngine;

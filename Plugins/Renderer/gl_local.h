@@ -162,8 +162,6 @@ extern bool g_bPortalClipPlaneEnabled[6];
 
 extern vec4_t g_PortalClipPlane[6];
 
-extern bool g_bIsGLInit;
-
 //gl extension
 
 extern int gl_max_texture_size;

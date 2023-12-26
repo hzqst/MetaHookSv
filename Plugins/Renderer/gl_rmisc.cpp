@@ -784,13 +784,13 @@ void GL_ClearFBO(FBO_Container_t* s)
 void GL_FreeFBO(FBO_Container_t* s)
 {
 	if (s->s_hBackBufferFBO)
-		glDeleteFramebuffersEXT(1, &s->s_hBackBufferFBO);
+		glDeleteFramebuffers(1, &s->s_hBackBufferFBO);
 
 	if (s->s_hBackBufferCB)
-		glDeleteRenderbuffersEXT(1, &s->s_hBackBufferCB);
+		glDeleteRenderbuffers(1, &s->s_hBackBufferCB);
 
 	if (s->s_hBackBufferDB)
-		glDeleteRenderbuffersEXT(1, &s->s_hBackBufferDB);
+		glDeleteRenderbuffers(1, &s->s_hBackBufferDB);
 
 	if (s->s_hBackBufferTex)
 		glDeleteTextures(1, &s->s_hBackBufferTex);

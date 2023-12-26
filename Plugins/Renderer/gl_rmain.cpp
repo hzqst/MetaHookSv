@@ -138,8 +138,6 @@ bool g_bPortalClipPlaneEnabled[6] = { false };
 
 vec4_t g_PortalClipPlane[6] = {0};
 
-bool g_bIsGLInit = false;
-
 float r_entity_matrix[4][4];
 float r_entity_color[4];
 
@@ -1344,8 +1342,9 @@ void GL_GenerateFrameBuffers(void)
 	GL_FreeFBO(&s_DepthLinearFBO);
 	GL_FreeFBO(&s_HBAOCalcFBO);
 	GL_FreeFBO(&s_ShadowFBO);
-
-	glEnable(GL_TEXTURE_2D);
+	
+	//Probably useless
+	//glEnable(GL_TEXTURE_2D);
 
 	s_FinalBufferFBO.iWidth = glwidth;
 	s_FinalBufferFBO.iHeight = glheight;
@@ -1560,6 +1559,11 @@ void GLAPIENTRY GL_DebugOutputCallback(GLenum source, GLenum type, GLuint id, GL
 
 void GL_Init(void)
 {
+	gPrivateFuncs.GL_Init();
+
+	//Just like what GL_SetMode does
+	g_pMetaHookAPI->GetVideoMode(&glwidth, &glheight, NULL, NULL);
+
 	auto err = glewInit();
 
 	if (GLEW_OK != err)
@@ -1630,8 +1634,6 @@ void GL_Init(void)
 
 	GL_GenerateFrameBuffers();
 	GL_InitShaders();
-
-	g_bIsGLInit = true;
 }
 
 void GL_Shutdown(void)
@@ -1704,37 +1706,28 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 {
 	gPrivateFuncs.GL_BeginRendering(x, y, width, height);
 
-	if (g_bIsGLInit)
+	//Window resized?
+	if ((*width) != glwidth || (*height) != glheight)
 	{
-		//Window resized?
-		if ((*x) != glx || (*y) != gly || (*width) != glwidth || (*height) != glheight)
-		{
-			glx = *x;
-			gly = *y;
-			glwidth = *width;
-			glheight = *height;
-			GL_GenerateFrameBuffers();
-		}
-		else
-		{
-			glx = *x;
-			gly = *y;
-			glwidth = *width;
-			glheight = *height;
-		}
-
-		//No V_RenderView calls when level changes so don't clear final buffer
-		if (SCR_IsLoadingVisible())
-		{
-
-		}
-		else
-		{
-			GL_FlushFinalBuffer();
-		}
-
-		R_RenderStartFrame();
+		GL_GenerateFrameBuffers();
 	}
+
+	glx = (*x);
+	gly = (*y);
+	glwidth = (*width);
+	glheight = (*height);
+
+	//No V_RenderView calls when level changes so don't clear final buffer
+	if (SCR_IsLoadingVisible())
+	{
+
+	}
+	else
+	{
+		GL_FlushFinalBuffer();
+	}
+
+	R_RenderStartFrame();
 
 	r_renderview_pass = 0;
 	*c_alias_polys = 0;

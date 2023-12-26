@@ -5,7 +5,7 @@
 #include <map>
 #include "gl_local.h"
 
-#define R_LOADSKYNAME_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x84\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x3D"
+//#define R_LOADSKYNAME_SIG_SVENGINE "\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x84\x2A\x2A\x2A\x2A\x2A\x2A\x8B\x3D"
 
 #define MOD_POINTINLEAF_SIG_SVENGINE "\x2A\x8B\x2A\x24\x2A\x85\x2A\x2A\x2A\x8B\x2A\xA4\x00\x00\x00"
 #define MOD_POINTINLEAF_SIG_HL25 "\x55\x8B\xEC\x56\x8B\x75\x0C\x85\x2A\x2A\x2A\x8B\x8E\xA4\x00\x00\x00\x85\xC9\x2A\x2A\x68"
@@ -82,12 +82,11 @@
 #define R_CULLBOX_SIG_HL25 "\x55\x8B\xEC\x2A\x8B\x2A\x08\x2A\x2A\x8B\x2A\x0C\xBE\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C\x83\xF8\x02"
 #define R_CULLBOX_SIG_SVENGINE "\x2A\x8B\x2A\x24\x08\x2A\x2A\x8B\x2A\x24\x14\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x0C\x83\xF8\x02"
 
-//inlined in HL25 and SvEngine
 #define R_SETUPFRAME_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x83\xEC\x18\x83\xF8\x01\x0F\x8E\x2A\x2A\x2A\x2A\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x2A\x2A\x2A\x68"
 #define R_SETUPFRAME_SIG_BLOB2 "\x8B\x0D\x2A\x2A\x2A\x2A\x83\xEC\x18\x33\xC0\x83\xF9\x01\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1"
 #define R_SETUPFRAME_SIG_NEW "\x55\x8B\xEC\x83\xEC\x18\x8B\x0D\x2A\x2A\x2A\x2A\x33\xC0\x83\xF9\x01\x0F\x9F\xC0\x50\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xA1"
-#define R_SETUPFRAME_SIG_HL25 ""
-#define R_SETUPFRAME_SIG_SVENGINE ""
+#define R_SETUPFRAME_SIG_HL25 ""     //inlined
+#define R_SETUPFRAME_SIG_SVENGINE "" //inlined
 
 #define GL_BIND_SIG_BLOB      "\x8B\x44\x24\x04\x8B\x0D\x2A\x2A\x2A\x2A\x2A\x8B\x2A\x2A\x2A\x10\x25\xFF\xFF\x00\x00"
 #define GL_BIND_SIG_NEW2      GL_BIND_SIG_BLOB
@@ -417,6 +416,79 @@ void R_FillAddress(void)
 			}
 		}
 	}
+
+	if (1)
+	{
+		const char pattern[] = "\x68\x00\x1F\x00\x00\xFF";
+		PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
+		PUCHAR SearchLimit = (PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize;
+		while (SearchBegin < SearchLimit)
+		{
+			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+			if (pFound)
+			{
+				auto pCandidateFunction = g_pMetaHookAPI->ReverseSearchFunctionBegin(pFound, 0x80);
+				if (pCandidateFunction)
+				{
+					typedef struct
+					{
+						bool bFoundPushString;
+					}GL_InitSearchContext;
+
+					GL_InitSearchContext ctx = { 0 };
+
+					g_pMetaHookAPI->DisasmRanges(pCandidateFunction, 0x120, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+						auto pinst = (cs_insn*)inst;
+						auto ctx = (GL_InitSearchContext*)context;
+
+						if (pinst->id == X86_INS_PUSH &&
+							pinst->detail->x86.op_count == 1 &&
+							pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+							(
+							((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)g_dwEngineDataBase &&
+							(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize) ||
+							((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)g_dwEngineRdataBase &&
+								(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineRdataBase + g_dwEngineRdataSize)
+								) )
+						{
+							auto pString = (PCHAR)pinst->detail->x86.operands[0].imm;
+							if (!memcmp(pString, "Failed to query GL vendor", sizeof("Failed to query GL vendor") - 1))
+							{
+								ctx->bFoundPushString = true;
+							}
+						}
+
+						if (ctx->bFoundPushString)
+							return TRUE;
+
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						if (pinst->id == X86_INS_RET)
+							return TRUE;
+
+						return FALSE;
+
+						}, 0, &ctx);
+
+					if (ctx.bFoundPushString)
+					{
+						gPrivateFuncs.GL_Init = (decltype(gPrivateFuncs.GL_Init))pCandidateFunction;
+
+						break;
+					}
+				}
+
+				SearchBegin = pFound + Sig_Length(pattern);
+}
+			else
+			{
+				break;
+			}
+		}
+	}
+	Sig_FuncNotFound(GL_Init);
 
 #if 0//unused
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -7217,6 +7289,7 @@ void R_FillAddress(void)
 	}
 }
 
+hook_t* g_phook_GL_Init = NULL;
 hook_t *g_phook_GL_BeginRendering = NULL;
 hook_t *g_phook_GL_EndRendering = NULL;
 hook_t *g_phook_R_RenderView_SvEngine = NULL;
@@ -7246,6 +7319,7 @@ hook_t *g_phook_DLL_SetModKey = NULL;
 void R_UninstallHooksForEngineDLL(void)
 {
 	//Engine
+	Uninstall_Hook(GL_Init);
 	Uninstall_Hook(GL_BeginRendering);
 	Uninstall_Hook(GL_EndRendering);
 
@@ -7284,6 +7358,7 @@ void R_UninstallHooksForEngineDLL(void)
 
 void R_InstallHooks(void)
 {
+	Install_InlineHook(GL_Init);
 	Install_InlineHook(GL_BeginRendering);
 	Install_InlineHook(GL_EndRendering);
 

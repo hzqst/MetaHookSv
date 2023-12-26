@@ -1380,34 +1380,6 @@ void Draw_MiptexTexture(cachewad_t *wad, byte *data)
 	}
 }
 
-DWORD ByteToUInt( byte *byte )
-{
-	DWORD iValue = byte[0];
-	iValue += (byte[1]<<8);
-	iValue += (byte[2]<<16);
-	iValue += (byte[3]<<24);
-
-	return iValue;
-}
-
-qboolean PowerOfTwo(int iWidth,int iHeight)
-{
-	int iWidthT = iWidth;
-	while(iWidthT != 1)
-	{
-		if((iWidthT % 2) != 0) return false;
-		iWidthT /=2;
-	}
-
-	int iHeightT = iHeight;
-	while(iHeightT != 1)
-	{
-		if((iHeightT % 2) != 0) return false;
-		iHeightT /=2;
-	}
-	return true;
-}
-
 bool LoadDDS(const char* filename, byte* buf, size_t bufsize, gl_loadtexture_state_t *state, qboolean throw_warning_on_missing)
 {
 	DDS_FILEHEADER10 fileHeader10;

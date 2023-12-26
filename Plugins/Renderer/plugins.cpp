@@ -102,8 +102,6 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	memcpy(&gExportfuncs, pExportFunc, sizeof(gExportfuncs));
 
-	GL_Init();
-
 	pExportFunc->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
 	pExportFunc->HUD_Redraw = HUD_Redraw;
 	pExportFunc->HUD_Init = HUD_Init;
