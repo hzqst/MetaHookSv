@@ -100,6 +100,14 @@
 
 3. `LoadEngine` 和 `LoadClient` 阶段会对所有`InlineHook`请求开启“事务”，直到所有插件的`LoadEngine` 和 `LoadClient`结束才会让`InlineHook`生效, 这样就可以允许不同插件`SearchPattern` 和 `InlineHook` 同一个函数，也不会引发冲突了
 
+4. 新增启动项参数 `-metahook_legacy_v2_api` ，该启动项将提供以前V2版本的错误行为API给使用V2版本接口的插件。
+
+* V2版本的 `g_pMetaHookAPI->GetEngineBase()` 对BLOB加密版本的引擎(如3266)会错误返回 0x1D01000 而非 0x1D00000，然而实际上 0x1D01000 是代码段起始地址而非引擎基址。因此某些依赖V2版本API的插件会依赖错误的引擎基址而硬编码一个错误的偏移（这些插件使用正确偏移-0x1000来达到抵消V2API错误行为的目的，但是这种抵消手法如果遇上返回正确结果的API就会导致算出的最终偏移比正常的大0x1000），该启动项专门用于解决这种情况，正常情况下不需要使用。
+
+5. 新增启动项参数 `-metahook_check_vfthook` ，该启动项将屏蔽任何非法的 `g_pMetaHookAPI->MH_VFTHook` 调用。
+
+* 有些来自插件作者检查不严格而产生的MH_VFTHook调用会对某些超出真实虚表范围的地址进行hook，这可能导致游戏随机崩溃等问题。该启动项专门用于解决这种情况，正常情况下不需要使用。
+
 ## 加载顺序
 
 1. MetaHook启动器总是会以从上到下的顺序加载 `\(ModDirectory)\metahook\configs\plugins.lst` 中列出的插件。当插件名前面存在引号";"时该行会被忽略。

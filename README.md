@@ -94,7 +94,11 @@ Let's assume that you have all requirements installed correctly.
 
 2. Blocking duplicate plugins (which may introduce infinite-recursive calling) from loading.
 
-3. A transaction will be there at stage `LoadEngine` and `LoadClient`, to prevent `InlineHook` issued by multiple plugins from immediately taking effect. Allowing multiple plugins to `SearchPattern` and `InlineHook` same function without conflict.
+3. A transaction will be there at stage `LoadEngine` and `LoadClient`, to prevent `InlineHook`, `VFTHook` and `IATHook` that issued by any plugin from immediately taking effect. Allowing multiple plugins to `SearchPattern` and `InlineHook` same function without confliction.
+
+4. A new launch parameter `-metahook_legacy_v2_api` that gives legacy APIs with wrong behaviours to plugins for backward-compatibility. (* the legacy `g_pMetaHookAPI->GetEngineBase()` will return 0x1D01000 instead of 0x1D00000, thus 0x1D01000 is actually the BaseOfCode instead of BaseOfImage)
+
+5. A new launch parameter `-metahook_check_vfthook` to block bogus `g_pMetaHookAPI->MH_VFTHook` call that the virtual function index was actually out of bound somewhere which might cause random crash or what.
 
 ## Load Order
 
