@@ -260,38 +260,45 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 
 #if 1
 
-#if defined(STUDIO_NF_CELSHADE_FACE)
-	L.z *= 0.0001;
-#else
-	L.z *= 0.01;
-#endif
+	#if defined(STUDIO_NF_CELSHADE_FACE)
+		L.z *= 0.0001;
+	#else
+		L.z *= 0.01;
+	#endif
 
-	L = normalize(L);
+		L = normalize(L);
 
-	vec3 vecForward = ExtractForwardVector(v_rotmatrix);
-	vec3 vecUp = ExtractUpVector(v_rotmatrix);
-	vec3 vecBack = -vecForward;
+	#if defined(STUDIO_NF_CELSHADE_FACE)
+		vec3 vecForward = ExtractForwardVector(v_rotmatrix);
+		vec3 vecUp = ExtractUpVector(v_rotmatrix);
 
-	L = ProjectVectorOntoPlane(L, vecUp);
-	
-	vec3 L2 = normalize(L);
+		L = ProjectVectorOntoPlane(L, vecUp);
+		
+		vec3 L2 = normalize(L);
 
-	float flFaceUp = abs(vecForward.z);
-	flFaceUp = pow(flFaceUp, 10.0);
+		float flFaceUp = abs(vecForward.z);
+		flFaceUp = pow(flFaceUp, 10.0);
 
-	L = mix(L2, vecBack, flFaceUp);
+		float flFaceDot = dot(vecForward, lightdirWS);
+		float flFaceMix = step(0.0, flFaceDot) * 2.0 - 1.0;
+
+		vec3 vecFaceLightWS = vecForward * flFaceMix;
+
+		L = mix(L2, vecFaceLightWS, flFaceUp);
+
+	#endif
 
 #endif
 
 #if 0
 
-#if defined(STUDIO_NF_CELSHADE_FACE)
-	L.z = 0;
-#else
-	L.z *= 0.01;
-#endif
+	#if defined(STUDIO_NF_CELSHADE_FACE)
+		L.z = 0;
+	#else
+		L.z *= 0.01;
+	#endif
 
-	L = normalize(L);
+		L = normalize(L);
 
 #endif
 

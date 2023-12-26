@@ -279,7 +279,6 @@ typedef struct
 	DDS_HEADER_DXT10 Header10;
 } DDS_FILEHEADER10;
 
-int GL_AllocTexture(const char *identifier, GL_TEXTURETYPE textureType, int width, int height, qboolean mipmap);
 int GL_FindTexture(const char *identifier, GL_TEXTURETYPE textureType, int *width, int *height);
 void GL_UnloadTextureByTextureId(int gltexturenum, bool notify_callback);
 void GL_UnloadTextureWithType(const char* identifier, GL_TEXTURETYPE textureType, bool notify_callback);

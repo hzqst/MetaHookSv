@@ -638,7 +638,7 @@ gltexture_t* GL_FindTextureEntryEx(const char* identifier, GL_TEXTURETYPE textur
 }
 
 /*
-	Search for glt and returns glt->texnum, The identifier, textureType, width and height must be matched
+	Search for the specified glt entry and returns glt->texnum, The identifier, textureType, width and height must be matched
 */
 int GL_FindTextureEx2(const char* identifier, GL_TEXTURETYPE textureType, int width, int height)
 {
@@ -685,7 +685,7 @@ int GL_FindTextureEx2(const char* identifier, GL_TEXTURETYPE textureType, int wi
 }
 
 /*
-	Search for glt and returns glt, The identifier, textureType, width and height must be matched
+	Search for the specified glt entry and returns glt, The identifier, textureType, width and height must be matched
 */
 gltexture_t * GL_FindTextureEntryEx2(const char* identifier, GL_TEXTURETYPE textureType, int width, int height)
 {
@@ -731,6 +731,10 @@ gltexture_t * GL_FindTextureEntryEx2(const char* identifier, GL_TEXTURETYPE text
 	return 0;
 }
 
+/*
+	Search for the specified glt entry and returns glt->texnum, The raw-identifier and textureType must be matched
+*/
+
 int GL_FindTexture(const char* identifier, GL_TEXTURETYPE textureType, int* width, int* height)
 {
 	char hashedIdentifier[64] = { 0 };
@@ -740,6 +744,10 @@ int GL_FindTexture(const char* identifier, GL_TEXTURETYPE textureType, int* widt
 
 	return foundTexture;
 }
+
+/*
+	Search for the specified glt entry and returns glt, The raw-identifier and textureType must be matched
+*/
 
 gltexture_t *GL_FindTextureEntry(const char* identifier, GL_TEXTURETYPE textureType)
 {
@@ -751,6 +759,10 @@ gltexture_t *GL_FindTextureEntry(const char* identifier, GL_TEXTURETYPE textureT
 	return foundGLT;
 }
 
+/*
+	Search for the specified glt entry and returns glt->texnum, The raw-identifier, textureType, width and height must be matched
+*/
+
 int GL_FindTexture2(const char* identifier, GL_TEXTURETYPE textureType, int width, int height)
 {
 	char hashedIdentifier[64] = { 0 };
@@ -760,6 +772,10 @@ int GL_FindTexture2(const char* identifier, GL_TEXTURETYPE textureType, int widt
 
 	return foundTexture;
 }
+
+/*
+	Search for the specified glt entry, The raw-identifier, textureType, width and height must be matched
+*/
 
 gltexture_t*GL_FindTextureEntry2(const char* identifier, GL_TEXTURETYPE textureType, int width, int height)
 {
@@ -771,7 +787,11 @@ gltexture_t*GL_FindTextureEntry2(const char* identifier, GL_TEXTURETYPE textureT
 	return foundGLT;
 }
 
-gltexture_t * GL_AllocTextureEx(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, qboolean mipmap)
+/*
+	Allocate an empty glt entry, or returns an existing one if identifier matched
+*/
+
+gltexture_t * GL_AllocTextureEntry(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, qboolean mipmap, bool *foundExisting)
 {
 	int i;
 	gltexture_t* glt;
@@ -796,6 +816,9 @@ gltexture_t * GL_AllocTextureEx(const char* identifier, GL_TEXTURETYPE textureTy
 			{
 				if (slot->servercount > 0)
 					slot->servercount = *gHostSpawnCount;
+
+				if (foundExisting)
+					*foundExisting = true;
 
 				return slot;
 			}
@@ -874,12 +897,15 @@ gltexture_t * GL_AllocTextureEx(const char* identifier, GL_TEXTURETYPE textureTy
 
 	glt->paletteIndex = -1;
 
+	if (foundExisting)
+		*foundExisting = false;
+
 	return glt;
 }
 
-int GL_AllocTexture(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, qboolean mipmap)
+int GL_AllocTexture(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, qboolean mipmap, bool* foundExisting)
 {
-	auto glt = GL_AllocTextureEx(identifier, textureType, width, height, mipmap);
+	auto glt = GL_AllocTextureEntry(identifier, textureType, width, height, mipmap, foundExisting);
 
 	if (!glt)
 		return 0;
@@ -1139,24 +1165,70 @@ void GL_Upload32ToMipmap(byte* pData, int width, int height, int iPalTextureType
 	GL_ProcessMipmap32(iPalTextureType, state);
 }
 
-int GL_LoadTexture(char* identifier, GL_TEXTURETYPE textureType, int width, int height, byte* data, qboolean mipmap, int iPalTextureType, byte* pPal)
+int GL_LoadTexture3(gltexture_t* glt, GL_TEXTURETYPE textureType, gl_loadtexture_state_t* state)
 {
-	return GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iPalTextureType, pPal, (*gl_filter_max));
+	int iTextureTarget = GL_TEXTURE_2D;
+
+	if (state->cubemap)
+		iTextureTarget = GL_TEXTURE_CUBE_MAP;
+
+	if (!state->wrap)
+	{
+		state->wrap = GL_REPEAT;
+
+		if (textureType == GLT_HUDSPRITE || textureType == GLT_SPRITE)
+			state->wrap = GL_CLAMP_TO_EDGE;
+	}
+
+	glBindTexture(iTextureTarget, glt->texnum);
+	(*currenttexture) = -1;
+
+	if (state->compressed)
+	{
+		GL_UploadDXT(state);
+	}
+	else
+	{
+		GL_UploadRGBA8(state);
+	}
+
+	glBindTexture(iTextureTarget, 0);
+	(*currenttexture) = -1;
+
+	return glt->texnum;
 }
 
 int GL_LoadTexture2(char* identifier, GL_TEXTURETYPE textureType, int width, int height, byte* data, qboolean mipmap, int iPalTextureType, byte* pPal, int filter)
 {
+	char hashedIdentifier[64] = { 0 };
+	GL_GenerateHashedTextureIndentifier2(identifier, textureType, width, height, hashedIdentifier, sizeof(hashedIdentifier));
+
 	if (bUseLegacyTextureLoader)
 	{
-		char hashedIdentifier[64] = { 0 };
-		GL_GenerateHashedTextureIndentifier2(identifier, textureType, width, height, hashedIdentifier, sizeof(hashedIdentifier));
-
 		int gltexturenum = gPrivateFuncs.GL_LoadTexture2(hashedIdentifier, textureType, width, height, data, mipmap, iPalTextureType, pPal, filter);
 
-		gEngfuncs.Con_DPrintf("GL_LoadTexture2: [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, gltexturenum);
+		gEngfuncs.Con_DPrintf("GL_LoadTexture2: Using legacy texture loader [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, gltexturenum);
 
 		return gltexturenum;
 	}
+
+	bool foundExisting = false;
+
+	auto glt = GL_AllocTextureEntry(hashedIdentifier, textureType, width, height, mipmap, &foundExisting);
+
+	if (!glt)
+	{
+		gEngfuncs.Con_Printf("GL_LoadTexture2: Failed to allocate texture entry for [%s] -> [%s].\n", identifier, hashedIdentifier);
+		return 0;
+	}
+
+	if (foundExisting)
+	{
+		gEngfuncs.Con_DPrintf("GL_LoadTexture2: Found existing texture entry [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, glt->texnum);
+		return glt->texnum;
+	}
+
+	gEngfuncs.Con_DPrintf("GL_LoadTexture2: Using new texture loader [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, glt->texnum);
 
 	gl_loadtexture_state_t state;
 
@@ -1190,7 +1262,12 @@ int GL_LoadTexture2(char* identifier, GL_TEXTURETYPE textureType, int width, int
 		}
 	}
 
-	return GL_LoadTextureEx(identifier, textureType, &state);
+	return GL_LoadTexture3(glt, textureType, &state);
+}
+
+int GL_LoadTexture(char* identifier, GL_TEXTURETYPE textureType, int width, int height, byte* data, qboolean mipmap, int iPalTextureType, byte* pPal)
+{
+	return GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iPalTextureType, pPal, (*gl_filter_max));
 }
 
 int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, gl_loadtexture_state_t *state)
@@ -1204,45 +1281,25 @@ int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, gl_load
 	char hashedIdentifier[64] = { 0 };
 	GL_GenerateHashedTextureIndentifier2(identifier, textureType, state->width, state->height, hashedIdentifier, sizeof(hashedIdentifier));
 
-	int gltexturenum = GL_AllocTexture(hashedIdentifier, textureType, state->width, state->height, state->mipmap);
+	bool foundExisting = false;
 
-	if (!gltexturenum)
+	auto glt = GL_AllocTextureEntry(hashedIdentifier, textureType, state->width, state->height, state->mipmap, &foundExisting);
+
+	if (!glt)
 	{
-		gEngfuncs.Con_Printf("GL_LoadTextureEx: Failed to allocate texture entry for %s.\n", identifier);
+		gEngfuncs.Con_Printf("GL_LoadTextureEx: Failed to allocate texture entry for [%s] -> [%s].\n", identifier, hashedIdentifier);
 		return 0;
 	}
 
-	gEngfuncs.Con_DPrintf("GL_LoadTextureEx: [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, gltexturenum);
-
-	int iTextureTarget = GL_TEXTURE_2D;
-
-	if (state->cubemap)
-		iTextureTarget = GL_TEXTURE_CUBE_MAP;
-
-	if (!state->wrap)
+	if (foundExisting)
 	{
-		state->wrap = GL_REPEAT;
-
-		if (textureType == GLT_HUDSPRITE || textureType == GLT_SPRITE)
-			state->wrap = GL_CLAMP_TO_EDGE;
+		gEngfuncs.Con_DPrintf("GL_LoadTextureEx: Found existing texture entry [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, glt->texnum);
+		return glt->texnum;
 	}
 
-	glBindTexture(iTextureTarget, gltexturenum);
-	(*currenttexture) = -1;
+	gEngfuncs.Con_DPrintf("GL_LoadTextureEx: [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, glt->texnum);
 
-	if (state->compressed)
-	{
-		GL_UploadDXT(state);
-	}
-	else
-	{
-		GL_UploadRGBA8(state);
-	}
-
-	glBindTexture(iTextureTarget, 0);
-	(*currenttexture) = -1;
-
-	return gltexturenum;
+	return GL_LoadTexture3(glt, textureType, state);
 }
 
 texture_t *Draw_DecalTexture(int index)
