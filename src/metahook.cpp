@@ -128,6 +128,8 @@ void *MH_GetClassFuncAddr(...);
 HMODULE MH_GetClientModule(void);
 PVOID MH_GetModuleBase(PVOID VirtualAddress);
 DWORD MH_GetModuleSize(PVOID ModuleBase);
+PVOID MH_GetClientBase(void);
+DWORD MH_GetClientSize(void);
 void *MH_SearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
 void MH_WriteDWORD(void *pAddress, DWORD dwValue);
 DWORD MH_ReadDWORD(void *pAddress);
@@ -512,7 +514,15 @@ int MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 			if (plug->pPluginAPI)
 			{
 				plug->iInterfaceVersion = 2;
-				((IPluginsV2 *)plug->pPluginAPI)->Init(&gMetaHookAPI_LegacyV2, &gInterface, &gMetaSave);
+
+				if (CommandLine()->CheckParm("-metahook_legacy_v2_api"))
+				{
+					((IPluginsV2*)plug->pPluginAPI)->Init(&gMetaHookAPI_LegacyV2, &gInterface, &gMetaSave);
+				}
+				else
+				{
+					((IPluginsV2*)plug->pPluginAPI)->Init(&gMetaHookAPI, &gInterface, &gMetaSave);
+				}
 			}
 			else
 			{
@@ -826,20 +836,26 @@ void MH_TransactionHookCommit(void)
 		else if (pHook->iType == MH_HOOK_VFTABLE && !pHook->bCommitted)
 		{
 			tagVTABLEDATA* info = (tagVTABLEDATA*)pHook->pInfo;
-			MH_WriteMemory(info->pVFTInfoAddr, &pHook->pNewFuncAddr, sizeof(ULONG_PTR));
+
+			pHook->pOldFuncAddr = *(PVOID *)info->pVFTInfoAddr;
 
 			if (pHook->pOrginalCall)
 				(*pHook->pOrginalCall) = pHook->pOldFuncAddr;
+
+			MH_WriteMemory(info->pVFTInfoAddr, &pHook->pNewFuncAddr, sizeof(PVOID));
 
 			pHook->bCommitted = true;
 		}
 		else if (pHook->iType == MH_HOOK_IAT && !pHook->bCommitted)
 		{
 			tagIATDATA* info = (tagIATDATA*)pHook->pInfo;
-			MH_WriteMemory(info->pAPIInfoAddr, &pHook->pNewFuncAddr, sizeof(ULONG_PTR));
+
+			pHook->pOldFuncAddr = *(PVOID*)info->pAPIInfoAddr;
 
 			if (pHook->pOrginalCall)
 				(*pHook->pOrginalCall) = pHook->pOldFuncAddr;
+
+			MH_WriteMemory(info->pAPIInfoAddr, &pHook->pNewFuncAddr, sizeof(PVOID));
 
 			pHook->bCommitted = true;
 		}
@@ -1892,19 +1908,24 @@ hook_t *MH_FindIATHooked(HMODULE hModule, const char *pszModuleName, const char 
 
 void MH_FreeHook(hook_t *pHook)
 {
-	if (pHook->iType == MH_HOOK_VFTABLE)
+	if (pHook->bCommitted)
 	{
-		tagVTABLEDATA *info = (tagVTABLEDATA *)pHook->pInfo;
-		MH_WriteMemory(info->pVFTInfoAddr, &pHook->pOldFuncAddr, sizeof(ULONG_PTR));
-	}
-	else if (pHook->iType == MH_HOOK_IAT)
-	{
-		tagIATDATA *info = (tagIATDATA *)pHook->pInfo;
-		MH_WriteMemory(info->pAPIInfoAddr, &pHook->pOldFuncAddr, sizeof(ULONG_PTR));
-	}
-	else if (pHook->iType == MH_HOOK_INLINE)
-	{
-		DetourDetach(&(void *&)pHook->pOldFuncAddr, pHook->pNewFuncAddr);
+		if (pHook->iType == MH_HOOK_VFTABLE)
+		{
+			tagVTABLEDATA* info = (tagVTABLEDATA*)pHook->pInfo;
+			MH_WriteMemory(info->pVFTInfoAddr, &pHook->pOldFuncAddr, sizeof(PVOID));
+		}
+		else if (pHook->iType == MH_HOOK_IAT)
+		{
+			tagIATDATA* info = (tagIATDATA*)pHook->pInfo;
+			MH_WriteMemory(info->pAPIInfoAddr, &pHook->pOldFuncAddr, sizeof(PVOID));
+		}
+		else if (pHook->iType == MH_HOOK_INLINE)
+		{
+			DetourDetach(&(void*&)pHook->pOldFuncAddr, pHook->pNewFuncAddr);
+		}
+
+		pHook->bCommitted = false;
 	}
 
 	if (pHook->pInfo)
@@ -2004,9 +2025,124 @@ hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCal
 	return h;
 }
 
+bool MH_IsBogusVFTableEntry(PVOID pVFTInfoAddr, PVOID pOldFuncAddr)
+{
+	if (1)
+	{
+		if (pVFTInfoAddr >= g_dwEngineBase && pVFTInfoAddr < (PUCHAR)g_dwEngineBase + g_dwEngineSize &&
+			pOldFuncAddr >= g_dwEngineBase && pOldFuncAddr < (PUCHAR)g_dwEngineBase + g_dwEngineSize)
+		{
+			ULONG TextSize = 0;
+			PVOID TextBase = MH_GetSectionByName(g_dwEngineBase, ".text\0\0\0", &TextSize);
+
+			if (TextBase)
+			{
+				if (!(pOldFuncAddr >= TextBase && pOldFuncAddr < (PUCHAR)TextBase + TextSize))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+	}
+
+	if (1)
+	{
+		auto ClientBase = MH_GetClientBase();
+		auto ClientSize = MH_GetClientSize();
+		if (pVFTInfoAddr >= ClientBase && pVFTInfoAddr < (PUCHAR)ClientBase + ClientSize &&
+			pOldFuncAddr >= ClientBase && pOldFuncAddr < (PUCHAR)ClientBase + ClientSize)
+		{
+			ULONG TextSize = 0;
+			PVOID TextBase = MH_GetSectionByName(ClientBase, ".text\0\0\0", &TextSize);
+
+			if (TextBase)
+			{
+				if (!(pOldFuncAddr >= TextBase && pOldFuncAddr < (PUCHAR)TextBase + TextSize))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+	}
+
+	auto ModuleBase = MH_GetModuleBase(pVFTInfoAddr);
+	if (ModuleBase)
+	{
+		auto ModuleSize = MH_GetModuleSize(ModuleBase);
+
+		if (ModuleSize > 0)
+		{
+			if (pVFTInfoAddr >= ModuleBase && pVFTInfoAddr < (PUCHAR)ModuleBase + ModuleSize &&
+				pOldFuncAddr >= ModuleBase && pOldFuncAddr < (PUCHAR)ModuleBase + ModuleSize)
+			{
+				ULONG TextSize = 0;
+				PVOID TextBase = MH_GetSectionByName(ModuleBase, ".text\0\0\0", &TextSize);
+
+				if (TextBase)
+				{
+					if (!(pOldFuncAddr >= TextBase && pOldFuncAddr < (PUCHAR)TextBase + TextSize))
+					{
+						return true;
+					}
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
 hook_t* MH_VFTHook(void* pClass, int iTableIndex, int iFuncIndex, void* pNewFuncAddr, void** pOrginalCall)
 {
-#if 0
+	tagVTABLEDATA* info = new tagVTABLEDATA;
+	info->pInstance = (tagCLASS*)pClass;
+
+	ULONG_PTR* pVMT = ((tagCLASS*)pClass + iTableIndex)->pVMT;
+	info->pVFTInfoAddr = pVMT + iFuncIndex;
+
+	hook_t* h = MH_NewHook(MH_HOOK_VFTABLE);
+
+	h->pOldFuncAddr = (void*)pVMT[iFuncIndex];
+	h->pNewFuncAddr = pNewFuncAddr;
+	h->pInfo = info;
+	h->pClass = pClass;
+	h->iTableIndex = iTableIndex;
+	h->iFuncIndex = iFuncIndex;
+	h->pOrginalCall = pOrginalCall;
+
+	if (CommandLine()->CheckParm("-metahook_check_vfthook"))
+	{
+		if (MH_IsBogusVFTableEntry(info->pVFTInfoAddr, h->pOldFuncAddr))
+		{
+			MH_UnHook(h);
+
+			char msg[256];
+			snprintf(msg, sizeof(msg), "MH_VFTHook: Found bogus hook at %p_vftable[%d][%d] -> %p, hook rejected.", pClass, iTableIndex, iFuncIndex, pNewFuncAddr);
+			MessageBoxA(NULL, msg, "Warning", MB_ICONWARNING);
+
+			return NULL;
+		}
+	}
+
+	if (g_bTransactionHook)
+	{
+		h->bCommitted = false;
+	}
+	else
+	{
+		MH_WriteMemory(info->pVFTInfoAddr, &pNewFuncAddr, sizeof(ULONG_PTR));
+
+		if (h->pOrginalCall)
+			(*h->pOrginalCall) = h->pOldFuncAddr;
+
+		h->bCommitted = true;
+	}
+
+#if 1
 	auto p = (PUCHAR)_ReturnAddress();
 
 	MEMORY_BASIC_INFORMATION mbi;
@@ -2018,38 +2154,10 @@ hook_t* MH_VFTHook(void* pClass, int iTableIndex, int iFuncIndex, void* pNewFunc
 		GetModuleFileNameA((HMODULE)mbi.AllocationBase, modname, sizeof(modname));
 
 		char test[256];
-		sprintf(test, "%p called MH_VFTHook, from %p[%d] to %p, %s+%X\n", p, pClass, iFuncIndex, pNewFuncAddr, modname, p - (PUCHAR)mbi.AllocationBase);
+		sprintf(test, "%p called MH_VFTHook, from %p[%d] (%p) to %p, %s+%X\n", p, pClass, iFuncIndex, info->pVFTInfoAddr, pNewFuncAddr, modname, p - (PUCHAR)mbi.AllocationBase);
 		OutputDebugStringA(test);
 	}
 #endif
-	tagVTABLEDATA* info = new tagVTABLEDATA;
-	info->pInstance = (tagCLASS*)pClass;
-
-	ULONG_PTR* pVMT = ((tagCLASS*)pClass + iTableIndex)->pVMT;
-	info->pVFTInfoAddr = pVMT + iFuncIndex;
-
-	hook_t* h = MH_NewHook(MH_HOOK_VFTABLE);
-	h->pOldFuncAddr = (void*)pVMT[iFuncIndex];
-	h->pNewFuncAddr = pNewFuncAddr;
-	h->pInfo = info;
-	h->pClass = pClass;
-	h->iTableIndex = iTableIndex;
-	h->iFuncIndex = iFuncIndex;
-	h->pOrginalCall = pOrginalCall;
-
-	if (false)/*g_bTransactionHook*/
-	{
-		h->bCommitted = false;
-	}
-	else
-	{
-		MH_WriteMemory(info->pVFTInfoAddr, &pNewFuncAddr, sizeof(ULONG_PTR));
-
-		if (h->pOrginalCall)
-			*h->pOrginalCall = h->pOldFuncAddr;
-
-		h->bCommitted = true;
-	}
 
 	return h;
 }
@@ -2134,6 +2242,9 @@ PVOID MH_GetModuleBase(PVOID VirtualAddress)
 	MEMORY_BASIC_INFORMATION mem;
 
 	if (!VirtualQuery(VirtualAddress, &mem, sizeof(MEMORY_BASIC_INFORMATION)))
+		return 0;
+
+	if (mem.Type != MEM_IMAGE)
 		return 0;
 
 	return mem.AllocationBase;
@@ -2655,6 +2766,11 @@ PVOID MH_GetSectionByName(PVOID ImageBase, const char *SectionName, ULONG *Secti
 	if (g_hBlobEngine && GetBlobModuleImageBase(g_hBlobEngine) == ImageBase)
 	{
 		return GetBlobSectionByName(g_hBlobEngine, SectionName, SectionSize);
+	}
+
+	if (g_hBlobClient && GetBlobModuleImageBase(g_hBlobClient) == ImageBase)
+	{
+		return GetBlobSectionByName(g_hBlobClient, SectionName, SectionSize);
 	}
 
 	PIMAGE_NT_HEADERS NtHeader = RtlImageNtHeader(ImageBase);
