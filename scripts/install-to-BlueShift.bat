@@ -9,7 +9,7 @@ if not defined SolutionDir (
 :: Ensure the path ends with a backslash
 if not "%SolutionDir:~-1%"=="\" SET "SolutionDir=%SolutionDir%\"
 
-cd /d "%SolutionDir%"
+cd /d "%SolutionDir%"tools
 
 if not exist "%SolutionDir%Build\svencoop.exe" goto fail_nobuild
 
