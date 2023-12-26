@@ -92,13 +92,13 @@
 
 * 请确保已经登录Steam否则 [SteamAppsLocation](toolsrc/README.md) 可能会无法寻找游戏安装目录。
 
-## MetaHookSv (V3) 相比 MetaHook (V2) 的新功能
+## MetaHookSv (V4) 相比 MetaHook (V2) 的新功能
 
 1. 提供反汇编 API 用于分析引擎代码，提供反向（往前）搜索函数头部的API。提供更多好用的API。
 
 2. 防止插件重复加载（重复加载会导致插件自调用，引发无限递归）
 
-3. `LoadEngine` 和 `LoadClient` 阶段会对所有`InlineHook`请求开启“事务”，直到所有插件的`LoadEngine` 和 `LoadClient`结束才会让`InlineHook`生效, 这样就可以允许不同插件`SearchPattern` 和 `InlineHook` 同一个函数，也不会引发冲突了
+3. `LoadEngine` 和 `LoadClient` 阶段会对所有 `InlineHook`, `VFTHook` and `IATHook` 请求开启“事务”，直到所有插件的`LoadEngine` 和 `LoadClient`结束才会让hook生效, 这样就可以允许不同插件同时 `SearchPattern` 和 hook 同一个函数，避免了因为前一个插件提前hook修改了引擎代码导致后一个插件搜索特征码失败之类的冲突问题。
 
 4. 新增启动项参数 `-metahook_legacy_v2_api` ，该启动项将提供以前V2版本的错误行为API给使用V2版本接口的插件。
 

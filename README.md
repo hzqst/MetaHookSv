@@ -88,7 +88,7 @@ Let's assume that you have all requirements installed correctly.
 
 * You should restart Visual Studio IDE to apply changes to debugging profile if Visual Studio IDE was running.
 
-## MetaHookSv (V3) new features compare to nagist's old metahook (V2)
+## MetaHookSv (V4) new features compare to nagist's old metahook (V2)
 
 1. New and better capstone API to disassemble and analyze engine code, new API to reverse search the function begin.
 
