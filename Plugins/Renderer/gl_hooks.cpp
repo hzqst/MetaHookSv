@@ -321,18 +321,72 @@ void R_FillAddress(void)
 {
 	ULONG_PTR addr;
 
-	auto engineFactory = g_pMetaHookAPI->GetEngineFactory(); 
+	auto engineFactory = g_pMetaHookAPI->GetEngineFactory();
+
 	if (engineFactory)
 	{
 #define ENGINE_SURFACE_VERSION "EngineSurface007"
 		void *engineSurface = (void *)engineFactory(ENGINE_SURFACE_VERSION, NULL);
 
-		int offset = 0x58;
+		auto engineSurface_vftable = *(ULONG_PTR**)engineSurface;
+
+		int index_drawSetTextureRGBA = 8;
+		int index_drawSetTexture = 9;
+		int index_createNewTextureID = 11;
+		int index_drawSetTextureFile = 18;
+		int index_isTextureIDValid = 20;
+		int index_drawFlushText = 22;
 
 		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-			offset += 4;
+		{
+			index_drawSetTextureFile ++;
+			index_isTextureIDValid++;
+			index_drawFlushText ++;
+		}
 
-		gPrivateFuncs.enginesurface_drawFlushText = *(decltype(gPrivateFuncs.enginesurface_drawFlushText) *)(*(ULONG_PTR*)engineSurface + offset);
+		gPrivateFuncs.enginesurface_drawSetTextureRGBA = (decltype(gPrivateFuncs.enginesurface_drawSetTextureRGBA))engineSurface_vftable[index_drawSetTextureRGBA];
+		gPrivateFuncs.enginesurface_drawSetTexture = (decltype(gPrivateFuncs.enginesurface_drawSetTexture))engineSurface_vftable[index_drawSetTexture];
+		gPrivateFuncs.enginesurface_createNewTextureID = (decltype(gPrivateFuncs.enginesurface_createNewTextureID))engineSurface_vftable[index_createNewTextureID];
+		gPrivateFuncs.enginesurface_drawSetTextureFile = (decltype(gPrivateFuncs.enginesurface_drawSetTextureFile))engineSurface_vftable[index_drawSetTextureFile];
+		gPrivateFuncs.enginesurface_isTextureIDValid = (decltype(gPrivateFuncs.enginesurface_isTextureIDValid))engineSurface_vftable[index_isTextureIDValid];
+		gPrivateFuncs.enginesurface_drawFlushText = (decltype(gPrivateFuncs.enginesurface_drawFlushText))engineSurface_vftable[index_drawFlushText];
+
+		typedef struct
+		{
+			void* candicate;
+			int instCount;
+		}enginesurface_isTextureIDValid_SearchContext;
+
+		enginesurface_isTextureIDValid_SearchContext ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.enginesurface_isTextureIDValid, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (enginesurface_isTextureIDValid_SearchContext*)context;
+
+			if (instCount <= 8 && pinst->id == X86_INS_CALL &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_IMM)
+			{
+				ctx->candicate = (decltype(ctx->candicate))pinst->detail->x86.operands[0].imm;
+			}
+
+			ctx->instCount = instCount;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+		}, 0, &ctx);
+
+		if (ctx.candicate && ctx.instCount <= 20)
+		{
+			gPrivateFuncs.staticGetTextureById = (decltype(gPrivateFuncs.staticGetTextureById))ctx.candicate;
+		}
 	}
 
 	gPrivateFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
@@ -399,7 +453,7 @@ void R_FillAddress(void)
 
 					return FALSE;
 
-					}, 0, &ctx);
+				}, 0, &ctx);
 
 				if (ctx.bFoundPush && ctx.bFoundCall)
 				{
@@ -453,7 +507,8 @@ void R_FillAddress(void)
 								) )
 						{
 							auto pString = (PCHAR)pinst->detail->x86.operands[0].imm;
-							if (!memcmp(pString, "Failed to query GL vendor", sizeof("Failed to query GL vendor") - 1))
+							if (!memcmp(pString, "Failed to query GL vendor", sizeof("Failed to query GL vendor") - 1) ||
+								!memcmp(pString, "GL_VENDOR: %s", sizeof("GL_VENDOR: %s") - 1))
 							{
 								ctx->bFoundPushString = true;
 							}
@@ -7306,6 +7361,8 @@ hook_t *g_phook_GL_UnloadTextures = NULL;
 hook_t *g_phook_GL_UnloadTexture = NULL;
 hook_t *g_phook_GL_LoadTexture2 = NULL;
 hook_t *g_phook_GL_BuildLightmaps = NULL;
+hook_t *g_phook_enginesurface_createNewTextureID = NULL;
+hook_t *g_phook_enginesurface_drawSetTextureFile = NULL;
 hook_t *g_phook_enginesurface_drawFlushText = NULL;
 hook_t *g_phook_Mod_LoadStudioModel = NULL;
 hook_t *g_phook_Mod_LoadBrushModel = NULL;
@@ -7343,6 +7400,13 @@ void R_UninstallHooksForEngineDLL(void)
 	Uninstall_Hook(GL_UnloadTextures);
 	Uninstall_Hook(GL_LoadTexture2);
 	Uninstall_Hook(GL_BuildLightmaps);
+
+	if (!bHasOfficialGLTexAllocSupport)
+	{
+		Uninstall_Hook(enginesurface_createNewTextureID);
+	}
+
+	Uninstall_Hook(enginesurface_drawSetTextureFile);
 	Uninstall_Hook(enginesurface_drawFlushText);
 	Uninstall_Hook(Mod_LoadStudioModel);
 	Uninstall_Hook(Mod_UnloadSpriteTextures);
@@ -7382,6 +7446,11 @@ void R_InstallHooks(void)
 	Install_InlineHook(GL_UnloadTextures);
 	Install_InlineHook(GL_LoadTexture2);
 	Install_InlineHook(GL_BuildLightmaps);
+	if (!bHasOfficialGLTexAllocSupport)
+	{
+		Install_InlineHook(enginesurface_createNewTextureID);
+	}
+	Install_InlineHook(enginesurface_drawSetTextureFile);
 	Install_InlineHook(enginesurface_drawFlushText);
 	Install_InlineHook(Mod_LoadStudioModel);
 	Install_InlineHook(Mod_UnloadSpriteTextures);

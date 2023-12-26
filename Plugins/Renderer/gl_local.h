@@ -389,6 +389,8 @@ texture_t *Draw_DecalTexture(int index);
 void Draw_MiptexTexture(cachewad_t *wad, byte *data);
 void EmitWaterPolys(msurface_t *fa, int direction);
 void R_DecalShootInternal(texture_t *ptexture, int index, int entity, int modelIndex, vec3_t position, int flags, float flScale);
+void __fastcall enginesurface_drawSetTextureFile(void* pthis, int, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload);
+int __fastcall enginesurface_createNewTextureID(void* pthis, int);
 void __fastcall enginesurface_drawFlushText(void *pthis, int dummy);
 int SignbitsForPlane(mplane_t *out);
 qboolean R_ParseStringAsColor1(const char *string, float *vec);
@@ -441,10 +443,9 @@ int GL_LoadTextureEx(const char* identifier, GL_TEXTURETYPE textureType, gl_load
 int R_LoadTextureFromFile(const char *filename, const char * identifier, int *width, int *height, GL_TEXTURETYPE type, bool mipmap, bool throw_warning_on_missing);
 int R_LoadRGBATextureFromMemory(const char* identifier, void* data, int width, int height, GL_TEXTURETYPE type, bool mipmap);
 
-void GL_UploadDXT(void *data, int width, int height, qboolean mipmap, qboolean ansio, int wrap);
-qboolean LoadDDS(const char *filename, byte *buf, size_t bufSize, size_t *width, size_t *height);
-qboolean LoadImageGeneric(const char *filename, byte *buf, size_t bufSize, size_t *width, size_t *height);
-qboolean SaveImageGeneric(const char *filename, size_t width, size_t height, byte *data);
+bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize, gl_loadtexture_state_t* state, bool throw_warning_on_missing);
+bool LoadImageGeneric(const char* filename, const char* pathId, byte* buf, size_t bufSize, gl_loadtexture_state_t* state, bool throw_warning_on_missing);
+bool SaveImageGeneric(const char *filename, const char* pathId, size_t width, size_t height, byte *data);
 
 cubemap_t *R_FindCubemap(float *origin);
 void R_LoadCubemap(cubemap_t *cubemap);

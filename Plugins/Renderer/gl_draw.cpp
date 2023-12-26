@@ -457,10 +457,13 @@ void GL_UploadDXT(gl_loadtexture_state_t *state)
 		glTexParameteri(iTextureTarget, GL_TEXTURE_MAG_FILTER, (*gl_filter_max));
 	}
 
-	glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
+	if (state->wrap)
+	{
+		glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_S, state->wrap);
+		glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_T, state->wrap);
+	}
 
-	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_S, state->wrap);
-	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_T, state->wrap);
+	glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, state->mipmap ? (state->mipmaps.size() - 1) : 0);
@@ -510,10 +513,13 @@ void GL_UploadRGBA8(gl_loadtexture_state_t* state)
 		glTexParameteri(iTextureTarget, GL_TEXTURE_MAG_FILTER, (*gl_filter_max));
 	}
 
-	glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
+	if (state->wrap)
+	{
+		glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_S, state->wrap);
+		glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_T, state->wrap);
+	}
 
-	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_S, state->wrap);
-	glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_T, state->wrap);
+	glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, state->mipmap ? (state->mipmaps.size() - 1) : 0);
@@ -1181,7 +1187,6 @@ int GL_LoadTexture3(gltexture_t* glt, GL_TEXTURETYPE textureType, gl_loadtexture
 	}
 
 	glBindTexture(iTextureTarget, glt->texnum);
-	(*currenttexture) = -1;
 
 	if (state->compressed)
 	{
@@ -1193,6 +1198,7 @@ int GL_LoadTexture3(gltexture_t* glt, GL_TEXTURETYPE textureType, gl_loadtexture
 	}
 
 	glBindTexture(iTextureTarget, 0);
+
 	(*currenttexture) = -1;
 
 	return glt->texnum;
@@ -1380,11 +1386,11 @@ void Draw_MiptexTexture(cachewad_t *wad, byte *data)
 	}
 }
 
-bool LoadDDS(const char* filename, byte* buf, size_t bufsize, gl_loadtexture_state_t *state, qboolean throw_warning_on_missing)
+bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize, gl_loadtexture_state_t *state, bool throw_warning_on_missing)
 {
 	DDS_FILEHEADER10 fileHeader10;
 
-	FileHandle_t fileHandle = FILESYSTEM_ANY_OPEN(filename, "rb");
+	FileHandle_t fileHandle = FILESYSTEM_ANY_OPEN(filename, "rb", pathId);
 
 	if (!fileHandle)
 	{
@@ -1885,9 +1891,9 @@ long WINAPI FI_Tell(fi_handle handle)
 	return FILESYSTEM_ANY_TELL(handle);
 }
 
-bool LoadImageGeneric(const char *filename, byte *buf, size_t bufSize, gl_loadtexture_state_t *state, qboolean throw_warning_on_missing)
+bool LoadImageGeneric(const char *filename, const char* pathId, byte *buf, size_t bufSize, gl_loadtexture_state_t *state, bool throw_warning_on_missing)
 {
-	FileHandle_t fileHandle = FILESYSTEM_ANY_OPEN(filename, "rb");
+	FileHandle_t fileHandle = FILESYSTEM_ANY_OPEN(filename, "rb", pathId);
 
 	if (!fileHandle)
 	{
@@ -1971,7 +1977,7 @@ bool LoadImageGeneric(const char *filename, byte *buf, size_t bufSize, gl_loadte
 	return true;
 }
 
-qboolean SaveImageGeneric(const char *filename, int width, int height, byte *data)
+bool SaveImageGeneric(const char *filename, const char* pathId, int width, int height, byte *data)
 {
 	const char *extension = V_GetFileExtension(filename);
 
@@ -1989,7 +1995,7 @@ qboolean SaveImageGeneric(const char *filename, int width, int height, byte *dat
 		return false;
     }
 
-	FileHandle_t fileHandle = FILESYSTEM_ANY_OPEN(filename, "wb");
+	FileHandle_t fileHandle = FILESYSTEM_ANY_OPEN(filename, "wb", pathId);
 
 	if(!fileHandle)
     {
@@ -2071,7 +2077,7 @@ int R_LoadTextureFromFile(const char *filename, const char * identifier, int *wi
 
 	if(!stricmp(extension, "dds"))
 	{
-		if(LoadDDS(filename, texloader_buffer, sizeof(texloader_buffer), &state, throw_warning_on_missing))
+		if(LoadDDS(filename, NULL, texloader_buffer, sizeof(texloader_buffer), &state, throw_warning_on_missing))
 		{
 			if(width)
 				*width = state.width;
@@ -2081,7 +2087,7 @@ int R_LoadTextureFromFile(const char *filename, const char * identifier, int *wi
 			return GL_LoadTextureEx(identifier, textureType, &state);
 		}
 	}
-	else if(LoadImageGeneric(filename, texloader_buffer, sizeof(texloader_buffer), &state, throw_warning_on_missing))
+	else if(LoadImageGeneric(filename, NULL, texloader_buffer, sizeof(texloader_buffer), &state, throw_warning_on_missing))
 	{
 		if (width)
 			*width = state.width;
@@ -2111,12 +2117,127 @@ void BuildGammaTable(float g)
 	}
 }
 
-//Valve called glEnableClientState(GL_VERTEX_ARRAY) and forgot to disable it.
+void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int textureId, const char* filename, qboolean hardwareFilter, bool forceReload)
+{
+	bool bLoaded = false;
+	char filepath[1024];
+
+	if (!gPrivateFuncs.enginesurface_isTextureIDValid(pthis, dummy, textureId) || forceReload)
+	{
+		if (1)
+		{
+			snprintf(filepath, sizeof(filepath), "%s.dds", filename);
+
+			gl_loadtexture_state_t state;
+			state.wrap = GL_CLAMP_TO_EDGE;
+			state.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
+			if (g_iEngineType == ENGINE_SVENGINE && 
+				!bLoaded && LoadDDS(filepath, "UI", texloader_buffer, sizeof(texloader_buffer), &state, false) && !state.cubemap)
+			{
+				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
+					(const char*)texloader_buffer, state.width, state.height,
+					hardwareFilter, true);
+				GL_UploadDXT(&state);
+				bLoaded = true;
+			}
+			if (!bLoaded && LoadDDS(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && !state.cubemap)
+			{
+				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId, 
+					(const char *)texloader_buffer, state.width, state.height, 
+					hardwareFilter, true);
+				GL_UploadDXT(&state);
+				bLoaded = true;
+			}
+		}
+		if (1)
+		{
+			snprintf(filepath, sizeof(filepath), "%s.png", filename);
+
+			gl_loadtexture_state_t state;
+			state.wrap = GL_CLAMP_TO_EDGE;
+			state.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
+			if (g_iEngineType == ENGINE_SVENGINE &&
+				!bLoaded && LoadImageGeneric(filepath, "UI", texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
+			{
+				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
+					(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
+					hardwareFilter, true);
+				bLoaded = true;
+			}
+			if (!bLoaded && LoadImageGeneric(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
+			{
+				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId, 
+					(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
+					hardwareFilter, true);
+				bLoaded = true;
+			}
+		}
+		if (1)
+		{
+			snprintf(filepath, sizeof(filepath), "%s.tga", filename);
+
+			gl_loadtexture_state_t state;
+			state.wrap = GL_CLAMP_TO_EDGE;
+			state.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
+			if (g_iEngineType == ENGINE_SVENGINE &&
+				!bLoaded && LoadImageGeneric(filepath, "UI", texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
+			{
+				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
+					(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
+					hardwareFilter, true);
+				bLoaded = true;
+			}
+			if (!bLoaded && LoadImageGeneric(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
+			{
+				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
+					(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
+					hardwareFilter, true);
+				bLoaded = true;
+			}
+		}
+		if (1)
+		{
+			snprintf(filepath, sizeof(filepath), "%s.bmp", filename);
+
+			gl_loadtexture_state_t state;
+			state.wrap = GL_CLAMP_TO_EDGE;
+			state.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
+			if (g_iEngineType == ENGINE_SVENGINE &&
+				!bLoaded && LoadImageGeneric(filepath, "UI", texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
+			{
+				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
+					(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
+					hardwareFilter, true);
+				bLoaded = true;
+			}
+			if (!bLoaded && LoadImageGeneric(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
+			{
+				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId, 
+					(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height, 
+					hardwareFilter, true);
+				bLoaded = true;
+			}
+		}
+	}
+
+	if (bLoaded)
+	{
+		if (gPrivateFuncs.enginesurface_isTextureIDValid(pthis, dummy, textureId))
+			gPrivateFuncs.enginesurface_drawSetTexture(pthis, dummy, textureId);
+	}
+}
+
+int __fastcall enginesurface_createNewTextureID(void* pthis, int dummy)
+{
+	// allocated_surface_texture = 5810;
+	return (int)GL_GenTexture();
+}
 
 void __fastcall enginesurface_drawFlushText(void *pthis, int dummy)
 {
 	gPrivateFuncs.enginesurface_drawFlushText(pthis, dummy);
 
+	//Valve called glEnableClientState(GL_VERTEX_ARRAY) and forgot to disable it.
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }

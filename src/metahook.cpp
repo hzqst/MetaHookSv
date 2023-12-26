@@ -22,6 +22,22 @@ extern "C"
 #define MH_HOOK_VFTABLE 2
 #define MH_HOOK_IAT 3
 
+struct tagIATDATA
+{
+	void* pAPIInfoAddr;
+};
+
+struct tagCLASS
+{
+	ULONG_PTR* pVMT;
+};
+
+struct tagVTABLEDATA
+{
+	tagCLASS* pInstance;
+	void* pVFTInfoAddr;
+};
+
 typedef struct hook_s
 {
 	int iType;
@@ -96,7 +112,7 @@ cl_exportfuncs_t *g_pExportFuncs = NULL;
 void *g_ppExportFuncs = NULL;
 void *g_ppEngfuncs = NULL;
 bool g_bSaveVideo = false;
-bool g_bTransactionInlineHook = false;
+bool g_bTransactionHook = false;
 int g_iEngineType = ENGINE_UNKNOWN;
 
 PVOID MH_GetNextCallAddr(void *pAddress, DWORD dwCount);
@@ -783,14 +799,14 @@ void MH_LoadPlugins(const char *gamedir)
 	infile.close();
 }
 
-void MH_TransactionInlineHookBegin(void)
+void MH_TransactionHookBegin(void)
 {
-	g_bTransactionInlineHook = true;
+	g_bTransactionHook = true;
 }
 
-void MH_TransactionInlineHookCommit(void)
+void MH_TransactionHookCommit(void)
 {
-	g_bTransactionInlineHook = false;
+	g_bTransactionHook = false;
 
 	for (auto pHook = g_pHookBase; pHook; pHook = pHook->pNext)
 	{
@@ -805,6 +821,26 @@ void MH_TransactionInlineHookCommit(void)
 
 			pHook->bCommitted = true;
 		}
+		else if (pHook->iType == MH_HOOK_VFTABLE && !pHook->bCommitted)
+		{
+			tagVTABLEDATA* info = (tagVTABLEDATA*)pHook->pInfo;
+			MH_WriteMemory(info->pVFTInfoAddr, &pHook->pNewFuncAddr, sizeof(ULONG_PTR));
+
+			if (pHook->pOrginalCall)
+				(*pHook->pOrginalCall) = pHook->pOldFuncAddr;
+
+			pHook->bCommitted = true;
+		}
+		else if (pHook->iType == MH_HOOK_IAT && !pHook->bCommitted)
+		{
+			tagIATDATA* info = (tagIATDATA*)pHook->pInfo;
+			MH_WriteMemory(info->pAPIInfoAddr, &pHook->pNewFuncAddr, sizeof(ULONG_PTR));
+
+			if (pHook->pOrginalCall)
+				(*pHook->pOrginalCall) = pHook->pOldFuncAddr;
+
+			pHook->bCommitted = true;
+		}
 	}
 }
 
@@ -812,11 +848,11 @@ int __fastcall CheckStudioInterfaceTrampoline(int(*pfn)(int version, struct r_st
 {
 	int r = 0;
 
-	MH_TransactionInlineHookBegin();
+	MH_TransactionHookBegin();
 
 	r = pfn ? pfn(1, g_pStudioAPI, g_pEngineStudioAPI) : 0;
 
-	MH_TransactionInlineHookCommit();
+	MH_TransactionHookCommit();
 
 	return r;
 }
@@ -826,7 +862,7 @@ int ClientDLL_Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 	memcpy(gMetaSave.pExportFuncs, g_pExportFuncs, sizeof(cl_exportfuncs_t));
 	memcpy(gMetaSave.pEngineFuncs, pEnginefuncs, sizeof(cl_enginefunc_t));
 
-	MH_TransactionInlineHookBegin();
+	MH_TransactionHookBegin();
 
 	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next)
 	{
@@ -847,7 +883,7 @@ int ClientDLL_Initialize(struct cl_enginefuncs_s *pEnginefuncs, int iVersion)
 		}
 	}
 
-	MH_TransactionInlineHookCommit();
+	MH_TransactionHookCommit();
 
 	gMetaSave.pEngineFuncs->pfnAddCommand("mh_pluginlist", MH_PrintPluginList);
 
@@ -1689,7 +1725,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 
 	MH_LoadPlugins(szGameName);
 
-	g_bTransactionInlineHook = true;
+	MH_TransactionHookBegin();
 
 	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next)
 	{
@@ -1709,20 +1745,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		}
 	}
 
-	g_bTransactionInlineHook = false;
-
-	for (auto pHook = g_pHookBase; pHook; pHook = pHook->pNext)
-	{
-		if (pHook->iType == MH_HOOK_INLINE && !pHook->bCommitted)
-		{
-			DetourTransactionBegin();
-			DetourAttach(&(void *&)pHook->pOldFuncAddr, pHook->pNewFuncAddr);
-			DetourTransactionCommit();
-
-			*pHook->pOrginalCall = pHook->pOldFuncAddr;
-			pHook->bCommitted = true;
-		}
-	}
+	MH_TransactionHookCommit();
 }
 
 void MH_ExitGame(int iResult)
@@ -1865,37 +1888,17 @@ hook_t *MH_FindIATHooked(HMODULE hModule, const char *pszModuleName, const char 
 	return NULL;
 }
 
-#pragma pack(push, 1)
-
-struct tagIATDATA
-{
-	void *pAPIInfoAddr;
-};
-
-struct tagCLASS
-{
-	DWORD *pVMT;
-};
-
-struct tagVTABLEDATA
-{
-	tagCLASS *pInstance;
-	void *pVFTInfoAddr;
-};
-
-#pragma pack(pop)
-
 void MH_FreeHook(hook_t *pHook)
 {
 	if (pHook->iType == MH_HOOK_VFTABLE)
 	{
 		tagVTABLEDATA *info = (tagVTABLEDATA *)pHook->pInfo;
-		MH_WriteMemory(info->pVFTInfoAddr, (BYTE *)&pHook->pOldFuncAddr, sizeof(DWORD));
+		MH_WriteMemory(info->pVFTInfoAddr, &pHook->pOldFuncAddr, sizeof(ULONG_PTR));
 	}
 	else if (pHook->iType == MH_HOOK_IAT)
 	{
 		tagIATDATA *info = (tagIATDATA *)pHook->pInfo;
-		MH_WriteMemory(info->pAPIInfoAddr, (BYTE *)&pHook->pOldFuncAddr, sizeof(DWORD));
+		MH_WriteMemory(info->pAPIInfoAddr, &pHook->pOldFuncAddr, sizeof(ULONG_PTR));
 	}
 	else if (pHook->iType == MH_HOOK_INLINE)
 	{
@@ -1961,16 +1964,10 @@ hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCal
 	hook_t *h = MH_NewHook(MH_HOOK_INLINE);
 	h->pOldFuncAddr = pOldFuncAddr;
 	h->pNewFuncAddr = pNewFuncAddr;
+	h->pOrginalCall = pOrginalCall;
 
-	//if (!pOrginalCall)
-	//{
-		//MessageBox(NULL, "MH_InlineHook: pOrginalCall can not be NULL.", "Fatal Error", MB_ICONERROR);
-		//NtTerminateProcess((HANDLE)-1, 0);
-	//}
-
-	if (g_bTransactionInlineHook)
+	if (g_bTransactionHook)
 	{
-		h->pOrginalCall = pOrginalCall;
 		h->bCommitted = false;
 	}
 	else
@@ -1978,7 +1975,6 @@ hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCal
 		DetourTransactionBegin();
 		DetourAttach(&(void *&)h->pOldFuncAddr, pNewFuncAddr);
 		DetourTransactionCommit();
-		h->pOrginalCall = pOrginalCall;
 
 		if(h->pOrginalCall)
 			(*h->pOrginalCall) = h->pOldFuncAddr;
@@ -1989,28 +1985,37 @@ hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCal
 	return h;
 }
 
-hook_t *MH_VFTHook(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFuncAddr, void **pOrginalCall)
+hook_t* MH_VFTHook(void* pClass, int iTableIndex, int iFuncIndex, void* pNewFuncAddr, void** pOrginalCall)
 {
-	tagVTABLEDATA *info = new tagVTABLEDATA;
-	info->pInstance = (tagCLASS *)pClass;
+	tagVTABLEDATA* info = new tagVTABLEDATA;
+	info->pInstance = (tagCLASS*)pClass;
 
-	DWORD *pVMT = ((tagCLASS *)pClass + iTableIndex)->pVMT;
+	ULONG_PTR* pVMT = ((tagCLASS*)pClass + iTableIndex)->pVMT;
 	info->pVFTInfoAddr = pVMT + iFuncIndex;
 
-	hook_t *h = MH_NewHook(MH_HOOK_VFTABLE);
-	h->pOldFuncAddr = (void *)pVMT[iFuncIndex];
+	hook_t* h = MH_NewHook(MH_HOOK_VFTABLE);
+	h->pOldFuncAddr = (void*)pVMT[iFuncIndex];
 	h->pNewFuncAddr = pNewFuncAddr;
 	h->pInfo = info;
 	h->pClass = pClass;
 	h->iTableIndex = iTableIndex;
 	h->iFuncIndex = iFuncIndex;
+	h->pOrginalCall = pOrginalCall;
 
-	if(pOrginalCall)
-		*pOrginalCall = h->pOldFuncAddr;
+	if (g_bTransactionHook)
+	{
+		h->bCommitted = false;
+	}
+	else
+	{
+		MH_WriteMemory(info->pVFTInfoAddr, &pNewFuncAddr, sizeof(ULONG_PTR));
 
-	h->bCommitted = true;
+		if (h->pOrginalCall)
+			*h->pOrginalCall = h->pOldFuncAddr;
 
-	MH_WriteMemory(info->pVFTInfoAddr, (BYTE *)&pNewFuncAddr, sizeof(DWORD));
+		h->bCommitted = true;
+	}
+
 	return h;
 }
 
@@ -2056,13 +2061,22 @@ hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFu
 	h->hModule = hModule;
 	h->pszModuleName = pszModuleName;
 	h->pszFuncName = pszFuncName;
+	h->pOrginalCall = pOrginalCall;
 
-	if(pOrginalCall)
-		*pOrginalCall = h->pOldFuncAddr;
+	if (g_bTransactionHook)
+	{
+		h->bCommitted = false;
+	}
+	else
+	{
+		MH_WriteMemory(info->pAPIInfoAddr, &pNewFuncAddr, sizeof(ULONG_PTR));
 
-	h->bCommitted = true;
+		if (h->pOrginalCall)
+			(*h->pOrginalCall) = h->pOldFuncAddr;
 
-	MH_WriteMemory(info->pAPIInfoAddr, (BYTE *)&pNewFuncAddr, sizeof(ULONG_PTR));
+		h->bCommitted = true;
+	}
+
 	return h;
 }
 

@@ -708,3 +708,15 @@ typedef struct
 	int height;
 	byte data[1];
 }model_texture_cache_t;
+
+class enginesurface_Texture
+{
+public:
+	int     _id;
+	int     _wide;
+	int     _tall;
+	float	_s0;
+	float	_t0;
+	float	_s1;
+	float	_t1;
+};
