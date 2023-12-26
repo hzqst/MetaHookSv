@@ -8,6 +8,7 @@
 #include <sstream>
 #include <set>
 #include <vector>
+#include <intrin.h>
 
 extern PVOID g_BlobLoaderSectionBase;
 extern ULONG g_BlobLoaderSectionSize;
@@ -164,6 +165,7 @@ extern IFileSystem* g_pFileSystem;
 mh_interface_t gInterface = {0};
 mh_enginesave_t gMetaSave = {0};
 
+extern metahook_api_t gMetaHookAPI_LegacyV2;
 extern metahook_api_t gMetaHookAPI;
 
 DWORD MH_LoadBlobFile(BYTE* pBuffer, void* pBlobFootPrint, void** pv, DWORD dwBufferSize)
@@ -510,7 +512,7 @@ int MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 			if (plug->pPluginAPI)
 			{
 				plug->iInterfaceVersion = 2;
-				((IPluginsV2 *)plug->pPluginAPI)->Init(&gMetaHookAPI, &gInterface, &gMetaSave);
+				((IPluginsV2 *)plug->pPluginAPI)->Init(&gMetaHookAPI_LegacyV2, &gInterface, &gMetaSave);
 			}
 			else
 			{
@@ -1961,6 +1963,23 @@ BOOL MH_UnHook(hook_t *pHook)
 
 hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCall)
 {
+#if 0
+	auto p = (PUCHAR)_ReturnAddress();
+
+	MEMORY_BASIC_INFORMATION mbi;
+	VirtualQuery(p, &mbi, sizeof(mbi));
+
+	if (mbi.Type == MEM_IMAGE)
+	{
+		char modname[256] = { 0 };
+		GetModuleFileNameA((HMODULE)mbi.AllocationBase, modname, sizeof(modname));
+
+		char test[256];
+		sprintf(test, "%p called MH_InlineHook, from %p to %p, %s+%X\n", p, pOldFuncAddr, pNewFuncAddr, modname, p - (PUCHAR)mbi.AllocationBase);
+		OutputDebugStringA(test);
+	}
+#endif
+
 	hook_t *h = MH_NewHook(MH_HOOK_INLINE);
 	h->pOldFuncAddr = pOldFuncAddr;
 	h->pNewFuncAddr = pNewFuncAddr;
@@ -1987,6 +2006,22 @@ hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCal
 
 hook_t* MH_VFTHook(void* pClass, int iTableIndex, int iFuncIndex, void* pNewFuncAddr, void** pOrginalCall)
 {
+#if 0
+	auto p = (PUCHAR)_ReturnAddress();
+
+	MEMORY_BASIC_INFORMATION mbi;
+	VirtualQuery(p, &mbi, sizeof(mbi));
+
+	if (mbi.Type == MEM_IMAGE)
+	{
+		char modname[256] = { 0 };
+		GetModuleFileNameA((HMODULE)mbi.AllocationBase, modname, sizeof(modname));
+
+		char test[256];
+		sprintf(test, "%p called MH_VFTHook, from %p[%d] to %p, %s+%X\n", p, pClass, iFuncIndex, pNewFuncAddr, modname, p - (PUCHAR)mbi.AllocationBase);
+		OutputDebugStringA(test);
+	}
+#endif
 	tagVTABLEDATA* info = new tagVTABLEDATA;
 	info->pInstance = (tagCLASS*)pClass;
 
@@ -2002,7 +2037,7 @@ hook_t* MH_VFTHook(void* pClass, int iTableIndex, int iFuncIndex, void* pNewFunc
 	h->iFuncIndex = iFuncIndex;
 	h->pOrginalCall = pOrginalCall;
 
-	if (g_bTransactionHook)
+	if (false)/*g_bTransactionHook*/
 	{
 		h->bCommitted = false;
 	}
@@ -2112,6 +2147,16 @@ DWORD MH_GetModuleSize(PVOID ModuleBase)
 HMODULE MH_GetEngineModule(void)
 {
 	return g_hEngineModule;
+}
+
+PVOID MH_GetEngineBase_LegacyV2(void)
+{
+	if (g_hBlobEngine)
+	{
+		return (PUCHAR)g_dwEngineBase + 0x1000;
+	}
+
+	return g_dwEngineBase;
 }
 
 PVOID MH_GetEngineBase(void)
@@ -2524,14 +2569,9 @@ CreateInterfaceFn MH_GetEngineFactory(void)
 
 	if (g_hBlobEngine)
 	{
-		ULONG_PTR factoryAddr = 0;
-
-		if (!factoryAddr)
-		{
-			BlobHeader_t* pHeader = GetBlobHeader(g_hBlobEngine);
-			ULONG_PTR base = pHeader->m_dwExportPoint + 0x8;
-			factoryAddr = ((ULONG_PTR(*)(void))(base + *(ULONG_PTR*)base + 0x4))();
-		}
+		BlobHeader_t* pHeader = GetBlobHeader(g_hBlobEngine);
+		ULONG_PTR base = pHeader->m_dwExportPoint + 0x8;
+		ULONG_PTR factoryAddr = ((ULONG_PTR(*)(void))(base + *(ULONG_PTR*)base + 0x4))();
 
 		return (CreateInterfaceFn)factoryAddr;
 	}
@@ -3182,6 +3222,58 @@ BOOL MH_GetPluginInfo(const char *name, mh_plugininfo_t *info)
 }
 
 extern blob_thread_manager_api_t g_BlobThreadManagerAPI;
+
+metahook_api_t gMetaHookAPI_LegacyV2 =
+{
+	MH_UnHook,
+	MH_InlineHook,
+	MH_VFTHook,
+	MH_IATHook,
+	MH_GetClassFuncAddr,
+	MH_GetModuleBase,
+	MH_GetModuleSize,
+	MH_GetEngineModule,
+	MH_GetEngineBase_LegacyV2,
+	MH_GetEngineSize,
+	MH_SearchPattern,
+	MH_WriteDWORD,
+	MH_ReadDWORD,
+	MH_WriteMemory,
+	MH_ReadMemory,
+	MH_GetVideoMode,
+	MH_GetEngineVersion,
+	MH_GetEngineFactory,
+	MH_GetNextCallAddr,
+	MH_WriteBYTE,
+	MH_ReadBYTE,
+	MH_WriteNOP,
+	MH_GetEngineType,
+	MH_GetEngineTypeName,
+	MH_ReverseSearchFunctionBegin,
+	MH_GetSectionByName,
+	MH_DisasmSingleInstruction,
+	MH_DisasmRanges,
+	MH_ReverseSearchPattern,
+	MH_GetClientModule,
+	MH_GetClientBase,
+	MH_GetClientSize,
+	MH_GetClientFactory,
+	MH_QueryPluginInfo,
+	MH_GetPluginInfo,
+	MH_HookUserMsg,
+	MH_HookCvarCallback,
+	MH_HookCmd,
+	MH_SysError,
+	MH_ReverseSearchFunctionBeginEx,
+	MH_IsDebuggerPresent,
+	MH_RegisterCvarCallback,
+	&g_BlobThreadManagerAPI,
+	MH_GetBlobEngineModule,
+	MH_GetBlobClientModule,
+	GetBlobModuleImageBase,
+	GetBlobModuleImageSize,
+	GetBlobSectionByName
+};
 
 metahook_api_t gMetaHookAPI =
 {
