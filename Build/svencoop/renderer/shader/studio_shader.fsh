@@ -260,6 +260,7 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 
 	#if defined(STUDIO_NF_CELSHADE_FACE)
 		vec3 vecForward = ExtractForwardVector(v_rotmatrix);
+		vec3 vecRight = ExtractRightVector(v_rotmatrix);
 		vec3 vecUp = ExtractUpVector(v_rotmatrix);
 
 		L = ProjectVectorOntoPlane(L, vecUp);
@@ -422,14 +423,8 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 
 #endif
 
-void main(void)
+vec3 R_GenerateNormal()
 {
-#if !defined(SHADOW_CASTER_ENABLED) && !defined(HAIR_SHADOW_ENABLED)
-
-	vec3 vWorldPos = v_worldpos.xyz;
-
-	vec4 specularColor = vec4(0.0);
-
 #if defined(NORMALTEXTURE_ENABLED)
 
 	mat3 TBN = CalcTBNMatrix();
@@ -450,6 +445,19 @@ void main(void)
 	#if defined(INVERT_NORMAL_ENABLED)
 		vNormal = vNormal * -1.0;
 	#endif
+
+	
+}
+
+void main(void)
+{
+#if !defined(SHADOW_CASTER_ENABLED) && !defined(HAIR_SHADOW_ENABLED)
+
+	vec3 vWorldPos = v_worldpos.xyz;
+
+	vec4 specularColor = vec4(0.0);
+
+	vNormal = R_GenerateNormal(vNormal);
 
 	ClipPlaneTest(v_worldpos.xyz, vNormal);
 

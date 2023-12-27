@@ -40,7 +40,7 @@
 
 2. 运行 `scripts\install-to-SvenCoop.bat`
 
-3. 从 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe` 启动游戏
+3. 从解压位置根目录生成的快捷方式 `MetaHook for SvenCoop.lnk` 或 Steam游戏库中  或 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe` 启动Sven Co-op。(*Sven Co-op之外的其他游戏只能通过快捷方式方式启动)
 
 * 其他游戏也可以按照此种方式安装，只需要运行其他install-to-批处理即可。
 

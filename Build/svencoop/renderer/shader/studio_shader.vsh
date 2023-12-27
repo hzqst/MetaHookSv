@@ -122,8 +122,6 @@ void main(void)
     vec3(vertbone_matrix[0][1], vertbone_matrix[1][1], vertbone_matrix[2][1]),
     vec3(vertbone_matrix[0][2], vertbone_matrix[1][2], vertbone_matrix[2][2]));
 	
-	//v_invrotmatrix = inverse(v_rotmatrix);
-
 #endif
 
 	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * vec4(outvert, 1.0);

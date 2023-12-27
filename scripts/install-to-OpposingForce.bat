@@ -63,6 +63,8 @@ del "%GameDir%\%LauncherMod%\metahook\configs\plugins_goldsrc.lst"
 del "%GameDir%\%LauncherMod%\metahook\configs\plugins_svencoop.lst"
 del "%GameDir%\%LauncherMod%\metahook\configs\plugins_svencoop_avx2.lst"
 
+cd /d "%SolutionDir%"
+
 powershell $shell = New-Object -ComObject WScript.Shell;$shortcut = $shell.CreateShortcut(\"MetaHook for %ShortGameName%.lnk\");$shortcut.TargetPath = \"%GameDir%\%LauncherExe%\";$shortcut.WorkingDirectory = \"%GameDir%\";$shortcut.Arguments = \"-insecure -game %LauncherMod%\";$shortcut.Save();
 
 echo -----------------------------------------------------

@@ -34,7 +34,7 @@ The binaries or executables of Sven Co-op are not signed with digital signatures
 
 2. Run `scripts\install-to-SvenCoop.bat` (or `scripts\install-to-(WhateverGameYouWant).bat`, depends on which you are going to play)
 
-3. Launch game from shortcut `MetaHook for SvenCoop` or `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`
+3. Launch Sven Co-op from either the generated shortcut `MetaHook for SvenCoop.lnk`, or your Steam Game Library, or `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`. (* Run `MetaHook for [GameName].lnk` for games other than Sven Co-op.)
 
 * Other games follow the same instruction.
 
