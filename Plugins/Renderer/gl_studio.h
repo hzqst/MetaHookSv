@@ -22,6 +22,8 @@ typedef struct
 	int r_celshade_midpoint;
 	int r_celshade_softness;
 	int r_celshade_shadow_color;
+	int r_celshade_head_offset;
+	int r_celshade_lightdir_adjust;
 	int r_rimlight_power;
 	int r_rimlight_smooth;
 	int r_rimlight_smooth2;
@@ -143,6 +145,8 @@ typedef struct studio_celshade_control_s
 	StudioConVar celshade_midpoint;
 	StudioConVar celshade_softness;
 	StudioConVar celshade_shadow_color;
+	StudioConVar celshade_head_offset;
+	StudioConVar celshade_lightdir_adjust;
 	StudioConVar outline_size;
 	StudioConVar outline_dark;
 	StudioConVar rimlight_power;
@@ -387,3 +391,4 @@ extern r_studio_interface_t **gpStudioInterface;
 #define STUDIO_INVERT_NORMAL_ENABLED			0x100000000ull
 #define STUDIO_NORMALTEXTURE_ENABLED			0x200000000ull
 #define STUDIO_SPECULARTEXTURE_ENABLED			0x400000000ull
+#define STUDIO_DEBUG_ENABLED					0x800000000ull

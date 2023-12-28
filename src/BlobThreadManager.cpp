@@ -215,8 +215,23 @@ BOOL WINAPI BlobCloseHandle(HANDLE hObject)
 
 BOOL WINAPI BlobTerminateThread(HANDLE hThread,	DWORD  dwExitCode)
 {
-	if (WAIT_OBJECT_0 == WaitForSingleObject(hThread, INFINITE))
+	auto wait = WaitForSingleObject(hThread, 1000);
+	if (WAIT_OBJECT_0 == wait)
 	{
+		BlobEnterCritSection();
+
+		bool bFoundAlive = BlobFindAndRemoveAliveThread(hThread);
+
+		CloseHandle(hThread);
+
+		BlobLeaveCritSection();
+
+		return TRUE;
+	}
+	else if (WAIT_TIMEOUT == wait)
+	{
+		g_pfnTerminateThread(hThread, dwExitCode);
+
 		BlobEnterCritSection();
 
 		bool bFoundAlive = BlobFindAndRemoveAliveThread(hThread);

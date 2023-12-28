@@ -13,6 +13,8 @@ layout(binding = 6) uniform usampler2D stencilTex;
 uniform float r_celshade_midpoint;
 uniform float r_celshade_softness;
 uniform vec3 r_celshade_shadow_color;
+uniform vec3 r_celshade_head_offset;
+uniform vec2 celshade_lightdir_adjust;
 uniform float r_rimlight_power;
 uniform float r_rimlight_smooth;
 uniform vec2 r_rimlight_smooth2;
@@ -36,9 +38,18 @@ in vec3 v_normal;
 in vec2 v_texcoord;
 in vec4 v_projpos;
 
-#if defined(STUDIO_NF_CELSHADE)
-in mat3 v_rotmatrix;
-//in mat3 v_invrotmatrix;
+#if defined(STUDIO_NF_CELSHADE_FACE)
+
+	in vec3 v_headfwd;
+	in vec3 v_headup;
+	in vec3 v_headorigin;
+
+	#if defined(STUDIO_DEBUG_ENABLED)
+
+		in vec4 v_headorigin_proj;
+
+	#endif
+
 #endif
 
 layout(location = 0) out vec4 out_Diffuse;
@@ -194,6 +205,13 @@ vec3 R_StudioLightingLinear(vec3 vWorldPos, vec3 vNormal, float specularMask)
 	return color;
 }
 
+vec3 ProjectVectorOntoPlane(vec3 v, vec3 normal) {
+
+    vec3 projectionOntoNormal = dot(v, normal) * normal;
+    vec3 projectionOntoPlane = v - projectionOntoNormal;
+    return normalize(projectionOntoPlane);
+}
+
 #if defined(STUDIO_NF_CELSHADE)
 
 vec3 ShiftTangent(vec3 T, vec3 N, float uvX, vec4 noise)
@@ -209,38 +227,9 @@ float StrandSpecular(vec3 T, vec3 H, float exponent)
     return dirAtten * pow(sinTH, exponent);
 }
 
-vec3 ProjectVectorOntoPlane(vec3 v, vec3 normal) {
-    float dotProduct = dot(v, normal);
-    vec3 projectionOntoNormal = dotProduct * normal;
-    vec3 projectionOntoPlane = v - projectionOntoNormal;
-    return normalize(projectionOntoPlane);
-}
-
-vec3 ExtractUpVector(mat3 rotationMatrix) {
-    return rotationMatrix[0];
-}
-
-vec3 ExtractForwardVector(mat3 rotationMatrix) {
-    return rotationMatrix[1];
-}
-
-vec3 ExtractRightVector(mat3 rotationMatrix) {
-    return -rotationMatrix[2];
-}
-
-mat3 ExtractRotationMatrix(mat4 transform) {
-    return mat3(transform[0].xyz, transform[1].xyz, transform[2].xyz);
-}
-
 vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specularMask)
 {
 	vec3 N = normalWS;
-
-	#if defined(STUDIO_NF_DOUBLE_FACE)
-		if (!gl_FrontFacing) {
-			N = N * -1.0;
-		}
-	#endif
 
     vec3 L = lightdirWS;
 	vec3 V = normalize(v_worldpos.xyz - SceneUBO.viewpos.xyz);
@@ -248,50 +237,31 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 	vec3 BiT = cross(N, UP);
 	vec3 T = cross(N, BiT);
 
-#if 1
-
 	#if defined(STUDIO_NF_CELSHADE_FACE)
-		L.z *= 0.0001;
-	#else
-		L.z *= 0.01;
-	#endif
+
+		vec3 vecForward = v_headfwd;
+		vec3 vecUp = v_headup;
+
+		L.z *= celshade_lightdir_adjust.y;
 
 		L = normalize(L);
 
-	#if defined(STUDIO_NF_CELSHADE_FACE)
-		vec3 vecForward = ExtractForwardVector(v_rotmatrix);
-		vec3 vecRight = ExtractRightVector(v_rotmatrix);
-		vec3 vecUp = ExtractUpVector(v_rotmatrix);
+		float flFaceCosine = abs(vecForward.z);
+		flFaceCosine = pow(flFaceCosine, 10.0);
 
-		L = ProjectVectorOntoPlane(L, vecUp);
-		
-		vec3 L2 = normalize(L);
+		//Check the direction
+		float flFaceDot = dot(vecForward, -lightdirWS);
 
-		float flFaceUp = abs(vecForward.z);
-		flFaceUp = pow(flFaceUp, 10.0);
+		//Use vecForward when flFaceCosine getting close to 1 or -1
+		L = mix(L, vecForward * sign(flFaceDot), flFaceCosine);
 
-		float flFaceDot = dot(vecForward, lightdirWS);
-		float flFaceMix = step(0.0, flFaceDot) * 2.0 - 1.0;
-
-		vec3 vecFaceLightWS = vecForward * flFaceMix;
-
-		L = mix(L2, vecFaceLightWS, flFaceUp);
-
-	#endif
-
-#endif
-
-#if 0
-
-	#if defined(STUDIO_NF_CELSHADE_FACE)
-		L.z = 0;
 	#else
-		L.z *= 0.01;
-	#endif
+
+		L.z *= celshade_lightdir_adjust.x;
 
 		L = normalize(L);
 
-#endif
+	#endif
 
     float NoL = dot(-N,L);
 
@@ -423,7 +393,45 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 
 #endif
 
-vec3 R_GenerateNormal()
+#if defined(STUDIO_NF_CELSHADE_FACE) && defined(STUDIO_DEBUG_ENABLED) 
+
+vec4 R_RenderDebugPoint(vec4 baseColor)
+{ 
+	// Convert to normalized device coordinates (NDC) by dividing by the w component
+    vec3 point_ndc = v_headorigin_proj.xyz / v_headorigin_proj.w;
+    vec3 vertex_ndc = v_projpos.xyz / v_projpos.w;
+
+	point_ndc.x = point_ndc.x * SceneUBO.viewport.x / SceneUBO.viewport.y;
+	vertex_ndc.x = vertex_ndc.x * SceneUBO.viewport.x / SceneUBO.viewport.y;
+
+	if(distance(point_ndc.xy, vertex_ndc.xy) < 0.01)
+	{
+		return vec4(1.0, 0.0, 0.0, 1.0);
+	}
+
+	return baseColor;
+}
+
+#endif
+
+vec3 R_GenerateSimplifiedNormal()
+{
+	vec3 vNormal = normalize(v_normal.xyz);
+
+	#if defined(STUDIO_NF_DOUBLE_FACE)
+		if (!gl_FrontFacing) {
+			vNormal = vNormal * -1.0;
+		}
+	#endif
+
+	#if defined(INVERT_NORMAL_ENABLED)
+		vNormal = vNormal * -1.0;
+	#endif
+
+	return vNormal;
+}
+
+vec3 R_GenerateAdjustedNormal(vec3 vWorldPos, float flNormalMask)
 {
 #if defined(NORMALTEXTURE_ENABLED)
 
@@ -446,7 +454,20 @@ vec3 R_GenerateNormal()
 		vNormal = vNormal * -1.0;
 	#endif
 
-	
+	#if defined(STUDIO_NF_CELSHADE)
+
+		#if defined(STUDIO_NF_CELSHADE_FACE)
+
+			vec3 vSphereizedNormal = vWorldPos - v_headorigin;
+			vSphereizedNormal = normalize(vSphereizedNormal);
+
+			vNormal = mix(vNormal, vSphereizedNormal, flNormalMask);
+
+		#endif
+
+	#endif
+
+	return vNormal;
 }
 
 void main(void)
@@ -455,11 +476,13 @@ void main(void)
 
 	vec3 vWorldPos = v_worldpos.xyz;
 
+	vec3 vSimpleNormal = R_GenerateSimplifiedNormal();
+
 	vec4 specularColor = vec4(0.0);
 
-	vNormal = R_GenerateNormal(vNormal);
+	float flNormalMask = 0.0;
 
-	ClipPlaneTest(v_worldpos.xyz, vNormal);
+	ClipPlaneTest(v_worldpos.xyz, vSimpleNormal);
 
 	vec2 texcoord = v_texcoord;
 
@@ -475,9 +498,23 @@ void main(void)
 	#if defined(SPECULARTEXTURE_ENABLED)
 
 		vec2 specularTexCoord = vec2(v_texcoord.x, v_texcoord.y);
-		specularColor.xy = texture(specularTex, specularTexCoord).xy;
+		vec4 rawSpecularColor = texture(specularTex, specularTexCoord);
+		specularColor.xy = rawSpecularColor.xy;
+		flNormalMask = rawSpecularColor.z;
 
 	#endif
+
+	//Some meshes has STUDIO_NF_CELSHADE_FACE but has no STUDIO_NF_CELSHADE, why ???
+
+	#if defined(STUDIO_DEBUG_ENABLED)  && defined(STUDIO_NF_CELSHADE_FACE)
+
+		diffuseColor.b = flNormalMask;
+
+		diffuseColor = R_RenderDebugPoint(diffuseColor);
+
+	#endif
+
+	vec3 vNormal = R_GenerateAdjustedNormal(vWorldPos, flNormalMask);
 
 	#if defined(ADDITIVE_RENDER_MODE_ENABLED)
 

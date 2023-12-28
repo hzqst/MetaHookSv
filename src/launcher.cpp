@@ -205,8 +205,15 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	if (!stricmp(szExeName, "svencoop.exe") && CommandLine()->CheckParm("-game") == NULL)
 	{
 		CommandLine()->AppendParm("-game", "svencoop");
+
+		//Force 32bpp
 		CommandLine()->AppendParm("-32bpp", "");
+
+		//Force OpenGL
 		CommandLine()->AppendParm("-gl", "");
+
+		//Completely remove netthread support since it's buggy and the netthread can not be terminated safely.
+		CommandLine()->AppendParm("-nonetthread", "");
 	}
 	if (stricmp(szExeName, "hl.exe") && CommandLine()->CheckParm("-game") == NULL)
 	{

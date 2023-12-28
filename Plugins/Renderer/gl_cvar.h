@@ -37,6 +37,7 @@ public:
 	float m_override_value[4];
 };
 
+#define ConVar_None 0
 #define ConVar_Color255 1
 
 MapConVar *R_RegisterMapCvar(char *cvar_name, char *default_value, int cvar_flags, int numargs = 1, int flags = 0);

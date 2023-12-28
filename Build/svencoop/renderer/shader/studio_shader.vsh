@@ -2,6 +2,7 @@
 
 #include "common.h"
 
+uniform vec3 r_celshade_head_offset;
 uniform vec2 r_hair_shadow_offset;
 uniform vec2 r_uvscale;
 
@@ -15,9 +16,18 @@ out vec3 v_normal;
 out vec2 v_texcoord;
 out vec4 v_projpos;
 
-#if defined(STUDIO_NF_CELSHADE)
-out mat3 v_rotmatrix;
-//out mat3 v_invrotmatrix;
+#if defined(STUDIO_NF_CELSHADE_FACE)
+
+	out vec3 v_headfwd;
+	out vec3 v_headup;
+	out vec3 v_headorigin;
+
+	#if defined(STUDIO_DEBUG_ENABLED)
+
+		out vec4 v_headorigin_proj;
+
+	#endif
+	
 #endif
 
 void main(void)
@@ -115,14 +125,35 @@ void main(void)
 	outvert = outvert + vecLight * r_hair_shadow_offset.x + vec3(0.0, 0.0, r_hair_shadow_offset.y);
 #endif
 
-#if defined(STUDIO_NF_CELSHADE)
+	#if defined(STUDIO_NF_CELSHADE_FACE)
 
-	v_rotmatrix = mat3(
-    vec3(vertbone_matrix[0][0], vertbone_matrix[1][0], vertbone_matrix[2][0]),
-    vec3(vertbone_matrix[0][1], vertbone_matrix[1][1], vertbone_matrix[2][1]),
-    vec3(vertbone_matrix[0][2], vertbone_matrix[1][2], vertbone_matrix[2][2]));
-	
-#endif
+		v_headfwd = vec3(
+			dot(vec3(0.0, 1.0, 0.0), vertbone_matrix_0),
+			dot(vec3(0.0, 1.0, 0.0), vertbone_matrix_1),
+			dot(vec3(0.0, 1.0, 0.0), vertbone_matrix_2)
+		);
+		v_headfwd = normalize(v_headfwd);
+
+		v_headup = vec3(
+			dot(vec3(1.0, 0.0, 0.0), vertbone_matrix_0),
+			dot(vec3(1.0, 0.0, 0.0), vertbone_matrix_1),
+			dot(vec3(1.0, 0.0, 0.0), vertbone_matrix_2)
+		);
+		v_headup = normalize(v_headup);
+
+		v_headorigin = vec3(
+			dot(r_celshade_head_offset, vertbone_matrix_0) + vertbone_matrix[0][3],
+			dot(r_celshade_head_offset, vertbone_matrix_1) + vertbone_matrix[1][3],
+			dot(r_celshade_head_offset, vertbone_matrix_2) + vertbone_matrix[2][3]
+		);
+
+		#if defined(STUDIO_DEBUG_ENABLED)
+
+			v_headorigin_proj = SceneUBO.projMatrix * SceneUBO.viewMatrix * vec4(v_headorigin, 1.0);
+
+		#endif
+
+	#endif
 
 	gl_Position = SceneUBO.projMatrix * SceneUBO.viewMatrix * vec4(outvert, 1.0);
 	v_projpos = gl_Position;

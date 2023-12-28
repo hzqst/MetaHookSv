@@ -76,10 +76,14 @@ int r_studio_polys = 0;
 
 //Cvars
 
+cvar_t* r_studio_debug = NULL;
+
 cvar_t* r_studio_celshade = NULL;
 cvar_t* r_studio_celshade_midpoint = NULL;
 cvar_t* r_studio_celshade_softness = NULL;
 cvar_t* r_studio_celshade_shadow_color = NULL;
+cvar_t* r_studio_celshade_head_offset = NULL;
+cvar_t* r_studio_celshade_lightdir_adjust = NULL;
 
 cvar_t* r_studio_outline = NULL;
 cvar_t* r_studio_outline_size = NULL;
@@ -375,31 +379,33 @@ studio_vbo_t* R_PrepareStudioVBO(studiohdr_t* studiohdr)
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(studio_ubo_t), NULL, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-	VBOData->celshade_control.celshade_midpoint.Init(r_studio_celshade_midpoint, 1, 0);
-	VBOData->celshade_control.celshade_softness.Init(r_studio_celshade_softness, 1, 0);
+	VBOData->celshade_control.celshade_midpoint.Init(r_studio_celshade_midpoint, 1, ConVar_None);
+	VBOData->celshade_control.celshade_softness.Init(r_studio_celshade_softness, 1, ConVar_None);
 	VBOData->celshade_control.celshade_shadow_color.Init(r_studio_celshade_shadow_color, 3, ConVar_Color255);
+	VBOData->celshade_control.celshade_head_offset.Init(r_studio_celshade_head_offset, 3, ConVar_None);
+	VBOData->celshade_control.celshade_lightdir_adjust.Init(r_studio_celshade_lightdir_adjust, 2, ConVar_None);
 
-	VBOData->celshade_control.outline_size.Init(r_studio_outline_size, 1, 0);
-	VBOData->celshade_control.outline_dark.Init(r_studio_outline_dark, 1, 0);
+	VBOData->celshade_control.outline_size.Init(r_studio_outline_size, 1, ConVar_None);
+	VBOData->celshade_control.outline_dark.Init(r_studio_outline_dark, 1, ConVar_None);
 
-	VBOData->celshade_control.rimlight_power.Init(r_studio_rimlight_power, 1, 0);
-	VBOData->celshade_control.rimlight_smooth.Init(r_studio_rimlight_smooth, 1, 0);
-	VBOData->celshade_control.rimlight_smooth2.Init(r_studio_rimlight_smooth2, 2, 0);
+	VBOData->celshade_control.rimlight_power.Init(r_studio_rimlight_power, 1, ConVar_None);
+	VBOData->celshade_control.rimlight_smooth.Init(r_studio_rimlight_smooth, 1, ConVar_None);
+	VBOData->celshade_control.rimlight_smooth2.Init(r_studio_rimlight_smooth2, 2, ConVar_None);
 	VBOData->celshade_control.rimlight_color.Init(r_studio_rimlight_color, 3, ConVar_Color255);
 
-	VBOData->celshade_control.rimdark_power.Init(r_studio_rimdark_power, 1, 0);
-	VBOData->celshade_control.rimdark_smooth.Init(r_studio_rimdark_smooth, 1, 0);
-	VBOData->celshade_control.rimdark_smooth2.Init(r_studio_rimdark_smooth2, 2, 0);
+	VBOData->celshade_control.rimdark_power.Init(r_studio_rimdark_power, 1, ConVar_None);
+	VBOData->celshade_control.rimdark_smooth.Init(r_studio_rimdark_smooth, 1, ConVar_None);
+	VBOData->celshade_control.rimdark_smooth2.Init(r_studio_rimdark_smooth2, 2, ConVar_None);
 	VBOData->celshade_control.rimdark_color.Init(r_studio_rimdark_color, 3, ConVar_Color255);
 
-	VBOData->celshade_control.hair_specular_exp.Init(r_studio_hair_specular_exp, 1, 0);
-	VBOData->celshade_control.hair_specular_noise.Init(r_studio_hair_specular_noise, 4, 0);
-	VBOData->celshade_control.hair_specular_intensity.Init(r_studio_hair_specular_intensity, 3, 0);
-	VBOData->celshade_control.hair_specular_exp2.Init(r_studio_hair_specular_exp2, 1, 0);
-	VBOData->celshade_control.hair_specular_noise2.Init(r_studio_hair_specular_noise2, 4, 0);
-	VBOData->celshade_control.hair_specular_intensity2.Init(r_studio_hair_specular_intensity2, 3, 0);
-	VBOData->celshade_control.hair_specular_smooth.Init(r_studio_hair_specular_smooth, 2, 0);
-	VBOData->celshade_control.hair_shadow_offset.Init(r_studio_hair_shadow_offset, 2, 0);
+	VBOData->celshade_control.hair_specular_exp.Init(r_studio_hair_specular_exp, 1, ConVar_None);
+	VBOData->celshade_control.hair_specular_noise.Init(r_studio_hair_specular_noise, 4, ConVar_None);
+	VBOData->celshade_control.hair_specular_intensity.Init(r_studio_hair_specular_intensity, 3, ConVar_None);
+	VBOData->celshade_control.hair_specular_exp2.Init(r_studio_hair_specular_exp2, 1, ConVar_None);
+	VBOData->celshade_control.hair_specular_noise2.Init(r_studio_hair_specular_noise2, 4, ConVar_None);
+	VBOData->celshade_control.hair_specular_intensity2.Init(r_studio_hair_specular_intensity2, 3, ConVar_None);
+	VBOData->celshade_control.hair_specular_smooth.Init(r_studio_hair_specular_smooth, 2, ConVar_None);
+	VBOData->celshade_control.hair_shadow_offset.Init(r_studio_hair_shadow_offset, 2, ConVar_None);
 
 	return VBOData;
 }
@@ -506,6 +512,12 @@ void R_StudioTextureAddReferences(model_t* mod, studiohdr_t* studiohdr, std::set
 
 void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 {
+	//Fix bogus state
+	if ((state & STUDIO_NF_CELSHADE_EXTENSIONBITS) && !(state & STUDIO_NF_CELSHADE))
+	{
+		state |= STUDIO_NF_CELSHADE;
+	}
+
 	studio_program_t prog = { 0 };
 
 	auto itor = g_StudioProgramTable.find(state);
@@ -600,6 +612,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_SPECULARTEXTURE_ENABLED)
 			defs << "#define SPECULARTEXTURE_ENABLED\n";
 
+		if (state & STUDIO_DEBUG_ENABLED)
+			defs << "#define STUDIO_DEBUG_ENABLED\n";
+
 		if (glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define NV_BINDLESS_ENABLED\n";
 
@@ -614,6 +629,8 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			SHADER_UNIFORM(prog, r_celshade_midpoint, "r_celshade_midpoint");
 			SHADER_UNIFORM(prog, r_celshade_softness, "r_celshade_softness");
 			SHADER_UNIFORM(prog, r_celshade_shadow_color, "r_celshade_shadow_color");
+			SHADER_UNIFORM(prog, r_celshade_head_offset, "r_celshade_head_offset");
+			SHADER_UNIFORM(prog, r_celshade_lightdir_adjust, "r_celshade_lightdir_adjust");
 			SHADER_UNIFORM(prog, r_rimlight_power, "r_rimlight_power");
 			SHADER_UNIFORM(prog, r_rimlight_smooth, "r_rimlight_smooth");
 			SHADER_UNIFORM(prog, r_rimlight_smooth2, "r_rimlight_smooth2");
@@ -688,6 +705,38 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 				vec3_t color = { 0 };
 				R_ParseCvarAsColor3(r_studio_celshade_shadow_color, color);
 				glUniform3f(prog.r_celshade_shadow_color, color[0], color[1], color[2]);
+			}
+		}
+
+		if (prog.r_celshade_head_offset != -1)
+		{
+			if (g_CurrentVBOCache)
+			{
+				vec3_t offset = { 0 };
+				g_CurrentVBOCache->celshade_control.celshade_head_offset.GetValues(offset);
+				glUniform3f(prog.r_celshade_head_offset, offset[0], offset[1], offset[2]);
+			}
+			else
+			{
+				vec3_t offset = { 0 };
+				R_ParseCvarAsVector3(r_studio_celshade_head_offset, offset);
+				glUniform3f(prog.r_celshade_head_offset, offset[0], offset[1], offset[2]);
+			}
+		}
+
+		if (prog.r_celshade_lightdir_adjust != -1)
+		{
+			if (g_CurrentVBOCache)
+			{
+				vec2_t value = { 0 };
+				g_CurrentVBOCache->celshade_control.celshade_lightdir_adjust.GetValues(value);
+				glUniform2f(prog.r_celshade_lightdir_adjust, value[0], value[1]);
+			}
+			else
+			{
+				vec2_t value = { 0 };
+				R_ParseCvarAsVector2(r_studio_celshade_lightdir_adjust, value);
+				glUniform2f(prog.r_celshade_lightdir_adjust, value[0], value[1]);
 			}
 		}
 
@@ -963,6 +1012,7 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_INVERT_NORMAL_ENABLED			,"STUDIO_INVERT_NORMAL_ENABLED"				},
 { STUDIO_NORMALTEXTURE_ENABLED			,"STUDIO_NORMALTEXTURE_ENABLED"				},
 { STUDIO_SPECULARTEXTURE_ENABLED		,"STUDIO_SPECULARTEXTURE_ENABLED"			},
+{ STUDIO_DEBUG_ENABLED					,"STUDIO_DEBUG_ENABLED"			},
 
 { STUDIO_NF_FLATSHADE					,"STUDIO_NF_FLATSHADE"		},
 { STUDIO_NF_MASKED						,"STUDIO_NF_MASKED"			},
@@ -1006,10 +1056,14 @@ void R_ShutdownStudio(void)
 
 void R_InitStudio(void)
 {
+	r_studio_debug = gEngfuncs.pfnRegisterVariable("r_studio_debug", "0", FCVAR_CLIENTDLL);
+
 	r_studio_celshade = gEngfuncs.pfnRegisterVariable("r_studio_celshade", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_celshade_midpoint = gEngfuncs.pfnRegisterVariable("r_studio_celshade_midpoint", "-0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_celshade_softness = gEngfuncs.pfnRegisterVariable("r_studio_celshade_softness", "0.05", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_celshade_shadow_color = gEngfuncs.pfnRegisterVariable("r_studio_celshade_shadow_color", "160 150 150", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_celshade_head_offset = gEngfuncs.pfnRegisterVariable("r_studio_celshade_head_offset", "3.5 2 0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
+	r_studio_celshade_lightdir_adjust = gEngfuncs.pfnRegisterVariable("r_studio_celshade_lightdir_adjust", "0.01 0.001", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_studio_outline = gEngfuncs.pfnRegisterVariable("r_studio_outline", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_outline_size = gEngfuncs.pfnRegisterVariable("r_studio_outline_size", "3.0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -1691,9 +1745,9 @@ void R_StudioDrawVBOMesh_DrawPass(
 	{
 		StudioProgramState |= (STUDIO_ADDITIVE_BLEND_ENABLED | STUDIO_GLOW_SHELL_ENABLED | STUDIO_NF_CHROME);
 
-		if (StudioProgramState & STUDIO_NF_CELSHADE)
+		if (StudioProgramState & STUDIO_NF_CELSHADE_ALLBITS)
 		{
-			StudioProgramState &= ~STUDIO_NF_CELSHADE;
+			StudioProgramState &= ~STUDIO_NF_CELSHADE_ALLBITS;
 			StudioProgramState |= STUDIO_NF_FLATSHADE;
 		}
 	}
@@ -1930,13 +1984,6 @@ void R_StudioDrawVBOMesh_DrawPass(
 		glDisable(GL_CULL_FACE);
 	}
 
-	/*else if (R_IsFlippedViewModel())
-	{
-		glDisable(GL_CULL_FACE);
-
-		StudioProgramState |= STUDIO_INVERT_NORMAL_ENABLED;
-	}*/
-
 	if (StudioProgramState & STUDIO_SHADOW_CASTER_ENABLED)
 	{
 		//client.dll!StudioRenderFinal enables GL_BLEND and this will mess everything up.
@@ -1980,6 +2027,11 @@ void R_StudioDrawVBOMesh_DrawPass(
 			glDisable(GL_BLEND);
 			glDepthMask(GL_TRUE);
 		}
+	}
+
+	if (r_studio_debug->value > 0)
+	{
+		StudioProgramState |= STUDIO_DEBUG_ENABLED;
 	}
 
 	studio_program_t prog = { 0 };
@@ -2871,17 +2923,14 @@ void R_StudioLoadExternalFile_TextureFlags(bspentity_t* ent, studiohdr_t* studio
 	}
 	else if (value && !strcmp(value, "STUDIO_NF_CELSHADE_FACE"))
 	{
-		ptexture->flags |= STUDIO_NF_CELSHADE;
 		ptexture->flags |= STUDIO_NF_CELSHADE_FACE;
 	}
 	else if (value && !strcmp(value, "STUDIO_NF_CELSHADE_HAIR"))
 	{
-		ptexture->flags |= STUDIO_NF_CELSHADE;
 		ptexture->flags |= STUDIO_NF_CELSHADE_HAIR;
 	}
 	else if (value && !strcmp(value, "STUDIO_NF_CELSHADE_HAIR_H"))
 	{
-		ptexture->flags |= STUDIO_NF_CELSHADE;
 		ptexture->flags |= STUDIO_NF_CELSHADE_HAIR_H;
 	}
 	else if (value && !strcmp(value, "STUDIO_NF_DOUBLE_FACE"))
@@ -3102,6 +3151,38 @@ void R_StudioLoadExternalFile_Celshade(bspentity_t* ent, studiohdr_t* studiohdr,
 			else
 			{
 				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"celshade_shadow_color\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		auto celshade_head_offset = ValueForKey(ent, "celshade_head_offset");
+		if (celshade_head_offset && celshade_head_offset[0])
+		{
+			if (R_ParseStringAsVector3(celshade_head_offset, VBOData->celshade_control.celshade_head_offset.m_override_value))
+			{
+				VBOData->celshade_control.celshade_head_offset.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"celshade_head_offset\" in entity \"studio_celshade_control\"\n");
+			}
+		}
+	}
+
+	if (1)
+	{
+		auto celshade_lightdir_adjust = ValueForKey(ent, "celshade_lightdir_adjust");
+		if (celshade_lightdir_adjust && celshade_lightdir_adjust[0])
+		{
+			if (R_ParseStringAsVector2(celshade_lightdir_adjust, VBOData->celshade_control.celshade_lightdir_adjust.m_override_value))
+			{
+				VBOData->celshade_control.celshade_lightdir_adjust.m_is_override = true;
+			}
+			else
+			{
+				gEngfuncs.Con_Printf("R_StudioLoadExternalFile: Failed to parse \"celshade_lightdir_adjust\" in entity \"studio_celshade_control\"\n");
 			}
 		}
 	}
