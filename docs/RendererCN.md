@@ -440,7 +440,7 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 1. 其会往拥有`STUDIO_NF_CELSHADE_FACE`标记的表面上投射阴影。具体参数见`r_studio_hair_shadow_offset`。
 
-2. 其表面会产生Kajiya-Kay Shading算法计算出的高光，具体参数见`r_studio_hair_specular_[...]`。
+2. 其表面会产生Kajiya-Kay Shading算法计算出的高光，具体参数见`r_studio_hair_specular_[...]`。该高光在头发加载了高光贴图的情况下，仅会在高光贴图的红色通道上有颜色的区域上显示头发高光，并且强度按红色通道强度进行插值。如果头发没有加载高光贴图则无显示区域限制。
 
 ### 控制台参数
 
