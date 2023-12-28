@@ -5,6 +5,16 @@
 }
 {
     "classname" "studio_texture"
+    "basetexture" "Yuni_Bottom_al.bmp"
+    "flags" "STUDIO_NF_DOUBLE_FACE"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "Yuni_Body_al.bmp"
+    "flags" "STUDIO_NF_DOUBLE_FACE"
+}
+{
+    "classname" "studio_texture"
     "basetexture" "Yuni_SkinA_al.bmp"
     "flags" "STUDIO_NF_CELSHADE_FACE"
     "speculartexture" "models/player/pcr_yuni/Yuni_SkinA_al_specular.png"
