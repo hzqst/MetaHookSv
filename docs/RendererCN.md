@@ -422,6 +422,8 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 如果键值对不存在，则使用对应的控制台参数。
 
+被`EF_OUTLINE`标记的模型会产生描边，具体参数见`r_studio_outline_size`和`r_studio_outline_dark`。
+
 被`STUDIO_NF_CELSHADE`标记的表面会有一些特殊处理：
 
 1. 光照和阴影使用特殊的CelShade算法进行计算
