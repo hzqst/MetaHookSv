@@ -381,6 +381,8 @@ Cvars for celshade will be overrided if sepcified key-values are filled in `[mod
     "celshade_midpoint" "-0.1"
     "celshade_softness" "0.05"
     "celshade_shadow_color" "160 150 150"
+    "celshade_head_offset" "3.5 2 0"
+    "celshade_lightdir_adjust" "0.01 0.001"
     "outline_size" "3.0"
     "outline_dark" "0.5"
     "rimlight_power" "5.0"
@@ -404,11 +406,17 @@ Cvars for celshade will be overrided if sepcified key-values are filled in `[mod
 
 ### Console vars
 
+`r_studio_debug` set to 1 to display debug draw for the studio models.
+
 `r_studio_celshade` set to 1 to enable Outline / Celshade / RimLight / HairShadow / HairSpecular effects, set to 0 to disable them all.
 
 `r_studio_celshade_midpoint` and `r_studio_celshade_softness` control the softness of celshade shadow.
 
-`r_studio_celshade_shadow_color` control the color of celshade shadow.
+`r_studio_celshade_shadow_color` controls the color of celshade shadow.
+
+`r_studio_celshade_head_offset` controls the head's origin offset of from it's parent bone.
+
+`r_studio_celshade_lightdir_adjust` scales the Z-axis of the light vector that being used to calculate the celshade lighting. The 1st value works for body-celshade and the 2nd value works for face-celshade.
 
 `r_studio_outline_size` controls the size of outline.
 

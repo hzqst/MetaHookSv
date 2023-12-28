@@ -304,6 +304,12 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 }
 ```
 
+高光贴图的红色通道会被用于表示高光强度。
+
+绿色通道用于表示SSR（屏幕空间反射强度），一般情况下不使用绿色通道。
+
+蓝色通道用于表示球面化法线的插值比例，越接近1插值比例越高，法线越接近于球面化。（需要拥有`STUDIO_NF_CELSHADE_FACE`属性才生效）
+
 以下位置的文件会被用作高光贴图:
 
 `(game_directory)\specular_texture.dds`
@@ -416,6 +422,24 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 如果键值对不存在，则使用对应的控制台参数。
 
+被`STUDIO_NF_CELSHADE`标记的表面会有一些特殊处理：
+
+1. 光照和阴影使用特殊的CelShade算法进行计算
+
+2. 光照计算所使用的光线方向的Z轴会被压缩为更小的值，来达到接近水平照射的效果（具体压缩比例见`r_studio_celshade_lightdir_adjust`）
+
+被`STUDIO_NF_CELSHADE_FACE`标记的表面除了包含`STUDIO_NF_CELSHADE`的效果外，还有一些特殊处理：
+
+1. 根据所使用高光贴图的蓝色通道的强度，其法线会被替换为球面化法线，蓝色通道越接近1插值程度越高。蓝色通道为0或者无高光贴图时则使用模型原生法线（法线贴图仍生效）。
+
+2. 仅在该种类型的表面上才会投射来自头发的阴影。具体参数见`r_studio_hair_shadow_offset`。
+
+被`STUDIO_NF_CELSHADE_HAIR`标记的表面除了包含`STUDIO_NF_CELSHADE`的效果外，还有一些特殊处理：
+
+1. 其会往拥有`STUDIO_NF_CELSHADE_FACE`标记的表面上投射阴影。具体参数见`r_studio_hair_shadow_offset`。
+
+2. 其表面会产生Kajiya-Kay Shading算法计算出的高光，具体参数见`r_studio_hair_specular_[...]`。
+
 ### 控制台参数
 
 `r_studio_celshade` 设为 1 启用卡通渲染 / 描边  / 边缘光 / 刘海阴影 / 头发高光。
@@ -423,6 +447,10 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 `r_studio_celshade_midpoint` 和 `r_studio_celshade_softness` 控制卡通渲染阴影的柔软程度。
 
 `r_studio_celshade_shadow_color` 控制卡通渲染阴影的颜色。
+
+`r_studio_celshade_head_offset` 控制人物头部相对父骨骼的坐标偏移
+
+`r_studio_celshade_lightdir_adjust` 用于缩放卡通渲染光照处理环节时使用的光照的方向向量的Z轴值（即从z轴方向上对光线方向进行压缩，使得其趋近于水平照射）。第一个值作用于除面部外的其他部位，第二个值作用于面部。
 
 `r_studio_outline_size` 控制描边的大小。
 
