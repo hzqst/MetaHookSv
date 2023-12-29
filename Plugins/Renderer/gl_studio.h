@@ -18,7 +18,8 @@
 typedef struct
 {
 	int program;
-	//celshade
+	int r_base_specular;
+	int r_celshade_specular;
 	int r_celshade_midpoint;
 	int r_celshade_softness;
 	int r_celshade_shadow_color;
@@ -42,7 +43,6 @@ typedef struct
 	int r_hair_specular_smooth;
 	int r_hair_shadow_offset;
 	int r_uvscale;
-	//ShadowCaster
 	int entityPos;
 }studio_program_t;
 
@@ -142,6 +142,8 @@ typedef struct studio_vbo_material_s
 
 typedef struct studio_celshade_control_s
 {
+	StudioConVar base_specular;
+	StudioConVar celshade_specular;
 	StudioConVar celshade_midpoint;
 	StudioConVar celshade_softness;
 	StudioConVar celshade_shadow_color;
@@ -342,8 +344,8 @@ extern model_t *cl_shellchrome;
 extern int r_studio_drawcall;
 extern int r_studio_polys;
 
-extern MapConVar* r_studio_shade_specular;
-extern  MapConVar* r_studio_shade_specularpow;
+extern MapConVar* r_studio_base_specular;
+extern MapConVar* r_studio_celshade_specular;
 
 void R_StudioBoneCaches_StartFrame();
 studio_vbo_t *R_PrepareStudioVBO(studiohdr_t *studiohdr);
@@ -373,22 +375,22 @@ void  R_StudioRenderFinal(void);
 extern engine_studio_api_t IEngineStudio;
 extern r_studio_interface_t **gpStudioInterface;
 
-#define STUDIO_GBUFFER_ENABLED					0x20000ull
-#define STUDIO_LINEAR_FOG_ENABLED				0x40000ull
-#define STUDIO_EXP_FOG_ENABLED					0x80000ull
-#define STUDIO_EXP2_FOG_ENABLED					0x100000ull
-#define STUDIO_SHADOW_CASTER_ENABLED			0x200000ull
-#define STUDIO_GLOW_SHELL_ENABLED				0x400000ull
-#define STUDIO_OUTLINE_ENABLED					0x800000ull
-#define STUDIO_HAIR_SHADOW_ENABLED				0x1000000ull
-#define STUDIO_CLIP_WATER_ENABLED				0x2000000ull
-#define STUDIO_CLIP_ENABLED						0x4000000ull
-#define STUDIO_ALPHA_BLEND_ENABLED				0x8000000ull
-#define STUDIO_ADDITIVE_BLEND_ENABLED			0x10000000ull
-#define STUDIO_OIT_BLEND_ENABLED				0x20000000ull
-#define STUDIO_GAMMA_BLEND_ENABLED				0x40000000ull
-#define STUDIO_ADDITIVE_RENDER_MODE_ENABLED		0x80000000ull
-#define STUDIO_INVERT_NORMAL_ENABLED			0x100000000ull
-#define STUDIO_NORMALTEXTURE_ENABLED			0x200000000ull
-#define STUDIO_SPECULARTEXTURE_ENABLED			0x400000000ull
-#define STUDIO_DEBUG_ENABLED					0x800000000ull
+#define STUDIO_GBUFFER_ENABLED					0x40000ull
+#define STUDIO_LINEAR_FOG_ENABLED				0x80000ull
+#define STUDIO_EXP_FOG_ENABLED					0x100000ull
+#define STUDIO_EXP2_FOG_ENABLED					0x200000ull
+#define STUDIO_SHADOW_CASTER_ENABLED			0x400000ull
+#define STUDIO_GLOW_SHELL_ENABLED				0x800000ull
+#define STUDIO_OUTLINE_ENABLED					0x1000000ull
+#define STUDIO_HAIR_SHADOW_ENABLED				0x2000000ull
+#define STUDIO_CLIP_WATER_ENABLED				0x4000000ull
+#define STUDIO_CLIP_ENABLED						0x8000000ull
+#define STUDIO_ALPHA_BLEND_ENABLED				0x10000000ull
+#define STUDIO_ADDITIVE_BLEND_ENABLED			0x20000000ull
+#define STUDIO_OIT_BLEND_ENABLED				0x40000000ull
+#define STUDIO_GAMMA_BLEND_ENABLED				0x80000000ull
+#define STUDIO_ADDITIVE_RENDER_MODE_ENABLED		0x100000000ull
+#define STUDIO_INVERT_NORMAL_ENABLED			0x200000000ull
+#define STUDIO_NORMALTEXTURE_ENABLED			0x400000000ull
+#define STUDIO_SPECULARTEXTURE_ENABLED			0x800000000ull
+#define STUDIO_DEBUG_ENABLED					0x1000000000ull

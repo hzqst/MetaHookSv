@@ -104,16 +104,24 @@ void R_UseDFinalProgram(program_state_t state, dfinal_program_t *progOutput)
 		GL_UseProgram(prog.program);
 
 		if (prog.u_ssrRayStep != -1)
+		{
 			glUniform1f(prog.u_ssrRayStep, r_ssr_ray_step->GetValue());
+		}
 
 		if (prog.u_ssrIterCount != -1)
+		{
 			glUniform1i(prog.u_ssrIterCount, r_ssr_iter_count->GetValue());
+		}
 
 		if (prog.u_ssrDistanceBias != -1)
+		{
 			glUniform1f(prog.u_ssrDistanceBias, r_ssr_distance_bias->GetValue());
+		}
 
 		if (prog.u_ssrFade != -1)
+		{
 			glUniform2f(prog.u_ssrFade, r_ssr_fade->GetValues()[0], r_ssr_fade->GetValues()[1]);
+		}
 
 		if (progOutput)
 			*progOutput = prog;

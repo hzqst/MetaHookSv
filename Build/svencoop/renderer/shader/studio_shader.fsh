@@ -10,11 +10,13 @@ layout(binding = 6) uniform usampler2D stencilTex;
 
 /* celshade */
 
+uniform vec2 r_base_specular;
+uniform vec4 r_celshade_specular;
 uniform float r_celshade_midpoint;
 uniform float r_celshade_softness;
 uniform vec3 r_celshade_shadow_color;
 uniform vec3 r_celshade_head_offset;
-uniform vec2 celshade_lightdir_adjust;
+uniform vec2 r_celshade_lightdir_adjust;
 uniform float r_rimlight_power;
 uniform float r_rimlight_smooth;
 uniform vec2 r_rimlight_smooth2;
@@ -96,8 +98,192 @@ vec3 NormalMapping(mat3 TBN, vec2 baseTexcoord)
 
 #endif
 
-//The output is in Linear Space
-vec3 R_StudioLightingLinear(vec3 vWorldPos, vec3 vNormal, float specularMask)
+vec3 R_GetAdjustedLightDirection(vec3 vecLightDirection)
+{
+	vec3 vecAdjustedLightDirection = vecLightDirection;
+
+#if defined(STUDIO_NF_CELSHADE_FACE)
+
+		vecAdjustedLightDirection.z *= r_celshade_lightdir_adjust.y;
+
+#elif defined(STUDIO_NF_CELSHADE)
+
+		vecAdjustedLightDirection.z *= r_celshade_lightdir_adjust.x;
+
+#endif
+
+	return normalize(vecAdjustedLightDirection);
+}
+
+float R_StudioBaseLight_PhongSpecular(vec3 vWorldPos, vec3 vNormal, float specularMask)
+{
+	float illum = 0.0;
+
+	vec3 vecVertexToEye = normalize(SceneUBO.viewpos.xyz - vWorldPos.xyz);
+	vec3 vecAdjustedLight = R_GetAdjustedLightDirection(StudioUBO.r_plightvec.xyz);
+	vec3 vecLightReflect = normalize(reflect(vecAdjustedLight, vNormal.xyz));
+	float flSpecularFactor = dot(vecVertexToEye, vecLightReflect);
+
+	flSpecularFactor = clamp(flSpecularFactor, 0.0, 1.0);
+	flSpecularFactor = pow(flSpecularFactor, r_base_specular.y) * r_base_specular.x;
+
+	illum += StudioUBO.r_shadelight * flSpecularFactor * specularMask;
+
+	return illum;
+}
+
+float GetSteppedValue(float low, float high, float value) {
+    return mix(mix(0.0, value, step(low, value)), 1.0, step(high, value)) * value;
+}
+
+float R_StudioBaseLight_CelShadeSpecular(vec3 vWorldPos, vec3 vNormal, float specularMask)
+{
+	float illum = 0.0;
+
+	vec3 vecVertexToEye = normalize(SceneUBO.viewpos.xyz - vWorldPos.xyz);
+	vec3 vecAdjustedLight = R_GetAdjustedLightDirection(StudioUBO.r_plightvec.xyz);
+	vec3 vecLightReflect = normalize(reflect(vecAdjustedLight, vNormal.xyz));
+	float flSpecularFactor = dot(vecVertexToEye, vecLightReflect);
+
+	flSpecularFactor = clamp(flSpecularFactor, 0.0, 1.0);
+	flSpecularFactor = pow(flSpecularFactor, r_celshade_specular.y) * r_celshade_specular.x;
+
+	flSpecularFactor = GetSteppedValue(r_celshade_specular.z, r_celshade_specular.w, flSpecularFactor);
+	
+	illum += StudioUBO.r_shadelight * flSpecularFactor * specularMask;
+
+	return illum;
+}
+
+float R_StudioBaseLight_FlatShading(vec3 vWorldPos, vec3 vNormal, float specularMask)
+{
+	float illum = 0.0;
+
+	illum += StudioUBO.r_shadelight * 0.8;
+
+	//Layer 1 Specular
+	#if defined(SPECULARTEXTURE_ENABLED)
+
+		illum += R_StudioBaseLight_PhongSpecular(vWorldPos, vNormal, specularMask);
+
+	#endif
+
+	//Layer 2 Specular
+	#if defined(SPECULARTEXTURE_ENABLED) && defined(STUDIO_NF_CELSHADE)
+
+		illum += R_StudioBaseLight_CelShadeSpecular(vWorldPos, vNormal, specularMask);
+
+	#endif
+
+	return illum;
+}
+
+float R_StudioBaseLight_PhongShading(vec3 vWorldPos, vec3 vNormal, float specularMask)
+{
+	float illum = 0.0;
+	float lightcos = dot(vNormal.xyz, StudioUBO.r_plightvec.xyz);
+
+	if(SceneUBO.v_lambert < 1.0)
+	{
+		lightcos = (SceneUBO.v_lambert - lightcos) / (SceneUBO.v_lambert + 1.0); 
+		illum += StudioUBO.r_shadelight * max(lightcos, 0.0); 			
+	}
+	else
+	{
+		illum += StudioUBO.r_shadelight;
+		lightcos = (lightcos + SceneUBO.v_lambert - 1.0) / SceneUBO.v_lambert;
+		illum -= StudioUBO.r_shadelight * max(lightcos, 0.0);
+	}
+
+	//Layer 1 Specular
+	#if defined(SPECULARTEXTURE_ENABLED)
+
+		illum += R_StudioBaseLight_PhongSpecular(vWorldPos, vNormal, specularMask);
+
+	#endif
+
+	return illum;
+}
+
+vec3 R_StudioEntityLight_PhongSpecular(int i, vec3 vElightDirection, vec3 vWorldPos, vec3 vNormal, float specularMask)
+{
+	vec3 color = vec3(0.0, 0.0, 0.0);
+
+	vec3 vecVertexToEye = normalize(SceneUBO.viewpos.xyz - vWorldPos.xyz);
+	vec3 vecLightReflect = normalize(reflect(vElightDirection, vNormal.xyz));
+	
+	float flSpecularFactor = dot(vecVertexToEye, vecLightReflect);
+	flSpecularFactor = clamp(flSpecularFactor, 0.0, 1.0);
+	flSpecularFactor = pow(flSpecularFactor, r_base_specular.y) * r_base_specular.x;
+
+	color.x += StudioUBO.r_elight_color[i].x * flSpecularFactor * specularMask;
+	color.y += StudioUBO.r_elight_color[i].y * flSpecularFactor * specularMask;
+	color.z += StudioUBO.r_elight_color[i].z * flSpecularFactor * specularMask;
+
+	return color;
+}
+
+vec3 R_StudioEntityLight_FlatShading(int i, vec3 vWorldPos, vec3 vNormal, float specularMask)
+{
+	vec3 color = vec3(0.0, 0.0, 0.0);
+	
+	vec3 ElightDirection = StudioUBO.r_elight_origin[i].xyz - vWorldPos.xyz;
+
+	float ElightCosine = 0.8;
+
+	float ElightDistance = length(ElightDirection);
+	float ElightDot = dot(ElightDirection, ElightDirection);
+
+	float r2 = StudioUBO.r_elight_radius[i];
+
+	r2 = r2 * r2;
+
+	float ElightAttenuation = clamp(r2 / (ElightDot * ElightDistance), 0.0, 1.0);
+
+	color.x += StudioUBO.r_elight_color[i].x * ElightCosine;
+	color.y += StudioUBO.r_elight_color[i].y * ElightCosine;
+	color.z += StudioUBO.r_elight_color[i].z * ElightCosine;
+
+	#if defined(SPECULARTEXTURE_ENABLED)
+
+		color += R_StudioEntityLight_PhongSpecular(i, ElightDirection, vWorldPos, vNormal, specularMask);
+		
+	#endif
+
+	return color;
+}
+
+vec3 R_StudioEntityLight_PhongShading(int i, vec3 vWorldPos, vec3 vNormal, float specularMask)
+{
+	vec3 color = vec3(0.0, 0.0, 0.0);
+
+	vec3 ElightDirection = StudioUBO.r_elight_origin[i].xyz - vWorldPos.xyz;
+		
+	float ElightCosine = clamp(dot(vNormal, normalize(ElightDirection)), 0.0, 1.0);
+	float ElightDistance = length(ElightDirection);
+	float ElightDot = dot(ElightDirection, ElightDirection);
+
+	float r2 = StudioUBO.r_elight_radius[i];
+	
+	r2 = r2 * r2;
+
+	float ElightAttenuation = clamp(r2 / (ElightDot * ElightDistance), 0.0, 1.0);
+
+	color.x += StudioUBO.r_elight_color[i].x * ElightCosine;
+	color.y += StudioUBO.r_elight_color[i].y * ElightCosine;
+	color.z += StudioUBO.r_elight_color[i].z * ElightCosine;
+
+	#if defined(SPECULARTEXTURE_ENABLED)
+
+		color += R_StudioEntityLight_PhongSpecular(i, ElightDirection, vWorldPos, vNormal, specularMask);
+		
+	#endif
+
+	return color;
+}
+
+//The output is in linear space
+vec3 R_StudioLighting(vec3 vWorldPos, vec3 vNormal, float specularMask)
 {	
 	float illum = StudioUBO.r_ambientlight;
 
@@ -107,42 +293,11 @@ vec3 R_StudioLightingLinear(vec3 vWorldPos, vec3 vNormal, float specularMask)
 
 	#elif defined(STUDIO_NF_FLATSHADE) || defined(STUDIO_NF_CELSHADE)
 
-		illum += StudioUBO.r_shadelight * 0.8;
+		illum += R_StudioBaseLight_FlatShading(vWorldPos, vNormal, specularMask);
 
 	#else
 
-		float lightcos = dot(vNormal.xyz, StudioUBO.r_plightvec.xyz);
-
-		if(SceneUBO.v_lambert < 1.0)
-		{
-			lightcos = (SceneUBO.v_lambert - lightcos) / (SceneUBO.v_lambert + 1.0); 
-			illum += StudioUBO.r_shadelight * max(lightcos, 0.0); 			
-		}
-		else
-		{
-			illum += StudioUBO.r_shadelight;
-			lightcos = (lightcos + SceneUBO.v_lambert - 1.0) / SceneUBO.v_lambert;
-			illum -= StudioUBO.r_shadelight * max(lightcos, 0.0);
-		}
-
-		#if defined(STUDIO_NF_FLATSHADE) || defined(STUDIO_NF_CELSHADE)
-
-		#else
-
-			#if defined(SPECULARTEXTURE_ENABLED)
-
-				vec3 VertexToEye = normalize(SceneUBO.viewpos.xyz - vWorldPos.xyz);
-				vec3 LightReflect = normalize(reflect(StudioUBO.r_plightvec.xyz, vNormal.xyz));
-				float SpecularFactor = dot(VertexToEye, LightReflect);
-				SpecularFactor = clamp(SpecularFactor, 0.0, 1.0);
-				SpecularFactor = pow(SpecularFactor * SceneUBO.r_studio_shade_specular,
-				SceneUBO.r_studio_shade_specularpow);
-
-				illum += StudioUBO.r_shadelight * SpecularFactor * specularMask;
-
-			#endif
-
-		#endif
+		illum += R_StudioBaseLight_PhongShading(vWorldPos, vNormal, specularMask);
 
 	#endif
 
@@ -156,50 +311,17 @@ vec3 R_StudioLightingLinear(vec3 vWorldPos, vec3 vNormal, float specularMask)
 
 	for(int i = 0; i < StudioUBO.r_numelight.x; ++i)
 	{
-		vec3 ElightDirection = StudioUBO.r_elight_origin[i].xyz - vWorldPos.xyz;
 		
-		#if defined(STUDIO_NF_FLATSHADE) || defined(STUDIO_NF_CELSHADE)
-		
-			float ElightCosine = 0.8;
-		
-		#else
+	#if defined(STUDIO_NF_FLATSHADE) || defined(STUDIO_NF_CELSHADE)
 
-			float ElightCosine = clamp(dot(vNormal, normalize(ElightDirection)), 0.0, 1.0);
+		color += R_StudioEntityLight_FlatShading(i, vWorldPos, vNormal, specularMask);
 
-		#endif
+	#else
 
-		float ElightDistance = length(ElightDirection);
-		float ElightDot = dot(ElightDirection, ElightDirection);
+		color += R_StudioEntityLight_PhongShading(i, vWorldPos, vNormal, specularMask);
 
-		float r2 = StudioUBO.r_elight_radius[i];
-		
-		r2 = r2 * r2;
+	#endif
 
-		float ElightAttenuation = clamp(r2 / (ElightDot * ElightDistance), 0.0, 1.0);
-
-		color.x += StudioUBO.r_elight_color[i].x * ElightCosine;
-		color.y += StudioUBO.r_elight_color[i].y * ElightCosine;
-		color.z += StudioUBO.r_elight_color[i].z * ElightCosine;
-
-		#if defined(STUDIO_NF_FLATSHADE) || defined(STUDIO_NF_CELSHADE)
-
-		#else
-
-			#if defined(SPECULARTEXTURE_ENABLED)
-
-				vec3 EVertexToEye = normalize(SceneUBO.viewpos.xyz - vWorldPos.xyz);
-				vec3 ELightReflect = normalize(reflect(ElightDirection, vNormal.xyz));
-				float ESpecularFactor = dot(EVertexToEye, ELightReflect);
-				ESpecularFactor = clamp(ESpecularFactor, 0.0, 1.0);
-				ESpecularFactor = pow(ESpecularFactor * SceneUBO.r_studio_shade_specular,
-				SceneUBO.r_studio_shade_specularpow);
-				color.x += StudioUBO.r_elight_color[i].x * ESpecularFactor * specularMask;
-				color.y += StudioUBO.r_elight_color[i].y * ESpecularFactor * specularMask;
-				color.z += StudioUBO.r_elight_color[i].z * ESpecularFactor * specularMask;
-
-			#endif
-
-		#endif
 	}
 
 	return color;
@@ -242,9 +364,7 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 		vec3 vecForward = v_headfwd;
 		vec3 vecUp = v_headup;
 
-		L.z *= celshade_lightdir_adjust.y;
-
-		L = normalize(L);
+		L = R_GetAdjustedLightDirection(L);
 
 		float flFaceCosine = abs(vecForward.z);
 		flFaceCosine = pow(flFaceCosine, 10.0);
@@ -257,9 +377,7 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 
 	#else
 
-		L.z *= celshade_lightdir_adjust.x;
-
-		L = normalize(L);
+		L = R_GetAdjustedLightDirection(L);
 
 	#endif
 
@@ -364,27 +482,6 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 	specularColor += kajiyaSpecular * litOrShadowColor;
 
 #endif
-
-#endif
-
-#if 0
-
-	vec3 halfVec = normalize(L + vec3(0.01, 0.0, 0.0) + SceneUBO.vpn.xyz);
-
-	float specular = dot(N, halfVec);
-
-	vec3 specularColorMasked = vec3(0.0);
-	vec3 specularColorSmooth = vec3(0.0);
-
-	specularColorMasked.x = pow(v_color.x * specular, 0.8);
-	specularColorMasked.y = pow(v_color.y * specular, 0.8);
-	specularColorMasked.z = pow(v_color.z * specular, 0.8);
-
-	specularColorSmooth.x = smoothstep(0, 0.01 * 1, specularColorMasked.x);
-	specularColorSmooth.y = smoothstep(0, 0.01 * 1, specularColorMasked.y);
-	specularColorSmooth.z = smoothstep(0, 0.01 * 1, specularColorMasked.z);
-
-	specularColor += specularColorSmooth;
 
 #endif
 
@@ -528,7 +625,7 @@ void main(void)
 
 		vec4 lightmapColor = ProcessOtherGammaColor(StudioUBO.r_color);
 
-		vec3 lightColorLinear = R_StudioLightingLinear(vWorldPos, vNormal, specularColor.x);
+		vec3 lightColorLinear = R_StudioLighting(vWorldPos, vNormal, specularColor.x);
 
 		#if defined(STUDIO_NF_CELSHADE)
 			lightColorLinear = R_StudioCelShade(lightColorLinear, vNormal, StudioUBO.r_plightvec.xyz, specularColor.x);

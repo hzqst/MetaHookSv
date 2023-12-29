@@ -156,10 +156,6 @@ struct scene_ubo_t{
 	float r_lightscale;
 	vec4 r_filtercolor;
 	vec4 r_lightstylevalue[64];
-	float r_studio_shade_specular;
-	float r_studio_shade_specularpow;
-	float padding2;
-	float padding3;
 };
 
 struct dlight_ubo_t{

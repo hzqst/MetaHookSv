@@ -3735,8 +3735,8 @@ void R_ParseBSPEntity_Env_SSR_Control(bspentity_t *ent)
 
 void R_ParseBSPEntity_Env_Studio_Control(bspentity_t* ent)
 {
-	R_ParseMapCvarSetMapValue(r_studio_shade_specular, ValueForKey(ent, "shade_specular"));
-	R_ParseMapCvarSetMapValue(r_studio_shade_specularpow, ValueForKey(ent, "shade_specularpow"));
+	R_ParseMapCvarSetMapValue(r_studio_base_specular, ValueForKey(ent, "base_specular"));
+	R_ParseMapCvarSetMapValue(r_studio_celshade_specular, ValueForKey(ent, "celshade_specular"));
 }
 
 void R_LoadBSPEntities(void)
@@ -4146,9 +4146,6 @@ void R_SetupSceneUBO(void)
 		SceneUBO.r_lightstylevalue[i / 4][i % 4] = d_lightstylevalue[i] * (1.0f / 264.0f);
 	}
 
-	SceneUBO.r_studio_shade_specular = r_studio_shade_specular->GetValue();
-	SceneUBO.r_studio_shade_specularpow = r_studio_shade_specularpow->GetValue();
-	
 	if (glNamedBufferSubData)
 	{
 		glNamedBufferSubData(r_wsurf.hSceneUBO, 0, sizeof(SceneUBO), &SceneUBO);
