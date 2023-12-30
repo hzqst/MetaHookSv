@@ -4,6 +4,8 @@
 #include <sstream>
 #include <set>
 
+//#define HAS_VIEWMODEL_PASS
+
 private_funcs_t gPrivateFuncs = { 0 };
 
 refdef_t r_refdef = { 0 };
@@ -138,8 +140,19 @@ bool g_bPortalClipPlaneEnabled[6] = { false };
 
 vec4_t g_PortalClipPlane[6] = {0};
 
-float r_entity_matrix[4][4];
-float r_entity_color[4];
+float r_entity_matrix[4][4] = { 0 };
+float r_entity_color[4] = {0};
+
+#if defined(HAS_VIEWMODEL_PASS)
+std::vector<cl_entity_t*> g_ViewModelPassOpaqueEntity;
+std::vector<transObjRef> g_ViewModelPassTransEntity;
+#endif
+
+//This is the pass that collects tempents created by ViewModel's StudioEvents
+bool r_draw_predrawviewmodel = false;
+
+//This is the pass that actually draw ViewModel and it's muzzleflash
+bool r_draw_drawviewmodel = false;
 
 //This is the very first pass for studiomodel mesh analysis
 bool r_draw_analyzingstudio = false;
@@ -1209,7 +1222,14 @@ void R_DrawViewModel(void)
 		return;
 	}
 
+	r_draw_drawviewmodel = true;
+
 	glDepthRange(0, 0.3);
+
+#if 0
+	int original_numVisEdicts = (*cl_numvisedicts);
+	int original_numTransObjects = (*numTransObjs);
+#endif
 
 	switch ((*currententity)->model->type)
 	{
@@ -1252,8 +1272,18 @@ void R_DrawViewModel(void)
 	}
 	}
 
+#if 0
+
+	R_DrawEntitiesForViewModel();
+	R_DrawTEntitiesForViewModel();
+#endif
+
 	glDepthRange(0, 1);
+
+	//Valve add this shit for what? idk
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+	r_draw_drawviewmodel = false;
 }
 
 void R_PolyBlend(void)
@@ -1679,6 +1709,15 @@ void R_RenderPreFrame()
 {
 	R_EntityComponents_PreFrame();
 }
+
+void R_RenderStartView()
+{
+#if defined(HAS_VIEWMODEL_PASS)
+	g_ViewModelPassOpaqueEntity.clear();
+	g_ViewModelPassTransEntity.clear();
+#endif
+}
+
 /*
 	Called only once per frame, before running any render pass
 */
@@ -1774,6 +1813,8 @@ void R_PreRenderView()
 		}
 	}
 
+	R_RenderStartView();
+
 	R_RenderShadowMap();
 
 	R_RenderWaterPass();
@@ -1837,6 +1878,14 @@ void R_PreDrawViewModel(void)
 	if ((*cl_viewentity) > r_params.maxclients)
 		return;
 
+	r_draw_predrawviewmodel = true;
+
+#if defined(HAS_VIEWMODEL_PASS)
+
+	int original_numVisEdicts = (*cl_numvisedicts);
+	int original_numTransObjects = (*numTransObjs);
+#endif
+
 	switch ((*currententity)->model->type)
 	{
 	case mod_studio:
@@ -1863,6 +1912,24 @@ void R_PreDrawViewModel(void)
 		break;
 	}
 	}
+
+#if defined(HAS_VIEWMODEL_PASS)
+	for (int i = original_numVisEdicts; i < (*cl_numvisedicts); ++i)
+	{
+		g_ViewModelPassOpaqueEntity.emplace_back(cl_visedicts[i]);
+	}
+
+	for (int i = original_numTransObjects; i < (*numTransObjs); ++i)
+	{
+		g_ViewModelPassTransEntity.emplace_back((*transObjects)[i]);
+	}
+
+	(*cl_numvisedicts) = original_numVisEdicts;
+	(*numTransObjs) = original_numTransObjects;
+
+#endif
+
+	r_draw_predrawviewmodel = false;
 }
 
 bool R_IsRenderingPortal(void)
@@ -1926,12 +1993,16 @@ void R_RenderView_SvEngine(int viewIdx)
 		glDepthRange(0, 1);
 
 		if (!(*r_refdef.onlyClientDraws))
+		{
+			//Allocate TEMPENT here
 			R_PreDrawViewModel();
+		}
 
 		R_RenderScene();
 
 		if (!(*r_refdef.onlyClientDraws))
 		{
+			//ViewModel and Muzzleflash here
 			R_SetupGLForViewModel();
 			R_DrawViewModel();
 		}
@@ -2711,6 +2782,46 @@ void R_AdjustScopeFOVForViewModel(float *fov)
 	}
 }
 
+void R_UseProjMatrixForViewModel(void)
+{
+	scene_ubo_t SceneUBO;
+	memcpy(SceneUBO.projMatrix, r_viewmodel_projection_matrix, sizeof(mat4));
+	memcpy(SceneUBO.invProjMatrix, r_viewmodel_projection_matrix_inv, sizeof(mat4));
+
+	if (glNamedBufferSubData)
+	{
+		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
+		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
+	}
+	else
+	{
+		glBindBuffer(GL_UNIFORM_BUFFER, r_wsurf.hSceneUBO);
+		glBufferSubData(GL_UNIFORM_BUFFER, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
+		glBufferSubData(GL_UNIFORM_BUFFER, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
+}
+
+void R_UseProjMatrixForWorld(void)
+{
+	scene_ubo_t SceneUBO;
+	memcpy(SceneUBO.projMatrix, r_projection_matrix, sizeof(mat4));
+	memcpy(SceneUBO.invProjMatrix, r_projection_matrix_inv, sizeof(mat4));
+
+	if (glNamedBufferSubData)
+	{
+		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
+		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
+	}
+	else
+	{
+		glBindBuffer(GL_UNIFORM_BUFFER, r_wsurf.hSceneUBO);
+		glBufferSubData(GL_UNIFORM_BUFFER, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
+		glBufferSubData(GL_UNIFORM_BUFFER, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
+}
+
 void R_SetupGLForViewModel(void)
 {
 	if (!CL_IsDevOverviewMode() && viewmodel_fov->value > 0)
@@ -2755,30 +2866,12 @@ void R_SetupGLForViewModel(void)
 			R_SetupPerspective(r_xfov_viewmodel, r_yfov_viewmodel, 4.0f, (r_params.movevars ? r_params.movevars->zmax : 4096));
 		}
 
-		float viewmodel_projection_matrix[16];
-		float viewmodel_projection_matrix_inv[16];
-
-		glGetFloatv(GL_PROJECTION_MATRIX, viewmodel_projection_matrix);
+		glGetFloatv(GL_PROJECTION_MATRIX, r_viewmodel_projection_matrix);
 		glMatrixMode(GL_MODELVIEW);
 
-		InvertMatrix(viewmodel_projection_matrix, viewmodel_projection_matrix_inv);
+		InvertMatrix(r_viewmodel_projection_matrix, r_viewmodel_projection_matrix_inv);
 
-		scene_ubo_t SceneUBO;
-		memcpy(SceneUBO.projMatrix, viewmodel_projection_matrix, sizeof(mat4));
-		memcpy(SceneUBO.invProjMatrix, viewmodel_projection_matrix_inv, sizeof(mat4));
-
-		if (glNamedBufferSubData)
-		{
-			glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
-			glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
-		}
-		else
-		{
-			glBindBuffer(GL_UNIFORM_BUFFER, r_wsurf.hSceneUBO);
-			glBufferSubData(GL_UNIFORM_BUFFER, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
-			glBufferSubData(GL_UNIFORM_BUFFER, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
-			glBindBuffer(GL_UNIFORM_BUFFER, 0);
-		}
+		R_UseProjMatrixForViewModel();
 	}
 }
 
@@ -2956,7 +3049,7 @@ void R_SetupGL(void)
 	InvertMatrix(gWorldToScreen, gScreenToWorld);
 
 	InvertMatrix(r_world_matrix, r_world_matrix_inv);
-	InvertMatrix(r_projection_matrix, r_proj_matrix_inv);
+	InvertMatrix(r_projection_matrix, r_projection_matrix_inv);
 }
 
 void R_CheckVariables(void)
@@ -3103,6 +3196,117 @@ void R_DrawEntitiesOnList(void)
 
 	GL_EndProfile(&Profile_DrawEntitiesOnList);
 }
+
+#if defined(HAS_VIEWMODEL_PASS)
+
+void R_AddTEntityForViewModel(cl_entity_t* ent)
+{
+	if (r_draw_shadowcaster)
+		return;
+
+	if (!ent->model)
+		return;
+
+	//Brush models with kRenderTransAlpha are forced to be opaque, except renderamt = 0 
+	if (ent->model->type == mod_brush && ent->curstate.rendermode == kRenderTransAlpha)
+	{
+		if (ent->curstate.renderamt == 0)
+			return;
+
+		(*currententity) = ent;
+
+		R_DrawCurrentEntity(false);
+
+		return;
+	}
+
+	transObjRef ref;
+
+	float dist;
+	vec3_t v;
+
+	if (!ent->model || ent->model->type != mod_brush || ent->curstate.rendermode != kRenderTransAlpha)
+	{
+		VectorAdd(ent->model->mins, ent->model->maxs, v);
+		VectorScale(v, 0.5f, v);
+		VectorAdd(v, ent->origin, v);
+		VectorSubtract(r_origin, v, v);
+		dist = DotProduct(v, v);
+	}
+	else
+	{
+		dist = 1000000000;
+	}
+
+	ref.distance = dist;
+	ref.pEnt = ent;
+
+	g_ViewModelPassTransEntity.emplace_back(ref);
+}
+
+void R_DrawEntitiesForViewModel(void)
+{
+	if (!r_drawentities->value)
+		return;
+
+	for (size_t i = 0; i < g_ViewModelPassOpaqueEntity.size(); ++i)
+	{
+		(*currententity) = g_ViewModelPassOpaqueEntity[i];
+
+		if ((*currententity)->curstate.rendermode != kRenderNormal)
+		{
+			R_AddTEntityForViewModel((*currententity));
+			continue;
+		}
+
+		if ((*currententity)->curstate.rendermode == kRenderNormal &&
+			(*currententity)->model &&
+			(*currententity)->model->type == mod_sprite &&
+			gl_spriteblend->value)
+		{
+			R_AddTEntityForViewModel((*currententity));
+			continue;
+		}
+
+		if ((*currententity)->model &&
+			(*currententity)->model->type != mod_sprite)
+		{
+			R_DrawCurrentEntity(false);
+		}
+
+		//TODO: defer pass?
+	}
+}
+
+void R_DrawTEntitiesForViewModel(void)
+{
+	if (!r_drawentities->value)
+		return;
+
+	if (bUseOITBlend)
+	{
+		//TODO: oit stuffs...
+	}
+	else
+	{
+		std::qsort(g_ViewModelPassTransEntity.data(), g_ViewModelPassTransEntity.size(), sizeof(transObjRef), [](const void* a, const void* b) {
+
+			const auto arg1 = (const transObjRef *)(a);
+			const auto arg2 = (const transObjRef *)(b);
+
+			return (int)(arg1->distance > arg2->distance);
+		});
+
+		for (size_t i = 0; i < g_ViewModelPassTransEntity.size(); ++i)
+		{
+			(*currententity) = g_ViewModelPassTransEntity[i].pEnt;
+
+			R_DrawCurrentEntity(true);
+		}
+	}
+}
+
+#endif
 
 void R_RenderFinalFog(void)
 {

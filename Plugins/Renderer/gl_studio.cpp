@@ -3022,11 +3022,11 @@ void R_StudioLoadExternalFile_Efx(bspentity_t* ent, studiohdr_t* studiohdr, stud
 
 #define REGISTER_EFX_FLAGS_KEY_VALUE(name) if (flags_string && !strcmp(flags_string, #name))\
 	{\
-		studiohdr->flags |= EF_ROCKET; \
+		studiohdr->flags |= name; \
 	}\
 	if (flags_string && !strcmp(flags_string, "-" #name))\
 	{\
-		studiohdr->flags |= EF_ROCKET; \
+		studiohdr->flags |= name; \
 	}
 
 	REGISTER_EFX_FLAGS_KEY_VALUE(EF_ROCKET);

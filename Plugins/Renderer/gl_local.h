@@ -355,7 +355,10 @@ entity_state_t *R_GetPlayerState(int index);
 bool CL_IsDevOverviewMode(void);
 int CL_FxBlend(cl_entity_t *entity);
 void R_DrawCurrentEntity(bool bTransparent);
+void R_DrawEntitiesOnList(void);
 void R_DrawTEntitiesOnList(int onlyClientDraw);
+void R_DrawEntitiesForViewModel(void);
+void R_DrawTEntitiesForViewModel(void);
 void R_AddTEntity(cl_entity_t *pEnt);
 void GL_Shutdown(void);
 void GL_Init(void);
@@ -441,7 +444,7 @@ void GL_FrameBufferColorTextureOITBlend(FBO_Container_t *s);
 
 int GL_LoadTextureEx(const char* identifier, GL_TEXTURETYPE textureType, gl_loadtexture_state_t* state);
 int R_LoadTextureFromFile(const char *filename, const char * identifier, int *width, int *height, GL_TEXTURETYPE type, bool mipmap, bool throw_warning_on_missing);
-int R_LoadRGBATextureFromMemory(const char* identifier, void* data, int width, int height, GL_TEXTURETYPE type, bool mipmap);
+int R_LoadRGBA8TextureFromMemory(const char* identifier, void* data, int width, int height, GL_TEXTURETYPE type, bool mipmap);
 
 bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize, gl_loadtexture_state_t* state, bool throw_warning_on_missing);
 bool LoadImageGeneric(const char* filename, const char* pathId, byte* buf, size_t bufSize, gl_loadtexture_state_t* state, bool throw_warning_on_missing);
@@ -524,6 +527,8 @@ extern GLint r_viewport[4];
 extern float r_entity_matrix[4][4];
 extern float r_entity_color[4];
 
+extern bool r_draw_predrawviewmodel;
+extern bool r_draw_drawviewmodel;
 extern bool r_draw_analyzingstudio;
 extern bool r_draw_deferredtrans;
 extern bool r_draw_hasalpha;

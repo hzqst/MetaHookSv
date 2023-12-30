@@ -629,7 +629,7 @@ water_vbo_t *R_CreateWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t 
 				char identifier[64] = { 0 };
 				snprintf(identifier, sizeof(identifier), "%s_ripple", surf->texinfo->texture->name);
 
-				WaterVBO->ripplemap = R_LoadRGBATextureFromMemory(identifier, WaterVBO->ripple_image, WaterVBO->ripple_width, WaterVBO->ripple_height, GLT_WORLD, true);
+				WaterVBO->ripplemap = R_LoadRGBA8TextureFromMemory(identifier, WaterVBO->ripple_image, WaterVBO->ripple_width, WaterVBO->ripple_height, GLT_WORLD, true);
 
 				WaterVBO->ripple_spots[0] = (short *)malloc(imageSize * sizeof(short));
 				memset(WaterVBO->ripple_spots[0], 0, imageSize * sizeof(short));

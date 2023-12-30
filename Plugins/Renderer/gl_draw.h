@@ -55,7 +55,7 @@ typedef struct gl_loadtexture_state_s
 		filter = 0;
 		mipmap = false;
 
-		format = 0;
+		internalformat = 0;
 		compressed = false;
 	}
 
@@ -69,7 +69,7 @@ typedef struct gl_loadtexture_state_s
 	bool mipmap;
 
 	//Loader field
-	GLuint format;
+	GLuint internalformat;
 	bool compressed;
 	std::vector<gl_mipmap_texture_data_t> mipmaps;
 

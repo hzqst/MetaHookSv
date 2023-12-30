@@ -427,7 +427,7 @@ void GL_UnloadTextureByTextureId(int gltexturenum, bool notify_callback)
 	}
 }
 
-void GL_UploadDXT(gl_loadtexture_state_t *state)
+void GL_UploadCompressedTexture(gl_loadtexture_state_t *state)
 {
 	int iTextureTarget = GL_TEXTURE_2D;
 	int iMipmapTextureTarget = GL_TEXTURE_2D;
@@ -470,7 +470,7 @@ void GL_UploadDXT(gl_loadtexture_state_t *state)
 
 	for (size_t i = 0; i < state->mipmaps.size(); ++i)
 	{
-		glCompressedTexImage2D(iMipmapTextureTarget, state->mipmaps[i].level, state->format, state->mipmaps[i].width, state->mipmaps[i].height, 0, state->mipmaps[i].size, state->mipmaps[i].data);
+		glCompressedTexImage2D(iMipmapTextureTarget, state->mipmaps[i].level, state->internalformat, state->mipmaps[i].width, state->mipmaps[i].height, 0, state->mipmaps[i].size, state->mipmaps[i].data);
 		
 		if (!state->mipmap)
 			break;
@@ -483,7 +483,7 @@ void GL_UploadDXT(gl_loadtexture_state_t *state)
 	}
 }
 
-void GL_UploadRGBA8(gl_loadtexture_state_t* state)
+void GL_UploadUncompressedTexture(gl_loadtexture_state_t* state)
 {
 	int iTextureTarget = GL_TEXTURE_2D;
 	int iMipmapTextureTarget = GL_TEXTURE_2D;
@@ -526,8 +526,26 @@ void GL_UploadRGBA8(gl_loadtexture_state_t* state)
 
 	for (size_t i = 0; i < state->mipmaps.size(); ++i)
 	{
-		glTexImage2D(iMipmapTextureTarget, state->mipmaps[i].level, state->format, state->mipmaps[i].width, state->mipmaps[i].height, 0, GL_RGBA, GL_UNSIGNED_BYTE, state->mipmaps[i].data);
-	
+		if (state->internalformat == GL_RGBA8)
+		{
+			glTexImage2D(iMipmapTextureTarget, state->mipmaps[i].level, state->internalformat, state->mipmaps[i].width, state->mipmaps[i].height, 0, GL_RGBA, GL_UNSIGNED_BYTE, state->mipmaps[i].data);
+		}
+		else if (state->internalformat == GL_RGB8)
+		{
+			glTexImage2D(iMipmapTextureTarget, state->mipmaps[i].level, state->internalformat, state->mipmaps[i].width, state->mipmaps[i].height, 0, GL_RGB, GL_UNSIGNED_BYTE, state->mipmaps[i].data);
+		}
+		else if (state->internalformat == GL_RGBA32F)
+		{
+			glTexImage2D(iMipmapTextureTarget, state->mipmaps[i].level, state->internalformat, state->mipmaps[i].width, state->mipmaps[i].height, 0, GL_RGBA, GL_FLOAT, state->mipmaps[i].data);
+		}
+		else if (state->internalformat == GL_RGB32F)
+		{
+			glTexImage2D(iMipmapTextureTarget, state->mipmaps[i].level, state->internalformat, state->mipmaps[i].width, state->mipmaps[i].height, 0, GL_RGB, GL_FLOAT, state->mipmaps[i].data);
+		}
+		else
+		{
+			g_pMetaHookAPI->SysError("GL_UploadUncompressedTexture: bogus internalformat 0x%X.", state->internalformat);
+		}
 		if (!state->mipmap)
 			break;
 	}
@@ -1190,11 +1208,11 @@ int GL_LoadTexture3(gltexture_t* glt, GL_TEXTURETYPE textureType, gl_loadtexture
 
 	if (state->compressed)
 	{
-		GL_UploadDXT(state);
+		GL_UploadCompressedTexture(state);
 	}
 	else
 	{
-		GL_UploadRGBA8(state);
+		GL_UploadUncompressedTexture(state);
 	}
 
 	glBindTexture(iTextureTarget, 0);
@@ -1238,7 +1256,7 @@ int GL_LoadTexture2(char* identifier, GL_TEXTURETYPE textureType, int width, int
 
 	gl_loadtexture_state_t state;
 
-	state.format = GL_RGBA8;
+	state.internalformat = GL_RGBA8;
 	state.compressed = false;
 	state.width = width;
 	state.height = height;
@@ -1498,7 +1516,7 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 					return false;
 				}
 
-				state->format = GL_COMPRESSED_RGBA_BPTC_UNORM;
+				state->internalformat = GL_COMPRESSED_RGBA_BPTC_UNORM;
 				state->compressed = true;
 				state->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
@@ -1524,7 +1542,7 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 					return false;
 				}
 
-				state->format = GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM;
+				state->internalformat = GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM;
 				state->compressed = true;
 				state->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
@@ -1550,7 +1568,7 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 					return false;
 				}
 
-				state->format = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+				state->internalformat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
 				state->compressed = true;
 				state->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
@@ -1576,7 +1594,7 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 					return false;
 				}
 
-				state->format = GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
+				state->internalformat = GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
 				state->compressed = true;
 				state->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
@@ -1602,7 +1620,7 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 					return false;
 				}
 
-				state->format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+				state->internalformat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
 				state->compressed = true;
 				state->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
@@ -1628,7 +1646,7 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 					return false;
 				}
 
-				state->format = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
+				state->internalformat = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
 				state->compressed = true;
 				state->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
@@ -1654,7 +1672,7 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 					return false;
 				}
 
-				state->format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+				state->internalformat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 				state->compressed = true;
 				state->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
@@ -1680,7 +1698,7 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 					return false;
 				}
 
-				state->format = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+				state->internalformat = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
 				state->compressed = true;
 				state->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
@@ -1714,7 +1732,7 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 				return false;
 			}
 
-			state->format = GL_COMPRESSED_RGBA_BPTC_UNORM;
+			state->internalformat = GL_COMPRESSED_RGBA_BPTC_UNORM;
 			state->compressed = true;
 			state->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
@@ -1742,7 +1760,7 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 				return false;
 			}
 
-			state->format = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+			state->internalformat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
 			state->compressed = true;
 			state->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
@@ -1770,7 +1788,7 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 				return false;
 			}
 
-			state->format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+			state->internalformat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
 			state->compressed = true;
 			state->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
@@ -1797,7 +1815,7 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 				return false;
 			}
 
-			state->format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+			state->internalformat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 			state->compressed = true;
 			state->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
@@ -1866,6 +1884,79 @@ const char * V_GetFileExtension( const char * path )
 	return src;
 }
 
+class CScopedFIBitmap {
+public:
+	CScopedFIBitmap(FIBITMAP* bitmap) : m_bitmap(bitmap) {}
+
+	~CScopedFIBitmap() {
+		if (m_bitmap) {
+			FreeImage_Unload(m_bitmap);
+			m_bitmap = nullptr;
+		}
+	}
+
+	// Delete copy constructor and copy assignment operator
+	CScopedFIBitmap(const CScopedFIBitmap&) = delete;
+	CScopedFIBitmap& operator=(const CScopedFIBitmap&) = delete;
+
+	// Optionally add move constructor and move assignment operator
+	CScopedFIBitmap(CScopedFIBitmap&& other) noexcept : m_bitmap(other.m_bitmap) {
+		other.m_bitmap = nullptr;
+	}
+	CScopedFIBitmap& operator=(CScopedFIBitmap&& other) noexcept {
+		if (this != &other) {
+			if (m_bitmap) {
+				FreeImage_Unload(m_bitmap);
+			}
+			m_bitmap = other.m_bitmap;
+			other.m_bitmap = nullptr;
+		}
+		return *this;
+	}
+
+	// Access the FIBITMAP*
+	FIBITMAP* get() const { return m_bitmap; }
+
+private:
+	FIBITMAP* m_bitmap;
+};
+
+class CScopedFileHandle {
+public:
+	CScopedFileHandle(FileHandle_t filehandle) : m_filehandle(filehandle) {}
+
+	~CScopedFileHandle() {
+		if (m_filehandle) {
+			FILESYSTEM_ANY_CLOSE(m_filehandle);
+			m_filehandle = nullptr;
+		}
+	}
+
+	// Delete copy constructor and copy assignment operator
+	CScopedFileHandle(const CScopedFileHandle&) = delete;
+	CScopedFileHandle& operator=(const CScopedFileHandle&) = delete;
+
+	// Optionally add move constructor and move assignment operator
+	CScopedFileHandle(CScopedFileHandle&& other) noexcept : m_filehandle(other.m_filehandle) {
+		other.m_filehandle = nullptr;
+	}
+	CScopedFileHandle& operator=(CScopedFileHandle&& other) noexcept {
+		if (this != &other) {
+			if (m_filehandle) {
+				FILESYSTEM_ANY_CLOSE(m_filehandle);
+			}
+			m_filehandle = other.m_filehandle;
+			other.m_filehandle = nullptr;
+		}
+		return *this;
+	}
+
+	FileHandle_t get() const { return m_filehandle; }
+
+private:
+	FileHandle_t m_filehandle;
+};
+
 unsigned WINAPI FI_Read(void *buffer, unsigned size, unsigned count, fi_handle handle)
 {
 	if(FILESYSTEM_ANY_READ(buffer, size*count, handle))
@@ -1891,6 +1982,260 @@ long WINAPI FI_Tell(fi_handle handle)
 	return FILESYSTEM_ANY_TELL(handle);
 }
 
+bool LoadImageGenericRGBA32F(const char* filename, byte* buf, size_t bufSize, FIBITMAP* fiB, gl_loadtexture_state_t* state)
+{
+	size_t pos = 0;
+	size_t w = FreeImage_GetWidth(fiB);
+	size_t h = FreeImage_GetHeight(fiB);
+	size_t imageSize = w * h * sizeof(vec4_t);
+
+	if (imageSize > bufSize)
+	{
+		gEngfuncs.Con_Printf("LoadImageGenericRGB32F: Could not load %s, texture too large.\n", filename);
+		return false;
+	}
+
+	byte* imageData = FreeImage_GetBits(fiB);
+
+	size_t rowSize = w * sizeof(vec4_t);
+
+	// Flip the image vertically into the destination buffer
+	for (unsigned int y = 0; y < h; ++y) {
+		// Calculate the starting position of the source row
+		byte* sourceRow = imageData + y * rowSize;
+		// Calculate the starting position of the destination row
+		// We start from the end of the buffer and move backwards
+		byte* destRow = buf + (h - y - 1) * rowSize;
+
+		// Copy the source row to the destination row
+		memcpy(destRow, sourceRow, rowSize);
+	}
+
+	float r_texgamma = 1.0f / v_texgamma->value;
+
+	for (unsigned int y = 0; y < h; ++y) {
+		for (unsigned int x = 0; x < w; ++x) {
+			float* row = (float*)(buf + y * rowSize + x * sizeof(vec4_t));
+
+			row[0] = pow(row[0], r_texgamma);
+			row[1] = pow(row[1], r_texgamma);
+			row[2] = pow(row[2], r_texgamma);
+		}
+	}
+
+	state->internalformat = GL_RGBA32F;
+	state->compressed = false;
+	state->width = w;
+	state->height = h;
+	state->mipmaps.emplace_back(0, buf, pos, w, h);
+
+	return true;
+}
+
+bool LoadImageGenericRGB32F(const char* filename, byte* buf, size_t bufSize, FIBITMAP* fiB, gl_loadtexture_state_t* state)
+{
+	size_t pos = 0;
+	size_t w = FreeImage_GetWidth(fiB);
+	size_t h = FreeImage_GetHeight(fiB);
+	size_t imageSize = w * h * sizeof(vec3_t);
+
+	if (imageSize > bufSize)
+	{
+		gEngfuncs.Con_Printf("LoadImageGenericRGB32F: Could not load %s, texture too large.\n", filename);
+		return false;
+	}
+
+	byte* imageData = FreeImage_GetBits(fiB);
+
+	size_t rowSize = w * sizeof(vec3_t);
+
+	// Flip the image vertically into the destination buffer
+	for (unsigned int y = 0; y < h; ++y) {
+		// Calculate the starting position of the source row
+		byte* sourceRow = imageData + y * rowSize;
+		// Calculate the starting position of the destination row
+		// We start from the end of the buffer and move backwards
+		byte* destRow = buf + (h - y - 1) * rowSize;
+
+		// Copy the source row to the destination row
+		memcpy(destRow, sourceRow, rowSize);
+	}
+
+	float r_texgamma = 1.0f / v_gamma->value;
+
+	for (unsigned int y = 0; y < h; ++y) {
+		for (unsigned int x = 0; x < w; ++x) {
+			float* row = (float*)(buf + y * rowSize + x * sizeof(vec3_t));
+
+			row[0] = pow(row[0], r_texgamma);
+			row[1] = pow(row[1], r_texgamma);
+			row[2] = pow(row[2], r_texgamma);
+		}
+	}
+
+	state->internalformat = GL_RGB32F;
+	state->compressed = false;
+	state->width = w;
+	state->height = h;
+	state->mipmaps.emplace_back(0, buf, pos, w, h);
+
+	return true;
+}
+
+bool LoadImageGenericRGBA8(const char *filename, byte* buf, size_t bufSize, FIBITMAP* fiB, gl_loadtexture_state_t* state)
+{
+	size_t pos = 0;
+	size_t w = FreeImage_GetWidth(fiB);
+	size_t h = FreeImage_GetHeight(fiB);
+	size_t blockSize = FreeImage_GetLine(fiB) / w;
+
+	if (w * h * 4 > bufSize)
+	{
+		gEngfuncs.Con_Printf("LoadImageGenericRGBA8: Could not load %s, texture too large.\n", filename);
+		return false;
+	}
+
+	for (size_t y = 0; y < h; ++y)
+	{
+		BYTE* bits = FreeImage_GetScanLine(fiB, h - y - 1);
+		for (size_t x = 0; x < w; ++x)
+		{
+			buf[pos++] = bits[FI_RGBA_RED];//B
+			buf[pos++] = bits[FI_RGBA_GREEN];//G
+			buf[pos++] = bits[FI_RGBA_BLUE];//R
+			if (blockSize == 4)
+				buf[pos++] = bits[FI_RGBA_ALPHA];//Alpha
+			else
+				buf[pos++] = 255;
+			bits += blockSize;
+		}
+	}
+
+	state->internalformat = GL_RGBA8;
+	state->compressed = false;
+	state->width = w;
+	state->height = h;
+	state->mipmaps.emplace_back(0, buf, pos, w, h);
+
+	return true;
+}
+
+bool LoadImageGenericRGB8(const char* filename, byte* buf, size_t bufSize, FIBITMAP* fiB, gl_loadtexture_state_t* state)
+{
+	size_t pos = 0;
+	size_t w = FreeImage_GetWidth(fiB);
+	size_t h = FreeImage_GetHeight(fiB);
+	size_t blockSize = FreeImage_GetLine(fiB) / w;
+
+	if (w * h * 4 > bufSize)
+	{
+		gEngfuncs.Con_Printf("LoadImageGenericRGB8: Could not load %s, texture too large.\n", filename);
+		return false;
+	}
+
+	for (size_t y = 0; y < h; ++y)
+	{
+		BYTE* bits = FreeImage_GetScanLine(fiB, h - y - 1);
+		for (size_t x = 0; x < w; ++x)
+		{
+			buf[pos++] = bits[FI_RGBA_RED];//B
+			buf[pos++] = bits[FI_RGBA_GREEN];//G
+			buf[pos++] = bits[FI_RGBA_BLUE];//R
+			if (blockSize == 4)
+				buf[pos++] = bits[FI_RGBA_ALPHA];//Alpha
+			else
+				buf[pos++] = 255;
+			bits += blockSize;
+		}
+	}
+
+	state->internalformat = GL_RGB8;
+	state->compressed = false;
+	state->width = w;
+	state->height = h;
+	state->mipmaps.emplace_back(0, buf, pos, w, h);
+
+	return true;
+}
+
+bool LoadImagePaletteRGBA8(const char* filename, byte* buf, size_t bufSize, FIBITMAP* fiB, gl_loadtexture_state_t* state)
+{
+	size_t pos = 0;
+	size_t w = FreeImage_GetWidth(fiB);
+	size_t h = FreeImage_GetHeight(fiB);
+	size_t blockSize = FreeImage_GetLine(fiB) / w;
+
+	// Get the palette
+	RGBQUAD* palette = FreeImage_GetPalette(fiB);
+
+	if (w * h * 4 > bufSize)
+	{
+		gEngfuncs.Con_Printf("LoadImagePaletteRGBA8: Could not load %s, texture too large.\n", filename);
+		return false;
+	}
+
+	for (size_t y = 0; y < h; ++y)
+	{
+		BYTE* bits = FreeImage_GetScanLine(fiB, h - y - 1);
+		for (size_t x = 0; x < w; ++x)
+		{
+			const RGBQUAD& color = palette[bits[x]];
+
+			buf[pos++] = color.rgbRed;//R
+			buf[pos++] = color.rgbGreen;//G
+			buf[pos++] = color.rgbBlue;//B
+			buf[pos++] = 255;
+		}
+	}
+
+	state->internalformat = GL_RGBA8;
+	state->compressed = false;
+	state->width = w;
+	state->height = h;
+	state->mipmaps.emplace_back(0, buf, pos, w, h);
+
+	return true;
+}
+
+bool LoadImagePaletteRGB8(const char* filename, byte* buf, size_t bufSize, FIBITMAP* fiB, gl_loadtexture_state_t* state)
+{
+	size_t pos = 0;
+	size_t w = FreeImage_GetWidth(fiB);
+	size_t h = FreeImage_GetHeight(fiB);
+	size_t blockSize = FreeImage_GetLine(fiB) / w;
+
+	// Get the palette
+	RGBQUAD* palette = FreeImage_GetPalette(fiB);
+
+	if (w * h * 4 > bufSize)
+	{
+		gEngfuncs.Con_Printf("LoadImagePaletteRGB8: Could not load %s, texture too large.\n", filename);
+		return false;
+	}
+
+	for (size_t y = 0; y < h; ++y)
+	{
+		BYTE* bits = FreeImage_GetScanLine(fiB, h - y - 1);
+		for (size_t x = 0; x < w; ++x)
+		{
+			const RGBQUAD& color = palette[bits[x]];
+
+			buf[pos++] = color.rgbRed;//R
+			buf[pos++] = color.rgbGreen;//G
+			buf[pos++] = color.rgbBlue;//B
+			buf[pos++] = 255;
+		}
+	}
+
+	state->internalformat = GL_RGB8;
+	state->compressed = false;
+	state->width = w;
+	state->height = h;
+	state->mipmaps.emplace_back(0, buf, pos, w, h);
+
+	return true;
+}
+
 bool LoadImageGeneric(const char *filename, const char* pathId, byte *buf, size_t bufSize, gl_loadtexture_state_t *state, bool throw_warning_on_missing)
 {
 	FileHandle_t fileHandle = FILESYSTEM_ANY_OPEN(filename, "rb", pathId);
@@ -1904,6 +2249,8 @@ bool LoadImageGeneric(const char *filename, const char* pathId, byte *buf, size_
 		return false;
 	}
 
+	CScopedFileHandle scopedFileHandle(fileHandle);
+
 	FreeImageIO fiIO;
 	fiIO.read_proc = FI_Read;
 	fiIO.write_proc = FI_Write;
@@ -1912,26 +2259,24 @@ bool LoadImageGeneric(const char *filename, const char* pathId, byte *buf, size_
 
 	FREE_IMAGE_FORMAT fiFormat = FreeImage_GetFileTypeFromHandle(&fiIO, (fi_handle)fileHandle);
 
-	if(fiFormat == FIF_UNKNOWN)
+	if (fiFormat == FIF_UNKNOWN)
+	{
 		fiFormat = FreeImage_GetFIFFromFilename(filename);
+	}
 
 	if(fiFormat == FIF_UNKNOWN)
-    {
-		gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, Unsupported format.\n", filename);
-		FILESYSTEM_ANY_CLOSE(fileHandle);
+	{
+		gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, Unknown format.\n", filename);
 		return false;
-    }
+	}
 
 	if(!FreeImage_FIFSupportsReading(fiFormat))
-    {
+	{
 		gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, Unsupported format.\n", filename);
-		FILESYSTEM_ANY_CLOSE(fileHandle);
 		return false;
-    }
+	}
 
-	FIBITMAP *fiB = FreeImage_LoadFromHandle(fiFormat, &fiIO, (fi_handle)fileHandle);
-
-	FILESYSTEM_ANY_CLOSE(fileHandle);
+	FIBITMAP* fiB = FreeImage_LoadFromHandle(fiFormat, &fiIO, (fi_handle)fileHandle);
 
 	if (!fiB)
 	{
@@ -1939,40 +2284,75 @@ bool LoadImageGeneric(const char *filename, const char* pathId, byte *buf, size_
 		return false;
 	}
 
-	size_t pos = 0;
-	size_t w = FreeImage_GetWidth(fiB);
-	size_t h = FreeImage_GetHeight(fiB);
-	size_t blockSize = FreeImage_GetLine(fiB) / w;
+	CScopedFIBitmap scopedBitmap(fiB);
 
-	if(w * h * 4 > bufSize)
+	if (fiFormat == FIF_HDR)
 	{
-		FreeImage_Unload(fiB);
-		return false;
-	}
+		FREE_IMAGE_COLOR_TYPE colorType = FreeImage_GetColorType(scopedBitmap.get());
 
-	for(size_t y = 0; y < h; ++y )
-	{
-		BYTE *bits = FreeImage_GetScanLine(fiB, h-y-1);
-		for( size_t x = 0; x < w; ++x )
+		if (colorType == FIC_RGBALPHA)
 		{
-			buf[pos++] = bits[FI_RGBA_RED];//B
-			buf[pos++] = bits[FI_RGBA_GREEN];//G
-			buf[pos++] = bits[FI_RGBA_BLUE];//R
-			if(blockSize == 4)
-				buf[pos++] = bits[FI_RGBA_ALPHA];//Alpha
-			else
-				buf[pos++] = 255;
-			bits += blockSize;
+			FIBITMAP* fiBFloat = FreeImage_ConvertToRGBAF(scopedBitmap.get());
+
+			if (!fiBFloat)
+			{
+				gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, FreeImage_ConvertToRGBAF failed.\n", filename);
+				return false;
+			}
+
+			CScopedFIBitmap scopedBitmapFloat(fiBFloat);
+
+			if (!LoadImageGenericRGBA32F(filename, buf, bufSize, scopedBitmapFloat.get(), state))
+				return false;
+
+		}
+		else if (colorType == FIC_RGB)
+		{
+			FIBITMAP* fiBFloat = FreeImage_ConvertToRGBF(scopedBitmap.get());
+
+			if (!fiBFloat)
+			{
+				gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, FreeImage_ConvertToRGBF failed.\n", filename);
+				return false;
+			}
+
+			CScopedFIBitmap scopedBitmapFloat(fiBFloat);
+
+			if (!LoadImageGenericRGB32F(filename, buf, bufSize, scopedBitmapFloat.get(), state))
+				return false;
 		}
 	}
+	else
+	{
+		FREE_IMAGE_COLOR_TYPE colorType = FreeImage_GetColorType(scopedBitmap.get());
 
-	state->format = GL_RGBA8;
-	state->compressed = false;
-	state->width = w;
-	state->height = h;
-	state->mipmaps.emplace_back(0, buf, pos, w, h);
-
-	FreeImage_Unload(fiB);
+		if (colorType == FIC_RGBALPHA)
+		{
+			if (!LoadImageGenericRGBA8(filename, buf, bufSize, scopedBitmap.get(), state))
+			{
+				return false;
+			}
+		}
+		else if (colorType == FIC_RGB)
+		{
+			if (!LoadImageGenericRGBA8(filename, buf, bufSize, scopedBitmap.get(), state))
+			{
+				return false;
+			}
+		}
+		else if (colorType == FIC_PALETTE)
+		{
+			if (!LoadImagePaletteRGBA8(filename, buf, bufSize, scopedBitmap.get(), state))
+			{
+				return false;
+			}
+		}
+		else
+		{
+			gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, bogus color type: %d.\n", filename, colorType);
+			return false;
+		}
+	}
 
 	return true;
 }
@@ -2039,14 +2419,14 @@ bool SaveImageGeneric(const char *filename, const char* pathId, int width, int h
 	return true;
 }
 
-int R_LoadRGBATextureFromMemory(const char* identifier, void* data, int width, int height, GL_TEXTURETYPE textureType, bool mipmap)
+int R_LoadRGBA8TextureFromMemory(const char* identifier, void* data, int width, int height, GL_TEXTURETYPE textureType, bool mipmap)
 {
 	gl_loadtexture_state_t state;
 
+	state.internalformat = GL_RGBA8;
+	state.compressed = false;
 	state.width = width;
 	state.height = height;
-	state.format = GL_RGBA8;
-	state.compressed = false;
 	state.mipmap = mipmap;
 	state.mipmaps.emplace_back(0, data, 0, width, height);
 
@@ -2137,7 +2517,9 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
 					(const char*)texloader_buffer, state.width, state.height,
 					hardwareFilter, true);
-				GL_UploadDXT(&state);
+
+				GL_UploadCompressedTexture(&state);
+
 				bLoaded = true;
 			}
 			if (!bLoaded && LoadDDS(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && !state.cubemap)
@@ -2145,7 +2527,9 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId, 
 					(const char *)texloader_buffer, state.width, state.height, 
 					hardwareFilter, true);
-				GL_UploadDXT(&state);
+
+				GL_UploadCompressedTexture(&state);
+
 				bLoaded = true;
 			}
 		}

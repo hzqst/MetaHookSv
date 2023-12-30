@@ -13,11 +13,15 @@ cvar_t *r_wsurf_zprepass;
 int r_fog_mode = 0;
 float r_fog_control[3] = { 0 };
 float r_fog_color[4] = { 0 };
-float r_shadow_matrix[3][16];
-float r_world_matrix_inv[16];
-float r_proj_matrix_inv[16];
-vec3_t r_frustum_origin[4];
-vec3_t r_frustum_vec[4];
+float r_shadow_matrix[3][16] = { 0 };
+float r_world_matrix_inv[16] = { 0 };
+float r_projection_matrix_inv[16] = { 0 };
+
+float r_viewmodel_projection_matrix[16] = { 0 };
+float r_viewmodel_projection_matrix_inv[16] = { 0 };
+
+vec3_t r_frustum_origin[4] = { 0 };
+vec3_t r_frustum_vec[4] = { 0 };
 float r_znear = 0;
 float r_zfar = 0;
 bool r_ortho = false;
@@ -4062,7 +4066,7 @@ void R_SetupSceneUBO(void)
 	memcpy(SceneUBO.viewMatrix, r_world_matrix, sizeof(mat4));
 	memcpy(SceneUBO.projMatrix, r_projection_matrix, sizeof(mat4));
 	memcpy(SceneUBO.invViewMatrix, r_world_matrix_inv, sizeof(mat4));
-	memcpy(SceneUBO.invProjMatrix, r_proj_matrix_inv, sizeof(mat4));
+	memcpy(SceneUBO.invProjMatrix, r_projection_matrix_inv, sizeof(mat4));
 	memcpy(SceneUBO.shadowMatrix[0], r_shadow_matrix[0], sizeof(mat4));
 	memcpy(SceneUBO.shadowMatrix[1], r_shadow_matrix[1], sizeof(mat4));
 	memcpy(SceneUBO.shadowMatrix[2], r_shadow_matrix[2], sizeof(mat4));
