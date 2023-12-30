@@ -301,9 +301,16 @@ vec3 R_StudioLighting(vec3 vWorldPos, vec3 vNormal, float specularMask)
 
 	#endif
 
-	//Really need to clamp?
 
-	float lv = clamp(illum, 0.0, 255.0) / 255.0;
+	#if defined(STUDIO_NF_OVERBRIGHT)
+
+		float lv = clamp(illum, 0.0, 4096.0) / 255.0;
+
+	#else
+
+		float lv = clamp(illum, 0.0, 255.0) / 255.0;
+
+	#endif
 
 	lv = LightGammaToLinearInternal(lv);
 
