@@ -172,6 +172,7 @@ extern metahook_api_t gMetaHookAPI;
 
 DWORD MH_LoadBlobFile(BYTE* pBuffer, void* pBlobFootPrint, void** pv, DWORD dwBufferSize)
 {
+#if defined(METAHOOK_BLOB_SUPPORT) || defined(_DEBUG)
 	auto hBlob = LoadBlobFromBuffer(pBuffer, dwBufferSize, g_BlobLoaderSectionBase, g_BlobLoaderSectionSize);
 
 	if (hBlob)
@@ -186,6 +187,11 @@ DWORD MH_LoadBlobFile(BYTE* pBuffer, void* pBlobFootPrint, void** pv, DWORD dwBu
 		return GetBlobModuleSpecialAddress(hBlob);
 	}
 
+#else
+
+	MH_SysError("This build of metahook does not support blob client.\nPlease use metahook_blob.exe instead.");
+
+#endif
 	return 0;
 }
 

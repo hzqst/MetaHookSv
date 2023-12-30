@@ -283,6 +283,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 		if (FIsBlob(pszEngineDLL))
 		{
+
+#if defined(METAHOOK_BLOB_SUPPORT) || defined(_DEBUG)
 			if (!g_BlobLoaderSectionBase)
 			{
 				g_BlobLoaderSectionBase = GetBlobLoaderSection((PVOID)hInstance, &g_BlobLoaderSectionSize);
@@ -306,6 +308,15 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 					}
 				}
 			}
+#else
+			if (1)
+			{
+				char msg[512];
+				wsprintf(msg, "This build of metahook does not support blob engine : %s.\nPlease use metahook_blob.exe instead.", pszEngineDLL);
+				MessageBox(NULL, msg, "Fatal Error", MB_ICONERROR);
+				return 0;
+			}
+#endif
 
 			hBlobEngine = LoadBlobFile(pszEngineDLL, g_BlobLoaderSectionBase, g_BlobLoaderSectionSize);
 

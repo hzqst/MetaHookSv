@@ -303,6 +303,8 @@ BlobHandle_t LoadBlobFromBuffer(BYTE* pBuffer, DWORD dwBufferSize, PVOID BlobSec
 
 BlobHandle_t LoadBlobFile(const char *szFileName, PVOID BlobSectionBase, ULONG BlobSectionSize)
 {
+#if defined(METAHOOK_BLOB_SUPPORT) || defined(_DEBUG)
+
 	BlobHandle_t hBlob = NULL;
 
 	FileHandle_t hFile = FILESYSTEM_ANY_OPEN(szFileName, "rb");
@@ -328,6 +330,9 @@ BlobHandle_t LoadBlobFile(const char *szFileName, PVOID BlobSectionBase, ULONG B
 	}
 
 	return hBlob;
+#else
+	return NULL;
+#endif
 }
 
 void FreeBlobModule(BlobHandle_t hBlob)
