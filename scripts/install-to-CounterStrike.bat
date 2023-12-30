@@ -11,7 +11,12 @@ if not "%SolutionDir:~-1%"=="\" SET "SolutionDir=%SolutionDir%\"
 
 cd /d "%SolutionDir%"tools
 
-if not exist "%SolutionDir%Build\svencoop.exe" goto fail_nobuild
+if exist "%SolutionDir%Build\MetaHook.exe" goto start_install
+if exist "%SolutionDir%Build\MetaHook_blob.exe" goto start_install
+
+goto fail_nobuild
+
+start_install:
 
 set LauncherExe=metahook.exe
 set LauncherMod=cstrike
@@ -31,7 +36,8 @@ echo -----------------------------------------------------
 
 echo Copying files...
 
-copy "%SolutionDir%Build\svencoop.exe" "%GameDir%\%LauncherExe%" /y
+if exist "%SolutionDir%Build\MetaHook.exe" copy "%SolutionDir%Build\MetaHook.exe" "%GameDir%\%LauncherExe%" /y
+if exist "%SolutionDir%Build\MetaHook_blob.exe" copy "%SolutionDir%Build\MetaHook_blob.exe" "%GameDir%\metahook_blob.exe" /y
 copy "%SolutionDir%Build\FreeImage.dll" "%GameDir%\" /y
 xcopy "%SolutionDir%Build\svencoop" "%GameDir%\%LauncherMod%" /y /e
 xcopy "%SolutionDir%Build\cstrike_hd" "%GameDir%\cstrike_hd" /y /e
