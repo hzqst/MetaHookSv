@@ -2120,6 +2120,8 @@ bool LoadImageGenericRGBA8(const char *filename, byte* buf, size_t bufSize, FIBI
 	return true;
 }
 
+#if 0
+
 bool LoadImageGenericRGB8(const char* filename, byte* buf, size_t bufSize, FIBITMAP* fiB, gl_loadtexture_state_t* state)
 {
 	size_t pos = 0;
@@ -2157,6 +2159,8 @@ bool LoadImageGenericRGB8(const char* filename, byte* buf, size_t bufSize, FIBIT
 
 	return true;
 }
+
+#endif
 
 bool LoadImagePaletteRGBA8(const char* filename, byte* buf, size_t bufSize, FIBITMAP* fiB, gl_loadtexture_state_t* state)
 {
@@ -2197,6 +2201,8 @@ bool LoadImagePaletteRGBA8(const char* filename, byte* buf, size_t bufSize, FIBI
 	return true;
 }
 
+#if 0
+
 bool LoadImagePaletteRGB8(const char* filename, byte* buf, size_t bufSize, FIBITMAP* fiB, gl_loadtexture_state_t* state)
 {
 	size_t pos = 0;
@@ -2235,6 +2241,8 @@ bool LoadImagePaletteRGB8(const char* filename, byte* buf, size_t bufSize, FIBIT
 
 	return true;
 }
+
+#endif
 
 bool LoadImageGeneric(const char *filename, const char* pathId, byte *buf, size_t bufSize, gl_loadtexture_state_t *state, bool throw_warning_on_missing)
 {
@@ -2328,14 +2336,34 @@ bool LoadImageGeneric(const char *filename, const char* pathId, byte *buf, size_
 
 		if (colorType == FIC_RGBALPHA)
 		{
-			if (!LoadImageGenericRGBA8(filename, buf, bufSize, scopedBitmap.get(), state))
+			FIBITMAP* fiB32 = FreeImage_ConvertTo32Bits(scopedBitmap.get());
+
+			if (!fiB32)
+			{
+				gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, FreeImage_ConvertTo32Bits failed.\n", filename);
+				return false;
+			}
+
+			CScopedFIBitmap scopedBitmap32(fiB32);
+
+			if (!LoadImageGenericRGBA8(filename, buf, bufSize, scopedBitmap32.get(), state))
 			{
 				return false;
 			}
 		}
 		else if (colorType == FIC_RGB)
 		{
-			if (!LoadImageGenericRGBA8(filename, buf, bufSize, scopedBitmap.get(), state))
+			FIBITMAP* fiB24 = FreeImage_ConvertTo24Bits(scopedBitmap.get());
+
+			if (!fiB24)
+			{
+				gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, FreeImage_ConvertTo24Bits failed.\n", filename);
+				return false;
+			}
+
+			CScopedFIBitmap scopedBitmap24(fiB24);
+
+			if (!LoadImageGenericRGBA8(filename, buf, bufSize, scopedBitmap24.get(), state))
 			{
 				return false;
 			}
@@ -2518,6 +2546,8 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 					(const char*)texloader_buffer, state.width, state.height,
 					hardwareFilter, true);
 
+				(*currenttexture) = -1;
+				GL_Bind(textureId);
 				GL_UploadCompressedTexture(&state);
 
 				bLoaded = true;
@@ -2528,6 +2558,8 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 					(const char *)texloader_buffer, state.width, state.height, 
 					hardwareFilter, true);
 
+				(*currenttexture) = -1;
+				GL_Bind(textureId);
 				GL_UploadCompressedTexture(&state);
 
 				bLoaded = true;
@@ -2546,6 +2578,11 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
 					(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
 					hardwareFilter, true);
+
+				//(*currenttexture) = -1;
+				//GL_Bind(textureId);
+				//GL_UploadUncompressedTexture(&state);
+
 				bLoaded = true;
 			}
 			if (!bLoaded && LoadImageGeneric(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
@@ -2553,6 +2590,11 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId, 
 					(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
 					hardwareFilter, true);
+
+				//(*currenttexture) = -1;
+				//GL_Bind(textureId);
+				//GL_UploadUncompressedTexture(&state);
+
 				bLoaded = true;
 			}
 		}
@@ -2569,6 +2611,11 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
 					(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
 					hardwareFilter, true);
+
+				//(*currenttexture) = -1;
+				//GL_Bind(textureId);
+				//GL_UploadUncompressedTexture(&state);
+
 				bLoaded = true;
 			}
 			if (!bLoaded && LoadImageGeneric(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
@@ -2576,6 +2623,11 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
 					(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
 					hardwareFilter, true);
+
+				//(*currenttexture) = -1;
+				//GL_Bind(textureId);
+				//GL_UploadUncompressedTexture(&state);
+
 				bLoaded = true;
 			}
 		}
@@ -2592,6 +2644,11 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
 					(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
 					hardwareFilter, true);
+
+				//(*currenttexture) = -1;
+				//GL_Bind(textureId);
+				//GL_UploadUncompressedTexture(&state);
+
 				bLoaded = true;
 			}
 			if (!bLoaded && LoadImageGeneric(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
@@ -2599,6 +2656,11 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId, 
 					(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height, 
 					hardwareFilter, true);
+
+				//(*currenttexture) = -1;
+				//GL_Bind(textureId);
+				//GL_UploadUncompressedTexture(&state);
+
 				bLoaded = true;
 			}
 		}

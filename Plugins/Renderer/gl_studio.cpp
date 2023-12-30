@@ -81,6 +81,8 @@ cvar_t* r_studio_debug = NULL;
 MapConVar* r_studio_base_specular = NULL;
 MapConVar* r_studio_celshade_specular = NULL;
 
+cvar_t* r_studio_viewmodel_lightdir_adjust = NULL;
+
 cvar_t* r_studio_celshade = NULL;
 cvar_t* r_studio_celshade_midpoint = NULL;
 cvar_t* r_studio_celshade_softness = NULL;
@@ -656,7 +658,6 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 			SHADER_UNIFORM(prog, r_hair_shadow_offset, "r_hair_shadow_offset");
 			SHADER_UNIFORM(prog, r_outline_dark, "r_outline_dark");
 			SHADER_UNIFORM(prog, r_uvscale, "r_uvscale");
-			SHADER_UNIFORM(prog, entityPos, "entityPos");
 		}
 
 		g_StudioProgramTable[state] = prog;
@@ -669,11 +670,6 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 	if (prog.program)
 	{
 		GL_UseProgram(prog.program);
-
-		if (prog.entityPos != -1)
-		{
-			glUniform3f(prog.entityPos, (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3]);
-		}
 
 		if (prog.r_base_specular != -1)
 		{
@@ -1096,6 +1092,8 @@ void R_ShutdownStudio(void)
 void R_InitStudio(void)
 {
 	r_studio_debug = gEngfuncs.pfnRegisterVariable("r_studio_debug", "0", FCVAR_CLIENTDLL);
+
+	r_studio_viewmodel_lightdir_adjust = gEngfuncs.pfnRegisterVariable("r_studio_viewmodel_lightdir_adjust", "0", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 
 	r_studio_celshade = gEngfuncs.pfnRegisterVariable("r_studio_celshade", "1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	r_studio_celshade_midpoint = gEngfuncs.pfnRegisterVariable("r_studio_celshade_midpoint", "-0.1", FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
@@ -1656,6 +1654,13 @@ void R_StudioDrawVBOBegin(studio_vbo_t* VBOData)
 	}
 
 	memcpy(StudioUBO.r_plightvec, r_plightvec, sizeof(vec3_t));
+
+	if (r_draw_drawviewmodel && r_studio_viewmodel_lightdir_adjust->value > 0)
+	{
+		StudioUBO.r_plightvec[2] = StudioUBO.r_plightvec[2] * clamp(r_studio_viewmodel_lightdir_adjust->value, 0, 1);
+
+		VectorNormalize(StudioUBO.r_plightvec);
+	}
 
 	vec3_t entity_origin = { (*rotationmatrix)[0][3], (*rotationmatrix)[1][3], (*rotationmatrix)[2][3] };
 	memcpy(StudioUBO.entity_origin, entity_origin, sizeof(vec3_t));

@@ -21,3 +21,4 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
 
     MSBuild.exe MetaHook.sln "/target:MetaHook" /p:Configuration="Release_blob" /p:Platform="Win32"
 )
+

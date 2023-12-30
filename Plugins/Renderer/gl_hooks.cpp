@@ -508,6 +508,7 @@ void R_FillAddress(void)
 						{
 							auto pString = (PCHAR)pinst->detail->x86.operands[0].imm;
 							if (!memcmp(pString, "Failed to query GL vendor", sizeof("Failed to query GL vendor") - 1) ||
+								!memcmp(pString, "Failed to query gl vendor", sizeof("Failed to query gl vendor") - 1) ||
 								!memcmp(pString, "GL_VENDOR: %s", sizeof("GL_VENDOR: %s") - 1))
 							{
 								ctx->bFoundPushString = true;

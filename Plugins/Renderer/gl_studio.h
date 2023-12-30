@@ -43,7 +43,6 @@ typedef struct
 	int r_hair_specular_smooth;
 	int r_hair_shadow_offset;
 	int r_uvscale;
-	int entityPos;
 }studio_program_t;
 
 typedef struct studio_vbo_vertex_s
