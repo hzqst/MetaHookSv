@@ -1,0 +1,68 @@
+name: windows
+
+on:
+  push:
+    tags:
+      - "v*"
+  pull_request:
+    tags:
+      - "v*"
+
+env:
+  # Path to the solution file relative to the root of the project.
+  SOLUTION_FILE_PATH: .
+
+  # Configuration type to build.
+  # You can convert this to a build matrix if you need coverage of multiple configuration types.
+  # https://docs.github.com/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+  BUILD_CONFIGURATION: Release
+
+jobs:
+  build:
+
+    runs-on: windows-2019
+    if: github.repository == 'hzqst/MetaHookSv'
+
+    steps:
+      - uses: hzqst/checkout@v2.3.4
+
+      - name: Init dependencies
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: git submodule update --init --recursive
+        shell: cmd
+
+      - name: Build MetaHook and Plugins
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: scripts\build-MetaHook-blob.bat
+        shell: cmd
+
+      - name: Build Plugins
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: scripts\build-Plugins.bat
+        shell: cmd
+
+      - name: Create Output directory
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: mkdir Output
+        shell: cmd
+
+      - name: Copy Build to Output
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: |
+          mkdir "Output\Build"
+          xcopy "Build" "Output\Build" /y /e
+        shell: cmd
+
+      - name: Zipping All
+        uses: vimtor/action-zip@v1
+        with:
+          files: Output/
+          dest: MetaHookSv-windows-x86-blob-support.zip
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: MetaHookSv-${{ github.ref }}
+          files: |
+            MetaHookSv-windows-x86-blob-support.zip
