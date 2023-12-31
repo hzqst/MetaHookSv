@@ -2120,48 +2120,6 @@ bool LoadImageGenericRGBA8(const char *filename, byte* buf, size_t bufSize, FIBI
 	return true;
 }
 
-#if 0
-
-bool LoadImageGenericRGB8(const char* filename, byte* buf, size_t bufSize, FIBITMAP* fiB, gl_loadtexture_state_t* state)
-{
-	size_t pos = 0;
-	size_t w = FreeImage_GetWidth(fiB);
-	size_t h = FreeImage_GetHeight(fiB);
-	size_t blockSize = FreeImage_GetLine(fiB) / w;
-
-	if (w * h * 4 > bufSize)
-	{
-		gEngfuncs.Con_Printf("LoadImageGenericRGB8: Could not load %s, texture too large.\n", filename);
-		return false;
-	}
-
-	for (size_t y = 0; y < h; ++y)
-	{
-		BYTE* bits = FreeImage_GetScanLine(fiB, h - y - 1);
-		for (size_t x = 0; x < w; ++x)
-		{
-			buf[pos++] = bits[FI_RGBA_RED];//B
-			buf[pos++] = bits[FI_RGBA_GREEN];//G
-			buf[pos++] = bits[FI_RGBA_BLUE];//R
-			if (blockSize == 4)
-				buf[pos++] = bits[FI_RGBA_ALPHA];//Alpha
-			else
-				buf[pos++] = 255;
-			bits += blockSize;
-		}
-	}
-
-	state->internalformat = GL_RGB8;
-	state->compressed = false;
-	state->width = w;
-	state->height = h;
-	state->mipmaps.emplace_back(0, buf, pos, w, h);
-
-	return true;
-}
-
-#endif
-
 bool LoadImagePaletteRGBA8(const char* filename, byte* buf, size_t bufSize, FIBITMAP* fiB, gl_loadtexture_state_t* state)
 {
 	size_t pos = 0;
