@@ -16,7 +16,7 @@ if exist "%SolutionDir%Build\MetaHook_blob.exe" goto start_install
 
 goto fail_nobuild
 
-start_install:
+:start_install
 
 set LauncherExe=svencoop.exe
 set LauncherMod=svencoop
@@ -41,17 +41,17 @@ for /f "delims=" %%i in ('powershell.exe -Command "$filePath = '%GameSDL2Path%';
 
 if "%GameSDL2_fileVersion%"=="2, 0, 20, 0" (
     echo SDL2 version is "%GameSDL2_fileVersion%", no need to replace SDL2
-    goto :no_replace_sdl2
+    goto no_replace_sdl2
 )
 
 if "%GameSDL2_fileVersion%"=="2, 0, 16, 0" (
     echo SDL2 version is "%GameSDL2_fileVersion%", no need to replace SDL2
-    goto :no_replace_sdl2
+    goto no_replace_sdl2
 )
 
 echo SDL2 version is "%GameSDL2_fileVersion%", need to replace SDL2
 copy "%SolutionDir%Build\SDL2.dll" "%GameDir%\" /y
-goto :no_replace_sdl2
+goto no_replace_sdl2
 
 :no_replace_sdl2
 
