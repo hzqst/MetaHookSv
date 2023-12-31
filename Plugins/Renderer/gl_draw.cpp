@@ -2488,146 +2488,154 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 	bool bLoaded = false;
 	char filepath[1024];
 
-	if (!gPrivateFuncs.enginesurface_isTextureIDValid(pthis, dummy, textureId) || forceReload)
+	if (!gPrivateFuncs.staticGetTextureById)
 	{
-		if (1)
+		auto texture = gPrivateFuncs.staticGetTextureById(textureId);
+
+		if (texture && !forceReload)
 		{
-			snprintf(filepath, sizeof(filepath), "%s.dds", filename);
-
-			gl_loadtexture_state_t state;
-			state.wrap = GL_CLAMP_TO_EDGE;
-			state.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
-			if (g_iEngineType == ENGINE_SVENGINE && 
-				!bLoaded && LoadDDS(filepath, "UI", texloader_buffer, sizeof(texloader_buffer), &state, false) && !state.cubemap)
-			{
-				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
-					(const char*)texloader_buffer, state.width, state.height,
-					hardwareFilter, true);
-
-				(*currenttexture) = -1;
-				GL_Bind(textureId);
-				GL_UploadCompressedTexture(&state);
-
-				bLoaded = true;
-			}
-			if (!bLoaded && LoadDDS(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && !state.cubemap)
-			{
-				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId, 
-					(const char *)texloader_buffer, state.width, state.height, 
-					hardwareFilter, true);
-
-				(*currenttexture) = -1;
-				GL_Bind(textureId);
-				GL_UploadCompressedTexture(&state);
-
-				bLoaded = true;
-			}
+			gPrivateFuncs.enginesurface_drawSetTexture(pthis, dummy, textureId);
+			return;
 		}
-		if (1)
+	}
+	else
+	{
+		if (gPrivateFuncs.enginesurface_isTextureIDValid(pthis, dummy, textureId) && !forceReload)
 		{
-			snprintf(filepath, sizeof(filepath), "%s.png", filename);
-
-			gl_loadtexture_state_t state;
-			state.wrap = GL_CLAMP_TO_EDGE;
-			state.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
-			if (g_iEngineType == ENGINE_SVENGINE &&
-				!bLoaded && LoadImageGeneric(filepath, "UI", texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
-			{
-				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
-					(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
-					hardwareFilter, true);
-
-				//(*currenttexture) = -1;
-				//GL_Bind(textureId);
-				//GL_UploadUncompressedTexture(&state);
-
-				bLoaded = true;
-			}
-			if (!bLoaded && LoadImageGeneric(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
-			{
-				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId, 
-					(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
-					hardwareFilter, true);
-
-				//(*currenttexture) = -1;
-				//GL_Bind(textureId);
-				//GL_UploadUncompressedTexture(&state);
-
-				bLoaded = true;
-			}
+			gPrivateFuncs.enginesurface_drawSetTexture(pthis, dummy, textureId);
+			return;
 		}
-		if (1)
+	}
+
+	if (1)
+	{
+		snprintf(filepath, sizeof(filepath), "%s.dds", filename);
+
+		gl_loadtexture_state_t state;
+		state.wrap = GL_CLAMP_TO_EDGE;
+		state.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
+		if (g_iEngineType == ENGINE_SVENGINE && 
+			!bLoaded && LoadDDS(filepath, "UI", texloader_buffer, sizeof(texloader_buffer), &state, false) && !state.cubemap)
 		{
-			snprintf(filepath, sizeof(filepath), "%s.tga", filename);
+			gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
+				(const char*)texloader_buffer, state.width, state.height,
+				hardwareFilter, true);
 
-			gl_loadtexture_state_t state;
-			state.wrap = GL_CLAMP_TO_EDGE;
-			state.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
-			if (g_iEngineType == ENGINE_SVENGINE &&
-				!bLoaded && LoadImageGeneric(filepath, "UI", texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
-			{
-				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
-					(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
-					hardwareFilter, true);
+			(*currenttexture) = -1;
+			GL_Bind(textureId);
+			GL_UploadCompressedTexture(&state);
 
-				//(*currenttexture) = -1;
-				//GL_Bind(textureId);
-				//GL_UploadUncompressedTexture(&state);
-
-				bLoaded = true;
-			}
-			if (!bLoaded && LoadImageGeneric(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
-			{
-				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
-					(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
-					hardwareFilter, true);
-
-				//(*currenttexture) = -1;
-				//GL_Bind(textureId);
-				//GL_UploadUncompressedTexture(&state);
-
-				bLoaded = true;
-			}
+			bLoaded = true;
 		}
-		if (1)
+		if (!bLoaded && LoadDDS(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && !state.cubemap)
 		{
-			snprintf(filepath, sizeof(filepath), "%s.bmp", filename);
+			gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId, 
+				(const char *)texloader_buffer, state.width, state.height, 
+				hardwareFilter, true);
 
-			gl_loadtexture_state_t state;
-			state.wrap = GL_CLAMP_TO_EDGE;
-			state.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
-			if (g_iEngineType == ENGINE_SVENGINE &&
-				!bLoaded && LoadImageGeneric(filepath, "UI", texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
-			{
-				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
-					(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
-					hardwareFilter, true);
+			(*currenttexture) = -1;
+			GL_Bind(textureId);
+			GL_UploadCompressedTexture(&state);
 
-				//(*currenttexture) = -1;
-				//GL_Bind(textureId);
-				//GL_UploadUncompressedTexture(&state);
+			bLoaded = true;
+		}
+	}
+	if (1)
+	{
+		snprintf(filepath, sizeof(filepath), "%s.png", filename);
 
-				bLoaded = true;
-			}
-			if (!bLoaded && LoadImageGeneric(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
-			{
-				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId, 
-					(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height, 
-					hardwareFilter, true);
+		gl_loadtexture_state_t state;
+		state.wrap = GL_CLAMP_TO_EDGE;
+		state.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
+		if (g_iEngineType == ENGINE_SVENGINE &&
+			!bLoaded && LoadImageGeneric(filepath, "UI", texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
+		{
+			gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
+				(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
+				hardwareFilter, true);
 
-				//(*currenttexture) = -1;
-				//GL_Bind(textureId);
-				//GL_UploadUncompressedTexture(&state);
+			bLoaded = true;
+		}
+		if (!bLoaded && LoadImageGeneric(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
+		{
+			gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId, 
+				(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
+				hardwareFilter, true);
 
-				bLoaded = true;
-			}
+			bLoaded = true;
+		}
+	}
+	if (1)
+	{
+		snprintf(filepath, sizeof(filepath), "%s.tga", filename);
+
+		gl_loadtexture_state_t state;
+		state.wrap = GL_CLAMP_TO_EDGE;
+		state.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
+		if (g_iEngineType == ENGINE_SVENGINE &&
+			!bLoaded && LoadImageGeneric(filepath, "UI", texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
+		{
+			gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
+				(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
+				hardwareFilter, true);
+
+			bLoaded = true;
+		}
+		if (!bLoaded && LoadImageGeneric(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
+		{
+			gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
+				(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
+				hardwareFilter, true);
+
+			bLoaded = true;
+		}
+	}
+	if (1)
+	{
+		snprintf(filepath, sizeof(filepath), "%s.bmp", filename);
+
+		gl_loadtexture_state_t state;
+		state.wrap = GL_CLAMP_TO_EDGE;
+		state.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
+		if (g_iEngineType == ENGINE_SVENGINE &&
+			!bLoaded && LoadImageGeneric(filepath, "UI", texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
+		{
+			gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
+				(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
+				hardwareFilter, true);
+
+			bLoaded = true;
+		}
+		if (!bLoaded && LoadImageGeneric(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
+		{
+			gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId, 
+				(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height, 
+				hardwareFilter, true);
+
+			bLoaded = true;
 		}
 	}
 
 	if (bLoaded)
 	{
-		if (gPrivateFuncs.enginesurface_isTextureIDValid(pthis, dummy, textureId))
-			gPrivateFuncs.enginesurface_drawSetTexture(pthis, dummy, textureId);
+		if (gPrivateFuncs.staticGetTextureById)
+		{
+			auto texture = gPrivateFuncs.staticGetTextureById(textureId);
+
+			if (texture)
+			{
+				gPrivateFuncs.enginesurface_drawSetTexture(pthis, dummy, textureId);
+				return;
+			}
+		}
+		else
+		{
+			if (gPrivateFuncs.enginesurface_isTextureIDValid(pthis, dummy, textureId))
+			{
+				gPrivateFuncs.enginesurface_drawSetTexture(pthis, dummy, textureId);
+				return;
+			}
+		}
 	}
 }
 
