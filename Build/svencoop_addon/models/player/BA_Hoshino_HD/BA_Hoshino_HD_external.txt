@@ -31,9 +31,22 @@
 {
     "classname" "studio_texture"
     "basetexture" "T_BA_hsn_001_ring_C.bmp"
-    "flags" "STUDIO_NF_OVERBRIGHT"
-    "flags" "STUDIO_NF_FULLBRIGHT"
     "replacetexture" "models/player/BA_Hoshino_HD/T_BA_hsn_001_ring_C.hdr"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "T_BA_hsn_001_ring_C.bmp"
+    "flags" "STUDIO_NF_OVERBRIGHT"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "T_BA_hsn_001_ring_C.bmp"
+    "flags" "STUDIO_NF_FULLBRIGHT"
+}
+{
+    "classname" "studio_texture"
+    "basetexture" "T_BA_hsn_001_ring_C.bmp"
+    "flags" "STUDIO_NF_NOOUTLINE"
 }
 {
     "classname" "studio_texture"
@@ -70,4 +83,5 @@
     "hair_specular_noise" "512 1024 0.1 0.15"
     "hair_specular_noise2" "240 320 0.05 0.06"
     "hair_specular_smooth" "0.0 0.3"
+    "hair_shadow_offset" "0.3 -0.3"
 }

@@ -443,6 +443,8 @@ void R_ClearBSPEntities(void);
 void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator fn);
 bspentity_t *R_ParseBSPEntity_DefaultAllocator(void);
 const char *ValueForKey(bspentity_t *ent, const char *key);
+const char* ValueForKeyEx(bspentity_t* ent, const char* key, epair_t** ppLastEPair);
+void ValueForKeyExArray(bspentity_t* ent, const char* key, std::vector<const char*> &strArray);
 void R_LoadBSPEntities(void);
 void R_FreeLightmapTextures(void);
 void R_LoadExternalEntities(void);

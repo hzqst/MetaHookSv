@@ -3080,6 +3080,50 @@ const char *ValueForKey(bspentity_t *ent, const char *key)
    return NULL;
 }
 
+const char* ValueForKeyEx(bspentity_t* ent, const char* key,epair_t **ppLastEPair)
+{
+	if ((*ppLastEPair))
+	{
+		for (epair_t* pEPair = (*ppLastEPair)->next; pEPair; pEPair = pEPair->next)
+		{
+			if (!strcmp(pEPair->key, key))
+			{
+				(*ppLastEPair) = pEPair;
+				return pEPair->value;
+			}
+		}
+
+	}
+	else
+	{
+		for (epair_t* pEPair = ent->epairs; pEPair; pEPair = pEPair->next)
+		{
+			if (!strcmp(pEPair->key, key))
+			{
+				(*ppLastEPair) = pEPair;
+				return pEPair->value;
+			}
+		}
+	}
+	*ppLastEPair = NULL;
+	return NULL;
+}
+
+void ValueForKeyExArray(bspentity_t* ent, const char* key, std::vector<const char *> &strArray)
+{
+	const char* flags = NULL;
+	epair_t* ep = NULL;
+	do
+	{
+		flags = ValueForKeyEx(ent, "flags", &ep);
+
+		if (flags) {
+			strArray.emplace_back(flags);
+		}
+
+	} while (flags);
+}
+
 void FreeBSPEntity(bspentity_t *ent)
 {
 	epair_t *pPair = ent->epairs;

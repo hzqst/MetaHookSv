@@ -1081,15 +1081,12 @@ void GL_Upload16ToMipmap(byte* pData, int width, int height, byte* pPal, int iPa
 				byte index = pInputBytes[i];
 
 				if (iPalTextureType == TEX_TYPE_ALPHA_GRADIENT_SVENGINE) {
-					isTransparent = false;
 					pOutputPixels[i] = (index << 24) | ((*(unsigned int*)&pPalette[765]) & 0xFFFFFF);
 				}
 				else if (iPalTextureType == TEX_TYPE_RGBA_SVENGINE) {
-					isTransparent = false;
 					pOutputPixels[i] = (index << 24) | ((*(unsigned int*)&pPalette[3 * index]) & 0xFFFFFF);
 				}
 				else if (index == 255) {
-					isTransparent = false;
 					pOutputPixels[i] = 0; // Fully transparent.
 				}
 				else {
@@ -1146,15 +1143,12 @@ void GL_Upload16ToMipmap(byte* pData, int width, int height, byte* pPal, int iPa
 				byte index = pInputBytes[i];
 
 				if (iPalTextureType == TEX_TYPE_ALPHA_GRADIENT) {
-					isTransparent = false;
 					pOutputPixels[i] = (index << 24) | ((*(unsigned int*)&pPalette[765]) & 0xFFFFFF);
 				}
 				else if (iPalTextureType == TEX_TYPE_RGBA) {
-					isTransparent = false;
 					pOutputPixels[i] = (index << 24) | ((*(unsigned int*)&pPalette[3 * index]) & 0xFFFFFF);
 				}
 				else if (index == 255) {
-					isTransparent = false;
 					pOutputPixels[i] = 0; // Fully transparent.
 				}
 				else {
@@ -2158,49 +2152,6 @@ bool LoadImagePaletteRGBA8(const char* filename, byte* buf, size_t bufSize, FIBI
 
 	return true;
 }
-
-#if 0
-
-bool LoadImagePaletteRGB8(const char* filename, byte* buf, size_t bufSize, FIBITMAP* fiB, gl_loadtexture_state_t* state)
-{
-	size_t pos = 0;
-	size_t w = FreeImage_GetWidth(fiB);
-	size_t h = FreeImage_GetHeight(fiB);
-	size_t blockSize = FreeImage_GetLine(fiB) / w;
-
-	// Get the palette
-	RGBQUAD* palette = FreeImage_GetPalette(fiB);
-
-	if (w * h * 4 > bufSize)
-	{
-		gEngfuncs.Con_Printf("LoadImagePaletteRGB8: Could not load %s, texture too large.\n", filename);
-		return false;
-	}
-
-	for (size_t y = 0; y < h; ++y)
-	{
-		BYTE* bits = FreeImage_GetScanLine(fiB, h - y - 1);
-		for (size_t x = 0; x < w; ++x)
-		{
-			const RGBQUAD& color = palette[bits[x]];
-
-			buf[pos++] = color.rgbRed;//R
-			buf[pos++] = color.rgbGreen;//G
-			buf[pos++] = color.rgbBlue;//B
-			buf[pos++] = 255;
-		}
-	}
-
-	state->internalformat = GL_RGB8;
-	state->compressed = false;
-	state->width = w;
-	state->height = h;
-	state->mipmaps.emplace_back(0, buf, pos, w, h);
-
-	return true;
-}
-
-#endif
 
 bool LoadImageGeneric(const char *filename, const char* pathId, byte *buf, size_t bufSize, gl_loadtexture_state_t *state, bool throw_warning_on_missing)
 {

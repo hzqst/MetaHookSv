@@ -34,6 +34,8 @@ uniform vec4 r_hair_specular_noise2;
 uniform vec2 r_hair_specular_smooth;
 uniform float r_outline_dark;
 uniform vec2 r_uvscale;
+uniform float r_packed_stride;
+uniform vec4 r_packed_index;
 
 in vec3 v_worldpos;
 in vec3 v_normal;
@@ -62,9 +64,9 @@ layout(location = 2) out vec4 out_WorldNorm;
 layout(location = 3) out vec4 out_Specular;
 #endif
 
-#if defined(NORMALTEXTURE_ENABLED)
+#if defined(NORMALTEXTURE_ENABLED) || defined(PACKED_DIFFUSETEXTURE_ENABLED)
 
-mat3 CalcTBNMatrix()
+mat3 GenerateTBNMatrix()
 {
   // Calculate the TBN matrix
     vec3 dp1 = dFdx(v_worldpos);
@@ -82,12 +84,26 @@ mat3 CalcTBNMatrix()
     return mat3(normalize(T), normalize(B), v_normal);
 }
 
+vec4 SampleNormalTexture(vec2 baseTexcoord)
+{
+	#if defined(NORMALTEXTURE_ENABLED)
+
+		vec4 normColor = texture(normalTex, baseTexcoord);
+
+	#elif defined(PACKED_NORMALTEXTURE_ENABLED)
+
+		vec4 normColor = texture(diffuseTex, vec2(baseTexcoord.x + r_packed_stride * r_packed_index.y, baseTexcoord.y));
+
+	#endif
+
+	return normColor;
+}
+
 vec3 NormalMapping(mat3 TBN, vec2 baseTexcoord)
 {
-	vec2 vNormTexcoord = vec2(baseTexcoord.x, baseTexcoord.y);
-
     // Sample tangent space normal vector from normal map and remap it from [0, 1] to [-1, 1] range.
-    vec3 n = texture(normalTex, vNormTexcoord).xyz;
+    vec3 n = SampleNormalTexture(baseTexcoord).xyz;
+
     n = normalize(n * 2.0 - 1.0);
 
     // Multiple normal by the TBN matrix to transform the normal from tangent space to world space.
@@ -162,14 +178,14 @@ float R_StudioBaseLight_FlatShading(vec3 vWorldPos, vec3 vNormal, float specular
 	illum += StudioUBO.r_shadelight * 0.8;
 
 	//Layer 1 Specular
-	#if defined(SPECULARTEXTURE_ENABLED)
+	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
 		illum += R_StudioBaseLight_PhongSpecular(vWorldPos, vNormal, specularMask);
 
 	#endif
 
 	//Layer 2 Specular
-	#if defined(SPECULARTEXTURE_ENABLED) && defined(STUDIO_NF_CELSHADE)
+	#if (defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)) && defined(STUDIO_NF_CELSHADE)
 
 		illum += R_StudioBaseLight_CelShadeSpecular(vWorldPos, vNormal, specularMask);
 
@@ -196,7 +212,7 @@ float R_StudioBaseLight_PhongShading(vec3 vWorldPos, vec3 vNormal, float specula
 	}
 
 	//Layer 1 Specular
-	#if defined(SPECULARTEXTURE_ENABLED)
+	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
 		illum += R_StudioBaseLight_PhongSpecular(vWorldPos, vNormal, specularMask);
 
@@ -244,7 +260,7 @@ vec3 R_StudioEntityLight_FlatShading(int i, vec3 vWorldPos, vec3 vNormal, float 
 	color.y += StudioUBO.r_elight_color[i].y * ElightCosine;
 	color.z += StudioUBO.r_elight_color[i].z * ElightCosine;
 
-	#if defined(SPECULARTEXTURE_ENABLED)
+	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
 		color += R_StudioEntityLight_PhongSpecular(i, ElightDirection, vWorldPos, vNormal, specularMask);
 		
@@ -273,7 +289,7 @@ vec3 R_StudioEntityLight_PhongShading(int i, vec3 vWorldPos, vec3 vNormal, float
 	color.y += StudioUBO.r_elight_color[i].y * ElightCosine;
 	color.z += StudioUBO.r_elight_color[i].z * ElightCosine;
 
-	#if defined(SPECULARTEXTURE_ENABLED)
+	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
 		color += R_StudioEntityLight_PhongSpecular(i, ElightDirection, vWorldPos, vNormal, specularMask);
 		
@@ -454,7 +470,7 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 	kajiyaSpecular.y = kajiyaSpecular.y * smoothstep(r_hair_specular_smooth.x, r_hair_specular_smooth.y, v_color.y);
 	kajiyaSpecular.z = kajiyaSpecular.z * smoothstep(r_hair_specular_smooth.x, r_hair_specular_smooth.y, v_color.z);
 
-#if defined(SPECULARTEXTURE_ENABLED)
+#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
 	specularColor += kajiyaSpecular * litOrShadowColor * specularMask;
 
@@ -480,7 +496,7 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 	kajiyaSpecular.y = kajiyaSpecular.y * smoothstep(r_hair_specular_smooth.x, r_hair_specular_smooth.y, v_color.y);
 	kajiyaSpecular.z = kajiyaSpecular.z * smoothstep(r_hair_specular_smooth.x, r_hair_specular_smooth.y, v_color.z);
 
-#if defined(SPECULARTEXTURE_ENABLED)
+#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
 	specularColor += kajiyaSpecular * litOrShadowColor * specularMask;
 
@@ -523,13 +539,9 @@ vec3 R_GenerateSimplifiedNormal()
 	vec3 vNormal = normalize(v_normal.xyz);
 
 	#if defined(STUDIO_NF_DOUBLE_FACE)
-		if (!gl_FrontFacing) {
+		if (gl_FrontFacing) {
 			vNormal = vNormal * -1.0;
 		}
-	#endif
-
-	#if defined(INVERT_NORMAL_ENABLED)
-		vNormal = vNormal * -1.0;
 	#endif
 
 	return vNormal;
@@ -537,9 +549,9 @@ vec3 R_GenerateSimplifiedNormal()
 
 vec3 R_GenerateAdjustedNormal(vec3 vWorldPos, float flNormalMask)
 {
-#if defined(NORMALTEXTURE_ENABLED)
+#if defined(NORMALTEXTURE_ENABLED) | defined(PACKED_NORMALTEXTURE_ENABLED)
 
-	mat3 TBN = CalcTBNMatrix();
+	mat3 TBN = GenerateTBNMatrix();
 	vec3 vNormal = NormalMapping(TBN, v_texcoord);
 
 #else
@@ -549,13 +561,9 @@ vec3 R_GenerateAdjustedNormal(vec3 vWorldPos, float flNormalMask)
 #endif
 
 	#if defined(STUDIO_NF_DOUBLE_FACE)
-		if (!gl_FrontFacing) {
+		if (gl_FrontFacing) {
 			vNormal = vNormal * -1.0;
 		}
-	#endif
-
-	#if defined(INVERT_NORMAL_ENABLED)
-		vNormal = vNormal * -1.0;
 	#endif
 
 	#if defined(STUDIO_NF_CELSHADE)
@@ -574,6 +582,40 @@ vec3 R_GenerateAdjustedNormal(vec3 vWorldPos, float flNormalMask)
 	return vNormal;
 }
 
+vec4 SampleDiffuseTexture(vec2 baseTexcoord)
+{
+	#if defined(PACKED_DIFFUSETEXTURE_ENABLED)
+
+		vec4 diffuseColor = texture(diffuseTex, vec2(baseTexcoord.x + r_packed_stride * r_packed_index.x, baseTexcoord.y));
+
+	#else
+
+		vec4 diffuseColor = texture(diffuseTex, baseTexcoord);
+
+	#endif
+
+	return diffuseColor;
+}
+
+#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
+
+vec4 SampleRawSpecularTexture(vec2 baseTexcoord)
+{
+	#if defined(SPECULARTEXTURE_ENABLED)
+
+		vec4 rawSpecularColor = texture(specularTex, baseTexcoord);
+
+	#elif defined(PACKED_SPECULARTEXTURE_ENABLED)
+
+		vec4 rawSpecularColor = texture(diffuseTex, vec2(baseTexcoord.x + r_packed_stride * r_packed_index.w, baseTexcoord.y));
+
+	#endif
+
+	return rawSpecularColor;
+}
+
+#endif
+
 void main(void)
 {
 #if !defined(SHADOW_CASTER_ENABLED) && !defined(HAIR_SHADOW_ENABLED)
@@ -588,9 +630,7 @@ void main(void)
 
 	ClipPlaneTest(v_worldpos.xyz, vSimpleNormal);
 
-	vec2 texcoord = v_texcoord;
-
-	vec4 diffuseColor = texture(diffuseTex, texcoord);
+	vec4 diffuseColor = SampleDiffuseTexture(v_texcoord);
 
 	#if defined(STUDIO_NF_MASKED)
 		if(diffuseColor.a < 0.5)
@@ -599,10 +639,9 @@ void main(void)
 
 	diffuseColor = ProcessDiffuseColor(diffuseColor);
 
-	#if defined(SPECULARTEXTURE_ENABLED)
+	#if defined(SPECULARTEXTURE_ENABLED) || defined(PACKED_SPECULARTEXTURE_ENABLED)
 
-		vec2 specularTexCoord = vec2(v_texcoord.x, v_texcoord.y);
-		vec4 rawSpecularColor = texture(specularTex, specularTexCoord);
+		vec4 rawSpecularColor = SampleRawSpecularTexture(v_texcoord);
 		specularColor.xy = rawSpecularColor.xy;
 		flNormalMask = rawSpecularColor.z;
 
@@ -657,7 +696,7 @@ void main(void)
 	//Position output
 
 	#if defined(STUDIO_NF_MASKED)
-		vec4 diffuseColorMask = texture(diffuseTex, v_texcoord);
+		vec4 diffuseColorMask = SampleDiffuseTexture(v_texcoord);
 
 		if(diffuseColorMask.a < 0.5)
 			discard;
