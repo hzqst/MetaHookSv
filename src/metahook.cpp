@@ -521,14 +521,14 @@ int MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 			{
 				plug->iInterfaceVersion = 2;
 
-				if (CommandLine()->CheckParm("-metahook_legacy_v2_api"))
-				{
+				//if (CommandLine()->CheckParm("-metahook_legacy_v2_api"))
+				//{
 					((IPluginsV2*)plug->pPluginAPI)->Init(&gMetaHookAPI_LegacyV2, &gInterface, &gMetaSave);
-				}
-				else
-				{
-					((IPluginsV2*)plug->pPluginAPI)->Init(&gMetaHookAPI, &gInterface, &gMetaSave);
-				}
+				//}
+				//else
+				//{
+				//	((IPluginsV2*)plug->pPluginAPI)->Init(&gMetaHookAPI, &gInterface, &gMetaSave);
+				//}
 			}
 			else
 			{
