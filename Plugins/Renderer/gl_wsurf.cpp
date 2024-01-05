@@ -1005,6 +1005,8 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 {
 	std::vector<GLuint> vIndicesBuffer;
 
+	vIndicesBuffer.reserve(65536 * 4);
+
 	if (mod == r_worldmodel)
 	{
 		std::set<mleaf_t *> vPossibleLeafs;
@@ -1029,19 +1031,12 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 
 			R_GenerateTexChain(mod, vboleaf, vIndicesBuffer);
 
-			R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_STATIC);
-			R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_ANIM);
-
-			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_STATIC);
-			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID);
-			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID);
-
 			vboleaf->hEBO = GL_GenBuffer();
 			GL_UploadDataToEBO(vboleaf->hEBO, sizeof(GLuint) * vIndicesBuffer.size(), vIndicesBuffer.data());
 
 			vboleaf->hVAO = GL_GenVAO();
 			GL_BindStatesForVAO(vboleaf->hVAO, r_wsurf.hSceneVBO, vboleaf->hEBO,
-			[]() {
+				[]() {
 				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
 				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
 				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
@@ -1069,7 +1064,7 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 				glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_TEXINDEX, 1, GL_INT, sizeof(brushvertex_t), OFFSET(brushvertex_t, texindex));
 				glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(brushvertex_t), OFFSET(brushvertex_t, styles));
 			},
-			[]() {
+				[]() {
 				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
 				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
 				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
@@ -1087,6 +1082,13 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 
 			vIndicesBuffer.clear();
 
+			R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_STATIC);
+			R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_ANIM);
+
+			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_STATIC);
+			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID);
+			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID);
+
 			modvbo->vLeaves[leafindex] = vboleaf;
 		}
  	}
@@ -1100,19 +1102,12 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 
 		R_GenerateTexChain(mod, vboleaf, vIndicesBuffer);
 
-		R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_STATIC);
-		R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_ANIM);
-
-		R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_STATIC);
-		R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID);
-		R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID);
-
 		vboleaf->hEBO = GL_GenBuffer();
-		GL_UploadDataToEBO(vboleaf->hEBO, sizeof(GLuint)* vIndicesBuffer.size(), vIndicesBuffer.data());
+		GL_UploadDataToEBO(vboleaf->hEBO, sizeof(GLuint) * vIndicesBuffer.size(), vIndicesBuffer.data());
 
 		vboleaf->hVAO = GL_GenVAO();
 		GL_BindStatesForVAO(vboleaf->hVAO, r_wsurf.hSceneVBO, vboleaf->hEBO,
-		[]() {
+			[]() {
 			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
 			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
 			glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
@@ -1140,7 +1135,7 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 			glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_TEXINDEX, 1, GL_INT, sizeof(brushvertex_t), OFFSET(brushvertex_t, texindex));
 			glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(brushvertex_t), OFFSET(brushvertex_t, styles));
 		},
-		[]() {
+			[]() {
 			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
 			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
 			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
@@ -1155,6 +1150,15 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXINDEX);
 			glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
 		});
+
+		vIndicesBuffer.clear();
+
+		R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_STATIC);
+		R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_ANIM);
+
+		R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_STATIC);
+		R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID);
+		R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID);
 
 		modvbo->vLeaves.resize(1);
 		modvbo->vLeaves[0] = vboleaf;
@@ -1487,7 +1491,14 @@ void R_GenerateVertexBuffer(void)
 
 	r_wsurf.hSceneVBO = GL_GenBuffer();
 	glBindBuffer( GL_ARRAY_BUFFER, r_wsurf.hSceneVBO );
-	glBufferData( GL_ARRAY_BUFFER, sizeof(brushvertex_t) * vVertexBuffer.size(), vVertexBuffer.data(), GL_STATIC_DRAW );
+	if (glBufferStorage)
+	{
+		glBufferStorage(GL_ARRAY_BUFFER, sizeof(brushvertex_t)* vVertexBuffer.size(), vVertexBuffer.data(), 0);
+	}
+	else
+	{
+		glBufferData(GL_ARRAY_BUFFER, sizeof(brushvertex_t)* vVertexBuffer.size(), vVertexBuffer.data(), GL_STATIC_DRAW);
+	}
 	glBindBuffer( GL_ARRAY_BUFFER, 0 );
 }
 

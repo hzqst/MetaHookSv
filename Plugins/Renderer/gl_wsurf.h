@@ -182,8 +182,9 @@ typedef struct wsurf_vbo_batch_s
 
 typedef struct wsurf_vbo_leaf_s
 {
-	wsurf_vbo_leaf_s()
+	struct wsurf_vbo_leaf_s()
 	{
+		hVAO = NULL;
 		hEBO = NULL;
 	}
 
