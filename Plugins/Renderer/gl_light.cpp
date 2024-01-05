@@ -430,7 +430,16 @@ void R_NewMapLight(void)
 {
 	if (!r_flashlight_cone_texture_name.empty())
 	{
-		r_flashlight_cone_texture = R_LoadTextureFromFile(r_flashlight_cone_texture_name.c_str(), r_flashlight_cone_texture_name.c_str(), NULL, NULL, GLT_WORLD, true, true);
+		gl_loadtexture_result_t loadResult;
+
+		if (R_LoadTextureFromFile(r_flashlight_cone_texture_name.c_str(), r_flashlight_cone_texture_name.c_str(), GLT_WORLD, true, &loadResult))
+		{
+			r_flashlight_cone_texture = loadResult.gltexturenum;
+		}
+		else
+		{
+			gEngfuncs.Con_Printf("R_NewMapLight: Failed to load %s.\n", r_flashlight_cone_texture_name.c_str());
+		}
 	}
 	else
 	{
@@ -564,7 +573,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 
 		if (dynlight.type == DLIGHT_POINT)
 		{
-			float radius = dynlight.distance * clamp(r_dynlight_radius_scale->GetValue(), 0.001f, 1000.0f);
+			float radius = dynlight.distance * math_clamp(r_dynlight_radius_scale->GetValue(), 0.001f, 1000.0f);
 
 			vec3_t distToLight;
 			VectorSubtract((*r_refdef.vieworg), dynlight.origin, distToLight);
@@ -627,7 +636,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 				if (cl_viewent && cl_viewent->model && r_flashlight_attachment->GetValue() > 0)
 				{
 					int attachmentIndex = (int)(r_flashlight_attachment->GetValue());
-					attachmentIndex = clamp(attachmentIndex, 1, 4) - 1;
+					attachmentIndex = math_clamp(attachmentIndex, 1, 4) - 1;
 					if (cl_viewent->model)
 					{
 						auto pstudiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(cl_viewent->model);
@@ -719,7 +728,7 @@ void R_IterateDynamicLights(fnPointLightCallback pointlight_callback, fnSpotLigh
 			float specular = r_dynlight_specular->GetValue();
 			float specularpow = r_dynlight_specularpow->GetValue();
 
-			float radius = dl->radius * clamp(r_dynlight_radius_scale->GetValue(), 0.001f, 1000.0f);
+			float radius = dl->radius * math_clamp(r_dynlight_radius_scale->GetValue(), 0.001f, 1000.0f);
 
 			vec3_t distToLight;
 			VectorSubtract((*r_refdef.vieworg), dl->origin, distToLight);

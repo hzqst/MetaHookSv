@@ -6,7 +6,8 @@ layout(binding = STUDIO_DIFFUSE_TEXTURE) uniform sampler2D diffuseTex;
 layout(binding = STUDIO_NORMAL_TEXTURE) uniform sampler2D normalTex;
 layout(binding = STUDIO_PARALLAX_TEXTURE) uniform sampler2D parallaxTex;
 layout(binding = STUDIO_SPECULAR_TEXTURE) uniform sampler2D specularTex;
-layout(binding = 6) uniform usampler2D stencilTex;
+layout(binding = STUDIO_RESERVED_TEXTURE_STENCIL) uniform usampler2D stencilTex;
+layout(binding = STUDIO_RESERVED_TEXTURE_ANIMATED) uniform sampler2DArray animatedTexArray;
 
 /* celshade */
 
@@ -36,6 +37,7 @@ uniform float r_outline_dark;
 uniform vec2 r_uvscale;
 uniform float r_packed_stride;
 uniform vec4 r_packed_index;
+uniform vec2 r_framerate_numframes;
 
 in vec3 v_worldpos;
 in vec3 v_normal;
@@ -584,7 +586,13 @@ vec3 R_GenerateAdjustedNormal(vec3 vWorldPos, float flNormalMask)
 
 vec4 SampleDiffuseTexture(vec2 baseTexcoord)
 {
-	#if defined(PACKED_DIFFUSETEXTURE_ENABLED)
+	#if defined(ANIMATED_TEXTURE_ENABLED)
+
+		float layer = mod(floor(SceneUBO.time * r_framerate_numframes.x), r_framerate_numframes.y);
+
+		vec4 diffuseColor = texture(animatedTexArray, vec3(baseTexcoord.x, baseTexcoord.y, layer ));
+
+	#elif defined(PACKED_DIFFUSETEXTURE_ENABLED)
 
 		vec4 diffuseColor = texture(diffuseTex, vec2(baseTexcoord.x + r_packed_stride * r_packed_index.x, baseTexcoord.y));
 

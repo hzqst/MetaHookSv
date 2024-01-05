@@ -236,9 +236,13 @@ void R_SpriteColor(colorVec *pColor, cl_entity_t *pEntity, int alpha)
 	int a;
 
 	if (pEntity->curstate.rendermode == kRenderGlow || pEntity->curstate.rendermode == kRenderTransAdd)
-		a = clamp(alpha, 0, 255);//some entities > 255 wtf?
+	{
+		a = math_clamp(alpha, 0, 255);//some entities > 255 wtf?
+	}
 	else
+	{
 		a = 256;
+	}
 
 	if (pEntity->curstate.rendercolor.r != 0 || pEntity->curstate.rendercolor.g != 0 || pEntity->curstate.rendercolor.b != 0)
 	{
@@ -601,7 +605,7 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 	{
 		if (ent->curstate.effects & EF_SPRITE_CUSTOM_VP)
 		{
-			type = clamp(ent->curstate.sequence, SPR_VP_PARALLEL_UPRIGHT, SPR_VP_PARALLEL_ORIENTED);
+			type = math_clamp(ent->curstate.sequence, SPR_VP_PARALLEL_UPRIGHT, SPR_VP_PARALLEL_ORIENTED);
 		}
 	}
 
@@ -723,6 +727,7 @@ void R_SpriteTextureAddReferences(model_t* mod, msprite_t* pSprite, std::set<int
 	for (int i = 0; i < pSprite->numframes; i++)
 	{
 		auto pSpriteFrame = R_GetSpriteFrame(pSprite, i);
+
 		if (pSpriteFrame)
 		{
 			textures.emplace(pSpriteFrame->gl_texturenum);

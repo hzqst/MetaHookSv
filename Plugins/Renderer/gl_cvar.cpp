@@ -2,7 +2,7 @@
 
 std::vector<MapConVar *> g_MapConVars;
 
-MapConVar::MapConVar(char *cvar_name, char *default_value, int cvar_flags, int numargs, int flags)
+MapConVar::MapConVar(const char *cvar_name, const char *default_value, int cvar_flags, int numargs, int flags)
 {
 	m_cvar = gEngfuncs.pfnRegisterVariable(cvar_name, default_value, FCVAR_ARCHIVE | FCVAR_CLIENTDLL);
 	m_is_map_override = false;
@@ -220,7 +220,7 @@ void R_CvarSetMapCvar(cvar_t *cvar)
 	}
 }
 
-MapConVar *R_RegisterMapCvar(char *cvar_name, char *default_value, int cvar_flags, int numargs, int flags)
+MapConVar *R_RegisterMapCvar(const char *cvar_name, const char *default_value, int cvar_flags, int numargs, int flags)
 {
 	auto mapcvar = new MapConVar(cvar_name, default_value, cvar_flags, numargs, flags);
 

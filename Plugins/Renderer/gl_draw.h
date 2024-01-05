@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 extern gltexture_t *gltextures;
 extern gltexture_t **gltextures_SvEngine;
 extern int *maxgltextures_SvEngine;
@@ -28,52 +30,89 @@ typedef struct gl_mipmap_texture_data_s
 		size = 0;
 		width = 0;
 		height = 0;
+		data_ctx = NULL;
 	}
 
-	struct gl_mipmap_texture_data_s(int _level, void* _data, int _size, int _width, int _height) :
+	struct gl_mipmap_texture_data_s(int _level, const void* _data, int _size, int _width, int _height) :
 		level(_level), data(_data), size(_size), width(_width), height(_height)
 	{
 
 	}
 
+	struct gl_mipmap_texture_data_s(int _level, const void* _data, int _size, int _width, int _height, void* _data_ctx) :
+		level(_level), data(_data), size(_size), width(_width), height(_height), data_ctx(_data_ctx)
+	{
+
+	}
+
 	int level;
-	void* data;
+	const void* data;
 	int size;
 	int width;
 	int height;
+	void* data_ctx;
 }gl_mipmap_texture_data_t;
 
-typedef struct gl_loadtexture_state_s
+typedef struct gl_loadtexture_context_s
 {
-	struct gl_loadtexture_state_s()
+	struct gl_loadtexture_context_s()
 	{
 		width = 0;
 		height = 0;
+		numframes = 0;
+		framerate = 0;
 
+		internalformat = 0;
 		wrap = 0;
 		cubemap = 0;
 		filter = 0;
-		mipmap = false;
 
-		internalformat = 0;
+		mipmap = false;
 		compressed = false;
 	}
 
 	int width;
 	int height;
+	int numframes;
+	float framerate;
 
 	//OpenGL field
+	GLuint internalformat;
 	GLuint wrap;
 	GLuint cubemap;
 	int filter;
+
 	bool mipmap;
+	bool compressed;
 
 	//Loader field
-	GLuint internalformat;
-	bool compressed;
-	std::vector<gl_mipmap_texture_data_t> mipmaps;
 
-}gl_loadtexture_state_t;
+	//necessary
+	std::vector<gl_mipmap_texture_data_t> mipmaps;
+	std::function<bool(struct gl_loadtexture_context_s*)> callback;
+
+	//optional
+	std::function<void(void* data_ctx, const void* data, int size)> mipmaps_dtor;
+
+}gl_loadtexture_context_t;
+
+typedef struct gl_loadtexture_result_s
+{
+	struct gl_loadtexture_result_s()
+	{
+		gltexturenum = 0;
+		width = 0;
+		height = 0;
+		numframes = 0;
+		framerate = 0;
+	}
+
+	int gltexturenum;
+	int width;
+	int height;
+	int numframes;
+	float framerate;
+}gl_loadtexture_result_t;
 
 //DXT
 

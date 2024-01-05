@@ -52,8 +52,8 @@ enum
 #define min(a,b)    (((a) < (b)) ? (a) : (b))
 #endif
 
-#ifndef clamp
-#define clamp( val, min, max ) ( ((val) > (max)) ? (max) : ( ((val) < (min)) ? (min) : (val) ) )
+#ifndef math_clamp
+#define math_clamp( val, min, max ) ( ((val) > (max)) ? (max) : ( ((val) < (min)) ? (min) : (val) ) )
 #endif
 
 //-----------------------------------------------------------------------------

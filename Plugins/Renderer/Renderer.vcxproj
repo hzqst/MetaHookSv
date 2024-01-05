@@ -45,16 +45,19 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(SolutionDir)tools\global.props" Condition="exists('$(SolutionDir)tools\global.props')" />
     <Import Project="$(SolutionDir)tools\global_template.props" Condition="!exists('$(SolutionDir)tools\global.props') and exists('$(SolutionDir)tools\global_template.props')" />
+    <Import Project="$(SolutionDir)tools\global_common.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(SolutionDir)tools\global.props" Condition="exists('$(SolutionDir)tools\global.props')" />
     <Import Project="$(SolutionDir)tools\global_template.props" Condition="!exists('$(SolutionDir)tools\global.props') and exists('$(SolutionDir)tools\global_template.props')" />
+    <Import Project="$(SolutionDir)tools\global_common.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(SolutionDir)tools\global.props" Condition="exists('$(SolutionDir)tools\global.props')" />
     <Import Project="$(SolutionDir)tools\global_template.props" Condition="!exists('$(SolutionDir)tools\global.props') and exists('$(SolutionDir)tools\global_template.props')" />
+    <Import Project="$(SolutionDir)tools\global_common.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -77,28 +80,34 @@
     <ClCompile>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(FreeImageIncludeDirectory);$(ScopeExitIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;RENDERER_EXPORTS;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MinimalRebuild>true</MinimalRebuild>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <PrecompiledHeader />
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <DisableSpecificWarnings>4311;4312;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(GLEWLibrariesDirectory)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>$(GLEWLibraryFiles);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(GLEWLibrariesDirectory);$(FreeImageLibrariesDirectory)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(GLEWLibraryFiles);$(FreeImageLibraryFiles);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>$(PluginPostBuildCommand)
-if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDirectory)$(MetaHookModName)\renderer\"
-if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" xcopy "$(ProjectDir)..\..\Build\svencoop\renderer\" "$(MetaHookGameDirectory)$(MetaHookModName)\renderer\" /y /e</Command>
+
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDirectory)$(MetaHookModName)\renderer"
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" xcopy "$(SolutionDir)Build\svencoop\renderer\" "$(MetaHookGameDirectory)$(MetaHookModName)\renderer\" /y /e
+
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDirectory)$(MetaHookModName)\metahook"
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDirectory)$(MetaHookModName)\metahook\dlls"
+if exist "$(MetaHookGameDirectory)$(MetaHookModName)\" mkdir "$(MetaHookGameDirectory)$(MetaHookModName)\metahook\dlls\FreeImage"
+
+copy "$(FreeImageBinaryDirectory)\$(FreeImageDLLFile)" "$(MetaHookGameDirectory)$(MetaHookModName)\metahook\dlls\FreeImage\$(FreeImageDLLFile)" /y</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>$(GLEWCheckRequirements)
-$(CapstoneCheckRequirements)</Command>
+$(CapstoneCheckRequirements)
+$(FreeImageCheckRequirements)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -106,7 +115,7 @@ $(CapstoneCheckRequirements)</Command>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(FreeImageIncludeDirectory);$(ScopeExitIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;RENDERER_EXPORTS;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader />
@@ -118,15 +127,22 @@ $(CapstoneCheckRequirements)</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <LargeAddressAware>true</LargeAddressAware>
-      <AdditionalLibraryDirectories>$(GLEWLibrariesDirectory)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>$(GLEWLibraryFiles);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(GLEWLibrariesDirectory);$(FreeImageLibrariesDirectory)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(GLEWLibraryFiles);$(FreeImageLibraryFiles);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>$(PluginPostBuildCommand)</Command>
+      <Command>$(PluginPostBuildCommand)
+
+mkdir "$(SolutionDir)Build\svencoop\metahook"
+mkdir "$(SolutionDir)Build\svencoop\metahook\dlls"
+mkdir "$(SolutionDir)Build\svencoop\metahook\dlls\FreeImage"
+
+copy "$(FreeImageBinaryDirectory)\$(FreeImageDLLFile)" "$(SolutionDir)Build\svencoop\metahook\dlls\FreeImage\$(FreeImageDLLFile)" /y</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>$(GLEWCheckRequirements)
-$(CapstoneCheckRequirements)</Command>
+$(CapstoneCheckRequirements)
+$(FreeImageCheckRequirements)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'">
@@ -134,7 +150,7 @@ $(CapstoneCheckRequirements)</Command>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(FreeImageIncludeDirectory);$(ScopeExitIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;RENDERER_EXPORTS;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>
@@ -150,15 +166,22 @@ $(CapstoneCheckRequirements)</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <LargeAddressAware>true</LargeAddressAware>
-      <AdditionalLibraryDirectories>$(GLEWLibrariesDirectory)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>$(GLEWLibraryFiles);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(GLEWLibrariesDirectory);$(FreeImageLibrariesDirectory)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(GLEWLibraryFiles);$(FreeImageLibraryFiles);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>$(PluginPostBuildCommand)</Command>
+      <Command>$(PluginPostBuildCommand)
+
+mkdir "$(SolutionDir)Build\svencoop\metahook"
+mkdir "$(SolutionDir)Build\svencoop\metahook\dlls"
+mkdir "$(SolutionDir)Build\svencoop\metahook\dlls\FreeImage"
+
+copy "$(FreeImageBinaryDirectory)\$(FreeImageDLLFile)" "$(SolutionDir)Build\svencoop\metahook\dlls\FreeImage\$(FreeImageDLLFile)" /y</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>$(GLEWCheckRequirements)
-$(CapstoneCheckRequirements)</Command>
+$(CapstoneCheckRequirements)
+$(FreeImageCheckRequirements)</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

@@ -606,8 +606,16 @@ water_vbo_t *R_CreateWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t 
 
 			if (waterControl->level >= WATER_LEVEL_REFLECT_SKYBOX && waterControl->level <= WATER_LEVEL_REFLECT_ENTITY)
 			{
-				//Disable mimap for normal texture
-				WaterVBO->normalmap = R_LoadTextureFromFile(waterControl->normalmap.c_str(), waterControl->normalmap.c_str(), NULL, NULL, GLT_WORLD, false, true);					
+				//TODO: disable mimap for normal texture ?
+				gl_loadtexture_result_t loadResult;
+				if (R_LoadTextureFromFile(waterControl->normalmap.c_str(), waterControl->normalmap.c_str(), GLT_WORLD, true, &loadResult))
+				{
+					WaterVBO->normalmap = loadResult.gltexturenum;
+				}
+				else
+				{
+					gEngfuncs.Con_Printf("R_CreateWaterVBO: Failed to load %s.\n", waterControl->normalmap.c_str());
+				}
 			}
 
 			if (waterControl->level == WATER_LEVEL_LEGACY_RIPPLE)

@@ -371,7 +371,7 @@ typedef struct mh_enginesave_s
 
 void MH_FreeAllHook(void);
 void MH_LoadPlugins(const char *gamedir);
-void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *szGameName);
+void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *szGameName, const char* szFullGamePath);
 void MH_ExitGame(int iResult);
 void MH_Shutdown(void);
 

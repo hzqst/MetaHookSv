@@ -5,7 +5,7 @@
 class MapConVar
 {
 public:
-	MapConVar(char *cvar_name, char *default_value, int cvar_flags, int numargs, int flags);
+	MapConVar(const char *cvar_name, const char *default_value, int cvar_flags, int numargs, int flags);
 	~MapConVar();
 	float GetValue();
 	float *GetValues();
@@ -56,7 +56,7 @@ private:
 #define ConVar_None 0
 #define ConVar_Color255 1
 
-MapConVar *R_RegisterMapCvar(char *cvar_name, char *default_value, int cvar_flags, int numargs = 1, int flags = 0);
+MapConVar *R_RegisterMapCvar(const char *cvar_name, const char *default_value, int cvar_flags, int numargs = 1, int flags = 0);
 void R_ParseMapCvarSetMapValue(MapConVar *mapcvar, const char *value);
 void R_ParseMapCvarSetCvarValue(MapConVar *mapcvar, const char *value);
 void R_FreeMapCvars(void);

@@ -115,6 +115,8 @@ void *g_ppEngfuncs = NULL;
 bool g_bSaveVideo = false;
 bool g_bTransactionHook = false;
 int g_iEngineType = ENGINE_UNKNOWN;
+//std::vector<DLL_DIRECTORY_COOKIE > g_DllPathCookies;
+WCHAR g_wszEnvPath[4096] = { 0 };
 
 PVOID MH_GetNextCallAddr(void *pAddress, DWORD dwCount);
 hook_t *MH_FindInlineHooked(void *pOldFuncAddr);
@@ -459,7 +461,8 @@ int MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 		return PLUGIN_LOAD_DUPLICATE;
 	}
 
-	HINTERFACEMODULE hModule = Sys_LoadModule(filepath.c_str());
+	//HINTERFACEMODULE hModule = (HINTERFACEMODULE)LoadLibraryExA(filepath.c_str(), NULL, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+	HINTERFACEMODULE hModule = (HINTERFACEMODULE)Sys_LoadModule(filepath.c_str());
 
 	if (!hModule)
 	{
@@ -639,10 +642,36 @@ void MH_ReportError(const std::string &fileName, int result, int win32err)
 	}
 }
 
-void MH_LoadPlugins(const char *gamedir)
+void ANSIToUnicode(const std::string& str, std::wstring& out)
 {
-	std::string aConfigFile = gamedir;
-	aConfigFile += "/metahook/configs/plugins.lst";
+	int len = MultiByteToWideChar(CP_ACP, 0, str.c_str(), str.length(), NULL, 0);
+	out.resize(len);
+	MultiByteToWideChar(CP_ACP, 0, str.c_str(), str.length(), (LPWSTR)out.data(), len);
+}
+
+void MH_LoadDllPaths(const char* szGameDir, const char* szGameFullPath)
+{
+#if 0
+	auto pfnSetDefaultDllDirectories = (decltype(SetDefaultDllDirectories)*)GetProcAddress(GetModuleHandleA("kernel32.dll"), "SetDefaultDllDirectories");
+
+	if (!pfnSetDefaultDllDirectories)
+		return;
+
+	auto pfnAddDllDirectory = (decltype(AddDllDirectory) *)GetProcAddress(GetModuleHandleA("kernel32.dll"), "AddDllDirectory");
+
+	if (!pfnAddDllDirectory)
+		return;
+
+#else
+
+	GetEnvironmentVariableW(L"PATH", g_wszEnvPath, _ARRAYSIZE(g_wszEnvPath));
+
+	std::wstring NewEnvPath = g_wszEnvPath;
+
+#endif
+
+	std::string aConfigFile = szGameDir;
+	aConfigFile += "\\metahook\\configs\\dllpaths.lst";
 
 	std::ifstream infile;
 	infile.open(aConfigFile);
@@ -666,8 +695,94 @@ void MH_LoadPlugins(const char *gamedir)
 			if (stringLine[0] == '/' && stringLine[1] == '/')
 				continue;
 
-			std::string aPluginPath = gamedir;
-			aPluginPath += "/metahook/plugins/";
+			std::string aDllPath;
+			
+			if (stringLine.length() > 2 &&
+				std::isalpha(stringLine[0]) &&
+				stringLine[1] == ':' &&
+				(stringLine[2] == '/' || stringLine[2] == '\\'))
+			{
+				aDllPath = stringLine;
+			}
+			else
+			{
+				aDllPath = szGameFullPath;
+				aDllPath += "\\";
+				aDllPath += szGameDir;
+				aDllPath += "\\metahook\\dlls\\";
+				aDllPath += stringLine;
+			}
+
+			std::wstring wDllPath;
+			ANSIToUnicode(aDllPath, wDllPath);
+
+#if 0
+			auto cookie = pfnAddDllDirectory(wDllPath.c_str());
+
+			if (cookie)
+			{
+				g_DllPathCookies.emplace_back(cookie);
+			}
+#else
+
+			NewEnvPath += L";";
+			NewEnvPath += wDllPath;
+#endif
+		}
+	}
+	infile.close();
+	
+#if 1
+	SetEnvironmentVariableW(L"PATH", NewEnvPath.c_str());
+#endif
+
+}
+
+void MH_RemoveDllPaths(void)
+{
+#if 0
+	for (auto cookie : g_DllPathCookies)
+	{
+		RemoveDllDirectory(cookie);
+	}
+	g_DllPathCookies.clear();
+#else
+
+	SetEnvironmentVariableW(L"PATH", g_wszEnvPath);
+#endif
+}
+
+void MH_LoadPlugins(const char *szGameDir, const char* szGameFullPath)
+{
+	std::string aConfigFile = szGameDir;
+	aConfigFile += "\\metahook\\configs\\plugins.lst";
+
+	std::ifstream infile;
+	infile.open(aConfigFile);
+	if (!infile.is_open())
+	{
+		return;
+	}
+
+	while (!infile.eof())
+	{
+		std::string stringLine;
+		std::getline(infile, stringLine);
+		if (stringLine.length() > 1)
+		{
+			if (stringLine[0] == '\r' || stringLine[0] == '\n')
+				continue;
+			if (stringLine[0] == '\0')
+				continue;
+			if (stringLine[0] == ';')
+				continue;
+			if (stringLine[0] == '/' && stringLine[1] == '/')
+				continue;
+
+			std::string aPluginPath = szGameFullPath;
+			aPluginPath += "\\";
+			aPluginPath += szGameDir;
+			aPluginPath += "\\metahook\\plugins\\";
 
 			std::string aFileName;
 
@@ -688,130 +803,51 @@ void MH_LoadPlugins(const char *gamedir)
 
 			do
 			{
-				if (MH_IsDebuggerPresent())
-				{
-					std::string fileName = aFileName + ".dll";
-
-					int result = MH_LoadPlugin(aPluginPath + ".dll", fileName);
-
-					int win32err = GetLastError();
-
-					if (PLUGIN_LOAD_SUCCEEDED == result)
-					{
-						break;
-					}
-					else
-					{
-						MH_ReportError(fileName, result, win32err);
-					}
+#define MH_LOAD_PLUGIN_TEMPLATE(check, suffix) if (check)\
+				{\
+					std::string fileName = aFileName + suffix;\
+					int result = MH_LoadPlugin(aPluginPath + suffix, fileName);\
+					int win32err = GetLastError();\
+					if (PLUGIN_LOAD_SUCCEEDED == result)\
+					{\
+						break;\
+					}\
+					else\
+					{\
+						MH_ReportError(fileName, result, win32err);\
+					}\
 				}
 
-				if (MH_HasAVX2())
-				{
-					std::string fileName = aFileName + "_AVX2.dll";
+#define MH_LOAD_PLUGIN_TEMPLATE2(check, suffix) if (check) {\
+				std::string fileName = aFileName + suffix;\
+				int result = MH_LoadPlugin(aPluginPath + suffix, fileName);\
+				int win32err = GetLastError();\
+				if (PLUGIN_LOAD_SUCCEEDED == result)\
+				{\
+					break;\
+				}\
+				else if (PLUGIN_LOAD_ERROR == result && (win32err == ERROR_FILE_NOT_FOUND || win32err == ERROR_MOD_NOT_FOUND))\
+				{\
+				}\
+				else\
+				{\
+					MH_ReportError(fileName, result, win32err);\
+				}\
+			}
 
-					int result = MH_LoadPlugin(aPluginPath + "_AVX2.dll", fileName);
+				MH_LOAD_PLUGIN_TEMPLATE(MH_IsDebuggerPresent(), ".dll");
+				MH_LOAD_PLUGIN_TEMPLATE2(MH_HasAVX2(), "_AVX2.dll");
+				MH_LOAD_PLUGIN_TEMPLATE2(MH_HasAVX(), "_AVX.dll");
+				MH_LOAD_PLUGIN_TEMPLATE2(MH_HasSSE2(), "_SSE2.dll");
+				MH_LOAD_PLUGIN_TEMPLATE2(MH_HasSSE(), "_SSE.dll");
+				MH_LOAD_PLUGIN_TEMPLATE2(MH_HasSSE(), "_SSE.dll");
+				MH_LOAD_PLUGIN_TEMPLATE(1, ".dll");
 
-					int win32err = GetLastError();
-
-					if (PLUGIN_LOAD_SUCCEEDED == result)
-					{
-						break;
-					}
-					else if (PLUGIN_LOAD_ERROR == result && (win32err == ERROR_FILE_NOT_FOUND || win32err == ERROR_MOD_NOT_FOUND))
-					{
-
-					}
-					else
-					{
-						MH_ReportError(fileName, result, win32err);
-					}
-				}
-
-				if (MH_HasAVX())
-				{
-					std::string fileName = aFileName + "_AVX.dll";
-
-					int result = MH_LoadPlugin(aPluginPath + "_AVX.dll", fileName);
-
-					int win32err = GetLastError();
-
-					if (PLUGIN_LOAD_SUCCEEDED == result)
-					{
-						break;
-					}
-					else if (PLUGIN_LOAD_ERROR == result && (win32err == ERROR_FILE_NOT_FOUND || win32err == ERROR_MOD_NOT_FOUND))
-					{
-
-					}
-					else
-					{
-						MH_ReportError(fileName, result, win32err);
-					}
-				}
-
-				if (MH_HasSSE2())
-				{
-					std::string fileName = aFileName + "_SSE2.dll";
-
-					int result = MH_LoadPlugin(aPluginPath + "_SSE2.dll", fileName);
-
-					int win32err = GetLastError();
-
-					if (PLUGIN_LOAD_SUCCEEDED == result)
-					{
-						break;
-					}
-					else if (PLUGIN_LOAD_ERROR == result && (win32err == ERROR_FILE_NOT_FOUND || win32err == ERROR_MOD_NOT_FOUND))
-					{
-
-					}
-					else
-					{
-						MH_ReportError(fileName, result, win32err);
-					}
-				}
-
-				if (MH_HasSSE())
-				{
-					std::string fileName = aFileName + "_SSE.dll";
-
-					int result = MH_LoadPlugin(aPluginPath + "_SSE.dll", fileName);
-
-					int win32err = GetLastError();
-
-					if (PLUGIN_LOAD_SUCCEEDED == result)
-					{
-						break;
-					}
-					else if (PLUGIN_LOAD_ERROR == result && (win32err == ERROR_FILE_NOT_FOUND || win32err == ERROR_MOD_NOT_FOUND))
-					{
-
-					}
-					else
-					{
-						MH_ReportError(fileName, result, win32err);
-					}
-				}
-
-				if (1)
-				{
-					std::string fileName = aFileName + ".dll";
-
-					int result = MH_LoadPlugin(aPluginPath + ".dll", fileName);
-
-					int win32err = GetLastError();
-
-					if (PLUGIN_LOAD_SUCCEEDED == result)
-					{
-						break;
-					}
-					else
-					{
-						MH_ReportError(fileName, result, win32err);
-					}
-				}
 			} while (0);
+
+#undef MH_LOAD_PLUGIN_TEMPLATE
+#undef MH_LOAD_PLUGIN_TEMPLATE2
+
 		}
 	}
 	infile.close();
@@ -942,7 +978,7 @@ void MH_ResetAllVars(void)
 	g_iEngineType = ENGINE_UNKNOWN;
 }
 
-void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* szGameName)
+void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* szGameName, const char* szFullGamePath)
 {
 	MH_ResetAllVars();
 
@@ -1747,7 +1783,8 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		MH_IATHook(g_hEngineModule, "kernel32.dll", "TerminateThread", BlobTerminateThread, NULL);
 	}
 
-	MH_LoadPlugins(szGameName);
+	MH_LoadDllPaths(szGameName, szFullGamePath);
+	MH_LoadPlugins(szGameName, szFullGamePath);
 
 	MH_TransactionHookBegin();
 
@@ -1862,6 +1899,7 @@ void MH_Shutdown(void)
 	}
 
 	MH_ResetAllVars();
+	MH_RemoveDllPaths();
 }
 
 hook_t *MH_NewHook(int iType)

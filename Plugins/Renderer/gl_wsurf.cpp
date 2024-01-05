@@ -2649,33 +2649,53 @@ void R_LoadDecalTextures(const char *pfile)
 				continue;
 			}
 
-			int width = 0, height = 0;
+			bool bLoaded = false;
+			gl_loadtexture_result_t loadResult;
+			std::string texturePath;
 
-			std::string texturePath = "gfx/";
-			texturePath += detailtexture;
-			if (!V_GetFileExtension(detailtexture))
-				texturePath += ".tga";
+			//Texture name starts with "maps\\" or "maps/"
+			if (!bLoaded &&
+				!strnicmp(detailtexture, "maps", sizeof("maps") - 1) &&
+				(detailtexture[sizeof("maps") - 1] == '\\' || detailtexture[sizeof("maps") - 1] == '/'))
+			{
+				texturePath = detailtexture;
+				if (!V_GetFileExtension(detailtexture))
+					texturePath += ".tga";
 
-			int texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, textypeHasMipmap[texType], false);
-			if (!texId)
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_WORLD, textypeHasMipmap[texType], &loadResult);
+			}
+
+			//Search under gfx
+			if (!bLoaded)
+			{
+				texturePath = "gfx/";
+				texturePath += detailtexture;
+				if (!V_GetFileExtension(detailtexture))
+					texturePath += ".tga";
+
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_WORLD, textypeHasMipmap[texType], &loadResult);
+			}
+
+			//Search under renderer/texture
+			if (!bLoaded)
 			{
 				texturePath = "renderer/texture/";
 				texturePath += detailtexture;
 				if (!V_GetFileExtension(detailtexture))
 					texturePath += ".tga";
 
-				texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, textypeHasMipmap[texType], false);
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_WORLD, textypeHasMipmap[texType], &loadResult);
 			}
 
-			if (!texId)
+			if (!bLoaded)
 			{
 				gEngfuncs.Con_DPrintf("R_LoadDecalTextures: Failed to load %s as %s for basetexture %s\n", detailtexture, textypeNames[texType], base.c_str());
 				continue;
 			}
 
-			cache->tex[texType].gltexturenum = texId;
-			cache->tex[texType].width = width;
-			cache->tex[texType].height = height;
+			cache->tex[texType].gltexturenum = loadResult.gltexturenum;
+			cache->tex[texType].width = loadResult.width;
+			cache->tex[texType].height = loadResult.height;
 			cache->tex[texType].scaleX = i_xscale;
 			cache->tex[texType].scaleY = i_yscale;
 		}
@@ -2684,7 +2704,7 @@ void R_LoadDecalTextures(const char *pfile)
 
 void R_LoadBaseDecalTextures(void)
 {
-	char *pfile = (char *)gEngfuncs.COM_LoadFile((char *)"renderer/decal_textures.txt", 5, NULL);
+	char *pfile = (char *)gEngfuncs.COM_LoadFile("renderer/decal_textures.txt", 5, NULL);
 	if (!pfile)
 	{
 		gEngfuncs.Con_DPrintf("R_LoadBaseDecalTextures: No decal texture file \"renderer/decal_textures.txt\"\n");
@@ -2835,33 +2855,53 @@ void R_LoadDetailTextures(const char *pfile)
 				continue;
 			}
 
-			int width = 0, height = 0;
+			bool bLoaded = false;
+			gl_loadtexture_result_t loadResult;
+			std::string texturePath;
 
-			std::string texturePath = "gfx/";
-			texturePath += detailtexture;
-			if (!V_GetFileExtension(detailtexture))
-				texturePath += ".tga";
+			//Texture name starts with "maps\\" or "maps/"
+			if (!bLoaded &&
+				!strnicmp(detailtexture, "maps", sizeof("maps") - 1) &&
+				(detailtexture[sizeof("maps") - 1] == '\\' || detailtexture[sizeof("maps") - 1] == '/'))
+			{
+				texturePath = detailtexture;
+				if (!V_GetFileExtension(detailtexture))
+					texturePath += ".tga";
 
-			int texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, textypeHasMipmap[texType], false);
-			if (!texId)
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_WORLD, textypeHasMipmap[texType], &loadResult);
+			}
+
+			//Search under gfx
+			if (!bLoaded)
+			{
+				texturePath = "gfx/";
+				texturePath += detailtexture;
+				if (!V_GetFileExtension(detailtexture))
+					texturePath += ".tga";
+
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_WORLD, textypeHasMipmap[texType], &loadResult);
+			}
+
+			//Search under renderer/texture
+			if (!bLoaded)
 			{
 				texturePath = "renderer/texture/";
 				texturePath += detailtexture;
 				if (!V_GetFileExtension(detailtexture))
 					texturePath += ".tga";
 
-				texId = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), &width, &height, GLT_WORLD, textypeHasMipmap[texType], false);
+				bLoaded = R_LoadTextureFromFile(texturePath.c_str(), texturePath.c_str(), GLT_WORLD, textypeHasMipmap[texType], &loadResult);
 			}
 
-			if (!texId)
+			if (!bLoaded)
 			{
 				gEngfuncs.Con_DPrintf("R_LoadDetailTextures: Failed to load %s as %s for basetexture %s\n", detailtexture, textypeNames[texType], base.c_str());
 				continue;
 			}
 
-			cache->tex[texType].gltexturenum = texId;
-			cache->tex[texType].width = width;
-			cache->tex[texType].height = height;
+			cache->tex[texType].gltexturenum = loadResult.gltexturenum;
+			cache->tex[texType].width = loadResult.width;
+			cache->tex[texType].height = loadResult.height;
 			cache->tex[texType].scaleX = i_xscale;
 			cache->tex[texType].scaleY = i_yscale;
 		}
@@ -2870,7 +2910,7 @@ void R_LoadDetailTextures(const char *pfile)
 
 void R_LoadBaseDetailTextures(void)
 {
-	char *pfile = (char *)gEngfuncs.COM_LoadFile((char *)"renderer/detail_textures.txt", 5, NULL);
+	char *pfile = (char *)gEngfuncs.COM_LoadFile("renderer/detail_textures.txt", 5, NULL);
 	if (!pfile)
 	{
 		gEngfuncs.Con_DPrintf("R_LoadBaseDetailTextures: No detail texture file \"renderer/detail_textures.txt\"\n");
@@ -2890,7 +2930,7 @@ void R_LoadMapDetailTextures(void)
 
 	name += "_detail.txt";
 
-	char *pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
+	char *pfile = (char *)gEngfuncs.COM_LoadFile(name.c_str(), 5, NULL);
 	if (!pfile)
 	{
 		gEngfuncs.Con_DPrintf("R_LoadMapDetailTextures: No detail texture file %s\n", name.c_str());
@@ -3332,29 +3372,31 @@ void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator parse_allocator)
 
 void R_LoadExternalEntities(void)
 {
-	std::string name;
+	std::string fullPath;
 	
-	name = gEngfuncs.pfnGetLevelName();
+	fullPath = gEngfuncs.pfnGetLevelName();
 
-	RemoveFileExtension(name);
+	RemoveFileExtension(fullPath);
 
-	name += "_entity.txt";
+	fullPath += "_entity.txt";
 
-	char *pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
-	if (!pfile)
+	auto pFile = (char *)gEngfuncs.COM_LoadFile(fullPath.c_str(), 5, NULL);
+	if (!pFile)
 	{
-		name = "renderer/default_entity.txt";
+		fullPath = "renderer/default_entity.txt";
 
-		pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
-		if (!pfile)
+		pFile = (char *)gEngfuncs.COM_LoadFile(fullPath.c_str(), 5, NULL);
+
+		if (!pFile)
 		{
+			gEngfuncs.Con_DPrintf("R_LoadExternalEntities: Could not load %s.\n", fullPath);
 			return;
 		}
 	}
 
-	R_ParseBSPEntities(pfile, R_ParseBSPEntity_DefaultAllocator);
+	R_ParseBSPEntities(pFile, R_ParseBSPEntity_DefaultAllocator);
 
-	gEngfuncs.COM_FreeFile(pfile);
+	gEngfuncs.COM_FreeFile(pFile);
 }
 
 #if 0
@@ -3470,9 +3512,9 @@ void R_ParseBSPEntity_Light_Dynamic(bspentity_t *ent)
 		float temp[4];
 		if (sscanf(color_string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
 		{
-			dynlight.color[0] = clamp(temp[0], 0, 255) / 255.0f;
-			dynlight.color[1] = clamp(temp[1], 0, 255) / 255.0f;
-			dynlight.color[2] = clamp(temp[2], 0, 255) / 255.0f;
+			dynlight.color[0] = math_clamp(temp[0], 0, 255) / 255.0f;
+			dynlight.color[1] = math_clamp(temp[1], 0, 255) / 255.0f;
+			dynlight.color[2] = math_clamp(temp[2], 0, 255) / 255.0f;
 		}
 		else
 		{
@@ -3591,10 +3633,10 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		float temp[4];
 		if (sscanf(fresnelfactor_string, "%f %f %f %f", &temp[0], &temp[1], &temp[2], &temp[3]) == 4)
 		{
-			control.fresnelfactor[0] = clamp(temp[0], 0, 999999);
-			control.fresnelfactor[1] = clamp(temp[1], 0, 999999);
-			control.fresnelfactor[2] = clamp(temp[2], 0, 999999);
-			control.fresnelfactor[3] = clamp(temp[3], 0, 1);
+			control.fresnelfactor[0] = math_clamp(temp[0], 0, 999999);
+			control.fresnelfactor[1] = math_clamp(temp[1], 0, 999999);
+			control.fresnelfactor[2] = math_clamp(temp[2], 0, 999999);
+			control.fresnelfactor[3] = math_clamp(temp[3], 0, 1);
 		}
 		else
 		{
@@ -3608,7 +3650,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		float temp[4];
 		if (sscanf(normfactor_string, "%f", &temp[0]) == 1)
 		{
-			control.normfactor = clamp(temp[0], 0, 10);
+			control.normfactor = math_clamp(temp[0], 0, 10);
 		}
 		else
 		{
@@ -3622,9 +3664,9 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		float temp[4];
 		if (sscanf(depthfactor_string, "%f %f %f", &temp[0], &temp[1], &temp[2]) == 3)
 		{
-			control.depthfactor[0] = clamp(temp[0], 0, 10);
-			control.depthfactor[1] = clamp(temp[1], 0, 10);
-			control.depthfactor[2] = clamp(temp[2], 0, 999999);
+			control.depthfactor[0] = math_clamp(temp[0], 0, 10);
+			control.depthfactor[1] = math_clamp(temp[1], 0, 10);
+			control.depthfactor[2] = math_clamp(temp[2], 0, 999999);
 		}
 		else
 		{
@@ -3638,7 +3680,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		float temp[4];
 		if (sscanf(minheight_string, "%f", &temp[0]) == 1)
 		{
-			control.minheight = clamp(temp[0], 0, 10000);
+			control.minheight = math_clamp(temp[0], 0, 10000);
 		}
 		else
 		{
@@ -3652,7 +3694,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 		float temp[4];
 		if (sscanf(maxtrans_string, "%f", &temp[0]) == 1)
 		{
-			control.maxtrans = clamp(temp[0], 0, 255) / 255.0f;
+			control.maxtrans = math_clamp(temp[0], 0, 255) / 255.0f;
 		}
 		else
 		{
@@ -3706,7 +3748,7 @@ void R_ParseBSPEntity_Env_Water_Control(bspentity_t *ent)
 			int lv;
 			if (sscanf(level_string, "%d", &lv) == 1)
 			{
-				control.level = clamp(lv, WATER_LEVEL_LEGACY, WATER_LEVEL_MAX - 1);
+				control.level = math_clamp(lv, WATER_LEVEL_LEGACY, WATER_LEVEL_MAX - 1);
 			}
 			else
 			{

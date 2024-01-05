@@ -73,9 +73,6 @@
     <ClInclude Include="..\include\metahook.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="ExceptHandle.h">
-      <Filter>Source</Filter>
-    </ClInclude>
     <ClInclude Include="LoadBlob.h">
       <Filter>Source</Filter>
     </ClInclude>

@@ -442,13 +442,14 @@ void GL_FrameBufferColorTextureHBAO(FBO_Container_t *s);
 void GL_FrameBufferColorTextureDeferred(FBO_Container_t *s, int iInternalColorFormat);
 void GL_FrameBufferColorTextureOITBlend(FBO_Container_t *s);
 
-int GL_LoadTextureEx(const char* identifier, GL_TEXTURETYPE textureType, gl_loadtexture_state_t* state);
-int R_LoadTextureFromFile(const char *filename, const char * identifier, int *width, int *height, GL_TEXTURETYPE type, bool mipmap, bool throw_warning_on_missing);
-int R_LoadRGBA8TextureFromMemory(const char* identifier, void* data, int width, int height, GL_TEXTURETYPE type, bool mipmap);
+gltexture_t *GL_LoadTextureEx(const char* identifier, GL_TEXTURETYPE textureType, gl_loadtexture_context_t* context);
+bool R_LoadTextureFromFile(const char* filename, const char* identifier, GL_TEXTURETYPE textureType, bool mipmap, gl_loadtexture_result_t* result);
+int R_LoadRGBA8TextureFromMemory(const char* identifier, const void* data, int width, int height, GL_TEXTURETYPE type, bool mipmap);
 
-bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize, gl_loadtexture_state_t* state, bool throw_warning_on_missing);
-bool LoadImageGeneric(const char* filename, const char* pathId, byte* buf, size_t bufSize, gl_loadtexture_state_t* state, bool throw_warning_on_missing);
-bool SaveImageGeneric(const char *filename, const char* pathId, size_t width, size_t height, byte *data);
+bool LoadDDS(const char* filename, const char* pathId, gl_loadtexture_context_t* context);
+bool LoadImageGeneric(const char* filename, const char* pathId, gl_loadtexture_context_t* context);
+bool SaveImageGenericRGB8(const char *filename, const char* pathId, int width, int height, const void *data);
+bool SaveImageGenericRGBA8(const char* filename, const char* pathId, int width, int height, const void *data);
 
 cubemap_t *R_FindCubemap(float *origin);
 void R_LoadCubemap(cubemap_t *cubemap);

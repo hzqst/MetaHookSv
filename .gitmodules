@@ -13,3 +13,12 @@
 [submodule "thirdparty/glew_fork"]
 	path = thirdparty/glew_fork
 	url = https://github.com/hzqst/glew-cmake
+[submodule "thirdparty/ScopeExit"]
+	path = thirdparty/ScopeExit
+	url = https://github.com/SergiusTheBest/ScopeExit
+[submodule "thirdparty/FreeImage_fork"]
+	path = thirdparty/FreeImage_fork
+	url = https://github.com/hzqst/FreeImage_fork
+[submodule "thirdparty/FreeImage_clone"]
+	path = thirdparty/FreeImage_clone
+	url = https://github.com/hzqst/FreeImage_clone

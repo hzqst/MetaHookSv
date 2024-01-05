@@ -154,10 +154,10 @@ void R_CompileShaderAppendInclude(std::string &str, const char *filename)
 		includePath += slash;
 		includePath += includeFileName;
 
-		auto pFile = gEngfuncs.COM_LoadFile((char *)includePath.c_str(), 5, NULL);
+		auto pFile = (char*)gEngfuncs.COM_LoadFile(includePath.c_str(), 5, NULL);
 		if (pFile)
 		{
-			std::string wbinding((char *)pFile);
+			std::string wbinding(pFile);
 
 			gEngfuncs.COM_FreeFile(pFile);
 
@@ -216,10 +216,12 @@ GLuint R_CompileShaderFileEx(
 	const char *vsdefine, const char *fsdefine,
 	ExtraShaderStageCallback callback)
 {
-	auto vscode = (char *)gEngfuncs.COM_LoadFile((char *)vsfile, 5, 0);
+	auto vscode = (char *)gEngfuncs.COM_LoadFile(vsfile, 5, 0);
+
 	if (!vscode)
 	{
-		g_pMetaHookAPI->SysError("R_CompileShaderFileEx: %s file not found!", vsfile);
+		g_pMetaHookAPI->SysError("R_CompileShaderFileEx: \"%s\" not found!", vsfile);
+		return 0;
 	}
 
 	gEngfuncs.Con_DPrintf("R_CompileShaderFileEx: compiling %s...\n", vsfile);
@@ -227,6 +229,7 @@ GLuint R_CompileShaderFileEx(
 	std::string vs(vscode);
 
 	R_CompileShaderAppendDefine(vs, "#define IS_VERTEX_SHADER\n");
+
 	if (vsdefine)
 	{
 		R_CompileShaderAppendDefine(vs, vsdefine);
@@ -234,10 +237,11 @@ GLuint R_CompileShaderFileEx(
 
 	gEngfuncs.COM_FreeFile(vscode);
 
-	auto fscode = (char *)gEngfuncs.COM_LoadFile((char *)fsfile, 5, 0);
+	auto fscode = (char *)gEngfuncs.COM_LoadFile(fsfile, 5, 0);
 	if (!fscode)
 	{
-		g_pMetaHookAPI->SysError("R_CompileShaderFileEx: %s file not found!", fsfile);
+		g_pMetaHookAPI->SysError("R_CompileShaderFileEx: \"%s\" not found!", fsfile);
+		return 0;
 	}
 
 	gEngfuncs.Con_DPrintf("R_CompileShaderFileEx: compiling %s...\n", fsfile);
@@ -245,6 +249,7 @@ GLuint R_CompileShaderFileEx(
 	std::string fs(fscode);
 
 	R_CompileShaderAppendDefine(fs, "#define IS_FRAGMENT_SHADER\n");
+
 	if (fsdefine)
 	{
 		R_CompileShaderAppendDefine(fs, fsdefine);

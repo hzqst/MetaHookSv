@@ -197,10 +197,11 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	registry->Init();
 
-	char szFileName[256];
-	Sys_GetExecutableName(szFileName, sizeof(szFileName));
+	char szFullPath[MAX_PATH];
+	Sys_GetExecutableName(szFullPath, MAX_PATH);
 
-	char *szExeName = strrchr(szFileName, '\\') + 1;
+	char *szExeName = strrchr(szFullPath, '\\') + 1;
+	szExeName[-1] = 0;
 
 	if (!stricmp(szExeName, "svencoop.exe") && CommandLine()->CheckParm("-game") == NULL)
 	{
@@ -377,7 +378,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 		if (engineAPI)
 		{
-			MH_LoadEngine((HMODULE)hEngine, hBlobEngine, szGameName);
+			MH_LoadEngine((HMODULE)hEngine, hBlobEngine, szGameName, szFullPath);
 			iResult = engineAPI->Run(hInstance, Sys_GetLongPathName(), CommandLine()->GetCmdLine(), szNewCommandParams, Sys_GetFactoryThis(), Sys_GetFactory(hFileSystem));
 			MH_ExitGame(iResult);
 			MH_Shutdown();

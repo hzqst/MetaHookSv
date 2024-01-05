@@ -1,9 +1,11 @@
 #include "gl_local.h"
 #include "MurmurHash2.h"
 
+#include <ScopeExit/ScopeExit.h>
+
 extern "C"
 {
-#include "FreeImage/FreeImage.h"
+#include <FreeImage.h>
 };
 
 #pragma comment(lib,"FreeImage/FreeImage.lib")
@@ -33,7 +35,7 @@ gltexture_t *gltextures_get()
 
 typedef struct
 {
-	char *name;
+	const char *name;
 	int minimize, maximize;
 }glmode_t;
 
@@ -427,85 +429,103 @@ void GL_UnloadTextureByTextureId(int gltexturenum, bool notify_callback)
 	}
 }
 
-void GL_UploadCompressedTexture(gl_loadtexture_state_t *state)
+bool GL_IsSupportedInternalFormat(GLuint internalFormat)
 {
-	int iTextureTarget = GL_TEXTURE_2D;
-	int iMipmapTextureTarget = GL_TEXTURE_2D;
-
-	if (state->cubemap)
+	switch (internalFormat)
 	{
-		iTextureTarget = GL_TEXTURE_CUBE_MAP;
-		iMipmapTextureTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + state->cubemap - 1;
+	case GL_RGBA8:
+		return true;
+	case GL_RGB8:
+		return true;
+	case GL_RGBA32F:
+		return true;
+	case GL_RGB32F:
+		return true;
 	}
 
-	//No auto-mipmap-generation.
-	glTexParameteri(iTextureTarget, GL_GENERATE_MIPMAP, GL_FALSE);
-
-	if (state->mipmap)
-	{
-		glTexParameteri(iTextureTarget, GL_TEXTURE_MIN_FILTER, (*gl_filter_min));
-		glTexParameteri(iTextureTarget, GL_TEXTURE_MAG_FILTER, (*gl_filter_max));
-	}
-	else if (state->filter)
-	{
-		glTexParameteri(iTextureTarget, GL_TEXTURE_MIN_FILTER, state->filter);
-		glTexParameteri(iTextureTarget, GL_TEXTURE_MAG_FILTER, state->filter);
-	}
-	else
-	{
-		glTexParameteri(iTextureTarget, GL_TEXTURE_MIN_FILTER, (*gl_filter_max));
-		glTexParameteri(iTextureTarget, GL_TEXTURE_MAG_FILTER, (*gl_filter_max));
-	}
-
-	if (state->wrap)
-	{
-		glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_S, state->wrap);
-		glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_T, state->wrap);
-	}
-
-	glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, state->mipmap ? (state->mipmaps.size() - 1) : 0);
-
-	for (size_t i = 0; i < state->mipmaps.size(); ++i)
-	{
-		glCompressedTexImage2D(iMipmapTextureTarget, state->mipmaps[i].level, state->internalformat, state->mipmaps[i].width, state->mipmaps[i].height, 0, state->mipmaps[i].size, state->mipmaps[i].data);
-		
-		if (!state->mipmap)
-			break;
-	}
-
-	if (state->mipmaps.size() == 1 && state->mipmap)
-	{
-		//available since OpenGL 3.0
-		glGenerateMipmap(iTextureTarget);
-	}
+	return false;
 }
 
-void GL_UploadUncompressedTexture(gl_loadtexture_state_t* state)
+GLuint GL_GetTextureFormatFromInternalFormat(GLuint internalFormat)
 {
-	int iTextureTarget = GL_TEXTURE_2D;
-	int iMipmapTextureTarget = GL_TEXTURE_2D;
-
-	if (state->cubemap)
+	switch (internalFormat)
 	{
-		iTextureTarget = GL_TEXTURE_CUBE_MAP;
-		iMipmapTextureTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + state->cubemap - 1;
+	case GL_RGBA8:
+		return GL_RGBA;
+	case GL_RGB8:
+		return GL_RGB;
+	case GL_RGBA32F:
+		return GL_RGBA;
+	case GL_RGB32F:
+		return GL_RGB;
 	}
 
-	//No auto-mipmap-generation.
+	return 0;
+}
+
+GLuint GL_GetTextureColorTypeFromInternalFormat(GLuint internalFormat)
+{
+	switch (internalFormat)
+	{
+	case GL_RGBA8:
+		return GL_UNSIGNED_BYTE;
+	case GL_RGB8:
+		return GL_UNSIGNED_BYTE;
+	case GL_RGBA32F:
+		return GL_FLOAT;
+	case GL_RGB32F:
+		return GL_FLOAT;
+	}
+
+	return 0;
+}
+
+int GL_GetTextureTargetFromContext(const gl_loadtexture_context_t* context)
+{
+	int iTextureTarget = GL_TEXTURE_2D;
+
+	if (context->cubemap)
+	{
+		iTextureTarget = GL_TEXTURE_CUBE_MAP;
+	}
+	else if (context->numframes)
+	{
+		iTextureTarget = GL_TEXTURE_2D_ARRAY;
+	}
+
+	return iTextureTarget;
+}
+
+int GL_GetMipmapTextureTargetFromContext(const gl_loadtexture_context_t* context)
+{
+	int iMipmapTextureTarget = GL_TEXTURE_2D;
+
+	if (context->cubemap)
+	{
+		iMipmapTextureTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + context->cubemap - 1;
+	}
+	else if (context->numframes)
+	{
+		iMipmapTextureTarget = GL_TEXTURE_2D_ARRAY;
+	}
+
+	return iMipmapTextureTarget;
+}
+
+void GL_UploadTexturePreCommon(gl_loadtexture_context_t* context, int iTextureTarget)
+{
+	//Disable auto-mipmap-generation.
 	glTexParameteri(iTextureTarget, GL_GENERATE_MIPMAP, GL_FALSE);
 
-	if (state->mipmap)
+	if (context->mipmap)
 	{
 		glTexParameteri(iTextureTarget, GL_TEXTURE_MIN_FILTER, (*gl_filter_min));
 		glTexParameteri(iTextureTarget, GL_TEXTURE_MAG_FILTER, (*gl_filter_max));
 	}
-	else if (state->filter)
+	else if (context->filter)
 	{
-		glTexParameteri(iTextureTarget, GL_TEXTURE_MIN_FILTER, state->filter);
-		glTexParameteri(iTextureTarget, GL_TEXTURE_MAG_FILTER, state->filter);
+		glTexParameteri(iTextureTarget, GL_TEXTURE_MIN_FILTER, context->filter);
+		glTexParameteri(iTextureTarget, GL_TEXTURE_MAG_FILTER, context->filter);
 	}
 	else
 	{
@@ -513,53 +533,163 @@ void GL_UploadUncompressedTexture(gl_loadtexture_state_t* state)
 		glTexParameteri(iTextureTarget, GL_TEXTURE_MAG_FILTER, (*gl_filter_max));
 	}
 
-	if (state->wrap)
+	if (context->wrap)
 	{
-		glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_S, state->wrap);
-		glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_T, state->wrap);
+		glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_S, context->wrap);
+		glTexParameteri(iTextureTarget, GL_TEXTURE_WRAP_T, context->wrap);
 	}
 
 	glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, state->mipmap ? (state->mipmaps.size() - 1) : 0);
+	glTexParameteri(iTextureTarget, GL_TEXTURE_BASE_LEVEL, 0);
 
-	for (size_t i = 0; i < state->mipmaps.size(); ++i)
+	if (context->mipmap)
 	{
-		if (state->internalformat == GL_RGBA8)
+		//There are more than one mipmaps
+		if (context->mipmaps.size() > 1)
 		{
-			glTexImage2D(iMipmapTextureTarget, state->mipmaps[i].level, state->internalformat, state->mipmaps[i].width, state->mipmaps[i].height, 0, GL_RGBA, GL_UNSIGNED_BYTE, state->mipmaps[i].data);
-		}
-		else if (state->internalformat == GL_RGB8)
-		{
-			glTexImage2D(iMipmapTextureTarget, state->mipmaps[i].level, state->internalformat, state->mipmaps[i].width, state->mipmaps[i].height, 0, GL_RGB, GL_UNSIGNED_BYTE, state->mipmaps[i].data);
-		}
-		else if (state->internalformat == GL_RGBA32F)
-		{
-			glTexImage2D(iMipmapTextureTarget, state->mipmaps[i].level, state->internalformat, state->mipmaps[i].width, state->mipmaps[i].height, 0, GL_RGBA, GL_FLOAT, state->mipmaps[i].data);
-		}
-		else if (state->internalformat == GL_RGB32F)
-		{
-			glTexImage2D(iMipmapTextureTarget, state->mipmaps[i].level, state->internalformat, state->mipmaps[i].width, state->mipmaps[i].height, 0, GL_RGB, GL_FLOAT, state->mipmaps[i].data);
+			glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_LEVEL, context->mipmaps.size() - 1);
 		}
 		else
 		{
-			g_pMetaHookAPI->SysError("GL_UploadUncompressedTexture: bogus internalformat 0x%X.", state->internalformat);
+			glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_LEVEL, 1000);
 		}
-		if (!state->mipmap)
-			break;
+	}
+	else
+	{
+		glTexParameteri(iTextureTarget, GL_TEXTURE_MAX_LEVEL, 0);
+	}
+}
+
+void GL_UploadTexturePostCommon(gl_loadtexture_context_t* context, int iTextureTarget)
+{
+	if (context->numframes)
+	{
+		if (context->mipmap)
+		{
+			glGenerateMipmap(iTextureTarget);
+		}
+	}
+	else
+	{
+		//Generate mipmaps if there isn't one
+		if (context->mipmaps.size() == 1 && context->mipmap)
+		{
+			//available since OpenGL 3.0
+			glGenerateMipmap(iTextureTarget);
+		}
 	}
 
-	if (state->mipmaps.size() == 1 && state->mipmap)
+	//Free containers owning mipmap data.
+	if (context->mipmaps_dtor)
 	{
-		//available since OpenGL 3.0
-		glGenerateMipmap(iTextureTarget);
+		for (size_t i = 0; i < context->mipmaps.size(); ++i)
+		{
+			context->mipmaps_dtor(context->mipmaps[i].data_ctx, context->mipmaps[i].data, context->mipmaps[i].size);
+		}
+		context->mipmaps.clear();
 	}
+}
+
+void GL_UploadCompressedTexture(gl_loadtexture_context_t * context, int iTextureTarget)
+{
+	GL_UploadTexturePreCommon(context, iTextureTarget);
+
+	int iMipmapTextureTarget = GL_GetMipmapTextureTargetFromContext(context);
+
+	if (context->numframes)
+	{
+		//TODO: Not supported yet
+	}
+	else
+	{
+		for (size_t i = 0; i < context->mipmaps.size(); ++i)
+		{
+			glCompressedTexImage2D(
+				iMipmapTextureTarget, 
+				context->mipmaps[i].level,
+				context->internalformat,
+				context->mipmaps[i].width, 
+				context->mipmaps[i].height, 
+				0, 
+				context->mipmaps[i].size,
+				context->mipmaps[i].data);
+
+			if (!context->mipmap)
+				break;
+		}
+	}
+
+	GL_UploadTexturePostCommon(context, iTextureTarget);
+}
+
+void GL_UploadUncompressedTexture(gl_loadtexture_context_t* context, int iTextureTarget)
+{
+	GL_UploadTexturePreCommon(context, iTextureTarget);
+
+	int iMipmapTextureTarget = GL_GetMipmapTextureTargetFromContext(context);
+
+	if (context->numframes)
+	{
+		if (GL_IsSupportedInternalFormat(context->internalformat))
+		{
+			glTexStorage3D(iTextureTarget, 1, context->internalformat, context->width, context->height, context->numframes);
+
+			for (size_t i = 0; i < context->mipmaps.size(); ++i)
+			{
+				glTexSubImage3D(
+					iMipmapTextureTarget,
+					context->mipmaps[i].level, //level
+					0, //xoffset
+					0, //yoffset
+					i, //zoffset
+					context->mipmaps[i].width,
+					context->mipmaps[i].height,
+					1,
+					GL_GetTextureFormatFromInternalFormat(context->internalformat),
+					GL_GetTextureColorTypeFromInternalFormat(context->internalformat),
+					context->mipmaps[i].data);
+			}
+		}
+		else
+		{
+			g_pMetaHookAPI->SysError("GL_UploadUncompressedTexture: bogus internalformat 0x%X.", context->internalformat);
+		}
+	}
+	else
+	{
+		if (GL_IsSupportedInternalFormat(context->internalformat))
+		{
+			for (size_t i = 0; i < context->mipmaps.size(); ++i)
+			{
+				glTexImage2D(iMipmapTextureTarget,
+					context->mipmaps[i].level,
+					context->internalformat,
+					context->mipmaps[i].width,
+					context->mipmaps[i].height,
+					0,
+					GL_GetTextureFormatFromInternalFormat(context->internalformat),
+					GL_GetTextureColorTypeFromInternalFormat(context->internalformat),
+					context->mipmaps[i].data);
+
+				//Only upload mipmap[0] if mipmap is off
+				if (!context->mipmap)
+					break;
+			}
+		}
+		else
+		{
+			g_pMetaHookAPI->SysError("GL_UploadUncompressedTexture: bogus internalformat 0x%X.", context->internalformat);
+		}
+	}
+
+	GL_UploadTexturePostCommon(context, iTextureTarget);
 }
 
 /*
 	Search for glt and returns texnum, The identifier must be matched
 */
+
 int GL_FindTextureEx(const char *identifier, GL_TEXTURETYPE textureType, int *width, int *height)
 {
 	int i;
@@ -980,9 +1110,9 @@ void GL_BoxFilter3x3(unsigned char* out, unsigned char* in, int w, int h, int x,
 	out[3] = 0;
 }
 
-void GL_ProcessMipmap32(int iPalTextureType, gl_loadtexture_state_t* state)
+void GL_ProcessMipmap32(int iPalTextureType, gl_loadtexture_context_t* context)
 {
-	for (size_t i = 0; i < state->mipmaps.size(); ++i)
+	for (size_t i = 0; i < context->mipmaps.size(); ++i)
 	{
 		if (gl_spriteblend && gl_spriteblend->value)
 		{
@@ -990,9 +1120,9 @@ void GL_ProcessMipmap32(int iPalTextureType, gl_loadtexture_state_t* state)
 			{
 				if (iPalTextureType == TEX_TYPE_ALPHA_SVENGINE || iPalTextureType == TEX_TYPE_ALPHA_GRADIENT_SVENGINE || iPalTextureType == TEX_TYPE_RGBA_SVENGINE)
 				{
-					int width = state->mipmaps[i].width;
-					int height = state->mipmaps[i].height;
-					unsigned int* pData = (unsigned int*)state->mipmaps[i].data;
+					int width = context->mipmaps[i].width;
+					int height = context->mipmaps[i].height;
+					unsigned int* pData = (unsigned int*)context->mipmaps[i].data;
 
 					for (int i = 0; i < width * height; i++)
 					{
@@ -1007,9 +1137,9 @@ void GL_ProcessMipmap32(int iPalTextureType, gl_loadtexture_state_t* state)
 			{
 				if (iPalTextureType == TEX_TYPE_ALPHA || iPalTextureType == TEX_TYPE_ALPHA_GRADIENT || iPalTextureType == TEX_TYPE_RGBA)
 				{
-					int width = state->mipmaps[i].width;
-					int height = state->mipmaps[i].height;
-					unsigned int* pData = (unsigned int*)state->mipmaps[i].data;
+					int width = context->mipmaps[i].width;
+					int height = context->mipmaps[i].height;
+					unsigned int* pData = (unsigned int*)context->mipmaps[i].data;
 
 					for (int i = 0; i < width * height; i++)
 					{
@@ -1024,7 +1154,7 @@ void GL_ProcessMipmap32(int iPalTextureType, gl_loadtexture_state_t* state)
 	}
 }
 
-void GL_Upload16ToMipmap(byte* pData, int width, int height, byte* pPal, int iPalTextureType, gl_loadtexture_state_t* state)
+void GL_Upload16ToMipmap(byte* pData, int width, int height, byte* pPal, int iPalTextureType, gl_loadtexture_context_t* context)
 {
 	// Calculate the size of the image data.
 	int imageSize = width * height * sizeof(unsigned int);
@@ -1166,54 +1296,47 @@ void GL_Upload16ToMipmap(byte* pData, int width, int height, byte* pPal, int iPa
 		}
 	}
 
-	state->width = width;
-	state->height = height;
+	context->width = width;
+	context->height = height;
 
-	state->mipmaps.emplace_back(0, pOutputPixels, imageSize, state->width, state->height);
+	context->mipmaps.emplace_back(0, pOutputPixels, imageSize, context->width, context->height);
 
-	GL_ProcessMipmap32(iPalTextureType, state);
+	GL_ProcessMipmap32(iPalTextureType, context);
 }
 
-void GL_Upload32ToMipmap(byte* pData, int width, int height, int iPalTextureType, gl_loadtexture_state_t* state)
+void GL_Upload32ToMipmap(byte* pData, int width, int height, int iPalTextureType, gl_loadtexture_context_t* context)
 {
 	auto imageSize = width * height * 4;
 
-	state->mipmaps.emplace_back(0, pData, imageSize, width, height);
+	context->mipmaps.emplace_back(0, pData, imageSize, width, height);
 
-	GL_ProcessMipmap32(iPalTextureType, state);
+	GL_ProcessMipmap32(iPalTextureType, context);
 }
 
-int GL_LoadTexture3(gltexture_t* glt, GL_TEXTURETYPE textureType, gl_loadtexture_state_t* state)
+void GL_UploadTexture(gltexture_t* glt, GL_TEXTURETYPE textureType, gl_loadtexture_context_t* context)
 {
-	int iTextureTarget = GL_TEXTURE_2D;
+	int iTextureTarget = GL_GetTextureTargetFromContext(context);
 
-	if (state->cubemap)
-		iTextureTarget = GL_TEXTURE_CUBE_MAP;
-
-	if (!state->wrap)
+	if (!context->wrap)
 	{
-		state->wrap = GL_REPEAT;
+		context->wrap = GL_REPEAT;
 
 		if (textureType == GLT_HUDSPRITE || textureType == GLT_SPRITE)
-			state->wrap = GL_CLAMP_TO_EDGE;
+			context->wrap = GL_CLAMP_TO_EDGE;
 	}
 
 	glBindTexture(iTextureTarget, glt->texnum);
 
-	if (state->compressed)
+	if (context->compressed)
 	{
-		GL_UploadCompressedTexture(state);
+		GL_UploadCompressedTexture(context, iTextureTarget);
 	}
 	else
 	{
-		GL_UploadUncompressedTexture(state);
+		GL_UploadUncompressedTexture(context, iTextureTarget);
 	}
 
 	glBindTexture(iTextureTarget, 0);
-
-	(*currenttexture) = -1;
-
-	return glt->texnum;
 }
 
 int GL_LoadTexture2(char* identifier, GL_TEXTURETYPE textureType, int width, int height, byte* data, qboolean mipmap, int iPalTextureType, byte* pPal, int filter)
@@ -1248,39 +1371,41 @@ int GL_LoadTexture2(char* identifier, GL_TEXTURETYPE textureType, int width, int
 
 	gEngfuncs.Con_DPrintf("GL_LoadTexture2: Using new texture loader [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, glt->texnum);
 
-	gl_loadtexture_state_t state;
+	gl_loadtexture_context_t context;
 
-	state.internalformat = GL_RGBA8;
-	state.compressed = false;
-	state.width = width;
-	state.height = height;
-	state.mipmap = mipmap;
-	state.filter = filter;
+	context.internalformat = GL_RGBA8;
+	context.compressed = false;
+	context.width = width;
+	context.height = height;
+	context.mipmap = mipmap;
+	context.filter = filter;
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		if (!pPal)
 		{
-			GL_Upload32ToMipmap(data, width, height, iPalTextureType, &state);
+			GL_Upload32ToMipmap(data, width, height, iPalTextureType, &context);
 		}
 		else
 		{
-			GL_Upload16ToMipmap(data, width, height, pPal, iPalTextureType, &state);
+			GL_Upload16ToMipmap(data, width, height, pPal, iPalTextureType, &context);
 		}
 	}
 	else
 	{
 		if (iPalTextureType == TEX_TYPE_RGBA && textureType == GLT_SPRITE)
 		{
-			GL_Upload32ToMipmap(data, width, height, iPalTextureType, &state);
+			GL_Upload32ToMipmap(data, width, height, iPalTextureType, &context);
 		}
 		else
 		{
-			GL_Upload16ToMipmap(data, width, height, pPal, iPalTextureType, &state);
+			GL_Upload16ToMipmap(data, width, height, pPal, iPalTextureType, &context);
 		}
 	}
 
-	return GL_LoadTexture3(glt, textureType, &state);
+	GL_UploadTexture(glt, textureType, &context);
+
+	return glt->texnum;
 }
 
 int GL_LoadTexture(char* identifier, GL_TEXTURETYPE textureType, int width, int height, byte* data, qboolean mipmap, int iPalTextureType, byte* pPal)
@@ -1288,12 +1413,12 @@ int GL_LoadTexture(char* identifier, GL_TEXTURETYPE textureType, int width, int 
 	return GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iPalTextureType, pPal, (*gl_filter_max));
 }
 
-int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, gl_loadtexture_state_t *state)
+gltexture_t *GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, gl_loadtexture_context_t *state)
 {
 	if (!state->mipmaps.size())
 	{
 		gEngfuncs.Con_Printf("GL_LoadTextureEx: no mipmap data for %s.\n", identifier);
-		return 0;
+		return NULL;
 	}
 
 	char hashedIdentifier[64] = { 0 };
@@ -1306,18 +1431,20 @@ int GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, gl_load
 	if (!glt)
 	{
 		gEngfuncs.Con_Printf("GL_LoadTextureEx: Failed to allocate texture entry for [%s] -> [%s].\n", identifier, hashedIdentifier);
-		return 0;
+		return NULL;
 	}
 
 	if (foundExisting)
 	{
 		gEngfuncs.Con_DPrintf("GL_LoadTextureEx: Found existing texture entry [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, glt->texnum);
-		return glt->texnum;
+		return glt;
 	}
 
 	gEngfuncs.Con_DPrintf("GL_LoadTextureEx: [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, glt->texnum);
 
-	return GL_LoadTexture3(glt, textureType, state);
+	GL_UploadTexture(glt, textureType, state);
+
+	return glt;
 }
 
 texture_t *Draw_DecalTexture(int index)
@@ -1398,60 +1525,55 @@ void Draw_MiptexTexture(cachewad_t *wad, byte *data)
 	}
 }
 
-bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize, gl_loadtexture_state_t *state, bool throw_warning_on_missing)
+bool LoadDDS(const char* filename, const char* pathId, gl_loadtexture_context_t * context)
 {
+	byte* buf = texloader_buffer;
+	size_t bufsize = sizeof(texloader_buffer);
+
 	DDS_FILEHEADER10 fileHeader10;
 
 	FileHandle_t fileHandle = FILESYSTEM_ANY_OPEN(filename, "rb", pathId);
 
 	if (!fileHandle)
 	{
-		if (throw_warning_on_missing)
-		{
-			gEngfuncs.Con_Printf("LoadDDS: Could not open %s.\n", filename);
-		}
 		return false;
 	}
 
+	SCOPE_EXIT{ FILESYSTEM_ANY_CLOSE(fileHandle); };
+
 	if (sizeof(DDS_FILEHEADER) != FILESYSTEM_ANY_READ(&fileHeader10, sizeof(DDS_FILEHEADER), fileHandle))
 	{
-		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
-		FILESYSTEM_ANY_CLOSE(fileHandle);
+		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);	
 		return false;
 	}
 
 	if (fileHeader10.dwMagic != DDS_MAGIC)
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
-		FILESYSTEM_ANY_CLOSE(fileHandle);
 		return false;
 	}
 
 	if (fileHeader10.Header.dwSize != 124)
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
-		FILESYSTEM_ANY_CLOSE(fileHandle);
 		return false;
 	}
 
 	if (!(fileHeader10.Header.dwFlags & DDSD_PIXELFORMAT))
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
-		FILESYSTEM_ANY_CLOSE(fileHandle);
 		return false;
 	}
 
 	if (!(fileHeader10.Header.dwFlags & DDSD_CAPS))
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
-		FILESYSTEM_ANY_CLOSE(fileHandle);
 		return false;
 	}
 
 	if (!(fileHeader10.Header.ddspf.dwFlags & DDPF_FOURCC))
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
-		FILESYSTEM_ANY_CLOSE(fileHandle);
 		return false;
 	}
 
@@ -1462,7 +1584,6 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 		fileHeader10.Header.ddspf.dwFourCC != D3DFMT_DX10)
 	{
 		gEngfuncs.Con_Printf("LoadDDS: File %s has unsupported compressed texture format! Only DXT1/3/5 and BC7 supported!\n", filename);
-		FILESYSTEM_ANY_CLOSE(fileHandle);
 		return false;
 	}
 
@@ -1471,7 +1592,6 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 		if (sizeof(DDS_HEADER_DXT10) != FILESYSTEM_ANY_READ(&fileHeader10.Header10, sizeof(DDS_HEADER_DXT10), fileHandle))
 		{
 			gEngfuncs.Con_Printf("LoadDDS: File %s is not a DDS image.\n", filename);
-			FILESYSTEM_ANY_CLOSE(fileHandle);
 			return false;
 		}
 
@@ -1499,20 +1619,18 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 				if (offset + size > bufsize)
 				{
 					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
 				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
 				{
 					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
-				state->internalformat = GL_COMPRESSED_RGBA_BPTC_UNORM;
-				state->compressed = true;
-				state->mipmaps.emplace_back(i, buf + offset, size, w, h);
+				context->internalformat = GL_COMPRESSED_RGBA_BPTC_UNORM;
+				context->compressed = true;
+				context->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
 				offset += size;
 				w = w >> 1;
@@ -1525,20 +1643,18 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 				if (offset + size > bufsize)
 				{
 					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
 				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
 				{
 					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
-				state->internalformat = GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM;
-				state->compressed = true;
-				state->mipmaps.emplace_back(i, buf + offset, size, w, h);
+				context->internalformat = GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM;
+				context->compressed = true;
+				context->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
 				offset += size;
 				w = w >> 1;
@@ -1551,20 +1667,18 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 				if (offset + size > bufsize)
 				{
 					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
 				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
 				{
 					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
-				state->internalformat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-				state->compressed = true;
-				state->mipmaps.emplace_back(i, buf + offset, size, w, h);
+				context->internalformat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+				context->compressed = true;
+				context->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
 				offset += size;
 				w = w >> 1;
@@ -1577,20 +1691,18 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 				if (offset + size > bufsize)
 				{
 					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
 				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
 				{
 					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
-				state->internalformat = GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
-				state->compressed = true;
-				state->mipmaps.emplace_back(i, buf + offset, size, w, h);
+				context->internalformat = GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
+				context->compressed = true;
+				context->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
 				offset += size;
 				w = w >> 1;
@@ -1603,20 +1715,18 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 				if (offset + size > bufsize)
 				{
 					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
 				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
 				{
 					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
-				state->internalformat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-				state->compressed = true;
-				state->mipmaps.emplace_back(i, buf + offset, size, w, h);
+				context->internalformat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+				context->compressed = true;
+				context->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
 				offset += size;
 				w = w >> 1;
@@ -1629,20 +1739,18 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 				if (offset + size > bufsize)
 				{
 					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
 				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
 				{
 					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
-				state->internalformat = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
-				state->compressed = true;
-				state->mipmaps.emplace_back(i, buf + offset, size, w, h);
+				context->internalformat = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
+				context->compressed = true;
+				context->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
 				offset += size;
 				w = w >> 1;
@@ -1655,20 +1763,18 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 				if (offset + size > bufsize)
 				{
 					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
 				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
 				{
 					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
-				state->internalformat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-				state->compressed = true;
-				state->mipmaps.emplace_back(i, buf + offset, size, w, h);
+				context->internalformat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+				context->compressed = true;
+				context->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
 				offset += size;
 				w = w >> 1;
@@ -1681,20 +1787,18 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 				if (offset + size > bufsize)
 				{
 					gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
 				if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
 				{
 					gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-					FILESYSTEM_ANY_CLOSE(fileHandle);
 					return false;
 				}
 
-				state->internalformat = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
-				state->compressed = true;
-				state->mipmaps.emplace_back(i, buf + offset, size, w, h);
+				context->internalformat = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+				context->compressed = true;
+				context->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
 				offset += size;
 				w = w >> 1;
@@ -1703,7 +1807,6 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 			else
 			{
 				gEngfuncs.Con_Printf("LoadDDS: File %s has unsupported compressed texture format! Only DXT1/3/5 and BC7 supported!\n", filename);
-				FILESYSTEM_ANY_CLOSE(fileHandle);
 				return false;
 			}
 			break;
@@ -1715,20 +1818,18 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 			if (offset + size > bufsize)
 			{
 				gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-				FILESYSTEM_ANY_CLOSE(fileHandle);
 				return false;
 			}
 
 			if (size != FILESYSTEM_ANY_READ((void*)(buf + offset), size, fileHandle))
 			{
 				gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-				FILESYSTEM_ANY_CLOSE(fileHandle);
 				return false;
 			}
 
-			state->internalformat = GL_COMPRESSED_RGBA_BPTC_UNORM;
-			state->compressed = true;
-			state->mipmaps.emplace_back(i, buf + offset, size, w, h);
+			context->internalformat = GL_COMPRESSED_RGBA_BPTC_UNORM;
+			context->compressed = true;
+			context->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
 			offset += size;
 			w = w >> 1;
@@ -1743,20 +1844,18 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 			if (offset + size > bufsize)
 			{
 				gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-				FILESYSTEM_ANY_CLOSE(fileHandle);
 				return false;
 			}
 
 			if (size != FILESYSTEM_ANY_READ((void *)(buf + offset), size, fileHandle))
 			{
 				gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-				FILESYSTEM_ANY_CLOSE(fileHandle);
 				return false;
 			}
 
-			state->internalformat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-			state->compressed = true;
-			state->mipmaps.emplace_back(i, buf + offset, size, w, h);
+			context->internalformat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+			context->compressed = true;
+			context->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
 			offset += size;
 			w = w >> 1;
@@ -1771,20 +1870,18 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 			if (offset + size > bufsize)
 			{
 				gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-				FILESYSTEM_ANY_CLOSE(fileHandle);
 				return false;
 			}
 
 			if (size != FILESYSTEM_ANY_READ((void *)(buf + offset), size, fileHandle))
 			{
 				gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-				FILESYSTEM_ANY_CLOSE(fileHandle);
 				return false;
 			}
 
-			state->internalformat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-			state->compressed = true;
-			state->mipmaps.emplace_back(i, buf + offset, size, w, h);
+			context->internalformat = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+			context->compressed = true;
+			context->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
 			offset += size;
 			w = w >> 1;
@@ -1798,20 +1895,18 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 			if (offset + size > bufsize)
 			{
 				gEngfuncs.Con_Printf("LoadDDS: Texture %s is too large!\n", filename);
-				FILESYSTEM_ANY_CLOSE(fileHandle);
 				return false;
 			}
 			
 			if (size != FILESYSTEM_ANY_READ((void *)(buf + offset), size, fileHandle))
 			{
 				gEngfuncs.Con_Printf("LoadDDS: File %s is corrupted.\n", filename);
-				FILESYSTEM_ANY_CLOSE(fileHandle);
 				return false;
 			}
 
-			state->internalformat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-			state->compressed = true;
-			state->mipmaps.emplace_back(i, buf + offset, size, w, h);
+			context->internalformat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+			context->compressed = true;
+			context->mipmaps.emplace_back(i, buf + offset, size, w, h);
 
 			offset += size;
 			w = w >> 1;
@@ -1825,19 +1920,17 @@ bool LoadDDS(const char* filename, const char* pathId, byte* buf, size_t bufsize
 		{
 			break;
 		}
+
 		if (FILESYSTEM_ANY_EOF(fileHandle))
 		{
 			break;
 		}
-
 	}
 
-	state->width = fileHeader10.Header.dwWidth;
-	state->height = fileHeader10.Header.dwHeight;
+	context->width = fileHeader10.Header.dwWidth;
+	context->height = fileHeader10.Header.dwHeight;
 
-	FILESYSTEM_ANY_CLOSE(fileHandle);
-
-	return true;
+	return context->callback(context);
 }
 
 #define PATHSEPARATOR(c) ((c) == '\\' || (c) == '/')
@@ -1878,79 +1971,6 @@ const char * V_GetFileExtension( const char * path )
 	return src;
 }
 
-class CScopedFIBitmap {
-public:
-	CScopedFIBitmap(FIBITMAP* bitmap) : m_bitmap(bitmap) {}
-
-	~CScopedFIBitmap() {
-		if (m_bitmap) {
-			FreeImage_Unload(m_bitmap);
-			m_bitmap = nullptr;
-		}
-	}
-
-	// Delete copy constructor and copy assignment operator
-	CScopedFIBitmap(const CScopedFIBitmap&) = delete;
-	CScopedFIBitmap& operator=(const CScopedFIBitmap&) = delete;
-
-	// Optionally add move constructor and move assignment operator
-	CScopedFIBitmap(CScopedFIBitmap&& other) noexcept : m_bitmap(other.m_bitmap) {
-		other.m_bitmap = nullptr;
-	}
-	CScopedFIBitmap& operator=(CScopedFIBitmap&& other) noexcept {
-		if (this != &other) {
-			if (m_bitmap) {
-				FreeImage_Unload(m_bitmap);
-			}
-			m_bitmap = other.m_bitmap;
-			other.m_bitmap = nullptr;
-		}
-		return *this;
-	}
-
-	// Access the FIBITMAP*
-	FIBITMAP* get() const { return m_bitmap; }
-
-private:
-	FIBITMAP* m_bitmap;
-};
-
-class CScopedFileHandle {
-public:
-	CScopedFileHandle(FileHandle_t filehandle) : m_filehandle(filehandle) {}
-
-	~CScopedFileHandle() {
-		if (m_filehandle) {
-			FILESYSTEM_ANY_CLOSE(m_filehandle);
-			m_filehandle = nullptr;
-		}
-	}
-
-	// Delete copy constructor and copy assignment operator
-	CScopedFileHandle(const CScopedFileHandle&) = delete;
-	CScopedFileHandle& operator=(const CScopedFileHandle&) = delete;
-
-	// Optionally add move constructor and move assignment operator
-	CScopedFileHandle(CScopedFileHandle&& other) noexcept : m_filehandle(other.m_filehandle) {
-		other.m_filehandle = nullptr;
-	}
-	CScopedFileHandle& operator=(CScopedFileHandle&& other) noexcept {
-		if (this != &other) {
-			if (m_filehandle) {
-				FILESYSTEM_ANY_CLOSE(m_filehandle);
-			}
-			m_filehandle = other.m_filehandle;
-			other.m_filehandle = nullptr;
-		}
-		return *this;
-	}
-
-	FileHandle_t get() const { return m_filehandle; }
-
-private:
-	FileHandle_t m_filehandle;
-};
-
 unsigned WINAPI FI_Read(void *buffer, unsigned size, unsigned count, fi_handle handle)
 {
 	if(FILESYSTEM_ANY_READ(buffer, size*count, handle))
@@ -1976,40 +1996,25 @@ long WINAPI FI_Tell(fi_handle handle)
 	return FILESYSTEM_ANY_TELL(handle);
 }
 
-bool LoadImageGenericRGBA32F(const char* filename, byte* buf, size_t bufSize, FIBITMAP* fiB, gl_loadtexture_state_t* state)
+bool LoadImageGenericRGBA32F(const char* filename, FIBITMAP* fiB, gl_loadtexture_context_t* context)
 {
 	size_t pos = 0;
 	size_t w = FreeImage_GetWidth(fiB);
 	size_t h = FreeImage_GetHeight(fiB);
 	size_t imageSize = w * h * sizeof(vec4_t);
 
-	if (imageSize > bufSize)
-	{
-		gEngfuncs.Con_Printf("LoadImageGenericRGB32F: Could not load %s, texture too large.\n", filename);
-		return false;
-	}
-
-	byte* imageData = FreeImage_GetBits(fiB);
+	auto imageData = FreeImage_GetBits(fiB);
 
 	size_t rowSize = w * sizeof(vec4_t);
 
-	// Flip the image vertically into the destination buffer
-	for (unsigned int y = 0; y < h; ++y) {
-		// Calculate the starting position of the source row
-		byte* sourceRow = imageData + y * rowSize;
-		// Calculate the starting position of the destination row
-		// We start from the end of the buffer and move backwards
-		byte* destRow = buf + (h - y - 1) * rowSize;
+	FreeImage_FlipVertical(fiB);
 
-		// Copy the source row to the destination row
-		memcpy(destRow, sourceRow, rowSize);
-	}
-
+	//Assume the texture to be SRGB
 	float r_texgamma = 1.0f / v_texgamma->value;
 
 	for (unsigned int y = 0; y < h; ++y) {
 		for (unsigned int x = 0; x < w; ++x) {
-			float* row = (float*)(buf + y * rowSize + x * sizeof(vec4_t));
+			float* row = (float*)(imageData + y * rowSize + x * sizeof(vec4_t));
 
 			row[0] = pow(row[0], r_texgamma);
 			row[1] = pow(row[1], r_texgamma);
@@ -2017,49 +2022,34 @@ bool LoadImageGenericRGBA32F(const char* filename, byte* buf, size_t bufSize, FI
 		}
 	}
 
-	state->internalformat = GL_RGBA32F;
-	state->compressed = false;
-	state->width = w;
-	state->height = h;
-	state->mipmaps.emplace_back(0, buf, pos, w, h);
+	context->internalformat = GL_RGBA32F;
+	context->compressed = false;
+	context->width = w;
+	context->height = h;
+	context->mipmaps.emplace_back(0, imageData, pos, w, h);
 
-	return true;
+	return context->callback(context);
 }
 
-bool LoadImageGenericRGB32F(const char* filename, byte* buf, size_t bufSize, FIBITMAP* fiB, gl_loadtexture_state_t* state)
+bool LoadImageGenericRGB32F(const char* filename, FIBITMAP* fiB, gl_loadtexture_context_t* context)
 {
 	size_t pos = 0;
 	size_t w = FreeImage_GetWidth(fiB);
 	size_t h = FreeImage_GetHeight(fiB);
 	size_t imageSize = w * h * sizeof(vec3_t);
 
-	if (imageSize > bufSize)
-	{
-		gEngfuncs.Con_Printf("LoadImageGenericRGB32F: Could not load %s, texture too large.\n", filename);
-		return false;
-	}
-
 	byte* imageData = FreeImage_GetBits(fiB);
 
 	size_t rowSize = w * sizeof(vec3_t);
 
-	// Flip the image vertically into the destination buffer
-	for (unsigned int y = 0; y < h; ++y) {
-		// Calculate the starting position of the source row
-		byte* sourceRow = imageData + y * rowSize;
-		// Calculate the starting position of the destination row
-		// We start from the end of the buffer and move backwards
-		byte* destRow = buf + (h - y - 1) * rowSize;
+	FreeImage_FlipVertical(fiB);
 
-		// Copy the source row to the destination row
-		memcpy(destRow, sourceRow, rowSize);
-	}
-
+	//Assume the texture to be SRGB
 	float r_texgamma = 1.0f / v_gamma->value;
 
 	for (unsigned int y = 0; y < h; ++y) {
 		for (unsigned int x = 0; x < w; ++x) {
-			float* row = (float*)(buf + y * rowSize + x * sizeof(vec3_t));
+			float* row = (float*)(imageData + y * rowSize + x * sizeof(vec3_t));
 
 			row[0] = pow(row[0], r_texgamma);
 			row[1] = pow(row[1], r_texgamma);
@@ -2067,106 +2057,181 @@ bool LoadImageGenericRGB32F(const char* filename, byte* buf, size_t bufSize, FIB
 		}
 	}
 
-	state->internalformat = GL_RGB32F;
-	state->compressed = false;
-	state->width = w;
-	state->height = h;
-	state->mipmaps.emplace_back(0, buf, pos, w, h);
+	context->internalformat = GL_RGB32F;
+	context->compressed = false;
+	context->width = w;
+	context->height = h;
+	context->mipmaps.emplace_back(0, imageData, pos, w, h);
 
-	return true;
+	return context->callback(context);
 }
 
-bool LoadImageGenericRGBA8(const char *filename, byte* buf, size_t bufSize, FIBITMAP* fiB, gl_loadtexture_state_t* state)
+bool LoadImageGenericBGRA8(const char *filename, FIBITMAP* fiB, gl_loadtexture_context_t* context)
 {
 	size_t pos = 0;
 	size_t w = FreeImage_GetWidth(fiB);
 	size_t h = FreeImage_GetHeight(fiB);
-	size_t blockSize = FreeImage_GetLine(fiB) / w;
 
-	if (w * h * 4 > bufSize)
-	{
-		gEngfuncs.Con_Printf("LoadImageGenericRGBA8: Could not load %s, texture too large.\n", filename);
-		return false;
-	}
+	byte* imageData = FreeImage_GetBits(fiB);
 
-	for (size_t y = 0; y < h; ++y)
-	{
-		BYTE* bits = FreeImage_GetScanLine(fiB, h - y - 1);
-		for (size_t x = 0; x < w; ++x)
-		{
-			buf[pos++] = bits[FI_RGBA_RED];//B
-			buf[pos++] = bits[FI_RGBA_GREEN];//G
-			buf[pos++] = bits[FI_RGBA_BLUE];//R
-			if (blockSize == 4)
-				buf[pos++] = bits[FI_RGBA_ALPHA];//Alpha
-			else
-				buf[pos++] = 255;
-			bits += blockSize;
+	FreeImage_FlipVertical(fiB);
+
+	for (unsigned y = 0; y < h; ++y) {
+		// Get a pointer to the start of the pixel row.
+		BYTE* bits = FreeImage_GetScanLine(fiB, y);
+		for (unsigned x = 0; x < w; ++x) {
+			// Swap the red and blue bytes.
+			// Assuming the format is BGRA, where the bytes are in the order (B, G, R, A).
+			BYTE temp = bits[FI_RGBA_RED];
+			bits[FI_RGBA_RED] = bits[FI_RGBA_BLUE];
+			bits[FI_RGBA_BLUE] = temp;
+
+			// Move to the next pixel (4 bytes per pixel).
+			bits += 4;
 		}
 	}
 
-	state->internalformat = GL_RGBA8;
-	state->compressed = false;
-	state->width = w;
-	state->height = h;
-	state->mipmaps.emplace_back(0, buf, pos, w, h);
+	context->internalformat = GL_RGBA8;
+	context->compressed = false;
+	context->width = w;
+	context->height = h;
+	context->mipmaps.emplace_back(0, imageData, pos, w, h);
 
-	return true;
+	return context->callback(context);
 }
 
-bool LoadImagePaletteRGBA8(const char* filename, byte* buf, size_t bufSize, FIBITMAP* fiB, gl_loadtexture_state_t* state)
+bool LoadWEBPFrame(FIMULTIBITMAP * fiBMulti, int page, gl_loadtexture_context_t* context)
 {
-	size_t pos = 0;
-	size_t w = FreeImage_GetWidth(fiB);
-	size_t h = FreeImage_GetHeight(fiB);
-	size_t blockSize = FreeImage_GetLine(fiB) / w;
+	bool bLoaded = false;
 
-	// Get the palette
-	RGBQUAD* palette = FreeImage_GetPalette(fiB);
+	auto fiBPage = FreeImage_LockPage(fiBMulti, page);
 
-	if (w * h * 4 > bufSize)
+	if (fiBPage)
 	{
-		gEngfuncs.Con_Printf("LoadImagePaletteRGBA8: Could not load %s, texture too large.\n", filename);
-		return false;
-	}
+		auto colorType = FreeImage_GetColorType(fiBPage);
 
-	for (size_t y = 0; y < h; ++y)
-	{
-		BYTE* bits = FreeImage_GetScanLine(fiB, h - y - 1);
-		for (size_t x = 0; x < w; ++x)
+		if (colorType == FIC_RGBALPHA || colorType == FIC_RGB)
 		{
-			const RGBQUAD& color = palette[bits[x]];
+			auto fiBGRA8 = FreeImage_ConvertTo32Bits(fiBPage);
 
-			buf[pos++] = color.rgbRed;//R
-			buf[pos++] = color.rgbGreen;//G
-			buf[pos++] = color.rgbBlue;//B
-			buf[pos++] = 255;
+			if (fiBGRA8)
+			{
+				FreeImage_FlipVertical(fiBGRA8);
+
+				auto w = FreeImage_GetWidth(fiBGRA8);
+				auto h = FreeImage_GetHeight(fiBGRA8);
+				auto bpp = FreeImage_GetBPP(fiBGRA8);
+
+				for (unsigned int y = 0; y < h; ++y) {
+					// Get a pointer to the start of the pixel row.
+					BYTE* bits = FreeImage_GetScanLine(fiBGRA8, y);
+					for (unsigned int x = 0; x < w; ++x) {
+						// Swap the red and blue bytes.
+						// Assuming the format is BGRA, where the bytes are in the order (B, G, R, A).
+						BYTE temp = bits[FI_RGBA_RED];
+						bits[FI_RGBA_RED] = bits[FI_RGBA_BLUE];
+						bits[FI_RGBA_BLUE] = temp;
+
+						// Move to the next pixel (4 bytes per pixel).
+						bits += 4;
+					}
+				}
+
+				if (page > 0)
+				{
+					auto& previousMipmap = context->mipmaps[page - 1];
+
+					auto fiPreviousBitmap = (FIBITMAP*)previousMipmap.data_ctx;
+
+					auto fiSrcBitmap = fiBGRA8;
+					auto fiDstBitmap = FreeImage_Clone(fiPreviousBitmap);
+
+					int XOffset = 0;
+					int YOffset = 0;
+
+					FITAG* tagX = NULL;
+					if (FreeImage_GetMetadata(FIMD_ANIMATION, fiBPage, "FrameLeft", &tagX))
+					{
+						XOffset = *(int*)FreeImage_GetTagValue(tagX);
+					}
+
+					FITAG* tagY = NULL;
+					if (FreeImage_GetMetadata(FIMD_ANIMATION, fiBPage, "FrameTop", &tagY))
+					{
+						YOffset = *(int*)FreeImage_GetTagValue(tagY);
+					}
+
+					if (fiDstBitmap)
+					{
+						for (unsigned int y = 0; y < h; ++y) {
+
+							auto srcBits = FreeImage_GetScanLine(fiSrcBitmap, y);
+							auto dstBits = FreeImage_GetScanLine(fiDstBitmap, y + YOffset);
+
+							for (unsigned int x = 0; x < w; ++x) {
+								// Assuming 32-bit images (4 bytes per pixel: BGRA)
+								// Composite src pixel onto dst pixel
+								// Simple alpha blending: out = src_alpha * src + (1 - src_alpha) * dst
+
+								float srcAlpha = srcBits[x * 4 + 3] / 255.0f; // Normalize the alpha
+
+								dstBits[(x + XOffset) * 4 + 0] = (BYTE)(srcBits[x * 4 + 0] * srcAlpha + dstBits[(x + XOffset) * 4 + 0] * (1.0f - srcAlpha));
+								dstBits[(x + XOffset) * 4 + 1] = (BYTE)(srcBits[x * 4 + 1] * srcAlpha + dstBits[(x + XOffset) * 4 + 1] * (1.0f - srcAlpha));
+								dstBits[(x + XOffset) * 4 + 2] = (BYTE)(srcBits[x * 4 + 2] * srcAlpha + dstBits[(x + XOffset) * 4 + 2] * (1.0f - srcAlpha));
+								//dstBits[(x + XOffset) * 4 + 3] = 255;
+								//dstBits[(x + XOffset) * 4 + 3] = srcBits[x * 4 + 3];
+							}
+						}
+
+						context->mipmaps.emplace_back(0, FreeImage_GetBits(fiDstBitmap), context->width * context->height * 4, context->width, context->height, fiDstBitmap);
+						context->numframes++;
+
+						bLoaded = true;
+					}
+
+					FreeImage_Unload(fiBGRA8);
+				}
+				else
+				{
+					// duration of the frame (in milliseconds).
+					int duration = 0;
+
+					FITAG* tagFrameRate = NULL;
+					if (FreeImage_GetMetadata(FIMD_ANIMATION, fiBPage, "FrameTime", &tagFrameRate))
+					{
+						duration = *(int*)FreeImage_GetTagValue(tagFrameRate);
+					}
+
+					context->mipmaps.emplace_back(0, FreeImage_GetBits(fiBGRA8), w * h * 4, w, h, fiBGRA8);
+					context->width = w;
+					context->height = h;
+					context->numframes++;
+					if(duration > 0)
+						context->framerate = 1.0f / (duration / 1000.0f);
+					else
+						context->framerate = 0;
+
+					bLoaded = true;
+				}
+			}
 		}
+
+		FreeImage_UnlockPage(fiBMulti, fiBPage, FALSE);
 	}
 
-	state->internalformat = GL_RGBA8;
-	state->compressed = false;
-	state->width = w;
-	state->height = h;
-	state->mipmaps.emplace_back(0, buf, pos, w, h);
-
-	return true;
+	return bLoaded;
 }
 
-bool LoadImageGeneric(const char *filename, const char* pathId, byte *buf, size_t bufSize, gl_loadtexture_state_t *state, bool throw_warning_on_missing)
+bool LoadWEBP(const char* filename, const char* pathId, gl_loadtexture_context_t* context)
 {
-	FileHandle_t fileHandle = FILESYSTEM_ANY_OPEN(filename, "rb", pathId);
+	auto fileHandle = FILESYSTEM_ANY_OPEN(filename, "rb", pathId);
 
 	if (!fileHandle)
 	{
-		if (throw_warning_on_missing)
-		{
-			gEngfuncs.Con_Printf("LoadImageGeneric: Could not open %s.\n", filename);
-		}
 		return false;
 	}
 
-	CScopedFileHandle scopedFileHandle(fileHandle);
+	SCOPE_EXIT{ FILESYSTEM_ANY_CLOSE(fileHandle); };
 
 	FreeImageIO fiIO;
 	fiIO.read_proc = FI_Read;
@@ -2174,7 +2239,82 @@ bool LoadImageGeneric(const char *filename, const char* pathId, byte *buf, size_
 	fiIO.seek_proc = FI_Seek;
 	fiIO.tell_proc = FI_Tell;
 
-	FREE_IMAGE_FORMAT fiFormat = FreeImage_GetFileTypeFromHandle(&fiIO, (fi_handle)fileHandle);
+	auto fiFormat = FreeImage_GetFileTypeFromHandle(&fiIO, (fi_handle)fileHandle);
+
+	if (fiFormat != FIF_WEBP)
+	{
+		gEngfuncs.Con_Printf("LoadWEBP: Could not load %s, Invalid format.\n", filename);
+		return false;
+	}
+
+	if (!FreeImage_FIFSupportsReading(fiFormat))
+	{
+		gEngfuncs.Con_Printf("LoadWEBP: Could not load %s, Unsupported format.\n", filename);
+		return false;
+	}
+
+	auto fiBMulti = FreeImage_OpenMultiBitmapFromHandle(fiFormat, &fiIO, (fi_handle)fileHandle, WEBP_LOAD_FRAME);
+
+	if (!fiBMulti)
+	{
+		gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, FreeImage_OpenMultiBitmapFromHandle failed.\n", filename);
+		return false;
+	}
+
+	SCOPE_EXIT{ FreeImage_CloseMultiBitmap(fiBMulti); };
+
+	int count = FreeImage_GetPageCount(fiBMulti);
+
+	for (int i = 0; i < count; ++i)
+	{
+		if (!LoadWEBPFrame(fiBMulti, i, context))
+		{
+			gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, LoadWEBPFrame failed.\n", filename);
+			return false;
+		}
+	}
+
+	context->internalformat = GL_RGBA8;
+	context->compressed = false;
+
+	context->mipmaps_dtor = [](void* data_ctx, const void* data, int size) {
+
+		auto fi = (FIBITMAP *)data_ctx;
+
+		FreeImage_Unload(fi);
+
+	};
+
+#if 0
+	for (size_t i = 0; i < context->mipmaps.size(); ++i)
+	{
+		char test[256];
+		sprintf(test, "test_%d.png", i);
+		SaveImageGenericRGBA8(test, NULL, context->mipmaps[i].width, context->mipmaps[i].height, context->mipmaps[i].data);
+	}
+#endif
+
+	return context->callback(context);
+}
+
+bool LoadImageGeneric(const char *filename, const char* pathId, gl_loadtexture_context_t * context)
+{
+	auto fileHandle = FILESYSTEM_ANY_OPEN(filename, "rb", pathId);
+
+	if (!fileHandle)
+	{
+		return false;
+	}
+
+	SCOPE_EXIT{ FILESYSTEM_ANY_CLOSE(fileHandle); };
+
+	FreeImageIO fiIO;
+	fiIO.read_proc = FI_Read;
+	fiIO.write_proc = FI_Write;
+	fiIO.seek_proc = FI_Seek;
+	fiIO.tell_proc = FI_Tell;
+
+	auto fiFormat = FreeImage_GetFileTypeFromHandle(&fiIO, (fi_handle)fileHandle);
 
 	if (fiFormat == FIF_UNKNOWN)
 	{
@@ -2193,7 +2333,7 @@ bool LoadImageGeneric(const char *filename, const char* pathId, byte *buf, size_
 		return false;
 	}
 
-	FIBITMAP* fiB = FreeImage_LoadFromHandle(fiFormat, &fiIO, (fi_handle)fileHandle);
+	auto fiB = FreeImage_LoadFromHandle(fiFormat, &fiIO, (fi_handle)fileHandle);
 
 	if (!fiB)
 	{
@@ -2201,15 +2341,15 @@ bool LoadImageGeneric(const char *filename, const char* pathId, byte *buf, size_
 		return false;
 	}
 
-	CScopedFIBitmap scopedBitmap(fiB);
+	SCOPE_EXIT{ FreeImage_Unload(fiB); };
 
 	if (fiFormat == FIF_HDR)
 	{
-		FREE_IMAGE_COLOR_TYPE colorType = FreeImage_GetColorType(scopedBitmap.get());
+		auto colorType = FreeImage_GetColorType(fiB);
 
 		if (colorType == FIC_RGBALPHA)
 		{
-			FIBITMAP* fiBFloat = FreeImage_ConvertToRGBAF(scopedBitmap.get());
+			auto fiBFloat = FreeImage_ConvertToRGBAF(fiB);
 
 			if (!fiBFloat)
 			{
@@ -2217,15 +2357,16 @@ bool LoadImageGeneric(const char *filename, const char* pathId, byte *buf, size_
 				return false;
 			}
 
-			CScopedFIBitmap scopedBitmapFloat(fiBFloat);
+			SCOPE_EXIT{ FreeImage_Unload(fiBFloat); };
 
-			if (!LoadImageGenericRGBA32F(filename, buf, bufSize, scopedBitmapFloat.get(), state))
-				return false;
-
+			if (LoadImageGenericRGBA32F(filename, fiBFloat, context))
+			{
+				return true;
+			}
 		}
 		else if (colorType == FIC_RGB)
 		{
-			FIBITMAP* fiBFloat = FreeImage_ConvertToRGBF(scopedBitmap.get());
+			auto fiBFloat = FreeImage_ConvertToRGBF(fiB);
 
 			if (!fiBFloat)
 			{
@@ -2233,92 +2374,67 @@ bool LoadImageGeneric(const char *filename, const char* pathId, byte *buf, size_
 				return false;
 			}
 
-			CScopedFIBitmap scopedBitmapFloat(fiBFloat);
+			SCOPE_EXIT{ FreeImage_Unload(fiBFloat); };
 
-			if (!LoadImageGenericRGB32F(filename, buf, bufSize, scopedBitmapFloat.get(), state))
-				return false;
+			if (LoadImageGenericRGB32F(filename, fiBFloat, context))
+			{
+				return true;
+			}
 		}
 	}
 	else
 	{
-		FREE_IMAGE_COLOR_TYPE colorType = FreeImage_GetColorType(scopedBitmap.get());
+		auto colorType = FreeImage_GetColorType(fiB);
 
-		if (colorType == FIC_RGBALPHA)
+		if (colorType == FIC_RGBALPHA || colorType == FIC_RGB || colorType == FIC_PALETTE)
 		{
-			FIBITMAP* fiB32 = FreeImage_ConvertTo32Bits(scopedBitmap.get());
+			auto fiBGRA8 = FreeImage_ConvertTo32Bits(fiB);
 
-			if (!fiB32)
+			if (!fiBGRA8)
 			{
 				gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, FreeImage_ConvertTo32Bits failed.\n", filename);
 				return false;
 			}
 
-			CScopedFIBitmap scopedBitmap32(fiB32);
+			SCOPE_EXIT{ FreeImage_Unload(fiBGRA8); };
 
-			if (!LoadImageGenericRGBA8(filename, buf, bufSize, scopedBitmap32.get(), state))
+			if (LoadImageGenericBGRA8(filename, fiBGRA8, context))
 			{
-				return false;
+				return true;
 			}
-		}
-		else if (colorType == FIC_RGB)
-		{
-			FIBITMAP* fiB24 = FreeImage_ConvertTo24Bits(scopedBitmap.get());
-
-			if (!fiB24)
-			{
-				gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, FreeImage_ConvertTo24Bits failed.\n", filename);
-				return false;
-			}
-
-			CScopedFIBitmap scopedBitmap24(fiB24);
-
-			if (!LoadImageGenericRGBA8(filename, buf, bufSize, scopedBitmap24.get(), state))
-			{
-				return false;
-			}
-		}
-		else if (colorType == FIC_PALETTE)
-		{
-			if (!LoadImagePaletteRGBA8(filename, buf, bufSize, scopedBitmap.get(), state))
-			{
-				return false;
-			}
-		}
-		else
-		{
-			gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, bogus color type: %d.\n", filename, colorType);
-			return false;
 		}
 	}
 
-	return true;
+	return false;
 }
 
-bool SaveImageGeneric(const char *filename, const char* pathId, int width, int height, byte *data)
+bool SaveImageGenericRGBA8(const char* filename, const char* pathId, int width, int height, const void* data)
 {
-	const char *extension = V_GetFileExtension(filename);
+	const char* extension = V_GetFileExtension(filename);
 
 	FREE_IMAGE_FORMAT fiFormat = FreeImage_GetFIFFromFilename(filename);
 
-	if(fiFormat == FIF_UNKNOWN)
+	if (fiFormat == FIF_UNKNOWN)
 	{
-		gEngfuncs.Con_Printf("SaveImageGeneric: Could not save %s, Unsupported format.\n", filename);
-		return false;  
+		gEngfuncs.Con_Printf("SaveImageGenericRGBA8: Could not save %s, Unsupported format.\n", filename);
+		return false;
 	}
 
-	if(!FreeImage_FIFSupportsWriting(fiFormat))
-    {
-		gEngfuncs.Con_Printf("SaveImageGeneric: Could not save %s, Unsupported format.\n", filename);
+	if (!FreeImage_FIFSupportsWriting(fiFormat))
+	{
+		gEngfuncs.Con_Printf("SaveImageGenericRGBA8: Could not save %s, Unsupported format.\n", filename);
 		return false;
-    }
+	}
 
 	FileHandle_t fileHandle = FILESYSTEM_ANY_OPEN(filename, "wb", pathId);
 
-	if(!fileHandle)
-    {
-		gEngfuncs.Con_Printf("SaveImageGeneric: Could not open %s for writing.\n", filename);
-		return false;  
-    }
+	if (!fileHandle)
+	{
+		gEngfuncs.Con_Printf("SaveImageGenericRGBA8: Could not open %s for writing.\n", filename);
+		return false;
+	}
+
+	SCOPE_EXIT{ FILESYSTEM_ANY_CLOSE(fileHandle); };
 
 	FreeImageIO fiIO;
 	fiIO.read_proc = FI_Read;
@@ -2326,8 +2442,76 @@ bool SaveImageGeneric(const char *filename, const char* pathId, int width, int h
 	fiIO.seek_proc = FI_Seek;
 	fiIO.tell_proc = FI_Tell;
 
-	FIBITMAP *fiB = FreeImage_Allocate(width, height, 24);
+	auto fiB = FreeImage_Allocate(width, height, 32);
 
+	SCOPE_EXIT{ FreeImage_Unload(fiB); };
+
+	auto src = (byte*)data;
+	int pos = 0;
+
+	int blockSize = FreeImage_GetLine(fiB) / width;
+
+	for (int y = 0; y < height; ++y)
+	{
+		BYTE* bits = FreeImage_GetScanLine(fiB, y);
+		for (int x = 0; x < width; ++x)
+		{
+			bits[FI_RGBA_RED] = src[pos++];
+			bits[FI_RGBA_GREEN] = src[pos++];
+			bits[FI_RGBA_BLUE] = src[pos++];
+			bits[FI_RGBA_ALPHA] = src[pos++];
+			bits += blockSize;
+		}
+	}
+
+	if (FALSE == FreeImage_SaveToHandle(fiFormat, fiB, &fiIO, (fi_handle)fileHandle))
+	{
+		gEngfuncs.Con_Printf("SaveImageGenericRGBA8: Could not save %s, FreeImage_SaveToHandle failed.\n", filename);
+		return false;
+	}
+
+	return true;
+}
+
+bool SaveImageGenericRGB8(const char *filename, const char* pathId, int width, int height, const void *data)
+{
+	const char *extension = V_GetFileExtension(filename);
+
+	FREE_IMAGE_FORMAT fiFormat = FreeImage_GetFIFFromFilename(filename);
+
+	if(fiFormat == FIF_UNKNOWN)
+	{
+		gEngfuncs.Con_Printf("SaveImageGenericRGB8: Could not save %s, Unsupported format.\n", filename);
+		return false;  
+	}
+
+	if(!FreeImage_FIFSupportsWriting(fiFormat))
+    {
+		gEngfuncs.Con_Printf("SaveImageGenericRGB8: Could not save %s, Unsupported format.\n", filename);
+		return false;
+    }
+
+	FileHandle_t fileHandle = FILESYSTEM_ANY_OPEN(filename, "wb", pathId);
+
+	if(!fileHandle)
+    {
+		gEngfuncs.Con_Printf("SaveImageGenericRGB8: Could not open %s for writing.\n", filename);
+		return false;  
+    }
+
+	SCOPE_EXIT{ FILESYSTEM_ANY_CLOSE(fileHandle); };
+
+	FreeImageIO fiIO;
+	fiIO.read_proc = FI_Read;
+	fiIO.write_proc = FI_Write;
+	fiIO.seek_proc = FI_Seek;
+	fiIO.tell_proc = FI_Tell;
+
+	auto fiB = FreeImage_Allocate(width, height, 24);
+
+	SCOPE_EXIT{ FreeImage_Unload(fiB); };
+
+	auto src = (byte*)data;
 	int pos = 0;
 	int blockSize = FreeImage_GetLine(fiB) / width;
 
@@ -2336,85 +2520,498 @@ bool SaveImageGeneric(const char *filename, const char* pathId, int width, int h
 		BYTE *bits = FreeImage_GetScanLine(fiB, y);
 		for(int x = 0; x < width; ++x)
 		{
-			bits[FI_RGBA_RED] = data[pos++];
-			bits[FI_RGBA_GREEN] = data[pos++];
-			bits[FI_RGBA_BLUE] = data[pos++];
+			bits[FI_RGBA_RED] = src[pos++];
+			bits[FI_RGBA_GREEN] = src[pos++];
+			bits[FI_RGBA_BLUE] = src[pos++];
 			bits += blockSize;
 		}
 	}
 
 	if(FALSE == FreeImage_SaveToHandle(fiFormat, fiB, &fiIO, (fi_handle)fileHandle))
     {
-		gEngfuncs.Con_Printf("SaveImageGeneric: Could not save %s, FreeImage_SaveToHandle failed.\n", filename);
-		FILESYSTEM_ANY_CLOSE(fileHandle);
-		FreeImage_Unload(fiB);
+		gEngfuncs.Con_Printf("SaveImageGenericRGB8: Could not save %s, FreeImage_SaveToHandle failed.\n", filename);
         return false;
     }
 
-	FILESYSTEM_ANY_CLOSE(fileHandle);
-	FreeImage_Unload(fiB);
 	return true;
 }
 
-int R_LoadRGBA8TextureFromMemory(const char* identifier, void* data, int width, int height, GL_TEXTURETYPE textureType, bool mipmap)
+void GL_FillLoadTextureResult(const gltexture_t* textureEntry, const gl_loadtexture_context_t* context, gl_loadtexture_result_t* result)
 {
-	gl_loadtexture_state_t state;
-
-	state.internalformat = GL_RGBA8;
-	state.compressed = false;
-	state.width = width;
-	state.height = height;
-	state.mipmap = mipmap;
-	state.mipmaps.emplace_back(0, data, 0, width, height);
-
-	return GL_LoadTextureEx(identifier, textureType, &state);
+	result->gltexturenum = textureEntry->texnum;
+	result->width = context->width;
+	result->height = context->height;
+	result->numframes = context->numframes;
+	result->framerate = context->framerate;
 }
 
-int R_LoadTextureFromFile(const char *filename, const char * identifier, int *width, int *height, GL_TEXTURETYPE textureType, bool mipmap, bool throw_warning_on_missing)
+int R_LoadRGBA8TextureFromMemory(const char* identifier, const void* data, int width, int height, GL_TEXTURETYPE textureType, bool mipmap)
 {
-	auto foundTexture = GL_FindTexture(identifier, textureType, width, height);
+	gl_loadtexture_context_t context;
 
-	if (foundTexture > 0)
-		return foundTexture;
+	context.internalformat = GL_RGBA8;
+	context.compressed = false;
+	context.width = width;
+	context.height = height;
+	context.mipmap = mipmap;
+	context.mipmaps.emplace_back(0, data, 0, width, height);
 
-	const char *extension = V_GetFileExtension(filename);
+	auto textureEntry = GL_LoadTextureEx(identifier, textureType, &context);
 
-	if(!extension)
+	if (textureEntry)
 	{
-		if (throw_warning_on_missing)
-		{
-			gEngfuncs.Con_Printf("R_LoadTextureFromFile: File %s has no extension.\n", filename);
-		}
-		return 0;
+		return textureEntry->texnum;
 	}
 
-	gl_loadtexture_state_t state;
+	return 0;
+}
 
-	state.mipmap = mipmap;
+#if 0
 
-	if(!stricmp(extension, "dds"))
+int AVCodec_Read(void* opaque, uint8_t* buf, int buf_size) {
+
+	FileHandle_t fileHandle = (FileHandle_t)opaque;
+
+	return FILESYSTEM_ANY_READ(buf, buf_size, fileHandle);
+}
+
+int64_t AVCodec_Seek(void* opaque, int64_t offset, int whence) {
+
+	FileHandle_t fileHandle = (FileHandle_t)opaque;
+	int64_t ret = -1;
+
+	switch (whence)
 	{
-		if(LoadDDS(filename, NULL, texloader_buffer, sizeof(texloader_buffer), &state, throw_warning_on_missing))
-		{
-			if(width)
-				*width = state.width;
-			if(height)
-				*height = state.height;
+	case AVSEEK_SIZE:
+	{
+		return FILESYSTEM_ANY_SIZE(fileHandle);
+	}
 
-			return GL_LoadTextureEx(identifier, textureType, &state);
+	case SEEK_END:
+	{
+
+		break;
+	}
+	case SEEK_CUR:
+	{
+		
+		break;
+	}
+	case SEEK_SET:
+	{
+		FILESYSTEM_ANY_SEEK(fileHandle, offset, FileSystemSeek_t::FILESYSTEM_SEEK_HEAD);
+		ret = FILESYSTEM_ANY_TELL(fileHandle);
+
+		break;
+	}
+	}
+
+	return ret;
+}
+
+int process_frame(AVFormatContext* fmt_ctx,
+	AVCodecContext* dec_ctx,
+	AVCodecParameters* par,
+	AVFrame* frame,
+	AVPacket* pkt,
+	int* packet_new) {
+	int ret = 0, got_frame = 0;
+
+	if (dec_ctx && dec_ctx->codec) {
+		switch (par->codec_type) {
+		case AVMEDIA_TYPE_VIDEO:
+		case AVMEDIA_TYPE_AUDIO:
+			if (*packet_new) {
+				ret = avcodec_send_packet(dec_ctx, pkt);
+				if (ret == AVERROR(EAGAIN)) {
+					ret = 0;
+				}
+				else if (ret >= 0 || ret == AVERROR_EOF) {
+					ret = 0;
+					*packet_new = 0;
+				}
+			}
+			if (ret >= 0) {
+				ret = avcodec_receive_frame(dec_ctx, frame);
+				if (ret >= 0) {
+					got_frame = 1;
+				}
+				else if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+					ret = 0;
+				}
+			}
+			break;
+
+		case AVMEDIA_TYPE_SUBTITLE:
+			*packet_new = 0;
+			break;
+		default:
+			*packet_new = 0;
 		}
 	}
-	else if(LoadImageGeneric(filename, NULL, texloader_buffer, sizeof(texloader_buffer), &state, throw_warning_on_missing))
-	{
-		if (width)
-			*width = state.width;
-		if (height)
-			*height = state.height;
+	else {
+		*packet_new = 0;
+	}
 
-		return GL_LoadTextureEx(identifier, textureType, &state);
+	if (ret < 0) {
+		return ret;
+	}
+
+	return got_frame || *packet_new;
+}
+
+bool LoadVideoFrames(const char* filename, const char* pathId, gl_loadtexture_context_t *state)
+{
+	FileHandle_t fileHandle = FILESYSTEM_ANY_OPEN(filename, "rb", pathId);
+
+	if (!fileHandle)
+	{
+		gEngfuncs.Con_Printf("LoadVideoFrames: Failed to open %s.\n", filename);
+		return false;
+	}
+
+	SCOPE_EXIT{ FILESYSTEM_ANY_CLOSE(fileHandle); };
+
+	size_t io_buffer_size = 0x10000;
+
+	unsigned char* io_buffer = (unsigned char*)av_malloc(io_buffer_size);
+
+	if (!io_buffer)
+	{
+		gEngfuncs.Con_Printf("LoadVideoFrames: Failed to av_malloc for %s.\n", filename);
+		return false;
+	}
+
+	auto avio_ctx = avio_alloc_context(io_buffer, io_buffer_size, 0, fileHandle, AVCodec_Read, NULL, AVCodec_Seek);
+
+	if (!avio_ctx)
+	{
+		av_free(io_buffer);
+
+		gEngfuncs.Con_Printf("LoadVideoFrames: Failed to avio_alloc_context for %s.\n", filename);
+		return false;
+	}
+
+	SCOPE_EXIT{
+		av_free(avio_ctx->buffer);
+		avio_context_free(&avio_ctx); 
+	};
+
+	auto formatContext = avformat_alloc_context();
+
+	if(!formatContext)
+	{
+		gEngfuncs.Con_Printf("LoadVideoFrames: Failed to avformat_alloc_context for %s.\n", filename);
+		return false;
+	}
+
+	SCOPE_EXIT
+	{ 
+		if (formatContext) {
+			avformat_free_context(formatContext); 
+			formatContext = NULL;
+		}
+	};
+	
+	formatContext->pb = avio_ctx;
+
+	if (avformat_open_input(&formatContext, NULL, NULL, NULL) < 0)
+	{
+		gEngfuncs.Con_Printf("LoadVideoFrames: Failed to avformat_open_input for %s.\n", filename);
+		return false;
+	}
+
+	SCOPE_EXIT{ if(formatContext) avformat_close_input(&formatContext); };
+
+	if (avformat_find_stream_info(formatContext, NULL) <  0)
+	{
+		gEngfuncs.Con_Printf("LoadVideoFrames: Failed to avformat_find_stream_info for %s.\n", filename);
+		return false;
+	}
+
+	// Find the video stream
+	AVCodecParameters* codecParameters = NULL;
+
+	auto videoStreamIndex = av_find_best_stream(formatContext, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
+
+	if (videoStreamIndex >= 0)
+	{
+		codecParameters = formatContext->streams[videoStreamIndex]->codecpar;
+	}
+
+	if (!codecParameters)
+	{
+		gEngfuncs.Con_Printf("LoadVideoFrames: Failed to av_find_best_stream for %s.\n", filename);
+		return false;
+	}
+
+	auto codec = avcodec_find_decoder(codecParameters->codec_id);
+
+	if (!codec)
+	{
+		gEngfuncs.Con_Printf("LoadVideoFrames: Failed to avcodec_find_decoder for %s.\n", filename);
+		return false;
+	}
+
+	auto codecContext = avcodec_alloc_context3(codec);
+
+	if (!codecContext)
+	{
+		gEngfuncs.Con_Printf("LoadVideoFrames: Failed to avcodec_alloc_context3 for %s.\n", filename);
+		return false;
+	}
+
+	SCOPE_EXIT{ if(codecContext) avcodec_free_context(&codecContext); };
+
+	if (avcodec_parameters_to_context(codecContext, codecParameters) < 0)
+	{
+		gEngfuncs.Con_Printf("LoadVideoFrames: Failed to avcodec_parameters_to_context for %s.\n", filename);
+		return false;
+	}
+
+	if (avcodec_open2(codecContext, codec, NULL) < 0)
+	{
+		gEngfuncs.Con_Printf("LoadVideoFrames: Failed to avcodec_open2 for %s.\n", filename);
+		return false;
+	}
+
+	SCOPE_EXIT{ if (codecContext) avcodec_close(codecContext); };
+
+	auto frame = av_frame_alloc();
+
+	if (!frame)
+	{
+		gEngfuncs.Con_Printf("LoadVideoFrames: Failed to av_frame_alloc for %s.\n", filename);
+		return false;
+	}
+
+	SCOPE_EXIT{ if (frame) av_frame_free(&frame); };
+
+	auto packet = av_packet_alloc();
+
+	while (av_read_frame(formatContext, packet) == 0)
+	{
+		if (packet->stream_index == videoStreamIndex)
+		{
+			int packet_new = 1;
+			while (process_frame(formatContext, codecContext, codecParameters, frame, packet, &packet_new) > 0)
+			{
+				auto swsCtx = sws_getContext(
+					frame->width, frame->height, static_cast<AVPixelFormat>(frame->format),
+					codecParameters->width, codecParameters->height, AV_PIX_FMT_RGBA,
+					SWS_BILINEAR, NULL, NULL, NULL
+				);
+
+				if (!swsCtx)
+				{
+					gEngfuncs.Con_Printf("LoadVideoFrames: Failed to sws_getContext for %s.\n", filename);
+					return false;
+				}
+
+				SCOPE_EXIT{ if (swsCtx) sws_freeContext(swsCtx); };
+
+				AVFrame* rgbFrame = av_frame_alloc();
+
+				if (!rgbFrame)
+				{
+					gEngfuncs.Con_Printf("LoadVideoFrames: Failed to av_frame_alloc for %s.\n", filename);
+					return false;
+				}
+
+				rgbFrame->width = codecParameters->width;
+				rgbFrame->height = codecParameters->height;
+				rgbFrame->format = AV_PIX_FMT_RGBA;
+
+				// Allocate the buffer for the frame data
+				if (av_frame_get_buffer(rgbFrame, 0) < 0)
+				{
+					gEngfuncs.Con_Printf("LoadVideoFrames: Could not allocate frame data.\n");
+					av_frame_free(&rgbFrame);
+					return false;
+				}
+
+				// Make sure the frame data is writable
+				if (av_frame_make_writable(rgbFrame) < 0)
+				{
+					gEngfuncs.Con_Printf("LoadVideoFrames: Frame not writable.\n");
+					av_frame_free(&rgbFrame);
+					return false;
+				}
+
+				if (sws_scale(swsCtx, frame->data, frame->linesize, 0, frame->height, rgbFrame->data, rgbFrame->linesize) == 0)
+				{
+					gEngfuncs.Con_Printf("LoadVideoFrames: Failed to sws_scale for %s.\n", filename);
+					av_frame_free(&rgbFrame);
+					return false;
+				}
+
+				state->mipmaps.emplace_back(0, rgbFrame->data[0], codecParameters->width * codecParameters->height * 4, codecParameters->width, codecParameters->height, rgbFrame);
+
+				frameIndex++;
+			}
+		}
+
+		av_packet_unref(packet);
+	}
+
+	if (1)
+	{
+		int packet_new = 1;
+		packet->stream_index = videoStreamIndex;
+		while (process_frame(formatContext, codecContext, codecParameters, frame, packet, &packet_new) > 0)
+		{
+			auto swsCtx = sws_getContext(
+				frame->width, frame->height, static_cast<AVPixelFormat>(frame->format),
+				codecParameters->width, codecParameters->height, AV_PIX_FMT_RGBA,
+				SWS_BILINEAR, NULL, NULL, NULL
+			);
+
+			if (!swsCtx)
+			{
+				gEngfuncs.Con_Printf("LoadVideoFrames: Failed to sws_getContext for %s.\n", filename);
+				return false;
+			}
+
+			SCOPE_EXIT{ if (swsCtx) sws_freeContext(swsCtx); };
+
+			AVFrame* rgbFrame = av_frame_alloc();
+
+			if (!rgbFrame)
+			{
+				gEngfuncs.Con_Printf("LoadVideoFrames: Failed to av_frame_alloc for %s.\n", filename);
+				return false;
+			}
+
+			rgbFrame->width = codecParameters->width;
+			rgbFrame->height = codecParameters->height;
+			rgbFrame->format = AV_PIX_FMT_RGBA;
+
+			// Allocate the buffer for the frame data
+			if (av_frame_get_buffer(rgbFrame, 0) < 0)
+			{
+				gEngfuncs.Con_Printf("LoadVideoFrames: Could not allocate frame data.\n");
+				av_frame_free(&rgbFrame);
+				return false;
+			}
+
+			// Make sure the frame data is writable
+			if (av_frame_make_writable(rgbFrame) < 0)
+			{
+				gEngfuncs.Con_Printf("LoadVideoFrames: Frame not writable.\n");
+				av_frame_free(&rgbFrame);
+				return false;
+			}
+
+			if (sws_scale(swsCtx, frame->data, frame->linesize, 0, frame->height, rgbFrame->data, rgbFrame->linesize) == 0)
+			{
+				gEngfuncs.Con_Printf("LoadVideoFrames: Failed to sws_scale for %s.\n", filename);
+				av_frame_free(&rgbFrame);
+				return false;
+			}
+
+			state->mipmaps.emplace_back(0, rgbFrame->data[0], codecParameters->width * codecParameters->height * 4, codecParameters->width, codecParameters->height, rgbFrame);
+			state->numframes++;
+		}
+
+		avcodec_flush_buffers(codecContext);
+	}
+
+	state->internalformat = GL_RGBA8;
+	state->compressed = false;
+	state->width = codecParameters->width;
+	state->height = codecParameters->height;
+
+	state->mipmaps_dtor = [](void* data_ctx, void *data, int size) {
+
+		AVFrame* rgbFrame = (AVFrame*)data_ctx;
+
+		av_frame_free(&rgbFrame);
+
+	};
+
+	return state->callback(state);
+}
+
+#endif
+
+bool R_LoadTextureFromFile(const char *filename, const char * identifier, GL_TEXTURETYPE textureType, bool mipmap, gl_loadtexture_result_t* result)
+{
+	auto textureEntry = GL_FindTextureEntry(identifier, textureType);
+
+	if (textureEntry > 0)
+	{
+		result->width = textureEntry->width;
+		result->height = textureEntry->height;
+
+		return true;
+	}
+
+	const char *szExtension = V_GetFileExtension(filename);
+
+	if(!szExtension)
+	{
+		gEngfuncs.Con_Printf("R_LoadTextureFromFile: File %s has no extension.\n", filename);
+		return false;
+	}
+
+	gl_loadtexture_context_t context;
+
+	context.mipmap = mipmap;
+	context.callback = [&textureEntry, identifier, textureType, result](gl_loadtexture_context_t *ctx) {
+
+		textureEntry = GL_LoadTextureEx(identifier, textureType, ctx);
+
+		if (textureEntry)
+		{
+			GL_FillLoadTextureResult(textureEntry, ctx, result);
+			return true;
+		}
+
+		return false;
+	};
+
+#if 0
+	if (!stricmp(extension, "webm") || !stricmp(extension, "mp4") || !stricmp(extension, "avi") || !stricmp(extension, "mkv") || !stricmp(extension, "flv") || !stricmp(extension, "mov") || !stricmp(extension, "m3u8"))
+	{
+		if (LoadVideoFrames(filename, NULL, &context))
+		{
+			return foundTexture;
+		}
+	}
+#endif
+
+	if (!stricmp(szExtension, "webp"))
+	{
+		if (LoadWEBP(filename, NULL, &context))
+		{
+			return true;
+		}
+	}
+
+#if 0
+	else if (!stricmp(extension, "gif"))
+	{
+		if (LoadGIF(filename, NULL, &context))
+		{
+			return true;
+		}
+	}
+#endif
+
+	if(!stricmp(szExtension, "dds"))
+	{
+		if(LoadDDS(filename, NULL, &context))
+		{
+			return true;
+		}
+	}
+
+	if(LoadImageGeneric(filename, NULL, &context))
+	{
+		return true;
 	}
 	
-	return 0;
+	return false;
 }
 
 void BuildGammaTable(float g)
@@ -2458,111 +3055,82 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 		}
 	}
 
+	gl_loadtexture_context_t context;
+	context.wrap = GL_CLAMP_TO_EDGE;
+	context.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
+	context.callback = [pthis, textureId, hardwareFilter](gl_loadtexture_context_t* ctx) {
+
+		if (ctx->mipmaps.size() > 0)
+		{
+			if (ctx->compressed)
+			{
+				//We have to call drawSetTextureRGBA with dummy shit to allocate a new enginesurface_Texture for us
+				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, 0, textureId, (const char*)texloader_buffer, 16, 16, hardwareFilter, true);
+
+				(*currenttexture) = -1;
+				GL_Bind(textureId);
+				GL_UploadCompressedTexture(ctx, GL_TEXTURE_2D);
+
+				return true;
+			}
+			else
+			{
+				gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, 0, textureId,
+					(const char*)ctx->mipmaps[0].data, ctx->mipmaps[0].width, ctx->mipmaps[0].height,
+					hardwareFilter, true);
+
+				return true;
+			}
+		}
+
+		return false;
+	};
+
 	if (1)
 	{
 		snprintf(filepath, sizeof(filepath), "%s.dds", filename);
-
-		gl_loadtexture_state_t state;
-		state.wrap = GL_CLAMP_TO_EDGE;
-		state.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
-		if (g_iEngineType == ENGINE_SVENGINE && 
-			!bLoaded && LoadDDS(filepath, "UI", texloader_buffer, sizeof(texloader_buffer), &state, false) && !state.cubemap)
+		if (g_iEngineType == ENGINE_SVENGINE && !bLoaded && LoadDDS(filepath, "UI", &context))
 		{
-			gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
-				(const char*)texloader_buffer, state.width, state.height,
-				hardwareFilter, true);
-
-			(*currenttexture) = -1;
-			GL_Bind(textureId);
-			GL_UploadCompressedTexture(&state);
-
 			bLoaded = true;
 		}
-		if (!bLoaded && LoadDDS(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && !state.cubemap)
+		if (!bLoaded && LoadDDS(filepath, NULL, &context))
 		{
-			gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId, 
-				(const char *)texloader_buffer, state.width, state.height, 
-				hardwareFilter, true);
-
-			(*currenttexture) = -1;
-			GL_Bind(textureId);
-			GL_UploadCompressedTexture(&state);
-
 			bLoaded = true;
 		}
 	}
 	if (1)
 	{
 		snprintf(filepath, sizeof(filepath), "%s.png", filename);
-
-		gl_loadtexture_state_t state;
-		state.wrap = GL_CLAMP_TO_EDGE;
-		state.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
-		if (g_iEngineType == ENGINE_SVENGINE &&
-			!bLoaded && LoadImageGeneric(filepath, "UI", texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
+		if (g_iEngineType == ENGINE_SVENGINE && !bLoaded && LoadImageGeneric(filepath, "UI", &context))
 		{
-			gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
-				(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
-				hardwareFilter, true);
-
 			bLoaded = true;
 		}
-		if (!bLoaded && LoadImageGeneric(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
+		if (!bLoaded && LoadImageGeneric(filepath, NULL, &context))
 		{
-			gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId, 
-				(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
-				hardwareFilter, true);
-
 			bLoaded = true;
 		}
 	}
 	if (1)
 	{
 		snprintf(filepath, sizeof(filepath), "%s.tga", filename);
-
-		gl_loadtexture_state_t state;
-		state.wrap = GL_CLAMP_TO_EDGE;
-		state.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
-		if (g_iEngineType == ENGINE_SVENGINE &&
-			!bLoaded && LoadImageGeneric(filepath, "UI", texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
+		if (g_iEngineType == ENGINE_SVENGINE && !bLoaded && LoadImageGeneric(filepath, "UI", &context))
 		{
-			gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
-				(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
-				hardwareFilter, true);
-
 			bLoaded = true;
 		}
-		if (!bLoaded && LoadImageGeneric(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
+		if (!bLoaded && LoadImageGeneric(filepath, NULL, &context))
 		{
-			gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
-				(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
-				hardwareFilter, true);
-
 			bLoaded = true;
 		}
 	}
 	if (1)
 	{
 		snprintf(filepath, sizeof(filepath), "%s.bmp", filename);
-
-		gl_loadtexture_state_t state;
-		state.wrap = GL_CLAMP_TO_EDGE;
-		state.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
-		if (g_iEngineType == ENGINE_SVENGINE &&
-			!bLoaded && LoadImageGeneric(filepath, "UI", texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
+		if (g_iEngineType == ENGINE_SVENGINE && !bLoaded && LoadImageGeneric(filepath, "UI", &context))
 		{
-			gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId,
-				(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height,
-				hardwareFilter, true);
-
 			bLoaded = true;
 		}
-		if (!bLoaded && LoadImageGeneric(filepath, NULL, texloader_buffer, sizeof(texloader_buffer), &state, false) && state.mipmaps.size() > 0)
+		if (!bLoaded && LoadImageGeneric(filepath, NULL, &context))
 		{
-			gPrivateFuncs.enginesurface_drawSetTextureRGBA(pthis, dummy, textureId, 
-				(const char*)state.mipmaps[0].data, state.mipmaps[0].width, state.mipmaps[0].height, 
-				hardwareFilter, true);
-
 			bLoaded = true;
 		}
 	}

@@ -15,6 +15,9 @@
 #define STUDIO_SPECULAR_TEXTURE			4
 #define STUDIO_MAX_TEXTURE				5
 
+#define STUDIO_RESERVED_TEXTURE_STENCIL				6
+#define STUDIO_RESERVED_TEXTURE_ANIMATED			7
+
 typedef struct
 {
 	int program;
@@ -45,6 +48,7 @@ typedef struct
 	int r_uvscale;
 	int r_packed_stride;
 	int r_packed_index;
+	int r_framerate_numframes;
 }studio_program_t;
 
 typedef struct studio_vbo_vertex_s
@@ -121,12 +125,16 @@ typedef struct studio_vbo_texture_s
 	studio_vbo_texture_s()
 	{
 		gltexturenum = 0;
+		numframes = 0;
+		framerate = 0;
 		width = 0;
 		height = 0;
 		scaleX = 0;
 		scaleY = 0;
 	}
 	int gltexturenum;
+	int numframes;
+	float framerate;
 	int width, height;
 	float scaleX, scaleY;
 }studio_vbo_texture_t;
@@ -300,10 +308,10 @@ public:
 	studio_bone_cache* m_next;
 };
 
-class CStudioSetupSkinContext
+typedef struct studio_setupskin_context_s
 {
 public:
-	CStudioSetupSkinContext(program_state_t* State)
+	struct studio_setupskin_context_s(program_state_t* State)
 	{
 		StudioProgramState = State;
 		packedDiffuseIndex = -1;
@@ -316,6 +324,8 @@ public:
 		height = 0;
 		s = 0;
 		t = 0;
+		framerate = 0;
+		numframes = 0;
 	}
 
 	program_state_t* StudioProgramState;
@@ -327,7 +337,9 @@ public:
 	float packedStride;
 	float width, height;
 	float s, t;
-};
+	float framerate;
+	float numframes;
+}studio_setupskin_context_t;
 
 //engine
 extern mstudiomodel_t **psubmodel;
@@ -428,5 +440,6 @@ extern r_studio_interface_t **gpStudioInterface;
 #define STUDIO_PACKED_NORMALTEXTURE_ENABLED		0x8000000000ull
 #define STUDIO_PACKED_PARALLAXTEXTURE_ENABLED	0x10000000000ull
 #define STUDIO_PACKED_SPECULARTEXTURE_ENABLED	0x20000000000ull
+#define STUDIO_ANIMATED_TEXTURE_ENABLED			0x40000000000ull
 
 #define STUDIO_PACKED_TEXTURE_ALLBITS	(STUDIO_PACKED_DIFFUSETEXTURE_ENABLED | STUDIO_PACKED_NORMALTEXTURE_ENABLED | STUDIO_PACKED_PARALLAXTEXTURE_ENABLED | STUDIO_PACKED_SPECULARTEXTURE_ENABLED)

@@ -134,7 +134,7 @@ int* allocated_textures = NULL;
 int *g_iUser1 = NULL;
 int *g_iUser2 = NULL;
 
-bool *g_bRenderingPortals_SCClient = false;
+bool *g_bRenderingPortals_SCClient = NULL;
 
 bool g_bPortalClipPlaneEnabled[6] = { false };
 
@@ -2470,7 +2470,7 @@ qboolean R_ParseStringAsColor1(const char *string, float *vec)
 	vec2_t vinput;
 	if (sscanf(string, "%f", &vinput[0]) == 1)
 	{
-		vec[0] = clamp(vinput[0], 0, 255) / 255.0f;
+		vec[0] = math_clamp(vinput[0], 0, 255) / 255.0f;
 		return true;
 	}
 	return false;
@@ -2481,8 +2481,8 @@ qboolean R_ParseStringAsColor2(const char *string, float *vec)
 	vec2_t vinput;
 	if (sscanf(string, "%f %f", &vinput[0], &vinput[1]) == 2)
 	{
-		vec[0] = clamp(vinput[0], 0, 255) / 255.0f;
-		vec[1] = clamp(vinput[1], 0, 255) / 255.0f;
+		vec[0] = math_clamp(vinput[0], 0, 255) / 255.0f;
+		vec[1] = math_clamp(vinput[1], 0, 255) / 255.0f;
 		return true;
 	}
 	return false;
@@ -2493,9 +2493,9 @@ qboolean R_ParseStringAsColor3(const char *string, float *vec)
 	vec3_t vinput;
 	if (sscanf(string, "%f %f %f", &vinput[0], &vinput[1], &vinput[2]) == 3)
 	{
-		vec[0] = clamp(vinput[0], 0, 255) / 255.0f;
-		vec[1] = clamp(vinput[1], 0, 255) / 255.0f;
-		vec[2] = clamp(vinput[2], 0, 255) / 255.0f;
+		vec[0] = math_clamp(vinput[0], 0, 255) / 255.0f;
+		vec[1] = math_clamp(vinput[1], 0, 255) / 255.0f;
+		vec[2] = math_clamp(vinput[2], 0, 255) / 255.0f;
 		return true;
 	}
 	return false;
@@ -2506,10 +2506,10 @@ qboolean R_ParseStringAsColor4(const char *string, float *vec)
 	vec4_t vinput;
 	if (sscanf(string, "%f %f %f %f", &vinput[0], &vinput[1], &vinput[2], &vinput[3]) == 4)
 	{
-		vec[0] = clamp(vinput[0], 0, 255) / 255.0f;
-		vec[1] = clamp(vinput[1], 0, 255) / 255.0f;
-		vec[2] = clamp(vinput[2], 0, 255) / 255.0f;
-		vec[3] = clamp(vinput[3], 0, 255) / 255.0f;
+		vec[0] = math_clamp(vinput[0], 0, 255) / 255.0f;
+		vec[1] = math_clamp(vinput[1], 0, 255) / 255.0f;
+		vec[2] = math_clamp(vinput[2], 0, 255) / 255.0f;
+		vec[3] = math_clamp(vinput[3], 0, 255) / 255.0f;
 		return true;
 	}
 	return false;
@@ -3670,23 +3670,29 @@ void R_LoadLegacySkyTextures(const char* name)
 
 	for (int i = 0; i < 6; i++)
 	{
-		char fullpath[260] = { 0 };
-		snprintf(fullpath, sizeof(fullpath), "gfx/env/%s%s.tga", name, suf[i]);
+		bool bLoaded = false;
+		char fullPath[MAX_PATH];
+		gl_loadtexture_result_t loadResult;
 
-		int texId = R_LoadTextureFromFile(fullpath, fullpath, NULL, NULL, GLT_WORLD, true, false);
-		if (!texId)
+		if (!bLoaded)
 		{
-			snprintf(fullpath, sizeof(fullpath), "gfx/env/%s%s.bmp", name, suf[i]);
-			texId = R_LoadTextureFromFile(fullpath, fullpath, NULL, NULL, GLT_WORLD, true, false);
+			snprintf(fullPath, sizeof(fullPath), "gfx/env/%s%s.tga", name, suf[i]);
+			bLoaded = R_LoadTextureFromFile(fullPath, fullPath, GLT_WORLD, true, &loadResult);
 		}
 
-		if (!texId)
+		if (!bLoaded)
 		{
-			gEngfuncs.Con_DPrintf("R_LoadLegacySkyTextures: Failed to load %s\n", fullpath);
+			snprintf(fullPath, sizeof(fullPath), "gfx/env/%s%s.bmp", name, suf[i]);
+			bLoaded = R_LoadTextureFromFile(fullPath, fullPath, GLT_WORLD, true, &loadResult);
+		}
+
+		if (!bLoaded)
+		{
+			gEngfuncs.Con_DPrintf("R_LoadLegacySkyTextures: Failed to load %s\n", fullPath);
 			continue;
 		}
 
-		r_wsurf.vSkyboxTextureId[0 + i] = texId;
+		r_wsurf.vSkyboxTextureId[0 + i] = loadResult.gltexturenum;
 	}
 
 #endif
@@ -3698,25 +3704,29 @@ void R_LoadDetailSkyTextures(const char* name)
 
 	for (int i = 0; i < 6; i++)
 	{
-		char fullpath[260] = {0};
-		snprintf(fullpath, sizeof(fullpath), "gfx/env/%s%s.dds", name, suf[i]);
+		bool bLoaded = false;
+		char fullPath[MAX_PATH];
+		gl_loadtexture_result_t loadResult;
 
-		int width, height;
-		int texId = R_LoadTextureFromFile(fullpath, fullpath, &width, &height, GLT_WORLD, true, false);
-		if (!texId)
+		if (!bLoaded)
 		{
-			snprintf(fullpath, sizeof(fullpath), "renderer/texture/skybox/%s%s.dds", name, suf[i]);
-
-			texId = R_LoadTextureFromFile(fullpath, fullpath, &width, &height, GLT_WORLD, true, false);
+			snprintf(fullPath, sizeof(fullPath), "gfx/env/%s%s.dds", name, suf[i]);
+			bLoaded = R_LoadTextureFromFile(fullPath, fullPath, GLT_WORLD, true, &loadResult);
 		}
 
-		if (!texId)
+		if (!bLoaded)
 		{
-			gEngfuncs.Con_DPrintf("R_LoadDetailSkyTexture: Failed to load %s\n", fullpath);
+			snprintf(fullPath, sizeof(fullPath), "renderer/texture/skybox/%s%s.dds", name, suf[i]);
+			bLoaded = R_LoadTextureFromFile(fullPath, fullPath, GLT_WORLD, true, &loadResult);
+		}
+
+		if (!bLoaded)
+		{
+			gEngfuncs.Con_DPrintf("R_LoadDetailSkyTexture: Failed to load %s\n", fullPath);
 			continue;
 		}
 
-		r_wsurf.vSkyboxTextureId[6 + i] = texId;
+		r_wsurf.vSkyboxTextureId[6 + i] = loadResult.gltexturenum;
 	}
 }
 

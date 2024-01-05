@@ -448,7 +448,7 @@ void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	GL_UseProgram(pp_luminadapt.program);
-	glUniform1f(pp_luminadapt.frametime, frametime * clamp(r_hdr_adaptation->GetValue(), 0.1, 100));
+	glUniform1f(pp_luminadapt.frametime, frametime * math_clamp(r_hdr_adaptation->GetValue(), 0.1, 100));
 
 	glViewport(glx, gly, dst->iWidth, dst->iHeight);
 
@@ -549,9 +549,9 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 	glUniform1i(pp_tonemap.baseTex, 0);
 	glUniform1i(pp_tonemap.blurTex, 1);
 	glUniform1i(pp_tonemap.lumTex, 2);
-	glUniform1f(pp_tonemap.blurfactor, clamp(r_hdr_blurwidth->GetValue(), 0, 1));
-	glUniform1f(pp_tonemap.exposure, clamp(r_hdr_exposure->GetValue(), 0.001, 10));
-	glUniform1f(pp_tonemap.darkness, clamp(r_hdr_darkness->GetValue(), 0.001, 10));
+	glUniform1f(pp_tonemap.blurfactor, math_clamp(r_hdr_blurwidth->GetValue(), 0, 1));
+	glUniform1f(pp_tonemap.exposure, math_clamp(r_hdr_exposure->GetValue(), 0.001, 10));
+	glUniform1f(pp_tonemap.darkness, math_clamp(r_hdr_darkness->GetValue(), 0.001, 10));
 
 	GL_Bind(src->s_hBackBufferTex);
 
