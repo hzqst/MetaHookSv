@@ -17,7 +17,7 @@ int g_iRetryState = 0;
 
 private_funcs_t gPrivateFuncs = {0};
 
-int NewClientCmd(char *szCmdString)
+int NewClientCmd(const char *szCmdString)
 {
 	//It's not necessary when flush-on-retry is blocked!
 	if (!strncmp(szCmdString, "dlfile ", sizeof("dlfile ") - 1))

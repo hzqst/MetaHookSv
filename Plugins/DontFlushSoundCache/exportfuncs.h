@@ -7,7 +7,7 @@ void IN_ActivateMouse(void);
 
 void __fastcall CClient_SoundEngine_FlushCache(int pthis, int dummy, qboolean including_local);
 
-int NewClientCmd(char *szCmdString);
+int NewClientCmd(const char *szCmdString);
 
 typedef struct
 {
@@ -17,7 +17,7 @@ typedef struct
 
 	void(__fastcall *CClient_SoundEngine_FlushCache)(int pthis, int dummy, qboolean including_local);
 
-	int(*pfnClientCmd)(char *szCmdString);
+	int(*pfnClientCmd)(const char *szCmdString);
 
 }private_funcs_t;
 
