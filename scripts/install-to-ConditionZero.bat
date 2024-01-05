@@ -57,7 +57,6 @@ goto no_replace_sdl2
 
 if exist "%SolutionDir%Build\MetaHook.exe" copy "%SolutionDir%Build\MetaHook.exe" "%GameDir%\%LauncherExe%" /y
 if exist "%SolutionDir%Build\MetaHook_blob.exe" copy "%SolutionDir%Build\MetaHook_blob.exe" "%GameDir%\metahook_blob.exe" /y
-copy "%SolutionDir%Build\FreeImage.dll" "%GameDir%\" /y
 xcopy "%SolutionDir%Build\svencoop" "%GameDir%\%LauncherMod%" /y /e
 xcopy "%SolutionDir%Build\czero" "%GameDir%\czero" /y /e
 xcopy "%SolutionDir%Build\valve" "%GameDir%\%LauncherMod%" /y /e
@@ -77,6 +76,10 @@ echo -----------------------------------------------------
 echo Make sure that you have all plugins you want in the plugins.lst
 
 notepad "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst"
+
+echo Make sure that you have all library directories you want in the dllpaths.lst
+
+notepad "%GameDir%\%LauncherMod%\metahook\configs\dllpaths.lst"
 
 echo Done
 echo Please launch game from shortcut "MetaHook for %ShortGameName%"

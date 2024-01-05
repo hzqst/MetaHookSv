@@ -1,14 +1,7 @@
 #include "gl_local.h"
 #include "MurmurHash2.h"
-
 #include <ScopeExit/ScopeExit.h>
-
-extern "C"
-{
 #include <FreeImage.h>
-};
-
-#pragma comment(lib,"FreeImage/FreeImage.lib")
 
 // Definitions for the translation and pixel arrays, presumably for texture processing.
 static byte texloader_buffer[4096 * 4096 * 4];
