@@ -327,7 +327,7 @@ Add following content to the `[modelname]_external.txt`:
 
 ## StudioModel double-side face rendering
 
-Meshes with `STUDIO_NF_DOUBLE_FACE` will be rendering double-sided.
+Both front and back faces will be rendered, when those meshes are using textures with `STUDIO_NF_DOUBLE_FACE`.
 
 Add following content to the `[modelname]_external.txt`:
 
@@ -338,6 +338,22 @@ Add following content to the `[modelname]_external.txt`:
     "flags" "STUDIO_NF_DOUBLE_FACE"
 }
 ```
+
+## StudioModel packed-texture
+
+Diffuse texture, normal texture, parallax texture and specular texture can be packed into one texture.
+
+The texture name in the .mdl file must be started with `Packed_`.
+
+For example: `Packed_D0_N1_P2_S3_whatever.bmp` means the texture will be loaded as packed texture. the whole image will be divided into 4 parts horizontally. The 1st part (aka region #0) will be treated as diffuse texture, the 2nd part (aka region #1) will be treated as normal texture, the 3rd part (aka region #2) will be treated as parallax texture, and the last part  (aka region #4) will be treated as specular texture.
+
+`D0` : Diffuse texture at region #0
+
+`N1` : Normal texture at region #1
+
+`P2` : Parallax texture at region #2
+
+`S3` : Specular texture at region #3
 
 ## Outline / Celshade / RimLight / HairShadow / HairSpecular
 
