@@ -318,6 +318,20 @@ void GL_UploadDataToVBODynamicDraw(GLuint VBO, size_t size, const void* data)
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
+void GL_UploadSubDataToVBODynamicDraw(GLuint VBO, size_t offset, size_t size, const void* data)
+{
+	if (glNamedBufferSubData)
+	{
+		glNamedBufferSubData(VBO, offset, size, data);
+	}
+	else
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferSubData(GL_ARRAY_BUFFER, offset, size, data);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
+}
+
 void GL_UploadDataToEBOStaticDraw(GLuint EBO, size_t size, const void* data)
 {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);

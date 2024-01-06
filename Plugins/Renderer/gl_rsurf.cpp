@@ -1013,16 +1013,7 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 		v += VERTEXSIZE;
 	}
 
-	if (glNamedBufferSubData)
-	{
-		glNamedBufferSubData(r_wsurf.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * vertCount, vertexArray);
-	}
-	else
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, r_wsurf.hDecalVBO);
-		glBufferSubData(GL_ARRAY_BUFFER, sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * vertCount, vertexArray);
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-	}
+	GL_UploadSubDataToVBODynamicDraw(r_wsurf.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * decalIndex, sizeof(decalvertex_t) * vertCount, vertexArray);
 
 	r_wsurf.vDecalStartIndex[decalIndex] = MAX_DECALVERTS * decalIndex;
 	r_wsurf.vDecalVertexCount[decalIndex] = vertCount;

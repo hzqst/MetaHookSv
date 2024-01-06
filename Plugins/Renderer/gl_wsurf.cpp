@@ -1489,16 +1489,7 @@ void R_GenerateVertexBuffer(void)
 	}
 
 	r_wsurf.hSceneVBO = GL_GenBuffer();
-	glBindBuffer( GL_ARRAY_BUFFER, r_wsurf.hSceneVBO );
-	if (glBufferStorage)
-	{
-		glBufferStorage(GL_ARRAY_BUFFER, sizeof(brushvertex_t)* vVertexBuffer.size(), vVertexBuffer.data(), 0);
-	}
-	else
-	{
-		glBufferData(GL_ARRAY_BUFFER, sizeof(brushvertex_t)* vVertexBuffer.size(), vVertexBuffer.data(), GL_STATIC_DRAW);
-	}
-	glBindBuffer( GL_ARRAY_BUFFER, 0 );
+	GL_UploadDataToVBOStaticDraw(r_wsurf.hSceneVBO, sizeof(brushvertex_t)* vVertexBuffer.size(), vVertexBuffer.data());
 }
 
 void R_GenerateSceneUBO(void)

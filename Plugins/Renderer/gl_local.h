@@ -375,6 +375,7 @@ void GL_DeleteVAO(GLuint VAO);
 void GL_BindVAO(GLuint VAO);
 void GL_UploadDataToVBOStaticDraw(GLuint VBO, size_t size, const void* data);
 void GL_UploadDataToVBODynamicDraw(GLuint VBO, size_t size, const void* data);
+void GL_UploadSubDataToVBODynamicDraw(GLuint VBO, size_t offset, size_t size, const void* data);
 void GL_UploadDataToEBOStaticDraw(GLuint EBO, size_t size, const void* data);
 void GL_UploadDataToEBODynamicDraw(GLuint EBO, size_t size, const void* data);
 void GL_BindStatesForVAO(GLuint VAO, GLuint VBO, GLuint EBO, void(*bind)(), void(*unbind)());
