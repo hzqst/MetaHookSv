@@ -7,27 +7,28 @@
 #include "message.h"
 #include "qgl.h"
 
-cl_exportfuncs_t gExportfuncs;
-mh_interface_t *g_pInterface;
-metahook_api_t *g_pMetaHookAPI;
-mh_enginesave_t *g_pMetaSave;
-IFileSystem *g_pFileSystem;
+cl_exportfuncs_t gExportfuncs = {0};
+mh_interface_t *g_pInterface = NULL;
+metahook_api_t *g_pMetaHookAPI = NULL;
+mh_enginesave_t *g_pMetaSave = NULL;
+IFileSystem *g_pFileSystem = NULL;
+IFileSystem_HL25* g_pFileSystem_HL25 = NULL;
 
-HINSTANCE g_hInstance, g_hThisModule, g_hEngineModule;
-PVOID g_dwEngineBase;
-DWORD g_dwEngineSize;
-PVOID g_dwEngineTextBase;
-DWORD g_dwEngineTextSize;
-PVOID g_dwEngineDataBase;
-DWORD g_dwEngineDataSize;
-PVOID g_dwEngineRdataBase;
-DWORD g_dwEngineRdataSize;
-DWORD g_dwEngineBuildnum;
-int g_iEngineType;
-PVOID g_dwClientBase;
-DWORD g_dwClientSize;
-
-hook_t *g_phook_R_NewMap = NULL;
+HINSTANCE g_hInstance = NULL;
+HMODULE g_hThisModule = NULL;
+HMODULE g_hEngineModule = NULL;
+PVOID g_dwEngineBase = 0;
+DWORD g_dwEngineSize = 0;
+PVOID g_dwEngineTextBase = 0;
+DWORD g_dwEngineTextSize = 0;
+PVOID g_dwEngineDataBase = 0;
+DWORD g_dwEngineDataSize = 0;
+PVOID g_dwEngineRdataBase = 0;
+DWORD g_dwEngineRdataSize = 0;
+DWORD g_dwEngineBuildnum = 0;
+int g_iEngineType = 0;
+PVOID g_dwClientBase = 0;
+DWORD g_dwClientSize = 0;
 
 void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
@@ -43,7 +44,10 @@ void IPluginsV4::Shutdown(void)
 
 void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
-	g_pFileSystem = g_pInterface->FileSystem;
+	g_pFileSystem = g_pInterface->FileSystem;	
+	if (!g_pFileSystem)//backward compatibility
+		g_pFileSystem_HL25 = g_pInterface->FileSystem_HL25;
+
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();
 	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
 	g_hEngineModule = g_pMetaHookAPI->GetEngineModule();
@@ -55,14 +59,13 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 
-	if (g_iEngineType != ENGINE_SVENGINE && g_iEngineType != ENGINE_GOLDSRC)
+	if (g_iEngineType != ENGINE_SVENGINE && g_iEngineType != ENGINE_GOLDSRC_BLOB && g_iEngineType != ENGINE_GOLDSRC && g_iEngineType != ENGINE_GOLDSRC_HL25)
 	{
 		g_pMetaHookAPI->SysError("Unsupported engine: %s, buildnum %d", g_pMetaHookAPI->GetEngineTypeName(), g_dwEngineBuildnum);
 	}
 
 	Engine_FillAddreess();
-
-	Install_InlineHook(R_NewMap);
+	Engine_InstallHook();
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
@@ -85,6 +88,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	Client_FillAddress();
 
 	auto err = glewInit();
+
 	if (GLEW_OK != err)
 	{
 		g_pMetaHookAPI->SysError("glewInit failed, %s", glewGetErrorString(err));
@@ -94,7 +98,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 void IPluginsV4::ExitGame(int iResult)
 {
-	Uninstall_Hook(R_NewMap);
+	Engine_UninstallHook();
 }
 
 const char completeVersion[] =

@@ -352,10 +352,10 @@ studio_vbo_t* R_PrepareStudioVBO(studiohdr_t* studiohdr)
 	}
 
 	VBOData->hVBO = GL_GenBuffer();
-	GL_UploadDataToVBO(VBOData->hVBO, vVertex.size() * sizeof(studio_vbo_vertex_t), vVertex.data());
+	GL_UploadDataToVBOStaticDraw(VBOData->hVBO, vVertex.size() * sizeof(studio_vbo_vertex_t), vVertex.data());
 
 	VBOData->hEBO = GL_GenBuffer();
-	GL_UploadDataToEBO(VBOData->hEBO, vIndices.size() * sizeof(GLuint), vIndices.data());
+	GL_UploadDataToEBOStaticDraw(VBOData->hEBO, vIndices.size() * sizeof(GLuint), vIndices.data());
 
 	VBOData->hVAO = GL_GenVAO();
 	GL_BindStatesForVAO(VBOData->hVAO, VBOData->hVBO, VBOData->hEBO,

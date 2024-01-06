@@ -5951,7 +5951,7 @@ void R_FillAddress(void)
 	if(1)
 	{
 #define MOD_KNOWN_SIG "\xB8\x9D\x82\x97\x53\x81\xE9"
-		DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)g_dwEngineTextBase, g_dwEngineTextSize, MOD_KNOWN_SIG, sizeof(MOD_KNOWN_SIG) - 1);
+		ULONG_PTR addr = (ULONG_PTR)Search_Pattern(MOD_KNOWN_SIG);
 		Sig_AddrNotFound(mod_known);
 		mod_known = *(model_t **)(addr + 7);
 	}

@@ -186,7 +186,7 @@ portal_vbo_t *R_PreparePortalVBO(void *ClientPortalManager, void * ClientPortal,
 
 		VBOCache->hEBO = GL_GenBuffer();
 
-		GL_UploadDataToEBO(VBOCache->hEBO, sizeof(GLuint) * VBOCache->vIndicesBuffer.size(), VBOCache->vIndicesBuffer.data());
+		GL_UploadDataToEBODynamicDraw(VBOCache->hEBO, sizeof(GLuint) * VBOCache->vIndicesBuffer.size(), VBOCache->vIndicesBuffer.data());
 
 		VBOCache->hVAO = GL_GenVAO();
 
@@ -231,9 +231,7 @@ portal_vbo_t *R_PreparePortalVBO(void *ClientPortalManager, void * ClientPortal,
 				VBOCache->vIndicesBuffer.emplace_back((GLuint)0xFFFFFFFF);
 			}
 
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOCache->hEBO);
-			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * VBOCache->vIndicesBuffer.size(), VBOCache->vIndicesBuffer.data(), GL_STATIC_DRAW);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			GL_UploadDataToEBODynamicDraw(VBOCache->hEBO, sizeof(unsigned int) * VBOCache->vIndicesBuffer.size(), VBOCache->vIndicesBuffer.data());
 
 			VBOCache->iPolyCount += brushface->num_polys;
 		}

@@ -1,5 +1,18 @@
 #pragma once
 
+#include <com_model.h>
+
+typedef struct walk_context_s
+{
+	walk_context_s(PVOID a, size_t l, int d) : address(a), len(l), depth(d)
+	{
+
+	}
+	PVOID address;
+	size_t len;
+	int depth;
+}walk_context_t;
+
 typedef struct
 {
 	void(*R_NewMap)(void);
@@ -8,14 +21,23 @@ typedef struct
 	//int(*ClientDLL_AddEntity)(int type, struct cl_entity_s *ent);
 
 	//Client GameStudioRenderer
-	int(__fastcall *GameStudioRenderer_StudioDrawModel)(void *pthis, int, int flags);
-	int (__fastcall *GameStudioRenderer_StudioDrawPlayer)(void *pthis, int, int flags, struct entity_state_s *pplayer);
-	void(__fastcall *GameStudioRenderer_StudioSetupBones)(void *pthis, int);
+	void(__fastcall* GameStudioRenderer_StudioSetupBones)(void* pthis, int);
+	void(__fastcall* GameStudioRenderer_StudioMergeBones)(void* pthis, int, model_t* pSubModel);
+	int(__fastcall* GameStudioRenderer_StudioDrawModel)(void* pthis, int, int flags);
+	int(__fastcall* GameStudioRenderer_StudioDrawPlayer)(void* pthis, int, int flags, struct entity_state_s* pplayer);
+	int(__fastcall* GameStudioRenderer__StudioDrawPlayer)(void* pthis, int, int flags, struct entity_state_s* pplayer);
+	void(__fastcall* GameStudioRenderer_StudioRenderModel)(void* pthis, int);
+	void(__fastcall* GameStudioRenderer_StudioRenderFinal)(void* pthis, int);
 
-	int GameStudioRenderer_StudioDrawPlayer_vftable_index;
-	int GameStudioRenderer_StudioDrawModel_vftable_index;
-	int GameStudioRenderer_StudioSetupBones_vftable_index;
 	int GameStudioRenderer_StudioCalcAttachments_vftable_index;
+	int GameStudioRenderer_StudioSetupBones_vftable_index;
+	int GameStudioRenderer_StudioSaveBones_vftable_index;
+	int GameStudioRenderer_StudioMergeBones_vftable_index;
+	int GameStudioRenderer_StudioDrawModel_vftable_index;
+	int GameStudioRenderer_StudioDrawPlayer_vftable_index;
+	int GameStudioRenderer__StudioDrawPlayer_vftable_index;
+	int GameStudioRenderer_StudioRenderModel_vftable_index;
+	int GameStudioRenderer_StudioRenderFinal_vftable_index;
 
 	//Engine StudioRenderer
 	int (*R_StudioDrawModel)(int flags);
@@ -34,7 +56,10 @@ TEMPENTITY *efxapi_R_TempModel(float *pos, float *dir, float *angles, float life
 
 void Engine_FillAddreess(void);
 void Client_FillAddress(void);
+void Engine_InstallHook(void);
+void Engine_UninstallHook(void);
 
+extern int* r_framecount;
 extern int *r_visframecount;
 extern int *cl_parsecount;
 extern void *cl_frames;

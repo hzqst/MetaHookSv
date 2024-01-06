@@ -541,7 +541,6 @@ void R_BrushModelLinkTextureChain(model_t *mod, wsurf_vbo_leaf_t *leaf)
 			surf = mod->surfaces + mod->firstmodelsurface + i;
 		}
 
-
 		auto pplane = surf->plane;
 
 		if (surf->flags & SURF_DRAWSKY)
@@ -716,7 +715,7 @@ void R_GenerateWaterStorages(model_t *mod, wsurf_vbo_leaf_t *vboleaf)
 		{
 			WaterVBO->hEBO = GL_GenBuffer();
 
-			GL_UploadDataToEBO(WaterVBO->hEBO, sizeof(unsigned int) * WaterVBO->vIndicesBuffer->size(), WaterVBO->vIndicesBuffer->data());
+			GL_UploadDataToEBOStaticDraw(WaterVBO->hEBO, sizeof(unsigned int) * WaterVBO->vIndicesBuffer->size(), WaterVBO->vIndicesBuffer->data());
 
 			WaterVBO->hVAO = GL_GenVAO();
 
@@ -1032,7 +1031,7 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 			R_GenerateTexChain(mod, vboleaf, vIndicesBuffer);
 
 			vboleaf->hEBO = GL_GenBuffer();
-			GL_UploadDataToEBO(vboleaf->hEBO, sizeof(GLuint) * vIndicesBuffer.size(), vIndicesBuffer.data());
+			GL_UploadDataToEBOStaticDraw(vboleaf->hEBO, sizeof(GLuint) * vIndicesBuffer.size(), vIndicesBuffer.data());
 
 			vboleaf->hVAO = GL_GenVAO();
 			GL_BindStatesForVAO(vboleaf->hVAO, r_wsurf.hSceneVBO, vboleaf->hEBO,
@@ -1103,7 +1102,7 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 		R_GenerateTexChain(mod, vboleaf, vIndicesBuffer);
 
 		vboleaf->hEBO = GL_GenBuffer();
-		GL_UploadDataToEBO(vboleaf->hEBO, sizeof(GLuint) * vIndicesBuffer.size(), vIndicesBuffer.data());
+		GL_UploadDataToEBOStaticDraw(vboleaf->hEBO, sizeof(GLuint) * vIndicesBuffer.size(), vIndicesBuffer.data());
 
 		vboleaf->hVAO = GL_GenVAO();
 		GL_BindStatesForVAO(vboleaf->hVAO, r_wsurf.hSceneVBO, vboleaf->hEBO,
@@ -1521,7 +1520,7 @@ void R_GenerateSceneUBO(void)
 
 	//3.5 MBytes of VRAM
 	r_wsurf.hDecalVBO = GL_GenBuffer();
-	GL_UploadDataToVBO(r_wsurf.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * MAX_DECALS, NULL);
+	GL_UploadDataToVBODynamicDraw(r_wsurf.hDecalVBO, sizeof(decalvertex_t) * MAX_DECALVERTS * MAX_DECALS, NULL);
 
 	r_wsurf.hDecalVAO = GL_GenVAO();
 	GL_BindStatesForVAO(r_wsurf.hDecalVAO, r_wsurf.hDecalVBO, 0,

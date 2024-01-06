@@ -297,7 +297,7 @@ void GL_BindVAO(GLuint VAO)
 	glBindVertexArray(VAO);
 }
 
-void GL_UploadDataToVBO(GLuint VBO, size_t size, const void* data)
+void GL_UploadDataToVBOStaticDraw(GLuint VBO, size_t size, const void* data)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	if (glBufferStorage)
@@ -311,7 +311,14 @@ void GL_UploadDataToVBO(GLuint VBO, size_t size, const void* data)
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void GL_UploadDataToEBO(GLuint EBO, size_t size, const void* data)
+void GL_UploadDataToVBODynamicDraw(GLuint VBO, size_t size, const void* data)
+{
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void GL_UploadDataToEBOStaticDraw(GLuint EBO, size_t size, const void* data)
 {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	if (glBufferStorage)
@@ -322,6 +329,13 @@ void GL_UploadDataToEBO(GLuint EBO, size_t size, const void* data)
 	{
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
 	}
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+void GL_UploadDataToEBODynamicDraw(GLuint EBO, size_t size, const void* data)
+{
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, data, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 

@@ -8,45 +8,106 @@
 #include "corpse.h"
 #include "physics.h"
 
+#define R_NEWMAP_SIG_COMMON    "\x55\x8B\xEC\x83\xEC\x2A\xC7\x45\xFC\x00\x00\x00\x00\x2A\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC"
+#define R_NEWMAP_SIG_BLOB      R_NEWMAP_SIG_COMMON
+#define R_NEWMAP_SIG_NEW       R_NEWMAP_SIG_COMMON
+#define R_NEWMAP_SIG_HL25      R_NEWMAP_SIG_COMMON
 #define R_NEWMAP_SIG_SVENGINE "\x55\x8B\xEC\x51\xC7\x45\xFC\x00\x00\x00\x00\xEB\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC\x81\x7D\xFC\x00\x01\x00\x00"
-#define R_NEWMAP_SIG_NEW "\x55\x8B\xEC\x83\xEC\x08\xC7\x45\xFC\x00\x00\x00\x00\x2A\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC\x81\x7D\xFC\x00\x01\x00\x00\x2A\x2A\x8B\x4D\xFC"
 
-#define R_RECURSIVEWORLDNODE_SIG_SVENGINE "\x83\xEC\x08\x53\x8B\x5C\x24\x10\x83\x3B\xFE"
+#define R_RECURSIVEWORLDNODE_SIG_BLOB "\x55\x8B\xEC\x83\xE4\xF8\x83\xEC\x0C\x53\x56\x57\x8B\x7D\x08\x83\x3F\xFE"
+#define R_RECURSIVEWORLDNODE_SIG_NEW2 R_RECURSIVEWORLDNODE_SIG_BLOB
 #define R_RECURSIVEWORLDNODE_SIG_NEW "\x55\x8B\xEC\x83\xEC\x08\x53\x56\x57\x8B\x7D\x08\x83\x3F\xFE\x0F\x2A\x2A\x2A\x2A\x2A\x8B\x47\x04"
+#define R_RECURSIVEWORLDNODE_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x08\x2A\x8B\x5D\x08\x83\x3B\xFE\x0F"
+#define R_RECURSIVEWORLDNODE_SIG_SVENGINE "\x83\xEC\x08\x53\x8B\x5C\x24\x10\x83\x3B\xFE"
 
+#define R_DRAWTENTITIESONLIST_SIG_BLOB "\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x2A\x0F\x2A\x2A\x2A\x00\x00\x8B\x44\x24\x04"
+#define R_DRAWTENTITIESONLIST_SIG_NEW2 R_DRAWTENTITIESONLIST_SIG_BLOB
 #define R_DRAWTENTITIESONLIST_SIG_NEW "\x55\x8B\xEC\xD9\x05\x2A\x2A\x2A\x2A\xD8\x1D\x2A\x2A\x2A\x2A\xDF\xE0\xF6\xC4\x44\x0F\x8B\x2A\x2A\x2A\x2A\x8B\x45\x08"
+#define R_DRAWTENTITIESONLIST_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\xF3\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x0F\x2E"
 #define R_DRAWTENTITIESONLIST_SIG_SVENGINE "\x55\x8B\xEC\x83\xE4\x2A\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x00\x00\x00\xD9\x05\x2A\x2A\x2A\x2A\xD9\xEE"
 
 private_funcs_t gPrivateFuncs;
 
+hook_t* g_phook_R_NewMap = NULL;
+
 void Engine_FillAddreess(void)
 {
-	if (g_iEngineType == ENGINE_SVENGINE)
+	if (1)
 	{
-		gPrivateFuncs.R_DrawTEntitiesOnList = (void(*)(int))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_SVENGINE);
-		Sig_FuncNotFound(R_DrawTEntitiesOnList);
+		const char sigs1[] = "Non-sprite set to glow";
+		auto NonSprite_String = Search_Pattern_Data(sigs1);
+		if (!NonSprite_String)
+			NonSprite_String = Search_Pattern_Rdata(sigs1);
+		if (NonSprite_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B";
+			*(DWORD*)(pattern + 1) = (DWORD)NonSprite_String;
+			auto NonSprite_Call = Search_Pattern(pattern);
+			if (NonSprite_Call)
+			{
+				gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(NonSprite_Call, 0x500, [](PUCHAR Candidate) {
+
+					if (Candidate[0] == 0xD9 &&
+						Candidate[1] == 0x05 &&
+						Candidate[6] == 0xD8)
+						return TRUE;
+
+					if (Candidate[0] == 0x55 &&
+						Candidate[1] == 0x8B &&
+						Candidate[2] == 0xEC)
+						return TRUE;
+
+					return FALSE;
+				});
+			}
+		}
 	}
-	else
+
+	if (!gPrivateFuncs.R_DrawTEntitiesOnList)
 	{
-		gPrivateFuncs.R_DrawTEntitiesOnList = (void(*)(int))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_NEW);
-		Sig_FuncNotFound(R_DrawTEntitiesOnList);
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_SVENGINE);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_HL25);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_NEW);
+			if (!gPrivateFuncs.R_DrawTEntitiesOnList)
+				gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_NEW2);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			gPrivateFuncs.R_DrawTEntitiesOnList = (decltype(gPrivateFuncs.R_DrawTEntitiesOnList))Search_Pattern(R_DRAWTENTITIESONLIST_SIG_BLOB);
+		}
 	}
+	Sig_FuncNotFound(R_DrawTEntitiesOnList);
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))Search_Pattern(R_RECURSIVEWORLDNODE_SIG_SVENGINE);
-		Sig_FuncNotFound(R_RecursiveWorldNode);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))Search_Pattern(R_RECURSIVEWORLDNODE_SIG_HL25);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC)
+	{
+		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))Search_Pattern(R_RECURSIVEWORLDNODE_SIG_NEW);
+		if (!gPrivateFuncs.R_RecursiveWorldNode)
+			gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))Search_Pattern(R_RECURSIVEWORLDNODE_SIG_NEW2);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))Search_Pattern(R_RECURSIVEWORLDNODE_SIG_BLOB);
+	}
+	Sig_FuncNotFound(R_RecursiveWorldNode);
 
-		//mov     eax, [edi+4]
-		//mov     ecx, r_visframecount
-#define R_VISFRAMECOUNT_SIG_SVENGINE "\x8B\x43\x04\x3B\x05"
-		if (1)
-		{
-			DWORD addr = (DWORD)Search_Pattern_From_Length(gPrivateFuncs.R_RecursiveWorldNode, 0x100, R_VISFRAMECOUNT_SIG_SVENGINE);
-			Sig_AddrNotFound(r_visframecount);
-			r_visframecount = *(int **)(addr + 5);
-		}
-
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
 #define GTEMPENTS_SIG_SVENGINE "\x68\x00\xE0\x5F\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xA3"
 		if (1)
 		{
@@ -54,34 +115,9 @@ void Engine_FillAddreess(void)
 			Sig_AddrNotFound(gTempEnts);
 			gTempEnts = *(decltype(gTempEnts)*)(addr + 8);
 		}
-
-#define CL_VIEWENTITY_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x50\x6A\x06\xFF\x35\x2A\x2A\x2A\x2A\xE8"
-		if (1)
-		{
-			DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_SVENGINE);
-			Sig_AddrNotFound(cl_viewentity);
-			cl_viewentity = *(decltype(cl_viewentity)*)(addr + 10);
-		}
-
-		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_SVENGINE);
-		Sig_FuncNotFound(R_NewMap);
-
 	}
 	else
 	{
-		gPrivateFuncs.R_RecursiveWorldNode = (decltype(gPrivateFuncs.R_RecursiveWorldNode))Search_Pattern(R_RECURSIVEWORLDNODE_SIG_NEW);
-		Sig_FuncNotFound(R_RecursiveWorldNode);
-
-		//mov     eax, [edi+4]
-		//mov     ecx, r_visframecount
-#define R_VISFRAMECOUNT_SIG_NEW "\x8B\x47\x04\x8B\x0D"
-		if(1)
-		{
-			DWORD addr = (DWORD)Search_Pattern_From_Length(gPrivateFuncs.R_RecursiveWorldNode, 0x100, R_VISFRAMECOUNT_SIG_NEW);
-			Sig_AddrNotFound(r_visframecount);
-			r_visframecount = *(int **)(addr + 5);
-		}
-
 #define GTEMPENTS_SIG_NEW "\x68\x30\x68\x17\x00\x6A\x00\x68\x2A\x2A\x2A\x2A\xE8"
 		if (1)
 		{
@@ -89,24 +125,194 @@ void Engine_FillAddreess(void)
 			Sig_AddrNotFound(gTempEnts);
 			gTempEnts = *(decltype(gTempEnts)*)(addr + 8);
 		}
-
-#define CL_VIEWENTITY_SIG_NEW "\x8B\x0D\x2A\x2A\x2A\x2A\x6A\x64\x6A\x00\x68\x00\x00\x80\x3F\x68\x00\x00\x80\x3F\x68\x2A\x2A\x2A\x2A\x50"
-		if (1)
-		{
-			DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_NEW);
-			Sig_AddrNotFound(gTempEnts);
-			cl_viewentity = *(decltype(cl_viewentity)*)(addr + 2);
-		}
-
-		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_NEW);
-		Sig_FuncNotFound(R_NewMap);
 	}
 
-#define MOD_KNOWN_SIG "\xB8\x9D\x82\x97\x53\x81\xE9"
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+#define CL_VIEWENTITY_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x50\x6A\x06\xFF\x35\x2A\x2A\x2A\x2A\xE8"
+		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_SVENGINE);
+		Sig_AddrNotFound(cl_viewentity);
+		cl_viewentity = *(decltype(cl_viewentity)*)(addr + 10);
+	}
+	else
+	{
+#define CL_VIEWENTITY_SIG_GOLDSRC "\xA1\x2A\x2A\x2A\x2A\x48\x3B\x2A"
+		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_GOLDSRC);
+		Sig_AddrNotFound(cl_viewentity);
+
+		typedef struct
+		{
+			bool found_cmp_200;
+		}CL_ViewEntity_ctx;
+
+		CL_ViewEntity_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges((PVOID)addr, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (CL_ViewEntity_ctx*)context;
+
+			if (pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 0x200)
+			{
+				ctx->found_cmp_200 = true;
+			}
+
+			if (ctx->found_cmp_200)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, &ctx);
+
+		if (ctx.found_cmp_200)
+		{
+			cl_viewentity = *(decltype(cl_viewentity)*)(addr + 1);
+		}
+
+		Sig_VarNotFound(cl_viewentity);
+	}
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_SVENGINE);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_HL25);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC)
+	{
+		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_NEW);
+	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		gPrivateFuncs.R_NewMap = (decltype(gPrivateFuncs.R_NewMap))Search_Pattern(R_NEWMAP_SIG_BLOB);
+	}
+	Sig_FuncNotFound(R_NewMap);
+
 	if (1)
 	{
-		
-		DWORD addr = (DWORD)Search_Pattern(MOD_KNOWN_SIG);
+		typedef struct
+		{
+			int movexx_offset;
+			int movexx_instcount;
+			int movexx_register;
+			int cmp_register;
+			DWORD cmp_candidate;
+			int test_cl_instcount;
+			int test_cl_flag;
+		}R_RecursiveWorldNode_ctx;
+
+		R_RecursiveWorldNode_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_RecursiveWorldNode, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (R_RecursiveWorldNode_ctx*)context;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base != 0 &&
+				pinst->detail->x86.operands[1].mem.index == 0 &&
+				(pinst->detail->x86.operands[1].mem.disp == 0 || pinst->detail->x86.operands[1].mem.disp == 4)
+				)
+			{//.text:01D49235 8B 47 04                                            mov     eax, [edi+4]
+
+				ctx->movexx_offset = pinst->detail->x86.operands[1].mem.disp;
+				ctx->movexx_instcount = instCount;
+				ctx->movexx_register = pinst->detail->x86.operands[0].reg;
+			}
+			else if (ctx->movexx_instcount &&
+				instCount < ctx->movexx_instcount + 3 &&
+				pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize
+				)
+			{
+				//.text:01D49238 8B 0D D4 98 BC 02                                   mov     ecx, r_visframecount
+
+				ctx->cmp_register = pinst->detail->x86.operands[0].reg;
+				ctx->cmp_candidate = (decltype(ctx->cmp_candidate))pinst->detail->x86.operands[1].mem.disp;
+			}
+			else if (ctx->movexx_instcount &&
+				instCount < ctx->movexx_instcount + 3 &&
+				pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.base == 0 &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp >(PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize
+				)
+			{
+				//.text:01D5A533 3B 05 7C 3F F5 03                                   cmp     eax, r_visframecount
+
+				if (ctx->movexx_offset == 4 && !r_visframecount)
+					r_visframecount = (decltype(r_visframecount))pinst->detail->x86.operands[1].mem.disp;
+				else if (ctx->movexx_offset == 0 && !r_framecount)
+					r_framecount = (decltype(r_framecount))pinst->detail->x86.operands[1].mem.disp;
+			}
+			else if (ctx->movexx_instcount &&
+				instCount < ctx->movexx_instcount + 3 &&
+				pinst->id == X86_INS_CMP &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_REG &&
+				((pinst->detail->x86.operands[0].reg == ctx->cmp_register &&
+					pinst->detail->x86.operands[1].reg == ctx->movexx_register) ||
+					(pinst->detail->x86.operands[1].reg == ctx->cmp_register &&
+						pinst->detail->x86.operands[0].reg == ctx->movexx_register)))
+			{
+				//.text:01D49235 8B 47 04                                            mov     eax, [edi+4]
+				//.text:01D49238 8B 0D D4 98 BC 02                                   mov     ecx, r_visframecount
+				//.text:01D4923E 3B C1                                               cmp     eax, ecx
+
+				//.text:01D4932E 8B 0E                                               mov     ecx, [esi]
+				//.text:01D49330 A1 EC 97 BC 02                                      mov     eax, r_framecount
+				//.text:01D49335 3B C8                                               cmp     ecx, eax
+				if (ctx->movexx_offset == 4 && !r_visframecount)
+					r_visframecount = (decltype(r_visframecount))ctx->cmp_candidate;
+				else if (ctx->movexx_offset == 0 && !r_framecount)
+					r_framecount = (decltype(r_framecount))ctx->cmp_candidate;
+			}
+
+			if (r_visframecount && r_framecount)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, &ctx);
+
+		Sig_VarNotFound(r_framecount);
+		Sig_VarNotFound(r_visframecount);
+	}
+
+	if (1)
+	{
+#define MOD_KNOWN_SIG "\xB8\x9D\x82\x97\x53\x81\xE9"
+		ULONG_PTR addr = (ULONG_PTR)Search_Pattern(MOD_KNOWN_SIG);
 		Sig_AddrNotFound(mod_known);
 		mod_known = *(void **)(addr + 7);
 	}
@@ -172,7 +378,7 @@ void Engine_FillAddreess(void)
 
 		R_DrawTEntitiesOnList_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_DrawTEntitiesOnList, 0x250, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.R_DrawTEntitiesOnList, 0x500, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 			{
 				auto pinst = (cs_insn *)inst;
 				auto ctx = (R_DrawTEntitiesOnList_ctx *)context;
@@ -265,7 +471,6 @@ void Engine_FillAddreess(void)
 		Sig_VarNotFound(cl_frames);
 		Sig_VarNotFound(cl_parsecount);
 	}
-
 }
 
 void Client_FillAddress(void)
@@ -347,4 +552,14 @@ TEMPENTITY *efxapi_R_TempModel(float *pos, float *dir, float *angles, float life
 	}
 
 	return r;
+}
+
+void Engine_InstallHook(void)
+{
+	Install_InlineHook(R_NewMap);
+}
+
+void Engine_UninstallHook(void)
+{
+	Uninstall_Hook(R_NewMap);
 }

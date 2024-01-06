@@ -110,8 +110,6 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_Frame = HUD_Frame;
 	pExportFunc->HUD_PlayerMoveInit = HUD_PlayerMoveInit;
 	pExportFunc->V_CalcRefdef = V_CalcRefdef;
-
-	//Uninstall_Hook(DLL_SetModKey);
 }
 
 void IPluginsV4::ExitGame(int iResult)

@@ -343,10 +343,10 @@ void R_InitLight(void)
 	}
 
 	r_sphere_vbo = GL_GenBuffer();
-	GL_UploadDataToVBO(r_sphere_vbo, sphereVertices.size() * sizeof(float), sphereVertices.data());
+	GL_UploadDataToVBOStaticDraw(r_sphere_vbo, sphereVertices.size() * sizeof(float), sphereVertices.data());
 
 	r_sphere_ebo = GL_GenBuffer();
-	GL_UploadDataToEBO(r_sphere_ebo, sphereIndices.size() * sizeof(int), sphereIndices.data());
+	GL_UploadDataToVBOStaticDraw(r_sphere_ebo, sphereIndices.size() * sizeof(int), sphereIndices.data());
 
 	r_sphere_vao = GL_GenVAO();
 
@@ -410,7 +410,7 @@ void R_InitLight(void)
 	}
 
 	r_cone_vbo = GL_GenBuffer();
-	GL_UploadDataToVBO(r_cone_vbo, coneVertices.size() * sizeof(float), coneVertices.data());
+	GL_UploadDataToVBOStaticDraw(r_cone_vbo, coneVertices.size() * sizeof(float), coneVertices.data());
 
 	r_cone_vao = GL_GenVAO();
 

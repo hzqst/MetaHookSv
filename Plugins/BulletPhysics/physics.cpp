@@ -238,16 +238,25 @@ void CPhysicsManager::GenerateWorldVerticeArray(void)
 	int iNumFaces = 0;
 	int iNumVerts = 0;
 
-	auto surf = r_worldmodel->surfaces;
-
 	m_worldVertexArray->vFaceBuffer.resize(r_worldmodel->numsurfaces);
 
 	for (int i = 0; i < r_worldmodel->numsurfaces; i++)
 	{
-		if ((surf[i].flags & (SURF_DRAWTURB | SURF_UNDERWATER | SURF_DRAWSKY)))
+		msurface_t* surf;
+
+		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			surf = (((msurface_hl25_t*)r_worldmodel->surfaces) + i);
+		}
+		else
+		{
+			surf = r_worldmodel->surfaces + i;
+		}
+
+		if ((surf->flags & (SURF_DRAWTURB | SURF_UNDERWATER | SURF_DRAWSKY)))
 			continue;
 
-		auto poly = surf[i].polys;
+		auto poly = surf->polys;
 
 		poly->flags = i;
 
@@ -257,7 +266,7 @@ void CPhysicsManager::GenerateWorldVerticeArray(void)
 
 		brushface->start_vertex = iStartVert;
 
-		for (poly = surf[i].polys; poly; poly = poly->next)
+		for (poly = surf->polys; poly; poly = poly->next)
 		{
 			auto v = poly->verts[0];
 
@@ -299,6 +308,7 @@ void CPhysicsManager::GenerateIndexedArrayForBrushface(brushface_t *brushface, i
 	int prv0 = -1;
 	int prv1 = -1;
 	int prv2 = -1;
+
 	for (int i = 0; i < brushface->num_vertexes; i++)
 	{
 		if (prv0 != -1 && prv1 != -1 && prv2 != -1)
@@ -348,16 +358,20 @@ void CPhysicsManager::GenerateIndexedArrayRecursiveWorldNode(mnode_t *node, vert
 
 	GenerateIndexedArrayRecursiveWorldNode(node->children[0], vertexarray, indexarray);
 
-	auto c = node->numsurfaces;
-
-	if (c)
+	for (int i = 0;i < node->numsurfaces; ++i)
 	{
-		auto psurf = r_worldmodel->surfaces + node->firstsurface;
+		msurface_t* surf;
 
-		for (; c; c--, psurf++)
+		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
-			GenerateIndexedArrayForSurface(psurf, vertexarray, indexarray);
+			surf = (((msurface_hl25_t*)r_worldmodel->surfaces) + node->firstsurface + i);
 		}
+		else
+		{
+			surf = r_worldmodel->surfaces + node->firstsurface + i;
+		}
+
+		GenerateIndexedArrayForSurface(surf, vertexarray, indexarray);
 	}
 
 	GenerateIndexedArrayRecursiveWorldNode(node->children[1], vertexarray, indexarray);
@@ -371,10 +385,20 @@ void CPhysicsManager::GenerateIndexedArrayForBrush(model_t *mod, vertexarray_t *
 	}
 	else
 	{
-		auto psurf = &mod->surfaces[mod->firstmodelsurface];
-		for (int i = 0; i < mod->nummodelsurfaces; i++, psurf++)
+		for (int i = 0; i < mod->nummodelsurfaces; i++)
 		{
-			GenerateIndexedArrayForSurface(psurf, vertexarray, indexarray);			
+			msurface_t* surf;
+
+			if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+			{
+				surf = (((msurface_hl25_t*)mod->surfaces) + mod->firstmodelsurface + i);
+			}
+			else
+			{
+				surf = mod->surfaces + mod->firstmodelsurface + i;
+			}
+
+			GenerateIndexedArrayForSurface(surf, vertexarray, indexarray);
 		}
 	}
 }
