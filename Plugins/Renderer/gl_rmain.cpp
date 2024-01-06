@@ -1608,11 +1608,11 @@ void GL_Init(void)
 		return;
 	}
 
-	if (!GLEW_VERSION_4_3)
-	{
-		g_pMetaHookAPI->SysError("OpenGL 4.3 is not supported!\nRequirement: Nvidia GeForce 400 series and newer / AMD Radeon HD 5000 Series and newer / Intel HD Graphics in Intel Haswell and newer.\n");
-		return;
-	}
+	//if (!GLEW_VERSION_4_3)
+	//{
+		//g_pMetaHookAPI->SysError("OpenGL 4.3 is not supported!\nRequirement: Nvidia GeForce 400 series and newer / AMD Radeon HD 5000 Series and newer / Intel HD Graphics in Intel Haswell and newer.\n");
+		//return;
+	//}
 
 	//No vanilla detail texture support
 	(*detTexSupported) = false;

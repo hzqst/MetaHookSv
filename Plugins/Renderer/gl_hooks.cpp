@@ -6240,7 +6240,6 @@ void R_FillAddress(void)
 			auto pinst = (cs_insn *)inst;
 
 			if (!particletexture &&
-				g_iEngineType == ENGINE_SVENGINE &&
 				pinst->id == X86_INS_PUSH &&
 				pinst->detail->x86.op_count == 1 &&
 				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
@@ -6251,8 +6250,8 @@ void R_FillAddress(void)
 			{
 				particletexture = (decltype(particletexture))pinst->detail->x86.operands[0].mem.disp;
 			}
-			else if (!particletexture &&
-				g_iEngineType != ENGINE_SVENGINE &&
+
+			if (!particletexture &&
 				pinst->id == X86_INS_MOV &&
 				pinst->detail->x86.op_count == 2 &&
 				pinst->detail->x86.operands[0].type == X86_OP_REG &&
@@ -6262,7 +6261,17 @@ void R_FillAddress(void)
 				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
 				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
 			{
-				particletexture = (decltype(particletexture))pinst->detail->x86.operands[1].mem.disp;
+				//Skip this shit
+				//.text:101EBCA6 A1 F4 36 32 10                                      mov     eax, ___security_cookie
+				//.text:101EBCAB 33 C5 xor eax, ebp
+				if (address[instLen] == 0x33 && address[instLen + 1] == 0xC5)
+				{
+
+				}
+				else
+				{
+					particletexture = (decltype(particletexture))pinst->detail->x86.operands[1].mem.disp;
+				}
 			}
 
 			if (!active_particles &&
