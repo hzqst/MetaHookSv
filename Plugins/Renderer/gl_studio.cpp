@@ -2987,6 +2987,12 @@ bool R_StudioFreeTextureInVBOMaterial(studio_vbo_material_t* VBOMaterial, int gl
 	return false;
 }
 
+/*
+
+Purpose : Free VBOMaterial (if there is) for this gltexturenum.
+
+*/
+
 bool R_StudioFreeVBOMaterialByTextureId(int gltexturenum)
 {
 	const auto& itor = g_StudioVBOMaterialCache.find(gltexturenum);
@@ -3008,9 +3014,18 @@ bool R_StudioFreeVBOMaterialByTextureId(int gltexturenum)
 	return false;
 }
 
+/*
+
+Purpose : 
+
+1. Free all VBOMaterials owned by this glt.
+2. Free any VBOMaterial linked to this glt.
+
+*/
+
 void R_StudioFreeTextureCallback(gltexture_t *glt)
 {
-	if (GL_GetTextureTypeFromGLTexture(glt) != GLT_STUDIO)
+	if (GL_GetTextureTypeFromTextureIdentifier(glt->identifier) != GLT_STUDIO)
 		return;
 
 	if (R_StudioFreeVBOMaterialByTextureId(glt->texnum))

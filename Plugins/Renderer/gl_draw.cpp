@@ -78,21 +78,47 @@ void GL_Texturemode_internal(const char *value)
 	{
 		if (pgltextures[j].texnum)
 		{
-			if (pgltextures[j].mipmap)
-			{
-				GL_Bind(pgltextures[j].texnum);
+			int iTextureTarget = GL_GetTextureTargetFromTextureEntry(&pgltextures[j]);
 
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (*gl_filter_min));
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (*gl_filter_max));
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
+			if (iTextureTarget == GL_TEXTURE_2D_ARRAY)
+			{
+				glBindTexture(GL_TEXTURE_2D_ARRAY, pgltextures[j].texnum);
+
+				if (pgltextures[j].mipmap)
+				{
+					glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, (*gl_filter_min));
+					glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, (*gl_filter_max));
+					glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
+				}
+				else
+				{
+
+					glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, (*gl_filter_max));
+					glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, (*gl_filter_max));
+					glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
+				}
+
+				glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 			}
-			else
+			else if (iTextureTarget == GL_TEXTURE_2D)
 			{
 				GL_Bind(pgltextures[j].texnum);
 
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (*gl_filter_max));
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (*gl_filter_max));
-				glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
+				if (pgltextures[j].mipmap)
+				{
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (*gl_filter_min));
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (*gl_filter_max));
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
+				}
+				else
+				{
+
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (*gl_filter_max));
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (*gl_filter_max));
+					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
+				}
+
+				GL_Bind(0);
 			}
 		}
 	}
@@ -106,9 +132,12 @@ void GL_Texturemode_internal(const char *value)
 		if (r_wsurf.vSkyboxTextureId[j])
 		{
 			GL_Bind(r_wsurf.vSkyboxTextureId[j]);
+
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, *gl_filter_min);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, *gl_filter_max);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, GL_GetAnsioValue());
+
+			GL_Bind(0);
 		}
 	}
 
@@ -128,130 +157,187 @@ void GL_Texturemode_f(void)
 
 void GL_GenerateHashedTextureIndentifier(const char* identifier, GL_TEXTURETYPE textureType, char* hashedIdentifier, size_t len)
 {
-	if (textureType == GLT_SYSTEM)
-	{
-		snprintf(hashedIdentifier, len, "@SYS_%08X", MurmurHash2(identifier, strlen(identifier), textureType));
+#define FORMAT_TEXTURE_IDENTIFIER(Ty, Name) if (textureType == Ty)\
+	{\
+		snprintf(hashedIdentifier, len, "@" Name "_%08X", MurmurHash2(identifier, strlen(identifier), textureType));\
+		return;\
 	}
-	else if (textureType == GLT_DECAL)
-	{
-		snprintf(hashedIdentifier, len, "@DCL_%08X", MurmurHash2(identifier, strlen(identifier), textureType));
-	}
-	else if (textureType == GLT_HUDSPRITE)
-	{
-		snprintf(hashedIdentifier, len, "@SPH_%08X", MurmurHash2(identifier, strlen(identifier), textureType));
-	}
-	else if (textureType == GLT_STUDIO)
-	{
-		snprintf(hashedIdentifier, len, "@MDL_%08X", MurmurHash2(identifier, strlen(identifier), textureType));
-	}
-	else if (textureType == GLT_WORLD)
-	{
-		snprintf(hashedIdentifier, len, "@BSP_%08X", MurmurHash2(identifier, strlen(identifier), textureType));
-	}
-	else if (textureType == GLT_SPRITE)
-	{
-		snprintf(hashedIdentifier, len, "@SPR_%08X", MurmurHash2(identifier, strlen(identifier), textureType));
-	}
-	else if (textureType == GLT_DETAIL)
-	{
-		snprintf(hashedIdentifier, len, "@DET_%08X", MurmurHash2(identifier, strlen(identifier), textureType));
-	}
-	else
-	{
-		strncpy(hashedIdentifier, identifier, len);
-	}
+
+	FORMAT_TEXTURE_IDENTIFIER(GLT_SYSTEM, "SYS");
+	FORMAT_TEXTURE_IDENTIFIER(GLT_DECAL, "DCL");
+	FORMAT_TEXTURE_IDENTIFIER(GLT_HUDSPRITE, "HSP");
+	FORMAT_TEXTURE_IDENTIFIER(GLT_STUDIO, "MDL");
+	FORMAT_TEXTURE_IDENTIFIER(GLT_WORLD, "BSP");
+	FORMAT_TEXTURE_IDENTIFIER(GLT_SPRITE, "SPR");
+	FORMAT_TEXTURE_IDENTIFIER(GLT_DETAIL, "DET");
+
+#undef FORMAT_TEXTURE_IDENTIFIER
+
+	//Default case
+	strncpy(hashedIdentifier, identifier, len);
 }
 
 void GL_GenerateHashedTextureIndentifier2(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, char * hashedIdentifier, size_t len)
 {
-	if (textureType == GLT_SYSTEM)
-	{
-		snprintf(hashedIdentifier, len, "@SYS_%08X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height);
+#define FORMAT_TEXTURE_IDENTIFIER(Ty, Name) if (textureType == Ty)\
+	{\
+		snprintf(hashedIdentifier, len, "@" Name "_%08X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height);\
+		return;\
 	}
-	else if (textureType == GLT_DECAL)
-	{
-		snprintf(hashedIdentifier, len, "@DCL_%08X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height);
-	}
-	else if (textureType == GLT_HUDSPRITE)
-	{
-		snprintf(hashedIdentifier, len, "@SPH_%08X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height);
-	}
-	else if (textureType == GLT_STUDIO)
-	{
-		snprintf(hashedIdentifier, len, "@MDL_%08X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height);
-	}
-	else if (textureType == GLT_WORLD)
-	{
-		snprintf(hashedIdentifier, len, "@BSP_%08X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height);
-	}
-	else if (textureType == GLT_SPRITE)
-	{
-		snprintf(hashedIdentifier, len, "@SPR_%08X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height);
-	}
-	else if (textureType == GLT_DETAIL)
-	{
-		snprintf(hashedIdentifier, len, "@DET_%08X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height);
-	}
-	else
-	{
-		strncpy(hashedIdentifier, identifier, len);
-	}
+
+	FORMAT_TEXTURE_IDENTIFIER(GLT_SYSTEM, "SYS");
+	FORMAT_TEXTURE_IDENTIFIER(GLT_DECAL, "DCL");
+	FORMAT_TEXTURE_IDENTIFIER(GLT_HUDSPRITE, "HSP");
+	FORMAT_TEXTURE_IDENTIFIER(GLT_STUDIO, "MDL");
+	FORMAT_TEXTURE_IDENTIFIER(GLT_WORLD, "BSP");
+	FORMAT_TEXTURE_IDENTIFIER(GLT_SPRITE, "SPR");
+	FORMAT_TEXTURE_IDENTIFIER(GLT_DETAIL, "DET");
+	
+#undef FORMAT_TEXTURE_IDENTIFIER
+
+	//Default case
+	strncpy(hashedIdentifier, identifier, len);
 }
 
-GL_TEXTURETYPE GL_GetTextureTypeFromGLTexture(gltexture_t* glt)
+void GL_GenerateHashedTextureIndentifier3(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, int numframes, char* hashedIdentifier, size_t len)
 {
-	if (glt->identifier[0] == '@')
+#define FORMAT_TEXTURE_IDENTIFIER(Ty, Name) if (textureType == Ty)\
+	{\
+		snprintf(hashedIdentifier, len, "@" Name "_%08X_%04X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height, numframes);\
+		return;\
+	}
+
+	FORMAT_TEXTURE_IDENTIFIER(GLT_SYSTEM, "SYS");
+	FORMAT_TEXTURE_IDENTIFIER(GLT_DECAL, "DCL");
+	FORMAT_TEXTURE_IDENTIFIER(GLT_HUDSPRITE, "HSP");
+	FORMAT_TEXTURE_IDENTIFIER(GLT_STUDIO, "MDL");
+	FORMAT_TEXTURE_IDENTIFIER(GLT_WORLD, "BSP");
+	FORMAT_TEXTURE_IDENTIFIER(GLT_SPRITE, "SPR");
+	FORMAT_TEXTURE_IDENTIFIER(GLT_DETAIL, "DET");
+
+#undef FORMAT_TEXTURE_IDENTIFIER
+
+	//Default case
+	strncpy(hashedIdentifier, identifier, len);
+}
+
+/*
+	Purpose : Parse texture's identifier. Get textureType, width, height and numframes (if exists)
+*/
+
+bool GL_ParseTextureIdentifier(const char* identifier, GL_TEXTURETYPE* textureType, int* width, int* height, int* numframes)
+{
+	int hash = 0, w = 0, h = 0, n = 0;
+
+	auto Ty = GL_GetTextureTypeFromTextureIdentifier(identifier);
+
+	if (Ty != GLT_UNKNOWN)
 	{
-		if (glt->identifier[1] == 'S' &&
-			glt->identifier[2] == 'Y' &&
-			glt->identifier[3] == 'S' &&
-			glt->identifier[4] == '_')
+		auto len = strlen(identifier);
+
+		if (len == sizeof("@SYS_12345678_1234_1234_1234") - 1)
+		{
+			if (sscanf(identifier + sizeof("@SYS_") - 1, "%08X_%04X_%04X_%04X", &hash, &w, &h, &n) == 4)
+			{
+				if (width)
+					*width = w;
+				if (height)
+					*height = h;
+				if (numframes)
+					*numframes = n;
+
+				return true;
+			}
+		}
+		else if (len == sizeof("@SYS_12345678_1234_1234") - 1)
+		{
+			if (sscanf(identifier + sizeof("@SYS_") - 1, "%08X_%04X_%04X", &hash, &w, &h) == 3)
+			{
+				if (width)
+					*width = w;
+				if (height)
+					*height = h;
+
+				return true;
+			}
+		}
+	}
+	
+	return false;
+}
+
+GL_TEXTURETYPE GL_GetTextureTypeFromTextureIdentifier(const char *identifier)
+{
+	if (identifier[0] == '@')
+	{
+		if (identifier[1] == 'S' &&
+			identifier[2] == 'Y' &&
+			identifier[3] == 'S' &&
+			identifier[4] == '_')
 		{
 			return GLT_SYSTEM;
 		}
 
-		if (glt->identifier[1] == 'D' &&
-			glt->identifier[2] == 'C' &&
-			glt->identifier[3] == 'L' &&
-			glt->identifier[4] == '_')
+		if (identifier[1] == 'D' &&
+			identifier[2] == 'C' &&
+			identifier[3] == 'L' &&
+			identifier[4] == '_')
 		{
 			return GLT_DECAL;
 		}
 
-		if (glt->identifier[1] == 'S' &&
-			glt->identifier[2] == 'P' &&
-			glt->identifier[3] == 'H' &&
-			glt->identifier[4] == '_')
+		if (identifier[1] == 'S' &&
+			identifier[2] == 'P' &&
+			identifier[3] == 'H' &&
+			identifier[4] == '_')
 		{
 			return GLT_HUDSPRITE;
 		}
 
-		if (glt->identifier[1] == 'M' &&
-			glt->identifier[2] == 'D' &&
-			glt->identifier[3] == 'L' &&
-			glt->identifier[4] == '_')
+		if (identifier[1] == 'M' &&
+			identifier[2] == 'D' &&
+			identifier[3] == 'L' &&
+			identifier[4] == '_')
 		{
 			return GLT_STUDIO;
 		}
 
-		if (glt->identifier[1] == 'B' &&
-			glt->identifier[2] == 'S' &&
-			glt->identifier[3] == 'P' &&
-			glt->identifier[4] == '_')
+		if (identifier[1] == 'B' &&
+			identifier[2] == 'S' &&
+			identifier[3] == 'P' &&
+			identifier[4] == '_')
 		{
 			return GLT_WORLD;
 		}
 
-		if (glt->identifier[1] == 'S' &&
-			glt->identifier[2] == 'P' &&
-			glt->identifier[3] == 'R' &&
-			glt->identifier[4] == '_')
+		if (identifier[1] == 'S' &&
+			identifier[2] == 'P' &&
+			identifier[3] == 'R' &&
+			identifier[4] == '_')
 		{
 			return GLT_SPRITE;
 		}
 	}
 
 	return GLT_UNKNOWN;
+}
+
+int GL_GetTextureTargetFromTextureIdentifier(const char *identifier)
+{
+	int iTextureTarget = GL_TEXTURE_2D;
+
+	//Make sure it's animated texture
+	if (GL_GetTextureTypeFromTextureIdentifier(identifier) != GLT_UNKNOWN && strlen(identifier) == sizeof("@SYS_12345678_1234_1234_1234") - 1)
+	{
+		iTextureTarget = GL_TEXTURE_2D_ARRAY;
+	}
+
+	return iTextureTarget;
+}
+
+int GL_GetTextureTargetFromTextureEntry(const gltexture_t* glt)
+{
+	return GL_GetTextureTargetFromTextureIdentifier(glt->identifier);
 }
 
 //GL Start

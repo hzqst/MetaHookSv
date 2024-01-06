@@ -2377,7 +2377,7 @@ void R_UnloadNoreferenceTextures(const std::set<int>& textures)
 			//"lambda" goes LoadTransPic
 			//BSP detail texture goes GLT_SPRITE under GoldSrc while GLT_DETAIL under SvEngine, need to block vanilla detail texture
 
-			auto textureType = GL_GetTextureTypeFromGLTexture(glt);
+			auto textureType = GL_GetTextureTypeFromTextureIdentifier(glt->identifier);
 
 			if (textureType == GLT_STUDIO || textureType == GLT_HUDSPRITE || textureType == GLT_SPRITE)
 			{
