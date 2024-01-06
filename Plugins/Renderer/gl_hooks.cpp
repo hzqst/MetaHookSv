@@ -321,6 +321,12 @@ void R_FillAddress(void)
 {
 	ULONG_PTR addr;
 
+	auto hSDL2 = GetModuleHandleA("SDL2.dll");
+	if (hSDL2)
+	{
+		gPrivateFuncs.SDL_GL_SetAttribute = (decltype(gPrivateFuncs.SDL_GL_SetAttribute))GetProcAddress(hSDL2, "SDL_GL_SetAttribute");
+	}
+
 	auto engineFactory = g_pMetaHookAPI->GetEngineFactory();
 
 	if (engineFactory)
@@ -7382,6 +7388,7 @@ hook_t *g_phook_triapi_Color4f = NULL;
 hook_t *g_phook_Draw_MiptexTexture = NULL;
 hook_t *g_phook_BuildGammaTable = NULL;
 hook_t *g_phook_DLL_SetModKey = NULL;
+hook_t *g_phook_SDL_GL_SetAttribute = NULL;
 
 void R_UninstallHooksForEngineDLL(void)
 {
@@ -7402,10 +7409,7 @@ void R_UninstallHooksForEngineDLL(void)
 	}
 
 	Uninstall_Hook(R_NewMap);
-	//Uninstall_Hook(R_CullBox);
 	Uninstall_Hook(Mod_PointInLeaf);
-	//Uninstall_Hook(R_BuildLightMap);//Overrrided
-	//Uninstall_Hook(R_AddDynamicLights);//Overrrided
 	Uninstall_Hook(R_GLStudioDrawPoints);
 	Uninstall_Hook(GL_UnloadTextures);
 	Uninstall_Hook(GL_LoadTexture2);
@@ -7423,7 +7427,11 @@ void R_UninstallHooksForEngineDLL(void)
 	Uninstall_Hook(triapi_RenderMode);
 	Uninstall_Hook(Draw_MiptexTexture);
 	Uninstall_Hook(BuildGammaTable);
-	//Uninstall_Hook(DLL_SetModKey);
+
+	if (gPrivateFuncs.SDL_GL_SetAttribute)
+	{
+		Uninstall_Hook(SDL_GL_SetAttribute);
+	}
 
 	Uninstall_Hook(studioapi_StudioDynamicLight);
 	Uninstall_Hook(studioapi_StudioCheckBBox);
@@ -7448,18 +7456,17 @@ void R_InstallHooks(void)
 	}
 
 	Install_InlineHook(R_NewMap);
-	//Install_InlineHook(R_CullBox);
 	Install_InlineHook(Mod_PointInLeaf);
-	//Install_InlineHook(R_BuildLightMap);//Overrided
-	//Install_InlineHook(R_AddDynamicLights);//Overrided
 	Install_InlineHook(R_GLStudioDrawPoints);
 	Install_InlineHook(GL_UnloadTextures);
 	Install_InlineHook(GL_LoadTexture2);
 	Install_InlineHook(GL_BuildLightmaps);
+
 	if (!bHasOfficialGLTexAllocSupport)
 	{
 		Install_InlineHook(enginesurface_createNewTextureID);
 	}
+
 	Install_InlineHook(enginesurface_drawSetTextureFile);
 	Install_InlineHook(enginesurface_drawFlushText);
 	Install_InlineHook(Mod_LoadStudioModel);
@@ -7467,7 +7474,21 @@ void R_InstallHooks(void)
 	Install_InlineHook(triapi_RenderMode);
 	Install_InlineHook(Draw_MiptexTexture);
 	Install_InlineHook(BuildGammaTable);
-	//Install_InlineHook(DLL_SetModKey);
+
+	//OpenGL4.2 was forced by HL25 engine which might ruin the renderer features.
+	/*
+	      if ( a1 )
+		  {
+			SDL_GL_SetAttribute(17, 4);
+			SDL_GL_SetAttribute(18, 2);
+			result = SDL_GL_SetAttribute(21, 2);
+		  }
+	*/
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25 &&
+		gPrivateFuncs.SDL_GL_SetAttribute)
+	{
+		Install_InlineHook(SDL_GL_SetAttribute);
+	}
 }
 
 int WINAPI GL_RedirectedGenTexture(void)
@@ -7475,77 +7496,79 @@ int WINAPI GL_RedirectedGenTexture(void)
 	return GL_GenTexture();
 }
 
+/*
+Purpose: Redirect all "mov eax, allocated_textures" to "call GL_RedirectedGenTexture" for legacy engine
+*/
+
 void R_RedirectLegacyOpenGLTextureAllocation(void)
 {
-	if (!bHasOfficialGLTexAllocSupport)
+	if (bHasOfficialGLTexAllocSupport)
+		return;
+	
+	const char pattern[] = "\xA1\x2A\x2A\x2A\x2A";
+	*(ULONG_PTR*)(pattern + 1) = (ULONG_PTR)allocated_textures;
+
+	PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
+	PUCHAR SearchLimit = (PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize;
+	while (SearchBegin < SearchLimit)
 	{
-		const char pattern[] = "\xA1\x2A\x2A\x2A\x2A";
-		*(ULONG_PTR*)(pattern + 1) = (ULONG_PTR)allocated_textures;
-
-		PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
-		PUCHAR SearchLimit = (PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize;
-		while (SearchBegin < SearchLimit)
+		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+		if (pFound)
 		{
-			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
-			if (pFound)
+			typedef struct
 			{
-				typedef struct
+				bool bFoundWriteBack;
+				bool bFoundGL_Bind;
+			}RedirectBlobEngineOpenGLTextureContext;
+
+			RedirectBlobEngineOpenGLTextureContext ctx = { 0 };
+
+			g_pMetaHookAPI->DisasmRanges(pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (RedirectBlobEngineOpenGLTextureContext*)context;
+
+				if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp == (PUCHAR)allocated_textures &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].reg == X86_REG_EAX)
 				{
-					bool bFoundWriteBack;
-					bool bFoundGL_Bind;
-				}RedirectBlobEngineOpenGLTextureContext;
-
-				RedirectBlobEngineOpenGLTextureContext ctx = { 0 };
-
-				g_pMetaHookAPI->DisasmRanges(pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-					auto pinst = (cs_insn*)inst;
-					auto ctx = (RedirectBlobEngineOpenGLTextureContext*)context;
-
-					if (pinst->id == X86_INS_MOV &&
-						pinst->detail->x86.op_count == 2 &&
-						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-						(PUCHAR)pinst->detail->x86.operands[0].mem.disp == (PUCHAR)allocated_textures &&
-						pinst->detail->x86.operands[1].type == X86_OP_REG &&
-						pinst->detail->x86.operands[1].reg == X86_REG_EAX)
-					{
-						ctx->bFoundWriteBack = true;
-					}
-
-					if (address[0] == 0xE8 && 
-						(PUCHAR)pinst->detail->x86.operands[0].imm == (PUCHAR)gPrivateFuncs.GL_Bind)
-					{
-						ctx->bFoundGL_Bind = true;
-					}
-
-					if (ctx->bFoundWriteBack || ctx->bFoundGL_Bind)
-						return TRUE;
-
-					if (address[0] == 0xCC)
-						return TRUE;
-
-					if (pinst->id == X86_INS_RET)
-						return TRUE;
-
-					return FALSE;
-
-				}, 0, &ctx);
-
-				if (ctx.bFoundWriteBack || ctx.bFoundGL_Bind)
-				{
-					char redirect[] = "\xE8\x2A\x2A\x2A\x2A";
-					*(int*)(redirect + 1) = (PUCHAR)GL_RedirectedGenTexture - (pFound + 5);
-					g_pMetaHookAPI->WriteMemory(pFound, redirect, sizeof(redirect) - 1);
-
-					//gEngfuncs.Con_Printf("%p redirected\n", pFound);
+					ctx->bFoundWriteBack = true;
 				}
 
-				SearchBegin = pFound + Sig_Length(pattern);
-			}
-			else
+				if (address[0] == 0xE8 && 
+					(PUCHAR)pinst->detail->x86.operands[0].imm == (PUCHAR)gPrivateFuncs.GL_Bind)
+				{
+					ctx->bFoundGL_Bind = true;
+				}
+
+				if (ctx->bFoundWriteBack || ctx->bFoundGL_Bind)
+					return TRUE;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+
+			}, 0, &ctx);
+
+			if (ctx.bFoundWriteBack || ctx.bFoundGL_Bind)
 			{
-				break;
+				char redirect[] = "\xE8\x2A\x2A\x2A\x2A";
+				*(int*)(redirect + 1) = (PUCHAR)GL_RedirectedGenTexture - (pFound + 5);
+				g_pMetaHookAPI->WriteMemory(pFound, redirect, sizeof(redirect) - 1);
 			}
+
+			SearchBegin = pFound + Sig_Length(pattern);
+		}
+		else
+		{
+			break;
 		}
 	}
 }

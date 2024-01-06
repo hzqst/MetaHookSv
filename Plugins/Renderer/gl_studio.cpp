@@ -641,6 +641,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_ANIMATED_TEXTURE_ENABLED)
 			defs << "#define ANIMATED_TEXTURE_ENABLED\n";
 
+		if (state & STUDIO_REVERT_NORMAL_ENABLED)
+			defs << "#define REVERT_NORMAL_ENABLED\n";
+
 		if (glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define NV_BINDLESS_ENABLED\n";
 
@@ -1073,6 +1076,7 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_PACKED_PARALLAXTEXTURE_ENABLED	,"STUDIO_PACKED_PARALLAXTEXTURE_ENABLED"	},
 { STUDIO_PACKED_SPECULARTEXTURE_ENABLED	,"STUDIO_PACKED_SPECULARTEXTURE_ENABLED"	},
 { STUDIO_ANIMATED_TEXTURE_ENABLED		,"STUDIO_ANIMATED_TEXTURE_ENABLED"			},
+{ STUDIO_REVERT_NORMAL_ENABLED			,"STUDIO_REVERT_NORMAL_ENABLED"			},
 
 { STUDIO_NF_FLATSHADE					,"STUDIO_NF_FLATSHADE"		},
 { STUDIO_NF_CHROME						,"STUDIO_NF_CHROME"			},
@@ -2186,7 +2190,7 @@ void R_StudioDrawVBOMesh_DrawPass(
 
 	if (R_IsFlippedViewModel())
 	{
-		StudioProgramState |= STUDIO_NF_DOUBLE_FACE;
+		StudioProgramState |= (STUDIO_NF_DOUBLE_FACE | STUDIO_REVERT_NORMAL_ENABLED);
 	}
 
 	if (StudioProgramState & STUDIO_NF_DOUBLE_FACE)

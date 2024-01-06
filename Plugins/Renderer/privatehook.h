@@ -142,6 +142,8 @@ typedef struct
 	void(*R_StudioSetupBones)(void);
 	void(*R_StudioMergeBones)(model_t *pSubModel);
 
+	//SDL2
+	int (__cdecl * SDL_GL_SetAttribute)(int attr, int value);
 }private_funcs_t;
 
 extern hook_t* g_phook_GL_Init;

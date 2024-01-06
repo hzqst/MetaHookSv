@@ -546,6 +546,10 @@ vec3 R_GenerateSimplifiedNormal()
 		}
 	#endif
 
+	#if defined(REVERT_NORMAL_ENABLED)
+		vNormal = vNormal * -1.0;
+	#endif
+
 	return vNormal;
 }
 
@@ -566,6 +570,10 @@ vec3 R_GenerateAdjustedNormal(vec3 vWorldPos, float flNormalMask)
 		if (gl_FrontFacing) {
 			vNormal = vNormal * -1.0;
 		}
+	#endif
+
+	#if defined(REVERT_NORMAL_ENABLED)
+		vNormal = vNormal * -1.0;
 	#endif
 
 	#if defined(STUDIO_NF_CELSHADE)

@@ -1608,11 +1608,11 @@ void GL_Init(void)
 		return;
 	}
 
-	//if (!GLEW_VERSION_4_3)
-	//{
-		//g_pMetaHookAPI->SysError("OpenGL 4.3 is not supported!\nRequirement: Nvidia GeForce 400 series and newer / AMD Radeon HD 5000 Series and newer / Intel HD Graphics in Intel Haswell and newer.\n");
-		//return;
-	//}
+	if (!GLEW_VERSION_4_3)
+	{
+		g_pMetaHookAPI->SysError("OpenGL 4.3 is not supported!\n");
+		return;
+	}
 
 	//No vanilla detail texture support
 	(*detTexSupported) = false;
@@ -3951,4 +3951,60 @@ void GammaToLinear(float *color)
 	color[0] = pow(color[0], v_gamma->value);
 	color[1] = pow(color[1], v_gamma->value);
 	color[2] = pow(color[2], v_gamma->value);
+}
+
+typedef enum
+{
+	SDL_GL_RED_SIZE,
+	SDL_GL_GREEN_SIZE,
+	SDL_GL_BLUE_SIZE,
+	SDL_GL_ALPHA_SIZE,
+	SDL_GL_BUFFER_SIZE,
+	SDL_GL_DOUBLEBUFFER,
+	SDL_GL_DEPTH_SIZE,
+	SDL_GL_STENCIL_SIZE,
+	SDL_GL_ACCUM_RED_SIZE,
+	SDL_GL_ACCUM_GREEN_SIZE,
+	SDL_GL_ACCUM_BLUE_SIZE,
+	SDL_GL_ACCUM_ALPHA_SIZE,
+	SDL_GL_STEREO,
+	SDL_GL_MULTISAMPLEBUFFERS,
+	SDL_GL_MULTISAMPLESAMPLES,
+	SDL_GL_ACCELERATED_VISUAL,
+	SDL_GL_RETAINED_BACKING,
+	SDL_GL_CONTEXT_MAJOR_VERSION,
+	SDL_GL_CONTEXT_MINOR_VERSION,
+	SDL_GL_CONTEXT_EGL,
+	SDL_GL_CONTEXT_FLAGS,
+	SDL_GL_CONTEXT_PROFILE_MASK,
+	SDL_GL_SHARE_WITH_CURRENT_CONTEXT,
+	SDL_GL_FRAMEBUFFER_SRGB_CAPABLE,
+	SDL_GL_CONTEXT_RELEASE_BEHAVIOR,
+	SDL_GL_CONTEXT_RESET_NOTIFICATION,
+	SDL_GL_CONTEXT_NO_ERROR
+} SDL_GLattr;
+
+typedef enum
+{
+	SDL_GL_CONTEXT_PROFILE_CORE = 0x0001,
+	SDL_GL_CONTEXT_PROFILE_COMPATIBILITY = 0x0002,
+	SDL_GL_CONTEXT_PROFILE_ES = 0x0004 /**< GLX_CONTEXT_ES2_PROFILE_BIT_EXT */
+} SDL_GLprofile;
+
+int __cdecl SDL_GL_SetAttribute(int attr, int value)
+{
+	if (attr == SDL_GL_CONTEXT_MAJOR_VERSION)
+	{
+		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 4);
+	}
+	if (attr == SDL_GL_CONTEXT_MINOR_VERSION)
+	{
+		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 3);
+	}
+	if (attr == SDL_GL_CONTEXT_PROFILE_MASK)
+	{
+		return gPrivateFuncs.SDL_GL_SetAttribute(attr, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+	}
+
+	return gPrivateFuncs.SDL_GL_SetAttribute(attr, value);
 }

@@ -524,6 +524,8 @@ TEMPENTITY *EngineGetTempTentByIndex(int index);
 
 void RemoveFileExtension(std::string& filePath);
 
+int _cdecl SDL_GL_SetAttribute(int attr, int value);
+
 //void DLL_SetModKey(void *pinfo, char *pkey, char *pvalue);
 
 extern GLint r_viewport[4];
