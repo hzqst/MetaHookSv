@@ -826,3 +826,11 @@ void RemoveFileExtension(std::string& filePath)
 
 	// No extension found, return the original path
 }
+
+float GetFrameRateFromFrameDuration(int frameduration)
+{
+	if (frameduration > 0)
+		return 1000.0f / frameduration;
+
+	return 0;
+}

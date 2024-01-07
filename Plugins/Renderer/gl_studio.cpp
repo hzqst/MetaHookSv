@@ -3129,7 +3129,7 @@ void R_StudioLoadExternalFile_TextureLoad(bspentity_t* ent, studiohdr_t* studioh
 
 			VBOMaterial->textures[StudioTextureType - 1].gltexturenum = loadResult.gltexturenum;
 			VBOMaterial->textures[StudioTextureType - 1].numframes = loadResult.numframes;
-			VBOMaterial->textures[StudioTextureType - 1].framerate = loadResult.framerate;
+			VBOMaterial->textures[StudioTextureType - 1].framerate = GetFrameRateFromFrameDuration(loadResult.frameduration);
 			VBOMaterial->textures[StudioTextureType - 1].width = loadResult.width;
 			VBOMaterial->textures[StudioTextureType - 1].height = loadResult.height;
 			VBOMaterial->textures[StudioTextureType - 1].scaleX = 0;

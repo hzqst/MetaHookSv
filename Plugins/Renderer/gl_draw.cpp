@@ -199,11 +199,11 @@ void GL_GenerateHashedTextureIndentifier2(const char* identifier, GL_TEXTURETYPE
 	strncpy(hashedIdentifier, identifier, len);
 }
 
-void GL_GenerateHashedTextureIndentifier3(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, int numframes, char* hashedIdentifier, size_t len)
+void GL_GenerateHashedTextureIndentifier3(const char* identifier, GL_TEXTURETYPE textureType, int width, int height, int numframes, int frameduration, char* hashedIdentifier, size_t len)
 {
 #define FORMAT_TEXTURE_IDENTIFIER(Ty, Name) if (textureType == Ty)\
 	{\
-		snprintf(hashedIdentifier, len, "@" Name "_%08X_%04X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height, numframes);\
+		snprintf(hashedIdentifier, len, "#" Name "_%08X_%04X_%04X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height, numframes, frameduration);\
 		return;\
 	}
 
@@ -222,12 +222,12 @@ void GL_GenerateHashedTextureIndentifier3(const char* identifier, GL_TEXTURETYPE
 }
 
 /*
-	Purpose : Parse texture's identifier. Get textureType, width, height and numframes (if exists)
+	Purpose : Parse texture's identifier. Get textureType, and loadResult
 */
 
-bool GL_ParseTextureIdentifier(const char* identifier, GL_TEXTURETYPE* textureType, int* width, int* height, int* numframes)
+GL_TEXTURETYPE GL_ParseTextureIdentifier(const char* identifier, gl_loadtexture_result_t *loadResult)
 {
-	int hash = 0, w = 0, h = 0, n = 0;
+	int hash = 0, width = 0, height = 0, numframes = 0, frameduration = 0;
 
 	auto Ty = GL_GetTextureTypeFromTextureIdentifier(identifier);
 
@@ -235,35 +235,29 @@ bool GL_ParseTextureIdentifier(const char* identifier, GL_TEXTURETYPE* textureTy
 	{
 		auto len = strlen(identifier);
 
-		if (len == sizeof("@SYS_12345678_1234_1234_1234") - 1)
+		if (len == sizeof("@SYS_12345678_1234_1234_1234_1234") - 1)
 		{
-			if (sscanf(identifier + sizeof("@SYS_") - 1, "%08X_%04X_%04X_%04X", &hash, &w, &h, &n) == 4)
+			if (sscanf(identifier + sizeof("@SYS_") - 1, "%08X_%04X_%04X_%04X_%04X", &hash, &width, &height, &numframes, &frameduration) == 5)
 			{
-				if (width)
-					*width = w;
-				if (height)
-					*height = h;
-				if (numframes)
-					*numframes = n;
-
-				return true;
+				loadResult->width = width;
+				loadResult->height = height;
+				loadResult->numframes = numframes;
+				loadResult->frameduration = frameduration;
 			}
 		}
 		else if (len == sizeof("@SYS_12345678_1234_1234") - 1)
 		{
-			if (sscanf(identifier + sizeof("@SYS_") - 1, "%08X_%04X_%04X", &hash, &w, &h) == 3)
+			if (sscanf(identifier + sizeof("@SYS_") - 1, "%08X_%04X_%04X", &hash, &width, &height) == 3)
 			{
-				if (width)
-					*width = w;
-				if (height)
-					*height = h;
-
-				return true;
+				loadResult->width = width;
+				loadResult->height = height;
+				loadResult->numframes = 0;
+				loadResult->frameduration = 0;
 			}
 		}
 	}
 	
-	return false;
+	return Ty;
 }
 
 GL_TEXTURETYPE GL_GetTextureTypeFromTextureIdentifier(const char *identifier)
@@ -327,7 +321,7 @@ int GL_GetTextureTargetFromTextureIdentifier(const char *identifier)
 	int iTextureTarget = GL_TEXTURE_2D;
 
 	//Make sure it's animated texture
-	if (GL_GetTextureTypeFromTextureIdentifier(identifier) != GLT_UNKNOWN && strlen(identifier) == sizeof("@SYS_12345678_1234_1234_1234") - 1)
+	if (GL_GetTextureTypeFromTextureIdentifier(identifier) != GLT_UNKNOWN && identifier[0] == '#')
 	{
 		iTextureTarget = GL_TEXTURE_2D_ARRAY;
 	}
@@ -601,7 +595,7 @@ GLuint GL_GetTextureColorTypeFromInternalFormat(GLuint internalFormat)
 	return 0;
 }
 
-int GL_GetTextureTargetFromContext(const gl_loadtexture_context_t* context)
+int GL_GetTextureTargetFromLoadTextureContext(const gl_loadtexture_context_t* context)
 {
 	int iTextureTarget = GL_TEXTURE_2D;
 
@@ -617,7 +611,7 @@ int GL_GetTextureTargetFromContext(const gl_loadtexture_context_t* context)
 	return iTextureTarget;
 }
 
-int GL_GetMipmapTextureTargetFromContext(const gl_loadtexture_context_t* context)
+int GL_GetMipmapTextureTargetFromLoadTextureContext(const gl_loadtexture_context_t* context)
 {
 	int iMipmapTextureTarget = GL_TEXTURE_2D;
 
@@ -716,7 +710,7 @@ void GL_UploadCompressedTexture(gl_loadtexture_context_t * context, int iTexture
 {
 	GL_UploadTexturePreCommon(context, iTextureTarget);
 
-	int iMipmapTextureTarget = GL_GetMipmapTextureTargetFromContext(context);
+	int iMipmapTextureTarget = GL_GetMipmapTextureTargetFromLoadTextureContext(context);
 
 	if (context->numframes)
 	{
@@ -748,7 +742,7 @@ void GL_UploadUncompressedTexture(gl_loadtexture_context_t* context, int iTextur
 {
 	GL_UploadTexturePreCommon(context, iTextureTarget);
 
-	int iMipmapTextureTarget = GL_GetMipmapTextureTargetFromContext(context);
+	int iMipmapTextureTarget = GL_GetMipmapTextureTargetFromLoadTextureContext(context);
 
 	if (context->numframes)
 	{
@@ -1436,7 +1430,7 @@ void GL_Upload32ToMipmap(byte* pData, int width, int height, int iPalTextureType
 
 void GL_UploadTexture(gltexture_t* glt, GL_TEXTURETYPE textureType, gl_loadtexture_context_t* context)
 {
-	int iTextureTarget = GL_GetTextureTargetFromContext(context);
+	int iTextureTarget = GL_GetTextureTargetFromLoadTextureContext(context);
 
 	if (!context->wrap)
 	{
@@ -1534,20 +1528,29 @@ int GL_LoadTexture(char* identifier, GL_TEXTURETYPE textureType, int width, int 
 	return GL_LoadTexture2(identifier, textureType, width, height, data, mipmap, iPalTextureType, pPal, (*gl_filter_max));
 }
 
-gltexture_t *GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, gl_loadtexture_context_t *state)
+gltexture_t *GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType, gl_loadtexture_context_t *context)
 {
-	if (!state->mipmaps.size())
+	if (!context->mipmaps.size())
 	{
 		gEngfuncs.Con_Printf("GL_LoadTextureEx: no mipmap data for %s.\n", identifier);
 		return NULL;
 	}
 
-	char hashedIdentifier[64] = { 0 };
-	GL_GenerateHashedTextureIndentifier2(identifier, textureType, state->width, state->height, hashedIdentifier, sizeof(hashedIdentifier));
+	char hashedIdentifier[64];
+
+	if (context->numframes > 0)
+	{
+		GL_GenerateHashedTextureIndentifier3(identifier, textureType, context->width, context->height, context->numframes, context->frameduration, hashedIdentifier, sizeof(hashedIdentifier));
+	}
+	else
+	{
+		GL_GenerateHashedTextureIndentifier2(identifier, textureType, context->width, context->height, hashedIdentifier, sizeof(hashedIdentifier));
+	}
 
 	bool foundExisting = false;
 
-	auto glt = GL_AllocTextureEntry(hashedIdentifier, textureType, state->width, state->height, state->mipmap, &foundExisting);
+	//Find or Allocate a legacy texture entry for this texture.
+	auto glt = GL_AllocTextureEntry(hashedIdentifier, textureType, context->width, context->height, context->mipmap, &foundExisting);
 
 	if (!glt)
 	{
@@ -1563,7 +1566,8 @@ gltexture_t *GL_LoadTextureEx(const char *identifier, GL_TEXTURETYPE textureType
 
 	gEngfuncs.Con_DPrintf("GL_LoadTextureEx: [%s] -> [%s] [%d]\n", identifier, hashedIdentifier, glt->texnum);
 
-	GL_UploadTexture(glt, textureType, state);
+	//Upload texture data to GPU.
+	GL_UploadTexture(glt, textureType, context);
 
 	return glt;
 }
@@ -2305,7 +2309,7 @@ bool LoadWEBPFrame(FIMULTIBITMAP * fiBMulti, int page, gl_loadtexture_context_t*
 						}
 
 						context->mipmaps.emplace_back(0, FreeImage_GetBits(fiDstBitmap), context->width * context->height * 4, context->width, context->height, fiDstBitmap);
-						context->numframes++;
+						context->numframes ++;
 
 						bLoaded = true;
 					}
@@ -2326,11 +2330,8 @@ bool LoadWEBPFrame(FIMULTIBITMAP * fiBMulti, int page, gl_loadtexture_context_t*
 					context->mipmaps.emplace_back(0, FreeImage_GetBits(fiBGRA8), w * h * 4, w, h, fiBGRA8);
 					context->width = w;
 					context->height = h;
-					context->numframes++;
-					if(duration > 0)
-						context->framerate = 1.0f / (duration / 1000.0f);
-					else
-						context->framerate = 0;
+					context->numframes ++;
+					context->frameduration = duration;
 
 					bLoaded = true;
 				}
@@ -2657,13 +2658,22 @@ bool SaveImageGenericRGB8(const char *filename, const char* pathId, int width, i
 	return true;
 }
 
-void GL_FillLoadTextureResult(const gltexture_t* textureEntry, const gl_loadtexture_context_t* context, gl_loadtexture_result_t* result)
+void GL_FillLoadTextureResultFromTextureEntry(const gltexture_t* textureEntry, gl_loadtexture_result_t* result)
+{
+	result->gltexturenum = textureEntry->texnum;
+	result->width = textureEntry->width;
+	result->height = textureEntry->height;
+
+	GL_ParseTextureIdentifier(textureEntry->identifier, result);
+}
+
+void GL_FillLoadTextureResultFromLoadTextureContext(const gltexture_t* textureEntry, const gl_loadtexture_context_t* context, gl_loadtexture_result_t* result)
 {
 	result->gltexturenum = textureEntry->texnum;
 	result->width = context->width;
 	result->height = context->height;
 	result->numframes = context->numframes;
-	result->framerate = context->framerate;
+	result->frameduration = context->frameduration;
 }
 
 int R_LoadRGBA8TextureFromMemory(const char* identifier, const void* data, int width, int height, GL_TEXTURETYPE textureType, bool mipmap)
@@ -3059,10 +3069,9 @@ bool R_LoadTextureFromFile(const char *filename, const char * identifier, GL_TEX
 {
 	auto textureEntry = GL_FindTextureEntry(identifier, textureType);
 
-	if (textureEntry > 0)
+	if (textureEntry)
 	{
-		result->width = textureEntry->width;
-		result->height = textureEntry->height;
+		GL_FillLoadTextureResultFromTextureEntry(textureEntry, result);
 
 		return true;
 	}
@@ -3084,7 +3093,7 @@ bool R_LoadTextureFromFile(const char *filename, const char * identifier, GL_TEX
 
 		if (textureEntry)
 		{
-			GL_FillLoadTextureResult(textureEntry, ctx, result);
+			GL_FillLoadTextureResultFromLoadTextureContext(textureEntry, ctx, result);
 			return true;
 		}
 

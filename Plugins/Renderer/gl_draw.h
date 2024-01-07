@@ -60,7 +60,7 @@ typedef struct gl_loadtexture_context_s
 		width = 0;
 		height = 0;
 		numframes = 0;
-		framerate = 0;
+		frameduration = 0;
 
 		internalformat = 0;
 		wrap = 0;
@@ -74,7 +74,9 @@ typedef struct gl_loadtexture_context_s
 	int width;
 	int height;
 	int numframes;
-	float framerate;
+
+	// duration of the frame (in milliseconds).
+	int frameduration;
 
 	//OpenGL field
 	GLuint internalformat;
@@ -104,14 +106,14 @@ typedef struct gl_loadtexture_result_s
 		width = 0;
 		height = 0;
 		numframes = 0;
-		framerate = 0;
+		frameduration = 0;
 	}
 
 	int gltexturenum;
 	int width;
 	int height;
 	int numframes;
-	float framerate;
+	int frameduration;
 }gl_loadtexture_result_t;
 
 //DXT
