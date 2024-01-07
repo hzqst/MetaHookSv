@@ -321,7 +321,7 @@ int GL_GetTextureTargetFromTextureIdentifier(const char *identifier)
 	int iTextureTarget = GL_TEXTURE_2D;
 
 	//Make sure it's animated texture
-	if (GL_GetTextureTypeFromTextureIdentifier(identifier) != GLT_UNKNOWN && identifier[0] == '#')
+	if (GL_GetTextureTypeFromTextureIdentifier(identifier) != GLT_UNKNOWN && strlen(identifier) == sizeof("@SYS_12345678_1234_1234_1234_1234") - 1)
 	{
 		iTextureTarget = GL_TEXTURE_2D_ARRAY;
 	}
