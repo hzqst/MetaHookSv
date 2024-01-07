@@ -187,17 +187,39 @@ A detail texture is a high resolution external image (Supported format: BMP, TGA
 
 `r_detailtextures` set to 1 to enable BSP detail brush textures, normal textures, parallax textures and specular textures.
 
-Detail texture list is read from `/maps/[map name]_detail.txt`, with `_DETAIL` as suffix in basetexture name (basetexture with no suffix will be treated as detail texture).
+Detail texture list is parsed from `/maps/[mapname]_detail.txt`, with `_DETAIL` as suffix in basetexture name. names with no suffix will be treated as detailtexture.
 
-Detail textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` and `/Sven Co-op/svencoop/renderer/texture`.
+Detail textures will be loaded from (if exists):
+
+`/(game_directory)/maps/[texturename]` (only if texturename starts with "maps/" or "maps\", and the texturename has an extension)
+
+`/(game_directory)/maps/[texturename].tga` (only if texturename starts with "maps/" or "maps\", and the texturename has no extension)
+
+`/(game_directory)/gfx/detail/[texturename]` (if texturename has an extension)
+
+`/(game_directory)/gfx/detail/[texturename].tga` (if texturename has no extension)
+
+`/(game_directory)/renderer/texture/[texturename]` (if texturename has an extension)
+
+`/(game_directory)/renderer/texture/[texturename].tga` if texturename has no extension)
+
+### BSP texture replacer
+
+You can replace wad textures with external images.
+
+Replace list is parsed from `/maps/[map name]_detail.txt`, with `_REPLACE` as suffix in basetexture name.
+
+The rules of texture searching follow the same way as "BSP detail textures"
+
+* BSP texture replacer only works when `r_detailtextures` set to 1.
 
 ### BSP normal textures
 
 Normal textures are external images applied to specified brush surfaces and change the direction of surface normal.
 
-Normal texture list is read from `/maps/[map name]_detail.txt`, with `_NORMAL` as suffix in basetexture name.
+Normal texture list is parsed from `/maps/[map name]_detail.txt`, with `_NORMAL` as suffix in basetexture name.
 
-Normal textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` and `/Sven Co-op/svencoop/renderer/texture`.
+The rules of texture searching follow the same way as "BSP detail textures"
 
 * Normal textures change nothing but the direction of surface normal, thus only work with surfaces that illuminated by dynamic lights or flashlights.
 
@@ -207,9 +229,9 @@ Normal textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/deta
 
 Parallax textures are external images applied to specified brush surfaces which will have more apparent depth.
 
-Parallax texture list is read from `/maps/[map name]_detail.txt`, with `_PARALLAX` as suffix in basetexture name.
+Parallax texture list is parsed from `/maps/[map name]_detail.txt`, with `_PARALLAX` as suffix in basetexture name.
 
-Parallax textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` and `/Sven Co-op/svencoop/renderer/texture`.
+The rules of texture searching follow the same way as "BSP detail textures"
 
 * `r_wsurf_parallax_scale` controls the intensity (and direction if negative value is given) of parallax textures.
 
@@ -219,9 +241,9 @@ Parallax textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/de
 
 Specular textures are external images applied to specified brush surfaces which will increase the intensity of specularity of surfaces.
 
-Specular texture list is read from `/maps/[map name]_detail.txt`, with `_SPECULAR` as suffix in basetexture name.
+Specular texture list is parsed from `/maps/[map name]_detail.txt`, with `_SPECULAR` as suffix in basetexture name.
 
-Specular textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` and `/Sven Co-op/svencoop/renderer/texture`.
+The rules of texture searching follow the same way as "BSP detail textures"
 
 * Red channel of specular texture controls the intensity of specular lighting, while green channel of specular texture controls intensity of Screen-Space-Reflection or SSR.
 
@@ -229,19 +251,26 @@ Specular textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/de
 
 * BSP specular textures only work when `r_detailtextures` set to 1.
 
-### BSP texture replacer
-
-You can replace wad textures with external images.
-
-Replace list is read from `/maps/[map name]_detail.txt`, with `_REPLACE` as suffix in basetexture name.
-
-Replaced textures are loaded from `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` and `/Sven Co-op/svencoop/renderer/texture`.
-
-* BSP texture replacer only works when `r_detailtextures` set to 1.
-
 ## StudioModel texture replacer
 
 You will have to create a txt file named `[modelname]_external.txt` along with `[modelname].mdl` file, with the following content:
+
+### If the replacetexture's name starts with "models/" or "models\"
+
+```
+{
+    "classname" "studio_texture"
+    "basetexture" "base_texture.bmp"
+    "replacetexture"  "models/mymodel/base_texture.dds"
+    "replacescale" "1.0 1.0"
+}
+```
+
+The following file will be used to replace basetexture if exists:
+
+`(game_directory)\models\mymodel\base_texture.dds`
+
+### Otherwise
 
 ```
 {
@@ -254,13 +283,19 @@ You will have to create a txt file named `[modelname]_external.txt` along with `
 
 The following files will be used to replace basetexture if exists:
 
-`(game_directory)\base_texture.dds`
-
 `(game_directory)\gfx\base_texture.dds`
 
 `(game_directory)\renderer\texture\base_texture.dds`
 
-`"replacescale" "1.0 1.0"` controls the UV scale of replaced texture (optional).
+### UV Controls
+
+`"replacescale" "1.0 1.0"` : the width&height are replaced with 1.0 x width&height of the new replacetexture.
+
+`"replacescale" "1.0"` : equals to `"replacescale" "1.0 1.0"`
+
+`"replacescale" "-1.0 -1.0"` : the width&height are replaced with 1.0 x width&height of the original basetexture.
+
+### Cvars
 
 * Use cvar `r_studio_external_textures 0` to disable StudioModel texture replacer temporarily.
 
@@ -272,17 +307,9 @@ You will have to create a txt file named `[modelname]_external.txt` along with `
 {
     "classname" "studio_texture"
     "basetexture" "base_texture.bmp"
-    "normaltexture"  "normal_texture.dds" 
+    "normaltexture"  "normal_texture.dds" //The rules of texture searching follow the same way as "replacetexture"
 }
 ```
-
-The following files will be used if exists:
-
-`(game_directory)\normal_texture.dds`
-
-`(game_directory)\gfx\normal_texture.dds`
-
-`(game_directory)\renderer\texture\normal_texture.dds`
 
 * Use cvar `r_studio_external_textures 0` to disable StudioModel normal texture temporarily.
 
@@ -294,17 +321,9 @@ You will have to create a txt file named `[modelname]_external.txt` along with `
 {
     "classname" "studio_texture"
     "basetexture" "base_texture.bmp"
-    "speculartexture"  "specular_texture.dds" 
+    "speculartexture"  "specular_texture.dds" //The rules of texture searching follow the same way as "replacetexture"
 }
 ```
-
-The following files will be used if exists:
-
-`(game_directory)\specular_texture.dds`
-
-`(game_directory)\gfx\specular_texture.dds`
-
-`(game_directory)\renderer\texture\specular_texture.dds`
 
 * Use cvar `r_studio_external_textures 0` to disable StudioModel specular texture temporarily.
 
@@ -320,7 +339,7 @@ Add following content to the `[modelname]_external.txt`:
 {
     "classname" "studio_texture"
     "basetexture" "basetexture.bmp"
-    "replacetexture" "replacetexture.dds" // alpha-channel required!!!
+    "replacetexture" "replacetexture.dds" // Alpha-channel required!!!
     "flags" "STUDIO_NF_ALPHA"
 }
 ```
