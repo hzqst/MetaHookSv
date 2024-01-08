@@ -2186,7 +2186,7 @@ hook_t* MH_VFTHook(void* pClass, int iTableIndex, int iFuncIndex, void* pNewFunc
 		h->bCommitted = true;
 	}
 
-#if 1
+#if 0
 	auto p = (PUCHAR)_ReturnAddress();
 
 	MEMORY_BASIC_INFORMATION mbi;
