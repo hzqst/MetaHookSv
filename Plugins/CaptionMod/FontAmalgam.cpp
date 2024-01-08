@@ -115,3 +115,19 @@ bool CFontAmalgam::GetOutlined(void)
 
 	return m_Fonts[0].font->GetOutlined();
 }
+
+int CFontAmalgam::GetBlur(void)
+{
+	if (!m_Fonts.Count())
+		return false;
+
+	return m_Fonts[0].font->GetBlur();
+}
+
+bool CFontAmalgam::GetAdditive(void)
+{
+	if (!m_Fonts.Count())
+		return false;
+
+	return m_Fonts[0].font->GetAdditive();
+}

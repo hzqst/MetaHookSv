@@ -185,6 +185,7 @@ void NewClientVGUI::Initialize(CreateInterfaceFn *factories, int count)
 }
 
 extern vgui::ISurface *g_pSurface;
+extern vgui::ISurface_HL25* g_pSurface_HL25;
 
 void NewClientVGUI::Start(void)
 {

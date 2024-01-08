@@ -84,7 +84,6 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	Engine_FillAddress();
 	Engine_InstallHooks();
 	BaseUI_InstallHook();
-
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)

@@ -11,8 +11,6 @@
 #undef GetCharABCWidths
 #endif
 
-class CWin32Font;
-
 class CWin32Font
 {
 public:
@@ -49,6 +47,8 @@ public:
 	virtual bool GetUnderlined(void);
 	virtual int GetAscent(void);
 	virtual bool GetOutlined(void);
+	virtual int GetBlur(void);
+	virtual bool GetAdditive(void);
 
 private:
 	void ApplyScanlineEffectToTexture(int rgbaX, int rgbaY, int rgbaWide, int rgbaTall, unsigned char *rgba);

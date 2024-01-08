@@ -39,19 +39,19 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(SolutionDir)tools\global.props"  Condition="exists('$(SolutionDir)tools\global.props')" />
+    <Import Project="$(SolutionDir)tools\global.props" Condition="exists('$(SolutionDir)tools\global.props')" />
     <Import Project="$(SolutionDir)tools\global_template.props" Condition="!exists('$(SolutionDir)tools\global.props') and exists('$(SolutionDir)tools\global_template.props')" />
     <Import Project="$(SolutionDir)tools\global_common.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(SolutionDir)tools\global.props"  Condition="exists('$(SolutionDir)tools\global.props')" />
+    <Import Project="$(SolutionDir)tools\global.props" Condition="exists('$(SolutionDir)tools\global.props')" />
     <Import Project="$(SolutionDir)tools\global_template.props" Condition="!exists('$(SolutionDir)tools\global.props') and exists('$(SolutionDir)tools\global_template.props')" />
     <Import Project="$(SolutionDir)tools\global_common.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(SolutionDir)tools\global.props"  Condition="exists('$(SolutionDir)tools\global.props')" />
+    <Import Project="$(SolutionDir)tools\global.props" Condition="exists('$(SolutionDir)tools\global.props')" />
     <Import Project="$(SolutionDir)tools\global_template.props" Condition="!exists('$(SolutionDir)tools\global.props') and exists('$(SolutionDir)tools\global_template.props')" />
     <Import Project="$(SolutionDir)tools\global_common.props" />
   </ImportGroup>
@@ -79,12 +79,11 @@
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\SteamSDK;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;STEAM_API_NODLL;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;STEAM_API_NODLL;GLEW_STATIC;VGUI_USE_SURFACE2;VGUI_USE_SCHEME2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Async</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader />
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <DisableSpecificWarnings>4291;4311;4312;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -176,9 +175,10 @@ $(GLEWCheckRequirements)</Command>
     <ClCompile Include="KeyValuesSystemHook.cpp" />
     <ClCompile Include="message.cpp" />
     <ClCompile Include="plugins.cpp" />
-    <ClCompile Include="Scheme.cpp" />
+    <ClCompile Include="Scheme2.cpp" />
     <ClCompile Include="SchemeHook.cpp" />
     <ClCompile Include="SubtitlePanel.cpp" />
+    <ClCompile Include="Surface2.cpp" />
     <ClCompile Include="SurfaceHook.cpp" />
     <ClCompile Include="Viewport.cpp" />
     <ClCompile Include="Win32Font.cpp" />
@@ -191,7 +191,6 @@ $(GLEWCheckRequirements)</Command>
     <ClCompile Include="$(SolutionDir)include\SourceSDK\mathlib\3dnow.cpp" />
     <ClCompile Include="$(SolutionDir)include\SourceSDK\mathlib\mathlib_base.cpp" />
     <ClCompile Include="$(SolutionDir)include\SourceSDK\mathlib\sse.cpp" />
-    <ClCompile Include="$(SolutionDir)include\SourceSDK\Surface.cpp" />
     <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\assert_dialog.cpp" />
     <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\cpu.cpp" />
     <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\dbg.cpp" />
@@ -302,7 +301,9 @@ $(GLEWCheckRequirements)</Command>
     <ClInclude Include="FontTextureCache.h" />
     <ClInclude Include="message.h" />
     <ClInclude Include="plugins.h" />
+    <ClInclude Include="Scheme2.h" />
     <ClInclude Include="SubtitlePanel.h" />
+    <ClInclude Include="Surface2.h" />
     <ClInclude Include="vgui_internal.h" />
     <ClInclude Include="Viewport.h" />
     <ClInclude Include="Win32Font.h" />

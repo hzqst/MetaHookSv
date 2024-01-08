@@ -62,7 +62,7 @@ int FileSystem_SetGameDirectory(const char *pDefaultDir, const char *pGameDir)
 {
 	int result = gPrivateFuncs.FileSystem_SetGameDirectory(pDefaultDir, pGameDir);
 
-	if (g_flDPIScaling > 1)
+	if (g_flDPIScaling > 1.0f)
 	{
 		char temp[1024];
 		snprintf(temp, sizeof(temp) - 1, "%s/%s_dpi%.0f", GetBaseDirectory(), gEngfuncs.pfnGetGameDirectory(), g_flDPIScaling * 100.0f);

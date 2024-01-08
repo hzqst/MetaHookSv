@@ -55,6 +55,7 @@ IBaseUI *baseuifuncs;
 IGameUIFuncs *gameuifuncs;
 
 extern vgui::ISurface *g_pSurface;
+extern vgui::ISurface_HL25* g_pSurface_HL25;
 extern vgui::ISchemeManager *g_pScheme;
 extern vgui::ISchemeManager_HL25 *g_pScheme_HL25;
 extern IKeyValuesSystem *g_pKeyValuesSystem;
@@ -81,29 +82,28 @@ void CBaseUI::Initialize(CreateInterfaceFn *factories, int count)
 	{
 		CreateInterfaceFn fnVGUI2CreateInterface = Sys_GetFactory(hVGUI2);
 
-		if (g_iEngineType != ENGINE_GOLDSRC_HL25)
-			g_pScheme = (vgui::ISchemeManager *)fnVGUI2CreateInterface(VGUI_SCHEME_INTERFACE_VERSION, NULL);
+		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+			g_pScheme_HL25 = (vgui::ISchemeManager_HL25*)fnVGUI2CreateInterface(VGUI_SCHEME_INTERFACE_VERSION, NULL); 
 		else
-			g_pScheme_HL25 = (vgui::ISchemeManager_HL25 *)fnVGUI2CreateInterface(VGUI_SCHEME_INTERFACE_VERSION, NULL);
+			g_pScheme = (vgui::ISchemeManager*)fnVGUI2CreateInterface(VGUI_SCHEME_INTERFACE_VERSION, NULL);
 
 		g_pKeyValuesSystem = (IKeyValuesSystem *)fnVGUI2CreateInterface(KEYVALUESSYSTEM_INTERFACE_VERSION, NULL);
 	}
 
-	g_pSurface = (vgui::ISurface *)factories[0](VGUI_SURFACE_INTERFACE_VERSION, NULL);
-
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25)
-		staticSurface = (IEngineSurface *)factories[0](ENGINE_SURFACE_VERSION, NULL);
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		g_pSurface_HL25 = (vgui::ISurface_HL25*)factories[0](VGUI_SURFACE_INTERFACE_VERSION, NULL);
 	else
-		staticSurface_HL25 = (IEngineSurface_HL25 *)factories[0](ENGINE_SURFACE_VERSION, NULL);
+		g_pSurface = (vgui::ISurface *)factories[0](VGUI_SURFACE_INTERFACE_VERSION, NULL);
+
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		staticSurface_HL25 = (IEngineSurface_HL25*)factories[0](ENGINE_SURFACE_VERSION, NULL); 
+	else
+		staticSurface = (IEngineSurface*)factories[0](ENGINE_SURFACE_VERSION, NULL);
 
 	KeyValuesSystem_InstallHook();
-
- if (g_iEngineType != ENGINE_GOLDSRC_HL25)
-	{
-		Surface_InstallHooks();
-		Scheme_InstallHooks();
-		GameUI_InstallHooks();
-	}
+	Surface_InstallHooks();
+	Scheme_InstallHooks();
+	GameUI_InstallHooks();
 }
 
 void CBaseUI::Start(struct cl_enginefuncs_s *engineFuncs, int interfaceVersion)

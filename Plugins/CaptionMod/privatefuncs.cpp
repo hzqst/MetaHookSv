@@ -4,31 +4,36 @@
 #include "exportfuncs.h"
 #include "privatefuncs.h"
 
-#define S_FINDNAME_SIG_SVENGINE "\x53\x55\x8B\x6C\x24\x0C\x56\x33\xF6\x57\x85\xED\x75\x2A\x68"
-#define S_STARTDYNAMICSOUND_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x54\x8B\x44\x24\x5C\x55"
-#define S_STARTSTATICSOUND_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x48\x57\x8B\x7C\x24\x5C"
-#define S_LOADSOUND_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\x8B\x8C\x24\x2A\x2A\x00\x00\x56\x8B\xB4\x24\x2A\x2A\x00\x00\x8A\x06\x3C\x2A"
-#define SEQUENCE_GETSENTENCEBYINDEX_SIG_SVENGINE "\x8B\x0D\x2A\x2A\x2A\x2A\x2A\x33\x2A\x85\xC9\x2A\x2A\x8B\x2A\x24\x08\x8B\x41\x04\x2A\x2A\x3B\x2A\x2A\x2A\x8B\x49\x0C"
-
-#define S_FINDNAME_SIG_HL25 "\x55\x8B\xEC\x53\x8B\x5D\x08\x56\x33\xF6\x57\x85"
-#define S_STARTDYNAMICSOUND_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x5C\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x83\x3D\x2A\x2A\x2A\x2A\x2A\x8B\x45\x08"
-#define S_STARTSTATICSOUND_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x50\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x57"
-#define S_LOADSOUND_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x34\x05"
-#define SEQUENCE_GETSENTENCEBYINDEX_SIG_HL25 "\x55\x8B\xEC\x8B\x0D\x2A\x2A\x2A\x2A\x56\x33"
-
+#define S_INIT_SIG_BLOB "\x83\xEC\x08\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x85\xC0"
 #define S_INIT_SIG_NEW "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x85\xC0"
-#define S_FINDNAME_SIG_NEW "\x55\x8B\xEC\x53\x56\x8B\x75\x08\x33\xDB\x85\xF6"
-#define S_STARTDYNAMICSOUND_SIG_NEW "\x55\x8B\xEC\x83\xEC\x48\xA1\x2A\x2A\x2A\x2A\x53\x56\x57\x85\xC0\xC7\x45\xFC\x00\x00\x00\x00"
-#define S_STARTSTATICSOUND_SIG_NEW "\x55\x8B\xEC\x83\xEC\x44\x53\x56\x57\x8B\x7D\x10\x85\xFF\xC7\x45\xFC\x00\x00\x00\x00"
-#define S_LOADSOUND_SIG_NEW "\x55\x8B\xEC\x81\xEC\x44\x05\x00\x00\x53\x56\x8B\x75\x08"
-#define S_LOADSOUND_8308_SIG "\x55\x8B\xEC\x81\xEC\x28\x05\x00\x00\x53\x8B\x5D\x08"
-#define SEQUENCE_GETSENTENCEBYINDEX_SIG_NEW "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x33\xC9\x85\xC0\x2A\x2A\x2A\x8B\x75\x08\x8B\x50\x04"
+#define S_INIT_SIG_HL25 S_INIT_SIG_NEW
+#define S_INIT_SIG_SVENGINE S_INIT_SIG_NEW
 
-#define S_INIT_SIG "\x83\xEC\x08\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x85\xC0"
-#define S_FINDNAME_SIG "\x53\x55\x8B\x6C\x24\x0C\x33\xDB\x56\x57\x85\xED"
-#define S_STARTDYNAMICSOUND_SIG "\x83\xEC\x48\xA1\x2A\x2A\x2A\x2A\x53\x55\x56\x85\xC0\x57\xC7\x44\x24\x10\x00\x00\x00\x00"
-#define S_STARTSTATICSOUND_SIG "\x83\xEC\x44\x53\x55\x8B\x6C\x24\x58\x56\x85\xED\x57"
-#define S_LOADSOUND_SIG "\x81\xEC\x2A\x2A\x00\x00\x53\x8B\x9C\x24\x2A\x2A\x00\x00\x55\x56\x8A\x03\x57"
+#define S_FINDNAME_SIG_BLOB "\x53\x55\x8B\x6C\x24\x0C\x33\xDB\x56\x57\x85\xED"
+#define S_FINDNAME_SIG_NEW "\x55\x8B\xEC\x53\x56\x8B\x75\x08\x33\xDB\x85\xF6"
+#define S_FINDNAME_SIG_HL25 "\x55\x8B\xEC\x53\x8B\x5D\x08\x56\x33\xF6\x57\x85"
+#define S_FINDNAME_SIG_SVENGINE "\x53\x55\x8B\x6C\x24\x0C\x56\x33\xF6\x57\x85\xED\x75\x2A\x68"
+
+#define S_STARTDYNAMICSOUND_SIG_BLOB "\x83\xEC\x48\xA1\x2A\x2A\x2A\x2A\x53\x55\x56\x85\xC0\x57\xC7\x44\x24\x10\x00\x00\x00\x00"
+#define S_STARTDYNAMICSOUND_SIG_NEW "\x55\x8B\xEC\x83\xEC\x48\xA1\x2A\x2A\x2A\x2A\x53\x56\x57\x85\xC0\xC7\x45\xFC\x00\x00\x00\x00"
+#define S_STARTDYNAMICSOUND_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x5C\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x83\x3D\x2A\x2A\x2A\x2A\x2A\x8B\x45\x08"
+#define S_STARTDYNAMICSOUND_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x54\x8B\x44\x24\x5C\x55"
+
+#define S_STARTSTATICSOUND_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x48\x57\x8B\x7C\x24\x5C"
+#define S_STARTSTATICSOUND_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x50\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x57"
+#define S_STARTSTATICSOUND_SIG_NEW "\x55\x8B\xEC\x83\xEC\x44\x53\x56\x57\x8B\x7D\x10\x85\xFF\xC7\x45\xFC\x00\x00\x00\x00"
+#define S_STARTSTATICSOUND_SIG_BLOB "\x83\xEC\x44\x53\x55\x8B\x6C\x24\x58\x56\x85\xED\x57"
+
+#define S_LOADSOUND_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\x8B\x8C\x24\x2A\x2A\x00\x00\x56\x8B\xB4\x24\x2A\x2A\x00\x00\x8A\x06\x3C\x2A"
+#define S_LOADSOUND_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x34\x05\x00\x00\xA1"
+#define S_LOADSOUND_SIG_8308 "\x55\x8B\xEC\x81\xEC\x28\x05\x00\x00\x53\x8B\x5D\x08"
+#define S_LOADSOUND_SIG_NEW "\x55\x8B\xEC\x81\xEC\x44\x05\x00\x00\x53\x56\x8B\x75\x08"
+#define S_LOADSOUND_SIG_BLOB "\x81\xEC\x2A\x2A\x00\x00\x53\x8B\x9C\x24\x2A\x2A\x00\x00\x55\x56\x8A\x03\x57"
+
+#define SEQUENCE_GETSENTENCEBYINDEX_SIG_SVENGINE "\x8B\x0D\x2A\x2A\x2A\x2A\x2A\x33\x2A\x85\xC9\x2A\x2A\x8B\x2A\x24\x08\x8B\x41\x04\x2A\x2A\x3B\x2A\x2A\x2A\x8B\x49\x0C"
+#define SEQUENCE_GETSENTENCEBYINDEX_SIG_HL25 "\x55\x8B\xEC\x8B\x0D\x2A\x2A\x2A\x2A\x56\x33"
+#define SEQUENCE_GETSENTENCEBYINDEX_SIG_NEW "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x33\xC9\x85\xC0\x2A\x2A\x2A\x8B\x75\x08\x8B\x50\x04"
+#define SEQUENCE_GETSENTENCEBYINDEX_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x33\xC9\x85\xC0\x56\x2A\x2A\x8B\x74\x24\x08\x8B\x50\x04"
 
 #define SCR_BEGIN_LOADING_PLAQUE "\x6A\x01\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xF8\x03"
 
@@ -75,87 +80,341 @@ bool SCR_IsLoadingVisible()
 
 void Engine_FillAddress(void)
 {
-	if (g_iEngineType == ENGINE_SVENGINE)
+	if (1)
 	{
-		gPrivateFuncs.S_Init = (void(*)(void))Search_Pattern(S_INIT_SIG_NEW);
-		Sig_FuncNotFound(S_Init);
+		/*
+.text:01D96050                                     S_Init          proc near               ; CODE XREF: sub_1D65260+32B¡üp
+.text:01D96050 68 08 CE E6 01                                      push    offset aSoundInitializ ; "Sound Initialization\n"
+.text:01D96055 E8 76 DB F6 FF                                      call    sub_1D03BD0
+.text:01D9605A E8 E1 3A 00 00                                      call    sub_1D99B40
+.text:01D9605F 68 D8 D9 E5 01                                      push    offset aNosound ; "-nosound"
+		  */
 
-		gPrivateFuncs.S_FindName = (sfx_t * (*)(char *, int *))Search_Pattern(S_FINDNAME_SIG_SVENGINE);
-		Sig_FuncNotFound(S_FindName);
-
-		gPrivateFuncs.S_StartDynamicSound = (void(*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern(S_STARTDYNAMICSOUND_SIG_SVENGINE);
-		Sig_FuncNotFound(S_StartDynamicSound);
-
-		gPrivateFuncs.S_StartStaticSound = (void(*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern(S_STARTSTATICSOUND_SIG_SVENGINE);
-		Sig_FuncNotFound(S_StartStaticSound);
-
-		gPrivateFuncs.S_LoadSound = (sfxcache_t * (*)(sfx_t *, channel_t *))Search_Pattern(S_LOADSOUND_SIG_SVENGINE);
-		Sig_FuncNotFound(S_LoadSound);
-
-		gPrivateFuncs.SequenceGetSentenceByIndex = (sentenceEntry_s * (*)(unsigned int))Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_SVENGINE);
-		Sig_FuncNotFound(SequenceGetSentenceByIndex);
+		const char sigs[] = "Sound Initialization\n";
+		auto Sound_Init_String = Search_Pattern_Data(sigs);
+		if (!Sound_Init_String)
+			Sound_Init_String = Search_Pattern_Rdata(sigs);
+		if (Sound_Init_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A";
+			*(DWORD*)(pattern + 1) = (DWORD)Sound_Init_String;
+			auto Sound_Init_PushString = (PUCHAR)Search_Pattern(pattern);
+			if (Sound_Init_PushString)
+			{
+				gPrivateFuncs.S_Init = (decltype(gPrivateFuncs.S_Init))Sound_Init_PushString;
+			}
+		}
 	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+
+	if (!gPrivateFuncs.S_Init)
 	{
-		gPrivateFuncs.S_Init = (void (*)(void))Search_Pattern(S_INIT_SIG_NEW);
-		Sig_FuncNotFound(S_Init);
-
-		gPrivateFuncs.S_FindName = (sfx_t * (*)(char *, int *))Search_Pattern(S_FINDNAME_SIG_HL25);
-		Sig_FuncNotFound(S_FindName);
-
-		gPrivateFuncs.S_StartDynamicSound = (void(*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern(S_STARTDYNAMICSOUND_SIG_HL25);
-		Sig_FuncNotFound(S_StartDynamicSound);
-
-		gPrivateFuncs.S_StartStaticSound = (void(*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern(S_STARTSTATICSOUND_SIG_HL25);
-		Sig_FuncNotFound(S_StartStaticSound);
-
-		gPrivateFuncs.S_LoadSound = (sfxcache_t * (*)(sfx_t *, channel_t *))Search_Pattern(S_LOADSOUND_SIG_HL25);
-		Sig_FuncNotFound(S_LoadSound);
-
-		gPrivateFuncs.SequenceGetSentenceByIndex = (sentenceEntry_s * (*)(unsigned int))Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_HL25);
-		Sig_FuncNotFound(SequenceGetSentenceByIndex);
-
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gPrivateFuncs.S_Init = (decltype(gPrivateFuncs.S_Init))Search_Pattern(S_INIT_SIG_SVENGINE);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			gPrivateFuncs.S_Init = (decltype(gPrivateFuncs.S_Init))Search_Pattern(S_INIT_SIG_HL25);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			gPrivateFuncs.S_Init = (decltype(gPrivateFuncs.S_Init))Search_Pattern(S_INIT_SIG_NEW);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+		{
+			gPrivateFuncs.S_Init = (decltype(gPrivateFuncs.S_Init))Search_Pattern(S_INIT_SIG_BLOB);
+		}
 	}
-	else if (g_dwEngineBuildnum >= 5953)
+	Sig_FuncNotFound(S_Init);
+
+	if (1)
 	{
-		gPrivateFuncs.S_Init = (void (*)(void))Search_Pattern(S_INIT_SIG_NEW);
-		Sig_FuncNotFound(S_Init);
+		/*
+.text:01D97B9A 6A 00                                               push    0
+.text:01D97B9C 50                                                  push    eax/edx
+.text:01D97B9D E8 5E F4 FF FF                                      call    S_FindName
+.text:01D97BA2 83 C4 08                                            add     esp, 8
+.text:01D97BA5 85 C0                                               test    eax, eax
+.text:01D97BA7 75 26                                               jnz     short loc_1D97BCF
+.text:01D97BA9 8D 04 24                                            lea     eax, [esp+104h+var_104]
+.text:01D97BAC 50                                                  push    eax
+.text:01D97BAD 68 F0 D1 E6 01                                      push    offset aSSayReliableCa_0 ; "S_Say_Reliable: can't find sentence nam"...
+.text:01D97BB2 E8 09 BF F6 FF                                      call    sub_1D03AC0
+		  */
 
-		gPrivateFuncs.S_FindName = (sfx_t * (*)(char *, int *))Search_Pattern_From(gPrivateFuncs.S_Init, S_FINDNAME_SIG_NEW);
-		Sig_FuncNotFound(S_FindName);
-
-		gPrivateFuncs.S_StartDynamicSound = (void (*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern_From(gPrivateFuncs.S_FindName, S_STARTDYNAMICSOUND_SIG_NEW);
-		Sig_FuncNotFound(S_StartDynamicSound);
-
-		gPrivateFuncs.S_StartStaticSound = (void (*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern_From(gPrivateFuncs.S_StartDynamicSound, S_STARTSTATICSOUND_SIG_NEW);
-		Sig_FuncNotFound(S_StartStaticSound);
-
-		gPrivateFuncs.S_LoadSound = (sfxcache_t * (*)(sfx_t *, channel_t *))Search_Pattern(S_LOADSOUND_SIG_NEW);
-		if (!gPrivateFuncs.S_LoadSound)
-			gPrivateFuncs.S_LoadSound = (sfxcache_t * (*)(sfx_t *, channel_t *))Search_Pattern(S_LOADSOUND_8308_SIG);
-		Sig_FuncNotFound(S_LoadSound);
-
-		gPrivateFuncs.SequenceGetSentenceByIndex = (sentenceEntry_s * (*)(unsigned int))Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_NEW);
-		Sig_FuncNotFound(SequenceGetSentenceByIndex);
-
+		const char sigs[] = "S_Say_Reliable: can't find sentence";
+		auto S_Say_Reliable_String = Search_Pattern_Data(sigs);
+		if (!S_Say_Reliable_String)
+			S_Say_Reliable_String = Search_Pattern_Rdata(sigs);
+		if (S_Say_Reliable_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
+			*(DWORD*)(pattern + 1) = (DWORD)S_Say_Reliable_String;
+			auto S_Say_Reliable_PushString = (PUCHAR)Search_Pattern(pattern);
+			if (S_Say_Reliable_PushString)
+			{
+				char pattern2[] = "\x6A\x00\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
+				auto S_FindName_Call = (PUCHAR)Search_Pattern_From_Size((S_Say_Reliable_PushString - 0x60), 0x60, pattern2);
+				if (S_FindName_Call)
+				{
+					gPrivateFuncs.S_FindName = (decltype(gPrivateFuncs.S_FindName))GetCallAddress(S_FindName_Call + 3);
+				}
+			}
+		}
 	}
-	else
+
+	if (!gPrivateFuncs.S_FindName)
 	{
-		gPrivateFuncs.S_Init = (void (*)(void))Search_Pattern(S_INIT_SIG);
-		Sig_FuncNotFound(S_Init);
-
-		gPrivateFuncs.S_FindName = (sfx_t * (*)(char *, int *))Search_Pattern_From(gPrivateFuncs.S_Init, S_FINDNAME_SIG);
-		Sig_FuncNotFound(S_FindName);
-
-		gPrivateFuncs.S_StartDynamicSound = (void (*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern_From(S_FindName, S_STARTDYNAMICSOUND_SIG);
-		Sig_FuncNotFound(S_StartDynamicSound);
-
-		gPrivateFuncs.S_StartStaticSound = (void (*)(int, int, sfx_t *, float *, float, float, int, int))Search_Pattern_From(S_StartDynamicSound, S_STARTSTATICSOUND_SIG);
-		Sig_FuncNotFound(S_StartStaticSound);
-
-		gPrivateFuncs.S_LoadSound = (sfxcache_t * (*)(sfx_t *, channel_t *))Search_Pattern_From(S_StartStaticSound, S_LOADSOUND_SIG);
-		Sig_FuncNotFound(S_LoadSound);
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gPrivateFuncs.S_FindName = (decltype(gPrivateFuncs.S_FindName))Search_Pattern(S_FINDNAME_SIG_SVENGINE);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			gPrivateFuncs.S_FindName = (decltype(gPrivateFuncs.S_FindName))Search_Pattern(S_FINDNAME_SIG_HL25);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			gPrivateFuncs.S_FindName = (decltype(gPrivateFuncs.S_FindName))Search_Pattern(S_FINDNAME_SIG_NEW);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+		{
+			gPrivateFuncs.S_FindName = (decltype(gPrivateFuncs.S_FindName))Search_Pattern(S_FINDNAME_SIG_BLOB);
+		}
 	}
+	Sig_FuncNotFound(S_FindName);
+
+	if (1)
+	{
+		/*
+.text:01D8C299 68 FC 45 E5 01                                      push    offset aSStartdynamics ; "S_StartDynamicSound: %s volume > 255"
+.text:01D8C29E E8 ED 09 FA FF                                      call    sub_1D2CC90
+.text:01D8C2A3 83 C4 08                                            add     esp, 8
+		*/
+		const char sigs[] = "Warning: S_StartDynamicSound Ignored";
+		auto S_StartDynamicSound_String = Search_Pattern_Data(sigs);
+		if (!S_StartDynamicSound_String)
+			S_StartDynamicSound_String = Search_Pattern_Rdata(sigs);
+		if (S_StartDynamicSound_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
+			*(DWORD*)(pattern + 1) = (DWORD)S_StartDynamicSound_String;
+			auto S_StartDynamicSound_PushString = (PUCHAR)Search_Pattern(pattern);
+			if (S_StartDynamicSound_PushString)
+			{
+				gPrivateFuncs.S_StartDynamicSound = (decltype(gPrivateFuncs.S_StartDynamicSound))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(S_StartDynamicSound_PushString, 0x300, [](PUCHAR Candidate) {
+
+					if (Candidate[0] == 0x55 &&
+						Candidate[1] == 0x8B &&
+						Candidate[2] == 0xEC)
+					{
+						return TRUE;
+					}
+
+					if (Candidate[0] == 0x83 &&
+						Candidate[1] == 0xEC)
+					{
+						return TRUE;
+					}
+
+					return FALSE;
+				});
+			}
+		}
+	}
+
+	if (!gPrivateFuncs.S_StartDynamicSound)
+	{
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gPrivateFuncs.S_StartDynamicSound = (decltype(gPrivateFuncs.S_StartDynamicSound))Search_Pattern(S_STARTDYNAMICSOUND_SIG_SVENGINE);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			gPrivateFuncs.S_StartDynamicSound = (decltype(gPrivateFuncs.S_StartDynamicSound))Search_Pattern(S_STARTDYNAMICSOUND_SIG_HL25);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			gPrivateFuncs.S_StartDynamicSound = (decltype(gPrivateFuncs.S_StartDynamicSound))Search_Pattern(S_STARTDYNAMICSOUND_SIG_NEW);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+		{
+			gPrivateFuncs.S_StartDynamicSound = (decltype(gPrivateFuncs.S_StartDynamicSound))Search_Pattern(S_STARTDYNAMICSOUND_SIG_BLOB);
+		}
+	}
+	Sig_FuncNotFound(S_StartDynamicSound);
+
+	if (1)
+	{
+		/*
+.text:01D96FE6 68 C0 4D ED 01                                      push    offset aWarningSStarts ; "Warning: S_StartStaticSound Ignored, ca"...
+.text:01D96FEB E8 50 89 F9 FF                                      call    sub_1D2F940
+.text:01D96FF0 83 C4 04                                            add     esp, 4
+		*/
+		const char sigs[] = "Warning: S_StartStaticSound Ignored";
+		auto S_StartStaticSound_String = Search_Pattern_Data(sigs);
+		if (!S_StartStaticSound_String)
+			S_StartStaticSound_String = Search_Pattern_Rdata(sigs);
+		if (S_StartStaticSound_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
+			*(DWORD*)(pattern + 1) = (DWORD)S_StartStaticSound_String;
+			auto S_StartStaticSound_PushString = (PUCHAR)Search_Pattern(pattern);
+			if (S_StartStaticSound_PushString)
+			{
+				gPrivateFuncs.S_StartStaticSound = (decltype(gPrivateFuncs.S_StartStaticSound))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(S_StartStaticSound_PushString, 0x300, [](PUCHAR Candidate) {
+
+					if (Candidate[0] == 0x55 &&
+						Candidate[1] == 0x8B &&
+						Candidate[2] == 0xEC)
+					{
+						return TRUE;
+					}
+
+					if (Candidate[0] == 0x83 &&
+						Candidate[1] == 0xEC)
+					{
+						return TRUE;
+					}
+
+					return FALSE;
+				});
+			}
+		}
+	}
+
+	if (!gPrivateFuncs.S_StartStaticSound)
+	{
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gPrivateFuncs.S_StartStaticSound = (decltype(gPrivateFuncs.S_StartStaticSound))Search_Pattern(S_STARTSTATICSOUND_SIG_SVENGINE);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			gPrivateFuncs.S_StartStaticSound = (decltype(gPrivateFuncs.S_StartStaticSound))Search_Pattern(S_STARTSTATICSOUND_SIG_HL25);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			gPrivateFuncs.S_StartStaticSound = (decltype(gPrivateFuncs.S_StartStaticSound))Search_Pattern(S_STARTSTATICSOUND_SIG_NEW);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+		{
+			gPrivateFuncs.S_StartStaticSound = (decltype(gPrivateFuncs.S_StartStaticSound))Search_Pattern(S_STARTSTATICSOUND_SIG_BLOB);
+		}
+	}
+	Sig_FuncNotFound(S_StartStaticSound);
+	
+	if (1)
+	{
+		/*
+.text:01D98912 68 F0 52 ED 01                                      push    offset aSLoadsoundCoul ; "S_LoadSound: Couldn't load %s\n"
+.text:01D98917 E8 24 70 F9 FF                                      call    sub_1D2F940
+.text:01D9891C 83 C4 08                                            add     esp, 8
+		*/
+		const char sigs[] = "S_LoadSound: Couldn't load %s";
+		auto S_LoadSound_String = Search_Pattern_Data(sigs);
+		if (!S_LoadSound_String)
+			S_LoadSound_String = Search_Pattern_Rdata(sigs);
+		if (S_LoadSound_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
+			*(DWORD*)(pattern + 1) = (DWORD)S_LoadSound_String;
+			auto S_LoadSound_PushString = (PUCHAR)Search_Pattern(pattern);
+			if (S_LoadSound_PushString)
+			{
+				gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(S_LoadSound_PushString, 0x500, [](PUCHAR Candidate) {
+
+					if (Candidate[0] == 0x55 &&
+						Candidate[1] == 0x8B &&
+						Candidate[2] == 0xEC)
+					{
+						return TRUE;
+					}
+
+					if (Candidate[0] == 0x83 &&
+						Candidate[1] == 0xEC)
+					{
+						return TRUE;
+					}
+
+					//.text:01D98710 81 EC 48 05 00 00                                   sub     esp, 548h
+					if (Candidate[0] == 0x81 &&
+						Candidate[1] == 0xEC &&
+						Candidate[4] == 0x00 &&
+						Candidate[5] == 0x00)
+					{
+						return TRUE;
+					}
+
+					return FALSE;
+				});
+			}
+		}
+
+	}
+
+	if (!gPrivateFuncs.S_LoadSound)
+	{
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))Search_Pattern(S_LOADSOUND_SIG_SVENGINE);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))Search_Pattern(S_LOADSOUND_SIG_HL25);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))Search_Pattern(S_LOADSOUND_SIG_NEW);
+			if (!gPrivateFuncs.S_LoadSound)
+				gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))Search_Pattern(S_LOADSOUND_SIG_8308);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+		{
+			gPrivateFuncs.S_LoadSound = (decltype(gPrivateFuncs.S_LoadSound))Search_Pattern(S_LOADSOUND_SIG_BLOB);
+		}
+	}
+	Sig_FuncNotFound(S_LoadSound);
+
+	if (1)
+	{
+		const char pattern[] = "\x50\xFF\x15\x2A\x2A\x2A\x2A\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x85\xC0";
+		auto SequenceGetSentenceByIndex_Call = (PUCHAR)Search_Pattern(pattern);
+		if (SequenceGetSentenceByIndex_Call)
+		{
+			gPrivateFuncs.SequenceGetSentenceByIndex = (decltype(gPrivateFuncs.SequenceGetSentenceByIndex))GetCallAddress(SequenceGetSentenceByIndex_Call + 8);
+		}
+		else
+		{
+			const char pattern[] = "\x50\xE8\x2A\x2A\x2A\x2A\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x85\xC0";
+			auto SequenceGetSentenceByIndex_Call = (PUCHAR)Search_Pattern(pattern);
+			if (SequenceGetSentenceByIndex_Call)
+			{
+				gPrivateFuncs.SequenceGetSentenceByIndex = (decltype(gPrivateFuncs.SequenceGetSentenceByIndex))GetCallAddress(SequenceGetSentenceByIndex_Call + 7);
+			}
+		}
+	}
+
+	if (!gPrivateFuncs.SequenceGetSentenceByIndex)
+	{
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gPrivateFuncs.SequenceGetSentenceByIndex = (decltype(gPrivateFuncs.SequenceGetSentenceByIndex))Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_SVENGINE);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			gPrivateFuncs.SequenceGetSentenceByIndex = (decltype(gPrivateFuncs.SequenceGetSentenceByIndex))Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_HL25);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			gPrivateFuncs.SequenceGetSentenceByIndex = (decltype(gPrivateFuncs.SequenceGetSentenceByIndex))Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_NEW);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+		{
+			gPrivateFuncs.SequenceGetSentenceByIndex = (decltype(gPrivateFuncs.SequenceGetSentenceByIndex))Search_Pattern(SEQUENCE_GETSENTENCEBYINDEX_SIG_BLOB);
+		}
+	}
+	Sig_FuncNotFound(SequenceGetSentenceByIndex);
 
 	gPrivateFuncs.SCR_BeginLoadingPlaque = (decltype(gPrivateFuncs.SCR_BeginLoadingPlaque))Search_Pattern(SCR_BEGIN_LOADING_PLAQUE);
 	Sig_FuncNotFound(SCR_BeginLoadingPlaque);
@@ -194,7 +453,6 @@ void Engine_FillAddress(void)
 
 		Sig_VarNotFound(scr_drawloading);
 	}
-
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -411,8 +669,6 @@ void Engine_FillAddress(void)
 		int rva = pfnVGUIClient001_CreateInterface - (address + 5);
 
 		g_pMetaHookAPI->WriteMemory(address + 1, (BYTE *)&rva, 4);
-
-
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -431,7 +687,7 @@ void Engine_FillAddress(void)
 
 		s_pBaseDir = *(decltype(s_pBaseDir) *)((PUCHAR)basedir_pattern + 7);
 	}
-	else
+	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
 		const char sigs1[] = "\x84\xC9\x75\x2A\x8B\x45\x0C\xC7\x05\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x50\xE8";
 		auto basedir_pattern = Search_Pattern(sigs1);
@@ -439,137 +695,146 @@ void Engine_FillAddress(void)
 
 		s_pBaseDir = *(decltype(s_pBaseDir) *)((PUCHAR)basedir_pattern + 13);
 	}
+	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		const char sigs1[] = "\xC7\x05\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x84\xC0";
+		auto basedir_pattern = Search_Pattern(sigs1);
+		Sig_VarNotFound(basedir_pattern);
+
+		s_pBaseDir = *(decltype(s_pBaseDir) *)((PUCHAR)basedir_pattern + 6);
+	}
 
 #define VOX_LOOKUPSTRING_SIG "\x80\x2A\x23\x2A\x2A\x8D\x2A\x01\x50\xE8"
 #define VOX_LOOKUPSTRING_SIG_HL25 "\x80\x3B\x23\x0F\x85\x90\x00\x00\x00"
 	if (1)
 	{
 		const char sigs[] = "\x40\x68\x2A\x2A\x2A\x2A\xA3\x2A\x2A\x2A\x2A\xA1";
-		void *addr;
+		void *addr = NULL;
 
-		if (g_iEngineType != ENGINE_GOLDSRC_HL25)
-			addr = Search_Pattern(VOX_LOOKUPSTRING_SIG);
+		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+			addr = Search_Pattern(VOX_LOOKUPSTRING_SIG_HL25); 
 		else
-			addr = Search_Pattern(VOX_LOOKUPSTRING_SIG_HL25);
+			addr = Search_Pattern(VOX_LOOKUPSTRING_SIG);
 
-		//Sig_VarNotFound(addr);
+		if (addr)
+		{
+			g_pMetaHookAPI->DisasmRanges(addr, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+				auto pinst = (cs_insn*)inst;
 
-		g_pMetaHookAPI->DisasmRanges(addr, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-			auto pinst = (cs_insn *)inst;
-
-			if (g_iEngineType == ENGINE_SVENGINE)
-			{
-				if (!cszrawsentences &&
-					pinst->id == X86_INS_CMP &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					pinst->detail->x86.operands[0].mem.index == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
-					pinst->detail->x86.operands[1].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].size == 4)
+				if (g_iEngineType == ENGINE_SVENGINE)
 				{
-					//.text:01D99D06 39 35 18 A2 E0 08                                            cmp     cszrawsentences, esi
-					cszrawsentences = (decltype(cszrawsentences))pinst->detail->x86.operands[0].mem.disp;
+					if (!cszrawsentences &&
+						pinst->id == X86_INS_CMP &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[0].mem.base == 0 &&
+						pinst->detail->x86.operands[0].mem.index == 0 &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+						pinst->detail->x86.operands[1].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].size == 4)
+					{
+						//.text:01D99D06 39 35 18 A2 E0 08                                            cmp     cszrawsentences, esi
+						cszrawsentences = (decltype(cszrawsentences))pinst->detail->x86.operands[0].mem.disp;
+					}
+
+
+					if (!rgpszrawsentence &&
+						pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[0].mem.base == 0 &&
+						pinst->detail->x86.operands[0].mem.index != 0 &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+						pinst->detail->x86.operands[0].mem.scale == 4)
+					{
+						//.text:01D99D10 FF 34 B5 18 82 E0 08                                         push    rgpszrawsentence[esi*4]
+						rgpszrawsentence = (decltype(rgpszrawsentence))pinst->detail->x86.operands[0].mem.disp;
+					}
+
+				}
+				else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+				{
+					if (!cszrawsentences &&
+						pinst->id == X86_INS_CMP &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[0].mem.base == 0 &&
+						pinst->detail->x86.operands[0].mem.index == 0 &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+						pinst->detail->x86.operands[1].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].size == 4)
+					{
+						//.text:1020233E 39 35 9C FC 52 10											cmp     cszrawsentences, esi
+						cszrawsentences = (decltype(cszrawsentences))pinst->detail->x86.operands[0].mem.disp;
+					}
+
+
+					if (!rgpszrawsentence &&
+						pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[0].mem.base == 0 &&
+						pinst->detail->x86.operands[0].mem.index != 0 &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+						(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+						pinst->detail->x86.operands[0].mem.scale == 4)
+					{
+						//.text:01D99D10 FF 34 B5 18 82 E0 08                                         push    rgpszrawsentence[esi*4]
+						rgpszrawsentence = (decltype(rgpszrawsentence))pinst->detail->x86.operands[0].mem.disp;
+					}
+
+				}
+				else
+				{
+					if (!cszrawsentences &&
+						pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[1].mem.base == 0 &&
+						pinst->detail->x86.operands[1].mem.index == 0 &&
+						(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+						(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG)
+					{
+						//.text:01D90EF9 A1 48 B2 3B 02                                      mov     eax, cszrawsentences
+						cszrawsentences = (decltype(cszrawsentences))pinst->detail->x86.operands[1].mem.disp;
+					}
+
+					if (!rgpszrawsentence &&
+						pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[1].mem.base == 0 &&
+						pinst->detail->x86.operands[1].mem.index != 0 &&
+						(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+						(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+						pinst->detail->x86.operands[1].mem.scale == 4 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG)
+					{
+						//.text:01D90F04 8B 0C B5 00 34 72 02                                mov     ecx, rgpszrawsentence[esi*4]
+						rgpszrawsentence = (decltype(rgpszrawsentence))pinst->detail->x86.operands[1].mem.disp;
+					}
 				}
 
 
-				if (!rgpszrawsentence &&
-					pinst->id == X86_INS_PUSH &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					pinst->detail->x86.operands[0].mem.index != 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
-					pinst->detail->x86.operands[0].mem.scale == 4)
-				{
-					//.text:01D99D10 FF 34 B5 18 82 E0 08                                         push    rgpszrawsentence[esi*4]
-					rgpszrawsentence = (decltype(rgpszrawsentence))pinst->detail->x86.operands[0].mem.disp;
-				}
+				if (cszrawsentences && rgpszrawsentence)
+					return TRUE;
 
-			}
-			else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-			{
-				if (!cszrawsentences &&
-					pinst->id == X86_INS_CMP &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					pinst->detail->x86.operands[0].mem.index == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
-					pinst->detail->x86.operands[1].type == X86_OP_REG &&
-					pinst->detail->x86.operands[1].size == 4)
-				{
-					//.text:1020233E 39 35 9C FC 52 10											cmp     cszrawsentences, esi
-					cszrawsentences = (decltype(cszrawsentences))pinst->detail->x86.operands[0].mem.disp;
-				}
+				if (address[0] == 0xCC)
+					return TRUE;
 
+				return FALSE;
 
-				if (!rgpszrawsentence &&
-					pinst->id == X86_INS_PUSH &&
-					pinst->detail->x86.op_count == 1 &&
-					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[0].mem.base == 0 &&
-					pinst->detail->x86.operands[0].mem.index != 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
-					pinst->detail->x86.operands[0].mem.scale == 4)
-				{
-					//.text:01D99D10 FF 34 B5 18 82 E0 08                                         push    rgpszrawsentence[esi*4]
-					rgpszrawsentence = (decltype(rgpszrawsentence))pinst->detail->x86.operands[0].mem.disp;
-				}
-
-			}
-			else
-			{
-				if (!cszrawsentences &&
-					pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[1].mem.base == 0 &&
-					pinst->detail->x86.operands[1].mem.index == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG)
-				{
-					//.text:01D90EF9 A1 48 B2 3B 02                                      mov     eax, cszrawsentences
-					cszrawsentences = (decltype(cszrawsentences))pinst->detail->x86.operands[1].mem.disp;
-				}
-
-				if (!rgpszrawsentence &&
-					pinst->id == X86_INS_MOV &&
-					pinst->detail->x86.op_count == 2 &&
-					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
-					pinst->detail->x86.operands[1].mem.base == 0 &&
-					pinst->detail->x86.operands[1].mem.index != 0 &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
-					pinst->detail->x86.operands[1].mem.scale == 4 &&
-					pinst->detail->x86.operands[0].type == X86_OP_REG)
-				{
-					//.text:01D90F04 8B 0C B5 00 34 72 02                                mov     ecx, rgpszrawsentence[esi*4]
-					rgpszrawsentence = (decltype(rgpszrawsentence))pinst->detail->x86.operands[1].mem.disp;
-				}
-			}
-
-
-			if (cszrawsentences && rgpszrawsentence)
-				return TRUE;
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			return FALSE;
-
-		}, 0, NULL);
+				}, 0, NULL);
+		}
 
 		Sig_VarNotFound(cszrawsentences);
 		Sig_VarNotFound(rgpszrawsentence);
-
 	}
+
 	if (1)
 	{
 		PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
@@ -577,7 +842,7 @@ void Engine_FillAddress(void)
 		while (1)
 		{
 #define LANGUAGESTRNCPY_SIG "\x68\x80\x00\x00\x00\x50\x8D"
-			PUCHAR LanguageStrncpy = (PUCHAR)g_pMetaHookAPI->SearchPattern(SearchBegin, SearchEnd - SearchBegin, LANGUAGESTRNCPY_SIG, sizeof(LANGUAGESTRNCPY_SIG) - 1);
+			PUCHAR LanguageStrncpy = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchEnd - SearchBegin, LANGUAGESTRNCPY_SIG);
 			if (LanguageStrncpy)
 			{
 				typedef struct
@@ -670,7 +935,6 @@ void Engine_FillAddress(void)
 
 void Engine_InstallHooks(void)
 {
-	//Install_InlineHook(S_FindName);
 	Install_InlineHook(S_StartDynamicSound);
 	Install_InlineHook(S_StartStaticSound);
 	Install_InlineHook(pfnTextMessageGet);
@@ -679,7 +943,6 @@ void Engine_InstallHooks(void)
 
 void Engine_UninstallHooks(void)
 {
-	//Uninstall_Hook(S_FindName);
 	Uninstall_Hook(S_StartDynamicSound);
 	Uninstall_Hook(S_StartStaticSound);
 	Uninstall_Hook(pfnTextMessageGet);

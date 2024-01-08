@@ -155,16 +155,13 @@
     <ClCompile Include="FontTextureCache.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
-    <ClCompile Include="Scheme.cpp">
+    <ClCompile Include="Scheme2.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="SurfaceHook.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="Win32Font.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="$(SolutionDir)include\SourceSDK\Surface.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="$(SolutionDir)include\SourceSDK\VPanel.cpp">
@@ -329,9 +326,6 @@
     <ClCompile Include="$(SolutionDir)\include\vgui_controls\PanelListPanel.cpp">
       <Filter>vgui_controls</Filter>
     </ClCompile>
-    <ClCompile Include="privatefuncs.cpp">
-      <Filter>vgui_controls</Filter>
-    </ClCompile>
     <ClCompile Include="$(SolutionDir)\include\vgui_controls\ProgressBar.cpp">
       <Filter>vgui_controls</Filter>
     </ClCompile>
@@ -360,9 +354,6 @@
       <Filter>vgui_controls</Filter>
     </ClCompile>
     <ClCompile Include="$(SolutionDir)\include\vgui_controls\savedocumentquery.cpp">
-      <Filter>vgui_controls</Filter>
-    </ClCompile>
-    <ClCompile Include="SchemeHook.cpp">
       <Filter>vgui_controls</Filter>
     </ClCompile>
     <ClCompile Include="$(SolutionDir)\include\vgui_controls\ScrollableEditablePanel.cpp">
@@ -439,6 +430,15 @@
     </ClCompile>
     <ClCompile Include="$(SolutionDir)include\HLSDK\common\parsemsg.cpp">
       <Filter>HLSDK</Filter>
+    </ClCompile>
+    <ClCompile Include="privatefuncs.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="SchemeHook.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="Surface2.cpp">
+      <Filter>VGUI2</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -995,6 +995,12 @@
       <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="$(SolutionDir)include\VGUI\BaseUI.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="Scheme2.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="Surface2.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
   </ItemGroup>
