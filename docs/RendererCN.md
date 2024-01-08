@@ -6,8 +6,8 @@
 
 |        引擎            |      |
 |        ----              | ---- |
-| GoldSrc_blob   (< 4554)  | -    |
-| GoldSrc_legacy (< 6153)  | -    |
+| GoldSrc_blob   (< 4554)  | √    |
+| GoldSrc_legacy (< 6153)  | √    |
 | GoldSrc_new    (8684)    | √    |
 | SvEngine       (>= 8832) | √    |
 | GoldSrc_HL25   (>= 9884) | √    |
