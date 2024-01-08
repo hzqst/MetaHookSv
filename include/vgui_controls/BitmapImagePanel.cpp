@@ -9,9 +9,10 @@
 
 #include "BitmapImagePanel.h"
 
-#include <vgui/ISurface2.h>
 #include <vgui/IScheme.h>
 #include <vgui/IBorder.h>
+#include <vgui/ISurface.h>
+#include "Surface2.h"
 
 #include <tier1/KeyValues.h>
 

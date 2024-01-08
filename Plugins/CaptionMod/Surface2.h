@@ -6,8 +6,6 @@
 #include <mathlib/vector2d.h>
 #include <Color.h>
 
-class IVguiMatInfo;
-
 namespace vgui
 {
 
@@ -77,13 +75,29 @@ struct IntRect
 	int y1;
 };
 
-//-----------------------------------------------------------------------------
-// Purpose: Wraps contextless windows system functions
-//-----------------------------------------------------------------------------
-class CSurface
+
+#ifndef VGUI2_SURFACE_FEATURE
+#define VGUI2_SURFACE_FEATURE
+// returns true if the surface supports minimize & maximize capabilities
+enum SurfaceFeature_e
+{
+	ANTIALIASED_FONTS = 1,
+	DROPSHADOW_FONTS = 2,
+	ESCAPE_KEY = 3,
+	OPENING_NEW_HTML_WINDOWS = 4,
+	FRAME_MINIMIZE_MAXIMIZE = 5,
+	DIRECT_HWND_RENDER = 6,
+	OUTLINE_FONTS = 7,
+};
+
+#endif
+
+//Simple wrapper around original g_pSurface and g_pSurface_HL25
+
+class CSurface2
 {
 public:
-	CSurface();
+	CSurface2();
 
 	// call to Shutdown surface; surface can no longer be used after this is called
 	void Shutdown( void );
@@ -155,17 +169,6 @@ public:
 	bool IsWithin( int x, int y );
 	bool HasFocus( void );
 
-	// returns true if the surface supports minimize & maximize capabilities
-	enum SurfaceFeature_e
-	{
-		ANTIALIASED_FONTS			= 1,
-		DROPSHADOW_FONTS			= 2,
-		ESCAPE_KEY					= 3,
-		OPENING_NEW_HTML_WINDOWS	= 4,
-		FRAME_MINIMIZE_MAXIMIZE		= 5,
-		DIRECT_HWND_RENDER			= 6,
-		OUTLINE_FONTS = 7,
-	};
 	bool SupportsFeature( SurfaceFeature_e feature );
 
 	// restricts what gets drawn to one panel and it's children
@@ -251,6 +254,9 @@ public:
 	// gets the base resolution used in proportional mode
 	void GetProportionalBase( int &width, int &height );
 
+	//Added in HL25
+	void GetHDProportionalBase(int& width, int& height);
+
 	void CalculateMouseVisible( void );
 	bool NeedKBInput( void );
 
@@ -287,7 +293,7 @@ public:
 	HCursor CreateCursorFromFile( const char *curOrAniFile, const char *pPathID );
 
 	// create IVguiMatInfo object ( IMaterial wrapper in VguiMatSurface, NULL in CWin32Surface )
-	IVguiMatInfo *DrawGetTextureMatInfoFactory( int id );
+	void *DrawGetTextureMatInfoFactory( int id );
 
 	void PaintTraverseEx( VPANEL panel, bool paintPopups = false );
 
@@ -308,7 +314,7 @@ public:
 	void ClearTemporaryFontCache( void );
 
 	IImage *GetIconImageForFullPath( const char *pFullPath );
-	void DrawUnicodeString( const wchar_t *pwString, int drawType );
+	void DrawUnicodeString( const wchar_t *pwString, FontDrawType_t drawType );
 	void PrecacheFontCharacters( HFont font, wchar_t *pCharacters );
 	// Console-only.  Get the string to use for the current video mode for layout files.
 	const char *GetResolutionKey( void ) const;
@@ -319,6 +325,6 @@ private:
 
 }
 
-vgui::CSurface *Surface();
+vgui::CSurface2 *Surface2();
 
 #endif

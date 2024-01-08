@@ -41,8 +41,6 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
 
-extern float g_flDPIScaling;
-
 using namespace vgui;
 
 #define TRIPLE_PRESS_MSEC	300
@@ -1022,6 +1020,7 @@ void Panel::PaintTraverse( bool repaint, bool allowForce )
 
 	// set global alpha
 	surface()->DrawSetAlphaMultiplier( newAlphaMultiplier );
+
 	if ( repaint && _flags.IsFlagSet( PAINT_BACKGROUND_ENABLED | PAINT_ENABLED ) )
 	{
 		// draw the background with no inset
@@ -3799,7 +3798,7 @@ void Panel::ApplySettings(KeyValues *inResourceData)
 			ystr++;
 		}
 		y = atoi(ystr);
-		// *g_flDPIScaling;
+
 		if (IsProportional())
 		{
 			// scale the y up to our screen co-ords
@@ -3838,13 +3837,12 @@ void Panel::ApplySettings(KeyValues *inResourceData)
 
 		wide = atoi(wstr);
 
-		//wide *= g_flDPIScaling;
-
 		if ( IsProportional() )
 		{
 			// scale the x and y up to our screen co-ords
 			wide = scheme()->GetProportionalScaledValueEx(GetScheme(), wide);
 		}
+
 		// now correct the alignment
 		if (_buildModeFlags & BUILDMODE_SAVE_WIDE_FULL)
 		{
@@ -3853,7 +3851,7 @@ void Panel::ApplySettings(KeyValues *inResourceData)
 	}
 
 	tall = inResourceData->GetInt( "tall", tall );
-	//tall *= g_flDPIScaling;
+
 	if ( IsProportional() )
 	{
 		// scale the x and y up to our screen co-ords

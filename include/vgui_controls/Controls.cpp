@@ -14,6 +14,7 @@ vgui::IPanel *g_pVGuiPanel = NULL;
 vgui::ILocalize *g_pVGuiLocalize = NULL;
 
 vgui::ISurface *g_pSurface = NULL;
+vgui::ISurface_HL25 *g_pSurface_HL25 = NULL;
 vgui::ISchemeManager *g_pScheme = NULL;
 vgui::ISchemeManager_HL25 *g_pScheme_HL25 = NULL;
 

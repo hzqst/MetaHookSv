@@ -6,9 +6,10 @@
 #pragma warning( disable : 4244 ) // conversion from 'double' to 'float', possible loss of data
 
 #include <vgui/IScheme.h>
-#include <vgui/ISurface2.h>
 #include <vgui/ISystem.h>
 #include <vgui/IVGui.h>
+#include <vgui/ISurface.h>
+#include "Surface2.h"
 
 #include <tier1/KeyValues.h>
 #include <tier1/mempool.h>
