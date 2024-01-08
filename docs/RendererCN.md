@@ -193,9 +193,17 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 `r_detailtextures` 设为1启用细节贴图、法线贴图、视差贴图和高光贴图。
 
-贴图列表会自动从文件 `/maps/[map name]_detail.txt` 中加载，以 `_DETAIL` 为后缀的贴图会被视为该基础贴图的细节贴图（如果基础贴图没有任何后缀则默认视为细节贴图）。
+贴图列表会自动从文件 `/maps/[mapname]_detail.txt` 中加载，以 `_DETAIL` 为后缀的贴图会被视为该基础贴图的细节贴图（如果基础贴图没有任何后缀则默认视为细节贴图）。
 
-列表中指定的细节贴图文件会从 `/Sven Co-op/svencoop_(addon,downloads)/gfx/detail/` 和 `/Sven Co-op/svencoop/renderer/texture` 中加载（支持格式: BMP, TGA, DDS, JPG, PNG）。
+贴图会按顺序从以下位置尝试加载 (如果文件存在的话)：
+
+1. `/(game_directory)/maps/[texturename]` (贴图名必须以 "maps/" 或 "maps\" 开头)
+
+2. `/(game_directory)/gfx/detail/[texturename]`
+
+3. `/(game_directory)/renderer/texture/[texturename]`
+
+* 当路径不包含扩展名时，将默认添加`.tga`扩展名。
 
 ### BSP法线贴图
 
@@ -239,34 +247,44 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 你需要在`[modelname].mdl`模型的同目录下创建 `[modelname]_external.txt`文件，文件应包含以下内容：
 
+### 如果"replacetexture"的贴图名以 "models/" 或 "models\" 开头：
+
 ```
 {
     "classname" "studio_texture"
     "basetexture" "base_texture.bmp"
-    "replacetexture"  "base_texture.dds" 
+    "replacetexture"  "models/mymodel/base_texture.dds" 
     "replacescale" "1.0 1.0"
 }
 ```
 
-以下位置的文件会被用来替换模型中自带的BMP贴图:
+那么以下位置的文件会被用来替换模型中自带的BMP贴图:
 
-`(game_directory)\base_texture.dds`
+`(game_directory)\models\mymodel\base_texture.dds`
+
+### 否则
+
+以下位置的文件会被用来替换模型中自带的BMP贴图:
 
 `(game_directory)\gfx\base_texture.dds`
 
 `(game_directory)\renderer\texture\base_texture.dds`
 
-模型使用`replacetexture`加载外置贴图时应包含从游戏文件夹开始的完整路径
+* 当路径不包含扩展名时，将默认添加`.tga`扩展名。
 
-当外置路径不存在时将在`gfx/`与`renderer/texture/`文件夹中搜寻相应文件
+### UV 控制
 
-当路径不包含扩展名时，将默认读取`tga`格式的文件
+`"replacescale" "1.0 1.0"` : 计算纹理坐标时使用的贴图宽高会被替换为 (1.0 x 新贴图的宽, 1.0 x 新贴图的高).
 
-当加载外置贴图时，可以使用`replacescale`调整外置贴图缩放（可选），如`"replacescale" "0.5 0.5"`表示外置贴图宽缩小为50%，高缩小为50%
+`"replacescale" "1.0"` : 等价于 `"replacescale" "1.0 1.0"`
 
-`"replacescale" "1.0 1.0"` 用于控制贴图替换后的UV缩放 (可选)。
+`"replacescale" "-1.0 -1.0"` : 计算纹理坐标时使用的贴图宽高会被替换为 (1.0 x 原始BMP贴图的宽, 1.0 x 原始BMP贴图的高).
 
-当`replacescale`仅有一个参数时，代表宽高使用同一个缩放值
+* 没有"replacescale"时不对UV缩放做出任何调整
+
+* MDL中存储的UV格式是-32767~32768的无符号USHORT整型，具体值等于在原始BMP贴图上的以像素计的绝对坐标。所以最终传递给GPU的取值范围0~1的真实UV需要由该USHORT类型除以贴图宽高来算出，上述"replacescale"修改的就是这里所谓的“贴图宽高”。
+
+### 控制台参数
 
 * 使用控制台参数 `r_studio_external_textures 0` 可以临时禁用贴图替换。
 
@@ -278,17 +296,11 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 {
     "classname" "studio_texture"
     "basetexture" "base_texture.bmp"
-    "normaltexture"  "normal_texture.dds" 
+    "normaltexture"  "normal_texture.dds" //贴图搜索路径和搜索规则参考 "replacetexture"
 }
 ```
 
-以下位置的文件会被用作法线贴图:
-
-`(game_directory)\normal_texture.dds`
-
-`(game_directory)\gfx\normal_texture.dds`
-
-`(game_directory)\renderer\texture\normal_texture.dds`
+### 控制台参数
 
 * 使用控制台参数 `r_studio_external_textures 0` 可以临时禁用法线贴图。
 
@@ -300,7 +312,7 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 {
     "classname" "studio_texture"
     "basetexture" "base_texture.bmp"
-    "speculartexture"  "specular_texture.dds" 
+    "speculartexture"  "specular_texture.dds" //贴图搜索路径和搜索规则参考 "replacetexture"
 }
 ```
 
@@ -310,13 +322,7 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 蓝色通道用于表示球面化法线的插值比例，越接近1插值比例越高，法线越接近于球面化。（需要拥有`STUDIO_NF_CELSHADE_FACE`属性才生效）
 
-以下位置的文件会被用作高光贴图:
-
-`(game_directory)\specular_texture.dds`
-
-`(game_directory)\gfx\specular_texture.dds`
-
-`(game_directory)\renderer\texture\specular_texture.dds`
+### 控制台参数
 
 * 使用控制台参数 `r_studio_external_textures 0` 可以临时禁用法线贴图。
 
@@ -324,7 +330,7 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 跟 `STUDIO_NF_ADDITIVE` 效果类似，只是使用ALPHA通道而非颜色叠加模式进行半透明混合。带 `STUDIO_NF_ALPHA` 属性的贴图会被延迟到半透明阶段再进行绘制（如果是来自不透明的实体的话）。
 
-你需要使用模型贴图替换功能将基础贴图替换为带ALPHA通道的贴图，比如内部编码格式为DXT5的DDS，TGA或PNG。
+你需要使用模型贴图替换功能将基础贴图替换为带ALPHA通道的贴图，比如内部编码格式为DXT5-BC7的DDS，TGA或PNG。
 
 需要添加以下内容到 `[modelname]_external.txt` 文件中:
 
@@ -377,12 +383,6 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
     "classname" "studio_efx"
     "flags" "EF_OUTLINE"
 }
-{
-    "classname" "studio_texture"
-    "basetexture" "hair.bmp"
-    "replacetexture" "models/player/[modelname]/xxxx.dds"
-    "replacescale" "0.5 0.5"
-}
 ```
 
 来为 `[modelname].mdl` 模型启用上述特效。
@@ -391,7 +391,7 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 或者参考 `Build\svencoop_addon\models\player\GFL_HK416\GFL_HK416_external.txt` 中提供的示例文件。
 
-卡通渲染的参数会优先使用 `[modelname]_external.txt` 中的studio_celshade_control键值对：（举例）
+卡通渲染的参数会优先使用 `[modelname]_external.txt` 中的 studio_celshade_control 键值对：（举例）
 
 ```
 {
@@ -512,11 +512,33 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 ## 新的贴图加载器
 
-最大允许的贴图尺寸提升至 4096 x 4096。
+### 原版贴图（WAD/SPR）
 
-该功能默认启用，并且可能会导致最终加载的贴图与原版引擎的有轻微的视觉上的差别。
+最大允许的WAD/SPR贴图尺寸提升至 4096 x 4096。
+
+该功能默认启用，并且可能会导致最终加载的WAD/SPR贴图与原版引擎的有轻微的视觉上的差别。
 
 如果要使用原版的贴图加载器，请在启动项中添加 `-use_legacy_texloader`。
+
+### 外部贴图
+
+### 最大允许的外部贴图尺寸取决于你的GPU和OpenGL驱动实现（稍老一点显卡的也有4096x4096，新显卡一般都支持16384x16384）。
+
+支持的外部贴图格式：
+
+BMP (Indexed / RGB8 / RGBA8)
+
+TGA (RGB8 / RGBA8)
+
+DDS (DX10 BC1 / DX10 BC2 / DX10 BC3 / DX10 BC7 / Legacy DXT1 / Legacy DXT3 / Legacy DXT5）
+
+HDR (RGB8F / RGBA8F)
+
+JPEG (RGB8)
+
+PNG (RGB8 / RGBA8)
+
+WEBP (RGB8 / RGBA8)
 
 ## 抗锯齿
 
