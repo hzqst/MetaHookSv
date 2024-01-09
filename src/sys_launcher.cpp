@@ -66,13 +66,6 @@ extern "C"
 		ULONG ProcessInformationLength);
 }
 
-BOOL Sys_CloseDEP(void)
-{
-	ULONG ExecuteFlags = MEM_EXECUTE_OPTION_ENABLE;
-
-	return NtSetInformationProcess((HANDLE)-1, ProcessExecuteFlags, &ExecuteFlags, sizeof(ExecuteFlags)) == 0;
-}
-
 BOOL Sys_GetExecutableName(char *pszName, int nSize)
 {
 	return GetModuleFileName(GetModuleHandle(NULL), pszName, nSize) != 0;
@@ -80,8 +73,9 @@ BOOL Sys_GetExecutableName(char *pszName, int nSize)
 
 char *Sys_GetLongPathName(void)
 {
-	char szShortPath[MAX_PATH];
 	static char szLongPath[MAX_PATH];
+
+	char szShortPath[MAX_PATH];
 	char *pszPath;
 
 	szShortPath[0] = 0;

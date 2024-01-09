@@ -55,6 +55,7 @@ EXPORT_FUNCTION IBaseInterface *CreateInterface( const char *pName, int *pReturn
 	{
 		*pReturnCode = IFACE_FAILED;
 	}
+
 	return NULL;	
 }
 

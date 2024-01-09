@@ -101,7 +101,6 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->IN_MouseEvent = IN_MouseEvent;
 	pExportFunc->IN_Accumulate = IN_Accumulate;
 	pExportFunc->CL_CreateMove = CL_CreateMove;
-	pExportFunc->ClientFactory = NewClientFactory;
 
 	g_hClientDll = g_pMetaHookAPI->GetClientModule();
 	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
@@ -111,7 +110,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	Client_InstallHooks();
 
 	//Try installing hook to interface VClientVGUI001
-	ClientVGUI_InstallHook();
+	ClientVGUI_InstallHook(pExportFunc);
 
 	VGUI1_InstallHook();
 

@@ -119,7 +119,9 @@ void CClientVGUI::Shutdown(void)
 
 }
 
-void ClientVGUI_InstallHook(void)
+void* NewClientFactory(void);
+
+void ClientVGUI_InstallHook(cl_exportfuncs_t* pExportFunc)
 {
 	CreateInterfaceFn ClientVGUICreateInterface = NULL;
 
@@ -149,6 +151,13 @@ void ClientVGUI_InstallHook(void)
 
 			g_IsClientVGUI2 = true;
 		}
+	}
+
+	if (!g_IsClientVGUI2)
+	{
+		//TODO: Patch ClientFactory here..
+
+		pExportFunc->ClientFactory = NewClientFactory;
 	}
 }
 

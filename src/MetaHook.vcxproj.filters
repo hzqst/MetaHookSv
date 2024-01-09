@@ -54,7 +54,7 @@
     <ClCompile Include="Z.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="BlobThreadManager.cpp">
+    <ClCompile Include="LoadDllNotification.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -79,8 +79,11 @@
     <ClInclude Include="sys.h">
       <Filter>Source</Filter>
     </ClInclude>
-    <ClInclude Include="BlobThreadManager.h">
+    <ClInclude Include="LoadDllNotification.h">
       <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\Interface\IPlugins.h">
+      <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -51,6 +51,8 @@ char(*s_pBaseDir)[512] = NULL;
 
 qboolean *scr_drawloading = NULL;
 
+CreateInterfaceFn *g_pClientFactory = NULL;
+
 char m_szCurrentLanguage[128] = { 0 };
 
 private_funcs_t gPrivateFuncs = { 0 };
@@ -70,6 +72,7 @@ PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule)
 	{
 		return NewCreateInterface;
 	}
+
 	return Sys_GetFactory(hModule);
 }
 
@@ -567,7 +570,7 @@ void Engine_FillAddress(void)
 		if (!UserToken2_String)
 			UserToken2_String = Search_Pattern_Rdata(sigs1);
 		Sig_VarNotFound(UserToken2_String);
-		char pattern[] = "\x51\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x88\x9D";
+		char pattern[] = "\x51\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A";
 		*(DWORD *)(pattern + 2) = (DWORD)UserToken2_String;
 		auto UserToken2_PushString = Search_Pattern(pattern);
 		Sig_VarNotFound(UserToken2_PushString);
@@ -586,6 +589,13 @@ void Engine_FillAddress(void)
 				Candidate[7] == 0x00 &&
 				Candidate[8] == 0x00)
 				return TRUE;
+
+			//.text:01D3BB30 81 EC 8C 04 00 00                                   sub     esp, 48Ch
+			//.text : 01D3BB36 8B 0D C8 0A 08 02                                   mov     ecx, dword_2080AC8
+			if (Candidate[0] == 0x81 &&
+				Candidate[1] == 0xEC)
+				return TRUE;
+
 
 			return FALSE;
 		});
@@ -630,6 +640,20 @@ void Engine_FillAddress(void)
 		auto VClientVGUI001_PushString = Search_Pattern(pattern);
 		Sig_VarNotFound(VClientVGUI001_PushString);
 
+/*
+		if ( !dword_1E67088 )
+		__debugbreak();
+		if ( ClientFactory )
+		{
+			factory = VGUIClient001_CreateInterface(hModule);
+			if ( factory )
+			{
+				v4[v4[7]++ + 1] = factory;
+				dword_1E66F4C = ((int (__cdecl *)(char *, _DWORD))factory)("VClientVGUI001", 0);
+			}
+		}
+*/
+
 		const char sigs2[] = "\xFF\x35\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x85\xC0\x74\x28";
 		auto Call_VClientVGUI001_CreateInterface = g_pMetaHookAPI->ReverseSearchPattern(VClientVGUI001_PushString, 0x50, sigs2, sizeof(sigs2) - 1);
 		Sig_VarNotFound(Call_VClientVGUI001_CreateInterface);
@@ -651,24 +675,78 @@ void Engine_FillAddress(void)
 		if (!VClientVGUI001_String)
 			VClientVGUI001_String = Search_Pattern_Rdata(sigs1);
 		Sig_VarNotFound(VClientVGUI001_String);
-		char pattern[] = "\x8B\x2A\x2A\x6A\x00\x68\x2A\x2A\x2A\x2A\x89";
-		*(DWORD *)(pattern + 6) = (DWORD)VClientVGUI001_String;
+		char pattern[] = "\x6A\x00\x68\x2A\x2A\x2A\x2A\x89";
+		*(DWORD *)(pattern + 3) = (DWORD)VClientVGUI001_String;
 		auto VClientVGUI001_PushString = Search_Pattern(pattern);
+		if (!VClientVGUI001_PushString)
+		{
+			char pattern2[] = "\x6A\x00\x68\x2A\x2A\x2A\x2A\xFF";
+			*(DWORD*)(pattern2 + 3) = (DWORD)VClientVGUI001_String;
+			VClientVGUI001_PushString = Search_Pattern(pattern2);
+		}
 		Sig_VarNotFound(VClientVGUI001_PushString);
+
+		/*
+		if ( !dword_1E67088 )
+		__debugbreak();
+		if ( ClientFactory )
+		{
+			factory = VGUIClient001_CreateInterface(hModule);
+			if ( factory )
+			{
+				v4[v4[7]++ + 1] = factory;
+				dword_1E66F4C = ((int (__cdecl *)(char *, _DWORD))factory)("VClientVGUI001", 0);
+			}
+		}
+		*/
 
 		const char sigs2[] = "\xA1\x2A\x2A\x2A\x2A\x50\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x85\xC0";
 		auto Call_VClientVGUI001_CreateInterface = g_pMetaHookAPI->ReverseSearchPattern(VClientVGUI001_PushString, 0x50, sigs2, sizeof(sigs2) - 1);
-		Sig_VarNotFound(Call_VClientVGUI001_CreateInterface);
+		if (Call_VClientVGUI001_CreateInterface)
+		{
+			PUCHAR address = (PUCHAR)Call_VClientVGUI001_CreateInterface + 6;
 
-		PUCHAR address = (PUCHAR)Call_VClientVGUI001_CreateInterface + 6;
+			gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
 
-		gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
+			PUCHAR pfnVGUIClient001_CreateInterface = (PUCHAR)VGUIClient001_CreateInterface;
 
-		PUCHAR pfnVGUIClient001_CreateInterface = (PUCHAR)VGUIClient001_CreateInterface;
+			int rva = pfnVGUIClient001_CreateInterface - (address + 5);
 
-		int rva = pfnVGUIClient001_CreateInterface - (address + 5);
+			g_pMetaHookAPI->WriteMemory(address + 1, (BYTE*)&rva, 4);
+		}
+		else
+		{
+			/*
+				if ( !dword_1EF4070 )
+					__debugbreak();
+				if ( ClientFactory )
+				{
+					v14 = (int (__cdecl *)(const char *, _DWORD))ClientFactory();
+					if ( v14 )
+					v3[v3[6]++ + 1] = v14;
+					g_VClientVGUI = v14("VClientVGUI001", 0);
+				}
+			*/
 
-		g_pMetaHookAPI->WriteMemory(address + 1, (BYTE *)&rva, 4);
+			/*
+.text:01D011E9 CC                                                  int     3               ; Trap to Debugger
+.text:01D011EA
+.text:01D011EA                                     loc_1D011EA:                            ; CODE XREF: sub_1D010D0+117↑j
+.text:01D011EA A1 48 13 F7 02                                      mov     eax, ClientFactory
+.text:01D011EF 85 C0                                               test    eax, eax
+.text:01D011F1 74 27                                               jz      short loc_1D0121A
+.text:01D011F3 FF D0                                               call    eax ; ClientFactory
+.text:01D011F5 85 C0                                               test    eax, eax
+			*/
+#if 1
+			const char sigs3[] = "\xCC\xA1\x2A\x2A\x2A\x2A\x85\xC0\x74\x2A\xFF";
+			auto pClientFactoryAddr = (PUCHAR)g_pMetaHookAPI->ReverseSearchPattern(VClientVGUI001_PushString, 0x50, sigs3, sizeof(sigs3) - 1);
+			if (pClientFactoryAddr)
+			{
+				g_pClientFactory = *(decltype(g_pClientFactory)*)(pClientFactoryAddr + 2);
+			}
+#endif
+		}
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)

@@ -1050,16 +1050,17 @@ public:
 	virtual void SetProportionalBase(int width, int height);
 	virtual void GetHDProportionalBase(int& width, int& height);
 	virtual void SetHDProportionalBase(int nWidth, int nHeight);
-	virtual void setFullscreenMode(int wide, int tall, int bpp);
-	virtual void setWindowedMode(void);
-	virtual void PanelRequestFocus(VPANEL panel);
-	virtual void EnableMouseCapture2(bool state);
+	//WTF is this shit?
+	virtual void unk(int a1);
+	virtual void unk2(int a2);
+	virtual void unk3(int a1, int a2, int a3);
+	virtual void unk4(int a1, int a2, int a3);
+	virtual void unk5();
+	virtual void unk6(int a1);
+	virtual void unk7(int a2);
 	virtual void DrawPrintChar(int x, int y, int wide, int tall, float s0, float t0, float s1, float t1);
-	virtual void SetNotifyIcon2(Image* image, VPANEL panelToReceiveMessages, const char* text);
-	virtual bool SetWatchForComputerUse(bool state);
-	virtual double GetTimeSinceLastUse(void);
-	virtual bool VGUI2MouseControl(void);
-	virtual void SetVGUI2MouseControl(bool state);
+	virtual bool unk8(void);
+	virtual double unk9(void);
 
 public:
 	void DrawSetAlphaMultiplier(float alpha);
@@ -1812,54 +1813,48 @@ void CSurfaceProxy_HL25::SetHDProportionalBase(int nWidth, int nHeight)
 	m_pfnSetHDProportionalBase(this, 0, nWidth, nHeight);
 }
 
-void CSurfaceProxy_HL25::setFullscreenMode(int wide, int tall, int bpp)
+void CSurfaceProxy_HL25::unk(int a1)
 {
-	m_pfnsetFullscreenMode(this, 0, wide, tall, bpp);
-}
 
-void CSurfaceProxy_HL25::setWindowedMode(void)
-{
-	m_pfnsetWindowedMode(this, 0);
 }
-
-void CSurfaceProxy_HL25::PanelRequestFocus(VPANEL panel)
+void CSurfaceProxy_HL25::unk2(int a2)
 {
-	m_pfnPanelRequestFocus(this, 0, panel);
+
 }
-
-void CSurfaceProxy_HL25::EnableMouseCapture2(bool state)
+void CSurfaceProxy_HL25::unk3(int a1, int a2, int a3)
 {
-	m_pfnEnableMouseCapture2(this, 0, state);
+
+}
+void CSurfaceProxy_HL25::unk4(int a1, int a2, int a3)
+{
+
+}
+void CSurfaceProxy_HL25::unk5()
+{
+
+}
+void CSurfaceProxy_HL25::unk6(int a1)
+{
+
+}
+void CSurfaceProxy_HL25::unk7(int a2)
+{
+
 }
 
 void CSurfaceProxy_HL25::DrawPrintChar(int x, int y, int wide, int tall, float s0, float t0, float s1, float t1)
 {
-	m_pfnDrawPrintChar(this, 0, x, y, wide, tall, s0, s1, s1, t1);
+	
 }
 
-void CSurfaceProxy_HL25::SetNotifyIcon2(Image *image, VPANEL panelToReceiveMessages, const char *text)
+bool CSurfaceProxy_HL25::unk8(void)
 {
-	m_pfnSetNotifyIcon2(this, 0, image, panelToReceiveMessages, text);
+	return false;
 }
 
-bool CSurfaceProxy_HL25::SetWatchForComputerUse(bool state)
+double CSurfaceProxy_HL25::unk9(void)
 {
-	return m_pfnSetWatchForComputerUse(this, 0, state);
-}
-
-double CSurfaceProxy_HL25::GetTimeSinceLastUse(void)
-{
-	return m_pfnGetTimeSinceLastUse(this, 0);
-}
-
-bool CSurfaceProxy_HL25::VGUI2MouseControl(void)
-{
-	return m_pfnVGUI2MouseControl(this, 0);
-}
-
-void CSurfaceProxy_HL25::SetVGUI2MouseControl(bool state)
-{
-	m_pfnSetVGUI2MouseControl(this, 0, state);
+	return 0;
 }
 
 void Surface_InstallHooks(void)

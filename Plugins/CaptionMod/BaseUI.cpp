@@ -64,19 +64,26 @@ extern IEngineSurface_HL25 *staticSurface_HL25;
 
 static bool s_LoadingClientFactory = false;
 
+extern CreateInterfaceFn* g_pClientFactory;
+
 void CBaseUI::Initialize(CreateInterfaceFn *factories, int count)
 {
+#if 0
 	//Patch ClientFactory
-	/*if(!g_IsClientVGUI2 && *gPrivateFuncs.pfnClientFactory == NULL)
+
+	if(!g_IsClientVGUI2 && *g_pClientFactory == NULL)
 	{
-		*gPrivateFuncs.pfnClientFactory = NewClientFactory;
+		*g_pClientFactory = (CreateInterfaceFn)NewClientFactory;
 		s_LoadingClientFactory = true;
-	}*/
+	}
+#endif
 
 	m_pfnCBaseUI_Initialize(this, 0, factories, count);
 
+#if 0
 	s_LoadingClientFactory = false;
 
+#endif
 	HINTERFACEMODULE hVGUI2 = (HINTERFACEMODULE)GetModuleHandle("vgui2.dll");
 	if (hVGUI2)
 	{

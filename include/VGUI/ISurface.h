@@ -176,16 +176,16 @@ namespace vgui
 		virtual void SetProportionalBase(int width, int height) = 0;
 		virtual void GetHDProportionalBase(int& width, int& height) = 0;
 		virtual void SetHDProportionalBase(int nWidth, int nHeight) = 0;
-		virtual void setFullscreenMode(int wide, int tall, int bpp) = 0;
-		virtual void setWindowedMode(void) = 0;
-		virtual void PanelRequestFocus(VPANEL panel) = 0;
-		virtual void EnableMouseCapture2(bool state) = 0;
+		virtual void unk(int a1) = 0;
+		virtual void unk2(int a2) = 0;
+		virtual void unk3(int a1, int a2, int a3) = 0;
+		virtual void unk4(int a1, int a2, int a3) = 0;
+		virtual void unk5() = 0;	
+		virtual void unk6(int a1) = 0;
+		virtual void unk7(int a2) = 0;
 		virtual void DrawPrintChar(int x, int y, int wide, int tall, float s0, float t0, float s1, float t1) = 0;
-		virtual void SetNotifyIcon2(Image* image, VPANEL panelToReceiveMessages, const char* text) = 0;
-		virtual bool SetWatchForComputerUse(bool state) = 0;
-		virtual double GetTimeSinceLastUse(void) = 0;
-		virtual bool VGUI2MouseControl(void) = 0;
-		virtual void SetVGUI2MouseControl(bool state) = 0;
+		virtual bool unk8(void) = 0;
+		virtual double unk9(void) = 0;
 	};
 }
 

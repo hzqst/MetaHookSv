@@ -6,4 +6,4 @@ PrecacheManager.dll
 CommunicationDemo.dll
 SCModelDownloader.dll
 SteamScreenshots.dll
-;DontFlushSoundCache.dll
+ThreadGuard.dll

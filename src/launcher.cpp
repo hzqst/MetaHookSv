@@ -1,7 +1,7 @@
 #include "metahook.h"
 #include <IEngine.h>
 #include "LoadBlob.h"
-#include "BlobThreadManager.h"
+#include "LoadDllNotification.h"
 #include "sys.h"
 #include <tlhelp32.h> 
 
@@ -214,7 +214,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		CommandLine()->AppendParm("-gl", "");
 
 		//Completely remove netthread support since it's buggy and the netthread can not be terminated safely.
-		CommandLine()->AppendParm("-nonetthread", "");
+		//CommandLine()->AppendParm("-nonetthread", "");
 	}
 	if (stricmp(szExeName, "hl.exe") && CommandLine()->CheckParm("-game") == NULL)
 	{
@@ -259,8 +259,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			registry->WriteInt("ScreenBPP", 32);
 		}
 	}
-
-	InitBlobThreadManager();
 
 	while (1)
 	{
@@ -318,7 +316,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				return 0;
 			}
 #endif
-
 			hBlobEngine = LoadBlobFile(pszEngineDLL, g_BlobLoaderSectionBase, g_BlobLoaderSectionSize);
 
 			if (!hBlobEngine)
@@ -379,21 +376,23 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		if (engineAPI)
 		{
 			MH_LoadEngine((HMODULE)hEngine, hBlobEngine, szGameName, szFullPath);
+
 			iResult = engineAPI->Run(hInstance, Sys_GetLongPathName(), CommandLine()->GetCmdLine(), szNewCommandParams, Sys_GetFactoryThis(), Sys_GetFactory(hFileSystem));
+
 			MH_ExitGame(iResult);
-			MH_Shutdown();
-
-			BlobWaitForAliveThreadsToShutdown();
-			BlobWaitForClosedThreadsToShutdown();
-
+			
 			if (hBlobEngine)
 			{
+				MH_DispatchLoadBlobNotificationCallback(hBlobEngine, LOAD_DLL_NOTIFICATION_IS_UNLOAD);
 				FreeBlobModule(hBlobEngine);
+				BlobLoaderRemoveBlob(hBlobEngine);
 			}
 			else
 			{
 				Sys_FreeModule(hEngine);
 			}
+
+			MH_Shutdown();
 		}
 
 		if (iResult == ENGINE_RESULT_NONE || iResult > ENGINE_RESULT_UNSUPPORTEDVIDEO)
@@ -448,8 +447,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		if (!bContinue)
 			break;
 	}
-
-	ShutdownBlobThreadManager();
 
 	registry->Shutdown();
 

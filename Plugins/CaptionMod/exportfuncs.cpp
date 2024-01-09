@@ -80,9 +80,19 @@ const char *GetBaseDirectory()
 	return *s_pBaseDir;
 }
 
+IBaseInterface* CreateInterfaceProxy(const char* pName, int* pReturnCode)
+{
+	auto ret = CreateInterface(pName, pReturnCode);
+	if (ret)
+		return ret;
+
+	auto CreateInterfaceClientDll = (decltype(CreateInterfaceProxy)*)gExportfuncs.ClientFactory();
+	return CreateInterfaceClientDll(pName, pReturnCode);
+}
+
 void *NewClientFactory(void)
 {
-	return Sys_GetFactoryThis();
+	return CreateInterfaceProxy;
 }
 
 int HUD_VidInit(void)

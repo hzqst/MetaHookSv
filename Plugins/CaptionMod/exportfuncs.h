@@ -38,7 +38,7 @@ void Engine_UninstallHooks(void);
 void BaseUI_InstallHook(void);
 void GameUI_InstallHooks(void);
 void GameUI_UninstallHooks(void);
-void ClientVGUI_InstallHook(void);
+void ClientVGUI_InstallHook(cl_exportfuncs_t* pExportFunc);
 void ClientVGUI_Shutdown(void);
 void VGUI1_InstallHook(void);
 void VGUI1_Shutdown(void);
