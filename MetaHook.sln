@@ -31,6 +31,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DontFlushSoundCache", "Plug
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PrecacheManager", "Plugins\PrecacheManager\PrecacheManager.vcxproj", "{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CC}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ThreadGuard", "Plugins\ThreadGuard\ThreadGuard.vcxproj", "{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -207,6 +209,22 @@ Global
 		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CC}.Release|Win32.ActiveCfg = Release|Win32
 		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CC}.Release|Win32.Build.0 = Release|Win32
 		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CC}.Release|x64.ActiveCfg = Release|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CD}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CD}.Debug|Win32.Build.0 = Debug|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CD}.Debug|x64.ActiveCfg = Debug|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CD}.Debug|x64.Build.0 = Debug|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CD}.Release_AVX2|Win32.ActiveCfg = Release|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CD}.Release_AVX2|Win32.Build.0 = Release|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CD}.Release_AVX2|x64.ActiveCfg = Release|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CD}.Release_AVX2|x64.Build.0 = Release|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CD}.Release_blob|Win32.ActiveCfg = Release|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CD}.Release_blob|Win32.Build.0 = Release|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CD}.Release_blob|x64.ActiveCfg = Release|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CD}.Release_blob|x64.Build.0 = Release|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CD}.Release|Win32.ActiveCfg = Release|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CD}.Release|Win32.Build.0 = Release|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CD}.Release|x64.ActiveCfg = Release|Win32
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CD}.Release|x64.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -223,6 +241,7 @@ Global
 		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C9} = {4BBE5591-2774-44E5-837E-B54D33AFC431}
 		{527CB8FE-4710-4F1E-B929-CF43C6C80D1E} = {4BBE5591-2774-44E5-837E-B54D33AFC431}
 		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CC} = {4BBE5591-2774-44E5-837E-B54D33AFC431}
+		{FBF9CAF6-8DED-4EB0-8E7B-18294607C5CD} = {4BBE5591-2774-44E5-837E-B54D33AFC431}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D7EC138D-907F-4149-8DE2-92E63D7597ED}

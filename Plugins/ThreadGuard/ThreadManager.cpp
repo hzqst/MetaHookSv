@@ -1,4 +1,4 @@
-#include <Windows.h>
+#include <MINT.h>
 #include "metahook.h"
 #include "ThreadManager.h"
 #include <vector>
@@ -7,6 +7,8 @@
 
 static std::mutex g_ThreadManagerLock;
 static std::vector<IThreadManager*> g_ThreadManagers;
+
+extern HANDLE g_MainThreadId;
 
 IThreadManager * FindThreadManagerByVirtualAddress(PVOID VirtualAddress)
 {
@@ -194,7 +196,8 @@ public:
 	{
 		if (m_bStartTermination)
 		{
-			return true;
+			if(NtCurrentTeb()->ClientId.UniqueThread != g_MainThreadId)
+				return true;
 		}
 		return false;
 	}

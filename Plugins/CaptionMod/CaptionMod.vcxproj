@@ -82,7 +82,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;STEAM_API_NODLL;GLEW_STATIC;VGUI_USE_SURFACE2;VGUI_USE_SCHEME2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Async</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader />
       <DisableSpecificWarnings>4291;4311;4312;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
@@ -105,7 +105,7 @@ $(GLEWCheckRequirements)</Command>
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\SteamSDK;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;STEAM_API_NODLL;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;STEAM_API_NODLL;GLEW_STATIC;VGUI_USE_SURFACE2;VGUI_USE_SCHEME2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader />
