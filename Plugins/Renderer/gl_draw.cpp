@@ -2167,7 +2167,10 @@ bool LoadImageGenericRGB32F(const char* filename, FIBITMAP* fiB, gl_loadtexture_
 
 	size_t rowSize = w * sizeof(vec3_t);
 
-	FreeImage_FlipVertical(fiB);
+	if (!context->vflip)
+	{
+		FreeImage_FlipVertical(fiB);
+	}
 
 	//Assume the texture to be SRGB
 	float r_texgamma = 1.0f / v_gamma->value;
@@ -2199,7 +2202,10 @@ bool LoadImageGenericBGRA8(const char *filename, FIBITMAP* fiB, gl_loadtexture_c
 
 	byte* imageData = FreeImage_GetBits(fiB);
 
-	FreeImage_FlipVertical(fiB);
+	if (!context->vflip)
+	{
+		FreeImage_FlipVertical(fiB);
+	}
 
 	for (unsigned y = 0; y < h; ++y) {
 		// Get a pointer to the start of the pixel row.
@@ -3166,7 +3172,7 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 	bool bLoaded = false;
 	char filepath[1024];
 
-	if (!gPrivateFuncs.staticGetTextureById)
+	if (gPrivateFuncs.staticGetTextureById)
 	{
 		auto texture = gPrivateFuncs.staticGetTextureById(textureId);
 
@@ -3188,6 +3194,12 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 	gl_loadtexture_context_t context;
 	context.wrap = GL_CLAMP_TO_EDGE;
 	context.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
+
+	if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+	{
+		context.vflip = true;
+	}
+
 	context.callback = [pthis, textureId, hardwareFilter](gl_loadtexture_context_t* ctx) {
 
 		if (ctx->mipmaps.size() > 0)

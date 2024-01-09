@@ -69,6 +69,7 @@ typedef struct gl_loadtexture_context_s
 
 		mipmap = false;
 		compressed = false;
+		vflip = false;
 	}
 
 	int width;
@@ -86,6 +87,9 @@ typedef struct gl_loadtexture_context_s
 
 	bool mipmap;
 	bool compressed;
+
+	//Back compatibility with blob engine
+	bool vflip;
 
 	//Loader field
 

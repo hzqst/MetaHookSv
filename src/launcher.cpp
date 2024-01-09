@@ -328,6 +328,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 			if (hBlobEngine)
 			{
+				BlobLoaderAddBlob(hBlobEngine);
 				RunDllMainForBlob(hBlobEngine, DLL_PROCESS_ATTACH);
 				RunExportEntryForBlob(hBlobEngine, (void**)&engineAPI);
 
