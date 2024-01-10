@@ -69,7 +69,7 @@ typedef struct gl_loadtexture_context_s
 
 		mipmap = false;
 		compressed = false;
-		vflip = false;
+		ignore_direction_LoadTGA = false;
 	}
 
 	int width;
@@ -88,8 +88,8 @@ typedef struct gl_loadtexture_context_s
 	bool mipmap;
 	bool compressed;
 
-	//Back compatibility with blob engine
-	bool vflip;
+	//Valve's LoadTGA ignores the direction bits
+	bool ignore_direction_LoadTGA;
 
 	//Loader field
 

@@ -2167,10 +2167,7 @@ bool LoadImageGenericRGB32F(const char* filename, FIBITMAP* fiB, gl_loadtexture_
 
 	size_t rowSize = w * sizeof(vec3_t);
 
-	if (!context->vflip)
-	{
-		FreeImage_FlipVertical(fiB);
-	}
+	FreeImage_FlipVertical(fiB);
 
 	//Assume the texture to be SRGB
 	float r_texgamma = 1.0f / v_gamma->value;
@@ -2202,10 +2199,7 @@ bool LoadImageGenericBGRA8(const char *filename, FIBITMAP* fiB, gl_loadtexture_c
 
 	byte* imageData = FreeImage_GetBits(fiB);
 
-	if (!context->vflip)
-	{
-		FreeImage_FlipVertical(fiB);
-	}
+	FreeImage_FlipVertical(fiB);
 
 	for (unsigned y = 0; y < h; ++y) {
 		// Get a pointer to the start of the pixel row.
@@ -2385,7 +2379,7 @@ bool LoadWEBP(const char* filename, const char* pathId, gl_loadtexture_context_t
 
 	if (!fiBMulti)
 	{
-		gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, FreeImage_OpenMultiBitmapFromHandle failed.\n", filename);
+		gEngfuncs.Con_Printf("LoadWEBP: Could not load %s, FreeImage_OpenMultiBitmapFromHandle failed.\n", filename);
 		return false;
 	}
 
@@ -2397,7 +2391,7 @@ bool LoadWEBP(const char* filename, const char* pathId, gl_loadtexture_context_t
 	{
 		if (!LoadWEBPFrame(fiBMulti, i, context))
 		{
-			gEngfuncs.Con_Printf("LoadImageGeneric: Could not load %s, LoadWEBPFrame failed.\n", filename);
+			gEngfuncs.Con_Printf("LoadWEBP: Could not load %s, LoadWEBPFrame failed.\n", filename);
 			return false;
 		}
 	}
@@ -2461,7 +2455,13 @@ bool LoadImageGeneric(const char *filename, const char* pathId, gl_loadtexture_c
 		return false;
 	}
 
-	auto fiB = FreeImage_LoadFromHandle(fiFormat, &fiIO, (fi_handle)fileHandle);
+	int flags = 0;
+	if (context->ignore_direction_LoadTGA && fiFormat == FIF_TARGA)
+	{
+		flags |= TARGA_IGNORE_DIRECTION;
+	}
+
+	auto fiB = FreeImage_LoadFromHandle(fiFormat, &fiIO, (fi_handle)fileHandle, flags);
 
 	if (!fiB)
 	{
@@ -3194,11 +3194,7 @@ void __fastcall enginesurface_drawSetTextureFile(void* pthis, int dummy, int tex
 	gl_loadtexture_context_t context;
 	context.wrap = GL_CLAMP_TO_EDGE;
 	context.filter = hardwareFilter ? GL_LINEAR : GL_NEAREST;
-
-	if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-	{
-		context.vflip = true;
-	}
+	context.ignore_direction_LoadTGA = true;
 
 	context.callback = [pthis, textureId, hardwareFilter](gl_loadtexture_context_t* ctx) {
 
