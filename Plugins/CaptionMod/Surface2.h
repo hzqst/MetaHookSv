@@ -256,6 +256,8 @@ public:
 
 	//Added in HL25
 	void GetHDProportionalBase(int& width, int& height);
+	void SetProportionalBase(int width, int height);
+	void SetHDProportionalBase(int width, int height);
 
 	void CalculateMouseVisible( void );
 	bool NeedKBInput( void );

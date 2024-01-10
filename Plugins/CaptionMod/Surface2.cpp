@@ -1002,6 +1002,24 @@ void CSurface2::GetProportionalBase(int &width, int &height)
 	g_pSurface->GetProportionalBase(width, height);
 }
 
+//Added in HL25
+void CSurface2::SetProportionalBase(int width, int height)
+{
+	if (g_pSurface_HL25)
+	{
+		return g_pSurface_HL25->SetProportionalBase(width, height);
+	}
+}
+
+void CSurface2::SetHDProportionalBase(int width, int height)
+{
+	if (g_pSurface_HL25)
+	{
+		return g_pSurface_HL25->SetHDProportionalBase(width, height);
+	}
+}
+
+//Added in HL25
 void CSurface2::GetHDProportionalBase(int& width, int& height)
 {
 	if (g_pSurface_HL25)

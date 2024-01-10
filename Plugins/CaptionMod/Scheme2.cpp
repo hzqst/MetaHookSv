@@ -336,8 +336,49 @@ void CScheme::LoadFromFile(VPANEL sizingPanel, const char *inFilename, const cha
 	}
 	else
 	{
-		Assert("You need to name the scheme!");
+		//Assert("You need to name the scheme!");
 		Q_strncpy(tag, "default", sizeof(tag));
+	}
+
+	//Added in HL25
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		//Why does Valve use GetFloat ???
+
+		/*
+			if ( (*(int (__thiscall **)(_DWORD, const char *, _DWORD))(**(_DWORD **)(this + 328) + 20))(
+					 *(_DWORD *)(this + 328),
+					 "ProportionalBaseWidth",
+					 0)
+				&& (*(int (__thiscall **)(_DWORD, const char *, _DWORD))(**(_DWORD **)(this + 328) + 20))(
+					 *(_DWORD *)(this + 328),
+					 "ProportionalBaseHeight",
+					 0) )
+			  {
+				v10 = *(_DWORD *)(this + 328);
+				v11 = *(_DWORD *)dword_100282B8;
+				(*(void (__thiscall **)(int, const char *, float))(*(_DWORD *)v10 + 44))(v10, "ProportionalBaseHeight", 480.0);
+				sub_1001E7E0();
+				(*(void (__thiscall **)(int, const char *, float))(*(_DWORD *)v10 + 44))(v10, "ProportionalBaseWidth", 640.0);
+				v12 = sub_1001E7E0();
+				(*(void (__thiscall **)(int, int))(v11 + 412))(dword_100282B8, v12);
+			  }
+		*/
+
+		/*
+			auto ProportionalBaseHeight = m_pkvBaseSettings->GetFloat("ProportionalBaseHeight", 480.0f);
+			auto ProportionalBaseWidth = m_pkvBaseSettings->GetFloat("ProportionalBaseWidth", 640.0f);
+		*/
+
+		auto ProportionalBaseWidth = m_pkvBaseSettings->GetInt("ProportionalBaseWidth", 640);
+		auto ProportionalBaseHeight = m_pkvBaseSettings->GetInt("ProportionalBaseHeight", 480);
+
+		surface()->SetProportionalBase(ProportionalBaseWidth, ProportionalBaseHeight);
+
+		auto ProportionalBaseWidthHD = m_pkvBaseSettings->GetInt("ProportionalBaseWidthHD", 1280);
+		auto ProportionalBaseHeightHD = m_pkvBaseSettings->GetInt("ProportionalBaseHeightHD", 720);
+
+		surface()->SetHDProportionalBase(ProportionalBaseWidthHD, ProportionalBaseHeightHD);
 	}
 
 	for (int i = 0; i < ARRAYSIZE(g_SchemeTranslation); i++)
@@ -397,13 +438,13 @@ void CScheme::LoadFonts(void)
 
 			HFont hFont = surface()->CreateFont();
 
-			int j = m_FontAliases.AddToTail();
+			int fontIndex = m_FontAliases.AddToTail();
 
-			m_FontAliases[j]._fontName = fontName;
-			m_FontAliases[j]._trueFontName = kv->GetName();
-			m_FontAliases[j]._font = hFont;
-			m_FontAliases[j].m_bProportional = proportional;
-			m_FontAliases[j].m_bHD = hd;
+			m_FontAliases[fontIndex]._fontName = fontName;
+			m_FontAliases[fontIndex]._trueFontName = kv->GetName();
+			m_FontAliases[fontIndex]._font = hFont;
+			m_FontAliases[fontIndex].m_bProportional = proportional;
+			m_FontAliases[fontIndex].m_bHD = hd;
 		}
 	}
 
@@ -422,6 +463,7 @@ void CScheme::ReloadFontGlyphs(void)
 	}
 
 	int minimumFontHeight = GetMinimumFontHeightForCurrentLanguage();
+
 	KeyValues *fonts = m_pData->FindKey("Fonts", true);
 
 	for (int i = 0; i < m_FontAliases.Count(); i++)
