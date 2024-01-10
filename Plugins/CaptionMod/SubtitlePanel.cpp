@@ -459,17 +459,10 @@ void SubtitlePanel::StartSubtitle(CDictionary *Dict, float flStartTime)
 			LastP = p;
 			nLastCharNum = nCharNum;
 
-			//English word don't break at half...
-			if((*p >= L'A' && *p <= L'Z') || (*p >= L'a' && *p <= L'z'))
+			//Make sure English words, numbers, punctuations, and certain additional characters don't break in half...
+			if((*p >= L'A' && *p <= L'Z') || (*p >= L'a' && *p <= L'z') || *p == L'Ç' || *p == L'ç' || *p == L'Ğ' || *p == L'ğ' || *p == L'İ' || *p == L'ı' || *p == L'Ö' || *p == L'ö' || *p == L'Ş' || *p == L'ş' || *p == L'Ü' || *p == L'ü' || *p == L'â' || *p == L'Â' || *p == L':' || *p == L'-' || *p == L'\'' || *p == L'"' || *p == L',' || *p == L'.' || *p == L'!' || *p == L'?' || *p == L';' || *p == '%' || (*p >= L'0' && *p <= L'9'))
 			{
-				while((*p >= L'A' && *p <= L'Z') || (*p >= L'a' && *p <= L'z') || *p == L'.' || *p == L',' || *p == L'\'' || *p == L'"' || *p == L'-')
-					szBuf[nCharNum++] = *p++;
-				szBuf[nCharNum] = L'\0';
-			}
-			//number don't break at half...
-			else if((*p >= L'0' && *p <= L'9') || *p == L':' || *p == L'-' || *p == L'\'' || *p == L'"'|| *p == L',' || *p == L'.')
-			{
-				while((*p >= L'0' && *p <= L'9') || *p == L':' || *p == L'-' || *p == L'\'' || *p == L'"' || *p == L',' || *p == L'.')
+				while((*p >= L'A' && *p <= L'Z') || (*p >= L'a' && *p <= L'z') || *p == L'Ç' || *p == L'ç' || *p == L'Ğ' || *p == L'ğ' || *p == L'İ' || *p == L'ı' || *p == L'Ö' || *p == L'ö' || *p == L'Ş' || *p == L'ş' || *p == L'Ü' || *p == L'ü' || *p == L'â' || *p == L'Â' || *p == L':' || *p == L'-' || *p == L'\'' || *p == L'"'|| *p == L',' || *p == L'.' || *p == L'!' || *p == L'?' || *p == L';' || *p == '%' || (*p >= L'0' && *p <= L'9'))
 					szBuf[nCharNum++] = *p++;
 				szBuf[nCharNum] = L'\0';
 			}
