@@ -6,4 +6,4 @@ set FullGameName=Half-Life : Blue Shift
 set ShortGameName=BlueShift
 set GameAppId=130
 
-call "install-AIO.bat"
+call "install-helper-AIO.bat"

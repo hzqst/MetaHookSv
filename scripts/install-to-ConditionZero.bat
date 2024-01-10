@@ -6,4 +6,4 @@ set FullGameName=Counter-Strike : Condition Zero
 set ShortGameName=ConditionZero
 set GameAppId=80
 
-call "install-AIO.bat"
+call "install-helper-AIO.bat"

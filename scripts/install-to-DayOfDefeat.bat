@@ -6,4 +6,4 @@ set FullGameName=Day of Defeat
 set ShortGameName=DayOfDefeat
 set GameAppId=30
 
-call "install-AIO.bat"
+call "install-helper-AIO.bat"

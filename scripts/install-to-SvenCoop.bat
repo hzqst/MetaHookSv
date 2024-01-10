@@ -6,4 +6,4 @@ set FullGameName=Sven Co-Op
 set ShortGameName=SvenCoop
 set GameAppId=225840
 
-call "install-AIO.bat"
+call "install-helper-AIO.bat"

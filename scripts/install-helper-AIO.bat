@@ -43,6 +43,6 @@ echo -----------------------------------------------------
 
 echo Copying files...
 
-call "%SolutionDir%scripts\install-CopySDL2.bat"
-call "%SolutionDir%scripts\install-CopyBuild.bat"
-call "%SolutionDir%scripts\install-CreateShortcut.bat"
+call "%SolutionDir%scripts\install-helper-CopySDL2.bat"
+call "%SolutionDir%scripts\install-helper-CopyBuild.bat"
+call "%SolutionDir%scripts\install-helper-CreateShortcut.bat"

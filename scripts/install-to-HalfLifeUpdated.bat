@@ -6,4 +6,4 @@ set FullGameName=Half-Life Updated
 set ShortGameName=HalfLifeUpdated
 set GameAppId=70
 
-call "install-AIO.bat"
+call "install-helper-AIO.bat"
