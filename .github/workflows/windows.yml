@@ -66,16 +66,7 @@ jobs:
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: |
           mkdir "Output\scripts"
-          copy "scripts\install-to-BlueShift.bat" "Output\scripts" /y
-          copy "scripts\install-to-ConditionZero.bat" "Output\scripts" /y
-          copy "scripts\install-to-CounterStrike.bat" "Output\scripts" /y
-          copy "scripts\install-to-CSCZDeletedScenes.bat" "Output\scripts" /y
-          copy "scripts\install-to-DayOfDefeat.bat" "Output\scripts" /y
-          copy "scripts\install-to-Echoes.bat" "Output\scripts" /y
-          copy "scripts\install-to-HalfLife.bat" "Output\scripts" /y
-          copy "scripts\install-to-HalfLifeUpdated.bat" "Output\scripts" /y
-          copy "scripts\install-to-OpposingForce.bat" "Output\scripts" /y
-          copy "scripts\install-to-SvenCoop.bat" "Output\scripts" /y
+          copy "scripts\install-*.bat" "Output\scripts" /y
         shell: cmd
 
       - name: Zipping All

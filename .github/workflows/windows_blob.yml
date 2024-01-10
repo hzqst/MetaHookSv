@@ -53,6 +53,14 @@ jobs:
           xcopy "Build" "Output\Build" /y /e
         shell: cmd
 
+      - name: Copy install bat to Output
+        working-directory: ${{env.GITHUB_WORKSPACE}}
+        run: |
+          mkdir "Output\scripts"
+          copy "scripts\install-helper-*.bat" "Output\scripts" /y
+          copy "scripts\install-to-CustomGame.bat" "Output\scripts" /y
+        shell: cmd
+
       - name: Zipping All
         uses: vimtor/action-zip@v1
         with:
