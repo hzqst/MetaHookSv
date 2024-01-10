@@ -1,16 +1,16 @@
 # 可安装资源
 
-### svencoop.exe (必须)
+### MetaHook.exe / MetaHook_blob.exe (必须)
 
 metahook主启动器
 
-### FreeImage.dll (可选)
-
-Renderer.dll的依赖项，如果要使用Renderer.dll则必须安装
+* 使用 MetaHook_blob.exe 而不是 MetaHook.exe 来加载旧版的加密引擎（如3248或3266版本的引擎）。
 
 ### SDL.dll (可选)
 
 `SDL2.dll`文件是用来修复原版SDL使用中文输入法进行游戏时可能发生的内存越界写入导致游戏崩溃的问题。如果你全程都关闭中文输入法的话也可以选择不替换`SDL2.dll`。
+
+* Valve在HL25周年补丁中更新了修复了缓冲区越界问题的SDL2，所以如果你是HL25周年正版就不需要替换SDL2.dll
 
 ### svencoop/captionmod/* (可选)
 
