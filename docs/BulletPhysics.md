@@ -18,13 +18,13 @@
 
 ### Compatibility
 
-|        Engine            |      |
-|        ----              | ---- |
-| GoldSrc_blob   (< 4554)  | -    |
-| GoldSrc_legacy (< 6153)  | -    |
-| GoldSrc_new    (8684 ~)  | √    |
-| SvEngine       (8832 ~)  | √    |
-| GoldSrc_HL25   (>= 9884) | -    |
+|        Engine               |      |
+|        ----                 | ---- |
+| GoldSrc_blob   (3266~?)     | √    |
+| GoldSrc_legacy (4554~6153)  | √    |
+| GoldSrc_new    (8684 ~)     | √    |
+| SvEngine       (8832 ~)     | √    |
+| GoldSrc_HL25   (>= 9884)    | √    |
 
 ### Console Vars
 
