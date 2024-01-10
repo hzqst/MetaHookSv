@@ -24,7 +24,6 @@
 #include <vgui/IInputInternal.h>
 #include <vgui/IScheme.h>
 #include <vgui/ISurface.h>
-#include <vgui/ISurface2.h>
 #include <vgui/ISystem.h>
 #include <vgui/IVGUI.h>
 #include <vgui/IPanel.h>
@@ -32,11 +31,19 @@
 #include <vgui/MouseCode.h>
 #include <vgui/KeyCode.h>
 
+#ifdef VGUI_USE_SURFACE2
+#include "Surface2.h"
+#endif
+
+#ifdef VGUI_USE_SCHEME2
+#include "Scheme2.h"
+#endif
+
 extern IFileSystem *g_pFullFileSystem;
 
 extern vgui::IInput *g_pVGuiInput;
-extern vgui::ISchemeManager *g_pVGuiSchemeManager;
-extern vgui::CSurface *g_pVGuiSurface;
+extern vgui::CSchemeManager * g_pVGuiSchemeManager;
+extern vgui::CSurface2 *g_pVGuiSurface;
 extern vgui::ISystem *g_pVGuiSystem;
 extern vgui::IVGui *g_pVGui;
 extern vgui::IPanel *g_pVGuiPanel;
@@ -78,13 +85,13 @@ inline vgui::IInputInternal *inputinternal()
 }
 
 // #include <vgui/IScheme.h>
-inline vgui::ISchemeManager *scheme()
+inline vgui::CSchemeManager *scheme()
 {
 	return g_pVGuiSchemeManager;
 }
 
 // #include <vgui/ISurface.h>
-inline vgui::CSurface *surface()
+inline vgui::CSurface2 *surface()
 {
 	return g_pVGuiSurface;
 }

@@ -30,4 +30,5 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
     MSBuild.exe MetaHook.sln "/target:Plugins\SCModelDownloader" /p:Configuration="Release" /p:Platform="Win32"
     MSBuild.exe MetaHook.sln "/target:Plugins\SteamScreenshots" /p:Configuration="Release" /p:Platform="Win32"
     MSBuild.exe MetaHook.sln "/target:Plugins\StudioEvents" /p:Configuration="Release" /p:Platform="Win32"
+    MSBuild.exe MetaHook.sln "/target:Plugins\ThreadGuard" /p:Configuration="Release" /p:Platform="Win32"
 )

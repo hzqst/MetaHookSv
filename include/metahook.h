@@ -55,227 +55,206 @@ typedef struct hook_s hook_t;
 #define PLUGIN_LOAD_INVALID 3
 #define PLUGIN_LOAD_NOMEM 4
 
-typedef void (*DisasmSingleCallback)(void *inst, PUCHAR address, size_t instLen, PVOID context);
-typedef BOOL (*DisasmCallback)(void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context);
-typedef BOOL (*FindAddressCallback)(PUCHAR address);
+#define LOAD_DLL_NOTIFICATION_IS_BLOB		0x1
+#define LOAD_DLL_NOTIFICATION_IS_ENGINE		0x2
+#define LOAD_DLL_NOTIFICATION_IS_CLIENT		0x4
+#define LOAD_DLL_NOTIFICATION_IS_LOAD		0x8
+#define LOAD_DLL_NOTIFICATION_IS_UNLOAD		0x10
 
 typedef void* BlobHandle_t;
 
-typedef struct blob_thread_manager_api_s
+typedef struct mh_load_dll_notification_context_s
 {
-	void (*InitBlobThreadManager)(void);
-	void (*ShutdownBlobThreadManager)(void);
-	void (*EnterCritSection)(void);
-	void (*LeaveCritSection)(void);
-	bool (*FindAliveThread)(HANDLE hThread);
-	bool (*FindAndRemoveAliveThread)(HANDLE hThread);
-	bool (*AddAliveThread)(HANDLE hThread);
-	bool (*FindClosedThread)(HANDLE hThread);
-	bool (*AddClosedThread)(HANDLE hThread);
-	bool (*FindAndRemoveSignaledAliveThread)(DWORD* pIndex);
-	bool (*FindAndRemoveSignaledClosedThread)(DWORD* pIndex);
+	HMODULE hModule;
+	BlobHandle_t hBlob;
+	PVOID ImageBase;
+	ULONG ImageSize;
+	int flags;
+	LPCWSTR FullDllName;
+	LPCWSTR BaseDllName;
+}mh_load_dll_notification_context_t;
 
-	HANDLE(WINAPI** PointerToOriginalCreateThread)(
-		LPSECURITY_ATTRIBUTES   lpThreadAttributes,
-		SIZE_T                  dwStackSize,
-		LPTHREAD_START_ROUTINE  lpStartAddress,
-		LPVOID					lpParameter,
-		DWORD                   dwCreationFlags,
-		LPDWORD                 lpThreadId
-		);
-
-	BOOL(WINAPI** PointerToOriginalCloseHandle)(HANDLE hObject);
-
-	BOOL(WINAPI** PointerToOriginalTerminateThread)( HANDLE hThread, DWORD  dwExitCode );
-
-	HANDLE(WINAPI* BlobCreateThread)(
-		LPSECURITY_ATTRIBUTES   lpThreadAttributes,
-		SIZE_T                  dwStackSize,
-		LPTHREAD_START_ROUTINE  lpStartAddress,
-		LPVOID					lpParameter,
-		DWORD                   dwCreationFlags,
-		LPDWORD                 lpThreadId
-	);
-
-	BOOL (WINAPI* BlobCloseHandle)(HANDLE hObject);
-
-	BOOL (WINAPI* BlobTerminateThread)( HANDLE hThread, DWORD dwExitCode );
-
-}blob_thread_manager_api_t;
+typedef void (*DisasmSingleCallback)(void *inst, PUCHAR address, size_t instLen, PVOID context);
+typedef BOOL (*DisasmCallback)(void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context);
+typedef BOOL (*FindAddressCallback)(PUCHAR address);
+typedef void (*LoadDllNotificationCallback)(mh_load_dll_notification_context_t*ctx);
 
 typedef struct metahook_api_s
 {
+	/*
+		Purpose : Uninstall the hook
+	*/
 	BOOL (*UnHook)(hook_t *pHook);
 
+	/*
+		Purpose : Install JMP hook at begin of function,
+		Warning : This hook operation will be delayed until LoadEngine or LoadClient from all plugins called, if it is requseted from inside LoadEngine or LoadClient.
+		otherwise the hook operation will be performed immediately.
+	*/
 	hook_t *(*InlineHook)(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCall);
-	/*
-		Install JMP hook at begin of function,
-		Warning : this hook operation will be delayed until LoadEngine or LoadClient from all plugins called, if it is requseted from inside LoadEngine or LoadClient.
-		otherwise the hook operation is executed immediately.
-	*/
 
+	/*
+		Purpose : Install VFT hook
+		This will modify the content of Virtual Function Table
+	*/
 	hook_t *(*VFTHook)(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFuncAddr, void **pOrginalCall);
-	/*
-		Install VFT hook
-		This will modify the Virtual Function Table
-	*/
 
+	/*
+		Purpose : Install IAT hook
+		This will modify the content of Import Address Table
+	*/
 	hook_t *(*IATHook)(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, void *pNewFuncAddr, void **pOrginalCall);
-	/*
-		Install IAT hook
-		This will modify the Import Address Table
-	*/
 
-	void *(*GetClassFuncAddr)(...);
 	/*
 		Unused
 	*/
+	void *(*GetClassFuncAddr)(...);
 
+	/*
+		Purpose : Query module base of given virtual address
+		Return null if it's a BlobEngine
+	*/
 	PVOID (*GetModuleBase)(PVOID VirtualAddress);
-	/*
-		Query module base of given virtual address
-	*/
 
+	/*
+		Purpose : Query module size of given module base
+	*/
 	DWORD (*GetModuleSize)(PVOID ModuleBase);
-	/*
-		Query module size of given module base
-	*/
 
+	/*
+		Purpose : Query module handle of engine dll
+		Return null if it's a BlobEngine
+	*/
 	HMODULE (*GetEngineModule)(void);
-	/*
-		Query module handle of engine dll
-		Could be null if BlobEngine is loaded
-	*/
 
+	/*
+		Purpose : Query module base of engine
+	*/
 	PVOID (*GetEngineBase)(void);
-	/*
-		Query module base of engine dll
-	*/
 
+	/*
+		Purpose : Query module size of engine
+	*/
 	DWORD (*GetEngineSize)(void);
-	/*
-		Query module size of engine dll
-	*/
 
+	/*
+		Purpose : Search pattern (signature) in given region
+	*/
 	void *(*SearchPattern)(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
-	/*
-		Search pattern (signature) in given region
-	*/
 
+	/*
+		Purpose : Write 4bytes value at given address, ignoring page protection
+	*/
 	void (*WriteDWORD)(void *pAddress, DWORD dwValue);
+
 	/*
-		Write 4bytes value at given address, ignoring page protection
+		Purpose : Read 4bytes from given address
 	*/
-	
 	DWORD (*ReadDWORD)(void *pAddress);
-	/*
-		Read 4bytes from given address
-	*/
 
+	/*
+		Purpose : Write memory at given address, ignoring page protection
+	*/
 	DWORD (*WriteMemory)(void *pAddress, void *pData, DWORD dwDataSize);
-	/*
-		Write memory at given address, ignoring page protection
-	*/
 
+	/*
+		Purpose : Read memory from given address
+	*/
 	DWORD (*ReadMemory)(void *pAddress, void *pData, DWORD dwDataSize);
-	/*
-		Read memory from given address
-	*/
 
+	/*
+		Purpose : Get VideoMode, VideoWidth, VideoHeight, BitPerPixel (16 or 24), WindowedMode
+	*/
 	DWORD (*GetVideoMode)(int *width, int *height, int *bpp, bool *windowed);
-	/*
-		Get VideoMode, VideoWidth, VideoHeight, BitPerPixel (16 or 24), WindowedMode
-	*/
 
+	/*
+		Purpose : Get buildnum of loaded engine.
+	*/
 	DWORD (*GetEngineBuildnum)(void);
-	/*
-		Get buildnum of loaded engine.
-	*/
 
+	/*
+		Purpose : Get factory interface (CreateInterface) of engine dll
+	*/
 	CreateInterfaceFn (*GetEngineFactory)(void);
-	/*
-		Get factory interface (CreateInterface) of engine dll
-	*/
 
+	/*
+		Purpose : Get the branch target of 0xE8 jmp instruction at given address
+	*/
 	void *(*GetNextCallAddr)(void *pAddress, DWORD dwCount);
-	/*
-		Get the branch target of 0xE8 jmp instruction at given address
-	*/
 
+	/*
+		Purpose : Write 1 byte value at given address, ignoring page protection
+	*/
 	void (*WriteBYTE)(void *pAddress, BYTE ucValue);
-	/*
-		Write 1 byte value at given address, ignoring page protection
-	*/
 
+	/*
+		Purpose : Read 1 byte from given address
+	*/
 	BYTE (*ReadBYTE)(void *pAddress);
-	/*
-		Read 1 byte from given address
-	*/
 
+	/*
+		Purpose : Write 0x90 (x86 nop) at given address, ignoring page protection
+	*/
 	void (*WriteNOP)(void *pAddress, DWORD dwCount);
-	/*
-		Write 0x90 (x86 nop) at given address, ignoring page protection
-	*/
 
+	/*
+		Purpose : Return one of them :  ENGINE_UNKNOWN, ENGINE_GOLDSRC_BLOB, ENGINE_GOLDSRC, ENGINE_GOLDSRC_HL25, ENGINE_SVENGINE
+	*/
 	int (*GetEngineType)(void);
-	/*
-		Return one of them :  ENGINE_UNKNOWN, ENGINE_GOLDSRC_BLOB, ENGINE_GOLDSRC, ENGINE_SVENGINE
-	*/
 
+	/*
+		Purpose : Return one of them : "Unknown", "GoldSrc_Blob", "GoldSrc", "GoldSrc_HL25", "SvEngine"
+	*/
 	const char *(*GetEngineTypeName)(void);
-	/*
-		Return one of them : "Unknown", "GoldSrc_Blob", "GoldSrc", "SvEngine"
-	*/
 
+	/*
+		Purpose : Reverse search from given base to lower address, find 90 90 90 99 + ??, or CC CC CC CC + ??
+	*/
 	PVOID(*ReverseSearchFunctionBegin)(PVOID SearchBegin, DWORD SearchSize);
-	/*
-		Reverse search from given base to lower address, find 90 90 90 99 + ??, or CC CC CC CC + ??
-	*/
 
+	/*
+		Purpose : Return the section base and section size of given image and section name.
+	*/
 	PVOID(*GetSectionByName)(PVOID ImageBase, const char *SectionName, ULONG *SectionSize);
-	/*
-		Return the section base and section size of given image and section name.
-	*/
 
+	/*
+		Purpose : Disassemble a instruction at given address, return result inside callback
+	*/
 	int (*DisasmSingleInstruction)(PVOID address, DisasmSingleCallback callback, void *context);
-	/*
-		Disassemble a instruction at given address, return result inside callback
-	*/
 
+	/*
+		Purpose : Disassemble instructions at given range of address, return result inside callback
+	*/
 	BOOL (*DisasmRanges)(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callback, int depth, PVOID context);
-	/*
-		Disassemble instructions at given range of address, return result inside callback
-	*/
 
+	/*
+		Purpose : Search pattern (signature) from pStartSearch in reversed direction
+	*/
 	void *(*ReverseSearchPattern)(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
-	/*
-		Search pattern (signature) from pStartSearch in reverse direction
-	*/
 
+	/*
+		Purpose : Get module handle of client dll
+		Return null if it's a SecureClient
+	*/
 	HMODULE	(*GetClientModule)(void);
-	/*
-		Get module handle of client dll
-		Could be null if SecureClient is loaded
-	*/
 
+	/*
+		Purpose: Get image base of client
+	*/
 	PVOID (*GetClientBase)(void);
-	/*
-		Get module base of client dll
-	*/
 
+	/*
+		Purpose: Get image size of client
+	*/
 	DWORD (*GetClientSize)(void);
-	/*
-		Get module size of client dll
-	*/
 
+	/*
+		Purpose: Get factory interface (CreateInterface) of client dll
+	*/
 	CreateInterfaceFn(*GetClientFactory)(void);
-	/*
-		Get factory interface (CreateInterface) of client dll
-	*/
 
-	BOOL (*QueryPluginInfo)(int fromindex, mh_plugininfo_t *info);
 	/*
-		Query information of all loaded plugins.
+		Purpose: Query information of all loaded plugins.
 
 		Usage:
 
@@ -285,9 +264,10 @@ typedef struct metahook_api_s
 
 		}
 	*/
-	BOOL (*GetPluginInfo)(const char *name, mh_plugininfo_t *info);
+	BOOL (*QueryPluginInfo)(int fromindex, mh_plugininfo_t *info);
+
 	/*
-		Get information of specified plugin
+		Purpose: Get information of specified plugin
 
 		Usage:
 
@@ -297,69 +277,117 @@ typedef struct metahook_api_s
 
 		}
 	*/
-	pfnUserMsgHook (*HookUserMsg)(const char *szMsgName, pfnUserMsgHook pfn);
+	BOOL (*GetPluginInfo)(const char *name, mh_plugininfo_t *info);
+
 	/*
 		Find registered UserMsg, and set it's pfnHook to specified function pointer, return original function pointer if exists.
 	*/
+	pfnUserMsgHook (*HookUserMsg)(const char *szMsgName, pfnUserMsgHook pfn);
 
-	cvar_callback_t (*HookCvarCallback)(const char *cvar_name, cvar_callback_t callback);
 	/*
-		Find existing cvar, and set it's Cvar-Set callback to specified function pointer, return original callback function pointer if exists.
+		Purpose: Find existing cvar, and set it's Cvar-Set callback to specified function pointer, return original callback function pointer if exists.
 
 		Important: Cvar-Set callback only get called when changing cvar value from console.
 	*/
+	cvar_callback_t (*HookCvarCallback)(const char *cvar_name, cvar_callback_t callback);
 
+	/*
+		Purpose: Find existing console command, and set it's command callback to specified function pointer, return original callback function pointer.
+	*/
 	xcommand_t(*HookCmd)(const char *cmd_name, xcommand_t newfuncs);
-	/*
-		Find existing console command, and set it's command callback to specified function pointer, return original callback function pointer.
-	*/
 
+	/*
+		Purpose: Popup an error message box and terminate game.
+	*/
 	void (*SysError)(const char *fmt, ...);
-	/*
-		Show error msgbox and terminate game process.
-	*/
 
+	/*
+		Purpose: Reverse search from given base to lower address, find 90 90 90 99 + ??, or CC CC CC CC + ??, but with additional check
+	*/
 	PVOID(*ReverseSearchFunctionBeginEx)(PVOID SearchBegin, DWORD SearchSize, FindAddressCallback callback);
-	/*
-		Reverse search from given base to lower address, find 90 90 90 99 + ??, or CC CC CC CC + ??
-	*/
 
-	bool(*IsDebuggerPresent)();
 	/*
-	Basically the name
+		Purpose: Check if debugger is attached to current game process.
 	*/
+	bool(*IsDebuggerPresent)(void);
 
-	bool(*RegisterCvarCallback)(const char* cvar_name, cvar_callback_t callback, cvar_callback_t *pOldCallback);
 	/*
-		Find existing cvar, and register a Cvar-Set callback for it, return original callback function pointer in the pOldCallback if exists.
+		Purpose: Find existing cvar, and register a Cvar-Set callback for it, return original callback function pointer in the pOldCallback if exists.
 		Register on existing callback will override the old one (the old one will be in poldcallback)
 
 		Important: Cvar-Set callback only get called when changing cvar value from console.
 	*/
+	bool(*RegisterCvarCallback)(const char* cvar_name, cvar_callback_t callback, cvar_callback_t *pOldCallback);
 
 	/*
-		Manage threads created from blob engine
+		Purpose: Get handle to blob engine module
 	*/
-
-	blob_thread_manager_api_t* BlobThreadManagerAPI;
-
-	/*
-		Get handle to blob engine
-	*/
-
 	BlobHandle_t(*GetBlobEngineModule)(void);
 
 	/*
-		Get handle to blob client
+		Purpose: Get handle to blob client module
 	*/
-
 	BlobHandle_t(*GetBlobClientModule)(void);
 
+	/*
+		Purpose: Get image base of blob module
+	*/
 	PVOID (*GetBlobModuleImageBase)(BlobHandle_t hBlob);
 
+	/*
+		Purpose: Get image size of blob module
+	*/
 	ULONG (*GetBlobModuleImageSize)(BlobHandle_t hBlob);
 
+	/*
+		Purpose: Get section base and section size with the given section name, only ".text\0\0\0" and ".data\0\0\0" supported
+	*/
 	PVOID(*GetBlobSectionByName)(BlobHandle_t hBlob, const char* SectionName, ULONG* SectionSize);
+
+	/*
+		Purpose: Find blob module with specified image base.
+	*/
+	BlobHandle_t(*BlobLoaderFindBlobByImageBase)(PVOID ImageBase);
+
+	/*
+		Purpose: Find blob module with specified virtual address.
+	*/
+	BlobHandle_t(*BlobLoaderFindBlobByVirtualAddress)(PVOID VirtualAddress);
+
+	/*
+		Purpose: Register a load dll notification callback. the callback will be called whenever a dll or blob module is loaded or unloaded.
+	*/
+	void (*RegisterLoadDllNotificationCallback)(LoadDllNotificationCallback callback);
+
+	/*
+		Purpose: Unregister the load dll notification callback
+	*/
+	void (*UnregisterLoadDllNotificationCallback)(LoadDllNotificationCallback callback);
+
+	/*
+		Purpose: Check if the given pszModuleName is imported by hModule
+	*/
+	bool (*ModuleHasImport)(HMODULE hModule, const char* pszModuleName);
+
+	/*
+		Purpose: Check if the given pszModuleName and pszFuncName is imported by hModule
+	*/
+	bool (*ModuleHasImportEx)(HMODULE hModule, const char* pszModuleName, const char* pszFuncName);
+
+	/*
+		Purpose: Check if the given pszModuleName is imported by hBlob
+	*/
+	bool (*BlobHasImport)(BlobHandle_t hBlob, const char* pszModuleName);
+
+	/*
+		Purpose: Check if the given pszModuleName and pszFuncName is imported by hBlob
+	*/
+	bool (*BlobHasImportEx)(BlobHandle_t hBlob, const char* pszModuleName, const char* pszFuncName);
+
+	/*
+		Purpose: Hook IAT in blob module
+	*/
+	hook_t* (*BlobIATHook)(BlobHandle_t hBlob, const char* pszModuleName, const char* pszFuncName, void* pNewFuncAddr, void** pOrginalCall);
 
 }metahook_api_t;
 
@@ -369,8 +397,6 @@ typedef struct mh_enginesave_s
 	cl_enginefunc_t *pEngineFuncs;
 }mh_enginesave_t;
 
-void MH_FreeAllHook(void);
-void MH_LoadPlugins(const char *gamedir);
 void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char *szGameName, const char* szFullGamePath);
 void MH_ExitGame(int iResult);
 void MH_Shutdown(void);

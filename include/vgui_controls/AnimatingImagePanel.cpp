@@ -9,10 +9,11 @@
 #define PROTECTED_THINGS_DISABLE
 
 #include <vgui/IScheme.h>
-#include <vgui/ISurface2.h>
 #include <vgui/ISystem.h>
 #include <vgui/IImage.h>
 #include <vgui/IVGui.h>
+#include <vgui/ISurface.h>
+#include "Surface2.h"
 
 #include <tier1/KeyValues.h>
 

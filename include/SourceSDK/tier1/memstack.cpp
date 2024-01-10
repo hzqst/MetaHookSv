@@ -24,6 +24,8 @@
 #pragma init_seg(lib)
 #endif
 
+#ifndef NO_MALLOC_OVERRIDE
+
 //-----------------------------------------------------------------------------
 
 MEMALLOC_DEFINE_EXTERNAL_TRACKING(CMemoryStack);
@@ -295,3 +297,4 @@ void CMemoryStack::PrintContents()
 }
 
 //-----------------------------------------------------------------------------
+#endif

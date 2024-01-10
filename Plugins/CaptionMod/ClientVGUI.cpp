@@ -119,7 +119,9 @@ void CClientVGUI::Shutdown(void)
 
 }
 
-void ClientVGUI_InstallHook(void)
+void* NewClientFactory(void);
+
+void ClientVGUI_InstallHook(cl_exportfuncs_t* pExportFunc)
 {
 	CreateInterfaceFn ClientVGUICreateInterface = NULL;
 
@@ -149,6 +151,11 @@ void ClientVGUI_InstallHook(void)
 
 			g_IsClientVGUI2 = true;
 		}
+	}
+
+	if (!g_IsClientVGUI2)
+	{
+		pExportFunc->ClientFactory = NewClientFactory;
 	}
 }
 
@@ -185,6 +192,7 @@ void NewClientVGUI::Initialize(CreateInterfaceFn *factories, int count)
 }
 
 extern vgui::ISurface *g_pSurface;
+extern vgui::ISurface_HL25* g_pSurface_HL25;
 
 void NewClientVGUI::Start(void)
 {

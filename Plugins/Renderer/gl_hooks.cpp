@@ -345,6 +345,25 @@ void R_FillAddress(void)
 
 		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{
+			/*
+.rdata:102C94B4 ; const EngineSurface::`vftable'
+.rdata:102C94B4 ??_7EngineSurface@@6B@ dd offset dtor_0 ; DATA XREF: dtor_0+2C¡üo
+.rdata:102C94B4                                         ; sub_102285C0+30¡üo ...
+.rdata:102C94B8                 dd offset pushMakeCurrent //1
+.rdata:102C94BC                 dd offset popMakeCurrent  //2
+.rdata:102C94C0                 dd offset drawFilledRect  //3
+.rdata:102C94C4                 dd offset drawOutlinedRect//4
+.rdata:102C94C8                 dd offset drawLine			//5
+.rdata:102C94CC                 dd offset drawPolyLine		//6
+.rdata:102C94D0                 dd offset drawTexturedPolygon//7
+.rdata:102C94D4                 dd offset drawSetTextureRGBA//8
+.rdata:102C94D8                 dd offset drawSetTexture	//9
+.rdata:102C94DC                 dd offset drawTexturedRect	//10
+.rdata:102C94E0                 dd offset drawTexturedRectAdd//11
+.rdata:102C94E4                 dd offset j_GL_GenTexture	//12
+.rdata:102C94E8                 dd offset drawSetColor		//13
+			*/
+			index_createNewTextureID++;
 			index_drawSetTextureFile ++;
 			index_isTextureIDValid++;
 			index_drawFlushText ++;

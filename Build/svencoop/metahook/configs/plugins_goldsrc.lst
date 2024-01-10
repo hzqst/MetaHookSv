@@ -3,3 +3,4 @@ Renderer.dll
 BulletPhysics.dll
 StudioEvents.dll
 PrecacheManager.dll
+ThreadGuard.dll

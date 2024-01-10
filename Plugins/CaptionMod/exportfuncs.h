@@ -38,7 +38,7 @@ void Engine_UninstallHooks(void);
 void BaseUI_InstallHook(void);
 void GameUI_InstallHooks(void);
 void GameUI_UninstallHooks(void);
-void ClientVGUI_InstallHook(void);
+void ClientVGUI_InstallHook(cl_exportfuncs_t* pExportFunc);
 void ClientVGUI_Shutdown(void);
 void VGUI1_InstallHook(void);
 void VGUI1_Shutdown(void);
@@ -69,6 +69,10 @@ LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 
 int __fastcall ScClient_FindSoundEx(void* pthis, int, const char *sound);
 void __fastcall WeaponsResource_SelectSlot(void *pthis, int, int iSlot, int fAdvance, int iDirection);
+
+void InitWin32Stuffs(void);
+void InitDPIScaling(void);
+float GetDPIScaling(void);
 
 extern cvar_t* cap_debug;
 extern cvar_t* cap_enabled;

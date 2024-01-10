@@ -1,8 +1,11 @@
 #include <metahook.h>
 #include <vgui/IScheme.h>
+#include "Scheme2.h"
 #include "plugins.h"
 
 using namespace vgui;
+
+extern vgui::CSchemeManager * g_pVGuiSchemeManager;
 
 class CSchemeManagerProxy : public ISchemeManager
 {
@@ -29,8 +32,6 @@ static IScheme *(__fastcall *m_pfnGetIScheme)(void *pthis, int, HScheme scheme) 
 static void(__fastcall *m_pfnShutdown)(void *pthis, int, bool full) = NULL;
 static int(__fastcall *m_pfnGetProportionalScaledValue)(void *pthis, int, int normalizedValue) = NULL;
 static int(__fastcall *m_pfnGetProportionalNormalizedValue)(void *pthis, int, int scaledValue) = NULL;
-
-extern vgui::ISchemeManager *g_pVGuiSchemeManager;
 
 HScheme CSchemeManagerProxy::LoadSchemeFromFile(const char *fileName, const char *tag)
 {
@@ -83,6 +84,7 @@ int CSchemeManagerProxy::GetProportionalNormalizedValue(int scaledValue)
 }
 
 static CSchemeManagerProxy g_SchemeProxy;
+
 extern vgui::ISchemeManager *g_pScheme;
 
 class CSchemeManagerProxy_HL25 : public ISchemeManager_HL25
@@ -111,7 +113,6 @@ extern vgui::ISchemeManager_HL25 *g_pVGuiSchemeManager_HL25;
 
 HScheme CSchemeManagerProxy_HL25::LoadSchemeFromFile(const char *fileName, const char *tag)
 {
-	MessageBoxA(NULL, fileName, "TEST", 0);
 	return g_pVGuiSchemeManager->LoadSchemeFromFile(fileName, tag);
 }
 
@@ -162,55 +163,57 @@ int CSchemeManagerProxy_HL25::GetProportionalNormalizedValue(int scaledValue)
 
 float CSchemeManagerProxy_HL25::GetProportionalScale(void)
 {
-	return m_pfnGetProportionalScale(this, 0);
+	return g_pVGuiSchemeManager->GetProportionalScale();
 }
 
 int CSchemeManagerProxy_HL25::GetHDProportionalScaledValue(int normalizedValue)
 {
-	return m_pfnGetHDProportionalScaledValue(this, 0, normalizedValue);
+	return g_pVGuiSchemeManager->GetHDProportionalScaledValue(normalizedValue);
 }
 
-int CSchemeManagerProxy_HL25::GetHDProportionalNormalizedValue(int scaledValue)
+int CSchemeManagerProxy_HL25::GetHDProportionalNormalizedValue(int normalizedValue)
 {
-	return m_pfnGetHDProportionalNormalizedValue(this, 0, scaledValue);
+	return g_pVGuiSchemeManager->GetHDProportionalNormalizedValue(normalizedValue);
 }
 
 static CSchemeManagerProxy_HL25 g_SchemeProxy_HL25;
+
 extern vgui::ISchemeManager_HL25 *g_pScheme_HL25;
 
 void Scheme_InstallHooks(void)
 {
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25)
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		DWORD *pVFTable = *(DWORD **)&g_SchemeProxy;
+		DWORD* pVFTable = *(DWORD**)&g_SchemeProxy_HL25;
 
-		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 1, (void *)pVFTable[1], (void **)&m_pfnLoadSchemeFromFile);
-		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 2, (void *)pVFTable[2], (void **)&m_pfnReloadSchemes);
-		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 3, (void *)pVFTable[3], (void **)&m_pfnGetDefaultScheme);
-		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 4, (void *)pVFTable[4], (void **)&m_pfnGetScheme);
-		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 5, (void *)pVFTable[5], (void **)&m_pfnGetImage);
-		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 6, (void *)pVFTable[6], (void **)&m_pfnGetImageID);
-		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 7, (void *)pVFTable[7], (void **)&m_pfnGetIScheme);
-		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 8, (void *)pVFTable[8], (void **)&m_pfnShutdown);
-		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 9, (void *)pVFTable[9], (void **)&m_pfnGetProportionalScaledValue);
-		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 10, (void *)pVFTable[10], (void **)&m_pfnGetProportionalNormalizedValue);
+		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 1, (void *)pVFTable[1], (void **)&m_pfnLoadSchemeFromFile); //Assert (IsValidIndex(i))
+		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 2, (void*)pVFTable[2], (void**)&m_pfnReloadSchemes);
+		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 3, (void*)pVFTable[3], (void**)&m_pfnGetDefaultScheme);
+		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 4, (void*)pVFTable[4], (void**)&m_pfnGetScheme);
+		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 5, (void *)pVFTable[5], (void **)&m_pfnGetImage);
+		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 6, (void*)pVFTable[6], (void**)&m_pfnGetImageID);
+		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 7, (void *)pVFTable[7], (void **)&m_pfnGetIScheme);
+		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 8, (void*)pVFTable[8], (void**)&m_pfnShutdown);
+		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 9, (void*)pVFTable[9], (void**)&m_pfnGetProportionalScaledValue);
+		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 10, (void*)pVFTable[10], (void**)&m_pfnGetProportionalNormalizedValue);
+		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 11, (void*)pVFTable[11], (void**)&m_pfnGetProportionalScale);
+		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 12, (void*)pVFTable[12], (void**)&m_pfnGetHDProportionalScaledValue);
+		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 13, (void*)pVFTable[13], (void**)&m_pfnGetHDProportionalNormalizedValue);
+
 	}
 	else
 	{
-		DWORD *pVFTable = *(DWORD **)&g_SchemeProxy_HL25;
+		DWORD* pVFTable = *(DWORD**)&g_SchemeProxy;
 
-		//g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 1, (void *)pVFTable[1], (void **)&m_pfnLoadSchemeFromFile); Assert (IsValidIndex(i))
-		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 2, (void *)pVFTable[2], (void **)&m_pfnReloadSchemes);
-		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 3, (void *)pVFTable[3], (void **)&m_pfnGetDefaultScheme);
-		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 4, (void *)pVFTable[4], (void **)&m_pfnGetScheme);
-		//g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 5, (void *)pVFTable[5], (void **)&m_pfnGetImage);
-		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 6, (void *)pVFTable[6], (void **)&m_pfnGetImageID);
-		//g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 7, (void *)pVFTable[7], (void **)&m_pfnGetIScheme);
-		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 8, (void *)pVFTable[8], (void **)&m_pfnShutdown);
-		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 9, (void *)pVFTable[9], (void **)&m_pfnGetProportionalScaledValue);
-		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 10, (void *)pVFTable[10], (void **)&m_pfnGetProportionalNormalizedValue);
-		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 11, (void *)pVFTable[11], (void **)&m_pfnGetProportionalScale);
-		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 12, (void *)pVFTable[12], (void **)&m_pfnGetHDProportionalScaledValue);
-		g_pMetaHookAPI->VFTHook(g_pScheme_HL25, 0, 13, (void *)pVFTable[13], (void **)&m_pfnGetHDProportionalNormalizedValue);
+		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 1, (void*)pVFTable[1], (void**)&m_pfnLoadSchemeFromFile);
+		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 2, (void*)pVFTable[2], (void**)&m_pfnReloadSchemes);
+		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 3, (void*)pVFTable[3], (void**)&m_pfnGetDefaultScheme);
+		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 4, (void*)pVFTable[4], (void**)&m_pfnGetScheme);
+		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 5, (void*)pVFTable[5], (void**)&m_pfnGetImage);
+		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 6, (void*)pVFTable[6], (void**)&m_pfnGetImageID);
+		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 7, (void*)pVFTable[7], (void**)&m_pfnGetIScheme);
+		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 8, (void*)pVFTable[8], (void**)&m_pfnShutdown);
+		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 9, (void*)pVFTable[9], (void**)&m_pfnGetProportionalScaledValue);
+		g_pMetaHookAPI->VFTHook(g_pScheme, 0, 10, (void*)pVFTable[10], (void**)&m_pfnGetProportionalNormalizedValue);
 	}
 }

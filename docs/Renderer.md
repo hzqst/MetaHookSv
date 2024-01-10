@@ -4,13 +4,13 @@
 
 # Compatibility
 
-|        Engine            |      |
-|        ----              | ---- |
-| GoldSrc_blob   (< 4554)  | √    |
-| GoldSrc_legacy (< 6153)  | √    |
-| GoldSrc_new    (8684)    | √    |
-| SvEngine       (>= 8832) | √    |
-| GoldSrc_HL25   (>= 9884) | √    |
+|        Engine               |      |
+|        ----                 | ---- |
+| GoldSrc_blob   (3266~?)     | √    |
+| GoldSrc_legacy (4554~6153)  | √    |
+| GoldSrc_new    (8684 ~)     | √    |
+| SvEngine       (8832 ~)     | √    |
+| GoldSrc_HL25   (>= 9884)    | √    |
 
 * Warning: This plugin is not compatible with ReShade. 
 
@@ -189,19 +189,15 @@ A detail texture is a high resolution external image (Supported format: BMP, TGA
 
 Detail texture list is parsed from `/maps/[mapname]_detail.txt`, with `_DETAIL` as suffix in basetexture name. names with no suffix will be treated as detailtexture.
 
-Detail textures will be loaded from (if exists):
+Detail textures will be loaded from the following path (if exists):
 
-`/(game_directory)/maps/[texturename]` (only if texturename starts with "maps/" or "maps\", and the texturename has an extension)
+`/(game_directory)/maps/[texturename]` (only if texturename starts with "maps/" or "maps\")
 
-`/(game_directory)/maps/[texturename].tga` (only if texturename starts with "maps/" or "maps\", and the texturename has no extension)
+`/(game_directory)/gfx/detail/[texturename]`
 
-`/(game_directory)/gfx/detail/[texturename]` (if texturename has an extension)
+`/(game_directory)/renderer/texture/[texturename]`
 
-`/(game_directory)/gfx/detail/[texturename].tga` (if texturename has no extension)
-
-`/(game_directory)/renderer/texture/[texturename]` (if texturename has an extension)
-
-`/(game_directory)/renderer/texture/[texturename].tga` if texturename has no extension)
+* `.tga` will be added to the filename if no file extension is given.
 
 ### BSP texture replacer
 
@@ -287,13 +283,19 @@ The following files will be used to replace basetexture if exists:
 
 `(game_directory)\renderer\texture\base_texture.dds`
 
+* `.tga` will be added to the filename if no file extension is given.
+
 ### UV Controls
 
-`"replacescale" "1.0 1.0"` : the width&height are replaced with 1.0 x width&height of the new replacetexture.
+`"replacescale" "1.0 1.0"` : the width & height used to calculate the texcoord will be replaced with (1.0 x new texture's width, 1.0 x new texture's height).
 
 `"replacescale" "1.0"` : equals to `"replacescale" "1.0 1.0"`
 
-`"replacescale" "-1.0 -1.0"` : the width&height are replaced with 1.0 x width&height of the original basetexture.
+`"replacescale" "-1.0 -1.0"` : the width & height used to calculate the texcoord will be replaced with (1.0 x original texture's width, 1.0 x original texture's height).
+
+* The UV scaling won't be affected if there is no "replacescale"
+
+* The UVs in studiomodel are stored in unsigned short ranges from -32767 to 32768. The exact value of stored UV equals the pixel coordinate in the original BMP texture. The actual texcoord transfered to GPU has to be calculated first -- dividing the pixel coordinate by the width & height of the texture. the "replacescale" affects the saying "the width & height of the texture".
 
 ### Cvars
 
@@ -311,6 +313,8 @@ You will have to create a txt file named `[modelname]_external.txt` along with `
 }
 ```
 
+### Cvars
+
 * Use cvar `r_studio_external_textures 0` to disable StudioModel normal texture temporarily.
 
 ## StudioModel specular texture
@@ -325,13 +329,19 @@ You will have to create a txt file named `[modelname]_external.txt` along with `
 }
 ```
 
+### Cvars
+
 * Use cvar `r_studio_external_textures 0` to disable StudioModel specular texture temporarily.
+
+* Use cvar `r_studio_base_specular 1.0 2.0` to control the intensity and focus of the phong-model specular lighting.
+
+* Higher "intensity" results in higher brightness, while higher "focus" gets the specular lighting focused into a shiny point.
 
 ## StudioModel alpha-transparent texture
 
 Just like `STUDIO_NF_ADDITIVE` but with alpha-blending instead of additive-blending. The rendering of meshes with `STUDIO_NF_ALPHA` will be defered to transparent pass if it's from a opaque entity.
 
-You will have to replace the basetexture with an external texture with alpha-channel supported, like DXT5-dds,TGA or PNG.
+You will have to replace the basetexture with an external texture with alpha-channel supported, like DXT5-BC7 DDS,TGA or PNG.
 
 Add following content to the `[modelname]_external.txt`:
 
@@ -511,11 +521,33 @@ Add `-oitblend` to the launch parameters to enable Order-Independent Transparenc
 
 ## New texture loader
 
-The maximum size of texture is extended to 4096 x 4096 if using new texture loader.
+### Vanilla textures
+
+The maximum size of WAD/SPR texture is extended to 4096 x 4096 if using new texture loader.
 
 This is enabled by default and may produce inconsistencies of texture's visual presentation between the new and legacy texture loader.
 
 You can add `-use_legacy_texloader` to the launch parameter to disable the new texture loader.
+
+### External textures
+
+The maximum size of external texture depends on your GPU and OpenGL driver implementation (typically 16384x16384).
+
+Supported format :
+
+BMP (Indexed / RGB8 / RGBA8)
+
+TGA (RGB8 / RGBA8)
+
+DDS (DX10 BC1 / DX10 BC2 / DX10 BC3 / DX10 BC7 / Legacy DXT1 / Legacy DXT3 / Legacy DXT5）
+
+HDR (RGB8F / RGBA8F)
+
+JPEG (RGB8)
+
+PNG (RGB8 / RGBA8)
+
+WEBP (RGB8 / RGBA8)
 
 ## Anti-Aliasing
 

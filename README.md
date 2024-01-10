@@ -184,6 +184,14 @@ This plugin provides a console command `fs_dump_precaches` to dump precache reso
 
 * The SoundSystem from Sven Co-op uses `soundcache.txt` instead of engine's precache system to precache sound files.
 
+### ThreadGuard
+
+This plugin intercepts Valve's Win32Thread creation and wait for all threads to exit before unloading the backed module, in case Valve's thread code gets running when the backed module is unloaded.
+
+Managed modules that may create new threads and quit without waiting for thread termination : 
+
+`hw.dll`, `GameUI.dll`, `ServerBrowser.dll`
+
 ### ABCEnchance (third-party) (Sven Co-op only)
 
 ABCEnchance is a metahook plugin that provides experience improvement for Sven co-op.

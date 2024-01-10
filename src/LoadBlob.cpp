@@ -1,9 +1,9 @@
 #include <windows.h>
 #include <interface.h>
+#include <mutex>
 #include "IFileSystem.h"
 #include "metahook.h"
 #include "LoadBlob.h"
-#include "BlobThreadManager.h"
 
 PVOID MH_GetSectionByName(PVOID ImageBase, const char* SectionName, ULONG* SectionSize);
 void* MH_SearchPattern(void* pStartSearch, DWORD dwSearchLen, const char* pPattern, DWORD dwPatternLen);
@@ -26,11 +26,129 @@ extern IFileSystem *g_pFileSystem;
 #define FILESYSTEM_ANY_MOUNT(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->Mount(__VA_ARGS__) : g_pFileSystem->Mount(__VA_ARGS__))
 #define FILESYSTEM_ANY_UNMOUNT(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->Unmount(__VA_ARGS__) : g_pFileSystem->Unmount(__VA_ARGS__))
 
+static std::mutex g_BlobLoaderLock;
+static std::vector<BlobHandle_t> g_LoadedBlobs;
+
+typedef struct BlobInfo_s
+{
+	char m_szPath[10];
+	char m_szDescribe[32];
+	char m_szCompany[22];
+	DWORD m_dwAlgorithm;
+}BlobInfo_t;
+
+typedef struct BlobHeader_s
+{
+	DWORD m_dwCheckSum;
+	WORD m_wSectionCount;
+	DWORD m_dwExportPoint;
+	DWORD m_dwImageBase;
+	DWORD m_dwEntryPoint;
+	DWORD m_dwImportTable;
+}BlobHeader_t;
+
+typedef struct BlobSection_s
+{
+	DWORD m_dwVirtualAddress;
+	DWORD m_dwVirtualSize;
+	DWORD m_dwDataSize;
+	DWORD m_dwDataAddress;
+	BOOL m_bIsSpecial;
+}BlobSection_t;
+
+typedef struct BlobImportEntry_s
+{
+	BlobImportEntry_s(ULONG_PTR* a1, HMODULE a2, const char* a3, const char* a4) : ThunkFunction(a1), hProcDll(a2), DllName(a3), FunctionName(a4)
+	{
+	};
+	ULONG_PTR* ThunkFunction;
+	HMODULE hProcDll;
+	std::string DllName;
+	std::string FunctionName;
+}BlobImportEntry_t;
+
+typedef struct BlobModule_s
+{
+	BlobHeader_t BlobHeader;
+
+	ULONG_PTR SpecialAddress;
+	ULONG ImageSize;
+
+	PVOID TextBase;
+	ULONG TextSize;
+
+	PVOID DataBase;
+	ULONG DataSize;
+
+	std::vector<HMODULE> LoadLibraryRefs;
+	std::vector<BlobImportEntry_t> ImportEntries;
+}BlobModule_t;
+
+void BlobLoaderAddBlob(BlobHandle_t hBlob)
+{
+	std::lock_guard<std::mutex> lock(g_BlobLoaderLock);
+
+	g_LoadedBlobs.emplace_back(hBlob);
+}
+
+void BlobLoaderRemoveBlob(BlobHandle_t hBlob)
+{
+	std::lock_guard<std::mutex> lock(g_BlobLoaderLock);
+
+	for (auto itor = g_LoadedBlobs.begin(); itor != g_LoadedBlobs.end();)
+	{
+		if ((*itor) == hBlob)
+		{
+			itor = g_LoadedBlobs.erase(itor);
+			return;
+		}
+		itor++;
+	}
+}
+
+BlobHandle_t BlobLoaderFindBlobByImageBase(PVOID ImageBase)
+{
+	std::lock_guard<std::mutex> lock(g_BlobLoaderLock);
+
+	for (auto hBlob : g_LoadedBlobs)
+	{
+		if (ImageBase == GetBlobModuleImageBase(hBlob))
+		{
+			return hBlob;
+		}
+	}
+
+	return NULL;
+}
+
+BlobHandle_t BlobLoaderFindBlobByVirtualAddress(PVOID VirtualAddress)
+{
+	std::lock_guard<std::mutex> lock(g_BlobLoaderLock);
+
+	for (auto hBlob : g_LoadedBlobs)
+	{
+		auto ImageBase = GetBlobModuleImageBase(hBlob);
+		auto ImageSize = GetBlobModuleImageSize(hBlob);
+
+		if (VirtualAddress >= ImageBase && VirtualAddress < (PUCHAR)ImageBase + ImageSize)
+		{
+			return hBlob;
+		}
+	}
+
+	return NULL;
+}
+
 BlobHeader_t *GetBlobHeader(BlobHandle_t hBlob)
 {
 	auto pBlobModule = (BlobModule_t*)hBlob;
 
 	return &pBlobModule->BlobHeader;
+}
+
+ULONG_PTR GetBlobHeaderExportPoint(BlobHandle_t hBlob)
+{
+	return (ULONG_PTR)GetBlobHeader(hBlob)->m_dwExportPoint;
 }
 
 BOOL FIsBlob(const char *szFileName)
@@ -93,12 +211,10 @@ bool BlobVerifyStringRange(PVOID Ptr, ULONG Size, PVOID ValidBase, ULONG ValidSi
 BlobHandle_t LoadBlobFromBuffer(BYTE* pBuffer, DWORD dwBufferSize, PVOID BlobSectionBase, ULONG BlobSectionSize)
 {
 #if defined(METAHOOK_BLOB_SUPPORT) || defined(_DEBUG)
-	auto pBlobModule = (BlobModule_t *)malloc(sizeof(BlobModule_t));
+	auto pBlobModule = new (std::nothrow) BlobModule_t;
 
 	if (!pBlobModule)
 		return NULL;
-
-	memset(pBlobModule, 0, sizeof(BlobModule_t));
 
 	BYTE bXor = 0x57;
 
@@ -122,6 +238,12 @@ BlobHandle_t LoadBlobFromBuffer(BYTE* pBuffer, DWORD dwBufferSize, PVOID BlobSec
 	pBlobModule->BlobHeader.m_dwImageBase ^= 0x49C042D1;
 	pBlobModule->BlobHeader.m_dwEntryPoint -= 12;
 	pBlobModule->BlobHeader.m_dwImportTable ^= 0x872C3D47;
+	pBlobModule->SpecialAddress = 0;
+	pBlobModule->ImageSize = 0;
+	pBlobModule->TextBase = 0;
+	pBlobModule->TextSize = 0;
+	pBlobModule->DataBase = 0;
+	pBlobModule->DataSize = 0;
 
 	const auto pSection = (BlobSection_t*)(pBuffer + sizeof(BlobInfo_t) + sizeof(BlobHeader_t));
 
@@ -204,12 +326,6 @@ BlobHandle_t LoadBlobFromBuffer(BYTE* pBuffer, DWORD dwBufferSize, PVOID BlobSec
 			return NULL;
 		}
 
-		if (pBlobModule->NumLoadLibraryRefs >= _ARRAYSIZE(pBlobModule->LoadLibraryRefs))
-		{
-			FreeBlobModule(pBlobModule);
-			return NULL;
-		}
-
 		HMODULE hProcDll = LoadLibraryA(pszDllName);
 
 		if (!hProcDll)
@@ -218,8 +334,7 @@ BlobHandle_t LoadBlobFromBuffer(BYTE* pBuffer, DWORD dwBufferSize, PVOID BlobSec
 			return NULL;
 		}
 
-		pBlobModule->LoadLibraryRefs[pBlobModule->NumLoadLibraryRefs] = hProcDll;
-		pBlobModule->NumLoadLibraryRefs++;
+		pBlobModule->LoadLibraryRefs.emplace_back(hProcDll);
 
 		PIMAGE_THUNK_DATA pThunk = (PIMAGE_THUNK_DATA)(pBlobModule->BlobHeader.m_dwImageBase + pImport->FirstThunk);
 		
@@ -264,22 +379,12 @@ BlobHandle_t LoadBlobFromBuffer(BYTE* pBuffer, DWORD dwBufferSize, PVOID BlobSec
 				return NULL;
 			}
 
-			if (!bIsLoadByOrdinal && !strcmp(pszProcName, "CreateThread"))
+			if (!bIsLoadByOrdinal)
 			{
-				pThunk->u1.AddressOfData = (DWORD)BlobCreateThread;
+				pBlobModule->ImportEntries.emplace_back(&pThunk->u1.AddressOfData, hProcDll, pszDllName, pszProcName);
 			}
-			else if (!bIsLoadByOrdinal && !strcmp(pszProcName, "TerminateThread"))
-			{
-				pThunk->u1.AddressOfData = (DWORD)BlobTerminateThread;
-			}
-			else if (!bIsLoadByOrdinal && !strcmp(pszProcName, "CloseHandle"))
-			{
-				pThunk->u1.AddressOfData = (DWORD)BlobCloseHandle;
-			}
-			else
-			{
-				pThunk->u1.AddressOfData = (DWORD)GetProcAddress(hProcDll, pszProcName);
-			}
+
+			pThunk->u1.AddressOfData = (DWORD)GetProcAddress(hProcDll, pszProcName);
 
 			pThunk++;
 
@@ -343,9 +448,10 @@ void FreeBlobModule(BlobHandle_t hBlob)
 {
 	auto pBlobModule = (BlobModule_t *)hBlob;
 
+	//Shutdown CRT for it
 	RunDllMainForBlob(hBlob, DLL_PROCESS_DETACH);
 
-	for (int i = pBlobModule->NumLoadLibraryRefs - 1;i >= 0; --i)
+	for (int i = (int)pBlobModule->LoadLibraryRefs.size() - 1; i >= 0; --i)
 	{
 		FreeLibrary(pBlobModule->LoadLibraryRefs[i]);
 	}
@@ -355,7 +461,7 @@ void FreeBlobModule(BlobHandle_t hBlob)
 	memset((void*)pBlobModule->BlobHeader.m_dwImageBase, 0, pBlobModule->ImageSize);
 #endif
 
-	free(pBlobModule);
+	delete pBlobModule;
 }
 
 PVOID GetBlobModuleImageBase(BlobHandle_t hBlob)
@@ -418,4 +524,51 @@ PVOID GetBlobLoaderSection(PVOID ImageBase, ULONG *BlobSectionSize)
 
 	*BlobSectionSize = SectionSize;
 	return SectionBase;
+}
+
+hook_t* MH_CreateIATHook(HMODULE hModule, BlobHandle_t hBlob, const char* pszModuleName, const char* pszFuncName, void* pNewFuncAddr, void** pOrginalCall, ULONG_PTR* pThunkFunction);
+
+hook_t* MH_BlobIATHook(BlobHandle_t hBlob, const char* pszModuleName, const char* pszFuncName, void* pNewFuncAddr, void** pOrginalCall)
+{
+	auto pBlobModule = (BlobModule_t*)hBlob;
+
+	for (const auto& entry : pBlobModule->ImportEntries)
+	{
+		if (!stricmp(entry.DllName.c_str(), pszModuleName) && !stricmp(entry.FunctionName.c_str(), pszFuncName))
+		{
+			return MH_CreateIATHook(NULL, hBlob, pszModuleName, pszFuncName, pNewFuncAddr, pOrginalCall, entry.ThunkFunction);
+		}
+	}
+
+	return NULL;
+}
+
+bool MH_BlobHasImport(BlobHandle_t hBlob, const char* pszModuleName)
+{
+	auto pBlobModule = (BlobModule_t*)hBlob;
+
+	for (const auto& entry : pBlobModule->ImportEntries)
+	{
+		if (!stricmp(entry.DllName.c_str(), pszModuleName))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool MH_BlobHasImportEx(BlobHandle_t hBlob, const char* pszModuleName, const char* pszFuncName)
+{
+	auto pBlobModule = (BlobModule_t*)hBlob;
+
+	for (const auto& entry : pBlobModule->ImportEntries)
+	{
+		if (!stricmp(entry.DllName.c_str(), pszModuleName) && !stricmp(entry.FunctionName.c_str(), pszFuncName))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }

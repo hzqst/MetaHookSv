@@ -13,11 +13,12 @@
 #include <vgui/IBorder.h>
 #include <vgui/IInput.h>
 #include <vgui/IScheme.h>
-#include <vgui/ISurface2.h>
 #include <vgui/ISystem.h>
 #include <vgui/IVGUI.h>
 #include <vgui/MouseCode.h>
 #include <vgui/KeyCode.h>
+#include <vgui/ISurface.h>
+#include "Surface2.h"
 
 #include "Button.h"
 #include "FocusNavGroup.h"

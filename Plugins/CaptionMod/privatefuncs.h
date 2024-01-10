@@ -67,9 +67,6 @@ typedef struct
 
 	void(*MessageMode2_f)(void);
 
-	//ClientDLL
-	//void *(**pfnClientFactory)(void);
-
 	//Engine init
 	PVOID (*VGUIClient001_CreateInterface)(HINTERFACEMODULE hModule);
 
@@ -106,4 +103,4 @@ extern private_funcs_t gPrivateFuncs;
 
 cl_entity_t *EngineGetViewEntity(void);
 
-bool SCR_IsLoadingVisible();
+bool SCR_IsLoadingVisible(void);

@@ -190,6 +190,14 @@
 
 * Sven Co-op 的声音系统使用 `soundcache.txt` 而非引擎的预缓存系统来维护声音文件的预缓存列表。
 
+### ThreadGuard
+
+该插件接管了Valve的一些模块的线程创建行为，这些模块创建线程后在模块释放时不会等待线程结束，这可能会导致游戏退出或热重启时游戏进程随机崩溃。
+
+目前接管的模块：
+
+`hw.dll`, `GameUI.dll`, `ServerBrowser.dll`
+
 ### ABCEnchance (第三方) (只支持Sven Co-op)
 
 该插件提供以下功能：

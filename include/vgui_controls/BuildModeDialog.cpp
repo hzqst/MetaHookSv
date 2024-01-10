@@ -13,10 +13,11 @@
 
 #include <vgui/IInput.h>
 #include <vgui/ILocalize.h>
-#include <vgui/ISurface2.h>
 #include <vgui/ISystem.h>
 #include <vgui/KeyCode.h>
 #include <vgui/MouseCode.h>
+#include <vgui/ISurface.h>
+#include "Surface2.h"
 
 #include "BuildModeDialog.h"
 #include "Label.h"

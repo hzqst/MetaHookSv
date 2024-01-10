@@ -24,6 +24,8 @@ public:
 	int GetCount(void);
 	bool GetUnderlined(void);
 	bool GetOutlined(void);
+	int GetBlur(void);
+	bool GetAdditive(void);
 
 public:
 	struct TFontRange

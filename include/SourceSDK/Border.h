@@ -1,9 +1,9 @@
 #ifndef BORDER_H
 #define BORDER_H
 
-#include "vgui/IBorder.h"
+#include <vgui/IBorder.h>
 
-class Color;
+#include "Color.h"
 
 namespace vgui
 {

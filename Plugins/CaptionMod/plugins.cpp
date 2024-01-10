@@ -16,7 +16,6 @@ PVOID g_dwClientBase = 0;
 DWORD g_dwClientSize = 0;
 int g_iVideoWidth = 0;
 int g_iVideoHeight = 0;
-float g_flDPIScaling = 1.0f;
 
 PVOID g_dwEngineBase = NULL;
 DWORD g_dwEngineSize = 0;
@@ -85,6 +84,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	Engine_InstallHooks();
 	BaseUI_InstallHook();
 
+	InitDPIScaling();
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
@@ -102,7 +102,6 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->IN_MouseEvent = IN_MouseEvent;
 	pExportFunc->IN_Accumulate = IN_Accumulate;
 	pExportFunc->CL_CreateMove = CL_CreateMove;
-	pExportFunc->ClientFactory = NewClientFactory;
 
 	g_hClientDll = g_pMetaHookAPI->GetClientModule();
 	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
@@ -112,32 +111,11 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	Client_InstallHooks();
 
 	//Try installing hook to interface VClientVGUI001
-	ClientVGUI_InstallHook();
+	ClientVGUI_InstallHook(pExportFunc);
 
 	VGUI1_InstallHook();
 
-	EnumWindows([](HWND hwnd, LPARAM lParam
-		)
-	{
-		DWORD pid = 0;
-		if (GetWindowThreadProcessId(hwnd, &pid) && pid == GetCurrentProcessId())
-		{
-			char windowClass[256] = { 0 };
-			RealGetWindowClassA(hwnd, windowClass, sizeof(windowClass));
-			if (!strcmp(windowClass, "Valve001") || !strcmp(windowClass, "SDL_app"))
-			{
-				g_MainWnd = hwnd;
-
-				//g_flDPIScaling = GetDpiForWindow(g_MainWnd) / 96.0f;
-
-				return FALSE;
-			}
-		}
-		return TRUE;
-	}, NULL);
-
-	g_MainWndProc = (WNDPROC)GetWindowLong(g_MainWnd, GWL_WNDPROC);
-	SetWindowLong(g_MainWnd, GWL_WNDPROC, (LONG)VID_MainWndProc);
+	InitWin32Stuffs();
 }
 
 void IPluginsV4::ExitGame(int iResult)

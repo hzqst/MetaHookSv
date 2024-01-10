@@ -41,8 +41,6 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>
 
-extern float g_flDPIScaling;
-
 using namespace vgui;
 
 #define TRIPLE_PRESS_MSEC	300
@@ -800,6 +798,7 @@ const char *Panel::GetClassName()
 void Panel::SetPos(int x, int y)
 {
 	Assert( abs(x) < 32768 && abs(y) < 32768 );
+
 	ipanel()->SetPos(GetVPanel(), x, y);
 }
 
@@ -817,6 +816,7 @@ void Panel::GetPos(int &x, int &y)
 void Panel::SetSize(int wide, int tall)
 {
 	Assert( abs(wide) < 32768 && abs(tall) < 32768 );
+
 	ipanel()->SetSize(GetVPanel(), wide, tall);
 }
 
@@ -1022,6 +1022,7 @@ void Panel::PaintTraverse( bool repaint, bool allowForce )
 
 	// set global alpha
 	surface()->DrawSetAlphaMultiplier( newAlphaMultiplier );
+
 	if ( repaint && _flags.IsFlagSet( PAINT_BACKGROUND_ENABLED | PAINT_ENABLED ) )
 	{
 		// draw the background with no inset
@@ -3799,7 +3800,7 @@ void Panel::ApplySettings(KeyValues *inResourceData)
 			ystr++;
 		}
 		y = atoi(ystr);
-		// *g_flDPIScaling;
+
 		if (IsProportional())
 		{
 			// scale the y up to our screen co-ords
@@ -3838,13 +3839,12 @@ void Panel::ApplySettings(KeyValues *inResourceData)
 
 		wide = atoi(wstr);
 
-		//wide *= g_flDPIScaling;
-
 		if ( IsProportional() )
 		{
 			// scale the x and y up to our screen co-ords
 			wide = scheme()->GetProportionalScaledValueEx(GetScheme(), wide);
 		}
+
 		// now correct the alignment
 		if (_buildModeFlags & BUILDMODE_SAVE_WIDE_FULL)
 		{
@@ -3853,7 +3853,7 @@ void Panel::ApplySettings(KeyValues *inResourceData)
 	}
 
 	tall = inResourceData->GetInt( "tall", tall );
-	//tall *= g_flDPIScaling;
+
 	if ( IsProportional() )
 	{
 		// scale the x and y up to our screen co-ords

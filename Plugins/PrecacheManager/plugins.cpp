@@ -2,25 +2,30 @@
 #include "exportfuncs.h"
 #include "privatehook.h"
 
-cl_exportfuncs_t gExportfuncs;
-mh_interface_t *g_pInterface;
-metahook_api_t *g_pMetaHookAPI;
-mh_enginesave_t *g_pMetaSave;
-IFileSystem *g_pFileSystem;
 
-HINSTANCE g_hInstance, g_hThisModule, g_hEngineModule;
-PVOID g_dwEngineBase;
-DWORD g_dwEngineSize;
-PVOID g_dwEngineTextBase;
-DWORD g_dwEngineTextSize;
-PVOID g_dwEngineDataBase;
-DWORD g_dwEngineDataSize;
-PVOID g_dwEngineRdataBase;
-DWORD g_dwEngineRdataSize;
-DWORD g_dwEngineBuildnum;
-int g_iEngineType;
-PVOID g_dwClientBase;
-DWORD g_dwClientSize;
+cl_exportfuncs_t gExportfuncs = { 0 };
+mh_interface_t* g_pInterface = NULL;
+metahook_api_t* g_pMetaHookAPI = NULL;
+mh_enginesave_t* g_pMetaSave = NULL;
+IFileSystem* g_pFileSystem = NULL;
+IFileSystem_HL25* g_pFileSystem_HL25 = NULL;
+
+HINSTANCE g_hInstance = 0;
+HMODULE g_hThisModule = 0;
+HMODULE g_hEngineModule = 0;
+PVOID g_dwEngineBase = 0;
+DWORD g_dwEngineSize = 0;
+PVOID g_dwEngineTextBase = 0;
+DWORD g_dwEngineTextSize = 0;
+PVOID g_dwEngineDataBase = 0;
+DWORD g_dwEngineDataSize = 0;
+PVOID g_dwEngineRdataBase = 0;
+DWORD g_dwEngineRdataSize = 0;
+DWORD g_dwEngineBuildnum = 0;
+int g_iEngineType = 0;
+PVOID g_dwClientBase = 0;
+DWORD g_dwClientSize = 0;
+
 
 void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {

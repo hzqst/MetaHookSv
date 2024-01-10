@@ -947,12 +947,15 @@ const char *CDbgMemAlloc::GetAllocatonFileName( void *pMem )
 {
 	if (!pMem)
 		return "";
-
+#ifdef __SANITIZE_ADDRESS__
+	return g_pszUnknown;
+#else
 	CrtDbgMemHeader_t *pHeader = GetCrtDbgMemHeader( pMem );
 	if ( pHeader->m_pFileName )
 		return pHeader->m_pFileName;
 	else
 		return g_pszUnknown;
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -963,8 +966,12 @@ int CDbgMemAlloc::GetAllocatonLineNumber( void *pMem )
 	if ( !pMem )
 		return 0;
 
+#ifdef __SANITIZE_ADDRESS__
+	return 0;
+#else
 	CrtDbgMemHeader_t *pHeader = GetCrtDbgMemHeader( pMem );
 	return pHeader->m_nLineNumber;
+#endif
 }
 
 //-----------------------------------------------------------------------------

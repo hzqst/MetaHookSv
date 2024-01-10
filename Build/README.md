@@ -1,16 +1,16 @@
 # Compiled Binaries and Resources
 
-### svencoop.exe (required)
+### MetaHook.exe / MetaHook_blob.exe (required)
 
 Main executable loader to bootstrap metahook plugins and start game.
 
-### FreeImage.dll (optional)
-
-Imageloader required by MetaRenderer plugin.
+* Use MetaHook_blob.exe instead of MetaHook.exe to load legacy blob engine, such as engine with buildnum 3248 or 3266.
 
 ### SDL.dll (optional)
 
 The SDL2.dll fixes a bug that the IME input handler from original SDL library provided by valve was causing buffer overflow and game crash when using non-english IME. you don't need to copy it if you don't have a non-english IME.
+
+* Valve fixed this issue for SDL2 in HL25th patch, you don't have to replace SDL2 if you are running HL25th engine.
 
 ### svencoop/captionmod/* (optional)
 

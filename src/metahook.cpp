@@ -1,6 +1,7 @@
+#include <MINT.h>
 #include "metahook.h"
 #include "LoadBlob.h"
-#include "BlobThreadManager.h"
+#include "LoadDllNotification.h"
 #include <detours.h>
 #include "interface.h"
 #include <capstone.h>
@@ -8,16 +9,9 @@
 #include <sstream>
 #include <set>
 #include <vector>
-#include <intrin.h>
 
 extern PVOID g_BlobLoaderSectionBase;
 extern ULONG g_BlobLoaderSectionSize;
-
-extern "C"
-{
-	NTSYSAPI PIMAGE_NT_HEADERS NTAPI RtlImageNtHeader(PVOID Base);
-	NTSYSAPI NTSTATUS NTAPI NtTerminateProcess(HANDLE ProcessHandle, NTSTATUS ExitStatus);
-}
 
 #define MH_HOOK_INLINE 1
 #define MH_HOOK_VFTABLE 2
@@ -41,6 +35,23 @@ struct tagVTABLEDATA
 
 typedef struct hook_s
 {
+	struct hook_s() {
+		iType = 0;
+		bCommitted = false;
+		pOldFuncAddr = NULL;
+		pNewFuncAddr = NULL;
+		pOrginalCall = NULL;
+		pClass = NULL;
+		iTableIndex = 0;
+		iFuncIndex = 0;
+		hModule = 0;
+		hBlob = 0;
+		pszModuleName = NULL;
+		pszFuncName = NULL;
+		pNext = NULL;
+		pInfo = NULL;
+	}
+
 	int iType;
 	qboolean bCommitted;
 	void *pOldFuncAddr;
@@ -50,6 +61,7 @@ typedef struct hook_s
 	int iTableIndex;
 	int iFuncIndex;
 	HMODULE hModule;
+	BlobHandle_t hBlob;
 	const char *pszModuleName;
 	const char *pszFuncName;
 	struct hook_s *pNext;
@@ -81,32 +93,26 @@ typedef struct cvar_callback_entry_s
 }cvar_callback_entry_t;
 
 cvar_callback_entry_t **cvar_callbacks = NULL;
-
 cvar_callback_entry_t* g_ManagedCvarCallbackList = NULL;
-
 std::vector<cvar_callback_entry_t*> g_ManagedCvarCallbacks;
-
 usermsg_t **gClientUserMsgs = NULL;
-
 cmd_function_t *(*Cmd_GetCmdBase)(void) = NULL;
 void **g_pVideoMode = NULL;
 int (*g_pfnbuild_number)(void) = NULL;
 int(*g_pfnClientDLL_Init)(void) = NULL;
 void(*g_pfnCvar_DirectSet)(cvar_t* var, char* value) = NULL;
-void(*g_pfnLoadBlobFile)(BYTE* pBuffer, void* pblobfootprint, void** pv, DWORD dwBufferSize) = NULL;
+void(*g_pfnLoadBlobFile)(BYTE* pBuffer, void** pBlobFootprint, void** pv, DWORD dwBufferSize) = NULL;
+void(*g_pfnFreeBlob)(void** pBlobFootprint) = NULL;
 void *g_StudioInterfaceCall = NULL;
 struct engine_studio_api_s* g_pEngineStudioAPI = NULL;
 struct r_studio_interface_t** g_pStudioAPI = NULL;
 CreateInterfaceFn *g_pClientFactory = NULL;
-
 HMODULE *g_phClientModule = NULL;
-
 BlobHandle_t g_hBlobEngine = NULL;
 BlobHandle_t g_hBlobClient = NULL;
 HMODULE g_hEngineModule = NULL;
 PVOID g_dwEngineBase = NULL;
 DWORD g_dwEngineSize = NULL;
-
 hook_t *g_pHookBase = NULL;	
 ULONG_PTR g_dwClientDLL_Initialize[1] = {0};
 cl_exportfuncs_t *g_pExportFuncs = NULL;
@@ -115,7 +121,6 @@ void *g_ppEngfuncs = NULL;
 bool g_bSaveVideo = false;
 bool g_bTransactionHook = false;
 int g_iEngineType = ENGINE_UNKNOWN;
-//std::vector<DLL_DIRECTORY_COOKIE > g_DllPathCookies;
 WCHAR g_wszEnvPath[4096] = { 0 };
 
 PVOID MH_GetNextCallAddr(void *pAddress, DWORD dwCount);
@@ -149,6 +154,7 @@ PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize);
 PVOID MH_ReverseSearchFunctionBeginEx(PVOID SearchBegin, DWORD SearchSize, FindAddressCallback callback);
 void *MH_ReverseSearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
 void MH_SysError(const char *fmt, ...);
+hook_t* MH_BlobIATHook(BlobHandle_t hBlob, const char* pszModuleName, const char* pszFuncName, void* pNewFuncAddr, void** pOrginalCall);
 
 typedef struct plugin_s
 {
@@ -172,20 +178,29 @@ mh_enginesave_t gMetaSave = {0};
 extern metahook_api_t gMetaHookAPI_LegacyV2;
 extern metahook_api_t gMetaHookAPI;
 
-DWORD MH_LoadBlobFile(BYTE* pBuffer, void* pBlobFootPrint, void** pv, DWORD dwBufferSize)
+DWORD MH_LoadBlobFile(BYTE* pBuffer, void** pBlobFootPrint, void** pv, DWORD dwBufferSize)
 {
 #if defined(METAHOOK_BLOB_SUPPORT) || defined(_DEBUG)
 	auto hBlob = LoadBlobFromBuffer(pBuffer, dwBufferSize, g_BlobLoaderSectionBase, g_BlobLoaderSectionSize);
 
 	if (hBlob)
 	{
-		if (GetBlobModuleImageBase(hBlob) == (PVOID)0x01900000)
+		BlobLoaderAddBlob(hBlob);
+
+		bool bIsClientDll = (GetBlobModuleImageBase(hBlob) == (PVOID)BLOB_LOAD_CLIENT_BASE) ? true : false;
+
+		if (bIsClientDll)
 		{
 			g_hBlobClient = hBlob;
 		}
 
+		MH_DispatchLoadBlobNotificationCallback(hBlob, LOAD_DLL_NOTIFICATION_IS_LOAD);
+
 		RunDllMainForBlob(hBlob, DLL_PROCESS_ATTACH);
 		RunExportEntryForBlob(hBlob, pv);
+
+		*pBlobFootPrint = hBlob;
+
 		return GetBlobModuleSpecialAddress(hBlob);
 	}
 
@@ -195,6 +210,17 @@ DWORD MH_LoadBlobFile(BYTE* pBuffer, void* pBlobFootPrint, void** pv, DWORD dwBu
 
 #endif
 	return 0;
+}
+
+void MH_FreeBlob(void** pBlobFootPrint)
+{
+	BlobHandle_t hBlob = (BlobHandle_t)(*pBlobFootPrint);
+
+	MH_DispatchLoadBlobNotificationCallback(hBlob, LOAD_DLL_NOTIFICATION_IS_UNLOAD);
+	FreeBlobModule(hBlob);
+	BlobLoaderRemoveBlob(hBlob);
+
+	(*pBlobFootPrint) = NULL;
 }
 
 void MH_Cvar_DirectSet(cvar_t* var, char* value)
@@ -461,7 +487,6 @@ int MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 		return PLUGIN_LOAD_DUPLICATE;
 	}
 
-	//HINTERFACEMODULE hModule = (HINTERFACEMODULE)LoadLibraryExA(filepath.c_str(), NULL, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
 	HINTERFACEMODULE hModule = (HINTERFACEMODULE)Sys_LoadModule(filepath.c_str());
 
 	if (!hModule)
@@ -961,6 +986,7 @@ void MH_ResetAllVars(void)
 	g_pfnClientDLL_Init = NULL;
 	g_pfnCvar_DirectSet = NULL;
 	g_pfnLoadBlobFile = NULL;
+	g_pfnFreeBlob = NULL;
 	g_StudioInterfaceCall = NULL;
 	g_pEngineStudioAPI = NULL;
 	g_pStudioAPI = NULL;
@@ -1692,6 +1718,21 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		}
 	}
 
+	if (g_pfnLoadBlobFile)
+	{
+		const char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x6A\x74";
+
+		auto FreeBlob_Call = (PUCHAR)MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
+		if (FreeBlob_Call)
+		{
+			g_pfnFreeBlob = (decltype(g_pfnFreeBlob))MH_GetNextCallAddr(FreeBlob_Call + 5, 1);
+		}
+
+		if (!g_pfnFreeBlob) {
+			MH_SysError("MH_LoadEngine: Failed to locate FreeBlob");
+			return;
+		}
+	}
 
 	if (1)
 	{
@@ -1777,10 +1818,14 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		MH_InlineHook(g_pfnLoadBlobFile, MH_LoadBlobFile, NULL);
 	}
 
-	if (g_hEngineModule)
+	/*
+.text:01D63B62 68 2C E2 3C 02                                      push    offset g_pBlobFootprint
+.text:01D63B67 E8 54 E2 FF FF                                      call    UnloadBlob
+.text:01D63B6C 6A 74                                               push    74h ; 't'
+	*/
+	if (g_pfnFreeBlob)
 	{
-		MH_IATHook(g_hEngineModule, "kernel32.dll", "CreateThread", BlobCreateThread, NULL);
-		MH_IATHook(g_hEngineModule, "kernel32.dll", "TerminateThread", BlobTerminateThread, NULL);
+		MH_InlineHook(g_pfnFreeBlob, MH_FreeBlob, NULL);
 	}
 
 	MH_LoadDllPaths(szGameName, szFullGamePath);
@@ -1807,6 +1852,17 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	}
 
 	MH_TransactionHookCommit();
+
+	InitLoadDllNotification();
+
+	if (hBlobEngine)
+	{
+		MH_DispatchLoadBlobNotificationCallback(hBlobEngine, LOAD_DLL_NOTIFICATION_IS_LOAD);
+	}
+	else
+	{
+		MH_DispatchLoadLdrDllNotificationCallback(NULL, NULL, g_dwEngineBase, g_dwEngineSize, LOAD_DLL_NOTIFICATION_IS_LOAD);
+	}
 }
 
 void MH_ExitGame(int iResult)
@@ -1832,79 +1888,45 @@ void MH_ExitGame(int iResult)
 
 void MH_ShutdownPlugins(void)
 {
-	plugin_t *plug = g_pPluginBase;
+	if (!g_pPluginBase)
+		return;
+
+	auto plug = g_pPluginBase;
 
 	while (plug)
 	{
-		plugin_t *pfree = plug;
+		auto p = plug;
 		plug = plug->next;
 
-		if (pfree->pPluginAPI)
+		if (p->pPluginAPI)
 		{
-			switch (pfree->iInterfaceVersion)
+			switch (p->iInterfaceVersion)
 			{
 			case 4:
-				((IPluginsV4 *)pfree->pPluginAPI)->Shutdown();
+				((IPluginsV4 *)p->pPluginAPI)->Shutdown();
 				break;
 			case 3:
-				((IPluginsV3 *)pfree->pPluginAPI)->Shutdown();
+				((IPluginsV3 *)p->pPluginAPI)->Shutdown();
 				break;
 			case 2:
-				((IPluginsV2 *)pfree->pPluginAPI)->Shutdown();
+				((IPluginsV2 *)p->pPluginAPI)->Shutdown();
 				break;
 			default:
 				break;
 			}
 		}
 
-		FreeLibrary((HMODULE)pfree->module);
-		delete pfree;
+		Sys_FreeModule(p->module);
+		delete p;
 	}
 
 	g_pPluginBase = NULL;
 }
 
-void MH_Shutdown(void)
-{
-	if (g_pHookBase)
-		MH_FreeAllHook();
-
-	if (g_pPluginBase)
-		MH_ShutdownPlugins();
-
-	if (gMetaSave.pExportFuncs)
-	{
-		delete gMetaSave.pExportFuncs;
-		gMetaSave.pExportFuncs = NULL;
-	}
-
-	if (gMetaSave.pEngineFuncs)
-	{
-		delete gMetaSave.pEngineFuncs;
-		gMetaSave.pEngineFuncs = NULL;
-	}
-
-	g_ManagedCvarCallbackList = NULL;
-
-	for (auto p : g_ManagedCvarCallbacks)
-	{
-		delete p;
-	}
-
-	g_ManagedCvarCallbacks.clear();
-
-	if (cvar_callbacks)
-	{
-		(*cvar_callbacks) = NULL;
-	}
-
-	MH_ResetAllVars();
-	MH_RemoveDllPaths();
-}
-
 hook_t *MH_NewHook(int iType)
 {
-	hook_t *h = new (std::nothrow) hook_t;
+	auto h = new (std::nothrow) hook_t;
+
 	if (!h)
 		return NULL;
 
@@ -1919,10 +1941,13 @@ hook_t *MH_NewHook(int iType)
 
 hook_t *MH_FindInlineHooked(void *pOldFuncAddr)
 {
-	for (hook_t *h = g_pHookBase; h; h = h->pNext)
+	for (auto h = g_pHookBase; h; h = h->pNext)
 	{
-		if (h->pOldFuncAddr == pOldFuncAddr)
-			return h;
+		if (h->iType == MH_HOOK_INLINE)
+		{
+			if (h->pOldFuncAddr == pOldFuncAddr)
+				return h;
+		}
 	}
 
 	return NULL;
@@ -1930,10 +1955,13 @@ hook_t *MH_FindInlineHooked(void *pOldFuncAddr)
 
 hook_t *MH_FindVFTHooked(void *pClass, int iTableIndex, int iFuncIndex)
 {
-	for (hook_t *h = g_pHookBase; h; h = h->pNext)
+	for (auto h = g_pHookBase; h; h = h->pNext)
 	{
-		if (h->pClass == pClass && h->iTableIndex == iTableIndex && h->iFuncIndex == iFuncIndex)
-			return h;
+		if (h->iType == MH_HOOK_VFTABLE)
+		{
+			if (h->pClass == pClass && h->iTableIndex == iTableIndex && h->iFuncIndex == iFuncIndex)
+				return h;
+		}
 	}
 
 	return NULL;
@@ -1941,10 +1969,13 @@ hook_t *MH_FindVFTHooked(void *pClass, int iTableIndex, int iFuncIndex)
 
 hook_t *MH_FindIATHooked(HMODULE hModule, const char *pszModuleName, const char *pszFuncName)
 {
-	for (hook_t *h = g_pHookBase; h; h = h->pNext)
+	for (auto h = g_pHookBase; h; h = h->pNext)
 	{
-		if (h->hModule == hModule && h->pszModuleName == pszModuleName && h->pszFuncName == pszFuncName)
-			return h;
+		if (h->iType == MH_HOOK_IAT)
+		{
+			if (h->hModule == hModule && h->pszModuleName == pszModuleName && h->pszFuncName == pszFuncName)
+				return h;
+		}
 	}
 
 	return NULL;
@@ -1983,6 +2014,9 @@ void MH_FreeHook(hook_t *pHook)
 
 void MH_FreeAllHook(void)
 {
+	if (!g_pHookBase)
+		return;
+
 	DetourTransactionBegin();
 
 	hook_t *next = NULL;
@@ -2024,6 +2058,45 @@ BOOL MH_UnHook(hook_t *pHook)
 	}
 
 	return FALSE;
+}
+
+void MH_Shutdown(void)
+{
+	ShutdownLoadDllNotification();
+
+	MH_FreeAllHook();
+
+	MH_ShutdownPlugins();
+	
+	if (gMetaSave.pExportFuncs)
+	{
+		delete gMetaSave.pExportFuncs;
+		gMetaSave.pExportFuncs = NULL;
+	}
+
+	if (gMetaSave.pEngineFuncs)
+	{
+		delete gMetaSave.pEngineFuncs;
+		gMetaSave.pEngineFuncs = NULL;
+	}
+
+	g_ManagedCvarCallbackList = NULL;
+
+	for (auto p : g_ManagedCvarCallbacks)
+	{
+		delete p;
+	}
+
+	g_ManagedCvarCallbacks.clear();
+
+	if (cvar_callbacks)
+	{
+		(*cvar_callbacks) = NULL;
+	}
+
+	MH_ResetAllVars();
+	MH_RemoveDllPaths();
+	MH_ClearDllLoaderNotificationCallback();
 }
 
 hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOrginalCall)
@@ -2186,7 +2259,7 @@ hook_t* MH_VFTHook(void* pClass, int iTableIndex, int iFuncIndex, void* pNewFunc
 		h->bCommitted = true;
 	}
 
-#if 1
+#if 0
 	auto p = (PUCHAR)_ReturnAddress();
 
 	MEMORY_BASIC_INFORMATION mbi;
@@ -2206,16 +2279,48 @@ hook_t* MH_VFTHook(void* pClass, int iTableIndex, int iFuncIndex, void* pNewFunc
 	return h;
 }
 
+hook_t* MH_CreateIATHook(HMODULE hModule, BlobHandle_t hBlob, const char* pszModuleName, const char* pszFuncName, void* pNewFuncAddr, void** pOrginalCall, ULONG_PTR *pThunkFunction)
+{
+	tagIATDATA* info = new tagIATDATA;
+	info->pAPIInfoAddr = pThunkFunction;
+
+	hook_t* h = MH_NewHook(MH_HOOK_IAT);
+	h->pOldFuncAddr = (void*)(*pThunkFunction);
+	h->pNewFuncAddr = pNewFuncAddr;
+	h->pInfo = info;
+	h->hModule = hModule;
+	h->hBlob = hBlob;
+	h->pszModuleName = pszModuleName;
+	h->pszFuncName = pszFuncName;
+	h->pOrginalCall = pOrginalCall;
+
+	if (g_bTransactionHook)
+	{
+		h->bCommitted = false;
+	}
+	else
+	{
+		MH_WriteMemory(info->pAPIInfoAddr, &pNewFuncAddr, sizeof(ULONG_PTR));
+
+		if (h->pOrginalCall)
+			(*h->pOrginalCall) = h->pOldFuncAddr;
+
+		h->bCommitted = true;
+	}
+
+	return h;
+}
+
 hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, void *pNewFuncAddr, void **pOrginalCall)
 {
-	auto pNtHeader = RtlImageNtHeader(hModule);//(IMAGE_NT_HEADERS *)((ULONG_PTR)hModule + ((IMAGE_DOS_HEADER *)hModule)->e_lfanew);
+	auto pNtHeader = RtlImageNtHeader(hModule);
 
 	if (!pNtHeader)
 		return NULL;
 
 	auto pImport = (IMAGE_IMPORT_DESCRIPTOR *)((ULONG_PTR)hModule + pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
 
-	while (pImport->Name && stricmp((const char *)((ULONG_PTR)hModule + pImport->Name), pszModuleName))
+	while (pImport->Name && 0 != stricmp((const char *)((ULONG_PTR)hModule + pImport->Name), pszModuleName))
 		pImport++;
 
 	auto hProcModule = GetModuleHandle(pszModuleName);
@@ -2238,33 +2343,72 @@ hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFu
 	if(!pThunk->u1.Function)
 		return NULL;
 
-	tagIATDATA *info = new tagIATDATA;
-	info->pAPIInfoAddr = &pThunk->u1.Function;
+	return MH_CreateIATHook(hModule, NULL, pszModuleName, pszFuncName, pNewFuncAddr, pOrginalCall, &pThunk->u1.Function);
+}
 
-	hook_t *h = MH_NewHook(MH_HOOK_IAT);
-	h->pOldFuncAddr = (void *)pThunk->u1.Function;
-	h->pNewFuncAddr = pNewFuncAddr;
-	h->pInfo = info;
-	h->hModule = hModule;
-	h->pszModuleName = pszModuleName;
-	h->pszFuncName = pszFuncName;
-	h->pOrginalCall = pOrginalCall;
+bool MH_ModuleHasImport(HMODULE hModule, const char* pszModuleName)
+{
+	auto pNtHeader = RtlImageNtHeader(hModule);
 
-	if (g_bTransactionHook)
+	if (!pNtHeader)
+		return NULL;
+
+	auto pImport = (IMAGE_IMPORT_DESCRIPTOR*)((ULONG_PTR)hModule + pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+
+	while (pImport->Name)
 	{
-		h->bCommitted = false;
-	}
-	else
-	{
-		MH_WriteMemory(info->pAPIInfoAddr, &pNewFuncAddr, sizeof(ULONG_PTR));
+		if (0 == stricmp((const char*)((ULONG_PTR)hModule + pImport->Name), pszModuleName))
+		{
+			return true;
+		}
 
-		if (h->pOrginalCall)
-			(*h->pOrginalCall) = h->pOldFuncAddr;
-
-		h->bCommitted = true;
+		pImport++;
 	}
 
-	return h;
+	return false;
+}
+
+bool MH_ModuleHasImportEx(HMODULE hModule, const char* pszModuleName, const char* pszFuncName)
+{
+	auto pNtHeader = RtlImageNtHeader(hModule);
+
+	if (!pNtHeader)
+		return NULL;
+
+	auto pImport = (IMAGE_IMPORT_DESCRIPTOR*)((ULONG_PTR)hModule + pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+
+	while (pImport->Name)
+	{
+		if (0 == stricmp((const char*)((ULONG_PTR)hModule + pImport->Name), pszModuleName))
+		{
+			auto hProcModule = GetModuleHandle(pszModuleName);
+
+			if (!hProcModule)
+				break;
+
+			ULONG_PTR dwFuncAddr = (ULONG_PTR)GetProcAddress(hProcModule, pszFuncName);
+
+			if (!dwFuncAddr)
+				break;
+
+			auto pThunk = (IMAGE_THUNK_DATA*)((ULONG_PTR)hModule + pImport->FirstThunk);
+
+			while (pThunk->u1.Function)
+			{
+				if (pThunk->u1.Function == dwFuncAddr)
+				{
+					return true;
+				}
+				pThunk++;
+			}
+
+			break;
+		}
+
+		pImport++;
+	}
+
+	return false;
 }
 
 void *MH_GetClassFuncAddr(...)
@@ -2724,8 +2868,7 @@ CreateInterfaceFn MH_GetEngineFactory(void)
 
 	if (g_hBlobEngine)
 	{
-		BlobHeader_t* pHeader = GetBlobHeader(g_hBlobEngine);
-		ULONG_PTR base = pHeader->m_dwExportPoint + 0x8;
+		ULONG_PTR base = GetBlobHeaderExportPoint(g_hBlobEngine) + 0x8;
 		ULONG_PTR factoryAddr = ((ULONG_PTR(*)(void))(base + *(ULONG_PTR*)base + 0x4))();
 
 		return (CreateInterfaceFn)factoryAddr;
@@ -2807,14 +2950,11 @@ const char *MH_GetEngineTypeName(void)
 
 PVOID MH_GetSectionByName(PVOID ImageBase, const char *SectionName, ULONG *SectionSize)
 {
-	if (g_hBlobEngine && GetBlobModuleImageBase(g_hBlobEngine) == ImageBase)
-	{
-		return GetBlobSectionByName(g_hBlobEngine, SectionName, SectionSize);
-	}
+	auto hBlob = BlobLoaderFindBlobByImageBase(ImageBase);
 
-	if (g_hBlobClient && GetBlobModuleImageBase(g_hBlobClient) == ImageBase)
+	if (hBlob)
 	{
-		return GetBlobSectionByName(g_hBlobClient, SectionName, SectionSize);
+		return GetBlobSectionByName(hBlob, SectionName, SectionSize);
 	}
 
 	PIMAGE_NT_HEADERS NtHeader = RtlImageNtHeader(ImageBase);
@@ -3381,8 +3521,6 @@ BOOL MH_GetPluginInfo(const char *name, mh_plugininfo_t *info)
 	return FALSE;
 }
 
-extern blob_thread_manager_api_t g_BlobThreadManagerAPI;
-
 metahook_api_t gMetaHookAPI_LegacyV2 =
 {
 	MH_UnHook,
@@ -3427,12 +3565,20 @@ metahook_api_t gMetaHookAPI_LegacyV2 =
 	MH_ReverseSearchFunctionBeginEx,
 	MH_IsDebuggerPresent,
 	MH_RegisterCvarCallback,
-	&g_BlobThreadManagerAPI,
 	MH_GetBlobEngineModule,
 	MH_GetBlobClientModule,
 	GetBlobModuleImageBase,
 	GetBlobModuleImageSize,
-	GetBlobSectionByName
+	GetBlobSectionByName,
+	BlobLoaderFindBlobByImageBase,
+	BlobLoaderFindBlobByVirtualAddress,
+	MH_RegisterDllLoaderNotificationCallback,
+	MH_UnregisterDllLoaderNotificationCallback,
+	MH_ModuleHasImport,
+	MH_ModuleHasImportEx,
+	MH_BlobHasImport,
+	MH_BlobHasImportEx,
+	MH_BlobIATHook,
 };
 
 metahook_api_t gMetaHookAPI =
@@ -3479,10 +3625,18 @@ metahook_api_t gMetaHookAPI =
 	MH_ReverseSearchFunctionBeginEx,
 	MH_IsDebuggerPresent,
 	MH_RegisterCvarCallback,
-	&g_BlobThreadManagerAPI,
 	MH_GetBlobEngineModule,
 	MH_GetBlobClientModule,
 	GetBlobModuleImageBase,
 	GetBlobModuleImageSize,
-	GetBlobSectionByName
+	GetBlobSectionByName,
+	BlobLoaderFindBlobByImageBase,
+	BlobLoaderFindBlobByVirtualAddress,
+	MH_RegisterDllLoaderNotificationCallback,
+	MH_UnregisterDllLoaderNotificationCallback,
+	MH_ModuleHasImport,
+	MH_ModuleHasImportEx,
+	MH_BlobHasImport,
+	MH_BlobHasImportEx,
+	MH_BlobIATHook,
 };

@@ -31,6 +31,7 @@ class IImage;
 // Purpose: Holds all panel rendering data
 //			This functionality is all wrapped in the Panel::GetScheme*() functions
 //-----------------------------------------------------------------------------
+
 class IScheme : public IBaseInterface
 {
 public:
@@ -51,27 +52,13 @@ public:
 	char const *GetFontName(const HFont &font);
 };
 
-class ISchemeManager: public IBaseInterface
+class IScheme_HL25 : public IScheme
 {
 public:
-	virtual HScheme LoadSchemeFromFile(const char *fileName, const char *tag) = 0;
-	virtual void ReloadSchemes(void) = 0;
-	virtual HScheme GetDefaultScheme(void) = 0;
-	virtual HScheme GetScheme(const char *tag) = 0;
-	virtual IImage *GetImage(const char *imageName, bool hardwareFiltered) = 0;
-	virtual HTexture GetImageID(const char *imageName, bool hardwareFiltered) = 0;
-	virtual IScheme *GetIScheme(HScheme scheme) = 0;
-	virtual void Shutdown(bool full = true) = 0;
-	virtual int GetProportionalScaledValue(int normalizedValue) = 0;
-	virtual int GetProportionalNormalizedValue(int scaledValue) = 0;
-
-public:
-	HScheme LoadSchemeFromFileEx(VPANEL sizingPanel, const char *fileName, const char *tag);
-	int GetProportionalScaledValueEx(HScheme scheme, int normalizedValue);
-	int GetProportionalNormalizedValueEx(HScheme scheme, int scaledValue);
+	virtual HFont GetHDFont(const char* fontName, bool proportional, bool hd) = 0;
 };
 
-class ISchemeManager_HL25 : public IBaseInterface
+class ISchemeManager : public IBaseInterface
 {
 public:
 	virtual HScheme LoadSchemeFromFile(const char *fileName, const char *tag) = 0;
@@ -84,14 +71,14 @@ public:
 	virtual void Shutdown(bool full = true) = 0;
 	virtual int GetProportionalScaledValue(int normalizedValue) = 0;
 	virtual int GetProportionalNormalizedValue(int scaledValue) = 0;
+};
+
+class ISchemeManager_HL25 : public ISchemeManager
+{
+public:
 	virtual float GetProportionalScale(void) = 0;
 	virtual int GetHDProportionalScaledValue(int normalizedValue) = 0;
 	virtual int GetHDProportionalNormalizedValue(int scaledValue) = 0;
-
-public:
-	HScheme LoadSchemeFromFileEx(VPANEL sizingPanel, const char *fileName, const char *tag);
-	int GetProportionalScaledValueEx(HScheme scheme, int normalizedValue);
-	int GetProportionalNormalizedValueEx(HScheme scheme, int scaledValue);
 };
 
 #define VGUI_SCHEME_INTERFACE_VERSION "VGUI_Scheme009"

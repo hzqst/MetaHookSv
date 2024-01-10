@@ -195,7 +195,7 @@ void Tooltip::PerformLayout()
 	s_TooltipWindow->SetKeyBoardInputEnabled( false );
 	s_TooltipWindow->SetMouseInputEnabled( false );
 
-	IScheme *pScheme = scheme()->GetIScheme( s_TooltipWindow->GetScheme() );
+	auto pScheme = scheme()->GetIScheme( s_TooltipWindow->GetScheme() );
 
 	s_TooltipWindow->SetBgColor(s_TooltipWindow->GetSchemeColor("SelectionBG", s_TooltipWindow->GetBgColor(), pScheme));
 	s_TooltipWindow->SetFgColor(s_TooltipWindow->GetSchemeColor("BorderSelection", s_TooltipWindow->GetFgColor(), pScheme));

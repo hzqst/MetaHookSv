@@ -49,7 +49,7 @@ bool CFontManager::AddGlyphSetToFont(HFont font, const char *windowsFontName, in
 
 	CWin32Font *winFont = CreateOrFindWin32Font(windowsFontName, tall, weight, blur, scanlines, flags);
 
-	if (flags & vgui::ISurface::FONTFLAG_CUSTOM)
+	if (flags & vgui::FONTFLAG_CUSTOM)
 	{
 		if (winFont)
 			m_FontAmalgams[font].AddFont(winFont, 0x0, 0xFFFF);
@@ -145,7 +145,7 @@ int CFontManager::GetFontAscent(HFont font, wchar_t wch)
 
 bool CFontManager::IsFontAdditive(HFont font)
 {
-	return (m_FontAmalgams[font].GetFlags(0) & vgui::ISurface::FONTFLAG_ADDITIVE) ? true : false;
+	return (m_FontAmalgams[font].GetFlags(0) & vgui::FONTFLAG_ADDITIVE) ? true : false;
 }
 
 int CFontManager::GetCharacterWidth(vgui::HFont font, int ch)
@@ -281,6 +281,16 @@ bool CFontManager::GetFontUnderlined(vgui::HFont font)
 bool CFontManager::GetFontOutlined(vgui::HFont font)
 {
 	return m_FontAmalgams[font].GetOutlined();
+}
+
+int CFontManager::GetFontBlur(HFont font)
+{
+	return m_FontAmalgams[font].GetBlur();
+}
+
+bool CFontManager::GetFontAdditive(HFont font)
+{
+	return m_FontAmalgams[font].GetAdditive();
 }
 
 CWin32Font *CFontManager::CreateOrFindWin32Font(const char *windowsFontName, int tall, int weight, int blur, int scanlines, int flags)

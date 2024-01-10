@@ -15,7 +15,8 @@
 
 #include <vgui/ILocalize.h>
 #include <vgui/IScheme.h>
-#include <vgui/ISurface2.h>
+#include <vgui/ISurface.h>
+#include "Surface2.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include <tier0/memdbgon.h>

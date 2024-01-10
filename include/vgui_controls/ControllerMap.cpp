@@ -7,8 +7,9 @@
 
 #include "ControllerMap.h"
 
-#include <vgui/ISurface2.h>
 #include <vgui/KeyCode.h>
+#include <vgui/ISurface.h>
+#include "Surface2.h"
 
 #include <tier1/KeyValues.h>
 

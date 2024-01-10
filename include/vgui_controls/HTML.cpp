@@ -72,7 +72,7 @@ HTML::HTML(Panel *parent, const char *name, bool allowJavaScript) : Panel(parent
 	m_bContextMenuEnabled = true;
 	m_bNewWindowsOnly = false;
 	m_bSetVisibleOnPerformLayout = false;
-	if ( surface()->SupportsFeature( CSurface::DIRECT_HWND_RENDER ) )
+	if ( surface()->SupportsFeature( DIRECT_HWND_RENDER ) )
 	{
 		SetCursor( dc_blank );
 	}
@@ -139,7 +139,7 @@ void HTML::PaintBackground()
 
 	if (m_bRegenerateHTMLBitmap)
 	{
-		if ( !surface()->SupportsFeature( CSurface::DIRECT_HWND_RENDER ) )
+		if ( !surface()->SupportsFeature( DIRECT_HWND_RENDER ) )
 		{	
 			surface()->PaintHTMLWindow(browser);
 		}
@@ -149,7 +149,7 @@ void HTML::PaintBackground()
 		CalcScrollBars(w, h);
 	}
 
-	if ( surface()->SupportsFeature( CSurface::DIRECT_HWND_RENDER ) )
+	if ( surface()->SupportsFeature( DIRECT_HWND_RENDER ) )
 	{
 	}
 	else
@@ -406,7 +406,7 @@ void HTML::OnSizeChanged(int wide,int tall)
 
 	BrowserResize();
 	m_bRegenerateHTMLBitmap = true;
-	if ( !surface()->SupportsFeature( CSurface::DIRECT_HWND_RENDER ) )
+	if ( !surface()->SupportsFeature( DIRECT_HWND_RENDER ) )
 	{
 		Repaint();
 	}
@@ -423,7 +423,7 @@ void HTML::OnTick()
 	{
 		m_iNextFrameTime = system()->GetTimeMillis() + 	m_iAnimTime;
 		m_bRegenerateHTMLBitmap = true;
-		if ( !surface()->SupportsFeature( CSurface::DIRECT_HWND_RENDER ) )
+		if ( !surface()->SupportsFeature( DIRECT_HWND_RENDER ) )
 		{
 			Repaint();
 		}
@@ -448,7 +448,7 @@ void HTML::OnMousePressed(MouseCode code)
 		}
 	}
 	m_bRegenerateHTMLBitmap = true;
-	if ( !surface()->SupportsFeature( CSurface::DIRECT_HWND_RENDER ) )
+	if ( !surface()->SupportsFeature( DIRECT_HWND_RENDER ) )
 	{
 		Repaint();
 	}
@@ -464,7 +464,7 @@ void HTML::OnMouseReleased(MouseCode code)
 		browser->OnMouse(code, IHTML::UP, m_iMouseX, m_iMouseY);
 	}
 	m_bRegenerateHTMLBitmap = true;
-	if ( !surface()->SupportsFeature( CSurface::DIRECT_HWND_RENDER ) )
+	if ( !surface()->SupportsFeature( DIRECT_HWND_RENDER ) )
 	{
 		Repaint();
 	}
@@ -491,7 +491,7 @@ void HTML::OnMouseDoublePressed(MouseCode code)
 		browser->OnMouse(code, IHTML::DOWN, m_iMouseX, m_iMouseY);
 	}
 	m_bRegenerateHTMLBitmap = true;
-	if ( !surface()->SupportsFeature( CSurface::DIRECT_HWND_RENDER ) )
+	if ( !surface()->SupportsFeature( DIRECT_HWND_RENDER ) )
 	{
 		Repaint();
 	}
@@ -559,7 +559,7 @@ void HTML::AddCustomURLHandler(const char *customProtocolName, vgui::Panel *targ
 //-----------------------------------------------------------------------------
 bool HTML::OnStartURL(const char *url, const char *target, bool first)
 {
-	if ( IsVisible() && !surface()->SupportsFeature( CSurface::DIRECT_HWND_RENDER ) )
+	if ( IsVisible() && !surface()->SupportsFeature( DIRECT_HWND_RENDER ) )
 	{
 		SetCursor( dc_arrow );
 	}
@@ -640,7 +640,7 @@ void HTML::OnFinishURL(const char *url)
 	BrowserResize();
 
 	m_bRegenerateHTMLBitmap = true; // repaint the window, as we have a new picture to show
-	if ( !surface()->SupportsFeature( CSurface::DIRECT_HWND_RENDER ) )
+	if ( !surface()->SupportsFeature( DIRECT_HWND_RENDER ) )
 	{
 		Repaint();
 	}
@@ -672,7 +672,7 @@ void HTML::OnUpdate()
 	{
 		m_iNextFrameTime = system()->GetTimeMillis() + m_iAnimTime;
 		m_bRegenerateHTMLBitmap = true;
-		if ( !surface()->SupportsFeature( CSurface::DIRECT_HWND_RENDER ) )
+		if ( !surface()->SupportsFeature( DIRECT_HWND_RENDER ) )
 		{
 			Repaint();
 		}
@@ -689,7 +689,7 @@ void HTML::OnUpdate()
 //-----------------------------------------------------------------------------
 void HTML::OnLink()
 {
-	if( IsVisible() && !surface()->SupportsFeature( CSurface::DIRECT_HWND_RENDER ))
+	if( IsVisible() && !surface()->SupportsFeature( DIRECT_HWND_RENDER ))
 	{
 		SetCursor(dc_hand);
 	}
@@ -700,7 +700,7 @@ void HTML::OnLink()
 //-----------------------------------------------------------------------------
 void HTML::OffLink()
 {
-	if( IsVisible() && !surface()->SupportsFeature( CSurface::DIRECT_HWND_RENDER ))
+	if( IsVisible() && !surface()->SupportsFeature( DIRECT_HWND_RENDER ))
 	{
 		SetCursor(dc_arrow);
 	}
@@ -732,7 +732,7 @@ void HTML::OnSliderMoved()
 
 	
 	m_bRegenerateHTMLBitmap = true;
-	if ( !surface()->SupportsFeature( CSurface::DIRECT_HWND_RENDER ) )
+	if ( !surface()->SupportsFeature( DIRECT_HWND_RENDER ) )
 	{
 		Repaint();
 	}

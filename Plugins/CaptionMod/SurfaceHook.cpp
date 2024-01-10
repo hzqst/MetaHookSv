@@ -14,6 +14,7 @@ extern IEngineSurface *staticSurface;
 extern IEngineSurface_HL25 *staticSurface_HL25;
 
 extern vgui::ISurface *g_pSurface;
+extern vgui::ISurface_HL25* g_pSurface_HL25;
 
 using namespace vgui;
 
@@ -117,7 +118,7 @@ public:
 	virtual void SetAllowHTMLJavaScript(bool state);
 	virtual void SetLanguage(const char *pchLang);
 	virtual const char *GetLanguage(void);
-	virtual void DeleteTextureByID(int id);
+	virtual bool DeleteTextureByID(int id);
 	virtual void DrawUpdateRegionTextureBGRA(int nTextureID, int x, int y, const unsigned char *pchData, int wide, int tall);
 	virtual void DrawSetTextureBGRA(int id, const unsigned char *rgba, int wide, int tall);
 	virtual void CreateBrowser(VPANEL panel, IHTMLResponses *pBrowser, bool bPopupWindow, const char *pchUserAgentIdentifier);
@@ -128,9 +129,9 @@ public:
 	virtual void SetAsTopMost(bool state);
 	virtual void SetAsToolBar(bool state);
 	virtual void PanelRequestFocus(VPANEL panel);
-	virtual void EnableMouseCapture(bool state);
+	virtual void EnableMouseCapture2(bool state);
 	virtual void DrawPrintChar(int x, int y, int wide, int tall, float s0, float t0, float s1, float t1);
-	virtual void SetNotifyIcon(Image *image, VPANEL panelToReceiveMessages, const char *text);
+	virtual void SetNotifyIcon2(Image *image, VPANEL panelToReceiveMessages, const char *text);
 	virtual bool SetWatchForComputerUse(bool state);
 	virtual double GetTimeSinceLastUse(void);
 	virtual bool VGUI2MouseControl(void);
@@ -147,7 +148,7 @@ void(__fastcall *m_pfnSurface_Shutdown)(void *pthis, int);
 void(__fastcall *m_pfnDrawSetTextFont)(void *pthis, int, HFont font);
 void(__fastcall *m_pfnDrawUnicodeChar)(void *pthis, int, wchar_t wch);
 void(__fastcall *m_pfnDrawUnicodeCharAdd)(void *pthis, int, wchar_t wch);
-bool(__fastcall *m_pfnSupportsFeature)(void *pthis, int, ISurface::SurfaceFeature_e feature);
+bool(__fastcall *m_pfnSupportsFeature)(void *pthis, int, SurfaceFeature_e feature);
 bool(__fastcall *m_pfnAddGlyphSetToFont)(void *pthis, int, HFont font, const char *windowsFontName, int tall, int weight, int blur, int scanlines, int flags, int lowRange, int highRange);
 void(__fastcall *m_pfnAddCustomFontFile)(void *pthis, int, const char *fontFileName);
 int(__fastcall *m_pfnGetFontTall)(void *pthis, int, HFont font);
@@ -161,7 +162,7 @@ void(__fastcall *m_pfnDrawSetTextColor2)(void *pthis, int, Color col);
 void(__fastcall *m_pfnSetAllowHTMLJavaScript)(void *pthis, int, bool state);
 void(__fastcall *m_pfnSetLanguage)(void *pthis, int, const char *pchLang);
 const char *(__fastcall *m_pfnGetLanguage)(void *pthis, int);
-void(__fastcall *m_pfnDeleteTextureByID)(void *pthis, int, int id);
+bool(__fastcall *m_pfnDeleteTextureByID)(void *pthis, int, int id);
 void(__fastcall *m_pfnDrawUpdateRegionTextureBGRA)(void *pthis, int, int nTextureID, int x, int y, const unsigned char *pchData, int wide, int tall);
 void(__fastcall *m_pfnDrawSetTextureBGRA)(void *pthis, int, int id, const unsigned char *rgba, int wide, int tall);
 void(__fastcall *m_pfnCreateBrowser)(void *pthis, int, VPANEL panel, IHTMLResponses *pBrowser, bool bPopupWindow, const char *pchUserAgentIdentifier);
@@ -172,9 +173,9 @@ void(__fastcall *m_pfnsetWindowedMode)(void *pthis, int);
 void(__fastcall *m_pfnSetAsTopMost)(void *pthis, int, bool state);
 void(__fastcall *m_pfnSetAsToolBar)(void *pthis, int, bool state);
 void(__fastcall *m_pfnPanelRequestFocus)(void *pthis, int, VPANEL panel);
-void(__fastcall *m_pfnEnableMouseCapture)(void *pthis, int, bool state);
+void(__fastcall *m_pfnEnableMouseCapture2)(void *pthis, int, bool state);
 void(__fastcall *m_pfnDrawPrintChar)(void *pthis, int, int x, int y, int wide, int tall, float s0, float t0, float s1, float t1);
-void(__fastcall *m_pfnSetNotifyIcon)(void *pthis, int, Image *image, VPANEL panelToReceiveMessages, const char *text);
+void(__fastcall *m_pfnSetNotifyIcon2)(void *pthis, int, Image *image, VPANEL panelToReceiveMessages, const char *text);
 bool(__fastcall *m_pfnSetWatchForComputerUse)(void *pthis, int, bool state);
 double(__fastcall *m_pfnGetTimeSinceLastUse)(void *pthis, int);
 bool(__fastcall *m_pfnVGUI2MouseControl)(void *pthis, int);
@@ -182,7 +183,7 @@ void(__fastcall *m_pfnSetVGUI2MouseControl)(void *pthis, int, bool state);
 void(__fastcall *m_pfnSurfaceSetCursorPos)(void *pthis, int, int x, int y);
 void(__fastcall *m_pfnSetCursor)(void *pthis, int, HCursor cursor);
 
-CSurfaceProxy g_SurfaceProxy;
+static CSurfaceProxy g_SurfaceProxy;
 
 void CSurfaceProxy::Shutdown(void)
 {
@@ -851,9 +852,9 @@ const char *CSurfaceProxy::GetLanguage(void)
 	return m_pfnGetLanguage(this, 0);
 }
 
-void CSurfaceProxy::DeleteTextureByID(int id)
+bool CSurfaceProxy::DeleteTextureByID(int id)
 {
-	m_pfnDeleteTextureByID(this, 0, id);
+	return m_pfnDeleteTextureByID(this, 0, id);
 }
 
 void CSurfaceProxy::DrawUpdateRegionTextureBGRA(int nTextureID, int x, int y, const unsigned char *pchData, int wide, int tall)
@@ -906,9 +907,9 @@ void CSurfaceProxy::PanelRequestFocus(VPANEL panel)
 	m_pfnPanelRequestFocus(this, 0, panel);
 }
 
-void CSurfaceProxy::EnableMouseCapture(bool state)
+void CSurfaceProxy::EnableMouseCapture2(bool state)
 {
-	m_pfnEnableMouseCapture(this, 0, state);
+	m_pfnEnableMouseCapture2(this, 0, state);
 }
 
 void CSurfaceProxy::DrawPrintChar(int x, int y, int wide, int tall, float s0, float t0, float s1, float t1)
@@ -916,9 +917,9 @@ void CSurfaceProxy::DrawPrintChar(int x, int y, int wide, int tall, float s0, fl
 	m_pfnDrawPrintChar(this, 0, x, y, wide, tall, s0, s1, s1, t1);
 }
 
-void CSurfaceProxy::SetNotifyIcon(Image *image, VPANEL panelToReceiveMessages, const char *text)
+void CSurfaceProxy::SetNotifyIcon2(Image *image, VPANEL panelToReceiveMessages, const char *text)
 {
-	m_pfnSetNotifyIcon(this, 0, image, panelToReceiveMessages, text);
+	m_pfnSetNotifyIcon2(this, 0, image, panelToReceiveMessages, text);
 }
 
 bool CSurfaceProxy::SetWatchForComputerUse(bool state)
@@ -941,7 +942,7 @@ void CSurfaceProxy::SetVGUI2MouseControl(bool state)
 	m_pfnSetVGUI2MouseControl(this, 0, state);
 }
 
-class CSurfaceProxy_HL25 : public ISurface
+class CSurfaceProxy_HL25 : public ISurface_HL25
 {
 public:
 	virtual void Shutdown(void);
@@ -955,27 +956,27 @@ public:
 	virtual void DrawFilledRect(int x0, int y0, int x1, int y1);
 	virtual void DrawOutlinedRect(int x0, int y0, int x1, int y1);
 	virtual void DrawLine(int x0, int y0, int x1, int y1);
-	virtual void DrawPolyLine(int *px, int *py, int numPoints);
+	virtual void DrawPolyLine(int* px, int* py, int numPoints);
 	virtual void DrawSetTextFont(HFont font);
 	virtual void DrawSetTextColor(int r, int g, int b, int a);
 	virtual void DrawSetTextColor(Color col);
 	virtual void DrawSetTextPos(int x, int y);
-	virtual void DrawGetTextPos(int &x, int &y);
-	virtual void DrawPrintText(const wchar_t *text, int textLen);
+	virtual void DrawGetTextPos(int& x, int& y);
+	virtual void DrawPrintText(const wchar_t* text, int textLen);
 	virtual void DrawUnicodeChar(wchar_t wch);
 	virtual void DrawUnicodeCharAdd(wchar_t wch);
 	virtual void DrawFlushText(void);
-	virtual IHTML *CreateHTMLWindow(IHTMLEvents *events, VPANEL context);
-	virtual void PaintHTMLWindow(IHTML *htmlwin);
-	virtual void DeleteHTMLWindow(IHTML *htmlwin);
-	virtual void DrawSetTextureFile(int id, const char *filename, int hardwareFilter, bool forceReload);
-	virtual void DrawSetTextureRGBA(int id, const unsigned char *rgba, int wide, int tall, int hardwareFilter, bool forceReload);
+	virtual IHTML* CreateHTMLWindow(IHTMLEvents* events, VPANEL context);
+	virtual void PaintHTMLWindow(IHTML* htmlwin);
+	virtual void DeleteHTMLWindow(IHTML* htmlwin);
+	virtual void DrawSetTextureFile(int id, const char* filename, int hardwareFilter, bool forceReload);
+	virtual void DrawSetTextureRGBA(int id, const unsigned char* rgba, int wide, int tall, int hardwareFilter, bool forceReload);
 	virtual void DrawSetTexture(int id);
-	virtual void DrawGetTextureSize(int id, int &wide, int &tall);
+	virtual void DrawGetTextureSize(int id, int& wide, int& tall);
 	virtual void DrawTexturedRect(int x0, int y0, int x1, int y1);
 	virtual bool IsTextureIDValid(int id);
 	virtual int CreateNewTextureID(bool procedural = false);
-	virtual void GetScreenSize(int &wide, int &tall);
+	virtual void GetScreenSize(int& wide, int& tall);
 	virtual void SetAsTopMost(VPANEL panel, bool state);
 	virtual void BringToFront(VPANEL panel);
 	virtual void SetForegroundWindow(VPANEL panel);
@@ -983,7 +984,7 @@ public:
 	virtual void SetMinimized(VPANEL panel, bool state);
 	virtual bool IsMinimized(VPANEL panel);
 	virtual void FlashWindow(VPANEL panel, bool state);
-	virtual void SetTitle(VPANEL panel, const wchar_t *title);
+	virtual void SetTitle(VPANEL panel, const wchar_t* title);
 	virtual void SetAsToolBar(VPANEL panel, bool state);
 	virtual void CreatePopup(VPANEL panel, bool minimised, bool showTaskbarIcon = true, bool disabled = false, bool mouseInput = true, bool kbInput = true);
 	virtual void SwapBuffers(VPANEL panel);
@@ -1003,15 +1004,15 @@ public:
 	virtual VPANEL GetTopmostPopup(void);
 	virtual void SetTopLevelFocus(VPANEL panel);
 	virtual HFont CreateFont(void);
-	virtual bool AddGlyphSetToFont(HFont font, const char *windowsFontName, int tall, int weight, int blur, int scanlines, int flags, int lowRange, int highRange);
-	virtual bool AddCustomFontFile(const char *fontFileName);
+	virtual bool AddGlyphSetToFont(HFont font, const char* windowsFontName, int tall, int weight, int blur, int scanlines, int flags, int lowRange, int highRange);
+	virtual bool AddCustomFontFile(const char* fontFileName);
 	virtual int GetFontTall(HFont font);
-	virtual void GetCharABCwide(HFont font, int ch, int &a, int &b, int &c);
+	virtual void GetCharABCwide(HFont font, int ch, int& a, int& b, int& c);
 	virtual int GetCharacterWidth(HFont font, int ch);
-	virtual void GetTextSize(HFont font, const wchar_t *text, int &wide, int &tall);
+	virtual void GetTextSize(HFont font, const wchar_t* text, int& wide, int& tall);
 	virtual VPANEL GetNotifyPanel(void);
-	virtual void SetNotifyIcon(VPANEL context, HTexture icon, VPANEL panelToReceiveMessages, const char *text);
-	virtual void PlaySound(const char *fileName);
+	virtual void SetNotifyIcon(VPANEL context, HTexture icon, VPANEL panelToReceiveMessages, const char* text);
+	virtual void PlaySound(const char* fileName);
 	virtual int GetPopupCount(void);
 	virtual VPANEL GetPopup(int index);
 	virtual bool ShouldPaintChildPanel(VPANEL childPanel);
@@ -1023,42 +1024,43 @@ public:
 	virtual void SolveTraverse(VPANEL panel, bool forceApplySchemeSettings = false);
 	virtual void PaintTraverse(VPANEL panel);
 	virtual void EnableMouseCapture(VPANEL panel, bool state);
-	virtual void GetWorkspaceBounds(int &x, int &y, int &wide, int &tall);
-	virtual void GetAbsoluteWindowBounds(int &x, int &y, int &wide, int &tall);
-	virtual void GetProportionalBase(int &width, int &height);
+	virtual void GetWorkspaceBounds(int& x, int& y, int& wide, int& tall);
+	virtual void GetAbsoluteWindowBounds(int& x, int& y, int& wide, int& tall);
+	virtual void GetProportionalBase(int& width, int& height);
 	virtual void CalculateMouseVisible(void);
 	virtual bool NeedKBInput(void);
 	virtual bool HasCursorPosFunctions(void);
-	virtual void SurfaceGetCursorPos(int &x, int &y);
+	virtual void SurfaceGetCursorPos(int& x, int& y);
 	virtual void SurfaceSetCursorPos(int x, int y);
-	virtual void DrawTexturedPolygon(int *p, int n);
+	virtual void DrawTexturedPolygon(int* p, int n);
 	virtual int GetFontAscent(HFont font, wchar_t wch);
 	virtual void SetAllowHTMLJavaScript(bool state);
-	virtual void SetLanguage(const char *pchLang);
-	virtual const char *GetLanguage(void);
-	virtual void DeleteTextureByID(int id);
-	virtual void DrawUpdateRegionTextureBGRA(int nTextureID, int x, int y, const unsigned char *pchData, int wide, int tall);
-	virtual void DrawSetTextureBGRA(int id, const unsigned char *rgba, int wide, int tall);
-	virtual void CreateBrowser(VPANEL panel, IHTMLResponses *pBrowser, bool bPopupWindow, const char *pchUserAgentIdentifier);
-	virtual void RemoveBrowser(VPANEL panel, IHTMLResponses *pBrowser);
-	virtual IHTMLChromeController *AccessChromeHTMLController(void);
+	virtual void SetLanguage(const char* szLanguage);
+	virtual const char* GetLanguage(void);
+	virtual bool DeleteTextureByID(int id);
+	virtual void DrawUpdateRegionTextureBGRA(int nTextureID, int x, int y, const unsigned char* pchData, int wide, int tall);
+	virtual void DrawSetTextureBGRA(int id, const unsigned char* rgba, int wide, int tall);
+	virtual void CreateBrowser(VPANEL panel, IHTMLResponses* pBrowser, bool bPopupWindow, const char* pchUserAgentIdentifier);
+	virtual void RemoveBrowser(VPANEL panel, IHTMLResponses* pBrowser);
+	virtual IHTMLChromeController* AccessChromeHTMLController(void);
 	virtual void DrawTexturedRectAdd(int x0, int y0, int x1, int y1);
 	virtual void SetSupportsEsc(bool bSupportsEsc);
 	virtual int GetFontBlur(HFont font);
-	virtual bool IsAdditive(HFont font);
+	virtual bool IsFontAdditive(HFont font);
 	virtual void SetProportionalBase(int width, int height);
-	virtual void GetHDProportionalBase(int &width, int &height);
+	virtual void GetHDProportionalBase(int& width, int& height);
 	virtual void SetHDProportionalBase(int nWidth, int nHeight);
-	virtual void setFullscreenMode(int wide, int tall, int bpp);
-	virtual void setWindowedMode(void);
-	virtual void PanelRequestFocus(VPANEL panel);
-	virtual void EnableMouseCapture(bool state);
+	//WTF is this shit?
+	virtual void unk(int a1);
+	virtual void unk2(int a2);
+	virtual void unk3(int a1, int a2, int a3);
+	virtual void unk4(int a1, int a2, int a3);
+	virtual void unk5();
+	virtual void unk6(int a1);
+	virtual void unk7(int a2);
 	virtual void DrawPrintChar(int x, int y, int wide, int tall, float s0, float t0, float s1, float t1);
-	virtual void SetNotifyIcon(Image *image, VPANEL panelToReceiveMessages, const char *text);
-	virtual bool SetWatchForComputerUse(bool state);
-	virtual double GetTimeSinceLastUse(void);
-	virtual bool VGUI2MouseControl(void);
-	virtual void SetVGUI2MouseControl(bool state);
+	virtual bool unk8(void);
+	virtual double unk9(void);
 
 public:
 	void DrawSetAlphaMultiplier(float alpha);
@@ -1068,12 +1070,12 @@ public:
 void(__fastcall *m_pfnDrawTexturedRectAdd)(void *pthis, int, int x0, int y0, int x1, int y1);
 void(__fastcall *m_pfnSetSupportsEsc)(void *pthis, int, bool bSupportsEsc);
 int(__fastcall *m_pfnGetFontBlur)(void *pthis, int, HFont font);
-bool(__fastcall *m_pfnIsAdditive)(void *pthis, int, HFont font);
+bool(__fastcall *m_pfnIsFontAdditive)(void *pthis, int, HFont font);
 void(__fastcall *m_pfnSetProportionalBase)(void *pthis, int, int width, int height);
 void(__fastcall *m_pfnGetHDProportionalBase)(void *pthis, int, int &width, int &height);
 void(__fastcall *m_pfnSetHDProportionalBase)(void *pthis, int, int nWidth, int nHeight);
 
-CSurfaceProxy_HL25 g_SurfaceProxy_HL25;
+static CSurfaceProxy_HL25 g_SurfaceProxy_HL25;
 
 void CSurfaceProxy_HL25::Shutdown(void)
 {
@@ -1097,57 +1099,57 @@ void CSurfaceProxy_HL25::Shutdown(void)
 
 void CSurfaceProxy_HL25::RunFrame(void)
 {
-	g_pSurface->RunFrame();
+	g_pSurface_HL25->RunFrame();
 }
 
 VPANEL CSurfaceProxy_HL25::GetEmbeddedPanel(void)
 {
-	return g_pSurface->GetEmbeddedPanel();
+	return g_pSurface_HL25->GetEmbeddedPanel();
 }
 
 void CSurfaceProxy_HL25::SetEmbeddedPanel(VPANEL pPanel)
 {
-	g_pSurface->SetEmbeddedPanel(pPanel);
+	g_pSurface_HL25->SetEmbeddedPanel(pPanel);
 }
 
 void CSurfaceProxy_HL25::PushMakeCurrent(VPANEL panel, bool useInsets)
 {
-	g_pSurface->PushMakeCurrent(panel, useInsets);
+	g_pSurface_HL25->PushMakeCurrent(panel, useInsets);
 }
 
 void CSurfaceProxy_HL25::PopMakeCurrent(VPANEL panel)
 {
-	g_pSurface->PopMakeCurrent(panel);
+	g_pSurface_HL25->PopMakeCurrent(panel);
 }
 
 void CSurfaceProxy_HL25::DrawSetColor(int r, int g, int b, int a)
 {
-	g_pSurface->DrawSetColor(r, g, b, a);
+	g_pSurface_HL25->DrawSetColor(r, g, b, a);
 }
 
 void CSurfaceProxy_HL25::DrawSetColor(Color col)
 {
-	g_pSurface->DrawSetColor(col);
+	g_pSurface_HL25->DrawSetColor(col);
 }
 
 void CSurfaceProxy_HL25::DrawFilledRect(int x0, int y0, int x1, int y1)
 {
-	g_pSurface->DrawFilledRect(x0, y0, x1, y1);
+	g_pSurface_HL25->DrawFilledRect(x0, y0, x1, y1);
 }
 
 void CSurfaceProxy_HL25::DrawOutlinedRect(int x0, int y0, int x1, int y1)
 {
-	g_pSurface->DrawOutlinedRect(x0, y0, x1, y1);
+	g_pSurface_HL25->DrawOutlinedRect(x0, y0, x1, y1);
 }
 
 void CSurfaceProxy_HL25::DrawLine(int x0, int y0, int x1, int y1)
 {
-	g_pSurface->DrawLine(x0, y0, x1, y1);
+	g_pSurface_HL25->DrawLine(x0, y0, x1, y1);
 }
 
 void CSurfaceProxy_HL25::DrawPolyLine(int *px, int *py, int numPoints)
 {
-	g_pSurface->DrawPolyLine(px, py, numPoints);
+	g_pSurface_HL25->DrawPolyLine(px, py, numPoints);
 }
 
 void CSurfaceProxy_HL25::DrawSetTextFont(HFont font)
@@ -1183,17 +1185,17 @@ void CSurfaceProxy_HL25::DrawSetTextColor(Color col)
 
 void CSurfaceProxy_HL25::DrawSetTextPos(int x, int y)
 {
-	g_pSurface->DrawSetTextPos(x, y);
+	g_pSurface_HL25->DrawSetTextPos(x, y);
 }
 
 void CSurfaceProxy_HL25::DrawGetTextPos(int &x, int &y)
 {
-	g_pSurface->DrawGetTextPos(x, y);
+	g_pSurface_HL25->DrawGetTextPos(x, y);
 }
 
 void CSurfaceProxy_HL25::DrawPrintText(const wchar_t *text, int textLen)
 {
-	g_pSurface->DrawPrintText(text, textLen);
+	g_pSurface_HL25->DrawPrintText(text, textLen);
 }
 
 void CSurfaceProxy_HL25::DrawUnicodeChar(wchar_t wch)
@@ -1202,7 +1204,7 @@ void CSurfaceProxy_HL25::DrawUnicodeChar(wchar_t wch)
 		return;
 
 	int x, y;
-	g_pSurface->DrawGetTextPos(x, y);
+	DrawGetTextPos(x, y);
 
 	int a, b, c;
 	FontManager().GetCharABCwide(g_hCurrentFont, wch, a, b, c);
@@ -1226,12 +1228,13 @@ void CSurfaceProxy_HL25::DrawUnicodeChar(wchar_t wch)
 	if (!g_FontTextureCache.GetTextureForChar(g_hCurrentFont, wch, &textureID, &texCoords))
 		return;
 
-	g_pSurface->DrawSetTexture(textureID);
+	DrawSetTexture(textureID);
 
 	if (FontManager().GetFontOutlined(g_hCurrentFont))
 	{
 		int OutlineColor = (g_iCurrentTextR <= 10 && g_iCurrentTextG <= 10 && g_iCurrentTextB <= 10) ? 255 : 0;
-		m_pfnDrawSetTextColor(this, 0, OutlineColor, OutlineColor, OutlineColor, g_iCurrentTextA);
+		
+		DrawSetTextColor(OutlineColor, OutlineColor, OutlineColor, g_iCurrentTextA);
 
 		if (staticSurface)
 		{
@@ -1257,15 +1260,16 @@ void CSurfaceProxy_HL25::DrawUnicodeChar(wchar_t wch)
 		}
 	}
 
-	m_pfnDrawSetTextColor(this, 0, g_iCurrentTextR, g_iCurrentTextG, g_iCurrentTextB, g_iCurrentTextA);
+	DrawSetTextColor(g_iCurrentTextR, g_iCurrentTextG, g_iCurrentTextB, g_iCurrentTextA);
 
-	if (staticSurface)
-		staticSurface->drawPrintChar(x, y, rgbaWide, rgbaTall, texCoords[0], texCoords[1], texCoords[2], texCoords[3]);
-	else
+	if (staticSurface_HL25)
 		staticSurface_HL25->drawPrintChar(x, y, rgbaWide, rgbaTall, texCoords[0], texCoords[1], texCoords[2], texCoords[3]);
+	else
+		staticSurface->drawPrintChar(x, y, rgbaWide, rgbaTall, texCoords[0], texCoords[1], texCoords[2], texCoords[3]);
 
-	m_pfnDrawSetTextColor(this, 0, g_iCurrentTextR, g_iCurrentTextG, g_iCurrentTextB, g_iCurrentTextA);
-	g_pSurface->DrawSetTextPos(x + b + c, y);
+	DrawSetTextColor(g_iCurrentTextR, g_iCurrentTextG, g_iCurrentTextB, g_iCurrentTextA);
+	
+	DrawSetTextPos(x + b + c, y);
 }
 
 void CSurfaceProxy_HL25::DrawUnicodeCharAdd(wchar_t wch)
@@ -1274,7 +1278,7 @@ void CSurfaceProxy_HL25::DrawUnicodeCharAdd(wchar_t wch)
 		return;
 
 	int x, y;
-	g_pSurface->DrawGetTextPos(x, y);
+	DrawGetTextPos(x, y);
 
 	int a, b, c;
 	FontManager().GetCharABCwide(g_hCurrentFont, wch, a, b, c);
@@ -1298,12 +1302,13 @@ void CSurfaceProxy_HL25::DrawUnicodeCharAdd(wchar_t wch)
 	if (!g_FontTextureCache.GetTextureForChar(g_hCurrentFont, wch, &textureID, &texCoords))
 		return;
 
-	g_pSurface->DrawSetTexture(textureID);
+	DrawSetTexture(textureID);
 
 	if (FontManager().GetFontOutlined(g_hCurrentFont))
 	{
 		int OutlineColor = (g_iCurrentTextR <= 10 && g_iCurrentTextG <= 10 && g_iCurrentTextB <= 10) ? 255 : 0;
-		m_pfnDrawSetTextColor(this, 0, OutlineColor, OutlineColor, OutlineColor, g_iCurrentTextA);
+		
+		DrawSetTextColor(OutlineColor, OutlineColor, OutlineColor, g_iCurrentTextA);
 
 		if (staticSurface)
 		{
@@ -1329,135 +1334,136 @@ void CSurfaceProxy_HL25::DrawUnicodeCharAdd(wchar_t wch)
 		}
 	}
 
-	m_pfnDrawSetTextColor(this, 0, g_iCurrentTextR, g_iCurrentTextG, g_iCurrentTextB, g_iCurrentTextA);
+	DrawSetTextColor(g_iCurrentTextR, g_iCurrentTextG, g_iCurrentTextB, g_iCurrentTextA);
 
-	if (staticSurface)
-		staticSurface->drawPrintCharAdd(x, y, rgbaWide, rgbaTall, texCoords[0], texCoords[1], texCoords[2], texCoords[3]);
-	else
+	if (staticSurface_HL25)
 		staticSurface_HL25->drawPrintCharAdd(x, y, rgbaWide, rgbaTall, texCoords[0], texCoords[1], texCoords[2], texCoords[3]);
+	else
+		staticSurface->drawPrintCharAdd(x, y, rgbaWide, rgbaTall, texCoords[0], texCoords[1], texCoords[2], texCoords[3]);
 
-	m_pfnDrawSetTextColor(this, 0, g_iCurrentTextR, g_iCurrentTextG, g_iCurrentTextB, g_iCurrentTextA);
-	g_pSurface->DrawSetTextPos(x + b + c, y);
+	DrawSetTextColor(g_iCurrentTextR, g_iCurrentTextG, g_iCurrentTextB, g_iCurrentTextA);
+
+	DrawSetTextPos(x + b + c, y);
 }
 
 void CSurfaceProxy_HL25::DrawFlushText(void)
 {
-	g_pSurface->DrawFlushText();
+	g_pSurface_HL25->DrawFlushText();
 }
 
 IHTML *CSurfaceProxy_HL25::CreateHTMLWindow(IHTMLEvents *events, VPANEL context)
 {
-	return g_pSurface->CreateHTMLWindow(events, context);
+	return g_pSurface_HL25->CreateHTMLWindow(events, context);
 }
 
 void CSurfaceProxy_HL25::PaintHTMLWindow(IHTML *htmlwin)
 {
-	g_pSurface->PaintHTMLWindow(htmlwin);
+	g_pSurface_HL25->PaintHTMLWindow(htmlwin);
 }
 
 void CSurfaceProxy_HL25::DeleteHTMLWindow(IHTML *htmlwin)
 {
-	g_pSurface->DeleteHTMLWindow(htmlwin);
+	g_pSurface_HL25->DeleteHTMLWindow(htmlwin);
 }
 
 void CSurfaceProxy_HL25::DrawSetTextureFile(int id, const char *filename, int hardwareFilter, bool forceReload)
 {
-	g_pSurface->DrawSetTextureFile(id, filename, hardwareFilter, forceReload);
+	g_pSurface_HL25->DrawSetTextureFile(id, filename, hardwareFilter, forceReload);
 }
 
 void CSurfaceProxy_HL25::DrawSetTextureRGBA(int id, const unsigned char *rgba, int wide, int tall, int hardwareFilter, bool forceReload)
 {
-	g_pSurface->DrawSetTextureRGBA(id, rgba, wide, tall, hardwareFilter, forceReload);
+	g_pSurface_HL25->DrawSetTextureRGBA(id, rgba, wide, tall, hardwareFilter, forceReload);
 }
 
 void CSurfaceProxy_HL25::DrawSetTexture(int id)
 {
-	g_pSurface->DrawSetTexture(id);
+	g_pSurface_HL25->DrawSetTexture(id);
 }
 
 void CSurfaceProxy_HL25::DrawGetTextureSize(int id, int &wide, int &tall)
 {
-	g_pSurface->DrawGetTextureSize(id, wide, tall);
+	g_pSurface_HL25->DrawGetTextureSize(id, wide, tall);
 }
 
 void CSurfaceProxy_HL25::DrawTexturedRect(int x0, int y0, int x1, int y1)
 {
-	g_pSurface->DrawTexturedRect(x0, y0, x1, y1);
+	g_pSurface_HL25->DrawTexturedRect(x0, y0, x1, y1);
 }
 
 bool CSurfaceProxy_HL25::IsTextureIDValid(int id)
 {
-	return g_pSurface->IsTextureIDValid(id);
+	return g_pSurface_HL25->IsTextureIDValid(id);
 }
 
 int CSurfaceProxy_HL25::CreateNewTextureID(bool procedural)
 {
-	return g_pSurface->CreateNewTextureID(procedural);
+	return g_pSurface_HL25->CreateNewTextureID(procedural);
 }
 
 void CSurfaceProxy_HL25::GetScreenSize(int &wide, int &tall)
 {
-	g_pSurface->GetScreenSize(wide, tall);
+	g_pSurface_HL25->GetScreenSize(wide, tall);
 }
 
 void CSurfaceProxy_HL25::SetAsTopMost(VPANEL panel, bool state)
 {
-	g_pSurface->SetAsTopMost(panel, state);
+	g_pSurface_HL25->SetAsTopMost(panel, state);
 }
 
 void CSurfaceProxy_HL25::BringToFront(VPANEL panel)
 {
-	g_pSurface->BringToFront(panel);
+	g_pSurface_HL25->BringToFront(panel);
 }
 
 void CSurfaceProxy_HL25::SetForegroundWindow(VPANEL panel)
 {
-	g_pSurface->SetForegroundWindow(panel);
+	g_pSurface_HL25->SetForegroundWindow(panel);
 }
 
 void CSurfaceProxy_HL25::SetPanelVisible(VPANEL panel, bool state)
 {
-	g_pSurface->SetPanelVisible(panel, state);
+	g_pSurface_HL25->SetPanelVisible(panel, state);
 }
 
 void CSurfaceProxy_HL25::SetMinimized(VPANEL panel, bool state)
 {
-	g_pSurface->SetMinimized(panel, state);
+	g_pSurface_HL25->SetMinimized(panel, state);
 }
 
 bool CSurfaceProxy_HL25::IsMinimized(VPANEL panel)
 {
-	return g_pSurface->IsMinimized(panel);
+	return g_pSurface_HL25->IsMinimized(panel);
 }
 
 void CSurfaceProxy_HL25::FlashWindow(VPANEL panel, bool state)
 {
-	g_pSurface->FlashWindow(panel, state);
+	g_pSurface_HL25->FlashWindow(panel, state);
 }
 
 void CSurfaceProxy_HL25::SetTitle(VPANEL panel, const wchar_t *title)
 {
-	g_pSurface->SetTitle(panel, title);
+	g_pSurface_HL25->SetTitle(panel, title);
 }
 
 void CSurfaceProxy_HL25::SetAsToolBar(VPANEL panel, bool state)
 {
-	g_pSurface->SetAsToolBar(panel, state);
+	g_pSurface_HL25->SetAsToolBar(panel, state);
 }
 
 void CSurfaceProxy_HL25::CreatePopup(VPANEL panel, bool minimised, bool showTaskbarIcon, bool disabled, bool mouseInput, bool kbInput)
 {
-	g_pSurface->CreatePopup(panel, minimised, showTaskbarIcon, disabled, mouseInput, kbInput);
+	g_pSurface_HL25->CreatePopup(panel, minimised, showTaskbarIcon, disabled, mouseInput, kbInput);
 }
 
 void CSurfaceProxy_HL25::SwapBuffers(VPANEL panel)
 {
-	g_pSurface->SwapBuffers(panel);
+	g_pSurface_HL25->SwapBuffers(panel);
 }
 
 void CSurfaceProxy_HL25::Invalidate(VPANEL panel)
 {
-	g_pSurface->Invalidate(panel);
+	g_pSurface_HL25->Invalidate(panel);
 }
 
 void CSurfaceProxy_HL25::SetCursor(HCursor cursor)
@@ -1467,22 +1473,22 @@ void CSurfaceProxy_HL25::SetCursor(HCursor cursor)
 
 bool CSurfaceProxy_HL25::IsCursorVisible(void)
 {
-	return g_pSurface->IsCursorVisible();
+	return g_pSurface_HL25->IsCursorVisible();
 }
 
 void CSurfaceProxy_HL25::ApplyChanges(void)
 {
-	g_pSurface->ApplyChanges();
+	g_pSurface_HL25->ApplyChanges();
 }
 
 bool CSurfaceProxy_HL25::IsWithin(int x, int y)
 {
-	return g_pSurface->IsWithin(x, y);
+	return g_pSurface_HL25->IsWithin(x, y);
 }
 
 bool CSurfaceProxy_HL25::HasFocus(void)
 {
-	return g_pSurface->HasFocus();
+	return g_pSurface_HL25->HasFocus();
 }
 
 bool CSurfaceProxy_HL25::SupportsFeature(SurfaceFeature_e feature)
@@ -1503,42 +1509,42 @@ bool CSurfaceProxy_HL25::SupportsFeature(SurfaceFeature_e feature)
 
 void CSurfaceProxy_HL25::RestrictPaintToSinglePanel(VPANEL panel)
 {
-	g_pSurface->RestrictPaintToSinglePanel(panel);
+	g_pSurface_HL25->RestrictPaintToSinglePanel(panel);
 }
 
 void CSurfaceProxy_HL25::SetModalPanel(VPANEL panel)
 {
-	g_pSurface->SetModalPanel(panel);
+	g_pSurface_HL25->SetModalPanel(panel);
 }
 
 VPANEL CSurfaceProxy_HL25::GetModalPanel(void)
 {
-	return g_pSurface->GetModalPanel();
+	return g_pSurface_HL25->GetModalPanel();
 }
 
 void CSurfaceProxy_HL25::UnlockCursor(void)
 {
-	g_pSurface->UnlockCursor();
+	g_pSurface_HL25->UnlockCursor();
 }
 
 void CSurfaceProxy_HL25::LockCursor(void)
 {
-	g_pSurface->LockCursor();
+	g_pSurface_HL25->LockCursor();
 }
 
 void CSurfaceProxy_HL25::SetTranslateExtendedKeys(bool state)
 {
-	g_pSurface->SetTranslateExtendedKeys(state);
+	g_pSurface_HL25->SetTranslateExtendedKeys(state);
 }
 
 VPANEL CSurfaceProxy_HL25::GetTopmostPopup(void)
 {
-	return g_pSurface->GetTopmostPopup();
+	return g_pSurface_HL25->GetTopmostPopup();
 }
 
 void CSurfaceProxy_HL25::SetTopLevelFocus(VPANEL panel)
 {
-	g_pSurface->SetTopLevelFocus(panel);
+	g_pSurface_HL25->SetTopLevelFocus(panel);
 }
 
 HFont CSurfaceProxy_HL25::CreateFont(void)
@@ -1606,107 +1612,107 @@ void CSurfaceProxy_HL25::GetTextSize(HFont font, const wchar_t *text, int &wide,
 
 VPANEL CSurfaceProxy_HL25::GetNotifyPanel(void)
 {
-	return g_pSurface->GetNotifyPanel();
+	return g_pSurface_HL25->GetNotifyPanel();
 }
 
 void CSurfaceProxy_HL25::SetNotifyIcon(VPANEL context, HTexture icon, VPANEL panelToReceiveMessages, const char *text)
 {
-	g_pSurface->SetNotifyIcon(context, icon, panelToReceiveMessages, text);
+	g_pSurface_HL25->SetNotifyIcon(context, icon, panelToReceiveMessages, text);
 }
 
 void CSurfaceProxy_HL25::PlaySound(const char *fileName)
 {
-	g_pSurface->PlaySound(fileName);
+	g_pSurface_HL25->PlaySound(fileName);
 }
 
 int CSurfaceProxy_HL25::GetPopupCount(void)
 {
-	return g_pSurface->GetPopupCount();
+	return g_pSurface_HL25->GetPopupCount();
 }
 
 VPANEL CSurfaceProxy_HL25::GetPopup(int index)
 {
-	return g_pSurface->GetPopup(index);
+	return g_pSurface_HL25->GetPopup(index);
 }
 
 bool CSurfaceProxy_HL25::ShouldPaintChildPanel(VPANEL childPanel)
 {
-	return g_pSurface->ShouldPaintChildPanel(childPanel);
+	return g_pSurface_HL25->ShouldPaintChildPanel(childPanel);
 }
 
 bool CSurfaceProxy_HL25::RecreateContext(VPANEL panel)
 {
-	return g_pSurface->RecreateContext(panel);
+	return g_pSurface_HL25->RecreateContext(panel);
 }
 
 void CSurfaceProxy_HL25::AddPanel(VPANEL panel)
 {
-	g_pSurface->AddPanel(panel);
+	g_pSurface_HL25->AddPanel(panel);
 }
 
 void CSurfaceProxy_HL25::ReleasePanel(VPANEL panel)
 {
-	g_pSurface->ReleasePanel(panel);
+	g_pSurface_HL25->ReleasePanel(panel);
 }
 
 void CSurfaceProxy_HL25::MovePopupToFront(VPANEL panel)
 {
-	g_pSurface->MovePopupToFront(panel);
+	g_pSurface_HL25->MovePopupToFront(panel);
 }
 
 void CSurfaceProxy_HL25::MovePopupToBack(VPANEL panel)
 {
-	g_pSurface->MovePopupToBack(panel);
+	g_pSurface_HL25->MovePopupToBack(panel);
 }
 
 void CSurfaceProxy_HL25::SolveTraverse(VPANEL panel, bool forceApplySchemeSettings)
 {
-	g_pSurface->SolveTraverse(panel, forceApplySchemeSettings);
+	g_pSurface_HL25->SolveTraverse(panel, forceApplySchemeSettings);
 }
 
 void CSurfaceProxy_HL25::PaintTraverse(VPANEL panel)
 {
-	g_pSurface->PaintTraverse(panel);
+	g_pSurface_HL25->PaintTraverse(panel);
 }
 
 void CSurfaceProxy_HL25::EnableMouseCapture(VPANEL panel, bool state)
 {
-	g_pSurface->EnableMouseCapture(panel, state);
+	g_pSurface_HL25->EnableMouseCapture(panel, state);
 }
 
 void CSurfaceProxy_HL25::GetWorkspaceBounds(int &x, int &y, int &wide, int &tall)
 {
-	g_pSurface->GetWorkspaceBounds(x, y, wide, tall);
+	g_pSurface_HL25->GetWorkspaceBounds(x, y, wide, tall);
 }
 
 void CSurfaceProxy_HL25::GetAbsoluteWindowBounds(int &x, int &y, int &wide, int &tall)
 {
-	g_pSurface->GetAbsoluteWindowBounds(x, y, wide, tall);
+	g_pSurface_HL25->GetAbsoluteWindowBounds(x, y, wide, tall);
 }
 
 void CSurfaceProxy_HL25::GetProportionalBase(int &width, int &height)
 {
-	g_pSurface->GetProportionalBase(width, height);
+	g_pSurface_HL25->GetProportionalBase(width, height);
 }
 
 void CSurfaceProxy_HL25::CalculateMouseVisible(void)
 {
-	g_pSurface->CalculateMouseVisible();
+	g_pSurface_HL25->CalculateMouseVisible();
 }
 
 bool CSurfaceProxy_HL25::NeedKBInput(void)
 {
-	return g_pSurface->NeedKBInput();
+	return g_pSurface_HL25->NeedKBInput();
 }
 
 bool CSurfaceProxy_HL25::HasCursorPosFunctions(void)
 {
-	return g_pSurface->HasCursorPosFunctions();
+	return g_pSurface_HL25->HasCursorPosFunctions();
 }
 
 void CSurfaceProxy_HL25::SurfaceGetCursorPos(int &x, int &y)
 {
-	g_pSurface->SurfaceGetCursorPos(x, y);
+	g_pSurface_HL25->SurfaceGetCursorPos(x, y);
 }
 
 void CSurfaceProxy_HL25::SurfaceSetCursorPos(int x, int y)
@@ -1716,7 +1722,7 @@ void CSurfaceProxy_HL25::SurfaceSetCursorPos(int x, int y)
 
 void CSurfaceProxy_HL25::DrawTexturedPolygon(int *p, int n)
 {
-	g_pSurface->DrawTexturedPolygon(p, n);
+	g_pSurface_HL25->DrawTexturedPolygon(p, n);
 }
 
 int CSurfaceProxy_HL25::GetFontAscent(HFont font, wchar_t wch)
@@ -1742,9 +1748,9 @@ const char *CSurfaceProxy_HL25::GetLanguage(void)
 	return m_pfnGetLanguage(this, 0);
 }
 
-void CSurfaceProxy_HL25::DeleteTextureByID(int id)
+bool CSurfaceProxy_HL25::DeleteTextureByID(int id)
 {
-	m_pfnDeleteTextureByID(this, 0, id);
+	return m_pfnDeleteTextureByID(this, 0, id);
 }
 
 void CSurfaceProxy_HL25::DrawUpdateRegionTextureBGRA(int nTextureID, int x, int y, const unsigned char *pchData, int wide, int tall)
@@ -1784,12 +1790,12 @@ void CSurfaceProxy_HL25::SetSupportsEsc(bool bSupportsEsc)
 
 int CSurfaceProxy_HL25::GetFontBlur(HFont font)
 {
-	return m_pfnGetFontBlur(this, 0, font);
+	return FontManager().GetFontBlur(font);
 }
 
-bool CSurfaceProxy_HL25::IsAdditive(HFont font)
+bool CSurfaceProxy_HL25::IsFontAdditive(HFont font)
 {
-	return m_pfnIsAdditive(this, 0, font);
+	return FontManager().GetFontAdditive(font);
 }
 
 void CSurfaceProxy_HL25::SetProportionalBase(int width, int height)
@@ -1807,100 +1813,96 @@ void CSurfaceProxy_HL25::SetHDProportionalBase(int nWidth, int nHeight)
 	m_pfnSetHDProportionalBase(this, 0, nWidth, nHeight);
 }
 
-void CSurfaceProxy_HL25::setFullscreenMode(int wide, int tall, int bpp)
+void CSurfaceProxy_HL25::unk(int a1)
 {
-	m_pfnsetFullscreenMode(this, 0, wide, tall, bpp);
-}
 
-void CSurfaceProxy_HL25::setWindowedMode(void)
-{
-	m_pfnsetWindowedMode(this, 0);
 }
-
-void CSurfaceProxy_HL25::PanelRequestFocus(VPANEL panel)
+void CSurfaceProxy_HL25::unk2(int a2)
 {
-	m_pfnPanelRequestFocus(this, 0, panel);
+
 }
-
-void CSurfaceProxy_HL25::EnableMouseCapture(bool state)
+void CSurfaceProxy_HL25::unk3(int a1, int a2, int a3)
 {
-	m_pfnEnableMouseCapture(this, 0, state);
+
+}
+void CSurfaceProxy_HL25::unk4(int a1, int a2, int a3)
+{
+
+}
+void CSurfaceProxy_HL25::unk5()
+{
+
+}
+void CSurfaceProxy_HL25::unk6(int a1)
+{
+
+}
+void CSurfaceProxy_HL25::unk7(int a2)
+{
+
 }
 
 void CSurfaceProxy_HL25::DrawPrintChar(int x, int y, int wide, int tall, float s0, float t0, float s1, float t1)
 {
-	m_pfnDrawPrintChar(this, 0, x, y, wide, tall, s0, s1, s1, t1);
+	
 }
 
-void CSurfaceProxy_HL25::SetNotifyIcon(Image *image, VPANEL panelToReceiveMessages, const char *text)
+bool CSurfaceProxy_HL25::unk8(void)
 {
-	m_pfnSetNotifyIcon(this, 0, image, panelToReceiveMessages, text);
+	return false;
 }
 
-bool CSurfaceProxy_HL25::SetWatchForComputerUse(bool state)
+double CSurfaceProxy_HL25::unk9(void)
 {
-	return m_pfnSetWatchForComputerUse(this, 0, state);
-}
-
-double CSurfaceProxy_HL25::GetTimeSinceLastUse(void)
-{
-	return m_pfnGetTimeSinceLastUse(this, 0);
-}
-
-bool CSurfaceProxy_HL25::VGUI2MouseControl(void)
-{
-	return m_pfnVGUI2MouseControl(this, 0);
-}
-
-void CSurfaceProxy_HL25::SetVGUI2MouseControl(bool state)
-{
-	m_pfnSetVGUI2MouseControl(this, 0, state);
+	return 0;
 }
 
 void Surface_InstallHooks(void)
 {
-
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25)
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		DWORD *pVFTable = *(DWORD **)&g_SurfaceProxy;
+		DWORD* pVFTable = *(DWORD**)&g_SurfaceProxy_HL25;
 
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 1, (void *)pVFTable[1], (void **)&m_pfnSurface_Shutdown);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 13, (void *)pVFTable[13], (void **)&m_pfnDrawSetTextFont);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 15, (void *)pVFTable[15], (void **)&m_pfnDrawSetTextColor);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 14, (void *)pVFTable[14], (void **)&m_pfnDrawSetTextColor2);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 19, (void *)pVFTable[19], (void **)&m_pfnDrawUnicodeChar);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 20, (void *)pVFTable[20], (void **)&m_pfnDrawUnicodeCharAdd);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 50, (void *)pVFTable[50], (void **)&m_pfnSupportsFeature);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 59, (void *)pVFTable[59], (void **)&m_pfnCreateFont);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 60, (void *)pVFTable[60], (void **)&m_pfnAddGlyphSetToFont);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 61, (void *)pVFTable[61], (void **)&m_pfnAddCustomFontFile);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 62, (void *)pVFTable[62], (void **)&m_pfnGetFontTall);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 63, (void *)pVFTable[63], (void **)&m_pfnGetCharABCwide);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 64, (void *)pVFTable[64], (void **)&m_pfnGetCharacterWidth);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 65, (void *)pVFTable[65], (void **)&m_pfnGetTextSize);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 89, (void *)pVFTable[89], (void **)&m_pfnGetFontAscent);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 91, (void *)pVFTable[91], (void **)&m_pfnSetLanguage);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 1, (void*)pVFTable[1], (void**)&m_pfnSurface_Shutdown);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 13, (void*)pVFTable[13], (void**)&m_pfnDrawSetTextFont);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 15, (void*)pVFTable[15], (void**)&m_pfnDrawSetTextColor);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 14, (void*)pVFTable[14], (void**)&m_pfnDrawSetTextColor2);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 19, (void *)pVFTable[19], (void **)&m_pfnDrawUnicodeChar);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 20, (void *)pVFTable[20], (void **)&m_pfnDrawUnicodeCharAdd);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 50, (void *)pVFTable[50], (void **)&m_pfnSupportsFeature);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 59, (void *)pVFTable[59], (void **)&m_pfnCreateFont);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 60, (void *)pVFTable[60], (void **)&m_pfnAddGlyphSetToFont);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 61, (void *)pVFTable[61], (void **)&m_pfnAddCustomFontFile);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 62, (void *)pVFTable[62], (void **)&m_pfnGetFontTall);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 63, (void *)pVFTable[63], (void **)&m_pfnGetCharABCwide);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 64, (void *)pVFTable[64], (void **)&m_pfnGetCharacterWidth);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 65, (void *)pVFTable[65], (void **)&m_pfnGetTextSize);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 89, (void *)pVFTable[89], (void **)&m_pfnGetFontAscent);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 91, (void*)pVFTable[91], (void**)&m_pfnSetLanguage);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 101, (void*)pVFTable[101], (void**)&m_pfnGetFontBlur);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 102, (void*)pVFTable[102], (void**)&m_pfnIsFontAdditive);
+		//g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 104, (void*)pVFTable[104], (void**)&m_pfnGetHDProportionalBase);
 	}
 	else
 	{
-		DWORD *pVFTable = *(DWORD **)&g_SurfaceProxy_HL25;
+		DWORD* pVFTable = *(DWORD**)&g_SurfaceProxy;
 
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 1, (void *)pVFTable[1], (void **)&m_pfnSurface_Shutdown);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 13, (void *)pVFTable[13], (void **)&m_pfnDrawSetTextFont);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 15, (void *)pVFTable[15], (void **)&m_pfnDrawSetTextColor);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 14, (void *)pVFTable[14], (void **)&m_pfnDrawSetTextColor2);
-		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 19, (void *)pVFTable[19], (void **)&m_pfnDrawUnicodeChar);
-		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 20, (void *)pVFTable[20], (void **)&m_pfnDrawUnicodeCharAdd);
-		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 50, (void *)pVFTable[50], (void **)&m_pfnSupportsFeature);
-		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 59, (void *)pVFTable[59], (void **)&m_pfnCreateFont); // Assert (IsValidIndex(i))
-		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 60, (void *)pVFTable[60], (void **)&m_pfnAddGlyphSetToFont);
-		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 61, (void *)pVFTable[61], (void **)&m_pfnAddCustomFontFile);
-		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 62, (void *)pVFTable[62], (void **)&m_pfnGetFontTall);
-		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 63, (void *)pVFTable[63], (void **)&m_pfnGetCharABCwide);
-		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 64, (void *)pVFTable[64], (void **)&m_pfnGetCharacterWidth);
-		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 65, (void *)pVFTable[65], (void **)&m_pfnGetTextSize);
-		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 89, (void *)pVFTable[89], (void **)&m_pfnGetFontAscent);
-		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 91, (void *)pVFTable[91], (void **)&m_pfnSetLanguage);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 1, (void*)pVFTable[1], (void**)&m_pfnSurface_Shutdown);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 13, (void*)pVFTable[13], (void**)&m_pfnDrawSetTextFont);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 15, (void*)pVFTable[15], (void**)&m_pfnDrawSetTextColor);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 14, (void*)pVFTable[14], (void**)&m_pfnDrawSetTextColor2);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 19, (void*)pVFTable[19], (void**)&m_pfnDrawUnicodeChar);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 20, (void*)pVFTable[20], (void**)&m_pfnDrawUnicodeCharAdd);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 50, (void*)pVFTable[50], (void**)&m_pfnSupportsFeature);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 59, (void*)pVFTable[59], (void**)&m_pfnCreateFont);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 60, (void*)pVFTable[60], (void**)&m_pfnAddGlyphSetToFont);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 61, (void*)pVFTable[61], (void**)&m_pfnAddCustomFontFile);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 62, (void*)pVFTable[62], (void**)&m_pfnGetFontTall);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 63, (void*)pVFTable[63], (void**)&m_pfnGetCharABCwide);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 64, (void*)pVFTable[64], (void**)&m_pfnGetCharacterWidth);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 65, (void*)pVFTable[65], (void**)&m_pfnGetTextSize);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 89, (void*)pVFTable[89], (void**)&m_pfnGetFontAscent);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 91, (void*)pVFTable[91], (void**)&m_pfnSetLanguage);
 	}
 }
 
