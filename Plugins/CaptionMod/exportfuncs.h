@@ -70,6 +70,10 @@ LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 int __fastcall ScClient_FindSoundEx(void* pthis, int, const char *sound);
 void __fastcall WeaponsResource_SelectSlot(void *pthis, int, int iSlot, int fAdvance, int iDirection);
 
+void InitWin32Stuffs(void);
+void InitDPIScaling(void);
+float GetDPIScaling(void);
+
 extern cvar_t* cap_debug;
 extern cvar_t* cap_enabled;
 extern cvar_t* cap_max_distance;

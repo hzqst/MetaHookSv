@@ -76,7 +76,7 @@ PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule)
 	return Sys_GetFactory(hModule);
 }
 
-bool SCR_IsLoadingVisible()
+bool SCR_IsLoadingVisible(void)
 {
 	return scr_drawloading && (*scr_drawloading) == 1 ? true : false;
 }

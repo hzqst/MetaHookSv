@@ -798,6 +798,7 @@ const char *Panel::GetClassName()
 void Panel::SetPos(int x, int y)
 {
 	Assert( abs(x) < 32768 && abs(y) < 32768 );
+
 	ipanel()->SetPos(GetVPanel(), x, y);
 }
 
@@ -815,6 +816,7 @@ void Panel::GetPos(int &x, int &y)
 void Panel::SetSize(int wide, int tall)
 {
 	Assert( abs(wide) < 32768 && abs(tall) < 32768 );
+
 	ipanel()->SetSize(GetVPanel(), wide, tall);
 }
 

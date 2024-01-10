@@ -62,14 +62,13 @@ int FileSystem_SetGameDirectory(const char *pDefaultDir, const char *pGameDir)
 {
 	int result = gPrivateFuncs.FileSystem_SetGameDirectory(pDefaultDir, pGameDir);
 
-	if (g_flDPIScaling > 1.0f)
+	if (GetDPIScaling() > 1.0f)
 	{
 		char temp[1024];
-		snprintf(temp, sizeof(temp) - 1, "%s/%s_dpi%.0f", GetBaseDirectory(), gEngfuncs.pfnGetGameDirectory(), g_flDPIScaling * 100.0f);
-		temp[sizeof(temp) - 1] = 0;
+		snprintf(temp, sizeof(temp), "%s\\%s_dpi%.0f", GetBaseDirectory(), gEngfuncs.pfnGetGameDirectory(), GetDPIScaling() * 100.0f);
 		COM_FixSlashes(temp);
 
-		g_pFileSystem->AddSearchPathNoWrite(temp, "GAME");
+		g_pFileSystem->AddSearchPathNoWrite(temp, "SKIN");
 	}
 
 	return result;
@@ -1153,4 +1152,115 @@ LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 	}
 
 	return CallWindowProc(g_MainWndProc, hWnd, uMsg, wParam, lParam);
+}
+
+const int DPIScalingSource_System = 1;
+const int DPIScalingSource_Window = 2;
+const int DPIScalingSource_SDL2 = 3;
+
+static float g_flDPIScaling = 0;
+static int g_iDPIScalingSource = 0;
+
+float GetDPIScaling(void)
+{
+	return g_flDPIScaling;
+}
+
+void InitDPIScaling(void)
+{
+	if (DPIScalingSource_SDL2 > g_iDPIScalingSource)
+	{
+		auto SDL2 = GetModuleHandleA("sdl2.dll");
+
+		if (SDL2)
+		{
+			int (*pfnSDL_GetDisplayDPI)(int displayIndex, float* ddpi, float* hdpi, float* vdpi) = (decltype(pfnSDL_GetDisplayDPI))GetProcAddress(SDL2, "SDL_GetDisplayDPI");
+
+			if (pfnSDL_GetDisplayDPI)
+			{
+				float ddpi = 0;
+				float hdpi = 0;
+				float vdpi = 0;
+
+				if (0 == pfnSDL_GetDisplayDPI(0, &ddpi, &hdpi, &vdpi))
+				{
+					g_flDPIScaling = vdpi / 96.0f;
+					g_iDPIScalingSource = DPIScalingSource_SDL2;
+				}
+			}
+		}
+	}
+
+	if (DPIScalingSource_System > g_iDPIScalingSource)
+	{
+		auto user32 = GetModuleHandleA("user32.dll");
+		if (user32)
+		{
+			auto pfnGetDpiForSystem = (decltype(GetDpiForSystem)*)GetProcAddress(user32, "GetDpiForSystem");
+			if (pfnGetDpiForSystem)
+			{
+				g_flDPIScaling = pfnGetDpiForSystem() / 96.0f;
+				g_iDPIScalingSource = DPIScalingSource_System;
+			}
+		}
+	}
+
+	if (DPIScalingSource_System > g_iDPIScalingSource)
+	{
+		HDC hScreen = GetDC(g_MainWnd);
+		int dpiX = GetDeviceCaps(hScreen, LOGPIXELSX);
+		int dpiY = GetDeviceCaps(hScreen, LOGPIXELSY);
+		ReleaseDC(g_MainWnd, hScreen);
+
+		g_flDPIScaling = (float)dpiY / 96.0f;
+		g_iDPIScalingSource = DPIScalingSource_System;
+	}
+}
+
+void InitWin32Stuffs(void)
+{
+	EnumWindows([](HWND hwnd, LPARAM lParam
+		)
+		{
+			DWORD pid = 0;
+			if (GetWindowThreadProcessId(hwnd, &pid) && pid == GetCurrentProcessId())
+			{
+				char windowClass[256] = { 0 };
+				RealGetWindowClassA(hwnd, windowClass, sizeof(windowClass));
+				if (!strcmp(windowClass, "Valve001") || !strcmp(windowClass, "SDL_app"))
+				{
+					g_MainWnd = hwnd;
+
+					if (DPIScalingSource_Window > g_iDPIScalingSource)
+					{
+						auto user32 = GetModuleHandleA("user32.dll");
+						if (user32)
+						{
+							auto pfnGetDpiForWindow = (decltype(GetDpiForWindow)*)GetProcAddress(user32, "GetDpiForWindow");
+							if (pfnGetDpiForWindow)
+							{
+								g_flDPIScaling = pfnGetDpiForWindow(g_MainWnd) / 96.0f;
+								g_iDPIScalingSource = DPIScalingSource_Window;
+							}
+						}
+					}
+
+					if (DPIScalingSource_Window > g_iDPIScalingSource)
+					{
+						HDC hScreen = GetDC(g_MainWnd);
+						int dpiX = GetDeviceCaps(hScreen, LOGPIXELSX);
+						int dpiY = GetDeviceCaps(hScreen, LOGPIXELSY);
+						ReleaseDC(g_MainWnd, hScreen);
+
+						g_flDPIScaling = (float)dpiY / 96.0f;
+						g_iDPIScalingSource = DPIScalingSource_Window;
+					}
+					return FALSE;
+				}
+			}
+			return TRUE;
+		}, NULL);
+
+	g_MainWndProc = (WNDPROC)GetWindowLong(g_MainWnd, GWL_WNDPROC);
+	SetWindowLong(g_MainWnd, GWL_WNDPROC, (LONG)VID_MainWndProc);
 }

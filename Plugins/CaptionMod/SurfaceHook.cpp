@@ -1881,7 +1881,7 @@ void Surface_InstallHooks(void)
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 91, (void*)pVFTable[91], (void**)&m_pfnSetLanguage);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 101, (void*)pVFTable[101], (void**)&m_pfnGetFontBlur);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 102, (void*)pVFTable[102], (void**)&m_pfnIsFontAdditive);
-
+		//g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 104, (void*)pVFTable[104], (void**)&m_pfnGetHDProportionalBase);
 	}
 	else
 	{

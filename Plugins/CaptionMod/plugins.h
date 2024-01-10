@@ -11,7 +11,6 @@ extern PVOID g_dwClientBase;
 extern DWORD g_dwClientSize;
 extern int g_iVideoWidth;
 extern int g_iVideoHeight;
-extern float g_flDPIScaling;
 
 extern PVOID g_dwEngineBase;
 extern DWORD g_dwEngineSize;

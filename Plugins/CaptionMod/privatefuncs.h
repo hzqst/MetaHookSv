@@ -103,4 +103,4 @@ extern private_funcs_t gPrivateFuncs;
 
 cl_entity_t *EngineGetViewEntity(void);
 
-bool SCR_IsLoadingVisible();
+bool SCR_IsLoadingVisible(void);

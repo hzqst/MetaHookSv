@@ -155,8 +155,6 @@ void ClientVGUI_InstallHook(cl_exportfuncs_t* pExportFunc)
 
 	if (!g_IsClientVGUI2)
 	{
-		//TODO: Patch ClientFactory here..
-
 		pExportFunc->ClientFactory = NewClientFactory;
 	}
 }

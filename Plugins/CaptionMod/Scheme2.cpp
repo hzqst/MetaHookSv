@@ -142,8 +142,21 @@ HScheme CSchemeManager::LoadSchemeFromFileEx(VPANEL sizingPanel, const char *fil
 	auto data = new KeyValues("Scheme");
 	data->UsesEscapeSequences(true);
 
-	bool result = data->LoadFromFile(g_pFullFileSystem, fileName, "GAME");
+	bool result = false;
 
+	//This is what vgui2.dll does
+	if (!result)
+	{
+		result = data->LoadFromFile(g_pFullFileSystem, fileName, "SKIN");
+	}
+
+	//Why GAME ?
+	if (!result)
+	{
+		result = data->LoadFromFile(g_pFullFileSystem, fileName, "GAME");
+	}
+
+	//Fallback
 	if (!result)
 	{
 		result = data->LoadFromFile(g_pFullFileSystem, fileName, NULL);
@@ -156,6 +169,7 @@ HScheme CSchemeManager::LoadSchemeFromFileEx(VPANEL sizingPanel, const char *fil
 	}
 
 	CScheme *newScheme = new CScheme();
+
 	newScheme->LoadFromFile(sizingPanel, fileName, tag, data);
 
 	return m_Schemes.AddToTail(newScheme);
