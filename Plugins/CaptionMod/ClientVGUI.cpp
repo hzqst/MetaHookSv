@@ -199,9 +199,13 @@ void NewClientVGUI::Start(void)
 	g_pViewPort = new CViewport();
 	g_pViewPort->Start();
 
-	//Fix a bug that VGUI1 mouse disappear
-	auto pSurface4 = (DWORD)g_pSurface + 4;
-	*(PUCHAR)(pSurface4 + 0x4B) = 0;
+	//TODO: Need to fix for HL25?
+	if (g_pSurface)
+	{
+		//Fix a bug that VGUI1 mouse disappear
+		auto pSurface4 = (DWORD)g_pSurface + 4;
+		*(PUCHAR)(pSurface4 + 0x4B) = 0;
+	}
 }
 
 void NewClientVGUI::SetParent(vgui::VPANEL parent)

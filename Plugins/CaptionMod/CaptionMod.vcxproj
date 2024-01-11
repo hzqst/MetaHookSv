@@ -163,6 +163,8 @@ $(GLEWCheckRequirements)</Command>
     <ClCompile Include="cstrikechatdialog.cpp" />
     <ClCompile Include="CvarSlider.cpp" />
     <ClCompile Include="CvarToggleCheckButton.cpp" />
+    <ClCompile Include="DpiManager.cpp" />
+    <ClCompile Include="EngineSurfaceHook.cpp" />
     <ClCompile Include="libcsv\csv_document.cpp" />
     <ClCompile Include="privatefuncs.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
@@ -290,6 +292,8 @@ $(GLEWCheckRequirements)</Command>
     <ClInclude Include="cstrikechatdialog.h" />
     <ClInclude Include="CvarSlider.h" />
     <ClInclude Include="CvarToggleCheckButton.h" />
+    <ClInclude Include="DpiManager.h" />
+    <ClInclude Include="EngineSurfaceHook.h" />
     <ClInclude Include="libcsv\csv_document.h" />
     <ClInclude Include="privatefuncs.h" />
     <ClInclude Include="enginedef.h" />

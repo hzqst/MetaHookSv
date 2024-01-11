@@ -10,9 +10,16 @@
 #include "enginedef.h"
 
 struct vgui1_TextImage;
+class KeyValues;
 
 typedef struct
-{	
+{
+	//Engine Screen
+	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
+
+	//Engine VGUI2 wrapper
+	//void(*VGuiWrap2_Paint)(void);
+
 	//Engine FileSystem
 
 	int(*FileSystem_SetGameDirectory)(const char *pDefaultDir, const char *pGameDir);
@@ -58,25 +65,29 @@ typedef struct
 	//VGUI2
 	char* (*V_strncpy)(char* a1, const char* a2, size_t a3);
 
-	//Engine
-	void(*SCR_BeginLoadingPlaque)(qboolean reconnect);
-
+	//EngineFuncs
 	client_textmessage_t *(*pfnTextMessageGet)(const char *pName);
 
+	//Commands
 	void(*MessageMode_f)(void);
-
 	void(*MessageMode2_f)(void);
 
 	//Engine init
 	PVOID (*VGUIClient001_CreateInterface)(HINTERFACEMODULE hModule);
 
 	//GameUI
-	void *(__fastcall*COptionsDialog_ctor)(void *pthis, int a2, void *parent);
-	void *(__fastcall*COptionsSubVideo_ctor)(void *pthis, int a2, void *parent);
-	void(__fastcall *COptionsSubVideo_ApplyVidSettings)(void *pthis, int, bool bForceRestart);
-	void(__fastcall *COptionsSubVideo_ApplyVidSettings_HL25)(void *pthis, int);
-	void *(__fastcall*COptionsSubAudio_ctor)(void *pthis, int a2, void *parent);
-	void *(__fastcall *COptionsDialog_AddPage)(void *pthis, int, void *panel, const char *name);
+	void(__fastcall* LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID, KeyValues* pPreloadedKeyValues);
+	void *(__fastcall*COptionsDialog_ctor)(void *pthis, int dummy, void *parent);
+	void *(__fastcall*COptionsSubVideo_ctor)(void *pthis, int dummy, void *parent);
+	void(__fastcall *COptionsSubVideo_ApplyVidSettings)(void *pthis, int dummy, bool bForceRestart);
+	void(__fastcall *COptionsSubVideo_ApplyVidSettings_HL25)(void *pthis, int dummy);
+	void *(__fastcall*COptionsSubAudio_ctor)(void *pthis, int dummy, void *parent);
+	void *(__fastcall *COptionsDialog_AddPage)(void *pthis, int dummy, void *panel, const char *name);
+
+	//SDL2
+	void (*SDL_GetWindowPosition)(void* window, int* x, int* y);
+	void (*SDL_GetWindowSize)(void* window, int* w, int* h);
+	int (*SDL_GetDisplayDPI)(int displayIndex, float* ddpi, float* hdpi, float* vdpi);
 }private_funcs_t;
 
 extern void *GameViewport;

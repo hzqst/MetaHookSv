@@ -16,6 +16,7 @@
 
 //language
 #include "privatefuncs.h"
+#include "DpiManager.h"
 
 using namespace vgui;
 
@@ -355,7 +356,7 @@ void CScheme::LoadFromFile(VPANEL sizingPanel, const char *inFilename, const cha
 	}
 
 	//Added in HL25
-	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	if (1)
 	{
 		//Why does Valve use GetFloat ???
 
@@ -888,6 +889,11 @@ IImage *CSchemeManager::GetImage(const char *imageName, bool hardwareFiltered)
 		return m_Bitmaps[i].bitmap;
 
 	Bitmap *pBitmap = new Bitmap(imageName, hardwareFiltered);
+
+	if (!pBitmap)
+	{
+		return NULL;
+	}
 
 	if (imageName[0] && !pBitmap->IsValid())
 	{

@@ -1,10 +1,16 @@
 #include <vgui/ISurface.h>
 #include <vgui/Cursor.h>
 #include "Surface2.h"
+#include "DpiManager.h"
 
 //BaseUISurface from hw.dll
 extern vgui::ISurface *g_pSurface;
 extern vgui::ISurface_HL25 *g_pSurface_HL25;
+
+extern int g_iProportionalBaseWidth;
+extern int g_iProportionalBaseHeight;
+extern int g_iProportionalBaseWidthHD;
+extern int g_iProportionalBaseHeightHD;
 
 using namespace vgui;
 
@@ -352,6 +358,17 @@ void CSurface2::DrawTexturedRect(int x0, int y0, int x1, int y1)
 		return g_pSurface_HL25->DrawTexturedRect(x0, y0, x1, y1);
 	}
 
+	return g_pSurface->DrawTexturedRect(x0, y0, x1, y1);
+}
+
+void CSurface2::DrawTexturedRectAdd(int x0, int y0, int x1, int y1)
+{
+	if (g_pSurface_HL25)
+	{
+		return g_pSurface_HL25->DrawTexturedRectAdd(x0, y0, x1, y1);
+	}
+
+	//Not support, fallback to non-additive
 	return g_pSurface->DrawTexturedRect(x0, y0, x1, y1);
 }
 
@@ -999,6 +1016,24 @@ void CSurface2::GetProportionalBase(int &width, int &height)
 	{
 		return g_pSurface_HL25->GetProportionalBase(width, height);
 	}
+
+	if (dpimanager()->IsHighDpiSupportEnabled())
+	{
+		if (g_iProportionalBaseWidthHD && g_iProportionalBaseHeightHD)
+		{
+			width = g_iProportionalBaseWidthHD;
+			height = g_iProportionalBaseHeightHD;
+			return;
+		}
+	}
+
+	if (g_iProportionalBaseWidth && g_iProportionalBaseHeight)
+	{
+		width = g_iProportionalBaseWidth;
+		height = g_iProportionalBaseHeight;
+		return;
+	}
+
 	g_pSurface->GetProportionalBase(width, height);
 }
 
@@ -1009,6 +1044,11 @@ void CSurface2::SetProportionalBase(int width, int height)
 	{
 		return g_pSurface_HL25->SetProportionalBase(width, height);
 	}
+	else
+	{
+		g_iProportionalBaseWidth = width;
+		g_iProportionalBaseHeight = height;
+	}
 }
 
 void CSurface2::SetHDProportionalBase(int width, int height)
@@ -1016,6 +1056,11 @@ void CSurface2::SetHDProportionalBase(int width, int height)
 	if (g_pSurface_HL25)
 	{
 		return g_pSurface_HL25->SetHDProportionalBase(width, height);
+	}
+	else
+	{
+		g_iProportionalBaseWidthHD = width;
+		g_iProportionalBaseHeightHD = height;
 	}
 }
 
@@ -1027,7 +1072,14 @@ void CSurface2::GetHDProportionalBase(int& width, int& height)
 		return g_pSurface_HL25->GetHDProportionalBase(width, height);
 	}
 
-	//Fallback
+	if (g_iProportionalBaseWidthHD && g_iProportionalBaseHeightHD)
+	{
+		width = g_iProportionalBaseWidthHD;
+		height = g_iProportionalBaseHeightHD;
+		return;
+	}
+
+	//Fallback if not initialized
 	return g_pSurface->GetProportionalBase(width, height);
 }
 //-----------------------------------------------------------------------------

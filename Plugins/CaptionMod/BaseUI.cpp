@@ -5,11 +5,13 @@
 #include <VGUI\ILocalize.h>
 #include <VGUI\ISurface.h>
 #include <VGUI\IInput.h>
-#include "FontTextureCache.h"
 #include <IEngineSurface.h>
+#include <IKeyValuesSystem.h>
 #include "vgui_internal.h"
-#include "IKeyValuesSystem.h"
+#include "FontTextureCache.h"
+#include "EngineSurfaceHook.h"
 #include "ViewPort.h"
+#include "DpiManager.h"
 
 #include "exportfuncs.h"
 #include "privatefuncs.h"
@@ -68,22 +70,8 @@ extern CreateInterfaceFn* g_pClientFactory;
 
 void CBaseUI::Initialize(CreateInterfaceFn *factories, int count)
 {
-#if 0
-	//Patch ClientFactory
-
-	if(!g_IsClientVGUI2 && *g_pClientFactory == NULL)
-	{
-		*g_pClientFactory = (CreateInterfaceFn)NewClientFactory;
-		s_LoadingClientFactory = true;
-	}
-#endif
-
 	m_pfnCBaseUI_Initialize(this, 0, factories, count);
 
-#if 0
-	s_LoadingClientFactory = false;
-
-#endif
 	HINTERFACEMODULE hVGUI2 = (HINTERFACEMODULE)GetModuleHandle("vgui2.dll");
 	if (hVGUI2)
 	{
@@ -107,6 +95,8 @@ void CBaseUI::Initialize(CreateInterfaceFn *factories, int count)
 	else
 		staticSurface = (IEngineSurface*)factories[0](ENGINE_SURFACE_VERSION, NULL);
 
+	EngineSurface_FillAddress();
+	EngineSurface_InstallHooks();
 	KeyValuesSystem_InstallHook();
 	Surface_InstallHooks();
 	Scheme_InstallHooks();
@@ -178,47 +168,50 @@ void BaseUI_InstallHook(void)
 	//Search CBaseUI::Initialize for ClientFactory
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-#define CLIENTFACTORY_SIG_SVENGINE "\x83\xC4\x0C\x83\x3D"
-		DWORD *vft = *(DWORD **)baseuifuncs;
+//#define CLIENTFACTORY_SIG_SVENGINE "\x83\xC4\x0C\x83\x3D"
+		//DWORD *vft = *(DWORD **)baseuifuncs;
 
 		//DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)vft[1], 0x200, CLIENTFACTORY_SIG_SVENGINE, Sig_Length(CLIENTFACTORY_SIG_SVENGINE));
 		//Sig_AddrNotFound(ClientFactory);
 		//gPrivateFuncs.pfnClientFactory = (void *(**)(void))*(DWORD *)(addr + 5);
 
-		DWORD *pVFTable = *(DWORD **)&s_BaseUI;
+		PVOID*ProxyVFTable = *(PVOID**)&s_BaseUI;
 
-		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, (void *)pVFTable[1], (void **)&m_pfnCBaseUI_Initialize);
-		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, (void *)pVFTable[3], (void **)&m_pfnCBaseUI_Shutdown);
-		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 4, (void *)pVFTable[4], (void **)&m_pfnCBaseUI_Key_Event);
+		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, ProxyVFTable[1], (void **)&m_pfnCBaseUI_Initialize);
+		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, ProxyVFTable[3], (void **)&m_pfnCBaseUI_Shutdown);
+		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 4, ProxyVFTable[4], (void **)&m_pfnCBaseUI_Key_Event);
+		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 6, ProxyVFTable[6], (void**)&m_pfnCBaseUI_Paint);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-#define CLIENTFACTORY_SIG_HL25 "\xFF\x35\x2A\x2A\x2A\x2A\xA3"
-		DWORD *vft = *(DWORD **)baseuifuncs;
+//#define CLIENTFACTORY_SIG_HL25 "\xFF\x35\x2A\x2A\x2A\x2A\xA3"
+		//DWORD *vft = *(DWORD **)baseuifuncs;
 
 		//DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)vft[1], 0x200, CLIENTFACTORY_SIG_SVENGINE, Sig_Length(CLIENTFACTORY_SIG_SVENGINE));
 		//Sig_AddrNotFound(ClientFactory);
 		//gPrivateFuncs.pfnClientFactory = (void *(**)(void))*(DWORD *)(addr + 5);
 
-		DWORD *pVFTable = *(DWORD **)&s_BaseUI;
+		PVOID* ProxyVFTable = *(PVOID**)&s_BaseUI;
 
-		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, (void *)pVFTable[1], (void **)&m_pfnCBaseUI_Initialize);
-		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, (void *)pVFTable[3], (void **)&m_pfnCBaseUI_Shutdown);
-		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 4, (void *)pVFTable[4], (void **)&m_pfnCBaseUI_Key_Event);
+		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, ProxyVFTable[1], (void **)&m_pfnCBaseUI_Initialize);
+		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, ProxyVFTable[3], (void **)&m_pfnCBaseUI_Shutdown);
+		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 4, (void *)ProxyVFTable[4], (void **)&m_pfnCBaseUI_Key_Event);
+		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 6, ProxyVFTable[6], (void**)&m_pfnCBaseUI_Paint);
 	}
 	else
 	{
-#define CLIENTFACTORY_SIG "\xCC\xA1\x2A\x2A\x2A\x2A\x85\xC0\x74"
-		DWORD *vft = *(DWORD **)baseuifuncs;
+//#define CLIENTFACTORY_SIG "\xCC\xA1\x2A\x2A\x2A\x2A\x85\xC0\x74"
+		//DWORD *vft = *(DWORD **)baseuifuncs;
 
 		//DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)vft[1], 0x200, CLIENTFACTORY_SIG, Sig_Length(CLIENTFACTORY_SIG));
 		//Sig_AddrNotFound(ClientFactory);
 		//gPrivateFuncs.pfnClientFactory = (void *(**)(void))*(DWORD *)(addr + 2);
 
-		DWORD *pVFTable = *(DWORD **)&s_BaseUI;
+		PVOID* ProxyVFTable = *(PVOID **)&s_BaseUI;
 
-		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, (void *)pVFTable[1], (void **)&m_pfnCBaseUI_Initialize);
-		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, (void *)pVFTable[3], (void **)&m_pfnCBaseUI_Shutdown);
-		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 4, (void *)pVFTable[4], (void **)&m_pfnCBaseUI_Key_Event);
+		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, ProxyVFTable[1], (void **)&m_pfnCBaseUI_Initialize);
+		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, ProxyVFTable[3], (void **)&m_pfnCBaseUI_Shutdown);
+		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 4, ProxyVFTable[4], (void **)&m_pfnCBaseUI_Key_Event);
+		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 6, ProxyVFTable[6], (void**)&m_pfnCBaseUI_Paint);
 	}
 }

@@ -440,6 +440,12 @@
     <ClCompile Include="Surface2.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
+    <ClCompile Include="EngineSurfaceHook.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="DpiManager.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="enginedef.h">
@@ -1002,6 +1008,12 @@
     </ClInclude>
     <ClInclude Include="Surface2.h">
       <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="EngineSurfaceHook.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="DpiManager.h">
+      <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

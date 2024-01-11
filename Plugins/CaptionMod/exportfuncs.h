@@ -32,6 +32,7 @@ client_textmessage_t *pfnTextMessageGet(const char *pName);
 void Client_FillAddress(void);
 void Client_InstallHooks(void);
 void Client_UninstallHooks(void);
+void SDL2_FillAddress(void);
 void Engine_FillAddress(void);
 void Engine_InstallHooks(void);
 void Engine_UninstallHooks(void);
@@ -70,9 +71,10 @@ LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 int __fastcall ScClient_FindSoundEx(void* pthis, int, const char *sound);
 void __fastcall WeaponsResource_SelectSlot(void *pthis, int, int iSlot, int fAdvance, int iDirection);
 
+void VGuiWrap2_Paint(void);
+void SDL_GetWindowSize(void* window, int* w, int* h);
+
 void InitWin32Stuffs(void);
-void InitDPIScaling(void);
-float GetDPIScaling(void);
 
 extern cvar_t* cap_debug;
 extern cvar_t* cap_enabled;

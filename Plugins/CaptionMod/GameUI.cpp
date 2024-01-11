@@ -18,7 +18,10 @@
 
 #include "plugins.h"
 #include "privatefuncs.h"
+#include "DpiManager.h"
+#include <capstone.h>
 
+hook_t* g_phook_COptionsDialog_ctor = NULL;
 hook_t *g_phook_COptionsSubVideo_ctor = NULL;
 hook_t *g_phook_COptionsSubVideo_ApplyVidSettings = NULL;
 hook_t *g_phook_COptionsSubAudio_ctor = NULL;
@@ -647,6 +650,21 @@ void * __fastcall COptionsSubAudio_ctor(vgui::Panel *pthis, int dummy, vgui::Pan
 	return result;
 }
 
+void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel* parent)
+{
+	auto result = gPrivateFuncs.COptionsDialog_ctor(pthis, dummy, parent);
+	
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && dpimanager()->IsHighDpiSupportEnabled())
+	{
+		PVOID* PanelVFTable = *(PVOID**)pthis;
+		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];
+		pfnSetProportional(pthis, 0, true);
+	}
+
+	gPrivateFuncs.LoadControlSettings(pthis, 0, "Resource/OptionsDialog.res", "SKIN", NULL);
+
+	return result;
+}
 
 void CGameUI::HideGameUI(void)
 {
@@ -729,6 +747,40 @@ void GameUI_InstallHooks(void)
 
 		gPrivateFuncs.COptionsSubVideo_ctor = (decltype(gPrivateFuncs.COptionsSubVideo_ctor))GetCallAddress(GameUI_Video_Call);
 		Sig_FuncNotFound(COptionsSubVideo_ctor);
+	}
+
+	if (1)
+	{
+		const char sigs1[] = "Resource\\OptionsSubVideo.res";
+		auto OptionsSubVideo_res_String = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), sigs1, sizeof(sigs1) - 1);
+		Sig_VarNotFound(OptionsSubVideo_res_String);
+		char pattern[] = "\x6A\x00\x68\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern + 3) = (DWORD)OptionsSubVideo_res_String;
+		auto OptionsSubVideo_res_PushString = g_pMetaHookAPI->SearchPattern(gPrivateFuncs.COptionsSubVideo_ctor, 0x800, pattern, sizeof(pattern) - 1);
+		Sig_VarNotFound(OptionsSubVideo_res_PushString);
+
+		g_pMetaHookAPI->DisasmRanges(OptionsSubVideo_res_PushString, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+				
+			auto pinst = (cs_insn*)inst;
+
+				if (address[0] == 0xE8 && instCount <= 8)
+				{
+					gPrivateFuncs.LoadControlSettings = (decltype(gPrivateFuncs.LoadControlSettings))GetCallAddress(address);
+
+					return TRUE;
+				}
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+
+			}, 0, NULL);
+
+		Sig_FuncNotFound(LoadControlSettings);
 	}
 
 	if (1)
@@ -826,6 +878,7 @@ void GameUI_InstallHooks(void)
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 8, (void*)pVFTable[8], (void**)&g_pfnCGameUI_ConnectToServer);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 10, (void *)pVFTable[10], (void **)&g_pfnCGameUI_HideGameUI);
 
+	Install_InlineHook(COptionsDialog_ctor);
 	Install_InlineHook(COptionsSubVideo_ctor);
 	Install_InlineHook(COptionsSubVideo_ApplyVidSettings);
 	Install_InlineHook(COptionsSubAudio_ctor);
@@ -833,6 +886,7 @@ void GameUI_InstallHooks(void)
 
 void GameUI_UninstallHooks(void)
 {
+	Uninstall_Hook(COptionsDialog_ctor);
 	Uninstall_Hook(COptionsSubVideo_ctor);
 	Uninstall_Hook(COptionsSubVideo_ApplyVidSettings);
 	Uninstall_Hook(COptionsSubAudio_ctor);

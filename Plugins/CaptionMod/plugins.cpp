@@ -2,6 +2,7 @@
 #include <capstone.h>
 #include "exportfuncs.h"
 #include "privatefuncs.h"
+#include "DpiManager.h"
 
 cl_exportfuncs_t gExportfuncs = {0};
 mh_interface_t *g_pInterface = NULL;
@@ -75,16 +76,21 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	gPrivateFuncs.pfnTextMessageGet = pEngfuncs->pfnTextMessageGet;
 
-	DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)gEngfuncs.GetClientTime, 0x20, "\xDD\x05", sizeof("\xDD\x05") - 1);
+	ULONG_PTR addr = (ULONG_PTR)g_pMetaHookAPI->SearchPattern((void *)gEngfuncs.GetClientTime, 0x20, "\xDD\x05", sizeof("\xDD\x05") - 1);
 	Sig_AddrNotFound("cl_time");
-	cl_time = (double *)*(DWORD *)(addr + 2);
+	cl_time = (double *)*(ULONG_PTR*)(addr + 2);
 	cl_oldtime = cl_time + 1;
 
+	SDL2_FillAddress();
+
 	Engine_FillAddress();
+
 	Engine_InstallHooks();
+
+	//TODO: uninstalling?
 	BaseUI_InstallHook();
 
-	InitDPIScaling();
+	dpimanager()->Init();
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
@@ -108,9 +114,13 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
 
 	Client_FillAddress();
+
+	//TODO: uninstalling?
 	Client_InstallHooks();
 
 	//Try installing hook to interface VClientVGUI001
+
+	//TODO: uninstalling?
 	ClientVGUI_InstallHook(pExportFunc);
 
 	VGUI1_InstallHook();

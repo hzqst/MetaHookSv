@@ -8,6 +8,8 @@
 #include "tier1/utlrbtree.h"
 #include "tier1/UtlDict.h"
 #include "privatefuncs.h"
+#include "exportfuncs.h"
+#include "DpiManager.h"
 #include "Cursor.h"
 
 extern IEngineSurface *staticSurface;
@@ -21,121 +23,114 @@ using namespace vgui;
 HFont g_hCurrentFont;
 int g_iCurrentTextR, g_iCurrentTextG, g_iCurrentTextB, g_iCurrentTextA;
 
+int g_iProportionalBaseWidth = 640;
+int g_iProportionalBaseHeight = 480;
+int g_iProportionalBaseWidthHD = 1280;
+int g_iProportionalBaseHeightHD = 720;
+
 static CUtlVector<CUtlSymbol> m_CustomFontFileNames;
 
 class CSurfaceProxy : public ISurface
 {
 public:
-	virtual void Shutdown(void);
-	virtual void RunFrame(void);
-	virtual VPANEL GetEmbeddedPanel(void);
-	virtual void SetEmbeddedPanel(VPANEL pPanel);
-	virtual void PushMakeCurrent(VPANEL panel, bool useInsets);
-	virtual void PopMakeCurrent(VPANEL panel);
-	virtual void DrawSetColor(int r, int g, int b, int a);
-	virtual void DrawSetColor(Color col);
-	virtual void DrawFilledRect(int x0, int y0, int x1, int y1);
-	virtual void DrawOutlinedRect(int x0, int y0, int x1, int y1);
-	virtual void DrawLine(int x0, int y0, int x1, int y1);
-	virtual void DrawPolyLine(int *px, int *py, int numPoints);
-	virtual void DrawSetTextFont(HFont font);
-	virtual void DrawSetTextColor(int r, int g, int b, int a);
-	virtual void DrawSetTextColor(Color col);
-	virtual void DrawSetTextPos(int x, int y);
-	virtual void DrawGetTextPos(int &x, int &y);
-	virtual void DrawPrintText(const wchar_t *text, int textLen);
-	virtual void DrawUnicodeChar(wchar_t wch);
-	virtual void DrawUnicodeCharAdd(wchar_t wch);
-	virtual void DrawFlushText(void);
-	virtual IHTML *CreateHTMLWindow(IHTMLEvents *events, VPANEL context);
-	virtual void PaintHTMLWindow(IHTML *htmlwin);
-	virtual void DeleteHTMLWindow(IHTML *htmlwin);
-	virtual void DrawSetTextureFile(int id, const char *filename, int hardwareFilter, bool forceReload);
-	virtual void DrawSetTextureRGBA(int id, const unsigned char *rgba, int wide, int tall, int hardwareFilter, bool forceReload);
-	virtual void DrawSetTexture(int id);
-	virtual void DrawGetTextureSize(int id, int &wide, int &tall);
-	virtual void DrawTexturedRect(int x0, int y0, int x1, int y1);
-	virtual bool IsTextureIDValid(int id);
-	virtual int CreateNewTextureID(bool procedural = false);
-	virtual void GetScreenSize(int &wide, int &tall);
-	virtual void SetAsTopMost(VPANEL panel, bool state);
-	virtual void BringToFront(VPANEL panel);
-	virtual void SetForegroundWindow(VPANEL panel);
-	virtual void SetPanelVisible(VPANEL panel, bool state);
-	virtual void SetMinimized(VPANEL panel, bool state);
-	virtual bool IsMinimized(VPANEL panel);
-	virtual void FlashWindow(VPANEL panel, bool state);
-	virtual void SetTitle(VPANEL panel, const wchar_t *title);
-	virtual void SetAsToolBar(VPANEL panel, bool state);
-	virtual void CreatePopup(VPANEL panel, bool minimised, bool showTaskbarIcon = true, bool disabled = false, bool mouseInput = true, bool kbInput = true);
-	virtual void SwapBuffers(VPANEL panel);
-	virtual void Invalidate(VPANEL panel);
-	virtual void SetCursor(HCursor cursor);
-	virtual bool IsCursorVisible(void);
-	virtual void ApplyChanges(void);
-	virtual bool IsWithin(int x, int y);
-	virtual bool HasFocus(void);
-	virtual bool SupportsFeature(SurfaceFeature_e feature);
-	virtual void RestrictPaintToSinglePanel(VPANEL panel);
-	virtual void SetModalPanel(VPANEL panel);
-	virtual VPANEL GetModalPanel(void);
-	virtual void UnlockCursor(void);
-	virtual void LockCursor(void);
-	virtual void SetTranslateExtendedKeys(bool state);
-	virtual VPANEL GetTopmostPopup(void);
-	virtual void SetTopLevelFocus(VPANEL panel);
-	virtual HFont CreateFont(void);
-	virtual bool AddGlyphSetToFont(HFont font, const char *windowsFontName, int tall, int weight, int blur, int scanlines, int flags, int lowRange, int highRange);
-	virtual bool AddCustomFontFile(const char *fontFileName);
-	virtual int GetFontTall(HFont font);
-	virtual void GetCharABCwide(HFont font, int ch, int &a, int &b, int &c);
-	virtual int GetCharacterWidth(HFont font, int ch);
-	virtual void GetTextSize(HFont font, const wchar_t *text, int &wide, int &tall);
-	virtual VPANEL GetNotifyPanel(void);
-	virtual void SetNotifyIcon(VPANEL context, HTexture icon, VPANEL panelToReceiveMessages, const char *text);
-	virtual void PlaySound(const char *fileName);
-	virtual int GetPopupCount(void);
-	virtual VPANEL GetPopup(int index);
-	virtual bool ShouldPaintChildPanel(VPANEL childPanel);
-	virtual bool RecreateContext(VPANEL panel);
-	virtual void AddPanel(VPANEL panel);
-	virtual void ReleasePanel(VPANEL panel);
-	virtual void MovePopupToFront(VPANEL panel);
-	virtual void MovePopupToBack(VPANEL panel);
-	virtual void SolveTraverse(VPANEL panel, bool forceApplySchemeSettings = false);
-	virtual void PaintTraverse(VPANEL panel);
-	virtual void EnableMouseCapture(VPANEL panel, bool state);
-	virtual void GetWorkspaceBounds(int &x, int &y, int &wide, int &tall);
-	virtual void GetAbsoluteWindowBounds(int &x, int &y, int &wide, int &tall);
-	virtual void GetProportionalBase(int &width, int &height);
-	virtual void CalculateMouseVisible(void);
-	virtual bool NeedKBInput(void);
-	virtual bool HasCursorPosFunctions(void);
-	virtual void SurfaceGetCursorPos(int &x, int &y);
-	virtual void SurfaceSetCursorPos(int x, int y);
-	virtual void DrawTexturedPolygon(int *p, int n);
-	virtual int GetFontAscent(HFont font, wchar_t wch);
-	virtual void SetAllowHTMLJavaScript(bool state);
-	virtual void SetLanguage(const char *pchLang);
-	virtual const char *GetLanguage(void);
-	virtual bool DeleteTextureByID(int id);
-	virtual void DrawUpdateRegionTextureBGRA(int nTextureID, int x, int y, const unsigned char *pchData, int wide, int tall);
-	virtual void DrawSetTextureBGRA(int id, const unsigned char *rgba, int wide, int tall);
-	virtual void CreateBrowser(VPANEL panel, IHTMLResponses *pBrowser, bool bPopupWindow, const char *pchUserAgentIdentifier);
-	virtual void RemoveBrowser(VPANEL panel, IHTMLResponses *pBrowser);
-	virtual IHTMLChromeController *AccessChromeHTMLController(void);
-	virtual void setFullscreenMode(int wide, int tall, int bpp);
-	virtual void setWindowedMode(void);
-	virtual void SetAsTopMost(bool state);
-	virtual void SetAsToolBar(bool state);
-	virtual void PanelRequestFocus(VPANEL panel);
-	virtual void EnableMouseCapture2(bool state);
-	virtual void DrawPrintChar(int x, int y, int wide, int tall, float s0, float t0, float s1, float t1);
-	virtual void SetNotifyIcon2(Image *image, VPANEL panelToReceiveMessages, const char *text);
-	virtual bool SetWatchForComputerUse(bool state);
-	virtual double GetTimeSinceLastUse(void);
-	virtual bool VGUI2MouseControl(void);
-	virtual void SetVGUI2MouseControl(bool state);
+	void Shutdown(void) override;
+	void RunFrame(void) override;
+	VPANEL GetEmbeddedPanel(void) override;
+	void SetEmbeddedPanel(VPANEL pPanel) override;
+	void PushMakeCurrent(VPANEL panel, bool useInsets) override;
+	void PopMakeCurrent(VPANEL panel) override;
+	void DrawSetColor(int r, int g, int b, int a) override;
+	void DrawSetColor(Color col) override;
+	void DrawFilledRect(int x0, int y0, int x1, int y1) override;
+	void DrawOutlinedRect(int x0, int y0, int x1, int y1) override;
+	void DrawLine(int x0, int y0, int x1, int y1) override;
+	void DrawPolyLine(int *px, int *py, int numPoints) override;
+	void DrawSetTextFont(HFont font) override;
+	void DrawSetTextColor(int r, int g, int b, int a) override;
+	void DrawSetTextColor(Color col) override;
+	void DrawSetTextPos(int x, int y) override;
+	void DrawGetTextPos(int &x, int &y) override;
+	void DrawPrintText(const wchar_t *text, int textLen) override;
+	void DrawUnicodeChar(wchar_t wch) override;
+	void DrawUnicodeCharAdd(wchar_t wch) override;
+	void DrawFlushText(void) override;
+	IHTML *CreateHTMLWindow(IHTMLEvents *events, VPANEL context) override;
+	void PaintHTMLWindow(IHTML *htmlwin) override;
+	void DeleteHTMLWindow(IHTML *htmlwin) override;
+	void DrawSetTextureFile(int id, const char *filename, int hardwareFilter, bool forceReload) override;
+	void DrawSetTextureRGBA(int id, const unsigned char *rgba, int wide, int tall, int hardwareFilter, bool forceReload) override;
+	void DrawSetTexture(int id) override;
+	void DrawGetTextureSize(int id, int &wide, int &tall) override;
+	void DrawTexturedRect(int x0, int y0, int x1, int y1) override;
+	bool IsTextureIDValid(int id) override;
+	int CreateNewTextureID(bool procedural = false) override;
+	void GetScreenSize(int &wide, int &tall) override;
+	void SetAsTopMost(VPANEL panel, bool state) override;
+	void BringToFront(VPANEL panel) override;
+	void SetForegroundWindow(VPANEL panel) override;
+	void SetPanelVisible(VPANEL panel, bool state) override;
+	void SetMinimized(VPANEL panel, bool state) override;
+	bool IsMinimized(VPANEL panel) override;
+	void FlashWindow(VPANEL panel, bool state) override;
+	void SetTitle(VPANEL panel, const wchar_t *title) override;
+	void SetAsToolBar(VPANEL panel, bool state) override;
+	void CreatePopup(VPANEL panel, bool minimised, bool showTaskbarIcon = true, bool disabled = false, bool mouseInput = true, bool kbInput = true) override;
+	void SwapBuffers(VPANEL panel) override;
+	void Invalidate(VPANEL panel) override;
+	void SetCursor(HCursor cursor) override;
+	bool IsCursorVisible(void) override;
+	void ApplyChanges(void) override;
+	bool IsWithin(int x, int y) override;
+	bool HasFocus(void) override;
+	bool SupportsFeature(SurfaceFeature_e feature) override;
+	void RestrictPaintToSinglePanel(VPANEL panel) override;
+	void SetModalPanel(VPANEL panel) override;
+	VPANEL GetModalPanel(void) override;
+	void UnlockCursor(void) override;
+	void LockCursor(void) override;
+	void SetTranslateExtendedKeys(bool state) override;
+	VPANEL GetTopmostPopup(void) override;
+	void SetTopLevelFocus(VPANEL panel) override;
+	HFont CreateFont(void) override;
+	bool AddGlyphSetToFont(HFont font, const char *windowsFontName, int tall, int weight, int blur, int scanlines, int flags, int lowRange, int highRange) override;
+	bool AddCustomFontFile(const char *fontFileName) override;
+	int GetFontTall(HFont font) override;
+	void GetCharABCwide(HFont font, int ch, int &a, int &b, int &c) override;
+	int GetCharacterWidth(HFont font, int ch) override;
+	void GetTextSize(HFont font, const wchar_t *text, int &wide, int &tall) override;
+	VPANEL GetNotifyPanel(void) override;
+	void SetNotifyIcon(VPANEL context, HTexture icon, VPANEL panelToReceiveMessages, const char *text) override;
+	void PlaySound(const char *fileName) override;
+	int GetPopupCount(void) override;
+	VPANEL GetPopup(int index) override;
+	bool ShouldPaintChildPanel(VPANEL childPanel) override;
+	bool RecreateContext(VPANEL panel) override;
+	void AddPanel(VPANEL panel) override;
+	void ReleasePanel(VPANEL panel) override;
+	void MovePopupToFront(VPANEL panel) override;
+	void MovePopupToBack(VPANEL panel) override;
+	void SolveTraverse(VPANEL panel, bool forceApplySchemeSettings = false) override;
+	void PaintTraverse(VPANEL panel) override;
+	void EnableMouseCapture(VPANEL panel, bool state) override;
+	void GetWorkspaceBounds(int &x, int &y, int &wide, int &tall) override;
+	void GetAbsoluteWindowBounds(int &x, int &y, int &wide, int &tall) override;
+	void GetProportionalBase(int &width, int &height) override;
+	void CalculateMouseVisible(void) override;
+	bool NeedKBInput(void) override;
+	bool HasCursorPosFunctions(void) override;
+	void SurfaceGetCursorPos(int &x, int &y) override;
+	void SurfaceSetCursorPos(int x, int y) override;
+	void DrawTexturedPolygon(int *p, int n) override;
+	int GetFontAscent(HFont font, wchar_t wch) override;
+	void SetAllowHTMLJavaScript(bool state) override;
+	void SetLanguage(const char *pchLang) override;
+	const char *GetLanguage(void) override;
+	bool DeleteTextureByID(int id) override;
+	void DrawUpdateRegionTextureBGRA(int nTextureID, int x, int y, const unsigned char *pchData, int wide, int tall) override;
+	void DrawSetTextureBGRA(int id, const unsigned char *rgba, int wide, int tall) override;
+	void CreateBrowser(VPANEL panel, IHTMLResponses *pBrowser, bool bPopupWindow, const char *pchUserAgentIdentifier) override;
+	void RemoveBrowser(VPANEL panel, IHTMLResponses *pBrowser) override;
+	IHTMLChromeController *AccessChromeHTMLController(void) override;
 
 public:
 	void DrawSetAlphaMultiplier(float alpha);
@@ -157,6 +152,7 @@ int(__fastcall *m_pfnGetCharacterWidth)(void *pthis, int, HFont font, int ch);
 void(__fastcall *m_pfnGetTextSize)(void *pthis, int, HFont font, const wchar_t *text, int &wide, int &tall);
 int(__fastcall *m_pfnGetFontAscent)(void *pthis, int, HFont font, wchar_t wch);
 HFont(__fastcall *m_pfnCreateFont)(void *pthis, int);
+void(__fastcall* m_pfnGetScreenSize)(int& wide, int& tall);
 void(__fastcall *m_pfnDrawSetTextColor)(void *pthis, int, int r, int g, int b, int a);
 void(__fastcall *m_pfnDrawSetTextColor2)(void *pthis, int, Color col);
 void(__fastcall *m_pfnSetAllowHTMLJavaScript)(void *pthis, int, bool state);
@@ -182,6 +178,8 @@ bool(__fastcall *m_pfnVGUI2MouseControl)(void *pthis, int);
 void(__fastcall *m_pfnSetVGUI2MouseControl)(void *pthis, int, bool state);
 void(__fastcall *m_pfnSurfaceSetCursorPos)(void *pthis, int, int x, int y);
 void(__fastcall *m_pfnSetCursor)(void *pthis, int, HCursor cursor);
+
+void(__fastcall* m_pfnGetProportionalBase)(void* pthis, int, int& width, int& height);
 
 static CSurfaceProxy g_SurfaceProxy;
 
@@ -507,7 +505,10 @@ int CSurfaceProxy::CreateNewTextureID(bool procedural)
 
 void CSurfaceProxy::GetScreenSize(int &wide, int &tall)
 {
-	g_pSurface->GetScreenSize(wide, tall);
+	m_pfnGetScreenSize(wide, tall);
+
+	wide /= dpimanager()->GetDpiScaling();
+	tall /= dpimanager()->GetDpiScaling();
 }
 
 void CSurfaceProxy::SetAsTopMost(VPANEL panel, bool state)
@@ -796,7 +797,14 @@ void CSurfaceProxy::GetAbsoluteWindowBounds(int &x, int &y, int &wide, int &tall
 
 void CSurfaceProxy::GetProportionalBase(int &width, int &height)
 {
-	g_pSurface->GetProportionalBase(width, height);
+	//g_pSurface->GetProportionalBase(width, height);
+	m_pfnGetProportionalBase(g_pSurface, 0, width, height);
+
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && dpimanager()->IsHighDpiSupportEnabled())
+	{
+		width = 1280;
+		height = 720;
+	}
 }
 
 void CSurfaceProxy::CalculateMouseVisible(void)
@@ -882,185 +890,125 @@ IHTMLChromeController *CSurfaceProxy::AccessChromeHTMLController(void)
 	return m_pfnAccessChromeHTMLController(this, 0);
 }
 
-void CSurfaceProxy::setFullscreenMode(int wide, int tall, int bpp)
-{
-	m_pfnsetFullscreenMode(this, 0, wide, tall, bpp);
-}
-
-void CSurfaceProxy::setWindowedMode(void)
-{
-	m_pfnsetWindowedMode(this, 0);
-}
-
-void CSurfaceProxy::SetAsTopMost(bool state)
-{
-	m_pfnSetAsTopMost(this, 0, state);
-}
-
-void CSurfaceProxy::SetAsToolBar(bool state)
-{
-	m_pfnSetAsToolBar(this, 0, state);
-}
-
-void CSurfaceProxy::PanelRequestFocus(VPANEL panel)
-{
-	m_pfnPanelRequestFocus(this, 0, panel);
-}
-
-void CSurfaceProxy::EnableMouseCapture2(bool state)
-{
-	m_pfnEnableMouseCapture2(this, 0, state);
-}
-
-void CSurfaceProxy::DrawPrintChar(int x, int y, int wide, int tall, float s0, float t0, float s1, float t1)
-{
-	m_pfnDrawPrintChar(this, 0, x, y, wide, tall, s0, s1, s1, t1);
-}
-
-void CSurfaceProxy::SetNotifyIcon2(Image *image, VPANEL panelToReceiveMessages, const char *text)
-{
-	m_pfnSetNotifyIcon2(this, 0, image, panelToReceiveMessages, text);
-}
-
-bool CSurfaceProxy::SetWatchForComputerUse(bool state)
-{
-	return m_pfnSetWatchForComputerUse(this, 0, state);
-}
-
-double CSurfaceProxy::GetTimeSinceLastUse(void)
-{
-	return m_pfnGetTimeSinceLastUse(this, 0);
-}
-
-bool CSurfaceProxy::VGUI2MouseControl(void)
-{
-	return m_pfnVGUI2MouseControl(this, 0);
-}
-
-void CSurfaceProxy::SetVGUI2MouseControl(bool state)
-{
-	m_pfnSetVGUI2MouseControl(this, 0, state);
-}
-
 class CSurfaceProxy_HL25 : public ISurface_HL25
 {
 public:
-	virtual void Shutdown(void);
-	virtual void RunFrame(void);
-	virtual VPANEL GetEmbeddedPanel(void);
-	virtual void SetEmbeddedPanel(VPANEL pPanel);
-	virtual void PushMakeCurrent(VPANEL panel, bool useInsets);
-	virtual void PopMakeCurrent(VPANEL panel);
-	virtual void DrawSetColor(int r, int g, int b, int a);
-	virtual void DrawSetColor(Color col);
-	virtual void DrawFilledRect(int x0, int y0, int x1, int y1);
-	virtual void DrawOutlinedRect(int x0, int y0, int x1, int y1);
-	virtual void DrawLine(int x0, int y0, int x1, int y1);
-	virtual void DrawPolyLine(int* px, int* py, int numPoints);
-	virtual void DrawSetTextFont(HFont font);
-	virtual void DrawSetTextColor(int r, int g, int b, int a);
-	virtual void DrawSetTextColor(Color col);
-	virtual void DrawSetTextPos(int x, int y);
-	virtual void DrawGetTextPos(int& x, int& y);
-	virtual void DrawPrintText(const wchar_t* text, int textLen);
-	virtual void DrawUnicodeChar(wchar_t wch);
-	virtual void DrawUnicodeCharAdd(wchar_t wch);
-	virtual void DrawFlushText(void);
-	virtual IHTML* CreateHTMLWindow(IHTMLEvents* events, VPANEL context);
-	virtual void PaintHTMLWindow(IHTML* htmlwin);
-	virtual void DeleteHTMLWindow(IHTML* htmlwin);
-	virtual void DrawSetTextureFile(int id, const char* filename, int hardwareFilter, bool forceReload);
-	virtual void DrawSetTextureRGBA(int id, const unsigned char* rgba, int wide, int tall, int hardwareFilter, bool forceReload);
-	virtual void DrawSetTexture(int id);
-	virtual void DrawGetTextureSize(int id, int& wide, int& tall);
-	virtual void DrawTexturedRect(int x0, int y0, int x1, int y1);
-	virtual bool IsTextureIDValid(int id);
-	virtual int CreateNewTextureID(bool procedural = false);
-	virtual void GetScreenSize(int& wide, int& tall);
-	virtual void SetAsTopMost(VPANEL panel, bool state);
-	virtual void BringToFront(VPANEL panel);
-	virtual void SetForegroundWindow(VPANEL panel);
-	virtual void SetPanelVisible(VPANEL panel, bool state);
-	virtual void SetMinimized(VPANEL panel, bool state);
-	virtual bool IsMinimized(VPANEL panel);
-	virtual void FlashWindow(VPANEL panel, bool state);
-	virtual void SetTitle(VPANEL panel, const wchar_t* title);
-	virtual void SetAsToolBar(VPANEL panel, bool state);
-	virtual void CreatePopup(VPANEL panel, bool minimised, bool showTaskbarIcon = true, bool disabled = false, bool mouseInput = true, bool kbInput = true);
-	virtual void SwapBuffers(VPANEL panel);
-	virtual void Invalidate(VPANEL panel);
-	virtual void SetCursor(HCursor cursor);
-	virtual bool IsCursorVisible(void);
-	virtual void ApplyChanges(void);
-	virtual bool IsWithin(int x, int y);
-	virtual bool HasFocus(void);
-	virtual bool SupportsFeature(SurfaceFeature_e feature);
-	virtual void RestrictPaintToSinglePanel(VPANEL panel);
-	virtual void SetModalPanel(VPANEL panel);
-	virtual VPANEL GetModalPanel(void);
-	virtual void UnlockCursor(void);
-	virtual void LockCursor(void);
-	virtual void SetTranslateExtendedKeys(bool state);
-	virtual VPANEL GetTopmostPopup(void);
-	virtual void SetTopLevelFocus(VPANEL panel);
-	virtual HFont CreateFont(void);
-	virtual bool AddGlyphSetToFont(HFont font, const char* windowsFontName, int tall, int weight, int blur, int scanlines, int flags, int lowRange, int highRange);
-	virtual bool AddCustomFontFile(const char* fontFileName);
-	virtual int GetFontTall(HFont font);
-	virtual void GetCharABCwide(HFont font, int ch, int& a, int& b, int& c);
-	virtual int GetCharacterWidth(HFont font, int ch);
-	virtual void GetTextSize(HFont font, const wchar_t* text, int& wide, int& tall);
-	virtual VPANEL GetNotifyPanel(void);
-	virtual void SetNotifyIcon(VPANEL context, HTexture icon, VPANEL panelToReceiveMessages, const char* text);
-	virtual void PlaySound(const char* fileName);
-	virtual int GetPopupCount(void);
-	virtual VPANEL GetPopup(int index);
-	virtual bool ShouldPaintChildPanel(VPANEL childPanel);
-	virtual bool RecreateContext(VPANEL panel);
-	virtual void AddPanel(VPANEL panel);
-	virtual void ReleasePanel(VPANEL panel);
-	virtual void MovePopupToFront(VPANEL panel);
-	virtual void MovePopupToBack(VPANEL panel);
-	virtual void SolveTraverse(VPANEL panel, bool forceApplySchemeSettings = false);
-	virtual void PaintTraverse(VPANEL panel);
-	virtual void EnableMouseCapture(VPANEL panel, bool state);
-	virtual void GetWorkspaceBounds(int& x, int& y, int& wide, int& tall);
-	virtual void GetAbsoluteWindowBounds(int& x, int& y, int& wide, int& tall);
-	virtual void GetProportionalBase(int& width, int& height);
-	virtual void CalculateMouseVisible(void);
-	virtual bool NeedKBInput(void);
-	virtual bool HasCursorPosFunctions(void);
-	virtual void SurfaceGetCursorPos(int& x, int& y);
-	virtual void SurfaceSetCursorPos(int x, int y);
-	virtual void DrawTexturedPolygon(int* p, int n);
-	virtual int GetFontAscent(HFont font, wchar_t wch);
-	virtual void SetAllowHTMLJavaScript(bool state);
-	virtual void SetLanguage(const char* szLanguage);
-	virtual const char* GetLanguage(void);
-	virtual bool DeleteTextureByID(int id);
-	virtual void DrawUpdateRegionTextureBGRA(int nTextureID, int x, int y, const unsigned char* pchData, int wide, int tall);
-	virtual void DrawSetTextureBGRA(int id, const unsigned char* rgba, int wide, int tall);
-	virtual void CreateBrowser(VPANEL panel, IHTMLResponses* pBrowser, bool bPopupWindow, const char* pchUserAgentIdentifier);
-	virtual void RemoveBrowser(VPANEL panel, IHTMLResponses* pBrowser);
-	virtual IHTMLChromeController* AccessChromeHTMLController(void);
-	virtual void DrawTexturedRectAdd(int x0, int y0, int x1, int y1);
-	virtual void SetSupportsEsc(bool bSupportsEsc);
-	virtual int GetFontBlur(HFont font);
-	virtual bool IsFontAdditive(HFont font);
-	virtual void SetProportionalBase(int width, int height);
-	virtual void GetHDProportionalBase(int& width, int& height);
-	virtual void SetHDProportionalBase(int nWidth, int nHeight);
+	void Shutdown(void) override;
+	void RunFrame(void) override;
+	VPANEL GetEmbeddedPanel(void) override;
+	void SetEmbeddedPanel(VPANEL pPanel) override;
+	void PushMakeCurrent(VPANEL panel, bool useInsets) override;
+	void PopMakeCurrent(VPANEL panel) override;
+	void DrawSetColor(int r, int g, int b, int a) override;
+	void DrawSetColor(Color col) override;
+	void DrawFilledRect(int x0, int y0, int x1, int y1) override;
+	void DrawOutlinedRect(int x0, int y0, int x1, int y1) override;
+	void DrawLine(int x0, int y0, int x1, int y1) override;
+	void DrawPolyLine(int* px, int* py, int numPoints) override;
+	void DrawSetTextFont(HFont font) override;
+	void DrawSetTextColor(int r, int g, int b, int a) override;
+	void DrawSetTextColor(Color col) override;
+	void DrawSetTextPos(int x, int y) override;
+	void DrawGetTextPos(int& x, int& y) override;
+	void DrawPrintText(const wchar_t* text, int textLen) override;
+	void DrawUnicodeChar(wchar_t wch) override;
+	void DrawUnicodeCharAdd(wchar_t wch) override;
+	void DrawFlushText(void) override;
+	IHTML* CreateHTMLWindow(IHTMLEvents* events, VPANEL context) override;
+	void PaintHTMLWindow(IHTML* htmlwin) override;
+	void DeleteHTMLWindow(IHTML* htmlwin) override;
+	void DrawSetTextureFile(int id, const char* filename, int hardwareFilter, bool forceReload) override;
+	void DrawSetTextureRGBA(int id, const unsigned char* rgba, int wide, int tall, int hardwareFilter, bool forceReload) override;
+	void DrawSetTexture(int id) override;
+	void DrawGetTextureSize(int id, int& wide, int& tall) override;
+	void DrawTexturedRect(int x0, int y0, int x1, int y1) override;
+	bool IsTextureIDValid(int id) override;
+	int CreateNewTextureID(bool procedural = false) override;
+	void GetScreenSize(int& wide, int& tall) override;
+	void SetAsTopMost(VPANEL panel, bool state) override;
+	void BringToFront(VPANEL panel) override;
+	void SetForegroundWindow(VPANEL panel) override;
+	void SetPanelVisible(VPANEL panel, bool state) override;
+	void SetMinimized(VPANEL panel, bool state) override;
+	bool IsMinimized(VPANEL panel) override;
+	void FlashWindow(VPANEL panel, bool state) override;
+	void SetTitle(VPANEL panel, const wchar_t* title) override;
+	void SetAsToolBar(VPANEL panel, bool state) override;
+	void CreatePopup(VPANEL panel, bool minimised, bool showTaskbarIcon = true, bool disabled = false, bool mouseInput = true, bool kbInput = true) override;
+	void SwapBuffers(VPANEL panel) override;
+	void Invalidate(VPANEL panel) override;
+	void SetCursor(HCursor cursor) override;
+	bool IsCursorVisible(void) override;
+	void ApplyChanges(void) override;
+	bool IsWithin(int x, int y) override;
+	bool HasFocus(void) override;
+	bool SupportsFeature(SurfaceFeature_e feature) override;
+	void RestrictPaintToSinglePanel(VPANEL panel) override;
+	void SetModalPanel(VPANEL panel) override;
+	VPANEL GetModalPanel(void) override;
+	void UnlockCursor(void) override;
+	void LockCursor(void) override;
+	void SetTranslateExtendedKeys(bool state) override;
+	VPANEL GetTopmostPopup(void) override;
+	void SetTopLevelFocus(VPANEL panel) override;
+	HFont CreateFont(void) override;
+	bool AddGlyphSetToFont(HFont font, const char* windowsFontName, int tall, int weight, int blur, int scanlines, int flags, int lowRange, int highRange) override;
+	bool AddCustomFontFile(const char* fontFileName) override;
+	int GetFontTall(HFont font) override;
+	void GetCharABCwide(HFont font, int ch, int& a, int& b, int& c) override;
+	int GetCharacterWidth(HFont font, int ch) override;
+	void GetTextSize(HFont font, const wchar_t* text, int& wide, int& tall) override;
+	VPANEL GetNotifyPanel(void) override;
+	void SetNotifyIcon(VPANEL context, HTexture icon, VPANEL panelToReceiveMessages, const char* text) override;
+	void PlaySound(const char* fileName) override;
+	int GetPopupCount(void) override;
+	VPANEL GetPopup(int index) override;
+	bool ShouldPaintChildPanel(VPANEL childPanel) override;
+	bool RecreateContext(VPANEL panel) override;
+	void AddPanel(VPANEL panel) override;
+	void ReleasePanel(VPANEL panel) override;
+	void MovePopupToFront(VPANEL panel) override;
+	void MovePopupToBack(VPANEL panel) override;
+	void SolveTraverse(VPANEL panel, bool forceApplySchemeSettings = false) override;
+	void PaintTraverse(VPANEL panel) override;
+	void EnableMouseCapture(VPANEL panel, bool state) override;
+	void GetWorkspaceBounds(int& x, int& y, int& wide, int& tall) override;
+	void GetAbsoluteWindowBounds(int& x, int& y, int& wide, int& tall) override;
+	void GetProportionalBase(int& width, int& height) override;
+	void CalculateMouseVisible(void) override;
+	bool NeedKBInput(void) override;
+	bool HasCursorPosFunctions(void) override;
+	void SurfaceGetCursorPos(int& x, int& y) override;
+	void SurfaceSetCursorPos(int x, int y) override;
+	void DrawTexturedPolygon(int* p, int n) override;
+	int GetFontAscent(HFont font, wchar_t wch) override;
+	void SetAllowHTMLJavaScript(bool state) override;
+	void SetLanguage(const char* szLanguage) override;
+	const char* GetLanguage(void) override;
+	bool DeleteTextureByID(int id) override;
+	void DrawUpdateRegionTextureBGRA(int nTextureID, int x, int y, const unsigned char* pchData, int wide, int tall) override;
+	void DrawSetTextureBGRA(int id, const unsigned char* rgba, int wide, int tall) override;
+	void CreateBrowser(VPANEL panel, IHTMLResponses* pBrowser, bool bPopupWindow, const char* pchUserAgentIdentifier) override;
+	void RemoveBrowser(VPANEL panel, IHTMLResponses* pBrowser) override;
+	IHTMLChromeController* AccessChromeHTMLController(void) override;
+	void DrawTexturedRectAdd(int x0, int y0, int x1, int y1) override;
+	void SetSupportsEsc(bool bSupportsEsc) override;
+	int GetFontBlur(HFont font) override;
+	bool IsFontAdditive(HFont font) override;
+	void SetProportionalBase(int width, int height) override;
+	void GetHDProportionalBase(int& width, int& height) override;
+	void SetHDProportionalBase(int nWidth, int nHeight) override;
 	//WTF is this shit?
-	virtual void unk(int a1);
-	virtual void unk2(int a2);
-	virtual void unk3(int a1, int a2, int a3);
-	virtual void unk4(int a1, int a2, int a3);
-	virtual void unk5();
-	virtual void unk6(int a1);
-	virtual void unk7(int a2);
-	virtual void DrawPrintChar(int x, int y, int wide, int tall, float s0, float t0, float s1, float t1);
-	virtual bool unk8(void);
-	virtual double unk9(void);
+	void unk(int a1) override;
+	void unk2(int a2) override;
+	void unk3(int a1, int a2, int a3) override;
+	void unk4(int a1, int a2, int a3) override;
+	void unk5() override;
+	void unk6(int a1) override;
+	void unk7(int a2) override;
+	void DrawPrintChar(int x, int y, int wide, int tall, float s0, float t0, float s1, float t1) override;
+	bool unk8(void) override;
+	double unk9(void) override;
 
 public:
 	void DrawSetAlphaMultiplier(float alpha);
@@ -1403,7 +1351,7 @@ int CSurfaceProxy_HL25::CreateNewTextureID(bool procedural)
 
 void CSurfaceProxy_HL25::GetScreenSize(int &wide, int &tall)
 {
-	g_pSurface_HL25->GetScreenSize(wide, tall);
+	m_pfnGetScreenSize(wide, tall);
 }
 
 void CSurfaceProxy_HL25::SetAsTopMost(VPANEL panel, bool state)
@@ -1692,7 +1640,8 @@ void CSurfaceProxy_HL25::GetAbsoluteWindowBounds(int &x, int &y, int &wide, int 
 
 void CSurfaceProxy_HL25::GetProportionalBase(int &width, int &height)
 {
-	g_pSurface_HL25->GetProportionalBase(width, height);
+	//g_pSurface_HL25->GetProportionalBase(width, height);
+	m_pfnGetProportionalBase(g_pSurface_HL25, 0, width, height);
 }
 
 void CSurfaceProxy_HL25::CalculateMouseVisible(void)
@@ -1869,6 +1818,7 @@ void Surface_InstallHooks(void)
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 14, (void*)pVFTable[14], (void**)&m_pfnDrawSetTextColor2);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 19, (void *)pVFTable[19], (void **)&m_pfnDrawUnicodeChar);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 20, (void *)pVFTable[20], (void **)&m_pfnDrawUnicodeCharAdd);
+		//g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 32, (void*)pVFTable[32], (void**)&m_pfnGetScreenSize);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 50, (void *)pVFTable[50], (void **)&m_pfnSupportsFeature);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 59, (void *)pVFTable[59], (void **)&m_pfnCreateFont);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 60, (void *)pVFTable[60], (void **)&m_pfnAddGlyphSetToFont);
@@ -1877,6 +1827,7 @@ void Surface_InstallHooks(void)
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 63, (void *)pVFTable[63], (void **)&m_pfnGetCharABCwide);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 64, (void *)pVFTable[64], (void **)&m_pfnGetCharacterWidth);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 65, (void *)pVFTable[65], (void **)&m_pfnGetTextSize);
+		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 82, (void*)pVFTable[82], (void**)&m_pfnGetProportionalBase);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 89, (void *)pVFTable[89], (void **)&m_pfnGetFontAscent);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 91, (void*)pVFTable[91], (void**)&m_pfnSetLanguage);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 101, (void*)pVFTable[101], (void**)&m_pfnGetFontBlur);
@@ -1893,6 +1844,7 @@ void Surface_InstallHooks(void)
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 14, (void*)pVFTable[14], (void**)&m_pfnDrawSetTextColor2);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 19, (void*)pVFTable[19], (void**)&m_pfnDrawUnicodeChar);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 20, (void*)pVFTable[20], (void**)&m_pfnDrawUnicodeCharAdd);
+		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 32, (void*)pVFTable[32], (void**)&m_pfnGetScreenSize);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 50, (void*)pVFTable[50], (void**)&m_pfnSupportsFeature);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 59, (void*)pVFTable[59], (void**)&m_pfnCreateFont);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 60, (void*)pVFTable[60], (void**)&m_pfnAddGlyphSetToFont);
@@ -1901,6 +1853,7 @@ void Surface_InstallHooks(void)
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 63, (void*)pVFTable[63], (void**)&m_pfnGetCharABCwide);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 64, (void*)pVFTable[64], (void**)&m_pfnGetCharacterWidth);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 65, (void*)pVFTable[65], (void**)&m_pfnGetTextSize);
+		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 82, (void*)pVFTable[82], (void**)&m_pfnGetProportionalBase);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 89, (void*)pVFTable[89], (void**)&m_pfnGetFontAscent);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 91, (void*)pVFTable[91], (void**)&m_pfnSetLanguage);
 	}
