@@ -22,6 +22,7 @@ if "%LauncherMod%"=="svencoop" (
 
     xcopy "%SolutionDir%Build\valve" "%GameDir%\%LauncherMod%" /y /e
 
+    if not exist "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst" copy "%GameDir%\%LauncherMod%\metahook\configs\plugins_goldsrc.lst" "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst" /y
 )
 
 echo -------------------------------------------------------
