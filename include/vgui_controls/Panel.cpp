@@ -1012,9 +1012,10 @@ void Panel::PaintTraverse( bool repaint, bool allowForce )
 
 	VPANEL vpanel = GetVPanel();
 
-
 	int clipRect[4];
+
 	ipanel()->GetClipRect( vpanel, clipRect[0], clipRect[1], clipRect[2], clipRect[3] );
+
 	if ( ( clipRect[2] <= clipRect[0] ) || ( clipRect[3] <= clipRect[1] ) )
 	{
 		repaint = false;

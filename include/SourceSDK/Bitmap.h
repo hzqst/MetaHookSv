@@ -13,20 +13,22 @@ namespace vgui
 
 typedef unsigned long HTexture;
 
-class Bitmap : public IImage
+//Best compatibility for HL25 and non-HL25 engine
+class Bitmap : public IImage_HL25
 {
 public:
 	Bitmap(const char *filename, bool hardwareFiltered);
 	~Bitmap(void);
 
 public:
-	virtual void Paint(void);
-	virtual void GetSize(int &wide, int &tall);
-	virtual void GetContentSize(int &wide, int &tall);
-	virtual void SetSize(int x, int y);
-	virtual void SetPos(int x, int y);
-	virtual void SetColor(Color col);
-
+	void Paint(void) override;
+	void GetSize(int &wide, int &tall) override;
+	void GetContentSize(int &wide, int &tall) override;
+	void SetSize(int x, int y) override;
+	void SetPos(int x, int y) override;
+	void SetColor(Color col) override;
+	void Destroy(void) override;
+	void SetAdditive(bool bIsAdditive) override;
 public:
 	void ForceUpload(void);
 	HTexture GetID(void);
@@ -43,6 +45,7 @@ private:
 	bool _filtered;
 	int _wide,_tall;
 	bool _bProcedural;
+	bool _bAdditive;
 };
 }
 

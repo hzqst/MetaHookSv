@@ -22,6 +22,7 @@ Bitmap::Bitmap(const char *filename, bool hardwareFiltered)
 	Q_snprintf(_filename, size, "%s", filename);
 
 	_bProcedural = false;
+	_bAdditive = false;
 
 	if (Q_stristr(filename, ".pic"))
 		_bProcedural = true;
@@ -102,7 +103,14 @@ void Bitmap::Paint(void)
 	if (_wide == 0)
 		GetSize(_wide, _tall);
 
-	surface()->DrawTexturedRect(_pos[0], _pos[1], _pos[0] + _wide, _pos[1] + _tall);
+	if (_bAdditive)
+	{
+		surface()->DrawTexturedRectAdd(_pos[0], _pos[1], _pos[0] + _wide, _pos[1] + _tall);
+	}
+	else
+	{
+		surface()->DrawTexturedRect(_pos[0], _pos[1], _pos[0] + _wide, _pos[1] + _tall);
+	}
 }
 
 void Bitmap::ForceUpload(void)
@@ -123,4 +131,14 @@ void Bitmap::ForceUpload(void)
 HTexture Bitmap::GetID(void)
 {
 	return _id;
+}
+
+void Bitmap::Destroy(void)
+{
+	delete this;
+}
+
+void Bitmap::SetAdditive(bool bIsAdditive)
+{
+	_bAdditive = bIsAdditive;
 }

@@ -10,7 +10,7 @@
 class IEngineSurface : public IBaseInterface
 {
 public:
-	virtual void pushMakeCurrent(int *p1, int *p2, int *r, bool useInsets) = 0;
+	virtual void pushMakeCurrent(int *p1, int *p2, int *r, bool translateToScreenSpace) = 0;
 	virtual void popMakeCurrent(void) = 0;
 	virtual void drawFilledRect(int x0, int y0, int x1, int y1) = 0;
 	virtual void drawOutlinedRect(int x0, int y0, int x1, int y1) = 0;
@@ -40,7 +40,7 @@ public:
 class IEngineSurface_HL25 : public IBaseInterface
 {
 public:
-	virtual void pushMakeCurrent(int *p1, int *p2, int *r, bool useInsets) = 0;
+	virtual void pushMakeCurrent(int *p1, int *p2, int *r, bool translateToScreenSpace) = 0;
 	virtual void popMakeCurrent(void) = 0;
 	virtual void drawFilledRect(int x0, int y0, int x1, int y1) = 0;
 	virtual void drawOutlinedRect(int x0, int y0, int x1, int y1) = 0;

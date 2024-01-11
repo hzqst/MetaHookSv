@@ -43,6 +43,16 @@ public:
 
 	// Set the draw color 
 	virtual void SetColor(Color col) = 0;
+
+};
+
+//Added in HL25
+class IImage_HL25 : public IImage
+{
+public:
+	virtual void Destroy() = 0;
+
+	virtual void SetAdditive(bool bIsAdditive) = 0;
 };
 
 } // namespace vgui
