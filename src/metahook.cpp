@@ -1727,6 +1727,17 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		{
 			g_pfnFreeBlob = (decltype(g_pfnFreeBlob))MH_GetNextCallAddr(FreeBlob_Call + 5, 1);
 		}
+		else
+		{
+			const char pattern2[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A";
+			*(ULONG_PTR*)(pattern2 + sizeof(pattern2) - 1 - 4) = (ULONG_PTR)g_phClientModule;
+
+			auto FreeBlob_Call = (PUCHAR)MH_SearchPattern(textBase, textSize, pattern2, sizeof(pattern2) - 1);
+			if (FreeBlob_Call)
+			{
+				g_pfnFreeBlob = (decltype(g_pfnFreeBlob))MH_GetNextCallAddr(FreeBlob_Call + 14, 1);
+			}
+		}
 
 		if (!g_pfnFreeBlob) {
 			MH_SysError("MH_LoadEngine: Failed to locate FreeBlob");
@@ -1851,10 +1862,6 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		}
 	}
 
-	MH_TransactionHookCommit();
-
-	InitLoadDllNotification();
-
 	if (hBlobEngine)
 	{
 		MH_DispatchLoadBlobNotificationCallback(hBlobEngine, LOAD_DLL_NOTIFICATION_IS_LOAD);
@@ -1863,64 +1870,10 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	{
 		MH_DispatchLoadLdrDllNotificationCallback(NULL, NULL, g_dwEngineBase, g_dwEngineSize, LOAD_DLL_NOTIFICATION_IS_LOAD);
 	}
-}
 
-void MH_ExitGame(int iResult)
-{
-	for (plugin_t *plug = g_pPluginBase; plug; plug = plug->next)
-	{
-		switch (plug->iInterfaceVersion)
-		{
-		case 4:
-			((IPluginsV4 *)plug->pPluginAPI)->ExitGame(iResult);
-			break;
-		case 3:
-			((IPluginsV3 *)plug->pPluginAPI)->ExitGame(iResult);
-			break;
-		case 2:
-			((IPluginsV2 *)plug->pPluginAPI)->ExitGame(iResult);
-			break;
-		default:
-			break;
-		}
-	}
-}
+	MH_TransactionHookCommit();
 
-void MH_ShutdownPlugins(void)
-{
-	if (!g_pPluginBase)
-		return;
-
-	auto plug = g_pPluginBase;
-
-	while (plug)
-	{
-		auto p = plug;
-		plug = plug->next;
-
-		if (p->pPluginAPI)
-		{
-			switch (p->iInterfaceVersion)
-			{
-			case 4:
-				((IPluginsV4 *)p->pPluginAPI)->Shutdown();
-				break;
-			case 3:
-				((IPluginsV3 *)p->pPluginAPI)->Shutdown();
-				break;
-			case 2:
-				((IPluginsV2 *)p->pPluginAPI)->Shutdown();
-				break;
-			default:
-				break;
-			}
-		}
-
-		Sys_FreeModule(p->module);
-		delete p;
-	}
-
-	g_pPluginBase = NULL;
+	InitLoadDllNotification();
 }
 
 hook_t *MH_NewHook(int iType)
@@ -2060,14 +2013,79 @@ BOOL MH_UnHook(hook_t *pHook)
 	return FALSE;
 }
 
+void MH_ExitGame(int iResult)
+{
+	for (plugin_t* plug = g_pPluginBase; plug; plug = plug->next)
+	{
+		switch (plug->iInterfaceVersion)
+		{
+		case 4:
+			((IPluginsV4*)plug->pPluginAPI)->ExitGame(iResult);
+			break;
+		case 3:
+			((IPluginsV3*)plug->pPluginAPI)->ExitGame(iResult);
+			break;
+		case 2:
+			((IPluginsV2*)plug->pPluginAPI)->ExitGame(iResult);
+			break;
+		default:
+			break;
+		}
+}
+
+	//TODO check if there is any inlinehook left?
+	MH_FreeAllHook();
+
+	//Clear all built-in cvar callbacks
+	if (cvar_callbacks)
+	{
+		(*cvar_callbacks) = NULL;
+	}
+}
+
+void MH_ShutdownPlugins(void)
+{
+	if (!g_pPluginBase)
+		return;
+
+	auto plug = g_pPluginBase;
+
+	while (plug)
+	{
+		auto p = plug;
+		plug = plug->next;
+
+		if (p->pPluginAPI)
+		{
+			switch (p->iInterfaceVersion)
+			{
+			case 4:
+				((IPluginsV4*)p->pPluginAPI)->Shutdown();
+				break;
+			case 3:
+				((IPluginsV3*)p->pPluginAPI)->Shutdown();
+				break;
+			case 2:
+				((IPluginsV2*)p->pPluginAPI)->Shutdown();
+				break;
+			default:
+				break;
+			}
+		}
+
+		Sys_FreeModule(p->module);
+		delete p;
+	}
+
+	g_pPluginBase = NULL;
+}
+
 void MH_Shutdown(void)
 {
 	ShutdownLoadDllNotification();
 
-	MH_FreeAllHook();
-
 	MH_ShutdownPlugins();
-	
+
 	if (gMetaSave.pExportFuncs)
 	{
 		delete gMetaSave.pExportFuncs;
@@ -2088,11 +2106,6 @@ void MH_Shutdown(void)
 	}
 
 	g_ManagedCvarCallbacks.clear();
-
-	if (cvar_callbacks)
-	{
-		(*cvar_callbacks) = NULL;
-	}
 
 	MH_ResetAllVars();
 	MH_RemoveDllPaths();
