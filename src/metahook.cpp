@@ -1729,13 +1729,23 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		}
 		else
 		{
-			const char pattern2[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A";
+			const char pattern2[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x2A\x2A\xFF\x35\x2A\x2A\x2A\x2A";
 			*(ULONG_PTR*)(pattern2 + sizeof(pattern2) - 1 - 4) = (ULONG_PTR)g_phClientModule;
 
 			auto FreeBlob_Call = (PUCHAR)MH_SearchPattern(textBase, textSize, pattern2, sizeof(pattern2) - 1);
 			if (FreeBlob_Call)
 			{
-				g_pfnFreeBlob = (decltype(g_pfnFreeBlob))MH_GetNextCallAddr(FreeBlob_Call + 14, 1);
+				g_pfnFreeBlob = (decltype(g_pfnFreeBlob))MH_GetNextCallAddr(FreeBlob_Call + 5, 1);
+			}
+			else
+			{
+				const char pattern3[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x50";
+				*(ULONG_PTR*)(pattern3 + sizeof(pattern2) - 1 - 5) = (ULONG_PTR)g_phClientModule;
+				auto FreeBlob_Call = (PUCHAR)MH_SearchPattern(textBase, textSize, pattern3, sizeof(pattern3) - 1);
+				if (FreeBlob_Call)
+				{
+					g_pfnFreeBlob = (decltype(g_pfnFreeBlob))MH_GetNextCallAddr(FreeBlob_Call + 5, 1);
+				}
 			}
 		}
 
