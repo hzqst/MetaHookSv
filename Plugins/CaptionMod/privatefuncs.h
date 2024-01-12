@@ -77,6 +77,7 @@ typedef struct
 
 	//GameUI
 	void(__fastcall* GameUI_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
+	void* (__fastcall* CCreateMultiplayerGameDialog_ctor)(void* pthis, int dummy, void* parent);
 	void *(__fastcall*COptionsDialog_ctor)(void *pthis, int dummy, void *parent);
 	void *(__fastcall*COptionsSubVideo_ctor)(void *pthis, int dummy, void *parent);
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings)(void *pthis, int dummy, bool bForceRestart);

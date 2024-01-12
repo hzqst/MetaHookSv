@@ -21,6 +21,7 @@
 #include "DpiManager.h"
 #include <capstone.h>
 
+static hook_t* g_phook_CCreateMultiplayerGameDialog_ctor = NULL;
 static hook_t* g_phook_COptionsDialog_ctor = NULL;
 static hook_t *g_phook_COptionsSubVideo_ctor = NULL;
 static hook_t *g_phook_COptionsSubVideo_ApplyVidSettings = NULL;
@@ -228,7 +229,7 @@ public:
 		m_pTexGamma = new CCvarSlider(this, "TexGamma", "#GameUI_TexGamma", 1.8f, 3.0f, "texgamma", false);
 		m_pLightGamma = new CCvarSlider(this, "LightGamma", "#GameUI_LightGamma", 1.8f, 3.0f, "lightgamma", false);
 
-		LoadControlSettings("captionmod/OptionsSubVideoAdvancedDlg.res");
+		LoadControlSettings("captionmod\\OptionsSubVideoAdvancedDlg.res");
 	}
 
 	virtual void Activate(void)
@@ -404,7 +405,7 @@ public:
 		m_pHeightEntry = new vgui::TextEntry(this, "HeightEntry");
 		m_pYPosEntry = new vgui::TextEntry(this, "YPosEntry");
 
-		LoadControlSettings("captionmod/OptionsSubAudioAdvancedDlg.res");
+		LoadControlSettings("captionmod\\OptionsSubAudioAdvancedDlg.res");
 	}
 
 	virtual void Activate(void)
@@ -654,17 +655,18 @@ void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel*
 {
 	auto result = gPrivateFuncs.COptionsDialog_ctor(pthis, dummy, parent);
 
-#if 0
-	if (dpimanager()->IsHighDpiSupportEnabled())
-	{
-		PVOID* PanelVFTable = *(PVOID**)pthis;
-		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];
-		pfnSetProportional(pthis, 0, true);
-	}
-#endif
-
-		//Load res to make it proportional
+	//Load res to make it proportional
 	gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource\\OptionsDialog.res", NULL);
+
+	return result;
+}
+
+void* __fastcall CCreateMultiplayerGameDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel* parent)
+{
+	auto result = gPrivateFuncs.CCreateMultiplayerGameDialog_ctor(pthis, dummy, parent);
+
+	//Load res to make it proportional
+	gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource\\CreateMultiplayerGameDialog.res", NULL);
 
 	return result;
 }
@@ -686,13 +688,109 @@ void CGameUI::HideGameUI(void)
 void GameUI_InstallHooks(void)
 {
 	auto hGameUI = GetModuleHandleA("GameUI.dll");
+
+	if (!hGameUI)
+	{
+		g_pMetaHookAPI->SysError("Failed to get GameUI module");
+		return;
+	}
+
+	auto GameUIBase = g_pMetaHookAPI->GetModuleBase(hGameUI);
+
+	if (!GameUIBase)
+	{
+		g_pMetaHookAPI->SysError("Failed to get image base of GameUI.dll");
+		return;
+	}
+
 	CreateInterfaceFn GameUICreateInterface = Sys_GetFactory((HINTERFACEMODULE)hGameUI);
+
+	if (!GameUICreateInterface)
+	{
+		g_pMetaHookAPI->SysError("Failed to get interface factory from GameUI.dll");
+		return;
+	}
+
 	g_pGameUI = (IGameUI *)GameUICreateInterface(GAMEUI_INTERFACE_VERSION, 0);
+
+	if (!g_pGameUI)
+	{
+		g_pMetaHookAPI->SysError("Failed to get interface \"" GAMEUI_INTERFACE_VERSION "\" from GameUI.dll");
+		return;
+	}
+
+	ULONG GameUITextSize = 0;
+	auto GameUITextBase = g_pMetaHookAPI->GetSectionByName(GameUIBase, ".text\0\0\0", &GameUITextSize);
+
+	if (!GameUITextBase)
+	{
+		g_pMetaHookAPI->SysError("Failed to locate section \".text\" in GameUI.dll");
+		return;
+	}
+
+	ULONG GameUIRdataSize = 0;
+	auto GameUIRdataBase = g_pMetaHookAPI->GetSectionByName(GameUIBase, ".rdata\0\0", &GameUIRdataSize);
+
+	if (!GameUIRdataBase)
+	{
+		g_pMetaHookAPI->SysError("Failed to locate section \".rdata\" in GameUI.dll");
+		return;
+	}
+
+	ULONG GameUIDataSize = 0;
+	auto GameUIDataBase = g_pMetaHookAPI->GetSectionByName(GameUIBase, ".data\0\0", &GameUIDataSize);
+
+	if (!GameUIDataBase)
+	{
+		g_pMetaHookAPI->SysError("Failed to locate section \".data\" in GameUI.dll");
+		return;
+	}
+
+	if (1)
+	{
+		const char sigs1[] = "CreateMultiplayerGameDialog\0";
+		auto CreateMultiplayerGameDialog_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
+		if(!CreateMultiplayerGameDialog_String)
+			CreateMultiplayerGameDialog_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
+		Sig_VarNotFound(CreateMultiplayerGameDialog_String);
+
+		void* CreateMultiplayerGameDialog_Call = nullptr;
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x50";
+		*(DWORD*)(pattern + 1) = (DWORD)CreateMultiplayerGameDialog_String;
+		CreateMultiplayerGameDialog_Call = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
+		Sig_VarNotFound(CreateMultiplayerGameDialog_Call);
+
+		gPrivateFuncs.CCreateMultiplayerGameDialog_ctor = (decltype(gPrivateFuncs.CCreateMultiplayerGameDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(CreateMultiplayerGameDialog_Call, 0x120, [](PUCHAR Candidate) {
+
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC)
+				return TRUE;
+
+			//8B 44 24 04                                         mov     eax, [esp+arg_0]
+			if (Candidate[0] == 0x8B &&
+				Candidate[1] == 0x44 &&
+				Candidate[2] == 0x24)
+			{
+				//.text:1001B472 68 CC 01 00 00                                      push    1CCh
+				//text : 1001B477 68 5C 01 00 00                                     push    15Ch
+				if (g_pMetaHookAPI->SearchPattern(Candidate, 0x30, "\x68\xCC\x01\x00\x00\x68\x5C\x01\x00\x00", sizeof("\x68\xCC\x01\x00\x00\x68\x5C\x01\x00\x00") - 1))
+				{
+					return TRUE;
+				}
+			}
+			return FALSE;
+		});
+
+		Sig_FuncNotFound(CCreateMultiplayerGameDialog_ctor);
+	}
 
 	if (1)
 	{
 		const char sigs1[] = "#GameUI_Options";
-		auto GameUI_Options_String = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), sigs1, sizeof(sigs1) - 1);
+		auto GameUI_Options_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
+		if(!GameUI_Options_String)
+			GameUI_Options_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
 		Sig_VarNotFound(GameUI_Options_String);
 
 		void *GameUI_Options_Call = nullptr;
@@ -700,13 +798,13 @@ void GameUI_InstallHooks(void)
 		{
 			char pattern[] = "\x6A\x01\x68\x2A\x2A\x2A\x2A\x8B\xCE";
 			*(DWORD *)(pattern + 3) = (DWORD)GameUI_Options_String;
-			GameUI_Options_Call = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), pattern, sizeof(pattern) - 1);
+			GameUI_Options_Call = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
 		}
 		else
 		{
 			char pattern2[] = "\x6A\x01\x68\xCC\xCC\xCC\xCC\x8B\xCB";
 			*(DWORD *)(pattern2 + 3) = (DWORD)GameUI_Options_String;
-			GameUI_Options_Call = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), pattern2, sizeof(pattern2) - 1);
+			GameUI_Options_Call = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern2, sizeof(pattern2) - 1);
 		}
 		Sig_VarNotFound(GameUI_Options_Call);
 
@@ -735,16 +833,18 @@ void GameUI_InstallHooks(void)
 			}
 			return FALSE;
 		});
+
 		Sig_FuncNotFound(COptionsDialog_ctor);
 	}
-
-
 
 	if (1)
 	{
 		const char sigs1[] = "#GameUI_Video";
-		auto GameUI_Video_String = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), sigs1, sizeof(sigs1) - 1);
+		auto GameUI_Video_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
+		if(!GameUI_Video_String)
+			GameUI_Video_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
 		Sig_VarNotFound(GameUI_Video_String);
+
 		char pattern[] = "\xE8\x2A\x2A\x2A\x2A\x2A\x2A\x33\xC0\x68\x2A\x2A\x2A\x2A";
 		*(DWORD *)(pattern + 10) = (DWORD)GameUI_Video_String;
 		auto GameUI_Video_Call = g_pMetaHookAPI->SearchPattern(gPrivateFuncs.COptionsDialog_ctor, 0x300, pattern, sizeof(pattern) - 1);
@@ -757,8 +857,11 @@ void GameUI_InstallHooks(void)
 	if (1)
 	{
 		const char sigs1[] = "Resource\\OptionsSubVideo.res";
-		auto OptionsSubVideo_res_String = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), sigs1, sizeof(sigs1) - 1);
+		auto OptionsSubVideo_res_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
+		if(!OptionsSubVideo_res_String)
+			OptionsSubVideo_res_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
 		Sig_VarNotFound(OptionsSubVideo_res_String);
+
 		char pattern[] = "\x6A\x00\x68\x2A\x2A\x2A\x2A";
 		*(DWORD*)(pattern + 3) = (DWORD)OptionsSubVideo_res_String;
 		auto OptionsSubVideo_res_PushString = g_pMetaHookAPI->SearchPattern(gPrivateFuncs.COptionsSubVideo_ctor, 0x800, pattern, sizeof(pattern) - 1);
@@ -791,8 +894,11 @@ void GameUI_InstallHooks(void)
 	if (1)
 	{
 		const char sigs1[] = "#GameUI_Audio";
-		auto GameUI_Audio_String = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), sigs1, sizeof(sigs1) - 1);
+		auto GameUI_Audio_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
+		if(!GameUI_Audio_String)
+			GameUI_Audio_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
 		Sig_VarNotFound(GameUI_Audio_String);
+
 		char pattern[] = "\xE8\x2A\x2A\x2A\x2A\x2A\x2A\x33\xC0\x68\x2A\x2A\x2A\x2A";
 		*(DWORD *)(pattern + 10) = (DWORD)GameUI_Audio_String;
 		auto GameUI_Audio_Call = g_pMetaHookAPI->SearchPattern(gPrivateFuncs.COptionsDialog_ctor, 0x300, pattern, sizeof(pattern) - 1);
@@ -805,11 +911,14 @@ void GameUI_InstallHooks(void)
 	if (1)
 	{
 		const char sigs1[] = "_setvideomode";
-		auto SetVideoMode_String = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), sigs1, sizeof(sigs1) - 1);
+		auto SetVideoMode_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
+		if(!SetVideoMode_String)
+			SetVideoMode_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
 		Sig_VarNotFound(SetVideoMode_String);
+
 		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x50\xE8";
 		*(DWORD *)(pattern + 1) = (DWORD)SetVideoMode_String;
-		auto SetVideoMode_StringPush = g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), pattern, sizeof(pattern) - 1);
+		auto SetVideoMode_StringPush = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
 		Sig_VarNotFound(SetVideoMode_StringPush);
 
 		if (g_iEngineType != ENGINE_GOLDSRC_HL25)
@@ -836,6 +945,7 @@ void GameUI_InstallHooks(void)
 
 				return FALSE;
 			});
+
 			Sig_FuncNotFound(COptionsSubVideo_ApplyVidSettings);
 		}
 		else
@@ -877,12 +987,13 @@ void GameUI_InstallHooks(void)
 
 	DWORD *pVFTable = *(DWORD **)&s_GameUI;
 
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  1, (void *)pVFTable[1], (void **)&g_pfnCGameUI_Initialize);
+	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 1, (void *)pVFTable[1], (void **)&g_pfnCGameUI_Initialize);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 2, (void *)pVFTable[2], (void **)&g_pfnCGameUI_Start);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 4, (void *)pVFTable[4], (void **)&g_pfnCGameUI_ActivateGameUI);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 8, (void*)pVFTable[8], (void**)&g_pfnCGameUI_ConnectToServer);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 10, (void *)pVFTable[10], (void **)&g_pfnCGameUI_HideGameUI);
 
+	Install_InlineHook(CCreateMultiplayerGameDialog_ctor);
 	Install_InlineHook(COptionsDialog_ctor);
 	Install_InlineHook(COptionsSubVideo_ctor);
 	Install_InlineHook(COptionsSubVideo_ApplyVidSettings);
@@ -891,6 +1002,7 @@ void GameUI_InstallHooks(void)
 
 void GameUI_UninstallHooks(void)
 {
+	Uninstall_Hook(CCreateMultiplayerGameDialog_ctor);
 	Uninstall_Hook(COptionsDialog_ctor);
 	Uninstall_Hook(COptionsSubVideo_ctor);
 	Uninstall_Hook(COptionsSubVideo_ApplyVidSettings);
