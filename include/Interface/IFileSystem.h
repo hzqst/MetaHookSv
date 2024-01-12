@@ -90,7 +90,19 @@ public:
 	virtual bool IsAppReadyForOfflinePlay(void) = 0;
 	virtual void AddPackFile(const char *pPath, const char *pathID = 0) = 0;
 	virtual void *OpenFromCacheForRead(const char *pFileName, const char *pOptions, const char *pathID = 0) = 0;
-	virtual void AddSearchPathNoWrite(const char *pPath, const char *pathID) = 0;
+	virtual void AddSearchPathNoWrite(const char *pPath, const char *pathID) = 0;//[53]
+};
+
+class IFileSystem_SvEngine : public IFileSystem
+{
+public:
+	//this + 0x58 = pfnConsoleOutput
+	virtual int GetOutputLevel() const = 0; //[53]
+	virtual void DumpPaths() = 0; //[54]
+	virtual void* GetUnknown(int a1) = 0; //[55]
+	virtual void AddSearchPathEx(const char* pPath, const char* pathID, bool bAllowWrite, int iType) = 0; //[56] iType = 0, 1, 2, 3 ???
+	virtual bool Unknown2(const char * path, int a2) = 0;
+	virtual int GetUnknown3(int a2, bool a3, char* OutputPath, int MaxOutputPath) = 0;
 };
 
 class IFileSystem_HL25 : public IBaseInterface
