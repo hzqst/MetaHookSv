@@ -7,6 +7,7 @@ mkdir "%GameDir%\%LauncherMod%\"
 xcopy "%SolutionDir%Build\svencoop" "%GameDir%\%LauncherMod%" /y /e
 
 if "%LauncherMod%"=="svencoop" (
+
     mkdir "%GameDir%\%LauncherMod%_addon\"
     xcopy "%SolutionDir%Build\svencoop_addon" "%GameDir%\%LauncherMod%_addon\" /y /e
 
@@ -23,8 +24,17 @@ if "%LauncherMod%"=="svencoop" (
 
 ) else (
 
-    mkdir "%GameDir%\%LauncherMod%_hidpi\"
-    xcopy "%SolutionDir%Build\svencoop_hidpi" "%GameDir%\%LauncherMod%_hidpi\" /y /e
+    if "%GameSDL2_fileVersion%"=="2, 0, 20, 0" (
+
+        mkdir "%GameDir%\%LauncherMod%_hidpi\"
+        xcopy "%SolutionDir%Build\valve_hl25_hidpi" "%GameDir%\%LauncherMod%_hidpi\" /y /e
+
+    ) else (
+
+        mkdir "%GameDir%\%LauncherMod%_hidpi\"
+        xcopy "%SolutionDir%Build\valve_hidpi" "%GameDir%\%LauncherMod%_hidpi\" /y /e
+
+    )
 
     if not exist "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst" copy "%GameDir%\%LauncherMod%\metahook\configs\plugins_goldsrc.lst" "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst" /y
 )
