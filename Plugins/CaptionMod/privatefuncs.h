@@ -104,7 +104,8 @@ extern vec3_t *listener_origin;
 extern char *(*rgpszrawsentence)[CVOXFILESENTENCEMAX];
 extern int *cszrawsentences;
 
-extern char(*s_pBaseDir)[512];
+//extern char(*s_pBaseDir)[512];
+extern char*(*hostparam_basedir);
 
 extern HWND g_MainWnd;
 extern WNDPROC g_MainWndProc;

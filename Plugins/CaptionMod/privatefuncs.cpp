@@ -54,7 +54,9 @@ int *cl_viewentity = NULL;
 
 vec3_t *listener_origin = NULL;
 
-char(*s_pBaseDir)[512] = NULL;
+//not used
+//char(*s_pBaseDir)[512] = NULL;
+char* (*hostparam_basedir) = NULL;
 
 qboolean *scr_drawloading = NULL;
 
@@ -389,7 +391,7 @@ void Engine_FillAddress(void)
 			S_LoadSound_String = Search_Pattern_Rdata(sigs);
 		if (S_LoadSound_String)
 		{
-			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
 			*(DWORD*)(pattern + 1) = (DWORD)S_LoadSound_String;
 			auto S_LoadSound_PushString = (PUCHAR)Search_Pattern(pattern);
 			if (S_LoadSound_PushString)
@@ -552,22 +554,69 @@ void Engine_FillAddress(void)
 	{
 #define CL_VIEWENTITY_SIG_SVENGINE "\x68\x2A\x2A\x2A\x2A\x50\x6A\x06\xFF\x35\x2A\x2A\x2A\x2A\xE8"
 		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_SVENGINE);
-		cl_viewentity = *(decltype(cl_viewentity) *)(addr + 10);
 		Sig_AddrNotFound(cl_viewentity);
+		cl_viewentity = *(decltype(cl_viewentity) *)(addr + 10);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
+#define CL_VIEWENTITY_SIG_GOLDSRC "\xA1\x2A\x2A\x2A\x2A\x48\x3B\x2A"
+		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_GOLDSRC);
+		Sig_AddrNotFound(cl_viewentity);
+
+		typedef struct
+		{
+			bool found_cmp_200;
+		}CL_ViewEntity_ctx;
+
+		CL_ViewEntity_ctx ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges((PVOID)addr, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			{
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (CL_ViewEntity_ctx*)context;
+
+				if (pinst->id == X86_INS_CMP &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[1].imm == 0x200)
+				{
+					ctx->found_cmp_200 = true;
+				}
+
+				if (ctx->found_cmp_200)
+					return TRUE;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+			}, 0, & ctx);
+
+		if (ctx.found_cmp_200)
+		{
+			cl_viewentity = *(decltype(cl_viewentity)*)(addr + 1);
+		}
+
+
+#if 0
 #define CL_VIEWENTITY_SIG_HL25 "\xE8\x2A\x2A\x2A\x2A\xA3\x2A\x2A\x2A\x2A\xC3"
 		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_HL25);
-		cl_viewentity = (decltype(cl_viewentity))(addr + 5);
 		Sig_AddrNotFound(cl_viewentity);
+		cl_viewentity = (decltype(cl_viewentity))(addr + 5);
 	}
 	else
 	{
 #define CL_VIEWENTITY_SIG_NEW "\x8B\x0D\x2A\x2A\x2A\x2A\x6A\x64\x6A\x00\x68\x00\x00\x80\x3F\x68\x00\x00\x80\x3F\x68\x2A\x2A\x2A\x2A\x50"
 		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_NEW);
-		cl_viewentity = *(decltype(cl_viewentity) *)(addr + 2);
 		Sig_AddrNotFound(cl_viewentity);
+		cl_viewentity = *(decltype(cl_viewentity) *)(addr + 2);
+#endif
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -845,6 +894,7 @@ void Engine_FillAddress(void)
 	gPrivateFuncs.EngineVGUI2_Panel_Init = (decltype(gPrivateFuncs.EngineVGUI2_Panel_Init))VGUI2_FindPanelInit(g_dwEngineTextBase, g_dwEngineTextSize);
 	Sig_FuncNotFound(EngineVGUI2_Panel_Init);
 
+#if 0
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char sigs1[] = "\x84\xC0\x75\x2A\x8B\x44\x24\x08\xC7\x05\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x85\xC0";
@@ -863,6 +913,12 @@ void Engine_FillAddress(void)
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC)
 	{
+		/*
+.text:01D3B903 84 C9                                               test    cl, cl
+.text:01D3B905 75 F6                                               jnz     short loc_1D3B8FD
+.text:01D3B907 8B 45 0C                                            mov     eax, [ebp+arg_4]
+.text:01D3B90A C7 05 80 75 7B 02 38 69 FF 01                       mov     dword_27B7580, offset s_pBaseDir
+		*/
 		const char sigs1[] = "\x84\xC9\x75\x2A\x8B\x45\x0C\xC7\x05\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x50\xE8";
 		auto basedir_pattern = Search_Pattern(sigs1);
 		Sig_VarNotFound(basedir_pattern);
@@ -877,6 +933,53 @@ void Engine_FillAddress(void)
 
 		s_pBaseDir = *(decltype(s_pBaseDir) *)((PUCHAR)basedir_pattern + 6);
 	}
+#else
+	const char sigs1[] = "Sys_InitializeGameDLL called twice";
+	auto Sys_InitializeGameDLL_String = Search_Pattern_Data(sigs1);
+	if (!Sys_InitializeGameDLL_String)
+		Sys_InitializeGameDLL_String = Search_Pattern_Rdata(sigs1);
+	Sig_VarNotFound(Sys_InitializeGameDLL_String);
+	char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04\xC3";
+	*(DWORD*)(pattern + 1) = (DWORD)Sys_InitializeGameDLL_String;
+	auto Sys_InitializeGameDLL_PushString = Search_Pattern(pattern);
+	Sig_VarNotFound(Sys_InitializeGameDLL_PushString);
+
+	g_pMetaHookAPI->DisasmRanges((PUCHAR)Sys_InitializeGameDLL_PushString + sizeof(pattern) - 1, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		{
+			auto pinst = (cs_insn*)inst;
+
+			if (instCount < 5 && pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				hostparam_basedir = (decltype(hostparam_basedir))pinst->detail->x86.operands[1].mem.disp;
+				return TRUE;
+			}
+
+			if (instCount < 5 && pinst->id == X86_INS_PUSH &&
+				pinst->detail->x86.op_count == 1 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwEngineDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+			{
+				hostparam_basedir = (decltype(hostparam_basedir))pinst->detail->x86.operands[0].mem.disp;
+				return TRUE;
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+		}, 0, NULL);
+	Sig_VarNotFound(hostparam_basedir);
+
+#endif
 
 #define VOX_LOOKUPSTRING_SIG "\x80\x2A\x23\x2A\x2A\x8D\x2A\x01\x50\xE8"
 #define VOX_LOOKUPSTRING_SIG_HL25 "\x80\x3B\x23\x0F\x85\x90\x00\x00\x00"
