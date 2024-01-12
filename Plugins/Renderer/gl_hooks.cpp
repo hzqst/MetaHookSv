@@ -7503,8 +7503,7 @@ void R_InstallHooks(void)
 			result = SDL_GL_SetAttribute(21, 2);
 		  }
 	*/
-	if (g_iEngineType == ENGINE_GOLDSRC_HL25 &&
-		gPrivateFuncs.SDL_GL_SetAttribute)
+	if (gPrivateFuncs.SDL_GL_SetAttribute)
 	{
 		Install_InlineHook(SDL_GL_SetAttribute);
 	}

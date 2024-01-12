@@ -4005,6 +4005,10 @@ int __cdecl SDL_GL_SetAttribute(int attr, int value)
 	{
 		return gPrivateFuncs.SDL_GL_SetAttribute(attr, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
 	}
-
+	//Why the fuck 4,4,4 in GoldSrc and SvEngine????
+	if (attr == SDL_GL_RED_SIZE || attr == SDL_GL_GREEN_SIZE || attr == SDL_GL_BLUE_SIZE)
+	{
+		return gPrivateFuncs.SDL_GL_SetAttribute(attr, 8);
+	}
 	return gPrivateFuncs.SDL_GL_SetAttribute(attr, value);
 }
