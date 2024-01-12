@@ -302,11 +302,12 @@
 
 #define SCR_BEGIN_LOADING_PLAQUE "\x6A\x01\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xF8\x03"
 
-#define HOST_IS_SINGLE_PLAYER_GAME_SVENGINE  "\x33\xC0\x39\x05\x2A\x2A\x2A\x2A\x75\x2A\x83\x3D\x2A\x2A\x2A\x2A\x01\x0F\x94\xC0"
-#define HOST_IS_SINGLE_PLAYER_GAME_HL25      "\x83\x3D\x2A\x2A\x2A\x2A\x00\xA1\x2A\x2A\x2A\x2A\x0F\x44\x05\x2A\x2A\x2A\x2A\xC3"
-#define HOST_IS_SINGLE_PLAYER_GAME_NEW       "\xA1\x2A\x2A\x2A\x2A\x85\xC0\xA1\x2A\x2A\x2A\x2A\x74\x05\xA1\x2A\x2A\x2A\x2A\xC3"
+#define HOST_IS_SINGLE_PLAYER_GAME_BLOB      "\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x33\xC0"
+#define HOST_IS_SINGLE_PLAYER_GAME_NEW3      HOST_IS_SINGLE_PLAYER_GAME_BLOB
 #define HOST_IS_SINGLE_PLAYER_GAME_NEW2      "\xA1\x2A\x2A\x2A\x2A\x85\xC0\x75\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x33\xC0"
-#define HOST_IS_SINGLE_PLAYER_GAME_BLOB      "\xA1\x2A\x2A\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x85\xC0\x2A\x2A\x8B\x0D\x2A\x2A\x2A\x2A\x33\xC0\x83\xF9\x01"
+#define HOST_IS_SINGLE_PLAYER_GAME_NEW       "\xA1\x2A\x2A\x2A\x2A\x85\xC0\xA1\x2A\x2A\x2A\x2A\x74\x05\xA1\x2A\x2A\x2A\x2A\xC3"
+#define HOST_IS_SINGLE_PLAYER_GAME_HL25      "\x83\x3D\x2A\x2A\x2A\x2A\x00\xA1\x2A\x2A\x2A\x2A\x0F\x44\x05\x2A\x2A\x2A\x2A\xC3"
+#define HOST_IS_SINGLE_PLAYER_GAME_SVENGINE  "\x33\xC0\x39\x05\x2A\x2A\x2A\x2A\x75\x2A\x83\x3D\x2A\x2A\x2A\x2A\x01\x0F\x94\xC0"
 
 #define MOD_UNLOADSPRITETEXTURES_BLOB     "\x81\xEC\x2A\x2A\x00\x00\xB8\x01\x00\x00\x00\x2A\x8B\x2A\x24\x08\x01\x00\x00\x2A\x2A\x2A\x2A\x44"
 #define MOD_UNLOADSPRITETEXTURES_NEW2     MOD_UNLOADSPRITETEXTURES_BLOB
@@ -2389,23 +2390,66 @@ void R_FillAddress(void)
 	gPrivateFuncs.SCR_BeginLoadingPlaque = (decltype(gPrivateFuncs.SCR_BeginLoadingPlaque))Search_Pattern(SCR_BEGIN_LOADING_PLAQUE);
 	Sig_FuncNotFound(SCR_BeginLoadingPlaque);
 
-	if (g_iEngineType == ENGINE_SVENGINE)
+	if (!gPrivateFuncs.Host_IsSinglePlayerGame)
 	{
-		gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_SVENGINE);
+		const char sigs1[] = "setpause;";
+		auto setpause_String = Search_Pattern_Data(sigs1);
+		if (!setpause_String)
+			setpause_String = Search_Pattern_Rdata(sigs1);
+		if (setpause_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
+			*(DWORD*)(pattern + 1) = (DWORD)setpause_String;
+			auto setpause_PushString = (PUCHAR)Search_Pattern(pattern);
+			if (setpause_PushString)
+			{
+				auto setpause_Function = (PUCHAR)g_pMetaHookAPI->ReverseSearchFunctionBegin(setpause_PushString, 0x50);
+				if (setpause_Function)
+				{
+					g_pMetaHookAPI->DisasmRanges(setpause_Function, setpause_PushString - setpause_Function, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+					{
+						auto pinst = (cs_insn*)inst;
+
+						if (address[0] == 0xE8 && instLen == 5 && address[5] == 0x85 && address[6] == 0xC0)
+						{
+							gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))pinst->detail->x86.operands[0].imm;
+						}
+
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						if (pinst->id == X86_INS_RET)
+							return TRUE;
+
+						return FALSE;
+					}, 0, NULL);
+				}
+			}
+		}
 	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+
+	if (!gPrivateFuncs.Host_IsSinglePlayerGame)
 	{
-		gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_HL25);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC)
-	{
-		gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW);
-		if(!gPrivateFuncs.Host_IsSinglePlayerGame)
-			gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW2);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
-	{
-		gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_BLOB);
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_SVENGINE);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_HL25);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW);
+			if (!gPrivateFuncs.Host_IsSinglePlayerGame)
+				gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW2);
+			if (!gPrivateFuncs.Host_IsSinglePlayerGame)
+				gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_NEW3);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+		{
+			gPrivateFuncs.Host_IsSinglePlayerGame = (decltype(gPrivateFuncs.Host_IsSinglePlayerGame))Search_Pattern(HOST_IS_SINGLE_PLAYER_GAME_BLOB);
+		}
 	}
 	Sig_FuncNotFound(Host_IsSinglePlayerGame);
 
