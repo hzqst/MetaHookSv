@@ -21,6 +21,7 @@
 #include "DpiManager.h"
 #include <capstone.h>
 
+//static hook_t* g_phook_QueryBox_ctor = NULL;
 static hook_t* g_phook_CCreateMultiplayerGameDialog_ctor = NULL;
 static hook_t* g_phook_COptionsDialog_ctor = NULL;
 static hook_t *g_phook_COptionsSubVideo_ctor = NULL;
@@ -671,6 +672,24 @@ void* __fastcall CCreateMultiplayerGameDialog_ctor(vgui::Panel* pthis, int dummy
 	return result;
 }
 
+#if 0
+void* __fastcall QueryBox_ctor(vgui::Panel* pthis, int dummy, const char* title, const char* queryText, vgui::Panel* parent)
+{
+	
+
+	//Load res to make it proportional
+	if (!strcmp(queryText, "#GameUI_QuitConfirmationText"))
+	{
+		//gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource\\QuitConfirmationBox.res", NULL);
+
+		return gPrivateFuncs.QueryBox_ctor(pthis, dummy, title, "#GameUI_QuitConfirmationText\n\n", parent);
+	}
+	auto result = gPrivateFuncs.QueryBox_ctor(pthis, dummy, title, queryText, parent);
+
+	return result;
+}
+#endif
+
 void CGameUI::HideGameUI(void)
 {
 	if (m_hOptionsSubVideoAdvancedDlg.Get())
@@ -745,7 +764,45 @@ void GameUI_InstallHooks(void)
 		g_pMetaHookAPI->SysError("Failed to locate section \".data\" in GameUI.dll");
 		return;
 	}
+#if 0
+	if (1)
+	{
+		const char sigs1[] = "#GameUI_QuitConfirmationTitle";
+		auto GameUI_QuitConfirmationTitle_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
+		if (!GameUI_QuitConfirmationTitle_String)
+			GameUI_QuitConfirmationTitle_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
+		Sig_VarNotFound(GameUI_QuitConfirmationTitle_String);
 
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern + 6) = (DWORD)GameUI_QuitConfirmationTitle_String;
+		auto GameUI_QuitConfirmationTitle_PushString = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
+
+		Sig_VarNotFound(GameUI_QuitConfirmationTitle_PushString);
+
+		g_pMetaHookAPI->DisasmRanges(GameUI_QuitConfirmationTitle_PushString, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+
+			if (address[0] == 0xE8 && instCount <= 5)
+			{
+				gPrivateFuncs.QueryBox_ctor = (decltype(gPrivateFuncs.QueryBox_ctor))GetCallAddress(address);
+
+				return TRUE;
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+		}, 0, NULL);
+
+		Sig_FuncNotFound(QueryBox_ctor);
+	}
+#endif
 	if (1)
 	{
 		const char sigs1[] = "CreateMultiplayerGameDialog\0";
@@ -892,7 +949,7 @@ void GameUI_InstallHooks(void)
 
 				return FALSE;
 
-			}, 0, NULL);
+		}, 0, NULL);
 
 		Sig_FuncNotFound(GameUI_LoadControlSettings);
 	}
@@ -999,6 +1056,7 @@ void GameUI_InstallHooks(void)
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 8, (void*)pVFTable[8], (void**)&g_pfnCGameUI_ConnectToServer);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 10, (void *)pVFTable[10], (void **)&g_pfnCGameUI_HideGameUI);
 
+	//Install_InlineHook(QueryBox_ctor);
 	Install_InlineHook(CCreateMultiplayerGameDialog_ctor);
 	Install_InlineHook(COptionsDialog_ctor);
 	Install_InlineHook(COptionsSubVideo_ctor);
@@ -1008,6 +1066,7 @@ void GameUI_InstallHooks(void)
 
 void GameUI_UninstallHooks(void)
 {
+	//Uninstall_Hook(QueryBox_ctor);
 	Uninstall_Hook(CCreateMultiplayerGameDialog_ctor);
 	Uninstall_Hook(COptionsDialog_ctor);
 	Uninstall_Hook(COptionsSubVideo_ctor);
