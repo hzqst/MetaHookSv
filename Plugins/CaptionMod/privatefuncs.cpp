@@ -557,7 +557,7 @@ void Engine_FillAddress(void)
 		Sig_AddrNotFound(cl_viewentity);
 		cl_viewentity = *(decltype(cl_viewentity) *)(addr + 10);
 	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	else
 	{
 #define CL_VIEWENTITY_SIG_GOLDSRC "\xA1\x2A\x2A\x2A\x2A\x48\x3B\x2A"
 		DWORD addr = (DWORD)Search_Pattern(CL_VIEWENTITY_SIG_GOLDSRC);
@@ -602,7 +602,7 @@ void Engine_FillAddress(void)
 		{
 			cl_viewentity = *(decltype(cl_viewentity)*)(addr + 1);
 		}
-
+		Sig_VarNotFound(cl_viewentity);
 
 #if 0
 #define CL_VIEWENTITY_SIG_HL25 "\xE8\x2A\x2A\x2A\x2A\xA3\x2A\x2A\x2A\x2A\xC3"

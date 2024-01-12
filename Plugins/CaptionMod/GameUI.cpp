@@ -758,6 +758,12 @@ void GameUI_InstallHooks(void)
 		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x50";
 		*(DWORD*)(pattern + 1) = (DWORD)CreateMultiplayerGameDialog_String;
 		CreateMultiplayerGameDialog_Call = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
+		if(!CreateMultiplayerGameDialog_Call)
+		{
+			char pattern2[] = "\x68\x2A\x2A\x2A\x2A\x2A\x2A\x50";
+			*(DWORD*)(pattern2 + 1) = (DWORD)CreateMultiplayerGameDialog_String;
+			CreateMultiplayerGameDialog_Call = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern2, sizeof(pattern2) - 1);
+		}
 		Sig_VarNotFound(CreateMultiplayerGameDialog_Call);
 
 		gPrivateFuncs.CCreateMultiplayerGameDialog_ctor = (decltype(gPrivateFuncs.CCreateMultiplayerGameDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(CreateMultiplayerGameDialog_Call, 0x120, [](PUCHAR Candidate) {
@@ -916,7 +922,7 @@ void GameUI_InstallHooks(void)
 			SetVideoMode_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
 		Sig_VarNotFound(SetVideoMode_String);
 
-		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x50\xE8";
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x2A\xE8";
 		*(DWORD *)(pattern + 1) = (DWORD)SetVideoMode_String;
 		auto SetVideoMode_StringPush = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
 		Sig_VarNotFound(SetVideoMode_StringPush);
