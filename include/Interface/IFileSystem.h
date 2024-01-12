@@ -97,12 +97,18 @@ class IFileSystem_SvEngine : public IFileSystem
 {
 public:
 	//this + 0x58 = pfnConsoleOutput
-	virtual int GetOutputLevel() const = 0; //[53]
+	virtual int GetWarningLevel() const = 0; //[53]
 	virtual void DumpPaths() = 0; //[54]
-	virtual void* GetUnknown(int a1) = 0; //[55]
+	virtual void* FindGetCurSearchPath(int a1) = 0; //[55] wtf a1 is???
 	virtual void AddSearchPathEx(const char* pPath, const char* pathID, bool bAllowWrite, int iType) = 0; //[56] iType = 0, 1, 2, 3 ???
-	virtual bool Unknown2(const char * path, int a2) = 0;
-	virtual int GetUnknown3(int a2, bool a3, char* OutputPath, int MaxOutputPath) = 0;
+	virtual bool RemoveSearchPathEx(const char * path, int iType) = 0;
+	virtual int GetSearchPath(char* a2, bool a3, char* OutputPath, int MaxOutputPath) = 0;
+	virtual const char* RelativePathToFullPath(const char *pFileName, const char *pPathID, char *pLocalPath, int localPathBufferSize) = 0;
+	virtual bool FullPathToRelativePathEx(const char *pFullpath, const char *pPathId, char *pRelative, int maxlen) = 0;
+	virtual bool FileExists(const char *pFileName, const char *pPathID) = 0;
+	virtual bool IsDirectoryEx(const char *pFileName, const char *pPathID) = 0;
+	virtual int SizeEx(const char *pFileName, const char *pPathID) = 0;
+	virtual int GetFileTimeEx(const char *pFileName, const char *pPathID) = 0;
 };
 
 class IFileSystem_HL25 : public IBaseInterface
