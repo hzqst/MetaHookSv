@@ -348,6 +348,8 @@ void R_RenderShadowScene(void)
 
 	if (R_ShouldRenderShadowScene())
 	{
+		r_draw_shadowscene = true;
+
 		GL_BindFrameBuffer(&s_ShadowFBO);
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
@@ -421,6 +423,8 @@ void R_RenderShadowScene(void)
 
 		glClearDepth(1);
 		glDepthFunc(GL_LEQUAL);
+
+		r_draw_shadowscene = false;
 	}
 
 	GL_EndProfile(&Profile_RenderShadowScene);

@@ -548,6 +548,7 @@ extern bool r_draw_hasface;
 extern bool r_draw_hashair;
 extern bool r_draw_hasoutline;
 extern bool r_draw_shadowcaster;
+extern bool r_draw_shadowscene;
 extern bool r_draw_opaque;
 extern bool r_draw_oitblend;
 extern bool r_draw_gammablend;

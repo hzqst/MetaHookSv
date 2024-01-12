@@ -174,6 +174,7 @@ bool r_draw_hashair = false;
 bool r_draw_hasoutline = false;
 
 bool r_draw_shadowcaster = false;
+bool r_draw_shadowscene = false;
 
 bool r_draw_opaque = false;
 bool r_draw_oitblend = false;
@@ -317,6 +318,9 @@ qboolean Host_IsSinglePlayerGame()
 
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
+	if (r_draw_shadowscene)
+		return false;
+
 	return gPrivateFuncs.R_CullBox(mins, maxs);
 }
 
