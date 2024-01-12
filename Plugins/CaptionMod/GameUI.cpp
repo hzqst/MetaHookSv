@@ -663,8 +663,8 @@ void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel*
 	}
 #endif
 
-	//Load res to make it proportional
-	gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource\\OptionsDialog.res", NULL, NULL);
+		//Load res to make it proportional
+	gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource\\OptionsDialog.res", NULL);
 
 	return result;
 }
