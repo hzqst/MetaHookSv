@@ -106,6 +106,9 @@ public:
 		if (gEngfuncs.CheckParm("-no_high_dpi", NULL))
 			m_bIsHighDpiSupported = false;
 
+		if (gEngfuncs.CheckParm("-high_dpi", NULL))
+			m_bIsHighDpiSupported = true;
+
 		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 			m_bIsHighDpiSupported = false;
 
