@@ -506,9 +506,6 @@ int CSurfaceProxy::CreateNewTextureID(bool procedural)
 void CSurfaceProxy::GetScreenSize(int &wide, int &tall)
 {
 	m_pfnGetScreenSize(wide, tall);
-
-	wide /= dpimanager()->GetDpiScaling();
-	tall /= dpimanager()->GetDpiScaling();
 }
 
 void CSurfaceProxy::SetAsTopMost(VPANEL panel, bool state)
@@ -800,10 +797,10 @@ void CSurfaceProxy::GetProportionalBase(int &width, int &height)
 	//g_pSurface->GetProportionalBase(width, height);
 	m_pfnGetProportionalBase(g_pSurface, 0, width, height);
 
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && dpimanager()->IsHighDpiSupportEnabled())
+	if (dpimanager()->IsHighDpiSupportEnabled())
 	{
-		width = 1280;
-		height = 720;
+		width = g_iProportionalBaseWidthHD;
+		height = g_iProportionalBaseHeightHD;
 	}
 }
 
@@ -1810,7 +1807,7 @@ void Surface_InstallHooks(void)
 {
 	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-		DWORD* pVFTable = *(DWORD**)&g_SurfaceProxy_HL25;
+		PVOID* pVFTable = *(PVOID**)&g_SurfaceProxy_HL25;
 
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 1, (void*)pVFTable[1], (void**)&m_pfnSurface_Shutdown);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 13, (void*)pVFTable[13], (void**)&m_pfnDrawSetTextFont);
@@ -1818,7 +1815,6 @@ void Surface_InstallHooks(void)
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 14, (void*)pVFTable[14], (void**)&m_pfnDrawSetTextColor2);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 19, (void *)pVFTable[19], (void **)&m_pfnDrawUnicodeChar);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 20, (void *)pVFTable[20], (void **)&m_pfnDrawUnicodeCharAdd);
-		//g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 32, (void*)pVFTable[32], (void**)&m_pfnGetScreenSize);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 50, (void *)pVFTable[50], (void **)&m_pfnSupportsFeature);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 59, (void *)pVFTable[59], (void **)&m_pfnCreateFont);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 60, (void *)pVFTable[60], (void **)&m_pfnAddGlyphSetToFont);
@@ -1832,11 +1828,10 @@ void Surface_InstallHooks(void)
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 91, (void*)pVFTable[91], (void**)&m_pfnSetLanguage);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 101, (void*)pVFTable[101], (void**)&m_pfnGetFontBlur);
 		g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 102, (void*)pVFTable[102], (void**)&m_pfnIsFontAdditive);
-		//g_pMetaHookAPI->VFTHook(g_pSurface_HL25, 0, 104, (void*)pVFTable[104], (void**)&m_pfnGetHDProportionalBase);
 	}
 	else
 	{
-		DWORD* pVFTable = *(DWORD**)&g_SurfaceProxy;
+		PVOID* pVFTable = *(PVOID**)&g_SurfaceProxy;
 
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 1, (void*)pVFTable[1], (void**)&m_pfnSurface_Shutdown);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 13, (void*)pVFTable[13], (void**)&m_pfnDrawSetTextFont);
@@ -1844,7 +1839,6 @@ void Surface_InstallHooks(void)
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 14, (void*)pVFTable[14], (void**)&m_pfnDrawSetTextColor2);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 19, (void*)pVFTable[19], (void**)&m_pfnDrawUnicodeChar);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 20, (void*)pVFTable[20], (void**)&m_pfnDrawUnicodeCharAdd);
-		//g_pMetaHookAPI->VFTHook(g_pSurface, 0, 32, (void*)pVFTable[32], (void**)&m_pfnGetScreenSize);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 50, (void*)pVFTable[50], (void**)&m_pfnSupportsFeature);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 59, (void*)pVFTable[59], (void**)&m_pfnCreateFont);
 		g_pMetaHookAPI->VFTHook(g_pSurface, 0, 60, (void*)pVFTable[60], (void**)&m_pfnAddGlyphSetToFont);

@@ -9,6 +9,8 @@ extern int g_iProportionalBaseHeight;
 extern int g_iProportionalBaseWidthHD;
 extern int g_iProportionalBaseHeightHD;
 
+void COM_FixSlashes(char* pname);
+
 class CDpiManager : public IDpiManager
 {
 private:
@@ -25,15 +27,6 @@ public:
 
 	void Init() override
 	{
-		if (g_iEngineType != ENGINE_GOLDSRC_HL25)
-			m_bIsHighDpiSupported = true;
-
-		if (gEngfuncs.CheckParm("-no_high_dpi", NULL))
-			m_bIsHighDpiSupported = false;
-
-		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-			m_bIsHighDpiSupported = false;
-
 		if (DpiScalingSource_SDL2 > m_iDpiScalingSource)
 		{
 			if (gPrivateFuncs.SDL_GetDisplayDPI)
@@ -102,6 +95,31 @@ public:
 
 			m_flDpiScaling = (float)dpiY / 96.0f;
 			m_iDpiScalingSource = DpiScalingSource_Window;
+		}
+	}
+
+	void PostInit() override
+	{
+		if (g_iEngineType != ENGINE_GOLDSRC_HL25 && GetDpiScaling() > 1.0f)
+			m_bIsHighDpiSupported = true;
+
+		if (gEngfuncs.CheckParm("-no_high_dpi", NULL))
+			m_bIsHighDpiSupported = false;
+
+		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+			m_bIsHighDpiSupported = false;
+
+		if (IsHighDpiSupportEnabled())
+		{
+			char temp[1024];
+
+			snprintf(temp, sizeof(temp), "%s\\%s_dpi%.0f", GetBaseDirectory(), gEngfuncs.pfnGetGameDirectory(), dpimanager()->GetDpiScaling() * 100.0f);
+			COM_FixSlashes(temp);
+			g_pFileSystem->AddSearchPathNoWrite(temp, "SKIN");
+
+			snprintf(temp, sizeof(temp), "%s\\%s_hidpi", GetBaseDirectory(), gEngfuncs.pfnGetGameDirectory());
+			COM_FixSlashes(temp);
+			g_pFileSystem->AddSearchPathNoWrite(temp, "SKIN");
 		}
 	}
 

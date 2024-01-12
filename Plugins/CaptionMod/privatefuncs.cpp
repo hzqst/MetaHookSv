@@ -35,10 +35,12 @@
 #define SEQUENCE_GETSENTENCEBYINDEX_SIG_NEW "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x33\xC9\x85\xC0\x2A\x2A\x2A\x8B\x75\x08\x8B\x50\x04"
 #define SEQUENCE_GETSENTENCEBYINDEX_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x33\xC9\x85\xC0\x56\x2A\x2A\x8B\x74\x24\x08\x8B\x50\x04"
 
+#if 0
 #define VGUIWRAP2_PAINT_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x10\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x85\xC0"
 #define VGUIWRAP2_PAINT_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x2A\x33\xFF\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\x89\x7D"
 #define VGUIWRAP2_PAINT_SIG_NEW "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x2A\x33\xFF\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\x89\x7D"
 #define VGUIWRAP2_PAINT_SIG_BLOB "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x2A\x33\xFF\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\x89\x7D"
+#endif
 
 #define SCR_BEGIN_LOADING_PLAQUE "\x6A\x01\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xF8\x03"
 
@@ -62,16 +64,14 @@ char m_szCurrentLanguage[128] = { 0 };
 
 private_funcs_t gPrivateFuncs = { 0 };
 
-hook_t *g_phook_S_FindName = NULL;
-hook_t *g_phook_S_StartDynamicSound = NULL;
-hook_t *g_phook_S_StartStaticSound = NULL;
-hook_t *g_phook_ScClient_FindSoundEx = NULL;
-hook_t *g_phook_pfnTextMessageGet = NULL;
-hook_t *g_phook_CWin32Font_GetCharRGBA = NULL;
-hook_t *g_phook_WeaponsResource_SelectSlot = NULL;
-hook_t *g_phook_FileSystem_SetGameDirectory = NULL;
-//hook_t* g_phook_VGuiWrap2_Paint = NULL;
-//hook_t* g_phook_SDL_GetWindowSize = NULL;
+static hook_t *g_phook_S_FindName = NULL;
+static hook_t *g_phook_S_StartDynamicSound = NULL;
+static hook_t *g_phook_S_StartStaticSound = NULL;
+static hook_t *g_phook_ScClient_FindSoundEx = NULL;
+static hook_t *g_phook_pfnTextMessageGet = NULL;
+static hook_t *g_phook_CWin32Font_GetCharRGBA = NULL;
+static hook_t *g_phook_WeaponsResource_SelectSlot = NULL;
+//hook_t *g_phook_FileSystem_SetGameDirectory = NULL;
 
 PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule)
 {
@@ -98,6 +98,42 @@ void SDL2_FillAddress(void)
 		gPrivateFuncs.SDL_GetWindowSize = (decltype(gPrivateFuncs.SDL_GetWindowSize))GetProcAddress(SDL2, "SDL_GetWindowSize");
 		gPrivateFuncs.SDL_GetDisplayDPI = (decltype(gPrivateFuncs.SDL_GetDisplayDPI))GetProcAddress(SDL2, "SDL_GetDisplayDPI");
 	}
+}
+
+PVOID VGUI2_FindPanelInit(PVOID TextBase, ULONG TextSize)
+{
+	PVOID Panel_Init = NULL;
+	if (1)
+	{
+		const char sigs[] = "\x6A\x18\x6A\x40\x6A\x00\x6A\x00";
+		auto Panel_Init_Push = (PUCHAR)Search_Pattern_From_Size(TextBase, TextSize, sigs);
+		if (Panel_Init_Push)
+		{
+			g_pMetaHookAPI->DisasmRanges(Panel_Init_Push + Sig_Length(sigs), 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+				auto pinst = (cs_insn*)inst;
+				auto pPanel_Init = (PVOID*)context;
+
+				if (address[0] == 0xE8 && instCount <= 5)
+				{
+					(*pPanel_Init) = GetCallAddress(address);
+
+					return TRUE;
+				}
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+
+				}, 0, &Panel_Init);
+		}
+	}
+
+	return Panel_Init;
 }
 
 void Engine_FillAddress(void)
@@ -437,6 +473,7 @@ void Engine_FillAddress(void)
 		}
 	}
 	Sig_FuncNotFound(SequenceGetSentenceByIndex);
+
 #if 0
 	if (!gPrivateFuncs.VGuiWrap2_Paint)
 	{
@@ -541,6 +578,7 @@ void Engine_FillAddress(void)
 		listener_origin = *(decltype(listener_origin) *)(addr + 2);
 	}
 
+#if 0
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
 		const char sigs1[] = "User Token 2";
@@ -641,6 +679,7 @@ void Engine_FillAddress(void)
 		});
 		Sig_FuncNotFound(FileSystem_SetGameDirectory);
 	}
+#endif
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -788,6 +827,9 @@ void Engine_FillAddress(void)
 #endif
 		}
 	}
+
+	gPrivateFuncs.EngineVGUI2_Panel_Init = (decltype(gPrivateFuncs.EngineVGUI2_Panel_Init))VGUI2_FindPanelInit(g_dwEngineTextBase, g_dwEngineTextSize);
+	Sig_FuncNotFound(EngineVGUI2_Panel_Init);
 
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
@@ -1287,7 +1329,7 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(S_StartDynamicSound);
 	Install_InlineHook(S_StartStaticSound);
 	Install_InlineHook(pfnTextMessageGet);
-	Install_InlineHook(FileSystem_SetGameDirectory);
+	//Install_InlineHook(FileSystem_SetGameDirectory);
 	//Install_InlineHook(VGuiWrap2_Paint);
 	//Install_InlineHook(SDL_GetWindowSize);
 }
@@ -1297,7 +1339,7 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(S_StartDynamicSound);
 	Uninstall_Hook(S_StartStaticSound);
 	Uninstall_Hook(pfnTextMessageGet);
-	Uninstall_Hook(FileSystem_SetGameDirectory);
+	//Uninstall_Hook(FileSystem_SetGameDirectory);
 	//Uninstall_Hook(VGuiWrap2_Paint);
 	//Uninstall_Hook(SDL_GetWindowSize);
 }

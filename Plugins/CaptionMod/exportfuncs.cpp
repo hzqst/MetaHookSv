@@ -42,6 +42,7 @@ void *gHud = NULL;
 
 HWND g_MainWnd = NULL;
 WNDPROC g_MainWndProc = NULL;
+
 #if 0
 void SDL_GetWindowSize(void* window, int* w, int* h)
 {
@@ -84,12 +85,13 @@ void COM_FixSlashes(char *pname)
 #endif
 }
 
+#if 0
+
 int FileSystem_SetGameDirectory(const char *pDefaultDir, const char *pGameDir)
 {
 	int result = gPrivateFuncs.FileSystem_SetGameDirectory(pDefaultDir, pGameDir);
 
-	if (dpimanager()->IsHighDpiSupportEnabled() &&
-		dpimanager()->GetDpiScaling() > 1.0f)
+	if (dpimanager()->IsHighDpiSupportEnabled())
 	{
 		char temp[1024];
 		snprintf(temp, sizeof(temp), "%s\\%s_dpi%.0f", GetBaseDirectory(), gEngfuncs.pfnGetGameDirectory(), dpimanager()->GetDpiScaling() * 100.0f);
@@ -100,6 +102,8 @@ int FileSystem_SetGameDirectory(const char *pDefaultDir, const char *pGameDir)
 
 	return result;
 }
+
+#endif
 
 const char *GetBaseDirectory()
 {

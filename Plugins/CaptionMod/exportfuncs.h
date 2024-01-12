@@ -52,7 +52,7 @@ void *NewClientFactory(void);
 
 const char *GetBaseDirectory();
 
-int FileSystem_SetGameDirectory(const char *pDefaultDir, const char *pGameDir);
+//int FileSystem_SetGameDirectory(const char *pDefaultDir, const char *pGameDir);
 
 IBaseInterface *NewCreateInterface(const char *pName, int *pReturnCode);
 

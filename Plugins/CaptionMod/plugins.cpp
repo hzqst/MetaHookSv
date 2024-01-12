@@ -126,6 +126,8 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	VGUI1_InstallHook();
 
 	InitWin32Stuffs();
+
+	dpimanager()->PostInit();
 }
 
 void IPluginsV4::ExitGame(int iResult)

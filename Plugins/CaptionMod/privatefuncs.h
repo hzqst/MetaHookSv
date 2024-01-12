@@ -19,10 +19,10 @@ typedef struct
 
 	//Engine VGUI2 wrapper
 	//void(*VGuiWrap2_Paint)(void);
+	void(__fastcall* EngineVGUI2_Panel_Init)(void* pthis, int dummy, int x, int y, int w, int h);
 
 	//Engine FileSystem
-
-	int(*FileSystem_SetGameDirectory)(const char *pDefaultDir, const char *pGameDir);
+	//int(*FileSystem_SetGameDirectory)(const char *pDefaultDir, const char *pGameDir);
 
 	//Engine Sound
 	void (*S_Init)(void);
@@ -76,7 +76,7 @@ typedef struct
 	PVOID (*VGUIClient001_CreateInterface)(HINTERFACEMODULE hModule);
 
 	//GameUI
-	void(__fastcall* LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID, KeyValues* pPreloadedKeyValues);
+	void(__fastcall* GameUI_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID, KeyValues* pPreloadedKeyValues);
 	void *(__fastcall*COptionsDialog_ctor)(void *pthis, int dummy, void *parent);
 	void *(__fastcall*COptionsSubVideo_ctor)(void *pthis, int dummy, void *parent);
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings)(void *pthis, int dummy, bool bForceRestart);
@@ -115,3 +115,5 @@ extern private_funcs_t gPrivateFuncs;
 cl_entity_t *EngineGetViewEntity(void);
 
 bool SCR_IsLoadingVisible(void);
+
+PVOID VGUI2_FindPanelInit(PVOID TextBase, ULONG TextSize);

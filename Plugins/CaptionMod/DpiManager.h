@@ -11,6 +11,7 @@ class IDpiManager : public IBaseInterface
 public:
 	virtual void Init() = 0;
 	virtual void InitFromMainHwnd() = 0;
+	virtual void PostInit() = 0;
 	virtual void Shutdown() = 0;
 	virtual float GetDpiScaling() const = 0;
 	virtual int GetDpiScalingSource() const = 0;

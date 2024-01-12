@@ -10,7 +10,6 @@ extern IEngineSurface *staticSurface;
 extern IEngineSurface_HL25 *staticSurface_HL25;
 
 static void (*m_pfnEngineSurface_pushMakeCurrent)(int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace) = NULL;
-
 static void (*m_pfnEngineSurface_popMakeCurrent)(void) = NULL;
 
 bool* g_bScissor = NULL;
@@ -360,6 +359,7 @@ static CEngineSurfaceProxy_HL25 g_EngineSurfaceProxy_HL25;
 
 void EngineSurface_FillAddress(void)
 {
+#if 0
 	PVOID* OriginalVFTable = (g_iEngineType == ENGINE_GOLDSRC_HL25) ? *(PVOID**)staticSurface_HL25 : *(PVOID**)staticSurface;
 
 	auto pushMakeCurrent = OriginalVFTable[1];
@@ -475,10 +475,12 @@ void EngineSurface_FillAddress(void)
 	Sig_VarNotFound(g_SDL2_mainwindow);
 	Sig_VarNotFound(g_bScissor);
 	Sig_VarNotFound(g_ScissorRect);
+#endif
 }
 
 void EngineSurface_InstallHooks(void)
 {
+#if 0
 	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
 		PVOID* ProxyVFTable = *(PVOID**)&g_EngineSurfaceProxy_HL25;
@@ -493,6 +495,7 @@ void EngineSurface_InstallHooks(void)
 		//g_pMetaHookAPI->VFTHook(staticSurface, 0, 1, (void*)ProxyVFTable[1], (void**)&m_pfnEngineSurface_pushMakeCurrent);
 		//g_pMetaHookAPI->VFTHook(staticSurface, 0, 2, (void*)ProxyVFTable[2], (void**)&m_pfnEngineSurface_popMakeCurrent);
 	}
+#endif
 }
 
 void EngineSurface_UninstallHooks(void)

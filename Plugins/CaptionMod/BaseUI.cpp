@@ -18,6 +18,9 @@
 
 extern IGameUI *g_pGameUI;
 
+static hook_t* g_phook_EngineVGUI2_Panel_Init = NULL;
+static bool s_LoadingBaseUI = false;
+
 namespace vgui
 {
 	bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryList, int numFactories);
@@ -35,7 +38,7 @@ bool(__fastcall *m_pfnCBaseUI_IsGameUIVisible)(void *pthis, int);
 void(__fastcall *m_pfnCBaseUI_HideConsole)(void *pthis, int);
 void(__fastcall *m_pfnCBaseUI_ShowConsole)(void *pthis, int);
 
-class CBaseUI : public IBaseUI
+class CBaseUIProxy : public IBaseUI
 {
 public:
 	virtual void Initialize(CreateInterfaceFn *factories, int count);
@@ -51,7 +54,7 @@ public:
 	virtual void ShowConsole(void);
 };
 
-static CBaseUI s_BaseUI;
+static CBaseUIProxy s_BaseUIProxy;
 
 IBaseUI *baseuifuncs;
 IGameUIFuncs *gameuifuncs;
@@ -64,11 +67,26 @@ extern IKeyValuesSystem *g_pKeyValuesSystem;
 extern IEngineSurface *staticSurface;
 extern IEngineSurface_HL25 *staticSurface_HL25;
 
-static bool s_LoadingClientFactory = false;
-
 extern CreateInterfaceFn* g_pClientFactory;
 
-void CBaseUI::Initialize(CreateInterfaceFn *factories, int count)
+#if 1
+void __fastcall EngineVGUI2_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, int w, int h)
+{
+	gPrivateFuncs.EngineVGUI2_Panel_Init(pthis, 0, x, y, w, h);
+
+	if (s_LoadingBaseUI)
+	{
+		if (dpimanager()->IsHighDpiSupportEnabled())
+		{
+			PVOID* PanelVFTable = *(PVOID**)pthis;
+			void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];
+			pfnSetProportional(pthis, 0, true);
+		}
+	}
+}
+#endif
+
+void CBaseUIProxy::Initialize(CreateInterfaceFn *factories, int count)
 {
 	m_pfnCBaseUI_Initialize(this, 0, factories, count);
 
@@ -103,12 +121,20 @@ void CBaseUI::Initialize(CreateInterfaceFn *factories, int count)
 	GameUI_InstallHooks();
 }
 
-void CBaseUI::Start(struct cl_enginefuncs_s *engineFuncs, int interfaceVersion)
+void CBaseUIProxy::Start(struct cl_enginefuncs_s *engineFuncs, int interfaceVersion)
 {
+	Install_InlineHook(EngineVGUI2_Panel_Init);
+
+	s_LoadingBaseUI = true;
+
 	m_pfnCBaseUI_Start(this, 0, engineFuncs, interfaceVersion);
+
+	s_LoadingBaseUI = false;
+
+	Uninstall_Hook(EngineVGUI2_Panel_Init);
 }
 
-void CBaseUI::Shutdown(void)
+void CBaseUIProxy::Shutdown(void)
 {
 	ClientVGUI_Shutdown();
 
@@ -119,42 +145,42 @@ if (g_iEngineType != ENGINE_GOLDSRC_HL25)
 	m_pfnCBaseUI_Shutdown(this, 0);
 }
 
-int CBaseUI::Key_Event(int down, int keynum, const char *pszCurrentBinding)
+int CBaseUIProxy::Key_Event(int down, int keynum, const char *pszCurrentBinding)
 {
 	return m_pfnCBaseUI_Key_Event(this, 0, down, keynum, pszCurrentBinding);
 }
 
-void CBaseUI::CallEngineSurfaceProc(void *hwnd, unsigned int msg, unsigned int wparam, long lparam)
+void CBaseUIProxy::CallEngineSurfaceProc(void *hwnd, unsigned int msg, unsigned int wparam, long lparam)
 {
 	m_pfnCBaseUI_CallEngineSurfaceProc(this, 0, hwnd, msg, wparam, lparam);
 }
 
-void CBaseUI::Paint(int x, int y, int right, int bottom)
+void CBaseUIProxy::Paint(int x, int y, int right, int bottom)
 {
 	m_pfnCBaseUI_Paint(this, 0, x, y, right, bottom);
 }
 
-void CBaseUI::HideGameUI(void)
+void CBaseUIProxy::HideGameUI(void)
 {
 	m_pfnCBaseUI_HideGameUI(this, 0);
 }
 
-void CBaseUI::ActivateGameUI(void)
+void CBaseUIProxy::ActivateGameUI(void)
 {
 	m_pfnCBaseUI_ActivateGameUI(this, 0);
 }
 
-bool CBaseUI::IsGameUIVisible(void)
+bool CBaseUIProxy::IsGameUIVisible(void)
 {
 	return m_pfnCBaseUI_IsGameUIVisible(this, 0);
 }
 
-void CBaseUI::HideConsole(void)
+void CBaseUIProxy::HideConsole(void)
 {
 	m_pfnCBaseUI_HideConsole(this, 0);
 }
 
-void CBaseUI::ShowConsole(void)
+void CBaseUIProxy::ShowConsole(void)
 {
 	m_pfnCBaseUI_ShowConsole(this, 0);
 }
@@ -168,48 +194,30 @@ void BaseUI_InstallHook(void)
 	//Search CBaseUI::Initialize for ClientFactory
 	if (g_iEngineType == ENGINE_SVENGINE)
 	{
-//#define CLIENTFACTORY_SIG_SVENGINE "\x83\xC4\x0C\x83\x3D"
-		//DWORD *vft = *(DWORD **)baseuifuncs;
-
-		//DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)vft[1], 0x200, CLIENTFACTORY_SIG_SVENGINE, Sig_Length(CLIENTFACTORY_SIG_SVENGINE));
-		//Sig_AddrNotFound(ClientFactory);
-		//gPrivateFuncs.pfnClientFactory = (void *(**)(void))*(DWORD *)(addr + 5);
-
-		PVOID*ProxyVFTable = *(PVOID**)&s_BaseUI;
+		PVOID*ProxyVFTable = *(PVOID**)&s_BaseUIProxy;
 
 		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, ProxyVFTable[1], (void **)&m_pfnCBaseUI_Initialize);
+		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 2, ProxyVFTable[2], (void**)&m_pfnCBaseUI_Start);
 		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, ProxyVFTable[3], (void **)&m_pfnCBaseUI_Shutdown);
 		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 4, ProxyVFTable[4], (void **)&m_pfnCBaseUI_Key_Event);
 		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 6, ProxyVFTable[6], (void**)&m_pfnCBaseUI_Paint);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
-//#define CLIENTFACTORY_SIG_HL25 "\xFF\x35\x2A\x2A\x2A\x2A\xA3"
-		//DWORD *vft = *(DWORD **)baseuifuncs;
-
-		//DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)vft[1], 0x200, CLIENTFACTORY_SIG_SVENGINE, Sig_Length(CLIENTFACTORY_SIG_SVENGINE));
-		//Sig_AddrNotFound(ClientFactory);
-		//gPrivateFuncs.pfnClientFactory = (void *(**)(void))*(DWORD *)(addr + 5);
-
-		PVOID* ProxyVFTable = *(PVOID**)&s_BaseUI;
+		PVOID* ProxyVFTable = *(PVOID**)&s_BaseUIProxy;
 
 		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, ProxyVFTable[1], (void **)&m_pfnCBaseUI_Initialize);
+		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 2, ProxyVFTable[2], (void**)&m_pfnCBaseUI_Start);
 		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, ProxyVFTable[3], (void **)&m_pfnCBaseUI_Shutdown);
 		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 4, (void *)ProxyVFTable[4], (void **)&m_pfnCBaseUI_Key_Event);
 		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 6, ProxyVFTable[6], (void**)&m_pfnCBaseUI_Paint);
 	}
 	else
 	{
-//#define CLIENTFACTORY_SIG "\xCC\xA1\x2A\x2A\x2A\x2A\x85\xC0\x74"
-		//DWORD *vft = *(DWORD **)baseuifuncs;
-
-		//DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern((void *)vft[1], 0x200, CLIENTFACTORY_SIG, Sig_Length(CLIENTFACTORY_SIG));
-		//Sig_AddrNotFound(ClientFactory);
-		//gPrivateFuncs.pfnClientFactory = (void *(**)(void))*(DWORD *)(addr + 2);
-
-		PVOID* ProxyVFTable = *(PVOID **)&s_BaseUI;
+		PVOID* ProxyVFTable = *(PVOID **)&s_BaseUIProxy;
 
 		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, ProxyVFTable[1], (void **)&m_pfnCBaseUI_Initialize);
+		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 2, ProxyVFTable[2], (void**)&m_pfnCBaseUI_Start);
 		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, ProxyVFTable[3], (void **)&m_pfnCBaseUI_Shutdown);
 		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 4, ProxyVFTable[4], (void **)&m_pfnCBaseUI_Key_Event);
 		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 6, ProxyVFTable[6], (void**)&m_pfnCBaseUI_Paint);

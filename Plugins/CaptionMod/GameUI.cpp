@@ -21,10 +21,10 @@
 #include "DpiManager.h"
 #include <capstone.h>
 
-hook_t* g_phook_COptionsDialog_ctor = NULL;
-hook_t *g_phook_COptionsSubVideo_ctor = NULL;
-hook_t *g_phook_COptionsSubVideo_ApplyVidSettings = NULL;
-hook_t *g_phook_COptionsSubAudio_ctor = NULL;
+static hook_t* g_phook_COptionsDialog_ctor = NULL;
+static hook_t *g_phook_COptionsSubVideo_ctor = NULL;
+static hook_t *g_phook_COptionsSubVideo_ApplyVidSettings = NULL;
+static hook_t *g_phook_COptionsSubAudio_ctor = NULL;
 
 vgui::Panel** staticPanel = NULL;
 
@@ -653,15 +653,18 @@ void * __fastcall COptionsSubAudio_ctor(vgui::Panel *pthis, int dummy, vgui::Pan
 void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel* parent)
 {
 	auto result = gPrivateFuncs.COptionsDialog_ctor(pthis, dummy, parent);
-	
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && dpimanager()->IsHighDpiSupportEnabled())
+
+#if 0
+	if (dpimanager()->IsHighDpiSupportEnabled())
 	{
 		PVOID* PanelVFTable = *(PVOID**)pthis;
 		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];
 		pfnSetProportional(pthis, 0, true);
 	}
+#endif
 
-	gPrivateFuncs.LoadControlSettings(pthis, 0, "Resource/OptionsDialog.res", "SKIN", NULL);
+	//Load res to make it proportional
+	gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource\\OptionsDialog.res", NULL, NULL);
 
 	return result;
 }
@@ -735,6 +738,8 @@ void GameUI_InstallHooks(void)
 		Sig_FuncNotFound(COptionsDialog_ctor);
 	}
 
+
+
 	if (1)
 	{
 		const char sigs1[] = "#GameUI_Video";
@@ -765,7 +770,7 @@ void GameUI_InstallHooks(void)
 
 				if (address[0] == 0xE8 && instCount <= 8)
 				{
-					gPrivateFuncs.LoadControlSettings = (decltype(gPrivateFuncs.LoadControlSettings))GetCallAddress(address);
+					gPrivateFuncs.GameUI_LoadControlSettings = (decltype(gPrivateFuncs.GameUI_LoadControlSettings))GetCallAddress(address);
 
 					return TRUE;
 				}
@@ -780,7 +785,7 @@ void GameUI_InstallHooks(void)
 
 			}, 0, NULL);
 
-		Sig_FuncNotFound(LoadControlSettings);
+		Sig_FuncNotFound(GameUI_LoadControlSettings);
 	}
 
 	if (1)
@@ -872,7 +877,7 @@ void GameUI_InstallHooks(void)
 
 	DWORD *pVFTable = *(DWORD **)&s_GameUI;
 
-	//g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  1, (void *)pVFTable[1], (void **)&g_pfnCGameUI_Initialize);
+	g_pMetaHookAPI->VFTHook(g_pGameUI, 0,  1, (void *)pVFTable[1], (void **)&g_pfnCGameUI_Initialize);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 2, (void *)pVFTable[2], (void **)&g_pfnCGameUI_Start);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 4, (void *)pVFTable[4], (void **)&g_pfnCGameUI_ActivateGameUI);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 8, (void*)pVFTable[8], (void**)&g_pfnCGameUI_ConnectToServer);

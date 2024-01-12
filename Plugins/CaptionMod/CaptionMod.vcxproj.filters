@@ -51,6 +51,12 @@
     <Filter Include="HLSDK">
       <UniqueIdentifier>{91f2638d-d23f-44d7-b7a5-1b21058ff405}</UniqueIdentifier>
     </Filter>
+    <Filter Include="GameUI">
+      <UniqueIdentifier>{202c3000-f52e-43c1-a1d7-d46c5151a3f2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EngineVGUI2">
+      <UniqueIdentifier>{ef193300-06c2-4211-b454-83b2413a01a6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(SolutionDir)include\SourceSDK\filesystem.cpp">
@@ -186,12 +192,6 @@
       <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="ClientVGUI.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="BaseUI.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="GameUI.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="CvarSlider.cpp">
@@ -440,11 +440,17 @@
     <ClCompile Include="Surface2.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
-    <ClCompile Include="EngineSurfaceHook.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="DpiManager.cpp">
       <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="GameUI.cpp">
+      <Filter>GameUI</Filter>
+    </ClCompile>
+    <ClCompile Include="EngineSurfaceHook.cpp">
+      <Filter>EngineVGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseUI.cpp">
+      <Filter>EngineVGUI2</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1000,20 +1006,20 @@
     <ClInclude Include="$(SolutionDir)\include\vgui_controls\PHandle.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
-    <ClInclude Include="$(SolutionDir)include\VGUI\BaseUI.h">
-      <Filter>VGUI2</Filter>
-    </ClInclude>
     <ClInclude Include="Scheme2.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="Surface2.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
-    <ClInclude Include="EngineSurfaceHook.h">
-      <Filter>Source</Filter>
-    </ClInclude>
     <ClInclude Include="DpiManager.h">
       <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="EngineSurfaceHook.h">
+      <Filter>EngineVGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SolutionDir)include\VGUI\BaseUI.h">
+      <Filter>EngineVGUI2</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
