@@ -1,7 +1,10 @@
 #version 430
 
 #extension GL_EXT_texture_array : require
+
+#ifdef BINDLESS_ENABLED
 #extension GL_ARB_shader_draw_parameters : require
+#endif
 
 #include "common.h"
 
