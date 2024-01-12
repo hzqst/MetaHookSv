@@ -862,8 +862,8 @@ void GameUI_InstallHooks(void)
 			OptionsSubVideo_res_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
 		Sig_VarNotFound(OptionsSubVideo_res_String);
 
-		char pattern[] = "\x6A\x00\x68\x2A\x2A\x2A\x2A";
-		*(DWORD*)(pattern + 3) = (DWORD)OptionsSubVideo_res_String;
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x8B";
+		*(DWORD*)(pattern + 1) = (DWORD)OptionsSubVideo_res_String;
 		auto OptionsSubVideo_res_PushString = g_pMetaHookAPI->SearchPattern(gPrivateFuncs.COptionsSubVideo_ctor, 0x800, pattern, sizeof(pattern) - 1);
 		Sig_VarNotFound(OptionsSubVideo_res_PushString);
 

@@ -109,12 +109,26 @@ PVOID VGUI2_FindPanelInit(PVOID TextBase, ULONG TextSize)
 		auto Panel_Init_Push = (PUCHAR)Search_Pattern_From_Size(TextBase, TextSize, sigs);
 		if (Panel_Init_Push)
 		{
-			g_pMetaHookAPI->DisasmRanges(Panel_Init_Push + Sig_Length(sigs), 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+			Panel_Init_Push += Sig_Length(sigs);
+		}
+		else
+		{
+			const char sigs2[] = "\x6A\x18\x2A\x2A\x2A\x00\x2A\x2A\x2A\x00\x2A\x2A\x2A\x00\x2A\x2A\x2A\x00\x6A\x40";
+			Panel_Init_Push = (PUCHAR)Search_Pattern_From_Size(TextBase, TextSize, sigs2);
+			if (Panel_Init_Push)
+			{
+				Panel_Init_Push += Sig_Length(sigs2);
+			}
+		}
+		
+		if (Panel_Init_Push)
+		{
+			g_pMetaHookAPI->DisasmRanges(Panel_Init_Push, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 				auto pinst = (cs_insn*)inst;
 				auto pPanel_Init = (PVOID*)context;
 
-				if (address[0] == 0xE8 && instCount <= 5)
+				if (address[0] == 0xE8 && instCount <= 15)
 				{
 					(*pPanel_Init) = GetCallAddress(address);
 

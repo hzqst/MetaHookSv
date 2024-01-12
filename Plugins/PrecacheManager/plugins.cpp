@@ -2,7 +2,6 @@
 #include "exportfuncs.h"
 #include "privatehook.h"
 
-
 cl_exportfuncs_t gExportfuncs = { 0 };
 mh_interface_t* g_pInterface = NULL;
 metahook_api_t* g_pMetaHookAPI = NULL;
