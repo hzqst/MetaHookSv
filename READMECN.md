@@ -64,6 +64,8 @@
 
 * 对于低于4554版本的GoldSrc引擎，请使用 `MetaHook_blob.exe` 而非 `MetaHook.exe`。
 
+* 你可以在 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\plugins.lst` 中根据自己需求启用/禁用插件。
+
 * `Build`目录中的`SDL2.dll`文件是用来修复原版SDL使用中文输入法进行游戏时可能发生的内存越界写入导致游戏崩溃的问题。如果你全程都关闭中文输入法的话也可以选择不替换`SDL2.dll`。
 
 * Valve在HL25周年补丁中更新了修复了缓冲区越界问题的SDL2，所以如果你是HL25周年正版就不需要替换SDL2.dll。

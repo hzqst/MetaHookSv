@@ -38,7 +38,7 @@ The binaries or executables of Sven Co-op are not signed with digital signatures
 
 2. Run `scripts\install-to-SvenCoop.bat` (or `scripts\install-to-(WhateverGameYouWant).bat`, depends on which you are going to play)
 
-3. Launch Sven Co-op from either the generated shortcut `MetaHook for SvenCoop.lnk`, or your Steam Game Library, or `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`. (* Run `MetaHook for [GameName].lnk` for games other than Sven Co-op.)
+3. Launch game from either the generated shortcut `MetaHook for SvenCoop.lnk` (* Run `MetaHook for [GameName].lnk` for games other than Sven Co-op.)
 
 * Other games follow the same instruction.
 
@@ -52,15 +52,15 @@ The binaries or executables of Sven Co-op are not signed with digital signatures
 
 3. Go to `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\`, rename `plugin_svencoop.lst` (or `plugin_goldsrc.lst`) to `plugin.lst` (depending on the engine you are going to run)
 
-4. Launch game from Steam Game Library or `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe`
+4. Rename `MetaHook.exe` to `(ModDirectory).exe`, Let's say `svencoop.exe` for Sven Co-op. or `cstrike.exe` for Counter-Strike.
 
-* Launch game with launch parameter `-game (gamename)` if you are going to play other games than Sven Co-op, e.g. `svencoop.exe -game valve` or `svencoop.exe -game cstrike`. Renaming `svencoop.exe` to something like `cstrike.exe` also works.
-
-* The new `svencoop.exe` is renamed from `metahook.exe`. You could run game from "metahook.exe -game svencoop" however it will cause game crash when changing video settings.
+* Use `MetaHook_blob.exe` instead of `MetaHook.exe` if you are on a legacy GoldSrc engine with buildnum < 4554.
 
 * Plugins can be disabled or enabled in `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\plugins.lst`
 
-* The `SDL2.dll` fixes a bug that the IME input handler from original SDL library provided by Valve was causing buffer overflow and game crash when using non-english IME.
+* The SDL2.dll fixes a bug that the IME input handler from original SDL library provided by valve was causing buffer overflow and game crash when using non-english IME. you don't need to copy it if you don't have a non-english IME.
+
+* Valve fixed this issue for SDL2 in HL25th patch, you don't have to replace SDL2 if you are running HL25th engine.
 
 ## Build Requirements
 
@@ -91,6 +91,10 @@ Let's assume that you have all requirements installed correctly.
 * Other games follow the same instruction.
 
 * You should restart Visual Studio IDE to apply changes to debugging profile if Visual Studio IDE was running.
+
+## MetaHook Docs
+
+[Docs](docs/MetaHook.md) [中文文档](docs/MetaHookCN.md)
 
 ## MetaHookSv (V4) new features compare to nagist's old metahook (V2)
 
