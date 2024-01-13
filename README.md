@@ -96,32 +96,6 @@ Let's assume that you have all requirements installed correctly.
 
 [Docs](docs/MetaHook.md) [中文文档](docs/MetaHookCN.md)
 
-## MetaHookSv (V4) new features compare to nagist's old metahook (V2)
-
-1. New and better capstone API to disassemble and analyze engine code, new API to reverse search the function begin.
-
-2. Blocking duplicate plugins (which may introduce infinite-recursive calling) from loading.
-
-3. A transaction will be there at stage `LoadEngine` and `LoadClient`, to prevent `InlineHook`, `VFTHook` and `IATHook` that issued by any plugin from immediately taking effect. Allowing multiple plugins to `SearchPattern` and `InlineHook` same function without confliction.
-
-4. A new launch parameter `-metahook_legacy_v2_api` that gives legacy APIs with wrong behaviours to plugins for backward-compatibility. (* the legacy `g_pMetaHookAPI->GetEngineBase()` will return 0x1D01000 instead of 0x1D00000, thus 0x1D01000 is actually the BaseOfCode instead of BaseOfImage)
-
-5. A new launch parameter `-metahook_check_vfthook` to block bogus `g_pMetaHookAPI->MH_VFTHook` call that the virtual function index was actually out of bound somewhere which might cause random crash or what.
-
-## Load Order
-
-1. MetaHook launcher always loads plugins listed in `\(ModDirectory)\metahook\configs\plugins.lst` in ascending order. Plugin name started with ";" will be ignored.
-
-2. (PluginName)_AVX2.dll will be loaded if exists only when AVX2 instruction set supported.
-
-3. (PluginName)_AVX.dll will be loaded if exists only when AVX instruction set supported and (2) fails.
-
-4. (PluginName)_SSE2.dll will be loaded if exists only when SSE2 instruction set supported and (3) fails
-
-5. (PluginName)_SSE.dll will be loaded if exists only when SSE instruction set supported and (4) fails.
-
-6. (PluginName).dll will be loaded if (2) (3) (4) (5) fails.
-
 ## Plugins
 
 ### CaptionMod
