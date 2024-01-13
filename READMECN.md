@@ -22,7 +22,11 @@
 
 [GitHub Release](https://github.com/hzqst/MetaHookSv/releases)
 
-[因为某些神秘原因导致无法下载的话可以使用加速镜像，往里复制下载地址即可下载](https://ghproxy.com/)
+* 因某些国内线路问题无法下载或下载过慢的话可以百度搜索GitHub加速镜像.随便找一个国内能直接访问的加速镜像站，往里复制从Release页面上复制的下载地址即可加速下载。
+
+* 大多数用户应下载 `MetaHookSv-windows-x86.zip` .
+
+* 对于使用低于4554版本GoldSrc引擎（如3248、3266、3647）的用户，请下载 `MetaHookSv-windows-x86-blob-support.zip`
 
 ## VAC风险?
 
@@ -34,19 +38,21 @@
 
 如果你实在不放心，那么请使用小号进行游戏，毕竟Sven Co-op是免费游戏。
 
-## 一键安装方式
+## 一键安装方式 (推荐)
 
 1. 从 [GitHub Release](https://github.com/hzqst/MetaHookSv/releases) 下载压缩包。(可利用GitHub的国内加速镜像加速下载），然后解压。
 
 2. 运行 `scripts\install-to-SvenCoop.bat`
 
-3. 从解压位置根目录生成的快捷方式 `MetaHook for SvenCoop.lnk` 或 Steam游戏库中  或 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe` 启动Sven Co-op。(*Sven Co-op之外的其他游戏只能通过快捷方式方式启动)
+3. 从生成的快捷方式 `MetaHook for SvenCoop.lnk` 或 Steam游戏库中  或 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe` 启动Sven Co-op。(*Sven Co-op之外的其他游戏只能通过快捷方式方式启动)
 
 * 其他游戏也可以按照此种方式安装，只需要运行其他install-to-批处理即可。
 
 * 请确保已经登录Steam否则 [SteamAppsLocation](toolsrc/README.md) 可能会无法寻找游戏安装目录，导致自动安装失败。
 
-## 手动安装方式
+* 对于Steam游戏库中不存在的游戏（如盗版CS）可以复制一份`scripts\install-to-CustomGame.bat`，将里面的游戏路径修改为你自己的游戏路径，并正确修改Mod目录、Mod名等信息。这样双击你自己修改的这份bat也可以实现自动安装。
+
+## 手动安装方式 (不推荐)
 
 1. 从 [GitHub Release](https://github.com/hzqst/MetaHookSv/releases) 下载压缩包。(可利用GitHub的国内加速镜像加速下载），然后解压。
 
@@ -54,13 +60,13 @@
 
 3. 打开 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop\metahook\configs\` 目录, 将 `plugin_svencoop.lst` (或 `plugin_goldsrc.lst`，取决于你当前使用的游戏引擎是SvEngine还是GoldSrc) 重命名为 `plugins.lst`
 
-4. 从 `\SteamLibrary\steamapps\common\Sven Co-op\svencoop.exe` 启动游戏。
+4. 从将 `MetaHook.exe` 重命名为对应游戏的mod目录名，如`svencoop.exe`、`cstrike.exe`，并从该exe启动游戏。
 
-* 如果要运行Sven Co-op以外的游戏，请自行使用`-game`启动项参数的方式启动，如：`svencoop.exe -game valve`或`svencoop.exe -game cstrike`。或者将 `svencoop.exe` 重命名为对应游戏的mod目录名，如`cstrike.exe`
-
-* `Build`目录中的 `svencoop.exe` 原来叫 `metahook.exe`，它会替换你自带的游戏启动器`svencoop.exe`，请注意备份。当然你也可以选择不替换`svencoop.exe`，而是手动安装并以命令行或启动项`metahook.exe -game svencoop`的方式启动游戏。不过不推荐这么做，因为这么做会导致更改视频模式的时候游戏闪退（可能是游戏自己对进程名有校验）。
+* 对于低于4554版本的GoldSrc引擎，请使用 `MetaHook_blob.exe` 而非 `MetaHook.exe`。
 
 * `Build`目录中的`SDL2.dll`文件是用来修复原版SDL使用中文输入法进行游戏时可能发生的内存越界写入导致游戏崩溃的问题。如果你全程都关闭中文输入法的话也可以选择不替换`SDL2.dll`。
+
+* Valve在HL25周年补丁中更新了修复了缓冲区越界问题的SDL2，所以如果你是HL25周年正版就不需要替换SDL2.dll。
 
 ## 构建需求
 
@@ -76,7 +82,7 @@
 
 1. 执行 `git clone --recursive https://github.com/hzqst/MetaHookSv` 拉取代码到一处**路径不包含空格**的目录中。
 
-2. 运行 `scripts\build-MetaHook.bat`, 等待metahook exe生成完成。如果没有错误发生，生成的EXE应该会出现在`Build`目录下。
+2. 运行 `scripts\build-MetaHook.bat`, 等待`MetaHook.exe`生成完成。如果没有错误发生，生成的EXE应该会出现在`Build`目录下。
 
 3. 运行 `scripts\build-Plugins.bat`, 等待所有插件生成完成。如果没有错误发生，生成的DLL应该会出现在`Build\svencoop\metahook\plugins\`目录下。
 
@@ -92,35 +98,11 @@
 
 * 请确保已经登录Steam否则 [SteamAppsLocation](toolsrc/README.md) 可能会无法寻找游戏安装目录。
 
-## MetaHookSv (V4) 相比 MetaHook (V2) 的新功能
+* 对于Steam游戏库中不存在的游戏（如盗版CS）可以复制一份`scripts\debug-CustomGame.bat`，将里面的游戏路径修改为你自己的游戏路径，并正确修改Mod目录、Mod名等信息。这样双击你自己修改的这份bat也可以实现自动设置调试路径。
 
-1. 提供反汇编 API 用于分析引擎代码，提供反向（往前）搜索函数头部的API。提供更多好用的API。
+## 文档
 
-2. 防止插件重复加载（重复加载会导致插件自调用，引发无限递归）
-
-3. `LoadEngine` 和 `LoadClient` 阶段会对所有 `InlineHook`, `VFTHook` and `IATHook` 请求开启“事务”，直到所有插件的`LoadEngine` 和 `LoadClient`结束才会让hook生效, 这样就可以允许不同插件同时 `SearchPattern` 和 hook 同一个函数，避免了因为前一个插件提前hook修改了引擎代码导致后一个插件搜索特征码失败之类的冲突问题。
-
-4. 新增启动项参数 `-metahook_legacy_v2_api` ，该启动项将提供以前V2版本的错误行为API给使用V2版本接口的插件。
-
-* V2版本的 `g_pMetaHookAPI->GetEngineBase()` 对BLOB加密版本的引擎(如3266)会错误返回 0x1D01000 而非 0x1D00000，然而实际上 0x1D01000 是代码段起始地址而非引擎基址。因此某些依赖V2版本API的插件会依赖错误的引擎基址而硬编码一个错误的偏移（这些插件使用正确偏移-0x1000来达到抵消V2API错误行为的目的，但是这种抵消手法如果遇上返回正确结果的API就会导致算出的最终偏移比正常的大0x1000），该启动项专门用于解决这种情况，正常情况下不需要使用。
-
-5. 新增启动项参数 `-metahook_check_vfthook` ，该启动项将屏蔽任何非法的 `g_pMetaHookAPI->MH_VFTHook` 调用。
-
-* 有些来自插件作者检查不严格而产生的MH_VFTHook调用会对某些超出真实虚表范围的地址进行hook，这可能导致游戏随机崩溃等问题。该启动项专门用于解决这种情况，正常情况下不需要使用。
-
-## 加载顺序
-
-1. MetaHook启动器总是会以从上到下的顺序加载 `\(ModDirectory)\metahook\configs\plugins.lst` 中列出的插件。当插件名前面存在引号";"时该行会被忽略。
-
-2. 当支持AVX2指令集时自动加载(插件名)_AVX2.dll
-
-3. 当支持AVX指令集时且(2)失败时自动加载(PluginName)_AVX.dll
-
-4. 当支持SSE2指令集时且(3)失败时自动加载(PluginName)_SSE2.dll
-
-5. 当支持SSE指令集时且(4)失败时自动加载(PluginName)_SSE.dll
-
-6. 当(2) (3) (4) (5)均失败时自动加载(PluginName).dll
+[中文文档](docs/MetaHookCN.md) [英文文档](docs/MetaHook.md)
 
 ## 插件列表
 

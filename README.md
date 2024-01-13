@@ -22,6 +22,10 @@ Most of plugins are still compatible with vanilla GoldSrc engine. please check e
 
 [GitHub Release](https://github.com/hzqst/MetaHookSv/releases)
 
+* `MetaHookSv-windows-x86.zip` for most users.
+
+* `MetaHookSv-windows-x86-blob-support.zip` for legacy GoldSrc engine with buildnum < 4554.
+
 ## Risk of VAC ?
 
 There is no VAC ban reported yet.

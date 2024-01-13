@@ -224,6 +224,8 @@ typedef struct metahook_api_s
 
 	/*
 		Purpose : Disassemble instructions at given range of address, return result inside callback
+
+		return TRUE from callback to interrupt the disasm loop.
 	*/
 	BOOL (*DisasmRanges)(PVOID DisasmBase, SIZE_T DisasmSize, DisasmCallback callback, int depth, PVOID context);
 
