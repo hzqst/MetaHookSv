@@ -69,12 +69,11 @@ extern IEngineSurface_HL25 *staticSurface_HL25;
 
 extern CreateInterfaceFn* g_pClientFactory;
 
-#if 1
 void __fastcall EngineVGUI2_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, int w, int h)
 {
 	gPrivateFuncs.EngineVGUI2_Panel_Init(pthis, 0, x, y, w, h);
 
-	if (s_LoadingBaseUI)
+	//if (s_LoadingBaseUI)
 	{
 		if (dpimanager()->IsHighDpiSupportEnabled())
 		{
@@ -84,7 +83,6 @@ void __fastcall EngineVGUI2_Panel_Init(vgui::Panel* pthis, int dummy, int x, int
 		}
 	}
 }
-#endif
 
 void CBaseUIProxy::Initialize(CreateInterfaceFn *factories, int count)
 {
@@ -123,22 +121,19 @@ void CBaseUIProxy::Initialize(CreateInterfaceFn *factories, int count)
 
 void CBaseUIProxy::Start(struct cl_enginefuncs_s *engineFuncs, int interfaceVersion)
 {
-	Install_InlineHook(EngineVGUI2_Panel_Init);
-
 	s_LoadingBaseUI = true;
 
 	m_pfnCBaseUI_Start(this, 0, engineFuncs, interfaceVersion);
 
 	s_LoadingBaseUI = false;
-
-	Uninstall_Hook(EngineVGUI2_Panel_Init);
 }
 
 void CBaseUIProxy::Shutdown(void)
 {
 	ClientVGUI_Shutdown();
 
-if (g_iEngineType != ENGINE_GOLDSRC_HL25)
+	//TODO: why???
+	//if (g_iEngineType != ENGINE_GOLDSRC_HL25)
 	GameUI_UninstallHooks();
 
 	//GameUI.dll and vgui2.dll will be unloaded by engine!CBaseUI::Shutdown
@@ -192,34 +187,18 @@ void BaseUI_InstallHook(void)
 	gameuifuncs = (IGameUIFuncs *)fnCreateInterface(VENGINE_GAMEUIFUNCS_VERSION, NULL);
 
 	//Search CBaseUI::Initialize for ClientFactory
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-		PVOID*ProxyVFTable = *(PVOID**)&s_BaseUIProxy;
+	PVOID* ProxyVFTable = *(PVOID**)&s_BaseUIProxy;
 
-		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, ProxyVFTable[1], (void **)&m_pfnCBaseUI_Initialize);
-		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 2, ProxyVFTable[2], (void**)&m_pfnCBaseUI_Start);
-		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, ProxyVFTable[3], (void **)&m_pfnCBaseUI_Shutdown);
-		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 4, ProxyVFTable[4], (void **)&m_pfnCBaseUI_Key_Event);
-		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 6, ProxyVFTable[6], (void**)&m_pfnCBaseUI_Paint);
-	}
-	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		PVOID* ProxyVFTable = *(PVOID**)&s_BaseUIProxy;
+	g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, ProxyVFTable[1], (void**)&m_pfnCBaseUI_Initialize);
+	//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 2, ProxyVFTable[2], (void**)&m_pfnCBaseUI_Start);
+	g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, ProxyVFTable[3], (void**)&m_pfnCBaseUI_Shutdown);
+	//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 4, ProxyVFTable[4], (void **)&m_pfnCBaseUI_Key_Event);
+	//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 6, ProxyVFTable[6], (void**)&m_pfnCBaseUI_Paint);
 
-		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, ProxyVFTable[1], (void **)&m_pfnCBaseUI_Initialize);
-		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 2, ProxyVFTable[2], (void**)&m_pfnCBaseUI_Start);
-		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, ProxyVFTable[3], (void **)&m_pfnCBaseUI_Shutdown);
-		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 4, (void *)ProxyVFTable[4], (void **)&m_pfnCBaseUI_Key_Event);
-		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 6, ProxyVFTable[6], (void**)&m_pfnCBaseUI_Paint);
-	}
-	else
-	{
-		PVOID* ProxyVFTable = *(PVOID **)&s_BaseUIProxy;
+	Install_InlineHook(EngineVGUI2_Panel_Init);
+}
 
-		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, ProxyVFTable[1], (void **)&m_pfnCBaseUI_Initialize);
-		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 2, ProxyVFTable[2], (void**)&m_pfnCBaseUI_Start);
-		g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 3, ProxyVFTable[3], (void **)&m_pfnCBaseUI_Shutdown);
-		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 4, ProxyVFTable[4], (void **)&m_pfnCBaseUI_Key_Event);
-		//g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 6, ProxyVFTable[6], (void**)&m_pfnCBaseUI_Paint);
-	}
+void BaseUI_UninstallHook(void)
+{
+	Uninstall_Hook(EngineVGUI2_Panel_Init);
 }

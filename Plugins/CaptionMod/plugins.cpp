@@ -134,6 +134,7 @@ void IPluginsV4::ExitGame(int iResult)
 {
 	VGUI1_Shutdown();
 
+	BaseUI_UninstallHook();
 	Engine_UninstallHooks();
 }
 

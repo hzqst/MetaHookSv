@@ -29,24 +29,6 @@ void IN_Accumulate(void);
 void CL_CreateMove(float frametime, struct usercmd_s *cmd, int active);
 
 client_textmessage_t *pfnTextMessageGet(const char *pName);
-void Client_FillAddress(void);
-void Client_InstallHooks(void);
-void Client_UninstallHooks(void);
-void SDL2_FillAddress(void);
-void Engine_FillAddress(void);
-void Engine_InstallHooks(void);
-void Engine_UninstallHooks(void);
-void BaseUI_InstallHook(void);
-void GameUI_InstallHooks(void);
-void GameUI_UninstallHooks(void);
-void ClientVGUI_InstallHook(cl_exportfuncs_t* pExportFunc);
-void ClientVGUI_Shutdown(void);
-void VGUI1_InstallHook(void);
-void VGUI1_Shutdown(void);
-void Surface_InstallHooks(void);
-void Surface_UninstallHooks(void);
-void Scheme_InstallHooks(void);
-void KeyValuesSystem_InstallHook(void);
 
 void *NewClientFactory(void);
 

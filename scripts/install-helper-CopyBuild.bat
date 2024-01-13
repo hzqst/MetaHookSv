@@ -30,11 +30,13 @@ if "%LauncherMod%"=="svencoop" (
     if "%GameSDL2_fileVersion%"=="2, 0, 20, 0" (
 
         mkdir "%GameDir%\%LauncherMod%_hidpi\"
+        xcopy "%SolutionDir%Build\svencoop_hidpi" "%GameDir%\%LauncherMod%_hidpi\" /y /e
         xcopy "%SolutionDir%Build\valve_hl25_hidpi" "%GameDir%\%LauncherMod%_hidpi\" /y /e
 
     ) else (
 
         mkdir "%GameDir%\%LauncherMod%_hidpi\"
+        xcopy "%SolutionDir%Build\svencoop_hidpi" "%GameDir%\%LauncherMod%_hidpi\" /y /e
         xcopy "%SolutionDir%Build\valve_hidpi" "%GameDir%\%LauncherMod%_hidpi\" /y /e
 
     )

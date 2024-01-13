@@ -76,9 +76,11 @@ typedef struct
 	PVOID (*VGUIClient001_CreateInterface)(HINTERFACEMODULE hModule);
 
 	//GameUI
+	void(__fastcall* GameUI_Panel_Init)(void* pthis, int dummy, int x, int y, int w, int h);
 	void(__fastcall* GameUI_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
 	void * (__fastcall* QueryBox_ctor)(void* pthis, int dummy, const char* title, const char* queryText, void* parent);
 	void* (__fastcall* CCreateMultiplayerGameDialog_ctor)(void* pthis, int dummy, void* parent);
+	void* (__fastcall* CGameConsoleDialog_ctor)(void* pthis, int dummy);
 	void *(__fastcall*COptionsDialog_ctor)(void *pthis, int dummy, void *parent);
 	void *(__fastcall*COptionsSubVideo_ctor)(void *pthis, int dummy, void *parent);
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings)(void *pthis, int dummy, bool bForceRestart);
@@ -120,3 +122,22 @@ cl_entity_t *EngineGetViewEntity(void);
 bool SCR_IsLoadingVisible(void);
 
 PVOID VGUI2_FindPanelInit(PVOID TextBase, ULONG TextSize);
+void Client_FillAddress(void);
+void Client_InstallHooks(void);
+void Client_UninstallHooks(void);
+void SDL2_FillAddress(void);
+void Engine_FillAddress(void);
+void Engine_InstallHooks(void);
+void Engine_UninstallHooks(void);
+void BaseUI_InstallHook(void);
+void BaseUI_UninstallHook(void);
+void GameUI_InstallHooks(void);
+void GameUI_UninstallHooks(void);
+void ClientVGUI_InstallHook(cl_exportfuncs_t* pExportFunc);
+void ClientVGUI_Shutdown(void);
+void VGUI1_InstallHook(void);
+void VGUI1_Shutdown(void);
+void Surface_InstallHooks(void);
+void Surface_UninstallHooks(void);
+void Scheme_InstallHooks(void);
+void KeyValuesSystem_InstallHook(void);

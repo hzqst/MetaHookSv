@@ -22,6 +22,8 @@
 #include <capstone.h>
 
 //static hook_t* g_phook_QueryBox_ctor = NULL;
+static hook_t* g_phook_GameUI_Panel_Init = NULL;
+static hook_t* g_phook_CGameConsoleDialog_ctor = NULL;
 static hook_t* g_phook_CCreateMultiplayerGameDialog_ctor = NULL;
 static hook_t* g_phook_COptionsDialog_ctor = NULL;
 static hook_t *g_phook_COptionsSubVideo_ctor = NULL;
@@ -33,6 +35,18 @@ vgui::Panel** staticPanel = NULL;
 namespace vgui
 {
 bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryList, int numFactories);
+}
+
+void __fastcall GameUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, int w, int h)
+{
+	gPrivateFuncs.GameUI_Panel_Init(pthis, 0, x, y, w, h);
+
+	if (dpimanager()->IsHighDpiSupportEnabled())
+	{
+		PVOID* PanelVFTable = *(PVOID**)pthis;
+		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];
+		pfnSetProportional(pthis, 0, true);
+	}
 }
 
 IGameUI *g_pGameUI = NULL;
@@ -136,6 +150,7 @@ void CGameUI::ConnectToServer(const char *game, int IP, int port)
 	if(gEngfuncs.GetMaxClients() > 1)
 		return g_pfnCGameUI_ConnectToServer(this, 0, game, IP, port);
 
+	//This just stop GameUI from sending "mp3 stop" on level transition
 	return g_pfnCGameUI_ConnectToServer(this, 0, "valve", IP, port);
 }
 
@@ -672,6 +687,16 @@ void* __fastcall CCreateMultiplayerGameDialog_ctor(vgui::Panel* pthis, int dummy
 	return result;
 }
 
+void* __fastcall CGameConsoleDialog_ctor(vgui::Panel* pthis, int dummy)
+{
+	auto result = gPrivateFuncs.CGameConsoleDialog_ctor(pthis, dummy);
+
+	//Load res to make it proportional
+	gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource\\GameConsoleDialog.res", NULL);
+
+	return result;
+}
+
 #if 0
 void* __fastcall QueryBox_ctor(vgui::Panel* pthis, int dummy, const char* title, const char* queryText, vgui::Panel* parent)
 {
@@ -1039,14 +1064,8 @@ void GameUI_InstallHooks(void)
 		}
 	}
 
-	//TODO the vpanel of staticPanel?
-	/*if (1)
-	{
-		const char sigs1[] = "\x68\x2C\x01\x00\x00\x68\x90\x01\x00\x00\x2A\x2A\x8B\xC8\xA3";
-		auto addr = (PUCHAR)g_pMetaHookAPI->SearchPattern(hGameUI, g_pMetaHookAPI->GetModuleSize(hGameUI), sigs1, sizeof(sigs1) - 1);
-		Sig_AddrNotFound(staticPanel);
-		staticPanel = *(decltype(staticPanel) *)(addr + sizeof(sigs1) - 1);
-	}*/
+	gPrivateFuncs.GameUI_Panel_Init = (decltype(gPrivateFuncs.GameUI_Panel_Init))VGUI2_FindPanelInit(GameUITextBase, GameUITextSize);
+	Sig_FuncNotFound(GameUI_Panel_Init);
 
 	DWORD *pVFTable = *(DWORD **)&s_GameUI;
 
@@ -1057,6 +1076,8 @@ void GameUI_InstallHooks(void)
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 10, (void *)pVFTable[10], (void **)&g_pfnCGameUI_HideGameUI);
 
 	//Install_InlineHook(QueryBox_ctor);
+	Install_InlineHook(GameUI_Panel_Init);
+	Install_InlineHook(CGameConsoleDialog_ctor);
 	Install_InlineHook(CCreateMultiplayerGameDialog_ctor);
 	Install_InlineHook(COptionsDialog_ctor);
 	Install_InlineHook(COptionsSubVideo_ctor);
@@ -1067,6 +1088,8 @@ void GameUI_InstallHooks(void)
 void GameUI_UninstallHooks(void)
 {
 	//Uninstall_Hook(QueryBox_ctor);
+	Uninstall_Hook(GameUI_Panel_Init);
+	Uninstall_Hook(CGameConsoleDialog_ctor);
 	Uninstall_Hook(CCreateMultiplayerGameDialog_ctor);
 	Uninstall_Hook(COptionsDialog_ctor);
 	Uninstall_Hook(COptionsSubVideo_ctor);
