@@ -19,11 +19,26 @@ exit
 :start_install
 
 if not "%GameDir%"=="" (
-    if exist "%GameDir%\" goto start_copy
 
-    echo Error: The GameDir "%GameDir%" is not existing !!!
-    pause
-    exit
+    if not exist "%GameDir%\" (
+        echo Error: The GameDir "%GameDir%" is not existing !!!
+        pause
+        exit
+    )
+
+    if not exist "%GameDir%\%LauncherMod%" (
+        echo Error: The ModDir "%GameDir%\%LauncherMod%" is not existing !!!
+        pause
+        exit
+    )
+
+    if not exist "%GameDir%\%LauncherMod%\liblist.gam" (
+        echo Error: The ModDir "%GameDir%\%LauncherMod%" is not a valid Mod !!!
+        pause
+        exit
+    )
+
+    goto start_copy
 )
 
 for /f "delims=" %%a in ('"%SolutionDir%\tools\SteamAppsLocation" %GameAppId% InstallDir') do set OutputString=%%a
