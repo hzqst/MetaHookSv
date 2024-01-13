@@ -4,35 +4,47 @@
 
 ## Features
 
-### Use Steam language or any other customized language as game language
+### Language Enforcement
 
-check **Command Arguments**
+You can force the engine and VGUI2 to use language settings from Steam or from launch parameters.
 
-### Display subtitles when sound is played
+Check **Luanch Parameters**
 
-### Display subtitles when sentence is played
+### VGUI2-based Subtitle System
 
-### Display subtitles when client receives HudText message
+You can:
 
-### Display subtitles when client receives SendAudio message
+1. Display subtitles when sound is played
 
-### Translate HUDText message into other language dynamically (regex supported)
+2. Display subtitles when sentence is played
+
+3. Display subtitles when client receives HudText message
+
+4. Display subtitles when client receives SendAudio message
+
+The subtitles are defined in `\Sven Co-op\svencoop\captionmod\dictionary.csv`, which can be opened with Microsoft Excel or any other open-sourced CSV editors.
+
+### HUDText Message Translation System
+
+You can translate HUDText message into other language dynamically (regex supported)
 
 There is a example file demostrates how to translate static HUD TextMessage to `schinese` , the file is at  `\Sven Co-op\svencoop_schinese\maps\restriction02_dictionary.csv`.
 
 There is a example file demostrates how to translate dynamic HUD TextMessage to `schinese` using regex, the file is at `\Sven Co-op\svencoop\captionmod\dictionary_schinese.txt` called `#SVENCOOP_PLAYERINFO`.
 
-### Hook original client's old-style HudText and draw it with multi-byte character support.
+### Mutli-byte chars support for legacy VGUI1 and HUD elements
 
-### Hook VGUI1 TextImage's paint procedure and draw it with multi-byte character support.
+1. Hook original client's old-style HudText and draw it with multi-byte character support.
 
-* You can see multi-byte characters rendered correctly on scoreboard.
+2. Hook VGUI1 TextImage's paint procedure and draw it with multi-byte character support.
 
-### Draw HUDMenu with multi-byte character support. (Sven Co-op only)
+* You can see multi-byte characters rendered correctly on VGUI1 scoreboard.
+
+3. Draw HUDMenu with multi-byte character support. (Sven Co-op only)
 
 * You can see multi-byte characters rendered correctly on HudMenu.
 
-### New Source2007 style VGUI2 ChatDialog
+### Source2007 style VGUI2 ChatDialog
 
 Set cvar `cap_newchat` to 1 to enable new chat dialog.
 
@@ -40,11 +52,17 @@ The default chat text color can be customized in `\Sven Co-op\svencoop\captionmo
 
 ![](/img/1.png)
 
+### HiDpi Support
+
+All VGUI2 elements will be proportional (scaling up base on your game resolution)
+
+The HiDpi is enabled by defalut if your system's dpi scaling > 100% and you are running on a non-HL25th engine
+
 ### Compatibility
 
 |        Engine               |      |
 |        ----                 | ---- |
-| GoldSrc_blob   (3266~?)     | √    |
+| GoldSrc_blob   (3248~4554)  | √    |
 | GoldSrc_legacy (4554~6153)  | √    |
 | GoldSrc_new    (8684 ~)     | √    |
 | SvEngine       (8832 ~)     | √    |
@@ -68,8 +86,12 @@ The default chat text color can be customized in `\Sven Co-op\svencoop\captionmo
 
 `cap_lang` : Indicate current game lanuage. Any changes to this cvar acutally do nothing. Provide the capability of getting client's current game language by sending network message "svc_sendcvarvalue" or "svc_sendcvarvalue2" or reading userinfo "cap_lang".
 
-#### Command Arguments
+#### Launch Parameters
 
 `-steamlang` : use Steam language as engine and vgui2 language, ignore game language setting in Steam's game config panel. for Sven Co-op, it always uses Steam language as engine and vgui2 language no matter if -steamlang is added or not.
 
 `-forcelang [language]` : force engine and vgui2 to use [language] as engine and vgui2 language, ignore game language setting in Steam's game config panel.
+
+`-high_dpi` : Enable HiDpi Support
+
+`-no_high_dpi` : Disable HiDpi Support
