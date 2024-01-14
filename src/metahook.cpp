@@ -732,7 +732,12 @@ void MH_LoadDllPaths(const char* szGameDir, const char* szGameFullPath)
 			else
 			{
 				aDllPath = szGameFullPath;
-				aDllPath += "\\";
+
+				if (aDllPath.size() >= 1 && aDllPath[aDllPath.size() - 1] != '\\' && aDllPath[aDllPath.size() - 1] != '/')
+				{
+					aDllPath += "\\";
+				}
+
 				aDllPath += szGameDir;
 				aDllPath += "\\metahook\\dlls\\";
 				aDllPath += stringLine;
@@ -805,7 +810,12 @@ void MH_LoadPlugins(const char *szGameDir, const char* szGameFullPath)
 				continue;
 
 			std::string aPluginPath = szGameFullPath;
-			aPluginPath += "\\";
+
+			if (aPluginPath.size() >= 1 && aPluginPath[aPluginPath.size() - 1] != '\\' && aPluginPath[aPluginPath.size() - 1] != '/')
+			{
+				aPluginPath += "\\";
+			}
+
 			aPluginPath += szGameDir;
 			aPluginPath += "\\metahook\\plugins\\";
 

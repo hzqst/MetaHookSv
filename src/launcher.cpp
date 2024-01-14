@@ -246,13 +246,17 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	registry->Init();
 
-	char szFullPath[MAX_PATH];
-	Sys_GetExecutableName(szFullPath, MAX_PATH);
+	char szFullExePath[MAX_PATH];
+	Sys_GetExecutableName(szFullExePath, MAX_PATH);
 
-	char* pszExeFullName = COM_SkipPath(szFullPath);
+	char* pszExeFullName = COM_SkipPath(szFullExePath);
+
+	char szFullPath[MAX_PATH];
+	strncpy(szFullPath, szFullExePath, pszExeFullName - szFullExePath);
+	szFullPath[pszExeFullName - szFullExePath] = 0;
 
 	char szExeBaseName[MAX_PATH];
-	COM_FileBase(szFullPath, szExeBaseName);
+	COM_FileBase(pszExeFullName, szExeBaseName);
 
 	if (CommandLine()->CheckParm("-game") == NULL)
 	{
