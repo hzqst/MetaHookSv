@@ -480,8 +480,7 @@ void R_DrawParticles(void)
 	glEnable(GL_ALPHA_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	//glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
 	program_state_t LegacySpriteProgramState = 0;
 
@@ -2072,6 +2071,7 @@ void R_RenderView_SvEngine(int viewIdx)
 		//This will switch to final framebuffer (RGBA8)
 		//TODO: Why not using GL_BlitFrameBufferToFrameBufferColorOnly?		
 		R_BlendFinalBuffer(&s_BackBufferFBO, &s_FinalBufferFBO);
+		GL_SetCurrentSceneFBO(NULL);
 
 		if (!(*r_refdef.onlyClientDraws))
 			R_PolyBlend();

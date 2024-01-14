@@ -644,6 +644,9 @@ void R_UseStudioProgram(program_state_t state, studio_program_t* progOutput)
 		if (state & STUDIO_REVERT_NORMAL_ENABLED)
 			defs << "#define REVERT_NORMAL_ENABLED\n";
 
+		if (state & STUDIO_STENCIL_TEXTURE_ENABLED)
+			defs << "#define STENCIL_TEXTURE_ENABLED\n";
+
 		if (glewIsSupported("GL_NV_bindless_texture"))
 			defs << "#define NV_BINDLESS_ENABLED\n";
 
@@ -1076,7 +1079,8 @@ const program_state_mapping_t s_StudioProgramStateName[] = {
 { STUDIO_PACKED_PARALLAXTEXTURE_ENABLED	,"STUDIO_PACKED_PARALLAXTEXTURE_ENABLED"	},
 { STUDIO_PACKED_SPECULARTEXTURE_ENABLED	,"STUDIO_PACKED_SPECULARTEXTURE_ENABLED"	},
 { STUDIO_ANIMATED_TEXTURE_ENABLED		,"STUDIO_ANIMATED_TEXTURE_ENABLED"			},
-{ STUDIO_REVERT_NORMAL_ENABLED			,"STUDIO_REVERT_NORMAL_ENABLED"			},
+{ STUDIO_REVERT_NORMAL_ENABLED			,"STUDIO_REVERT_NORMAL_ENABLED"				},
+{ STUDIO_STENCIL_TEXTURE_ENABLED		,"STUDIO_STENCIL_TEXTURE_ENABLED"			},
 
 { STUDIO_NF_FLATSHADE					,"STUDIO_NF_FLATSHADE"		},
 { STUDIO_NF_CHROME						,"STUDIO_NF_CHROME"			},
@@ -2040,9 +2044,11 @@ void R_StudioDrawVBOMesh_DrawPass(
 			//Texture unit 6 = Stencil texture
 			if (s_BackBufferFBO2.s_hBackBufferStencilView)
 			{
-				glActiveTexture(GL_TEXTURE6);
+				glActiveTexture(GL_TEXTURE0 + STUDIO_RESERVED_TEXTURE_STENCIL);
 				glBindTexture(GL_TEXTURE_2D, s_BackBufferFBO2.s_hBackBufferStencilView);
 				glActiveTexture(GL_TEXTURE0);
+
+				StudioProgramState |= STUDIO_STENCIL_TEXTURE_ENABLED;
 			}
 		}
 	}
@@ -2307,28 +2313,23 @@ void R_StudioDrawVBOMesh_DrawPass(
 		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 	}
 
+	if (StudioProgramState & STUDIO_STENCIL_TEXTURE_ENABLED)
+	{
+		//Texture unit 6 = Stencil texture
+		glActiveTexture(GL_TEXTURE0 + STUDIO_RESERVED_TEXTURE_STENCIL);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+
 	glActiveTexture((*oldtarget));
 
 	//Restore states
 	glDepthMask(GL_TRUE);
 	glDisable(GL_BLEND);
-
 	glEnable(GL_CULL_FACE);
 
 	if (r_draw_opaque)
 	{
 		GL_EndStencil();
-	}
-
-	if (StudioProgramState & STUDIO_NF_CELSHADE_FACE)
-	{
-		//Texture unit 6 = Stencil texture
-		if (s_GBufferFBO.s_hBackBufferStencilView)
-		{
-			glActiveTexture(GL_TEXTURE0 + STUDIO_RESERVED_TEXTURE_STENCIL);
-			glBindTexture(GL_TEXTURE_2D, 0);
-			glActiveTexture(GL_TEXTURE0);
-		}
 	}
 }
 
@@ -2740,7 +2741,7 @@ __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType 
 		if (r_draw_gbuffer)
 			GL_BindFrameBuffer(&s_GBufferFBO);
 		else
-			GL_BindFrameBuffer(&s_BackBufferFBO);
+			GL_BindFrameBuffer(GL_GetCurrentSceneFBO());
 	}
 
 	if ((*currententity)->curstate.renderfx == kRenderFxGlowShell)

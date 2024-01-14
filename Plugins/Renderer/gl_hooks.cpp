@@ -7490,7 +7490,7 @@ void R_UninstallHooksForEngineDLL(void)
 	Uninstall_Hook(triapi_RenderMode);
 	Uninstall_Hook(Draw_MiptexTexture);
 	Uninstall_Hook(BuildGammaTable);
-	Uninstall_Hook(R_CullBox);
+	//Uninstall_Hook(R_CullBox);
 
 	if (gPrivateFuncs.SDL_GL_SetAttribute)
 	{
@@ -7538,7 +7538,7 @@ void R_InstallHooks(void)
 	Install_InlineHook(triapi_RenderMode);
 	Install_InlineHook(Draw_MiptexTexture);
 	Install_InlineHook(BuildGammaTable);
-	Install_InlineHook(R_CullBox);
+	//Install_InlineHook(R_CullBox);
 
 	//OpenGL4.2 was forced by HL25 engine which might ruin the renderer features.
 	/*
