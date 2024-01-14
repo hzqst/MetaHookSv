@@ -696,6 +696,7 @@ void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
 	g_CurrentReflectCache = ReflectCache;
 
 	GL_BindFrameBufferWithTextures(&s_BackBufferFBO, ReflectCache->reflectmap, 0, ReflectCache->depthreflmap, ReflectCache->texwidth, ReflectCache->texheight);
+	GL_SetCurrentSceneFBO(&s_BackBufferFBO);
 
 	vec4_t vecClearColor = { ReflectCache->color.r / 255.0f, ReflectCache->color.g / 255.0f, ReflectCache->color.b / 255.0f, 0 };
 	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_SKY, STENCIL_MASK_ALL);
@@ -750,6 +751,8 @@ void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
 
 	r_draw_reflectview = false;
 	g_CurrentReflectCache = NULL;
+
+	GL_SetCurrentSceneFBO(NULL);
 }
 
 void R_RenderWaterPass(void)
@@ -996,7 +999,7 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 					//s_BackBufferFBO is in gamma space
 					GL_BlitFrameBufferToFrameBufferDepthStencil(&s_BackBufferFBO, &s_BackBufferFBO2);
 					//Convert back to linear space
-					R_GammaUncorrectionEx(&s_BackBufferFBO, &s_BackBufferFBO2);
+					R_GammaUncorrection(&s_BackBufferFBO, &s_BackBufferFBO2);
 				}
 				else
 				{

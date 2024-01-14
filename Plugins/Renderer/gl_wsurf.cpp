@@ -4294,6 +4294,10 @@ void R_SetupDLightUBO(void)
 	}
 }
 
+/*
+	Purpose : Setup texture states and SceneUBO for DrawWorld
+*/
+
 void R_PrepareDrawWorld(void)
 {
 	r_wsurf.bDiffuseTexture = true;
@@ -4327,8 +4331,6 @@ void R_PrepareDrawWorld(void)
 		glPopMatrix();
 		glMatrixMode(GL_MODELVIEW);
 	}
-
-	//Setup Scene UBO
 
 	R_SetupSceneUBO();
 	R_SetupDLightUBO();
@@ -4372,6 +4374,7 @@ void R_DrawWorld(void)
 
 	R_DrawSkyBox();
 
+	//Skip world meshes if we are drawing reflect texture for skybox.
 	if (r_draw_reflectview && g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_SKYBOX)
 	{
 		

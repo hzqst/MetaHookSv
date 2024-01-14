@@ -193,6 +193,7 @@ int glheight = 0;
 FBO_Container_t s_FinalBufferFBO = { 0 };
 FBO_Container_t s_BackBufferFBO = { 0 };
 FBO_Container_t s_BackBufferFBO2 = { 0 };
+FBO_Container_t s_BackBufferFBO3 = { 0 };
 FBO_Container_t s_GBufferFBO = { 0 };
 FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS] = { 0 };
 FBO_Container_t s_LuminFBO[LUMIN_BUFFERS] = { 0 };
@@ -205,7 +206,8 @@ FBO_Container_t s_DepthLinearFBO = { 0 };
 FBO_Container_t s_HBAOCalcFBO = { 0 };
 FBO_Container_t s_ShadowFBO = { 0 };
 
-FBO_Container_t *g_CurrentFBO = NULL;
+FBO_Container_t* g_CurrentSceneFBO = NULL;
+FBO_Container_t *g_CurrentRenderingFBO = NULL;
 
 bool bEnforceStretchAspect = false;
 bool bUseBindless = true;
@@ -303,12 +305,7 @@ cvar_t *r_additive_shift = NULL;
 
 bool R_IsRenderingGBuffer()
 {
-	return GL_GetCurrentFrameBuffer() == &s_GBufferFBO;
-}
-
-bool R_IsRenderingBackBuffer()
-{
-	return GL_GetCurrentFrameBuffer() == &s_BackBufferFBO;
+	return GL_GetCurrentRenderingFBO() == &s_GBufferFBO;
 }
 
 qboolean Host_IsSinglePlayerGame()
@@ -471,7 +468,6 @@ const color24 gTracerColors[] =
 
 void R_DrawParticles(void)
 {
-	//Don't render particles!!!
 	if (CL_IsDevOverviewMode())
 		return;
 
@@ -522,7 +518,11 @@ void R_DrawParticles(void)
 
 	R_UseLegacySpriteProgram(LegacySpriteProgramState, NULL);
 
-	glBegin(GL_TRIANGLES);
+#if 1
+	gEngfuncs.pTriAPI->Begin(TRI_TRIANGLES);
+#else
+	//glBegin(GL_TRIANGLES);
+#endif
 
 	VectorScale(vup, 1.5, up);
 	VectorScale(vright, 1.5, right);
@@ -538,7 +538,7 @@ void R_DrawParticles(void)
 	{
 		if (p->type != pt_blob)
 		{
-			// hack a scale up to keep particles from disapearing
+			// hack a scale up to keep particles from disappearing
 			scale = (p->org[0] - r_origin[0])*vpn[0] + (p->org[1] - r_origin[1])*vpn[1]
 				+ (p->org[2] - r_origin[2])*vpn[2];
 			if (scale < 20)
@@ -554,6 +554,16 @@ void R_DrawParticles(void)
 			rgba[2] = pb[0];
 			rgba[3] = 255;
 
+#if 1
+
+			gEngfuncs.pTriAPI->Color4ub(rgba[0], rgba[1], rgba[2], rgba[3]);
+			gEngfuncs.pTriAPI->TexCoord2f(0, 0);
+			gEngfuncs.pTriAPI->Vertex3fv(p->org);
+			gEngfuncs.pTriAPI->TexCoord2f(1, 0);
+			gEngfuncs.pTriAPI->Vertex3f(p->org[0] + up[0] * scale, p->org[1] + up[1] * scale, p->org[2] + up[2] * scale);
+			gEngfuncs.pTriAPI->TexCoord2f(0, 1);
+			gEngfuncs.pTriAPI->Vertex3f(p->org[0] + right[0] * scale, p->org[1] + right[1] * scale, p->org[2] + right[2] * scale);
+#else
 			glColor3ubv(rgba);
 			glTexCoord2f(0, 0);
 			glVertex3fv(p->org);
@@ -561,6 +571,7 @@ void R_DrawParticles(void)
 			glVertex3f(p->org[0] + up[0] * scale, p->org[1] + up[1] * scale, p->org[2] + up[2] * scale);
 			glTexCoord2f(0, 1);
 			glVertex3f(p->org[0] + right[0] * scale, p->org[1] + right[1] * scale, p->org[2] + right[2] * scale);
+#endif
 		}
 
 		if (p->type != pt_clientcustom)
@@ -655,7 +666,11 @@ void R_DrawParticles(void)
 		}
 	}
 
-	glEnd();
+#if 1
+	gEngfuncs.pTriAPI->End();
+#else
+	//glEnd();
+#endif
 
 	gPrivateFuncs.R_TracerDraw();
 	gPrivateFuncs.R_BeamDrawList();
@@ -664,10 +679,12 @@ void R_DrawParticles(void)
 	glDisable(GL_ALPHA_TEST);
 }
 
+#if 0
 void triapi_Color4f(float x, float y, float z, float w)
 {
 	gPrivateFuncs.triapi_Color4f(x, y, z, w);
 }
+#endif
 
 void triapi_RenderMode(int mode)
 {
@@ -887,7 +904,8 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 		glColorMask(1, 1, 1, 1);
 
-		R_BlendOITBuffer();
+		GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
+		R_BlendOITBuffer(&s_BackBufferFBO2, &s_BackBufferFBO);
 
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 	}
@@ -1353,20 +1371,20 @@ void R_SetupPerspective(float fovx, float fovy, float zNear, float zFar)
 	VectorNormalize(r_frustum_vec[3]);
 }
 
-void GL_GenerateFrameBuffers(void)
+void GL_FreeFrameBuffers(void)
 {
 	GL_FreeFBO(&s_FinalBufferFBO);
 	GL_FreeFBO(&s_BackBufferFBO);
 	GL_FreeFBO(&s_BackBufferFBO2);
 	GL_FreeFBO(&s_GBufferFBO);
-	for(int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
+	for (int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
 		GL_FreeFBO(&s_DownSampleFBO[i]);
-	for(int i = 0; i < LUMIN_BUFFERS; ++i)
+	for (int i = 0; i < LUMIN_BUFFERS; ++i)
 		GL_FreeFBO(&s_LuminFBO[i]);
-	for(int i = 0; i < LUMIN1x1_BUFFERS; ++i)
+	for (int i = 0; i < LUMIN1x1_BUFFERS; ++i)
 		GL_FreeFBO(&s_Lumin1x1FBO[i]);
 	GL_FreeFBO(&s_BrightPassFBO);
-	for(int i = 0; i < BLUR_BUFFERS; ++i)
+	for (int i = 0; i < BLUR_BUFFERS; ++i)
 	{
 		GL_FreeFBO(&s_BlurPassFBO[i][0]);
 		GL_FreeFBO(&s_BlurPassFBO[i][1]);
@@ -1376,9 +1394,11 @@ void GL_GenerateFrameBuffers(void)
 	GL_FreeFBO(&s_DepthLinearFBO);
 	GL_FreeFBO(&s_HBAOCalcFBO);
 	GL_FreeFBO(&s_ShadowFBO);
-	
-	//Probably useless
-	//glEnable(GL_TEXTURE_2D);
+}
+
+void GL_GenerateFrameBuffers(void)
+{
+	GL_FreeFrameBuffers();
 
 	s_FinalBufferFBO.iWidth = glwidth;
 	s_FinalBufferFBO.iHeight = glheight;
@@ -1414,6 +1434,18 @@ void GL_GenerateFrameBuffers(void)
 	{
 		GL_FreeFBO(&s_BackBufferFBO2);
 		g_pMetaHookAPI->SysError("Failed to initialize BackBufferFBO2!\n");
+	}
+
+	s_BackBufferFBO3.iWidth = glwidth;
+	s_BackBufferFBO3.iHeight = glheight;
+	GL_GenFrameBuffer(&s_BackBufferFBO3);
+	GL_FrameBufferColorTexture(&s_BackBufferFBO3, GL_RGBA16F);
+	GL_FrameBufferDepthTexture(&s_BackBufferFBO3, GL_DEPTH24_STENCIL8);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		GL_FreeFBO(&s_BackBufferFBO3);
+		g_pMetaHookAPI->SysError("Failed to initialize BackBufferFBO3!\n");
 	}
 
 	s_GBufferFBO.iWidth = glwidth;
@@ -1674,32 +1706,17 @@ void GL_Shutdown(void)
 {
 	GL_FreeShaders();
 	GL_FreeProfiles();
-
-	GL_FreeFBO(&s_FinalBufferFBO);
-	GL_FreeFBO(&s_BackBufferFBO);
-	GL_FreeFBO(&s_BackBufferFBO2);
-	GL_FreeFBO(&s_GBufferFBO);
-	for (int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
-		GL_FreeFBO(&s_DownSampleFBO[i]);
-	for (int i = 0; i < LUMIN_BUFFERS; ++i)
-		GL_FreeFBO(&s_LuminFBO[i]);
-	for (int i = 0; i < LUMIN1x1_BUFFERS; ++i)
-		GL_FreeFBO(&s_Lumin1x1FBO[i]);
-	for (int i = 0; i < BLUR_BUFFERS; ++i)
-	{
-		GL_FreeFBO(&s_BlurPassFBO[i][0]);
-		GL_FreeFBO(&s_BlurPassFBO[i][1]);
-	}
-	GL_FreeFBO(&s_ToneMapFBO);
-	GL_FreeFBO(&s_DepthLinearFBO);
-	GL_FreeFBO(&s_HBAOCalcFBO);
-	GL_FreeFBO(&s_ShadowFBO);
+	GL_FreeFrameBuffers();
 }
+
+/*
+	Purpose : Switch to s_FinalBufferFBO and clear it
+*/
 
 void GL_FlushFinalBuffer()
 {
 	GL_BindFrameBuffer(&s_FinalBufferFBO);
-
+	
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 }
@@ -1723,7 +1740,7 @@ void R_RenderStartView()
 }
 
 /*
-	Called only once per frame, before running any render pass
+	Purpose: Called once per frame, before running any render pass, but after physics and networking
 */
 
 void R_RenderStartFrame()
@@ -1760,7 +1777,7 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 	glwidth = (*width);
 	glheight = (*height);
 
-	//No V_RenderView calls when level changes so don't clear final buffer
+	//No V_RenderView calls when level changes so don't GL_FlushFinalBuffer, this replicates vanilla engine's behavior
 	if (SCR_IsLoadingVisible())
 	{
 
@@ -1777,8 +1794,16 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 	*c_brush_polys = 0;
 }
 
+/*
+	Purpose: 
+		Called on beginning of RenderView
+		This will switch from final framebuffer (RGBA8) to back framebuffer (RGBAF16)
+*/
+
 void R_PreRenderView()
 {
+	//Reset statistics
+
 	r_wsurf_drawcall = 0;
 	r_wsurf_polys = 0;
 	r_studio_drawcall = 0;
@@ -1786,10 +1811,8 @@ void R_PreRenderView()
 	r_sprite_drawcall = 0;
 	r_sprite_polys = 0;
 
-	//Capture previous fog settings
-
+	//Capture OpenGL fog settings committed by client dll or engine dll.
 	r_fog_mode = 0;
-	r_draw_gammablend = false;
 
 	if (glIsEnabled(GL_FOG))
 	{
@@ -1817,14 +1840,36 @@ void R_PreRenderView()
 		}
 	}
 
+	//Always force GammaBlend to be disabled when rendering opaques.
+	r_draw_gammablend = false;
+
+	//Currently unused
 	R_RenderStartView();
 
 	R_RenderShadowMap();
 
 	R_RenderWaterPass();
 
-	//Restore BackBufferFBO states
+	//Restore s_BackBufferFBO states because it might be corrupted by R_RenderWaterPass.
 	GL_BindFrameBufferWithTextures(&s_BackBufferFBO, s_BackBufferFBO.s_hBackBufferTex, 0, s_BackBufferFBO.s_hBackBufferDepthTex, glwidth, glheight);
+	GL_SetCurrentSceneFBO(&s_BackBufferFBO);
+
+	vec4_t vecClearColor = {0};
+
+	if (CL_IsDevOverviewMode())
+	{
+		R_ParseCvarAsColor3(dev_overview_color, vecClearColor);
+	}
+	else
+	{
+		R_ParseCvarAsColor3(gl_clearcolor, vecClearColor);
+	}
+
+	//TODO: Gamma correction for the clear color ?
+	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_WORLD, STENCIL_MASK_ALL);
+
+	glDepthFunc(GL_LEQUAL);
+	glDepthRange(0, 1);
 }
 
 void R_PostRenderView()
@@ -1833,30 +1878,50 @@ void R_PostRenderView()
 	{
 		if (r_draw_gammablend)
 		{
-			R_GammaUncorrection();
+			R_GammaUncorrection(GL_GetCurrentSceneFBO(), &s_BackBufferFBO2);
 		}
-		R_HDR();
+		else
+		{
+			GL_BlitFrameBufferToFrameBufferColorOnly(GL_GetCurrentSceneFBO(), &s_BackBufferFBO2);
+		}
+
+		R_HDR(&s_BackBufferFBO2, &s_BackBufferFBO);
+
+		if (GL_GetCurrentSceneFBO() != &s_BackBufferFBO)
+		{
+			GL_BlitFrameBufferToFrameBufferDepthStencil(GL_GetCurrentSceneFBO(), &s_BackBufferFBO);
+		}
 	}
 	else
 	{
-		if (!r_draw_gammablend)
+		if (r_draw_gammablend)
 		{
-			R_GammaCorrection();
+			GL_BlitFrameBufferToFrameBufferColorDepthStencil(GL_GetCurrentSceneFBO(), &s_BackBufferFBO);
+		}
+		else
+		{
+			GL_BlitFrameBufferToFrameBufferColorOnly(GL_GetCurrentSceneFBO(), &s_BackBufferFBO2);
+			R_GammaCorrection(&s_BackBufferFBO2, &s_BackBufferFBO);
 		}
 	}
 
 	r_draw_gammablend = false;
+	GL_BindFrameBuffer(&s_BackBufferFBO);
+	GL_SetCurrentSceneFBO(&s_BackBufferFBO);
 
 	if (R_IsUnderWaterEffectEnabled())
 	{
-		R_UnderWaterEffect();
+		GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
+		R_UnderWaterEffect(&s_BackBufferFBO2, &s_BackBufferFBO);
 	}
 
 	if (R_IsFXAAEnabled())
 	{
-		R_FXAA();
+		GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
+		R_FXAA(&s_BackBufferFBO2, &s_BackBufferFBO);
 	}
 
+	//Restore OpenGL states to default
 	GL_DisableMultitexture();
 	glEnable(GL_TEXTURE_2D);
 	glColor4f(1, 1, 1, 1);
@@ -1941,18 +2006,28 @@ bool R_IsRenderingPortal(void)
 	return g_bRenderingPortals_SCClient && (*g_bRenderingPortals_SCClient) == 1;
 }
 
+void R_ClearPortalClipPlanes(void)
+{
+	for (int i = 0; i < 6; ++i)
+	{
+		g_bPortalClipPlaneEnabled[i] = false;
+	}
+	memset(g_PortalClipPlane, 0, sizeof(g_PortalClipPlane));
+}
+
 void R_RenderView_SvEngine(int viewIdx)
 {
-	//Clear texture id cache since SC client dll bind texture id 0 but leave texture id cache non-zero
-	*currenttexture = -1;
+	//Clear texture id cache since SC client dll bind texture id 0 by glBindTexture directly and leave texture id caching system corrupted.
+	(*currenttexture) = -1;
 
-	//Clear final buffer again since SC client dll may draw some portal views on it before the first pass.
+	//Clear s_FinalBuffer again since SC client dll may draw some portal views on it before the very first pass.
 	if (R_IsRenderingPortal())
 	{
 		GL_FlushFinalBuffer();
 	}
 	else
 	{
+		//Clear s_FinalBuffer for the very first pass
 		if (viewIdx == 0)
 		{
 			GL_FlushFinalBuffer();
@@ -1975,26 +2050,7 @@ void R_RenderView_SvEngine(int viewIdx)
 			g_pMetaHookAPI->SysError("R_RenderView: NULL worldmodel");
 		}
 
-		//This will switch from final framebuffer (RGBA8) to back framebuffer (RGBAF16)
 		R_PreRenderView();
-
-		//back framebuffer should be cleared before uses.
-		float clearColor[3];
-
-		if (CL_IsDevOverviewMode())
-		{
-			R_ParseCvarAsColor3(dev_overview_color, clearColor);
-		}
-		else
-		{
-			R_ParseCvarAsColor3(gl_clearcolor, clearColor);
-		}
-
-		vec4_t vecClearColor = { clearColor[0], clearColor[1], clearColor[2], 0 };
-		GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_WORLD, STENCIL_MASK_ALL);
-
-		glDepthFunc(GL_LEQUAL);
-		glDepthRange(0, 1);
 
 		if (!(*r_refdef.onlyClientDraws))
 		{
@@ -2011,11 +2067,11 @@ void R_RenderView_SvEngine(int viewIdx)
 			R_DrawViewModel();
 		}
 
-		//Post processing
 		R_PostRenderView();
 
 		//This will switch to final framebuffer (RGBA8)
-		R_BlendFinalBuffer();
+		//TODO: Why not using GL_BlitFrameBufferToFrameBufferColorOnly?		
+		R_BlendFinalBuffer(&s_BackBufferFBO, &s_FinalBufferFBO);
 
 		if (!(*r_refdef.onlyClientDraws))
 			R_PolyBlend();
@@ -2027,20 +2083,13 @@ void R_RenderView_SvEngine(int viewIdx)
 		GL_BindFrameBuffer(&s_FinalBufferFBO);
 	}
 
-	*c_alias_polys += r_studio_polys;
-	*c_brush_polys += r_wsurf_polys;
+	(*c_alias_polys) += r_studio_polys;
+	(*c_brush_polys) += r_wsurf_polys;
 	
 	//Clear texture id cache since SC client dll bind texture id 0 but leave texture id cache non-zero
-	*currenttexture = -1;
+	(*currenttexture) = -1;
 
-	//Clear portal clipplanes
-
-	for (int i = 0; i < 6; ++i)
-	{
-		g_bPortalClipPlaneEnabled[i] = false;
-	}
-
-	memset(g_PortalClipPlane, 0, sizeof(g_PortalClipPlane));
+	R_ClearPortalClipPlanes();
 
 	if (r_speeds->value)
 	{
@@ -2051,7 +2100,7 @@ void R_RenderView_SvEngine(int viewIdx)
 
 		auto time2 = gEngfuncs.GetAbsoluteTime();
 
-		gEngfuncs.Con_Printf("%3ifps in %3i ms at pass %d, with %d brushpolys, %d brushdraw, %d studiopolys, %d studiodraw, %d spritepolys, %d spritedraw\n",
+		gEngfuncs.Con_Printf("%3ifps in %3i ms at viewpass #%d, with:\n  %d brushpolys,%d brushdraw.\n  %d studiopolys, %d studiodraw.\n  %d spritepolys, %d spritedraw.\n",
 			(int)(framerate + 0.5), (int)((time2 - time1) * 1000),
 			r_renderview_pass,
 			r_wsurf_polys, r_wsurf_drawcall,
@@ -3372,23 +3421,24 @@ void R_EndRenderOpaque(void)
 
 	glDisable(GL_ALPHA_TEST);
 
-	//Transfer everything from GBuffer into BackBuffer
+	//Transfer everything from GBuffer into SceneFBO
 	if (R_IsRenderingGBuffer())
 	{
-		R_EndRenderGBuffer();
+		R_EndRenderGBuffer(GL_GetCurrentSceneFBO());
 	}
 	else if (R_IsAmbientOcclusionEnabled())
 	{
 		GL_BeginFullScreenQuad(false);
-		R_LinearizeDepth(&s_BackBufferFBO);
-		R_AmbientOcclusion();
+		R_LinearizeDepth(GL_GetCurrentSceneFBO(), &s_DepthLinearFBO);
+		R_AmbientOcclusion(&s_DepthLinearFBO, GL_GetCurrentSceneFBO());
 		GL_EndFullScreenQuad();
 	}
 
 	if (R_IsGammaBlendEnabled())
 	{
-		R_GammaCorrection();
-
+		R_GammaCorrection(GL_GetCurrentSceneFBO(), &s_BackBufferFBO3);
+		GL_BlitFrameBufferToFrameBufferDepthStencil(GL_GetCurrentSceneFBO(), &s_BackBufferFBO3);
+		GL_SetCurrentSceneFBO(&s_BackBufferFBO3);
 		r_draw_gammablend = true;
 	}
 }
@@ -3423,7 +3473,7 @@ void ClientDLL_DrawNormalTriangles(void)
 	glAlphaFunc(GL_NOTEQUAL, 0);
 
 	//Clear texture id cache since SC client dll bind texture id 0 but leave texture id cache non-zero
-	*currenttexture = -1;
+	(*currenttexture) = -1;
 
 	//Restore current framebuffer just in case that Allow SC client dll changes it
 	GL_PopFrameBuffer();

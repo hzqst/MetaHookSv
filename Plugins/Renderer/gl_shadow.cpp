@@ -301,6 +301,11 @@ bool R_ShouldCastShadow(cl_entity_t *ent)
 	return false;
 }
 
+/*
+
+	Purpose : Rendering textures for shadow mapping
+
+*/
 void R_RenderShadowScene(void)
 {
 	GL_BeginProfile(&Profile_RenderShadowScene);
@@ -351,7 +356,6 @@ void R_RenderShadowScene(void)
 		r_draw_shadowscene = true;
 
 		GL_BindFrameBuffer(&s_ShadowFBO);
-		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 		glDisable(GL_BLEND);
 		glDisable(GL_ALPHA_TEST);
@@ -367,6 +371,7 @@ void R_RenderShadowScene(void)
 
 			glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, r_shadow_texture.color_array_as_depth, 0, i);
 			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, r_shadow_texture.depth_stencil, 0);
+			glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
@@ -546,7 +551,13 @@ void R_RenderShadowDynamicLights(void)
 	}
 }
 
-void R_RenderShadowMap(void)
+/*
+
+	Purpose : Clear shadow related vars which might be accessed later by deferred lighting pass.
+
+*/
+
+void R_RenderShadowMap_Start(void)
 {
 	shadow_numvisedicts[0] = 0;
 	shadow_numvisedicts[1] = 0;
@@ -556,6 +567,17 @@ void R_RenderShadowMap(void)
 	{
 		cl_dlight_shadow_textures[i].ready = false;
 	}
+}
+
+/*
+
+	Purpose : Rendering textures for shadow mapping
+
+*/
+
+void R_RenderShadowMap(void)
+{
+	R_RenderShadowMap_Start();
 
 	if (!r_shadow->value)
 		return;

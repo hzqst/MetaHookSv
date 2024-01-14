@@ -25,14 +25,24 @@ GLint save_readframebuffer[MAX_SAVESTACK] = { 0 };
 GLint save_drawframebuffer[MAX_SAVESTACK] = { 0 };
 int save_framebuffer_stack = 0;
 
-FBO_Container_t* GL_GetCurrentFrameBuffer()
+void GL_SetCurrentSceneFBO(FBO_Container_t* src)
 {
-	return g_CurrentFBO;
+	g_CurrentSceneFBO = src;
+}
+
+FBO_Container_t* GL_GetCurrentSceneFBO()
+{
+	return g_CurrentSceneFBO;
+}
+
+FBO_Container_t* GL_GetCurrentRenderingFBO()
+{
+	return g_CurrentRenderingFBO;
 }
 
 void GL_BindFrameBuffer(FBO_Container_t *fbo)
 {
-	g_CurrentFBO = fbo;
+	g_CurrentRenderingFBO = fbo;
 
 	if (fbo)
 	{

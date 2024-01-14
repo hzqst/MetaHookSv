@@ -327,6 +327,10 @@ void R_DrawHUDQuad_Texture(int tex, int w, int h)
 	R_DrawHUDQuad(w, h);
 }
 
+/*
+	Purpose: Blit src FBO to screen, the current rendering FBO will be undefined, you must bind correct FBO again after this
+*/
+
 void GL_BlitFrameFufferToScreen(FBO_Container_t *src)
 {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -338,6 +342,9 @@ void GL_BlitFrameFufferToScreen(FBO_Container_t *src)
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, glwidth, glheight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
 
+/*
+	Purpose: Blit color of src FBO to dst, the current rendering FBO will be undefined, you must bind correct FBO again after this
+*/
 void GL_BlitFrameBufferToFrameBufferColorOnly(FBO_Container_t *src, FBO_Container_t *dst)
 {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
@@ -346,6 +353,9 @@ void GL_BlitFrameBufferToFrameBufferColorOnly(FBO_Container_t *src, FBO_Containe
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
 
+/*
+	Purpose: Blit color and depth of src FBO to dst, the current rendering FBO will be undefined, you must bind correct FBO again after this
+*/
 void GL_BlitFrameBufferToFrameBufferColorDepth(FBO_Container_t *src, FBO_Container_t *dst)
 {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
@@ -354,6 +364,9 @@ void GL_BlitFrameBufferToFrameBufferColorDepth(FBO_Container_t *src, FBO_Contain
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 }
 
+/*
+	Purpose: Blit color, depth and stencil of src FBO to dst, the current rendering FBO will be undefined, you must bind correct FBO again after this
+*/
 void GL_BlitFrameBufferToFrameBufferColorDepthStencil(FBO_Container_t* src, FBO_Container_t* dst)
 {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
@@ -362,6 +375,9 @@ void GL_BlitFrameBufferToFrameBufferColorDepthStencil(FBO_Container_t* src, FBO_
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 }
 
+/*
+	Purpose: Blit depth of src FBO to dst, the current rendering FBO will be undefined, you must bind correct FBO again after this
+*/
 void GL_BlitFrameBufferToFrameBufferDepthOnly(FBO_Container_t* src, FBO_Container_t* dst)
 {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
@@ -370,6 +386,9 @@ void GL_BlitFrameBufferToFrameBufferDepthOnly(FBO_Container_t* src, FBO_Containe
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 }
 
+/*
+	Purpose: Blit stencil of src FBO to dst, the current rendering FBO will be undefined, you must bind correct FBO again after this
+*/
 void GL_BlitFrameBufferToFrameBufferStencilOnly(FBO_Container_t* src, FBO_Container_t* dst)
 {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
@@ -378,6 +397,9 @@ void GL_BlitFrameBufferToFrameBufferStencilOnly(FBO_Container_t* src, FBO_Contai
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 }
 
+/*
+	Purpose: Blit depth and stencil of src FBO to dst, the current rendering FBO will be undefined, you must bind correct FBO again after this
+*/
 void GL_BlitFrameBufferToFrameBufferDepthStencil(FBO_Container_t* src, FBO_Container_t* dst)
 {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
@@ -386,9 +408,12 @@ void GL_BlitFrameBufferToFrameBufferDepthStencil(FBO_Container_t* src, FBO_Conta
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 }
 
+/*
+	Purpose: Do downsample from src FBO to dst, the current rendering FBO is set to dst
+*/
 void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2)
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	GL_BindFrameBuffer(dst);
 
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -412,7 +437,7 @@ void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2
 
 void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int type)
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	GL_BindFrameBuffer(dst);
 
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -442,7 +467,7 @@ void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int type)
 
 void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *ada, double frametime)
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	GL_BindFrameBuffer(dst);
 
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -465,7 +490,7 @@ void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container
 
 void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *lum)
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	GL_BindFrameBuffer(dst);
 
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -489,7 +514,7 @@ void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *l
 
 void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	GL_BindFrameBuffer(dst);
 
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -514,7 +539,7 @@ void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
 
 void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container_t *blur3, FBO_Container_t *dst)
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	GL_BindFrameBuffer(dst);
 
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -540,7 +565,7 @@ void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container
 
 void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *blur, FBO_Container_t *lum)
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, dst->s_hBackBufferFBO);
+	GL_BindFrameBuffer(dst);
 
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -590,7 +615,7 @@ bool R_IsHDREnabled(void)
 	return true;
 }
 
-void R_HDR(void)
+void R_HDR(FBO_Container_t* src, FBO_Container_t* dst)
 {
 	GL_BeginProfile(&Profile_DoHDR);
 
@@ -601,8 +626,7 @@ void R_HDR(void)
 	glDisable(GL_BLEND);
 	glColor4f(1, 1, 1, 1);
 
-	//Downsample backbuffer
-	R_DownSample(&s_BackBufferFBO, &s_DownSampleFBO[0], false);//(1->1/4)
+	R_DownSample(src, &s_DownSampleFBO[0], false);//(1->1/4)
 	R_DownSample(&s_DownSampleFBO[0], &s_DownSampleFBO[1], false);//(1/4)->(1/16)
 
 	//Log Luminance DownSample from .. (RGB16F to R32F)
@@ -636,13 +660,13 @@ void R_HDR(void)
 	R_BrightAccum(&s_BlurPassFBO[0][1], &s_BlurPassFBO[1][1], &s_BlurPassFBO[2][1], &s_BrightAccumFBO);
 
 	//Tone mapping
-	R_ToneMapping(&s_BackBufferFBO, &s_ToneMapFBO, &s_BrightAccumFBO, &s_Lumin1x1FBO[last_luminance]);
+	R_ToneMapping(src, &s_ToneMapFBO, &s_BrightAccumFBO, &s_Lumin1x1FBO[last_luminance]);
 
 	GL_UseProgram(0);
 
 	GL_EndFullScreenQuad();
 
-	GL_BlitFrameBufferToFrameBufferColorOnly(&s_ToneMapFBO, &s_BackBufferFBO);
+	GL_BlitFrameBufferToFrameBufferColorOnly(&s_ToneMapFBO, dst);
 
 	GL_EndProfile(&Profile_DoHDR);
 }
@@ -664,14 +688,12 @@ bool R_IsFXAAEnabled(void)
 	return true;
 }
 
-void R_FXAA(void)
+void R_FXAA(FBO_Container_t* src, FBO_Container_t* dst)
 {
 	GL_PushDrawState();
 	GL_PushMatrix();
 
-	GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
-
-	GL_BindFrameBuffer(&s_BackBufferFBO);
+	GL_BindFrameBuffer(dst);
 
 	GL_UseProgram(pp_fxaa.program);
 	glUniform1i(pp_fxaa.tex0, 0);
@@ -683,7 +705,7 @@ void R_FXAA(void)
 	glEnable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
 
-	R_DrawHUDQuad_Texture(s_BackBufferFBO2.s_hBackBufferTex, glwidth, glheight);
+	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, glwidth, glheight);
 
 	GL_UseProgram(0);
 
@@ -717,14 +739,12 @@ bool R_IsUnderWaterEffectEnabled(void)
 	return true;
 }
 
-void R_UnderWaterEffect(void)
+void R_UnderWaterEffect(FBO_Container_t* src, FBO_Container_t* dst)
 {
 	GL_PushDrawState();
 	GL_PushMatrix();
 
-	GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
-
-	GL_BindFrameBuffer(&s_BackBufferFBO);
+	GL_BindFrameBuffer(dst);
 
 	GL_UseProgram(under_water_effect.program);
 	glUniform1f(0, r_under_water_effect_wave_amount->value);
@@ -736,7 +756,7 @@ void R_UnderWaterEffect(void)
 	glEnable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
 
-	R_DrawHUDQuad_Texture(s_BackBufferFBO2.s_hBackBufferTex, glwidth, glheight);
+	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, glwidth, glheight);
 
 	GL_UseProgram(0);
 
@@ -768,13 +788,11 @@ bool R_IsGammaBlendEnabled()
 	return false;
 }
 
-void R_GammaCorrection(void)
+void R_GammaCorrection(FBO_Container_t* src, FBO_Container_t* dst)
 {
 	GL_BeginProfile(&Profile_GammaCorrection);
 
-	GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
-
-	GL_BindFrameBuffer(&s_BackBufferFBO);
+	GL_BindFrameBuffer(dst);
 
 	GL_BeginFullScreenQuad(false);
 
@@ -787,7 +805,7 @@ void R_GammaCorrection(void)
 	glEnable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
 
-	R_DrawHUDQuad_Texture(s_BackBufferFBO2.s_hBackBufferTex, r_refdef.vrect->width, r_refdef.vrect->height);
+	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, r_refdef.vrect->width, r_refdef.vrect->height);
 
 	GL_UseProgram(0);
 
@@ -796,30 +814,7 @@ void R_GammaCorrection(void)
 	GL_EndProfile(&Profile_GammaCorrection);
 }
 
-void R_GammaUncorrection(void)
-{
-	GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
-
-	GL_BindFrameBuffer(&s_BackBufferFBO);
-
-	GL_BeginFullScreenQuad(false);
-
-	GL_UseProgram(gamma_uncorrection.program);
-
-	//Could be non-fullscreen quad
-
-	GL_Begin2D();
-	GL_DisableMultitexture();
-	glDisable(GL_BLEND);
-
-	R_DrawHUDQuad_Texture(s_BackBufferFBO2.s_hBackBufferTex, r_refdef.vrect->width, r_refdef.vrect->height);
-
-	GL_UseProgram(0);
-
-	GL_EndFullScreenQuad();
-}
-
-void R_GammaUncorrectionEx(FBO_Container_t *src, FBO_Container_t* dst)
+void R_GammaUncorrection(FBO_Container_t *src, FBO_Container_t* dst)
 {
 	GL_BindFrameBuffer(dst);
 
@@ -856,11 +851,9 @@ void R_ClearOITBuffer(void)
 	glClearNamedBufferData(r_wsurf.hOITAtomicSSBO, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, (const void*)&val);
 }
 
-void R_BlendOITBuffer(void)
+void R_BlendOITBuffer(FBO_Container_t* src, FBO_Container_t* dst)
 {
-	GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
-
-	GL_BindFrameBuffer(&s_BackBufferFBO);
+	GL_BindFrameBuffer(dst);
 	
 	GL_BeginFullScreenQuad(false);
 
@@ -868,7 +861,7 @@ void R_BlendOITBuffer(void)
 
 	GL_UseProgram(blit_oitblend.program);	
 
-	GL_Bind(s_BackBufferFBO2.s_hBackBufferTex);
+	GL_Bind(src->s_hBackBufferTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -877,9 +870,9 @@ void R_BlendOITBuffer(void)
 	GL_EndFullScreenQuad();
 }
 
-void R_LinearizeDepth(FBO_Container_t *fbo)
+void R_LinearizeDepth(FBO_Container_t *src, FBO_Container_t* dst)
 {
-	GL_BindFrameBuffer(&s_DepthLinearFBO);
+	GL_BindFrameBuffer(dst);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	glDisable(GL_BLEND);
@@ -888,7 +881,7 @@ void R_LinearizeDepth(FBO_Container_t *fbo)
 
 	glUniform4f(0, r_znear * r_zfar, r_znear - r_zfar, r_zfar, r_ortho ? 0 : 1);
 	
-	GL_Bind(fbo->s_hBackBufferDepthTex);
+	GL_Bind(src->s_hBackBufferDepthTex);
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
@@ -919,7 +912,7 @@ bool R_IsAmbientOcclusionEnabled(void)
 	return true;
 }
 
-void R_AmbientOcclusion(void)
+void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 {
 	if (!hbao_randomview[0])
 		return;
@@ -997,7 +990,7 @@ void R_AmbientOcclusion(void)
 	}
 
 	//Texture unit 0 = linearized depth
-	GL_Bind(s_DepthLinearFBO.s_hBackBufferTex);
+	GL_Bind(src->s_hBackBufferTex);
 
 	//Texture unit 1 = random texture
 	GL_EnableMultitexture();
@@ -1023,17 +1016,15 @@ void R_AmbientOcclusion(void)
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 
 	//Write to main framebuffer or GBuffer lightmap channel
-	if (r_draw_gbuffer)
-	{
-		GL_BindFrameBuffer(&s_GBufferFBO);
+	GL_BindFrameBuffer(dst);
 
+	//TODO: wrapper?
+	if (dst == &s_GBufferFBO)
+	{
 		glDrawBuffer(GL_COLOR_ATTACHMENT1);
 	}
 	else
 	{
-		GL_BindFrameBuffer(&s_BackBufferFBO);
-
-		//Should we reset drawbuffer?
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	}
 
@@ -1063,14 +1054,14 @@ void R_AmbientOcclusion(void)
 	GL_EndProfile(&Profile_AmbientOcclusion);
 }
 
-void R_BlendFinalBuffer(void)
+void R_BlendFinalBuffer(FBO_Container_t* src, FBO_Container_t* dst)
 {
 	GL_BeginProfile(&Profile_BlendFinalBuffer);
 
 	GL_PushDrawState();
 	GL_PushMatrix();
 
-	GL_BindFrameBuffer(&s_FinalBufferFBO);
+	GL_BindFrameBuffer(dst);
 
 	GL_UseProgram(0);
 
@@ -1080,7 +1071,7 @@ void R_BlendFinalBuffer(void)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	R_DrawHUDQuad_Texture(s_BackBufferFBO.s_hBackBufferTex, glwidth, glheight);
+	R_DrawHUDQuad_Texture(src->s_hBackBufferTex, glwidth, glheight);
 
 	GL_UseProgram(0);
 

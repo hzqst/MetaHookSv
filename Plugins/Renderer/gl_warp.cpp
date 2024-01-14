@@ -7,6 +7,10 @@ int *r_loading_skybox = NULL;
 
 cvar_t* r_detailskytextures = NULL;
 
+/*
+	Purpose : Draw skybox
+*/
+
 void R_DrawSkyBox(void)
 {
 	if (CL_IsDevOverviewMode())

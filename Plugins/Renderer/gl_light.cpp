@@ -527,6 +527,11 @@ bool R_IsDeferredRenderingEnabled(void)
 	return true;
 }
 
+/*
+
+	Purpose : Switch to s_GBuffers
+*/
+
 bool R_BeginRenderGBuffer(void)
 {
 	if (!R_IsDeferredRenderingEnabled())
@@ -979,14 +984,17 @@ void R_LightShadingPass(void)
 
 }
 
-//Final Shading Pass
-
-void R_FinalShadingPass(void)
+/*
+	Purpose : final shading colors from s_GBufferFBO to dst, simply blits depth and stencil.
+*/
+void R_FinalShadingPass(FBO_Container_t *dst)
 {
 	//Re-enable depth write
 	glDepthMask(GL_TRUE);
 
 	//Write GBuffer depth and stencil buffer into main framebuffer
+	GL_BlitFrameBufferToFrameBufferDepthStencil(&s_GBufferFBO, dst);
+#if 0
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, s_BackBufferFBO.s_hBackBufferFBO);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
 	glBlitFramebuffer(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight,
@@ -995,12 +1003,15 @@ void R_FinalShadingPass(void)
 		GL_NEAREST);
 
 	GL_BindFrameBuffer(&s_BackBufferFBO);
+#endif
 
-	//No blend for final shading pass
-	glDisable(GL_BLEND);
+	GL_BindFrameBuffer(dst);
 
 	//Only draw color0 channel
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+	//No blend for final shading pass
+	glDisable(GL_BLEND);
 
 	GL_BeginFullScreenQuad(false);
 
@@ -1064,22 +1075,20 @@ void R_FinalShadingPass(void)
 	GL_EndFullScreenQuad();
 }
 
-void R_EndRenderGBuffer(void)
+void R_EndRenderGBuffer(FBO_Container_t *dst)
 {
 	GL_BeginFullScreenQuad(false);
 
-	R_LinearizeDepth(&s_GBufferFBO);
+	R_LinearizeDepth(&s_GBufferFBO, &s_DepthLinearFBO);
 
 	if (R_IsAmbientOcclusionEnabled())
 	{
-		R_AmbientOcclusion();
+		R_AmbientOcclusion(&s_DepthLinearFBO, &s_GBufferFBO);
 	}
-	else
-	{
-		//Write to GBuffer->lightmap only
-		GL_BindFrameBuffer(&s_GBufferFBO);
-		glDrawBuffer(GL_COLOR_ATTACHMENT1);
-	}
+
+	//Write to GBuffer->lightmap only whatsoever
+	GL_BindFrameBuffer(&s_GBufferFBO);
+	glDrawBuffer(GL_COLOR_ATTACHMENT1);
 
 	GL_EndFullScreenQuad();
 
@@ -1087,7 +1096,7 @@ void R_EndRenderGBuffer(void)
 
 	R_LightShadingPass();
 
-	R_FinalShadingPass();
+	R_FinalShadingPass(dst);
 
 	GL_EndProfile(&Profile_EndRenderGBuffer);
 

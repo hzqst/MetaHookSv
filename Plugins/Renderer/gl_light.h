@@ -84,7 +84,7 @@ void R_NewMapLight(void);
 void R_InitLight(void);
 void R_ShutdownLight(void);
 bool R_BeginRenderGBuffer(void);
-void R_EndRenderGBuffer(void);
+void R_EndRenderGBuffer(FBO_Container_t* dst);
 void R_SetGBufferMask(int mask);
 void R_SetGBufferBlend(int blendsrc, int blenddst);
 void R_SaveDLightProgramStates(void);

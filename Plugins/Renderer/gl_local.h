@@ -206,6 +206,7 @@ extern bool bHasOfficialGLTexAllocSupport;
 extern FBO_Container_t s_FinalBufferFBO;
 extern FBO_Container_t s_BackBufferFBO;
 extern FBO_Container_t s_BackBufferFBO2;
+extern FBO_Container_t s_BackBufferFBO3;
 extern FBO_Container_t s_GBufferFBO;
 extern FBO_Container_t s_BlendBufferFBO;
 extern FBO_Container_t s_DownSampleFBO[DOWNSAMPLE_BUFFERS];
@@ -219,7 +220,8 @@ extern FBO_Container_t s_DepthLinearFBO;
 extern FBO_Container_t s_HBAOCalcFBO;
 extern FBO_Container_t s_ShadowFBO;
 
-extern FBO_Container_t *g_CurrentFBO;
+extern FBO_Container_t* g_CurrentSceneFBO;
+extern FBO_Container_t *g_CurrentRenderingFBO;
 
 extern msurface_t **skychain;
 extern msurface_t **waterchain;
@@ -384,7 +386,7 @@ void GL_SelectTexture(GLenum target);
 void GL_DisableMultitexture(void);
 void GL_EnableMultitexture(void);
 void triapi_RenderMode(int mode);
-void triapi_Color4f(float x, float y, float z, float w);
+//void triapi_Color4f(float x, float y, float z, float w);
 void GL_UnloadTextureByIdentifier(const char* identifier, bool notify_callback);
 void GL_UnloadTextures(void);
 int GL_LoadTexture(char *identifier, GL_TEXTURETYPE textureType, int width, int height, byte *data, qboolean mipmap, int iType, byte *pPal);
@@ -434,7 +436,10 @@ void GL_UploadTextureArrayColorFormat(int texid, int w, int h, int levels, int i
 GLuint GL_GenShadowTexture(int w, int h, float *borderColor);
 void GL_UploadShadowTexture(int texid, int w, int h, float *borderColor);
 
-FBO_Container_t* GL_GetCurrentFrameBuffer();
+void GL_SetCurrentSceneFBO(FBO_Container_t* src);
+FBO_Container_t* GL_GetCurrentSceneFBO();
+FBO_Container_t* GL_GetCurrentRenderingFBO();
+
 void GL_BindFrameBuffer(FBO_Container_t *fbo);
 void GL_BindFrameBufferWithTextures(FBO_Container_t *fbo, GLuint color, GLuint depth, GLuint depth_stencil, GLsizei width, GLsizei height);
 
@@ -471,7 +476,6 @@ void GL_PushFrameBuffer(void);
 void GL_PopFrameBuffer(void);
 
 bool R_IsRenderingGBuffer();
-bool R_IsRenderingBackBuffer();
 
 //refdef
 void R_PushRefDef(void);

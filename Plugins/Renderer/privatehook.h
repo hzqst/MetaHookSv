@@ -79,7 +79,7 @@ typedef struct
 	void(*Mod_LoadBrushModel)(model_t *mod, void *buffer);
 	model_t *(*Mod_LoadModel)(model_t *mod, qboolean crash, qboolean trackCRC);
 	void(*triapi_RenderMode)(int mode);
-	void(*triapi_Color4f) (float r, float g, float b, float a);
+	//void(*triapi_Color4f) (float r, float g, float b, float a);
 	enginesurface_Texture* (*staticGetTextureById)(int id);
 	void(__fastcall* enginesurface_drawSetTextureRGBA)(void* pthis, int, int textureId, const char* data, int wide, int tall, qboolean hardwareFilter, qboolean hasAlphaChannel);
 	void(__fastcall* enginesurface_drawSetTexture)(void* pthis, int, int textureId);

@@ -416,7 +416,7 @@ void R_FillAddress(void)
 	}
 
 	gPrivateFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
-	gPrivateFuncs.triapi_Color4f = gEngfuncs.pTriAPI->Color4f;
+	//gPrivateFuncs.triapi_Color4f = gEngfuncs.pTriAPI->Color4f;
 
 	bHasOfficialFBOSupport = false;
 	bHasOfficialGLTexAllocSupport = true;
@@ -7447,7 +7447,7 @@ hook_t *g_phook_Mod_LoadStudioModel = NULL;
 hook_t *g_phook_Mod_LoadBrushModel = NULL;
 hook_t *g_phook_Mod_UnloadSpriteTextures = NULL;
 hook_t *g_phook_triapi_RenderMode = NULL;
-hook_t *g_phook_triapi_Color4f = NULL;
+//hook_t *g_phook_triapi_Color4f = NULL;
 hook_t *g_phook_Draw_MiptexTexture = NULL;
 hook_t *g_phook_BuildGammaTable = NULL;
 hook_t *g_phook_DLL_SetModKey = NULL;
