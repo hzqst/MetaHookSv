@@ -2745,7 +2745,7 @@ DWORD MH_GetVideoMode(int *width, int *height, int *bpp, bool *windowed)
 	static int iSaveWidth, iSaveHeight, iSaveBPP;
 	static bool bSaveWindowed;
 
-	if (g_pVideoMode && *g_pVideoMode)
+	if (g_pVideoMode && (*g_pVideoMode))
 	{
 		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 		{

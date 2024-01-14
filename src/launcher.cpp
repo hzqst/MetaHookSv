@@ -167,6 +167,55 @@ public:
 	HINTERFACEMODULE hFileSystem;
 };
 
+char* COM_SkipPath(char* pathname)
+{
+	char* last;
+
+	last = pathname;
+	while (*pathname)
+	{
+		if (*pathname == '/' || *pathname == '\\')
+			last = pathname + 1;
+		pathname++;
+	}
+	return last;
+}
+
+void COM_FileBase(const char* in, char* out)
+{
+	int len, start, end;
+
+	len = strlen(in);
+
+	// scan backward for '.'
+	end = len - 1;
+	while (end && in[end] != '.' && in[end] != '/' && in[end] != '\\')
+		end--;
+
+	if (in[end] != '.')		// no '.', copy to end
+		end = len - 1;
+	else
+		end--;					// Found ',', copy to left of '.'
+
+
+	// Scan backward for '/'
+	start = len - 1;
+	while (start >= 0 && in[start] != '/' && in[start] != '\\')
+		start--;
+
+	if (start < 0 || (in[start] != '/' && in[start] != '\\'))
+		start = 0;
+	else
+		start++;
+
+	// Length of new sting
+	len = end - start + 1;
+
+	// Copy partial string
+	strncpy(out, &in[start], len);
+	out[len] = 0;
+}
+
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	static char szNewCommandParams[2048];
@@ -200,36 +249,36 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	char szFullPath[MAX_PATH];
 	Sys_GetExecutableName(szFullPath, MAX_PATH);
 
-	char *szExeName = strrchr(szFullPath, '\\') + 1;
-	szExeName[-1] = 0;
+	char* pszExeFullName = COM_SkipPath(szFullPath);
 
-	if (!stricmp(szExeName, "svencoop.exe") && CommandLine()->CheckParm("-game") == NULL)
+	char szExeBaseName[MAX_PATH];
+	COM_FileBase(szFullPath, szExeBaseName);
+
+	if (CommandLine()->CheckParm("-game") == NULL)
 	{
-		CommandLine()->AppendParm("-game", "svencoop");
-
-		//Force 32bpp
-		CommandLine()->AppendParm("-32bpp", "");
-
-		//Force OpenGL
-		CommandLine()->AppendParm("-gl", "");
-
-		//Completely remove netthread support since it's buggy and the netthread can not be terminated safely.
-		//CommandLine()->AppendParm("-nonetthread", "");
-	}
-	if (stricmp(szExeName, "hl.exe") && CommandLine()->CheckParm("-game") == NULL)
-	{
-		szExeName[strlen(szExeName) - 4] = '\0';
-		CommandLine()->AppendParm("-game", szExeName);
+		if (0 == stricmp(szExeBaseName, "svencoop"))
+		{
+			CommandLine()->AppendParm("-game", "svencoop");
+		}
+		if (0 == stricmp(szExeBaseName, "hl"))
+		{
+			CommandLine()->AppendParm("-game", "valve");
+		}
+		else
+		{
+			CommandLine()->AppendParm("-game", szExeBaseName);
+		}
 	}
 
-	char szGameName[32] = {0};
+	char szGameName[32] = { 0 };
 	const char *pszGameName = NULL;
 	const char *szGameStr = CommandLine()->CheckParm("-game", &pszGameName);
 
-	strncpy(szGameName, (szGameStr) ? pszGameName : "valve", sizeof(szGameName) - 1);
+	strncpy(szGameName, (pszGameName) ? pszGameName : "valve", sizeof(szGameName) - 1);
 	szGameName[sizeof(szGameName) - 1] = 0;
 
-	if (szGameStr && !strnicmp(&szGameStr[6], "czero", 5))
+	//"czero" or "czeror"
+	if (pszGameName && 0 == strnicmp(pszGameName, "czero", sizeof("czero") - 1))
 		CommandLine()->AppendParm("-forcevalve", NULL);
 
 	if (registry->ReadInt("CrashInitializingVideoMode", FALSE))
@@ -237,6 +286,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		registry->WriteInt("CrashInitializingVideoMode", FALSE);
 
 		auto hw = registry->ReadString("EngineDLL", "hw.dll");
+
 		if (hw[0] && 0 != strcmp(hw, "hw.dll"))
 		{
 			if (registry->ReadInt("EngineD3D", FALSE))
@@ -272,7 +322,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		const char *pszEngineDLL = NULL;
 		int iResult = ENGINE_RESULT_NONE;
 
-		SetEngineDLL(szExeName, &pszEngineDLL);
+		SetEngineDLL(pszExeFullName, &pszEngineDLL);
 
 		memset(szNewCommandParams, 0, sizeof(szNewCommandParams));
 
@@ -282,7 +332,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 		if (FIsBlob(pszEngineDLL))
 		{
-
 #if defined(METAHOOK_BLOB_SUPPORT) || defined(_DEBUG)
 			if (!g_BlobLoaderSectionBase)
 			{

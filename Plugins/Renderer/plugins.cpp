@@ -31,6 +31,12 @@ void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_engin
 	g_pMetaHookAPI = pAPI;
 	g_pMetaSave = pSave;
 	g_hInstance = GetModuleHandle(NULL);
+
+	//Force 32bpp
+	CommandLine()->AppendParm("-32bpp", "");
+
+	//Force OpenGL
+	CommandLine()->AppendParm("-gl", "");
 }
 
 void IPluginsV4::Shutdown(void)
@@ -43,19 +49,18 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	int bbp = 0;
 	int iVideoMode = g_pMetaHookAPI->GetVideoMode(NULL, NULL, &bbp, NULL);
 
-	if (iVideoMode == 2)
-	{
-		g_pMetaHookAPI->SysError("D3D mode is not supported.");
-	}
 	if (iVideoMode == 0)
 	{
 		g_pMetaHookAPI->SysError("Software mode is not supported.");
+	}
+	if (iVideoMode == 2)
+	{
+		g_pMetaHookAPI->SysError("D3D mode is not supported.");
 	}
 	if (bbp == 16)
 	{
 		g_pMetaHookAPI->SysError("16bit mode is not supported.");
 	}
-
 	g_pFileSystem = g_pInterface->FileSystem;
 	if (!g_pFileSystem)//backward compatibility
 		g_pFileSystem_HL25 = g_pInterface->FileSystem_HL25;
@@ -86,13 +91,13 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	int bbp = 0;
 	int iVideoMode = g_pMetaHookAPI->GetVideoMode(&glwidth, &glheight, &bbp, NULL);
 
-	if (iVideoMode == 2)
-	{
-		g_pMetaHookAPI->SysError("D3D mode is not supported");
-	}
 	if (iVideoMode == 0)
 	{
 		g_pMetaHookAPI->SysError("Software mode is not supported");
+	}
+	if (iVideoMode == 2)
+	{
+		g_pMetaHookAPI->SysError("D3D mode is not supported");
 	}
 	if (bbp == 16)
 	{
