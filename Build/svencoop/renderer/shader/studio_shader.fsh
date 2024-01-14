@@ -411,7 +411,7 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
     // N dot L
     float litOrShadowArea = smoothstep(r_celshade_midpoint - r_celshade_softness, r_celshade_midpoint + r_celshade_softness, NoL);
 
-#if defined(STUDIO_NF_CELSHADE_FACE)
+#if defined(STUDIO_NF_CELSHADE_FACE) && defined(STENCIL_TEXTURE_ENABLED)
 
 	litOrShadowArea = mix(0.5, 1.0, litOrShadowArea);
 
