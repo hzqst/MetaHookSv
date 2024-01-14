@@ -31,15 +31,6 @@ void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_engin
 	g_pMetaHookAPI = pAPI;
 	g_pMetaSave = pSave;
 	g_hInstance = GetModuleHandle(NULL);
-
-	if (g_pInterface->CommandLine)
-	{
-		//Force 32bpp
-		g_pInterface->CommandLine->AppendParm("-32bpp", "");
-
-		//Force OpenGL
-		g_pInterface->CommandLine->AppendParm("-gl", "");
-	}
 }
 
 void IPluginsV4::Shutdown(void)
@@ -49,21 +40,13 @@ void IPluginsV4::Shutdown(void)
 
 void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
-	int bbp = 0;
-	int iVideoMode = g_pMetaHookAPI->GetVideoMode(NULL, NULL, &bbp, NULL);
+	int iVideoMode = g_pMetaHookAPI->GetVideoMode(NULL, NULL, NULL, NULL);
 
 	if (iVideoMode == 0)
 	{
-		g_pMetaHookAPI->SysError("Software mode is not supported.");
+		g_pMetaHookAPI->SysError("Software mode is not supported.\nPlease add \"-gl\" in the launch parameters.");
 	}
-	if (iVideoMode == 2)
-	{
-		g_pMetaHookAPI->SysError("D3D mode is not supported.");
-	}
-	if (bbp == 16)
-	{
-		g_pMetaHookAPI->SysError("16bit mode is not supported.");
-	}
+
 	g_pFileSystem = g_pInterface->FileSystem;
 	if (!g_pFileSystem)//backward compatibility
 		g_pFileSystem_HL25 = g_pInterface->FileSystem_HL25;
@@ -77,12 +60,12 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	g_dwEngineDataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".data\x0\x0\x0", &g_dwEngineDataSize);
 	g_dwEngineRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".rdata\x0\x0", &g_dwEngineRdataSize);
 
-	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
-
-	if(g_iEngineType != ENGINE_SVENGINE && g_iEngineType != ENGINE_GOLDSRC_BLOB && g_iEngineType != ENGINE_GOLDSRC && g_iEngineType != ENGINE_GOLDSRC_HL25)
+	if (g_iEngineType != ENGINE_SVENGINE && g_iEngineType != ENGINE_GOLDSRC_BLOB && g_iEngineType != ENGINE_GOLDSRC && g_iEngineType != ENGINE_GOLDSRC_HL25)
 	{
 		g_pMetaHookAPI->SysError("Unsupported engine: %s, buildnum %d", g_pMetaHookAPI->GetEngineTypeName(), g_dwEngineBuildnum);
 	}
+
+	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 
 	R_FillAddress();
 	R_InstallHooks();
@@ -96,15 +79,15 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	if (iVideoMode == 0)
 	{
-		g_pMetaHookAPI->SysError("Software mode is not supported");
+		g_pMetaHookAPI->SysError("Software mode is not supported.\nPlease add \"-gl\" in the launch parameters.");
 	}
 	if (iVideoMode == 2)
 	{
-		g_pMetaHookAPI->SysError("D3D mode is not supported");
+		g_pMetaHookAPI->SysError("D3D mode is not supported.\nPlease add \"-gl\" in the launch parameters.");
 	}
 	if (bbp == 16)
 	{
-		g_pMetaHookAPI->SysError("16bbp mode is not supported");
+		g_pMetaHookAPI->SysError("16bbp mode is not supported.\nPlease add \"-32bpp\" in the launch parameters.");
 	}
 
 	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
