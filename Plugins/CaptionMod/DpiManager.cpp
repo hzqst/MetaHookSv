@@ -112,6 +112,9 @@ public:
 		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 			m_bIsHighDpiSupported = false;
 
+		if (g_iVideoHeight < g_iProportionalBaseHeightHD)
+			m_bIsHighDpiSupported = false;;
+
 		if (IsHighDpiSupportEnabled())
 		{
 			char temp[1024];
