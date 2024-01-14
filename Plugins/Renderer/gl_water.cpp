@@ -976,14 +976,17 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 			{
 				R_DrawWaterVBOEnd();
 
+				//Purpose : Blit color and depth of s_GBuffers into ReflectCache->refractmap and ReflectCache->depthrefrmap
+
 				GL_BindFrameBufferWithTextures(&s_BackBufferFBO2, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
 				
 				//The output is in linear space
 				R_BlitGBufferToFrameBuffer(&s_BackBufferFBO2, true, true, true);
 
-				//Restore BackBufferFBO2
+				//Restore BackBufferFBO2 to it's original states.
 				GL_BindFrameBufferWithTextures(&s_BackBufferFBO2, s_BackBufferFBO2.s_hBackBufferTex, 0, s_BackBufferFBO2.s_hBackBufferDepthTex, glwidth, glheight);
-				//Restore Previous FrameBuffer
+
+				//Restore previous framebuffer
 				GL_BindFrameBuffer(&s_GBufferFBO);
 
 				R_DrawWaterVBOBegin(WaterVBO);
@@ -992,25 +995,28 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 			{
 				R_DrawWaterVBOEnd();
 
+				//Purpose : Blit color and depth of SceneFBO into ReflectCache->refractmap and ReflectCache->depthrefrmap
+
 				GL_BindFrameBufferWithTextures(&s_BackBufferFBO2, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
 				
 				if (r_draw_gammablend)
 				{
-					//s_BackBufferFBO is in gamma space
-					GL_BlitFrameBufferToFrameBufferDepthStencil(&s_BackBufferFBO, &s_BackBufferFBO2);
+					//The SceneFBO is in gamma space
+					GL_BlitFrameBufferToFrameBufferDepthStencil(GL_GetCurrentSceneFBO(), &s_BackBufferFBO2);
 					//Convert back to linear space
-					R_GammaUncorrection(&s_BackBufferFBO, &s_BackBufferFBO2);
+					R_GammaUncorrection(GL_GetCurrentSceneFBO(), &s_BackBufferFBO2);
 				}
 				else
 				{
-					//s_BackBufferFBO is in linear space
-					GL_BlitFrameBufferToFrameBufferColorDepthStencil(&s_BackBufferFBO, &s_BackBufferFBO2);
+					//The SceneFBO is in linear space
+					GL_BlitFrameBufferToFrameBufferColorDepthStencil(GL_GetCurrentSceneFBO(), &s_BackBufferFBO2);
 				}
 
-				//Restore BackBufferFBO2 states
+				//Restore BackBufferFBO2 to it's original states.
 				GL_BindFrameBufferWithTextures(&s_BackBufferFBO2, s_BackBufferFBO2.s_hBackBufferTex, 0, s_BackBufferFBO2.s_hBackBufferDepthTex, glwidth, glheight);
-				//Restore Previous FrameBuffer
-				GL_BindFrameBuffer(&s_BackBufferFBO);
+
+				//Restore previous framebuffer
+				GL_BindFrameBuffer(GL_GetCurrentSceneFBO());
 
 				R_DrawWaterVBOBegin(WaterVBO);
 			}

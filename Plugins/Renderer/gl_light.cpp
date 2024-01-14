@@ -1104,29 +1104,29 @@ void R_EndRenderGBuffer(FBO_Container_t *dst)
 	gbuffer_mask = -1;
 }
 
-void R_BlitGBufferToFrameBuffer(FBO_Container_t *fbo, bool color, bool depth, bool stencil)
+void R_BlitGBufferToFrameBuffer(FBO_Container_t *dst, bool color, bool depth, bool stencil)
 {
 	if (depth && stencil)
 	{
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->s_hBackBufferFBO);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
-		glBlitFramebuffer(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight, 0, 0, fbo->iWidth, fbo->iHeight, GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+		glBlitFramebuffer(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 	}
 	else if (depth && !stencil)
 	{
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->s_hBackBufferFBO);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
-		glBlitFramebuffer(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight, 0, 0, fbo->iWidth, fbo->iHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+		glBlitFramebuffer(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 	}
 	else if (!depth && stencil)
 	{
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo->s_hBackBufferFBO);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dst->s_hBackBufferFBO);
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, s_GBufferFBO.s_hBackBufferFBO);
-		glBlitFramebuffer(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight, 0, 0, fbo->iWidth, fbo->iHeight, GL_STENCIL_BUFFER_BIT, GL_NEAREST);
+		glBlitFramebuffer(0, 0, s_GBufferFBO.iWidth, s_GBufferFBO.iHeight, 0, 0, dst->iWidth, dst->iHeight, GL_STENCIL_BUFFER_BIT, GL_NEAREST);
 	}
 
 	//Shading pass
-	GL_BindFrameBuffer(fbo);
+	GL_BindFrameBuffer(dst);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	if (color)
@@ -1167,6 +1167,7 @@ void R_BlitGBufferToFrameBuffer(FBO_Container_t *fbo, bool color, bool depth, bo
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 		glEnable(GL_TEXTURE_2D);
+
 		(*currenttexture) = -1;
 
 		GL_UseProgram(0);
