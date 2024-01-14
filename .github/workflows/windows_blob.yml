@@ -31,7 +31,7 @@ jobs:
         run: git submodule update --init --recursive
         shell: cmd
 
-      - name: Build MetaHook and Plugins
+      - name: Build MetaHook
         working-directory: ${{env.GITHUB_WORKSPACE}}
         run: scripts\build-MetaHook-blob.bat
         shell: cmd
