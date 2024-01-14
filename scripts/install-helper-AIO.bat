@@ -41,9 +41,11 @@ if not "%GameDir%"=="" (
     goto start_copy
 )
 
+echo %GameAppId% > "%SolutionDir%tools\steam_appid.txt"
+
 for /f "delims=" %%a in ('"%SolutionDir%\tools\SteamAppsLocation" %GameAppId% InstallDir') do set OutputString=%%a
 
-if %ERRORLEVEL% equ 0 (
+if not "%OutputString%"=="" (
     set "GameDir=%OutputString%"
     goto start_copy
 )
