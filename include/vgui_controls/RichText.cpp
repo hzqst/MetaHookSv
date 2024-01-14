@@ -470,7 +470,9 @@ void RichText::CursorToPixelSpace(int cursorPos, int &cx, int &cy)
 		if (cursorPos == i)
 		{
 			// if we've passed a line break go to that
-			if (m_LineBreaks[lineBreakIndexIndex] == i)
+			if (m_LineBreaks.Count() &&
+				lineBreakIndexIndex < m_LineBreaks.Count() &&
+				m_LineBreaks[lineBreakIndexIndex] == i)
 			{
 				// add another line
 				AddAnotherLine(x, y);
@@ -480,7 +482,9 @@ void RichText::CursorToPixelSpace(int cursorPos, int &cx, int &cy)
 		}
 		
 		// if we've passed a line break go to that
-		if (m_LineBreaks[lineBreakIndexIndex] == i)
+		if (m_LineBreaks.Count() &&
+			lineBreakIndexIndex < m_LineBreaks.Count() &&
+			m_LineBreaks[lineBreakIndexIndex] == i)
 		{
 			// add another line
 			AddAnotherLine(x, y);
@@ -531,7 +535,9 @@ int RichText::PixelToCursorSpace(int cx, int cy)
 		}
 
 		// if we are on the right line but off the end of if put the cursor at the end of the line
-		if (m_LineBreaks[lineBreakIndexIndex] == i)
+		if (m_LineBreaks.Count() &&
+			lineBreakIndexIndex < m_LineBreaks.Count() &&
+			m_LineBreaks[lineBreakIndexIndex] == i)
 		{
 			// add another line
 			AddAnotherLine(x, y);
@@ -771,7 +777,9 @@ void RichText::Paint()
 		
 		// 2.
 		// if we've passed a line break go to that
-		if (m_LineBreaks[lineBreakIndexIndex] == i)
+		if (m_LineBreaks.Count() &&
+			lineBreakIndexIndex < m_LineBreaks.Count() &&
+			m_LineBreaks[lineBreakIndexIndex] == i)
 		{
 			if (_currentTextClickable)
 			{
@@ -799,7 +807,9 @@ void RichText::Paint()
 		int iLast = m_TextStream.Count() - 1;
 		
 		// Stop at the next line break
-		if ( m_LineBreaks[lineBreakIndexIndex] <= iLast )
+		if (m_LineBreaks.Count() &&
+			lineBreakIndexIndex < m_LineBreaks.Count() &&
+			m_LineBreaks[lineBreakIndexIndex] <= iLast )
 			iLast = m_LineBreaks[lineBreakIndexIndex] - 1;
 
 		// Stop at the next format change

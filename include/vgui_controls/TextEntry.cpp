@@ -502,7 +502,9 @@ int TextEntry::PixelToCursorSpace(int cx, int cy)
 		}
 		
 		// if we are on the right line but off the end of if put the cursor at the end of the line
-		if (m_LineBreaks[lineBreakIndexIndex] == i )
+		if (m_LineBreaks.Count() &&
+			lineBreakIndexIndex < m_LineBreaks.Count() &&
+			m_LineBreaks[lineBreakIndexIndex] == i )
 		{
 			// add another line
 			AddAnotherLine(x,y);
@@ -860,7 +862,9 @@ void TextEntry::PaintBackground()
 			}
 			
 			// if we've passed a line break go to that
-			if ( _multiline && m_LineBreaks[lineBreakIndexIndex] == i)
+			if ( _multiline && m_LineBreaks.Count() &&
+				lineBreakIndexIndex < m_LineBreaks.Count() &&
+				m_LineBreaks[lineBreakIndexIndex] == i)
 			{
 				// add another line
 				AddAnotherLine(x, y);
@@ -2395,7 +2399,9 @@ void TextEntry::MoveCursor(int line, int pixelsAcross)
 		}
 		
 		// if we've passed a line break go to that
-		if (m_LineBreaks[lineBreakIndexIndex] == i)
+		if (m_LineBreaks.Count() &&
+			lineBreakIndexIndex < m_LineBreaks.Count() &&
+			m_LineBreaks[lineBreakIndexIndex] == i)
 		{
 			if (lineBreakIndexIndex == line)
 			{
@@ -2838,14 +2844,14 @@ void TextEntry::InsertChar(wchar_t ch)
 					// we can get called before this has been run for the first time :)
 					RecalculateLineBreaks();
 				}
-				if (m_LineBreaks[0]> m_TextStream.Count())
+				if (m_LineBreaks.Count() > 0 && m_LineBreaks[0]> m_TextStream.Count())
 				{
 					// if the line break is the past the end of the buffer recalc
 					_recalculateBreaksIndex=-1;
 					RecalculateLineBreaks();
 				}
 				
-				if (m_LineBreaks[0]+1 < m_TextStream.Count())
+				if (m_LineBreaks.Count() > 0 && m_LineBreaks[0]+1 < m_TextStream.Count())
 				{
 					// delete the line
 					m_TextStream.RemoveMultiple(0, m_LineBreaks[0]);
