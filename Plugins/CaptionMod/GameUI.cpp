@@ -52,7 +52,11 @@ int GetPatchedGetFontTall(int fontTall)
 	if (g_bPatchingGetFontTall)
 	{
 		const int DRAW_OFFSET_X = 3, DRAW_OFFSET_Y = 1;
-		//int displayLines = g_iPatchingPanelTall / (fontTall + DRAW_OFFSET_Y);
+		//The displayLines should be always >= 1 otherwise the legacy vgui2 controls may randomly crash
+		/*
+			int displayLines = g_iPatchingPanelTall / (fontTall + DRAW_OFFSET_Y);
+		*/
+
 		if (g_iPatchingPanelTall < fontTall + DRAW_OFFSET_Y)
 		{
 			return g_iPatchingPanelTall - DRAW_OFFSET_Y;

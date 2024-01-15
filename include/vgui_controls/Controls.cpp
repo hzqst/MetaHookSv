@@ -67,8 +67,8 @@ bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryL
 		Sig_VarNotFound(KeyCodeRelease_String);
 		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x8B\xC8";
 		*(DWORD *)(pattern + 6) = (DWORD)KeyCodeRelease_String;
-		auto KeyCodeRelease_StringPush = g_pMetaHookAPI->SearchPattern(hVGUI2, g_pMetaHookAPI->GetModuleSize(hVGUI2), pattern, sizeof(pattern) - 1);
-		Sig_VarNotFound(KeyCodeRelease_StringPush);
+		auto KeyCodeRelease_PushString = g_pMetaHookAPI->SearchPattern(hVGUI2, g_pMetaHookAPI->GetModuleSize(hVGUI2), pattern, sizeof(pattern) - 1);
+		Sig_VarNotFound(KeyCodeRelease_PushString);
 
 		typedef struct
 		{
@@ -77,7 +77,7 @@ bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryL
 
 		KeyCodeRelease_ctx ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(KeyCodeRelease_StringPush, 0x250, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		g_pMetaHookAPI->DisasmRanges(KeyCodeRelease_PushString, 0x250, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
 			auto pinst = (cs_insn *)inst;
 			KeyCodeRelease_ctx *ctx = (KeyCodeRelease_ctx *)context;

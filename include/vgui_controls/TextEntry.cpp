@@ -2829,7 +2829,7 @@ void TextEntry::InsertChar(wchar_t ch)
 
 	if (m_bAllowNumericInputOnly)
 	{
-		if (!iswdigit(ch) && ((char)ch != '.'))
+		if (!iswdigit(ch) && (ch != L'.'))
 		{
 			surface()->PlaySound("Resource\\warning.wav");
 			return;
@@ -3484,10 +3484,6 @@ int TextEntry::GetStartDrawIndex(int &lineBreakIndexIndex)
 		if (!displayLines)
 			displayLines = 1;
 
-		if (displayLines < 1)
-		{
-			displayLines = 1;
-		}
 		if (numLines > displayLines)
 		{
 			int cursorLine = GetCursorLine();
