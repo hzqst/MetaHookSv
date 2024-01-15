@@ -12,7 +12,7 @@ Most of plugins are still compatible with vanilla GoldSrc engine. please check e
 
 |        Engine               |      |
 |        ----                 | ---- |
-| GoldSrc_blob   (3266~4554)  | √    |
+| GoldSrc_blob   (3248~4554)  | √    |
 | GoldSrc_legacy (< 6153)     | √    |
 | GoldSrc_new    (8684 ~)     | √    |
 | SvEngine       (8832 ~)     | √    |
