@@ -903,8 +903,8 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 		glColorMask(1, 1, 1, 1);
 
-		GL_BlitFrameBufferToFrameBufferColorOnly(&s_BackBufferFBO, &s_BackBufferFBO2);
-		R_BlendOITBuffer(&s_BackBufferFBO2, &s_BackBufferFBO);
+		GL_BlitFrameBufferToFrameBufferColorOnly(GL_GetCurrentSceneFBO(), &s_BackBufferFBO2);
+		R_BlendOITBuffer(&s_BackBufferFBO2, GL_GetCurrentSceneFBO());
 
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 	}
@@ -1375,6 +1375,7 @@ void GL_FreeFrameBuffers(void)
 	GL_FreeFBO(&s_FinalBufferFBO);
 	GL_FreeFBO(&s_BackBufferFBO);
 	GL_FreeFBO(&s_BackBufferFBO2);
+	GL_FreeFBO(&s_BackBufferFBO3);
 	GL_FreeFBO(&s_GBufferFBO);
 	for (int i = 0; i < DOWNSAMPLE_BUFFERS; ++i)
 		GL_FreeFBO(&s_DownSampleFBO[i]);
@@ -1404,6 +1405,7 @@ void GL_GenerateFrameBuffers(void)
 	GL_GenFrameBuffer(&s_FinalBufferFBO);
 	GL_FrameBufferColorTexture(&s_FinalBufferFBO, GL_RGBA8);
 	GL_FrameBufferDepthTexture(&s_FinalBufferFBO, GL_DEPTH24_STENCIL8);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
@@ -2081,6 +2083,7 @@ void R_RenderView_SvEngine(int viewIdx)
 	else
 	{
 		GL_BindFrameBuffer(&s_FinalBufferFBO);
+		GL_SetCurrentSceneFBO(NULL);
 	}
 
 	(*c_alias_polys) += r_studio_polys;
@@ -2835,6 +2838,22 @@ void R_AdjustScopeFOVForViewModel(float *fov)
 	}
 }
 
+void R_UseLegacyOpenGLMatrixForViewModel()
+{
+	glMatrixMode(GL_PROJECTION);
+	glLoadMatrixf(r_viewmodel_projection_matrix);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadMatrixf(r_world_matrix);
+}
+
+void R_UseLegacyOpenGLMatrixForWorld()
+{
+	glMatrixMode(GL_PROJECTION);
+	glLoadMatrixf(r_projection_matrix);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadMatrixf(r_world_matrix);
+}
+
 void R_UseProjMatrixForViewModel(void)
 {
 	scene_ubo_t SceneUBO;
@@ -3436,11 +3455,14 @@ void R_EndRenderOpaque(void)
 
 	if (R_IsGammaBlendEnabled())
 	{
-		R_GammaCorrection(GL_GetCurrentSceneFBO(), &s_BackBufferFBO3);
 		GL_BlitFrameBufferToFrameBufferDepthStencil(GL_GetCurrentSceneFBO(), &s_BackBufferFBO3);
+		R_GammaCorrection(GL_GetCurrentSceneFBO(), &s_BackBufferFBO3);
 		GL_SetCurrentSceneFBO(&s_BackBufferFBO3);
 		r_draw_gammablend = true;
 	}
+
+	//For backward compatibility, some Mods may use Legacy OpenGL 1.x Matrix
+	R_UseLegacyOpenGLMatrixForWorld();
 }
 
 void ClientDLL_DrawNormalTriangles(void)

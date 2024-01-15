@@ -93,10 +93,12 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 	memcpy(&r_params, pparams, sizeof(struct ref_params_s));
 }
 
+#if 0
 void HUD_DrawTransparentTriangles(void)
 {
-	//gExportfuncs.HUD_DrawTransparentTriangles();
+	gExportfuncs.HUD_DrawTransparentTriangles();
 }
+#endif
 
 int HUD_Redraw(float time, int intermission)
 {

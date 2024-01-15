@@ -177,6 +177,7 @@ void R_UseLegacySpriteProgram(program_state_t state, legacysprite_program_t *pro
 		auto def = defs.str();
 
 		prog.program = R_CompileShaderFileEx("renderer\\shader\\legacysprite_shader.vsh", "renderer\\shader\\legacysprite_shader.fsh", def.c_str(), def.c_str(), NULL);
+
 		if (prog.program)
 		{
 

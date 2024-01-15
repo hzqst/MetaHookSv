@@ -508,12 +508,12 @@ vec3 R_StudioCelShade(vec3 v_color, vec3 normalWS, vec3 lightdirWS, float specul
 
 #endif
 
-#endif
+#endif    //defined(STUDIO_NF_CELSHADE_HAIR)
 
 	return v_color.xyz * litOrShadowColor + rimLightColor + rimDarkColor + specularColor;
-}
+}         //R_StudioCelShade
 
-#endif
+#endif  //defined(STUDIO_NF_CELSHADE)
 
 #if defined(STUDIO_NF_CELSHADE_FACE) && defined(STUDIO_DEBUG_ENABLED) 
 

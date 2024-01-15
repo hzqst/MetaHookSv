@@ -414,6 +414,8 @@ void GL_UploadSubDataToVBODynamicDraw(GLuint VBO, size_t offset, size_t size, co
 
 void GL_UploadDataToEBOStaticDraw(GLuint EBO, size_t size, const void* data)
 {
+	//TODO: what if size == 0 ?
+
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	if (glBufferStorage)
 	{
