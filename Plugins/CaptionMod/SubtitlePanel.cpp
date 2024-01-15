@@ -5,7 +5,8 @@
 #include <KeyValues.h>
 #include <FileSystem.h>
 
-#include <glew.h>
+//#include <glew.h>
+#include <triangleapi.h>
 
 #include "SubtitlePanel.h"
 #include "privatefuncs.h"
@@ -583,7 +584,9 @@ void SubtitlePanel::Paint(void)
 	//if (SCR_IsLoadingVisible())
 	//	return;
 
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	//Remove any raw OpenGL call
+	//glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	gEngfuncs.pTriAPI->RenderMode(kRenderTransAlpha);
 
 	int x;
 
@@ -675,7 +678,9 @@ void SubtitlePanel::PaintBackground(void)
 	//if (SCR_IsLoadingVisible())
 	//	return;
 
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	//Remove any raw OpenGL call
+	//glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	gEngfuncs.pTriAPI->RenderMode(kRenderTransAlpha);
 
 	//Cornor is maximum at 1/4 wide or tall
 	r = min(min(m_iScaledCornorSize, h / 4), w / 4);

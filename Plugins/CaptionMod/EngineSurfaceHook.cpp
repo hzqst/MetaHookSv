@@ -1,6 +1,5 @@
 #include <metahook.h>
 #include <capstone.h>
-#include <glew.h>
 #include <cstdlib>
 #include "EngineSurfaceHook.h"
 #include "plugins.h"
@@ -22,8 +21,8 @@ void SDL_GetWindowSize(void* window, int* w, int* h);
 
 void CEngineSurfaceProxy::pushMakeCurrent(int* insets, int* absExtents, int* clipRect, bool translateToScreenSpace)
 {
-	//return m_pfnEngineSurface_pushMakeCurrent(insets, absExtents, clipRect, translateToScreenSpace);
-
+	return m_pfnEngineSurface_pushMakeCurrent(insets, absExtents, clipRect, translateToScreenSpace);
+#if 0
 	POINT pnt = { 0 };
 	RECT rect = {0};
 
@@ -99,6 +98,7 @@ void CEngineSurfaceProxy::pushMakeCurrent(int* insets, int* absExtents, int* cli
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+#endif
 }
 
 void CEngineSurfaceProxy::popMakeCurrent(void)
