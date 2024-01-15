@@ -1151,6 +1151,11 @@ void TextEntry::LayoutVerticalScrollBarSlider()
 		
 		// calculate how many lines we can fully display
 		int displayLines = tall / (surface()->GetFontTall(_font) + DRAW_OFFSET_Y);
+		
+		//Fix crash if GetFontTall too large
+		if (!displayLines)
+			displayLines = 1;
+
 		int numLines = m_LineBreaks.Count();
 		
 		if (numLines <= displayLines)
@@ -1880,7 +1885,11 @@ void TextEntry::OnKeyCodeTyped(KeyCode code)
 				if (_multiline)
 				{
 					int displayLines = GetTall() / (surface()->GetFontTall(_font) + DRAW_OFFSET_Y);
-					// move the cursor down
+
+					//Fix crash if GetFontTall too large
+					if (!displayLines)
+						displayLines = 1;
+
 					for (int i=0; i < displayLines; i++)
 					{
 						GotoUp();
@@ -1910,7 +1919,11 @@ void TextEntry::OnKeyCodeTyped(KeyCode code)
 				if (_multiline)
 				{
 					int displayLines = GetTall() / (surface()->GetFontTall(_font) + DRAW_OFFSET_Y);
-					// move the cursor down
+
+					//Fix crash if GetFontTall too large
+					if (!displayLines)
+						displayLines = 1;
+
 					for (int i=0; i < displayLines; i++)
 					{
 						GotoDown();
@@ -3466,6 +3479,11 @@ int TextEntry::GetStartDrawIndex(int &lineBreakIndexIndex)
 		// check to see if the cursor is off the screen-multiline case
 		HFont font = _font;
 		int displayLines = GetTall() / (surface()->GetFontTall(font) + DRAW_OFFSET_Y);
+
+		//Fix crash if GetFontTall too large
+		if (!displayLines)
+			displayLines = 1;
+
 		if (displayLines < 1)
 		{
 			displayLines = 1;

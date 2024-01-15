@@ -2444,6 +2444,12 @@ bool MH_ModuleHasImportEx(HMODULE hModule, const char* pszModuleName, const char
 	return false;
 }
 
+hook_t* MH_InlineHookTrampoline(void* pOldFuncAddr, void* pNewFuncAddr, void** pOriginalCall)
+{
+
+
+}
+
 void *MH_GetClassFuncAddr(...)
 {
 	DWORD address;
