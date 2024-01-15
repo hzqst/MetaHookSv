@@ -20,6 +20,7 @@
 #include "privatefuncs.h"
 #include "DpiManager.h"
 #include <capstone.h>
+#include <set>
 
 //static hook_t* g_phook_QueryBox_ctor = NULL;
 static hook_t* g_phook_GameUI_Panel_Init = NULL;
@@ -29,6 +30,12 @@ static hook_t* g_phook_COptionsDialog_ctor = NULL;
 static hook_t *g_phook_COptionsSubVideo_ctor = NULL;
 static hook_t *g_phook_COptionsSubVideo_ApplyVidSettings = NULL;
 static hook_t *g_phook_COptionsSubAudio_ctor = NULL;
+static hook_t* g_phook_RichText_InsertChar = NULL;
+static hook_t* g_phook_RichText_OnThink = NULL;
+static hook_t* g_phook_TextEntry_OnKeyCodeTyped = NULL;
+//static hook_t* g_phook_TextEntry_InsertChar = NULL;
+static hook_t* g_phook_TextEntry_LayoutVerticalScrollBarSlider = NULL;
+static hook_t* g_phook_TextEntry_GetStartDrawIndex = NULL;
 
 vgui::Panel** staticPanel = NULL;
 
@@ -36,6 +43,94 @@ namespace vgui
 {
 bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryList, int numFactories);
 }
+
+static int g_iPatchingPanelTall = 0;
+static bool g_bPatchingGetFontTall = false;
+
+int GetPatchedGetFontTall(int fontTall)
+{
+	if (g_bPatchingGetFontTall)
+	{
+		const int DRAW_OFFSET_X = 3, DRAW_OFFSET_Y = 1;
+		//int displayLines = g_iPatchingPanelTall / (fontTall + DRAW_OFFSET_Y);
+		if (g_iPatchingPanelTall < fontTall + DRAW_OFFSET_Y)
+		{
+			return g_iPatchingPanelTall - DRAW_OFFSET_Y;
+		}
+	}
+
+	return fontTall;
+}
+
+void __fastcall RichText_InsertChar(void* pthis, int dummy, wchar_t ch)
+{
+	if (ch == L'\r')
+		return;
+
+	gPrivateFuncs.RichText_InsertChar(pthis, 0, ch);
+}
+
+//TextEntry doesn't have such issue
+#if 0
+void __fastcall TextEntry_InsertChar(void* pthis, int dummy, wchar_t ch)
+{
+	if (ch == L'\r')
+		return;
+
+	gPrivateFuncs.TextEntry_InsertChar(pthis, 0, ch);
+}
+#endif
+
+void __fastcall RichText_OnThink(void* pthis, int dummy)
+{
+	vgui::Panel* pPanel = (vgui::Panel*)pthis;
+	g_iPatchingPanelTall = pPanel->GetTall();
+	g_bPatchingGetFontTall = true;
+
+	gPrivateFuncs.RichText_OnThink(pthis, 0);
+
+	g_bPatchingGetFontTall = false;
+	g_iPatchingPanelTall = 0;
+}
+
+void __fastcall TextEntry_LayoutVerticalScrollBarSlider(void* pthis, int dummy)
+{
+	vgui::Panel* pPanel = (vgui::Panel*)pthis;
+	g_iPatchingPanelTall = pPanel->GetTall();
+	g_bPatchingGetFontTall = true;
+
+	gPrivateFuncs.TextEntry_LayoutVerticalScrollBarSlider(pthis, 0);
+
+	g_bPatchingGetFontTall = false;
+	g_iPatchingPanelTall = 0;
+}
+
+void __fastcall TextEntry_OnKeyCodeTyped(void* pthis, int dummy, vgui::KeyCode code)
+{
+	vgui::Panel* pPanel = (vgui::Panel*)pthis;
+	g_iPatchingPanelTall = pPanel->GetTall();
+	g_bPatchingGetFontTall = true;
+
+	gPrivateFuncs.TextEntry_OnKeyCodeTyped(pthis, 0, (int)code);
+
+	g_bPatchingGetFontTall = false;
+	g_iPatchingPanelTall = 0;
+}
+
+int __fastcall TextEntry_GetStartDrawIndex(void* pthis, int dummy, int& lineBreakIndexIndex)
+{
+	vgui::Panel* pPanel = (vgui::Panel*)pthis;
+	g_iPatchingPanelTall = pPanel->GetTall();
+	g_bPatchingGetFontTall = true;
+
+	int result = gPrivateFuncs.TextEntry_GetStartDrawIndex(pthis, 0, lineBreakIndexIndex);
+
+	g_bPatchingGetFontTall = false;
+	g_iPatchingPanelTall = 0;
+
+	return result;
+}
+
 
 void __fastcall GameUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, int w, int h)
 {
@@ -828,6 +923,7 @@ void GameUI_InstallHooks(void)
 		Sig_FuncNotFound(QueryBox_ctor);
 	}
 #endif
+
 	if (1)
 	{
 		const char sigs1[] = "CreateMultiplayerGameDialog\0";
@@ -836,19 +932,13 @@ void GameUI_InstallHooks(void)
 			CreateMultiplayerGameDialog_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
 		Sig_VarNotFound(CreateMultiplayerGameDialog_String);
 
-		void* CreateMultiplayerGameDialog_Call = nullptr;
-		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x50";
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A";
 		*(DWORD*)(pattern + 1) = (DWORD)CreateMultiplayerGameDialog_String;
-		CreateMultiplayerGameDialog_Call = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
-		if(!CreateMultiplayerGameDialog_Call)
-		{
-			char pattern2[] = "\x68\x2A\x2A\x2A\x2A\x2A\x2A\x50";
-			*(DWORD*)(pattern2 + 1) = (DWORD)CreateMultiplayerGameDialog_String;
-			CreateMultiplayerGameDialog_Call = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern2, sizeof(pattern2) - 1);
-		}
-		Sig_VarNotFound(CreateMultiplayerGameDialog_Call);
+		auto CreateMultiplayerGameDialog_PushString = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
+		Sig_VarNotFound(CreateMultiplayerGameDialog_PushString);
+		Sig_VarNotFound(CreateMultiplayerGameDialog_PushString);
 
-		gPrivateFuncs.CCreateMultiplayerGameDialog_ctor = (decltype(gPrivateFuncs.CCreateMultiplayerGameDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(CreateMultiplayerGameDialog_Call, 0x120, [](PUCHAR Candidate) {
+		gPrivateFuncs.CCreateMultiplayerGameDialog_ctor = (decltype(gPrivateFuncs.CCreateMultiplayerGameDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(CreateMultiplayerGameDialog_PushString, 0x120, [](PUCHAR Candidate) {
 
 			if (Candidate[0] == 0x55 &&
 				Candidate[1] == 0x8B &&
@@ -881,19 +971,9 @@ void GameUI_InstallHooks(void)
 			GameUI_Options_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
 		Sig_VarNotFound(GameUI_Options_String);
 
-		void *GameUI_Options_Call = nullptr;
-		if (g_iEngineType != ENGINE_GOLDSRC_HL25)
-		{
-			char pattern[] = "\x6A\x01\x68\x2A\x2A\x2A\x2A\x8B\xCE";
-			*(DWORD *)(pattern + 3) = (DWORD)GameUI_Options_String;
-			GameUI_Options_Call = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
-		}
-		else
-		{
-			char pattern2[] = "\x6A\x01\x68\xCC\xCC\xCC\xCC\x8B\xCB";
-			*(DWORD *)(pattern2 + 3) = (DWORD)GameUI_Options_String;
-			GameUI_Options_Call = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern2, sizeof(pattern2) - 1);
-		}
+		char pattern[] = "\x6A\x01\x68\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern + 3) = (DWORD)GameUI_Options_String;
+		auto GameUI_Options_Call = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
 		Sig_VarNotFound(GameUI_Options_Call);
 
 		gPrivateFuncs.COptionsDialog_ctor = (decltype(gPrivateFuncs.COptionsDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(GameUI_Options_Call, 0x300, [](PUCHAR Candidate) {
@@ -1006,12 +1086,12 @@ void GameUI_InstallHooks(void)
 
 		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x2A\xE8";
 		*(DWORD *)(pattern + 1) = (DWORD)SetVideoMode_String;
-		auto SetVideoMode_StringPush = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
-		Sig_VarNotFound(SetVideoMode_StringPush);
+		auto SetVideoMode_PushString = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
+		Sig_VarNotFound(SetVideoMode_PushString);
 
 		if (g_iEngineType != ENGINE_GOLDSRC_HL25)
 		{
-			gPrivateFuncs.COptionsSubVideo_ApplyVidSettings = (decltype(gPrivateFuncs.COptionsSubVideo_ApplyVidSettings))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(SetVideoMode_StringPush, 0x300, [](PUCHAR Candidate) {
+			gPrivateFuncs.COptionsSubVideo_ApplyVidSettings = (decltype(gPrivateFuncs.COptionsSubVideo_ApplyVidSettings))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(SetVideoMode_PushString, 0x300, [](PUCHAR Candidate) {
 				//  .text : 1001D2C0 55                                                  push    ebp
 				//	.text : 1001D2C1 8B EC                                               mov     ebp, esp
 				//	.text : 1001D2C3 81 EC 0C 02 00 00                                   sub     esp, 20Ch
@@ -1038,7 +1118,7 @@ void GameUI_InstallHooks(void)
 		}
 		else
 		{
-			gPrivateFuncs.COptionsSubVideo_ApplyVidSettings_HL25 = (decltype(gPrivateFuncs.COptionsSubVideo_ApplyVidSettings_HL25))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(SetVideoMode_StringPush, 0x300, [](PUCHAR Candidate) {
+			gPrivateFuncs.COptionsSubVideo_ApplyVidSettings_HL25 = (decltype(gPrivateFuncs.COptionsSubVideo_ApplyVidSettings_HL25))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(SetVideoMode_PushString, 0x300, [](PUCHAR Candidate) {
 				//  .text : 1001D2C0 55                                                  push    ebp
 				//	.text : 1001D2C1 8B EC                                               mov     ebp, esp
 				//	.text : 1001D2C3 81 EC 0C 02 00 00                                   sub     esp, 20Ch
@@ -1064,6 +1144,396 @@ void GameUI_InstallHooks(void)
 		}
 	}
 
+	if (1)
+	{
+		const char sigs1[] = "ConsoleHistory\0";
+		auto ConsoleHistory_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
+		if (!ConsoleHistory_String)
+			ConsoleHistory_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
+		Sig_VarNotFound(ConsoleHistory_String);
+
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern + 1) = (DWORD)ConsoleHistory_String;
+		auto ConsoleHistory_PushString = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
+		Sig_VarNotFound(ConsoleHistory_PushString);
+
+		typedef struct
+		{
+			PVOID GameUIRdataBase;
+			ULONG GameUIRdataSize;
+
+			PVOID GameUITextBase;
+			ULONG GameUITextSize;
+
+			PVOID* ConsoleHistory_vftable;
+
+		}ConsoleHistorySearchContext;
+
+		ConsoleHistorySearchContext ctx = { 0 };
+
+		ctx.GameUIRdataBase = GameUIRdataBase;
+		ctx.GameUIRdataSize = GameUIRdataSize;
+
+		ctx.GameUITextBase = GameUITextBase;
+		ctx.GameUITextSize = GameUITextSize;
+
+		g_pMetaHookAPI->DisasmRanges(ConsoleHistory_PushString, 0x60, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (ConsoleHistorySearchContext*)context;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->GameUIRdataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->GameUIRdataBase + ctx->GameUIRdataSize))
+			{
+				auto candidate = (PVOID *)pinst->detail->x86.operands[1].imm;
+				if (candidate[0] >= (PUCHAR)ctx->GameUITextBase && candidate[0] < (PUCHAR)ctx->GameUITextBase + ctx->GameUITextSize)
+				{
+					ctx->ConsoleHistory_vftable = candidate;
+				}
+			}
+
+			if (ctx->ConsoleHistory_vftable)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+		}, 0, & ctx);
+
+		Sig_VarNotFound(ctx.ConsoleHistory_vftable);
+
+		gPrivateFuncs.RichText_OnThink = (decltype(gPrivateFuncs.RichText_OnThink))ctx.ConsoleHistory_vftable[0x158 / 4];
+	}
+
+	if (1)
+	{
+		const char sigs2[] = "Unable to condump to \0";
+		auto UnableToCondump_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs2, sizeof(sigs2) - 1);
+		if (!UnableToCondump_String)
+			UnableToCondump_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs2, sizeof(sigs2) - 1);
+		Sig_VarNotFound(UnableToCondump_String);
+
+		char pattern2[] = "\x68\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern2 + 1) = (DWORD)UnableToCondump_String;
+		auto UnableToCondump_PushString = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern2, sizeof(pattern2) - 1);
+		Sig_VarNotFound(UnableToCondump_PushString);
+
+		typedef struct
+		{
+
+			bool bFound118h;//it's 128h for HL25
+			bool bFound_RichText_Print;//it's 128h for HL25
+
+		}UnableToCondumpSearchContext;
+
+		UnableToCondumpSearchContext ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(UnableToCondump_PushString, 0x60, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (UnableToCondumpSearchContext*)context;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].mem.disp >= 0x118 && pinst->detail->x86.operands[1].mem.disp <= 0x120)
+			{
+				ctx->bFound118h = true;
+			}
+
+			if (address[0] == 0xE8 && instCount <= 5)
+			{
+				if (ctx->bFound118h)
+				{
+					gPrivateFuncs.RichText_InsertString = (decltype(gPrivateFuncs.RichText_InsertString))GetCallAddress(address);
+				}
+				else
+				{
+					gPrivateFuncs.RichText_Print = (decltype(gPrivateFuncs.RichText_Print))GetCallAddress(address);
+				}
+				ctx->bFound_RichText_Print = true;
+
+				return TRUE;
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+		}, 0, & ctx);
+
+		Sig_VarNotFound(ctx.bFound_RichText_Print);
+	}
+
+	if (1)
+	{
+		PVOID RecursiveWalkBase = (gPrivateFuncs.RichText_Print) ? gPrivateFuncs.RichText_Print : gPrivateFuncs.RichText_InsertString;
+
+		typedef struct
+		{
+			PVOID base;
+			size_t max_insts;
+			int max_depth;
+			std::set<PVOID> code;
+			std::set<PVOID> branches;
+			std::vector<walk_context_t> walks;
+
+			PVOID FunctionBeginCandidate;
+			int FunctionBeginCandidateDepth;
+			PVOID Found0xDCandidate;
+			int Found0xDCandidateInstCount;
+			bool Is0xDCandidatePatched;
+
+			PVOID GameUIRdataBase;
+			ULONG GameUIRdataSize;
+
+			PVOID GameUITextBase;
+			ULONG GameUITextSize;
+
+		}RichText_PrintWalkContext;
+
+		RichText_PrintWalkContext ctx = { 0 };
+
+		ctx.GameUIRdataBase = GameUIRdataBase;
+		ctx.GameUIRdataSize = GameUIRdataSize;
+
+		ctx.GameUITextBase = GameUITextBase;
+		ctx.GameUITextSize = GameUITextSize;
+
+		ctx.base = RecursiveWalkBase;
+		ctx.max_insts = 1000;
+		ctx.max_depth = 16;
+		ctx.walks.emplace_back(ctx.base, 0x1000, 0);
+
+		while (ctx.walks.size())
+		{
+			auto walk = ctx.walks[ctx.walks.size() - 1];
+			ctx.walks.pop_back();
+
+			g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+				{
+					auto pinst = (cs_insn*)inst;
+					auto ctx = (RichText_PrintWalkContext*)context;
+
+					if (ctx->code.size() > ctx->max_insts)
+						return TRUE;
+
+					if (ctx->code.find(address) != ctx->code.end())
+						return TRUE;
+
+					ctx->code.emplace(address);
+
+					/*
+					Engine: 3266
+.text:1006BE4D 0F BE 45 08                                         movsx   eax, byte ptr [ebp+arg_0]
+.text:1006BE51 83 F8 0D                                            cmp     eax, 0Dh
+.text:1006BE54 75 02                                               jnz     short loc_1006BE58 label_work
+.text:1006BE56 EB 67                                               jmp     short loc_1006BEBF label_exit
+					*/
+
+					/*
+					Engine: 4554, 6153
+.text:100573B0 8A 44 24 04                                         mov     al, byte ptr [esp+arg_0]
+.text:100573B4 55                                                  push    ebp
+.text:100573B5 3C 0D                                               cmp     al, 0Dh
+.text:100573B7 8B E9                                               mov     ebp, ecx
+.text:100573B9 0F 84 8C 00 00 00                                   jz      loc_1005744B label_exit
+					*/
+
+					/*
+					Engine: SvEngine
+.text:10047463 80 7D 08 0D                                         cmp     [ebp+arg_0], 0Dh
+
+.text:1004746A 74 3C                                               jz      short loc_100474A8 label_exit
+					*/
+
+					/*
+					Engine: 9920
+.text:1005D664 0F B7 C1                                            movzx   eax, cx
+.text:1005D667 89 45 08                                            mov     [ebp+arg_0], eax
+.text:1005D66A 80 F9 0D                                            cmp     cl, 0Dh
+.text:1005D66D 74 3B                                               jz      short loc_1005D6AA label_exit
+					*/
+
+					if (instCount == 1)
+					{
+						ctx->FunctionBeginCandidate = address;
+						ctx->FunctionBeginCandidateDepth = depth;
+					}
+
+					if (!ctx->Found0xDCandidate &&
+						instCount < 25 &&
+						depth == ctx->FunctionBeginCandidateDepth &&
+						pinst->id == X86_INS_CMP &&
+						pinst->detail->x86.op_count == 2 &&
+						(pinst->detail->x86.operands[0].type == X86_OP_REG || pinst->detail->x86.operands[0].type == X86_OP_MEM) &&
+						pinst->detail->x86.operands[1].imm == 0x0D)
+					{
+						ctx->Found0xDCandidate = address;
+						ctx->Found0xDCandidateInstCount = instCount;
+
+						gPrivateFuncs.RichText_InsertChar = (decltype(gPrivateFuncs.RichText_InsertChar))ctx->FunctionBeginCandidate;
+					}
+
+					if (!ctx->Is0xDCandidatePatched &&
+						ctx->Found0xDCandidateInstCount > 0 &&
+						instCount > ctx->Found0xDCandidateInstCount &&
+						instCount < ctx->Found0xDCandidateInstCount + 5 &&
+						(pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS) &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_IMM)
+					{
+						if (pinst->id == X86_INS_JE)
+						{
+							g_pMetaHookAPI->WriteNOP(address, instLen);
+							ctx->Is0xDCandidatePatched = true;
+						}
+						else if (pinst->id == X86_INS_JNE)
+						{
+							if (instLen == 2)
+							{
+								//jmp short
+								g_pMetaHookAPI->WriteBYTE(address, 0xEB);
+								ctx->Is0xDCandidatePatched = true;
+							}
+							else if (instLen == 5)
+							{
+								//jmp
+								g_pMetaHookAPI->WriteBYTE(address, 0xE9);
+								ctx->Is0xDCandidatePatched = true;
+							}
+						}
+					}
+
+					if (ctx->Is0xDCandidatePatched)
+						return TRUE;
+
+					if ((pinst->id == X86_INS_CALL || pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_IMM)
+					{
+						PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
+						if (imm >= (PUCHAR)ctx->GameUITextBase && imm < (PUCHAR)ctx->GameUITextBase + ctx->GameUITextSize)
+						{
+							auto foundbranch = ctx->branches.find(imm);
+							if (foundbranch == ctx->branches.end())
+							{
+								ctx->branches.emplace(imm);
+								if (depth + 1 < ctx->max_depth)
+									ctx->walks.emplace_back(imm, 0x1000, depth + 1);
+							}
+						}
+
+						if (pinst->id == X86_INS_JMP)
+							return TRUE;
+					}
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+
+				}, walk.depth, &ctx);
+		}
+
+		Sig_FuncNotFound(RichText_InsertChar);
+
+		if (!ctx.Is0xDCandidatePatched)
+		{
+			g_pMetaHookAPI->SysError("Failed to patch GameUI!RichText_InsertChar.");
+		}
+	}
+
+	if (1)
+	{
+		const char sigs1[] = "ConsoleEntry\0";
+		auto ConsoleEntry_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
+		if (!ConsoleEntry_String)
+			ConsoleEntry_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
+		Sig_VarNotFound(ConsoleEntry_String);
+
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern + 1) = (DWORD)ConsoleEntry_String;
+		auto ConsoleEntry_PushString = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
+		Sig_VarNotFound(ConsoleEntry_PushString);
+
+		typedef struct
+		{
+			PVOID GameUIRdataBase;
+			ULONG GameUIRdataSize;
+
+			PVOID GameUITextBase;
+			ULONG GameUITextSize;
+
+			PVOID* ConsoleEntry_vftable;
+
+		}ConsoleEntrySearchContext;
+
+		ConsoleEntrySearchContext ctx = { 0 };
+
+		ctx.GameUIRdataBase = GameUIRdataBase;
+		ctx.GameUIRdataSize = GameUIRdataSize;
+
+		ctx.GameUITextBase = GameUITextBase;
+		ctx.GameUITextSize = GameUITextSize;
+
+		g_pMetaHookAPI->DisasmRanges(ConsoleEntry_PushString, 0x60, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (ConsoleEntrySearchContext*)context;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->GameUIRdataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->GameUIRdataBase + ctx->GameUIRdataSize))
+			{
+				auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
+				if (candidate[0] >= (PUCHAR)ctx->GameUITextBase && candidate[0] < (PUCHAR)ctx->GameUITextBase + ctx->GameUITextSize)
+				{
+					ctx->ConsoleEntry_vftable = candidate;
+				}
+			}
+
+			if (ctx->ConsoleEntry_vftable)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+			}, 0, &ctx);
+
+		Sig_VarNotFound(ctx.ConsoleEntry_vftable);
+
+		gPrivateFuncs.TextEntry_OnKeyCodeTyped = (decltype(gPrivateFuncs.TextEntry_OnKeyCodeTyped))ctx.ConsoleEntry_vftable[0x194 / 4];
+		//gPrivateFuncs.TextEntry_InsertChar = (decltype(gPrivateFuncs.TextEntry_InsertChar))ctx.ConsoleEntry_vftable[0x250 / 4];
+		gPrivateFuncs.TextEntry_LayoutVerticalScrollBarSlider = (decltype(gPrivateFuncs.TextEntry_LayoutVerticalScrollBarSlider))ctx.ConsoleEntry_vftable[0x2C0 / 4];
+		gPrivateFuncs.TextEntry_GetStartDrawIndex = (decltype(gPrivateFuncs.TextEntry_GetStartDrawIndex))ctx.ConsoleEntry_vftable[0x2F8 / 4];
+	}
+
 	gPrivateFuncs.GameUI_Panel_Init = (decltype(gPrivateFuncs.GameUI_Panel_Init))VGUI2_FindPanelInit(GameUITextBase, GameUITextSize);
 	Sig_FuncNotFound(GameUI_Panel_Init);
 
@@ -1083,6 +1553,11 @@ void GameUI_InstallHooks(void)
 	Install_InlineHook(COptionsSubVideo_ctor);
 	Install_InlineHook(COptionsSubVideo_ApplyVidSettings);
 	Install_InlineHook(COptionsSubAudio_ctor);
+	Install_InlineHook(RichText_InsertChar);
+	Install_InlineHook(RichText_OnThink);
+	Install_InlineHook(TextEntry_OnKeyCodeTyped);
+	Install_InlineHook(TextEntry_LayoutVerticalScrollBarSlider);
+	Install_InlineHook(TextEntry_GetStartDrawIndex);
 }
 
 void GameUI_UninstallHooks(void)
@@ -1095,4 +1570,9 @@ void GameUI_UninstallHooks(void)
 	Uninstall_Hook(COptionsSubVideo_ctor);
 	Uninstall_Hook(COptionsSubVideo_ApplyVidSettings);
 	Uninstall_Hook(COptionsSubAudio_ctor);
+	Uninstall_Hook(RichText_InsertChar);
+	Uninstall_Hook(RichText_OnThink);
+	Uninstall_Hook(TextEntry_OnKeyCodeTyped);
+	Uninstall_Hook(TextEntry_LayoutVerticalScrollBarSlider);
+	Uninstall_Hook(TextEntry_GetStartDrawIndex);
 }

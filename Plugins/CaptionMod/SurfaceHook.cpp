@@ -18,6 +18,8 @@ extern IEngineSurface_HL25 *staticSurface_HL25;
 extern vgui::ISurface *g_pSurface;
 extern vgui::ISurface_HL25* g_pSurface_HL25;
 
+int GetPatchedGetFontTall(int fontTall);
+
 using namespace vgui;
 
 HFont g_hCurrentFont;
@@ -694,7 +696,7 @@ bool CSurfaceProxy::AddCustomFontFile(const char *fontFileName)
 
 int CSurfaceProxy::GetFontTall(HFont font)
 {
-	return FontManager().GetFontTall(font);
+	return GetPatchedGetFontTall(FontManager().GetFontTall(font));
 }
 
 void CSurfaceProxy::GetCharABCwide(HFont font, int ch, int &a, int &b, int &c)
@@ -1537,7 +1539,7 @@ bool CSurfaceProxy_HL25::AddCustomFontFile(const char *fontFileName)
 
 int CSurfaceProxy_HL25::GetFontTall(HFont font)
 {
-	return FontManager().GetFontTall(font);
+	return GetPatchedGetFontTall(FontManager().GetFontTall(font));
 }
 
 void CSurfaceProxy_HL25::GetCharABCwide(HFont font, int ch, int &a, int &b, int &c)

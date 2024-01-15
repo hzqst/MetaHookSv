@@ -12,6 +12,17 @@
 struct vgui1_TextImage;
 class KeyValues;
 
+typedef struct walk_context_s
+{
+	walk_context_s(PVOID a, size_t l, int d) : address(a), len(l), depth(d)
+	{
+
+	}
+	PVOID address;
+	size_t len;
+	int depth;
+}walk_context_t;
+
 typedef struct
 {
 	//Engine Screen
@@ -86,7 +97,17 @@ typedef struct
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings)(void *pthis, int dummy, bool bForceRestart);
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings_HL25)(void *pthis, int dummy);
 	void *(__fastcall*COptionsSubAudio_ctor)(void *pthis, int dummy, void *parent);
-	void *(__fastcall *COptionsDialog_AddPage)(void *pthis, int dummy, void *panel, const char *name);
+	//void *(__fastcall *COptionsDialog_AddPage)(void *pthis, int dummy, void *panel, const char *name);
+
+	void(__fastcall* RichText_Print)(void* pthis, int dummy, const char* msg);
+	void (__fastcall* RichText_InsertString)(void* pthis, int dummy, const char* msg);
+	void(__fastcall* RichText_InsertChar)(void* pthis, int dummy, wchar_t ch);
+	void (__fastcall* RichText_OnThink)(void* pthis, int dummy);//virtual 0x158
+
+	void (__fastcall* TextEntry_LayoutVerticalScrollBarSlider)(void* pthis, int dummy);//virtual 0x2C0
+	void (__fastcall* TextEntry_OnKeyCodeTyped)(void* pthis, int dummy, int code);//virtual 0x194
+	int  (__fastcall* TextEntry_GetStartDrawIndex)(void* pthis, int dummy, int& lineBreakIndexIndex);//virtual 0x2F8
+	//void (__fastcall* TextEntry_InsertChar)(void* pthis, int dummy, wchar_t ch);//virtual 0x250
 
 	//SDL2
 	void (*SDL_GetWindowPosition)(void* window, int* x, int* y);
