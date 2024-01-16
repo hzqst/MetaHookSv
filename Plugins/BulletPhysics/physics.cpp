@@ -449,6 +449,7 @@ CStaticBody *CPhysicsManager::CreateStaticBody(cl_entity_t *ent, vertexarray_t *
 	{
 		body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 		body->setActivationState(DISABLE_DEACTIVATION);
+		body->setGravity(btVector3(0, 0, 0));
 
 		staticbody->m_kinematic = true;
 	}
@@ -3177,6 +3178,7 @@ void CPhysicsManager::ResetPose(CRagdollBody *ragdoll, entity_state_t *curstate)
 			//Transform to dynamic at next tick
 			rig->rigbody->setCollisionFlags(rig->oldCollisionFlags | btCollisionObject::CF_KINEMATIC_OBJECT);
 			rig->rigbody->setActivationState(DISABLE_DEACTIVATION);
+			rig->rigbody->setGravity(btVector3(0, 0, 0));
 
 			bNeedResetKinematic = true;
 		}
@@ -3543,6 +3545,7 @@ update_kinematic:
 		{
 			rig->rigbody->setCollisionFlags(rig->oldCollisionFlags | btCollisionObject::CF_KINEMATIC_OBJECT);
 			rig->rigbody->setActivationState(DISABLE_DEACTIVATION);
+			rig->rigbody->setGravity(btVector3(0, 0, 0));
 		}
 		else
 		{
