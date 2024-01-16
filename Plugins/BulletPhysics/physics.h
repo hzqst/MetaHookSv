@@ -300,7 +300,7 @@ public:
 	{
 		m_barnacleindex = -1;
 		m_gargantuaindex = -1;
-		m_studiohdr = NULL;
+		m_model = NULL;
 		m_pelvisRigBody = NULL;
 		m_headRigBody = NULL;
 		m_iActivityType = -1;
@@ -310,6 +310,7 @@ public:
 		m_firstperson_angleoffset[1] = 0;
 		m_firstperson_angleoffset[2] = 0;
 		m_flLastOriginChangeTime = 0;
+		m_flLastRagdollCreateTime = 0;
 	}
 
 	int m_barnacleindex;
@@ -317,7 +318,7 @@ public:
 	int m_iActivityType;
 	float m_flUpdateKinematicTime;
 	float m_bUpdateKinematic;
-	studiohdr_t *m_studiohdr;
+	model_t *m_model;
 	CRigBody *m_pelvisRigBody;
 	CRigBody *m_headRigBody;
 	std::vector<CRigBody *> m_barnacleDragRigBody;
@@ -335,6 +336,7 @@ public:
 	std::vector<ragdoll_gar_control_t> m_garcontrol;
 	vec3_t m_firstperson_angleoffset;
 	float m_flLastOriginChangeTime;
+	float m_flLastRagdollCreateTime;
 };
 
 typedef struct brushvertex_s
@@ -550,7 +552,7 @@ public:
 	void ResetPose(CRagdollBody *ragdoll, entity_state_t *curstate);
 	void ApplyBarnacle(CRagdollBody *ragdoll, cl_entity_t *barnacleEntity);
 	void ApplyGargantua(CRagdollBody *ragdoll, cl_entity_t *gargEntity);
-	CRagdollBody *CreateRagdoll(ragdoll_config_t *cfg, int entindex);
+	CRagdollBody *CreateRagdoll(model_t* mod, ragdoll_config_t *cfg, int entindex);
 	CRigBody *CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol);
 	btTypedConstraint *CreateConstraint(CRagdollBody *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
 	void CreateWaterControl(CRagdollBody *ragdoll, studiohdr_t *studiohdr, ragdoll_water_control_t *water_control);
@@ -565,7 +567,7 @@ public:
 	bool UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time);
 	void UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time);
 	void UpdateRagdollSleepState(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time);
-	void UpdateTempEntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time);
+	void UpdateTempEntity(TEMPENTITY** ppTempEntFree, TEMPENTITY **ppTempEntActive, double frame_time, double client_time);
 	//bool SyncThirdPersonView(CRagdollBody *ragdoll, float *org);
 	bool SyncFirstPersonView(CRagdollBody *ragdoll, cl_entity_t *ent, struct ref_params_s *pparams);
 	void ForceRagdollToSleep(CRagdollBody *ragdoll);

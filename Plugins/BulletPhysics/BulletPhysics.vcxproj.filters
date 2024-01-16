@@ -29,7 +29,7 @@
     <ClCompile Include="privatehook.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="corpse.cpp">
+    <ClCompile Include="ClientEntityManager.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="message.cpp">
@@ -64,7 +64,7 @@
     <ClInclude Include="plugins.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="corpse.h">
+    <ClInclude Include="ClientEntityManager.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="message.h">
