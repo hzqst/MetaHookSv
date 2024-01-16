@@ -41,6 +41,26 @@ if "%LauncherMod%"=="svencoop" (
 
     )
 
+	if "%LauncherMod%"=="cstrike" (
+
+		xcopy "%SolutionDir%Build\cstrike_hd" "%GameDir%\%LauncherMod%_hd\" /y /e
+	)
+
+	if "%LauncherMod%"=="czero" (
+
+		xcopy "%SolutionDir%Build\czero" "%GameDir%\%LauncherMod%\" /y /e
+	)
+
+	if "%LauncherMod%"=="echoes" (
+
+		xcopy "%SolutionDir%Build\echoes" "%GameDir%\%LauncherMod%\" /y /e
+	)
+
+	if "%LauncherMod%"=="gearbox" (
+
+		xcopy "%SolutionDir%Build\gearbox" "%GameDir%\%LauncherMod%\" /y /e
+	)
+
     if not exist "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst" copy "%GameDir%\%LauncherMod%\metahook\configs\plugins_goldsrc.lst" "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst" /y
 )
 
