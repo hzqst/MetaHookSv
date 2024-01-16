@@ -1206,7 +1206,7 @@ void CPhysicsManager::UpdateRagdollSleepState(cl_entity_t *ent, CRagdollBody *ra
 
 		if (bv_debug->value == 10)
 		{
-			gEngfuncs.Con_Printf("total: lv=%.2f, av=%.2f\n", flAverageLinearVelocity, flAverageAngularVelocity);
+			gEngfuncs.Con_Printf("UpdateRagdollSleepState: flAverageLinearVelocity = %.2f, flAverageAngularVelocity=%.2f\n", flAverageLinearVelocity, flAverageAngularVelocity);
 		}
 
 		if (flAverageLinearVelocity > bv_ragdoll_sleeplinearvel->value || flAverageAngularVelocity > bv_ragdoll_sleepangularvel->value)
