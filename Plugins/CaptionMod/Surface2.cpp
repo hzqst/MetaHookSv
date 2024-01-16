@@ -1300,3 +1300,14 @@ const char *CSurface2::GetResolutionKey(void) const
 {
 	return NULL;
 }
+
+void CSurface2::DeleteTextureByID(int textureId)
+{
+	if (g_pSurface_HL25)
+	{
+		g_pSurface_HL25->DeleteTextureByID(textureId);
+		return;
+	}
+
+	g_pSurface->DeleteTextureByID(textureId);
+}

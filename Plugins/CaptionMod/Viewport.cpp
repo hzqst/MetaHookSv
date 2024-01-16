@@ -13,6 +13,7 @@
 #include "message.h"
 #include "privatefuncs.h"
 #include "exportfuncs.h"
+#include "dpimanager.h"
 #include <stdexcept>
 
 using namespace vgui;
@@ -862,7 +863,7 @@ void CDictionary::FinalizeString(std::wstring &output, int iPrefix)
 
 void CViewport::Start(void)
 {
-	m_pSubtitlePanel = new SubtitlePanel(NULL);
+	m_pSubtitlePanel = new SubtitlePanel(this);
 	m_pChatDialog = new CCSChatDialog(this);
 
 	SetVisible(false);
@@ -872,7 +873,11 @@ void CViewport::SetParent(VPANEL vPanel)
 {
 	BaseClass::SetParent(vPanel);
 
-	m_pSubtitlePanel->SetParent(this);
+	if (dpimanager()->IsHighDpiSupportEnabled())
+	{
+		SetProportional(true);
+	}
+	//m_pSubtitlePanel->SetParent(this);
 }
 
 void CViewport::Think(void)
