@@ -44,19 +44,19 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(SolutionDir)tools\global.props"  Condition="exists('$(SolutionDir)tools\global.props')" />
+    <Import Project="$(SolutionDir)tools\global.props" Condition="exists('$(SolutionDir)tools\global.props')" />
     <Import Project="$(SolutionDir)tools\global_template.props" Condition="!exists('$(SolutionDir)tools\global.props') and exists('$(SolutionDir)tools\global_template.props')" />
     <Import Project="$(SolutionDir)tools\global_common.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(SolutionDir)tools\global.props"  Condition="exists('$(SolutionDir)tools\global.props')" />
+    <Import Project="$(SolutionDir)tools\global.props" Condition="exists('$(SolutionDir)tools\global.props')" />
     <Import Project="$(SolutionDir)tools\global_template.props" Condition="!exists('$(SolutionDir)tools\global.props') and exists('$(SolutionDir)tools\global_template.props')" />
     <Import Project="$(SolutionDir)tools\global_common.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(SolutionDir)tools\global.props"  Condition="exists('$(SolutionDir)tools\global.props')" />
+    <Import Project="$(SolutionDir)tools\global.props" Condition="exists('$(SolutionDir)tools\global.props')" />
     <Import Project="$(SolutionDir)tools\global_template.props" Condition="!exists('$(SolutionDir)tools\global.props') and exists('$(SolutionDir)tools\global_template.props')" />
     <Import Project="$(SolutionDir)tools\global_common.props" />
   </ImportGroup>
@@ -170,7 +170,7 @@ $(Bullet3CheckRequirements)</Command>
   <ItemGroup>
     <ClCompile Include="..\..\include\HLSDK\common\interface.cpp" />
     <ClCompile Include="mathlib2.cpp" />
-    <ClCompile Include="corpse.cpp" />
+    <ClCompile Include="ClientEntityManager.cpp" />
     <ClCompile Include="message.cpp" />
     <ClCompile Include="parsemsg.cpp" />
     <ClCompile Include="privatehook.cpp" />
@@ -186,7 +186,7 @@ $(Bullet3CheckRequirements)</Command>
     <ClInclude Include="exportfuncs.h" />
     <ClInclude Include="mathlib2.h" />
     <ClInclude Include="physics.h" />
-    <ClInclude Include="corpse.h" />
+    <ClInclude Include="ClientEntityManager.h" />
     <ClInclude Include="qgl.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

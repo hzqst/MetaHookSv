@@ -1,16 +1,15 @@
-#include "exportfuncs.h"
+#include <metahook.h>
 #include <triangleapi.h>
 #include <studio.h>
 #include <cvardef.h>
+#include "exportfuncs.h"
 #include "enginedef.h"
 #include "plugins.h"
 #include "privatehook.h"
 #include "physics.h"
+#include "ClientEntityManager.h"
 #include "qgl.h"
 #include "mathlib2.h"
-
-//btScalar G2BScale = 1;
-//btScalar B2GScale = 1 / G2BScale;
 
 extern studiohdr_t **pstudiohdr;
 extern model_t **r_model;
@@ -19,7 +18,6 @@ extern float(*plighttransform)[128][3][4];
 
 extern cvar_t *bv_debug;
 extern cvar_t *bv_simrate;
-//extern cvar_t *bv_scale;
 extern cvar_t *bv_ragdoll_sleepaftertime;
 extern cvar_t *bv_ragdoll_sleeplinearvel;
 extern cvar_t *bv_ragdoll_sleepangularvel;
@@ -32,11 +30,6 @@ int EngineGetNumKnownModel(void);
 int EngineGetMaxKnownModel(void);
 int EngineGetModelIndex(model_t *mod);
 model_t *EngineGetModelByIndex(int index);
-bool IsEntityPresent(cl_entity_t* ent);
-bool IsEntityGargantua(cl_entity_t* ent);
-bool IsEntityBarnacle(cl_entity_t* ent);
-bool IsEntityWater(cl_entity_t* ent);
-bool IsEntityEmitted(cl_entity_t* ent);
 int StudioGetSequenceActivityType(model_t *mod, entity_state_t* entstate);
 void RagdollDestroyCallback(int entindex);
 
@@ -64,9 +57,14 @@ void EulerMatrix(const btVector3& in_euler, btMatrix3x3& out_matrix) {
 }
 
 void MatrixEuler(const btMatrix3x3& in_matrix, btVector3& out_euler) {
+
 	out_euler[0] = btAsin(in_matrix[2][0]);
 
-	if (btFabs(in_matrix[2][0]) < (1 - 0.001f)) {
+	if (in_matrix[2][0] >= (1 - 0.002f) && in_matrix[2][0] < 1.002f) {
+		out_euler[1] = btAtan2(in_matrix[1][0], in_matrix[0][0]);
+		out_euler[2] = btAtan2(in_matrix[2][1], in_matrix[2][2]);
+	}
+	else if (btFabs(in_matrix[2][0]) < (1 - 0.002f)) {
 		out_euler[1] = btAtan2(in_matrix[1][0], in_matrix[0][0]);
 		out_euler[2] = btAtan2(in_matrix[2][1], in_matrix[2][2]);
 	}
@@ -74,6 +72,8 @@ void MatrixEuler(const btMatrix3x3& in_matrix, btVector3& out_euler) {
 		out_euler[1] = btAtan2(in_matrix[1][2], in_matrix[1][1]);
 		out_euler[2] = 0;
 	}
+
+	out_euler[3] = 0;
 
 	out_euler *= SIMD_DEGS_PER_RAD;
 }
@@ -190,6 +190,7 @@ CPhysicsManager::CPhysicsManager()
 	 m_collisionConfiguration = NULL;
 	 m_dispatcher = NULL;
 	 m_overlappingPairCache = NULL;
+	 m_overlapFilterCallback = NULL;
 	 m_solver = NULL;
 	 m_dynamicsWorld = NULL;
 	 m_debugDraw = NULL;
@@ -448,6 +449,7 @@ CStaticBody *CPhysicsManager::CreateStaticBody(cl_entity_t *ent, vertexarray_t *
 	{
 		body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 		body->setActivationState(DISABLE_DEACTIVATION);
+		body->setGravity(btVector3(0, 0, 0));
 
 		staticbody->m_kinematic = true;
 	}
@@ -801,6 +803,7 @@ struct GameFilterCallback : public btOverlapFilterCallback
 			{
 				auto physobj0 = (CRigBody *)body0->getUserPointer();
 				auto physobj1 = (CRigBody *)body1->getUserPointer();
+
 				if( (physobj0->flags & RIG_FL_JIGGLE) && !(physobj1->flags & RIG_FL_JIGGLE) )
 				{
 					if (!(body1->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT))
@@ -1204,7 +1207,7 @@ void CPhysicsManager::UpdateRagdollSleepState(cl_entity_t *ent, CRagdollBody *ra
 
 		if (bv_debug->value == 10)
 		{
-			gEngfuncs.Con_Printf("total: lv=%.2f, av=%.2f\n", flAverageLinearVelocity, flAverageAngularVelocity);
+			gEngfuncs.Con_Printf("UpdateRagdollSleepState: flAverageLinearVelocity = %.2f, flAverageAngularVelocity=%.2f\n", flAverageLinearVelocity, flAverageAngularVelocity);
 		}
 
 		if (flAverageLinearVelocity > bv_ragdoll_sleeplinearvel->value || flAverageAngularVelocity > bv_ragdoll_sleepangularvel->value)
@@ -1218,8 +1221,14 @@ void CPhysicsManager::UpdateRagdollSleepState(cl_entity_t *ent, CRagdollBody *ra
 			return;
 		}
 
-		// It has stopped moving, see if it
+		// It has stopped moving
 		if (client_time - ragdoll->m_flLastOriginChangeTime < bv_ragdoll_sleepaftertime->value)
+		{
+			return;
+		}
+
+		// It was just created in few seconds before
+		if (client_time - ragdoll->m_flLastRagdollCreateTime < bv_ragdoll_sleepaftertime->value)
 		{
 			return;
 		}
@@ -1296,6 +1305,10 @@ void CPhysicsManager::UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBod
 #endif
 }
 
+/*
+	Purpose: Perform frame-action for the given ragdoll object.
+*/
+
 bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time)
 {
 	//Don't update if player is not emitted this frame (in firstperson mode)
@@ -1309,13 +1322,12 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 		if (StudioGetSequenceActivityType(ent->model, &ent->curstate) != 2)
 		{
 			ReleaseRagdollFromGargantua(ragdoll);
-
 			return true;
 		}
 
 		auto gargantua = gEngfuncs.GetEntityByIndex(ragdoll->m_gargantuaindex);
 
-		if (!IsEntityGargantua(gargantua))
+		if (!ClientEntityManager()->IsEntityGargantua(gargantua))
 		{
 			ReleaseRagdollFromGargantua(ragdoll);
 			return true;
@@ -1346,13 +1358,12 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 		if (StudioGetSequenceActivityType(ent->model, &ent->curstate) != 2)
 		{
 			ReleaseRagdollFromBarnacle(ragdoll);
-
 			return true;
 		}
 
 		auto barnacle = gEngfuncs.GetEntityByIndex(ragdoll->m_barnacleindex);
 
-		if (!IsEntityBarnacle(barnacle))
+		if (!ClientEntityManager()->IsEntityBarnacle(barnacle))
 		{
 			ReleaseRagdollFromBarnacle(ragdoll);
 			return true;
@@ -1438,12 +1449,12 @@ bool CPhysicsManager::UpdateRagdoll(cl_entity_t *ent, CRagdollBody *ragdoll, dou
 	return true;
 }
 
-void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double frame_time, double client_time)
+void CPhysicsManager::UpdateTempEntity(TEMPENTITY** ppTempEntFree, TEMPENTITY **ppTempEntActive, double frame_time, double client_time)
 {
 	if (frame_time <= 0)
 		return;
 
-	auto pTEnt = *ppTempEntActive;
+	auto pTEnt = (*ppTempEntActive);
 
 	while (pTEnt)
 	{
@@ -1456,15 +1467,13 @@ void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double fram
 			if (itor != m_ragdollMap.end())
 			{
 				UpdateRagdoll(ent, itor->second, frame_time, client_time);
-
-				//Fake messagenum, just mark as active
-				ent->curstate.messagenum = (*cl_parsecount);
 			}
 		}
 
 		pTEnt = pTEnt->next;
 	}
 
+	//Purpose: Remove ragdollObjects that tend to be removed.
 	for (auto itor = m_ragdollMap.begin(); itor != m_ragdollMap.end();)
 	{
 		int entindex = itor->first;
@@ -1473,7 +1482,8 @@ void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double fram
 		{
 			//Remove inactive tents
 			auto tent = &gTempEnts[entindex - ENTINDEX_TEMPENTITY];
-			if (tent->entity.curstate.messagenum != (*cl_parsecount))
+
+			if (!ClientEntityManager()->IsTempEntityPresent(ppTempEntFree, ppTempEntActive, tent))
 			{
 				itor = FreeRagdollInternal(itor);
 			}
@@ -1486,7 +1496,7 @@ void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double fram
 		
 		auto ent = gEngfuncs.GetEntityByIndex(entindex);
 
-		if (!IsEntityPresent(ent) ||
+		if (!ClientEntityManager()->IsEntityPresent(ent) ||
 			!UpdateRagdoll(ent, itor->second, frame_time, client_time))
 		{
 			itor = FreeRagdollInternal(itor);
@@ -1497,6 +1507,7 @@ void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double fram
 		}
 	}
 
+	//Purpose: Remove staticObjects that tend to be removed.
 	for (auto itor = m_staticMap.begin(); itor != m_staticMap.end();)
 	{
 		if (itor->first == 0)
@@ -1507,7 +1518,7 @@ void CPhysicsManager::UpdateTempEntity(TEMPENTITY **ppTempEntActive, double fram
 
 		auto ent = gEngfuncs.GetEntityByIndex(itor->first);
 
-		if (!IsEntityPresent(ent))
+		if (!ClientEntityManager()->IsEntityPresent(ent))
 		{
 			itor = FreeStaticInternal(itor);
 		}
@@ -2867,11 +2878,13 @@ ragdoll_itor CPhysicsManager::FreeRagdollInternal(ragdoll_itor &itor)
 	for (auto p : ragdoll->m_rigbodyMap)
 	{
 		auto rig = p.second;
+
 		if (rig->buoyancy)
 		{
 			m_dynamicsWorld->removeAction(rig->buoyancy);
 			delete rig->buoyancy;
 		}
+
 		if (rig->rigbody)
 		{
 			m_dynamicsWorld->removeRigidBody(rig->rigbody);
@@ -2957,7 +2970,7 @@ void CPhysicsManager::MergeBarnacleBones(studiohdr_t *hdr, int entindex)
 		return;
 	}
 
-	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->boneindex);
+	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)hdr + hdr->boneindex);
 
 	auto ragdoll = itor->second;
 
@@ -3045,7 +3058,7 @@ bool CPhysicsManager::SetupBones(studiohdr_t *hdr, int entindex)
 		return false;
 	}
 
-	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->boneindex);
+	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)hdr + hdr->boneindex);
 
 	auto ragdoll = itor->second;
 
@@ -3140,9 +3153,11 @@ bool CPhysicsManager::ChangeRagdollEntIndex(ragdoll_itor &itor, int new_entindex
 
 void CPhysicsManager::ResetPose(CRagdollBody *ragdoll, entity_state_t *curstate)
 {
+	auto studiohdr = (studiohdr_t *)IEngineStudio.Mod_Extradata(ragdoll->m_model);
+
 	bool bNeedResetKinematic = false;
 
-	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)ragdoll->m_studiohdr + ragdoll->m_studiohdr->boneindex);
+	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)studiohdr + studiohdr->boneindex);
 
 	for (auto &p : ragdoll->m_rigbodyMap)
 	{
@@ -3163,6 +3178,7 @@ void CPhysicsManager::ResetPose(CRagdollBody *ragdoll, entity_state_t *curstate)
 			//Transform to dynamic at next tick
 			rig->rigbody->setCollisionFlags(rig->oldCollisionFlags | btCollisionObject::CF_KINEMATIC_OBJECT);
 			rig->rigbody->setActivationState(DISABLE_DEACTIVATION);
+			rig->rigbody->setGravity(btVector3(0, 0, 0));
 
 			bNeedResetKinematic = true;
 		}
@@ -3529,6 +3545,7 @@ update_kinematic:
 		{
 			rig->rigbody->setCollisionFlags(rig->oldCollisionFlags | btCollisionObject::CF_KINEMATIC_OBJECT);
 			rig->rigbody->setActivationState(DISABLE_DEACTIVATION);
+			rig->rigbody->setGravity(btVector3(0, 0, 0));
 		}
 		else
 		{
@@ -3545,17 +3562,22 @@ update_kinematic:
 	return true;
 }
 
-CRagdollBody *CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int entindex)
+CRagdollBody *CPhysicsManager::CreateRagdoll(model_t *mod, ragdoll_config_t *cfg, int entindex)
 {
+	auto studiohdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(mod);
+
 	auto ragdoll = new CRagdollBody();
 
-	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)(*pstudiohdr) + (*pstudiohdr)->boneindex);
+	ragdoll->m_flLastRagdollCreateTime = gEngfuncs.GetClientTime();
+
+	mstudiobone_t *pbones = (mstudiobone_t *)((byte *)studiohdr + studiohdr->boneindex);
 
 	//Save bone relative transform
 
-	for (int i = 0; i < (*pstudiohdr)->numbones; ++i)
+	for (int i = 0; i < studiohdr->numbones; ++i)
 	{
 		int parent = pbones[i].parent;
+
 		if (parent == -1)
 		{
 			Matrix3x4ToTransform((*pbonetransform)[i], ragdoll->m_boneRelativeTransform[i]);
@@ -3579,7 +3601,7 @@ CRagdollBody *CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int entindex
 	{
 		auto rigcontrol = &cfg->rigcontrol[i];
 
-		CRigBody *rig = CreateRigBody((*pstudiohdr), rigcontrol);
+		CRigBody *rig = CreateRigBody(studiohdr, rigcontrol);
 		if (rig)
 		{
 			ragdoll->m_keyBones.emplace_back(rigcontrol->boneindex);
@@ -3599,7 +3621,7 @@ CRagdollBody *CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int entindex
 		//m_dynamicsWorld->addAction(rig->buoyancy);
 	}
 
-	for (int i = 0; i < (*pstudiohdr)->numbones; ++i)
+	for (int i = 0; i < studiohdr->numbones; ++i)
 	{
 		if (std::find(ragdoll->m_keyBones.begin(), ragdoll->m_keyBones.end(), i) == ragdoll->m_keyBones.end())
 			ragdoll->m_nonKeyBones.emplace_back(i);
@@ -3609,21 +3631,22 @@ CRagdollBody *CPhysicsManager::CreateRagdoll(ragdoll_config_t *cfg, int entindex
 	{
 		auto cstcontrol = &cfg->cstcontrol[i];
 
-		CreateConstraint(ragdoll, (*pstudiohdr), cstcontrol);
+		CreateConstraint(ragdoll, studiohdr, cstcontrol);
 	}
 
 	for (size_t i = 0; i < cfg->watercontrol.size(); ++i)
 	{
 		auto water_control = &cfg->watercontrol[i];
 
-		CreateWaterControl(ragdoll, (*pstudiohdr), water_control);
+		CreateWaterControl(ragdoll, studiohdr, water_control);
 	}
 
 	ragdoll->m_entindex = entindex;
-	ragdoll->m_studiohdr = (*pstudiohdr);
+	ragdoll->m_model = mod;
 	ragdoll->m_animcontrol = cfg->animcontrol;
 	ragdoll->m_barcontrol = cfg->barcontrol;
 	ragdoll->m_garcontrol = cfg->garcontrol;
+
 	VectorCopy(cfg->firstperson_angleoffset, ragdoll->m_firstperson_angleoffset);
 
 	m_ragdollMap[entindex] = ragdoll;

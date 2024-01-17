@@ -4,8 +4,8 @@
 #include "privatehook.h"
 #include "parsemsg.h"
 #include "message.h"
-#include "corpse.h"
 #include "event_api.h"
+#include "ClientEntityManager.h"
 
 cvar_t *cl_minmodels = NULL;
 cvar_t *cl_min_t = NULL;
@@ -153,27 +153,30 @@ int __MsgFunc_ClCorpse(const char *pszName, int iSize, void *pbuf)
 
 	BEGIN_READ(pbuf, iSize);
 	auto model = READ_STRING();
+
+	char szModel[64] = { 0 };
+	strncpy(szModel, model, sizeof(szModel));
+
 	vOrigin[0] = 0.0078125f * READ_LONG();
 	vOrigin[1] = 0.0078125f * READ_LONG(); 
 	vOrigin[2] = 0.0078125f * READ_LONG();
 	vAngles[0] = READ_COORD();
 	vAngles[1] = READ_COORD();
 	vAngles[2] = READ_COORD();
-	auto delay = READ_LONG();
+	auto Delay = READ_LONG();
 	auto Sequence = READ_BYTE();
 	auto Body = READ_BYTE();
 	auto TeamID = READ_BYTE();
 	auto PlayerID = READ_BYTE();
 
-	char szModel[64] = { 0 };
-
-	CounterStrike_RedirectPlayerModelPath(model, PlayerID, TeamID, szModel, sizeof(szModel));
+	char szNewModel[64] = { 0 };
+	CounterStrike_RedirectPlayerModelPath(szModel, PlayerID, TeamID, szNewModel, sizeof(szNewModel));
 
 	g_bIsCreatingClCorpse = true;
 	
 	if (PlayerID <= 0 || PlayerID > gEngfuncs.GetMaxClients())
 	{
-		g_iCreatingClCorpsePlayerIndex = gCorpseManager.FindDyingPlayer(szModel, vOrigin, vAngles, Sequence, Body);
+		g_iCreatingClCorpsePlayerIndex = ClientEntityManager()->FindDyingPlayer(szModel, vOrigin, vAngles, Sequence, Body);
 	}
 	else
 	{

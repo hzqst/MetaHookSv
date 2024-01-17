@@ -17,13 +17,48 @@ using namespace vgui;
 
 SubtitlePanel::SubtitlePanel(Panel *parent)  : EditablePanel(parent, "Subtitle")
 {
+	m_bInLevel = false;
+	m_flFadeIn = 0;
+	m_flFadeOut = 0;
+	m_flHoldTime = 0;
+	m_flHoldTimeScale = 0;
+	m_flStartTimeScale = 0;
+	m_hTextFont = NULL;
+	m_iAntiSpam = 0;
+	m_iCornorSize = 0;
+	m_iCurPanelY = 0;
+	m_iCurPanelYEnd = 0;
+	m_iFontTall = 0;
+	m_iLineSpace = 0;
+	m_iMaxLines = 0;
+	m_iPanelAlpha = 0;
+	m_iPanelTop = 0;
+	m_iPanelY = 0;
+	m_iPanelYEnd = 0;
+	m_iPrefix = 0;
+	m_iRoundCornorMaterial[0] = 0;
+	m_iRoundCornorMaterial[1] = 0;
+	m_iRoundCornorMaterial[2] = 0;
+	m_iRoundCornorMaterial[3] = 0;
+	m_iScaledCornorSize = 0;
+	m_iScaledLineSpace = 0;
+	m_iScaledXSpace = 0;
+	m_iScaledYSpace = 0;
+	m_iTextAlign = ALIGN_DEFAULT;
+	m_iWaitPlay = 0;
+	m_iXSpace = 0;
+	m_iYSpace = 0;
+	m_szTextAlign[0] = 0;
+	m_szTextFont[0] = 0;
+
 	SetPaintBackgroundEnabled(true);
 	SetPaintBorderEnabled(false);
 	SetProportional(true);
 
 	SetScheme("CaptionScheme");
 
-	LoadControlSettings("captionmod/SubtitlePanel.res", "GAME");
+	LoadControlSettings("captionmod/SubtitlePanel.res");
+	
 	InvalidateLayout(false, true);
 
 	vgui::ivgui()->AddTickSignal( GetVPanel() );
@@ -42,6 +77,15 @@ SubtitlePanel::~SubtitlePanel()
 		delete m_BackLines[i];
 	}
 	m_BackLines.RemoveAll();
+
+	for (int i = 0; i < 4; ++i)
+	{
+		if (m_iRoundCornorMaterial[i])
+		{
+			surface()->DeleteTextureByID(m_iRoundCornorMaterial[i]);
+			m_iRoundCornorMaterial[i] = 0;
+		}
+	}
 }
 
 void SubtitlePanel::ApplySettings( KeyValues *inResourceData )

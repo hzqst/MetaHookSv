@@ -326,12 +326,11 @@ public:
 	// Console-only.  Get the string to use for the current video mode for layout files.
 	const char *GetResolutionKey( void ) const;
 
+	void DeleteTextureByID(int textureId);
 private:
 	float m_flAlphaMultiplier;
 };
 
 }
-
-vgui::CSurface2 *Surface2();
 
 #endif
