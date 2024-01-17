@@ -1,6 +1,7 @@
 #include <metahook.h>
 #include "gl_local.h"
 #include "exportfuncs.h"
+#include <FreeImage.h>
 
 cl_exportfuncs_t gExportfuncs = {0};
 mh_interface_t *g_pInterface = NULL;
@@ -45,6 +46,16 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	if (iVideoMode == 0)
 	{
 		g_pMetaHookAPI->SysError("Software mode is not supported.\nPlease add \"-gl\" in the launch parameters.");
+	}
+
+	auto FreeImage_VersionString = FreeImage_GetVersion();
+	int FreeImage_MajorVersion = 0, FreeImage_MinorVersion = 0, FreeImage_ReleaseSerial = 0;
+	if (3 != sscanf(FreeImage_VersionString, "%d.%d.%d", &FreeImage_MajorVersion, &FreeImage_MinorVersion, &FreeImage_ReleaseSerial) ||
+		FreeImage_MajorVersion != FREEIMAGE_MAJOR_VERSION ||
+		FreeImage_MinorVersion != FREEIMAGE_MINOR_VERSION ||
+		FreeImage_ReleaseSerial != FREEIMAGE_RELEASE_SERIAL)
+	{
+		g_pMetaHookAPI->SysError("FreeImage.dll version mismatch, expect \"%s\", got \"%d.%d.%d\" !", FreeImage_VersionString, FreeImage_MajorVersion, FreeImage_MinorVersion, FreeImage_ReleaseSerial);
 	}
 
 	g_pFileSystem = g_pInterface->FileSystem;
