@@ -118,7 +118,7 @@ public:
 	};
 
 public:
-		virtual void Shutdown( void ) = 0;
+	virtual void Shutdown( void ) = 0;
 	virtual void RunFrame( void ) = 0;
 	virtual VPANEL GetEmbeddedPanel( void ) = 0;
 	virtual void SetEmbeddedPanel( VPANEL pPanel ) = 0;
