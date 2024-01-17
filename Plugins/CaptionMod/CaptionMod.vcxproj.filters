@@ -505,9 +505,6 @@
     <ClInclude Include="$(SolutionDir)include\VGUI\ISurface.h">
       <Filter>vgui_interface</Filter>
     </ClInclude>
-    <ClInclude Include="$(SolutionDir)include\VGUI\ISurface2.h">
-      <Filter>vgui_interface</Filter>
-    </ClInclude>
     <ClInclude Include="$(SolutionDir)include\VGUI\ISystem.h">
       <Filter>vgui_interface</Filter>
     </ClInclude>
@@ -1020,6 +1017,9 @@
     </ClInclude>
     <ClInclude Include="$(SolutionDir)include\VGUI\BaseUI.h">
       <Filter>EngineVGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Interface\VGUI\ISurface2.h">
+      <Filter>vgui_interface</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

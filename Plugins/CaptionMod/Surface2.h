@@ -1,100 +1,16 @@
-#ifndef ISURFACE2_H
-#define ISURFACE2_H
+#ifndef SURFACE2_H
+#define SURFACE2_H
 
 #include "VGUI.h"
 #include "IHTML.h"
 #include <mathlib/vector2d.h>
 #include <Color.h>
+#include <ISurface2.h>
 
 namespace vgui
 {
 
-class IImage;
-
-// SRC only defines
-
-struct Vertex_t
-{
-	Vertex_t() {}
-	Vertex_t( const Vector2D &pos, const Vector2D &coord = Vector2D( 0, 0 ) )
-	{
-		m_Position = pos;
-		m_TexCoord = coord;
-	}
-	void Init( const Vector2D &pos, const Vector2D &coord = Vector2D( 0, 0 ) )
-	{
-		m_Position = pos;
-		m_TexCoord = coord;
-	}
-	
-	Vector2D	m_Position;
-	Vector2D	m_TexCoord;
-};
-
-enum FontDrawType_t
-{
-	// Use the "additive" value from the scheme file
-	FONT_DRAW_DEFAULT = 0,
-
-	// Overrides
-	FONT_DRAW_NONADDITIVE,
-	FONT_DRAW_ADDITIVE,
-
-	FONT_DRAW_TYPE_COUNT = 2,
-};
-
-// Refactor these two
-struct CharRenderInfo
-{
-	// In:
-	FontDrawType_t	drawType;
-	wchar_t			ch;
-
-	// Out
-	bool			valid;
-
-	// In/Out (true by default)
-	bool			shouldclip;
-	// Text pos
-	int				x, y;
-	// Top left and bottom right
-	Vertex_t		verts[ 2 ];
-	int				textureId;
-	int				abcA;
-	int				abcB;
-	int				abcC;
-	int				fontTall;
-	HFont			currentFont;
-};
-
-struct IntRect
-{
-	int x0;
-	int y0;
-	int x1;
-	int y1;
-};
-
-
-#ifndef VGUI2_SURFACE_FEATURE
-#define VGUI2_SURFACE_FEATURE
-// returns true if the surface supports minimize & maximize capabilities
-enum SurfaceFeature_e
-{
-	ANTIALIASED_FONTS = 1,
-	DROPSHADOW_FONTS = 2,
-	ESCAPE_KEY = 3,
-	OPENING_NEW_HTML_WINDOWS = 4,
-	FRAME_MINIMIZE_MAXIMIZE = 5,
-	DIRECT_HWND_RENDER = 6,
-	OUTLINE_FONTS = 7,
-};
-
-#endif
-
-//Simple wrapper around original g_pSurface and g_pSurface_HL25
-
-class CSurface2
+class CSurface2 : public ISurface2
 {
 public:
 	CSurface2();
@@ -327,6 +243,7 @@ public:
 	const char *GetResolutionKey( void ) const;
 
 	void DeleteTextureByID(int textureId);
+
 private:
 	float m_flAlphaMultiplier;
 };

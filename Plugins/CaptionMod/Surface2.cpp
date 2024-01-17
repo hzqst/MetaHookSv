@@ -16,7 +16,9 @@ using namespace vgui;
 
 static CSurface2 s_Surface2;
 
-vgui::CSurface2 *g_pVGuiSurface = &s_Surface2;
+vgui::ISurface2 *g_pVGuiSurface = &s_Surface2;
+
+EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CSurface2, ISurface2, VGUI_SURFACE2_INTERFACE_VERSION, s_Surface2);
 
 CSurface2::CSurface2()
 {
@@ -1298,6 +1300,7 @@ void CSurface2::PrecacheFontCharacters(HFont font, wchar_t *pCharacters)
 
 const char *CSurface2::GetResolutionKey(void) const
 {
+
 	return NULL;
 }
 

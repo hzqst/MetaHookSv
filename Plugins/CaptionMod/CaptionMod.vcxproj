@@ -288,6 +288,7 @@ $(GLEWCheckRequirements)</Command>
     <ClCompile Include="$(SolutionDir)\include\vgui_controls\WizardSubPanel.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\Interface\VGUI\ISurface2.h" />
     <ClInclude Include="chatdialog.h" />
     <ClInclude Include="cstrikechatdialog.h" />
     <ClInclude Include="CvarSlider.h" />
@@ -397,7 +398,6 @@ $(GLEWCheckRequirements)</Command>
     <ClInclude Include="$(SolutionDir)include\VGUI\IPanel.h" />
     <ClInclude Include="$(SolutionDir)include\VGUI\IScheme.h" />
     <ClInclude Include="$(SolutionDir)include\VGUI\ISurface.h" />
-    <ClInclude Include="$(SolutionDir)include\VGUI\ISurface2.h" />
     <ClInclude Include="$(SolutionDir)include\VGUI\ISystem.h" />
     <ClInclude Include="$(SolutionDir)include\VGUI\IVGUI.h" />
     <ClInclude Include="$(SolutionDir)include\VGUI\KeyCode.h" />

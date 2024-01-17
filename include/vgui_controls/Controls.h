@@ -32,7 +32,7 @@
 #include <vgui/KeyCode.h>
 
 #ifdef VGUI_USE_SURFACE2
-#include "Surface2.h"
+#include <ISurface2.h>
 #endif
 
 #ifdef VGUI_USE_SCHEME2
@@ -43,7 +43,7 @@ extern IFileSystem *g_pFullFileSystem;
 
 extern vgui::IInput *g_pVGuiInput;
 extern vgui::CSchemeManager * g_pVGuiSchemeManager;
-extern vgui::CSurface2 *g_pVGuiSurface;
+extern vgui::ISurface2 *g_pVGuiSurface;
 extern vgui::ISystem *g_pVGuiSystem;
 extern vgui::IVGui *g_pVGui;
 extern vgui::IPanel *g_pVGuiPanel;
@@ -90,8 +90,8 @@ inline vgui::CSchemeManager *scheme()
 	return g_pVGuiSchemeManager;
 }
 
-// #include <vgui/ISurface.h>
-inline vgui::CSurface2 *surface()
+// #include <vgui/ISurface2.h>
+inline vgui::ISurface2 *surface()
 {
 	return g_pVGuiSurface;
 }
