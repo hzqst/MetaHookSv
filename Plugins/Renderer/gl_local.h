@@ -78,6 +78,7 @@ extern float r_screenaspect;
 extern cl_entity_t *r_worldentity;
 extern model_t *r_worldmodel;
 extern model_t *r_playermodel;
+
 extern int *cl_numvisedicts;
 extern cl_entity_t **cl_visedicts;
 extern cl_entity_t **currententity;

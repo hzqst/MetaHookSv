@@ -9,8 +9,6 @@
 
 vec3_t vec3_origin = { 0, 0, 0 };
 
-int nanmask = 255 << 23;
-
 #define DEG2RAD(a) (a * M_PI) / 180.0F
 
 void ProjectPointOnPlane(vec3_t dst, const vec3_t p, const vec3_t normal)

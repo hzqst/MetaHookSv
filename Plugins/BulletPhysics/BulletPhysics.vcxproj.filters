@@ -41,6 +41,15 @@
     <ClCompile Include="parsemsg.cpp">
       <Filter>HLSDK</Filter>
     </ClCompile>
+    <ClCompile Include="BasePhysicManager.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BulletPhysicMnager.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="CounterStrike.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
@@ -68,6 +77,18 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="message.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicManager.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BasePhysicManager.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="BulletPhysicManager.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="CounterStrike.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

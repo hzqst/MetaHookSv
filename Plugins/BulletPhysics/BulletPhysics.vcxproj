@@ -169,6 +169,9 @@ $(Bullet3CheckRequirements)</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\include\HLSDK\common\interface.cpp" />
+    <ClCompile Include="BulletPhysicMnager.cpp" />
+    <ClCompile Include="BasePhysicManager.cpp" />
+    <ClCompile Include="CounterStrike.cpp" />
     <ClCompile Include="mathlib2.cpp" />
     <ClCompile Include="ClientEntityManager.cpp" />
     <ClCompile Include="message.cpp" />
@@ -179,7 +182,11 @@ $(Bullet3CheckRequirements)</Command>
     <ClCompile Include="plugins.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BasePhysicManager.h" />
+    <ClInclude Include="BulletPhysicManager.h" />
+    <ClInclude Include="CounterStrike.h" />
     <ClInclude Include="message.h" />
+    <ClInclude Include="PhysicManager.h" />
     <ClInclude Include="plugins.h" />
     <ClInclude Include="privatehook.h" />
     <ClInclude Include="enginedef.h" />

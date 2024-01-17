@@ -521,6 +521,15 @@ public:
 	void Shutdown();
 	void NewMap(void);
 	void DebugDraw(void);
+	void SetGravity(float velocity);
+	void StepSimulation(double framerate);
+	void ReloadConfig(void);
+	bool SetupBones(studiohdr_t* hdr, int entindex);
+	bool SetupJiggleBones(studiohdr_t* hdr, int entindex);
+	void MergeBarnacleBones(studiohdr_t* hdr, int entindex);
+	CRagdollBody* FindRagdoll(int entindex);
+	CRagdollBody* CreateRagdoll(model_t* mod, ragdoll_config_t* cfg, int entindex);
+
 	void GenerateBarnacleIndiceVerticeArray(void);
 	void GenerateGargantuaIndiceVerticeArray(void);
 	void GenerateBrushIndiceArray(void);
@@ -528,14 +537,8 @@ public:
 	void GenerateIndexedArrayRecursiveWorldNode(mnode_t *node, vertexarray_t *vertexarray, indexarray_t *indexarray);
 	void GenerateIndexedArrayForBrushface(brushface_t *brushface, indexarray_t *indexarray);
 	void GenerateIndexedArrayForSurface(msurface_t *psurf, vertexarray_t *vertexarray, indexarray_t *indexarray);
-	void GenerateIndexedArrayForBrush(model_t *mod, vertexarray_t *vertexarray, indexarray_t *indexarray);
-	void SetGravity(float velocity);
-	void StepSimulation(double framerate);
-	void ReloadConfig(void);
+	void GenerateIndexedArrayForBrush(model_t* mod, vertexarray_t* vertexarray, indexarray_t* indexarray);
 	ragdoll_config_t *LoadRagdollConfig(model_t *mod);
-	bool SetupBones(studiohdr_t *hdr, int entindex);
-	bool SetupJiggleBones(studiohdr_t *hdr, int entindex);
-	void MergeBarnacleBones(studiohdr_t *hdr, int entindex);
 	bool HasRagdolls(void);
 	void RemoveRagdoll(int entindex);
 	void RemoveRagdollEx(ragdoll_itor &itor);
@@ -544,18 +547,18 @@ public:
 	void RemoveAllRagdolls();
 	void RemoveAllStatics(); 
 	bool IsValidRagdoll(ragdoll_itor &itor);
-	CRagdollBody *FindRagdoll(int entindex);
 	ragdoll_itor FindRagdollEx(int entindex);
 	bool ChangeRagdollEntIndex(int old_entindex, int new_entindex);
 	bool ChangeRagdollEntIndex(ragdoll_itor &itor, int new_entindex);
+
 	bool UpdateKinematic(CRagdollBody *ragdoll, int iActivityType, entity_state_t *curstate);
 	void ResetPose(CRagdollBody *ragdoll, entity_state_t *curstate);
 	void ApplyBarnacle(CRagdollBody *ragdoll, cl_entity_t *barnacleEntity);
 	void ApplyGargantua(CRagdollBody *ragdoll, cl_entity_t *gargEntity);
-	CRagdollBody *CreateRagdoll(model_t* mod, ragdoll_config_t *cfg, int entindex);
 	CRigBody *CreateRigBody(studiohdr_t *studiohdr, ragdoll_rig_control_t *rigcontrol);
 	btTypedConstraint *CreateConstraint(CRagdollBody *ragdoll, studiohdr_t *hdr, ragdoll_cst_control_t *cstcontrol);
 	void CreateWaterControl(CRagdollBody *ragdoll, studiohdr_t *studiohdr, ragdoll_water_control_t *water_control);
+
 	CStaticBody *CreateStaticBody(cl_entity_t *ent, vertexarray_t *vertexarray, indexarray_t *indexarray, bool kinematic);
 	void CreateBrushModel(cl_entity_t *ent);
 	void CreateBarnacle(cl_entity_t *ent);
@@ -568,7 +571,6 @@ public:
 	void UpdateRagdollWaterSimulation(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time);
 	void UpdateRagdollSleepState(cl_entity_t *ent, CRagdollBody *ragdoll, double frame_time, double client_time);
 	void UpdateTempEntity(TEMPENTITY** ppTempEntFree, TEMPENTITY **ppTempEntActive, double frame_time, double client_time);
-	//bool SyncThirdPersonView(CRagdollBody *ragdoll, float *org);
 	bool SyncFirstPersonView(CRagdollBody *ragdoll, cl_entity_t *ent, struct ref_params_s *pparams);
 	void ForceRagdollToSleep(CRagdollBody *ragdoll);
 private:

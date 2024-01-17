@@ -1,5 +1,6 @@
 #pragma once
 
+#include <studio.h>
 #include <com_model.h>
 
 typedef struct walk_context_s
@@ -58,6 +59,11 @@ void Engine_FillAddreess(void);
 void Client_FillAddress(void);
 void Engine_InstallHook(void);
 void Engine_UninstallHook(void);
+
+extern studiohdr_t** pstudiohdr;
+extern model_t** r_model;
+extern float(*pbonetransform)[128][3][4];
+extern float(*plighttransform)[128][3][4];
 
 extern int* r_framecount;
 extern int *r_visframecount;

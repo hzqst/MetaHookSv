@@ -1,11 +1,15 @@
 #include <metahook.h>
 #include <studio.h>
 #include <r_studioint.h>
+#include <com_model.h>
 #include "cl_entity.h"
 
 extern cl_enginefunc_t gEngfuncs;
 extern cl_exportfuncs_t gExportfuncs;
 extern engine_studio_api_t IEngineStudio;
+
+extern model_t* r_worldmodel;
+extern cl_entity_t* r_worldentity;
 
 int HUD_AddEntity(int type, cl_entity_t *ent, const char *model);
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio);

@@ -19,13 +19,13 @@
 #include "ClientEntityManager.h"
 #include "physics.h"
 
-hook_t *g_phook_GameStudioRenderer_StudioSetupBones = NULL;
-hook_t *g_phook_GameStudioRenderer_StudioDrawPlayer = NULL;
-hook_t *g_phook_GameStudioRenderer_StudioDrawModel = NULL;
-hook_t *g_phook_R_StudioSetupBones = NULL;
-hook_t *g_phook_R_StudioDrawPlayer = NULL;
-hook_t *g_phook_R_StudioDrawModel = NULL;
-hook_t *g_phook_efxapi_R_TempModel = NULL;
+static hook_t *g_phook_GameStudioRenderer_StudioSetupBones = NULL;
+static hook_t *g_phook_GameStudioRenderer_StudioDrawPlayer = NULL;
+static hook_t *g_phook_GameStudioRenderer_StudioDrawModel = NULL;
+static hook_t *g_phook_R_StudioSetupBones = NULL;
+static hook_t *g_phook_R_StudioDrawPlayer = NULL;
+static hook_t *g_phook_R_StudioDrawModel = NULL;
+static hook_t *g_phook_efxapi_R_TempModel = NULL;
 
 cl_enginefunc_t gEngfuncs;
 engine_studio_api_t IEngineStudio;
@@ -33,7 +33,6 @@ r_studio_interface_t **gpStudioInterface;
 
 cvar_t *bv_debug = NULL;
 cvar_t *bv_simrate = NULL;
-//cvar_t *bv_scale = NULL;
 cvar_t *bv_enable = NULL;
 cvar_t *bv_syncview = NULL;
 cvar_t *bv_ragdoll_sleepaftertime = NULL;
@@ -51,10 +50,13 @@ bool g_bIsCounterStrike = false;
 int g_iRagdollRenderState = 0;
 int g_iRagdollRenderEntIndex = 0;
 
+model_t* r_worldmodel = NULL;
+cl_entity_t* r_worldentity = NULL;
+
+ref_params_t r_params = { 0 };
+
 studiohdr_t **pstudiohdr = NULL;
 model_t **r_model = NULL;
-model_t *r_worldmodel = NULL;
-cl_entity_t *r_worldentity = NULL;
 void *g_pGameStudioRenderer = NULL;
 int* r_framecount = NULL;
 int *r_visframecount = NULL;
@@ -69,8 +71,6 @@ TEMPENTITY *gTempEnts = NULL;
 
 int *g_iUser1 = NULL;
 int *g_iUser2 = NULL;
-
-ref_params_t r_params = { 0 };
 
 float(*pbonetransform)[MAXSTUDIOBONES][3][4] = NULL;
 float(*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;

@@ -11,20 +11,11 @@
 #include "qgl.h"
 #include "mathlib2.h"
 
-extern studiohdr_t **pstudiohdr;
-extern model_t **r_model;
-extern float(*pbonetransform)[128][3][4];
-extern float(*plighttransform)[128][3][4]; 
-
 extern cvar_t *bv_debug;
 extern cvar_t *bv_simrate;
 extern cvar_t *bv_ragdoll_sleepaftertime;
 extern cvar_t *bv_ragdoll_sleeplinearvel;
 extern cvar_t *bv_ragdoll_sleepangularvel;
-
-extern model_t *r_worldmodel;
-extern cl_entity_t *r_worldentity;
-extern int *r_visframecount;
 
 int EngineGetNumKnownModel(void);
 int EngineGetMaxKnownModel(void);
@@ -1064,29 +1055,7 @@ void CPhysicsManager::ReleaseRagdollFromBarnacle(CRagdollBody *ragdoll)
 		ragdoll->m_barnacleDragRigBody.clear();
 	}
 }
-#if 0
-bool CPhysicsManager::SyncThirdPersonView(CRagdollBody *ragdoll, float *org)
-{
-	if (ragdoll->m_pelvisRigBody)
-	{
-		auto worldTrans = ragdoll->m_pelvisRigBody->rigbody->getWorldTransform();
-		auto worldOrg = worldTrans.getOrigin();
 
-		vec3_t origin;
-		origin[0] = worldOrg.getX();
-		origin[1] = worldOrg.getY();
-		origin[2] = worldOrg.getZ();
-
-		Vec3BulletToGoldSrc(origin);
-
-		VectorCopy(origin, org);
-
-		return true;
-	}
-
-	return false;
-}
-#endif
 bool CPhysicsManager::SyncFirstPersonView(CRagdollBody *ragdoll, cl_entity_t *ent, struct ref_params_s *pparams)
 {
 	if (ragdoll->m_headRigBody)
@@ -2732,7 +2701,7 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 		localrig2.mult(inv2, bonematrix2);
 		localrig2.setOrigin(btVector3(offset4, offset5, offset6));
 
-		if (offset1 == 0 && offset1 == 0 && offset3 == 0 && !(offset4 == 0 && offset5 == 0 && offset6 == 0))
+		if (offset1 == 0 && offset2 == 0 && offset3 == 0 && !(offset4 == 0 && offset5 == 0 && offset6 == 0))
 		{
 			btTransform globaljoint;
 			globaljoint.mult(trans2, localrig2);
@@ -2742,7 +2711,7 @@ btTypedConstraint *CPhysicsManager::CreateConstraint(CRagdollBody *ragdoll, stud
 
 			localrig1.setOrigin(localrig1_org.getOrigin());
 		}
-		else if (offset4 == 0 && offset5 == 0 && offset6 == 0 && !(offset1 == 0 && offset1 == 0 && offset3 == 0))
+		else if (offset4 == 0 && offset5 == 0 && offset6 == 0 && !(offset1 == 0 && offset2 == 0 && offset3 == 0))
 		{
 			btTransform globaljoint;
 			globaljoint.mult(trans1, localrig1);
@@ -3515,6 +3484,8 @@ bool CPhysicsManager::UpdateKinematic(CRagdollBody *ragdoll, int iActivityType, 
 	if (ragdoll->m_bUpdateKinematic && curstate->msg_time > ragdoll->m_flUpdateKinematicTime)
 	{
 		ragdoll->m_bUpdateKinematic = false;
+
+		//TODO: change to UpdateKinematicInternal
 		goto update_kinematic;
 	}
 
