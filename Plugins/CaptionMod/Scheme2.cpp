@@ -586,7 +586,7 @@ void CScheme::ReloadFontGlyphs(void)
 			auto fontName = fontdata->GetString("name");
 			auto fontWeight = fontdata->GetInt("weight");
 
-			surface()->AddGlyphSetToFont(m_FontAliases[i]._font, fontName, tall, fontdata->GetInt("weight"), blur, scanlines, flags);
+			surface()->AddGlyphSetToFont(m_FontAliases[i]._font, fontName, tall, fontWeight, blur, scanlines, flags);
 
 			break;
 		}
