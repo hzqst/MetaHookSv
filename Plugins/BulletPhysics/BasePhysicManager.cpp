@@ -29,7 +29,8 @@ void CBasePhysicManager::Shutdown()
 
 void CBasePhysicManager::NewMap(void)
 {
-	GenerateWorldIndexVertexArray();
+	GenerateWorldVertexArray();
+	GenerateBrushIndexArray();
 	GenerateBarnacleIndexVertexArray();
 	GenerateGargantuaIndexVertexArray();
 	CreateBrushModel(r_worldentity);
@@ -137,25 +138,11 @@ void CBasePhysicManager::UpdateTempEntity(TEMPENTITY** ppTempEntFree, TEMPENTITY
 
 }
 
-class CSavedPolyFlag
-{
-public:
-	CSavedPolyFlag(glpoly_t* p, int flags) : m_poly(p), m_flags(flags)
-	{
-
-	}
-
-	glpoly_t* m_poly;
-	int m_flags;
-};
-
-void CBasePhysicManager::GenerateWorldIndexVertexArray()
+void CBasePhysicManager::GenerateWorldVertexArray()
 {
 	FreeWorldVertexArray();
 
 	m_worldVertexArray = new CPhysicVertexArray;
-
-	std::vector<CSavedPolyFlag> SavedPolyFlags;
 
 	CPhysicBrushVertex Vertexes[3];
 
@@ -166,25 +153,12 @@ void CBasePhysicManager::GenerateWorldIndexVertexArray()
 
 	for (int i = 0; i < r_worldmodel->numsurfaces; i++)
 	{
-		msurface_t* surf;
-
-		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-		{
-			surf = (((msurface_hl25_t*)r_worldmodel->surfaces) + i);
-		}
-		else
-		{
-			surf = r_worldmodel->surfaces + i;
-		}
+		auto surf = GetWorldSurfaceByIndex(i);
 
 		if ((surf->flags & (SURF_DRAWTURB | SURF_UNDERWATER | SURF_DRAWSKY)))
 			continue;
 
 		auto poly = surf->polys;
-
-		SavedPolyFlags.emplace_back(poly, poly->flags);
-
-		poly->flags = i;
 
 		CPhysicBrushFace* brushface = &m_worldVertexArray->vFaceBuffer[i];
 
@@ -228,12 +202,8 @@ void CBasePhysicManager::GenerateWorldIndexVertexArray()
 		brushface->num_vertexes = iNumVerts - iStartVert;
 	}
 
-	GenerateBrushIndexArray();
-
-	for (auto& p : SavedPolyFlags)
-	{
-		p.m_poly->flags = p.m_flags;
-	}
+	//Always shrink to save system memory
+	m_worldVertexArray->vVertexBuffer.shrink_to_fit();
 }
 
 void CBasePhysicManager::FreeWorldVertexArray()
@@ -260,6 +230,7 @@ void CBasePhysicManager::GenerateBrushIndexArray()
 	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
 		auto mod = EngineGetModelByIndex(i);
+
 		if (mod->type == mod_brush && mod->name[0])
 		{
 			if (mod->needload == NL_PRESENT || mod->needload == NL_CLIENT)
@@ -294,40 +265,36 @@ void CBasePhysicManager::GenerateIndexArrayForBrushModel(model_t* mod, CPhysicVe
 	{
 		for (int i = 0; i < mod->nummodelsurfaces; i++)
 		{
-			msurface_t* surf;
-
-			if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-			{
-				surf = (((msurface_hl25_t*)mod->surfaces) + mod->firstmodelsurface + i);
-			}
-			else
-			{
-				surf = mod->surfaces + mod->firstmodelsurface + i;
-			}
+			auto surf = GetWorldSurfaceByIndex(mod->firstmodelsurface + i);
 
 			GenerateIndexArrayForSurface(surf, vertexArray, indexArray);
 		}
 	}
+
+	//Always shrink to save system memory
+	indexArray->vIndexBuffer.shrink_to_fit();
 }
 
-void CBasePhysicManager::GenerateIndexArrayForSurface(msurface_t* psurf, CPhysicVertexArray* vertexarray, CPhysicIndexArray* indexarray)
+void CBasePhysicManager::GenerateIndexArrayForSurface(msurface_t* surf, CPhysicVertexArray* vertexarray, CPhysicIndexArray* indexarray)
 {
-	if (psurf->flags & SURF_DRAWTURB)
+	if (surf->flags & SURF_DRAWTURB)
 	{
 		return;
 	}
 
-	if (psurf->flags & SURF_DRAWSKY)
+	if (surf->flags & SURF_DRAWSKY)
 	{
 		return;
 	}
 
-	if (psurf->flags & SURF_UNDERWATER)
+	if (surf->flags & SURF_UNDERWATER)
 	{
 		return;
 	}
 
-	GenerateIndexArrayForBrushface(&vertexarray->vFaceBuffer[psurf->polys->flags], indexarray);
+	auto surfIndex = GetWorldSurfaceIndex(surf);
+
+	GenerateIndexArrayForBrushface(&vertexarray->vFaceBuffer[surfIndex], indexarray);
 }
 
 void CBasePhysicManager::GenerateIndexArrayRecursiveWorldNode(mnode_t* node, CPhysicVertexArray* vertexArray, CPhysicIndexArray* indexArray)
@@ -342,16 +309,7 @@ void CBasePhysicManager::GenerateIndexArrayRecursiveWorldNode(mnode_t* node, CPh
 
 	for (int i = 0; i < node->numsurfaces; ++i)
 	{
-		msurface_t* surf;
-
-		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-		{
-			surf = (((msurface_hl25_t*)r_worldmodel->surfaces) + node->firstsurface + i);
-		}
-		else
-		{
-			surf = r_worldmodel->surfaces + node->firstsurface + i;
-		}
+		auto surf = GetWorldSurfaceByIndex(node->firstsurface + i);
 
 		GenerateIndexArrayForSurface(surf, vertexArray, indexArray);
 	}

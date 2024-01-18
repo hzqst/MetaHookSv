@@ -108,7 +108,7 @@ public:
 
 private:
 	//WorldVertexArray and WorldIndexArray
-	void GenerateWorldIndexVertexArray();
+	void GenerateWorldVertexArray();
 	void FreeWorldVertexArray();
 	void GenerateBrushIndexArray();
 	void FreeAllBrushIndexArray();

@@ -201,6 +201,35 @@ bool CL_IsFirstPersonMode(cl_entity_t *player)
 	return (!gExportfuncs.CL_IsThirdPerson() && (*cl_viewentity) == player->index && !(chase_active && chase_active->value)) ? true : false;
 }
 
+msurface_t* GetWorldSurfaceByIndex(int index)
+{
+	msurface_t* surf;
+
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		surf = (((msurface_hl25_t*)r_worldmodel->surfaces) + index);
+	}
+	else
+	{
+		surf = r_worldmodel->surfaces + index;
+	}
+
+	return surf;
+}
+
+int GetWorldSurfaceIndex(msurface_t* surf)
+{
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		auto surf25 = (msurface_hl25_t*)surf;
+		auto surfbase = (msurface_hl25_t*)r_worldmodel->surfaces;
+
+		return surf25 - surfbase;
+	}
+
+	return surf - r_worldmodel->surfaces;
+}
+
 int EngineGetNumKnownModel()
 {
 	return (*mod_numknown);

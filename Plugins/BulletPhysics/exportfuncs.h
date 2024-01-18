@@ -27,3 +27,6 @@ void V_CalcRefdef(struct ref_params_s *pparams);
 void HUD_Frame(double frametime);
 void HUD_Shutdown(void);
 void HUD_CreateEntities(void);
+
+msurface_t* GetWorldSurfaceByIndex(int index);
+int GetWorldSurfaceIndex(msurface_t* surf);

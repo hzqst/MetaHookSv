@@ -247,8 +247,6 @@ void CPhysicsManager::GenerateWorldVerticeArray(void)
 
 		auto poly = surf->polys;
 
-		poly->flags = i;
-
 		brushface_t *brushface = &m_worldVertexArray->vFaceBuffer[i];
 
 		int iStartVert = iNumVerts;
@@ -317,24 +315,26 @@ void CPhysicsManager::GenerateIndexedArrayForBrushface(brushface_t *brushface, i
 	}
 }
 
-void CPhysicsManager::GenerateIndexedArrayForSurface(msurface_t *psurf, vertexarray_t *vertexarray, indexarray_t *indexarray)
+void CPhysicsManager::GenerateIndexedArrayForSurface(msurface_t * surf, vertexarray_t *vertexarray, indexarray_t *indexarray)
 {
-	if (psurf->flags & SURF_DRAWTURB)
+	if (surf->flags & SURF_DRAWTURB)
 	{
 		return;
 	}
 
-	if (psurf->flags & SURF_DRAWSKY)
+	if (surf->flags & SURF_DRAWSKY)
 	{
 		return;
 	}
 
-	if (psurf->flags & SURF_UNDERWATER)
+	if (surf->flags & SURF_UNDERWATER)
 	{
 		return;
 	}
 
-	GenerateIndexedArrayForBrushface(&vertexarray->vFaceBuffer[psurf->polys->flags], indexarray);	
+	auto surfIndex = GetWorldSurfaceIndex(surf);
+
+	GenerateIndexedArrayForBrushface(&vertexarray->vFaceBuffer[surfIndex], indexarray);
 }
 
 void CPhysicsManager::GenerateIndexedArrayRecursiveWorldNode(mnode_t *node, vertexarray_t *vertexarray, indexarray_t *indexarray)
@@ -349,17 +349,7 @@ void CPhysicsManager::GenerateIndexedArrayRecursiveWorldNode(mnode_t *node, vert
 
 	for (int i = 0;i < node->numsurfaces; ++i)
 	{
-		msurface_t* surf;
-
-		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-		{
-			surf = (((msurface_hl25_t*)r_worldmodel->surfaces) + node->firstsurface + i);
-		}
-		else
-		{
-			surf = r_worldmodel->surfaces + node->firstsurface + i;
-		}
-
+		auto surf = GetWorldSurfaceByIndex(node->firstsurface + i);
 		GenerateIndexedArrayForSurface(surf, vertexarray, indexarray);
 	}
 
@@ -622,6 +612,7 @@ void CPhysicsManager::GenerateBarnacleIndiceVerticeArray(void)
 	}
 
 	m_barnacleIndexArray = new indexarray_t;
+
 	for (int i = 0; i < (int)m_barnacleVertexArray->vFaceBuffer.size(); i++)
 	{
 		GenerateIndexedArrayForBrushface(&m_barnacleVertexArray->vFaceBuffer[i], m_barnacleIndexArray);
@@ -757,6 +748,7 @@ void CPhysicsManager::GenerateGargantuaIndiceVerticeArray(void)
 	}
 
 	m_gargantuaIndexArray = new indexarray_t;
+
 	for (int i = 0; i < (int)m_gargantuaVertexArray->vFaceBuffer.size(); i++)
 	{
 		if (i >= 3 * 2 && i < 8 * 2)
