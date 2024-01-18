@@ -100,7 +100,7 @@ Let's assume that you have all requirements installed correctly.
 
 ### CaptionMod
 
-A subtitle plugin designed for displaying subtitles and translate in-game HUD text.
+A subtitle plugin that adds closing-captioning, HUD text translatation to game, HiDpi support and Source2007-style chat dialog to game.
 
 [DOC](docs/CaptionMod.md) [中文文档](docs/CaptionModCN.md)
 
@@ -213,15 +213,3 @@ Client-Side part of the mod it´s introduced as a metahook plugin.
 Server-Side part of the mod it´s done with a modifidied reGame dll.
 
 https://github.com/ollerjoaco/Trinity-EngineSv
-
-### ModelViewer (third-party) (Sven Co-op only)
-
-https://github.com/surf082/ModelViewer
-
-This is a plugin for Sven Co-op that adds a button to the option menu to open the modelviewer for player model preview.
-
-### ServerFilter (third-party) (GoldSrc only)
-
-https://github.com/surf082/ServerFilter
-
-This is a plugin for GoldSrc Games that provides server filter function.
