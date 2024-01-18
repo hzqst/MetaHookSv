@@ -6,7 +6,7 @@
 
 |        Engine               |      |
 |        ----                 | ---- |
-| GoldSrc_blob   (3266~?)     | √    |
+| GoldSrc_blob   (3248~4554)  | √    |
 | GoldSrc_legacy (4554~6153)  | √    |
 | GoldSrc_new    (8684 ~)     | √    |
 | SvEngine       (8832 ~)     | √    |
@@ -35,7 +35,7 @@ HDR (高动态范围) 模拟了超出显示器所能显示的亮度范围，将�
 
 ### 控制台参数
 
-`r_hdr` 开启/关闭HDR后处理. 推荐值 : 1
+`r_hdr` 开启/关闭HDR后处理. 推荐值 : `1`
 
 `r_hdr_blurwidth` 设置HDR的模糊强度. 推荐值 : `0.0 ~ 0.1`
 
@@ -77,7 +77,7 @@ HDR (高动态范围) 模拟了超出显示器所能显示的亮度范围，将�
 
 `r_shadow_distfade` 控制阴影开始淡出的距离，以及阴影的最大投射距离，单位为游戏内的距离单位. 举例：`r_shadow_distfade 64 128`
 
-`r_shadow_lumfade` 控制阴影开始淡出的环境亮度, 以及阴影允许投射的最小环境亮度, 必须在 0 ~ 255 之间. 举例 `r_shadow_lumfade 64 32`
+`r_shadow_lumfade` 控制阴影开始淡出的环境亮度, 以及阴影允许投射的最小环境亮度, 必须在 0 至 255 之间. 举例 `r_shadow_lumfade 64 32`
 
 `r_shadow_high_distance` 该距离内的实体使用高质量的阴影贴图. 举例： `r_shadow_high_distance 400`
 
@@ -282,7 +282,7 @@ SSAO （屏幕空间环境光遮蔽）是一种在后处理阶段为场景添加
 
 * 没有"replacescale"时不对UV缩放做出任何调整
 
-* MDL中存储的UV格式是-32767~32768的无符号USHORT整型，具体值等于在原始BMP贴图上的以像素计的绝对坐标。所以最终传递给GPU的取值范围0~1的真实UV需要由该USHORT类型除以贴图宽高来算出，上述"replacescale"修改的就是这里所谓的“贴图宽高”。
+* MDL中存储的UV格式是-32767至32768的无符号USHORT整型，具体值等于在原始BMP贴图上的以像素计的绝对坐标。所以最终传递给GPU的取值范围0至1的真实UV需要由该USHORT类型除以贴图宽高来算出，上述"replacescale"修改的就是这里所谓的“贴图宽高”。
 
 ### 控制台参数
 

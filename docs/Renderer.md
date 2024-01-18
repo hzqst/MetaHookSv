@@ -6,7 +6,7 @@
 
 |        Engine               |      |
 |        ----                 | ---- |
-| GoldSrc_blob   (3266~?)     | √    |
+| GoldSrc_blob   (3248~?)     | √    |
 | GoldSrc_legacy (4554~6153)  | √    |
 | GoldSrc_new    (8684 ~)     | √    |
 | SvEngine       (8832 ~)     | √    |
@@ -191,7 +191,7 @@ Detail texture list is parsed from `/maps/[mapname]_detail.txt`, with `_DETAIL` 
 
 Detail textures will be loaded from the following path (if exists):
 
-`/(game_directory)/maps/[texturename]` (only if texturename starts with "maps/" or "maps\")
+`/(game_directory)/maps/[texturename]` (only if texture name starts with "maps/" or "maps\")
 
 `/(game_directory)/gfx/detail/[texturename]`
 
