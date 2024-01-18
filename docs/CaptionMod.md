@@ -2,13 +2,23 @@
 
 [中文DOC](/docs/CaptionModCN.md)
 
+### Compatibility
+
+|        Engine               |      |
+|        ----                 | ---- |
+| GoldSrc_blob   (3248~4554)  | √    |
+| GoldSrc_legacy (4554~6153)  | √    |
+| GoldSrc_new    (8684 ~)     | √    |
+| SvEngine       (8832 ~)     | √    |
+| GoldSrc_HL25   (>= 9884)    | √    |
+
 ## Features
 
 ### Language Enforcement
 
 You can force the engine and VGUI2 to use language settings from Steam or from launch parameters.
 
-Check **Luanch Parameters**
+Check **Launch Parameters**
 
 ### VGUI2-based Subtitle System
 
@@ -67,16 +77,6 @@ e.g. `\Sven Co-op\svencoop_dpi150` or `\Half-Life\valve_dpi200`
 2. `(GameDirectory)\(ModDirectory)_hidpi`
 
 e.g. `\Sven Co-op\svencoop_hidpi` or `\Half-Life\valve_hidpi`
-
-### Compatibility
-
-|        Engine               |      |
-|        ----                 | ---- |
-| GoldSrc_blob   (3248~4554)  | √    |
-| GoldSrc_legacy (4554~6153)  | √    |
-| GoldSrc_new    (8684 ~)     | √    |
-| SvEngine       (8832 ~)     | √    |
-| GoldSrc_HL25   (>= 9884)    | √    |
 
 #### Console Vars
 

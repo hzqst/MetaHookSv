@@ -4,13 +4,15 @@
 
 ### Features
 
-1. Transform player model into ragdoll when player is dead or being caught by barnacle (thirdperson only for local player).
+1. Transform player model into ragdoll when player is dead
 
-2. Transform player model into ragdoll when player being bitten by gargantua (thirdperson only for local player).
+2. Transform player model into ragdoll when player is being caught by barnacle or gargantua (thirdperson only for local player).
 
-3. Jiggle Bones
+3. Brush entities can interact with ragdoll.
 
-4. Transform monster model into ragdoll when monster is dead.
+4. Water can interact with ragdoll if section `[WaterControl]` is specified in the ragdoll config.
+
+5. Jiggle Bones
 
 ![](/img/6.png)
 
@@ -20,7 +22,7 @@
 
 |        Engine               |      |
 |        ----                 | ---- |
-| GoldSrc_blob   (3266~?)     | √    |
+| GoldSrc_blob   (3248~4554)  | √    |
 | GoldSrc_legacy (4554~6153)  | √    |
 | GoldSrc_new    (8684 ~)     | √    |
 | SvEngine       (8832 ~)     | √    |

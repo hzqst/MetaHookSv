@@ -6,7 +6,7 @@
 
 |        Engine               |      |
 |        ----                 | ---- |
-| GoldSrc_blob   (3248~?)     | √    |
+| GoldSrc_blob   (3248~4554)  | √    |
 | GoldSrc_legacy (4554~6153)  | √    |
 | GoldSrc_new    (8684 ~)     | √    |
 | SvEngine       (8832 ~)     | √    |

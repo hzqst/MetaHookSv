@@ -2,6 +2,16 @@
 
 [English DOC](/docs/CaptionMod.md)
 
+### 兼容性
+
+|        Engine               |      |
+|        ----                 | ---- |
+| GoldSrc_blob   (3248~4554)  | √    |
+| GoldSrc_legacy (4554~6153)  | √    |
+| GoldSrc_new    (8684 ~)     | √    |
+| SvEngine       (8832 ~)     | √    |
+| GoldSrc_HL25   (>= 9884)    | √    |
+
 ## 功能
 
 ### 强制游戏语言
@@ -22,11 +32,11 @@
 
 4、在收到SendAudio（无线电）消息时显示字幕 （仅支持Counter-Strike及它的衍生mod如Counter-Strike : Condition Zero）
 
-5、翻译HUD文字消息 (支持正则表达式)
+### HUD文字消息翻译系统
+
+该插件可以在游戏运行时动态地翻译HUD文字消息 (支持正则表达式匹配原始语句)
 
 我们提供了用于翻译[restriction](http://scmapdb.com/map:restriction)系列地图消息文本的字典文件作为参考（位于"\Build\svencoop_addons\maps\restrictionXX_dictionary.csv"），其他地图的消息文本也可以参照这个格式进行翻译
-
-### HUD文字消息翻译系统
 
 你可以动态翻译原版客户端的英文HUD文字消息（如友军敌人血量显示以及game_text实体显示的文本）到其他语言（如中文）
 
@@ -49,16 +59,6 @@
 如何修改默认的聊天文本颜色： `\Sven Co-op\svencoop\captionmod\ChatScheme.res` -> `Colors` -> `TanLight`
 
 ![](/img/1.png)
-
-### 兼容性
-
-|        Engine               |      |
-|        ----                 | ---- |
-| GoldSrc_blob   (3248~4554)  | √    |
-| GoldSrc_legacy (4554~6153)  | √    |
-| GoldSrc_new    (8684 ~)     | √    |
-| SvEngine       (8832 ~)     | √    |
-| GoldSrc_HL25   (>= 9884)    | √    |
 
 ### 高DPI缩放支持
 
