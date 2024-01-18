@@ -16,9 +16,86 @@ CBulletPhysicManager::CBulletPhysicManager() : CBasePhysicManager()
 	m_debugDraw = NULL;
 }
 
+ATTRIBUTE_ALIGNED16(class)
+CBulletPhysicsDebugDraw : public btIDebugDraw
+{
+private:
+	int m_debugMode;
+	DefaultColors m_ourColors;
+
+public:
+	BT_DECLARE_ALIGNED_ALLOCATOR();
+
+	CBulletPhysicsDebugDraw() : m_debugMode(btIDebugDraw::DBG_DrawWireframe | btIDebugDraw::DBG_DrawConstraints | btIDebugDraw::DBG_DrawConstraintLimits)
+	{
+
+	}
+
+	~CBulletPhysicsDebugDraw() override
+	{
+	}
+
+	DefaultColors getDefaultColors() const override
+	{
+		return m_ourColors;
+	}
+	///the default implementation for setDefaultColors has no effect. A derived class can implement it and store the colors.
+	void setDefaultColors(const DefaultColors& colors) override
+	{
+		m_ourColors = colors;
+	}
+
+	void drawLine(const btVector3& from1, const btVector3& to1, const btVector3& color1) override
+	{
+
+	}
+
+	void drawContactPoint(const btVector3& PointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime, const btVector3& color) override
+	{
+		drawLine(PointOnB, PointOnB + normalOnB * distance, color);
+		btVector3 nColor(0, 0, 0);
+		drawLine(PointOnB, PointOnB + normalOnB * 0.01, nColor);
+	}
+
+	void reportErrorWarning(const char* warningString) override
+	{
+
+	}
+
+	void draw3dText(const btVector3& location, const char* textString) override
+	{
+
+	}
+
+	void setDebugMode(int debugMode) override
+	{
+		m_debugMode = debugMode;
+	}
+
+	int getDebugMode() const override
+	{
+		return m_debugMode;
+	}
+};
+
+
 void CBulletPhysicManager::Init(void)
 {
 	CBasePhysicManager::Init();
+
+	m_collisionConfiguration = new btDefaultCollisionConfiguration();
+	m_dispatcher = new btCollisionDispatcher(m_collisionConfiguration);
+	m_overlappingPairCache = new btDbvtBroadphase();
+	m_solver = new btSequentialImpulseConstraintSolver;
+	m_dynamicsWorld = new btDiscreteDynamicsWorld(m_dispatcher, m_overlappingPairCache, m_solver, m_collisionConfiguration);
+
+	m_debugDraw = new CBulletPhysicsDebugDraw;
+	m_dynamicsWorld->setDebugDrawer(m_debugDraw);
+
+	//m_overlapFilterCallback = new GameFilterCallback();
+	m_dynamicsWorld->getPairCache()->setOverlapFilterCallback(m_overlapFilterCallback);
+
+	m_dynamicsWorld->setGravity(btVector3(0, 0, 0));
 }
 
 void CBulletPhysicManager::Shutdown()
@@ -37,73 +114,24 @@ void CBulletPhysicManager::DebugDraw(void)
 {
 
 }
+
 void CBulletPhysicManager::SetGravity(float velocity)
 {
+	CBasePhysicManager::SetGravity(velocity);
 
+	m_dynamicsWorld->setGravity(btVector3(0, 0, m_gravity));
 }
+
 void CBulletPhysicManager::StepSimulation(double framerate)
 {
 
 }
-void CBulletPhysicManager::ReloadConfig(void)
+
+IStaticObject* CBulletPhysicManager::CreateStaticObject(cl_entity_t* ent, const CPhysicStaticObjectCreationParameter& CreationParameter)
 {
 
-}
 
-bool CBulletPhysicManager::SetupBones(studiohdr_t* hdr, int entindex)
-{
-	return false;
-}
-
-bool CBulletPhysicManager::SetupJiggleBones(studiohdr_t* hdr, int entindex)
-{
-	return false;
-}
-
-void CBulletPhysicManager::MergeBarnacleBones(studiohdr_t* hdr, int entindex)
-{
-
-}
-
-bool CBulletPhysicManager::ChangeRagdollEntityIndex(int old_entindex, int new_entindex)
-{
-	return false;
-}
-
-IRagdollObject* CBulletPhysicManager::FindRagdollObject(int entindex)
-{
 	return NULL;
-}
-
-IRagdollObject* CBulletPhysicManager::CreateRagdollObject(model_t* mod, int entindex, const CRagdollConfig* config)
-{
-	return NULL;
-}
-
-IStaticObject* CBulletPhysicManager::CreateStaticObject(model_t* mod, int entindex)
-{
-	return NULL;
-}
-
-void CBulletPhysicManager::CreateBrushModel(cl_entity_t* ent)
-{
-
-}
-void CBulletPhysicManager::CreateBarnacle(cl_entity_t* ent)
-{
-
-}
-void CBulletPhysicManager::CreateGargantua(cl_entity_t* ent)
-{
-
-}
-void CBulletPhysicManager::RemovePhysicObject(int entindex)
-{
-
-}
-void CBulletPhysicManager::UpdateTempEntity(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time)
-{
-
 }
 
 static CBulletPhysicManager g_BulletPhysicManager;

@@ -50,30 +50,10 @@ bool g_bIsCounterStrike = false;
 int g_iRagdollRenderState = 0;
 int g_iRagdollRenderEntIndex = 0;
 
-model_t* r_worldmodel = NULL;
-cl_entity_t* r_worldentity = NULL;
-
 ref_params_t r_params = { 0 };
 
-studiohdr_t **pstudiohdr = NULL;
-model_t **r_model = NULL;
-void *g_pGameStudioRenderer = NULL;
-int* r_framecount = NULL;
-int *r_visframecount = NULL;
-int *cl_parsecount = NULL;
-void *cl_frames = NULL;
-int size_of_frame = 0;
-int *cl_viewentity = NULL;
-cl_entity_t **currententity = NULL;
-void *mod_known = NULL;
-int *mod_numknown = NULL;
-TEMPENTITY *gTempEnts = NULL;
-
-int *g_iUser1 = NULL;
-int *g_iUser2 = NULL;
-
-float(*pbonetransform)[MAXSTUDIOBONES][3][4] = NULL;
-float(*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;
+model_t* r_worldmodel = NULL;
+cl_entity_t* r_worldentity = NULL;
 
 model_t* CounterStrike_RedirectPlayerModel(model_t* original_model, int PlayerNumber, int* modelindex);
 
@@ -221,12 +201,12 @@ bool CL_IsFirstPersonMode(cl_entity_t *player)
 	return (!gExportfuncs.CL_IsThirdPerson() && (*cl_viewentity) == player->index && !(chase_active && chase_active->value)) ? true : false;
 }
 
-int EngineGetNumKnownModel(void)
+int EngineGetNumKnownModel()
 {
 	return (*mod_numknown);
 }
 
-int EngineGetMaxKnownModel(void)
+int EngineGetMaxKnownModel()
 {
 	if (g_iEngineType == ENGINE_SVENGINE)
 		return 16384;

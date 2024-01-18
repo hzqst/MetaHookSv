@@ -40,6 +40,7 @@ void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_engin
 
 void IPluginsV4::Shutdown(void)
 {
+
 }
 
 void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)

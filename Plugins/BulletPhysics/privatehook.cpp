@@ -4,6 +4,7 @@
 #include "enginedef.h"
 #include "plugins.h"
 #include "privatehook.h"
+#include "exportfuncs.h"
 #include "message.h"
 #include "physics.h"
 #include "ClientEntityManager.h"
@@ -26,9 +27,30 @@
 #define R_DRAWTENTITIESONLIST_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\xF3\x0F\x2A\x2A\x2A\x2A\x2A\x2A\x0F\x2E"
 #define R_DRAWTENTITIESONLIST_SIG_SVENGINE "\x55\x8B\xEC\x83\xE4\x2A\x81\xEC\x2A\x00\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x00\x00\x00\xD9\x05\x2A\x2A\x2A\x2A\xD9\xEE"
 
-private_funcs_t gPrivateFuncs;
+private_funcs_t gPrivateFuncs = {0};
 
-hook_t* g_phook_R_NewMap = NULL;
+studiohdr_t** pstudiohdr = NULL;
+model_t** r_model = NULL;
+void* g_pGameStudioRenderer = NULL;
+int* r_framecount = NULL;
+int* r_visframecount = NULL;
+int* cl_parsecount = NULL;
+void* cl_frames = NULL;
+int size_of_frame = 0;
+int* cl_viewentity = NULL;
+cl_entity_t** currententity = NULL;
+void* mod_known = NULL;
+int* mod_numknown = NULL;
+TEMPENTITY* gTempEnts = NULL;
+
+int* g_iUser1 = NULL;
+int* g_iUser2 = NULL;
+
+float(*pbonetransform)[MAXSTUDIOBONES][3][4] = NULL;
+float(*plighttransform)[MAXSTUDIOBONES][3][4] = NULL;
+
+static hook_t* g_phook_R_NewMap = NULL;
+static hook_t* g_phook_Mod_LoadStudioModel = NULL;
 
 void Engine_FillAddreess(void)
 {
@@ -319,6 +341,47 @@ void Engine_FillAddreess(void)
 
 	if (1)
 	{
+		const char sigs1[] = "bogus\0";
+		auto Bogus_String = Search_Pattern_Data(sigs1);
+		if (!Bogus_String)
+			Bogus_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(Bogus_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x2A\xE8";
+		*(DWORD*)(pattern + 1) = (DWORD)Bogus_String;
+		auto Bogus_Call = Search_Pattern(pattern);
+		Sig_VarNotFound(Bogus_Call);
+
+		gPrivateFuncs.Mod_LoadStudioModel = (decltype(gPrivateFuncs.Mod_LoadStudioModel))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Bogus_Call, 0x50, [](PUCHAR Candidate) {
+
+			//  .text : 01D71630 81 EC 10 01 00 00                                   sub     esp, 110h
+			if (Candidate[0] == 0x81 &&
+				Candidate[1] == 0xEC &&
+				Candidate[4] == 0x00 &&
+				Candidate[5] == 0x00)
+			{
+				return TRUE;
+			}
+			//  .text : 01D61AD0 55                                                  push    ebp
+			//  .text : 01D61AD1 8B EC                                               mov     ebp, esp
+			//	.text : 01D61AD3 81 EC 0C 01 00 00                                   sub     esp, 10Ch
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC &&
+				Candidate[3] == 0x81 &&
+				Candidate[4] == 0xEC &&
+				Candidate[7] == 0x00 &&
+				Candidate[8] == 0x00)
+			{
+				return TRUE;
+			}
+
+			return FALSE;
+		});
+		Sig_FuncNotFound(Mod_LoadStudioModel);
+	}
+
+	if (1)
+	{
 		const char sigs1[] = "Cached models:\n";
 		auto Mod_Print_String = Search_Pattern_Data(sigs1);
 		if (!Mod_Print_String)
@@ -532,6 +595,9 @@ void Client_FillAddress(void)
 
 void R_NewMap(void)
 {
+	r_worldentity = gEngfuncs.GetEntityByIndex(0);
+	r_worldmodel = r_worldentity->model;
+
 	gPrivateFuncs.R_NewMap();
 	gPhysicsManager.NewMap();
 	ClientEntityManager()->NewMap();
@@ -540,6 +606,7 @@ void R_NewMap(void)
 TEMPENTITY *efxapi_R_TempModel(float *pos, float *dir, float *angles, float life, int modelIndex, int soundtype)
 {
 	auto r = gPrivateFuncs.efxapi_R_TempModel(pos, dir, angles, life, modelIndex, soundtype);
+
 	if (r && g_bIsCreatingClCorpse && g_iCreatingClCorpsePlayerIndex > 0)
 	{
 		int tentindex = r - gTempEnts;
@@ -554,12 +621,21 @@ TEMPENTITY *efxapi_R_TempModel(float *pos, float *dir, float *angles, float life
 	return r;
 }
 
+void Mod_LoadStudioModel(model_t* mod, void* buffer)
+{
+	gPrivateFuncs.Mod_LoadStudioModel(mod, buffer);
+
+
+}
+
 void Engine_InstallHook(void)
 {
 	Install_InlineHook(R_NewMap);
+	Install_InlineHook(Mod_LoadStudioModel);
 }
 
 void Engine_UninstallHook(void)
 {
 	Uninstall_Hook(R_NewMap);
+	Uninstall_Hook(Mod_LoadStudioModel);
 }

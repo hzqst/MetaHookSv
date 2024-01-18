@@ -6119,6 +6119,7 @@ void R_FillAddress(void)
 		Sig_FuncNotFound(Mod_LoadStudioModel);
 	}
 
+	if(1)
 	{
 		const char sigs1[] = "Mod_LoadBrushModel: %s has wrong version number";
 		auto Bogus_String = Search_Pattern_Data(sigs1);

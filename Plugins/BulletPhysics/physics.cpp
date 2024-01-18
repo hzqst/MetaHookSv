@@ -17,10 +17,6 @@ extern cvar_t *bv_ragdoll_sleepaftertime;
 extern cvar_t *bv_ragdoll_sleeplinearvel;
 extern cvar_t *bv_ragdoll_sleepangularvel;
 
-int EngineGetNumKnownModel(void);
-int EngineGetMaxKnownModel(void);
-int EngineGetModelIndex(model_t *mod);
-model_t *EngineGetModelByIndex(int index);
 int StudioGetSequenceActivityType(model_t *mod, entity_state_t* entstate);
 void RagdollDestroyCallback(int entindex);
 
@@ -185,6 +181,7 @@ CPhysicsManager::CPhysicsManager()
 	 m_solver = NULL;
 	 m_dynamicsWorld = NULL;
 	 m_debugDraw = NULL;
+
 	 m_worldVertexArray = NULL;
 	 m_barnacleIndexArray = NULL;
 	 m_barnacleVertexArray = NULL;
@@ -503,16 +500,9 @@ void CPhysicsManager::CreateBrushModel(cl_entity_t *ent)
 
 void CPhysicsManager::NewMap(void)
 {
-	//G2BScale = bv_scale->value;
-	//B2GScale = 1 / bv_scale->value;
-
 	ReloadConfig();
 	RemoveAllRagdolls();
 	RemoveAllStatics();
-
-	r_worldentity = gEngfuncs.GetEntityByIndex(0);
-
-	r_worldmodel = r_worldentity->model;
 
 	GenerateWorldVerticeArray();
 	GenerateBrushIndiceArray();

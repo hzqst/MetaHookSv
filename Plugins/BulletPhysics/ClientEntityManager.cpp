@@ -17,8 +17,8 @@ class CClientEntityManager : public IClientEntityManager
 {
 private:
 
-	std::unordered_map<int, int> m_barnacleMap;
-	std::unordered_map<int, int> m_gargantuaMap;
+	std::unordered_map<int, int> m_BarnacleMap;
+	std::unordered_map<int, int> m_GargantuaMap;
 
 	CPlayerDeathState m_PlayerDeathState[33];
 	bool m_bIsPlayerEmitted[33];
@@ -289,7 +289,7 @@ public:
 
 	void FreePlayerForBarnacle(int entindex) override
 	{
-		for (auto itor = m_barnacleMap.begin(); itor != m_barnacleMap.end(); )
+		for (auto itor = m_BarnacleMap.begin(); itor != m_BarnacleMap.end(); )
 		{
 			if (itor->second == entindex)
 			{
@@ -304,20 +304,20 @@ public:
 	void NewMap(void) override
 	{
 		m_BarnacleModel = NULL;
-		m_barnacleMap.clear();
+		m_BarnacleMap.clear();
 
 		m_GargantuaModel = NULL;
-		m_gargantuaMap.clear();
+		m_GargantuaMap.clear();
 
 		ClearAllPlayerDeathState();
 	}
 
 	void AddBarnacle(int entindex, int playerindex) override
 	{
-		auto itor = m_barnacleMap.find(entindex);
-		if (itor == m_barnacleMap.end())
+		auto itor = m_BarnacleMap.find(entindex);
+		if (itor == m_BarnacleMap.end())
 		{
-			m_barnacleMap[entindex] = playerindex;
+			m_BarnacleMap[entindex] = playerindex;
 		}
 		else if (itor->second == 0 && playerindex != 0)
 		{
@@ -327,10 +327,10 @@ public:
 
 	void AddGargantua(int entindex, int playerindex)
 	{
-		auto itor = m_gargantuaMap.find(entindex);
-		if (itor == m_gargantuaMap.end())
+		auto itor = m_GargantuaMap.find(entindex);
+		if (itor == m_GargantuaMap.end())
 		{
-			m_gargantuaMap[entindex] = playerindex;
+			m_GargantuaMap[entindex] = playerindex;
 		}
 		else if (itor->second == 0 && playerindex != 0)
 		{
@@ -343,8 +343,8 @@ public:
 	*/
 	cl_entity_t* FindPlayerForBarnacle(int entindex)
 	{
-		auto itor = m_barnacleMap.find(entindex);
-		if (itor != m_barnacleMap.end())
+		auto itor = m_BarnacleMap.find(entindex);
+		if (itor != m_BarnacleMap.end())
 		{
 			if (itor->second != 0)
 			{
@@ -366,8 +366,8 @@ public:
 	*/
 	cl_entity_t* FindPlayerForGargantua(int entindex)
 	{
-		auto itor = m_gargantuaMap.find(entindex);
-		if (itor != m_gargantuaMap.end())
+		auto itor = m_GargantuaMap.find(entindex);
+		if (itor != m_GargantuaMap.end())
 		{
 			if (itor->second != 0)
 			{
@@ -389,7 +389,7 @@ public:
 	*/
 	cl_entity_t* FindBarnacleForPlayer(entity_state_t* player)
 	{
-		for (auto itor = m_barnacleMap.begin(); itor != m_barnacleMap.end(); itor++)
+		for (auto itor = m_BarnacleMap.begin(); itor != m_BarnacleMap.end(); itor++)
 		{
 			auto ent = gEngfuncs.GetEntityByIndex(itor->first);
 			if (IsEntityBarnacle(ent))
@@ -412,7 +412,7 @@ public:
 	*/
 	cl_entity_t* FindGargantuaForPlayer(entity_state_t* player)
 	{
-		for (auto itor = m_gargantuaMap.begin(); itor != m_gargantuaMap.end(); itor++)
+		for (auto itor = m_GargantuaMap.begin(); itor != m_GargantuaMap.end(); itor++)
 		{
 			auto ent = gEngfuncs.GetEntityByIndex(itor->first);
 			if (IsEntityGargantua(ent) && ent->curstate.sequence == 15)

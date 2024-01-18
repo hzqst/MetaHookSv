@@ -19,7 +19,6 @@ typedef struct
 	void(*R_NewMap)(void);
 	void(*R_RecursiveWorldNode)(void *node);
 	void(*R_DrawTEntitiesOnList)(int onlyClientDraw);
-	//int(*ClientDLL_AddEntity)(int type, struct cl_entity_s *ent);
 
 	//Client GameStudioRenderer
 	void(__fastcall* GameStudioRenderer_StudioSetupBones)(void* pthis, int);
@@ -48,6 +47,9 @@ typedef struct
 	void (*FirstPerson_f)(void);
 	void (*ThreadPerson_f)(void);
 
+	//Engine model managment
+	void (*Mod_LoadStudioModel)(model_t* mod, void* buffer);
+
 	//efxapi
 	TEMPENTITY	*(*efxapi_R_TempModel)				(float *pos, float *dir, float *angles, float life, int modelIndex, int soundtype);
 }private_funcs_t;
@@ -62,6 +64,7 @@ void Engine_UninstallHook(void);
 
 extern studiohdr_t** pstudiohdr;
 extern model_t** r_model;
+extern void* g_pGameStudioRenderer;
 extern float(*pbonetransform)[128][3][4];
 extern float(*plighttransform)[128][3][4];
 
@@ -117,3 +120,8 @@ extern cvar_t *cl_minmodels;
 extern cvar_t *cl_min_t;
 extern cvar_t *cl_min_ct;
 extern extra_player_info_t(*g_PlayerExtraInfo)[65];
+
+int EngineGetMaxKnownModel();
+int EngineGetNumKnownModel();
+int EngineGetModelIndex(model_t* mod);
+model_t* EngineGetModelByIndex(int index);
