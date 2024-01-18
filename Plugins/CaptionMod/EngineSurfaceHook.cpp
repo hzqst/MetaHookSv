@@ -126,7 +126,7 @@ void CEngineSurfaceProxy::drawPolyLine(int* px, int* py, int numPoints)
 
 }
 
-void CEngineSurfaceProxy::drawTexturedPolygon(int* p, int n)
+void CEngineSurfaceProxy::drawTexturedPolygon(vgui::VGuiVertex* p, int n)
 {
 
 }

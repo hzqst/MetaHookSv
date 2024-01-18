@@ -6,6 +6,7 @@
 #endif
 
 #include "VGUI.h"
+#include "VGuiVertex.h"
 #include "IHTML.h"
 #include <interface.h>
 
@@ -153,7 +154,7 @@ namespace vgui
 		virtual bool HasCursorPosFunctions(void) = 0;
 		virtual void SurfaceGetCursorPos(int &x, int &y) = 0;
 		virtual void SurfaceSetCursorPos(int x, int y) = 0;
-		virtual void DrawTexturedPolygon(int *p, int n) = 0;
+		virtual void DrawTexturedPolygon(vgui::VGuiVertex*p, int n) = 0;
 		virtual int GetFontAscent(HFont font, wchar_t wch) = 0;
 		virtual void SetAllowHTMLJavaScript(bool state) = 0;
 		virtual void SetLanguage(const char * szLanguage) = 0;

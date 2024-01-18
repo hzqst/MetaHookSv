@@ -122,7 +122,7 @@ public:
 	bool HasCursorPosFunctions(void) override;
 	void SurfaceGetCursorPos(int &x, int &y) override;
 	void SurfaceSetCursorPos(int x, int y) override;
-	void DrawTexturedPolygon(int *p, int n) override;
+	void DrawTexturedPolygon(vgui::VGuiVertex*p, int n) override;
 	int GetFontAscent(HFont font, wchar_t wch) override;
 	void SetAllowHTMLJavaScript(bool state) override;
 	void SetLanguage(const char *pchLang) override;
@@ -831,7 +831,7 @@ void CSurfaceProxy::SurfaceSetCursorPos(int x, int y)
 	return m_pfnSurfaceSetCursorPos(this, 0, x, y);
 }
 
-void CSurfaceProxy::DrawTexturedPolygon(int *p, int n)
+void CSurfaceProxy::DrawTexturedPolygon(vgui::VGuiVertex*p, int n)
 {
 	g_pSurface->DrawTexturedPolygon(p, n);
 }
@@ -979,7 +979,7 @@ public:
 	bool HasCursorPosFunctions(void) override;
 	void SurfaceGetCursorPos(int& x, int& y) override;
 	void SurfaceSetCursorPos(int x, int y) override;
-	void DrawTexturedPolygon(int* p, int n) override;
+	void DrawTexturedPolygon(vgui::VGuiVertex* p, int n) override;
 	int GetFontAscent(HFont font, wchar_t wch) override;
 	void SetAllowHTMLJavaScript(bool state) override;
 	void SetLanguage(const char* szLanguage) override;
@@ -1668,7 +1668,7 @@ void CSurfaceProxy_HL25::SurfaceSetCursorPos(int x, int y)
 	return m_pfnSurfaceSetCursorPos(this, 0, x, y);
 }
 
-void CSurfaceProxy_HL25::DrawTexturedPolygon(int *p, int n)
+void CSurfaceProxy_HL25::DrawTexturedPolygon(vgui::VGuiVertex*p, int n)
 {
 	g_pSurface_HL25->DrawTexturedPolygon(p, n);
 }

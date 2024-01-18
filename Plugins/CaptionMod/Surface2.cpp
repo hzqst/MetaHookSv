@@ -1138,22 +1138,39 @@ void CSurface2::SurfaceSetCursorPos(int x, int y)
 // Source specific interfaces
 void CSurface2::DrawTexturedLine(const Vertex_t &a, const Vertex_t &b)
 {
+
 }
 
 void CSurface2::DrawOutlinedCircle(int x, int y, int radius, int segments)
 {
+
 }
 
 void CSurface2::DrawTexturedPolyLine(const Vertex_t *p, int n)
 {
+	
 }
 
 void CSurface2::DrawTexturedSubRect(int x0, int y0, int x1, int y1, float texs0, float text0, float texs1, float text1)
 {
+	
 }
 
 void CSurface2::DrawTexturedPolygon(int n, Vertex_t *pVertices)
 {
+	vgui::VGuiVertex GoldSrcVertices[32];
+
+	int maxVerts = min(n, 32);
+
+	for (int i = 0; i < n; ++i)
+	{
+		GoldSrcVertices[i].SetVertex(pVertices[i].m_Position.x, pVertices[i].m_Position.y, pVertices[i].m_TexCoord.x, pVertices[i].m_TexCoord.y);
+	}
+
+	if(g_pSurface_HL25)
+		g_pSurface_HL25->DrawTexturedPolygon(GoldSrcVertices, n);
+	else
+		g_pSurface->DrawTexturedPolygon(GoldSrcVertices, n);
 }
 
 const wchar_t *CSurface2::GetTitle(VPANEL panel)
@@ -1256,6 +1273,7 @@ bool CSurface2::SetBitmapFontGlyphSet(HFont font, const char *windowsFontName, f
 //-----------------------------------------------------------------------------
 bool CSurface2::AddBitmapFontFile(const char *fontFileName)
 {
+
 	return false;
 }
 
@@ -1287,6 +1305,7 @@ void CSurface2::DrawUnicodeString(const wchar_t *pwString, FontDrawType_t drawTy
 		auto ch = (*pwString); 
 		if (!ch)
 			break;
+
 		DrawUnicodeChar(ch);
 
 		pwString++;

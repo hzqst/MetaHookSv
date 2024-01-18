@@ -9,7 +9,7 @@ public:
 	void drawOutlinedRect(int x0, int y0, int x1, int y1) override;
 	void drawLine(int x0, int y0, int x1, int y1) override;
 	void drawPolyLine(int* px, int* py, int numPoints) override;
-	void drawTexturedPolygon(int* p, int n) override;
+	void drawTexturedPolygon(vgui::VGuiVertex* p, int n) override;
 	void drawSetTextureRGBA(int id, const unsigned char* rgba, int wide, int tall, int hardwareFilter, bool forceReload) override;
 	void drawSetTexture(int id) override;
 	void drawTexturedRect(int x0, int y0, int x1, int y1) override;

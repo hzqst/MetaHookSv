@@ -6,6 +6,7 @@
 #endif
 
 #include "tier1/interface.h"
+#include <VGuiVertex.h>
 
 class IEngineSurface : public IBaseInterface
 {
@@ -16,7 +17,7 @@ public:
 	virtual void drawOutlinedRect(int x0, int y0, int x1, int y1) = 0;
 	virtual void drawLine(int x0, int y0, int x1, int y1) = 0;
 	virtual void drawPolyLine(int *px, int *py, int numPoints) = 0;
-	virtual void drawTexturedPolygon(int *p, int n) = 0;
+	virtual void drawTexturedPolygon(vgui::VGuiVertex*p, int n) = 0;
 	virtual void drawSetTextureRGBA(int id, const unsigned char *rgba, int wide, int tall, int hardwareFilter, bool forceReload) = 0;
 	virtual void drawSetTexture(int id) = 0;
 	virtual void drawTexturedRect(int x0, int y0, int x1, int y1) = 0;
