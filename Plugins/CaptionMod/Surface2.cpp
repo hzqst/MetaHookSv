@@ -1,5 +1,12 @@
+#if defined( WIN32) && !defined( _X360 )
+#include "winlite.h"
+#include <shellapi.h>
+#endif
+
 #include <vgui/ISurface.h>
 #include <vgui/Cursor.h>
+#include <vgui_controls/MemoryBitmap.h>
+#include "strtools.h"
 #include "Surface2.h"
 #include "DpiManager.h"
 
@@ -30,6 +37,11 @@ CSurface2::CSurface2()
 //-----------------------------------------------------------------------------
 void CSurface2::Shutdown(void)
 {
+	for (int i = m_FileTypeImages.First(); i != m_FileTypeImages.InvalidIndex(); i = m_FileTypeImages.Next(i))
+	{
+		delete m_FileTypeImages[i];
+	}
+	m_FileTypeImages.RemoveAll();
 	if (g_pSurface_HL25)
 		return g_pSurface_HL25->Shutdown();
 
@@ -1290,9 +1302,167 @@ void CSurface2::ClearTemporaryFontCache(void)
 {
 }
 
+
+#if defined( WIN32 ) && !defined( _X360 )
+static bool GetIconSize(ICONINFO& iconInfo, int& w, int& h)
+{
+	w = h = 0;
+
+	HBITMAP bitmap = iconInfo.hbmColor;
+	BITMAP bm;
+	if (0 == GetObject((HGDIOBJ)bitmap, sizeof(BITMAP), (LPVOID)&bm))
+	{
+		return false;
+	}
+
+	w = bm.bmWidth;
+	h = bm.bmHeight;
+
+	return true;
+}
+
+// If rgba is NULL, bufsize gets filled in w/ # of bytes required
+static bool GetIconBits(HDC hdc, ICONINFO& iconInfo, int& w, int& h, unsigned char* rgba, size_t& bufsize)
+{
+	if (!iconInfo.hbmColor || !iconInfo.hbmMask)
+		return false;
+
+	if (!rgba)
+	{
+		if (!GetIconSize(iconInfo, w, h))
+			return false;
+
+		bufsize = (size_t)((w * h) << 2);
+		return true;
+	}
+
+	bool bret = false;
+
+	Assert(w > 0);
+	Assert(h > 0);
+	Assert(bufsize == (size_t)((w * h) << 2));
+
+	DWORD* maskData = new DWORD[w * h];
+	DWORD* colorData = new DWORD[w * h];
+	DWORD* output = (DWORD*)rgba;
+
+	BITMAPINFO bmInfo;
+
+	memset(&bmInfo, 0, sizeof(bmInfo));
+	bmInfo.bmiHeader.biSize = sizeof(bmInfo.bmiHeader);
+	bmInfo.bmiHeader.biWidth = w;
+	bmInfo.bmiHeader.biHeight = h;
+	bmInfo.bmiHeader.biPlanes = 1;
+	bmInfo.bmiHeader.biBitCount = 32;
+	bmInfo.bmiHeader.biCompression = BI_RGB;
+
+	// Get the info about the bits
+	if (GetDIBits(hdc, iconInfo.hbmMask, 0, h, maskData, &bmInfo, DIB_RGB_COLORS) == h &&
+		GetDIBits(hdc, iconInfo.hbmColor, 0, h, colorData, &bmInfo, DIB_RGB_COLORS) == h)
+	{
+		bret = true;
+
+		for (int row = 0; row < h; ++row)
+		{
+			// Invert
+			int r = (h - row - 1);
+			int rowstart = r * w;
+
+			DWORD* color = &colorData[rowstart];
+			DWORD* mask = &maskData[rowstart];
+			DWORD* outdata = &output[row * w];
+
+			for (int col = 0; col < w; ++col)
+			{
+				unsigned char* cr = (unsigned char*)&color[col];
+
+				// Set alpha
+				cr[3] = mask[col] == 0 ? 0xff : 0x00;
+
+				// Swap blue and red
+				unsigned char t = cr[2];
+				cr[2] = cr[0];
+				cr[0] = t;
+
+				*(unsigned int*)&outdata[col] = *(unsigned int*)cr;
+			}
+		}
+	}
+
+	delete[] colorData;
+	delete[] maskData;
+
+	return bret;
+}
+
+static bool ShouldMakeUnique(char const* extension)
+{
+	if (!stricmp(extension, "cur"))
+		return true;
+	if (!stricmp(extension, "ani"))
+		return true;
+	return false;
+}
+#endif // !_X360
+
 IImage *CSurface2::GetIconImageForFullPath(const char *pFullPath)
 {
-	return NULL;
+	vgui::IImage* newIcon = NULL;
+
+#if defined( WIN32 ) && !defined( _X360 )
+	SHFILEINFO info = { 0 };
+	DWORD_PTR dwResult = SHGetFileInfo(
+		pFullPath,
+		0,
+		&info,
+		sizeof(info),
+		SHGFI_TYPENAME | SHGFI_ICON | SHGFI_SMALLICON | SHGFI_SHELLICONSIZE
+	);
+	if (dwResult)
+	{
+		if (info.szTypeName[0] != 0)
+		{
+			char ext[32];
+			Q_ExtractFileExtension(pFullPath, ext, sizeof(ext));
+
+			char lookup[512];
+			Q_snprintf(lookup, sizeof(lookup), "%s", ShouldMakeUnique(ext) ? pFullPath : info.szTypeName);
+
+			// Now check the dictionary
+			unsigned short idx = m_FileTypeImages.Find(lookup);
+			if (idx == m_FileTypeImages.InvalidIndex())
+			{
+				ICONINFO iconInfo;
+				if (0 != GetIconInfo(info.hIcon, &iconInfo))
+				{
+					int w, h;
+					size_t bufsize = 0;
+
+					HDC hdc = CreateCompatibleDC(NULL);
+
+					if (GetIconBits(hdc, iconInfo, w, h, NULL, bufsize))
+					{
+						byte* bits = new byte[bufsize];
+						if (bits && GetIconBits(hdc, iconInfo, w, h, bits, bufsize))
+						{
+							newIcon = new MemoryBitmap(bits, w, h);
+						}
+						delete[] bits;
+					}
+
+					DeleteDC(hdc);
+				}
+
+				idx = m_FileTypeImages.Insert(lookup, newIcon);
+			}
+
+			newIcon = m_FileTypeImages[idx];
+		}
+
+		if (info.hIcon) DestroyIcon(info.hIcon);
+	}
+#endif
+	return newIcon;
 }
 
 void CSurface2::DrawUnicodeString(const wchar_t *pwString, FontDrawType_t drawType)
