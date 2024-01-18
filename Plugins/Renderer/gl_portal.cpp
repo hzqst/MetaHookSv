@@ -147,10 +147,9 @@ mtexinfo_t * __fastcall ClientPortalManager_GetOriginalSurfaceTexture(void * pth
 portal_vbo_t *R_FindPortalVBO(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId)
 {
 	auto poly = surf->polys;
+	auto surfIndex = R_GetWorldSurfaceIndex(surf);
 
-	//auto brushface = &r_wsurf.vFaceBuffer[poly->flags];
-
-	portal_vbo_hash_t hash(ClientPortal, poly->flags, textureId);
+	portal_vbo_hash_t hash(ClientPortal, surf->texinfo->texture->name[0] == '{' ? surf->texinfo->texture->gl_texturenum : 0, textureId);
 	auto itor = g_PortalVBOCache.find(hash);
 	if (itor == g_PortalVBOCache.end())
 	{
@@ -162,18 +161,18 @@ portal_vbo_t *R_FindPortalVBO(void *ClientPortalManager, void * ClientPortal, ms
 
 portal_vbo_t *R_PreparePortalVBO(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId)
 {
-	portal_vbo_t *VBOCache = R_FindPortalVBO(ClientPortalManager, ClientPortal, surf, textureId);
+	auto poly = surf->polys;
+	auto surfIndex = R_GetWorldSurfaceIndex(surf);
+	auto brushface = &r_wsurf.vFaceBuffer[surfIndex];
+
+	auto VBOCache = R_FindPortalVBO(ClientPortalManager, ClientPortal, surf, textureId);
 
 	if (!VBOCache)
 	{
 		VBOCache = new portal_vbo_t;
 		VBOCache->texinfo = ClientPortalManager_GetOriginalSurfaceTexture(ClientPortalManager, 0, surf);
 		
-		auto poly = surf->polys;
-
-		auto brushface = &r_wsurf.vFaceBuffer[poly->flags];
-
-		VBOCache->PolySet.emplace(poly->flags);
+		VBOCache->SurfaceSet.emplace(surfIndex);
 
 		for (int j = 0; j < brushface->num_polys; ++j)
 		{
@@ -213,14 +212,11 @@ portal_vbo_t *R_PreparePortalVBO(void *ClientPortalManager, void * ClientPortal,
 	}
 	else
 	{
-		auto poly = surf->polys;
+		auto polyItor = VBOCache->SurfaceSet.find(surfIndex);
 
-		auto brushface = &r_wsurf.vFaceBuffer[poly->flags];
-
-		auto polyItor = VBOCache->PolySet.find(poly->flags);
-		if (polyItor == VBOCache->PolySet.end())
+		if (polyItor == VBOCache->SurfaceSet.end())
 		{
-			VBOCache->PolySet.emplace(poly->flags);
+			VBOCache->SurfaceSet.emplace(surfIndex);
 
 			for (int j = 0; j < brushface->num_polys; ++j)
 			{

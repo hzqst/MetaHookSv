@@ -41,7 +41,7 @@ typedef struct portal_vbo_s
 	GLuint hVAO;
 	mtexinfo_t *texinfo;
 	std::vector<GLuint> vIndicesBuffer;
-	std::set<int> PolySet;
+	std::set<int> SurfaceSet;
 	int iPolyCount;
 }portal_vbo_t;
 

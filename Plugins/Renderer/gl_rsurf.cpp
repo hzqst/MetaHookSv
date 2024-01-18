@@ -928,8 +928,12 @@ void R_UploadDecalTextures(int decalIndex, texture_t *ptexture, detail_texture_c
 	}
 }
 
-void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface_t *psurf, detail_texture_cache_t *pcache)
+void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface_t * surf, detail_texture_cache_t *pcache)
 {
+	auto poly = surf->polys;
+	auto surfIndex = R_GetWorldSurfaceIndex(surf);
+	auto brushface = &r_wsurf.vFaceBuffer[surfIndex];
+
 	decalvertex_t vertexArray[MAX_DECALVERTS] = { 0 };
 
 	for (int j = 0; j < vertCount && j < MAX_DECALVERTS; ++j)
@@ -944,7 +948,7 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 
 		vertexArray[j].lightmaptexcoord[0] = v[5];
 		vertexArray[j].lightmaptexcoord[1] = v[6];
-		vertexArray[j].lightmaptexcoord[2] = psurf->lightmaptexturenum;
+		vertexArray[j].lightmaptexcoord[2] = surf->lightmaptexturenum;
 
 		float replaceScale[2] = { 1,1 };
 		float detailScale[2] = { 1,1 };
@@ -992,10 +996,6 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 		vertexArray[j].speculartexcoord[0] = specularScale[0];
 		vertexArray[j].speculartexcoord[1] = specularScale[1];
 
-		auto poly = psurf->polys;
-
-		auto brushface = &r_wsurf.vFaceBuffer[poly->flags];
-
 		vertexArray[j].normal[0] = brushface->normal[0];
 		vertexArray[j].normal[1] = brushface->normal[1];
 		vertexArray[j].normal[2] = brushface->normal[2];
@@ -1008,7 +1008,7 @@ void R_UploadDecalVertexBuffer(int decalIndex, int vertCount, float *v, msurface
 
 		vertexArray[j].decalindex = decalIndex;
 
-		memcpy(&vertexArray[j].styles, psurf->styles, sizeof(psurf->styles));
+		memcpy(&vertexArray[j].styles, surf->styles, sizeof(surf->styles));
 
 		v += VERTEXSIZE;
 	}

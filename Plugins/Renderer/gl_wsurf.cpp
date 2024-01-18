@@ -565,12 +565,12 @@ void R_BrushModelLinkTextureChain(model_t *mod, wsurf_vbo_leaf_t *leaf)
 	}
 }
 
-void R_GenerateIndicesForTexChain(msurface_t *s, brushtexchain_t *texchain, std::vector<GLuint> &vIndicesBuffer)
+void R_GenerateIndicesForTexChain(msurface_t *surf, brushtexchain_t *texchain, std::vector<GLuint> &vIndicesBuffer)
 {
-	auto p = s->polys;
-	auto &brushface = r_wsurf.vFaceBuffer[p->flags];
+	auto surfIndex = R_GetWorldSurfaceIndex(surf);
+	auto &brushface = r_wsurf.vFaceBuffer[surfIndex];
 
-	if (s->flags & SURF_DRAWSKY)
+	if (surf->flags & SURF_DRAWSKY)
 	{
 		if (texchain->iType == TEXCHAIN_SKY)
 		{
@@ -587,15 +587,15 @@ void R_GenerateIndicesForTexChain(msurface_t *s, brushtexchain_t *texchain, std:
 			}
 		}
 	}
-	else if (s->flags & SURF_DRAWTURB)
+	else if (surf->flags & SURF_DRAWTURB)
 	{
 
 	}
-	else if (s->flags & SURF_UNDERWATER)
+	else if (surf->flags & SURF_UNDERWATER)
 	{
 
 	}
-	else if (s->flags & SURF_DRAWTILED)
+	else if (surf->flags & SURF_DRAWTILED)
 	{
 		if (texchain->iType == TEXCHAIN_SCROLL)
 		{
@@ -1255,6 +1255,35 @@ int R_FindTextureIdByTexture(texture_t *ptex)
 	return -1;
 }
 
+msurface_t* R_GetWorldSurfaceByIndex(int index)
+{
+	msurface_t* surf;
+
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		surf = (((msurface_hl25_t*)r_worldmodel->surfaces) + index);
+	}
+	else
+	{
+		surf = r_worldmodel->surfaces + index;
+	}
+
+	return surf;
+}
+
+int R_GetWorldSurfaceIndex(msurface_t*surf)
+{
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		auto surf25 = (msurface_hl25_t*)surf;
+		auto surfbase = (msurface_hl25_t*)r_worldmodel->surfaces;
+
+		return surf25 - surfbase;
+	}
+
+	return surf - r_worldmodel->surfaces;
+}
+
 void R_GenerateVertexBuffer(void)
 {
 	std::vector<brushvertex_t> vVertexBuffer;
@@ -1267,22 +1296,9 @@ void R_GenerateVertexBuffer(void)
 
 	for(int i = 0; i < r_worldmodel->numsurfaces; i++)
 	{
-		msurface_t* surf;
-
-		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-		{
-			surf = (((msurface_hl25_t *)r_worldmodel->surfaces) + i);
-		}
-		else
-		{
-			surf = r_worldmodel->surfaces + i;
-		}
-
+		auto surf = R_GetWorldSurfaceByIndex(i);
 		auto poly = surf->polys;
-
-		poly->flags = i;
-
-		brushface_t *brushface = &r_wsurf.vFaceBuffer[iNumFaces];
+		brushface_t *brushface = &r_wsurf.vFaceBuffer[i];
 
 		VectorCopy(surf->texinfo->vecs[0], brushface->s_tangent);
 		VectorCopy(surf->texinfo->vecs[1], brushface->t_tangent);

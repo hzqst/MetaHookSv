@@ -330,6 +330,8 @@ qboolean Host_IsSinglePlayerGame();
 void R_ForceCVars(qboolean mp);
 void R_NewMap(void);
 void GL_BuildLightmaps(void);
+int R_GetWorldSurfaceIndex(msurface_t* surf);
+msurface_t* R_GetWorldSurfaceByIndex(int index);
 void R_Init(void);
 void R_VidInit(void);
 void R_Shutdown(void);

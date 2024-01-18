@@ -375,8 +375,8 @@ bool R_IsAboveWater(water_vbo_t *water)
 water_vbo_t *R_FindFlatWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t *leaf)
 {
 	auto poly = surf->polys;
-
-	auto brushface = &r_wsurf.vFaceBuffer[poly->flags];
+	auto surfIndex = R_GetWorldSurfaceIndex(surf);
+	auto brushface = &r_wsurf.vFaceBuffer[surfIndex];
 
 	vec3_t normal;
 	VectorCopy(brushface->normal, normal);
@@ -553,8 +553,8 @@ void R_UpdateRippleTexture(water_vbo_t *VBOCache, int framecount)
 water_vbo_t *R_CreateWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t *leaf)
 {
 	auto poly = surf->polys;
-
-	auto brushface = &r_wsurf.vFaceBuffer[poly->flags];
+	auto surfIndex = R_GetWorldSurfaceIndex(surf);
+	auto brushface = &r_wsurf.vFaceBuffer[surfIndex];
 
 	auto WaterVBO = R_FindFlatWaterVBO(surf, direction, leaf);
 
