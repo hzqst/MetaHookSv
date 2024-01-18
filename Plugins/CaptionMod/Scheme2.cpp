@@ -36,6 +36,8 @@ static CSchemeManager g_SchemeManagerNew;
 
 CSchemeManager* g_pVGuiSchemeManager = &g_SchemeManagerNew;
 
+EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CSchemeManager, ISchemeManager2, VGUI_SCHEME2_INTERFACE_VERSION, g_SchemeManagerNew);
+
 CSchemeManager::CSchemeManager(void)
 {
 	CScheme *nullScheme = new CScheme();
@@ -721,7 +723,7 @@ int CSchemeManager::GetProportionalNormalizedValue_HD(int rootWide, int rootTall
 
 //LD
 
-int CSchemeManager::GetProportionalScaledValueEx(CScheme *pScheme, int normalizedValue)
+int CSchemeManager::GetProportionalScaledValueEx(IScheme2*pScheme, int normalizedValue)
 {
 	VPANEL sizing = pScheme->GetSizingPanel();
 
@@ -733,7 +735,7 @@ int CSchemeManager::GetProportionalScaledValueEx(CScheme *pScheme, int normalize
 	return GetProportionalScaledValue_LD(w, h, normalizedValue);
 }
 
-int CSchemeManager::GetProportionalNormalizedValueEx(CScheme *pScheme, int scaledValue)
+int CSchemeManager::GetProportionalNormalizedValueEx(IScheme2*pScheme, int scaledValue)
 {
 	auto sizing = pScheme->GetSizingPanel();
 
@@ -789,7 +791,7 @@ int CSchemeManager::GetProportionalNormalizedValue(int scaledValue)
 
 //HD
 
-int CSchemeManager::GetHDProportionalScaledValueEx(CScheme* pScheme, int normalizedValue)
+int CSchemeManager::GetHDProportionalScaledValueEx(IScheme2* pScheme, int normalizedValue)
 {
 	VPANEL sizing = pScheme->GetSizingPanel();
 
@@ -801,7 +803,7 @@ int CSchemeManager::GetHDProportionalScaledValueEx(CScheme* pScheme, int normali
 	return GetProportionalScaledValue_HD(w, h, normalizedValue);
 }
 
-int CSchemeManager::GetHDProportionalNormalizedValueEx(CScheme* pScheme, int scaledValue)
+int CSchemeManager::GetHDProportionalNormalizedValueEx(IScheme2* pScheme, int scaledValue)
 {
 	auto sizing = pScheme->GetSizingPanel();
 

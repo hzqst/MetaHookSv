@@ -5,8 +5,8 @@
 // $NoKeywords: $
 //=============================================================================//
 
-#ifndef ISCHEME2_H
-#define ISCHEME2_H
+#ifndef CSCHEME2_H
+#define CSCHEME2_H
 
 #ifdef _WIN32
 #pragma once
@@ -19,6 +19,8 @@
 
 #include "Border.h"
 #include "Color.h"
+
+#include <IScheme2.h>
 
 namespace vgui
 {
@@ -35,7 +37,7 @@ class IImage;
 
 //Simple wrapper around original g_SchemeManager and g_SchemeManager_HL25
 
-class CScheme : public IScheme_HL25
+class CScheme : public IScheme2
 {
 public:
 	CScheme(void);
@@ -103,7 +105,7 @@ private:
 	int m_nScreenTall;
 };
 
-class CSchemeManager : public ISchemeManager_HL25
+class CSchemeManager : public ISchemeManager2
 {
 public:
 	CSchemeManager(void);
@@ -130,13 +132,13 @@ public:
 	//LD
 	int GetProportionalScaledValueEx(HScheme scheme, int normalizedValue);
 	int GetProportionalNormalizedValueEx(HScheme scheme, int scaledValue);
-	int GetProportionalScaledValueEx(CScheme* pScheme, int normalizedValue);
-	int GetProportionalNormalizedValueEx(CScheme* pScheme, int scaledValue);
+	int GetProportionalScaledValueEx(IScheme2* pScheme, int normalizedValue);
+	int GetProportionalNormalizedValueEx(IScheme2* pScheme, int scaledValue);
 	//HD
 	int GetHDProportionalScaledValueEx(HScheme scheme, int normalizedValue);
 	int GetHDProportionalNormalizedValueEx(HScheme scheme, int scaledValue);
-	int GetHDProportionalScaledValueEx(CScheme* pScheme, int normalizedValue);
-	int GetHDProportionalNormalizedValueEx(CScheme* pScheme, int scaledValue);
+	int GetHDProportionalScaledValueEx(IScheme2* pScheme, int normalizedValue);
+	int GetHDProportionalNormalizedValueEx(IScheme2* pScheme, int scaledValue);
 
 	HScheme LoadSchemeFromFileEx(VPANEL sizingPanel, const char* fileName, const char* tag);
 
@@ -165,4 +167,4 @@ private:
 
 } // namespace vgui
 
-#endif // ISCHEME_H
+#endif // CSCHEME_H
