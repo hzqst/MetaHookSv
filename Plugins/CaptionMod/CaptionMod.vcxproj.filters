@@ -452,6 +452,9 @@
     <ClCompile Include="BaseUI.cpp">
       <Filter>EngineVGUI2</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\MemoryBitmap.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="enginedef.h">
@@ -1020,6 +1023,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\Interface\VGUI\ISurface2.h">
       <Filter>vgui_interface</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\MemoryBitmap.h">
+      <Filter>vgui_controls</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

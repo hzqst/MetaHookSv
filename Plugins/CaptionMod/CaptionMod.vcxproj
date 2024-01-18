@@ -157,6 +157,7 @@ $(GLEWCheckRequirements)</Command>
   <ItemGroup>
     <ClCompile Include="$(SolutionDir)include\HLSDK\common\interface.cpp" />
     <ClCompile Include="$(SolutionDir)include\HLSDK\common\parsemsg.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\MemoryBitmap.cpp" />
     <ClCompile Include="BaseUI.cpp" />
     <ClCompile Include="chatdialog.cpp" />
     <ClCompile Include="ClientVGUI.cpp" />
@@ -289,6 +290,7 @@ $(GLEWCheckRequirements)</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Interface\VGUI\ISurface2.h" />
+    <ClInclude Include="..\..\include\vgui_controls\MemoryBitmap.h" />
     <ClInclude Include="chatdialog.h" />
     <ClInclude Include="cstrikechatdialog.h" />
     <ClInclude Include="CvarSlider.h" />
