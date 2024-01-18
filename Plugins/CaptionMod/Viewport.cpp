@@ -877,7 +877,6 @@ void CViewport::SetParent(VPANEL vPanel)
 	{
 		SetProportional(true);
 	}
-	//m_pSubtitlePanel->SetParent(this);
 }
 
 void CViewport::Think(void)

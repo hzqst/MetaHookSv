@@ -583,7 +583,10 @@ void CScheme::ReloadFontGlyphs(void)
 			if (tall < minimumFontHeight)
 				tall = minimumFontHeight;
 
-			surface()->AddGlyphSetToFont(m_FontAliases[i]._font, fontdata->GetString("name"), tall, fontdata->GetInt("weight"), blur, scanlines, flags);
+			auto fontName = fontdata->GetString("name");
+			auto fontWeight = fontdata->GetInt("weight");
+
+			surface()->AddGlyphSetToFont(m_FontAliases[i]._font, fontName, tall, fontdata->GetInt("weight"), blur, scanlines, flags);
 
 			break;
 		}
