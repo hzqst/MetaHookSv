@@ -3,6 +3,7 @@
 
 #include "VGUI.h"
 #include "IHTML.h"
+#include "utldict.h"
 #include <mathlib/vector2d.h>
 #include <Color.h>
 #include <ISurface2.h>
@@ -246,6 +247,7 @@ public:
 
 private:
 	float m_flAlphaMultiplier;
+	CUtlDict< vgui::IImage*, unsigned short >	m_FileTypeImages;
 };
 
 }
