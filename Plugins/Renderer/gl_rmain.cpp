@@ -2387,9 +2387,7 @@ void R_ForceCVars(qboolean mp)
 
 void R_AddReferencedTextures(std::set<int> &textures)
 {
-	int i;
-
-	for (i = 0; i < EngineGetNumKnownModel(); ++i)
+	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
 	{
 		auto mod = EngineGetModelByIndex(i);
 
@@ -2448,6 +2446,29 @@ void R_UnloadNoreferenceTextures(const std::set<int>& textures)
 	}
 }
 
+void R_UnloadNoreferenceModels()
+{
+	for (int i = 0; i < EngineGetNumKnownModel(); ++i)
+	{
+		auto mod = EngineGetModelByIndex(i);
+
+		if (mod && (mod->needload == NL_UNREFERENCED))
+		{
+			if (mod->type == mod_studio)
+			{
+				auto studiohdr = (studiohdr_t*)Cache_Check(&mod->cache);
+
+				if (studiohdr)
+				{
+					gEngfuncs.Con_DPrintf("R_UnloadNoreferenceModel: [mdl] [%s].\n", mod->name);
+
+					Cache_Free(&mod->cache);
+				}
+			}
+		}
+	}
+}
+
 void R_NewMap(void)
 {
 	R_GenerateSceneUBO();
@@ -2476,6 +2497,7 @@ void R_NewMap(void)
 		std::set<int> textures;
 		R_AddReferencedTextures(textures);
 		R_UnloadNoreferenceTextures(textures);
+		R_UnloadNoreferenceModels();
 	}
 
 	(*r_framecount) = 1;

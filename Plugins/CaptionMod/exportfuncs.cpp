@@ -333,7 +333,6 @@ void HUD_Init(void)
 	gPrivateFuncs.MessageMode_f = g_pMetaHookAPI->HookCmd("messagemode", MessageMode_f);
 	gPrivateFuncs.MessageMode2_f = g_pMetaHookAPI->HookCmd("messagemode2", MessageMode2_f);
 
-	//Fix SvClient Portal Rendering Confliction
 	if (g_bIsSvenCoop)
 	{
 		gPrivateFuncs.fmodex = GetModuleHandleA("fmodex.dll");
