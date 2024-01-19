@@ -322,7 +322,7 @@ void HUD_Init(void)
 	cap_debug = gEngfuncs.pfnRegisterVariable("cap_debug", "0", FCVAR_CLIENTDLL);
 	cap_enabled = gEngfuncs.pfnRegisterVariable("cap_enabled", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cap_max_distance = gEngfuncs.pfnRegisterVariable("cap_max_distance", "1500", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	cap_min_avol = gEngfuncs.pfnRegisterVariable("cap_min_avol", "0.1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	cap_min_avol = gEngfuncs.pfnRegisterVariable("cap_min_avol", "0.25", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cap_netmessage = gEngfuncs.pfnRegisterVariable("cap_netmessage", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cap_hudmessage = gEngfuncs.pfnRegisterVariable("cap_hudmessage", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	cap_newchat = gEngfuncs.pfnRegisterVariable("cap_newchat", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
@@ -1026,7 +1026,7 @@ char * NewV_strncpy(char *a1, const char *a2, size_t a3)
 	else if ((gamedir && !strcmp(gamedir, "svencoop")) || CommandLine()->CheckParm("-steamlang"))
 	{
 		Sys_GetRegKeyValue("Software\\Valve\\Steam", "Language", language, sizeof(language), "");
-		if ((Q_strlen(language) > 0) && (Q_stricmp(language, "english")))
+		if ((Q_strlen(language) > 0) && (0 != Q_stricmp(language, "english")))
 		{
 			a2 = language;
 		}

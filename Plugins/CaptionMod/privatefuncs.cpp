@@ -1117,13 +1117,14 @@ void Engine_FillAddress(void)
 		PUCHAR SearchEnd = SearchBegin + g_dwEngineTextSize;
 		while (1)
 		{
-#define LANGUAGESTRNCPY_SIG "\x68\x80\x00\x00\x00\x50\x8D"
+#define LANGUAGESTRNCPY_SIG "\x68\x80\x00\x00\x00\x50"
 			PUCHAR LanguageStrncpy = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchEnd - SearchBegin, LANGUAGESTRNCPY_SIG);
 			if (LanguageStrncpy)
 			{
 				typedef struct
 				{
 					bool bHasPushEax;
+					bool bHasPushEnglish;
 				}LanguageStrncpy_ctx;
 
 				LanguageStrncpy_ctx ctx = { 0 };
@@ -1141,7 +1142,22 @@ void Engine_FillAddress(void)
 						ctx->bHasPushEax = true;
 					}
 
-					if (ctx->bHasPushEax)
+					if (pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+						(((PUCHAR)pinst->detail->x86.operands[0].imm >= (PUCHAR)g_dwEngineRdataBase && (PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineRdataBase + g_dwEngineRdataSize)
+						|| ((PUCHAR)pinst->detail->x86.operands[0].imm >= (PUCHAR)g_dwEngineDataBase && (PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+						))
+					{
+						const char* pPushString = (const char*)pinst->detail->x86.operands[0].imm;
+
+						if (!memcmp(pPushString, "english", sizeof("english")))
+						{
+							ctx->bHasPushEnglish = true;
+						}
+					}
+
+					if (ctx->bHasPushEax && ctx->bHasPushEnglish)
 					{
 						if (address[0] == 0xE8)
 						{
@@ -1165,9 +1181,22 @@ void Engine_FillAddress(void)
 								return TRUE;
 							}
 						}
+						else if (address[0] == 0xFF && address[1] == 0x15)
+						{
+							gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))**(ULONG_PTR **)(address + 2);
+							
+							PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
+							int rva = pfnNewV_strncpy - (address + 5);
+
+							char trampoline[] = "\xE8\x2A\x2A\x2A\x2A\x90";
+							*(int*)(trampoline + 1) = rva;
+
+							g_pMetaHookAPI->WriteMemory(address, trampoline, sizeof(trampoline) - 1);
+							return TRUE;
+						}
 					}
 
-					if (instCount > 5)
+					if (instCount > 8)
 						return TRUE;
 
 					if (address[0] == 0xCC)
