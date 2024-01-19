@@ -212,9 +212,9 @@ portal_vbo_t *R_PreparePortalVBO(void *ClientPortalManager, void * ClientPortal,
 	}
 	else
 	{
-		auto polyItor = VBOCache->SurfaceSet.find(surfIndex);
+		auto itor = VBOCache->SurfaceSet.find(surfIndex);
 
-		if (polyItor == VBOCache->SurfaceSet.end())
+		if (itor == VBOCache->SurfaceSet.end())
 		{
 			VBOCache->SurfaceSet.emplace(surfIndex);
 

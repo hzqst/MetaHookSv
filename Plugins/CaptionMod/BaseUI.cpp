@@ -132,8 +132,6 @@ void CBaseUIProxy::Shutdown(void)
 {
 	ClientVGUI_Shutdown();
 
-	//TODO: why???
-	//if (g_iEngineType != ENGINE_GOLDSRC_HL25)
 	GameUI_UninstallHooks();
 
 	//GameUI.dll and vgui2.dll will be unloaded by engine!CBaseUI::Shutdown

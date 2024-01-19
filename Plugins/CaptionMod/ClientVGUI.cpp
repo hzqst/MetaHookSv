@@ -250,9 +250,9 @@ EXPOSE_SINGLE_INTERFACE(NewClientVGUI, IClientVGUI, CLIENTVGUI_INTERFACE_VERSION
 
 HMODULE g_hVGui1 = NULL;
 
-void *vgui_TextImage_paint_orig = NULL;
-void **vftable_TextImage = NULL;
-void **vftable_Color = NULL;
+void * g_vgui_TextImage_paint_orig = NULL;
+void ** g_vftable_TextImage = NULL;
+void **g_vftable_Color = NULL;
 
 class vgui1_IColor
 {
@@ -273,6 +273,7 @@ public:
 public:
 	vgui1_Color()
 	{
+		vftable = g_vftable_Color;
 		color[0] = 0;
 		color[1] = 0;
 		color[2] = 0;
@@ -349,10 +350,10 @@ void __fastcall vgui_TextImage_paint(vgui1_TextImage *pthis, int, void *panel)
 	{
 		qboolean isNonANSI = false;
 
-		char *p = pthis->text;
+		auto p = pthis->text;
 		while (*p)
 		{
-			if (*p < 0 || *p > 127) {
+			if ((*p) < 0 || (*p) > 127) {
 				isNonANSI = true;
 				break;
 			}
@@ -363,7 +364,6 @@ void __fastcall vgui_TextImage_paint(vgui1_TextImage *pthis, int, void *panel)
 		{
 			vgui1_Color color;
 			memset(&color, 0, sizeof(color));
-			color.vftable = vftable_Color;
 			pthis2->getColor(&color);
 
 			int r, g, b, a;
@@ -423,10 +423,10 @@ void VGUI1_InstallHook(void)
 
 	if (g_hVGui1)
 	{
-		vftable_TextImage = (void **)GetProcAddress(g_hVGui1, "??_7TextImage@vgui@@6B@");
-		vftable_Color = (void **)GetProcAddress(g_hVGui1, "??_7Color@vgui@@6B@");
+		g_vftable_TextImage = (void **)GetProcAddress(g_hVGui1, "??_7TextImage@vgui@@6B@");
+		g_vftable_Color = (void **)GetProcAddress(g_hVGui1, "??_7Color@vgui@@6B@");
 
-		gPrivateFuncs.vgui_TextImage_paint = (decltype(gPrivateFuncs.vgui_TextImage_paint))vftable_TextImage[22];
+		gPrivateFuncs.vgui_TextImage_paint = (decltype(gPrivateFuncs.vgui_TextImage_paint))g_vftable_TextImage[22];
 
 		Install_InlineHook(vgui_TextImage_paint);
 	}
