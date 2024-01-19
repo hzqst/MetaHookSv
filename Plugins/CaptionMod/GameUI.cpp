@@ -21,6 +21,7 @@
 #include "DpiManager.h"
 #include <capstone.h>
 #include <set>
+#include <sstream>
 
 //static hook_t* g_phook_QueryBox_ctor = NULL;
 static hook_t* g_phook_GameUI_Panel_Init = NULL;
@@ -31,9 +32,9 @@ static hook_t *g_phook_COptionsSubVideo_ctor = NULL;
 static hook_t *g_phook_COptionsSubVideo_ApplyVidSettings = NULL;
 static hook_t *g_phook_COptionsSubAudio_ctor = NULL;
 static hook_t* g_phook_RichText_InsertChar = NULL;
+static hook_t* g_phook_RichText_InsertStringW = NULL;
 static hook_t* g_phook_RichText_OnThink = NULL;
 static hook_t* g_phook_TextEntry_OnKeyCodeTyped = NULL;
-//static hook_t* g_phook_TextEntry_InsertChar = NULL;
 static hook_t* g_phook_TextEntry_LayoutVerticalScrollBarSlider = NULL;
 static hook_t* g_phook_TextEntry_GetStartDrawIndex = NULL;
 
@@ -72,6 +73,34 @@ void __fastcall RichText_InsertChar(void* pthis, int dummy, wchar_t ch)
 		return;
 
 	gPrivateFuncs.RichText_InsertChar(pthis, 0, ch);
+}
+
+void __fastcall RichText_InsertStringW(void* pthis, int dummy, wchar_t *ch)
+{
+	while (1)
+	{
+		std::wstringstream wss;
+
+		while (1)
+		{
+			if ((*ch) == L'\r' || (*ch) == L'\0')
+				break;
+
+			wss << (*ch);
+
+			ch++;
+		}
+
+		auto ws = wss.str();
+
+		if (ws.size())
+		{
+			gPrivateFuncs.RichText_InsertStringW(pthis, 0, ws.c_str());
+		}
+
+		if ((*ch) == L'\r' || (*ch) == L'\0')
+			break;
+	}
 }
 
 //TextEntry doesn't have such issue
@@ -1259,7 +1288,7 @@ void GameUI_InstallHooks(void)
 			{
 				if (ctx->bFound118h)
 				{
-					gPrivateFuncs.RichText_InsertString = (decltype(gPrivateFuncs.RichText_InsertString))GetCallAddress(address);
+					gPrivateFuncs.RichText_InsertStringA = (decltype(gPrivateFuncs.RichText_InsertStringA))GetCallAddress(address);
 				}
 				else
 				{
@@ -1285,7 +1314,7 @@ void GameUI_InstallHooks(void)
 
 	if (1)
 	{
-		PVOID RecursiveWalkBase = (gPrivateFuncs.RichText_Print) ? gPrivateFuncs.RichText_Print : gPrivateFuncs.RichText_InsertString;
+		PVOID RecursiveWalkBase = (gPrivateFuncs.RichText_Print) ? gPrivateFuncs.RichText_Print : gPrivateFuncs.RichText_InsertStringA;
 
 		typedef struct
 		{
@@ -1329,7 +1358,7 @@ void GameUI_InstallHooks(void)
 			ctx.walks.pop_back();
 
 			g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-				{
+			{
 					auto pinst = (cs_insn*)inst;
 					auto ctx = (RichText_PrintWalkContext*)context;
 
@@ -1390,7 +1419,52 @@ void GameUI_InstallHooks(void)
 						ctx->Found0xDCandidate = address;
 						ctx->Found0xDCandidateInstCount = instCount;
 
-						gPrivateFuncs.RichText_InsertChar = (decltype(gPrivateFuncs.RichText_InsertChar))ctx->FunctionBeginCandidate;
+						typedef struct
+						{
+							bool IsFetchWord;
+						}RichText_InsertCharContext;
+
+						RichText_InsertCharContext ctx2 = { 0 };
+
+						g_pMetaHookAPI->DisasmRanges(ctx->FunctionBeginCandidate, address - ctx->FunctionBeginCandidate, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+							{
+								auto pinst = (cs_insn*)inst;
+								auto ctx = (RichText_InsertCharContext*)context;
+								//66 8B 06                                            mov     ax, [esi]
+								//0F B7 07                                            movzx   eax, word ptr [edi]
+								//66 8B 08                                            mov     cx, [eax]
+
+								if ((pinst->id == X86_INS_MOV || pinst->id == X86_INS_MOVZX) &&
+									pinst->detail->x86.op_count == 2 &&
+									pinst->detail->x86.operands[0].type == X86_OP_REG &&
+									pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+									(pinst->detail->x86.operands[0].size == 2 || pinst->detail->x86.operands[1].size == 2) &&
+									pinst->detail->x86.operands[1].mem.base != 0 &&
+									pinst->detail->x86.operands[1].mem.disp == 0 &&
+									pinst->detail->x86.operands[1].mem.index == 0 &&
+									pinst->detail->x86.operands[1].mem.scale == 1)
+								{
+									ctx->IsFetchWord = true;
+								}
+
+								if (address[0] == 0xCC)
+									return TRUE;
+
+								if (pinst->id == X86_INS_RET)
+									return TRUE;
+
+								return FALSE;
+
+							}, 0, & ctx2);
+
+						if (ctx2.IsFetchWord)
+						{
+							gPrivateFuncs.RichText_InsertStringW = (decltype(gPrivateFuncs.RichText_InsertStringW))ctx->FunctionBeginCandidate;
+						}
+						else
+						{
+							gPrivateFuncs.RichText_InsertChar = (decltype(gPrivateFuncs.RichText_InsertChar))ctx->FunctionBeginCandidate;
+						}
 					}
 
 					if (!ctx->Is0xDCandidatePatched &&
@@ -1457,11 +1531,14 @@ void GameUI_InstallHooks(void)
 				}, walk.depth, &ctx);
 		}
 
-		Sig_FuncNotFound(RichText_InsertChar);
-
 		if (!ctx.Is0xDCandidatePatched)
 		{
 			g_pMetaHookAPI->SysError("Failed to patch GameUI!RichText_InsertChar.");
+		}
+
+		if (!gPrivateFuncs.RichText_InsertChar && !gPrivateFuncs.RichText_InsertStringW)
+		{
+			g_pMetaHookAPI->SysError("Failed to locate GameUI!RichText_InsertChar or RichText_InsertStringW.");
 		}
 	}
 
@@ -1557,7 +1634,13 @@ void GameUI_InstallHooks(void)
 	Install_InlineHook(COptionsSubVideo_ctor);
 	Install_InlineHook(COptionsSubVideo_ApplyVidSettings);
 	Install_InlineHook(COptionsSubAudio_ctor);
-	Install_InlineHook(RichText_InsertChar);
+	
+	if(gPrivateFuncs.RichText_InsertChar)
+		Install_InlineHook(RichText_InsertChar);
+
+	if (gPrivateFuncs.RichText_InsertStringW)
+		Install_InlineHook(RichText_InsertStringW);
+
 	Install_InlineHook(RichText_OnThink);
 	Install_InlineHook(TextEntry_OnKeyCodeTyped);
 	Install_InlineHook(TextEntry_LayoutVerticalScrollBarSlider);
@@ -1575,6 +1658,7 @@ void GameUI_UninstallHooks(void)
 	Uninstall_Hook(COptionsSubVideo_ApplyVidSettings);
 	Uninstall_Hook(COptionsSubAudio_ctor);
 	Uninstall_Hook(RichText_InsertChar);
+	Uninstall_Hook(RichText_InsertStringW);
 	Uninstall_Hook(RichText_OnThink);
 	Uninstall_Hook(TextEntry_OnKeyCodeTyped);
 	Uninstall_Hook(TextEntry_LayoutVerticalScrollBarSlider);

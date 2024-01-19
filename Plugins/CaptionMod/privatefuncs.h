@@ -100,7 +100,8 @@ typedef struct
 	//void *(__fastcall *COptionsDialog_AddPage)(void *pthis, int dummy, void *panel, const char *name);
 
 	void(__fastcall* RichText_Print)(void* pthis, int dummy, const char* msg);
-	void (__fastcall* RichText_InsertString)(void* pthis, int dummy, const char* msg);
+	void (__fastcall* RichText_InsertStringA)(void* pthis, int dummy, const char* msg);
+	void(__fastcall* RichText_InsertStringW)(void* pthis, int dummy, const wchar_t* msg);
 	void(__fastcall* RichText_InsertChar)(void* pthis, int dummy, wchar_t ch);
 	void (__fastcall* RichText_OnThink)(void* pthis, int dummy);//virtual 0x158
 
