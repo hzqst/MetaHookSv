@@ -1111,30 +1111,153 @@ void Engine_FillAddress(void)
 		Sig_VarNotFound(rgpszrawsentence);
 	}
 
-	if (1)
+	if (g_iEngineType == ENGINE_SVENGINE)
 	{
+		const char pattern[] = "\xB8\x2A\x2A\x2A\x2A\x68\x80\x00\x00\x00\x50";
+
 		PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
 		PUCHAR SearchEnd = SearchBegin + g_dwEngineTextSize;
 		while (1)
 		{
-#define LANGUAGESTRNCPY_SIG "\x68\x80\x00\x00\x00\x50"
-			PUCHAR LanguageStrncpy = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchEnd - SearchBegin, LANGUAGESTRNCPY_SIG);
+			auto LanguageStrncpy = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchEnd - SearchBegin, pattern);
 			if (LanguageStrncpy)
 			{
 				typedef struct
 				{
 					bool bHasPushEax;
 					bool bHasPushEnglish;
-				}LanguageStrncpy_ctx;
+				}LanguageStrncpySearchContext;
 
-				LanguageStrncpy_ctx ctx = { 0 };
+				LanguageStrncpySearchContext ctx = { 0 };
+
+				g_pMetaHookAPI->DisasmRanges(LanguageStrncpy, 0x30, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+					{
+						auto ctx = (LanguageStrncpySearchContext*)context;
+						auto pinst = (cs_insn*)inst;
+
+						if (!ctx->bHasPushEax && pinst->id == X86_INS_PUSH &&
+							pinst->detail->x86.op_count == 1 &&
+							pinst->detail->x86.operands[0].type == X86_OP_REG &&
+							pinst->detail->x86.operands[0].reg == X86_REG_EAX)
+						{
+							ctx->bHasPushEax = true;
+						}
+
+						if (!ctx->bHasPushEnglish && pinst->id == X86_INS_PUSH &&
+							pinst->detail->x86.op_count == 1 &&
+							pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+							(((PUCHAR)pinst->detail->x86.operands[0].imm >= (PUCHAR)g_dwEngineRdataBase && (PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineRdataBase + g_dwEngineRdataSize)
+								|| ((PUCHAR)pinst->detail->x86.operands[0].imm >= (PUCHAR)g_dwEngineDataBase && (PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+								))
+						{
+							const char* pPushString = (const char*)pinst->detail->x86.operands[0].imm;
+
+							if (!memcmp(pPushString, "english", sizeof("english")))
+							{
+								ctx->bHasPushEnglish = true;
+							}
+						}
+
+						if (!ctx->bHasPushEnglish && pinst->id == X86_INS_MOV &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_REG &&
+							pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+							(((PUCHAR)pinst->detail->x86.operands[1].imm >= (PUCHAR)g_dwEngineRdataBase && (PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineRdataBase + g_dwEngineRdataSize)
+								|| ((PUCHAR)pinst->detail->x86.operands[1].imm >= (PUCHAR)g_dwEngineDataBase && (PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+								))
+						{
+							const char* pPushString = (const char*)pinst->detail->x86.operands[1].imm;
+
+							if (!memcmp(pPushString, "english", sizeof("english")))
+							{
+								ctx->bHasPushEnglish = true;
+							}
+						}
+
+						if (ctx->bHasPushEax && ctx->bHasPushEnglish)
+						{
+							if (address[0] == 0xE8)
+							{
+								gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(address);
+								PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
+								int rva = pfnNewV_strncpy - (address + 5);
+								g_pMetaHookAPI->WriteMemory(address + 1, (BYTE*)&rva, 4);
+								return TRUE;
+							}
+							else if (address[0] == 0xEB)
+							{
+								char jmprva = *(char*)(address + 1);
+								PUCHAR jmptarget = address + 2 + jmprva;
+
+								if (jmptarget[0] == 0xE8)
+								{
+									gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(jmptarget);
+									PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
+									int rva = pfnNewV_strncpy - (jmptarget + 5);
+									g_pMetaHookAPI->WriteMemory(jmptarget + 1, (BYTE*)&rva, 4);
+									return TRUE;
+								}
+							}
+							else if (address[0] == 0xFF && address[1] == 0x15)
+							{
+								gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy)) * *(ULONG_PTR**)(address + 2);
+
+								PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
+								int rva = pfnNewV_strncpy - (address + 5);
+
+								char trampoline[] = "\xE8\x2A\x2A\x2A\x2A\x90";
+								*(int*)(trampoline + 1) = rva;
+
+								g_pMetaHookAPI->WriteMemory(address, trampoline, sizeof(trampoline) - 1);
+								return TRUE;
+							}
+						}
+
+						if (instCount > 8)
+							return TRUE;
+
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						if (pinst->id == X86_INS_RET)
+							return TRUE;
+
+						return FALSE;
+					}, 0, &ctx);
+
+				SearchBegin = LanguageStrncpy + sizeof(pattern) - 1;
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+	else
+	{
+		const char pattern[] = "\x68\x80\x00\x00\x00\x50";
+
+		PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
+		PUCHAR SearchEnd = SearchBegin + g_dwEngineTextSize;
+		while (1)
+		{
+			auto LanguageStrncpy = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchEnd - SearchBegin, pattern);
+			if (LanguageStrncpy)
+			{
+				typedef struct
+				{
+					bool bHasPushEax;
+					bool bHasPushEnglish;
+				}LanguageStrncpySearchContext;
+
+				LanguageStrncpySearchContext ctx = { 0 };
 
 				g_pMetaHookAPI->DisasmRanges(LanguageStrncpy, 0x30, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 				{
-					auto ctx = (LanguageStrncpy_ctx *)context;
+					auto ctx = (LanguageStrncpySearchContext*)context;
 					auto pinst = (cs_insn *)inst;
 
-					if (pinst->id == X86_INS_PUSH &&
+					if (!ctx->bHasPushEax && pinst->id == X86_INS_PUSH &&
 						pinst->detail->x86.op_count == 1 &&
 						pinst->detail->x86.operands[0].type == X86_OP_REG &&
 						pinst->detail->x86.operands[0].reg == X86_REG_EAX)
@@ -1142,7 +1265,7 @@ void Engine_FillAddress(void)
 						ctx->bHasPushEax = true;
 					}
 
-					if (pinst->id == X86_INS_PUSH &&
+					if (!ctx->bHasPushEnglish && pinst->id == X86_INS_PUSH &&
 						pinst->detail->x86.op_count == 1 &&
 						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
 						(((PUCHAR)pinst->detail->x86.operands[0].imm >= (PUCHAR)g_dwEngineRdataBase && (PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)g_dwEngineRdataBase + g_dwEngineRdataSize)
@@ -1150,6 +1273,22 @@ void Engine_FillAddress(void)
 						))
 					{
 						const char* pPushString = (const char*)pinst->detail->x86.operands[0].imm;
+
+						if (!memcmp(pPushString, "english", sizeof("english")))
+						{
+							ctx->bHasPushEnglish = true;
+						}
+					}
+
+					if (!ctx->bHasPushEnglish && pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+						(((PUCHAR)pinst->detail->x86.operands[1].imm >= (PUCHAR)g_dwEngineRdataBase && (PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineRdataBase + g_dwEngineRdataSize)
+							|| ((PUCHAR)pinst->detail->x86.operands[1].imm >= (PUCHAR)g_dwEngineDataBase && (PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize)
+							))
+					{
+						const char* pPushString = (const char*)pinst->detail->x86.operands[1].imm;
 
 						if (!memcmp(pPushString, "english", sizeof("english")))
 						{
@@ -1208,7 +1347,7 @@ void Engine_FillAddress(void)
 					return FALSE;
 				}, 0, &ctx);
 
-				SearchBegin = LanguageStrncpy + sizeof(LANGUAGESTRNCPY_SIG) - 1;
+				SearchBegin = LanguageStrncpy + sizeof(pattern) - 1;
 			}
 			else
 			{
