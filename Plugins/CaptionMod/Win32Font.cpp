@@ -37,6 +37,11 @@ CWin32Font::CWin32Font(void): m_ExtendedABCWidthsCache(256, 0, &ExtendedABCWidth
 	m_hDIB = NULL;
 	m_bAntiAliased = false;
 	m_bUnderlined = false;
+	m_bOutlined = false;
+	m_iDropShadowOffset = 0;
+	m_iFxpHeight = 0;
+	m_iOutlineSize = 0;
+	m_pBuf = NULL;
 	m_iBlur = 0;
 	m_iScanLines = 0;
 	m_bRotary = false;
@@ -71,6 +76,11 @@ CWin32Font::~CWin32Font(void)
 
 	if (m_hDIB)
 		::DeleteObject(m_hDIB);
+
+	if (m_pGaussianDistribution)
+	{
+		delete[]m_pGaussianDistribution;
+	}
 }
 
 bool g_bFontFound = false;
@@ -196,7 +206,7 @@ bool CWin32Font::Create(const char *windowsFontName, int tall, int weight, int b
 			m_ABCWidthsCache[i].b = (char)tm.tmAveCharWidth;
 	}
 
-	if (m_iBlur > 1)
+	if (m_iBlur > 1 && !m_pGaussianDistribution)
 	{
 		m_pGaussianDistribution = new float[m_iBlur * 2 + 1];
 		double sigma = 0.683 * m_iBlur;
@@ -659,10 +669,4 @@ bool CWin32Font::GetAdditive(void)
 int CWin32Font::GetAscent(void)
 {
 	return m_iAscent;
-}
-
-void __fastcall CWin32Font_GetCharRGBA(void *pthis, int, int ch, int rgbaX, int rgbaY, int rgbaWide, int rgbaTall, unsigned char *rgba)
-{
-	CWin32Font *pFont = (CWin32Font *)pthis;
-	pFont->GetCharRGBA(ch, rgbaX, rgbaY, rgbaWide, rgbaTall, rgba);
 }

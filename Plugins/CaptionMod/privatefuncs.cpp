@@ -71,7 +71,6 @@ static hook_t *g_phook_S_StartDynamicSound = NULL;
 static hook_t *g_phook_S_StartStaticSound = NULL;
 static hook_t *g_phook_ScClient_FindSoundEx = NULL;
 static hook_t *g_phook_pfnTextMessageGet = NULL;
-static hook_t *g_phook_CWin32Font_GetCharRGBA = NULL;
 static hook_t *g_phook_WeaponsResource_SelectSlot = NULL;
 //hook_t *g_phook_FileSystem_SetGameDirectory = NULL;
 
@@ -1188,26 +1187,6 @@ void Engine_FillAddress(void)
 			}
 		}
 	}
-
-	//TODO: Remove this? Looks like not used anymore?
-#if 0
-	if (g_iEngineType == ENGINE_SVENGINE)
-	{
-#define CWIN32FONT_GETCHARABCWIDTHS_SIG_SVENGINE "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x2A\x45\x0C\x2A\x2A\x5D\x14"
-
-		gPrivateFuncs.CWin32Font_GetCharRGBA = (decltype(gPrivateFuncs.CWin32Font_GetCharRGBA))Search_Pattern(CWIN32FONT_GETCHARABCWIDTHS_SIG_SVENGINE);
-		Sig_FuncNotFound(CWin32Font_GetCharRGBA);
-	}
-	else
-	{
-#define CWIN32FONT_GETCHARABCWIDTHS_SIG "\x55\x8B\xEC\x83\xEC\x70\x53\x56\x8B\xF1\x8D\x45\xD0\x57\x8D\x4D\xE4\x50\x8B\x45\x08\x8D\x55\xD4\x51\x52\x50\x8B\xCE"
-
-		gPrivateFuncs.CWin32Font_GetCharRGBA = (decltype(gPrivateFuncs.CWin32Font_GetCharRGBA))Search_Pattern(CWIN32FONT_GETCHARABCWIDTHS_SIG);
-		Sig_FuncNotFound(CWin32Font_GetCharRGBA);
-	}
-#endif
-
-
 }
 
 void Client_FillAddress(void)

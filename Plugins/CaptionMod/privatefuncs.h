@@ -43,9 +43,6 @@ typedef struct
 	sfxcache_t *(*S_LoadSound)(sfx_t *s, channel_t *ch);
 	sentenceEntry_s*(*SequenceGetSentenceByIndex)(unsigned int);
 
-	//Engine Surface
-	void(__fastcall *CWin32Font_GetCharRGBA)(void *pthis, int, int ch, int rgbaX, int rgbaY, int rgbaWide, int rgbaTall, unsigned char *rgba);
-
 	//SC ClientDLL
 
 	int(__fastcall *ScClient_FindSoundEx)(void *pthis, int, const char *soundName);

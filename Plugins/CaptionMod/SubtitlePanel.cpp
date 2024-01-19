@@ -267,6 +267,7 @@ void CSubLine::Draw(int x, int w, int align)
 	int nTextAlign = ALIGN_DEFAULT;
 
 	float flFraction = GetYPosOutRate();
+
 	if(flFraction != 0)
 	{
 		nAlpha = (float)nAlpha * (1 - flFraction);
@@ -623,6 +624,8 @@ void SubtitlePanel::VidInit(void)
 		ClearSubtitle();
 }
 
+//#include <gl/gl.h>
+
 void SubtitlePanel::Paint(void)
 {
 	//if (SCR_IsLoadingVisible())
@@ -644,13 +647,13 @@ void SubtitlePanel::Paint(void)
 
 	iPanelWidth -= x << 1;
 
-	//Draw lines and get how large the panel suppose to be.
+	//Draw lines and calculate the size of panel.
 
 	surface()->DrawSetTextFont(m_hTextFont);
 
 	for(int i = 0; i < m_Lines.Count(); ++i)
 	{
-		CSubLine *Line = m_Lines[i];
+		auto Line = m_Lines[i];
 
 		Line->Draw(x, iPanelWidth, m_iTextAlign);
 
@@ -664,18 +667,18 @@ void SubtitlePanel::Paint(void)
 			m_iPanelAlpha = Line->m_Alpha;
 	}
 
-	//If the panel try to fade in when it's fully hidden
+	//Check if the panel is trying to fade in when it's fully hidden
 	if(m_iCurPanelY > m_iCurPanelYEnd && m_iPanelY < m_iPanelYEnd)
 	{
 		m_iCurPanelY = m_iPanelY;
 		m_iCurPanelYEnd = m_iPanelYEnd;
 	}
 
-	//the panel's top won't be higher than m_iPanelTop
+	//The panel's top won't be higher than m_iPanelTop
 	if(m_iPanelY < m_iPanelTop)
 		m_iPanelY = m_iPanelTop;
 
-	//do not go away too far
+	//Do not go away too far
 	if(m_iPanelY > iPanelHeight)
 		m_iPanelY = iPanelHeight;
 
@@ -692,6 +695,7 @@ void SubtitlePanel::Paint(void)
 		else if(sign == -1 && m_iCurPanelY < m_iPanelY)
 			m_iCurPanelY = m_iPanelY;
 	}
+
 	if(m_iCurPanelYEnd != m_iPanelYEnd)
 	{
 		int sign = (m_iPanelYEnd - m_iCurPanelYEnd) ? 1 : -1;
@@ -735,7 +739,7 @@ void SubtitlePanel::PaintBackground(void)
 
 	surface()->DrawSetColor(clr);
 
-	//Draw 4 side rectangle
+	//Draw 4 side rectangles
 	surface()->DrawFilledRect(x+r, y, x+w-r, y+r);
 	surface()->DrawFilledRect(x+w-r, y+r, x+w, y+h-r);
 	surface()->DrawFilledRect(x+r, y+h-r, x+w-r, y+h);
@@ -744,7 +748,7 @@ void SubtitlePanel::PaintBackground(void)
 	//Draw the central rectangle
 	surface()->DrawFilledRect(x+r, y+r, x+w-r, y+h-r);
 
-	//draw 4 round cornor
+	//Draw 4 round cornors
 	surface()->DrawSetTexture(m_iRoundCornorMaterial[0]);
 	surface()->DrawTexturedRect(x, y, x+r, y+r);
 

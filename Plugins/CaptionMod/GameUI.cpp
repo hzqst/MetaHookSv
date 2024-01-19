@@ -103,17 +103,6 @@ void __fastcall RichText_InsertStringW(void* pthis, int dummy, wchar_t *ch)
 	}
 }
 
-//TextEntry doesn't have such issue
-#if 0
-void __fastcall TextEntry_InsertChar(void* pthis, int dummy, wchar_t ch)
-{
-	if (ch == L'\r')
-		return;
-
-	gPrivateFuncs.TextEntry_InsertChar(pthis, 0, ch);
-}
-#endif
-
 void __fastcall RichText_OnThink(void* pthis, int dummy)
 {
 	vgui::Panel* pPanel = (vgui::Panel*)pthis;

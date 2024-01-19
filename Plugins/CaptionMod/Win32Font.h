@@ -91,6 +91,4 @@ public:
 public:
 	static bool ms_bSetFriendlyNameCacheLessFunc;
 };
-
-void __fastcall CWin32Font_GetCharRGBA(void *pthis, int, int ch, int rgbaX, int rgbaY, int rgbaWide, int rgbaTall, unsigned char *rgba);
 #endif

@@ -312,7 +312,7 @@ void CSurfaceProxy::DrawUnicodeChar(wchar_t wch)
 		return;
 
 	int x, y;
-	g_pSurface->DrawGetTextPos(x, y);
+	DrawGetTextPos(x, y);
 
 	int a, b, c;
 	FontManager().GetCharABCwide(g_hCurrentFont, wch, a, b, c);
@@ -330,7 +330,7 @@ void CSurfaceProxy::DrawUnicodeChar(wchar_t wch)
 		rgbaWide = b;
 	}
 
-	int textureID;
+	int textureID = 0;
 	float *texCoords = NULL;
 
 	if (!g_FontTextureCache.GetTextureForChar(g_hCurrentFont, wch, &textureID, &texCoords))
@@ -338,10 +338,18 @@ void CSurfaceProxy::DrawUnicodeChar(wchar_t wch)
 
 	g_pSurface->DrawSetTexture(textureID);
 
+	int iSavedColor[4];
+
+	iSavedColor[0] = g_iCurrentTextR;
+	iSavedColor[1] = g_iCurrentTextG;
+	iSavedColor[2] = g_iCurrentTextB;
+	iSavedColor[3] = g_iCurrentTextA;
+
 	if (FontManager().GetFontOutlined(g_hCurrentFont))
 	{
 		int OutlineColor = (g_iCurrentTextR <= 10 && g_iCurrentTextG <= 10 && g_iCurrentTextB <= 10) ? 255 : 0;
-		m_pfnDrawSetTextColor(this, 0, OutlineColor, OutlineColor, OutlineColor, g_iCurrentTextA);
+
+		DrawSetTextColor(OutlineColor, OutlineColor, OutlineColor, g_iCurrentTextA);
 
 		if (staticSurface)
 		{
@@ -367,15 +375,14 @@ void CSurfaceProxy::DrawUnicodeChar(wchar_t wch)
 		}
 	}
 
-	m_pfnDrawSetTextColor(this, 0, g_iCurrentTextR, g_iCurrentTextG, g_iCurrentTextB, g_iCurrentTextA);
+	DrawSetTextColor(iSavedColor[0], iSavedColor[1], iSavedColor[2], iSavedColor[3]);
 
 	if (staticSurface)
 		staticSurface->drawPrintChar(x, y, rgbaWide, rgbaTall, texCoords[0], texCoords[1], texCoords[2], texCoords[3]);
 	else
 		staticSurface_HL25->drawPrintChar(x, y, rgbaWide, rgbaTall, texCoords[0], texCoords[1], texCoords[2], texCoords[3]);
 
-	m_pfnDrawSetTextColor(this, 0, g_iCurrentTextR, g_iCurrentTextG, g_iCurrentTextB, g_iCurrentTextA);
-	g_pSurface->DrawSetTextPos(x + b + c, y);
+	DrawSetTextPos(x + b + c, y);
 }
 
 void CSurfaceProxy::DrawUnicodeCharAdd(wchar_t wch)
@@ -410,10 +417,18 @@ void CSurfaceProxy::DrawUnicodeCharAdd(wchar_t wch)
 
 	g_pSurface->DrawSetTexture(textureID);
 
+	int iSavedColor[4];
+
+	iSavedColor[0] = g_iCurrentTextR;
+	iSavedColor[1] = g_iCurrentTextG;
+	iSavedColor[2] = g_iCurrentTextB;
+	iSavedColor[3] = g_iCurrentTextA;
+
 	if (FontManager().GetFontOutlined(g_hCurrentFont))
 	{
 		int OutlineColor = (g_iCurrentTextR <= 10 && g_iCurrentTextG <= 10 && g_iCurrentTextB <= 10) ? 255 : 0;
-		m_pfnDrawSetTextColor(this, 0, OutlineColor, OutlineColor, OutlineColor, g_iCurrentTextA);
+		
+		DrawSetTextColor(OutlineColor, OutlineColor, OutlineColor, g_iCurrentTextA);
 
 		if (staticSurface)
 		{
@@ -439,15 +454,14 @@ void CSurfaceProxy::DrawUnicodeCharAdd(wchar_t wch)
 		}
 	}
 
-	m_pfnDrawSetTextColor(this, 0, g_iCurrentTextR, g_iCurrentTextG, g_iCurrentTextB, g_iCurrentTextA);
+	DrawSetTextColor(iSavedColor[0], iSavedColor[1], iSavedColor[2], iSavedColor[3]);
 
 	if (staticSurface)
 		staticSurface->drawPrintCharAdd(x, y, rgbaWide, rgbaTall, texCoords[0], texCoords[1], texCoords[2], texCoords[3]);
 	else
 		staticSurface_HL25->drawPrintCharAdd(x, y, rgbaWide, rgbaTall, texCoords[0], texCoords[1], texCoords[2], texCoords[3]);
 
-	m_pfnDrawSetTextColor(this, 0, g_iCurrentTextR, g_iCurrentTextG, g_iCurrentTextB, g_iCurrentTextA);
-	g_pSurface->DrawSetTextPos(x + b + c, y);
+	DrawSetTextPos(x + b + c, y);
 }
 
 void CSurfaceProxy::DrawFlushText(void)
@@ -1177,6 +1191,13 @@ void CSurfaceProxy_HL25::DrawUnicodeChar(wchar_t wch)
 
 	DrawSetTexture(textureID);
 
+	int iSavedColor[4];
+
+	iSavedColor[0] = g_iCurrentTextR;
+	iSavedColor[1] = g_iCurrentTextG;
+	iSavedColor[2] = g_iCurrentTextB;
+	iSavedColor[3] = g_iCurrentTextA;
+
 	if (FontManager().GetFontOutlined(g_hCurrentFont))
 	{
 		int OutlineColor = (g_iCurrentTextR <= 10 && g_iCurrentTextG <= 10 && g_iCurrentTextB <= 10) ? 255 : 0;
@@ -1207,15 +1228,13 @@ void CSurfaceProxy_HL25::DrawUnicodeChar(wchar_t wch)
 		}
 	}
 
-	DrawSetTextColor(g_iCurrentTextR, g_iCurrentTextG, g_iCurrentTextB, g_iCurrentTextA);
+	DrawSetTextColor(iSavedColor[0], iSavedColor[1], iSavedColor[2], iSavedColor[3]);
 
 	if (staticSurface_HL25)
 		staticSurface_HL25->drawPrintChar(x, y, rgbaWide, rgbaTall, texCoords[0], texCoords[1], texCoords[2], texCoords[3]);
 	else
 		staticSurface->drawPrintChar(x, y, rgbaWide, rgbaTall, texCoords[0], texCoords[1], texCoords[2], texCoords[3]);
 
-	DrawSetTextColor(g_iCurrentTextR, g_iCurrentTextG, g_iCurrentTextB, g_iCurrentTextA);
-	
 	DrawSetTextPos(x + b + c, y);
 }
 
@@ -1251,6 +1270,13 @@ void CSurfaceProxy_HL25::DrawUnicodeCharAdd(wchar_t wch)
 
 	DrawSetTexture(textureID);
 
+	int iSavedColor[4];
+
+	iSavedColor[0] = g_iCurrentTextR;
+	iSavedColor[1] = g_iCurrentTextG;
+	iSavedColor[2] = g_iCurrentTextB;
+	iSavedColor[3] = g_iCurrentTextA;
+
 	if (FontManager().GetFontOutlined(g_hCurrentFont))
 	{
 		int OutlineColor = (g_iCurrentTextR <= 10 && g_iCurrentTextG <= 10 && g_iCurrentTextB <= 10) ? 255 : 0;
@@ -1281,14 +1307,12 @@ void CSurfaceProxy_HL25::DrawUnicodeCharAdd(wchar_t wch)
 		}
 	}
 
-	DrawSetTextColor(g_iCurrentTextR, g_iCurrentTextG, g_iCurrentTextB, g_iCurrentTextA);
+	DrawSetTextColor(iSavedColor[0], iSavedColor[1], iSavedColor[2], iSavedColor[3]);
 
 	if (staticSurface_HL25)
 		staticSurface_HL25->drawPrintCharAdd(x, y, rgbaWide, rgbaTall, texCoords[0], texCoords[1], texCoords[2], texCoords[3]);
 	else
 		staticSurface->drawPrintCharAdd(x, y, rgbaWide, rgbaTall, texCoords[0], texCoords[1], texCoords[2], texCoords[3]);
-
-	DrawSetTextColor(g_iCurrentTextR, g_iCurrentTextG, g_iCurrentTextB, g_iCurrentTextA);
 
 	DrawSetTextPos(x + b + c, y);
 }

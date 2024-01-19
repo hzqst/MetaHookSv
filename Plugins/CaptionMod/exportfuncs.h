@@ -42,8 +42,6 @@ void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, 
 void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);
 sfx_t *S_FindName(char *name, int *pfInCache);
 
-void __fastcall CWin32Font_GetCharRGBA(void *pthis, int, int ch, int rgbaX, int rgbaY, int rgbaWide, int rgbaTall, unsigned char *rgba);
-
 void MessageMode_f(void);
 void MessageMode2_f(void);
 void Cap_Version_f(void);
