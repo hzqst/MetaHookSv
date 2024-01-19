@@ -220,7 +220,8 @@ void R_PrepareStudioVBOSubmodel(
 					vIndices.emplace_back(iStartVertex + iNumVertex);
 					VBOMesh.iIndiceCount++;
 					VBOMesh.iPolyCount++;
-					VBOMesh.mesh = pmesh;
+					//VBOMesh.mesh = pmesh;
+					VBOMesh.iMeshIndex = k;
 
 					if (first == -1)
 						first = iNumVertex;
@@ -260,7 +261,8 @@ void R_PrepareStudioVBOSubmodel(
 					vIndices.emplace_back(iStartVertex + iNumVertex);
 					VBOMesh.iIndiceCount++;
 					VBOMesh.iPolyCount++;
-					VBOMesh.mesh = pmesh;
+					//VBOMesh.mesh = pmesh;
+					VBOMesh.iMeshIndex = k;
 
 					iNumTri++;
 
@@ -340,7 +342,9 @@ studio_vbo_t* R_PrepareStudioVBO(studiohdr_t* studiohdr)
 				auto submodel = (mstudiomodel_t*)((byte*)studiohdr + bodypart->modelindex) + j;
 
 				studio_vbo_submodel_t* vboSubmodel = new studio_vbo_submodel_t;
-				vboSubmodel->submodel = submodel;
+				//vboSubmodel->submodel = submodel;
+
+				vboSubmodel->iSubmodelIndex = j;
 
 				R_PrepareStudioVBOSubmodel(studiohdr, submodel, vVertex, vIndices, vboSubmodel);
 
@@ -1882,6 +1886,7 @@ void R_StudioDrawVBOMesh_AnalyzePass(
 	studio_vbo_t* VBOData,
 	studio_vbo_submodel_t* VBOSubmodel,
 	studio_vbo_mesh_t* VBOMesh,
+	mstudiomesh_t* pmesh,
 	studiohdr_t* ptexturehdr,
 	mstudiotexture_t* ptexture,
 	short* pskinref,
@@ -1936,13 +1941,12 @@ void R_StudioDrawVBOMesh_DrawPass(
 	studio_vbo_t* VBOData,
 	studio_vbo_submodel_t* VBOSubmodel,
 	studio_vbo_mesh_t* VBOMesh,
+	mstudiomesh_t* pmesh,
 	studiohdr_t* ptexturehdr,
 	mstudiotexture_t* ptexture,
 	short* pskinref,
 	const int flags)
 {
-	auto pmesh = VBOMesh->mesh;
-
 	program_state_t StudioProgramState = flags;
 
 	if (r_draw_shadowcaster)
@@ -2337,12 +2341,11 @@ void R_StudioDrawVBOMesh(
 	studio_vbo_t* VBOData,
 	studio_vbo_submodel_t* VBOSubmodel,
 	studio_vbo_mesh_t* VBOMesh,
+	mstudiomesh_t*pmesh,
 	studiohdr_t* ptexturehdr,
 	mstudiotexture_t* ptexture,
 	short* pskinref)
 {
-	auto pmesh = VBOMesh->mesh;
-
 	int flags = ptexture[pskinref[pmesh->skinref]].flags;
 
 	//Lighting related flags are ignored when r_fullbright >= 2
@@ -2378,6 +2381,7 @@ void R_StudioDrawVBOMesh(
 		R_StudioDrawVBOMesh_AnalyzePass(VBOData,
 			VBOSubmodel,
 			VBOMesh,
+			pmesh,
 			ptexturehdr,
 			ptexture,
 			pskinref,
@@ -2388,6 +2392,7 @@ void R_StudioDrawVBOMesh(
 		R_StudioDrawVBOMesh_DrawPass(VBOData,
 			VBOSubmodel,
 			VBOMesh,
+			pmesh,
 			ptexturehdr,
 			ptexture,
 			pskinref,
@@ -2406,7 +2411,9 @@ void R_StudioDrawVBOSubmodel(
 	{
 		auto VBOMesh = &VBOSubmodel->vMesh[i];
 
-		R_StudioDrawVBOMesh(VBOData, VBOSubmodel, VBOMesh, ptexturehdr, ptexture, pskinref);
+		auto pmesh = (mstudiomesh_t*)((byte*)(*pstudiohdr) + (*psubmodel)->meshindex) + VBOMesh->iMeshIndex;
+
+		R_StudioDrawVBOMesh(VBOData, VBOSubmodel, VBOMesh, pmesh, ptexturehdr, ptexture, pskinref);
 	}
 }
 

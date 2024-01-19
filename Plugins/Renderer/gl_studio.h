@@ -98,13 +98,14 @@ typedef struct studio_vbo_mesh_s
 {
 	studio_vbo_mesh_s()
 	{
-		mesh = NULL;
+		iMeshIndex = -1;
+		//memset(&mesh, 0, sizeof(mesh));
 		iStartIndex = -1;
 		iIndiceCount = 0;
 		iPolyCount = 0;
 	}
-
-	mstudiomesh_t *mesh;
+	int iMeshIndex;
+	//mstudiomesh_t mesh;
 	int iStartIndex;
 	int iIndiceCount;
 	int iPolyCount;
@@ -114,9 +115,11 @@ typedef struct studio_vbo_submodel_s
 {
 	struct studio_vbo_submodel_s()
 	{
-		submodel = NULL;
+		//memset(&submodel, 0, sizeof(submodel));
+		iSubmodelIndex = -1;
 	}
-	mstudiomodel_t *submodel;
+	//mstudiomodel_t submodel;
+	int iSubmodelIndex;
 	std::vector<studio_vbo_mesh_t> vMesh;
 }studio_vbo_submodel_t;
 

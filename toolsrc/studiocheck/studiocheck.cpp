@@ -100,6 +100,7 @@ int main(int argc, const char **argv)
 		{
 			auto pal = (byte *)buffer + ptexture[i].index;
 			auto palsize = (ptexture[i].height * ptexture[i].width);
+
 			if (pal + palsize < (byte *)buffer)
 			{
 				printf("Error: invalid texturedata at texture[%d], (%p < %p)\n", i, pal + palsize, (byte *)buffer);
@@ -112,6 +113,45 @@ int main(int argc, const char **argv)
 				printf("Error: invalid texturedata at texture[%d], (%p > %p)\n", i, pal + palsize, (byte *)buffer + studiohdr->length);
 				free(buffer);
 				return 0;
+			}
+
+		}
+
+		printf("numskinfamilies %d\n", studiohdr->numskinfamilies);
+		printf("numskinref %d\n", studiohdr->numskinref);
+
+		auto pskinref = (short*)((byte*)studiohdr + studiohdr->skinindex);
+
+		for (int i = 0; i < studiohdr->numskinfamilies; ++i)
+		{
+			pskinref += i * studiohdr->numskinref;
+
+			if ((byte*)pskinref < (byte*)buffer)
+			{
+				printf("Error: invalid pskinref at pskinref[%d], (%p < %p)\n", i, pskinref, (byte*)buffer);
+				free(buffer);
+				return 0;
+			}
+
+			if (((byte*)pskinref + sizeof(short) * studiohdr->numskinref) > (byte*)buffer + studiohdr->length)
+			{
+				printf("Error: invalid pskinref at pskinref[%d], (%p > %p)\n", i, ((byte*)pskinref + sizeof(short)), (byte*)buffer + studiohdr->length);
+				free(buffer);
+				return 0;
+			}
+
+			for (int j = 0; j < studiohdr->numskinref; ++j)
+			{
+				auto skinref = pskinref[j];
+
+				printf("skinref[%d][%d]=%d\n", i, j, skinref);
+
+				if (skinref < 0 || skinref >= studiohdr->numtextures)
+				{
+					printf("Error: invalid skinref value (%d) at pskinref[%d][%d]\n", skinref, i, j);
+					free(buffer);
+					return 0;
+				}
 			}
 		}
 	}
@@ -167,6 +207,20 @@ int main(int argc, const char **argv)
 				printf("Error: psubmodel[j].numverts (%d) > MAXSTUDIOVERTS (%d)\n", psubmodel[j].numverts, MAXSTUDIOVERTS);
 				free(buffer);
 				return 0;
+			}
+
+			for (int k = 0; k < psubmodel[j].nummesh; ++k)
+			{
+				auto skinref = pmesh[k].skinref;
+
+				printf("skinref value = (%d) at pmesh[%d].skinref\n", skinref, k);
+
+				if (skinref < 0 || skinref >= studiohdr->numtextures)
+				{
+					printf("Error: invalid skinref value (%d) at pmesh[%d].skinref\n", skinref, k);
+					free(buffer);
+					return 0;
+				}
 			}
 
 			for (int k = 0; k < psubmodel[j].nummesh; ++k)
