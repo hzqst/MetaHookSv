@@ -48,7 +48,10 @@ void Cap_Version_f(void);
 
 LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-int __fastcall ScClient_FindSoundEx(void* pthis, int, const char *sound);
+//int __fastcall ScClient_FindSoundEx(void* pthis, int, const char *sound);
+
+void __fastcall ScClient_SoundEngine_PlayFMODSound(void* pSoundEngine, int, int flags, int entindex, float* origin, int channel, const char* name, float fvol, float attenuation, int extraflags, int pitch, int sentenceIndex, float soundLength);
+int __stdcall FMOD_System_playSound(void* FMOD_System, int channelid, void* FMOD_Sound, bool paused, void** FMOD_Channel);
 void __fastcall WeaponsResource_SelectSlot(void *pthis, int, int iSlot, int fAdvance, int iDirection);
 
 void VGuiWrap2_Paint(void);

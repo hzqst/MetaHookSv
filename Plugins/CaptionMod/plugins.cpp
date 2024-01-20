@@ -49,6 +49,7 @@ void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_engin
 
 void IPluginsV4::Shutdown(void)
 {
+	g_pMetaHookAPI->UnregisterLoadDllNotificationCallback(DllLoadNotification);
 }
 
 void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
@@ -91,6 +92,8 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	BaseUI_InstallHook();
 
 	dpimanager()->Init();
+
+	g_pMetaHookAPI->RegisterLoadDllNotificationCallback(DllLoadNotification);
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)

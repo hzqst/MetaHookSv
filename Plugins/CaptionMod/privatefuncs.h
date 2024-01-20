@@ -45,12 +45,13 @@ typedef struct
 
 	//SC ClientDLL
 
-	int(__fastcall *ScClient_FindSoundEx)(void *pthis, int, const char *soundName);
-
+	//int(__fastcall *ScClient_FindSoundEx)(void *pthis, int, const char *soundName);
+	void (__fastcall*ScClient_SoundEngine_PlayFMODSound)(void *pSoundEngine, int, int flags, int entindex, float *origin, int channel, const char *name, float fvol, float attenuation, int extraflags, int pitch, int sentenceIndex, float soundLength);
+	
 	//FMOD
 
-	HMODULE fmodex;
-	int(__stdcall *FMOD_Sound_getLength)(int a1, void* a2, int a3);//?getLength@Sound@FMOD@@QAG?AW4FMOD_RESULT@@PAII@Z
+	int(__stdcall*FMOD_Sound_getLength)(void * FMOD_Sound, void* output, int type);//?getLength@Sound@FMOD@@QAG?AW4FMOD_RESULT@@PAII@Z
+	int(__stdcall*FMOD_System_playSound)(void* FMOD_System, int channelid, void* FMOD_Sound, bool paused, void** FMOD_Channel);//?playSound@System@FMOD@@QAG?AW4FMOD_RESULT@@W4FMOD_CHANNELINDEX@@PAVSound@2@_NPAPAVChannel@2@@Z
 
 	//ClientDLL
 
@@ -160,3 +161,7 @@ void Surface_InstallHooks(void);
 void Surface_UninstallHooks(void);
 void Scheme_InstallHooks(void);
 void KeyValuesSystem_InstallHook(void);
+void FMOD_InstallHooks(HMODULE fmodex);
+void FMOD_UninstallHooks(HMODULE fmodex);
+
+void DllLoadNotification(mh_load_dll_notification_context_t* ctx);

@@ -12,7 +12,7 @@
 #include "DpiManager.h"
 #include <functional>
 
-cl_enginefunc_t gEngfuncs;
+cl_enginefunc_t gEngfuncs = { 0 };
 
 //Legacy MetaAudio
 cvar_t *al_enable = NULL;
@@ -40,6 +40,11 @@ void *gHud = NULL;
 
 HWND g_MainWnd = NULL;
 WNDPROC g_MainWndProc = NULL;
+
+cl_entity_t* EngineGetViewEntity(void)
+{
+	return gEngfuncs.GetEntityByIndex((*cl_viewentity));
+}
 
 #if 0
 void SDL_GetWindowSize(void* window, int* w, int* h)
@@ -240,40 +245,6 @@ void Cap_Reload_f(void)
 	}
 }
 
-void SvClient_StartWave(const char *name, float duration)
-{
-	if (!g_pViewPort)
-		return;
-
-	auto pDict = g_pViewPort->FindDictionary(name, DICT_SOUND);
-
-	if (cap_debug && cap_debug->value)
-	{
-		gEngfuncs.Con_Printf(pDict ? "CaptionMod: Sound [%s] found.\n" : "CaptionMod: Sound [%s] not found.\n", name);
-	}
-
-	if (!pDict)
-		return;
-
-	//TODO: avol and distance check
-
-	g_pViewPort->StartSubtitle(pDict, duration);
-}
-
-int __fastcall ScClient_FindSoundEx(void *pthis, int, const char *sound)
-{
-	auto result = gPrivateFuncs.ScClient_FindSoundEx(pthis, 0, sound);
-
-	if (result)
-	{
-		int duration = 0;
-		gPrivateFuncs.FMOD_Sound_getLength(result, &duration, 1);
-		SvClient_StartWave(sound, (float)duration / 1000.0f);
-	}
-
-	return result;
-}
-
 void HUD_Init(void)
 {
 	gExportfuncs.HUD_Init();
@@ -305,15 +276,6 @@ void HUD_Init(void)
 
 	gPrivateFuncs.MessageMode_f = g_pMetaHookAPI->HookCmd("messagemode", MessageMode_f);
 	gPrivateFuncs.MessageMode2_f = g_pMetaHookAPI->HookCmd("messagemode2", MessageMode2_f);
-
-	if (g_bIsSvenCoop)
-	{
-		gPrivateFuncs.fmodex = GetModuleHandleA("fmodex.dll");
-		Sig_FuncNotFound(fmodex);
-
-		gPrivateFuncs.FMOD_Sound_getLength = (decltype(gPrivateFuncs.FMOD_Sound_getLength))GetProcAddress(gPrivateFuncs.fmodex, "?getLength@Sound@FMOD@@QAG?AW4FMOD_RESULT@@PAII@Z");
-		Sig_FuncNotFound(FMOD_Sound_getLength);
-	}
 
 	gEngfuncs.pfnRegisterVariable("cap_lang", m_szCurrentLanguage, FCVAR_CLIENTDLL | FCVAR_USERINFO);
 }
@@ -411,17 +373,6 @@ void S_StartWave(sfx_t *sfx, float distance, float avol)
 	}
 
 	g_pViewPort->StartSubtitle(pDict, duration);
-}
-
-void S_AddSoundDuration(sfx_t* sfx, float &duration)
-{
-	//Get duration for zero-duration
-	float flDuration = S_GetDuration(sfx);
-
-	if (flDuration > 0)
-	{
-		duration = flDuration;
-	}
 }
 
 static char szsentences[] = "sound/sentences.txt";
@@ -763,15 +714,13 @@ bool S_StartSentence(const char *name, float distance, float avol)
 	return true;
 }
 
-//2015-11-26 fixed, to support !SENTENCE and #SENTENCE
-//2015-11-26 added, support added up the duration of sound for zero-duration sentences
-void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch)
+void S_StartSoundTemplate(int entnum, int entchannel, sfx_t* sfx, float* origin, float fvol, float attenuation, int flags, int pitch)
 {
 	bool ignore = false;
 	float distance = 0;
 	float avol = 1;
 
-	if(sfx)
+	if (sfx)
 	{
 		if (flags & (SND_STOP | SND_CHANGE_VOL | SND_CHANGE_PITCH))
 		{
@@ -780,18 +729,20 @@ void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, 
 
 		if (!ignore)
 		{
-			auto level = gEngfuncs.pfnGetLevelName();
-			if (level[0])
+			auto szLevelName = gEngfuncs.pfnGetLevelName();
+
+			if (szLevelName[0])
 			{
 				if (origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && attenuation > 0 && EngineGetViewEntity())
 				{
-					float localorg[3];
-					VectorCopy(EngineGetViewEntity()->origin, localorg);
+					float vecLocalOrigin[3];
+					VectorCopy(EngineGetViewEntity()->origin, vecLocalOrigin);
 
-					float dir[3];
-					VectorSubtract(origin, localorg, dir);
+					float vecDirection[3];
+					VectorSubtract(origin, vecLocalOrigin, vecDirection);
 
-					distance = VectorLength(dir);
+					distance = VectorLength(vecDirection);
+
 					avol = fvol * (1.0f - distance * (attenuation / 1000.0f));
 					if (avol < 0)
 						avol = 0;
@@ -820,69 +771,17 @@ void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, 
 			S_StartWave(sfx, distance, avol);
 		}
 	}
+}
 
+void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch)
+{
+	S_StartSoundTemplate(entnum, entchannel, sfx, origin, fvol, attenuation, flags, pitch);
 	gPrivateFuncs.S_StartDynamicSound(entnum, entchannel, sfx, origin, fvol, attenuation, flags, pitch);
 }
 
-//2015-11-26 fixed, to support !SENTENCE and #SENTENCE
-//2015-11-26 added, support added up the duration of sound for zero-duration sentences
 void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch)
 {
-	bool ignore = false;
-	float distance = 0;
-	float avol = 1;
-
-	if(sfx)
-	{
-		if (flags & (SND_STOP | SND_CHANGE_VOL | SND_CHANGE_PITCH))
-		{
-			ignore = true;
-		}
-
-		if (!ignore)
-		{
-			auto level = gEngfuncs.pfnGetLevelName();
-			if (level[0])
-			{
-				if (origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && attenuation > 0 && EngineGetViewEntity())
-				{
-					float localorg[3];
-					VectorCopy(EngineGetViewEntity()->origin, localorg);
-
-					float dir[3];
-					VectorSubtract(origin, localorg, dir);
-
-					distance = VectorLength(dir);
-
-					avol = fvol * (1.0f - distance * (attenuation / 1000.0f));
-					if (avol < 0)
-						avol = 0;
-				}
-			}
-		}
-
-		if (!ignore)
-		{
-			if (sfx->name[0] == '!' || sfx->name[0] == '#')
-			{
-				if (!S_StartSentence(sfx->name, distance, avol))
-				{
-					S_LoadSentence(sfx->name + 1, [distance, avol](sfx_t* sfx_sentence) {
-
-						S_StartWave(sfx_sentence, distance, avol);
-
-					});
-				}
-				ignore = true;
-			}
-		}
-
-		if (!ignore)
-		{
-			S_StartWave(sfx, distance, avol);
-		}
-	}
-
+	S_StartSoundTemplate(entnum, entchannel, sfx, origin, fvol, attenuation, flags, pitch);
 	gPrivateFuncs.S_StartStaticSound(entnum, entchannel, sfx, origin, fvol, attenuation, flags, pitch);
 }
 
@@ -890,6 +789,230 @@ sfx_t *S_FindName(char *name, int *pfInCache)
 {
 	return gPrivateFuncs.S_FindName(name, pfInCache);;
 }
+
+//Sven Co-op client.dll
+
+static bool g_bPlayingFMODSound = false;
+static bool g_bPlayedFMODSound = false;
+static int g_iCurrentPlayingFMODSoundLengthMs = 0;
+
+bool ScClient_StartSentence(const char* name, float distance, float avol)
+{
+	if (!g_pViewPort)
+		return false;
+
+	auto pDict = g_pViewPort->FindDictionary(name, DICT_SENTENCE);
+
+	if (!pDict)
+	{
+		//skip "!" and "#"
+		pDict = g_pViewPort->FindDictionary(name + 1);
+	}
+
+	if (cap_debug && cap_debug->value)
+	{
+		if (pDict)
+		{
+			gEngfuncs.Con_Printf("CaptionMod: SENTENCE [%s] found. dist: %.2f, avol: %.2f\n", name, distance, avol);
+		}
+		else
+		{
+			gEngfuncs.Con_Printf("CaptionMod: SENTENCE [%s] not found.\n", name);
+		}
+	}
+
+	if (!pDict)
+	{
+		return false;
+	}
+
+	if (!pDict->m_bIgnoreDistanceLimit && cap_max_distance && cap_max_distance->value > 0 && distance > cap_max_distance->value)
+	{
+		return false;
+	}
+
+	if (!pDict->m_bIgnoreVolumeLimit && cap_min_avol && cap_min_avol->value > 0 && avol < cap_min_avol->value)
+	{
+		return false;
+	}
+
+	float duration = 0;
+
+	if (pDict->m_bOverrideDuration)
+	{
+		duration = pDict->m_flDuration;
+	}
+	else
+	{
+#if 0//TODO...
+		ScClient_LoadSentence(name + 1, [&duration](sfx_t* sfx) {
+
+			duration += S_GetDuration(sfx);
+
+		});
+#endif
+	}
+
+	g_pViewPort->StartSubtitle(pDict, duration);
+
+	return true;
+}
+
+void ScClient_StartWave(const char* name, float distance, float avol, int ms_duration)
+{
+	if (!g_pViewPort)
+		return;
+
+	if (!Q_strnicmp(name, "sound/", 6))
+		name += 6;
+	else if (!Q_strnicmp(name + 1, "sound/", 6))
+		name += 7;
+
+	auto pDict = g_pViewPort->FindDictionary(name, DICT_SOUND);
+
+	if (cap_debug && cap_debug->value)
+	{
+		if (pDict)
+		{
+			gEngfuncs.Con_Printf("CaptionMod: Sound [%s] found. dist: %.2f, avol: %.2f\n", name, distance, avol);
+		}
+		else
+		{
+			gEngfuncs.Con_Printf("CaptionMod: Sound [%s] not found.\n", name);
+		}
+	}
+
+	if (!pDict)
+	{
+		return;
+	}
+
+	if (!pDict->m_bIgnoreDistanceLimit && cap_max_distance && cap_max_distance->value > 0 && distance > cap_max_distance->value)
+	{
+		return;
+	}
+
+	if (!pDict->m_bIgnoreVolumeLimit && cap_min_avol && cap_min_avol->value > 0 && avol < cap_min_avol->value)
+	{
+		return;
+	}
+
+	float duration;
+
+	if (pDict->m_bOverrideDuration)
+	{
+		duration = pDict->m_flDuration;
+	}
+	else
+	{
+		duration = ms_duration / 1000.0f;
+	}
+
+	g_pViewPort->StartSubtitle(pDict, duration);
+}
+
+void __fastcall ScClient_SoundEngine_PlayFMODSound(void* pSoundEngine, int, int flags, int entindex, float* origin, int channel, const char* name, float fvol, float attenuation, int extraflags, int pitch, int sentenceIndex, float soundLength)
+{
+	g_bPlayingFMODSound = true;
+	g_iCurrentPlayingFMODSoundLengthMs = 0;
+
+	gPrivateFuncs.ScClient_SoundEngine_PlayFMODSound(pSoundEngine, 0, flags, entindex, origin, channel, name, fvol, attenuation, extraflags, pitch, sentenceIndex, soundLength);
+
+	if (g_bPlayedFMODSound)
+	{
+		if (name)
+		{
+			bool ignore = false;
+			float distance = 0;
+			float avol = 1;
+
+			if (flags & (SND_STOP | SND_CHANGE_VOL | SND_CHANGE_PITCH))
+			{
+				ignore = true;
+			}
+
+			if (!ignore)
+			{
+				auto szLevelName = gEngfuncs.pfnGetLevelName();
+
+				if (szLevelName[0])
+				{
+					if (origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && attenuation > 0 && EngineGetViewEntity())
+					{
+						float vecLocalOrigin[3];
+						VectorCopy(EngineGetViewEntity()->origin, vecLocalOrigin);
+
+						float vecDirection[3];
+						VectorSubtract(origin, vecLocalOrigin, vecDirection);
+
+						distance = VectorLength(vecDirection);
+
+						avol = fvol * (1.0f - distance * (attenuation / 1000.0f));
+						if (avol < 0)
+							avol = 0;
+					}
+				}
+			}
+
+			if (!ignore)
+			{
+				if (name[0] == '!' || name[0] == '#')
+				{
+					if (!ScClient_StartSentence(name, distance, avol))
+					{
+
+					}
+					ignore = true;
+				}
+			}
+
+			if (!ignore)
+			{
+				ScClient_StartWave(name, distance, avol, g_iCurrentPlayingFMODSoundLengthMs);
+			}
+		}
+		else
+		{
+			gEngfuncs.Con_DPrintf("ScClient_SoundEngine_PlayFMODSound: sentenceIndex %d\n", sentenceIndex);
+		}
+	}
+
+	g_bPlayingFMODSound = false;
+	g_bPlayedFMODSound = false;
+	g_iCurrentPlayingFMODSoundLengthMs = 0;
+}
+
+int __stdcall FMOD_System_playSound(void* FMOD_System, int channelid, void* FMOD_Sound, bool paused, void** FMOD_Channel)
+{
+	if (g_bPlayingFMODSound)
+	{
+		int duration = 0;
+		gPrivateFuncs.FMOD_Sound_getLength(FMOD_Sound, &duration, 1);
+		g_iCurrentPlayingFMODSoundLengthMs = duration;
+		g_bPlayedFMODSound = true;
+	}
+
+	return gPrivateFuncs.FMOD_System_playSound(FMOD_System, channelid, FMOD_Sound, paused, FMOD_Channel);
+}
+
+
+#if 0
+int __fastcall ScClient_FindSoundEx(void* pthis, int, const char* sound)
+{
+	auto result = gPrivateFuncs.ScClient_FindSoundEx(pthis, 0, sound);
+
+	if (result)
+	{
+		int duration = 0;
+		gPrivateFuncs.FMOD_Sound_getLength(result, &duration, 1);
+		SvClient_StartWave(sound, (float)duration / 1000.0f);
+	}
+
+	return result;
+}
+#endif
+
+//Misc
 
 IBaseInterface *NewCreateInterface(const char *pName, int *pReturnCode)
 {
