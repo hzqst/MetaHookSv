@@ -1,6 +1,6 @@
 # CaptionMod documentation
 
-[中文DOC](/docs/CaptionModCN.md)
+[中文文档](/docs/CaptionModCN.md)
 
 ### Compatibility
 
@@ -42,21 +42,21 @@ There is a example file demostrates how to translate static HUD TextMessage to `
 
 There is a example file demostrates how to translate dynamic HUD TextMessage to `schinese` using regex, the file is at `\Sven Co-op\svencoop\captionmod\dictionary_schinese.txt` called `#SVENCOOP_PLAYERINFO`.
 
-### Mutli-byte chars support for legacy VGUI1 and HUD elements
+### Mutli-byte character support for legacy VGUI1 and HUD elements
 
-1. Hook original client's old-style HudText and draw it with multi-byte character support.
+1. Client's HudText are overhauled with multi-byte character support. (Sven Co-op and Half-Life)
 
-2. Hook VGUI1 TextImage's paint procedure and draw it with multi-byte character support.
+2. VGUI1 TextImage's are overhauled with multi-byte character support.
 
-* You can see multi-byte characters rendered correctly on VGUI1 scoreboard.
+* You can see multi-byte characters rendered correctly on VGUI1 scoreboard. (Sven Co-op and Half-Life)
 
-3. Draw HUDMenu with multi-byte character support. (Sven Co-op only)
+3. Client's HUDMenu are overhauled with multi-byte character support. (Sven Co-op only)
 
 * You can see multi-byte characters rendered correctly on HudMenu.
 
-### Source2007 style VGUI2 ChatDialog
+### Source2007 style VGUI2-based ChatDialog
 
-Set cvar `cap_newchat` to 1 to enable new chat dialog.
+Set cvar `cap_newchat` to 1 to enable the new VGUI2-based chat dialog.
 
 The default chat text color can be customized in `\Sven Co-op\svencoop\captionmod\ChatScheme.res` -> `Colors` -> `TanLight`
 
@@ -86,11 +86,11 @@ e.g. `\Sven Co-op\svencoop_hidpi` or `\Half-Life\valve_hidpi`
 
 `cap_netmessage` : To enable or disable CaptionMod's `__NETMESSAGE__` HUD TextMessage translation.
 
-`cap_max_distance` : Ignore sound or sentences (which are supposed to play subtitles) whose speaker is too far away from this distance. This cvar is not going to work with SvEngine because of missing sound source information in `ScClient_FindSoundEx`.
+`cap_max_distance` : Ignore sound or sentences (which are supposed to play subtitles) whose speaker is too far away from this distance.
 
-`cap_min_avol` : Ignore sound or sentences (which are supposed to play subtitles) which plays with volume smaller than this value. This cvar is not going to work with SvEngine because of missing sound source information in `ScClient_FindSoundEx`.
+`cap_min_avol` : Ignore sound or sentences (which are supposed to play subtitles) which plays with volume smaller than this value.
 
-`cap_debug` : To output debug message when there is a HUD TextMessage or sound playing.
+`cap_debug` : To output debug message of the Subtitle System and HudMessage Translation System. You can set `cap_debug` to 1 to check wether an dictionary entry is found or not in the Subtitle System.
 
 `cap_newchat` : To enable or disable Source2007 style VGUI2 chat dialog.
 

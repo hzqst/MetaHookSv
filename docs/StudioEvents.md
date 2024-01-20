@@ -1,6 +1,6 @@
 # StudioEvents documentation
 
-[中文DOC](/docs/StudioEventsCN.md)
+[中文文档](/docs/StudioEventsCN.md)
 
 ### Features
 

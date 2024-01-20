@@ -1,6 +1,6 @@
 # MetaRenderer documentation
 
-[中文DOC](/docs/RendererCN.md)
+[中文文档](/docs/RendererCN.md)
 
 # Compatibility
 

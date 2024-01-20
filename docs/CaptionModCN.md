@@ -86,7 +86,9 @@
 
 `cap_max_distance` : 说话的人超过该距离时不显示其对应的字幕
 
-`cap_debug` : 在控制台输出调试信息
+`cap_min_avol` : 音量小于该数值时不显示其对应的字幕
+
+`cap_debug` : 在控制台输出调试信息，可以使用`cap_debug 1`启动调试信息来观察词条是否能在字幕系统的字典中找到。
 
 `cap_newchat` : 启用新的起源风格VGUI2聊天框
 
