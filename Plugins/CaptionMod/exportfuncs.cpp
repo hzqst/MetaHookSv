@@ -920,60 +920,46 @@ void __fastcall ScClient_SoundEngine_PlayFMODSound(void* pSoundEngine, int, int 
 
 	if (g_bPlayedFMODSound)
 	{
-		if (name)
+		bool ignore = false;
+		float distance = 0;
+		float avol = 1;
+
+		if (flags & (SND_STOP | SND_CHANGE_VOL | SND_CHANGE_PITCH))
 		{
-			bool ignore = false;
-			float distance = 0;
-			float avol = 1;
+			ignore = true;
+		}
 
-			if (flags & (SND_STOP | SND_CHANGE_VOL | SND_CHANGE_PITCH))
+		if (!ignore)
+		{
+			auto szLevelName = gEngfuncs.pfnGetLevelName();
+
+			if (szLevelName[0])
 			{
-				ignore = true;
-			}
-
-			if (!ignore)
-			{
-				auto szLevelName = gEngfuncs.pfnGetLevelName();
-
-				if (szLevelName[0])
+				if (origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && attenuation > 0 && EngineGetViewEntity())
 				{
-					if (origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && attenuation > 0 && EngineGetViewEntity())
-					{
-						float vecLocalOrigin[3];
-						VectorCopy(EngineGetViewEntity()->origin, vecLocalOrigin);
+					float vecLocalOrigin[3];
+					VectorCopy(EngineGetViewEntity()->origin, vecLocalOrigin);
 
-						float vecDirection[3];
-						VectorSubtract(origin, vecLocalOrigin, vecDirection);
+					float vecDirection[3];
+					VectorSubtract(origin, vecLocalOrigin, vecDirection);
 
-						distance = VectorLength(vecDirection);
+					distance = VectorLength(vecDirection);
 
-						avol = fvol * (1.0f - distance * (attenuation / 1000.0f));
-						if (avol < 0)
-							avol = 0;
-					}
+					avol = fvol * (1.0f - distance * (attenuation / 1000.0f));
+					if (avol < 0)
+						avol = 0;
 				}
-			}
-
-			if (!ignore)
-			{
-				if (name[0] == '!' || name[0] == '#')
-				{
-					if (!ScClient_StartSentence(name, distance, avol))
-					{
-
-					}
-					ignore = true;
-				}
-			}
-
-			if (!ignore)
-			{
-				ScClient_StartWave(name, distance, avol, g_iCurrentPlayingFMODSoundLengthMs);
 			}
 		}
-		else
+
+		if (!ignore && !name && sentenceIndex >= 0)
 		{
-			gEngfuncs.Con_DPrintf("ScClient_SoundEngine_PlayFMODSound: sentenceIndex %d\n", sentenceIndex);
+			//TODO: Sentence support
+		}
+
+		if (!ignore && name)
+		{
+			ScClient_StartWave(name, distance, avol, g_iCurrentPlayingFMODSoundLengthMs);
 		}
 	}
 
