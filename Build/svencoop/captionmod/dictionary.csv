@@ -798,33 +798,16 @@ barney/youhearthat.wav,#youhearthat,Blue,,#HalfLife_Security,,,C
 barney/youneedmedic.wav,#youneedmedic,Blue,,#HalfLife_Security,,,C
 barney/youtalkmuch.wav,#youtalkmuch,Blue,,#HalfLife_Security,,,C
 barney/yup.wav,#yup,Blue,,#HalfLife_Security,,,C
-tride/c0a0_tr_gmorn.wav,#c0a0_tr_gmorn,Purple,11,#HalfLife_Train,,,C IGNORE_DISTANCE_LIMIT
-tride/c0a0_tr_time.wav,#c0a0_tr_time,Purple,4.7,#HalfLife_Train,tr_time2,4.7,C IGNORE_DISTANCE_LIMIT
-tr_time2,#tr_time2,Purple,10,#HalfLife_Train,tr_time3,10,C
-tr_time3,#tr_time3,Purple,8,#HalfLife_Train,,8,C
-tride/c0a0_tr_dest.wav,#c0a0_tr_dest,Purple,10,#HalfLife_Train,tr_dest2,9.9,C IGNORE_DISTANCE_LIMIT
-tr_dest2,#tr_dest2,Purple,6.2,#HalfLife_Train,tr_dest3,6.1,C
-tr_dest3,#tr_dest3,Purple,8,#HalfLife_Train,tr_dest4,8,C
-tr_dest4,#tr_dest4,Purple,5,#HalfLife_Train,tr_dest5,5,C
-tr_dest5,#tr_dest5,Purple,10,#HalfLife_Train,,10,C
-tride/c0a0_tr_noeat.wav,#c0a0_tr_noeat,Purple,3.9,#HalfLife_Train,tr_noeat2,3.8,C IGNORE_DISTANCE_LIMIT
-tr_noeat2,#tr_noeat2,Purple,5.9,#HalfLife_Train,tr_noeat3,5.8,C
-tr_noeat3,#tr_noeat3,Purple,3,#HalfLife_Train,,3,C
-tride/c0a0_tr_emerg.wav,#c0a0_tr_emerg,Purple,4.2,#HalfLife_Train,tr_emerg2,4.1,C IGNORE_DISTANCE_LIMIT
-tr_emerg2,#tr_emerg2,Purple,5.9,#HalfLife_Train,tr_emerg3,5.8,C
-tr_emerg3,#tr_emerg3,Purple,2.1,#HalfLife_Train,tr_emerg4,2.3,C
-tr_emerg4,#tr_emerg4,Purple,23,#HalfLife_Train,,,C
-tride/c0a0_tr_tourn.wav,#c0a0_tr_tourn,Purple,24.3,#HalfLife_Train,,,C IGNORE_DISTANCE_LIMIT
-tride/c0a0_tr_jobs.wav,#c0a0_tr_jobs,Purple,6.3,#HalfLife_Train,tr_jobs2,6.3,C IGNORE_DISTANCE_LIMIT
-tr_jobs2,#tr_jobs2,Purple,8,#HalfLife_Train,tr_jobs3,8,C
-tr_jobs3,#tr_jobs3,Purple,5,#HalfLife_Train,tr_jobs4,4.9,C
-tr_jobs4,#tr_jobs4,Purple,17.4,#HalfLife_Train,,,C
-tride/c0a0_tr_haz.wav,#c0a0_tr_haz,Purple,19.7,#HalfLife_Train,tr_haz2,20,C IGNORE_DISTANCE_LIMIT
-tr_haz2,#tr_haz2,Purple,11.7,#HalfLife_Train,tr_haz3,11.6,C
-tr_haz3,#tr_haz3,Purple,5,#HalfLife_Train,,,C
+tride/c0a0_tr_gmorn.wav,#c0a0_tr_gmorn,Purple,,#HalfLife_Train,,,C IGNORE_DISTANCE_LIMIT
+tride/c0a0_tr_time.wav,#c0a0_tr_time,Purple,,#HalfLife_Train,,,C IGNORE_DISTANCE_LIMIT
+tride/c0a0_tr_dest.wav,#c0a0_tr_dest,Purple,,#HalfLife_Train,,,C IGNORE_DISTANCE_LIMIT
+tride/c0a0_tr_noeat.wav,#c0a0_tr_noeat,Purple,,#HalfLife_Train,,,C IGNORE_DISTANCE_LIMIT
+tride/c0a0_tr_emerg.wav,#c0a0_tr_emerg,Purple,,#HalfLife_Train,,,C IGNORE_DISTANCE_LIMIT
+tride/c0a0_tr_tourn.wav,#c0a0_tr_tourn,Purple,,#HalfLife_Train,,,C IGNORE_DISTANCE_LIMIT
+tride/c0a0_tr_jobs.wav,#c0a0_tr_jobs,Purple,,#HalfLife_Train,,,C IGNORE_DISTANCE_LIMIT
+tride/c0a0_tr_haz.wav,#c0a0_tr_haz,Purple,,#HalfLife_Train,,,C IGNORE_DISTANCE_LIMIT
 tride/c0a0_tr_arrive.wav,#c0a0_tr_arrive,Purple,,#HalfLife_Train,,,C IGNORE_DISTANCE_LIMIT
-tride/c0a0_tr_exit.wav,#c0a0_tr_exit,Purple,13,#HalfLife_Train,tr_exit2,13.1,C IGNORE_DISTANCE_LIMIT
-tr_exit2,#tr_exit2,Purple,4.1,#HalfLife_Train,,,C
+tride/c0a0_tr_exit.wav,#c0a0_tr_exit,Purple,,#HalfLife_Train,,,C IGNORE_DISTANCE_LIMIT
 gman/gman_suit.wav,#gman_suit,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
 gman/gman_nasty.wav,#gman_nasty,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT
 gman/gman_potential.wav,#gman_potential,SweetBlue,,,,,C IGNORE_DISTANCE_LIMIT

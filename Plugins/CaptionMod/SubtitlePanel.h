@@ -133,8 +133,8 @@ public:
 	void VidInit(void);
 
 public://Subtitle interface
-	void StartSubtitle(CDictionary *Dict, float flStartTime);
-	void StartNextSubtitle(CDictionary *Dict);
+	void StartSubtitle(CDictionary * pDict, float flDurationTime, float flStartTime);
+	void StartNextSubtitle(CDictionary *pDict);
 	void AddLine(CDictionary *Dict, wchar_t *wszSentence, int nLength, float flStartTime, float flDuration, int nTextLength);
 	void StartLine(CSubLine *Line);
 	void ClearSubtitle(void);

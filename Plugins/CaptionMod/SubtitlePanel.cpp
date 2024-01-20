@@ -295,13 +295,14 @@ void CSubLine::Draw(int x, int w, int align)
 	surface()->DrawFlushText();
 }
 
-void SubtitlePanel::StartNextSubtitle(CDictionary *Dict)
+void SubtitlePanel::StartNextSubtitle(CDictionary *pDict)
 {
 	//Check if there is a next dict to be played
-	CDictionary *pNextDict = Dict->m_pNext;
+	auto pNextDict = pDict->m_pNext;
+
 	if(pNextDict)
 	{
-		StartSubtitle(pNextDict, g_pViewPort->GetSystemTime() + Dict->m_flNextDelay);
+		StartSubtitle(pNextDict, pDict->m_flDuration, g_pViewPort->GetSystemTime() + pDict->m_flNextDelay);
 	}
 }
 
@@ -400,8 +401,13 @@ void SubtitlePanel::AddLine(CDictionary *Dict, wchar_t *wszSentence, int nLength
 	Line->m_TextAlign = Dict->m_iTextAlign ? Dict->m_iTextAlign : m_iTextAlign;
 }
 
+static bool IsNonBreakableCharacter(wchar_t ch)
+{
+	return ((ch >= L'A' && ch <= L'Z') || (ch >= L'a' && ch <= L'z') || ch == L'Ç' || ch == L'ç' || ch == L'Ğ' || ch == L'ğ' || ch == L'İ' || ch == L'ı' || ch == L'Ö' || ch == L'ö' || ch == L'Ş' || ch == L'ş' || ch == L'Ü' || ch == L'ü' || ch == L'â' || ch == L'Â' || ch == L':' || ch == L'-' || ch == L'\'' || ch == L'"' || ch == L',' || ch == L'.' || ch == L'!' || ch == L'?' || ch == L';' || ch == '%' || (ch >= L'0' && ch <= L'9')) ? true : false;
+}
+
 //2015-11-26 added htimescale for SubtitlePanel
-void SubtitlePanel::StartSubtitle(CDictionary *Dict, float flStartTime)
+void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, float flStartTime)
 {
 	//Delay the current line till the last backline plays
 	float flLatestStart = 0;
@@ -416,8 +422,9 @@ void SubtitlePanel::StartSubtitle(CDictionary *Dict, float flStartTime)
 			if (m_BackLines[i]->m_StartTime > flLatestStart)
 				flLatestStart = m_BackLines[i]->m_StartTime;
 		}
+
 		//Already in list, do not start one subtitle for twice at the same time.
-		if(m_BackLines[i]->m_Dict == Dict)
+		if(m_BackLines[i]->m_Dict == pDict)
 			return;
 	}
 
@@ -426,14 +433,14 @@ void SubtitlePanel::StartSubtitle(CDictionary *Dict, float flStartTime)
 		for (int i = 0; i < m_Lines.Count(); ++i)
 		{
 			//Already in display, ignore
-			if (m_Lines[i]->m_Dict == Dict)
+			if (m_Lines[i]->m_Dict == pDict)
 				return;
 		}
 	}
 
 	std::wstring sentence;
 
-	Dict->FinalizeString(sentence, m_iPrefix);
+	pDict->FinalizeString(sentence, m_iPrefix);
 
 	int iPanelWidth = GetWide();
 	int iMaxTextWidth = iPanelWidth - (m_iScaledXSpace << 1);
@@ -464,16 +471,16 @@ void SubtitlePanel::StartSubtitle(CDictionary *Dict, float flStartTime)
 	if(!nTotalCharNum)
 		return;
 
-	float flDuration = Dict->m_flDuration;
+	float flDuration = flDurationTime;
 
-	//use m_flHoldTime as default
+	//Fallback to m_flHoldTime
 	if(flDuration <= 0)
 		flDuration = m_flHoldTime;
 
 	if(flDuration <= 0)
 		flDuration = 4.0f;
 
-	if (!Dict->m_bOverrideDuration && g_pCurrentTextMessage)
+	if (!pDict->m_bOverrideDuration && g_pCurrentTextMessage)
 	{
 		if (g_pCurrentTextMessage->effect == 2 && g_pCurrentTextMessage->pMessage)
 		{
@@ -499,17 +506,29 @@ void SubtitlePanel::StartSubtitle(CDictionary *Dict, float flStartTime)
 		int nLastWide;
 		wchar_t *LastP;
 		int nLastCharNum;
+
 		while(1)
 		{
 			nLastWide = nWide;
 			LastP = p;
 			nLastCharNum = nCharNum;
 
+			//Leave at least 2 chars, one for (*p) and another for '\0'
+			if (nCharNum + 2 >= _ARRAYSIZE(szBuf) - 1)
+				break;
+
 			//Make sure English words, numbers, punctuations, and certain additional characters don't break in half...
-			if((*p >= L'A' && *p <= L'Z') || (*p >= L'a' && *p <= L'z') || *p == L'Ç' || *p == L'ç' || *p == L'Ğ' || *p == L'ğ' || *p == L'İ' || *p == L'ı' || *p == L'Ö' || *p == L'ö' || *p == L'Ş' || *p == L'ş' || *p == L'Ü' || *p == L'ü' || *p == L'â' || *p == L'Â' || *p == L':' || *p == L'-' || *p == L'\'' || *p == L'"' || *p == L',' || *p == L'.' || *p == L'!' || *p == L'?' || *p == L';' || *p == '%' || (*p >= L'0' && *p <= L'9'))
+			if(IsNonBreakableCharacter(*p))
 			{
-				while((*p >= L'A' && *p <= L'Z') || (*p >= L'a' && *p <= L'z') || *p == L'Ç' || *p == L'ç' || *p == L'Ğ' || *p == L'ğ' || *p == L'İ' || *p == L'ı' || *p == L'Ö' || *p == L'ö' || *p == L'Ş' || *p == L'ş' || *p == L'Ü' || *p == L'ü' || *p == L'â' || *p == L'Â' || *p == L':' || *p == L'-' || *p == L'\'' || *p == L'"'|| *p == L',' || *p == L'.' || *p == L'!' || *p == L'?' || *p == L';' || *p == '%' || (*p >= L'0' && *p <= L'9'))
-					szBuf[nCharNum++] = *p++;
+				while (IsNonBreakableCharacter(*p))
+				{
+					//Leave at least 2 chars, one for (*p) and another for '\0'
+					if (nCharNum + 2 >= _ARRAYSIZE(szBuf) - 1)
+						break;
+
+					szBuf[nCharNum] = *p++;
+					nCharNum++;
+				}
 				szBuf[nCharNum] = L'\0';
 			}
 			else
@@ -517,9 +536,10 @@ void SubtitlePanel::StartSubtitle(CDictionary *Dict, float flStartTime)
 				szBuf[nCharNum++] = *p++;
 				szBuf[nCharNum] = L'\0';
 			}
+
 			surface()->GetTextSize(m_hTextFont, szBuf, nWide, nTall);
 
-			//It's out of range? go back to last position and make it a new line
+			//It's out of range? Go back to last position and make it a new line
 			if(nWide > iMaxTextWidth)
 			{
 				nWide = nLastWide;
@@ -530,7 +550,7 @@ void SubtitlePanel::StartSubtitle(CDictionary *Dict, float flStartTime)
 			}
 
 			//Force to be a new line
-			if (*p == L'\0' || *p == L'\n' || *p == L'\r')
+			if ((*p) == L'\0' || (*p) == L'\n' || (*p) == L'\r')
 			{
 				nAddedCharNum += nCharNum;
 				break;
@@ -544,10 +564,12 @@ void SubtitlePanel::StartSubtitle(CDictionary *Dict, float flStartTime)
 		//Calculate the StartTime
 		float flCalcStartTime = flPercentStart * flDuration;
 		float flRealStartTime;
+
 		if(m_flStartTimeScale <= 0)
 			flRealStartTime = flStartTime;
 		else
 			flRealStartTime = flStartTime + flCalcStartTime * m_flStartTimeScale;
+
 		//Shall we wait for the latest backlines played?
 		if(m_iWaitPlay)
 			flRealStartTime = max(flRealStartTime, flLatestStart);
@@ -556,15 +578,15 @@ void SubtitlePanel::StartSubtitle(CDictionary *Dict, float flStartTime)
 		float flCalcDuration = flDuration * flPercentDuration;
 		float flRealDuration;
 		
-		//longer start time won't change the duration
+		//Longer start time won't change the duration
 		if(m_flStartTimeScale >= 1)
 			flRealDuration = flCalcDuration;
 		else//real duration = original starttime - real starttime + original duration
 			flRealDuration = max(flStartTime + flCalcStartTime - flRealStartTime, 0) + flCalcDuration;
 
-		AddLine(Dict, pStart, nCharNum, flRealStartTime, flRealDuration, nWide);
+		AddLine(pDict, pStart, nCharNum, flRealStartTime, flRealDuration, nWide);
 
-		//skip CRLF
+		//Skip CRLF
 		while (*p == L'\r' || *p == L'\n')
 			p++;
 

@@ -928,10 +928,10 @@ void CViewport::Init(void)
 	m_HudMenu.Init();
 }
 
-void CViewport::StartSubtitle(CDictionary *dict)
+void CViewport::StartSubtitle(CDictionary *dict, float flDurationTime)
 {
 	if (cap_enabled && cap_enabled->value) {
-		m_pSubtitlePanel->StartSubtitle(dict, g_pViewPort->GetSystemTime());
+		m_pSubtitlePanel->StartSubtitle(dict, flDurationTime, g_pViewPort->GetSystemTime());
 	}
 }
 
