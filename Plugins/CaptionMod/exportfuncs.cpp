@@ -795,6 +795,7 @@ sfx_t *S_FindName(char *name, int *pfInCache)
 static bool g_bPlayingFMODSound = false;
 static bool g_bPlayedFMODSound = false;
 static int g_iCurrentPlayingFMODSoundLengthMs = 0;
+static void* g_pFMODSystem = NULL;
 
 bool ScClient_StartSentence(const char* name, float distance, float avol)
 {
@@ -915,6 +916,7 @@ void __fastcall ScClient_SoundEngine_PlayFMODSound(void* pSoundEngine, int, int 
 {
 	g_bPlayingFMODSound = true;
 	g_iCurrentPlayingFMODSoundLengthMs = 0;
+	g_pFMODSystem = *(void **)((PUCHAR)pSoundEngine + 0x2004);
 
 	gPrivateFuncs.ScClient_SoundEngine_PlayFMODSound(pSoundEngine, 0, flags, entindex, origin, channel, name, fvol, attenuation, extraflags, pitch, sentenceIndex, soundLength);
 
@@ -954,7 +956,14 @@ void __fastcall ScClient_SoundEngine_PlayFMODSound(void* pSoundEngine, int, int 
 
 		if (!ignore && !name && sentenceIndex >= 0)
 		{
-			//TODO: Sentence support
+			auto sentenceName = gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySentenceIndex(pSoundEngine, sentenceIndex);
+
+			if (sentenceName)
+			{
+				ScClient_StartWave(sentenceName, distance, avol, g_iCurrentPlayingFMODSoundLengthMs);
+
+				ignore = true;
+			}
 		}
 
 		if (!ignore && name)
@@ -970,7 +979,7 @@ void __fastcall ScClient_SoundEngine_PlayFMODSound(void* pSoundEngine, int, int 
 
 int __stdcall FMOD_System_playSound(void* FMOD_System, int channelid, void* FMOD_Sound, bool paused, void** FMOD_Channel)
 {
-	if (g_bPlayingFMODSound)
+	if (g_bPlayingFMODSound && g_pFMODSystem == FMOD_System)
 	{
 		int duration = 0;
 		gPrivateFuncs.FMOD_Sound_getLength(FMOD_Sound, &duration, 1);

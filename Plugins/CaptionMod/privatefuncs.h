@@ -47,7 +47,8 @@ typedef struct
 
 	//int(__fastcall *ScClient_FindSoundEx)(void *pthis, int, const char *soundName);
 	void (__fastcall*ScClient_SoundEngine_PlayFMODSound)(void *pSoundEngine, int, int flags, int entindex, float *origin, int channel, const char *name, float fvol, float attenuation, int extraflags, int pitch, int sentenceIndex, float soundLength);
-	
+	const char *(__thiscall* ScClient_SoundEngine_LookupSoundBySentenceIndex)(void* pSoundEngine, int sentenceIndex);
+
 	//FMOD
 
 	int(__stdcall*FMOD_Sound_getLength)(void * FMOD_Sound, void* output, int type);//?getLength@Sound@FMOD@@QAG?AW4FMOD_RESULT@@PAII@Z

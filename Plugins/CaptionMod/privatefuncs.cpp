@@ -1408,6 +1408,15 @@ void Client_FillAddress(void)
 			gPrivateFuncs.ScClient_SoundEngine_PlayFMODSound = (decltype(gPrivateFuncs.ScClient_SoundEngine_PlayFMODSound))GetCallAddress(addr + Sig_Length(pattern) - 1);
 		}
 
+		if (1)
+		{
+			char pattern[] = "\x8B\x54\x24\x04\x81\xFA\xFF\x0F\x00\x00\x2A\x2A\x83\x3C\x91\x00\x2A\x2A\x0F\xAE\xE8";
+			auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+			Sig_VarNotFound("ScClient_SoundEngine_LookupSoundBySentenceIndex");
+
+			gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySentenceIndex = (decltype(gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySentenceIndex))addr;
+		}
+
 #if 0
 #define SC_FINDSOUND_SIG "\x51\x55\x8B\x6C\x24\x0C\x89\x4C\x24\x04\x85\xED\x0F\x84\x2A\x2A\x2A\x2A\x80\x7D\x00\x00"
 		{
