@@ -1026,7 +1026,6 @@ int CHudMessage::MsgFunc_HudTextArgs(const char *pszName, int iSize, void *pbuf)
 	return 0;
 }
 
-
 int CHudMessage::MsgFunc_SendAudio(const char* pszName, int iSize, void* pbuf)
 {
 	BEGIN_READ(pbuf, iSize);
@@ -1038,21 +1037,21 @@ int CHudMessage::MsgFunc_SendAudio(const char* pszName, int iSize, void* pbuf)
 	if (!READ_OK())
 		pitch = 0;
 
-	hud_player_info_t info;
+	hud_player_info_t info = {0};
 	gEngfuncs.pfnGetPlayerInfo(entIndex, &info);
 
 	m_pSenderName = info.name;
 
-	CDictionary* dict = g_pViewPort->FindDictionary(pString, DICT_SENDAUDIO);
+	auto pDict = g_pViewPort->FindDictionary(pString, DICT_SENDAUDIO);
 
 	if (cap_debug && cap_debug->value)
 	{
-		gEngfuncs.Con_Printf((dict) ? "CaptionMod: SendAudio [%s] found.\n" : "CaptionMod: SendAudio [%s] not found.\n", pString);
+		gEngfuncs.Con_Printf(pDict ? "CaptionMod: SendAudio [%s] found.\n" : "CaptionMod: SendAudio [%s] not found.\n", pString);
 	}
 
-	if (dict)
+	if (pDict)
 	{
-		g_pViewPort->StartSubtitle(dict);
+		g_pViewPort->StartSubtitle(pDict, pDict->m_flDuration);
 	}
 
 	return 0;

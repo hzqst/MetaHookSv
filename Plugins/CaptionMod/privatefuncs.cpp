@@ -69,10 +69,30 @@ private_funcs_t gPrivateFuncs = { 0 };
 static hook_t *g_phook_S_FindName = NULL;
 static hook_t *g_phook_S_StartDynamicSound = NULL;
 static hook_t *g_phook_S_StartStaticSound = NULL;
-static hook_t *g_phook_ScClient_FindSoundEx = NULL;
 static hook_t *g_phook_pfnTextMessageGet = NULL;
 static hook_t *g_phook_WeaponsResource_SelectSlot = NULL;
-//hook_t *g_phook_FileSystem_SetGameDirectory = NULL;
+static hook_t* g_phook_ScClient_SoundEngine_PlayFMODSound = NULL;
+static hook_t* g_phook_FMOD_System_playSound = NULL;
+//static hook_t *g_phook_FileSystem_SetGameDirectory = NULL;
+
+static HMODULE g_hFMODEx = NULL;
+
+void FMOD_InstallHooks(HMODULE fmodex)
+{
+	gPrivateFuncs.FMOD_Sound_getLength = (decltype(gPrivateFuncs.FMOD_Sound_getLength))GetProcAddress(fmodex, "?getLength@Sound@FMOD@@QAG?AW4FMOD_RESULT@@PAII@Z");
+	Sig_FuncNotFound(FMOD_Sound_getLength);
+
+	gPrivateFuncs.FMOD_System_playSound = (decltype(gPrivateFuncs.FMOD_System_playSound))GetProcAddress(fmodex, "?playSound@System@FMOD@@QAG?AW4FMOD_RESULT@@W4FMOD_CHANNELINDEX@@PAVSound@2@_NPAPAVChannel@2@@Z");
+	Sig_FuncNotFound(FMOD_System_playSound);
+
+	//g_phook_FMOD_System_playSound = g_pMetaHookAPI->IATHook(g_hClientDll, "fmodex.dll", "?playSound@System@FMOD@@QAG?AW4FMOD_RESULT@@W4FMOD_CHANNELINDEX@@PAVSound@2@_NPAPAVChannel@2@@Z", FMOD_System_playSound, NULL);
+	Install_InlineHook(FMOD_System_playSound);
+}
+
+void FMOD_UninstallHooks(HMODULE fmodex)
+{
+	Uninstall_Hook(FMOD_System_playSound);
+}
 
 PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule)
 {
@@ -1359,12 +1379,45 @@ void Engine_FillAddress(void)
 
 void Client_FillAddress(void)
 {
+	ULONG ClientTextSize = 0;
+	auto ClientTextBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".text\0\0\0", &ClientTextSize);
+
+	if (!ClientTextBase)
+	{
+		g_pMetaHookAPI->SysError("Failed to locate section \".text\" in client.dll!");
+	}
+
+	ULONG ClientDataSize = 0;
+	auto ClientDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".data\0\0\0", &ClientDataSize);
+
+	ULONG ClientRDataSize = 0;
+	auto ClientRDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".rdata\0\0", &ClientRDataSize);
+
 	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
 
 	if (pfnClientFactory && pfnClientFactory("SCClientDLL001", 0))
 	{
 		g_bIsSvenCoop = true;
 
+		if (1)
+		{
+			char pattern[] = "\x6A\x00\x50\x6A\xFF\x6A\x08\xE8\x2A\x2A\x2A\x2A\x2A\x2A\xE8";
+			auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+			Sig_VarNotFound("ScClient_SoundEngine_PlayFMODSound");
+
+			gPrivateFuncs.ScClient_SoundEngine_PlayFMODSound = (decltype(gPrivateFuncs.ScClient_SoundEngine_PlayFMODSound))GetCallAddress(addr + Sig_Length(pattern) - 1);
+		}
+
+		if (1)
+		{
+			char pattern[] = "\x8B\x54\x24\x04\x81\xFA\xFF\x0F\x00\x00\x2A\x2A\x83\x3C\x91\x00\x2A\x2A\x0F\xAE\xE8";
+			auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+			Sig_VarNotFound("ScClient_SoundEngine_LookupSoundBySentenceIndex");
+
+			gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySentenceIndex = (decltype(gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySentenceIndex))addr;
+		}
+
+#if 0
 #define SC_FINDSOUND_SIG "\x51\x55\x8B\x6C\x24\x0C\x89\x4C\x24\x04\x85\xED\x0F\x84\x2A\x2A\x2A\x2A\x80\x7D\x00\x00"
 		{
 			gPrivateFuncs.ScClient_FindSoundEx = (decltype(gPrivateFuncs.ScClient_FindSoundEx))
@@ -1372,18 +1425,19 @@ void Client_FillAddress(void)
 
 			Sig_FuncNotFound(ScClient_FindSoundEx);
 		}
+#endif
 
-#define SC_GETCLIENTCOLOR_SIG "\x8B\x4C\x24\x04\x85\xC9\x2A\x2A\x6B\xC1\x58"
+		if(1)
 		{
-			gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))
-				g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_GETCLIENTCOLOR_SIG, Sig_Length(SC_GETCLIENTCOLOR_SIG));
-
+			char pattern[] = "\x8B\x4C\x24\x04\x85\xC9\x2A\x2A\x6B\xC1\x58";
+			gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
 			Sig_FuncNotFound(GetClientColor);
 		}
 
-#define SC_VIEWPORT_SIG "\x8B\x0D\x2A\x2A\x2A\x2A\x85\xC9\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x84\xC0\x0F"
+		if(1)
 		{
-			auto addr = (PUCHAR)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_VIEWPORT_SIG, Sig_Length(SC_VIEWPORT_SIG));
+			char pattern[] = "\x8B\x0D\x2A\x2A\x2A\x2A\x85\xC9\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x84\xC0\x0F";
+			auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
 
 			Sig_AddrNotFound(GameViewport);
 
@@ -1392,9 +1446,10 @@ void Client_FillAddress(void)
 			gPrivateFuncs.GameViewport_AllowedToPrintText = (decltype(gPrivateFuncs.GameViewport_AllowedToPrintText))GetCallAddress(addr + 10);
 		}
 
-#define SC_VIEWPORT_ISSCOREBOARDVISIBLE_SIG "\x8B\x01\x8B\x40\x28\xFF\xE0"
+		if(1)
 		{
-			auto addr = (PUCHAR)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_VIEWPORT_ISSCOREBOARDVISIBLE_SIG, Sig_Length(SC_VIEWPORT_ISSCOREBOARDVISIBLE_SIG));
+			char pattern[] = "\x8B\x01\x8B\x40\x28\xFF\xE0";
+			auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
 
 			Sig_AddrNotFound(GameViewport_IsScoreBoardVisible);
 
@@ -1415,18 +1470,19 @@ void Client_FillAddress(void)
 			Sig_FuncNotFound(GameViewport_IsScoreBoardVisible);
 		}
 
-#define SELECTSLOT_STRING_SIG "common/wpn_hudon.wav"
+		if(1)
 		{
-			auto addr = (PUCHAR)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SELECTSLOT_STRING_SIG, Sig_Length(SELECTSLOT_STRING_SIG));
+			char pattern[] = "common/wpn_hudon.wav";
+			auto addr = (PUCHAR)Search_Pattern_From_Size(ClientRDataBase, ClientRDataSize, pattern);
 
 			Sig_AddrNotFound(wpn_hudon_wav_String);
 
-			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
-			*(DWORD *)(pattern + 1) = (DWORD)addr;
-			auto Push_wpn_hudon_Call = g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, pattern, Sig_Length(pattern));
-			Sig_VarNotFound(Push_wpn_hudon_Call);
+			char pattern2[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
+			*(DWORD *)(pattern2 + 1) = (DWORD)addr;
+			auto wpn_hudon_PushString = Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern2);
+			Sig_VarNotFound(wpn_hudon_PushString);
 
-			gPrivateFuncs.WeaponsResource_SelectSlot = (decltype(gPrivateFuncs.WeaponsResource_SelectSlot))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Push_wpn_hudon_Call, 0x250, [](PUCHAR Candidate) {
+			gPrivateFuncs.WeaponsResource_SelectSlot = (decltype(gPrivateFuncs.WeaponsResource_SelectSlot))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(wpn_hudon_PushString, 0x250, [](PUCHAR Candidate) {
 
 				//.text:10054A80 55                                                  push    ebp
 				//.text:10054A81 8B EC                                               mov     ebp, esp
@@ -1446,23 +1502,24 @@ void Client_FillAddress(void)
 			Sig_FuncNotFound(WeaponsResource_SelectSlot);
 		}
 
-#define SC_UPDATECURSORSTATE_SIG "\x8B\x40\x28\xFF\xD0\x84\xC0\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00"
+		if(1)
 		{
-			auto addr = (PUCHAR)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_UPDATECURSORSTATE_SIG, Sig_Length(SC_UPDATECURSORSTATE_SIG));
+			char pattern[] = "\x8B\x40\x28\xFF\xD0\x84\xC0\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00";
+			auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
 
 			Sig_AddrNotFound(g_iVisibleMouse);
 
 			g_iVisibleMouse = *(decltype(g_iVisibleMouse) *)(addr + 11);
 		}
 
-#define SC_GETBORDERSIZE_SIG "\xF6\x05\x2A\x2A\x2A\x2A\x20\x2A\x2A\xB9\x2A\x2A\x2A\x2A\xE8"
+		if(1)
 		{
-			auto addr = (PUCHAR)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SC_GETBORDERSIZE_SIG, Sig_Length(SC_GETBORDERSIZE_SIG));
+			char pattern[] = "\xF6\x05\x2A\x2A\x2A\x2A\x20\x2A\x2A\xB9\x2A\x2A\x2A\x2A\xE8";
+			auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
 			Sig_AddrNotFound(CHud_GetBorderSize);
 
 			gHud = *(decltype(gHud) *)(addr + 10);
-			gPrivateFuncs.CHud_GetBorderSize = (decltype(gPrivateFuncs.CHud_GetBorderSize))
-				g_pMetaHookAPI->GetNextCallAddr(addr + Sig_Length(SC_GETBORDERSIZE_SIG) - 1, 1);
+			gPrivateFuncs.CHud_GetBorderSize = (decltype(gPrivateFuncs.CHud_GetBorderSize)) GetCallAddress(addr + Sig_Length(pattern) - 1);
 		}
 	}
 
@@ -1472,23 +1529,24 @@ void Client_FillAddress(void)
 
 		if (1)
 		{
-#define CS_CZ_GETTEXTCOLOR_SIG "\x8B\x44\x24\x04\x83\xE8\x03\x2A\x2A\x48"
-			gPrivateFuncs.GetTextColor = (decltype(gPrivateFuncs.GetTextColor))
-				g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, CS_CZ_GETTEXTCOLOR_SIG, Sig_Length(CS_CZ_GETTEXTCOLOR_SIG));
+			char pattern[] = "\x8B\x44\x24\x04\x83\xE8\x03\x2A\x2A\x48";
+			gPrivateFuncs.GetTextColor = (decltype(gPrivateFuncs.GetTextColor))Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
 			//Sig_FuncNotFound(GetTextColor);
 		}
 
-#define CS_CZ_GETCLIENTCOLOR_SIG "\x0F\xBF\x2A\x2A\x2A\x2A\x2A\x2A\x48\x83\xF8\x03\x77\x2A\xFF\x24"
-#define CS_CZ_GETCLIENTCOLOR_SIG_HL25 "\x55\x8B\xEC\x6B\x45\x08\x74\x0F\xBF\x80\x2A\x2A\x2A\x2A\x48\x83\xF8\x03\x77\x23\xFF\x24\x85"
+#define CS_CZ_GETCLIENTCOLOR_SIG 
+#define CS_CZ_GETCLIENTCOLOR_SIG_HL25 
 		if (1)
 		{
+			char pattern[] = "\x0F\xBF\x2A\x2A\x2A\x2A\x2A\x2A\x48\x83\xF8\x03\x77\x2A\xFF\x24";
+			char pattern_HL25[] = "\x55\x8B\xEC\x6B\x45\x08\x74\x0F\xBF\x80\x2A\x2A\x2A\x2A\x48\x83\xF8\x03\x77\x23\xFF\x24\x85";
 			if (g_iEngineType != ENGINE_GOLDSRC_HL25)
 			{
-				DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, CS_CZ_GETCLIENTCOLOR_SIG, Sig_Length(CS_CZ_GETCLIENTCOLOR_SIG));
+				auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
 
 				if (addr)
 				{
-					gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx((PVOID)addr, 0x50, [](PUCHAR Candidate) {
+					gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(addr, 0x50, [](PUCHAR Candidate) {
 
 						//8B 44 24 04                                         mov     eax, [esp+arg_0]
 						if (Candidate[0] == 0x8B &&
@@ -1506,12 +1564,7 @@ void Client_FillAddress(void)
 			}
 			else
 			{
-				gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))g_pMetaHookAPI->SearchPattern(
-					g_dwClientBase,
-					g_dwClientSize,
-					CS_CZ_GETCLIENTCOLOR_SIG_HL25,
-					Sig_Length(CS_CZ_GETCLIENTCOLOR_SIG_HL25)
-				);
+				gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern_HL25);
 
 				Sig_FuncNotFound(GetClientColor);
 			}
@@ -1593,9 +1646,6 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(S_StartDynamicSound);
 	Install_InlineHook(S_StartStaticSound);
 	Install_InlineHook(pfnTextMessageGet);
-	//Install_InlineHook(FileSystem_SetGameDirectory);
-	//Install_InlineHook(VGuiWrap2_Paint);
-	//Install_InlineHook(SDL_GetWindowSize);
 }
 
 void Engine_UninstallHooks(void)
@@ -1603,16 +1653,13 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(S_StartDynamicSound);
 	Uninstall_Hook(S_StartStaticSound);
 	Uninstall_Hook(pfnTextMessageGet);
-	//Uninstall_Hook(FileSystem_SetGameDirectory);
-	//Uninstall_Hook(VGuiWrap2_Paint);
-	//Uninstall_Hook(SDL_GetWindowSize);
 }
 
 void Client_InstallHooks(void)
 {
-	if (gPrivateFuncs.ScClient_FindSoundEx)
+	if (gPrivateFuncs.ScClient_SoundEngine_PlayFMODSound)
 	{
-		Install_InlineHook(ScClient_FindSoundEx);
+		Install_InlineHook(ScClient_SoundEngine_PlayFMODSound);
 	}
 
 	if (gPrivateFuncs.WeaponsResource_SelectSlot)
@@ -1623,11 +1670,26 @@ void Client_InstallHooks(void)
 
 void Client_UninstallHooks(void)
 {
-	Uninstall_Hook(ScClient_FindSoundEx);
+	Uninstall_Hook(ScClient_SoundEngine_PlayFMODSound);
 	Uninstall_Hook(WeaponsResource_SelectSlot);
 }
 
-cl_entity_t *EngineGetViewEntity(void)
+void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 {
-	return gEngfuncs.GetEntityByIndex((*cl_viewentity));
+	if (ctx->flags & LOAD_DLL_NOTIFICATION_IS_LOAD)
+	{
+		if (ctx->BaseDllName && ctx->hModule && !_wcsicmp(ctx->BaseDllName, L"fmodex.dll"))
+		{
+			g_hFMODEx = ctx->hModule;
+			FMOD_InstallHooks(ctx->hModule);
+		}
+	}
+	else if (ctx->flags & LOAD_DLL_NOTIFICATION_IS_UNLOAD)
+	{
+		if (ctx->hModule == g_hFMODEx)
+		{
+			FMOD_UninstallHooks(ctx->hModule);
+			g_hFMODEx = NULL;
+		}
+	}
 }

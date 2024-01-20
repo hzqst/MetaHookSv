@@ -120,7 +120,7 @@ public:
 	void LinkDictionary(void);
 
 	//Subtitle Interface
-	void StartSubtitle(CDictionary *dict);
+	void StartSubtitle(CDictionary *dict, float flDurationTime);
 	void StartNextSubtitle(CDictionary *dict);
 
 	//Dictionary Hashtable

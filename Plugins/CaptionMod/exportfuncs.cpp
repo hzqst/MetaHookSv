@@ -10,8 +10,9 @@
 #include "Viewport.h"
 
 #include "DpiManager.h"
+#include <functional>
 
-cl_enginefunc_t gEngfuncs;
+cl_enginefunc_t gEngfuncs = { 0 };
 
 //Legacy MetaAudio
 cvar_t *al_enable = NULL;
@@ -30,9 +31,6 @@ cvar_t *cap_newchat = NULL;
 cvar_t *hud_saytext = NULL;
 cvar_t *hud_saytext_time = NULL;
 
-static CDictionary *m_SentenceDictionary = NULL;
-static qboolean m_bSentenceSound = false;
-static float m_flSentenceDuration = 0;
 int m_iIntermission = 0;
 
 //client.dll
@@ -42,6 +40,11 @@ void *gHud = NULL;
 
 HWND g_MainWnd = NULL;
 WNDPROC g_MainWndProc = NULL;
+
+cl_entity_t* EngineGetViewEntity(void)
+{
+	return gEngfuncs.GetEntityByIndex((*cl_viewentity));
+}
 
 #if 0
 void SDL_GetWindowSize(void* window, int* w, int* h)
@@ -242,65 +245,6 @@ void Cap_Reload_f(void)
 	}
 }
 
-void SvClient_StartWave(const char *name, float duration)
-{
-	if (!g_pViewPort)
-		return;
-
-	if (m_bSentenceSound && m_SentenceDictionary)
-	{
-		if (m_SentenceDictionary->m_flDuration <= 0)
-		{
-			float flDuration = duration;
-			if (flDuration > 0)
-			{
-				m_flSentenceDuration += flDuration;
-			}
-		}
-	}
-
-	CDictionary *Dict = g_pViewPort->FindDictionary(name, DICT_SOUND);
-
-	if (cap_debug && cap_debug->value)
-	{
-		gEngfuncs.Con_Printf((Dict) ? "CaptionMod: Sound [%s] found.\n" : "CaptionMod: Sound [%s] not found.\n", name);
-	}
-
-	if (!Dict)
-		return;
-
-	//Get duration for zero-duration
-	if (Dict->m_flDuration <= 0)
-	{
-		float flDuration = duration;
-		if (flDuration > 0)
-		{
-			Dict->m_flDuration = flDuration;
-		}
-	}
-
-	if (Dict->m_flDuration > 0)
-	{
-		m_flSentenceDuration += Dict->m_flDuration;
-	}
-
-	g_pViewPort->StartSubtitle(Dict);
-}
-
-int __fastcall ScClient_FindSoundEx(void *pthis, int, const char *sound)
-{
-	auto result = gPrivateFuncs.ScClient_FindSoundEx(pthis, 0, sound);
-
-	if (result)
-	{
-		int duration = 0;
-		gPrivateFuncs.FMOD_Sound_getLength(result, &duration, 1);
-		SvClient_StartWave(sound, (float)duration / 1000.0f);
-	}
-
-	return result;
-}
-
 void HUD_Init(void)
 {
 	gExportfuncs.HUD_Init();
@@ -332,15 +276,6 @@ void HUD_Init(void)
 
 	gPrivateFuncs.MessageMode_f = g_pMetaHookAPI->HookCmd("messagemode", MessageMode_f);
 	gPrivateFuncs.MessageMode2_f = g_pMetaHookAPI->HookCmd("messagemode2", MessageMode2_f);
-
-	if (g_bIsSvenCoop)
-	{
-		gPrivateFuncs.fmodex = GetModuleHandleA("fmodex.dll");
-		Sig_FuncNotFound(fmodex);
-
-		gPrivateFuncs.FMOD_Sound_getLength = (decltype(gPrivateFuncs.FMOD_Sound_getLength))GetProcAddress(gPrivateFuncs.fmodex, "?getLength@Sound@FMOD@@QAG?AW4FMOD_RESULT@@PAII@Z");
-		Sig_FuncNotFound(FMOD_Sound_getLength);
-	}
 
 	gEngfuncs.pfnRegisterVariable("cap_lang", m_szCurrentLanguage, FCVAR_CLIENTDLL | FCVAR_USERINFO);
 }
@@ -385,7 +320,6 @@ float S_GetDuration(sfx_t *sfx)
 	return flDuration;
 }
 
-//2015-11-26 added, support added up the duration of sound for zero-duration sentences
 void S_StartWave(sfx_t *sfx, float distance, float avol)
 {
 	if (!g_pViewPort)
@@ -398,23 +332,11 @@ void S_StartWave(sfx_t *sfx, float distance, float avol)
 	else if(!Q_strnicmp(name + 1, "sound/", 6))
 		name += 7;
 
-	if(m_bSentenceSound && m_SentenceDictionary)
-	{
-		if(m_SentenceDictionary->m_flDuration <= 0)
-		{
-			float flDuration = S_GetDuration(sfx);
-			if(flDuration > 0)
-			{
-				m_flSentenceDuration += flDuration;
-			}
-		}
-	}
-
-	CDictionary *Dict = g_pViewPort->FindDictionary(name, DICT_SOUND);
+	auto pDict = g_pViewPort->FindDictionary(name, DICT_SOUND);
 
 	if(cap_debug && cap_debug->value)
 	{
-		if (Dict)
+		if (pDict)
 		{
 			gEngfuncs.Con_Printf("CaptionMod: Sound [%s] found. dist: %.2f, avol: %.2f\n", name, distance, avol);
 		}
@@ -424,37 +346,33 @@ void S_StartWave(sfx_t *sfx, float distance, float avol)
 		}
 	}
 
-	if (!Dict)
+	if (!pDict)
 	{
 		return;
 	}
 
-	if (!Dict->m_bIgnoreDistanceLimit && cap_max_distance && cap_max_distance->value > 0 && distance > cap_max_distance->value)
+	if (!pDict->m_bIgnoreDistanceLimit && cap_max_distance && cap_max_distance->value > 0 && distance > cap_max_distance->value)
 	{
 		return;
 	}
 
-	if (!Dict->m_bIgnoreVolumeLimit && cap_min_avol && cap_min_avol->value > 0 && avol < cap_min_avol->value)
+	if (!pDict->m_bIgnoreVolumeLimit && cap_min_avol && cap_min_avol->value > 0 && avol < cap_min_avol->value)
 	{
  		return;
 	}
 
-	//Get duration for zero-duration
-	if(Dict->m_flDuration <= 0)
+	float duration;
+
+	if(pDict->m_bOverrideDuration)
 	{
-		float flDuration = S_GetDuration(sfx);
-		if(flDuration > 0)
-		{
-			Dict->m_flDuration = flDuration;
-		}
+		duration = pDict->m_flDuration;
+	}
+	else
+	{
+		duration = S_GetDuration(sfx);
 	}
 
-	if(Dict->m_flDuration > 0)
-	{
-		m_flSentenceDuration += Dict->m_flDuration;
-	}
-
-	g_pViewPort->StartSubtitle(Dict);
+	g_pViewPort->StartSubtitle(pDict, duration);
 }
 
 static char szsentences[] = "sound/sentences.txt";
@@ -670,7 +588,7 @@ char *VOX_LookupString(const char *pszin, int *psentencenum)
 	return NULL;
 }
 
-void S_LoadSentence(const char *pszin, float distance, float avol)
+void S_LoadSentence(const char *pszin, const std::function<void(sfx_t *)> &callback)
 {
 	char buffer[512];
 	int i, j, k, cword;
@@ -726,7 +644,7 @@ void S_LoadSentence(const char *pszin, float distance, float avol)
 
 			if (rgvoxword[cword].sfx)
 			{
-				S_StartWave(rgvoxword[cword].sfx, distance, avol);
+				callback(rgvoxword[cword].sfx);
 			}
 
 			cword++;
@@ -736,22 +654,22 @@ void S_LoadSentence(const char *pszin, float distance, float avol)
 	}
 }
 
-void S_StartSentence(const char *name, float distance, float avol)
+bool S_StartSentence(const char *name, float distance, float avol)
 {
 	if (!g_pViewPort)
-		return;
+		return false;
 
-	CDictionary *Dict = g_pViewPort->FindDictionary(name, DICT_SENTENCE);	
+	auto pDict = g_pViewPort->FindDictionary(name, DICT_SENTENCE);
 
-	if(!Dict)
+	if(!pDict)
 	{
-		//skip ! and # then search again
-		Dict = g_pViewPort->FindDictionary(name + 1);
+		//skip "!" and "#"
+		pDict = g_pViewPort->FindDictionary(name + 1);
 	}
 
 	if(cap_debug && cap_debug->value)
 	{
-		if (Dict)
+		if (pDict)
 		{
 			gEngfuncs.Con_Printf("CaptionMod: SENTENCE [%s] found. dist: %.2f, avol: %.2f\n", name, distance, avol);
 		}
@@ -761,170 +679,335 @@ void S_StartSentence(const char *name, float distance, float avol)
 		}
 	}
 
-	m_SentenceDictionary = Dict;
-
-	if (!Dict)
+	if (!pDict)
 	{
-		//Parse sentences
-		S_LoadSentence(name + 1, distance, avol);
+		return false;
 	}
+
+	if (!pDict->m_bIgnoreDistanceLimit && cap_max_distance && cap_max_distance->value > 0 && distance > cap_max_distance->value)
+	{
+		return false;
+	}
+
+	if (!pDict->m_bIgnoreVolumeLimit && cap_min_avol && cap_min_avol->value > 0 && avol < cap_min_avol->value)
+	{
+		return false;
+	}
+
+	float duration = 0;
+
+	if (pDict->m_bOverrideDuration)
+	{
+		duration = pDict->m_flDuration;
+	}
+	else
+	{
+		S_LoadSentence(name + 1, [&duration](sfx_t* sfx) {
+
+			duration += S_GetDuration(sfx);
+
+		});
+	}
+
+	g_pViewPort->StartSubtitle(pDict, duration);
+
+	return true;
 }
 
-//2015-11-26 fixed, to support !SENTENCE and #SENTENCE
-void S_EndSentence(float distance, float avol)
+void S_StartSoundTemplate(int entnum, int entchannel, sfx_t* sfx, float* origin, float fvol, float attenuation, int flags, int pitch)
 {
-	if (!g_pViewPort)
-		return;
+	bool ignore = false;
+	float distance = 0;
+	float avol = 1;
 
-	if (!m_SentenceDictionary)
-		return;
-
-	if (!m_SentenceDictionary->m_bIgnoreDistanceLimit && cap_max_distance && cap_max_distance->value > 0 && distance > cap_max_distance->value)
+	if (sfx)
 	{
-		return;
-	}
+		if (flags & (SND_STOP | SND_CHANGE_VOL | SND_CHANGE_PITCH))
+		{
+			ignore = true;
+		}
 
-	if (!m_SentenceDictionary->m_bIgnoreVolumeLimit && cap_min_avol && cap_min_avol->value > 0 && avol < cap_min_avol->value)
-	{
-		return;
-	}
+		if (!ignore)
+		{
+			auto szLevelName = gEngfuncs.pfnGetLevelName();
 
-	//Use the total duration added up before
-	if(m_SentenceDictionary->m_flDuration <= 0 && m_flSentenceDuration > 0)
-	{
-		m_SentenceDictionary->m_flDuration = m_flSentenceDuration;
-	}
+			if (szLevelName[0])
+			{
+				if (origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && attenuation > 0 && EngineGetViewEntity())
+				{
+					float vecLocalOrigin[3];
+					VectorCopy(EngineGetViewEntity()->origin, vecLocalOrigin);
 
-	g_pViewPort->StartSubtitle(m_SentenceDictionary);
+					float vecDirection[3];
+					VectorSubtract(origin, vecLocalOrigin, vecDirection);
+
+					distance = VectorLength(vecDirection);
+
+					avol = fvol * (1.0f - distance * (attenuation / 1000.0f));
+					if (avol < 0)
+						avol = 0;
+				}
+			}
+		}
+
+		if (!ignore)
+		{
+			if (sfx->name[0] == '!' || sfx->name[0] == '#')
+			{
+				if (!S_StartSentence(sfx->name, distance, avol))
+				{
+					S_LoadSentence(sfx->name + 1, [distance, avol](sfx_t* sfx_sentence) {
+
+						S_StartWave(sfx_sentence, distance, avol);
+
+					});
+				}
+				ignore = true;
+			}
+		}
+
+		if (!ignore)
+		{
+			S_StartWave(sfx, distance, avol);
+		}
+	}
 }
 
-//2015-11-26 fixed, to support !SENTENCE and #SENTENCE
-//2015-11-26 added, support added up the duration of sound for zero-duration sentences
 void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch)
 {
-	bool ignore = false;
-	float distance = 0;
-	float avol = 1;
-
-	if(sfx)
-	{
-		if (flags & (SND_STOP | SND_CHANGE_VOL | SND_CHANGE_PITCH))
-		{
-			ignore = true;
-		}
-
-		if (!ignore)
-		{
-			auto level = gEngfuncs.pfnGetLevelName();
-			if (level[0])
-			{
-				if (origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && attenuation > 0 && EngineGetViewEntity())
-				{
-					float localorg[3];
-					VectorCopy(EngineGetViewEntity()->origin, localorg);
-
-					float dir[3];
-					VectorSubtract(origin, localorg, dir);
-
-					distance = VectorLength(dir);
-					avol = fvol * (1.0f - distance * (attenuation / 1000.0f));
-					if (avol < 0)
-						avol = 0;
-				}
-			}
-		}
-
-		if (!ignore)
-		{
-			if (sfx->name[0] == '!' || sfx->name[0] == '#')
-			{
-				m_bSentenceSound = true;
-				m_flSentenceDuration = 0;
-				S_StartSentence(sfx->name, distance, avol);
-			}
-			else
-			{
-				S_StartWave(sfx, distance, avol);
-			}
-		}
-	}
-
+	S_StartSoundTemplate(entnum, entchannel, sfx, origin, fvol, attenuation, flags, pitch);
 	gPrivateFuncs.S_StartDynamicSound(entnum, entchannel, sfx, origin, fvol, attenuation, flags, pitch);
-
-	if(m_bSentenceSound)
-	{
-		S_EndSentence(distance, avol);
-		m_flSentenceDuration = 0;
-		m_bSentenceSound = false;
-	}
 }
 
-//2015-11-26 fixed, to support !SENTENCE and #SENTENCE
-//2015-11-26 added, support added up the duration of sound for zero-duration sentences
 void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch)
 {
-	bool ignore = false;
-	float distance = 0;
-	float avol = 1;
-
-	if(sfx)
-	{
-		if (flags & (SND_STOP | SND_CHANGE_VOL | SND_CHANGE_PITCH))
-		{
-			ignore = true;
-		}
-
-		if (!ignore)
-		{
-			auto level = gEngfuncs.pfnGetLevelName();
-			if (level[0])
-			{
-				if (origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && attenuation > 0 && EngineGetViewEntity())
-				{
-					float localorg[3];
-					VectorCopy(EngineGetViewEntity()->origin, localorg);
-
-					float dir[3];
-					VectorSubtract(origin, localorg, dir);
-
-					distance = VectorLength(dir);
-
-					avol = fvol * (1.0f - distance * (attenuation / 1000.0f));
-					if (avol < 0)
-						avol = 0;
-				}
-			}
-		}
-
-		if (!ignore)
-		{
-			if (sfx->name[0] == '!' || sfx->name[0] == '#')
-			{
-				m_bSentenceSound = true;
-				m_flSentenceDuration = 0;
-				S_StartSentence(sfx->name, distance, avol);
-			}
-			else
-			{
-				S_StartWave(sfx, distance, avol);
-			}
-		}
-	}
-
+	S_StartSoundTemplate(entnum, entchannel, sfx, origin, fvol, attenuation, flags, pitch);
 	gPrivateFuncs.S_StartStaticSound(entnum, entchannel, sfx, origin, fvol, attenuation, flags, pitch);
-
-	if(m_bSentenceSound)
-	{
-		S_EndSentence(distance, avol);
-		m_flSentenceDuration = 0;
-		m_bSentenceSound = false;
-	}
 }
 
 sfx_t *S_FindName(char *name, int *pfInCache)
 {
 	return gPrivateFuncs.S_FindName(name, pfInCache);;
 }
+
+//Sven Co-op client.dll
+
+static bool g_bPlayingFMODSound = false;
+static bool g_bPlayedFMODSound = false;
+static int g_iCurrentPlayingFMODSoundLengthMs = 0;
+static void* g_pFMODSystem = NULL;
+
+bool ScClient_StartSentence(const char* name, float distance, float avol)
+{
+	if (!g_pViewPort)
+		return false;
+
+	auto pDict = g_pViewPort->FindDictionary(name, DICT_SENTENCE);
+
+	if (!pDict)
+	{
+		//skip "!" and "#"
+		pDict = g_pViewPort->FindDictionary(name + 1);
+	}
+
+	if (cap_debug && cap_debug->value)
+	{
+		if (pDict)
+		{
+			gEngfuncs.Con_Printf("CaptionMod: SENTENCE [%s] found. dist: %.2f, avol: %.2f\n", name, distance, avol);
+		}
+		else
+		{
+			gEngfuncs.Con_Printf("CaptionMod: SENTENCE [%s] not found.\n", name);
+		}
+	}
+
+	if (!pDict)
+	{
+		return false;
+	}
+
+	if (!pDict->m_bIgnoreDistanceLimit && cap_max_distance && cap_max_distance->value > 0 && distance > cap_max_distance->value)
+	{
+		return false;
+	}
+
+	if (!pDict->m_bIgnoreVolumeLimit && cap_min_avol && cap_min_avol->value > 0 && avol < cap_min_avol->value)
+	{
+		return false;
+	}
+
+	float duration = 0;
+
+	if (pDict->m_bOverrideDuration)
+	{
+		duration = pDict->m_flDuration;
+	}
+	else
+	{
+#if 0//TODO...
+		ScClient_LoadSentence(name + 1, [&duration](sfx_t* sfx) {
+
+			duration += S_GetDuration(sfx);
+
+		});
+#endif
+	}
+
+	g_pViewPort->StartSubtitle(pDict, duration);
+
+	return true;
+}
+
+void ScClient_StartWave(const char* name, float distance, float avol, int ms_duration)
+{
+	if (!g_pViewPort)
+		return;
+
+	if (!Q_strnicmp(name, "sound/", 6))
+		name += 6;
+	else if (!Q_strnicmp(name + 1, "sound/", 6))
+		name += 7;
+
+	auto pDict = g_pViewPort->FindDictionary(name, DICT_SOUND);
+
+	if (cap_debug && cap_debug->value)
+	{
+		if (pDict)
+		{
+			gEngfuncs.Con_Printf("CaptionMod: Sound [%s] found. dist: %.2f, avol: %.2f\n", name, distance, avol);
+		}
+		else
+		{
+			gEngfuncs.Con_Printf("CaptionMod: Sound [%s] not found.\n", name);
+		}
+	}
+
+	if (!pDict)
+	{
+		return;
+	}
+
+	if (!pDict->m_bIgnoreDistanceLimit && cap_max_distance && cap_max_distance->value > 0 && distance > cap_max_distance->value)
+	{
+		return;
+	}
+
+	if (!pDict->m_bIgnoreVolumeLimit && cap_min_avol && cap_min_avol->value > 0 && avol < cap_min_avol->value)
+	{
+		return;
+	}
+
+	float duration;
+
+	if (pDict->m_bOverrideDuration)
+	{
+		duration = pDict->m_flDuration;
+	}
+	else
+	{
+		duration = ms_duration / 1000.0f;
+	}
+
+	g_pViewPort->StartSubtitle(pDict, duration);
+}
+
+void __fastcall ScClient_SoundEngine_PlayFMODSound(void* pSoundEngine, int, int flags, int entindex, float* origin, int channel, const char* name, float fvol, float attenuation, int extraflags, int pitch, int sentenceIndex, float soundLength)
+{
+	g_bPlayingFMODSound = true;
+	g_iCurrentPlayingFMODSoundLengthMs = 0;
+	g_pFMODSystem = *(void **)((PUCHAR)pSoundEngine + 0x2004);
+
+	gPrivateFuncs.ScClient_SoundEngine_PlayFMODSound(pSoundEngine, 0, flags, entindex, origin, channel, name, fvol, attenuation, extraflags, pitch, sentenceIndex, soundLength);
+
+	if (g_bPlayedFMODSound)
+	{
+		bool ignore = false;
+		float distance = 0;
+		float avol = 1;
+
+		if (flags & (SND_STOP | SND_CHANGE_VOL | SND_CHANGE_PITCH))
+		{
+			ignore = true;
+		}
+
+		if (!ignore)
+		{
+			auto szLevelName = gEngfuncs.pfnGetLevelName();
+
+			if (szLevelName[0])
+			{
+				if (origin && !(origin[0] == 0 && origin[1] == 0 && origin[2] == 0) && attenuation > 0 && EngineGetViewEntity())
+				{
+					float vecLocalOrigin[3];
+					VectorCopy(EngineGetViewEntity()->origin, vecLocalOrigin);
+
+					float vecDirection[3];
+					VectorSubtract(origin, vecLocalOrigin, vecDirection);
+
+					distance = VectorLength(vecDirection);
+
+					avol = fvol * (1.0f - distance * (attenuation / 1000.0f));
+					if (avol < 0)
+						avol = 0;
+				}
+			}
+		}
+
+		if (!ignore && !name && sentenceIndex >= 0)
+		{
+			auto sentenceName = gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySentenceIndex(pSoundEngine, sentenceIndex);
+
+			if (sentenceName)
+			{
+				ScClient_StartWave(sentenceName, distance, avol, g_iCurrentPlayingFMODSoundLengthMs);
+
+				ignore = true;
+			}
+		}
+
+		if (!ignore && name)
+		{
+			ScClient_StartWave(name, distance, avol, g_iCurrentPlayingFMODSoundLengthMs);
+		}
+	}
+
+	g_bPlayingFMODSound = false;
+	g_bPlayedFMODSound = false;
+	g_iCurrentPlayingFMODSoundLengthMs = 0;
+}
+
+int __stdcall FMOD_System_playSound(void* FMOD_System, int channelid, void* FMOD_Sound, bool paused, void** FMOD_Channel)
+{
+	if (g_bPlayingFMODSound && g_pFMODSystem == FMOD_System)
+	{
+		int duration = 0;
+		gPrivateFuncs.FMOD_Sound_getLength(FMOD_Sound, &duration, 1);
+		g_iCurrentPlayingFMODSoundLengthMs = duration;
+		g_bPlayedFMODSound = true;
+	}
+
+	return gPrivateFuncs.FMOD_System_playSound(FMOD_System, channelid, FMOD_Sound, paused, FMOD_Channel);
+}
+
+
+#if 0
+int __fastcall ScClient_FindSoundEx(void* pthis, int, const char* sound)
+{
+	auto result = gPrivateFuncs.ScClient_FindSoundEx(pthis, 0, sound);
+
+	if (result)
+	{
+		int duration = 0;
+		gPrivateFuncs.FMOD_Sound_getLength(result, &duration, 1);
+		SvClient_StartWave(sound, (float)duration / 1000.0f);
+	}
+
+	return result;
+}
+#endif
+
+//Misc
 
 IBaseInterface *NewCreateInterface(const char *pName, int *pReturnCode)
 {

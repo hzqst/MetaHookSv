@@ -106,7 +106,7 @@ void ServerBrowser_InstallHook(HMODULE hModule)
 	g_ThreadManager_ServerBrowser->InstallHook(hookflag_CreateThread | hookflag_WaitForSingleObject);
 }
 
-void ServerBrowser_UnistallHook(HMODULE hModule)
+void ServerBrowser_UninstallHook(HMODULE hModule)
 {
 	if (g_ThreadManager_ServerBrowser)
 	{
@@ -146,7 +146,7 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 		}
 		else if (g_ThreadManager_ServerBrowser && ctx->hModule == g_ThreadManager_ServerBrowser->GetModule())
 		{
-			ServerBrowser_UnistallHook(ctx->hModule);
+			ServerBrowser_UninstallHook(ctx->hModule);
 		}
 	}
 }

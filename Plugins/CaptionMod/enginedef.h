@@ -6,15 +6,15 @@
 
 #define CVOXFILESENTENCEMAX 1536
 
-#define SND_VOLUME		(1<<0)		// a byte
-#define SND_ATTENUATION	(1<<1)		// a byte
-#define SND_LARGE_INDEX	(1<<2)		// a long
-#define SND_PITCH		(1<<3)
-#define SND_SENTENCE	(1<<4)
-#define SND_STOP		(1<<5)
-#define SND_CHANGE_VOL	(1<<6)
-#define SND_CHANGE_PITCH	(1<<7)
-#define SND_SPAWNING	(1<<8)
+#define SND_VOLUME		(1<<0)		// a byte 1
+#define SND_ATTENUATION	(1<<1)		// a byte 2
+#define SND_LARGE_INDEX	(1<<2)		// a long 4
+#define SND_PITCH		(1<<3)		//8
+#define SND_SENTENCE	(1<<4)		//0x10
+#define SND_STOP		(1<<5)		//0x20
+#define SND_CHANGE_VOL	(1<<6)		//0x40
+#define SND_CHANGE_PITCH	(1<<7)	//0x80
+#define SND_SPAWNING	(1<<8)		//0x100
 
 #define	MAX_QPATH		64			// max length of a quake game pathname
 
