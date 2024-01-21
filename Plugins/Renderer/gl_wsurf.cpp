@@ -387,15 +387,17 @@ void R_FreeVertexBuffer(void)
 	r_wsurf.vFaceBuffer.clear();
 }
 
-void R_RecursiveFindLeaves(mnode_t *node, std::set<mleaf_t *> &vLeafs)
+void R_RecursiveFindLeaves(mbasenode_t *basenode, std::set<mleaf_t *> &vLeafs)
 {
-	if (node->contents < 0)
+	if (basenode->contents < 0)
 	{
-		auto pleaf = (mleaf_t *)node;
+		auto pleaf = (mleaf_t *)basenode;
 
 		vLeafs.emplace(pleaf);
 		return;
 	}
+
+	auto node = (mnode_t*)basenode;
 
 	R_RecursiveFindLeaves(node->children[0], vLeafs);
 
@@ -406,40 +408,41 @@ void R_MarkPVSForLeaf(mleaf_t *leaf)
 {
 	(*r_visframecount)++;
 
+	//Decompress vis bytes from world model.
 	auto vis = Mod_LeafPVS(leaf, r_worldmodel);
 
-	for (int j = 0; j < r_worldmodel->numleafs; j++)
+	for (int i = 0; i < r_worldmodel->numleafs; i++)
 	{
-		if (vis[j >> 3] & (1 << (j & 7)))
+		if (vis[i >> 3] & (1 << (i & 7)))
 		{
-			auto node = (mnode_t *)&r_worldmodel->leafs[j + 1];
+			auto basenode = (mbasenode_t *)&r_worldmodel->leafs[i + 1];
 
 			do
 			{
-				if (node->visframe == (*r_visframecount))
+				if (basenode->visframe == (*r_visframecount))
 					break;
 
-				node->visframe = (*r_visframecount);
-				node = node->parent;
+				basenode->visframe = (*r_visframecount);
+				basenode = basenode->parent;
 
-			} while (node);
+			} while (basenode);
 		}
 	}
 }
 
-void R_RecursiveMarkSurfaces(mnode_t *node)
+void R_RecursiveMarkSurfaces(mbasenode_t *basenode)
 {
-	if (node->contents == CONTENTS_SOLID)
+	if (basenode->contents == CONTENTS_SOLID)
 		return;
 
 	//r_visframecount is updated only when you encounter a new leaf
 	//while r_framecount is updated every new frame
-	if (node->visframe != (*r_visframecount))
+	if (basenode->visframe != (*r_visframecount))
 		return;
 
-	if (node->contents < 0)
+	if (basenode->contents < 0)
 	{
-		auto pleaf = (mleaf_t *)node;
+		auto pleaf = (mleaf_t *)basenode;
 
 		auto mark = pleaf->firstmarksurface;
 		auto c = pleaf->nummarksurfaces;
@@ -454,6 +457,8 @@ void R_RecursiveMarkSurfaces(mnode_t *node)
 		}
 		return;
 	}
+
+	auto node = (mnode_t*)basenode;
 
 	R_RecursiveMarkSurfaces(node->children[0]);
 
@@ -470,18 +475,18 @@ void R_CollectWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t *leaf)
 	}
 }
 
-void R_RecursiveLinkTextureChain(mnode_t *node, wsurf_vbo_leaf_t *leaf)
+void R_RecursiveLinkTextureChain(mbasenode_t *basenode, wsurf_vbo_leaf_t *leaf)
 {
-	if (node->contents == CONTENTS_SOLID)
+	if (basenode->contents == CONTENTS_SOLID)
 		return;
 
-	//r_visframecount is updated only when you encounter a new leaf
-	//while r_framecount is updated every new frame
-	if (node->visframe != (*r_visframecount))
+	if (basenode->visframe != (*r_visframecount))
 		return;
 
-	if (node->contents < 0)
+	if (basenode->contents < 0)
 		return;
+
+	auto node = (mnode_t*)basenode;
 
 	R_RecursiveLinkTextureChain(node->children[0], leaf);
 
@@ -3936,115 +3941,6 @@ void R_DrawSequentialPolyVBO(msurface_t *s)
 			g_pMetaHookAPI->SysError("Too many decal surfaces!\n");
 	}
 }
-#if 0
-void R_RecursiveWorldNodeVBO(mnode_t *node)
-{
-	int c, side;
-	mplane_t *plane;
-	msurface_t *surf;
-	float dot;
-
-	if (node->contents == CONTENTS_SOLID)
-		return;
-
-	if (node->visframe != (*r_visframecount))
-		return;
-
-	if (R_CullBox(node->minmaxs, node->minmaxs + 3))
-		return;
-
-	if (node->contents < 0)
-	{
-		auto pleaf = (mleaf_t *)node;
-
-		auto mark = pleaf->firstmarksurface;
-		c = pleaf->nummarksurfaces;
-
-		if (c)
-		{
-			do
-			{
-				(*mark)->visframe = (*r_framecount);
-				mark++;
-			} while (--c);
-		}
-
-		return;
-	}
-
-	plane = node->plane;
-
-	switch (plane->type)
-	{
-	case PLANE_X:
-	{
-		dot = (*r_refdef.vieworg)[0] - plane->dist;
-		break;
-	}
-
-	case PLANE_Y:
-	{
-		dot = (*r_refdef.vieworg)[1] - plane->dist;
-		break;
-	}
-
-	case PLANE_Z:
-	{
-		dot = (*r_refdef.vieworg)[2] - plane->dist;
-		break;
-	}
-
-	default:
-	{
-		dot = DotProduct((*r_refdef.vieworg), plane->normal) - plane->dist;
-		break;
-	}
-	}
-
-	if (dot >= 0)
-		side = 0;
-	else
-		side = 1;
-
-	R_RecursiveWorldNodeVBO(node->children[side]);
-
-	c = node->numsurfaces;
-
-	if (c)
-	{
-		surf = r_worldmodel->surfaces + node->firstsurface;
-
-		if (dot < 0 - BACKFACE_EPSILON)
-			side = SURF_PLANEBACK;
-		else if (dot > BACKFACE_EPSILON)
-			side = 0;
-
-		for (; c; c--, surf++)
-		{
-			if (surf->visframe != (*r_framecount))
-				continue;
-
-			if (!(surf->flags & SURF_UNDERWATER) && ((dot < 0) ^ !!(surf->flags & SURF_PLANEBACK)))
-				continue;
-
-			if (surf->flags & SURF_DRAWSKY)
-			{
-
-			}
-			else if (surf->flags & SURF_DRAWTURB)
-			{
-				EmitWaterPolys(surf, 0);
-			}
-			else
-			{
-				R_DrawSequentialPolyVBO(surf);
-			}
-		}
-	}
-
-	R_RecursiveWorldNodeVBO(node->children[!side]);
-}
-#endif
 
 void R_DrawBrushModel(cl_entity_t *e)
 {

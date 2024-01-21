@@ -311,6 +311,7 @@ extern cvar_t *gl_bindless;
 
 void R_FillAddress(void);
 void R_InstallHooks(void);
+void R_UninstallHooksForEngineStudioInterface(void);
 void R_UninstallHooksForEngineDLL(void);
 void R_UninstallHooksForClientDLL(void);
 void R_RedirectLegacyOpenGLTextureAllocation(void);
@@ -389,6 +390,7 @@ void GL_SelectTexture(GLenum target);
 void GL_DisableMultitexture(void);
 void GL_EnableMultitexture(void);
 void triapi_RenderMode(int mode);
+int triapi_BoxInPVS(float* mins, float* maxs);
 //void triapi_Color4f(float x, float y, float z, float w);
 void GL_UnloadTextureByIdentifier(const char* identifier, bool notify_callback);
 void GL_UnloadTextures(void);

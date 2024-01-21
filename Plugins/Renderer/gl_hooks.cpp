@@ -416,6 +416,8 @@ void R_FillAddress(void)
 	}
 
 	gPrivateFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
+	gPrivateFuncs.triapi_GetMatrix = gEngfuncs.pTriAPI->GetMatrix;
+	gPrivateFuncs.triapi_BoxInPVS = gEngfuncs.pTriAPI->BoxInPVS;
 	//gPrivateFuncs.triapi_Color4f = gEngfuncs.pTriAPI->Color4f;
 
 	bHasOfficialFBOSupport = false;
@@ -7424,35 +7426,36 @@ void R_FillAddress(void)
 	}
 }
 
-hook_t* g_phook_GL_Init = NULL;
-hook_t *g_phook_GL_BeginRendering = NULL;
-hook_t *g_phook_GL_EndRendering = NULL;
-hook_t *g_phook_R_RenderView_SvEngine = NULL;
-hook_t *g_phook_R_RenderView = NULL;
-hook_t *g_phook_R_LoadSkyBox_SvEngine = NULL;
-hook_t *g_phook_R_LoadSkys = NULL;
-hook_t *g_phook_R_NewMap = NULL;
-hook_t *g_phook_R_CullBox = NULL;
-hook_t *g_phook_Mod_PointInLeaf = NULL;
-hook_t *g_phook_R_BuildLightMap = NULL;
-hook_t *g_phook_R_AddDynamicLights = NULL;
-hook_t *g_phook_R_GLStudioDrawPoints = NULL;
-hook_t *g_phook_GL_UnloadTextures = NULL;
-hook_t *g_phook_GL_UnloadTexture = NULL;
-hook_t *g_phook_GL_LoadTexture2 = NULL;
-hook_t *g_phook_GL_BuildLightmaps = NULL;
-hook_t *g_phook_enginesurface_createNewTextureID = NULL;
-hook_t *g_phook_enginesurface_drawSetTextureFile = NULL;
-hook_t *g_phook_enginesurface_drawFlushText = NULL;
-hook_t *g_phook_Mod_LoadStudioModel = NULL;
-hook_t *g_phook_Mod_LoadBrushModel = NULL;
-hook_t *g_phook_Mod_UnloadSpriteTextures = NULL;
-hook_t *g_phook_triapi_RenderMode = NULL;
-//hook_t *g_phook_triapi_Color4f = NULL;
-hook_t *g_phook_Draw_MiptexTexture = NULL;
-hook_t *g_phook_BuildGammaTable = NULL;
-hook_t *g_phook_DLL_SetModKey = NULL;
-hook_t *g_phook_SDL_GL_SetAttribute = NULL;
+static hook_t *g_phook_GL_Init = NULL;
+static hook_t *g_phook_GL_BeginRendering = NULL;
+static hook_t *g_phook_GL_EndRendering = NULL;
+static hook_t *g_phook_R_RenderView_SvEngine = NULL;
+static hook_t *g_phook_R_RenderView = NULL;
+static hook_t *g_phook_R_LoadSkyBox_SvEngine = NULL;
+static hook_t *g_phook_R_LoadSkys = NULL;
+static hook_t *g_phook_R_NewMap = NULL;
+static hook_t *g_phook_R_CullBox = NULL;
+static hook_t *g_phook_Mod_PointInLeaf = NULL;
+static hook_t *g_phook_R_BuildLightMap = NULL;
+static hook_t *g_phook_R_AddDynamicLights = NULL;
+static hook_t *g_phook_R_GLStudioDrawPoints = NULL;
+static hook_t *g_phook_GL_UnloadTextures = NULL;
+static hook_t *g_phook_GL_UnloadTexture = NULL;
+static hook_t *g_phook_GL_LoadTexture2 = NULL;
+static hook_t *g_phook_GL_BuildLightmaps = NULL;
+static hook_t *g_phook_enginesurface_createNewTextureID = NULL;
+static hook_t *g_phook_enginesurface_drawSetTextureFile = NULL;
+static hook_t *g_phook_enginesurface_drawFlushText = NULL;
+static hook_t *g_phook_Mod_LoadStudioModel = NULL;
+static hook_t *g_phook_Mod_LoadBrushModel = NULL;
+static hook_t *g_phook_Mod_UnloadSpriteTextures = NULL;
+static hook_t *g_phook_triapi_RenderMode = NULL;
+static hook_t *g_phook_triapi_BoxInPVS = NULL;
+//static hook_t *g_phook_triapi_Color4f = NULL;
+static hook_t *g_phook_Draw_MiptexTexture = NULL;
+static hook_t *g_phook_BuildGammaTable = NULL;
+static hook_t *g_phook_DLL_SetModKey = NULL;
+static hook_t *g_phook_SDL_GL_SetAttribute = NULL;
 
 void R_UninstallHooksForEngineDLL(void)
 {
@@ -7489,6 +7492,7 @@ void R_UninstallHooksForEngineDLL(void)
 	Uninstall_Hook(Mod_LoadStudioModel);
 	Uninstall_Hook(Mod_UnloadSpriteTextures);
 	Uninstall_Hook(triapi_RenderMode);
+	Uninstall_Hook(triapi_BoxInPVS);
 	Uninstall_Hook(Draw_MiptexTexture);
 	Uninstall_Hook(BuildGammaTable);
 	Uninstall_Hook(R_CullBox);
@@ -7497,10 +7501,6 @@ void R_UninstallHooksForEngineDLL(void)
 	{
 		Uninstall_Hook(SDL_GL_SetAttribute);
 	}
-
-	Uninstall_Hook(studioapi_StudioDynamicLight);
-	Uninstall_Hook(studioapi_StudioCheckBBox);
-	Uninstall_Hook(CL_FxBlend);
 }
 
 void R_InstallHooks(void)
@@ -7537,6 +7537,7 @@ void R_InstallHooks(void)
 	Install_InlineHook(Mod_LoadStudioModel);
 	Install_InlineHook(Mod_UnloadSpriteTextures);
 	Install_InlineHook(triapi_RenderMode);
+	Install_InlineHook(triapi_BoxInPVS);
 	Install_InlineHook(Draw_MiptexTexture);
 	Install_InlineHook(BuildGammaTable);
 	Install_InlineHook(R_CullBox);

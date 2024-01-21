@@ -409,7 +409,7 @@ void GL_BuildLightmaps(void)
 	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
 
-colorVec RecursiveLightPoint(mnode_t *node, vec3_t start, vec3_t end)
+colorVec RecursiveLightPoint(mbasenode_t *basenode, vec3_t start, vec3_t end)
 {
 	colorVec c;
 	float front, back, frac;
@@ -424,7 +424,7 @@ colorVec RecursiveLightPoint(mnode_t *node, vec3_t start, vec3_t end)
 	unsigned scale;
 	int maps;
 
-	if (node->contents < 0)
+	if (basenode->contents < 0)
 	{
 		c.r = 0;
 		c.g = 0;
@@ -432,6 +432,8 @@ colorVec RecursiveLightPoint(mnode_t *node, vec3_t start, vec3_t end)
 		c.a = 0;
 		return c;
 	}
+
+	auto node = (mnode_t*)basenode;
 
 	plane = node->plane;
 	front = DotProduct(start, plane->normal) - plane->dist;

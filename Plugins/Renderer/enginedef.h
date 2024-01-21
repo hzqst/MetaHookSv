@@ -389,33 +389,40 @@ typedef struct decalcache_s
 	float	decalVert[4][VERTEXSIZE];
 } decalcache_t;
 
-typedef struct mnode_s
+class mbasenode_s
 {
+public:
 	int contents;
 	int visframe;
 	float minmaxs[6];
-	struct mnode_s *parent;
-	mplane_t *plane;
-	struct mnode_s *children[2];
+	mbasenode_s* parent;
+};
+
+typedef mbasenode_s mbasenode_t;
+
+class mnode_s : public mbasenode_s
+{
+public:
+	mplane_t* plane;
+	mbasenode_t* children[2];
 	unsigned short firstsurface;
 	unsigned short numsurfaces;
-}
-mnode_t;
+};
 
-typedef struct mleaf_s
+typedef mnode_s mnode_t;
+
+class mleaf_s : public mbasenode_t
 {
-	int contents;
-	int visframe;
-	float minmaxs[6];
-	struct mnode_s *parent;
-	byte *compressed_vis;
-	struct efrag_s *efrags;
-	msurface_t **firstmarksurface;
+public:
+	byte* compressed_vis;
+	struct efrag_s* efrags;
+	msurface_t** firstmarksurface;
 	int nummarksurfaces;
 	int key;
 	byte ambient_sound_level[NUM_AMBIENTS];
-}
-mleaf_t;
+};
+
+typedef mleaf_s mleaf_t;
 
 typedef struct hull_s
 {

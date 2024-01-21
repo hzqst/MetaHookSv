@@ -67,6 +67,11 @@ float *g_UserFogDensity = NULL;
 float *g_UserFogStart = NULL;
 float *g_UserFogEnd = NULL;
 
+/*
+	r_visframecount is updated only when you encounter a new leaf
+	while r_framecount is updated every new frame
+*/
+
 int *r_framecount = NULL;
 int *r_visframecount = NULL;
 
@@ -312,6 +317,10 @@ qboolean Host_IsSinglePlayerGame()
 {
 	return gPrivateFuncs.Host_IsSinglePlayerGame();
 }
+
+/*
+	Purpose : Check if the box specified by mins and maxs in world space can be culled by camera frustrum, return true on culled
+*/
 
 qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 {
@@ -684,6 +693,55 @@ void triapi_Color4f(float x, float y, float z, float w)
 	gPrivateFuncs.triapi_Color4f(x, y, z, w);
 }
 #endif
+
+mbasenode_t* R_PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs)
+{
+	mplane_t* splitplane;
+	int			sides;
+	mbasenode_t* splitNode;
+
+	if (basenode->visframe != (*r_visframecount))
+		return NULL;
+
+	// add an efrag if the node is a leaf
+
+	if (basenode->contents < 0)
+	{
+		if (basenode->contents == CONTENT_SOLID)
+			return NULL;
+
+		return basenode;
+	}
+
+	auto node = (mnode_t*)basenode;
+
+	splitplane = node->plane;
+	sides = BOX_ON_PLANE_SIDE(emins, emaxs, splitplane);
+
+	// recurse down the contacted sides
+	if (sides & 1)
+	{
+		splitNode = R_PVSNode(node->children[0], emins, emaxs);
+
+		if (splitNode)
+			return splitNode;
+	}
+
+	if (sides & 2)
+	{
+		splitNode = R_PVSNode(node->children[1], emins, emaxs);
+
+		if (splitNode)
+			return splitNode;
+	}
+
+	return NULL;
+}
+
+int triapi_BoxInPVS(float* mins, float* maxs)
+{
+	return R_PVSNode(r_worldmodel->nodes, mins, maxs) != NULL;
+}
 
 void triapi_RenderMode(int mode)
 {
@@ -2506,27 +2564,25 @@ void R_NewMap(void)
 
 mleaf_t *Mod_PointInLeaf(vec3_t p, model_t *model)
 {
-	mnode_t *node;
-	float d;
-	mplane_t *plane;
-
 	if (!model || !model->nodes)
 		g_pMetaHookAPI->SysError("Mod_PointInLeaf: bad model");
 
-	node = model->nodes;
+	auto basenode = (mbasenode_t *)model->nodes;
 
 	while (1)
 	{
-		if (node->contents < 0)
-			return (mleaf_t *)node;
+		if (basenode->contents < 0)
+			return (mleaf_t *)basenode;
 
-		plane = node->plane;
-		d = DotProduct(p, plane->normal) - plane->dist;
+		auto node = (mnode_t*)basenode;
+
+		auto plane = node->plane;
+		auto d = DotProduct(p, plane->normal) - plane->dist;
 
 		if (d > 0)
-			node = node->children[0];
+			basenode = node->children[0];
 		else
-			node = node->children[1];
+			basenode = node->children[1];
 	}
 
 	return NULL;
@@ -3234,16 +3290,16 @@ void R_MarkLeaves(void)
 	{
 		if (vis[i >> 3] & (1 << (i & 7)))
 		{
-			auto node = (mnode_t *)&r_worldmodel->leafs[i + 1];
+			auto basenode = (mbasenode_t *)&r_worldmodel->leafs[i + 1];
 
 			do
 			{
-				if (node->visframe == (*r_visframecount))
+				if (basenode->visframe == (*r_visframecount))
 					break;
 
-				node->visframe = (*r_visframecount);
-				node = node->parent;
-			} while (node);
+				basenode->visframe = (*r_visframecount);
+				basenode = basenode->parent;
+			} while (basenode);
 		}
 	}
 }

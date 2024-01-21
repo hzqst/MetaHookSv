@@ -17,33 +17,36 @@ void *g_pGameStudioRenderer = NULL;
 bool g_bIsSvenCoop = false;
 bool g_bIsCounterStrike = false;
 
-//extern int g_LastPortalTextureId;
+static hook_t *g_phook_ClientPortalManager_ResetAll = NULL;
+static hook_t *g_phook_ClientPortalManager_DrawPortalSurface = NULL;
+static hook_t *g_phook_ClientPortalManager_EnableClipPlane = NULL;
+ 
+static hook_t *g_phook_GameStudioRenderer_StudioSetupBones = NULL;
+static hook_t *g_phook_GameStudioRenderer_StudioMergeBones = NULL;
+static hook_t *g_phook_GameStudioRenderer_StudioRenderModel = NULL;
+static hook_t *g_phook_GameStudioRenderer_StudioRenderFinal = NULL;
 
-hook_t *g_phook_studioapi_RestoreRenderer = NULL;
-hook_t *g_phook_studioapi_StudioDynamicLight = NULL;
-hook_t *g_phook_studioapi_StudioCheckBBox = NULL;
-hook_t *g_phook_CL_FxBlend = NULL;
+static hook_t *g_phook_R_StudioSetupBones = NULL;
+static hook_t *g_phook_R_StudioMergeBones = NULL;
+static hook_t *g_phook_R_StudioRenderModel = NULL;
+static hook_t *g_phook_R_StudioRenderFinal = NULL;
 
-hook_t *g_phook_ClientPortalManager_ResetAll = NULL;
-hook_t *g_phook_ClientPortalManager_DrawPortalSurface = NULL;
-hook_t *g_phook_ClientPortalManager_EnableClipPlane = NULL;
+static hook_t* g_phook_studioapi_RestoreRenderer = NULL;
+static hook_t* g_phook_studioapi_StudioDynamicLight = NULL;
+static hook_t* g_phook_studioapi_StudioCheckBBox = NULL;
+static hook_t* g_phook_CL_FxBlend = NULL;
 
-hook_t *g_phook_GameStudioRenderer_StudioSetupBones = NULL;
-hook_t *g_phook_GameStudioRenderer_StudioMergeBones = NULL;
-hook_t *g_phook_GameStudioRenderer_StudioRenderModel = NULL;
-hook_t *g_phook_GameStudioRenderer_StudioRenderFinal = NULL;
-
-hook_t *g_phook_R_StudioSetupBones = NULL;
-hook_t* g_phook_R_StudioMergeBones = NULL;
-hook_t *g_phook_R_StudioRenderModel = NULL;
-hook_t *g_phook_R_StudioRenderFinal = NULL;
-
-void R_UninstallHooksForClientDLL(void)
+void R_UninstallHooksForEngineStudioInterface(void)
 {
 	Uninstall_Hook(studioapi_StudioDynamicLight);
 	Uninstall_Hook(studioapi_StudioCheckBBox);
 	Uninstall_Hook(CL_FxBlend);
+	Uninstall_Hook(R_StudioRenderModel);
+	Uninstall_Hook(R_StudioRenderFinal);
+}
 
+void R_UninstallHooksForClientDLL(void)
+{
 	//SCClient
 
 	Uninstall_Hook(ClientPortalManager_ResetAll);
@@ -55,9 +58,6 @@ void R_UninstallHooksForClientDLL(void)
 	Uninstall_Hook(GameStudioRenderer_StudioMergeBones);
 	Uninstall_Hook(GameStudioRenderer_StudioRenderModel);
 	Uninstall_Hook(GameStudioRenderer_StudioRenderFinal);
-
-	Uninstall_Hook(R_StudioRenderModel);
-	Uninstall_Hook(R_StudioRenderFinal);
 }
 
 void HUD_Init(void)
@@ -309,8 +309,8 @@ int HUD_Redraw(float time, int intermission)
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
 {
 	//Save StudioAPI Funcs
-	//gPrivateFuncs.studioapi_RestoreRenderer = pstudio->RestoreRenderer;
 	gPrivateFuncs.studioapi_StudioDynamicLight = pstudio->StudioDynamicLight;
+	gPrivateFuncs.studioapi_StudioCheckBBox = pstudio->StudioCheckBBox;
 
 	//Vars in Engine Studio API
 
@@ -967,7 +967,6 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	gpStudioInterface = ppinterface;
 
 	//InlineHook StudioAPI
-	//Install_InlineHook(studioapi_RestoreRenderer);
 	Install_InlineHook(studioapi_StudioDynamicLight);
 	Install_InlineHook(studioapi_StudioCheckBBox);
 	Install_InlineHook(CL_FxBlend);
@@ -1589,5 +1588,6 @@ void HUD_Shutdown(void)
 
 	GL_Shutdown();
 
+	R_UninstallHooksForEngineStudioInterface();
 	R_UninstallHooksForClientDLL();
 }
