@@ -58,6 +58,9 @@ byte* Mod_DecompressVis(byte* in, model_t* model)
 
 byte* Mod_LeafPVS(mleaf_t* leaf, model_t* model)
 {
+	if (leaf == model->leafs)
+		return mod_novis;
+
 	return Mod_DecompressVis(leaf->compressed_vis, model);
 }
 

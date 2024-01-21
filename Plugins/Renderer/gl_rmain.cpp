@@ -1081,6 +1081,11 @@ entity_state_t *R_GetPlayerState(int index)
 
 void R_DrawCurrentEntity(bool bTransparent)
 {
+	if ((*currententity)->curstate.entityType & 4)
+	{
+		gEngfuncs.Con_DPrintf("clientEntity %s\n", (*currententity)->model->name);
+	}
+
 	if (bTransparent)
 	{
 		glDisable(GL_FOG);
@@ -1804,6 +1809,9 @@ void R_RenderStartView()
 
 void R_RenderStartFrame()
 {
+	//Make sure r_framecount be advanced once per frame
+	++(*r_framecount);
+
 	GL_Profiles_StartFrame();
 	R_PrepareDecals();
 	R_ForceCVars(gEngfuncs.GetMaxClients() > 1);
@@ -3225,8 +3233,6 @@ void R_SetupFrame(void)
 	//R_CheckVariables();
 	//R_AnimateLight();
 
-	++(*r_framecount);
-
 	VectorCopy((*r_refdef.vieworg), r_origin);
 
 	gEngfuncs.pfnAngleVectors((*r_refdef.viewangles), vpn, vright, vup);
@@ -3269,6 +3275,8 @@ void R_SetupFrame(void)
 
 void R_MarkLeaves(void)
 {
+	//return gPrivateFuncs.R_MarkLeaves();
+
 	byte *vis;
 
 	if ((*r_oldviewleaf) == (*r_viewleaf) && !r_novis->value)
@@ -3283,12 +3291,12 @@ void R_MarkLeaves(void)
 	}
 	else
 	{
-		vis = Mod_LeafPVS(*r_viewleaf, r_worldmodel);
+		vis = Mod_LeafPVS((*r_viewleaf), r_worldmodel);
 	}
 
 	for (int i = 0; i < r_worldmodel->numleafs; i++)
 	{
-		if (vis[i >> 3] & (1 << (i & 7)))
+		if ((byte)(1 << (i & 7)) & vis[i >> 3])
 		{
 			auto basenode = (mbasenode_t *)&r_worldmodel->leafs[i + 1];
 
@@ -3299,6 +3307,7 @@ void R_MarkLeaves(void)
 
 				basenode->visframe = (*r_visframecount);
 				basenode = basenode->parent;
+
 			} while (basenode);
 		}
 	}

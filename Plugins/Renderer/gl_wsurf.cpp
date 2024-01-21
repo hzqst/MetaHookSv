@@ -404,10 +404,8 @@ void R_RecursiveFindLeaves(mbasenode_t *basenode, std::set<mleaf_t *> &vLeafs)
 	R_RecursiveFindLeaves(node->children[1], vLeafs);
 }
 
-void R_MarkPVSForLeaf(mleaf_t *leaf)
+void R_MarkPVSForLeaf(mleaf_t *leaf, std::set<mbasenode_t*>& pvsnodes)
 {
-	(*r_visframecount)++;
-
 	//Decompress vis bytes from world model.
 	auto vis = Mod_LeafPVS(leaf, r_worldmodel);
 
@@ -419,10 +417,8 @@ void R_MarkPVSForLeaf(mleaf_t *leaf)
 
 			do
 			{
-				if (basenode->visframe == (*r_visframecount))
-					break;
+				pvsnodes.emplace(basenode);
 
-				basenode->visframe = (*r_visframecount);
 				basenode = basenode->parent;
 
 			} while (basenode);
@@ -430,42 +426,36 @@ void R_MarkPVSForLeaf(mleaf_t *leaf)
 	}
 }
 
-void R_RecursiveMarkSurfaces(mbasenode_t *basenode)
+void R_RecursiveMarkSurfaces(mbasenode_t *basenode, const std::set<mbasenode_t*>& pvsnodes, std::set<msurface_t*>& marksurfs)
 {
 	if (basenode->contents == CONTENTS_SOLID)
 		return;
 
-	//r_visframecount is updated only when you encounter a new leaf
-	//while r_framecount is updated every new frame
-	if (basenode->visframe != (*r_visframecount))
+	if (pvsnodes.find(basenode) == pvsnodes.end())
 		return;
 
 	if (basenode->contents < 0)
 	{
 		auto pleaf = (mleaf_t *)basenode;
 
-		auto mark = pleaf->firstmarksurface;
-		auto c = pleaf->nummarksurfaces;
+		auto marks = pleaf->firstmarksurface;
+		auto nummarks = pleaf->nummarksurfaces;
 
-		if (c)
+		for (int i = 0; i < nummarks; ++i)
 		{
-			do
-			{
-				(*mark)->visframe = (*r_framecount);
-				mark++;
-			} while (--c);
+			marksurfs.emplace(marks[i]);
 		}
 		return;
 	}
 
 	auto node = (mnode_t*)basenode;
 
-	R_RecursiveMarkSurfaces(node->children[0]);
+	R_RecursiveMarkSurfaces(node->children[0], pvsnodes, marksurfs);
 
-	R_RecursiveMarkSurfaces(node->children[1]);
+	R_RecursiveMarkSurfaces(node->children[1], pvsnodes, marksurfs);
 }
 
-void R_CollectWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t *leaf)
+void R_CollectWaterVBO(msurface_t* surf, int direction, wsurf_vbo_leaf_t* leaf)
 {
 	auto WaterVBO = R_CreateWaterVBO(surf, direction, leaf);
 
@@ -475,12 +465,12 @@ void R_CollectWaterVBO(msurface_t *surf, int direction, wsurf_vbo_leaf_t *leaf)
 	}
 }
 
-void R_RecursiveLinkTextureChain(mbasenode_t *basenode, wsurf_vbo_leaf_t *leaf)
+void R_RecursiveLinkTextureChain(mbasenode_t *basenode, const std::set<mbasenode_t*>& pvsnodes, const std::set<msurface_t*>& marksurfs, wsurf_vbo_leaf_t *leaf)
 {
 	if (basenode->contents == CONTENTS_SOLID)
 		return;
 
-	if (basenode->visframe != (*r_visframecount))
+	if (pvsnodes.find(basenode) == pvsnodes.end())
 		return;
 
 	if (basenode->contents < 0)
@@ -488,63 +478,40 @@ void R_RecursiveLinkTextureChain(mbasenode_t *basenode, wsurf_vbo_leaf_t *leaf)
 
 	auto node = (mnode_t*)basenode;
 
-	R_RecursiveLinkTextureChain(node->children[0], leaf);
+	R_RecursiveLinkTextureChain(node->children[0], pvsnodes, marksurfs, leaf);
 
-	auto c = node->numsurfaces;
-
-	if (c)
+	for (int i = 0; i < node->numsurfaces; ++i)
 	{
-		int surf_index = 0;
-		
-		for (; c; c--, surf_index ++)
+		auto surf = R_GetWorldSurfaceByIndex(node->firstsurface + i);
+
+		if (marksurfs.find(surf) == marksurfs.end())
 		{
-			msurface_t* surf;
-
-			if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-			{
-				surf = (((msurface_hl25_t*)r_worldmodel->surfaces) + node->firstsurface + surf_index);
-			}
-			else
-			{
-				surf = r_worldmodel->surfaces + node->firstsurface + surf_index;
-			}
-
-			// Filter out invisible surfaces
-			if (surf->visframe != (*r_framecount))
-				continue;
-
-			if (surf->flags & SURF_DRAWSKY)
-			{
-				continue;
-			}
-			if (surf->flags & SURF_DRAWTURB)
-			{
-				R_CollectWaterVBO(surf, 0, leaf);
-				continue;
-			}
-
-			surf->texturechain = surf->texinfo->texture->texturechain;
-			surf->texinfo->texture->texturechain = surf;
+			continue;
 		}
+
+		if (surf->flags & SURF_DRAWSKY)
+		{
+			continue;
+		}
+
+		if (surf->flags & SURF_DRAWTURB)
+		{
+			R_CollectWaterVBO(surf, 0, leaf);
+			continue;
+		}
+
+		surf->texturechain = surf->texinfo->texture->texturechain;
+		surf->texinfo->texture->texturechain = surf;
 	}
 
-	R_RecursiveLinkTextureChain(node->children[1], leaf);
+	R_RecursiveLinkTextureChain(node->children[1], pvsnodes, marksurfs, leaf);
 }
 
 void R_BrushModelLinkTextureChain(model_t *mod, wsurf_vbo_leaf_t *leaf)
 {
-	msurface_t* surf;
-
 	for (int i = 0; i < mod->nummodelsurfaces; i++)
 	{
-		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-		{
-			surf = (((msurface_hl25_t*)mod->surfaces) + mod->firstmodelsurface + i);
-		}
-		else
-		{
-			surf = mod->surfaces + mod->firstmodelsurface + i;
-		}
+		auto surf = R_GetWorldSurfaceByIndex(mod->firstmodelsurface + i);
 
 		auto pplane = surf->plane;
 
@@ -552,6 +519,7 @@ void R_BrushModelLinkTextureChain(model_t *mod, wsurf_vbo_leaf_t *leaf)
 		{
 			continue;
 		}
+
 		if (surf->flags & SURF_DRAWTURB)
 		{
 			//Skip non-Z planes
@@ -1020,16 +988,18 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 
 		for (auto &leaf : vPossibleLeafs)
 		{
+			std::set<mbasenode_t*> pvsnodes;
+			std::set<msurface_t*> marksurfs;
+
 			int leafindex = leaf - mod->leafs;
 			
-			(*r_framecount)++;
-
-			R_MarkPVSForLeaf(leaf);
+			R_MarkPVSForLeaf(leaf, pvsnodes);
 
 			auto vboleaf = new wsurf_vbo_leaf_t;
 
-			R_RecursiveMarkSurfaces(mod->nodes);
-			R_RecursiveLinkTextureChain(mod->nodes, vboleaf);
+			R_RecursiveMarkSurfaces(mod->nodes, pvsnodes, marksurfs);
+
+			R_RecursiveLinkTextureChain(mod->nodes, pvsnodes, marksurfs, vboleaf);
 
 			R_GenerateWaterStorages(mod, vboleaf);
 

@@ -2455,11 +2455,6 @@ void R_StudioDrawVBO(studio_vbo_t* VBOData)
 
 void R_GLStudioDrawPoints(void)
 {
-	if ((*currententity)->model && strstr((*currententity)->model->name, "sandbag"))
-	{
-		gEngfuncs.Con_DPrintf("curmod %s\n", (*currententity)->model->name);
-	}
-
 	auto VBOData = R_PrepareStudioVBO((*pstudiohdr));
 
 	if (!VBOData)
