@@ -325,31 +325,16 @@ void GL_BuildLightmaps(void)
 			for (int i = 0; i < mod->numsurfaces; i++)
 			{
 				//Allocate lightmap texture from empty slot
-				if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+				auto surf = R_GetWorldSurfaceByIndex(i);
+
+				//Allocate blocks
+				R_AllocateSurfaceLightmap(mod, surf);
+
+				//Build glpolys from blocks
+				if (!(surf->flags & SURF_DRAWTURB))
 				{
-					auto surf = ((msurface_hl25_t*)mod->surfaces) + i;
-
-					R_AllocateSurfaceLightmap(mod, surf);
-
-					//Build glpolys
-					if (!(surf->flags & SURF_DRAWTURB))
-					{
-						R_BuildSurfaceDisplayList(mod, mod->vertexes, surf);
-					}
+					R_BuildSurfaceDisplayList(mod, mod->vertexes, surf);
 				}
-				else
-				{
-					auto surf = mod->surfaces + i;
-
-					R_AllocateSurfaceLightmap(mod, surf);
-
-					//Build glpolys
-					if (!(surf->flags & SURF_DRAWTURB))
-					{
-						R_BuildSurfaceDisplayList(mod, mod->vertexes, surf);
-					}
-				}
-
 			}
 		}
 	}
@@ -382,16 +367,7 @@ void GL_BuildLightmaps(void)
 				{
 					//Fill lightmap color bytes into lightmaps[]
 
-					msurface_t* surf;
-
-					if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-					{
-						surf = (((msurface_hl25_t*)mod->surfaces) + i);
-					}
-					else
-					{
-						surf = mod->surfaces + i;
-					}
+					auto surf = R_GetWorldSurfaceByIndex(i);
 
 					R_BuildSurfaceLightmap(mod, surf, lightmap_idx);
 				}
@@ -467,14 +443,7 @@ colorVec RecursiveLightPoint(mbasenode_t *basenode, vec3_t start, vec3_t end)
 
 	for (i = 0; i < node->numsurfaces; i++)
 	{
-		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-		{
-			surf = (((msurface_hl25_t*)r_worldmodel->surfaces) + node->firstsurface + i);
-		}
-		else
-		{
-			surf = r_worldmodel->surfaces + node->firstsurface + i;
-		}
+		auto surf = R_GetWorldSurfaceByIndex(node->firstsurface + i);
 
 		if (surf->flags & SURF_DRAWTILED)
 			continue;
