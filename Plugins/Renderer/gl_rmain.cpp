@@ -1081,11 +1081,6 @@ entity_state_t *R_GetPlayerState(int index)
 
 void R_DrawCurrentEntity(bool bTransparent)
 {
-	if ((*currententity)->curstate.entityType & 4)
-	{
-		gEngfuncs.Con_DPrintf("clientEntity %s\n", (*currententity)->model->name);
-	}
-
 	if (bTransparent)
 	{
 		glDisable(GL_FOG);
@@ -3275,8 +3270,6 @@ void R_SetupFrame(void)
 
 void R_MarkLeaves(void)
 {
-	//return gPrivateFuncs.R_MarkLeaves();
-
 	byte *vis;
 
 	if ((*r_oldviewleaf) == (*r_viewleaf) && !r_novis->value)
