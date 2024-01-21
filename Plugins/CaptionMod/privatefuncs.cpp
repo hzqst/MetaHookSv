@@ -46,16 +46,15 @@
 
 double *cl_time = NULL;
 double *cl_oldtime = NULL;
+double *realtime = NULL;
+
+int* cl_viewentity = NULL;
 
 char *(*rgpszrawsentence)[CVOXFILESENTENCEMAX] = NULL;
 int *cszrawsentences = NULL;
 
-int *cl_viewentity = NULL;
-
 vec3_t *listener_origin = NULL;
 
-//not used
-//char(*s_pBaseDir)[512] = NULL;
 char* (*hostparam_basedir) = NULL;
 
 qboolean *scr_drawloading = NULL;
@@ -173,6 +172,25 @@ PVOID VGUI2_FindPanelInit(PVOID TextBase, ULONG TextSize)
 
 void Engine_FillAddress(void)
 {
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		char pattern[] = "\x01\x00\x00\x00\xF2\x0F\x10\x05\x2A\x2A\x2A\x2A\x66\x0F\x5A\xC0\x6A\x60";
+
+		auto addr = (PUCHAR)Search_Pattern(pattern);
+		Sig_AddrNotFound("realtime");
+
+		realtime = *(decltype(realtime)*)(addr + 8);
+	}
+	else
+	{
+		char pattern[] = "\x01\x00\x00\x00\xDD\x05\x2A\x2A\x2A\x2A\x6A\x60";
+
+		auto addr = (PUCHAR)Search_Pattern(pattern);
+		Sig_AddrNotFound("realtime");
+
+		realtime = *(decltype(realtime)*)(addr + 6);
+	}
+
 	if (1)
 	{
 		/*

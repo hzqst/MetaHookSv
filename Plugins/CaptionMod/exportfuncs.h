@@ -1,5 +1,4 @@
 #pragma once
-#include <gl/gl.h>
 #include <const.h>
 #include <triangleapi.h>
 #include <cl_entity.h>
@@ -14,6 +13,7 @@
 #include <entity_types.h>
 #include <usercmd.h>
 #include "enginedef.h"
+#include <string>
 
 extern cl_enginefunc_t gEngfuncs;
 
@@ -58,6 +58,8 @@ void VGuiWrap2_Paint(void);
 void SDL_GetWindowSize(void* window, int* w, int* h);
 
 void InitWin32Stuffs(void);
+
+void RemoveFileExtension(std::string& filePath);
 
 extern cvar_t* cap_debug;
 extern cvar_t* cap_enabled;

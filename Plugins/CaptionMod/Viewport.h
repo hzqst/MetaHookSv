@@ -113,6 +113,7 @@ public:
 	void Think(void);
 	void Paint(void);
 	void SetParent(vgui::VPANEL vPanel);
+	void ConnectToServer(const char* game, int IP, int port);
 	void ActivateClientUI(void);
 	void HideClientUI(void);
 	void LoadBaseDictionary(void);
@@ -141,7 +142,7 @@ public:
 	void ChatPrintf(int iPlayerIndex, const wchar_t *buffer);
 	void QuerySubtitlePanelVars(SubtitlePanelVars_t *vars);
 	void UpdateSubtitlePanelVars(SubtitlePanelVars_t *vars);
-	double GetSystemTime(void) const;
+	double GetCurTime(void) const;
 	double GetFrameTime(void) const;
 private:
 	SubtitlePanel *m_pSubtitlePanel;
@@ -149,9 +150,7 @@ private:
 	CUtlVector<CDictionary *> m_Dictionary;	
 	CUtlVector<hash_item_t> m_StringsHashTable;
 	char m_szLevelName[256];
-	double m_SystemTime;
-	double m_OldSystemTime;
-	double m_FrameTime;
+	double m_CurTime;
 };
 
 extern CViewport *g_pViewPort;

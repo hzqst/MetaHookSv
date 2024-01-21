@@ -264,8 +264,12 @@ void CGameUI::RunFrame(void)
 
 void CGameUI::ConnectToServer(const char *game, int IP, int port)
 {
-	if(gEngfuncs.GetMaxClients() > 1)
+	g_pViewPort->ConnectToServer(game, IP, port);
+
+	if (gEngfuncs.GetMaxClients() > 1)
+	{
 		return g_pfnCGameUI_ConnectToServer(this, 0, game, IP, port);
+	}
 
 	//This just stop GameUI from sending "mp3 stop" on level transition
 	return g_pfnCGameUI_ConnectToServer(this, 0, "valve", IP, port);

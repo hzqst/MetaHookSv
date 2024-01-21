@@ -404,20 +404,23 @@ void R_RecursiveFindLeaves(mbasenode_t *basenode, std::set<mleaf_t *> &vLeafs)
 	R_RecursiveFindLeaves(node->children[1], vLeafs);
 }
 
-void R_MarkPVSForLeaf(mleaf_t *leaf, std::set<mbasenode_t*>& pvsnodes)
+void R_MarkPVSForLeaf(mleaf_t *leaf, int visframecount)
 {
 	//Decompress vis bytes from world model.
 	auto vis = Mod_LeafPVS(leaf, r_worldmodel);
 
 	for (int i = 0; i < r_worldmodel->numleafs; i++)
 	{
-		if (vis[i >> 3] & (1 << (i & 7)))
+		if ((byte)(1 << (i & 7)) & vis[i >> 3])
 		{
 			auto basenode = (mbasenode_t *)&r_worldmodel->leafs[i + 1];
 
 			do
 			{
-				pvsnodes.emplace(basenode);
+				if (basenode->visframe == visframecount)
+					break;
+
+				basenode->visframe = visframecount;
 
 				basenode = basenode->parent;
 
@@ -426,12 +429,12 @@ void R_MarkPVSForLeaf(mleaf_t *leaf, std::set<mbasenode_t*>& pvsnodes)
 	}
 }
 
-void R_RecursiveMarkSurfaces(mbasenode_t *basenode, const std::set<mbasenode_t*>& pvsnodes, std::set<msurface_t*>& marksurfs)
+void R_RecursiveMarkSurfaces(mbasenode_t *basenode, int visframecount, int framecount)
 {
 	if (basenode->contents == CONTENTS_SOLID)
 		return;
 
-	if (pvsnodes.find(basenode) == pvsnodes.end())
+	if (basenode->visframe != visframecount)
 		return;
 
 	if (basenode->contents < 0)
@@ -443,16 +446,16 @@ void R_RecursiveMarkSurfaces(mbasenode_t *basenode, const std::set<mbasenode_t*>
 
 		for (int i = 0; i < nummarks; ++i)
 		{
-			marksurfs.emplace(marks[i]);
+			marks[i]->visframe = framecount;
 		}
 		return;
 	}
 
 	auto node = (mnode_t*)basenode;
 
-	R_RecursiveMarkSurfaces(node->children[0], pvsnodes, marksurfs);
+	R_RecursiveMarkSurfaces(node->children[0], visframecount, framecount);
 
-	R_RecursiveMarkSurfaces(node->children[1], pvsnodes, marksurfs);
+	R_RecursiveMarkSurfaces(node->children[1], visframecount, framecount);
 }
 
 void R_CollectWaterVBO(msurface_t* surf, int direction, wsurf_vbo_leaf_t* leaf)
@@ -465,12 +468,12 @@ void R_CollectWaterVBO(msurface_t* surf, int direction, wsurf_vbo_leaf_t* leaf)
 	}
 }
 
-void R_RecursiveLinkTextureChain(mbasenode_t *basenode, const std::set<mbasenode_t*>& pvsnodes, const std::set<msurface_t*>& marksurfs, wsurf_vbo_leaf_t *leaf)
+void R_RecursiveLinkTextureChain(mbasenode_t *basenode, int visframecount, int framecount, wsurf_vbo_leaf_t *leaf)
 {
 	if (basenode->contents == CONTENTS_SOLID)
 		return;
 
-	if (pvsnodes.find(basenode) == pvsnodes.end())
+	if (basenode->visframe != visframecount)
 		return;
 
 	if (basenode->contents < 0)
@@ -478,13 +481,13 @@ void R_RecursiveLinkTextureChain(mbasenode_t *basenode, const std::set<mbasenode
 
 	auto node = (mnode_t*)basenode;
 
-	R_RecursiveLinkTextureChain(node->children[0], pvsnodes, marksurfs, leaf);
+	R_RecursiveLinkTextureChain(node->children[0], visframecount, framecount, leaf);
 
 	for (int i = 0; i < node->numsurfaces; ++i)
 	{
 		auto surf = R_GetWorldSurfaceByIndex(node->firstsurface + i);
 
-		if (marksurfs.find(surf) == marksurfs.end())
+		if (surf->visframe != framecount)
 		{
 			continue;
 		}
@@ -504,7 +507,7 @@ void R_RecursiveLinkTextureChain(mbasenode_t *basenode, const std::set<mbasenode
 		surf->texinfo->texture->texturechain = surf;
 	}
 
-	R_RecursiveLinkTextureChain(node->children[1], pvsnodes, marksurfs, leaf);
+	R_RecursiveLinkTextureChain(node->children[1], visframecount, framecount, leaf);
 }
 
 void R_BrushModelLinkTextureChain(model_t *mod, wsurf_vbo_leaf_t *leaf)
@@ -986,82 +989,88 @@ void R_GenerateBufferStorage(model_t *mod, wsurf_vbo_t *modvbo)
 
 		modvbo->vLeaves.resize(vPossibleLeafs.size());
 
+		int visframecount = 0;
+		int framecount = 0;
+
 		for (auto &leaf : vPossibleLeafs)
 		{
-			std::set<mbasenode_t*> pvsnodes;
-			std::set<msurface_t*> marksurfs;
-
 			int leafindex = leaf - mod->leafs;
-			
-			R_MarkPVSForLeaf(leaf, pvsnodes);
+
+			framecount++;
+			visframecount++;
+
+			R_MarkPVSForLeaf(leaf, visframecount);
 
 			auto vboleaf = new wsurf_vbo_leaf_t;
 
-			R_RecursiveMarkSurfaces(mod->nodes, pvsnodes, marksurfs);
+			R_RecursiveMarkSurfaces(mod->nodes, visframecount, framecount);
 
-			R_RecursiveLinkTextureChain(mod->nodes, pvsnodes, marksurfs, vboleaf);
+			R_RecursiveLinkTextureChain(mod->nodes, visframecount, framecount, vboleaf);
 
 			R_GenerateWaterStorages(mod, vboleaf);
 
 			R_GenerateTexChain(mod, vboleaf, vIndicesBuffer);
 
-			vboleaf->hEBO = GL_GenBuffer();
-			GL_UploadDataToEBOStaticDraw(vboleaf->hEBO, sizeof(GLuint) * vIndicesBuffer.size(), vIndicesBuffer.data());
+			if (vIndicesBuffer.size() > 0)
+			{
+				vboleaf->hEBO = GL_GenBuffer();
+				GL_UploadDataToEBOStaticDraw(vboleaf->hEBO, sizeof(GLuint) * vIndicesBuffer.size(), vIndicesBuffer.data());
 
-			vboleaf->hVAO = GL_GenVAO();
-			GL_BindStatesForVAO(vboleaf->hVAO, r_wsurf.hSceneVBO, vboleaf->hEBO,
-				[]() {
-				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
-				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
-				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
-				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
-				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
-				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD);
-				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD);
-				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD);
-				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
-				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
-				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
-				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXINDEX);
-				glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
-				glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 4, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
-				glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 4, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
-				glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_S_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, s_tangent));
-				glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_T_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, t_tangent));
-				glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
-				glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, lightmaptexcoord));
-				glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, replacetexcoord));
-				glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, detailtexcoord));
-				glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normaltexcoord));
-				glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, parallaxtexcoord));
-				glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, speculartexcoord));
-				glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_TEXINDEX, 1, GL_INT, sizeof(brushvertex_t), OFFSET(brushvertex_t, texindex));
-				glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(brushvertex_t), OFFSET(brushvertex_t, styles));
-			},
-				[]() {
-				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
-				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
-				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
-				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
-				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
-				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD);
-				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD);
-				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD);
-				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
-				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
-				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
-				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXINDEX);
-				glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
-			});
+				vboleaf->hVAO = GL_GenVAO();
+				GL_BindStatesForVAO(vboleaf->hVAO, r_wsurf.hSceneVBO, vboleaf->hEBO,
+					[]() {
+						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
+						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
+						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
+						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
+						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
+						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD);
+						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD);
+						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD);
+						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
+						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
+						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
+						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXINDEX);
+						glEnableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
+						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_POSITION, 4, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, pos));
+						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMAL, 4, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normal));
+						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_S_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, s_tangent));
+						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_T_TANGENT, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, t_tangent));
+						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, texcoord));
+						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD, 3, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, lightmaptexcoord));
+						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, replacetexcoord));
+						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, detailtexcoord));
+						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, normaltexcoord));
+						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, parallaxtexcoord));
+						glVertexAttribPointer(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD, 2, GL_FLOAT, false, sizeof(brushvertex_t), OFFSET(brushvertex_t, speculartexcoord));
+						glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_TEXINDEX, 1, GL_INT, sizeof(brushvertex_t), OFFSET(brushvertex_t, texindex));
+						glVertexAttribIPointer(VERTEX_ATTRIBUTE_INDEX_STYLES, 4, GL_UNSIGNED_BYTE, sizeof(brushvertex_t), OFFSET(brushvertex_t, styles));
+					},
+					[]() {
+						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_POSITION);
+						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMAL);
+						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_S_TANGENT);
+						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_T_TANGENT);
+						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXCOORD);
+						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_LIGHTMAP_TEXCOORD);
+						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_REPLACETEXTURE_TEXCOORD);
+						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_DETAILTEXTURE_TEXCOORD);
+						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_NORMALTEXTURE_TEXCOORD);
+						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_PARALLAXTEXTURE_TEXCOORD);
+						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_SPECULARTEXTURE_TEXCOORD);
+						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_TEXINDEX);
+						glDisableVertexAttribArray(VERTEX_ATTRIBUTE_INDEX_STYLES);
+					});
 
-			vIndicesBuffer.clear();
+				vIndicesBuffer.clear();
 
-			R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_STATIC);
-			R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_ANIM);
+				R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_STATIC);
+				R_SortTextureChain(vboleaf, WSURF_TEXCHAIN_ANIM);
 
-			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_STATIC);
-			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID);
-			R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID);
+				R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_STATIC);
+				R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_STATIC, WSURF_DRAWBATCH_SOLID);
+				R_GenerateDrawBatch(vboleaf, WSURF_TEXCHAIN_ANIM, WSURF_DRAWBATCH_SOLID);
+			}
 
 			modvbo->vLeaves[leafindex] = vboleaf;
 		}
@@ -2326,25 +2335,28 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 		{
 			vboleaf = modvbo->vLeaves[leafindex];
 
-			R_DrawWSurfVBOBegin(vboleaf);
-
-			if (R_ShouldDrawZPrePass())
+			if (vboleaf->hVAO)
 			{
-				glColorMask(0, 0, 0, 0);
+				R_DrawWSurfVBOBegin(vboleaf);
 
-				R_DrawWSurfVBOSolid(vboleaf);
+				if (R_ShouldDrawZPrePass())
+				{
+					glColorMask(0, 0, 0, 0);
 
-				glColorMask(1, 1, 1, 1);
+					R_DrawWSurfVBOSolid(vboleaf);
 
-				glDepthFunc(GL_EQUAL);
+					glColorMask(1, 1, 1, 1);
 
-				bUseZPrePass = true;
+					glDepthFunc(GL_EQUAL);
+
+					bUseZPrePass = true;
+				}
+
+				R_DrawWSurfVBOStatic(vboleaf, bUseZPrePass);
+				R_DrawWSurfVBOAnim(vboleaf, bUseZPrePass);
+
+				R_DrawWSurfVBOEnd();
 			}
-
-			R_DrawWSurfVBOStatic(vboleaf, bUseZPrePass);
-			R_DrawWSurfVBOAnim(vboleaf, bUseZPrePass);
-
-			R_DrawWSurfVBOEnd();
 		}
 		else
 		{
@@ -2357,12 +2369,15 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 		{
 			vboleaf = modvbo->vLeaves[0];
 
-			R_DrawWSurfVBOBegin(vboleaf);
+			if (vboleaf->hVAO)
+			{
+				R_DrawWSurfVBOBegin(vboleaf);
 
-			R_DrawWSurfVBOStatic(vboleaf, bUseZPrePass);
-			R_DrawWSurfVBOAnim(vboleaf, bUseZPrePass);
+				R_DrawWSurfVBOStatic(vboleaf, bUseZPrePass);
+				R_DrawWSurfVBOAnim(vboleaf, bUseZPrePass);
 
-			R_DrawWSurfVBOEnd();
+				R_DrawWSurfVBOEnd();
+			}
 		}
 		else
 		{

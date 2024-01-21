@@ -26,8 +26,8 @@ SubtitlePanel::SubtitlePanel(Panel *parent)  : EditablePanel(parent, "Subtitle")
 	m_hTextFont = NULL;
 	m_iAntiSpam = 0;
 	m_iCornorSize = 0;
-	m_iCurPanelY = 0;
-	m_iCurPanelYEnd = 0;
+	m_flCurPanelY = 0;
+	m_flCurPanelYEnd = 0;
 	m_iFontTall = 0;
 	m_iLineSpace = 0;
 	m_iMaxLines = 0;
@@ -144,8 +144,8 @@ void SubtitlePanel::ApplySchemeSettings(vgui::IScheme *pScheme)
 	m_iMaxLines = max(1, m_iMaxLines-1);
 	m_iPanelTop = iTextTall - (m_iMaxLines - 1) * m_iScaledLineSpace - m_iMaxLines * m_iFontTall;
 
-	m_iCurPanelY = 0;
-	m_iCurPanelYEnd = GetTall();
+	m_flCurPanelY = 0;
+	m_flCurPanelYEnd = GetTall();
 	m_iPanelY = 9999;
 	m_iPanelYEnd = -9999;
 }
@@ -164,7 +164,7 @@ bool CAnimMovement::Update(void)
 			m_Started = true;
 			m_StartValue = m_Line->m_YPos;
 		}
-		float frac = min((g_pViewPort->GetSystemTime() - m_StartTime) / m_AnimTime, 1);
+		float frac = min((g_pViewPort->GetCurTime() - m_StartTime) / m_AnimTime, 1);
 		m_Line->m_YPos = (int)(frac * m_EndValue + (1 - frac) * m_StartValue);
 	}
 	return true;
@@ -184,7 +184,7 @@ bool CAnimAlphaFade::Update(void)
 			m_Started = true;
 			m_StartValue = m_Line->m_Alpha;
 		}
-		float frac = min((g_pViewPort->GetSystemTime() - m_StartTime) / m_AnimTime, 1);
+		float frac = min((g_pViewPort->GetCurTime() - m_StartTime) / m_AnimTime, 1);
 		m_Line->m_Alpha = (int)(frac * m_EndValue + (1 - frac) * m_StartValue);
 	}
 	return true;
@@ -202,12 +202,12 @@ float CSubLine::GetYPosOutRate(void)
 
 bool CSubLine::ShouldStart(void)
 {
-	return (g_pViewPort->GetSystemTime() > m_StartTime);
+	return (g_pViewPort->GetCurTime() > m_StartTime);
 }
 
 bool CSubLine::ShouldRetire(void)
 {
-	return (g_pViewPort->GetSystemTime() > m_EndTime || m_LineIndex > m_Panel->m_iMaxLines);
+	return (g_pViewPort->GetCurTime() > m_EndTime || m_LineIndex > m_Panel->m_iMaxLines);
 }
 
 bool CSubLine::Update(void)
@@ -246,13 +246,13 @@ void CSubLine::MoveTo(int ToPos, float Time)
 			i --;
 		}
 	}
-	CSubLineAnim *Anim = (CSubLineAnim *)new CAnimMovement(g_pViewPort->GetSystemTime(), Time, ToPos, this);
+	CSubLineAnim *Anim = (CSubLineAnim *)new CAnimMovement(g_pViewPort->GetCurTime(), Time, ToPos, this);
 	m_AnimList[m_AnimList.AddToTail()] = Anim;
 }
 
 void CSubLine::AlphaFade(int Alpha, float Time)
 {
-	CSubLineAnim *Anim = (CSubLineAnim *)new CAnimAlphaFade(g_pViewPort->GetSystemTime(), Time, Alpha, this);
+	CSubLineAnim *Anim = (CSubLineAnim *)new CAnimAlphaFade(g_pViewPort->GetCurTime(), Time, Alpha, this);
 	m_AnimList[m_AnimList.AddToTail()] = Anim;
 }
 
@@ -302,7 +302,7 @@ void SubtitlePanel::StartNextSubtitle(CDictionary *pDict)
 
 	if(pNextDict)
 	{
-		StartSubtitle(pNextDict, pDict->m_flDuration, g_pViewPort->GetSystemTime() + pDict->m_flNextDelay);
+		StartSubtitle(pNextDict, pDict->m_flDuration, g_pViewPort->GetCurTime() + pDict->m_flNextDelay);
 	}
 }
 
@@ -364,10 +364,10 @@ void SubtitlePanel::StartLine(CSubLine *Line)
 
 	if (Line->m_StartTime == 0)
 	{
-		Line->m_StartTime = g_pViewPort->GetSystemTime();
+		Line->m_StartTime = g_pViewPort->GetCurTime();
 	}
 
-	//Give it the lastest endtime
+	//Give it the latest endtime
 	Line->m_EndTime = max(Line->m_StartTime + Line->m_Duration, latestEndTime);
 
 	//Fade it now
@@ -642,27 +642,42 @@ void SubtitlePanel::UpdateSubtitlePanelVars(SubtitlePanelVars_t *vars)
 
 void SubtitlePanel::VidInit(void)
 {
-	if(gEngfuncs.GetMaxClients() > 1)
-		ClearSubtitle();
+
 }
 
-//#include <gl/gl.h>
+void SubtitlePanel::ConnectToServer(const char* game, int IP, int port)
+{
+	if (gEngfuncs.GetMaxClients() > 1)
+	{
+		ClearSubtitle();
+	}
+}
+
+void SubtitlePanel::AdjustClock(double flAdjustment)
+{
+	for (int i = 0; i < m_Lines.Count(); ++i)
+	{
+		auto pLine = m_Lines[i];
+
+		pLine->m_EndTime += flAdjustment;
+		pLine->m_StartTime += flAdjustment;
+	}
+	for (int i = 0; i < m_BackLines.Count(); ++i)
+	{
+		auto pLine = m_BackLines[i];
+
+		pLine->m_EndTime += flAdjustment;
+		pLine->m_StartTime += flAdjustment;
+
+	}
+}
 
 void SubtitlePanel::Paint(void)
 {
-	//if (SCR_IsLoadingVisible())
-	//	return;
-
-	//Remove any raw OpenGL call
-	//glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	gEngfuncs.pTriAPI->RenderMode(kRenderTransAlpha);
-
-	int x;
-
 	int iPanelWidth, iPanelHeight;
 	GetSize(iPanelWidth, iPanelHeight);
 
-	x = m_iScaledXSpace;
+	int x = m_iScaledXSpace;
 	m_iPanelY = 9999;
 	m_iPanelYEnd = -9999;
 	m_iPanelAlpha = 0;
@@ -690,10 +705,10 @@ void SubtitlePanel::Paint(void)
 	}
 
 	//Check if the panel is trying to fade in when it's fully hidden
-	if(m_iCurPanelY > m_iCurPanelYEnd && m_iPanelY < m_iPanelYEnd)
+	if(m_flCurPanelY > m_flCurPanelYEnd && m_iPanelY < m_iPanelYEnd)
 	{
-		m_iCurPanelY = m_iPanelY;
-		m_iCurPanelYEnd = m_iPanelYEnd;
+		m_flCurPanelY = m_iPanelY;
+		m_flCurPanelYEnd = m_iPanelYEnd;
 	}
 
 	//The panel's top won't be higher than m_iPanelTop
@@ -708,24 +723,24 @@ void SubtitlePanel::Paint(void)
 		m_iPanelYEnd = 0;
 
 	//Panel scaling animation
-	if(m_iCurPanelY != m_iPanelY)
+	if(m_flCurPanelY != m_iPanelY)
 	{
-		int sign = (m_iPanelY - m_iCurPanelY) ? 1 : -1;
-		m_iCurPanelY += sign * 200.0f * (g_pViewPort->GetFrameTime());
-		if(sign == 1 && m_iCurPanelY > m_iPanelY)
-			m_iCurPanelY = m_iPanelY;
-		else if(sign == -1 && m_iCurPanelY < m_iPanelY)
-			m_iCurPanelY = m_iPanelY;
+		int sign = (m_iPanelY - m_flCurPanelY) ? 1 : -1;
+		m_flCurPanelY += sign * 200.0f * (g_pViewPort->GetFrameTime());
+		if(sign == 1 && m_flCurPanelY > m_iPanelY)
+			m_flCurPanelY = m_iPanelY;
+		else if(sign == -1 && m_flCurPanelY < m_iPanelY)
+			m_flCurPanelY = m_iPanelY;
 	}
 
-	if(m_iCurPanelYEnd != m_iPanelYEnd)
+	if(m_flCurPanelYEnd != m_iPanelYEnd)
 	{
-		int sign = (m_iPanelYEnd - m_iCurPanelYEnd) ? 1 : -1;
-		m_iCurPanelYEnd += sign * 200.0f * (g_pViewPort->GetFrameTime());
-		if(sign == 1 && m_iCurPanelYEnd > m_iPanelYEnd)
-			m_iCurPanelYEnd = m_iPanelYEnd;
-		else if(sign == -1 && m_iCurPanelYEnd < m_iPanelYEnd)
-			m_iCurPanelYEnd = m_iPanelYEnd;
+		int sign = (m_iPanelYEnd - m_flCurPanelYEnd) ? 1 : -1;
+		m_flCurPanelYEnd += sign * 200.0f * (g_pViewPort->GetFrameTime());
+		if(sign == 1 && m_flCurPanelYEnd > m_iPanelYEnd)
+			m_flCurPanelYEnd = m_iPanelYEnd;
+		else if(sign == -1 && m_flCurPanelYEnd < m_iPanelYEnd)
+			m_flCurPanelYEnd = m_iPanelYEnd;
 	}
 }
 
@@ -738,9 +753,9 @@ void SubtitlePanel::PaintBackground(void)
 
 	//Use the Current value since we want the animation
 	x = 0;
-	y = m_iCurPanelY;
+	y = m_flCurPanelY;
 	w = iPanelWidth;
-	h = m_iCurPanelYEnd - m_iCurPanelY;
+	h = m_flCurPanelYEnd - m_flCurPanelY;
 
 	if(h <= 0)
 		return;
@@ -750,9 +765,11 @@ void SubtitlePanel::PaintBackground(void)
 
 	//Remove any raw OpenGL call
 	//glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+	//Force GL_MODULATE to be applied
 	gEngfuncs.pTriAPI->RenderMode(kRenderTransAlpha);
 
-	//Cornor is maximum at 1/4 wide or tall
+	//Corner is maximum at 1/4 wide or tall
 	r = min(min(m_iScaledCornorSize, h / 4), w / 4);
 
 	//Do the AlphaMultiplier
@@ -782,4 +799,6 @@ void SubtitlePanel::PaintBackground(void)
 
 	surface()->DrawSetTexture(m_iRoundCornorMaterial[3]);
 	surface()->DrawTexturedRect(x, y+h-r, x+r, y+h);
+
+	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
 }

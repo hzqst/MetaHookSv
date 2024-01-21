@@ -121,6 +121,8 @@ extern void *gHud;
 
 extern double *cl_time;
 extern double *cl_oldtime;
+extern double* realtime;
+
 extern int *cl_viewentity;
 
 extern vec3_t *listener_origin;

@@ -2532,15 +2532,14 @@ void R_UnloadNoreferenceModels()
 
 void R_NewMap(void)
 {
-	R_GenerateSceneUBO();
-
-	gPrivateFuncs.R_NewMap();
-
 	r_worldentity = gEngfuncs.GetEntityByIndex(0);
 	r_worldmodel = r_worldentity->model;
 	r_playermodel = NULL;
-
 	memset(&r_params, 0, sizeof(r_params));
+
+	R_GenerateSceneUBO();
+
+	gPrivateFuncs.R_NewMap();
 
 	R_NewMapWater();
 	R_NewMapPortal();

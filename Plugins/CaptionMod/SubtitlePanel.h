@@ -33,11 +33,11 @@ public:
 	}
 	virtual bool IsPlaying(void)
 	{
-		return (g_pViewPort->GetSystemTime() >= m_StartTime && g_pViewPort->GetSystemTime() < m_StartTime + m_AnimTime);
+		return (g_pViewPort->GetCurTime() >= m_StartTime && g_pViewPort->GetCurTime() < m_StartTime + m_AnimTime);
 	}
 	virtual bool IsDonePlay(void)
 	{
-		return (g_pViewPort->GetSystemTime() >= m_StartTime + m_AnimTime);
+		return (g_pViewPort->GetCurTime() >= m_StartTime + m_AnimTime);
 	}
 	virtual LineAnim_t GetType(void) = 0;
 	virtual bool Update(void) = 0;
@@ -131,7 +131,8 @@ public:
 	SubtitlePanel(Panel *parent);
 	virtual ~SubtitlePanel();
 	void VidInit(void);
-
+	void ConnectToServer(const char* game, int IP, int port);
+	void AdjustClock(double flAdjustment);
 public://Subtitle interface
 	void StartSubtitle(CDictionary * pDict, float flDurationTime, float flStartTime);
 	void StartNextSubtitle(CDictionary *pDict);
@@ -180,8 +181,9 @@ private:
 	int							m_iPanelYEnd;
 	int							m_iPanelAlpha;
 	//For panel scaling animation
-	int							m_iCurPanelY;
-	int							m_iCurPanelYEnd;
+	float						m_flCurPanelY;
+	float						m_flCurPanelYEnd;
+	//Textures
 	int							m_iRoundCornorMaterial[4];
 	//The lines that displaying now
 	CUtlVector<CSubLine *>		m_Lines;

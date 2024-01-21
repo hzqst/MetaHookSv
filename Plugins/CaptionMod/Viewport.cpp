@@ -41,11 +41,10 @@ CViewport::CViewport(void) : Panel(NULL, "CaptionViewport")
 	SetKeyBoardInputEnabled(false);
 	SetProportional(true);
 	m_pSubtitlePanel = NULL;
+	m_pChatDialog = NULL;
 	m_szLevelName[0] = 0;
 
-	m_SystemTime = 0;
-	m_OldSystemTime = 0;
-	m_FrameTime = 0;
+	m_CurTime = 0;
 }
 
 CViewport::~CViewport(void)
@@ -842,19 +841,6 @@ void CDictionary::FinalizeString(std::wstring &output, int iPrefix)
 		searchStart = result.suffix().first;
 	}
 
-	/*if (bReplaced && m_pTextMessage)
-	{
-		if (m_pTextMessage->pMessage)
-			delete m_pTextMessage->pMessage;
-
-		//Covert the text to UTF8
-		int utf8Length = WideCharToMultiByte(CP_UTF8, 0, &output[0], -1, NULL, 0, NULL, NULL);
-		char* utf8Text = new char[utf8Length + 1];
-		WideCharToMultiByte(CP_UTF8, 0, &output[0], -1, utf8Text, utf8Length, NULL, NULL);
-		utf8Text[utf8Length] = '\0';
-		m_pTextMessage->pMessage = utf8Text;
-	}*/
-
 	if(iPrefix)
 		output = m_szSpeaker + finalize;
 	else
@@ -881,32 +867,15 @@ void CViewport::SetParent(VPANEL vPanel)
 
 void CViewport::Think(void)
 {
-	auto levelname = gEngfuncs.pfnGetLevelName();
-	if (!levelname || !levelname[0])
-		return;
-
-	if (0 != strcmp(levelname, m_szLevelName))
+	if ((*cl_time) > 1)
 	{
-		std::string name = levelname;
-		name = name.substr(0, name.length() - 4);
-		name += "_dictionary.csv";
-
-		LoadCustomDictionary(name.c_str());
-
-		if (0 != strcmp(m_szCurrentLanguage, "english"))
+		if ((*cl_time) < m_CurTime)
 		{
-			name = levelname;
-			name = name.substr(0, name.length() - 4);
-			name += "_dictionary_";
-			name += m_szCurrentLanguage;
-			name += ".csv";
-
-			LoadCustomDictionary(name.c_str());
+			if (m_pSubtitlePanel)
+				m_pSubtitlePanel->AdjustClock((*cl_time) - m_CurTime);
 		}
 
-		LinkDictionary();
-
-		strcpy(m_szLevelName, levelname);
+		m_CurTime = (*cl_time);
 	}
 }
 
@@ -931,7 +900,7 @@ void CViewport::Init(void)
 void CViewport::StartSubtitle(CDictionary *dict, float flDurationTime)
 {
 	if (cap_enabled && cap_enabled->value) {
-		m_pSubtitlePanel->StartSubtitle(dict, flDurationTime, g_pViewPort->GetSystemTime());
+		m_pSubtitlePanel->StartSubtitle(dict, flDurationTime, g_pViewPort->GetCurTime());
 	}
 }
 
@@ -940,6 +909,43 @@ void CViewport::StartNextSubtitle(CDictionary* dict)
 	if (cap_enabled && cap_enabled->value) {
 		m_pSubtitlePanel->StartNextSubtitle(dict);
 	}
+}
+
+void CViewport::ConnectToServer(const char* game, int IP, int port)
+{
+	auto szLevelName = gEngfuncs.pfnGetLevelName();
+
+	if (!szLevelName || !szLevelName[0])
+		return;
+
+	if (0 != strcmp(szLevelName, m_szLevelName))
+	{
+		std::string name = szLevelName;
+		RemoveFileExtension(name);
+		name += "_dictionary.csv";
+
+		LoadCustomDictionary(name.c_str());
+
+		if (0 != strcmp(m_szCurrentLanguage, "english"))
+		{
+			name = szLevelName;
+			RemoveFileExtension(name);
+			name += "_dictionary_";
+			name += m_szCurrentLanguage;
+			name += ".csv";
+
+			LoadCustomDictionary(name.c_str());
+		}
+
+		LinkDictionary();
+
+		strncpy(m_szLevelName, szLevelName, sizeof(m_szLevelName) - 1);
+		m_szLevelName[sizeof(m_szLevelName) - 1] = 0;
+	}
+
+	if(m_pSubtitlePanel)
+		m_pSubtitlePanel->ConnectToServer(game, IP, port);
+
 }
 
 void CViewport::ActivateClientUI(void)
@@ -952,23 +958,19 @@ void CViewport::HideClientUI(void)
 	SetVisible(false);
 }
 
-double CViewport::GetSystemTime(void) const
+double CViewport::GetCurTime(void) const
 {
-	return m_SystemTime;
+	return (*cl_time);
 }
 
 double CViewport::GetFrameTime(void) const
 {
-	return m_FrameTime;
+	return (*cl_time) - (*cl_oldtime);
 }
 
 void CViewport::Paint(void)
 {
 	BaseClass::Paint();
-
-	m_SystemTime = system()->GetCurrentTime();
-	m_FrameTime = m_SystemTime - m_OldSystemTime;
-	m_OldSystemTime = m_SystemTime;
 
 	m_HudMessage.Draw();
 	m_HudMenu.Draw();
