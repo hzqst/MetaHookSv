@@ -55,7 +55,9 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 		FreeImage_MinorVersion != FREEIMAGE_MINOR_VERSION ||
 		FreeImage_ReleaseSerial != FREEIMAGE_RELEASE_SERIAL)
 	{
-		g_pMetaHookAPI->SysError("FreeImage.dll version mismatch, expect \"%s\", got \"%d.%d.%d\" !", FreeImage_VersionString, FreeImage_MajorVersion, FreeImage_MinorVersion, FreeImage_ReleaseSerial);
+		g_pMetaHookAPI->SysError("FreeImage.dll version mismatch, expect \"%d.%d.%d\", got \"%d.%d.%d\" !", 
+			FREEIMAGE_MAJOR_VERSION, FREEIMAGE_MINOR_VERSION, FREEIMAGE_RELEASE_SERIAL, 
+			FreeImage_MajorVersion, FreeImage_MinorVersion, FreeImage_ReleaseSerial);
 	}
 
 	g_pFileSystem = g_pInterface->FileSystem;
