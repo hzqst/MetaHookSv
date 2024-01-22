@@ -29,6 +29,7 @@ void IN_Accumulate(void);
 void CL_CreateMove(float frametime, struct usercmd_s *cmd, int active);
 
 client_textmessage_t *pfnTextMessageGet(const char *pName);
+void TextMessageParse(byte* pMemFile, int fileSize);
 
 void *NewClientFactory(void);
 

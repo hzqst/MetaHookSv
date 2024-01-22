@@ -1947,21 +1947,6 @@ void CHudMessage::MessageAdd(client_textmessage_t *newMessage, bool bIsDynamicMe
 		m_DynamicTextMessages.emplace_back(newMessage);
 }
 
-client_textmessage_t *pfnTextMessageGet(const char *pName)
-{
-	if (g_pViewPort)
-	{
-		CDictionary *dict = g_pViewPort->FindDictionary(pName);
-
-		if (dict)
-		{
-			return NULL;
-		}
-	}
-
-	return gPrivateFuncs.pfnTextMessageGet(pName);
-}
-
 int __MsgFunc_ShowMenu(const char* pszName, int iSize, void* pbuf)
 {
 	if (m_HudMenu.MsgFunc_ShowMenu(pszName, iSize, pbuf) != 0)

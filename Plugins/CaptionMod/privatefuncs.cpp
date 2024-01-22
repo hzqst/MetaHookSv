@@ -69,9 +69,10 @@ static hook_t *g_phook_S_FindName = NULL;
 static hook_t *g_phook_S_StartDynamicSound = NULL;
 static hook_t *g_phook_S_StartStaticSound = NULL;
 static hook_t *g_phook_pfnTextMessageGet = NULL;
+static hook_t *g_phook_TextMessageParse = NULL;
 static hook_t *g_phook_WeaponsResource_SelectSlot = NULL;
-static hook_t* g_phook_ScClient_SoundEngine_PlayFMODSound = NULL;
-static hook_t* g_phook_FMOD_System_playSound = NULL;
+static hook_t *g_phook_ScClient_SoundEngine_PlayFMODSound = NULL;
+static hook_t *g_phook_FMOD_System_playSound = NULL;
 //static hook_t *g_phook_FileSystem_SetGameDirectory = NULL;
 
 static HMODULE g_hFMODEx = NULL;
@@ -486,6 +487,49 @@ void Engine_FillAddress(void)
 		}
 	}
 	Sig_FuncNotFound(S_LoadSound);
+
+	if (1)
+	{
+		/*
+.text:10226B8A 68 44 7F 2C 10                                      push    offset aTmessageTextme ; "tmessage::TextMessageParse : messageCou"...
+.text:10226B8F E8 9C 8C FF FF                                      call    Sys_Error
+.text:10226B94                                     ; ---------------------------------------------------------------------------
+.text:10226B94 83 C4 04                                            add     esp, 4
+		*/
+		const char sigs[] = "tmessage::TextMessageParse";
+		auto TextMessageParse_String = Search_Pattern_Data(sigs);
+		if (!TextMessageParse_String)
+			TextMessageParse_String = Search_Pattern_Rdata(sigs);
+		if (TextMessageParse_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
+			*(DWORD*)(pattern + 1) = (DWORD)TextMessageParse_String;
+			auto TextMessageParse_PushString = (PUCHAR)Search_Pattern(pattern);
+			if (TextMessageParse_PushString)
+			{
+				gPrivateFuncs.TextMessageParse = (decltype(gPrivateFuncs.TextMessageParse))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(TextMessageParse_PushString, 0x500, [](PUCHAR Candidate) {
+
+					if (Candidate[0] == 0x55 &&
+						Candidate[1] == 0x8B &&
+						Candidate[2] == 0xEC)
+					{
+						return TRUE;
+					}
+
+					//.text:01DC1250 B8 F8 F1 00 00                                      mov     eax, 0F1F8h
+					//.text : 01DC1255 E8 F6 25 0A 00                                      call    __alloca_probe
+					if (Candidate[0] == 0xB8 &&
+						Candidate[5] == 0xE8)
+					{
+						return TRUE;
+					}
+
+					return FALSE;
+				});
+			}
+		}
+	}
+	Sig_FuncNotFound(TextMessageParse);
 
 	if (1)
 	{
@@ -1664,6 +1708,7 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(S_StartDynamicSound);
 	Install_InlineHook(S_StartStaticSound);
 	Install_InlineHook(pfnTextMessageGet);
+	Install_InlineHook(TextMessageParse);
 }
 
 void Engine_UninstallHooks(void)
@@ -1671,6 +1716,7 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(S_StartDynamicSound);
 	Uninstall_Hook(S_StartStaticSound);
 	Uninstall_Hook(pfnTextMessageGet);
+	Uninstall_Hook(TextMessageParse);
 }
 
 void Client_InstallHooks(void)

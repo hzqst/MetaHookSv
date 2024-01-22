@@ -1120,6 +1120,48 @@ char * NewV_strncpy(char *a1, const char *a2, size_t a3)
 	return gPrivateFuncs.V_strncpy(a1, a2, a3);
 }
 
+void TextMessageParse(byte* pMemFile, int fileSize)
+{
+	if (fileSize > 2 && pMemFile[0] == 0xFF && pMemFile[1] == 0xFE)
+	{
+		if (IsTextUnicode(pMemFile + 2, fileSize - 2, NULL))
+		{
+			auto wszBuf = (const wchar_t*)(pMemFile + 2);
+			char* szBuf = (char*)malloc(fileSize);
+			if (szBuf)
+			{
+				memset(szBuf, 0, fileSize);
+
+				int szBufLen = vgui::localize()->ConvertUnicodeToANSI(wszBuf, szBuf, fileSize);
+
+				szBuf[szBufLen] = 0;
+
+				gPrivateFuncs.TextMessageParse((byte *)szBuf, szBufLen);
+
+				free(szBuf);
+				return;
+			}
+		}
+	}
+
+	return gPrivateFuncs.TextMessageParse(pMemFile, fileSize);
+}
+
+client_textmessage_t* pfnTextMessageGet(const char* pName)
+{
+	if (g_pViewPort)
+	{
+		CDictionary* dict = g_pViewPort->FindDictionary(pName);
+
+		if (dict)
+		{
+			return NULL;
+		}
+	}
+
+	return gPrivateFuncs.pfnTextMessageGet(pName);
+}
+
 void MessageMode_f(void)
 {
 	if (!m_iIntermission && gEngfuncs.Cmd_Argc() == 1 && cap_newchat->value)

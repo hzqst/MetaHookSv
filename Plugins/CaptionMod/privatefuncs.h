@@ -75,8 +75,9 @@ typedef struct
 	//VGUI2
 	char* (*V_strncpy)(char* a1, const char* a2, size_t a3);
 
-	//EngineFuncs
+	//Engine TextMessage
 	client_textmessage_t *(*pfnTextMessageGet)(const char *pName);
+	void (*TextMessageParse)(byte* pMemFile, int fileSize);
 
 	//Commands
 	void(*MessageMode_f)(void);
