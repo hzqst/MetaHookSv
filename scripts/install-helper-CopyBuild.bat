@@ -61,6 +61,7 @@ if "%LauncherMod%"=="svencoop" (
 		xcopy "%SolutionDir%Build\gearbox" "%GameDir%\%LauncherMod%\" /y /e
 	)
 
+    if not exist "%GameDir%\%LauncherMod%\metahook\configs\dllpaths.lst" copy "%GameDir%\%LauncherMod%\metahook\configs\dllpaths.lst" "%GameDir%\%LauncherMod%\metahook\configs\dllpaths.lst" /y
     if not exist "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst" copy "%GameDir%\%LauncherMod%\metahook\configs\plugins_goldsrc.lst" "%GameDir%\%LauncherMod%\metahook\configs\plugins.lst" /y
 )
 
