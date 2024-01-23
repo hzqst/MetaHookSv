@@ -283,7 +283,7 @@ typedef int							(*pfnEngSrc_PM_WaterEntity_t )			( float *p );
 typedef struct pmtrace_s *			(*pfnEngSrc_PM_TraceLine_t )			( float *start, float *end, int flags, int usehull, int ignore_pe );
 typedef struct model_s *			(*pfnEngSrc_CL_LoadModel_t )			( const char *modelname, int *index );
 typedef int							(*pfnEngSrc_CL_CreateVisibleEntity_t )	( int type, struct cl_entity_s *ent );
-typedef const struct model_s *		(*pfnEngSrc_GetSpritePointer_t )		( int, int );
+typedef const struct model_s *		(*pfnEngSrc_GetSpritePointer_t )		( int hSprite );
 typedef void						(*pfnEngSrc_pfnPlaySoundByNameAtLocation_t )	( const char *szSound, float volume, float *origin );
 typedef unsigned short				(*pfnEngSrc_pfnPrecacheEvent_t )		( int type, const char* psz );
 typedef void						(*pfnEngSrc_pfnPlaybackEvent_t )		( int flags, const struct edict_s *pInvoker, unsigned short eventindex, float delay, float *origin, float *angles, float fparam1, float fparam2, int iparam1, int iparam2, int bparam1, int bparam2 );
