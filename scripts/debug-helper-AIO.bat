@@ -10,16 +10,33 @@ if not defined SolutionDir (
 if not "%SolutionDir:~-1%"=="\" SET "SolutionDir=%SolutionDir%\"
 
 if not "%GameDir%"=="" (
-    if exist "%GameDir%\" goto start_copy
 
-    echo Error: The GameDir "%GameDir%" is not existing !!!
-    pause
-    exit
+    if not exist "%GameDir%\" (
+        echo Error: The GameDir "%GameDir%" is not existing !!!
+        pause
+        exit
+    )
+
+    if not exist "%GameDir%\%LauncherMod%" (
+        echo Error: The ModDir "%GameDir%\%LauncherMod%" is not existing !!!
+        pause
+        exit
+    )
+
+    if not exist "%GameDir%\%LauncherMod%\liblist.gam" (
+        echo Error: The ModDir "%GameDir%\%LauncherMod%" is not a valid Mod !!!
+        pause
+        exit
+    )
+
+    goto start_copy
 )
+
+echo %GameAppId% > "%SolutionDir%tools\steam_appid.txt"
 
 for /f "delims=" %%a in ('"%SolutionDir%\tools\SteamAppsLocation" %GameAppId% InstallDir') do set OutputString=%%a
 
-if %ERRORLEVEL% equ 0 (
+if not "%OutputString%"=="" (
     set "GameDir=%OutputString%"
     goto start_copy
 )
