@@ -273,7 +273,7 @@ public:
 public:
 	vgui1_Color()
 	{
-		vftable = g_vftable_Color;
+		vftable = NULL;
 		color[0] = 0;
 		color[1] = 0;
 		color[2] = 0;
@@ -336,6 +336,13 @@ public:
 	void **vftable;
 	char padding[0x20];
 	char* text;
+
+public:
+	vgui1_TextImage()
+	{
+		vftable = NULL;
+		text = NULL;
+	}
 };
 
 hook_t *g_phook_vgui_TextImage_paint = NULL;
@@ -363,7 +370,7 @@ void __fastcall vgui_TextImage_paint(vgui1_TextImage *pthis, int, void *panel)
 		if (isNonANSI)
 		{
 			vgui1_Color color;
-			memset(&color, 0, sizeof(color));
+			color.vftable = g_vftable_Color;
 			pthis2->getColor(&color);
 
 			int r, g, b, a;
