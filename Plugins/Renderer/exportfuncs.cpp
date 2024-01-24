@@ -574,7 +574,10 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwEngineDataBase + g_dwEngineDataSize &&
 				pinst->detail->x86.operands[1].type == X86_OP_REG)
 			{
-				r_bottomcolor = (decltype(r_bottomcolor))pinst->detail->x86.operands[0].mem.disp;
+				if ((void*)r_topcolor != (void *)pinst->detail->x86.operands[0].mem.disp)
+				{
+					r_bottomcolor = (decltype(r_bottomcolor))pinst->detail->x86.operands[0].mem.disp;
+				}
 			}
 
 			if (r_topcolor && r_bottomcolor)
