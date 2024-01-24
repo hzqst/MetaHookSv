@@ -1712,11 +1712,7 @@ void GL_Init(void)
 	//No vanilla detail texture support
 	(*detTexSupported) = false;
 
-#ifdef _DEBUG
-	if (1)
-#else
 	if (gEngfuncs.CheckParm("-gl_debugoutput", NULL))
-#endif
 	{
 		glDebugMessageCallback(GL_DebugOutputCallback, 0);
 		glEnable(GL_DEBUG_OUTPUT);

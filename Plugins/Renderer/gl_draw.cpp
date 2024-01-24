@@ -203,7 +203,7 @@ void GL_GenerateHashedTextureIndentifier3(const char* identifier, GL_TEXTURETYPE
 {
 #define FORMAT_TEXTURE_IDENTIFIER(Ty, Name) if (textureType == Ty)\
 	{\
-		snprintf(hashedIdentifier, len, "#" Name "_%08X_%04X_%04X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height, numframes, frameduration);\
+		snprintf(hashedIdentifier, len, "@" Name "_%08X_%04X_%04X_%04X_%04X", MurmurHash2(identifier, strlen(identifier), textureType), width, height, numframes, frameduration);\
 		return;\
 	}
 

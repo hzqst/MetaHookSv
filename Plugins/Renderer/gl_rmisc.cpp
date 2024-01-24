@@ -398,7 +398,7 @@ void GL_FreeTextureEntry(gltexture_t *glt, bool notify_callback)
 		return;
 	}
 
-	gEngfuncs.Con_DPrintf("GL_FreeTextureEntry: [%d] [%s].\n", glt->texnum, glt->identifier);
+	gEngfuncs.Con_DPrintf("GL_FreeTextureEntry: [%d] [%s] [%d].\n", glt->texnum, glt->identifier, notify_callback ? 1 : 0);
 
 	if (notify_callback)
 	{
