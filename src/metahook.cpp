@@ -113,7 +113,7 @@ void *g_ppEngfuncs = NULL;
 bool g_bSaveVideo = false;
 bool g_bTransactionHook = false;
 int g_iEngineType = ENGINE_UNKNOWN;
-WCHAR g_wszEnvPath[4096] = { 0 };
+char g_szEnvPath[4096] = { 0 };
 char g_szGameDirectory[32] = { 0 };
 
 PVOID MH_GetNextCallAddr(void *pAddress, DWORD dwCount);
@@ -669,26 +669,25 @@ void ANSIToUnicode(const std::string& str, std::wstring& out)
 
 void MH_LoadDllPaths(const char* szGameName, const char* szGameFullPath)
 {
-#if 0
-	auto pfnSetDefaultDllDirectories = (decltype(SetDefaultDllDirectories)*)GetProcAddress(GetModuleHandleA("kernel32.dll"), "SetDefaultDllDirectories");
+	GetEnvironmentVariableA("PATH", g_szEnvPath, _ARRAYSIZE(g_szEnvPath));
 
-	if (!pfnSetDefaultDllDirectories)
-		return;
+	std::string GameFullPath = szGameFullPath;
+	std::string GameName = szGameName;
 
-	auto pfnAddDllDirectory = (decltype(AddDllDirectory) *)GetProcAddress(GetModuleHandleA("kernel32.dll"), "AddDllDirectory");
+	if (GameFullPath.size() >= 1 && GameFullPath[GameFullPath.size() - 1] != '\\' && GameFullPath[GameFullPath.size() - 1] != '/')
+	{
+		GameFullPath += "\\";
+	}
 
-	if (!pfnAddDllDirectory)
-		return;
+	std::stringstream NewEnvPath;
 
-#else
+	NewEnvPath << g_szEnvPath;
+	NewEnvPath << ";";
+	NewEnvPath << GameFullPath;
+	NewEnvPath << GameName;
+	NewEnvPath << "\\metahook\\dlls";
 
-	GetEnvironmentVariableW(L"PATH", g_wszEnvPath, _ARRAYSIZE(g_wszEnvPath));
-
-	std::wstring NewEnvPath = g_wszEnvPath;
-
-#endif
-
-	std::string aConfigFile = szGameName;
+	std::string aConfigFile = GameName;
 	aConfigFile += "\\metahook\\configs\\dllpaths.lst";
 
 	std::ifstream infile;
@@ -713,66 +712,32 @@ void MH_LoadDllPaths(const char* szGameName, const char* szGameFullPath)
 			if (stringLine[0] == '/' && stringLine[1] == '/')
 				continue;
 
-			std::string aDllPath;
-			
 			if (stringLine.length() > 2 &&
 				std::isalpha(stringLine[0]) &&
 				stringLine[1] == ':' &&
 				(stringLine[2] == '/' || stringLine[2] == '\\'))
 			{
-				aDllPath = stringLine;
+				NewEnvPath << ";" << stringLine;
 			}
 			else
 			{
-				aDllPath = szGameFullPath;
-
-				if (aDllPath.size() >= 1 && aDllPath[aDllPath.size() - 1] != '\\' && aDllPath[aDllPath.size() - 1] != '/')
-				{
-					aDllPath += "\\";
-				}
-
-				aDllPath += szGameName;
-				aDllPath += "\\metahook\\dlls\\";
-				aDllPath += stringLine;
+				NewEnvPath << ";" << GameFullPath << GameName << "\\metahook\\dlls\\" << stringLine;
 			}
 
-			std::wstring wDllPath;
-			ANSIToUnicode(aDllPath, wDllPath);
-
-#if 0
-			auto cookie = pfnAddDllDirectory(wDllPath.c_str());
-
-			if (cookie)
-			{
-				g_DllPathCookies.emplace_back(cookie);
-			}
-#else
-
-			NewEnvPath += L";";
-			NewEnvPath += wDllPath;
-#endif
+			
 		}
 	}
 	infile.close();
-	
-#if 1
-	SetEnvironmentVariableW(L"PATH", NewEnvPath.c_str());
-#endif
+
+	auto szNewEnvPath = NewEnvPath.str();
+
+	SetEnvironmentVariableA("PATH", szNewEnvPath.c_str());
 
 }
 
 void MH_RemoveDllPaths(void)
 {
-#if 0
-	for (auto cookie : g_DllPathCookies)
-	{
-		RemoveDllDirectory(cookie);
-	}
-	g_DllPathCookies.clear();
-#else
-
-	SetEnvironmentVariableW(L"PATH", g_wszEnvPath);
-#endif
+	SetEnvironmentVariableA("PATH", g_szEnvPath);
 }
 
 void MH_LoadPlugins(const char * szGameName, const char* szGameFullPath)
