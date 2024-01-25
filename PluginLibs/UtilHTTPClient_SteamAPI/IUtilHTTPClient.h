@@ -2,15 +2,8 @@
 
 #include <interface.h>
 #include <stdint.h>
-#include <string>
 #include <functional>
 #include <system_error>
-
-typedef uint64_t UtilHTTPRequestHandle_t;
-
-#define UTILHTTP_INVALID_REQUESTHANDLE (UtilHTTPRequestHandle_t)(0)
-#define UTILHTTP_START_REQUESTHANDLE (UtilHTTPRequestHandle_t)(1)
-#define UTILHTTP_MAX_REQUESTHANDLE (UtilHTTPRequestHandle_t)(0xffffffffffffffffull)
 
 enum class UtilHTTPMethod
 {
@@ -55,40 +48,56 @@ public:
 
     virtual void SetTimeout(int secs) = 0;
 
-    virtual void SetBody(const std::string& payload) = 0;
+    virtual void SetBody(const char * payload, size_t payloadSize) = 0;
 
-    virtual void SetField(const std::string& field, const std::string& value) = 0;
+    virtual void SetField(const char * field, const char * value) = 0;
 
-    virtual void SetField(UtilHTTPField field, const std::string& value) = 0;
+    virtual void SetField(UtilHTTPField field, const char * value) = 0;
 
     virtual bool IsRequestSuccessful() const = 0;
+};
+
+class IUtilHTTPPayload : public IBaseInterface
+{
+public:
+    virtual const char* GetBytes() const = 0;
+
+    virtual size_t GetLength() const = 0;
 };
 
 class IUtilHTTPResponse : public IBaseInterface
 {
 public:
     virtual int GetStatusCode() const = 0;
-
-    virtual bool GetBody(std::string& body) const = 0;
-
+    virtual IUtilHTTPPayload *GetPayload() const = 0;
     virtual bool IsResponseCompleted() const = 0;
+    virtual bool IsResponseError() const = 0;
 };
 
-using fnHTTPRequestCallback = std::function<void(IUtilHTTPRequest* RequestInstance)>;
-
-using fnHTTPResponseCallback = std::function<void(IUtilHTTPResponse* ResponseInstance)>;
-
-using fnHTTPErrorCallback = std::function<void(const std::error_code& ec)>;
-
-class CURLParsedResult
+class IUtilHTTPCallbacks : public IBaseInterface
 {
 public:
-    std::string scheme;
-    std::string host;
-    std::string port_str;
-    std::string target;
-    unsigned short port_us;
-    bool secure;
+    virtual void Destroy() = 0;
+    virtual void OnRequest(IUtilHTTPRequest *RequestInstance) = 0;
+    virtual void OnResponse(IUtilHTTPResponse *ResponseInstance) = 0;
+};
+
+class IURLParsedResult : public IBaseInterface
+{
+public:
+    virtual void Destroy() = 0;
+    virtual const char *GetScheme() const = 0;
+    virtual const char* GetHost() const = 0;
+    virtual const char* GetTarget() const = 0;
+    virtual const char* GetPortString() const = 0;
+    virtual unsigned short GetPort() const = 0;
+    virtual bool IsSecure() const = 0;
+
+    virtual void SetScheme(const char* s) = 0;
+    virtual void SetHost(const char* s) = 0;
+    virtual void SetTarget(const char *s) = 0;
+    virtual void SetUsPort(unsigned short p) = 0;
+    virtual void SetSecure(bool b) = 0;
 };
 
 class IUtilHTTPClient : public IBaseInterface
@@ -100,15 +109,17 @@ public:
 
     virtual void RunFrame() = 0;
 
-    virtual bool ParseUrl(const std::string& url, CURLParsedResult& result) = 0;
+    virtual bool ParseUrlEx(const char* url, IURLParsedResult* result) = 0;
 
-    virtual bool Get(const std::string& url, const fnHTTPRequestCallback& request_callback, const fnHTTPResponseCallback& response_callback, const fnHTTPErrorCallback& error_callback) = 0;
+    virtual IURLParsedResult *ParseUrl(const char * url) = 0;
 
-    virtual bool Post(const std::string& url, const std::string& payload, const fnHTTPRequestCallback& request_callback, const fnHTTPResponseCallback& response_callback, const fnHTTPErrorCallback& error_callback) = 0;
+    virtual bool Get(const char * url, IUtilHTTPCallbacks *callbacks) = 0;
 
-    virtual UtilHTTPRequestHandle_t AsyncGet(const std::string& url, const fnHTTPRequestCallback& request_callback, const fnHTTPResponseCallback& response_callback, const fnHTTPErrorCallback& error_callback) = 0;
+    virtual bool Post(const char * url, IUtilHTTPCallbacks *callbacks) = 0;
 
-    virtual UtilHTTPRequestHandle_t AsyncPost(const std::string& url, const std::string& payload, const fnHTTPRequestCallback& request_callback, const fnHTTPResponseCallback& response_callback, const fnHTTPErrorCallback& error_callback) = 0;
+    virtual void AsyncGet(const char * url, IUtilHTTPCallbacks *callbacks) = 0;
+
+    virtual void AsyncPost(const char * url, IUtilHTTPCallbacks *callbacks) = 0;
 
 };
 

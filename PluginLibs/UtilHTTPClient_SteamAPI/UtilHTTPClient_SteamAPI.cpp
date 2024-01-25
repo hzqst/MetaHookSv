@@ -43,19 +43,123 @@ EHTTPMethod UTIL_ConvertUtilHTTPMethodToSteamHTTPMethod(const UtilHTTPMethod met
 
 class CUtilHTTPRequest;
 
-using fnSteamHTTPCompleteCallback = std::function<void(CUtilHTTPRequest* pRequestInstance, HTTPRequestCompleted_t* pResult, bool bHasError) >;
+class CURLParsedResult : public IURLParsedResult
+{
+public:
+	void Destroy() override
+	{
+		delete this;
+	}
+
+	const char* GetScheme() const override
+	{
+		return scheme.c_str();
+	}
+
+	const char* GetHost() const  override
+	{
+		return host.c_str();
+	}
+
+	const char* GetTarget() const  override
+	{
+		return target.c_str();
+	}
+
+	const char* GetPortString() const  override
+	{
+		return port_str.c_str();
+	}
+
+	unsigned short GetPort() const override
+	{
+		return port_us;
+	}
+
+	bool IsSecure() const override
+	{
+		return secure;
+	}
+
+	void SetScheme(const char* s) override
+	{
+		scheme = s;
+	}
+
+	void SetHost(const char* s) override
+	{
+		host = s;
+	}
+
+	void SetTarget(const char* s) override
+	{
+		target = s;
+	}
+
+	void SetUsPort(unsigned short p) override
+	{
+		port_us = p;
+		port_str = std::format("{0}", p);
+	}
+
+	void SetSecure(bool b) override
+	{
+		secure = b;
+	}
+
+private:
+	std::string scheme;
+	std::string host;
+	std::string port_str;
+	std::string target;
+	unsigned short port_us{};
+	bool secure{};
+};
+
+class CUtilHTTPPayload : public IUtilHTTPPayload
+{
+private:
+	std::string m_payload;
+
+public:
+	bool ReadFromSteamHTTPRequestHandle(HTTPRequestHandle handle)
+	{
+		uint32_t responseSize = 0;
+		if (SteamHTTP()->GetHTTPResponseBodySize(handle, &responseSize))
+		{
+			m_payload.resize(responseSize);
+			if (SteamHTTP()->GetHTTPResponseBodyData(handle, (uint8*)m_payload.data(), responseSize))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	const char* GetBytes() const
+	{
+		return m_payload.data();
+	}
+
+	size_t GetLength() const
+	{
+		return m_payload.size();
+	}
+};
 
 class CUtilHTTPRequest : public IUtilHTTPRequest, public IUtilHTTPResponse
 {
 private:
 	HTTPRequestHandle m_RequestHandle{};
 	CCallResult<CUtilHTTPRequest, HTTPRequestCompleted_t> m_CallResult{};
-	fnSteamHTTPCompleteCallback m_SteamHTTPCompleteCallback{};
 	HANDLE m_hResponseEvent{};
 	bool m_bRequestSuccessful{};
 	bool m_bResponseCompleted{};
 	bool m_bResponseError{};
 	int m_iResponseStatusCode{};
+	CUtilHTTPPayload* m_pResponsePayload{};
+	IUtilHTTPCallbacks* m_Callbacks{};
 
 public:
 	CUtilHTTPRequest(
@@ -63,7 +167,8 @@ public:
 		const std::string& host,
 		unsigned short port,
 		bool secure,
-		const std::string& target)
+		const std::string& target,
+		IUtilHTTPCallbacks *callbacks) : m_Callbacks(callbacks), m_pResponsePayload(new CUtilHTTPPayload)
 	{
 		std::string field_host = host;
 
@@ -80,7 +185,7 @@ public:
 
 		m_RequestHandle = SteamHTTP()->CreateHTTPRequest(UTIL_ConvertUtilHTTPMethodToSteamHTTPMethod(method), url.c_str());
 
-		SetField(UtilHTTPField::host, field_host);
+		SetField(UtilHTTPField::host, field_host.c_str());
 		SetField(UtilHTTPField::user_agent, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36");
 
 		m_hResponseEvent = CreateEventA(NULL, FALSE, FALSE, NULL);
@@ -88,6 +193,11 @@ public:
 
 	~CUtilHTTPRequest()
 	{
+		if (m_CallResult.IsActive())
+		{
+			m_CallResult.Cancel();
+		}
+
 		if (m_RequestHandle != INVALID_HTTPREQUEST_HANDLE)
 		{
 			SteamHTTP()->ReleaseHTTPRequest(m_RequestHandle);
@@ -99,6 +209,19 @@ public:
 			CloseHandle(m_hResponseEvent);
 			m_hResponseEvent = NULL;
 		}
+
+		if (m_pResponsePayload)
+		{
+			delete m_pResponsePayload;
+			m_pResponsePayload = nullptr;
+		}
+
+		if (m_Callbacks)
+		{
+			m_Callbacks->Destroy();
+			m_Callbacks = nullptr;
+		}
+
 	}
 
 	void OnSteamHTTPCompleted(HTTPRequestCompleted_t* pResult, bool bHasError)
@@ -108,9 +231,14 @@ public:
 		m_bResponseError = bHasError;
 		m_iResponseStatusCode = (int)pResult->m_eStatusCode;
 		
-		if (m_SteamHTTPCompleteCallback)
+		if (m_bRequestSuccessful && !m_bResponseError && m_pResponsePayload)
 		{
-			m_SteamHTTPCompleteCallback(this, pResult, bHasError);
+			m_pResponsePayload->ReadFromSteamHTTPRequestHandle(m_RequestHandle);
+		}
+
+		if (m_Callbacks)
+		{
+			m_Callbacks->OnResponse(this);
 		}
 
 		if (m_hResponseEvent)
@@ -121,6 +249,11 @@ public:
 
 	void SendAsyncRequest()
 	{
+		if (m_Callbacks)
+		{
+			m_Callbacks->OnRequest(this);
+		}
+
 		SteamAPICall_t apiCall;
 		bool bRet = SteamHTTP()->SendHTTPRequest(m_RequestHandle, &apiCall);
 
@@ -130,23 +263,16 @@ public:
 		}
 	}
 
-	void WaitForResponse()
+	bool SyncWaitForResponse()
 	{
 		if (m_hResponseEvent)
 		{
 			WaitForSingleObject(m_hResponseEvent, INFINITE);
 		}
+
+		return (m_bResponseCompleted && !m_bResponseError) ? true : false;
 	}
 
-	void SetSteamHTTPCompleteCallback(const fnSteamHTTPCompleteCallback &callback)
-	{
-		m_SteamHTTPCompleteCallback = callback;
-	}
-
-	bool IsResponseError() const
-	{
-		return m_bResponseError;
-	}
 public:
 
 	void ForceShutdown() override
@@ -164,88 +290,93 @@ public:
 		return m_bResponseCompleted;
 	}
 
+	bool IsResponseError() const override
+	{
+		return m_bResponseError;
+	}
+
 	void SetTimeout(int secs)  override
 	{
 		SteamHTTP()->SetHTTPRequestNetworkActivityTimeout(m_RequestHandle, secs);
 	}
 
-	void SetBody(const std::string& payload) override
+	void SetBody(const char *payload, size_t payloadSize) override
 	{
 		//You can change content-type later
-		SteamHTTP()->SetHTTPRequestRawPostBody(m_RequestHandle, "application/octet-stream", (uint8_t *)payload.data(), payload.size());
+		SteamHTTP()->SetHTTPRequestRawPostBody(m_RequestHandle, "application/octet-stream", (uint8_t *)payload, payloadSize);
 	}
 
-	void SetField(const std::string& field, const std::string& value) override
+	void SetField(const char* field, const char* value) override
 	{
-		SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, field.c_str(), value.c_str());
+		SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, field, value);
 	}
 
-	void SetField(UtilHTTPField field, const std::string& value) override
+	void SetField(UtilHTTPField field, const char* value) override
 	{
 		switch (field)
 		{
 		case UtilHTTPField::user_agent:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "User-Agent", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "User-Agent", value);
 			break;
 		case UtilHTTPField::uri:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Uri", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Uri", value);
 			break;
 		case UtilHTTPField::set_cookie:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Set-Cookie", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Set-Cookie", value);
 			break;
 		case UtilHTTPField::referer:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Referer", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Referer", value);
 			break;
 		case UtilHTTPField::path:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Path", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Path", value);
 			break;
 		case UtilHTTPField::origin:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Origin", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Origin", value);
 			break;
 		case UtilHTTPField::location:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Location", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Location", value);
 			break;
 		case UtilHTTPField::keep_alive:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Keep-Alive", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Keep-Alive", value);
 			break;
 		case UtilHTTPField::host:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Host", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Host", value);
 			break;
 		case UtilHTTPField::expires:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Expires", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Expires", value);
 			break;
 		case UtilHTTPField::expiry_date:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Expiry-Date", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Expiry-Date", value);
 			break;
 		case UtilHTTPField::encoding:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Encoding", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Encoding", value);
 			break;
 		case UtilHTTPField::cookie:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Cookie", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Cookie", value);
 			break;
 		case UtilHTTPField::content_type:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Content-Type", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Content-Type", value);
 			break;
 		case UtilHTTPField::content_length:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Content-Length", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Content-Length", value);
 			break;
 		case UtilHTTPField::content_encoding:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Content-Encoding", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Content-Encoding", value);
 			break;
 		case UtilHTTPField::cache_control:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Cache-Control", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Cache-Control", value);
 			break;
 		case UtilHTTPField::body:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Cache-Body", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Cache-Body", value);
 			break;
 		case UtilHTTPField::authorization:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Authorization", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Authorization", value);
 			break;
 		case UtilHTTPField::accept_encoding:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Accept-Encoding", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Accept-Encoding", value);
 			break;
 		case UtilHTTPField::accept_charset:
-			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Accept-Charset", value.c_str());
+			SteamHTTP()->SetHTTPRequestHeaderValue(m_RequestHandle, "Accept-Charset", value);
 			break;
 		default:
 			break;
@@ -258,19 +389,9 @@ public:
 		return m_iResponseStatusCode;
 	}
 
-	bool GetBody(std::string& body) const override
+	IUtilHTTPPayload *GetPayload() const override
 	{
-		uint32_t responseSize = 0;
-		if (SteamHTTP()->GetHTTPResponseBodySize(m_RequestHandle, &responseSize))
-		{
-			body.resize(responseSize);
-			if (SteamHTTP()->GetHTTPResponseBodyData(m_RequestHandle, (uint8 *)body.data(), body.size() ))
-			{
-				return true;
-			}
-		}
-
-		return false;
+		return m_pResponsePayload;
 	}
 };
 
@@ -278,8 +399,7 @@ class CUtilHTTPClient : public IUtilHTTPClient
 {
 private:
 	std::mutex m_RequestHandleLock;
-	UtilHTTPRequestHandle_t m_UsedRequestHandle{ UTILHTTP_START_REQUESTHANDLE };
-	std::unordered_map<UtilHTTPRequestHandle_t, CUtilHTTPRequest*> m_RequestPool;
+	std::vector<CUtilHTTPRequest*> m_RequestPool;
 
 public:
 	CUtilHTTPClient()
@@ -298,7 +418,7 @@ public:
 
 		for (auto itor = m_RequestPool.begin(); itor != m_RequestPool.end();)
 		{
-			auto RequestInstance = itor->second;
+			auto RequestInstance = (*itor);
 
 			RequestInstance->ForceShutdown();
 
@@ -315,7 +435,7 @@ public:
 
 		for (auto itor = m_RequestPool.begin(); itor != m_RequestPool.end();)
 		{
-			auto RequestInstance = itor->second;
+			auto RequestInstance = (*itor);
 
 			if (RequestInstance->IsResponseCompleted())
 			{
@@ -328,24 +448,17 @@ public:
 		}
 	}
 
-	UtilHTTPRequestHandle_t AddRequestToPool(CUtilHTTPRequest *RequestInstance)
+	void AddRequestToPool(CUtilHTTPRequest *RequestInstance)
 	{
 		std::lock_guard<std::mutex> lock(m_RequestHandleLock);
 
-		if (m_UsedRequestHandle == UTILHTTP_MAX_REQUESTHANDLE)
-			m_UsedRequestHandle = UTILHTTP_START_REQUESTHANDLE;
-
-		auto Handle = m_UsedRequestHandle;
-
-		m_UsedRequestHandle++;
-
-		m_RequestPool[Handle] = RequestInstance;
-
-		return m_UsedRequestHandle;
+		m_RequestPool.emplace_back(RequestInstance);
 	}
 
-	bool ParseUrl(const std::string& url, CURLParsedResult& result) override
+	bool ParseUrlEx(const char* url, IURLParsedResult *result) override
 	{
+		std::string surl = url;
+
 		std::regex url_regex(
 			R"((http|https)://([-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|]):?(\d+)?([-A-Z0-9+&@#/%?=~_|!:,.;]*)?)",
 			std::regex_constants::icase
@@ -353,7 +466,7 @@ public:
 
 		std::smatch url_match_result;
 
-		if (std::regex_match(url, url_match_result, url_regex)) {
+		if (std::regex_match(surl, url_match_result, url_regex)) {
 			// If we found a match
 			if (url_match_result.size() >= 4) {
 				// Extract the matched groups
@@ -376,15 +489,14 @@ public:
 					}
 				}
 
-				result.scheme = scheme;
-				result.host = host;
-				result.port_str = port_str;
-				result.target = target;
-				result.port_us = port_us;
-				result.secure = false;
+				result->SetScheme(scheme.c_str());
+				result->SetHost(host.c_str());
+				result->SetUsPort(port_us);
+				result->SetTarget(target.c_str());
+				result->SetSecure(false);
 
 				if (scheme == "https") {
-					result.secure = true;
+					result->SetSecure(true);
 				}
 
 				return true;
@@ -394,191 +506,111 @@ public:
 		return false;
 	}
 
-	bool SyncRequest(const std::string& host, unsigned short port_us, const std::string& target, const UtilHTTPMethod method,
-		const fnHTTPRequestCallback& request_callback, const fnHTTPResponseCallback& response_callback, const fnHTTPErrorCallback& error_callback)
+	IURLParsedResult *ParseUrl(const char *url) override
 	{
-		CUtilHTTPRequest RequestInstance(method, host, port_us, false, target);
+		auto result = new CURLParsedResult;
 
-		request_callback(&RequestInstance);
+		if (ParseUrlEx(url, result))
+			return result;
+
+		delete result;
+		return nullptr;
+	}
+
+	bool SyncRequest(const std::string& host, unsigned short port_us, const std::string& target, const UtilHTTPMethod method, IUtilHTTPCallbacks *callback)
+	{
+		CUtilHTTPRequest RequestInstance(method, host, port_us, false, target, callback);
 
 		RequestInstance.SendAsyncRequest();
 
-		RequestInstance.WaitForResponse();
-
-		if (!RequestInstance.IsRequestSuccessful() || RequestInstance.IsResponseError())
-		{
-			error_callback(std::error_code());
-			return false;
-		}
-
-		response_callback(&RequestInstance);
-		return true;
+		return RequestInstance.SyncWaitForResponse();
 	}
 
-	bool SyncRequestTLS(const std::string& host, unsigned short port_us, const std::string& target, const UtilHTTPMethod method,
-		const fnHTTPRequestCallback& request_callback, const fnHTTPResponseCallback& response_callback, const fnHTTPErrorCallback& error_callback)
+	bool SyncRequestTLS(const std::string& host, unsigned short port_us, const std::string& target, const UtilHTTPMethod method, IUtilHTTPCallbacks* callback)
 	{
-		CUtilHTTPRequest RequestInstance(method, host, port_us, true, target);
-
-		request_callback(&RequestInstance);
+		CUtilHTTPRequest RequestInstance(method, host, port_us, true, target, callback);
 
 		RequestInstance.SendAsyncRequest();
 
-		RequestInstance.WaitForResponse();
-
-		if (!RequestInstance.IsRequestSuccessful() || RequestInstance.IsResponseError())
-		{
-			error_callback(std::error_code());
-			return false;
-		}
-
-		response_callback(&RequestInstance);
-		return true;
+		return RequestInstance.SyncWaitForResponse();
 	}
 
-	bool Get(const std::string& url, const fnHTTPRequestCallback& request_callback, const fnHTTPResponseCallback& response_callback, const fnHTTPErrorCallback& error_callback) override 
+	bool Get(const char * url, IUtilHTTPCallbacks* callback) override
 	{
 		CURLParsedResult result;
 
-		if (!ParseUrl(url, result))
-		{
+		if (!ParseUrlEx(url, &result))
 			return false;
-		}
 
-		if (result.secure)
+		if (result.IsSecure())
 		{
-			return SyncRequestTLS(result.host, result.port_us, result.target, UtilHTTPMethod::Get, request_callback, response_callback, error_callback);
+			return SyncRequestTLS(result.GetHost(), result.GetPort(), result.GetTarget(), UtilHTTPMethod::Get, callback);
 		}
 
-		return SyncRequest(result.host, result.port_us, result.target, UtilHTTPMethod::Get, request_callback, response_callback, error_callback);
+		return SyncRequest(result.GetHost(), result.GetPort(), result.GetTarget(), UtilHTTPMethod::Get, callback);
 	}
 
-	bool Post(const std::string& url, const std::string& payload, const fnHTTPRequestCallback& request_callback, const fnHTTPResponseCallback& response_callback, const fnHTTPErrorCallback& error_callback) override 
+	bool Post(const char* url, IUtilHTTPCallbacks* callback) override
 	{
 		CURLParsedResult result;
 
-		if (!ParseUrl(url, result))
-		{
+		if (!ParseUrlEx(url, &result))
 			return false;
-		}
 
-		if (result.secure)
+		if (result.IsSecure())
 		{
-			return SyncRequestTLS(result.host, result.port_us, result.target, UtilHTTPMethod::Post, [&payload, &request_callback](IUtilHTTPRequest* RequestInstance) {
-
-				RequestInstance->SetBody(payload);
-				RequestInstance->SetField(UtilHTTPField::content_length, std::format("{0}", payload.size()));
-
-				request_callback(RequestInstance);
-
-			}, response_callback, error_callback);
+			return SyncRequestTLS(result.GetHost(), result.GetPort(), result.GetTarget(), UtilHTTPMethod::Post, callback);
 		}
 
-		return SyncRequest(result.host, result.port_us, result.target, UtilHTTPMethod::Post, [&payload, &request_callback](IUtilHTTPRequest* RequestInstance) {
-
-			RequestInstance->SetBody(payload);
-			RequestInstance->SetField(UtilHTTPField::content_length, std::format("{0}", payload.size()));
-
-			request_callback(RequestInstance);
-
-		}, response_callback, error_callback);
+		return SyncRequest(result.GetHost(), result.GetPort(), result.GetTarget(), UtilHTTPMethod::Post, callback);
 	}
 
-	UtilHTTPRequestHandle_t AsyncRequest(const std::string& host, unsigned short port_us, const std::string& target, const UtilHTTPMethod method, const fnHTTPRequestCallback& request_callback, const fnHTTPResponseCallback& response_callback, const fnHTTPErrorCallback& error_callback)
+	void AsyncRequest(const char * host, unsigned short port_us, const char* target, const UtilHTTPMethod method, IUtilHTTPCallbacks* callback)
 	{
-		auto RequestInstance = new CUtilHTTPRequest(method, host, port_us, false, target);
+		auto RequestInstance = new CUtilHTTPRequest(method, host, port_us, false, target, callback);
 		
-		auto RequestHandle = AddRequestToPool(RequestInstance);
-
-		request_callback(RequestInstance);
-
-		RequestInstance->SetSteamHTTPCompleteCallback([response_callback, error_callback](CUtilHTTPRequest* pRequestInstance, HTTPRequestCompleted_t* pResult, bool bHasError) {
-
-			if (!pRequestInstance->IsRequestSuccessful() || pRequestInstance->IsResponseError())
-			{
-				error_callback(std::error_code());
-				return;
-			}
-
-			response_callback(pRequestInstance);
-
-		});
+		AddRequestToPool(RequestInstance);
 
 		RequestInstance->SendAsyncRequest();
-
-		return RequestHandle;
 	}
 
-	UtilHTTPRequestHandle_t AsyncRequestTLS(const std::string& host, unsigned short port_us, const std::string& target, const UtilHTTPMethod method, const fnHTTPRequestCallback& request_callback, const fnHTTPResponseCallback& response_callback, const fnHTTPErrorCallback& error_callback)
+	void AsyncRequestTLS(const char* host, unsigned short port_us, const char* target, const UtilHTTPMethod method, IUtilHTTPCallbacks* callbacks)
 	{
-		auto RequestInstance = new CUtilHTTPRequest(method, host, port_us, true, target);
+		auto RequestInstance = new CUtilHTTPRequest(method, host, port_us, true, target, callbacks);
 
-		auto RequestHandle = AddRequestToPool(RequestInstance);
-
-		request_callback(RequestInstance);
-
-		RequestInstance->SetSteamHTTPCompleteCallback([response_callback, error_callback](CUtilHTTPRequest* pRequestInstance, HTTPRequestCompleted_t* pResult, bool bHasError) {
-
-			if (!pRequestInstance->IsRequestSuccessful() || pRequestInstance->IsResponseError())
-			{
-				error_callback(std::error_code());
-				return;
-			}
-
-			response_callback(pRequestInstance);
-
-		});
+		AddRequestToPool(RequestInstance);
 
 		RequestInstance->SendAsyncRequest();
-
-		return RequestHandle;
 	}
 
-	UtilHTTPRequestHandle_t AsyncGet(const std::string& url, const fnHTTPRequestCallback& request_callback, const fnHTTPResponseCallback& response_callback, const fnHTTPErrorCallback& error_callback) override
+	void AsyncGet(const char* url, IUtilHTTPCallbacks* callbacks) override
 	{
 		CURLParsedResult result;
 
-		if (!ParseUrl(url, result))
+		if (!ParseUrlEx(url, &result))
+			return;
+
+		if (result.IsSecure())
 		{
-			return UTILHTTP_INVALID_REQUESTHANDLE;
+			return AsyncRequestTLS(result.GetHost(), result.GetPort(), result.GetTarget(), UtilHTTPMethod::Get, callbacks);
 		}
 
-		if (result.secure)
-		{
-			return AsyncRequestTLS(result.host, result.port_us, result.target, UtilHTTPMethod::Get, request_callback, response_callback, error_callback);
-		}
-
-		return AsyncRequestTLS(result.host, result.port_us, result.target, UtilHTTPMethod::Get, request_callback, response_callback, error_callback);
+		return AsyncRequestTLS(result.GetHost(), result.GetPort(), result.GetTarget(), UtilHTTPMethod::Get, callbacks);
 	}
 
-	UtilHTTPRequestHandle_t AsyncPost(const std::string& url, const std::string& payload, const fnHTTPRequestCallback& request_callback, const fnHTTPResponseCallback& response_callback, const fnHTTPErrorCallback& error_callback) override
+	void AsyncPost(const char* url, IUtilHTTPCallbacks* callbacks) override
 	{
 		CURLParsedResult result;
-		if (!ParseUrl(url, result))
+
+		if (!ParseUrlEx(url, &result))
+			return;
+
+		if (result.IsSecure())
 		{
-			return UTILHTTP_INVALID_REQUESTHANDLE;
+			return AsyncRequestTLS(result.GetHost(), result.GetPort(), result.GetTarget(), UtilHTTPMethod::Post, callbacks);
 		}
 
-		if (result.secure)
-		{
-			return AsyncRequestTLS(result.host, result.port_us, result.target, UtilHTTPMethod::Post, [&payload, &request_callback](IUtilHTTPRequest* RequestInstance) {
-
-				RequestInstance->SetBody(payload);
-				RequestInstance->SetField(UtilHTTPField::content_length, std::format("{0}", payload.size()));
-
-				request_callback(RequestInstance);
-
-			}, response_callback, error_callback);
-		}
-
-		return AsyncRequest(result.host, result.port_us, result.target, UtilHTTPMethod::Post, [&payload, &request_callback](IUtilHTTPRequest* RequestInstance) {
-
-			RequestInstance->SetBody(payload);
-			RequestInstance->SetField(UtilHTTPField::content_length, std::format("{0}", payload.size()));
-
-			request_callback(RequestInstance);
-
-		}, response_callback, error_callback);
+		return AsyncRequestTLS(result.GetHost(), result.GetPort(), result.GetTarget(), UtilHTTPMethod::Post, callbacks);
 	}
 
 };
