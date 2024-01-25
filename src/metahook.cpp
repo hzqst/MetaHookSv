@@ -1035,6 +1035,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	gInterface.FileSystem = g_pFileSystem;
 	gInterface.Registry = registry;
 	gInterface.FileSystem_HL25 = g_pFileSystem_HL25;
+	gInterface.MetaHookAPIVersion = METAHOOK_API_VERSION;
 
 	if (hEngineModule)
 	{

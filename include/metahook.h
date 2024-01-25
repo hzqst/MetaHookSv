@@ -21,6 +21,9 @@ typedef int (*pfnUserMsgHook)(const char *pszName, int iSize, void *pbuf);
 
 typedef void(*cvar_callback_t)(cvar_t *pcvar);
 
+#ifndef __HLSDK_COMMAND__
+#define __HLSDK_COMMAND__
+
 typedef void(*xcommand_t)(void);
 
 typedef struct cmd_function_s
@@ -41,6 +44,8 @@ typedef struct mh_plugininfo_s
 	void *PluginModuleBase;
 	size_t PluginModuleSize;
 }mh_plugininfo_t;
+
+#endif
 
 #include <cdll_export.h>
 #include <cdll_int.h>
@@ -427,12 +432,15 @@ void MH_Shutdown(void);
 #include <ICommandLine.h>
 #include <IRegistry.h>
 
+#define METAHOOK_API_VERSION 100
+
 typedef struct mh_interface_s
 {
 	ICommandLine *CommandLine;
 	IFileSystem *FileSystem;
 	IRegistry *Registry;
 	IFileSystem_HL25* FileSystem_HL25;
+	int MetaHookAPIVersion;
 }mh_interface_t;
 
 #include <IPlugins.h>
