@@ -23,6 +23,14 @@ typedef void(*cvar_callback_t)(cvar_t *pcvar);
 
 typedef void(*xcommand_t)(void);
 
+typedef struct cmd_function_s
+{
+	struct cmd_function_s* next;
+	char* name;
+	xcommand_t function;
+	int flags;
+}cmd_function_t;
+
 typedef struct mh_plugininfo_s
 {
 	int Index;
@@ -390,6 +398,18 @@ typedef struct metahook_api_s
 		Purpose: Hook IAT in blob module
 	*/
 	hook_t* (*BlobIATHook)(BlobHandle_t hBlob, const char* pszModuleName, const char* pszFuncName, void* pNewFuncAddr, void** pOrginalCall);
+
+	/*
+		Purpose: Get current loading game directory, even before it's passed to engine.
+	*/
+
+	const char* (*GetGameDirectory)();
+
+	/*
+		Purpose: Find command entry by the given cmd_name, return nullptr if not found.
+	*/
+
+	cmd_function_t* (*FindCmd)(const char* cmd_name);
 
 }metahook_api_t;
 

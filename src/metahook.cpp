@@ -77,14 +77,6 @@ typedef struct usermsg_s
 	pfnUserMsgHook function;
 }usermsg_t;
 
-typedef struct cmd_function_s
-{
-	struct cmd_function_s* next;
-	char* name;
-	xcommand_t function;
-	int flags;
-}cmd_function_t;
-
 typedef struct cvar_callback_entry_s
 {
 	cvar_callback_t callback;
@@ -122,6 +114,7 @@ bool g_bSaveVideo = false;
 bool g_bTransactionHook = false;
 int g_iEngineType = ENGINE_UNKNOWN;
 WCHAR g_wszEnvPath[4096] = { 0 };
+char g_szGameDirectory[32] = { 0 };
 
 PVOID MH_GetNextCallAddr(void *pAddress, DWORD dwCount);
 hook_t *MH_FindInlineHooked(void *pOldFuncAddr);
@@ -674,7 +667,7 @@ void ANSIToUnicode(const std::string& str, std::wstring& out)
 	MultiByteToWideChar(CP_ACP, 0, str.c_str(), str.length(), (LPWSTR)out.data(), len);
 }
 
-void MH_LoadDllPaths(const char* szGameDir, const char* szGameFullPath)
+void MH_LoadDllPaths(const char* szGameName, const char* szGameFullPath)
 {
 #if 0
 	auto pfnSetDefaultDllDirectories = (decltype(SetDefaultDllDirectories)*)GetProcAddress(GetModuleHandleA("kernel32.dll"), "SetDefaultDllDirectories");
@@ -695,7 +688,7 @@ void MH_LoadDllPaths(const char* szGameDir, const char* szGameFullPath)
 
 #endif
 
-	std::string aConfigFile = szGameDir;
+	std::string aConfigFile = szGameName;
 	aConfigFile += "\\metahook\\configs\\dllpaths.lst";
 
 	std::ifstream infile;
@@ -738,7 +731,7 @@ void MH_LoadDllPaths(const char* szGameDir, const char* szGameFullPath)
 					aDllPath += "\\";
 				}
 
-				aDllPath += szGameDir;
+				aDllPath += szGameName;
 				aDllPath += "\\metahook\\dlls\\";
 				aDllPath += stringLine;
 			}
@@ -782,9 +775,9 @@ void MH_RemoveDllPaths(void)
 #endif
 }
 
-void MH_LoadPlugins(const char *szGameDir, const char* szGameFullPath)
+void MH_LoadPlugins(const char * szGameName, const char* szGameFullPath)
 {
-	std::string aConfigFile = szGameDir;
+	std::string aConfigFile = szGameName;
 	aConfigFile += "\\metahook\\configs\\plugins.lst";
 
 	std::ifstream infile;
@@ -816,7 +809,7 @@ void MH_LoadPlugins(const char *szGameDir, const char* szGameFullPath)
 				aPluginPath += "\\";
 			}
 
-			aPluginPath += szGameDir;
+			aPluginPath += szGameName;
 			aPluginPath += "\\metahook\\plugins\\";
 
 			std::string aFileName;
@@ -1012,6 +1005,7 @@ void MH_ResetAllVars(void)
 	g_pExportFuncs = NULL;
 	g_bSaveVideo = false;
 	g_iEngineType = ENGINE_UNKNOWN;
+	memset(g_szGameDirectory, 0, sizeof(g_szGameDirectory));
 }
 
 void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* szGameName, const char* szFullGamePath)
@@ -1033,6 +1027,9 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	g_pHookBase = NULL;
 	g_pExportFuncs = NULL;
 	g_bSaveVideo = false;
+
+	strncpy(g_szGameDirectory, szGameName, sizeof(g_szGameDirectory) - 1);
+	g_szGameDirectory[sizeof(g_szGameDirectory) - 1] = 0;
 
 	gInterface.CommandLine = CommandLine();
 	gInterface.FileSystem = g_pFileSystem;
@@ -3559,6 +3556,11 @@ BOOL MH_GetPluginInfo(const char *name, mh_plugininfo_t *info)
 	return FALSE;
 }
 
+const char* MH_GetGameDirectory()
+{
+	return g_szGameDirectory;
+}
+
 metahook_api_t gMetaHookAPI_LegacyV2 =
 {
 	MH_UnHook,
@@ -3617,6 +3619,8 @@ metahook_api_t gMetaHookAPI_LegacyV2 =
 	MH_BlobHasImport,
 	MH_BlobHasImportEx,
 	MH_BlobIATHook,
+	MH_GetGameDirectory,
+	MH_FindCmd
 };
 
 metahook_api_t gMetaHookAPI =
@@ -3677,4 +3681,6 @@ metahook_api_t gMetaHookAPI =
 	MH_BlobHasImport,
 	MH_BlobHasImportEx,
 	MH_BlobIATHook,
+	MH_GetGameDirectory,
+	MH_FindCmd
 };

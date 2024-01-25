@@ -6,13 +6,26 @@
 
 private_funcs_t gPrivateFuncs;
 
+hook_t* g_pHook_FreeLibrary_Engine = NULL;
 hook_t* g_pHook_FreeLibrary_GameUI = NULL;
 
 IThreadManager* g_ThreadManager_Engine = NULL;
 IThreadManager* g_ThreadManager_GameUI = NULL;
 IThreadManager* g_ThreadManager_ServerBrowser = NULL;
+IThreadManager* g_ThreadManager_ServerDLL = NULL;
 
+void ServerDLL_WaitForShutdown(HMODULE hModule);
 void ServerBrowser_WaitForShutdown(HMODULE hModule);
+
+BOOL WINAPI NewFreeLibrary_Engine(HMODULE hModule)
+{
+	if (g_ThreadManager_ServerDLL && g_ThreadManager_ServerDLL->GetModule() == hModule)
+	{
+		ServerDLL_WaitForShutdown(hModule);
+	}
+
+	return FreeLibrary(hModule);
+}
 
 BOOL WINAPI NewFreeLibrary_GameUI(HMODULE hModule)
 {
@@ -39,6 +52,11 @@ void Engine_InstallHook(HMODULE hModule, BlobHandle_t hBlobModule)
 	{
 		g_ThreadManager_Engine = CreateThreadManagerForModule(hModule);
 		g_ThreadManager_Engine->InstallHook(hookflag_CreateThread | hookflag_WaitForSingleObject | hookflag_Sleep);
+
+		if (0 == stricmp(g_pMetaHookAPI->GetGameDirectory(), "svencoop"))
+		{
+			g_pHook_FreeLibrary_Engine = g_pMetaHookAPI->IATHook(hModule, "kernel32.dll", "FreeLibrary", NewFreeLibrary_Engine, NULL);
+		}
 	}
 	else if (hBlobModule)
 	{
@@ -49,6 +67,12 @@ void Engine_InstallHook(HMODULE hModule, BlobHandle_t hBlobModule)
 
 void Engine_UninstallHook(HMODULE hModule, BlobHandle_t hBlobModule)
 {
+	if (g_pHook_FreeLibrary_Engine)
+	{
+		g_pMetaHookAPI->UnHook(g_pHook_FreeLibrary_Engine);
+		g_pHook_FreeLibrary_Engine = NULL;
+	}
+
 	if (g_ThreadManager_Engine)
 	{
 		g_ThreadManager_Engine->UnistallHook();
@@ -84,6 +108,37 @@ void GameUI_UnistallHook(HMODULE hModule)
 		DeleteThreadManager(g_ThreadManager_GameUI);
 		delete g_ThreadManager_GameUI;
 		g_ThreadManager_GameUI = NULL;
+	}
+}
+
+void ServerDLL_WaitForShutdown(HMODULE hModule)
+{
+	if (g_ThreadManager_ServerDLL)
+	{
+		g_ThreadManager_ServerDLL->StartTermination();
+		g_ThreadManager_ServerDLL->WaitForAliveThreadsToShutdown();
+	}
+}
+
+void ServerDLL_InstallHook(HMODULE hModule)
+{
+	//It use callback instead of creating stupid thread.
+	if (0 != stricmp(g_pMetaHookAPI->GetGameDirectory(), "svencoop"))
+		return;
+
+	//Fuck off the CPlayerDatabase_RunThread
+	g_ThreadManager_ServerDLL = CreateThreadManagerForModule(hModule);
+	g_ThreadManager_ServerDLL->InstallHook(hookflag_CreateThread);
+}
+
+void ServerDLL_UninstallHook(HMODULE hModule)
+{
+	if (g_ThreadManager_ServerDLL)
+	{
+		g_ThreadManager_ServerDLL->UnistallHook();
+		DeleteThreadManager(g_ThreadManager_ServerDLL);
+		delete g_ThreadManager_ServerDLL;
+		g_ThreadManager_ServerDLL = NULL;
 	}
 }
 
@@ -133,6 +188,10 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 		{
 			ServerBrowser_InstallHook(ctx->hModule);
 		}
+		else if (ctx->BaseDllName && ctx->hModule && !_wcsicmp(ctx->BaseDllName, L"server.dll"))
+		{
+			ServerDLL_InstallHook(ctx->hModule);
+		}
 	}
 	else if (ctx->flags & LOAD_DLL_NOTIFICATION_IS_UNLOAD)
 	{
@@ -147,6 +206,10 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 		else if (g_ThreadManager_ServerBrowser && ctx->hModule == g_ThreadManager_ServerBrowser->GetModule())
 		{
 			ServerBrowser_UninstallHook(ctx->hModule);
+		}
+		else if (g_ThreadManager_ServerDLL && ctx->hModule == g_ThreadManager_ServerDLL->GetModule())
+		{
+			ServerDLL_UninstallHook(ctx->hModule);
 		}
 	}
 }

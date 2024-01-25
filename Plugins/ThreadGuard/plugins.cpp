@@ -65,6 +65,8 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
 	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
+
+	EngineCommand_InstallHook();
 }
 
 void IPluginsV4::ExitGame(int iResult)

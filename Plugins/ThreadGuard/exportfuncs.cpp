@@ -14,3 +14,27 @@
 cl_enginefunc_t gEngfuncs;
 engine_studio_api_t IEngineStudio;
 r_studio_interface_t **gpStudioInterface;
+
+static xcommand_t g_pfn_Host_KillServer_f;
+static xcommand_t g_pfn_Host_Quit_Restart_f;
+
+/*
+	Purpose: This fixed a bug from Valve that command "_restart" didn't shutdown server correctly, causing resources like CSteam3Server and such things to be leaked.
+*/
+
+void Host_Quit_Restart_f(void)
+{
+	g_pfn_Host_KillServer_f();
+
+	return g_pfn_Host_Quit_Restart_f();
+}
+
+void EngineCommand_InstallHook(void)
+{
+	auto entry = g_pMetaHookAPI->FindCmd("shutdownserver");
+	if (entry)
+	{
+		g_pfn_Host_KillServer_f = entry->function;
+		g_pfn_Host_Quit_Restart_f = g_pMetaHookAPI->HookCmd("_restart", Host_Quit_Restart_f);
+	}
+}
