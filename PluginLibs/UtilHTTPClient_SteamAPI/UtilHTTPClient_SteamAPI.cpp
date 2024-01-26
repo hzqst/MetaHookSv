@@ -1,10 +1,10 @@
-#include "IUtilHTTPClient.h"
-
 #include <Windows.h>
 #include <format>
 #include <regex>
 #include <mutex>
 #include <unordered_map>
+
+#include <IUtilHTTPClient.h>
 
 #include <steam_api.h>
 

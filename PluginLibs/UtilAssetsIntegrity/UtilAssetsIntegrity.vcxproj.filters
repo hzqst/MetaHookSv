@@ -20,7 +20,7 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="UtilHTTPClient_SteamAPI.cpp">
+    <ClCompile Include="UtilAssetsIntegrity.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="..\..\include\HLSDK\common\interface.cpp">
@@ -28,7 +28,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\Interface\IUtilHTTPClient.h">
+    <ClInclude Include="..\..\include\Interface\IUtilAssetsIntegrity.h">
       <Filter>Interface</Filter>
     </ClInclude>
   </ItemGroup>
