@@ -29,6 +29,7 @@ int g_iEngineType = 0;
 PVOID g_dwClientBase = 0;
 DWORD g_dwClientSize = 0;
 
+void DllLoadNotification(mh_load_dll_notification_context_t* ctx);
 
 void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
@@ -40,10 +41,17 @@ void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_engin
 
 void IPluginsV4::Shutdown(void)
 {
+	g_pMetaHookAPI->UnregisterLoadDllNotificationCallback(DllLoadNotification);
 }
 
 void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
+	if (g_pInterface->MetaHookAPIVersion < METAHOOK_API_VERSION)
+	{
+		g_pMetaHookAPI->SysError("MetaHookAPIVersion too low! expect %d, got %d !", METAHOOK_API_VERSION, g_pInterface->MetaHookAPIVersion);
+		return;
+	}
+
 	g_pFileSystem = g_pInterface->FileSystem;
 	g_iEngineType = g_pMetaHookAPI->GetEngineType();
 	g_dwEngineBuildnum = g_pMetaHookAPI->GetEngineBuildnum();
@@ -60,6 +68,8 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	gPrivateFuncs.R_StudioChangePlayerModel = (decltype(gPrivateFuncs.R_StudioChangePlayerModel))Search_Pattern(R_STUDIOCHANGEPLAYERMODEL_SIG_SVENGINE);
 	Sig_FuncNotFound(R_StudioChangePlayerModel);
+
+	g_pMetaHookAPI->RegisterLoadDllNotificationCallback(DllLoadNotification);
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
@@ -73,6 +83,8 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_Shutdown = HUD_Shutdown;
 	pExportFunc->HUD_Frame = HUD_Frame;
 	pExportFunc->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
+
+	UtilHTTPClient_Init();
 }
 
 void IPluginsV4::ExitGame(int iResult)

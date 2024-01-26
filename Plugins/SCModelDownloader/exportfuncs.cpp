@@ -107,16 +107,16 @@ void HUD_Init(void)
 
 	gEngfuncs.pfnAddCommand("scmodel_reload", SCModel_Reload_f);
 
-	UtilHTTPClient_Init();
 	SCModelDatabase()->Init();
 }
 
 void HUD_Shutdown(void)
 {
 	SCModelDatabase()->Shutdown();
-	UtilHTTPClient_Shutdown();
 
 	gExportfuncs.HUD_Shutdown();
+
+	UtilHTTPClient_Shutdown();
 }
 
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)

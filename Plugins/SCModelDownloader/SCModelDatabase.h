@@ -13,4 +13,4 @@ public:
 
 ISCModelDatabase* SCModelDatabase();
 
-#define SCMODEL_DATABASE_INTERFACE_VERSION "SCModelDatabase_001"
+#define SCMODEL_DATABASE_INTERFACE_VERSION "SCModelDatabase_API_001"

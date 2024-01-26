@@ -577,7 +577,7 @@ public:
 	{
 		std::lock_guard<std::mutex> lock(m_RequestHandleLock);
 
-		for (auto itor = m_RequestPool.begin(); itor != m_RequestPool.end();)
+		for (auto itor = m_RequestPool.begin(); itor != m_RequestPool.end(); itor ++)
 		{
 			auto RequestInstance = (*itor).second;
 

@@ -451,6 +451,7 @@ public:
 
 	void Shutdown() override
 	{
+		m_DatabaseQuery.reset();
 		m_QueryTaskList.clear();
 		g_Database.clear();
 	}
@@ -526,7 +527,6 @@ public:
 
 		std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(), ::tolower);
 
-
 		//Model name ends with "_v0" ~ "_v9"
 		if (lowerName.length() > 4 &&
 			lowerName[lowerName.length() - 3] == '_' &&
@@ -582,3 +582,5 @@ ISCModelDatabase* SCModelDatabase()
 {
 	return &s_SCModelDatabase;
 }
+
+EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CSCModelDatabase, ISCModelDatabase, SCMODEL_DATABASE_INTERFACE_VERSION, s_SCModelDatabase)
