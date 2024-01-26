@@ -32,7 +32,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="IUtilHTTPClient.h">
+    <ClInclude Include="..\..\include\Interface\IUtilHTTPClient.h">
       <Filter>Interface</Filter>
     </ClInclude>
   </ItemGroup>

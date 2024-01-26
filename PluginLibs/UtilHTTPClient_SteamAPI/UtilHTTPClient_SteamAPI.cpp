@@ -122,7 +122,7 @@ private:
 	std::string m_payload;
 
 public:
-	bool ReadFromSteamHTTPRequestHandle(HTTPRequestHandle handle)
+	bool ReadFromRequestHandle(HTTPRequestHandle handle)
 	{
 		uint32_t responseSize = 0;
 		if (SteamHTTP()->GetHTTPResponseBodySize(handle, &responseSize))
@@ -148,27 +148,86 @@ public:
 	}
 };
 
-class CUtilHTTPRequest : public IUtilHTTPRequest, public IUtilHTTPResponse
+class CUtilHTTPResponse : public IUtilHTTPResponse
 {
 private:
-	HTTPRequestHandle m_RequestHandle{};
-	CCallResult<CUtilHTTPRequest, HTTPRequestCompleted_t> m_CallResult{};
-	HANDLE m_hResponseEvent{};
-	bool m_bRequestSuccessful{};
 	bool m_bResponseCompleted{};
 	bool m_bResponseError{};
 	int m_iResponseStatusCode{};
 	CUtilHTTPPayload* m_pResponsePayload{};
-	IUtilHTTPCallbacks* m_Callbacks{};
+public:
+
+	void OnSteamHTTPCompleted(HTTPRequestHandle RequestHandle, HTTPRequestCompleted_t* pResult, bool bHasError)
+	{
+		m_bResponseCompleted = true;
+		m_bResponseError = bHasError;
+		m_iResponseStatusCode = (int)pResult->m_eStatusCode;
+
+		if (pResult->m_bRequestSuccessful && !bHasError)
+		{
+			m_pResponsePayload->ReadFromRequestHandle(RequestHandle);
+		}
+	}
 
 public:
+	CUtilHTTPResponse() : m_pResponsePayload(new CUtilHTTPPayload())
+	{
+
+	}
+
+	~CUtilHTTPResponse()
+	{
+		if (m_pResponsePayload)
+		{
+			delete m_pResponsePayload;
+			m_pResponsePayload = nullptr;
+		}
+	}
+
+	bool IsResponseCompleted() const override
+	{
+		return m_bResponseCompleted;
+	}
+
+	bool IsResponseError() const override
+	{
+		return m_bResponseError;
+	}
+
+	int GetStatusCode() const override
+	{
+		return m_iResponseStatusCode;
+	}
+
+	IUtilHTTPPayload* GetPayload() const override
+	{
+		return m_pResponsePayload;
+	}
+};
+
+class CUtilHTTPRequest : public IUtilHTTPRequest
+{
+protected:
+	HTTPRequestHandle m_RequestHandle{};
+	CCallResult<CUtilHTTPRequest, HTTPRequestCompleted_t> m_CallResult{};
+	bool m_bRequesting{};
+	bool m_bResponding{};
+	bool m_bRequestSuccessful{};
+	bool m_bFinished{};
+	IUtilHTTPCallbacks* m_Callbacks{};
+	CUtilHTTPResponse* m_pResponse{};
+
+public:
+
 	CUtilHTTPRequest(
 		const UtilHTTPMethod method,
 		const std::string& host,
 		unsigned short port,
 		bool secure,
 		const std::string& target,
-		IUtilHTTPCallbacks *callbacks) : m_Callbacks(callbacks), m_pResponsePayload(new CUtilHTTPPayload)
+		IUtilHTTPCallbacks* callbacks) : 
+		m_Callbacks(callbacks),
+		m_pResponse(new CUtilHTTPResponse())
 	{
 		std::string field_host = host;
 
@@ -181,14 +240,12 @@ public:
 			field_host = std::format("{0}:{1}", host, port);
 		}
 
-		std::string url = std::format("{0}://{1}/{2}", secure ? "https://" :"http://", field_host, target);
+		std::string url = std::format("{0}://{1}{2}", secure ? "https" :"http", field_host, target);
 
 		m_RequestHandle = SteamHTTP()->CreateHTTPRequest(UTIL_ConvertUtilHTTPMethodToSteamHTTPMethod(method), url.c_str());
 
 		SetField(UtilHTTPField::host, field_host.c_str());
 		SetField(UtilHTTPField::user_agent, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36");
-
-		m_hResponseEvent = CreateEventA(NULL, FALSE, FALSE, NULL);
 	}
 
 	~CUtilHTTPRequest()
@@ -204,80 +261,73 @@ public:
 			m_RequestHandle = INVALID_HTTPREQUEST_HANDLE;
 		}
 
-		if (m_hResponseEvent)
-		{
-			CloseHandle(m_hResponseEvent);
-			m_hResponseEvent = NULL;
-		}
-
-		if (m_pResponsePayload)
-		{
-			delete m_pResponsePayload;
-			m_pResponsePayload = nullptr;
-		}
-
 		if (m_Callbacks)
 		{
 			m_Callbacks->Destroy();
 			m_Callbacks = nullptr;
 		}
-
 	}
 
-	void OnSteamHTTPCompleted(HTTPRequestCompleted_t* pResult, bool bHasError)
+	//TODO stream read?
+	virtual void OnSteamHTTPCompleted(HTTPRequestCompleted_t* pResult, bool bHasError)
 	{
+		m_bRequesting = false;
+		m_bResponding = true;
+
+		if (m_Callbacks)
+		{
+			m_Callbacks->OnUpdateState(UtilHTTPRequestState::Responding);
+		}
+
 		m_bRequestSuccessful = pResult->m_bRequestSuccessful;
-		m_bResponseCompleted = true;
-		m_bResponseError = bHasError;
-		m_iResponseStatusCode = (int)pResult->m_eStatusCode;
-		
-		if (m_bRequestSuccessful && !m_bResponseError && m_pResponsePayload)
-		{
-			m_pResponsePayload->ReadFromSteamHTTPRequestHandle(m_RequestHandle);
-		}
+
+		m_pResponse->OnSteamHTTPCompleted(m_RequestHandle, pResult, bHasError);
 
 		if (m_Callbacks)
 		{
-			m_Callbacks->OnResponse(this);
+			m_Callbacks->OnResponse(this, m_pResponse);
 		}
 
-		if (m_hResponseEvent)
-		{
-			SetEvent(m_hResponseEvent);
-		}
-	}
+		m_bFinished = true;
+		m_bResponding = false;
 
-	void SendAsyncRequest()
-	{
 		if (m_Callbacks)
 		{
-			m_Callbacks->OnRequest(this);
+			m_Callbacks->OnUpdateState(UtilHTTPRequestState::Finished);
 		}
-
-		SteamAPICall_t apiCall;
-		bool bRet = SteamHTTP()->SendHTTPRequest(m_RequestHandle, &apiCall);
-
-		if (bRet)
-		{
-			m_CallResult.Set(apiCall, this, &CUtilHTTPRequest::OnSteamHTTPCompleted);
-		}
-	}
-
-	bool SyncWaitForResponse()
-	{
-		if (m_hResponseEvent)
-		{
-			WaitForSingleObject(m_hResponseEvent, INFINITE);
-		}
-
-		return (m_bResponseCompleted && !m_bResponseError) ? true : false;
 	}
 
 public:
 
-	void ForceShutdown() override
+	void Destroy() override
 	{
-		//has nothing to do
+		delete this;
+	}
+
+	void SendAsyncRequest() override
+	{
+		SteamAPICall_t SteamApiCall;
+		if (SteamHTTP()->SendHTTPRequest(m_RequestHandle, &SteamApiCall))
+		{
+			m_CallResult.Set(SteamApiCall, this, &CUtilHTTPRequest::OnSteamHTTPCompleted);
+		}
+
+		m_bRequesting = true;
+
+		if (m_Callbacks)
+		{
+			m_Callbacks->OnUpdateState(UtilHTTPRequestState::Requesting);
+		}
+	}
+
+	bool IsRequesting() const override
+	{
+		return m_bRequesting;
+	}
+
+	bool IsResponding() const override
+	{
+		return m_bResponding;
 	}
 
 	bool IsRequestSuccessful() const override
@@ -285,14 +335,23 @@ public:
 		return m_bRequestSuccessful;
 	}
 
-	bool IsResponseCompleted() const override
+	bool IsFinished() const override
 	{
-		return m_bResponseCompleted;
+		return m_bFinished;
 	}
 
-	bool IsResponseError() const override
+	UtilHTTPRequestState GetRequestState() const override
 	{
-		return m_bResponseError;
+		if (IsFinished())
+			return UtilHTTPRequestState::Finished;
+
+		if (IsRequesting())
+			return UtilHTTPRequestState::Requesting;
+
+		if (IsResponding())
+			return UtilHTTPRequestState::Responding;
+
+		return UtilHTTPRequestState::Idle;
 	}
 
 	void SetTimeout(int secs)  override
@@ -383,15 +442,116 @@ public:
 		}
 
 	}
+};
 
-	int GetStatusCode() const override
+class CUtilHTTPSyncRequest : public CUtilHTTPRequest
+{
+private:
+	HANDLE m_hResponseEvent{};
+
+public:
+	CUtilHTTPSyncRequest(
+		const UtilHTTPMethod method,
+		const std::string& host,
+		unsigned short port,
+		bool secure,
+		const std::string& target,
+		IUtilHTTPCallbacks* callbacks) : 
+		CUtilHTTPRequest(method, host, port, secure, target, callbacks)
 	{
-		return m_iResponseStatusCode;
+		m_hResponseEvent = CreateEventA(NULL, FALSE, FALSE, NULL);
 	}
 
-	IUtilHTTPPayload *GetPayload() const override
+	~CUtilHTTPSyncRequest()
 	{
-		return m_pResponsePayload;
+		if (m_hResponseEvent)
+		{
+			CloseHandle(m_hResponseEvent);
+			m_hResponseEvent = NULL;
+		}
+
+	}
+
+	bool IsAsync() const override
+	{
+		return false;
+	}
+
+	void WaitForResponse() override
+	{
+		if (m_hResponseEvent)
+		{
+			WaitForSingleObject(m_hResponseEvent, INFINITE);
+		}
+	}
+
+	IUtilHTTPResponse* GetResponse() override
+	{
+		return m_pResponse;
+	}
+
+	void OnSteamHTTPCompleted(HTTPRequestCompleted_t* pResult, bool bHasError) override
+	{
+		CUtilHTTPRequest::OnSteamHTTPCompleted(pResult, bHasError);
+
+		if (m_hResponseEvent)
+		{
+			SetEvent(m_hResponseEvent);
+		}
+	}
+
+	void SetRequestId(UtilHTTPRequestId_t id) override
+	{
+		
+	}
+
+	UtilHTTPRequestId_t GetRequestId() const override
+	{
+		return UTILHTTP_REQUEST_INVALID_ID;
+	}
+};
+
+class CUtilHTTPAsyncRequest : public CUtilHTTPRequest
+{
+private:
+	UtilHTTPRequestId_t m_RequestId{ UTILHTTP_REQUEST_INVALID_ID };
+
+public:
+	CUtilHTTPAsyncRequest(
+		const UtilHTTPMethod method,
+		const std::string& host,
+		unsigned short port,
+		bool secure,
+		const std::string& target,
+		IUtilHTTPCallbacks* callbacks) :
+		CUtilHTTPRequest(method, host, port, secure, target, callbacks)
+	{
+
+	}
+
+	bool IsAsync() const override
+	{
+		return true;
+	}
+
+	void WaitForResponse() override
+	{
+
+	}
+
+	IUtilHTTPResponse* GetResponse() override
+	{
+		return nullptr;
+	}
+
+	void SetRequestId(UtilHTTPRequestId_t id) override
+	{
+		m_RequestId = id;
+	}
+
+	UtilHTTPRequestId_t GetRequestId() const override
+	{
+		return m_RequestId;
 	}
 };
 
@@ -399,7 +559,8 @@ class CUtilHTTPClient : public IUtilHTTPClient
 {
 private:
 	std::mutex m_RequestHandleLock;
-	std::vector<CUtilHTTPRequest*> m_RequestPool;
+	UtilHTTPRequestId_t m_RequestUsedId{ UTILHTTP_REQUEST_START_ID };
+	std::unordered_map<UtilHTTPRequestId_t, IUtilHTTPRequest*> m_RequestPool;
 
 public:
 	CUtilHTTPClient()
@@ -418,15 +579,12 @@ public:
 
 		for (auto itor = m_RequestPool.begin(); itor != m_RequestPool.end();)
 		{
-			auto RequestInstance = (*itor);
+			auto RequestInstance = (*itor).second;
 
-			RequestInstance->ForceShutdown();
-
-			delete RequestInstance;
-
-			itor = m_RequestPool.erase(itor);
-			continue;
+			RequestInstance->Destroy();
 		}
+
+		m_RequestPool.clear();
 	}
 
 	void RunFrame() override
@@ -435,12 +593,14 @@ public:
 
 		for (auto itor = m_RequestPool.begin(); itor != m_RequestPool.end();)
 		{
-			auto RequestInstance = (*itor);
+			auto RequestInstance = (*itor).second;
 
-			if (RequestInstance->IsResponseCompleted())
+			if (RequestInstance->IsFinished())
 			{
-				delete RequestInstance;
+				RequestInstance->Destroy();
+
 				itor = m_RequestPool.erase(itor);
+
 				continue;
 			}
 
@@ -448,11 +608,20 @@ public:
 		}
 	}
 
-	void AddRequestToPool(CUtilHTTPRequest *RequestInstance)
+	void AddToRequestPool(IUtilHTTPRequest *RequestInstance)
 	{
 		std::lock_guard<std::mutex> lock(m_RequestHandleLock);
 
-		m_RequestPool.emplace_back(RequestInstance);
+		if (m_RequestUsedId == UTILHTTP_REQUEST_MAX_ID)
+			m_RequestUsedId = UTILHTTP_REQUEST_START_ID;
+
+		auto RequestId = m_RequestUsedId;
+
+		RequestInstance->SetRequestId(RequestId);
+
+		m_RequestPool[RequestId] = RequestInstance;
+
+		m_RequestUsedId++;
 	}
 
 	bool ParseUrlEx(const char* url, IURLParsedResult *result) override
@@ -460,7 +629,7 @@ public:
 		std::string surl = url;
 
 		std::regex url_regex(
-			R"((http|https)://([-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|]):?(\d+)?([-A-Z0-9+&@#/%?=~_|!:,.;]*)?)",
+			R"((http|https)://([^/]+)(:?(\d+)?)?(/.*)?)",
 			std::regex_constants::icase
 		);
 
@@ -473,7 +642,7 @@ public:
 				std::string scheme = url_match_result[1].str();
 				std::string host = url_match_result[2].str();
 				std::string port_str = url_match_result[3].str();
-				std::string target = (url_match_result.size() >= 5) ? url_match_result[4].str() : "";
+				std::string target = (url_match_result.size() >= 6) ? url_match_result[5].str() : "";
 
 				unsigned port_us = 0;
 
@@ -517,102 +686,69 @@ public:
 		return nullptr;
 	}
 
-	bool SyncRequest(const std::string& host, unsigned short port_us, const std::string& target, const UtilHTTPMethod method, IUtilHTTPCallbacks *callback)
+	IUtilHTTPRequest* CreateSyncRequestEx(const char* host, unsigned short port_us, const char* target, bool secure, const UtilHTTPMethod method, IUtilHTTPCallbacks* callback)
 	{
-		CUtilHTTPRequest RequestInstance(method, host, port_us, false, target, callback);
-
-		RequestInstance.SendAsyncRequest();
-
-		return RequestInstance.SyncWaitForResponse();
+		return new CUtilHTTPSyncRequest(method, host, port_us, secure, target, callback);
 	}
 
-	bool SyncRequestTLS(const std::string& host, unsigned short port_us, const std::string& target, const UtilHTTPMethod method, IUtilHTTPCallbacks* callback)
+	IUtilHTTPRequest* CreateAsyncRequestEx(const char * host, unsigned short port_us, const char* target, bool secure, const UtilHTTPMethod method, IUtilHTTPCallbacks* callback)
 	{
-		CUtilHTTPRequest RequestInstance(method, host, port_us, true, target, callback);
-
-		RequestInstance.SendAsyncRequest();
-
-		return RequestInstance.SyncWaitForResponse();
+		return new CUtilHTTPAsyncRequest(method, host, port_us, secure, target, callback);
 	}
 
-	bool Get(const char * url, IUtilHTTPCallbacks* callback) override
+	IUtilHTTPRequest* CreateSyncRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPCallbacks* callbacks) override
 	{
 		CURLParsedResult result;
 
 		if (!ParseUrlEx(url, &result))
-			return false;
+			return NULL;
 
-		if (result.IsSecure())
-		{
-			return SyncRequestTLS(result.GetHost(), result.GetPort(), result.GetTarget(), UtilHTTPMethod::Get, callback);
-		}
-
-		return SyncRequest(result.GetHost(), result.GetPort(), result.GetTarget(), UtilHTTPMethod::Get, callback);
+		return CreateSyncRequestEx(result.GetHost(), result.GetPort(), result.GetTarget(), result.IsSecure(), method, callbacks);
 	}
 
-	bool Post(const char* url, IUtilHTTPCallbacks* callback) override
+	IUtilHTTPRequest* CreateAsyncRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPCallbacks* callbacks) override
 	{
 		CURLParsedResult result;
 
 		if (!ParseUrlEx(url, &result))
-			return false;
+			return NULL;
 
-		if (result.IsSecure())
+		auto RequestInstance = CreateAsyncRequestEx(result.GetHost(), result.GetPort(), result.GetTarget(), result.IsSecure(), method, callbacks);
+
+		AddToRequestPool(RequestInstance);
+
+		return RequestInstance;
+	}
+
+	IUtilHTTPRequest* GetRequestById(UtilHTTPRequestId_t id) override
+	{
+		std::lock_guard<std::mutex> lock(m_RequestHandleLock);
+
+		auto itor = m_RequestPool.find(id);
+		if (itor != m_RequestPool.end())
 		{
-			return SyncRequestTLS(result.GetHost(), result.GetPort(), result.GetTarget(), UtilHTTPMethod::Post, callback);
+			return itor->second;
 		}
 
-		return SyncRequest(result.GetHost(), result.GetPort(), result.GetTarget(), UtilHTTPMethod::Post, callback);
+		return NULL;
 	}
 
-	void AsyncRequest(const char * host, unsigned short port_us, const char* target, const UtilHTTPMethod method, IUtilHTTPCallbacks* callback)
+	bool DestroyRequestById(UtilHTTPRequestId_t id) override
 	{
-		auto RequestInstance = new CUtilHTTPRequest(method, host, port_us, false, target, callback);
-		
-		AddRequestToPool(RequestInstance);
+		std::lock_guard<std::mutex> lock(m_RequestHandleLock);
 
-		RequestInstance->SendAsyncRequest();
-	}
-
-	void AsyncRequestTLS(const char* host, unsigned short port_us, const char* target, const UtilHTTPMethod method, IUtilHTTPCallbacks* callbacks)
-	{
-		auto RequestInstance = new CUtilHTTPRequest(method, host, port_us, true, target, callbacks);
-
-		AddRequestToPool(RequestInstance);
-
-		RequestInstance->SendAsyncRequest();
-	}
-
-	void AsyncGet(const char* url, IUtilHTTPCallbacks* callbacks) override
-	{
-		CURLParsedResult result;
-
-		if (!ParseUrlEx(url, &result))
-			return;
-
-		if (result.IsSecure())
+		auto itor = m_RequestPool.find(id);
+		if (itor != m_RequestPool.end())
 		{
-			return AsyncRequestTLS(result.GetHost(), result.GetPort(), result.GetTarget(), UtilHTTPMethod::Get, callbacks);
+			delete itor->second;
+
+			m_RequestPool.erase(itor);
+
+			return true;
 		}
 
-		return AsyncRequestTLS(result.GetHost(), result.GetPort(), result.GetTarget(), UtilHTTPMethod::Get, callbacks);
+		return false;
 	}
-
-	void AsyncPost(const char* url, IUtilHTTPCallbacks* callbacks) override
-	{
-		CURLParsedResult result;
-
-		if (!ParseUrlEx(url, &result))
-			return;
-
-		if (result.IsSecure())
-		{
-			return AsyncRequestTLS(result.GetHost(), result.GetPort(), result.GetTarget(), UtilHTTPMethod::Post, callbacks);
-		}
-
-		return AsyncRequestTLS(result.GetHost(), result.GetPort(), result.GetTarget(), UtilHTTPMethod::Post, callbacks);
-	}
-
 };
 
 EXPOSE_SINGLE_INTERFACE(CUtilHTTPClient, IUtilHTTPClient, UTIL_HTTPCLIENT_STEAMAPI_INTERFACE_VERSION);

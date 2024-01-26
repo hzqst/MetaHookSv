@@ -68,6 +68,9 @@
       <AdditionalLibraryDirectories>$(SolutionDir)include\SteamSDK</AdditionalLibraryDirectories>
       <AdditionalDependencies>steam_api.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>$(PluginLibsPostBuildCommand)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -101,7 +104,7 @@
     <ClCompile Include="UtilHTTPClient_SteamAPI.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="IUtilHTTPClient.h" />
+    <ClInclude Include="..\..\include\Interface\IUtilHTTPClient.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

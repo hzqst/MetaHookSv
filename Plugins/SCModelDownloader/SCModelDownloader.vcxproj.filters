@@ -26,6 +26,12 @@
     <ClCompile Include="..\..\include\HLSDK\common\interface.cpp">
       <Filter>HLSDK</Filter>
     </ClCompile>
+    <ClCompile Include="UtilHTTPClient.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="SCModelDatabase.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
@@ -35,6 +41,12 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="privatehook.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="UtilHTTPClient.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="SCModelDatabase.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

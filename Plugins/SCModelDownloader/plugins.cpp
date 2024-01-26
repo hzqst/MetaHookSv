@@ -3,6 +3,8 @@
 #include "privatehook.h"
 #include "plugins.h"
 
+#include "UtilHTTPClient.h"
+#include "SCModelDatabase.h"
 
 cl_exportfuncs_t gExportfuncs = { 0 };
 mh_interface_t* g_pInterface = NULL;
@@ -69,11 +71,13 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	pExportFunc->HUD_Init = HUD_Init;
 	pExportFunc->HUD_Shutdown = HUD_Shutdown;
+	pExportFunc->HUD_Frame = HUD_Frame;
 	pExportFunc->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
 }
 
 void IPluginsV4::ExitGame(int iResult)
 {
+
 }
 
 const char completeVersion[] =

@@ -16,6 +16,7 @@ extern DWORD g_dwEngineRdataSize;
 extern DWORD g_dwEngineBuildnum;
 extern int g_iEngineType;
 extern IFileSystem *g_pFileSystem;
+extern IFileSystem_HL25 *g_pFileSystem_HL25;
 extern PVOID g_dwClientBase;
 extern DWORD g_dwClientSize;
 
