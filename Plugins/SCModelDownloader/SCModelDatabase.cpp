@@ -359,8 +359,7 @@ bool CSCModelQueryModelFileTask::OnResponsePayload(const char* data, size_t size
 
 	if (m_localFileName.ends_with(".mdl"))
 	{
-		UtilAssetsIntegrityCheckResult checkResult;
-		if (UtilAssetsIntegrityCheckReason::OK != UtilAssetsIntegrity()->CheckStudioModel(data, size, &checkResult))
+		if (UtilAssetsIntegrityCheckReason::OK != UtilAssetsIntegrity()->CheckStudioModel(data, size, NULL))
 		{
 			gEngfuncs.Con_DPrintf("[SCModelDownloader] File \"%s\" is corrupted!\n", m_localFileName.c_str());
 			return false;
@@ -368,7 +367,11 @@ bool CSCModelQueryModelFileTask::OnResponsePayload(const char* data, size_t size
 	}
 	else if (m_localFileName.ends_with(".bmp"))
 	{
-		//TODO use FreeImage to determine...
+		if (UtilAssetsIntegrityCheckReason::OK != UtilAssetsIntegrity()->Check8bitBMP(data, size, NULL))
+		{
+			gEngfuncs.Con_DPrintf("[SCModelDownloader] File \"%s\" is corrupted!\n", m_localFileName.c_str());
+			return false;
+		}
 	}
 
 	FILESYSTEM_ANY_CREATEDIR("models", "GAMEDOWNLOAD");

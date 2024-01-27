@@ -6,6 +6,9 @@
 
 #include <studio.h>
 
+#include <FreeImage.h>
+#include <ScopeExit/ScopeExit.h>
+
 size_t safe_strlen(const char* str, size_t maxChars)
 {
 	size_t		count;
@@ -23,29 +26,29 @@ private:
 
 public:
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_Textures(const void* buf, size_t bufSize, studiohdr_t* studiohdr, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_Textures(const void* buf, size_t bufSize, studiohdr_t* studiohdr, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		if (studiohdr->numtextures < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numtextures (%d).", studiohdr->numtextures);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numtextures (%d).", studiohdr->numtextures);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (studiohdr->numtextures > MAXSTUDIOSKINS)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numtextures (%d).", studiohdr->numtextures);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numtextures (%d).", studiohdr->numtextures);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (studiohdr->textureindex < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->textureindex (%d).", studiohdr->textureindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->textureindex (%d).", studiohdr->textureindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (studiohdr->textureindex > (int)bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->textureindex (%d).", studiohdr->textureindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->textureindex (%d).", studiohdr->textureindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -53,7 +56,7 @@ public:
 
 		if ((byte*)ptexture_base < (byte*)buf)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptexture_base.");
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptexture_base.");
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -61,14 +64,14 @@ public:
 
 		if ((byte*)ptexture_end > (byte*)buf + bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptexture_end.");
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptexture_end.");
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_TextureData(const void* buf, size_t bufSize, studiohdr_t* studiohdr, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_TextureData(const void* buf, size_t bufSize, studiohdr_t* studiohdr, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		auto ptexture = (mstudiotexture_t*)((byte*)studiohdr + studiohdr->textureindex);
 
@@ -76,13 +79,13 @@ public:
 		{
 			if (ptexture[i].index < 0)
 			{
-				snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptexture[%d].index (%d).", i, ptexture[i].index);
+				if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptexture[%d].index (%d).", i, ptexture[i].index);
 				return UtilAssetsIntegrityCheckReason::OutOfBound;
 			}
 
 			if (ptexture[i].index > (int)bufSize)
 			{
-				snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptexture[%d].index (%d).", i, ptexture[i].index);
+				if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptexture[%d].index (%d).", i, ptexture[i].index);
 				return UtilAssetsIntegrityCheckReason::OutOfBound;
 			}
 
@@ -91,31 +94,31 @@ public:
 
 			if (ptexture[i].width < 0)
 			{
-				snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptexture[%d].width (%d).", i, ptexture[i].width);
+				if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptexture[%d].width (%d).", i, ptexture[i].width);
 				return UtilAssetsIntegrityCheckReason::OutOfBound;
 			}
 
 			if (ptexture[i].height < 0)
 			{
-				snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptexture[%d].height (%d).", i, ptexture[i].height);
+				if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptexture[%d].height (%d).", i, ptexture[i].height);
 				return UtilAssetsIntegrityCheckReason::OutOfBound;
 			}
 
 			if (pal < (byte*)buf)
 			{
-				snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptexture[%d].", i);
+				if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptexture[%d].", i);
 				return UtilAssetsIntegrityCheckReason::OutOfBound;
 			}
 
 			if (pal + palsize > (byte*)buf + bufSize)
 			{
-				snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptexture[%d].", i);
+				if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptexture[%d].", i);
 				return UtilAssetsIntegrityCheckReason::OutOfBound;
 			}
 
 			if (safe_strlen(ptexture[i].name, sizeof(ptexture[i].name)) >= sizeof(ptexture[i].name))
 			{
-				snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptexture[%d].name.", i);
+				if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptexture[%d].name.", i);
 				return UtilAssetsIntegrityCheckReason::OutOfBound;
 			}
 		}
@@ -123,17 +126,17 @@ public:
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_Skins(const void* buf, size_t bufSize, studiohdr_t* studiohdr, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_Skins(const void* buf, size_t bufSize, studiohdr_t* studiohdr, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		if (studiohdr->numskinref < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numskinref (%d).", studiohdr->numskinref);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numskinref (%d).", studiohdr->numskinref);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (studiohdr->numskinfamilies < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numskinfamilies (%d).", studiohdr->numskinfamilies);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numskinfamilies (%d).", studiohdr->numskinfamilies);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -151,7 +154,7 @@ public:
 
 		if ((byte*)pskinref_base < (byte*)buf)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pskinref_base.");
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pskinref_base.");
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -159,7 +162,7 @@ public:
 
 		if ((byte*)pskinref_end > (byte*)buf + bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pskinref_end.");
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pskinref_end.");
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -173,7 +176,7 @@ public:
 
 				if (ref < 0 || ref >= studiohdr->numtextures)
 				{
-					snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pskinref[%d][%d]=%d.", i, j, ref);
+					if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pskinref[%d][%d]=%d.", i, j, ref);
 					return UtilAssetsIntegrityCheckReason::OutOfBound;
 				}
 			}
@@ -182,40 +185,40 @@ public:
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_Event(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, int j, mstudioseqdesc_t* pseqdesc, mstudioevent_t *pevent, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_Event(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, int j, mstudioseqdesc_t* pseqdesc, mstudioevent_t *pevent, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		if (safe_strlen(pevent->options, sizeof(pevent->options)) >= sizeof(pevent->options))
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pevent->options.");
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pevent->options.");
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_SeqDescEvents(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, mstudioseqdesc_t* pseqdesc, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_SeqDescEvents(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, mstudioseqdesc_t* pseqdesc, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		if (pseqdesc->numevents < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pseqdesc->numevents (%d).", pseqdesc->numevents);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pseqdesc->numevents (%d).", pseqdesc->numevents);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (pseqdesc->numevents > MAXSTUDIOEVENTS)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pseqdesc->numevents (%d).", pseqdesc->numevents);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pseqdesc->numevents (%d).", pseqdesc->numevents);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (pseqdesc->eventindex < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pseqdesc->eventindex (%d).", pseqdesc->eventindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pseqdesc->eventindex (%d).", pseqdesc->eventindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (pseqdesc->eventindex > (int)bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pseqdesc->eventindex (%d).", pseqdesc->eventindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pseqdesc->eventindex (%d).", pseqdesc->eventindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -223,7 +226,7 @@ public:
 
 		if ((byte*)pevent_base < (byte*)buf)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pevent_base.");
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pevent_base.");
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -231,7 +234,7 @@ public:
 
 		if ((byte*)pevent_end > (byte*)buf + bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pevent_end.");
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pevent_end.");
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -249,17 +252,17 @@ public:
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_SeqDescAnim(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, mstudioseqdesc_t* pseqdesc, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_SeqDescAnim(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, mstudioseqdesc_t* pseqdesc, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		if (pseqdesc->animindex < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pseqdesc->animindex (%d).", pseqdesc->animindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pseqdesc->animindex (%d).", pseqdesc->animindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (pseqdesc->animindex > (int)bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pseqdesc->animindex (%d).", pseqdesc->animindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pseqdesc->animindex (%d).", pseqdesc->animindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -267,7 +270,7 @@ public:
 
 		if ((byte*)panim_base < (byte*)buf)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid panim_base.");
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid panim_base.");
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -275,7 +278,7 @@ public:
 
 		if ((byte*)panim_end > (byte*)buf + bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid panim_end.");
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid panim_end.");
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -291,7 +294,7 @@ public:
 
 					if ((byte*)(panimvalue + 255)> (byte*)buf + bufSize)
 					{
-						snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid panimvalue.");
+						if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid panimvalue.");
 						return UtilAssetsIntegrityCheckReason::OutOfBound;
 					}
 				}
@@ -301,7 +304,7 @@ public:
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_SeqDesc(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, mstudioseqdesc_t *pseqdesc, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_SeqDesc(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, mstudioseqdesc_t *pseqdesc, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		if (pseqdesc->numevents)
 		{
@@ -321,36 +324,36 @@ public:
 
 		if (pseqdesc->motionbone < 0 || pseqdesc->motionbone > MAXSTUDIOBONES)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pseqdesc->motionbone (%d).", pseqdesc->motionbone);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pseqdesc->motionbone (%d).", pseqdesc->motionbone);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_Sequences(const void* buf, size_t bufSize, studiohdr_t* studiohdr, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_Sequences(const void* buf, size_t bufSize, studiohdr_t* studiohdr, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		if (studiohdr->numseq < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numseq (%d).", studiohdr->numseq);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numseq (%d).", studiohdr->numseq);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (studiohdr->numseq > MAXSTUDIOSEQUENCES_SVENGINE)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numseq (%d).", studiohdr->numseq);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numseq (%d).", studiohdr->numseq);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (studiohdr->seqindex < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->seqindex (%d).", studiohdr->seqindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->seqindex (%d).", studiohdr->seqindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (studiohdr->seqindex > (int)bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->seqindex (%d).", studiohdr->seqindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->seqindex (%d).", studiohdr->seqindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -358,7 +361,7 @@ public:
 
 		if ((byte*)pseqdesc_base < (byte*)buf)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pseqdesc_base.");
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pseqdesc_base.");
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -366,7 +369,7 @@ public:
 
 		if ((byte*)pseqdesc_end > (byte*)buf + bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pseqdesc_base.");
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pseqdesc_base.");
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -383,40 +386,40 @@ public:
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_Hitbox(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, mstudiobbox_t * pbbox, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_Hitbox(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, mstudiobbox_t * pbbox, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		if (pbbox->bone < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbbox->bone (%d).", pbbox->bone);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbbox->bone (%d).", pbbox->bone);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (pbbox->bone >= studiohdr->numbones)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbbox->bone (%d).", pbbox->bone);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbbox->bone (%d).", pbbox->bone);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_Hitboxes(const void* buf, size_t bufSize, studiohdr_t* studiohdr, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_Hitboxes(const void* buf, size_t bufSize, studiohdr_t* studiohdr, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		if (studiohdr->numhitboxes < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numhitboxes (%d).", studiohdr->numhitboxes);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numhitboxes (%d).", studiohdr->numhitboxes);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (studiohdr->hitboxindex < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->hitboxindex (%d).", studiohdr->hitboxindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->hitboxindex (%d).", studiohdr->hitboxindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (studiohdr->hitboxindex > (int)bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->hitboxindex (%d).", studiohdr->hitboxindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->hitboxindex (%d).", studiohdr->hitboxindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -424,7 +427,7 @@ public:
 
 		if ((byte*)pbbox_base < (byte*)buf)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbbox_base.");
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbbox_base.");
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -443,7 +446,7 @@ public:
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_Mesh(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, int j, int k, mstudiomodel_t* psubmodel, mstudiomesh_t*pmesh, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_Mesh(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, int j, int k, mstudiomodel_t* psubmodel, mstudiomesh_t*pmesh, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		auto pstudioverts = (vec3_t*)((byte*)studiohdr + psubmodel->vertindex);
 		auto pstudionorms = (vec3_t*)((byte*)studiohdr + psubmodel->normindex);
@@ -452,7 +455,7 @@ public:
 
 		if (pmesh->triindex < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pmesh->triindex (%d).", pmesh->triindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pmesh->triindex (%d).", pmesh->triindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -460,7 +463,7 @@ public:
 
 		if ((byte*)(ptricmds + 1) > (byte*)buf + bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pmesh->triindex (%d).", pmesh->triindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pmesh->triindex (%d).", pmesh->triindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -475,7 +478,7 @@ public:
 				{
 					if ((byte*)(ptricmds + 4) > (byte*)buf + bufSize)
 					{
-						snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pmesh->triindex (%d).", pmesh->triindex);
+						if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pmesh->triindex (%d).", pmesh->triindex);
 						return UtilAssetsIntegrityCheckReason::OutOfBound;
 					}
 
@@ -484,34 +487,34 @@ public:
 
 					if (vertindex < 0)
 					{
-						snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[0] (%d).", ptricmds[0]);
+						if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[0] (%d).", ptricmds[0]);
 						return UtilAssetsIntegrityCheckReason::OutOfBound;
 					}
 
 					if (normindex < 0)
 					{
-						snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[1] (%d).", ptricmds[1]);
+						if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[1] (%d).", ptricmds[1]);
 						return UtilAssetsIntegrityCheckReason::OutOfBound;
 					}
 
 					if ((byte*)(pstudioverts + vertindex) > (byte*)buf + bufSize)
 					{
-						snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[0] (%d).", ptricmds[0]);
+						if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[0] (%d).", ptricmds[0]);
 						return UtilAssetsIntegrityCheckReason::OutOfBound;
 					}
 					if ((byte*)(pvertbone + vertindex) > (byte*)buf + bufSize)
 					{
-						snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[0] (%d).", ptricmds[0]);
+						if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[0] (%d).", ptricmds[0]);
 						return UtilAssetsIntegrityCheckReason::OutOfBound;
 					}
 					if ((byte*)(pstudionorms + normindex) > (byte*)buf + bufSize)
 					{
-						snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[1] (%d).", ptricmds[1]);
+						if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[1] (%d).", ptricmds[1]);
 						return UtilAssetsIntegrityCheckReason::OutOfBound;
 					}
 					if ((byte*)(pnormbone + normindex) > (byte*)buf + bufSize)
 					{
-						snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[1] (%d).", ptricmds[1]);
+						if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[1] (%d).", ptricmds[1]);
 						return UtilAssetsIntegrityCheckReason::OutOfBound;
 					}
 				}
@@ -523,7 +526,7 @@ public:
 				{
 					if ((byte*)(ptricmds + 4) > (byte*)buf + bufSize)
 					{
-						snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pmesh->triindex (%d).", pmesh->triindex);
+						if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pmesh->triindex (%d).", pmesh->triindex);
 						return UtilAssetsIntegrityCheckReason::OutOfBound;
 					}
 
@@ -532,34 +535,34 @@ public:
 
 					if (vertindex < 0)
 					{
-						snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[0] (%d).", ptricmds[0]);
+						if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[0] (%d).", ptricmds[0]);
 						return UtilAssetsIntegrityCheckReason::OutOfBound;
 					}
 
 					if (normindex < 0)
 					{
-						snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[1] (%d).", ptricmds[1]);
+						if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[1] (%d).", ptricmds[1]);
 						return UtilAssetsIntegrityCheckReason::OutOfBound;
 					}
 
 					if ((byte*)(pstudioverts + vertindex) > (byte*)buf + bufSize)
 					{
-						snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[0] (%d).", ptricmds[0]);
+						if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[0] (%d).", ptricmds[0]);
 						return UtilAssetsIntegrityCheckReason::OutOfBound;
 					}
 					if ((byte*)(pvertbone + vertindex) > (byte*)buf + bufSize)
 					{
-						snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[0] (%d).", ptricmds[0]);
+						if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[0] (%d).", ptricmds[0]);
 						return UtilAssetsIntegrityCheckReason::OutOfBound;
 					}
 					if ((byte*)(pstudionorms + normindex) > (byte*)buf + bufSize)
 					{
-						snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[1] (%d).", ptricmds[1]);
+						if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[1] (%d).", ptricmds[1]);
 						return UtilAssetsIntegrityCheckReason::OutOfBound;
 					}
 					if ((byte*)(pnormbone + normindex) > (byte*)buf + bufSize)
 					{
-						snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[1] (%d).", ptricmds[1]);
+						if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid ptricmds[1] (%d).", ptricmds[1]);
 						return UtilAssetsIntegrityCheckReason::OutOfBound;
 					}
 				}
@@ -569,77 +572,77 @@ public:
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_Submodel(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, int j, mstudiomodel_t *psubmodel, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_Submodel(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, int j, mstudiomodel_t *psubmodel, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		if (psubmodel->vertindex < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->vertindex (%d).", psubmodel->vertindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->vertindex (%d).", psubmodel->vertindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (psubmodel->vertindex > (int)bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->vertindex (%d).", psubmodel->vertindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->vertindex (%d).", psubmodel->vertindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (psubmodel->normindex < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->normindex (%d).", psubmodel->normindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->normindex (%d).", psubmodel->normindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (psubmodel->normindex > (int)bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->normindex (%d).", psubmodel->normindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->normindex (%d).", psubmodel->normindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (psubmodel->vertinfoindex < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->vertinfoindex (%d).", psubmodel->vertinfoindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->vertinfoindex (%d).", psubmodel->vertinfoindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (psubmodel->vertinfoindex > (int)bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->vertinfoindex (%d).", psubmodel->vertinfoindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->vertinfoindex (%d).", psubmodel->vertinfoindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (psubmodel->norminfoindex < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->norminfoindex (%d).", psubmodel->norminfoindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->norminfoindex (%d).", psubmodel->norminfoindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (psubmodel->norminfoindex > (int)bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->norminfoindex (%d).", psubmodel->norminfoindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->norminfoindex (%d).", psubmodel->norminfoindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (psubmodel->meshindex < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->meshindex (%d).", psubmodel->meshindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->meshindex (%d).", psubmodel->meshindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (psubmodel->meshindex > (int)bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->meshindex (%d).", psubmodel->meshindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->meshindex (%d).", psubmodel->meshindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (psubmodel->nummesh < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->nummesh (%d).", psubmodel->nummesh);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->nummesh (%d).", psubmodel->nummesh);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (psubmodel->nummesh > MAXSTUDIOMESHES)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->nummesh (%d).", psubmodel->nummesh);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->nummesh (%d).", psubmodel->nummesh);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -647,7 +650,7 @@ public:
 
 		if ((byte*)pmesh_base > (byte*)buf + bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->meshindex (%d) .", psubmodel->meshindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->meshindex (%d) .", psubmodel->meshindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -655,7 +658,7 @@ public:
 
 		if ((byte*)pmesh_end > (byte*)buf + bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->meshindex (%d) or psubmodel->nummesh (%d).", psubmodel->meshindex, psubmodel->nummesh);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid psubmodel->meshindex (%d) or psubmodel->nummesh (%d).", psubmodel->meshindex, psubmodel->nummesh);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -672,35 +675,35 @@ public:
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_BodyPart(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, mstudiobodyparts_t *pbodypart, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_BodyPart(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, mstudiobodyparts_t *pbodypart, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		if (safe_strlen(pbodypart->name, sizeof(pbodypart->name)) >= sizeof(pbodypart->name))
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbodypart->name.");
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbodypart->name.");
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (pbodypart->nummodels < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbodypart->nummodels (%d).", pbodypart->nummodels);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbodypart->nummodels (%d).", pbodypart->nummodels);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (pbodypart->nummodels > MAXSTUDIOMODELS_SVENGINE)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbodypart->nummodels (%d).", pbodypart->nummodels);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbodypart->nummodels (%d).", pbodypart->nummodels);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (pbodypart->modelindex < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbodypart->modelindex (%d).", pbodypart->modelindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbodypart->modelindex (%d).", pbodypart->modelindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (pbodypart->modelindex > (int)bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbodypart->modelindex (%d).", pbodypart->modelindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbodypart->modelindex (%d).", pbodypart->modelindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -708,7 +711,7 @@ public:
 
 		if ((byte*)psubmodel_base < (byte*)buf)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbodypart->modelindex (%d) or pbodypart->nummodels (%d).", pbodypart->modelindex, pbodypart->nummodels);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbodypart->modelindex (%d) or pbodypart->nummodels (%d).", pbodypart->modelindex, pbodypart->nummodels);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -716,7 +719,7 @@ public:
 
 		if ((byte*)psubmodel_end > (byte*)buf + bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbodypart->modelindex (%d) or pbodypart->nummodels (%d).", pbodypart->modelindex, pbodypart->nummodels);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbodypart->modelindex (%d) or pbodypart->nummodels (%d).", pbodypart->modelindex, pbodypart->nummodels);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -733,29 +736,29 @@ public:
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_BodyParts(const void* buf, size_t bufSize, studiohdr_t* studiohdr, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_BodyParts(const void* buf, size_t bufSize, studiohdr_t* studiohdr, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		if (studiohdr->numbodyparts < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numbodyparts (%d).", studiohdr->numbodyparts);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numbodyparts (%d).", studiohdr->numbodyparts);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (studiohdr->numbodyparts > MAXSTUDIOBODYPARTS)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numbodyparts (%d).", studiohdr->numbodyparts);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numbodyparts (%d).", studiohdr->numbodyparts);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (studiohdr->bodypartindex < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->bodypartindex (%d).", studiohdr->bodypartindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->bodypartindex (%d).", studiohdr->bodypartindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (studiohdr->bodypartindex > (int)bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->bodypartindex (%d).", studiohdr->bodypartindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->bodypartindex (%d).", studiohdr->bodypartindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -763,7 +766,7 @@ public:
 
 		if ((byte*)pbodypart_base < (byte*)buf)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->bodypartindex (%d).", studiohdr->bodypartindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->bodypartindex (%d).", studiohdr->bodypartindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -771,7 +774,7 @@ public:
 
 		if ((byte*)pbodypart_end > (byte*)buf + bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->bodypartindex (%d) or studiohdr->numbodyparts (%d).", studiohdr->bodypartindex, studiohdr->numbodyparts);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->bodypartindex (%d) or studiohdr->numbodyparts (%d).", studiohdr->bodypartindex, studiohdr->numbodyparts);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -788,23 +791,23 @@ public:
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_Bone(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, mstudiobone_t *pbone,  UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_Bone(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, mstudiobone_t *pbone,  UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		if (safe_strlen(pbone->name, sizeof(pbone->name)) >= sizeof(pbone->name))
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbone->name.");
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbone->name.");
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 		
 		if (pbone->parent < 0 && pbone->parent != -1)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbone->parent (%d).", pbone->parent);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbone->parent (%d).", pbone->parent);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (pbone->parent >= studiohdr->numbones)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbone->parent (%d).", pbone->parent);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbone->parent (%d).", pbone->parent);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -812,13 +815,13 @@ public:
 		{
 			if (pbone->bonecontroller[j] < 0 && pbone->bonecontroller[j] != -1)
 			{
-				snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbone->bonecontroller[%d] (%d).", j, pbone->bonecontroller[j]);
+				if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbone->bonecontroller[%d] (%d).", j, pbone->bonecontroller[j]);
 				return UtilAssetsIntegrityCheckReason::OutOfBound;
 			}
 
 			if (pbone->bonecontroller[j] >= studiohdr->numbones)
 			{
-				snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbone->bonecontroller[%d] (%d).", j, pbone->bonecontroller[j]);
+				if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbone->bonecontroller[%d] (%d).", j, pbone->bonecontroller[j]);
 				return UtilAssetsIntegrityCheckReason::OutOfBound;
 			}
 		}
@@ -826,29 +829,29 @@ public:
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_Bones(const void* buf, size_t bufSize, studiohdr_t* studiohdr, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_Bones(const void* buf, size_t bufSize, studiohdr_t* studiohdr, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		if (studiohdr->numbones < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numbones (%d).", studiohdr->numbones);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numbones (%d).", studiohdr->numbones);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (studiohdr->numbones > MAXSTUDIOBONES)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numbones (%d).", studiohdr->numbones);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numbones (%d).", studiohdr->numbones);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (studiohdr->boneindex < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->boneindex (%d).", studiohdr->boneindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->boneindex (%d).", studiohdr->boneindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (studiohdr->boneindex > (int)bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->boneindex (%d).", studiohdr->boneindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->boneindex (%d).", studiohdr->boneindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -856,7 +859,7 @@ public:
 
 		if ((byte*)pbone_base < (byte*)buf)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->boneindex (%d).", studiohdr->boneindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->boneindex (%d).", studiohdr->boneindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -864,7 +867,7 @@ public:
 
 		if ((byte*)pbone_end > (byte*)buf + bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->boneindex (%d) or studiohdr->numbones (%d).", studiohdr->boneindex, studiohdr->numbones);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->boneindex (%d) or studiohdr->numbones (%d).", studiohdr->boneindex, studiohdr->numbones);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -880,46 +883,46 @@ public:
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_BoneController(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, mstudiobonecontroller_t *pbonecontroller, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_BoneController(const void* buf, size_t bufSize, studiohdr_t* studiohdr, int i, mstudiobonecontroller_t *pbonecontroller, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		if (pbonecontroller->bone < 0 && pbonecontroller->bone != -1)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbonecontroller->bone (%d).", pbonecontroller->bone);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbonecontroller->bone (%d).", pbonecontroller->bone);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (pbonecontroller->bone > studiohdr->numbones)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbonecontroller->bone (%d).", pbonecontroller->bone);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid pbonecontroller->bone (%d).", pbonecontroller->bone);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_BoneControllers(const void* buf, size_t bufSize, studiohdr_t* studiohdr, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_BoneControllers(const void* buf, size_t bufSize, studiohdr_t* studiohdr, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		if (studiohdr->numbonecontrollers < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numbones (%d).", studiohdr->numbones);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numbones (%d).", studiohdr->numbones);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (studiohdr->numbonecontrollers > MAXSTUDIOCONTROLLERS)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numbones (%d).", studiohdr->numbonecontrollers);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->numbones (%d).", studiohdr->numbonecontrollers);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (studiohdr->bonecontrollerindex < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->bonecontrollerindex (%d).", studiohdr->bonecontrollerindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->bonecontrollerindex (%d).", studiohdr->bonecontrollerindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
 		if (studiohdr->bonecontrollerindex > (int)bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->bonecontrollerindex (%d).", studiohdr->bonecontrollerindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->bonecontrollerindex (%d).", studiohdr->bonecontrollerindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -927,7 +930,7 @@ public:
 
 		if ((byte*)pbonecontroller_base < (byte*)buf)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->bonecontrollerindex (%d).", studiohdr->bonecontrollerindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->bonecontrollerindex (%d).", studiohdr->bonecontrollerindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -935,7 +938,7 @@ public:
 
 		if ((byte*)pbonecontroller_end > (byte*)buf + bufSize)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->bonecontrollerindex (%d) or studiohdr->numbonecontrollers (%d).", studiohdr->bonecontrollerindex, studiohdr->numbonecontrollers);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->bonecontrollerindex (%d) or studiohdr->numbonecontrollers (%d).", studiohdr->bonecontrollerindex, studiohdr->numbonecontrollers);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -952,19 +955,19 @@ public:
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_IDST(const void* buf, size_t bufSize, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_IDST(const void* buf, size_t bufSize, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		auto studiohdr = (studiohdr_t*)buf;
 
 		if (studiohdr->version != 10)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid version number, expect %d, got %d.", 10, studiohdr->version);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid version number, expect %d, got %d.", 10, studiohdr->version);
 			return UtilAssetsIntegrityCheckReason::VersionMismatch;
 		}
 
 		if (studiohdr->texturedataindex < 0)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->texturedataindex (%d).", studiohdr->texturedataindex);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->texturedataindex (%d).", studiohdr->texturedataindex);
 			return UtilAssetsIntegrityCheckReason::OutOfBound;
 		}
 
@@ -974,7 +977,7 @@ public:
 		{
 			if (studiohdr->texturedataindex < 0 || studiohdr->texturedataindex > (int)bufSize)
 			{
-				snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->texturedataindex (%d).", studiohdr->texturedataindex);
+				if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->texturedataindex (%d).", studiohdr->texturedataindex);
 				return UtilAssetsIntegrityCheckReason::OutOfBound;
 			}
 
@@ -984,7 +987,7 @@ public:
 		{
 			if (studiohdr->length < 0 || studiohdr->length >(int)bufSize)
 			{
-				snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->length (%d).", studiohdr->length);
+				if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid studiohdr->length (%d).", studiohdr->length);
 				return UtilAssetsIntegrityCheckReason::OutOfBound;
 			}
 
@@ -1050,24 +1053,24 @@ public:
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel_IDSQ(const void* buf, size_t bufSize, UtilAssetsIntegrityCheckResult* checkResult)
+	UtilAssetsIntegrityCheckReason CheckStudioModel_IDSQ(const void* buf, size_t bufSize, UtilAssetsIntegrityCheckResult_StudioModel* checkResult)
 	{
 		auto studiohdr = (studiohdr_t*)buf;
 
 		if (studiohdr->version != 10)
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid version number, expect %d, got %d.", 10, studiohdr->version);
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has invalid version number, expect %d, got %d.", 10, studiohdr->version);
 			return UtilAssetsIntegrityCheckReason::VersionMismatch;
 		}
 
 		return UtilAssetsIntegrityCheckReason::OK;
 	}
 
-	UtilAssetsIntegrityCheckReason CheckStudioModel(const void* buf, size_t bufSize, UtilAssetsIntegrityCheckResult* checkResult) override
+	UtilAssetsIntegrityCheckReason CheckStudioModel(const void* buf, size_t bufSize, UtilAssetsIntegrityCheckResult_StudioModel* checkResult) override
 	{
 		if (bufSize < sizeof(studiohdr_t))
 		{
-			snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel file too small, file size %d < %d.", bufSize, sizeof(studiohdr_t));
+			if(checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel file too small, file size %d < %d.", bufSize, sizeof(studiohdr_t));
 			return UtilAssetsIntegrityCheckReason::SizeTooSmall;
 		}
 
@@ -1081,10 +1084,70 @@ public:
 			return CheckStudioModel_IDST(buf, bufSize, checkResult);
 		}
 
-		const char* pbuf = (const char*)buf;
-		snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has bogus header, expect IDST/IDSQ, got %c%c%c%c.", pbuf[0], pbuf[1], pbuf[2], pbuf[3]);
-
+		auto pbuf = (const char*)buf;
+		if (checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "StudioModel has bogus header, expect IDST/IDSQ, got %c%c%c%c.", pbuf[0], pbuf[1], pbuf[2], pbuf[3]);
 		return UtilAssetsIntegrityCheckReason::BogusHeader;
+	}
+
+	UtilAssetsIntegrityCheckReason Check8bitBMP(const void* buf, size_t bufSize, UtilAssetsIntegrityCheckResult_BMP* checkResult) override
+	{
+		auto fim = FreeImage_OpenMemory((BYTE*)buf, bufSize);
+
+		if (!fim)
+		{
+			if (checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "Failed to open BMP file with FreeImage_OpenMemory!");
+			return UtilAssetsIntegrityCheckReason::Unknown;
+		}
+
+		SCOPE_EXIT{
+			FreeImage_CloseMemory(fim);
+		};
+
+		auto fib = FreeImage_LoadFromMemory(FREE_IMAGE_FORMAT::FIF_BMP, fim);
+
+		if (!fib)
+		{
+			if (checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "Failed to load BMP file with FreeImage_LoadFromMemory!");
+			return UtilAssetsIntegrityCheckReason::BogusHeader;
+		}
+
+		SCOPE_EXIT{
+			FreeImage_Unload(fib);
+		};
+
+		auto colorType = FreeImage_GetColorType(fib);
+
+		if (colorType != FIC_PALETTE)
+		{
+			if (checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "The BMP is not indexed-color one!");
+			return UtilAssetsIntegrityCheckReason::InvalidFormat;
+		}
+
+		auto width = FreeImage_GetWidth(fib);
+
+		if (checkResult && width > checkResult->MaxWidth)
+		{
+			if (checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "The width of BMP is too large! (%d > %d)", width, checkResult->MaxWidth);
+			return UtilAssetsIntegrityCheckReason::SizeTooLarge;
+		}
+
+		auto height = FreeImage_GetHeight(fib);
+
+		if (checkResult && height > checkResult->MaxHeight)
+		{
+			if (checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "The height of BMP is too large! (%d > %d)", height, checkResult->MaxHeight);
+			return UtilAssetsIntegrityCheckReason::SizeTooLarge;
+		}
+
+		auto size = width * height;
+
+		if (checkResult && size > checkResult->MaxSize)
+		{
+			if (checkResult) snprintf(checkResult->ReasonStr, sizeof(checkResult->ReasonStr), "The size of BMP is too large! (%d > %d)", size, checkResult->MaxSize);
+			return UtilAssetsIntegrityCheckReason::SizeTooLarge;
+		}
+
+		return UtilAssetsIntegrityCheckReason::OK;
 	}
 };
 
