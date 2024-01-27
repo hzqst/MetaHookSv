@@ -65,8 +65,12 @@ class IUtilHTTPResponse : public IBaseInterface
 public:
     virtual int GetStatusCode() const = 0;
     virtual IUtilHTTPPayload* GetPayload() const = 0;
+    virtual bool GetHeaderSize(const char* name, size_t *buflen) = 0;
+    virtual bool GetHeader(const char *name, char *buf, size_t buflen) = 0;
     virtual bool IsResponseCompleted() const = 0;
     virtual bool IsResponseError() const = 0;
+    virtual bool IsHeaderReceived() const = 0;
+    virtual bool IsStream() const = 0;
 };
 
 class IUtilHTTPRequest : public IBaseInterface
@@ -83,6 +87,7 @@ public:
     virtual bool IsRequestSuccessful() const = 0;
     virtual bool IsFinished() const = 0;
     virtual bool IsAsync() const = 0;
+    virtual bool IsStream() const = 0;
     virtual UtilHTTPRequestState GetRequestState() const = 0;
 
     //Only available for SyncRequest
@@ -99,8 +104,15 @@ class IUtilHTTPCallbacks : public IBaseInterface
 {
 public:
     virtual void Destroy() = 0;
-    virtual void OnResponse(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse *ResponseInstance) = 0;
+    virtual void OnResponseComplete(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse *ResponseInstance) = 0;
     virtual void OnUpdateState(UtilHTTPRequestState NewState) = 0;
+};
+
+class IUtilHTTPStreamCallbacks : public IUtilHTTPCallbacks
+{
+public:
+    virtual void OnReceiveHeader(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance) = 0;
+    virtual void OnReceiveData(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance) = 0;
 };
 
 class IURLParsedResult : public IBaseInterface
@@ -148,8 +160,9 @@ public:
     virtual IUtilHTTPRequest* GetRequestById(UtilHTTPRequestId_t id) = 0; 
     virtual bool DestroyRequestById(UtilHTTPRequestId_t id) = 0;
     virtual bool SetCookie(const char *host, const char *url, const char* cookie) = 0;
+    virtual IUtilHTTPRequest* CreateAsyncStreamRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPStreamCallbacks* callbacks) = 0;
 };
 
 IUtilHTTPClient* UtilHTTPClient();
 
-#define UTIL_HTTPCLIENT_STEAMAPI_INTERFACE_VERSION "UtilHTTPClient_SteamAPI_002"
+#define UTIL_HTTPCLIENT_STEAMAPI_INTERFACE_VERSION "UtilHTTPClient_SteamAPI_003"

@@ -108,6 +108,18 @@ private:
 	std::string m_payload;
 
 public:
+
+	bool ReadStreamFromRequestHandle(HTTPRequestHandle handle, uint32_t offset, uint32_t size)
+	{
+		m_payload.resize(size);
+		if (SteamHTTP()->GetHTTPStreamingResponseBodyData(handle, offset, (uint8*)m_payload.data(), size))
+		{
+			return true;
+		}
+
+		return false;
+	}
+
 	bool ReadFromRequestHandle(HTTPRequestHandle handle)
 	{
 		uint32_t responseSize = 0;
@@ -139,19 +151,44 @@ class CUtilHTTPResponse : public IUtilHTTPResponse
 private:
 	bool m_bResponseCompleted{};
 	bool m_bResponseError{};
+	bool m_bIsHeaderReceived{};
+	bool m_bIsStream{};
 	int m_iResponseStatusCode{};
 	CUtilHTTPPayload* m_pResponsePayload{};
+
+	HTTPRequestHandle m_RequestHandle{ INVALID_HTTPREQUEST_HANDLE  };
 public:
 
-	void OnSteamHTTPCompleted(HTTPRequestHandle RequestHandle, HTTPRequestCompleted_t* pResult, bool bHasError)
+	void OnSteamHTTPRecvHeader(HTTPRequestHeadersReceived_t* pResult, bool bHasError)
 	{
+		m_bIsHeaderReceived = true;
+		m_bIsStream = true;
+
+		m_RequestHandle = pResult->m_hRequest;
+	}
+
+	void OnSteamHTTPRecvData(HTTPRequestDataReceived_t* pResult, bool bHasError)
+	{
+		m_RequestHandle = pResult->m_hRequest;
+
+		if (m_bIsStream && !bHasError)
+		{
+			m_pResponsePayload->ReadStreamFromRequestHandle(pResult->m_hRequest, pResult->m_cOffset, pResult->m_cBytesReceived);
+		}
+	}
+
+	void OnSteamHTTPCompleted(HTTPRequestCompleted_t* pResult, bool bHasError)
+	{
+		m_RequestHandle = pResult->m_hRequest;
+
+		m_bIsHeaderReceived = true;
 		m_bResponseCompleted = true;
 		m_bResponseError = bHasError;
 		m_iResponseStatusCode = (int)pResult->m_eStatusCode;
 
-		if (pResult->m_bRequestSuccessful && !bHasError)
+		if (pResult->m_bRequestSuccessful && !bHasError && !m_bIsStream)
 		{
-			m_pResponsePayload->ReadFromRequestHandle(RequestHandle);
+			m_pResponsePayload->ReadFromRequestHandle(pResult->m_hRequest);
 		}
 	}
 
@@ -170,6 +207,16 @@ public:
 		}
 	}
 
+	bool GetHeaderSize(const char* name, size_t *buflen) override
+	{
+		return SteamHTTP()->GetHTTPResponseHeaderSize(m_RequestHandle, name, buflen);
+	}
+
+	bool GetHeader(const char* name, char* buf, size_t buflen) override
+	{
+		return SteamHTTP()->GetHTTPResponseHeaderValue(m_RequestHandle, name, (uint8 *)buf, buflen);
+	}
+
 	bool IsResponseCompleted() const override
 	{
 		return m_bResponseCompleted;
@@ -178,6 +225,16 @@ public:
 	bool IsResponseError() const override
 	{
 		return m_bResponseError;
+	}
+
+	bool IsHeaderReceived() const override
+	{
+		return m_bIsHeaderReceived;
+	}
+
+	bool IsStream() const override
+	{
+		return m_bIsStream;
 	}
 
 	int GetStatusCode() const override
@@ -195,7 +252,7 @@ class CUtilHTTPRequest : public IUtilHTTPRequest
 {
 protected:
 	HTTPRequestHandle m_RequestHandle{};
-	CCallResult<CUtilHTTPRequest, HTTPRequestCompleted_t> m_CallResult{};
+	CCallResult<CUtilHTTPRequest, HTTPRequestCompleted_t> m_CompleteCallResult{};
 	bool m_bRequesting{};
 	bool m_bResponding{};
 	bool m_bRequestSuccessful{};
@@ -239,9 +296,9 @@ public:
 
 	~CUtilHTTPRequest()
 	{
-		if (m_CallResult.IsActive())
+		if (m_CompleteCallResult.IsActive())
 		{
-			m_CallResult.Cancel();
+			m_CompleteCallResult.Cancel();
 		}
 
 		if (m_RequestHandle != INVALID_HTTPREQUEST_HANDLE)
@@ -257,33 +314,51 @@ public:
 		}
 	}
 
-	//TODO stream read?
+	virtual void OnRespondStart()
+	{
+		if (!m_bResponding)
+		{
+			m_bRequesting = false;
+			m_bResponding = true;
+
+			if (m_Callbacks)
+			{
+				m_Callbacks->OnUpdateState(UtilHTTPRequestState::Responding);
+			}
+		}
+	}
+
+	virtual void OnRespondFinish()
+	{
+		if (m_bResponding)
+		{
+			m_bFinished = true;
+			m_bResponding = false;
+
+			if (m_Callbacks)
+			{
+				m_Callbacks->OnUpdateState(UtilHTTPRequestState::Finished);
+			}
+		}
+	}
+
 	virtual void OnSteamHTTPCompleted(HTTPRequestCompleted_t* pResult, bool bHasError)
 	{
-		m_bRequesting = false;
-		m_bResponding = true;
-
-		if (m_Callbacks)
-		{
-			m_Callbacks->OnUpdateState(UtilHTTPRequestState::Responding);
-		}
+		OnRespondStart();
 
 		m_bRequestSuccessful = pResult->m_bRequestSuccessful;
 
-		m_pResponse->OnSteamHTTPCompleted(m_RequestHandle, pResult, bHasError);
+		m_pResponse->OnSteamHTTPCompleted(pResult, bHasError);
 
 		if (m_Callbacks)
 		{
-			m_Callbacks->OnResponse(this, m_pResponse);
+			m_Callbacks->OnResponseComplete(this, m_pResponse);
 		}
 
 		m_bFinished = true;
 		m_bResponding = false;
 
-		if (m_Callbacks)
-		{
-			m_Callbacks->OnUpdateState(UtilHTTPRequestState::Finished);
-		}
+		OnRespondFinish();
 	}
 
 public:
@@ -298,7 +373,7 @@ public:
 		SteamAPICall_t SteamApiCall;
 		if (SteamHTTP()->SendHTTPRequest(m_RequestHandle, &SteamApiCall))
 		{
-			m_CallResult.Set(SteamApiCall, this, &CUtilHTTPRequest::OnSteamHTTPCompleted);
+			m_CompleteCallResult.Set(SteamApiCall, this, &CUtilHTTPRequest::OnSteamHTTPCompleted);
 		}
 
 		m_bRequesting = true;
@@ -467,6 +542,11 @@ public:
 		return false;
 	}
 
+	bool IsStream() const override
+	{
+		return false;
+	}
+
 	void WaitForResponse() override
 	{
 		if (m_hResponseEvent)
@@ -525,6 +605,11 @@ public:
 		return true;
 	}
 
+	bool IsStream() const override
+	{
+		return false;
+	}
+
 	void WaitForResponse() override
 	{
 
@@ -543,6 +628,135 @@ public:
 	UtilHTTPRequestId_t GetRequestId() const override
 	{
 		return m_RequestId;
+	}
+};
+
+class CUtilHTTPAsyncStreamRequest : public CUtilHTTPAsyncRequest
+{
+private:
+	CCallResult<CUtilHTTPAsyncStreamRequest, HTTPRequestCompleted_t> m_StreamCompleteCallResult{};
+	CCallResult<CUtilHTTPAsyncStreamRequest, HTTPRequestHeadersReceived_t> m_RecvHeaderCallResult{};
+	CCallResult<CUtilHTTPAsyncStreamRequest, HTTPRequestDataReceived_t> m_RecvDataCallResult{};
+
+	IUtilHTTPStreamCallbacks* m_StreamCallbacks{};
+
+public:
+	CUtilHTTPAsyncStreamRequest(
+		const UtilHTTPMethod method,
+		const std::string& host,
+		unsigned short port,
+		bool secure,
+		const std::string& target,
+		IUtilHTTPStreamCallbacks* callbacks,
+		HTTPCookieContainerHandle hCookieHandle) :
+		CUtilHTTPAsyncRequest(method, host, port, secure, target, nullptr, hCookieHandle), m_StreamCallbacks(callbacks)
+	{
+
+	}
+
+	~CUtilHTTPAsyncStreamRequest()
+	{
+		if (m_StreamCompleteCallResult.IsActive())
+		{
+			m_StreamCompleteCallResult.Cancel();
+		}
+		if (m_RecvHeaderCallResult.IsActive())
+		{
+			m_RecvHeaderCallResult.Cancel();
+		}
+		if (m_RecvDataCallResult.IsActive())
+		{
+			m_RecvDataCallResult.Cancel();
+		}
+	}
+
+	bool IsStream() const override
+	{
+		return true;
+	}
+
+	virtual void OnSteamHTTPRecvHeader(HTTPRequestHeadersReceived_t* pResult, bool bHasError)
+	{
+		OnRespondStart();
+
+		m_pResponse->OnSteamHTTPRecvHeader(pResult, bHasError);
+
+		if (m_StreamCallbacks)
+		{
+			m_StreamCallbacks->OnReceiveHeader(this, m_pResponse);
+		}
+	}
+
+	virtual void OnSteamHTTPRecvData(HTTPRequestDataReceived_t* pResult, bool bHasError)
+	{
+		m_pResponse->OnSteamHTTPRecvData(pResult, bHasError);
+
+		if (m_StreamCallbacks)
+		{
+			m_StreamCallbacks->OnReceiveData(this, m_pResponse);
+		}
+	}
+
+	void OnSteamHTTPCompleted(HTTPRequestCompleted_t* pResult, bool bHasError) override
+	{
+		OnRespondStart();
+
+		m_bRequestSuccessful = pResult->m_bRequestSuccessful;
+
+		m_pResponse->OnSteamHTTPCompleted(pResult, bHasError);
+
+		if (m_StreamCallbacks)
+		{
+			m_StreamCallbacks->OnResponseComplete(this, m_pResponse);
+		}
+
+		OnRespondFinish();
+	}
+
+	void OnRespondStart() override
+	{
+		if (!m_bResponding)
+		{
+			m_bRequesting = false;
+			m_bResponding = true;
+
+			if (m_StreamCallbacks)
+			{
+				m_StreamCallbacks->OnUpdateState(UtilHTTPRequestState::Responding);
+			}
+		}
+	}
+
+	void OnRespondFinish() override
+	{
+		if (m_bResponding)
+		{
+			m_bFinished = true;
+			m_bResponding = false;
+
+			if (m_StreamCallbacks)
+			{
+				m_StreamCallbacks->OnUpdateState(UtilHTTPRequestState::Finished);
+			}
+		}
+	}
+
+	void SendAsyncRequest() override
+	{
+		SteamAPICall_t SteamApiCall;
+		if (SteamHTTP()->SendHTTPRequestAndStreamResponse(m_RequestHandle, &SteamApiCall))
+		{
+			m_StreamCompleteCallResult.Set(SteamApiCall, this, &CUtilHTTPAsyncStreamRequest::OnSteamHTTPCompleted);
+			m_RecvHeaderCallResult.Set(SteamApiCall, this, &CUtilHTTPAsyncStreamRequest::OnSteamHTTPRecvHeader);
+			m_RecvDataCallResult.Set(SteamApiCall, this, &CUtilHTTPAsyncStreamRequest::OnSteamHTTPRecvData);
+		}
+
+		m_bRequesting = true;
+
+		if (m_StreamCallbacks)
+		{
+			m_StreamCallbacks->OnUpdateState(UtilHTTPRequestState::Requesting);
+		}
 	}
 };
 
@@ -768,6 +982,26 @@ public:
 
 		return false;
 	}
+
+	IUtilHTTPRequest* CreateAsyncStreamRequestEx(const char* host, unsigned short port_us, const char* target, bool secure, const UtilHTTPMethod method, IUtilHTTPStreamCallbacks* callback)
+	{
+		return new CUtilHTTPAsyncStreamRequest(method, host, port_us, secure, target, callback, m_CookieHandle);
+	}
+
+	IUtilHTTPRequest* CreateAsyncStreamRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPStreamCallbacks* callbacks) override
+	{
+		CURLParsedResult result;
+
+		if (!ParseUrlEx(url, &result))
+			return NULL;
+
+		auto RequestInstance = CreateAsyncStreamRequestEx(result.GetHost(), result.GetPort(), result.GetTarget(), result.IsSecure(), method, callbacks);
+
+		AddToRequestPool(RequestInstance);
+
+		return RequestInstance;
+	}
+
 };
 
 EXPOSE_INTERFACE(CUtilHTTPClient, IUtilHTTPClient, UTIL_HTTPCLIENT_STEAMAPI_INTERFACE_VERSION);

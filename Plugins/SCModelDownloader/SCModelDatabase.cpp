@@ -66,7 +66,7 @@ public:
 		delete this;
 	}
 
-	void OnResponse(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance) override
+	void OnResponseComplete(IUtilHTTPRequest* RequestInstance, IUtilHTTPResponse* ResponseInstance) override
 	{
 		if (!RequestInstance->IsRequestSuccessful())
 		{
