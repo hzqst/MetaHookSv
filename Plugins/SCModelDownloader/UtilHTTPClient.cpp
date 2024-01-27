@@ -55,6 +55,7 @@ void UtilHTTPClient_Shutdown()
 	if (g_pUtilHTTPClient)
 	{
 		g_pUtilHTTPClient->Shutdown();
+		g_pUtilHTTPClient->Destroy();
 		g_pUtilHTTPClient = nullptr;
 	}
 

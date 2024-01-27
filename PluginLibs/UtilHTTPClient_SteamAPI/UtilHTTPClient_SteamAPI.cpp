@@ -8,20 +8,6 @@
 
 #include <steam_api.h>
 
-/*
-enum EHTTPMethod
-{
-	k_EHTTPMethodInvalid = 0,
-	k_EHTTPMethodGET,
-	k_EHTTPMethodHEAD,
-	k_EHTTPMethodPOST,
-	k_EHTTPMethodPUT,
-	k_EHTTPMethodDELETE,
-	k_EHTTPMethodOPTIONS,
-	k_EHTTPMethodPATCH,
-};
-*/
-
 EHTTPMethod UTIL_ConvertUtilHTTPMethodToSteamHTTPMethod(const UtilHTTPMethod method)
 {
 	switch (method)
@@ -568,6 +554,11 @@ public:
 	
 	}
 
+	void Destroy() override
+	{
+		delete this;
+	}
+
 	void Init() override
 	{
 
@@ -751,4 +742,4 @@ public:
 	}
 };
 
-EXPOSE_SINGLE_INTERFACE(CUtilHTTPClient, IUtilHTTPClient, UTIL_HTTPCLIENT_STEAMAPI_INTERFACE_VERSION);
+EXPOSE_INTERFACE(CUtilHTTPClient, IUtilHTTPClient, UTIL_HTTPCLIENT_STEAMAPI_INTERFACE_VERSION);
