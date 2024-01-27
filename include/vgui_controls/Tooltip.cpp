@@ -155,9 +155,10 @@ void Tooltip::ShowTooltip(Panel *currentPanel)
 {
 	if ( s_TooltipWindow.Get() )
 	{
-		int nLen = s_TooltipWindow->GetTextLength();
-		char *pBuf = (char*)_alloca( nLen+1 );
-		s_TooltipWindow->GetText( pBuf, nLen+1 );
+		//int nLen = s_TooltipWindow->GetTextLength();
+		//char *pBuf = (char*)malloc( nLen+1 );
+		//s_TooltipWindow->GetText( pBuf, nLen+1 );
+
 		Panel *pCurrentParent = s_TooltipWindow->GetParent();
 
 		_isDirty = _isDirty || ( pCurrentParent != currentPanel );

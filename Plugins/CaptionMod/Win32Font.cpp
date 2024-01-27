@@ -260,51 +260,55 @@ void CWin32Font::GetCharRGBA(int ch, int rgbaX, int rgbaY, int rgbaWide, int rgb
 
 	if (bytesNeeded > 0)
 	{
-		unsigned char *lpbuf = (unsigned char *)_alloca(bytesNeeded);
-		::GetGlyphOutlineW(m_hDC, ch, GGO_GRAY8_BITMAP, &glyphMetrics, bytesNeeded, lpbuf, &mat2);
-
-		wide = glyphMetrics.gmBlackBoxX;
-
-		while (wide % 4 != 0)
-			wide++;
-
-		int pushDown = m_iAscent - glyphMetrics.gmptGlyphOrigin.y;
-		int xstart = 0;
-
-		if ((int)glyphMetrics.gmBlackBoxX >= b + 2)
-			xstart = (glyphMetrics.gmBlackBoxX - b) / 2;
-
-		for (unsigned int j = 0; j < glyphMetrics.gmBlackBoxY; j++)
+		unsigned char *lpbuf = (unsigned char *)malloc(bytesNeeded);
+		if (lpbuf)
 		{
-			for (unsigned int i = xstart; i < glyphMetrics.gmBlackBoxX; i++)
+			::GetGlyphOutlineW(m_hDC, ch, GGO_GRAY8_BITMAP, &glyphMetrics, bytesNeeded, lpbuf, &mat2);
+
+			wide = glyphMetrics.gmBlackBoxX;
+
+			while (wide % 4 != 0)
+				wide++;
+
+			int pushDown = m_iAscent - glyphMetrics.gmptGlyphOrigin.y;
+			int xstart = 0;
+
+			if ((int)glyphMetrics.gmBlackBoxX >= b + 2)
+				xstart = (glyphMetrics.gmBlackBoxX - b) / 2;
+
+			for (unsigned int j = 0; j < glyphMetrics.gmBlackBoxY; j++)
 			{
-				int x = i - xstart + m_iBlur + m_iOutlineSize;
-				int y = j + pushDown;
-
-				if ((x < rgbaWide) && (y < rgbaTall))
+				for (unsigned int i = xstart; i < glyphMetrics.gmBlackBoxX; i++)
 				{
-					unsigned char grayscale = lpbuf[(j * wide + i)];
-					float r, g, b, a;
+					int x = i - xstart + m_iBlur + m_iOutlineSize;
+					int y = j + pushDown;
 
-					if (grayscale)
+					if ((x < rgbaWide) && (y < rgbaTall))
 					{
-						r = g = b = 1.0f;
-						a = (grayscale + 0) / 64.0f;
-						if (a > 1.0f) a = 1.0f;
+						unsigned char grayscale = lpbuf[(j * wide + i)];
+						float r, g, b, a;
+
+						if (grayscale)
+						{
+							r = g = b = 1.0f;
+							a = (grayscale + 0) / 64.0f;
+							if (a > 1.0f) a = 1.0f;
+						}
+						else
+							r = g = b = a = 0.0f;
+
+						if (ch == '\t')
+							r = g = b = 0;
+
+						unsigned char* dst = &rgba[(y * rgbaWide + x) * 4];
+						dst[0] = (unsigned char)(r * 255.0f);
+						dst[1] = (unsigned char)(g * 255.0f);
+						dst[2] = (unsigned char)(b * 255.0f);
+						dst[3] = (unsigned char)(a * 255.0f);
 					}
-					else
-						r = g = b = a = 0.0f;
-
-					if (ch == '\t')
-						r = g = b = 0;
-
-					unsigned char *dst = &rgba[(y*rgbaWide+x)*4];
-					dst[0] = (unsigned char)(r * 255.0f);
-					dst[1] = (unsigned char)(g * 255.0f);
-					dst[2] = (unsigned char)(b * 255.0f);
-					dst[3] = (unsigned char)(a * 255.0f);
 				}
 			}
+			free(lpbuf);
 		}
 	}
 	else
@@ -503,17 +507,21 @@ void CWin32Font::ApplyGaussianBlurToTexture(int rgbaX, int rgbaY, int rgbaWide, 
 	if (!m_pGaussianDistribution)
 		return;
 
-	unsigned char *src = (unsigned char *)_alloca(rgbaWide * rgbaTall * 4);
-	memcpy(src, rgba, rgbaWide * rgbaTall * 4);
-	unsigned char *dest = rgba;
-
-	for (int y = 0; y < rgbaTall; y++)
+	unsigned char *src = (unsigned char *)malloc(rgbaWide * rgbaTall * 4);
+	if (src)
 	{
-		for (int x = 0; x < rgbaWide; x++)
+		memcpy(src, rgba, rgbaWide * rgbaTall * 4);
+		unsigned char* dest = rgba;
+
+		for (int y = 0; y < rgbaTall; y++)
 		{
-			GetBlurValueForPixel(src, m_iBlur, m_pGaussianDistribution, x, y, rgbaWide, rgbaTall, dest);
-			dest += 4;
+			for (int x = 0; x < rgbaWide; x++)
+			{
+				GetBlurValueForPixel(src, m_iBlur, m_pGaussianDistribution, x, y, rgbaWide, rgbaTall, dest);
+				dest += 4;
+			}
 		}
+		free(src);
 	}
 }
 

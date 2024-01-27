@@ -3584,20 +3584,46 @@ int TextEntry::GetStartDrawIndex(int &lineBreakIndexIndex)
 // helper accessors for common gets
 float TextEntry::GetValueAsFloat()
 {
+#if 0
 	int nTextLength = GetTextLength() + 1;
-	char* txt = ( char* )_alloca( nTextLength * sizeof( char ) );
-	GetText( txt, nTextLength );
+	char* txt = ( char* )malloc( nTextLength * sizeof( char ) );
+	if (txt)
+	{
+		GetText(txt, nTextLength);
 
-	return V_atof( txt );
+		auto val = V_atof(txt);
+
+		return val;
+	}
+#else
+	char szText[256];
+	GetText(szText, sizeof(szText));
+	return  V_atof(szText);
+#endif
+	return 0;
 }
 
 int TextEntry::GetValueAsInt()
 {
+#if 0
 	int nTextLength = GetTextLength() + 1;
-	char* txt = ( char* )_alloca( nTextLength * sizeof( char ) );
-	GetText( txt, nTextLength );
+	char* txt = ( char* )malloc( nTextLength * sizeof( char ) );
+	if (txt)
+	{
+		GetText(txt, nTextLength);
 
-	return V_atoi( txt );
+		int val = V_atoi(txt);
+
+		free(txt);
+
+		return val;
+	}
+#else
+	char szText[256];
+	GetText(szText, sizeof(szText));
+	return V_atoi(szText);
+#endif
+	return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -4251,12 +4277,16 @@ void TextEntry::OnPanelDropped( CUtlVector< KeyValues * >& msglist )
 		int curLen = m_TextStream.Count();
 
 		size_t outsize = sizeof( wchar_t ) * ( newLen + curLen + 1 );
-		wchar_t *out = (wchar_t *)_alloca( outsize );
-		Q_memset( out, 0, outsize );
-		wcsncpy( out, m_TextStream.Base(), curLen );
-		wcsncat( out, newText, wcslen( newText ) );
-		out[ newLen + curLen ] = L'\0';
-		SetText( out );
+		wchar_t *out = (wchar_t *)malloc( outsize );
+		if (out)
+		{
+			Q_memset(out, 0, outsize);
+			wcsncpy(out, m_TextStream.Base(), curLen);
+			wcsncat(out, newText, wcslen(newText));
+			out[newLen + curLen] = L'\0';
+			SetText(out);
+			free(out);
+		}
 		_dataChanged = true;
 		FireActionSignal();
 	}
@@ -4266,12 +4296,16 @@ void TextEntry::OnPanelDropped( CUtlVector< KeyValues * >& msglist )
 		int curLen = m_TextStream.Count();
 
 		size_t outsize = sizeof( wchar_t ) * ( newLen + curLen + 1 );
-		wchar_t *out = (wchar_t *)_alloca( outsize );
-		Q_memset( out, 0, outsize );
-		wcsncpy( out, newText, wcslen( newText ) );
-		wcsncat( out, m_TextStream.Base(), curLen );
-		out[ newLen + curLen ] = L'\0';
-		SetText( out );
+		wchar_t *out = (wchar_t *)malloc( outsize );
+		if (out)
+		{
+			Q_memset(out, 0, outsize);
+			wcsncpy(out, newText, wcslen(newText));
+			wcsncat(out, m_TextStream.Base(), curLen);
+			out[newLen + curLen] = L'\0';
+			SetText(out);
+			free(out);
+		}
 		_dataChanged = true;
 		FireActionSignal();
 	}

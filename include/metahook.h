@@ -465,6 +465,7 @@ extern mh_enginesave_t *g_pMetaSave;
 #define FILESYSTEM_ANY_GETLOCALPATH(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->GetLocalPath(__VA_ARGS__) : g_pFileSystem->GetLocalPath(__VA_ARGS__))
 #define FILESYSTEM_ANY_GETCURRENTDIRECTORY(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->GetCurrentDirectory(__VA_ARGS__) : g_pFileSystem->GetCurrentDirectory(__VA_ARGS__))
 #define FILESYSTEM_ANY_ADDSEARCHPATH(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->AddSearchPath(__VA_ARGS__) : g_pFileSystem->AddSearchPath(__VA_ARGS__))
+#define FILESYSTEM_ANY_ADDSEARCHPATHNOWRITE(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->AddSearchPathNoWrite(__VA_ARGS__) : g_pFileSystem->AddSearchPathNoWrite(__VA_ARGS__))
 #define FILESYSTEM_ANY_MOUNT(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->Mount(__VA_ARGS__) : g_pFileSystem->Mount(__VA_ARGS__))
 #define FILESYSTEM_ANY_UNMOUNT(...) (g_pFileSystem_HL25 ? g_pFileSystem_HL25->Unmount(__VA_ARGS__) : g_pFileSystem->Unmount(__VA_ARGS__))
 

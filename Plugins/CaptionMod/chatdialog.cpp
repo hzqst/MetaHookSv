@@ -921,10 +921,7 @@ void CChatDialog::ChatPrintf(int iPlayerIndex, const char *fmt)
 	if (!*pmsg)
 		return;
 
-	CChatDialogLine *line = (CChatDialogLine *)FindUnusedChatLine();
-
-	//if (!line)
-	//	line = (CChatDialogLine *)FindUnusedChatLine();
+	auto line = FindUnusedChatLine();
 
 	if (!line)
 		return;
@@ -947,7 +944,7 @@ void CChatDialog::ChatPrintf(int iPlayerIndex, const char *fmt)
 	}
 
 	int bufSize = (strlen(pmsg) + 1) * sizeof(wchar_t);
-	wchar_t *wbuf = static_cast<wchar_t *>(_alloca(bufSize));
+	wchar_t *wbuf = static_cast<wchar_t *>(malloc(bufSize));
 
 	if (wbuf)
 	{
@@ -975,6 +972,8 @@ void CChatDialog::ChatPrintf(int iPlayerIndex, const char *fmt)
 		line->SetNameLength(iNameLength);
 		line->SetNameColor(clrNameColor);
 		line->InsertAndColorizeText(wbuf, iPlayerIndex);
+
+		free(wbuf);
 	}
 
 	SetVisible(true);

@@ -122,18 +122,26 @@ public:
 			snprintf(temp, sizeof(temp), "%s\\%s_dpi%.0f", GetBaseDirectory(), gEngfuncs.pfnGetGameDirectory(), dpimanager()->GetDpiScaling() * 100.0f);
 			COM_FixSlashes(temp);
 
-			if(g_dwEngineBuildnum >= 6153)
-				g_pFileSystem->AddSearchPathNoWrite(temp, "SKIN");
+			if (g_dwEngineBuildnum >= 6153)
+			{
+				FILESYSTEM_ANY_ADDSEARCHPATHNOWRITE(temp, "SKIN");
+			}
 			else
-				g_pFileSystem->AddSearchPath(temp, "SKIN");
+			{
+				FILESYSTEM_ANY_ADDSEARCHPATH(temp, "SKIN");
+			}
 
 			snprintf(temp, sizeof(temp), "%s\\%s_hidpi", GetBaseDirectory(), gEngfuncs.pfnGetGameDirectory());
 			COM_FixSlashes(temp);
 
 			if (g_dwEngineBuildnum >= 6153)
-				g_pFileSystem->AddSearchPathNoWrite(temp, "SKIN");
+			{
+				FILESYSTEM_ANY_ADDSEARCHPATHNOWRITE(temp, "SKIN");
+			}
 			else
-				g_pFileSystem->AddSearchPath(temp, "SKIN");
+			{
+				FILESYSTEM_ANY_ADDSEARCHPATH(temp, "SKIN");
+			}
 		}
 	}
 

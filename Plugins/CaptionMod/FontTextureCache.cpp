@@ -65,21 +65,24 @@ bool CFontTextureCache::GetTextureForChar(HFont font, wchar_t wch, int *textureI
 		return false;
 
 	int nByteCount = s_pFontPageSize[FONT_PAGE_SIZE_COUNT - 1] * s_pFontPageSize[FONT_PAGE_SIZE_COUNT - 1] * 4;
-	unsigned char* rgba = (unsigned char *)_alloca(nByteCount);
-	memset(rgba, 0, nByteCount);
-	winFont->GetCharRGBA(wch, 0, 0, fontWide, fontTall, rgba);
-
-	if (staticSurface)
+	unsigned char* rgba = (unsigned char *)malloc(nByteCount);
+	if (rgba)
 	{
-		staticSurface->drawSetTexture(m_PageList[page].textureID);
-		staticSurface->drawSetSubTextureRGBA(m_PageList[page].textureID, drawX, drawY, rgba, fontWide, fontTall);
-	}
-	else
-	{
-		staticSurface_HL25->drawSetTexture(m_PageList[page].textureID);
-		staticSurface_HL25->drawSetSubTextureRGBA(m_PageList[page].textureID, drawX, drawY, rgba, fontWide, fontTall);
-	}
+		memset(rgba, 0, nByteCount);
+		winFont->GetCharRGBA(wch, 0, 0, fontWide, fontTall, rgba);
 
+		if (staticSurface)
+		{
+			staticSurface->drawSetTexture(m_PageList[page].textureID);
+			staticSurface->drawSetSubTextureRGBA(m_PageList[page].textureID, drawX, drawY, rgba, fontWide, fontTall);
+		}
+		else
+		{
+			staticSurface_HL25->drawSetTexture(m_PageList[page].textureID);
+			staticSurface_HL25->drawSetSubTextureRGBA(m_PageList[page].textureID, drawX, drawY, rgba, fontWide, fontTall);
+		}
+		free(rgba);
+	}
 	cacheitem.page = page;
 
 	double adjust = 0.0f;
