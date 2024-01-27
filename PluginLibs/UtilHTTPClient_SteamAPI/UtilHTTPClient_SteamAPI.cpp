@@ -211,7 +211,8 @@ public:
 		unsigned short port,
 		bool secure,
 		const std::string& target,
-		IUtilHTTPCallbacks* callbacks) : 
+		IUtilHTTPCallbacks* callbacks,
+		HTTPCookieContainerHandle hCookieHandle) :
 		m_Callbacks(callbacks),
 		m_pResponse(new CUtilHTTPResponse())
 	{
@@ -229,6 +230,8 @@ public:
 		std::string url = std::format("{0}://{1}{2}", secure ? "https" :"http", field_host, target);
 
 		m_RequestHandle = SteamHTTP()->CreateHTTPRequest(UTIL_ConvertUtilHTTPMethodToSteamHTTPMethod(method), url.c_str());
+
+		SteamHTTP()->SetHTTPRequestCookieContainer(m_RequestHandle, hCookieHandle);
 
 		SetField(UtilHTTPField::host, field_host.c_str());
 		SetField(UtilHTTPField::user_agent, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36");
@@ -442,8 +445,9 @@ public:
 		unsigned short port,
 		bool secure,
 		const std::string& target,
-		IUtilHTTPCallbacks* callbacks) : 
-		CUtilHTTPRequest(method, host, port, secure, target, callbacks)
+		IUtilHTTPCallbacks* callbacks,
+		HTTPCookieContainerHandle hCookieHandle) :
+		CUtilHTTPRequest(method, host, port, secure, target, callbacks, hCookieHandle)
 	{
 		m_hResponseEvent = CreateEventA(NULL, FALSE, FALSE, NULL);
 	}
@@ -509,8 +513,9 @@ public:
 		unsigned short port,
 		bool secure,
 		const std::string& target,
-		IUtilHTTPCallbacks* callbacks) :
-		CUtilHTTPRequest(method, host, port, secure, target, callbacks)
+		IUtilHTTPCallbacks* callbacks,
+		HTTPCookieContainerHandle hCookieHandle) :
+		CUtilHTTPRequest(method, host, port, secure, target, callbacks, hCookieHandle)
 	{
 
 	}
@@ -547,11 +552,21 @@ private:
 	std::mutex m_RequestHandleLock;
 	UtilHTTPRequestId_t m_RequestUsedId{ UTILHTTP_REQUEST_START_ID };
 	std::unordered_map<UtilHTTPRequestId_t, IUtilHTTPRequest*> m_RequestPool;
+	HTTPCookieContainerHandle m_CookieHandle{ INVALID_HTTPCOOKIE_HANDLE  };
 
 public:
 	CUtilHTTPClient()
 	{
-	
+		
+	}
+
+	~CUtilHTTPClient()
+	{
+		if (m_CookieHandle)
+		{
+			SteamHTTP()->ReleaseCookieContainer(m_CookieHandle);
+			m_CookieHandle = INVALID_HTTPCOOKIE_HANDLE;
+		}
 	}
 
 	void Destroy() override
@@ -559,9 +574,12 @@ public:
 		delete this;
 	}
 
-	void Init() override
+	void Init(CUtilHTTPClientCreationContext* context) override
 	{
-
+		if (context->m_bUseCookieContainer)
+		{
+			m_CookieHandle = SteamHTTP()->CreateCookieContainer(context->m_bAllowResponseToModifyCookie);
+		}
 	}
 
 	void Shutdown() override
@@ -679,12 +697,12 @@ public:
 
 	IUtilHTTPRequest* CreateSyncRequestEx(const char* host, unsigned short port_us, const char* target, bool secure, const UtilHTTPMethod method, IUtilHTTPCallbacks* callback)
 	{
-		return new CUtilHTTPSyncRequest(method, host, port_us, secure, target, callback);
+		return new CUtilHTTPSyncRequest(method, host, port_us, secure, target, callback, m_CookieHandle);
 	}
 
 	IUtilHTTPRequest* CreateAsyncRequestEx(const char * host, unsigned short port_us, const char* target, bool secure, const UtilHTTPMethod method, IUtilHTTPCallbacks* callback)
 	{
-		return new CUtilHTTPAsyncRequest(method, host, port_us, secure, target, callback);
+		return new CUtilHTTPAsyncRequest(method, host, port_us, secure, target, callback, m_CookieHandle);
 	}
 
 	IUtilHTTPRequest* CreateSyncRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPCallbacks* callbacks) override
@@ -736,6 +754,16 @@ public:
 			m_RequestPool.erase(itor);
 
 			return true;
+		}
+
+		return false;
+	}
+
+	bool SetCookie(const char* host, const char* url, const char* cookie) override
+	{
+		if (m_CookieHandle != INVALID_HTTPCOOKIE_HANDLE)
+		{
+			return SteamHTTP()->SetCookie(m_CookieHandle, host, url, cookie);
 		}
 
 		return false;

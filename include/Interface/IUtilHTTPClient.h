@@ -121,11 +121,24 @@ public:
     virtual void SetSecure(bool b) = 0;
 };
 
+class CUtilHTTPClientCreationContext
+{
+public:
+    CUtilHTTPClientCreationContext()
+    {
+        m_bUseCookieContainer = false;
+        m_bAllowResponseToModifyCookie = false;
+    }
+
+    bool m_bUseCookieContainer;
+    bool m_bAllowResponseToModifyCookie{};
+};
+
 class IUtilHTTPClient : public IBaseInterface
 {
 public:
     virtual void Destroy() = 0;
-    virtual void Init() = 0;
+    virtual void Init(CUtilHTTPClientCreationContext *context) = 0;
     virtual void Shutdown() = 0;
     virtual void RunFrame() = 0;
     virtual bool ParseUrlEx(const char* url, IURLParsedResult* result) = 0;
@@ -134,8 +147,9 @@ public:
     virtual IUtilHTTPRequest* CreateAsyncRequest(const char* url, const UtilHTTPMethod method, IUtilHTTPCallbacks* callbacks) = 0;
     virtual IUtilHTTPRequest* GetRequestById(UtilHTTPRequestId_t id) = 0; 
     virtual bool DestroyRequestById(UtilHTTPRequestId_t id) = 0;
+    virtual bool SetCookie(const char *host, const char *url, const char* cookie) = 0;
 };
 
 IUtilHTTPClient* UtilHTTPClient();
 
-#define UTIL_HTTPCLIENT_STEAMAPI_INTERFACE_VERSION "UtilHTTPClient_SteamAPI_001"
+#define UTIL_HTTPCLIENT_STEAMAPI_INTERFACE_VERSION "UtilHTTPClient_SteamAPI_002"

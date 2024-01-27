@@ -38,7 +38,8 @@ void UtilHTTPClient_Init()
 
 	if (g_pUtilHTTPClient)
 	{
-		g_pUtilHTTPClient->Init();
+		CUtilHTTPClientCreationContext context;
+		g_pUtilHTTPClient->Init(&context);
 	}
 }
 
