@@ -26,6 +26,10 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CommunicationDemo", "Plugins\CommunicationDemo\CommunicationDemo.vcxproj", "{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C8}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SCModelDownloader", "Plugins\SCModelDownloader\SCModelDownloader.vcxproj", "{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C9}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A4450AD0-38A5-48D5-B5E5-D17B865DB999} = {A4450AD0-38A5-48D5-B5E5-D17B865DB999}
+		{A4450AD0-38A5-48D5-B5E5-D17B865DB99A} = {A4450AD0-38A5-48D5-B5E5-D17B865DB99A}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DontFlushSoundCache", "Plugins\DontFlushSoundCache\DontFlushSoundCache.vcxproj", "{527CB8FE-4710-4F1E-B929-CF43C6C80D1E}"
 EndProject

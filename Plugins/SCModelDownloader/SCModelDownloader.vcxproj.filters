@@ -32,6 +32,9 @@
     <ClCompile Include="SCModelDatabase.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="UtilAssetsIntegrity.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
@@ -47,6 +50,9 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="SCModelDatabase.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="UtilAssetsIntegrity.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

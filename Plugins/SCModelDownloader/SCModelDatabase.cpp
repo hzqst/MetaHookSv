@@ -2,6 +2,7 @@
 #include "plugins.h"
 
 #include "UtilHTTPClient.h"
+#include "UtilAssetsIntegrity.h"
 #include "SCModelDatabase.h"
 
 #include <string>
@@ -356,21 +357,33 @@ bool CSCModelQueryModelFileTask::OnResponsePayload(const char* data, size_t size
 {
 	gEngfuncs.Con_DPrintf("[SCModelDownloader] File \"%s\" acquired!\n", m_localFileName.c_str());
 
-	//TODO: Integrity check ?
+	if (m_localFileName.ends_with(".mdl"))
+	{
+		UtilAssetsIntegrityCheckResult checkResult;
+		if (UtilAssetsIntegrityCheckReason::OK != UtilAssetsIntegrity()->CheckStudioModel(data, size, &checkResult))
+		{
+			gEngfuncs.Con_DPrintf("[SCModelDownloader] File \"%s\" is corrupted!\n", m_localFileName.c_str());
+			return false;
+		}
+	}
+	else if (m_localFileName.ends_with(".bmp"))
+	{
+		//TODO use FreeImage to determine...
+	}
 
-	g_pFileSystem->CreateDirHierarchy("models", "GAMEDOWNLOAD");
-	g_pFileSystem->CreateDirHierarchy("models/player", "GAMEDOWNLOAD");
+	FILESYSTEM_ANY_CREATEDIR("models", "GAMEDOWNLOAD");
+	FILESYSTEM_ANY_CREATEDIR("models/player", "GAMEDOWNLOAD");
 
 	std::string filePathDir = std::format("models/player/{0}", m_pQueryTaskList->m_localFileNameBase);
-	g_pFileSystem->CreateDirHierarchy(filePathDir.c_str(), "GAMEDOWNLOAD");
+	FILESYSTEM_ANY_CREATEDIR(filePathDir.c_str(), "GAMEDOWNLOAD");
 
 	std::string filePath = std::format("models/player/{0}/{1}", m_pQueryTaskList->m_localFileNameBase, m_localFileName);
-	auto FileHandle = g_pFileSystem->Open(filePath.c_str(), "wb", "GAMEDOWNLOAD");
+	auto FileHandle = FILESYSTEM_ANY_OPEN(filePath.c_str(), "wb", "GAMEDOWNLOAD");
 
 	if (FileHandle)
 	{
-		g_pFileSystem->Write(data, size, FileHandle);
-		g_pFileSystem->Close(FileHandle);
+		FILESYSTEM_ANY_WRITE(data, size, FileHandle);
+		FILESYSTEM_ANY_CLOSE(FileHandle);
 	}
 
 	m_pQueryTaskList->OnModelFileWriteFinished();

@@ -158,6 +158,7 @@
     <ClCompile Include="..\..\include\HLSDK\common\interface.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="SCModelDatabase.cpp" />
+    <ClCompile Include="UtilAssetsIntegrity.cpp" />
     <ClCompile Include="UtilHTTPClient.cpp" />
     <ClCompile Include="plugins.cpp" />
     <ClCompile Include="privatehook.cpp" />
@@ -165,6 +166,7 @@
   <ItemGroup>
     <ClInclude Include="exportfuncs.h" />
     <ClInclude Include="SCModelDatabase.h" />
+    <ClInclude Include="UtilAssetsIntegrity.h" />
     <ClInclude Include="UtilHTTPClient.h" />
     <ClInclude Include="plugins.h" />
     <ClInclude Include="privatehook.h" />

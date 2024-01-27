@@ -4,6 +4,7 @@
 #include "plugins.h"
 
 #include "UtilHTTPClient.h"
+#include "UtilAssetsIntegrity.h"
 #include "SCModelDatabase.h"
 
 cl_exportfuncs_t gExportfuncs = { 0 };
@@ -85,6 +86,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->HUD_GetStudioModelInterface = HUD_GetStudioModelInterface;
 
 	UtilHTTPClient_Init();
+	UtilAssetsIntegrity_Init();
 }
 
 void IPluginsV4::ExitGame(int iResult)

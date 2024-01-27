@@ -2,21 +2,16 @@
 #include <studio.h>
 #include <r_studioint.h>
 #include <capstone.h>
-#include "cl_entity.h"
-#include "com_model.h"
-#include "triangleapi.h"
-#include "cvardef.h"
+#include <cl_entity.h>
+#include <com_model.h>
+#include <cvardef.h>
+#include <entity_types.h>
 #include "exportfuncs.h"
-#include "entity_types.h"
-#include "parsemsg.h"
 #include "privatehook.h"
 #include "plugins.h"
 #include "SCModelDatabase.h"
-#include "utilhttpclient.h"
-#include <string>
-#include <functional>
-#include <set>
-#include <unordered_map>
+#include "UtilHTTPClient.h"
+#include "UtilAssetsIntegrity.h"
 
 cvar_t *scmodel_autodownload = NULL;
 cvar_t *scmodel_downloadlatest = NULL;
@@ -116,6 +111,7 @@ void HUD_Shutdown(void)
 
 	gExportfuncs.HUD_Shutdown();
 
+	UtilAssetsIntegrity_Init();
 	UtilHTTPClient_Shutdown();
 }
 
