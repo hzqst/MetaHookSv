@@ -1033,5 +1033,8 @@
     <ClInclude Include="$(SolutionDir)include\SourceSDK\Border.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
+    <ClInclude Include="GameUI.h">
+      <Filter>GameUI</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

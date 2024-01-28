@@ -156,7 +156,6 @@ int __fastcall TextEntry_GetStartDrawIndex(void* pthis, int dummy, int& lineBrea
 	return result;
 }
 
-
 void __fastcall GameUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, int w, int h)
 {
 	gPrivateFuncs.GameUI_Panel_Init(pthis, 0, x, y, w, h);

@@ -300,6 +300,7 @@ $(GLEWCheckRequirements)</Command>
     <ClInclude Include="cstrikechatdialog.h" />
     <ClInclude Include="DpiManager.h" />
     <ClInclude Include="EngineSurfaceHook.h" />
+    <ClInclude Include="GameUI.h" />
     <ClInclude Include="libcsv\csv_document.h" />
     <ClInclude Include="privatefuncs.h" />
     <ClInclude Include="enginedef.h" />

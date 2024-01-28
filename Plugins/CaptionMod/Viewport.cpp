@@ -6,7 +6,8 @@
 #include <vgui_controls/Controls.h>
 #include <vgui_controls/Label.h>
 #include "BaseUI.h"
-#include "viewport.h"
+#include "GameUI.h"
+#include "Viewport.h"
 #include "SubtitlePanel.h"
 #include "cstrikechatdialog.h"
 #include "MemPool.h"
