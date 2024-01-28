@@ -678,7 +678,14 @@ void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel*
 
 	PVOID* COptionsDialog_vftable = *(PVOID**)pthis;
 
-	vgui::Panel* _propertySheet = *(vgui::Panel**)((PUCHAR)pthis + 272);
+	int offset_propertySheet = 272;
+
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		offset_propertySheet = 280;
+	}
+
+	vgui::Panel* _propertySheet = *(vgui::Panel**)((PUCHAR)pthis + offset_propertySheet);
 	PVOID* _propertySheet_vftable = *(PVOID**)_propertySheet;
 
 	if (!gPrivateFuncs.FocusNavGroup_GetCurrentFocus)
