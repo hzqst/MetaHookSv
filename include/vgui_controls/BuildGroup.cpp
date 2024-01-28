@@ -660,7 +660,7 @@ bool BuildGroup::KeyCodeTyped(KeyCode code, Panel *panel)
 		}
 	}
 
-	if(dx||dy)
+	if(dx || dy)
 	{
 		//TODO: make this stuff actually snap
 
@@ -682,7 +682,7 @@ bool BuildGroup::KeyCodeTyped(KeyCode code, Panel *panel)
 		panel->Repaint();
 		if (panel->GetVParent() != NULL)
 		{
-			panel->PostMessage(panel->GetVParent(), new KeyValues("Repaint"));
+			panel->PostMessage2(panel->GetVParent(), new KeyValues("Repaint"));
 		}
 
 

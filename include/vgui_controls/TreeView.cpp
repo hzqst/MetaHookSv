@@ -377,7 +377,10 @@ public:
 class TreeViewSubPanel : public Panel
 {
 public:
-    TreeViewSubPanel(Panel *parent) : Panel(parent) {}
+    TreeViewSubPanel(Panel *parent) : Panel(parent)
+	{
+	
+	}
 
     virtual void ApplySchemeSettings(IScheme *pScheme)
     {
@@ -2440,7 +2443,7 @@ void TreeView::ApplySchemeSettings(IScheme *pScheme)
 	BaseClass::ApplySchemeSettings(pScheme);
 
 	SetBorder(pScheme->GetBorder("ButtonDepressedBorder"));
-	SetBgColor(GetSchemeColor("ListBgColor", GetSchemeColor("WindowDisabledBgColor", pScheme), pScheme));
+	SetBgColor(GetSchemeColor2("ListBgColor", GetSchemeColor("WindowDisabledBgColor", pScheme), pScheme));
 	SetFont( pScheme->GetFont( "Default", IsProportional() ) );
 	m_pSubPanel->SetBgColor( GetBgColor() );
 }

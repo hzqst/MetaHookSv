@@ -633,8 +633,8 @@ void FileOpenDialog::Init( const char *title, KeyValues *pContextKeyValues )
 	SetStartDirectory( pLocalPath );
 
 	// Because these call through virtual functions, we can't issue them in the constructor, so we post a message to ourselves instead!!
-	PostMessage( GetVPanel(), new KeyValues( "PopulateFileList" ) );
-	PostMessage( GetVPanel(), new KeyValues( "PopulateDriveList" ) );
+	PostMessage2( GetVPanel(), new KeyValues( "PopulateFileList" ) );
+	PostMessage2( GetVPanel(), new KeyValues( "PopulateDriveList" ) );
 }
 
 

@@ -26,7 +26,7 @@ class PropertyPage : public EditablePanel
 	DECLARE_CLASS_SIMPLE( PropertyPage, EditablePanel );
 
 public:
-	PropertyPage(Panel *parent, const char *panelName);
+	PropertyPage(Panel *parent, const char *panelName, bool paintBorder =true);
 	~PropertyPage();
 
 	// Called when page is loaded.  Data should be reloaded from document into controls.
@@ -43,6 +43,8 @@ public:
 	virtual bool HasUserConfigSettings() { return true; }
 
 protected:
+	virtual void ApplySchemeSettings(IScheme* pScheme);	
+	virtual void PaintBorder();
 	virtual void SetVisible(bool state);
 
 	// called to be notified of the tab button used to Activate this page
@@ -51,6 +53,7 @@ protected:
 
 private:
 	PHandle _pageTab;
+	bool _paintRaised;
 };
 
 } // namespace vgui

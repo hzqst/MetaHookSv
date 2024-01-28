@@ -325,7 +325,7 @@ void MessageBox::SetCommand(KeyValues *command)
 void MessageBox::OnShutdownRequest()
 {
 	// Shutdown the dialog
-	PostMessage(this, new KeyValues("Close"));
+	PostMessage1(this, new KeyValues("Close"));
 }
 
 //-----------------------------------------------------------------------------

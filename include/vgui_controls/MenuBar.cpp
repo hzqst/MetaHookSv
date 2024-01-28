@@ -135,7 +135,7 @@ void MenuBar::OnKeyTyped(wchar_t unichar)
 				if (hot)
 				{
 					// post a message to the menuitem telling it it's hotkey was pressed
-					PostMessage(hot, new KeyValues("Hotkey"));
+					PostMessage1(hot, new KeyValues("Hotkey"));
 					return;
 				}
 			}

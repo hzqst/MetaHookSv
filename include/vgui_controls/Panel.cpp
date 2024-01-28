@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <intrin.h>
 
 #include <tier1/mempool.h>
 #include <tier0/vprof.h>
@@ -648,6 +649,7 @@ void Panel::Init( int x, int y, int wide, int tall )
 	_tabPosition = 0;
 	m_iScheme = 0;
 	m_bIsSilent = false;
+	m_pszOverrideModuleName = vgui::GetOverrideControlsModuleName();
 
 	_buildModeFlags = 0; // not editable or deletable in buildmode dialog by default
 
@@ -774,6 +776,11 @@ const char *Panel::GetName()
 //-----------------------------------------------------------------------------
 const char *Panel::GetModuleName()
 {
+	if (GetOverrideModuleName())
+	{
+		return GetOverrideModuleName();
+	}
+
 	return vgui::GetControlsModuleName();
 }
 
@@ -862,11 +869,15 @@ Panel *Panel::GetParent()
 	// get the parent and convert it to a Panel *
 	// this is OK, the hierarchy is guaranteed to be all from the same module, except for the root node
 	// the root node always returns NULL when a GetParent() is done so everything is OK
-	VPANEL parent = ipanel()->GetParent(GetVPanel());
-	if (parent)
+	VPANEL vparent = ipanel()->GetParent(GetVPanel());
+	if (vparent)
 	{
-		Panel *pParent = ipanel()->GetPanel(parent, GetControlsModuleName());
-		Assert(!pParent || !strcmp(pParent->GetModuleName(), GetControlsModuleName()));
+		//Panel *pParent = ipanel()->GetPanel(vparent, GetControlsModuleName());
+
+		Panel* pParent = ipanel()->GetPanel(vparent, GetModuleName());
+		
+		//Assert(!pParent || !strcmp(pParent->GetModuleName(), GetControlsModuleName()));
+		
 		return pParent;
 	}
 
@@ -882,7 +893,7 @@ void Panel::OnScreenSizeChanged(int nOldWide, int nOldTall)
 	for (int i = 0; i < ipanel()->GetChildCount(GetVPanel()); i++)
 	{
 		VPANEL child = ipanel()->GetChild(GetVPanel(), i);
-		PostMessage(child, new KeyValues("OnScreenSizeChanged", "oldwide", nOldWide, "oldtall", nOldTall), NULL);
+		PostMessage2(child, new KeyValues("OnScreenSizeChanged", "oldwide", nOldWide, "oldtall", nOldTall), NULL);
 	}
 
 	// make any currently fullsize window stay fullsize
@@ -1407,7 +1418,8 @@ Panel *Panel::FindSiblingByName(const char *siblingName)
 	for (int i = 0; i < siblingCount; i++)
 	{
 		VPANEL sibling = ipanel()->GetChild(GetVParent(), i);
-		Panel *panel = ipanel()->GetPanel(sibling, GetControlsModuleName());
+		//Panel *panel = ipanel()->GetPanel(sibling, GetControlsModuleName());
+		Panel* panel = ipanel()->GetPanel(sibling, GetModuleName());
 		if (!stricmp(panel->GetName(), siblingName))
 		{
 			return panel;
@@ -1483,7 +1495,7 @@ HScheme Panel::GetScheme()
 //-----------------------------------------------------------------------------
 // Purpose: set the scheme to render this panel with by name
 //-----------------------------------------------------------------------------
-void Panel::SetScheme(const char *tag)
+void Panel::SetScheme2(const char *tag)
 {
 	if (strlen(tag) > 0 && scheme()->GetScheme(tag)) // check the scheme exists
 	{
@@ -1504,7 +1516,6 @@ void Panel::SetScheme(HScheme scheme)
 //		InvalidateLayout( false, true );
 	}
 }
-
 
 //-----------------------------------------------------------------------------
 // Purpose: returns the char of this panels hotkey
@@ -3072,9 +3083,30 @@ int Panel::GetChildCount()
 //-----------------------------------------------------------------------------
 Panel *Panel::GetChild(int index)
 {
-	// get the child and cast it to a panel
-	// this assumes that the child is from the same module as the this (precondition)
-	return ipanel()->GetPanel(ipanel()->GetChild(GetVPanel(), index), GetControlsModuleName());
+	return GetChildWithModuleName(index, GetModuleName());
+}
+
+Panel* Panel::GetChildWithModuleName(int index, const char *pszModuleName)
+{
+	auto vchild = ipanel()->GetChild(GetVPanel(), index);
+
+	//return ipanel()->GetPanel(vchild, GetControlsModuleName());
+
+	return ipanel()->GetPanel(vchild, pszModuleName);
+}
+
+Panel* Panel::GetParentWithModuleName(const char* pszModuleName)
+{
+	VPANEL vparent = ipanel()->GetParent(GetVPanel());
+
+	if (vparent)
+	{
+		Panel* pParent = ipanel()->GetPanel(vparent, pszModuleName);
+
+		return pParent;
+	}
+
+	return NULL;
 }
 
 //-----------------------------------------------------------------------------
@@ -3199,7 +3231,7 @@ void Panel::AddActionSignalTarget(Panel *messageTarget)
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void Panel::AddActionSignalTarget(VPANEL messageTarget)
+void Panel::AddActionSignalTarget2(VPANEL messageTarget)
 {
 	HPanel target = ivgui()->PanelToHandle(messageTarget);
 	if (!_actionSignalTargetDar.HasElement(target))
@@ -3342,9 +3374,23 @@ void Panel::SetTall(int tall)
 	ipanel()->SetSize(GetVPanel(), GetWide(), tall);
 }
 
+//bool IsFromCurrentModule(void *addr);
+
 void Panel::SetBuildGroup(BuildGroup* buildGroup)
 {
-	//TODO: remove from old group
+#if 0
+	if (!IsFromCurrentModule(_ReturnAddress()))
+	{
+		auto LegacyBuildGroup = (BuildGroup_Legacy*)buildGroup;
+
+		if (LegacyBuildGroup->IsEnabled())
+		{
+
+		}
+
+		return;
+	}
+#endif
 
 	Assert(buildGroup != NULL);
 	
@@ -4031,7 +4077,7 @@ Color Panel::GetSchemeColor(const char *keyName, IScheme *pScheme)
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-Color Panel::GetSchemeColor(const char *keyName, Color defaultColor, IScheme *pScheme)
+Color Panel::GetSchemeColor2(const char *keyName, Color defaultColor, IScheme *pScheme)
 {
 	return pScheme->GetColor(keyName, defaultColor);
 }
@@ -4516,12 +4562,12 @@ bool Panel::RequestInfoFromChild(const char *childName, KeyValues *outputData)
 //-----------------------------------------------------------------------------
 // Purpose: Posts a message
 //-----------------------------------------------------------------------------
-void Panel::PostMessage(Panel *target, KeyValues *message, float delay)
+void Panel::PostMessage1(Panel *target, KeyValues *message, float delay)
 {
 	ivgui()->PostMessage(target->GetVPanel(), message, GetVPanel(), delay);
 }
 
-void Panel::PostMessage(VPANEL target, KeyValues *message, float delaySeconds)
+void Panel::PostMessage2(VPANEL target, KeyValues *message, float delaySeconds)
 {
 	ivgui()->PostMessage(target, message, GetVPanel(), delaySeconds);
 }
@@ -4658,8 +4704,11 @@ Panel *PHandle::Get()
 		VPANEL panel = ivgui()->HandleToPanel(m_iPanelID);
 		if (panel)
 		{
-			Panel *vguiPanel = ipanel()->GetPanel(panel, GetControlsModuleName());
-			return vguiPanel;
+			auto szModuleName = GetControlsModuleName();
+
+			Panel *pPanel = ipanel()->GetPanel(panel, szModuleName);
+
+			return pPanel;
 		}
 	}
 	return NULL;
@@ -6074,6 +6123,31 @@ void Panel::GetDragData( CUtlVector< KeyValues * >& list )
 		list.AddToTail( m_pDragDrop->m_DragData[ i ] );
 	}
 #endif
+}
+
+const char* Panel::GetOverrideModuleName() const
+{
+	return m_pszOverrideModuleName;
+}
+
+void Panel::SetOverrideModuleName(const char* pszModuleName)
+{
+	m_pszOverrideModuleName = pszModuleName;
+}
+
+void Panel::RecursiveSetOverrideModuleName(const char* pszModuleName, const char* pszPreviousModuleName)
+{
+	SetOverrideModuleName(pszModuleName);
+
+	for (int i = 0; i < GetChildCount(); ++i)
+	{
+		auto pChild = GetChildWithModuleName(i, pszPreviousModuleName);
+
+		if (pChild)
+		{
+			pChild->RecursiveSetOverrideModuleName(pszModuleName, pszPreviousModuleName);
+		}
+	}
 }
 
 #if defined( VGUI_USEDRAGDROP )

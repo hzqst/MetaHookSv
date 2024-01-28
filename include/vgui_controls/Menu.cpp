@@ -1591,23 +1591,6 @@ public:
 					return true;
 				}
 
-				/*
-				// NOTE:  this check used to not cast to MenuButton, but it seems wrong to me
-				//  since if the mouse is over another child of the parent panel to the menu then
-				//  the menu stays visible.  I think this is bogus.
-				Panel *pTopMost = ipanel()->GetPanel(topMost, GetControlsModuleName());
-
-				if ( pTopMost &&
-					ipanel()->HasParent( topMost, parent->GetVPanel() ) &&
-					dynamic_cast< MenuButton * >( pTopMost ) )
-				{
-					Msg( "topMost %s has parent %s\n", 
-						ipanel()->GetName( topMost ),
-						parent->GetName() );
-
-					return true;
-				}
-				*/
 			}
 		}
 

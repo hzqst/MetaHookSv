@@ -739,7 +739,7 @@ public:
 			vgui::Menu *pMenu = GetMenu();
 			if ( pMenu && pMenu->FindChildByName("Close") )
 			{
-				PostMessage(GetVParent(), new KeyValues("CloseFrameButtonPressed"));
+				PostMessage2(GetVParent(), new KeyValues("CloseFrameButtonPressed"));
 			}
 		}
 	}
@@ -949,7 +949,7 @@ void Frame::CloseModal()
 		vgui::input()->SetAppModalSurface( m_hPreviousModal );
 		m_hPreviousModal = 0;
 	}
-	PostMessage( this, new KeyValues("Close") );
+	PostMessage1( this, new KeyValues("Close") );
 }
 
 
@@ -1989,7 +1989,7 @@ void Frame::InternalFlashWindow()
 		surface()->FlashWindow(GetVPanel(), _nextFlashState);
 		_nextFlashState = !_nextFlashState;
 		
-		PostMessage(this, new KeyValues("FlashWindow"), 1.8f);
+		PostMessage1(this, new KeyValues("FlashWindow"), 1.8f);
 	}
 }
 
@@ -2083,16 +2083,16 @@ void Frame::OnKeyCodeTyped(KeyCode code)
 	else if (alt && code == KEY_F4)
 	{
 		// user has hit the close
-		PostMessage(this, new KeyValues("CloseFrameButtonPressed"));
+		PostMessage1(this, new KeyValues("CloseFrameButtonPressed"));
 	}
 	else if (code == KEY_ENTER)
 	{
 		// check for a default button
-		VPANEL panel = GetFocusNavGroup().GetCurrentDefaultButton();
-		if (panel && ipanel()->IsVisible( panel ) && ipanel()->IsEnabled( panel ))
+		VPANEL vpanel = GetFocusNavGroup().GetCurrentDefaultButton();
+		if (vpanel && ipanel()->IsVisible(vpanel) && ipanel()->IsEnabled(vpanel))
 		{
 			// Activate the button
-			PostMessage(panel, new KeyValues("Hotkey"));
+			PostMessage2(vpanel, new KeyValues("Hotkey"));
 		}
 	}
 	else if ( code == KEY_ESCAPE && 
@@ -2144,7 +2144,7 @@ void Frame::OnKeyTyped(wchar_t unichar)
 	if (panel)
 	{
 		// tell the panel to Activate
-		PostMessage(panel, new KeyValues("Hotkey"));
+		PostMessage1(panel, new KeyValues("Hotkey"));
 	}
 }
 

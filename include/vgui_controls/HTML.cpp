@@ -265,7 +265,7 @@ void HTML::CalcScrollBars(int w, int h)
 			{
 				_vbar->SetVisible(true);
 				// displayable area has changed, need to force an update
-				PostMessage(this, new KeyValues("ScrollBarSliderMoved"), 0.02f);
+				PostMessage1(this, new KeyValues("ScrollBarSliderMoved"), 0.02f);
 			}
 
 			_vbar->SetEnabled(false);
@@ -574,7 +574,7 @@ bool HTML::OnStartURL(const char *url, const char *target, bool first)
 			Panel *target = m_CustomURLHandlers[i].hPanel;
 			if (target)
 			{
-				PostMessage(target, new KeyValues("CustomURL", "url", url + strlen(m_CustomURLHandlers[i].url) + 3, "protocol", m_CustomURLHandlers[i].url));
+				PostMessage1(target, new KeyValues("CustomURL", "url", url + strlen(m_CustomURLHandlers[i].url) + 3, "protocol", m_CustomURLHandlers[i].url));
 			}
 
 			bURLHandled = true;

@@ -22,8 +22,9 @@ using namespace vgui;
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-PropertyPage::PropertyPage(Panel *parent, const char *panelName) : EditablePanel(parent, panelName)
+PropertyPage::PropertyPage(Panel *parent, const char *panelName, bool paintBorder) : EditablePanel(parent, panelName)
 {
+	_paintRaised = paintBorder;
 }
 
 //-----------------------------------------------------------------------------
@@ -70,6 +71,27 @@ void PropertyPage::OnPageTabActivated(Panel *pageTab)
 	_pageTab = pageTab;
 }
 
+void PropertyPage::PaintBorder()
+{
+	IBorder* border = GetBorder();
+
+	// setup border break
+	if (_paintRaised == true && border && _pageTab.Get())
+	{
+		int px, py, pwide, ptall;
+		_pageTab->GetBounds(px, py, pwide, ptall);
+
+		int wide, tall;
+		GetSize(wide, tall);
+		border->Paint(0, 0, wide, tall, IBorder::SIDE_TOP, px + 1, px + pwide - 1);
+	}
+	else
+	{
+		// Paint the border
+		BaseClass::PaintBorder();
+	}
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -96,9 +118,16 @@ void PropertyPage::OnKeyCodeTyped(KeyCode code)
 	}
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
+void PropertyPage::ApplySchemeSettings(IScheme* pScheme)
+{
+	BaseClass::ApplySchemeSettings(pScheme);
+
+	if (_paintRaised)
+	{
+		SetBorder(pScheme->GetBorder("ButtonBorder"));
+	}
+}
+
 void PropertyPage::SetVisible(bool state)
 {
     if (IsVisible() && !state)

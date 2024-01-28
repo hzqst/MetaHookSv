@@ -380,9 +380,9 @@ void MenuItem::ApplySchemeSettings(IScheme *pScheme)
 	Button::ApplySchemeSettings(pScheme);
 
 	// get color settings
-	SetDefaultColor(GetSchemeColor("Menu/FgColor", GetFgColor(), pScheme), GetSchemeColor("Menu/BgColor", GetBgColor(), pScheme));
-	SetArmedColor(GetSchemeColor("Menu/ArmedFgColor", GetFgColor(), pScheme), GetSchemeColor("Menu/ArmedBgColor", GetBgColor(), pScheme));
-	SetDepressedColor(GetSchemeColor("Menu/ArmedFgColor", GetFgColor(), pScheme), GetSchemeColor("Menu/ArmedBgColor", GetBgColor(), pScheme));
+	SetDefaultColor(GetSchemeColor2("Menu/FgColor", GetFgColor(), pScheme), GetSchemeColor2("Menu/BgColor", GetBgColor(), pScheme));
+	SetArmedColor(GetSchemeColor2("Menu/ArmedFgColor", GetFgColor(), pScheme), GetSchemeColor2("Menu/ArmedBgColor", GetBgColor(), pScheme));
+	SetDepressedColor(GetSchemeColor2("Menu/ArmedFgColor", GetFgColor(), pScheme), GetSchemeColor2("Menu/ArmedBgColor", GetBgColor(), pScheme));
 
 	SetTextInset(atoi(pScheme->GetResourceString("Menu/TextInset")), 0);
 	

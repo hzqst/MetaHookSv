@@ -58,7 +58,7 @@ private:
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-SplitterHandle::SplitterHandle( Splitter *parent, const char *name, SplitterMode_t mode, int nIndex ) : BaseClass( parent, name )
+SplitterHandle::SplitterHandle( Splitter *parent, const char *name, SplitterMode_t mode, int nIndex) : BaseClass( parent, name )
 {
 	int w, h;
 	parent->GetSize( w, h );

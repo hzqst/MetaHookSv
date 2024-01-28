@@ -188,7 +188,7 @@ void VControlsListPanel::OnClearBinding()
 	if ( GetItemOfInterest() < 0 )
 		return;
 
-	PostMessage( GetParent()->GetVPanel(), new KeyValues( "ClearBinding", "item", GetItemOfInterest() ) );
+	PostMessage2( GetParent()->GetVPanel(), new KeyValues( "ClearBinding", "item", GetItemOfInterest() ) );
 }
 
 //-----------------------------------------------------------------------------

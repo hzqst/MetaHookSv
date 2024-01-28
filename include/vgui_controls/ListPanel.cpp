@@ -176,7 +176,7 @@ void Dragger::OnMouseDoublePressed(MouseCode code)
 	if (m_bMovable)
 	{
 		// resize the column to the size of it's contents
-		PostMessage(GetParent(), new KeyValues("ResizeColumnToContents", "column", m_iDragger));
+		PostMessage1(GetParent(), new KeyValues("ResizeColumnToContents", "column", m_iDragger));
 	}
 }
 
@@ -2470,12 +2470,12 @@ void ListPanel::ApplySchemeSettings(IScheme *pScheme)
 	m_pLabel->SetBgColor(GetSchemeColor("Menu/ArmedBgColor", pScheme));
 
 	m_LabelFgColor = GetSchemeColor("WindowFgColor", pScheme);
-	m_DisabledColor = GetSchemeColor("WindowFgColor", m_LabelFgColor, pScheme);
-	m_SelectionFgColor = GetSchemeColor("ListSelectionFgColor", m_LabelFgColor, pScheme);
-	m_DisabledSelectionFgColor = GetSchemeColor("ListSelectionFgColor", m_LabelFgColor, pScheme);
+	m_DisabledColor = GetSchemeColor2("WindowFgColor", m_LabelFgColor, pScheme);
+	m_SelectionFgColor = GetSchemeColor2("ListSelectionFgColor", m_LabelFgColor, pScheme);
+	m_DisabledSelectionFgColor = GetSchemeColor2("ListSelectionFgColor", m_LabelFgColor, pScheme);
 
 	m_pEmptyListText->SetColor(GetSchemeColor("LabelDimText", pScheme));
-		
+
 	SetFont( pScheme->GetFont("Default", IsProportional() ) );
 	m_pEmptyListText->SetFont( pScheme->GetFont( "Default", IsProportional() ) );
 }

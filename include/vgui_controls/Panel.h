@@ -132,6 +132,8 @@ public:
 	// returns pointer to Panel's vgui VPanel interface handle
 	virtual VPANEL GetVPanel() { return _vpanel; }
 
+	virtual void IPanel_dtor() { Panel::~Panel(); }
+
 	//-----------------------------------------------------------------------------
 	// PANEL METHODS
 	// these functions all manipulate panels
@@ -173,7 +175,7 @@ public:
 	// painting
 	virtual VPANEL IsWithinTraverse(int x, int y, bool traversePopups);	// recursive; returns a pointer to the panel at those coordinates
 	MESSAGE_FUNC( Repaint, "Repaint" );							// marks the panel as needing to be repainted
-	virtual void PostMessage(VPANEL target, KeyValues *message, float delaySeconds = 0.0f);
+	virtual void PostMessage2(VPANEL target, KeyValues *message, float delaySeconds = 0.0f);
 
 	bool IsWithin(int x, int y); //in screen space
 	void LocalToScreen(int &x, int &y);
@@ -191,6 +193,8 @@ public:
 	
 	int GetChildCount();
 	Panel *GetChild(int index);
+	Panel* GetChildWithModuleName(int index, const char* pszModuleName);
+	virtual Panel* GetParentWithModuleName(const char* pszModuleName);
 	int FindChildIndexByName( const char *childName );
 	Panel *FindChildByName(const char *childName, bool recurseDown = false);
 	Panel *FindSiblingByName(const char *siblingName);
@@ -202,12 +206,12 @@ public:
 
 	// messaging
 	virtual void AddActionSignalTarget(Panel *messageTarget);
-	virtual void AddActionSignalTarget(VPANEL messageTarget);
+	virtual void AddActionSignalTarget2(VPANEL messageTarget);
 	virtual void RemoveActionSignalTarget(Panel *oldTarget);
 	virtual void PostActionSignal(KeyValues *message);			// sends a message to the current actionSignalTarget(s)
 	virtual bool RequestInfoFromChild(const char *childName, KeyValues *outputData);
 	virtual void PostMessageToChild(const char *childName, KeyValues *messsage);
-	virtual void PostMessage(Panel *target, KeyValues *message, float delaySeconds = 0.0f);
+	virtual void PostMessage1(Panel *target, KeyValues *message, float delaySeconds = 0.0f);
 	virtual bool RequestInfo(KeyValues *outputData);				// returns true if output is successfully written.  You should always chain back to the base class if info request is not handled
 	virtual bool SetInfo(KeyValues *inputData);						// sets a specified value in the control - inverse of the above
 	virtual void SetSilentMode( bool bSilent );						//change the panel's silent mode; if silent, the panel will not post any action signals
@@ -289,10 +293,10 @@ public:
 
 	// scheme access functions
 	virtual HScheme GetScheme();
-	virtual void SetScheme(const char *tag);
+	virtual void SetScheme2(const char *tag);
 	virtual void SetScheme(HScheme scheme);
 	virtual Color GetSchemeColor(const char *keyName,IScheme *pScheme);
-	virtual Color GetSchemeColor(const char *keyName, Color defaultColor,IScheme *pScheme);
+	virtual Color GetSchemeColor2(const char *keyName, Color defaultColor,IScheme *pScheme);
 
 	// called when scheme settings need to be applied; called the first time before the panel is painted
 	virtual void ApplySchemeSettings(IScheme *pScheme);
@@ -545,6 +549,10 @@ protected:
 	virtual void GetDragData( CUtlVector< KeyValues * >& list );
 	virtual void CreateDragData();
 
+	virtual const char *GetOverrideModuleName() const;
+	virtual void SetOverrideModuleName(const char *pszModuleName);
+	virtual void RecursiveSetOverrideModuleName(const char* pszModuleName, const char* pszPreviousModuleName);
+
 protected:
 	MESSAGE_FUNC_ENUM_ENUM( OnRequestFocus, "OnRequestFocus", VPANEL, subFocus, VPANEL, defaultPanel);
 	MESSAGE_FUNC_INT_INT( OnScreenSizeChanged, "OnScreenSizeChanged", oldwide, oldtall );
@@ -682,7 +690,8 @@ private:
 
 	bool			m_bIsSilent; // should this panel PostActionSignals?
 
-	
+	const char* m_pszOverrideModuleName;
+
 	CPanelAnimationVar( float, m_flAlpha, "alpha", "255" );
 
 	// 1 == Textured (TextureId1 only)

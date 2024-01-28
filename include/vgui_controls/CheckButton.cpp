@@ -121,13 +121,13 @@ void CheckButton::ApplySchemeSettings(IScheme *pScheme)
 	BaseClass::ApplySchemeSettings(pScheme);
 
 	SetDefaultColor( GetSchemeColor("FgColor", pScheme), GetBgColor() );
-	_checkBoxImage->_bgColor = GetSchemeColor("CheckBgColor", Color(62, 70, 55, 255), pScheme);
-	_checkBoxImage->_borderColor1 = GetSchemeColor("CheckButtonBorder1", Color(20, 20, 20, 255), pScheme);
-	_checkBoxImage->_borderColor2 = GetSchemeColor("CheckButtonBorder2", Color(90, 90, 90, 255), pScheme);
-	_checkBoxImage->_checkColor = GetSchemeColor("CheckButtonCheck", Color(20, 20, 20, 255), pScheme);
-	_selectedFgColor = GetSchemeColor("BrightControlText", GetSchemeColor("ControlText", pScheme), pScheme);
-	_disabledFgColor = GetSchemeColor("CheckButton.DisabledFgColor", Color(130, 130, 130, 255), pScheme);
-	_disabledBgColor = GetSchemeColor("CheckButton.DisabledBgColor", Color(62, 70, 55, 255), pScheme);
+	_checkBoxImage->_bgColor = GetSchemeColor2("CheckBgColor", Color(62, 70, 55, 255), pScheme);
+	_checkBoxImage->_borderColor1 = GetSchemeColor2("CheckButtonBorder1", Color(20, 20, 20, 255), pScheme);
+	_checkBoxImage->_borderColor2 = GetSchemeColor2("CheckButtonBorder2", Color(90, 90, 90, 255), pScheme);
+	_checkBoxImage->_checkColor = GetSchemeColor2("CheckButtonCheck", Color(20, 20, 20, 255), pScheme);
+	_selectedFgColor = GetSchemeColor2("BrightControlText", GetSchemeColor("ControlText", pScheme), pScheme);
+	_disabledFgColor = GetSchemeColor2("CheckButton.DisabledFgColor", Color(130, 130, 130, 255), pScheme);
+	_disabledBgColor = GetSchemeColor2("CheckButton.DisabledBgColor", Color(62, 70, 55, 255), pScheme);
 
 	SetContentAlignment(Label::a_west);
 

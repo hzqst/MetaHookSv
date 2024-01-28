@@ -160,7 +160,7 @@ public:
 		m_FgColor1 = GetSchemeColor("BuddyButton/FgColor1", pScheme);
 		m_FgColor2 = GetSchemeColor("BuddyButton/FgColor2", pScheme);
 
-		m_BgColor = GetSchemeColor("BuddyListBgColor", GetBgColor(), pScheme);
+		m_BgColor = GetSchemeColor2("BuddyListBgColor", GetBgColor(), pScheme);
 //		m_BgColor = GetSchemeColor("ListPanel.TextBgColor", m_BgColor, pScheme);
 		m_SelectionBG2Color = GetSchemeColor("SelectionBG2", pScheme);
 		SetBgColor(m_BgColor);
@@ -713,7 +713,7 @@ void ListViewPanel::ApplySchemeSettings(IScheme *pScheme)
 	SetBorder(pScheme->GetBorder("ButtonDepressedBorder"));
 
 	m_LabelFgColor = GetSchemeColor("WindowFgColor", pScheme);
-	m_SelectionFgColor = GetSchemeColor("ListSelectionFgColor", m_LabelFgColor, pScheme);
+	m_SelectionFgColor = GetSchemeColor2("ListSelectionFgColor", m_LabelFgColor, pScheme);
 		
 	m_hFont = pScheme->GetFont("Default", IsProportional());
 	SetFont(m_hFont);

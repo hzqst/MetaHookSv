@@ -324,7 +324,7 @@ void ProgressBox::OnClose()
 void ProgressBox::OnShutdownRequest()
 {
 	// Shutdown the dialog
-	PostMessage(this, new KeyValues("Command", "command", "Cancel"));
+	PostMessage1(this, new KeyValues("Command", "command", "Cancel"));
 }
 
 //-----------------------------------------------------------------------------

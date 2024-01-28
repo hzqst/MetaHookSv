@@ -311,8 +311,8 @@ public:
 		// set up the scheme settings
 		Button::ApplySchemeSettings(pScheme);
 
-		_textColor = GetSchemeColor("BrightControlText", GetFgColor(), pScheme);
-		_dimTextColor = GetSchemeColor("FgColorDim", GetFgColor(), pScheme);
+		_textColor = GetSchemeColor2("BrightControlText", GetFgColor(), pScheme);
+		_dimTextColor = GetSchemeColor2("FgColorDim", GetFgColor(), pScheme);
 		m_pActiveBorder = pScheme->GetBorder("TabActiveBorder");
 		m_pNormalBorder = pScheme->GetBorder("TabBorder");
 
@@ -619,7 +619,7 @@ void PropertySheet::AddPage(Panel *page, const char *title, char const *imageNam
 
 	page->SetParent(this);
 	page->AddActionSignalTarget(this);
-	PostMessage(page, new KeyValues("ResetData"));
+	PostMessage1(page, new KeyValues("ResetData"));
 
 	page->SetVisible(false);
 	InvalidateLayout();
@@ -787,7 +787,7 @@ bool PropertySheet::RequestFocusPrev(VPANEL panel)
     {
         if (GetVParent())
         {
-            PostMessage(GetVParent(), new KeyValues("FindDefaultButton"));
+            PostMessage2(GetVParent(), new KeyValues("FindDefaultButton"));
         }
         _activeTab->RequestFocus(-1);
         _tabFocus = true;
@@ -1221,7 +1221,7 @@ void PropertySheet::OnOpenContextMenu( KeyValues *params )
 	Panel *page = reinterpret_cast< Panel * >( params->GetPtr( "page" ) );
 	if ( page )
 	{
-		PostMessage( page->GetVPanel(), params->MakeCopy() );
+		PostMessage2( page->GetVPanel(), params->MakeCopy() );
 	}
 }
 
@@ -1322,7 +1322,7 @@ void PropertySheet::OnCurrentDefaultButtonSet(Panel *defaultButton)
 	{
 		KeyValues *msg = new KeyValues("CurrentDefaultButtonSet");
 		msg->SetPtr("button", defaultButton);
-		PostMessage(GetVParent(), msg);
+		PostMessage2(GetVParent(), msg);
 	}
 }
 
@@ -1336,7 +1336,7 @@ void PropertySheet::OnDefaultButtonSet(Panel *defaultButton)
 	{
 		KeyValues *msg = new KeyValues("DefaultButtonSet");
 		msg->SetPtr("button", defaultButton);
-		PostMessage(GetVParent(), msg);
+		PostMessage2(GetVParent(), msg);
 	}
 }
 
@@ -1347,7 +1347,7 @@ void PropertySheet::OnFindDefaultButton()
 {
     if (GetVParent())
     {
-        PostMessage(GetVParent(), new KeyValues("FindDefaultButton"));
+        PostMessage2(GetVParent(), new KeyValues("FindDefaultButton"));
     }
 }
 

@@ -117,7 +117,7 @@ void EditablePanel::OnKeyCodeTyped(KeyCode code)
 		if (panel && ipanel()->IsVisible( panel ) && ipanel()->IsEnabled( panel ))
 		{
 			// Activate the button
-			PostMessage(panel, new KeyValues("Hotkey"));
+			PostMessage2(panel, new KeyValues("Hotkey"));
 		}
 		else
 		{
@@ -216,7 +216,7 @@ void EditablePanel::OnCurrentDefaultButtonSet(Panel *defaultButton)
 	{
 		KeyValues *msg = new KeyValues("CurrentDefaultButtonSet");
 		msg->SetPtr("button", defaultButton);
-		PostMessage(GetVParent(), msg);
+		PostMessage2(GetVParent(), msg);
 	}
 }
 
@@ -241,7 +241,7 @@ void EditablePanel::OnFindDefaultButton()
     {
         if (GetVParent())
         {
-            PostMessage(GetVParent(), new KeyValues("FindDefaultButton"));
+            PostMessage2(GetVParent(), new KeyValues("FindDefaultButton"));
         }
     }
 }
@@ -787,6 +787,7 @@ Panel *EditablePanel::HasHotkey(wchar_t key)
 	for (int i = 0; i < GetChildCount(); i++)
 	{
 		Panel *hot = GetChild(i)->HasHotkey(key);
+
 		if (hot && hot->IsVisible() && hot->IsEnabled())
 		{
 			return hot;
@@ -834,12 +835,12 @@ void EditablePanel::SetControlString(const char *controlName, const char *string
 			const wchar_t *wszText = g_pVGuiLocalize->Find(string);
 			if (wszText)
 			{
-				PostMessage(control, new KeyValues("SetText", "text", wszText));
+				PostMessage1(control, new KeyValues("SetText", "text", wszText));
 			}
 		}
 		else
 		{
-			PostMessage(control, new KeyValues("SetText", "text", string));
+			PostMessage1(control, new KeyValues("SetText", "text", string));
 		}
 	}
 }
@@ -852,7 +853,7 @@ void EditablePanel::SetControlInt(const char *controlName, int state)
 	Panel *control = FindChildByName(controlName);
 	if (control)
 	{
-		PostMessage(control, new KeyValues("SetState", "state", state));
+		PostMessage1(control, new KeyValues("SetState", "state", state));
 	}
 }
 

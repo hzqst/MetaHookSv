@@ -136,9 +136,7 @@ TextEntry::TextEntry(Panel *parent, const char *panelName) : BaseClass(parent, p
 
 	// If keyboard focus is in an edit control, don't chain keyboard mappings up to parents since it could mess with typing in text.
 	SetAllowKeyBindingChainToParent( false );
-
 }
-
 
 TextEntry::~TextEntry()
 {
@@ -160,10 +158,10 @@ void TextEntry::ApplySchemeSettings(IScheme *pScheme)
 	_disabledFgColor = GetSchemeColor("WindowDisabledFgColor", pScheme);
 	_disabledBgColor = GetSchemeColor("ControlBG", pScheme);
 	
-	_selectionTextColor = GetSchemeColor("SelectionFgColor", GetFgColor(), pScheme);
+	_selectionTextColor = GetSchemeColor2("SelectionFgColor", GetFgColor(), pScheme);
 	_selectionColor = GetSchemeColor("SelectionBgColor", pScheme);
 	_defaultSelectionBG2Color = GetSchemeColor("SelectionBG2", pScheme);
-	_focusEdgeColor = GetSchemeColor("BorderSelection", Color(0, 0, 0, 0), pScheme);
+	_focusEdgeColor = GetSchemeColor2("BorderSelection", Color(0, 0, 0, 0), pScheme);
 
 	SetBorder( pScheme->GetBorder("ButtonDepressedBorder"));
 

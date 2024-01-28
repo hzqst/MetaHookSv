@@ -93,7 +93,7 @@ class RichTextInterior : public Panel
 	DECLARE_CLASS_SIMPLE( RichTextInterior, Panel );
 
 public:
-	RichTextInterior( RichText *pParent, const char *pchName ) : BaseClass( pParent, pchName )  
+	RichTextInterior( RichText *pParent, const char *pchName) : BaseClass( pParent, pchName)
 	{
 		SetKeyBoardInputEnabled( false );
 		SetMouseInputEnabled( false );
@@ -236,7 +236,7 @@ void RichText::ApplySchemeSettings(IScheme *pScheme)
 	SetFgColor(GetSchemeColor("WindowFgColor", pScheme));
 	SetBgColor(GetSchemeColor("WindowBgColor", pScheme));
 	
-	_selectionTextColor = GetSchemeColor("SelectionFgColor", GetFgColor(), pScheme);
+	_selectionTextColor = GetSchemeColor2("SelectionFgColor", GetFgColor(), pScheme);
 	_selectionColor = GetSchemeColor("SelectionBgColor", pScheme);
 
 	if ( Q_strlen( pScheme->GetResourceString( "RichText.InsetX" ) ) )

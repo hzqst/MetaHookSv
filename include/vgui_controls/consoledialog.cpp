@@ -70,7 +70,7 @@ public:
 		}
 		else if ( code == KEY_ENTER )
 		{
-			PostMessage( GetParent()->GetVPanel(), new KeyValues( "Command", "command", "submit" ) );
+			PostMessage2( GetParent()->GetVPanel(), new KeyValues( "Command", "command", "submit" ) );
 		}
 		else
 		{
@@ -82,7 +82,7 @@ public:
 	{
 		if ( input()->GetFocus() != m_pCompletionList )
 		{
-			PostMessage(GetParent(), new KeyValues("CloseCompletionList"));
+			PostMessage1(GetParent(), new KeyValues("CloseCompletionList"));
 		}
 	}
 
@@ -401,7 +401,7 @@ void CConsolePanel::OnTextChanged(Panel *panel)
 		{
 			m_pEntry->SetText( "" );
 
-			PostMessage( this, new KeyValues( "Close" ) );
+			PostMessage1( this, new KeyValues( "Close" ) );
 			PostActionSignal( new KeyValues( "ClosedByHittingTilde" ) );
 		}
 		else
