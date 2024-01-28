@@ -17,7 +17,9 @@ private:
 	float m_flDpiScaling;
 	int m_iDpiScalingSource;
 	bool m_bIsHighDpiSupported;
+
 public:
+
 	CDpiManager()
 	{
 		m_flDpiScaling = 0;
@@ -100,7 +102,7 @@ public:
 
 	void PostInit() override
 	{
-		if (g_iEngineType != ENGINE_GOLDSRC_HL25 && GetDpiScaling() > 1.0f)
+		if (GetDpiScaling() > 1.0f)
 			m_bIsHighDpiSupported = true;
 
 		if (gEngfuncs.CheckParm("-no_high_dpi", NULL))
@@ -109,11 +111,8 @@ public:
 		if (gEngfuncs.CheckParm("-high_dpi", NULL))
 			m_bIsHighDpiSupported = true;
 
-		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-			m_bIsHighDpiSupported = false;
-
 		if (g_iVideoHeight < g_iProportionalBaseHeightHD)
-			m_bIsHighDpiSupported = false;;
+			m_bIsHighDpiSupported = false;
 
 		if (IsHighDpiSupportEnabled())
 		{

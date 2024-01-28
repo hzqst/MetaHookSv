@@ -161,7 +161,7 @@ void __fastcall GameUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, i
 {
 	gPrivateFuncs.GameUI_Panel_Init(pthis, 0, x, y, w, h);
 
-	if (dpimanager()->IsHighDpiSupportEnabled())
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && dpimanager()->IsHighDpiSupportEnabled())
 	{
 		PVOID* PanelVFTable = *(PVOID**)pthis;
 		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];

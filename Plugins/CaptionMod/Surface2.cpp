@@ -1028,7 +1028,16 @@ void CSurface2::GetProportionalBase(int &width, int &height)
 {
 	if (g_pSurface_HL25)
 	{
-		return g_pSurface_HL25->GetProportionalBase(width, height);
+		if (dpimanager()->IsHighDpiSupportEnabled())
+		{
+			g_pSurface_HL25->GetHDProportionalBase(width, height);
+		}
+		else
+		{
+			g_pSurface_HL25->GetProportionalBase(width, height);
+		}
+
+		return;
 	}
 
 	if (dpimanager()->IsHighDpiSupportEnabled())

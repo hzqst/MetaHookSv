@@ -859,7 +859,7 @@ void CViewport::SetParent(VPANEL vPanel)
 {
 	BaseClass::SetParent(vPanel);
 
-	if (dpimanager()->IsHighDpiSupportEnabled())
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && dpimanager()->IsHighDpiSupportEnabled())
 	{
 		SetProportional(true);
 	}

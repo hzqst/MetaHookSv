@@ -810,13 +810,14 @@ void CSurfaceProxy::GetAbsoluteWindowBounds(int &x, int &y, int &wide, int &tall
 
 void CSurfaceProxy::GetProportionalBase(int &width, int &height)
 {
-	//g_pSurface->GetProportionalBase(width, height);
-	m_pfnGetProportionalBase(g_pSurface, 0, width, height);
-
 	if (dpimanager()->IsHighDpiSupportEnabled())
 	{
 		width = g_iProportionalBaseWidthHD;
 		height = g_iProportionalBaseHeightHD;
+	}
+	else
+	{
+		m_pfnGetProportionalBase(g_pSurface, 0, width, height);
 	}
 }
 

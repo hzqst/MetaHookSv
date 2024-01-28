@@ -75,7 +75,7 @@ void __fastcall EngineVGUI2_Panel_Init(vgui::Panel* pthis, int dummy, int x, int
 
 	//if (s_LoadingBaseUI)
 	{
-		if (dpimanager()->IsHighDpiSupportEnabled())
+		if (g_iEngineType != ENGINE_GOLDSRC_HL25 && dpimanager()->IsHighDpiSupportEnabled())
 		{
 			PVOID* PanelVFTable = *(PVOID**)pthis;
 			void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];
