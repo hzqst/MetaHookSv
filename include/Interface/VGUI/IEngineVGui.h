@@ -6,7 +6,7 @@
 #endif
 
 #include <vgui/VGUI.h>
-#include "interface.h"
+#include <interface.h>
 
 namespace vgui
 {

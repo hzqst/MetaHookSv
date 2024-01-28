@@ -7,6 +7,7 @@
 
 #include <vgui/VGUI.h>
 
+class IFileSystem;
 class KeyValues;
 
 #ifndef _WCHAR_T_DEFINED
@@ -29,7 +30,7 @@ public:
 	virtual int ConvertANSIToUnicode(const char *ansi, wchar_t *unicode, int unicodeBufferSizeInBytes) = 0;
 	virtual int ConvertUnicodeToANSI(const wchar_t *unicode, char *ansi, int ansiBufferSize) = 0;
 	virtual StringIndex_t FindIndex(const char *tokenName) = 0;
-	virtual void ConstructString(wchar_t *unicodeOutput, int unicodeBufferSizeInBytes, wchar_t *formatString, int numFormatParameters, ...) = 0;
+	virtual void ConstructString(wchar_t *unicodeOuput, int unicodeBufferSizeInBytes, wchar_t *formatString, int numFormatParameters, ...) = 0;
 	virtual const char *GetNameByIndex(StringIndex_t index) = 0;
 	virtual wchar_t *GetValueByIndex(StringIndex_t index) = 0;
 	virtual StringIndex_t GetFirstStringIndex(void) = 0;

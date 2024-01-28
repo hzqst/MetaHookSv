@@ -5,7 +5,7 @@
 #pragma once
 #endif
 
-#include "interface.h"
+#include <interface.h>
 #include <vgui/VGUI.h>
 #include <vgui/KeyCode.h>
 
@@ -60,5 +60,4 @@ public:
 }
 
 #define VGUI_SYSTEM_INTERFACE_VERSION "VGUI_System009"
-
 #endif

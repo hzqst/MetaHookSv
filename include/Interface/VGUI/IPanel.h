@@ -1,3 +1,10 @@
+//========= Copyright ?1996-2005, Valve Corporation, All rights reserved. ============//
+//
+// Purpose: 
+//
+// $NoKeywords: $
+//=============================================================================//
+
 #ifndef IPANEL_H
 #define IPANEL_H
 
@@ -5,8 +12,8 @@
 #pragma once
 #endif
 
-#include <vgui/VGUI.h>
-#include "interface.h"
+#include "VGUI.h"
+#include <interface.h>
 
 #ifdef SendMessage
 #undef SendMessage
@@ -24,8 +31,12 @@ namespace vgui
 class SurfacePlat;
 class IClientPanel;
 
+//!! must be removed
 class Panel;
 
+//-----------------------------------------------------------------------------
+// Purpose: interface from Client panels -> vgui panels
+//-----------------------------------------------------------------------------
 class IPanel : public IBaseInterface
 {
 public:
@@ -88,9 +99,15 @@ public:
 	virtual void SetEnabled(VPANEL vguiPanel, bool state) = 0;
 	virtual IClientPanel *Client(VPANEL vguiPanel) = 0;
 	virtual const char *GetModuleName(VPANEL vguiPanel) = 0;
+
+public:
+	bool IsTopmostPopup(VPANEL vguiPanel);
+	void SetTopmostPopup(VPANEL vguiPanel, bool state);
+	bool IsFullyVisible(VPANEL vguiPanel);
 };
-}
 
 #define VGUI_PANEL_INTERFACE_VERSION "VGUI_Panel007"
 
-#endif
+} // namespace vgui
+
+#endif // IPANEL_H
