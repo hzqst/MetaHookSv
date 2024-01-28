@@ -1768,7 +1768,6 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 		}
 		else if (ctx->hModule == g_hFMODEx)
 		{
-			GameUI_UninstallHooks();
 			g_hGameUI = NULL;
 		}
 	}

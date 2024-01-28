@@ -181,10 +181,29 @@ void CBaseUIProxy::ShowConsole(void)
 void BaseUI_InstallHook(void)
 {
 	CreateInterfaceFn fnCreateInterface = g_pMetaHookAPI->GetEngineFactory();
-	baseuifuncs = (IBaseUI *)fnCreateInterface(BASEUI_INTERFACE_VERSION, NULL);
-	gameuifuncs = (IGameUIFuncs *)fnCreateInterface(VENGINE_GAMEUIFUNCS_VERSION, NULL);
 
-	//Search CBaseUI::Initialize for ClientFactory
+	if (!fnCreateInterface)
+	{
+		g_pMetaHookAPI->SysError("Failed to get engine factory.");
+		return;
+	}
+
+	baseuifuncs = (IBaseUI *)fnCreateInterface(BASEUI_INTERFACE_VERSION, NULL);
+
+	if (!fnCreateInterface)
+	{
+		g_pMetaHookAPI->SysError("Failed to get interface \"" BASEUI_INTERFACE_VERSION "\" from engine.");
+		return;
+	}
+
+	gameuifuncs = (IGameUIFuncs *)fnCreateInterface(VENGINE_GAMEUIFUNCS_VERSION, NULL);
+	
+	if (!fnCreateInterface)
+	{
+		g_pMetaHookAPI->SysError("Failed to get interface \"" VENGINE_GAMEUIFUNCS_VERSION "\" from engine.");
+		return;
+	}
+
 	PVOID* ProxyVFTable = *(PVOID**)&s_BaseUIProxy;
 
 	g_pMetaHookAPI->VFTHook(baseuifuncs, 0, 1, ProxyVFTable[1], (void**)&m_pfnCBaseUI_Initialize);
