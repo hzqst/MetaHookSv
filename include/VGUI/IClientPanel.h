@@ -91,8 +91,8 @@ public:
 	virtual void SetParent(VPANEL param_1) = 0;//37
 	virtual bool HasParent(VPANEL potentialParent) = 0;//38
 	virtual void SetAutoDelete(bool param_1) = 0;//39
-	virtual void AddActionSignalTarget(Panel* panel) = 0;//40
-	virtual void AddActionSignalTarget2(VPANEL vpanel) = 0;//41
+	virtual void AddActionSignalTarget2(VPANEL vpanel) = 0;//40
+	virtual void AddActionSignalTarget(Panel* panel) = 0;//41
 	virtual void RemoveActionSignalTarget(Panel* panel) = 0;//42
 	virtual void PostActionSignal(KeyValues* keyvalue) = 0;//43
 	virtual bool RequestInfoFromChild(const char* childName, KeyValues* outputData) = 0;//44

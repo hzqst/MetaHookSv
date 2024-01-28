@@ -46,7 +46,7 @@ public:
 	virtual VPANEL HandleToPanel(HPanel index) = 0;//14
 	virtual void MarkPanelForDeletion(VPANEL panel) = 0;//15
 	virtual void AddTickSignal(VPANEL panel, int intervalMilliseconds = 0) = 0;//16
-	virtual void RemoveTickSignal(VPANEL panekl);//17
+	virtual void RemoveTickSignal(VPANEL panel);//17
 	virtual void PostMessage(VPANEL target, KeyValues *params, VPANEL from, float delaySeconds = 0.0) = 0;//18
 	virtual HContext CreateContext(void) = 0;//19
 	virtual void DestroyContext(HContext context) = 0;//20

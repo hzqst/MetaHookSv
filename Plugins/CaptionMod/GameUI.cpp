@@ -638,7 +638,14 @@ void* __fastcall FocusNavGroup_GetCurrentFocus(void* pthis, int dummy)
 
 void* __fastcall PropertySheet_HasHotkey(void *pthis, int dummy, wchar_t key)
 {
-	vgui::Panel* _activePage = *(vgui::Panel **)((PUCHAR)pthis + 144);
+	int offset_activePage = 144;
+
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		offset_activePage = 148;
+	}
+
+	auto _activePage = *(vgui::Panel**)((PUCHAR)pthis + offset_activePage);
 
 	if (!_activePage)
 		return 0;
