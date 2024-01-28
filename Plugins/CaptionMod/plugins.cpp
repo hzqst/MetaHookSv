@@ -35,6 +35,16 @@ bool g_bIsCounterStrike = false;
 extern IFileSystem* g_pFullFileSystem;
 extern IFileSystem_HL25* g_pFullFileSystem_HL25;
 
+#if 0
+PVOID g_dwCurrentModuleBase = NULL;
+DWORD g_dwCurrentModuleSize = 0;
+
+bool IsFromCurrentModule(void *addr)
+{
+	return addr >= g_dwCurrentModuleBase && addr < (PUCHAR)g_dwCurrentModuleBase + g_dwCurrentModuleSize;
+}
+#endif
+
 ICommandLine *CommandLine(void)
 {
 	return g_pInterface->CommandLine;
@@ -45,6 +55,10 @@ void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_engin
 	g_pInterface = pInterface;
 	g_pMetaHookAPI = pAPI;
 	g_pMetaSave = pSave;
+#if 0
+	g_dwCurrentModuleBase = g_pMetaHookAPI->GetModuleBase(IsFromCurrentModule);
+	g_dwCurrentModuleSize = g_pMetaHookAPI->GetModuleSize(g_dwCurrentModuleBase);
+#endif
 }
 
 void IPluginsV4::Shutdown(void)

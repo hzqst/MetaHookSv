@@ -38,7 +38,7 @@ class CChatDialogLine : public vgui::RichText
 	typedef vgui::RichText BaseClass;
 
 public:
-	CChatDialogLine(vgui::Panel *parent, const char *panelNam);
+	CChatDialogLine(vgui::Panel *parent, const char *panelName);
 	~CChatDialogLine(void);
 
 public:
@@ -117,7 +117,7 @@ public:
 	};
 
 public:
-	CChatDialog(Panel *parent);
+	CChatDialog(Panel *parent, const char* panelName);
 
 public:
 	virtual void CreateChatInputLine(void);

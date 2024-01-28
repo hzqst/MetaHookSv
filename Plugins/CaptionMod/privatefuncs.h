@@ -89,15 +89,18 @@ typedef struct
 	//GameUI
 	void(__fastcall* GameUI_Panel_Init)(void* pthis, int dummy, int x, int y, int w, int h);
 	void(__fastcall* GameUI_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
-	void * (__fastcall* QueryBox_ctor)(void* pthis, int dummy, const char* title, const char* queryText, void* parent);
-	void* (__fastcall* CCreateMultiplayerGameDialog_ctor)(void* pthis, int dummy, void* parent);
-	void* (__fastcall* CGameConsoleDialog_ctor)(void* pthis, int dummy);
+	void *(__fastcall* Sheet_ctor)(void* pthis, int dummy, void* parent, const char *panelName);
+	//void *(__fastcall* QueryBox_ctor)(void* pthis, int dummy, const char* title, const char* queryText, void* parent);
+	void *(__fastcall* CCreateMultiplayerGameDialog_ctor)(void* pthis, int dummy, void* parent);
+	void *(__fastcall* CGameConsoleDialog_ctor)(void* pthis, int dummy);
 	void *(__fastcall*COptionsDialog_ctor)(void *pthis, int dummy, void *parent);
 	void *(__fastcall*COptionsSubVideo_ctor)(void *pthis, int dummy, void *parent);
+	void *(__fastcall*COptionsSubAudio_ctor)(void *pthis, int dummy, void *parent);
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings)(void *pthis, int dummy, bool bForceRestart);
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings_HL25)(void *pthis, int dummy);
-	void *(__fastcall*COptionsSubAudio_ctor)(void *pthis, int dummy, void *parent);
 	//void *(__fastcall *COptionsDialog_AddPage)(void *pthis, int dummy, void *panel, const char *name);
+	void* (__fastcall *PropertySheet_HasHotkey)(void* pthis, int dummy, wchar_t key);
+	void* (__fastcall *FocusNavGroup_GetCurrentFocus)(void* pthis, int dummy);
 
 	void(__fastcall* RichText_Print)(void* pthis, int dummy, const char* msg);
 	void (__fastcall* RichText_InsertStringA)(void* pthis, int dummy, const char* msg);
@@ -155,6 +158,7 @@ void Engine_InstallHooks(void);
 void Engine_UninstallHooks(void);
 void BaseUI_InstallHook(void);
 void BaseUI_UninstallHook(void);
+void GameUI_FillAddress(HMODULE hModule);
 void GameUI_InstallHooks(void);
 void GameUI_UninstallHooks(void);
 void ClientVGUI_InstallHook(cl_exportfuncs_t* pExportFunc);

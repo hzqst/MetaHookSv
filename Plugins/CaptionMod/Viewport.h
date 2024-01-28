@@ -64,7 +64,7 @@ public:
 	virtual ~CDictionary();
 
 	void Load(CSV::CSVDocument::row_type &row, Color &defaultColor, vgui::IScheme *ischeme);
-	void FinalizeString(std::wstring &output, int iPrefix);
+	void FinalizeString(std::wstring &output, bool iPrefix);
 
 	dict_t					m_Type;
 	std::string				m_szTitle;
@@ -102,7 +102,7 @@ class CViewport : public vgui::Panel
 	DECLARE_CLASS_SIMPLE(CViewport, vgui::Panel);
 
 public:
-	CViewport(void);
+	CViewport();
 	virtual ~CViewport(void);
 
 public:

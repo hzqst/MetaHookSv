@@ -16,9 +16,19 @@ extern cvar_t *hud_saytext;
 extern cvar_t *hud_saytext_time;
 extern cvar_t *cap_newchat;
 
-char *m_pSenderName = NULL;
+static char *m_pSenderName = NULL;
 
-client_textmessage_t *g_pCurrentTextMessage = NULL;
+static client_textmessage_t *g_pCurrentTextMessage = NULL;
+
+const char *GetSenderName()
+{
+	return m_pSenderName;
+}
+
+client_textmessage_t* GetCurrentTextMessage()
+{
+	return g_pCurrentTextMessage;
+}
 
 CHudMessage m_HudMessage;
 CHudMenu m_HudMenu;

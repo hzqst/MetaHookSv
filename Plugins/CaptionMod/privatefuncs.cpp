@@ -76,6 +76,12 @@ static hook_t *g_phook_FMOD_System_playSound = NULL;
 //static hook_t *g_phook_FileSystem_SetGameDirectory = NULL;
 
 static HMODULE g_hFMODEx = NULL;
+static HMODULE g_hGameUI = NULL;
+
+HMODULE GetGameUIModule()
+{
+	return g_hGameUI;
+}
 
 void FMOD_InstallHooks(HMODULE fmodex)
 {
@@ -1747,6 +1753,11 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 			g_hFMODEx = ctx->hModule;
 			FMOD_InstallHooks(ctx->hModule);
 		}
+		else if (ctx->BaseDllName && ctx->hModule && !_wcsicmp(ctx->BaseDllName, L"GameUI.dll"))
+		{
+			g_hGameUI = ctx->hModule;
+			GameUI_FillAddress(ctx->hModule);
+		}
 	}
 	else if (ctx->flags & LOAD_DLL_NOTIFICATION_IS_UNLOAD)
 	{
@@ -1754,6 +1765,11 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 		{
 			FMOD_UninstallHooks(ctx->hModule);
 			g_hFMODEx = NULL;
+		}
+		else if (ctx->hModule == g_hFMODEx)
+		{
+			GameUI_UninstallHooks();
+			g_hGameUI = NULL;
 		}
 	}
 }

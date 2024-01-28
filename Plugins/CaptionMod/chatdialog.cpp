@@ -253,7 +253,7 @@ void CChatDialogHistory::Paint(void)
 
 int CChatDialog::m_nLineCounter = 1;
 
-CChatDialog::CChatDialog(Panel *parent) : BaseClass(parent, PANEL_CHAT)
+CChatDialog::CChatDialog(Panel *parent, const char* panelName) : BaseClass(parent, panelName)
 {
 	m_PreviousAppModal = NULL;
 	MakePopup(false, false);
@@ -553,12 +553,6 @@ void CChatDialog::StartMessageMode(int iMessageModeType)
 
 void CChatDialog::StopMessageMode(void)
 {
-	/*if (m_PreviousAppModal)
-	{
-		input()->SetAppModalSurface(m_PreviousAppModal);
-		m_PreviousAppModal = NULL;
-	}*/
-
 	m_nMessageMode = MM_NONE;
 
 	SetKeyBoardInputEnabled(false);

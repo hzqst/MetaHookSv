@@ -11,20 +11,31 @@
 #include "SubtitlePanel.h"
 #include "privatefuncs.h"
 
-extern client_textmessage_t *g_pCurrentTextMessage;
+client_textmessage_t* GetCurrentTextMessage();
+
+extern cvar_t* cap_subtitle_prefix;
+extern cvar_t* cap_subtitle_waitplay;
+extern cvar_t* cap_subtitle_antispam;
+extern cvar_t* cap_subtitle_fadein;
+extern cvar_t* cap_subtitle_fadeout;
+extern cvar_t* cap_subtitle_holdtime;
+extern cvar_t* cap_subtitle_stimescale;
+extern cvar_t* cap_subtitle_htimescale;
 
 using namespace vgui;
 
 SubtitlePanel::SubtitlePanel(Panel *parent)  : EditablePanel(parent, "Subtitle")
 {
 	m_bInLevel = false;
-	m_flFadeIn = 0;
-	m_flFadeOut = 0;
-	m_flHoldTime = 0;
-	m_flHoldTimeScale = 0;
-	m_flStartTimeScale = 0;
+	//m_flFadeIn = 0;
+	//m_flFadeOut = 0;
+	//m_flHoldTime = 0;
+	//m_flHoldTimeScale = 0;
+	//m_flStartTimeScale = 0;
+	//m_iAntiSpam = 0;
+	//m_iPrefix = 0;
+	//m_iWaitPlay = 0;
 	m_hTextFont = NULL;
-	m_iAntiSpam = 0;
 	m_iCornorSize = 0;
 	m_flCurPanelY = 0;
 	m_flCurPanelYEnd = 0;
@@ -35,7 +46,6 @@ SubtitlePanel::SubtitlePanel(Panel *parent)  : EditablePanel(parent, "Subtitle")
 	m_iPanelTop = 0;
 	m_iPanelY = 0;
 	m_iPanelYEnd = 0;
-	m_iPrefix = 0;
 	m_iRoundCornorMaterial[0] = 0;
 	m_iRoundCornorMaterial[1] = 0;
 	m_iRoundCornorMaterial[2] = 0;
@@ -45,7 +55,6 @@ SubtitlePanel::SubtitlePanel(Panel *parent)  : EditablePanel(parent, "Subtitle")
 	m_iScaledXSpace = 0;
 	m_iScaledYSpace = 0;
 	m_iTextAlign = ALIGN_DEFAULT;
-	m_iWaitPlay = 0;
 	m_iXSpace = 0;
 	m_iYSpace = 0;
 	m_szTextAlign[0] = 0;
@@ -55,7 +64,7 @@ SubtitlePanel::SubtitlePanel(Panel *parent)  : EditablePanel(parent, "Subtitle")
 	SetPaintBorderEnabled(false);
 	SetProportional(true);
 
-	SetScheme("CaptionScheme");
+	SetScheme2("CaptionScheme");
 
 	LoadControlSettings("captionmod/SubtitlePanel.res");
 	
@@ -353,7 +362,7 @@ void SubtitlePanel::StartLine(CSubLine *Line)
 		CSubLine *Temp = m_Lines[i];
 		//Move all existing lines up
 		Temp->m_LineIndex ++;
-		Temp->MoveTo(Temp->CalcYPos(), m_flFadeIn);
+		Temp->MoveTo(Temp->CalcYPos(), cap_subtitle_fadein->value);
 
 		if(m_Lines[i]->m_EndTime > latestEndTime)
 			latestEndTime = m_Lines[i]->m_EndTime;
@@ -371,7 +380,7 @@ void SubtitlePanel::StartLine(CSubLine *Line)
 	Line->m_EndTime = max(Line->m_StartTime + Line->m_Duration, latestEndTime);
 
 	//Fade it now
-	Line->AlphaFade(255, m_flFadeIn);
+	Line->AlphaFade(255, cap_subtitle_fadein->value);
 
 	StartNextSubtitle(Line->m_Dict);
 }
@@ -389,15 +398,15 @@ void SubtitlePanel::AddLine(CDictionary *Dict, wchar_t *wszSentence, int nLength
 	Line->m_Duration = flDuration;
 	Line->m_Color = Dict->m_Color;
 
-	if (Dict->m_bDefaultColor && g_pCurrentTextMessage)
+	if (Dict->m_bDefaultColor && GetCurrentTextMessage())
 	{
-		Line->m_Color = Color(g_pCurrentTextMessage->r1, g_pCurrentTextMessage->g1, g_pCurrentTextMessage->b1, g_pCurrentTextMessage->a1);
+		Line->m_Color = Color(GetCurrentTextMessage()->r1, GetCurrentTextMessage()->g1, GetCurrentTextMessage()->b1, GetCurrentTextMessage()->a1);
 	}
 
 	Line->m_Alpha = 0;
 	Line->m_LineIndex = 0;
 	Line->m_YPos = Line->CalcYPos();
-	Line->m_FadeOut = m_flFadeOut;
+	Line->m_FadeOut = cap_subtitle_fadeout->value;
 	Line->m_TextAlign = Dict->m_iTextAlign ? Dict->m_iTextAlign : m_iTextAlign;
 }
 
@@ -413,7 +422,7 @@ void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, flo
 	float flLatestStart = 0;
 	for(int i = 0; i < m_BackLines.Count(); ++i)
 	{
-		if (m_iWaitPlay)
+		if (cap_subtitle_waitplay->value >= 1.0f)
 		{
 			m_BackLines[i]->m_StartTime = 0;
 		}
@@ -428,7 +437,7 @@ void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, flo
 			return;
 	}
 
-	if (m_iAntiSpam)
+	if (cap_subtitle_antispam->value >= 1.0f)
 	{
 		for (int i = 0; i < m_Lines.Count(); ++i)
 		{
@@ -440,7 +449,7 @@ void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, flo
 
 	std::wstring sentence;
 
-	pDict->FinalizeString(sentence, m_iPrefix);
+	pDict->FinalizeString(sentence, (cap_subtitle_prefix->value >= 1.0f) ? true : false);
 
 	int iPanelWidth = GetWide();
 	int iMaxTextWidth = iPanelWidth - (m_iScaledXSpace << 1);
@@ -475,25 +484,25 @@ void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, flo
 
 	//Fallback to m_flHoldTime
 	if(flDuration <= 0)
-		flDuration = m_flHoldTime;
+		flDuration = cap_subtitle_holdtime->value;
 
 	if(flDuration <= 0)
 		flDuration = 4.0f;
 
-	if (!pDict->m_bOverrideDuration && g_pCurrentTextMessage)
+	if (!pDict->m_bOverrideDuration && GetCurrentTextMessage())
 	{
-		if (g_pCurrentTextMessage->effect == 2 && g_pCurrentTextMessage->pMessage)
+		if (GetCurrentTextMessage()->effect == 2 && GetCurrentTextMessage()->pMessage)
 		{
-			flDuration = (g_pCurrentTextMessage->fadein * sentence.length() ) + g_pCurrentTextMessage->fadeout + g_pCurrentTextMessage->holdtime;
+			flDuration = (GetCurrentTextMessage()->fadein * sentence.length() ) + GetCurrentTextMessage()->fadeout + GetCurrentTextMessage()->holdtime;
 		}
 		else
 		{
-			flDuration = g_pCurrentTextMessage->holdtime + g_pCurrentTextMessage->fadein + g_pCurrentTextMessage->fadeout;
+			flDuration = GetCurrentTextMessage()->holdtime + GetCurrentTextMessage()->fadein + GetCurrentTextMessage()->fadeout;
 		}
 	}
 
-	if(m_flHoldTimeScale > 0)
-		flDuration *= m_flHoldTimeScale;
+	if(cap_subtitle_htimescale->value > 0)
+		flDuration *= cap_subtitle_htimescale->value;
 
 	p = pStart;
 
@@ -565,13 +574,13 @@ void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, flo
 		float flCalcStartTime = flPercentStart * flDuration;
 		float flRealStartTime;
 
-		if(m_flStartTimeScale <= 0)
+		if(cap_subtitle_stimescale->value <= 0)
 			flRealStartTime = flStartTime;
 		else
-			flRealStartTime = flStartTime + flCalcStartTime * m_flStartTimeScale;
+			flRealStartTime = flStartTime + flCalcStartTime * cap_subtitle_stimescale->value;
 
 		//Shall we wait for the latest backlines played?
-		if(m_iWaitPlay)
+		if(cap_subtitle_waitplay->value >= 1.0f)
 			flRealStartTime = max(flRealStartTime, flLatestStart);
 
 		//Calculate the Duration
@@ -579,7 +588,7 @@ void SubtitlePanel::StartSubtitle(CDictionary * pDict, float flDurationTime, flo
 		float flRealDuration;
 		
 		//Longer start time won't change the duration
-		if(m_flStartTimeScale >= 1)
+		if(cap_subtitle_stimescale->value >= 1)
 			flRealDuration = flCalcDuration;
 		else//real duration = original starttime - real starttime + original duration
 			flRealDuration = max(flStartTime + flCalcStartTime - flRealStartTime, 0) + flCalcDuration;
@@ -604,6 +613,7 @@ void SubtitlePanel::ClearSubtitle(void)
 	m_BackLines.RemoveAll();
 }
 
+#if 0
 void SubtitlePanel::QuerySubtitlePanelVars(SubtitlePanelVars_t *vars)
 {
 	GetSize(vars->m_iWidth, vars->m_iHeight);
@@ -639,6 +649,7 @@ void SubtitlePanel::UpdateSubtitlePanelVars(SubtitlePanelVars_t *vars)
 	m_iPrefix = vars->m_iPrefix;
 	m_iWaitPlay = vars->m_iWaitPlay;
 }
+#endif
 
 void SubtitlePanel::VidInit(void)
 {

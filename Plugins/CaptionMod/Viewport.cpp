@@ -26,14 +26,14 @@ CMemoryPool m_HashItemMemPool(sizeof(hash_item_t), 64);
 extern CHudMessage m_HudMessage;
 extern CHudMenu m_HudMenu;
 
-CViewport::CViewport(void) : Panel(NULL, "CaptionViewport")
+CViewport::CViewport() : BaseClass(NULL, "CaptionViewport")
 {
 	int swide, stall;
 	surface()->GetScreenSize(swide, stall);
 
 	MakePopup(false, true);
 
-	SetScheme("CaptionScheme");
+	SetScheme2("CaptionScheme");
 	SetBounds(0, 0, swide, stall);
 	SetPaintBorderEnabled(false);
 	SetPaintBackgroundEnabled(false);
@@ -757,7 +757,7 @@ void CViewport::LoadBaseDictionary(void)
 	gEngfuncs.Con_Printf("LoadBaseDictionary: %d lines are loaded.\n", nRowCount - 1);
 }
 
-extern char *m_pSenderName;
+const char* GetSenderName();
 
 //KeyBinding Name(jump) -> Key Name(SPACE)
 const char *PrimaryKey_ForBinding(const char *binding)
@@ -765,9 +765,9 @@ const char *PrimaryKey_ForBinding(const char *binding)
 	if(binding[0] == '+')
 		binding ++;
 
-	if (!strcmp(binding, "sender") && m_pSenderName)
+	if (!strcmp(binding, "sender") && GetSenderName())
 	{
-		return m_pSenderName;
+		return GetSenderName();
 	}
 
 	for (int i = 255; i >= 0; --i)
@@ -791,7 +791,7 @@ const char *PrimaryKey_ForBinding(const char *binding)
 	return "<not bound>";
 }
 
-void CDictionary::FinalizeString(std::wstring &output, int iPrefix)
+void CDictionary::FinalizeString(std::wstring &output, bool bPrefix)
 {
 	auto finalize = m_szSentence;
 
@@ -841,7 +841,7 @@ void CDictionary::FinalizeString(std::wstring &output, int iPrefix)
 		searchStart = result.suffix().first;
 	}
 
-	if(iPrefix)
+	if(bPrefix)
 		output = m_szSpeaker + finalize;
 	else
 		output = finalize;
@@ -850,7 +850,7 @@ void CDictionary::FinalizeString(std::wstring &output, int iPrefix)
 void CViewport::Start(void)
 {
 	m_pSubtitlePanel = new SubtitlePanel(this);
-	m_pChatDialog = new CCSChatDialog(this);
+	m_pChatDialog = new CCSChatDialog(this, PANEL_CHAT);
 
 	SetVisible(false);
 }
@@ -1017,6 +1017,7 @@ void CViewport::ChatPrintf(int iPlayerIndex, const wchar_t *buffer)
 	m_pChatDialog->ChatPrintf(iPlayerIndex, buffer);
 }
 
+#if 0
 void CViewport::QuerySubtitlePanelVars(SubtitlePanelVars_t *vars)
 {
 	m_pSubtitlePanel->QuerySubtitlePanelVars(vars);
@@ -1026,3 +1027,4 @@ void CViewport::UpdateSubtitlePanelVars(SubtitlePanelVars_t *vars)
 {
 	m_pSubtitlePanel->UpdateSubtitlePanelVars(vars);
 }
+#endif

@@ -29,19 +29,8 @@ IEngineSurface_HL25 *staticSurface_HL25 = NULL;
 namespace vgui
 {
 	static char g_szControlsModuleName[256] = {0};
-const char *g_pszOverrideControlsModuleName = NULL;
 
 bool (__fastcall *g_pfnCWin32Input_PostKeyMessage)(void *pthis, int, KeyValues *message);
-
-void SetOverrideControlsModuleName(const char *pszNewName)
-{
-	g_pszOverrideControlsModuleName = pszNewName;
-}
-
-const char* GetOverrideControlsModuleName()
-{
-	return g_pszOverrideControlsModuleName;
-}
 
 const char* GetControlsModuleName(void)
 {

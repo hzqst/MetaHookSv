@@ -194,12 +194,6 @@
     <ClCompile Include="ClientVGUI.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
-    <ClCompile Include="CvarSlider.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="CvarToggleCheckButton.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
     <ClCompile Include="KeyValuesSystemHook.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
@@ -453,6 +447,15 @@
       <Filter>EngineVGUI2</Filter>
     </ClCompile>
     <ClCompile Include="..\..\include\vgui_controls\MemoryBitmap.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\CvarSlider.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\CvarTextEntry.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\CvarToggleCheckButton.cpp">
       <Filter>vgui_controls</Filter>
     </ClCompile>
   </ItemGroup>
@@ -760,12 +763,6 @@
     <ClInclude Include="cstrikechatdialog.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
-    <ClInclude Include="CvarSlider.h">
-      <Filter>VGUI2</Filter>
-    </ClInclude>
-    <ClInclude Include="CvarToggleCheckButton.h">
-      <Filter>VGUI2</Filter>
-    </ClInclude>
     <ClInclude Include="Viewport.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
@@ -788,9 +785,6 @@
       <Filter>vgui_controls</Filter>
     </ClInclude>
     <ClInclude Include="$(SolutionDir)\include\vgui_controls\BitmapImagePanel.h">
-      <Filter>vgui_controls</Filter>
-    </ClInclude>
-    <ClInclude Include="$(SolutionDir)include\SourceSDK\Border.h">
       <Filter>vgui_controls</Filter>
     </ClInclude>
     <ClInclude Include="$(SolutionDir)\include\vgui_controls\BuildGroup.h">
@@ -1018,14 +1012,26 @@
     <ClInclude Include="EngineSurfaceHook.h">
       <Filter>EngineVGUI2</Filter>
     </ClInclude>
-    <ClInclude Include="$(SolutionDir)include\VGUI\BaseUI.h">
-      <Filter>EngineVGUI2</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Interface\VGUI\ISurface2.h">
       <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\vgui_controls\MemoryBitmap.h">
       <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="BaseUI.h">
+      <Filter>EngineVGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\CvarSlider.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\CvarTextEntry.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\CvarToggleCheckButton.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SolutionDir)include\SourceSDK\Border.h">
+      <Filter>VGUI2</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -8,7 +8,7 @@ extern IGameUI *g_pGameUI;
 
 using namespace vgui;
 
-CCSChatDialog::CCSChatDialog(Panel *parent) : BaseClass(parent)
+CCSChatDialog::CCSChatDialog(Panel *parent, const char* panelName) : BaseClass(parent, panelName)
 {
 	SetProportional(true);
 	SetSizeable(false);

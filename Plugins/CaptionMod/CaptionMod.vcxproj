@@ -77,7 +77,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\SteamSDK;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\vgui_controls_legacy;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\SteamSDK;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;STEAM_API_NODLL;VGUI_USE_SURFACE2;VGUI_USE_SCHEME2;NO_MALLOC_OVERRIDE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader />
@@ -102,7 +102,7 @@ $(GLEWCheckRequirements)</Command>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\SteamSDK;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\vgui_controls_legacy;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\SteamSDK;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;STEAM_API_NODLL;VGUI_USE_SURFACE2;VGUI_USE_SCHEME2;NO_MALLOC_OVERRIDE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Async</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -157,13 +157,14 @@ $(GLEWCheckRequirements)</Command>
   <ItemGroup>
     <ClCompile Include="$(SolutionDir)include\HLSDK\common\interface.cpp" />
     <ClCompile Include="$(SolutionDir)include\HLSDK\common\parsemsg.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\CvarSlider.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\CvarTextEntry.cpp" />
+    <ClCompile Include="..\..\include\vgui_controls\CvarToggleCheckButton.cpp" />
     <ClCompile Include="..\..\include\vgui_controls\MemoryBitmap.cpp" />
     <ClCompile Include="BaseUI.cpp" />
     <ClCompile Include="chatdialog.cpp" />
     <ClCompile Include="ClientVGUI.cpp" />
     <ClCompile Include="cstrikechatdialog.cpp" />
-    <ClCompile Include="CvarSlider.cpp" />
-    <ClCompile Include="CvarToggleCheckButton.cpp" />
     <ClCompile Include="DpiManager.cpp" />
     <ClCompile Include="EngineSurfaceHook.cpp" />
     <ClCompile Include="libcsv\csv_document.cpp" />
@@ -290,11 +291,13 @@ $(GLEWCheckRequirements)</Command>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Interface\VGUI\ISurface2.h" />
+    <ClInclude Include="..\..\include\vgui_controls\CvarSlider.h" />
+    <ClInclude Include="..\..\include\vgui_controls\CvarTextEntry.h" />
+    <ClInclude Include="..\..\include\vgui_controls\CvarToggleCheckButton.h" />
     <ClInclude Include="..\..\include\vgui_controls\MemoryBitmap.h" />
+    <ClInclude Include="BaseUI.h" />
     <ClInclude Include="chatdialog.h" />
     <ClInclude Include="cstrikechatdialog.h" />
-    <ClInclude Include="CvarSlider.h" />
-    <ClInclude Include="CvarToggleCheckButton.h" />
     <ClInclude Include="DpiManager.h" />
     <ClInclude Include="EngineSurfaceHook.h" />
     <ClInclude Include="libcsv\csv_document.h" />
@@ -312,7 +315,6 @@ $(GLEWCheckRequirements)</Command>
     <ClInclude Include="vgui_internal.h" />
     <ClInclude Include="Viewport.h" />
     <ClInclude Include="Win32Font.h" />
-    <ClInclude Include="$(SolutionDir)include\VGUI\BaseUI.h" />
     <ClInclude Include="$(SolutionDir)include\SourceSDK\Bitmap.h" />
     <ClInclude Include="$(SolutionDir)include\SourceSDK\Border.h" />
     <ClInclude Include="$(SolutionDir)include\SourceSDK\appframework\IAppSystem.h" />

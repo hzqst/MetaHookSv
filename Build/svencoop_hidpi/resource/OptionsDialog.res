@@ -6,7 +6,7 @@
 		"fieldName"		"OptionsDialog"
 		"xpos"		"0"
 		"ypos"		"0"
-		"wide"		"512"
+		"wide"		"560"
 		"tall"		"406"
 		"autoResize"	"1"
 		"pinCorner"		"0"

@@ -1,22 +1,5 @@
 "resource/OptionsSubVideoAdvancedDlg.res"
 {
-	"OptionsSubVideoAdvancedDlg"
-	{
-		"ControlName"		"COptionsSubVideoAdvancedDlg"
-		"fieldName"		"OptionsSubVideoAdvancedDlg"
-		"xpos"		"c-171"
-		"ypos"		"c-85"
-		"wide"		"600"
-		"tall"		"400"
-		"autoResize"	"0"
-		"pinCorner"		"0"
-		"visible"		"1"
-		"enabled"		"1"
-		"tabPosition"		"0"
-		"settitlebarvisible"		"1"
-		"title"		"#GameUI_VideoAdvanced_Title"
-	}
-
 	"DetailTexture"
 	{
 		"ControlName"		"CCvarToggleCheckButton"
@@ -263,7 +246,7 @@
 	{
 		"ControlName"		"Label"
 		"fieldName"		"Label_HDRExposure"
-		"xpos"		"220"
+		"xpos"		"180"
 		"ypos"		"40"
 		"wide"		"160"
 		"tall"		"24"
@@ -283,7 +266,7 @@
 	{
 		"ControlName"		"CCvarSlider"
 		"fieldName"		"HDRExposure"
-		"xpos"		"220"
+		"xpos"		"180"
 		"ypos"		"62"
 		"wide"		"160"
 		"tall"		"40"
@@ -305,7 +288,7 @@
 	{
 		"ControlName"		"Label"
 		"fieldName"		"Label_HDRDarkness"
-		"xpos"		"220"
+		"xpos"		"180"
 		"ypos"		"100"
 		"wide"		"160"
 		"tall"		"24"
@@ -325,7 +308,7 @@
 	{
 		"ControlName"		"CCvarSlider"
 		"fieldName"		"HDRDarkness"
-		"xpos"		"220"
+		"xpos"		"180"
 		"ypos"		"122"
 		"wide"		"160"
 		"tall"		"40"
@@ -347,7 +330,7 @@
 	{
 		"ControlName"		"Label"
 		"fieldName"		"Label_BloomIntensity"
-		"xpos"		"220"
+		"xpos"		"180"
 		"ypos"		"160"
 		"wide"		"160"
 		"tall"		"24"
@@ -367,7 +350,7 @@
 	{
 		"ControlName"		"CCvarSlider"
 		"fieldName"		"BloomIntensity"
-		"xpos"		"220"
+		"xpos"		"180"
 		"ypos"		"188"
 		"wide"		"160"
 		"tall"		"40"
@@ -389,7 +372,7 @@
 	{
 		"ControlName"		"Label"
 		"fieldName"		"Label_ShadowIntensity"
-		"xpos"		"220"
+		"xpos"		"180"
 		"ypos"		"220"
 		"wide"		"160"
 		"tall"		"24"
@@ -409,7 +392,7 @@
 	{
 		"ControlName"		"CCvarSlider"
 		"fieldName"		"ShadowIntensity"
-		"xpos"		"220"
+		"xpos"		"180"
 		"ypos"		"242"
 		"wide"		"160"
 		"tall"		"40"
@@ -431,7 +414,7 @@
 	{
 		"ControlName"		"Label"
 		"fieldName"		"Label_TexGamma"
-		"xpos"		"410"
+		"xpos"		"350"
 		"ypos"		"40"
 		"wide"		"160"
 		"tall"		"24"
@@ -451,7 +434,7 @@
 	{
 		"ControlName"		"CCvarSlider"
 		"fieldName"		"TexGamma"
-		"xpos"		"410"
+		"xpos"		"350"
 		"ypos"		"62"
 		"wide"		"160"
 		"tall"		"40"
@@ -473,7 +456,7 @@
 	{
 		"ControlName"		"Label"
 		"fieldName"		"Label_LightGamma"
-		"xpos"		"410"
+		"xpos"		"350"
 		"ypos"		"100"
 		"wide"		"160"
 		"tall"		"24"
@@ -493,7 +476,7 @@
 	{
 		"ControlName"		"CCvarSlider"
 		"fieldName"		"LightGamma"
-		"xpos"		"410"
+		"xpos"		"350"
 		"ypos"		"122"
 		"wide"		"160"
 		"tall"		"40"
@@ -549,72 +532,5 @@
 		"maxchars"		"-1"
 		"NumericInputOnly"		"0"
 		"unicode"		"0"
-	}
-
-	"ButtonOK"
-	{
-		"ControlName"		"Button"
-		"fieldName"		"ButtonOK"
-		"xpos"		"300"
-		"ypos"		"350"
-		"wide"		"80"
-		"tall"		"24"
-		"autoResize"		"0"
-		"pinCorner"		"0"
-		"visible"		"1"
-		"enabled"		"1"
-		"tabPosition"		"19"
-		"labelText"		"#GameUI_OK"
-		"textAlignment"		"west"
-		"dulltext"		"0"
-		"brighttext"		"0"
-		"wrap"		"0"
-		"Command"		"OK"
-		"Default"		"1"
-		"selected"		"0"
-	}
-	"ButtonCancel"
-	{
-		"ControlName"		"Button"
-		"fieldName"		"ButtonCancel"
-		"xpos"		"400"
-		"ypos"		"350"
-		"wide"		"80"
-		"tall"		"24"
-		"autoResize"		"0"
-		"pinCorner"		"0"
-		"visible"		"1"
-		"enabled"		"1"
-		"tabPosition"		"20"
-		"labelText"		"#GameUI_Cancel"
-		"textAlignment"		"west"
-		"dulltext"		"0"
-		"brighttext"		"0"
-		"wrap"		"0"
-		"Command"		"Close"
-		"Default"		"0"
-		"selected"		"0"
-	}
-	"ButtonApply"
-	{
-		"ControlName"		"Button"
-		"fieldName"		"ButtonApply"
-		"xpos"			"500"
-		"ypos"			"350"
-		"wide"			"80"
-		"tall"			"24"
-		"autoResize"		"0"
-		"pinCorner"		"3"
-		"visible"		"1"
-		"enabled"		"1"
-		"tabPosition"		"21"
-		"paintbackground"	"1"
-		"labelText"		"#GameUI_Apply"
-		"textAlignment"		"west"
-		"dulltext"		"0"
-		"brighttext"		"0"
-		"wrap"			"0"
-		"Command"		"Apply"
-		"Default"		"0"
 	}
 }

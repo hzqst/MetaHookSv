@@ -31,6 +31,10 @@ public:
 		m_Line = Line;
 		m_Started = false;
 	}
+	virtual ~CSubLineAnim()
+	{
+
+	}
 	virtual bool IsPlaying(void)
 	{
 		return (g_pViewPort->GetCurTime() >= m_StartTime && g_pViewPort->GetCurTime() < m_StartTime + m_AnimTime);
@@ -41,6 +45,7 @@ public:
 	}
 	virtual LineAnim_t GetType(void) = 0;
 	virtual bool Update(void) = 0;
+
 protected:
 	float	m_StartTime;
 	float	m_AnimTime;
@@ -84,6 +89,7 @@ public:
 		m_Length = 0;
 		m_Duration = 0;
 		m_StartTime = 0;
+		m_EndTime = 0;
 		m_Alpha = 0;
 		m_YPos = 0;
 		m_LineIndex = 0;
@@ -93,6 +99,10 @@ public:
 		m_Dict = Dict;
 		m_TextWide = 0;
 		m_TextAlign = ALIGN_DEFAULT;
+	}
+	virtual ~CSubLine()
+	{
+
 	}
 
 	void Draw(int x, int w, int align);
@@ -115,7 +125,7 @@ public:
 	int				m_LineIndex;//Line number, 0 means the bottom
 	bool			m_Retired;//Should this line be retired?
 	float			m_FadeOut;//Fadeout duration
-	CUtlVector<CSubLineAnim *>	m_AnimList;//Animation list
+	CUtlVector<CSubLineAnim *> m_AnimList;//Animation list
 	SubtitlePanel	*m_Panel;//Subtitle panel
 	CDictionary		*m_Dict;//Linked dictionary
 	int				m_TextWide;
@@ -139,8 +149,10 @@ public://Subtitle interface
 	void AddLine(CDictionary *Dict, wchar_t *wszSentence, int nLength, float flStartTime, float flDuration, int nTextLength);
 	void StartLine(CSubLine *Line);
 	void ClearSubtitle(void);
+#if 0
 	void QuerySubtitlePanelVars(SubtitlePanelVars_t *vars);
 	void UpdateSubtitlePanelVars(SubtitlePanelVars_t *vars);
+#endif
 protected:
 	virtual void ApplySchemeSettings(vgui::IScheme *pScheme);
 	virtual void PaintBackground(void);
@@ -154,14 +166,14 @@ protected:
 	CPanelAnimationVar( int, m_iYSpace, "yspace", "8" );
 	CPanelAnimationVar( int, m_iLineSpace, "linespace", "8" );
 	CPanelAnimationVar( Color, m_PanelColor, "panelcolor", "SubtitleBG" );
-	CPanelAnimationVar( float, m_flFadeIn, "fadein", "0.5" );
-	CPanelAnimationVar( float, m_flFadeOut, "fadeout", "0.8" );
-	CPanelAnimationVar( float, m_flHoldTime, "holdtime", "4.0" );
-	CPanelAnimationVar( int, m_iPrefix, "prefix", "1" );
-	CPanelAnimationVar( int, m_iWaitPlay, "waitplay", "1" );
-	CPanelAnimationVar(int, m_iAntiSpam, "antispam", "1");
-	CPanelAnimationVar( float, m_flStartTimeScale, "stimescale", "1" );
-	CPanelAnimationVar( float, m_flHoldTimeScale, "htimescale", "1" );
+	//CPanelAnimationVar( float, m_flFadeIn, "fadein", "0.5" );
+	//CPanelAnimationVar( float, m_flFadeOut, "fadeout", "0.8" );
+	//CPanelAnimationVar( float, m_flHoldTime, "holdtime", "4.0" );
+	//CPanelAnimationVar( int, m_iPrefix, "prefix", "1" );
+	//CPanelAnimationVar( int, m_iWaitPlay, "waitplay", "1" );
+	//CPanelAnimationVar(int, m_iAntiSpam, "antispam", "1");
+	//CPanelAnimationVar( float, m_flStartTimeScale, "stimescale", "1" );
+	//CPanelAnimationVar( float, m_flHoldTimeScale, "htimescale", "1" );
 
 public:
 	//Some attributes

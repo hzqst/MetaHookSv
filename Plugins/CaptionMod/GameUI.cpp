@@ -13,6 +13,7 @@
 #include "vgui_controls/PropertyPage.h"
 #include "CvarSlider.h"
 #include "CvarToggleCheckButton.h"
+#include "CvarTextEntry.h"
 
 #include "Viewport.h"
 
@@ -28,15 +29,17 @@ static hook_t* g_phook_GameUI_Panel_Init = NULL;
 static hook_t* g_phook_CGameConsoleDialog_ctor = NULL;
 static hook_t* g_phook_CCreateMultiplayerGameDialog_ctor = NULL;
 static hook_t* g_phook_COptionsDialog_ctor = NULL;
-static hook_t *g_phook_COptionsSubVideo_ctor = NULL;
+//static hook_t *g_phook_COptionsSubVideo_ctor = NULL;
+//static hook_t *g_phook_COptionsSubAudio_ctor = NULL;
 static hook_t *g_phook_COptionsSubVideo_ApplyVidSettings = NULL;
-static hook_t *g_phook_COptionsSubAudio_ctor = NULL;
 static hook_t* g_phook_RichText_InsertChar = NULL;
 static hook_t* g_phook_RichText_InsertStringW = NULL;
 static hook_t* g_phook_RichText_OnThink = NULL;
 static hook_t* g_phook_TextEntry_OnKeyCodeTyped = NULL;
 static hook_t* g_phook_TextEntry_LayoutVerticalScrollBarSlider = NULL;
 static hook_t* g_phook_TextEntry_GetStartDrawIndex = NULL;
+static hook_t* g_phook_PropertySheet_HasHotkey = NULL;
+static hook_t* g_phook_FocusNavGroup_GetCurrentFocus = NULL;
 
 vgui::Panel** staticPanel = NULL;
 
@@ -221,11 +224,24 @@ void CGameUI::Initialize(CreateInterfaceFn *factories, int count)
 
 void CGameUI::Start(struct cl_enginefuncs_s *engineFuncs, int interfaceVersion, void *system)
 {
-	if (!vgui::localize()->AddFile(g_pFullFileSystem, "captionmod/gameui_%language%.txt"))
+	if (g_pFileSystem)
 	{
-		if (!vgui::localize()->AddFile(g_pFullFileSystem, "captionmod/gameui_english.txt"))
+		if (!vgui::localize()->AddFile(g_pFileSystem, "captionmod/gameui_%language%.txt"))
 		{
-			g_pMetaHookAPI->SysError("Failed to load captionmod/gameui_english.txt");
+			if (!vgui::localize()->AddFile(g_pFileSystem, "captionmod/gameui_english.txt"))
+			{
+				g_pMetaHookAPI->SysError("Failed to load captionmod/gameui_english.txt");
+			}
+		}
+	}
+	else if (g_pFileSystem_HL25)
+	{
+		if (!vgui::localize()->AddFile((IFileSystem *)g_pFileSystem_HL25, "captionmod/gameui_%language%.txt"))
+		{
+			if (!vgui::localize()->AddFile((IFileSystem*)g_pFileSystem_HL25, "captionmod/gameui_english.txt"))
+			{
+				g_pMetaHookAPI->SysError("Failed to load captionmod/gameui_english.txt");
+			}
 		}
 	}
 
@@ -327,18 +343,13 @@ void CGameUI::SetSecondaryProgressBarText(const char *statusText)
 	return g_pfnCGameUI_SetSecondaryProgressBarText(this, 0, statusText);
 }
 
-class COptionsSubVideoAdvancedDlg : public vgui::Frame
+class COptionsSubVideoAdvancedDlg : public vgui::PropertyPage
 {
-	DECLARE_CLASS_SIMPLE(COptionsSubVideoAdvancedDlg, vgui::Frame);
+	DECLARE_CLASS_SIMPLE(COptionsSubVideoAdvancedDlg, vgui::PropertyPage);
 
 public:
 	COptionsSubVideoAdvancedDlg(vgui::Panel *parent) : BaseClass(parent, "OptionsSubVideoAdvancedDlg")
 	{
-		SetTitle("#GameUI_VideoAdvanced_Title", true);
-		SetSize(600, 400);
-		SetSizeable(false);
-		SetDeleteSelfOnClose(true);
-
 		m_pAnisotropicFiltering = new vgui::ComboBox(this, "AnisotropicFiltering", 5, false);
 		m_pAnisotropicFiltering->AddItem("1X", NULL);
 		m_pAnisotropicFiltering->AddItem("2X", NULL);
@@ -366,29 +377,7 @@ public:
 		m_pTexGamma = new CCvarSlider(this, "TexGamma", "#GameUI_TexGamma", 1.8f, 3.0f, "texgamma", false);
 		m_pLightGamma = new CCvarSlider(this, "LightGamma", "#GameUI_LightGamma", 1.8f, 3.0f, "lightgamma", false);
 
-		LoadControlSettings("captionmod\\OptionsSubVideoAdvancedDlg.res");
-	}
-
-	virtual void Activate(void)
-	{
-		OnResetData();
-		BaseClass::Activate();
-
-		vgui::input()->SetAppModalSurface(GetVPanel());
-	}
-
-	MESSAGE_FUNC_PTR(OnTextChanged, "TextChanged", panel)
-	{
-	}
-
-	MESSAGE_FUNC(OnGameUIHidden, "GameUIHidden")
-	{
-		Close();
-	}
-
-	MESSAGE_FUNC(OK_Confirmed, "OK_Confirmed")
-	{
-		Close();
+		LoadControlSettings("captionmod/OptionsSubVideoAdvancedDlg.res");
 	}
 
 	void ApplyChangesToConVar(const char *pConVarName, int value)
@@ -398,7 +387,7 @@ public:
 		gEngfuncs.pfnClientCmd(szCmd);
 	}
 
-	virtual void ApplyChanges(void)
+	void ApplyChanges(void)
 	{
 		int activateItem = m_pAnisotropicFiltering->GetActiveItem();
 
@@ -430,7 +419,7 @@ public:
 		m_pLightGamma->ApplyChanges();
 	}
 
-	virtual void OnResetData(void)
+	void OnResetData(void) override
 	{
 		m_pDetailTexture->Reset();
 		m_pWaterShader->Reset();
@@ -452,6 +441,7 @@ public:
 		m_pLightGamma->Reset();
 
 		auto gl_ansio = gEngfuncs.pfnGetCvarPointer("gl_ansio");
+
 		if (gl_ansio)
 		{
 			int ansio = gl_ansio->value;
@@ -473,12 +463,11 @@ public:
 		}
 	}
 
-	virtual void OnCommand(const char *command)
+	void OnCommand(const char *command) override
 	{
 		if (!stricmp(command, "OK"))
 		{
 			ApplyChanges();
-			Close();
 		}
 		else if (!stricmp(command, "Apply"))
 		{
@@ -490,13 +479,9 @@ public:
 		}
 	}
 
-	bool RequiresRestart(void)
-	{
-		return false;
-	}
+	MESSAGE_FUNC(OnDataChanged, "ControlModified");
 
 private:
-	bool m_bUseChanges;
 	vgui::ComboBox *m_pAnisotropicFiltering;
 	CCvarToggleCheckButton *m_pDetailTexture;
 	CCvarToggleCheckButton *m_pWaterShader;
@@ -518,53 +503,24 @@ private:
 	CCvarSlider *m_pLightGamma;
 };
 
-class COptionsSubAudioAdvancedDlg : public vgui::Frame
+class COptionsSubAudioAdvancedDlg : public vgui::PropertyPage
 {
-	DECLARE_CLASS_SIMPLE(COptionsSubAudioAdvancedDlg, vgui::Frame);
+	DECLARE_CLASS_SIMPLE(COptionsSubAudioAdvancedDlg, vgui::PropertyPage);
 
 public:
 	COptionsSubAudioAdvancedDlg(vgui::Panel *parent) : BaseClass(parent, "OptionsSubAudioAdvancedDlg")
 	{
-		SetTitle("#GameUI_CaptionMod_Title", true);
-		SetSize(600, 400);
-		SetSizeable(false);
-		SetDeleteSelfOnClose(true);
+		m_pPrefixButton = new CCvarToggleCheckButton(this, "PrefixButton", "#GameUI_CaptionMod_Prefix", "cap_subtitle_prefix");
+		m_pWaitPlayButton = new CCvarToggleCheckButton(this, "WaitPlayButton", "#GameUI_CaptionMod_WaitPlay", "cap_subtitle_waitplay");
+		m_pAntiSpamButton = new CCvarToggleCheckButton(this, "AntiSpamButton", "#GameUI_CaptionMod_AntiSpam", "cap_subtitle_antispam");
 
-		m_pPrefixButton = new vgui::CheckButton(this, "PrefixButton", "#GameUI_CaptionMod_Prefix");
-		m_pWaitPlayButton = new vgui::CheckButton(this, "WaitPlayButton", "#GameUI_CaptionMod_WaitPlay");
-		m_pAntiSpamButton = new vgui::CheckButton(this, "AntiSpamButton", "#GameUI_CaptionMod_AntiSpam");
-		m_pFadeInEntry = new vgui::TextEntry(this, "FadeInEntry");
-		m_pFadeOutEntry = new vgui::TextEntry(this, "FadeOutEntry");
-		m_pHoldTimeEntry = new vgui::TextEntry(this, "HoldTimeEntry");
-		m_pHoldTimeScaleEntry = new vgui::TextEntry(this, "HoldTimeScaleEntry");
-		m_pStartTimeScaleEntry = new vgui::TextEntry(this, "StartTimeScaleEntry");
-		m_pWidthEntry = new vgui::TextEntry(this, "WidthEntry");
-		m_pHeightEntry = new vgui::TextEntry(this, "HeightEntry");
-		m_pYPosEntry = new vgui::TextEntry(this, "YPosEntry");
+		m_pFadeInEntry = new CCvarTextEntry(this, "FadeInEntry", "cap_subtitle_fadein");
+		m_pFadeOutEntry = new CCvarTextEntry(this, "FadeOutEntry", "cap_subtitle_fadeout");
+		m_pHoldTimeEntry = new CCvarTextEntry(this, "HoldTimeEntry", "cap_subtitle_holdtime");
+		m_pHoldTimeScaleEntry = new CCvarTextEntry(this, "HoldTimeScaleEntry", "cap_subtitle_htimescale");
+		m_pStartTimeScaleEntry = new CCvarTextEntry(this, "StartTimeScaleEntry", "cap_subtitle_stimescale");
 
-		LoadControlSettings("captionmod\\OptionsSubAudioAdvancedDlg.res");
-	}
-
-	virtual void Activate(void)
-	{
-		OnResetData();
-		BaseClass::Activate();
-
-		vgui::input()->SetAppModalSurface(GetVPanel());
-	}
-
-	MESSAGE_FUNC_PTR(OnTextChanged, "TextChanged", panel)
-	{
-	}
-
-	MESSAGE_FUNC(OnGameUIHidden, "GameUIHidden")
-	{
-		Close();
-	}
-
-	MESSAGE_FUNC(OK_Confirmed, "OK_Confirmed")
-	{
-		Close();
+		LoadControlSettings("captionmod/OptionsSubAudioAdvancedDlg.res");
 	}
 
 	void ApplyChangesToConVar(const char *pConVarName, int value)
@@ -574,124 +530,42 @@ public:
 		gEngfuncs.pfnClientCmd(szCmd);
 	}
 
-	virtual void ApplyChanges(void)
+	void ApplyChanges(void)
 	{
-		SubtitlePanelVars_t vars = { 0 };
+		m_pPrefixButton->ApplyChanges();
+		m_pWaitPlayButton->ApplyChanges();
+		m_pAntiSpamButton->ApplyChanges();
 
-		vars.m_iPrefix = m_pPrefixButton->IsSelected() ? 1 : 0;
-		vars.m_iWaitPlay = m_pWaitPlayButton->IsSelected() ? 1 : 0;
-		vars.m_iAntiSpam = m_pAntiSpamButton->IsSelected() ? 1 : 0;
-
-		{
-			char szTextEntry[16] = { 0 };
-			m_pFadeInEntry->GetText(szTextEntry, sizeof(szTextEntry));
-			vars.m_flFadeIn = atof(szTextEntry);
-		}
-
-		{
-			char szTextEntry[16] = { 0 };
-			m_pFadeOutEntry->GetText(szTextEntry, sizeof(szTextEntry));
-			vars.m_flFadeOut = atof(szTextEntry);
-		}
-
-		{
-			char szTextEntry[16] = { 0 };
-			m_pHoldTimeEntry->GetText(szTextEntry, sizeof(szTextEntry));
-			vars.m_flHoldTime = atof(szTextEntry);
-		}
-
-		{
-			char szTextEntry[16] = { 0 };
-			m_pHoldTimeScaleEntry->GetText(szTextEntry, sizeof(szTextEntry));
-			vars.m_flHoldTimeScale = atof(szTextEntry);
-		}
-
-		{
-			char szTextEntry[16] = { 0 };
-			m_pStartTimeScaleEntry->GetText(szTextEntry, sizeof(szTextEntry));
-			vars.m_flStartTimeScale = atof(szTextEntry);
-		}
-
-		{
-			char szTextEntry[16] = { 0 };
-			m_pWidthEntry->GetText(szTextEntry, sizeof(szTextEntry));
-			vars.m_iWidth = atoi(szTextEntry);
-		}
-
-		{
-			char szTextEntry[16] = { 0 };
-			m_pHeightEntry->GetText(szTextEntry, sizeof(szTextEntry));
-			vars.m_iHeight = atoi(szTextEntry);
-		}
-
-		{
-			char szTextEntry[16] = { 0 };
-			m_pYPosEntry->GetText(szTextEntry, sizeof(szTextEntry));
-			vars.m_iYPos = atoi(szTextEntry);
-		}
-
-		if (g_pViewPort)
-			g_pViewPort->UpdateSubtitlePanelVars(&vars);
+		m_pFadeInEntry->ApplyChanges();
+		m_pFadeOutEntry->ApplyChanges();
+		m_pHoldTimeEntry->ApplyChanges();
+		m_pHoldTimeScaleEntry->ApplyChanges();
+		m_pStartTimeScaleEntry->ApplyChanges();
 	}
 
-	virtual void OnResetData(void)
+	void OnApplyChanges() override
 	{
-		SubtitlePanelVars_t vars = { 0 };
-		if(g_pViewPort)
-			g_pViewPort->QuerySubtitlePanelVars(&vars);
-		
-		m_pPrefixButton->SetSelected(vars.m_iPrefix ? true : false);
-		m_pWaitPlayButton->SetSelected(vars.m_iWaitPlay ? true : false);
-		m_pAntiSpamButton->SetSelected(vars.m_iAntiSpam ? true : false);
-
-		{
-			char szTextEntry[16] = { 0 };
-			V_snprintf(szTextEntry, sizeof(szTextEntry) - 1, "%.1f", vars.m_flFadeIn);
-			m_pFadeInEntry->SetText(szTextEntry);
-		}
-		{
-			char szTextEntry[16] = { 0 };
-			V_snprintf(szTextEntry, sizeof(szTextEntry) - 1, "%.1f", vars.m_flFadeOut);
-			m_pFadeOutEntry->SetText(szTextEntry);
-		}
-		{
-			char szTextEntry[16] = { 0 };
-			V_snprintf(szTextEntry, sizeof(szTextEntry) - 1, "%.1f", vars.m_flHoldTime);
-			m_pHoldTimeEntry->SetText(szTextEntry);
-		}
-		{
-			char szTextEntry[16] = { 0 };
-			V_snprintf(szTextEntry, sizeof(szTextEntry) - 1, "%.1f", vars.m_flHoldTimeScale);
-			m_pHoldTimeScaleEntry->SetText(szTextEntry);
-		}
-		{
-			char szTextEntry[16] = { 0 };
-			V_snprintf(szTextEntry, sizeof(szTextEntry) - 1, "%.1f", vars.m_flStartTimeScale);
-			m_pStartTimeScaleEntry->SetText(szTextEntry);
-		}
-		{
-			char szTextEntry[16] = { 0 };
-			V_snprintf(szTextEntry, sizeof(szTextEntry) - 1, "%d", vars.m_iWidth);
-			m_pWidthEntry->SetText(szTextEntry);
-		}
-		{
-			char szTextEntry[16] = { 0 };
-			V_snprintf(szTextEntry, sizeof(szTextEntry) - 1, "%d", vars.m_iHeight);
-			m_pHeightEntry->SetText(szTextEntry);
-		}
-		{
-			char szTextEntry[16] = { 0 };
-			V_snprintf(szTextEntry, sizeof(szTextEntry) - 1, "%d", vars.m_iYPos);
-			m_pYPosEntry->SetText(szTextEntry);
-		}
+		ApplyChanges();
 	}
 
-	virtual void OnCommand(const char *command)
+	void OnResetData(void) override
+	{
+		m_pPrefixButton->Reset();
+		m_pWaitPlayButton->Reset();
+		m_pAntiSpamButton->Reset();
+
+		m_pFadeInEntry->Reset();
+		m_pFadeOutEntry->Reset();
+		m_pHoldTimeEntry->Reset();
+		m_pHoldTimeScaleEntry->Reset();
+		m_pStartTimeScaleEntry->Reset();
+	}
+
+	void OnCommand(const char *command) override
 	{
 		if (!stricmp(command, "OK"))
 		{
 			ApplyChanges();
-			Close();
 		}
 		else if (!stricmp(command, "Apply"))
 		{
@@ -703,49 +577,29 @@ public:
 		}
 	}
 
-private:
-	bool m_bUseChanges;
+	MESSAGE_FUNC(OnDataChanged, "ControlModified");
 
-	vgui::CheckButton *m_pPrefixButton;
-	vgui::CheckButton *m_pWaitPlayButton;
-	vgui::CheckButton *m_pAntiSpamButton;
-	vgui::TextEntry *m_pFadeInEntry;
-	vgui::TextEntry *m_pFadeOutEntry;
-	vgui::TextEntry *m_pHoldTimeEntry;
-	vgui::TextEntry *m_pHoldTimeScaleEntry;
-	vgui::TextEntry *m_pStartTimeScaleEntry;
-	vgui::TextEntry *m_pWidthEntry;
-	vgui::TextEntry *m_pHeightEntry;
-	vgui::TextEntry *m_pYPosEntry;
+private:
+
+	CCvarToggleCheckButton*m_pPrefixButton;
+	CCvarToggleCheckButton*m_pWaitPlayButton;
+	CCvarToggleCheckButton*m_pAntiSpamButton;
+
+	CCvarTextEntry *m_pFadeInEntry;
+	CCvarTextEntry *m_pFadeOutEntry;
+	CCvarTextEntry *m_pHoldTimeEntry;
+	CCvarTextEntry *m_pHoldTimeScaleEntry;
+	CCvarTextEntry *m_pStartTimeScaleEntry;
 };
 
-static vgui::DHANDLE<class COptionsSubVideoAdvancedDlg> m_hOptionsSubVideoAdvancedDlg;
-
-static vgui::DHANDLE<class COptionsSubAudioAdvancedDlg> m_hOptionsSubAudioAdvancedDlg;
-
-void __fastcall COptionsSubVideo_OnCommand(vgui::Panel *pthis, int dummy, const char *command);
-
-static decltype(COptionsSubVideo_OnCommand) *g_pfnCOptionsSubVideo_OnCommand = NULL;
-
-void __fastcall COptionsSubVideo_OnCommand(vgui::Panel *pthis, int dummy, const char *command)
+void COptionsSubVideoAdvancedDlg::OnDataChanged()
 {
-	if (0 == strcmp(command, "Advanced"))
-	{
-		if (!m_hOptionsSubVideoAdvancedDlg.Get())
-			m_hOptionsSubVideoAdvancedDlg = new COptionsSubVideoAdvancedDlg(pthis);
-
-		m_hOptionsSubVideoAdvancedDlg->Activate();
-	}
+	GetParentWithModuleName("GameUI")->PostActionSignal(new KeyValues("ApplyButtonEnable"));
 }
 
-void * __fastcall COptionsSubVideo_ctor(vgui::Panel *pthis, int dummy, vgui::Panel *parent)
+void COptionsSubAudioAdvancedDlg::OnDataChanged()
 {
-	auto result = gPrivateFuncs.COptionsSubVideo_ctor(pthis, dummy, parent);
-	
-	if (!g_pfnCOptionsSubVideo_OnCommand)
-		g_pMetaHookAPI->VFTHook(pthis, 0, 0x15C / 4, COptionsSubVideo_OnCommand, (void **)&g_pfnCOptionsSubVideo_OnCommand);
-
-	return result;
+	GetParentWithModuleName("GameUI")->PostActionSignal(new KeyValues("ApplyButtonEnable"));
 }
 
 void __fastcall COptionsSubVideo_ApplyVidSettings(vgui::Panel *pthis, int dummy, bool bForceRestart)
@@ -761,39 +615,99 @@ void __fastcall COptionsSubVideo_ApplyVidSettings_HL25(vgui::Panel *pthis, int d
 	gPrivateFuncs.COptionsSubVideo_ApplyVidSettings_HL25(pthis, dummy);
 }
 
-void __fastcall COptionsSubAudio_OnCommand(vgui::Panel *pthis, int dummy, const char *command);
-
-static decltype(COptionsSubAudio_OnCommand) *g_pfnCOptionsSubAudio_OnCommand = NULL;
-
-void __fastcall COptionsSubAudio_OnCommand(vgui::Panel *pthis, int dummy, const char *command)
+void* __fastcall FocusNavGroup_GetCurrentFocus(void* pthis, int dummy)
 {
-	g_pfnCOptionsSubAudio_OnCommand(pthis, dummy, command);
+	vgui::VPanelHandle* _currentFocus = (vgui::VPanelHandle*)((PUCHAR)pthis + 12);
 
-	if (0 == strcmp(command, "Advanced"))
+	auto vpanel = _currentFocus->Get();
+
+	if (vpanel)
 	{
-		if (!m_hOptionsSubAudioAdvancedDlg.Get())
-			m_hOptionsSubAudioAdvancedDlg = new COptionsSubAudioAdvancedDlg(pthis);
+		auto pPanel = vgui::ipanel()->GetPanel(vpanel, "GameUI");
 
-		m_hOptionsSubAudioAdvancedDlg->Activate();
+		if (!pPanel)
+		{
+			pPanel = vgui::ipanel()->GetPanel(vpanel, vgui::GetControlsModuleName());
+		}
+
+		return pPanel;
 	}
+
+	return NULL;
 }
 
-void * __fastcall COptionsSubAudio_ctor(vgui::Panel *pthis, int dummy, vgui::Panel *parent)
+void* __fastcall PropertySheet_HasHotkey(void *pthis, int dummy, wchar_t key)
 {
-	auto result = gPrivateFuncs.COptionsSubAudio_ctor(pthis, dummy, parent);
+	vgui::Panel* _activePage = *(vgui::Panel **)((PUCHAR)pthis + 144);
 
-	if (!g_pfnCOptionsSubAudio_OnCommand)
-		g_pMetaHookAPI->VFTHook(pthis, 0, 0x15C / 4, COptionsSubAudio_OnCommand, (void **)&g_pfnCOptionsSubAudio_OnCommand);
+	if (!_activePage)
+		return 0;
 
-	return result;
+	int childCount = _activePage->GetChildCount();
+
+	for (int i = 0; i < childCount; i++)
+	{
+		auto pChild = _activePage->GetChild(i);
+#if 0
+		if (!pChild)
+		{
+			pChild = _activePage->GetChildWithModuleName(i, "GameUI");
+		}
+		if (!pChild)
+		{
+			pChild = _activePage->GetChildWithModuleName(i, "CaptionMod");
+		}
+#endif
+		if (pChild)
+		{
+			auto hot = pChild->HasHotkey(key);
+
+			if (hot)
+			{
+				return (void *)hot;
+			}
+		}
+	}
+
+	return NULL;
 }
 
 void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel* parent)
 {
 	auto result = gPrivateFuncs.COptionsDialog_ctor(pthis, dummy, parent);
 
+	PVOID* COptionsDialog_vftable = *(PVOID**)pthis;
+
+	vgui::Panel* _propertySheet = *(vgui::Panel**)((PUCHAR)pthis + 272);
+	PVOID* _propertySheet_vftable = *(PVOID**)_propertySheet;
+
+	if (!gPrivateFuncs.FocusNavGroup_GetCurrentFocus)
+	{
+		void* (__fastcall * pfnGetFocusNavGroup)(vgui::Panel * pthis, int dummy) = (decltype(pfnGetFocusNavGroup))COptionsDialog_vftable[612 / 4];
+
+		auto FocusNavGroup = pfnGetFocusNavGroup(pthis, 0);
+		PVOID* FocusNavGroup_vftable = *(PVOID**)FocusNavGroup;
+
+		gPrivateFuncs.FocusNavGroup_GetCurrentFocus = (decltype(gPrivateFuncs.FocusNavGroup_GetCurrentFocus))FocusNavGroup_vftable[7];
+		Install_InlineHook(FocusNavGroup_GetCurrentFocus);
+	}
+
+	if (!gPrivateFuncs.PropertySheet_HasHotkey)
+	{
+		gPrivateFuncs.PropertySheet_HasHotkey = (decltype(gPrivateFuncs.PropertySheet_HasHotkey))_propertySheet_vftable[73];
+		Install_InlineHook(PropertySheet_HasHotkey);
+	}
+
+	void(__fastcall * pfnAddPage)(vgui::Panel * pthis, int dummy, vgui::Panel * panel, const char* title) =
+		(decltype(pfnAddPage))_propertySheet_vftable[536 / 4];
+
+	//AddPage = (decltype(AddPage))((PUCHAR)GetModuleHandleA("GameUI.dll") + 0x3B180);
+
+	pfnAddPage(_propertySheet, 0, new COptionsSubAudioAdvancedDlg(pthis), "#GameUI_CaptionMod_Tab");
+	pfnAddPage(_propertySheet, 0, new COptionsSubVideoAdvancedDlg(pthis), "#GameUI_Renderer_Tab");
+
 	//Load res to make it proportional
-	gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource\\OptionsDialog.res", NULL);
+	gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource/OptionsDialog.res", NULL);
 
 	return result;
 }
@@ -803,7 +717,7 @@ void* __fastcall CCreateMultiplayerGameDialog_ctor(vgui::Panel* pthis, int dummy
 	auto result = gPrivateFuncs.CCreateMultiplayerGameDialog_ctor(pthis, dummy, parent);
 
 	//Load res to make it proportional
-	gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource\\CreateMultiplayerGameDialog.res", NULL);
+	gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource/CreateMultiplayerGameDialog.res", NULL);
 
 	return result;
 }
@@ -813,7 +727,7 @@ void* __fastcall CGameConsoleDialog_ctor(vgui::Panel* pthis, int dummy)
 	auto result = gPrivateFuncs.CGameConsoleDialog_ctor(pthis, dummy);
 
 	//Load res to make it proportional
-	gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource\\GameConsoleDialog.res", NULL);
+	gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource/GameConsoleDialog.res", NULL);
 
 	return result;
 }
@@ -826,7 +740,7 @@ void* __fastcall QueryBox_ctor(vgui::Panel* pthis, int dummy, const char* title,
 	//Load res to make it proportional
 	if (!strcmp(queryText, "#GameUI_QuitConfirmationText"))
 	{
-		//gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource\\QuitConfirmationBox.res", NULL);
+		//gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource/QuitConfirmationBox.res", NULL);
 
 		return gPrivateFuncs.QueryBox_ctor(pthis, dummy, title, "#GameUI_QuitConfirmationText\n\n", parent);
 	}
@@ -838,49 +752,16 @@ void* __fastcall QueryBox_ctor(vgui::Panel* pthis, int dummy, const char* title,
 
 void CGameUI::HideGameUI(void)
 {
-	if (m_hOptionsSubVideoAdvancedDlg.Get())
-	{
-		m_hOptionsSubVideoAdvancedDlg.Get()->PostMessage(m_hOptionsSubVideoAdvancedDlg.Get(), new KeyValues("GameUIHidden"));
-	}
-	if (m_hOptionsSubAudioAdvancedDlg.Get())
-	{
-		m_hOptionsSubAudioAdvancedDlg.Get()->PostMessage(m_hOptionsSubAudioAdvancedDlg.Get(), new KeyValues("GameUIHidden"));
-	}
-
 	return g_pfnCGameUI_HideGameUI(this, 0);
 }
 
-void GameUI_InstallHooks(void)
+void GameUI_FillAddress(HMODULE hGameUI)
 {
-	auto hGameUI = GetModuleHandleA("GameUI.dll");
-
-	if (!hGameUI)
-	{
-		g_pMetaHookAPI->SysError("Failed to get GameUI module");
-		return;
-	}
-
 	auto GameUIBase = g_pMetaHookAPI->GetModuleBase(hGameUI);
 
 	if (!GameUIBase)
 	{
 		g_pMetaHookAPI->SysError("Failed to get image base of GameUI.dll");
-		return;
-	}
-
-	CreateInterfaceFn GameUICreateInterface = Sys_GetFactory((HINTERFACEMODULE)hGameUI);
-
-	if (!GameUICreateInterface)
-	{
-		g_pMetaHookAPI->SysError("Failed to get interface factory from GameUI.dll");
-		return;
-	}
-
-	g_pGameUI = (IGameUI *)GameUICreateInterface(GAMEUI_INTERFACE_VERSION, 0);
-
-	if (!g_pGameUI)
-	{
-		g_pMetaHookAPI->SysError("Failed to get interface \"" GAMEUI_INTERFACE_VERSION "\" from GameUI.dll");
 		return;
 	}
 
@@ -944,7 +825,7 @@ void GameUI_InstallHooks(void)
 
 			return FALSE;
 
-		}, 0, NULL);
+			}, 0, NULL);
 
 		Sig_FuncNotFound(QueryBox_ctor);
 	}
@@ -954,7 +835,7 @@ void GameUI_InstallHooks(void)
 	{
 		const char sigs1[] = "CreateMultiplayerGameDialog\0";
 		auto CreateMultiplayerGameDialog_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
-		if(!CreateMultiplayerGameDialog_String)
+		if (!CreateMultiplayerGameDialog_String)
 			CreateMultiplayerGameDialog_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
 		Sig_VarNotFound(CreateMultiplayerGameDialog_String);
 
@@ -984,7 +865,7 @@ void GameUI_InstallHooks(void)
 				}
 			}
 			return FALSE;
-		});
+			});
 
 		Sig_FuncNotFound(CCreateMultiplayerGameDialog_ctor);
 	}
@@ -993,7 +874,7 @@ void GameUI_InstallHooks(void)
 	{
 		const char sigs1[] = "#GameUI_Options";
 		auto GameUI_Options_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
-		if(!GameUI_Options_String)
+		if (!GameUI_Options_String)
 			GameUI_Options_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
 		Sig_VarNotFound(GameUI_Options_String);
 
@@ -1026,7 +907,7 @@ void GameUI_InstallHooks(void)
 				}
 			}
 			return FALSE;
-		});
+			});
 
 		Sig_FuncNotFound(COptionsDialog_ctor);
 	}
@@ -1035,12 +916,12 @@ void GameUI_InstallHooks(void)
 	{
 		const char sigs1[] = "#GameUI_Video";
 		auto GameUI_Video_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
-		if(!GameUI_Video_String)
+		if (!GameUI_Video_String)
 			GameUI_Video_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
 		Sig_VarNotFound(GameUI_Video_String);
 
 		char pattern[] = "\xE8\x2A\x2A\x2A\x2A\x2A\x2A\x33\xC0\x68\x2A\x2A\x2A\x2A";
-		*(DWORD *)(pattern + 10) = (DWORD)GameUI_Video_String;
+		*(DWORD*)(pattern + 10) = (DWORD)GameUI_Video_String;
 		auto GameUI_Video_Call = g_pMetaHookAPI->SearchPattern(gPrivateFuncs.COptionsDialog_ctor, 0x300, pattern, sizeof(pattern) - 1);
 		Sig_VarNotFound(GameUI_Video_Call);
 
@@ -1052,7 +933,7 @@ void GameUI_InstallHooks(void)
 	{
 		const char sigs1[] = "Resource\\OptionsSubVideo.res";
 		auto OptionsSubVideo_res_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
-		if(!OptionsSubVideo_res_String)
+		if (!OptionsSubVideo_res_String)
 			OptionsSubVideo_res_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
 		Sig_VarNotFound(OptionsSubVideo_res_String);
 
@@ -1062,25 +943,25 @@ void GameUI_InstallHooks(void)
 		Sig_VarNotFound(OptionsSubVideo_res_PushString);
 
 		g_pMetaHookAPI->DisasmRanges(OptionsSubVideo_res_PushString, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-				
+
 			auto pinst = (cs_insn*)inst;
 
-				if (address[0] == 0xE8 && instCount <= 8)
-				{
-					gPrivateFuncs.GameUI_LoadControlSettings = (decltype(gPrivateFuncs.GameUI_LoadControlSettings))GetCallAddress(address);
+			if (address[0] == 0xE8 && instCount <= 8)
+			{
+				gPrivateFuncs.GameUI_LoadControlSettings = (decltype(gPrivateFuncs.GameUI_LoadControlSettings))GetCallAddress(address);
 
-					return TRUE;
-				}
+				return TRUE;
+			}
 
-				if (address[0] == 0xCC)
-					return TRUE;
+			if (address[0] == 0xCC)
+				return TRUE;
 
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
 
-				return FALSE;
+			return FALSE;
 
-		}, 0, NULL);
+			}, 0, NULL);
 
 		Sig_FuncNotFound(GameUI_LoadControlSettings);
 	}
@@ -1089,12 +970,12 @@ void GameUI_InstallHooks(void)
 	{
 		const char sigs1[] = "#GameUI_Audio";
 		auto GameUI_Audio_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
-		if(!GameUI_Audio_String)
+		if (!GameUI_Audio_String)
 			GameUI_Audio_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
 		Sig_VarNotFound(GameUI_Audio_String);
 
 		char pattern[] = "\xE8\x2A\x2A\x2A\x2A\x2A\x2A\x33\xC0\x68\x2A\x2A\x2A\x2A";
-		*(DWORD *)(pattern + 10) = (DWORD)GameUI_Audio_String;
+		*(DWORD*)(pattern + 10) = (DWORD)GameUI_Audio_String;
 		auto GameUI_Audio_Call = g_pMetaHookAPI->SearchPattern(gPrivateFuncs.COptionsDialog_ctor, 0x300, pattern, sizeof(pattern) - 1);
 		Sig_VarNotFound(GameUI_Audio_Call);
 
@@ -1106,12 +987,12 @@ void GameUI_InstallHooks(void)
 	{
 		const char sigs1[] = "_setvideomode";
 		auto SetVideoMode_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
-		if(!SetVideoMode_String)
+		if (!SetVideoMode_String)
 			SetVideoMode_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
 		Sig_VarNotFound(SetVideoMode_String);
 
 		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x2A\xE8";
-		*(DWORD *)(pattern + 1) = (DWORD)SetVideoMode_String;
+		*(DWORD*)(pattern + 1) = (DWORD)SetVideoMode_String;
 		auto SetVideoMode_PushString = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
 		Sig_VarNotFound(SetVideoMode_PushString);
 
@@ -1138,7 +1019,7 @@ void GameUI_InstallHooks(void)
 				}
 
 				return FALSE;
-			});
+				});
 
 			Sig_FuncNotFound(COptionsSubVideo_ApplyVidSettings);
 		}
@@ -1165,7 +1046,7 @@ void GameUI_InstallHooks(void)
 				}
 
 				return FALSE;
-			});
+				});
 			Sig_FuncNotFound(COptionsSubVideo_ApplyVidSettings_HL25);
 		}
 	}
@@ -1215,7 +1096,7 @@ void GameUI_InstallHooks(void)
 				((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->GameUIRdataBase &&
 					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->GameUIRdataBase + ctx->GameUIRdataSize))
 			{
-				auto candidate = (PVOID *)pinst->detail->x86.operands[1].imm;
+				auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
 				if (candidate[0] >= (PUCHAR)ctx->GameUITextBase && candidate[0] < (PUCHAR)ctx->GameUITextBase + ctx->GameUITextSize)
 				{
 					ctx->ConsoleHistory_vftable = candidate;
@@ -1233,7 +1114,7 @@ void GameUI_InstallHooks(void)
 
 			return FALSE;
 
-		}, 0, & ctx);
+			}, 0, &ctx);
 
 		Sig_VarNotFound(ctx.ConsoleHistory_vftable);
 
@@ -1300,7 +1181,7 @@ void GameUI_InstallHooks(void)
 
 			return FALSE;
 
-		}, 0, & ctx);
+			}, 0, &ctx);
 
 		Sig_VarNotFound(ctx.bFound_RichText_Print);
 	}
@@ -1351,7 +1232,7 @@ void GameUI_InstallHooks(void)
 			ctx.walks.pop_back();
 
 			g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-			{
+				{
 					auto pinst = (cs_insn*)inst;
 					auto ctx = (RichText_PrintWalkContext*)context;
 
@@ -1448,7 +1329,7 @@ void GameUI_InstallHooks(void)
 
 								return FALSE;
 
-							}, 0, & ctx2);
+							}, 0, &ctx2);
 
 						if (ctx2.IsFetchWord)
 						{
@@ -1607,9 +1488,184 @@ void GameUI_InstallHooks(void)
 		gPrivateFuncs.TextEntry_LayoutVerticalScrollBarSlider = (decltype(gPrivateFuncs.TextEntry_LayoutVerticalScrollBarSlider))ctx.ConsoleEntry_vftable[0x2C0 / 4];
 		gPrivateFuncs.TextEntry_GetStartDrawIndex = (decltype(gPrivateFuncs.TextEntry_GetStartDrawIndex))ctx.ConsoleEntry_vftable[0x2F8 / 4];
 	}
+#if 0
+	if (1)
+	{
+		PVOID Sheet_PushString = NULL;
+		const char sigs1[] = "Sheet\0";
+		auto PropertySheet_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
+		if (!PropertySheet_String)
+		{
+			PropertySheet_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
+
+			if (PropertySheet_String)
+			{
+				PUCHAR SearchBegin = (PUCHAR)GameUIDataBase;
+				PUCHAR SearchLimit = (PUCHAR)GameUIDataBase + GameUIDataSize;
+				while (SearchBegin < SearchLimit)
+				{
+					PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, sigs1);
+					if (pFound)
+					{
+						char pattern[] = "\x74\x2A\x68\x2A\x2A\x2A\x2A";
+						*(DWORD*)(pattern + 3) = (DWORD)pFound;
+						Sheet_PushString = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
+						if (Sheet_PushString)
+						{
+							break;
+						}
+
+						SearchBegin = pFound + Sig_Length(sigs1);
+					}
+					else
+					{
+						break;
+					}
+				}
+			}
+		}
+		else
+		{
+			PUCHAR SearchBegin = (PUCHAR)GameUIRdataBase;
+			PUCHAR SearchLimit = (PUCHAR)GameUIRdataBase + GameUIRdataSize;
+			while (SearchBegin < SearchLimit)
+			{
+				PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, sigs1);
+				if (pFound)
+				{
+					char pattern[] = "\x74\x2A\x68\x2A\x2A\x2A\x2A";
+					*(DWORD*)(pattern + 3) = (DWORD)pFound;
+					Sheet_PushString = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
+					if (Sheet_PushString)
+					{
+						break;
+					}
+
+					SearchBegin = pFound + Sig_Length(sigs1);
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+		Sig_VarNotFound(Sheet_PushString);
+
+		g_pMetaHookAPI->DisasmRanges(Sheet_PushString, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+
+			if (address[0] == 0xE8 && instCount <= 5)
+			{
+				gPrivateFuncs.Sheet_ctor = (decltype(gPrivateFuncs.Sheet_ctor))GetCallAddress(address);
+
+				return TRUE;
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+			}, 0, NULL);
+
+		Sig_FuncNotFound(Sheet_ctor);
+
+		typedef struct
+		{
+			PVOID GameUIRdataBase;
+			ULONG GameUIRdataSize;
+
+			PVOID GameUITextBase;
+			ULONG GameUITextSize;
+
+			PVOID* Sheet_vftable;
+
+		}SheetSearchContext;
+
+		SheetSearchContext ctx = { 0 };
+
+		ctx.GameUIRdataBase = GameUIRdataBase;
+		ctx.GameUIRdataSize = GameUIRdataSize;
+
+		ctx.GameUITextBase = GameUITextBase;
+		ctx.GameUITextSize = GameUITextSize;
+
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.Sheet_ctor, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (SheetSearchContext*)context;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->GameUIRdataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->GameUIRdataBase + ctx->GameUIRdataSize))
+			{
+				auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
+				if (candidate[0] >= (PUCHAR)ctx->GameUITextBase && candidate[0] < (PUCHAR)ctx->GameUITextBase + ctx->GameUITextSize)
+				{
+					ctx->Sheet_vftable = candidate;
+				}
+			}
+
+			if (ctx->Sheet_vftable)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+			}, 0, &ctx);
+
+		Sig_VarNotFound(ctx.Sheet_vftable);
+
+		gPrivateFuncs.PropertySheet_HasHotkey = (decltype(gPrivateFuncs.PropertySheet_HasHotkey))ctx.Sheet_vftable[73];
+	}
+#endif
 
 	gPrivateFuncs.GameUI_Panel_Init = (decltype(gPrivateFuncs.GameUI_Panel_Init))VGUI2_FindPanelInit(GameUITextBase, GameUITextSize);
 	Sig_FuncNotFound(GameUI_Panel_Init);
+
+	//gPrivateFuncs.PropertySheet_HasHotkey = (decltype(gPrivateFuncs.PropertySheet_HasHotkey))((PUCHAR)GameUIBase + 0x53060);
+	//gPrivateFuncs.FocusNavGroup_GetCurrentFocus = (decltype(gPrivateFuncs.FocusNavGroup_GetCurrentFocus))((PUCHAR)GameUIBase + 0x4D640);
+}
+
+HMODULE GetGameUIModule();
+
+void GameUI_InstallHooks(void)
+{
+	auto hGameUI = GetGameUIModule();
+
+	if (!hGameUI)
+	{
+		g_pMetaHookAPI->SysError("Failed to get GameUI.dll ");
+		return;
+	}
+
+	CreateInterfaceFn GameUICreateInterface = Sys_GetFactory((HINTERFACEMODULE)hGameUI);
+
+	if (!GameUICreateInterface)
+	{
+		g_pMetaHookAPI->SysError("Failed to get interface factory from GameUI.dll");
+		return;
+	}
+
+	g_pGameUI = (IGameUI*)GameUICreateInterface(GAMEUI_INTERFACE_VERSION, 0);
+
+	if (!g_pGameUI)
+	{
+		g_pMetaHookAPI->SysError("Failed to get interface \"" GAMEUI_INTERFACE_VERSION "\" from GameUI.dll");
+		return;
+	}
 
 	DWORD *pVFTable = *(DWORD **)&s_GameUI;
 
@@ -1617,16 +1673,14 @@ void GameUI_InstallHooks(void)
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 2, (void *)pVFTable[2], (void **)&g_pfnCGameUI_Start);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 4, (void *)pVFTable[4], (void **)&g_pfnCGameUI_ActivateGameUI);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 8, (void*)pVFTable[8], (void**)&g_pfnCGameUI_ConnectToServer);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 10, (void *)pVFTable[10], (void **)&g_pfnCGameUI_HideGameUI);
+	//g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 10, (void *)pVFTable[10], (void **)&g_pfnCGameUI_HideGameUI);
 
 	//Install_InlineHook(QueryBox_ctor);
 	Install_InlineHook(GameUI_Panel_Init);
 	Install_InlineHook(CGameConsoleDialog_ctor);
 	Install_InlineHook(CCreateMultiplayerGameDialog_ctor);
 	Install_InlineHook(COptionsDialog_ctor);
-	Install_InlineHook(COptionsSubVideo_ctor);
 	Install_InlineHook(COptionsSubVideo_ApplyVidSettings);
-	Install_InlineHook(COptionsSubAudio_ctor);
 	
 	if(gPrivateFuncs.RichText_InsertChar)
 		Install_InlineHook(RichText_InsertChar);
@@ -1638,6 +1692,8 @@ void GameUI_InstallHooks(void)
 	Install_InlineHook(TextEntry_OnKeyCodeTyped);
 	Install_InlineHook(TextEntry_LayoutVerticalScrollBarSlider);
 	Install_InlineHook(TextEntry_GetStartDrawIndex);
+
+	//Install_InlineHook(PropertySheet_HasHotkey);
 }
 
 void GameUI_UninstallHooks(void)
@@ -1647,13 +1703,16 @@ void GameUI_UninstallHooks(void)
 	Uninstall_Hook(CGameConsoleDialog_ctor);
 	Uninstall_Hook(CCreateMultiplayerGameDialog_ctor);
 	Uninstall_Hook(COptionsDialog_ctor);
-	Uninstall_Hook(COptionsSubVideo_ctor);
+	//Uninstall_Hook(COptionsSubVideo_ctor);
 	Uninstall_Hook(COptionsSubVideo_ApplyVidSettings);
-	Uninstall_Hook(COptionsSubAudio_ctor);
+	//Uninstall_Hook(COptionsSubAudio_ctor);
 	Uninstall_Hook(RichText_InsertChar);
 	Uninstall_Hook(RichText_InsertStringW);
 	Uninstall_Hook(RichText_OnThink);
 	Uninstall_Hook(TextEntry_OnKeyCodeTyped);
 	Uninstall_Hook(TextEntry_LayoutVerticalScrollBarSlider);
 	Uninstall_Hook(TextEntry_GetStartDrawIndex);
+
+	Uninstall_Hook(PropertySheet_HasHotkey);
+	Uninstall_Hook(FocusNavGroup_GetCurrentFocus);
 }

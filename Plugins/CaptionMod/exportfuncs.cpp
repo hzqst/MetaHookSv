@@ -41,6 +41,27 @@ void *gHud = NULL;
 HWND g_MainWnd = NULL;
 WNDPROC g_MainWndProc = NULL;
 
+cvar_t* cap_subtitle_prefix = NULL;
+cvar_t* cap_subtitle_waitplay = NULL;
+cvar_t* cap_subtitle_antispam = NULL;
+cvar_t* cap_subtitle_fadein = NULL;
+cvar_t* cap_subtitle_fadeout = NULL;
+cvar_t* cap_subtitle_holdtime = NULL;
+cvar_t* cap_subtitle_stimescale = NULL;
+cvar_t* cap_subtitle_htimescale = NULL;
+
+void Cap_RegisterSubtitleCvars()
+{
+	cap_subtitle_prefix = gEngfuncs.pfnRegisterVariable("cap_subtitle_prefix", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	cap_subtitle_waitplay = gEngfuncs.pfnRegisterVariable("cap_subtitle_waitplay", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	cap_subtitle_antispam = gEngfuncs.pfnRegisterVariable("cap_subtitle_antispam", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	cap_subtitle_fadein = gEngfuncs.pfnRegisterVariable("cap_subtitle_fadein", "0.3", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	cap_subtitle_fadeout = gEngfuncs.pfnRegisterVariable("cap_subtitle_fadeout", "0.3", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	cap_subtitle_holdtime = gEngfuncs.pfnRegisterVariable("cap_subtitle_holdtime", "10.0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	cap_subtitle_stimescale = gEngfuncs.pfnRegisterVariable("cap_subtitle_stimescale", "1.0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+	cap_subtitle_htimescale = gEngfuncs.pfnRegisterVariable("cap_subtitle_htimescale", "1.0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+}
+
 cl_entity_t* EngineGetViewEntity(void)
 {
 	return gEngfuncs.GetEntityByIndex((*cl_viewentity));
@@ -248,6 +269,8 @@ void Cap_Reload_f(void)
 void HUD_Init(void)
 {
 	gExportfuncs.HUD_Init();
+
+	Cap_RegisterSubtitleCvars();
 
 	if(g_pViewPort)
 		g_pViewPort->Init();

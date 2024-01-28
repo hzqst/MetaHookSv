@@ -549,10 +549,6 @@ protected:
 	virtual void GetDragData( CUtlVector< KeyValues * >& list );
 	virtual void CreateDragData();
 
-	virtual const char *GetOverrideModuleName() const;
-	virtual void SetOverrideModuleName(const char *pszModuleName);
-	virtual void RecursiveSetOverrideModuleName(const char* pszModuleName, const char* pszPreviousModuleName);
-
 protected:
 	MESSAGE_FUNC_ENUM_ENUM( OnRequestFocus, "OnRequestFocus", VPANEL, subFocus, VPANEL, defaultPanel);
 	MESSAGE_FUNC_INT_INT( OnScreenSizeChanged, "OnScreenSizeChanged", oldwide, oldtall );
@@ -689,8 +685,6 @@ private:
 	HScheme			 m_iScheme; // handle to the scheme to use
 
 	bool			m_bIsSilent; // should this panel PostActionSignals?
-
-	const char* m_pszOverrideModuleName;
 
 	CPanelAnimationVar( float, m_flAlpha, "alpha", "255" );
 

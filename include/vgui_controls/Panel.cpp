@@ -649,7 +649,6 @@ void Panel::Init( int x, int y, int wide, int tall )
 	_tabPosition = 0;
 	m_iScheme = 0;
 	m_bIsSilent = false;
-	m_pszOverrideModuleName = vgui::GetOverrideControlsModuleName();
 
 	_buildModeFlags = 0; // not editable or deletable in buildmode dialog by default
 
@@ -776,11 +775,6 @@ const char *Panel::GetName()
 //-----------------------------------------------------------------------------
 const char *Panel::GetModuleName()
 {
-	if (GetOverrideModuleName())
-	{
-		return GetOverrideModuleName();
-	}
-
 	return vgui::GetControlsModuleName();
 }
 
@@ -6123,31 +6117,6 @@ void Panel::GetDragData( CUtlVector< KeyValues * >& list )
 		list.AddToTail( m_pDragDrop->m_DragData[ i ] );
 	}
 #endif
-}
-
-const char* Panel::GetOverrideModuleName() const
-{
-	return m_pszOverrideModuleName;
-}
-
-void Panel::SetOverrideModuleName(const char* pszModuleName)
-{
-	m_pszOverrideModuleName = pszModuleName;
-}
-
-void Panel::RecursiveSetOverrideModuleName(const char* pszModuleName, const char* pszPreviousModuleName)
-{
-	SetOverrideModuleName(pszModuleName);
-
-	for (int i = 0; i < GetChildCount(); ++i)
-	{
-		auto pChild = GetChildWithModuleName(i, pszPreviousModuleName);
-
-		if (pChild)
-		{
-			pChild->RecursiveSetOverrideModuleName(pszModuleName, pszPreviousModuleName);
-		}
-	}
 }
 
 #if defined( VGUI_USEDRAGDROP )
