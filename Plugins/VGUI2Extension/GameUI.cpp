@@ -7,7 +7,7 @@
 
 #include "plugins.h"
 #include "privatefuncs.h"
-#include "DpiManager.h"
+#include "DpiManagerInternal.h"
 #include "VGUI2ExtensionInternal.h"
 #include <capstone.h>
 #include <set>
@@ -147,7 +147,7 @@ void __fastcall GameUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, i
 {
 	gPrivateFuncs.GameUI_Panel_Init(pthis, 0, x, y, w, h);
 
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && dpimanager()->IsHighDpiSupportEnabled())
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
 		PVOID* PanelVFTable = *(PVOID**)pthis;
 		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];
@@ -624,15 +624,39 @@ void CGameUIProxy::SetSecondaryProgressBarText(const char *statusText)
 
 void __fastcall COptionsSubVideo_ApplyVidSettings(vgui::Panel *pthis, int dummy, bool bForceRestart)
 {
-	if(gEngfuncs.pfnGetCvarPointer("r_hdr"))
-		gPrivateFuncs.COptionsSubVideo_ApplyVidSettings(pthis, dummy, false);
-	else
-		gPrivateFuncs.COptionsSubVideo_ApplyVidSettings(pthis, dummy, bForceRestart);
+	void* _this = pthis;
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	VGUI2ExtensionInternal()->GameUI_COptionsSubVideo_ApplyVidSettings(_this, bForceRestart ,&CallbackContext);
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	{
+		gPrivateFuncs.COptionsSubVideo_ApplyVidSettings(_this, dummy, bForceRestart);
+	}
+
+	CallbackContext.IsPost = true;
+
+	VGUI2ExtensionInternal()->GameUI_COptionsSubVideo_ApplyVidSettings(_this, bForceRestart, &CallbackContext);	
 }
 
 void __fastcall COptionsSubVideo_ApplyVidSettings_HL25(vgui::Panel *pthis, int dummy)
 {
-	gPrivateFuncs.COptionsSubVideo_ApplyVidSettings_HL25(pthis, dummy);
+	void* _this = pthis;
+	bool bForceRestart = false;
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	VGUI2ExtensionInternal()->GameUI_COptionsSubVideo_ApplyVidSettings(_this, bForceRestart, &CallbackContext);
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	{
+		gPrivateFuncs.COptionsSubVideo_ApplyVidSettings_HL25(pthis, dummy);
+	}
+
+	CallbackContext.IsPost = true;
+
+	VGUI2ExtensionInternal()->GameUI_COptionsSubVideo_ApplyVidSettings(_this, bForceRestart, &CallbackContext);
 }
 
 void* __fastcall FocusNavGroup_GetCurrentFocus(void* pthis, int dummy)
@@ -647,7 +671,13 @@ void* __fastcall FocusNavGroup_GetCurrentFocus(void* pthis, int dummy)
 
 		if (!pPanel)
 		{
-			pPanel = vgui::ipanel()->GetPanel(vpanel, vgui::GetControlsModuleName());
+			for (int i = 0; i < VGUI2ExtensionInternal()->GameUI_GetCallbackCount(); ++i)
+			{
+				pPanel = vgui::ipanel()->GetPanel(vpanel, VGUI2ExtensionInternal()->GameUI_GetControlModuleName(i));
+
+				if (pPanel)
+					break;
+			}			
 		}
 
 		return pPanel;
@@ -699,11 +729,66 @@ void* __fastcall PropertySheet_HasHotkey(void *pthis, int dummy, wchar_t key)
 	return NULL;
 }
 
+class CGameUIOptionsDialogCtorCallbackContext : public IGameUIOptionsDialogCtorCallbackContext
+{
+public:
+	CGameUIOptionsDialogCtorCallbackContext(vgui::Panel* pthis, vgui::Panel* _propertySheet)
+	{
+		m_pDialog = pthis;
+		m_pPropertySheet = _propertySheet;
+	}
+
+	void InstallHook()
+	{
+		if (!gPrivateFuncs.FocusNavGroup_GetCurrentFocus)
+		{
+			PVOID* COptionsDialog_vftable = *(PVOID**)m_pDialog;
+			void* (__fastcall * pfnGetFocusNavGroup)(vgui::Panel * pthis, int dummy) = (decltype(pfnGetFocusNavGroup))COptionsDialog_vftable[612 / 4];
+
+			auto FocusNavGroup = pfnGetFocusNavGroup(m_pDialog, 0);
+			PVOID* FocusNavGroup_vftable = *(PVOID**)FocusNavGroup;
+
+			gPrivateFuncs.FocusNavGroup_GetCurrentFocus = (decltype(gPrivateFuncs.FocusNavGroup_GetCurrentFocus))FocusNavGroup_vftable[7];
+			Install_InlineHook(FocusNavGroup_GetCurrentFocus);
+		}
+
+		if (!gPrivateFuncs.PropertySheet_HasHotkey)
+		{
+			PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+			gPrivateFuncs.PropertySheet_HasHotkey = (decltype(gPrivateFuncs.PropertySheet_HasHotkey))_propertySheet_vftable[73];
+			Install_InlineHook(PropertySheet_HasHotkey);
+		}
+	}
+
+	void* GetDialog() const override
+	{
+		return m_pDialog;
+	}
+
+	void* GetPropertySheet() const override
+	{
+		return m_pPropertySheet;
+	}
+
+	void AddPage(void* panel, const char* title) override
+	{
+		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+		void(__fastcall * pfnAddPage)(vgui::Panel * pthis, int dummy, vgui::Panel * panel, const char* title) =
+			(decltype(pfnAddPage))_propertySheet_vftable[536 / 4];
+
+		pfnAddPage(m_pPropertySheet, 0, (vgui::Panel*)panel, title);
+	}
+
+	vgui::Panel* m_pDialog;
+	vgui::Panel* m_pPropertySheet;
+};
+
+
 void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel* parent)
 {
 	auto result = gPrivateFuncs.COptionsDialog_ctor(pthis, dummy, parent);
-
-	PVOID* COptionsDialog_vftable = *(PVOID**)pthis;
 
 	int offset_propertySheet = 272;
 
@@ -713,32 +798,12 @@ void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel*
 	}
 
 	vgui::Panel* _propertySheet = *(vgui::Panel**)((PUCHAR)pthis + offset_propertySheet);
-	PVOID* _propertySheet_vftable = *(PVOID**)_propertySheet;
 
-	if (!gPrivateFuncs.FocusNavGroup_GetCurrentFocus)
-	{
-		void* (__fastcall * pfnGetFocusNavGroup)(vgui::Panel * pthis, int dummy) = (decltype(pfnGetFocusNavGroup))COptionsDialog_vftable[612 / 4];
+	CGameUIOptionsDialogCtorCallbackContext CallbackContext(pthis, _propertySheet);
 
-		auto FocusNavGroup = pfnGetFocusNavGroup(pthis, 0);
-		PVOID* FocusNavGroup_vftable = *(PVOID**)FocusNavGroup;
+	CallbackContext.InstallHook();
 
-		gPrivateFuncs.FocusNavGroup_GetCurrentFocus = (decltype(gPrivateFuncs.FocusNavGroup_GetCurrentFocus))FocusNavGroup_vftable[7];
-		Install_InlineHook(FocusNavGroup_GetCurrentFocus);
-	}
-
-	if (!gPrivateFuncs.PropertySheet_HasHotkey)
-	{
-		gPrivateFuncs.PropertySheet_HasHotkey = (decltype(gPrivateFuncs.PropertySheet_HasHotkey))_propertySheet_vftable[73];
-		Install_InlineHook(PropertySheet_HasHotkey);
-	}
-
-	void(__fastcall * pfnAddPage)(vgui::Panel * pthis, int dummy, vgui::Panel * panel, const char* title) =
-		(decltype(pfnAddPage))_propertySheet_vftable[536 / 4];
-
-	//AddPage = (decltype(AddPage))((PUCHAR)GetModuleHandleA("GameUI.dll") + 0x3B180);
-
-	//pfnAddPage(_propertySheet, 0, new COptionsSubAudioAdvancedDlg(pthis), "#GameUI_CaptionMod_Tab");
-	//pfnAddPage(_propertySheet, 0, new COptionsSubVideoAdvancedDlg(pthis), "#GameUI_Renderer_Tab");
+	VGUI2ExtensionInternal()->GameUI_COptionsDialog_ctor(&CallbackContext);
 
 	//Load res to make it proportional
 	gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource/OptionsDialog.res", NULL);

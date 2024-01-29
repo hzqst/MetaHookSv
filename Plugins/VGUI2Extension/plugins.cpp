@@ -1,7 +1,7 @@
 #include <metahook.h>
 #include "exportfuncs.h"
 #include "privatefuncs.h"
-#include "DpiManager.h"
+#include "DpiManagerInternal.h"
 
 cl_exportfuncs_t gExportfuncs = {0};
 mh_interface_t *g_pInterface = NULL;
@@ -86,7 +86,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	BaseUI_InstallHook();
 
-	dpimanager()->Init();
+	DpiManagerInternal()->Init();
 
 	g_pMetaHookAPI->RegisterLoadDllNotificationCallback(DllLoadNotification);
 }
@@ -113,17 +113,15 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	Client_FillAddress();
 
-	//TODO: uninstalling?
 	Client_InstallHooks();
 
-	//TODO: uninstalling?
 	ClientVGUI_InstallHooks(pExportFunc);
 
 	VGUI1_InstallHooks();
 
 	InitWin32Stuffs();
 
-	dpimanager()->PostInit();
+	DpiManagerInternal()->PostInit();
 }
 
 void IPluginsV4::ExitGame(int iResult)

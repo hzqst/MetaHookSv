@@ -1,8 +1,8 @@
 #include <metahook.h>
 #include "exportfuncs.h"
 #include "privatefuncs.h"
-#include "DpiManager.h"
 #include "Surface2.h"
+#include "DpiManagerInternal.h"
 
 extern int g_iProportionalBaseWidth;
 extern int g_iProportionalBaseHeight;
@@ -11,7 +11,7 @@ extern int g_iProportionalBaseHeightHD;
 
 void COM_FixSlashes(char* pname);
 
-class CDpiManager : public IDpiManager
+class CDpiManagerInternal : public IDpiManagerInternal
 {
 private:
 	float m_flDpiScaling;
@@ -20,7 +20,7 @@ private:
 
 public:
 
-	CDpiManager()
+	CDpiManagerInternal()
 	{
 		m_flDpiScaling = 0;
 		m_iDpiScalingSource = 0;
@@ -118,7 +118,7 @@ public:
 		{
 			char temp[1024];
 
-			snprintf(temp, sizeof(temp), "%s\\%s_dpi%.0f", GetBaseDirectory(), gEngfuncs.pfnGetGameDirectory(), dpimanager()->GetDpiScaling() * 100.0f);
+			snprintf(temp, sizeof(temp), "%s\\%s_dpi%.0f", GetBaseDirectory(), gEngfuncs.pfnGetGameDirectory(), DpiManagerInternal()->GetDpiScaling() * 100.0f);
 			COM_FixSlashes(temp);
 
 			if (g_dwEngineBuildnum >= 6153)
@@ -165,9 +165,11 @@ public:
 	}
 };
 
-static CDpiManager g_DpiManager;
+static CDpiManagerInternal s_DpiManagerInternal;
 
-IDpiManager* dpimanager()
+IDpiManagerInternal* DpiManagerInternal()
 {
-	return &g_DpiManager;
+	return &s_DpiManagerInternal;
 }
+
+EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CDpiManagerInternal, IDpiManager, DPI_MANAGER_INTERFACE_VERSION, s_DpiManagerInternal);

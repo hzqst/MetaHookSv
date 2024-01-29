@@ -12,7 +12,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{FBF9CAF6-8DED-4EB0-8E7B-18294607C5C5}</ProjectGuid>
-    <RootNamespace>CopyData</RootNamespace>
+    <RootNamespace>VGUI2Extension</RootNamespace>
     <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>$([Microsoft.Build.Utilities.ToolLocationHelper]::GetLatestSDKTargetPlatformVersion('Windows', '10.0'))</WindowsTargetPlatformVersion>
   </PropertyGroup>
@@ -157,6 +157,7 @@ $(GLEWCheckRequirements)</Command>
   <ItemGroup>
     <ClCompile Include="$(SolutionDir)include\HLSDK\common\interface.cpp" />
     <ClCompile Include="$(SolutionDir)include\HLSDK\common\parsemsg.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\VPanel.cpp" />
     <ClCompile Include="..\..\include\vgui_controls\CvarSlider.cpp" />
     <ClCompile Include="..\..\include\vgui_controls\CvarTextEntry.cpp" />
     <ClCompile Include="..\..\include\vgui_controls\CvarToggleCheckButton.cpp" />
@@ -165,26 +166,15 @@ $(GLEWCheckRequirements)</Command>
     <ClCompile Include="chatdialog.cpp" />
     <ClCompile Include="ClientVGUI.cpp" />
     <ClCompile Include="cstrikechatdialog.cpp" />
-    <ClCompile Include="DpiManager.cpp" />
-    <ClCompile Include="EngineSurfaceHook.cpp" />
     <ClCompile Include="libcsv\csv_document.cpp" />
     <ClCompile Include="privatefuncs.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
-    <ClCompile Include="FontAmalgam.cpp" />
-    <ClCompile Include="FontManager.cpp" />
-    <ClCompile Include="FontTextureCache.cpp" />
     <ClCompile Include="GameUI.cpp" />
-    <ClCompile Include="KeyValuesSystemHook.cpp" />
     <ClCompile Include="message.cpp" />
     <ClCompile Include="plugins.cpp" />
-    <ClCompile Include="Scheme2.cpp" />
-    <ClCompile Include="SchemeHook.cpp" />
     <ClCompile Include="SubtitlePanel.cpp" />
-    <ClCompile Include="Surface2.cpp" />
-    <ClCompile Include="SurfaceHook.cpp" />
+    <ClCompile Include="VGUI2ExtensionImport.cpp" />
     <ClCompile Include="Viewport.cpp" />
-    <ClCompile Include="Win32Font.cpp" />
-    <ClCompile Include="$(SolutionDir)include\SourceSDK\VPanel.cpp" />
     <ClCompile Include="$(SolutionDir)include\SourceSDK\Bitmap.cpp" />
     <ClCompile Include="$(SolutionDir)include\SourceSDK\Border.cpp" />
     <ClCompile Include="$(SolutionDir)include\SourceSDK\filesystem.cpp" />
@@ -215,7 +205,6 @@ $(GLEWCheckRequirements)</Command>
     <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\utlbuffer.cpp" />
     <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\utlstring.cpp" />
     <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\utlsymbol.cpp" />
-    <ClCompile Include="$(SolutionDir)include\SourceSDK\VPanelWrapper.cpp" />
     <ClCompile Include="$(SolutionDir)include\SourceSDK\vstdlib\KeyValuesSystem.cpp" />
     <ClCompile Include="$(SolutionDir)include\SourceSDK\vstdlib\random.cpp" />
     <ClCompile Include="$(SolutionDir)\include\vgui_controls\AnalogBar.cpp" />
@@ -295,27 +284,18 @@ $(GLEWCheckRequirements)</Command>
     <ClInclude Include="..\..\include\vgui_controls\CvarTextEntry.h" />
     <ClInclude Include="..\..\include\vgui_controls\CvarToggleCheckButton.h" />
     <ClInclude Include="..\..\include\vgui_controls\MemoryBitmap.h" />
-    <ClInclude Include="BaseUI.h" />
     <ClInclude Include="chatdialog.h" />
     <ClInclude Include="cstrikechatdialog.h" />
-    <ClInclude Include="DpiManager.h" />
-    <ClInclude Include="EngineSurfaceHook.h" />
-    <ClInclude Include="GameUI.h" />
     <ClInclude Include="libcsv\csv_document.h" />
     <ClInclude Include="privatefuncs.h" />
     <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />
-    <ClInclude Include="FontAmalgam.h" />
-    <ClInclude Include="FontManager.h" />
-    <ClInclude Include="FontTextureCache.h" />
     <ClInclude Include="message.h" />
     <ClInclude Include="plugins.h" />
-    <ClInclude Include="Scheme2.h" />
     <ClInclude Include="SubtitlePanel.h" />
-    <ClInclude Include="Surface2.h" />
+    <ClInclude Include="VGUI2ExtensionImport.h" />
     <ClInclude Include="vgui_internal.h" />
     <ClInclude Include="Viewport.h" />
-    <ClInclude Include="Win32Font.h" />
     <ClInclude Include="$(SolutionDir)include\SourceSDK\Bitmap.h" />
     <ClInclude Include="$(SolutionDir)include\SourceSDK\Border.h" />
     <ClInclude Include="$(SolutionDir)include\SourceSDK\appframework\IAppSystem.h" />

@@ -1,7 +1,7 @@
 #include <metahook.h>
 #include "exportfuncs.h"
 #include "privatefuncs.h"
-#include "DpiManager.h"
+#include "DpiManagerInternal.h"
 
 //Steam API
 #include <steam_api.h>
@@ -452,7 +452,7 @@ void InitWin32Stuffs(void)
 			{
 				g_MainWnd = hwnd;
 
-				dpimanager()->InitFromMainHwnd();
+				DpiManagerInternal()->InitFromMainHwnd();
 				
 				return FALSE;
 			}

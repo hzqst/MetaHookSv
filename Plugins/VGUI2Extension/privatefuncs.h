@@ -53,7 +53,6 @@ typedef struct
 	void *(__fastcall*COptionsSubAudio_ctor)(void *pthis, int dummy, void *parent);
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings)(void *pthis, int dummy, bool bForceRestart);
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings_HL25)(void *pthis, int dummy);
-	//void *(__fastcall *COptionsDialog_AddPage)(void *pthis, int dummy, void *panel, const char *name);
 	void* (__fastcall *PropertySheet_HasHotkey)(void* pthis, int dummy, wchar_t key);
 	void* (__fastcall *FocusNavGroup_GetCurrentFocus)(void* pthis, int dummy);
 
@@ -128,5 +127,6 @@ void Scheme_InstallHooks(void);
 void Scheme_UninstallHooks(void);
 void KeyValuesSystem_InstallHooks(void);
 void KeyValuesSystem_UninstallHooks(void);
+void InputWin32_FillAddress(void);
 
 void DllLoadNotification(mh_load_dll_notification_context_t* ctx);

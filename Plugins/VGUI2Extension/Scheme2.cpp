@@ -14,9 +14,9 @@
 #include "Bitmap.h"
 #include "KeyValues.h"
 
-//language
 #include "privatefuncs.h"
-#include "DpiManager.h"
+#include "DpiManagerInternal.h"
+#include "Scheme2.h"
 
 using namespace vgui;
 
@@ -34,7 +34,7 @@ bool CSchemeManager::BitmapHandleSearchFunc(const CachedBitmapHandle_t &lhs, con
 
 static CSchemeManager g_SchemeManagerNew;
 
-CSchemeManager* g_pVGuiSchemeManager = &g_SchemeManagerNew;
+ISchemeManager2* g_pVGuiSchemeManager = &g_SchemeManagerNew;
 
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CSchemeManager, ISchemeManager2, VGUI_SCHEME2_INTERFACE_VERSION, g_SchemeManagerNew);
 
@@ -1059,14 +1059,4 @@ int CScheme::GetMinimumFontHeightForCurrentLanguage(void)
 	}
 
 	return 0;
-}
-
-char const *IScheme::GetFontName(const HFont &font)
-{
-	return ((CScheme *)this)->GetFontName(font);
-}
-
-const char *IScheme::GetName(void)
-{
-	return ((CScheme *)this)->GetName();
 }

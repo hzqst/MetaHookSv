@@ -12,7 +12,7 @@
 #include <IKeyValuesSystem.h>
 #include "vgui_internal.h"
 #include "FontTextureCache.h"
-#include "DpiManager.h"
+#include "DpiManagerInternal.h"
 
 #include "exportfuncs.h"
 #include "privatefuncs.h"
@@ -22,7 +22,6 @@
 extern IGameUI *g_pGameUI;
 
 static hook_t* g_phook_EngineVGUI2_Panel_Init = NULL;
-//static bool s_LoadingBaseUI = false;
 
 namespace vgui
 {
@@ -74,7 +73,7 @@ void __fastcall EngineVGUI2_Panel_Init(vgui::Panel* pthis, int dummy, int x, int
 {
 	gPrivateFuncs.EngineVGUI2_Panel_Init(pthis, 0, x, y, w, h);
 
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && dpimanager()->IsHighDpiSupportEnabled())
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
 		PVOID* PanelVFTable = *(PVOID**)pthis;
 		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];
@@ -114,26 +113,23 @@ void CBaseUIProxy::Initialize(CreateInterfaceFn *factories, int count)
 	Surface_InstallHooks();
 	Scheme_InstallHooks();
 	GameUI_InstallHooks();
+	InputWin32_FillAddress();
 
 	VGUI2ExtensionInternal()->BaseUI_Initialize(factories, count);
 }
 
 void CBaseUIProxy::Start(struct cl_enginefuncs_s *engineFuncs, int interfaceVersion)
 {
-	//s_LoadingBaseUI = true;
-
 	m_pfnCBaseUI_Start(this, 0, engineFuncs, interfaceVersion);
 
 	VGUI2ExtensionInternal()->BaseUI_Start(engineFuncs, interfaceVersion);
-
-	//s_LoadingBaseUI = false;
 }
 
 void CBaseUIProxy::Shutdown(void)
 {
-	VGUI2ExtensionInternal()->BaseUI_Shutdown();
-
 	ClientVGUI_Shutdown();
+
+	VGUI2ExtensionInternal()->BaseUI_Shutdown();
 
 	GameUI_UninstallHooks();
 

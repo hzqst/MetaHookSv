@@ -9,7 +9,7 @@
 #include "tier1/UtlDict.h"
 #include "privatefuncs.h"
 #include "exportfuncs.h"
-#include "DpiManager.h"
+#include "DpiManagerInternal.h"
 #include "Cursor.h"
 
 extern IEngineSurface *staticSurface;
@@ -810,7 +810,7 @@ void CSurfaceProxy::GetAbsoluteWindowBounds(int &x, int &y, int &wide, int &tall
 
 void CSurfaceProxy::GetProportionalBase(int &width, int &height)
 {
-	if (dpimanager()->IsHighDpiSupportEnabled())
+	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
 		width = g_iProportionalBaseWidthHD;
 		height = g_iProportionalBaseHeightHD;

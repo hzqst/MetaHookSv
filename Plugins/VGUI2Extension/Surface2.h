@@ -243,8 +243,11 @@ public:
 	// Console-only.  Get the string to use for the current video mode for layout files.
 	const char *GetResolutionKey( void ) const;
 
-	void DeleteTextureByID(int textureId);
+	void DeleteTextureByID(int textureId) override;
 
+	bool IsIMEComposing() const override;
+	double GetImeComposingTime() const override;
+	double GetAbsoluteTime() const override;
 private:
 	float m_flAlphaMultiplier;
 	CUtlDict< vgui::IImage*, unsigned short >	m_FileTypeImages;

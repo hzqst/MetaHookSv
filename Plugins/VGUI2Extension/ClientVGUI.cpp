@@ -390,7 +390,7 @@ void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)
 
 void ClientVGUI_Shutdown(void)
 {
-
+	VGUI2ExtensionInternal()->ClientVGUI_Shutdown();
 }
 
 PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule)

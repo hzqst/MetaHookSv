@@ -54,8 +54,11 @@
     <Filter Include="GameUI">
       <UniqueIdentifier>{202c3000-f52e-43c1-a1d7-d46c5151a3f2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="EngineVGUI2">
-      <UniqueIdentifier>{ef193300-06c2-4211-b454-83b2413a01a6}</UniqueIdentifier>
+    <Filter Include="ClientVGUI">
+      <UniqueIdentifier>{781ba846-ecb4-440e-ae71-29ddc1667f82}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="BaseUI">
+      <UniqueIdentifier>{29f5fbb3-b7ac-4eaa-a4a5-f280201c7245}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -152,30 +155,6 @@
     <ClCompile Include="$(SolutionDir)include\SourceSDK\Border.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
-    <ClCompile Include="FontAmalgam.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="FontManager.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="FontTextureCache.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="Scheme2.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="SurfaceHook.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="Win32Font.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="$(SolutionDir)include\SourceSDK\VPanel.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="$(SolutionDir)include\SourceSDK\VPanelWrapper.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
     <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\assert_dialog.cpp">
       <Filter>SourceSDK\tier0</Filter>
     </ClCompile>
@@ -189,12 +168,6 @@
       <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="Viewport.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="ClientVGUI.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="KeyValuesSystemHook.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
     <ClCompile Include="$(SolutionDir)\include\vgui_controls\AnalogBar.cpp">
@@ -428,23 +401,8 @@
     <ClCompile Include="privatefuncs.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="SchemeHook.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="Surface2.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="DpiManager.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="GameUI.cpp">
       <Filter>GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="EngineSurfaceHook.cpp">
-      <Filter>EngineVGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="BaseUI.cpp">
-      <Filter>EngineVGUI2</Filter>
     </ClCompile>
     <ClCompile Include="..\..\include\vgui_controls\MemoryBitmap.cpp">
       <Filter>vgui_controls</Filter>
@@ -457,6 +415,18 @@
     </ClCompile>
     <ClCompile Include="..\..\include\vgui_controls\CvarToggleCheckButton.cpp">
       <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientVGUI.cpp">
+      <Filter>ClientVGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="VGUI2ExtensionImport.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseUI.cpp">
+      <Filter>BaseUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\VPanel.cpp">
+      <Filter>VGUI2</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -742,19 +712,7 @@
     <ClInclude Include="$(SolutionDir)include\SourceSDK\appframework\IAppSystem.h">
       <Filter>SourceSDK\appframework</Filter>
     </ClInclude>
-    <ClInclude Include="FontAmalgam.h">
-      <Filter>VGUI2</Filter>
-    </ClInclude>
-    <ClInclude Include="FontManager.h">
-      <Filter>VGUI2</Filter>
-    </ClInclude>
-    <ClInclude Include="FontTextureCache.h">
-      <Filter>VGUI2</Filter>
-    </ClInclude>
     <ClInclude Include="vgui_internal.h">
-      <Filter>VGUI2</Filter>
-    </ClInclude>
-    <ClInclude Include="Win32Font.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="chatdialog.h">
@@ -1000,26 +958,11 @@
     <ClInclude Include="$(SolutionDir)\include\vgui_controls\PHandle.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
-    <ClInclude Include="Scheme2.h">
-      <Filter>VGUI2</Filter>
-    </ClInclude>
-    <ClInclude Include="Surface2.h">
-      <Filter>VGUI2</Filter>
-    </ClInclude>
-    <ClInclude Include="DpiManager.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="EngineSurfaceHook.h">
-      <Filter>EngineVGUI2</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Interface\VGUI\ISurface2.h">
       <Filter>vgui_interface</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\vgui_controls\MemoryBitmap.h">
       <Filter>vgui_controls</Filter>
-    </ClInclude>
-    <ClInclude Include="BaseUI.h">
-      <Filter>EngineVGUI2</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\vgui_controls\CvarSlider.h">
       <Filter>vgui_controls</Filter>
@@ -1033,8 +976,8 @@
     <ClInclude Include="$(SolutionDir)include\SourceSDK\Border.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
-    <ClInclude Include="GameUI.h">
-      <Filter>GameUI</Filter>
+    <ClInclude Include="VGUI2ExtensionImport.h">
+      <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

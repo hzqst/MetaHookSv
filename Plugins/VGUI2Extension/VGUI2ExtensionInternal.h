@@ -18,7 +18,6 @@ public:
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(BaseUI_Paint, int& x, int& y, int& right, int& bottom);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(BaseUI_HideGameUI);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(BaseUI_ActivateGameUI);
-    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(BaseUI_IsGameUIVisible);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(BaseUI_HideConsole);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(BaseUI_ShowConsole);
 
@@ -41,6 +40,11 @@ public:
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameUI_SetProgressBarStatusText, const char*& statusText);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameUI_SetSecondaryProgressBar, float& progress);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameUI_SetSecondaryProgressBarText, const char*& statusText);
+
+    virtual const char *GameUI_GetControlModuleName(int i) const = 0;
+    virtual int GameUI_GetCallbackCount() const = 0;
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(GameUI_COptionsDialog_ctor, IGameUIOptionsDialogCtorCallbackContext* CallbackContext);
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameUI_COptionsSubVideo_ApplyVidSettings, void*& pPanel, bool& bForceRestart);
 
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(ClientVGUI_Initialize, CreateInterfaceFn* factories, int count);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(ClientVGUI_Shutdown);

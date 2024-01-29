@@ -161,7 +161,7 @@ $(GLEWCheckRequirements)</Command>
     <ClCompile Include="$(SolutionDir)include\vgui_controls\MemoryBitmap.cpp" />
     <ClCompile Include="BaseUI.cpp" />
     <ClCompile Include="ClientVGUI.cpp" />
-    <ClCompile Include="DpiManager.cpp" />
+    <ClCompile Include="DpiManagerInternal.cpp" />
     <ClCompile Include="EngineSurfaceHook.cpp" />
     <ClCompile Include="privatefuncs.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
@@ -286,8 +286,9 @@ $(GLEWCheckRequirements)</Command>
   <ItemGroup>
     <ClInclude Include="$(SolutionDir)include\Interface\VGUI\ISurface2.h" />
     <ClInclude Include="$(SolutionDir)include\Interface\VGUI\IScheme2.h" />
+    <ClInclude Include="..\..\include\Interface\IDpiManager.h" />
     <ClInclude Include="..\..\include\Interface\IVGUI2Extension.h" />
-    <ClInclude Include="DpiManager.h" />
+    <ClInclude Include="DpiManagerInternal.h" />
     <ClInclude Include="privatefuncs.h" />
     <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />

@@ -8,7 +8,7 @@
 #include <vgui_controls/MemoryBitmap.h>
 #include "strtools.h"
 #include "Surface2.h"
-#include "DpiManager.h"
+#include "DpiManagerInternal.h"
 
 //BaseUISurface from hw.dll
 extern vgui::ISurface *g_pSurface;
@@ -1028,7 +1028,7 @@ void CSurface2::GetProportionalBase(int &width, int &height)
 {
 	if (g_pSurface_HL25)
 	{
-		if (dpimanager()->IsHighDpiSupportEnabled())
+		if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 		{
 			g_pSurface_HL25->GetHDProportionalBase(width, height);
 		}
@@ -1040,7 +1040,7 @@ void CSurface2::GetProportionalBase(int &width, int &height)
 		return;
 	}
 
-	if (dpimanager()->IsHighDpiSupportEnabled())
+	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
 		if (g_iProportionalBaseWidthHD && g_iProportionalBaseHeightHD)
 		{
@@ -1511,4 +1511,22 @@ void CSurface2::DeleteTextureByID(int textureId)
 	}
 
 	g_pSurface->DeleteTextureByID(textureId);
+}
+
+extern bool g_bIMEComposing;
+extern double g_flImeComposingTime;
+
+bool CSurface2::IsIMEComposing() const
+{
+	return g_bIMEComposing;
+}
+
+double CSurface2::GetImeComposingTime() const
+{
+	return g_flImeComposingTime;
+}
+
+double CSurface2::GetAbsoluteTime() const
+{
+	return GetAbsoluteTime();
 }

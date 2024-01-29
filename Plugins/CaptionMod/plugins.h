@@ -5,7 +5,7 @@ extern IFileSystem_HL25 *g_pFileSystem_HL25;
 extern mh_interface_t *g_pInterface;
 extern metahook_api_t *g_pMetaHookAPI;
 extern mh_enginesave_t *g_pMetaSave;
-extern bool g_IsClientVGUI2;
+
 extern HMODULE g_hClientDll;
 extern PVOID g_dwClientBase;
 extern DWORD g_dwClientSize;
@@ -25,8 +25,9 @@ extern int g_iEngineType;
 extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;
 
+#define Sys_Error(msg, ...) g_pMetaHookAPI->SysError("[CaptionMod] " msg, __VA_ARGS__);
 #define GetCallAddress(addr) g_pMetaHookAPI->GetNextCallAddr((PUCHAR)addr, 1)
-#define Sig_NotFound(name) g_pMetaHookAPI->SysError("[CaptionMod] Could not found: %s\nEngine buildnum: %d", #name, g_dwEngineBuildnum);
+#define Sig_NotFound(name) Sys_Error("Could not found: %s\nEngine buildnum: %d", #name, g_dwEngineBuildnum);
 #define Sig_VarNotFound(name) if(!name) Sig_NotFound(name)
 #define Sig_AddrNotFound(name) if(!addr) Sig_NotFound(name)
 #define Sig_FuncNotFound(name) if(!gPrivateFuncs.name) Sig_NotFound(name)
@@ -39,3 +40,4 @@ extern bool g_bIsCounterStrike;
 #define Search_Pattern_From(fn, sig) g_pMetaHookAPI->SearchPattern((void *)(fn), ((PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize) - (PUCHAR)(fn), sig, Sig_Length(sig))
 #define Install_InlineHook(fn) g_phook_##fn = g_pMetaHookAPI->InlineHook((void *)gPrivateFuncs.fn, fn, (void **)&gPrivateFuncs.fn)
 #define Uninstall_Hook(fn) if(g_phook_##fn){g_pMetaHookAPI->UnHook(g_phook_##fn);g_phook_##fn = NULL;}
+

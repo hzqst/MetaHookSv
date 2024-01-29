@@ -5,7 +5,7 @@
 #include <algorithm>
 
 const char* GetBaseDirectory();
-const char* GetCurrentLanguage();
+const char* GetCurrentGameLanguage();
 
 class CVGUI2Extension : public IVGUI2ExtensionInternal
 {
@@ -89,7 +89,7 @@ public:
 
 	const char* GetCurrentLanguage() const override
 	{
-		return GetCurrentLanguage();
+		return GetCurrentGameLanguage();
 	}
 
 public:
@@ -120,7 +120,7 @@ public:
 		}
 	}
 
-	void BaseUI_Key_Event(int &down, int &keynum, const char* &pszCurrentBinding, VGUI2Extension_CallbackContext* CallbackContext) override
+	void BaseUI_Key_Event(int& down, int& keynum, const char*& pszCurrentBinding, VGUI2Extension_CallbackContext* CallbackContext) override
 	{
 		for (auto it = m_BaseUICallbacks.begin(); it != m_BaseUICallbacks.end(); ++it)
 		{
@@ -133,7 +133,7 @@ public:
 		}
 	}
 
-	void BaseUI_CallEngineSurfaceProc(void* &pevent, void* &userData, VGUI2Extension_CallbackContext* CallbackContext) override
+	void BaseUI_CallEngineSurfaceProc(void*& pevent, void*& userData, VGUI2Extension_CallbackContext* CallbackContext) override
 	{
 		for (auto it = m_BaseUICallbacks.begin(); it != m_BaseUICallbacks.end(); ++it)
 		{
@@ -146,7 +146,7 @@ public:
 		}
 	}
 
-	void BaseUI_Paint(int &x, int &y, int &right, int &bottom, VGUI2Extension_CallbackContext* CallbackContext) override
+	void BaseUI_Paint(int& x, int& y, int& right, int& bottom, VGUI2Extension_CallbackContext* CallbackContext) override
 	{
 		for (auto it = m_BaseUICallbacks.begin(); it != m_BaseUICallbacks.end(); ++it)
 		{
@@ -177,19 +177,6 @@ public:
 		for (auto it = m_BaseUICallbacks.begin(); it != m_BaseUICallbacks.end(); ++it)
 		{
 			(*it)->ActivateGameUI(CallbackContext);
-
-			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
-			{
-				return;
-			}
-		}
-	}
-
-	void BaseUI_IsGameUIVisible(VGUI2Extension_CallbackContext* CallbackContext) override
-	{
-		for (auto it = m_BaseUICallbacks.begin(); it != m_BaseUICallbacks.end(); ++it)
-		{
-			(*it)->IsGameUIVisible(CallbackContext);
 
 			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
 			{
@@ -447,6 +434,37 @@ public:
 		for (auto it = m_GameUICallbacks.begin(); it != m_GameUICallbacks.end(); ++it)
 		{
 			(*it)->SetSecondaryProgressBarText(statusText, CallbackContext);
+
+			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
+			{
+				return;
+			}
+		}
+	}
+
+	const char* GameUI_GetControlModuleName(int i) const override
+	{
+		return m_GameUICallbacks[i]->GetControlModuleName();
+	}
+
+	int GameUI_GetCallbackCount() const override
+	{
+		return (int)m_GameUICallbacks.size();
+	}
+
+	void GameUI_COptionsDialog_ctor(IGameUIOptionsDialogCtorCallbackContext* CallbackContext) override
+	{
+		for (auto it = m_GameUICallbacks.begin(); it != m_GameUICallbacks.end(); ++it)
+		{
+			(*it)->COptionsDialog_ctor(CallbackContext);
+		}
+	}
+
+	void GameUI_COptionsSubVideo_ApplyVidSettings(void* &pPanel, bool &bForceRestart, VGUI2Extension_CallbackContext* CallbackContext) override
+	{
+		for (auto it = m_GameUICallbacks.begin(); it != m_GameUICallbacks.end(); ++it)
+		{
+			(*it)->COptionsSubVideo_ApplyVidSettings(pPanel, bForceRestart, CallbackContext);
 
 			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
 			{

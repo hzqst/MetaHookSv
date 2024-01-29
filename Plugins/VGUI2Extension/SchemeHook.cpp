@@ -5,7 +5,7 @@
 
 using namespace vgui;
 
-extern vgui::CSchemeManager * g_pVGuiSchemeManager;
+extern vgui::ISchemeManager2 * g_pVGuiSchemeManager;
 
 class CSchemeManagerProxy : public ISchemeManager
 {

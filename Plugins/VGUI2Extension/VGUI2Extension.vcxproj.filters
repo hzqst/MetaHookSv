@@ -48,9 +48,6 @@
     <Filter Include="GameUI">
       <UniqueIdentifier>{202c3000-f52e-43c1-a1d7-d46c5151a3f2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="EngineVGUI2">
-      <UniqueIdentifier>{ef193300-06c2-4211-b454-83b2413a01a6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="VGUI1">
       <UniqueIdentifier>{d4c93ff0-9194-42ef-b828-fc4dcd97a8eb}</UniqueIdentifier>
     </Filter>
@@ -59,6 +56,12 @@
     </Filter>
     <Filter Include="ClientVGUI">
       <UniqueIdentifier>{0bf7689a-0344-48b0-a5d6-69999246e07a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EngineSurface">
+      <UniqueIdentifier>{0c0ae51b-0359-4d5e-a5bc-37da2eabb77a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="BaseUI">
+      <UniqueIdentifier>{ef193300-06c2-4211-b454-83b2413a01a6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -206,17 +209,14 @@
     <ClCompile Include="Surface2.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
-    <ClCompile Include="DpiManager.cpp">
+    <ClCompile Include="DpiManagerInternal.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="GameUI.cpp">
       <Filter>GameUI</Filter>
     </ClCompile>
-    <ClCompile Include="EngineSurfaceHook.cpp">
-      <Filter>EngineVGUI2</Filter>
-    </ClCompile>
     <ClCompile Include="BaseUI.cpp">
-      <Filter>EngineVGUI2</Filter>
+      <Filter>BaseUI</Filter>
     </ClCompile>
     <ClCompile Include="$(SolutionDir)include\vgui_controls\Controls.cpp">
       <Filter>Source</Filter>
@@ -449,6 +449,9 @@
     <ClCompile Include="ClientVGUI.cpp">
       <Filter>ClientVGUI</Filter>
     </ClCompile>
+    <ClCompile Include="EngineSurfaceHook.cpp">
+      <Filter>EngineSurface</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="enginedef.h">
@@ -487,7 +490,7 @@
     <ClInclude Include="Surface2.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
-    <ClInclude Include="DpiManager.h">
+    <ClInclude Include="DpiManagerInternal.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="$(SolutionDir)include\Interface\VGUI\ISurface2.h">
@@ -501,6 +504,9 @@
     </ClInclude>
     <ClInclude Include="VGUI2ExtensionInternal.h">
       <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Interface\IDpiManager.h">
+      <Filter>Interface</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

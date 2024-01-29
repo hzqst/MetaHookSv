@@ -3,10 +3,11 @@
 #include <vgui/IScheme.h>
 #include <vgui/ILocalize.h>
 #include <vgui/IEngineVGui.h>
+#include <vgui/IGameUIFuncs.h>
 #include <vgui_controls/Controls.h>
 #include <vgui_controls/Label.h>
-#include "BaseUI.h"
-#include "GameUI.h"
+#include <IVGUI2Extension.h>
+#include <IDpiManager.h>
 #include "Viewport.h"
 #include "SubtitlePanel.h"
 #include "cstrikechatdialog.h"
@@ -14,7 +15,6 @@
 #include "message.h"
 #include "privatefuncs.h"
 #include "exportfuncs.h"
-#include "dpimanager.h"
 #include <stdexcept>
 
 using namespace vgui;
@@ -26,6 +26,7 @@ CMemoryPool m_HashItemMemPool(sizeof(hash_item_t), 64);
 
 extern CHudMessage m_HudMessage;
 extern CHudMenu m_HudMenu;
+extern IGameUIFuncs* gameuifuncs;
 
 CViewport::CViewport() : BaseClass(NULL, "CaptionViewport")
 {
@@ -860,7 +861,7 @@ void CViewport::SetParent(VPANEL vPanel)
 {
 	BaseClass::SetParent(vPanel);
 
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && dpimanager()->IsHighDpiSupportEnabled())
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManager()->IsHighDpiSupportEnabled())
 	{
 		SetProportional(true);
 	}
@@ -927,12 +928,12 @@ void CViewport::ConnectToServer(const char* game, int IP, int port)
 
 		LoadCustomDictionary(name.c_str());
 
-		if (0 != strcmp(m_szCurrentLanguage, "english"))
+		if (0 != strcmp(VGUI2Extension()->GetCurrentLanguage(), "english"))
 		{
 			name = szLevelName;
 			RemoveFileExtension(name);
 			name += "_dictionary_";
-			name += m_szCurrentLanguage;
+			name += VGUI2Extension()->GetCurrentLanguage();
 			name += ".csv";
 
 			LoadCustomDictionary(name.c_str());
