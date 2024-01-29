@@ -1,0 +1,506 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="SourceSDK">
+      <UniqueIdentifier>{07b70233-8449-4f32-87a8-2dee7c35ed48}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SourceSDK\tier1">
+      <UniqueIdentifier>{293aa179-3d18-4bf5-95ec-17612887fa72}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SourceSDK\tier0">
+      <UniqueIdentifier>{9ffb327a-9db4-4c0e-8a8d-ad92cb42b834}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SourceSDK\mathlib">
+      <UniqueIdentifier>{c8eb0da4-f481-45b4-a3eb-7189a85764e3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SourceSDK\vstdlib">
+      <UniqueIdentifier>{81e243fb-9f4b-4ea2-a617-261300d870da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SourceSDK\inputsystem">
+      <UniqueIdentifier>{58efe4e9-93f7-4dfd-af89-0163ab24e45a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SourceSDK\common">
+      <UniqueIdentifier>{ad78cd1f-3c51-44b9-9e1d-695f52e96e25}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SourceSDK\common\xbox">
+      <UniqueIdentifier>{51aa52d9-6ff6-4ca7-a6ae-ce3423d1f55c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SourceSDK\appframework">
+      <UniqueIdentifier>{2171bd44-b0d9-4585-b96a-cbac09f8aaf1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="vgui_controls">
+      <UniqueIdentifier>{27da8815-49cc-4df4-85c2-1393164c30e5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="VGUI2">
+      <UniqueIdentifier>{7ca0e99c-9048-4b3a-85eb-af09ac2cf41b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="HLSDK">
+      <UniqueIdentifier>{91f2638d-d23f-44d7-b7a5-1b21058ff405}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="GameUI">
+      <UniqueIdentifier>{202c3000-f52e-43c1-a1d7-d46c5151a3f2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="EngineVGUI2">
+      <UniqueIdentifier>{ef193300-06c2-4211-b454-83b2413a01a6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="VGUI1">
+      <UniqueIdentifier>{d4c93ff0-9194-42ef-b828-fc4dcd97a8eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Interface">
+      <UniqueIdentifier>{d61a29a9-3838-4c74-a882-ae7ef51b0268}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ClientVGUI">
+      <UniqueIdentifier>{0bf7689a-0344-48b0-a5d6-69999246e07a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\filesystem.cpp">
+      <Filter>SourceSDK</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\filesystem_helpers.cpp">
+      <Filter>SourceSDK</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\InputWin32.cpp">
+      <Filter>SourceSDK</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\characterset.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\generichash.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\KeyValues.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\mempool.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\memstack.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\stringpool.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\strtools.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\utlbuffer.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\utlstring.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\utlsymbol.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\cpu.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\dbg.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\fasttimer.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\mem.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\mem_helpers.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\memdbg.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\memstd.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\minidump.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\platform.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\threadtools.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\vcrmode.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\mathlib\3dnow.cpp">
+      <Filter>SourceSDK\mathlib</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\mathlib\mathlib_base.cpp">
+      <Filter>SourceSDK\mathlib</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\mathlib\sse.cpp">
+      <Filter>SourceSDK\mathlib</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\vstdlib\KeyValuesSystem.cpp">
+      <Filter>SourceSDK\vstdlib</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\vstdlib\random.cpp">
+      <Filter>SourceSDK\vstdlib</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\Bitmap.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\Border.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="FontAmalgam.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="FontManager.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="FontTextureCache.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="Scheme2.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="SurfaceHook.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="Win32Font.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\VPanel.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\VPanelWrapper.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\assert_dialog.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="KeyValuesSystemHook.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="exportfuncs.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="plugins.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\HLSDK\common\interface.cpp">
+      <Filter>HLSDK</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\HLSDK\common\parsemsg.cpp">
+      <Filter>HLSDK</Filter>
+    </ClCompile>
+    <ClCompile Include="privatefuncs.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="SchemeHook.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="Surface2.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="DpiManager.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="GameUI.cpp">
+      <Filter>GameUI</Filter>
+    </ClCompile>
+    <ClCompile Include="EngineSurfaceHook.cpp">
+      <Filter>EngineVGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseUI.cpp">
+      <Filter>EngineVGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Controls.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\AnalogBar.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\AnimatingImagePanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\AnimationController.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\BitmapImagePanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\BuildFactoryHelper.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\BuildGroup.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\BuildModeDialog.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Button.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\CheckButton.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\CheckButtonList.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\CircularProgressBar.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ComboBox.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\consoledialog.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ControllerMap.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\CvarSlider.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\CvarTextEntry.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\CvarToggleCheckButton.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\DirectorySelectDialog.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Divider.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\EditablePanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ExpandButton.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\FileOpenDialog.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\FocusNavGroup.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Frame.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\GraphPanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\HTML.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Image.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ImageList.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ImagePanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\InputDialog.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\KeyBindingHelpDialog.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\KeyBoardEditorDialog.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\KeyRepeat.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Label.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ListPanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ListViewPanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\MemoryBitmap.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Menu.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\MenuBar.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\MenuButton.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\MenuItem.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\MessageDialog.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\MessageBox.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Panel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\PanelListPanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ProgressBar.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\PropertyDialog.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ProgressBox.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\PropertyPage.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\PropertySheet.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\QueryBox.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\RadioButton.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\RichText.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\RotatingProgressBar.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ScrollableEditablePanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\savedocumentquery.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ScrollBarSlider.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\SectionedListPanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ScrollBar.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Slider.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Splitter.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\TextEntry.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\subrectimage.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\TextImage.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ToggleButton.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ToolWindow.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Tooltip.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\TreeView.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\TreeViewListControl.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\URLLabel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\WizardPanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\WizardSubPanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\vgui_controls.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="VGUI2ExtensionInternal.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="VGUI1Hook.cpp">
+      <Filter>VGUI1</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientVGUI.cpp">
+      <Filter>ClientVGUI</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="enginedef.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="exportfuncs.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="message.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="plugins.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="FontAmalgam.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="FontManager.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="FontTextureCache.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="vgui_internal.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="Win32Font.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="privatefuncs.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="Scheme2.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="Surface2.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="DpiManager.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SolutionDir)include\Interface\VGUI\ISurface2.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SolutionDir)include\Interface\VGUI\IScheme2.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Interface\IVGUI2Extension.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="VGUI2ExtensionInternal.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

@@ -47,6 +47,7 @@ public:
 };
 
 #define VGUI_SCHEME2_INTERFACE_VERSION  "VGUI_Scheme2_001"
+
 } // namespace vgui
 
 #endif // ISCHEME2_H

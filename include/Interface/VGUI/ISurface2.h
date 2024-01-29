@@ -3,7 +3,7 @@
 
 #include <interface.h>
 #include "VGUI.h"
-#include "IHTML.h"
+#include <IHTML.h>
 #include <mathlib/vector2d.h>
 #include <Color.h>
 

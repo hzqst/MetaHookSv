@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{44F12F1B-E5AE-4C8E-AAD9-D3D958633A6F}</ProjectGuid>
+    <RootNamespace>VGUI2Extension</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>$([Microsoft.Build.Utilities.ToolLocationHelper]::GetLatestSDKTargetPlatformVersion('Windows', '10.0'))</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)tools\global.props" Condition="exists('$(SolutionDir)tools\global.props')" />
+    <Import Project="$(SolutionDir)tools\global_template.props" Condition="!exists('$(SolutionDir)tools\global.props') and exists('$(SolutionDir)tools\global_template.props')" />
+    <Import Project="$(SolutionDir)tools\global_common.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)tools\global.props" Condition="exists('$(SolutionDir)tools\global.props')" />
+    <Import Project="$(SolutionDir)tools\global_template.props" Condition="!exists('$(SolutionDir)tools\global.props') and exists('$(SolutionDir)tools\global_template.props')" />
+    <Import Project="$(SolutionDir)tools\global_common.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(SolutionDir)tools\global.props" Condition="exists('$(SolutionDir)tools\global.props')" />
+    <Import Project="$(SolutionDir)tools\global_template.props" Condition="!exists('$(SolutionDir)tools\global.props') and exists('$(SolutionDir)tools\global_template.props')" />
+    <Import Project="$(SolutionDir)tools\global_common.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>15.0.28127.55</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'">
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\Interface\VGUI;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\SteamSDK;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;STEAM_API_NODLL;VGUI_USE_SURFACE2;VGUI_USE_SCHEME2;NO_MALLOC_OVERRIDE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader />
+      <DisableSpecificWarnings>4291;4311;4312;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <Optimization>Disabled</Optimization>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\SourceSDK\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent>
+      <Command>$(PluginPostBuildCommand)</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>$(CapstoneCheckRequirements)
+$(GLEWCheckRequirements)</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\Interface\VGUI;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\SteamSDK;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;STEAM_API_NODLL;VGUI_USE_SURFACE2;VGUI_USE_SCHEME2;NO_MALLOC_OVERRIDE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PrecompiledHeader />
+      <DisableSpecificWarnings>4091;4291;4311;4312;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\SourceSDK\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent>
+      <Command>$(PluginPostBuildCommand)</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>$(CapstoneCheckRequirements)
+$(GLEWCheckRequirements)</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'">
+    <ClCompile>
+      <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\SteamSDK;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;STEAM_API_NODLL;GLEW_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <DisableSpecificWarnings>4091;4291;4311;4312;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(SolutionDir)include\SourceSDK\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>OpenGL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <PostBuildEvent>
+      <Command>$(PluginPostBuildCommand)</Command>
+    </PostBuildEvent>
+    <PreBuildEvent>
+      <Command>$(CapstoneCheckRequirements)
+$(GLEWCheckRequirements)</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="$(SolutionDir)include\HLSDK\common\interface.cpp" />
+    <ClCompile Include="$(SolutionDir)include\HLSDK\common\parsemsg.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\CvarSlider.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\CvarTextEntry.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\CvarToggleCheckButton.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\MemoryBitmap.cpp" />
+    <ClCompile Include="BaseUI.cpp" />
+    <ClCompile Include="ClientVGUI.cpp" />
+    <ClCompile Include="DpiManager.cpp" />
+    <ClCompile Include="EngineSurfaceHook.cpp" />
+    <ClCompile Include="privatefuncs.cpp" />
+    <ClCompile Include="exportfuncs.cpp" />
+    <ClCompile Include="FontAmalgam.cpp" />
+    <ClCompile Include="FontManager.cpp" />
+    <ClCompile Include="FontTextureCache.cpp" />
+    <ClCompile Include="GameUI.cpp" />
+    <ClCompile Include="KeyValuesSystemHook.cpp" />
+    <ClCompile Include="plugins.cpp" />
+    <ClCompile Include="Scheme2.cpp" />
+    <ClCompile Include="SchemeHook.cpp" />
+    <ClCompile Include="Surface2.cpp" />
+    <ClCompile Include="SurfaceHook.cpp" />
+    <ClCompile Include="VGUI1Hook.cpp" />
+    <ClCompile Include="VGUI2ExtensionInternal.cpp" />
+    <ClCompile Include="Win32Font.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\VPanel.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\Bitmap.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\Border.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\filesystem.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\filesystem_helpers.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\InputWin32.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\mathlib\3dnow.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\mathlib\mathlib_base.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\mathlib\sse.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\assert_dialog.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\cpu.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\dbg.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\fasttimer.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\mem.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\memdbg.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\memstd.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\mem_helpers.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\minidump.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\platform.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\threadtools.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\vcrmode.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\characterset.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\generichash.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\KeyValues.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\mempool.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\memstack.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\stringpool.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\strtools.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\utlbuffer.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\utlstring.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\utlsymbol.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\VPanelWrapper.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\vstdlib\KeyValuesSystem.cpp" />
+    <ClCompile Include="$(SolutionDir)include\SourceSDK\vstdlib\random.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\AnalogBar.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\AnimatingImagePanel.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\AnimationController.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\BitmapImagePanel.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\BuildFactoryHelper.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\BuildGroup.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\BuildModeDialog.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Button.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\CheckButton.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\CheckButtonList.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\CircularProgressBar.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ComboBox.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\consoledialog.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ControllerMap.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Controls.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\DirectorySelectDialog.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Divider.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\EditablePanel.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ExpandButton.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\FileOpenDialog.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\FocusNavGroup.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Frame.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\GraphPanel.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\HTML.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Image.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ImageList.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ImagePanel.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\InputDialog.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\KeyBindingHelpDialog.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\KeyBoardEditorDialog.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\KeyRepeat.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Label.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ListPanel.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ListViewPanel.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Menu.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\MenuBar.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\MenuButton.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\MenuItem.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\MessageBox.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\MessageDialog.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Panel.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\PanelListPanel.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ProgressBar.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ProgressBox.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\PropertyDialog.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\PropertyPage.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\PropertySheet.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\QueryBox.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\RadioButton.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\RichText.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\RotatingProgressBar.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\savedocumentquery.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ScrollableEditablePanel.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ScrollBar.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ScrollBarSlider.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\SectionedListPanel.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Slider.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Splitter.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\subrectimage.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\TextEntry.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\TextImage.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ToggleButton.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\Tooltip.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\ToolWindow.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\TreeView.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\TreeViewListControl.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\URLLabel.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\vgui_controls.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\WizardPanel.cpp" />
+    <ClCompile Include="$(SolutionDir)include\vgui_controls\WizardSubPanel.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(SolutionDir)include\Interface\VGUI\ISurface2.h" />
+    <ClInclude Include="$(SolutionDir)include\Interface\VGUI\IScheme2.h" />
+    <ClInclude Include="..\..\include\Interface\IVGUI2Extension.h" />
+    <ClInclude Include="DpiManager.h" />
+    <ClInclude Include="privatefuncs.h" />
+    <ClInclude Include="enginedef.h" />
+    <ClInclude Include="exportfuncs.h" />
+    <ClInclude Include="FontAmalgam.h" />
+    <ClInclude Include="FontManager.h" />
+    <ClInclude Include="FontTextureCache.h" />
+    <ClInclude Include="message.h" />
+    <ClInclude Include="plugins.h" />
+    <ClInclude Include="Scheme2.h" />
+    <ClInclude Include="Surface2.h" />
+    <ClInclude Include="VGUI2ExtensionInternal.h" />
+    <ClInclude Include="vgui_internal.h" />
+    <ClInclude Include="Win32Font.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
