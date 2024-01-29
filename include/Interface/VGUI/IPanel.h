@@ -30,8 +30,6 @@ namespace vgui
 
 class SurfacePlat;
 class IClientPanel;
-
-//!! must be removed
 class Panel;
 
 //-----------------------------------------------------------------------------
@@ -99,14 +97,18 @@ public:
 	virtual void SetEnabled(VPANEL vguiPanel, bool state) = 0;
 	virtual IClientPanel *Client(VPANEL vguiPanel) = 0;
 	virtual const char *GetModuleName(VPANEL vguiPanel) = 0;
+};
 
+class IPanel2 : public IPanel
+{
 public:
-	bool IsTopmostPopup(VPANEL vguiPanel);
-	void SetTopmostPopup(VPANEL vguiPanel, bool state);
-	bool IsFullyVisible(VPANEL vguiPanel);
+	virtual bool IsTopmostPopup(VPANEL vguiPanel) = 0;
+	virtual void SetTopmostPopup(VPANEL vguiPanel, bool state) = 0;
+	virtual bool IsFullyVisible(VPANEL vguiPanel) = 0;
 };
 
 #define VGUI_PANEL_INTERFACE_VERSION "VGUI_Panel007"
+#define VGUI_PANEL2_INTERFACE_VERSION "VGUI_Panel2_007"
 
 } // namespace vgui
 

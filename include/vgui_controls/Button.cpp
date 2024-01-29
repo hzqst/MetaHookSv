@@ -18,7 +18,7 @@
 #include <vgui/MouseCode.h>
 #include <vgui/KeyCode.h>
 #include <vgui/ISurface.h>
-#include "Surface2.h"
+#include <ISurface2.h>
 
 #include "Button.h"
 #include "FocusNavGroup.h"

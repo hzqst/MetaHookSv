@@ -6,6 +6,7 @@
 #endif
 
 #include "tier1/interface.h"
+#include <vgui/KeyCode.h>
 
 class IGameUIFuncs : public IBaseInterface
 {

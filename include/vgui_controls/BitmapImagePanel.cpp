@@ -12,7 +12,7 @@
 #include <vgui/IScheme.h>
 #include <vgui/IBorder.h>
 #include <vgui/ISurface.h>
-#include "Surface2.h"
+#include <ISurface2.h>
 
 #include <tier1/KeyValues.h>
 

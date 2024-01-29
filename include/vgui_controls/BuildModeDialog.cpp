@@ -17,7 +17,7 @@
 #include <vgui/KeyCode.h>
 #include <vgui/MouseCode.h>
 #include <vgui/ISurface.h>
-#include "Surface2.h"
+#include <ISurface2.h>
 
 #include "BuildModeDialog.h"
 #include "Label.h"

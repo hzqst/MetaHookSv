@@ -38,11 +38,6 @@ enum
 	BUFFER_SIZE=999999,
 };
 
-extern bool g_bIMEComposing;
-extern double g_flImeComposingTime;
-
-double GetAbsoluteTime();
-
 using namespace vgui;
 
 static const int DRAW_OFFSET_X = 3,DRAW_OFFSET_Y = 1; 
@@ -3042,10 +3037,10 @@ void TextEntry::Backspace()
 	if (!IsEditable())
 		return;
 
-	if (g_bIMEComposing)
+	if (surface()->IsIMEComposing())
 		return;
 
-	if (GetAbsoluteTime() < g_flImeComposingTime + 0.1)
+	if (surface()->GetAbsoluteTime() < surface()->GetImeComposingTime() + 0.1)
 		return;
 
 	//if you are at the first position don't do anything

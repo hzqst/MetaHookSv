@@ -28,6 +28,7 @@
 #include <vgui/IVGUI.h>
 #include <vgui/IPanel.h>
 #include <vgui/ILocalize.h>
+#include <vgui/IBorder.h>
 #include <vgui/MouseCode.h>
 #include <vgui/KeyCode.h>
 
@@ -36,17 +37,18 @@
 #endif
 
 #ifdef VGUI_USE_SCHEME2
-#include "Scheme2.h"
+#include <IScheme2.h>
 #endif
 
 extern IFileSystem *g_pFullFileSystem;
 
 extern vgui::IInput *g_pVGuiInput;
-extern vgui::CSchemeManager * g_pVGuiSchemeManager;
+extern vgui::ISchemeManager2 * g_pVGuiSchemeManager;
 extern vgui::ISurface2 *g_pVGuiSurface;
 extern vgui::ISystem *g_pVGuiSystem;
 extern vgui::IVGui *g_pVGui;
 extern vgui::IPanel *g_pVGuiPanel;
+extern vgui::IPanel2* g_pVGuiPanel2;
 extern vgui::ILocalize *g_pVGuiLocalize;
 
 namespace vgui
@@ -89,7 +91,7 @@ inline vgui::IInputInternal *inputinternal()
 }
 
 // #include <vgui/IScheme.h>
-inline vgui::CSchemeManager *scheme()
+inline vgui::ISchemeManager2 *scheme()
 {
 	return g_pVGuiSchemeManager;
 }
@@ -116,6 +118,11 @@ inline vgui::IVGui *ivgui()
 inline vgui::IPanel *ipanel()
 {
 	return g_pVGuiPanel;
+}
+
+inline vgui::IPanel2* ipanel2()
+{
+	return g_pVGuiPanel2;
 }
 
 inline vgui::ILocalize *localize()

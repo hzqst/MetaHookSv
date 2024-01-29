@@ -14,6 +14,7 @@
 
 #include "VGUI.h"
 #include <IScheme.h>
+#include <KeyValues.h>
 
 namespace vgui
 {
