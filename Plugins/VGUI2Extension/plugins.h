@@ -25,7 +25,8 @@ extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;
 
 #define GetCallAddress(addr) g_pMetaHookAPI->GetNextCallAddr((PUCHAR)addr, 1)
-#define Sig_NotFound(name) g_pMetaHookAPI->SysError("[CaptionMod] Could not found: %s\nEngine buildnum: %d", #name, g_dwEngineBuildnum);
+#define Sys_Error(msg, ...) g_pMetaHookAPI->SysError("[VGUI2Extension] " msg, __VA_ARGS__);
+#define Sig_NotFound(name) Sys_Error("Could not found: %s\nEngine buildnum: %d", #name, g_dwEngineBuildnum);
 #define Sig_VarNotFound(name) if(!name) Sig_NotFound(name)
 #define Sig_AddrNotFound(name) if(!addr) Sig_NotFound(name)
 #define Sig_FuncNotFound(name) if(!gPrivateFuncs.name) Sig_NotFound(name)
@@ -36,5 +37,5 @@ extern bool g_bIsCounterStrike;
 #define Search_Pattern_Rdata(sig) g_pMetaHookAPI->SearchPattern(g_dwEngineRdataBase, g_dwEngineRdataSize, sig, Sig_Length(sig))
 #define Search_Pattern_From_Size(fn, size, sig) g_pMetaHookAPI->SearchPattern((void *)(fn), size, sig, Sig_Length(sig))
 #define Search_Pattern_From(fn, sig) g_pMetaHookAPI->SearchPattern((void *)(fn), ((PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize) - (PUCHAR)(fn), sig, Sig_Length(sig))
-#define Install_InlineHook(fn) g_phook_##fn = g_pMetaHookAPI->InlineHook((void *)gPrivateFuncs.fn, fn, (void **)&gPrivateFuncs.fn)
+#define Install_InlineHook(fn) if(!g_phook_##fn) { g_phook_##fn = g_pMetaHookAPI->InlineHook((void *)gPrivateFuncs.fn, fn, (void **)&gPrivateFuncs.fn); }
 #define Uninstall_Hook(fn) if(g_phook_##fn){g_pMetaHookAPI->UnHook(g_phook_##fn);g_phook_##fn = NULL;}

@@ -18,7 +18,9 @@ static hook_t* g_phook_GameUI_Panel_Init = NULL;
 static hook_t* g_phook_CGameConsoleDialog_ctor = NULL;
 static hook_t* g_phook_CCreateMultiplayerGameDialog_ctor = NULL;
 static hook_t* g_phook_COptionsDialog_ctor = NULL;
-static hook_t *g_phook_COptionsSubVideo_ApplyVidSettings = NULL;
+static hook_t* g_phook_COptionsSubVideo_ApplyVidSettings = NULL;
+static hook_t* g_phook_CTaskBar_ctor = NULL;
+static hook_t* g_phook_CTaskBar_OnCommand = NULL;
 static hook_t* g_phook_RichText_InsertChar = NULL;
 static hook_t* g_phook_RichText_InsertStringW = NULL;
 static hook_t* g_phook_RichText_OnThink = NULL;
@@ -785,7 +787,6 @@ public:
 	vgui::Panel* m_pPropertySheet;
 };
 
-
 void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel* parent)
 {
 	auto result = gPrivateFuncs.COptionsDialog_ctor(pthis, dummy, parent);
@@ -827,6 +828,79 @@ void* __fastcall CGameConsoleDialog_ctor(vgui::Panel* pthis, int dummy)
 
 	//Load res to make it proportional
 	gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource/GameConsoleDialog.res", NULL);
+
+	return result;
+}
+
+void __fastcall CTaskBar_OnCommand(void* pthis, int dummy, const char* command)
+{
+	void* _this = pthis;
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	VGUI2ExtensionInternal()->GameUI_CTaskBar_OnCommand(_this, command, &CallbackContext);
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	{
+		gPrivateFuncs.CTaskBar_OnCommand(_this, dummy, command);
+	}
+
+	CallbackContext.IsPost = true;
+
+	VGUI2ExtensionInternal()->GameUI_CTaskBar_OnCommand(_this, command, &CallbackContext);
+}
+
+class CGameUITaskBarCtorCallbackContext : public IGameUITaskBarCtorCallbackContext
+{
+public:
+	CGameUITaskBarCtorCallbackContext(vgui::Panel* pthis, vgui::Panel* parent, const char *panelName)
+	{
+		m_pTaskBar = pthis;
+		m_pParentPanel = parent;
+		m_pszPanelName = panelName;
+	}
+
+	void InstallHook()
+	{
+		if (!gPrivateFuncs.CTaskBar_OnCommand)
+		{
+			PVOID* CTaskBar_vftable = *(PVOID**)m_pTaskBar;
+
+			gPrivateFuncs.CTaskBar_OnCommand = (decltype(gPrivateFuncs.CTaskBar_OnCommand))CTaskBar_vftable[348 / 4];
+
+			Install_InlineHook(CTaskBar_OnCommand);
+		}
+	}
+
+	void* GetTaskBar() const
+	{
+		return m_pTaskBar;
+	}
+
+	void* GetParentPanel() const
+	{
+		return m_pParentPanel;
+	}
+
+	const char* GetParentName() const
+	{
+		return m_pszPanelName;
+	}
+
+	vgui::Panel* m_pTaskBar;
+	vgui::Panel* m_pParentPanel;
+	const char* m_pszPanelName;
+};
+
+void* __fastcall CTaskBar_ctor(void* pthis, int dummy, void* parent, const char* panelName)
+{
+	auto result = gPrivateFuncs.CTaskBar_ctor(pthis, dummy, parent, panelName);
+
+	CGameUITaskBarCtorCallbackContext CallbackContext((vgui::Panel *)pthis, (vgui::Panel*)parent, panelName);
+
+	CallbackContext.InstallHook();
+
+	VGUI2ExtensionInternal()->GameUI_CTaskBar_ctor(&CallbackContext);
 
 	return result;
 }
@@ -958,7 +1032,7 @@ void GameUI_FillAddress(HMODULE hGameUI)
 				}
 			}
 			return FALSE;
-			});
+		});
 
 		Sig_FuncNotFound(CCreateMultiplayerGameDialog_ctor);
 	}
@@ -1000,7 +1074,7 @@ void GameUI_FillAddress(HMODULE hGameUI)
 				}
 			}
 			return FALSE;
-			});
+		});
 
 		Sig_FuncNotFound(COptionsDialog_ctor);
 	}
@@ -1211,6 +1285,7 @@ void GameUI_FillAddress(HMODULE hGameUI)
 
 		Sig_VarNotFound(ctx.ConsoleHistory_vftable);
 
+		//TODO: fetch from ConsoleDialog's ctor
 		gPrivateFuncs.RichText_OnThink = (decltype(gPrivateFuncs.RichText_OnThink))ctx.ConsoleHistory_vftable[0x158 / 4];
 	}
 
@@ -1725,6 +1800,105 @@ void GameUI_FillAddress(HMODULE hGameUI)
 	}
 #endif
 
+	if (1)
+	{
+		PVOID Sheet_PushString = NULL;
+		const char sigs1[] = "GameMenuButton\0";
+		auto GameMenuButton_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
+		if (!GameMenuButton_String)
+		{
+			GameMenuButton_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
+		}
+		Sig_VarNotFound(GameMenuButton_String);
+		char pattern[] = "\x74\x2A\x68\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern + 3) = (DWORD)GameMenuButton_String;
+		auto GameMenuButton_PushString = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
+		Sig_VarNotFound(GameMenuButton_PushString);
+
+		gPrivateFuncs.CTaskBar_ctor = (decltype(gPrivateFuncs.CTaskBar_ctor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(GameMenuButton_PushString, 0x300, [](PUCHAR Candidate) {
+
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC &&
+				Candidate[3] == 0x83 &&
+				Candidate[4] == 0xEC)
+				return TRUE;
+
+			//8B 44 24 04                                         mov     eax, [esp+arg_0]
+			if (Candidate[0] == 0x8B &&
+				Candidate[1] == 0x44 &&
+				Candidate[2] == 0x24)
+			{
+				//.text:1002AD81 83 C8 FF                                            or      eax, 0FFFFFFFFh
+				if (g_pMetaHookAPI->SearchPattern(Candidate, 0x100, "\x83\xC8\xFF", sizeof("\x83\xC8\xFF") - 1))
+				{
+					return TRUE;
+				}
+			}
+			return FALSE;
+		});
+		Sig_FuncNotFound(CTaskBar_ctor);
+
+		typedef struct
+		{
+			PVOID GameUIRdataBase;
+			ULONG GameUIRdataSize;
+
+			PVOID GameUITextBase;
+			ULONG GameUITextSize;
+
+			PVOID* CTaskBar_vftable;
+
+		}CTaskBarCtorSearchContext;
+
+		CTaskBarCtorSearchContext ctx = { 0 };
+
+		ctx.GameUIRdataBase = GameUIRdataBase;
+		ctx.GameUIRdataSize = GameUIRdataSize;
+
+		ctx.GameUITextBase = GameUITextBase;
+		ctx.GameUITextSize = GameUITextSize;
+
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.CTaskBar_ctor, 0x120, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (CTaskBarCtorSearchContext*)context;
+
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->GameUIRdataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->GameUIRdataBase + ctx->GameUIRdataSize))
+			{
+				auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
+				if (candidate[0] >= (PUCHAR)ctx->GameUITextBase && candidate[0] < (PUCHAR)ctx->GameUITextBase + ctx->GameUITextSize)
+				{
+					ctx->CTaskBar_vftable = candidate;
+				}
+			}
+
+			if (ctx->CTaskBar_vftable)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+			}, 0, & ctx);
+
+		//Sig_VarNotFound(ctx.CTaskBar_vftable);
+		
+		if (ctx.CTaskBar_vftable)
+		{
+			gPrivateFuncs.CTaskBar_OnCommand = (decltype(gPrivateFuncs.CTaskBar_OnCommand))ctx.CTaskBar_vftable[348 / 4];
+		}
+	}
+
 	gPrivateFuncs.GameUI_Panel_Init = (decltype(gPrivateFuncs.GameUI_Panel_Init))VGUI2_FindPanelInit(GameUITextBase, GameUITextSize);
 	Sig_FuncNotFound(GameUI_Panel_Init);
 
@@ -1765,7 +1939,6 @@ void GameUI_InstallHooks(void)
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 1, ProxyVFTable[1], (void**)&g_pfnCGameUI_Initialize);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 2, ProxyVFTable[2], (void**)&g_pfnCGameUI_Start);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 3, ProxyVFTable[3], (void**)&g_pfnCGameUI_Shutdown);
-
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 4, ProxyVFTable[4], (void**)&g_pfnCGameUI_ActivateGameUI);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 5, ProxyVFTable[5], (void**)&g_pfnCGameUI_ActivateDemoUI);
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 6, ProxyVFTable[6], (void**)&g_pfnCGameUI_HasExclusiveInput);
@@ -1786,14 +1959,24 @@ void GameUI_InstallHooks(void)
 	Install_InlineHook(GameUI_Panel_Init);
 	Install_InlineHook(CGameConsoleDialog_ctor);
 	Install_InlineHook(CCreateMultiplayerGameDialog_ctor);
+
+	if (gPrivateFuncs.CTaskBar_ctor)
+	{
+		Install_InlineHook(CTaskBar_ctor);
+	}
+
 	Install_InlineHook(COptionsDialog_ctor);
 	Install_InlineHook(COptionsSubVideo_ApplyVidSettings);
 	
-	if(gPrivateFuncs.RichText_InsertChar)
+	if (gPrivateFuncs.RichText_InsertChar)
+	{
 		Install_InlineHook(RichText_InsertChar);
+	}
 
 	if (gPrivateFuncs.RichText_InsertStringW)
+	{
 		Install_InlineHook(RichText_InsertStringW);
+	}
 
 	Install_InlineHook(RichText_OnThink);
 	Install_InlineHook(TextEntry_OnKeyCodeTyped);
@@ -1806,6 +1989,7 @@ void GameUI_UninstallHooks(void)
 	Uninstall_Hook(GameUI_Panel_Init);
 	Uninstall_Hook(CGameConsoleDialog_ctor);
 	Uninstall_Hook(CCreateMultiplayerGameDialog_ctor);
+	Uninstall_Hook(CTaskBar_ctor);
 	Uninstall_Hook(COptionsDialog_ctor);
 	Uninstall_Hook(COptionsSubVideo_ApplyVidSettings);
 	Uninstall_Hook(RichText_InsertChar);

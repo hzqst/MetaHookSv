@@ -15,7 +15,6 @@
 #include "message.h"
 #include "privatefuncs.h"
 #include "exportfuncs.h"
-#include <stdexcept>
 
 using namespace vgui;
 

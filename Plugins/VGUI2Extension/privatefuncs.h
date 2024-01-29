@@ -53,6 +53,8 @@ typedef struct
 	void *(__fastcall*COptionsSubAudio_ctor)(void *pthis, int dummy, void *parent);
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings)(void *pthis, int dummy, bool bForceRestart);
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings_HL25)(void *pthis, int dummy);
+	void*(__fastcall* CTaskBar_ctor)(void* pthis, int dummy, void* parent, const char* panelName);
+	void (__fastcall* CTaskBar_OnCommand)(void* pthis, int dummy, const char* command);
 	void* (__fastcall *PropertySheet_HasHotkey)(void* pthis, int dummy, wchar_t key);
 	void* (__fastcall *FocusNavGroup_GetCurrentFocus)(void* pthis, int dummy);
 
