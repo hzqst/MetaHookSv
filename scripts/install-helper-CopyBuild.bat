@@ -32,13 +32,11 @@ if "%LauncherMod%"=="svencoop" (
 
         mkdir "%GameDir%\%LauncherMod%_hidpi\"
         xcopy "%SolutionDir%Build\svencoop_hidpi" "%GameDir%\%LauncherMod%_hidpi\" /y /e
-        xcopy "%SolutionDir%Build\valve_hl25_hidpi" "%GameDir%\%LauncherMod%_hidpi\" /y /e
 
     ) else (
 
         mkdir "%GameDir%\%LauncherMod%_hidpi\"
         xcopy "%SolutionDir%Build\svencoop_hidpi" "%GameDir%\%LauncherMod%_hidpi\" /y /e
-        xcopy "%SolutionDir%Build\valve_hidpi" "%GameDir%\%LauncherMod%_hidpi\" /y /e
 
     )
 
@@ -73,6 +71,8 @@ if exist "%GameDir%\%LauncherMod%\metahook\configs\plugins_goldsrc.lst" del "%Ga
 if exist "%GameDir%\%LauncherMod%\metahook\configs\plugins_svencoop.lst" del "%GameDir%\%LauncherMod%\metahook\configs\plugins_svencoop.lst"
 if exist "%GameDir%\%LauncherMod%\metahook\configs\plugins_svencoop_avx2.lst" del "%GameDir%\%LauncherMod%\metahook\configs\plugins_svencoop_avx2.lst"
 if exist "%GameDir%\FreeImage.dll" del "%GameDir%\FreeImage.dll"
+if exist "%GameDir%\%LauncherMod%_hidpi\resource\CreateMultiplayerGameDialog.res" del "%GameDir%\%LauncherMod%_hidpi\resource\CreateMultiplayerGameDialog.res"
+if exist "%GameDir%\%LauncherMod%_hidpi\resource\OptionsDialog.res" del "%GameDir%\%LauncherMod%_hidpi\resource\OptionsDialog.res"
 
 echo -----------------------------------------------------
 echo Make sure that all plugins you want has been added into the plugins.lst
