@@ -68,9 +68,6 @@
     <ClCompile Include="$(SolutionDir)include\SourceSDK\filesystem_helpers.cpp">
       <Filter>SourceSDK</Filter>
     </ClCompile>
-    <ClCompile Include="$(SolutionDir)include\SourceSDK\InputWin32.cpp">
-      <Filter>SourceSDK</Filter>
-    </ClCompile>
     <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\characterset.cpp">
       <Filter>SourceSDK\tier1</Filter>
     </ClCompile>

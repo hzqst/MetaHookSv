@@ -1324,91 +1324,102 @@ void TextEntry::CreateEditMenu()
 	}
 	
 
-	if ( m_bAllowNonAsciiCharacters )
+	if (m_bAllowNonAsciiCharacters)
 	{
-		IInput::LanguageItem *langs = NULL;
+		LanguageItem* langs = NULL;
 
-		int count = input()->GetIMELanguageList( NULL, 0 );
-		if ( count > 0 )
+		int count = input()->GetIMELanguageList(NULL, 0);
+		if (count > 0)
 		{
-			langs = new IInput::LanguageItem[ count ];
-			input()->GetIMELanguageList( langs, count );
+			langs = new LanguageItem[count];
+			input()->GetIMELanguageList(langs, count);
 
 			// Create a submenu
-			Menu *subMenu = new Menu( this, "LanguageMenu" );
+			Menu* subMenu = new Menu(this, "LanguageMenu");
 
-			subMenu->SetFont( _font );
+			subMenu->SetFont(_font);
 
-			for ( int i = 0; i < count; ++i )
+			for (int i = 0; i < count; ++i)
 			{
-				int id = subMenu->AddCheckableMenuItem( "Language", UnlocalizeUnicode( langs[ i ].menuname ), new KeyValues( "DoLanguageChanged", "handle", langs[ i ].handleValue ), this );
-				if ( langs[ i ].active )
+				int id = subMenu->AddCheckableMenuItem("Language", UnlocalizeUnicode(langs[i].menuname), new KeyValues("DoLanguageChanged", "handle", langs[i].handleValue), this);
+				if (langs[i].active)
 				{
-					subMenu->SetMenuItemChecked( id, true );
+					subMenu->SetMenuItemChecked(id, true);
 				}
 			}
 
-			m_pEditMenu->AddCascadingMenuItem( "Language", "#TextEntry_Language", "", this, subMenu );
+			m_pEditMenu->AddCascadingMenuItem("Language", "#TextEntry_Language", "", this, subMenu);
+		}
 
+		ConversionModeItem* modes = NULL;
+
+		count = input()->GetIMEConversionModes(NULL, 0);
+		// if count == 0 then native mode is the only mode...
+		if (count > 0)
+		{
+			modes = new ConversionModeItem[count];
+			input()->GetIMEConversionModes(modes, count);
+
+			// Create a submenu
+			Menu* subMenu = new Menu(this, "ConversionModeMenu");
+
+			subMenu->SetFont(_font);
+
+			for (int i = 0; i < count; ++i)
+			{
+				int id = subMenu->AddCheckableMenuItem("ConversionMode", UnlocalizeUnicode(modes[i].menuname), new KeyValues("DoConversionModeChanged", "handle", modes[i].handleValue), this);
+				
+				if (modes[i].active)
+				{
+					subMenu->SetMenuItemChecked(id, true);
+				}
+			}
+
+			m_pEditMenu->AddCascadingMenuItem("ConversionMode", "#TextEntry_ConversionMode", "", this, subMenu);
+		}
+
+		SentenceModeItem* sentencemodes = NULL;
+
+		count = input()->GetIMESentenceModes(NULL, 0);
+		// if count == 0 then native mode is the only mode...
+		if (count > 0)
+		{
+			sentencemodes = new SentenceModeItem[count];
+			input()->GetIMESentenceModes(sentencemodes, count);
+
+			// Create a submenu
+			Menu* subMenu = new Menu(this, "SentenceModeMenu");
+
+			subMenu->SetFont(_font);
+
+			for (int i = 0; i < count; ++i)
+			{
+				int id = subMenu->AddCheckableMenuItem("SentenceMode", UnlocalizeUnicode(sentencemodes[i].menuname), new KeyValues("DoConversionModeChanged", "handle", modes[i].handleValue), this);
+				if (modes[i].active)
+				{
+					subMenu->SetMenuItemChecked(id, true);
+				}
+			}
+
+			m_pEditMenu->AddCascadingMenuItem("SentenceMode", "#TextEntry_SentenceMode", "", this, subMenu);
+		}
+
+		if (langs)
+		{
 			delete[] langs;
 		}
 
-		IInput::ConversionModeItem *modes = NULL;
-
-		count = input()->GetIMEConversionModes( NULL, 0 );
-		// if count == 0 then native mode is the only mode...
-		if ( count > 0 )
+		if (modes)
 		{
-			modes = new IInput::ConversionModeItem[ count ];
-			input()->GetIMEConversionModes( modes, count );
-
-			// Create a submenu
-			Menu *subMenu = new Menu( this, "ConversionModeMenu" );
-
-			subMenu->SetFont( _font );
-
-			for ( int i = 0; i < count; ++i )
-			{
-				int id = subMenu->AddCheckableMenuItem( "ConversionMode", UnlocalizeUnicode( modes[ i ].menuname ), new KeyValues( "DoConversionModeChanged", "handle", modes[ i ].handleValue ), this );
-				if ( modes[ i ].active )
-				{
-					subMenu->SetMenuItemChecked( id, true );
-				}
-			}
-
-			m_pEditMenu->AddCascadingMenuItem( "ConversionMode", "#TextEntry_ConversionMode", "", this, subMenu );
-
 			delete[] modes;
 		}
 
-		IInput::SentenceModeItem *sentencemodes = NULL;
-
-		count = input()->GetIMESentenceModes( NULL, 0 );
-		// if count == 0 then native mode is the only mode...
-		if ( count > 0 )
+		if (sentencemodes)
 		{
-			sentencemodes = new IInput::SentenceModeItem[ count ];
-			input()->GetIMESentenceModes( sentencemodes, count );
-
-			// Create a submenu
-			Menu *subMenu = new Menu( this, "SentenceModeMenu" );
-
-			subMenu->SetFont( _font );
-
-			for ( int i = 0; i < count; ++i )
-			{
-				int id = subMenu->AddCheckableMenuItem( "SentenceMode", UnlocalizeUnicode( sentencemodes[ i ].menuname ), new KeyValues( "DoConversionModeChanged", "handle", modes[ i ].handleValue ), this );
-				if ( modes[ i ].active )
-				{
-					subMenu->SetMenuItemChecked( id, true );
-				}
-			}
-
-			m_pEditMenu->AddCascadingMenuItem( "SentenceMode", "#TextEntry_SentenceMode", "", this, subMenu );
-
 			delete[] sentencemodes;
 		}
 	}
+
 	
 
 	m_pEditMenu->SetVisible(false);

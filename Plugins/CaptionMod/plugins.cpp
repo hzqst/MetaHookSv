@@ -117,9 +117,9 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 void IPluginsV4::ExitGame(int iResult)
 {
-	BaseUI_UninstallHooks();
 	ClientVGUI_UninstallHooks();
 	GameUI_UninstallHooks();
+	BaseUI_UninstallHooks();
 
 	VGUI2Extension_Shutdown();
 }

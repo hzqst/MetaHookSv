@@ -45,6 +45,7 @@ typedef struct
 	void(__fastcall* GameUI_Panel_Init)(void* pthis, int dummy, int x, int y, int w, int h);
 	void(__fastcall* GameUI_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
 	void *(__fastcall* Sheet_ctor)(void* pthis, int dummy, void* parent, const char *panelName);
+	int offset_propertySheet;
 	//void *(__fastcall* QueryBox_ctor)(void* pthis, int dummy, const char* title, const char* queryText, void* parent);
 	void *(__fastcall* CCreateMultiplayerGameDialog_ctor)(void* pthis, int dummy, void* parent);
 	void *(__fastcall* CGameConsoleDialog_ctor)(void* pthis, int dummy);
@@ -97,8 +98,6 @@ extern int *cszrawsentences;
 extern char*(*hostparam_basedir);
 
 extern HWND g_MainWnd;
-extern WNDPROC g_MainWndProc;
-
 extern char m_szCurrentGameLanguage[128];
 
 extern private_funcs_t gPrivateFuncs;
@@ -125,7 +124,6 @@ void GameUI_FillAddress(void);
 void GameUI_InstallHooks(void);
 void GameUI_UninstallHooks(void);
 void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc);
-void ClientVGUI_Shutdown(void);
 void VGUI1_InstallHooks(void);
 void VGUI1_Shutdown(void);
 void Surface_InstallHooks(void);

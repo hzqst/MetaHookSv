@@ -50,7 +50,8 @@ public:
     DEFINE_VGUI2EXTENSION_CALLBACK_SIMPLE(Start, struct cl_enginefuncs_s* engineFuncs, int interfaceVersion);
     DEFINE_VGUI2EXTENSION_CALLBACK_SIMPLE(Shutdown);
     DEFINE_VGUI2EXTENSION_CALLBACK(Key_Event, int& down, int& keynum, const char*& pszCurrentBinding);
-    DEFINE_VGUI2EXTENSION_CALLBACK(CallEngineSurfaceProc, void* &pevent, void* &userData);
+    DEFINE_VGUI2EXTENSION_CALLBACK(CallEngineSurfaceAppProc, void* &pevent, void* &userData);
+    DEFINE_VGUI2EXTENSION_CALLBACK(CallEngineSurfaceWndProc, void* &hwnd, unsigned int &msg, unsigned int &wparam, long &lparam);
     DEFINE_VGUI2EXTENSION_CALLBACK(Paint, int& x, int& y, int& right, int& bottom);
     DEFINE_VGUI2EXTENSION_CALLBACK_NOARG(HideGameUI);
     DEFINE_VGUI2EXTENSION_CALLBACK_NOARG(ActivateGameUI);
@@ -158,4 +159,4 @@ public:
 
 IVGUI2Extension* VGUI2Extension();
 
-#define VGUI2_EXTENSION_INTERFACE_VERSION "VGUI2_Extension_API_003"
+#define VGUI2_EXTENSION_INTERFACE_VERSION "VGUI2_Extension_API_004"

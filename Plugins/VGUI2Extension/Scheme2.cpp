@@ -34,7 +34,7 @@ bool CSchemeManager::BitmapHandleSearchFunc(const CachedBitmapHandle_t &lhs, con
 
 static CSchemeManager g_SchemeManagerNew;
 
-ISchemeManager2* g_pVGuiSchemeManager = &g_SchemeManagerNew;
+ISchemeManager2* g_pVGuiSchemeManager2 = &g_SchemeManagerNew;
 
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CSchemeManager, ISchemeManager2, VGUI_SCHEME2_INTERFACE_VERSION, g_SchemeManagerNew);
 

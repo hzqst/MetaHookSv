@@ -23,7 +23,7 @@ using namespace vgui;
 
 static CSurface2 s_Surface2;
 
-vgui::ISurface2 *g_pVGuiSurface = &s_Surface2;
+vgui::ISurface2 *g_pVGuiSurface2 = &s_Surface2;
 
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CSurface2, ISurface2, VGUI_SURFACE2_INTERFACE_VERSION, s_Surface2);
 

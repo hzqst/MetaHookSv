@@ -818,14 +818,7 @@ void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel*
 {
 	auto result = gPrivateFuncs.COptionsDialog_ctor(pthis, dummy, parent);
 
-	int offset_propertySheet = 272;
-
-	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		offset_propertySheet = 280;
-	}
-
-	vgui::Panel* _propertySheet = *(vgui::Panel**)((PUCHAR)pthis + offset_propertySheet);
+	vgui::Panel* _propertySheet = *(vgui::Panel**)((PUCHAR)pthis + gPrivateFuncs.offset_propertySheet);
 
 	CGameUIOptionsDialogCtorCallbackContext CallbackContext(pthis, _propertySheet);
 
@@ -834,7 +827,7 @@ void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel*
 	VGUI2ExtensionInternal()->GameUI_COptionsDialog_ctor(&CallbackContext);
 
 	//Load res to make it proportional
-	LOAD_CONTROL_SETTINGS_FALLBACK("OptionsDialog.res");
+	LOAD_CONTROL_SETTINGS_FALLBACK(pthis, "OptionsDialog.res");
 
 	return result;
 }
@@ -1726,7 +1719,7 @@ void GameUI_FillAddress(void)
 		gPrivateFuncs.TextEntry_LayoutVerticalScrollBarSlider = (decltype(gPrivateFuncs.TextEntry_LayoutVerticalScrollBarSlider))ctx.ConsoleEntry_vftable[0x2C0 / 4];
 		gPrivateFuncs.TextEntry_GetStartDrawIndex = (decltype(gPrivateFuncs.TextEntry_GetStartDrawIndex))ctx.ConsoleEntry_vftable[0x2F8 / 4];
 	}
-#if 0
+
 	if (1)
 	{
 		PVOID Sheet_PushString = NULL;
@@ -1789,16 +1782,40 @@ void GameUI_FillAddress(void)
 		}
 		Sig_VarNotFound(Sheet_PushString);
 
-		g_pMetaHookAPI->DisasmRanges(Sheet_PushString, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		typedef struct
+		{
+			int instCount_Sheet_ctor;
+		}SheetCtorSearchContext;
+
+		SheetCtorSearchContext ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(Sheet_PushString, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 			auto pinst = (cs_insn*)inst;
+			auto ctx = (SheetCtorSearchContext*)context;
 
-			if (address[0] == 0xE8 && instCount <= 8)
+			if (!gPrivateFuncs.Sheet_ctor && address[0] == 0xE8 && instCount <= 8)
 			{
 				gPrivateFuncs.Sheet_ctor = (decltype(gPrivateFuncs.Sheet_ctor))GetCallAddress(address);
-
-				return TRUE;
+				ctx->instCount_Sheet_ctor = instCount;
 			}
+
+			if (!gPrivateFuncs.offset_propertySheet && instCount > ctx->instCount_Sheet_ctor && instCount < ctx->instCount_Sheet_ctor + 10)
+			{
+				if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base != 0 &&
+					pinst->detail->x86.operands[0].mem.disp >= 260 &&
+					pinst->detail->x86.operands[0].mem.disp <= 280 &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG)
+				{
+					gPrivateFuncs.offset_propertySheet = (decltype(gPrivateFuncs.offset_propertySheet))pinst->detail->x86.operands[0].mem.disp;
+				}
+			}
+
+			if (gPrivateFuncs.Sheet_ctor && gPrivateFuncs.offset_propertySheet)
+				return TRUE;
 
 			if (address[0] == 0xCC)
 				return TRUE;
@@ -1808,10 +1825,13 @@ void GameUI_FillAddress(void)
 
 			return FALSE;
 
-			}, 0, NULL);
+			}, 0, &ctx);
 
 		Sig_FuncNotFound(Sheet_ctor);
+	}
 
+	if(1)
+	{
 		typedef struct
 		{
 			PVOID GameUIRdataBase;
@@ -1868,7 +1888,6 @@ void GameUI_FillAddress(void)
 
 		gPrivateFuncs.PropertySheet_HasHotkey = (decltype(gPrivateFuncs.PropertySheet_HasHotkey))ctx.Sheet_vftable[73];
 	}
-#endif
 
 	if (1)
 	{
@@ -2122,7 +2141,7 @@ void GameUI_InstallHooks(void)
 
 	if (!hGameUI)
 	{
-		g_pMetaHookAPI->SysError("Failed to get GameUI.dll ");
+		Sys_Error("Failed to get GameUI.dll ");
 		return;
 	}
 
@@ -2130,7 +2149,7 @@ void GameUI_InstallHooks(void)
 
 	if (!GameUICreateInterface)
 	{
-		g_pMetaHookAPI->SysError("Failed to get interface factory from GameUI.dll");
+		Sys_Error("Failed to get interface factory from GameUI.dll");
 		return;
 	}
 
@@ -2138,7 +2157,7 @@ void GameUI_InstallHooks(void)
 
 	if (!g_pGameUI)
 	{
-		g_pMetaHookAPI->SysError("Failed to get interface \"" GAMEUI_INTERFACE_VERSION "\" from GameUI.dll");
+		Sys_Error("Failed to get interface \"" GAMEUI_INTERFACE_VERSION "\" from GameUI.dll");
 		return;
 	}
 
@@ -2195,6 +2214,17 @@ void GameUI_InstallHooks(void)
 	Install_InlineHook(TextEntry_OnKeyCodeTyped);
 	Install_InlineHook(TextEntry_LayoutVerticalScrollBarSlider);
 	Install_InlineHook(TextEntry_GetStartDrawIndex);
+
+	if (gPrivateFuncs.PropertySheet_HasHotkey)
+	{
+		Install_InlineHook(PropertySheet_HasHotkey);
+	}
+
+	if (gPrivateFuncs.FocusNavGroup_GetCurrentFocus)
+	{
+		Install_InlineHook(FocusNavGroup_GetCurrentFocus);
+	}
+
 }
 
 void GameUI_UninstallHooks(void)
@@ -2202,16 +2232,21 @@ void GameUI_UninstallHooks(void)
 	Uninstall_Hook(GameUI_Panel_Init);
 	Uninstall_Hook(CGameConsoleDialog_ctor);
 	Uninstall_Hook(CCreateMultiplayerGameDialog_ctor);
+
 	Uninstall_Hook(CTaskBar_ctor);
 	Uninstall_Hook(KeyValues_LoadFromFile);
+
 	Uninstall_Hook(COptionsDialog_ctor);
 	Uninstall_Hook(COptionsSubVideo_ApplyVidSettings);
+
 	Uninstall_Hook(RichText_InsertChar);
 	Uninstall_Hook(RichText_InsertStringW);
+
 	Uninstall_Hook(RichText_OnThink);
 	Uninstall_Hook(TextEntry_OnKeyCodeTyped);
 	Uninstall_Hook(TextEntry_LayoutVerticalScrollBarSlider);
 	Uninstall_Hook(TextEntry_GetStartDrawIndex);
+
 	Uninstall_Hook(PropertySheet_HasHotkey);
 	Uninstall_Hook(FocusNavGroup_GetCurrentFocus);
 }

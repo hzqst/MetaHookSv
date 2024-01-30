@@ -202,11 +202,24 @@ public:
 		}
 	}
 
-	void BaseUI_CallEngineSurfaceProc(void*& pevent, void*& userData, VGUI2Extension_CallbackContext* CallbackContext) override
+	void BaseUI_CallEngineSurfaceAppProc(void*& pevent, void*& userData, VGUI2Extension_CallbackContext* CallbackContext) override
 	{
 		for (auto it = m_BaseUICallbacks.begin(); it != m_BaseUICallbacks.end(); ++it)
 		{
-			(*it)->CallEngineSurfaceProc(pevent, userData, CallbackContext);
+			(*it)->CallEngineSurfaceAppProc(pevent, userData, CallbackContext);
+
+			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
+			{
+				return;
+			}
+		}
+	}
+
+	void BaseUI_CallEngineSurfaceWndProc(void* &hwnd, unsigned int &msg, unsigned int &wparam, long &lparam, VGUI2Extension_CallbackContext* CallbackContext) override
+	{
+		for (auto it = m_BaseUICallbacks.begin(); it != m_BaseUICallbacks.end(); ++it)
+		{
+			(*it)->CallEngineSurfaceWndProc(hwnd, msg, wparam, lparam, CallbackContext);
 
 			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
 			{

@@ -338,5 +338,8 @@ public:
 
 static VPanelWrapper g_Panel;
 
+//TODO: FIX ME!!!
+vgui::IPanel2 *g_pVGuiPanel2 = NULL;
+
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(VPanelWrapper, IPanel, VGUI_PANEL_INTERFACE_VERSION, g_Panel);
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(VPanelWrapper, IPanel2, VGUI_PANEL2_INTERFACE_VERSION, g_Panel);

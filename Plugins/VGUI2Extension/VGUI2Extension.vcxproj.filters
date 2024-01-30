@@ -71,9 +71,6 @@
     <ClCompile Include="$(SolutionDir)include\SourceSDK\filesystem_helpers.cpp">
       <Filter>SourceSDK</Filter>
     </ClCompile>
-    <ClCompile Include="$(SolutionDir)include\SourceSDK\InputWin32.cpp">
-      <Filter>SourceSDK</Filter>
-    </ClCompile>
     <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\characterset.cpp">
       <Filter>SourceSDK\tier1</Filter>
     </ClCompile>
@@ -452,6 +449,9 @@
     <ClCompile Include="EngineSurfaceHook.cpp">
       <Filter>EngineSurface</Filter>
     </ClCompile>
+    <ClCompile Include="InputWin32.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="enginedef.h">
@@ -473,9 +473,6 @@
       <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="FontTextureCache.h">
-      <Filter>VGUI2</Filter>
-    </ClInclude>
-    <ClInclude Include="vgui_internal.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="Win32Font.h">

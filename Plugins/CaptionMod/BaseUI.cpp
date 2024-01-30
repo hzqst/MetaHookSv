@@ -11,13 +11,7 @@
 
 IGameUIFuncs* gameuifuncs = NULL;
 
-extern vgui::ISurface* g_pSurface;
-extern vgui::ISurface_HL25* g_pSurface_HL25;
-extern vgui::ISchemeManager* g_pScheme;
-extern vgui::ISchemeManager_HL25* g_pScheme_HL25;
 extern IKeyValuesSystem* g_pKeyValuesSystem;
-extern IEngineSurface* staticSurface;
-extern IEngineSurface_HL25* staticSurface_HL25;
 
 namespace vgui
 {
@@ -40,23 +34,8 @@ public:
 		{
 			CreateInterfaceFn fnVGUI2CreateInterface = Sys_GetFactory(hVGUI2);
 
-			if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-				g_pScheme_HL25 = (vgui::ISchemeManager_HL25*)fnVGUI2CreateInterface(VGUI_SCHEME_INTERFACE_VERSION, NULL);
-			else
-				g_pScheme = (vgui::ISchemeManager*)fnVGUI2CreateInterface(VGUI_SCHEME_INTERFACE_VERSION, NULL);
-
 			g_pKeyValuesSystem = (IKeyValuesSystem*)fnVGUI2CreateInterface(KEYVALUESSYSTEM_INTERFACE_VERSION, NULL);
 		}
-
-		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-			g_pSurface_HL25 = (vgui::ISurface_HL25*)factories[0](VGUI_SURFACE_INTERFACE_VERSION, NULL);
-		else
-			g_pSurface = (vgui::ISurface*)factories[0](VGUI_SURFACE_INTERFACE_VERSION, NULL);
-
-		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-			staticSurface_HL25 = (IEngineSurface_HL25*)factories[0](ENGINE_SURFACE_VERSION, NULL);
-		else
-			staticSurface = (IEngineSurface*)factories[0](ENGINE_SURFACE_VERSION, NULL);
 	}
 
 	void Start(struct cl_enginefuncs_s* engineFuncs, int interfaceVersion) override
@@ -74,7 +53,12 @@ public:
 
 	}
 
-	void CallEngineSurfaceProc(void*& pevent, void*& userData, VGUI2Extension_CallbackContext* CallbackContext) override
+	void CallEngineSurfaceAppProc(void*& pevent, void*& userData, VGUI2Extension_CallbackContext* CallbackContext) override
+	{
+
+	}
+
+	void CallEngineSurfaceWndProc(void*& hwnd, unsigned int& msg, unsigned int& wparam, long& lparam, VGUI2Extension_CallbackContext* CallbackContext) override
 	{
 
 	}
@@ -113,7 +97,7 @@ void BaseUI_InstallHooks(void)
 
 	if (!fnCreateInterface)
 	{
-		g_pMetaHookAPI->SysError("Failed to get engine factory.");
+		Sys_Error("Failed to get engine factory.");
 		return;
 	}
 
@@ -121,7 +105,7 @@ void BaseUI_InstallHooks(void)
 	
 	if (!fnCreateInterface)
 	{
-		g_pMetaHookAPI->SysError("Failed to get interface \"" VENGINE_GAMEUIFUNCS_VERSION "\" from engine.");
+		Sys_Error("Failed to get interface \"" VENGINE_GAMEUIFUNCS_VERSION "\" from engine.");
 		return;
 	}
 

@@ -34,6 +34,7 @@ namespace vgui
 	class ISurface2;
 	class IVGui;
 	class IInput;
+	class IInput2;
 	class IPanel;
 	class ILocalize;
 	class ISchemeManager;
@@ -53,11 +54,13 @@ namespace vgui
 extern IStudioRender *g_pStudioRender;
 extern IStudioRender *studiorender;
 extern IMatSystemSurface *g_pMatSystemSurface;
-extern vgui::IInput *g_pVGuiInput;
+extern vgui::IInput*g_pVGuiInput;
+extern vgui::IInput2*g_pVGuiInput2;
 extern vgui::IVGui *g_pVGui;
 extern vgui::IPanel *g_pVGuiPanel;
 extern vgui::ILocalize *g_pVGuiLocalize;
-extern vgui::ISchemeManager2*g_pVGuiSchemeManager;
+extern vgui::ISchemeManager* g_pVGuiSchemeManager;
+extern vgui::ISchemeManager2*g_pVGuiSchemeManager2;
 extern vgui::ISystem *g_pVGuiSystem;
 extern IDataCache *g_pDataCache;	// FIXME: Should IDataCache be in tier2?
 extern IMDLCache *g_pMDLCache;

@@ -33,18 +33,37 @@
 #include <vgui/KeyCode.h>
 
 #ifdef VGUI_USE_SURFACE2
-#include <ISurface2.h>
+#include <vgui/ISurface2.h>
 #endif
 
 #ifdef VGUI_USE_SCHEME2
-#include <IScheme2.h>
+#include <vgui/IScheme2.h>
+#endif
+
+#ifdef VGUI_USE_INPUT2
+#include <vgui/IInput2.h>
 #endif
 
 extern IFileSystem *g_pFullFileSystem;
 
-extern vgui::IInput *g_pVGuiInput;
-extern vgui::ISchemeManager2 * g_pVGuiSchemeManager;
-extern vgui::ISurface2 *g_pVGuiSurface;
+#ifdef VGUI_USE_INPUT2
+extern vgui::IInput2 *g_pVGuiInput2;
+#else
+extern vgui::IInput* g_pVGuiInput;
+#endif
+
+#ifdef VGUI_USE_SCHEME2
+extern vgui::ISchemeManager2 * g_pVGuiSchemeManager2;
+#else
+extern vgui::ISchemeManager* g_pVGuiSchemeManager;
+#endif
+
+#ifdef VGUI_USE_SURFACE2
+extern vgui::ISurface2 *g_pVGuiSurface2;
+#else
+extern vgui::ISurface* g_pVGuiSurface;
+#endif
+
 extern vgui::ISystem *g_pVGuiSystem;
 extern vgui::IVGui *g_pVGui;
 extern vgui::IPanel *g_pVGuiPanel;
@@ -58,10 +77,6 @@ namespace vgui
 // interfaces (listed below) are first attempted to be loaded from primaryProvider, then secondaryProvider
 // moduleName should be the name of the module that this instance of the vgui_controls has been compiled into
 bool VGui_InitInterfacesList( const char *moduleName, CreateInterfaceFn *factoryList, int numFactories );
-
-void SetOverrideControlsModuleName(const char* pszNewName);
-
-const char* GetOverrideControlsModuleName();
 
 // returns the name of the module as specified above
 const char *GetControlsModuleName();
@@ -80,27 +95,51 @@ class IVGui;
 //-----------------------------------------------------------------------------
 
 // #include <vgui/IInput.h>
-inline vgui::IInput *input()
+#ifdef VGUI_USE_INPUT2
+inline vgui::IInput2 *input()
+{
+	return g_pVGuiInput2;
+}
+inline vgui::IInputInternal* inputinternal()
+{
+	return (vgui::IInputInternal*)g_pVGuiInput2;
+}
+#else
+inline vgui::IInput* input()
 {
 	return g_pVGuiInput;
 }
-
-inline vgui::IInputInternal *inputinternal()
+inline vgui::IInputInternal* inputinternal()
 {
-	return (vgui::IInputInternal *)g_pVGuiInput;
+	return (vgui::IInputInternal*)g_pVGuiInput;
 }
+#endif
 
 // #include <vgui/IScheme.h>
+#ifdef VGUI_USE_SCHEME2
 inline vgui::ISchemeManager2 *scheme()
+{
+	return g_pVGuiSchemeManager2;
+}
+#else
+inline vgui::ISchemeManager* scheme()
 {
 	return g_pVGuiSchemeManager;
 }
+#endif
 
 // #include <vgui/ISurface2.h>
+#ifdef VGUI_USE_SURFACE2
 inline vgui::ISurface2 *surface()
+{
+	return g_pVGuiSurface2;
+}
+#else
+inline vgui::ISurface* surface()
 {
 	return g_pVGuiSurface;
 }
+#endif
 
 // #include <vgui/ISystem.h>
 inline vgui::ISystem *system()

@@ -151,7 +151,7 @@ public:
 			{
 				if (!vgui::localize()->AddFile(g_pFileSystem, "captionmod/gameui_english.txt"))
 				{
-					g_pMetaHookAPI->SysError("Failed to load captionmod/gameui_english.txt");
+					Sys_Error("Failed to load captionmod/gameui_english.txt");
 				}
 			}
 		}
@@ -161,7 +161,7 @@ public:
 			{
 				if (!vgui::localize()->AddFile((IFileSystem*)g_pFileSystem_HL25, "captionmod/gameui_english.txt"))
 				{
-					g_pMetaHookAPI->SysError("Failed to load captionmod/gameui_english.txt");
+					Sys_Error("Failed to load captionmod/gameui_english.txt");
 				}
 			}
 		}
@@ -305,7 +305,8 @@ public:
 
 	void KeyValues_LoadFromFile(void*& pthis, IFileSystem*& pFileSystem, const char*& resourceName, const char*& pathId, VGUI2Extension_CallbackContext* CallbackContext)
 	{
-		if (CallbackContext->IsPost && !strcmp(resourceName, "resource/GameMenu.res"))
+#if 0
+		if (CallbackContext->IsPost && !stricmp(resourceName, "resource/GameMenu.res"))
 		{
 			bool *pRealReturnValue = (bool*)CallbackContext->pRealReturnValue;
 
@@ -326,8 +327,6 @@ public:
 				}
 				if (SectionQuit)
 				{
-					
-
 					auto NameSectionQuit = SectionQuit->GetName();
 					int iNameSectionQuit = atoi(NameSectionQuit);
 					if (iNameSectionQuit > 0)
@@ -373,6 +372,7 @@ public:
 				}
 			}
 		}
+#endif
 	}
 };
 

@@ -1,6 +1,8 @@
 #ifndef VGUI_IINPUTINTERNAL_H
 #define VGUI_IINPUTINTERNAL_H
 
+#include <vgui/IInput.h>
+
 namespace vgui
 {
 

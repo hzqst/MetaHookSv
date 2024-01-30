@@ -26,6 +26,9 @@ class VPanel;
 class Cursor;
 typedef unsigned long HCursor;
 typedef int HInputContext;
+
+#if 0
+
 #define VGUI_GCS_COMPREADSTR                 0x0001
 #define VGUI_GCS_COMPREADATTR                0x0002
 #define VGUI_GCS_COMPREADCLAUSE              0x0004
@@ -41,6 +44,7 @@ typedef int HInputContext;
 // style bit flags for WM_IME_COMPOSITION
 #define VGUI_CS_INSERTCHAR                   0x2000
 #define VGUI_CS_NOMOVECARET                  0x4000
+#endif
 
 class IInput : public IBaseInterface
 {
@@ -83,6 +87,7 @@ public:
 
 	virtual void GetCursorPosition(int &x, int &y) = 0;
 
+#if 0
 	void SetIMEWindow( void *hwnd );
 	void *GetIMEWindow();
 
@@ -163,7 +168,7 @@ public:
 	bool ShouldModalSubTreeReceiveMessages() const;
 	VPANEL GetModalSubTree(void);
 private:
-
+#endif
 };
 
 #define VGUI_INPUT_INTERFACE_VERSION "VGUI_Input004"

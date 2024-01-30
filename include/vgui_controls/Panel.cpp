@@ -29,6 +29,10 @@
 #include <vgui/IVGUI.h>
 #include <vgui/MouseCode.h>
 
+#ifdef VGUI_USE_INPUT2
+#include <vgui/IInput2.h>
+#endif
+
 #include "Controls.h"
 #include "Panel.h"
 #include "BuildGroup.h"

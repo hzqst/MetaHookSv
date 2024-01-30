@@ -14,7 +14,8 @@ public:
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(BaseUI_Start, struct cl_enginefuncs_s* engineFuncs, int interfaceVersion);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(BaseUI_Shutdown);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(BaseUI_Key_Event, int& down, int& keynum, const char*& pszCurrentBinding);
-    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(BaseUI_CallEngineSurfaceProc, void*& pevent, void*& userData);
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(BaseUI_CallEngineSurfaceAppProc, void*& pevent, void*& userData);
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(BaseUI_CallEngineSurfaceWndProc, void*& hwnd, unsigned int &msg, unsigned int& wparam, long& lparam);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(BaseUI_Paint, int& x, int& y, int& right, int& bottom);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(BaseUI_HideGameUI);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(BaseUI_ActivateGameUI);
