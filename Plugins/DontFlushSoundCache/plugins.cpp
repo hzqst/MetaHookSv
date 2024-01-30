@@ -26,6 +26,7 @@ int g_iEngineType = 0;
 PVOID g_dwClientBase = 0;
 DWORD g_dwClientSize = 0;
 
+static hook_t* g_phook_CClient_SoundEngine_FlushCache = NULL;
 
 void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
