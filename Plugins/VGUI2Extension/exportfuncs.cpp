@@ -307,13 +307,13 @@ char * NewV_strncpy(char *a1, const char *a2, size_t a3)
 	return gPrivateFuncs.V_strncpy(a1, a2, a3);
 }
 
-bool g_bIMEComposing = false;
-double g_flImeComposingTime = 0;
-
-double GetAbsoluteTime()
+double engine_GetAbsoluteTime()
 {
 	return gEngfuncs.GetAbsoluteTime();
 }
+
+extern bool g_bIMEComposing;
+extern double g_flImeComposingTime;
 
 LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -354,7 +354,7 @@ LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 	case WM_IME_STARTCOMPOSITION:
 	{
 		g_bIMEComposing = true;
-		g_flImeComposingTime = GetAbsoluteTime();
+		g_flImeComposingTime = engine_GetAbsoluteTime();
 		vgui::input()->OnIMEStartComposition();
 		return 1;
 	}
@@ -369,7 +369,7 @@ LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 	case WM_IME_ENDCOMPOSITION:
 	{
 		g_bIMEComposing = false;
-		g_flImeComposingTime = GetAbsoluteTime();
+		g_flImeComposingTime = engine_GetAbsoluteTime();
 		vgui::input()->OnIMEEndComposition();
 		return 1;
 	}

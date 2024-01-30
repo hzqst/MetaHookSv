@@ -245,8 +245,6 @@ public:
 
 	void DeleteTextureByID(int textureId) override;
 
-	bool IsIMEComposing() const override;
-	double GetImeComposingTime() const override;
 	double GetAbsoluteTime() const override;
 private:
 	float m_flAlphaMultiplier;

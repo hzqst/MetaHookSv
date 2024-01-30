@@ -3048,10 +3048,10 @@ void TextEntry::Backspace()
 	if (!IsEditable())
 		return;
 
-	if (surface()->IsIMEComposing())
+	if (input()->IsIMEComposing())
 		return;
 
-	if (surface()->GetAbsoluteTime() < surface()->GetImeComposingTime() + 0.1)
+	if (surface()->GetAbsoluteTime() < input()->GetImeComposingTime() + 0.1f)
 		return;
 
 	//if you are at the first position don't do anything

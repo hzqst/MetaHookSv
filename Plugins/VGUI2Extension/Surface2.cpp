@@ -1513,20 +1513,9 @@ void CSurface2::DeleteTextureByID(int textureId)
 	g_pSurface->DeleteTextureByID(textureId);
 }
 
-extern bool g_bIMEComposing;
-extern double g_flImeComposingTime;
-
-bool CSurface2::IsIMEComposing() const
-{
-	return g_bIMEComposing;
-}
-
-double CSurface2::GetImeComposingTime() const
-{
-	return g_flImeComposingTime;
-}
+double engine_GetAbsoluteTime();
 
 double CSurface2::GetAbsoluteTime() const
 {
-	return GetAbsoluteTime();
+	return engine_GetAbsoluteTime();
 }

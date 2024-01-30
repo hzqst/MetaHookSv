@@ -490,12 +490,6 @@
     <ClInclude Include="DpiManagerInternal.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="$(SolutionDir)include\Interface\VGUI\ISurface2.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="$(SolutionDir)include\Interface\VGUI\IScheme2.h">
-      <Filter>Header</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Interface\IVGUI2Extension.h">
       <Filter>Interface</Filter>
     </ClInclude>
@@ -503,6 +497,15 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Interface\IDpiManager.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SolutionDir)include\Interface\VGUI\IScheme2.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SolutionDir)include\Interface\VGUI\ISurface2.h">
+      <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Interface\VGUI\IInput2.h">
       <Filter>Interface</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1828,6 +1828,7 @@ void GameUI_FillAddress(void)
 			}, 0, &ctx);
 
 		Sig_FuncNotFound(Sheet_ctor);
+		Sig_FuncNotFound(offset_propertySheet);
 	}
 
 	if(1)

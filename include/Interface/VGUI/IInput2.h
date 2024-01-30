@@ -112,9 +112,11 @@ public:
 	virtual void OnKeyCodeUnhandled(int keyCode) = 0;
 	virtual bool ShouldModalSubTreeReceiveMessages() const = 0;
 	virtual VPANEL GetModalSubTree(void) = 0;
+	virtual bool IsIMEComposing() const = 0;
+	virtual double GetImeComposingTime() const = 0;
 };
 
-#define VGUI_INPUT2_INTERFACE_VERSION "VGUI_Input2_004"
+#define VGUI_INPUT2_INTERFACE_VERSION "VGUI_Input2_005"
 
 } // namespace vgui
 

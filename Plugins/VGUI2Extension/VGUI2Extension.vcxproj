@@ -288,6 +288,7 @@ $(GLEWCheckRequirements)</Command>
     <ClInclude Include="$(SolutionDir)include\Interface\VGUI\IScheme2.h" />
     <ClInclude Include="..\..\include\Interface\IDpiManager.h" />
     <ClInclude Include="..\..\include\Interface\IVGUI2Extension.h" />
+    <ClInclude Include="..\..\include\Interface\VGUI\IInput2.h" />
     <ClInclude Include="DpiManagerInternal.h" />
     <ClInclude Include="privatefuncs.h" />
     <ClInclude Include="enginedef.h" />

@@ -18,6 +18,9 @@
 extern vgui::IVGui *g_pVGui;
 extern vgui::IInput* g_pVGuiInput;
 
+bool g_bIMEComposing = false;
+double g_flImeComposingTime = 0;
+
 static bool(__fastcall* g_pfnCWin32Input_PostKeyMessage)(void* pthis, int, KeyValues* message);
 
 void InputWin32_FillAddress(void)
@@ -1328,6 +1331,16 @@ public:
 	bool PostKeyMessage(KeyValues* message) override
 	{
 		return g_pfnCWin32Input_PostKeyMessage(g_pVGuiInput, 0, message);
+	}
+
+	bool IsIMEComposing() const override
+	{
+		return g_bIMEComposing;
+	}
+
+	double GetImeComposingTime() const override
+	{
+		return g_flImeComposingTime;
 	}
 };
 
