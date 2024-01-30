@@ -9,7 +9,7 @@
 #include <vgui/ISystem.h>
 #include <vgui/IVGui.h>
 #include <vgui/ISurface.h>
-#include "Surface2.h"
+#include <ISurface2.h>
 
 #include <tier1/KeyValues.h>
 #include <tier1/mempool.h>

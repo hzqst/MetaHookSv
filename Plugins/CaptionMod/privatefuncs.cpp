@@ -70,12 +70,12 @@ static HMODULE g_hFMODEx = NULL;
 void FMOD_InstallHooks(HMODULE fmodex)
 {
 	gPrivateFuncs.FMOD_Sound_getLength = (decltype(gPrivateFuncs.FMOD_Sound_getLength))GetProcAddress(fmodex, "?getLength@Sound@FMOD@@QAG?AW4FMOD_RESULT@@PAII@Z");
-	Sig_FuncNotFound(FMOD_Sound_getLength);
-
 	gPrivateFuncs.FMOD_System_playSound = (decltype(gPrivateFuncs.FMOD_System_playSound))GetProcAddress(fmodex, "?playSound@System@FMOD@@QAG?AW4FMOD_RESULT@@W4FMOD_CHANNELINDEX@@PAVSound@2@_NPAPAVChannel@2@@Z");
-	Sig_FuncNotFound(FMOD_System_playSound);
 
-	Install_InlineHook(FMOD_System_playSound);
+	if (gPrivateFuncs.FMOD_System_playSound)
+	{
+		Install_InlineHook(FMOD_System_playSound);
+	}
 }
 
 void FMOD_UninstallHooks(HMODULE fmodex)
@@ -751,12 +751,22 @@ void Engine_FillAddress(void)
 
 void Client_FillAddress(void)
 {
+	if (!g_hClientDll)
+		g_hClientDll = g_pMetaHookAPI->GetClientModule();
+
+	if (!g_dwClientBase)
+		g_dwClientBase = g_pMetaHookAPI->GetClientBase();
+
+	if (!g_dwClientSize)
+		g_dwClientSize = g_pMetaHookAPI->GetClientSize();
+
 	ULONG ClientTextSize = 0;
 	PVOID ClientTextBase = ClientTextBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".text\0\0\0", &ClientTextSize);
 	
 	if (!ClientTextBase)
 	{
-		g_pMetaHookAPI->SysError("Failed to locate section \".text\" in client.dll!");
+		Sys_Error("Failed to locate section \".text\" in client.dll!");
+		return;
 	}
 
 	ULONG ClientDataSize = 0;
@@ -1047,7 +1057,6 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 			g_hClientDll = ctx->hModule;
 			g_dwClientBase = ctx->ImageBase;
 			g_dwClientSize = ctx->ImageSize;
-			Client_FillAddress();
 		}
 		else if (ctx->BaseDllName && ctx->hModule && !_wcsicmp(ctx->BaseDllName, L"fmodex.dll"))
 		{

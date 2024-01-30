@@ -597,7 +597,7 @@ void KeyValues::RecursiveSaveToFile(IFileSystem *filesystem, FileHandle_t f, CUt
 	INTERNALWRITE("}\r\n", 3);
 }
 
-KeyValues *KeyValues::FindKey(int keySymbol) const
+KeyValues *KeyValues::FindKey2(int keySymbol) const
 {
 	for (KeyValues *dat = m_pSub; dat != NULL; dat = dat->m_pPeer)
 	{
@@ -731,6 +731,74 @@ void KeyValues::AddSubKey(KeyValues *pSubkey)
 
 		pTempDat->SetNextKey(pSubkey);
 	}
+}
+
+bool KeyValues::AddSubKeyAfter(KeyValues* pSubkey, KeyValues* pAfterKey)
+{
+	if (m_pSub == NULL)
+	{
+		m_pSub = pSubkey;
+		return true;
+	}
+	else
+	{
+		KeyValues* pTempDat = m_pSub;
+
+		if (pTempDat == pAfterKey)
+		{
+			pSubkey->SetNextKey(pTempDat->GetNextKey());
+			pTempDat->SetNextKey(pSubkey);
+			return true;
+		}
+
+		while (pTempDat->GetNextKey() != NULL)
+		{
+			pTempDat = pTempDat->GetNextKey();
+
+			if (pTempDat == pAfterKey)
+			{
+				pSubkey->SetNextKey(pTempDat->GetNextKey());
+				pTempDat->SetNextKey(pSubkey);
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+bool KeyValues::AddSubKeyBefore(KeyValues* pSubkey, KeyValues* pBeforeKey)
+{
+	if (m_pSub == NULL)
+	{
+		m_pSub = pSubkey;
+		return true;
+	}
+	else
+	{
+		KeyValues* pTempDat = m_pSub;
+
+		if (pTempDat->GetNextKey() == pBeforeKey)
+		{
+			pSubkey->SetNextKey(pTempDat->GetNextKey());
+			pTempDat->SetNextKey(pSubkey);
+			return true;
+		}
+
+		while (pTempDat->GetNextKey() != NULL)
+		{
+			pTempDat = pTempDat->GetNextKey();
+
+			if (pTempDat && pTempDat->GetNextKey() == pBeforeKey)
+			{
+				pSubkey->SetNextKey(pTempDat->GetNextKey());
+				pTempDat->SetNextKey(pSubkey);
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 void KeyValues::RemoveSubKey(KeyValues *subKey)

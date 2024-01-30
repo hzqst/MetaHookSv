@@ -50,13 +50,13 @@ public:
 	HFont GetHDFont(const char* fontName, bool proportional, bool hd) override;
 
 public:
-	void Shutdown(bool full);
-	void LoadFromFile(VPANEL sizingPanel, const char* filename, const char* tag, KeyValues* inKeys);
-	const char* GetName(void) { return tag; }
-	const char* GetFileName(void) { return fileName; }
-	char const* GetFontName(const HFont& font);
-	void ReloadFontGlyphs(void);
-	VPANEL GetSizingPanel(void) { return m_SizingPanel; }
+	void Shutdown(bool full) override;
+	void LoadFromFile(VPANEL sizingPanel, const char* filename, const char* tag, KeyValues* inKeys) override;
+	const char* GetName(void) override { return tag; }
+	const char* GetFileName(void) override { return fileName; }
+	char const* GetFontName(const HFont& font) override;
+	void ReloadFontGlyphs(void) override;
+	VPANEL GetSizingPanel(void) override { return m_SizingPanel; }
 
 private:
 	const char* LookupSchemeSetting(const char* pchSetting);

@@ -11,3 +11,4 @@ void MH_DispatchLoadLdrDllNotificationCallback(PCUNICODE_STRING FullDllName, PCU
 void MH_RegisterDllLoaderNotificationCallback(LoadDllNotificationCallback callback);
 void MH_UnregisterDllLoaderNotificationCallback(LoadDllNotificationCallback callback);
 void MH_ClearDllLoaderNotificationCallback();
+bool MH_IsInLdrCriticalRegion();

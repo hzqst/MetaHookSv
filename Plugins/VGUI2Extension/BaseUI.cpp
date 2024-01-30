@@ -112,6 +112,7 @@ void CBaseUIProxy::Initialize(CreateInterfaceFn *factories, int count)
 	KeyValuesSystem_InstallHooks();
 	Surface_InstallHooks();
 	Scheme_InstallHooks();
+	GameUI_FillAddress();
 	GameUI_InstallHooks();
 	InputWin32_FillAddress();
 

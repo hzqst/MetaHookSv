@@ -146,7 +146,6 @@ PVOID MH_GetSectionByName(PVOID ImageBase, const char *SectionName, ULONG *Secti
 PVOID MH_ReverseSearchFunctionBegin(PVOID SearchBegin, DWORD SearchSize);
 PVOID MH_ReverseSearchFunctionBeginEx(PVOID SearchBegin, DWORD SearchSize, FindAddressCallback callback);
 void *MH_ReverseSearchPattern(void *pStartSearch, DWORD dwSearchLen, const char *pPattern, DWORD dwPatternLen);
-void MH_SysError(const char *fmt, ...);
 hook_t* MH_BlobIATHook(BlobHandle_t hBlob, const char* pszModuleName, const char* pszFuncName, void* pNewFuncAddr, void** pOrginalCall);
 
 typedef struct plugin_s
@@ -170,6 +169,46 @@ mh_enginesave_t gMetaSave = {0};
 
 extern metahook_api_t gMetaHookAPI_LegacyV2;
 extern metahook_api_t gMetaHookAPI;
+
+extern "C"
+{
+#define MAX_SYS_ERROR_LENGTH 4096
+
+	void MH_SysErrorWrapper(const char* fmt, ...);
+
+	void (*g_pfnSys_Error)(const char* fmt, ...) = NULL;
+
+	void MH_SysErrorInternal(const char* msg)
+	{
+#if 1
+		if (gMetaSave.pEngineFuncs)
+		{
+			if (gMetaSave.pEngineFuncs->pfnClientCmd)
+				gMetaSave.pEngineFuncs->pfnClientCmd("escape\n");
+		}
+#endif
+		MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
+		NtTerminateProcess((HANDLE)(-1), 0);
+	}
+
+	void MH_SysError(const char* fmt, ...)
+	{
+		char* msg = (char*)malloc(MAX_SYS_ERROR_LENGTH);
+
+		if (!msg)
+			return;
+
+		va_list argptr;
+
+		va_start(argptr, fmt);
+		_vsnprintf(msg, MAX_SYS_ERROR_LENGTH - 1, fmt, argptr);
+		va_end(argptr);
+
+		msg[MAX_SYS_ERROR_LENGTH - 1] = 0;
+
+		MH_SysErrorInternal(msg);
+	}
+}
 
 DWORD MH_LoadBlobFile(BYTE* pBuffer, void** pBlobFootPrint, void** pv, DWORD dwBufferSize)
 {
@@ -237,28 +276,6 @@ void MH_Cvar_DirectSet(cvar_t* var, char* value)
 bool MH_IsDebuggerPresent()
 {
 	return IsDebuggerPresent() ? true : false;
-}
-
-void MH_SysError(const char *fmt, ...)
-{
-	char msg[4096] = { 0 };
-
-	va_list argptr;
-
-	va_start(argptr, fmt);
-	_vsnprintf(msg, sizeof(msg) - 1, fmt, argptr);
-	va_end(argptr);
-
-	msg[sizeof(msg) - 1] = 0;
-
-	if (gMetaSave.pEngineFuncs)
-	{
-		if(gMetaSave.pEngineFuncs->pfnClientCmd)
-			gMetaSave.pEngineFuncs->pfnClientCmd("escape\n");
-	}
-
-	MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
-	NtTerminateProcess((HANDLE)(-1), 0);
 }
 
 cvar_callback_t MH_HookCvarCallback(const char *cvar_name, cvar_callback_t callback)
@@ -542,14 +559,7 @@ int MH_LoadPlugin(const std::string &filepath, const std::string &filename)
 			{
 				plug->iInterfaceVersion = 2;
 
-				//if (CommandLine()->CheckParm("-metahook_legacy_v2_api"))
-				//{
-					((IPluginsV2*)plug->pPluginAPI)->Init(&gMetaHookAPI_LegacyV2, &gInterface, &gMetaSave);
-				//}
-				//else
-				//{
-				//	((IPluginsV2*)plug->pPluginAPI)->Init(&gMetaHookAPI, &gInterface, &gMetaSave);
-				//}
+				((IPluginsV2*)plug->pPluginAPI)->Init(&gMetaHookAPI_LegacyV2, &gInterface, &gMetaSave);
 			}
 			else
 			{
@@ -950,6 +960,7 @@ void MH_ResetAllVars(void)
 	gClientUserMsgs = NULL;
 	g_pVideoMode = NULL;
 	g_pfnbuild_number = NULL;
+	g_pfnSys_Error = NULL;
 	g_pClientFactory = NULL;
 	g_pfnClientDLL_Init = NULL;
 	g_pfnCvar_DirectSet = NULL;
@@ -1107,6 +1118,37 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 		}
 	}
 
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+#define COULD_NOT_LINK_STRING_SIG_SVENGINE "Couldn't link client library function \"Initialize\"\n"
+		auto CouldNotLink_String = MH_SearchPattern((void*)g_dwEngineBase, g_dwEngineSize, COULD_NOT_LINK_STRING_SIG_SVENGINE, sizeof(COULD_NOT_LINK_STRING_SIG_SVENGINE) - 1);
+		if (CouldNotLink_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
+			*(DWORD*)(pattern + 1) = (DWORD)CouldNotLink_String;
+			auto CouldNotLink_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
+			if (CouldNotLink_PushString)
+			{
+				g_pfnSys_Error = (decltype(g_pfnSys_Error))MH_GetNextCallAddr((PUCHAR)CouldNotLink_PushString + 5, 1);
+			}
+		}
+	}
+	else
+	{
+#define COULD_NOT_LINK_STRING_SIG_GOLDSRC "could not link client.dll function Initialize\n\0"
+		auto CouldNotLink_String = MH_SearchPattern((void*)g_dwEngineBase, g_dwEngineSize, COULD_NOT_LINK_STRING_SIG_GOLDSRC, sizeof(COULD_NOT_LINK_STRING_SIG_GOLDSRC) - 1);
+		if (CouldNotLink_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
+			*(DWORD*)(pattern + 1) = (DWORD)CouldNotLink_String;
+			auto CouldNotLink_PushString = MH_SearchPattern(textBase, textSize, pattern, sizeof(pattern) - 1);
+			if (CouldNotLink_PushString)
+			{
+				g_pfnSys_Error = (decltype(g_pfnSys_Error))MH_GetNextCallAddr((PUCHAR)CouldNotLink_PushString + 5, 1);
+			}
+		}
+	}
+
 	if (1)
 	{
 #define CLDLL_INIT_STRING_SIG "ScreenShake"
@@ -1154,7 +1196,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 						return TRUE;
 
 					return FALSE;
-					});
+				});
 
 				if (ClientDll_Init_FunctionBase)
 				{

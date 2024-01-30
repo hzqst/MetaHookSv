@@ -4259,7 +4259,7 @@ void Panel::OnMessage(const KeyValues *params, VPANEL ifromPanel)
 		
 				case 1:
 				{
-					KeyValues *param1 = params->FindKey(pMap->firstParamSymbol);
+					KeyValues *param1 = params->FindKey2(pMap->firstParamSymbol);
 					if (!param1)
 					{
 						param1 = const_cast<KeyValues *>(params);
@@ -4319,12 +4319,12 @@ void Panel::OnMessage(const KeyValues *params, VPANEL ifromPanel)
 
 				case 2:
 				{
-					KeyValues *param1 = params->FindKey(pMap->firstParamSymbol);
+					KeyValues *param1 = params->FindKey2(pMap->firstParamSymbol);
 					if (!param1)
 					{
 						param1 = const_cast<KeyValues *>(params);
 					}
-					KeyValues *param2 = params->FindKey(pMap->secondParamSymbol);
+					KeyValues *param2 = params->FindKey2(pMap->secondParamSymbol);
 					if (!param2)
 					{
 						param2 = const_cast<KeyValues *>(params);
@@ -5031,12 +5031,14 @@ class CHFontProperty : public vgui::IPanelAnimationPropertyConverter
 public:
 	virtual void GetData( Panel *panel, KeyValues *kv, PanelAnimationMapEntry *entry )
 	{
-		vgui::IScheme *scheme = vgui::scheme()->GetIScheme( panel->GetScheme() );
-		Assert( scheme );
-		if ( scheme )
+		auto pScheme = vgui::scheme()->GetIScheme( panel->GetScheme() );
+		Assert(pScheme);
+		if (pScheme)
 		{
+			auto scheme2 = (IScheme2*)scheme;
+
 			void *data = ( void * )( (*entry->m_pfnLookup)( panel ) );
-			char const *fontName = scheme->GetFontName( *(HFont *)data );
+			char const *fontName = scheme2->GetFontName( *(HFont *)data );
 			kv->SetString( entry->name(), fontName );
 		}
 	}
@@ -6128,7 +6130,11 @@ CDragDropHelperPanel::CDragDropHelperPanel() : BaseClass( NULL, "DragDropHelper"
 	SetMouseInputEnabled( false );
 	SetKeyBoardInputEnabled( false );
 	// SetCursor( dc_none );
-	ipanel()->SetTopmostPopup( GetVPanel(), true );
+
+	if (ipanel2())
+	{
+		ipanel2()->SetTopmostPopup(GetVPanel(), true);
+	}
 	int w, h;
 	surface()->GetScreenSize( w, h );
 	SetBounds( 0, 0, w, h );
@@ -6243,8 +6249,11 @@ void CDragDropHelperPanel::RemovePanel( Panel *search )
 void Panel::FindDropTargetPanel_R( CUtlVector< VPANEL >& panelList, int x, int y, VPANEL check )
 {
 #if defined( VGUI_USEDRAGDROP )
-	if ( !ipanel()->IsFullyVisible( check ) )
-		return;
+	if (ipanel2())
+	{
+		if (!ipanel2()->IsFullyVisible(check))
+			return;
+	}
 
 	if ( ::ShouldHandleInputMessage( check ) && ipanel()->IsWithinTraverse( check, x, y, false ) )
 	{
@@ -6297,8 +6306,11 @@ Panel *Panel::FindDropTargetPanel()
 			if ( popup == helper )
 				continue;
 
-			if ( !ipanel()->IsFullyVisible( popup ) )
-				continue;
+			if (ipanel2())
+			{
+				if (!ipanel2()->IsFullyVisible(popup))
+					continue;
+			}
 
 			FindDropTargetPanel_R( hits, x, y, popup );
 		}

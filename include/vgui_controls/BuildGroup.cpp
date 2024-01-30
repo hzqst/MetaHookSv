@@ -32,7 +32,7 @@
 #include <vgui/ISystem.h>
 #include <vgui/IVGUI.h>
 #include <vgui/ISurface.h>
-#include "Surface2.h"
+#include <ISurface2.h>
 
 #include "BuildGroup.h"
 #include "Panel.h"

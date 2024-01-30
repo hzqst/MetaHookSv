@@ -56,7 +56,7 @@ typedef struct walk_context_s
 
 typedef struct refdef_s
 {
-	vrect_t *vrect;
+	vrect_GoldSrc_t *vrect;
 	vec3_t *vieworg;
 	vec3_t *viewangles;
 	color24 *ambientlight;

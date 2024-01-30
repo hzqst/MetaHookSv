@@ -55,7 +55,11 @@ void CClientVGUIProxy::Initialize(CreateInterfaceFn *factories, int count)
 {
 	m_pfnCClientVGUI_Initialize(this, 0, factories, count);
 
-	vgui::VGui_InitInterfacesList("VGUI2Extension", factories, count);
+	if (!vgui::VGui_InitInterfacesList("VGUI2Extension", factories, count))
+	{
+		Sys_Error("Failed to VGui_InitInterfacesList");
+		return;
+	}
 
 	VGUI2ExtensionInternal()->ClientVGUI_Initialize(factories, count);
 }
@@ -206,7 +210,11 @@ public:
 
 void NewClientVGUI::Initialize(CreateInterfaceFn *factories, int count)
 {
-	vgui::VGui_InitInterfacesList("VGUI2Extension", factories, count);
+	if (!vgui::VGui_InitInterfacesList("VGUI2Extension", factories, count))
+	{
+		Sys_Error("Failed to VGui_InitInterfacesList");
+		return;
+	}
 
 	VGUI2ExtensionInternal()->ClientVGUI_Initialize(factories, count);
 }

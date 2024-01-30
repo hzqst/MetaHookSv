@@ -4,9 +4,9 @@
 #include <vgui/IScheme.h>
 #include <vgui/IVGUI.h>
 #include <vgui/ISurface.h>
-#include "Surface2.h"
 #include <vgui/ILocalize.h>
 #include <vgui/KeyCode.h>
+#include <ISurface2.h>
 
 #include <tier1/KeyValues.h>
 

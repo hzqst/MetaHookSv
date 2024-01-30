@@ -92,7 +92,18 @@ int BoxOnPlaneSide(vec3_t emins, vec3_t emaxs, struct mplane_s *plane);
 
 void VectorRotate(const vec3_t in1, const float in2[3][4], vec3_t out);
 void VectorIRotate(const vec3_t in1, const float in2[3][4], vec3_t out);
-float anglemod(float a);
+
+inline void SinCos(float radians, float* sine, float* cosine)
+{
+	*sine = sinf(radians);
+	*cosine = cosf(radians);
+}
+
+inline float anglemod(float a)
+{
+	a = (360.f / 65536) * ((int)(a * (65536.f / 360.0f)) & 65535);
+	return a;
+}
 
 #define BOX_ON_PLANE_SIDE(emins, emaxs, p) \
 	(((p)->type < 3) ? \

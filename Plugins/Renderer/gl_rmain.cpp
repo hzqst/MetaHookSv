@@ -3953,7 +3953,7 @@ void R_BuildCubemap(cubemap_t *cubemap)
 {
 	gEngfuncs.Con_Printf("Building cubemap \"%s\" , cubemap size = %d\n", cubemap->name.c_str(), cubemap->size);
 
-	vrect_t saveVrect;
+	vrect_GoldSrc_t saveVrect;
 	memcpy(&saveVrect, &(*r_refdef.vrect), sizeof(vrect_t));
 
 	vec3_t viewangles_array[6] = {

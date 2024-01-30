@@ -87,7 +87,9 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	VGUI2Extension_Init();
 
 	BaseUI_InstallHooks();
+
 	ClientVGUI_InstallHooks();
+
 	GameUI_InstallHooks();
 
 	g_pMetaHookAPI->RegisterLoadDllNotificationCallback(DllLoadNotification);
@@ -109,6 +111,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->IN_Accumulate = IN_Accumulate;
 	pExportFunc->CL_CreateMove = CL_CreateMove;
 
+	Client_FillAddress();
 	Client_InstallHooks();
 }
 

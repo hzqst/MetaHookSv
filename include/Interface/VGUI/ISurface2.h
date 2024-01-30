@@ -245,6 +245,11 @@ public:
 	virtual void PrecacheFontCharacters( HFont font, wchar_t *pCharacters ) = 0;
 	virtual const char *GetResolutionKey( void ) const = 0;
 	virtual void DeleteTextureByID(int textureId) = 0;
+
+	//Added by hzqst
+	virtual bool IsIMEComposing() const = 0;
+	virtual double GetImeComposingTime() const = 0;
+	virtual double GetAbsoluteTime() const = 0;
 };
 
 }

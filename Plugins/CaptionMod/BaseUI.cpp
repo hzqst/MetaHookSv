@@ -7,9 +7,7 @@
 #include <IKeyValuesSystem.h>
 #include <IGameUIFuncs.h>
 #include <IVGUI2Extension.h>
-#include "vgui_internal.h"
-#include "exportfuncs.h"
-#include "privatefuncs.h"
+#include "plugins.h"
 
 IGameUIFuncs* gameuifuncs = NULL;
 
@@ -25,7 +23,6 @@ namespace vgui
 {
 	bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryList, int numFactories);
 }
-
 
 class CVGUI2Extension_BaseUICallbacks : public IVGUI2Extension_BaseUICallbacks
 {
@@ -69,9 +66,7 @@ public:
 
 	void Shutdown(void)
 	{
-		ClientVGUI_UninstallHooks();
 
-		GameUI_UninstallHooks();
 	}
 
 	void Key_Event(int& down, int& keynum, const char*& pszCurrentBinding, VGUI2Extension_CallbackContext* CallbackContext) override

@@ -31,7 +31,7 @@ void VGUI2Extension_Init()
 
 	if (!g_pVGUI2Extension)
 	{
-		Sys_Error("Could not get interface \" VGUI2_EXTENSION_INTERFACE_VERSION \" from VGUI2Extension.dll");
+		Sys_Error("Could not get interface \"" VGUI2_EXTENSION_INTERFACE_VERSION "\" from VGUI2Extension.dll");
 		return;
 	}
 
@@ -39,7 +39,7 @@ void VGUI2Extension_Init()
 
 	if (!g_pDpiManager)
 	{
-		Sys_Error("Could not get interface \" DPI_MANAGER_INTERFACE_VERSION \" from VGUI2Extension.dll");
+		Sys_Error("Could not get interface \"" DPI_MANAGER_INTERFACE_VERSION "\" from VGUI2Extension.dll");
 		return;
 	}
 
@@ -47,7 +47,7 @@ void VGUI2Extension_Init()
 
 	if (!g_pVGuiSurface)
 	{
-		Sys_Error("Could not get interface \" VGUI_SURFACE2_INTERFACE_VERSION \" from VGUI2Extension.dll");
+		Sys_Error("Could not get interface \"" VGUI_SURFACE2_INTERFACE_VERSION "\" from VGUI2Extension.dll");
 		return;
 	}
 
@@ -55,7 +55,7 @@ void VGUI2Extension_Init()
 
 	if (!g_pVGuiSchemeManager)
 	{
-		Sys_Error("Could not get interface \" VGUI_SCHEME2_INTERFACE_VERSION \" from VGUI2Extension.dll");
+		Sys_Error("Could not get interface \"" VGUI_SCHEME2_INTERFACE_VERSION "\" from VGUI2Extension.dll");
 		return;
 	}
 }

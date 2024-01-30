@@ -47,9 +47,9 @@ public:
 	// colors
 	virtual Color GetColor(const char *colorName, Color defaultColor) = 0;
 
-public:
-	const char *GetName(void);
-	char const *GetFontName(const HFont &font);
+//public:
+	//const char *GetName(void);
+	//char const *GetFontName(const HFont &font);
 };
 
 class IScheme_HL25 : public IScheme

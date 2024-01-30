@@ -46,6 +46,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -259,7 +260,14 @@
     <ClInclude Include="LoadBlob.h" />
     <ClInclude Include="sys.h" />
   </ItemGroup>
+  <ItemGroup>
+    <MASM Include="x86.asm">
+      <FileType>Document</FileType>
+      <UseSafeExceptionHandlers Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</UseSafeExceptionHandlers>
+    </MASM>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   </ImportGroup>
 </Project>

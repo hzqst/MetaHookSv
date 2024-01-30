@@ -73,6 +73,7 @@ typedef struct hook_s hook_t;
 #define LOAD_DLL_NOTIFICATION_IS_CLIENT		0x4
 #define LOAD_DLL_NOTIFICATION_IS_LOAD		0x8
 #define LOAD_DLL_NOTIFICATION_IS_UNLOAD		0x10
+#define LOAD_DLL_NOTIFICATION_IS_IN_CRIT_REGION		0x20
 
 typedef void* BlobHandle_t;
 

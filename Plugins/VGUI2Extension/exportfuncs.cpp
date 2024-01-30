@@ -3,9 +3,6 @@
 #include "privatefuncs.h"
 #include "DpiManagerInternal.h"
 
-//Steam API
-#include <steam_api.h>
-
 //VGUI2
 #include <vgui/VGUI.h>
 #include <vgui/ISurface.h>

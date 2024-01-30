@@ -933,7 +933,6 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 		if (ctx->BaseDllName && ctx->hModule && !_wcsicmp(ctx->BaseDllName, L"GameUI.dll"))
 		{
 			g_hGameUI = ctx->hModule;
-			GameUI_FillAddress(ctx->hModule);
 		}
 	}
 	else if (ctx->flags & LOAD_DLL_NOTIFICATION_IS_UNLOAD)

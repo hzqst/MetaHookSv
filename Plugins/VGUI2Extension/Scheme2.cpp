@@ -171,7 +171,7 @@ HScheme CSchemeManager::LoadSchemeFromFileEx(VPANEL sizingPanel, const char *fil
 		return 0;
 	}
 
-	CScheme *newScheme = new CScheme();
+	auto newScheme = new CScheme();
 
 	newScheme->LoadFromFile(sizingPanel, fileName, tag, data);
 

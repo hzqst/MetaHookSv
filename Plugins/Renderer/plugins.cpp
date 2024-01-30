@@ -1,6 +1,8 @@
 #include <metahook.h>
 #include "gl_local.h"
 #include "exportfuncs.h"
+#include "VGUI2ExtensionImport.h"
+
 #include <FreeImage.h>
 
 cl_exportfuncs_t gExportfuncs = {0};
@@ -45,7 +47,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	if (iVideoMode == 0)
 	{
-		g_pMetaHookAPI->SysError("Software mode is not supported.\nPlease add \"-gl\" in the launch parameters.");
+		Sys_Error("Software mode is not supported.\nPlease add \"-gl\" in the launch parameters.");
 	}
 
 	auto FreeImage_VersionString = FreeImage_GetVersion();
@@ -55,7 +57,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 		FreeImage_MinorVersion != FREEIMAGE_MINOR_VERSION ||
 		FreeImage_ReleaseSerial != FREEIMAGE_RELEASE_SERIAL)
 	{
-		g_pMetaHookAPI->SysError("FreeImage.dll version mismatch, expect \"%d.%d.%d\", got \"%d.%d.%d\" !", 
+		Sys_Error("FreeImage.dll version mismatch, expect \"%d.%d.%d\", got \"%d.%d.%d\" !", 
 			FREEIMAGE_MAJOR_VERSION, FREEIMAGE_MINOR_VERSION, FREEIMAGE_RELEASE_SERIAL, 
 			FreeImage_MajorVersion, FreeImage_MinorVersion, FreeImage_ReleaseSerial);
 	}
@@ -73,16 +75,15 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	g_dwEngineDataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".data\x0\x0\x0", &g_dwEngineDataSize);
 	g_dwEngineRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwEngineBase, ".rdata\x0\x0", &g_dwEngineRdataSize);
 
-	if (g_iEngineType != ENGINE_SVENGINE && g_iEngineType != ENGINE_GOLDSRC_BLOB && g_iEngineType != ENGINE_GOLDSRC && g_iEngineType != ENGINE_GOLDSRC_HL25)
-	{
-		g_pMetaHookAPI->SysError("Unsupported engine: %s, buildnum %d", g_pMetaHookAPI->GetEngineTypeName(), g_dwEngineBuildnum);
-	}
-
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 
 	R_FillAddress();
 	R_InstallHooks();
 	R_RedirectLegacyOpenGLTextureAllocation();
+
+	VGUI2Extension_Init();
+	BaseUI_InstallHooks();
+	GameUI_InstallHooks();
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
@@ -92,15 +93,15 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	if (iVideoMode == 0)
 	{
-		g_pMetaHookAPI->SysError("Software mode is not supported.\nPlease add \"-gl\" in the launch parameters.");
+		Sys_Error("Software mode is not supported.\nPlease add \"-gl\" in the launch parameters.");
 	}
 	if (iVideoMode == 2)
 	{
-		g_pMetaHookAPI->SysError("D3D mode is not supported.\nPlease add \"-gl\" in the launch parameters.");
+		Sys_Error("D3D mode is not supported.\nPlease add \"-gl\" in the launch parameters.");
 	}
 	if (bbp == 16)
 	{
-		g_pMetaHookAPI->SysError("16bbp mode is not supported.\nPlease add \"-32bpp\" in the launch parameters.");
+		Sys_Error("16bbp mode is not supported.\nPlease add \"-32bpp\" in the launch parameters.");
 	}
 
 	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
@@ -120,6 +121,9 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 void IPluginsV4::ExitGame(int iResult)
 {
+	BaseUI_UninstallHooks();
+	GameUI_UninstallHooks();
+	VGUI2Extension_Shutdown();
 	R_UninstallHooksForEngineDLL();
 }
 

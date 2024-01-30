@@ -23,6 +23,7 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
     MSBuild.exe MetaHook.sln "/target:Plugins\Renderer" /p:Configuration="Release_AVX2" /p:Platform="Win32"
     MSBuild.exe MetaHook.sln "/target:Plugins\BulletPhysics" /p:Configuration="Release" /p:Platform="Win32"
     MSBuild.exe MetaHook.sln "/target:Plugins\BulletPhysics" /p:Configuration="Release_AVX2" /p:Platform="Win32"
+    MSBuild.exe MetaHook.sln "/target:Plugins\VGUI2Extension" /p:Configuration="Release" /p:Platform="Win32"
     MSBuild.exe MetaHook.sln "/target:Plugins\CaptionMod" /p:Configuration="Release" /p:Platform="Win32"
     MSBuild.exe MetaHook.sln "/target:Plugins\CommunicationDemo" /p:Configuration="Release" /p:Platform="Win32"
     MSBuild.exe MetaHook.sln "/target:Plugins\DontFlushSoundCache" /p:Configuration="Release" /p:Platform="Win32"

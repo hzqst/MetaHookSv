@@ -12,283 +12,283 @@
 
 using namespace vgui;
 
-class VPanelWrapper : public vgui::IPanel
+class VPanelWrapper : public vgui::IPanel2
 {
 public:
-	virtual void Init(VPANEL vguiPanel, IClientPanel *panel)
+	void Init(VPANEL vguiPanel, IClientPanel* panel) override
 	{
-		((VPanel *)vguiPanel)->Init(panel);
+		((VPanel*)vguiPanel)->Init(panel);
 	}
 
-	virtual void SetPos(VPANEL vguiPanel, int x, int y)
+	void SetPos(VPANEL vguiPanel, int x, int y) override
 	{
-		((VPanel *)vguiPanel)->SetPos(x, y);
+		((VPanel*)vguiPanel)->SetPos(x, y);
 	}
 
-	virtual void GetPos(VPANEL vguiPanel, int &x, int &y)
+	void GetPos(VPANEL vguiPanel, int& x, int& y) override
 	{
-		((VPanel *)vguiPanel)->GetPos(x, y);
+		((VPanel*)vguiPanel)->GetPos(x, y);
 	}
 
-	virtual void SetSize(VPANEL vguiPanel, int wide, int tall)
+	void SetSize(VPANEL vguiPanel, int wide, int tall) override
 	{
-		((VPanel *)vguiPanel)->SetSize(wide, tall);
+		((VPanel*)vguiPanel)->SetSize(wide, tall);
 	}
 
-	virtual void GetSize(VPANEL vguiPanel, int &wide, int &tall)
+	void GetSize(VPANEL vguiPanel, int& wide, int& tall) override
 	{
-		((VPanel *)vguiPanel)->GetSize(wide, tall);
+		((VPanel*)vguiPanel)->GetSize(wide, tall);
 	}
 
-	virtual void SetMinimumSize(VPANEL vguiPanel, int wide, int tall)
+	void SetMinimumSize(VPANEL vguiPanel, int wide, int tall) override
 	{
-		((VPanel *)vguiPanel)->SetMinimumSize(wide, tall);
+		((VPanel*)vguiPanel)->SetMinimumSize(wide, tall);
 	}
 
-	virtual void GetMinimumSize(VPANEL vguiPanel, int &wide, int &tall)
+	void GetMinimumSize(VPANEL vguiPanel, int& wide, int& tall) override
 	{
-		((VPanel *)vguiPanel)->GetMinimumSize(wide, tall);
+		((VPanel*)vguiPanel)->GetMinimumSize(wide, tall);
 	}
 
-	virtual void SetZPos(VPANEL vguiPanel, int z)
+	void SetZPos(VPANEL vguiPanel, int z) override
 	{
-		((VPanel *)vguiPanel)->SetZPos(z);
+		((VPanel*)vguiPanel)->SetZPos(z);
 	}
 
-	virtual int GetZPos(VPANEL vguiPanel)
+	int GetZPos(VPANEL vguiPanel) override
 	{
-		return ((VPanel *)vguiPanel)->GetZPos();
+		return ((VPanel*)vguiPanel)->GetZPos();
 	}
 
-	virtual void GetAbsPos(VPANEL vguiPanel, int &x, int &y)
+	void GetAbsPos(VPANEL vguiPanel, int& x, int& y) override
 	{
-		((VPanel *)vguiPanel)->GetAbsPos(x, y);
+		((VPanel*)vguiPanel)->GetAbsPos(x, y);
 	}
 
-	virtual void GetClipRect(VPANEL vguiPanel, int &x0, int &y0, int &x1, int &y1)
+	void GetClipRect(VPANEL vguiPanel, int& x0, int& y0, int& x1, int& y1) override
 	{
-		((VPanel *)vguiPanel)->GetClipRect(x0, y0, x1, y1);
+		((VPanel*)vguiPanel)->GetClipRect(x0, y0, x1, y1);
 	}
 
-	virtual void SetInset(VPANEL vguiPanel, int left, int top, int right, int bottom)
+	void SetInset(VPANEL vguiPanel, int left, int top, int right, int bottom) override
 	{
-		((VPanel *)vguiPanel)->SetInset(left, top, right, bottom);
+		((VPanel*)vguiPanel)->SetInset(left, top, right, bottom);
 	}
 
-	virtual void GetInset(VPANEL vguiPanel, int &left, int &top, int &right, int &bottom)
+	void GetInset(VPANEL vguiPanel, int& left, int& top, int& right, int& bottom) override
 	{
-		((VPanel *)vguiPanel)->GetInset(left, top, right, bottom);
+		((VPanel*)vguiPanel)->GetInset(left, top, right, bottom);
 	}
 
-	virtual void SetVisible(VPANEL vguiPanel, bool state)
+	void SetVisible(VPANEL vguiPanel, bool state) override
 	{
-		((VPanel *)vguiPanel)->SetVisible(state);
+		((VPanel*)vguiPanel)->SetVisible(state);
 	}
 
-	virtual bool IsVisible(VPANEL vguiPanel)
+	bool IsVisible(VPANEL vguiPanel) override
 	{
-		return ((VPanel *)vguiPanel)->IsVisible();
+		return ((VPanel*)vguiPanel)->IsVisible();
 	}
 
-	virtual void SetParent(VPANEL vguiPanel, VPANEL newParent)
+	void SetParent(VPANEL vguiPanel, VPANEL newParent) override
 	{
-		((VPanel *)vguiPanel)->SetParent((VPanel *)newParent);
+		((VPanel*)vguiPanel)->SetParent((VPanel*)newParent);
 	}
 
-	virtual int GetChildCount(VPANEL vguiPanel)
+	int GetChildCount(VPANEL vguiPanel) override
 	{
-		return ((VPanel *)vguiPanel)->GetChildCount();
+		return ((VPanel*)vguiPanel)->GetChildCount();
 	}
 
-	virtual VPANEL GetChild(VPANEL vguiPanel, int index)
+	VPANEL GetChild(VPANEL vguiPanel, int index) override
 	{
-		return (VPANEL)((VPanel *)vguiPanel)->GetChild(index);
+		return (VPANEL)((VPanel*)vguiPanel)->GetChild(index);
 	}
 
-	virtual VPANEL GetParent(VPANEL vguiPanel)
+	VPANEL GetParent(VPANEL vguiPanel) override
 	{
-		return (VPANEL)((VPanel *)vguiPanel)->GetParent();
+		return (VPANEL)((VPanel*)vguiPanel)->GetParent();
 	}
 
-	virtual void MoveToFront(VPANEL vguiPanel)
+	void MoveToFront(VPANEL vguiPanel) override
 	{
-		((VPanel *)vguiPanel)->MoveToFront();
+		((VPanel*)vguiPanel)->MoveToFront();
 	}
 
-	virtual void MoveToBack(VPANEL vguiPanel)
+	void MoveToBack(VPANEL vguiPanel) override
 	{
-		((VPanel *)vguiPanel)->MoveToBack();
+		((VPanel*)vguiPanel)->MoveToBack();
 	}
 
-	virtual bool HasParent(VPANEL vguiPanel, VPANEL potentialParent)
+	bool HasParent(VPANEL vguiPanel, VPANEL potentialParent) override
 	{
 		if (!vguiPanel)
 			return false;
 
-		return ((VPanel *)vguiPanel)->HasParent((VPanel *)potentialParent);
+		return ((VPanel*)vguiPanel)->HasParent((VPanel*)potentialParent);
 	}
 
-	virtual bool IsPopup(VPANEL vguiPanel)
+	bool IsPopup(VPANEL vguiPanel) override
 	{
-		return ((VPanel *)vguiPanel)->IsPopup();
+		return ((VPanel*)vguiPanel)->IsPopup();
 	}
 
-	virtual void SetPopup(VPANEL vguiPanel, bool state)
+	void SetPopup(VPANEL vguiPanel, bool state) override
 	{
-		((VPanel *)vguiPanel)->SetPopup(state);
+		((VPanel*)vguiPanel)->SetPopup(state);
 	}
 
-	virtual bool Render_GetPopupVisible(VPANEL vguiPanel)
+	bool Render_GetPopupVisible(VPANEL vguiPanel) override
 	{
-		return ((VPanel *)vguiPanel)->Render_IsPopupPanelVisible();
+		return ((VPanel*)vguiPanel)->Render_IsPopupPanelVisible();
 	}
 
-	virtual void Render_SetPopupVisible(VPANEL vguiPanel, bool state)
+	void Render_SetPopupVisible(VPANEL vguiPanel, bool state) override
 	{
-		return ((VPanel *)vguiPanel)->Render_SetPopupVisible(state);
+		return ((VPanel*)vguiPanel)->Render_SetPopupVisible(state);
 	}
 
-	virtual HScheme GetScheme(VPANEL vguiPanel)
+	HScheme GetScheme(VPANEL vguiPanel) override
 	{
-		return ((VPanel *)vguiPanel)->GetScheme();
+		return ((VPanel*)vguiPanel)->GetScheme();
 	}
 
-	virtual bool IsProportional(VPANEL vguiPanel)
+	bool IsProportional(VPANEL vguiPanel) override
 	{
 		return Client(vguiPanel)->IsProportional();
 	}
 
-	virtual bool IsAutoDeleteSet(VPANEL vguiPanel)
+	bool IsAutoDeleteSet(VPANEL vguiPanel) override
 	{
 		return Client(vguiPanel)->IsAutoDeleteSet();
 	}
 
-	virtual void DeletePanel(VPANEL vguiPanel)
+	void DeletePanel(VPANEL vguiPanel) override
 	{
 		Client(vguiPanel)->DeletePanel();
 	}
 
-	virtual void SetKeyBoardInputEnabled(VPANEL vguiPanel, bool state)
+	void SetKeyBoardInputEnabled(VPANEL vguiPanel, bool state)override
 	{
-		((VPanel *)vguiPanel)->SetKeyBoardInputEnabled(state);
+		((VPanel*)vguiPanel)->SetKeyBoardInputEnabled(state);
 	}
 
-	virtual void SetMouseInputEnabled(VPANEL vguiPanel, bool state)
+	void SetMouseInputEnabled(VPANEL vguiPanel, bool state) override
 	{
-		((VPanel *)vguiPanel)->SetMouseInputEnabled(state);
+		((VPanel*)vguiPanel)->SetMouseInputEnabled(state);
 	}
 
-	virtual bool IsMouseInputEnabled(VPANEL vguiPanel)
+	bool IsMouseInputEnabled(VPANEL vguiPanel) override
 	{
-		return ((VPanel *)vguiPanel)->IsMouseInputEnabled();
+		return ((VPanel*)vguiPanel)->IsMouseInputEnabled();
 	}
 
-	virtual bool IsKeyBoardInputEnabled(VPANEL vguiPanel)
+	bool IsKeyBoardInputEnabled(VPANEL vguiPanel) override
 	{
-		return ((VPanel *)vguiPanel)->IsKeyBoardInputEnabled();
+		return ((VPanel*)vguiPanel)->IsKeyBoardInputEnabled();
 	}
 
-	virtual void Solve(VPANEL vguiPanel)
+	void Solve(VPANEL vguiPanel) override
 	{
-		((VPanel *)vguiPanel)->Solve();
+		((VPanel*)vguiPanel)->Solve();
 	}
 
-	virtual const char *GetName(VPANEL vguiPanel)
+	const char* GetName(VPANEL vguiPanel) override
 	{
-		return ((VPanel *)vguiPanel)->GetName();
+		return ((VPanel*)vguiPanel)->GetName();
 	}
 
-	virtual const char *GetClassName(VPANEL vguiPanel)
+	const char* GetClassName(VPANEL vguiPanel) override
 	{
-		return ((VPanel *)vguiPanel)->GetClassName();
+		return ((VPanel*)vguiPanel)->GetClassName();
 	}
 
-	virtual void SendMessage(VPANEL vguiPanel, KeyValues *params, VPANEL ifrompanel)
+	void SendMessage(VPANEL vguiPanel, KeyValues* params, VPANEL ifrompanel) override
 	{
-		((VPanel *)vguiPanel)->SendMessage(params, ifrompanel);
+		((VPanel*)vguiPanel)->SendMessage(params, ifrompanel);
 	}
 
-	virtual void Think(VPANEL vguiPanel)
+	void Think(VPANEL vguiPanel) override
 	{
 		Client(vguiPanel)->Think();
 	}
 
-	virtual void PerformApplySchemeSettings(VPANEL vguiPanel)
+	void PerformApplySchemeSettings(VPANEL vguiPanel) override
 	{
 		Client(vguiPanel)->PerformApplySchemeSettings();
 	}
 
-	virtual void PaintTraverse(VPANEL vguiPanel, bool forceRepaint, bool allowForce)
+	void PaintTraverse(VPANEL vguiPanel, bool forceRepaint, bool allowForce) override
 	{
 		Client(vguiPanel)->PaintTraverse(forceRepaint, allowForce);
 	}
 
-	virtual void Repaint(VPANEL vguiPanel)
+	void Repaint(VPANEL vguiPanel) override
 	{
 		Client(vguiPanel)->Repaint();
 	}
 
-	virtual VPANEL IsWithinTraverse(VPANEL vguiPanel, int x, int y, bool traversePopups)
+	VPANEL IsWithinTraverse(VPANEL vguiPanel, int x, int y, bool traversePopups)override
 	{
 		return Client(vguiPanel)->IsWithinTraverse(x, y, traversePopups);
 	}
 
-	virtual void OnChildAdded(VPANEL vguiPanel, VPANEL child)
+	void OnChildAdded(VPANEL vguiPanel, VPANEL child)override
 	{
 		Client(vguiPanel)->OnChildAdded(child);
 	}
 
-	virtual void OnSizeChanged(VPANEL vguiPanel, int newWide, int newTall)
+	void OnSizeChanged(VPANEL vguiPanel, int newWide, int newTall)override
 	{
 		Client(vguiPanel)->OnSizeChanged(newWide, newTall);
 	}
 
-	virtual void InternalFocusChanged(VPANEL vguiPanel, bool lost)
+	void InternalFocusChanged(VPANEL vguiPanel, bool lost) override
 	{
 		Client(vguiPanel)->InternalFocusChanged(lost);
 	}
 
-	virtual bool RequestInfo(VPANEL vguiPanel, KeyValues *outputData)
+	bool RequestInfo(VPANEL vguiPanel, KeyValues* outputData)override
 	{
 		return Client(vguiPanel)->RequestInfo(outputData);
 	}
 
-	virtual void RequestFocus(VPANEL vguiPanel, int direction = 0)
+	void RequestFocus(VPANEL vguiPanel, int direction = 0)override
 	{
 		Client(vguiPanel)->RequestFocus(direction);
 	}
 
-	virtual bool RequestFocusPrev(VPANEL vguiPanel, VPANEL existingPanel)
+	bool RequestFocusPrev(VPANEL vguiPanel, VPANEL existingPanel)override
 	{
 		return Client(vguiPanel)->RequestFocusPrev(existingPanel);
 	}
 
-	virtual bool RequestFocusNext(VPANEL vguiPanel, VPANEL existingPanel)
+	bool RequestFocusNext(VPANEL vguiPanel, VPANEL existingPanel)override
 	{
 		return Client(vguiPanel)->RequestFocusNext(existingPanel);
 	}
 
-	virtual VPANEL GetCurrentKeyFocus(VPANEL vguiPanel)
+	VPANEL GetCurrentKeyFocus(VPANEL vguiPanel)override
 	{
 		return Client(vguiPanel)->GetCurrentKeyFocus();
 	}
 
-	virtual int GetTabPosition(VPANEL vguiPanel)
+	int GetTabPosition(VPANEL vguiPanel)override
 	{
 		return Client(vguiPanel)->GetTabPosition();
 	}
 
-	virtual SurfacePlat *Plat(VPANEL vguiPanel)
+	SurfacePlat* Plat(VPANEL vguiPanel)override
 	{
-		return ((VPanel *)vguiPanel)->Plat();
+		return ((VPanel*)vguiPanel)->Plat();
 	}
 
-	virtual void SetPlat(VPANEL vguiPanel, SurfacePlat *Plat)
+	void SetPlat(VPANEL vguiPanel, SurfacePlat* Plat)override
 	{
-		((VPanel *)vguiPanel)->SetPlat(Plat);
+		((VPanel*)vguiPanel)->SetPlat(Plat);
 	}
 
-	virtual Panel *GetPanel(VPANEL vguiPanel, const char *moduleName)
+	Panel* GetPanel(VPANEL vguiPanel, const char* moduleName)override
 	{
 		if (vguiPanel == surface()->GetEmbeddedPanel())
 			return NULL;
@@ -299,58 +299,44 @@ public:
 		return Client(vguiPanel)->GetPanel();
 	}
 
-	virtual bool IsEnabled(VPANEL vguiPanel)
+	bool IsEnabled(VPANEL vguiPanel)override
 	{
-		return ((VPanel *)vguiPanel)->IsEnabled();
+		return ((VPanel*)vguiPanel)->IsEnabled();
 	}
 
-	virtual void SetEnabled(VPANEL vguiPanel, bool state)
+	void SetEnabled(VPANEL vguiPanel, bool state)override
 	{
-		((VPanel *)vguiPanel)->SetEnabled(state);
+		((VPanel*)vguiPanel)->SetEnabled(state);
 	}
 
-	virtual IClientPanel *Client(VPANEL vguiPanel)
+	IClientPanel* Client(VPANEL vguiPanel)override
 	{
-		return ((VPanel *)vguiPanel)->Client();
+		return ((VPanel*)vguiPanel)->Client();
 	}
 
-	virtual const char *GetModuleName(VPANEL vguiPanel)
+	const char* GetModuleName(VPANEL vguiPanel)override
 	{
 		return Client(vguiPanel)->GetModuleName();
 	}
 
 public:
-	bool IsTopmostPopup(VPANEL vguiPanel)
+	bool IsTopmostPopup(VPANEL vguiPanel) override
 	{
-		return ((VPanel *)vguiPanel)->IsTopmostPopup();
+		return ((VPanel*)vguiPanel)->IsTopmostPopup();
 	}
 
-	void SetTopmostPopup(VPANEL vguiPanel, bool state)
+	void SetTopmostPopup(VPANEL vguiPanel, bool state) override
 	{
-		return ((VPanel *)vguiPanel)->SetTopmostPopup(state);
+		return ((VPanel*)vguiPanel)->SetTopmostPopup(state);
 	}
 
-	bool IsFullyVisible(VPANEL vguiPanel)
+	bool IsFullyVisible(VPANEL vguiPanel) override
 	{
-		return ((VPanel *)vguiPanel)->IsFullyVisible();
+		return ((VPanel*)vguiPanel)->IsFullyVisible();
 	}
 };
 
-VPanelWrapper g_Panel;
+static VPanelWrapper g_Panel;
 
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(VPanelWrapper, IPanel, VGUI_PANEL_INTERFACE_VERSION, g_Panel);
-
-bool IPanel::IsTopmostPopup(VPANEL vguiPanel)
-{
-	return g_Panel.IsTopmostPopup(vguiPanel);
-}
-
-void IPanel::SetTopmostPopup(VPANEL vguiPanel, bool state)
-{
-	return g_Panel.SetTopmostPopup(vguiPanel, state);
-}
-
-bool IPanel::IsFullyVisible(VPANEL vguiPanel)
-{
-	return g_Panel.IsFullyVisible(vguiPanel);
-}
+EXPOSE_SINGLE_INTERFACE_GLOBALVAR(VPanelWrapper, IPanel2, VGUI_PANEL2_INTERFACE_VERSION, g_Panel);
