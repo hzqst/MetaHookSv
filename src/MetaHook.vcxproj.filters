@@ -86,4 +86,9 @@
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <MASM Include="x86.asm">
+      <Filter>Source</Filter>
+    </MASM>
+  </ItemGroup>
 </Project>

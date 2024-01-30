@@ -19,8 +19,8 @@ extern IFileSystem *g_pFileSystem;
 extern PVOID g_dwClientBase;
 extern DWORD g_dwClientSize;
 
-#define GetCallAddress(addr) ((PUCHAR)addr + *(int *)((PUCHAR)addr + 1) + 5)
-#define Sys_Error(msg, ...) g_pMetaHookAPI->SysError("[DontFlushSoundCache] " msg, __VA_ARGS__);
+#define MHPluginName "DontFlushSoundCache"
+#define Sys_Error(msg, ...) g_pMetaHookAPI->SysError("["  MHPluginName   "] " msg, __VA_ARGS__);
 #define Sig_NotFound(name) Sys_Error("Could not found: %s\nEngine buildnum: %d", #name, g_dwEngineBuildnum);
 #define Sig_VarNotFound(name) if(!name) Sig_NotFound(name)
 #define Sig_AddrNotFound(name) if(!addr) Sig_NotFound(name)
@@ -34,3 +34,4 @@ extern DWORD g_dwClientSize;
 #define Search_Pattern_From(fn, sig) g_pMetaHookAPI->SearchPattern((void *)(fn), ((PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize) - (PUCHAR)(fn), sig, Sig_Length(sig))
 #define Install_InlineHook(fn) if(!g_phook_##fn) { g_phook_##fn = g_pMetaHookAPI->InlineHook((void *)gPrivateFuncs.fn, fn, (void **)&gPrivateFuncs.fn); }
 #define Uninstall_Hook(fn) if(g_phook_##fn){g_pMetaHookAPI->UnHook(g_phook_##fn);g_phook_##fn = NULL;}
+#define GetCallAddress(addr) g_pMetaHookAPI->GetNextCallAddr((PUCHAR)addr, 1)

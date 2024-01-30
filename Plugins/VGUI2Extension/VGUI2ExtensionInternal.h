@@ -50,6 +50,8 @@ public:
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(GameUI_CTaskBar_ctor, IGameUITaskBarCtorCallbackContext* CallbackContext);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameUI_CTaskBar_OnCommand, void*& pPanel, const char*& command);
 
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameUI_KeyValues_LoadFromFile, void*& pthis, IFileSystem*& pFileSystem, const char*& resourceName, const char*& pathId);
+
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(ClientVGUI_Initialize, CreateInterfaceFn* factories, int count);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(ClientVGUI_Shutdown);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(ClientVGUI_Start);

@@ -283,6 +283,12 @@ void COptionsSubAudioAdvancedDlg::OnDataChanged()
 	GetParentWithModuleName("GameUI")->PostActionSignal(new KeyValues("ApplyButtonEnable"));
 }
 
+/*
+=================================================================================================================
+GameUI Callbacks
+=================================================================================================================
+*/
+
 class CVGUI2Extension_GameUICallbacks : public IVGUI2Extension_GameUICallbacks
 {
 public:
@@ -356,7 +362,7 @@ public:
 
 		if (gEngfuncs.GetMaxClients() <= 1)
 		{
-			//This just stop GameUI from sending "mp3 stop" on level transition
+			//This stop GameUI from sending "mp3 stop" on level transition
 			game = "valve";
 		}
 	}
@@ -416,25 +422,142 @@ public:
 
 	}
 
-	void COptionsDialog_ctor(IGameUIOptionsDialogCtorCallbackContext* CallbackContext)
+};
+
+static CVGUI2Extension_GameUICallbacks s_GameUICallbacks;
+
+/*
+=================================================================================================================
+GameUI OptionDialog Callbacks
+=================================================================================================================
+*/
+
+class CVGUI2Extension_GameUIOptionDialogCallbacks : public IVGUI2Extension_GameUIOptionDialogCallbacks
+{
+public:
+	int GetAltitude() const override
+	{
+		return 0;
+	}
+
+	void COptionsDialog_ctor(IGameUIOptionsDialogCtorCallbackContext* CallbackContext) override
 	{
 		CallbackContext->AddPage(new COptionsSubAudioAdvancedDlg((vgui::Panel*)CallbackContext->GetDialog()), "#GameUI_CaptionMod_Tab");
 	}
 
 	void COptionsSubVideo_ApplyVidSettings(void*& pPanel, bool& bForceRestart, VGUI2Extension_CallbackContext* CallbackContext) override
 	{
-		
+
 	}
 };
 
-static CVGUI2Extension_GameUICallbacks s_GameUICallbacks;
+static CVGUI2Extension_GameUIOptionDialogCallbacks s_GameUIOptionDialogCallbacks;
+
+/*
+=================================================================================================================
+GameUI KeyValues Callbacks
+=================================================================================================================
+*/
+
+class CVGUI2Extension_GameUIKeyValuesCallbacks : public IVGUI2Extension_GameUIKeyValuesCallbacks
+{
+public:
+	int GetAltitude() const override
+	{
+		return 0;
+	}
+
+	void KeyValues_LoadFromFile(void*& pthis, IFileSystem*& pFileSystem, const char*& resourceName, const char*& pathId, VGUI2Extension_CallbackContext* CallbackContext)
+	{
+		if (CallbackContext->IsPost && !strcmp(resourceName, "resource/GameMenu.res"))
+		{
+			bool *pRealReturnValue = (bool*)CallbackContext->pRealReturnValue;
+
+			if ((*pRealReturnValue) == true)
+			{
+				KeyValues* pKeyValues = (KeyValues*)pthis;
+
+				auto name = pKeyValues->GetName();
+
+				KeyValues* SectionQuit = NULL;
+				for (auto p = pKeyValues->GetFirstSubKey(); p; p = p->GetNextKey())
+				{
+					auto command = p->GetString("command");
+					if (!strcmp(command, "Quit"))
+					{
+						SectionQuit = p;
+					}
+				}
+				if (SectionQuit)
+				{
+					
+
+					auto NameSectionQuit = SectionQuit->GetName();
+					int iNameSectionQuit = atoi(NameSectionQuit);
+					if (iNameSectionQuit > 0)
+					{
+						/*
+						
+						 //Update this:
+							"8"
+							{
+								"label" "#GameUI_GameMenu_Quit"
+								"command" "Quit"
+							}
+
+						//To this:
+							"8"
+							{
+								"label" "#GameUI_GameMenu_TestButton"
+								"command" "TestButton"
+							}
+							"9"
+							{
+								"label" "#GameUI_GameMenu_Quit"
+								"command" "Quit"
+							}
+						*/
+
+						char szNewNameSectionQuit[32];
+						snprintf(szNewNameSectionQuit, sizeof(szNewNameSectionQuit), "%d", iNameSectionQuit + 1);
+
+						SectionQuit->SetName(szNewNameSectionQuit);
+
+						char szNewNameTestButton[32];
+						snprintf(szNewNameTestButton, sizeof(szNewNameTestButton), "%d", iNameSectionQuit);
+
+						auto SectionTestButton = new KeyValues(szNewNameTestButton);
+
+						SectionTestButton->SetString("label", "#GameUI_GameMenu_TestButton");
+						SectionTestButton->SetString("command", "TestCommand");
+
+						pKeyValues->AddSubKeyBefore(SectionTestButton, SectionQuit);
+
+					}
+				}
+			}
+		}
+	}
+};
+
+static CVGUI2Extension_GameUIKeyValuesCallbacks s_GameUIKeyValuesCallbacks;
+
+/*
+=================================================================================================================
+GameUI init & shutdown
+=================================================================================================================
+*/
 
 void GameUI_InstallHooks(void)
 {
 	VGUI2Extension()->RegisterGameUICallbacks(&s_GameUICallbacks);
+	VGUI2Extension()->RegisterGameUIOptionDialogCallbacks(&s_GameUIOptionDialogCallbacks);
+	VGUI2Extension()->RegisterGameUIKeyValuesCallbacks(&s_GameUIKeyValuesCallbacks);
 }
 
 void GameUI_UninstallHooks(void)
 {
 	VGUI2Extension()->UnregisterGameUICallbacks(&s_GameUICallbacks);
+	VGUI2Extension()->UnregisterGameUIOptionDialogCallbacks(&s_GameUIOptionDialogCallbacks);
+	VGUI2Extension()->UnregisterGameUIKeyValuesCallbacks(&s_GameUIKeyValuesCallbacks);
 }

@@ -55,6 +55,9 @@ typedef struct
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings_HL25)(void *pthis, int dummy);
 	void*(__fastcall* CTaskBar_ctor)(void* pthis, int dummy, void* parent, const char* panelName);
 	void (__fastcall* CTaskBar_OnCommand)(void* pthis, int dummy, const char* command);
+	void(__fastcall* CTaskBar_CreateGameMenu)(void* pthis, int dummy);
+	void* (__fastcall* KeyValues_ctor)(void* pthis, int dummy, const char* name);
+	bool (__fastcall* KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem *pFileSystem, const char* resourceName, const char *pathId);
 	void* (__fastcall *PropertySheet_HasHotkey)(void* pthis, int dummy, wchar_t key);
 	void* (__fastcall *FocusNavGroup_GetCurrentFocus)(void* pthis, int dummy);
 
@@ -102,6 +105,8 @@ extern private_funcs_t gPrivateFuncs;
 
 const char* GetCurrentGameLanguage();
 
+HMODULE GetGameUIModule();
+
 PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule);
 
 bool SCR_IsLoadingVisible(void);
@@ -116,7 +121,7 @@ void Engine_InstallHooks(void);
 void Engine_UninstallHooks(void);
 void BaseUI_InstallHook(void);
 void BaseUI_UninstallHook(void);
-void GameUI_FillAddress(HMODULE hModule);
+void GameUI_FillAddress(void);
 void GameUI_InstallHooks(void);
 void GameUI_UninstallHooks(void);
 void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc);

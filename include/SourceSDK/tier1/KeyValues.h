@@ -16,16 +16,17 @@
 #include "utlvector.h"
 #include <filesystem.h>
 #include <Color.h>
+#include <IBaseKeyValues.h>
 
 class IFileSystem;
 class CUtlBuffer;
 class Color;
 typedef void *FileHandle_t;
 
-class KeyValues
+class KeyValues : public IBaseKeyValues
 {
 public:
-	KeyValues(KeyValues &);
+	//KeyValues(KeyValues &);
 	KeyValues(const char *setName);
 	KeyValues(const char *setName, const char *firstKey, const char *firstValue);
 	KeyValues(const char *setName, const char *firstKey, const wchar_t *firstValue);
@@ -35,6 +36,8 @@ public:
 	~KeyValues(void);
 
 public:
+
+#if 0
 	class AutoDelete
 	{
 	public:
@@ -58,47 +61,34 @@ public:
 		AutoDelete & operator = (AutoDelete const &x);
 		KeyValues *m_pKeyValues;
 	};
+#endif
 
 public:
-	virtual const char *GetName(void) const;
-	virtual int GetNameSymbol(void) const;
-	virtual bool LoadFromFile(IFileSystem *filesystem, const char *resourceName, const char *pathID = NULL);
-	virtual bool SaveToFile(IFileSystem *filesystem, const char *resourceName, const char *pathID = NULL);
-	virtual KeyValues *FindKey(const char *keyName, bool bCreate = false);
-	virtual KeyValues *FindKey(int keySymbol) const;
-	virtual KeyValues *CreateNewKey(void);
-	virtual void RemoveSubKey(KeyValues *subKey);
-	virtual KeyValues *GetFirstSubKey(void);
-	virtual KeyValues *GetNextKey(void);
-	virtual int GetInt(const char *keyName = NULL, int defaultValue = 0);
-	virtual float GetFloat(const char *keyName = NULL, float defaultValue = 0.0);
-	virtual const char *GetString(const char *keyName = NULL, const char *defaultValue = "");
-	virtual const wchar_t *GetWString(const char *keyName = NULL, const wchar_t *defaultValue = L"");
-	virtual void *GetPtr(const char *keyName = NULL, void *defaultValue = NULL);
-	virtual bool IsEmpty(const char *keyName = NULL);
-	virtual void SetWString(const char *keyName, const wchar_t *value);
-	virtual void SetString(const char *keyName, const char *value);
-	virtual void SetInt(const char *keyName, int value);
-	virtual void SetFloat(const char *keyName, float value);
-	virtual void SetPtr(const char *keyName, void *value);
-	virtual KeyValues *MakeCopy(void) const;
-	virtual void Clear(void);
-
-	enum types_t
-	{
-		TYPE_NONE,
-		TYPE_STRING,
-		TYPE_INT,
-		TYPE_FLOAT,
-		TYPE_PTR,
-		TYPE_WSTRING,
-		TYPE_COLOR,
-		TYPE_UINT64,
-		TYPE_NUMTYPES, 
-	};
-
-	virtual types_t GetDataType(const char *keyName = NULL);
-	virtual void deleteThis(void);
+	const char* GetName(void) const override;
+	int GetNameSymbol(void) const override;
+	bool LoadFromFile(IFileSystem *filesystem, const char *resourceName, const char *pathID = NULL) override;
+	bool SaveToFile(IFileSystem *filesystem, const char *resourceName, const char *pathID = NULL) override;
+	KeyValues* FindKey2(int keySymbol) const override;
+	KeyValues *FindKey(const char *keyName, bool bCreate = false) override;
+	KeyValues *CreateNewKey(void) override;
+	void RemoveSubKey(KeyValues *subKey) override;
+	KeyValues *GetFirstSubKey(void) override;
+	KeyValues *GetNextKey(void) override;
+	int GetInt(const char *keyName = NULL, int defaultValue = 0) override;
+	float GetFloat(const char *keyName = NULL, float defaultValue = 0.0) override;
+	const char *GetString(const char *keyName = NULL, const char *defaultValue = "") override;
+	const wchar_t *GetWString(const char *keyName = NULL, const wchar_t *defaultValue = L"") override;
+	void *GetPtr(const char *keyName = NULL, void *defaultValue = NULL) override;
+	bool IsEmpty(const char *keyName = NULL) override;
+	void SetWString(const char *keyName, const wchar_t *value) override;
+	void SetString(const char *keyName, const char *value) override;
+	void SetInt(const char *keyName, int value) override;
+	void SetFloat(const char *keyName, float value) override;
+	void SetPtr(const char *keyName, void *value) override;
+	KeyValues *MakeCopy(void) const;
+	void Clear(void) override;
+	types_t GetDataType(const char *keyName = NULL) override;
+	void deleteThis(void) override;
 
 public:
 	void SetName(const char *setName);
@@ -106,6 +96,8 @@ public:
 	bool LoadFromBuffer(char const *resourceName, const char *pBuffer, IFileSystem *pFileSystem = NULL, const char *pPathID = NULL);
 	bool LoadFromBuffer(char const *resourceName, CUtlBuffer &buf, IFileSystem *pFileSystem = NULL, const char *pPathID = NULL);
 	void AddSubKey(KeyValues *pSubkey);
+	bool AddSubKeyAfter(KeyValues* pSubkey, KeyValues* pAfterKey);
+	bool AddSubKeyBefore(KeyValues* pSubkey, KeyValues* pAfterKey);
 	void SetNextKey(KeyValues *pDat);
 	void ChainKeyValue(KeyValues *pChain);
 	void RecursiveSaveToFile(CUtlBuffer &buf, int indentLevel);
@@ -158,7 +150,9 @@ private:
 	void AllocateValueBlock(int size);
 
 private:
-	int m_iKeyName;
+
+	//GoldSrc stuffs
+	int m_iKeyName;//+4
 
 	union
 	{
@@ -168,12 +162,14 @@ private:
 		unsigned char m_Color[4];
 		char *m_sValue;
 		wchar_t *m_wsValue;
-	};
+	};//+8h
 
-	types_t m_iDataType;
+	types_t m_iDataType;//+Ch
 
-	KeyValues *m_pPeer;
-	KeyValues *m_pSub;
+	KeyValues *m_pPeer;//+10h
+	KeyValues *m_pSub;//+14h
+
+	//Source stuffs
 	KeyValues *m_pChain;
 
 	char m_bHasEscapeSequences;
@@ -205,44 +201,44 @@ struct KeyValuesUnpackStructure
 
 inline int KeyValues::GetInt(int keySymbol, int defaultValue)
 {
-	KeyValues *dat = FindKey(keySymbol);
+	KeyValues *dat = FindKey2(keySymbol);
 	return dat ? dat->GetInt((const char *)NULL, defaultValue) : defaultValue;
 }
 
 inline float KeyValues::GetFloat(int keySymbol, float defaultValue)
 {
-	KeyValues *dat = FindKey(keySymbol);
+	KeyValues *dat = FindKey2(keySymbol);
 	return dat ? dat->GetFloat((const char *)NULL, defaultValue) : defaultValue;
 }
 
 inline const char *KeyValues::GetString(int keySymbol, const char *defaultValue)
 {
-	KeyValues *dat = FindKey(keySymbol);
+	KeyValues *dat = FindKey2(keySymbol);
 	return dat ? dat->GetString((const char *)NULL, defaultValue) : defaultValue;
 }
 
 inline const wchar_t *KeyValues::GetWString(int keySymbol, const wchar_t *defaultValue)
 {
-	KeyValues *dat = FindKey(keySymbol);
+	KeyValues *dat = FindKey2(keySymbol);
 	return dat ? dat->GetWString((const char *)NULL, defaultValue) : defaultValue;
 }
 
 inline void *KeyValues::GetPtr(int keySymbol, void *defaultValue)
 {
-	KeyValues *dat = FindKey(keySymbol);
+	KeyValues *dat = FindKey2(keySymbol);
 	return dat ? dat->GetPtr((const char *)NULL, defaultValue) : defaultValue;
 }
 
 inline Color KeyValues::GetColor(int keySymbol)
 {
 	Color defaultValue(0, 0, 0, 0);
-	KeyValues *dat = FindKey(keySymbol);
+	KeyValues *dat = FindKey2(keySymbol);
 	return dat ? dat->GetColor() : defaultValue;
 }
 
 inline bool KeyValues::IsEmpty(int keySymbol)
 {
-	KeyValues *dat = FindKey(keySymbol);
+	KeyValues *dat = FindKey2(keySymbol);
 	return dat ? dat->IsEmpty() : true;
 }
 

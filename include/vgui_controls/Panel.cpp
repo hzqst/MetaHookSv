@@ -4259,7 +4259,7 @@ void Panel::OnMessage(const KeyValues *params, VPANEL ifromPanel)
 		
 				case 1:
 				{
-					KeyValues *param1 = params->FindKey(pMap->firstParamSymbol);
+					KeyValues *param1 = params->FindKey2(pMap->firstParamSymbol);
 					if (!param1)
 					{
 						param1 = const_cast<KeyValues *>(params);
@@ -4319,12 +4319,12 @@ void Panel::OnMessage(const KeyValues *params, VPANEL ifromPanel)
 
 				case 2:
 				{
-					KeyValues *param1 = params->FindKey(pMap->firstParamSymbol);
+					KeyValues *param1 = params->FindKey2(pMap->firstParamSymbol);
 					if (!param1)
 					{
 						param1 = const_cast<KeyValues *>(params);
 					}
-					KeyValues *param2 = params->FindKey(pMap->secondParamSymbol);
+					KeyValues *param2 = params->FindKey2(pMap->secondParamSymbol);
 					if (!param2)
 					{
 						param2 = const_cast<KeyValues *>(params);

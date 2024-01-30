@@ -14,6 +14,7 @@ private:
 	std::vector<IVGUI2Extension_GameUICallbacks*> m_GameUICallbacks;
 	std::vector<IVGUI2Extension_GameUIOptionDialogCallbacks*> m_GameUIOptionDialogCallbacks;
 	std::vector<IVGUI2Extension_GameUITaskBarCallbacks*> m_GameUITaskBarCallbacks;
+	std::vector<IVGUI2Extension_GameUIKeyValuesCallbacks*> m_GameUIKeyValuesCallbacks;
 	std::vector<IVGUI2Extension_ClientVGUICallbacks*> m_ClientVGUICallbacks;
 
 public:
@@ -54,6 +55,16 @@ public:
 
 		std::sort(m_GameUITaskBarCallbacks.begin(), m_GameUITaskBarCallbacks.end(),
 			[](const IVGUI2Extension_GameUITaskBarCallbacks* a, const IVGUI2Extension_GameUITaskBarCallbacks* b) -> bool {
+				return a->GetAltitude() > b->GetAltitude();
+			});
+	}
+
+	void RegisterGameUIKeyValuesCallbacks(IVGUI2Extension_GameUIKeyValuesCallbacks* pCallbacks) override
+	{
+		m_GameUIKeyValuesCallbacks.emplace_back(pCallbacks);
+
+		std::sort(m_GameUIKeyValuesCallbacks.begin(), m_GameUIKeyValuesCallbacks.end(),
+			[](const IVGUI2Extension_GameUIKeyValuesCallbacks* a, const IVGUI2Extension_GameUIKeyValuesCallbacks* b) -> bool {
 				return a->GetAltitude() > b->GetAltitude();
 			});
 	}
@@ -111,6 +122,18 @@ public:
 			if (*it == pCallbacks)
 			{
 				m_GameUITaskBarCallbacks.erase(it);
+				return;
+			}
+		}
+	}
+
+	void UnregisterGameUIKeyValuesCallbacks(IVGUI2Extension_GameUIKeyValuesCallbacks* pCallbacks) override
+	{
+		for (auto it = m_GameUIKeyValuesCallbacks.begin(); it != m_GameUIKeyValuesCallbacks.end(); ++it)
+		{
+			if (*it == pCallbacks)
+			{
+				m_GameUIKeyValuesCallbacks.erase(it);
 				return;
 			}
 		}
@@ -532,6 +555,19 @@ public:
 		for (auto it = m_GameUITaskBarCallbacks.begin(); it != m_GameUITaskBarCallbacks.end(); ++it)
 		{
 			(*it)->CTaskBar_OnCommand(pPanel, command, CallbackContext);
+
+			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
+			{
+				return;
+			}
+		}
+	}
+
+	void GameUI_KeyValues_LoadFromFile(void*& pthis, IFileSystem*& pFileSystem, const char*& resourceName, const char*& pathId, VGUI2Extension_CallbackContext* CallbackContext) override
+	{
+		for (auto it = m_GameUIKeyValuesCallbacks.begin(); it != m_GameUIKeyValuesCallbacks.end(); ++it)
+		{
+			(*it)->KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, CallbackContext);
 
 			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
 			{

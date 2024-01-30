@@ -24,6 +24,7 @@ typedef NTSTATUS(NTAPI* LDR_REGISTER_DLL_NOTIFICATION)(
 static std::mutex g_LoadDllNotificationCallbackLock;
 static std::vector<LoadDllNotificationCallback> g_LoadDllNotificationCallbacks;
 static PVOID g_LdrNotificationCookie = NULL;
+static bool g_IsInLdrCriticalRegion = false;
 
 NTSTATUS (NTAPI*g_pfnLdrLoadDll)(PWSTR a1, PULONG a2, PUNICODE_STRING a3, PVOID* a4) = NULL;
 
@@ -31,6 +32,11 @@ void UnicodeToWString(_In_ PCUNICODE_STRING ustr, _Out_ std::wstring& out)
 {
 	size_t totallen = ustr->Length / sizeof(WCHAR);
 	out.assign(ustr->Buffer, totallen);
+}
+
+bool MH_IsInLdrCriticalRegion()
+{
+	return g_IsInLdrCriticalRegion;
 }
 
 void MH_ClearDllLoaderNotificationCallback()
@@ -165,18 +171,20 @@ VOID CALLBACK LdrDllNotificationCallback(
 	_In_     PLDR_DLL_NOTIFICATION_DATA NotificationData,
 	_In_opt_ PVOID Context)
 {
+	g_IsInLdrCriticalRegion = true;
 	if (NotificationReason == LDR_DLL_NOTIFICATION_REASON_LOADED)
 	{
 		auto& args = NotificationData->Loaded;
 
-		MH_DispatchLoadLdrDllNotificationCallback(args.FullDllName, args.BaseDllName, args.DllBase, args.SizeOfImage, LOAD_DLL_NOTIFICATION_IS_LOAD);
+		MH_DispatchLoadLdrDllNotificationCallback(args.FullDllName, args.BaseDllName, args.DllBase, args.SizeOfImage, LOAD_DLL_NOTIFICATION_IS_LOAD | LOAD_DLL_NOTIFICATION_IS_IN_CRIT_REGION);
 	}
 	else if (NotificationReason == LDR_DLL_NOTIFICATION_REASON_UNLOADED)
 	{
 		auto& args = NotificationData->Unloaded;
 
-		MH_DispatchLoadLdrDllNotificationCallback(args.FullDllName, args.BaseDllName, args.DllBase, args.SizeOfImage, LOAD_DLL_NOTIFICATION_IS_UNLOAD);
+		MH_DispatchLoadLdrDllNotificationCallback(args.FullDllName, args.BaseDllName, args.DllBase, args.SizeOfImage, LOAD_DLL_NOTIFICATION_IS_UNLOAD | LOAD_DLL_NOTIFICATION_IS_IN_CRIT_REGION);
 	}
+	g_IsInLdrCriticalRegion = false;
 }
 
 void InitLoadDllNotification(void)

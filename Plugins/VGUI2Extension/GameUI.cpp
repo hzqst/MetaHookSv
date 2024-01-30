@@ -29,6 +29,7 @@ static hook_t* g_phook_TextEntry_LayoutVerticalScrollBarSlider = NULL;
 static hook_t* g_phook_TextEntry_GetStartDrawIndex = NULL;
 static hook_t* g_phook_PropertySheet_HasHotkey = NULL;
 static hook_t* g_phook_FocusNavGroup_GetCurrentFocus = NULL;
+static hook_t* g_phook_KeyValues_LoadFromFile = NULL;
 
 namespace vgui
 {
@@ -740,7 +741,7 @@ public:
 		m_pPropertySheet = _propertySheet;
 	}
 
-	void InstallHook()
+	void InstallHooks()
 	{
 		if (!gPrivateFuncs.FocusNavGroup_GetCurrentFocus)
 		{
@@ -802,7 +803,7 @@ void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel*
 
 	CGameUIOptionsDialogCtorCallbackContext CallbackContext(pthis, _propertySheet);
 
-	CallbackContext.InstallHook();
+	CallbackContext.InstallHooks();
 
 	VGUI2ExtensionInternal()->GameUI_COptionsDialog_ctor(&CallbackContext);
 
@@ -860,12 +861,11 @@ public:
 		m_pszPanelName = panelName;
 	}
 
-	void InstallHook()
+	void InstallHooks()
 	{
 		if (!gPrivateFuncs.CTaskBar_OnCommand)
 		{
-			PVOID* CTaskBar_vftable = *(PVOID**)m_pTaskBar;
-
+			PVOID *CTaskBar_vftable = *(PVOID**)m_pTaskBar;
 			gPrivateFuncs.CTaskBar_OnCommand = (decltype(gPrivateFuncs.CTaskBar_OnCommand))CTaskBar_vftable[348 / 4];
 
 			Install_InlineHook(CTaskBar_OnCommand);
@@ -898,7 +898,7 @@ void* __fastcall CTaskBar_ctor(void* pthis, int dummy, void* parent, const char*
 
 	CGameUITaskBarCtorCallbackContext CallbackContext((vgui::Panel *)pthis, (vgui::Panel*)parent, panelName);
 
-	CallbackContext.InstallHook();
+	CallbackContext.InstallHooks();
 
 	VGUI2ExtensionInternal()->GameUI_CTaskBar_ctor(&CallbackContext);
 
@@ -908,8 +908,6 @@ void* __fastcall CTaskBar_ctor(void* pthis, int dummy, void* parent, const char*
 #if 0
 void* __fastcall QueryBox_ctor(vgui::Panel* pthis, int dummy, const char* title, const char* queryText, vgui::Panel* parent)
 {
-	
-
 	//Load res to make it proportional
 	if (!strcmp(queryText, "#GameUI_QuitConfirmationText"))
 	{
@@ -923,8 +921,53 @@ void* __fastcall QueryBox_ctor(vgui::Panel* pthis, int dummy, const char* title,
 }
 #endif
 
-void GameUI_FillAddress(HMODULE hGameUI)
+bool __fastcall KeyValues_LoadFromFile(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId)
 {
+	bool fake_ret = false;
+	bool real_ret = false;
+	bool ret = false;
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	CallbackContext.pPluginReturnValue = &fake_ret;
+
+	VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis , pFileSystem, resourceName, pathId, &CallbackContext);
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	{
+		real_ret = gPrivateFuncs.KeyValues_LoadFromFile(pthis, dummy, pFileSystem, resourceName, pathId);
+	}
+
+	CallbackContext.pRealReturnValue = &real_ret;
+	CallbackContext.IsPost = true;
+
+	VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, &CallbackContext);
+
+	switch (CallbackContext.Result)
+	{
+	case VGUI2Extension_Result::OVERRIDE:
+	case VGUI2Extension_Result::SUPERCEDE:
+	{
+		ret = fake_ret;
+	}
+	default:
+	{
+		ret = real_ret;
+	}
+	}
+
+	return ret;
+}
+
+void GameUI_FillAddress(void)
+{
+	auto hGameUI = GetGameUIModule();
+	if (!hGameUI)
+	{
+		g_pMetaHookAPI->SysError("Failed to get module handle of GameUI.dll");
+		return;
+	}
+
 	auto GameUIBase = g_pMetaHookAPI->GetModuleBase(hGameUI);
 	if (!GameUIBase)
 	{
@@ -951,13 +994,14 @@ void GameUI_FillAddress(HMODULE hGameUI)
 	}
 
 	ULONG GameUIDataSize = 0;
-	auto GameUIDataBase = g_pMetaHookAPI->GetSectionByName(GameUIBase, ".data\0\0", &GameUIDataSize);
+	auto GameUIDataBase = g_pMetaHookAPI->GetSectionByName(GameUIBase, ".data\0\0\0", &GameUIDataSize);
 
 	if (!GameUIDataBase)
 	{
 		g_pMetaHookAPI->SysError("Failed to locate section \".data\" in GameUI.dll");
 		return;
 	}
+
 #if 0
 	if (1)
 	{
@@ -977,7 +1021,7 @@ void GameUI_FillAddress(HMODULE hGameUI)
 
 			auto pinst = (cs_insn*)inst;
 
-			if (address[0] == 0xE8 && instCount <= 5)
+			if (address[0] == 0xE8 && instCount <= 8)
 			{
 				gPrivateFuncs.QueryBox_ctor = (decltype(gPrivateFuncs.QueryBox_ctor))GetCallAddress(address);
 
@@ -1723,7 +1767,7 @@ void GameUI_FillAddress(HMODULE hGameUI)
 
 			auto pinst = (cs_insn*)inst;
 
-			if (address[0] == 0xE8 && instCount <= 5)
+			if (address[0] == 0xE8 && instCount <= 8)
 			{
 				gPrivateFuncs.Sheet_ctor = (decltype(gPrivateFuncs.Sheet_ctor))GetCallAddress(address);
 
@@ -1802,7 +1846,6 @@ void GameUI_FillAddress(HMODULE hGameUI)
 
 	if (1)
 	{
-		PVOID Sheet_PushString = NULL;
 		const char sigs1[] = "GameMenuButton\0";
 		auto GameMenuButton_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
 		if (!GameMenuButton_String)
@@ -1815,11 +1858,18 @@ void GameUI_FillAddress(HMODULE hGameUI)
 		auto GameMenuButton_PushString = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
 		Sig_VarNotFound(GameMenuButton_PushString);
 
-		gPrivateFuncs.CTaskBar_ctor = (decltype(gPrivateFuncs.CTaskBar_ctor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(GameMenuButton_PushString, 0x300, [](PUCHAR Candidate) {
+		gPrivateFuncs.CTaskBar_ctor = (decltype(gPrivateFuncs.CTaskBar_ctor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(GameMenuButton_PushString, 0x350, [](PUCHAR Candidate) {
 
 			if (Candidate[0] == 0x55 &&
 				Candidate[1] == 0x8B &&
 				Candidate[2] == 0xEC &&
+				Candidate[3] == 0x83 &&
+				Candidate[4] == 0xEC)
+				return TRUE;
+
+			if (Candidate[0] == 0x53 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xDC &&
 				Candidate[3] == 0x83 &&
 				Candidate[4] == 0xEC)
 				return TRUE;
@@ -1841,6 +1891,9 @@ void GameUI_FillAddress(HMODULE hGameUI)
 
 		typedef struct
 		{
+			PVOID GameUIDataBase;
+			ULONG GameUIDataSize;
+
 			PVOID GameUIRdataBase;
 			ULONG GameUIRdataSize;
 
@@ -1848,10 +1901,14 @@ void GameUI_FillAddress(HMODULE hGameUI)
 			ULONG GameUITextSize;
 
 			PVOID* CTaskBar_vftable;
+			PVOID* KeyValues_vftable;
 
 		}CTaskBarCtorSearchContext;
 
 		CTaskBarCtorSearchContext ctx = { 0 };
+
+		ctx.GameUIDataBase = GameUIDataBase;
+		ctx.GameUIDataSize = GameUIDataSize;
 
 		ctx.GameUIRdataBase = GameUIRdataBase;
 		ctx.GameUIRdataSize = GameUIRdataSize;
@@ -1859,27 +1916,159 @@ void GameUI_FillAddress(HMODULE hGameUI)
 		ctx.GameUITextBase = GameUITextBase;
 		ctx.GameUITextSize = GameUITextSize;
 
-		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.CTaskBar_ctor, 0x120, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.CTaskBar_ctor, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (CTaskBarCtorSearchContext*)context;
 
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->GameUIRdataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->GameUIRdataBase + ctx->GameUIRdataSize))
+			if (!ctx->CTaskBar_vftable)
 			{
-				auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
-				if (candidate[0] >= (PUCHAR)ctx->GameUITextBase && candidate[0] < (PUCHAR)ctx->GameUITextBase + ctx->GameUITextSize)
+				if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.disp == 0 &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->GameUIRdataBase &&
+						(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->GameUIRdataBase + ctx->GameUIRdataSize))
 				{
-					ctx->CTaskBar_vftable = candidate;
+					auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
+
+					if (candidate[0] >= (PUCHAR)ctx->GameUITextBase && candidate[0] < (PUCHAR)ctx->GameUITextBase + ctx->GameUITextSize)
+					{
+						ctx->CTaskBar_vftable = candidate;
+						gPrivateFuncs.CTaskBar_OnCommand = (decltype(gPrivateFuncs.CTaskBar_OnCommand))ctx->CTaskBar_vftable[348 / 4];
+					}
 				}
 			}
 
-			if (ctx->CTaskBar_vftable)
-				return TRUE;
+			if (address[0] == 0xE8)
+			{
+				PVOID call_candidate = (decltype(call_candidate))GetCallAddress(address);
+
+				typedef struct
+				{
+					PVOID GameUIDataBase;
+					ULONG GameUIDataSize;
+
+					PVOID GameUIRdataBase;
+					ULONG GameUIRdataSize;
+
+					PVOID GameUITextBase;
+					ULONG GameUITextSize;
+
+					bool bHasPush18h;
+					bool bHasPushGameMenu;
+					int instCount_PushGameMenu;
+					PVOID* KeyValues_vftable;
+
+				}CTaskBarCtorSearchContext2;
+
+				CTaskBarCtorSearchContext2 ctx2 = { 0 };
+
+				ctx2.GameUIDataBase = ctx->GameUIDataBase;
+				ctx2.GameUIDataSize = ctx->GameUIDataSize;
+
+				ctx2.GameUIRdataBase = ctx->GameUIRdataBase;
+				ctx2.GameUIRdataSize = ctx->GameUIRdataSize;
+
+				ctx2.GameUITextBase = ctx->GameUITextBase;
+				ctx2.GameUITextSize = ctx->GameUITextSize;
+
+				g_pMetaHookAPI->DisasmRanges(call_candidate, 0x350, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto pinst = (cs_insn*)inst;
+					auto ctx2 = (CTaskBarCtorSearchContext2*)context;
+
+					if (!ctx2->bHasPush18h &&
+						pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+						pinst->detail->x86.operands[0].imm == 0x18)
+					{
+						ctx2->bHasPush18h = true;
+					}
+
+					if (ctx2->bHasPush18h &&
+						pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+						(
+							((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx2->GameUIDataBase &&
+								(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx2->GameUIDataBase + ctx2->GameUIDataSize) ||
+							((PUCHAR)pinst->detail->x86.operands[0].imm > (PUCHAR)ctx2->GameUIRdataBase &&
+								(PUCHAR)pinst->detail->x86.operands[0].imm < (PUCHAR)ctx2->GameUIRdataBase + ctx2->GameUIRdataSize)
+							))
+					{
+						auto pString = (PCHAR)pinst->detail->x86.operands[0].imm;
+
+						if (!memcmp(pString, "GameMenu\0", sizeof("GameMenu\0") - 1))
+						{
+							ctx2->bHasPushGameMenu = true;
+							ctx2->instCount_PushGameMenu = instCount;
+						}
+					}
+
+					if (!gPrivateFuncs.KeyValues_ctor)
+					{
+						if (address[0] == 0xE8)
+						{
+							if (ctx2->bHasPushGameMenu && instCount > ctx2->instCount_PushGameMenu && instCount < ctx2->instCount_PushGameMenu + 5)
+							{
+								gPrivateFuncs.KeyValues_ctor = (decltype(gPrivateFuncs.KeyValues_ctor))GetCallAddress(address);
+
+								g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.KeyValues_ctor, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+									auto pinst = (cs_insn*)inst;
+									auto ctx2 = (CTaskBarCtorSearchContext2*)context;
+
+									if (!ctx2->KeyValues_vftable)
+									{
+										if (pinst->id == X86_INS_MOV &&
+											pinst->detail->x86.op_count == 2 &&
+											pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+											pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+											((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx2->GameUIRdataBase &&
+												(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx2->GameUIRdataBase + ctx2->GameUIRdataSize))
+										{
+											auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
+
+											if (candidate[0] >= (PUCHAR)ctx2->GameUITextBase && candidate[0] < (PUCHAR)ctx2->GameUITextBase + ctx2->GameUITextSize)
+											{
+												ctx2->KeyValues_vftable = candidate;
+												gPrivateFuncs.KeyValues_LoadFromFile = (decltype(gPrivateFuncs.KeyValues_LoadFromFile))ctx2->KeyValues_vftable[2];
+											}
+										}
+									}
+
+									if(gPrivateFuncs.KeyValues_LoadFromFile)
+										return TRUE;
+
+									if (address[0] == 0xCC)
+										return TRUE;
+
+									if (pinst->id == X86_INS_RET)
+										return TRUE;
+
+									return FALSE;
+
+								}, 0, ctx2);
+							}
+						}
+					}
+
+					if (gPrivateFuncs.KeyValues_ctor)
+						return TRUE;
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+
+				}, 0, &ctx2);
+			}
 
 			if (address[0] == 0xCC)
 				return TRUE;
@@ -1889,21 +2078,14 @@ void GameUI_FillAddress(HMODULE hGameUI)
 
 			return FALSE;
 
-			}, 0, & ctx);
-
-		//Sig_VarNotFound(ctx.CTaskBar_vftable);
-		
-		if (ctx.CTaskBar_vftable)
-		{
-			gPrivateFuncs.CTaskBar_OnCommand = (decltype(gPrivateFuncs.CTaskBar_OnCommand))ctx.CTaskBar_vftable[348 / 4];
-		}
+		}, 0, & ctx);
 	}
+
+	Sig_FuncNotFound(KeyValues_ctor);
+	Sig_FuncNotFound(KeyValues_LoadFromFile);
 
 	gPrivateFuncs.GameUI_Panel_Init = (decltype(gPrivateFuncs.GameUI_Panel_Init))VGUI2_FindPanelInit(GameUITextBase, GameUITextSize);
 	Sig_FuncNotFound(GameUI_Panel_Init);
-
-	//gPrivateFuncs.PropertySheet_HasHotkey = (decltype(gPrivateFuncs.PropertySheet_HasHotkey))((PUCHAR)GameUIBase + 0x53060);
-	//gPrivateFuncs.FocusNavGroup_GetCurrentFocus = (decltype(gPrivateFuncs.FocusNavGroup_GetCurrentFocus))((PUCHAR)GameUIBase + 0x4D640);
 }
 
 HMODULE GetGameUIModule();
@@ -1965,6 +2147,11 @@ void GameUI_InstallHooks(void)
 		Install_InlineHook(CTaskBar_ctor);
 	}
 
+	if (gPrivateFuncs.KeyValues_LoadFromFile)
+	{
+		Install_InlineHook(KeyValues_LoadFromFile);
+	}
+
 	Install_InlineHook(COptionsDialog_ctor);
 	Install_InlineHook(COptionsSubVideo_ApplyVidSettings);
 	
@@ -1990,6 +2177,7 @@ void GameUI_UninstallHooks(void)
 	Uninstall_Hook(CGameConsoleDialog_ctor);
 	Uninstall_Hook(CCreateMultiplayerGameDialog_ctor);
 	Uninstall_Hook(CTaskBar_ctor);
+	Uninstall_Hook(KeyValues_LoadFromFile);
 	Uninstall_Hook(COptionsDialog_ctor);
 	Uninstall_Hook(COptionsSubVideo_ApplyVidSettings);
 	Uninstall_Hook(RichText_InsertChar);

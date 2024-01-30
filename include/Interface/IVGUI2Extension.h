@@ -5,6 +5,7 @@
 
 #include <IGameUI.h>
 #include <IClientVGUI.h>
+#include <IFileSystem.h>
 #include <VGUI\VGUI.h>
 
 #define DEFINE_VGUI2EXTENSION_CALLBACK_SIMPLE(name, ...)  virtual void name(__VA_ARGS__) = 0;
@@ -87,6 +88,12 @@ public:
     DEFINE_VGUI2EXTENSION_CALLBACK(CTaskBar_OnCommand, void*& pPanel, const char*& command);
 };
 
+class IVGUI2Extension_GameUIKeyValuesCallbacks : public IVGUI2Extension_BaseCallbacks
+{
+public:
+    DEFINE_VGUI2EXTENSION_CALLBACK(KeyValues_LoadFromFile, void* &pthis, IFileSystem* &pFileSystem, const char* &resourceName, const char* &pathId);
+};
+
 class IVGUI2Extension_GameUICallbacks : public IVGUI2Extension_BaseCallbacks
 {
 public:
@@ -135,12 +142,14 @@ public:
     virtual void RegisterGameUICallbacks(IVGUI2Extension_GameUICallbacks* pCallbacks) = 0;
     virtual void RegisterGameUIOptionDialogCallbacks(IVGUI2Extension_GameUIOptionDialogCallbacks* pCallbacks) = 0;
     virtual void RegisterGameUITaskBarCallbacks(IVGUI2Extension_GameUITaskBarCallbacks* pCallbacks) = 0;
+    virtual void RegisterGameUIKeyValuesCallbacks(IVGUI2Extension_GameUIKeyValuesCallbacks* pCallbacks) = 0;
     virtual void RegisterClientVGUICallbacks(IVGUI2Extension_ClientVGUICallbacks* pCallbacks) = 0;
 
     virtual void UnregisterBaseUICallbacks(IVGUI2Extension_BaseUICallbacks* pCallbacks) = 0;
     virtual void UnregisterGameUICallbacks(IVGUI2Extension_GameUICallbacks* pCallbacks) = 0;
     virtual void UnregisterGameUIOptionDialogCallbacks(IVGUI2Extension_GameUIOptionDialogCallbacks* pCallbacks) = 0;
     virtual void UnregisterGameUITaskBarCallbacks(IVGUI2Extension_GameUITaskBarCallbacks* pCallbacks) = 0;
+    virtual void UnregisterGameUIKeyValuesCallbacks(IVGUI2Extension_GameUIKeyValuesCallbacks* pCallbacks) = 0;
     virtual void UnregisterClientVGUICallbacks(IVGUI2Extension_ClientVGUICallbacks* pCallbacks) = 0;
 
     virtual const char* GetBaseDirectory() const = 0;
@@ -149,4 +158,4 @@ public:
 
 IVGUI2Extension* VGUI2Extension();
 
-#define VGUI2_EXTENSION_INTERFACE_VERSION "VGUI2_Extension_API_002"
+#define VGUI2_EXTENSION_INTERFACE_VERSION "VGUI2_Extension_API_003"
