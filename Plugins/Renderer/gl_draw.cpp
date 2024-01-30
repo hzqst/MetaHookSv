@@ -2,6 +2,7 @@
 #include "MurmurHash2.h"
 #include <ScopeExit/ScopeExit.h>
 #include <FreeImage.h>
+#include <strtools.h>
 
 // Definitions for the translation and pixel arrays, presumably for texture processing.
 static byte texloader_buffer[4096 * 4096 * 4];
@@ -1581,10 +1582,6 @@ texture_t *Draw_DecalTexture(int index)
 	return texture;
 }
 
-int LittleLong(int l);
-short LittleShort(short l);
-float LittleFloat(float l);
-
 void Draw_MiptexTexture(cachewad_t *wad, byte *data)
 {
 	texture_t* tex;
@@ -2058,44 +2055,6 @@ bool LoadDDS(const char* filename, const char* pathId, gl_loadtexture_context_t 
 	context->height = fileHeader10.Header.dwHeight;
 
 	return context->callback(context);
-}
-
-#define PATHSEPARATOR(c) ((c) == '\\' || (c) == '/')
-//-----------------------------------------------------------------------------
-// Purpose: Returns a pointer to the beginning of the unqualified file name 
-//			(no path information)
-// Input:	in - file name (may be unqualified, relative or absolute path)
-// Output:	pointer to unqualified file name
-//-----------------------------------------------------------------------------
-const char * V_UnqualifiedFileName(const char * in)
-{
-	// back up until the character after the first path separator we find,
-	// or the beginning of the string
-	const char * out = in + strlen(in) - 1;
-	while ((out > in) && (!PATHSEPARATOR(*(out - 1))))
-		out--;
-	return out;
-}
-
-const char * V_GetFileExtension( const char * path )
-{
-	const char    *src;
-
-	src = path + strlen(path) - 1;
-
-	//
-	// back up until a . or the start
-	//
-	while (src != path && *(src-1) != '.' )
-		src--;
-
-	// check to see if the '.' is part of a pathname
-	if (src == path || *src == '\\' || *src == '/' )
-	{		
-		return NULL;  // no extension
-	}
-
-	return src;
 }
 
 unsigned WINAPI FI_Read(void *buffer, unsigned size, unsigned count, fi_handle handle)

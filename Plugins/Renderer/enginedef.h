@@ -68,10 +68,10 @@ typedef struct glRect_s
 	int l, t, w, h;
 }glRect_t;
 
-typedef struct vrect_s
+typedef struct vrect_GoldSrc_s
 {
 	int x, y, width, height;
-}vrect_t;
+}vrect_GoldSrc_t;
 
 typedef struct
 {
@@ -80,7 +80,7 @@ typedef struct
 
 typedef struct refdef_SvEngine_s
 {
-	vrect_t vrect;
+	vrect_GoldSrc_t vrect;
 	vec3_t vieworg;
 	vec3_t viewangles;
 	color24 ambientlight;
@@ -92,7 +92,7 @@ typedef struct refdef_SvEngine_s
 
 typedef struct refdef_GoldSrc_s
 {
-	vrect_t vrect;
+	vrect_GoldSrc_t vrect;
 	char padding[96];
 	vec3_t vieworg;
 	vec3_t viewangles;
