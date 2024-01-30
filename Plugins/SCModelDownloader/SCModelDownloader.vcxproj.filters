@@ -12,6 +12,27 @@
     <Filter Include="HLSDK">
       <UniqueIdentifier>{0749dfb7-e093-4f9a-b2f1-763f200b3525}</UniqueIdentifier>
     </Filter>
+    <Filter Include="VGUI2">
+      <UniqueIdentifier>{51e871d3-2f46-4ce0-8284-1151f3fecdd0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SourceSDK">
+      <UniqueIdentifier>{f3099672-273f-44aa-a428-a22f0fcac76a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="vgui_controls">
+      <UniqueIdentifier>{19fa925a-9caf-4246-a308-e931fd7100d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SourceSDK\tier1">
+      <UniqueIdentifier>{f6971a2d-eb82-467f-8af4-0eda377bda6f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SourceSDK\tier0">
+      <UniqueIdentifier>{24f3a40e-9625-41ba-b876-34fdf0eb9dc6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SourceSDK\mathlib">
+      <UniqueIdentifier>{ac0972e5-014e-4dd0-9264-2b3962c2224a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SourceSDK\vstdlib">
+      <UniqueIdentifier>{6baabead-71ac-4849-96a6-6b884d08d9af}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="exportfuncs.cpp">
@@ -35,6 +56,330 @@
     <ClCompile Include="UtilAssetsIntegrity.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\Bitmap.cpp">
+      <Filter>SourceSDK</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\Border.cpp">
+      <Filter>SourceSDK</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\filesystem.cpp">
+      <Filter>SourceSDK</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\filesystem_helpers.cpp">
+      <Filter>SourceSDK</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\AnalogBar.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\AnimatingImagePanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\AnimationController.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\BitmapImagePanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\BuildFactoryHelper.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\BuildGroup.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\BuildModeDialog.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\Button.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\CheckButton.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\CheckButtonList.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\CircularProgressBar.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\ComboBox.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\consoledialog.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\ControllerMap.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\Controls.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\CvarSlider.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\CvarTextEntry.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\CvarToggleCheckButton.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\DirectorySelectDialog.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\Divider.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\EditablePanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\ExpandButton.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\FileOpenDialog.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\FocusNavGroup.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\Frame.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\GraphPanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\HTML.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\Image.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\ImageList.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\ImagePanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\InputDialog.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\KeyBindingHelpDialog.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\KeyBoardEditorDialog.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\KeyRepeat.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\Label.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\ListPanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\ListViewPanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\MemoryBitmap.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\Menu.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\MenuBar.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\MenuButton.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\MenuItem.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\MessageBox.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\MessageDialog.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\Panel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\PanelListPanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\ProgressBar.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\ProgressBox.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\PropertyDialog.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\PropertyPage.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\PropertySheet.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\QueryBox.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\RadioButton.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\RichText.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\RotatingProgressBar.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\savedocumentquery.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\ScrollableEditablePanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\ScrollBar.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\ScrollBarSlider.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\SectionedListPanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\Slider.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\Splitter.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\subrectimage.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\TextEntry.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\TextImage.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\ToggleButton.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\Tooltip.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\ToolWindow.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\TreeView.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\TreeViewListControl.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\URLLabel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\vgui_controls.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\WizardPanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\vgui_controls\WizardSubPanel.cpp">
+      <Filter>vgui_controls</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseUI.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="GameUI.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="VGUI2ExtensionImport.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\assert_dialog.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\cpu.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\dbg.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\fasttimer.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\mem.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\mem_helpers.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\memdbg.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\memstd.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\minidump.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\platform.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\threadtools.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\vcrmode.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\characterset.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\generichash.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\KeyValues.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\mempool.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\memstack.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\stringpool.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\strtools.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\utlbuffer.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\utlstring.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\utlsymbol.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\vstdlib\KeyValuesSystem.cpp">
+      <Filter>SourceSDK\vstdlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\vstdlib\random.cpp">
+      <Filter>SourceSDK\vstdlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\mathlib\3dnow.cpp">
+      <Filter>SourceSDK\mathlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\mathlib\mathlib_base.cpp">
+      <Filter>SourceSDK\mathlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\mathlib\sse.cpp">
+      <Filter>SourceSDK\mathlib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
@@ -54,6 +399,462 @@
     </ClInclude>
     <ClInclude Include="UtilAssetsIntegrity.h">
       <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\Bitmap.h">
+      <Filter>SourceSDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\Border.h">
+      <Filter>SourceSDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\Color.h">
+      <Filter>SourceSDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\datamap.h">
+      <Filter>SourceSDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\filesystem.h">
+      <Filter>SourceSDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\filesystem_helpers.h">
+      <Filter>SourceSDK</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\AnalogBar.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\AnimatingImagePanel.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\AnimationController.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\BitmapImagePanel.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\BuildGroup.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\BuildModeDialog.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\Button.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\CheckButton.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\CheckButtonList.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\CircularProgressBar.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\ComboBox.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\consoledialog.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\ControllerMap.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\Controls.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\CvarSlider.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\CvarTextEntry.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\CvarToggleCheckButton.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\DialogManager.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\DirectorySelectDialog.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\Divider.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\EditablePanel.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\ExpandButton.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\FileOpenDialog.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\FocusNavGroup.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\Frame.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\GraphPanel.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\HTML.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\Image.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\ImageList.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\ImagePanel.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\InputDialog.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\KeyBindingHelpDialog.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\KeyBindingMap.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\KeyBoardEditorDialog.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\KeyRepeat.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\Label.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\ListPanel.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\ListViewPanel.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\MemoryBitmap.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\Menu.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\MenuBar.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\MenuButton.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\MenuItem.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\MessageBox.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\MessageDialog.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\MessageMap.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\Panel.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\PanelAnimationVar.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\PanelListPanel.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\pch_vgui_controls.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\PHandle.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\ProgressBar.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\ProgressBox.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\PropertyDialog.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\PropertyPage.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\PropertySheet.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\QueryBox.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\RadioButton.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\RichText.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\RotatingProgressBar.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\savedocumentquery.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\ScrollableEditablePanel.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\ScrollBar.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\ScrollBarSlider.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\SectionedListPanel.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\Slider.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\Splitter.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\subrectimage.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\TextEntry.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\TextImage.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\ToggleButton.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\Tooltip.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\ToolWindow.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\TreeView.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\TreeViewListControl.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\URLLabel.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\WizardPanel.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\vgui_controls\WizardSubPanel.h">
+      <Filter>vgui_controls</Filter>
+    </ClInclude>
+    <ClInclude Include="VGUI2ExtensionImport.h">
+      <Filter>VGUI2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\basetypes.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\commonmacros.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\dbg.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\dbgflag.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\fasttimer.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\l2cache.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\mem.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\mem_helpers.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\memalloc.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\memdbgoff.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\memdbgon.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\memstd.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\minidump.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\pch_tier0.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\platform.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\protected_things.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\resource.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\threadtools.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\tslist.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\validator.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\valobject.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\valve_off.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\valve_on.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\vcr_shared.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\vcrmode.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\vprof.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\wchartypes.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier0\xbox_codeline_defines.h">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\byteswap.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\characterset.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\convar.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\generichash.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\iconvar.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\interface.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\KeyValues.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\mempool.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\memstack.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\stringpool.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\strtools.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\tier1.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\utlblockmemory.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\utlbuffer.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\utldict.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\utlfixedmemory.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\utlflags.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\utlhandletable.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\utllinkedlist.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\utlmap.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\utlmemory.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\utlqueue.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\utlrbtree.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\utlstring.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\UtlStringMap.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\utlsymbol.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\tier1\utlvector.h">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\vstdlib\IKeyValuesSystem.h">
+      <Filter>SourceSDK\vstdlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\vstdlib\random.h">
+      <Filter>SourceSDK\vstdlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\vstdlib\vstdlib.h">
+      <Filter>SourceSDK\vstdlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\mathlib\3dnow.h">
+      <Filter>SourceSDK\mathlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\mathlib\amd3dx.h">
+      <Filter>SourceSDK\mathlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\mathlib\math_pfns.h">
+      <Filter>SourceSDK\mathlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\mathlib\mathlib.h">
+      <Filter>SourceSDK\mathlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\mathlib\sse.h">
+      <Filter>SourceSDK\mathlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\mathlib\ssemath.h">
+      <Filter>SourceSDK\mathlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\mathlib\ssequaternion.h">
+      <Filter>SourceSDK\mathlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\mathlib\vector.h">
+      <Filter>SourceSDK\mathlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\mathlib\vector2d.h">
+      <Filter>SourceSDK\mathlib</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

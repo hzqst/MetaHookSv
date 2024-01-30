@@ -81,7 +81,7 @@
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\Interface\VGUI;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(FreeImageIncludeDirectory);$(ScopeExitIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;RENDERER_EXPORTS;GLEW_STATIC;VGUI_USE_SURFACE2;VGUI_USE_SCHEME2;NO_MALLOC_OVERRIDE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;RENDERER_EXPORTS;GLEW_STATIC;VGUI_USE_SURFACE2;VGUI_USE_SCHEME2;VGUI_USE_INPUT2;NO_MALLOC_OVERRIDE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <PrecompiledHeader />
@@ -117,7 +117,7 @@ $(FreeImageCheckRequirements)</Command>
       <Optimization>MaxSpeed</Optimization>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
       <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\Interface\VGUI;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(FreeImageIncludeDirectory);$(ScopeExitIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;RENDERER_EXPORTS;GLEW_STATIC;VGUI_USE_SURFACE2;VGUI_USE_SCHEME2;NO_MALLOC_OVERRIDE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;RENDERER_EXPORTS;GLEW_STATIC;VGUI_USE_SURFACE2;VGUI_USE_SCHEME2;VGUI_USE_INPUT2;NO_MALLOC_OVERRIDE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
@@ -152,7 +152,7 @@ $(FreeImageCheckRequirements)</Command>
       <Optimization>MaxSpeed</Optimization>
       <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
       <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\Interface\VGUI;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(FreeImageIncludeDirectory);$(ScopeExitIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;RENDERER_EXPORTS;GLEW_STATIC;VGUI_USE_SURFACE2;VGUI_USE_SCHEME2;NO_MALLOC_OVERRIDE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;RENDERER_EXPORTS;GLEW_STATIC;VGUI_USE_SURFACE2;VGUI_USE_SCHEME2;VGUI_USE_INPUT2;NO_MALLOC_OVERRIDE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -189,7 +189,6 @@ $(FreeImageCheckRequirements)</Command>
     <ClCompile Include="..\..\include\HLSDK\common\interface.cpp" />
     <ClCompile Include="..\..\include\SourceSDK\filesystem.cpp" />
     <ClCompile Include="..\..\include\SourceSDK\filesystem_helpers.cpp" />
-    <ClCompile Include="..\..\include\SourceSDK\InputWin32.cpp" />
     <ClCompile Include="..\..\include\SourceSDK\mathlib\3dnow.cpp" />
     <ClCompile Include="..\..\include\SourceSDK\mathlib\mathlib_base.cpp" />
     <ClCompile Include="..\..\include\SourceSDK\mathlib\sse.cpp" />

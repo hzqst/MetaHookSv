@@ -95,6 +95,11 @@ public:
 		m_pLightGamma->ApplyChanges();
 	}
 
+	void OnApplyChanges(void) override
+	{
+		ApplyChanges();
+	}
+
 	void OnResetData(void) override
 	{
 		m_pDetailTexture->Reset();
@@ -220,7 +225,7 @@ public:
 			{
 				if (!vgui::localize()->AddFile(g_pFileSystem, "renderer/gameui_english.txt"))
 				{
-					g_pMetaHookAPI->SysError("Failed to load renderer/gameui_english.txt");
+					Sys_Error("Failed to load renderer/gameui_english.txt");
 				}
 			}
 		}
@@ -230,7 +235,7 @@ public:
 			{
 				if (!vgui::localize()->AddFile((IFileSystem*)g_pFileSystem_HL25, "renderer/gameui_english.txt"))
 				{
-					g_pMetaHookAPI->SysError("Failed to load renderer/gameui_english.txt");
+					Sys_Error("Failed to load renderer/gameui_english.txt");
 				}
 			}
 		}

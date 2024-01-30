@@ -338,9 +338,6 @@
     <ClCompile Include="..\..\include\SourceSDK\tier1\KeyValues.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\InputWin32.cpp">
-      <Filter>SourceSDK</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\include\SourceSDK\tier1\characterset.cpp">
       <Filter>SourceSDK\tier1</Filter>
     </ClCompile>
