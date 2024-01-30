@@ -293,6 +293,7 @@ $(FreeImageCheckRequirements)</Command>
     <ClCompile Include="..\..\include\vgui_controls\vgui_controls.cpp" />
     <ClCompile Include="..\..\include\vgui_controls\WizardPanel.cpp" />
     <ClCompile Include="..\..\include\vgui_controls\WizardSubPanel.cpp" />
+    <ClCompile Include="BaseUI.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="GameUI.cpp" />
     <ClCompile Include="gl_cvar.cpp" />

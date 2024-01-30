@@ -17,172 +17,9 @@
 
 #include <IVGUI2Extension.h>
 
-#include "Viewport.h"
 #include "plugins.h"
-#include "privatefuncs.h"
-#include <capstone.h>
-#include <set>
-#include <sstream>
 
-class COptionsSubVideoAdvancedDlg : public vgui::PropertyPage
-{
-	DECLARE_CLASS_SIMPLE(COptionsSubVideoAdvancedDlg, vgui::PropertyPage);
-
-public:
-	COptionsSubVideoAdvancedDlg(vgui::Panel *parent) : BaseClass(parent, "OptionsSubVideoAdvancedDlg")
-	{
-		m_pAnisotropicFiltering = new vgui::ComboBox(this, "AnisotropicFiltering", 5, false);
-		m_pAnisotropicFiltering->AddItem("1X", NULL);
-		m_pAnisotropicFiltering->AddItem("2X", NULL);
-		m_pAnisotropicFiltering->AddItem("4X", NULL);
-		m_pAnisotropicFiltering->AddItem("8X", NULL);
-		m_pAnisotropicFiltering->AddItem("16X", NULL);
-
-		m_pDetailTexture = new CCvarToggleCheckButton(this, "DetailTexture", "#GameUI_DetailTextures", "r_detailtextures");
-		m_pWaterShader = new CCvarToggleCheckButton(this, "WaterShader", "#GameUI_WaterShader", "r_water");
-		m_pDynamicShadow = new CCvarToggleCheckButton(this, "DynamicShadow", "#GameUI_DynamicShadow", "r_shadow");
-		m_pAmbientOcclusion = new CCvarToggleCheckButton(this, "AmbientOcclusion", "#GameUI_AmbientOcclusion", "r_ssao");
-		m_pDynamicLights = new CCvarToggleCheckButton(this, "DynamicLights", "#GameUI_DynamicLights", "r_light_dynamic");
-		m_pScreenSpaceReflection = new CCvarToggleCheckButton(this, "ScreenSpaceReflection", "#GameUI_ScreenSpaceReflection", "r_ssr");
-		m_pCelShade = new CCvarToggleCheckButton(this, "CelShade", "#GameUI_CelShade", "r_studio_celshade");
-		m_pAntiAliasing = new CCvarToggleCheckButton(this, "AntiAliasing", "#GameUI_AntiAliasing", "r_fxaa");
-		m_pSkyOcclusion = new CCvarToggleCheckButton(this, "SkyOcclusion", "#GameUI_SkyOcclusion", "r_wsurf_sky_occlusion");
-		m_pZPrepass = new CCvarToggleCheckButton(this, "ZPrepass", "#GameUI_ZPrepass", "r_wsurf_zprepass");
-		m_pHDR = new CCvarToggleCheckButton(this, "HDR", "#GameUI_HDR", "r_hdr");
-
-		m_pHDRExposure = new CCvarSlider(this, "HDRExposure", "#GameUI_HDRExposure", 0.1f, 2.0f, "r_hdr_exposure", false);
-		m_pHDRDarkness = new CCvarSlider(this, "HDRDarkness", "#GameUI_HDRDarkness", 0.1f, 2.0f, "r_hdr_darkness", false);
-		m_pBloomIntensity = new CCvarSlider(this, "BloomIntensity", "#GameUI_BloomIntensity", 0.0f, 1.0f, "r_hdr_blurwidth", false);
-		m_pShadowIntensity = new CCvarSlider(this, "ShadowIntensity", "#GameUI_ShadowIntensity", 0.0f, 1.0f, "r_shadow_intensity", false);
-
-		m_pTexGamma = new CCvarSlider(this, "TexGamma", "#GameUI_TexGamma", 1.8f, 3.0f, "texgamma", false);
-		m_pLightGamma = new CCvarSlider(this, "LightGamma", "#GameUI_LightGamma", 1.8f, 3.0f, "lightgamma", false);
-
-		LoadControlSettings("captionmod/OptionsSubVideoAdvancedDlg.res");
-	}
-
-	void ApplyChangesToConVar(const char *pConVarName, int value)
-	{
-		char szCmd[256] = {0};
-		Q_snprintf(szCmd, sizeof(szCmd) - 1, "%s %d\n", pConVarName, value);
-		gEngfuncs.pfnClientCmd(szCmd);
-	}
-
-	void ApplyChanges(void)
-	{
-		int activateItem = m_pAnisotropicFiltering->GetActiveItem();
-
-		switch (activateItem)
-		{
-		case 0: ApplyChangesToConVar("gl_ansio", 1); break;
-		case 1: ApplyChangesToConVar("gl_ansio", 2); break;
-		case 2: ApplyChangesToConVar("gl_ansio", 4); break;
-		case 3: ApplyChangesToConVar("gl_ansio", 8); break;
-		case 4: ApplyChangesToConVar("gl_ansio", 16); break;
-		}
-
-		ApplyChangesToConVar(m_pDetailTexture->GetCvarName(), m_pDetailTexture->IsSelected());
-		ApplyChangesToConVar(m_pWaterShader->GetCvarName(), m_pWaterShader->IsSelected());
-		ApplyChangesToConVar(m_pDynamicShadow->GetCvarName(), m_pDynamicShadow->IsSelected());
-		ApplyChangesToConVar(m_pAmbientOcclusion->GetCvarName(), m_pAmbientOcclusion->IsSelected());
-		ApplyChangesToConVar(m_pScreenSpaceReflection->GetCvarName(), m_pScreenSpaceReflection->IsSelected());
-		ApplyChangesToConVar(m_pCelShade->GetCvarName(), m_pCelShade->IsSelected());
-		ApplyChangesToConVar(m_pAntiAliasing->GetCvarName(), m_pAntiAliasing->IsSelected());
-		ApplyChangesToConVar(m_pSkyOcclusion->GetCvarName(), m_pSkyOcclusion->IsSelected());
-		ApplyChangesToConVar(m_pZPrepass->GetCvarName(), m_pZPrepass->IsSelected());
-		ApplyChangesToConVar(m_pHDR->GetCvarName(), m_pHDR->IsSelected());
-
-		m_pHDRExposure->ApplyChanges();
-		m_pHDRDarkness->ApplyChanges();
-		m_pBloomIntensity->ApplyChanges();
-		m_pShadowIntensity->ApplyChanges();
-		m_pTexGamma->ApplyChanges();
-		m_pLightGamma->ApplyChanges();
-	}
-
-	void OnResetData(void) override
-	{
-		m_pDetailTexture->Reset();
-		m_pWaterShader->Reset();
-		m_pDynamicShadow->Reset();
-		m_pDynamicLights->Reset();
-		m_pAmbientOcclusion->Reset();
-		m_pScreenSpaceReflection->Reset();
-		m_pCelShade->Reset();
-		m_pAntiAliasing->Reset();
-		m_pSkyOcclusion->Reset();
-		m_pZPrepass->Reset();
-		m_pHDR->Reset();
-
-		m_pHDRExposure->Reset();
-		m_pHDRDarkness->Reset();
-		m_pBloomIntensity->Reset();
-		m_pShadowIntensity->Reset();
-		m_pTexGamma->Reset();
-		m_pLightGamma->Reset();
-
-		auto gl_ansio = gEngfuncs.pfnGetCvarPointer("gl_ansio");
-
-		if (gl_ansio)
-		{
-			int ansio = gl_ansio->value;
-
-			if (ansio >= 16)
-				m_pAnisotropicFiltering->ActivateItem(4);
-			else if (ansio >= 8)
-				m_pAnisotropicFiltering->ActivateItem(3);
-			else if (ansio >= 4)
-				m_pAnisotropicFiltering->ActivateItem(2);
-			else if (ansio >= 2)
-				m_pAnisotropicFiltering->ActivateItem(1);
-			else
-				m_pAnisotropicFiltering->ActivateItem(0);
-		}
-		else
-		{
-			m_pAnisotropicFiltering->SetEnabled(false);
-		}
-	}
-
-	void OnCommand(const char *command) override
-	{
-		if (!stricmp(command, "OK"))
-		{
-			ApplyChanges();
-		}
-		else if (!stricmp(command, "Apply"))
-		{
-			ApplyChanges();
-		}
-		else
-		{
-			BaseClass::OnCommand(command);
-		}
-	}
-
-	MESSAGE_FUNC(OnDataChanged, "ControlModified");
-
-private:
-	vgui::ComboBox *m_pAnisotropicFiltering;
-	CCvarToggleCheckButton *m_pDetailTexture;
-	CCvarToggleCheckButton *m_pWaterShader;
-	CCvarToggleCheckButton *m_pDynamicShadow;
-	CCvarToggleCheckButton *m_pAmbientOcclusion;
-	CCvarToggleCheckButton *m_pDynamicLights;
-	CCvarToggleCheckButton *m_pScreenSpaceReflection;
-	CCvarToggleCheckButton *m_pCelShade;
-	CCvarToggleCheckButton *m_pAntiAliasing;
-	CCvarToggleCheckButton *m_pSkyOcclusion;
-	CCvarToggleCheckButton *m_pZPrepass;
-	CCvarToggleCheckButton *m_pHDR;
-
-	CCvarSlider *m_pHDRExposure;
-	CCvarSlider *m_pHDRDarkness;
-	CCvarSlider *m_pBloomIntensity;
-	CCvarSlider *m_pShadowIntensity;
-	CCvarSlider *m_pTexGamma;
-	CCvarSlider *m_pLightGamma;
-};
+#include "Viewport.h"
 
 class COptionsSubAudioAdvancedDlg : public vgui::PropertyPage
 {
@@ -273,11 +110,6 @@ private:
 	CCvarTextEntry *m_pStartTimeScaleEntry;
 };
 
-void COptionsSubVideoAdvancedDlg::OnDataChanged()
-{
-	GetParentWithModuleName("GameUI")->PostActionSignal(new KeyValues("ApplyButtonEnable"));
-}
-
 void COptionsSubAudioAdvancedDlg::OnDataChanged()
 {
 	GetParentWithModuleName("GameUI")->PostActionSignal(new KeyValues("ApplyButtonEnable"));
@@ -304,7 +136,11 @@ public:
 
 	void Initialize(CreateInterfaceFn* factories, int count) override
 	{
-		vgui::VGui_InitInterfacesList("CaptionMod", factories, count);
+		if (!vgui::VGui_InitInterfacesList("CaptionMod", factories, count))
+		{
+			Sys_Error("Failed to VGui_InitInterfacesList");
+			return;
+		}
 	}
 
 	void Start(struct cl_enginefuncs_s* engineFuncs, int interfaceVersion, void* system) override

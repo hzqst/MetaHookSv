@@ -109,6 +109,9 @@ static CVGUI2Extension_BaseUICallbacks s_BaseUICallbacks;
 
 void BaseUI_InstallHooks(void)
 {
+	if (!VGUI2Extension())
+		return;
+
 	CreateInterfaceFn fnCreateInterface = g_pMetaHookAPI->GetEngineFactory();
 
 	if (!fnCreateInterface)
@@ -130,5 +133,8 @@ void BaseUI_InstallHooks(void)
 
 void BaseUI_UninstallHooks(void)
 {
+	if (!VGUI2Extension())
+		return;
+
 	VGUI2Extension()->UnregisterBaseUICallbacks(&s_BaseUICallbacks);
 }

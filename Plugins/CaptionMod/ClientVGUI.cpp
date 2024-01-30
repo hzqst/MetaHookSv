@@ -28,7 +28,11 @@ public:
 
 	void Initialize(CreateInterfaceFn* factories, int count) override
 	{
-		vgui::VGui_InitInterfacesList("CaptionMod", factories, count);
+		if (!vgui::VGui_InitInterfacesList("CaptionMod", factories, count))
+		{
+			Sys_Error("Failed to VGui_InitInterfacesList");
+			return;
+		}
 
 		vgui::scheme()->LoadSchemeFromFile("captionmod/CaptionScheme.res", "CaptionScheme");
 

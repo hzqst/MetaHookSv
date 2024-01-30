@@ -3,9 +3,6 @@
 #include <locale.h>
 #include <VGUI/IEngineVGui.h>
 #include <IEngineSurface.h>
-#include "plugins.h"
-
-#include <capstone.h>
 
 vgui::IInput *g_pVGuiInput = NULL;
 vgui::ISystem *g_pVGuiSystem = NULL;
@@ -59,7 +56,7 @@ bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryL
 
 	if (!g_pFullFileSystem || !g_pKeyValuesSystem || !g_pVGuiInput || !g_pVGuiSystem || !g_pVGui || !g_pVGuiPanel || !g_pVGuiLocalize)
 	{
-		g_pMetaHookAPI->SysError("vgui_controls is missing a required interface!\n");
+		//g_pMetaHookAPI->SysError("vgui_controls is missing a required interface!\n");
 		return false;
 	}
 

@@ -2,9 +2,6 @@
 #include "exportfuncs.h"
 #include "privatefuncs.h"
 
-//Steam API
-#include "steam_api.h"
-
 //Viewport
 #include <IVGUI2Extension.h>
 #include <VGUI/VGUI.h>

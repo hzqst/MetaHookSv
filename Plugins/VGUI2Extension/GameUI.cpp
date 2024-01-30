@@ -36,6 +36,32 @@ namespace vgui
 bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryList, int numFactories);
 }
 
+#define LOAD_CONTROL_SETTINGS_FALLBACK(panel, name) \
+auto bIsResourceExists = FILESYSTEM_ANY_FILEEXISTS("resource/"##name);\
+if (bIsResourceExists)\
+{\
+	gPrivateFuncs.GameUI_LoadControlSettings(panel, 0, "resource/"##name, NULL);\
+}\
+else\
+{\
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)\
+	{\
+		bIsResourceExists = FILESYSTEM_ANY_FILEEXISTS("vgui2ext/resource_hl25/"##name);\
+		if (bIsResourceExists)\
+		{\
+			gPrivateFuncs.GameUI_LoadControlSettings(panel, 0, "vgui2ext/resource_hl25/"##name, NULL);\
+		}\
+	}\
+	else\
+	{\
+		bIsResourceExists = FILESYSTEM_ANY_FILEEXISTS("vgui2ext/resource/"##name);\
+		if (bIsResourceExists)\
+		{\
+			gPrivateFuncs.GameUI_LoadControlSettings(panel, 0, "vgui2ext/resource/"##name, NULL);\
+		}\
+	}\
+}\
+
 static int g_iPatchingPanelTall = 0;
 static bool g_bPatchingGetFontTall = false;
 
@@ -808,7 +834,7 @@ void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel*
 	VGUI2ExtensionInternal()->GameUI_COptionsDialog_ctor(&CallbackContext);
 
 	//Load res to make it proportional
-	gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource/OptionsDialog.res", NULL);
+	LOAD_CONTROL_SETTINGS_FALLBACK("OptionsDialog.res");
 
 	return result;
 }
@@ -818,7 +844,7 @@ void* __fastcall CCreateMultiplayerGameDialog_ctor(vgui::Panel* pthis, int dummy
 	auto result = gPrivateFuncs.CCreateMultiplayerGameDialog_ctor(pthis, dummy, parent);
 
 	//Load res to make it proportional
-	gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource/CreateMultiplayerGameDialog.res", NULL);
+	LOAD_CONTROL_SETTINGS_FALLBACK(pthis, "CreateMultiplayerGameDialog.res");
 
 	return result;
 }
@@ -828,7 +854,7 @@ void* __fastcall CGameConsoleDialog_ctor(vgui::Panel* pthis, int dummy)
 	auto result = gPrivateFuncs.CGameConsoleDialog_ctor(pthis, dummy);
 
 	//Load res to make it proportional
-	gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource/GameConsoleDialog.res", NULL);
+	LOAD_CONTROL_SETTINGS_FALLBACK(pthis, "GameConsoleDialog.res");
 
 	return result;
 }

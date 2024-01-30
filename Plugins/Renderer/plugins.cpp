@@ -82,6 +82,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	R_RedirectLegacyOpenGLTextureAllocation();
 
 	VGUI2Extension_Init();
+	BaseUI_InstallHooks();
 	GameUI_InstallHooks();
 }
 
@@ -120,7 +121,8 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 void IPluginsV4::ExitGame(int iResult)
 {
-	GameUI_InstallHooks();
+	BaseUI_UninstallHooks();
+	GameUI_UninstallHooks();
 	VGUI2Extension_Shutdown();
 	R_UninstallHooksForEngineDLL();
 }

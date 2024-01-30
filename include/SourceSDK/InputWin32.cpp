@@ -12,7 +12,7 @@
 #include <imm.h>
 #pragma comment(lib, "Imm32.lib")
 
-#include "privatefuncs.h"
+#include "plugins.h"
 
 extern vgui::IVGui *g_pVGui;
 

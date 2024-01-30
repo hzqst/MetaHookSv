@@ -382,6 +382,9 @@ GameUI init & shutdown
 
 void GameUI_InstallHooks(void)
 {
+	if (!VGUI2Extension())
+		return;
+
 	VGUI2Extension()->RegisterGameUICallbacks(&s_GameUICallbacks);
 	VGUI2Extension()->RegisterGameUIOptionDialogCallbacks(&s_GameUIOptionDialogCallbacks);
 	VGUI2Extension()->RegisterGameUIKeyValuesCallbacks(&s_GameUIKeyValuesCallbacks);
@@ -389,6 +392,9 @@ void GameUI_InstallHooks(void)
 
 void GameUI_UninstallHooks(void)
 {
+	if (!VGUI2Extension())
+		return;
+
 	VGUI2Extension()->UnregisterGameUICallbacks(&s_GameUICallbacks);
 	VGUI2Extension()->UnregisterGameUIOptionDialogCallbacks(&s_GameUIOptionDialogCallbacks);
 	VGUI2Extension()->UnregisterGameUIKeyValuesCallbacks(&s_GameUIKeyValuesCallbacks);

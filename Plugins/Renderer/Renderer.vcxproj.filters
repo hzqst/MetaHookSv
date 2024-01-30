@@ -113,12 +113,6 @@
     <ClCompile Include="..\..\include\HLSDK\common\interface.cpp">
       <Filter>HLSDK</Filter>
     </ClCompile>
-    <ClCompile Include="GameUI.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
-    <ClCompile Include="VGUI2ExtensionImport.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\include\vgui_controls\AnalogBar.cpp">
       <Filter>vgui_controls</Filter>
     </ClCompile>
@@ -431,6 +425,15 @@
     <ClCompile Include="..\..\include\SourceSDK\mathlib\sse.cpp">
       <Filter>SourceSDK\mathlib</Filter>
     </ClCompile>
+    <ClCompile Include="GameUI.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="VGUI2ExtensionImport.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseUI.cpp">
+      <Filter>VGUI2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bspfile.h">
@@ -509,9 +512,6 @@
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="gl_common.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="VGUI2ExtensionImport.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\vgui_controls\AnalogBar.h">
@@ -927,6 +927,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\SourceSDK\filesystem_helpers.h">
       <Filter>SourceSDK</Filter>
+    </ClInclude>
+    <ClInclude Include="VGUI2ExtensionImport.h">
+      <Filter>VGUI2</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -98,13 +98,6 @@ void Client_UninstallHooks(void);
 void Engine_FillAddress(void);
 void Engine_InstallHooks(void);
 void Engine_UninstallHooks(void);
-void BaseUI_InstallHooks(void);
-void BaseUI_UninstallHooks(void);
-void GameUI_FillAddress(HMODULE hModule);
-void GameUI_InstallHooks(void);
-void GameUI_UninstallHooks(void);
-void ClientVGUI_InstallHooks(void);
-void ClientVGUI_UninstallHooks(void);
 void FMOD_InstallHooks(HMODULE fmodex);
 void FMOD_UninstallHooks(HMODULE fmodex);
 
