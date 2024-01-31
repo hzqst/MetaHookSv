@@ -5,9 +5,10 @@
 #pragma once
 #endif
 
-#include "interface.h"
+#include <interface.h>
 
-class Color;
+#include <vgui/VGUI.h>
+//class Color;
 
 class IGameConsole : public IBaseInterface
 {
@@ -20,7 +21,7 @@ public:
 	virtual void Printf(const char *format, ...) = 0;
 	virtual void DPrintf(const char *format, ...) = 0;
 	//virtual void ColorPrintf(Color &clr) = 0;	// Doesn't exist on GS
-	virtual void SetParent(int parent) = 0;
+	virtual void SetParent(vgui::VPANEL parent) = 0;
 };
 
 #define GAMECONSOLE_INTERFACE_VERSION_GS "GameConsole003"

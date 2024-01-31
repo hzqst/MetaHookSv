@@ -1,6 +1,7 @@
 #include <metahook.h>
 #include <cvardef.h>
 #include <IGameUI.h>
+#include <IGameConsole.h>
 #include <vgui/VGUI.h>
 #include <vgui/IPanel.h>
 #include <vgui_controls/Panel.h>
@@ -85,6 +86,12 @@ int GetPatchedGetFontTall(int fontTall)
 
 	return fontTall;
 }
+
+/*
+==================================================================================
+vgui_controls hook
+==================================================================================
+*/
 
 void __fastcall RichText_InsertChar(void* pthis, int dummy, wchar_t ch)
 {
@@ -183,6 +190,339 @@ void __fastcall GameUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, i
 		pfnSetProportional(pthis, 0, true);
 	}
 }
+
+void __fastcall COptionsSubVideo_ApplyVidSettings(vgui::Panel* pthis, int dummy, bool bForceRestart)
+{
+	void* _this = pthis;
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	VGUI2ExtensionInternal()->GameUI_COptionsSubVideo_ApplyVidSettings(_this, bForceRestart, &CallbackContext);
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	{
+		gPrivateFuncs.COptionsSubVideo_ApplyVidSettings(_this, dummy, bForceRestart);
+	}
+
+	CallbackContext.IsPost = true;
+
+	VGUI2ExtensionInternal()->GameUI_COptionsSubVideo_ApplyVidSettings(_this, bForceRestart, &CallbackContext);
+}
+
+void __fastcall COptionsSubVideo_ApplyVidSettings_HL25(vgui::Panel* pthis, int dummy)
+{
+	void* _this = pthis;
+	bool bForceRestart = false;
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	VGUI2ExtensionInternal()->GameUI_COptionsSubVideo_ApplyVidSettings(_this, bForceRestart, &CallbackContext);
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	{
+		gPrivateFuncs.COptionsSubVideo_ApplyVidSettings_HL25(pthis, dummy);
+	}
+
+	CallbackContext.IsPost = true;
+
+	VGUI2ExtensionInternal()->GameUI_COptionsSubVideo_ApplyVidSettings(_this, bForceRestart, &CallbackContext);
+}
+
+void* __fastcall FocusNavGroup_GetCurrentFocus(void* pthis, int dummy)
+{
+	vgui::VPanelHandle* _currentFocus = (vgui::VPanelHandle*)((PUCHAR)pthis + 12);
+
+	auto vpanel = _currentFocus->Get();
+
+	if (vpanel)
+	{
+		auto pPanel = vgui::ipanel()->GetPanel(vpanel, "GameUI");
+
+		if (!pPanel)
+		{
+			for (int i = 0; i < VGUI2ExtensionInternal()->GameUI_GetCallbackCount(); ++i)
+			{
+				pPanel = vgui::ipanel()->GetPanel(vpanel, VGUI2ExtensionInternal()->GameUI_GetControlModuleName(i));
+
+				if (pPanel)
+					break;
+			}
+		}
+
+		return pPanel;
+	}
+
+	return NULL;
+}
+
+void* __fastcall PropertySheet_HasHotkey(void* pthis, int dummy, wchar_t key)
+{
+	int offset_activePage = 144;
+
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		offset_activePage = 148;
+	}
+
+	auto _activePage = *(vgui::Panel**)((PUCHAR)pthis + offset_activePage);
+
+	if (!_activePage)
+		return 0;
+
+	int childCount = _activePage->GetChildCount();
+
+	for (int i = 0; i < childCount; i++)
+	{
+		auto pChild = _activePage->GetChild(i);
+#if 0
+		if (!pChild)
+		{
+			pChild = _activePage->GetChildWithModuleName(i, "GameUI");
+		}
+		if (!pChild)
+		{
+			pChild = _activePage->GetChildWithModuleName(i, "CaptionMod");
+		}
+#endif
+		if (pChild)
+		{
+			auto hot = pChild->HasHotkey(key);
+
+			if (hot)
+			{
+				return (void*)hot;
+			}
+		}
+	}
+
+	return NULL;
+}
+
+class CGameUIOptionsDialogCtorCallbackContext : public IGameUIOptionsDialogCtorCallbackContext
+{
+public:
+	CGameUIOptionsDialogCtorCallbackContext(vgui::Panel* pthis, vgui::Panel* _propertySheet)
+	{
+		m_pDialog = pthis;
+		m_pPropertySheet = _propertySheet;
+	}
+
+	void InstallHooks()
+	{
+		if (!gPrivateFuncs.FocusNavGroup_GetCurrentFocus)
+		{
+			PVOID* COptionsDialog_vftable = *(PVOID**)m_pDialog;
+			void* (__fastcall * pfnGetFocusNavGroup)(vgui::Panel * pthis, int dummy) = (decltype(pfnGetFocusNavGroup))COptionsDialog_vftable[612 / 4];
+
+			auto FocusNavGroup = pfnGetFocusNavGroup(m_pDialog, 0);
+			PVOID* FocusNavGroup_vftable = *(PVOID**)FocusNavGroup;
+
+			gPrivateFuncs.FocusNavGroup_GetCurrentFocus = (decltype(gPrivateFuncs.FocusNavGroup_GetCurrentFocus))FocusNavGroup_vftable[7];
+			Install_InlineHook(FocusNavGroup_GetCurrentFocus);
+		}
+
+		if (!gPrivateFuncs.PropertySheet_HasHotkey)
+		{
+			PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+			gPrivateFuncs.PropertySheet_HasHotkey = (decltype(gPrivateFuncs.PropertySheet_HasHotkey))_propertySheet_vftable[73];
+			Install_InlineHook(PropertySheet_HasHotkey);
+		}
+	}
+
+	void* GetDialog() const override
+	{
+		return m_pDialog;
+	}
+
+	void* GetPropertySheet() const override
+	{
+		return m_pPropertySheet;
+	}
+
+	void AddPage(void* panel, const char* title) override
+	{
+		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+		void(__fastcall * pfnAddPage)(vgui::Panel * pthis, int dummy, vgui::Panel * panel, const char* title) =
+			(decltype(pfnAddPage))_propertySheet_vftable[536 / 4];
+
+		pfnAddPage(m_pPropertySheet, 0, (vgui::Panel*)panel, title);
+	}
+
+	vgui::Panel* m_pDialog;
+	vgui::Panel* m_pPropertySheet;
+};
+
+void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel* parent)
+{
+	auto result = gPrivateFuncs.COptionsDialog_ctor(pthis, dummy, parent);
+
+	vgui::Panel* _propertySheet = *(vgui::Panel**)((PUCHAR)pthis + gPrivateFuncs.offset_propertySheet);
+
+	CGameUIOptionsDialogCtorCallbackContext CallbackContext(pthis, _propertySheet);
+
+	CallbackContext.InstallHooks();
+
+	VGUI2ExtensionInternal()->GameUI_COptionsDialog_ctor(&CallbackContext);
+
+	//Load res to make it proportional
+	LOAD_CONTROL_SETTINGS_FALLBACK(pthis, "OptionsDialog.res");
+
+	return result;
+}
+
+void* __fastcall CCreateMultiplayerGameDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel* parent)
+{
+	auto result = gPrivateFuncs.CCreateMultiplayerGameDialog_ctor(pthis, dummy, parent);
+
+	//Load res to make it proportional
+	LOAD_CONTROL_SETTINGS_FALLBACK(pthis, "CreateMultiplayerGameDialog.res");
+
+	return result;
+}
+
+void* __fastcall CGameConsoleDialog_ctor(vgui::Panel* pthis, int dummy)
+{
+	auto result = gPrivateFuncs.CGameConsoleDialog_ctor(pthis, dummy);
+
+	//Load res to make it proportional
+	LOAD_CONTROL_SETTINGS_FALLBACK(pthis, "GameConsoleDialog.res");
+
+	return result;
+}
+
+void __fastcall CTaskBar_OnCommand(void* pthis, int dummy, const char* command)
+{
+	void* _this = pthis;
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	VGUI2ExtensionInternal()->GameUI_CTaskBar_OnCommand(_this, command, &CallbackContext);
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	{
+		gPrivateFuncs.CTaskBar_OnCommand(_this, dummy, command);
+	}
+
+	CallbackContext.IsPost = true;
+
+	VGUI2ExtensionInternal()->GameUI_CTaskBar_OnCommand(_this, command, &CallbackContext);
+}
+
+class CGameUITaskBarCtorCallbackContext : public IGameUITaskBarCtorCallbackContext
+{
+public:
+	CGameUITaskBarCtorCallbackContext(vgui::Panel* pthis, vgui::Panel* parent, const char* panelName)
+	{
+		m_pTaskBar = pthis;
+		m_pParentPanel = parent;
+		m_pszPanelName = panelName;
+	}
+
+	void InstallHooks()
+	{
+		if (!gPrivateFuncs.CTaskBar_OnCommand)
+		{
+			PVOID* CTaskBar_vftable = *(PVOID**)m_pTaskBar;
+			gPrivateFuncs.CTaskBar_OnCommand = (decltype(gPrivateFuncs.CTaskBar_OnCommand))CTaskBar_vftable[348 / 4];
+
+			Install_InlineHook(CTaskBar_OnCommand);
+		}
+	}
+
+	void* GetTaskBar() const
+	{
+		return m_pTaskBar;
+	}
+
+	void* GetParentPanel() const
+	{
+		return m_pParentPanel;
+	}
+
+	const char* GetParentName() const
+	{
+		return m_pszPanelName;
+	}
+
+	vgui::Panel* m_pTaskBar;
+	vgui::Panel* m_pParentPanel;
+	const char* m_pszPanelName;
+};
+
+void* __fastcall CTaskBar_ctor(void* pthis, int dummy, void* parent, const char* panelName)
+{
+	auto result = gPrivateFuncs.CTaskBar_ctor(pthis, dummy, parent, panelName);
+
+	CGameUITaskBarCtorCallbackContext CallbackContext((vgui::Panel*)pthis, (vgui::Panel*)parent, panelName);
+
+	CallbackContext.InstallHooks();
+
+	VGUI2ExtensionInternal()->GameUI_CTaskBar_ctor(&CallbackContext);
+
+	return result;
+}
+
+#if 0
+void* __fastcall QueryBox_ctor(vgui::Panel* pthis, int dummy, const char* title, const char* queryText, vgui::Panel* parent)
+{
+	//Load res to make it proportional
+	if (!strcmp(queryText, "#GameUI_QuitConfirmationText"))
+	{
+		//gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource/QuitConfirmationBox.res", NULL);
+
+		return gPrivateFuncs.QueryBox_ctor(pthis, dummy, title, "#GameUI_QuitConfirmationText\n\n", parent);
+	}
+	auto result = gPrivateFuncs.QueryBox_ctor(pthis, dummy, title, queryText, parent);
+
+	return result;
+}
+#endif
+
+bool __fastcall KeyValues_LoadFromFile(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId)
+{
+	bool fake_ret = false;
+	bool real_ret = false;
+	bool ret = false;
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	CallbackContext.pPluginReturnValue = &fake_ret;
+
+	VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, &CallbackContext);
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	{
+		real_ret = gPrivateFuncs.KeyValues_LoadFromFile(pthis, dummy, pFileSystem, resourceName, pathId);
+	}
+
+	CallbackContext.pRealReturnValue = &real_ret;
+	CallbackContext.IsPost = true;
+
+	VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, &CallbackContext);
+
+	switch (CallbackContext.Result)
+	{
+	case VGUI2Extension_Result::OVERRIDE:
+	case VGUI2Extension_Result::SUPERCEDE:
+	{
+		ret = fake_ret;
+	}
+	default:
+	{
+		ret = real_ret;
+	}
+	}
+
+	return ret;
+}
+
+/*
+==================================================================================
+IGameUI hook
+==================================================================================
+*/
 
 IGameUI *g_pGameUI = NULL;
 
@@ -397,16 +737,6 @@ void CGameUIProxy::ConnectToServer(const char *game, int IP, int port)
 	CallbackContext.IsPost = true;
 
 	VGUI2ExtensionInternal()->GameUI_ConnectToServer(game, IP, port , &CallbackContext);
-
-#if 0
-	if (gEngfuncs.GetMaxClients() > 1)
-	{
-		return g_pfnCGameUI_ConnectToServer(this, 0, game, IP, port);
-	}
-
-	//This just stop GameUI from sending "mp3 stop" on level transition
-	return g_pfnCGameUI_ConnectToServer(this, 0, "valve", IP, port);
-#endif
 }
 
 void CGameUIProxy::DisconnectFromServer(void)
@@ -651,331 +981,65 @@ void CGameUIProxy::SetSecondaryProgressBarText(const char *statusText)
 	VGUI2ExtensionInternal()->GameUI_SetSecondaryProgressBarText(statusText, &CallbackContext);
 }
 
-void __fastcall COptionsSubVideo_ApplyVidSettings(vgui::Panel *pthis, int dummy, bool bForceRestart)
-{
-	void* _this = pthis;
+/*
+==================================================================================
+IGameConsole hook
+==================================================================================
+*/
 
-	VGUI2Extension_CallbackContext CallbackContext;
+IGameConsole* g_pGameConsole = NULL;
 
-	VGUI2ExtensionInternal()->GameUI_COptionsSubVideo_ApplyVidSettings(_this, bForceRestart ,&CallbackContext);
-
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
-	{
-		gPrivateFuncs.COptionsSubVideo_ApplyVidSettings(_this, dummy, bForceRestart);
-	}
-
-	CallbackContext.IsPost = true;
-
-	VGUI2ExtensionInternal()->GameUI_COptionsSubVideo_ApplyVidSettings(_this, bForceRestart, &CallbackContext);	
-}
-
-void __fastcall COptionsSubVideo_ApplyVidSettings_HL25(vgui::Panel *pthis, int dummy)
-{
-	void* _this = pthis;
-	bool bForceRestart = false;
-
-	VGUI2Extension_CallbackContext CallbackContext;
-
-	VGUI2ExtensionInternal()->GameUI_COptionsSubVideo_ApplyVidSettings(_this, bForceRestart, &CallbackContext);
-
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
-	{
-		gPrivateFuncs.COptionsSubVideo_ApplyVidSettings_HL25(pthis, dummy);
-	}
-
-	CallbackContext.IsPost = true;
-
-	VGUI2ExtensionInternal()->GameUI_COptionsSubVideo_ApplyVidSettings(_this, bForceRestart, &CallbackContext);
-}
-
-void* __fastcall FocusNavGroup_GetCurrentFocus(void* pthis, int dummy)
-{
-	vgui::VPanelHandle* _currentFocus = (vgui::VPanelHandle*)((PUCHAR)pthis + 12);
-
-	auto vpanel = _currentFocus->Get();
-
-	if (vpanel)
-	{
-		auto pPanel = vgui::ipanel()->GetPanel(vpanel, "GameUI");
-
-		if (!pPanel)
-		{
-			for (int i = 0; i < VGUI2ExtensionInternal()->GameUI_GetCallbackCount(); ++i)
-			{
-				pPanel = vgui::ipanel()->GetPanel(vpanel, VGUI2ExtensionInternal()->GameUI_GetControlModuleName(i));
-
-				if (pPanel)
-					break;
-			}			
-		}
-
-		return pPanel;
-	}
-
-	return NULL;
-}
-
-void* __fastcall PropertySheet_HasHotkey(void *pthis, int dummy, wchar_t key)
-{
-	int offset_activePage = 144;
-
-	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-	{
-		offset_activePage = 148;
-	}
-
-	auto _activePage = *(vgui::Panel**)((PUCHAR)pthis + offset_activePage);
-
-	if (!_activePage)
-		return 0;
-
-	int childCount = _activePage->GetChildCount();
-
-	for (int i = 0; i < childCount; i++)
-	{
-		auto pChild = _activePage->GetChild(i);
-#if 0
-		if (!pChild)
-		{
-			pChild = _activePage->GetChildWithModuleName(i, "GameUI");
-		}
-		if (!pChild)
-		{
-			pChild = _activePage->GetChildWithModuleName(i, "CaptionMod");
-		}
-#endif
-		if (pChild)
-		{
-			auto hot = pChild->HasHotkey(key);
-
-			if (hot)
-			{
-				return (void *)hot;
-			}
-		}
-	}
-
-	return NULL;
-}
-
-class CGameUIOptionsDialogCtorCallbackContext : public IGameUIOptionsDialogCtorCallbackContext
+class CGameConsoleProxy : public IGameConsole
 {
 public:
-	CGameUIOptionsDialogCtorCallbackContext(vgui::Panel* pthis, vgui::Panel* _propertySheet)
-	{
-		m_pDialog = pthis;
-		m_pPropertySheet = _propertySheet;
-	}
-
-	void InstallHooks()
-	{
-		if (!gPrivateFuncs.FocusNavGroup_GetCurrentFocus)
-		{
-			PVOID* COptionsDialog_vftable = *(PVOID**)m_pDialog;
-			void* (__fastcall * pfnGetFocusNavGroup)(vgui::Panel * pthis, int dummy) = (decltype(pfnGetFocusNavGroup))COptionsDialog_vftable[612 / 4];
-
-			auto FocusNavGroup = pfnGetFocusNavGroup(m_pDialog, 0);
-			PVOID* FocusNavGroup_vftable = *(PVOID**)FocusNavGroup;
-
-			gPrivateFuncs.FocusNavGroup_GetCurrentFocus = (decltype(gPrivateFuncs.FocusNavGroup_GetCurrentFocus))FocusNavGroup_vftable[7];
-			Install_InlineHook(FocusNavGroup_GetCurrentFocus);
-		}
-
-		if (!gPrivateFuncs.PropertySheet_HasHotkey)
-		{
-			PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
-
-			gPrivateFuncs.PropertySheet_HasHotkey = (decltype(gPrivateFuncs.PropertySheet_HasHotkey))_propertySheet_vftable[73];
-			Install_InlineHook(PropertySheet_HasHotkey);
-		}
-	}
-
-	void* GetDialog() const override
-	{
-		return m_pDialog;
-	}
-
-	void* GetPropertySheet() const override
-	{
-		return m_pPropertySheet;
-	}
-
-	void AddPage(void* panel, const char* title) override
-	{
-		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
-
-		void(__fastcall * pfnAddPage)(vgui::Panel * pthis, int dummy, vgui::Panel * panel, const char* title) =
-			(decltype(pfnAddPage))_propertySheet_vftable[536 / 4];
-
-		pfnAddPage(m_pPropertySheet, 0, (vgui::Panel*)panel, title);
-	}
-
-	vgui::Panel* m_pDialog;
-	vgui::Panel* m_pPropertySheet;
+	void Activate(void) override;
+	void Initialize(void) override;
+	void Hide(void)  override;
+	void Clear(void) override;
+	bool IsConsoleVisible(void) override;
+	void Printf(const char* format, ...) override;
+	void DPrintf(const char* format, ...)  override;
+	void SetParent(vgui::VPANEL parent) override;
 };
 
-void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel* parent)
+void CGameConsoleProxy::Activate(void)
 {
-	auto result = gPrivateFuncs.COptionsDialog_ctor(pthis, dummy, parent);
 
-	vgui::Panel* _propertySheet = *(vgui::Panel**)((PUCHAR)pthis + gPrivateFuncs.offset_propertySheet);
-
-	CGameUIOptionsDialogCtorCallbackContext CallbackContext(pthis, _propertySheet);
-
-	CallbackContext.InstallHooks();
-
-	VGUI2ExtensionInternal()->GameUI_COptionsDialog_ctor(&CallbackContext);
-
-	//Load res to make it proportional
-	LOAD_CONTROL_SETTINGS_FALLBACK(pthis, "OptionsDialog.res");
-
-	return result;
 }
 
-void* __fastcall CCreateMultiplayerGameDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel* parent)
+void CGameConsoleProxy::Initialize(void)
 {
-	auto result = gPrivateFuncs.CCreateMultiplayerGameDialog_ctor(pthis, dummy, parent);
 
-	//Load res to make it proportional
-	LOAD_CONTROL_SETTINGS_FALLBACK(pthis, "CreateMultiplayerGameDialog.res");
-
-	return result;
 }
 
-void* __fastcall CGameConsoleDialog_ctor(vgui::Panel* pthis, int dummy)
+void CGameConsoleProxy::Hide(void)
 {
-	auto result = gPrivateFuncs.CGameConsoleDialog_ctor(pthis, dummy);
 
-	//Load res to make it proportional
-	LOAD_CONTROL_SETTINGS_FALLBACK(pthis, "GameConsoleDialog.res");
-
-	return result;
 }
 
-void __fastcall CTaskBar_OnCommand(void* pthis, int dummy, const char* command)
+void CGameConsoleProxy::Clear(void)
 {
-	void* _this = pthis;
 
-	VGUI2Extension_CallbackContext CallbackContext;
-
-	VGUI2ExtensionInternal()->GameUI_CTaskBar_OnCommand(_this, command, &CallbackContext);
-
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
-	{
-		gPrivateFuncs.CTaskBar_OnCommand(_this, dummy, command);
-	}
-
-	CallbackContext.IsPost = true;
-
-	VGUI2ExtensionInternal()->GameUI_CTaskBar_OnCommand(_this, command, &CallbackContext);
 }
 
-class CGameUITaskBarCtorCallbackContext : public IGameUITaskBarCtorCallbackContext
+bool CGameConsoleProxy::IsConsoleVisible(void)
 {
-public:
-	CGameUITaskBarCtorCallbackContext(vgui::Panel* pthis, vgui::Panel* parent, const char *panelName)
-	{
-		m_pTaskBar = pthis;
-		m_pParentPanel = parent;
-		m_pszPanelName = panelName;
-	}
-
-	void InstallHooks()
-	{
-		if (!gPrivateFuncs.CTaskBar_OnCommand)
-		{
-			PVOID *CTaskBar_vftable = *(PVOID**)m_pTaskBar;
-			gPrivateFuncs.CTaskBar_OnCommand = (decltype(gPrivateFuncs.CTaskBar_OnCommand))CTaskBar_vftable[348 / 4];
-
-			Install_InlineHook(CTaskBar_OnCommand);
-		}
-	}
-
-	void* GetTaskBar() const
-	{
-		return m_pTaskBar;
-	}
-
-	void* GetParentPanel() const
-	{
-		return m_pParentPanel;
-	}
-
-	const char* GetParentName() const
-	{
-		return m_pszPanelName;
-	}
-
-	vgui::Panel* m_pTaskBar;
-	vgui::Panel* m_pParentPanel;
-	const char* m_pszPanelName;
-};
-
-void* __fastcall CTaskBar_ctor(void* pthis, int dummy, void* parent, const char* panelName)
-{
-	auto result = gPrivateFuncs.CTaskBar_ctor(pthis, dummy, parent, panelName);
-
-	CGameUITaskBarCtorCallbackContext CallbackContext((vgui::Panel *)pthis, (vgui::Panel*)parent, panelName);
-
-	CallbackContext.InstallHooks();
-
-	VGUI2ExtensionInternal()->GameUI_CTaskBar_ctor(&CallbackContext);
-
-	return result;
+	return false;
 }
 
-#if 0
-void* __fastcall QueryBox_ctor(vgui::Panel* pthis, int dummy, const char* title, const char* queryText, vgui::Panel* parent)
+void CGameConsoleProxy::Printf(const char* format, ...)
 {
-	//Load res to make it proportional
-	if (!strcmp(queryText, "#GameUI_QuitConfirmationText"))
-	{
-		//gPrivateFuncs.GameUI_LoadControlSettings(pthis, 0, "Resource/QuitConfirmationBox.res", NULL);
 
-		return gPrivateFuncs.QueryBox_ctor(pthis, dummy, title, "#GameUI_QuitConfirmationText\n\n", parent);
-	}
-	auto result = gPrivateFuncs.QueryBox_ctor(pthis, dummy, title, queryText, parent);
-
-	return result;
 }
-#endif
 
-bool __fastcall KeyValues_LoadFromFile(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId)
+void CGameConsoleProxy::DPrintf(const char* format, ...)
 {
-	bool fake_ret = false;
-	bool real_ret = false;
-	bool ret = false;
 
-	VGUI2Extension_CallbackContext CallbackContext;
+}
 
-	CallbackContext.pPluginReturnValue = &fake_ret;
+void CGameConsoleProxy::SetParent(vgui::VPANEL parent)
+{
 
-	VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis , pFileSystem, resourceName, pathId, &CallbackContext);
-
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
-	{
-		real_ret = gPrivateFuncs.KeyValues_LoadFromFile(pthis, dummy, pFileSystem, resourceName, pathId);
-	}
-
-	CallbackContext.pRealReturnValue = &real_ret;
-	CallbackContext.IsPost = true;
-
-	VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, &CallbackContext);
-
-	switch (CallbackContext.Result)
-	{
-	case VGUI2Extension_Result::OVERRIDE:
-	case VGUI2Extension_Result::SUPERCEDE:
-	{
-		ret = fake_ret;
-	}
-	default:
-	{
-		ret = real_ret;
-	}
-	}
-
-	return ret;
 }
 
 void GameUI_FillAddress(void)
@@ -1063,16 +1127,56 @@ void GameUI_FillAddress(void)
 
 	if (1)
 	{
+		const char sigs1[] = "#GameUI_Console\0";
+		auto GameUI_Console_String = Search_Pattern_From_Size(GameUIRdataBase, GameUIRdataSize, sigs1);
+		if (!GameUI_Console_String)
+			GameUI_Console_String = Search_Pattern_From_Size(GameUIDataBase, GameUIDataSize, sigs1);
+		Sig_VarNotFound(GameUI_Console_String);
+
+		char pattern[] = "\x6A\x01\x68\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern + 3) = (DWORD)GameUI_Console_String;
+		auto GameUI_Console_PushString = Search_Pattern_From_Size(GameUITextBase, GameUITextSize, pattern);
+		Sig_VarNotFound(GameUI_Console_PushString);
+
+		gPrivateFuncs.CGameConsoleDialog_ctor = (decltype(gPrivateFuncs.CGameConsoleDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(GameUI_Console_PushString, 0x350, [](PUCHAR Candidate) {
+
+			if (Candidate[0] == 0x55 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xEC)
+				return TRUE;
+
+			//.text:10027EC0 53                                                  push    ebx
+			//.text : 10027EC1 8B DC                                               mov     ebx, esp
+			if (Candidate[0] == 0x53 &&
+				Candidate[1] == 0x8B &&
+				Candidate[2] == 0xDC)
+				return TRUE;
+
+			//.text:10033D30 81 EC 00 08 00 00                                   sub     esp, 800h
+			if (Candidate[0] == 0x81 &&
+				Candidate[1] == 0xEC &&
+				Candidate[4] == 0x00 &&
+				Candidate[5] == 0x00)
+			{
+				return TRUE;
+			}
+			return FALSE;
+		});
+
+		Sig_FuncNotFound(CGameConsoleDialog_ctor);
+	}
+
+	if (1)
+	{
 		const char sigs1[] = "CreateMultiplayerGameDialog\0";
-		auto CreateMultiplayerGameDialog_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
+		auto CreateMultiplayerGameDialog_String = Search_Pattern_From_Size(GameUIRdataBase, GameUIRdataSize, sigs1);
 		if (!CreateMultiplayerGameDialog_String)
-			CreateMultiplayerGameDialog_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
+			CreateMultiplayerGameDialog_String = Search_Pattern_From_Size(GameUIDataBase, GameUIDataSize, sigs1);
 		Sig_VarNotFound(CreateMultiplayerGameDialog_String);
 
 		char pattern[] = "\x68\x2A\x2A\x2A\x2A";
 		*(DWORD*)(pattern + 1) = (DWORD)CreateMultiplayerGameDialog_String;
-		auto CreateMultiplayerGameDialog_PushString = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
-		Sig_VarNotFound(CreateMultiplayerGameDialog_PushString);
+		auto CreateMultiplayerGameDialog_PushString = Search_Pattern_From_Size(GameUITextBase, GameUITextSize, pattern);
 		Sig_VarNotFound(CreateMultiplayerGameDialog_PushString);
 
 		gPrivateFuncs.CCreateMultiplayerGameDialog_ctor = (decltype(gPrivateFuncs.CCreateMultiplayerGameDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(CreateMultiplayerGameDialog_PushString, 0x120, [](PUCHAR Candidate) {
@@ -1095,7 +1199,7 @@ void GameUI_FillAddress(void)
 				}
 			}
 			return FALSE;
-		});
+			});
 
 		Sig_FuncNotFound(CCreateMultiplayerGameDialog_ctor);
 	}
@@ -2162,6 +2266,13 @@ void GameUI_InstallHooks(void)
 		return;
 	}
 
+	g_pGameConsole = (IGameConsole*)GameUICreateInterface(GAMECONSOLE_INTERFACE_VERSION_GS, 0);
+
+	if (!g_pGameConsole)
+	{
+		Sys_Error("Failed to get interface \"" GAMECONSOLE_INTERFACE_VERSION_GS "\" from GameUI.dll");
+		return;
+	}
 	PVOID * ProxyVFTable = *(PVOID**)&s_GameUIProxy;
 
 	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 1, ProxyVFTable[1], (void**)&g_pfnCGameUI_Initialize);
@@ -2191,6 +2302,11 @@ void GameUI_InstallHooks(void)
 	if (gPrivateFuncs.CTaskBar_ctor)
 	{
 		Install_InlineHook(CTaskBar_ctor);
+	}
+
+	if (gPrivateFuncs.CTaskBar_OnCommand)
+	{
+		Install_InlineHook(CTaskBar_OnCommand);
 	}
 
 	if (gPrivateFuncs.KeyValues_LoadFromFile)
@@ -2235,6 +2351,7 @@ void GameUI_UninstallHooks(void)
 	Uninstall_Hook(CCreateMultiplayerGameDialog_ctor);
 
 	Uninstall_Hook(CTaskBar_ctor);
+	Uninstall_Hook(CTaskBar_OnCommand);
 	Uninstall_Hook(KeyValues_LoadFromFile);
 
 	Uninstall_Hook(COptionsDialog_ctor);

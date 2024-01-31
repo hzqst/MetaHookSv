@@ -194,12 +194,15 @@ public:
 
 	void ConnectToServer(const char*& game, int& IP, int& port, VGUI2Extension_CallbackContext* CallbackContext) override
 	{
-		g_pViewPort->ConnectToServer(game, IP, port);
-
-		if (gEngfuncs.GetMaxClients() <= 1)
+		if (!CallbackContext->IsPost)
 		{
-			//This stop GameUI from sending "mp3 stop" on level transition
-			game = "valve";
+			g_pViewPort->ConnectToServer(game, IP, port);
+
+			if (gEngfuncs.GetMaxClients() <= 1)
+			{
+				//This stop GameUI from sending "mp3 stop" on level transition
+				game = "valve";
+			}
 		}
 	}
 
