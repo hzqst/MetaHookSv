@@ -2,7 +2,7 @@
 #include <IScheme2.h>
 #include <ISurface2.h>
 #include <IInput2.h>
-#include <IPanel.h>
+#include <IPanel2.h>
 
 #include "plugins.h"
 #include "VGUI2ExtensionImport.h"

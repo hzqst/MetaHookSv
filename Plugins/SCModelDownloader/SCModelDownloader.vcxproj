@@ -77,12 +77,13 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\Interface\VGUI;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\tier3;$(SolutionDir)include\SourceSDK\vstdlib;$(SolutionDir)include\SteamSDK;$(SolutionDir)thirdparty\rapidjson\include;$(CapstoneIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;VGUI_USE_SURFACE2;VGUI_USE_SCHEME2;VGUI_USE_INPUT2;NO_MALLOC_OVERRIDE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;$(VGUI2ExtensionDefines);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader />
       <WarningLevel>TurnOffAllWarnings</WarningLevel>
       <DisableSpecificWarnings>4311;4312;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -101,7 +102,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\Interface\VGUI;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\tier3;$(SolutionDir)include\SourceSDK\vstdlib;$(SolutionDir)include\SteamSDK;$(SolutionDir)thirdparty\rapidjson\include;$(CapstoneIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;VGUI_USE_SURFACE2;VGUI_USE_SCHEME2;VGUI_USE_INPUT2;NO_MALLOC_OVERRIDE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;$(VGUI2ExtensionDefines);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>

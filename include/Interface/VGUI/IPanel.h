@@ -99,16 +99,7 @@ public:
 	virtual const char *GetModuleName(VPANEL vguiPanel) = 0;
 };
 
-class IPanel2 : public IPanel
-{
-public:
-	virtual bool IsTopmostPopup(VPANEL vguiPanel) = 0;
-	virtual void SetTopmostPopup(VPANEL vguiPanel, bool state) = 0;
-	virtual bool IsFullyVisible(VPANEL vguiPanel) = 0;
-};
-
 #define VGUI_PANEL_INTERFACE_VERSION "VGUI_Panel007"
-#define VGUI_PANEL2_INTERFACE_VERSION "VGUI_Panel2_007"
 
 } // namespace vgui
 

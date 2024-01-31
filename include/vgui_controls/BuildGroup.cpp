@@ -862,7 +862,12 @@ void BuildGroup::PanelAdded(Panel *panel)
 	int c = _panelDar.Count();
 	for ( int i = 0; i < c; ++i )
 	{
-		if ( _panelDar[ i ] == temp )
+		//if ( _panelDar[ i ] == temp ) // < ---- This compiles with error on c++20
+
+		//bool operator == (const PHandle& other) const { return m_iPanelID == other.m_iPanelID; }
+		//This would provide a clear operator== for comparing two PHandle objects, which could resolve the ambiguity.
+
+		if ( _panelDar[ i ] == temp)
 		{
 			return;
 		}

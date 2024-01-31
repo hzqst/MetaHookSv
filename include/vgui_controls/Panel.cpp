@@ -1137,11 +1137,12 @@ void Panel::PaintBackground()
 			wide -= 2 * cornerWide;
 			tall -= 2 * cornerTall;
 
-			FillRectSkippingPanel( GetBgColor(), cornerWide, cornerTall, wide, tall, m_SkipChild.Get() );
+			FillRectSkippingPanel(col, cornerWide, cornerTall, wide, tall, m_SkipChild.Get() );
 		}
 		else
 		{
-			FillRectSkippingPanel( GetBgColor(), 0, 0, wide, tall, m_SkipChild.Get() );
+			Color col = GetBgColor();
+			FillRectSkippingPanel(col, 0, 0, wide, tall, m_SkipChild.Get() );
 		}
 	}
 	else
@@ -4700,6 +4701,7 @@ Panel *PHandle::Get()
 	if (m_iPanelID != INVALID_PANEL)
 	{
 		VPANEL panel = ivgui()->HandleToPanel(m_iPanelID);
+
 		if (panel)
 		{
 			auto szModuleName = GetControlsModuleName();
@@ -6135,10 +6137,14 @@ CDragDropHelperPanel::CDragDropHelperPanel() : BaseClass( NULL, "DragDropHelper"
 	SetKeyBoardInputEnabled( false );
 	// SetCursor( dc_none );
 
-	if (ipanel2())
-	{
-		ipanel2()->SetTopmostPopup(GetVPanel(), true);
-	}
+#ifdef VGUI_USE_PANEL2
+
+	ipanel2()->SetTopmostPopup(GetVPanel(), true);
+#else
+
+	SetZPos(1000);
+
+#endif
 	int w, h;
 	surface()->GetScreenSize( w, h );
 	SetBounds( 0, 0, w, h );
@@ -6253,11 +6259,14 @@ void CDragDropHelperPanel::RemovePanel( Panel *search )
 void Panel::FindDropTargetPanel_R( CUtlVector< VPANEL >& panelList, int x, int y, VPANEL check )
 {
 #if defined( VGUI_USEDRAGDROP )
-	if (ipanel2())
-	{
-		if (!ipanel2()->IsFullyVisible(check))
-			return;
-	}
+
+#ifdef VGUI_USE_PANEL2
+	if (!ipanel2()->IsFullyVisible(check))
+		return;
+#else
+	if (!ipanel()->IsVisible(check))
+		return;
+#endif
 
 	if ( ::ShouldHandleInputMessage( check ) && ipanel()->IsWithinTraverse( check, x, y, false ) )
 	{
@@ -6309,12 +6318,13 @@ Panel *Panel::FindDropTargetPanel()
 			// Don't return helper panel!!!
 			if ( popup == helper )
 				continue;
-
-			if (ipanel2())
-			{
+#ifdef VGUI_USE_PANEL2
 				if (!ipanel2()->IsFullyVisible(popup))
 					continue;
-			}
+#else
+			if (!ipanel()->IsVisible(popup))
+				continue;
+#endif
 
 			FindDropTargetPanel_R( hits, x, y, popup );
 		}
@@ -6539,7 +6549,7 @@ struct srect_t
 };
 
 // Draws a filled rect of specified bounds, but omits the bounds of the skip panel from those bounds
-void Panel::FillRectSkippingPanel( Color& clr, int x, int y, int w, int h, Panel *skipPanel )
+void Panel::FillRectSkippingPanel( const Color& clr, int x, int y, int w, int h, Panel *skipPanel )
 {
 	int sx = 0, sy = 0, sw, sh;
 	skipPanel->GetSize( sw, sh );

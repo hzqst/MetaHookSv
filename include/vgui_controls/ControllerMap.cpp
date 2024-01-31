@@ -21,7 +21,7 @@ using namespace vgui;
 struct keystring_t
 {
 	int code;
-	char *name;
+	const char *name;
 };
 
 static keystring_t s_ControllerButtons[] = {

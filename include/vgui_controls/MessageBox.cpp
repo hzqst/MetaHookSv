@@ -30,6 +30,7 @@ vgui::Panel *MessageBox_Factory()
 }
 
 DECLARE_BUILD_FACTORY_CUSTOM( MessageBox, MessageBox_Factory );
+
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------

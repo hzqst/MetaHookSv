@@ -181,27 +181,29 @@ template < class T >
 class CUtlFixedLinkedList : public CUtlLinkedList< T, int, true, int, CUtlFixedMemory< UtlLinkedListElem_t< T, int > > >
 {
 public:
+	typedef CUtlLinkedList< T, int, true, int, CUtlFixedMemory< UtlLinkedListElem_t< T, int > > > BaseClass;
+
 	CUtlFixedLinkedList( int growSize = 0, int initSize = 0 )
-		: CUtlLinkedList< T, int, true, int, CUtlFixedMemory< UtlLinkedListElem_t< T, int > > >( growSize, initSize ) {}
+		: BaseClass( growSize, initSize ) {}
 
 	bool IsValidIndex( int i ) const
 	{
-		if ( !Memory().IsIdxValid( i ) )
+		if ( !BaseClass::Memory().IsIdxValid( i ) )
 			return false;
 
 #ifdef _DEBUG // it's safe to skip this here, since the only way to get indices after m_LastAlloc is to use MaxElementIndex
-		if ( Memory().IsIdxAfter( i, this->m_LastAlloc ) )
+		if (BaseClass::Memory().IsIdxAfter( i, this->m_LastAlloc ) )
 		{
 			Assert( 0 );
 			return false; // don't read values that have been allocated, but not constructed
 		}
 #endif
 
-		return ( Memory()[ i ].m_Previous != i ) || ( Memory()[ i ].m_Next == i );
+		return (BaseClass::Memory()[ i ].m_Previous != i ) || (BaseClass::Memory()[ i ].m_Next == i );
 	}
 
 private:
-	int	MaxElementIndex() const { Assert( 0 ); return InvalidIndex(); } // fixedmemory containers don't support iteration from 0..maxelements-1
+	int	MaxElementIndex() const { Assert( 0 ); return BaseClass::InvalidIndex(); } // fixedmemory containers don't support iteration from 0..maxelements-1
 	void ResetDbgInfo() {}
 };
 

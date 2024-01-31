@@ -37,12 +37,12 @@ public:
 		return _color[index];
 	}
 
-	bool operator == (Color &rhs) const
+	bool operator == (const Color &rhs) const//Add const to avoid error on c++20 because consistency check for comparison operators was introduced.
 	{
 		return (_color[0] == rhs._color[0] && _color[1] == rhs._color[1] && _color[2] == rhs._color[2] && _color[3] == rhs._color[3]);
 	}
 
-	bool operator != (Color &rhs) const
+	bool operator != (const Color &rhs) const
 	{
 		return !(operator == (rhs));
 	}

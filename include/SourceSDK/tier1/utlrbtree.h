@@ -78,11 +78,7 @@ template <> inline bool CDefOps<char *>::LessFunc( char * const &lhs, char * con
 template <typename RBTREE_T>
 void SetDefLessFunc( RBTREE_T &RBTree )
 {
-#ifdef _WIN32
-	RBTree.SetLessFunc( DefLessFunc( RBTREE_T::KeyType_t ) );
-#elif _LINUX
-	RBTree.SetLessFunc( DefLessFunc( typename RBTREE_T::KeyType_t ) );
-#endif
+	RBTree.SetLessFunc(DefLessFunc(typename RBTREE_T::KeyType_t));
 }
 
 //-----------------------------------------------------------------------------
@@ -298,26 +294,27 @@ class CUtlFixedRBTree : public CUtlRBTree< T, I, L, CUtlFixedMemory< UtlRBTreeNo
 public:
 
 	typedef L LessFunc_t;
+	typedef CUtlRBTree< T, I, L, CUtlFixedMemory< UtlRBTreeNode_t< T, I > > > BaseClass;
 
 	CUtlFixedRBTree( int growSize = 0, int initSize = 0, const LessFunc_t &lessfunc = 0 )
-		: CUtlRBTree< T, I, L, CUtlFixedMemory< UtlRBTreeNode_t< T, I > > >( growSize, initSize, lessfunc ) {}
+		: BaseClass( growSize, initSize, lessfunc ) {}
 	CUtlFixedRBTree( const LessFunc_t &lessfunc )
-		: CUtlRBTree< T, I, L, CUtlFixedMemory< UtlRBTreeNode_t< T, I > > >( lessfunc ) {}
+		: BaseClass( lessfunc ) {}
 
 	bool IsValidIndex( I i ) const
 	{
-		if ( !Elements().IsIdxValid( i ) )
+		if ( !BaseClass::Elements().IsIdxValid( i ) )
 			return false;
 
 #ifdef _DEBUG // it's safe to skip this here, since the only way to get indices after m_LastAlloc is to use MaxElement()
-		if ( Elements().IsIdxAfter( i, this->m_LastAlloc ) )
+		if (BaseClass::Elements().IsIdxAfter( i, this->m_LastAlloc ) )
 		{
 			Assert( 0 );
 			return false; // don't read values that have been allocated, but not constructed
 		}
 #endif
 
-		return LeftChild(i) != i; 
+		return BaseClass::LeftChild(i) != i;
 	}
 
 protected:

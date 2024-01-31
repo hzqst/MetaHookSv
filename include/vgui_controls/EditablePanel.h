@@ -27,7 +27,7 @@ class EditablePanel : public Panel
 
 public:
 	EditablePanel(Panel *parent, const char *panelName);
-	EditablePanel::EditablePanel(Panel *parent, const char *panelName, HScheme hScheme);
+	EditablePanel(Panel *parent, const char *panelName, HScheme hScheme);
 
 	virtual ~EditablePanel();
 

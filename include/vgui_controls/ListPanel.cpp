@@ -352,8 +352,8 @@ static int __cdecl DefaultSortFunc(
 	}
 	else    // its an imagePanel column
 	{
-	   	const ImagePanel *s1 = (ImagePanel *)p1->kv->GetPtr(col, "");
-		const ImagePanel *s2 = (ImagePanel *)p2->kv->GetPtr(col, "");
+	   	const ImagePanel *s1 = (ImagePanel *)p1->kv->GetPtr(col);//Why the fuck use "" as default value here?
+		const ImagePanel *s2 = (ImagePanel *)p2->kv->GetPtr(col);//Why the fuck use "" as default value here?
 
 		if (s1 < s2)
 		{

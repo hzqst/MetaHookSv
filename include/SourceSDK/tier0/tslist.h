@@ -329,7 +329,11 @@ public:
 	void PutObject( T *pInfo )
 	{
 		char *pElem = (char *)pInfo;
-		pElem -= offsetof(simpleTSPoolStruct_t,elem);
+
+		simpleTSPoolStruct_t dummyNode;
+		size_t offset = reinterpret_cast<char*>(&dummyNode.elem) - reinterpret_cast<char*>(&dummyNode);
+		//pElem -= offsetof(simpleTSPoolStruct_t, elem);//This failed on c++20
+		pElem -= offset;
 		simpleTSPoolStruct_t *pNode = (simpleTSPoolStruct_t *)pElem;
 
 		CTSListBase::Push( pNode );

@@ -9,7 +9,7 @@
 #include "minidump.h"
 #include "platform.h"
 
-#if defined( _WIN32 ) && !defined( _X360 )
+#if defined( _WIN32 ) && !defined( _X360 ) && !defined(NO_TIER0_MINIDUMP)
 
 #if _MSC_VER >= 1300
 #include "valve_off.h"

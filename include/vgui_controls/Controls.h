@@ -65,9 +65,14 @@ extern vgui::ISurface* g_pVGuiSurface;
 #endif
 
 extern vgui::ISystem *g_pVGuiSystem;
+
 extern vgui::IVGui *g_pVGui;
-extern vgui::IPanel *g_pVGuiPanel;
+#ifdef VGUI_USE_PANEL2
 extern vgui::IPanel2* g_pVGuiPanel2;
+#else
+extern vgui::IPanel *g_pVGuiPanel;
+#endif
+
 extern vgui::ILocalize *g_pVGuiLocalize;
 
 namespace vgui
@@ -154,15 +159,17 @@ inline vgui::IVGui *ivgui()
 }
 
 // #include <vgui/IPanel.h>
-inline vgui::IPanel *ipanel()
-{
-	return g_pVGuiPanel;
-}
-
+#ifdef VGUI_USE_PANEL2
 inline vgui::IPanel2* ipanel2()
 {
 	return g_pVGuiPanel2;
 }
+#else
+inline vgui::IPanel* ipanel()
+{
+	return g_pVGuiPanel;
+}
+#endif
 
 inline vgui::ILocalize *localize()
 {

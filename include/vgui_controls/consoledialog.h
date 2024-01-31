@@ -65,7 +65,7 @@ private:
 	public:
 		CompletionItem( void );
 		CompletionItem( const CompletionItem& src );
-		CompletionItem& CompletionItem::operator =( const CompletionItem& src );
+		CompletionItem& operator =( const CompletionItem& src );//why the fuck CompletionItem::operator= here?
 		~CompletionItem( void );
 		const char *GetItemText( void );
 		const char *GetCommand( void ) const;

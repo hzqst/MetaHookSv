@@ -173,12 +173,6 @@
     <ClCompile Include="Win32Font.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
-    <ClCompile Include="$(SolutionDir)include\SourceSDK\VPanel.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
-    <ClCompile Include="$(SolutionDir)include\SourceSDK\VPanelWrapper.cpp">
-      <Filter>VGUI2</Filter>
-    </ClCompile>
     <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\assert_dialog.cpp">
       <Filter>SourceSDK\tier0</Filter>
     </ClCompile>

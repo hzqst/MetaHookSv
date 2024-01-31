@@ -35,7 +35,10 @@ public:
 	Panel * operator ->()					{ return Get(); }
 	Panel * operator = (Panel *pPanel)		{ return Set(pPanel); }
 
-	bool operator == (Panel *pPanel)		{ return (Get() == pPanel); }
+	//remove any ambiguity
+	bool operator == (const PHandle& other) const { return m_iPanelID == other.m_iPanelID; }
+
+	//bool operator == (Panel *pPanel)		{ return (Get() == pPanel); }
 	operator bool ()						{ return Get() != 0; }
 
 private:

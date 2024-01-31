@@ -19,7 +19,7 @@
 #include "utlvector.h"
 #include "utlbuffer.h"
 
-static char *s_LastFileLoadingFrom = "unknown";
+static const char *s_LastFileLoadingFrom = "unknown";
 
 #define KEYVALUES_TOKEN_SIZE 1024
 static char s_pTokenBuf[KEYVALUES_TOKEN_SIZE];

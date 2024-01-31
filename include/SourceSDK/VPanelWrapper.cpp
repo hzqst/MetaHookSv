@@ -8,6 +8,7 @@
 
 #include <vgui/IClientPanel.h>
 #include <vgui/IPanel.h>
+#include <vgui/IPanel2.h>
 #include <vgui/ISurface.h>
 
 using namespace vgui;

@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include <vgui/IPanel.h>
+#include <vgui/IPanel2.h>
 #include <vgui/IClientPanel.h>
 #include <vgui/ISurface.h>
 #include <vgui/IVGui.h>

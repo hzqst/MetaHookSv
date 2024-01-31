@@ -41,27 +41,27 @@ public:
 public:
 	void SetCount(int count)
 	{
-		EnsureCount( count );
+		BaseClass::EnsureCount( count );
 	}
 	int GetCount()
 	{
-		return Count();
+		return BaseClass::Count();
 	}
 	int AddElement(ELEMTYPE elem)
 	{
-		return AddToTail( elem );
+		return BaseClass::AddToTail( elem );
 	}
 	void MoveElementToEnd( ELEMTYPE elem )
 	{
-		if ( Count() == 0 )
+		if (BaseClass::Count() == 0 )
 			return;
 
 		// quick check to see if it's already at the end
-		if ( Element( Count() - 1 ) == elem )
+		if (BaseClass::Element(BaseClass::Count() - 1 ) == elem )
 			return;
 
 		int idx = Find( elem );
-		if ( idx == InvalidIndex() )
+		if ( idx == BaseClass::InvalidIndex() )
 			return;
 
 		Remove( idx );
@@ -70,11 +70,11 @@ public:
 	// returns the index of the element in the array, -1 if not found
 	int FindElement(ELEMTYPE elem)
 	{
-		return Find( elem );
+		return BaseClass::Find( elem );
 	}
 	bool HasElement(ELEMTYPE elem)
 	{
-		if ( FindElement(elem) != InvalidIndex() )
+		if ( FindElement(elem) != BaseClass::InvalidIndex() )
 		{
 			return true;
 		}
@@ -92,38 +92,38 @@ public:
 	// insert element at index and move all the others down 1
 	void InsertElementAt(ELEMTYPE elem,int index)
 	{
-		InsertBefore( index, elem );
+		BaseClass::InsertBefore( index, elem );
 	}
 	void SetElementAt(ELEMTYPE elem,int index)
 	{
-		EnsureCount( index + 1 );
-		Element( index ) = elem;
+		BaseClass::EnsureCount( index + 1 );
+		BaseClass::Element( index ) = elem;
 	}
 	void RemoveElementAt(int index)
 	{
-		Remove( index );
+		BaseClass::Remove( index );
 	} 
 
 	void RemoveElementsBefore(int index)
 	{
 		if ( index <= 0 )
 			return;
-		RemoveMultiple( 0, index - 1 );
+		BaseClass::RemoveMultiple( 0, index - 1 );
 	}  
 
 	void RemoveElement(ELEMTYPE elem)
 	{
-		FindAndRemove( elem );
+		BaseClass::FindAndRemove( elem );
 	}
 
 	void *GetBaseData()
 	{
-		return Base();
+		return BaseClass::Base();
 	}
 
 	void CopyFrom(Dar<ELEMTYPE> &dar)
 	{
-		CoypArray( dar.Base(), dar.Count() );
+		BaseClass::CopyArray( dar.Base(), dar.Count() );
 	}
 };
 

@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//========= Copyright ?1996-2005, Valve Corporation, All rights reserved. ============//
 //
 // Purpose:
 //
@@ -32,7 +32,7 @@ public:
 	void FreeAll();
 
 	// searches for a string already in the pool
-	const char * CStringPool::Find( const char *pszValue );
+	const char * Find( const char *pszValue );
 
 protected:
 	typedef CUtlRBTree<const char *, unsigned short> CStrSet;
