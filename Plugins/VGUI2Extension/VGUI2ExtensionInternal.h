@@ -2,10 +2,42 @@
 
 #include <metahook.h>
 #include <IVGUI2Extension.h>
+#include <string>
 
 #define DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(name, ...) virtual void name(__VA_ARGS__) = 0;
 #define DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(name, ...)  virtual void name(__VA_ARGS__, VGUI2Extension_CallbackContext* CallbackContext) = 0;
 #define DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(name)  virtual void name(VGUI2Extension_CallbackContext* CallbackContext) = 0;
+
+class CVGUI2Extension_String : public IVGUI2Extension_String
+{
+private:
+    std::string m_str;
+public:
+    const char* c_str() const override
+    {
+        return m_str.c_str();
+    }
+    size_t length() const override
+    {
+        return m_str.length();
+    }
+    size_t capacity() const override
+    {
+        return m_str.capacity();
+    }
+    void resize(size_t n) override
+    {
+        m_str.resize(n);
+    }
+    void assign(const char* s) override
+    {
+        m_str.assign(s);
+    }
+    void assign2(const char* s, size_t n) override
+    {
+        m_str.assign(s, n);
+    }
+};
 
 class IVGUI2ExtensionInternal : public IVGUI2Extension
 {
@@ -52,6 +84,15 @@ public:
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameUI_CTaskBar_OnCommand, void*& pPanel, const char*& command);
 
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameUI_KeyValues_LoadFromFile, void*& pthis, IFileSystem*& pFileSystem, const char*& resourceName, const char*& pathId);
+
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(GameConsole_Activate);
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(GameConsole_Initialize);
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(GameConsole_Hide);
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(GameConsole_Clear);
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(GameConsole_IsConsoleVisible);
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameConsole_Printf, IVGUI2Extension_String* str);
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameConsole_DPrintf, IVGUI2Extension_String* str);
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameConsole_SetParent, vgui::VPANEL parent);
 
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(ClientVGUI_Initialize, CreateInterfaceFn* factories, int count);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(ClientVGUI_Shutdown);

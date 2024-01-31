@@ -16,6 +16,7 @@ private:
 	std::vector<IVGUI2Extension_GameUITaskBarCallbacks*> m_GameUITaskBarCallbacks;
 	std::vector<IVGUI2Extension_GameUIKeyValuesCallbacks*> m_GameUIKeyValuesCallbacks;
 	std::vector<IVGUI2Extension_ClientVGUICallbacks*> m_ClientVGUICallbacks;
+	std::vector<IVGUI2Extension_GameConsoleCallbacks*> m_GameConsoleCallbacks;
 
 public:
 
@@ -75,6 +76,16 @@ public:
 
 		std::sort(m_ClientVGUICallbacks.begin(), m_ClientVGUICallbacks.end(),
 			[](const IVGUI2Extension_ClientVGUICallbacks* a, const IVGUI2Extension_ClientVGUICallbacks* b) -> bool {
+				return a->GetAltitude() > b->GetAltitude();
+			});
+	}
+
+	void RegisterGameConsoleCallbacks(IVGUI2Extension_GameConsoleCallbacks* pCallbacks) override
+	{
+		m_GameConsoleCallbacks.emplace_back(pCallbacks);
+
+		std::sort(m_GameConsoleCallbacks.begin(), m_GameConsoleCallbacks.end(),
+			[](const IVGUI2Extension_GameConsoleCallbacks* a, const IVGUI2Extension_GameConsoleCallbacks* b) -> bool {
 				return a->GetAltitude() > b->GetAltitude();
 			});
 	}
@@ -146,6 +157,18 @@ public:
 			if (*it == pCallbacks)
 			{
 				m_ClientVGUICallbacks.erase(it);
+				return;
+			}
+		}
+	}
+
+	void UnregisterGameConsoleCallbacks(IVGUI2Extension_GameConsoleCallbacks* pCallbacks) override
+	{
+		for (auto it = m_GameConsoleCallbacks.begin(); it != m_GameConsoleCallbacks.end(); ++it)
+		{
+			if (*it == pCallbacks)
+			{
+				m_GameConsoleCallbacks.erase(it);
 				return;
 			}
 		}
@@ -628,6 +651,11 @@ public:
 		for (auto it = m_ClientVGUICallbacks.begin(); it != m_ClientVGUICallbacks.end(); ++it)
 		{
 			(*it)->UseVGUI1(CallbackContext);
+
+			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
+			{
+				return;
+			}
 		}
 	}
 
@@ -636,6 +664,11 @@ public:
 		for (auto it = m_ClientVGUICallbacks.begin(); it != m_ClientVGUICallbacks.end(); ++it)
 		{
 			(*it)->HideScoreBoard(CallbackContext);
+
+			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
+			{
+				return;
+			}
 		}
 	}
 
@@ -644,6 +677,11 @@ public:
 		for (auto it = m_ClientVGUICallbacks.begin(); it != m_ClientVGUICallbacks.end(); ++it)
 		{
 			(*it)->HideAllVGUIMenu(CallbackContext);
+
+			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
+			{
+				return;
+			}
 		}
 	}
 
@@ -652,6 +690,11 @@ public:
 		for (auto it = m_ClientVGUICallbacks.begin(); it != m_ClientVGUICallbacks.end(); ++it)
 		{
 			(*it)->ActivateClientUI(CallbackContext);
+
+			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
+			{
+				return;
+			}
 		}
 	}
 
@@ -660,6 +703,117 @@ public:
 		for (auto it = m_ClientVGUICallbacks.begin(); it != m_ClientVGUICallbacks.end(); ++it)
 		{
 			(*it)->HideClientUI(CallbackContext);
+
+			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
+			{
+				return;
+			}
+		}
+	}
+
+	//GameConsole
+
+	void GameConsole_Activate(VGUI2Extension_CallbackContext* CallbackContext)override
+	{
+		for (auto it = m_GameConsoleCallbacks.begin(); it != m_GameConsoleCallbacks.end(); ++it)
+		{
+			(*it)->Activate(CallbackContext);
+
+			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
+			{
+				return;
+			}
+		}
+	}
+
+	void GameConsole_Initialize(VGUI2Extension_CallbackContext* CallbackContext)override
+	{
+		for (auto it = m_GameConsoleCallbacks.begin(); it != m_GameConsoleCallbacks.end(); ++it)
+		{
+			(*it)->Initialize(CallbackContext);
+
+			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
+			{
+				return;
+			}
+		}
+	}
+
+	void GameConsole_Hide(VGUI2Extension_CallbackContext* CallbackContext)override
+	{
+		for (auto it = m_GameConsoleCallbacks.begin(); it != m_GameConsoleCallbacks.end(); ++it)
+		{
+			(*it)->Hide(CallbackContext);
+
+			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
+			{
+				return;
+			}
+		}
+	}
+
+	void GameConsole_Clear(VGUI2Extension_CallbackContext* CallbackContext)override
+	{
+		for (auto it = m_GameConsoleCallbacks.begin(); it != m_GameConsoleCallbacks.end(); ++it)
+		{
+			(*it)->Clear(CallbackContext);
+
+			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
+			{
+				return;
+			}
+		}
+	}
+
+	void GameConsole_IsConsoleVisible(VGUI2Extension_CallbackContext* CallbackContext)override
+	{
+		for (auto it = m_GameConsoleCallbacks.begin(); it != m_GameConsoleCallbacks.end(); ++it)
+		{
+			(*it)->IsConsoleVisible(CallbackContext);
+
+			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
+			{
+				return;
+			}
+		}
+	}
+
+	void GameConsole_Printf(IVGUI2Extension_String* str, VGUI2Extension_CallbackContext* CallbackContext)override
+	{
+		for (auto it = m_GameConsoleCallbacks.begin(); it != m_GameConsoleCallbacks.end(); ++it)
+		{
+			(*it)->Printf(str, CallbackContext);
+
+			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
+			{
+				return;
+			}
+		}
+	}
+
+	void GameConsole_DPrintf(IVGUI2Extension_String* str, VGUI2Extension_CallbackContext* CallbackContext)override
+	{
+		for (auto it = m_GameConsoleCallbacks.begin(); it != m_GameConsoleCallbacks.end(); ++it)
+		{
+			(*it)->DPrintf(str, CallbackContext);
+
+			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
+			{
+				return;
+			}
+		}
+	}
+
+	void GameConsole_SetParent(vgui::VPANEL parent, VGUI2Extension_CallbackContext* CallbackContext)override
+	{
+		for (auto it = m_GameConsoleCallbacks.begin(); it != m_GameConsoleCallbacks.end(); ++it)
+		{
+			(*it)->SetParent(parent, CallbackContext);
+
+			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
+			{
+				return;
+			}
 		}
 	}
 };

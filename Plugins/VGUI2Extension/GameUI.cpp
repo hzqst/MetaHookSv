@@ -988,6 +988,17 @@ IGameConsole hook
 */
 
 IGameConsole* g_pGameConsole = NULL;
+extern "C"
+{
+	void(__fastcall* g_pfnCGameConsole_Activate)(void *pthis, int) = NULL;
+	void(__fastcall* g_pfnCGameConsole_Initialize)(void* pthis, int) = NULL;
+	void(__fastcall* g_pfnCGameConsole_Hide)(void* pthis, int) = NULL;
+	void(__fastcall* g_pfnCGameConsole_Clear)(void* pthis, int) = NULL;
+	bool(__fastcall* g_pfnCGameConsole_IsConsoleVisible)(void* pthis, int) = NULL;
+	void(__cdecl* g_pfnCGameConsole_Printf)(void* pthis, const char* format, ...) = NULL;
+	void(__cdecl* g_pfnCGameConsole_DPrintf)(void* pthis, const char* format, ...) = NULL;
+	void(__fastcall* g_pfnCGameConsole_SetParent)(void* pthis, int, vgui::VPANEL parent) = NULL;
+};
 
 class CGameConsoleProxy : public IGameConsole
 {
@@ -1004,43 +1015,203 @@ public:
 
 void CGameConsoleProxy::Activate(void)
 {
+	VGUI2Extension_CallbackContext CallbackContext;
 
+	VGUI2ExtensionInternal()->GameConsole_Activate(&CallbackContext);
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	{
+		g_pfnCGameConsole_Activate(this, 0);
+	}
+
+	CallbackContext.IsPost = true;
+
+	VGUI2ExtensionInternal()->GameConsole_Activate(&CallbackContext);
 }
 
 void CGameConsoleProxy::Initialize(void)
 {
+	VGUI2Extension_CallbackContext CallbackContext;
 
+	VGUI2ExtensionInternal()->GameConsole_Initialize(&CallbackContext);
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	{
+		g_pfnCGameConsole_Initialize(this, 0);
+	}
+
+	CallbackContext.IsPost = true;
+
+	VGUI2ExtensionInternal()->GameConsole_Initialize(&CallbackContext);
 }
 
 void CGameConsoleProxy::Hide(void)
 {
+	VGUI2Extension_CallbackContext CallbackContext;
 
+	VGUI2ExtensionInternal()->GameConsole_Hide(&CallbackContext);
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	{
+		g_pfnCGameConsole_Hide(this, 0);
+	}
+
+	CallbackContext.IsPost = true;
+
+	VGUI2ExtensionInternal()->GameConsole_Hide(&CallbackContext);
 }
 
 void CGameConsoleProxy::Clear(void)
 {
+	VGUI2Extension_CallbackContext CallbackContext;
 
+	VGUI2ExtensionInternal()->GameConsole_Clear(&CallbackContext);
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	{
+		g_pfnCGameConsole_Clear(this, 0);
+	}
+
+	CallbackContext.IsPost = true;
+
+	VGUI2ExtensionInternal()->GameConsole_Clear(&CallbackContext);
 }
 
 bool CGameConsoleProxy::IsConsoleVisible(void)
 {
-	return false;
+	bool fake_ret = false;
+	bool real_ret = false;
+	bool ret = false;
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	CallbackContext.pPluginReturnValue = &fake_ret;
+
+	VGUI2ExtensionInternal()->GameConsole_IsConsoleVisible(&CallbackContext);
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	{
+		real_ret = g_pfnCGameConsole_IsConsoleVisible(this, 0);
+	}
+
+	CallbackContext.pRealReturnValue = &real_ret;
+	CallbackContext.IsPost = true;
+
+	VGUI2ExtensionInternal()->GameConsole_IsConsoleVisible(&CallbackContext);
+
+	switch (CallbackContext.Result)
+	{
+	case VGUI2Extension_Result::OVERRIDE:
+	case VGUI2Extension_Result::SUPERCEDE:
+	{
+		ret = fake_ret;
+	}
+	default:
+	{
+		ret = real_ret;
+	}
+	}
+
+	return ret;
 }
 
 void CGameConsoleProxy::Printf(const char* format, ...)
 {
+	va_list args;
+	va_start(args, format);
 
+	// Use vsnprintf to calculate the required length
+	int length = vsnprintf(nullptr, 0, format, args);
+	va_end(args);
+
+	// Check for error
+	if (length <= 0) {
+		return;
+	}
+
+	// Create a vector with the required size (+1 for the null terminator)
+	CVGUI2Extension_String str;
+
+	str.resize(length);
+
+	// Format the string again with the actual buffer
+	va_start(args, format);
+	vsnprintf((char *)str.c_str(), str.length(), format, args);
+	va_end(args);
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	VGUI2ExtensionInternal()->GameConsole_Printf(&str, &CallbackContext);
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	{
+		g_pfnCGameConsole_Printf(this, "%s\n", str.c_str());
+	}
+
+	CallbackContext.IsPost = true;
+	VGUI2ExtensionInternal()->GameConsole_Printf(&str, &CallbackContext);
 }
 
 void CGameConsoleProxy::DPrintf(const char* format, ...)
 {
+	va_list args;
+	va_start(args, format);
 
+	// Use vsnprintf to calculate the required length
+	int length = vsnprintf(nullptr, 0, format, args);
+	va_end(args);
+
+	// Check for error
+	if (length <= 0) {
+		return;
+	}
+
+	// Create a vector with the required size (+1 for the null terminator)
+	CVGUI2Extension_String str;
+
+	str.resize(length);
+
+	// Format the string again with the actual buffer
+	va_start(args, format);
+	vsnprintf((char*)str.c_str(), str.length(), format, args);
+	va_end(args);
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	VGUI2ExtensionInternal()->GameConsole_Printf(&str, &CallbackContext);
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	{
+		g_pfnCGameConsole_DPrintf(this, "%s\n", str.c_str());
+	}
+
+	CallbackContext.IsPost = true;
+	VGUI2ExtensionInternal()->GameConsole_Printf(&str, &CallbackContext);
 }
 
 void CGameConsoleProxy::SetParent(vgui::VPANEL parent)
 {
+	VGUI2Extension_CallbackContext CallbackContext;
 
+	VGUI2ExtensionInternal()->GameConsole_SetParent(parent, &CallbackContext);
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	{
+		g_pfnCGameConsole_SetParent(this, 0, parent);
+	}
+
+	CallbackContext.IsPost = true;
+
+	VGUI2ExtensionInternal()->GameConsole_SetParent(parent, &CallbackContext);
 }
+
+static CGameConsoleProxy s_GameConsoleProxy;
+
+/*
+======================================================================
+End of hook proxy
+======================================================================
+*/
 
 void GameUI_FillAddress(void)
 {
@@ -2273,27 +2444,45 @@ void GameUI_InstallHooks(void)
 		Sys_Error("Failed to get interface \"" GAMECONSOLE_INTERFACE_VERSION_GS "\" from GameUI.dll");
 		return;
 	}
-	PVOID * ProxyVFTable = *(PVOID**)&s_GameUIProxy;
 
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 1, ProxyVFTable[1], (void**)&g_pfnCGameUI_Initialize);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 2, ProxyVFTable[2], (void**)&g_pfnCGameUI_Start);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 3, ProxyVFTable[3], (void**)&g_pfnCGameUI_Shutdown);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 4, ProxyVFTable[4], (void**)&g_pfnCGameUI_ActivateGameUI);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 5, ProxyVFTable[5], (void**)&g_pfnCGameUI_ActivateDemoUI);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 6, ProxyVFTable[6], (void**)&g_pfnCGameUI_HasExclusiveInput);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 7, ProxyVFTable[7], (void**)&g_pfnCGameUI_RunFrame);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 8, ProxyVFTable[8], (void**)&g_pfnCGameUI_ConnectToServer);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 9, ProxyVFTable[9], (void**)&g_pfnCGameUI_DisconnectFromServer);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 10, ProxyVFTable[10], (void**)&g_pfnCGameUI_HideGameUI);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 11, ProxyVFTable[11], (void**)&g_pfnCGameUI_IsGameUIActive);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 12, ProxyVFTable[12], (void**)&g_pfnCGameUI_LoadingStarted);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 13, ProxyVFTable[13], (void**)&g_pfnCGameUI_LoadingFinished);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 14, ProxyVFTable[14], (void**)&g_pfnCGameUI_StartProgressBar);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 15, ProxyVFTable[15], (void**)&g_pfnCGameUI_ContinueProgressBar);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 16, ProxyVFTable[16], (void**)&g_pfnCGameUI_StopProgressBar);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 17, ProxyVFTable[17], (void**)&g_pfnCGameUI_SetProgressBarStatusText);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 18, ProxyVFTable[18], (void**)&g_pfnCGameUI_SetSecondaryProgressBar);
-	g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 19, ProxyVFTable[19], (void**)&g_pfnCGameUI_SetSecondaryProgressBarText);
+	if (1)
+	{
+		PVOID* ProxyVFTable = *(PVOID**)&s_GameUIProxy;
+
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 1, ProxyVFTable[1], (void**)&g_pfnCGameUI_Initialize);
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 2, ProxyVFTable[2], (void**)&g_pfnCGameUI_Start);
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 3, ProxyVFTable[3], (void**)&g_pfnCGameUI_Shutdown);
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 4, ProxyVFTable[4], (void**)&g_pfnCGameUI_ActivateGameUI);
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 5, ProxyVFTable[5], (void**)&g_pfnCGameUI_ActivateDemoUI);
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 6, ProxyVFTable[6], (void**)&g_pfnCGameUI_HasExclusiveInput);
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 7, ProxyVFTable[7], (void**)&g_pfnCGameUI_RunFrame);
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 8, ProxyVFTable[8], (void**)&g_pfnCGameUI_ConnectToServer);
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 9, ProxyVFTable[9], (void**)&g_pfnCGameUI_DisconnectFromServer);
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 10, ProxyVFTable[10], (void**)&g_pfnCGameUI_HideGameUI);
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 11, ProxyVFTable[11], (void**)&g_pfnCGameUI_IsGameUIActive);
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 12, ProxyVFTable[12], (void**)&g_pfnCGameUI_LoadingStarted);
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 13, ProxyVFTable[13], (void**)&g_pfnCGameUI_LoadingFinished);
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 14, ProxyVFTable[14], (void**)&g_pfnCGameUI_StartProgressBar);
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 15, ProxyVFTable[15], (void**)&g_pfnCGameUI_ContinueProgressBar);
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 16, ProxyVFTable[16], (void**)&g_pfnCGameUI_StopProgressBar);
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 17, ProxyVFTable[17], (void**)&g_pfnCGameUI_SetProgressBarStatusText);
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 18, ProxyVFTable[18], (void**)&g_pfnCGameUI_SetSecondaryProgressBar);
+		g_pMetaHookAPI->VFTHook(g_pGameUI, 0, 19, ProxyVFTable[19], (void**)&g_pfnCGameUI_SetSecondaryProgressBarText);
+	}
+
+	if (1)
+	{
+		PVOID* ProxyVFTable = *(PVOID**)&s_GameConsoleProxy;
+
+		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 1, ProxyVFTable[1], (void**)&g_pfnCGameConsole_Activate);
+		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 2, ProxyVFTable[2], (void**)&g_pfnCGameConsole_Initialize);
+		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 3, ProxyVFTable[3], (void**)&g_pfnCGameConsole_Hide);
+		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 4, ProxyVFTable[4], (void**)&g_pfnCGameConsole_Clear);
+		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 5, ProxyVFTable[5], (void**)&g_pfnCGameConsole_IsConsoleVisible);
+		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 6, ProxyVFTable[6], (void**)&g_pfnCGameConsole_Printf);
+		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 7, ProxyVFTable[7], (void**)&g_pfnCGameConsole_DPrintf);
+		g_pMetaHookAPI->VFTHook(g_pGameConsole, 0, 8, ProxyVFTable[8], (void**)&g_pfnCGameConsole_SetParent);
+	}
 
 	Install_InlineHook(GameUI_Panel_Init);
 	Install_InlineHook(CGameConsoleDialog_ctor);

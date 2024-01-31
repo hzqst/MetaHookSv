@@ -2,6 +2,7 @@
 
 #include <interface.h>
 #include <stdint.h>
+#include <stdarg.h>
 
 #include <IGameUI.h>
 #include <IClientVGUI.h>
@@ -35,6 +36,17 @@ public:
     void* pPluginReturnValue;
     void* pRealReturnValue;
     bool IsPost;
+};
+
+class IVGUI2Extension_String : public IBaseInterface
+{
+public:
+   virtual const char* c_str() const = 0;
+   virtual size_t length() const = 0;
+   virtual size_t capacity() const = 0;
+   virtual void resize(size_t n) = 0;
+   virtual void assign(const char*s) = 0;
+   virtual void assign2(const char *s, size_t n) = 0;
 };
 
 class IVGUI2Extension_BaseCallbacks : public IBaseInterface
@@ -136,6 +148,19 @@ public:
     DEFINE_VGUI2EXTENSION_CALLBACK_NOARG(HideClientUI);
 };
 
+class IVGUI2Extension_GameConsoleCallbacks : public IVGUI2Extension_BaseCallbacks
+{
+public:
+    DEFINE_VGUI2EXTENSION_CALLBACK_NOARG(Activate);
+    DEFINE_VGUI2EXTENSION_CALLBACK_NOARG(Initialize);
+    DEFINE_VGUI2EXTENSION_CALLBACK_NOARG(Hide);
+    DEFINE_VGUI2EXTENSION_CALLBACK_NOARG(Clear);
+    DEFINE_VGUI2EXTENSION_CALLBACK_NOARG(IsConsoleVisible);
+    DEFINE_VGUI2EXTENSION_CALLBACK(Printf, IVGUI2Extension_String *str);
+    DEFINE_VGUI2EXTENSION_CALLBACK(DPrintf, IVGUI2Extension_String* str);
+    DEFINE_VGUI2EXTENSION_CALLBACK(SetParent, vgui::VPANEL parent);
+};
+
 class IVGUI2Extension : public IBaseInterface
 {
 public:
@@ -145,6 +170,7 @@ public:
     virtual void RegisterGameUITaskBarCallbacks(IVGUI2Extension_GameUITaskBarCallbacks* pCallbacks) = 0;
     virtual void RegisterGameUIKeyValuesCallbacks(IVGUI2Extension_GameUIKeyValuesCallbacks* pCallbacks) = 0;
     virtual void RegisterClientVGUICallbacks(IVGUI2Extension_ClientVGUICallbacks* pCallbacks) = 0;
+    virtual void RegisterGameConsoleCallbacks(IVGUI2Extension_GameConsoleCallbacks* pCallbacks) = 0;
 
     virtual void UnregisterBaseUICallbacks(IVGUI2Extension_BaseUICallbacks* pCallbacks) = 0;
     virtual void UnregisterGameUICallbacks(IVGUI2Extension_GameUICallbacks* pCallbacks) = 0;
@@ -152,6 +178,7 @@ public:
     virtual void UnregisterGameUITaskBarCallbacks(IVGUI2Extension_GameUITaskBarCallbacks* pCallbacks) = 0;
     virtual void UnregisterGameUIKeyValuesCallbacks(IVGUI2Extension_GameUIKeyValuesCallbacks* pCallbacks) = 0;
     virtual void UnregisterClientVGUICallbacks(IVGUI2Extension_ClientVGUICallbacks* pCallbacks) = 0;
+    virtual void UnregisterGameConsoleCallbacks(IVGUI2Extension_GameConsoleCallbacks* pCallbacks) = 0;
 
     virtual const char* GetBaseDirectory() const = 0;
     virtual const char* GetCurrentLanguage() const = 0;
@@ -159,4 +186,4 @@ public:
 
 IVGUI2Extension* VGUI2Extension();
 
-#define VGUI2_EXTENSION_INTERFACE_VERSION "VGUI2_Extension_API_004"
+#define VGUI2_EXTENSION_INTERFACE_VERSION "VGUI2_Extension_API_005"
