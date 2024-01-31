@@ -26,12 +26,18 @@
     <ClCompile Include="..\..\include\HLSDK\common\parsemsg.cpp">
       <Filter>HLSDK</Filter>
     </ClCompile>
+    <ClCompile Include="gl_catpure.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="plugins.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="gl_capture.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,7 +1,7 @@
 #include <metahook.h>
 #include <glew.h>
 #include "exportfuncs.h"
-
+#include "gl_capture.h"
 
 cl_exportfuncs_t gExportfuncs = { 0 };
 mh_interface_t* g_pInterface = NULL;
@@ -26,7 +26,6 @@ int g_iEngineType = 0;
 PVOID g_dwClientBase = 0;
 DWORD g_dwClientSize = 0;
 
-
 void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_enginesave_t *pSave)
 {
 	g_pInterface = pInterface;
@@ -37,6 +36,7 @@ void IPluginsV4::Init(metahook_api_t *pAPI, mh_interface_t *pInterface, mh_engin
 
 void IPluginsV4::Shutdown(void)
 {
+
 }
 
 void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
@@ -64,6 +64,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	glewInit();
 
 	pExportFunc->HUD_Frame = HUD_Frame;
+	pExportFunc->HUD_Shutdown = HUD_Shutdown;
 	pExportFunc->IN_ActivateMouse = IN_ActivateMouse;
 }
 
