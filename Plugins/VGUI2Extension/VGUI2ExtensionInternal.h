@@ -17,6 +17,10 @@ public:
     {
         return m_str.c_str();
     }
+    const char* data() const override
+    {
+        return m_str.data();
+    }
     size_t length() const override
     {
         return m_str.length();
@@ -36,6 +40,10 @@ public:
     void assign2(const char* s, size_t n) override
     {
         m_str.assign(s, n);
+    }
+    void clear() override
+    {
+        m_str.clear();
     }
 };
 
@@ -83,7 +91,7 @@ public:
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(GameUI_CTaskBar_ctor, IGameUITaskBarCtorCallbackContext* CallbackContext);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameUI_CTaskBar_OnCommand, void*& pPanel, const char*& command);
 
-    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameUI_KeyValues_LoadFromFile, void*& pthis, IFileSystem*& pFileSystem, const char*& resourceName, const char*& pathId);
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameUI_KeyValues_LoadFromFile, void*& pthis, IFileSystem*& pFileSystem, const char*& resourceName, const char*& pathId, const char* sourceModule);
 
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(GameConsole_Activate);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(GameConsole_Initialize);

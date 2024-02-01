@@ -170,13 +170,13 @@ mh_enginesave_t gMetaSave = {0};
 extern metahook_api_t gMetaHookAPI_LegacyV2;
 extern metahook_api_t gMetaHookAPI;
 
-extern "C"
-{
 #define MAX_SYS_ERROR_LENGTH 4096
 
-	void MH_SysErrorWrapper(const char* fmt, ...);
-
+extern "C"
+{
 	void (*g_pfnSys_Error)(const char* fmt, ...) = NULL;
+
+	void MH_SysErrorWrapper(const char* fmt, ...);
 
 	void MH_SysErrorInternal(const char* msg)
 	{
@@ -193,10 +193,7 @@ extern "C"
 
 	void MH_SysError(const char* fmt, ...)
 	{
-		char* msg = (char*)malloc(MAX_SYS_ERROR_LENGTH);
-
-		if (!msg)
-			return;
+		char msg[MAX_SYS_ERROR_LENGTH];
 
 		va_list argptr;
 

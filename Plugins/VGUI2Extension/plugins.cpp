@@ -84,7 +84,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	Engine_InstallHooks();
 
-	BaseUI_InstallHook();
+	BaseUI_InstallHooks();
 
 	DpiManagerInternal()->Init();
 
@@ -128,7 +128,7 @@ void IPluginsV4::ExitGame(int iResult)
 {
 	VGUI1_Shutdown();
 
-	BaseUI_UninstallHook();
+	BaseUI_UninstallHooks();
 	Engine_UninstallHooks();
 }
 

@@ -42,11 +42,13 @@ class IVGUI2Extension_String : public IBaseInterface
 {
 public:
    virtual const char* c_str() const = 0;
+   virtual const char* data() const = 0;
    virtual size_t length() const = 0;
    virtual size_t capacity() const = 0;
    virtual void resize(size_t n) = 0;
    virtual void assign(const char*s) = 0;
    virtual void assign2(const char *s, size_t n) = 0;
+   virtual void clear() = 0;
 };
 
 class IVGUI2Extension_BaseCallbacks : public IBaseInterface
@@ -104,7 +106,7 @@ public:
 class IVGUI2Extension_GameUIKeyValuesCallbacks : public IVGUI2Extension_BaseCallbacks
 {
 public:
-    DEFINE_VGUI2EXTENSION_CALLBACK(KeyValues_LoadFromFile, void* &pthis, IFileSystem* &pFileSystem, const char* &resourceName, const char* &pathId);
+    DEFINE_VGUI2EXTENSION_CALLBACK(KeyValues_LoadFromFile, void* &pthis, IFileSystem* &pFileSystem, const char* &resourceName, const char* &pathId, const char *sourceModule);
 };
 
 class IVGUI2Extension_GameUICallbacks : public IVGUI2Extension_BaseCallbacks
@@ -169,16 +171,16 @@ public:
     virtual void RegisterGameUIOptionDialogCallbacks(IVGUI2Extension_GameUIOptionDialogCallbacks* pCallbacks) = 0;
     virtual void RegisterGameUITaskBarCallbacks(IVGUI2Extension_GameUITaskBarCallbacks* pCallbacks) = 0;
     virtual void RegisterGameUIKeyValuesCallbacks(IVGUI2Extension_GameUIKeyValuesCallbacks* pCallbacks) = 0;
-    virtual void RegisterClientVGUICallbacks(IVGUI2Extension_ClientVGUICallbacks* pCallbacks) = 0;
     virtual void RegisterGameConsoleCallbacks(IVGUI2Extension_GameConsoleCallbacks* pCallbacks) = 0;
+    virtual void RegisterClientVGUICallbacks(IVGUI2Extension_ClientVGUICallbacks* pCallbacks) = 0;
 
     virtual void UnregisterBaseUICallbacks(IVGUI2Extension_BaseUICallbacks* pCallbacks) = 0;
     virtual void UnregisterGameUICallbacks(IVGUI2Extension_GameUICallbacks* pCallbacks) = 0;
     virtual void UnregisterGameUIOptionDialogCallbacks(IVGUI2Extension_GameUIOptionDialogCallbacks* pCallbacks) = 0;
     virtual void UnregisterGameUITaskBarCallbacks(IVGUI2Extension_GameUITaskBarCallbacks* pCallbacks) = 0;
     virtual void UnregisterGameUIKeyValuesCallbacks(IVGUI2Extension_GameUIKeyValuesCallbacks* pCallbacks) = 0;
-    virtual void UnregisterClientVGUICallbacks(IVGUI2Extension_ClientVGUICallbacks* pCallbacks) = 0;
     virtual void UnregisterGameConsoleCallbacks(IVGUI2Extension_GameConsoleCallbacks* pCallbacks) = 0;
+    virtual void UnregisterClientVGUICallbacks(IVGUI2Extension_ClientVGUICallbacks* pCallbacks) = 0;
 
     virtual const char* GetBaseDirectory() const = 0;
     virtual const char* GetCurrentLanguage() const = 0;
@@ -186,4 +188,4 @@ public:
 
 IVGUI2Extension* VGUI2Extension();
 
-#define VGUI2_EXTENSION_INTERFACE_VERSION "VGUI2_Extension_API_005"
+#define VGUI2_EXTENSION_INTERFACE_VERSION "VGUI2_Extension_API_006"

@@ -6,16 +6,20 @@
 #include <vgui/IPanel.h>
 #include <vgui_controls/Panel.h>
 
-#include "plugins.h"
-#include "privatefuncs.h"
-#include "DpiManagerInternal.h"
-#include "VGUI2ExtensionInternal.h"
 #include <capstone.h>
 #include <set>
 #include <sstream>
 #include <vector>
 
+#include "plugins.h"
+#include "privatefuncs.h"
+#include "DpiManagerInternal.h"
+#include "VGUI2ExtensionInternal.h"
+
+static hook_t* g_phook_ServerBrowser_Panel_Init = NULL;
+static hook_t* g_phook_ServerBrowser_KeyValues_LoadFromFile = NULL;
 static hook_t* g_phook_GameUI_Panel_Init = NULL;
+static hook_t* g_phook_GameUI_KeyValues_LoadFromFile = NULL;
 static hook_t* g_phook_CGameConsoleDialog_ctor = NULL;
 static hook_t* g_phook_CCreateMultiplayerGameDialog_ctor = NULL;
 static hook_t* g_phook_COptionsDialog_ctor = NULL;
@@ -30,7 +34,6 @@ static hook_t* g_phook_TextEntry_LayoutVerticalScrollBarSlider = NULL;
 static hook_t* g_phook_TextEntry_GetStartDrawIndex = NULL;
 static hook_t* g_phook_PropertySheet_HasHotkey = NULL;
 static hook_t* g_phook_FocusNavGroup_GetCurrentFocus = NULL;
-static hook_t* g_phook_KeyValues_LoadFromFile = NULL;
 
 namespace vgui
 {
@@ -177,6 +180,18 @@ int __fastcall TextEntry_GetStartDrawIndex(void* pthis, int dummy, int& lineBrea
 	g_iPatchingPanelTall = 0;
 
 	return result;
+}
+
+void __fastcall ServerBrowser_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, int w, int h)
+{
+	gPrivateFuncs.ServerBrowser_Panel_Init(pthis, 0, x, y, w, h);
+
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManagerInternal()->IsHighDpiSupportEnabled())
+	{
+		PVOID* PanelVFTable = *(PVOID**)pthis;
+		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];
+		pfnSetProportional(pthis, 0, true);
+	}
 }
 
 void __fastcall GameUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, int w, int h)
@@ -382,12 +397,21 @@ void* __fastcall CCreateMultiplayerGameDialog_ctor(vgui::Panel* pthis, int dummy
 	return result;
 }
 
+static vgui::Panel* g_pCreatingGameConsoleDialog = NULL;
+static int g_iCreatingGameConsoleDialogX = 0;
+static int g_iCreatingGameConsoleDialogY = 0;
+static int g_iCreatingGameConsoleDialogWidth = 0;
+static int g_iCreatingGameConsoleDialogHeight = 0;
+
 void* __fastcall CGameConsoleDialog_ctor(vgui::Panel* pthis, int dummy)
 {
 	auto result = gPrivateFuncs.CGameConsoleDialog_ctor(pthis, dummy);
 
 	//Load res to make it proportional
 	LOAD_CONTROL_SETTINGS_FALLBACK(pthis, "GameConsoleDialog.res");
+
+	g_pCreatingGameConsoleDialog = pthis;
+	pthis->GetBounds(g_iCreatingGameConsoleDialogX, g_iCreatingGameConsoleDialogY, g_iCreatingGameConsoleDialogWidth, g_iCreatingGameConsoleDialogHeight);
 
 	return result;
 }
@@ -480,7 +504,7 @@ void* __fastcall QueryBox_ctor(vgui::Panel* pthis, int dummy, const char* title,
 }
 #endif
 
-bool __fastcall KeyValues_LoadFromFile(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId)
+bool __fastcall GameUI_KeyValues_LoadFromFile(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId)
 {
 	bool fake_ret = false;
 	bool real_ret = false;
@@ -490,17 +514,55 @@ bool __fastcall KeyValues_LoadFromFile(void* pthis, int dummy, IFileSystem* pFil
 
 	CallbackContext.pPluginReturnValue = &fake_ret;
 
-	VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, &CallbackContext);
+	VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "GameUI", & CallbackContext);
 
 	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
 	{
-		real_ret = gPrivateFuncs.KeyValues_LoadFromFile(pthis, dummy, pFileSystem, resourceName, pathId);
+		real_ret = gPrivateFuncs.GameUI_KeyValues_LoadFromFile(pthis, dummy, pFileSystem, resourceName, pathId);
 	}
 
 	CallbackContext.pRealReturnValue = &real_ret;
 	CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, &CallbackContext);
+	VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "GameUI", &CallbackContext);
+
+	switch (CallbackContext.Result)
+	{
+	case VGUI2Extension_Result::OVERRIDE:
+	case VGUI2Extension_Result::SUPERCEDE:
+	{
+		ret = fake_ret;
+	}
+	default:
+	{
+		ret = real_ret;
+	}
+	}
+
+	return ret;
+}
+
+bool __fastcall ServerBrowser_KeyValues_LoadFromFile(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId)
+{
+	bool fake_ret = false;
+	bool real_ret = false;
+	bool ret = false;
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	CallbackContext.pPluginReturnValue = &fake_ret;
+
+	VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "ServerBrowser", &CallbackContext);
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	{
+		real_ret = gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile(pthis, dummy, pFileSystem, resourceName, pathId);
+	}
+
+	CallbackContext.pRealReturnValue = &real_ret;
+	CallbackContext.IsPost = true;
+
+	VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "ServerBrowser", &CallbackContext);
 
 	switch (CallbackContext.Result)
 	{
@@ -1038,6 +1100,19 @@ void CGameConsoleProxy::Initialize(void)
 	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
 	{
 		g_pfnCGameConsole_Initialize(this, 0);
+
+		if (g_pCreatingGameConsoleDialog && 
+			g_iCreatingGameConsoleDialogWidth > 100 && 
+			g_iCreatingGameConsoleDialogHeight > 100)
+		{
+			g_pCreatingGameConsoleDialog->SetBounds(
+				g_iCreatingGameConsoleDialogX,
+				g_iCreatingGameConsoleDialogY, 
+				g_iCreatingGameConsoleDialogWidth, 
+				g_iCreatingGameConsoleDialogHeight);
+		}
+
+		g_pCreatingGameConsoleDialog = NULL;
 	}
 
 	CallbackContext.IsPost = true;
@@ -1136,7 +1211,7 @@ void CGameConsoleProxy::Printf(const char* format, ...)
 
 	// Format the string again with the actual buffer
 	va_start(args, format);
-	vsnprintf((char *)str.c_str(), str.length(), format, args);
+	vsnprintf((char *)str.c_str(), str.length() + 1, format, args);
 	va_end(args);
 
 	VGUI2Extension_CallbackContext CallbackContext;
@@ -1145,7 +1220,7 @@ void CGameConsoleProxy::Printf(const char* format, ...)
 
 	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
 	{
-		g_pfnCGameConsole_Printf(this, "%s\n", str.c_str());
+		g_pfnCGameConsole_Printf(this, "%s", str.c_str());
 	}
 
 	CallbackContext.IsPost = true;
@@ -1173,7 +1248,7 @@ void CGameConsoleProxy::DPrintf(const char* format, ...)
 
 	// Format the string again with the actual buffer
 	va_start(args, format);
-	vsnprintf((char*)str.c_str(), str.length(), format, args);
+	vsnprintf((char*)str.c_str(), str.length() + 1, format, args);
 	va_end(args);
 
 	VGUI2Extension_CallbackContext CallbackContext;
@@ -1182,7 +1257,7 @@ void CGameConsoleProxy::DPrintf(const char* format, ...)
 
 	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
 	{
-		g_pfnCGameConsole_DPrintf(this, "%s\n", str.c_str());
+		g_pfnCGameConsole_DPrintf(this, "%s", str.c_str());
 	}
 
 	CallbackContext.IsPost = true;
@@ -1215,17 +1290,18 @@ End of hook proxy
 
 void GameUI_FillAddress(void)
 {
-	auto hGameUI = GetGameUIModule();
+	auto hGameUI = g_hGameUI;
+
 	if (!hGameUI)
 	{
-		g_pMetaHookAPI->SysError("Failed to get module handle of GameUI.dll");
+		Sys_Error("Failed to get module handle of GameUI.dll");
 		return;
 	}
 
 	auto GameUIBase = g_pMetaHookAPI->GetModuleBase(hGameUI);
 	if (!GameUIBase)
 	{
-		g_pMetaHookAPI->SysError("Failed to get image base of GameUI.dll");
+		Sys_Error("Failed to get image base of GameUI.dll");
 		return;
 	}
 
@@ -1234,7 +1310,7 @@ void GameUI_FillAddress(void)
 
 	if (!GameUITextBase)
 	{
-		g_pMetaHookAPI->SysError("Failed to locate section \".text\" in GameUI.dll");
+		Sys_Error("Failed to locate section \".text\" in GameUI.dll");
 		return;
 	}
 
@@ -1243,7 +1319,7 @@ void GameUI_FillAddress(void)
 
 	if (!GameUIRdataBase)
 	{
-		g_pMetaHookAPI->SysError("Failed to locate section \".rdata\" in GameUI.dll");
+		Sys_Error("Failed to locate section \".rdata\" in GameUI.dll");
 		return;
 	}
 
@@ -1252,7 +1328,7 @@ void GameUI_FillAddress(void)
 
 	if (!GameUIDataBase)
 	{
-		g_pMetaHookAPI->SysError("Failed to locate section \".data\" in GameUI.dll");
+		Sys_Error("Failed to locate section \".data\" in GameUI.dll");
 		return;
 	}
 
@@ -1290,7 +1366,7 @@ void GameUI_FillAddress(void)
 
 			return FALSE;
 
-			}, 0, NULL);
+		}, 0, NULL);
 
 		Sig_FuncNotFound(QueryBox_ctor);
 	}
@@ -1309,7 +1385,7 @@ void GameUI_FillAddress(void)
 		auto GameUI_Console_PushString = Search_Pattern_From_Size(GameUITextBase, GameUITextSize, pattern);
 		Sig_VarNotFound(GameUI_Console_PushString);
 
-		gPrivateFuncs.CGameConsoleDialog_ctor = (decltype(gPrivateFuncs.CGameConsoleDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(GameUI_Console_PushString, 0x350, [](PUCHAR Candidate) {
+		gPrivateFuncs.CGameConsoleDialog_ctor = (decltype(gPrivateFuncs.CGameConsoleDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(GameUI_Console_PushString, 0x450, [](PUCHAR Candidate) {
 
 			if (Candidate[0] == 0x55 &&
 				Candidate[1] == 0x8B &&
@@ -1913,12 +1989,12 @@ void GameUI_FillAddress(void)
 
 		if (!ctx.Is0xDCandidatePatched)
 		{
-			g_pMetaHookAPI->SysError("Failed to patch GameUI!RichText_InsertChar.");
+			Sys_Error("Failed to patch GameUI!RichText_InsertChar.");
 		}
 
 		if (!gPrivateFuncs.RichText_InsertChar && !gPrivateFuncs.RichText_InsertStringW)
 		{
-			g_pMetaHookAPI->SysError("Failed to locate GameUI!RichText_InsertChar or RichText_InsertStringW.");
+			Sys_Error("Failed to locate GameUI!RichText_InsertChar or RichText_InsertStringW.");
 		}
 	}
 
@@ -2116,8 +2192,6 @@ void GameUI_FillAddress(void)
 			PVOID GameUITextBase;
 			ULONG GameUITextSize;
 
-			PVOID* Sheet_vftable;
-
 		}SheetSearchContext;
 
 		SheetSearchContext ctx = { 0 };
@@ -2133,21 +2207,24 @@ void GameUI_FillAddress(void)
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (SheetSearchContext*)context;
 
-			if (pinst->id == X86_INS_MOV &&
-				pinst->detail->x86.op_count == 2 &&
-				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->GameUIRdataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->GameUIRdataBase + ctx->GameUIRdataSize))
+			if (!gPrivateFuncs.Sheet_vftable)
 			{
-				auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
-				if (candidate[0] >= (PUCHAR)ctx->GameUITextBase && candidate[0] < (PUCHAR)ctx->GameUITextBase + ctx->GameUITextSize)
+				if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->GameUIRdataBase &&
+						(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->GameUIRdataBase + ctx->GameUIRdataSize))
 				{
-					ctx->Sheet_vftable = candidate;
+					auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
+					if (candidate[0] >= (PUCHAR)ctx->GameUITextBase && candidate[0] < (PUCHAR)ctx->GameUITextBase + ctx->GameUITextSize)
+					{
+						gPrivateFuncs.Sheet_vftable = candidate;
+					}
 				}
 			}
 
-			if (ctx->Sheet_vftable)
+			if (gPrivateFuncs.Sheet_vftable)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -2158,11 +2235,11 @@ void GameUI_FillAddress(void)
 
 			return FALSE;
 
-			}, 0, &ctx);
+		}, 0, &ctx);
 
-		Sig_VarNotFound(ctx.Sheet_vftable);
+		Sig_FuncNotFound(Sheet_vftable);
 
-		gPrivateFuncs.PropertySheet_HasHotkey = (decltype(gPrivateFuncs.PropertySheet_HasHotkey))ctx.Sheet_vftable[73];
+		gPrivateFuncs.PropertySheet_HasHotkey = (decltype(gPrivateFuncs.PropertySheet_HasHotkey))gPrivateFuncs.Sheet_vftable[73];
 	}
 
 	if (1)
@@ -2221,9 +2298,6 @@ void GameUI_FillAddress(void)
 			PVOID GameUITextBase;
 			ULONG GameUITextSize;
 
-			PVOID* CTaskBar_vftable;
-			PVOID* KeyValues_vftable;
-
 		}CTaskBarCtorSearchContext;
 
 		CTaskBarCtorSearchContext ctx = { 0 };
@@ -2242,7 +2316,7 @@ void GameUI_FillAddress(void)
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (CTaskBarCtorSearchContext*)context;
 
-			if (!ctx->CTaskBar_vftable)
+			if (!gPrivateFuncs.CTaskBar_vftable)
 			{
 				if (pinst->id == X86_INS_MOV &&
 					pinst->detail->x86.op_count == 2 &&
@@ -2256,8 +2330,8 @@ void GameUI_FillAddress(void)
 
 					if (candidate[0] >= (PUCHAR)ctx->GameUITextBase && candidate[0] < (PUCHAR)ctx->GameUITextBase + ctx->GameUITextSize)
 					{
-						ctx->CTaskBar_vftable = candidate;
-						gPrivateFuncs.CTaskBar_OnCommand = (decltype(gPrivateFuncs.CTaskBar_OnCommand))ctx->CTaskBar_vftable[348 / 4];
+						gPrivateFuncs.CTaskBar_vftable = candidate;
+						gPrivateFuncs.CTaskBar_OnCommand = (decltype(gPrivateFuncs.CTaskBar_OnCommand))gPrivateFuncs.CTaskBar_vftable[348 / 4];
 					}
 				}
 			}
@@ -2280,7 +2354,6 @@ void GameUI_FillAddress(void)
 					bool bHasPush18h;
 					bool bHasPushGameMenu;
 					int instCount_PushGameMenu;
-					PVOID* KeyValues_vftable;
 
 				}CTaskBarCtorSearchContext2;
 
@@ -2329,20 +2402,20 @@ void GameUI_FillAddress(void)
 						}
 					}
 
-					if (!gPrivateFuncs.KeyValues_ctor)
+					if (!gPrivateFuncs.GameUI_KeyValues_ctor)
 					{
 						if (address[0] == 0xE8)
 						{
 							if (ctx2->bHasPushGameMenu && instCount > ctx2->instCount_PushGameMenu && instCount < ctx2->instCount_PushGameMenu + 5)
 							{
-								gPrivateFuncs.KeyValues_ctor = (decltype(gPrivateFuncs.KeyValues_ctor))GetCallAddress(address);
+								gPrivateFuncs.GameUI_KeyValues_ctor = (decltype(gPrivateFuncs.GameUI_KeyValues_ctor))GetCallAddress(address);
 
-								g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.KeyValues_ctor, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+								g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.GameUI_KeyValues_ctor, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 									auto pinst = (cs_insn*)inst;
 									auto ctx2 = (CTaskBarCtorSearchContext2*)context;
 
-									if (!ctx2->KeyValues_vftable)
+									if (!gPrivateFuncs.GameUI_KeyValues_vftable)
 									{
 										if (pinst->id == X86_INS_MOV &&
 											pinst->detail->x86.op_count == 2 &&
@@ -2355,13 +2428,14 @@ void GameUI_FillAddress(void)
 
 											if (candidate[0] >= (PUCHAR)ctx2->GameUITextBase && candidate[0] < (PUCHAR)ctx2->GameUITextBase + ctx2->GameUITextSize)
 											{
-												ctx2->KeyValues_vftable = candidate;
-												gPrivateFuncs.KeyValues_LoadFromFile = (decltype(gPrivateFuncs.KeyValues_LoadFromFile))ctx2->KeyValues_vftable[2];
+												gPrivateFuncs.GameUI_KeyValues_vftable = candidate;
+												gPrivateFuncs.GameUI_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.GameUI_KeyValues_LoadFromFile))gPrivateFuncs.GameUI_KeyValues_vftable[2];
 											}
 										}
 									}
 
-									if(gPrivateFuncs.KeyValues_LoadFromFile)
+									if(gPrivateFuncs.GameUI_KeyValues_vftable &&
+										gPrivateFuncs.GameUI_KeyValues_LoadFromFile)
 										return TRUE;
 
 									if (address[0] == 0xCC)
@@ -2377,7 +2451,9 @@ void GameUI_FillAddress(void)
 						}
 					}
 
-					if (gPrivateFuncs.KeyValues_ctor)
+					if (gPrivateFuncs.GameUI_KeyValues_ctor &&
+						gPrivateFuncs.GameUI_KeyValues_vftable && 
+						gPrivateFuncs.GameUI_KeyValues_LoadFromFile)
 						return TRUE;
 
 					if (address[0] == 0xCC)
@@ -2402,18 +2478,16 @@ void GameUI_FillAddress(void)
 		}, 0, & ctx);
 	}
 
-	Sig_FuncNotFound(KeyValues_ctor);
-	Sig_FuncNotFound(KeyValues_LoadFromFile);
+	Sig_FuncNotFound(GameUI_KeyValues_ctor);
+	Sig_FuncNotFound(GameUI_KeyValues_LoadFromFile);
 
 	gPrivateFuncs.GameUI_Panel_Init = (decltype(gPrivateFuncs.GameUI_Panel_Init))VGUI2_FindPanelInit(GameUITextBase, GameUITextSize);
 	Sig_FuncNotFound(GameUI_Panel_Init);
 }
 
-HMODULE GetGameUIModule();
-
 void GameUI_InstallHooks(void)
 {
-	auto hGameUI = GetGameUIModule();
+	auto hGameUI = g_hGameUI;
 
 	if (!hGameUI)
 	{
@@ -2498,9 +2572,9 @@ void GameUI_InstallHooks(void)
 		Install_InlineHook(CTaskBar_OnCommand);
 	}
 
-	if (gPrivateFuncs.KeyValues_LoadFromFile)
+	if (gPrivateFuncs.GameUI_KeyValues_LoadFromFile)
 	{
-		Install_InlineHook(KeyValues_LoadFromFile);
+		Install_InlineHook(GameUI_KeyValues_LoadFromFile);
 	}
 
 	Install_InlineHook(COptionsDialog_ctor);
@@ -2541,7 +2615,7 @@ void GameUI_UninstallHooks(void)
 
 	Uninstall_Hook(CTaskBar_ctor);
 	Uninstall_Hook(CTaskBar_OnCommand);
-	Uninstall_Hook(KeyValues_LoadFromFile);
+	Uninstall_Hook(GameUI_KeyValues_LoadFromFile);
 
 	Uninstall_Hook(COptionsDialog_ctor);
 	Uninstall_Hook(COptionsSubVideo_ApplyVidSettings);
@@ -2556,4 +2630,165 @@ void GameUI_UninstallHooks(void)
 
 	Uninstall_Hook(PropertySheet_HasHotkey);
 	Uninstall_Hook(FocusNavGroup_GetCurrentFocus);
+}
+
+void ServerBrowser_FillAddress(void)
+{
+	auto hServerBrowser = g_hServerBrowser;
+	if (!hServerBrowser)
+	{
+		Sys_Error("Failed to get module handle of ServerBrowser.dll");
+		return;
+	}
+
+	auto ServerBrowserBase = g_pMetaHookAPI->GetModuleBase(hServerBrowser);
+	if (!ServerBrowserBase)
+	{
+		Sys_Error("Failed to get image base of ServerBrowser.dll");
+		return;
+	}
+
+	ULONG ServerBrowserTextSize = 0;
+	auto ServerBrowserTextBase = g_pMetaHookAPI->GetSectionByName(ServerBrowserBase, ".text\0\0\0", &ServerBrowserTextSize);
+
+	if (!ServerBrowserTextBase)
+	{
+		Sys_Error("Failed to locate section \".text\" in ServerBrowser.dll");
+		return;
+	}
+
+	ULONG ServerBrowserRdataSize = 0;
+	auto ServerBrowserRdataBase = g_pMetaHookAPI->GetSectionByName(ServerBrowserBase, ".rdata\0\0", &ServerBrowserRdataSize);
+
+	if (!ServerBrowserRdataBase)
+	{
+		Sys_Error("Failed to locate section \".rdata\" in ServerBrowser.dll");
+		return;
+	}
+
+	ULONG ServerBrowserDataSize = 0;
+	auto ServerBrowserDataBase = g_pMetaHookAPI->GetSectionByName(ServerBrowserBase, ".data\0\0\0", &ServerBrowserDataSize);
+
+	if (!ServerBrowserDataBase)
+	{
+		Sys_Error("Failed to locate section \".data\" in ServerBrowser.dll");
+		return;
+	}
+
+	if (1)
+	{
+		const char sigs1[] = "CursorEnteredMenuButton\0";
+		auto CursorEnteredMenuButton_String = g_pMetaHookAPI->SearchPattern(ServerBrowserRdataBase, ServerBrowserRdataSize, sigs1, sizeof(sigs1) - 1);
+		if (!CursorEnteredMenuButton_String)
+		{
+			CursorEnteredMenuButton_String = g_pMetaHookAPI->SearchPattern(ServerBrowserDataBase, ServerBrowserDataSize, sigs1, sizeof(sigs1) - 1);
+		}
+		Sig_VarNotFound(CursorEnteredMenuButton_String);
+		char pattern[] = "\x74\x2A\x68\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern + 3) = (DWORD)CursorEnteredMenuButton_String;
+		auto CursorEnteredMenuButton_PushString = g_pMetaHookAPI->SearchPattern(ServerBrowserTextBase, ServerBrowserTextSize, pattern, sizeof(pattern) - 1);
+		Sig_VarNotFound(CursorEnteredMenuButton_PushString);
+
+		typedef struct
+		{
+			PVOID ServerBrowserDataBase;
+			ULONG ServerBrowserDataSize;
+
+			PVOID ServerBrowserRdataBase;
+			ULONG ServerBrowserRdataSize;
+
+			PVOID ServerBrowserTextBase;
+			ULONG ServerBrowserTextSize;
+
+		}ServerBrowserKeyValuesSearchContext;
+
+		ServerBrowserKeyValuesSearchContext ctx = { 0 };
+
+		ctx.ServerBrowserDataBase = ServerBrowserDataBase;
+		ctx.ServerBrowserDataSize = ServerBrowserDataSize;
+
+		ctx.ServerBrowserRdataBase = ServerBrowserRdataBase;
+		ctx.ServerBrowserRdataSize = ServerBrowserRdataSize;
+
+		ctx.ServerBrowserTextBase = ServerBrowserTextBase;
+		ctx.ServerBrowserTextSize = ServerBrowserTextSize;
+
+		g_pMetaHookAPI->DisasmRanges(CursorEnteredMenuButton_PushString, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (ServerBrowserKeyValuesSearchContext*)context;
+
+			if (address[0] == 0xE8 && instCount <= 5)
+			{
+				gPrivateFuncs.ServerBrowser_KeyValues_ctor = (decltype(gPrivateFuncs.ServerBrowser_KeyValues_ctor))GetCallAddress(address);
+
+				g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.ServerBrowser_KeyValues_ctor, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto pinst = (cs_insn*)inst;
+					auto ctx = (ServerBrowserKeyValuesSearchContext*)context;
+
+					if (!gPrivateFuncs.ServerBrowser_KeyValues_vftable)
+					{
+						if (pinst->id == X86_INS_MOV &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+							pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+							((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->ServerBrowserRdataBase &&
+								(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->ServerBrowserRdataBase + ctx->ServerBrowserRdataSize))
+						{
+							auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
+
+							if (candidate[0] >= (PUCHAR)ctx->ServerBrowserTextBase && candidate[0] < (PUCHAR)ctx->ServerBrowserTextBase + ctx->ServerBrowserTextSize)
+							{
+								gPrivateFuncs.ServerBrowser_KeyValues_vftable = candidate;
+								gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile))gPrivateFuncs.ServerBrowser_KeyValues_vftable[2];
+							}
+						}
+					}
+
+					if (gPrivateFuncs.ServerBrowser_KeyValues_vftable &&
+						gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile)
+						return TRUE;
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+
+					}, 0, ctx);
+
+				return TRUE;
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+		}, 0, &ctx);
+
+		Sig_FuncNotFound(ServerBrowser_KeyValues_ctor);
+		Sig_FuncNotFound(ServerBrowser_KeyValues_LoadFromFile);
+	}
+
+	gPrivateFuncs.ServerBrowser_Panel_Init = (decltype(gPrivateFuncs.ServerBrowser_Panel_Init))VGUI2_FindPanelInit(ServerBrowserTextBase, ServerBrowserTextSize);
+	Sig_FuncNotFound(ServerBrowser_Panel_Init);
+}
+
+void ServerBrowser_InstallHooks(void)
+{
+	Install_InlineHook(ServerBrowser_Panel_Init);
+	Install_InlineHook(ServerBrowser_KeyValues_LoadFromFile);
+}
+
+void ServerBrowser_UninstallHooks(void)
+{
+	Uninstall_Hook(ServerBrowser_Panel_Init);
+	Uninstall_Hook(ServerBrowser_KeyValues_LoadFromFile);
 }

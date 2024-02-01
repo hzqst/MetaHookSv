@@ -41,10 +41,20 @@ typedef struct
 	//Engine init
 	PVOID (*VGUIClient001_CreateInterface)(HINTERFACEMODULE hModule);
 
+	//ServerBrowser
+	void(__fastcall* ServerBrowser_Panel_Init)(void* pthis, int dummy, int x, int y, int w, int h);
+	void(__fastcall* ServerBrowser_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
+	void* (__fastcall* ServerBrowser_KeyValues_ctor)(void* pthis, int dummy, const char* name);
+	void ** ServerBrowser_KeyValues_vftable;
+	bool(__fastcall* ServerBrowser_KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId);
 	//GameUI
 	void(__fastcall* GameUI_Panel_Init)(void* pthis, int dummy, int x, int y, int w, int h);
 	void(__fastcall* GameUI_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
+	void*(__fastcall* GameUI_KeyValues_ctor)(void* pthis, int dummy, const char* name);
+	void** GameUI_KeyValues_vftable;
+	bool(__fastcall* GameUI_KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId);
 	void *(__fastcall* Sheet_ctor)(void* pthis, int dummy, void* parent, const char *panelName);
+	void** Sheet_vftable;
 	int offset_propertySheet;
 	//void *(__fastcall* QueryBox_ctor)(void* pthis, int dummy, const char* title, const char* queryText, void* parent);
 	void *(__fastcall* CCreateMultiplayerGameDialog_ctor)(void* pthis, int dummy, void* parent);
@@ -55,10 +65,9 @@ typedef struct
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings)(void *pthis, int dummy, bool bForceRestart);
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings_HL25)(void *pthis, int dummy);
 	void*(__fastcall* CTaskBar_ctor)(void* pthis, int dummy, void* parent, const char* panelName);
+	void** CTaskBar_vftable;
 	void (__fastcall* CTaskBar_OnCommand)(void* pthis, int dummy, const char* command);
 	void(__fastcall* CTaskBar_CreateGameMenu)(void* pthis, int dummy);
-	void* (__fastcall* KeyValues_ctor)(void* pthis, int dummy, const char* name);
-	bool (__fastcall* KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem *pFileSystem, const char* resourceName, const char *pathId);
 	void* (__fastcall *PropertySheet_HasHotkey)(void* pthis, int dummy, wchar_t key);
 	void* (__fastcall *FocusNavGroup_GetCurrentFocus)(void* pthis, int dummy);
 
@@ -104,7 +113,9 @@ extern private_funcs_t gPrivateFuncs;
 
 const char* GetCurrentGameLanguage();
 
-HMODULE GetGameUIModule();
+extern HMODULE g_hGameUI;
+extern HMODULE g_hServerBrowser;
+extern bool g_bIsServerBrowserHooked;
 
 PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule);
 
@@ -118,11 +129,14 @@ void SDL2_FillAddress(void);
 void Engine_FillAddress(void);
 void Engine_InstallHooks(void);
 void Engine_UninstallHooks(void);
-void BaseUI_InstallHook(void);
-void BaseUI_UninstallHook(void);
+void BaseUI_InstallHooks(void);
+void BaseUI_UninstallHooks(void);
 void GameUI_FillAddress(void);
 void GameUI_InstallHooks(void);
 void GameUI_UninstallHooks(void);
+void ServerBrowser_FillAddress(void);
+void ServerBrowser_InstallHooks(void);
+void ServerBrowser_UninstallHooks(void);
 void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc);
 void VGUI1_InstallHooks(void);
 void VGUI1_Shutdown(void);

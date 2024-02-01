@@ -15,8 +15,8 @@ private:
 	std::vector<IVGUI2Extension_GameUIOptionDialogCallbacks*> m_GameUIOptionDialogCallbacks;
 	std::vector<IVGUI2Extension_GameUITaskBarCallbacks*> m_GameUITaskBarCallbacks;
 	std::vector<IVGUI2Extension_GameUIKeyValuesCallbacks*> m_GameUIKeyValuesCallbacks;
-	std::vector<IVGUI2Extension_ClientVGUICallbacks*> m_ClientVGUICallbacks;
 	std::vector<IVGUI2Extension_GameConsoleCallbacks*> m_GameConsoleCallbacks;
+	std::vector<IVGUI2Extension_ClientVGUICallbacks*> m_ClientVGUICallbacks;
 
 public:
 
@@ -70,22 +70,22 @@ public:
 			});
 	}
 
-	void RegisterClientVGUICallbacks(IVGUI2Extension_ClientVGUICallbacks* pCallbacks) override
-	{
-		m_ClientVGUICallbacks.emplace_back(pCallbacks);
-
-		std::sort(m_ClientVGUICallbacks.begin(), m_ClientVGUICallbacks.end(),
-			[](const IVGUI2Extension_ClientVGUICallbacks* a, const IVGUI2Extension_ClientVGUICallbacks* b) -> bool {
-				return a->GetAltitude() > b->GetAltitude();
-			});
-	}
-
 	void RegisterGameConsoleCallbacks(IVGUI2Extension_GameConsoleCallbacks* pCallbacks) override
 	{
 		m_GameConsoleCallbacks.emplace_back(pCallbacks);
 
 		std::sort(m_GameConsoleCallbacks.begin(), m_GameConsoleCallbacks.end(),
 			[](const IVGUI2Extension_GameConsoleCallbacks* a, const IVGUI2Extension_GameConsoleCallbacks* b) -> bool {
+				return a->GetAltitude() > b->GetAltitude();
+			});
+	}
+
+	void RegisterClientVGUICallbacks(IVGUI2Extension_ClientVGUICallbacks* pCallbacks) override
+	{
+		m_ClientVGUICallbacks.emplace_back(pCallbacks);
+
+		std::sort(m_ClientVGUICallbacks.begin(), m_ClientVGUICallbacks.end(),
+			[](const IVGUI2Extension_ClientVGUICallbacks* a, const IVGUI2Extension_ClientVGUICallbacks* b) -> bool {
 				return a->GetAltitude() > b->GetAltitude();
 			});
 	}
@@ -150,18 +150,6 @@ public:
 		}
 	}
 
-	void UnregisterClientVGUICallbacks(IVGUI2Extension_ClientVGUICallbacks* pCallbacks) override
-	{
-		for (auto it = m_ClientVGUICallbacks.begin(); it != m_ClientVGUICallbacks.end(); ++it)
-		{
-			if (*it == pCallbacks)
-			{
-				m_ClientVGUICallbacks.erase(it);
-				return;
-			}
-		}
-	}
-
 	void UnregisterGameConsoleCallbacks(IVGUI2Extension_GameConsoleCallbacks* pCallbacks) override
 	{
 		for (auto it = m_GameConsoleCallbacks.begin(); it != m_GameConsoleCallbacks.end(); ++it)
@@ -169,6 +157,18 @@ public:
 			if (*it == pCallbacks)
 			{
 				m_GameConsoleCallbacks.erase(it);
+				return;
+			}
+		}
+	}
+
+	void UnregisterClientVGUICallbacks(IVGUI2Extension_ClientVGUICallbacks* pCallbacks) override
+	{
+		for (auto it = m_ClientVGUICallbacks.begin(); it != m_ClientVGUICallbacks.end(); ++it)
+		{
+			if (*it == pCallbacks)
+			{
+				m_ClientVGUICallbacks.erase(it);
 				return;
 			}
 		}
@@ -599,11 +599,11 @@ public:
 		}
 	}
 
-	void GameUI_KeyValues_LoadFromFile(void*& pthis, IFileSystem*& pFileSystem, const char*& resourceName, const char*& pathId, VGUI2Extension_CallbackContext* CallbackContext) override
+	void GameUI_KeyValues_LoadFromFile(void*& pthis, IFileSystem*& pFileSystem, const char*& resourceName, const char*& pathId, const char *sourceModule, VGUI2Extension_CallbackContext* CallbackContext) override
 	{
 		for (auto it = m_GameUIKeyValuesCallbacks.begin(); it != m_GameUIKeyValuesCallbacks.end(); ++it)
 		{
-			(*it)->KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, CallbackContext);
+			(*it)->KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, sourceModule, CallbackContext);
 
 			if (CallbackContext->Result >= VGUI2Extension_Result::HANDLED)
 			{

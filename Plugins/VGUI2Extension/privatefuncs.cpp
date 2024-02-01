@@ -65,12 +65,9 @@ char m_szCurrentGameLanguage[128] = { 0 };
 
 private_funcs_t gPrivateFuncs = { 0 };
 
-static HMODULE g_hGameUI = NULL;
-
-HMODULE GetGameUIModule()
-{
-	return g_hGameUI;
-}
+HMODULE g_hGameUI = NULL;
+HMODULE g_hServerBrowser = NULL;
+bool g_bIsServerBrowserHooked = false;
 
 const char* GetCurrentGameLanguage()
 {
@@ -807,7 +804,8 @@ void Client_FillAddress(void)
 
 	if (!ClientTextBase)
 	{
-		g_pMetaHookAPI->SysError("Failed to locate section \".text\" in client.dll!");
+		Sys_Error("Failed to locate section \".text\" in client.dll!");
+		return;
 	}
 
 	ULONG ClientDataSize = 0;
@@ -926,6 +924,21 @@ void Client_UninstallHooks(void)
 
 }
 
+static HMODULE WINAPI NewLoadLibraryA_GameUI(LPCSTR lpLibFileName)
+{
+	auto result = LoadLibraryA(lpLibFileName);
+
+	if (g_hServerBrowser == result && !g_bIsServerBrowserHooked)
+	{
+		g_bIsServerBrowserHooked = true;
+
+		ServerBrowser_FillAddress();
+		ServerBrowser_InstallHooks();
+	}
+	
+	return result;
+}
+
 void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 {
 	if (ctx->flags & LOAD_DLL_NOTIFICATION_IS_LOAD)
@@ -933,6 +946,12 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 		if (ctx->BaseDllName && ctx->hModule && !_wcsicmp(ctx->BaseDllName, L"GameUI.dll"))
 		{
 			g_hGameUI = ctx->hModule;
+
+			g_pMetaHookAPI->IATHook(g_hGameUI, "kernel32.dll", "LoadLibraryA", NewLoadLibraryA_GameUI, NULL);
+		}
+		else if (ctx->BaseDllName && ctx->hModule && !_wcsicmp(ctx->BaseDllName, L"ServerBrowser.dll"))
+		{
+			g_hServerBrowser = ctx->hModule;
 		}
 	}
 	else if (ctx->flags & LOAD_DLL_NOTIFICATION_IS_UNLOAD)
@@ -940,6 +959,12 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 		if (ctx->hModule == g_hGameUI)
 		{
 			g_hGameUI = NULL;
+		}
+		else if (ctx->hModule == g_hServerBrowser)
+		{
+			ServerBrowser_UninstallHooks();
+			g_hServerBrowser = NULL;
+			g_bIsServerBrowserHooked = false;
 		}
 	}
 }

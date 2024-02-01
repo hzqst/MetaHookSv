@@ -155,7 +155,7 @@ void CBaseUIProxy::Shutdown(void)
 	vgui::ivgui()->RunFrame();
 
 	VGUI2ExtensionInternal()->ClientVGUI_Shutdown();
-	
+
 	GameUI_UninstallHooks();
 
 	//GameUI.dll and vgui2.dll will be unloaded by engine!CBaseUI::Shutdown
@@ -499,7 +499,7 @@ void CBaseUILegacyProxy::ShowConsole(void)
 	VGUI2ExtensionInternal()->BaseUI_ShowConsole(&CallbackContext);
 }
 
-void BaseUI_InstallHook(void)
+void BaseUI_InstallHooks(void)
 {
 	CreateInterfaceFn fnCreateInterface = g_pMetaHookAPI->GetEngineFactory();
 
@@ -572,7 +572,7 @@ void BaseUI_InstallHook(void)
 	Install_InlineHook(EngineVGUI2_Panel_Init);
 }
 
-void BaseUI_UninstallHook(void)
+void BaseUI_UninstallHooks(void)
 {
 	Uninstall_Hook(EngineVGUI2_Panel_Init);
 }
