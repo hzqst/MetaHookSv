@@ -306,7 +306,7 @@ public:
 		return 0;
 	}
 
-	void KeyValues_LoadFromFile(void*& pthis, IFileSystem*& pFileSystem, const char*& resourceName, const char*& pathId, VGUI2Extension_CallbackContext* CallbackContext)
+	void KeyValues_LoadFromFile(void*& pthis, IFileSystem*& pFileSystem, const char*& resourceName, const char*& pathId, const char *sourceModule, VGUI2Extension_CallbackContext* CallbackContext)
 	{
 #if 0
 		if (CallbackContext->IsPost && !stricmp(resourceName, "resource/GameMenu.res"))
