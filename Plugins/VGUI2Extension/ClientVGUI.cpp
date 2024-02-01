@@ -86,24 +86,31 @@ bool CClientVGUIProxy::UseVGUI1(void)
 
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
 	CallbackContext.pPluginReturnValue = &fake_ret;
 
 	VGUI2ExtensionInternal()->ClientVGUI_UseVGUI1(&CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		real_ret = m_pfnCClientVGUI_UseVGUI1(this, 0);
 	}
 
-	CallbackContext.pRealReturnValue = &real_ret;
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
+		CallbackContext.pRealReturnValue = &real_ret;
 
-	VGUI2ExtensionInternal()->ClientVGUI_UseVGUI1(&CallbackContext);
+		VGUI2ExtensionInternal()->ClientVGUI_UseVGUI1(&CallbackContext);
+	}
 
 	switch (CallbackContext.Result)
 	{
 	case VGUI2Extension_Result::OVERRIDE:
 	case VGUI2Extension_Result::SUPERCEDE:
+	case VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS:
 	{
 		ret = fake_ret;
 	}
@@ -120,65 +127,92 @@ void CClientVGUIProxy::HideScoreBoard(void)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->ClientVGUI_HideScoreBoard(&CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCClientVGUI_HideScoreBoard(this, 0);
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->ClientVGUI_HideScoreBoard(&CallbackContext);
+		VGUI2ExtensionInternal()->ClientVGUI_HideScoreBoard(&CallbackContext);
+	}
 }
 
 void CClientVGUIProxy::HideAllVGUIMenu(void)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->ClientVGUI_HideAllVGUIMenu(&CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCClientVGUI_HideAllVGUIMenu(this, 0);
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->ClientVGUI_HideAllVGUIMenu(&CallbackContext);
-	
+		VGUI2ExtensionInternal()->ClientVGUI_HideAllVGUIMenu(&CallbackContext);
+	}
 }
 
 void CClientVGUIProxy::ActivateClientUI(void)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->ClientVGUI_ActivateClientUI(&CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCClientVGUI_ActivateClientUI(this, 0);
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->ClientVGUI_ActivateClientUI(&CallbackContext);
+		VGUI2ExtensionInternal()->ClientVGUI_ActivateClientUI(&CallbackContext);
+	}
 }
 
 void CClientVGUIProxy::HideClientUI(void)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->ClientVGUI_HideClientUI(&CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCClientVGUI_HideClientUI(this, 0);
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->ClientVGUI_HideClientUI(&CallbackContext);	
+		VGUI2ExtensionInternal()->ClientVGUI_HideClientUI(&CallbackContext);
+	}
 }
 
 void CClientVGUIProxy::Unknown(void)
@@ -245,24 +279,31 @@ bool NewClientVGUI::UseVGUI1(void)
 
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
 	CallbackContext.pPluginReturnValue = &fake_ret;
 
 	VGUI2ExtensionInternal()->ClientVGUI_UseVGUI1(&CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		real_ret = true;
 	}
 
-	CallbackContext.pRealReturnValue = &real_ret;
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
+		CallbackContext.pRealReturnValue = &real_ret;
 
-	VGUI2ExtensionInternal()->ClientVGUI_UseVGUI1(&CallbackContext);
+		VGUI2ExtensionInternal()->ClientVGUI_UseVGUI1(&CallbackContext);
+	}
 
 	switch (CallbackContext.Result)
 	{
 	case VGUI2Extension_Result::OVERRIDE:
 	case VGUI2Extension_Result::SUPERCEDE:
+	case VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS:
 	{
 		ret = fake_ret;
 	}
@@ -279,64 +320,92 @@ void NewClientVGUI::HideScoreBoard(void)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->ClientVGUI_HideScoreBoard(&CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->ClientVGUI_HideScoreBoard(&CallbackContext);
+		VGUI2ExtensionInternal()->ClientVGUI_HideScoreBoard(&CallbackContext);
+	}
 }
 
 void NewClientVGUI::HideAllVGUIMenu(void)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->ClientVGUI_HideAllVGUIMenu(&CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
-
+		
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->ClientVGUI_HideAllVGUIMenu(&CallbackContext);
+		VGUI2ExtensionInternal()->ClientVGUI_HideAllVGUIMenu(&CallbackContext);
+	}
 }
 
 void NewClientVGUI::ActivateClientUI(void)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->ClientVGUI_ActivateClientUI(&CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
-
+		
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->ClientVGUI_ActivateClientUI(&CallbackContext);
+		VGUI2ExtensionInternal()->ClientVGUI_ActivateClientUI(&CallbackContext);
+	}
 }
 
 void NewClientVGUI::HideClientUI(void)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->ClientVGUI_HideClientUI(&CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->ClientVGUI_HideClientUI(&CallbackContext);
+		VGUI2ExtensionInternal()->ClientVGUI_HideClientUI(&CallbackContext);
+	}
 }
 
 void NewClientVGUI::Unknown(void)

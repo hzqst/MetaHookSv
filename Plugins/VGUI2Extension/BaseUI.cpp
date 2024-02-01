@@ -172,24 +172,31 @@ int CBaseUIProxy::Key_Event(int down, int keynum, const char *pszCurrentBinding)
 
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
 	CallbackContext.pPluginReturnValue = &fake_ret;
 
 	VGUI2ExtensionInternal()->BaseUI_Key_Event(down, keynum, pszCurrentBinding, &CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		real_ret = m_pfnCBaseUI_Key_Event(this, 0, down, keynum, pszCurrentBinding);
 	}
 
-	CallbackContext.pRealReturnValue = &real_ret;
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
+		CallbackContext.pRealReturnValue = &real_ret;
 
-	VGUI2ExtensionInternal()->BaseUI_Key_Event(down, keynum, pszCurrentBinding, &CallbackContext);
+		VGUI2ExtensionInternal()->BaseUI_Key_Event(down, keynum, pszCurrentBinding, &CallbackContext);
+	}
 
 	switch (CallbackContext.Result)
 	{
 	case VGUI2Extension_Result::OVERRIDE:
 	case VGUI2Extension_Result::SUPERCEDE:
+	case VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS:
 	{
 		ret = fake_ret;
 	}
@@ -206,96 +213,138 @@ void CBaseUIProxy::CallEngineSurfaceAppHandler(void* pevent, void* userData)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->BaseUI_CallEngineSurfaceAppProc(pevent, userData, &CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_CallEngineSurfaceAppHandler(this, 0, pevent, userData);
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->BaseUI_CallEngineSurfaceAppProc(pevent, userData, &CallbackContext);
+		VGUI2ExtensionInternal()->BaseUI_CallEngineSurfaceAppProc(pevent, userData, &CallbackContext);
+	}
 }
 
 void CBaseUIProxy::Paint(int x, int y, int right, int bottom)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->BaseUI_Paint(x, y, right, bottom, &CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_Paint(this, 0, x, y, right, bottom);
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->BaseUI_Paint(x, y, right, bottom, &CallbackContext);
+		VGUI2ExtensionInternal()->BaseUI_Paint(x, y, right, bottom, &CallbackContext);
+	}
 }
 
 void CBaseUIProxy::HideGameUI(void)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->BaseUI_HideGameUI(&CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_HideGameUI(this, 0);
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->BaseUI_HideGameUI(&CallbackContext);
+		VGUI2ExtensionInternal()->BaseUI_HideGameUI(&CallbackContext);
+	}
 }
 
 void CBaseUIProxy::ActivateGameUI(void)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->BaseUI_ActivateGameUI(&CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_ActivateGameUI(this, 0);
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->BaseUI_ActivateGameUI(&CallbackContext);
+		VGUI2ExtensionInternal()->BaseUI_ActivateGameUI(&CallbackContext);
+	}
 }
 
 void CBaseUIProxy::HideConsole(void)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->BaseUI_HideConsole(&CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_HideConsole(this, 0);
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->BaseUI_HideConsole(&CallbackContext);
+		VGUI2ExtensionInternal()->BaseUI_HideConsole(&CallbackContext);
+	}
 }
 
 void CBaseUIProxy::ShowConsole(void)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->BaseUI_ShowConsole(&CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_ShowConsole(this, 0);
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->BaseUI_ShowConsole(&CallbackContext);
+		VGUI2ExtensionInternal()->BaseUI_ShowConsole(&CallbackContext);
+	}
 }
 
 /*
@@ -373,24 +422,31 @@ int CBaseUILegacyProxy::Key_Event(int down, int keynum, const char* pszCurrentBi
 
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
 	CallbackContext.pPluginReturnValue = &fake_ret;
 
 	VGUI2ExtensionInternal()->BaseUI_Key_Event(down, keynum, pszCurrentBinding, &CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		real_ret = m_pfnCBaseUI_Key_Event(this, 0, down, keynum, pszCurrentBinding);
 	}
 
-	CallbackContext.pRealReturnValue = &real_ret;
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
+		CallbackContext.pRealReturnValue = &real_ret;
 
-	VGUI2ExtensionInternal()->BaseUI_Key_Event(down, keynum, pszCurrentBinding, &CallbackContext);
+		VGUI2ExtensionInternal()->BaseUI_Key_Event(down, keynum, pszCurrentBinding, &CallbackContext);
+	}
 
 	switch (CallbackContext.Result)
 	{
 	case VGUI2Extension_Result::OVERRIDE:
 	case VGUI2Extension_Result::SUPERCEDE:
+	case VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS:
 	{
 		ret = fake_ret;
 	}
@@ -407,96 +463,138 @@ void CBaseUILegacyProxy::CallEngineSurfaceWndProc(void* hwnd, unsigned int msg, 
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->BaseUI_CallEngineSurfaceWndProc(hwnd, msg, wparam, lparam, &CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_CallEngineSurfaceWndProc(this, 0, hwnd, msg, wparam, lparam);
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->BaseUI_CallEngineSurfaceWndProc(hwnd, msg, wparam, lparam, &CallbackContext);
+		VGUI2ExtensionInternal()->BaseUI_CallEngineSurfaceWndProc(hwnd, msg, wparam, lparam, &CallbackContext);
+	}
 }
 
 void CBaseUILegacyProxy::Paint(int x, int y, int right, int bottom)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->BaseUI_Paint(x, y, right, bottom, &CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_Paint(this, 0, x, y, right, bottom);
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->BaseUI_Paint(x, y, right, bottom, &CallbackContext);
+		VGUI2ExtensionInternal()->BaseUI_Paint(x, y, right, bottom, &CallbackContext);
+	}
 }
 
 void CBaseUILegacyProxy::HideGameUI(void)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->BaseUI_HideGameUI(&CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_HideGameUI(this, 0);
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->BaseUI_HideGameUI(&CallbackContext);
+		VGUI2ExtensionInternal()->BaseUI_HideGameUI(&CallbackContext);
+	}
 }
 
 void CBaseUILegacyProxy::ActivateGameUI(void)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->BaseUI_ActivateGameUI(&CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_ActivateGameUI(this, 0);
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->BaseUI_ActivateGameUI(&CallbackContext);
+		VGUI2ExtensionInternal()->BaseUI_ActivateGameUI(&CallbackContext);
+	}
 }
 
 void CBaseUILegacyProxy::HideConsole(void)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->BaseUI_HideConsole(&CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_HideConsole(this, 0);
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->BaseUI_HideConsole(&CallbackContext);
+		VGUI2ExtensionInternal()->BaseUI_HideConsole(&CallbackContext);
+	}
 }
 
 void CBaseUILegacyProxy::ShowConsole(void)
 {
 	VGUI2Extension_CallbackContext CallbackContext;
 
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+
 	VGUI2ExtensionInternal()->BaseUI_ShowConsole(&CallbackContext);
 
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_ShowConsole(this, 0);
 	}
 
-	CallbackContext.IsPost = true;
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
 
-	VGUI2ExtensionInternal()->BaseUI_ShowConsole(&CallbackContext);
+		VGUI2ExtensionInternal()->BaseUI_ShowConsole(&CallbackContext);
+	}
 }
 
 void BaseUI_InstallHooks(void)

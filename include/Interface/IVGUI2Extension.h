@@ -15,10 +15,11 @@
 
 enum class VGUI2Extension_Result{
     UNSET = 0,
-    IGNORED,		// plugin didn't take any action
-    HANDLED,		// plugin did something, but real function should still be called
-    OVERRIDE,		// call real function, but use my return value
-    SUPERCEDE,		// skip real function; use my return value
+    IGNORED,		            // plugin didn't take any action
+    HANDLED,		            // plugin did something, but real function should still be called
+    OVERRIDE,		           // call real function, but use my return value
+    SUPERCEDE,		            // skip real function; use my return value
+    SUPERCEDE_SKIP_PLUGINS,		// skip real function and any other plugin calls; use my return value
 };
 
 class VGUI2Extension_CallbackContext
