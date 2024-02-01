@@ -19,17 +19,26 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
 
     "%InstallDir%\Common7\Tools\vsdevcmd.bat"
 
-    MSBuild.exe MetaHook.sln "/target:Plugins\Renderer" /p:Configuration="Release" /p:Platform="Win32"
-    MSBuild.exe MetaHook.sln "/target:Plugins\Renderer" /p:Configuration="Release_AVX2" /p:Platform="Win32"
-    MSBuild.exe MetaHook.sln "/target:Plugins\BulletPhysics" /p:Configuration="Release" /p:Platform="Win32"
-    MSBuild.exe MetaHook.sln "/target:Plugins\BulletPhysics" /p:Configuration="Release_AVX2" /p:Platform="Win32"
-    MSBuild.exe MetaHook.sln "/target:Plugins\VGUI2Extension" /p:Configuration="Release" /p:Platform="Win32"
-    MSBuild.exe MetaHook.sln "/target:Plugins\CaptionMod" /p:Configuration="Release" /p:Platform="Win32"
-    MSBuild.exe MetaHook.sln "/target:Plugins\CommunicationDemo" /p:Configuration="Release" /p:Platform="Win32"
-    MSBuild.exe MetaHook.sln "/target:Plugins\DontFlushSoundCache" /p:Configuration="Release" /p:Platform="Win32"
-    MSBuild.exe MetaHook.sln "/target:Plugins\PrecacheManager" /p:Configuration="Release" /p:Platform="Win32"
-    MSBuild.exe MetaHook.sln "/target:Plugins\SCModelDownloader" /p:Configuration="Release" /p:Platform="Win32"
-    MSBuild.exe MetaHook.sln "/target:Plugins\SteamScreenshots" /p:Configuration="Release" /p:Platform="Win32"
-    MSBuild.exe MetaHook.sln "/target:Plugins\StudioEvents" /p:Configuration="Release" /p:Platform="Win32"
-    MSBuild.exe MetaHook.sln "/target:Plugins\ThreadGuard" /p:Configuration="Release" /p:Platform="Win32"
+    MSBuild.exe MetaHook.sln "/target:Plugins\Renderer" /p:Configuration="Release" /p:Platform="Win32" || goto builderror
+    MSBuild.exe MetaHook.sln "/target:Plugins\Renderer" /p:Configuration="Release_AVX2" /p:Platform="Win32" || goto builderror
+    MSBuild.exe MetaHook.sln "/target:Plugins\BulletPhysics" /p:Configuration="Release" /p:Platform="Win32" || goto builderror
+    MSBuild.exe MetaHook.sln "/target:Plugins\BulletPhysics" /p:Configuration="Release_AVX2" /p:Platform="Win32" || goto builderror
+    MSBuild.exe MetaHook.sln "/target:Plugins\VGUI2Extension" /p:Configuration="Release" /p:Platform="Win32" || goto builderror 
+    MSBuild.exe MetaHook.sln "/target:Plugins\CaptionMod" /p:Configuration="Release" /p:Platform="Win32" || goto builderror
+    MSBuild.exe MetaHook.sln "/target:Plugins\CommunicationDemo" /p:Configuration="Release" /p:Platform="Win32" || goto builderror
+    MSBuild.exe MetaHook.sln "/target:Plugins\DontFlushSoundCache" /p:Configuration="Release" /p:Platform="Win32" || goto builderror
+    MSBuild.exe MetaHook.sln "/target:Plugins\PrecacheManager" /p:Configuration="Release" /p:Platform="Win32" || goto builderror
+    MSBuild.exe MetaHook.sln "/target:Plugins\SCModelDownloader" /p:Configuration="Release" /p:Platform="Win32" || goto builderror
+    MSBuild.exe MetaHook.sln "/target:Plugins\SteamScreenshots" /p:Configuration="Release" /p:Platform="Win32" || goto builderror
+    MSBuild.exe MetaHook.sln "/target:Plugins\StudioEvents" /p:Configuration="Release" /p:Platform="Win32" || goto builderror
+    MSBuild.exe MetaHook.sln "/target:Plugins\ThreadGuard" /p:Configuration="Release" /p:Platform="Win32" || goto builderror
+    goto endbuild
+
+:builderror
+    echo Build failed with error %errorlevel%
+    exit /b %errorlevel%
+
 )
+
+:endbuild
+echo Build OK
