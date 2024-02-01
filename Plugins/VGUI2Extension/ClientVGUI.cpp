@@ -92,7 +92,7 @@ bool CClientVGUIProxy::UseVGUI1(void)
 
 	VGUI2ExtensionInternal()->ClientVGUI_UseVGUI1(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		real_ret = m_pfnCClientVGUI_UseVGUI1(this, 0);
 	}
@@ -132,7 +132,7 @@ void CClientVGUIProxy::HideScoreBoard(void)
 
 	VGUI2ExtensionInternal()->ClientVGUI_HideScoreBoard(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCClientVGUI_HideScoreBoard(this, 0);
 	}
@@ -155,7 +155,7 @@ void CClientVGUIProxy::HideAllVGUIMenu(void)
 
 	VGUI2ExtensionInternal()->ClientVGUI_HideAllVGUIMenu(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCClientVGUI_HideAllVGUIMenu(this, 0);
 	}
@@ -178,7 +178,7 @@ void CClientVGUIProxy::ActivateClientUI(void)
 
 	VGUI2ExtensionInternal()->ClientVGUI_ActivateClientUI(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCClientVGUI_ActivateClientUI(this, 0);
 	}
@@ -201,7 +201,7 @@ void CClientVGUIProxy::HideClientUI(void)
 
 	VGUI2ExtensionInternal()->ClientVGUI_HideClientUI(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCClientVGUI_HideClientUI(this, 0);
 	}
@@ -285,7 +285,7 @@ bool NewClientVGUI::UseVGUI1(void)
 
 	VGUI2ExtensionInternal()->ClientVGUI_UseVGUI1(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		real_ret = true;
 	}
@@ -325,7 +325,7 @@ void NewClientVGUI::HideScoreBoard(void)
 
 	VGUI2ExtensionInternal()->ClientVGUI_HideScoreBoard(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		
 	}
@@ -348,7 +348,7 @@ void NewClientVGUI::HideAllVGUIMenu(void)
 
 	VGUI2ExtensionInternal()->ClientVGUI_HideAllVGUIMenu(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		
 	}
@@ -371,7 +371,7 @@ void NewClientVGUI::ActivateClientUI(void)
 
 	VGUI2ExtensionInternal()->ClientVGUI_ActivateClientUI(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		
 	}
@@ -394,7 +394,7 @@ void NewClientVGUI::HideClientUI(void)
 
 	VGUI2ExtensionInternal()->ClientVGUI_HideClientUI(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 
 	}

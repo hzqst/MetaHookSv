@@ -217,7 +217,7 @@ void __fastcall COptionsSubVideo_ApplyVidSettings(vgui::Panel* pthis, int dummy,
 
 	VGUI2ExtensionInternal()->GameUI_COptionsSubVideo_ApplyVidSettings(_this, bForceRestart, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		gPrivateFuncs.COptionsSubVideo_ApplyVidSettings(_this, dummy, bForceRestart);
 	}
@@ -243,7 +243,7 @@ void __fastcall COptionsSubVideo_ApplyVidSettings_HL25(vgui::Panel* pthis, int d
 
 	VGUI2ExtensionInternal()->GameUI_COptionsSubVideo_ApplyVidSettings(_this, bForceRestart, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		gPrivateFuncs.COptionsSubVideo_ApplyVidSettings_HL25(pthis, dummy);
 	}
@@ -441,7 +441,7 @@ void __fastcall CTaskBar_OnCommand(void* pthis, int dummy, const char* command)
 
 	VGUI2ExtensionInternal()->GameUI_CTaskBar_OnCommand(_this, command, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		gPrivateFuncs.CTaskBar_OnCommand(_this, dummy, command);
 	}
@@ -539,7 +539,7 @@ bool __fastcall GameUI_KeyValues_LoadFromFile(void* pthis, int dummy, IFileSyste
 
 	VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "GameUI", & CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		real_ret = gPrivateFuncs.GameUI_KeyValues_LoadFromFile(pthis, dummy, pFileSystem, resourceName, pathId);
 	}
@@ -584,7 +584,7 @@ bool __fastcall ServerBrowser_KeyValues_LoadFromFile(void* pthis, int dummy, IFi
 
 	VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "ServerBrowser", &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		real_ret = gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile(pthis, dummy, pFileSystem, resourceName, pathId);
 	}
@@ -704,7 +704,7 @@ int CGameUIProxy::ActivateGameUI(void)
 
 	VGUI2ExtensionInternal()->GameUI_ActivateGameUI(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		real_ret = g_pfnCGameUI_ActivateGameUI(this, 0);
 	}
@@ -749,7 +749,7 @@ int CGameUIProxy::ActivateDemoUI(void)
 
 	VGUI2ExtensionInternal()->GameUI_ActivateDemoUI(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		real_ret = g_pfnCGameUI_ActivateDemoUI(this, 0);
 	}
@@ -791,7 +791,7 @@ int CGameUIProxy::HasExclusiveInput(void)
 
 	VGUI2ExtensionInternal()->GameUI_HasExclusiveInput(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		real_ret = g_pfnCGameUI_HasExclusiveInput(this, 0);
 	}
@@ -831,7 +831,7 @@ void CGameUIProxy::RunFrame(void)
 
 	VGUI2ExtensionInternal()->GameUI_RunFrame(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		g_pfnCGameUI_RunFrame(this, 0);
 	}
@@ -854,7 +854,7 @@ void CGameUIProxy::ConnectToServer(const char *game, int IP, int port)
 
 	VGUI2ExtensionInternal()->GameUI_ConnectToServer(game, IP, port , &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		g_pfnCGameUI_ConnectToServer(this, 0, game, IP, port);
 	}
@@ -877,7 +877,7 @@ void CGameUIProxy::DisconnectFromServer(void)
 
 	VGUI2ExtensionInternal()->GameUI_DisconnectFromServer(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		g_pfnCGameUI_DisconnectFromServer(this, 0);
 	}
@@ -900,7 +900,7 @@ void CGameUIProxy::HideGameUI(void)
 
 	VGUI2ExtensionInternal()->GameUI_HideGameUI(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		g_pfnCGameUI_HideGameUI(this, 0);
 	}
@@ -928,7 +928,7 @@ bool CGameUIProxy::IsGameUIActive(void)
 
 	VGUI2ExtensionInternal()->GameUI_IsGameUIActive(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		real_ret = g_pfnCGameUI_IsGameUIActive(this, 0);
 	}
@@ -968,7 +968,7 @@ void CGameUIProxy::LoadingStarted(const char *resourceType, const char *resource
 
 	VGUI2ExtensionInternal()->GameUI_LoadingStarted(resourceType, resourceName, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		g_pfnCGameUI_LoadingStarted(this, 0, resourceType, resourceName);
 	}
@@ -991,7 +991,7 @@ void CGameUIProxy::LoadingFinished(const char *resourceType, const char *resourc
 
 	VGUI2ExtensionInternal()->GameUI_LoadingFinished(resourceType, resourceName, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		g_pfnCGameUI_LoadingFinished(this, 0, resourceType, resourceName);
 	}
@@ -1014,7 +1014,7 @@ void CGameUIProxy::StartProgressBar(const char *progressType, int progressSteps)
 
 	VGUI2ExtensionInternal()->GameUI_StartProgressBar(progressType, progressSteps, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		g_pfnCGameUI_StartProgressBar(this, 0, progressType, progressSteps);
 	}
@@ -1042,7 +1042,7 @@ int CGameUIProxy::ContinueProgressBar(int progressPoint, float progressFraction)
 
 	VGUI2ExtensionInternal()->GameUI_ContinueProgressBar(progressPoint, progressFraction, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		real_ret = g_pfnCGameUI_ContinueProgressBar(this, 0, progressPoint, progressFraction);
 	}
@@ -1082,7 +1082,7 @@ void CGameUIProxy::StopProgressBar(bool bError, const char *failureReason, const
 
 	VGUI2ExtensionInternal()->GameUI_StopProgressBar(bError, failureReason, extendedReason, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		g_pfnCGameUI_StopProgressBar(this, 0, bError, failureReason, extendedReason);
 	}
@@ -1110,7 +1110,7 @@ int CGameUIProxy::SetProgressBarStatusText(const char *statusText)
 
 	VGUI2ExtensionInternal()->GameUI_SetProgressBarStatusText(statusText, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		real_ret = g_pfnCGameUI_SetProgressBarStatusText(this, 0, statusText);
 	}
@@ -1150,7 +1150,7 @@ void CGameUIProxy::SetSecondaryProgressBar(float progress)
 
 	VGUI2ExtensionInternal()->GameUI_SetSecondaryProgressBar(progress, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		g_pfnCGameUI_SetSecondaryProgressBar(this, 0, progress);
 	}
@@ -1173,7 +1173,7 @@ void CGameUIProxy::SetSecondaryProgressBarText(const char *statusText)
 
 	VGUI2ExtensionInternal()->GameUI_SetSecondaryProgressBarText(statusText, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		g_pfnCGameUI_SetSecondaryProgressBarText(this, 0, statusText);
 	}
@@ -1228,7 +1228,7 @@ void CGameConsoleProxy::Activate(void)
 
 	VGUI2ExtensionInternal()->GameConsole_Activate(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		g_pfnCGameConsole_Activate(this, 0);
 	}
@@ -1251,7 +1251,7 @@ void CGameConsoleProxy::Initialize(void)
 
 	VGUI2ExtensionInternal()->GameConsole_Initialize(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		g_pfnCGameConsole_Initialize(this, 0);
 
@@ -1287,7 +1287,7 @@ void CGameConsoleProxy::Hide(void)
 
 	VGUI2ExtensionInternal()->GameConsole_Hide(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		g_pfnCGameConsole_Hide(this, 0);
 	}
@@ -1310,7 +1310,7 @@ void CGameConsoleProxy::Clear(void)
 
 	VGUI2ExtensionInternal()->GameConsole_Clear(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		g_pfnCGameConsole_Clear(this, 0);
 	}
@@ -1338,7 +1338,7 @@ bool CGameConsoleProxy::IsConsoleVisible(void)
 
 	VGUI2ExtensionInternal()->GameConsole_IsConsoleVisible(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		real_ret = g_pfnCGameConsole_IsConsoleVisible(this, 0);
 	}
@@ -1400,7 +1400,7 @@ void CGameConsoleProxy::Printf(const char* format, ...)
 
 	VGUI2ExtensionInternal()->GameConsole_Printf(&str, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		g_pfnCGameConsole_Printf(this, "%s", str.c_str());
 	}
@@ -1445,7 +1445,7 @@ void CGameConsoleProxy::DPrintf(const char* format, ...)
 
 	VGUI2ExtensionInternal()->GameConsole_DPrintf(&str, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		g_pfnCGameConsole_DPrintf(this, "%s", str.c_str());
 	}
@@ -1468,7 +1468,7 @@ void CGameConsoleProxy::SetParent(vgui::VPANEL parent)
 
 	VGUI2ExtensionInternal()->GameConsole_SetParent(parent, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		g_pfnCGameConsole_SetParent(this, 0, parent);
 	}

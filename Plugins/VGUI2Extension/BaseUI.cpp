@@ -178,7 +178,7 @@ int CBaseUIProxy::Key_Event(int down, int keynum, const char *pszCurrentBinding)
 
 	VGUI2ExtensionInternal()->BaseUI_Key_Event(down, keynum, pszCurrentBinding, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		real_ret = m_pfnCBaseUI_Key_Event(this, 0, down, keynum, pszCurrentBinding);
 	}
@@ -218,7 +218,7 @@ void CBaseUIProxy::CallEngineSurfaceAppHandler(void* pevent, void* userData)
 
 	VGUI2ExtensionInternal()->BaseUI_CallEngineSurfaceAppProc(pevent, userData, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_CallEngineSurfaceAppHandler(this, 0, pevent, userData);
 	}
@@ -241,7 +241,7 @@ void CBaseUIProxy::Paint(int x, int y, int right, int bottom)
 
 	VGUI2ExtensionInternal()->BaseUI_Paint(x, y, right, bottom, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_Paint(this, 0, x, y, right, bottom);
 	}
@@ -264,7 +264,7 @@ void CBaseUIProxy::HideGameUI(void)
 
 	VGUI2ExtensionInternal()->BaseUI_HideGameUI(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_HideGameUI(this, 0);
 	}
@@ -287,7 +287,7 @@ void CBaseUIProxy::ActivateGameUI(void)
 
 	VGUI2ExtensionInternal()->BaseUI_ActivateGameUI(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_ActivateGameUI(this, 0);
 	}
@@ -310,7 +310,7 @@ void CBaseUIProxy::HideConsole(void)
 
 	VGUI2ExtensionInternal()->BaseUI_HideConsole(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_HideConsole(this, 0);
 	}
@@ -333,7 +333,7 @@ void CBaseUIProxy::ShowConsole(void)
 
 	VGUI2ExtensionInternal()->BaseUI_ShowConsole(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_ShowConsole(this, 0);
 	}
@@ -428,7 +428,7 @@ int CBaseUILegacyProxy::Key_Event(int down, int keynum, const char* pszCurrentBi
 
 	VGUI2ExtensionInternal()->BaseUI_Key_Event(down, keynum, pszCurrentBinding, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		real_ret = m_pfnCBaseUI_Key_Event(this, 0, down, keynum, pszCurrentBinding);
 	}
@@ -468,7 +468,7 @@ void CBaseUILegacyProxy::CallEngineSurfaceWndProc(void* hwnd, unsigned int msg, 
 
 	VGUI2ExtensionInternal()->BaseUI_CallEngineSurfaceWndProc(hwnd, msg, wparam, lparam, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_CallEngineSurfaceWndProc(this, 0, hwnd, msg, wparam, lparam);
 	}
@@ -491,7 +491,7 @@ void CBaseUILegacyProxy::Paint(int x, int y, int right, int bottom)
 
 	VGUI2ExtensionInternal()->BaseUI_Paint(x, y, right, bottom, &CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_Paint(this, 0, x, y, right, bottom);
 	}
@@ -514,7 +514,7 @@ void CBaseUILegacyProxy::HideGameUI(void)
 
 	VGUI2ExtensionInternal()->BaseUI_HideGameUI(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_HideGameUI(this, 0);
 	}
@@ -537,7 +537,7 @@ void CBaseUILegacyProxy::ActivateGameUI(void)
 
 	VGUI2ExtensionInternal()->BaseUI_ActivateGameUI(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_ActivateGameUI(this, 0);
 	}
@@ -560,7 +560,7 @@ void CBaseUILegacyProxy::HideConsole(void)
 
 	VGUI2ExtensionInternal()->BaseUI_HideConsole(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_HideConsole(this, 0);
 	}
@@ -583,7 +583,7 @@ void CBaseUILegacyProxy::ShowConsole(void)
 
 	VGUI2ExtensionInternal()->BaseUI_ShowConsole(&CallbackContext);
 
-	if (CallbackContext.Result >= VGUI2Extension_Result::SUPERCEDE)
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
 		m_pfnCBaseUI_ShowConsole(this, 0);
 	}
