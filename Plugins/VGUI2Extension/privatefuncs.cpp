@@ -110,6 +110,24 @@ PVOID VGUI2_FindPanelInit(PVOID TextBase, ULONG TextSize)
 			{
 				Panel_Init_Push += Sig_Length(sigs2);
 			}
+			else
+			{
+				const char sigs3[] = "\x6A\x18\x6A\x40\x53\x53";
+				Panel_Init_Push = (PUCHAR)Search_Pattern_From_Size(TextBase, TextSize, sigs3);
+				if (Panel_Init_Push)
+				{
+					Panel_Init_Push += Sig_Length(sigs3);
+				}
+				else
+				{
+					const char sigs4[] = "\x6A\x18\x6A\x40\x50\x50";
+					Panel_Init_Push = (PUCHAR)Search_Pattern_From_Size(TextBase, TextSize, sigs4);
+					if (Panel_Init_Push)
+					{
+						Panel_Init_Push += Sig_Length(sigs4);
+					}
+				}
+			}
 		}
 		
 		if (Panel_Init_Push)

@@ -44,32 +44,38 @@ typedef struct
 	//ServerBrowser
 	void(__fastcall* ServerBrowser_Panel_Init)(void* pthis, int dummy, int x, int y, int w, int h);
 	void(__fastcall* ServerBrowser_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
+	void(__fastcall* ServerBrowser_LoadControlSettingsAndUserConfig)(void* pthis, int dummy, const char* dialogResourceName, int dialogID);
 	void* (__fastcall* ServerBrowser_KeyValues_ctor)(void* pthis, int dummy, const char* name);
+	void (__fastcall* CBaseGamesPage_OnButtonToggled)(void* pthis, int dummy, void* a2, int state);
+	void(__fastcall* ServerBrowser_Panel_SetSize)(void* pthis, int dummy, int width, int height);
 	void ** ServerBrowser_KeyValues_vftable;
 	bool(__fastcall* ServerBrowser_KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId);
+	void* (__fastcall* CServerBrowserDialog_ctor)(void* pthis, int dummy, void* parent);
 	//GameUI
 	void(__fastcall* GameUI_Panel_Init)(void* pthis, int dummy, int x, int y, int w, int h);
 	void(__fastcall* GameUI_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
+	void(__fastcall* GameUI_LoadControlSettingsAndUserConfig)(void* pthis, int dummy, const char* dialogResourceName, int dialogID);
 	void*(__fastcall* GameUI_KeyValues_ctor)(void* pthis, int dummy, const char* name);
 	void** GameUI_KeyValues_vftable;
 	bool(__fastcall* GameUI_KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId);
 	void *(__fastcall* Sheet_ctor)(void* pthis, int dummy, void* parent, const char *panelName);
 	void** Sheet_vftable;
 	int offset_propertySheet;
-	//void *(__fastcall* QueryBox_ctor)(void* pthis, int dummy, const char* title, const char* queryText, void* parent);
-	void *(__fastcall* CCreateMultiplayerGameDialog_ctor)(void* pthis, int dummy, void* parent);
-	void *(__fastcall* CGameConsoleDialog_ctor)(void* pthis, int dummy);
+	//void *(__fastcall*QueryBox_ctor)(void* pthis, int dummy, const char* title, const char* queryText, void* parent);
+	void *(__fastcall*CCreateMultiplayerGameDialog_ctor)(void* pthis, int dummy, void* parent);
+	void *(__fastcall*CGameConsoleDialog_ctor)(void* pthis, int dummy);
 	void *(__fastcall*COptionsDialog_ctor)(void *pthis, int dummy, void *parent);
 	void *(__fastcall*COptionsSubVideo_ctor)(void *pthis, int dummy, void *parent);
 	void *(__fastcall*COptionsSubAudio_ctor)(void *pthis, int dummy, void *parent);
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings)(void *pthis, int dummy, bool bForceRestart);
 	void(__fastcall *COptionsSubVideo_ApplyVidSettings_HL25)(void *pthis, int dummy);
-	void*(__fastcall* CTaskBar_ctor)(void* pthis, int dummy, void* parent, const char* panelName);
+	void*(__fastcall*CTaskBar_ctor)(void* pthis, int dummy, void* parent, const char* panelName);
 	void** CTaskBar_vftable;
-	void (__fastcall* CTaskBar_OnCommand)(void* pthis, int dummy, const char* command);
+	void(__fastcall* CTaskBar_OnCommand)(void* pthis, int dummy, const char* command);
 	void(__fastcall* CTaskBar_CreateGameMenu)(void* pthis, int dummy);
-	void* (__fastcall *PropertySheet_HasHotkey)(void* pthis, int dummy, wchar_t key);
-	void* (__fastcall *FocusNavGroup_GetCurrentFocus)(void* pthis, int dummy);
+
+	void* (__fastcall *GameUI_PropertySheet_HasHotkey)(void* pthis, int dummy, wchar_t key);
+	void* (__fastcall *GameUI_FocusNavGroup_GetCurrentFocus)(void* pthis, int dummy);
 
 	void(__fastcall* RichText_Print)(void* pthis, int dummy, const char* msg);
 	void (__fastcall* RichText_InsertStringA)(void* pthis, int dummy, const char* msg);

@@ -18,6 +18,8 @@
 
 static hook_t* g_phook_ServerBrowser_Panel_Init = NULL;
 static hook_t* g_phook_ServerBrowser_KeyValues_LoadFromFile = NULL;
+static hook_t* g_phook_ServerBrowser_LoadControlSettings = NULL;
+static hook_t* g_phook_ServerBrowser_LoadControlSettingsAndUserConfig = NULL;
 static hook_t* g_phook_GameUI_Panel_Init = NULL;
 static hook_t* g_phook_GameUI_KeyValues_LoadFromFile = NULL;
 static hook_t* g_phook_CGameConsoleDialog_ctor = NULL;
@@ -32,39 +34,45 @@ static hook_t* g_phook_RichText_OnThink = NULL;
 static hook_t* g_phook_TextEntry_OnKeyCodeTyped = NULL;
 static hook_t* g_phook_TextEntry_LayoutVerticalScrollBarSlider = NULL;
 static hook_t* g_phook_TextEntry_GetStartDrawIndex = NULL;
-static hook_t* g_phook_PropertySheet_HasHotkey = NULL;
-static hook_t* g_phook_FocusNavGroup_GetCurrentFocus = NULL;
+static hook_t* g_phook_GameUI_PropertySheet_HasHotkey = NULL;
+static hook_t* g_phook_GameUI_FocusNavGroup_GetCurrentFocus = NULL;
 
 namespace vgui
 {
 bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryList, int numFactories);
 }
 
-#define LOAD_CONTROL_SETTINGS_FALLBACK(panel, name) \
-auto bIsResourceExists = FILESYSTEM_ANY_FILEEXISTS("resource/"##name);\
-if (bIsResourceExists)\
-{\
-	gPrivateFuncs.GameUI_LoadControlSettings(panel, 0, "resource/"##name, NULL);\
-}\
-else\
-{\
-	if (g_iEngineType == ENGINE_GOLDSRC_HL25)\
+#define LOAD_CONTROL_SETTINGS_FALLBACK(mod, panel, name) if(1) {\
+	if (!gPrivateFuncs.mod##_LoadControlSettings)\
 	{\
-		bIsResourceExists = FILESYSTEM_ANY_FILEEXISTS("vgui2ext/resource_hl25/"##name);\
-		if (bIsResourceExists)\
-		{\
-			gPrivateFuncs.GameUI_LoadControlSettings(panel, 0, "vgui2ext/resource_hl25/"##name, NULL);\
-		}\
+		auto panel_vftable = *(PVOID**)panel; \
+		gPrivateFuncs.mod##_LoadControlSettings = (decltype(gPrivateFuncs.mod##_LoadControlSettings))panel_vftable[536 / 4];\
+	}\
+	auto bIsResourceExists = FILESYSTEM_ANY_FILEEXISTS("resource/"##name);\
+	if (bIsResourceExists)\
+	{\
+		gPrivateFuncs.mod##_LoadControlSettings(panel, 0, "resource/"##name, NULL);\
 	}\
 	else\
 	{\
-		bIsResourceExists = FILESYSTEM_ANY_FILEEXISTS("vgui2ext/resource/"##name);\
-		if (bIsResourceExists)\
+		if (g_iEngineType == ENGINE_GOLDSRC_HL25)\
 		{\
-			gPrivateFuncs.GameUI_LoadControlSettings(panel, 0, "vgui2ext/resource/"##name, NULL);\
+			bIsResourceExists = FILESYSTEM_ANY_FILEEXISTS("vgui2ext/resource_hl25/"##name);\
+			if (bIsResourceExists)\
+			{\
+				gPrivateFuncs.mod##_LoadControlSettings(panel, 0, "vgui2ext/resource_hl25/"##name, NULL);\
+			}\
+		}\
+		else\
+		{\
+			bIsResourceExists = FILESYSTEM_ANY_FILEEXISTS("vgui2ext/resource/"##name);\
+			if (bIsResourceExists)\
+			{\
+				gPrivateFuncs.mod##_LoadControlSettings(panel, 0, "vgui2ext/resource/"##name, NULL);\
+			}\
 		}\
 	}\
-}\
+}
 
 static int g_iPatchingPanelTall = 0;
 static bool g_bPatchingGetFontTall = false;
@@ -91,8 +99,129 @@ int GetPatchedGetFontTall(int fontTall)
 }
 
 /*
+====================================================================
+ServerBrowser inline hook
+====================================================================
+*/
+
+void __fastcall CBaseGamesPage_OnButtonToggled_ServerBrowser_Panel_SetSize(vgui::Panel* pthis, int dummy, int width, int height)
+{
+	width = g_pVGuiSchemeManager2->GetProportionalScaledValue(width);
+	height = g_pVGuiSchemeManager2->GetProportionalScaledValue(height);
+
+	gPrivateFuncs.ServerBrowser_Panel_SetSize(pthis, 0, width, height);
+}
+
+void __fastcall CBaseGamesPage_OnButtonToggled(vgui::Panel* pthis, int dummy, vgui::Panel* a2, int state)
+{
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		return gPrivateFuncs.CBaseGamesPage_OnButtonToggled(pthis, dummy, a2, state);
+	}
+
+	gPrivateFuncs.CBaseGamesPage_OnButtonToggled(pthis, dummy, a2, state);
+}
+
+#if 0
+void* __fastcall CServerBrowserDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel* parent)
+{
+	auto result = gPrivateFuncs.CServerBrowserDialog_ctor(pthis, dummy, parent);
+
+	//TODO callbacks?
+
+	
+
+	return result;
+}
+#endif
+
+void __fastcall ServerBrowser_LoadControlSettings(vgui::Panel* pthis, int dummy, const char* controlResourceName, const char* pathID)
+{
+	gPrivateFuncs.ServerBrowser_LoadControlSettings(pthis, 0, controlResourceName, pathID);
+}
+
+void __fastcall ServerBrowser_LoadControlSettingsAndUserConfig(vgui::Panel* pthis, int dummy, const char* dialogResourceName, int dialogID)
+{
+	if (!strcmp(dialogResourceName, "Servers/DialogServerBrowser.res"))
+	{
+		if (!gPrivateFuncs.ServerBrowser_LoadControlSettings)
+		{
+			auto panel_vftable = *(PVOID**)pthis;
+			gPrivateFuncs.ServerBrowser_LoadControlSettings = (decltype(gPrivateFuncs.ServerBrowser_LoadControlSettings))panel_vftable[536 / 4];
+			Install_InlineHook(ServerBrowser_LoadControlSettings);
+		}
+
+		//int offset_AutoResize = 92;
+
+		//*(int*)((PUCHAR)pthis + offset_AutoResize) = 0;
+
+		gPrivateFuncs.ServerBrowser_LoadControlSettings(pthis, 0, "Servers/DialogServerBrowser.res", NULL);
+		return;
+	}
+
+	return gPrivateFuncs.ServerBrowser_LoadControlSettingsAndUserConfig(pthis, dummy, dialogResourceName, dialogID);
+}
+
+void __fastcall ServerBrowser_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, int w, int h)
+{
+	gPrivateFuncs.ServerBrowser_Panel_Init(pthis, 0, x, y, w, h);
+
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManagerInternal()->IsHighDpiSupportEnabled())
+	{
+		PVOID* PanelVFTable = *(PVOID**)pthis;
+		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];
+		pfnSetProportional(pthis, 0, true);
+	}
+}
+
+bool __fastcall ServerBrowser_KeyValues_LoadFromFile(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId)
+{
+	bool fake_ret = false;
+	bool real_ret = false;
+	bool ret = false;
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+	CallbackContext.pPluginReturnValue = &fake_ret;
+
+	VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "ServerBrowser", &CallbackContext);
+
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
+	{
+		real_ret = gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile(pthis, dummy, pFileSystem, resourceName, pathId);
+	}
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
+		CallbackContext.pRealReturnValue = &real_ret;
+
+		VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "ServerBrowser", &CallbackContext);
+	}
+
+	switch (CallbackContext.Result)
+	{
+	case VGUI2Extension_Result::OVERRIDE:
+	case VGUI2Extension_Result::SUPERCEDE:
+	case VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS:
+	{
+		ret = fake_ret;
+	}
+	default:
+	{
+		ret = real_ret;
+	}
+	}
+
+	return ret;
+}
+
+/*
 ==================================================================================
-vgui_controls hook
+GameUI vgui_controls hook
 ==================================================================================
 */
 
@@ -104,7 +233,7 @@ void __fastcall RichText_InsertChar(void* pthis, int dummy, wchar_t ch)
 	gPrivateFuncs.RichText_InsertChar(pthis, 0, ch);
 }
 
-void __fastcall RichText_InsertStringW(void* pthis, int dummy, wchar_t *ch)
+void __fastcall RichText_InsertStringW(void* pthis, int dummy, wchar_t* ch)
 {
 	while (1)
 	{
@@ -182,18 +311,6 @@ int __fastcall TextEntry_GetStartDrawIndex(void* pthis, int dummy, int& lineBrea
 	return result;
 }
 
-void __fastcall ServerBrowser_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, int w, int h)
-{
-	gPrivateFuncs.ServerBrowser_Panel_Init(pthis, 0, x, y, w, h);
-
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManagerInternal()->IsHighDpiSupportEnabled())
-	{
-		PVOID* PanelVFTable = *(PVOID**)pthis;
-		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];
-		pfnSetProportional(pthis, 0, true);
-	}
-}
-
 void __fastcall GameUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, int w, int h)
 {
 	gPrivateFuncs.GameUI_Panel_Init(pthis, 0, x, y, w, h);
@@ -205,6 +322,12 @@ void __fastcall GameUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, i
 		pfnSetProportional(pthis, 0, true);
 	}
 }
+
+/*
+====================================================================
+GameUI inline hook
+====================================================================
+*/
 
 void __fastcall COptionsSubVideo_ApplyVidSettings(vgui::Panel* pthis, int dummy, bool bForceRestart)
 {
@@ -257,7 +380,7 @@ void __fastcall COptionsSubVideo_ApplyVidSettings_HL25(vgui::Panel* pthis, int d
 	}
 }
 
-void* __fastcall FocusNavGroup_GetCurrentFocus(void* pthis, int dummy)
+void* __fastcall GameUI_FocusNavGroup_GetCurrentFocus(void* pthis, int dummy)
 {
 	vgui::VPanelHandle* _currentFocus = (vgui::VPanelHandle*)((PUCHAR)pthis + 12);
 
@@ -284,7 +407,7 @@ void* __fastcall FocusNavGroup_GetCurrentFocus(void* pthis, int dummy)
 	return NULL;
 }
 
-void* __fastcall PropertySheet_HasHotkey(void* pthis, int dummy, wchar_t key)
+void* __fastcall GameUI_PropertySheet_HasHotkey(void* pthis, int dummy, wchar_t key)
 {
 	int offset_activePage = 144;
 
@@ -338,7 +461,7 @@ public:
 
 	void InstallHooks()
 	{
-		if (!gPrivateFuncs.FocusNavGroup_GetCurrentFocus)
+		if (!gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus)
 		{
 			PVOID* COptionsDialog_vftable = *(PVOID**)m_pDialog;
 			void* (__fastcall * pfnGetFocusNavGroup)(vgui::Panel * pthis, int dummy) = (decltype(pfnGetFocusNavGroup))COptionsDialog_vftable[612 / 4];
@@ -346,16 +469,16 @@ public:
 			auto FocusNavGroup = pfnGetFocusNavGroup(m_pDialog, 0);
 			PVOID* FocusNavGroup_vftable = *(PVOID**)FocusNavGroup;
 
-			gPrivateFuncs.FocusNavGroup_GetCurrentFocus = (decltype(gPrivateFuncs.FocusNavGroup_GetCurrentFocus))FocusNavGroup_vftable[7];
-			Install_InlineHook(FocusNavGroup_GetCurrentFocus);
+			gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus = (decltype(gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus))FocusNavGroup_vftable[7];
+			Install_InlineHook(GameUI_FocusNavGroup_GetCurrentFocus);
 		}
 
-		if (!gPrivateFuncs.PropertySheet_HasHotkey)
+		if (!gPrivateFuncs.GameUI_PropertySheet_HasHotkey)
 		{
 			PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
-			gPrivateFuncs.PropertySheet_HasHotkey = (decltype(gPrivateFuncs.PropertySheet_HasHotkey))_propertySheet_vftable[73];
-			Install_InlineHook(PropertySheet_HasHotkey);
+			gPrivateFuncs.GameUI_PropertySheet_HasHotkey = (decltype(gPrivateFuncs.GameUI_PropertySheet_HasHotkey))_propertySheet_vftable[73];
+			Install_InlineHook(GameUI_PropertySheet_HasHotkey);
 		}
 	}
 
@@ -396,7 +519,7 @@ void* __fastcall COptionsDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel*
 	VGUI2ExtensionInternal()->GameUI_COptionsDialog_ctor(&CallbackContext);
 
 	//Load res to make it proportional
-	LOAD_CONTROL_SETTINGS_FALLBACK(pthis, "OptionsDialog.res");
+	LOAD_CONTROL_SETTINGS_FALLBACK(GameUI, pthis, "OptionsDialog.res");
 
 	return result;
 }
@@ -406,7 +529,7 @@ void* __fastcall CCreateMultiplayerGameDialog_ctor(vgui::Panel* pthis, int dummy
 	auto result = gPrivateFuncs.CCreateMultiplayerGameDialog_ctor(pthis, dummy, parent);
 
 	//Load res to make it proportional
-	LOAD_CONTROL_SETTINGS_FALLBACK(pthis, "CreateMultiplayerGameDialog.res");
+	LOAD_CONTROL_SETTINGS_FALLBACK(GameUI, pthis, "CreateMultiplayerGameDialog.res");
 
 	return result;
 }
@@ -422,9 +545,10 @@ void* __fastcall CGameConsoleDialog_ctor(vgui::Panel* pthis, int dummy)
 	auto result = gPrivateFuncs.CGameConsoleDialog_ctor(pthis, dummy);
 
 	//Load res to make it proportional
-	LOAD_CONTROL_SETTINGS_FALLBACK(pthis, "GameConsoleDialog.res");
+	LOAD_CONTROL_SETTINGS_FALLBACK(GameUI, pthis, "GameConsoleDialog.res");
 
 	g_pCreatingGameConsoleDialog = pthis;
+
 	pthis->GetBounds(g_iCreatingGameConsoleDialogX, g_iCreatingGameConsoleDialogY, g_iCreatingGameConsoleDialogWidth, g_iCreatingGameConsoleDialogHeight);
 
 	return result;
@@ -570,50 +694,6 @@ bool __fastcall GameUI_KeyValues_LoadFromFile(void* pthis, int dummy, IFileSyste
 	return ret;
 }
 
-bool __fastcall ServerBrowser_KeyValues_LoadFromFile(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId)
-{
-	bool fake_ret = false;
-	bool real_ret = false;
-	bool ret = false;
-
-	VGUI2Extension_CallbackContext CallbackContext;
-
-	CallbackContext.Result = VGUI2Extension_Result::UNSET;
-	CallbackContext.IsPost = false;
-	CallbackContext.pPluginReturnValue = &fake_ret;
-
-	VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "ServerBrowser", &CallbackContext);
-
-	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
-	{
-		real_ret = gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile(pthis, dummy, pFileSystem, resourceName, pathId);
-	}
-
-	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
-	{
-		CallbackContext.Result = VGUI2Extension_Result::UNSET;
-		CallbackContext.IsPost = true;
-		CallbackContext.pRealReturnValue = &real_ret;
-
-		VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "ServerBrowser", &CallbackContext);
-	}
-
-	switch (CallbackContext.Result)
-	{
-	case VGUI2Extension_Result::OVERRIDE:
-	case VGUI2Extension_Result::SUPERCEDE:
-	case VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS:
-	{
-		ret = fake_ret;
-	}
-	default:
-	{
-		ret = real_ret;
-	}
-	}
-
-	return ret;
-}
 
 /*
 ==================================================================================
@@ -1695,6 +1775,7 @@ void GameUI_FillAddress(void)
 		Sig_FuncNotFound(COptionsDialog_ctor);
 	}
 
+#if 0
 	if (1)
 	{
 		const char sigs1[] = "#GameUI_Video";
@@ -1744,10 +1825,11 @@ void GameUI_FillAddress(void)
 
 			return FALSE;
 
-			}, 0, NULL);
+		}, 0, NULL);
 
 		Sig_FuncNotFound(GameUI_LoadControlSettings);
 	}
+#endif
 
 	if (1)
 	{
@@ -2441,7 +2523,7 @@ void GameUI_FillAddress(void)
 
 		Sig_FuncNotFound(Sheet_vftable);
 
-		gPrivateFuncs.PropertySheet_HasHotkey = (decltype(gPrivateFuncs.PropertySheet_HasHotkey))gPrivateFuncs.Sheet_vftable[73];
+		gPrivateFuncs.GameUI_PropertySheet_HasHotkey = (decltype(gPrivateFuncs.GameUI_PropertySheet_HasHotkey))gPrivateFuncs.Sheet_vftable[73];
 	}
 
 	if (1)
@@ -2797,14 +2879,14 @@ void GameUI_InstallHooks(void)
 	Install_InlineHook(TextEntry_LayoutVerticalScrollBarSlider);
 	Install_InlineHook(TextEntry_GetStartDrawIndex);
 
-	if (gPrivateFuncs.PropertySheet_HasHotkey)
+	if (gPrivateFuncs.GameUI_PropertySheet_HasHotkey)
 	{
-		Install_InlineHook(PropertySheet_HasHotkey);
+		Install_InlineHook(GameUI_PropertySheet_HasHotkey);
 	}
 
-	if (gPrivateFuncs.FocusNavGroup_GetCurrentFocus)
+	if (gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus)
 	{
-		Install_InlineHook(FocusNavGroup_GetCurrentFocus);
+		Install_InlineHook(GameUI_FocusNavGroup_GetCurrentFocus);
 	}
 
 }
@@ -2830,8 +2912,8 @@ void GameUI_UninstallHooks(void)
 	Uninstall_Hook(TextEntry_LayoutVerticalScrollBarSlider);
 	Uninstall_Hook(TextEntry_GetStartDrawIndex);
 
-	Uninstall_Hook(PropertySheet_HasHotkey);
-	Uninstall_Hook(FocusNavGroup_GetCurrentFocus);
+	Uninstall_Hook(GameUI_PropertySheet_HasHotkey);
+	Uninstall_Hook(GameUI_FocusNavGroup_GetCurrentFocus);
 }
 
 void ServerBrowser_FillAddress(void)
@@ -2875,6 +2957,46 @@ void ServerBrowser_FillAddress(void)
 	{
 		Sys_Error("Failed to locate section \".data\" in ServerBrowser.dll");
 		return;
+	}
+
+	if (1)
+	{
+		const char sigs1[] = "Servers/DialogServerBrowser.res";
+		auto DialogServerBrowser_String = g_pMetaHookAPI->SearchPattern(ServerBrowserRdataBase, ServerBrowserRdataSize, sigs1, sizeof(sigs1) - 1);
+		if (!DialogServerBrowser_String)
+			DialogServerBrowser_String = g_pMetaHookAPI->SearchPattern(ServerBrowserDataBase, ServerBrowserDataSize, sigs1, sizeof(sigs1) - 1);
+		Sig_VarNotFound(DialogServerBrowser_String);
+
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern + 1) = (DWORD)DialogServerBrowser_String;
+		auto DialogServerBrowser_Call = g_pMetaHookAPI->SearchPattern(ServerBrowserTextBase, ServerBrowserTextSize, pattern, sizeof(pattern) - 1);
+		Sig_VarNotFound(DialogServerBrowser_Call);
+
+		//gPrivateFuncs.CServerBrowserDialog_ctor = (decltype(gPrivateFuncs.CServerBrowserDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBegin(DialogServerBrowser_Call, 0x800);
+		//Sig_FuncNotFound(CServerBrowserDialog_ctor);
+
+		g_pMetaHookAPI->DisasmRanges(DialogServerBrowser_Call, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+
+			if (address[0] == 0xE8 && instCount <= 8)
+			{
+				gPrivateFuncs.ServerBrowser_LoadControlSettingsAndUserConfig = (decltype(gPrivateFuncs.ServerBrowser_LoadControlSettingsAndUserConfig))GetCallAddress(address);
+
+				return TRUE;
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+		}, 0, NULL);
+
+		Sig_FuncNotFound(ServerBrowser_LoadControlSettingsAndUserConfig);
 	}
 
 	if (1)
@@ -2960,7 +3082,7 @@ void ServerBrowser_FillAddress(void)
 
 					return FALSE;
 
-					}, 0, ctx);
+				}, 0, ctx);
 
 				return TRUE;
 			}
@@ -2977,6 +3099,14 @@ void ServerBrowser_FillAddress(void)
 
 		Sig_FuncNotFound(ServerBrowser_KeyValues_ctor);
 		Sig_FuncNotFound(ServerBrowser_KeyValues_LoadFromFile);
+
+		gPrivateFuncs.CBaseGamesPage_OnButtonToggled = (decltype(gPrivateFuncs.CBaseGamesPage_OnButtonToggled))((PUCHAR)ServerBrowserBase + 0x3450);
+
+		gPrivateFuncs.ServerBrowser_Panel_SetSize = (decltype(gPrivateFuncs.ServerBrowser_Panel_SetSize))GetCallAddress((PUCHAR)ServerBrowserBase + 0x3486, 1);
+
+		int rva = (PUCHAR)CBaseGamesPage_OnButtonToggled_ServerBrowser_Panel_SetSize - ((PUCHAR)ServerBrowserBase + 0x348B);
+		g_pMetaHookAPI->WriteMemory((PUCHAR)ServerBrowserBase + 0x3486 + 1, &rva, 4);
+
 	}
 
 	gPrivateFuncs.ServerBrowser_Panel_Init = (decltype(gPrivateFuncs.ServerBrowser_Panel_Init))VGUI2_FindPanelInit(ServerBrowserTextBase, ServerBrowserTextSize);
@@ -2987,10 +3117,17 @@ void ServerBrowser_InstallHooks(void)
 {
 	Install_InlineHook(ServerBrowser_Panel_Init);
 	Install_InlineHook(ServerBrowser_KeyValues_LoadFromFile);
+	//Install_InlineHook(CServerBrowserDialog_ctor);8684 sucks
+	//Install_InlineHook(ServerBrowser_LoadControlSettingsAndUserConfig);
+	//Install_InlineHook(CBaseGamesPage_OnButtonToggled);
+
 }
 
 void ServerBrowser_UninstallHooks(void)
 {
 	Uninstall_Hook(ServerBrowser_Panel_Init);
 	Uninstall_Hook(ServerBrowser_KeyValues_LoadFromFile);
+	//Uninstall_Hook(CServerBrowserDialog_ctor);
+	//Uninstall_Hook(ServerBrowser_LoadControlSettingsAndUserConfig);
+	//Uninstall_Hook(CBaseGamesPage_OnButtonToggled);
 }
