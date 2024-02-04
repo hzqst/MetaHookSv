@@ -18,8 +18,8 @@
 
 static hook_t* g_phook_ServerBrowser_Panel_Init = NULL;
 static hook_t* g_phook_ServerBrowser_KeyValues_LoadFromFile = NULL;
-static hook_t* g_phook_ServerBrowser_LoadControlSettings = NULL;
-static hook_t* g_phook_ServerBrowser_LoadControlSettingsAndUserConfig = NULL;
+//static hook_t* g_phook_ServerBrowser_LoadControlSettings = NULL;
+//static hook_t* g_phook_ServerBrowser_LoadControlSettingsAndUserConfig = NULL;
 static hook_t* g_phook_GameUI_Panel_Init = NULL;
 static hook_t* g_phook_GameUI_KeyValues_LoadFromFile = NULL;
 static hook_t* g_phook_CGameConsoleDialog_ctor = NULL;
@@ -112,6 +112,7 @@ void __fastcall CBaseGamesPage_OnButtonToggled_ServerBrowser_Panel_SetSize(vgui:
 	gPrivateFuncs.ServerBrowser_Panel_SetSize(pthis, 0, width, height);
 }
 
+#if 0
 void __fastcall CBaseGamesPage_OnButtonToggled(vgui::Panel* pthis, int dummy, vgui::Panel* a2, int state)
 {
 	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
@@ -122,7 +123,6 @@ void __fastcall CBaseGamesPage_OnButtonToggled(vgui::Panel* pthis, int dummy, vg
 	gPrivateFuncs.CBaseGamesPage_OnButtonToggled(pthis, dummy, a2, state);
 }
 
-#if 0
 void* __fastcall CServerBrowserDialog_ctor(vgui::Panel* pthis, int dummy, vgui::Panel* parent)
 {
 	auto result = gPrivateFuncs.CServerBrowserDialog_ctor(pthis, dummy, parent);
@@ -133,7 +133,6 @@ void* __fastcall CServerBrowserDialog_ctor(vgui::Panel* pthis, int dummy, vgui::
 
 	return result;
 }
-#endif
 
 void __fastcall ServerBrowser_LoadControlSettings(vgui::Panel* pthis, int dummy, const char* controlResourceName, const char* pathID)
 {
@@ -161,6 +160,8 @@ void __fastcall ServerBrowser_LoadControlSettingsAndUserConfig(vgui::Panel* pthi
 
 	return gPrivateFuncs.ServerBrowser_LoadControlSettingsAndUserConfig(pthis, dummy, dialogResourceName, dialogID);
 }
+
+#endif
 
 void __fastcall ServerBrowser_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, int w, int h)
 {
@@ -2995,6 +2996,39 @@ void ServerBrowser_FillAddress(void)
 			return FALSE;
 
 		}, 0, NULL);
+
+		Sig_FuncNotFound(ServerBrowser_LoadControlSettingsAndUserConfig);
+	}
+
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25)
+	{
+		char pattern[] = "\x68\x16\x01\x00\x00\x68\x70\x02\x00";
+		auto CBaseGamesPage_OnButtonToggled_SetSizeImm = g_pMetaHookAPI->SearchPattern(ServerBrowserTextBase, ServerBrowserTextSize, pattern, sizeof(pattern) - 1);
+		Sig_VarNotFound(CBaseGamesPage_OnButtonToggled_SetSizeImm);
+
+		//gPrivateFuncs.CServerBrowserDialog_ctor = (decltype(gPrivateFuncs.CServerBrowserDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBegin(DialogServerBrowser_Call, 0x800);
+		//Sig_FuncNotFound(CServerBrowserDialog_ctor);
+
+		g_pMetaHookAPI->DisasmRanges(CBaseGamesPage_OnButtonToggled_SetSizeImm, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+
+			if (address[0] == 0xE8 && instCount <= 8)
+			{
+				gPrivateFuncs.ServerBrowser_Panel_SetSize = (decltype(gPrivateFuncs.ServerBrowser_Panel_SetSize))GetCallAddress(address);
+
+				return TRUE;
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+			}, 0, NULL);
 
 		Sig_FuncNotFound(ServerBrowser_LoadControlSettingsAndUserConfig);
 	}

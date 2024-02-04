@@ -293,7 +293,7 @@ void CChatDialog::CreateChatLines(void)
 
 void CChatDialog::ApplySchemeSettings(vgui::IScheme *pScheme)
 {
-	LoadControlSettings("captionmod/ChatDialog.res", "GAME");
+	LoadControlSettings("captionmod/ChatDialog.res");
 
 	BaseClass::ApplySchemeSettings(pScheme);
 
