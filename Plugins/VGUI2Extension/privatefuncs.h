@@ -46,7 +46,7 @@ typedef struct
 	void(__fastcall* ServerBrowser_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
 	void(__fastcall* ServerBrowser_LoadControlSettingsAndUserConfig)(void* pthis, int dummy, const char* dialogResourceName, int dialogID);
 	void* (__fastcall* ServerBrowser_KeyValues_ctor)(void* pthis, int dummy, const char* name);
-	void (__fastcall* CBaseGamesPage_OnButtonToggled)(void* pthis, int dummy, void* a2, int state);
+	//void (__fastcall* CBaseGamesPage_OnButtonToggled)(void* pthis, int dummy, void* a2, int state);
 	void(__fastcall* ServerBrowser_Panel_SetSize)(void* pthis, int dummy, int width, int height);
 	void ** ServerBrowser_KeyValues_vftable;
 	bool(__fastcall* ServerBrowser_KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId);

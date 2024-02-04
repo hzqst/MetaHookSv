@@ -4,46 +4,6 @@
 #include "exportfuncs.h"
 #include "privatefuncs.h"
 
-#define S_INIT_SIG_BLOB "\x83\xEC\x08\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x85\xC0"
-#define S_INIT_SIG_NEW "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08\x85\xC0"
-#define S_INIT_SIG_HL25 S_INIT_SIG_NEW
-#define S_INIT_SIG_SVENGINE S_INIT_SIG_NEW
-
-#define S_FINDNAME_SIG_BLOB "\x53\x55\x8B\x6C\x24\x0C\x33\xDB\x56\x57\x85\xED"
-#define S_FINDNAME_SIG_NEW "\x55\x8B\xEC\x53\x56\x8B\x75\x08\x33\xDB\x85\xF6"
-#define S_FINDNAME_SIG_HL25 "\x55\x8B\xEC\x53\x8B\x5D\x08\x56\x33\xF6\x57\x85"
-#define S_FINDNAME_SIG_SVENGINE "\x53\x55\x8B\x6C\x24\x0C\x56\x33\xF6\x57\x85\xED\x75\x2A\x68"
-
-#define S_STARTDYNAMICSOUND_SIG_BLOB "\x83\xEC\x48\xA1\x2A\x2A\x2A\x2A\x53\x55\x56\x85\xC0\x57\xC7\x44\x24\x10\x00\x00\x00\x00"
-#define S_STARTDYNAMICSOUND_SIG_NEW "\x55\x8B\xEC\x83\xEC\x48\xA1\x2A\x2A\x2A\x2A\x53\x56\x57\x85\xC0\xC7\x45\xFC\x00\x00\x00\x00"
-#define S_STARTDYNAMICSOUND_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x5C\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x83\x3D\x2A\x2A\x2A\x2A\x2A\x8B\x45\x08"
-#define S_STARTDYNAMICSOUND_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x54\x8B\x44\x24\x5C\x55"
-
-#define S_STARTSTATICSOUND_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x48\x57\x8B\x7C\x24\x5C"
-#define S_STARTSTATICSOUND_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x50\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x57"
-#define S_STARTSTATICSOUND_SIG_NEW "\x55\x8B\xEC\x83\xEC\x44\x53\x56\x57\x8B\x7D\x10\x85\xFF\xC7\x45\xFC\x00\x00\x00\x00"
-#define S_STARTSTATICSOUND_SIG_BLOB "\x83\xEC\x44\x53\x55\x8B\x6C\x24\x58\x56\x85\xED\x57"
-
-#define S_LOADSOUND_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\x8B\x8C\x24\x2A\x2A\x00\x00\x56\x8B\xB4\x24\x2A\x2A\x00\x00\x8A\x06\x3C\x2A"
-#define S_LOADSOUND_SIG_HL25 "\x55\x8B\xEC\x81\xEC\x34\x05\x00\x00\xA1"
-#define S_LOADSOUND_SIG_8308 "\x55\x8B\xEC\x81\xEC\x28\x05\x00\x00\x53\x8B\x5D\x08"
-#define S_LOADSOUND_SIG_NEW "\x55\x8B\xEC\x81\xEC\x44\x05\x00\x00\x53\x56\x8B\x75\x08"
-#define S_LOADSOUND_SIG_BLOB "\x81\xEC\x2A\x2A\x00\x00\x53\x8B\x9C\x24\x2A\x2A\x00\x00\x55\x56\x8A\x03\x57"
-
-#define SEQUENCE_GETSENTENCEBYINDEX_SIG_SVENGINE "\x8B\x0D\x2A\x2A\x2A\x2A\x2A\x33\x2A\x85\xC9\x2A\x2A\x8B\x2A\x24\x08\x8B\x41\x04\x2A\x2A\x3B\x2A\x2A\x2A\x8B\x49\x0C"
-#define SEQUENCE_GETSENTENCEBYINDEX_SIG_HL25 "\x55\x8B\xEC\x8B\x0D\x2A\x2A\x2A\x2A\x56\x33"
-#define SEQUENCE_GETSENTENCEBYINDEX_SIG_NEW "\x55\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x33\xC9\x85\xC0\x2A\x2A\x2A\x8B\x75\x08\x8B\x50\x04"
-#define SEQUENCE_GETSENTENCEBYINDEX_SIG_BLOB "\xA1\x2A\x2A\x2A\x2A\x33\xC9\x85\xC0\x56\x2A\x2A\x8B\x74\x24\x08\x8B\x50\x04"
-
-#if 0
-#define VGUIWRAP2_PAINT_SIG_SVENGINE "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x44\x24\x10\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x2A\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x85\xC0"
-#define VGUIWRAP2_PAINT_SIG_HL25 "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x2A\x33\xFF\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\x89\x7D"
-#define VGUIWRAP2_PAINT_SIG_NEW "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x2A\x33\xFF\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\x89\x7D"
-#define VGUIWRAP2_PAINT_SIG_BLOB "\x55\x8B\xEC\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x2A\x33\xFF\x2A\x2A\x0F\x2A\x2A\x2A\x2A\x2A\x89\x7D"
-#endif
-
-#define SCR_BEGIN_LOADING_PLAQUE "\x6A\x01\xE8\x2A\x2A\x2A\x2A\xA1\x2A\x2A\x2A\x2A\x83\xC4\x04\x83\xF8\x03"
-
 double *cl_time = NULL;
 double *cl_oldtime = NULL;
 double *realtime = NULL;
@@ -104,28 +64,67 @@ PVOID VGUI2_FindPanelInit(PVOID TextBase, ULONG TextSize)
 		}
 		else
 		{
-			const char sigs2[] = "\x6A\x18\x2A\x2A\x2A\x00\x2A\x2A\x2A\x00\x2A\x2A\x2A\x00\x2A\x2A\x2A\x00\x6A\x40";
-			Panel_Init_Push = (PUCHAR)Search_Pattern_From_Size(TextBase, TextSize, sigs2);
-			if (Panel_Init_Push)
+			//  mov     dword ptr [ebx+24h], 2
+			// C7 46 24 02 00 00 00                                mov     dword ptr [esi+24h], 2
+			const char sigs2[] = "\x6A\x18\xC6";
+			PUCHAR SearchBegin = (PUCHAR)TextBase;
+			PUCHAR SearchLimit = (PUCHAR)TextBase + TextSize;
+			while (SearchBegin < SearchLimit)
 			{
-				Panel_Init_Push += Sig_Length(sigs2);
-			}
-			else
-			{
-				const char sigs3[] = "\x6A\x18\x6A\x40\x53\x53";
-				Panel_Init_Push = (PUCHAR)Search_Pattern_From_Size(TextBase, TextSize, sigs3);
-				if (Panel_Init_Push)
+				PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, sigs2);
+				if (pFound)
 				{
-					Panel_Init_Push += Sig_Length(sigs3);
+					typedef struct
+					{
+						int instCount_push40h;
+						int instCount_call;
+						PVOID pushaddr;
+					}VGUI2_FindPanelInit_SearchContext;
+
+					VGUI2_FindPanelInit_SearchContext ctx2;
+
+					g_pMetaHookAPI->DisasmRanges(pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+						auto pinst = (cs_insn*)inst;
+						auto ctx = (VGUI2_FindPanelInit_SearchContext*)context;
+
+						if (!ctx->instCount_push40h &&
+							pinst->id == X86_INS_PUSH &&
+							pinst->detail->x86.op_count == 1 &&
+							pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+							pinst->detail->x86.operands[0].imm == 0x40)
+						{
+							ctx->instCount_push40h = instCount;
+							ctx->pushaddr = address;
+						}
+
+						if (address[0] == 0xE8)
+						{
+							ctx->instCount_call = instCount;
+							return TRUE;
+						}
+
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						if (pinst->id == X86_INS_RET)
+							return TRUE;
+
+						return FALSE;
+
+					}, 0, &ctx2);
+
+					if (ctx2.instCount_call > ctx2.instCount_push40h && ctx2.instCount_call < ctx2.instCount_push40h + 15)
+					{
+						Panel_Init_Push = (decltype(Panel_Init_Push))ctx2.pushaddr;
+						break;
+					}
+
+					SearchBegin = pFound + Sig_Length(sigs2);
 				}
 				else
 				{
-					const char sigs4[] = "\x6A\x18\x6A\x40\x50\x50";
-					Panel_Init_Push = (PUCHAR)Search_Pattern_From_Size(TextBase, TextSize, sigs4);
-					if (Panel_Init_Push)
-					{
-						Panel_Init_Push += Sig_Length(sigs4);
-					}
+					break;
 				}
 			}
 		}
@@ -152,7 +151,7 @@ PVOID VGUI2_FindPanelInit(PVOID TextBase, ULONG TextSize)
 
 				return FALSE;
 
-				}, 0, &Panel_Init);
+			}, 0, &Panel_Init);
 		}
 	}
 

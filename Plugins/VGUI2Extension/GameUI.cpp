@@ -3002,6 +3002,16 @@ void ServerBrowser_FillAddress(void)
 
 	if (g_iEngineType != ENGINE_GOLDSRC_HL25)
 	{
+		typedef struct
+		{
+			std::set<PVOID> insnSets;
+
+			int instCount_push270h;
+
+		}OnButtonToggledSearchContext;
+
+		OnButtonToggledSearchContext ctx = { };
+
 		char pattern[] = "\x68\x16\x01\x00\x00\x68\x70\x02\x00";
 		auto CBaseGamesPage_OnButtonToggled_SetSizeImm = g_pMetaHookAPI->SearchPattern(ServerBrowserTextBase, ServerBrowserTextSize, pattern, sizeof(pattern) - 1);
 		Sig_VarNotFound(CBaseGamesPage_OnButtonToggled_SetSizeImm);
@@ -3012,10 +3022,13 @@ void ServerBrowser_FillAddress(void)
 		g_pMetaHookAPI->DisasmRanges(CBaseGamesPage_OnButtonToggled_SetSizeImm, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 			auto pinst = (cs_insn*)inst;
+			auto ctx = (OnButtonToggledSearchContext*)context;
 
 			if (address[0] == 0xE8 && instCount <= 8)
 			{
 				gPrivateFuncs.ServerBrowser_Panel_SetSize = (decltype(gPrivateFuncs.ServerBrowser_Panel_SetSize))GetCallAddress(address);
+
+				ctx->insnSets.emplace(address);
 
 				return TRUE;
 			}
@@ -3028,9 +3041,71 @@ void ServerBrowser_FillAddress(void)
 
 			return FALSE;
 
-			}, 0, NULL);
+		}, 0, &ctx);
 
-		Sig_FuncNotFound(ServerBrowser_LoadControlSettingsAndUserConfig);
+		Sig_FuncNotFound(ServerBrowser_Panel_SetSize);
+
+		char pattern2[] = "\x68\x16\x01\x00\x00";
+		PUCHAR SearchBegin = (PUCHAR)ServerBrowserTextBase;
+		PUCHAR SearchLimit = (PUCHAR)ServerBrowserTextBase + ServerBrowserTextSize;
+		while (SearchBegin < SearchLimit)
+		{
+			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern2);
+			if (pFound)
+			{
+				if (ctx.insnSets.find(pFound) == ctx.insnSets.end())
+				{
+					ctx.instCount_push270h = 0;
+					g_pMetaHookAPI->DisasmRanges(pFound, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+						auto pinst = (cs_insn*)inst;
+						auto ctx = (OnButtonToggledSearchContext*)context;
+
+						if (!ctx->instCount_push270h &&
+							pinst->id == X86_INS_PUSH &&
+							pinst->detail->x86.op_count == 1 &&
+							pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+							pinst->detail->x86.operands[0].imm == 0x270)
+						{
+							ctx->instCount_push270h = instCount;
+						}
+
+						if (address[0] == 0xE8 && instCount > ctx->instCount_push270h && instCount <= ctx->instCount_push270h + 5)
+						{
+							PVOID calladdr = GetCallAddress(address);
+
+							if (gPrivateFuncs.ServerBrowser_Panel_SetSize == calladdr)
+							{
+								ctx->insnSets.emplace(address);
+								return TRUE;
+							}
+						}
+
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						if (pinst->id == X86_INS_RET)
+							return TRUE;
+
+						return FALSE;
+
+					}, 0, &ctx);
+				}
+
+				SearchBegin = pFound + Sig_Length(pattern2);
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		for (auto insn : ctx.insnSets)
+		{
+			auto addr = (PUCHAR)insn;
+			int rva = (PUCHAR)CBaseGamesPage_OnButtonToggled_ServerBrowser_Panel_SetSize - (addr + 5);
+			g_pMetaHookAPI->WriteMemory(addr + 1, &rva, 4);
+		}
 	}
 
 	if (1)
@@ -3134,13 +3209,7 @@ void ServerBrowser_FillAddress(void)
 		Sig_FuncNotFound(ServerBrowser_KeyValues_ctor);
 		Sig_FuncNotFound(ServerBrowser_KeyValues_LoadFromFile);
 
-		gPrivateFuncs.CBaseGamesPage_OnButtonToggled = (decltype(gPrivateFuncs.CBaseGamesPage_OnButtonToggled))((PUCHAR)ServerBrowserBase + 0x3450);
-
-		gPrivateFuncs.ServerBrowser_Panel_SetSize = (decltype(gPrivateFuncs.ServerBrowser_Panel_SetSize))GetCallAddress((PUCHAR)ServerBrowserBase + 0x3486, 1);
-
-		int rva = (PUCHAR)CBaseGamesPage_OnButtonToggled_ServerBrowser_Panel_SetSize - ((PUCHAR)ServerBrowserBase + 0x348B);
-		g_pMetaHookAPI->WriteMemory((PUCHAR)ServerBrowserBase + 0x3486 + 1, &rva, 4);
-
+		//gPrivateFuncs.CBaseGamesPage_OnButtonToggled = (decltype(gPrivateFuncs.CBaseGamesPage_OnButtonToggled))((PUCHAR)ServerBrowserBase + 0x3450);
 	}
 
 	gPrivateFuncs.ServerBrowser_Panel_Init = (decltype(gPrivateFuncs.ServerBrowser_Panel_Init))VGUI2_FindPanelInit(ServerBrowserTextBase, ServerBrowserTextSize);
