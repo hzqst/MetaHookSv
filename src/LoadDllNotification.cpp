@@ -7,6 +7,7 @@
 
 PVOID MH_GetEngineBase(void);
 PVOID MH_GetClientBase(void);
+bool MH_IsTransactionHookEnabled(void);
 void MH_TransactionHookBegin(void);
 void MH_TransactionHookCommit(void);
 
@@ -113,14 +114,24 @@ void MH_DispatchLoadBlobNotificationCallback(BlobHandle_t hBlob, int flags)
 	ctx.FullDllName = NULL;
 	ctx.BaseDllName = NULL;
 
-	MH_TransactionHookBegin();
-
-	for (auto callback : g_LoadDllNotificationCallbacks)
+	if (!MH_IsTransactionHookEnabled())
 	{
-		callback(&ctx);
-	}
+		MH_TransactionHookBegin();
 
-	MH_TransactionHookCommit();
+		for (auto callback : g_LoadDllNotificationCallbacks)
+		{
+			callback(&ctx);
+		}
+
+		MH_TransactionHookCommit();
+	}
+	else
+	{
+		for (auto callback : g_LoadDllNotificationCallbacks)
+		{
+			callback(&ctx);
+		}
+	}
 }
 
 void MH_DispatchLoadLdrDllNotificationCallback(PCUNICODE_STRING FullDllName, PCUNICODE_STRING BaseDllName, PVOID ImageBase, ULONG ImageSize, int flags)
@@ -154,14 +165,24 @@ void MH_DispatchLoadLdrDllNotificationCallback(PCUNICODE_STRING FullDllName, PCU
 		ctx.BaseDllName = wBaseDllName.c_str();
 	}
 
-	MH_TransactionHookBegin();
-
-	for (auto callback : g_LoadDllNotificationCallbacks)
+	if (!MH_IsTransactionHookEnabled())
 	{
-		callback(&ctx);
-	}
+		MH_TransactionHookBegin();
 
-	MH_TransactionHookCommit();
+		for (auto callback : g_LoadDllNotificationCallbacks)
+		{
+			callback(&ctx);
+		}
+
+		MH_TransactionHookCommit();
+	}
+	else
+	{
+		for (auto callback : g_LoadDllNotificationCallbacks)
+		{
+			callback(&ctx);
+		}
+	}
 }
 
 PLDR_DATA_TABLE_ENTRY GetLdrEntryInfoByDllBase(PVOID DllBase)

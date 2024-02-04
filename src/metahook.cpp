@@ -853,6 +853,11 @@ void MH_LoadPlugins(const char * szGameName, const char* szGameFullPath)
 	infile.close();
 }
 
+bool MH_IsTransactionHookEnabled(void)
+{
+	return g_bTransactionHook;
+}
+
 void MH_TransactionHookBegin(void)
 {
 	g_bTransactionHook = true;
