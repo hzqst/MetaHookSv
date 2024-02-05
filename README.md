@@ -60,7 +60,7 @@ The binaries or executables of Sven Co-op are not signed with digital signatures
 
 * The SDL2.dll fixes a bug that the IME input handler from original SDL library provided by valve was causing buffer overflow and game crash when using non-english IME. you don't need to copy it if you don't have a non-english IME.
 
-* Valve fixed this issue for SDL2 in HL25th patch, you don't have to replace SDL2 if you are running HL25th engine.
+* Valve has fixed this issue in the HL25th update, you don't have to replace SDL2 if you are running HL25th engine.
 
 ## Build Requirements
 
