@@ -293,6 +293,7 @@ mspriteframe_t* R_GetSpriteFrame(msprite_t* pSprite, int frame)
 }
 
 //Credits to https://github.com/FWGS/xashxt-fwgs/blob/dee61d6cf0a8f681c322e863f8df1d5e6f22443e/client/render/r_sprite.cpp#L126
+//And https://github.com/FWGS/xash3d-fwgs/blob/33da68b013fd9a2c683316758d751308d1a98109/ref/gl/gl_sprite.c#L462
 void R_GetSpriteFrameInterpolant(cl_entity_t* ent, msprite_t* pSprite, mspriteframe_t** oldframe, mspriteframe_t** curframe, float *lerp)
 {
 #if 0
@@ -664,7 +665,7 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 	glUniform3f(3, r_entorigin[0], r_entorigin[1], r_entorigin[2]);
 	glUniform3f(4, ent->angles[0], ent->angles[1], ent->angles[2]);
 	glUniform1f(5, scale);
-	glUniform1f(6, lerp);
+	glUniform1f(6, math_clamp(lerp, 0.0f, 1.0f));
 
 	GL_Bind(frame->gl_texturenum);
 
