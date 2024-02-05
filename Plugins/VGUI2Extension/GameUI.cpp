@@ -18,6 +18,7 @@
 
 static hook_t* g_phook_ServerBrowser_Panel_Init = NULL;
 static hook_t* g_phook_ServerBrowser_KeyValues_LoadFromFile = NULL;
+//static hook_t* g_phook_ServerBrowser_LoadControlSettingsAndUserConfig = NULL;
 static hook_t* g_phook_GameUI_Panel_Init = NULL;
 static hook_t* g_phook_GameUI_KeyValues_LoadFromFile = NULL;
 static hook_t* g_phook_CGameConsoleDialog_ctor = NULL;
@@ -96,18 +97,102 @@ int GetPatchedGetFontTall(int fontTall)
 	return fontTall;
 }
 
+bool VGUI2_IsPanelSetSize(PVOID Candidate)
+{
+	typedef struct
+	{
+		bool bFoundCall10h;
+	}VGUI2_IsPanelSetSize_SearchContext;
+
+	VGUI2_IsPanelSetSize_SearchContext ctx = { 0 };
+
+	g_pMetaHookAPI->DisasmRanges(Candidate, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+		auto pinst = (cs_insn*)inst;
+		auto ctx = (VGUI2_IsPanelSetSize_SearchContext*)context;
+
+		if (!ctx->bFoundCall10h &&
+			pinst->id == X86_INS_CALL &&
+			pinst->detail->x86.op_count == 1 &&
+			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[0].mem.base &&
+			pinst->detail->x86.operands[0].mem.disp == 0x10)
+		{
+			ctx->bFoundCall10h = true;
+			return TRUE;
+		}
+
+		if (address[0] == 0xCC)
+			return TRUE;
+
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
+
+		return FALSE;
+
+	}, 0, &ctx);
+
+	return ctx.bFoundCall10h;
+}
+
+bool VGUI2_IsPanelSetMinimumSize(PVOID Candidate)
+{
+	typedef struct
+	{
+		bool bFoundCall18h;
+	}VGUI2_IsPanelSetMinimumSize_SearchContext;
+
+	VGUI2_IsPanelSetMinimumSize_SearchContext ctx = { 0 };
+
+	g_pMetaHookAPI->DisasmRanges(Candidate, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+		auto pinst = (cs_insn*)inst;
+		auto ctx = (VGUI2_IsPanelSetMinimumSize_SearchContext*)context;
+
+		if (!ctx->bFoundCall18h &&
+			pinst->id == X86_INS_CALL &&
+			pinst->detail->x86.op_count == 1 &&
+			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[0].mem.base &&
+			pinst->detail->x86.operands[0].mem.disp == 0x18)
+		{
+			ctx->bFoundCall18h = true;
+			return TRUE;
+		}
+
+		if (address[0] == 0xCC)
+			return TRUE;
+
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
+
+		return FALSE;
+
+	}, 0, &ctx);
+
+	return ctx.bFoundCall18h;
+}
+
 /*
 ====================================================================
 ServerBrowser inline hook
 ====================================================================
 */
 
-void __fastcall CBaseGamesPage_OnButtonToggled_ServerBrowser_Panel_SetSize(vgui::Panel* pthis, int dummy, int width, int height)
+void __fastcall ServerBrowser_Panel_SetSize(vgui::Panel* pthis, int dummy, int width, int height)
 {
 	width = g_pVGuiSchemeManager2->GetProportionalScaledValue(width);
 	height = g_pVGuiSchemeManager2->GetProportionalScaledValue(height);
 
 	gPrivateFuncs.ServerBrowser_Panel_SetSize(pthis, 0, width, height);
+}
+
+void __fastcall ServerBrowser_Panel_SetMinimumSize(vgui::Panel* pthis, int dummy, int width, int height)
+{
+	width = g_pVGuiSchemeManager2->GetProportionalScaledValue(width);
+	height = g_pVGuiSchemeManager2->GetProportionalScaledValue(height);
+
+	gPrivateFuncs.ServerBrowser_Panel_SetMinimumSize(pthis, 0, width, height);
 }
 
 #if 0
@@ -145,14 +230,19 @@ void __fastcall ServerBrowser_LoadControlSettingsAndUserConfig(vgui::Panel* pthi
 		{
 			auto panel_vftable = *(PVOID**)pthis;
 			gPrivateFuncs.ServerBrowser_LoadControlSettings = (decltype(gPrivateFuncs.ServerBrowser_LoadControlSettings))panel_vftable[536 / 4];
-			Install_InlineHook(ServerBrowser_LoadControlSettings);
+			//Install_InlineHook(ServerBrowser_LoadControlSettings);
 		}
 
 		//int offset_AutoResize = 92;
 
 		//*(int*)((PUCHAR)pthis + offset_AutoResize) = 0;
 
-		gPrivateFuncs.ServerBrowser_LoadControlSettings(pthis, 0, "Servers/DialogServerBrowser.res", NULL);
+		//gPrivateFuncs.ServerBrowser_LoadControlSettings(pthis, 0, "Servers/DialogServerBrowser.res", NULL);
+
+		gPrivateFuncs.ServerBrowser_LoadControlSettingsAndUserConfig(pthis, dummy, dialogResourceName, dialogID);
+
+
+
 		return;
 	}
 
@@ -2957,7 +3047,7 @@ void ServerBrowser_FillAddress(void)
 		Sys_Error("Failed to locate section \".data\" in ServerBrowser.dll");
 		return;
 	}
-
+#if 0
 	if (1)
 	{
 		const char sigs1[] = "Servers/DialogServerBrowser.res";
@@ -2997,6 +3087,7 @@ void ServerBrowser_FillAddress(void)
 
 		Sig_FuncNotFound(ServerBrowser_LoadControlSettingsAndUserConfig);
 	}
+#endif
 
 	if (g_iEngineType != ENGINE_GOLDSRC_HL25)
 	{
@@ -3006,22 +3097,22 @@ void ServerBrowser_FillAddress(void)
 			sPage_Filters_String = g_pMetaHookAPI->SearchPattern(ServerBrowserDataBase, ServerBrowserDataSize, sigs1, sizeof(sigs1) - 1);
 		if (sPage_Filters_String)
 		{
-			typedef struct
-			{
-				std::set<PVOID> insnSets;
-
-				int instCount_push270h;
-
-			}OnButtonToggledSearchContext;
-
-			OnButtonToggledSearchContext ctx = { };
-
 			char pattern[] = "\x68\x16\x01\x00\x00\x68\x70\x02\x00";
 			auto CBaseGamesPage_OnButtonToggled_SetSizeImm = g_pMetaHookAPI->SearchPattern(ServerBrowserTextBase, ServerBrowserTextSize, pattern, sizeof(pattern) - 1);
 			Sig_VarNotFound(CBaseGamesPage_OnButtonToggled_SetSizeImm);
 
 			//gPrivateFuncs.CServerBrowserDialog_ctor = (decltype(gPrivateFuncs.CServerBrowserDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBegin(DialogServerBrowser_Call, 0x800);
 			//Sig_FuncNotFound(CServerBrowserDialog_ctor);
+
+			typedef struct
+			{
+				std::set<PVOID> insnSets_SetSize;
+
+				int instCount_push270h;
+
+			}OnButtonToggledSearchContext;
+
+			OnButtonToggledSearchContext ctx = { };
 
 			g_pMetaHookAPI->DisasmRanges(CBaseGamesPage_OnButtonToggled_SetSizeImm, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
@@ -3030,9 +3121,13 @@ void ServerBrowser_FillAddress(void)
 
 				if (address[0] == 0xE8 && instCount <= 8)
 				{
-					gPrivateFuncs.ServerBrowser_Panel_SetSize = (decltype(gPrivateFuncs.ServerBrowser_Panel_SetSize))GetCallAddress(address);
+					auto Candidate = GetCallAddress(address);
 
-					ctx->insnSets.emplace(address);
+					if (VGUI2_IsPanelSetSize(Candidate))
+					{
+						gPrivateFuncs.ServerBrowser_Panel_SetSize = (decltype(gPrivateFuncs.ServerBrowser_Panel_SetSize))Candidate;
+						ctx->insnSets_SetSize.emplace(address);
+					}
 
 					return TRUE;
 				}
@@ -3045,7 +3140,7 @@ void ServerBrowser_FillAddress(void)
 
 				return FALSE;
 
-				}, 0, &ctx);
+			}, 0, &ctx);
 
 			Sig_FuncNotFound(ServerBrowser_Panel_SetSize);
 
@@ -3057,7 +3152,7 @@ void ServerBrowser_FillAddress(void)
 				PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern2);
 				if (pFound)
 				{
-					if (ctx.insnSets.find(pFound) == ctx.insnSets.end())
+					if (ctx.insnSets_SetSize.find(pFound) == ctx.insnSets_SetSize.end())
 					{
 						ctx.instCount_push270h = 0;
 						g_pMetaHookAPI->DisasmRanges(pFound, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
@@ -3080,7 +3175,14 @@ void ServerBrowser_FillAddress(void)
 
 								if (gPrivateFuncs.ServerBrowser_Panel_SetSize == calladdr)
 								{
-									ctx->insnSets.emplace(address);
+									ctx->insnSets_SetSize.emplace(address);
+									return TRUE;
+								}
+
+								if (!gPrivateFuncs.ServerBrowser_Panel_SetSize && VGUI2_IsPanelSetSize(calladdr))
+								{
+									gPrivateFuncs.ServerBrowser_Panel_SetSize = (decltype(gPrivateFuncs.ServerBrowser_Panel_SetSize))calladdr;
+									ctx->insnSets_SetSize.emplace(address);
 									return TRUE;
 								}
 							}
@@ -3093,7 +3195,7 @@ void ServerBrowser_FillAddress(void)
 
 							return FALSE;
 
-							}, 0, &ctx);
+						}, 0, &ctx);
 					}
 
 					SearchBegin = pFound + Sig_Length(pattern2);
@@ -3104,12 +3206,116 @@ void ServerBrowser_FillAddress(void)
 				}
 			}
 
-			for (auto insn : ctx.insnSets)
+			for (auto insn : ctx.insnSets_SetSize)
 			{
 				auto addr = (PUCHAR)insn;
-				int rva = (PUCHAR)CBaseGamesPage_OnButtonToggled_ServerBrowser_Panel_SetSize - (addr + 5);
+				int rva = (PUCHAR)ServerBrowser_Panel_SetSize - (addr + 5);
 				g_pMetaHookAPI->WriteMemory(addr + 1, &rva, 4);
 			}
+		}
+	}
+
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25)
+	{
+		typedef struct
+		{
+			std::set<PVOID> insnSets_SetSize;
+			std::set<PVOID> insnSets_SetMinimumSize;
+
+			int instCount_push280h;
+
+		}CServerBrowserDialog_ctor_SearchContext;
+
+		CServerBrowserDialog_ctor_SearchContext ctx = { };
+
+		char pattern[] = "\x68\x80\x01\x00\x00\x68\x80\x02\x00\x00";
+		PUCHAR SearchBegin = (PUCHAR)ServerBrowserTextBase;
+		PUCHAR SearchLimit = (PUCHAR)ServerBrowserTextBase + ServerBrowserTextSize;
+		while (SearchBegin < SearchLimit)
+		{
+			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+			if (pFound)
+			{
+				if (ctx.insnSets_SetSize.find(pFound) == ctx.insnSets_SetSize.end() &&
+					ctx.insnSets_SetMinimumSize.find(pFound) == ctx.insnSets_SetMinimumSize.end())
+				{
+					ctx.instCount_push280h = 0;
+					g_pMetaHookAPI->DisasmRanges(pFound, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+						auto pinst = (cs_insn*)inst;
+						auto ctx = (CServerBrowserDialog_ctor_SearchContext*)context;
+
+						if (!ctx->instCount_push280h &&
+							pinst->id == X86_INS_PUSH &&
+							pinst->detail->x86.op_count == 1 &&
+							pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+							pinst->detail->x86.operands[0].imm == 0x280)
+						{
+							ctx->instCount_push280h = instCount;
+						}
+
+						if (address[0] == 0xE8 && instCount > ctx->instCount_push280h && instCount <= ctx->instCount_push280h + 5)
+						{
+							PVOID calladdr = GetCallAddress(address);
+
+							if (gPrivateFuncs.ServerBrowser_Panel_SetSize == calladdr)
+							{
+								ctx->insnSets_SetSize.emplace(address);
+								return TRUE;
+							}
+
+							if (gPrivateFuncs.ServerBrowser_Panel_SetMinimumSize == calladdr)
+							{
+								ctx->insnSets_SetMinimumSize.emplace(address);
+								return TRUE;
+							}
+
+							if (!gPrivateFuncs.ServerBrowser_Panel_SetSize && VGUI2_IsPanelSetSize(calladdr))
+							{
+								gPrivateFuncs.ServerBrowser_Panel_SetSize = (decltype(gPrivateFuncs.ServerBrowser_Panel_SetSize))calladdr;
+								ctx->insnSets_SetSize.emplace(address);
+								return TRUE;
+							}
+
+							if (!gPrivateFuncs.ServerBrowser_Panel_SetMinimumSize && VGUI2_IsPanelSetMinimumSize(calladdr))
+							{
+								gPrivateFuncs.ServerBrowser_Panel_SetMinimumSize = (decltype(gPrivateFuncs.ServerBrowser_Panel_SetMinimumSize))calladdr;
+								ctx->insnSets_SetMinimumSize.emplace(address);
+								return TRUE;
+							}
+						}
+
+						if (address[0] == 0xCC)
+							return TRUE;
+
+						if (pinst->id == X86_INS_RET)
+							return TRUE;
+
+						return FALSE;
+
+					}, 0, &ctx);
+				}
+
+				SearchBegin = pFound + Sig_Length(pattern);
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		for (auto insn : ctx.insnSets_SetSize)
+		{
+			auto addr = (PUCHAR)insn;
+			int rva = (PUCHAR)ServerBrowser_Panel_SetSize - (addr + 5);
+			g_pMetaHookAPI->WriteMemory(addr + 1, &rva, 4);
+		}
+
+		for (auto insn : ctx.insnSets_SetMinimumSize)
+		{
+			auto addr = (PUCHAR)insn;
+			int rva = (PUCHAR)ServerBrowser_Panel_SetMinimumSize - (addr + 5);
+			g_pMetaHookAPI->WriteMemory(addr + 1, &rva, 4);
 		}
 	}
 
@@ -3217,16 +3423,21 @@ void ServerBrowser_FillAddress(void)
 
 	gPrivateFuncs.ServerBrowser_Panel_Init = (decltype(gPrivateFuncs.ServerBrowser_Panel_Init))VGUI2_FindPanelInit(ServerBrowserTextBase, ServerBrowserTextSize);
 	Sig_FuncNotFound(ServerBrowser_Panel_Init);
+
+	//gPrivateFuncs.ServerBrowser_LoadControlSettingsAndUserConfig = (decltype(gPrivateFuncs.ServerBrowser_LoadControlSettingsAndUserConfig))((PUCHAR)ServerBrowserBase + 0x19E80);
+	//Sig_FuncNotFound(ServerBrowser_LoadControlSettingsAndUserConfig);
 }
 
 void ServerBrowser_InstallHooks(void)
 {
 	Install_InlineHook(ServerBrowser_Panel_Init);
 	Install_InlineHook(ServerBrowser_KeyValues_LoadFromFile);
+	//Install_InlineHook(ServerBrowser_LoadControlSettingsAndUserConfig);
 }
 
 void ServerBrowser_UninstallHooks(void)
 {
 	Uninstall_Hook(ServerBrowser_Panel_Init);
 	Uninstall_Hook(ServerBrowser_KeyValues_LoadFromFile);
+	//Uninstall_Hook(ServerBrowser_LoadControlSettingsAndUserConfig);
 }

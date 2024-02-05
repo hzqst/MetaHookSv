@@ -56,14 +56,14 @@ bool VGUI2_IsPanelInit(PVOID Candidate)
 	typedef struct
 	{
 		bool bFoundMov2;//C7 46 24 02 00 00 00                                mov     dword ptr [esi+24h], 2
-	}VVGUI2_IsPanelInit_SearchContext;
+	}VGUI2_IsPanelInit_SearchContext;
 
-	VVGUI2_IsPanelInit_SearchContext ctx = { 0 };
+	VGUI2_IsPanelInit_SearchContext ctx = { 0 };
 
 	g_pMetaHookAPI->DisasmRanges(Candidate, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 		auto pinst = (cs_insn*)inst;
-		auto ctx = (VVGUI2_IsPanelInit_SearchContext*)context;
+		auto ctx = (VGUI2_IsPanelInit_SearchContext*)context;
 
 		if (!ctx->bFoundMov2 &&
 			pinst->id == X86_INS_MOV &&
