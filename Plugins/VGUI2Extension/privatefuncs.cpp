@@ -51,6 +51,45 @@ void SDL2_FillAddress(void)
 	}
 }
 
+bool VGUI2_IsPanelInit(PVOID Candidate)
+{
+	typedef struct
+	{
+		bool bFoundMov2;//C7 46 24 02 00 00 00                                mov     dword ptr [esi+24h], 2
+	}VVGUI2_IsPanelInit_SearchContext;
+
+	VVGUI2_IsPanelInit_SearchContext ctx = { 0 };
+
+	g_pMetaHookAPI->DisasmRanges(Candidate, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+		auto pinst = (cs_insn*)inst;
+		auto ctx = (VVGUI2_IsPanelInit_SearchContext*)context;
+
+		if (!ctx->bFoundMov2 &&
+			pinst->id == X86_INS_MOV &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[0].mem.disp == 0x24 &&
+			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+			pinst->detail->x86.operands[1].imm == 2)
+		{
+			ctx->bFoundMov2 = true;
+			return TRUE;
+		}
+
+		if (address[0] == 0xCC)
+			return TRUE;
+
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
+
+		return FALSE;
+
+	}, 0, &ctx);
+
+	return ctx.bFoundMov2;
+}
+
 PVOID VGUI2_FindPanelInit(PVOID TextBase, ULONG TextSize)
 {
 	PVOID Panel_Init = NULL;
@@ -61,97 +100,265 @@ PVOID VGUI2_FindPanelInit(PVOID TextBase, ULONG TextSize)
 		if (Panel_Init_Push)
 		{
 			Panel_Init_Push += Sig_Length(sigs);
-		}
-		else
-		{
-			//  mov     dword ptr [ebx+24h], 2
-			// C7 46 24 02 00 00 00                                mov     dword ptr [esi+24h], 2
-			const char sigs2[] = "\x6A\x18\xC6";
-			PUCHAR SearchBegin = (PUCHAR)TextBase;
-			PUCHAR SearchLimit = (PUCHAR)TextBase + TextSize;
-			while (SearchBegin < SearchLimit)
+
+			if (Panel_Init_Push)
 			{
-				PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, sigs2);
-				if (pFound)
-				{
-					typedef struct
+				g_pMetaHookAPI->DisasmRanges(Panel_Init_Push, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto pinst = (cs_insn*)inst;
+					auto pPanel_Init = (PVOID*)context;
+
+					if (address[0] == 0xE8 && instCount <= 15)
 					{
-						int instCount_push40h;
-						int instCount_call;
-						PVOID pushaddr;
-					}VGUI2_FindPanelInit_SearchContext;
-
-					VGUI2_FindPanelInit_SearchContext ctx2;
-
-					g_pMetaHookAPI->DisasmRanges(pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-						auto pinst = (cs_insn*)inst;
-						auto ctx = (VGUI2_FindPanelInit_SearchContext*)context;
-
-						if (!ctx->instCount_push40h &&
-							pinst->id == X86_INS_PUSH &&
-							pinst->detail->x86.op_count == 1 &&
-							pinst->detail->x86.operands[0].type == X86_OP_IMM &&
-							pinst->detail->x86.operands[0].imm == 0x40)
+						auto Candidate = GetCallAddress(address);
+						if (VGUI2_IsPanelInit(Candidate))
 						{
-							ctx->instCount_push40h = instCount;
-							ctx->pushaddr = address;
+							(*pPanel_Init) = Candidate;
 						}
-
-						if (address[0] == 0xE8)
-						{
-							ctx->instCount_call = instCount;
-							return TRUE;
-						}
-
-						if (address[0] == 0xCC)
-							return TRUE;
-
-						if (pinst->id == X86_INS_RET)
-							return TRUE;
-
-						return FALSE;
-
-					}, 0, &ctx2);
-
-					if (ctx2.instCount_call > ctx2.instCount_push40h && ctx2.instCount_call < ctx2.instCount_push40h + 15)
-					{
-						Panel_Init_Push = (decltype(Panel_Init_Push))ctx2.pushaddr;
-						break;
+						return TRUE;
 					}
 
-					SearchBegin = pFound + Sig_Length(sigs2);
-				}
-				else
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+
+				}, 0, &Panel_Init);
+			}
+
+			if (Panel_Init)
+				return Panel_Init;
+		}
+	}
+
+	if (1)
+	{
+		//  mov     dword ptr [ebx+24h], 2
+		/* 8684 engine
+.text:01DDB7ED 6A 18                                               push    18h
+.text:01DDB7EF C6 47 38 00                                         mov     byte ptr [edi+38h], 0
+.text:01DDB7F3 C6 47 39 00                                         mov     byte ptr [edi+39h], 0
+.text:01DDB7F7 C6 47 3A 00                                         mov     byte ptr [edi+3Ah], 0
+.text:01DDB7FB C6 47 3B 00                                         mov     byte ptr [edi+3Bh], 0
+.text:01DDB7FF 6A 40                                               push    40h ; '@'
+.text:01DDB801 C6 47 3C 00                                         mov     byte ptr [edi+3Ch], 0
+.text:01DDB805 C6 47 3D 00                                         mov     byte ptr [edi+3Dh], 0
+.text:01DDB809 C6 47 3E 00                                         mov     byte ptr [edi+3Eh], 0
+.text:01DDB80D C6 47 3F 00                                         mov     byte ptr [edi+3Fh], 0
+.text:01DDB811 56                                                  push    esi
+.text:01DDB812 89 77 50                                            mov     [edi+50h], esi
+.text:01DDB815 89 77 54                                            mov     [edi+54h], esi
+.text:01DDB818 89 77 58                                            mov     [edi+58h], esi
+.text:01DDB81B 56                                                  push    esi
+.text:01DDB81C 8B CF                                               mov     ecx, edi
+.text:01DDB81E C7 07 FC 0C E2 01                                   mov     dword ptr [edi], offset off_1E20CFC
+.text:01DDB824 E8 17 0A 00 00                                      call    sub_1DDC240
+		*/
+		const char sigs2[] = "\x6A\x18\xC6";
+		PUCHAR SearchBegin = (PUCHAR)TextBase;
+		PUCHAR SearchLimit = (PUCHAR)TextBase + TextSize;
+		while (SearchBegin < SearchLimit)
+		{
+			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, sigs2);
+			if (pFound)
+			{
+				typedef struct
+				{
+					int instCount_push40h;
+					int reg_pushReg;
+					int instCount_pushReg;
+					int instCount_pushReg2;
+					PVOID* pPanel_Init;
+				}VGUI2_FindPanelInit_SearchContext;
+
+				VGUI2_FindPanelInit_SearchContext ctx = { 0 };
+
+				ctx.pPanel_Init = &Panel_Init;
+
+				g_pMetaHookAPI->DisasmRanges(pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto pinst = (cs_insn*)inst;
+					auto ctx = (VGUI2_FindPanelInit_SearchContext*)context;
+
+					if (!ctx->instCount_push40h &&
+						pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+						pinst->detail->x86.operands[0].imm == 0x40)
+					{
+						ctx->instCount_push40h = instCount;
+					}
+
+					if (!ctx->instCount_pushReg &&
+						ctx->instCount_push40h &&
+						instCount > ctx->instCount_push40h &&
+						instCount < ctx->instCount_push40h + 10 &&
+						pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG)
+					{
+						ctx->instCount_pushReg = instCount;
+						ctx->reg_pushReg = pinst->detail->x86.operands[0].reg;
+					}
+
+					if (!ctx->instCount_pushReg2 &&
+						ctx->instCount_pushReg &&
+						instCount > ctx->instCount_pushReg &&
+						instCount < ctx->instCount_pushReg + 8 &&
+						pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						ctx->reg_pushReg == pinst->detail->x86.operands[0].reg)
+					{
+						ctx->instCount_pushReg2 = instCount;
+					}
+
+					if (address[0] == 0xE8)
+					{
+						if (ctx->instCount_pushReg2 &&
+							instCount > ctx->instCount_pushReg2 &&
+							instCount < ctx->instCount_pushReg2 + 6)
+						{
+							auto Candidate = GetCallAddress(address);
+							if (VGUI2_IsPanelInit(Candidate))
+							{
+								(*ctx->pPanel_Init) = Candidate;
+							}
+						}
+						return TRUE;
+					}
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+
+					}, 0, &ctx);
+
+				if (Panel_Init)
 				{
 					break;
 				}
+
+				SearchBegin = pFound + Sig_Length(sigs2);
+			}
+			else
+			{
+				break;
 			}
 		}
-		
-		if (Panel_Init_Push)
+	}
+
+	if (1)
+	{
+		//  mov     dword ptr [ebx+24h], 2
+		/* 8684 serverbrowser.dll
+.text:100203F1 6A 18                                               push    18h
+.text:100203F3 6A 40                                               push    40h ; '@'
+.text:100203F5 53                                                  push    ebx
+.text:100203F6 53                                                  push    ebx
+		*/
+		const char sigs3[] = "\x6A\x18\x6A\x40";
+		PUCHAR SearchBegin = (PUCHAR)TextBase;
+		PUCHAR SearchLimit = (PUCHAR)TextBase + TextSize;
+		while (SearchBegin < SearchLimit)
 		{
-			g_pMetaHookAPI->DisasmRanges(Panel_Init_Push, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-				auto pinst = (cs_insn*)inst;
-				auto pPanel_Init = (PVOID*)context;
-
-				if (address[0] == 0xE8 && instCount <= 15)
+			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, sigs3);
+			if (pFound)
+			{
+				typedef struct
 				{
-					(*pPanel_Init) = GetCallAddress(address);
+					int instCount_push40h;
+					int reg_pushReg;
+					int instCount_pushReg;
+					int instCount_pushReg2;
+					PVOID* pPanel_Init;
+				}VGUI2_FindPanelInit_SearchContext;
 
-					return TRUE;
+				VGUI2_FindPanelInit_SearchContext ctx = { 0 };
+
+				ctx.pPanel_Init = &Panel_Init;
+
+				g_pMetaHookAPI->DisasmRanges(pFound, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto pinst = (cs_insn*)inst;
+					auto ctx = (VGUI2_FindPanelInit_SearchContext*)context;
+
+					if (!ctx->instCount_push40h &&
+						pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+						pinst->detail->x86.operands[0].imm == 0x40)
+					{
+						ctx->instCount_push40h = instCount;
+					}
+
+					if (!ctx->instCount_pushReg &&
+						ctx->instCount_push40h &&
+						instCount > ctx->instCount_push40h &&
+						instCount < ctx->instCount_push40h + 10 &&
+						pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG)
+					{
+						ctx->instCount_pushReg = instCount;
+						ctx->reg_pushReg = pinst->detail->x86.operands[0].reg;
+					}
+
+					if (!ctx->instCount_pushReg2 &&
+						ctx->instCount_pushReg &&
+						instCount > ctx->instCount_pushReg &&
+						instCount < ctx->instCount_pushReg + 8 &&
+						pinst->id == X86_INS_PUSH &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						ctx->reg_pushReg == pinst->detail->x86.operands[0].reg)
+					{
+						ctx->instCount_pushReg2 = instCount;
+					}
+
+					if (address[0] == 0xE8)
+					{
+						if (ctx->instCount_pushReg2 &&
+							instCount > ctx->instCount_pushReg2 &&
+							instCount < ctx->instCount_pushReg2 + 6)
+						{
+							auto Candidate = GetCallAddress(address);
+							if (VGUI2_IsPanelInit(Candidate))
+							{
+								(*ctx->pPanel_Init) = Candidate;
+							}
+						}
+						return TRUE;
+					}
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+
+					}, 0, &ctx);
+
+				if (Panel_Init)
+				{
+					break;
 				}
 
-				if (address[0] == 0xCC)
-					return TRUE;
-
-				if (pinst->id == X86_INS_RET)
-					return TRUE;
-
-				return FALSE;
-
-			}, 0, &Panel_Init);
+				SearchBegin = pFound + Sig_Length(sigs3);
+			}
+			else
+			{
+				break;
+			}
 		}
 	}
 

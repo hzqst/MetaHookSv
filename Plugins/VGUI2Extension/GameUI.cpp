@@ -18,8 +18,6 @@
 
 static hook_t* g_phook_ServerBrowser_Panel_Init = NULL;
 static hook_t* g_phook_ServerBrowser_KeyValues_LoadFromFile = NULL;
-//static hook_t* g_phook_ServerBrowser_LoadControlSettings = NULL;
-//static hook_t* g_phook_ServerBrowser_LoadControlSettingsAndUserConfig = NULL;
 static hook_t* g_phook_GameUI_Panel_Init = NULL;
 static hook_t* g_phook_GameUI_KeyValues_LoadFromFile = NULL;
 static hook_t* g_phook_CGameConsoleDialog_ctor = NULL;
@@ -3220,17 +3218,10 @@ void ServerBrowser_InstallHooks(void)
 {
 	Install_InlineHook(ServerBrowser_Panel_Init);
 	Install_InlineHook(ServerBrowser_KeyValues_LoadFromFile);
-	//Install_InlineHook(CServerBrowserDialog_ctor);8684 sucks
-	//Install_InlineHook(ServerBrowser_LoadControlSettingsAndUserConfig);
-	//Install_InlineHook(CBaseGamesPage_OnButtonToggled);
-
 }
 
 void ServerBrowser_UninstallHooks(void)
 {
 	Uninstall_Hook(ServerBrowser_Panel_Init);
 	Uninstall_Hook(ServerBrowser_KeyValues_LoadFromFile);
-	//Uninstall_Hook(CServerBrowserDialog_ctor);
-	//Uninstall_Hook(ServerBrowser_LoadControlSettingsAndUserConfig);
-	//Uninstall_Hook(CBaseGamesPage_OnButtonToggled);
 }
