@@ -117,17 +117,37 @@ bool VGUI2_IsPanelSetSize(PVOID Candidate)
 		auto pinst = (cs_insn*)inst;
 		auto ctx = (VGUI2_IsPanelSetSize_SearchContext*)context;
 
+		//call  [exx+10h]
 		if (!ctx->bFoundCall10h &&
 			pinst->id == X86_INS_CALL &&
 			pinst->detail->x86.op_count == 1 &&
 			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 			pinst->detail->x86.operands[0].mem.base &&
+			pinst->detail->x86.operands[0].mem.base != X86_REG_ESP &&
+			pinst->detail->x86.operands[0].mem.base != X86_REG_EBP &&
 			pinst->detail->x86.operands[0].mem.disp == 0x10)
 		{
 			ctx->bFoundCall10h = true;
 			return TRUE;
 		}
 
+		//mov     exx, [exx+10h]
+		if (!ctx->bMov10h &&
+			pinst->id == X86_INS_MOV &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[0].type == X86_OP_REG &&
+			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[1].mem.base &&
+			pinst->detail->x86.operands[1].mem.base != X86_REG_ESP &&
+			pinst->detail->x86.operands[1].mem.base != X86_REG_EBP &&
+			pinst->detail->x86.operands[1].mem.disp == 0x10)
+		{
+			ctx->bMov10h = true;
+			ctx->instCount_Mov10h = instCount;
+			ctx->reg_Mov10h = pinst->detail->x86.operands[0].reg;
+		}
+
+		//add     exx, 10
 		if (!ctx->bAdd10h &&
 			pinst->id == X86_INS_ADD &&
 			pinst->detail->x86.op_count == 2 &&
@@ -140,6 +160,7 @@ bool VGUI2_IsPanelSetSize(PVOID Candidate)
 			ctx->reg_Add10h = pinst->detail->x86.operands[0].reg;
 		}
 
+		//mov     exx, [exx]
 		if (ctx->bAdd10h &&
 			!ctx->bMov10h &&
 			pinst->id == X86_INS_MOV &&
@@ -153,8 +174,8 @@ bool VGUI2_IsPanelSetSize(PVOID Candidate)
 			ctx->reg_Mov10h = pinst->detail->x86.operands[0].reg;
 		}
 
-		if (ctx->bAdd10h &&
-			ctx->bMov10h &&
+		//call     exx
+		if (ctx->bMov10h &&
 			instCount > ctx->instCount_Mov10h &&
 			instCount < ctx->instCount_Mov10h + 5 &&
 			pinst->id == X86_INS_CALL &&
@@ -204,10 +225,28 @@ bool VGUI2_IsPanelSetMinimumSize(PVOID Candidate)
 			pinst->detail->x86.op_count == 1 &&
 			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 			pinst->detail->x86.operands[0].mem.base &&
+			pinst->detail->x86.operands[0].mem.base != X86_REG_ESP &&
+			pinst->detail->x86.operands[0].mem.base != X86_REG_EBP &&
 			pinst->detail->x86.operands[0].mem.disp == 0x18)
 		{
 			ctx->bFoundCall18h = true;
 			return TRUE;
+		}
+
+		//mov     exx, [exx+18h]
+		if (!ctx->bMov18h &&
+			pinst->id == X86_INS_MOV &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[0].type == X86_OP_REG &&
+			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[1].mem.base &&
+			pinst->detail->x86.operands[1].mem.base != X86_REG_ESP &&
+			pinst->detail->x86.operands[1].mem.base != X86_REG_EBP &&
+			pinst->detail->x86.operands[1].mem.disp == 0x18)
+		{
+			ctx->bMov18h = true;
+			ctx->instCount_Mov18h = instCount;
+			ctx->reg_Mov18h = pinst->detail->x86.operands[0].reg;
 		}
 
 		if (!ctx->bAdd18h &&
@@ -235,8 +274,7 @@ bool VGUI2_IsPanelSetMinimumSize(PVOID Candidate)
 			ctx->reg_Mov18h = pinst->detail->x86.operands[0].reg;
 		}
 
-		if (ctx->bAdd18h &&
-			ctx->bMov18h &&
+		if (ctx->bMov18h &&
 			instCount > ctx->instCount_Mov18h &&
 			instCount < ctx->instCount_Mov18h + 5 &&
 			pinst->id == X86_INS_CALL &&
