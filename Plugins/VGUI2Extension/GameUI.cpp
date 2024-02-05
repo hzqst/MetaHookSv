@@ -102,6 +102,12 @@ bool VGUI2_IsPanelSetSize(PVOID Candidate)
 	typedef struct
 	{
 		bool bFoundCall10h;
+		bool bAdd10h;
+		bool bMov10h;
+		int instCount_Add10h;
+		int instCount_Mov10h;
+		int reg_Add10h;
+		int reg_Mov10h;
 	}VGUI2_IsPanelSetSize_SearchContext;
 
 	VGUI2_IsPanelSetSize_SearchContext ctx = { 0 };
@@ -117,6 +123,44 @@ bool VGUI2_IsPanelSetSize(PVOID Candidate)
 			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 			pinst->detail->x86.operands[0].mem.base &&
 			pinst->detail->x86.operands[0].mem.disp == 0x10)
+		{
+			ctx->bFoundCall10h = true;
+			return TRUE;
+		}
+
+		if (!ctx->bAdd10h &&
+			pinst->id == X86_INS_ADD &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[0].type == X86_OP_REG &&
+			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+			pinst->detail->x86.operands[1].imm == 0x10)
+		{
+			ctx->bAdd10h = true;
+			ctx->instCount_Add10h = instCount;
+			ctx->reg_Add10h = pinst->detail->x86.operands[0].reg;
+		}
+
+		if (ctx->bAdd10h &&
+			!ctx->bMov10h &&
+			pinst->id == X86_INS_MOV &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[0].type == X86_OP_REG &&
+			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[1].mem.base == ctx->reg_Add10h)
+		{
+			ctx->bMov10h = true;
+			ctx->instCount_Mov10h = instCount;
+			ctx->reg_Mov10h = pinst->detail->x86.operands[0].reg;
+		}
+
+		if (ctx->bAdd10h &&
+			ctx->bMov10h &&
+			instCount > ctx->instCount_Mov10h &&
+			instCount < ctx->instCount_Mov10h + 5 &&
+			pinst->id == X86_INS_CALL &&
+			pinst->detail->x86.op_count == 1 &&
+			pinst->detail->x86.operands[0].type == X86_OP_REG &&
+			pinst->detail->x86.operands[0].reg == ctx->reg_Mov10h)
 		{
 			ctx->bFoundCall10h = true;
 			return TRUE;
@@ -140,6 +184,12 @@ bool VGUI2_IsPanelSetMinimumSize(PVOID Candidate)
 	typedef struct
 	{
 		bool bFoundCall18h;
+		bool bAdd18h;
+		bool bMov18h;
+		int instCount_Add18h;
+		int instCount_Mov18h;
+		int reg_Add18h;
+		int reg_Mov18h;
 	}VGUI2_IsPanelSetMinimumSize_SearchContext;
 
 	VGUI2_IsPanelSetMinimumSize_SearchContext ctx = { 0 };
@@ -155,6 +205,44 @@ bool VGUI2_IsPanelSetMinimumSize(PVOID Candidate)
 			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 			pinst->detail->x86.operands[0].mem.base &&
 			pinst->detail->x86.operands[0].mem.disp == 0x18)
+		{
+			ctx->bFoundCall18h = true;
+			return TRUE;
+		}
+
+		if (!ctx->bAdd18h &&
+			pinst->id == X86_INS_ADD &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[0].type == X86_OP_REG &&
+			pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+			pinst->detail->x86.operands[1].imm == 0x18)
+		{
+			ctx->bAdd18h = true;
+			ctx->instCount_Add18h = instCount;
+			ctx->reg_Add18h = pinst->detail->x86.operands[0].reg;
+		}
+
+		if (ctx->bAdd18h &&
+			!ctx->bMov18h &&
+			pinst->id == X86_INS_MOV &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[0].type == X86_OP_REG &&
+			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[1].mem.base == ctx->reg_Add18h)
+		{
+			ctx->bMov18h = true;
+			ctx->instCount_Mov18h = instCount;
+			ctx->reg_Mov18h = pinst->detail->x86.operands[0].reg;
+		}
+
+		if (ctx->bAdd18h &&
+			ctx->bMov18h &&
+			instCount > ctx->instCount_Mov18h &&
+			instCount < ctx->instCount_Mov18h + 5 &&
+			pinst->id == X86_INS_CALL &&
+			pinst->detail->x86.op_count == 1 &&
+			pinst->detail->x86.operands[0].type == X86_OP_REG &&
+			pinst->detail->x86.operands[0].reg == ctx->reg_Mov18h)
 		{
 			ctx->bFoundCall18h = true;
 			return TRUE;
@@ -3283,6 +3371,8 @@ void ServerBrowser_FillAddress(void)
 			}OnButtonToggledSearchContext;
 
 			OnButtonToggledSearchContext ctx = { };
+
+			ctx.instCount_push270h = 0;
 
 			g_pMetaHookAPI->DisasmRanges(CBaseGamesPage_OnButtonToggled_SetSizeImm, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
