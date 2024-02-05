@@ -61,6 +61,7 @@ static hook_t *g_phook_S_StartDynamicSound = NULL;
 static hook_t *g_phook_S_StartStaticSound = NULL;
 static hook_t *g_phook_pfnTextMessageGet = NULL;
 static hook_t *g_phook_TextMessageParse = NULL;
+static hook_t* g_phook_COM_ExplainDisconnection = NULL;
 static hook_t *g_phook_WeaponsResource_SelectSlot = NULL;
 static hook_t *g_phook_ScClient_SoundEngine_PlayFMODSound = NULL;
 static hook_t *g_phook_FMOD_System_playSound = NULL;
@@ -445,8 +446,83 @@ void Engine_FillAddress(void)
 				});
 			}
 		}
+		Sig_FuncNotFound(TextMessageParse);
 	}
-	Sig_FuncNotFound(TextMessageParse);
+
+	if (1)
+	{
+		const char pattern[] = "\x68\x2A\x2A\x2A\x2A\x6A\x01";
+		PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
+		PUCHAR SearchLimit = (PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize;
+		while (SearchBegin < SearchLimit)
+		{
+			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+			if (pFound)
+			{
+				const char* pPushString = *(const char**)(pFound + 1);
+
+				if (((ULONG_PTR)pPushString >= (ULONG_PTR)g_dwEngineRdataBase && (ULONG_PTR)pPushString < (ULONG_PTR)g_dwEngineRdataBase + g_dwEngineRdataSize) ||
+					((ULONG_PTR)pPushString >= (ULONG_PTR)g_dwEngineDataBase && (ULONG_PTR)pPushString < (ULONG_PTR)g_dwEngineDataBase + g_dwEngineDataSize))
+				{
+					if (0 == memcmp(pPushString, "#GameUI_DisconnectedFromServerExtended", sizeof("#GameUI_DisconnectedFromServerExtended") - 1))
+					{
+						typedef struct
+						{
+							int instCount_push0h;
+						}COM_ExplainDisconnectionSearchContext;
+
+						COM_ExplainDisconnectionSearchContext ctx = { 0 };
+
+						g_pMetaHookAPI->DisasmRanges(pFound + Sig_Length(pattern), 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+							auto pinst = (cs_insn*)inst;
+							auto ctx = (COM_ExplainDisconnectionSearchContext*)context;
+
+							if (gPrivateFuncs.COM_ExplainDisconnection && gPrivateFuncs.COM_ExtendedExplainDisconnection)
+								return TRUE;
+
+							if (!gPrivateFuncs.COM_ExplainDisconnection && address[0] == 0xE8 && instCount < 3)
+							{
+								gPrivateFuncs.COM_ExplainDisconnection = (decltype(gPrivateFuncs.COM_ExplainDisconnection))GetCallAddress(address);
+								return FALSE;
+							}
+
+							if (gPrivateFuncs.COM_ExplainDisconnection && !ctx->instCount_push0h && address[0] == 0x6A && address[1] == 0x01)
+							{
+								ctx->instCount_push0h = instCount;
+								return FALSE;
+							}
+
+							if (!gPrivateFuncs.COM_ExtendedExplainDisconnection && address[0] == 0xE8 && instCount > ctx->instCount_push0h && instCount < ctx->instCount_push0h + 3)
+							{
+								gPrivateFuncs.COM_ExtendedExplainDisconnection = (decltype(gPrivateFuncs.COM_ExtendedExplainDisconnection))GetCallAddress(address);
+								return FALSE;
+							}
+
+							if (address[0] == 0xCC)
+								return TRUE;
+
+							if (pinst->id == X86_INS_RET)
+								return TRUE;
+
+							return FALSE;
+
+						}, 0, &ctx);
+
+						break;
+					}
+				}
+
+				SearchBegin = pFound + Sig_Length(pattern);
+			}
+			else
+			{
+				break;
+			}
+		}
+		Sig_FuncNotFound(COM_ExplainDisconnection);
+		Sig_FuncNotFound(COM_ExtendedExplainDisconnection);
+	}
 
 	if (1)
 	{
@@ -1019,6 +1095,7 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(S_StartStaticSound);
 	Install_InlineHook(pfnTextMessageGet);
 	Install_InlineHook(TextMessageParse);
+	Install_InlineHook(COM_ExplainDisconnection);
 }
 
 void Engine_UninstallHooks(void)
@@ -1027,6 +1104,7 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(S_StartStaticSound);
 	Uninstall_Hook(pfnTextMessageGet);
 	Uninstall_Hook(TextMessageParse);
+	Uninstall_Hook(COM_ExplainDisconnection);
 }
 
 void Client_InstallHooks(void)

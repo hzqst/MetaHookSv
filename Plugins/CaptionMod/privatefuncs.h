@@ -49,7 +49,7 @@ typedef struct
 
 	float *(*GetClientColor)(int clientIndex);
 
-	//Only available in vgui2 based Counter Strike
+	//ClientDLL Counter-Strike
 	float *(*GetTextColor)(int colorNum, int clientIndex);
 
 	//ClientDLL
@@ -61,6 +61,10 @@ typedef struct
 	//Engine TextMessage
 	client_textmessage_t *(*pfnTextMessageGet)(const char *pName);
 	void (*TextMessageParse)(byte* pMemFile, int fileSize);
+
+	//Engine Misc
+	void (*COM_ExplainDisconnection)(qboolean bPrint, const char* fmt, ...);
+	void (*COM_ExtendedExplainDisconnection)(qboolean bPrint, const char* fmt, ...);
 
 	//Commands
 	void(*MessageMode_f)(void);

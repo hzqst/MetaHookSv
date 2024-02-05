@@ -974,6 +974,168 @@ void TextMessageParse(byte* pMemFile, int fileSize)
 	return gPrivateFuncs.TextMessageParse(pMemFile, fileSize);
 }
 
+
+void COM_ExplainDisconnection(qboolean bPrint, const char* fmt, ...)
+{
+	if (!strcmp(fmt, "Mod_LoadBrushModel: %s has wrong version number (%i should be %i)"))
+	{
+		va_list args;
+		va_start(args, fmt); // Initialize 'args' to point to the first argument after 'dummy'
+
+		// Assuming the first argument is of type 'int'
+		const char* firstArg = va_arg(args, const char*);
+		int secondArg = va_arg(args, int);
+		int thirdArg = va_arg(args, int);
+
+		gPrivateFuncs.COM_ExtendedExplainDisconnection(false, "%s", firstArg);
+		return gPrivateFuncs.COM_ExplainDisconnection(bPrint, "%s", "#GameUI_ExplainDisconnection_LoadBrushModel");
+	}
+	else if (!strcmp(fmt, "Error: Corrupt demo file."))
+	{
+		return gPrivateFuncs.COM_ExplainDisconnection(bPrint, "%s", "#GameUI_ExplainDisconnection_CorruptDemoFile");
+	}
+	else if (!strcmp(fmt, "Client world model is NULL\n"))
+	{
+		return gPrivateFuncs.COM_ExplainDisconnection(bPrint, "%s", "#GameUI_ExplainDisconnection_InvalidClientWorldModel");
+	}
+	else if (!strcmp(fmt, "Client world model is invalid. Not a brush.\n"))
+	{
+		return gPrivateFuncs.COM_ExplainDisconnection(bPrint, "%s", "#GameUI_ExplainDisconnection_InvalidClientWorldModel");
+	}
+	else if (!strcmp(fmt, "Client world model is invalid: Unexpected name.\n"))
+	{
+		return gPrivateFuncs.COM_ExplainDisconnection(bPrint, "%s", "#GameUI_ExplainDisconnection_InvalidClientWorldModel");
+	}
+	else if (!strcmp(fmt, "Connection to server lost during level change."))
+	{
+		return gPrivateFuncs.COM_ExplainDisconnection(bPrint, "%s", "#GameUI_ExplainDisconnection_ConnectionLostDuringLevelChange");
+	}
+	else if (!strcmp(fmt, "Invalid server version, unable to connect."))
+	{
+		return gPrivateFuncs.COM_ExplainDisconnection(bPrint, "%s", "#GameUI_ExplainDisconnection_InvalidServerVersion");
+	}
+	else if (!strcmp(fmt, "Cannot continue without script %s, disconnecting."))
+	{
+		va_list args;
+		va_start(args, fmt); // Initialize 'args' to point to the first argument after 'dummy'
+
+		const char* firstArg = va_arg(args, const char*);
+		int secondArg = va_arg(args, int);
+
+		gPrivateFuncs.COM_ExtendedExplainDisconnection(false, "%s", firstArg);
+		return gPrivateFuncs.COM_ExplainDisconnection(bPrint, "%s", "#GameUI_ExplainDisconnection_CannotContinueWithoutScript");
+	}
+	else if (!strcmp(fmt, "Cannot continue without model %s, disconnecting."))
+	{
+		va_list args;
+		va_start(args, fmt); // Initialize 'args' to point to the first argument after 'dummy'
+
+		const char* firstArg = va_arg(args, const char*);
+		int secondArg = va_arg(args, int);
+
+		gPrivateFuncs.COM_ExtendedExplainDisconnection(false, "%s", firstArg);
+		return gPrivateFuncs.COM_ExplainDisconnection(bPrint, "%s", "#GameUI_ExplainDisconnection_CannotContinueWithoutModel");
+	}
+	else if (!strcmp(fmt, "Cannot continue with altered model %s, disconnecting."))
+	{
+		va_list args;
+		va_start(args, fmt); // Initialize 'args' to point to the first argument after 'dummy'
+
+		const char* firstArg = va_arg(args, const char*);
+		int secondArg = va_arg(args, int);
+
+		gPrivateFuncs.COM_ExtendedExplainDisconnection(false, "%s", firstArg);
+		return gPrivateFuncs.COM_ExplainDisconnection(bPrint, "%s", "#GameUI_ExplainDisconnection_CannotContinueWithoutAlteredModel");
+	}
+	else if (!strcmp(fmt, "Refusing to download map %s, (cl_allowdownload is 0 ) disconnecting.\n"))
+	{
+		va_list args;
+		va_start(args, fmt); // Initialize 'args' to point to the first argument after 'dummy'
+
+		const char* firstArg = va_arg(args, const char*);
+		int secondArg = va_arg(args, int);
+
+		gPrivateFuncs.COM_ExtendedExplainDisconnection(false, "%s", firstArg);
+		return gPrivateFuncs.COM_ExplainDisconnection(bPrint, "%s", "#GameUI_ExplainDisconnection_RefuseToDownloadMap");
+	}
+	else if (!strcmp(fmt, "Couldn't CRC client side dll %s.") || !strcmp(fmt, "Couldn't CRC .dll [%s]."))
+	{
+		va_list args;
+		va_start(args, fmt); // Initialize 'args' to point to the first argument after 'dummy'
+
+		const char* firstArg = va_arg(args, const char*);
+		int secondArg = va_arg(args, int);
+
+		gPrivateFuncs.COM_ExtendedExplainDisconnection(false, "%s", firstArg);
+		return gPrivateFuncs.COM_ExplainDisconnection(bPrint, "%s", "#GameUI_ExplainDisconnection_CouldntCRCClientDll");
+	}
+	else if (!strncmp(fmt, "Your map [%s] differs from the server's.", sizeof("Your map [%s] differs from the server's.") - 1))
+	{
+		va_list args;
+		va_start(args, fmt); // Initialize 'args' to point to the first argument after 'dummy'
+
+		const char* firstArg = va_arg(args, const char*);
+		int secondArg = va_arg(args, int);
+
+		gPrivateFuncs.COM_ExtendedExplainDisconnection(false, "%s", firstArg);
+		return gPrivateFuncs.COM_ExplainDisconnection(bPrint, "%s", "#GameUI_ExplainDisconnection_MapDiffersFromServer");
+	}
+	else if (!strncmp(fmt, "Your .dll [%s] differs from the server's.", sizeof("Your .dll [%s] differs from the server's.") - 1))
+	{
+		va_list args;
+		va_start(args, fmt); // Initialize 'args' to point to the first argument after 'dummy'
+
+		const char* firstArg = va_arg(args, const char*);
+		int secondArg = va_arg(args, int);
+
+		gPrivateFuncs.COM_ExtendedExplainDisconnection(false, "%s", firstArg);
+		return gPrivateFuncs.COM_ExplainDisconnection(bPrint, "%s", "#GameUI_ExplainDisconnection_DllDiffersFromServer");
+	}
+	else if (!strcmp(fmt, "Too many sounds precached. (Limit is %d.)"))
+	{
+		va_list args;
+		va_start(args, fmt); // Initialize 'args' to point to the first argument after 'dummy'
+
+		int firstArg = va_arg(args, int);
+
+		gPrivateFuncs.COM_ExtendedExplainDisconnection(false, "%d", firstArg);
+		return gPrivateFuncs.COM_ExplainDisconnection(bPrint, "%s", "#GameUI_ExplainDisconnection_TooManyPrecachedSounds");
+	}
+	else if (!strcmp(fmt, "Too many models precached. (Limit is %d."))
+	{
+		va_list args;
+		va_start(args, fmt); // Initialize 'args' to point to the first argument after 'dummy'
+
+		int firstArg = va_arg(args, int);
+
+		gPrivateFuncs.COM_ExtendedExplainDisconnection(false, "%d", firstArg);
+		return gPrivateFuncs.COM_ExplainDisconnection(bPrint, "%s", "#GameUI_ExplainDisconnection_TooManyPrecachedModels");
+	}
+
+	va_list args;
+	va_start(args, fmt);
+
+	// Use vsnprintf to calculate the required length
+	int length = vsnprintf(nullptr, 0, fmt, args);
+	va_end(args);
+
+	// Check for error
+	if (length <= 0) {
+		return;
+	}
+
+	std::string str;
+
+	str.resize(length);
+
+	// Format the string again with the actual buffer
+	va_start(args, fmt);
+	vsnprintf((char*)str.c_str(), str.length() + 1, fmt, args);
+	va_end(args);
+
+	gPrivateFuncs.COM_ExplainDisconnection(bPrint, "%s", str.c_str());
+}
+
 client_textmessage_t* pfnTextMessageGet(const char* pName)
 {
 	if (g_pViewPort)
