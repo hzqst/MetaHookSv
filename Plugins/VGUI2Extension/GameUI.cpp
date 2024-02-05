@@ -2749,7 +2749,7 @@ void GameUI_FillAddress(void)
 				ctx->instCount_Add64h = instCount;
 			}
 
-			if (address[0] == 0xE8 && ctx->instCount_Add64h && instCount > ctx->instCount_Add64h && instCount < ctx->instCount_Add64h + 10)
+			if (address[0] == 0xE8 && ctx->instCount_Add64h && instCount > ctx->instCount_Add64h && instCount < ctx->instCount_Add64h + 15)
 			{
 				auto Candidate = GetCallAddress(address);
 
