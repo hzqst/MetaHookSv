@@ -412,6 +412,17 @@ void __fastcall GameUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, i
 	}
 }
 
+void __fastcall GameUI_MessageBox_ApplySchemeSettings_Panel_SetSize(vgui::Panel* pthis, int dummy, int width, int height)
+{
+	int basewidth = width - 100;
+	int baseheight = height - 100;
+
+	width = basewidth + g_pVGuiSchemeManager2->GetProportionalScaledValue(100);
+	height = baseheight + g_pVGuiSchemeManager2->GetProportionalScaledValue(100);
+
+	gPrivateFuncs.GameUI_Panel_SetSize(pthis, 0, width, height);
+}
+
 /*
 ====================================================================
 GameUI inline hook
@@ -2617,6 +2628,166 @@ void GameUI_FillAddress(void)
 
 	if (1)
 	{
+		const char sigs1[] = "MessageBoxText";
+		auto MessageBoxText_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
+		if (!MessageBoxText_String)
+		{
+			MessageBoxText_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
+		}
+		Sig_VarNotFound(MessageBoxText_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern + 1) = (DWORD)MessageBoxText_String;
+		auto MessageBoxText_PushString = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
+		Sig_VarNotFound(MessageBoxText_PushString);
+
+		g_pMetaHookAPI->DisasmRanges(MessageBoxText_PushString, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+
+			if (address[0] == 0xE8 && instCount <= 8)
+			{
+				gPrivateFuncs.MessageBox_ctor = (decltype(gPrivateFuncs.MessageBox_ctor))GetCallAddress(address);
+
+				return TRUE;
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+		}, 0, NULL);
+
+		Sig_FuncNotFound(MessageBox_ctor);
+
+		typedef struct
+		{
+			PVOID GameUIRdataBase;
+			ULONG GameUIRdataSize;
+
+			PVOID GameUITextBase;
+			ULONG GameUITextSize;
+
+		}MessageBoxSearchContext;
+
+		MessageBoxSearchContext ctx = { 0 };
+
+		ctx.GameUIRdataBase = GameUIRdataBase;
+		ctx.GameUIRdataSize = GameUIRdataSize;
+
+		ctx.GameUITextBase = GameUITextBase;
+		ctx.GameUITextSize = GameUITextSize;
+
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.MessageBox_ctor, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (MessageBoxSearchContext*)context;
+
+			if (!gPrivateFuncs.MessageBox_vftable)
+			{
+				if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.disp == 0 &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->GameUIRdataBase &&
+						(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->GameUIRdataBase + ctx->GameUIRdataSize))
+				{
+					auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
+					if (candidate[0] >= (PUCHAR)ctx->GameUITextBase && candidate[0] < (PUCHAR)ctx->GameUITextBase + ctx->GameUITextSize)
+					{
+						gPrivateFuncs.MessageBox_vftable = candidate;
+					}
+				}
+			}
+
+			if (gPrivateFuncs.MessageBox_vftable)
+				return TRUE;
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+		}, 0, & ctx);
+
+		Sig_FuncNotFound(MessageBox_vftable);
+
+		gPrivateFuncs.MessageBox_ApplySchemeSettings = (decltype(gPrivateFuncs.MessageBox_ApplySchemeSettings))gPrivateFuncs.MessageBox_vftable[0x13C/4];
+	}
+
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25)
+	{
+		typedef struct
+		{
+			std::set<PVOID> insnSets_SetSize;
+
+			int instCount_Add64h;
+
+		}MessageBox_ApplySchemeSettings_SearchContext;
+
+		MessageBox_ApplySchemeSettings_SearchContext ctx = { };
+
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.MessageBox_ApplySchemeSettings, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (MessageBox_ApplySchemeSettings_SearchContext*)context;
+
+			if (!ctx->instCount_Add64h &&
+				pinst->id == X86_INS_ADD &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_REG &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 0x64)
+			{
+				ctx->instCount_Add64h = instCount;
+			}
+
+			if (address[0] == 0xE8 && ctx->instCount_Add64h && instCount > ctx->instCount_Add64h && instCount < ctx->instCount_Add64h + 10)
+			{
+				auto Candidate = GetCallAddress(address);
+
+				if (gPrivateFuncs.GameUI_Panel_SetSize == Candidate)
+				{
+					ctx->insnSets_SetSize.emplace(address);
+				}
+				else if (!gPrivateFuncs.GameUI_Panel_SetSize && VGUI2_IsPanelSetSize(Candidate))
+				{
+					gPrivateFuncs.GameUI_Panel_SetSize = (decltype(gPrivateFuncs.GameUI_Panel_SetSize))Candidate;
+					ctx->insnSets_SetSize.emplace(address);
+				}
+
+				return TRUE;
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+		}, 0, & ctx);
+
+		Sig_FuncNotFound(GameUI_Panel_SetSize);
+
+		for (auto insn : ctx.insnSets_SetSize)
+		{
+			auto addr = (PUCHAR)insn;
+			int rva = (PUCHAR)GameUI_MessageBox_ApplySchemeSettings_Panel_SetSize - (addr + 5);
+			g_pMetaHookAPI->WriteMemory(addr + 1, &rva, 4);
+		}
+	}
+
+	if (1)
+	{
 		const char sigs1[] = "GameMenuButton\0";
 		auto GameMenuButton_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
 		if (!GameMenuButton_String)
@@ -2977,7 +3148,6 @@ void GameUI_InstallHooks(void)
 	{
 		Install_InlineHook(GameUI_FocusNavGroup_GetCurrentFocus);
 	}
-
 }
 
 void GameUI_UninstallHooks(void)
