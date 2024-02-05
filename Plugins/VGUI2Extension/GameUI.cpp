@@ -307,16 +307,22 @@ ServerBrowser inline hook
 
 void __fastcall ServerBrowser_Panel_SetSize(vgui::Panel* pthis, int dummy, int width, int height)
 {
-	width = g_pVGuiSchemeManager2->GetProportionalScaledValue(width);
-	height = g_pVGuiSchemeManager2->GetProportionalScaledValue(height);
+	if (pthis->IsProportional())
+	{
+		width = g_pVGuiSchemeManager2->GetProportionalScaledValue(width);
+		height = g_pVGuiSchemeManager2->GetProportionalScaledValue(height);
+	}
 
 	gPrivateFuncs.ServerBrowser_Panel_SetSize(pthis, 0, width, height);
 }
 
 void __fastcall ServerBrowser_Panel_SetMinimumSize(vgui::Panel* pthis, int dummy, int width, int height)
 {
-	width = g_pVGuiSchemeManager2->GetProportionalScaledValue(width);
-	height = g_pVGuiSchemeManager2->GetProportionalScaledValue(height);
+	if (pthis->IsProportional())
+	{
+		width = g_pVGuiSchemeManager2->GetProportionalScaledValue(width);
+		height = g_pVGuiSchemeManager2->GetProportionalScaledValue(height);
+	}
 
 	gPrivateFuncs.ServerBrowser_Panel_SetMinimumSize(pthis, 0, width, height);
 }
@@ -540,13 +546,18 @@ void __fastcall GameUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, i
 
 void __fastcall GameUI_MessageBox_ApplySchemeSettings_Panel_SetSize(vgui::Panel* pthis, int dummy, int width, int height)
 {
-	int basewidth = width - 100;
-	int baseheight = height - 100;
+	if (pthis->IsProportional())
+	{
+		int basewidth = width - 100;
+		int baseheight = height - 100;
 
-	width = basewidth + g_pVGuiSchemeManager2->GetProportionalScaledValue(100);
-	height = baseheight + g_pVGuiSchemeManager2->GetProportionalScaledValue(100);
+		width = basewidth + g_pVGuiSchemeManager2->GetProportionalScaledValue(100);
+		height = baseheight + g_pVGuiSchemeManager2->GetProportionalScaledValue(100);
 
-	gPrivateFuncs.GameUI_Panel_SetSize(pthis, 0, width, height);
+		return gPrivateFuncs.GameUI_Panel_SetSize(pthis, 0, width, height);
+	}
+
+	return gPrivateFuncs.GameUI_Panel_SetSize(pthis, 0, width, height);
 }
 
 /*
