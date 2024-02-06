@@ -1572,15 +1572,20 @@ void CGameConsoleProxy::Initialize(void)
 	{
 		g_pfnCGameConsole_Initialize(this, 0);
 
-		if (g_pCreatingGameConsoleDialog && 
-			g_iCreatingGameConsoleDialogWidth > 100 && 
-			g_iCreatingGameConsoleDialogHeight > 100)
+		if (g_pCreatingGameConsoleDialog)
 		{
-			g_pCreatingGameConsoleDialog->SetBounds(
-				g_iCreatingGameConsoleDialogX,
-				g_iCreatingGameConsoleDialogY, 
-				g_iCreatingGameConsoleDialogWidth, 
-				g_iCreatingGameConsoleDialogHeight);
+			int iBaseWidth = (g_pCreatingGameConsoleDialog->IsProportional()) ? g_pVGuiSchemeManager2->GetProportionalScaledValue(100) : 100;
+			int iBaseHeight = (g_pCreatingGameConsoleDialog->IsProportional()) ? g_pVGuiSchemeManager2->GetProportionalScaledValue(100) : 100;
+
+			if (g_iCreatingGameConsoleDialogWidth > iBaseWidth &&
+				g_iCreatingGameConsoleDialogHeight > iBaseHeight)
+			{
+				g_pCreatingGameConsoleDialog->SetBounds(
+					g_iCreatingGameConsoleDialogX,
+					g_iCreatingGameConsoleDialogY,
+					g_iCreatingGameConsoleDialogWidth,
+					g_iCreatingGameConsoleDialogHeight);
+			}
 		}
 
 		g_pCreatingGameConsoleDialog = NULL;
