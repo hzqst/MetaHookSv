@@ -738,6 +738,22 @@ mbasenode_t* R_PVSNode(mbasenode_t* basenode, vec3_t emins, vec3_t emaxs)
 	return NULL;
 }
 
+void triapi_GetMatrix(const int pname, float* matrix)
+{
+	if (pname == GL_MODELVIEW_MATRIX)
+	{
+		memcpy(matrix, r_world_matrix, sizeof(float[16]));
+		return;
+	}
+	else if (pname == GL_PROJECTION_MATRIX)
+	{
+		memcpy(matrix, r_projection_matrix, sizeof(float[16]));
+		return;
+	}
+
+	return gPrivateFuncs.triapi_GetMatrix(pname, matrix);
+}
+
 int triapi_BoxInPVS(float* mins, float* maxs)
 {
 	return R_PVSNode(r_worldmodel->nodes, mins, maxs) != NULL;
@@ -2920,7 +2936,7 @@ void R_AdjustScopeFOVForViewModel(float *fov)
 	}
 }
 
-void R_UseLegacyOpenGLMatrixForViewModel()
+void R_LoadLegacyOpenGLMatrixForViewModel()
 {
 	glMatrixMode(GL_PROJECTION);
 	glLoadMatrixf(r_viewmodel_projection_matrix);
@@ -2928,7 +2944,7 @@ void R_UseLegacyOpenGLMatrixForViewModel()
 	glLoadMatrixf(r_world_matrix);
 }
 
-void R_UseLegacyOpenGLMatrixForWorld()
+void R_LoadLegacyOpenGLMatrixForWorld()
 {
 	glMatrixMode(GL_PROJECTION);
 	glLoadMatrixf(r_projection_matrix);
@@ -2936,7 +2952,7 @@ void R_UseLegacyOpenGLMatrixForWorld()
 	glLoadMatrixf(r_world_matrix);
 }
 
-void R_UseProjMatrixForViewModel(void)
+void R_UploadProjMatrixForViewModel(void)
 {
 	scene_ubo_t SceneUBO;
 	memcpy(SceneUBO.projMatrix, r_viewmodel_projection_matrix, sizeof(mat4));
@@ -2956,7 +2972,7 @@ void R_UseProjMatrixForViewModel(void)
 	}
 }
 
-void R_UseProjMatrixForWorld(void)
+void R_LoadProjMatrixForWorld(void)
 {
 	scene_ubo_t SceneUBO;
 	memcpy(SceneUBO.projMatrix, r_projection_matrix, sizeof(mat4));
@@ -3025,7 +3041,7 @@ void R_SetupGLForViewModel(void)
 
 		InvertMatrix(r_viewmodel_projection_matrix, r_viewmodel_projection_matrix_inv);
 
-		R_UseProjMatrixForViewModel();
+		R_UploadProjMatrixForViewModel();
 	}
 }
 
@@ -3543,7 +3559,7 @@ void R_EndRenderOpaque(void)
 	}
 
 	//For backward compatibility, some Mods may use Legacy OpenGL 1.x Matrix
-	R_UseLegacyOpenGLMatrixForWorld();
+	R_LoadLegacyOpenGLMatrixForWorld();
 }
 
 void ClientDLL_DrawNormalTriangles(void)

@@ -391,6 +391,7 @@ void GL_DisableMultitexture(void);
 void GL_EnableMultitexture(void);
 void triapi_RenderMode(int mode);
 int triapi_BoxInPVS(float* mins, float* maxs);
+void triapi_GetMatrix(const int pname, float* matrix);
 //void triapi_Color4f(float x, float y, float z, float w);
 void GL_UnloadTextureByIdentifier(const char* identifier, bool notify_callback);
 void GL_UnloadTextures(void);
