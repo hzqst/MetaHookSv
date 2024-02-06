@@ -18,5 +18,11 @@
     <ClCompile Include="studiocheck.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="UtilAssetsIntegrity.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\HLSDK\common\interface.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
