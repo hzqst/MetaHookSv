@@ -889,7 +889,7 @@ void Engine_FillAddress(void)
 						return FALSE;
 					}, 0, &ctx);
 
-				SearchBegin = LanguageStrncpy + sizeof(pattern) - 1;
+				SearchBegin = LanguageStrncpy + Sig_Length(pattern);
 			}
 			else
 			{
@@ -1011,7 +1011,7 @@ void Engine_FillAddress(void)
 					return FALSE;
 				}, 0, &ctx);
 
-				SearchBegin = LanguageStrncpy + sizeof(pattern) - 1;
+				SearchBegin = LanguageStrncpy + Sig_Length(pattern);
 			}
 			else
 			{
