@@ -877,7 +877,7 @@ void Engine_FillAddress(void)
 							}
 						}
 
-						if (instCount > 8)
+						if (instCount > 12)
 							return TRUE;
 
 						if (address[0] == 0xCC)
@@ -967,7 +967,7 @@ void Engine_FillAddress(void)
 							gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(address);
 							PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
 							int rva = pfnNewV_strncpy - (address + 5);
-							g_pMetaHookAPI->WriteMemory(address + 1, (BYTE *)&rva, 4);
+							g_pMetaHookAPI->WriteMemory(address + 1, &rva, 4);
 							return TRUE;
 						}
 						else if (address[0] == 0xEB)
@@ -980,7 +980,7 @@ void Engine_FillAddress(void)
 								gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(jmptarget);
 								PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
 								int rva = pfnNewV_strncpy - (jmptarget + 5);
-								g_pMetaHookAPI->WriteMemory(jmptarget + 1, (BYTE *)&rva, 4);
+								g_pMetaHookAPI->WriteMemory(jmptarget + 1, &rva, 4);
 								return TRUE;
 							}
 						}
@@ -999,7 +999,7 @@ void Engine_FillAddress(void)
 						}
 					}
 
-					if (instCount > 8)
+					if (instCount > 12)
 						return TRUE;
 
 					if (address[0] == 0xCC)
