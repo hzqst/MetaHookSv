@@ -1825,7 +1825,7 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 	gPrivateFuncs.GL_BeginRendering(x, y, width, height);
 
 	//Window resized?
-#if 0
+#if 1
 	if ((*width) != glwidth || (*height) != glheight)
 	{
 		glx = (*x);
@@ -1843,6 +1843,7 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height)
 		glheight = (*height);
 	}
 #endif
+
 	//No V_RenderView calls when level changes so don't GL_FlushFinalBuffer, this replicates vanilla engine's behavior
 	if (SCR_IsLoadingVisible())
 	{
@@ -2213,13 +2214,7 @@ void GL_EndRendering(void)
 		*gl_backbuffer_fbo = 0;
 	}
 
-	int srcW = 0, srcH = 0;
-
-	//void (*VideoMode_GetCurrentVideoMode)(int* wide, int* tall, int* bpp);
-	//VideoMode_GetCurrentVideoMode = (decltype(VideoMode_GetCurrentVideoMode))((PUCHAR)g_dwEngineBase + 0xAEDB0);
-	//VideoMode_GetCurrentVideoMode(&srcW, &srcH, NULL);
-
-	g_pMetaHookAPI->GetVideoMode(&srcW, &srcH, NULL, NULL);
+	int srcW = s_FinalBufferFBO.iWidth, srcH = s_FinalBufferFBO.iHeight;
 
 	int dstX1 = 0;
 	int dstY1 = 0;
