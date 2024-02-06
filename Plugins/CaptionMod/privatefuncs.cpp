@@ -979,42 +979,127 @@ void Client_FillAddress(void)
 		{
 			char pattern[] = "\x8B\x44\x24\x04\x83\xE8\x03\x2A\x2A\x48";
 			gPrivateFuncs.GetTextColor = (decltype(gPrivateFuncs.GetTextColor))Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
-			Sig_FuncNotFound(GetTextColor);
 		}
 
-#define CS_CZ_GETCLIENTCOLOR_SIG 
-#define CS_CZ_GETCLIENTCOLOR_SIG_HL25 
-		if (1)
+		if (!gPrivateFuncs.GetTextColor)
 		{
-			char pattern[] = "\x0F\xBF\x2A\x2A\x2A\x2A\x2A\x2A\x48\x83\xF8\x03\x77\x2A\xFF\x24";
-			char pattern_HL25[] = "\x55\x8B\xEC\x6B\x45\x08\x74\x0F\xBF\x80\x2A\x2A\x2A\x2A\x48\x83\xF8\x03\x77\x23\xFF\x24\x85";
-			if (g_iEngineType != ENGINE_GOLDSRC_HL25)
+			if (!gPrivateFuncs.GetClientColor)
 			{
-				auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+				const char sigs1[] = "spec_mode_internal";
+				auto SpecModeInternal_String = g_pMetaHookAPI->SearchPattern(ClientRDataBase, ClientRDataSize, sigs1, sizeof(sigs1) - 1);
+				if (!SpecModeInternal_String)
+					SpecModeInternal_String = g_pMetaHookAPI->SearchPattern(ClientDataBase, ClientDataSize, sigs1, sizeof(sigs1) - 1);
+				Sig_VarNotFound(SpecModeInternal_String);
 
-				if (addr)
+				char pattern[] = "\x68\x2A\x2A\x2A\x2A\xFF\x15";
+				*(DWORD*)(pattern + 1) = (DWORD)SpecModeInternal_String;
+				auto SpecModeInternal_PushString = g_pMetaHookAPI->SearchPattern(ClientTextBase, ClientTextSize, pattern, sizeof(pattern) - 1);
+
+				Sig_VarNotFound(SpecModeInternal_PushString);
+
+				typedef struct
 				{
-					gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(addr, 0x50, [](PUCHAR Candidate) {
+					int instCount_incReg;
+				}SpecModeInternalSearchContext;
 
-						//8B 44 24 04                                         mov     eax, [esp+arg_0]
-						if (Candidate[0] == 0x8B &&
-							Candidate[1] == 0x44 &&
-							Candidate[2] == 0x24)
-						{
-							return TRUE;
-						}
+				SpecModeInternalSearchContext ctx = { 0 };
 
-						return FALSE;
-					});
+				g_pMetaHookAPI->DisasmRanges(SpecModeInternal_PushString, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto pinst = (cs_insn*)inst;
+					auto ctx = (SpecModeInternalSearchContext*)context;
+
+					if (!ctx->instCount_incReg &&
+						pinst->id == X86_INS_INC &&
+						pinst->detail->x86.op_count == 1 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG)
+					{
+						ctx->instCount_incReg = instCount;
+					}
+
+					if (!ctx->instCount_incReg &&
+						pinst->id == X86_INS_ADD &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+						pinst->detail->x86.operands[1].imm == 1)
+					{
+						ctx->instCount_incReg = instCount;
+					}
+
+					if (!ctx->instCount_incReg &&
+						pinst->id == X86_INS_LEA &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[1].mem.disp == 1)
+					{
+						ctx->instCount_incReg = instCount;
+					}
+
+					if (address[0] == 0xE8 && instCount > ctx->instCount_incReg && instCount < ctx->instCount_incReg + 3)
+					{
+						gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))GetCallAddress(address);
+
+						return TRUE;
+					}
+
+					if (gPrivateFuncs.GetClientColor)
+						return TRUE;
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+
+				}, 0, &ctx);
+			}
+
+			if (!gPrivateFuncs.GetClientColor)
+			{
+				char pattern[] = "\x0F\xBF\x2A\x2A\x2A\x2A\x2A\x2A\x48\x83\xF8\x03\x77\x2A\xFF\x24";
+				char pattern_HL25[] = "\x55\x8B\xEC\x6B\x45\x08\x74\x0F\xBF\x80\x2A\x2A\x2A\x2A\x48\x83\xF8\x03\x77\x23\xFF\x24\x85";
+				if (g_iEngineType != ENGINE_GOLDSRC_HL25)
+				{
+					auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+
+					if (addr)
+					{
+						gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(addr, 0x50, [](PUCHAR Candidate) {
+
+							//8B 44 24 04                                         mov     eax, [esp+arg_0]
+							if (Candidate[0] == 0x8B &&
+								Candidate[1] == 0x44 &&
+								Candidate[2] == 0x24)
+							{
+								return TRUE;
+							}
+
+							return FALSE;
+							});
+
+						Sig_FuncNotFound(GetClientColor);
+					}
+				}
+				else
+				{
+					gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern_HL25);
 
 					Sig_FuncNotFound(GetClientColor);
 				}
 			}
-			else
-			{
-				gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern_HL25);
 
-				Sig_FuncNotFound(GetClientColor);
+			if (1)
+			{
+				char pattern[] = "\x33\xC0\xEB\x2A\xB8\x2A\x2A\x2A\x2A\xEB\x2A";
+				auto addr = Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+
+				Sig_AddrNotFound(BaseTextColor);
+
+				gPrivateFuncs.BaseTextColor = *(decltype(gPrivateFuncs.BaseTextColor)*)((PUCHAR)addr + 5);
 			}
 		}
 	}

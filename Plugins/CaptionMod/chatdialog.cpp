@@ -640,6 +640,14 @@ float *ClientDLL_GetTextColor(int colorNum, int clientIndex)
 		}
 		break;
 	}
+	case TEXTCOLOR_LOCATION:
+	{
+		if (gPrivateFuncs.BaseTextColor)
+		{
+			return (float *)gPrivateFuncs.BaseTextColor;
+		}
+		break;
+	}
 	default:
 	{
 		if (g_bIsSvenCoop)

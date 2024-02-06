@@ -46,11 +46,11 @@ typedef struct
 	int(__stdcall*FMOD_System_playSound)(void* FMOD_System, int channelid, void* FMOD_Sound, bool paused, void** FMOD_Channel);//?playSound@System@FMOD@@QAG?AW4FMOD_RESULT@@W4FMOD_CHANNELINDEX@@PAVSound@2@_NPAPAVChannel@2@@Z
 
 	//ClientDLL
-
-	float *(*GetClientColor)(int clientIndex);
+	float* (*GetClientColor)(int clientIndex);
 
 	//ClientDLL Counter-Strike
 	float *(*GetTextColor)(int colorNum, int clientIndex);
+	void* BaseTextColor;
 
 	//ClientDLL
 	bool (__fastcall *GameViewport_AllowedToPrintText)(void *pthis, int);
