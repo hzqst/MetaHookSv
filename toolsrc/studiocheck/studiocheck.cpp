@@ -49,5 +49,6 @@ int main(int argc, const char **argv)
 	}
 
 	free(buf);
+	std::cerr << "[Info] Integrity check succeeded for " << argv[1] << "\n";
 	return 0;
 }
