@@ -863,17 +863,59 @@ void MH_TransactionHookBegin(void)
 	g_bTransactionHook = true;
 }
 
+void MH_TransactionHookUpdateThreads(void)
+{
+	int num_threads_frozen;
+
+	do
+	{
+		num_threads_frozen = 0;
+		HANDLE thread = NULL;
+
+		while (1)
+		{
+			HANDLE next_thread = NULL;
+			const auto status = NtGetNextThread((HANDLE)(-1), thread,
+				THREAD_QUERY_LIMITED_INFORMATION | THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_SET_CONTEXT, 0,
+				0, &next_thread);
+
+			if (thread != NULL) {
+				CloseHandle(thread);
+			}
+
+			if (!NT_SUCCESS(status)) {
+				break;
+			}
+
+			thread = next_thread;
+
+			const auto thread_id = GetThreadId(thread);
+
+			if (thread_id == 0 || thread_id == GetCurrentThreadId()) {
+				continue;
+			}
+
+			if (DetourUpdateThread(thread) != NO_ERROR) {
+				continue;
+			}
+
+			++num_threads_frozen;
+		}
+
+	} while (num_threads_frozen != 0);
+}
+
 void MH_TransactionHookCommit(void)
 {
-	g_bTransactionHook = false;
+	MH_TransactionHookUpdateThreads();
+
+	DetourTransactionBegin();
 
 	for (auto pHook = g_pHookBase; pHook; pHook = pHook->pNext)
 	{
 		if (pHook->iType == MH_HOOK_INLINE && !pHook->bCommitted)
 		{
-			DetourTransactionBegin();
 			DetourAttach(&(void*&)pHook->pOldFuncAddr, pHook->pNewFuncAddr);
-			DetourTransactionCommit();
 
 			if (pHook->pOrginalCall)
 				(*pHook->pOrginalCall) = pHook->pOldFuncAddr;
@@ -907,6 +949,10 @@ void MH_TransactionHookCommit(void)
 			pHook->bCommitted = true;
 		}
 	}
+
+	DetourTransactionCommit();
+
+	g_bTransactionHook = false;
 }
 
 int __fastcall CheckStudioInterfaceTrampoline(int(*pfn)(int version, struct r_studio_interface_t** ppinterface, struct engine_studio_api_s* pstudio), int dummy)
