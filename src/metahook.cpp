@@ -915,12 +915,13 @@ void MH_TransactionHookCommit(void)
 	{
 		if (pHook->iType == MH_HOOK_INLINE && !pHook->bCommitted)
 		{
-			DetourAttach(&(void*&)pHook->pOldFuncAddr, pHook->pNewFuncAddr);
+			if (NO_ERROR == DetourAttach(&(void*&)pHook->pOldFuncAddr, pHook->pNewFuncAddr))
+			{
+				if (pHook->pOrginalCall)
+					(*pHook->pOrginalCall) = pHook->pOldFuncAddr;
 
-			if (pHook->pOrginalCall)
-				(*pHook->pOrginalCall) = pHook->pOldFuncAddr;
-
-			pHook->bCommitted = true;
+				pHook->bCommitted = true;
+			}
 		}
 		else if (pHook->iType == MH_HOOK_VFTABLE && !pHook->bCommitted)
 		{
