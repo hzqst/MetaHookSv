@@ -19,3 +19,6 @@
 [submodule "thirdparty/FreeImage_clone"]
 	path = thirdparty/FreeImage_clone
 	url = https://github.com/hzqst/FreeImage_clone
+[submodule "thirdparty/Detours_fork"]
+	path = thirdparty/Detours_fork
+	url = https://github.com/hzqst/Detours_fork

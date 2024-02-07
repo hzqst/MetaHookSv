@@ -103,11 +103,10 @@
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)thirdparty\Detours\src;$(CapstoneIncludeDirectory);$(MINTIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)thirdparty\Detours_fork\src;$(CapstoneIncludeDirectory);$(MINTIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <DisableSpecificWarnings>4005;4091;4311;4312;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
@@ -135,13 +134,12 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)thirdparty\Detours\src;$(CapstoneIncludeDirectory);$(MINTIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)thirdparty\Detours_fork\src;$(CapstoneIncludeDirectory);$(MINTIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <DisableSpecificWarnings>4005;4091;4311;4312;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -168,14 +166,13 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_blob|Win32'">
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)thirdparty\Detours\src;$(CapstoneIncludeDirectory);$(MINTIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)thirdparty\Detours_fork\src;$(CapstoneIncludeDirectory);$(MINTIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;METAHOOK_BLOB_SUPPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <DisableSpecificWarnings>4005;4091;4311;4312;4819;4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
@@ -236,9 +233,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\include\HLSDK\common\interface.cpp" />
-    <ClCompile Include="..\thirdparty\Detours\src\detours.cpp" />
-    <ClCompile Include="..\thirdparty\Detours\src\disasm.cpp" />
-    <ClCompile Include="..\thirdparty\Detours\src\modules.cpp" />
+    <ClCompile Include="..\thirdparty\Detours_fork\src\detours.cpp" />
+    <ClCompile Include="..\thirdparty\Detours_fork\src\disasm.cpp" />
+    <ClCompile Include="..\thirdparty\Detours_fork\src\modules.cpp" />
     <ClCompile Include="commandline.cpp" />
     <ClCompile Include="LoadDllNotification.cpp" />
     <ClCompile Include="launcher.cpp" />

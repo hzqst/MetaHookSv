@@ -866,49 +866,65 @@ void MH_TransactionHookBegin(void)
 void MH_TransactionHookUpdateThreads(void)
 {
 	int num_threads_frozen;
+	auto first_run = true;
 
 	do
 	{
 		num_threads_frozen = 0;
-		HANDLE thread = NULL;
+		HANDLE hThreadHandle = NULL;
 
 		while (1)
 		{
-			HANDLE next_thread = NULL;
-			const auto status = NtGetNextThread((HANDLE)(-1), thread,
+			HANDLE hNextThreadHandle = NULL;
+			const auto status = NtGetNextThread(GetCurrentProcess(), hThreadHandle,
 				THREAD_QUERY_LIMITED_INFORMATION | THREAD_SUSPEND_RESUME | THREAD_GET_CONTEXT | THREAD_SET_CONTEXT, 0,
-				0, &next_thread);
+				0, &hNextThreadHandle);
 
-			if (thread != NULL) {
-				CloseHandle(thread);
+			if (hThreadHandle != NULL) {
+				CloseHandle(hThreadHandle);
 			}
 
 			if (!NT_SUCCESS(status)) {
 				break;
 			}
 
-			thread = next_thread;
+			hThreadHandle = hNextThreadHandle;
 
-			const auto thread_id = GetThreadId(thread);
+			const auto thread_id = GetThreadId(hThreadHandle);
 
 			if (thread_id == 0 || thread_id == GetCurrentThreadId()) {
 				continue;
 			}
 
-			if (DetourUpdateThread(thread) != NO_ERROR) {
+			const auto suspend_count = SuspendThread(hThreadHandle);
+
+			if (suspend_count == static_cast<DWORD>(-1)) {
 				continue;
+			}
+
+			// Check if the thread was already frozen. Only resume if the thread was already frozen, and it wasn't the
+			// first run of this freeze loop to account for threads that may have already been frozen for other reasons.
+			if (suspend_count != 0 && !first_run) {
+				ResumeThread(hThreadHandle);
+				continue;
+			}
+
+			HANDLE hNewThreadHandle = 0;
+			if (DuplicateHandle((HANDLE)(-1), hThreadHandle, (HANDLE)(-1), &hNewThreadHandle, THREAD_ALL_ACCESS, FALSE, DUPLICATE_SAME_ACCESS))
+			{
+				DetourUpdateThreadEx(hNewThreadHandle, FALSE, TRUE, TRUE);
 			}
 
 			++num_threads_frozen;
 		}
+		
+		first_run = false;
 
 	} while (num_threads_frozen != 0);
 }
 
 void MH_TransactionHookCommit(void)
 {
-	MH_TransactionHookUpdateThreads();
-
 	DetourTransactionBegin();
 
 	for (auto pHook = g_pHookBase; pHook; pHook = pHook->pNext)
@@ -950,6 +966,8 @@ void MH_TransactionHookCommit(void)
 			pHook->bCommitted = true;
 		}
 	}
+
+	MH_TransactionHookUpdateThreads();
 
 	DetourTransactionCommit();
 

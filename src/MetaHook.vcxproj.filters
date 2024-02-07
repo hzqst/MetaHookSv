@@ -39,15 +39,6 @@
     <ClCompile Include="commandline.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="..\thirdparty\Detours\src\detours.cpp">
-      <Filter>Detours</Filter>
-    </ClCompile>
-    <ClCompile Include="..\thirdparty\Detours\src\disasm.cpp">
-      <Filter>Detours</Filter>
-    </ClCompile>
-    <ClCompile Include="..\thirdparty\Detours\src\modules.cpp">
-      <Filter>Detours</Filter>
-    </ClCompile>
     <ClCompile Include="..\include\HLSDK\common\interface.cpp">
       <Filter>HLSDK</Filter>
     </ClCompile>
@@ -56,6 +47,15 @@
     </ClCompile>
     <ClCompile Include="LoadDllNotification.cpp">
       <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\Detours_fork\src\detours.cpp">
+      <Filter>Detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\Detours_fork\src\disasm.cpp">
+      <Filter>Detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\thirdparty\Detours_fork\src\modules.cpp">
+      <Filter>Detours</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
