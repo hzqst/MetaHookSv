@@ -930,19 +930,18 @@ void MH_TransactionHookUpdateThreads(void)
 
 void MH_TransactionHookCommit(void)
 {
-	DetourTransactionBegin();
-
 	for (auto pHook = g_pHookBase; pHook; pHook = pHook->pNext)
 	{
 		if (!pHook->bCommitted)
 		{
 			if (pHook->iType == MH_HOOK_INLINE)
 			{
-				PDETOUR_TRAMPOLINE pTrampoline = NULL;
-				DetourAttachEx(&pHook->hookData.inlinehook.pTrampolineCall, pHook->pNewFuncAddr, &pTrampoline, NULL, NULL);
-			
+				DetourTransactionBegin();
+				DetourAttach(&pHook->hookData.inlinehook.pTrampolineCall, pHook->pNewFuncAddr);
+				DetourTransactionCommit();
+
 				if (pHook->pOrginalCall)
-					(*pHook->pOrginalCall) = pTrampoline;
+					(*pHook->pOrginalCall) = pHook->hookData.inlinehook.pTrampolineCall;
 			}
 			else if (pHook->iType == MH_HOOK_VFTABLE)
 			{
@@ -966,8 +965,6 @@ void MH_TransactionHookCommit(void)
 	}
 
 	//MH_TransactionHookUpdateThreads();
-
-	DetourTransactionCommit();
 
 	g_bTransactionHook = false;
 }
