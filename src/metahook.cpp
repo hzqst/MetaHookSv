@@ -944,7 +944,7 @@ void MH_TransactionHookCommit(void)
 				if (pHook->pOrginalCall)
 					(*pHook->pOrginalCall) = pTrampoline;
 			}
-			else if (pHook->iType == MH_HOOK_VFTABLE && !pHook->bCommitted)
+			else if (pHook->iType == MH_HOOK_VFTABLE)
 			{
 				pHook->pOldFuncAddr = *pHook->hookData.vfthook.pVirtualFuncAddr;
 				MH_WriteMemory(pHook->hookData.vfthook.pVirtualFuncAddr, &pHook->pNewFuncAddr, sizeof(PVOID));
@@ -952,7 +952,7 @@ void MH_TransactionHookCommit(void)
 				if (pHook->pOrginalCall)
 					(*pHook->pOrginalCall) = pHook->pOldFuncAddr;
 			}
-			else if (pHook->iType == MH_HOOK_IAT && !pHook->bCommitted)
+			else if (pHook->iType == MH_HOOK_IAT)
 			{
 				pHook->pOldFuncAddr = *pHook->hookData.iathook.pImportFuncAddr;
 				MH_WriteMemory(pHook->hookData.iathook.pImportFuncAddr, &pHook->pNewFuncAddr, sizeof(PVOID));
