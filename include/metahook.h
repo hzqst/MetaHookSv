@@ -111,7 +111,7 @@ typedef struct metahook_api_s
 		Purpose : Install VFT hook
 		This will modify the content of Virtual Function Table
 	*/
-	hook_t *(*VFTHook)(void *pClass, int iTableIndex, int iFuncIndex, void *pNewFuncAddr, void **pOrginalCall);
+	hook_t *(*VFTHook)(void *pClassInstance, int iTableIndex, int iFuncIndex, void *pNewFuncAddr, void **pOrginalCall);
 
 	/*
 		Purpose : Install IAT hook
