@@ -131,8 +131,8 @@ public:
 	virtual Color GetSchemeColor(const char* keyName, IScheme* pScheme) = 0;//77
 	virtual Color GetSchemeColor2(const char* keyName, Color defaultColor, IScheme* pScheme) = 0;//78
 	virtual void ApplySchemeSettings(IScheme* pScheme) = 0;//79
-	virtual void ApplySettings(KeyValues* inResourceData) = 0;//80
-	virtual void GetSettings(KeyValues* param_1) = 0;//81
+	virtual void ApplySettings(KeyValues* inResourceData) = 0;//80, actually 81 in 8684
+	virtual void GetSettings(KeyValues* outResourceData) = 0;//81
 	virtual const char* GetDescription() = 0;//82
 	virtual void ApplyUserConfigSettings(KeyValues* userConfig) = 0;//83
 	virtual void GetUserConfigSettings(KeyValues* userConfig) = 0;//84

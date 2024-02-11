@@ -417,6 +417,12 @@ typedef struct metahook_api_s
 
 	cmd_function_t* (*FindCmd)(const char* cmd_name);
 
+	/*
+		Purpose : Install VFT hook directly by providing the table address
+		This will modify the content of Virtual Function Table
+	*/
+	hook_t* (*VFTHookEx)(void** pVFTable, int iFuncIndex, void* pNewFuncAddr, void** pOrginalCall);
+
 }metahook_api_t;
 
 typedef struct mh_enginesave_s
@@ -433,7 +439,7 @@ void MH_Shutdown(void);
 #include <ICommandLine.h>
 #include <IRegistry.h>
 
-#define METAHOOK_API_VERSION 100
+#define METAHOOK_API_VERSION 101
 
 typedef struct mh_interface_s
 {

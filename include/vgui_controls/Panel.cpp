@@ -4714,6 +4714,22 @@ Panel *PHandle::Get()
 	return NULL;
 }
 
+Panel* PHandle::GetWithControlModuleName(const char *szControlModuleName)
+{
+	if (m_iPanelID != INVALID_PANEL)
+	{
+		VPANEL panel = ivgui()->HandleToPanel(m_iPanelID);
+
+		if (panel)
+		{
+			Panel* pPanel = ipanel()->GetPanel(panel, szControlModuleName);
+
+			return pPanel;
+		}
+	}
+	return NULL;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: sets the smart pointer
 //-----------------------------------------------------------------------------

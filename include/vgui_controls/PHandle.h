@@ -31,6 +31,9 @@ public:
 	Panel *Set( Panel *pPanel );
 	Panel *Set( HPanel hPanel );
 
+	//Added: inter-module operation
+	Panel* GetWithControlModuleName(const char* szControlModuleName);
+
 	operator Panel *()						{ return Get(); }
 	Panel * operator ->()					{ return Get(); }
 	Panel * operator = (Panel *pPanel)		{ return Set(pPanel); }

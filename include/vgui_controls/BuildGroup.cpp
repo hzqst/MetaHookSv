@@ -1392,6 +1392,11 @@ CUtlVector<PHandle> *BuildGroup::GetPanelList()
 	return &_panelDar;
 }
 
+CUtlVector<PHandle>* BuildGroup_Legacy::GetPanelList()
+{
+	return &_panelDar;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: dialog variables
 //-----------------------------------------------------------------------------

@@ -45,6 +45,20 @@ public:
 	virtual int GetHDProportionalNormalizedValueEx(IScheme2* pScheme, int scaledValue) = 0;
 
 	virtual HScheme LoadSchemeFromFileEx(VPANEL sizingPanel, const char* fileName, const char* tag) = 0;
+
+	//For horizontal protportional
+	virtual float GetHorizontalProportionalScale(void) = 0;
+	virtual int GetHorizontalProportionalScaledValue(int normalizedValue) = 0;
+	virtual int GetHorizontalProportionalNormalizedValue(int scaledValue) = 0;
+	virtual int GetHDHorizontalProportionalScaledValue(int normalizedValue) = 0;
+	virtual int GetHDHorizontalProportionalNormalizedValue(int scaledValue) = 0;
+
+	//For altered protportional from CounterStrike client
+	virtual float GetAlteredProportionalScale(void) = 0;
+	virtual int GetAlteredProportionalScaledValue(int normalizedValue) = 0;
+	virtual int GetAlteredProportionalNormalizedValue(int scaledValue) = 0;
+	virtual int GetHDAlteredProportionalScaledValue(int normalizedValue) = 0;
+	virtual int GetHDAlteredProportionalNormalizedValue(int scaledValue) = 0;
 };
 
 #define VGUI_SCHEME2_INTERFACE_VERSION  "VGUI_Scheme2_001"
