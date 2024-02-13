@@ -13,6 +13,15 @@ if "%GameSDL2_fileVersion%"=="2, 0, 16, 0" (
     echo SDL2 version is "%GameSDL2_fileVersion%", no need to replace SDL2
     goto no_replace_sdl2
 )
+if "%GameSDL2_fileVersion%"==" " (
+    echo SDL2 version is empty, no need to replace SDL2
+    goto no_replace_sdl2
+)
+
+if "%GameSDL2_fileVersion%"=="" (
+    echo SDL2 version is empty, no need to replace SDL2
+    goto no_replace_sdl2
+)
 
 echo SDL2 version is "%GameSDL2_fileVersion%", need to replace SDL2
 copy "%SolutionDir%Build\SDL2.dll" "%GameDir%\" /y
