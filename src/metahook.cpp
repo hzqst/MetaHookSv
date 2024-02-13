@@ -128,6 +128,7 @@ hook_t *MH_FindIATHooked(HMODULE hModule, const char *pszModuleName, const char 
 BOOL MH_UnHook(hook_t *pHook);
 hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOriginalCall);
 hook_t *MH_VFTHook(void *pClassInstance, int iTableIndex, int iFuncIndex, void *pNewFuncAddr, void **pOriginalCall);
+hook_t* MH_VFTHookEx(void** pVFTable, int iFuncIndex, void* pNewFuncAddr, void** pOrginalCall);
 hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, void *pNewFuncAddr, void **pOriginalCall);
 void *MH_GetClassFuncAddr(...);
 HMODULE MH_GetClientModule(void);
@@ -2317,6 +2318,74 @@ bool MH_IsBogusVFTableEntry(PVOID pVirtualFuncAddr, PVOID pOldFuncAddr)
 	return false;
 }
 
+hook_t* MH_VFTHookEx(void ** pVFTable, int iFuncIndex, void* pNewFuncAddr, void** pOrginalCall)
+{
+	hook_t* h = MH_NewHook(MH_HOOK_VFTABLE);
+
+	if (!h)
+	{
+		return NULL;
+	}
+
+	PVOID* pVMT = pVFTable;
+
+	h->pOldFuncAddr = pVMT[iFuncIndex];
+	h->pNewFuncAddr = pNewFuncAddr;
+	h->hookData.vfthook.pClassInstance = NULL;
+	h->hookData.vfthook.iTableIndex = -1;
+	h->hookData.vfthook.iFuncIndex = iFuncIndex;
+	h->hookData.vfthook.pVirtualFuncTable = pVMT;
+	h->hookData.vfthook.pVirtualFuncAddr = pVMT + iFuncIndex;
+	h->pOrginalCall = pOrginalCall;
+
+	if (CommandLine()->CheckParm("-metahook_check_vfthook"))
+	{
+		if (MH_IsBogusVFTableEntry(h->hookData.vfthook.pVirtualFuncAddr, h->pOldFuncAddr))
+		{
+			MH_UnHook(h);
+
+			char msg[256];
+			snprintf(msg, sizeof(msg), "MH_VFTHook: Found bogus hook at vftable(%p)[%d] -> %p, hook rejected.", pVFTable, iFuncIndex, pNewFuncAddr);
+			MessageBoxA(NULL, msg, "Warning", MB_ICONWARNING);
+
+			return NULL;
+		}
+	}
+
+	if (g_bTransactionHook)
+	{
+		h->bCommitted = false;
+	}
+	else
+	{
+		MH_WriteMemory(h->hookData.vfthook.pVirtualFuncAddr, &pNewFuncAddr, sizeof(ULONG_PTR));
+
+		if (h->pOrginalCall)
+			(*h->pOrginalCall) = h->pOldFuncAddr;
+
+		h->bCommitted = true;
+	}
+
+#if 0
+	auto p = (PUCHAR)_ReturnAddress();
+
+	MEMORY_BASIC_INFORMATION mbi;
+	VirtualQuery(p, &mbi, sizeof(mbi));
+
+	if (mbi.Type == MEM_IMAGE)
+	{
+		char modname[256] = { 0 };
+		GetModuleFileNameA((HMODULE)mbi.AllocationBase, modname, sizeof(modname));
+
+		char test[256];
+		sprintf(test, "%p called MH_VFTHook, from %p[%d] (%p) to %p, %s+%X\n", p, pClassInstance, iFuncIndex, info->pVirtualFuncAddr, pNewFuncAddr, modname, p - (PUCHAR)mbi.AllocationBase);
+		OutputDebugStringA(test);
+	}
+#endif
+
+	return h;
+}
+
 hook_t* MH_VFTHook(void* pClassInstance, int iTableIndex, int iFuncIndex, void* pNewFuncAddr, void** pOrginalCall)
 {
 	hook_t* h = MH_NewHook(MH_HOOK_VFTABLE);
@@ -2365,23 +2434,6 @@ hook_t* MH_VFTHook(void* pClassInstance, int iTableIndex, int iFuncIndex, void* 
 
 		h->bCommitted = true;
 	}
-
-#if 0
-	auto p = (PUCHAR)_ReturnAddress();
-
-	MEMORY_BASIC_INFORMATION mbi;
-	VirtualQuery(p, &mbi, sizeof(mbi));
-
-	if (mbi.Type == MEM_IMAGE)
-	{
-		char modname[256] = { 0 };
-		GetModuleFileNameA((HMODULE)mbi.AllocationBase, modname, sizeof(modname));
-
-		char test[256];
-		sprintf(test, "%p called MH_VFTHook, from %p[%d] (%p) to %p, %s+%X\n", p, pClassInstance, iFuncIndex, info->pVirtualFuncAddr, pNewFuncAddr, modname, p - (PUCHAR)mbi.AllocationBase);
-		OutputDebugStringA(test);
-	}
-#endif
 
 	return h;
 }
@@ -3702,7 +3754,8 @@ metahook_api_t gMetaHookAPI_LegacyV2 =
 	MH_BlobHasImportEx,
 	MH_BlobIATHook,
 	MH_GetGameDirectory,
-	MH_FindCmd
+	MH_FindCmd,
+	MH_VFTHookEx
 };
 
 metahook_api_t gMetaHookAPI =
@@ -3764,5 +3817,6 @@ metahook_api_t gMetaHookAPI =
 	MH_BlobHasImportEx,
 	MH_BlobIATHook,
 	MH_GetGameDirectory,
-	MH_FindCmd
+	MH_FindCmd,
+	MH_VFTHookEx
 };

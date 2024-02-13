@@ -80,6 +80,9 @@ typedef struct BlobModule_s
 	PVOID DataBase;
 	ULONG DataSize;
 
+	PVOID RDataBase;
+	ULONG RDataSize;
+
 	std::vector<HMODULE> LoadLibraryRefs;
 	std::vector<BlobImportEntry_t> ImportEntries;
 }BlobModule_t;
@@ -282,9 +285,14 @@ BlobHandle_t LoadBlobFromBuffer(BYTE* pBuffer, DWORD dwBufferSize, PVOID BlobSec
 			if (MH_SearchPattern(VirtualBase, VirtualSize, "HeapAlloc", sizeof("HeapAlloc")) &&
 				MH_SearchPattern(VirtualBase, VirtualSize, "HeapFree", sizeof("HeapFree")))
 			{
-				
+				if (MH_SearchPattern(VirtualBase, VirtualSize, "Microsoft Visual C++ Runtime Library", sizeof("Microsoft Visual C++ Runtime Library") - 1) &&
+					MH_SearchPattern(VirtualBase, VirtualSize, "JanFebMarAprMayJunJulAugSepOctNovDec", sizeof("JanFebMarAprMayJunJulAugSepOctNovDec") - 1))
+				{
+					pBlobModule->RDataBase = VirtualBase;
+					pBlobModule->RDataSize = VirtualSize;
+				}
 			}
-			else
+			else if(VirtualSize > 0x10000)
 			{
 				pBlobModule->DataBase = VirtualBase;
 				pBlobModule->DataSize = VirtualSize;
@@ -503,6 +511,14 @@ PVOID GetBlobSectionByName(BlobHandle_t hBlob, const char* SectionName, ULONG* S
 			*SectionSize = pBlobModule->DataSize;
 
 		return pBlobModule->DataBase;
+	}
+
+	if (0 == memcmp(SectionName, ".rdata\x0\x0", sizeof(".rdata\x0\x0") - 1))
+	{
+		if (SectionSize)
+			*SectionSize = pBlobModule->RDataSize;
+
+		return pBlobModule->RDataBase;
 	}
 
 	return NULL;
