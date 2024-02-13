@@ -161,6 +161,7 @@ $(GLEWCheckRequirements)</Command>
     <ClCompile Include="$(SolutionDir)include\vgui_controls\MemoryBitmap.cpp" />
     <ClCompile Include="BaseUI.cpp" />
     <ClCompile Include="ClientVGUI.cpp" />
+    <ClCompile Include="CounterStrikeViewport.cpp" />
     <ClCompile Include="DpiManagerInternal.cpp" />
     <ClCompile Include="EngineSurfaceHook.cpp" />
     <ClCompile Include="InputWin32.cpp" />

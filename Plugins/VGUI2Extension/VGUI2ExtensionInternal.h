@@ -91,7 +91,7 @@ public:
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_SIMPLE(GameUI_CTaskBar_ctor, IGameUITaskBarCtorCallbackContext* CallbackContext);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameUI_CTaskBar_OnCommand, void*& pPanel, const char*& command);
 
-    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(GameUI_KeyValues_LoadFromFile, void*& pthis, IFileSystem*& pFileSystem, const char*& resourceName, const char*& pathId, const char* sourceModule);
+    DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK(KeyValues_LoadFromFile, void*& pthis, IFileSystem*& pFileSystem, const char*& resourceName, const char*& pathId, const char* sourceModule);
 
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(GameConsole_Activate);
     DEFINE_VGUI2EXTENSION_INTERNAL_CALLBACK_NOARG(GameConsole_Initialize);

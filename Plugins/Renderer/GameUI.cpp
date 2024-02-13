@@ -359,11 +359,11 @@ static CVGUI2Extension_GameUIOptionDialogCallbacks s_GameUIOptionDialogCallbacks
 
 /*
 =================================================================================================================
-GameUI KeyValues Callbacks
+KeyValues Callbacks
 =================================================================================================================
 */
 
-class CVGUI2Extension_GameUIKeyValuesCallbacks : public IVGUI2Extension_GameUIKeyValuesCallbacks
+class CVGUI2Extension_KeyValuesCallbacks : public IVGUI2Extension_KeyValuesCallbacks
 {
 public:
 	int GetAltitude() const override
@@ -377,7 +377,7 @@ public:
 	}
 };
 
-static CVGUI2Extension_GameUIKeyValuesCallbacks s_GameUIKeyValuesCallbacks;
+static CVGUI2Extension_KeyValuesCallbacks s_KeyValuesCallbacks;
 
 /*
 =================================================================================================================
@@ -392,7 +392,7 @@ void GameUI_InstallHooks(void)
 
 	VGUI2Extension()->RegisterGameUICallbacks(&s_GameUICallbacks);
 	VGUI2Extension()->RegisterGameUIOptionDialogCallbacks(&s_GameUIOptionDialogCallbacks);
-	VGUI2Extension()->RegisterGameUIKeyValuesCallbacks(&s_GameUIKeyValuesCallbacks);
+	//VGUI2Extension()->RegisterKeyValuesCallbacks(&s_KeyValuesCallbacks);
 }
 
 void GameUI_UninstallHooks(void)
@@ -402,5 +402,5 @@ void GameUI_UninstallHooks(void)
 
 	VGUI2Extension()->UnregisterGameUICallbacks(&s_GameUICallbacks);
 	VGUI2Extension()->UnregisterGameUIOptionDialogCallbacks(&s_GameUIOptionDialogCallbacks);
-	VGUI2Extension()->UnregisterGameUIKeyValuesCallbacks(&s_GameUIKeyValuesCallbacks);
+	//VGUI2Extension()->UnregisterKeyValuesCallbacks(&s_KeyValuesCallbacks);
 }

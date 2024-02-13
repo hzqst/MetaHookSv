@@ -407,7 +407,7 @@ bool __fastcall ServerBrowser_KeyValues_LoadFromFile(void* pthis, int dummy, IFi
 	CallbackContext.IsPost = false;
 	CallbackContext.pPluginReturnValue = &fake_ret;
 
-	VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "ServerBrowser", &CallbackContext);
+	VGUI2ExtensionInternal()->KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "ServerBrowser", &CallbackContext);
 
 	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
@@ -420,7 +420,7 @@ bool __fastcall ServerBrowser_KeyValues_LoadFromFile(void* pthis, int dummy, IFi
 		CallbackContext.IsPost = true;
 		CallbackContext.pRealReturnValue = &real_ret;
 
-		VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "ServerBrowser", &CallbackContext);
+		VGUI2ExtensionInternal()->KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "ServerBrowser", &CallbackContext);
 	}
 
 	switch (CallbackContext.Result)
@@ -898,7 +898,7 @@ bool __fastcall GameUI_KeyValues_LoadFromFile(void* pthis, int dummy, IFileSyste
 	CallbackContext.IsPost = false;
 	CallbackContext.pPluginReturnValue = &fake_ret;
 
-	VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "GameUI", & CallbackContext);
+	VGUI2ExtensionInternal()->KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "GameUI", & CallbackContext);
 
 	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
 	{
@@ -911,7 +911,7 @@ bool __fastcall GameUI_KeyValues_LoadFromFile(void* pthis, int dummy, IFileSyste
 		CallbackContext.IsPost = true;
 		CallbackContext.pRealReturnValue = &real_ret;
 
-		VGUI2ExtensionInternal()->GameUI_KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "GameUI", &CallbackContext);
+		VGUI2ExtensionInternal()->KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "GameUI", &CallbackContext);
 	}
 
 	switch (CallbackContext.Result)
@@ -1978,14 +1978,14 @@ void GameUI_FillAddress(void)
 	if (1)
 	{
 		const char sigs1[] = "#GameUI_Options";
-		auto GameUI_Options_String = g_pMetaHookAPI->SearchPattern(GameUIRdataBase, GameUIRdataSize, sigs1, sizeof(sigs1) - 1);
+		auto GameUI_Options_String = Search_Pattern_From_Size(GameUIRdataBase, GameUIRdataSize, sigs1);
 		if (!GameUI_Options_String)
-			GameUI_Options_String = g_pMetaHookAPI->SearchPattern(GameUIDataBase, GameUIDataSize, sigs1, sizeof(sigs1) - 1);
+			GameUI_Options_String = Search_Pattern_From_Size(GameUIDataBase, GameUIDataSize, sigs1);
 		Sig_VarNotFound(GameUI_Options_String);
 
 		char pattern[] = "\x6A\x01\x68\x2A\x2A\x2A\x2A";
 		*(DWORD*)(pattern + 3) = (DWORD)GameUI_Options_String;
-		auto GameUI_Options_Call = g_pMetaHookAPI->SearchPattern(GameUITextBase, GameUITextSize, pattern, sizeof(pattern) - 1);
+		auto GameUI_Options_Call = Search_Pattern_From_Size(GameUITextBase, GameUITextSize, pattern);
 		Sig_VarNotFound(GameUI_Options_Call);
 
 		gPrivateFuncs.COptionsDialog_ctor = (decltype(gPrivateFuncs.COptionsDialog_ctor))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(GameUI_Options_Call, 0x300, [](PUCHAR Candidate) {
@@ -3635,104 +3635,13 @@ void ServerBrowser_FillAddress(void)
 
 	if (1)
 	{
-		const char sigs1[] = "CursorEnteredMenuButton\0";
-		auto CursorEnteredMenuButton_String = g_pMetaHookAPI->SearchPattern(ServerBrowserRdataBase, ServerBrowserRdataSize, sigs1, sizeof(sigs1) - 1);
-		if (!CursorEnteredMenuButton_String)
-		{
-			CursorEnteredMenuButton_String = g_pMetaHookAPI->SearchPattern(ServerBrowserDataBase, ServerBrowserDataSize, sigs1, sizeof(sigs1) - 1);
-		}
-		Sig_VarNotFound(CursorEnteredMenuButton_String);
-		char pattern[] = "\x74\x2A\x68\x2A\x2A\x2A\x2A";
-		*(DWORD*)(pattern + 3) = (DWORD)CursorEnteredMenuButton_String;
-		auto CursorEnteredMenuButton_PushString = g_pMetaHookAPI->SearchPattern(ServerBrowserTextBase, ServerBrowserTextSize, pattern, sizeof(pattern) - 1);
-		Sig_VarNotFound(CursorEnteredMenuButton_PushString);
-
-		typedef struct
-		{
-			PVOID ServerBrowserDataBase;
-			ULONG ServerBrowserDataSize;
-
-			PVOID ServerBrowserRdataBase;
-			ULONG ServerBrowserRdataSize;
-
-			PVOID ServerBrowserTextBase;
-			ULONG ServerBrowserTextSize;
-
-		}ServerBrowserKeyValuesSearchContext;
-
-		ServerBrowserKeyValuesSearchContext ctx = { 0 };
-
-		ctx.ServerBrowserDataBase = ServerBrowserDataBase;
-		ctx.ServerBrowserDataSize = ServerBrowserDataSize;
-
-		ctx.ServerBrowserRdataBase = ServerBrowserRdataBase;
-		ctx.ServerBrowserRdataSize = ServerBrowserRdataSize;
-
-		ctx.ServerBrowserTextBase = ServerBrowserTextBase;
-		ctx.ServerBrowserTextSize = ServerBrowserTextSize;
-
-		g_pMetaHookAPI->DisasmRanges(CursorEnteredMenuButton_PushString, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-			auto pinst = (cs_insn*)inst;
-			auto ctx = (ServerBrowserKeyValuesSearchContext*)context;
-
-			if (address[0] == 0xE8 && instCount <= 5)
-			{
-				gPrivateFuncs.ServerBrowser_KeyValues_ctor = (decltype(gPrivateFuncs.ServerBrowser_KeyValues_ctor))GetCallAddress(address);
-
-				g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.ServerBrowser_KeyValues_ctor, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
-
-					auto pinst = (cs_insn*)inst;
-					auto ctx = (ServerBrowserKeyValuesSearchContext*)context;
-
-					if (!gPrivateFuncs.ServerBrowser_KeyValues_vftable)
-					{
-						if (pinst->id == X86_INS_MOV &&
-							pinst->detail->x86.op_count == 2 &&
-							pinst->detail->x86.operands[0].type == X86_OP_MEM &&
-							pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-							((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->ServerBrowserRdataBase &&
-								(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->ServerBrowserRdataBase + ctx->ServerBrowserRdataSize))
-						{
-							auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
-
-							if (candidate[0] >= (PUCHAR)ctx->ServerBrowserTextBase && candidate[0] < (PUCHAR)ctx->ServerBrowserTextBase + ctx->ServerBrowserTextSize)
-							{
-								gPrivateFuncs.ServerBrowser_KeyValues_vftable = candidate;
-								gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile))gPrivateFuncs.ServerBrowser_KeyValues_vftable[2];
-							}
-						}
-					}
-
-					if (gPrivateFuncs.ServerBrowser_KeyValues_vftable &&
-						gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile)
-						return TRUE;
-
-					if (address[0] == 0xCC)
-						return TRUE;
-
-					if (pinst->id == X86_INS_RET)
-						return TRUE;
-
-					return FALSE;
-
-				}, 0, ctx);
-
-				return TRUE;
-			}
-
-			if (address[0] == 0xCC)
-				return TRUE;
-
-			if (pinst->id == X86_INS_RET)
-				return TRUE;
-
-			return FALSE;
-
-		}, 0, &ctx);
-
-		Sig_FuncNotFound(ServerBrowser_KeyValues_ctor);
-		Sig_FuncNotFound(ServerBrowser_KeyValues_LoadFromFile);
+		gPrivateFuncs.ServerBrowser_KeyValues_vftable = VGUI2_FindKeyValueVFTable(
+			ServerBrowserTextBase, ServerBrowserTextSize, 
+			ServerBrowserRdataBase, ServerBrowserRdataSize, 
+			ServerBrowserDataBase, ServerBrowserDataSize);
+		Sig_FuncNotFound(ServerBrowser_KeyValues_vftable);
+		
+		gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.ServerBrowser_KeyValues_LoadFromFile))gPrivateFuncs.ServerBrowser_KeyValues_vftable[2];
 	}
 
 	gPrivateFuncs.ServerBrowser_Panel_Init = (decltype(gPrivateFuncs.ServerBrowser_Panel_Init))VGUI2_FindPanelInit(ServerBrowserTextBase, ServerBrowserTextSize);

@@ -365,6 +365,119 @@ PVOID VGUI2_FindPanelInit(PVOID TextBase, ULONG TextSize)
 	return Panel_Init;
 }
 
+PVOID *VGUI2_FindKeyValueVFTable(PVOID TextBase, ULONG TextSize, PVOID RdataBase, ULONG RdataSize, PVOID DataBase, ULONG DataSize)
+{
+	const char sigs1[] = "CursorEnteredMenuButton\0";
+	auto CursorEnteredMenuButton_String = g_pMetaHookAPI->SearchPattern(RdataBase, RdataSize, sigs1, sizeof(sigs1) - 1);
+	if (!CursorEnteredMenuButton_String)
+	{
+		CursorEnteredMenuButton_String = g_pMetaHookAPI->SearchPattern(DataBase, DataSize, sigs1, sizeof(sigs1) - 1);
+	}
+
+	if (!CursorEnteredMenuButton_String)
+		return NULL;
+
+	char pattern[] = "\x74\x2A\x68\x2A\x2A\x2A\x2A";
+	*(DWORD*)(pattern + 3) = (DWORD)CursorEnteredMenuButton_String;
+	auto CursorEnteredMenuButton_PushString = g_pMetaHookAPI->SearchPattern(TextBase, TextSize, pattern, sizeof(pattern) - 1);
+
+	if (!CursorEnteredMenuButton_PushString)
+		return NULL;
+
+	typedef struct
+	{
+		PVOID DataBase;
+		ULONG DataSize;
+
+		PVOID RdataBase;
+		ULONG RdataSize;
+
+		PVOID TextBase;
+		ULONG TextSize;
+
+		PVOID KeyValues_ctor;
+		PVOID *KeyValues_vftable;
+
+	}KeyValuesSearchContext;
+
+	KeyValuesSearchContext ctx = { 0 };
+
+	ctx.DataBase =  DataBase;
+	ctx.DataSize =  DataSize;
+
+	ctx.RdataBase = RdataBase;
+	ctx.RdataSize = RdataSize;
+
+	if (ctx.RdataBase == 0)
+	{
+		ctx.RdataBase = ctx.DataBase;
+		ctx.RdataSize = ctx.DataSize;
+	}
+
+	ctx.TextBase =  TextBase;
+	ctx.TextSize =  TextSize;
+
+	g_pMetaHookAPI->DisasmRanges(CursorEnteredMenuButton_PushString, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+		auto pinst = (cs_insn*)inst;
+		auto ctx = (KeyValuesSearchContext*)context;
+
+		if (address[0] == 0xE8 && instCount <= 5)
+		{
+			ctx->KeyValues_ctor = (decltype(ctx->KeyValues_ctor))GetCallAddress(address);
+
+			g_pMetaHookAPI->DisasmRanges(ctx->KeyValues_ctor, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (KeyValuesSearchContext*)context;
+
+				if (!ctx->KeyValues_vftable)
+				{
+					if (pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+						((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->RdataBase &&
+							(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->RdataBase + ctx->RdataSize))
+					{
+						auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
+
+						if (candidate[0] >= (PUCHAR)ctx->TextBase && candidate[0] < (PUCHAR)ctx->TextBase + ctx->TextSize)
+						{
+							ctx->KeyValues_vftable = candidate;
+						}
+					}
+				}
+
+				if (ctx->KeyValues_vftable)
+					return TRUE;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+
+				}, 0, ctx);
+
+			return TRUE;
+		}
+
+		if (address[0] == 0xCC)
+			return TRUE;
+
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
+
+		return FALSE;
+
+	}, 0, &ctx);
+
+	return ctx.KeyValues_vftable;
+}
+
 void Engine_FillAddress(void)
 {
 	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
@@ -1058,6 +1171,11 @@ void Client_FillAddress(void)
 	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "cstrike") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
 	{
 		g_bIsCounterStrike = true;
+	}
+
+	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
+	{
+		g_bIsCZero = true;
 	}
 
 	if (!g_iVisibleMouse &&

@@ -139,7 +139,7 @@ void HUD_Frame(double time)
 
 void IN_MouseEvent(int mstate)
 {
-	if (g_iVisibleMouse && vgui::surface()->IsCursorVisible())
+	if (g_iVisibleMouse && vgui::surface() && vgui::surface()->IsCursorVisible())
 	{
 		int iVisibleMouse = *g_iVisibleMouse;
 		*g_iVisibleMouse = 1;
@@ -156,7 +156,7 @@ void IN_MouseEvent(int mstate)
 
 void IN_Accumulate(void)
 {
-	if (g_iVisibleMouse && vgui::surface()->IsCursorVisible())
+	if (g_iVisibleMouse && vgui::surface() && vgui::surface()->IsCursorVisible())
 	{
 		int iVisibleMouse = *g_iVisibleMouse;
 		*g_iVisibleMouse = 1;
@@ -173,7 +173,7 @@ void IN_Accumulate(void)
 
 void CL_CreateMove(float frametime, struct usercmd_s *cmd, int active)
 {
-	if (g_iVisibleMouse && vgui::surface()->IsCursorVisible())
+	if (g_iVisibleMouse && vgui::surface() && vgui::surface()->IsCursorVisible())
 	{
 		int iVisibleMouse = *g_iVisibleMouse;
 		*g_iVisibleMouse = 1;

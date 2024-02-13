@@ -29,6 +29,7 @@ int g_iEngineType = 0;
 
 bool g_bIsSvenCoop = false;
 bool g_bIsCounterStrike = false;
+bool g_bIsCZero = false;
 
 extern IFileSystem* g_pFullFileSystem;
 extern IFileSystem_HL25* g_pFullFileSystem_HL25;
@@ -112,9 +113,9 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
 
 	Client_FillAddress();
-
 	Client_InstallHooks();
 
+	ClientVGUI_FillAddress();
 	ClientVGUI_InstallHooks(pExportFunc);
 
 	VGUI1_InstallHooks();

@@ -446,6 +446,9 @@
     <ClCompile Include="InputWin32.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
+    <ClCompile Include="CounterStrikeViewport.cpp">
+      <Filter>ClientVGUI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="enginedef.h">

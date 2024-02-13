@@ -8,12 +8,18 @@
 #include <vgui.h>
 #include <VGUI_controls/Controls.h>
 #include <VGUI_controls/Panel.h>
+#include <VGUI_controls/BuildGroup.h>
 #include <IClientVGUI.h>
+#include <ICounterStrikeViewport.h>
 #include "plugins.h"
 #include "privatefuncs.h"
 #include "exportfuncs.h"
 
+#include "DpiManagerInternal.h"
 #include "VGUI2ExtensionInternal.h"
+
+#include <capstone.h>
+
 namespace vgui
 {
 bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryList, int numFactories);
@@ -24,6 +30,13 @@ extern vgui::ISurface_HL25* g_pSurface_HL25;
 
 bool g_IsNativeClientVGUI2 = false;
 IClientVGUI* g_pClientVGUI = NULL;
+CounterStrikeViewport* g_pCounterStrikeViewport = NULL;
+
+static vgui::Panel* g_pCSBackGroundPanel = NULL;
+
+static hook_t* g_phook_ClientVGUI_Panel_Init = NULL;
+static hook_t* g_phook_ClientVGUI_KeyValues_LoadFromFile = NULL;
+static hook_t* g_phook_ClientVGUI_LoadControlSettings = NULL;
 
 static void (__fastcall *m_pfnCClientVGUI_Initialize)(void *pthis, int,CreateInterfaceFn *factories, int count) = NULL;
 static void (__fastcall *m_pfnCClientVGUI_Start)(void *pthis, int) = NULL;
@@ -33,6 +46,509 @@ static void (__fastcall *m_pfnCClientVGUI_HideScoreBoard)(void *pthis, int) = NU
 static void (__fastcall *m_pfnCClientVGUI_HideAllVGUIMenu)(void *pthis, int) = NULL;
 static void (__fastcall *m_pfnCClientVGUI_ActivateClientUI)(void *pthis, int) = NULL;
 static void (__fastcall *m_pfnCClientVGUI_HideClientUI)(void *pthis, int) = NULL;
+
+/*
+============================================================
+ClientVGUI inline hook
+============================================================
+*/
+
+static bool g_bIsApplyingSettingsForAlteredProportionalPanels = false;
+
+bool IsApplyingSettingsForAlteredProportionalPanels()
+{
+	return g_bIsApplyingSettingsForAlteredProportionalPanels;
+}
+
+vgui::BuildGroup_Legacy *GetLegacyBuildGroup(vgui::Panel* pWindow)
+{
+	auto vftable = *(PVOID**)(pWindow);
+
+	auto pfnGetBuildGroup = (vgui::BuildGroup_Legacy *(__fastcall *)(vgui::Panel * pthis, int))vftable[139];
+	
+	return pfnGetBuildGroup(pWindow, 0);
+}
+
+void __fastcall ClientVGUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, int w, int h)
+{
+	gPrivateFuncs.ClientVGUI_Panel_Init(pthis, 0, x, y, w, h);
+
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManagerInternal()->IsHighDpiSupportEnabled())
+	{
+		PVOID* PanelVFTable = *(PVOID**)pthis;
+		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];
+		pfnSetProportional(pthis, 0, true);
+	}
+}
+
+void __fastcall CSBuyMenu_Activate(vgui::Panel* pthis, int dummy)
+{
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManagerInternal()->IsHighDpiSupportEnabled())
+	{
+		pthis->MoveToFront();
+		pthis->RequestFocus();
+		pthis->SetVisible(true);
+		pthis->SetEnabled(true);
+		vgui::surface()->SetMinimized(pthis->GetVPanel(), false);
+
+		int screenW, screenH;
+		vgui::surface()->GetScreenSize(screenW, screenH);
+
+		pthis->SetPos(0, 0);
+		pthis->SetSize(screenW, screenH);
+
+		int wide2 = vgui::scheme()->GetAlteredProportionalScaledValue(640);
+		int tall2 = vgui::scheme()->GetAlteredProportionalScaledValue(480);
+
+		int offsetX = (screenW - wide2) / 2;
+		int offsetY = (screenH - tall2) / 2;
+
+		int offset = min(offsetX, offsetY);
+
+		pthis->SetPos(offset, offset);
+	}
+	else
+	{
+		gPrivateFuncs.CSBuyMenu_Activate(pthis, dummy);
+	}
+}
+
+typedef struct
+{
+	int OffsetCandidates[2];
+	int OffsetCandidatesCount;
+	bool bFoundCall22Ch;
+}VGUI2_IsCSBackGroundPanelActivate_SearchContext;
+
+bool VGUI2_IsCSBackGroundPanelActivate(PVOID Candidate, int *pOffsetBase)
+{
+	VGUI2_IsCSBackGroundPanelActivate_SearchContext ctx = { 0 };
+
+	g_pMetaHookAPI->DisasmRanges(Candidate, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		auto pinst = (cs_insn*)inst;
+		auto ctx = (VGUI2_IsCSBackGroundPanelActivate_SearchContext*)context;
+
+		if (!ctx->bFoundCall22Ch &&
+			pinst->id == X86_INS_CALL &&
+			pinst->detail->x86.op_count == 1 &&
+			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[0].mem.base != 0 &&
+			pinst->detail->x86.operands[0].mem.disp == 0x22C)
+		{
+			ctx->bFoundCall22Ch = true;
+		}
+
+		if (pinst->id == X86_INS_MOV &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[0].mem.base != 0 &&
+			pinst->detail->x86.operands[0].mem.disp >= 0x130 &&
+			pinst->detail->x86.operands[0].mem.disp <= 0x140 &&
+			pinst->detail->x86.operands[1].type == X86_OP_REG)
+		{
+			if (ctx->OffsetCandidatesCount < 2)
+			{
+				ctx->OffsetCandidates[ctx->OffsetCandidatesCount] = pinst->detail->x86.operands[0].mem.disp;
+				ctx->OffsetCandidatesCount++;
+			}
+		}
+
+		if (ctx->bFoundCall22Ch)
+			return TRUE;
+
+		if (address[0] == 0xCC)
+			return TRUE;
+
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
+
+		return FALSE;
+
+	}, 0, &ctx);
+
+	if (ctx.bFoundCall22Ch && ctx.OffsetCandidatesCount >= 2)
+	{
+		(*pOffsetBase) = min(ctx.OffsetCandidates[0], ctx.OffsetCandidates[1]);
+		return true;
+	}
+
+	return false;
+}
+
+typedef struct
+{
+	PVOID CallCandidates[4];
+	int CallCount;
+	bool bFound280h;
+	bool bFound1E0h;
+}VGUI2_IsFitToScreen_SearchContext;
+
+bool VGUI2_IsFitToScreenInternal(PVOID Candidate, VGUI2_IsFitToScreen_SearchContext *ctx)
+{
+
+	g_pMetaHookAPI->DisasmRanges(ctx->CallCandidates[1], 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		auto pinst = (cs_insn*)inst;
+		auto ctx = (VGUI2_IsFitToScreen_SearchContext*)context;
+
+		if (!ctx->bFound280h &&
+			pinst->id == X86_INS_PUSH &&
+			pinst->detail->x86.op_count == 1 &&
+			pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+			pinst->detail->x86.operands[0].imm == 0x280)
+		{
+			ctx->bFound280h = true;
+		}
+
+		if (!ctx->bFound1E0h &&
+			pinst->id == X86_INS_PUSH &&
+			pinst->detail->x86.op_count == 1 &&
+			pinst->detail->x86.operands[0].type == X86_OP_IMM &&
+			pinst->detail->x86.operands[0].imm == 0x1E0)
+		{
+			ctx->bFound1E0h = true;
+		}
+
+		if (ctx->bFound1E0h && ctx->bFound280h)
+			return TRUE;
+
+		if (address[0] == 0xCC)
+			return TRUE;
+
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
+
+		return FALSE;
+
+	}, 0, ctx);
+
+	return ctx->bFound1E0h && ctx->bFound280h;
+}
+
+bool VGUI2_IsFitToScreen(PVOID Candidate)
+{
+	VGUI2_IsFitToScreen_SearchContext ctx = {0};
+
+	if (VGUI2_IsFitToScreenInternal(Candidate, &ctx))
+		return true;
+
+	memset(&ctx, 0, sizeof(ctx));
+
+	g_pMetaHookAPI->DisasmRanges(Candidate, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+		auto pinst = (cs_insn*)inst;
+		auto ctx = (VGUI2_IsFitToScreen_SearchContext*)context;
+
+		if (address[0] == 0xE8 && ctx->CallCount < 4)
+		{
+			ctx->CallCandidates[ctx->CallCount] = (PVOID)GetCallAddress(address);
+			ctx->CallCount++;
+		}
+
+		if (ctx->bFound1E0h && ctx->bFound280h)
+			return TRUE;
+
+		if (ctx->CallCount >= 4)
+			return TRUE;
+
+		if (address[0] == 0xCC)
+			return TRUE;
+
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
+
+		return FALSE;
+
+		}, 0, &ctx);
+
+
+	if (ctx.CallCount == 2)
+	{
+		VGUI2_IsFitToScreenInternal(ctx.CallCandidates[1], &ctx);
+
+		if (ctx.bFound1E0h && ctx.bFound280h)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void __fastcall ClientVGUI_LoadControlSettings(vgui::Panel* pthis, int dummy, const char* controlResourceName, const char* pathID)
+{
+	//if (!gPrivateFuncs.ClientVGUI_BuildGroup_vftable)
+	//{
+		//auto BuildGroup = GetLegacyBuildGroup(pthis);
+		//gPrivateFuncs.ClientVGUI_BuildGroup_vftable = *(PVOID**)BuildGroup;
+		//g_pMetaHookAPI->VFTHookEx(gPrivateFuncs.ClientVGUI_BuildGroup_vftable, 3, ClientVGUI_BuildGroup_LoadControlSettings, (void**)&gPrivateFuncs.ClientVGUI_BuildGroup_LoadControlSettings);
+		//g_pMetaHookAPI->VFTHookEx(gPrivateFuncs.ClientVGUI_BuildGroup_vftable, 5, ClientVGUI_BuildGroup_ApplySettings, (void**)&gPrivateFuncs.ClientVGUI_BuildGroup_ApplySettings);
+	//}
+
+	if (!strcmp(controlResourceName, "Resource/UI/BuyMenu.res"))
+	{
+		if (!gPrivateFuncs.CSBuyMenu_vftable)
+		{
+			gPrivateFuncs.CSBuyMenu_vftable = *(PVOID**)pthis;
+
+			for (int index = 159; index <= 160; ++index)
+			{
+				if (VGUI2_IsFitToScreen(gPrivateFuncs.CSBuyMenu_vftable[index]))
+				{
+					g_pMetaHookAPI->VFTHookEx(gPrivateFuncs.CSBuyMenu_vftable, index, CSBuyMenu_Activate, (void**)&gPrivateFuncs.CSBuyMenu_Activate);
+					break;
+				}
+			}
+			Sig_FuncNotFound(CSBuyMenu_Activate);
+		}
+	}
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManagerInternal()->IsHighDpiSupportEnabled())
+	{
+		if (!strcmp(controlResourceName, "Resource/UI/MOTD.res") ||
+			!strcmp(controlResourceName, "Resource/UI/TeamMenu.res") ||
+			!strcmp(controlResourceName, "Resource/UI/ClassMenu_CT.res") ||
+			!strcmp(controlResourceName, "Resource/UI/ClassMenu_TER.res"))
+		{
+			g_bIsApplyingSettingsForAlteredProportionalPanels = true;
+			gPrivateFuncs.ClientVGUI_LoadControlSettings(pthis, 0, controlResourceName, pathID);
+			g_bIsApplyingSettingsForAlteredProportionalPanels = false;
+			return;
+		}
+	}
+
+	gPrivateFuncs.ClientVGUI_LoadControlSettings(pthis, 0, controlResourceName, pathID);
+}
+
+void ClientVGUI_KeyValues_FitToFullScreen(KeyValues* pControlKeyValues)
+{
+	int xpos = pControlKeyValues->GetInt("xpos");
+	int ypos = pControlKeyValues->GetInt("ypos");
+
+	int screenW, screenH;
+	vgui::surface()->GetScreenSize(screenW, screenH);
+
+	int wide2 = vgui::scheme()->GetAlteredProportionalScaledValue(640);
+	int tall2 = vgui::scheme()->GetAlteredProportionalScaledValue(480);
+
+	int offsetX = (screenW - wide2) / 2;
+	int offsetY = (screenH - tall2) / 2;
+
+	xpos += vgui::scheme()->GetAlteredProportionalNormalizedValue(offsetX);
+	ypos += vgui::scheme()->GetAlteredProportionalNormalizedValue(offsetY);
+
+	pControlKeyValues->SetInt("xpos", xpos);
+	pControlKeyValues->SetInt("ypos", ypos);
+}
+
+void ClientVGUI_KeyValues_LoadFromFile_CounterStrike(KeyValues* pthis, const char* resourceName, const char* pathId)
+{
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManagerInternal()->IsHighDpiSupportEnabled())
+	{
+		if (!strcmp(resourceName, "Resource/UI/MOTD.res"))
+		{
+			auto pFrame = pthis->FindKey("ClientMOTD");
+			if (pFrame)
+			{
+				ClientVGUI_KeyValues_FitToFullScreen(pFrame);
+			}
+		}
+		else if (!strcmp(resourceName, "Resource/UI/TeamMenu.res"))
+		{
+			auto pFrame = pthis->FindKey("TeamMenu");
+			if (pFrame)
+			{
+				ClientVGUI_KeyValues_FitToFullScreen(pFrame);
+			}
+		}
+		else if (!strcmp(resourceName, "Resource/UI/ClassMenu_CT.res") || !strcmp(resourceName, "Resource/UI/ClassMenu_TER.res"))
+		{
+			auto pFrame = pthis->FindKey("ClassMenu");
+			if (pFrame)
+			{
+				ClientVGUI_KeyValues_FitToFullScreen(pFrame);
+			}
+		}
+	}
+}
+
+void __fastcall CCSBackGroundPanel_Activate(vgui::Panel* pthis, int dummy)
+{
+	gPrivateFuncs.CCSBackGroundPanel_Activate(pthis, dummy);
+
+	*(int *)((PUCHAR)pthis + gPrivateFuncs.CCSBackGroundPanel_XOffsetBase) = 0;
+	*(int *)((PUCHAR)pthis + gPrivateFuncs.CCSBackGroundPanel_XOffsetBase + 4) = 0;
+}
+
+#if 0
+void ResizeWindowControls(vgui::Panel* pWindow, int offsetX, int offsetY)
+{
+	if (!pWindow || !GetLegacyBuildGroup(pWindow) || !GetLegacyBuildGroup(pWindow)->GetPanelList())
+		return;
+
+	CUtlVector<vgui::PHandle>* panelList = GetLegacyBuildGroup(pWindow)->GetPanelList();
+	CUtlVector<vgui::Panel*> resizedPanels;
+	CUtlVector<vgui::Panel*> movedPanels;
+
+	// Resize to account for 1.25 aspect ratio (1280x1024) screens
+	{
+		for (int i = 0; i < panelList->Size(); ++i)
+		{
+			vgui::PHandle handle = (*panelList)[i];
+
+			vgui::Panel* panel = handle.GetWithControlModuleName("ClientUI");
+
+			bool found = false;
+			for (int j = 0; j < resizedPanels.Size(); ++j)
+			{
+				if (panel == resizedPanels[j])
+					found = true;
+			}
+
+			if (!panel || found)
+			{
+				continue;
+			}
+
+			resizedPanels.AddToTail(panel); // don't move a panel more than once
+
+			if (panel != pWindow)
+			{
+			
+			}
+		}
+	}
+
+	// and now re-center them.  Woohoo!
+	for (int i = 0; i < panelList->Size(); ++i)
+	{
+		vgui::PHandle handle = (*panelList)[i];
+
+		vgui::Panel* panel = handle.GetWithControlModuleName("ClientUI");
+
+		bool found = false;
+		for (int j = 0; j < movedPanels.Size(); ++j)
+		{
+			if (panel == movedPanels[j])
+				found = true;
+		}
+
+		if (!panel || found)
+		{
+			continue;
+		}
+
+		movedPanels.AddToTail(panel); // don't move a panel more than once
+
+		if (panel != pWindow)
+		{
+			int x, y;
+
+			panel->GetPos(x, y);
+			panel->SetPos(x + offsetX, y + offsetY);
+		}
+	}
+}
+
+void __fastcall CBuySubMenu_OnDisplay(vgui::Panel* pthis, int dummy)
+{
+	gPrivateFuncs.CBuySubMenu_OnDisplay(pthis, dummy);
+}
+
+#endif
+
+#if 0
+void *__fastcall CCSBackGroundPanel_ctor(vgui::Panel* pthis, int dummy, vgui::Panel* parent)
+{
+	auto r = gPrivateFuncs.CCSBackGroundPanel_ctor(pthis, dummy, parent);
+
+	if (!gPrivateFuncs.CCSBackGroundPanel_vftable)
+	{
+		gPrivateFuncs.CCSBackGroundPanel_vftable = *(decltype(gPrivateFuncs.CCSBackGroundPanel_vftable)*)pthis;
+		g_pMetaHookAPI->VFTHook(pthis, 0, 160, CCSBackGroundPanel_Activate, (void**)&gPrivateFuncs.CCSBackGroundPanel_Activate);
+	}
+
+	return r;
+}
+#endif
+
+#if 0
+
+void __fastcall ClientVGUI_BuildGroup_LoadControlSettings(vgui::BuildGroup_Legacy* pthis, int dummy, const char* controlResourceName, const char* pathID)
+{
+	if (!strcmp(controlResourceName, "Resource/UI/MOTD.res") ||
+		!strcmp(controlResourceName, "Resource/UI/TeamMenu.res") ||
+		!strcmp(controlResourceName, "Resource/UI/ClassMenu_CT.res") ||
+		!strcmp(controlResourceName, "Resource/UI/ClassMenu_TER.res"))
+	{
+		g_bIsApplyingSettingsForAlteredProportionalPanels = true;
+		gPrivateFuncs.ClientVGUI_BuildGroup_LoadControlSettings(pthis, dummy, controlResourceName, pathID);
+		g_bIsApplyingSettingsForAlteredProportionalPanels = false;
+		return;
+	}
+
+	gPrivateFuncs.ClientVGUI_BuildGroup_LoadControlSettings(pthis, dummy, controlResourceName, pathID);
+}
+
+void __fastcall ClientVGUI_BuildGroup_ApplySettings(vgui::BuildGroup_Legacy* pthis, int dummy, KeyValues* resourceData)
+{
+	gPrivateFuncs.ClientVGUI_BuildGroup_ApplySettings(pthis, dummy, resourceData);
+}
+#endif
+
+bool __fastcall ClientVGUI_KeyValues_LoadFromFile(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId)
+{
+	bool fake_ret = false;
+	bool real_ret = false;
+	bool ret = false;
+
+	VGUI2Extension_CallbackContext CallbackContext;
+
+	CallbackContext.Result = VGUI2Extension_Result::UNSET;
+	CallbackContext.IsPost = false;
+	CallbackContext.pPluginReturnValue = &fake_ret;
+
+	VGUI2ExtensionInternal()->KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "ClientUI", &CallbackContext);
+
+	if (CallbackContext.Result < VGUI2Extension_Result::SUPERCEDE)
+	{
+		real_ret = gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile(pthis, dummy, pFileSystem, resourceName, pathId);
+	}
+
+	if (CallbackContext.Result != VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS)
+	{
+		CallbackContext.Result = VGUI2Extension_Result::UNSET;
+		CallbackContext.IsPost = true;
+		CallbackContext.pRealReturnValue = &real_ret;
+
+		VGUI2ExtensionInternal()->KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, "ClientUI", &CallbackContext);
+	}
+
+	switch (CallbackContext.Result)
+	{
+	case VGUI2Extension_Result::OVERRIDE:
+	case VGUI2Extension_Result::SUPERCEDE:
+	case VGUI2Extension_Result::SUPERCEDE_SKIP_PLUGINS:
+	{
+		ret = fake_ret;
+	}
+	default:
+	{
+		ret = real_ret;
+	}
+	}
+
+	if (ret && g_bIsCounterStrike)
+	{
+		ClientVGUI_KeyValues_LoadFromFile_CounterStrike((KeyValues *)pthis, resourceName, pathId);
+	}
+
+	return ret;
+}
+
+/*
+============================================================
+ClientVGUI interface proxy
+============================================================
+*/
 
 class CClientVGUIProxy : public IClientVGUI
 {
@@ -67,6 +583,22 @@ void CClientVGUIProxy::Initialize(CreateInterfaceFn *factories, int count)
 void CClientVGUIProxy::Start(void)
 {
 	m_pfnCClientVGUI_Start(this, 0);
+
+	const int offset_CSBackGroundPanel = 0x72C;
+
+	g_pCSBackGroundPanel = *(vgui::Panel**)((PUCHAR)this + offset_CSBackGroundPanel);
+
+	gPrivateFuncs.CCSBackGroundPanel_vftable = *(PVOID**)g_pCSBackGroundPanel;
+
+	for (int index = 159; index <= 160; ++index)
+	{
+		if (VGUI2_IsCSBackGroundPanelActivate(gPrivateFuncs.CCSBackGroundPanel_vftable[index], &gPrivateFuncs.CCSBackGroundPanel_XOffsetBase))
+		{
+			g_pMetaHookAPI->VFTHook(g_pCSBackGroundPanel, 0, index, CCSBackGroundPanel_Activate, (void**)&gPrivateFuncs.CCSBackGroundPanel_Activate);
+			break;
+		}
+	}
+	Sig_FuncNotFound(CCSBackGroundPanel_Activate);
 
 	VGUI2ExtensionInternal()->ClientVGUI_Start();
 }
@@ -424,6 +956,99 @@ EXPOSE_SINGLE_INTERFACE(NewClientVGUI, IClientVGUI, CLIENTVGUI_INTERFACE_VERSION
 	Purpose : Install hooks for ClientVGUI interface
 */
 
+void ClientVGUI_FillAddress(void)
+{
+	ULONG ClientTextSize = 0;
+	PVOID ClientTextBase = ClientTextBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".text\0\0\0", &ClientTextSize);
+
+	if (!ClientTextBase)
+	{
+		Sys_Error("Failed to locate section \".text\" in client.dll!");
+		return;
+	}
+
+	ULONG ClientDataSize = 0;
+	auto ClientDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".data\0\0\0", &ClientDataSize);
+
+	ULONG ClientRdataSize = 0;
+	auto ClientRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".rdata\0\0", &ClientRdataSize);
+
+	if (1)
+	{
+		gPrivateFuncs.ClientVGUI_Panel_Init = (decltype(gPrivateFuncs.ClientVGUI_Panel_Init))VGUI2_FindPanelInit(ClientTextBase, ClientTextSize);
+		Sig_FuncNotFound(ClientVGUI_Panel_Init);
+
+		gPrivateFuncs.ClientVGUI_KeyValues_vftable = (decltype(gPrivateFuncs.ClientVGUI_KeyValues_vftable))gPrivateFuncs.ClientVGUI_KeyValues_vftable = VGUI2_FindKeyValueVFTable(
+			ClientTextBase, ClientTextSize,
+			ClientRdataBase, ClientRdataSize,
+			ClientDataBase, ClientDataSize);
+		Sig_FuncNotFound(ClientVGUI_KeyValues_vftable);
+
+		gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile = (decltype(gPrivateFuncs.ClientVGUI_KeyValues_LoadFromFile))gPrivateFuncs.ClientVGUI_KeyValues_vftable[2];
+	}
+
+	if (1)
+	{
+		const char sigs1[] = "Resource/UI/TeamMenu.res";
+		auto TeamMenu_res_String = Search_Pattern_From_Size(ClientRdataBase, ClientRdataSize, sigs1);
+		if (!TeamMenu_res_String)
+			TeamMenu_res_String = Search_Pattern_From_Size(ClientDataBase, ClientDataSize, sigs1);
+		Sig_VarNotFound(TeamMenu_res_String);
+
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern + 1) = (DWORD)TeamMenu_res_String;
+		auto TeamMenu_res_PushString = Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+		Sig_VarNotFound(TeamMenu_res_PushString);
+
+		g_pMetaHookAPI->DisasmRanges(TeamMenu_res_PushString, 0x80, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+
+			if (address[0] == 0xE8 && instCount <= 8)
+			{
+				gPrivateFuncs.ClientVGUI_LoadControlSettings = (decltype(gPrivateFuncs.ClientVGUI_LoadControlSettings))GetCallAddress(address);
+
+				return TRUE;
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+		}, 0, NULL);
+
+		Sig_FuncNotFound(ClientVGUI_LoadControlSettings);
+	}
+
+	/*
+	gPrivateFuncs.CCSBackGroundPanel_ctor =
+		(decltype(gPrivateFuncs.CCSBackGroundPanel_ctor))
+		((PUCHAR)g_dwClientBase + 0x1D640);
+
+	gPrivateFuncs.CClientMOTD_ctor =
+		(decltype(gPrivateFuncs.CClientMOTD_ctor))
+		((PUCHAR)g_dwClientBase + 0xA98F0);
+
+	gPrivateFuncs.CClientMOTD_vftable = (decltype(gPrivateFuncs.CClientMOTD_vftable))
+		((PUCHAR)g_dwClientBase + 0xD8B44);
+
+
+	gPrivateFuncs.ClientVGUI_BuildGroup_vftable =
+		(decltype(gPrivateFuncs.ClientVGUI_BuildGroup_vftable))
+		((PUCHAR)g_dwClientBase + 0xD0B5C);
+
+	gPrivateFuncs.CSBuyMenu_vftable = (decltype(gPrivateFuncs.CSBuyMenu_vftable))
+		((PUCHAR)g_dwClientBase + 0xC7C4C);
+
+	gPrivateFuncs.CBuySubMenu_vftable = (decltype(gPrivateFuncs.CBuySubMenu_vftable))
+		((PUCHAR)g_dwClientBase + 0xC7FBC);
+		*/
+}
+
 void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)
 {
 	CreateInterfaceFn ClientVGUICreateInterface = NULL;
@@ -444,16 +1069,23 @@ void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)
 
 		if (g_pClientVGUI)
 		{
-			PVOID* pVFTable = *(PVOID**)&s_ClientVGUIProxy;
+			PVOID* ProxyVFTable = *(PVOID**)&s_ClientVGUIProxy;
 
-			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 1, (void*)pVFTable[1], (void**)&m_pfnCClientVGUI_Initialize);
-			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 2, (void*)pVFTable[2], (void**)&m_pfnCClientVGUI_Start);
-			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 3, (void*)pVFTable[3], (void**)&m_pfnCClientVGUI_SetParent);
-			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 4, (void*)pVFTable[4], (void**)&m_pfnCClientVGUI_UseVGUI1);
-			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 5, (void*)pVFTable[5], (void**)&m_pfnCClientVGUI_HideScoreBoard);
-			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 6, (void*)pVFTable[6], (void**)&m_pfnCClientVGUI_HideAllVGUIMenu);
-			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 7, (void*)pVFTable[7], (void**)&m_pfnCClientVGUI_ActivateClientUI);
-			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 8, (void*)pVFTable[8], (void**)&m_pfnCClientVGUI_HideClientUI);
+			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 1, (void*)ProxyVFTable[1], (void**)&m_pfnCClientVGUI_Initialize);
+			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 2, (void*)ProxyVFTable[2], (void**)&m_pfnCClientVGUI_Start);
+			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 3, (void*)ProxyVFTable[3], (void**)&m_pfnCClientVGUI_SetParent);
+			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 4, (void*)ProxyVFTable[4], (void**)&m_pfnCClientVGUI_UseVGUI1);
+			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 5, (void*)ProxyVFTable[5], (void**)&m_pfnCClientVGUI_HideScoreBoard);
+			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 6, (void*)ProxyVFTable[6], (void**)&m_pfnCClientVGUI_HideAllVGUIMenu);
+			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 7, (void*)ProxyVFTable[7], (void**)&m_pfnCClientVGUI_ActivateClientUI);
+			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 8, (void*)ProxyVFTable[8], (void**)&m_pfnCClientVGUI_HideClientUI);
+
+			g_pCounterStrikeViewport = (CounterStrikeViewport*)(g_pClientVGUI - 1);
+
+			//Install_InlineHook(CCSBackGroundPanel_ctor);
+			Install_InlineHook(ClientVGUI_LoadControlSettings);
+			Install_InlineHook(ClientVGUI_KeyValues_LoadFromFile);
+			Install_InlineHook(ClientVGUI_Panel_Init);
 
 			g_IsNativeClientVGUI2 = true;
 		}

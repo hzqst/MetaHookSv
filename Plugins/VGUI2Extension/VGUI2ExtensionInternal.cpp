@@ -14,9 +14,9 @@ private:
 	std::vector<IVGUI2Extension_GameUICallbacks*> m_GameUICallbacks;
 	std::vector<IVGUI2Extension_GameUIOptionDialogCallbacks*> m_GameUIOptionDialogCallbacks;
 	std::vector<IVGUI2Extension_GameUITaskBarCallbacks*> m_GameUITaskBarCallbacks;
-	std::vector<IVGUI2Extension_GameUIKeyValuesCallbacks*> m_GameUIKeyValuesCallbacks;
 	std::vector<IVGUI2Extension_GameConsoleCallbacks*> m_GameConsoleCallbacks;
 	std::vector<IVGUI2Extension_ClientVGUICallbacks*> m_ClientVGUICallbacks;
+	std::vector<IVGUI2Extension_KeyValuesCallbacks*> m_KeyValuesCallbacks;
 
 public:
 
@@ -60,12 +60,12 @@ public:
 			});
 	}
 
-	void RegisterGameUIKeyValuesCallbacks(IVGUI2Extension_GameUIKeyValuesCallbacks* pCallbacks) override
+	void RegisterKeyValuesCallbacks(IVGUI2Extension_KeyValuesCallbacks* pCallbacks) override
 	{
-		m_GameUIKeyValuesCallbacks.emplace_back(pCallbacks);
+		m_KeyValuesCallbacks.emplace_back(pCallbacks);
 
-		std::sort(m_GameUIKeyValuesCallbacks.begin(), m_GameUIKeyValuesCallbacks.end(),
-			[](const IVGUI2Extension_GameUIKeyValuesCallbacks* a, const IVGUI2Extension_GameUIKeyValuesCallbacks* b) -> bool {
+		std::sort(m_KeyValuesCallbacks.begin(), m_KeyValuesCallbacks.end(),
+			[](const IVGUI2Extension_KeyValuesCallbacks* a, const IVGUI2Extension_KeyValuesCallbacks* b) -> bool {
 				return a->GetAltitude() > b->GetAltitude();
 			});
 	}
@@ -138,13 +138,13 @@ public:
 		}
 	}
 
-	void UnregisterGameUIKeyValuesCallbacks(IVGUI2Extension_GameUIKeyValuesCallbacks* pCallbacks) override
+	void UnregisterKeyValuesCallbacks(IVGUI2Extension_KeyValuesCallbacks* pCallbacks) override
 	{
-		for (auto it = m_GameUIKeyValuesCallbacks.begin(); it != m_GameUIKeyValuesCallbacks.end(); ++it)
+		for (auto it = m_KeyValuesCallbacks.begin(); it != m_KeyValuesCallbacks.end(); ++it)
 		{
 			if (*it == pCallbacks)
 			{
-				m_GameUIKeyValuesCallbacks.erase(it);
+				m_KeyValuesCallbacks.erase(it);
 				return;
 			}
 		}
@@ -599,9 +599,9 @@ public:
 		}
 	}
 
-	void GameUI_KeyValues_LoadFromFile(void*& pthis, IFileSystem*& pFileSystem, const char*& resourceName, const char*& pathId, const char *sourceModule, VGUI2Extension_CallbackContext* CallbackContext) override
+	void KeyValues_LoadFromFile(void*& pthis, IFileSystem*& pFileSystem, const char*& resourceName, const char*& pathId, const char *sourceModule, VGUI2Extension_CallbackContext* CallbackContext) override
 	{
-		for (auto it = m_GameUIKeyValuesCallbacks.begin(); it != m_GameUIKeyValuesCallbacks.end(); ++it)
+		for (auto it = m_KeyValuesCallbacks.begin(); it != m_KeyValuesCallbacks.end(); ++it)
 		{
 			(*it)->KeyValues_LoadFromFile(pthis, pFileSystem, resourceName, pathId, sourceModule, CallbackContext);
 

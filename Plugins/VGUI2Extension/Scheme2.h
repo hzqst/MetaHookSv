@@ -130,17 +130,31 @@ public:
 
 public:
 	//LD
-	int GetProportionalScaledValueEx(HScheme scheme, int normalizedValue);
-	int GetProportionalNormalizedValueEx(HScheme scheme, int scaledValue);
-	int GetProportionalScaledValueEx(IScheme2* pScheme, int normalizedValue);
-	int GetProportionalNormalizedValueEx(IScheme2* pScheme, int scaledValue);
+	int GetProportionalScaledValueEx(HScheme scheme, int normalizedValue) override;
+	int GetProportionalNormalizedValueEx(HScheme scheme, int scaledValue) override;
+	int GetProportionalScaledValueEx(IScheme2* pScheme, int normalizedValue) override;
+	int GetProportionalNormalizedValueEx(IScheme2* pScheme, int scaledValue) override;
 	//HD
-	int GetHDProportionalScaledValueEx(HScheme scheme, int normalizedValue);
-	int GetHDProportionalNormalizedValueEx(HScheme scheme, int scaledValue);
-	int GetHDProportionalScaledValueEx(IScheme2* pScheme, int normalizedValue);
-	int GetHDProportionalNormalizedValueEx(IScheme2* pScheme, int scaledValue);
+	int GetHDProportionalScaledValueEx(HScheme scheme, int normalizedValue) override;
+	int GetHDProportionalNormalizedValueEx(HScheme scheme, int scaledValue) override;
+	int GetHDProportionalScaledValueEx(IScheme2* pScheme, int normalizedValue) override;
+	int GetHDProportionalNormalizedValueEx(IScheme2* pScheme, int scaledValue) override;
 
-	HScheme LoadSchemeFromFileEx(VPANEL sizingPanel, const char* fileName, const char* tag);
+	HScheme LoadSchemeFromFileEx(VPANEL sizingPanel, const char* fileName, const char* tag) override;
+
+public:
+	float GetHorizontalProportionalScale(void) override;
+	int GetHorizontalProportionalScaledValue(int normalizedValue) override;
+	int GetHorizontalProportionalNormalizedValue(int scaledValue) override;
+	int GetHDHorizontalProportionalScaledValue(int normalizedValue) override;
+	int GetHDHorizontalProportionalNormalizedValue(int normalizedValue) override;
+
+public:
+	float GetAlteredProportionalScale(void) override;
+	int GetAlteredProportionalScaledValue(int normalizedValue) override;
+	int GetAlteredProportionalNormalizedValue(int scaledValue) override;
+	int GetHDAlteredProportionalScaledValue(int normalizedValue) override;
+	int GetHDAlteredProportionalNormalizedValue(int normalizedValue) override;
 
 private:
 	void ReloadFonts(void);
@@ -148,6 +162,17 @@ private:
 	int GetProportionalNormalizedValue_LD(int rootWide, int rootTall, int scaledValue);
 	int GetProportionalScaledValue_HD(int rootWide, int rootTall, int normalizedValue);
 	int GetProportionalNormalizedValue_HD(int rootWide, int rootTall, int scaledValue);
+
+	int GetHorizontalProportionalScaledValue_LD(int rootWide, int rootTall, int normalizedValue);
+	int GetHorizontalProportionalNormalizedValue_LD(int rootWide, int rootTall, int normalizedValue);
+	int GetHorizontalProportionalScaledValue_HD(int rootWide, int rootTall, int normalizedValue);
+	int GetHorizontalProportionalNormalizedValue_HD(int rootWide, int rootTall, int scaledValue);
+
+	int GetAlteredProportionalScaledValue_LD(int rootWide, int rootTall, int normalizedValue);
+	int GetAlteredProportionalNormalizedValue_LD(int rootWide, int rootTall, int normalizedValue);
+	int GetAlteredProportionalScaledValue_HD(int rootWide, int rootTall, int normalizedValue);
+	int GetAlteredProportionalNormalizedValue_HD(int rootWide, int rootTall, int scaledValue);
+
 	HScheme FindLoadedScheme(const char* fileName);
 	void DeleteImage(const char* pImageName);
 

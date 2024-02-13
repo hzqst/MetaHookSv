@@ -41,11 +41,40 @@ typedef struct
 	//Engine init
 	PVOID (*VGUIClient001_CreateInterface)(HINTERFACEMODULE hModule);
 
+	//ClientVGUI
+	void(__fastcall* ClientVGUI_Panel_Init)(void* pthis, int dummy, int x, int y, int w, int h);
+	void(__fastcall* ClientVGUI_Panel_SetSize)(void* pthis, int dummy, int width, int height);
+	void(__fastcall* ClientVGUI_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
+	void** ClientVGUI_KeyValues_vftable;
+	bool(__fastcall* ClientVGUI_KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId);
+
+	//void** ClientVGUI_BuildGroup_vftable;
+	//void(__fastcall* ClientVGUI_BuildGroup_ApplySettings)(void* pthis, int dummy, void* resourceData);
+	//void(__fastcall* ClientVGUI_BuildGroup_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
+
+	//void* (__fastcall* CCSBackGroundPanel_ctor)(void* pthis, int, void* parent);
+	void (__fastcall* CCSBackGroundPanel_Activate)(void* pthis, int dummy);
+	void** CCSBackGroundPanel_vftable;
+	int CCSBackGroundPanel_XOffsetBase;
+
+	//void* (__fastcall* CClientMOTD_ctor)(void* pthis, int, void* parent);
+	//void (__fastcall* CClientMOTD_PerformLayout)(void* pthis, int dummy);
+	//void (__fastcall* CClientMOTD_ApplySettings)(void* pthis, int dummy, void* inResourceData);
+	//void** CClientMOTD_vftable;
+
+	void* (__fastcall* CSBuyMenu_ctor)(void* pthis, int, void* parent);
+	void (__fastcall* CSBuyMenu_Activate)(void* pthis, int);
+	void** CSBuyMenu_vftable;
+
+	//void* (__fastcall* CBuySubMenu_ctor)(void* pthis, int, void* parent);
+	//void(__fastcall* CBuySubMenu_OnDisplay)(void* pthis, int);
+	//void** CBuySubMenu_vftable;
+
 	//ServerBrowser
 	void(__fastcall* ServerBrowser_Panel_Init)(void* pthis, int dummy, int x, int y, int w, int h);
 	void(__fastcall* ServerBrowser_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
 	//void(__fastcall* ServerBrowser_LoadControlSettingsAndUserConfig)(void* pthis, int dummy, const char* dialogResourceName, int dialogID);
-	void* (__fastcall* ServerBrowser_KeyValues_ctor)(void* pthis, int dummy, const char* name);
+	//void* (__fastcall* ServerBrowser_KeyValues_ctor)(void* pthis, int dummy, const char* name);
 	//void (__fastcall* CBaseGamesPage_OnButtonToggled)(void* pthis, int dummy, void* a2, int state);
 	void(__fastcall* ServerBrowser_Panel_SetSize)(void* pthis, int dummy, int width, int height);
 	void(__fastcall* ServerBrowser_Panel_SetMinimumSize)(void* pthis, int dummy, int width, int height);
@@ -133,6 +162,8 @@ PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule);
 bool SCR_IsLoadingVisible(void);
 
 PVOID VGUI2_FindPanelInit(PVOID TextBase, ULONG TextSize);
+PVOID *VGUI2_FindKeyValueVFTable(PVOID TextBase, ULONG TextSize, PVOID RdataBase, ULONG RdataSize, PVOID DataBase, ULONG DataSize);
+
 void Client_FillAddress(void);
 void Client_InstallHooks(void);
 void Client_UninstallHooks(void);
@@ -148,6 +179,7 @@ void GameUI_UninstallHooks(void);
 void ServerBrowser_FillAddress(void);
 void ServerBrowser_InstallHooks(void);
 void ServerBrowser_UninstallHooks(void);
+void ClientVGUI_FillAddress(void);
 void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc);
 void VGUI1_InstallHooks(void);
 void VGUI1_Shutdown(void);

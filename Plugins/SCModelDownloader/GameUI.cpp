@@ -193,7 +193,7 @@ GameUI KeyValues Callbacks
 =================================================================================================================
 */
 
-class CVGUI2Extension_GameUIKeyValuesCallbacks : public IVGUI2Extension_GameUIKeyValuesCallbacks
+class CVGUI2Extension_KeyValuesCallbacks : public IVGUI2Extension_KeyValuesCallbacks
 {
 public:
 	int GetAltitude() const override
@@ -207,7 +207,7 @@ public:
 	}
 };
 
-static CVGUI2Extension_GameUIKeyValuesCallbacks s_GameUIKeyValuesCallbacks;
+static CVGUI2Extension_KeyValuesCallbacks s_KeyValuesCallbacks;
 
 /*
 =================================================================================================================

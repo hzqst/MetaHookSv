@@ -23,6 +23,7 @@ extern DWORD g_dwEngineBuildnum;
 extern int g_iEngineType;
 extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;
+extern bool g_bIsCZero;
 
 #define MHPluginName "VGUI2Extension"
 #define Sys_Error(msg, ...) g_pMetaHookAPI->SysError("["  MHPluginName   "] " msg, __VA_ARGS__);

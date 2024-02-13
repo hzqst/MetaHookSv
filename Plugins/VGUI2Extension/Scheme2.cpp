@@ -22,6 +22,8 @@ using namespace vgui;
 
 const char *CSchemeManager::s_pszSearchString = NULL;
 
+bool IsApplyingSettingsForAlteredProportionalPanels();
+
 bool CSchemeManager::BitmapHandleSearchFunc(const CachedBitmapHandle_t &lhs, const CachedBitmapHandle_t &rhs)
 {
 	if (lhs.bitmap && rhs.bitmap)
@@ -686,8 +688,14 @@ HScheme CSchemeManager::GetScheme(const char *tag)
 	return 1;
 }
 
+//Vertical prop internal impl
+
 int CSchemeManager::GetProportionalScaledValue_LD(int rootWide, int rootTall, int normalizedValue)
 {
+	if (IsApplyingSettingsForAlteredProportionalPanels()) {
+		return GetAlteredProportionalScaledValue_LD(rootWide, rootTall, normalizedValue);
+	}
+
 	int proH, proW;
 	surface()->GetProportionalBase(proW, proH);
 
@@ -697,6 +705,10 @@ int CSchemeManager::GetProportionalScaledValue_LD(int rootWide, int rootTall, in
 
 int CSchemeManager::GetProportionalNormalizedValue_LD(int rootWide, int rootTall, int scaledValue)
 {
+	if (IsApplyingSettingsForAlteredProportionalPanels()) {
+		return GetAlteredProportionalNormalizedValue_LD(rootWide, rootTall, scaledValue);
+	}
+
 	int proH, proW;
 	surface()->GetProportionalBase(proW, proH);
 
@@ -704,10 +716,14 @@ int CSchemeManager::GetProportionalNormalizedValue_LD(int rootWide, int rootTall
 	return (int)(scaledValue / scale);
 }
 
-//Added in HL25
+//Vertical prop internal impl, but HD
 
 int CSchemeManager::GetProportionalScaledValue_HD(int rootWide, int rootTall, int normalizedValue)
 {
+	if (IsApplyingSettingsForAlteredProportionalPanels()) {
+		return GetAlteredProportionalScaledValue_HD(rootWide, rootTall, normalizedValue);
+	}
+
 	int proH, proW;
 	surface()->GetHDProportionalBase(proW, proH);
 
@@ -717,6 +733,10 @@ int CSchemeManager::GetProportionalScaledValue_HD(int rootWide, int rootTall, in
 
 int CSchemeManager::GetProportionalNormalizedValue_HD(int rootWide, int rootTall, int scaledValue)
 {
+	if (IsApplyingSettingsForAlteredProportionalPanels()) {
+		return GetAlteredProportionalNormalizedValue_HD(rootWide, rootTall, scaledValue);
+	}
+
 	int proH, proW;
 	surface()->GetHDProportionalBase(proW, proH);
 
@@ -724,7 +744,7 @@ int CSchemeManager::GetProportionalNormalizedValue_HD(int rootWide, int rootTall
 	return (int)(scaledValue / scale);
 }
 
-//LD
+//Vertical prop - scheme support
 
 int CSchemeManager::GetProportionalScaledValueEx(IScheme2*pScheme, int normalizedValue)
 {
@@ -778,6 +798,8 @@ int CSchemeManager::GetProportionalNormalizedValueEx(HScheme scheme, int scaledV
 	return GetProportionalNormalizedValueEx(p, scaledValue);
 }
 
+//Vertical prop - base support
+
 int CSchemeManager::GetProportionalScaledValue(int normalizedValue)
 {
 	int wide, tall;
@@ -792,7 +814,7 @@ int CSchemeManager::GetProportionalNormalizedValue(int scaledValue)
 	return GetProportionalNormalizedValue_LD(wide, tall, scaledValue);
 }
 
-//HD
+//Vertical prop - scheme with HD support
 
 int CSchemeManager::GetHDProportionalScaledValueEx(IScheme2* pScheme, int normalizedValue)
 {
@@ -870,6 +892,178 @@ int CSchemeManager::GetHDProportionalNormalizedValue(int scaledValue)
 	surface()->GetScreenSize(wide, tall);
 	return GetProportionalNormalizedValue_HD(wide, tall, scaledValue);
 }
+
+//Horizontal proportional
+
+float CSchemeManager::GetHorizontalProportionalScale(void)
+{
+	int wide, tall;
+	int propWide, propTall;
+	surface()->GetScreenSize(wide, tall);
+	surface()->GetProportionalBase(propWide, propTall);
+	return (float)(wide / (double)propWide);
+}
+
+int CSchemeManager::GetHorizontalProportionalScaledValue(int normalizedValue)
+{
+	int wide, tall;
+	surface()->GetScreenSize(wide, tall);
+	return GetHorizontalProportionalScaledValue_LD(wide, tall, normalizedValue);
+}
+
+int CSchemeManager::GetHorizontalProportionalNormalizedValue(int normalizedValue)
+{
+	int wide, tall;
+	surface()->GetScreenSize(wide, tall);
+	return GetHorizontalProportionalNormalizedValue_LD(wide, tall, normalizedValue);
+}
+
+int CSchemeManager::GetHDHorizontalProportionalScaledValue(int normalizedValue)
+{
+	int wide, tall;
+	surface()->GetScreenSize(wide, tall);
+	return GetHorizontalProportionalScaledValue_HD(wide, tall, normalizedValue);
+}
+
+int CSchemeManager::GetHDHorizontalProportionalNormalizedValue(int scaledValue)
+{
+	int wide, tall;
+	surface()->GetScreenSize(wide, tall);
+	return GetHorizontalProportionalNormalizedValue_HD(wide, tall, scaledValue);
+}
+
+//HorizontalProportional impl
+
+int CSchemeManager::GetHorizontalProportionalScaledValue_LD(int rootWide, int rootTall, int normalizedValue)
+{
+	int proH, proW;
+	surface()->GetProportionalBase(proW, proH);
+
+	double scale = (double)rootWide / (double)proW;
+	return (int)(normalizedValue * scale);
+}
+
+int CSchemeManager::GetHorizontalProportionalNormalizedValue_LD(int rootWide, int rootTall, int scaledValue)
+{
+	int proH, proW;
+	surface()->GetProportionalBase(proW, proH);
+
+	float scale = (double)rootWide / (double)proW;
+	return (int)(scaledValue / scale);
+}
+
+int CSchemeManager::GetHorizontalProportionalScaledValue_HD(int rootWide, int rootTall, int normalizedValue)
+{
+	int proH, proW;
+	surface()->GetHDProportionalBase(proW, proH);
+
+	double scale = (double)rootWide / (double)proW;
+	return (int)(normalizedValue * scale);
+}
+
+int CSchemeManager::GetHorizontalProportionalNormalizedValue_HD(int rootWide, int rootTall, int scaledValue)
+{
+	int proH, proW;
+	surface()->GetHDProportionalBase(proW, proH);
+
+	float scale = (double)rootWide / (double)proW;
+	return (int)(scaledValue / scale);
+}
+
+//Altered proportional
+
+float CSchemeManager::GetAlteredProportionalScale(void)
+{
+	int wide, tall;
+	int propWide, propTall;
+	surface()->GetScreenSize(wide, tall);
+	surface()->GetProportionalBase(propWide, propTall);
+	double scaleH = (double)tall / (double)propTall;
+	double scaleW = (double)wide / (double)propWide;
+	double scale = (scaleW < scaleH) ? scaleW : scaleH;
+
+	return scale;
+}
+
+int CSchemeManager::GetAlteredProportionalScaledValue(int normalizedValue)
+{
+	int wide, tall;
+	surface()->GetScreenSize(wide, tall);
+	return GetAlteredProportionalScaledValue_LD(wide, tall, normalizedValue);
+}
+
+int CSchemeManager::GetAlteredProportionalNormalizedValue(int normalizedValue)
+{
+	int wide, tall;
+	surface()->GetScreenSize(wide, tall);
+	return GetAlteredProportionalNormalizedValue_LD(wide, tall, normalizedValue);
+}
+
+int CSchemeManager::GetHDAlteredProportionalScaledValue(int normalizedValue)
+{
+	int wide, tall;
+	surface()->GetScreenSize(wide, tall);
+	return GetAlteredProportionalScaledValue_HD(wide, tall, normalizedValue);
+}
+
+int CSchemeManager::GetHDAlteredProportionalNormalizedValue(int scaledValue)
+{
+	int wide, tall;
+	surface()->GetScreenSize(wide, tall);
+	return GetAlteredProportionalNormalizedValue_HD(wide, tall, scaledValue);
+}
+
+//HorizontalProportional impl
+
+int CSchemeManager::GetAlteredProportionalScaledValue_LD(int rootWide, int rootTall, int normalizedValue)
+{
+	int proH, proW;
+	surface()->GetProportionalBase(proW, proH);
+
+	double scaleH = (double)rootTall / (double)proH;
+	double scaleW = (double)rootWide / (double)proW;
+	double scale = (scaleW < scaleH) ? scaleW : scaleH;
+
+	return (int)(normalizedValue * scale);
+}
+
+int CSchemeManager::GetAlteredProportionalNormalizedValue_LD(int rootWide, int rootTall, int scaledValue)
+{
+	int proH, proW;
+	surface()->GetProportionalBase(proW, proH);
+
+	double scaleH = (double)rootTall / (double)proH;
+	double scaleW = (double)rootWide / (double)proW;
+	double scale = (scaleW < scaleH) ? scaleW : scaleH;
+
+	return (int)(scaledValue / scale);
+}
+
+int CSchemeManager::GetAlteredProportionalScaledValue_HD(int rootWide, int rootTall, int normalizedValue)
+{
+	int proH, proW;
+	surface()->GetHDProportionalBase(proW, proH);
+
+	double scaleH = (double)rootTall / (double)proH;
+	double scaleW = (double)rootWide / (double)proW;
+	double scale = (scaleW < scaleH) ? scaleW : scaleH;
+
+	return (int)(normalizedValue * scale);
+}
+
+int CSchemeManager::GetAlteredProportionalNormalizedValue_HD(int rootWide, int rootTall, int scaledValue)
+{
+	int proH, proW;
+	surface()->GetHDProportionalBase(proW, proH);
+
+	double scaleH = (double)rootTall / (double)proH;
+	double scaleW = (double)rootWide / (double)proW;
+	double scale = (scaleW < scaleH) ? scaleW : scaleH;
+
+	return (int)(scaledValue / scale);
+}
+
+//Other impl
 
 const char *CScheme::GetResourceString(const char *stringName)
 {
