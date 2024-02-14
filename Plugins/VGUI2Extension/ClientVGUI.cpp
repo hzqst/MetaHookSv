@@ -290,17 +290,27 @@ void __fastcall ClientVGUI_LoadControlSettings(vgui::Panel* pthis, int dummy, co
 		{
 			gPrivateFuncs.CSBuyMenu_vftable = *(PVOID**)pthis;
 
-			for (int index = 159; index <= 160; ++index)
+			if (gPrivateFuncs.ClientVGUI_Frame_Activate_vftable_index)
 			{
-				if (VGUI2_IsFitToScreen(gPrivateFuncs.CSBuyMenu_vftable[index]))
+				int index = gPrivateFuncs.ClientVGUI_Frame_Activate_vftable_index;
+				g_pMetaHookAPI->VFTHookEx(gPrivateFuncs.CSBuyMenu_vftable, index, CSBuyMenu_Activate, (void**)&gPrivateFuncs.CSBuyMenu_Activate);
+			}
+			else
+			{
+				for (int index = 159; index <= 160; ++index)
 				{
-					g_pMetaHookAPI->VFTHookEx(gPrivateFuncs.CSBuyMenu_vftable, index, CSBuyMenu_Activate, (void**)&gPrivateFuncs.CSBuyMenu_Activate);
-					break;
+					if (VGUI2_IsFitToScreen(gPrivateFuncs.CSBuyMenu_vftable[index]))
+					{
+						gPrivateFuncs.ClientVGUI_Frame_Activate_vftable_index = index;
+						g_pMetaHookAPI->VFTHookEx(gPrivateFuncs.CSBuyMenu_vftable, index, CSBuyMenu_Activate, (void**)&gPrivateFuncs.CSBuyMenu_Activate);
+						break;
+					}
 				}
 			}
 			Sig_FuncNotFound(CSBuyMenu_Activate);
 		}
 	}
+
 	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
 		if (!strcmp(controlResourceName, "Resource/UI/MOTD.res") ||
@@ -594,6 +604,7 @@ void CClientVGUIProxy::Start(void)
 	{
 		if (VGUI2_IsCSBackGroundPanelActivate(gPrivateFuncs.CCSBackGroundPanel_vftable[index], &gPrivateFuncs.CCSBackGroundPanel_XOffsetBase))
 		{
+			gPrivateFuncs.ClientVGUI_Frame_Activate_vftable_index = index;
 			g_pMetaHookAPI->VFTHook(g_pCSBackGroundPanel, 0, index, CCSBackGroundPanel_Activate, (void**)&gPrivateFuncs.CCSBackGroundPanel_Activate);
 			break;
 		}
@@ -1082,7 +1093,6 @@ void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)
 
 			g_pCounterStrikeViewport = (CounterStrikeViewport*)(g_pClientVGUI - 1);
 
-			//Install_InlineHook(CCSBackGroundPanel_ctor);
 			Install_InlineHook(ClientVGUI_LoadControlSettings);
 			Install_InlineHook(ClientVGUI_KeyValues_LoadFromFile);
 			Install_InlineHook(ClientVGUI_Panel_Init);

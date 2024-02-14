@@ -52,6 +52,7 @@ typedef struct
 	//void(__fastcall* ClientVGUI_BuildGroup_ApplySettings)(void* pthis, int dummy, void* resourceData);
 	//void(__fastcall* ClientVGUI_BuildGroup_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
 
+	int ClientVGUI_Frame_Activate_vftable_index;
 	//void* (__fastcall* CCSBackGroundPanel_ctor)(void* pthis, int, void* parent);
 	void (__fastcall* CCSBackGroundPanel_Activate)(void* pthis, int dummy);
 	void** CCSBackGroundPanel_vftable;
