@@ -16,15 +16,15 @@ static void (_fastcall *g_pfnRemoveKeyValuesFromMemoryLeakList)(void *pthis, int
 class CKeyValuesSystemProxy : public IKeyValuesSystem
 {
 public:
-	virtual void RegisterSizeofKeyValues(int size);
-	virtual void *AllocKeyValuesMemory(int size);
-	virtual void FreeKeyValuesMemory(void *pMem);
-	virtual HKeySymbol GetSymbolForString(const char *name);
-	virtual const char *GetStringForSymbol(HKeySymbol symbol);
-	virtual void GetLocalizedFromANSI(const char *ansi, wchar_t *outBuf, int unicodeBufferSizeInBytes);
-	virtual void GetANSIFromLocalized(const wchar_t *wchar, char *outBuf, int ansiBufferSizeInBytes);
-	virtual void AddKeyValuesToMemoryLeakList(void *pMem, HKeySymbol name);
-	virtual void RemoveKeyValuesFromMemoryLeakList(void *pMem);
+	void RegisterSizeofKeyValues(int size) override;
+	void *AllocKeyValuesMemory(int size) override;
+	void FreeKeyValuesMemory(void* pMem) override;
+	HKeySymbol GetSymbolForString(const char *name) override;
+	const char *GetStringForSymbol(HKeySymbol symbol) override;
+	void GetLocalizedFromANSI(const char *ansi, wchar_t *outBuf, int unicodeBufferSizeInBytes) override;
+	void GetANSIFromLocalized(const wchar_t *wchar, char *outBuf, int ansiBufferSizeInBytes) override;
+	void AddKeyValuesToMemoryLeakList(void *pMem, HKeySymbol name) override;
+	void RemoveKeyValuesFromMemoryLeakList(void *pMem) override;
 };
 
 void CKeyValuesSystemProxy::RegisterSizeofKeyValues(int size)

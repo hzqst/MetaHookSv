@@ -810,15 +810,14 @@ void CSurfaceProxy::GetAbsoluteWindowBounds(int &x, int &y, int &wide, int &tall
 
 void CSurfaceProxy::GetProportionalBase(int &width, int &height)
 {
-	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
+	if (g_iProportionalBaseWidth && g_iProportionalBaseHeight)
 	{
-		width = g_iProportionalBaseWidthHD;
-		height = g_iProportionalBaseHeightHD;
+		width = g_iProportionalBaseWidth;
+		height = g_iProportionalBaseHeight;
+		return;
 	}
-	else
-	{
-		m_pfnGetProportionalBase(g_pSurface, 0, width, height);
-	}
+
+	m_pfnGetProportionalBase(g_pSurface, 0, width, height);
 }
 
 void CSurfaceProxy::CalculateMouseVisible(void)
@@ -1666,7 +1665,13 @@ void CSurfaceProxy_HL25::GetAbsoluteWindowBounds(int &x, int &y, int &wide, int 
 
 void CSurfaceProxy_HL25::GetProportionalBase(int &width, int &height)
 {
-	//g_pSurface_HL25->GetProportionalBase(width, height);
+	if (g_iProportionalBaseWidth && g_iProportionalBaseHeight)
+	{
+		width = g_iProportionalBaseWidth;
+		height = g_iProportionalBaseHeight;
+		return;
+	}
+
 	m_pfnGetProportionalBase(g_pSurface_HL25, 0, width, height);
 }
 

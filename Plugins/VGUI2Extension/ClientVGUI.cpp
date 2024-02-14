@@ -408,8 +408,11 @@ void __fastcall CCSBackGroundPanel_Activate(vgui::Panel* pthis, int dummy)
 {
 	gPrivateFuncs.CCSBackGroundPanel_Activate(pthis, dummy);
 
-	*(int *)((PUCHAR)pthis + gPrivateFuncs.CCSBackGroundPanel_XOffsetBase) = 0;
-	*(int *)((PUCHAR)pthis + gPrivateFuncs.CCSBackGroundPanel_XOffsetBase + 4) = 0;
+	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManagerInternal()->IsHighDpiSupportEnabled())
+	{
+		*(int*)((PUCHAR)pthis + gPrivateFuncs.CCSBackGroundPanel_XOffsetBase) = 0;
+		*(int*)((PUCHAR)pthis + gPrivateFuncs.CCSBackGroundPanel_XOffsetBase + 4) = 0;
+	}
 }
 
 #if 0
