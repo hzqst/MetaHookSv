@@ -20,31 +20,36 @@
 
 using namespace vgui;
 
-const char *CSchemeManager::s_pszSearchString = NULL;
-
-bool IsApplyingSettingsForAlteredProportionalPanels();
-
-bool CSchemeManager::BitmapHandleSearchFunc(const CachedBitmapHandle_t &lhs, const CachedBitmapHandle_t &rhs)
-{
-	if (lhs.bitmap && rhs.bitmap)
-		return stricmp(lhs.bitmap->GetName(), rhs.bitmap->GetName()) > 0;
-	else if (lhs.bitmap)
-		return stricmp(lhs.bitmap->GetName(), s_pszSearchString) > 0;
-
-	return stricmp(s_pszSearchString, rhs.bitmap->GetName()) > 0;
-}
-
 static CSchemeManager g_SchemeManagerNew;
 
 ISchemeManager2* g_pVGuiSchemeManager2 = &g_SchemeManagerNew;
 
 EXPOSE_SINGLE_INTERFACE_GLOBALVAR(CSchemeManager, ISchemeManager2, VGUI_SCHEME2_INTERFACE_VERSION, g_SchemeManagerNew);
 
+bool CSchemeManager::BitmapHandleSearchFunc(const CachedBitmapHandle_t& lhs, const CachedBitmapHandle_t& rhs)
+{
+	if (lhs.bitmap && rhs.bitmap)
+		return stricmp(lhs.bitmap->GetName(), rhs.bitmap->GetName()) > 0;
+	else if (lhs.bitmap)
+		return stricmp(lhs.bitmap->GetName(), g_SchemeManagerNew.GetCurrentSearchString()) > 0;
+
+	return stricmp(g_SchemeManagerNew.GetCurrentSearchString(), rhs.bitmap->GetName()) > 0;
+}
+
+const char* CSchemeManager::GetCurrentSearchString() const
+{
+	return s_pszSearchString;
+}
+
 CSchemeManager::CSchemeManager(void)
 {
 	CScheme *nullScheme = new CScheme();
 	m_Schemes.AddToTail(nullScheme);
 	m_Bitmaps.SetLessFunc(&BitmapHandleSearchFunc);
+
+	s_pszSearchString = NULL;
+	m_bIsForcingAlteredProportional = false;
+	m_bIsForcingHDProportional = false;
 }
 
 CSchemeManager::~CSchemeManager()
@@ -156,10 +161,10 @@ HScheme CSchemeManager::LoadSchemeFromFileEx(VPANEL sizingPanel, const char *fil
 	}
 
 	//Why GAME ?
-	if (!result)
-	{
-		result = data->LoadFromFile(g_pFullFileSystem, fileName, "GAME");
-	}
+	//if (!result)
+	//{
+	//	result = data->LoadFromFile(g_pFullFileSystem, fileName, "GAME");
+	//}
 
 	//Fallback
 	if (!result)
@@ -692,7 +697,7 @@ HScheme CSchemeManager::GetScheme(const char *tag)
 
 int CSchemeManager::GetProportionalScaledValue_LD(int rootWide, int rootTall, int normalizedValue)
 {
-	if (IsApplyingSettingsForAlteredProportionalPanels()) {
+	if (m_bIsForcingAlteredProportional) {
 		return GetAlteredProportionalScaledValue_LD(rootWide, rootTall, normalizedValue);
 	}
 
@@ -705,7 +710,7 @@ int CSchemeManager::GetProportionalScaledValue_LD(int rootWide, int rootTall, in
 
 int CSchemeManager::GetProportionalNormalizedValue_LD(int rootWide, int rootTall, int scaledValue)
 {
-	if (IsApplyingSettingsForAlteredProportionalPanels()) {
+	if (m_bIsForcingAlteredProportional) {
 		return GetAlteredProportionalNormalizedValue_LD(rootWide, rootTall, scaledValue);
 	}
 
@@ -720,7 +725,7 @@ int CSchemeManager::GetProportionalNormalizedValue_LD(int rootWide, int rootTall
 
 int CSchemeManager::GetProportionalScaledValue_HD(int rootWide, int rootTall, int normalizedValue)
 {
-	if (IsApplyingSettingsForAlteredProportionalPanels()) {
+	if (m_bIsForcingAlteredProportional) {
 		return GetAlteredProportionalScaledValue_HD(rootWide, rootTall, normalizedValue);
 	}
 
@@ -733,7 +738,7 @@ int CSchemeManager::GetProportionalScaledValue_HD(int rootWide, int rootTall, in
 
 int CSchemeManager::GetProportionalNormalizedValue_HD(int rootWide, int rootTall, int scaledValue)
 {
-	if (IsApplyingSettingsForAlteredProportionalPanels()) {
+	if (m_bIsForcingAlteredProportional) {
 		return GetAlteredProportionalNormalizedValue_HD(rootWide, rootTall, scaledValue);
 	}
 
@@ -873,10 +878,10 @@ int CSchemeManager::GetHDProportionalNormalizedValueEx(HScheme scheme, int scale
 float CSchemeManager::GetProportionalScale()
 {
 	int wide, tall;
-	int propWide, propTall;
+	int proW, proH;
 	surface()->GetScreenSize(wide, tall);
-	surface()->GetProportionalBase(propWide, propTall);
-	return (float)(tall / (double)propTall);
+	surface()->GetProportionalBase(proW, proH);
+	return (float)(tall / (double)proH);
 }
 
 int CSchemeManager::GetHDProportionalScaledValue(int normalizedValue)
@@ -898,10 +903,10 @@ int CSchemeManager::GetHDProportionalNormalizedValue(int scaledValue)
 float CSchemeManager::GetHorizontalProportionalScale(void)
 {
 	int wide, tall;
-	int propWide, propTall;
+	int proW, proH;
 	surface()->GetScreenSize(wide, tall);
-	surface()->GetProportionalBase(propWide, propTall);
-	return (float)(wide / (double)propWide);
+	surface()->GetProportionalBase(proW, proH);
+	return (float)(wide / (double)proW);
 }
 
 int CSchemeManager::GetHorizontalProportionalScaledValue(int normalizedValue)
@@ -1064,6 +1069,16 @@ int CSchemeManager::GetAlteredProportionalNormalizedValue_HD(int rootWide, int r
 }
 
 //Other impl
+
+void CSchemeManager::SetForcingAlteredProportional(bool bForcingAlteredProportional)
+{
+	m_bIsForcingAlteredProportional = bForcingAlteredProportional;
+}
+
+bool CSchemeManager::IsForcingAlteredProportional() const
+{
+	return m_bIsForcingAlteredProportional;
+}
 
 const char *CScheme::GetResourceString(const char *stringName)
 {

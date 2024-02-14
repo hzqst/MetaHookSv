@@ -27,6 +27,7 @@ int g_iProportionalBaseWidth = 640;
 int g_iProportionalBaseHeight = 480;
 int g_iProportionalBaseWidthHD = 1280;
 int g_iProportionalBaseHeightHD = 720;
+bool g_bIsForcingHDProportional = false;
 
 static CUtlVector<CUtlSymbol> m_CustomFontFileNames;
 
@@ -810,6 +811,13 @@ void CSurfaceProxy::GetAbsoluteWindowBounds(int &x, int &y, int &wide, int &tall
 
 void CSurfaceProxy::GetProportionalBase(int &width, int &height)
 {
+	if (g_bIsForcingHDProportional && g_iProportionalBaseWidthHD && g_iProportionalBaseHeightHD)
+	{
+		width = g_iProportionalBaseWidthHD;
+		height = g_iProportionalBaseHeightHD;
+		return;
+	}
+
 	if (g_iProportionalBaseWidth && g_iProportionalBaseHeight)
 	{
 		width = g_iProportionalBaseWidth;
@@ -1665,6 +1673,13 @@ void CSurfaceProxy_HL25::GetAbsoluteWindowBounds(int &x, int &y, int &wide, int 
 
 void CSurfaceProxy_HL25::GetProportionalBase(int &width, int &height)
 {
+	if (g_bIsForcingHDProportional && g_iProportionalBaseWidthHD && g_iProportionalBaseHeightHD)
+	{
+		width = g_iProportionalBaseWidthHD;
+		height = g_iProportionalBaseHeightHD;
+		return;
+	}
+
 	if (g_iProportionalBaseWidth && g_iProportionalBaseHeight)
 	{
 		width = g_iProportionalBaseWidth;

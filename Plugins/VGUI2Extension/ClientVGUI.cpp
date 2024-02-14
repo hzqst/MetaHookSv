@@ -53,13 +53,6 @@ ClientVGUI inline hook
 ============================================================
 */
 
-static bool g_bIsApplyingSettingsForAlteredProportionalPanels = false;
-
-bool IsApplyingSettingsForAlteredProportionalPanels()
-{
-	return g_bIsApplyingSettingsForAlteredProportionalPanels;
-}
-
 vgui::BuildGroup_Legacy *GetLegacyBuildGroup(vgui::Panel* pWindow)
 {
 	auto vftable = *(PVOID**)(pWindow);
@@ -318,9 +311,9 @@ void __fastcall ClientVGUI_LoadControlSettings(vgui::Panel* pthis, int dummy, co
 			!strcmp(controlResourceName, "Resource/UI/ClassMenu_CT.res") ||
 			!strcmp(controlResourceName, "Resource/UI/ClassMenu_TER.res"))
 		{
-			g_bIsApplyingSettingsForAlteredProportionalPanels = true;
+			vgui::scheme()->SetForcingAlteredProportional(true);
 			gPrivateFuncs.ClientVGUI_LoadControlSettings(pthis, 0, controlResourceName, pathID);
-			g_bIsApplyingSettingsForAlteredProportionalPanels = false;
+			vgui::scheme()->SetForcingAlteredProportional(false);
 			return;
 		}
 	}
@@ -516,9 +509,9 @@ void __fastcall ClientVGUI_BuildGroup_LoadControlSettings(vgui::BuildGroup_Legac
 		!strcmp(controlResourceName, "Resource/UI/ClassMenu_CT.res") ||
 		!strcmp(controlResourceName, "Resource/UI/ClassMenu_TER.res"))
 	{
-		g_bIsApplyingSettingsForAlteredProportionalPanels = true;
+		vgui::scheme()->SetForcingAlteredProportional(true);
 		gPrivateFuncs.ClientVGUI_BuildGroup_LoadControlSettings(pthis, dummy, controlResourceName, pathID);
-		g_bIsApplyingSettingsForAlteredProportionalPanels = false;
+		vgui::scheme()->SetForcingAlteredProportional(false);
 		return;
 	}
 

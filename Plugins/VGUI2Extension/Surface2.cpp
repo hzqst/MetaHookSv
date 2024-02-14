@@ -18,6 +18,7 @@ extern int g_iProportionalBaseWidth;
 extern int g_iProportionalBaseHeight;
 extern int g_iProportionalBaseWidthHD;
 extern int g_iProportionalBaseHeightHD;
+extern bool g_bIsForcingHDProportional;
 
 using namespace vgui;
 
@@ -1012,9 +1013,6 @@ void CSurface2::GetWorkspaceBounds(int &x, int &y, int &wide, int &tall)
 	return g_pSurface->GetWorkspaceBounds(x, y, wide, tall);
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: gets the absolute coordinates of the screen (in screen space)
-//-----------------------------------------------------------------------------
 void CSurface2::GetAbsoluteWindowBounds(int &x, int &y, int &wide, int &tall)
 {
 	if (g_pSurface_HL25)
@@ -1022,6 +1020,16 @@ void CSurface2::GetAbsoluteWindowBounds(int &x, int &y, int &wide, int &tall)
 		return g_pSurface_HL25->GetAbsoluteWindowBounds(x, y, wide, tall);
 	}
 	return g_pSurface->GetAbsoluteWindowBounds(x, y, wide, tall);
+}
+
+void CSurface2::SetForcingHDProportional(bool bForcingHDProportional)
+{
+	g_bIsForcingHDProportional = bForcingHDProportional;
+}
+
+bool CSurface2::IsForcingHDProportional() const
+{
+	return g_bIsForcingHDProportional;
 }
 
 void CSurface2::GetProportionalBase(int &width, int &height)

@@ -156,6 +156,10 @@ public:
 	int GetHDAlteredProportionalScaledValue(int normalizedValue) override;
 	int GetHDAlteredProportionalNormalizedValue(int normalizedValue) override;
 
+public:
+	void SetForcingAlteredProportional(bool bForcingAlteredProportional) override;
+	bool IsForcingAlteredProportional() const override;
+
 private:
 	void ReloadFonts(void);
 	int GetProportionalScaledValue_LD(int rootWide, int rootTall, int normalizedValue);
@@ -175,10 +179,14 @@ private:
 
 	HScheme FindLoadedScheme(const char* fileName);
 	void DeleteImage(const char* pImageName);
+public:
+	const char* GetCurrentSearchString() const;
 
 private:
 	CUtlVector<CScheme*> m_Schemes;
-	static const char* s_pszSearchString;
+	const char* s_pszSearchString;
+	bool m_bIsForcingAlteredProportional;
+	bool m_bIsForcingHDProportional;
 
 	struct CachedBitmapHandle_t
 	{

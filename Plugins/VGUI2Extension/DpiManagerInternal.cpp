@@ -1,13 +1,10 @@
 #include <metahook.h>
 #include "exportfuncs.h"
 #include "privatefuncs.h"
-#include "Surface2.h"
 #include "DpiManagerInternal.h"
+#include <ISurface2.h>
 
-extern int g_iProportionalBaseWidth;
-extern int g_iProportionalBaseHeight;
-extern int g_iProportionalBaseWidthHD;
-extern int g_iProportionalBaseHeightHD;
+extern vgui::ISurface2* g_pVGuiSurface2;
 
 void COM_FixSlashes(char* pname);
 
@@ -27,7 +24,7 @@ public:
 		m_bIsHighDpiSupported = false;
 	}
 
-	void Init() override
+	void InitEngine() override
 	{
 		if (DpiScalingSource_SDL2 > m_iDpiScalingSource)
 		{
@@ -100,7 +97,7 @@ public:
 		}
 	}
 
-	void PostInit() override
+	void InitClient() override
 	{
 		if (GetDpiScaling() > 1.0f)
 			m_bIsHighDpiSupported = true;
@@ -111,13 +108,21 @@ public:
 		if (gEngfuncs.CheckParm("-high_dpi", NULL))
 			m_bIsHighDpiSupported = true;
 
-		if (g_iVideoHeight < g_iProportionalBaseHeightHD)
+		int proW, proH;
+		g_pVGuiSurface2->GetHDProportionalBase(proW, proH);
+
+		if (g_iVideoWidth < proW)
+			m_bIsHighDpiSupported = false;
+
+		if (g_iVideoHeight < proH)
 			m_bIsHighDpiSupported = false;
 
 		if (IsHighDpiSupportEnabled())
 		{
+			g_pVGuiSurface2->SetForcingHDProportional(true);
+
 			char temp[1024];
-#if 0
+#if 1
 			snprintf(temp, sizeof(temp), "%s\\%s_dpi%.0f", GetBaseDirectory(), gEngfuncs.pfnGetGameDirectory(), DpiManagerInternal()->GetDpiScaling() * 100.0f);
 			COM_FixSlashes(temp);
 
@@ -145,7 +150,7 @@ public:
 			//TODO: hook FileSystem_AddFallbackGameDir ?
 			if (g_bIsCZero)
 			{
-#if 0
+#if 1
 				snprintf(temp, sizeof(temp), "%s\\cstrike_dpi%.0f", GetBaseDirectory(), DpiManagerInternal()->GetDpiScaling() * 100.0f);
 				COM_FixSlashes(temp);
 

@@ -6,9 +6,9 @@
 class IDpiManagerInternal : public IDpiManager
 {
 public:
-	virtual void Init() = 0;
+	virtual void InitEngine() = 0;
 	virtual void InitFromMainHwnd() = 0;
-	virtual void PostInit() = 0;
+	virtual void InitClient() = 0;
 	virtual void Shutdown() = 0;
 };
 

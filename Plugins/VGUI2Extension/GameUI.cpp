@@ -35,6 +35,9 @@ static hook_t* g_phook_TextEntry_LayoutVerticalScrollBarSlider = NULL;
 static hook_t* g_phook_TextEntry_GetStartDrawIndex = NULL;
 static hook_t* g_phook_GameUI_PropertySheet_HasHotkey = NULL;
 static hook_t* g_phook_GameUI_FocusNavGroup_GetCurrentFocus = NULL;
+static hook_t* g_phook_CCareerProfileFrame_ctor = NULL;
+static hook_t* g_phook_CCareerMapFrame_ctor = NULL;
+static hook_t* g_phook_CCareerBotFrame_ctor = NULL;
 
 namespace vgui
 {
@@ -565,6 +568,42 @@ void __fastcall GameUI_MessageBox_ApplySchemeSettings_Panel_SetSize(vgui::Panel*
 GameUI inline hook
 ====================================================================
 */
+
+void *__fastcall CCareerProfileFrame_ctor(void* pthis, int dummy, void* parent)
+{
+	bool bOriginal = vgui::surface()->IsForcingHDProportional();
+	vgui::surface()->SetForcingHDProportional(false);
+
+	auto r = gPrivateFuncs.CCareerProfileFrame_ctor(pthis, dummy, parent);
+
+	vgui::surface()->SetForcingHDProportional(bOriginal);
+
+	return r;
+}
+
+void* __fastcall CCareerMapFrame_ctor(void* pthis, int dummy, void* parent)
+{
+	bool bOriginal = vgui::surface()->IsForcingHDProportional();
+	vgui::surface()->SetForcingHDProportional(false);
+
+	auto r = gPrivateFuncs.CCareerMapFrame_ctor(pthis, dummy, parent);
+
+	vgui::surface()->SetForcingHDProportional(bOriginal);
+
+	return r;
+}
+
+void* __fastcall CCareerBotFrame_ctor(void* pthis, int dummy, void* parent)
+{
+	bool bOriginal = vgui::surface()->IsForcingHDProportional();
+	vgui::surface()->SetForcingHDProportional(false);
+
+	auto r = gPrivateFuncs.CCareerBotFrame_ctor(pthis, dummy, parent);
+
+	vgui::surface()->SetForcingHDProportional(bOriginal);
+
+	return r;
+}
 
 void __fastcall COptionsSubVideo_ApplyVidSettings(vgui::Panel* pthis, int dummy, bool bForceRestart)
 {
@@ -2023,6 +2062,60 @@ void GameUI_FillAddress(void)
 		Sig_FuncNotFound(COptionsDialog_ctor);
 	}
 
+	if (g_bIsCZero)
+	{
+		const char sigs1[] = "ProfileSelectionBackground";
+		auto ProfileSelectionBackground_String = Search_Pattern_From_Size(GameUIRdataBase, GameUIRdataSize, sigs1);
+		if (!ProfileSelectionBackground_String)
+			ProfileSelectionBackground_String = Search_Pattern_From_Size(GameUIDataBase, GameUIDataSize, sigs1);
+		Sig_VarNotFound(ProfileSelectionBackground_String);
+
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern + 6) = (DWORD)ProfileSelectionBackground_String;
+		auto ProfileSelectionBackground_PushString = Search_Pattern_From_Size(GameUITextBase, GameUITextSize, pattern);
+		Sig_VarNotFound(ProfileSelectionBackground_PushString);
+
+		gPrivateFuncs.CCareerProfileFrame_ctor = (decltype(gPrivateFuncs.CCareerProfileFrame_ctor))
+			g_pMetaHookAPI->ReverseSearchFunctionBegin(ProfileSelectionBackground_PushString, 0x150);
+		Sig_FuncNotFound(CCareerProfileFrame_ctor);
+	}
+
+	if (g_bIsCZero)
+	{
+		const char sigs1[] = "MapSelectionBackground";
+		auto MapSelectionBackground_String = Search_Pattern_From_Size(GameUIRdataBase, GameUIRdataSize, sigs1);
+		if (!MapSelectionBackground_String)
+			MapSelectionBackground_String = Search_Pattern_From_Size(GameUIDataBase, GameUIDataSize, sigs1);
+		Sig_VarNotFound(MapSelectionBackground_String);
+
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern + 6) = (DWORD)MapSelectionBackground_String;
+		auto MapSelectionBackground_PushString = Search_Pattern_From_Size(GameUITextBase, GameUITextSize, pattern);
+		Sig_VarNotFound(MapSelectionBackground_PushString);
+
+		gPrivateFuncs.CCareerMapFrame_ctor = (decltype(gPrivateFuncs.CCareerMapFrame_ctor))
+			g_pMetaHookAPI->ReverseSearchFunctionBegin(MapSelectionBackground_PushString, 0x150);
+		Sig_FuncNotFound(CCareerMapFrame_ctor);
+	}
+
+	if (g_bIsCZero)
+	{
+		const char sigs1[] = "PoolBackground";
+		auto PoolBackground_String = Search_Pattern_From_Size(GameUIRdataBase, GameUIRdataSize, sigs1);
+		if (!PoolBackground_String)
+			PoolBackground_String = Search_Pattern_From_Size(GameUIDataBase, GameUIDataSize, sigs1);
+		Sig_VarNotFound(PoolBackground_String);
+
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A";
+		*(DWORD*)(pattern + 6) = (DWORD)PoolBackground_String;
+		auto PoolBackground_PushString = Search_Pattern_From_Size(GameUITextBase, GameUITextSize, pattern);
+		Sig_VarNotFound(PoolBackground_PushString);
+
+		gPrivateFuncs.CCareerBotFrame_ctor = (decltype(gPrivateFuncs.CCareerBotFrame_ctor))
+			g_pMetaHookAPI->ReverseSearchFunctionBegin(PoolBackground_PushString, 0x150);
+		Sig_FuncNotFound(CCareerBotFrame_ctor);
+	}
+
 #if 0
 	if (1)
 	{
@@ -3296,6 +3389,19 @@ void GameUI_InstallHooks(void)
 	{
 		Install_InlineHook(GameUI_FocusNavGroup_GetCurrentFocus);
 	}
+
+	if (gPrivateFuncs.CCareerProfileFrame_ctor)
+	{
+		Install_InlineHook(CCareerProfileFrame_ctor);
+	}
+	if (gPrivateFuncs.CCareerMapFrame_ctor)
+	{
+		Install_InlineHook(CCareerMapFrame_ctor);
+	}
+	if (gPrivateFuncs.CCareerBotFrame_ctor)
+	{
+		Install_InlineHook(CCareerBotFrame_ctor);
+	}
 }
 
 void GameUI_UninstallHooks(void)
@@ -3321,6 +3427,10 @@ void GameUI_UninstallHooks(void)
 
 	Uninstall_Hook(GameUI_PropertySheet_HasHotkey);
 	Uninstall_Hook(GameUI_FocusNavGroup_GetCurrentFocus);
+
+	Uninstall_Hook(CCareerProfileFrame_ctor);
+	Uninstall_Hook(CCareerMapFrame_ctor);
+	Uninstall_Hook(CCareerBotFrame_ctor);
 }
 
 void ServerBrowser_FillAddress(void)

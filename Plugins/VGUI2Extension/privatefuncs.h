@@ -123,6 +123,10 @@ typedef struct
 	int  (__fastcall* TextEntry_GetStartDrawIndex)(void* pthis, int dummy, int& lineBreakIndexIndex);//virtual 0x2F8
 	//void (__fastcall* TextEntry_InsertChar)(void* pthis, int dummy, wchar_t ch);//virtual 0x250
 
+	void* (__fastcall* CCareerProfileFrame_ctor)(void* pthis, int dummy, void* parent);
+	void* (__fastcall* CCareerMapFrame_ctor)(void* pthis, int dummy, void* parent);
+	void* (__fastcall* CCareerBotFrame_ctor)(void* pthis, int dummy, void* parent);
+
 	//SDL2
 	void (*SDL_GetWindowPosition)(void* window, int* x, int* y);
 	void (*SDL_GetWindowSize)(void* window, int* w, int* h);

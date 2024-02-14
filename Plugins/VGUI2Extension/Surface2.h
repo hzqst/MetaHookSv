@@ -176,6 +176,9 @@ public:
 	// gets the base resolution used in proportional mode
 	void GetProportionalBase( int &width, int &height );
 
+	void SetForcingHDProportional(bool bForcingHDProportional);
+	bool IsForcingHDProportional() const;
+
 	//Added in HL25
 	void GetHDProportionalBase(int& width, int& height);
 	void SetProportionalBase(int width, int height);

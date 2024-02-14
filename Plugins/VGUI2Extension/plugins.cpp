@@ -87,7 +87,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	BaseUI_InstallHooks();
 
-	DpiManagerInternal()->Init();
+	DpiManagerInternal()->InitEngine();
 
 	g_pMetaHookAPI->RegisterLoadDllNotificationCallback(DllLoadNotification);
 }
@@ -121,7 +121,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	InitWin32Stuffs();
 
-	DpiManagerInternal()->PostInit();
+	DpiManagerInternal()->InitClient();
 }
 
 void IPluginsV4::ExitGame(int iResult)

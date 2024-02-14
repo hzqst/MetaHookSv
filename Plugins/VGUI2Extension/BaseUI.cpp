@@ -19,8 +19,6 @@
 
 #include "VGUI2ExtensionInternal.h"
 
-static hook_t* g_phook_EngineVGUI2_Panel_Init = NULL;
-
 IBaseUI* baseui = NULL;
 IBaseUI_Legacy* baseui_legacy = NULL;
 IGameUIFuncs* gameuifuncs = NULL;
@@ -39,17 +37,18 @@ namespace vgui
 	bool VGui_InitInterfacesList(const char *moduleName, CreateInterfaceFn *factoryList, int numFactories);
 }
 
-void(__fastcall *m_pfnCBaseUI_Initialize)(void *pthis, int, CreateInterfaceFn *factories, int count);
-void(__fastcall *m_pfnCBaseUI_Start)(void *pthis, int, struct cl_enginefuncs_s *engineFuncs, int interfaceVersion);
-void(__fastcall *m_pfnCBaseUI_Shutdown)(void *pthis, int);
-int(__fastcall *m_pfnCBaseUI_Key_Event)(void *pthis, int, int down, int keynum, const char *pszCurrentBinding);
-void(__fastcall *m_pfnCBaseUI_CallEngineSurfaceAppHandler)(void *pthis, int, void* pevent, void* userData);
-void(__fastcall* m_pfnCBaseUI_CallEngineSurfaceWndProc)(void* pthis, int, void* hwnd, unsigned int msg, unsigned int wparam, long lparam);
-void(__fastcall *m_pfnCBaseUI_Paint)(void *pthis, int, int x, int y, int right, int bottom);
-void(__fastcall *m_pfnCBaseUI_HideGameUI)(void *pthis, int);
-void(__fastcall *m_pfnCBaseUI_ActivateGameUI)(void *pthis, int);
-void(__fastcall *m_pfnCBaseUI_HideConsole)(void *pthis, int);
-void(__fastcall *m_pfnCBaseUI_ShowConsole)(void *pthis, int);
+static hook_t* g_phook_EngineVGUI2_Panel_Init = NULL;
+static void(__fastcall *m_pfnCBaseUI_Initialize)(void *pthis, int, CreateInterfaceFn *factories, int count) = NULL;
+static void(__fastcall *m_pfnCBaseUI_Start)(void *pthis, int, struct cl_enginefuncs_s *engineFuncs, int interfaceVersion) = NULL;
+static void(__fastcall *m_pfnCBaseUI_Shutdown)(void *pthis, int) = NULL;
+static int(__fastcall *m_pfnCBaseUI_Key_Event)(void *pthis, int, int down, int keynum, const char *pszCurrentBinding) = NULL;
+static void(__fastcall *m_pfnCBaseUI_CallEngineSurfaceAppHandler)(void *pthis, int, void* pevent, void* userData) = NULL;
+static void(__fastcall* m_pfnCBaseUI_CallEngineSurfaceWndProc)(void* pthis, int, void* hwnd, unsigned int msg, unsigned int wparam, long lparam) = NULL;
+static void(__fastcall *m_pfnCBaseUI_Paint)(void *pthis, int, int x, int y, int right, int bottom) = NULL;
+static void(__fastcall *m_pfnCBaseUI_HideGameUI)(void *pthis, int) = NULL;
+static void(__fastcall *m_pfnCBaseUI_ActivateGameUI)(void *pthis, int) = NULL;
+static void(__fastcall *m_pfnCBaseUI_HideConsole)(void *pthis, int) = NULL;
+static void(__fastcall *m_pfnCBaseUI_ShowConsole)(void *pthis, int) = NULL;
 
 void __fastcall EngineVGUI2_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, int w, int h)
 {
