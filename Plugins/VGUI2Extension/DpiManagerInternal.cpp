@@ -117,7 +117,7 @@ public:
 		if (IsHighDpiSupportEnabled())
 		{
 			char temp[1024];
-
+#if 0
 			snprintf(temp, sizeof(temp), "%s\\%s_dpi%.0f", GetBaseDirectory(), gEngfuncs.pfnGetGameDirectory(), DpiManagerInternal()->GetDpiScaling() * 100.0f);
 			COM_FixSlashes(temp);
 
@@ -129,7 +129,7 @@ public:
 			{
 				FILESYSTEM_ANY_ADDSEARCHPATH(temp, "SKIN");
 			}
-
+#endif
 			snprintf(temp, sizeof(temp), "%s\\%s_hidpi", GetBaseDirectory(), gEngfuncs.pfnGetGameDirectory());
 			COM_FixSlashes(temp);
 
@@ -145,6 +145,7 @@ public:
 			//TODO: hook FileSystem_AddFallbackGameDir ?
 			if (g_bIsCZero)
 			{
+#if 0
 				snprintf(temp, sizeof(temp), "%s\\cstrike_dpi%.0f", GetBaseDirectory(), DpiManagerInternal()->GetDpiScaling() * 100.0f);
 				COM_FixSlashes(temp);
 
@@ -156,7 +157,7 @@ public:
 				{
 					FILESYSTEM_ANY_ADDSEARCHPATH(temp, "SKIN");
 				}
-
+#endif
 				snprintf(temp, sizeof(temp), "%s\\cstrike_hidpi", GetBaseDirectory());
 				COM_FixSlashes(temp);
 

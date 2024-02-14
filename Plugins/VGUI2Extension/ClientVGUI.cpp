@@ -377,6 +377,30 @@ void ClientVGUI_KeyValues_LoadFromFile_CounterStrike(KeyValues* pthis, const cha
 				ClientVGUI_KeyValues_FitToFullScreen(pFrame);
 			}
 		}
+		else if (!strcmp(resourceName, "Resource/UI/Spectator.res"))
+		{
+			auto pBottomBar = pthis->FindKey("BottomBar");
+			if (pBottomBar)
+			{
+				int ypos = pBottomBar->GetInt("ypos");
+				int tall = pBottomBar->GetInt("tall");
+
+				char szTemp[32];
+				snprintf(szTemp, sizeof(szTemp), "r%d", tall);
+				pBottomBar->SetString("ypos", szTemp);
+			}
+
+			auto pbottombarblank = pthis->FindKey("bottombarblank");
+			if (pbottombarblank)
+			{
+				int ypos = pbottombarblank->GetInt("ypos");
+				int tall = pbottombarblank->GetInt("tall");
+
+				char szTemp[32];
+				snprintf(szTemp, sizeof(szTemp), "r%d", tall);
+				pbottombarblank->SetString("ypos", szTemp);
+			}
+		}
 	}
 }
 
