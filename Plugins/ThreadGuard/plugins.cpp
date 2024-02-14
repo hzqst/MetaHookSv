@@ -1,6 +1,7 @@
 #include <metahook.h>
 #include "exportfuncs.h"
 #include "privatehook.h"
+#include "plugins.h"
 
 cl_exportfuncs_t gExportfuncs = {0};
 mh_interface_t *g_pInterface = NULL;
@@ -44,7 +45,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
 	if (g_pInterface->MetaHookAPIVersion < METAHOOK_API_VERSION)
 	{
-		g_pMetaHookAPI->SysError("MetaHookAPIVersion too low! expect %d, got %d !", METAHOOK_API_VERSION, g_pInterface->MetaHookAPIVersion);
+		Sys_Error("MetaHookAPIVersion too low! expect %d, got %d !", METAHOOK_API_VERSION, g_pInterface->MetaHookAPIVersion);
 		return;
 	}
 

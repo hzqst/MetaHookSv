@@ -49,7 +49,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 {
 	if (g_pInterface->MetaHookAPIVersion < METAHOOK_API_VERSION)
 	{
-		g_pMetaHookAPI->SysError("MetaHookAPIVersion too low! expect %d, got %d !", METAHOOK_API_VERSION, g_pInterface->MetaHookAPIVersion);
+		Sys_Error("MetaHookAPIVersion too low! expect %d, got %d !", METAHOOK_API_VERSION, g_pInterface->MetaHookAPIVersion);
 		return;
 	}
 
