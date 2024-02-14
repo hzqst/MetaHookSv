@@ -59,9 +59,12 @@ public:
 	virtual int GetAlteredProportionalNormalizedValue(int scaledValue) = 0;
 	virtual int GetHDAlteredProportionalScaledValue(int normalizedValue) = 0;
 	virtual int GetHDAlteredProportionalNormalizedValue(int scaledValue) = 0;
+
+	virtual void SetForcingAlteredProportional(bool bForcingAlteredProportional) = 0;
+	virtual bool IsForcingAlteredProportional() const = 0;
 };
 
-#define VGUI_SCHEME2_INTERFACE_VERSION  "VGUI_Scheme2_001"
+#define VGUI_SCHEME2_INTERFACE_VERSION  "VGUI_Scheme2_002"
 
 } // namespace vgui
 

@@ -246,10 +246,12 @@ public:
 	virtual const char *GetResolutionKey( void ) const = 0;
 	virtual void DeleteTextureByID(int textureId) = 0;
 	virtual double GetAbsoluteTime() const = 0;
+	virtual void SetForcingHDProportional(bool bForcingHDProportional) = 0;
+	virtual bool IsForcingHDProportional() const = 0;
 };
 
 }
 
-#define VGUI_SURFACE2_INTERFACE_VERSION "VGUI_Surface2_002"
+#define VGUI_SURFACE2_INTERFACE_VERSION "VGUI_Surface2_003"
 
 #endif
