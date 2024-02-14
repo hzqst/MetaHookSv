@@ -124,6 +124,7 @@ int HUD_Redraw(float time, int intermission)
 
 void HUD_Shutdown(void)
 {
+	NativeClientUI_UninstallHooks();
 	Client_UninstallHooks();
 
 	gExportfuncs.HUD_Shutdown();

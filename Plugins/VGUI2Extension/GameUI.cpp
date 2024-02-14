@@ -27,12 +27,12 @@ static hook_t* g_phook_COptionsDialog_ctor = NULL;
 static hook_t* g_phook_COptionsSubVideo_ApplyVidSettings = NULL;
 static hook_t* g_phook_CTaskBar_ctor = NULL;
 static hook_t* g_phook_CTaskBar_OnCommand = NULL;
-static hook_t* g_phook_RichText_InsertChar = NULL;
-static hook_t* g_phook_RichText_InsertStringW = NULL;
-static hook_t* g_phook_RichText_OnThink = NULL;
-static hook_t* g_phook_TextEntry_OnKeyCodeTyped = NULL;
-static hook_t* g_phook_TextEntry_LayoutVerticalScrollBarSlider = NULL;
-static hook_t* g_phook_TextEntry_GetStartDrawIndex = NULL;
+static hook_t* g_phook_GameUI_RichText_InsertChar = NULL;
+static hook_t* g_phook_GameUI_RichText_InsertStringW = NULL;
+static hook_t* g_phook_GameUI_RichText_OnThink = NULL;
+static hook_t* g_phook_GameUI_TextEntry_OnKeyCodeTyped = NULL;
+static hook_t* g_phook_GameUI_TextEntry_LayoutVerticalScrollBarSlider = NULL;
+static hook_t* g_phook_GameUI_TextEntry_GetStartDrawIndex = NULL;
 static hook_t* g_phook_GameUI_PropertySheet_HasHotkey = NULL;
 static hook_t* g_phook_GameUI_FocusNavGroup_GetCurrentFocus = NULL;
 static hook_t* g_phook_CCareerProfileFrame_ctor = NULL;
@@ -449,15 +449,15 @@ GameUI vgui_controls hook
 ==================================================================================
 */
 
-void __fastcall RichText_InsertChar(void* pthis, int dummy, wchar_t ch)
+void __fastcall GameUI_RichText_InsertChar(void* pthis, int dummy, wchar_t ch)
 {
 	if (ch == L'\r')
 		return;
 
-	gPrivateFuncs.RichText_InsertChar(pthis, 0, ch);
+	gPrivateFuncs.GameUI_RichText_InsertChar(pthis, 0, ch);
 }
 
-void __fastcall RichText_InsertStringW(void* pthis, int dummy, wchar_t* ch)
+void __fastcall GameUI_RichText_InsertStringW(void* pthis, int dummy, wchar_t* ch)
 {
 	while (1)
 	{
@@ -477,7 +477,7 @@ void __fastcall RichText_InsertStringW(void* pthis, int dummy, wchar_t* ch)
 
 		if (ws.size())
 		{
-			gPrivateFuncs.RichText_InsertStringW(pthis, 0, ws.c_str());
+			gPrivateFuncs.GameUI_RichText_InsertStringW(pthis, 0, ws.c_str());
 		}
 
 		if ((*ch) == L'\r' || (*ch) == L'\0')
@@ -485,49 +485,49 @@ void __fastcall RichText_InsertStringW(void* pthis, int dummy, wchar_t* ch)
 	}
 }
 
-void __fastcall RichText_OnThink(void* pthis, int dummy)
+void __fastcall GameUI_RichText_OnThink(void* pthis, int dummy)
 {
 	vgui::Panel* pPanel = (vgui::Panel*)pthis;
 	g_iPatchingPanelTall = pPanel->GetTall();
 	g_bPatchingGetFontTall = true;
 
-	gPrivateFuncs.RichText_OnThink(pthis, 0);
+	gPrivateFuncs.GameUI_RichText_OnThink(pthis, 0);
 
 	g_bPatchingGetFontTall = false;
 	g_iPatchingPanelTall = 0;
 }
 
-void __fastcall TextEntry_LayoutVerticalScrollBarSlider(void* pthis, int dummy)
+void __fastcall GameUI_TextEntry_LayoutVerticalScrollBarSlider(void* pthis, int dummy)
 {
 	vgui::Panel* pPanel = (vgui::Panel*)pthis;
 	g_iPatchingPanelTall = pPanel->GetTall();
 	g_bPatchingGetFontTall = true;
 
-	gPrivateFuncs.TextEntry_LayoutVerticalScrollBarSlider(pthis, 0);
+	gPrivateFuncs.GameUI_TextEntry_LayoutVerticalScrollBarSlider(pthis, 0);
 
 	g_bPatchingGetFontTall = false;
 	g_iPatchingPanelTall = 0;
 }
 
-void __fastcall TextEntry_OnKeyCodeTyped(void* pthis, int dummy, vgui::KeyCode code)
+void __fastcall GameUI_TextEntry_OnKeyCodeTyped(void* pthis, int dummy, vgui::KeyCode code)
 {
 	vgui::Panel* pPanel = (vgui::Panel*)pthis;
 	g_iPatchingPanelTall = pPanel->GetTall();
 	g_bPatchingGetFontTall = true;
 
-	gPrivateFuncs.TextEntry_OnKeyCodeTyped(pthis, 0, (int)code);
+	gPrivateFuncs.GameUI_TextEntry_OnKeyCodeTyped(pthis, 0, (int)code);
 
 	g_bPatchingGetFontTall = false;
 	g_iPatchingPanelTall = 0;
 }
 
-int __fastcall TextEntry_GetStartDrawIndex(void* pthis, int dummy, int& lineBreakIndexIndex)
+int __fastcall GameUI_TextEntry_GetStartDrawIndex(void* pthis, int dummy, int& lineBreakIndexIndex)
 {
 	vgui::Panel* pPanel = (vgui::Panel*)pthis;
 	g_iPatchingPanelTall = pPanel->GetTall();
 	g_bPatchingGetFontTall = true;
 
-	int result = gPrivateFuncs.TextEntry_GetStartDrawIndex(pthis, 0, lineBreakIndexIndex);
+	int result = gPrivateFuncs.GameUI_TextEntry_GetStartDrawIndex(pthis, 0, lineBreakIndexIndex);
 
 	g_bPatchingGetFontTall = false;
 	g_iPatchingPanelTall = 0;
@@ -2325,7 +2325,7 @@ void GameUI_FillAddress(void)
 		Sig_VarNotFound(ctx.ConsoleHistory_vftable);
 
 		//TODO: fetch from ConsoleDialog's ctor
-		gPrivateFuncs.RichText_OnThink = (decltype(gPrivateFuncs.RichText_OnThink))ctx.ConsoleHistory_vftable[0x158 / 4];
+		gPrivateFuncs.GameUI_RichText_OnThink = (decltype(gPrivateFuncs.GameUI_RichText_OnThink))ctx.ConsoleHistory_vftable[0x158 / 4];
 	}
 
 	if (1)
@@ -2369,11 +2369,11 @@ void GameUI_FillAddress(void)
 			{
 				if (ctx->bFound118h)
 				{
-					gPrivateFuncs.RichText_InsertStringA = (decltype(gPrivateFuncs.RichText_InsertStringA))GetCallAddress(address);
+					gPrivateFuncs.GameUI_RichText_InsertStringA = (decltype(gPrivateFuncs.GameUI_RichText_InsertStringA))GetCallAddress(address);
 				}
 				else
 				{
-					gPrivateFuncs.RichText_Print = (decltype(gPrivateFuncs.RichText_Print))GetCallAddress(address);
+					gPrivateFuncs.GameUI_RichText_Print = (decltype(gPrivateFuncs.GameUI_RichText_Print))GetCallAddress(address);
 				}
 				ctx->bFound_RichText_Print = true;
 
@@ -2395,7 +2395,7 @@ void GameUI_FillAddress(void)
 
 	if (1)
 	{
-		PVOID RecursiveWalkBase = (gPrivateFuncs.RichText_Print) ? gPrivateFuncs.RichText_Print : gPrivateFuncs.RichText_InsertStringA;
+		PVOID RecursiveWalkBase = (gPrivateFuncs.GameUI_RichText_Print) ? gPrivateFuncs.GameUI_RichText_Print : gPrivateFuncs.GameUI_RichText_InsertStringA;
 
 		typedef struct
 		{
@@ -2540,11 +2540,11 @@ void GameUI_FillAddress(void)
 
 						if (ctx2.IsFetchWord)
 						{
-							gPrivateFuncs.RichText_InsertStringW = (decltype(gPrivateFuncs.RichText_InsertStringW))ctx->FunctionBeginCandidate;
+							gPrivateFuncs.GameUI_RichText_InsertStringW = (decltype(gPrivateFuncs.GameUI_RichText_InsertStringW))ctx->FunctionBeginCandidate;
 						}
 						else
 						{
-							gPrivateFuncs.RichText_InsertChar = (decltype(gPrivateFuncs.RichText_InsertChar))ctx->FunctionBeginCandidate;
+							gPrivateFuncs.GameUI_RichText_InsertChar = (decltype(gPrivateFuncs.GameUI_RichText_InsertChar))ctx->FunctionBeginCandidate;
 						}
 					}
 
@@ -2617,7 +2617,7 @@ void GameUI_FillAddress(void)
 			Sys_Error("Failed to patch GameUI!RichText_InsertChar.");
 		}
 
-		if (!gPrivateFuncs.RichText_InsertChar && !gPrivateFuncs.RichText_InsertStringW)
+		if (!gPrivateFuncs.GameUI_RichText_InsertChar && !gPrivateFuncs.GameUI_RichText_InsertStringW)
 		{
 			Sys_Error("Failed to locate GameUI!RichText_InsertChar or RichText_InsertStringW.");
 		}
@@ -2690,10 +2690,10 @@ void GameUI_FillAddress(void)
 
 		Sig_VarNotFound(ctx.ConsoleEntry_vftable);
 
-		gPrivateFuncs.TextEntry_OnKeyCodeTyped = (decltype(gPrivateFuncs.TextEntry_OnKeyCodeTyped))ctx.ConsoleEntry_vftable[0x194 / 4];
-		//gPrivateFuncs.TextEntry_InsertChar = (decltype(gPrivateFuncs.TextEntry_InsertChar))ctx.ConsoleEntry_vftable[0x250 / 4];
-		gPrivateFuncs.TextEntry_LayoutVerticalScrollBarSlider = (decltype(gPrivateFuncs.TextEntry_LayoutVerticalScrollBarSlider))ctx.ConsoleEntry_vftable[0x2C0 / 4];
-		gPrivateFuncs.TextEntry_GetStartDrawIndex = (decltype(gPrivateFuncs.TextEntry_GetStartDrawIndex))ctx.ConsoleEntry_vftable[0x2F8 / 4];
+		gPrivateFuncs.GameUI_TextEntry_OnKeyCodeTyped = (decltype(gPrivateFuncs.GameUI_TextEntry_OnKeyCodeTyped))ctx.ConsoleEntry_vftable[0x194 / 4];
+		//gPrivateFuncs.GameUI_TextEntry_InsertChar = (decltype(gPrivateFuncs.GameUI_TextEntry_InsertChar))ctx.ConsoleEntry_vftable[0x250 / 4];
+		gPrivateFuncs.GameUI_TextEntry_LayoutVerticalScrollBarSlider = (decltype(gPrivateFuncs.GameUI_TextEntry_LayoutVerticalScrollBarSlider))ctx.ConsoleEntry_vftable[0x2C0 / 4];
+		gPrivateFuncs.GameUI_TextEntry_GetStartDrawIndex = (decltype(gPrivateFuncs.GameUI_TextEntry_GetStartDrawIndex))ctx.ConsoleEntry_vftable[0x2F8 / 4];
 	}
 
 	if (1)
@@ -3365,20 +3365,20 @@ void GameUI_InstallHooks(void)
 	Install_InlineHook(COptionsDialog_ctor);
 	Install_InlineHook(COptionsSubVideo_ApplyVidSettings);
 	
-	if (gPrivateFuncs.RichText_InsertChar)
+	if (gPrivateFuncs.GameUI_RichText_InsertChar)
 	{
-		Install_InlineHook(RichText_InsertChar);
+		Install_InlineHook(GameUI_RichText_InsertChar);
 	}
 
-	if (gPrivateFuncs.RichText_InsertStringW)
+	if (gPrivateFuncs.GameUI_RichText_InsertStringW)
 	{
-		Install_InlineHook(RichText_InsertStringW);
+		Install_InlineHook(GameUI_RichText_InsertStringW);
 	}
 
-	Install_InlineHook(RichText_OnThink);
-	Install_InlineHook(TextEntry_OnKeyCodeTyped);
-	Install_InlineHook(TextEntry_LayoutVerticalScrollBarSlider);
-	Install_InlineHook(TextEntry_GetStartDrawIndex);
+	Install_InlineHook(GameUI_RichText_OnThink);
+	Install_InlineHook(GameUI_TextEntry_OnKeyCodeTyped);
+	Install_InlineHook(GameUI_TextEntry_LayoutVerticalScrollBarSlider);
+	Install_InlineHook(GameUI_TextEntry_GetStartDrawIndex);
 
 	if (gPrivateFuncs.GameUI_PropertySheet_HasHotkey)
 	{
@@ -3417,13 +3417,12 @@ void GameUI_UninstallHooks(void)
 	Uninstall_Hook(COptionsDialog_ctor);
 	Uninstall_Hook(COptionsSubVideo_ApplyVidSettings);
 
-	Uninstall_Hook(RichText_InsertChar);
-	Uninstall_Hook(RichText_InsertStringW);
-
-	Uninstall_Hook(RichText_OnThink);
-	Uninstall_Hook(TextEntry_OnKeyCodeTyped);
-	Uninstall_Hook(TextEntry_LayoutVerticalScrollBarSlider);
-	Uninstall_Hook(TextEntry_GetStartDrawIndex);
+	Uninstall_Hook(GameUI_RichText_InsertChar);
+	Uninstall_Hook(GameUI_RichText_InsertStringW);
+	Uninstall_Hook(GameUI_RichText_OnThink);
+	Uninstall_Hook(GameUI_TextEntry_OnKeyCodeTyped);
+	Uninstall_Hook(GameUI_TextEntry_LayoutVerticalScrollBarSlider);
+	Uninstall_Hook(GameUI_TextEntry_GetStartDrawIndex);
 
 	Uninstall_Hook(GameUI_PropertySheet_HasHotkey);
 	Uninstall_Hook(GameUI_FocusNavGroup_GetCurrentFocus);

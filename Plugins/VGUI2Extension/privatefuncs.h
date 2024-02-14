@@ -48,6 +48,9 @@ typedef struct
 	void** ClientVGUI_KeyValues_vftable;
 	bool(__fastcall* ClientVGUI_KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId);
 
+	void(__fastcall* ClientVGUI_RichText_SetTextW)(void* pthis, int dummy, const wchar_t* text);
+	void(__fastcall* ClientVGUI_RichText_SetTextA)(void* pthis, int dummy, const char* text);
+
 	//void** ClientVGUI_BuildGroup_vftable;
 	//void(__fastcall* ClientVGUI_BuildGroup_ApplySettings)(void* pthis, int dummy, void* resourceData);
 	//void(__fastcall* ClientVGUI_BuildGroup_LoadControlSettings)(void* pthis, int dummy, const char* controlResourceName, const char* pathID);
@@ -112,15 +115,15 @@ typedef struct
 	void* (__fastcall *GameUI_PropertySheet_HasHotkey)(void* pthis, int dummy, wchar_t key);
 	void* (__fastcall *GameUI_FocusNavGroup_GetCurrentFocus)(void* pthis, int dummy);
 
-	void(__fastcall* RichText_Print)(void* pthis, int dummy, const char* msg);
-	void (__fastcall* RichText_InsertStringA)(void* pthis, int dummy, const char* msg);
-	void(__fastcall* RichText_InsertStringW)(void* pthis, int dummy, const wchar_t* msg);
-	void(__fastcall* RichText_InsertChar)(void* pthis, int dummy, wchar_t ch);
-	void (__fastcall* RichText_OnThink)(void* pthis, int dummy);//virtual 0x158
+	void(__fastcall* GameUI_RichText_Print)(void* pthis, int dummy, const char* msg);
+	void (__fastcall* GameUI_RichText_InsertStringA)(void* pthis, int dummy, const char* msg);
+	void(__fastcall* GameUI_RichText_InsertStringW)(void* pthis, int dummy, const wchar_t* msg);
+	void(__fastcall* GameUI_RichText_InsertChar)(void* pthis, int dummy, wchar_t ch);
+	void (__fastcall* GameUI_RichText_OnThink)(void* pthis, int dummy);//virtual 0x158
 
-	void (__fastcall* TextEntry_LayoutVerticalScrollBarSlider)(void* pthis, int dummy);//virtual 0x2C0
-	void (__fastcall* TextEntry_OnKeyCodeTyped)(void* pthis, int dummy, int code);//virtual 0x194
-	int  (__fastcall* TextEntry_GetStartDrawIndex)(void* pthis, int dummy, int& lineBreakIndexIndex);//virtual 0x2F8
+	void (__fastcall* GameUI_TextEntry_LayoutVerticalScrollBarSlider)(void* pthis, int dummy);//virtual 0x2C0
+	void (__fastcall* GameUI_TextEntry_OnKeyCodeTyped)(void* pthis, int dummy, int code);//virtual 0x194
+	int  (__fastcall* GameUI_TextEntry_GetStartDrawIndex)(void* pthis, int dummy, int& lineBreakIndexIndex);//virtual 0x2F8
 	//void (__fastcall* TextEntry_InsertChar)(void* pthis, int dummy, wchar_t ch);//virtual 0x250
 
 	void* (__fastcall* CCareerProfileFrame_ctor)(void* pthis, int dummy, void* parent);
@@ -184,7 +187,8 @@ void GameUI_UninstallHooks(void);
 void ServerBrowser_FillAddress(void);
 void ServerBrowser_InstallHooks(void);
 void ServerBrowser_UninstallHooks(void);
-void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc);
+void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc); 
+void NativeClientUI_UninstallHooks(void);
 void VGUI1_InstallHooks(void);
 void VGUI1_Shutdown(void);
 void Surface_InstallHooks(void);

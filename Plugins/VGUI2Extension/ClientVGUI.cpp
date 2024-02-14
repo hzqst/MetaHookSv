@@ -19,6 +19,7 @@
 #include "VGUI2ExtensionInternal.h"
 
 #include <capstone.h>
+#include <sstream>
 
 namespace vgui
 {
@@ -61,6 +62,66 @@ vgui::BuildGroup_Legacy *GetLegacyBuildGroup(vgui::Panel* pWindow)
 	
 	return pfnGetBuildGroup(pWindow, 0);
 }
+
+#if 0//Fuck Valve
+void __fastcall ClientVGUI_RichText_SetTextW_Proxy(void* pthis, int dummy, const wchar_t* text)
+{
+	std::wstringstream wss;
+
+	auto ch = text;
+	const char * pbase = (const char*)text;
+
+	while (1)
+	{
+		auto pch = (const char*)ch;
+		int offset = (pch - pbase);
+
+		if ((BYTE)pch[0] == (BYTE)0xFF && (BYTE)pch[1] == (BYTE)0x50 &&  (BYTE)pch[2] == (BYTE)0x60)
+		{
+			wss << L"£º¿Ö";
+			pch += 3;
+			ch = (const wchar_t*)pch;
+			continue;
+		}
+
+		if ((BYTE)pch[0] == (BYTE)0xFF && (BYTE)pch[1] == (BYTE)0x26 && (BYTE)pch[2] == (BYTE)0x5E)
+		{
+			wss << L"£º´ø";
+			pch += 3;
+			ch = (const wchar_t*)pch;
+			continue;
+		}
+
+		if ((BYTE)pch[0] == (BYTE)0xFF && (BYTE)pch[1] == (BYTE)0x28 && (BYTE)pch[2] == (BYTE)0x57)
+		{
+			wss << L"£ºÔÚ";
+			pch += 3;
+			ch = (const wchar_t*)pch;
+			continue;
+		}
+
+		if ((BYTE)pch[0] == (BYTE)0x4F && (offset % 2) == 1)
+		{
+			pch += 1;
+			ch = (const wchar_t*)pch;
+			continue;
+		}
+
+		if ((*ch) == L'\0')
+			break;
+
+		wss << (*ch);
+		ch++;
+
+		if ((*ch) == L'\0')
+			break;
+	}
+
+	auto ws = wss.str();
+
+	gPrivateFuncs.ClientVGUI_RichText_SetTextW(pthis, dummy, ws.c_str());
+}
+#endif
 
 void __fastcall ClientVGUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, int w, int h)
 {
@@ -987,6 +1048,69 @@ EXPOSE_SINGLE_INTERFACE(NewClientVGUI, IClientVGUI, CLIENTVGUI_INTERFACE_VERSION
 	Purpose : Install hooks for native ClientUI interface
 */
 
+typedef struct
+{
+	bool bIsUnicode;
+}NativeClientUI_RichText_SearchContext;
+
+void NativeClientUI_RichText_Search(PVOID Candidate, bool bIsUnicode)
+{
+	NativeClientUI_RichText_SearchContext ctx = { 0 };
+
+	ctx.bIsUnicode = bIsUnicode;
+
+	g_pMetaHookAPI->DisasmRanges(Candidate, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+		auto pinst = (cs_insn*)inst;
+		auto ctx = (NativeClientUI_RichText_SearchContext*)context;
+
+		if ((pinst->id == X86_INS_JE) &&
+			pinst->detail->x86.op_count == 1 &&
+			pinst->detail->x86.operands[0].type == X86_OP_IMM)
+		{
+			PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
+
+			NativeClientUI_RichText_Search(imm, true);
+			return FALSE;
+		}
+
+		if (address[0] == 0xE8)
+		{
+			if (ctx->bIsUnicode)
+			{
+				if (!gPrivateFuncs.ClientVGUI_RichText_SetTextW)
+				{
+					gPrivateFuncs.ClientVGUI_RichText_SetTextW = (decltype(gPrivateFuncs.ClientVGUI_RichText_SetTextW))GetCallAddress(address);
+					
+					//auto addr = (PUCHAR)address;
+					//int rva = (PUCHAR)ClientVGUI_RichText_SetTextW_Proxy - (addr + 5);
+					//g_pMetaHookAPI->WriteMemory(addr + 1, &rva, 4);
+				}
+			}
+			else
+			{
+				if (!gPrivateFuncs.ClientVGUI_RichText_SetTextA)
+				{
+					gPrivateFuncs.ClientVGUI_RichText_SetTextA = (decltype(gPrivateFuncs.ClientVGUI_RichText_SetTextA))GetCallAddress(address);
+				}
+			}
+			return TRUE;
+		}
+
+		if(instCount > 10)
+			return TRUE;
+
+		if (address[0] == 0xCC)
+			return TRUE;
+
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
+
+		return FALSE;
+
+	}, 0, &ctx);
+}
+
 void NativeClientUI_FillAddress(void)
 {
 	ULONG ClientTextSize = 0;
@@ -1050,9 +1174,21 @@ void NativeClientUI_FillAddress(void)
 
 			return FALSE;
 
-		}, 0, NULL);
+			}, 0, NULL);
 
 		Sig_FuncNotFound(ClientVGUI_LoadControlSettings);
+	}
+
+	if (g_bIsCounterStrike)
+	{
+		char pattern[] = "\x66\x2A\x2A\xFF\xFE\x8B";
+		auto CTeamMenu_LoadMapPage_FoundPattern = Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+		Sig_VarNotFound(CTeamMenu_LoadMapPage_FoundPattern);
+
+		NativeClientUI_RichText_Search(CTeamMenu_LoadMapPage_FoundPattern, false);
+
+		Sig_FuncNotFound(ClientVGUI_RichText_SetTextW);
+		Sig_FuncNotFound(ClientVGUI_RichText_SetTextA);
 	}
 }
 
@@ -1061,6 +1197,13 @@ void NativeClientUI_InstallHooks(void)
 	Install_InlineHook(ClientVGUI_LoadControlSettings);
 	Install_InlineHook(ClientVGUI_KeyValues_LoadFromFile);
 	Install_InlineHook(ClientVGUI_Panel_Init);
+}
+
+void NativeClientUI_UninstallHooks(void)
+{
+	Uninstall_Hook(ClientVGUI_LoadControlSettings);
+	Uninstall_Hook(ClientVGUI_KeyValues_LoadFromFile);
+	Uninstall_Hook(ClientVGUI_Panel_Init);
 }
 
 void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)
