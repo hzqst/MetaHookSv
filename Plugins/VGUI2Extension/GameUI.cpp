@@ -990,6 +990,12 @@ void CGameUIProxy::Initialize(CreateInterfaceFn *factories, int count)
 {
 	g_pfnCGameUI_Initialize(this, 0, factories, count);
 
+	if (!vgui::VGui_InitInterfacesList("VGUI2Extension", factories, count))
+	{
+		Sys_Error("Failed to VGui_InitInterfacesList");
+		return;
+	}
+
 	VGUI2ExtensionInternal()->GameUI_Initialize(factories, count);
 }
 

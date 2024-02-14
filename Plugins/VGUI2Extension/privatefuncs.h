@@ -180,7 +180,6 @@ void GameUI_UninstallHooks(void);
 void ServerBrowser_FillAddress(void);
 void ServerBrowser_InstallHooks(void);
 void ServerBrowser_UninstallHooks(void);
-void ClientVGUI_FillAddress(void);
 void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc);
 void VGUI1_InstallHooks(void);
 void VGUI1_Shutdown(void);

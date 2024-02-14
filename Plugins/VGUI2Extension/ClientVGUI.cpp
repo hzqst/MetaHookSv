@@ -988,10 +988,10 @@ void NewClientVGUI::Shutdown(void)
 EXPOSE_SINGLE_INTERFACE(NewClientVGUI, IClientVGUI, CLIENTVGUI_INTERFACE_VERSION);
 
 /*
-	Purpose : Install hooks for ClientVGUI interface
+	Purpose : Install hooks for native ClientUI interface
 */
 
-void ClientVGUI_FillAddress(void)
+void NativeClientUI_FillAddress(void)
 {
 	ULONG ClientTextSize = 0;
 	PVOID ClientTextBase = ClientTextBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".text\0\0\0", &ClientTextSize);
@@ -1058,30 +1058,13 @@ void ClientVGUI_FillAddress(void)
 
 		Sig_FuncNotFound(ClientVGUI_LoadControlSettings);
 	}
+}
 
-	/*
-	gPrivateFuncs.CCSBackGroundPanel_ctor =
-		(decltype(gPrivateFuncs.CCSBackGroundPanel_ctor))
-		((PUCHAR)g_dwClientBase + 0x1D640);
-
-	gPrivateFuncs.CClientMOTD_ctor =
-		(decltype(gPrivateFuncs.CClientMOTD_ctor))
-		((PUCHAR)g_dwClientBase + 0xA98F0);
-
-	gPrivateFuncs.CClientMOTD_vftable = (decltype(gPrivateFuncs.CClientMOTD_vftable))
-		((PUCHAR)g_dwClientBase + 0xD8B44);
-
-
-	gPrivateFuncs.ClientVGUI_BuildGroup_vftable =
-		(decltype(gPrivateFuncs.ClientVGUI_BuildGroup_vftable))
-		((PUCHAR)g_dwClientBase + 0xD0B5C);
-
-	gPrivateFuncs.CSBuyMenu_vftable = (decltype(gPrivateFuncs.CSBuyMenu_vftable))
-		((PUCHAR)g_dwClientBase + 0xC7C4C);
-
-	gPrivateFuncs.CBuySubMenu_vftable = (decltype(gPrivateFuncs.CBuySubMenu_vftable))
-		((PUCHAR)g_dwClientBase + 0xC7FBC);
-		*/
+void NativeClientUI_InstallHooks(void)
+{
+	Install_InlineHook(ClientVGUI_LoadControlSettings);
+	Install_InlineHook(ClientVGUI_KeyValues_LoadFromFile);
+	Install_InlineHook(ClientVGUI_Panel_Init);
 }
 
 void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)
@@ -1104,6 +1087,11 @@ void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)
 
 		if (g_pClientVGUI)
 		{
+			if (g_bIsCounterStrike)
+			{
+				g_pCounterStrikeViewport = (CounterStrikeViewport*)(g_pClientVGUI - 1);
+			}
+
 			PVOID* ProxyVFTable = *(PVOID**)&s_ClientVGUIProxy;
 
 			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 1, (void*)ProxyVFTable[1], (void**)&m_pfnCClientVGUI_Initialize);
@@ -1115,11 +1103,8 @@ void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)
 			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 7, (void*)ProxyVFTable[7], (void**)&m_pfnCClientVGUI_ActivateClientUI);
 			g_pMetaHookAPI->VFTHook(g_pClientVGUI, 0, 8, (void*)ProxyVFTable[8], (void**)&m_pfnCClientVGUI_HideClientUI);
 
-			g_pCounterStrikeViewport = (CounterStrikeViewport*)(g_pClientVGUI - 1);
-
-			Install_InlineHook(ClientVGUI_LoadControlSettings);
-			Install_InlineHook(ClientVGUI_KeyValues_LoadFromFile);
-			Install_InlineHook(ClientVGUI_Panel_Init);
+			NativeClientUI_FillAddress();
+			NativeClientUI_InstallHooks();
 
 			g_IsNativeClientVGUI2 = true;
 		}

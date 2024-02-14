@@ -115,9 +115,6 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	Client_FillAddress();
 	Client_InstallHooks();
 
-	ClientVGUI_FillAddress();
-	ClientVGUI_InstallHooks(pExportFunc);
-
 	VGUI1_InstallHooks();
 
 	InitWin32Stuffs();
