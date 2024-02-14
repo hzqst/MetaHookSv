@@ -63,63 +63,68 @@ vgui::BuildGroup_Legacy *GetLegacyBuildGroup(vgui::Panel* pWindow)
 	return pfnGetBuildGroup(pWindow, 0);
 }
 
-#if 0//Fuck Valve
+//Fuck Valve
+#if 1
 void __fastcall ClientVGUI_RichText_SetTextW_Proxy(void* pthis, int dummy, const wchar_t* text)
 {
-	std::wstringstream wss;
-
-	auto ch = text;
-	const char * pbase = (const char*)text;
-
-	while (1)
+	if (!strcmp(GetCurrentGameLanguage(), "schinese"))
 	{
-		auto pch = (const char*)ch;
-		int offset = (pch - pbase);
+		std::wstringstream wss;
 
-		if ((BYTE)pch[0] == (BYTE)0xFF && (BYTE)pch[1] == (BYTE)0x50 &&  (BYTE)pch[2] == (BYTE)0x60)
+		auto ch = text;
+		const char* pbase = (const char*)text;
+		auto totalLen = wcslen(text);
+
+		while (1)
 		{
-			wss << L"£º¿Ö";
-			pch += 3;
-			ch = (const wchar_t*)pch;
-			continue;
+			auto pch = (const char*)ch;
+			int offset = (pch - pbase);
+
+			if (offset >= totalLen * 2)
+				break;
+
+			if ((*ch) == L'\0')
+				break;
+
+			if ((BYTE)pch[0] == (BYTE)0xFF)
+			{
+				wss << L"£º";
+				pch += 1;
+				ch = (const wchar_t*)pch;
+				continue;
+			}
+
+			if ((WORD)(*ch) > (WORD)0x00FF)
+			{
+				if ((WORD)(*ch) >= (WORD)0x2000 && (WORD)(*ch) <= (WORD)0x26FF)
+				{
+					//symbols
+				}
+				else if ((WORD)(*ch) >= (WORD)0x4E00 && (WORD)(*ch) <= (WORD)0x9FA5)
+				{
+					//schinese
+				}
+				else
+				{
+					pch += 1;
+					ch = (const wchar_t*)pch;
+					continue;
+				}
+			}
+
+			if ((*ch) == L'\0')
+				break;
+
+			wss << (*ch);
+			ch++;
 		}
 
-		if ((BYTE)pch[0] == (BYTE)0xFF && (BYTE)pch[1] == (BYTE)0x26 && (BYTE)pch[2] == (BYTE)0x5E)
-		{
-			wss << L"£º´ø";
-			pch += 3;
-			ch = (const wchar_t*)pch;
-			continue;
-		}
+		auto ws = wss.str();
 
-		if ((BYTE)pch[0] == (BYTE)0xFF && (BYTE)pch[1] == (BYTE)0x28 && (BYTE)pch[2] == (BYTE)0x57)
-		{
-			wss << L"£ºÔÚ";
-			pch += 3;
-			ch = (const wchar_t*)pch;
-			continue;
-		}
-
-		if ((BYTE)pch[0] == (BYTE)0x4F && (offset % 2) == 1)
-		{
-			pch += 1;
-			ch = (const wchar_t*)pch;
-			continue;
-		}
-
-		if ((*ch) == L'\0')
-			break;
-
-		wss << (*ch);
-		ch++;
-
-		if ((*ch) == L'\0')
-			break;
+		return gPrivateFuncs.ClientVGUI_RichText_SetTextW(pthis, dummy, ws.c_str());
 	}
 
-	auto ws = wss.str();
-
-	gPrivateFuncs.ClientVGUI_RichText_SetTextW(pthis, dummy, ws.c_str());
+	gPrivateFuncs.ClientVGUI_RichText_SetTextW(pthis, dummy, text);
 }
 #endif
 
@@ -1082,9 +1087,9 @@ void NativeClientUI_RichText_Search(PVOID Candidate, bool bIsUnicode)
 				{
 					gPrivateFuncs.ClientVGUI_RichText_SetTextW = (decltype(gPrivateFuncs.ClientVGUI_RichText_SetTextW))GetCallAddress(address);
 					
-					//auto addr = (PUCHAR)address;
-					//int rva = (PUCHAR)ClientVGUI_RichText_SetTextW_Proxy - (addr + 5);
-					//g_pMetaHookAPI->WriteMemory(addr + 1, &rva, 4);
+					auto addr = (PUCHAR)address;
+					int rva = (PUCHAR)ClientVGUI_RichText_SetTextW_Proxy - (addr + 5);
+					g_pMetaHookAPI->WriteMemory(addr + 1, &rva, 4);
 				}
 			}
 			else
