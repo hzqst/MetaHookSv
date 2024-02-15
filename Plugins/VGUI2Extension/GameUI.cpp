@@ -390,7 +390,7 @@ void __fastcall ServerBrowser_Panel_Init(vgui::Panel* pthis, int dummy, int x, i
 {
 	gPrivateFuncs.ServerBrowser_Panel_Init(pthis, 0, x, y, w, h);
 
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManagerInternal()->IsHighDpiSupportEnabled())
+	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
 		PVOID* PanelVFTable = *(PVOID**)pthis;
 		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];
@@ -539,7 +539,7 @@ void __fastcall GameUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int y, i
 {
 	gPrivateFuncs.GameUI_Panel_Init(pthis, 0, x, y, w, h);
 
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManagerInternal()->IsHighDpiSupportEnabled())
+	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
 		PVOID* PanelVFTable = *(PVOID**)pthis;
 		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];
@@ -3021,9 +3021,7 @@ void GameUI_FillAddress(void)
 
 		for (auto insn : ctx.insnSets_SetSize)
 		{
-			auto addr = (PUCHAR)insn;
-			int rva = (PUCHAR)GameUI_MessageBox_ApplySchemeSettings_Panel_SetSize - (addr + 5);
-			g_pMetaHookAPI->WriteMemory(addr + 1, &rva, 4);
+			g_pMetaHookAPI->InlinePatchRedirectBranch(insn, GameUI_MessageBox_ApplySchemeSettings_Panel_SetSize, NULL);
 		}
 	}
 
@@ -3637,9 +3635,7 @@ void ServerBrowser_FillAddress(void)
 
 			for (auto insn : ctx.insnSets_SetSize)
 			{
-				auto addr = (PUCHAR)insn;
-				int rva = (PUCHAR)ServerBrowser_Panel_SetSize - (addr + 5);
-				g_pMetaHookAPI->WriteMemory(addr + 1, &rva, 4);
+				g_pMetaHookAPI->InlinePatchRedirectBranch(insn, ServerBrowser_Panel_SetSize, NULL);
 			}
 		}
 	}
@@ -3735,16 +3731,12 @@ void ServerBrowser_FillAddress(void)
 
 		for (auto insn : ctx.insnSets_SetSize)
 		{
-			auto addr = (PUCHAR)insn;
-			int rva = (PUCHAR)ServerBrowser_Panel_SetSize - (addr + 5);
-			g_pMetaHookAPI->WriteMemory(addr + 1, &rva, 4);
+			g_pMetaHookAPI->InlinePatchRedirectBranch(insn, ServerBrowser_Panel_SetSize, NULL);
 		}
 
 		for (auto insn : ctx.insnSets_SetMinimumSize)
 		{
-			auto addr = (PUCHAR)insn;
-			int rva = (PUCHAR)ServerBrowser_Panel_SetMinimumSize - (addr + 5);
-			g_pMetaHookAPI->WriteMemory(addr + 1, &rva, 4);
+			g_pMetaHookAPI->InlinePatchRedirectBranch(insn, ServerBrowser_Panel_SetMinimumSize, NULL);
 		}
 	}
 

@@ -96,9 +96,29 @@ void __fastcall ClientVGUI_RichText_SetTextW_Proxy(void* pthis, int dummy, const
 
 			if ((WORD)(*ch) > (WORD)0x00FF)
 			{
-				if ((WORD)(*ch) >= (WORD)0x2000 && (WORD)(*ch) <= (WORD)0x26FF)
+				if ((WORD)(*ch) >= (WORD)0x2000 && (WORD)(*ch) <= (WORD)0x206F)
 				{
-					//symbols
+					//General Punctuation
+				}
+				else if ((WORD)(*ch) >= (WORD)0x20A0 && (WORD)(*ch) <= (WORD)0x20CF)
+				{
+					//Currency Symbols
+				}
+				else if ((WORD)(*ch) >= (WORD)0x2100 && (WORD)(*ch) <= (WORD)0x214F)
+				{
+					//Letterlike Symbols
+				}
+				else if ((WORD)(*ch) >= (WORD)0x2200 && (WORD)(*ch) <= (WORD)0x22FF)
+				{
+					//Mathematical Operators
+				}
+				else if ((WORD)(*ch) >= (WORD)0x2300 && (WORD)(*ch) <= (WORD)0x23FF)
+				{
+					//Miscellaneous Symbols
+				}
+				else if ((WORD)(*ch) >= (WORD)0x2600 && (WORD)(*ch) <= (WORD)0x26FF)
+				{
+					//Miscellaneous Symbols
 				}
 				else if ((WORD)(*ch) >= (WORD)0x4E00 && (WORD)(*ch) <= (WORD)0x9FA5)
 				{
@@ -106,6 +126,7 @@ void __fastcall ClientVGUI_RichText_SetTextW_Proxy(void* pthis, int dummy, const
 				}
 				else
 				{
+					//Skip invalid character
 					pch += 1;
 					ch = (const wchar_t*)pch;
 					continue;
@@ -116,6 +137,7 @@ void __fastcall ClientVGUI_RichText_SetTextW_Proxy(void* pthis, int dummy, const
 				break;
 
 			wss << (*ch);
+			pch += sizeof(wchar_t);
 			ch++;
 		}
 
@@ -132,7 +154,7 @@ void __fastcall ClientVGUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int 
 {
 	gPrivateFuncs.ClientVGUI_Panel_Init(pthis, 0, x, y, w, h);
 
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManagerInternal()->IsHighDpiSupportEnabled())
+	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
 		PVOID* PanelVFTable = *(PVOID**)pthis;
 		void(__fastcall * pfnSetProportional)(vgui::Panel * pthis, int dummy, bool state) = (decltype(pfnSetProportional))PanelVFTable[113];
@@ -142,7 +164,7 @@ void __fastcall ClientVGUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int 
 
 void __fastcall CSBuyMenu_Activate(vgui::Panel* pthis, int dummy)
 {
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManagerInternal()->IsHighDpiSupportEnabled())
+	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
 		pthis->MoveToFront();
 		pthis->RequestFocus();
@@ -370,7 +392,7 @@ void __fastcall ClientVGUI_LoadControlSettings(vgui::Panel* pthis, int dummy, co
 		}
 	}
 
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManagerInternal()->IsHighDpiSupportEnabled())
+	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
 		if (!strcmp(controlResourceName, "Resource/UI/MOTD.res") ||
 			!strcmp(controlResourceName, "Resource/UI/TeamMenu.res") ||
@@ -410,7 +432,7 @@ void ClientVGUI_KeyValues_FitToFullScreen(KeyValues* pControlKeyValues)
 
 void ClientVGUI_KeyValues_LoadFromFile_CounterStrike(KeyValues* pthis, const char* resourceName, const char* pathId)
 {
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManagerInternal()->IsHighDpiSupportEnabled())
+	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
 		if (!strcmp(resourceName, "Resource/UI/MOTD.res"))
 		{
@@ -467,7 +489,7 @@ void __fastcall CCSBackGroundPanel_Activate(vgui::Panel* pthis, int dummy)
 {
 	gPrivateFuncs.CCSBackGroundPanel_Activate(pthis, dummy);
 
-	if (g_iEngineType != ENGINE_GOLDSRC_HL25 && DpiManagerInternal()->IsHighDpiSupportEnabled())
+	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
 		*(int*)((PUCHAR)pthis + gPrivateFuncs.CCSBackGroundPanel_XOffsetBase) = 0;
 		*(int*)((PUCHAR)pthis + gPrivateFuncs.CCSBackGroundPanel_XOffsetBase + 4) = 0;
@@ -1086,10 +1108,7 @@ void NativeClientUI_RichText_Search(PVOID Candidate, bool bIsUnicode)
 				if (!gPrivateFuncs.ClientVGUI_RichText_SetTextW)
 				{
 					gPrivateFuncs.ClientVGUI_RichText_SetTextW = (decltype(gPrivateFuncs.ClientVGUI_RichText_SetTextW))GetCallAddress(address);
-					
-					auto addr = (PUCHAR)address;
-					int rva = (PUCHAR)ClientVGUI_RichText_SetTextW_Proxy - (addr + 5);
-					g_pMetaHookAPI->WriteMemory(addr + 1, &rva, 4);
+					g_pMetaHookAPI->InlinePatchRedirectBranch(address, ClientVGUI_RichText_SetTextW_Proxy, NULL);
 				}
 			}
 			else
@@ -1179,18 +1198,61 @@ void NativeClientUI_FillAddress(void)
 
 			return FALSE;
 
-			}, 0, NULL);
+		}, 0, NULL);
 
 		Sig_FuncNotFound(ClientVGUI_LoadControlSettings);
 	}
 
 	if (g_bIsCounterStrike)
 	{
-		char pattern[] = "\x66\x2A\x2A\xFF\xFE\x8B";
-		auto CTeamMenu_LoadMapPage_FoundPattern = Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
-		Sig_VarNotFound(CTeamMenu_LoadMapPage_FoundPattern);
+		const char sigs1[] = "maps/%s.txt";
+		auto MAPS_String = Search_Pattern_From_Size(ClientRdataBase, ClientRdataSize, sigs1);
+		if (!MAPS_String)
+			MAPS_String = Search_Pattern_From_Size(ClientDataBase, ClientDataSize, sigs1);
+		Sig_VarNotFound(MAPS_String);
 
-		NativeClientUI_RichText_Search(CTeamMenu_LoadMapPage_FoundPattern, false);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\x8D";
+		*(DWORD*)(pattern + 1) = (DWORD)MAPS_String;
+		auto MAPS_PushString = Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+		Sig_VarNotFound(MAPS_PushString);
+
+		typedef struct
+		{
+			PVOID InstAddress_FEFF;
+		}CTeamMenu_LoadMapPage_SearchContext;
+
+		CTeamMenu_LoadMapPage_SearchContext ctx = { 0 };
+
+		g_pMetaHookAPI->DisasmRanges(MAPS_PushString, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+			auto pinst = (cs_insn*)inst;
+			auto ctx = (CTeamMenu_LoadMapPage_SearchContext*)context;
+
+			if(pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				pinst->detail->x86.operands[1].imm == 0xFEFF)
+			{
+				ctx->InstAddress_FEFF = (decltype(ctx->InstAddress_FEFF))address;
+
+				return TRUE;
+			}
+
+			if (address[0] == 0xCC)
+				return TRUE;
+
+			if (pinst->id == X86_INS_RET)
+				return TRUE;
+
+			return FALSE;
+
+		}, 0, &ctx);
+
+		if (!ctx.InstAddress_FEFF)
+		{
+			Sig_NotFound(ctx.InstAddress_FEFF);
+		}
+
+		NativeClientUI_RichText_Search(ctx.InstAddress_FEFF, false);
 
 		Sig_FuncNotFound(ClientVGUI_RichText_SetTextW);
 		Sig_FuncNotFound(ClientVGUI_RichText_SetTextA);

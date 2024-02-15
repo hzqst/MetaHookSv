@@ -713,11 +713,7 @@ void Engine_FillAddress(void)
 
 		gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
 
-		PUCHAR pfnVGUIClient001_CreateInterface = (PUCHAR)VGUIClient001_CreateInterface;
-
-		int rva = pfnVGUIClient001_CreateInterface - (address + 5);
-
-		g_pMetaHookAPI->WriteMemory(address + 1, (BYTE *)&rva, 4);
+		g_pMetaHookAPI->InlinePatchRedirectBranch(address, VGUIClient001_CreateInterface, NULL);
 	}
 	else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
 	{
@@ -753,11 +749,7 @@ void Engine_FillAddress(void)
 
 		gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
 
-		PUCHAR pfnVGUIClient001_CreateInterface = (PUCHAR)VGUIClient001_CreateInterface;
-
-		int rva = pfnVGUIClient001_CreateInterface - (address + 5);
-
-		g_pMetaHookAPI->WriteMemory(address + 1, (BYTE *)&rva, 4);
+		g_pMetaHookAPI->InlinePatchRedirectBranch(address, VGUIClient001_CreateInterface, NULL);
 	}
 	else
 	{
@@ -799,11 +791,7 @@ void Engine_FillAddress(void)
 
 			gPrivateFuncs.VGUIClient001_CreateInterface = (decltype(gPrivateFuncs.VGUIClient001_CreateInterface))GetCallAddress(address);
 
-			PUCHAR pfnVGUIClient001_CreateInterface = (PUCHAR)VGUIClient001_CreateInterface;
-
-			int rva = pfnVGUIClient001_CreateInterface - (address + 5);
-
-			g_pMetaHookAPI->WriteMemory(address + 1, (BYTE*)&rva, 4);
+			g_pMetaHookAPI->InlinePatchRedirectBranch(address , VGUIClient001_CreateInterface, NULL);
 		}
 		else
 		{
@@ -956,9 +944,7 @@ void Engine_FillAddress(void)
 							if (address[0] == 0xE8)
 							{
 								gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(address);
-								PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
-								int rva = pfnNewV_strncpy - (address + 5);
-								g_pMetaHookAPI->WriteMemory(address + 1, (BYTE*)&rva, 4);
+								g_pMetaHookAPI->InlinePatchRedirectBranch(address, NewV_strncpy, NULL);
 								return TRUE;
 							}
 							else if (address[0] == 0xEB)
@@ -969,23 +955,22 @@ void Engine_FillAddress(void)
 								if (jmptarget[0] == 0xE8)
 								{
 									gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(jmptarget);
-									PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
-									int rva = pfnNewV_strncpy - (jmptarget + 5);
-									g_pMetaHookAPI->WriteMemory(jmptarget + 1, (BYTE*)&rva, 4);
+									g_pMetaHookAPI->InlinePatchRedirectBranch(jmptarget, NewV_strncpy, NULL);
 									return TRUE;
 								}
 							}
 							else if (address[0] == 0xFF && address[1] == 0x15)
 							{
-								gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy)) * *(ULONG_PTR**)(address + 2);
+								gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))**(ULONG_PTR**)(address + 2);
 
-								PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
-								int rva = pfnNewV_strncpy - (address + 5);
+								//PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
+								//int rva = pfnNewV_strncpy - (address + 5);
 
-								char trampoline[] = "\xE8\x2A\x2A\x2A\x2A\x90";
-								*(int*)(trampoline + 1) = rva;
+								//char trampoline[] = "\xE8\x2A\x2A\x2A\x2A\x90";
+								//*(int*)(trampoline + 1) = rva;
 
-								g_pMetaHookAPI->WriteMemory(address, trampoline, sizeof(trampoline) - 1);
+								//g_pMetaHookAPI->WriteMemory(address, trampoline, sizeof(trampoline) - 1);
+								g_pMetaHookAPI->InlinePatchRedirectBranch(address, NewV_strncpy, (void**)&gPrivateFuncs.V_strncpy);
 								return TRUE;
 							}
 						}
@@ -1078,9 +1063,7 @@ void Engine_FillAddress(void)
 						if (address[0] == 0xE8)
 						{
 							gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(address);
-							PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
-							int rva = pfnNewV_strncpy - (address + 5);
-							g_pMetaHookAPI->WriteMemory(address + 1, &rva, 4);
+							g_pMetaHookAPI->InlinePatchRedirectBranch(address, NewV_strncpy, NULL);
 							return TRUE;
 						}
 						else if (address[0] == 0xEB)
@@ -1091,23 +1074,22 @@ void Engine_FillAddress(void)
 							if (jmptarget[0] == 0xE8)
 							{
 								gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))GetCallAddress(jmptarget);
-								PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
-								int rva = pfnNewV_strncpy - (jmptarget + 5);
-								g_pMetaHookAPI->WriteMemory(jmptarget + 1, &rva, 4);
+								g_pMetaHookAPI->InlinePatchRedirectBranch(jmptarget, NewV_strncpy, NULL);
 								return TRUE;
 							}
 						}
 						else if (address[0] == 0xFF && address[1] == 0x15)
 						{
-							gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))**(ULONG_PTR **)(address + 2);
+							//gPrivateFuncs.V_strncpy = (decltype(gPrivateFuncs.V_strncpy))**(ULONG_PTR **)(address + 2);
 							
-							PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
-							int rva = pfnNewV_strncpy - (address + 5);
+							//PUCHAR pfnNewV_strncpy = (PUCHAR)NewV_strncpy;
+							//int rva = pfnNewV_strncpy - (address + 5);
 
-							char trampoline[] = "\xE8\x2A\x2A\x2A\x2A\x90";
-							*(int*)(trampoline + 1) = rva;
+							//char trampoline[] = "\xE8\x2A\x2A\x2A\x2A\x90";
+							//*(int*)(trampoline + 1) = rva;
 
-							g_pMetaHookAPI->WriteMemory(address, trampoline, sizeof(trampoline) - 1);
+							//g_pMetaHookAPI->WriteMemory(address, trampoline, sizeof(trampoline) - 1);
+							g_pMetaHookAPI->InlinePatchRedirectBranch(address, NewV_strncpy, (void**)&gPrivateFuncs.V_strncpy);
 							return TRUE;
 						}
 					}
