@@ -261,7 +261,78 @@ Scheme
 				"antialias"	"1"
 			}
 		}
-		
+		"DefaultVerySmall"
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"12"
+				"weight"	"600"
+				"yres"	"480 599"
+			}
+			"2"
+			{
+				"name"		"Verdana"
+				"tall"		"13"
+				"weight"	"600"
+				"yres"	"600 767"
+			}
+			"3"
+			{
+				"name"		"Verdana"
+				"tall"		"14"
+				"weight"	"600"
+				"yres"	"768 1023"
+				"antialias"	"1"
+			}
+			"4"
+			{
+				"name"		"Verdana"
+				"tall"		"20"
+				"weight"	"600"
+				"yres"	"1024 1199"
+				"antialias"	"1"
+			}
+			"5"
+			{
+				"name"		"Verdana"
+				"tall"		"24"
+				"weight"	"600"
+				"yres"	"1200 6000"
+				"antialias"	"1"
+			}
+		}
+		// Used by scoreboard and spectator UI for names which don't map in the normal fashion
+		"DefaultVerySmallFallBack"
+		{
+			"1"
+			{
+				"name"		"Verdana"
+				"tall"		"10"
+				"weight"	"0"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"		"480 599"
+				"antialias"	"1"
+			}
+			"2"
+			{
+				"name"		"Verdana"
+				"tall"		"12"
+				"weight"	"0"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"		"600 1199"
+				"antialias"	"1"
+			}
+			"3"
+			{
+				"name"		"Verdana"
+				"tall"		"15"
+				"weight"	"0"
+				"range"		"0x0000 0x017F" //	Basic Latin, Latin-1 Supplement, Latin Extended-A
+				"yres"		"1200 6000"
+				"antialias"	"1"
+			}
+		}
 		// this is the symbol font
 		"Marlett"
 		{
