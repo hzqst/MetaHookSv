@@ -16,6 +16,7 @@ extern ULONG g_BlobLoaderSectionSize;
 #define MH_HOOK_INLINE 1
 #define MH_HOOK_VFTABLE 2
 #define MH_HOOK_IAT 3
+#define MH_HOOK_INLINEPATCH 4
 
 struct tagIATDATA
 {
@@ -36,11 +37,20 @@ struct tagINLINEDATA
 	PVOID pTrampolineCall;
 };
 
+struct tagINLINEPATCHDATA
+{
+	PVOID pInstructionAddress;
+	ULONG PatchLength;
+	UCHAR OriginalBytes[8];
+	UCHAR NewCodeBytes[8];
+};
+
 union tagHOOKDATA
 {
 	tagIATDATA iathook;
 	tagVTABLEDATA vfthook;
 	tagINLINEDATA inlinehook;
+	tagINLINEPATCHDATA inlinepatch;
 };
 
 typedef struct hook_s
@@ -256,6 +266,11 @@ void MH_FreeBlob(void** pBlobFootPrint)
 	BlobLoaderRemoveBlob(hBlob);
 
 	(*pBlobFootPrint) = NULL;
+}
+
+void MH_FreeHooksForModule(PVOID ImageBase, ULONG ImageSize)
+{
+	//TODO
 }
 
 void MH_Cvar_DirectSet(cvar_t* var, char* value)
@@ -947,6 +962,7 @@ void MH_TransactionHookCommit(void)
 			else if (pHook->iType == MH_HOOK_VFTABLE)
 			{
 				pHook->pOldFuncAddr = *pHook->hookData.vfthook.pVirtualFuncAddr;
+
 				MH_WriteMemory(pHook->hookData.vfthook.pVirtualFuncAddr, &pHook->pNewFuncAddr, sizeof(PVOID));
 
 				if (pHook->pOrginalCall)
@@ -955,7 +971,18 @@ void MH_TransactionHookCommit(void)
 			else if (pHook->iType == MH_HOOK_IAT)
 			{
 				pHook->pOldFuncAddr = *pHook->hookData.iathook.pImportFuncAddr;
+
 				MH_WriteMemory(pHook->hookData.iathook.pImportFuncAddr, &pHook->pNewFuncAddr, sizeof(PVOID));
+
+				if (pHook->pOrginalCall)
+					(*pHook->pOrginalCall) = pHook->pOldFuncAddr;
+			}
+			else if (pHook->iType == MH_HOOK_INLINEPATCH)
+			{
+				pHook->pOldFuncAddr = MH_GetNextCallAddr(pHook->hookData.inlinepatch.pInstructionAddress, 1);
+
+				memcpy(pHook->hookData.inlinepatch.OriginalBytes, (PUCHAR)pHook->hookData.inlinepatch.pInstructionAddress, pHook->hookData.inlinepatch.PatchLength);
+				MH_WriteMemory(pHook->hookData.inlinepatch.pInstructionAddress, pHook->hookData.inlinepatch.NewCodeBytes, pHook->hookData.inlinepatch.PatchLength);
 
 				if (pHook->pOrginalCall)
 					(*pHook->pOrginalCall) = pHook->pOldFuncAddr;
@@ -2028,7 +2055,13 @@ void MH_FreeHook(hook_t *pHook)
 {
 	if (pHook->bCommitted)
 	{
-		if (pHook->iType == MH_HOOK_VFTABLE)
+		if (pHook->iType == MH_HOOK_INLINE)
+		{
+			DetourTransactionBegin();
+			DetourDetach(&pHook->hookData.inlinehook.pTrampolineCall, pHook->pNewFuncAddr);
+			DetourTransactionCommit();
+		}
+		else if (pHook->iType == MH_HOOK_VFTABLE)
 		{
 			MH_WriteMemory(pHook->hookData.vfthook.pVirtualFuncAddr, &pHook->pOldFuncAddr, sizeof(PVOID));
 		}
@@ -2036,9 +2069,9 @@ void MH_FreeHook(hook_t *pHook)
 		{
 			MH_WriteMemory(pHook->hookData.iathook.pImportFuncAddr, &pHook->pOldFuncAddr, sizeof(PVOID));
 		}
-		else if (pHook->iType == MH_HOOK_INLINE)
+		else if (pHook->iType == MH_HOOK_INLINEPATCH)
 		{
-			DetourDetach(&pHook->hookData.inlinehook.pTrampolineCall, pHook->pNewFuncAddr);
+			MH_WriteMemory(pHook->hookData.inlinepatch.pInstructionAddress, pHook->hookData.inlinepatch.OriginalBytes, pHook->hookData.inlinepatch.PatchLength);
 		}
 
 		pHook->bCommitted = false;
@@ -2052,8 +2085,6 @@ void MH_FreeAllHook(void)
 	if (!g_pHookBase)
 		return;
 
-	DetourTransactionBegin();
-
 	hook_t *next = NULL;
 
 	for (auto h = g_pHookBase; h; h = next)
@@ -2063,8 +2094,6 @@ void MH_FreeAllHook(void)
 	}
 
 	g_pHookBase = NULL;
-
-	DetourTransactionCommit();
 }
 
 BOOL MH_UnHook(hook_t *pHook)
@@ -2318,6 +2347,73 @@ bool MH_IsBogusVFTableEntry(PVOID pVirtualFuncAddr, PVOID pOldFuncAddr)
 	return false;
 }
 
+hook_t* MH_InlinePatchRedirectBranch(void* pInstructionAddress, void* pNewFuncAddr, void** pOrginalCall)
+{
+	auto pSourceCode = (PUCHAR)pInstructionAddress;
+
+	ULONG PatchLength = 0;
+	UCHAR NewCodeBytes[8];
+
+	if (pSourceCode[0] == 0xE9 || pSourceCode[0] == 0xE8)
+	{
+		PatchLength = 5;
+		NewCodeBytes[0] = pSourceCode[0];
+		*(int*)(NewCodeBytes + 1) = (PUCHAR)pNewFuncAddr - ((PUCHAR)pInstructionAddress + 5);
+	}
+	else if (pSourceCode[0] == 0xFF && pSourceCode[1] == 0x15)
+	{
+		//indirect call
+		PatchLength = 6;
+		NewCodeBytes[0] = 0xE8;
+		NewCodeBytes[5] = 0x90;
+		*(int*)(NewCodeBytes + 1) = (PUCHAR)pNewFuncAddr - ((PUCHAR)pInstructionAddress + 5);
+	}
+	else if (pSourceCode[0] == 0xFF && pSourceCode[1] == 0x25)
+	{
+		//indirect jmp
+		PatchLength = 6;
+		NewCodeBytes[0] = 0xE9;
+		NewCodeBytes[5] = 0x90;
+		*(int*)(NewCodeBytes + 1) = (PUCHAR)pNewFuncAddr - ((PUCHAR)pInstructionAddress + 5);
+	}
+	else
+	{
+		return NULL;
+	}
+
+	hook_t* h = MH_NewHook(MH_HOOK_INLINEPATCH);
+
+	if (!h)
+	{
+		return NULL;
+	}
+
+	h->pOldFuncAddr = MH_GetNextCallAddr(pInstructionAddress, 1);
+	h->pNewFuncAddr = pNewFuncAddr;
+	h->pOrginalCall = pOrginalCall;
+	h->hookData.inlinepatch.pInstructionAddress = pInstructionAddress;
+	h->hookData.inlinepatch.PatchLength = PatchLength;
+	memcpy(h->hookData.inlinepatch.NewCodeBytes, NewCodeBytes, PatchLength);
+	memcpy(h->hookData.inlinepatch.OriginalBytes, (PUCHAR)pInstructionAddress, PatchLength);
+
+	if (g_bTransactionHook)
+	{
+		h->bCommitted = false;
+	}
+	else
+	{
+		MH_WriteMemory(pInstructionAddress, NewCodeBytes, PatchLength);
+
+		if (h->pOrginalCall)
+			(*h->pOrginalCall) = h->pOldFuncAddr;
+
+		h->bCommitted = true;
+	}
+
+	return h;
+}
+
+
 hook_t* MH_VFTHookEx(void ** pVFTable, int iFuncIndex, void* pNewFuncAddr, void** pOrginalCall)
 {
 	hook_t* h = MH_NewHook(MH_HOOK_VFTABLE);
@@ -2331,12 +2427,12 @@ hook_t* MH_VFTHookEx(void ** pVFTable, int iFuncIndex, void* pNewFuncAddr, void*
 
 	h->pOldFuncAddr = pVMT[iFuncIndex];
 	h->pNewFuncAddr = pNewFuncAddr;
+	h->pOrginalCall = pOrginalCall;
 	h->hookData.vfthook.pClassInstance = NULL;
 	h->hookData.vfthook.iTableIndex = -1;
 	h->hookData.vfthook.iFuncIndex = iFuncIndex;
 	h->hookData.vfthook.pVirtualFuncTable = pVMT;
 	h->hookData.vfthook.pVirtualFuncAddr = pVMT + iFuncIndex;
-	h->pOrginalCall = pOrginalCall;
 
 	if (CommandLine()->CheckParm("-metahook_check_vfthook"))
 	{
@@ -2400,12 +2496,12 @@ hook_t* MH_VFTHook(void* pClassInstance, int iTableIndex, int iFuncIndex, void* 
 
 	h->pOldFuncAddr = pVMT[iFuncIndex];
 	h->pNewFuncAddr = pNewFuncAddr;
+	h->pOrginalCall = pOrginalCall;
 	h->hookData.vfthook.pClassInstance = pClassInstance;
 	h->hookData.vfthook.iTableIndex = iTableIndex;
 	h->hookData.vfthook.iFuncIndex = iFuncIndex;
 	h->hookData.vfthook.pVirtualFuncTable = pVMT;
 	h->hookData.vfthook.pVirtualFuncAddr = pVMT + iFuncIndex;
-	h->pOrginalCall = pOrginalCall;
 
 	if (CommandLine()->CheckParm("-metahook_check_vfthook"))
 	{
@@ -3073,22 +3169,29 @@ PVOID MH_GetNextCallAddr(void *pAddress, DWORD dwCount)
 
 	for (DWORD i = 0; i < dwCount; i++)
 	{
-		BYTE code = *(BYTE *)pbAddress;
-
-		if (code == 0xFF && *(BYTE *)(pbAddress + 1) == 0x15)
+		if (pbAddress[0] == 0xFF && pbAddress[1] == 0x15)
 		{
-			return *(PVOID *)(pbAddress + 2);
+			pbAddress = (BYTE*)(**(PVOID **)(pbAddress + 2));
 		}
-
-		if (code == 0xE8)
+		else if (pbAddress[0] == 0xFF && pbAddress[1] == 0x25)
 		{
-			return (PVOID)(pbAddress + 5 + *(int *)(pbAddress + 1));
+			pbAddress = (BYTE*)(**(PVOID**)(pbAddress + 2));
 		}
-
-		pbAddress++;
+		else if (pbAddress[0] == 0xE8)
+		{
+			pbAddress = (BYTE*)(pbAddress + 5 + *(int *)(pbAddress + 1));
+		}
+		else if (pbAddress[0] == 0xE9)
+		{
+			pbAddress = (BYTE*)(pbAddress + 5 + *(int*)(pbAddress + 1));
+		}
+		else
+		{
+			return NULL;
+		}
 	}
 
-	return NULL;
+	return pbAddress;
 }
 
 DWORD MH_GetEngineVersion(void)
@@ -3755,7 +3858,8 @@ metahook_api_t gMetaHookAPI_LegacyV2 =
 	MH_BlobIATHook,
 	MH_GetGameDirectory,
 	MH_FindCmd,
-	MH_VFTHookEx
+	MH_VFTHookEx,
+	MH_InlinePatchRedirectBranch
 };
 
 metahook_api_t gMetaHookAPI =
@@ -3818,5 +3922,6 @@ metahook_api_t gMetaHookAPI =
 	MH_BlobIATHook,
 	MH_GetGameDirectory,
 	MH_FindCmd,
-	MH_VFTHookEx
+	MH_VFTHookEx,
+	MH_InlinePatchRedirectBranch
 };

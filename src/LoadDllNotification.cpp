@@ -10,6 +10,7 @@ PVOID MH_GetClientBase(void);
 bool MH_IsTransactionHookEnabled(void);
 void MH_TransactionHookBegin(void);
 void MH_TransactionHookCommit(void);
+void MH_FreeHooksForModule(PVOID ImageBase, ULONG ImageSize);
 
 typedef VOID(CALLBACK* PLDR_DLL_NOTIFICATION_FUNCTION)(
 	_In_     ULONG                       NotificationReason,
@@ -123,6 +124,8 @@ void MH_DispatchLoadBlobNotificationCallback(BlobHandle_t hBlob, int flags)
 			callback(&ctx);
 		}
 
+		MH_FreeHooksForModule(ctx.ImageBase, ctx.ImageSize);
+
 		MH_TransactionHookCommit();
 	}
 	else
@@ -131,6 +134,8 @@ void MH_DispatchLoadBlobNotificationCallback(BlobHandle_t hBlob, int flags)
 		{
 			callback(&ctx);
 		}
+
+		MH_FreeHooksForModule(ctx.ImageBase, ctx.ImageSize);
 	}
 }
 
