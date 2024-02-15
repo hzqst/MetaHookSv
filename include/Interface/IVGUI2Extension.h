@@ -79,7 +79,23 @@ class IGameUIOptionsDialogCtorCallbackContext : public IBaseInterface
 public:
     virtual void* GetDialog() const = 0;
     virtual void* GetPropertySheet() const = 0;
-    virtual void AddPage(void* panel, const char* title) = 0;
+    virtual void AddPage(void* panel, const char* title) = 0; 
+    virtual void SetActivePage(void* panel) = 0;
+    virtual void SetTabWidth(int width) = 0;
+    virtual void* GetActivePage() = 0;
+    virtual void ResetAllData() = 0;
+    virtual void ApplyChanges() = 0;
+    virtual void* GetPage(int i) = 0;
+    virtual void DeletePage(void* panel) = 0;
+    virtual void* GetActiveTab() = 0;
+    virtual void GetActiveTabTitle(char* textOut, int bufferLen) = 0;
+    virtual bool GetTabTitle(int i, char* textOut, int bufferLen) = 0;
+    virtual int GetActivePageNum() = 0;
+    virtual int GetNumPages() = 0;
+    virtual void DisablePage(const char* title) = 0;
+    virtual void EnablePage(const char* title) = 0;
+    virtual  void ChangeActiveTab(int index) = 0;
+
 };
 
 class IVGUI2Extension_GameUIOptionDialogCallbacks : public IVGUI2Extension_BaseCallbacks
