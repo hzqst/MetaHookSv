@@ -38,6 +38,18 @@
 
 如果你实在不放心，那么请使用小号进行游戏，毕竟Sven Co-op是免费游戏。
 
+## 常见问题
+
+1. 为什么使用盗版/旧版引擎进行游戏时，游戏进程会周期性卡住几秒？
+
+Q: 因为V社在引擎的主循环中使用了一个阻塞式API `gethostbyname` 来请求域名。该API在请求已失效的域名的时候就是会阻塞当前进程直到超时返回的，这是Windows的设定。
+
+你可以通过在启动项中添加 `-nomaster` 或 `-steam` 来缓解该问题。（ `-steam` 在某些NoSteam盗版版本上可能导致游戏无法启动）
+
+2. 为什么游戏进程会在退出/重启时卡住很久 ?
+
+Q: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络线程退出，以防游戏意外崩溃。具体见 [ThreadGuard](https://github.com/hzqst/MetaHookSv#threadguard)。
+
 ## 一键安装方式 (推荐)
 
 1. 从 [GitHub Release](https://github.com/hzqst/MetaHookSv/releases) 下载压缩包。(可利用GitHub的国内加速镜像加速下载），然后解压。

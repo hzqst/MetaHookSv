@@ -32,6 +32,18 @@ There is no VAC ban reported yet.
 
 The binaries or executables of Sven Co-op are not signed with digital signatures thus no integrity check from VAC would be applied for them.
 
+## FAQ
+
+1. Why the game process hangs up / freeze occasionally for few seconds when playing on legacy / pirated version of GoldSrc game ?
+
+Q: This is because Valve uses `gethostbyname` with an non-existing hostname to query maters servers. which is known to block the whole game loop for few seconds if the hostname is not available.
+
+You can either add `-nomaster` to launch paramaters to prevent engine from querying invalid hostname or add `-steam` launch paramaters to force engine to use a valid master server source (which probably not gonna work on pirated game).
+
+2. Why the game process hangs up for abount tens of seconds on exiting / on restarting ?
+
+Q: This is because ThreadGuard.dll is waiting for Valve's network threads or similiar things to exit before actually exiting the game. See [ThreadGuard](https://github.com/hzqst/MetaHookSv#threadguard) for more details.
+
 ## One Click Installation
 
 1. Download from [GitHub Release](https://github.com/hzqst/MetaHookSv/releases), then unzip it.
