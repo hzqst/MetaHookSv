@@ -93,10 +93,12 @@ typedef struct
 	void** GameUI_KeyValues_vftable;
 	bool(__fastcall* GameUI_KeyValues_LoadFromFile)(void* pthis, int dummy, IFileSystem* pFileSystem, const char* resourceName, const char* pathId);
 	void(__fastcall* GameUI_Panel_SetSize)(void* pthis, int dummy, int width, int height);
-	void *(__fastcall* Sheet_ctor)(void* pthis, int dummy, void* parent, const char *panelName);
-	void** Sheet_vftable;
+	void** GameUI_Menu_vftable;
+	void(__fastcall* GameUI_Menu_MakeItemsVisibleInScrollRange)(void* pthis, int dummy);
+	void *(__fastcall* GameUI_Sheet_ctor)(void* pthis, int dummy, void* parent, const char *panelName);
+	int offset_ScrollBar;
+	void** GameUI_Sheet_vftable;
 	int offset_propertySheet;
-	//void *(__fastcall*QueryBox_ctor)(void* pthis, int dummy, const char* title, const char* queryText, void* parent);
 	void *(__fastcall*MessageBox_ctor)(void* pthis, int dummy, const char *title, const char *text, void *parent);
 	void (__fastcall*MessageBox_ApplySchemeSettings)(void* pthis, int dummy, void *pScheme);
 	void** MessageBox_vftable;
@@ -171,6 +173,7 @@ bool SCR_IsLoadingVisible(void);
 
 PVOID VGUI2_FindPanelInit(PVOID TextBase, ULONG TextSize);
 PVOID *VGUI2_FindKeyValueVFTable(PVOID TextBase, ULONG TextSize, PVOID RdataBase, ULONG RdataSize, PVOID DataBase, ULONG DataSize);
+PVOID* VGUI2_FindMenuVFTable(PVOID TextBase, ULONG TextSize, PVOID RdataBase, ULONG RdataSize, PVOID DataBase, ULONG DataSize);
 
 void Client_FillAddress(void);
 void Client_InstallHooks(void);

@@ -38,6 +38,7 @@ namespace vgui
 }
 
 static hook_t* g_phook_EngineVGUI2_Panel_Init = NULL;
+
 static void(__fastcall *m_pfnCBaseUI_Initialize)(void *pthis, int, CreateInterfaceFn *factories, int count) = NULL;
 static void(__fastcall *m_pfnCBaseUI_Start)(void *pthis, int, struct cl_enginefuncs_s *engineFuncs, int interfaceVersion) = NULL;
 static void(__fastcall *m_pfnCBaseUI_Shutdown)(void *pthis, int) = NULL;

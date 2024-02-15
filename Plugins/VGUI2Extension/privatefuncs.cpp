@@ -365,6 +365,97 @@ PVOID VGUI2_FindPanelInit(PVOID TextBase, ULONG TextSize)
 	return Panel_Init;
 }
 
+PVOID *VGUI2_FindMenuVFTable(PVOID TextBase, ULONG TextSize, PVOID RdataBase, ULONG RdataSize, PVOID DataBase, ULONG DataSize)
+{
+	const char sigs1[] = "MenuScrollBar";
+	auto MenuScrollBar_String = Search_Pattern_From_Size(RdataBase, RdataSize, sigs1);
+	if (!MenuScrollBar_String)
+	{
+		MenuScrollBar_String = Search_Pattern_From_Size(DataBase, DataSize, sigs1);
+	}
+
+	if (!MenuScrollBar_String)
+		return NULL;
+
+	char pattern[] = "\x6A\x01\x68\x2A\x2A\x2A\x2A";
+	*(DWORD*)(pattern + 3) = (DWORD)MenuScrollBar_String;
+	auto MenuScrollBar_PushString = Search_Pattern_From_Size(TextBase, TextSize, pattern);
+
+	if (!MenuScrollBar_PushString)
+		return NULL;
+
+	typedef struct
+	{
+		PVOID DataBase;
+		ULONG DataSize;
+
+		PVOID RdataBase;
+		ULONG RdataSize;
+
+		PVOID TextBase;
+		ULONG TextSize;
+
+		PVOID Menu_ctor;
+		PVOID* Menu_vftable;
+
+	}MenuSearchContext;
+
+	MenuSearchContext ctx = { 0 };
+
+	ctx.DataBase = DataBase;
+	ctx.DataSize = DataSize;
+
+	ctx.RdataBase = RdataBase;
+	ctx.RdataSize = RdataSize;
+
+	ctx.TextBase = TextBase;
+	ctx.TextSize = TextSize;
+
+	ctx.Menu_ctor = g_pMetaHookAPI->ReverseSearchFunctionBegin(MenuScrollBar_PushString, 0x300);
+
+	if (!ctx.Menu_ctor)
+		return NULL;
+
+	g_pMetaHookAPI->DisasmRanges(ctx.Menu_ctor, 0x500, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+		auto pinst = (cs_insn*)inst;
+		auto ctx = (MenuSearchContext*)context;
+
+		if (!ctx->Menu_vftable)
+		{
+			if (pinst->id == X86_INS_MOV &&
+				pinst->detail->x86.op_count == 2 &&
+				pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+				pinst->detail->x86.operands[0].mem.disp == 0 &&
+				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+				((PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)ctx->RdataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)ctx->RdataBase + ctx->RdataSize))
+			{
+				auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
+
+				if (candidate[0] >= (PUCHAR)ctx->TextBase && candidate[0] < (PUCHAR)ctx->TextBase + ctx->TextSize)
+				{
+					ctx->Menu_vftable = candidate;
+				}
+			}
+		}
+
+		if(ctx->Menu_vftable)
+			return TRUE;
+
+		if (address[0] == 0xCC)
+			return TRUE;
+
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
+
+		return FALSE;
+
+	}, 0, & ctx);
+
+	return ctx.Menu_vftable;
+}
+
 PVOID *VGUI2_FindKeyValueVFTable(PVOID TextBase, ULONG TextSize, PVOID RdataBase, ULONG RdataSize, PVOID DataBase, ULONG DataSize)
 {
 	const char sigs1[] = "CursorEnteredMenuButton\0";
@@ -407,12 +498,6 @@ PVOID *VGUI2_FindKeyValueVFTable(PVOID TextBase, ULONG TextSize, PVOID RdataBase
 
 	ctx.RdataBase = RdataBase;
 	ctx.RdataSize = RdataSize;
-
-	if (ctx.RdataBase == 0)
-	{
-		ctx.RdataBase = ctx.DataBase;
-		ctx.RdataSize = ctx.DataSize;
-	}
 
 	ctx.TextBase =  TextBase;
 	ctx.TextSize =  TextSize;

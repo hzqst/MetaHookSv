@@ -5,7 +5,7 @@
 #include <vgui/VGUI.h>
 #include <vgui/IPanel.h>
 #include <vgui_controls/Panel.h>
-
+#include <vgui_controls/Menu.h>
 #include <capstone.h>
 #include <set>
 #include <sstream>
@@ -35,6 +35,7 @@ static hook_t* g_phook_GameUI_TextEntry_LayoutVerticalScrollBarSlider = NULL;
 static hook_t* g_phook_GameUI_TextEntry_GetStartDrawIndex = NULL;
 static hook_t* g_phook_GameUI_PropertySheet_HasHotkey = NULL;
 static hook_t* g_phook_GameUI_FocusNavGroup_GetCurrentFocus = NULL;
+static hook_t* g_phook_GameUI_Menu_MakeItemsVisibleInScrollRange = NULL;
 static hook_t* g_phook_CCareerProfileFrame_ctor = NULL;
 static hook_t* g_phook_CCareerMapFrame_ctor = NULL;
 static hook_t* g_phook_CCareerBotFrame_ctor = NULL;
@@ -98,6 +99,71 @@ int GetPatchedGetFontTall(int fontTall)
 	}
 
 	return fontTall;
+}
+
+bool VGUI2_IsMenuMakeItemsVisibleInScrollRange(PVOID Candidate, int *poffset_ScrollBar)
+{
+	typedef struct
+	{
+		int offset_ScrollBar;
+		bool bFoundCall21Ch;
+	}VGUI2_IsMenuMakeItemsVisibleInScrollRange_SearchContext;
+
+	VGUI2_IsMenuMakeItemsVisibleInScrollRange_SearchContext ctx = { 0 };
+
+	g_pMetaHookAPI->DisasmRanges(Candidate, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+		auto pinst = (cs_insn*)inst;
+		auto ctx = (VGUI2_IsMenuMakeItemsVisibleInScrollRange_SearchContext*)context;
+
+		if (!ctx->offset_ScrollBar &&
+			pinst->id == X86_INS_MOV &&
+			pinst->detail->x86.op_count == 2 &&
+			pinst->detail->x86.operands[0].type == X86_OP_REG &&
+			pinst->detail->x86.operands[0].reg &&
+			pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[1].mem.base &&
+			pinst->detail->x86.operands[1].mem.base != X86_REG_ESP &&
+			pinst->detail->x86.operands[1].mem.base != X86_REG_EBP &&
+			pinst->detail->x86.operands[1].mem.disp >= 0x80 &&
+			pinst->detail->x86.operands[1].mem.disp <= 0x90)
+		{
+			ctx->offset_ScrollBar = pinst->detail->x86.operands[1].mem.disp;
+		}
+
+		//call  [exx+21Ch]
+		if (!ctx->bFoundCall21Ch &&
+			pinst->id == X86_INS_CALL &&
+			pinst->detail->x86.op_count == 1 &&
+			pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+			pinst->detail->x86.operands[0].mem.base &&
+			pinst->detail->x86.operands[0].mem.base != X86_REG_ESP &&
+			pinst->detail->x86.operands[0].mem.base != X86_REG_EBP &&
+			pinst->detail->x86.operands[0].mem.disp == 0x21C)
+		{
+			ctx->bFoundCall21Ch = true;
+			return TRUE;
+		}
+
+		if (address[0] == 0xCC)
+			return TRUE;
+
+		if (pinst->id == X86_INS_RET)
+			return TRUE;
+
+		return FALSE;
+
+		}, 0, & ctx);
+
+	if (ctx.bFoundCall21Ch)
+	{
+		if(poffset_ScrollBar)
+			(*poffset_ScrollBar) = ctx.offset_ScrollBar;
+
+		return TRUE;
+	}
+
+	return FALSE;
 }
 
 bool VGUI2_IsPanelSetSize(PVOID Candidate)
@@ -563,13 +629,78 @@ void __fastcall GameUI_MessageBox_ApplySchemeSettings_Panel_SetSize(vgui::Panel*
 	return gPrivateFuncs.GameUI_Panel_SetSize(pthis, 0, width, height);
 }
 
+class CScrollBar_Legacy : public vgui::IClientPanel
+{
+public:
+	virtual void    SetValue(int value) = 0;//134
+	virtual int     GetValue() = 0;//135
+	virtual void    SetRange(int min, int max) = 0;//136
+	virtual void    GetRange(int& min, int& max) = 0;//137
+	virtual void    SetRangeWindow(int rangeWindow) = 0;//138
+	virtual int    GetRangeWindow() = 0;//139
+	virtual bool    IsVertical() = 0;//140
+	virtual bool    HasFullRange() = 0;//141
+	virtual void    SetButton(vgui::Panel* button, int index) = 0;
+	virtual vgui::Panel* GetButton(int index) = 0;
+	virtual void    SetSlider(vgui::Panel* slider) = 0;
+	virtual vgui::Panel* GetSlider() = 0;
+	virtual void    SetButtonPressedScrollValue(int value) = 0;
+	virtual void    Validate() = 0;
+};
+
+class CMenu_Legacy
+{
+public:
+	int 			m_iMenuItemHeight;
+	int 			m_iFixedWidth;
+	int 			m_iMinimumWidth; // a minimum width the menu has to be if it is not fixed width
+	int 			m_iNumVisibleLines;	// number of items in menu before scroll bar adds on
+
+	CScrollBar_Legacy* m_pScroller;
+
+	CUtlLinkedList<vgui::Panel*, int> 	m_MenuItems;
+	CUtlVector<int>					m_SortedItems;
+};
+
+void __fastcall GameUI_Menu_MakeItemsVisibleInScrollRange(vgui::Panel* pthis, int dummy)
+{
+	CMenu_Legacy* pMenu = (CMenu_Legacy*)((PUCHAR)pthis + gPrivateFuncs.offset_ScrollBar - 4 * sizeof(int));
+
+	for (int i = 0; i < pMenu->m_MenuItems.Count(); i++)
+	{
+		pMenu->m_MenuItems[i]->SetVisible(false);
+	}
+
+	int count = 0;
+	int startItem = pMenu->m_pScroller->GetValue();
+	do
+	{
+		for (int i = startItem; count < pMenu->m_iNumVisibleLines && i < pMenu->m_SortedItems.Count(); i++)
+		{
+			auto iItemIndex = pMenu->m_SortedItems[i];
+			if (iItemIndex < pMenu->m_MenuItems.Count())
+			{
+				pMenu->m_MenuItems[iItemIndex]->SetVisible(true);
+				count++;
+			}
+		}
+
+		if (count < pMenu->m_iNumVisibleLines)
+		{
+			startItem--;  // scroll up 
+			count = 0;
+		}
+
+	} while (count < pMenu->m_iNumVisibleLines - 1);
+}
+
 /*
 ====================================================================
-GameUI inline hook
+GameUI control hooks
 ====================================================================
 */
 
-void *__fastcall CCareerProfileFrame_ctor(void* pthis, int dummy, void* parent)
+void *__fastcall CCareerProfileFrame_ctor(vgui::Panel* pthis, int dummy, void* parent)
 {
 	bool bOriginal = vgui::surface()->IsForcingHDProportional();
 	vgui::surface()->SetForcingHDProportional(false);
@@ -581,7 +712,7 @@ void *__fastcall CCareerProfileFrame_ctor(void* pthis, int dummy, void* parent)
 	return r;
 }
 
-void* __fastcall CCareerMapFrame_ctor(void* pthis, int dummy, void* parent)
+void* __fastcall CCareerMapFrame_ctor(vgui::Panel* pthis, int dummy, void* parent)
 {
 	bool bOriginal = vgui::surface()->IsForcingHDProportional();
 	vgui::surface()->SetForcingHDProportional(false);
@@ -593,7 +724,7 @@ void* __fastcall CCareerMapFrame_ctor(void* pthis, int dummy, void* parent)
 	return r;
 }
 
-void* __fastcall CCareerBotFrame_ctor(void* pthis, int dummy, void* parent)
+void* __fastcall CCareerBotFrame_ctor(vgui::Panel* pthis, int dummy, void* parent)
 {
 	bool bOriginal = vgui::surface()->IsForcingHDProportional();
 	vgui::surface()->SetForcingHDProportional(false);
@@ -2770,9 +2901,9 @@ void GameUI_FillAddress(void)
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (SheetCtorSearchContext*)context;
 
-			if (!gPrivateFuncs.Sheet_ctor && address[0] == 0xE8 && instCount <= 8)
+			if (!gPrivateFuncs.GameUI_Sheet_ctor && address[0] == 0xE8 && instCount <= 8)
 			{
-				gPrivateFuncs.Sheet_ctor = (decltype(gPrivateFuncs.Sheet_ctor))GetCallAddress(address);
+				gPrivateFuncs.GameUI_Sheet_ctor = (decltype(gPrivateFuncs.GameUI_Sheet_ctor))GetCallAddress(address);
 				ctx->instCount_Sheet_ctor = instCount;
 			}
 
@@ -2790,7 +2921,7 @@ void GameUI_FillAddress(void)
 				}
 			}
 
-			if (gPrivateFuncs.Sheet_ctor && gPrivateFuncs.offset_propertySheet)
+			if (gPrivateFuncs.GameUI_Sheet_ctor && gPrivateFuncs.offset_propertySheet)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -2803,7 +2934,7 @@ void GameUI_FillAddress(void)
 
 			}, 0, &ctx);
 
-		Sig_FuncNotFound(Sheet_ctor);
+		Sig_FuncNotFound(GameUI_Sheet_ctor);
 		Sig_FuncNotFound(offset_propertySheet);
 	}
 
@@ -2827,12 +2958,12 @@ void GameUI_FillAddress(void)
 		ctx.GameUITextBase = GameUITextBase;
 		ctx.GameUITextSize = GameUITextSize;
 
-		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.Sheet_ctor, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.GameUI_Sheet_ctor, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
 			auto pinst = (cs_insn*)inst;
 			auto ctx = (SheetSearchContext*)context;
 
-			if (!gPrivateFuncs.Sheet_vftable)
+			if (!gPrivateFuncs.GameUI_Sheet_vftable)
 			{
 				if (pinst->id == X86_INS_MOV &&
 					pinst->detail->x86.op_count == 2 &&
@@ -2844,12 +2975,12 @@ void GameUI_FillAddress(void)
 					auto candidate = (PVOID*)pinst->detail->x86.operands[1].imm;
 					if (candidate[0] >= (PUCHAR)ctx->GameUITextBase && candidate[0] < (PUCHAR)ctx->GameUITextBase + ctx->GameUITextSize)
 					{
-						gPrivateFuncs.Sheet_vftable = candidate;
+						gPrivateFuncs.GameUI_Sheet_vftable = candidate;
 					}
 				}
 			}
 
-			if (gPrivateFuncs.Sheet_vftable)
+			if (gPrivateFuncs.GameUI_Sheet_vftable)
 				return TRUE;
 
 			if (address[0] == 0xCC)
@@ -2862,9 +2993,9 @@ void GameUI_FillAddress(void)
 
 		}, 0, &ctx);
 
-		Sig_FuncNotFound(Sheet_vftable);
+		Sig_FuncNotFound(GameUI_Sheet_vftable);
 
-		gPrivateFuncs.GameUI_PropertySheet_HasHotkey = (decltype(gPrivateFuncs.GameUI_PropertySheet_HasHotkey))gPrivateFuncs.Sheet_vftable[73];
+		gPrivateFuncs.GameUI_PropertySheet_HasHotkey = (decltype(gPrivateFuncs.GameUI_PropertySheet_HasHotkey))gPrivateFuncs.GameUI_Sheet_vftable[73];
 	}
 
 	if (1)
@@ -3266,6 +3397,24 @@ void GameUI_FillAddress(void)
 
 	gPrivateFuncs.GameUI_Panel_Init = (decltype(gPrivateFuncs.GameUI_Panel_Init))VGUI2_FindPanelInit(GameUITextBase, GameUITextSize);
 	Sig_FuncNotFound(GameUI_Panel_Init);
+
+	gPrivateFuncs.GameUI_Menu_vftable = (decltype(gPrivateFuncs.GameUI_Menu_vftable))VGUI2_FindMenuVFTable(GameUITextBase, GameUITextSize, GameUIRdataBase, GameUIRdataSize, GameUIDataBase, GameUIDataSize);
+	Sig_FuncNotFound(GameUI_Menu_vftable);
+
+	for (int index = 175; index < 182; ++index)
+	{
+		int offset_ScrollBar = 0;
+		if (VGUI2_IsMenuMakeItemsVisibleInScrollRange(gPrivateFuncs.GameUI_Menu_vftable[index], &offset_ScrollBar))
+		{
+			gPrivateFuncs.offset_ScrollBar = offset_ScrollBar;
+			gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange =
+				(decltype(gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange))
+				gPrivateFuncs.GameUI_Menu_vftable[index];
+			break;
+		}
+	}
+
+	Sig_FuncNotFound(GameUI_Menu_MakeItemsVisibleInScrollRange);
 }
 
 void GameUI_InstallHooks(void)
@@ -3388,6 +3537,11 @@ void GameUI_InstallHooks(void)
 		Install_InlineHook(GameUI_FocusNavGroup_GetCurrentFocus);
 	}
 
+	if (gPrivateFuncs.GameUI_Menu_MakeItemsVisibleInScrollRange)
+	{
+		Install_InlineHook(GameUI_Menu_MakeItemsVisibleInScrollRange);
+	}
+
 	if (gPrivateFuncs.CCareerProfileFrame_ctor)
 	{
 		Install_InlineHook(CCareerProfileFrame_ctor);
@@ -3424,10 +3578,12 @@ void GameUI_UninstallHooks(void)
 
 	Uninstall_Hook(GameUI_PropertySheet_HasHotkey);
 	Uninstall_Hook(GameUI_FocusNavGroup_GetCurrentFocus);
+	Uninstall_Hook(GameUI_Menu_MakeItemsVisibleInScrollRange)
 
 	Uninstall_Hook(CCareerProfileFrame_ctor);
 	Uninstall_Hook(CCareerMapFrame_ctor);
 	Uninstall_Hook(CCareerBotFrame_ctor);
+
 }
 
 void ServerBrowser_FillAddress(void)
