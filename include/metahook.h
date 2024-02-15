@@ -423,6 +423,11 @@ typedef struct metahook_api_s
 	*/
 	hook_t* (*VFTHookEx)(void** pVFTable, int iFuncIndex, void* pNewFuncAddr, void** pOrginalCall);
 
+	/*
+		Purpose : Patch E8/E9 call/jmp instruction and redirect the call target
+	*/
+	hook_t* (*InlinePatchRedirectBranch)(void *pInstructionAddress, void* pNewFuncAddr, void** pOrginalCall);
+
 }metahook_api_t;
 
 typedef struct mh_enginesave_s
@@ -439,7 +444,7 @@ void MH_Shutdown(void);
 #include <ICommandLine.h>
 #include <IRegistry.h>
 
-#define METAHOOK_API_VERSION 101
+#define METAHOOK_API_VERSION 102
 
 typedef struct mh_interface_s
 {
