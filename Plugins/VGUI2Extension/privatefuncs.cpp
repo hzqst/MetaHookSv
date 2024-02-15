@@ -411,7 +411,33 @@ PVOID *VGUI2_FindMenuVFTable(PVOID TextBase, ULONG TextSize, PVOID RdataBase, UL
 	ctx.TextBase = TextBase;
 	ctx.TextSize = TextSize;
 
-	ctx.Menu_ctor = g_pMetaHookAPI->ReverseSearchFunctionBegin(MenuScrollBar_PushString, 0x300);
+	ctx.Menu_ctor = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(MenuScrollBar_PushString, 0x500, [](PUCHAR Candidate) {
+
+		if (Candidate[0] == 0x55 &&
+			Candidate[1] == 0x8B &&
+			Candidate[2] == 0xEC)
+			return TRUE;
+
+		//.text:10027EC0 53                                                  push    ebx
+		//.text : 10027EC1 8B DC                                               mov     ebx, esp
+		if (Candidate[0] == 0x53 &&
+			Candidate[1] == 0x8B &&
+			Candidate[2] == 0xDC)
+			return TRUE;
+
+		//.text:1006A220 8B 44 24 08                                         mov     eax, [esp+arg_4]
+		//.text:1006A224 83 EC 08                                            sub     esp, 8
+		if (Candidate[0] == 0x8B &&
+			Candidate[1] == 0x44 &&
+			Candidate[2] == 0x24 &&
+			Candidate[4] == 0x83 &&
+			Candidate[5] == 0xEC)
+		{
+			return TRUE;
+		}
+
+		return FALSE;
+	});
 
 	if (!ctx.Menu_ctor)
 		return NULL;

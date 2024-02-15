@@ -33,6 +33,7 @@ static hook_t* g_phook_GameUI_RichText_OnThink = NULL;
 static hook_t* g_phook_GameUI_TextEntry_OnKeyCodeTyped = NULL;
 static hook_t* g_phook_GameUI_TextEntry_LayoutVerticalScrollBarSlider = NULL;
 static hook_t* g_phook_GameUI_TextEntry_GetStartDrawIndex = NULL;
+static hook_t* g_phook_GameUI_PropertySheet_PerformLayout = NULL;
 static hook_t* g_phook_GameUI_PropertySheet_HasHotkey = NULL;
 static hook_t* g_phook_GameUI_FocusNavGroup_GetCurrentFocus = NULL;
 static hook_t* g_phook_GameUI_Menu_MakeItemsVisibleInScrollRange = NULL;
@@ -814,6 +815,131 @@ void* __fastcall GameUI_FocusNavGroup_GetCurrentFocus(void* pthis, int dummy)
 	return NULL;
 }
 
+class CPropertySheet_Legacy
+{
+public:
+	vgui::Dar_Legacy<vgui::Panel*> _pages;
+	vgui::Dar_Legacy<vgui::Panel*> _pageTabs;
+	vgui::Panel* _activePage;
+	vgui::Panel* _activeTab;
+	int _tabWidth;
+	int _activeTabIndex;
+	bool _showTabs;
+	vgui::Panel* _combo;
+	bool _tabFocus;
+};
+
+void __fastcall GameUI_PropertySheet_PerformLayout(vgui::Panel* pthis, int dummy)
+{
+	int offset_activePage = 144;
+
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		offset_activePage = 148;
+	}
+
+	gPrivateFuncs.GameUI_PropertySheet_PerformLayout(pthis, dummy);
+
+	PVOID* _propertySheet_vftable = *(PVOID**)pthis;
+
+	void(__fastcall * pfnChangeActiveTab)(vgui::Panel * pthis, int dummy, int index) =
+		(decltype(pfnChangeActiveTab))_propertySheet_vftable[149];
+
+	auto pPropertySheet = (CPropertySheet_Legacy *)((PUCHAR)pthis + offset_activePage - offsetof(CPropertySheet_Legacy, _activePage));
+#if 0
+	if (!pPropertySheet->_activePage)
+	{
+		// first page becomes the active page
+		pfnChangeActiveTab(pthis, 0, 0);
+
+		if (pPropertySheet->_activePage)
+			pPropertySheet->_activePage->RequestFocus(0);
+	}
+
+	int x, y, wide, tall;
+	pthis->GetBounds(x, y, wide, tall);
+	if (pPropertySheet->_activePage)
+	{
+		if (pPropertySheet->_showTabs)
+		{
+			pPropertySheet->_activePage->SetBounds(
+				0, 
+				vgui::scheme()->GetProportionalScaledValue(28), 
+				wide, 
+				tall - vgui::scheme()->GetProportionalScaledValue(28));
+		}
+		else
+		{
+			pPropertySheet->_activePage->SetBounds(0, 0, wide, tall);
+		}
+		pPropertySheet->_activePage->InvalidateLayout();
+	}
+
+	int limit = pPropertySheet->_pageTabs.GetCount();
+
+	int xtab = 0;
+
+	// draw the visible tabs
+	if (pPropertySheet->_showTabs)
+	{
+		for (int i = 0; i < limit; i++)
+		{
+			int width, tall;
+
+			pPropertySheet->_pageTabs[i]->GetSize(width, tall);
+			if (pPropertySheet->_pageTabs[i] == pPropertySheet->_activeTab)
+			{
+				// active tab is taller
+				pPropertySheet->_activeTab->SetBounds(xtab, 
+					vgui::scheme()->GetProportionalScaledValue(2),
+					width,
+					vgui::scheme()->GetProportionalScaledValue(27));
+			}
+			else
+			{
+				pPropertySheet->_pageTabs[i]->SetBounds(xtab, 
+					vgui::scheme()->GetProportionalScaledValue(4),
+					width,
+					vgui::scheme()->GetProportionalScaledValue(25));
+			}
+			pPropertySheet->_pageTabs[i]->SetVisible(true);
+			xtab += (width + vgui::scheme()->GetProportionalScaledValue(1));
+		}
+	}
+	else
+	{
+		for (int i = 0; i < limit; i++)
+		{
+			pPropertySheet->_pageTabs[i]->SetVisible(false);
+		}
+	}
+#endif
+
+	int xtab = 0;
+	int limit = pPropertySheet->_pageTabs.GetCount();
+
+	for (int i = 0; i < limit; i++)
+	{
+		int width, tall;
+
+		pPropertySheet->_pageTabs[i]->GetSize(width, tall);
+		xtab += (width + 1);
+	}
+
+	auto parent = pthis->GetParent();
+
+	if (parent)
+	{
+		int w, h;
+		parent->GetSize(w, h);
+
+		if (w < xtab)
+		{
+			parent->SetSize(xtab, h);
+		}
+	}
+}
+
 void* __fastcall GameUI_PropertySheet_HasHotkey(void* pthis, int dummy, wchar_t key)
 {
 	int offset_activePage = 144;
@@ -823,7 +949,9 @@ void* __fastcall GameUI_PropertySheet_HasHotkey(void* pthis, int dummy, wchar_t 
 		offset_activePage = 148;
 	}
 
-	auto _activePage = *(vgui::Panel**)((PUCHAR)pthis + offset_activePage);
+	auto pPropertySheet = (CPropertySheet_Legacy*)((PUCHAR)pthis + offset_activePage - offsetof(CPropertySheet_Legacy, _activePage));
+
+	auto _activePage = pPropertySheet->_activePage;
 
 	if (!_activePage)
 		return 0;
@@ -887,6 +1015,14 @@ public:
 			gPrivateFuncs.GameUI_PropertySheet_HasHotkey = (decltype(gPrivateFuncs.GameUI_PropertySheet_HasHotkey))_propertySheet_vftable[73];
 			Install_InlineHook(GameUI_PropertySheet_HasHotkey);
 		}
+
+		if (!gPrivateFuncs.GameUI_PropertySheet_PerformLayout)
+		{
+			PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+			gPrivateFuncs.GameUI_PropertySheet_PerformLayout = (decltype(gPrivateFuncs.GameUI_PropertySheet_PerformLayout))_propertySheet_vftable[111];
+			Install_InlineHook(GameUI_PropertySheet_PerformLayout);
+		}
 	}
 
 	void* GetDialog() const override
@@ -904,9 +1040,159 @@ public:
 		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
 
 		void(__fastcall * pfnAddPage)(vgui::Panel * pthis, int dummy, vgui::Panel * panel, const char* title) =
-			(decltype(pfnAddPage))_propertySheet_vftable[536 / 4];
+			(decltype(pfnAddPage))_propertySheet_vftable[134];
 
 		pfnAddPage(m_pPropertySheet, 0, (vgui::Panel*)panel, title);
+	}
+
+	void SetActivePage(void* panel) override
+	{
+		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+		void(__fastcall * pfnSetActivePage)(vgui::Panel * pthis, int dummy, vgui::Panel * panel) =
+			(decltype(pfnSetActivePage))_propertySheet_vftable[135];
+
+		pfnSetActivePage(m_pPropertySheet, 0, (vgui::Panel*)panel);
+	}
+
+	void SetTabWidth(int width) override
+	{
+		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+		void(__fastcall * pfnSetTabWidth)(vgui::Panel * pthis, int dummy, int width) =
+			(decltype(pfnSetTabWidth))_propertySheet_vftable[136];
+
+		pfnSetTabWidth(m_pPropertySheet, 0, width);
+	}
+	
+	void* GetActivePage() override
+	{
+		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+		void*(__fastcall * pfnGetActivePage)(vgui::Panel * pthis, int dummy) =
+			(decltype(pfnGetActivePage))_propertySheet_vftable[137];
+
+		return pfnGetActivePage(m_pPropertySheet, 0);
+	}
+
+	void ResetAllData() override
+	{
+		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+		void(__fastcall * pfnResetAllData)(vgui::Panel * pthis, int dummy) =
+			(decltype(pfnResetAllData))_propertySheet_vftable[138];
+
+		pfnResetAllData(m_pPropertySheet, 0);
+	}
+
+	void ApplyChanges() override
+	{
+		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+		void(__fastcall * pfnApplyChanges)(vgui::Panel * pthis, int dummy) =
+			(decltype(pfnApplyChanges))_propertySheet_vftable[139];
+
+		pfnApplyChanges(m_pPropertySheet, 0);
+	}
+
+	void* GetPage(int i) override
+	{
+		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+		void *(__fastcall * pfnGetPage)(vgui::Panel * pthis, int dummy, int i) =
+			(decltype(pfnGetPage))_propertySheet_vftable[140];
+
+		return pfnGetPage(m_pPropertySheet, 0, i);
+	}
+
+	void DeletePage(void*panel) override
+	{
+		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+		void (__fastcall * pfnDeletePage)(vgui::Panel * pthis, int dummy, void *panel) =
+			(decltype(pfnDeletePage))_propertySheet_vftable[141];
+
+		pfnDeletePage(m_pPropertySheet, 0, panel);
+	}
+
+	void* GetActiveTab() override
+	{
+		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+		void* (__fastcall * pfnGetActiveTab)(vgui::Panel * pthis, int dummy) =
+			(decltype(pfnGetActiveTab))_propertySheet_vftable[142];
+
+		return pfnGetActiveTab(m_pPropertySheet, 0);
+	}
+
+	void GetActiveTabTitle(char* textOut, int bufferLen) override
+	{
+		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+		void (__fastcall * pfnGetActiveTabTitle)(vgui::Panel * pthis, int dummy, char* textOut, int bufferLen) =
+			(decltype(pfnGetActiveTabTitle))_propertySheet_vftable[143];
+
+		pfnGetActiveTabTitle(m_pPropertySheet, 0, textOut, bufferLen);
+	}
+
+	bool GetTabTitle(int i, char* textOut, int bufferLen) override
+	{
+		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+		bool(__fastcall * pfnGetTabTitle)(vgui::Panel * pthis, int dummy, int i, char* textOut, int bufferLen) =
+			(decltype(pfnGetTabTitle))_propertySheet_vftable[144];
+
+		return pfnGetTabTitle(m_pPropertySheet, 0, i, textOut, bufferLen);
+	}
+
+	int GetActivePageNum() override
+	{
+		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+		int(__fastcall * pfnGetActivePageNum)(vgui::Panel * pthis, int dummy) =
+			(decltype(pfnGetActivePageNum))_propertySheet_vftable[145];
+
+		return pfnGetActivePageNum(m_pPropertySheet, 0);
+	}
+
+	int GetNumPages() override
+	{
+		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+		int(__fastcall * pfnGetGetNumPages)(vgui::Panel * pthis, int dummy) =
+			(decltype(pfnGetGetNumPages))_propertySheet_vftable[146];
+
+		return pfnGetGetNumPages(m_pPropertySheet, 0);
+	}
+
+	void DisablePage(const char* title) override
+	{
+		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+		void(__fastcall * pfnDisablePage)(vgui::Panel * pthis, int dummy, const char* title) =
+			(decltype(pfnDisablePage))_propertySheet_vftable[147];
+
+		pfnDisablePage(m_pPropertySheet, 0, title);
+	}
+
+	void EnablePage(const char* title) override
+	{
+		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+		void(__fastcall * pfnEnablePage)(vgui::Panel * pthis, int dummy, const char* title) =
+			(decltype(pfnEnablePage))_propertySheet_vftable[148];
+
+		pfnEnablePage(m_pPropertySheet, 0, title);
+	}
+
+	void ChangeActiveTab(int index) override
+	{
+		PVOID* _propertySheet_vftable = *(PVOID**)m_pPropertySheet;
+
+		void(__fastcall * pfnChangeActiveTab)(vgui::Panel * pthis, int dummy, int index) =
+			(decltype(pfnChangeActiveTab))_propertySheet_vftable[149];
+
+		pfnChangeActiveTab(m_pPropertySheet, 0, index);
 	}
 
 	vgui::Panel* m_pDialog;
@@ -2996,6 +3282,7 @@ void GameUI_FillAddress(void)
 		Sig_FuncNotFound(GameUI_Sheet_vftable);
 
 		gPrivateFuncs.GameUI_PropertySheet_HasHotkey = (decltype(gPrivateFuncs.GameUI_PropertySheet_HasHotkey))gPrivateFuncs.GameUI_Sheet_vftable[73];
+		gPrivateFuncs.GameUI_PropertySheet_PerformLayout = (decltype(gPrivateFuncs.GameUI_PropertySheet_PerformLayout))gPrivateFuncs.GameUI_Sheet_vftable[111];
 	}
 
 	if (1)
@@ -3532,6 +3819,11 @@ void GameUI_InstallHooks(void)
 		Install_InlineHook(GameUI_PropertySheet_HasHotkey);
 	}
 
+	if (gPrivateFuncs.GameUI_PropertySheet_PerformLayout)
+	{
+		Install_InlineHook(GameUI_PropertySheet_PerformLayout);
+	}
+
 	if (gPrivateFuncs.GameUI_FocusNavGroup_GetCurrentFocus)
 	{
 		Install_InlineHook(GameUI_FocusNavGroup_GetCurrentFocus);
@@ -3577,6 +3869,7 @@ void GameUI_UninstallHooks(void)
 	Uninstall_Hook(GameUI_TextEntry_GetStartDrawIndex);
 
 	Uninstall_Hook(GameUI_PropertySheet_HasHotkey);
+	Uninstall_Hook(GameUI_PropertySheet_PerformLayout);
 	Uninstall_Hook(GameUI_FocusNavGroup_GetCurrentFocus);
 	Uninstall_Hook(GameUI_Menu_MakeItemsVisibleInScrollRange)
 

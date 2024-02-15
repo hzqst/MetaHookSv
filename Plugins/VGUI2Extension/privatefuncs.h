@@ -114,6 +114,7 @@ typedef struct
 	void(__fastcall* CTaskBar_OnCommand)(void* pthis, int dummy, const char* command);
 	void(__fastcall* CTaskBar_CreateGameMenu)(void* pthis, int dummy);
 
+	void(__fastcall* GameUI_PropertySheet_PerformLayout)(void* pthis, int dummy);
 	void* (__fastcall *GameUI_PropertySheet_HasHotkey)(void* pthis, int dummy, wchar_t key);
 	void* (__fastcall *GameUI_FocusNavGroup_GetCurrentFocus)(void* pthis, int dummy);
 
