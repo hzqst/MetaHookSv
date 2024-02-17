@@ -11,10 +11,12 @@
 #include "exportfuncs.h"
 #include "DpiManagerInternal.h"
 #include "Cursor.h"
+#include <intrin.h>
+
+#define CLIENTUI_USE_640_480_PROPBASE
 
 extern IEngineSurface *staticSurface;
 extern IEngineSurface_HL25 *staticSurface_HL25;
-
 extern vgui::ISurface *g_pSurface;
 extern vgui::ISurface_HL25* g_pSurface_HL25;
 
@@ -811,7 +813,18 @@ void CSurfaceProxy::GetAbsoluteWindowBounds(int &x, int &y, int &wide, int &tall
 
 void CSurfaceProxy::GetProportionalBase(int &width, int &height)
 {
-	if (g_bIsForcingHDProportional && g_iProportionalBaseWidthHD && g_iProportionalBaseHeightHD)
+	bool bNoHDProportional = false;
+
+#ifdef CLIENTUI_USE_640_480_PROPBASE
+	auto retaddr = (PUCHAR)_ReturnAddress();
+
+	if (retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	{
+		bNoHDProportional = true;
+	}
+#endif
+
+	if (!bNoHDProportional && g_bIsForcingHDProportional && g_iProportionalBaseWidthHD && g_iProportionalBaseHeightHD)
 	{
 		width = g_iProportionalBaseWidthHD;
 		height = g_iProportionalBaseHeightHD;
@@ -1673,7 +1686,18 @@ void CSurfaceProxy_HL25::GetAbsoluteWindowBounds(int &x, int &y, int &wide, int 
 
 void CSurfaceProxy_HL25::GetProportionalBase(int &width, int &height)
 {
-	if (g_bIsForcingHDProportional && g_iProportionalBaseWidthHD && g_iProportionalBaseHeightHD)
+	bool bNoHDProportional = false;
+
+	auto retaddr = (PUCHAR)_ReturnAddress();
+
+#ifdef CLIENTUI_USE_640_480_PROPBASE
+	if (retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	{
+		bNoHDProportional = true;
+	}
+#endif
+
+	if (!bNoHDProportional && g_bIsForcingHDProportional && g_iProportionalBaseWidthHD && g_iProportionalBaseHeightHD)
 	{
 		width = g_iProportionalBaseWidthHD;
 		height = g_iProportionalBaseHeightHD;

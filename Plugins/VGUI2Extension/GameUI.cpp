@@ -656,16 +656,30 @@ public:
 	int 			m_iFixedWidth;
 	int 			m_iMinimumWidth; // a minimum width the menu has to be if it is not fixed width
 	int 			m_iNumVisibleLines;	// number of items in menu before scroll bar adds on
-
 	CScrollBar_Legacy* m_pScroller;
 
 	CUtlLinkedList<vgui::Panel*, int> 	m_MenuItems;
 	CUtlVector<int>					m_SortedItems;
 };
 
-void __fastcall GameUI_Menu_MakeItemsVisibleInScrollRange(vgui::Panel* pthis, int dummy)
+class CMenu_HL25
 {
-	CMenu_Legacy* pMenu = (CMenu_Legacy*)((PUCHAR)pthis + gPrivateFuncs.offset_ScrollBar - 4 * sizeof(int));
+public:
+	int 			m_iMenuItemHeight;
+	int 			m_iFixedWidth;
+	int 			m_iMinimumWidth; // a minimum width the menu has to be if it is not fixed width
+	int 			m_iNumVisibleLines;	// number of items in menu before scroll bar adds on
+	int				m_iMenuItemBlurOffset;
+	CScrollBar_Legacy* m_pScroller;
+
+	CUtlLinkedList<vgui::Panel*, int> 	m_MenuItems;
+	CUtlVector<int>					m_SortedItems;
+};
+
+template<class T>
+void GameUI_Menu_MakeItemsVisibleInScrollRange_Template(vgui::Panel* pthis)
+{
+	T* pMenu = (T*)((PUCHAR)pthis + gPrivateFuncs.offset_ScrollBar - offsetof(T, m_pScroller));
 
 	for (int i = 0; i < pMenu->m_MenuItems.Count(); i++)
 	{
@@ -693,6 +707,16 @@ void __fastcall GameUI_Menu_MakeItemsVisibleInScrollRange(vgui::Panel* pthis, in
 		}
 
 	} while (count < pMenu->m_iNumVisibleLines - 1);
+}
+
+void __fastcall GameUI_Menu_MakeItemsVisibleInScrollRange(vgui::Panel* pthis, int dummy)
+{
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+	{
+		return GameUI_Menu_MakeItemsVisibleInScrollRange_Template<CMenu_HL25>(pthis);
+	}
+
+	return GameUI_Menu_MakeItemsVisibleInScrollRange_Template<CMenu_Legacy>(pthis);
 }
 
 /*

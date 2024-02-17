@@ -8,6 +8,8 @@ extern mh_enginesave_t *g_pMetaSave;
 extern HMODULE g_hClientDll;
 extern PVOID g_dwClientBase;
 extern DWORD g_dwClientSize;
+extern PVOID g_dwClientTextBase;
+extern DWORD g_dwClientTextSize;
 extern int g_iVideoWidth;
 extern int g_iVideoHeight;
 

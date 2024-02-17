@@ -357,14 +357,6 @@ bool VGUI2_IsFitToScreen(PVOID Candidate)
 
 void __fastcall ClientVGUI_LoadControlSettings(vgui::Panel* pthis, int dummy, const char* controlResourceName, const char* pathID)
 {
-	//if (!gPrivateFuncs.ClientVGUI_BuildGroup_vftable)
-	//{
-		//auto BuildGroup = GetLegacyBuildGroup(pthis);
-		//gPrivateFuncs.ClientVGUI_BuildGroup_vftable = *(PVOID**)BuildGroup;
-		//g_pMetaHookAPI->VFTHookEx(gPrivateFuncs.ClientVGUI_BuildGroup_vftable, 3, ClientVGUI_BuildGroup_LoadControlSettings, (void**)&gPrivateFuncs.ClientVGUI_BuildGroup_LoadControlSettings);
-		//g_pMetaHookAPI->VFTHookEx(gPrivateFuncs.ClientVGUI_BuildGroup_vftable, 5, ClientVGUI_BuildGroup_ApplySettings, (void**)&gPrivateFuncs.ClientVGUI_BuildGroup_ApplySettings);
-	//}
-
 	if (!strcmp(controlResourceName, "Resource/UI/BuyMenu.res"))
 	{
 		if (!gPrivateFuncs.CSBuyMenu_vftable)
@@ -702,22 +694,25 @@ void CClientVGUIProxy::Start(void)
 {
 	m_pfnCClientVGUI_Start(this, 0);
 
-	const int offset_CSBackGroundPanel = 0x72C;
-
-	g_pCSBackGroundPanel = *(vgui::Panel**)((PUCHAR)this + offset_CSBackGroundPanel);
-
-	gPrivateFuncs.CCSBackGroundPanel_vftable = *(PVOID**)g_pCSBackGroundPanel;
-
-	for (int index = 159; index <= 160; ++index)
+	if (g_bIsCounterStrike)
 	{
-		if (VGUI2_IsCSBackGroundPanelActivate(gPrivateFuncs.CCSBackGroundPanel_vftable[index], &gPrivateFuncs.CCSBackGroundPanel_XOffsetBase))
+		const int offset_CSBackGroundPanel = 0x72C;
+
+		g_pCSBackGroundPanel = *(vgui::Panel**)((PUCHAR)this + offset_CSBackGroundPanel);
+
+		gPrivateFuncs.CCSBackGroundPanel_vftable = *(PVOID**)g_pCSBackGroundPanel;
+
+		for (int index = 159; index <= 160; ++index)
 		{
-			gPrivateFuncs.ClientVGUI_Frame_Activate_vftable_index = index;
-			g_pMetaHookAPI->VFTHook(g_pCSBackGroundPanel, 0, index, CCSBackGroundPanel_Activate, (void**)&gPrivateFuncs.CCSBackGroundPanel_Activate);
-			break;
+			if (VGUI2_IsCSBackGroundPanelActivate(gPrivateFuncs.CCSBackGroundPanel_vftable[index], &gPrivateFuncs.CCSBackGroundPanel_XOffsetBase))
+			{
+				gPrivateFuncs.ClientVGUI_Frame_Activate_vftable_index = index;
+				g_pMetaHookAPI->VFTHook(g_pCSBackGroundPanel, 0, index, CCSBackGroundPanel_Activate, (void**)&gPrivateFuncs.CCSBackGroundPanel_Activate);
+				break;
+			}
 		}
+		Sig_FuncNotFound(CCSBackGroundPanel_Activate);
 	}
-	Sig_FuncNotFound(CCSBackGroundPanel_Activate);
 
 	VGUI2ExtensionInternal()->ClientVGUI_Start();
 }
@@ -1137,14 +1132,8 @@ void NativeClientUI_RichText_Search(PVOID Candidate, bool bIsUnicode)
 
 void NativeClientUI_FillAddress(void)
 {
-	ULONG ClientTextSize = 0;
-	PVOID ClientTextBase = ClientTextBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".text\0\0\0", &ClientTextSize);
-
-	if (!ClientTextBase)
-	{
-		Sys_Error("Failed to locate section \".text\" in client.dll!");
-		return;
-	}
+	ULONG ClientTextSize = g_dwClientTextSize;
+	PVOID ClientTextBase = g_dwClientTextBase;
 
 	ULONG ClientDataSize = 0;
 	auto ClientDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".data\0\0\0", &ClientDataSize);

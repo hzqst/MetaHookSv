@@ -1229,14 +1229,8 @@ void Engine_FillAddress(void)
 
 void Client_FillAddress(void)
 {
-	ULONG ClientTextSize = 0;
-	auto ClientTextBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".text\0\0\0", &ClientTextSize);
-
-	if (!ClientTextBase)
-	{
-		Sys_Error("Failed to locate section \".text\" in client.dll!");
-		return;
-	}
+	ULONG ClientTextSize = g_dwClientTextSize;
+	auto ClientTextBase = g_dwClientTextBase;
 
 	ULONG ClientDataSize = 0;
 	auto ClientDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".data\0\0\0", &ClientDataSize);
@@ -1272,8 +1266,8 @@ void Client_FillAddress(void)
 	}
 
 	if (!g_iVisibleMouse &&
-		(PUCHAR)gExportfuncs.IN_Accumulate > (PUCHAR)g_dwClientBase &&
-		(PUCHAR)gExportfuncs.IN_Accumulate < (PUCHAR)g_dwClientBase + g_dwClientSize)
+		(PUCHAR)gExportfuncs.IN_Accumulate > (PUCHAR)g_dwClientTextBase &&
+		(PUCHAR)gExportfuncs.IN_Accumulate < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
 	{
 		typedef struct
 		{
