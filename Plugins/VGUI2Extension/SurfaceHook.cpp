@@ -13,7 +13,7 @@
 #include "Cursor.h"
 #include <intrin.h>
 
-#define CLIENTUI_USE_640_480_PROPBASE
+extern bool g_IsNativeClientUIHDProportional;
 
 extern IEngineSurface *staticSurface;
 extern IEngineSurface_HL25 *staticSurface_HL25;
@@ -813,18 +813,23 @@ void CSurfaceProxy::GetAbsoluteWindowBounds(int &x, int &y, int &wide, int &tall
 
 void CSurfaceProxy::GetProportionalBase(int &width, int &height)
 {
-	bool bNoHDProportional = false;
-
-#ifdef CLIENTUI_USE_640_480_PROPBASE
 	auto retaddr = (PUCHAR)_ReturnAddress();
 
-	if (retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (g_bIsForcingHDProportional && !g_IsNativeClientUIHDProportional && retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
 	{
-		bNoHDProportional = true;
+		if (g_iProportionalBaseWidth && g_iProportionalBaseHeight)
+		{
+			width = g_iProportionalBaseWidth;
+			height = g_iProportionalBaseHeight;
+		}
+		else
+		{
+			m_pfnGetProportionalBase(g_pSurface, 0, width, height);
+		}
+		return;
 	}
-#endif
 
-	if (!bNoHDProportional && g_bIsForcingHDProportional && g_iProportionalBaseWidthHD && g_iProportionalBaseHeightHD)
+	if (g_bIsForcingHDProportional && g_iProportionalBaseWidthHD && g_iProportionalBaseHeightHD)
 	{
 		width = g_iProportionalBaseWidthHD;
 		height = g_iProportionalBaseHeightHD;
@@ -835,10 +840,11 @@ void CSurfaceProxy::GetProportionalBase(int &width, int &height)
 	{
 		width = g_iProportionalBaseWidth;
 		height = g_iProportionalBaseHeight;
-		return;
 	}
-
-	m_pfnGetProportionalBase(g_pSurface, 0, width, height);
+	else
+	{
+		m_pfnGetProportionalBase(g_pSurface, 0, width, height);
+	}
 }
 
 void CSurfaceProxy::CalculateMouseVisible(void)
@@ -1686,18 +1692,23 @@ void CSurfaceProxy_HL25::GetAbsoluteWindowBounds(int &x, int &y, int &wide, int 
 
 void CSurfaceProxy_HL25::GetProportionalBase(int &width, int &height)
 {
-	bool bNoHDProportional = false;
-
 	auto retaddr = (PUCHAR)_ReturnAddress();
 
-#ifdef CLIENTUI_USE_640_480_PROPBASE
-	if (retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (g_bIsForcingHDProportional && !g_IsNativeClientUIHDProportional && retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
 	{
-		bNoHDProportional = true;
+		if (g_iProportionalBaseWidth && g_iProportionalBaseHeight)
+		{
+			width = g_iProportionalBaseWidth;
+			height = g_iProportionalBaseHeight;
+		}
+		else
+		{
+			m_pfnGetProportionalBase(g_pSurface_HL25, 0, width, height);
+		}
+		return;
 	}
-#endif
 
-	if (!bNoHDProportional && g_bIsForcingHDProportional && g_iProportionalBaseWidthHD && g_iProportionalBaseHeightHD)
+	if (g_bIsForcingHDProportional && g_iProportionalBaseWidthHD && g_iProportionalBaseHeightHD)
 	{
 		width = g_iProportionalBaseWidthHD;
 		height = g_iProportionalBaseHeightHD;
@@ -1708,10 +1719,11 @@ void CSurfaceProxy_HL25::GetProportionalBase(int &width, int &height)
 	{
 		width = g_iProportionalBaseWidth;
 		height = g_iProportionalBaseHeight;
-		return;
 	}
-
-	m_pfnGetProportionalBase(g_pSurface_HL25, 0, width, height);
+	else
+	{
+		m_pfnGetProportionalBase(g_pSurface_HL25, 0, width, height);
+	}
 }
 
 void CSurfaceProxy_HL25::CalculateMouseVisible(void)

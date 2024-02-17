@@ -9,6 +9,8 @@ using namespace vgui;
 
 #define CLIENTUI_USE_640_480_PROPBASE
 
+extern bool g_IsNativeClientUIHDProportional;
+
 extern vgui::ISurface2* g_pVGuiSurface2;
 extern vgui::ISchemeManager2 * g_pVGuiSchemeManager2;
 extern vgui::ISchemeManager  * g_pSchemeManager;
@@ -88,52 +90,40 @@ void CSchemeManagerProxy::Shutdown(bool full)
 
 int CSchemeManagerProxy::GetProportionalScaledValue(int normalizedValue)
 {
-	bool bNoHDProportional = false;
-
 #ifdef CLIENTUI_USE_640_480_PROPBASE
 	auto retaddr = (PUCHAR)_ReturnAddress();
 
-	if (retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
 	{
-		bNoHDProportional = true;
-	}
-#endif
-
-	if (bNoHDProportional)
-	{
-		auto originalHDProportional = g_pVGuiSurface2->IsForcingHDProportional();
 		g_pVGuiSurface2->SetForcingHDProportional(false);
 
 		auto r = g_pVGuiSchemeManager2->GetProportionalScaledValue(normalizedValue);
 
-		g_pVGuiSurface2->SetForcingHDProportional(originalHDProportional);
+		g_pVGuiSurface2->SetForcingHDProportional(true);
+
 		return r;
 	}
+#endif
 
 	return g_pVGuiSchemeManager2->GetProportionalScaledValue(normalizedValue);
 }
 
 int CSchemeManagerProxy::GetProportionalNormalizedValue(int scaledValue)
 {
-	bool bNoHDProportional = false;
 #ifdef CLIENTUI_USE_640_480_PROPBASE
 	auto retaddr = (PUCHAR)_ReturnAddress();
 
-	if (retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
 	{
-		bNoHDProportional = true;
-	}
-#endif
-	if (bNoHDProportional)
-	{
-		auto originalHDProportional = g_pVGuiSurface2->IsForcingHDProportional();
 		g_pVGuiSurface2->SetForcingHDProportional(false);
 
 		auto r = g_pVGuiSchemeManager2->GetProportionalNormalizedValue(scaledValue);
 
-		g_pVGuiSurface2->SetForcingHDProportional(originalHDProportional);
+		g_pVGuiSurface2->SetForcingHDProportional(true);
+
 		return r;
 	}
+#endif
 
 	return g_pVGuiSchemeManager2->GetProportionalNormalizedValue(scaledValue);
 }
@@ -210,127 +200,100 @@ void CSchemeManagerProxy_HL25::Shutdown(bool full)
 
 int CSchemeManagerProxy_HL25::GetProportionalScaledValue(int normalizedValue)
 {
-	bool bNoHDProportional = false;
 #ifdef CLIENTUI_USE_640_480_PROPBASE
 	auto retaddr = (PUCHAR)_ReturnAddress();
 
-	if (retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
 	{
-		bNoHDProportional = true;
-	}
-#endif
-	if (bNoHDProportional)
-	{
-		auto originalHDProportional = g_pVGuiSurface2->IsForcingHDProportional();
 		g_pVGuiSurface2->SetForcingHDProportional(false);
 
 		auto r = g_pVGuiSchemeManager2->GetProportionalScaledValue(normalizedValue);
 
-		g_pVGuiSurface2->SetForcingHDProportional(originalHDProportional);
+		g_pVGuiSurface2->SetForcingHDProportional(true);
+
 		return r;
 	}
+#endif
 
 	return g_pVGuiSchemeManager2->GetProportionalScaledValue(normalizedValue);
 }
 
 int CSchemeManagerProxy_HL25::GetProportionalNormalizedValue(int scaledValue)
 {
-	bool bNoHDProportional = false;
-
 #ifdef CLIENTUI_USE_640_480_PROPBASE
 	auto retaddr = (PUCHAR)_ReturnAddress();
 
-	if (retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
 	{
-		bNoHDProportional = true;
-	}
-#endif
-
-	if (bNoHDProportional)
-	{
-		auto originalHDProportional = g_pVGuiSurface2->IsForcingHDProportional();
 		g_pVGuiSurface2->SetForcingHDProportional(false);
 
 		auto r = g_pVGuiSchemeManager2->GetProportionalNormalizedValue(scaledValue);
 
-		g_pVGuiSurface2->SetForcingHDProportional(originalHDProportional);
+		g_pVGuiSurface2->SetForcingHDProportional(true);
+
 		return r;
 	}
+#endif
 
 	return g_pVGuiSchemeManager2->GetProportionalNormalizedValue(scaledValue);
 }
 
 float CSchemeManagerProxy_HL25::GetProportionalScale(void)
 {
-	bool bNoHDProportional = false;
 #ifdef CLIENTUI_USE_640_480_PROPBASE
 	auto retaddr = (PUCHAR)_ReturnAddress();
 
-	if (retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
 	{
-		bNoHDProportional = true;
-	}
-#endif
-	if (bNoHDProportional)
-	{
-		auto originalHDProportional = g_pVGuiSurface2->IsForcingHDProportional();
 		g_pVGuiSurface2->SetForcingHDProportional(false);
 
 		auto r = g_pVGuiSchemeManager2->GetProportionalScale();
 
-		g_pVGuiSurface2->SetForcingHDProportional(originalHDProportional);
+		g_pVGuiSurface2->SetForcingHDProportional(true);
+
 		return r;
 	}
+#endif
 
 	return g_pVGuiSchemeManager2->GetProportionalScale();
 }
 
 int CSchemeManagerProxy_HL25::GetHDProportionalScaledValue(int normalizedValue)
 {
-	bool bNoHDProportional = false;
 #ifdef CLIENTUI_USE_640_480_PROPBASE
 	auto retaddr = (PUCHAR)_ReturnAddress();
 
-	if (retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
 	{
-		bNoHDProportional = true;
-	}
-#endif
-	if (bNoHDProportional)
-	{
-		auto originalHDProportional = g_pVGuiSurface2->IsForcingHDProportional();
 		g_pVGuiSurface2->SetForcingHDProportional(false);
 
 		auto r = g_pVGuiSchemeManager2->GetHDProportionalScaledValue(normalizedValue);
 
-		g_pVGuiSurface2->SetForcingHDProportional(originalHDProportional);
+		g_pVGuiSurface2->SetForcingHDProportional(true);
+
 		return r;
 	}
+#endif
 
 	return g_pVGuiSchemeManager2->GetHDProportionalScaledValue(normalizedValue);
 }
 
 int CSchemeManagerProxy_HL25::GetHDProportionalNormalizedValue(int normalizedValue)
 {
-	bool bNoHDProportional = false;
 #ifdef CLIENTUI_USE_640_480_PROPBASE
 	auto retaddr = (PUCHAR)_ReturnAddress();
 
-	if (retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
+	if (g_pVGuiSurface2->IsForcingHDProportional() && !g_IsNativeClientUIHDProportional && retaddr > g_dwClientTextBase && retaddr < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
 	{
-		bNoHDProportional = true;
-	}
-#endif
-	if (bNoHDProportional)
-	{
-		auto originalHDProportional = g_pVGuiSurface2->IsForcingHDProportional();
 		g_pVGuiSurface2->SetForcingHDProportional(false);
 
 		auto r = g_pVGuiSchemeManager2->GetHDProportionalNormalizedValue(normalizedValue);
 
-		g_pVGuiSurface2->SetForcingHDProportional(originalHDProportional);
+		g_pVGuiSurface2->SetForcingHDProportional(true);
+
 		return r;
 	}
+#endif
 
 	return g_pVGuiSchemeManager2->GetHDProportionalNormalizedValue(normalizedValue);
 }

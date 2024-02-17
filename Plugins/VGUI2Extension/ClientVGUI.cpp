@@ -30,6 +30,8 @@ extern vgui::ISurface* g_pSurface;
 extern vgui::ISurface_HL25* g_pSurface_HL25;
 
 bool g_IsNativeClientVGUI2 = false;
+bool g_IsNativeClientUIHDProportional = false;
+
 IClientVGUI* g_pClientVGUI = NULL;
 CounterStrikeViewport* g_pCounterStrikeViewport = NULL;
 
@@ -162,31 +164,56 @@ void __fastcall ClientVGUI_Panel_Init(vgui::Panel* pthis, int dummy, int x, int 
 	}
 }
 
+void CSBuyMenu_ActivateInternal(vgui::Panel* pthis)
+{
+	pthis->MoveToFront();
+	pthis->RequestFocus();
+	pthis->SetVisible(true);
+	pthis->SetEnabled(true);
+	vgui::surface()->SetMinimized(pthis->GetVPanel(), false);
+
+	int screenW, screenH;
+	vgui::surface()->GetScreenSize(screenW, screenH);
+
+	pthis->SetPos(0, 0);
+	pthis->SetSize(screenW, screenH);
+
+	int wide2 = vgui::scheme()->GetAlteredProportionalScaledValue(640);
+	int tall2 = vgui::scheme()->GetAlteredProportionalScaledValue(480);
+
+	int offsetX = (screenW - wide2) / 2;
+	int offsetY = (screenH - tall2) / 2;
+
+	int offset = min(offsetX, offsetY);
+
+	pthis->SetPos(offset, offset);
+}
+
 void __fastcall CSBuyMenu_Activate(vgui::Panel* pthis, int dummy)
 {
 	if (DpiManagerInternal()->IsHighDpiSupportEnabled())
 	{
-		pthis->MoveToFront();
-		pthis->RequestFocus();
-		pthis->SetVisible(true);
-		pthis->SetEnabled(true);
-		vgui::surface()->SetMinimized(pthis->GetVPanel(), false);
+		if (g_IsNativeClientUIHDProportional)
+		{
+			auto original = g_pVGuiSurface2->IsForcingHDProportional();
 
-		int screenW, screenH;
-		vgui::surface()->GetScreenSize(screenW, screenH);
+			g_pVGuiSurface2->SetForcingHDProportional(true);
 
-		pthis->SetPos(0, 0);
-		pthis->SetSize(screenW, screenH);
+			CSBuyMenu_ActivateInternal(pthis);
 
-		int wide2 = vgui::scheme()->GetAlteredProportionalScaledValue(640);
-		int tall2 = vgui::scheme()->GetAlteredProportionalScaledValue(480);
+			g_pVGuiSurface2->SetForcingHDProportional(original);			
 
-		int offsetX = (screenW - wide2) / 2;
-		int offsetY = (screenH - tall2) / 2;
+		}
+		else
+		{
+			auto original = g_pVGuiSurface2->IsForcingHDProportional();
 
-		int offset = min(offsetX, offsetY);
+			g_pVGuiSurface2->SetForcingHDProportional(false);
 
-		pthis->SetPos(offset, offset);
+			CSBuyMenu_ActivateInternal(pthis);
+
+			g_pVGuiSurface2->SetForcingHDProportional(original);
+		}
 	}
 	else
 	{
@@ -401,7 +428,7 @@ void __fastcall ClientVGUI_LoadControlSettings(vgui::Panel* pthis, int dummy, co
 	gPrivateFuncs.ClientVGUI_LoadControlSettings(pthis, 0, controlResourceName, pathID);
 }
 
-void ClientVGUI_KeyValues_FitToFullScreen(KeyValues* pControlKeyValues)
+void ClientVGUI_KeyValues_FitToFullScreenInternal(KeyValues* pControlKeyValues)
 {
 	int xpos = pControlKeyValues->GetInt("xpos");
 	int ypos = pControlKeyValues->GetInt("ypos");
@@ -420,6 +447,30 @@ void ClientVGUI_KeyValues_FitToFullScreen(KeyValues* pControlKeyValues)
 
 	pControlKeyValues->SetInt("xpos", xpos);
 	pControlKeyValues->SetInt("ypos", ypos);
+}
+
+void ClientVGUI_KeyValues_FitToFullScreen(KeyValues* pControlKeyValues)
+{
+	if (g_IsNativeClientUIHDProportional)
+	{
+		auto original = g_pVGuiSurface2->IsForcingHDProportional();
+
+		g_pVGuiSurface2->SetForcingHDProportional(true);
+
+		ClientVGUI_KeyValues_FitToFullScreenInternal(pControlKeyValues);
+
+		g_pVGuiSurface2->SetForcingHDProportional(original);
+	}
+	else
+	{
+		auto original = g_pVGuiSurface2->IsForcingHDProportional();
+
+		g_pVGuiSurface2->SetForcingHDProportional(false);
+
+		ClientVGUI_KeyValues_FitToFullScreenInternal(pControlKeyValues);
+
+		g_pVGuiSurface2->SetForcingHDProportional(original);
+	}
 }
 
 void ClientVGUI_KeyValues_LoadFromFile_CounterStrike(KeyValues* pthis, const char* resourceName, const char* pathId)
@@ -685,6 +736,15 @@ void CClientVGUIProxy::Initialize(CreateInterfaceFn *factories, int count)
 	{
 		Sys_Error("Failed to VGui_InitInterfacesList");
 		return;
+	}
+
+	if (gEngfuncs.CheckParm("clientui_use_hdp", NULL))
+	{
+		g_IsNativeClientUIHDProportional = true;
+	}
+	else if (gEngfuncs.CheckParm("clientui_no_hdp", NULL))
+	{
+		g_IsNativeClientUIHDProportional = false;
 	}
 
 	VGUI2ExtensionInternal()->ClientVGUI_Initialize(factories, count);
