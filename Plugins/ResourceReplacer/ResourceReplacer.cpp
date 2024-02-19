@@ -104,8 +104,16 @@ public:
 		std::cmatch match;
 		if (std::regex_match(szSourceFileName, match, m_Regex))
 		{
-			ReplacedFileName = std::regex_replace(szSourceFileName, m_Regex, m_Replacement);
-			return true;
+			std::string NewReplacedFileName = std::regex_replace(szSourceFileName, m_Regex, m_Replacement);
+
+			auto SourceExtension = V_GetFileExtension(szSourceFileName);
+			auto ReplaceExtension = V_GetFileExtension(NewReplacedFileName.c_str());
+
+			if (!stricmp(SourceExtension, ReplaceExtension))
+			{
+				ReplacedFileName = NewReplacedFileName;
+				return true;
+			}
 		}
 		return false;
 	}
