@@ -130,15 +130,11 @@ Q: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络�
 
 [中文文档](docs/CaptionModCN.md) [ENGLISH DOC](docs/CaptionMod.md)
 
-![](/img/1.png)
-
 ### BulletPhysics
 
 对游戏提供布娃娃支持。玩家死亡时以及玩家被藤壶、喷火怪抓住时将玩家模型转化为布娃娃。
 
 [中文文档](docs/BulletPhysicsCN.md) [ENGLISH DOC](docs/BulletPhysics.md)
-
-![](/img/6.png)
 
 ### MetaRenderer
 
@@ -146,15 +142,11 @@ Q: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络�
 
 [中文文档](docs/RendererCN.md) [ENGLISH DOC](docs/Renderer.md)
 
-![](/img/3.png)
-
 ### StudioEvents
 
 该插件可以防止重复播放模型自带音效，防止音效反复刷屏。
 
 [中文文档](docs/StudioEventsCN.md) [ENGLISH DOC](docs/StudioEvents.md)
-
-![](/img/8.png)
 
 ### SteamScreenshots (只支持Sven Co-op)
 
@@ -167,8 +159,6 @@ Q: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络�
 控制台参数 : `scmodel_autodownload 0 / 1` 设为1时启用自动下载
 
 控制台参数 : `scmodel_downloadlatest 0 / 1` 设为1时自动下载最新版本的模型（如果有多个版本的模型）
-
-控制台参数 : `scmodel_usemirror 0 / 1 / 2` 使用CDN镜像加速下载，1 = `cdn.jsdelivr.net`， 2 = `gh.api.99988866.xyz`
 
 ### CommunicationDemo (只支持Sven Co-op)
 

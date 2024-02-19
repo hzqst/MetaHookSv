@@ -116,15 +116,11 @@ A subtitle plugin that adds closing-captioning, HUD text translatation to game, 
 
 [DOC](docs/CaptionMod.md) [中文文档](docs/CaptionModCN.md)
 
-![](/img/1.png)
-
 ### BulletPhysics
 
 A plugin that transform player model into ragdoll when player is dead or being caught by barnacle.
 
 [DOC](docs/BulletPhysics.md) [中文文档](docs/BulletPhysicsCN.md)
-
-![](/img/6.png)
 
 ### MetaRenderer
 
@@ -134,15 +130,11 @@ You can even play with 200k epolys models and still keep a high framerate.
 
 [DOC](docs/Renderer.md) [中文文档](docs/RendererCN.md)
 
-![](/img/3.png)
-
 ### StudioEvents
 
 This plugin can block studio-event sound spamming with controllable cvars.
 
 [DOC](docs/StudioEvents.md) [中文文档](docs/StudioEventsCN.md)
-
-![](/img/8.png)
 
 ### SteamScreenshots (Sven Co-op only)
 
@@ -155,8 +147,6 @@ This plugin downloads missing player models from https://wootguy.github.io/scmod
 Cvar : `scmodel_autodownload 0 / 1` Automatically download missing model from scmodel database.
 
 Cvar : `scmodel_downloadlatest 0 / 1` Download latest version of this model if there are multiple ones with different version.
-
-Cvar : `scmodel_usemirror 0 / 1` Use mirror (cdn.jsdelivr.net) if github is not available.
 
 ### CommunicationDemo (Sven Co-op only)
 
