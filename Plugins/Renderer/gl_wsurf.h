@@ -441,7 +441,7 @@ extern cvar_t *r_wsurf_zprepass;
 
 void FreeBSPEntity(bspentity_t *ent);
 void R_ClearBSPEntities(void);
-void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator fn);
+void R_ParseBSPEntities(const char *data, fnParseBSPEntity_Allocator fn);
 bspentity_t *R_ParseBSPEntity_DefaultAllocator(void);
 const char *ValueForKey(bspentity_t *ent, const char *key);
 const char* ValueForKeyEx(bspentity_t* ent, const char* key, epair_t** ppLastEPair);

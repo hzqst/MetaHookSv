@@ -2529,9 +2529,9 @@ void R_ShutdownWSurf(void)
 	R_FreeSceneUBO();
 }
 
-void R_LoadDecalTextures(const char *pfile)
+void R_LoadDecalTextures(const char * pFileContent)
 {
-	char *ptext = (char *)pfile;
+	auto ptext = pFileContent;
 	while (1)
 	{
 		char temp[256];
@@ -2723,9 +2723,9 @@ void R_LoadBaseDecalTextures(void)
 	gEngfuncs.COM_FreeFile(pfile);
 }
 
-void R_LoadDetailTextures(const char *pfile)
+void R_LoadDetailTextures(const char *pFileContent)
 {
-	char *ptext = (char *)pfile;
+	auto ptext = pFileContent;
 	while (1)
 	{
 		char temp[256];
@@ -3257,7 +3257,7 @@ static bool R_ParseBSPEntityKeyValue(const char *classname, const char *keyname,
 	return false;
 }
 
-static bool R_ParseBSPEntityClassname(char *szInputStream, char *classname, fnParseBSPEntity_Allocator parse_allocator)
+static bool R_ParseBSPEntityClassname(const char *szInputStream, char *classname, size_t classname_len, fnParseBSPEntity_Allocator parse_allocator)
 {
 	char szKeyName[256];
 
@@ -3274,8 +3274,8 @@ static bool R_ParseBSPEntityClassname(char *szInputStream, char *classname, fnPa
 		{
 			R_ParseBSPEntityKeyValue(NULL, szKeyName, com_token, parse_allocator);
 
-			strncpy(classname, com_token, 255);
-			classname[255] = 0;
+			strncpy(classname, com_token, classname_len);
+			classname[classname_len - 1] = 0;
 
 			return true;
 		}
@@ -3291,16 +3291,17 @@ static bool R_ParseBSPEntityClassname(char *szInputStream, char *classname, fnPa
 	return false;
 }
 
-static char *R_ParseBSPEntity(char *data, fnParseBSPEntity_Allocator parse_allocator)
+static const char *R_ParseBSPEntity(const char *data, fnParseBSPEntity_Allocator parse_allocator)
 {
 	char keyname[256] = { 0 };
 	char classname[256] = { 0 };
 
-	if (R_ParseBSPEntityClassname(data, classname, parse_allocator))
+	if (R_ParseBSPEntityClassname(data, classname, sizeof(classname), parse_allocator))
 	{
 		while (1)
 		{
 			data = gEngfuncs.COM_ParseFile(data, com_token);
+
 			if (com_token[0] == '}')
 			{
 				break;
@@ -3359,7 +3360,7 @@ static char *R_ParseBSPEntity(char *data, fnParseBSPEntity_Allocator parse_alloc
 	return data;
 }
 
-void R_ParseBSPEntities(char *data, fnParseBSPEntity_Allocator parse_allocator)
+void R_ParseBSPEntities(const char *data, fnParseBSPEntity_Allocator parse_allocator)
 {
 	while (1)
 	{

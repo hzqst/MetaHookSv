@@ -3371,7 +3371,7 @@ void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, studio_vbo_t
 
 	fullPath += "_external.txt";
 
-	auto pFile = (char*)gEngfuncs.COM_LoadFile(fullPath.c_str(), 5, NULL);
+	auto pFile = (const char*)gEngfuncs.COM_LoadFile(fullPath.c_str(), 5, NULL);
 
 	if (!pFile)
 	{
@@ -3410,5 +3410,5 @@ void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, studio_vbo_t
 
 	g_StudioBSPEntities.clear();
 
-	gEngfuncs.COM_FreeFile(pFile);
+	gEngfuncs.COM_FreeFile((void *)pFile);
 }
