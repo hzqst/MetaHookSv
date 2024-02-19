@@ -3,25 +3,26 @@
 #include "plugins.h"
 #include "privatehook.h"
 
-privte_funcs_t gPrivateFuncs;
+private_funcs_t gPrivateFuncs = {0};
 
 void Engine_FillAddreess()
 {
-	const char sigs1[] = "#GameUI_PrecachingResources";
-	auto CL_PrecacheResources_String = Search_Pattern_Data(sigs1);
-	if (!CL_PrecacheResources_String)
-		CL_PrecacheResources_String = Search_Pattern_Rdata(sigs1);
-	Sig_VarNotFound(CL_PrecacheResources_String);
-	char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8";
-	*(DWORD *)(pattern + 1) = (DWORD)CL_PrecacheResources_String;
-	gPrivateFuncs.CL_PrecacheResources = (decltype(gPrivateFuncs.CL_PrecacheResources))Search_Pattern(pattern);
-	Sig_FuncNotFound(CL_PrecacheResources);
-
 	if (1)
 	{
-		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.CL_PrecacheResources, 0x250, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+		const char sigs1[] = "#GameUI_PrecachingResources";
+		auto CL_PrecacheResources_String = Search_Pattern_Data(sigs1);
+		if (!CL_PrecacheResources_String)
+			CL_PrecacheResources_String = Search_Pattern_Rdata(sigs1);
+		Sig_VarNotFound(CL_PrecacheResources_String);
+		char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8";
+		*(DWORD*)(pattern + 1) = (DWORD)CL_PrecacheResources_String;
+
+		auto CL_PrecacheResources_PushString = Search_Pattern(pattern);
+		Sig_VarNotFound(CL_PrecacheResources_PushString);
+
+		g_pMetaHookAPI->DisasmRanges(CL_PrecacheResources_PushString, 0x250, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 			{
-				auto pinst = (cs_insn *)inst;
+				auto pinst = (cs_insn*)inst;
 
 				if (pinst->id == X86_INS_CMP &&
 					pinst->detail->x86.op_count == 2 &&
@@ -46,5 +47,4 @@ void Engine_FillAddreess()
 				return FALSE;
 			}, 0, NULL);
 	}
-
 }

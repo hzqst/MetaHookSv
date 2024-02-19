@@ -1,7 +1,7 @@
 #include <metahook.h>
 #include "privatehook.h"
 
-privte_funcs_t gPrivateFuncs;
+private_funcs_t gPrivateFuncs = {0};
 
 player_model_t(*DM_PlayerState)[MAX_CLIENTS];
 

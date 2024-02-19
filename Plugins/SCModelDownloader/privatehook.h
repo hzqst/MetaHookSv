@@ -13,8 +13,8 @@ typedef struct
 {
 	struct model_s *(*studioapi_SetupPlayerModel)(int index);
 	void (*R_StudioChangePlayerModel)(void);
-}privte_funcs_t;
+}private_funcs_t;
 
-extern privte_funcs_t gPrivateFuncs;
+extern private_funcs_t gPrivateFuncs;
 
 extern player_model_t(*DM_PlayerState)[MAX_CLIENTS];

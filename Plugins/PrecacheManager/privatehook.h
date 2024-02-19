@@ -2,8 +2,8 @@
 
 typedef struct
 {
-	void(*CL_PrecacheResources)();
-}privte_funcs_t;
+	qboolean(*CL_PrecacheResources)();
+}private_funcs_t;
 
 typedef enum
 {

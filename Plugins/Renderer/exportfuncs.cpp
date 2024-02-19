@@ -1513,7 +1513,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		{
 			auto pinst = (cs_insn *)inst;
 
-			if (address[0] == 0xE8)
+			if (address[0] == 0xE8 && instLen == 5)
 			{
 				gPrivateFuncs.R_StudioRenderFinal = (decltype(gPrivateFuncs.R_StudioRenderFinal))pinst->detail->x86.operands[0].imm;
 			}

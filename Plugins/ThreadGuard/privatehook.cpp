@@ -4,7 +4,7 @@
 #include "privatehook.h"
 #include "ThreadManager.h"
 
-private_funcs_t gPrivateFuncs;
+private_funcs_t gPrivateFuncs = { 0 };
 
 hook_t* g_pHook_FreeLibrary_Engine = NULL;
 hook_t* g_pHook_FreeLibrary_GameUI = NULL;
