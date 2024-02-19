@@ -142,6 +142,18 @@ cvar回调是Valve在buildnum 6153 GoldSrc引擎中添加的功能，用于在cv
 
 `g_pMetaHookAPI->BlobIATHook` ：同`g_pMetaHookAPI->IATHook`，唯一的区别是第一个参数从HMODULE变成了Blob模块句柄。
 
+### API：获取当前游戏目录
+
+同`gEngfuncs.GetGameDirectory()`，但是可以在引擎初始化之前调用。（引擎初始化之前调用`gEngfuncs.GetGameDirectory()`只能得到空字符串）
+
+### API：虚表hook
+
+`g_pMetaHookAPI->VFTHookEx` ：同`g_pMetaHookAPI->VFTHook`，但是无需提供对象地址，用于只有虚表地址得情况下直接hook虚表的特定表项。
+
+### API：Patch方式重定向call/jmp
+
+`g_pMetaHookAPI->InlinePatchRedirectBranch` ：以内存补丁的方式重定向call/jmp指令到新的函数上，只由被patch的那条指令会受该hook影响。
+
 ### 自动检测并加载 SSE / SSE2 / AVX / AVX2 版本的插件
 
 1. MetaHook启动器总是会以从上到下的顺序加载 `\(ModDirectory)\metahook\configs\plugins.lst` 中列出的插件。当插件名前面存在引号";"时该行会被忽略。
@@ -198,4 +210,4 @@ MetaHook (V2)版本的 `g_pMetaHookAPI->GetEngineBase()` 对BLOB加密版本的�
 
 这样就可以允许不同插件同时 `SearchPattern` 和 hook 同一个函数，避免了因为前一个插件提前hook修改了引擎代码导致后一个插件搜索特征码失败等插件之间互相冲突的问题。
 
-* 引擎调用所有插件的`LoadClient`期间 以及 引擎调用客户端的 `HUD_GetStudioModelInterface` 期间同理。
+事务开启时机：引擎调用所有插件的`LoadEngine`和`LoadClient`期间、引擎调用客户端的 `HUD_GetStudioModelInterface` 期间以及DllLoadNotification期间。
