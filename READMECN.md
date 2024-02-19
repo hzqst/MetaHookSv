@@ -116,7 +116,7 @@ Q: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络�
 
 ## 文档
 
-[中文文档](docs/MetaHookCN.md) [英文文档](docs/MetaHook.md)
+[中文文档](docs/MetaHookCN.md) [ENGLISH DOC](docs/MetaHook.md)
 
 ## 插件列表
 
@@ -128,7 +128,7 @@ Q: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络�
 
 对Sven Co-op而言，该插件修复了游戏中的汉字无法显示或者乱码的问题。
 
-[中文文档](docs/CaptionModCN.md) [英文文档](docs/CaptionMod.md)
+[中文文档](docs/CaptionModCN.md) [ENGLISH DOC](docs/CaptionMod.md)
 
 ![](/img/1.png)
 
@@ -136,7 +136,7 @@ Q: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络�
 
 对游戏提供布娃娃支持。玩家死亡时以及玩家被藤壶、喷火怪抓住时将玩家模型转化为布娃娃。
 
-[中文文档](docs/BulletPhysicsCN.md) [DOCUMENTATION](docs/BulletPhysics.md)
+[中文文档](docs/BulletPhysicsCN.md) [ENGLISH DOC](docs/BulletPhysics.md)
 
 ![](/img/6.png)
 
@@ -144,7 +144,7 @@ Q: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络�
 
 替换了原版的图形渲染引擎，极大提升了渲染性能，使用了黑科技提升你的画质和帧率。
 
-[中文文档](docs/RendererCN.md) [英文文档](docs/Renderer.md)
+[中文文档](docs/RendererCN.md) [ENGLISH DOC](docs/Renderer.md)
 
 ![](/img/3.png)
 
@@ -152,7 +152,7 @@ Q: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络�
 
 该插件可以防止重复播放模型自带音效，防止音效反复刷屏。
 
-[中文文档](docs/StudioEvents.md) [中文文档](docs/StudioEventsCN.md)
+[中文文档](docs/StudioEventsCN.md) [ENGLISH DOC](docs/StudioEvents.md)
 
 ![](/img/8.png)
 
@@ -195,6 +195,12 @@ Q: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络�
 目前接管的模块：
 
 `hw.dll`, `GameUI.dll`, `ServerBrowser.dll`
+
+### ResourceReplacer
+
+该插件可以动态替换游戏内资源 (主要是模型和声音文件) 且无需修改磁盘上的文件，就像 Sven Co-op 的 [gmr](https://wiki.svencoop.com/Mapping/Model_Replacement_Guide) 和 [gsr](https://wiki.svencoop.com/Mapping/Sound_Replacement_Guide) 文件提供资源替换功能一样。
+
+[中文文档](docs/ResourceReplacerCN.md) [ENGLISH DOC](docs/ResourceReplacer.md)
 
 ### ABCEnchance (第三方) (只支持Sven Co-op)
 

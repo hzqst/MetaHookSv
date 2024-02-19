@@ -45,6 +45,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UtilAssetsIntegrity", "Plug
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VGUI2Extension", "Plugins\VGUI2Extension\VGUI2Extension.vcxproj", "{44F12F1B-E5AE-4C8E-AAD9-D3D958633A6F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ResourceReplacer", "Plugins\ResourceReplacer\ResourceReplacer.vcxproj", "{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -179,6 +181,14 @@ Global
 		{44F12F1B-E5AE-4C8E-AAD9-D3D958633A6F}.Release_blob|Win32.Build.0 = Release|Win32
 		{44F12F1B-E5AE-4C8E-AAD9-D3D958633A6F}.Release|Win32.ActiveCfg = Release|Win32
 		{44F12F1B-E5AE-4C8E-AAD9-D3D958633A6F}.Release|Win32.Build.0 = Release|Win32
+		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345E}.Debug|Win32.Build.0 = Debug|Win32
+		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345E}.Release_AVX2|Win32.ActiveCfg = Release|Win32
+		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345E}.Release_AVX2|Win32.Build.0 = Release|Win32
+		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345E}.Release_blob|Win32.ActiveCfg = Release|Win32
+		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345E}.Release_blob|Win32.Build.0 = Release|Win32
+		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345E}.Release|Win32.ActiveCfg = Release|Win32
+		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345E}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -199,6 +209,7 @@ Global
 		{A4450AD0-38A5-48D5-B5E5-D17B865DB999} = {C675D02D-BDD8-431A-91A7-59AE873F1BD0}
 		{A4450AD0-38A5-48D5-B5E5-D17B865DB99A} = {C675D02D-BDD8-431A-91A7-59AE873F1BD0}
 		{44F12F1B-E5AE-4C8E-AAD9-D3D958633A6F} = {4BBE5591-2774-44E5-837E-B54D33AFC431}
+		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345E} = {4BBE5591-2774-44E5-837E-B54D33AFC431}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D7EC138D-907F-4149-8DE2-92E63D7597ED}

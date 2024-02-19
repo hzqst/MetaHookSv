@@ -186,6 +186,12 @@ Managed modules that may create new threads and quit without waiting for thread 
 
 `hw.dll`, `GameUI.dll`, `ServerBrowser.dll`
 
+### ResourceReplacer
+
+This plugin replaces in-game resources (mainly model and sound files) at runtime with customizable replace list files without actually manipulating the files, just like what Sven Co-op does with [gmr](https://wiki.svencoop.com/Mapping/Model_Replacement_Guide) and [gsr](https://wiki.svencoop.com/Mapping/Sound_Replacement_Guide) files.
+
+[DOC](docs/ResourceReplacer.md) [中文文档](docs/ResourceReplacerCN.md)
+
 ### ABCEnchance (third-party) (Sven Co-op only)
 
 ABCEnchance is a metahook plugin that provides experience improvement for Sven co-op.
