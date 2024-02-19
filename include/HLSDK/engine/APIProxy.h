@@ -301,7 +301,7 @@ typedef void						(*pfnEngSrc_pfnSetScreenFade_t )		( struct screenfade_s *fade 
 typedef void *						(*pfnEngSrc_VGui_GetPanel_t )         ( );
 typedef void                        (*pfnEngSrc_VGui_ViewportPaintBackground_t ) (int extents[4]);
 typedef byte*						(*pfnEngSrc_COM_LoadFile_t )				(const char *path, int usehunk, int *pLength );
-typedef char*						(*pfnEngSrc_COM_ParseFile_t )			( char *data, char *token );
+typedef const char*					(*pfnEngSrc_COM_ParseFile_t )			( const char *data, char *token );
 typedef void						(*pfnEngSrc_COM_FreeFile_t)				( void *buffer );
 typedef struct triangleapi_s *		pTriAPI;
 typedef struct efx_api_s *			pEfxAPI;
