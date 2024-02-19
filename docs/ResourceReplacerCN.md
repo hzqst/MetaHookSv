@@ -20,7 +20,9 @@
 
 请查阅 Sven Co-op 官方的 [gmr](https://wiki.svencoop.com/Mapping/Model_Replacement_Guide) 与 [gsr](https://wiki.svencoop.com/Mapping/Sound_Replacement_Guide) 文件编写教程。
 
-由 # 或 / 开头的行会被自动忽略。
+* 由 # 或 / 开头的行会被自动忽略。
+
+* 出于安全考虑，替换后的文件名必须与替换前文件保持扩展名一致 (`.mdl`, `.spr`, `.wav`)，否则替换会被拒绝。
 
 ### 替换列表的文件位置
 
@@ -38,4 +40,4 @@
 
 该行会将 `models/v_ak47.mdl` 替换为 `models/new_viewmodel/v_ak47.mdl`
 
-注：如果`models/new_viewmodel/v_ak47.mdl`或某个被替换后的模型文件实际上在磁盘上不存在，而游戏正好又用到了这个模型，这种情况下游戏会在加载阶段报错！
+* 如果`models/new_viewmodel/v_ak47.mdl`或某个被替换后的模型文件实际上在磁盘上不存在，而游戏正好又用到了这个模型，这种情况下游戏会在加载阶段报错！

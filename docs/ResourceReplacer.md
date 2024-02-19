@@ -22,7 +22,9 @@ Check Sven Co-op's official [gmr](https://wiki.svencoop.com/Mapping/Model_Replac
 
 Lines start with # or / will be ignored.
 
-Both `.mdl` and `.spr` replacements are supported.
+* Both `.mdl` and `.spr` replacements are supported.
+
+* For security reason, the replaced one must have exactly the same file extension (`.mdl`, `.spr`, `.wav`) with source filename, or the replacement will be refused.
 
 ### Replacement files location
 
@@ -40,4 +42,4 @@ For example:
 
 replaces `models/v_ak47.mdl` with `models/new_viewmodel/v_ak47.mdl`
 
-Tip: Make sure that the `models/new_viewmodel/v_*.mdl` actually exists in the disk drive before using regex replacement.
+* Make sure that the `models/new_viewmodel/v_*.mdl` actually exists in the disk drive before using regex replacement.
