@@ -196,7 +196,7 @@ extern int gly;
 extern int glwidth;
 extern int glheight;
 
-extern bool bEnforceStretchAspect;
+extern bool bNoStretchAspect;
 extern bool bUseBindless;
 extern bool bUseOITBlend;
 //extern bool bVerticalFov;//unused

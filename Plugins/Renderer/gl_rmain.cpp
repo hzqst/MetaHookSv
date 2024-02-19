@@ -214,7 +214,7 @@ FBO_Container_t s_ShadowFBO = { 0 };
 FBO_Container_t* g_CurrentSceneFBO = NULL;
 FBO_Container_t *g_CurrentRenderingFBO = NULL;
 
-bool bEnforceStretchAspect = false;
+bool bNoStretchAspect = true;
 bool bUseBindless = true;
 bool bUseOITBlend = false;
 //bool bVerticalFov = false;
@@ -1746,7 +1746,7 @@ void GL_Init(void)
 
 	glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &gl_max_ubo_size);
 
-	bEnforceStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
+	bNoStretchAspect = (gEngfuncs.CheckParm("-stretchaspect", NULL) == 0);
 
 	if(gEngfuncs.CheckParm("-nobindless", NULL))
 		bUseBindless = false;
@@ -2241,7 +2241,7 @@ void GL_EndRendering(void)
 	float fSrcAspect = (float)srcW / (float)srcH;
 	float fDstAspect = (float)dstX2 / (float)dstY2;
 
-	if (bEnforceStretchAspect)
+	if (bNoStretchAspect)
 	{
 		if (fSrcAspect > fDstAspect)
 		{
@@ -2257,7 +2257,7 @@ void GL_EndRendering(void)
 			float fDiff = dstX2 - fDesiredHeight;
 			dstX1 = fDiff / 2;
 			dstX2 = dstX2 - dstX1;
-			(*s_fXMouseAspectAdjustment) = fSrcAspect / fDstAspect;
+			(*s_fXMouseAspectAdjustment) = fDstAspect / fSrcAspect;
 		}
 	}
 
