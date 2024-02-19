@@ -1561,7 +1561,7 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 	auto name = fullname.substr(0, fullname.length() - 4);
 	name += "_ragdoll.txt";
 
-	char *pfile = (char *)gEngfuncs.COM_LoadFile((char *)name.c_str(), 5, NULL);
+	auto pfile = (const char *)gEngfuncs.COM_LoadFile(name.c_str(), 5, NULL);
 	if (!pfile)
 	{
 		cfg->state = 2;
@@ -1584,7 +1584,7 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 
 	int iParsingState = -1;
 
-	char *ptext = pfile;
+	auto ptext = pfile;
 	while (1)
 	{
 		char text[256] = { 0 };
@@ -2172,7 +2172,7 @@ ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 		}
 	}
 
-	gEngfuncs.COM_FreeFile(pfile);
+	gEngfuncs.COM_FreeFile((void *)pfile);
 
 	return cfg;
 }
