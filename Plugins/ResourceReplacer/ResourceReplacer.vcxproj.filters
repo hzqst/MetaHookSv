@@ -1,0 +1,131 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="HLSDK">
+      <UniqueIdentifier>{5d3687a2-f491-42b9-b273-062e5b432622}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SourceSDK">
+      <UniqueIdentifier>{9631caec-9849-4cda-9c1b-af45c73cc50b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SourceSDK\tier0">
+      <UniqueIdentifier>{c7c845d4-943f-48e8-8085-5c3b6426de66}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SourceSDK\tier1">
+      <UniqueIdentifier>{40fc4667-af8f-4d53-bc63-fce4e0b8435c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="SourceSDK\vstdlib">
+      <UniqueIdentifier>{55f7b74e-35f9-4341-a977-4a3cf87e3b2a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="exportfuncs.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="plugins.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="privatehook.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\HLSDK\common\interface.cpp">
+      <Filter>HLSDK</Filter>
+    </ClCompile>
+    <ClCompile Include="ResourceReplacer.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\vcrmode.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\threadtools.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\platform.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\minidump.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\memstd.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\memdbg.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\mem_helpers.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\mem.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\fasttimer.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\dbg.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\cpu.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\assert_dialog.cpp">
+      <Filter>SourceSDK\tier0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\utlsymbol.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\utlstring.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\utlbuffer.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\strtools.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\stringpool.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\memstack.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\mempool.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\KeyValues.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\generichash.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\characterset.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\vstdlib\KeyValuesSystem.cpp">
+      <Filter>SourceSDK\vstdlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\vstdlib\random.cpp">
+      <Filter>SourceSDK\vstdlib</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="exportfuncs.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="plugins.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="privatehook.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="ResourceReplacer.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
