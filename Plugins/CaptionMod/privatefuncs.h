@@ -30,7 +30,7 @@ typedef struct
 
 	//Engine Sound
 	void (*S_Init)(void);
-	sfx_t *(*S_FindName)(char *name, int *pfInCache);//hooked
+	sfx_t *(*S_FindName)(const char *name, int *pfInCache);//hooked
 	void (*S_StartDynamicSound)(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);//hooked
 	void (*S_StartStaticSound)(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);//hooked
 	sfxcache_t *(*S_LoadSound)(sfx_t *s, channel_t *ch);

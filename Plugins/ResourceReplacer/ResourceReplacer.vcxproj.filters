@@ -127,5 +127,8 @@
     <ClInclude Include="ResourceReplacer.h">
       <Filter>Header</Filter>
     </ClInclude>
+    <ClInclude Include="enginedef.h">
+      <Filter>Header</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

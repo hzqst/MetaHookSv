@@ -43,7 +43,7 @@ IBaseInterface *NewCreateInterface(const char *pName, int *pReturnCode);
 
 void S_StartDynamicSound(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);
 void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, float fvol, float attenuation, int flags, int pitch);
-sfx_t *S_FindName(char *name, int *pfInCache);
+sfx_t *S_FindName(const char *name, int *pfInCache);
 
 void MessageMode_f(void);
 void MessageMode2_f(void);

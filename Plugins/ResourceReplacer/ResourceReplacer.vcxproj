@@ -150,6 +150,7 @@
     <ClCompile Include="ResourceReplacer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />
     <ClInclude Include="plugins.h" />
     <ClInclude Include="privatehook.h" />

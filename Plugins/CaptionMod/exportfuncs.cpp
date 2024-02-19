@@ -742,7 +742,7 @@ void S_StartStaticSound(int entnum, int entchannel, sfx_t *sfx, float *origin, f
 	gPrivateFuncs.S_StartStaticSound(entnum, entchannel, sfx, origin, fvol, attenuation, flags, pitch);
 }
 
-sfx_t *S_FindName(char *name, int *pfInCache)
+sfx_t *S_FindName(const char *name, int *pfInCache)
 {
 	return gPrivateFuncs.S_FindName(name, pfInCache);;
 }
