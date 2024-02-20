@@ -20,7 +20,11 @@ extern ULONG g_BlobLoaderSectionSize;
 
 struct tagIATDATA
 {
+	HMODULE hModule;
+	BlobHandle_t hBlob;
 	PVOID* pImportFuncAddr;
+	char szModuleName[64];
+	char szFuncName[256];
 };
 
 struct tagVTABLEDATA
@@ -61,10 +65,6 @@ typedef struct hook_s
 		pOldFuncAddr = NULL;
 		pNewFuncAddr = NULL;
 		pOrginalCall = NULL;
-		hModule = 0;
-		hBlob = 0;
-		pszModuleName = NULL;
-		pszFuncName = NULL;
 		pNext = NULL;
 
 		memset(&hookData, 0, sizeof(hookData));
@@ -75,22 +75,9 @@ typedef struct hook_s
 	void *pOldFuncAddr;
 	void *pNewFuncAddr;
 	void **pOrginalCall;
-	HMODULE hModule;
-	BlobHandle_t hBlob;
-	const char *pszModuleName;
-	const char *pszFuncName;
 	struct hook_s *pNext;
 	tagHOOKDATA hookData;
 }hook_t;
-
-typedef struct usermsg_s
-{
-	int index;
-	int size;
-	char name[16];
-	struct usermsg_s* next;
-	pfnUserMsgHook function;
-}usermsg_t;
 
 typedef struct cvar_callback_entry_s
 {
@@ -105,6 +92,7 @@ std::vector<cvar_callback_entry_t*> g_ManagedCvarCallbacks;
 usermsg_t **gClientUserMsgs = NULL;
 cmd_function_t *(*Cmd_GetCmdBase)(void) = NULL;
 void **g_pVideoMode = NULL;
+svc_func_t* cl_parsefuncs = NULL;
 int (*g_pfnbuild_number)(void) = NULL;
 int(*g_pfnClientDLL_Init)(void) = NULL;
 void(*g_pfnCvar_DirectSet)(cvar_t* var, char* value) = NULL;
@@ -132,9 +120,6 @@ char g_szEnvPath[4096] = { 0 };
 char g_szGameDirectory[32] = { 0 };
 
 PVOID MH_GetNextCallAddr(void *pAddress, DWORD dwCount);
-hook_t *MH_FindInlineHooked(void *pOldFuncAddr);
-hook_t *MH_FindVFTHooked(void *pClassInstance, int iTableIndex, int iFuncIndex);
-hook_t *MH_FindIATHooked(HMODULE hModule, const char *pszModuleName, const char *pszFuncName);
 BOOL MH_UnHook(hook_t *pHook);
 hook_t *MH_InlineHook(void *pOldFuncAddr, void *pNewFuncAddr, void **pOriginalCall);
 hook_t *MH_VFTHook(void *pClassInstance, int iTableIndex, int iFuncIndex, void *pNewFuncAddr, void **pOriginalCall);
@@ -396,12 +381,20 @@ bool MH_RegisterCvarCallback(const char* cvar_name, cvar_callback_t callback, cv
 	return false;
 }
 
-usermsg_t *MH_FindUserMsgHook(const char *szMsgName)
+usermsg_t* MH_GetUserMsgBase()
 {
 	if (!gClientUserMsgs)
 		return NULL;
 
-	for (usermsg_t *msg = (*gClientUserMsgs); msg; msg = msg->next)
+	return (*gClientUserMsgs);
+}
+
+usermsg_t *MH_FindUserMsgHook(const char *szMsgName)
+{
+	if (!MH_GetUserMsgBase())
+		return NULL;
+
+	for (usermsg_t *msg = MH_GetUserMsgBase(); msg; msg = msg->next)
 	{
 		if (!strcmp(msg->name, szMsgName))
 			return msg;
@@ -467,6 +460,69 @@ xcommand_t MH_HookCmd(const char *cmd_name, xcommand_t newfuncs)
 	xcommand_t result = cmd->function;
 	cmd->function = newfuncs;
 	return result;
+}
+
+svc_func_t* MH_GetCLParseFuncBase()
+{
+	return cl_parsefuncs;
+}
+
+fn_parsefunc MH_FindCLParseFuncByOpcode(unsigned char opcode)
+{
+	for (auto p = MH_GetCLParseFuncBase(); p->opcode != (unsigned char)-1; ++p)
+	{
+		if (p->opcode == opcode)
+		{
+			return p->pfnParse;
+		}
+	}
+
+	return NULL;
+}
+
+fn_parsefunc MH_FindCLParseFuncByName(const char* name)
+{
+	for (auto p = MH_GetCLParseFuncBase(); p->opcode != (unsigned char)-1; ++p)
+	{
+		if (!strcmp(name, p->pszname))
+		{
+			return p->pfnParse;
+		}
+	}
+
+	return NULL;
+}
+
+fn_parsefunc MH_HookCLParseFuncByOpcode(unsigned char opcode, fn_parsefunc pfnNewParse)
+{
+	for (auto p = MH_GetCLParseFuncBase(); p->opcode != (unsigned char)-1; ++p)
+	{
+		if (p->opcode == opcode)
+		{
+			auto oldParse = p->pfnParse;
+			p->pfnParse = pfnNewParse;
+
+			return oldParse;
+		}
+	}
+
+	return NULL;
+}
+
+fn_parsefunc MH_HookCLParseFuncByName(const char* name, fn_parsefunc pfnNewParse)
+{
+	for (auto p = MH_GetCLParseFuncBase(); p->opcode != (unsigned char)-1; ++p)
+	{
+		if (!strcmp(name, p->pszname))
+		{
+			auto oldParse = p->pfnParse;
+			p->pfnParse = pfnNewParse;
+
+			return oldParse;
+		}
+	}
+
+	return NULL;
 }
 
 void MH_PrintPluginList(void)
@@ -1049,6 +1105,7 @@ void MH_ResetAllVars(void)
 	cvar_callbacks = NULL;
 	gClientUserMsgs = NULL;
 	g_pVideoMode = NULL;
+	cl_parsefuncs = NULL;
 	g_pfnbuild_number = NULL;
 	g_pfnSys_Error = NULL;
 	g_pClientFactory = NULL;
@@ -1170,7 +1227,6 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 				g_pfnbuild_number = (decltype(g_pfnbuild_number))MH_GetNextCallAddr(ExeBuild_PushString, 1);
 			}
 		}
-
 	}
 
 	if (!g_pfnbuild_number)
@@ -1623,6 +1679,42 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 
 	if (1)
 	{
+		char pattern[] = "\x00\x00\x00\x00\x2A\x2A\x2A\x2A\x00\x00\x00\x00\x01\x00\x00\x00\x2A\x2A\x2A\x2A\x00\x00\x00\x00\x02\x00\x00\x00\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x2A\x03\x00\x00\x00";
+		auto searchBegin = (PUCHAR)dataBase;
+		auto searchEnd = (PUCHAR)dataBase + textSize;
+		while (1)
+		{
+			auto pFound = MH_SearchPattern(searchBegin, searchEnd - searchBegin, pattern, sizeof(pattern) - 1);
+			if (pFound)
+			{
+				auto pString_svc_bad = *(const char**)((PUCHAR)pFound + 4);
+
+				if (((PUCHAR)pString_svc_bad >= (PUCHAR)dataBase && (PUCHAR)pString_svc_bad < (PUCHAR)dataBase + dataSize) ||
+					((PUCHAR)pString_svc_bad >= (PUCHAR)rdataBase && (PUCHAR)pString_svc_bad < (PUCHAR)rdataBase + rdataSize))
+				{
+					if (!memcmp(pString_svc_bad, "svc_bad", sizeof("svc_bad")))
+					{
+						cl_parsefuncs = (decltype(cl_parsefuncs))pFound;
+						break;
+					}
+				}
+				searchBegin = (PUCHAR)pFound + sizeof(pattern) - 1;
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+
+	if (!cl_parsefuncs)
+	{
+		MH_SysError("MH_LoadEngine: Failed to locate cl_parsefuncs");
+		return;
+	}
+
+	if (1)
+	{
 		const char sigs1[] = "***PROTECTED***";
 		auto Cvar_DirectSet_String = MH_SearchPattern(dataBase, dataSize, sigs1, sizeof(sigs1) - 1);
 		if (!Cvar_DirectSet_String)
@@ -2007,9 +2099,14 @@ hook_t *MH_NewHook(int iType)
 	return h;
 }
 
-hook_t *MH_FindInlineHooked(void *pOldFuncAddr)
+hook_t *MH_FindInlineHook(void *pOldFuncAddr, hook_t* pLastFoundHook)
 {
-	for (auto h = g_pHookBase; h; h = h->pNext)
+	auto h = g_pHookBase;
+
+	if (pLastFoundHook)
+		h = pLastFoundHook->pNext;
+
+	for (; h; h = h->pNext)
 	{
 		if (h->iType == MH_HOOK_INLINE)
 		{
@@ -2021,9 +2118,14 @@ hook_t *MH_FindInlineHooked(void *pOldFuncAddr)
 	return NULL;
 }
 
-hook_t *MH_FindVFTHooked(void * pClassInstance, int iTableIndex, int iFuncIndex)
+hook_t *MH_FindVFTHook(void * pClassInstance, int iTableIndex, int iFuncIndex, hook_t* pLastFoundHook)
 {
-	for (auto h = g_pHookBase; h; h = h->pNext)
+	auto h = g_pHookBase;
+
+	if (pLastFoundHook)
+		h = pLastFoundHook->pNext;
+
+	for (; h; h = h->pNext)
 	{
 		if (h->iType == MH_HOOK_VFTABLE)
 		{
@@ -2037,13 +2139,58 @@ hook_t *MH_FindVFTHooked(void * pClassInstance, int iTableIndex, int iFuncIndex)
 	return NULL;
 }
 
-hook_t *MH_FindIATHooked(HMODULE hModule, const char *pszModuleName, const char *pszFuncName)
+hook_t* MH_FindVFTHookEx(void** pVFTable, int iFuncIndex, hook_t* pLastFoundHook)
 {
-	for (auto h = g_pHookBase; h; h = h->pNext)
+	auto h = g_pHookBase;
+
+	if (pLastFoundHook)
+		h = pLastFoundHook->pNext;
+
+	for (; h; h = h->pNext)
+	{
+		if (h->iType == MH_HOOK_VFTABLE)
+		{
+			if (h->hookData.vfthook.pVirtualFuncTable == pVFTable && h->hookData.vfthook.iFuncIndex == iFuncIndex)
+			{
+				return h;
+			}
+		}
+	}
+
+	return NULL;
+}
+
+hook_t *MH_FindIATHook(HMODULE hModule, const char *pszModuleName, const char *pszFuncName, hook_t* pLastFoundHook)
+{
+	auto h = g_pHookBase;
+
+	if (pLastFoundHook)
+		h = pLastFoundHook->pNext;
+
+	for (; h; h = h->pNext)
 	{
 		if (h->iType == MH_HOOK_IAT)
 		{
-			if (h->hModule == hModule && h->pszModuleName == pszModuleName && h->pszFuncName == pszFuncName)
+			if (h->hookData.iathook.hModule == hModule && 0 == stricmp(h->hookData.iathook.szModuleName, pszModuleName) && 0 == stricmp(h->hookData.iathook.szFuncName, pszFuncName))
+				return h;
+		}
+	}
+
+	return NULL;
+}
+
+hook_t* MH_FindInlinePatchHook(void* pInstructionAddress, hook_t* pLastFoundHook)
+{
+	auto h = g_pHookBase;
+
+	if (pLastFoundHook)
+		h = pLastFoundHook->pNext;
+
+	for (; h; h = h->pNext)
+	{
+		if (h->iType == MH_HOOK_INLINEPATCH)
+		{
+			if (h->hookData.inlinepatch.pInstructionAddress == pInstructionAddress)
 				return h;
 		}
 	}
@@ -2546,12 +2693,17 @@ hook_t* MH_CreateIATHook(HMODULE hModule, BlobHandle_t hBlob, const char* pszMod
 	h->pOldFuncAddr = (void*)(*pThunkFunction);
 	h->pNewFuncAddr = pNewFuncAddr;
 
-	h->hookData.iathook.pImportFuncAddr = (PVOID *)pThunkFunction;
+	h->hookData.iathook.hModule = hModule;
+	h->hookData.iathook.hBlob = hBlob;
 
-	h->hModule = hModule;
-	h->hBlob = hBlob;
-	h->pszModuleName = pszModuleName;
-	h->pszFuncName = pszFuncName;
+	h->hookData.iathook.pImportFuncAddr = (PVOID*)pThunkFunction;
+
+	strncpy(h->hookData.iathook.szModuleName, pszModuleName, sizeof(h->hookData.iathook.szModuleName));
+	h->hookData.iathook.szModuleName[sizeof(h->hookData.iathook.szModuleName) - 1] = 0;
+
+	strncpy(h->hookData.iathook.szFuncName, pszFuncName, sizeof(h->hookData.iathook.szFuncName));
+	h->hookData.iathook.szFuncName[sizeof(h->hookData.iathook.szFuncName) - 1] = 0;
+
 	h->pOrginalCall = pOrginalCall;
 
 	if (g_bTransactionHook)
@@ -2583,7 +2735,7 @@ hook_t *MH_IATHook(HMODULE hModule, const char *pszModuleName, const char *pszFu
 	while (pImport->Name && 0 != stricmp((const char *)((ULONG_PTR)hModule + pImport->Name), pszModuleName))
 		pImport++;
 
-	auto hProcModule = GetModuleHandle(pszModuleName);
+	auto hProcModule = GetModuleHandleA(pszModuleName);
 
 	if(!hProcModule)
 		return NULL;
@@ -3859,7 +4011,20 @@ metahook_api_t gMetaHookAPI_LegacyV2 =
 	MH_GetGameDirectory,
 	MH_FindCmd,
 	MH_VFTHookEx,
-	MH_InlinePatchRedirectBranch
+	MH_InlinePatchRedirectBranch,
+	MH_FindInlineHook,
+	MH_FindVFTHook,
+	MH_FindVFTHookEx,
+	MH_FindIATHook,
+	MH_FindInlinePatchHook,
+	MH_GetUserMsgBase,
+	MH_FindUserMsgHook,
+	MH_GetCLParseFuncBase,
+	MH_FindCLParseFuncByOpcode,
+	MH_FindCLParseFuncByName,
+	MH_HookCLParseFuncByOpcode,
+	MH_HookCLParseFuncByName,
+	NULL
 };
 
 metahook_api_t gMetaHookAPI =
@@ -3923,5 +4088,18 @@ metahook_api_t gMetaHookAPI =
 	MH_GetGameDirectory,
 	MH_FindCmd,
 	MH_VFTHookEx,
-	MH_InlinePatchRedirectBranch
+	MH_InlinePatchRedirectBranch,
+	MH_FindInlineHook,
+	MH_FindVFTHook,
+	MH_FindVFTHookEx,
+	MH_FindIATHook,
+	MH_FindInlinePatchHook,
+	MH_GetUserMsgBase,
+	MH_FindUserMsgHook,
+	MH_GetCLParseFuncBase,
+	MH_FindCLParseFuncByOpcode,
+	MH_FindCLParseFuncByName,
+	MH_HookCLParseFuncByOpcode,
+	MH_HookCLParseFuncByName,
+	NULL
 };
