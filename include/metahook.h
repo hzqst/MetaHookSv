@@ -34,6 +34,37 @@ typedef struct cmd_function_s
 	int flags;
 }cmd_function_t;
 
+#endif
+
+#ifndef __ENGINE_USER_MSG__
+#define __ENGINE_USER_MSG__
+
+typedef struct usermsg_s
+{
+	int index;
+	int size;
+	char name[16];
+	struct usermsg_s* next;
+	pfnUserMsgHook function;
+}usermsg_t;
+
+#endif
+
+#ifndef __ENGINR_SVC_FUNCS__
+#define __ENGINR_SVC_FUNCS__
+
+typedef void(*fn_parsefunc)(void);
+
+typedef struct svc_func_s
+{
+	unsigned char opcode;		// Opcode
+	unsigned char padding[3];
+	const char* pszname;		// Display Name
+	fn_parsefunc pfnParse;		// Parse function
+} svc_func_t;
+
+#endif
+
 typedef struct mh_plugininfo_s
 {
 	int Index;
@@ -44,8 +75,6 @@ typedef struct mh_plugininfo_s
 	void *PluginModuleBase;
 	size_t PluginModuleSize;
 }mh_plugininfo_t;
-
-#endif
 
 #include <cdll_export.h>
 #include <cdll_int.h>
@@ -428,6 +457,58 @@ typedef struct metahook_api_s
 	*/
 	hook_t* (*InlinePatchRedirectBranch)(void *pInstructionAddress, void* pNewFuncAddr, void** pOrginalCall);
 
+	/*
+		Purpose : Find hook with given parameters.
+	*/
+
+	hook_t* (*FindInlineHook)(void* pOldFuncAddr, hook_t*pLastFoundHook);
+
+	hook_t* (*FindVFTHook)(void* pClassInstance, int iTableIndex, int iFuncIndex, hook_t* pLastFoundHook);
+
+	hook_t* (*FindVFTHookEx)(void** pVFTable, int iFuncIndex, hook_t* pLastFoundHook);
+
+	hook_t* (*FindIATHook)(HMODULE hModule, const char* pszModuleName, const char* pszFuncName, hook_t* pLastFoundHook);
+
+	hook_t* (*FindInlinePatchHook)(void* pInstructionAddress, hook_t* pLastFoundHook);
+
+	/*
+		Purpose : Get gClientUserMsgs.
+	*/
+	usermsg_t* (*GetUserMsgBase)();
+
+	/*
+		Purpose : Find usermsg_t * by name.
+	*/
+	usermsg_t* (*FindUserMsgHook)(const char* szMsgName);
+
+	/*
+		Purpose : Return the address of cl_parsefuncs tables.
+	*/
+	svc_func_t* (*GetCLParseFuncBase)();
+
+	/*
+		Purpose : Find the parse function by given opcode
+	*/
+	fn_parsefunc(*FindCLParseFuncByOpcode)(unsigned char opcode);
+
+	/*
+		Purpose : Find the parse function by given name
+	*/
+	fn_parsefunc(*FindCLParseFuncByName)(const char* name);
+
+	/*
+		Purpose : Hook the parse function by given opcode, returns the original parse function. returns NULL if the specified entry could not be found.
+	*/
+	fn_parsefunc(*HookCLParseFuncByOpcode)(unsigned char opcode, fn_parsefunc pfnNewParse);
+
+	/*
+		Purpose : Hook the parse function by given name, returns the original parse function. returns NULL if the specified entry could not be found.
+	*/
+	fn_parsefunc(*HookCLParseFuncByName)(const char* name, fn_parsefunc pfnNewParse);
+
+	//Always terminate with a NULL
+	PVOID Terminator;
+
 }metahook_api_t;
 
 typedef struct mh_enginesave_s
@@ -444,7 +525,7 @@ void MH_Shutdown(void);
 #include <ICommandLine.h>
 #include <IRegistry.h>
 
-#define METAHOOK_API_VERSION 102
+#define METAHOOK_API_VERSION 103
 
 typedef struct mh_interface_s
 {
