@@ -2494,7 +2494,16 @@ void R_FillAddress(void)
 			auto Sprite_PushString = (PUCHAR)Search_Pattern(pattern);
 			if (Sprite_PushString)
 			{
-				auto Sprite_Function = (PUCHAR)g_pMetaHookAPI->ReverseSearchFunctionBegin(Sprite_PushString, 0x100);
+				auto Sprite_Function = (PUCHAR)g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Sprite_PushString, 0x100, [](PUCHAR Candidate) {
+
+					if (Candidate[0] == 0x83 &&
+						Candidate[1] == 0xEC &&
+						Candidate[2] == 0x08)
+						return TRUE;
+
+					return FALSE;
+				});
+
 				if (Sprite_Function)
 				{
 					gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))Sprite_Function;
@@ -2515,7 +2524,32 @@ void R_FillAddress(void)
 			auto Sprite_PushString = (PUCHAR)Search_Pattern(pattern);
 			if (Sprite_PushString)
 			{
-				auto Sprite_Function = (PUCHAR)g_pMetaHookAPI->ReverseSearchFunctionBegin(Sprite_PushString, 0x300);
+				auto Sprite_Function = (PUCHAR)g_pMetaHookAPI->ReverseSearchFunctionBeginEx(Sprite_PushString, 0x300, [](PUCHAR Candidate) {
+
+					if (Candidate[0] == 0x55 &&
+						Candidate[1] == 0x8B &&
+						Candidate[2] == 0xEC)
+						return TRUE;
+
+					if (Candidate[0] == 0x83 &&
+						Candidate[1] == 0xEC &&
+						Candidate[2] == 0x08)
+						return TRUE;
+
+					if (Candidate[-1] == 0x90 &&
+						Candidate[0] >= 0x50 &&
+						Candidate[0] <= 0x57 &&
+						Candidate[1] >= 0x50 &&
+						Candidate[1] <= 0x57 &&
+						Candidate[2] >= 0x50 &&
+						Candidate[2] <= 0x57 &&
+						Candidate[3] >= 0x50 &&
+						Candidate[3] <= 0x57)
+						return TRUE;
+
+					return FALSE;
+				});
+
 				if (Sprite_Function)
 				{
 					gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))Sprite_Function;
@@ -2562,7 +2596,7 @@ void R_FillAddress(void)
 				PUCHAR pFound2 = (PUCHAR)Search_Pattern_From_Size(pFound, 0x30, pattern2);
 				if (pFound2)
 				{
-					if (*(ULONG_PTR*)(pFound2 + 5) == *(ULONG_PTR*)(pFound + 2))
+					if (*(ULONG_PTR*)(pFound + 2) == *(ULONG_PTR*)(pFound2 + 5))
 					{
 						gSpriteMipMap = (decltype(gSpriteMipMap))*(ULONG_PTR*)(pFound + 2);
 						break;
@@ -2577,6 +2611,7 @@ void R_FillAddress(void)
 			}
 		}
 	}
+	Sig_VarNotFound(gSpriteMipMap);
 
 	//Engine's R_AddTEntity is not used anymore
 	if (g_iEngineType == ENGINE_SVENGINE)
