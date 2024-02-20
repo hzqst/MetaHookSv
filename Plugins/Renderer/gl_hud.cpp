@@ -409,19 +409,20 @@ void GL_BlitFrameBufferToFrameBufferDepthStencil(FBO_Container_t* src, FBO_Conta
 }
 
 /*
-	Purpose: Do downsample from src FBO to dst, the current rendering FBO is set to dst
+	Purpose: Down sample from src_color to dst, the current rendering FBO is set to dst
 */
-void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2)
+void R_DownSample(FBO_Container_t *src_color, FBO_Container_t* src_stencil, FBO_Container_t *dst, bool bUseFilter2x2, bool bUseStencilFilter)
 {
 	GL_BindFrameBuffer(dst);
 
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	vec4_t vecClearColor = { 0, 0, 0, 0 };
+	GL_ClearColor(vecClearColor);
+	GL_ClearStencil(0xFF);
 
-	if(filter2x2)
+	if(bUseFilter2x2)
 	{
 		GL_UseProgram(pp_downsample2x2.program);
-		glUniform2f(pp_downsample2x2.texelsize, 2.0f / src->iWidth, 2.0f / src->iHeight);
+		glUniform2f(pp_downsample2x2.texelsize, 2.0f / src_color->iWidth, 2.0f / src_color->iHeight);
 	}
 	else
 	{
@@ -430,17 +431,29 @@ void R_DownSample(FBO_Container_t *src, FBO_Container_t *dst, qboolean filter2x2
 
 	glViewport(glx, gly, dst->iWidth, dst->iHeight);
 
-	GL_Bind(src->s_hBackBufferTex);
+	GL_Bind(src_color->s_hBackBufferTex);
 
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	if (bUseStencilFilter && src_stencil)
+	{
+		GL_BlitFrameBufferToFrameBufferStencilOnly(src_stencil, dst);
+		GL_BeginStencilCompareNotEqual(STENCIL_MASK_NO_BLOOM, STENCIL_MASK_NO_BLOOM);
+
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
+		GL_EndStencil();
+	}
+	else
+	{
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+	}
 }
 
 void R_LuminPass(FBO_Container_t *src, FBO_Container_t *dst, int type)
 {
 	GL_BindFrameBuffer(dst);
 
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	vec4_t vecClearColor = { 0, 0, 0, 0 };
+	GL_ClearColor(vecClearColor);
 
 	if(type == LUMPASS_LOG)
 	{
@@ -469,8 +482,8 @@ void R_LuminAdaptation(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container
 {
 	GL_BindFrameBuffer(dst);
 
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	vec4_t vecClearColor = { 0, 0, 0, 0 };
+	GL_ClearColor(vecClearColor);
 
 	GL_UseProgram(pp_luminadapt.program);
 	glUniform1f(pp_luminadapt.frametime, frametime * math_clamp(r_hdr_adaptation->GetValue(), 0.1, 100));
@@ -492,8 +505,8 @@ void R_BrightPass(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *l
 {
 	GL_BindFrameBuffer(dst);
 
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	vec4_t vecClearColor = { 0, 0, 0, 0 };
+	GL_ClearColor(vecClearColor);
 
 	GL_UseProgram(pp_brightpass.program);
 	glUniform1i(pp_brightpass.baseTex, 0);
@@ -516,8 +529,8 @@ void R_BlurPass(FBO_Container_t *src, FBO_Container_t *dst, qboolean vertical)
 {
 	GL_BindFrameBuffer(dst);
 
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	vec4_t vecClearColor = { 0, 0, 0, 0 };
+	GL_ClearColor(vecClearColor);
 
 	if(vertical)
 	{
@@ -541,8 +554,8 @@ void R_BrightAccum(FBO_Container_t *blur1, FBO_Container_t *blur2, FBO_Container
 {
 	GL_BindFrameBuffer(dst);
 
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	vec4_t vecClearColor = { 0, 0, 0, 0 };
+	GL_ClearColor(vecClearColor);
 
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_ONE, GL_ONE);
@@ -567,8 +580,8 @@ void R_ToneMapping(FBO_Container_t *src, FBO_Container_t *dst, FBO_Container_t *
 {
 	GL_BindFrameBuffer(dst);
 
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	vec4_t vecClearColor = { 0, 0, 0, 0 };
+	GL_ClearColor(vecClearColor);
 
 	GL_UseProgram(pp_tonemap.program);
 	glUniform1i(pp_tonemap.baseTex, 0);
@@ -615,7 +628,7 @@ bool R_IsHDREnabled(void)
 	return true;
 }
 
-void R_HDR(FBO_Container_t* src, FBO_Container_t* dst)
+void R_HDR(FBO_Container_t* src_color, FBO_Container_t* src_stencil, FBO_Container_t* dst)
 {
 	GL_BeginProfile(&Profile_DoHDR);
 
@@ -626,8 +639,8 @@ void R_HDR(FBO_Container_t* src, FBO_Container_t* dst)
 	glDisable(GL_BLEND);
 	glColor4f(1, 1, 1, 1);
 
-	R_DownSample(src, &s_DownSampleFBO[0], false);//(1->1/4)
-	R_DownSample(&s_DownSampleFBO[0], &s_DownSampleFBO[1], false);//(1/4)->(1/16)
+	R_DownSample(src_color, src_stencil, &s_DownSampleFBO[0], true, true);//(1->1/4)
+	R_DownSample(&s_DownSampleFBO[0], NULL, &s_DownSampleFBO[1], true, false);//(1/4)->(1/16)
 
 	//Log Luminance DownSample from .. (RGB16F to R32F)
 	R_LuminPass(&s_DownSampleFBO[1], &s_LuminFBO[0], LUMPASS_LOG);//(1/16)->64x64
@@ -640,7 +653,7 @@ void R_HDR(FBO_Container_t* src, FBO_Container_t* dst)
 	R_LuminPass(&s_LuminFBO[2], &s_Lumin1x1FBO[2], LUMPASS_EXP);//4x4->1x1
 
 	//Luminance Adaptation
-	R_LuminAdaptation(&s_Lumin1x1FBO[2], &s_Lumin1x1FBO[!last_luminance], &s_Lumin1x1FBO[last_luminance], *cl_time - *cl_oldtime);
+	R_LuminAdaptation(&s_Lumin1x1FBO[2], &s_Lumin1x1FBO[!last_luminance], &s_Lumin1x1FBO[last_luminance], (*cl_time) - (*cl_oldtime));
 	last_luminance = !last_luminance;
 
 	//Bright Pass (with 1/16)
@@ -660,7 +673,7 @@ void R_HDR(FBO_Container_t* src, FBO_Container_t* dst)
 	R_BrightAccum(&s_BlurPassFBO[0][1], &s_BlurPassFBO[1][1], &s_BlurPassFBO[2][1], &s_BrightAccumFBO);
 
 	//Tone mapping
-	R_ToneMapping(src, &s_ToneMapFBO, &s_BrightAccumFBO, &s_Lumin1x1FBO[last_luminance]);
+	R_ToneMapping(src_color, &s_ToneMapFBO, &s_BrightAccumFBO, &s_Lumin1x1FBO[last_luminance]);
 
 	GL_UseProgram(0);
 
@@ -1033,7 +1046,7 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 	glBlendFunc(GL_ZERO, GL_SRC_COLOR);
 
 	//Only draw on brush surfaces
-	GL_BeginStencilCompareEqual(STENCIL_MASK_WORLD, STENCIL_MASK_WORLD | STENCIL_MASK_WATER | STENCIL_MASK_STUDIO_MODEL | STENCIL_MASK_SPRITE_MODEL);
+	GL_BeginStencilCompareEqual(STENCIL_MASK_WORLD, STENCIL_MASK_WORLD | STENCIL_MASK_WATER | STENCIL_MASK_STUDIO_MODEL);
 
 	GL_UseProgram(hbao_blur2.program);
 

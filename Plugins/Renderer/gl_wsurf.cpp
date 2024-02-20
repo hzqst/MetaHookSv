@@ -1219,15 +1219,6 @@ void R_CreateBindlessTexturesForWorld(void)
 	}
 }
 
-#if 0
-void Mod_LoadBrushModel(model_t *mod, void *buffer)
-{
-	auto current_loadmodel = (*loadmodel);
-
-	gPrivateFuncs.Mod_LoadBrushModel(mod, buffer);
-}
-#endif
-
 int R_FindTextureIdByTexture(texture_t *ptex)
 {
 	for (int i = 0; i < r_worldmodel->numtextures; ++i)

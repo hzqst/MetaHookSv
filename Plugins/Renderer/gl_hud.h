@@ -170,7 +170,7 @@ bool R_IsGammaBlendEnabled();
 void R_GammaCorrection(FBO_Container_t* src, FBO_Container_t* dst);
 void R_GammaUncorrection(FBO_Container_t* src, FBO_Container_t* dst);
 bool R_IsAmbientOcclusionEnabled(void);
-void R_HDR(FBO_Container_t* src, FBO_Container_t*);
+void R_HDR(FBO_Container_t* src_color, FBO_Container_t* src_stencil, FBO_Container_t*);
 bool R_IsHDREnabled(void);
 void R_FXAA(FBO_Container_t* src, FBO_Container_t* dst);
 bool R_IsFXAAEnabled(void);

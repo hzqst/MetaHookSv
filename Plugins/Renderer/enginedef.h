@@ -244,8 +244,9 @@ typedef struct alight_s
 #define EF_HITBOXCOLLISIONS	0x200			//! Use hitbox collisions
 #define EF_FORCESKYLIGHT	0x400		//! Forces the model to be lit by skybox lighting
 
-//Renderer specified flags for studio models
+//Renderer specified flags added by hzqst
 #define EF_OUTLINE			0x1000
+#define EF_NOBLOOM			0x2000
 
 #define kRenderFxDrawDeferedTransparentMeshes 0x80000000
 
@@ -432,8 +433,7 @@ typedef struct hull_s
 	int lastclipnode;
 	vec3_t clip_mins;
 	vec3_t clip_maxs;
-}
-hull_t;
+}hull_t;
 
 typedef struct mspriteframe_s
 {
@@ -441,7 +441,6 @@ typedef struct mspriteframe_s
 	int height;
 	float up, down, left, right;
 	int gl_texturenum;
-	//int ssbo_index;//Added by hooking Hunk_Alloc
 }mspriteframe_t;
 
 typedef struct
@@ -469,8 +468,7 @@ typedef struct msprite_s
 	float beamlength;
 	void *cachespot;
 	mspriteframedesc_t frames[1];
-}
-msprite_t;
+}msprite_t;
 
 typedef struct
 {

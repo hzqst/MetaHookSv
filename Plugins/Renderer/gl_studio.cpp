@@ -2192,6 +2192,7 @@ void R_StudioDrawVBOMesh_DrawPass(
 
 		if (StudioProgramState & (STUDIO_NF_FLATSHADE | STUDIO_NF_CELSHADE))
 			iStencilRef |= STENCIL_MASK_HAS_FLATSHADE;
+
 		GL_BeginStencilWrite(iStencilRef, STENCIL_MASK_ALL);
 	}
 
@@ -2331,10 +2332,10 @@ void R_StudioDrawVBOMesh_DrawPass(
 	glDisable(GL_BLEND);
 	glEnable(GL_CULL_FACE);
 
-	if (r_draw_opaque)
-	{
-		GL_EndStencil();
-	}
+	//if (r_draw_opaque)
+	//{
+	GL_EndStencil();
+	//}
 }
 
 void R_StudioDrawVBOMesh(
@@ -3384,7 +3385,7 @@ void R_StudioLoadExternalFile(model_t* mod, studiohdr_t* studiohdr, studio_vbo_t
 	{
 		bspentity_t* ent = &g_StudioBSPEntities[i];
 
-		char* classname = ent->classname;
+		const char* classname = ent->classname;
 
 		if (!classname)
 			continue;

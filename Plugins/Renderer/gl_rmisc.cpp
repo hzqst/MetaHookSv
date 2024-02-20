@@ -490,11 +490,9 @@ void GL_FrameBufferDepthTexture(FBO_Container_t *s, GLuint iInternalFormat)
 	glTexParameteri(tex2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(tex2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-	if (iInternalFormat == GL_DEPTH24_STENCIL8 || iInternalFormat == GL_DEPTH24_STENCIL8_EXT)
+	if (iInternalFormat == GL_DEPTH24_STENCIL8)
 	{
 		glTexStorage2D(tex2D, 1, iInternalFormat, s->iWidth, s->iHeight);
-
-		//glTexImage2D(tex2D, 0, iInternalFormat, s->iWidth, s->iHeight, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, 0);
 	}
 	else
 	{

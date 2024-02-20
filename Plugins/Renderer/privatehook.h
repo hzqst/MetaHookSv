@@ -55,6 +55,7 @@ typedef struct
 	int(*GL_LoadTexture2)(char *identifier, int textureType, int width, int height, byte *data, qboolean mipmap, int iPalTextureType, byte *pPal, int filter);
 	int(*GL_Upload16)(byte *data, int width, int height, int iType, byte *pPal, int a6, int a7, int a8);
 	void (*Mod_UnloadSpriteTextures)(model_t* mod);
+	void (*Mod_LoadSpriteModel)(model_t* mod, void* buffer);
 	void (*R_DecalMPoly)(float *v, texture_t *ptexture, msurface_t *psurf, int vertCount);
 	void (*R_MarkLeaves)(void);
 	void (*R_DrawBrushModel)(cl_entity_t *e);

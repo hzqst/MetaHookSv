@@ -449,6 +449,8 @@ bool R_SpriteAllowLerping(cl_entity_t* ent, msprite_t* pSprite)
 
 void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, mspriteframe_t* frame, mspriteframe_t* oldframe, float lerp)
 {
+	auto pSpriteVBOData = (sprite_vbo_t *)pSprite->cachespot;
+
 	auto scale = ent->curstate.scale;
 
 	if (scale <= 0)
@@ -656,6 +658,18 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 
 	R_SetGBufferMask(GBUFFER_MASK_ALL);
 
+	if (pSpriteVBOData && (pSpriteVBOData->flags & EF_NOBLOOM))
+	{
+		if (r_draw_opaque)
+		{
+			GL_BeginStencilWrite(STENCIL_MASK_WORLD | STENCIL_MASK_NO_BLOOM, STENCIL_MASK_ALL);
+		}
+		else
+		{
+			GL_BeginStencilWrite(STENCIL_MASK_NO_BLOOM, STENCIL_MASK_NO_BLOOM);
+		}
+	}
+
 	sprite_program_t prog = { 0 };
 	R_UseSpriteProgram(SpriteProgramState, &prog);
 
@@ -693,6 +707,8 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 	glDisable(GL_BLEND);
 	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
+
+	GL_EndStencil();
 }
 
 void R_DrawSpriteModel(cl_entity_t *ent)
@@ -735,4 +751,75 @@ void R_SpriteTextureAddReferences(model_t* mod, msprite_t* pSprite, std::set<int
 			textures.emplace(pSpriteFrame->gl_texturenum);
 		}
 	}
+}
+
+void R_SpriteLoadExternalFile_Efx(bspentity_t* ent, msprite_t* pSprite, sprite_vbo_t* pSpriteVBOData)
+{
+	auto flags_string = ValueForKey(ent, "flags");
+
+#define REGISTER_EFX_FLAGS_KEY_VALUE(name) if (flags_string && !strcmp(flags_string, #name))\
+	{\
+		pSpriteVBOData->flags |= name; \
+	}\
+	if (flags_string && !strcmp(flags_string, "-" #name))\
+	{\
+		pSpriteVBOData->flags |= name; \
+	}
+
+	REGISTER_EFX_FLAGS_KEY_VALUE(EF_NOBLOOM);
+
+#undef REGISTER_EFX_FLAGS_KEY_VALUE
+}
+
+static std::vector<bspentity_t> g_SpriteBSPEntities;
+
+bspentity_t* R_ParseBSPEntity_SpriteAllocator(void)
+{
+	size_t len = g_SpriteBSPEntities.size();
+
+	g_SpriteBSPEntities.resize(len + 1);
+
+	return &g_SpriteBSPEntities[len];
+}
+
+void R_SpriteLoadExternalFile(model_t* mod, msprite_t* pSprite, sprite_vbo_t* pSpriteVBOData)
+{
+	std::string fullPath = mod->name;
+
+	RemoveFileExtension(fullPath);
+
+	fullPath += "_external.txt";
+
+	auto pFile = (const char*)gEngfuncs.COM_LoadFile(fullPath.c_str(), 5, NULL);
+
+	if (!pFile)
+	{
+		return;
+	}
+
+	R_ParseBSPEntities(pFile, R_ParseBSPEntity_SpriteAllocator);
+
+	for (size_t i = 0; i < g_SpriteBSPEntities.size(); ++i)
+	{
+		bspentity_t* ent = &g_SpriteBSPEntities[i];
+
+		const char* classname = ent->classname;
+
+		if (!classname)
+			continue;
+
+		if (!strcmp(classname, "sprite_efx"))
+		{
+			R_SpriteLoadExternalFile_Efx(ent, pSprite, pSpriteVBOData);
+		}
+	}
+
+	for (size_t i = 0; i < g_SpriteBSPEntities.size(); i++)
+	{
+		FreeBSPEntity(&g_SpriteBSPEntities[i]);
+	}
+
+	g_SpriteBSPEntities.clear();
+
+	gEngfuncs.COM_FreeFile((void*)pFile);
 }

@@ -977,7 +977,6 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 				R_DrawWaterVBOEnd();
 
 				//Purpose : Blit color and depth of s_GBuffers into ReflectCache->refractmap and ReflectCache->depthrefrmap
-
 				GL_BindFrameBufferWithTextures(&s_BackBufferFBO2, ReflectCache->refractmap, 0, ReflectCache->depthrefrmap, ReflectCache->texwidth, ReflectCache->texheight);
 				
 				//The output is in linear space
@@ -988,6 +987,9 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 
 				//Restore previous framebuffer
 				GL_BindFrameBuffer(&s_GBufferFBO);
+
+				//Restore Legacy OpenGL matrix that manipulated by R_BlitGBufferToFrameBuffer
+				R_LoadLegacyOpenGLMatrixForWorld();
 
 				R_DrawWaterVBOBegin(WaterVBO);
 			}
@@ -1017,6 +1019,9 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 
 				//Restore previous framebuffer
 				GL_BindFrameBuffer(GL_GetCurrentSceneFBO());
+
+				//Restore Legacy OpenGL matrix that manipulated by R_GammaUncorrection
+				R_LoadLegacyOpenGLMatrixForWorld();
 
 				R_DrawWaterVBOBegin(WaterVBO);
 			}

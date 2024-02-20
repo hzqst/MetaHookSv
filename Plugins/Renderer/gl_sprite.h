@@ -21,6 +21,15 @@ extern word **host_basepal;
 
 extern cvar_t* r_sprite_lerping;
 
+typedef struct sprite_vbo_s
+{
+	sprite_vbo_s()
+	{
+		flags = 0;
+	}
+	int flags;
+}sprite_vbo_t;
+
 void R_UseSpriteProgram(program_state_t state, sprite_program_t *progOutput);
 void R_UseLegacySpriteProgram(program_state_t state, legacysprite_program_t *progOutput);
 void R_InitSprite(void);
@@ -30,6 +39,7 @@ void R_LoadLegacySpriteProgramStates(void);
 void R_LoadSpriteProgramStates(void);
 void R_SaveSpriteProgramStates(void);
 void R_SpriteTextureAddReferences(model_t* mod, msprite_t* pSprite, std::set<int>& textures);
+void R_SpriteLoadExternalFile(model_t* mod, msprite_t* pSprite, sprite_vbo_t* pSpriteVBOData);
 
 #define SPRITE_BINDLESS_ENABLED				0x1ull
 #define SPRITE_GBUFFER_ENABLED				0x2ull

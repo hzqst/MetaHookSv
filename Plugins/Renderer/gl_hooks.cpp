@@ -315,6 +315,12 @@
 #define MOD_UNLOADSPRITETEXTURES_HL25     "\x55\x8B\xEC\x81\xEC\x04\x01\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC5\x89\x45\xFC\x57\x8B\x7D\x08\x83\x7F\x44\x01"
 #define MOD_UNLOADSPRITETEXTURES_SVENGINE "\x81\xEC\x04\x01\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x00\x01\x00\x00\x57\x8B\xBC\x24\x0C\x01\x00\x00"
 
+#define MOD_LOADSPRITEMODEL_BLOB		"\x53\x55\x56\x57\x8B\x7C\x24\x18\x8B\x47\x04\x50\xFF\x15"
+#define MOD_LOADSPRITEMODEL_NEW2		MOD_LOADSPRITEMODEL_BLOB
+#define MOD_LOADSPRITEMODEL_NEW			"\x55\x8B\xEC\x51\x53\x56\x57\x8B\x7D\x0C\x8B\x47\x04\x50\xFF\x15"
+#define MOD_LOADSPRITEMODEL_HL25		"\x55\x8B\xEC\x83\xEC\x08\x2A\x2A\x8B\x75\x0C\x2A\xFF\x2A\x04\xFF\x15"
+#define MOD_LOADSPRITEMODEL_SVENGINE	"\x83\xEC\x08\x2A\x2A\x2A\x8B\x2A\x24\x1C\x2A\xFF\x2A\x04\xFF\x15"
+
 #define R_INITPARTICLETEXTURE_BLOB "\xA1\x2A\x2A\x2A\x2A\x81\xEC\x2A\x2A\x00\x00\x8B\xC8\x40"
 #define R_INITPARTICLETEXTURE_COMMON "\x68\x01\x14\x00\x00\x68\x08\x19\x00\x00\x6A\x00\x6A\x08\x6A\x08"
 
@@ -2474,6 +2480,103 @@ void R_FillAddress(void)
 		gPrivateFuncs.Mod_UnloadSpriteTextures = (decltype(gPrivateFuncs.Mod_UnloadSpriteTextures))Search_Pattern(MOD_UNLOADSPRITETEXTURES_BLOB);
 	}
 	Sig_FuncNotFound(Mod_UnloadSpriteTextures);
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		const char sigs1[] = "Sprite \"%s\" has wrong version number";
+		auto Sprite_String = Search_Pattern_Data(sigs1);
+		if (!Sprite_String)
+			Sprite_String = Search_Pattern_Rdata(sigs1);
+		if (Sprite_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
+			*(DWORD*)(pattern + 1) = (DWORD)Sprite_String;
+			auto Sprite_PushString = (PUCHAR)Search_Pattern(pattern);
+			if (Sprite_PushString)
+			{
+				auto Sprite_Function = (PUCHAR)g_pMetaHookAPI->ReverseSearchFunctionBegin(Sprite_PushString, 0x100);
+				if (Sprite_Function)
+				{
+					gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))Sprite_Function;
+				}
+			}
+		}
+	}
+	else
+	{
+		const char sigs1[] = "Mod_LoadSpriteModel: Invalid # of frame";
+		auto Sprite_String = Search_Pattern_Data(sigs1);
+		if (!Sprite_String)
+			Sprite_String = Search_Pattern_Rdata(sigs1);
+		if (Sprite_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4";
+			*(DWORD*)(pattern + 1) = (DWORD)Sprite_String;
+			auto Sprite_PushString = (PUCHAR)Search_Pattern(pattern);
+			if (Sprite_PushString)
+			{
+				auto Sprite_Function = (PUCHAR)g_pMetaHookAPI->ReverseSearchFunctionBegin(Sprite_PushString, 0x300);
+				if (Sprite_Function)
+				{
+					gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))Sprite_Function;
+				}
+			}
+		}
+	}
+
+	if (!gPrivateFuncs.Mod_LoadSpriteModel)
+	{
+		if (g_iEngineType == ENGINE_SVENGINE)
+		{
+			gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))Search_Pattern(MOD_LOADSPRITEMODEL_SVENGINE);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))Search_Pattern(MOD_LOADSPRITEMODEL_HL25);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC)
+		{
+			gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))Search_Pattern(MOD_LOADSPRITEMODEL_NEW);
+			if (!gPrivateFuncs.Mod_LoadSpriteModel)
+				gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))Search_Pattern(MOD_LOADSPRITEMODEL_NEW2);
+		}
+		else if (g_iEngineType == ENGINE_GOLDSRC_BLOB)
+		{
+			gPrivateFuncs.Mod_LoadSpriteModel = (decltype(gPrivateFuncs.Mod_LoadSpriteModel))Search_Pattern(MOD_LOADSPRITEMODEL_BLOB);
+		}
+	}
+	Sig_FuncNotFound(Mod_LoadSpriteModel);
+
+	if (1)
+	{
+		const char pattern[] = "\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x00\x00\xE8";
+
+		PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
+		PUCHAR SearchLimit = (PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize;
+		while (SearchBegin < SearchLimit)
+		{
+			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+			if (pFound)
+			{
+				const char pattern2[] = "\x83\xC4\x2A\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00";
+				PUCHAR pFound2 = (PUCHAR)Search_Pattern_From_Size(pFound, 0x30, pattern2);
+				if (pFound2)
+				{
+					if (*(ULONG_PTR*)(pFound2 + 5) == *(ULONG_PTR*)(pFound + 2))
+					{
+						gSpriteMipMap = (decltype(gSpriteMipMap))*(ULONG_PTR*)(pFound + 2);
+						break;
+					}
+				}
+
+				SearchBegin = pFound + Sig_Length(pattern);
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
 
 	//Engine's R_AddTEntity is not used anymore
 	if (g_iEngineType == ENGINE_SVENGINE)
@@ -7448,6 +7551,7 @@ static hook_t *g_phook_enginesurface_drawSetTextureFile = NULL;
 static hook_t *g_phook_enginesurface_drawFlushText = NULL;
 static hook_t *g_phook_Mod_LoadStudioModel = NULL;
 static hook_t *g_phook_Mod_LoadBrushModel = NULL;
+static hook_t *g_phook_Mod_LoadSpriteModel = NULL;
 static hook_t *g_phook_Mod_UnloadSpriteTextures = NULL;
 static hook_t *g_phook_triapi_RenderMode = NULL;
 static hook_t *g_phook_triapi_BoxInPVS = NULL;
@@ -7491,6 +7595,7 @@ void R_UninstallHooksForEngineDLL(void)
 	Uninstall_Hook(enginesurface_drawSetTextureFile);
 	Uninstall_Hook(enginesurface_drawFlushText);
 	Uninstall_Hook(Mod_LoadStudioModel);
+	Uninstall_Hook(Mod_LoadSpriteModel);
 	Uninstall_Hook(Mod_UnloadSpriteTextures);
 	Uninstall_Hook(triapi_RenderMode);
 	Uninstall_Hook(triapi_BoxInPVS);
@@ -7537,6 +7642,7 @@ void R_InstallHooks(void)
 	Install_InlineHook(enginesurface_drawSetTextureFile);
 	Install_InlineHook(enginesurface_drawFlushText);
 	Install_InlineHook(Mod_LoadStudioModel);
+	Install_InlineHook(Mod_LoadSpriteModel);
 	Install_InlineHook(Mod_UnloadSpriteTextures);
 	Install_InlineHook(triapi_RenderMode);
 	Install_InlineHook(triapi_BoxInPVS);

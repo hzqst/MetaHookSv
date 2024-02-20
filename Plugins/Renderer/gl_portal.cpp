@@ -309,10 +309,6 @@ void __fastcall ClientPortalManager_EnableClipPlane(void * pthis, int dummy, int
 
 void __fastcall ClientPortalManager_DrawPortalSurface(void *ClientPortalManager, int dummy, void *ClientPortal, msurface_t *surf, GLuint textureId)
 {
-	//gEngfuncs.Con_Printf("ClientPortalManager_DrawPortalSurface %d\n", textureId);
-
-	//g_LastPortalTextureId = textureId;
-
 	auto VBOCache = R_PreparePortalVBO(ClientPortalManager, ClientPortal, surf, textureId);
 
 	GL_BindVAO(VBOCache->hVAO);

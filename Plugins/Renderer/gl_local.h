@@ -139,6 +139,8 @@ extern int *c_brush_polys;
 extern int(*rtable)[20][20];
 extern void *tmp_palette;
 
+extern int* gSpriteMipMap;
+
 //fog
 extern int *g_bUserFogOn;
 extern float *g_UserFogColor;
@@ -475,6 +477,9 @@ void R_FreeBindlessTexturesForSkybox();
 void R_SaveProgramStates_f(void);
 void R_LoadProgramStates_f(void);
 
+void R_LoadLegacyOpenGLMatrixForViewModel();
+void R_LoadLegacyOpenGLMatrixForWorld();
+
 void COM_FileBase(const char *in, char *out);
 
 //framebuffer
@@ -579,10 +584,10 @@ extern bool g_bIsCounterStrike;
 #define STENCIL_MASK_WORLD						1
 #define STENCIL_MASK_WATER						2
 #define STENCIL_MASK_STUDIO_MODEL				4
-#define STENCIL_MASK_SPRITE_MODEL				8
+#define STENCIL_MASK_NO_BLOOM					8
 #define STENCIL_MASK_HAS_OUTLINE				0x10
 #define STENCIL_MASK_HAS_SHADOW					0x20
 #define STENCIL_MASK_HAS_DECAL					0x40
 #define STENCIL_MASK_HAS_FLATSHADE				0x80
 
-#define STENCIL_MASK_HAS_FOG					(STENCIL_MASK_WORLD | STENCIL_MASK_WATER | STENCIL_MASK_STUDIO_MODEL | STENCIL_MASK_SPRITE_MODEL)
+#define STENCIL_MASK_HAS_FOG					(STENCIL_MASK_WORLD | STENCIL_MASK_WATER | STENCIL_MASK_STUDIO_MODEL)

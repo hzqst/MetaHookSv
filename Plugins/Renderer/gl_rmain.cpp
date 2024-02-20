@@ -1571,10 +1571,9 @@ void GL_GenerateFrameBuffers(void)
 		downH >>= 1;
 		s_DownSampleFBO[i].iWidth = downW;
 		s_DownSampleFBO[i].iHeight = downH;
-		//fbo
 		GL_GenFrameBuffer(&s_DownSampleFBO[i]);
-		//color
 		GL_FrameBufferColorTexture(&s_DownSampleFBO[i], GL_RGB16F);
+		GL_FrameBufferDepthTexture(&s_DownSampleFBO[i], GL_DEPTH24_STENCIL8);
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		{
@@ -1968,7 +1967,7 @@ void R_PostRenderView()
 			GL_BlitFrameBufferToFrameBufferColorOnly(GL_GetCurrentSceneFBO(), &s_BackBufferFBO2);
 		}
 
-		R_HDR(&s_BackBufferFBO2, &s_BackBufferFBO);
+		R_HDR(&s_BackBufferFBO2, GL_GetCurrentSceneFBO(), &s_BackBufferFBO);
 
 		if (GL_GetCurrentSceneFBO() != &s_BackBufferFBO)
 		{
@@ -3552,8 +3551,8 @@ void R_EndRenderOpaque(void)
 
 	if (R_IsGammaBlendEnabled())
 	{
-		GL_BlitFrameBufferToFrameBufferDepthStencil(GL_GetCurrentSceneFBO(), &s_BackBufferFBO3);
 		R_GammaCorrection(GL_GetCurrentSceneFBO(), &s_BackBufferFBO3);
+		GL_BlitFrameBufferToFrameBufferDepthStencil(GL_GetCurrentSceneFBO(), &s_BackBufferFBO3);
 		GL_SetCurrentSceneFBO(&s_BackBufferFBO3);
 		r_draw_gammablend = true;
 	}
@@ -3564,14 +3563,11 @@ void R_EndRenderOpaque(void)
 
 void ClientDLL_DrawNormalTriangles(void)
 {
-	//Allow SC client dll to write stencil buffer
-	//TODO: Remove stencil from portal code
+	//Good news: Stencil write has been completely removed from portal code.
 
 	GL_PushFrameBuffer();
 
-	glStencilMask(0xFF);
-
-	glClear(GL_STENCIL_BUFFER_BIT);
+	//glStencilMask(0xFF);
 
 	//SC client dll should have enabled this but they don't
 	glEnable(GL_POLYGON_OFFSET_FILL);
@@ -3584,7 +3580,7 @@ void ClientDLL_DrawNormalTriangles(void)
 
 	r_draw_legacysprite = false;
 
-	glStencilMask(0);
+	//glStencilMask(0);
 
 	glDisable(GL_POLYGON_OFFSET_FILL);
 
