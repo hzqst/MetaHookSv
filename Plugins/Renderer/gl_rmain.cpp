@@ -131,7 +131,10 @@ bool* detTexSupported = NULL;
 
 cache_system_t(*cache_head) = NULL;
 
-//blob engine only
+//Sven Co-op only
+int* allow_cheats = NULL;
+
+//Blob Engine only
 int* allocated_textures = NULL;
 
 //client dll
@@ -217,7 +220,6 @@ FBO_Container_t *g_CurrentRenderingFBO = NULL;
 bool bNoStretchAspect = true;
 bool bUseBindless = true;
 bool bUseOITBlend = false;
-//bool bVerticalFov = false;
 bool bUseLegacyTextureLoader = false;
 bool bHasOfficialFBOSupport = false;
 bool bHasOfficialGLTexAllocSupport = true;
@@ -276,6 +278,7 @@ cvar_t *gl_fog = NULL;
 cvar_t *gl_wireframe = NULL;
 cvar_t *gl_ansio = NULL;
 cvar_t *developer = NULL;
+cvar_t* sv_cheats = NULL;
 cvar_t *gl_round_down = NULL;
 cvar_t *gl_picmip = NULL;
 cvar_t *gl_max_size = NULL;
@@ -316,6 +319,16 @@ bool R_IsRenderingGBuffer()
 qboolean Host_IsSinglePlayerGame()
 {
 	return gPrivateFuncs.Host_IsSinglePlayerGame();
+}
+
+bool AllowCheats()
+{
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		return (*allow_cheats) != 0;
+	}
+
+	return (sv_cheats->value != 0) ? true : false;
 }
 
 /*
@@ -2368,6 +2381,8 @@ void R_InitCvars(void)
 
 	developer = gEngfuncs.pfnGetCvarPointer("developer");
 
+	sv_cheats = gEngfuncs.pfnGetCvarPointer("sv_cheats");
+
 	gEngfuncs.Cvar_SetValue("r_detailtextures", 1);
 
 	gl_ansio = gEngfuncs.pfnGetCvarPointer("gl_ansio");
@@ -2460,7 +2475,7 @@ void R_ForceCVars(qboolean mp)
 	if (gPrivateFuncs.R_ForceCVars)
 		return gPrivateFuncs.R_ForceCVars(mp);
 
-	//TODO implement this for 3266
+	//TODO implement this for 3266, inlined ?
 }
 
 void R_AddReferencedTextures(std::set<int> &textures)

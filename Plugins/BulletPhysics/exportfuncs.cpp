@@ -39,6 +39,7 @@ cvar_t *bv_ragdoll_sleepaftertime = NULL;
 cvar_t *bv_ragdoll_sleeplinearvel = NULL;
 cvar_t *bv_ragdoll_sleepangularvel = NULL;
 cvar_t *chase_active = NULL;
+cvar_t* sv_cheats = NULL;
 
 const int RagdollRenderState_None = 0;
 const int RagdollRenderState_Monster = 1;
@@ -56,6 +57,16 @@ model_t* r_worldmodel = NULL;
 cl_entity_t* r_worldentity = NULL;
 
 model_t* CounterStrike_RedirectPlayerModel(model_t* original_model, int PlayerNumber, int* modelindex);
+
+bool AllowCheats()
+{
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		return (*allow_cheats) != 0;
+	}
+
+	return (sv_cheats->value != 0) ? true : false;
+}
 
 typedef enum
 {
@@ -1384,6 +1395,7 @@ void HUD_Init(void)
 	bv_ragdoll_sleeplinearvel = gEngfuncs.pfnRegisterVariable("bv_ragdoll_sleeplinearvel", "5", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_ragdoll_sleepangularvel = gEngfuncs.pfnRegisterVariable("bv_ragdoll_sleepangularvel", "3", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
+	sv_cheats = gEngfuncs.pfnGetCvarPointer("sv_cheats");
 	chase_active = gEngfuncs.pfnGetCvarPointer("chase_active");
 	cl_minmodels = gEngfuncs.pfnGetCvarPointer("cl_minmodels");
 	cl_min_ct = gEngfuncs.pfnGetCvarPointer("cl_min_ct");
@@ -1573,7 +1585,10 @@ void HUD_DrawNormalTriangles(void)
 {
 	gExportfuncs.HUD_DrawNormalTriangles();
 
-	gPhysicsManager.DebugDraw();
+	if (AllowCheats())
+	{
+		gPhysicsManager.DebugDraw();
+	}
 }
 
 void HUD_CreateEntities(void)

@@ -43,6 +43,9 @@ void* mod_known = NULL;
 int* mod_numknown = NULL;
 TEMPENTITY* gTempEnts = NULL;
 
+//Sven Co-op only
+int* allow_cheats = NULL;
+
 int* g_iUser1 = NULL;
 int* g_iUser2 = NULL;
 
@@ -147,6 +150,41 @@ void Engine_FillAddreess(void)
 			Sig_AddrNotFound(gTempEnts);
 			gTempEnts = *(decltype(gTempEnts)*)(addr + 8);
 		}
+	}
+
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		auto CL_Set_ServerExtraInfo = g_pMetaHookAPI->FindCLParseFuncByName("svc_sendextrainfo");
+
+		Sig_VarNotFound(CL_Set_ServerExtraInfo);
+
+		g_pMetaHookAPI->DisasmRanges(CL_Set_ServerExtraInfo, 0x100, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			{
+				auto pinst = (cs_insn*)inst;
+
+				if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].type == X86_OP_REG &&
+					pinst->detail->x86.operands[1].reg == X86_REG_EAX)
+				{
+					allow_cheats = (decltype(allow_cheats))pinst->detail->x86.operands[0].mem.disp;
+				}
+
+				if (allow_cheats)
+					return TRUE;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+
+		}, 0, NULL);
+
+		Sig_VarNotFound(allow_cheats);
 	}
 
 	if (g_iEngineType == ENGINE_SVENGINE)

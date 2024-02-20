@@ -103,192 +103,53 @@ void HUD_DrawTransparentTriangles(void)
 int HUD_Redraw(float time, int intermission)
 {
 	//TODO
-	if(r_water_debug && r_water_debug->value > 0)
+	if (AllowCheats())
 	{
-		glDisable(GL_BLEND);
-		glDisable(GL_ALPHA_TEST);
-		glColor4f(1, 1, 1, 1);
-
-		glEnable(GL_TEXTURE_2D);
-		switch ((int)r_water_debug->value)
+		if (r_water_debug && r_water_debug->value > 0)
 		{
-		case 1:
-			if (g_WaterReflectCaches[0].reflectmap)
-				R_DrawHUDQuad_Texture(g_WaterReflectCaches[0].reflectmap, glwidth / 2, glheight / 2);
-			break;
-		case 2:
-			if (g_WaterReflectCaches[0].refractmap)
-				R_DrawHUDQuad_Texture(g_WaterReflectCaches[0].refractmap, glwidth / 2, glheight / 2);
-			break;
-		case 3:
-			if (g_WaterReflectCaches[1].reflectmap)
-				R_DrawHUDQuad_Texture(g_WaterReflectCaches[1].reflectmap, glwidth / 2, glheight / 2);
-			break;
-		case 4:
-			if (g_WaterReflectCaches[1].refractmap)
-				R_DrawHUDQuad_Texture(g_WaterReflectCaches[1].refractmap, glwidth / 2, glheight / 2);
-			break;
-		//case 3:
-		//	R_DrawHUDQuad_Texture(g_LastPortalTextureId, glwidth / 2, glheight / 2);
-		//	break;
-		default:
-			break;
+			glDisable(GL_BLEND);
+			glDisable(GL_ALPHA_TEST);
+			glColor4f(1, 1, 1, 1);
+
+			glEnable(GL_TEXTURE_2D);
+			switch ((int)r_water_debug->value)
+			{
+			case 1:
+				if (g_WaterReflectCaches[0].reflectmap)
+					R_DrawHUDQuad_Texture(g_WaterReflectCaches[0].reflectmap, glwidth / 2, glheight / 2);
+				break;
+			case 2:
+				if (g_WaterReflectCaches[0].refractmap)
+					R_DrawHUDQuad_Texture(g_WaterReflectCaches[0].refractmap, glwidth / 2, glheight / 2);
+				break;
+			case 3:
+				if (g_WaterReflectCaches[1].reflectmap)
+					R_DrawHUDQuad_Texture(g_WaterReflectCaches[1].reflectmap, glwidth / 2, glheight / 2);
+				break;
+			case 4:
+				if (g_WaterReflectCaches[1].refractmap)
+					R_DrawHUDQuad_Texture(g_WaterReflectCaches[1].refractmap, glwidth / 2, glheight / 2);
+				break;
+				//case 3:
+				//	R_DrawHUDQuad_Texture(g_LastPortalTextureId, glwidth / 2, glheight / 2);
+				//	break;
+			default:
+				break;
+			}
 		}
-	}
-	else if(r_shadow_debug && r_shadow_debug->value && current_shadow_texture && current_shadow_texture->depth_stencil)
-	{
-		glDisable(GL_BLEND);
-		glDisable(GL_ALPHA_TEST);
-		glColor4f(1,1,1,1);
-
-		glEnable(GL_TEXTURE_2D);
-
-		GL_Bind(current_shadow_texture->depth_stencil);
-
-		hud_debug_program_t prog = { 0 };
-		R_UseHudDebugProgram(HUD_DEBUG_SHADOW, &prog);
-
-		glBegin(GL_QUADS);
-		glTexCoord2f(0,1);
-		glVertex3f(0,0,0);
-		glTexCoord2f(1,1);
-		glVertex3f(glwidth/2,0,0);
-		glTexCoord2f(1,0);
-		glVertex3f(glwidth/2,glheight/2,0);
-		glTexCoord2f(0,0);
-		glVertex3f(0,glheight/2,0);
-		glEnd();
-
-		glEnable(GL_ALPHA_TEST);
-		glEnable(GL_BLEND);
-		GL_UseProgram(0);
-	}
-	else if(r_light_debug && r_light_debug->value)
-	{
-		glDisable(GL_BLEND);
-		glDisable(GL_ALPHA_TEST);
-		glColor4f(1,1,1,1);
-
-		glDisable(GL_TEXTURE_2D);
-		glEnable(GL_TEXTURE_2D_ARRAY);
-
-		hud_debug_program_t prog = {0};
-		R_UseHudDebugProgram(HUD_DEBUG_TEXARRAY, &prog);
-
-		glBindTexture(GL_TEXTURE_2D_ARRAY, s_GBufferFBO.s_hBackBufferTex);
-
-		if (prog.layer != -1)
-			glUniform1f(prog.layer, r_light_debug->value - 1);
-
-		glBegin(GL_QUADS);
-		glTexCoord2f(0,1);
-		glVertex3f(0,0,0);
-		glTexCoord2f(1,1);
-		glVertex3f(glwidth/2,0,0);
-		glTexCoord2f(1,0);
-		glVertex3f(glwidth/2,glheight/2,0);
-		glTexCoord2f(0,0);
-		glVertex3f(0,glheight/2,0);
-		glEnd();
-
-		glEnable(GL_TEXTURE_2D);
-		glDisable(GL_TEXTURE_2D_ARRAY);
-
-		glEnable(GL_ALPHA_TEST);
-
-		GL_UseProgram(0);
-	}
-	else if(r_hdr_debug && r_hdr_debug->value)
-	{
-		glDisable(GL_BLEND);
-		glDisable(GL_ALPHA_TEST);
-		glColor4f(1,1,1,1);
-
-		glEnable(GL_TEXTURE_2D);
-		FBO_Container_t *pFBO = NULL;
-		switch((int)r_hdr_debug->value)
+		else if (r_shadow_debug && r_shadow_debug->value && current_shadow_texture && current_shadow_texture->depth_stencil)
 		{
-		case 1:
-			pFBO = &s_DownSampleFBO[0];break;
-		case 2:
-			pFBO = &s_DownSampleFBO[1];break;
-		case 3:
-			pFBO = &s_LuminFBO[0]; break;
-		case 4:
-			pFBO = &s_LuminFBO[1]; break;
-		case 5:
-			pFBO = &s_LuminFBO[2]; break;
-		case 6:
-			pFBO = &s_Lumin1x1FBO[0]; break;
-		case 7:
-			pFBO = &s_Lumin1x1FBO[1]; break;
-		case 8:
-			pFBO = &s_Lumin1x1FBO[2]; break;
-		case 9:
-			pFBO = &s_BrightPassFBO;break;
-		case 10:
-			pFBO = &s_BlurPassFBO[0][0];break;
-		case 11:
-			pFBO = &s_BlurPassFBO[0][1];break;
-		case 12:
-			pFBO = &s_BlurPassFBO[1][0];break;
-		case 13:
-			pFBO = &s_BlurPassFBO[1][1];break;
-		case 14:
-			pFBO = &s_BlurPassFBO[2][0];break;
-		case 15:
-			pFBO = &s_BlurPassFBO[2][1];break;
-		case 16:
-			pFBO = &s_BrightAccumFBO;break;
-		case 17:
-			pFBO = &s_ToneMapFBO;break;
-		case 18:
-			pFBO = &s_BackBufferFBO; break;
-		default:
-			break;
-		}
+			glDisable(GL_BLEND);
+			glDisable(GL_ALPHA_TEST);
+			glColor4f(1, 1, 1, 1);
 
-		if(pFBO)
-		{
-			glBindTexture(GL_TEXTURE_2D, pFBO->s_hBackBufferTex);
-			glBegin(GL_QUADS);
-			glTexCoord2f(0,1);
-			glVertex3f(0,0,0);
-			glTexCoord2f(1,1);
-			glVertex3f(glwidth/2, 0,0);
-			glTexCoord2f(1,0);
-			glVertex3f(glwidth/2, glheight/2,0);
-			glTexCoord2f(0,0);
-			glVertex3f(0, glheight/2,0);
-			glEnd();
-		}
-	}
-	else if (r_ssao_debug && r_ssao_debug->value)
-	{
-		glDisable(GL_BLEND);
-		glDisable(GL_ALPHA_TEST);
-		glColor4f(1, 1, 1, 1);
+			glEnable(GL_TEXTURE_2D);
 
-		glEnable(GL_TEXTURE_2D);
-		int texId = 0;
-		switch ((int)r_ssao_debug->value)
-		{	
-		case 1:
-			//GL_UseProgram(drawdepth.program);
-			texId = s_BackBufferFBO.s_hBackBufferDepthTex; break;
-		case 2:
-			texId = s_DepthLinearFBO.s_hBackBufferTex; break;
-		case 3:
-			texId = s_HBAOCalcFBO.s_hBackBufferTex; break;
-		case 4:
-			texId = s_HBAOCalcFBO.s_hBackBufferTex2; break;
-		default:
-			break;
-		}
+			GL_Bind(current_shadow_texture->depth_stencil);
 
-		if (texId)
-		{
-			glBindTexture(GL_TEXTURE_2D, texId);
+			hud_debug_program_t prog = { 0 };
+			R_UseHudDebugProgram(HUD_DEBUG_SHADOW, &prog);
+
 			glBegin(GL_QUADS);
 			glTexCoord2f(0, 1);
 			glVertex3f(0, 0, 0);
@@ -300,9 +161,152 @@ int HUD_Redraw(float time, int intermission)
 			glVertex3f(0, glheight / 2, 0);
 			glEnd();
 
+			glEnable(GL_ALPHA_TEST);
+			glEnable(GL_BLEND);
 			GL_UseProgram(0);
 		}
+		else if (r_light_debug && r_light_debug->value)
+		{
+			glDisable(GL_BLEND);
+			glDisable(GL_ALPHA_TEST);
+			glColor4f(1, 1, 1, 1);
+
+			glDisable(GL_TEXTURE_2D);
+			glEnable(GL_TEXTURE_2D_ARRAY);
+
+			hud_debug_program_t prog = { 0 };
+			R_UseHudDebugProgram(HUD_DEBUG_TEXARRAY, &prog);
+
+			glBindTexture(GL_TEXTURE_2D_ARRAY, s_GBufferFBO.s_hBackBufferTex);
+
+			if (prog.layer != -1)
+				glUniform1f(prog.layer, r_light_debug->value - 1);
+
+			glBegin(GL_QUADS);
+			glTexCoord2f(0, 1);
+			glVertex3f(0, 0, 0);
+			glTexCoord2f(1, 1);
+			glVertex3f(glwidth / 2, 0, 0);
+			glTexCoord2f(1, 0);
+			glVertex3f(glwidth / 2, glheight / 2, 0);
+			glTexCoord2f(0, 0);
+			glVertex3f(0, glheight / 2, 0);
+			glEnd();
+
+			glEnable(GL_TEXTURE_2D);
+			glDisable(GL_TEXTURE_2D_ARRAY);
+
+			glEnable(GL_ALPHA_TEST);
+
+			GL_UseProgram(0);
+		}
+		else if (r_hdr_debug && r_hdr_debug->value)
+		{
+			glDisable(GL_BLEND);
+			glDisable(GL_ALPHA_TEST);
+			glColor4f(1, 1, 1, 1);
+
+			glEnable(GL_TEXTURE_2D);
+			FBO_Container_t* pFBO = NULL;
+			switch ((int)r_hdr_debug->value)
+			{
+			case 1:
+				pFBO = &s_DownSampleFBO[0]; break;
+			case 2:
+				pFBO = &s_DownSampleFBO[1]; break;
+			case 3:
+				pFBO = &s_LuminFBO[0]; break;
+			case 4:
+				pFBO = &s_LuminFBO[1]; break;
+			case 5:
+				pFBO = &s_LuminFBO[2]; break;
+			case 6:
+				pFBO = &s_Lumin1x1FBO[0]; break;
+			case 7:
+				pFBO = &s_Lumin1x1FBO[1]; break;
+			case 8:
+				pFBO = &s_Lumin1x1FBO[2]; break;
+			case 9:
+				pFBO = &s_BrightPassFBO; break;
+			case 10:
+				pFBO = &s_BlurPassFBO[0][0]; break;
+			case 11:
+				pFBO = &s_BlurPassFBO[0][1]; break;
+			case 12:
+				pFBO = &s_BlurPassFBO[1][0]; break;
+			case 13:
+				pFBO = &s_BlurPassFBO[1][1]; break;
+			case 14:
+				pFBO = &s_BlurPassFBO[2][0]; break;
+			case 15:
+				pFBO = &s_BlurPassFBO[2][1]; break;
+			case 16:
+				pFBO = &s_BrightAccumFBO; break;
+			case 17:
+				pFBO = &s_ToneMapFBO; break;
+			case 18:
+				pFBO = &s_BackBufferFBO; break;
+			default:
+				break;
+			}
+
+			if (pFBO)
+			{
+				glBindTexture(GL_TEXTURE_2D, pFBO->s_hBackBufferTex);
+				glBegin(GL_QUADS);
+				glTexCoord2f(0, 1);
+				glVertex3f(0, 0, 0);
+				glTexCoord2f(1, 1);
+				glVertex3f(glwidth / 2, 0, 0);
+				glTexCoord2f(1, 0);
+				glVertex3f(glwidth / 2, glheight / 2, 0);
+				glTexCoord2f(0, 0);
+				glVertex3f(0, glheight / 2, 0);
+				glEnd();
+			}
+		}
+		else if (r_ssao_debug && r_ssao_debug->value)
+		{
+			glDisable(GL_BLEND);
+			glDisable(GL_ALPHA_TEST);
+			glColor4f(1, 1, 1, 1);
+
+			glEnable(GL_TEXTURE_2D);
+			int texId = 0;
+			switch ((int)r_ssao_debug->value)
+			{
+			case 1:
+				//GL_UseProgram(drawdepth.program);
+				texId = s_BackBufferFBO.s_hBackBufferDepthTex; break;
+			case 2:
+				texId = s_DepthLinearFBO.s_hBackBufferTex; break;
+			case 3:
+				texId = s_HBAOCalcFBO.s_hBackBufferTex; break;
+			case 4:
+				texId = s_HBAOCalcFBO.s_hBackBufferTex2; break;
+			default:
+				break;
+			}
+
+			if (texId)
+			{
+				glBindTexture(GL_TEXTURE_2D, texId);
+				glBegin(GL_QUADS);
+				glTexCoord2f(0, 1);
+				glVertex3f(0, 0, 0);
+				glTexCoord2f(1, 1);
+				glVertex3f(glwidth / 2, 0, 0);
+				glTexCoord2f(1, 0);
+				glVertex3f(glwidth / 2, glheight / 2, 0);
+				glTexCoord2f(0, 0);
+				glVertex3f(0, glheight / 2, 0);
+				glEnd();
+
+				GL_UseProgram(0);
+			}
+		}
 	}
+
 	return gExportfuncs.HUD_Redraw(time, intermission);
 }
 

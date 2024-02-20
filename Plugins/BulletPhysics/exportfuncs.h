@@ -30,3 +30,4 @@ void HUD_CreateEntities(void);
 
 msurface_t* GetWorldSurfaceByIndex(int index);
 int GetWorldSurfaceIndex(msurface_t* surf);
+bool AllowCheats();

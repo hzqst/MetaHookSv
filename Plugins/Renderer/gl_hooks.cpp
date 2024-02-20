@@ -4234,8 +4234,37 @@ void R_FillAddress(void)
 		gDevOverview = (decltype(gDevOverview))ctx.Candidates[0];
 
 		Sig_VarNotFound(gDevOverview);
+	}
 
+	if (g_iEngineType == ENGINE_SVENGINE)
+	{
+		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.CL_IsDevOverviewMode, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+			{
+				auto pinst = (cs_insn*)inst;
 
+				if (pinst->id == X86_INS_CMP &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[1].imm == 0)
+				{
+
+					allow_cheats = (decltype(allow_cheats))pinst->detail->x86.operands[0].mem.disp;
+				}
+
+				if (allow_cheats)
+					return TRUE;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+			}, 0, NULL);
+
+		Sig_VarNotFound(allow_cheats);
 	}
 
 	if (1)

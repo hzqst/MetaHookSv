@@ -191,6 +191,8 @@ extern bool* detTexSupported;
 
 extern cache_system_t(*cache_head);
 
+extern int* allow_cheats;
+
 extern int* allocated_textures;
 
 extern int glx;
@@ -330,6 +332,7 @@ void R_RenderView_SvEngine(int a1);
 bool R_IsRenderingPortal(void);
 qboolean R_CullBox(vec3_t mins, vec3_t maxs);
 qboolean Host_IsSinglePlayerGame();
+bool AllowCheats();
 void R_ForceCVars(qboolean mp);
 void R_NewMap(void);
 void GL_BuildLightmaps(void);
