@@ -40,7 +40,7 @@ Q: This is because Valve uses `gethostbyname` with an non-existing hostname to q
 
 You can either add `-nomaster` to launch paramaters to prevent engine from querying invalid hostname or add `-steam` launch paramaters to force engine to use a valid master server source (which probably not gonna work on pirated game).
 
-2. Why the game process hangs up for abount tens of seconds on exiting / on restarting ?
+2. Why the game process hangs up for tens of seconds on exiting / on restarting ?
 
 Q: This is because ThreadGuard.dll is waiting for Valve's network threads or similiar things to exit before actually exiting the game. See [ThreadGuard](https://github.com/hzqst/MetaHookSv#threadguard) for more details.
 
