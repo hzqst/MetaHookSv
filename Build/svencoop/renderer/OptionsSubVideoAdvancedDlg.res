@@ -176,10 +176,10 @@
 		"selected"		"0"
 	}
 
-	"SkyOcclusion"
+	"SkyFog"
 	{
 		"ControlName"		"CCvarToggleCheckButton"
-		"fieldName"		"SkyOcclusion"
+		"fieldName"		"SkyFog"
 		"xpos"		"20"
 		"ypos"		"214"
 		"wide"		"160"
@@ -189,7 +189,7 @@
 		"visible"		"1"
 		"enabled"		"1"
 		"tabPosition"		"9"
-		"labelText"		"#GameUI_SkyOcclusion"
+		"labelText"		"#GameUI_SkyFog"
 		"textAlignment"		"west"
 		"dulltext"		"0"
 		"brighttext"		"0"
