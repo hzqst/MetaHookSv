@@ -28,7 +28,7 @@ Lines start with # or / will be ignored.
 
 ### Replacement files location
 
-1. `\SteamLibrary\steamapps\common\Half-Life\(mod_directory)\resreplacer\default_global.gmr(.gsr)` will be used at global model(sound) replacement files, and will be loaded only on client initialiaztion.
+1. `\SteamLibrary\steamapps\common\Half-Life\(mod_directory)\resreplacer\default_global.gmr(.gsr)` will be used as global model(sound) replacement files, and will be loaded only at client initialiaztion.
 
 2. `\SteamLibrary\steamapps\common\Half-Life\(mod_directory)\maps\(current_map_name).gmr(.gsr)` with be used on each new map.
 
