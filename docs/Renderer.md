@@ -735,7 +735,7 @@ You can use [bspguy](https://github.com/wootguy/bspguy) to add entity to BSP fil
 | "level" "WATER_LEVEL_REFLECT_ENTITY" | skybox, world, entities and particles are reflected                         |
 | "level" "4"                          | use SSR to reflect, only pixeles in screen-space are reflected              |
 | "level" "WATER_LEVEL_REFLECT_SSR"    | use SSR to reflect, only pixeles in screen-space are reflected              |
-| "level" "5"                          | use SSR to reflect, only pixeles in screen-space are reflected              |
+| "level" "5"                          | render as legacy water, software-mode style, with pixel-art ripple effects  |
 | "level" "WATER_LEVEL_LEGACY_RIPPLE"  | render as legacy water, software-mode style, with pixel-art ripple effects  |
 
 ## light_dynamic
