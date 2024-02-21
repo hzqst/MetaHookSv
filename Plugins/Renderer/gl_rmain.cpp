@@ -299,6 +299,8 @@ cvar_t *viewmodel_fov = NULL;
 cvar_t *r_vertical_fov = NULL;
 cvar_t* gl_widescreen_yfov = NULL;
 
+cvar_t* cl_fixmodelinterpolationartifacts = NULL;
+
 cvar_t *gl_profile = NULL;
 
 cvar_t *gl_bindless = NULL;
@@ -315,6 +317,10 @@ bool R_IsRenderingGBuffer()
 {
 	return GL_GetCurrentRenderingFBO() == &s_GBufferFBO;
 }
+
+/*
+	urpose : Check if we are in SinglePlayer game
+*/
 
 qboolean Host_IsSinglePlayerGame()
 {
@@ -342,6 +348,30 @@ qboolean R_CullBox(vec3_t mins, vec3_t maxs)
 
 	return gPrivateFuncs.R_CullBox(mins, maxs);
 }
+
+/*
+	Purpose : Implement "cl_fixmodelinterpolationartifacts" for pre-HL25 engine
+*/
+
+void R_ResetLatched_Patched(cl_entity_t* ent, qboolean full_reset)
+{
+	if (cl_fixmodelinterpolationartifacts && cl_fixmodelinterpolationartifacts->value)
+	{
+		auto at = ent->curstate.animtime;
+
+		gPrivateFuncs.R_ResetLatched(ent, full_reset);
+
+		ent->latched.prevanimtime = ent->curstate.animtime = at;
+	}
+	else
+	{
+		gPrivateFuncs.R_ResetLatched(ent, full_reset);
+	}
+}
+
+/*
+	Purpose : Setup world matrix for this entity
+*/
 
 void R_RotateForEntity(cl_entity_t *e)
 {
@@ -2409,6 +2439,10 @@ void R_InitCvars(void)
 	gl_widescreen_yfov = gEngfuncs.pfnGetCvarPointer("gl_widescreen_yfov");
 	if(!gl_widescreen_yfov)
 		gl_widescreen_yfov = gEngfuncs.pfnRegisterVariable("gl_widescreen_yfov", "0", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
+
+	cl_fixmodelinterpolationartifacts = gEngfuncs.pfnGetCvarPointer("cl_fixmodelinterpolationartifacts");
+	if (!cl_fixmodelinterpolationartifacts)
+		cl_fixmodelinterpolationartifacts = gEngfuncs.pfnRegisterVariable("cl_fixmodelinterpolationartifacts", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gl_profile = gEngfuncs.pfnRegisterVariable("gl_profile", "0", FCVAR_CLIENTDLL );
 

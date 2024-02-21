@@ -319,6 +319,7 @@ void R_UninstallHooksForEngineStudioInterface(void);
 void R_UninstallHooksForEngineDLL(void);
 void R_UninstallHooksForClientDLL(void);
 void R_RedirectLegacyOpenGLTextureAllocation(void);
+void R_PatchResetLatched(void);
 
 void GammaToLinear(float *color);
 void R_LoadSkyBox_SvEngine(const char *name);
@@ -371,6 +372,7 @@ void R_DrawTEntitiesOnList(int onlyClientDraw);
 void R_DrawEntitiesForViewModel(void);
 void R_DrawTEntitiesForViewModel(void);
 void R_AddTEntity(cl_entity_t *pEnt);
+void R_ResetLatched_Patched(cl_entity_t* ent, qboolean full_reset);
 void GL_Shutdown(void);
 void GL_Init(void);
 void GL_BeginRendering(int *x, int *y, int *width, int *height);

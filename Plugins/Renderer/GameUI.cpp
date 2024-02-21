@@ -41,7 +41,7 @@ public:
 		m_pScreenSpaceReflection = new CCvarToggleCheckButton(this, "ScreenSpaceReflection", "#GameUI_ScreenSpaceReflection", "r_ssr");
 		m_pCelShade = new CCvarToggleCheckButton(this, "CelShade", "#GameUI_CelShade", "r_studio_celshade");
 		m_pAntiAliasing = new CCvarToggleCheckButton(this, "AntiAliasing", "#GameUI_AntiAliasing", "r_fxaa");
-		m_pSkyOcclusion = new CCvarToggleCheckButton(this, "SkyOcclusion", "#GameUI_SkyOcclusion", "r_wsurf_sky_occlusion");
+		m_pSkyFog = new CCvarToggleCheckButton(this, "SkyFog", "#GameUI_SkyFog", "r_wsurf_sky_fog");
 		m_pZPrepass = new CCvarToggleCheckButton(this, "ZPrepass", "#GameUI_ZPrepass", "r_wsurf_zprepass");
 		m_pHDR = new CCvarToggleCheckButton(this, "HDR", "#GameUI_HDR", "r_hdr");
 
@@ -53,7 +53,7 @@ public:
 		m_pTexGamma = new CCvarSlider(this, "TexGamma", "#GameUI_TexGamma", 1.8f, 3.0f, "texgamma", false);
 		m_pLightGamma = new CCvarSlider(this, "LightGamma", "#GameUI_LightGamma", 1.8f, 3.0f, "lightgamma", false);
 
-		LoadControlSettings("captionmod/OptionsSubVideoAdvancedDlg.res");
+		LoadControlSettings("renderer/OptionsSubVideoAdvancedDlg.res");
 	}
 
 	void ApplyChangesToConVar(const char *pConVarName, int value)
@@ -83,7 +83,7 @@ public:
 		ApplyChangesToConVar(m_pScreenSpaceReflection->GetCvarName(), m_pScreenSpaceReflection->IsSelected());
 		ApplyChangesToConVar(m_pCelShade->GetCvarName(), m_pCelShade->IsSelected());
 		ApplyChangesToConVar(m_pAntiAliasing->GetCvarName(), m_pAntiAliasing->IsSelected());
-		ApplyChangesToConVar(m_pSkyOcclusion->GetCvarName(), m_pSkyOcclusion->IsSelected());
+		ApplyChangesToConVar(m_pSkyFog->GetCvarName(), m_pSkyFog->IsSelected());
 		ApplyChangesToConVar(m_pZPrepass->GetCvarName(), m_pZPrepass->IsSelected());
 		ApplyChangesToConVar(m_pHDR->GetCvarName(), m_pHDR->IsSelected());
 
@@ -110,7 +110,7 @@ public:
 		m_pScreenSpaceReflection->Reset();
 		m_pCelShade->Reset();
 		m_pAntiAliasing->Reset();
-		m_pSkyOcclusion->Reset();
+		m_pSkyFog->Reset();
 		m_pZPrepass->Reset();
 		m_pHDR->Reset();
 
@@ -172,7 +172,7 @@ private:
 	CCvarToggleCheckButton *m_pScreenSpaceReflection;
 	CCvarToggleCheckButton *m_pCelShade;
 	CCvarToggleCheckButton *m_pAntiAliasing;
-	CCvarToggleCheckButton *m_pSkyOcclusion;
+	CCvarToggleCheckButton * m_pSkyFog;
 	CCvarToggleCheckButton *m_pZPrepass;
 	CCvarToggleCheckButton *m_pHDR;
 

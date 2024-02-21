@@ -7803,3 +7803,78 @@ void R_RedirectLegacyOpenGLTextureAllocation(void)
 		}
 	}
 }
+
+void R_PatchResetLatched(void)
+{
+	if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		return;
+
+	const char pattern[] = "\x6A\x01\x2A\x2A\x2A\x08\x03\x00\x00";
+
+	PUCHAR SearchBegin = (PUCHAR)g_dwEngineTextBase;
+	PUCHAR SearchLimit = (PUCHAR)g_dwEngineTextBase + g_dwEngineTextSize;
+	while (SearchBegin < SearchLimit)
+	{
+		PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
+		if (pFound)
+		{
+			typedef struct
+			{
+				bool bFoundMov308h;
+				bool bFoundResetLatched;
+			}PatchResetLatchedContext;
+
+			PatchResetLatchedContext ctx = { 0 };
+
+			g_pMetaHookAPI->DisasmRanges(pFound, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+				auto pinst = (cs_insn*)inst;
+				auto ctx = (PatchResetLatchedContext*)context;
+
+				if (pinst->id == X86_INS_MOV &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base != 0 &&
+					pinst->detail->x86.operands[0].mem.disp == 0x308 &&
+					(pinst->detail->x86.operands[1].type == X86_OP_REG || pinst->detail->x86.operands[1].type == X86_OP_IMM))
+				{
+					ctx->bFoundMov308h = true;
+					return FALSE;
+				}
+
+				if (ctx->bFoundMov308h && address[0] == 0xE8 && instLen == 5)
+				{
+					ctx->bFoundResetLatched = true;
+					gPrivateFuncs.R_ResetLatched = (decltype(gPrivateFuncs.R_ResetLatched))GetCallAddress(address);
+
+					g_pMetaHookAPI->InlinePatchRedirectBranch(address, R_ResetLatched_Patched, NULL);
+
+					return TRUE;
+				}
+
+				if (ctx->bFoundResetLatched)
+					return TRUE;
+
+				if (address[0] == 0xCC)
+					return TRUE;
+
+				if (pinst->id == X86_INS_RET)
+					return TRUE;
+
+				return FALSE;
+
+				}, 0, &ctx);
+
+			if (ctx.bFoundResetLatched)
+			{
+				break;
+			}
+
+			SearchBegin = pFound + Sig_Length(pattern);
+		}
+		else
+		{
+			break;
+		}
+	}
+}

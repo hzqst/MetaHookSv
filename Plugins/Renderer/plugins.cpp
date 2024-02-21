@@ -80,6 +80,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	R_FillAddress();
 	R_InstallHooks();
 	R_RedirectLegacyOpenGLTextureAllocation();
+	R_PatchResetLatched();
 
 	VGUI2Extension_Init();
 	BaseUI_InstallHooks();
