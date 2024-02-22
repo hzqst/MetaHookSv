@@ -1229,6 +1229,8 @@ void Engine_FillAddress(void)
 
 void Client_FillAddress(void)
 {
+	g_hClientModule = g_pMetaHookAPI->GetClientModule();
+
 	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
 	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
 
