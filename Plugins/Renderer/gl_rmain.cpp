@@ -3772,6 +3772,8 @@ void R_RenderScene(void)
 	{
 		GL_EndProfile(&Profile_RenderScene);
 	}
+
+	R_DisableRenderingFog();
 }
 
 int EngineGetMaxGLTextures()
