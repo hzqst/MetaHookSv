@@ -323,7 +323,25 @@ cvar_t *r_alpha_shift = NULL;
 cvar_t *r_additive_shift = NULL;
 
 /*
-	Purpose : Check if we are rendering with Fog
+	Purpose : Check if we can render fog
+*/
+
+bool R_CanRenderFog()
+{
+	if (!(*r_refdef.onlyClientDraws))
+		return false;
+
+	if (CL_IsDevOverviewMode())
+		return false;
+
+	if (r_draw_reflectview)
+		return false;
+
+	return true;
+}
+
+/*
+	Purpose : Check if we are rendering with fog
 */
 
 bool R_IsRenderingFog()
@@ -3335,7 +3353,7 @@ void R_SetupFrame(void)
 
 	R_DisableRenderingFog();
 
-	if (!r_draw_reflectview && !(*r_refdef.onlyClientDraws))
+	if (R_CanRenderFog())
 	{
 		if ((*cl_waterlevel) > 2)
 		{
