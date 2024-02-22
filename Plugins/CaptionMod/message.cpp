@@ -2038,8 +2038,12 @@ int CHudMenu::Draw(void)
 			nlc++;
 	}
 
-	int border = (gPrivateFuncs.CHud_GetBorderSize && gHud) ? gPrivateFuncs.CHud_GetBorderSize(gHud, 0) : 15;
-	menu_x = border + 5;
+	int border = (gPrivateFuncs.CHud_GetBorderSize && gHud) ? (gPrivateFuncs.CHud_GetBorderSize(gHud, 0) + 5) : 15;
+	
+	int base_x = vgui::scheme()->GetProportionalScaledValue(border);
+
+	menu_x = base_x;
+
 	menu_r = 255;
 	menu_g = 255;
 	menu_b = 255;
@@ -2054,7 +2058,7 @@ int CHudMenu::Draw(void)
 	ScreenWidth = si.iWidth;
 	ScreenHeight = si.iHeight;
 
-	int y = (ScreenHeight / 2) - ((nlc / 2) * m_iFontEngineHeight + 40);
+	int y = (ScreenHeight / 2) - ((nlc / 2) * m_iFontEngineHeight + vgui::scheme()->GetProportionalScaledValue(40));
 	const char *sptr = m_szMenuString;
 	int i;
 	char menubuf[80];
@@ -2133,8 +2137,9 @@ int CHudMenu::Draw(void)
 		if (*sptr == '\n')
 		{
 			menu_ralign = 0;
-			menu_x = 20;
+			menu_x = base_x;
 			y += m_iFontEngineHeight;
+			y += vgui::scheme()->GetProportionalScaledValue(2);
 			sptr += 1;
 			continue;
 		}
