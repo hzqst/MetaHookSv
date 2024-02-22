@@ -1229,14 +1229,26 @@ void Engine_FillAddress(void)
 
 void Client_FillAddress(void)
 {
-	ULONG ClientTextSize = g_dwClientTextSize;
-	auto ClientTextBase = g_dwClientTextBase;
+	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
+	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
 
-	ULONG ClientDataSize = 0;
-	auto ClientDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".data\0\0\0", &ClientDataSize);
+	g_dwClientTextBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".text\0\0\0", &g_dwClientTextSize);
 
-	ULONG ClientRDataSize = 0;
-	auto ClientRDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".rdata\0\0", &ClientRDataSize);
+	if (!g_dwClientTextBase)
+	{
+		Sys_Error("Failed to locate section \".text\" in client.dll!");
+		return;
+	}
+
+	g_dwClientDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".data\0\0\0", &g_dwClientDataSize);
+
+	if (!g_dwClientDataBase)
+	{
+		Sys_Error("Failed to locate section \".text\" in client.dll!");
+		return;
+	}
+
+	g_dwClientRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".rdata\0\0", &g_dwClientRdataSize);
 
 	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
 
@@ -1247,7 +1259,7 @@ void Client_FillAddress(void)
 		if(1)
 		{
 			char pattern[] = "\x8B\x40\x28\xFF\xD0\x84\xC0\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00";
-			auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+			auto addr = (PUCHAR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 
 			Sig_AddrNotFound(g_iVisibleMouse);
 

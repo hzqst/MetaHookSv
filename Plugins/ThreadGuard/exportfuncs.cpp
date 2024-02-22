@@ -37,4 +37,8 @@ void EngineCommand_InstallHook(void)
 		g_pfn_Host_KillServer_f = entry->function;
 		g_pfn_Host_Quit_Restart_f = g_pMetaHookAPI->HookCmd("_restart", Host_Quit_Restart_f);
 	}
+	else
+	{
+		Sys_Error("Command \"shutdownserver\" not found!");
+	}
 }

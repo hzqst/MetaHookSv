@@ -12,7 +12,6 @@
 
 #include <rapidjson/document.h>
 
-const char* SCModel_GetBaseUrl();
 bool SCModel_ShouldDownloadLatest();
 void SCModel_ReloadModel(const char* name);
 

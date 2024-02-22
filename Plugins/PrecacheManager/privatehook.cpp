@@ -35,6 +35,7 @@ void Engine_FillAddreess()
 
 					cl_resourcesonhand = (decltype(cl_resourcesonhand))imm;
 				}
+
 				if (cl_resourcesonhand)
 					return TRUE;
 
@@ -45,6 +46,6 @@ void Engine_FillAddreess()
 					return TRUE;
 
 				return FALSE;
-			}, 0, NULL);
+		}, 0, NULL);
 	}
 }

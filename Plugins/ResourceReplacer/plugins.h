@@ -3,8 +3,9 @@
 #include <metahook.h>
 
 class IFileSystem;
+extern IFileSystem* g_pFileSystem;
 
-extern HINSTANCE g_hInstance, g_hThisModule, g_hEngineModule;
+extern int g_iEngineType;
 extern PVOID g_dwEngineBase;
 extern DWORD g_dwEngineSize;
 extern PVOID g_dwEngineTextBase;
@@ -14,10 +15,6 @@ extern DWORD g_dwEngineDataSize;
 extern PVOID g_dwEngineRdataBase;
 extern DWORD g_dwEngineRdataSize;
 extern DWORD g_dwEngineBuildnum;
-extern int g_iEngineType;
-extern IFileSystem *g_pFileSystem;
-extern PVOID g_dwClientBase;
-extern DWORD g_dwClientSize;
 
 #define MHPluginName "PrecacheManager"
 #define Sys_Error(msg, ...) g_pMetaHookAPI->SysError("["  MHPluginName   "] " msg, __VA_ARGS__);

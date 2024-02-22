@@ -15,16 +15,10 @@
 
 cvar_t *scmodel_autodownload = NULL;
 cvar_t *scmodel_downloadlatest = NULL;
-cvar_t *scmodel_baseurl = NULL;
 
 cl_enginefunc_t gEngfuncs;
 engine_studio_api_t IEngineStudio;
 r_studio_interface_t **gpStudioInterface;
-
-const char* SCModel_GetBaseUrl()
-{
-	return scmodel_baseurl->string;
-}
 
 bool SCModel_ShouldDownloadLatest()
 {
@@ -97,8 +91,6 @@ void HUD_Init(void)
 	scmodel_autodownload = gEngfuncs.pfnRegisterVariable("scmodel_autodownload", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	scmodel_downloadlatest = gEngfuncs.pfnRegisterVariable("scmodel_downloadlatest", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-
-	scmodel_baseurl = gEngfuncs.pfnRegisterVariable("scmodel_baseurl", "", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 
 	gEngfuncs.pfnAddCommand("scmodel_reload", SCModel_Reload_f);
 

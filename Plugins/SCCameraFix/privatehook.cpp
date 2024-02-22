@@ -23,28 +23,28 @@ struct event_api_s** g_pClientDLLEventAPI = NULL;
 
 private_funcs_t gPrivateFuncs = { 0 };
 
-void Client_InstallHooks(void)
+void Client_FillAddress(void)
 {
-	if (!g_dwClientBase)
-		g_dwClientBase = g_pMetaHookAPI->GetClientBase();
+	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
+	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
 
-	if (!g_dwClientSize)
-		g_dwClientSize = g_pMetaHookAPI->GetClientSize();
+	g_dwClientTextBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".text\0\0\0", &g_dwClientTextSize);
 
-	ULONG ClientTextSize = 0;
-	PVOID ClientTextBase = ClientTextBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".text\0\0\0", &ClientTextSize);
-
-	if (!ClientTextBase)
+	if (!g_dwClientTextBase)
 	{
 		Sys_Error("Failed to locate section \".text\" in client.dll!");
 		return;
 	}
 
-	ULONG ClientDataSize = 0;
-	auto ClientDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".data\0\0\0", &ClientDataSize);
+	g_dwClientDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".data\0\0\0", &g_dwClientDataSize);
 
-	ULONG ClientRDataSize = 0;
-	auto ClientRDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".rdata\0\0", &ClientRDataSize);
+	if (!g_dwClientDataBase)
+	{
+		Sys_Error("Failed to locate section \".text\" in client.dll!");
+		return;
+	}
+
+	g_dwClientRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".rdata\0\0", &g_dwClientRdataSize);
 
 	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
 
@@ -53,7 +53,7 @@ void Client_InstallHooks(void)
 		if (1)
 		{
 			char pattern[] = "\xA1\x2A\x2A\x2A\x2A\x8B\x40\x3C\xFF\xD0\xA1\x2A\x2A\x2A\x2A\x6A\x01\x6A\x01";
-			auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+			auto addr = (PUCHAR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 			Sig_VarNotFound("CAM_Think_Pattern");
 
 			g_pClientDLLEventAPI = *(decltype(g_pClientDLLEventAPI)*)(addr + 1);
@@ -68,7 +68,7 @@ void Client_InstallHooks(void)
 	if (1)
 	{
 		const char pattern[] = "\x66\x0F\xD6\x05\x2A\x2A\x2A\x2A\x2A\x2A\x08\xA3\x2A\x2A\x2A\x2A\xF3\x0F\x2A\x2A\x0C";
-		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 		Sig_AddrNotFound(v_origin);
 		v_origin = (decltype(v_origin)) * (ULONG_PTR*)(addr + 4);
 	}
@@ -76,7 +76,7 @@ void Client_InstallHooks(void)
 	if (1)
 	{
 		const char pattern[] = "\xA3\x2A\x2A\x2A\x2A\x83\x2A\xE0\x00\x00\x00\x00\x0F\x85\x2A\x2A\x2A\x2A\x80\x3D\x2A\x2A\x2A\x2A\x00";
-		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 		Sig_AddrNotFound(g_bRenderingPortals);
 		g_iWaterLevel = (decltype(g_iWaterLevel)) * (ULONG_PTR*)(addr + 1);
 		g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient)) * (ULONG_PTR*)(addr + 20);
@@ -85,7 +85,7 @@ void Client_InstallHooks(void)
 	if (1)
 	{
 		const char pattern[] = "\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x85\x2A\x2A\x2A\x2A\x83\x3D\x2A\x2A\x2A\x2A\x00\x0F\x85\x2A\x2A\x2A\x2A\xE8";
-		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 		Sig_AddrNotFound(g_iIsSpectator);
 		g_iIsSpectator = (decltype(g_iIsSpectator)) * (ULONG_PTR*)(addr + 2);
 	}
@@ -93,7 +93,7 @@ void Client_InstallHooks(void)
 	if (1)
 	{
 		const char pattern[] = "\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x00\x00\xC7\x05\x2A\x2A\x2A\x2A\x00\x00\x00\x00\xFF\x15\x2A\x2A\x2A\x2A\x89\x2A\x2A\x2A\xFF\x15";
-		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 		Sig_AddrNotFound(g_pitchdrift);
 		g_pitchdrift = (decltype(g_pitchdrift)) * (ULONG_PTR*)(addr + 2);
 	}
@@ -101,7 +101,7 @@ void Client_InstallHooks(void)
 	if (1)
 	{
 		const char pattern[] = "\x2A\x2A\x48\x00\x75\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x04";
-		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 		Sig_AddrNotFound(V_CalcNormalRefdef);
 		gPrivateFuncs.V_CalcNormalRefdef = (decltype(gPrivateFuncs.V_CalcNormalRefdef))GetCallAddress(addr + 7);
 	}
@@ -109,7 +109,7 @@ void Client_InstallHooks(void)
 	if (1)
 	{
 		const char pattern[] = "\x68\x01\x26\x00\x00\x68\x65\x0B\x00\x00";
-		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+		ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 		Sig_AddrNotFound(g_iFogColor);
 
 		const char pattern2[] = "\xF3\x0F\x11\x05\x2A\x2A\x2A\x2A\xF3\x0F\x2A\x2A\x10\xF3\x0F\x11\x05\x2A\x2A\x2A\x2A\xF3\x0F\x2A\x2A\x14\xF3\x0F\x11\x05";
@@ -120,7 +120,7 @@ void Client_InstallHooks(void)
 			return;
 		}
 
-		g_vVecViewangles = (decltype(g_vVecViewangles))*(ULONG_PTR*)(addr2 + 4);
+		g_vVecViewangles = (decltype(g_vVecViewangles)) * (ULONG_PTR*)(addr2 + 4);
 
 		typedef struct
 		{
@@ -159,10 +159,10 @@ void Client_InstallHooks(void)
 
 			return FALSE;
 
-		}, 0, &ctx);
+			}, 0, &ctx);
 
 		if (ctx.iNumCandidates >= 5 &&
-			ctx.Candidates[ctx.iNumCandidates - 1] == ctx.Candidates[ctx.iNumCandidates - 2] + sizeof(int) && 
+			ctx.Candidates[ctx.iNumCandidates - 1] == ctx.Candidates[ctx.iNumCandidates - 2] + sizeof(int) &&
 			ctx.Candidates[ctx.iNumCandidates - 2] == ctx.Candidates[ctx.iNumCandidates - 3] + sizeof(int) &&
 			ctx.Candidates[ctx.iNumCandidates - 3] == ctx.Candidates[ctx.iNumCandidates - 4] + sizeof(int))
 		{
@@ -175,7 +175,7 @@ void Client_InstallHooks(void)
 	Sig_VarNotFound(g_iStartDist_SCClient);
 	Sig_VarNotFound(g_iEndDist_SCClient);
 
-	if ((void*)g_pMetaSave->pExportFuncs->CL_IsThirdPerson > ClientTextBase && (void*)g_pMetaSave->pExportFuncs->CL_IsThirdPerson < (PUCHAR)ClientTextBase + ClientTextSize)
+	if ((void*)g_pMetaSave->pExportFuncs->CL_IsThirdPerson > g_dwClientTextBase && (void*)g_pMetaSave->pExportFuncs->CL_IsThirdPerson < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
 	{
 		typedef struct
 		{
@@ -236,7 +236,8 @@ void Client_InstallHooks(void)
 				return TRUE;
 
 			return FALSE;
-		}, 0, &ctx);
+
+			}, 0, &ctx);
 
 		if (ctx.iNumCandidates >= 3 && ctx.Candidates[ctx.iNumCandidates - 1] == ctx.Candidates[ctx.iNumCandidates - 2] + sizeof(int))
 		{
@@ -244,6 +245,11 @@ void Client_InstallHooks(void)
 			g_iUser2 = (decltype(g_iUser2))ctx.Candidates[ctx.iNumCandidates - 1];
 		}
 	}
+}
+
+void Client_InstallHooks(void)
+{
+	
 }
 
 void Client_UninstallHooks(void)

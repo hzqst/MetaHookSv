@@ -4,7 +4,6 @@
 
 class IFileSystem;
 
-extern HINSTANCE g_hInstance, g_hThisModule, g_hEngineModule;
 extern PVOID g_dwEngineBase;
 extern DWORD g_dwEngineSize;
 extern PVOID g_dwEngineTextBase;

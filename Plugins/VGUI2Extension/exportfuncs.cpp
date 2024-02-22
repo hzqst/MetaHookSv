@@ -201,7 +201,7 @@ IBaseInterface *NewCreateInterface(const char *pName, int *pReturnCode)
 	if (pInterface)
 		return pInterface;
 
-	pfnCreateInterface = (decltype(NewCreateInterface) *)GetProcAddress(g_hClientDll, CREATEINTERFACE_PROCNAME);
+	pfnCreateInterface = (decltype(NewCreateInterface) *)GetProcAddress(g_hClientModule, CREATEINTERFACE_PROCNAME);
 	if (pfnCreateInterface)
 	{
 		pInterface = pfnCreateInterface(pName, pReturnCode);

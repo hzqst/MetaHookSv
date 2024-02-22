@@ -711,43 +711,6 @@ int __fastcall GameStudioRenderer_StudioDrawPlayer(void *pthis, int dummy, int f
 
 void EngineStudio_FillAddress(int version, struct r_studio_interface_s** ppinterface, struct engine_studio_api_s* pstudio)
 {
-	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "svencoop"))
-	{
-		g_bIsSvenCoop = true;
-	}
-	else if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "cstrike") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
-	{
-		g_bIsCounterStrike = true;
-
-		//g_PlayerExtraInfo
-		//66 85 C0 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ??
-		/*
-		.text:019A4575 66 85 C0                                            test    ax, ax
-		.text:019A4578 66 89 99 20 F4 A2 01                                mov     word_1A2F420[ecx], bx
-		.text:019A457F 66 89 A9 22 F4 A2 01                                mov     word_1A2F422[ecx], bp
-		.text:019A4586 66 89 91 48 F4 A2 01                                mov     word_1A2F448[ecx], dx
-		.text:019A458D 66 89 81 4A F4 A2 01                                mov     word_1A2F44A[ecx], ax
-		*/
-#define CSTRIKE_PLAYEREXTRAINFO_SIG      "\x66\x85\xC0\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89"
-#define CSTRIKE_PLAYEREXTRAINFO_SIG_HL25 "\x66\x89\x90\x2A\x2A\x2A\x2A\x8B\x55\x2A\x66\x89\x98\x2A\x2A\x2A\x2A\x66\x89\x90\x2A\x2A\x2A\x2A\x66\x89\x88"
-
-		auto addr = (ULONG_PTR)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, CSTRIKE_PLAYEREXTRAINFO_SIG, sizeof(CSTRIKE_PLAYEREXTRAINFO_SIG) - 1);
-		if (addr)
-		{
-			g_PlayerExtraInfo = *(decltype(g_PlayerExtraInfo)*)(addr + 6);
-		}
-		else
-		{
-			addr = (ULONG_PTR)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, CSTRIKE_PLAYEREXTRAINFO_SIG_HL25, sizeof(CSTRIKE_PLAYEREXTRAINFO_SIG_HL25) - 1);
-			if (addr)
-			{
-				g_PlayerExtraInfo = *(decltype(g_PlayerExtraInfo)*)(addr + 3);
-			}
-		}
-
-		Sig_VarNotFound(g_PlayerExtraInfo);
-
-	}
 	pbonetransform = (float(*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetBoneTransform();
 	plighttransform = (float(*)[MAXSTUDIOBONES][3][4])pstudio->StudioGetLightTransform();
 
@@ -851,7 +814,7 @@ void EngineStudio_FillAddress(int version, struct r_studio_interface_s** ppinter
 		Sig_VarNotFound(r_model);
 	}
 
-	if ((void*)(*ppinterface)->StudioDrawPlayer > g_dwClientBase && (void*)(*ppinterface)->StudioDrawPlayer < (PUCHAR)g_dwClientBase + g_dwClientSize)
+	if ((void*)(*ppinterface)->StudioDrawPlayer > g_dwClientTextBase && (void*)(*ppinterface)->StudioDrawPlayer < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
 	{
 		g_pMetaHookAPI->DisasmRanges((void*)(*ppinterface)->StudioDrawPlayer, 0x200, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 			{
@@ -862,8 +825,8 @@ void EngineStudio_FillAddress(int version, struct r_studio_interface_s** ppinter
 					pinst->detail->x86.operands[0].type == X86_OP_REG &&
 					pinst->detail->x86.operands[0].reg == X86_REG_ECX &&
 					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwClientBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwClientBase + g_dwClientSize)
+					(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwClientDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwClientDataBase + g_dwClientDataSize)
 				{
 					g_pGameStudioRenderer = (decltype(g_pGameStudioRenderer))pinst->detail->x86.operands[1].imm;
 				}
@@ -1499,7 +1462,20 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 {
 	memcpy(&r_params, pparams, sizeof(r_params));
 
+	if (pparams->intermission)
+		goto skip;
+
+	if (pparams->paused)
+		goto skip;
+
+	if (pparams->nextView)
+		goto skip;
+
+	if (g_bRenderingPortals_SCClient && (*g_bRenderingPortals_SCClient))
+		goto skip;
+
 	auto local = gEngfuncs.GetLocalPlayer();
+
 	if (local && local->player && bv_syncview->value)
 	{
 		auto spectating_player = local;

@@ -151,3 +151,5 @@ typedef struct
 }private_funcs_t;
 
 extern private_funcs_t gPrivateFuncs;
+
+void Client_FillAddress(void);

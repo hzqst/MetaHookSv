@@ -7879,3 +7879,27 @@ void R_PatchResetLatched(void)
 		}
 	}
 }
+
+void Client_FillAddress(void)
+{
+	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
+	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
+
+	g_dwClientTextBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".text\0\0\0", &g_dwClientTextSize);
+
+	if (!g_dwClientTextBase)
+	{
+		Sys_Error("Failed to locate section \".text\" in client.dll!");
+		return;
+	}
+
+	g_dwClientDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".data\0\0\0", &g_dwClientDataSize);
+
+	if (!g_dwClientDataBase)
+	{
+		Sys_Error("Failed to locate section \".text\" in client.dll!");
+		return;
+	}
+
+	g_dwClientRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".rdata\0\0", &g_dwClientRdataSize);
+}

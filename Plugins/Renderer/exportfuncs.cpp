@@ -986,7 +986,6 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
 
-	//Fix SvClient Portal Rendering Confliction
 	if (pfnClientFactory)
 	{
 		auto SCClient001 = pfnClientFactory("SCClientDLL001", 0);
@@ -995,16 +994,17 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			if (1)
 			{
 #define SCCLIENT_CLIENTPORTALMANAGER_RESETALL_SIG "\xC7\x45\x2A\xFF\xFF\xFF\xFF\xA3\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x8B\x0D"
-				DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SCCLIENT_CLIENTPORTALMANAGER_RESETALL_SIG, sizeof(SCCLIENT_CLIENTPORTALMANAGER_RESETALL_SIG) - 1);
+				ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, SCCLIENT_CLIENTPORTALMANAGER_RESETALL_SIG);
 
 				Sig_AddrNotFound(ClientPortalManager_ResetAll);
 
 				gPrivateFuncs.ClientPortalManager_ResetAll = (decltype(gPrivateFuncs.ClientPortalManager_ResetAll))GetCallAddress(addr + 12);
 			}
+
 			if (1)
 			{
 #define SCCLIENT_CLIENTPORTALMANAGER_GETORIGINALSURFACETEXTURE_SIG "\x8B\x2A\x24\x04\x83\xEC\x08\x2A\x2A\x2A\x2A\xC5\x9D\x1C\x81\x2A\x2A\x2A\x2A\x70\x2A\x2A\x6C"
-				DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SCCLIENT_CLIENTPORTALMANAGER_GETORIGINALSURFACETEXTURE_SIG, sizeof(SCCLIENT_CLIENTPORTALMANAGER_GETORIGINALSURFACETEXTURE_SIG) - 1);
+				ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, SCCLIENT_CLIENTPORTALMANAGER_GETORIGINALSURFACETEXTURE_SIG);
 
 				Sig_AddrNotFound(ClientPortalManager_GetOriginalSurfaceTexture);
 
@@ -1014,7 +1014,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			if (1)
 			{
 #define SCCLIENT_CLIENTPORTALMANAGER_DRAWPORTALSURFACE_SIG "\x83\xEC\x2A\x2A\x8B\x74\x24\x2A\x2A\x8B\x7C\x24\x2A\x89\x4C\x24\x2A\x83\x2A\x28\x01"
-				DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SCCLIENT_CLIENTPORTALMANAGER_DRAWPORTALSURFACE_SIG, sizeof(SCCLIENT_CLIENTPORTALMANAGER_DRAWPORTALSURFACE_SIG) - 1);
+				ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, SCCLIENT_CLIENTPORTALMANAGER_DRAWPORTALSURFACE_SIG);
 
 				Sig_AddrNotFound(ClientPortalManager_DrawPortalSurface);
 
@@ -1024,7 +1024,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			if (1)
 			{
 #define SCCLIENT_CLIENTPORTALMANAGER_ENABLECLIPPLANE_SIG "\x83\xEC\x2A\xA1\x2A\x2A\x2A\x2A\x33\xC4\x2A\x44\x24\x2A\x2A\x2A\x24\x2A\x2A\x2A\x24\x2A\x2A\x44\x24\x2A\xF3\x0F"
-				DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SCCLIENT_CLIENTPORTALMANAGER_ENABLECLIPPLANE_SIG, sizeof(SCCLIENT_CLIENTPORTALMANAGER_ENABLECLIPPLANE_SIG) - 1);
+				ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, SCCLIENT_CLIENTPORTALMANAGER_ENABLECLIPPLANE_SIG);
 
 				Sig_AddrNotFound(ClientPortalManager_EnableClipPlane);
 
@@ -1034,7 +1034,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 			if (1)
 			{
 #define SCCLIENT_ISRENDERINGPORTALS_SIG "\xFF\x50\x24\xC6\x05\x2A\x2A\x2A\x2A\x01"
-				DWORD addr = (DWORD)g_pMetaHookAPI->SearchPattern(g_dwClientBase, g_dwClientSize, SCCLIENT_ISRENDERINGPORTALS_SIG, sizeof(SCCLIENT_ISRENDERINGPORTALS_SIG) - 1);
+				ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, SCCLIENT_ISRENDERINGPORTALS_SIG);
 				Sig_AddrNotFound(g_bRenderingPortals);
 				g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient)) * (ULONG_PTR*)(addr + 5);
 			}
@@ -1047,7 +1047,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		}
 	}
 
-	if ((void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson > g_dwClientBase && (void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson < (PUCHAR)g_dwClientBase + g_dwClientSize)
+	if ((void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson > g_dwClientTextBase && (void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
 	{
 		typedef struct
 		{
@@ -1077,8 +1077,8 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 						) &&
 					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
 					pinst->detail->x86.operands[1].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwClientBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwClientBase + g_dwClientSize)
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwClientDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwClientDataBase + g_dwClientDataSize)
 				{
 					ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
 					ctx->iNumCandidates++;
@@ -1093,8 +1093,8 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 					pinst->detail->x86.operands[1].imm == 0 &&
 					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 					pinst->detail->x86.operands[0].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwClientBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwClientBase + g_dwClientSize)
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwClientDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwClientDataBase + g_dwClientDataSize)
 				{
 					ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
 					ctx->iNumCandidates++;
@@ -1108,7 +1108,8 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				return TRUE;
 
 			return FALSE;
-			}, 0, &ctx);
+
+		}, 0, &ctx);
 
 		if (ctx.iNumCandidates >= 3 && ctx.Candidates[ctx.iNumCandidates - 1] == ctx.Candidates[ctx.iNumCandidates - 2] + sizeof(int))
 		{
@@ -1122,11 +1123,12 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 		g_bIsCounterStrike = true;
 
 		spec_pip = gEngfuncs.pfnGetCvarPointer("spec_pip_internal");
+
 		if(!spec_pip)
 			spec_pip = gEngfuncs.pfnGetCvarPointer("spec_pip");
 	}
 
-	if ((void *)(*ppinterface)->StudioDrawPlayer > g_dwClientBase && (void *)(*ppinterface)->StudioDrawPlayer < (PUCHAR)g_dwClientBase + g_dwClientSize)
+	if ((void *)(*ppinterface)->StudioDrawPlayer > g_dwClientTextBase && (void *)(*ppinterface)->StudioDrawPlayer < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
 	{
 		g_pMetaHookAPI->DisasmRanges((void *)(*ppinterface)->StudioDrawPlayer, 0x200, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
 		{
@@ -1137,8 +1139,8 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				pinst->detail->x86.operands[0].type == X86_OP_REG &&
 				pinst->detail->x86.operands[0].reg == X86_REG_ECX &&
 				pinst->detail->x86.operands[1].type == X86_OP_IMM &&
-				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwClientBase &&
-				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwClientBase + g_dwClientSize)
+				(PUCHAR)pinst->detail->x86.operands[1].imm > (PUCHAR)g_dwClientDataBase &&
+				(PUCHAR)pinst->detail->x86.operands[1].imm < (PUCHAR)g_dwClientDataBase + g_dwClientDataSize)
 			{
 				g_pGameStudioRenderer = (decltype(g_pGameStudioRenderer))pinst->detail->x86.operands[1].imm;
 			}

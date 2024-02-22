@@ -827,29 +827,26 @@ void Engine_FillAddress(void)
 
 void Client_FillAddress(void)
 {
-	if (!g_hClientDll)
-		g_hClientDll = g_pMetaHookAPI->GetClientModule();
+	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
+	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
 
-	if (!g_dwClientBase)
-		g_dwClientBase = g_pMetaHookAPI->GetClientBase();
+	g_dwClientTextBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".text\0\0\0", &g_dwClientTextSize);
 
-	if (!g_dwClientSize)
-		g_dwClientSize = g_pMetaHookAPI->GetClientSize();
-
-	ULONG ClientTextSize = 0;
-	PVOID ClientTextBase = ClientTextBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".text\0\0\0", &ClientTextSize);
-	
-	if (!ClientTextBase)
+	if (!g_dwClientTextBase)
 	{
 		Sys_Error("Failed to locate section \".text\" in client.dll!");
 		return;
 	}
 
-	ULONG ClientDataSize = 0;
-	auto ClientDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".data\0\0\0", &ClientDataSize);
+	g_dwClientDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".data\0\0\0", &g_dwClientDataSize);
 
-	ULONG ClientRDataSize = 0;
-	auto ClientRDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".rdata\0\0", &ClientRDataSize);
+	if (!g_dwClientDataBase)
+	{
+		Sys_Error("Failed to locate section \".text\" in client.dll!");
+		return;
+	}
+
+	g_dwClientRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".rdata\0\0", &g_dwClientRdataSize);
 
 	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
 
@@ -860,7 +857,7 @@ void Client_FillAddress(void)
 		if (1)
 		{
 			char pattern[] = "\x6A\x00\x50\x6A\xFF\x6A\x08\xE8\x2A\x2A\x2A\x2A\x2A\x2A\xE8";
-			auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+			auto addr = (PUCHAR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 			Sig_VarNotFound("ScClient_SoundEngine_PlayFMODSound");
 
 			gPrivateFuncs.ScClient_SoundEngine_PlayFMODSound = (decltype(gPrivateFuncs.ScClient_SoundEngine_PlayFMODSound))GetCallAddress(addr + Sig_Length(pattern) - 1);
@@ -869,7 +866,7 @@ void Client_FillAddress(void)
 		if (1)
 		{
 			char pattern[] = "\x8B\x54\x24\x04\x81\xFA\xFF\x0F\x00\x00\x2A\x2A\x83\x3C\x91\x00\x2A\x2A\x0F\xAE\xE8";
-			auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+			auto addr = (PUCHAR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 			Sig_VarNotFound("ScClient_SoundEngine_LookupSoundBySentenceIndex");
 
 			gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySentenceIndex = (decltype(gPrivateFuncs.ScClient_SoundEngine_LookupSoundBySentenceIndex))addr;
@@ -878,14 +875,14 @@ void Client_FillAddress(void)
 		if(1)
 		{
 			char pattern[] = "\x8B\x4C\x24\x04\x85\xC9\x2A\x2A\x6B\xC1\x58";
-			gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+			gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 			Sig_FuncNotFound(GetClientColor);
 		}
 
 		if(1)
 		{
 			char pattern[] = "\x8B\x0D\x2A\x2A\x2A\x2A\x85\xC9\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x84\xC0\x0F";
-			auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+			auto addr = (PUCHAR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 
 			Sig_AddrNotFound(GameViewport);
 
@@ -897,7 +894,7 @@ void Client_FillAddress(void)
 		if(1)
 		{
 			char pattern[] = "\x8B\x01\x8B\x40\x28\xFF\xE0";
-			auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+			auto addr = (PUCHAR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 
 			Sig_AddrNotFound(GameViewport_IsScoreBoardVisible);
 
@@ -921,13 +918,13 @@ void Client_FillAddress(void)
 		if(1)
 		{
 			char pattern[] = "common/wpn_hudon.wav";
-			auto addr = (PUCHAR)Search_Pattern_From_Size(ClientRDataBase, ClientRDataSize, pattern);
+			auto addr = (PUCHAR)Search_Pattern_From_Size(g_dwClientRdataBase, g_dwClientRdataSize, pattern);
 
 			Sig_AddrNotFound(wpn_hudon_wav_String);
 
 			char pattern2[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x83\xC4\x08";
 			*(DWORD *)(pattern2 + 1) = (DWORD)addr;
-			auto wpn_hudon_PushString = Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern2);
+			auto wpn_hudon_PushString = Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern2);
 			Sig_VarNotFound(wpn_hudon_PushString);
 
 			gPrivateFuncs.WeaponsResource_SelectSlot = (decltype(gPrivateFuncs.WeaponsResource_SelectSlot))g_pMetaHookAPI->ReverseSearchFunctionBeginEx(wpn_hudon_PushString, 0x250, [](PUCHAR Candidate) {
@@ -953,7 +950,7 @@ void Client_FillAddress(void)
 		if(1)
 		{
 			char pattern[] = "\x8B\x40\x28\xFF\xD0\x84\xC0\x2A\x2A\xC7\x05\x2A\x2A\x2A\x2A\x01\x00\x00\x00";
-			auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+			auto addr = (PUCHAR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 
 			Sig_AddrNotFound(g_iVisibleMouse);
 
@@ -963,7 +960,7 @@ void Client_FillAddress(void)
 		if(1)
 		{
 			char pattern[] = "\xF6\x05\x2A\x2A\x2A\x2A\x20\x2A\x2A\xB9\x2A\x2A\x2A\x2A\xE8";
-			auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+			auto addr = (PUCHAR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 			Sig_AddrNotFound(CHud_GetBorderSize);
 
 			gHud = *(decltype(gHud) *)(addr + 10);
@@ -978,7 +975,7 @@ void Client_FillAddress(void)
 		if (1)
 		{
 			char pattern[] = "\x8B\x44\x24\x04\x83\xE8\x03\x2A\x2A\x48";
-			gPrivateFuncs.GetTextColor = (decltype(gPrivateFuncs.GetTextColor))Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+			gPrivateFuncs.GetTextColor = (decltype(gPrivateFuncs.GetTextColor))Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 		}
 
 		if (!gPrivateFuncs.GetTextColor)
@@ -986,14 +983,14 @@ void Client_FillAddress(void)
 			if (!gPrivateFuncs.GetClientColor)
 			{
 				const char sigs1[] = "spec_mode_internal";
-				auto SpecModeInternal_String = g_pMetaHookAPI->SearchPattern(ClientRDataBase, ClientRDataSize, sigs1, sizeof(sigs1) - 1);
+				auto SpecModeInternal_String = Search_Pattern_From_Size(g_dwClientRdataBase, g_dwClientRdataSize, sigs1);
 				if (!SpecModeInternal_String)
-					SpecModeInternal_String = g_pMetaHookAPI->SearchPattern(ClientDataBase, ClientDataSize, sigs1, sizeof(sigs1) - 1);
+					SpecModeInternal_String = Search_Pattern_From_Size(g_dwClientDataBase, g_dwClientDataSize, sigs1);
 				Sig_VarNotFound(SpecModeInternal_String);
 
 				char pattern[] = "\x68\x2A\x2A\x2A\x2A\xFF\x15";
 				*(DWORD*)(pattern + 1) = (DWORD)SpecModeInternal_String;
-				auto SpecModeInternal_PushString = g_pMetaHookAPI->SearchPattern(ClientTextBase, ClientTextSize, pattern, sizeof(pattern) - 1);
+				auto SpecModeInternal_PushString = Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 
 				Sig_VarNotFound(SpecModeInternal_PushString);
 
@@ -1064,7 +1061,7 @@ void Client_FillAddress(void)
 				char pattern_HL25[] = "\x55\x8B\xEC\x6B\x45\x08\x74\x0F\xBF\x80\x2A\x2A\x2A\x2A\x48\x83\xF8\x03\x77\x23\xFF\x24\x85";
 				if (g_iEngineType != ENGINE_GOLDSRC_HL25)
 				{
-					auto addr = (PUCHAR)Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+					auto addr = (PUCHAR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 
 					if (addr)
 					{
@@ -1086,7 +1083,7 @@ void Client_FillAddress(void)
 				}
 				else
 				{
-					gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern_HL25);
+					gPrivateFuncs.GetClientColor = (decltype(gPrivateFuncs.GetClientColor))Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern_HL25);
 
 					Sig_FuncNotFound(GetClientColor);
 				}
@@ -1095,7 +1092,7 @@ void Client_FillAddress(void)
 			if (1)
 			{
 				char pattern[] = "\x33\xC0\xEB\x2A\xB8\x2A\x2A\x2A\x2A\xEB\x2A";
-				auto addr = Search_Pattern_From_Size(ClientTextBase, ClientTextSize, pattern);
+				auto addr = Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
 
 				Sig_AddrNotFound(BaseTextColor);
 
@@ -1217,7 +1214,6 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 	{
 		if (ctx->flags & LOAD_DLL_NOTIFICATION_IS_CLIENT)
 		{
-			g_hClientDll = ctx->hModule;
 			g_dwClientBase = ctx->ImageBase;
 			g_dwClientSize = ctx->ImageSize;
 		}
@@ -1231,7 +1227,6 @@ void DllLoadNotification(mh_load_dll_notification_context_t* ctx)
 	{
 		if (ctx->flags & LOAD_DLL_NOTIFICATION_IS_CLIENT)
 		{
-			g_hClientDll = NULL;
 			g_dwClientBase = 0;
 			g_dwClientSize = 0;
 		}

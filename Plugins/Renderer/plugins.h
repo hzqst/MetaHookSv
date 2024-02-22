@@ -3,7 +3,10 @@
 class IFileSystem;
 class IFileSystem_HL25;
 
-extern HINSTANCE g_hInstance, g_hThisModule, g_hEngineModule;
+extern IFileSystem* g_pFileSystem;
+extern IFileSystem_HL25* g_pFileSystem_HL25;
+
+extern int g_iEngineType;
 extern PVOID g_dwEngineBase;
 extern DWORD g_dwEngineSize;
 extern PVOID g_dwEngineTextBase;
@@ -13,12 +16,15 @@ extern DWORD g_dwEngineDataSize;
 extern PVOID g_dwEngineRdataBase;
 extern DWORD g_dwEngineRdataSize;
 extern DWORD g_dwEngineBuildnum;
-extern int g_iEngineType;
+
 extern PVOID g_dwClientBase;
 extern DWORD g_dwClientSize;
-
-extern IFileSystem *g_pFileSystem;
-extern IFileSystem_HL25* g_pFileSystem_HL25;
+extern PVOID g_dwClientTextBase;
+extern DWORD g_dwClientTextSize;
+extern PVOID g_dwClientDataBase;
+extern DWORD g_dwClientDataSize;
+extern PVOID g_dwClientRdataBase;
+extern DWORD g_dwClientRdataSize;
 
 #define MHPluginName "Renderer"
 #define Sys_Error(msg, ...) g_pMetaHookAPI->SysError("["  MHPluginName   "] " msg, __VA_ARGS__);

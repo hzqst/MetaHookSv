@@ -10,12 +10,10 @@ mh_enginesave_t *g_pMetaSave = NULL;
 IFileSystem *g_pFileSystem = NULL;
 IFileSystem_HL25 *g_pFileSystem_HL25 = NULL;
 
-HMODULE g_hClientDll = NULL;
-PVOID g_dwClientBase = 0;
-DWORD g_dwClientSize = 0;
 int g_iVideoWidth = 0;
 int g_iVideoHeight = 0;
 
+int g_iEngineType = 0;
 PVOID g_dwEngineBase = NULL;
 DWORD g_dwEngineSize = 0;
 PVOID g_dwEngineTextBase = NULL;
@@ -25,7 +23,15 @@ DWORD g_dwEngineDataSize = 0;
 PVOID g_dwEngineRdataBase = NULL;
 DWORD g_dwEngineRdataSize = 0;
 DWORD g_dwEngineBuildnum = 0;
-int g_iEngineType = 0;
+
+PVOID g_dwClientBase = NULL;
+DWORD g_dwClientSize = NULL;
+PVOID g_dwClientTextBase = NULL;
+DWORD g_dwClientTextSize = NULL;
+PVOID g_dwClientDataBase = NULL;
+DWORD g_dwClientDataSize = NULL;
+PVOID g_dwClientRdataBase = NULL;
+DWORD g_dwClientRdataSize = NULL;
 
 bool g_bIsSvenCoop = false;
 bool g_bIsCounterStrike = false;

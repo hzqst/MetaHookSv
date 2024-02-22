@@ -5,14 +5,11 @@ extern IFileSystem_HL25 *g_pFileSystem_HL25;
 extern mh_interface_t *g_pInterface;
 extern metahook_api_t *g_pMetaHookAPI;
 extern mh_enginesave_t *g_pMetaSave;
-extern HMODULE g_hClientDll;
-extern PVOID g_dwClientBase;
-extern DWORD g_dwClientSize;
-extern PVOID g_dwClientTextBase;
-extern DWORD g_dwClientTextSize;
+
 extern int g_iVideoWidth;
 extern int g_iVideoHeight;
 
+extern int g_iEngineType;
 extern PVOID g_dwEngineBase;
 extern DWORD g_dwEngineSize;
 extern PVOID g_dwEngineTextBase;
@@ -22,7 +19,17 @@ extern DWORD g_dwEngineDataSize;
 extern PVOID g_dwEngineRdataBase;
 extern DWORD g_dwEngineRdataSize;
 extern DWORD g_dwEngineBuildnum;
-extern int g_iEngineType;
+
+extern HMODULE g_hClientModule;
+extern PVOID g_dwClientBase;
+extern DWORD g_dwClientSize;
+extern PVOID g_dwClientTextBase;
+extern DWORD g_dwClientTextSize;
+extern PVOID g_dwClientDataBase;
+extern DWORD g_dwClientDataSize;
+extern PVOID g_dwClientRdataBase;
+extern DWORD g_dwClientRdataSize;
+
 extern bool g_bIsSvenCoop;
 extern bool g_bIsCounterStrike;
 extern bool g_bIsCZero;

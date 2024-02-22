@@ -1326,9 +1326,9 @@ void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)
 {
 	CreateInterfaceFn ClientVGUICreateInterface = NULL;
 
-	if (g_hClientDll)
+	if (g_hClientModule)
 	{
-		ClientVGUICreateInterface = (CreateInterfaceFn)Sys_GetFactory((HINTERFACEMODULE)g_hClientDll);
+		ClientVGUICreateInterface = (CreateInterfaceFn)Sys_GetFactory((HINTERFACEMODULE)g_hClientModule);
 	}
 
 	if (!ClientVGUICreateInterface && gExportfuncs.ClientFactory)
@@ -1373,7 +1373,7 @@ void ClientVGUI_InstallHooks(cl_exportfuncs_t* pExportFunc)
 
 PVOID VGUIClient001_CreateInterface(HINTERFACEMODULE hModule)
 {
-	if (hModule == (HINTERFACEMODULE)g_hClientDll && !g_IsNativeClientVGUI2)
+	if (hModule == (HINTERFACEMODULE)g_hClientModule && !g_IsNativeClientVGUI2)
 	{
 		return NewCreateInterface;
 	}

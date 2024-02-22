@@ -10,14 +10,10 @@ mh_enginesave_t *g_pMetaSave = NULL;
 IFileSystem *g_pFileSystem = NULL;
 IFileSystem_HL25 *g_pFileSystem_HL25 = NULL;
 
-HMODULE g_hClientDll = NULL;
-PVOID g_dwClientBase = 0;
-DWORD g_dwClientSize = 0;
-PVOID g_dwClientTextBase = 0;
-DWORD g_dwClientTextSize = 0;
 int g_iVideoWidth = 0;
 int g_iVideoHeight = 0;
 
+int g_iEngineType = 0;
 PVOID g_dwEngineBase = NULL;
 DWORD g_dwEngineSize = 0;
 PVOID g_dwEngineTextBase = NULL;
@@ -27,7 +23,16 @@ DWORD g_dwEngineDataSize = 0;
 PVOID g_dwEngineRdataBase = NULL;
 DWORD g_dwEngineRdataSize = 0;
 DWORD g_dwEngineBuildnum = 0;
-int g_iEngineType = 0;
+
+HMODULE g_hClientModule = NULL;
+PVOID g_dwClientBase = 0;
+DWORD g_dwClientSize = 0;
+PVOID g_dwClientTextBase = 0;
+DWORD g_dwClientTextSize = 0;
+PVOID g_dwClientDataBase = 0;
+DWORD g_dwClientDataSize = 0;
+PVOID g_dwClientRdataBase = 0;
+DWORD g_dwClientRdataSize = 0;
 
 bool g_bIsSvenCoop = false;
 bool g_bIsCounterStrike = false;
@@ -116,19 +121,8 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 	pExportFunc->IN_Accumulate = IN_Accumulate;
 	pExportFunc->CL_CreateMove = CL_CreateMove;
 
-	g_hClientDll = g_pMetaHookAPI->GetClientModule();
-	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
-	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
-
-	g_dwClientTextBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".text\0\0\0", &g_dwClientTextSize);
-
-	if (!g_dwClientTextBase)
-	{
-		Sys_Error("Failed to locate section \".text\" in client.dll!");
-		return;
-	}
-
 	Client_FillAddress();
+
 	Client_InstallHooks();
 
 	ClientVGUI_InstallHooks(pExportFunc);

@@ -80,6 +80,7 @@ extern int *mod_numknown;
 extern TEMPENTITY *gTempEnts;
 
 extern int* allow_cheats;
+extern int* g_bRenderingPortals_SCClient;
 
 extern int *g_iUser1;
 extern int *g_iUser2;

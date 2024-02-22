@@ -45,6 +45,7 @@ TEMPENTITY* gTempEnts = NULL;
 
 //Sven Co-op only
 int* allow_cheats = NULL;
+int* g_bRenderingPortals_SCClient = NULL;
 
 int* g_iUser1 = NULL;
 int* g_iUser2 = NULL;
@@ -577,37 +578,37 @@ void Engine_FillAddreess(void)
 
 void Client_FillAddress(void)
 {
-	ULONG ClientTextSize = 0;
-	PVOID ClientTextBase = ClientTextBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".text\0\0\0", &ClientTextSize);
+	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
+	g_dwClientSize = g_pMetaHookAPI->GetClientSize();
 
-	if (!ClientTextBase)
+	g_dwClientTextBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".text\0\0\0", &g_dwClientTextSize);
+
+	if (!g_dwClientTextBase)
 	{
 		Sys_Error("Failed to locate section \".text\" in client.dll!");
 		return;
 	}
 
-	ULONG ClientDataSize = 0;
-	auto ClientDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".data\0\0\0", &ClientDataSize);
+	g_dwClientDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".data\0\0\0", &g_dwClientDataSize);
 
-	ULONG ClientRDataSize = 0;
-	auto ClientRDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".rdata\0\0", &ClientRDataSize);
+	if (!g_dwClientDataBase)
+	{
+		Sys_Error("Failed to locate section \".text\" in client.dll!");
+		return;
+	}
 
-	if ((void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson > ClientTextBase && (void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson < (PUCHAR)ClientTextBase + ClientTextSize)
+	g_dwClientRdataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".rdata\0\0", &g_dwClientRdataSize);
+
+	if ((void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson > g_dwClientTextBase && (void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson < (PUCHAR)g_dwClientTextBase + g_dwClientTextSize)
 	{
 		typedef struct
 		{
 			ULONG_PTR Candidates[16];
 			int iNumCandidates;
 
-			PVOID ClientDataBase;
-			ULONG ClientDataSize;
-
 		}CL_IsThirdPerson_ctx;
 
 		CL_IsThirdPerson_ctx ctx = { 0 };
-
-		ctx.ClientDataBase = ClientDataBase;
-		ctx.ClientDataSize = ClientDataSize;
 
 		g_pMetaHookAPI->DisasmRanges((void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
@@ -629,8 +630,8 @@ void Client_FillAddress(void)
 						) &&
 					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
 					pinst->detail->x86.operands[1].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->ClientDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->ClientDataBase + ctx->ClientDataSize)
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwClientDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwClientDataBase + g_dwClientDataSize)
 				{
 					ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
 					ctx->iNumCandidates++;
@@ -645,8 +646,8 @@ void Client_FillAddress(void)
 					pinst->detail->x86.operands[1].imm == 0 &&
 					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
 					pinst->detail->x86.operands[0].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->ClientDataBase &&
-					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->ClientDataBase + ctx->ClientDataSize)
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)g_dwClientDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)g_dwClientDataBase + g_dwClientDataSize)
 				{
 					ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
 					ctx->iNumCandidates++;
@@ -660,13 +661,67 @@ void Client_FillAddress(void)
 				return TRUE;
 
 			return FALSE;
-			}, 0, &ctx);
+
+		}, 0, &ctx);
 
 		if (ctx.iNumCandidates >= 3 && ctx.Candidates[ctx.iNumCandidates - 1] == ctx.Candidates[ctx.iNumCandidates - 2] + sizeof(int))
 		{
 			g_iUser1 = (decltype(g_iUser1))ctx.Candidates[ctx.iNumCandidates - 2];
 			g_iUser2 = (decltype(g_iUser2))ctx.Candidates[ctx.iNumCandidates - 1];
 		}
+	}
+
+	auto pfnClientFactory = g_pMetaHookAPI->GetClientFactory();
+
+	if (pfnClientFactory)
+	{
+		auto SCClient001 = pfnClientFactory("SCClientDLL001", 0);
+		if (SCClient001)
+		{
+			if (1)
+			{
+				const char pattern[] = "\xFF\x50\x24\xC6\x05\x2A\x2A\x2A\x2A\x01";
+				DWORD addr = (DWORD)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
+				Sig_AddrNotFound(g_bRenderingPortals);
+				g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient)) * (ULONG_PTR*)(addr + 5);
+			}
+
+			g_bIsSvenCoop = true;
+		}
+	}
+
+	if (!strcmp(gEngfuncs.pfnGetGameDirectory(), "cstrike") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czero") || !strcmp(gEngfuncs.pfnGetGameDirectory(), "czeror"))
+	{
+		g_bIsCounterStrike = true;
+
+		//g_PlayerExtraInfo
+		//66 85 C0 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ?? 66 89 ?? ?? ?? ?? ??
+		/*
+		.text:019A4575 66 85 C0                                            test    ax, ax
+		.text:019A4578 66 89 99 20 F4 A2 01                                mov     word_1A2F420[ecx], bx
+		.text:019A457F 66 89 A9 22 F4 A2 01                                mov     word_1A2F422[ecx], bp
+		.text:019A4586 66 89 91 48 F4 A2 01                                mov     word_1A2F448[ecx], dx
+		.text:019A458D 66 89 81 4A F4 A2 01                                mov     word_1A2F44A[ecx], ax
+		*/
+#define CSTRIKE_PLAYEREXTRAINFO_SIG      "\x66\x85\xC0\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89\x2A\x2A\x2A\x2A\x2A\x66\x89"
+#define CSTRIKE_PLAYEREXTRAINFO_SIG_HL25 "\x66\x89\x90\x2A\x2A\x2A\x2A\x8B\x55\x2A\x66\x89\x98\x2A\x2A\x2A\x2A\x66\x89\x90\x2A\x2A\x2A\x2A\x66\x89\x88"
+
+		auto addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, CSTRIKE_PLAYEREXTRAINFO_SIG);
+		if (addr)
+		{
+			g_PlayerExtraInfo = *(decltype(g_PlayerExtraInfo)*)(addr + 6);
+		}
+		else
+		{
+			addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, CSTRIKE_PLAYEREXTRAINFO_SIG_HL25);
+			if (addr)
+			{
+				g_PlayerExtraInfo = *(decltype(g_PlayerExtraInfo)*)(addr + 3);
+			}
+		}
+
+		Sig_VarNotFound(g_PlayerExtraInfo);
+
 	}
 }
 
@@ -701,8 +756,6 @@ TEMPENTITY *efxapi_R_TempModel(float *pos, float *dir, float *angles, float life
 void Mod_LoadStudioModel(model_t* mod, void* buffer)
 {
 	gPrivateFuncs.Mod_LoadStudioModel(mod, buffer);
-
-
 }
 
 void Engine_InstallHook(void)
