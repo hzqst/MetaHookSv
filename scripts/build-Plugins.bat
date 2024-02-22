@@ -64,13 +64,11 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
     MSBuild.exe MetaHook.sln "/target:Plugins\SCCameraFix" /p:Configuration="Release" /p:Platform="Win32"
     IF %ERRORLEVEL% NEQ 0 GOTO builderror
 
-    goto endbuild
+    echo Build OK
+    exit /b 0
 
 )
 
 :builderror
 echo Build failed
 exit /b -1
-
-:endbuild
-echo Build OK
