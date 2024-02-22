@@ -37,8 +37,8 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
     goto endbuild
 
 :builderror
-    echo Build failed with error %errorlevel%
-    exit /b %errorlevel%
+    echo Build failed
+    exit /b -1
 
 )
 
