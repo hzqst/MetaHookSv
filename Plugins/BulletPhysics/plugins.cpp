@@ -62,11 +62,6 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 
-	if (g_iEngineType != ENGINE_SVENGINE && g_iEngineType != ENGINE_GOLDSRC_BLOB && g_iEngineType != ENGINE_GOLDSRC && g_iEngineType != ENGINE_GOLDSRC_HL25)
-	{
-		g_pMetaHookAPI->SysError("Unsupported engine: %s, buildnum %d", g_pMetaHookAPI->GetEngineTypeName(), g_dwEngineBuildnum);
-	}
-
 	Engine_FillAddreess();
 	Engine_InstallHook();
 }

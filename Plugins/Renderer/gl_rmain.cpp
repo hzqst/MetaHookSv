@@ -22,6 +22,11 @@ float r_xfov_currentpass = 0;
 float r_yfov_currentpass = 0;
 float r_screenaspect = 0;
 
+bool r_fog_enabled = false;
+int r_fog_mode = 0;
+float r_fog_control[3] = { 0 };
+float r_fog_color[4] = { 0 };
+
 float gldepthmin = 0, gldepthmax = 1;
 
 cl_entity_t *r_worldentity = NULL;
@@ -143,6 +148,10 @@ int *g_iUser1 = NULL;
 int *g_iUser2 = NULL;
 
 bool *g_bRenderingPortals_SCClient = NULL;
+
+float* g_iFogColor_SCClient = NULL;
+float* g_iStartDist_SCClient = NULL;
+float* g_iEndDist_SCClient = NULL;
 
 bool g_bPortalClipPlaneEnabled[6] = { false };
 
@@ -313,13 +322,26 @@ cvar_t *r_alpha_shift = NULL;
 
 cvar_t *r_additive_shift = NULL;
 
+/*
+	Purpose : Check if we are rendering with Fog
+*/
+
+bool R_IsRenderingFog()
+{
+	return r_fog_mode && r_fog_enabled;
+}
+
+/*
+	Purpose : Check if we are rendering into GBuffer
+*/
+
 bool R_IsRenderingGBuffer()
 {
 	return GL_GetCurrentRenderingFBO() == &s_GBufferFBO;
 }
 
 /*
-	urpose : Check if we are in SinglePlayer game
+	Purpose : Check if we are in SinglePlayer game
 */
 
 qboolean Host_IsSinglePlayerGame()
@@ -536,7 +558,7 @@ void R_DrawParticles(void)
 
 	program_state_t LegacySpriteProgramState = 0;
 
-	if (!R_IsRenderingGBuffer())
+	if (!R_IsRenderingGBuffer() && R_IsRenderingFog())
 	{
 		if (r_fog_mode == GL_LINEAR)
 		{
@@ -814,7 +836,7 @@ void triapi_RenderMode(int mode)
 		{
 			program_state_t LegacySpriteProgramState = 0;
 
-			if (!R_IsRenderingGBuffer())
+			if (!R_IsRenderingGBuffer() && R_IsRenderingFog())
 			{
 				if (r_fog_mode == GL_LINEAR)
 				{
@@ -857,9 +879,9 @@ void triapi_RenderMode(int mode)
 
 		if (r_draw_legacysprite)
 		{
-			program_state_t LegacySpriteProgramState =  SPRITE_ADDITIVE_BLEND_ENABLED;
+			program_state_t LegacySpriteProgramState = SPRITE_ADDITIVE_BLEND_ENABLED;
 
-			if (!R_IsRenderingGBuffer())
+			if (!R_IsRenderingGBuffer() && R_IsRenderingFog())
 			{
 				if (r_fog_mode == GL_LINEAR)
 				{
@@ -909,7 +931,7 @@ void triapi_RenderMode(int mode)
 			{
 				LegacySpriteProgramState |= SPRITE_CLIP_ENABLED;
 			}
-			if (!R_IsRenderingGBuffer())
+			if (!R_IsRenderingGBuffer() && R_IsRenderingFog())
 			{
 				if (r_fog_mode == GL_LINEAR)
 				{
@@ -957,12 +979,18 @@ void R_DrawTEntitiesOnList(int onlyClientDraw)
 
 void ClientDLL_DrawTransparentTriangles(void)
 {
+	if((*g_bUserFogOn))
+		R_InhibitRenderingFog();
+
 	//gEngfuncs.pTriAPI->RenderMode(kRenderTransTexture);
 
 	if(gExportfuncs.HUD_DrawTransparentTriangles)
 		gExportfuncs.HUD_DrawTransparentTriangles();
 
 	gEngfuncs.pTriAPI->RenderMode(kRenderNormal);
+
+	if ((*g_bUserFogOn))
+		R_RestoreRenderingFog();
 }
 
 void R_DrawTransEntities(int onlyClientDraw)
@@ -994,13 +1022,7 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-			if ((*g_bUserFogOn))
-				glDisable(GL_FOG);
-
 			ClientDLL_DrawTransparentTriangles();
-
-			if ((*g_bUserFogOn))
-				glEnable(GL_FOG);
 
 			(*numTransObjs) = 0;
 			(*r_blend) = 1;
@@ -1039,13 +1061,7 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-			if ((*g_bUserFogOn))
-				glDisable(GL_FOG);
-
 			ClientDLL_DrawTransparentTriangles();
-
-			if ((*g_bUserFogOn))
-				glEnable(GL_FOG);
 
 			(*numTransObjs) = 0;
 			(*r_blend) = 1;
@@ -1142,7 +1158,7 @@ void R_DrawCurrentEntity(bool bTransparent)
 {
 	if (bTransparent)
 	{
-		glDisable(GL_FOG);
+		R_InhibitRenderingFog();
 
 		(*r_blend) = CL_FxBlend((*currententity));
 
@@ -1196,7 +1212,9 @@ void R_DrawCurrentEntity(bool bTransparent)
 			if ((*g_bUserFogOn))
 			{
 				if ((*currententity)->curstate.rendermode != kRenderGlow && (*currententity)->curstate.rendermode != kRenderTransAdd)
-					glEnable(GL_FOG);
+				{
+					R_RestoreRenderingFog();
+				}
 			}
 		}
 
@@ -1936,9 +1954,11 @@ void R_PreRenderView()
 	r_sprite_drawcall = 0;
 	r_sprite_polys = 0;
 
+#if 0
 	//Capture OpenGL fog settings committed by client dll or engine dll.
 	r_fog_mode = 0;
 
+	//TODO use client dll settings...
 	if (glIsEnabled(GL_FOG))
 	{
 		glGetIntegerv(GL_FOG_MODE, &r_fog_mode);
@@ -1964,6 +1984,7 @@ void R_PreRenderView()
 			glGetFloatv(GL_FOG_COLOR, r_fog_color);
 		}
 	}
+#endif
 
 	//Always force GammaBlend to be disabled when rendering opaques.
 	r_draw_gammablend = false;
@@ -3312,24 +3333,22 @@ void R_SetupFrame(void)
 		(*r_viewleaf) = Mod_PointInLeaf(r_origin, r_worldmodel);
 	}
 
-	if ((*cl_waterlevel) > 2 && !(*r_refdef.onlyClientDraws))
+	R_DisableRenderingFog();
+
+	if (!r_draw_reflectview && !(*r_refdef.onlyClientDraws))
 	{
-		r_fog_color[0] = cshift_water->destcolor[0] * 0.00392156862745098;
-		r_fog_color[1] = cshift_water->destcolor[1] * 0.00392156862745098;
-		r_fog_color[2] = cshift_water->destcolor[2] * 0.00392156862745098;
-		r_fog_color[3] = 1.0;
-
-		r_fog_control[0] = 0;
-		r_fog_control[1] = (1536 - 4 * cshift_water->percent);
-		r_fog_control[2] = 0;
-
-		r_fog_mode = GL_LINEAR;
-
-		glFogi(GL_FOG_MODE, r_fog_mode);
-		glFogfv(GL_FOG_COLOR, r_fog_color);
-		glFogf(GL_FOG_START, r_fog_control[0]);
-		glFogf(GL_FOG_END, r_fog_control[1]);
-		glEnable(GL_FOG);
+		if ((*cl_waterlevel) > 2)
+		{
+			R_RenderWaterFog();
+		}
+		else if (g_iStartDist_SCClient && g_iEndDist_SCClient && (*g_iStartDist_SCClient) >= 0 && (*g_iEndDist_SCClient) > 0)
+		{
+			R_RenderSvenFog();
+		}
+		else if ((*g_bUserFogOn))
+		{
+			R_RenderUserFog();
+		}
 	}
 }
 
@@ -3525,16 +3544,8 @@ void R_DrawTEntitiesForViewModel(void)
 
 #endif
 
-void R_RenderFinalFog(void)
+void R_SetupFog(void)
 {
-	memcpy(r_fog_color, g_UserFogColor, sizeof(vec4_t));
-
-	r_fog_control[0] = (*g_UserFogStart);
-	r_fog_control[1] = (*g_UserFogEnd);
-	r_fog_control[2] = (*g_UserFogDensity);
-
-	r_fog_mode = GL_EXP2;
-
 	scene_ubo_t SceneUBO;
 	memcpy(SceneUBO.fogColor, r_fog_color, sizeof(vec4_t));
 	SceneUBO.fogStart = r_fog_control[0];
@@ -3561,21 +3572,79 @@ void R_RenderFinalFog(void)
 	glFogf(GL_FOG_END, r_fog_control[1]);
 }
 
-void AllowFog(bool allowed)
+void R_RenderWaterFog(void)
 {
-	static GLboolean isFogEnabled;
+	r_fog_color[0] = cshift_water->destcolor[0] * 0.00392156862745098;
+	r_fog_color[1] = cshift_water->destcolor[1] * 0.00392156862745098;
+	r_fog_color[2] = cshift_water->destcolor[2] * 0.00392156862745098;
+	r_fog_color[3] = 1.0;
 
-	if (!allowed)
+	r_fog_control[0] = 0;
+	r_fog_control[1] = (1536 - 4 * cshift_water->percent);
+	r_fog_control[2] = 0;
+
+	r_fog_mode = GL_LINEAR;
+	r_fog_enabled = true;
+
+	R_SetupFog();
+}
+
+void R_RenderSvenFog(void)
+{
+	r_fog_color[0] = g_iFogColor_SCClient[0] * 1.0f / 255.0f;
+	r_fog_color[1] = g_iFogColor_SCClient[1] * 1.0f / 255.0f;
+	r_fog_color[2] = g_iFogColor_SCClient[2] * 1.0f / 255.0f;
+	r_fog_color[3] = 1.0;
+
+	r_fog_control[0] = (*g_iStartDist_SCClient);
+	r_fog_control[1] = (*g_iEndDist_SCClient);
+	r_fog_control[2] = 0;
+
+	r_fog_mode = GL_LINEAR;
+	r_fog_enabled = true;
+
+	R_SetupFog();
+}
+
+void R_RenderUserFog(void)
+{
+	memcpy(r_fog_color, g_UserFogColor, sizeof(vec4_t));
+
+	r_fog_control[0] = (*g_UserFogStart);
+	r_fog_control[1] = (*g_UserFogEnd);
+	r_fog_control[2] = (*g_UserFogDensity);
+
+	r_fog_mode = GL_EXP2;
+	r_fog_enabled = true;
+
+	R_SetupFog();
+}
+
+void R_DisableRenderingFog()
+{
+	r_fog_mode = 0;
+	r_fog_enabled = false;
+
+	glDisable(GL_FOG);
+}
+
+void R_InhibitRenderingFog()
+{
+	if (r_fog_mode)
 	{
-		isFogEnabled = glIsEnabled(GL_FOG);
+		r_fog_enabled = false;
 
-		if (isFogEnabled)
-			glDisable(GL_FOG);
+		glDisable(GL_FOG);
 	}
-	else
+}
+
+void R_RestoreRenderingFog()
+{
+	if (r_fog_mode)
 	{
-		if (isFogEnabled)
-			glEnable(GL_FOG);
+		r_fog_enabled = true;
+
+		glEnable(GL_FOG);
 	}
 }
 
@@ -3673,23 +3742,22 @@ void R_RenderScene(void)
 		R_DrawEntitiesOnList();
 	}
 
-	if ((*g_bUserFogOn))
-		R_RenderFinalFog();
-
 	R_EndRenderOpaque();
 
-	AllowFog(false);
+	R_InhibitRenderingFog();
 	ClientDLL_DrawNormalTriangles();
-	AllowFog(true);
+	R_RestoreRenderingFog();
 
 	if ((*cl_waterlevel) > 2 && (*r_refdef.onlyClientDraws))
 	{
-		glDisable(GL_FOG);
+		R_InhibitRenderingFog();
 	}
 	else
 	{
 		if (!(*g_bUserFogOn))
-			glDisable(GL_FOG);
+		{
+			R_InhibitRenderingFog();
+		}
 	}
 
 	R_DrawTransEntities((*r_refdef.onlyClientDraws));

@@ -2081,7 +2081,7 @@ void R_StudioDrawVBOMesh_DrawPass(
 		StudioProgramState |= STUDIO_CLIP_ENABLED;
 	}
 
-	if (!R_IsRenderingGBuffer())
+	if (!R_IsRenderingGBuffer() && R_IsRenderingFog())
 	{
 		if (r_fog_mode == GL_LINEAR)
 		{

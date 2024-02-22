@@ -1493,7 +1493,6 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 			{
 				vec3_t save_simorg;
 				vec3_t save_origin_spec;
-				vec3_t save_origin_aiming;
 
 				VectorCopy(pparams->simorg, save_simorg);
 				VectorCopy(spectating_player->origin, save_origin_spec);

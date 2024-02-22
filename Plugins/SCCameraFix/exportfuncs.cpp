@@ -541,7 +541,7 @@ float V_CalcBob(ref_params_t* pparams)
 	return bob;
 }
 
-void V_CalcNormalRefdef(ref_params_t* pparams)
+void V_CalcNormalRefdef_Refactor(ref_params_t* pparams)
 {
 	static viewinterp_t ViewInterp;
 	static float oldz = 0;
@@ -917,14 +917,25 @@ void V_CalcNormalRefdef(ref_params_t* pparams)
 
 #endif
 
+void V_CalcNormalRefdef(ref_params_t* pparams)
+{
+	if (pparams->spectator || (*g_iUser1))
+	{
+		V_CalcSpectatorRefdef(pparams);
+		return;
+	}
+
+	gPrivateFuncs.V_CalcNormalRefdef(pparams);
+}
+
 void V_CalcRefdef(struct ref_params_s* pparams)
 {
-#if 1
+#if 0
 	(*g_iWaterLevel) = pparams->waterlevel;
 	if (!pparams->nextView && !(*g_bRenderingPortals_SCClient))
 	{
 		pparams->onlyClientDraw = 0;
-		
+
 		if (pparams->intermission)
 		{
 			//TODO: refactor this shit.
@@ -941,18 +952,14 @@ void V_CalcRefdef(struct ref_params_s* pparams)
 			gPrivateFuncs.V_CalcNormalRefdef(pparams);
 		}
 
-		vec3_t fogColor;
-		fogColor[0] = g_iFogColor_SCClient[0] / 255.0f;
-		fogColor[1] = g_iFogColor_SCClient[1] / 255.0f;
-		fogColor[2] = g_iFogColor_SCClient[2] / 255.0f;
-		gEngfuncs.pTriAPI->Fog(fogColor, (*g_iStartDist_SCClient), (*g_iEndDist_SCClient), true);
 	}
 
 	pparams->nextView = 0;
 	AngleVectors(pparams->viewangles, pparams->forward, pparams->right, pparams->up);
 
-#else
+#endif
 
+#if 0
 	if (!pparams->intermission && (pparams->spectator || 0 != (*g_iUser1)))
 	{
 		pparams->nextView = 1;
@@ -970,6 +977,13 @@ void V_CalcRefdef(struct ref_params_s* pparams)
 	gExportfuncs.V_CalcRefdef(pparams);
 
 #endif
+	gExportfuncs.V_CalcRefdef(pparams);
+
+	vec3_t fogColor;
+	fogColor[0] = g_iFogColor_SCClient[0] / 255.0f;
+	fogColor[1] = g_iFogColor_SCClient[1] / 255.0f;
+	fogColor[2] = g_iFogColor_SCClient[2] / 255.0f;
+	gEngfuncs.pTriAPI->Fog(fogColor, (*g_iStartDist_SCClient), (*g_iEndDist_SCClient), true);
 }
 
 void HUD_Init(void)

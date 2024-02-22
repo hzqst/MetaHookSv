@@ -973,8 +973,8 @@ void R_AmbientOcclusion(FBO_Container_t* src, FBO_Container_t* dst)
 
 	glDisable(GL_BLEND);
 
-	//setup args for hbao_calc
-	if (r_fog_mode == GL_LINEAR)
+	//Setup for hbao_calc
+	if (r_fog_mode == GL_LINEAR && R_IsRenderingFog())
 	{
 		GL_UseProgram(hbao_calc_blur_fog.program);
 		glUniform4fv(hbao_calc_blur_fog.control_projInfo, 1, projInfoPerspective);

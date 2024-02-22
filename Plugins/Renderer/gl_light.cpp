@@ -1017,12 +1017,15 @@ void R_FinalShadingPass(FBO_Container_t *dst)
 
 	program_state_t FinalProgramState = 0;
 
-	if (r_fog_mode == GL_LINEAR)
-		FinalProgramState |= DFINAL_LINEAR_FOG_ENABLED;
-	else if (r_fog_mode == GL_EXP)
-		FinalProgramState |= DFINAL_EXP_FOG_ENABLED;
-	else if (r_fog_mode == GL_EXP2)
-		FinalProgramState |= DFINAL_EXP2_FOG_ENABLED;
+	if (R_IsRenderingFog())
+	{
+		if (r_fog_mode == GL_LINEAR)
+			FinalProgramState |= DFINAL_LINEAR_FOG_ENABLED;
+		else if (r_fog_mode == GL_EXP)
+			FinalProgramState |= DFINAL_EXP_FOG_ENABLED;
+		else if (r_fog_mode == GL_EXP2)
+			FinalProgramState |= DFINAL_EXP2_FOG_ENABLED;
+	}
 
 	if (r_wsurf_sky_fog->value)
 	{

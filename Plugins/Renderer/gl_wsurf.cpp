@@ -10,9 +10,6 @@ cvar_t *r_wsurf_parallax_scale;
 cvar_t *r_wsurf_sky_fog;
 cvar_t *r_wsurf_zprepass;
 
-int r_fog_mode = 0;
-float r_fog_control[3] = { 0 };
-float r_fog_color[4] = { 0 };
 float r_shadow_matrix[3][16] = { 0 };
 float r_world_matrix_inv[16] = { 0 };
 float r_projection_matrix_inv[16] = { 0 };

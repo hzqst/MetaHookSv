@@ -1178,7 +1178,7 @@ void R_DrawDecals(cl_entity_t *ent)
 		WSurfProgramState |= WSURF_CLIP_ENABLED;
 	}
 
-	if (!R_IsRenderingGBuffer())
+	if (!R_IsRenderingGBuffer() && R_IsRenderingFog())
 	{
 		if (r_fog_mode == GL_LINEAR)
 		{

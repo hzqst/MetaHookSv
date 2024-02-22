@@ -46,3 +46,5 @@ extern int* g_iIsSpectator;
 extern bool* g_bRenderingPortals_SCClient;
 extern struct event_api_s** g_pClientDLLEventAPI; 
 extern pitchdrift_t* g_pitchdrift;
+
+void V_CalcNormalRefdef(ref_params_t* pparams);

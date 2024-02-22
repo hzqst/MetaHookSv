@@ -23,6 +23,8 @@ struct event_api_s** g_pClientDLLEventAPI = NULL;
 
 private_funcs_t gPrivateFuncs = { 0 };
 
+static hook_t* g_phook_V_CalcNormalRefdef = NULL;
+
 void Client_FillAddress(void)
 {
 	g_dwClientBase = g_pMetaHookAPI->GetClientBase();
@@ -237,7 +239,7 @@ void Client_FillAddress(void)
 
 			return FALSE;
 
-			}, 0, &ctx);
+		}, 0, &ctx);
 
 		if (ctx.iNumCandidates >= 3 && ctx.Candidates[ctx.iNumCandidates - 1] == ctx.Candidates[ctx.iNumCandidates - 2] + sizeof(int))
 		{
@@ -249,10 +251,10 @@ void Client_FillAddress(void)
 
 void Client_InstallHooks(void)
 {
-	
+	Install_InlineHook(V_CalcNormalRefdef);
 }
 
 void Client_UninstallHooks(void)
 {
-
+	Uninstall_Hook(V_CalcNormalRefdef);
 }

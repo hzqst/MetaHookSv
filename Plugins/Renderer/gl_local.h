@@ -159,7 +159,11 @@ extern model_t **loadmodel;
 extern int *g_iUser1;
 extern int *g_iUser2;
 
-extern bool *g_bRenderingPortals_SCClient;
+extern float* g_iFogColor_SCClient;
+extern float* g_iStartDist_SCClient;
+extern float* g_iEndDist_SCClient;
+
+extern bool* g_bRenderingPortals_SCClient;
 
 extern bool g_bPortalClipPlaneEnabled[6];
 
@@ -487,11 +491,20 @@ void R_LoadLegacyOpenGLMatrixForWorld();
 
 void COM_FileBase(const char *in, char *out);
 
-//framebuffer
+//Framebuffer
 void GL_PushFrameBuffer(void);
 void GL_PopFrameBuffer(void);
 
 bool R_IsRenderingGBuffer();
+
+//Fog
+bool R_IsRenderingFog();
+void R_DisableRenderingFog();
+void R_InhibitRenderingFog();
+void R_RestoreRenderingFog();
+void R_RenderWaterFog(void);
+void R_RenderSvenFog(void);
+void R_RenderUserFog(void);
 
 //refdef
 void R_PushRefDef(void);

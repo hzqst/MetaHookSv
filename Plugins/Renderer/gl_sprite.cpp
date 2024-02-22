@@ -572,7 +572,7 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 		SpriteProgramState |= SPRITE_CLIP_ENABLED;
 	}
 
-	if (!R_IsRenderingGBuffer())
+	if (!R_IsRenderingGBuffer() && R_IsRenderingFog())
 	{
 		if (r_fog_mode == GL_LINEAR)
 		{

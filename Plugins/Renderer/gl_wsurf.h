@@ -399,6 +399,7 @@ typedef struct
 extern r_worldsurf_t r_wsurf;
 extern int r_wsurf_drawcall;
 extern int r_wsurf_polys;
+extern bool r_fog_enabled;
 extern int r_fog_mode;
 extern float r_fog_control[3];
 extern float r_fog_color[4];

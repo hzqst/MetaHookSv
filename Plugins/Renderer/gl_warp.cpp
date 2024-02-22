@@ -50,7 +50,7 @@ void R_DrawSkyBox(void)
 
 	if (r_wsurf_sky_fog->value)
 	{
-		if (!R_IsRenderingGBuffer())
+		if (!R_IsRenderingGBuffer() && R_IsRenderingFog())
 		{
 			if (r_fog_mode == GL_LINEAR)
 			{

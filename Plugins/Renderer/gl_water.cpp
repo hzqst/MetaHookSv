@@ -724,9 +724,6 @@ void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
 	(*r_refdef.viewangles)[1] = atan2(vForward[1], vForward[0]) / M_PI * 180;
 	(*r_refdef.viewangles)[2] = -(*r_refdef.viewangles)[2];
 
-	auto saved_fog_mode = r_fog_mode;
-	r_fog_mode = 0;
-
 	auto saved_cl_waterlevel = *cl_waterlevel;
 	*cl_waterlevel = 0;
 	
@@ -745,7 +742,6 @@ void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
 
 	r_drawentities->value = saved_r_drawentities;
 	*cl_waterlevel = saved_cl_waterlevel;
-	r_fog_mode = saved_fog_mode;
 
 	R_PopRefDef();
 

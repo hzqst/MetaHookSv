@@ -1039,6 +1039,65 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 				g_bRenderingPortals_SCClient = (decltype(g_bRenderingPortals_SCClient)) * (ULONG_PTR*)(addr + 5);
 			}
 
+			if (1)
+			{
+				const char pattern[] = "\x68\x01\x26\x00\x00\x68\x65\x0B\x00\x00";
+				ULONG_PTR addr = (ULONG_PTR)Search_Pattern_From_Size(g_dwClientTextBase, g_dwClientTextSize, pattern);
+				Sig_AddrNotFound(g_iFogColor);
+
+				typedef struct
+				{
+					ULONG_PTR Candidates[16];
+					int iNumCandidates;
+				}V_CalcNormalRefdef_ctx;
+
+				V_CalcNormalRefdef_ctx ctx = { 0 };
+
+				g_pMetaHookAPI->DisasmRanges((void*)addr, 0x300, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
+					auto ctx = (V_CalcNormalRefdef_ctx*)context;
+					auto pinst = (cs_insn*)inst;
+
+					if (ctx->iNumCandidates < 16)
+					{
+						if (pinst->id == X86_INS_MOVSS &&
+							pinst->detail->x86.op_count == 2 &&
+							pinst->detail->x86.operands[0].type == X86_OP_REG &&
+							pinst->detail->x86.operands[0].reg == X86_REG_XMM0 &&
+							pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+							pinst->detail->x86.operands[1].mem.base == 0 &&
+							(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwClientBase &&
+							(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwClientBase + g_dwClientSize)
+						{
+							ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
+							ctx->iNumCandidates++;
+						}
+					}
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+
+					}, 0, &ctx);
+
+				if (ctx.iNumCandidates >= 5 &&
+					ctx.Candidates[ctx.iNumCandidates - 1] == ctx.Candidates[ctx.iNumCandidates - 2] + sizeof(int) &&
+					ctx.Candidates[ctx.iNumCandidates - 2] == ctx.Candidates[ctx.iNumCandidates - 3] + sizeof(int) &&
+					ctx.Candidates[ctx.iNumCandidates - 3] == ctx.Candidates[ctx.iNumCandidates - 4] + sizeof(int))
+				{
+					g_iFogColor_SCClient = (decltype(g_iFogColor_SCClient))ctx.Candidates[0];
+					g_iStartDist_SCClient = (decltype(g_iStartDist_SCClient))ctx.Candidates[3];
+					g_iEndDist_SCClient = (decltype(g_iEndDist_SCClient))ctx.Candidates[4];
+				}
+			}
+			Sig_VarNotFound(g_iFogColor_SCClient);
+			Sig_VarNotFound(g_iStartDist_SCClient);
+			Sig_VarNotFound(g_iEndDist_SCClient);
+
 			Install_InlineHook(ClientPortalManager_ResetAll);
 			Install_InlineHook(ClientPortalManager_DrawPortalSurface);
 			Install_InlineHook(ClientPortalManager_EnableClipPlane);
