@@ -125,11 +125,6 @@ public:
 	{
 		BaseClass::CopyArray( dar.Base(), dar.Count() );
 	}
-
-	ELEMTYPE GetRawElementAt(int index)
-	{
-		return m_pElements[index];
-	}
 };
 
 template<class ELEMTYPE> class Dar_Legacy
