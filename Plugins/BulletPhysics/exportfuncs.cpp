@@ -1503,12 +1503,10 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 	if (local && local->player && bv_syncview->value)
 	{
 		auto spectating_player = local;
-		auto aiming_player = local;
 
 		if (g_iUser1 && g_iUser2 && (*g_iUser1))
 		{
 			spectating_player = gEngfuncs.GetEntityByIndex((*g_iUser2));
-			aiming_player = gEngfuncs.GetEntityByIndex((*g_iUser1));
 		}
 
 		if (!CL_IsFirstPersonMode(spectating_player))
@@ -1523,23 +1521,21 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 
 				VectorCopy(pparams->simorg, save_simorg);
 				VectorCopy(spectating_player->origin, save_origin_spec);
-				VectorCopy(aiming_player->origin, save_origin_aiming);
 
 				gPhysicsManager.GetRagdollOrigin(ragdoll, spectating_player->origin);
 				VectorCopy(spectating_player->origin, pparams->simorg);
 
-				if (spectating_player != aiming_player)
+				if (spectating_player != local)
 				{
-					auto ragdoll_aiming = gPhysicsManager.FindRagdoll(aiming_player->index);
-					if (ragdoll_aiming)
+					auto ragdoll_spectating = gPhysicsManager.FindRagdoll(spectating_player->index);
+					if (ragdoll_spectating)
 					{
-						gPhysicsManager.GetRagdollOrigin(ragdoll_aiming, aiming_player->origin);
+						gPhysicsManager.GetRagdollOrigin(ragdoll_spectating, spectating_player->origin);
 					}
 				}
 
 				gExportfuncs.V_CalcRefdef(pparams);
 
-				VectorCopy(save_origin_aiming, aiming_player->origin);
 				VectorCopy(save_origin_spec, spectating_player->origin);
 				VectorCopy(save_simorg, pparams->simorg);
 

@@ -4245,6 +4245,7 @@ void R_FillAddress(void)
 				if (pinst->id == X86_INS_CMP &&
 					pinst->detail->x86.op_count == 2 &&
 					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
 					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
 					pinst->detail->x86.operands[1].imm == 0)
 				{

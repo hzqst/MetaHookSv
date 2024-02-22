@@ -165,6 +165,7 @@ void Engine_FillAddreess(void)
 				if (pinst->id == X86_INS_MOV &&
 					pinst->detail->x86.op_count == 2 &&
 					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
 					pinst->detail->x86.operands[1].type == X86_OP_REG &&
 					pinst->detail->x86.operands[1].reg == X86_REG_EAX)
 				{
@@ -576,15 +577,37 @@ void Engine_FillAddreess(void)
 
 void Client_FillAddress(void)
 {
-	if ((void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson > g_dwClientBase && (void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson < (PUCHAR)g_dwClientBase + g_dwClientSize)
+	ULONG ClientTextSize = 0;
+	PVOID ClientTextBase = ClientTextBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".text\0\0\0", &ClientTextSize);
+
+	if (!ClientTextBase)
+	{
+		Sys_Error("Failed to locate section \".text\" in client.dll!");
+		return;
+	}
+
+	ULONG ClientDataSize = 0;
+	auto ClientDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".data\0\0\0", &ClientDataSize);
+
+	ULONG ClientRDataSize = 0;
+	auto ClientRDataBase = g_pMetaHookAPI->GetSectionByName(g_dwClientBase, ".rdata\0\0", &ClientRDataSize);
+
+	if ((void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson > ClientTextBase && (void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson < (PUCHAR)ClientTextBase + ClientTextSize)
 	{
 		typedef struct
 		{
 			ULONG_PTR Candidates[16];
 			int iNumCandidates;
+
+			PVOID ClientDataBase;
+			ULONG ClientDataSize;
+
 		}CL_IsThirdPerson_ctx;
 
 		CL_IsThirdPerson_ctx ctx = { 0 };
+
+		ctx.ClientDataBase = ClientDataBase;
+		ctx.ClientDataSize = ClientDataSize;
 
 		g_pMetaHookAPI->DisasmRanges((void *)g_pMetaSave->pExportFuncs->CL_IsThirdPerson, 0x100, [](void *inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
 
@@ -606,10 +629,26 @@ void Client_FillAddress(void)
 						) &&
 					pinst->detail->x86.operands[1].type == X86_OP_MEM &&
 					pinst->detail->x86.operands[1].mem.base == 0 &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)g_dwClientBase &&
-					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)g_dwClientBase + g_dwClientSize)
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp > (PUCHAR)ctx->ClientDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[1].mem.disp < (PUCHAR)ctx->ClientDataBase + ctx->ClientDataSize)
 				{
 					ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[1].mem.disp;
+					ctx->iNumCandidates++;
+				}
+			}
+
+			if (ctx->iNumCandidates < 16)
+			{
+				if (pinst->id == X86_INS_CMP &&
+					pinst->detail->x86.op_count == 2 &&
+					pinst->detail->x86.operands[1].type == X86_OP_IMM &&
+					pinst->detail->x86.operands[1].imm == 0 &&
+					pinst->detail->x86.operands[0].type == X86_OP_MEM &&
+					pinst->detail->x86.operands[0].mem.base == 0 &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp > (PUCHAR)ctx->ClientDataBase &&
+					(PUCHAR)pinst->detail->x86.operands[0].mem.disp < (PUCHAR)ctx->ClientDataBase + ctx->ClientDataSize)
+				{
+					ctx->Candidates[ctx->iNumCandidates] = (ULONG_PTR)pinst->detail->x86.operands[0].mem.disp;
 					ctx->iNumCandidates++;
 				}
 			}
