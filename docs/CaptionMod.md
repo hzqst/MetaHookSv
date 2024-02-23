@@ -80,8 +80,6 @@ e.g. `\Sven Co-op\svencoop_hidpi` or `\Half-Life\valve_hidpi`
 
 #### Console Vars
 
-`cap_enabled` : To enable or disable CaptionMod's subtitle display.
-
 `cap_hudmessage` : To enable or disable CaptionMod's HUD TextMessage translation.
 
 `cap_netmessage` : To enable or disable CaptionMod's `__NETMESSAGE__` HUD TextMessage translation.
@@ -94,7 +92,27 @@ e.g. `\Sven Co-op\svencoop_hidpi` or `\Half-Life\valve_hidpi`
 
 `cap_newchat` : To enable or disable Source2007 style VGUI2 chat dialog.
 
-`cap_lang` : Indicate current game lanuage. Any changes to this cvar acutally do nothing. Provide the capability of getting client's current game language by sending network message "svc_sendcvarvalue" or "svc_sendcvarvalue2" or reading userinfo "cap_lang".
+`cap_lang` : Indicate current game lanuage. Any changes to this cvar acutally do nothing. Provide the capability of getting client's current game language by sending network message "svc_sendcvarvalue" or "svc_sendcvarvalue2" or reading userinfo "cap_lang" from server.
+
+#### Console Vars (Subtitle System)
+
+`cap_enabled` : Set to 1 to display subtitles (if available).
+
+`cap_subtitle_prefix` : Set to 1 to display speaker's name before subtitle lines.
+
+`cap_subtitle_waitplay` : Set to 1 to wait for all previous lines from being displayed before playing next line.
+
+`cap_subtitle_antispam` : Set to 1 to prevent the subtitle from spamming.
+
+`cap_subtitle_fadein` : Fade-in duration for new subtitle lines.
+
+`cap_subtitle_fadeout` : Fade-out duration for retired subtitle lines.
+
+`cap_subtitle_holdtime` : Default hold duration for subtitle lines.
+
+`cap_subtitle_stimescale` : Scaling factor for "StartTime".
+
+`cap_subtitle_htimescale` : Scaling factor for "HoldTime".
 
 #### Launch Parameters
 
