@@ -1859,7 +1859,7 @@ void R_StudioDrawVBOBegin(studio_vbo_t* VBOData)
 
 	memcpy(StudioUBO.bonematrix, (*pbonetransform), sizeof(mat3x4) * 128);
 
-	GL_UploadSubDataToUBO(r_wsurf.hSceneUBO, 0, sizeof(StudioUBO), &StudioUBO);
+	GL_UploadSubDataToUBO(VBOData->hStudioUBO, 0, sizeof(StudioUBO), &StudioUBO);
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_STUDIO_UBO, VBOData->hStudioUBO);
 
