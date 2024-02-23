@@ -995,7 +995,7 @@ void R_DrawDecals(cl_entity_t *ent)
 	if (CL_IsDevOverviewMode())
 		return;
 
-	if (r_draw_shadowcaster)
+	if (R_IsRenderingShadowView())
 		return;
 
 	if (g_iEngineType == ENGINE_SVENGINE)

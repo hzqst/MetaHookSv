@@ -198,6 +198,7 @@ bool r_draw_oitblend = false;
 bool r_draw_gammablend = false;
 bool r_draw_legacysprite = false;
 bool r_draw_reflectview = false;
+bool r_draw_refractview = false;
 bool r_draw_portalview = false;
 
 int r_renderview_pass = 0;
@@ -334,7 +335,7 @@ bool R_CanRenderFog()
 	if (CL_IsDevOverviewMode())
 		return false;
 
-	if (r_draw_reflectview)
+	if (R_IsRenderingWaterView())
 		return false;
 
 	return true;
@@ -356,6 +357,33 @@ bool R_IsRenderingFog()
 bool R_IsRenderingGBuffer()
 {
 	return GL_GetCurrentRenderingFBO() == &s_GBufferFBO;
+}
+
+/*
+	Purpose : Check if we are rendering Shadow Pass
+*/
+
+bool R_IsRenderingShadowView(void)
+{
+	return r_draw_shadowcaster;
+}
+
+/*
+	Purpose : Check if we are rendering Water Pass
+*/
+
+bool R_IsRenderingWaterView(void)
+{
+	return r_draw_reflectview || r_draw_refractview;
+}
+
+/*
+	Purpose : Check if we are rendering Portal Pass
+*/
+
+bool R_IsRenderingPortal(void)
+{
+	return g_bRenderingPortals_SCClient && (*g_bRenderingPortals_SCClient) == 1;
 }
 
 /*
@@ -1013,7 +1041,7 @@ void ClientDLL_DrawTransparentTriangles(void)
 
 void R_DrawTransEntities(int onlyClientDraw)
 {
-	if (r_draw_shadowcaster)
+	if (R_IsRenderingShadowView())
 		return;
 
 	GL_BeginProfile(&Profile_DrawTransEntities);
@@ -1101,7 +1129,7 @@ void R_DrawTransEntities(int onlyClientDraw)
 
 void R_AddTEntity(cl_entity_t *ent)
 {
-	if (r_draw_shadowcaster)
+	if (R_IsRenderingShadowView())
 		return;
 
 	if (!ent->model)
@@ -1678,6 +1706,7 @@ void GL_GenerateFrameBuffers(void)
 		GL_FrameBufferColorTexture(&s_LuminFBO[i], GL_R32F);
 
 		vec4_t clearColor = { 0, 0, 0, 0 };
+
 		GL_ClearColor(clearColor);
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -1699,6 +1728,7 @@ void GL_GenerateFrameBuffers(void)
 		GL_FrameBufferColorTexture(&s_Lumin1x1FBO[i], GL_R32F);
 
 		vec4_t clearColor = { 0, 0, 0, 0 };
+
 		GL_ClearColor(clearColor);
 
 		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -1866,8 +1896,8 @@ void GL_FlushFinalBuffer()
 {
 	GL_BindFrameBuffer(&s_FinalBufferFBO);
 	
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	vec4_t vecClearColor = { 0, 0, 0, 0 };
+	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_SKY, STENCIL_MASK_ALL);
 }
 
 bool SCR_IsLoadingVisible()
@@ -1972,38 +2002,6 @@ void R_PreRenderView()
 	r_sprite_drawcall = 0;
 	r_sprite_polys = 0;
 
-#if 0
-	//Capture OpenGL fog settings committed by client dll or engine dll.
-	r_fog_mode = 0;
-
-	//TODO use client dll settings...
-	if (glIsEnabled(GL_FOG))
-	{
-		glGetIntegerv(GL_FOG_MODE, &r_fog_mode);
-
-		if (r_fog_mode == GL_LINEAR)
-		{
-			glGetFloatv(GL_FOG_START, &r_fog_control[0]);
-			glGetFloatv(GL_FOG_END, &r_fog_control[1]);
-			glGetFloatv(GL_FOG_COLOR, r_fog_color);
-		}
-		else if (r_fog_mode == GL_EXP)
-		{
-			glGetFloatv(GL_FOG_START, &r_fog_control[0]);
-			glGetFloatv(GL_FOG_END, &r_fog_control[1]);
-			glGetFloatv(GL_FOG_DENSITY, &r_fog_control[2]);
-			glGetFloatv(GL_FOG_COLOR, r_fog_color);
-		}
-		else if (r_fog_mode == GL_EXP2)
-		{
-			glGetFloatv(GL_FOG_START, &r_fog_control[0]);
-			glGetFloatv(GL_FOG_END, &r_fog_control[1]);
-			glGetFloatv(GL_FOG_DENSITY, &r_fog_control[2]);
-			glGetFloatv(GL_FOG_COLOR, r_fog_color);
-		}
-	}
-#endif
-
 	//Always force GammaBlend to be disabled when rendering opaques.
 	r_draw_gammablend = false;
 
@@ -2029,7 +2027,8 @@ void R_PreRenderView()
 		R_ParseCvarAsColor3(gl_clearcolor, vecClearColor);
 	}
 
-	//TODO: Gamma correction for the clear color ?
+	GammaToLinear(vecClearColor);
+
 	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_WORLD, STENCIL_MASK_ALL);
 
 	glDepthFunc(GL_LEQUAL);
@@ -2163,11 +2162,6 @@ void R_PreDrawViewModel(void)
 #endif
 
 	r_draw_predrawviewmodel = false;
-}
-
-bool R_IsRenderingPortal(void)
-{
-	return g_bRenderingPortals_SCClient && (*g_bRenderingPortals_SCClient) == 1;
 }
 
 void R_ClearPortalClipPlanes(void)
@@ -2346,8 +2340,8 @@ void GL_EndRendering(void)
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, s_FinalBufferFBO.s_hBackBufferFBO);
 
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT);
+	vec4_t vecClearColor = { 0, 0, 0, 0 };
+	GL_ClearColor(vecClearColor);
 
 	glBlitFramebuffer(0, 0, srcW, srcH, dstX1, dstY1, dstX2, dstY2, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
@@ -2542,7 +2536,7 @@ void R_Shutdown(void)
 
 void R_ForceCVars(qboolean mp)
 {
-	if (r_draw_reflectview)
+	if (R_IsRenderingWaterView())
 		return;
 
 	if (gPrivateFuncs.R_ForceCVars)
@@ -3045,18 +3039,8 @@ void R_UploadProjMatrixForViewModel(void)
 	memcpy(SceneUBO.projMatrix, r_viewmodel_projection_matrix, sizeof(mat4));
 	memcpy(SceneUBO.invProjMatrix, r_viewmodel_projection_matrix_inv, sizeof(mat4));
 
-	if (glNamedBufferSubData)
-	{
-		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
-		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
-	}
-	else
-	{
-		glBindBuffer(GL_UNIFORM_BUFFER, r_wsurf.hSceneUBO);
-		glBufferSubData(GL_UNIFORM_BUFFER, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
-		glBufferSubData(GL_UNIFORM_BUFFER, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	}
+	GL_UploadSubDataToUBO(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
+	GL_UploadSubDataToUBO(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
 }
 
 void R_LoadProjMatrixForWorld(void)
@@ -3065,18 +3049,8 @@ void R_LoadProjMatrixForWorld(void)
 	memcpy(SceneUBO.projMatrix, r_projection_matrix, sizeof(mat4));
 	memcpy(SceneUBO.invProjMatrix, r_projection_matrix_inv, sizeof(mat4));
 
-	if (glNamedBufferSubData)
-	{
-		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
-		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
-	}
-	else
-	{
-		glBindBuffer(GL_UNIFORM_BUFFER, r_wsurf.hSceneUBO);
-		glBufferSubData(GL_UNIFORM_BUFFER, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
-		glBufferSubData(GL_UNIFORM_BUFFER, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	}
+	GL_UploadSubDataToUBO(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), &SceneUBO.projMatrix);
+	GL_UploadSubDataToUBO(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, invProjMatrix), sizeof(mat4), &SceneUBO.invProjMatrix);
 }
 
 void R_SetupGLForViewModel(void)
@@ -3159,14 +3133,14 @@ void R_SetupGL(void)
 		glwidth = gl_envmapsize->value;
 	}
 
-	if (r_draw_shadowcaster)
+	if (R_IsRenderingShadowView())
 	{
 		r_viewport[0] = 0;
 		r_viewport[1] = 0;
 		r_viewport[2] = current_shadow_texture->size;
 		r_viewport[3] = current_shadow_texture->size;
 	}
-	else if (r_draw_reflectview)
+	else if (R_IsRenderingWaterView())
 	{
 		r_viewport[0] = 0;
 		r_viewport[1] = 0;
@@ -3183,7 +3157,7 @@ void R_SetupGL(void)
 
 	glViewport(r_viewport[0], r_viewport[1], r_viewport[2], r_viewport[3]);
 
-	if (r_draw_shadowcaster)
+	if (R_IsRenderingShadowView())
 	{
 		float cone_fov = current_shadow_texture->cone_angle * 2 * 360 / (M_PI * 2);
 		R_SetupPerspective(cone_fov, cone_fov, 4.0f, current_shadow_texture->distance);
@@ -3338,7 +3312,7 @@ void R_SetupFrame(void)
 
 	(*r_oldviewleaf) = (*r_viewleaf);
 
-	if (r_draw_reflectview)
+	if (R_IsRenderingWaterView())
 	{
 		(*r_viewleaf) = Mod_PointInLeaf(g_CurrentCameraView, r_worldmodel);
 	}
@@ -3455,7 +3429,7 @@ void R_DrawEntitiesOnList(void)
 
 void R_AddTEntityForViewModel(cl_entity_t* ent)
 {
-	if (r_draw_shadowcaster)
+	if (R_IsRenderingShadowView())
 		return;
 
 	if (!ent->model)
@@ -3565,21 +3539,14 @@ void R_DrawTEntitiesForViewModel(void)
 void R_SetupFog(void)
 {
 	scene_ubo_t SceneUBO;
+
 	memcpy(SceneUBO.fogColor, r_fog_color, sizeof(vec4_t));
+
 	SceneUBO.fogStart = r_fog_control[0];
 	SceneUBO.fogEnd = r_fog_control[1];
 	SceneUBO.fogDensity = r_fog_control[2];
 
-	if (glNamedBufferSubData)
-	{
-		glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, fogColor), offsetof(scene_ubo_t, time) - offsetof(scene_ubo_t, fogColor), &SceneUBO.fogColor);
-	}
-	else
-	{
-		glBindBuffer(GL_UNIFORM_BUFFER, r_wsurf.hSceneUBO);
-		glBufferSubData(GL_UNIFORM_BUFFER, offsetof(scene_ubo_t, fogColor), offsetof(scene_ubo_t, time) - offsetof(scene_ubo_t, fogColor), &SceneUBO.fogColor);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	}
+	GL_UploadSubDataToUBO(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, fogColor), offsetof(scene_ubo_t, time) - offsetof(scene_ubo_t, fogColor), &SceneUBO.fogColor);
 
 	glEnable(GL_FOG);
 	glFogi(GL_FOG_MODE, r_fog_mode);

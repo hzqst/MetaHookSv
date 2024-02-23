@@ -233,10 +233,10 @@ void R_ShutdownShadow(void)
 
 bool R_ShouldRenderShadow(void)
 {
-	if (r_draw_shadowcaster)
+	if (R_IsRenderingShadowView())
 		return false;
 
-	if (r_draw_reflectview)
+	if (R_IsRenderingWaterView())
 		return false;
 
 	if (R_IsRenderingPortal())
@@ -395,20 +395,11 @@ void R_RenderShadowScene(void)
 			glViewport(0, 0, r_shadow_texture.size, r_shadow_texture.size);
 
 			vec4_t vecClearColor = { -99999, -99999, -99999, 1 };
+
 			GL_ClearColorDepthStencil(vecClearColor, 0, STENCIL_MASK_SKY, STENCIL_MASK_ALL);
 
-			if (glNamedBufferSubData)
-			{
-				glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, viewMatrix), sizeof(mat4), shadow_mvmatrix[i]);
-				glNamedBufferSubData(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), shadow_projmatrix[i]);
-			}
-			else
-			{
-				glBindBuffer(GL_UNIFORM_BUFFER, r_wsurf.hSceneUBO);
-				glBufferSubData(GL_UNIFORM_BUFFER, offsetof(scene_ubo_t, viewMatrix), sizeof(mat4), shadow_mvmatrix[i]);
-				glBufferSubData(GL_UNIFORM_BUFFER, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), shadow_projmatrix[i]);
-				glBindBuffer(GL_UNIFORM_BUFFER, 0);
-			}
+			GL_UploadSubDataToUBO(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, viewMatrix), sizeof(mat4), shadow_mvmatrix[i]);
+			GL_UploadSubDataToUBO(r_wsurf.hSceneUBO, offsetof(scene_ubo_t, projMatrix), sizeof(mat4), shadow_projmatrix[i]);
 
 			cl_entity_t *backup_curentity = (*currententity);
 
@@ -502,16 +493,18 @@ void R_RenderShadowDynamicLights(void)
 					(*r_refdef.viewangles)[1] = angle[1];
 					(*r_refdef.viewangles)[2] = angle[2];
 
-					if (gEngfuncs.GetLocalPlayer()->model)
+					auto pLocalPlayer = gEngfuncs.GetLocalPlayer();
+
+					if (pLocalPlayer->model)
 					{
-						auto save_localplayer_model = gEngfuncs.GetLocalPlayer()->model;
+						auto save_localplayer_model = pLocalPlayer->model;
 
 						//This stops local player from being rendered
-						gEngfuncs.GetLocalPlayer()->model = NULL;
+						pLocalPlayer->model = NULL;
 
 						R_RenderScene();
 
-						gEngfuncs.GetLocalPlayer()->model = save_localplayer_model;
+						pLocalPlayer->model = save_localplayer_model;
 					}
 					else
 					{

@@ -336,9 +336,6 @@ void GL_BlitFrameFufferToScreen(FBO_Container_t *src)
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, src->s_hBackBufferFBO);
 
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT);
-
 	glBlitFramebuffer(0, 0, src->iWidth, src->iHeight, 0, 0, glwidth, glheight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
 
@@ -781,13 +778,13 @@ bool R_IsGammaBlendEnabled()
 {
 	if (r_gamma_blend->value > 0)
 	{
-		if (r_draw_shadowcaster)
-			return false;
-
-		if (r_draw_reflectview)
-			return false;
-
 		if ((*r_refdef.onlyClientDraws))
+			return false;
+
+		if (R_IsRenderingShadowView())
+			return false;
+
+		if (R_IsRenderingWaterView())
 			return false;
 
 		if (R_IsRenderingPortal())
@@ -907,10 +904,10 @@ bool R_IsAmbientOcclusionEnabled(void)
 	if ((*r_refdef.onlyClientDraws))
 		return false;
 
-	if (r_draw_shadowcaster)
+	if (R_IsRenderingShadowView())
 		return false;
 
-	if (r_draw_reflectview)
+	if (R_IsRenderingWaterView())
 		return false;
 
 	if (R_IsRenderingPortal())

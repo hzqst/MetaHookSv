@@ -130,7 +130,7 @@ bool R_StudioHasOutline()
 
 bool R_StudioHasHairShadow()
 {
-	return r_draw_hashair && r_draw_hasface && r_studio_hair_shadow->value > 0 && !r_draw_shadowcaster;
+	return r_draw_hashair && r_draw_hasface && r_studio_hair_shadow->value > 0 && !R_IsRenderingShadowView();
 }
 
 void R_StudioClearAllBoneCaches()
@@ -1859,16 +1859,7 @@ void R_StudioDrawVBOBegin(studio_vbo_t* VBOData)
 
 	memcpy(StudioUBO.bonematrix, (*pbonetransform), sizeof(mat3x4) * 128);
 
-	if (glNamedBufferSubData)
-	{
-		glNamedBufferSubData(VBOData->hStudioUBO, 0, sizeof(StudioUBO), &StudioUBO);
-	}
-	else
-	{
-		glBindBuffer(GL_UNIFORM_BUFFER, VBOData->hStudioUBO);
-		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(StudioUBO), &StudioUBO);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	}
+	GL_UploadSubDataToUBO(r_wsurf.hSceneUBO, 0, sizeof(StudioUBO), &StudioUBO);
 
 	glBindBufferBase(GL_UNIFORM_BUFFER, BINDING_POINT_STUDIO_UBO, VBOData->hStudioUBO);
 
@@ -1893,7 +1884,7 @@ void R_StudioDrawVBOMesh_AnalyzePass(
 	const int flags)
 {
 	//Analysis pass
-	if (r_draw_shadowcaster)
+	if (R_IsRenderingShadowView())
 	{
 
 	}
@@ -1949,7 +1940,7 @@ void R_StudioDrawVBOMesh_DrawPass(
 {
 	program_state_t StudioProgramState = flags;
 
-	if (r_draw_shadowcaster)
+	if (R_IsRenderingShadowView())
 	{
 		StudioProgramState |= STUDIO_SHADOW_CASTER_ENABLED;
 	}
@@ -2651,7 +2642,7 @@ __forceinline void StudioRenderFinal_Template(CallType pfnRenderFinal, void* pth
 template<typename CallType>
 __forceinline void StudioRenderModel_Template(CallType pfnRenderModel, CallType pfnRenderFinal, void* pthis = nullptr, int dummy = 0)
 {
-	if (r_draw_shadowcaster)
+	if (R_IsRenderingShadowView())
 	{
 		pfnRenderModel(pthis, dummy);
 		return;

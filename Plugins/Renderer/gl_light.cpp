@@ -512,10 +512,14 @@ bool R_IsDeferredRenderingEnabled(void)
 	if (!r_light_dynamic->value)
 		return false;
 
-	if (r_draw_shadowcaster)
+	//TODO: really?
+	if ((*r_refdef.onlyClientDraws))
 		return false;
 
-	if (r_draw_reflectview)
+	if (R_IsRenderingShadowView())
+		return false;
+
+	if (R_IsRenderingWaterView())
 		return false;
 
 	if (R_IsRenderingPortal())

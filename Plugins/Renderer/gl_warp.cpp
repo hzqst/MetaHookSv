@@ -16,7 +16,7 @@ void R_DrawSkyBox(void)
 	if (CL_IsDevOverviewMode())
 		return;
 
-	if (r_draw_shadowcaster)
+	if (R_IsRenderingShadowView())
 		return;
 
 	if (!r_wsurf.vSkyboxTextureId[0])

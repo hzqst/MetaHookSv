@@ -253,6 +253,7 @@ extern cvar_t *r_shadows;
 extern cvar_t *r_mirroralpha;
 extern cvar_t *r_wateralpha;
 extern cvar_t *r_dynamic;
+extern cvar_t* r_novis;
 extern cvar_t *r_mmx;
 extern cvar_t *r_traceglow;
 extern cvar_t *r_wadtextures;
@@ -334,7 +335,6 @@ void V_RenderView(void);
 void R_RenderView(void);
 void R_RenderScene(void);
 void R_RenderView_SvEngine(int a1);
-bool R_IsRenderingPortal(void);
 qboolean R_CullBox(vec3_t mins, vec3_t maxs);
 qboolean Host_IsSinglePlayerGame();
 bool AllowCheats();
@@ -390,6 +390,7 @@ void GL_DeleteTexture(GLuint tex);
 void GL_DeleteBuffer(GLuint buf);
 void GL_DeleteVAO(GLuint VAO);
 void GL_BindVAO(GLuint VAO);
+void GL_UploadSubDataToUBO(GLuint UBO, size_t offset, size_t size, const void* data);
 void GL_UploadDataToVBOStaticDraw(GLuint VBO, size_t size, const void* data);
 void GL_UploadDataToVBODynamicDraw(GLuint VBO, size_t size, const void* data);
 void GL_UploadSubDataToVBODynamicDraw(GLuint VBO, size_t offset, size_t size, const void* data);
@@ -496,6 +497,9 @@ void GL_PushFrameBuffer(void);
 void GL_PopFrameBuffer(void);
 
 bool R_IsRenderingGBuffer();
+bool R_IsRenderingShadowView(void);
+bool R_IsRenderingWaterView(void);
+bool R_IsRenderingPortal(void);
 
 //Fog
 bool R_IsRenderingFog();
@@ -587,6 +591,7 @@ extern bool r_draw_oitblend;
 extern bool r_draw_gammablend;
 extern bool r_draw_legacysprite;
 extern bool r_draw_reflectview;
+extern bool r_draw_refractview;
 extern bool r_draw_portalview;
 
 extern int r_renderview_pass;

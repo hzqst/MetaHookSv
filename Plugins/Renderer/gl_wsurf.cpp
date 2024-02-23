@@ -1667,7 +1667,7 @@ void R_DrawWSurfVBOSolid(wsurf_vbo_leaf_t *vboleaf)
 		WSurfProgramState |= WSURF_GBUFFER_ENABLED;
 	}
 
-	if (r_draw_shadowcaster)
+	if (R_IsRenderingShadowView())
 	{
 		WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 	}
@@ -1806,7 +1806,7 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t * vboleaf, bool bUseZPrePass)
 			}
 		}
 
-		if (r_draw_shadowcaster)
+		if (R_IsRenderingShadowView())
 		{
 			WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 		}
@@ -1985,7 +1985,7 @@ void R_DrawWSurfVBOStatic(wsurf_vbo_leaf_t * vboleaf, bool bUseZPrePass)
 				}
 			}
 
-			if (r_draw_shadowcaster)
+			if (R_IsRenderingShadowView())
 			{
 				WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 			}
@@ -2226,7 +2226,7 @@ void R_DrawWSurfVBOAnim(wsurf_vbo_leaf_t *vboleaf, bool bUseZPrePass)
 			WSurfProgramState |= WSURF_OIT_BLEND_ENABLED;
 		}
 
-		if (r_draw_shadowcaster)
+		if (R_IsRenderingShadowView())
 		{
 			WSurfProgramState |= WSURF_SHADOW_CASTER_ENABLED;
 		}
@@ -2257,7 +2257,7 @@ float R_ScrollSpeed(void)
 
 bool R_ShouldDrawZPrePass(void)
 {
-	if (r_draw_shadowcaster)
+	if (R_IsRenderingShadowView())
 		return false;
 
 	return (r_wsurf_zprepass->value > 0) ? true : false;
@@ -2271,16 +2271,7 @@ void R_DrawWSurfVBO(wsurf_vbo_t *modvbo, cl_entity_t *ent)
 	memcpy(EntityUBO.color, r_entity_color, sizeof(vec4));
 	EntityUBO.scrollSpeed = R_ScrollSpeed();
 
-	if (glNamedBufferSubData)
-	{
-		glNamedBufferSubData(modvbo->hEntityUBO, 0, sizeof(EntityUBO), &EntityUBO);
-	}
-	else
-	{
-		glBindBuffer(GL_UNIFORM_BUFFER, modvbo->hEntityUBO);
-		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(EntityUBO), &EntityUBO);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	}
+	GL_UploadSubDataToUBO(modvbo->hEntityUBO, 0, sizeof(EntityUBO), &EntityUBO);
 
 	if (bUseBindless)
 	{
@@ -4075,6 +4066,10 @@ void R_SetupSceneUBO(void)
 	{
 		memcpy(SceneUBO.clipPlane, g_PortalClipPlane[0], sizeof(vec4_t));
 	}
+	else
+	{
+		memset(SceneUBO.clipPlane, 0, sizeof(vec4_t));
+	}
 
 	//Fog colors are converted to linear space before use.
 	memcpy(SceneUBO.fogColor, r_fog_color, sizeof(vec4_t));
@@ -4123,16 +4118,7 @@ void R_SetupSceneUBO(void)
 		SceneUBO.r_lightstylevalue[i / 4][i % 4] = d_lightstylevalue[i] * (1.0f / 264.0f);
 	}
 
-	if (glNamedBufferSubData)
-	{
-		glNamedBufferSubData(r_wsurf.hSceneUBO, 0, sizeof(SceneUBO), &SceneUBO);
-	}
-	else
-	{
-		glBindBuffer(GL_UNIFORM_BUFFER, r_wsurf.hSceneUBO);
-		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(SceneUBO), &SceneUBO);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	}
+	GL_UploadSubDataToUBO(r_wsurf.hSceneUBO, 0, sizeof(SceneUBO), &SceneUBO);
 }
 
 void R_SetupDLightUBO(void)
@@ -4168,16 +4154,7 @@ void R_SetupDLightUBO(void)
 
 	DLightUBO.active_dlights[0] = r_wsurf.iLightmapLegacyDLights;
 
-	if (glNamedBufferSubData)
-	{
-		glNamedBufferSubData(r_wsurf.hDLightUBO, 0, sizeof(DLightUBO), &DLightUBO);
-	}
-	else
-	{
-		glBindBuffer(GL_UNIFORM_BUFFER, r_wsurf.hDLightUBO);
-		glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(DLightUBO), &DLightUBO);
-		glBindBuffer(GL_UNIFORM_BUFFER, 0);
-	}
+	GL_UploadSubDataToUBO(r_wsurf.hDLightUBO, 0, sizeof(DLightUBO), &DLightUBO);
 }
 
 /*

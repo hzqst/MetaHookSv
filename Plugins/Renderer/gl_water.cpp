@@ -437,7 +437,7 @@ water_control_t *R_FindWaterControl(msurface_t *surf)
 
 void R_UpdateRippleTexture(water_vbo_t *VBOCache, int framecount)
 {
-	if (r_draw_reflectview)
+	if (R_IsRenderingWaterView())
 		return;
 
 #define RANDOM_BYTES_SIZE 256
@@ -699,6 +699,9 @@ void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
 	GL_SetCurrentSceneFBO(&s_BackBufferFBO);
 
 	vec4_t vecClearColor = { ReflectCache->color.r / 255.0f, ReflectCache->color.g / 255.0f, ReflectCache->color.b / 255.0f, 0 };
+
+	GammaToLinear(vecClearColor);
+
 	GL_ClearColorDepthStencil(vecClearColor, 1, STENCIL_MASK_SKY, STENCIL_MASK_ALL);
 
 	R_PushRefDef();
@@ -726,7 +729,10 @@ void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
 
 	auto saved_cl_waterlevel = *cl_waterlevel;
 	*cl_waterlevel = 0;
-	
+
+	auto saved_r_novis = r_novis->value;
+	r_novis->value = 1;
+
 	auto saved_r_drawentities = r_drawentities->value;
 
 	if (g_CurrentReflectCache->level == WATER_LEVEL_REFLECT_ENTITY)
@@ -741,6 +747,7 @@ void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
 	R_RenderScene();
 
 	r_drawentities->value = saved_r_drawentities;
+	r_novis->value = saved_r_novis;
 	*cl_waterlevel = saved_cl_waterlevel;
 
 	R_PopRefDef();
@@ -753,7 +760,7 @@ void R_RenderReflectView(water_reflect_cache_t *ReflectCache)
 
 void R_RenderWaterPass(void)
 {
-	if (r_draw_reflectview)
+	if (R_IsRenderingWaterView())
 		return;
 
 	GL_BeginProfile(&Profile_RenderWaterPass);
@@ -1298,10 +1305,10 @@ void R_DrawWaterVBO(water_vbo_t *WaterVBO, water_reflect_cache_t *ReflectCache, 
 
 void R_DrawWaters(wsurf_vbo_leaf_t *vboleaf, cl_entity_t *ent)
 {
-	if (r_draw_reflectview)
+	if (R_IsRenderingWaterView())
 		return;
 
-	if (r_draw_shadowcaster)
+	if (R_IsRenderingShadowView())
 		return;
 
 	if (!vboleaf->vWaterVBO.size())

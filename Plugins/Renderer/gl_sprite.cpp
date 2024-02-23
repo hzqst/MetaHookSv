@@ -713,7 +713,7 @@ void R_DrawSpriteModelInterpFrames(cl_entity_t* ent, msprite_t* pSprite, msprite
 
 void R_DrawSpriteModel(cl_entity_t *ent)
 {
-	if (r_draw_shadowcaster)
+	if (R_IsRenderingShadowView())
 		return;
 
 	auto pSprite = (msprite_t *)ent->model->cache.data;

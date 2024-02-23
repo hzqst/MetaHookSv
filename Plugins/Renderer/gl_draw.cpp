@@ -378,6 +378,20 @@ void GL_BindVAO(GLuint VAO)
 	glBindVertexArray(VAO);
 }
 
+void GL_UploadSubDataToUBO(GLuint UBO, size_t offset, size_t size, const void* data)
+{
+	if (glNamedBufferSubData)
+	{
+		glNamedBufferSubData(UBO, offset, size, data);
+	}
+	else
+	{
+		glBindBuffer(GL_UNIFORM_BUFFER, UBO);
+		glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data);
+		glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	}
+}
+
 void GL_UploadDataToVBOStaticDraw(GLuint VBO, size_t size, const void* data)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
