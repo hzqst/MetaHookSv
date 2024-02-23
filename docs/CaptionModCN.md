@@ -78,8 +78,6 @@
 
 #### 控制台参数
 
-`cap_enabled` : 是否启用字幕
-
 `cap_hudmessage` : 是否启用HUD文本消息的翻译功能
 
 `cap_netmessage` : 是否启用`__NETMESSAGE__`文本消息的翻译功能
@@ -93,6 +91,26 @@
 `cap_newchat` : 启用新的起源风格VGUI2聊天框
 
 `cap_lang` : 用于指示当前游戏使用的语言。修改该cvar的无任何实际效果。服务器可以发送 "svc_sendcvarvalue" 或 "svc_sendcvarvalue2" 消息，或者从userinfo "cap_lang" 中获取服务器中的玩家当前使用的语言。
+
+#### 控制台参数 (字幕系统)
+
+`cap_enabled` : 是否启用字幕，设为1时启用字幕（如果有字幕文件可用的话）
+
+`cap_subtitle_prefix` : 是否在字幕前显示显示说话人的名字。
+
+`cap_subtitle_waitplay` : 是否等待之前的字幕显示完再显示新的字幕，设为1时只有在旧字幕全部显示出来之后新的字幕才会被显示出来，为0时新字幕会绕过等待旧字幕的过程，直接插队到字幕队列的最前端。
+
+`cap_subtitle_antispam` : 设为1时防止同样的字幕刷屏。
+
+`cap_subtitle_fadein` : 新字幕的淡入时间，单位：秒。
+
+`cap_subtitle_fadeout` : 旧字幕的淡出时间，单位：秒。
+
+`cap_subtitle_holdtime` : 默认的字幕持续时间，单位：秒。
+
+`cap_subtitle_stimescale` : "字幕起始时间"的缩放因子。
+
+`cap_subtitle_htimescale` :  "字幕持续时间"的缩放因子。
 
 #### 启动项参数
 
