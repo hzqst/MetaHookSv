@@ -515,7 +515,40 @@ void R_FillAddress(void)
 			PUCHAR pFound = (PUCHAR)Search_Pattern_From_Size(SearchBegin, SearchLimit - SearchBegin, pattern);
 			if (pFound)
 			{
-				auto pCandidateFunction = g_pMetaHookAPI->ReverseSearchFunctionBegin(pFound, 0x80);
+				auto pCandidateFunction = g_pMetaHookAPI->ReverseSearchFunctionBeginEx(pFound, 0x80, [](PUCHAR Candidate) {
+
+					//.text:01D5E540 83 EC 14                                            sub     esp, 14h
+					//	.text : 01D5E543 56                                                  push    esi
+					if (Candidate[0] == 0x83 &&
+						Candidate[1] == 0xEC &&
+						Candidate[2] == 0x14 &&
+						Candidate[3] >= 0x50 &&
+						Candidate[3] <= 0x57)
+						return TRUE;
+
+					//.text : 01D82A50 55                                                  push    ebp
+					//.text : 01D82A51 8B EC                                               mov     ebp, esp
+					//.text:01D4BE83 83 EC 14                                            sub     esp, 14h
+					if (Candidate[-1] == 0xCC &&
+						Candidate[0] == 0x55 &&
+						Candidate[1] == 0x8B &&
+						Candidate[2] == 0xEC &&
+						Candidate[3] == 0x83 &&
+						Candidate[4] == 0xEC)
+						return TRUE;
+
+					//.text : 01D82A50 55                                                  push    ebp
+					//.text : 01D82A51 8B EC                                               mov     ebp, esp
+					if (Candidate[-1] == 0x90 &&
+						Candidate[0] == 0x68 &&
+						Candidate[1] == 0x00 &&
+						Candidate[2] == 0x1F &&
+						Candidate[3] == 0x00 &&
+						Candidate[4] == 0x00)
+						return TRUE;
+
+					return FALSE;
+				});
 				if (pCandidateFunction)
 				{
 					typedef struct
