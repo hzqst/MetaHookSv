@@ -519,7 +519,8 @@ void R_FillAddress(void)
 
 					//.text:01D5E540 83 EC 14                                            sub     esp, 14h
 					//	.text : 01D5E543 56                                                  push    esi
-					if (Candidate[0] == 0x83 &&
+					if ((Candidate[-1] == 0xCC || Candidate[-1] == 0x90 || Candidate[-1] == 0xC3) && 
+						Candidate[0] == 0x83 &&
 						Candidate[1] == 0xEC &&
 						Candidate[2] == 0x14 &&
 						Candidate[3] >= 0x50 &&
@@ -529,7 +530,7 @@ void R_FillAddress(void)
 					//.text : 01D82A50 55                                                  push    ebp
 					//.text : 01D82A51 8B EC                                               mov     ebp, esp
 					//.text:01D4BE83 83 EC 14                                            sub     esp, 14h
-					if (Candidate[-1] == 0xCC &&
+					if ((Candidate[-1] == 0xCC || Candidate[-1] == 0x90 || Candidate[-1] == 0xC3) &&
 						Candidate[0] == 0x55 &&
 						Candidate[1] == 0x8B &&
 						Candidate[2] == 0xEC &&
@@ -537,8 +538,6 @@ void R_FillAddress(void)
 						Candidate[4] == 0xEC)
 						return TRUE;
 
-					//.text : 01D82A50 55                                                  push    ebp
-					//.text : 01D82A51 8B EC                                               mov     ebp, esp
 					if (Candidate[-1] == 0x90 &&
 						Candidate[0] == 0x68 &&
 						Candidate[1] == 0x00 &&
