@@ -324,7 +324,6 @@ studio_vbo_t* R_PrepareStudioVBO(studiohdr_t* studiohdr)
 		return VBOData;
 
 	VBOData = new studio_vbo_t;
-	//VBOData->studiohdr = studiohdr;
 
 	R_AllocSlotForStudioVBO(studiohdr, VBOData);
 
@@ -1221,8 +1220,11 @@ void R_StudioLoadTextureModel(model_t* mod, studiohdr_t* studiohdr)
 	{
 		//This is actually 260 instead of 256
 		char modelname[260];
-		strncpy(modelname, mod->name, sizeof(modelname) - 2);
-		modelname[sizeof(modelname) - 2] = 0;
+
+		size_t maxmodelname = sizeof(modelname) - 1 - (sizeof("T.mdl"));
+
+		strncpy(modelname, mod->name, maxmodelname);
+		modelname[maxmodelname] = 0;
 
 		strcpy(&modelname[strlen(modelname) - 4], "T.mdl");
 
