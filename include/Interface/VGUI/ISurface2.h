@@ -7,6 +7,9 @@
 #include <mathlib/vector2d.h>
 #include <Color.h>
 
+class IHTMLResponses;
+class IHTMLChromeController;
+
 namespace vgui
 {
 
