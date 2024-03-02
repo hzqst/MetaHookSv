@@ -1220,7 +1220,76 @@ void CSurface2::SetAllowHTMLJavaScript(bool state)
 	}
 	return g_pSurface->SetAllowHTMLJavaScript(state);
 }
-
+void CSurface2::SetLanguage(const char* pchLang)
+{
+	if (g_pSurface_HL25)
+	{
+		g_pSurface_HL25->SetLanguage(pchLang);
+	}
+	else
+	{
+		g_pSurface->SetLanguage(pchLang);
+	}
+}
+const char* CSurface2::GetLanguage()
+{
+	if (g_pSurface_HL25)
+	{
+		return g_pSurface_HL25->GetLanguage();
+	}
+	return g_pSurface->GetLanguage();
+}void CSurface2::DrawUpdateRegionTextureBGRA(int nTextureID, int x, int y, const unsigned char* pchData, int wide, int tall)
+{
+	if (g_pSurface_HL25)
+	{
+		g_pSurface_HL25->DrawUpdateRegionTextureBGRA(nTextureID, x, y, pchData, wide, tall);
+	}
+	else
+	{
+		g_pSurface->DrawUpdateRegionTextureBGRA(nTextureID, x, y, pchData, wide, tall);
+	}
+}
+void CSurface2::DrawSetTextureBGRA(int id, const unsigned char* pchData, int wide, int tall)
+{
+	if (g_pSurface_HL25)
+	{
+		g_pSurface_HL25->DrawSetTextureBGRA(id, pchData, wide, tall);
+	}
+	else
+	{
+		g_pSurface->DrawSetTextureBGRA(id, pchData, wide, tall);
+	}
+}
+void CSurface2::CreateBrowser(vgui::VPANEL panel, IHTMLResponses* pBrowser, bool bPopupWindow, const char* pchUserAgentIdentifier)
+{
+	if (g_pSurface_HL25)
+	{
+		g_pSurface_HL25->CreateBrowser(panel, pBrowser, bPopupWindow, pchUserAgentIdentifier);
+	}
+	else
+	{
+		g_pSurface->CreateBrowser(panel, pBrowser, bPopupWindow, pchUserAgentIdentifier);
+	}
+}
+void CSurface2::RemoveBrowser(vgui::VPANEL panel, IHTMLResponses* pBrowser)
+{
+	if (g_pSurface_HL25)
+	{
+		g_pSurface_HL25->RemoveBrowser(panel, pBrowser);
+	}
+	else
+	{
+		g_pSurface->RemoveBrowser(panel, pBrowser);
+	}
+}
+IHTMLChromeController* CSurface2::AccessChromeHTMLController()
+{
+	if (g_pSurface_HL25)
+	{
+		return g_pSurface_HL25->AccessChromeHTMLController();
+	}
+	return g_pSurface->AccessChromeHTMLController();
+}
 // screen size changing
 void CSurface2::OnScreenSizeChanged(int nOldWidth, int nOldHeight)
 {

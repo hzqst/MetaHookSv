@@ -212,7 +212,14 @@ public:
 	float DrawGetAlphaMultiplier( void );
 
 	// web browser
-	void SetAllowHTMLJavaScript( bool state );
+	virtual void SetAllowHTMLJavaScript(bool state);
+	virtual void SetLanguage(const char* pchLang);
+	virtual const char* GetLanguage();
+	virtual void DrawUpdateRegionTextureBGRA(int nTextureID, int x, int y, const unsigned char* pchData, int wide, int tall);
+	virtual void DrawSetTextureBGRA(int id, const unsigned char* pchData, int wide, int tall);
+	virtual void CreateBrowser(VPANEL panel, IHTMLResponses* pBrowser, bool bPopupWindow, const char* pchUserAgentIdentifier);
+	virtual void RemoveBrowser(VPANEL panel, IHTMLResponses* pBrowser);
+	virtual IHTMLChromeController* AccessChromeHTMLController();
 	
 	// video mode changing
 	void OnScreenSizeChanged( int nOldWidth, int nOldHeight );

@@ -7,6 +7,9 @@
 #include <mathlib/vector2d.h>
 #include <Color.h>
 
+class IHTMLResponses;
+class IHTMLChromeController;
+
 namespace vgui
 {
 
@@ -248,10 +251,17 @@ public:
 	virtual double GetAbsoluteTime() const = 0;
 	virtual void SetForcingHDProportional(bool bForcingHDProportional) = 0;
 	virtual bool IsForcingHDProportional() const = 0;
+	virtual void SetLanguage(const char* pchLang) = 0;
+	virtual const char* GetLanguage() = 0;
+	virtual void DrawUpdateRegionTextureBGRA(int nTextureID, int x, int y, const unsigned char* pchData, int wide, int tall) = 0;
+	virtual void DrawSetTextureBGRA(int id, const unsigned char* pchData, int wide, int tall) = 0;
+	virtual void CreateBrowser(VPANEL panel, IHTMLResponses* pBrowser, bool bPopupWindow, const char* pchUserAgentIdentifier) = 0;
+	virtual void RemoveBrowser(VPANEL panel, IHTMLResponses* pBrowser) = 0;
+	virtual IHTMLChromeController* AccessChromeHTMLController() = 0;
 };
 
 }
 
-#define VGUI_SURFACE2_INTERFACE_VERSION "VGUI_Surface2_003"
+#define VGUI_SURFACE2_INTERFACE_VERSION "VGUI_Surface2_004"
 
 #endif
