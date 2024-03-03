@@ -222,7 +222,7 @@ public:
 			std::string Tmdl = std::format("models/player/{0}/{0}T.mdl", m_localFileNameBase);
 			std::string tmdl = std::format("models/player/{0}/{0}t.mdl", m_localFileNameBase);
 
-			if (!FILESYSTEM_ANY_FILEEXISTS(Tmdl.c_str()) && FILESYSTEM_ANY_FILEEXISTS(tmdl.c_str()))
+			if (!FILESYSTEM_ANY_FILEEXISTS(Tmdl.c_str()) && !FILESYSTEM_ANY_FILEEXISTS(tmdl.c_str()))
 				return false;
 		}
 
