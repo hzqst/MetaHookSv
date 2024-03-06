@@ -192,6 +192,12 @@ Q: 因为 ThreadGuard.dll 会在游戏退出时强制等待 V社创建的网络�
 
 [中文文档](docs/ResourceReplacerCN.md) [ENGLISH DOC](docs/ResourceReplacer.md)
 
+### SCCameraFix  (只支持Sven Co-op)
+
+该插件修复了Sven Co-op的观察者模式下摄像机视角/画面高频抖动的问题。
+
+部分代码来自[halflife-updated](https://github.com/SamVanheer/halflife-updated)
+
 ### ABCEnchance (第三方) (只支持Sven Co-op)
 
 该插件提供以下功能：
