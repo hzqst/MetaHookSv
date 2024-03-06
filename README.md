@@ -182,6 +182,12 @@ This plugin replaces in-game resources (mainly model and sound files) at runtime
 
 [DOC](docs/ResourceReplacer.md) [中文文档](docs/ResourceReplacerCN.md)
 
+### SCCameraFix  (Sven Co-op only)
+
+This plugin fixes camera glitching in spectator-view for Sven Co-op.
+
+The updated spectator-view code credits to [halflife-updated](https://github.com/SamVanheer/halflife-updated)
+
 ### ABCEnchance (third-party) (Sven Co-op only)
 
 ABCEnchance is a metahook plugin that provides experience improvement for Sven co-op.
