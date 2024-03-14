@@ -4,6 +4,8 @@
 #include "privatehook.h"
 #include "ThreadManager.h"
 
+#include <IEngine.h>
+
 private_funcs_t gPrivateFuncs = { 0 };
 
 hook_t* g_pHook_FreeLibrary_Engine = NULL;
@@ -14,8 +16,25 @@ IThreadManager* g_ThreadManager_GameUI = NULL;
 IThreadManager* g_ThreadManager_ServerBrowser = NULL;
 IThreadManager* g_ThreadManager_ServerDLL = NULL;
 
+IEngine** engine = NULL;
+
 void ServerDLL_WaitForShutdown(HMODULE hModule);
 void ServerBrowser_WaitForShutdown(HMODULE hModule);
+
+#define DLL_INACTIVE 0		// no dll
+#define DLL_ACTIVE   1		// dll is running
+#define DLL_PAUSED   2		// dll is paused
+#define DLL_CLOSE    3		// closing down dll
+#define DLL_TRANS    4 		// Level Transition
+#define DLL_RESTART  5      // engine is shutting down but will restart right away
+
+int GetEngineDLLState()
+{
+	if (engine)
+		return (*engine)->GetState();
+
+	return DLL_INACTIVE;
+}
 
 BOOL WINAPI NewFreeLibrary_Engine(HMODULE hModule)
 {
@@ -39,7 +58,7 @@ BOOL WINAPI NewFreeLibrary_GameUI(HMODULE hModule)
 
 void Engine_WaitForShutdown(HMODULE hModule, BlobHandle_t hBlobModule)
 {
-	if (g_ThreadManager_Engine)
+	if (g_ThreadManager_Engine && GetEngineDLLState() == DLL_CLOSE)
 	{
 		g_ThreadManager_Engine->StartTermination();
 		g_ThreadManager_Engine->WaitForAliveThreadsToShutdown();
@@ -62,6 +81,55 @@ void Engine_InstallHook(HMODULE hModule, BlobHandle_t hBlobModule)
 	{
 		g_ThreadManager_Engine = CreateThreadManagerForBlob(hBlobModule);
 		g_ThreadManager_Engine->InstallHook(hookflag_CreateThread | hookflag_WaitForSingleObject | hookflag_Sleep);
+	}
+
+	if (1)
+	{
+		const char sigs1[] = "Sys_InitArgv( OrigCmd )";
+		auto Sys_InitArgv_String = Search_Pattern_Data(sigs1);
+		if (!Sys_InitArgv_String)
+			Sys_InitArgv_String = Search_Pattern_Rdata(sigs1);
+		if (Sys_InitArgv_String)
+		{
+			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
+			*(DWORD*)(pattern + 1) = (DWORD)Sys_InitArgv_String;
+			auto Sys_InitArgv_PushString = (PUCHAR)Search_Pattern(pattern);
+			if (Sys_InitArgv_PushString)
+			{
+				g_pMetaHookAPI->DisasmRanges(Sys_InitArgv_PushString, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
+				{
+					auto pinst = (cs_insn*)inst;
+
+					if (pinst->id == X86_INS_MOV &&
+						pinst->detail->x86.op_count == 2 &&
+						pinst->detail->x86.operands[0].type == X86_OP_REG &&
+						pinst->detail->x86.operands[1].type == X86_OP_MEM &&
+						pinst->detail->x86.operands[1].mem.base == 0)
+					{//A1 40 77 7B 02 mov     eax, gl_backbuffer_fbo
+						ULONG_PTR imm = pinst->detail->x86.operands[1].mem.disp;
+
+						if (imm >= (ULONG_PTR)g_dwEngineDataBase && imm < (ULONG_PTR)g_dwEngineDataBase + g_dwEngineDataSize)
+						{
+							engine = (decltype(engine))imm;
+							return TRUE;
+						}
+					}
+
+					if (address[0] == 0xCC)
+						return TRUE;
+
+					if (pinst->id == X86_INS_RET)
+						return TRUE;
+
+					return FALSE;
+				}, 0, NULL);
+			}
+		}
+	}
+
+	if (!engine)
+	{
+		Sys_Error("CEngine not found");
 	}
 }
 
@@ -113,7 +181,7 @@ void GameUI_UnistallHook(HMODULE hModule)
 
 void ServerDLL_WaitForShutdown(HMODULE hModule)
 {
-	if (g_ThreadManager_ServerDLL)
+	if (g_ThreadManager_ServerDLL && GetEngineDLLState() == DLL_CLOSE)
 	{
 		g_ThreadManager_ServerDLL->StartTermination();
 		g_ThreadManager_ServerDLL->WaitForAliveThreadsToShutdown();
@@ -144,7 +212,7 @@ void ServerDLL_UninstallHook(HMODULE hModule)
 
 void ServerBrowser_WaitForShutdown(HMODULE hModule)
 {
-	if (g_ThreadManager_ServerBrowser)
+	if (g_ThreadManager_ServerBrowser && GetEngineDLLState() == DLL_CLOSE)
 	{
 		g_ThreadManager_ServerBrowser->StartTermination();
 		g_ThreadManager_ServerBrowser->WaitForAliveThreadsToShutdown();

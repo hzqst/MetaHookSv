@@ -57,6 +57,7 @@ HANDLE WINAPI NewCreateThread(
 
 DWORD WINAPI NewWaitForSingleObject(HANDLE hHandle,  DWORD dwMilliseconds)
 {
+	//Fuck valve
 	if (dwMilliseconds == 0)
 	{
 		auto ThreadManager = FindThreadManagerByVirtualAddress(_ReturnAddress());

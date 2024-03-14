@@ -242,7 +242,7 @@ DWORD MH_LoadBlobFile(BYTE* pBuffer, void** pBlobFootPrint, void** pv, DWORD dwB
 	return 0;
 }
 
-void MH_FreeBlob(void** pBlobFootPrint)
+void MH_FreeBlobProxy(void** pBlobFootPrint)
 {
 	BlobHandle_t hBlob = (BlobHandle_t)(*pBlobFootPrint);
 
@@ -2043,7 +2043,7 @@ void MH_LoadEngine(HMODULE hEngineModule, BlobHandle_t hBlobEngine, const char* 
 	*/
 	if (g_pfnFreeBlob)
 	{
-		MH_InlineHook(g_pfnFreeBlob, MH_FreeBlob, NULL);
+		MH_InlineHook(g_pfnFreeBlob, MH_FreeBlobProxy, NULL);
 	}
 
 	MH_LoadDllPaths(szGameName, szFullGamePath);

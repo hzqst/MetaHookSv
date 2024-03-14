@@ -164,9 +164,13 @@ void MH_DispatchLoadLdrDllNotificationCallback(PCUNICODE_STRING FullDllName, PCU
 	if (FullDllName)
 	{
 		UnicodeToWString(FullDllName, wFullDllName);
-		UnicodeToWString(BaseDllName, wBaseDllName);
 
 		ctx.FullDllName = wFullDllName.c_str();
+	}
+
+	if (BaseDllName)
+	{
+		UnicodeToWString(BaseDllName, wBaseDllName);
 		ctx.BaseDllName = wBaseDllName.c_str();
 	}
 
@@ -217,7 +221,9 @@ static NTSTATUS NTAPI NewLdrLoadDll(PWSTR a1, PULONG a2, PUNICODE_STRING a3, PVO
 	{
 		auto pLdrEntryInfo = GetLdrEntryInfoByDllBase(*a4);
 
-		if (pLdrEntryInfo)
+		if (pLdrEntryInfo &&
+			//Skip here, dispatch engine notification manually
+			pLdrEntryInfo->DllBase != MH_GetEngineBase())
 		{
 			MH_DispatchLoadLdrDllNotificationCallback(&pLdrEntryInfo->FullDllName, &pLdrEntryInfo->BaseDllName, pLdrEntryInfo->DllBase, pLdrEntryInfo->SizeOfImage, LOAD_DLL_NOTIFICATION_IS_LOAD);
 		}
@@ -236,13 +242,19 @@ VOID CALLBACK LdrDllNotificationCallback(
 	{
 		auto& args = NotificationData->Loaded;
 
-		MH_DispatchLoadLdrDllNotificationCallback(args.FullDllName, args.BaseDllName, args.DllBase, args.SizeOfImage, LOAD_DLL_NOTIFICATION_IS_LOAD | LOAD_DLL_NOTIFICATION_IS_IN_CRIT_REGION);
+		if (args.DllBase != MH_GetEngineBase())
+		{
+			MH_DispatchLoadLdrDllNotificationCallback(args.FullDllName, args.BaseDllName, args.DllBase, args.SizeOfImage, LOAD_DLL_NOTIFICATION_IS_LOAD | LOAD_DLL_NOTIFICATION_IS_IN_CRIT_REGION);
+		}
 	}
 	else if (NotificationReason == LDR_DLL_NOTIFICATION_REASON_UNLOADED)
 	{
 		auto& args = NotificationData->Unloaded;
 
-		MH_DispatchLoadLdrDllNotificationCallback(args.FullDllName, args.BaseDllName, args.DllBase, args.SizeOfImage, LOAD_DLL_NOTIFICATION_IS_UNLOAD | LOAD_DLL_NOTIFICATION_IS_IN_CRIT_REGION);
+		if (args.DllBase != MH_GetEngineBase())
+		{
+			MH_DispatchLoadLdrDllNotificationCallback(args.FullDllName, args.BaseDllName, args.DllBase, args.SizeOfImage, LOAD_DLL_NOTIFICATION_IS_UNLOAD | LOAD_DLL_NOTIFICATION_IS_IN_CRIT_REGION);
+		}
 	}
 	g_IsInLdrCriticalRegion = false;
 }

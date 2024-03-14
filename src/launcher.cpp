@@ -1,5 +1,5 @@
 #include "metahook.h"
-#include <IEngine.h>
+#include <IEngineAPI.h>
 #include "LoadBlob.h"
 #include "LoadDllNotification.h"
 #include "sys.h"
@@ -13,6 +13,9 @@ IFileSystem* g_pFileSystem = nullptr;
 
 PVOID g_BlobLoaderSectionBase = NULL;
 ULONG g_BlobLoaderSectionSize = 0;
+
+PVOID MH_GetEngineBase(void);
+DWORD MH_GetEngineSize(void);
 
 #if 0
 #include <dbghelp.h>
@@ -330,7 +333,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 		memset(szNewCommandParams, 0, sizeof(szNewCommandParams));
 
-		IEngine *engineAPI = NULL;
+		IEngineAPI *EngineAPI = NULL;
 		HINTERFACEMODULE hEngine = NULL;
 		BlobHandle_t hBlobEngine = NULL;
 
@@ -383,12 +386,12 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			{
 				BlobLoaderAddBlob(hBlobEngine);
 				RunDllMainForBlob(hBlobEngine, DLL_PROCESS_ATTACH);
-				RunExportEntryForBlob(hBlobEngine, (void**)&engineAPI);
+				RunExportEntryForBlob(hBlobEngine, (void**)&EngineAPI);
 
-				if (!engineAPI)
+				if (!EngineAPI)
 				{
 					char msg[512];
-					wsprintf(msg, "Could not get engineAPI from engine : %s.", pszEngineDLL);
+					wsprintf(msg, "Could not get EngineAPI from engine : %s.", pszEngineDLL);
 					MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
 					ExitProcess(0);
 				}
@@ -406,9 +409,9 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				ExitProcess(0);
 			}
 
-			CreateInterfaceFn engineCreateInterface = (CreateInterfaceFn)Sys_GetFactory(hEngine);
+			CreateInterfaceFn EngineFactory = (CreateInterfaceFn)Sys_GetFactory(hEngine);
 
-			if (!engineCreateInterface)
+			if (!EngineFactory)
 			{
 				char msg[512];
 				wsprintf(msg, "Could not get factory from engine : %s.", pszEngineDLL);
@@ -416,22 +419,22 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				ExitProcess(0);
 			}
 
-			engineAPI = (IEngine *)engineCreateInterface(VENGINE_LAUNCHER_API_VERSION, NULL);
+			EngineAPI = (IEngineAPI *)EngineFactory(VENGINE_LAUNCHER_API_VERSION, NULL);
 
-			if (!engineAPI)
+			if (!EngineAPI)
 			{
 				char msg[512];
-				wsprintf(msg, "Could not get engineAPI from engine : %s.", pszEngineDLL);
+				wsprintf(msg, "Could not get EngineAPI from engine : %s.", pszEngineDLL);
 				MessageBoxA(NULL, msg, "Fatal Error", MB_ICONERROR);
 				ExitProcess(0);
 			}
 		}
 
-		if (engineAPI)
+		if (EngineAPI)
 		{
 			MH_LoadEngine((HMODULE)hEngine, hBlobEngine, szGameName, szFullPath);
 
-			iResult = engineAPI->Run(hInstance, Sys_GetLongPathName(), CommandLine()->GetCmdLine(), szNewCommandParams, Sys_GetFactoryThis(), Sys_GetFactory(hFileSystem));
+			iResult = EngineAPI->Run(hInstance, Sys_GetLongPathName(), CommandLine()->GetCmdLine(), szNewCommandParams, Sys_GetFactoryThis(), Sys_GetFactory(hFileSystem));
 
 			MH_ExitGame(iResult);
 			
@@ -443,6 +446,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			}
 			else
 			{
+				MH_DispatchLoadLdrDllNotificationCallback(NULL, NULL, MH_GetEngineBase(), MH_GetEngineSize(), LOAD_DLL_NOTIFICATION_IS_UNLOAD);
 				Sys_FreeModule(hEngine);
 			}
 
