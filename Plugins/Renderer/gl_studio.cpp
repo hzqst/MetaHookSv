@@ -2468,6 +2468,13 @@ void R_StudioTransformVector(vec3_t in, vec3_t out)
 	out[2] = in[0] * (*rotationmatrix)[2][0] + in[1] * (*rotationmatrix)[2][1] + in[2] * (*rotationmatrix)[2][2] + (*rotationmatrix)[2][3];
 }
 
+void studioapi_RestoreRenderer(void)
+{
+	glDepthMask(1);
+
+	gPrivateFuncs.studioapi_RestoreRenderer();
+}
+
 qboolean studioapi_StudioCheckBBox(void)
 {
 	if (!g_bIsSvenCoop)

@@ -237,9 +237,6 @@ extern msurface_t **waterchain;
 
 extern int *gSkyTexNumber;
 
-extern float gldepthmin;
-extern float gldepthmax;
-
 extern cvar_t *r_bmodelinterp;
 extern cvar_t *r_bmodelhighfrac;
 extern cvar_t *r_norefresh;

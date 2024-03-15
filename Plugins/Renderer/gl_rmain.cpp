@@ -27,8 +27,6 @@ int r_fog_mode = 0;
 float r_fog_control[3] = { 0 };
 float r_fog_color[4] = { 0 };
 
-float gldepthmin = 0, gldepthmax = 1;
-
 cl_entity_t *r_worldentity = NULL;
 model_t *r_worldmodel = NULL;
 model_t *r_playermodel = NULL;

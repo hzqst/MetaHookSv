@@ -404,6 +404,7 @@ void R_StudioFreeTextureCallback(gltexture_t* glt);
 studio_vbo_material_t* R_StudioGetVBOMaterialFromTextureId(int gltexturenum);
 void studioapi_StudioDynamicLight(cl_entity_t *ent, alight_t *plight);
 qboolean studioapi_StudioCheckBBox(void);
+void studioapi_RestoreRenderer(void);
 void __fastcall GameStudioRenderer_StudioRenderModel(void *pthis, int);
 void __fastcall GameStudioRenderer_StudioRenderFinal(void *pthis, int);
 void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int);

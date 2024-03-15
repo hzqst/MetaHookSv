@@ -120,6 +120,7 @@ typedef struct
 	//Engine Studio Exported API
 	void (*studioapi_StudioDynamicLight)(struct cl_entity_s *ent, struct alight_s *plight);
 	qboolean (*studioapi_StudioCheckBBox)(void);
+	void(*studioapi_RestoreRenderer)(void);
 
 	//Client Studio
 	void(__fastcall *GameStudioRenderer_StudioSetupBones)(void *pthis, int);

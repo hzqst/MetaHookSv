@@ -38,6 +38,7 @@ static hook_t* g_phook_CL_FxBlend = NULL;
 
 void R_UninstallHooksForEngineStudioInterface(void)
 {
+	Uninstall_Hook(studioapi_RestoreRenderer);
 	Uninstall_Hook(studioapi_StudioDynamicLight);
 	Uninstall_Hook(studioapi_StudioCheckBBox);
 	Uninstall_Hook(CL_FxBlend);
@@ -313,6 +314,7 @@ int HUD_Redraw(float time, int intermission)
 int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppinterface, struct engine_studio_api_s *pstudio)
 {
 	//Save StudioAPI Funcs
+	gPrivateFuncs.studioapi_RestoreRenderer = pstudio->RestoreRenderer;
 	gPrivateFuncs.studioapi_StudioDynamicLight = pstudio->StudioDynamicLight;
 	gPrivateFuncs.studioapi_StudioCheckBBox = pstudio->StudioCheckBBox;
 
@@ -974,6 +976,7 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 	gpStudioInterface = ppinterface;
 
 	//InlineHook StudioAPI
+	Install_InlineHook(studioapi_RestoreRenderer);
 	Install_InlineHook(studioapi_StudioDynamicLight);
 	Install_InlineHook(studioapi_StudioCheckBBox);
 	Install_InlineHook(CL_FxBlend);
