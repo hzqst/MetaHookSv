@@ -327,7 +327,7 @@ cvar_t *r_additive_shift = NULL;
 
 bool R_CanRenderFog()
 {
-	if (!(*r_refdef.onlyClientDraws))
+	if ((*r_refdef.onlyClientDraws))
 		return false;
 
 	if (CL_IsDevOverviewMode())
