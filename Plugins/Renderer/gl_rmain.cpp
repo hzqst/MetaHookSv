@@ -3923,7 +3923,7 @@ void R_LoadSky_PreCall(const char* name)
 #endif
 }
 
-void R_LoadLegacySkyTextures(const char* name)
+bool R_LoadLegacySkyTextures(const char* name)
 {
 #if 0
 	auto skytexorder = (g_iEngineType == ENGINE_SVENGINE) ? skytexorder_svengine : skytexorder_goldsrc;
@@ -3935,6 +3935,7 @@ void R_LoadLegacySkyTextures(const char* name)
 			r_wsurf.vSkyboxTextureId[0 + i] = gSkyTexNumber[skytexorder[i]];
 		}
 	}
+	return true;
 #else
 
 	const char* suf[6] = { "rt", "lf", "bk", "ft", "up", "dn" };
@@ -3960,16 +3961,17 @@ void R_LoadLegacySkyTextures(const char* name)
 		if (!bLoaded)
 		{
 			gEngfuncs.Con_DPrintf("R_LoadLegacySkyTextures: Failed to load %s\n", fullPath);
-			continue;
+
+			return false;
 		}
 
 		r_wsurf.vSkyboxTextureId[0 + i] = loadResult.gltexturenum;
 	}
-
+	return true;
 #endif
 }
 
-void R_LoadDetailSkyTextures(const char* name)
+bool R_LoadDetailSkyTextures(const char* name)
 {
 	const char* suf[6] = { "rt", "lf", "bk", "ft", "up", "dn" };
 
@@ -3994,18 +3996,32 @@ void R_LoadDetailSkyTextures(const char* name)
 		if (!bLoaded)
 		{
 			gEngfuncs.Con_DPrintf("R_LoadDetailSkyTexture: Failed to load %s\n", fullPath);
-			continue;
+
+			return false;
 		}
 
 		r_wsurf.vSkyboxTextureId[6 + i] = loadResult.gltexturenum;
 	}
+
+	return true;
 }
 
 void R_LoadSky_PostCall(const char *name)
 {
-	R_LoadLegacySkyTextures(name);
-
-	R_LoadDetailSkyTextures(name);
+	if (R_LoadLegacySkyTextures(name))
+	{
+		R_LoadDetailSkyTextures(name);
+	}
+	else
+	{
+		if (strcmp(name, "desert") != 0)
+		{
+			if (R_LoadLegacySkyTextures("desert"))
+			{
+				R_LoadDetailSkyTextures("desert");
+			}
+		}
+	}
 
 	R_CreateBindlessTexturesForSkybox();
 }
