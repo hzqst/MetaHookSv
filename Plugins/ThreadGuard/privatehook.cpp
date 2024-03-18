@@ -58,7 +58,7 @@ BOOL WINAPI NewFreeLibrary_GameUI(HMODULE hModule)
 
 void Engine_WaitForShutdown(HMODULE hModule, BlobHandle_t hBlobModule)
 {
-	if (g_ThreadManager_Engine && GetEngineDLLState() == DLL_CLOSE)
+	if (g_ThreadManager_Engine && (GetEngineDLLState() == DLL_CLOSE || GetEngineDLLState() == DLL_RESTART))
 	{
 		g_ThreadManager_Engine->StartTermination();
 		g_ThreadManager_Engine->WaitForAliveThreadsToShutdown();
@@ -181,7 +181,7 @@ void GameUI_UnistallHook(HMODULE hModule)
 
 void ServerDLL_WaitForShutdown(HMODULE hModule)
 {
-	if (g_ThreadManager_ServerDLL && GetEngineDLLState() == DLL_CLOSE)
+	if (g_ThreadManager_ServerDLL && (GetEngineDLLState() == DLL_CLOSE || GetEngineDLLState() == DLL_RESTART))
 	{
 		g_ThreadManager_ServerDLL->StartTermination();
 		g_ThreadManager_ServerDLL->WaitForAliveThreadsToShutdown();
@@ -212,7 +212,7 @@ void ServerDLL_UninstallHook(HMODULE hModule)
 
 void ServerBrowser_WaitForShutdown(HMODULE hModule)
 {
-	if (g_ThreadManager_ServerBrowser && GetEngineDLLState() == DLL_CLOSE)
+	if (g_ThreadManager_ServerBrowser && (GetEngineDLLState() == DLL_CLOSE || GetEngineDLLState() == DLL_RESTART))
 	{
 		g_ThreadManager_ServerBrowser->StartTermination();
 		g_ThreadManager_ServerBrowser->WaitForAliveThreadsToShutdown();
