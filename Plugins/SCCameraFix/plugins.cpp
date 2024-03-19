@@ -63,7 +63,7 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 	pExportFunc->CAM_Think = CAM_Think;
 	pExportFunc->HUD_Init = HUD_Init;
-	pExportFunc->V_CalcRefdef = V_CalcRefdef;
+	//pExportFunc->V_CalcRefdef = V_CalcRefdef;
 
 	Client_FillAddress();
 	Client_InstallHooks();

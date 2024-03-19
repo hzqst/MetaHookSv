@@ -210,11 +210,11 @@ void main()
 
     vec4 finalColor = diffuseColor * lightmapColor;
 
-#if !defined(SKY_FOG_ENABLED) && defined(TEXTURE_VIEW_AVAILABLE)
+#if !defined(SKY_FOG_ENABLED)
 
 	uint stencilValue = texture(stencilTex, texCoord).r;
 
-	if((stencilValue & STENCIL_MASK_HAS_FOG) != 0)
+	if((stencilValue & STENCIL_MASK_HAS_FOG) == 0)
 		out_FragColor = finalColor;
 	else
 		out_FragColor = CalcFogWithDistance(finalColor, worldnormColor.z);

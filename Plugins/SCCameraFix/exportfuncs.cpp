@@ -979,11 +979,14 @@ void V_CalcRefdef(struct ref_params_s* pparams)
 #endif
 	gExportfuncs.V_CalcRefdef(pparams);
 
+#if 0
 	vec3_t fogColor;
 	fogColor[0] = g_iFogColor_SCClient[0] / 255.0f;
 	fogColor[1] = g_iFogColor_SCClient[1] / 255.0f;
 	fogColor[2] = g_iFogColor_SCClient[2] / 255.0f;
 	gEngfuncs.pTriAPI->Fog(fogColor, (*g_iStartDist_SCClient), (*g_iEndDist_SCClient), true);
+#endif
+
 }
 
 void HUD_Init(void)

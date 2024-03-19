@@ -868,6 +868,11 @@ int triapi_BoxInPVS(float* mins, float* maxs)
 	return R_PVSNode(r_worldmodel->nodes, mins, maxs) != NULL;
 }
 
+void triapi_Fog(float* flFogColor, float flStart, float flEnd, BOOL bOn)
+{
+	gPrivateFuncs.triapi_Fog(flFogColor, flStart, flEnd, bOn);
+}
+
 void triapi_RenderMode(int mode)
 {
 	gPrivateFuncs.triapi_RenderMode(mode);

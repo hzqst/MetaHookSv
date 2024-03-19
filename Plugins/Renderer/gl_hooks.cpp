@@ -424,6 +424,7 @@ void R_FillAddress(void)
 	gPrivateFuncs.triapi_RenderMode = gEngfuncs.pTriAPI->RenderMode;
 	gPrivateFuncs.triapi_GetMatrix = gEngfuncs.pTriAPI->GetMatrix;
 	gPrivateFuncs.triapi_BoxInPVS = gEngfuncs.pTriAPI->BoxInPVS;
+	gPrivateFuncs.triapi_Fog = gEngfuncs.pTriAPI->Fog;
 	//gPrivateFuncs.triapi_Color4f = gEngfuncs.pTriAPI->Color4f;
 
 	bHasOfficialFBOSupport = false;
@@ -7652,6 +7653,7 @@ static hook_t *g_phook_Mod_LoadSpriteModel = NULL;
 static hook_t *g_phook_Mod_UnloadSpriteTextures = NULL;
 static hook_t *g_phook_triapi_RenderMode = NULL;
 static hook_t *g_phook_triapi_BoxInPVS = NULL;
+static hook_t *g_phook_triapi_Fog = NULL;
 static hook_t* g_phook_triapi_GetMatrix = NULL;
 //static hook_t *g_phook_triapi_Color4f = NULL;
 static hook_t *g_phook_Draw_MiptexTexture = NULL;
@@ -7696,6 +7698,7 @@ void R_UninstallHooksForEngineDLL(void)
 	Uninstall_Hook(Mod_UnloadSpriteTextures);
 	Uninstall_Hook(triapi_RenderMode);
 	Uninstall_Hook(triapi_BoxInPVS);
+	//Uninstall_Hook(triapi_Fog);
 	Uninstall_Hook(triapi_GetMatrix);
 	Uninstall_Hook(Draw_MiptexTexture);
 	Uninstall_Hook(BuildGammaTable);
@@ -7743,6 +7746,7 @@ void R_InstallHooks(void)
 	Install_InlineHook(Mod_UnloadSpriteTextures);
 	Install_InlineHook(triapi_RenderMode);
 	Install_InlineHook(triapi_BoxInPVS);
+	//Install_InlineHook(triapi_Fog);
 	Install_InlineHook(triapi_GetMatrix);
 	Install_InlineHook(Draw_MiptexTexture);
 	Install_InlineHook(BuildGammaTable);
