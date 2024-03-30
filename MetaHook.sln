@@ -49,6 +49,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ResourceReplacer", "Plugins
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SCCameraFix", "Plugins\SCCameraFix\SCCameraFix.vcxproj", "{C34EC03E-0DF9-44E3-BDFD-706ED7C10559}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HeapPatch", "Plugins\HeapPatch\HeapPatch.vcxproj", "{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -199,6 +201,14 @@ Global
 		{C34EC03E-0DF9-44E3-BDFD-706ED7C10559}.Release_blob|Win32.Build.0 = Release|Win32
 		{C34EC03E-0DF9-44E3-BDFD-706ED7C10559}.Release|Win32.ActiveCfg = Release|Win32
 		{C34EC03E-0DF9-44E3-BDFD-706ED7C10559}.Release|Win32.Build.0 = Release|Win32
+		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345F}.Debug|Win32.Build.0 = Debug|Win32
+		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345F}.Release_AVX2|Win32.ActiveCfg = Release|Win32
+		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345F}.Release_AVX2|Win32.Build.0 = Release|Win32
+		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345F}.Release_blob|Win32.ActiveCfg = Release|Win32
+		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345F}.Release_blob|Win32.Build.0 = Release|Win32
+		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345F}.Release|Win32.ActiveCfg = Release|Win32
+		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345F}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -221,6 +231,7 @@ Global
 		{44F12F1B-E5AE-4C8E-AAD9-D3D958633A6F} = {4BBE5591-2774-44E5-837E-B54D33AFC431}
 		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345E} = {4BBE5591-2774-44E5-837E-B54D33AFC431}
 		{C34EC03E-0DF9-44E3-BDFD-706ED7C10559} = {4BBE5591-2774-44E5-837E-B54D33AFC431}
+		{8FD80D25-1AFA-44BC-A8EE-DC2BFC9F345F} = {4BBE5591-2774-44E5-837E-B54D33AFC431}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D7EC138D-907F-4149-8DE2-92E63D7597ED}
