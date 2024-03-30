@@ -1,6 +1,7 @@
 #pragma once
 
 #include "enginedef.h"
+
 #include <FileSystem.h>
 
 typedef struct walk_context_s
@@ -9,17 +10,14 @@ typedef struct walk_context_s
 	{
 
 	}
-	void* address;
+	void * address;
 	size_t len;
 	int depth;
 }walk_context_t;
 
 typedef struct
 {
-	FileHandle_t (*FS_Open)(const char* pFileName, const char* pOptions);
-	qboolean(*CL_PrecacheResources)();
-	model_t* (*Mod_LoadModel)(model_t* mod, qboolean crash, qboolean trackCRC);
-	sfxcache_t* (*S_LoadSound)(sfx_t* s, channel_t* ch);
+	void (*Sys_InitMemory)(void);	
 }private_funcs_t;
 
 void Engine_InstallHooks();

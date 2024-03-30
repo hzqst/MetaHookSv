@@ -45,11 +45,11 @@
 
 typedef struct walk_context_s
 {
-	walk_context_s(PVOID a, size_t l, int d) : address(a), len(l), depth(d)
+	walk_context_s(void* a, size_t l, int d) : address(a), len(l), depth(d)
 	{
 
 	}
-	PVOID address;
+	void* address;
 	size_t len;
 	int depth;
 }walk_context_t;

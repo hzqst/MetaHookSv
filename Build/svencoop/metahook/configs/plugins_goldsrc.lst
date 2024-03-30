@@ -5,3 +5,5 @@ BulletPhysics.dll
 StudioEvents.dll
 PrecacheManager.dll
 ThreadGuard.dll
+HeapPatch.dll
+ResourceReplacer.dll

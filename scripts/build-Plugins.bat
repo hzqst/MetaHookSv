@@ -61,6 +61,9 @@ if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
     MSBuild.exe MetaHook.sln "/target:Plugins\ResourceReplacer" /p:Configuration="Release" /p:Platform="Win32"
     IF %ERRORLEVEL% NEQ 0 GOTO builderror
 
+    MSBuild.exe MetaHook.sln "/target:Plugins\HeapPatch" /p:Configuration="Release" /p:Platform="Win32"
+    IF %ERRORLEVEL% NEQ 0 GOTO builderror
+
     MSBuild.exe MetaHook.sln "/target:Plugins\SCCameraFix" /p:Configuration="Release" /p:Platform="Win32"
     IF %ERRORLEVEL% NEQ 0 GOTO builderror
 

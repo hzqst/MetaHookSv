@@ -280,52 +280,41 @@ void R_PrepareStudioVBOSubmodel(
 	}
 }
 
-studio_vbo_t* R_GetStudioVBOFromStudioHeader(studiohdr_t* studiohdr)
+studio_vbo_t* R_GetStudioVBOFromModel(model_t* mod)
 {
-	studio_vbo_t* VBOData = NULL;
+	int modelindex = EngineGetModelIndex(mod);
 
-	if (studiohdr->soundtable > 0 && studiohdr->soundtable - 1 < (int)g_StudioVBOCache.size())
-	{
-		VBOData = (studio_vbo_t*)g_StudioVBOCache[studiohdr->soundtable - 1];
+	if (modelindex >= g_StudioVBOCache.size())
+		return NULL;
 
-		if (VBOData)
-		{
-			return VBOData;
-		}
-	}
-
-	return VBOData;
+	return g_StudioVBOCache[modelindex];
 }
 
-void R_AllocSlotForStudioVBO(studiohdr_t* studiohdr, studio_vbo_t* VBOData)
+void R_AllocSlotForStudioVBO(model_t* mod, studio_vbo_t* VBOData)
 {
-	for (size_t i = 0; i < g_StudioVBOCache.size(); ++i)
+	int modelindex = EngineGetModelIndex(mod);
+
+	if (modelindex >= g_StudioVBOCache.size())
 	{
-		if (g_StudioVBOCache[i] == NULL)
-		{
-			g_StudioVBOCache[i] = VBOData;
-			studiohdr->soundtable = (int)i + 1;
-			return;
-		}
+		g_StudioVBOCache.resize(modelindex + 1);
 	}
 
-	studiohdr->soundtable = (int)g_StudioVBOCache.size() + 1;
-	g_StudioVBOCache.emplace_back(VBOData);
+	g_StudioVBOCache[modelindex] = VBOData;
 }
 
-studio_vbo_t* R_PrepareStudioVBO(studiohdr_t* studiohdr)
+studio_vbo_t* R_PrepareStudioVBO(model_t* mod, studiohdr_t* studiohdr)
 {
 	if (!studiohdr->numbodyparts)
 		return NULL;
 
-	studio_vbo_t* VBOData = R_GetStudioVBOFromStudioHeader(studiohdr);
+	studio_vbo_t* VBOData = R_GetStudioVBOFromModel(mod);
 
 	if (VBOData)
 		return VBOData;
 
 	VBOData = new studio_vbo_t;
 
-	R_AllocSlotForStudioVBO(studiohdr, VBOData);
+	R_AllocSlotForStudioVBO(mod, VBOData);
 
 	std::vector<studio_vbo_vertex_t> vVertex;
 	std::vector<GLuint> vIndices;
@@ -341,7 +330,6 @@ studio_vbo_t* R_PrepareStudioVBO(studiohdr_t* studiohdr)
 				auto submodel = (mstudiomodel_t*)((byte*)studiohdr + bodypart->modelindex) + j;
 
 				studio_vbo_submodel_t* vboSubmodel = new studio_vbo_submodel_t;
-				//vboSubmodel->submodel = submodel;
 
 				vboSubmodel->iSubmodelIndex = j;
 
@@ -471,7 +459,7 @@ void R_StudioReloadVBOCache(void)
 
 				if (studiohdr)
 				{
-					auto VBOData = R_PrepareStudioVBO(studiohdr);
+					auto VBOData = R_PrepareStudioVBO(mod, studiohdr);
 
 					if (VBOData)
 					{
@@ -2449,7 +2437,7 @@ void R_StudioDrawVBO(studio_vbo_t* VBOData)
 
 void R_GLStudioDrawPoints(void)
 {
-	auto VBOData = R_PrepareStudioVBO((*pstudiohdr));
+	auto VBOData = R_PrepareStudioVBO((*r_model), (*pstudiohdr));
 
 	if (!VBOData)
 		return;

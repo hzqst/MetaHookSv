@@ -101,9 +101,7 @@ void Mod_LoadStudioModel(model_t* mod, void* buffer)
 
 	if (studiohdr)
 	{
-		studiohdr->soundtable = 0;
-
-		auto VBOData = R_PrepareStudioVBO(studiohdr);
+		auto VBOData = R_PrepareStudioVBO(mod, studiohdr);
 
 		if (VBOData)
 		{

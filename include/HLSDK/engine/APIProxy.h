@@ -268,7 +268,7 @@ typedef void						(*pfnEngSrc_Con_NXPrintf_t )			( struct con_nprint_s *info, ch
 typedef const char *				(*pfnEngSrc_PhysInfo_ValueForKey_t )	( const char *key );
 typedef const char *				(*pfnEngSrc_ServerInfo_ValueForKey_t )( const char *key );
 typedef float						(*pfnEngSrc_GetClientMaxspeed_t )		( void );
-typedef int							(*pfnEngSrc_CheckParm_t )				( const char *parm, char **ppnext );
+typedef int							(*pfnEngSrc_CheckParm_t )				( const char *parm, const char **ppnext );
 typedef void						(*pfnEngSrc_Key_Event_t )				( int key, int down );
 typedef void						(*pfnEngSrc_GetMousePosition_t )		( int *mx, int *my );
 typedef int							(*pfnEngSrc_IsNoClipping_t )			( void );
