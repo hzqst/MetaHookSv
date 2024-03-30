@@ -1,6 +1,6 @@
 #version 430
 
-#define OIT_ALPHA_BLEND_ENABLED
+#define OIT_BLEND_ENABLED
 
 #include "common.h"
 
