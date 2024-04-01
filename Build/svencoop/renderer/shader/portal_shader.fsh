@@ -39,10 +39,12 @@ void main()
 
 	vFinalColor = vPortalColor;
 
-#ifdef OVERLAY_TEXTURE_ENABLED
+#if defined(PORTAL_OVERLAY_TEXTURE_ENABLED)
 
 	vec2 vOverlayTexCoord = vec2(v_diffusetexcoord.x, v_diffusetexcoord.y);
 	vec4 vOverlayColor = texture(overlayTex, vOverlayTexCoord);
+
+	vOverlayColor = ProcessDiffuseColor(vOverlayColor);
 
 	if(vOverlayColor.a > 0.5)
 		vFinalColor = vOverlayColor;

@@ -16,14 +16,17 @@ void R_UsePortalProgram(program_state_t state, portal_program_t *progOutput)
 	{
 		std::stringstream defs;
 
-		if (state & OVERLAY_TEXTURE_ENABLED)
-			defs << "#define OVERLAY_TEXTURE_ENABLED\n";
+		if (state & PORTAL_OVERLAY_TEXTURE_ENABLED)
+			defs << "#define PORTAL_OVERLAY_TEXTURE_ENABLED\n";
 
 		if (state & PORTAL_TEXCOORD_ENABLED)
 			defs << "#define PORTAL_TEXCOORD_ENABLED\n";
 
 		if (state & REVERSE_PORTAL_TEXCOORD_ENABLED)
 			defs << "#define REVERSE_PORTAL_TEXCOORD_ENABLED\n";
+
+		if (state & PORTAL_GAMMA_BLEND_ENABLED)
+			defs << "#define GAMMA_BLEND_ENABLED\n";
 
 		auto def = defs.str();
 
@@ -59,7 +62,7 @@ void R_UsePortalProgram(program_state_t state, portal_program_t *progOutput)
 }
 
 const program_state_mapping_t s_PortalProgramStateName[] = {
-{ OVERLAY_TEXTURE_ENABLED					, "OVERLAY_TEXTURE_ENABLED"			 },
+{ PORTAL_OVERLAY_TEXTURE_ENABLED					, "OVERLAY_TEXTURE_ENABLED"			 },
 { PORTAL_TEXCOORD_ENABLED					, "PORTAL_TEXCOORD_ENABLED"			 },
 { REVERSE_PORTAL_TEXCOORD_ENABLED			, "REVERSE_PORTAL_TEXCOORD_ENABLED"	 },
 };
@@ -238,13 +241,18 @@ portal_vbo_t *R_PreparePortalVBO(void *ClientPortalManager, void * ClientPortal,
 
 void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId, portal_vbo_t *VBOCache)
 {
-	auto ent = (cl_entity_t *)*(DWORD *)((ULONG_PTR)ClientPortal + 0x70);
+	auto ent = (cl_entity_t *)*(ULONG_PTR*)((ULONG_PTR)ClientPortal + 0x70);
 
 	program_state_t programState = (ClientPortal_GetPortalMode(ClientPortal) == 0) ? REVERSE_PORTAL_TEXCOORD_ENABLED  : PORTAL_TEXCOORD_ENABLED;
 
 	if (VBOCache->texinfo->texture->name[0] == '{')
 	{
-		programState |= OVERLAY_TEXTURE_ENABLED;
+		programState |= PORTAL_OVERLAY_TEXTURE_ENABLED;
+	}
+
+	if (r_draw_gammablend)
+	{
+		programState |= PORTAL_GAMMA_BLEND_ENABLED;
 	}
 
 	R_RotateForEntity(ent);
@@ -269,13 +277,18 @@ void R_DrawPortal(void *ClientPortalManager, void * ClientPortal, msurface_t *su
 
 void R_DrawMonitor(void *ClientPortalManager, void * ClientPortal, msurface_t *surf, GLuint textureId, portal_vbo_t *VBOCache)
 {
-	auto ent = (cl_entity_t *)*(DWORD *)((ULONG_PTR)ClientPortal + 0x70);
+	auto ent = (cl_entity_t *)*(ULONG_PTR*)((ULONG_PTR)ClientPortal + 0x70);
 
 	program_state_t programState = 0;
 
 	if (VBOCache->texinfo->texture->name[0] == '{')
 	{
-		programState |= OVERLAY_TEXTURE_ENABLED;
+		programState |= PORTAL_OVERLAY_TEXTURE_ENABLED;
+	}
+
+	if (r_draw_gammablend)
+	{
+		programState |= PORTAL_GAMMA_BLEND_ENABLED;
 	}
 
 	R_RotateForEntity(ent);
