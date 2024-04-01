@@ -1214,7 +1214,7 @@ studiohdr_t* R_StudioGetTextureHeader(studio_vbo_t* VBOData)
 
 	return (*pstudiohdr);
 #else
-	if ((*pstudiohdr)->textureindex == 0)
+	if ((*pstudiohdr)->textureindex == 0 && VBOData->TextureModel)
 	{
 		auto ptexturehdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(VBOData->TextureModel);
 
