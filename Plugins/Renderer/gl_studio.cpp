@@ -302,7 +302,7 @@ void R_AllocSlotForStudioVBO(model_t* mod, studio_vbo_t* VBOData)
 	g_StudioVBOCache[modelindex] = VBOData;
 }
 
-studio_vbo_t* R_PrepareStudioVBO(model_t* mod, studiohdr_t* studiohdr)
+studio_vbo_t* R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr)
 {
 	if (!studiohdr->numbodyparts)
 		return NULL;
@@ -315,6 +315,8 @@ studio_vbo_t* R_PrepareStudioVBO(model_t* mod, studiohdr_t* studiohdr)
 	VBOData = new studio_vbo_t;
 
 	R_AllocSlotForStudioVBO(mod, VBOData);
+
+	studiohdr->soundtable = EngineGetModelIndex(mod);
 
 	std::vector<studio_vbo_vertex_t> vVertex;
 	std::vector<GLuint> vIndices;
@@ -329,15 +331,17 @@ studio_vbo_t* R_PrepareStudioVBO(model_t* mod, studiohdr_t* studiohdr)
 			{
 				auto submodel = (mstudiomodel_t*)((byte*)studiohdr + bodypart->modelindex) + j;
 
-				studio_vbo_submodel_t* vboSubmodel = new studio_vbo_submodel_t;
+				studio_vbo_submodel_t* VBOSubmodel = new studio_vbo_submodel_t;
 
-				vboSubmodel->iSubmodelIndex = j;
+				VBOSubmodel->iSubmodelIndex = j;
 
-				R_PrepareStudioVBOSubmodel(studiohdr, submodel, vVertex, vIndices, vboSubmodel);
+				R_PrepareStudioVBOSubmodel(studiohdr, submodel, vVertex, vIndices, VBOSubmodel);
 
-				VBOData->vSubmodels.emplace_back(vboSubmodel);
+				VBOData->vSubmodels.emplace_back(VBOSubmodel);
 
-				submodel->groupindex = VBOData->vSubmodels.size();
+				auto submodel_offset = (byte*)submodel - (byte*)studiohdr;
+
+				VBOData->mSubmodels[submodel_offset] = VBOSubmodel;
 			}
 		}
 	}
@@ -351,21 +355,21 @@ studio_vbo_t* R_PrepareStudioVBO(model_t* mod, studiohdr_t* studiohdr)
 	VBOData->hVAO = GL_GenVAO();
 	GL_BindStatesForVAO(VBOData->hVAO, VBOData->hVBO, VBOData->hEBO,
 		[]() {
-		glEnableVertexAttribArray(0);
-		glEnableVertexAttribArray(1);
-		glEnableVertexAttribArray(2);
-		glEnableVertexAttribArray(3);
-		glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, pos));
-		glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, normal));
-		glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, texcoord));
-		glVertexAttribIPointer(3, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
-	},
+			glEnableVertexAttribArray(0);
+			glEnableVertexAttribArray(1);
+			glEnableVertexAttribArray(2);
+			glEnableVertexAttribArray(3);
+			glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, pos));
+			glVertexAttribPointer(1, 3, GL_FLOAT, false, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, normal));
+			glVertexAttribPointer(2, 2, GL_FLOAT, false, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, texcoord));
+			glVertexAttribIPointer(3, 2, GL_INT, sizeof(studio_vbo_vertex_t), OFFSET(studio_vbo_vertex_t, vertbone));
+		},
 		[]() {
-		glDisableVertexAttribArray(0);
-		glDisableVertexAttribArray(1);
-		glDisableVertexAttribArray(2);
-		glDisableVertexAttribArray(3);
-	});
+			glDisableVertexAttribArray(0);
+			glDisableVertexAttribArray(1);
+			glDisableVertexAttribArray(2);
+			glDisableVertexAttribArray(3);
+		});
 
 	VBOData->hStudioUBO = GL_GenBuffer();
 	glBindBuffer(GL_UNIFORM_BUFFER, VBOData->hStudioUBO);
@@ -404,6 +408,14 @@ studio_vbo_t* R_PrepareStudioVBO(model_t* mod, studiohdr_t* studiohdr)
 	VBOData->celshade_control.hair_shadow_offset.Init(r_studio_hair_shadow_offset, 2, ConVar_None);
 
 	return VBOData;
+}
+
+studio_vbo_t *R_GetStudioVBO(studiohdr_t* studiohdr)
+{
+	if (studiohdr->soundtable < 0 || studiohdr->soundtable >= g_StudioVBOCache.size())
+		return NULL;
+
+	return g_StudioVBOCache[studiohdr->soundtable];
 }
 
 void R_StudioClearVBOCache(void)
@@ -459,12 +471,12 @@ void R_StudioReloadVBOCache(void)
 
 				if (studiohdr)
 				{
-					auto VBOData = R_PrepareStudioVBO(mod, studiohdr);
+					auto VBOData = R_AllocateStudioVBO(mod, studiohdr);
 
 					if (VBOData)
 					{
 						R_StudioLoadExternalFile(mod, studiohdr, VBOData);
-						R_StudioLoadTextureModel(mod, studiohdr);
+						R_StudioLoadTextureModel(mod, studiohdr, VBOData);
 					}
 				}
 			}
@@ -1180,8 +1192,9 @@ bool R_IsFlippedViewModel(void)
 	return false;
 }
 
-studiohdr_t* R_StudioGetTextures(const model_t* psubm)
+studiohdr_t* R_StudioGetTextureHeader(studio_vbo_t* VBOData)
 {
+#if 0
 	if ((*pstudiohdr)->textureindex == 0)
 	{
 		auto texmodel = (model_t*)psubm->texinfo;
@@ -1200,11 +1213,25 @@ studiohdr_t* R_StudioGetTextures(const model_t* psubm)
 	}
 
 	return (*pstudiohdr);
+#else
+	if ((*pstudiohdr)->textureindex == 0)
+	{
+		auto ptexturehdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(VBOData->TextureModel);
+
+		//Fix: could be nullptr ?
+		if (ptexturehdr)
+			return ptexturehdr;
+
+		return NULL;
+	}
+#endif
+
+	return (*pstudiohdr);
 }
 
-void R_StudioLoadTextureModel(model_t* mod, studiohdr_t* studiohdr)
+void R_StudioLoadTextureModel(model_t* mod, studiohdr_t* studiohdr, studio_vbo_t* VBOData)
 {
-	if (studiohdr->textureindex == 0 && !mod->texinfo)
+	if (studiohdr->textureindex == 0 && !VBOData->TextureModel)
 	{
 		//This is actually 260 instead of 256
 		char modelname[260];
@@ -1217,7 +1244,10 @@ void R_StudioLoadTextureModel(model_t* mod, studiohdr_t* studiohdr)
 		strcpy(&modelname[strlen(modelname) - 4], "T.mdl");
 
 		auto texmodel = IEngineStudio.Mod_ForName(modelname, true);
-		mod->texinfo = (mtexinfo_t*)texmodel;
+		//mod->texinfo = (mtexinfo_t*)texmodel;
+
+		VBOData->TextureModel = texmodel;
+
 		auto ptexturehdr = (studiohdr_t*)IEngineStudio.Mod_Extradata(texmodel);
 		strncpy(ptexturehdr->name, modelname, sizeof(ptexturehdr->name) - 1);
 		ptexturehdr->name[sizeof(ptexturehdr->name) - 1] = 0;
@@ -2401,14 +2431,17 @@ void R_StudioDrawVBOSubmodel(
 
 void R_StudioDrawVBO(studio_vbo_t* VBOData)
 {
-	if ((*psubmodel)->groupindex < 1 || (*psubmodel)->groupindex >(int)VBOData->vSubmodels.size()) {
-		g_pMetaHookAPI->SysError("R_StudioFindVBOCache: invalid index");
+	auto submodel_offset = (byte*)(*psubmodel) - (byte*)(*pstudiohdr);
+	auto found_VBOSubmodel = VBOData->mSubmodels.find(submodel_offset);
+
+	if (found_VBOSubmodel == VBOData->mSubmodels.end()) {
+		g_pMetaHookAPI->SysError("R_StudioDrawVBO: invalid submodel!\n  submodel_offset = %d\n  psubmodel->name = %s\n  pstudiohdr->name = %s", submodel_offset, (*psubmodel)->name, (*pstudiohdr)->name);
 		return;
 	}
 
-	auto VBOSubmodel = VBOData->vSubmodels[(*psubmodel)->groupindex - 1];
+	auto VBOSubmodel = found_VBOSubmodel->second;
 
-	auto ptexturehdr = R_StudioGetTextures(*r_model);
+	auto ptexturehdr = R_StudioGetTextureHeader(VBOData);
 
 	mstudiotexture_t* ptexture = NULL;
 
@@ -2437,7 +2470,7 @@ void R_StudioDrawVBO(studio_vbo_t* VBOData)
 
 void R_GLStudioDrawPoints(void)
 {
-	auto VBOData = R_PrepareStudioVBO((*r_model), (*pstudiohdr));
+	auto VBOData = R_GetStudioVBO((*pstudiohdr));
 
 	if (!VBOData)
 		return;

@@ -185,14 +185,24 @@ typedef struct studio_vbo_s
 		hEBO = 0;
 		hVAO = 0;
 		hStudioUBO = 0;
+		TextureModel = NULL;
 		bExternalFileLoaded = false;
 	}
 	GLuint				hVBO;
 	GLuint				hEBO;
 	GLuint				hVAO;
 	GLuint				hStudioUBO;
+
+	//vbo_submodel_t Storage
 	std::vector<studio_vbo_submodel_t *> vSubmodels;
+
+	//Memory Offset -> vbo_submodel_t Mapping Table
+	std::unordered_map<int, studio_vbo_submodel_t*> mSubmodels;
+
+	model_t* TextureModel;
+
 	studio_celshade_control_t celshade_control;
+
 	bool bExternalFileLoaded;
 }studio_vbo_t;
 
@@ -387,7 +397,8 @@ extern MapConVar* r_studio_base_specular;
 extern MapConVar* r_studio_celshade_specular;
 
 void R_StudioBoneCaches_StartFrame();
-studio_vbo_t *R_PrepareStudioVBO(model_t* mod, studiohdr_t *studiohdr);
+studio_vbo_t *R_AllocateStudioVBO(model_t* mod, studiohdr_t* studiohdr);
+studio_vbo_t *R_GetStudioVBO(studiohdr_t *studiohdr);
 void R_StudioLoadExternalFile(model_t *mod, studiohdr_t *studiohdr, studio_vbo_t *VBOData);
 void R_StudioClearVBOCache(void);
 void R_StudioReloadVBOCache(void);
@@ -397,8 +408,8 @@ void R_InitStudio(void);
 void R_SaveStudioProgramStates(void);
 void R_LoadStudioProgramStates(void);
 void R_GLStudioDrawPoints(void);
-studiohdr_t* R_StudioGetTextures(const model_t* psubm);
-void R_StudioLoadTextureModel(model_t* mod, studiohdr_t *studiohdr);
+studiohdr_t* R_StudioGetTextureHeader(studio_vbo_t* VBOData);
+void R_StudioLoadTextureModel(model_t* mod, studiohdr_t *studiohdr, studio_vbo_t* VBOData);
 void R_StudioTextureAddReferences(model_t* mod, studiohdr_t* studiohdr, std::set<int>& textures);
 void R_StudioFreeTextureCallback(gltexture_t* glt);
 studio_vbo_material_t* R_StudioGetVBOMaterialFromTextureId(int gltexturenum);

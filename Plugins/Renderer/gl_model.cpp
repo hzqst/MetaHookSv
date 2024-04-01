@@ -101,12 +101,12 @@ void Mod_LoadStudioModel(model_t* mod, void* buffer)
 
 	if (studiohdr)
 	{
-		auto VBOData = R_PrepareStudioVBO(mod, studiohdr);
+		auto VBOData = R_AllocateStudioVBO(mod, studiohdr);
 
 		if (VBOData)
 		{
 			R_StudioLoadExternalFile(mod, studiohdr, VBOData);
-			R_StudioLoadTextureModel(mod, studiohdr);
+			R_StudioLoadTextureModel(mod, studiohdr, VBOData);
 		}
 	}
 }
