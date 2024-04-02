@@ -94,6 +94,18 @@ void Engine_InstallHook(HMODULE hModule, BlobHandle_t hBlobModule)
 			char pattern[] = "\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\xE8\x2A\x2A\x2A\x2A";
 			*(DWORD*)(pattern + 1) = (DWORD)Sys_InitArgv_String;
 			auto Sys_InitArgv_PushString = (PUCHAR)Search_Pattern(pattern);
+			if (!Sys_InitArgv_PushString)
+			{
+				//Build 4554
+				/*
+.text:01DC57DE 68 84 C6 E8 01                                      push    offset aSysInitargvOri ; "Sys_InitArgv( OrigCmd )"
+.text:01DC57E3 83 E1 03                                            and     ecx, 3
+.text:01DC57E6 F3 A4                                               rep movsb
+				*/
+				char pattern2[] = "\x68\x2A\x2A\x2A\x2A";
+				*(DWORD*)(pattern2 + 1) = (DWORD)Sys_InitArgv_String;
+				Sys_InitArgv_PushString = (PUCHAR)Search_Pattern(pattern2);
+			}
 			if (Sys_InitArgv_PushString)
 			{
 				g_pMetaHookAPI->DisasmRanges(Sys_InitArgv_PushString, 0x50, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
