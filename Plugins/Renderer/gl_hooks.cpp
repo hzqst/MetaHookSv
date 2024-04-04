@@ -6541,6 +6541,10 @@ void R_FillAddress(void)
 				{
 
 				}
+				else if (address[instLen] == 0x33 && address[instLen + 1] == 0xC4)
+				{
+
+				}
 				else
 				{
 					particletexture = (decltype(particletexture))pinst->detail->x86.operands[1].mem.disp;

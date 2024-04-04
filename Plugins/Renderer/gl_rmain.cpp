@@ -672,7 +672,6 @@ void R_DrawParticles(void)
 			rgba[3] = 255;
 
 #if 1
-
 			gEngfuncs.pTriAPI->Color4ub(rgba[0], rgba[1], rgba[2], rgba[3]);
 			gEngfuncs.pTriAPI->TexCoord2f(0, 0);
 			gEngfuncs.pTriAPI->Vertex3fv(p->org);
