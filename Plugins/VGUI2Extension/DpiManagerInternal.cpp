@@ -117,6 +117,11 @@ public:
 		if (g_iVideoHeight < proH)
 			m_bIsHighDpiSupported = false;
 
+		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
+		{
+			m_bIsHighDpiSupported = true;
+		}
+
 		if (IsHighDpiSupportEnabled())
 		{
 			g_pVGuiSurface2->SetForcingHDProportional(true);
