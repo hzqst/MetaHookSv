@@ -42,7 +42,15 @@ if "%LauncherMod%"=="svencoop" (
 
 	if "%LauncherMod%"=="cstrike" (
 
-		xcopy "%SolutionDir%Build\cstrike_hd" "%GameDir%\%LauncherMod%_hd\" /y /e
+		if "%GameSDL2_fileVersion%"=="2, 0, 20, 0" (
+
+			xcopy "%SolutionDir%Build\cstrike_hd" "%GameDir%\%LauncherMod%_hd\" /y /e
+
+		) else (
+
+			xcopy "%SolutionDir%Build\cstrike_hd" "%GameDir%\%LauncherMod%\" /y /e
+
+		)
 	)
 
 	if "%LauncherMod%"=="czero" (
