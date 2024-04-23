@@ -246,7 +246,8 @@ void Engine_InstallHooks()
 					return TRUE;
 
 				return FALSE;
-				}, walk.depth, &ctx);
+
+			}, walk.depth, &ctx);
 		}
 
 		if (!g_phook_S_LoadSound_FS_Open)
@@ -292,17 +293,47 @@ void Engine_InstallHooks()
 	{
 		typedef struct
 		{
+			PVOID base;
+			size_t max_insts;
+			int max_depth;
+			std::set<PVOID> code;
+			std::set<PVOID> branches;
+			std::vector<walk_context_t> walks;
+
 			int instCount_rb;
+			PUCHAR address_rb;
 		}Mod_LoadModel_SearchContext;
 
 		Mod_LoadModel_SearchContext ctx = { 0 };
 
-		g_pMetaHookAPI->DisasmRanges(gPrivateFuncs.Mod_LoadModel, 0x1000, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context)
-			{
+		ctx.base = gPrivateFuncs.Mod_LoadModel;
+
+		ctx.max_insts = 1000;
+		ctx.max_depth = 16;
+		ctx.walks.emplace_back(ctx.base, 0x1000, 0);
+
+		while (ctx.walks.size())
+		{
+			auto walk = ctx.walks[ctx.walks.size() - 1];
+			ctx.walks.pop_back();
+
+			g_pMetaHookAPI->DisasmRanges(walk.address, walk.len, [](void* inst, PUCHAR address, size_t instLen, int instCount, int depth, PVOID context) {
+
 				auto pinst = (cs_insn*)inst;
 				auto ctx = (Mod_LoadModel_SearchContext*)context;
 
-				if (!ctx->instCount_rb &&
+				if (g_phook_Mod_LoadModel_FS_Open)
+					return TRUE;
+
+				if (ctx->code.size() > ctx->max_insts)
+					return TRUE;
+
+				if (ctx->code.find(address) != ctx->code.end())
+					return TRUE;
+
+				ctx->code.emplace(address);
+
+				if (!ctx->address_rb &&
 					pinst->id == X86_INS_PUSH &&
 					pinst->detail->x86.op_count == 1 &&
 					pinst->detail->x86.operands[0].type == X86_OP_IMM &&
@@ -314,21 +345,41 @@ void Engine_InstallHooks()
 						))
 				{
 					auto pString = (PCHAR)pinst->detail->x86.operands[0].imm;
-					if (!memcmp(pString, "rb", sizeof("rb") - 1))
+					if (!memcmp(pString, "rb", sizeof("rb")))
 					{
 						ctx->instCount_rb = instCount;
+						ctx->address_rb = address;
 					}
 				}
 
-				if (address[0] == 0xE8 && instLen == 5 &&
-					ctx->instCount_rb && instCount > ctx->instCount_rb && instCount <= ctx->instCount_rb + 5)
+				if (address[0] == 0xE8 && instLen == 5 && ctx->address_rb
+					&& instCount > ctx->instCount_rb && instCount <= ctx->instCount_rb + 5
+					&& address > ctx->address_rb && address <= ctx->address_rb + 0x50)
 				{
 					if (!gPrivateFuncs.FS_Open)
 					{
 						gPrivateFuncs.FS_Open = (decltype(gPrivateFuncs.FS_Open))GetCallAddress(address);
 					}
+
 					g_phook_Mod_LoadModel_FS_Open = g_pMetaHookAPI->InlinePatchRedirectBranch(address, Mod_LoadModel_FS_Open, NULL);
 					return TRUE;
+				}
+
+				if ((pinst->id == X86_INS_JMP || (pinst->id >= X86_INS_JAE && pinst->id <= X86_INS_JS)) &&
+					pinst->detail->x86.op_count == 1 &&
+					pinst->detail->x86.operands[0].type == X86_OP_IMM)
+				{
+					PVOID imm = (PVOID)pinst->detail->x86.operands[0].imm;
+					auto foundbranch = ctx->branches.find(imm);
+					if (foundbranch == ctx->branches.end())
+					{
+						ctx->branches.emplace(imm);
+						if (depth + 1 < ctx->max_depth)
+							ctx->walks.emplace_back(imm, 0x300, depth + 1);
+					}
+
+					if (pinst->id == X86_INS_JMP)
+						return TRUE;
 				}
 
 				if (address[0] == 0xCC)
@@ -338,7 +389,9 @@ void Engine_InstallHooks()
 					return TRUE;
 
 				return FALSE;
-		}, 0, & ctx);
+
+			}, walk.depth, &ctx);
+		}
 
 		if (!g_phook_Mod_LoadModel_FS_Open)
 		{
