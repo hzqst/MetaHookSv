@@ -1,4 +1,4 @@
-#include <MINT.h>
+#include <Windows.h>
 #include "metahook.h"
 #include "LoadBlob.h"
 #include "LoadDllNotification.h"
