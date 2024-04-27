@@ -1,9 +1,10 @@
-#include <MINT.h>
+#include <Windows.h>
 #include <shared_mutex>
 #include <vector>
 #include <metahook.h>
 #include <Detours.h>
 #include "LoadBlob.h"
+#include "LoadDllNotification.h"
 
 PVOID MH_GetEngineBase(void);
 PVOID MH_GetClientBase(void);

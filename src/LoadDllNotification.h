@@ -1,6 +1,7 @@
 #pragma once
 
 #include <MINT.h>
+#include <metahook.h>
 
 typedef void* BlobHandle_t;
 
