@@ -366,16 +366,7 @@ void CPhysicsManager::GenerateIndexedArrayForBrush(model_t *mod, vertexarray_t *
 	{
 		for (int i = 0; i < mod->nummodelsurfaces; i++)
 		{
-			msurface_t* surf;
-
-			if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-			{
-				surf = (((msurface_hl25_t*)mod->surfaces) + mod->firstmodelsurface + i);
-			}
-			else
-			{
-				surf = mod->surfaces + mod->firstmodelsurface + i;
-			}
+			auto surf = GetWorldSurfaceByIndex(mod->firstmodelsurface + i);
 
 			GenerateIndexedArrayForSurface(surf, vertexarray, indexarray);
 		}
