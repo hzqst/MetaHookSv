@@ -2,9 +2,9 @@
 #include <string.h>
 
 #include "Color.h"
-#include "vgui/IPanel.h"
-#include "vgui/IScheme.h"
-#include "vgui/ISurface.h"
+#include <VGUI/IPanel.h>
+#include <VGUI/IScheme.h>
+#include <VGUI/ISurface.h>
 #include <VGUI_controls/Controls.h>
 #include "VPanel.h"
 #include "KeyValues.h"

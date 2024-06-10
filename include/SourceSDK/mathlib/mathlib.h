@@ -1174,7 +1174,7 @@ FORCEINLINE unsigned long RoundFloatToUnsignedLong(float f)
 // Fast, accurate ftol:
 FORCEINLINE int Float2Int( float a )
 {
-#if defined( _X360 )
+#if defined( _X360 ) && !defined(__clang__)
 	union
 	{
 		double flResult;
@@ -1186,7 +1186,7 @@ FORCEINLINE int Float2Int( float a )
 	
 	int RetVal;
 
-#if defined( _WIN32 )
+#if defined( _WIN32 ) && !defined(__clang__)
 	int CtrlwdHolder;
 	int CtrlwdSetter;
 	__asm 
@@ -1201,7 +1201,7 @@ FORCEINLINE int Float2Int( float a )
 		fistp  RetVal				// Store and converted (to int) result
 		fldcw  CtrlwdHolder		// Restore control word
 	}
-#elif _LINUX
+#elif _LINUX || defined(__clang__)
 	RetVal = static_cast<int>( a );
 #endif
 
@@ -1214,7 +1214,7 @@ inline int Floor2Int( float a )
 {
    int RetVal;
 
-#if defined( _X360 )
+#if defined( _X360 ) || defined(__clang__)
 	RetVal = (int)floor( a );
 #elif defined( _WIN32 )
    int CtrlwdHolder;
@@ -1272,7 +1272,7 @@ inline int Ceil2Int( float a )
 {
    int RetVal;
 
-#if defined( _X360 )
+#if defined( _X360 ) || defined(__clang__)
 	RetVal = (int)ceil( a );
 #elif defined( _WIN32 )
    int CtrlwdHolder;

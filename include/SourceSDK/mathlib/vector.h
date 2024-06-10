@@ -201,10 +201,11 @@ private:
 #endif
 };
 
-
-
-#define USE_M64S ( ( !defined( _X360 ) ) && ( ! defined( _LINUX) ) )
-
+#if !defined( _X360 ) && !defined( _LINUX) && !defined(__clang__)
+#define USE_M64S 1
+#else
+#define USE_M64S 0
+#endif
 
 
 //=========================================================
