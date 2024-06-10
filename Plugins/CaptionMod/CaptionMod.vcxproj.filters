@@ -131,13 +131,7 @@
     <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\vcrmode.cpp">
       <Filter>SourceSDK\tier0</Filter>
     </ClCompile>
-    <ClCompile Include="$(SolutionDir)include\SourceSDK\mathlib\3dnow.cpp">
-      <Filter>SourceSDK\mathlib</Filter>
-    </ClCompile>
     <ClCompile Include="$(SolutionDir)include\SourceSDK\mathlib\mathlib_base.cpp">
-      <Filter>SourceSDK\mathlib</Filter>
-    </ClCompile>
-    <ClCompile Include="$(SolutionDir)include\SourceSDK\mathlib\sse.cpp">
       <Filter>SourceSDK\mathlib</Filter>
     </ClCompile>
     <ClCompile Include="$(SolutionDir)include\SourceSDK\vstdlib\KeyValuesSystem.cpp">
@@ -428,6 +422,12 @@
     <ClCompile Include="util.cpp">
       <Filter>Source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\mathlib\3dnow.cpp">
+      <Filter>SourceSDK\mathlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\mathlib\sse.cpp">
+      <Filter>SourceSDK\mathlib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="enginedef.h">
@@ -664,9 +664,6 @@
     <ClInclude Include="$(SolutionDir)include\SourceSDK\tier0\xbox_codeline_defines.h">
       <Filter>SourceSDK\tier0</Filter>
     </ClInclude>
-    <ClInclude Include="$(SolutionDir)include\SourceSDK\mathlib\3dnow.h">
-      <Filter>SourceSDK\mathlib</Filter>
-    </ClInclude>
     <ClInclude Include="$(SolutionDir)include\SourceSDK\mathlib\amd3dx.h">
       <Filter>SourceSDK\mathlib</Filter>
     </ClInclude>
@@ -674,9 +671,6 @@
       <Filter>SourceSDK\mathlib</Filter>
     </ClInclude>
     <ClInclude Include="$(SolutionDir)include\SourceSDK\mathlib\mathlib.h">
-      <Filter>SourceSDK\mathlib</Filter>
-    </ClInclude>
-    <ClInclude Include="$(SolutionDir)include\SourceSDK\mathlib\sse.h">
       <Filter>SourceSDK\mathlib</Filter>
     </ClInclude>
     <ClInclude Include="$(SolutionDir)include\SourceSDK\mathlib\ssemath.h">
@@ -981,6 +975,12 @@
     </ClInclude>
     <ClInclude Include="util.h">
       <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\mathlib\3dnow.h">
+      <Filter>SourceSDK\mathlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\SourceSDK\mathlib\sse.h">
+      <Filter>SourceSDK\mathlib</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

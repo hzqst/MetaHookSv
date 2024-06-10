@@ -894,14 +894,11 @@ void CChatDialog::Clear(void)
 	//m_pChatHistory->Clear(); // WHAT
 }
 
-void CChatDialog::ChatPrintf(int iPlayerIndex, const char *fmt)
+void CChatDialog::ChatPrintf(int iPlayerIndex, const char *buf)
 {
-	va_list marker;
 	char msg[4096];
-
-	va_start(marker, fmt);
-	Q_vsnprintf(msg, sizeof(msg), fmt, marker);
-	va_end(marker);
+	strncpy(msg, buf, 4095);
+	msg[4095] = 0;
 
 	if (strlen(msg) > 0 && msg[strlen(msg) - 1] == '\n')
 		msg[strlen(msg) - 1] = 0;
@@ -981,12 +978,10 @@ void CChatDialog::ChatPrintf(int iPlayerIndex, const char *fmt)
 	SetVisible(true);
 }
 
-void CChatDialog::ChatPrintf(int iPlayerIndex, const wchar_t *fmt)
+void CChatDialog::ChatPrintf(int iPlayerIndex, const wchar_t *buf)
 {
-	va_list marker;
 	wchar_t msg[4096];
-
-	wcsncpy(msg, fmt, 4095);
+	wcsncpy(msg, buf, 4095);
 	msg[4095] = 0;
 
 	/*va_start(marker, fmt);

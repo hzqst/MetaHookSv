@@ -62,49 +62,51 @@ static char *CopyString( const char *in )
 }
 
 #if defined( VGUI_USEDRAGDROP )
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-struct vgui::DragDrop_t
+
+namespace vgui
 {
-	vgui::DragDrop_t() :
-		m_bDragEnabled( false ),
-		m_bDropEnabled( false ),
-		m_bDragStarted( false ),
-		m_nDragStartTolerance( 8 ),
-		m_bDragging( false ),
-		m_lDropHoverTime( 0 ),
-		m_bDropMenuShown( false ),
-		m_bPreventChaining( false )
+	struct DragDrop_t
 	{
-		m_nStartPos[ 0 ] = m_nStartPos[ 1 ] = 0;
-		m_nLastPos[ 0 ] = m_nLastPos[ 1 ] = 0;
-	}
+		DragDrop_t() :
+			m_bDragEnabled(false),
+			m_bDropEnabled(false),
+			m_bDragStarted(false),
+			m_nDragStartTolerance(8),
+			m_bDragging(false),
+			m_lDropHoverTime(0),
+			m_bDropMenuShown(false),
+			m_bPreventChaining(false)
+		{
+			m_nStartPos[0] = m_nStartPos[1] = 0;
+			m_nLastPos[0] = m_nLastPos[1] = 0;
+		}
 
-	// Drag related data
-	bool		m_bDragEnabled;
-	bool		m_bDragging;
-	bool		m_bDragStarted;
-	// How many pixels the dragged box must move before showing the outline rect...
-	int			m_nDragStartTolerance;
-	int			m_nStartPos[ 2 ];
-	int			m_nLastPos[ 2 ];
-	CUtlVector< KeyValues * >	m_DragData;
-	CUtlVector< PHandle >		m_DragPanels;
+		// Drag related data
+		bool		m_bDragEnabled;
+		bool		m_bDragging;
+		bool		m_bDragStarted;
+		// How many pixels the dragged box must move before showing the outline rect...
+		int			m_nDragStartTolerance;
+		int			m_nStartPos[2];
+		int			m_nLastPos[2];
+		CUtlVector< KeyValues* >	m_DragData;
+		CUtlVector< PHandle >		m_DragPanels;
 
-	// Drop related data
-	bool		m_bDropEnabled;
-	// A droppable panel can have a hover context menu, which will show up after m_flHoverContextTime of hovering
-	float		m_flHoverContextTime;
+		// Drop related data
+		bool		m_bDropEnabled;
+		// A droppable panel can have a hover context menu, which will show up after m_flHoverContextTime of hovering
+		float		m_flHoverContextTime;
 
-	PHandle			m_hCurrentDrop;
-	// Amount of time hovering over current drop target
-	long			m_lDropHoverTime;
-	bool			m_bDropMenuShown;
-	DHANDLE< Menu >	m_hDropContextMenu;
+		PHandle			m_hCurrentDrop;
+		// Amount of time hovering over current drop target
+		long			m_lDropHoverTime;
+		bool			m_bDropMenuShown;
+		DHANDLE< Menu >	m_hDropContextMenu;
 
-	// Misc data
-	bool			m_bPreventChaining;
+		// Misc data
+		bool			m_bPreventChaining;
+	};
+
 };
 
 //-----------------------------------------------------------------------------

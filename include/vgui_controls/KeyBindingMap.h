@@ -157,7 +157,7 @@ struct KeyBindingMap_t
 			if ( !bAdded ) \
 			{ \
 				bAdded = true; \
-				KB_AddToMap( #name, keycode, modifiers, (vgui::MessageFunc_t)&ThisClass::##function, help, doc, passive ); \
+				KB_AddToMap( #name, keycode, modifiers, (vgui::MessageFunc_t)&ThisClass::function, help, doc, passive ); \
 			}											\
 		}												\
 		PanelKBMapFunc_##name()							\

@@ -27,48 +27,6 @@ HWND g_MainWnd = NULL;
 WNDPROC g_MainWndProc = NULL;
 
 #if 0
-void SDL_GetWindowSize(void* window, int* w, int* h)
-{
-	gPrivateFuncs.SDL_GetWindowSize(window, w, h);
-
-	if (dpimanager()->IsScaling())
-	{
-		float flScalingFactor = (1.0f / dpimanager()->GetDpiScaling());
-
-		(*w) *= flScalingFactor;
-		(*h) *= flScalingFactor;
-	}
-}
-
-void VGuiWrap2_Paint(void)
-{
-	dpimanager()->BeginScaling();
-
-	gPrivateFuncs.VGuiWrap2_Paint();
-
-	dpimanager()->EndScaling();
-}
-
-#endif
-
-void COM_FixSlashes(char *pname)
-{
-#ifdef _WIN32
-	while (*pname) {
-		if (*pname == '/')
-			*pname = '\\';
-		pname++;
-	}
-#else
-	while (*pname) {
-		if (*pname == '\\')
-			*pname = '/';
-		pname++;
-	}
-#endif
-}
-
-#if 0
 
 int FileSystem_SetGameDirectory(const char *pDefaultDir, const char *pGameDir)
 {

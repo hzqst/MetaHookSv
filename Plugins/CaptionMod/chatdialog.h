@@ -126,8 +126,8 @@ public:
 	virtual void VidInit(void);
 	virtual void Printf(const char *fmt, ...);
 	virtual void Printf(const wchar_t *fmt, ...);
-	virtual void ChatPrintf(int iPlayerIndex, const char *fmt);
-	virtual void ChatPrintf(int iPlayerIndex, const wchar_t *fmt);
+	virtual void ChatPrintf(int iPlayerIndex, const char *buf);
+	virtual void ChatPrintf(int iPlayerIndex, const wchar_t * buf);
 	virtual int GetChatInputOffset(void);
 
 public:

@@ -716,8 +716,8 @@ bool ThreadInterlockedAssignPointerIf( void * volatile *pDest, void *value, void
 int64 ThreadInterlockedCompareExchange64( int64 volatile *pDest, int64 value, int64 comperand )
 {
 	Assert( (size_t)pDest % 8 == 0 );
-
-#if defined(_WIN64) || defined (_X360)
+	
+#if defined(_WIN64) || defined (_X360) || defined (__clang__)
 	return InterlockedCompareExchange64( pDest, value, comperand );
 #else
 	__asm 
@@ -739,7 +739,9 @@ bool ThreadInterlockedAssignIf64(volatile int64 *pDest, int64 value, int64 compe
 {
 	Assert( (size_t)pDest % 8 == 0 );
 
-#if defined(_WIN32) && !defined(_X360)
+#if defined(_WIN64) || defined (_X360) || defined (__clang__)
+	return (ThreadInterlockedCompareExchange64(pDest, value, comperand) == comperand);
+#else
 	__asm
 	{
 		lea esi,comperand;
@@ -754,8 +756,6 @@ bool ThreadInterlockedAssignIf64(volatile int64 *pDest, int64 value, int64 compe
 		mov eax,0;
 		setz al;
 	}
-#else
-	return ( ThreadInterlockedCompareExchange64( pDest, value, comperand ) == comperand ); 
 #endif
 }
 

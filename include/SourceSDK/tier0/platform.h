@@ -400,7 +400,7 @@ typedef void * HINSTANCE;
 #define  stackfree( _p )   0
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__clang__)
 #define RESTRICT __restrict
 #define RESTRICT_FUNC __declspec(restrict)
 #else

@@ -26,7 +26,11 @@ float _3DNow_Sqrt(float x)
 {
 	Assert( s_bMathlibInitialized );
 	float	root = 0.f;
-#if defined(_WIN32) && !defined(__clang__)
+#if defined(__clang__)
+
+	return sqrt(x);
+
+#elif defined(_WIN32)
 	_asm
 	{
 		femms
@@ -72,7 +76,15 @@ float FASTCALL _3DNow_VectorNormalize (Vector& vec)
 
 	if ( v[0] || v[1] || v[2] )
 	{
-#if defined(_WIN32) && !defined(__clang__)
+#if defined(__clang__)
+
+		auto length = sqrt(v[0] * v[0] + v[1] + v[1] + v[2] + v[2]);
+		v[0] /= length;
+		v[1] /= length;
+		v[2] /= length;
+
+		return length;
+#elif defined(_WIN32)
 	_asm
 		{
 			mov			eax, v
@@ -141,7 +153,12 @@ float _3DNow_InvRSquared(const float* v)
 {
 	Assert( s_bMathlibInitialized );
 	float	r2 = 1.f;
-#if defined(_WIN32) && !defined(__clang__)
+#if defined(__clang__)
+
+		r2 = DotProduct(v, v);
+	return r2 < 1.f ? 1.f : 1 / r2;
+
+#elif defined(_WIN32)
 	_asm { // AMD 3DNow only routine
 		mov			eax, v
 		femms

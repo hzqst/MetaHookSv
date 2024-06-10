@@ -368,19 +368,19 @@ private:
 // It them hooks that function up to the helper list so that the CHud objects can create
 //  the elements by name, with no header file dependency, etc.
 #define DECLARE_BUILD_FACTORY( className )										\
-	static vgui::Panel *Create_##className##( void )							\
+	static vgui::Panel *Create_##className  ( void )							\
 		{																		\
 			return new className( NULL, NULL );									\
 		};																		\
-		static vgui::CBuildFactoryHelper g_##className##_Helper( #className, Create_##className## );\
+		static vgui::CBuildFactoryHelper g_##className##_Helper( #className, Create_##className );\
 	className *g_##className##LinkerHack = NULL;
 
 #define DECLARE_BUILD_FACTORY_DEFAULT_TEXT( className, defaultText )			\
-	static vgui::Panel *Create_##className##( void )							\
+	static vgui::Panel *Create_##className( void )							\
 		{																		\
 			return new className( NULL, NULL, #defaultText );					\
 		};																		\
-	static vgui::CBuildFactoryHelper g_##className##_Helper( #className, Create_##className## );\
+	static vgui::CBuildFactoryHelper g_##className##_Helper( #className, Create_##className );\
 	className *g_##className##LinkerHack = NULL;
 
 // This one allows passing in a special function with calls new panel( xxx ) with arbitrary default parameters
