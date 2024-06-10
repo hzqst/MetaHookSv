@@ -745,7 +745,7 @@ void VectorRotateSSE( const float *in1, const matrix3x4_t& in2, float *out1 )
 #endif
 }
 
-#ifdef 0
+#if 1
 void _declspec(naked) _SSE_VectorMA( const float *start, float scale, const float *direction, float *dest )
 {
 	// FIXME: This don't work!! It will overwrite memory in the write to dest
