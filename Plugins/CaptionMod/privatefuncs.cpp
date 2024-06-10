@@ -60,6 +60,7 @@ static hook_t *g_phook_S_FindName = NULL;
 static hook_t *g_phook_S_StartDynamicSound = NULL;
 static hook_t *g_phook_S_StartStaticSound = NULL;
 static hook_t *g_phook_pfnTextMessageGet = NULL;
+static hook_t* g_phook_pfnServerCmdUnreliable = NULL;
 static hook_t *g_phook_TextMessageParse = NULL;
 static hook_t* g_phook_COM_ExplainDisconnection = NULL;
 static hook_t *g_phook_WeaponsResource_SelectSlot = NULL;
@@ -1176,6 +1177,7 @@ void Engine_InstallHooks(void)
 	Install_InlineHook(S_StartDynamicSound);
 	Install_InlineHook(S_StartStaticSound);
 	Install_InlineHook(pfnTextMessageGet);
+	Install_InlineHook(pfnServerCmdUnreliable);
 	Install_InlineHook(TextMessageParse);
 	Install_InlineHook(COM_ExplainDisconnection);
 }
@@ -1185,6 +1187,7 @@ void Engine_UninstallHooks(void)
 	Uninstall_Hook(S_StartDynamicSound);
 	Uninstall_Hook(S_StartStaticSound);
 	Uninstall_Hook(pfnTextMessageGet);
+	Uninstall_Hook(pfnServerCmdUnreliable);
 	Uninstall_Hook(TextMessageParse);
 	Uninstall_Hook(COM_ExplainDisconnection);
 }

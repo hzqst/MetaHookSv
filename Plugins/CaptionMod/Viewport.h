@@ -133,6 +133,7 @@ public:
 	void AddDictionaryHash(CDictionary *dict, const char *value);
 	void RemoveDictionaryHash(CDictionary *dict, const char *value);
 
+	bool IsChatBlocked(int clientIndex);
 	bool AllowedToPrintText(void);
 	bool IsScoreBoardVisible(void);
 	bool IsChatDialogOpened(void);

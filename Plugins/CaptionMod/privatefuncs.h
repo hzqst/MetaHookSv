@@ -58,7 +58,8 @@ typedef struct
 	void (__fastcall *WeaponsResource_SelectSlot)(void *pthis, int, int iSlot, int fAdvance, int iDirection);
 	int (__fastcall *CHud_GetBorderSize)(void *pthis, int);
 
-	//Engine TextMessage
+	//Engine funcs hook
+	int (*pfnServerCmdUnreliable)(const char* szCmdString);
 	client_textmessage_t *(*pfnTextMessageGet)(const char *pName);
 	void (*TextMessageParse)(byte* pMemFile, int fileSize);
 

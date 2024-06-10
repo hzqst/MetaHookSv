@@ -1172,22 +1172,23 @@ double GetAbsoluteTime()
 	return gEngfuncs.GetAbsoluteTime();
 }
 
-void RemoveFileExtension(std::string& filePath)
+static unsigned long g_VoiceBanMask = 0;
+
+unsigned long GetVoiceBanMask()
 {
-	// Find the last occurrence of '.'
-	size_t lastDotPosition = filePath.find_last_of(".");
+	return g_VoiceBanMask;
+}
 
-	// Check if the dot is part of a directory component rather than an extension
-	size_t lastPathSeparator = filePath.find_last_of("/\\");
-
-	if (lastDotPosition != std::string::npos) {
-		// Ensure the dot is after the last path separator
-		if (lastPathSeparator != std::string::npos && lastDotPosition < lastPathSeparator) {
-			return; // Dot is part of a directory name, not an extension
+int pfnServerCmdUnreliable(const char* szCmdString)
+{
+	if (!strncmp(szCmdString, "vban ",sizeof("vban ") - 1 ))
+	{
+		unsigned long banMask = 0;
+		if (1 == sscanf(szCmdString, "vban %x", &banMask))
+		{
+			g_VoiceBanMask = banMask;
 		}
-		// Return the substring from the beginning to the dot
-		filePath = filePath.substr(0, lastDotPosition);
 	}
 
-	// No extension found, return the original path
+	return gPrivateFuncs.pfnServerCmdUnreliable(szCmdString);
 }

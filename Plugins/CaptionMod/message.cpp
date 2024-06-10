@@ -1229,7 +1229,7 @@ void SayTextLine::Colorize(void)
 		wchar_t wName[128];
 		hud_player_info_t playerinfo = { 0 };
 		gEngfuncs.pfnGetPlayerInfo(m_clientIndex, &playerinfo);
-		char *pName = playerinfo.name ? playerinfo.name : "";
+		const char * pName = playerinfo.name ? playerinfo.name : "";
 
 		vgui::localize()->ConvertANSIToUnicode(pName, wName, sizeof(wName));
 
@@ -1412,6 +1412,12 @@ void CHudMessage::EnsureTextFitsInOneLineAndWrapIfHaveTo(int line)
 int CHudMessage::SayTextPrint(const char *pszBuf, int iBufSize, int clientIndex, char *sstr1, char *sstr2, char *sstr3, char *sstr4)
 {
 	if (!g_pViewPort->AllowedToPrintText())
+	{
+		gEngfuncs.pfnConsolePrint(pszBuf);
+		return 0;
+	}
+
+	if (g_pViewPort->IsChatBlocked(clientIndex))
 	{
 		gEngfuncs.pfnConsolePrint(pszBuf);
 		return 0;
@@ -1644,6 +1650,7 @@ int CHudMessage::MsgFunc_SayText(const char* pszName, int iSize, void* pbuf)
 	{
 		hud_player_info_t playerinfo = { 0 };
 		gEngfuncs.pfnGetPlayerInfo(client_index, &playerinfo);
+
 		if (playerinfo.name)
 		{
 			strcpy(sstr1, playerinfo.name);
@@ -2190,10 +2197,11 @@ char *CHudMenu::LocaliseTextString(const char *msg, char *dst_buffer, int buffer
 	{
 		if (*src == '#')
 		{
-			static char word_buf[255];
+			char word_buf[256] = {0};
+			const char* word_buf_end = word_buf + 255;
 			char *wdst = word_buf, *word_start = src;
 
-			for (++src; (*src >= 'A' && *src <= 'z') || (*src >= '0' && *src <= '9'); wdst++, src++)
+			for (++src; (*src >= 'A' && *src <= 'z') || (*src >= '0' && *src <= '9') && wdst < word_buf_end; wdst++, src++)
 				*wdst = *src;
 
 			*wdst = 0;
@@ -2208,7 +2216,7 @@ char *CHudMenu::LocaliseTextString(const char *msg, char *dst_buffer, int buffer
 				continue;
 			}
 
-			for (char *wsrc = (char *)clmsg->pMessage; *wsrc != 0; wsrc++, dst++)
+			for (const char *wsrc = clmsg->pMessage; *wsrc != 0; wsrc++, dst++)
 				*dst = *wsrc;
 
 			*dst = 0;

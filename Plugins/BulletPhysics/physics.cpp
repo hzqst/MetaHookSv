@@ -231,16 +231,7 @@ void CPhysicsManager::GenerateWorldVerticeArray(void)
 
 	for (int i = 0; i < r_worldmodel->numsurfaces; i++)
 	{
-		msurface_t* surf;
-
-		if (g_iEngineType == ENGINE_GOLDSRC_HL25)
-		{
-			surf = (((msurface_hl25_t*)r_worldmodel->surfaces) + i);
-		}
-		else
-		{
-			surf = r_worldmodel->surfaces + i;
-		}
+		auto surf = GetWorldSurfaceByIndex(i);
 
 		if ((surf->flags & (SURF_DRAWTURB | SURF_UNDERWATER | SURF_DRAWSKY)))
 			continue;

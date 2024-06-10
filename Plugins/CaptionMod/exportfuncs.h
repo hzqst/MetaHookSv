@@ -49,6 +49,10 @@ void MessageMode_f(void);
 void MessageMode2_f(void);
 void Cap_Version_f(void);
 
+int pfnServerCmdUnreliable(const char* szCmdString);
+
+unsigned long GetVoiceBanMask();
+
 LRESULT WINAPI VID_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 //int __fastcall ScClient_FindSoundEx(void* pthis, int, const char *sound);
@@ -57,12 +61,7 @@ void __fastcall ScClient_SoundEngine_PlayFMODSound(void* pSoundEngine, int, int 
 int __stdcall FMOD_System_playSound(void* FMOD_System, int channelid, void* FMOD_Sound, bool paused, void** FMOD_Channel);
 void __fastcall WeaponsResource_SelectSlot(void *pthis, int, int iSlot, int fAdvance, int iDirection);
 
-void VGuiWrap2_Paint(void);
-void SDL_GetWindowSize(void* window, int* w, int* h);
-
 void InitWin32Stuffs(void);
-
-void RemoveFileExtension(std::string& filePath);
 
 extern cvar_t* cap_debug;
 extern cvar_t* cap_enabled;

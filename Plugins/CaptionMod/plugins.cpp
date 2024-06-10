@@ -80,6 +80,7 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 	memcpy(&gEngfuncs, pEngfuncs, sizeof(gEngfuncs));
 
 	gPrivateFuncs.pfnTextMessageGet = pEngfuncs->pfnTextMessageGet;
+	gPrivateFuncs.pfnServerCmdUnreliable = pEngfuncs->pfnServerCmdUnreliable;
 
 	ULONG_PTR addr = (ULONG_PTR)g_pMetaHookAPI->SearchPattern((void *)gEngfuncs.GetClientTime, 0x20, "\xDD\x05", sizeof("\xDD\x05") - 1);
 	Sig_AddrNotFound("cl_time");

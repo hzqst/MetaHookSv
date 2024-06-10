@@ -15,6 +15,7 @@
 #include "message.h"
 #include "privatefuncs.h"
 #include "exportfuncs.h"
+#include "util.h"
 
 using namespace vgui;
 
@@ -419,7 +420,7 @@ void CDictionary::Load(CSV::CSVDocument::row_type &row, Color &defaultColor, ISc
 	}
 
 	//If it's a textmessage found in engine (gamedir/titles.txt)
-	client_textmessage_t *textmsg = gEngfuncs.pfnTextMessageGet(m_szTitle[0] == '#' ? &m_szTitle[1] : &m_szTitle[0]);
+	client_textmessage_t *textmsg = gPrivateFuncs.pfnTextMessageGet(m_szTitle[0] == '#' ? &m_szTitle[1] : &m_szTitle[0]);
 	if (textmsg)
 	{
 		m_Type = DICT_MESSAGE;
@@ -983,6 +984,17 @@ bool CViewport::AllowedToPrintText(void)
 		return gPrivateFuncs.GameViewport_AllowedToPrintText(GameViewport, 0);
 
 	return true;
+}
+
+bool CViewport::IsChatBlocked(int clientIndex)
+{
+	if (clientIndex >= 1 && clientIndex <= 32)
+	{
+		if (GetVoiceBanMask() & (1 << clientIndex))
+			return true;
+	}
+
+	return false;
 }
 
 bool CViewport::IsScoreBoardVisible(void)

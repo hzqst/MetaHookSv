@@ -425,6 +425,9 @@
     <ClCompile Include="..\..\include\SourceSDK\VPanel.cpp">
       <Filter>VGUI2</Filter>
     </ClCompile>
+    <ClCompile Include="util.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="enginedef.h">
@@ -974,6 +977,9 @@
       <Filter>VGUI2</Filter>
     </ClInclude>
     <ClInclude Include="VGUI2ExtensionImport.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="util.h">
       <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>
