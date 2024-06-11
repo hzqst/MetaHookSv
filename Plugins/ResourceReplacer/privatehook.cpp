@@ -2,8 +2,11 @@
 #include <capstone.h>
 #include <vector>
 #include <set>
+
 #include "plugins.h"
 #include "privatehook.h"
+#include "util.h"
+
 #include "ResourceReplacer.h"
 
 #define S_LOADSOUND_SIG_SVENGINE "\x81\xEC\x2A\x2A\x00\x00\xA1\x2A\x2A\x2A\x2A\x33\xC4\x89\x84\x24\x2A\x2A\x00\x00\x8B\x8C\x24\x2A\x2A\x00\x00\x56\x8B\xB4\x24\x2A\x2A\x00\x00\x8A\x06\x3C\x2A"
@@ -17,8 +20,6 @@ private_funcs_t gPrivateFuncs = { 0 };
 static hook_t* g_phook_S_LoadSound_FS_Open = NULL;
 static hook_t* g_phook_Mod_LoadModel_FS_Open = NULL;
 static hook_t* g_phook_CL_PrecacheResources = NULL;
-
-void RemoveFileExtension(std::string& filePath);
 
 qboolean CL_PrecacheResources()
 {

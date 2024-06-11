@@ -11,8 +11,6 @@ engine_studio_api_t IEngineStudio;
 r_studio_interface_t **gpStudioInterface;
 IKeyValuesSystem* g_pKeyValuesSystem = NULL;
 
-void RemoveFileExtension(std::string& filePath);
-
 int HUD_VidInit(void)
 {
 	ModelReplacer()->FreeMapEntries();

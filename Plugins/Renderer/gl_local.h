@@ -24,6 +24,7 @@
 #include "plugins.h"
 #include "exportfuncs.h"
 #include "privatehook.h"
+#include "util.h"
 
 #include "zone.h"
 
@@ -560,8 +561,6 @@ cl_entity_t *EngineGetClientEntitiesBase(void);
 int EngineGetMaxTempEnts(void);
 TEMPENTITY *EngineGetTempTentsBase(void);
 TEMPENTITY *EngineGetTempTentByIndex(int index);
-
-void RemoveFileExtension(std::string& filePath);
 
 float GetFrameRateFromFrameDuration(int frameduration);
 
