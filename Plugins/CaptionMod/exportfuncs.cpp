@@ -61,23 +61,6 @@ cl_entity_t* EngineGetViewEntity(void)
 	return gEngfuncs.GetEntityByIndex((*cl_viewentity));
 }
 
-void COM_FixSlashes(char *pname)
-{
-#ifdef _WIN32
-	while (*pname) {
-		if (*pname == '/')
-			*pname = '\\';
-		pname++;
-	}
-#else
-	while (*pname) {
-		if (*pname == '\\')
-			*pname = '/';
-		pname++;
-	}
-#endif
-}
-
 int HUD_VidInit(void)
 {
 	int result = gExportfuncs.HUD_VidInit();
