@@ -2,6 +2,7 @@
 #include "exportfuncs.h"
 #include "privatefuncs.h"
 #include "DpiManagerInternal.h"
+#include "util.h"
 #include <ISurface2.h>
 
 extern vgui::ISurface2* g_pVGuiSurface2;

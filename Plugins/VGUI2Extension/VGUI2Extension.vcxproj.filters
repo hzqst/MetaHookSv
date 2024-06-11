@@ -449,6 +449,9 @@
     <ClCompile Include="..\..\include\SourceSDK\tier0\vcrmode.cpp">
       <Filter>SourceSDK\tier0</Filter>
     </ClCompile>
+    <ClCompile Include="util.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="enginedef.h">
@@ -504,6 +507,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\Interface\VGUI\IInput2.h">
       <Filter>Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="util.h">
+      <Filter>Header</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

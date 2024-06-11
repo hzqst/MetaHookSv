@@ -179,6 +179,7 @@ $(GLEWCheckRequirements)</Command>
     <ClCompile Include="SchemeHook.cpp" />
     <ClCompile Include="Surface2.cpp" />
     <ClCompile Include="SurfaceHook.cpp" />
+    <ClCompile Include="util.cpp" />
     <ClCompile Include="VGUI1Hook.cpp" />
     <ClCompile Include="VGUI2ExtensionInternal.cpp" />
     <ClCompile Include="Win32Font.cpp" />
@@ -300,6 +301,7 @@ $(GLEWCheckRequirements)</Command>
     <ClInclude Include="plugins.h" />
     <ClInclude Include="Scheme2.h" />
     <ClInclude Include="Surface2.h" />
+    <ClInclude Include="util.h" />
     <ClInclude Include="VGUI2ExtensionInternal.h" />
     <ClInclude Include="Win32Font.h" />
   </ItemGroup>
