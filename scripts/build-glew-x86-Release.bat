@@ -11,6 +11,6 @@ if not "%SolutionDir:~-1%"=="\" SET "SolutionDir=%SolutionDir%\"
 
 cd /d "%SolutionDir%"
 
-call cmake -S "%SolutionDir%thirdparty\glew_fork" -B "%SolutionDir%thirdparty\build\glew\x86\Release" -A Win32 -DCMAKE_INSTALL_PREFIX="%SolutionDir%thirdparty\install\glew\x86\Release" -DCMAKE_TOOLCHAIN_FILE="%SolutionDir%tools\toolchain.cmake"  -DONLY_LIBS=TRUE -Dglew-cmake_BUILD_SHARED=FALSE
+call cmake -S "%SolutionDir%thirdparty\glew_fork" -B "%SolutionDir%thirdparty\build\glew\x86\Release" -A Win32 -DCMAKE_INSTALL_PREFIX="%SolutionDir%thirdparty\install\glew\x86\Release" -DCMAKE_TOOLCHAIN_FILE="%SolutionDir%tools\toolchain.cmake"  -DONLY_LIBS=TRUE -Dglew-cmake_BUILD_SHARED=FALSE -DGLEW_MSVC_LTCG=TRUE
 
 call cmake --build "%SolutionDir%thirdparty\build\glew\x86\Release" --config Release --target install
