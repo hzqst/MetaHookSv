@@ -314,6 +314,7 @@ $(FreeImageCheckRequirements)</Command>
     <ClCompile Include="MurmurHash2.cpp" />
     <ClCompile Include="parsemsg.cpp" />
     <ClCompile Include="plugins.cpp" />
+    <ClCompile Include="util.cpp" />
     <ClCompile Include="VGUI2ExtensionImport.cpp" />
     <ClCompile Include="zone.cpp" />
   </ItemGroup>

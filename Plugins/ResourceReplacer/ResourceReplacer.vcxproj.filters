@@ -113,6 +113,9 @@
     <ClCompile Include="..\..\include\SourceSDK\vstdlib\random.cpp">
       <Filter>SourceSDK\vstdlib</Filter>
     </ClCompile>
+    <ClCompile Include="util.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">

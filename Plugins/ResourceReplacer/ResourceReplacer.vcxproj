@@ -148,6 +148,7 @@
     <ClCompile Include="plugins.cpp" />
     <ClCompile Include="privatehook.cpp" />
     <ClCompile Include="ResourceReplacer.cpp" />
+    <ClCompile Include="util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="enginedef.h" />
