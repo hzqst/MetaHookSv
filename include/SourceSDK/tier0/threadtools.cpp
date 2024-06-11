@@ -85,7 +85,12 @@ ThreadHandle_t CreateSimpleThread( ThreadFunc_t pfnThread, void *pParam, ThreadI
 	ThreadId_t idIgnored;
 	if ( !pID )
 		pID = &idIgnored;
+#if defined(USE_VCRMODE) && !defined(NO_VCR)
 	return (ThreadHandle_t)VCRHook_CreateThread(NULL, stackSize, (LPTHREAD_START_ROUTINE)ThreadProcConvert, new ThreadProcInfo_t( pfnThread, pParam ), 0, pID);
+#else
+	return (ThreadHandle_t)VCRHook_CreateThread(NULL, stackSize, (_beginthreadex_proc_type)ThreadProcConvert, new ThreadProcInfo_t(pfnThread, pParam), 0, (unsigned*)pID);
+#endif
+
 #elif _LINUX
 	pthread_t tid;
 	pthread_create(&tid, NULL, ThreadProcConvert, new ThreadProcInfo_t( pfnThread, pParam ) );
@@ -1369,12 +1374,11 @@ bool CThread::Start( unsigned nBytesStack )
 	HANDLE       hThread;
 	CThreadEvent createComplete;
 	ThreadInit_t init = { this, &createComplete, &bInitSuccess };
-	m_hThread = hThread = (HANDLE)VCRHook_CreateThread( NULL,
-														nBytesStack,
-														(LPTHREAD_START_ROUTINE)GetThreadProc(),
-														new ThreadInit_t(init),
-														0,
-														&m_threadId );
+#if defined(USE_VCRMODE) && !defined(NO_VCR)
+	m_hThread = hThread = (HANDLE)VCRHook_CreateThread( NULL, nBytesStack, 	(LPTHREAD_START_ROUTINE)GetThreadProc(), 	new ThreadInit_t(init), 0, &m_threadId );
+#else
+	m_hThread = hThread = (HANDLE)VCRHook_CreateThread(NULL, nBytesStack, (_beginthreadex_proc_type)GetThreadProc(), new ThreadInit_t(init), 0, (unsigned *) & m_threadId);
+#endif
 	if ( !hThread )
 	{
 		AssertMsg1( 0, "Failed to create thread (error 0x%x)", GetLastError() );
