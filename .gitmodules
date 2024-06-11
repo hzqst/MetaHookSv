@@ -1,6 +1,3 @@
-[submodule "thirdparty/capstone"]
-	path = thirdparty/capstone
-	url = https://github.com/capstone-engine/capstone/
 [submodule "thirdparty/rapidjson"]
 	path = thirdparty/rapidjson
 	url = https://github.com/Tencent/rapidjson
