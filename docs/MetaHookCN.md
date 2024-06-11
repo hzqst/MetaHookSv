@@ -144,7 +144,7 @@ cvar回调是Valve在buildnum 6153 GoldSrc引擎中添加的功能，用于在cv
 
 ### API：获取当前游戏目录
 
-同`gEngfuncs.GetGameDirectory()`，但是可以在引擎初始化之前调用。（引擎初始化之前调用`gEngfuncs.GetGameDirectory()`只能得到空字符串）
+`g_pMetaHookAPI->GetGameDirectory()`：同`gEngfuncs.GetGameDirectory()`，但是可以在引擎初始化之前调用。（引擎初始化之前调用`gEngfuncs.GetGameDirectory()`只能得到空字符串）
 
 ### API：虚表hook
 

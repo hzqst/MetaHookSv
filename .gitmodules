@@ -19,3 +19,6 @@
 [submodule "thirdparty/Detours_fork"]
 	path = thirdparty/Detours_fork
 	url = https://github.com/hzqst/Detours_fork
+[submodule "thirdparty/capstone_fork"]
+	path = thirdparty/capstone_fork
+	url = https://github.com/hzqst/capstone
