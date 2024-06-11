@@ -208,6 +208,7 @@ $(FreeImageCheckRequirements)</Command>
     <ClCompile Include="..\..\include\SourceSDK\tier1\mempool.cpp" />
     <ClCompile Include="..\..\include\SourceSDK\tier1\memstack.cpp" />
     <ClCompile Include="..\..\include\SourceSDK\tier1\stringpool.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier1\strtools.cpp" />
     <ClCompile Include="..\..\include\SourceSDK\tier1\utlbuffer.cpp" />
     <ClCompile Include="..\..\include\SourceSDK\tier1\utlstring.cpp" />
     <ClCompile Include="..\..\include\SourceSDK\tier1\utlsymbol.cpp" />

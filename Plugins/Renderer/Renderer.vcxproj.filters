@@ -428,6 +428,9 @@
     <ClCompile Include="..\..\include\SourceSDK\tier0\vcrmode.cpp">
       <Filter>SourceSDK\tier0</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier1\strtools.cpp">
+      <Filter>SourceSDK\tier1</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bspfile.h">
