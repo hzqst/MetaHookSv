@@ -131,9 +131,6 @@
     <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\threadtools.cpp">
       <Filter>SourceSDK\tier0</Filter>
     </ClCompile>
-    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\vcrmode.cpp">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClCompile>
     <ClCompile Include="$(SolutionDir)include\SourceSDK\mathlib\3dnow.cpp">
       <Filter>SourceSDK\mathlib</Filter>
     </ClCompile>
@@ -448,6 +445,9 @@
     </ClCompile>
     <ClCompile Include="CounterStrikeViewport.cpp">
       <Filter>ClientVGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\vcrmode.cpp">
+      <Filter>SourceSDK\tier0</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

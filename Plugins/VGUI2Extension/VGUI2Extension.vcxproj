@@ -160,6 +160,7 @@ $(GLEWCheckRequirements)</Command>
     <ClCompile Include="$(SolutionDir)include\vgui_controls\CvarTextEntry.cpp" />
     <ClCompile Include="$(SolutionDir)include\vgui_controls\CvarToggleCheckButton.cpp" />
     <ClCompile Include="$(SolutionDir)include\vgui_controls\MemoryBitmap.cpp" />
+    <ClCompile Include="..\..\include\SourceSDK\tier0\vcrmode.cpp" />
     <ClCompile Include="BaseUI.cpp" />
     <ClCompile Include="ClientVGUI.cpp" />
     <ClCompile Include="CounterStrikeViewport.cpp" />
@@ -199,7 +200,6 @@ $(GLEWCheckRequirements)</Command>
     <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\minidump.cpp" />
     <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\platform.cpp" />
     <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\threadtools.cpp" />
-    <ClCompile Include="$(SolutionDir)include\SourceSDK\tier0\vcrmode.cpp" />
     <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\characterset.cpp" />
     <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\generichash.cpp" />
     <ClCompile Include="$(SolutionDir)include\SourceSDK\tier1\KeyValues.cpp" />

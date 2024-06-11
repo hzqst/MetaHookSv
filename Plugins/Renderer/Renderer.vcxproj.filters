@@ -353,9 +353,6 @@
     <ClCompile Include="..\..\include\SourceSDK\tier1\stringpool.cpp">
       <Filter>SourceSDK\tier1</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier1\strtools.cpp">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\include\SourceSDK\tier1\utlbuffer.cpp">
       <Filter>SourceSDK\tier1</Filter>
     </ClCompile>
@@ -404,9 +401,6 @@
     <ClCompile Include="..\..\include\SourceSDK\tier0\threadtools.cpp">
       <Filter>SourceSDK\tier0</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier0\vcrmode.cpp">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\include\SourceSDK\filesystem.cpp">
       <Filter>SourceSDK</Filter>
     </ClCompile>
@@ -430,6 +424,9 @@
     </ClCompile>
     <ClCompile Include="BaseUI.cpp">
       <Filter>VGUI2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\SourceSDK\tier0\vcrmode.cpp">
+      <Filter>SourceSDK\tier0</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -747,183 +744,6 @@
     </ClInclude>
     <ClInclude Include="..\..\include\SourceSDK\tier1\KeyValues.h">
       <Filter>VGUI2</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\vstdlib\IKeyValuesSystem.h">
-      <Filter>SourceSDK\vstdlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\vstdlib\random.h">
-      <Filter>SourceSDK\vstdlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\vstdlib\vstdlib.h">
-      <Filter>SourceSDK\vstdlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\byteswap.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\characterset.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\convar.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\generichash.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\iconvar.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\interface.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\mempool.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\memstack.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\stringpool.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\strtools.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\tier1.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlblockmemory.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlbuffer.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utldict.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlfixedmemory.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlflags.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlhandletable.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utllinkedlist.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlmap.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlmemory.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlqueue.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlrbtree.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlstring.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\UtlStringMap.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlsymbol.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlvector.h">
-      <Filter>SourceSDK\tier1</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\basetypes.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\commonmacros.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\dbg.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\dbgflag.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\fasttimer.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\l2cache.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\mem.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\mem_helpers.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\memalloc.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\memdbgoff.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\memdbgon.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\memstd.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\minidump.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\pch_tier0.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\platform.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\protected_things.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\resource.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\threadtools.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\tslist.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\validator.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\valobject.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\valve_off.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\valve_on.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\vcr_shared.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\vcrmode.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\vprof.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\wchartypes.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\xbox_codeline_defines.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\filesystem.h">
-      <Filter>SourceSDK</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\filesystem_helpers.h">
-      <Filter>SourceSDK</Filter>
     </ClInclude>
     <ClInclude Include="VGUI2ExtensionImport.h">
       <Filter>VGUI2</Filter>

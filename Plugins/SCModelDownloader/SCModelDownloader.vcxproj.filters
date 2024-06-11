@@ -332,9 +332,6 @@
     <ClCompile Include="..\..\include\SourceSDK\tier0\threadtools.cpp">
       <Filter>SourceSDK\tier0</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\include\SourceSDK\tier0\vcrmode.cpp">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\include\SourceSDK\tier1\characterset.cpp">
       <Filter>SourceSDK\tier1</Filter>
     </ClCompile>
@@ -655,90 +652,6 @@
     <ClInclude Include="VGUI2ExtensionImport.h">
       <Filter>VGUI2</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\basetypes.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\commonmacros.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\dbg.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\dbgflag.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\fasttimer.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\l2cache.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\mem.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\mem_helpers.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\memalloc.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\memdbgoff.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\memdbgon.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\memstd.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\minidump.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\pch_tier0.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\platform.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\protected_things.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\resource.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\threadtools.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\tslist.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\validator.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\valobject.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\valve_off.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\valve_on.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\vcr_shared.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\vcrmode.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\vprof.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\wchartypes.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\tier0\xbox_codeline_defines.h">
-      <Filter>SourceSDK\tier0</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\SourceSDK\tier1\byteswap.h">
       <Filter>SourceSDK\tier1</Filter>
     </ClInclude>
@@ -828,33 +741,6 @@
     </ClInclude>
     <ClInclude Include="..\..\include\SourceSDK\vstdlib\vstdlib.h">
       <Filter>SourceSDK\vstdlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\mathlib\3dnow.h">
-      <Filter>SourceSDK\mathlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\mathlib\amd3dx.h">
-      <Filter>SourceSDK\mathlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\mathlib\math_pfns.h">
-      <Filter>SourceSDK\mathlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\mathlib\mathlib.h">
-      <Filter>SourceSDK\mathlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\mathlib\sse.h">
-      <Filter>SourceSDK\mathlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\mathlib\ssemath.h">
-      <Filter>SourceSDK\mathlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\mathlib\ssequaternion.h">
-      <Filter>SourceSDK\mathlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\mathlib\vector.h">
-      <Filter>SourceSDK\mathlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\SourceSDK\mathlib\vector2d.h">
-      <Filter>SourceSDK\mathlib</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -8,6 +8,8 @@
 
 #include "pch_tier0.h"
 
+#ifdef USE_VCRMODE
+
 #ifdef _LINUX
 #include "vcrmode_linux.cpp"
 #else
@@ -1787,3 +1789,4 @@ VCR_t *g_pVCR = &g_VCR;
 
 #endif // LINUX
 
+#endif // USE_VCRMODE

@@ -114,7 +114,6 @@ $(FreeImageCheckRequirements)</Command>
     <ClCompile>
       <AdditionalOptions>/MP %(AdditionalOptions)</AdditionalOptions>
       <Optimization>MaxSpeed</Optimization>
-      <EnableFiberSafeOptimizations>false</EnableFiberSafeOptimizations>
       <AdditionalIncludeDirectories>.\;$(SolutionDir)include;$(SolutionDir)include\Interface;$(SolutionDir)include\Interface\VGUI;$(SolutionDir)include\HLSDK\cl_dll;$(SolutionDir)include\HLSDK\common;$(SolutionDir)include\HLSDK\engine;$(SolutionDir)include\HLSDK\pm_shared;$(SolutionDir)include\HLSDK\public;$(SolutionDir)include\VGUI;$(SolutionDir)include\vgui_controls;$(SolutionDir)include\SourceSDK;$(SolutionDir)include\SourceSDK\tier0;$(SolutionDir)include\SourceSDK\tier1;$(SolutionDir)include\SourceSDK\vstdlib;$(CapstoneIncludeDirectory);$(GLEWIncludeDirectory);$(FreeImageIncludeDirectory);$(ScopeExitIncludeDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;RENDERER_EXPORTS;GLEW_STATIC;$(VGUI2ExtensionDefines);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -209,7 +208,6 @@ $(FreeImageCheckRequirements)</Command>
     <ClCompile Include="..\..\include\SourceSDK\tier1\mempool.cpp" />
     <ClCompile Include="..\..\include\SourceSDK\tier1\memstack.cpp" />
     <ClCompile Include="..\..\include\SourceSDK\tier1\stringpool.cpp" />
-    <ClCompile Include="..\..\include\SourceSDK\tier1\strtools.cpp" />
     <ClCompile Include="..\..\include\SourceSDK\tier1\utlbuffer.cpp" />
     <ClCompile Include="..\..\include\SourceSDK\tier1\utlstring.cpp" />
     <ClCompile Include="..\..\include\SourceSDK\tier1\utlsymbol.cpp" />
@@ -319,66 +317,7 @@ $(FreeImageCheckRequirements)</Command>
     <ClCompile Include="zone.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\SourceSDK\filesystem.h" />
-    <ClInclude Include="..\..\include\SourceSDK\filesystem_helpers.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\basetypes.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\commonmacros.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\dbg.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\dbgflag.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\fasttimer.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\l2cache.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\mem.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\memalloc.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\memdbgoff.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\memdbgon.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\memstd.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\mem_helpers.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\minidump.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\pch_tier0.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\platform.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\protected_things.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\resource.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\threadtools.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\tslist.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\validator.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\valobject.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\valve_off.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\valve_on.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\vcrmode.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\vcr_shared.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\vprof.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\wchartypes.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier0\xbox_codeline_defines.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\byteswap.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\characterset.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\convar.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\generichash.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\iconvar.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\interface.h" />
     <ClInclude Include="..\..\include\SourceSDK\tier1\KeyValues.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\mempool.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\memstack.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\stringpool.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\strtools.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\tier1.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlblockmemory.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlbuffer.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utldict.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlfixedmemory.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlflags.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlhandletable.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utllinkedlist.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlmap.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlmemory.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlqueue.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlrbtree.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlstring.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\UtlStringMap.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlsymbol.h" />
-    <ClInclude Include="..\..\include\SourceSDK\tier1\utlvector.h" />
-    <ClInclude Include="..\..\include\SourceSDK\vstdlib\IKeyValuesSystem.h" />
-    <ClInclude Include="..\..\include\SourceSDK\vstdlib\random.h" />
-    <ClInclude Include="..\..\include\SourceSDK\vstdlib\vstdlib.h" />
     <ClInclude Include="..\..\include\vgui_controls\AnalogBar.h" />
     <ClInclude Include="..\..\include\vgui_controls\AnimatingImagePanel.h" />
     <ClInclude Include="..\..\include\vgui_controls\AnimationController.h" />
