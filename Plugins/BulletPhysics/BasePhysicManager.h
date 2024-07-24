@@ -8,74 +8,53 @@
 class CPhysicBrushVertex
 {
 public:
-	CPhysicBrushVertex()
-	{
-		pos[0] = 0;
-		pos[1] = 0;
-		pos[2] = 0;
-	}
-
-	vec3_t	pos;
+	vec3_t	pos{ 0 };
 };
 
 class CPhysicBrushFace
 {
 public:
-	CPhysicBrushFace()
-	{
-		start_vertex = 0;
-		num_vertexes = 0;
-	}
-
-	int start_vertex;
-	int num_vertexes;
+	int start_vertex{};
+	int num_vertexes{};
 };
 
 class CPhysicVertexArray
 {
 public:
-	CPhysicVertexArray()
-	{
-		bIsDynamic = false;
-	}
 	std::vector<CPhysicBrushVertex> vVertexBuffer;
 	std::vector<CPhysicBrushFace> vFaceBuffer;
-	bool bIsDynamic;
+	bool bIsDynamic{};
 };
 
 class CPhysicIndexArray
 {
 public:
-	CPhysicIndexArray()
-	{
-		bIsDynamic = false;
-	}
 	std::vector<int> vIndexBuffer;
-	bool bIsDynamic;
+	bool bIsDynamic{};
 };
 
 class CPhysicObjectCreationParameter
 {
 public:
-	CPhysicVertexArray* VertexArray;
-	CPhysicIndexArray* IndexArray;
+	CPhysicVertexArray* VertexArray{};
+	CPhysicIndexArray* IndexArray{};
 };
 
 class CPhysicStaticObjectCreationParameter : public CPhysicObjectCreationParameter
 {
 public:
-	bool IsKinematic;
+	bool IsKinematic{};
 };
 
 class CBasePhysicManager : public IPhysicManager
 {
 protected:
-	CPhysicVertexArray* m_worldVertexArray;
-	CPhysicIndexArray* m_barnacleIndexArray;
-	CPhysicVertexArray* m_barnacleVertexArray;
-	CPhysicIndexArray* m_gargantuaIndexArray;
-	CPhysicVertexArray* m_gargantuaVertexArray;
-	float m_gravity;
+	CPhysicVertexArray* m_worldVertexArray{};
+	CPhysicIndexArray* m_barnacleIndexArray{};
+	CPhysicVertexArray* m_barnacleVertexArray{};
+	CPhysicIndexArray* m_gargantuaIndexArray{};
+	CPhysicVertexArray* m_gargantuaVertexArray{};
+	float m_gravity{};
 
 	std::unordered_map<int, IPhysicObject *> m_physicObjects;
 	std::vector<CRagdollConfig *> m_ragdollConfigs;

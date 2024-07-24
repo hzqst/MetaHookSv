@@ -120,7 +120,17 @@ void CBasePhysicManager::CreateBrushModel(cl_entity_t* ent)
 
 void CBasePhysicManager::CreateBarnacle(cl_entity_t* ent)
 {
+	auto PhysicObject = GetPhysicObject(ent->index);
 
+	if (PhysicObject)
+		return;
+
+	CPhysicStaticObjectCreationParameter CreationParameter;
+	CreationParameter.VertexArray = m_barnacleVertexArray;
+	CreationParameter.IndexArray = m_barnacleIndexArray;
+	CreationParameter.IsKinematic = false;
+
+	CreateStaticObject(ent, CreationParameter);
 }
 
 void CBasePhysicManager::CreateGargantua(cl_entity_t* ent)
