@@ -187,6 +187,7 @@ $(Bullet3CheckRequirements)</Command>
   <ItemGroup>
     <ClInclude Include="BasePhysicManager.h" />
     <ClInclude Include="BulletPhysicManager.h" />
+    <ClInclude Include="ClientPhysicCommon.h" />
     <ClInclude Include="CounterStrike.h" />
     <ClInclude Include="message.h" />
     <ClInclude Include="ClientPhysicManager.h" />
@@ -195,9 +196,14 @@ $(Bullet3CheckRequirements)</Command>
     <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />
     <ClInclude Include="mathlib2.h" />
-    <ClInclude Include="physics.h" />
+    <ClInclude Include="physics.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="ClientEntityManager.h" />
     <ClInclude Include="qgl.h" />
+    <ClInclude Include="ClientPhysicConfig.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

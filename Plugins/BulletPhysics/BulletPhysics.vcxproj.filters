@@ -91,5 +91,11 @@
     <ClInclude Include="CounterStrike.h">
       <Filter>Header</Filter>
     </ClInclude>
+    <ClInclude Include="ClientPhysicConfig.h">
+      <Filter>Header</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientPhysicCommon.h">
+      <Filter>Header</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
