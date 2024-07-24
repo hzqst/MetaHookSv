@@ -1517,6 +1517,7 @@ void CPhysicsManager::ReloadConfig(void)
 ragdoll_config_t *CPhysicsManager::LoadRagdollConfig(model_t *mod)
 {
 	int modelindex = EngineGetModelIndex(mod);
+	
 	if (modelindex == -1)
 	{
 		//invalid model index?
@@ -2891,7 +2892,8 @@ void CPhysicsManager::RemoveRagdollEx(ragdoll_itor &itor)
 
 void CPhysicsManager::RemoveRagdoll(int tentindex)
 {
-	RemoveRagdollEx(m_ragdollMap.find(tentindex));
+	//Not support on c++20
+	//RemoveRagdollEx(m_ragdollMap.find(tentindex));
 }
 
 void CPhysicsManager::MergeBarnacleBones(studiohdr_t *hdr, int entindex)

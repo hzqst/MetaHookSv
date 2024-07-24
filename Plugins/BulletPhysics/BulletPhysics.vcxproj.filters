@@ -20,9 +20,6 @@
     <ClCompile Include="plugins.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="physics.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
     <ClCompile Include="mathlib2.cpp">
       <Filter>Source</Filter>
     </ClCompile>
@@ -48,6 +45,9 @@
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="CounterStrike.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="physics.cpp">
       <Filter>Source</Filter>
     </ClCompile>
   </ItemGroup>
@@ -79,7 +79,7 @@
     <ClInclude Include="message.h">
       <Filter>Header</Filter>
     </ClInclude>
-    <ClInclude Include="PhysicManager.h">
+    <ClInclude Include="ClientPhysicManager.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="BasePhysicManager.h">

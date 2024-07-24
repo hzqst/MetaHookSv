@@ -8,7 +8,9 @@
 #include <cvardef.h>
 #include <entity_types.h>
 #include <pm_defs.h>
+
 #include <set>
+#include <vector>
 
 #include "mathlib2.h"
 #include "plugins.h"
@@ -17,7 +19,7 @@
 #include "privatehook.h"
 #include "message.h"
 #include "ClientEntityManager.h"
-#include "physics.h"
+#include "ClientPhysicManager.h"
 
 static hook_t *g_phook_GameStudioRenderer_StudioSetupBones = NULL;
 static hook_t *g_phook_GameStudioRenderer_StudioDrawPlayer = NULL;
@@ -56,7 +58,14 @@ ref_params_t r_params = { 0 };
 model_t* r_worldmodel = NULL;
 cl_entity_t* r_worldentity = NULL;
 
+IClientPhysicManager* g_pClientPhysicManager;
+
 model_t* CounterStrike_RedirectPlayerModel(model_t* original_model, int PlayerNumber, int* modelindex);
+
+float GetSimulationTickRate()
+{
+	return bv_simrate->value;
+}
 
 bool AllowCheats()
 {
@@ -67,90 +76,6 @@ bool AllowCheats()
 
 	return (sv_cheats->value != 0) ? true : false;
 }
-
-typedef enum
-{
-	ACT_RESET,
-	ACT_IDLE,
-	ACT_GUARD,
-	ACT_WALK,
-	ACT_RUN,
-	ACT_FLY,
-	ACT_SWIM,
-	ACT_HOP,
-	ACT_LEAP,
-	ACT_FALL,
-	ACT_LAND,
-	ACT_STRAFE_LEFT,
-	ACT_STRAFE_RIGHT,
-	ACT_ROLL_LEFT,
-	ACT_ROLL_RIGHT,
-	ACT_TURN_LEFT,
-	ACT_TURN_RIGHT,
-	ACT_CROUCH,
-	ACT_CROUCHIDLE,
-	ACT_STAND,
-	ACT_USE,
-	ACT_SIGNAL1,
-	ACT_SIGNAL2,
-	ACT_SIGNAL3,
-	ACT_TWITCH,
-	ACT_COWER,
-	ACT_SMALL_FLINCH,
-	ACT_BIG_FLINCH,
-	ACT_RANGE_ATTACK1,
-	ACT_RANGE_ATTACK2,
-	ACT_MELEE_ATTACK1,
-	ACT_MELEE_ATTACK2,
-	ACT_RELOAD,
-	ACT_ARM,
-	ACT_DISARM,
-	ACT_EAT,
-	ACT_DIESIMPLE,
-	ACT_DIEBACKWARD,
-	ACT_DIEFORWARD,
-	ACT_DIEVIOLENT,
-	ACT_BARNACLE_HIT,
-	ACT_BARNACLE_PULL,
-	ACT_BARNACLE_CHOMP,
-	ACT_BARNACLE_CHEW,
-	ACT_SLEEP,
-	ACT_INSPECT_FLOOR,
-	ACT_INSPECT_WALL,
-	ACT_IDLE_ANGRY,
-	ACT_WALK_HURT,
-	ACT_RUN_HURT,
-	ACT_HOVER,
-	ACT_GLIDE,
-	ACT_FLY_LEFT,
-	ACT_FLY_RIGHT,
-	ACT_DETECT_SCENT,
-	ACT_SNIFF,
-	ACT_BITE,
-	ACT_THREAT_DISPLAY,
-	ACT_FEAR_DISPLAY,
-	ACT_EXCITED,
-	ACT_SPECIAL_ATTACK1,
-	ACT_SPECIAL_ATTACK2,
-	ACT_COMBAT_IDLE,
-	ACT_WALK_SCARED,
-	ACT_RUN_SCARED,
-	ACT_VICTORY_DANCE,
-	ACT_DIE_HEADSHOT,
-	ACT_DIE_CHESTSHOT,
-	ACT_DIE_GUTSHOT,
-	ACT_DIE_BACKSHOT,
-	ACT_FLINCH_HEAD,
-	ACT_FLINCH_CHEST,
-	ACT_FLINCH_STOMACH,
-	ACT_FLINCH_LEFTARM,
-	ACT_FLINCH_RIGHTARM,
-	ACT_FLINCH_LEFTLEG,
-	ACT_FLINCH_RIGHTLEG,
-	ACT_FLINCH_SMALL,
-	ACT_FLINCH_LARGE,
-	ACT_HOLDBOMB
-}activity_e;
 
 int StudioGetSequenceActivityType(model_t* mod, entity_state_t* entstate)
 {
@@ -288,7 +213,7 @@ __forceinline void StudioSetupBones_Template(CallType pfnSetupBones, void* pthis
 {
 	if ((g_iRagdollRenderState & (RagdollRenderState_Monster | RagdollRenderState_Player)) && !(g_iRagdollRenderState & RagdollRenderState_Jiggle))
 	{
-		if (gPhysicsManager.SetupBones((*pstudiohdr), g_iRagdollRenderEntIndex))
+		if (ClientPhysicManager()->SetupBones((*pstudiohdr), g_iRagdollRenderEntIndex))
 			return;
 	}
 
@@ -300,28 +225,38 @@ __forceinline void StudioSetupBones_Template(CallType pfnSetupBones, void* pthis
 
 		if (player)
 		{
-			gPhysicsManager.MergeBarnacleBones((*pstudiohdr), player->index);
+			ClientPhysicManager()->MergeBarnacleBones((*pstudiohdr), player->index);
 		}
 	}
 
 	if ((g_iRagdollRenderState & (RagdollRenderState_Monster | RagdollRenderState_Player)) && (g_iRagdollRenderState & RagdollRenderState_Jiggle))
 	{
-		if (gPhysicsManager.SetupJiggleBones((*pstudiohdr), g_iRagdollRenderEntIndex))
+		if (ClientPhysicManager()->SetupJiggleBones((*pstudiohdr), g_iRagdollRenderEntIndex))
 			return;
 	}
 }
+
+/*
+	Purpose : wrapper to call engine StudioSetupBones
+*/
 
 __forceinline void R_StudioSetupBones_originalcall_wrapper(void* pthis, int dummy)
 {
 	return gPrivateFuncs.R_StudioSetupBones();
 }
 
+/*
+	Purpose : Engine StudioSetupBones hook handler
+*/
+
 void R_StudioSetupBones(void)
 {
 	return StudioSetupBones_Template(R_StudioSetupBones_originalcall_wrapper);
 }
 
-//ClientSetupBones
+/*
+	Purpose : ClientDLL StudioSetupBones hook handler
+*/
 
 void __fastcall GameStudioRenderer_StudioSetupBones(void *pthis, int dummy)
 {
@@ -346,16 +281,17 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 		int entindex = (*currententity)->index;
 		auto model = (*currententity)->model;
 
-		auto ragdoll = gPhysicsManager.FindRagdoll(entindex);
-		if (!ragdoll)
+		auto RagdollObject = ClientPhysicManager()->GetPhysicObject(entindex);
+
+		if (!RagdollObject)
 		{
-			auto cfg = gPhysicsManager.LoadRagdollConfig(model);
+			auto cfg = ClientPhysicManager()->LoadRagdollConfig(model);
 
 			if (cfg && cfg->state == 1 && bv_enable->value)
 			{
 				pfnDrawModel(pthis, 0, 0);
 
-				ragdoll = gPhysicsManager.CreateRagdoll(model, cfg, entindex);
+				ragdoll = ClientPhysicManager()->CreateRagdollObject(model, entindex, cfg);
 
 				goto has_ragdoll;
 			}
@@ -368,10 +304,10 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 
 			if (iActivityType == 0)
 			{
-				iActivityType = gPhysicsManager.GetSequenceActivityType(ragdoll, &(*currententity)->curstate);
+				iActivityType = ClientPhysicManager()->GetSequenceActivityType(RagdollObject, &(*currententity)->curstate);
 			}
 
-			if (gPhysicsManager.UpdateKinematic(ragdoll, iActivityType, &(*currententity)->curstate))
+			if (ClientPhysicManager()->UpdateKinematic(RagdollObject, iActivityType, &(*currententity)->curstate))
 			{
 				//Monster don't have barnacle animation
 			}
@@ -395,7 +331,7 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 
 				vec3_t saved_origin;
 				VectorCopy((*currententity)->origin, saved_origin);
-				gPhysicsManager.GetRagdollOrigin(ragdoll, (*currententity)->origin);
+				RagdollObject->GetOrigin((*currententity)->origin);
 
 				int result = pfnDrawModel(pthis, 0, flags);
 
@@ -1307,8 +1243,8 @@ int HUD_GetStudioModelInterface(int version, struct r_studio_interface_s **ppint
 
 void BV_Reload_f(void)
 {
-	gPhysicsManager.ReloadConfig();
-	gPhysicsManager.RemoveAllRagdolls();
+	ClientPhysicManager()->ReloadConfig();
+	ClientPhysicManager()->RemoveAllPhysicObjects(PhysicObjectFlag_Ragdoll);
 }
 
 void BV_ThreadPerson_f(void)
@@ -1347,11 +1283,10 @@ void HUD_Init(void)
 {
 	gExportfuncs.HUD_Init();
 
-	gPhysicsManager.Init();
+	ClientPhysicManager()->Init();
 
 	bv_debug = gEngfuncs.pfnRegisterVariable("bv_debug", "0", FCVAR_CLIENTDLL);
 	bv_simrate = gEngfuncs.pfnRegisterVariable("bv_simrate", "64", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
-	//bv_scale = gEngfuncs.pfnRegisterVariable("bv_scale", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_enable = gEngfuncs.pfnRegisterVariable("bv_enable", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_syncview = gEngfuncs.pfnRegisterVariable("bv_syncview", "1", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
 	bv_ragdoll_sleepaftertime = gEngfuncs.pfnRegisterVariable("bv_ragdoll_sleepaftertime", "3", FCVAR_CLIENTDLL | FCVAR_ARCHIVE);
@@ -1369,8 +1304,10 @@ void HUD_Init(void)
 	//gPrivateFuncs.ThreadPerson_f = g_pMetaHookAPI->HookCmd("thirdperson", BV_ThreadPerson_f);
 	//gPrivateFuncs.FirstPerson_f = g_pMetaHookAPI->HookCmd("firstperson", BV_FirstPerson_f);
 
-	//For clcorpse hook
+	//For ClCorpse hook
+
 	m_pfnClCorpse = HOOK_MESSAGE(ClCorpse);
+
 	if (m_pfnClCorpse)
 	{
 		gPrivateFuncs.efxapi_R_TempModel = gEngfuncs.pEfxAPI->R_TempModel;
@@ -1384,23 +1321,23 @@ int HUD_AddEntity(int type, cl_entity_t *ent, const char *model)
 	{
 		if (ent->model->type == modtype_t::mod_brush && ent->curstate.solid == SOLID_BSP)
 		{
-			gPhysicsManager.CreateBrushModel(ent);
+			ClientPhysicManager()->CreateBrushModel(ent);
 		}
 
 		if (ClientEntityManager()->IsEntityDeadPlayer(ent))
 		{
 			int playerindex = (int)ent->curstate.renderamt;
 
-			gPhysicsManager.ChangeRagdollEntIndex(playerindex, ent->index);
+			ClientPhysicManager()->ChangeRagdollEntityIndex(playerindex, ent->index);
 		}
 		else if (ClientEntityManager()->IsEntityBarnacle(ent))
 		{
-			gPhysicsManager.CreateBarnacle(ent);
+			ClientPhysicManager()->CreateBarnacle(ent);
 			ClientEntityManager()->AddBarnacle(ent->index, 0);
 		}
 		else if (ClientEntityManager()->IsEntityGargantua(ent))
 		{
-			gPhysicsManager.CreateGargantua(ent);
+			ClientPhysicManager()->CreateGargantua(ent);
 			ClientEntityManager()->AddGargantua(ent->index, 0);
 		}
 	}
@@ -1430,9 +1367,9 @@ void HUD_TempEntUpdate(
 
 	if (levelname && levelname[0])
 	{
-		gPhysicsManager.SetGravity(cl_gravity);
-		gPhysicsManager.UpdateTempEntity(ppTempEntFree, ppTempEntActive, frametime, client_time);
-		gPhysicsManager.StepSimulation(frametime);
+		ClientPhysicManager()->SetGravity(cl_gravity);
+		ClientPhysicManager()->UpdateTempEntity(ppTempEntFree, ppTempEntActive, frametime, client_time);
+		ClientPhysicManager()->StepSimulation(frametime);
 	}
 }
 
@@ -1447,7 +1384,7 @@ void HUD_Shutdown(void)
 {
 	gExportfuncs.HUD_Shutdown();
 
-	gPhysicsManager.Shutdown();
+	ClientPhysicManager()->Shutdown();
 
 	Uninstall_Hook(GameStudioRenderer_StudioSetupBones);
 	Uninstall_Hook(GameStudioRenderer_StudioDrawPlayer);
@@ -1461,6 +1398,7 @@ void HUD_Shutdown(void)
 void V_CalcRefdef(struct ref_params_s *pparams)
 {
 	memcpy(&r_params, pparams, sizeof(r_params));
+	auto local = gEngfuncs.GetLocalPlayer();
 
 	if (pparams->intermission)
 		goto skip;
@@ -1474,8 +1412,6 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 	if (g_bRenderingPortals_SCClient && (*g_bRenderingPortals_SCClient))
 		goto skip;
 
-	auto local = gEngfuncs.GetLocalPlayer();
-
 	if (local && local->player && bv_syncview->value)
 	{
 		auto spectating_player = local;
@@ -1487,9 +1423,9 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 
 		if (!CL_IsFirstPersonMode(spectating_player))
 		{
-			auto ragdoll = gPhysicsManager.FindRagdoll(spectating_player->index);
+			auto RagdollObject = ClientPhysicManager()->GetPhysicObject(spectating_player->index);
 
-			if (ragdoll && ragdoll->m_iActivityType != 0)
+			if (RagdollObject && RagdollObject->m_iActivityType != 0)
 			{
 				vec3_t save_simorg;
 				vec3_t save_origin_spec;
@@ -1497,15 +1433,16 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 				VectorCopy(pparams->simorg, save_simorg);
 				VectorCopy(spectating_player->origin, save_origin_spec);
 
-				gPhysicsManager.GetRagdollOrigin(ragdoll, spectating_player->origin);
+				RagdollObject->GetOrigin(spectating_player->origin);
 				VectorCopy(spectating_player->origin, pparams->simorg);
 
 				if (spectating_player != local)
 				{
-					auto ragdoll_spectating = gPhysicsManager.FindRagdoll(spectating_player->index);
-					if (ragdoll_spectating)
+					auto RagdollObject_Spectating = ClientPhysicManager()->GetPhysicObject(spectating_player->index);
+
+					if (RagdollObject_Spectating)
 					{
-						gPhysicsManager.GetRagdollOrigin(ragdoll_spectating, spectating_player->origin);
+						RagdollObject_Spectating->GetOrigin(spectating_player->origin);
 					}
 				}
 
@@ -1519,9 +1456,9 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 		}
 		else
 		{
-			auto ragdoll = gPhysicsManager.FindRagdoll(spectating_player->index);
+			auto RagdollObject = ClientPhysicManager()->GetPhysicObject(spectating_player->index);
 
-			if (ragdoll && ragdoll->m_iActivityType != 0)
+			if (RagdollObject && RagdollObject->m_iActivityType != 0)
 			{
 				if (g_bIsCounterStrike && spectating_player->index == gEngfuncs.GetLocalPlayer()->index)
 				{
@@ -1536,7 +1473,7 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 				VectorCopy(pparams->simorg, save_simorg);
 				VectorCopy(pparams->cl_viewangles, save_cl_viewangles);
 				
-				gPhysicsManager.SyncFirstPersonView(ragdoll, spectating_player, pparams);
+				ClientPhysicManager()->SyncFirstPersonView(RagdollObject, spectating_player, pparams);
 
 				gExportfuncs.V_CalcRefdef(pparams);
 
@@ -1558,7 +1495,7 @@ void HUD_DrawNormalTriangles(void)
 
 	if (AllowCheats())
 	{
-		gPhysicsManager.DebugDraw();
+		ClientPhysicManager()->DebugDraw();
 	}
 }
 

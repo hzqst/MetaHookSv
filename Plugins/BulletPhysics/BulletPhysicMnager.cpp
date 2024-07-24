@@ -122,7 +122,22 @@ void CBulletPhysicManager::SetGravity(float velocity)
 	m_dynamicsWorld->setGravity(btVector3(0, 0, m_gravity));
 }
 
-void CBulletPhysicManager::StepSimulation(double framerate)
+void CBulletPhysicManager::StepSimulation(double frametime)
+{
+	CBasePhysicManager::StepSimulation(frametime);
+
+	if (frametime <= 0)
+		return;
+
+	m_dynamicsWorld->stepSimulation(frametime, 3, 1.0f / GetSimulationTickRate());
+}
+
+void CBulletPhysicManager::RemovePhysicObject(int entindex)
+{
+
+}
+
+void CBulletPhysicManager::RemoveAllPhysicObjects(int flags)
 {
 
 }
@@ -134,9 +149,7 @@ IStaticObject* CBulletPhysicManager::CreateStaticObject(cl_entity_t* ent, const 
 	return NULL;
 }
 
-static CBulletPhysicManager g_BulletPhysicManager;
-
-IPhysicManager* PhysicManager()
+IClientPhysicManager* BulletPhysicManager_CreateInstance()
 {
-	return &g_BulletPhysicManager;
+	return new CBulletPhysicManager;
 }

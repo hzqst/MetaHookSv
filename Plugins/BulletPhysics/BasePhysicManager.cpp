@@ -7,14 +7,16 @@
 #include "BasePhysicManager.h"
 #include "mathlib2.h"
 
-CBasePhysicManager::CBasePhysicManager()
+IClientPhysicManager* g_pClientPhysicManager{};
+
+IClientPhysicManager* ClientPhysicManager()
 {
-	m_worldVertexArray = NULL;
-	m_barnacleIndexArray = NULL;
-	m_barnacleVertexArray = NULL;
-	m_gargantuaIndexArray = NULL;
-	m_gargantuaVertexArray = NULL;
-	m_gravity = 0;
+	return g_pClientPhysicManager;
+}
+
+void CBasePhysicManager::Destroy(void)
+{
+	delete this;
 }
 
 void CBasePhysicManager::Init(void)
@@ -46,9 +48,16 @@ void CBasePhysicManager::SetGravity(float velocity)
 	m_gravity = -velocity;
 }
 
-void CBasePhysicManager::StepSimulation(double framerate)
+void CBasePhysicManager::StepSimulation(double frametime)
 {
-
+	if (GetSimulationTickRate() < 32)
+	{
+		gEngfuncs.Cvar_SetValue("bv_simrate", 32);
+	}
+	else if (GetSimulationTickRate() > 128)
+	{
+		gEngfuncs.Cvar_SetValue("bv_simrate", 128);
+	}
 }
 
 void CBasePhysicManager::ReloadConfig(void)
@@ -88,7 +97,48 @@ IPhysicObject* CBasePhysicManager::GetPhysicObject(int entindex)
 	return itor->second;
 }
 
-IRagdollObject* CBasePhysicManager::CreateRagdollObject(model_t* mod, int entindex, const CRagdollConfig& config)
+void CBasePhysicManager::LoadPhysicConfigFromFile(CClientPhysicConfig* Configs, const char* name)
+{
+	//TODO
+}
+
+CClientPhysicConfig* CBasePhysicManager::LoadPhysicConfig(model_t* mod)
+{
+	int modelindex = EngineGetModelIndex(mod);
+
+	if (modelindex == -1)
+	{
+		//invalid model index?
+		g_pMetaHookAPI->SysError("LoadPhysicConfig: Invalid model index\n");
+		return NULL;
+	}
+
+	if (m_physicConfigs.size() < EngineGetMaxKnownModel())
+		m_physicConfigs.resize(EngineGetMaxKnownModel());
+
+	if (modelindex >= m_physicConfigs.size())
+	{
+		//invalid model index?
+		g_pMetaHookAPI->SysError("LoadPhysicConfig: Invalid model index\n");
+		return NULL;
+	}
+
+	auto Configs = m_physicConfigs[modelindex];
+
+	if (Configs)
+		return Configs;
+
+	Configs = new CClientPhysicConfig;
+
+	m_physicConfigs[modelindex] = Configs;
+
+	LoadPhysicConfigFromFile(Configs, mod->name);
+
+	return Configs;
+}
+
+
+IRagdollObject* CBasePhysicManager::CreateRagdollObject(model_t* mod, int entindex, const CClientPhysicConfig* config)
 {
 	return NULL;
 }
@@ -139,6 +189,15 @@ void CBasePhysicManager::CreateGargantua(cl_entity_t* ent)
 }
 
 void CBasePhysicManager::RemovePhysicObject(int entindex)
+{
+	auto itor = m_physicObjects.find(entindex);
+	if (itor == m_physicObjects.end())
+		return;
+
+
+}
+
+void CBasePhysicManager::RemoveAllPhysicObjects(int flags)
 {
 
 }

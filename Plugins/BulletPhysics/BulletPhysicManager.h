@@ -24,8 +24,10 @@ public:
 	void NewMap(void) override;
 	void DebugDraw(void) override;
 	void SetGravity(float velocity) override;
-	void StepSimulation(double framerate) override;
+	void StepSimulation(double frametime) override;
 
+	void RemovePhysicObject(int entindex) override;
+	void RemoveAllPhysicObjects(int flags) override;
 public:
 	IStaticObject* CreateStaticObject(cl_entity_t* ent, const CPhysicStaticObjectCreationParameter& CreationParameter) override;
 

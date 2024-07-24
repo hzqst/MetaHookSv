@@ -7,10 +7,8 @@
 #include <r_studioint.h>
 #include <r_efx.h>
 
-class CRagdollConfig
-{
-public:
-};
+#include "ClientPhysicCommon.h"
+#include "ClientPhysicConfig.h"
 
 class IPhysicObject
 {
@@ -65,9 +63,10 @@ public:
 	}
 };
 
-class IPhysicManager : public IBaseInterface
+class IClientPhysicManager : public IBaseInterface
 {
 public:
+	virtual void Destroy(void) = 0;
 	virtual void Init(void) = 0;
 	virtual void Shutdown() = 0;
 	virtual void NewMap(void) = 0;
@@ -80,12 +79,18 @@ public:
 	virtual void MergeBarnacleBones(studiohdr_t* hdr, int entindex) = 0;
 	virtual bool ChangeRagdollEntityIndex(int old_entindex, int new_entindex) = 0;
 	virtual IPhysicObject* GetPhysicObject(int entindex) = 0;
-	virtual IRagdollObject* CreateRagdollObject(model_t* mod, int entindex, const CRagdollConfig& config) = 0;
+	virtual CClientPhysicConfig *LoadPhysicConfig(model_t* mod) = 0;
+	virtual IRagdollObject* CreateRagdollObject(model_t* mod, int entindex, const CClientPhysicConfig* config) = 0;
 	virtual void CreateBrushModel(cl_entity_t* ent) = 0;
 	virtual void CreateBarnacle(cl_entity_t* ent) = 0;
 	virtual void CreateGargantua(cl_entity_t* ent) = 0;
 	virtual void RemovePhysicObject(int entindex) = 0;
+	virtual void RemoveAllPhysicObjects(int flags) = 0;
 	virtual void UpdateTempEntity(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) = 0;
 };
 
-IPhysicManager* PhysicManager();
+extern IClientPhysicManager* g_pClientPhysicManager;
+
+IClientPhysicManager* ClientPhysicManager();
+IClientPhysicManager* BulletPhysicManager_CreateInstance();
+IClientPhysicManager* PhysXPhysicManager_CreateInstance();

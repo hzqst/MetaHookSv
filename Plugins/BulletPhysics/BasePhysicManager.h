@@ -3,7 +3,8 @@
 #include <vector>
 #include <unordered_map>
 
-#include "PhysicManager.h"
+#include "ClientPhysicManager.h"
+#include "ClientRagdollConfig.h"
 
 class CPhysicBrushVertex
 {
@@ -46,7 +47,7 @@ public:
 	bool IsKinematic{};
 };
 
-class CBasePhysicManager : public IPhysicManager
+class CBasePhysicManager : public IClientPhysicManager
 {
 protected:
 	CPhysicVertexArray* m_worldVertexArray{};
@@ -56,29 +57,34 @@ protected:
 	CPhysicVertexArray* m_gargantuaVertexArray{};
 	float m_gravity{};
 
+	//PhysicObject Manager
 	std::unordered_map<int, IPhysicObject *> m_physicObjects;
-	std::vector<CRagdollConfig *> m_ragdollConfigs;
-	std::vector<CPhysicIndexArray *> m_brushIndexArray;
-public:
-	CBasePhysicManager();
 
+	std::vector<CPhysicIndexArray *> m_brushIndexArray;
+
+	//Configs
+	CClientPhysicConfigs m_physicConfigs;
+public:
+	void Destroy(void) override;
 	void Init(void) override;
 	void Shutdown() override;
 	void NewMap(void) override;
 	void DebugDraw(void) override;
 	void SetGravity(float velocity) override;
-	void StepSimulation(double framerate) override;
+	void StepSimulation(double frametime) override;
 	void ReloadConfig(void)  override;
 	bool SetupBones(studiohdr_t* hdr, int entindex)  override;
 	bool SetupJiggleBones(studiohdr_t* hdr, int entindex)  override;
 	void MergeBarnacleBones(studiohdr_t* hdr, int entindex) override;
 	bool ChangeRagdollEntityIndex(int old_entindex, int new_entindex) override;
 	IPhysicObject* GetPhysicObject(int entindex) override;
-	IRagdollObject* CreateRagdollObject(model_t* mod, int entindex, const CRagdollConfig& config) override;
+	CClientPhysicConfig* LoadPhysicConfig(model_t* mod) override;
+	IRagdollObject* CreateRagdollObject(model_t* mod, int entindex, const CClientPhysicConfig* config) override;
 	void CreateBrushModel(cl_entity_t* ent) override;
 	void CreateBarnacle(cl_entity_t* ent) override;
 	void CreateGargantua(cl_entity_t* ent) override;
 	void RemovePhysicObject(int entindex) override;
+	void RemoveAllPhysicObjects(int flags) override;
 	void UpdateTempEntity(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) override;
 
 public:
@@ -106,5 +112,5 @@ private:
 	void GenerateGargantuaIndexVertexArray();
 	void FreeGargantuaIndexVertexArray();
 
-	CRagdollConfig* GetRagdollConfigFromModel(model_t* mod);
+	void LoadPhysicConfigFromFile(CClientPhysicConfig* Configs, const char* name);
 };

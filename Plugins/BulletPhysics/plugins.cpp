@@ -7,6 +7,8 @@
 #include "message.h"
 #include "qgl.h"
 
+#include "ClientPhysicManager.h"
+
 cl_exportfuncs_t gExportfuncs = {0};
 mh_interface_t *g_pInterface = NULL;
 metahook_api_t *g_pMetaHookAPI = NULL;
@@ -64,6 +66,8 @@ void IPluginsV4::LoadEngine(cl_enginefunc_t *pEngfuncs)
 
 	Engine_FillAddreess();
 	Engine_InstallHook();
+
+	g_pClientPhysicManager = BulletPhysicManager_CreateInstance();
 }
 
 void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
@@ -93,6 +97,8 @@ void IPluginsV4::LoadClient(cl_exportfuncs_t *pExportFunc)
 
 void IPluginsV4::ExitGame(int iResult)
 {
+	g_pClientPhysicManager->Destroy();
+
 	Engine_UninstallHook();
 }
 

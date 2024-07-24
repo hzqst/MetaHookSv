@@ -175,9 +175,13 @@ $(Bullet3CheckRequirements)</Command>
     <ClCompile Include="ClientEntityManager.cpp" />
     <ClCompile Include="message.cpp" />
     <ClCompile Include="parsemsg.cpp" />
+    <ClCompile Include="physics.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="privatehook.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
-    <ClCompile Include="physics.cpp" />
     <ClCompile Include="plugins.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -185,7 +189,7 @@ $(Bullet3CheckRequirements)</Command>
     <ClInclude Include="BulletPhysicManager.h" />
     <ClInclude Include="CounterStrike.h" />
     <ClInclude Include="message.h" />
-    <ClInclude Include="PhysicManager.h" />
+    <ClInclude Include="ClientPhysicManager.h" />
     <ClInclude Include="plugins.h" />
     <ClInclude Include="privatehook.h" />
     <ClInclude Include="enginedef.h" />
