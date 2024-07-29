@@ -362,6 +362,13 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 		}
 		else
 		{
+			//model changed ?
+			if (ragdoll->m_model != model)
+			{
+				gPhysicsManager.RemoveRagdoll(entindex);
+				return pfnDrawModel(pthis, 0, flags);
+			}
+
 		has_ragdoll:
 
 			int iActivityType = StudioGetSequenceActivityType(model, &(*currententity)->curstate);
