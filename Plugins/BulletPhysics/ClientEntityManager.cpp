@@ -3,15 +3,11 @@
 #include "exportfuncs.h"
 #include "privatehook.h"
 #include "enginedef.h"
-#include "physics.h"
 #include "mathlib2.h"
 #include "ClientEntityManager.h"
 
 #include <unordered_map>
 #include <set>
-
-int EngineGetModelIndex(model_t *mod);
-int StudioGetSequenceActivityType(model_t* mod, entity_state_t* entstate);
 
 class CClientEntityManager : public IClientEntityManager
 {

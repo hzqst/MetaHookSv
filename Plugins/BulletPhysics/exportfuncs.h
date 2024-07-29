@@ -2,7 +2,7 @@
 #include <studio.h>
 #include <r_studioint.h>
 #include <com_model.h>
-#include "cl_entity.h"
+#include <cl_entity.h>
 
 extern cl_enginefunc_t gEngfuncs;
 extern cl_exportfuncs_t gExportfuncs;
@@ -21,7 +21,7 @@ void HUD_TempEntUpdate(
 	TEMPENTITY **ppTempEntActive, // List 
 	int(*Callback_AddVisibleEntity)(cl_entity_t *pEntity),
 	void(*Callback_TempEntPlaySound)(TEMPENTITY *pTemp, float damp));
-void HUD_DrawNormalTriangles(void);
+void HUD_DrawTransparentTriangles(void);
 void HUD_Init(void);
 void V_CalcRefdef(struct ref_params_s *pparams);
 void HUD_Frame(double frametime);
@@ -34,3 +34,10 @@ int GetWorldSurfaceIndex(msurface_t* surf);
 bool AllowCheats();
 
 float GetSimulationTickRate();
+bool IsPhysicWorldEnabled();
+
+int EngineGetNumKnownModel();
+int EngineGetMaxKnownModel();
+int EngineGetModelIndex(model_t* mod);
+model_t* EngineGetModelByIndex(int index);
+int StudioGetSequenceActivityType(model_t* mod, entity_state_t* entstate);

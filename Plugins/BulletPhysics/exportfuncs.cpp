@@ -58,9 +58,12 @@ ref_params_t r_params = { 0 };
 model_t* r_worldmodel = NULL;
 cl_entity_t* r_worldentity = NULL;
 
-IClientPhysicManager* g_pClientPhysicManager;
-
 model_t* CounterStrike_RedirectPlayerModel(model_t* original_model, int PlayerNumber, int* modelindex);
+
+bool IsPhysicWorldEnabled()
+{
+	return bv_enable->value > 0;
+}
 
 float GetSimulationTickRate()
 {
@@ -281,17 +284,19 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 		int entindex = (*currententity)->index;
 		auto model = (*currententity)->model;
 
-		auto RagdollObject = ClientPhysicManager()->GetPhysicObject(entindex);
-
-		if (!RagdollObject)
+		auto PhysicObject = ClientPhysicManager()->GetPhysicObject(entindex);
+		
+		if (!PhysicObject || !PhysicObject->IsRagdollObject())
 		{
-			auto cfg = ClientPhysicManager()->LoadRagdollConfig(model);
+			auto pConfig = ClientPhysicManager()->LoadPhysicConfig(model);
 
-			if (cfg && cfg->state == 1 && bv_enable->value)
+			if (pConfig && pConfig->state == PhysicConfigState_Loaded && IsPhysicWorldEnabled())
 			{
 				pfnDrawModel(pthis, 0, 0);
 
-				ragdoll = ClientPhysicManager()->CreateRagdollObject(model, entindex, cfg);
+				PhysicObject = ClientPhysicManager()->CreateRagdollObject(model, entindex, pConfig.get());
+
+				ClientPhysicManager()->AddPhysicObject(entindex, PhysicObject);
 
 				goto has_ragdoll;
 			}
@@ -300,14 +305,16 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 		{
 		has_ragdoll:
 
-			int iActivityType = StudioGetSequenceActivityType(model, &(*currententity)->curstate);
+			auto RagdollObject = (IRagdollObject*)PhysicObject;
 
-			if (iActivityType == 0)
+			int iNewActivityType = StudioGetSequenceActivityType(model, &(*currententity)->curstate);
+
+			if (iNewActivityType == 0)
 			{
-				iActivityType = ClientPhysicManager()->GetSequenceActivityType(RagdollObject, &(*currententity)->curstate);
+				iNewActivityType = RagdollObject->GetOverrideActivityType(&(*currententity)->curstate);
 			}
 
-			if (ClientPhysicManager()->UpdateKinematic(RagdollObject, iActivityType, &(*currententity)->curstate))
+			if (RagdollObject->UpdateKinematic(iNewActivityType, &(*currententity)->curstate))
 			{
 				//Monster don't have barnacle animation
 			}
@@ -324,7 +331,7 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 
 				return result;
 			}
-			else if (ragdoll->m_iActivityType > 0)
+			else if (RagdollObject->GetActivityType() > 0)
 			{
 				g_iRagdollRenderState = RagdollRenderState_Monster;
 				g_iRagdollRenderEntIndex = entindex;
@@ -368,19 +375,20 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 		)
 	{
 		auto model = (*currententity)->model;
-
 		int entindex = (*currententity)->curstate.iuser3;
 
-		auto ragdoll = gPhysicsManager.FindRagdoll(entindex);
-		if (!ragdoll)
+		auto PhysicObject = ClientPhysicManager()->GetPhysicObject(entindex);
+		if (!PhysicObject || !PhysicObject->IsRagdollObject())
 		{
-			auto cfg = gPhysicsManager.LoadRagdollConfig(model);
+			auto pConfig = ClientPhysicManager()->LoadPhysicConfig(model);
 
-			if (cfg && cfg->state == 1 && bv_enable->value)
+			if (pConfig && pConfig->state == PhysicConfigState_Loaded && IsPhysicWorldEnabled())
 			{
 				pfnDrawModel(pthis, 0, 0);
 
-				ragdoll = gPhysicsManager.CreateRagdoll(model, cfg, entindex);
+				PhysicObject = ClientPhysicManager()->CreateRagdollObject(model, entindex, pConfig.get());
+
+				ClientPhysicManager()->AddPhysicObject(entindex, PhysicObject);
 
 				goto has_ragdoll_clcorpse;
 			}
@@ -389,26 +397,28 @@ __forceinline int StudioDrawModel_Template(CallType pfnDrawModel, int flags, voi
 		{
 		has_ragdoll_clcorpse:
 
+			auto RagdollObject = (IRagdollObject*)PhysicObject;
+
 			int iActivityType = StudioGetSequenceActivityType(model, &(*currententity)->curstate);
 
 			if (iActivityType == 0)
 			{
-				iActivityType = gPhysicsManager.GetSequenceActivityType(ragdoll, &(*currententity)->curstate);
+				iActivityType = RagdollObject->GetOverrideActivityType(&(*currententity)->curstate);
 			}
 
-			if (gPhysicsManager.UpdateKinematic(ragdoll, iActivityType, &(*currententity)->curstate))
+			if (RagdollObject->UpdateKinematic(iActivityType, &(*currententity)->curstate))
 			{
 
 			}
 
-			if (ragdoll->m_iActivityType > 0)
+			if (RagdollObject->GetActivityType() > 0)
 			{
 				g_iRagdollRenderState = RagdollRenderState_Monster;
 				g_iRagdollRenderEntIndex = entindex;
 
 				vec3_t saved_origin;
 				VectorCopy((*currententity)->origin, saved_origin);
-				gPhysicsManager.GetRagdollOrigin(ragdoll, (*currententity)->origin);
+				RagdollObject->GetOrigin((*currententity)->origin);
 
 				int result = pfnDrawModel(pthis, 0, flags);
 
@@ -484,22 +494,23 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 			model = CounterStrike_RedirectPlayerModel(model, playerindex, &modelindex);
 		}
 
-		auto ragdoll = gPhysicsManager.FindRagdoll(entindex);
+		auto PhysicObject = ClientPhysicManager()->GetPhysicObject(entindex);
 
-		if (!ragdoll)
+		if (!PhysicObject || !PhysicObject->IsRagdollObject())
 		{
-			auto cfg = gPhysicsManager.LoadRagdollConfig(model);
+			auto pConfig = ClientPhysicManager()->LoadPhysicConfig(model);
 
-			if (cfg && cfg->state == 1 && bv_enable->value)
+			if (pConfig && pConfig->state == PhysicConfigState_Loaded && IsPhysicWorldEnabled())
 			{
 				//Remove weapon model for me ?
 				int save_weaponmodel = pplayer->weaponmodel;
 				int save_sequence = pplayer->sequence;
 				int save_gaitsequence = pplayer->gaitsequence;
 
+				//Force to use sequence 0 as ragdoll pose
 				pplayer->weaponmodel = 0;
-				pplayer->sequence = 0;
-				pplayer->gaitsequence = 0;
+				pplayer->sequence = 0;//TODO: use pose from config?
+				pplayer->gaitsequence = 0;//TODO: use pose from config?
 
 				pfnDrawPlayer(pthis, 0, 0, pplayer);
 
@@ -510,7 +521,9 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 				if (!(*pstudiohdr))
 					return 0;
 
-				ragdoll = gPhysicsManager.CreateRagdoll(model, cfg, entindex);
+				PhysicObject = ClientPhysicManager()->CreateRagdollObject(model, entindex, pConfig.get());
+
+				ClientPhysicManager()->AddPhysicObject(entindex, PhysicObject);
 
 				goto has_ragdoll;
 			}
@@ -518,26 +531,29 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 		else
 		{
 			//model changed ?
-			if (ragdoll->m_model != model)
+			if (PhysicObject->GetModel() != model)
 			{
-				gPhysicsManager.RemoveRagdoll(entindex);
+				ClientPhysicManager()->RemovePhysicObject(entindex);
+
 				return pfnDrawPlayer(pthis, 0, flags, pplayer);
 			}
 
 		has_ragdoll:
 
-			int oldActivityType = ragdoll->m_iActivityType;
+			auto RagdollObject = (IRagdollObject*)PhysicObject;
 
-			int iActivityType = StudioGetSequenceActivityType(model, pplayer);
+			int iOldActivityType = RagdollObject->GetActivityType();
 
-			if (iActivityType == 0)
+			int iNewActivityType = StudioGetSequenceActivityType(model, pplayer);
+
+			if (iNewActivityType == 0)
 			{
-				iActivityType = gPhysicsManager.GetSequenceActivityType(ragdoll, pplayer);
+				iNewActivityType = RagdollObject->GetOverrideActivityType(pplayer);
 			}
 
 			if (playerindex == entindex)
 			{
-				if (iActivityType == 1)
+				if (iNewActivityType == 1)
 				{
 					ClientEntityManager()->SetPlayerDeathState(playerindex, pplayer, model);
 				}
@@ -547,16 +563,16 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 				}
 			}
 
-			if (gPhysicsManager.UpdateKinematic(ragdoll, iActivityType, pplayer))
+			if (RagdollObject->UpdateKinematic(iNewActivityType, pplayer))
 			{
 				//Transform from whatever to barnacle
-				if (ragdoll->m_iActivityType == 2)
+				if (RagdollObject->GetActivityType() == 2)
 				{
 					auto BarnacleEntity = ClientEntityManager()->FindBarnacleForPlayer(pplayer);
 
 					if (BarnacleEntity)
 					{
-						gPhysicsManager.ApplyBarnacle(ragdoll, BarnacleEntity);
+						RagdollObject->ApplyBarnacle(BarnacleEntity);
 					}
 					else
 					{
@@ -564,37 +580,36 @@ __forceinline int StudioDrawPlayer_Template(CallType pfnDrawPlayer, int flags, s
 
 						if (GargantuaEntity)
 						{
-							gPhysicsManager.ApplyGargantua(ragdoll, GargantuaEntity);
+							RagdollObject->ApplyGargantua(GargantuaEntity);
 						}
 					}
 				}
 
-				//Transform from death or barnacle to idle state.
-				else if (oldActivityType > 0 && ragdoll->m_iActivityType == 0)
+				//Transformed from death or barnacle to idle state.
+				else if (iOldActivityType > 0 && RagdollObject->GetActivityType() == 0)
 				{
 					pfnDrawPlayer(pthis, 0, 0, pplayer);
 
-					gPhysicsManager.ResetPose(ragdoll, pplayer);
+					RagdollObject->ResetPose(pplayer);
 				}
 			}
 
-			//Teleport ?
-			else if (oldActivityType == 0 && ragdoll->m_iActivityType == 0 &&
-				VectorDistance((*currententity)->curstate.origin, (*currententity)->latched.prevorigin) > 500)
+			//Teleported, no interp
+			else if (iOldActivityType == 0 && RagdollObject->GetActivityType() == 0 && VectorDistance((*currententity)->curstate.origin, (*currententity)->latched.prevorigin) > 500)
 			{
 				pfnDrawPlayer(pthis, 0, 0, pplayer);
 
-				gPhysicsManager.ResetPose(ragdoll, pplayer);
+				RagdollObject->ResetPose(pplayer);
 			}
 
-			if (ragdoll->m_iActivityType > 0)
+			if (RagdollObject->GetActivityType() > 0)
 			{
 				g_iRagdollRenderState = RagdollRenderState_Player;
 				g_iRagdollRenderEntIndex = entindex;
 
 				vec3_t saved_origin;
 				VectorCopy((*currententity)->origin, saved_origin);
-				gPhysicsManager.GetRagdollOrigin(ragdoll, (*currententity)->origin);
+				RagdollObject->GetOrigin((*currententity)->origin);
 
 				//Remove weapon model for me ?
 				int saved_weaponmodel = pplayer->weaponmodel;
@@ -1423,65 +1438,75 @@ void V_CalcRefdef(struct ref_params_s *pparams)
 
 		if (!CL_IsFirstPersonMode(spectating_player))
 		{
-			auto RagdollObject = ClientPhysicManager()->GetPhysicObject(spectating_player->index);
+			auto PhysicObject = ClientPhysicManager()->GetPhysicObject(spectating_player->index);
 
-			if (RagdollObject && RagdollObject->m_iActivityType != 0)
+			if (PhysicObject && PhysicObject->IsRagdollObject())
 			{
-				vec3_t save_simorg;
-				vec3_t save_origin_spec;
+				auto RagdollObject = (IRagdollObject*)PhysicObject;
 
-				VectorCopy(pparams->simorg, save_simorg);
-				VectorCopy(spectating_player->origin, save_origin_spec);
-
-				RagdollObject->GetOrigin(spectating_player->origin);
-				VectorCopy(spectating_player->origin, pparams->simorg);
-
-				if (spectating_player != local)
+				if (RagdollObject->GetActivityType() != 0)
 				{
-					auto RagdollObject_Spectating = ClientPhysicManager()->GetPhysicObject(spectating_player->index);
+					vec3_t save_simorg;
+					vec3_t save_origin_spec;
 
-					if (RagdollObject_Spectating)
+					VectorCopy(pparams->simorg, save_simorg);
+					VectorCopy(spectating_player->origin, save_origin_spec);
+
+					RagdollObject->GetOrigin(spectating_player->origin);
+					VectorCopy(spectating_player->origin, pparams->simorg);
+
+					if (spectating_player != local)
 					{
-						RagdollObject_Spectating->GetOrigin(spectating_player->origin);
+						auto RagdollObject_Spectating = ClientPhysicManager()->GetPhysicObject(spectating_player->index);
+
+						if (RagdollObject_Spectating)
+						{
+							RagdollObject_Spectating->GetOrigin(spectating_player->origin);
+						}
 					}
+
+					gExportfuncs.V_CalcRefdef(pparams);
+
+					VectorCopy(save_origin_spec, spectating_player->origin);
+					VectorCopy(save_simorg, pparams->simorg);
+
+					return;
 				}
-
-				gExportfuncs.V_CalcRefdef(pparams);
-
-				VectorCopy(save_origin_spec, spectating_player->origin);
-				VectorCopy(save_simorg, pparams->simorg);
-
-				return;
 			}
 		}
 		else
 		{
-			auto RagdollObject = ClientPhysicManager()->GetPhysicObject(spectating_player->index);
+			auto PhysicObject = ClientPhysicManager()->GetPhysicObject(spectating_player->index);
 
-			if (RagdollObject && RagdollObject->m_iActivityType != 0)
+			if (PhysicObject && PhysicObject->IsRagdollObject())
 			{
-				if (g_bIsCounterStrike && spectating_player->index == gEngfuncs.GetLocalPlayer()->index)
+				auto RagdollObject = (IRagdollObject*)PhysicObject;
+
+				if (RagdollObject->GetActivityType() != 0)
 				{
-					if (g_iUser1 && !(*g_iUser1))
-						goto skip;
+					if (g_bIsCounterStrike && spectating_player->index == gEngfuncs.GetLocalPlayer()->index)
+					{
+						if (g_iUser1 && !(*g_iUser1))
+							goto skip;
+					}
+
+					vec3_t save_simorg;
+					vec3_t save_cl_viewangles;
+					int save_health = pparams->health;
+
+					VectorCopy(pparams->simorg, save_simorg);
+					VectorCopy(pparams->cl_viewangles, save_cl_viewangles);
+
+					RagdollObject->SyncFirstPersonView(spectating_player, pparams);
+
+					gExportfuncs.V_CalcRefdef(pparams);
+
+					VectorCopy(save_simorg, pparams->simorg);
+					VectorCopy(save_cl_viewangles, pparams->cl_viewangles);
+					pparams->health = save_health;
+
+					return;
 				}
-
-				vec3_t save_simorg;
-				vec3_t save_cl_viewangles;
-				int save_health = pparams->health;
-
-				VectorCopy(pparams->simorg, save_simorg);
-				VectorCopy(pparams->cl_viewangles, save_cl_viewangles);
-				
-				ClientPhysicManager()->SyncFirstPersonView(RagdollObject, spectating_player, pparams);
-
-				gExportfuncs.V_CalcRefdef(pparams);
-
-				VectorCopy(save_simorg, pparams->simorg);
-				VectorCopy(save_cl_viewangles, pparams->cl_viewangles);
-				pparams->health = save_health;
-
-				return;
 			}
 		}
 	}
@@ -1489,9 +1514,9 @@ skip:
 	gExportfuncs.V_CalcRefdef(pparams);
 }
 
-void HUD_DrawNormalTriangles(void)
+void HUD_DrawTransparentTriangles(void)
 {
-	gExportfuncs.HUD_DrawNormalTriangles();
+	gExportfuncs.HUD_DrawTransparentTriangles();
 
 	if (AllowCheats())
 	{

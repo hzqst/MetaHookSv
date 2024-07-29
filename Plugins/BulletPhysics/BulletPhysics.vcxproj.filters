@@ -41,21 +41,15 @@
     <ClCompile Include="BasePhysicManager.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="BulletPhysicMnager.cpp">
+    <ClCompile Include="BulletPhysicManager.cpp">
       <Filter>Source</Filter>
     </ClCompile>
     <ClCompile Include="CounterStrike.cpp">
       <Filter>Source</Filter>
     </ClCompile>
-    <ClCompile Include="physics.cpp">
-      <Filter>Source</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="exportfuncs.h">
-      <Filter>Header</Filter>
-    </ClInclude>
-    <ClInclude Include="physics.h">
       <Filter>Header</Filter>
     </ClInclude>
     <ClInclude Include="mathlib2.h">

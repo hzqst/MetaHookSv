@@ -40,7 +40,7 @@ void CBasePhysicManager::NewMap(void)
 
 void CBasePhysicManager::DebugDraw(void)
 {
-
+	
 }
 
 void CBasePhysicManager::SetGravity(float velocity)
@@ -62,26 +62,29 @@ void CBasePhysicManager::StepSimulation(double frametime)
 
 void CBasePhysicManager::ReloadConfig(void)
 {
-
+	//TODO
 }
 
 bool CBasePhysicManager::SetupBones(studiohdr_t* hdr, int entindex)
 {
+	//TODO
 	return false;
 }
 
 bool CBasePhysicManager::SetupJiggleBones(studiohdr_t* hdr, int entindex)
 {
+	//TODO
 	return false;
 }
 
 void CBasePhysicManager::MergeBarnacleBones(studiohdr_t* hdr, int entindex)
 {
-
+	//TODO
 }
 
 bool CBasePhysicManager::ChangeRagdollEntityIndex(int old_entindex, int new_entindex)
 {
+	//TODO
 	return false;
 }
 
@@ -97,12 +100,78 @@ IPhysicObject* CBasePhysicManager::GetPhysicObject(int entindex)
 	return itor->second;
 }
 
-void CBasePhysicManager::LoadPhysicConfigFromFile(CClientPhysicConfig* Configs, const char* name)
+bool CBasePhysicManager::LoadPhysicConfigFromNewFile(CClientPhysicConfig* pConfigs, const std::string& filename)
 {
-	//TODO
+	auto pFileContent = (const char*)gEngfuncs.COM_LoadFile(filename.c_str(), 5, NULL);
+
+	if (!pFileContent)
+		return false;
+
+	bool bLoaded = LoadPhysicConfigFromNewFileBuffer(pConfigs, pFileContent);
+
+	gEngfuncs.COM_FreeFile((void*)pFileContent);
+
+	return bLoaded;
 }
 
-CClientPhysicConfig* CBasePhysicManager::LoadPhysicConfig(model_t* mod)
+bool CBasePhysicManager::LoadPhysicConfigFromNewFileBuffer(CClientPhysicConfig* pConfigs, const char* buf)
+{
+	//TODO
+	return false;
+}
+
+bool CBasePhysicManager::LoadPhysicConfigFromLegacyFile(CClientPhysicConfig* pConfigs, const std::string& filename)
+{
+	auto pFileContent = (const char*)gEngfuncs.COM_LoadFile(filename.c_str(), 5, NULL);
+
+	if (!pFileContent)
+		return false;
+
+	bool bLoaded = LoadPhysicConfigFromLegacyFileBuffer(pConfigs, pFileContent);
+
+	gEngfuncs.COM_FreeFile((void*)pFileContent);
+
+	return bLoaded;
+}
+
+bool CBasePhysicManager::LoadPhysicConfigFromLegacyFileBuffer(CClientPhysicConfig* pConfigs, const char *buf)
+{
+	//TODO
+	return false;
+}
+
+bool CBasePhysicManager::LoadPhysicConfigFromFiles(CClientPhysicConfig* pConfigs, const std::string& filename)
+{
+	std::string fullname = filename;
+
+	if (fullname.length() < 4)
+	{
+		gEngfuncs.Con_DPrintf("LoadPhysicConfigFromFiles: Invalid name %s\n", fullname.c_str());
+		return false;
+	}
+
+	fullname = fullname.substr(0, fullname.length() - 4);
+
+	auto fullname_phys = fullname;
+	fullname_phys += "_phys.txt";
+
+	if (LoadPhysicConfigFromNewFile(pConfigs, fullname_phys))
+		return true;
+
+	auto fullname_ragdoll = fullname;
+	fullname_ragdoll  += "_ragdoll.txt";
+
+	if (LoadPhysicConfigFromLegacyFile(pConfigs, fullname_ragdoll))
+		return true;
+
+	pConfigs->state = PhysicConfigState_LoadedWithError;
+
+	gEngfuncs.Con_DPrintf("LoadPhysicConfigFromFiles: Failed to load physic config file for %s\n", fullname.c_str());
+
+	return false;
+}
+
+CClientPhysicConfigSharedPtr CBasePhysicManager::LoadPhysicConfig(model_t* mod)
 {
 	int modelindex = EngineGetModelIndex(mod);
 
@@ -123,24 +192,18 @@ CClientPhysicConfig* CBasePhysicManager::LoadPhysicConfig(model_t* mod)
 		return NULL;
 	}
 
-	auto Configs = m_physicConfigs[modelindex];
+	auto pConfigs = m_physicConfigs[modelindex];
 
-	if (Configs)
-		return Configs;
+	if (pConfigs)
+		return pConfigs;
 
-	Configs = new CClientPhysicConfig;
+	pConfigs = std::make_shared<CClientPhysicConfig>();
 
-	m_physicConfigs[modelindex] = Configs;
+	m_physicConfigs[modelindex] = pConfigs;
 
-	LoadPhysicConfigFromFile(Configs, mod->name);
+	LoadPhysicConfigFromFiles(pConfigs.get(), mod->name);
 
-	return Configs;
-}
-
-
-IRagdollObject* CBasePhysicManager::CreateRagdollObject(model_t* mod, int entindex, const CClientPhysicConfig* config)
-{
-	return NULL;
+	return pConfigs;
 }
 
 void CBasePhysicManager::CreateBrushModel(cl_entity_t* ent)
@@ -188,18 +251,41 @@ void CBasePhysicManager::CreateGargantua(cl_entity_t* ent)
 
 }
 
+void CBasePhysicManager::AddPhysicObject(int entindex, IPhysicObject* PhysicObject)
+{
+	RemovePhysicObject(entindex);
+
+	m_physicObjects[entindex] = PhysicObject;
+}
+
 void CBasePhysicManager::RemovePhysicObject(int entindex)
 {
 	auto itor = m_physicObjects.find(entindex);
-	if (itor == m_physicObjects.end())
-		return;
 
+	if (itor != m_physicObjects.end())
+	{
+		auto PhysicObject = itor->second;
 
+		RemovePhysicObjectFromWorld(PhysicObject);
+
+		PhysicObject->Destroy();
+
+		m_physicObjects.erase(itor);
+	}
 }
 
 void CBasePhysicManager::RemoveAllPhysicObjects(int flags)
 {
+	for (const auto &itor : m_physicObjects)
+	{
+		auto PhysicObject = itor.second;
 
+		RemovePhysicObjectFromWorld(PhysicObject);
+
+		PhysicObject->Destroy();
+	}
+
+	m_physicObjects.clear();
 }
 
 void CBasePhysicManager::UpdateTempEntity(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time)
@@ -229,7 +315,7 @@ void CBasePhysicManager::GenerateWorldVertexArray()
 
 		auto poly = surf->polys;
 
-		CPhysicBrushFace* brushface = &m_worldVertexArray->vFaceBuffer[i];
+		auto brushface = &m_worldVertexArray->vFaceBuffer[i];
 
 		int iStartVert = iNumVerts;
 
@@ -639,18 +725,6 @@ void CBasePhysicManager::FreeGargantuaIndexVertexArray()
 		delete m_gargantuaIndexArray;
 		m_gargantuaIndexArray = NULL;
 	}
-}
-
-CRagdollConfig *CBasePhysicManager::GetRagdollConfigFromModel(model_t* mod)
-{
-	int modelindex = EngineGetModelIndex(mod);
-
-	if (modelindex < 0 || modelindex >(int)m_ragdollConfigs.size())
-	{
-		return NULL;
-	}
-
-	return m_ragdollConfigs[modelindex];
 }
 
 CPhysicIndexArray * CBasePhysicManager::GetIndexArrayFromBrushModel(model_t *mod)

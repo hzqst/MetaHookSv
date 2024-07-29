@@ -6,7 +6,7 @@
 #include "privatehook.h"
 #include "exportfuncs.h"
 #include "message.h"
-#include "physics.h"
+#include "ClientPhysicManager.h"
 #include "ClientEntityManager.h"
 
 #define R_NEWMAP_SIG_COMMON    "\x55\x8B\xEC\x83\xEC\x2A\xC7\x45\xFC\x00\x00\x00\x00\x2A\x2A\x8B\x45\xFC\x83\xC0\x01\x89\x45\xFC"
@@ -731,7 +731,7 @@ void R_NewMap(void)
 	r_worldmodel = r_worldentity->model;
 
 	gPrivateFuncs.R_NewMap();
-	gPhysicsManager.NewMap();
+	ClientPhysicManager()->NewMap();
 	ClientEntityManager()->NewMap();
 }
 
@@ -743,7 +743,7 @@ TEMPENTITY *efxapi_R_TempModel(float *pos, float *dir, float *angles, float life
 	{
 		int tentindex = r - gTempEnts;
 
-		gPhysicsManager.ChangeRagdollEntIndex(g_iCreatingClCorpsePlayerIndex, ENTINDEX_TEMPENTITY + tentindex);
+		ClientPhysicManager()->ChangeRagdollEntityIndex(g_iCreatingClCorpsePlayerIndex, ENTINDEX_TEMPENTITY + tentindex);
 
 		r->entity.curstate.iuser4 = PhyCorpseFlag;
 		r->entity.curstate.iuser3 = ENTINDEX_TEMPENTITY + tentindex;

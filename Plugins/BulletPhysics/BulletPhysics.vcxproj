@@ -168,18 +168,13 @@ $(Bullet3CheckRequirements)</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\include\HLSDK\common\interface.cpp" />
-    <ClCompile Include="BulletPhysicMnager.cpp" />
+    <ClCompile Include="BulletPhysicManager.cpp" />
     <ClCompile Include="BasePhysicManager.cpp" />
     <ClCompile Include="CounterStrike.cpp" />
     <ClCompile Include="mathlib2.cpp" />
     <ClCompile Include="ClientEntityManager.cpp" />
     <ClCompile Include="message.cpp" />
     <ClCompile Include="parsemsg.cpp" />
-    <ClCompile Include="physics.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="privatehook.cpp" />
     <ClCompile Include="exportfuncs.cpp" />
     <ClCompile Include="plugins.cpp" />
@@ -196,11 +191,6 @@ $(Bullet3CheckRequirements)</Command>
     <ClInclude Include="enginedef.h" />
     <ClInclude Include="exportfuncs.h" />
     <ClInclude Include="mathlib2.h" />
-    <ClInclude Include="physics.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_AVX2|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="ClientEntityManager.h" />
     <ClInclude Include="qgl.h" />
     <ClInclude Include="ClientPhysicConfig.h" />

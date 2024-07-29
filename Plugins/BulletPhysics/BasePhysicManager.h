@@ -4,7 +4,7 @@
 #include <unordered_map>
 
 #include "ClientPhysicManager.h"
-#include "ClientRagdollConfig.h"
+#include "ClientPhysicConfig.h"
 
 class CPhysicBrushVertex
 {
@@ -72,17 +72,17 @@ public:
 	void DebugDraw(void) override;
 	void SetGravity(float velocity) override;
 	void StepSimulation(double frametime) override;
-	void ReloadConfig(void)  override;
+	void ReloadConfig(void) override;
 	bool SetupBones(studiohdr_t* hdr, int entindex)  override;
 	bool SetupJiggleBones(studiohdr_t* hdr, int entindex)  override;
 	void MergeBarnacleBones(studiohdr_t* hdr, int entindex) override;
 	bool ChangeRagdollEntityIndex(int old_entindex, int new_entindex) override;
+	CClientPhysicConfigSharedPtr LoadPhysicConfig(model_t* mod) override;
 	IPhysicObject* GetPhysicObject(int entindex) override;
-	CClientPhysicConfig* LoadPhysicConfig(model_t* mod) override;
-	IRagdollObject* CreateRagdollObject(model_t* mod, int entindex, const CClientPhysicConfig* config) override;
 	void CreateBrushModel(cl_entity_t* ent) override;
 	void CreateBarnacle(cl_entity_t* ent) override;
 	void CreateGargantua(cl_entity_t* ent) override;
+	void AddPhysicObject(int entindex, IPhysicObject* PhysicObject) override;
 	void RemovePhysicObject(int entindex) override;
 	void RemoveAllPhysicObjects(int flags) override;
 	void UpdateTempEntity(TEMPENTITY** ppTempEntFree, TEMPENTITY** ppTempEntActive, double frame_time, double client_time) override;
@@ -112,5 +112,11 @@ private:
 	void GenerateGargantuaIndexVertexArray();
 	void FreeGargantuaIndexVertexArray();
 
-	void LoadPhysicConfigFromFile(CClientPhysicConfig* Configs, const char* name);
+	bool LoadPhysicConfigFromFiles(CClientPhysicConfig* Configs, const std::string& filename);
+
+	bool LoadPhysicConfigFromNewFile(CClientPhysicConfig* Configs, const std::string& filename);
+	bool LoadPhysicConfigFromNewFileBuffer(CClientPhysicConfig* pConfigs, const char* buf);
+
+	bool LoadPhysicConfigFromLegacyFile(CClientPhysicConfig* Configs, const std::string& filename);
+	bool LoadPhysicConfigFromLegacyFileBuffer(CClientPhysicConfig* pConfigs, const char *buf);
 };
