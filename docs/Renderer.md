@@ -329,6 +329,12 @@ You will have to create a txt file named `[modelname]_external.txt` along with `
 }
 ```
 
+The channel `RED` will be used as the intensity of the specular.
+
+The channel `GREEN` will be used as the intensity of the Screen-Space-Reflection.
+
+The channel `BLUE` will be used as the ratio of the Spherized-Normal on "face" textures。(This only affects textures with STUDIO_NF_CELSHADE_FACE)
+
 ### Cvars
 
 * Use cvar `r_studio_external_textures 0` to disable StudioModel specular texture temporarily.
