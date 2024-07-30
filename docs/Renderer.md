@@ -339,7 +339,7 @@ You will have to create a txt file named `[modelname]_external.txt` along with `
 
 ## StudioModel alpha-transparent texture
 
-Just like `STUDIO_NF_ADDITIVE` but with alpha-blending instead of additive-blending. The rendering of meshes with `STUDIO_NF_ALPHA` will be defered to transparent pass if it's from a opaque entity.
+Just like `STUDIO_NF_ADDITIVE` but with alpha-blending instead of additive-blending. The rendering of meshes with `STUDIO_NF_ALPHA` will be defered to transparent pass if it's from an opaque entity.
 
 You will have to replace the basetexture with an external texture with alpha-channel supported, like DXT5-BC7 DDS,TGA or PNG.
 
